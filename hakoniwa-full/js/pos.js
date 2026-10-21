@@ -53,6 +53,12 @@
     lock[k] = nameOf(r[0]);
     return r;
   };
+  /* 攻め×攻め・受け×受け（どちらも自分で選んだ指定）の組か。体の関係には乗り気にならない */
+  P.clash = function (a, b) {
+    if (!a || !b || a === b) return false;
+    var pa = P.of(a), pb = P.of(b);
+    return pa === pb && (pa === 'top' || pa === 'bottom') && explicit(a) && explicit(b);
+  };
   /* 向きが決まっている組か（＝途中の逆転・入れ替わりを起こしてはいけない） */
   P.fixed = function (a, b) { return !(P.of(a) === 'riba' && P.of(b) === 'riba'); };
   /* 二人の組で a が攻めか */

@@ -293,8 +293,12 @@
   HK.TL = {
     T: T,
     /* 台詞の中身だけ（{b} を埋める） */
-    /* row['@口調'] はその口調の書き下ろし（派生の口調用） */
-    text: function (p, id, b) { var row = T[id], t = row['@' + (HK.toneOf ? HK.toneOf(p) : p.tone)] || row[keyOf(p)] || row.gentle; return t.replace(/\{b\}/g, b ? b.name : ''); },
+    /* row['@口調'] はその口調の書き下ろし（派生の口調用）。
+       b が「敬語で話す相手」なら、敬語の行を使う（頭の ⁢ で、voice.js に言い換えさせない） */
+    text: function (p, id, b) {
+      var row = T[id], kg = b && b.name && p.keigo && p.keigo[b.name] && row.polite && keyOf(p) !== 'polite';
+      if (kg) return '\u2062' + row.polite.replace(/\{b\}/g, b.name);
+      var t = row['@' + (HK.toneOf ? HK.toneOf(p) : p.tone)] || row[keyOf(p)] || row.gentle; return t.replace(/\{b\}/g, b ? b.name : ''); },
     /* 「名前「……」」 */
     line: function (p, id, b) { return p.name + '「' + HK.TL.text(p, id, b) + '」'; }
   };

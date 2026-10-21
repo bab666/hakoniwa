@@ -220,7 +220,10 @@
     var rk = pairRules(ctx), sex = rk.some(function (r) { return r.k === 'h'; });
     if (sex) {
       var hubOnly = kind === 'hub' || kind === 'invite' && !(HK.canLove(x, y) && HK.canLove(y, x) && R(ctx, x, y).att > 10);
-      var sp = shape(ctx, g, hubOnly);
+      /* 攻め×攻め・受け×受けの二人は直接は繋がらない：残る一人を中心にする */
+      var cl = HK.Pos && HK.Pos.clash ? pairsOf(g).filter(function (p) { return HK.Pos.clash(p[0], p[1]); })[0] : null, sg = g;
+      if (cl) { var hub = g.filter(function (c) { return cl.indexOf(c) < 0; })[0]; if (hub) sg = [hub].concat(cl); hubOnly = true; }
+      var sp = shape(ctx, sg, hubOnly);
       txt += sexScene(ctx, g, kind, sp, hubOnly, first, nPresent);
     }
     rk.forEach(function (r) { if (r.k !== 'h' && SOFT[r.k]) txt += ctx.t(ctx.pick(SOFT[r.k]), h, x, y); });

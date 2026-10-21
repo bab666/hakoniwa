@@ -287,10 +287,34 @@
   /* 既存の関係による抵抗感（足される惹かれの壁）。家族は軽い行為以外ほぼ不可 */
   function tieWall(ctx, a, b, lvl) {
     var t = HK.Ties ? HK.Ties.get(ctx, a, b) : null;
-    if (!t) return 0;
+    /* 攻め×攻め・受け×受け：エッチには乗り気にならない（追い詰められれば、どちらかが折れる） */
+    var pw = lvl >= 5 && posClash(a, b) ? 40 : 0;
+    if (!t) return pw;
     var D = HK.TIES[t.type];
-    if (D.family) return D.loveOK ? (lvl >= 3 ? 16 : 4) : lvl >= 3 ? 999 : 0;
-    return { enemy: 20, rival: 12, ex: 6, lover: -30, fwb: -35, almost: -15, crush: -8, best: -4, childhood: -4 }[t.type] || 0;
+    if (D.family) return D.loveOK ? (lvl >= 3 ? 16 : 4) + pw : lvl >= 3 ? 999 : 0;
+    return ({ enemy: 20, rival: 12, ex: 6, lover: -30, fwb: -35, almost: -15, crush: -8, best: -4, childhood: -4 }[t.type] || 0) + pw;
+  }
+  function posClash(a, b) { return !!(HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b)); }
+  function clashH(ctx, a, b) { return posClash(a, b) && ctx.rules.some(function (r) { return r.k === 'h'; }); }
+  /* 攻め×攻め・受け×受けが、それでもエッチに至るとき：どちらが折れるか（{a}=上になる側、{b}=折れた側） */
+  var CLASH_TOP = {
+    cp: ['{a}と{b}は、どちらが抱く側に回るかで睨み合った。どちらも譲る気はなかった。最後は、扉の紙を睨んでいた{b}が舌打ちをして、先に目を逸らした。', '{b}は、自分が下になることだけは最後まで認めなかった。それでも、時間が尽きかけているのは{b}にも分かっていた。{b}は奥歯を噛んで、{a}に背中を預けた。'],
+    cold: ['{a}と{b}は、どちらも抱かれる側に回る気はなかった。しばらく無言の押し問答が続いたあと、このままでは出られないと見切った{b}のほうが、先に引いた。', '{b}は、どちらが上になるかで揉める時間すら惜しいと判断したらしい。表情を変えないまま、{a}に場所を譲った。'],
+    fc: ['{a}と{b}は、どっちが上かで揉めに揉めた。腕相撲で決めることになり、負けた{b}は、ベッドに大の字になって天井を仰いだ。', '{a}と{b}はじゃんけんで決めることにした。三回勝負に負けた{b}は、次は絶対に自分が上だと、何度も念を押した。'],
+    np: ['{a}と{b}は、どちらも抱く側のつもりだった。互いに譲らないまま時間だけが過ぎ、とうとう{b}のほうが、{a}の必死な顔に根負けした。', '{b}は、困ったように笑って肩をすくめた。今回だけは、{a}に譲ってやることにしたらしい。'],
+    ac: ['{a}と{b}は、どちらも抱く側だと思い込んでいた。{a}に押し倒されてようやく、{b}は自分が下になるのだと気づき、真っ赤になって固まった。', '{b}は言い出せないまま、気づけば{a}の下にいた。抗議しようとした口は、{a}の唇で塞がれた。']
+  };
+  var CLASH_BOTTOM = {
+    cp: ['{a}と{b}は、どちらも相手がリードするものだと思っていた。気まずい沈黙のあと、{a}が仕方なさそうに、乱暴に袖をまくった。','{a}と{b}は、どちらも自分から動く気はなかった。見かねた{a}が、ため息をついて{b}の肩を押した。'],
+    cold: ['{a}と{b}は、どちらも抱かれる側のつもりだった。このままでは埒が明かないと判断した{a}が、慣れない手つきで{b}に触れ始めた。'],
+    fc: ['{a}と{b}は、どちらがリードするかでじゃんけんをした。負けた{a}は、照れ笑いしながら{b}に覆いかぶさった。','{a}と{b}は、お互いに相手が動くのを待って、しばらく見つめ合ったまま笑ってしまった。先に手を伸ばしたのは、{a}だった。'],
+    np: ['{a}と{b}は、どちらも相手に委ねたいほうだった。{b}の不安そうな顔を見て、{a}が覚悟を決めた。'],
+    ac: ['{a}と{b}は、どちらも自分から動けなかった。長い沈黙のあと、震える指で先に触れたのは、{a}のほうだった。']
+  };
+  function clashText(ctx, a, b) {
+    var o = HK.Pos.order(a, b, [a, b]), top = HK.Pos.isTop(a), y = top ? o[1] : o[0], t = y.tr;
+    var k = [['cp', t.cp], ['cold', t.cold || 0], ['fc', t.fc], ['np', t.np], ['ac', t.ac]].sort(function (x, z) { return z[1] - x[1]; })[0][0];
+    return { text: ctx.t(ctx.pick((top ? CLASH_TOP : CLASH_BOTTOM)[k]), o[0], o[1]), why: top ? 'どちらも攻め。' + y.name + 'が折れた' : 'どちらも受け。' + y.name + 'が覚悟を決めた' };
   }
 
   var scen = {
@@ -472,8 +496,10 @@
         var rv = rough === a ? b : a;
         text = rough.name + 'は' + rv.name + 'の手首を掴んで、乱暴に壁へ押しつけた。' + HK.TL.line(rough, 'H_ROUGH', rv) + text;
       }
+      var cl = r.k === 'h' && first && posClash(a, b) ? clashText(ctx, a, b) : null;
+      if (cl) text = cl.text + text;
       if (r.n > 1) text += '（' + T.noun + ' ' + p.act[r.k] + '/' + r.n + '）';
-      var whyT = rough ? rough.name + 'は' + (rough === a ? b : a).name + 'を敵視している（嫌悪 ' + Math.round(HKr.level(ctx, rough, rough === a ? b : a)) + '）・強引な性格。条件のために、乱暴に' : wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった';
+      var whyT = (cl ? cl.why + '／' : '') + (rough ? rough.name + 'は' + (rough === a ? b : a).name + 'を敵視している（嫌悪 ' + Math.round(HKr.level(ctx, rough, rough === a ? b : a)) + '）・強引な性格。条件のために、乱暴に' : wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった');
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, r.k === 'h');
       if (p.act[r.k] >= r.n) text += '扉はまだ開かない。' + a.name + 'と' + b.name + 'に残っているのは、' + leftText(ctx, a, b) + '。';
       return { text: text, why: whyT, mag: first ? 15 : 5 };
@@ -497,6 +523,7 @@
   }
   function willing(ctx, a, b, lvl) {
     if (lvl >= 5 && HK.RoomReluct && HK.RoomReluct.blocks(ctx, a, b)) return false;   /* 恋人でも場所を渋っている（room-reluct.js） */
+    if (lvl >= 5 && posClash(a, b)) return false;   /* 攻め×攻め・受け×受けは、乗り気では始めない（焦りが限界なら desperate で） */
     var exp = (ctx.stat(a, 'exp') + ctx.stat(b, 'exp') - 6) * 3 + (ctx.present().length === 2 ? 4 : 0) - tieWall(ctx, a, b, lvl);
     var ab = R(ctx, a, b), ba = R(ctx, b, a);
     return ab.att + exp > LVL_ATT[lvl] && ba.att + exp > LVL_ATT[lvl] && ab.trust > LVL_TRUST[lvl] && ba.trust > LVL_TRUST[lvl] && ab.ten < 55 && ba.ten < 55;
@@ -665,7 +692,7 @@
   });
   EV.push({
     id: 'multi_flirt', cat: 'romance', scope: 'pair',
-    when: function (ctx, a, b) { return crowd(ctx) && eager(ctx, a) > 0.6 && (a.flags.partner == null || a.flags.partner !== b.i) && HK.canLove(a, b); },
+    when: function (ctx, a, b) { return crowd(ctx) && eager(ctx, a) > 0.6 && (a.flags.partner == null || a.flags.partner !== b.i) && HK.canLove(a, b) && !clashH(ctx, a, b); },
     w: function (ctx, a) { return 0.5 + eager(ctx, a) * 1.2; },
     run: function (ctx, a, b) {
       ctx.mod2(a, b, { att: 7 }, { att: eager(ctx, b) > 0.5 ? 6 : 2, ten: eager(ctx, b) > 0.5 ? 0 : 4 });
@@ -687,7 +714,7 @@
       if (G.indexOf(a) < 0) G[G.length - 1] = a;
       ctx.flags.groupDone = true;
       var others = ctx.present().filter(function (c) { return G.indexOf(c) < 0; });
-      G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i) { ctx.pair(x, y).night = true; ctx.mod2(x, y, { att: 8, aff: 4 }, { att: 8, aff: 4 }); var p = prog(ctx, x, y); p.act.h = (p.act.h || 0) + 1; } }); });
+      G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i && !posClash(x, y)) { ctx.pair(x, y).night = true; ctx.mod2(x, y, { att: 8, aff: 4 }, { att: 8, aff: 4 }); var p = prog(ctx, x, y); p.act.h = (p.act.h || 0) + 1; } }); });
       others.forEach(function (o) { G.forEach(function (g) { ctx.mod(o, g, { ten: 6 }); }); ctx.stress(o, 8); });
       var g2 = G.filter(function (c) { return c !== a; });
       var text = ctx.t('{a}が「もう、みんなでいいじゃん」と笑った。', a) + names(G) + 'は顔を見合わせ、誰からともなく手を伸ばした。' +
@@ -717,6 +744,7 @@
     when: function (ctx, a, b) {
       if (a.flags.down || b.flags.down || ctx.pair(a, b).speedTried || speedy(a) < 0.38 || ctx.stepIndex < 1) return false;
       if (b.flags.partner != null && b.flags.partner !== a.i) return false;
+      if (clashH(ctx, a, b)) return false;
       return ctx.rules.some(function (r) { return K[r.k].type === 'act' && K[r.k].lvl >= 2 && !ruleDone(ctx, r, a, b); }) && tieWall(ctx, a, b, 3) < 999 && HK.canLove(a, b);
     },
     w: function (ctx, a) { return (speedy(a) - 0.25) * 3 + a.stress / 120 + (a.goal.id === 'quick' ? 0.8 : 0); },

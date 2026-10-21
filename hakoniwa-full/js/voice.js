@@ -147,6 +147,11 @@
   function prohibit(s) {
     if (/(やる|いる|ある|なる|わかる|分かる|できる)な$/.test(s) || /[よょろそ]うな$/.test(s)) return null;
     if (/するな$/.test(s)) return s.replace(/するな$/, 'しないでください');
+    /* くだけた禁止（「すんな」「見んな」「来んな」「触んな」） */
+    if (/すんな$/.test(s)) return s.replace(/すんな$/, 'しないでください');
+    if (/(来|く)んな$/.test(s)) return s.replace(/(来|く)んな$/, '来ないでください');
+    if (/(見|寝|出|着)んな$/.test(s)) return s.replace(/んな$/, 'ないでください');
+    if (/(触|帰|乗|入|座|喋|しゃべ|ふざけ|なめ|舐め|調子乗)んな$/.test(s)) return s.replace(/んな$/, /(ふざけ|なめ|舐め)$/.test(s.slice(0, -2)) ? 'ないでください' : 'らないでください');
     if (/(来る|くる)な$/.test(s)) return s.replace(/(来る|くる)な$/, '来ないでください');
     var m = s.match(/(.)(る|う|く|す|つ|む|ぶ|ぐ|ぬ)な$/);
     if (!m) return null;
@@ -288,8 +293,49 @@
     }
     return null;
   }
-  /* people: [{name, fp, tone, persona, gender}] */
-  V.processText = function (text, people) {
+  /* ---------- 台詞の相手（敬語で話す相手の判定に使う） ---------- */
+  var HON = '(?:さん|くん|君|ちゃん|様|さま|先輩|先生|殿)?';
+  function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  /* 台詞 q（text の s〜e）が誰に向けたものか。actors はその出来事の登場人物（番号か住人） */
+  function addresseeOf(text, s, e, q, who, people, actors) {
+    var others = people.filter(function (p) { return p !== who && p.name; }).sort(function (a, b) { return b.name.length - a.name.length; });
+    if (!others.length) return null;
+    var i, p;
+    /* 1. 呼びかけ（「ミナト、……」「ミナトさん！」） */
+    for (i = 0; i < others.length; i++) { p = others[i]; if (new RegExp('^[…‥、\\s]*' + escRe(p.name) + HON + '(?:[、。！？!?…‥っ]|$)').test(q)) return p; }
+    /* 2. 直前の地の文（「アキラはミナトに言った。」「ミナトの耳元で」「ミナトを見て」） */
+    var seg = text.slice(0, s), span = seg.slice(Math.max(lastBound(seg), seg.length - 60)), best = null, bp = -1;
+    others.forEach(function (o) {
+      var re = new RegExp(escRe(o.name) + '(?:に|へ|の耳元|の目|の顔|の方|の肩|の手|の背中|の前|と目|を見|を振り返|を呼|を睨|に向)', 'g'), m;
+      while ((m = re.exec(span))) if (m.index > bp) { bp = m.index; best = o; }
+    });
+    if (best) return best;
+    /* 3. 直後の地の文（「……」とミナトに言った） */
+    var after = text.slice(e, e + 24);
+    for (i = 0; i < others.length; i++) { p = others[i]; if (new RegExp('^(?:と|って)、?' + escRe(p.name) + '(?:に|へ)').test(after)) return p; }
+    /* 4. 二人だけの出来事なら、もう一人 */
+    if (actors && actors.length === 2) {
+      var A = actors.map(function (x) { return typeof x === 'number' ? people[x] : x && (x.i != null && people[x.i] && people[x.i].name === x.name ? people[x.i] : people.filter(function (pp) { return pp.name === x.name; })[0]); });
+      if (A[0] === who && A[1] && A[1] !== who) return A[1];
+      if (A[1] === who && A[0] && A[0] !== who) return A[0];
+    }
+    /* 5. 住人が二人きり */
+    return others.length === 1 ? others[0] : null;
+  }
+  V.addresseeOf = addresseeOf;
+  /* who が、この台詞では敬語で話すか（ふだんの口調が敬語なら対象外） */
+  function keigoHere(text, s, e, q, who, people, actors) {
+    if (!who || !who.keigo || who.persona === 'polite') return false;
+    var ks = Object.keys(who.keigo).filter(function (k) { return who.keigo[k]; });
+    if (!ks.length) return false;
+    var to = addresseeOf(text, s, e, q, who, people, actors);
+    return !!(to && who.keigo[to.name]);
+  }
+
+  /* people: [{name, fp, tone, persona, gender, keigo}]。actors（任意）はその出来事の登場人物
+     台詞の頭の \u2062 は「書き下ろしの敬語の行（tone-lines.js）」。言い換えず、一人称と呼び方だけそろえる */
+  V.processText = function (text, people, actors) {
+    if (typeof text === 'string' && text.indexOf('\u2062') >= 0 && (text.indexOf('「') < 0 || !people || !people.length)) text = text.replace(/\u2062/g, '');
     if (!text || typeof text !== 'string' || (text.indexOf('「') < 0 && text.indexOf('（') < 0) || !people || !people.length) return text;
     var out = '', last = 0, depth = 0, start = -1;
     for (var i = 0; i < text.length; i++) {
@@ -315,9 +361,13 @@
               /* 「引いたのは「人妻と配達員」だった」のような題名も台詞ではない */
               (/^だ/.test(text.slice(i + 1, i + 2)) && /(?:のは|お題は|テーマは|題名は|企画は)$/.test(text.slice(Math.max(0, start - 6), start)));
             /* 口調ごとの書き下ろし（voice-override.js）があれば、自動の言い換えより優先する */
-            var ov = !nounQ && V.overrideFor ? V.overrideFor(q, who, people) : null;
+            /* 敬語で話す相手への台詞：書き下ろしの敬語の行はそのまま、それ以外は敬語に言い換える */
+            var pre = q.charAt(0) === '\u2062';
+            if (pre) q = q.slice(1);
+            var kg = !nounQ && (pre || keigoHere(text, start, i + 1, q, who, people, actors));
+            var ov = pre ? null : !nounQ && V.overrideFor ? V.overrideFor(q, kg ? Object.assign({}, who, { tone: 'polite' }) : who, people) : null;
             q = V.replaceFP(ov != null ? ov : q, who);
-            if (ov == null) { if (who.persona === 'polite') q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(q, who); }
+            if (ov == null && !pre) { if (who.persona === 'polite' || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(q, who); }
             if (YOU_ST.test(q0)) q = fixYouStutter(q);
             if (V.applyCalls) q = V.applyCalls(q, who, people);
           }
@@ -327,19 +377,19 @@
         }
       }
     }
-    return out + text.slice(last);
+    return (out + text.slice(last)).replace(/\u2062/g, '');
   };
   /* シミュレーション結果全体に適用 */
   V.processResult = function (res, input) {
     if (!res || !input || !input.chars) return res;
     var people = input.chars.map(function (c, i) {
       var r = (res.chars && res.chars[i]) || (res.heroes && res.heroes[i]) || {};
-      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', calls: c.calls || null };
+      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', calls: c.calls || null, keigo: c.keigo || null };
       p.persona = r.persona || HK.personaOf({ tone: c.tone, eg: c.eg });
       return p;
     });
-    var f = function (t) { return V.processText(t, people); };
-    (res.log || []).forEach(function (e) { if (e && typeof e.text === 'string') e.text = f(e.text); });
+    var f = function (t, ac) { return V.processText(t, people, ac); };
+    (res.log || []).forEach(function (e) { if (e && typeof e.text === 'string') e.text = f(e.text, e.actors); });
     var E = res.ending || res.end;
     if (E) {
       if (Array.isArray(E.lines)) E.lines = E.lines.map(function (l) { return typeof l === 'string' ? f(l) : l; });

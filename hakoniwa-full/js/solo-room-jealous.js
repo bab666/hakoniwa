@@ -148,7 +148,9 @@
         var rk = b.tr.ac > 0.6 || R(ctx, b, a).att > 60 ? 'sorry' : b.tr.cp > 0.6 ? 'defy' : 'tease';
         t += m(ctx.pick(CLAIM[grp(a)])) + m(ctx.pick(REPLY[grp(b)][rk]));
         var LW = HK.RoomLewd;
-        t += m(ctx.pick(CLAIM_SEX)) + (LW ? LW.scene(ctx, a, b, (A.prog(ctx, a, b).act.h || 0) ? 'repeat' : 'will', { lead: true }) : '') + (function () { var r = ctx.rng(); return r < 0.4 ? m(CLAIM_AFTER[grp(a)][0]) : r < 0.8 ? m(CLAIM_AFTER[grp(b)][1]) : m(CLAIM_AFTER.rough[2]); })();
+        /* 「奥まで沈めた」は {a} が攻めのときだけ（受け攻めの指定で {a} が受けなら、ほかの描写から選ぶ） */
+        var aTop = !HK.Pos || HK.Pos.topOf(a, b, [a, b]) === a;
+        t += m(ctx.pick(aTop ? CLAIM_SEX : CLAIM_SEX.filter(function (l) { return l.indexOf('沈めた') < 0; }))) + (LW ? LW.scene(ctx, a, b, (A.prog(ctx, a, b).act.h || 0) ? 'repeat' : 'will', { lead: true }) : '') + (function () { var r = ctx.rng(); return r < 0.4 ? m(CLAIM_AFTER[grp(a)][0]) : r < 0.8 ? m(CLAIM_AFTER[grp(b)][1]) : m(CLAIM_AFTER.rough[2]); })();
         var p = A.prog(ctx, a, b); p.act.h = (p.act.h || 0) + 1;
         ctx.pair(a, b).night = true;
         ctx.mod2(a, b, { att: 10, aff: 6, ten: 2 }, { att: 8, aff: 4 });
