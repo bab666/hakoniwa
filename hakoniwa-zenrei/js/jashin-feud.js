@@ -78,13 +78,14 @@
     if (!ps.length || rng() > 0.09 || S.found.length >= S.G.clues.length) return false;
     var pr = rng.pick(ps), a = pr[0], b = pr[1];
     a.rivalBoost = b.rivalBoost = 2;
-    var t = b.name + 'が床下の古い箱に手を伸ばした瞬間、' + a.name + 'が横からそれをさらった。' + TL.line(a, 'CLUE_SNATCH', b) + TL.line(b, 'CLUE_SNATCH_BACK', a);
+    var t = b.name + 'が床下の古い箱に手を伸ばした瞬間、' + a.name + 'が横からそれをさらった。' + TL.line(a, 'CLUE_SNATCH', b);
     edge(S, a, b, '出し抜いた', 'enemy');
     if (rng() < 0.3) {
-      ST.say(S, { actors: [a, b], tag: '奪い合い', text: t + '二人が箱を引っ張り合ううちに、中の古文書は真っ二つに裂けた。読める部分は、ほとんど残っていなかった。', why: a.name + 'と' + b.name + '（' + FD.label(S, a, b) + '）の手がかりの奪い合い――台無しになった', mag: 22 });
+      ST.say(S, { actors: [a, b], tag: '奪い合い', text: t + b.name + 'は黙って、箱の端を掴み返した。二人が引っ張り合ううちに、中の古文書は真っ二つに裂けた。読める部分は、ほとんど残っていなかった。', why: a.name + 'と' + b.name + '（' + FD.label(S, a, b) + '）の手がかりの奪い合い――台無しになった', mag: 22 });
       return true;
     }
     var g = JS.GODEV ? JS.GODEV.giveClue(S, a) : '';
+    t += TL.line(b, 'CLUE_SNATCH_BACK', a);
     ST.say(S, { actors: [a, b], tag: '奪い合い', text: t + (g ? a.name + 'は、勝ち誇ったように中身を読み上げた' + g : ''), why: a.name + 'と' + b.name + '（' + FD.label(S, a, b) + '）は張り合って、手がかりを奪い合う' + (g ? '（手がかり +1）' : ''), mag: 20 });
     return true;
   }

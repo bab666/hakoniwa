@@ -66,13 +66,14 @@
     var rng = S.rng, ps = pairs(live, function (a, b) { return (a.isDet || b.isDet) && FD.rival(S, a, b); });
     if (!ps.length || rng() > 0.18) return false;
     var pr = rng.pick(ps), a = pr[0], b = pr[1];
-    var t = b.name + 'が暖炉の灰をかき分けて何かをつまみ上げた瞬間、' + a.name + 'がその手から、それをかすめ取った。' + TL.line(a, 'CLUE_SNATCH', b) + TL.line(b, 'CLUE_SNATCH_BACK', a);
+    var t = b.name + 'が暖炉の灰をかき分けて何かをつまみ上げた瞬間、' + a.name + 'がその手から、それをかすめ取った。' + TL.line(a, 'CLUE_SNATCH', b);
     rel(S, a, b, '出し抜いた', 'enemy');
     if (rng() < 0.25) {
-      ST.say(S, { actors: [a, b], tag: '奪い合い', text: t + '奪い合ううちに、それは暖炉の火の中へ落ちた。燃え残りから読み取れることは、もう何もなかった。', why: a.name + 'と' + b.name + '（' + FD.label(S, a, b) + '）の手がかりの奪い合い――台無しになった', mag: 22 });
+      ST.say(S, { actors: [a, b], tag: '奪い合い', text: t + b.name + 'は黙って、それを取り返そうと手を伸ばした。奪い合ううちに、それは暖炉の火の中へ落ちた。燃え残りから読み取れることは、もう何もなかった。', why: a.name + 'と' + b.name + '（' + FD.label(S, a, b) + '）の手がかりの奪い合い――台無しになった', mag: 22 });
       return true;
     }
     var g = Y.gain(S, a, 'search');
+    t += TL.line(b, 'CLUE_SNATCH_BACK', a);
     ST.say(S, { actors: [a, b], tag: '奪い合い', text: t + (g ? '――' + g + '。' : ''), why: a.name + 'と' + b.name + '（' + FD.label(S, a, b) + '）は張り合って、手がかりを奪い合う' + (g ? '（手がかり +1）' : ''), mag: 20 });
     return true;
   }
