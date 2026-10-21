@@ -143,7 +143,12 @@
       if (V && ctx.rng() < 0.25) lew.push(V.line(pf, A.persona, 'climax', 'a'));
     }
     if (mode === 'repeat') lew.splice(0, 0, pick(ctx, ['{a}と{b}は、もう一度体を重ねた。今度は{b}が{a}の上になった。', '{a}と{b}は、息が整うのも待たずに二回目を始めた。', '回数を重ねるごとに、{b}は{a}の触れ方を覚えていった。', '次は{b}の方から{a}の服に手をかけた。']));
-    if (mode === 'will' || mode === 'des' || mode === 'aphro') lew.push(pick(ctx, AFTER[mode]));
+    if (mode === 'will' || mode === 'des' || mode === 'aphro') {
+      /* まだ条件が残っている組には、扉が開く・部屋を出る締めを使わない */
+      var API = HK.RoomAPI, open = !API || !API.pairDone || API.pairDone(ctx, a, b);
+      var af = open ? AFTER[mode] : AFTER[mode].filter(function (l) { return !/扉|出られる|行こう|条件は、満たした/.test(l); });
+      lew.push(pick(ctx, af.length ? af : AFTER[mode]));
+    }
     if (V && mode !== 'speed' && ctx.rng() < 0.4) lew.push(V.line(pf, B.persona, 'after', 'b'));
     return lew.map(function (s) { return t(ctx, s, A, B); }).join('') + (opt.dash ? '――' : '');
   };

@@ -134,6 +134,22 @@
     ctx.mod2(a, b, { trust: 8 }, { trust: 8 });
     return { cat: 'escape', mag: 35, text: text, why: why };
   }
+  /* 条件の数え方は出来事ごとに散らばっている（会話・三人・口論の中の行為など）。
+     区切りの終わりに、条件がそろったのにまだ部屋にいる組があれば、その場で扉を開ける */
+  function sweepExits(ctx) {
+    if (ctx.flags.isOne) return;
+    if (!hasPairRule(ctx)) {
+      if (ctx.present().length && ctx.rules.every(function (r) { return ((ctx.flags.consumed || {})[r.k] || 0) >= r.n; })) exitAll(ctx);
+      return;
+    }
+    var P = ctx.present(), night = ctx.rules.some(function (r) { return r.k === 'h'; });
+    for (var i = 0; i < P.length; i++) for (var j = i + 1; j < P.length; j++) {
+      var a = P[i], b = P[j];
+      if (a.out || b.out || !pairDone(ctx, a, b)) continue;
+      var ex = exitPair(ctx, a, b, '扉の紙を見ると、' + a.name + 'と' + b.name + 'の分の数字が、いつの間にかそろっていた。', a.name + 'と' + b.name + 'の条件が、ほかの出来事の中でそろった', night);
+      ctx.say({ kind: 'event', cat: 'escape', actors: [a, b], text: ex.text + (a.out && b.out ? a.name + 'と' + b.name + 'は、扉をくぐった。' : ''), why: ex.why, mag: ex.mag || 30 });
+    }
+  }
   function exitAll(ctx) {
     var P = ctx.present();
     P.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = '条件を満たし、全員で部屋を出た'; });
@@ -381,6 +397,7 @@
     },
     after: function (ctx) {
       countFlavor(ctx);
+      sweepExits(ctx);
       var P = ctx.present();
       P.forEach(function (c) { c.stress = HK.clamp(c.stress + ctx.env.pressure / 100 * 12 + 4, 0, 100); });
       /* 二人きりは話す時間が長い：毎時間、少しずつ距離が縮む */
@@ -394,7 +411,10 @@
     },
     end: function (ctx) { return ctx.flags.oneOut || ctx.present().length <= (hasPairRule(ctx) ? 1 : 0); },
     finish: function (ctx) {
+      sweepExits(ctx);
       ctx.present().forEach(function (c) {
+        /* 条件を満たしたのに、自分の意思で残った人（exitPair の stay）は「取り残された」ではない */
+        if (c.flags.stayed) { c.fate = '自分から残った'; c.fateNote = '条件を満たしたが、自分の意思で部屋に残った'; return; }
         c.fate = '取り残された';
         c.fateNote = ctx.flags.isOne && ctx.flags.oneOut ? '扉はもう開かなかった' : '最後まで条件を満たせなかった';
       });

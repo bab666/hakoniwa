@@ -81,7 +81,7 @@
   /* ---------- 出られない部屋 ---------- */
   E.whiteroom = function (res, X) {
     var ex = res.end.exits, room = res.end.room || {};
-    var out = X.byFate(/脱出/), left = X.C.filter(function (c) { return !/脱出/.test(c.fate); });
+    var out = X.byFate(/脱出/), stayed = X.byFate(/自分から残った/), left = X.C.filter(function (c) { return !/脱出|自分から残った/.test(c.fate); });
     var isOne = HK.roomRules(res.env)[0].k === 'one';
     var headline, lines = ['部屋：「' + (room.label || HK.roomLabel(res.env)) + '」'];
     if (isOne) {
@@ -97,11 +97,12 @@
       else if (trios.length) headline = trios.map(function (e) { return X.names(e.group) + 'の' + (['', '', '二人', '三人', '四人', '五人'][e.group.length] || e.group.length + '人'); }).join('と') + 'が、一緒に条件を満たして部屋を出た。' + (pairs.length ? 'ほかに' + pairs.map(function (e) { return X.nm(e.a) + '×' + X.nm(e.b); }).join('、') + 'も脱出。' : '') + (left.length ? X.names(left) + 'は取り残された。' : '');
       else if (pairs.length) headline = pairs.map(function (e) { return X.nm(e.a) + '×' + X.nm(e.b); }).join('、') + (pairs.length > 1 ? ' の' + pairs.length + '組' : '') + 'が成立して脱出。' + (left.length ? X.names(left) + 'は取り残された。' : '');
       else headline = '誰も条件を満たせず、' + (left.length > 2 ? '全員' : X.names(left)) + 'が部屋に取り残された。';
+      if (stayed.length) headline += X.names(stayed) + 'は条件を満たしたが、自分から部屋に残った。';
       ex.forEach(function (e) {
         if (e.trio) { lines.push(e.label + '　' + X.names(e.group) + '　' + (['', '', '二人', '三人', '四人', '五人'][e.group.length] || e.group.length + '人') + 'で一緒に条件を満たして脱出。部屋を出たあとは「' + (e.bondLabel || '―') + '」'); return; }
         if (e.group != null) return;
         var p = X.pair(e.a, e.b);
-        lines.push(e.label + '　' + X.nm(e.a) + '×' + X.nm(e.b) + '　条件を満たして脱出。部屋を出たあとの関係は「' + (p ? p.name : '―') + '」');
+        lines.push(e.label + '　' + X.nm(e.a) + '×' + X.nm(e.b) + '　条件を満たして' + (e.stay != null ? X.nm(e.a) + 'が脱出（' + X.nm(e.stay) + 'は自分から残った）' : '脱出') + '。部屋を出たあとの関係は「' + (p ? p.name : '―') + '」');
       });
       if (group) lines.push(group.label + '　全員で脱出');
     }
@@ -215,15 +216,28 @@
     var wrong = cases.filter(function (c) { return !c.solved; })[0];
     var alive = X.C.filter(function (c) { return c.alive; });
     var days = Math.ceil(res.stepCount / 4);
+    var rebels = X.byFate(/黒幕を倒して脱出/);
     var headline;
-    if (wrong) {
+    if (rebels.length) headline = (cases.length ? cases.length + '件の事件のあと、' : '') + '黒幕への反撃に成功した。' + X.names(rebels) + 'が、黒幕からゲームの鍵を奪ってホテルを脱出した。';
+    else if (wrong) {
       var grads = X.byFate(/生還|卒業/);
       headline = cases.length + '件目の裁判で投票を外した。犯人の' + X.nm(wrong.killer) + (grads.length > 1 ? 'と共犯の' + X.nm(wrong.acc) : '') + 'だけが生きて帰り、ほかの全員が処刑された。';
     } else if (!cases.length) headline = days + '日間、一度も殺人は起きなかった。' + X.names(alive) + 'は' + (res.env.endrule === 'out' ? '全員でホテルを出た。' : 'ホテルに残った。');
     else headline = cases.length + '件の事件をすべて解き明かし、生き残った' + X.names(alive) + 'が' + (res.env.endrule === 'out' ? 'ホテルを出た。' : 'ホテルに残った。');
     var lines = cases.map(function (c, k) {
-      return (CIRC.charAt(k) || '・') + ' ' + c.label.replace(/・(学級)?裁判/, '') + '　被害者：' + X.nm(c.victim) + '　犯人：' + X.nm(c.killer) + (c.acc != null ? '（共犯：' + X.nm(c.acc) + '）' : '') + '　動機：' + c.motive + '　→ ' +
+      /* 被害者が複数いる事件（口封じ・共犯者の始末・返り討ち）は全員を並べる */
+      var vs = c.victims && c.victims.length ? c.victims : [c.victim];
+      var first = c.prior ? '　最初の犯行：' + X.nm(c.prior.killer) + 'が' + X.nm(c.prior.victim) + 'を殺害' : '';
+      return (CIRC.charAt(k) || '・') + ' ' + c.label.replace(/・(学級)?裁判/, '') + '　被害者：' + vs.map(X.nm).join('・') + first + '　犯人：' + X.nm(c.killer) + (c.acc != null ? '（共犯：' + X.nm(c.acc) + '）' : '') + '　動機：' + c.motive + '　→ ' +
         (c.solved ? '見破られて処刑' + (c.det != null ? '（決め手は' + X.nm(c.det) + 'の推理）' : '') : '見破れず。' + X.nm(c.wrong) + 'に票が集まった');
+    });
+    /* 事件の被害者でも裁判の処刑でもない死（黒幕による処刑・裁判に至らなかった殺人） */
+    var inCase = {};
+    cases.forEach(function (c) { (c.victims && c.victims.length ? c.victims : [c.victim]).forEach(function (v) { inCase[v] = 1; }); if (c.prior) inCase[c.prior.victim] = 1; });
+    X.C.forEach(function (c) {
+      if (c.alive || inCase[c.i] || /裁判で/.test(c.fateNote || '')) return;
+      var how = String(c.fateNote || '').replace(/^[^、]*、/, '');
+      lines.push((/黒幕|見せしめ/.test(how) && c.killedBy == null ? '黒幕による処刑：' : '死亡：') + c.name + '（' + how + '）');
     });
     var dets = {};
     cases.forEach(function (c) { if (c.solved && c.det != null) dets[c.det] = (dets[c.det] || 0) + 1; });
@@ -231,7 +245,7 @@
     if (top != null) lines.push('探偵役：' + X.nm(+top) + '（' + dets[top] + '件の決め手）');
     return {
       headline: headline,
-      stats: [['事件', cases.length + '件'], ['正しい投票', cases.filter(function (c) { return c.solved; }).length + '/' + cases.length], ['生還', (wrong ? X.byFate(/卒業/).length : alive.length) + '/' + n + '人'], ['経過', days + '日']],
+      stats: [['事件', cases.length + '件'], ['正しい投票', cases.filter(function (c) { return c.solved; }).length + '/' + cases.length], (!rebels.length && !wrong && res.env.endrule !== 'out' ? ['ホテルに残った', alive.length + '/' + n + '人'] : ['生還', (rebels.length ? rebels.length : wrong ? X.byFate(/生還|卒業/).length : alive.length) + '/' + n + '人']), ['経過', days + '日']],
       lines: lines
     };
   };

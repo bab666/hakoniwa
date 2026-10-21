@@ -35,7 +35,12 @@
     var lr = lead0 ? lead0(ctx, a, b) : [a, b], A = lr[0], B = lr[1], s = st(A);
     var out = [ctx.pick(NEAR[s]), ctx.pick(MID), ctx.pick(FADE)];
     if (mode === 'repeat') out = ['{a}と{b}は、もう一度互いを抱き寄せた。', ctx.pick(FADE)];
-    if (AFTER[mode]) out.push(ctx.pick(AFTER[mode]));
+    if (AFTER[mode]) {
+      /* まだ条件が残っている組には、扉が開く・部屋を出る締めを使わない */
+      var API = HK.RoomAPI, open = !API || !API.pairDone || API.pairDone(ctx, a, b);
+      var af = open ? AFTER[mode] : AFTER[mode].filter(function (l) { return !/扉|出たら/.test(l); });
+      out.push(ctx.pick(af.length ? af : AFTER[mode]));
+    }
     return out.map(function (x) { return ctx.t(x, A, B); }).join('') + (opt.dash ? '――' : '');
   };
   var recap0 = L.recap;

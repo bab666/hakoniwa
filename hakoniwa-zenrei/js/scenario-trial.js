@@ -518,7 +518,7 @@
         if (o === K || !o.alive) return;
         if (R(ctx, o, K).aff > 35) { o.flags.grief = K.i; o.stress = HK.clamp(o.stress + 20, 0, 100); ctx.act2({ actors: [o, K], cat: 'solo', text: ctx.t('処刑のあいだ、{a}は一度も目を閉じなかった。', o, K), why: o.name + 'の' + K.name + 'への好意（' + Math.round(R(ctx, o, K).aff) + '）。悲しみは次の夜の火種になる' }); }
       });
-      F.cases.push({ label: ctx.label, victim: V.i, killer: K.i, acc: A ? A.i : null, motive: T.motive, solved: true, det: det ? det.i : null, twist: T.twist || '', victims: T.victims, faked: faked, exposed: exposed });
+      F.cases.push({ label: ctx.label, victim: V.i, killer: K.i, acc: A ? A.i : null, motive: T.motive, solved: true, det: det ? det.i : null, twist: T.twist || '', victims: T.victims, prior: T.prior || null, faked: faked, exposed: exposed });
     } else {
       var scape = ctx.most(P.filter(function (c) { return c !== K && c !== A; }), function (c) { var t = 0; P.forEach(function (o) { if (o !== c) t += R(ctx, o, c).ten - R(ctx, o, c).aff * 0.3; }); return t + (c === hotT ? 40 : 0); });
       if (!scape) scape = A || K;
@@ -529,7 +529,7 @@
       P.forEach(function (c) { if (winners.indexOf(c) < 0 && c.alive) ctx.kill(c, null, '裁判で投票を外し、犯人以外として処刑された'); });
       winners.forEach(function (w) { w.out = true; w.fate = '生還'; w.fateNote = (w === K ? V.name + 'を殺し、裁判を欺いて' : K.name + 'の共犯として') + '一人だけホテルを出た'; });
       if (A && ctx.env.accrule !== 'both') ctx.say({ text: '共犯者の' + A.name + 'も、例外ではなかった。' });
-      F.cases.push({ label: ctx.label, victim: V.i, killer: K.i, acc: A ? A.i : null, motive: T.motive, solved: false, wrong: scape.i, twist: T.twist || '', victims: T.victims, faked: faked, exposed: exposed });
+      F.cases.push({ label: ctx.label, victim: V.i, killer: K.i, acc: A ? A.i : null, motive: T.motive, solved: false, wrong: scape.i, twist: T.twist || '', victims: T.victims, prior: T.prior || null, faked: faked, exposed: exposed });
       F.over = true;
       F.outcome = K.name + 'の勝ち逃げ';
     }
