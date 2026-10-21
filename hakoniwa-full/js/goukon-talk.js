@@ -1,0 +1,181 @@
+/* 箱庭診断: 合コンの話題（100）と王様ゲームの命令（100） */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  var gk = HK.SCENARIOS.goukon;
+  if (!gk) return;
+
+  /* 話題：'話題名|振り方|刺さる気質' （気質は 因子:重み をカンマ区切り。risk は地雷になりやすい話題） */
+  var TOPICS = [
+    '休日の過ごし方|「休みの日って何してるんですか？」|warmth:.4,fc:.2', '好きな食べ物|「一番好きな食べ物、せーので言いません？」|fc:.4,warmth:.3', '最近ハマってるもの|「最近なにかハマってます？」|fc:.5,honesty:.2',
+    '地元の話|「出身どこですか？」|np:.3,warmth:.3', '血液型占い|「私、何型か当てていいですか」|fc:.4,ac:.2', '星座占い|「誕生日いつですか？私、星座で当てます」|fc:.3,ac:.3',
+    'MBTI|「MBTIって何型？」|fc:.3,a:.3', '好きな映画|「最近観た映画で一番よかったのは？」|a:.3,fc:.3', '好きな音楽|「カラオケで絶対歌う曲ってあります？」|fc:.5',
+    'ペットの話|「動物飼ってます？写真見たい！」|np:.5,warmth:.3', '猫派か犬派か|「猫派？犬派？」|fc:.3,warmth:.3', '料理の腕前|「料理とかします？得意料理は？」|np:.4,a:.2',
+    '旅行の思い出|「今まで行った中で一番よかった旅行先は？」|fc:.5,warmth:.2', '行ってみたい国|「死ぬまでに行きたい国あります？」|fc:.4,a:.2', '学生時代の部活|「部活何やってました？」|cp:.2,warmth:.3,fc:.2',
+    '黒歴史|「人生最大の黒歴史、教えてください」|honesty:.5,fc:.3|risk', '初恋の話|「初恋っていつでした？」|honesty:.4,ac:.2', '理想のデート|「理想のデートってどんなの？」|honesty:.3,fc:.3,ac:.2',
+    '好きなタイプ|「好きなタイプ、正直に」|honesty:.5,impulse:.2', '元恋人の話|「前の恋人ってどんな人でした？」|honesty:.4,jealous:.3|risk', '恋人に求める条件|「付き合うなら絶対これは譲れない、ってあります？」|cp:.4,a:.2',
+    '仕事の愚痴|「仕事どうですか、大変？」|cp:.3,ac:.3', '上司あるある|「私の上司がさ…」|cp:.3,fc:.2,ac:.2', '年収の話|「ぶっちゃけ稼いでます？」|cold:.4,impulse:.2|risk',
+    '将来の夢|「子どもの頃の夢、何でした？」|fc:.3,np:.2,honesty:.2', '結婚観|「結婚願望あります？」|honesty:.3,ac:.3|risk', '子どもは欲しいか|「将来、子どもは欲しい派？」|np:.5|risk',
+    'お酒の失敗談|「お酒で一番やらかしたことは？」|fc:.5,honesty:.3', '最近あった面白いこと|「最近一番笑ったことって何？」|fc:.5,warmth:.3', '怖い話|「実はこの店、出るらしいですよ」|fc:.3,impulse:.3',
+    'ゲームの話|「ゲームやります？今何やってる？」|fc:.4,a:.2', 'アニメ・漫画|「好きな漫画あります？」|fc:.4,ac:.2', '推しの話|「推しっています？」|fc:.4,jealous:.2,honesty:.2',
+    '筋トレ|「何か運動してます？」|cp:.3,lead:.2', 'サウナ|「サウナ好きですか？ととのいます？」|fc:.3,a:.2', 'キャンプ|「キャンプとか行きます？」|fc:.4,warmth:.2',
+    'コーヒーの好み|「コーヒー派？紅茶派？」|a:.3,caution:.2', '朝型か夜型か|「朝型ですか？夜型ですか？」|a:.3,warmth:.2', '休日の起床時間|「休みの日、何時に起きます？」|fc:.3,honesty:.3',
+    '一人暮らし事情|「一人暮らしですか？自炊します？」|np:.3,a:.3', '家族の話|「兄弟っています？」|np:.4,warmth:.2', '実家のルール|「実家の謎ルールってあります？」|fc:.4,ac:.2',
+    'SNSの使い方|「インスタやってます？」|fc:.3,jealous:.3', 'スマホの待ち受け|「スマホの待ち受け見せてください」|fc:.4,impulse:.3', '最近買ってよかったもの|「最近買ってよかったものある？」|a:.3,fc:.3',
+    '好きなコンビニ|「コンビニ、どこ派ですか？」|fc:.3,warmth:.3', 'ラーメンの好み|「ラーメン何系が好き？」|fc:.4,cp:.2', '甘いもの|「甘いもの好きですか？」|fc:.4,np:.2',
+    '苦手な食べ物|「逆に、苦手な食べ物は？」|honesty:.4,fc:.2', '得意なこと|「人に自慢できる特技あります？」|fc:.4,lead:.2', '意外な一面|「意外って言われることあります？」|honesty:.4,fc:.2',
+    '第一印象当て|「お互いの第一印象、言い合いません？」|honesty:.5,impulse:.3|risk', '共通点探し|「何か共通点あるかな」|warmth:.5,ac:.2', '学生時代のあだ名|「昔のあだ名、何でした？」|fc:.5,honesty:.2',
+    'バイト経験|「学生のときのバイトは？」|warmth:.3,fc:.2,cp:.2', '人生で一番の買い物|「今までで一番高い買い物って何？」|impulse:.3,cold:.3', '宝くじが当たったら|「三億当たったら何します？」|fc:.5,impulse:.2',
+    '無人島に持っていくもの|「無人島に一つだけ持っていくなら？」|fc:.4,a:.3', 'タイムマシン|「過去と未来、行けるならどっち？」|a:.3,fc:.3', '生まれ変わったら|「生まれ変わったら何になりたい？」|fc:.4,np:.2',
+    '好きな季節|「どの季節が一番好きですか？」|warmth:.4,ac:.2', '休日の理想|「完璧な休日を一日設計するなら？」|fc:.4,a:.2', '最近泣いたこと|「最近泣いたことあります？」|honesty:.5,np:.3',
+    '嫌いな人のタイプ|「どういう人が苦手ですか？」|cp:.5,honesty:.2|risk', '浮気の線引き|「どこからが浮気だと思います？」|jealous:.5,cp:.3|risk', '恋愛の失敗談|「恋愛で一番の失敗は？」|honesty:.5,fc:.2|risk',
+    '告白はする派かされる派か|「告白するほう？されるほう？」|honesty:.4,ac:.3', '連絡の頻度|「恋人とは毎日連絡したい派？」|jealous:.4,ac:.3', 'デートの割り勘|「デート代って割り勘派？」|cp:.4,cold:.2|risk',
+    '手料理と外食|「手料理作ってもらうのと外食、どっちが嬉しい？」|np:.4,fc:.2', '理想の休日デート|「家デートと外デート、どっち派？」|warmth:.3,fc:.3', 'お酒の好み|「何飲んでるんですか？それおいしい？」|fc:.4,warmth:.3',
+    '今日の服装|「その服どこで買ったんですか？」|fc:.3,np:.2', '香水の話|「なんかいい匂いしません？香水？」|impulse:.4,fc:.2', '髪型の話|「髪切ったばっかりですか？」|np:.3,warmth:.3',
+    '幽霊を信じるか|「幽霊って信じます？」|fc:.4,a:.2', 'UFOと宇宙|「宇宙人っていると思います？」|a:.4,fc:.3', '陰謀論|「これ知ってます？実は…」|fc:.3,impulse:.3|risk',
+    '政治の話|「最近のニュースどう思います？」|cp:.5,a:.3|risk', 'お金の使い方|「貯金する派？使う派？」|a:.4,caution:.3', '投資の話|「投資とかやってます？」|a:.4,cold:.3|risk',
+    '資格の話|「何か資格持ってます？」|cp:.3,a:.3', '転職の話|「転職考えたことあります？」|honesty:.3,a:.3', '理想の老後|「おじいちゃん・おばあちゃんになったらどうしてたい？」|np:.4,warmth:.3',
+    '好きな本|「最近読んだ本で面白かったのは？」|a:.5', '好きな言葉|「座右の銘ってあります？」|cp:.4,a:.2', '尊敬する人|「尊敬してる人っています？」|cp:.3,np:.3',
+    '最近の悩み|「最近、何か悩んでることあります？」|np:.4,honesty:.3', '自分の短所|「自分の直したいところってあります？」|ac:.4,honesty:.3', '褒められて嬉しかったこと|「言われて一番嬉しかった言葉は？」|ac:.4,np:.3',
+    '小さな幸せ|「最近の小さな幸せ、教えてください」|np:.4,warmth:.4', '子どもの頃の遊び|「子どもの頃、何して遊んでました？」|fc:.5,warmth:.2', '修学旅行の思い出|「修学旅行どこ行きました？」|fc:.4,warmth:.3',
+    '好きな芸人|「好きな芸人さんいます？」|fc:.5', 'ものまね|「誰かのものまねできます？」|fc:.6,impulse:.2', '手相占い|「私、手相見てあげましょうか」|impulse:.4,fc:.3',
+    '心理テスト|「心理テストやっていいですか？」|fc:.4,ac:.3', '好きな色|「好きな色で性格わかるらしいですよ」|fc:.3,ac:.3', 'じゃんけんの必勝法|「じゃんけん、最初何出す派？」|fc:.4,a:.2',
+    'この後の予定|「このあと、どうします？」|impulse:.5,honesty:.2', '連絡先交換|「よかったら連絡先、交換しません？」|impulse:.4,honesty:.3', '次の約束|「今度、ご飯でも行きません？」|impulse:.4,honesty:.3,ac:.1'
+  ].map(function (s) {
+    var p = s.split('|'), fit = {};
+    p[2].split(',').forEach(function (kv) { var m = kv.split(':'); fit[m[0]] = parseFloat(m[1]); });
+    return { t: p[0], q: p[1], fit: fit, risk: p[3] === 'risk' };
+  });
+
+  var OUT = {
+    hit: ['{a}の振った「{t}」で、テーブルが一気に沸いた。{f}が身を乗り出して「わかる！」と叫んだ。', '「{t}」の話は止まらなかった。{f}と{a}は気づけば二人だけで話し込んでいた。', '{a}の「{t}」の話に、{f}が涙を流して笑った。店員が様子を見に来た。', '{f}「え、それ私もめっちゃわかる」――「{t}」の話題で、テーブルの温度が上がった。'],
+    good: ['「{t}」の話はそこそこ盛り上がった。{f}がいちばん楽しそうだった。', '{a}の振った「{t}」に、{f}が乗っかった。', '「{t}」の話で、{f}の意外な一面が出てきた。'],
+    meh: ['「{t}」の話は、二往復で終わった。', '{a}が「{t}」の話を振ったが、返ってきたのは「へえ」だけだった。', '「{t}」の話をしている間、{x}はスマホを見ていた。'],
+    flop: ['{a}の振った「{t}」は、見事に滑った。沈黙を、ジョッキの氷の音が埋めた。', '{a}「…あれ、この話、つまんなかった？」{x}が気まずそうに笑った。', '「{t}」の話題で、場の空気が一段冷えた。{x}がトイレに立った。'],
+    mine: ['「{t}」の話で、{x}の表情が固まった。{a}は地雷を踏んだことに気づいた。', '{x}「…その話、やめません？」――「{t}」は地雷だった。', '「{t}」で{a}と{x}の意見が真っ向から割れた。空気がぴりついた。']
+  };
+
+  function interest(c, T, ctx) {
+    var v = 0;
+    for (var k in T.fit) v += (c.tr[k] || 0) * T.fit[k];
+    return v + ctx.rng() * 0.25 + (c.flags.drunk || 0) / 400;
+  }
+
+  function topicTurn(ctx) {
+    var P = ctx.present(), rng = ctx.rng;
+    if (P.length < 2) return;
+    ctx.flags.usedTopics = ctx.flags.usedTopics || {};
+    var a = ctx.most(P, function (c) { return c.tr.fc * 0.5 + c.tr.lead * 0.4 + c.tr.warmth * 0.3 + (c.flags.drunk || 0) / 150 + rng() * 0.6; });
+    var cand = TOPICS.filter(function (T) { return !ctx.flags.usedTopics[T.t]; });
+    var T = HK.weighted(rng, cand, function (x) { return 0.3 + interest(a, x, ctx); });
+    ctx.flags.usedTopics[T.t] = 1;
+    var scores = P.map(function (c) { return { c: c, v: interest(c, T, ctx) }; }).sort(function (x, y) { return y.v - x.v; });
+    var avg = scores.reduce(function (s, x) { return s + x.v; }, 0) / scores.length + (ctx.env.mood - 50) / 250;
+    var fan = scores[0].c === a && scores[1] ? scores[1].c : scores[0].c;
+    var cold = scores[scores.length - 1].c === a ? scores[scores.length - 2].c : scores[scores.length - 1].c;
+    var mine = T.risk && P.some(function (c) { return c !== a && (c.tr.cp > 0.65 || c.tr.jealous > 0.65); }) && rng() < 0.45;
+    if (mine) cold = ctx.most(ctx.others(a), function (c) { return c.tr.cp + c.tr.jealous; });
+    var lvl = mine ? 'mine' : avg > 0.6 ? 'hit' : avg > 0.48 ? 'good' : avg > 0.38 ? 'meh' : 'flop';
+    var text = ctx.pick(OUT[lvl]).replace(/\{t\}/g, T.t);
+    text = a.name + T.q + ' ' + ctx.t(text, a).replace(/\{f\}/g, fan.name).replace(/\{x\}/g, cold.name);
+    var fx = function () {
+      if (lvl === 'hit' || lvl === 'good') {
+        var g = lvl === 'hit' ? 1.6 : 1;
+        scores.forEach(function (x) { if (x.v > 0.4 && x.c !== a) { ctx.mod(x.c, a, { aff: 4 * g, att: 3 * g }); ctx.mod(a, x.c, { aff: 3 * g }); } });
+        ctx.mod2(a, fan, { att: 4 * g, aff: 3 * g }, { att: 4 * g, aff: 3 * g });
+        P.forEach(function (c) { ctx.stress(c, -4 * g); });
+      } else if (lvl === 'mine') {
+        ctx.mod2(a, cold, { ten: 10 }, { ten: 16, aff: -8 });
+        P.forEach(function (c) { ctx.stress(c, 5); });
+      } else {
+        ctx.stress(a, lvl === 'flop' ? 10 : 4);
+        if (cold !== a) ctx.mod(cold, a, { aff: lvl === 'flop' ? -4 : -1 });
+      }
+    };
+    ctx.act2({ actors: [a, fan], cat: lvl === 'mine' ? 'conflict' : 'bond', fx: fx, text: text,
+      why: '話題「' + T.t + '」×参加者の気質' + (lvl === 'hit' ? '（全体的に刺さった）' : lvl === 'mine' ? '（' + cold.name + 'のCP・こだわりに触れた）' : lvl === 'flop' ? '（誰の気質にも刺さらなかった）' : ''), mag: lvl === 'hit' ? 10 : lvl === 'mine' ? 12 : 3 });
+  }
+
+  /* 王様ゲーム：'強さ|対象|命令' 対象 two=番号の二人 king=王様と誰か one=一人 all=全員 */
+  var ORDERS = [
+    '1|one|一発ギャグ', '1|one|好きな人のタイプを発表', '1|one|初恋の話をする', '1|one|変顔で写真を撮られる', '1|one|語尾に「にゃん」をつけて3分過ごす', '1|one|全力で褒められる',
+    '1|one|ものまねをする', '1|one|黒歴史を一つ告白', '1|one|好きな人の有無を正直に答える', '1|one|スマホの検索履歴を一件見せる', '1|one|一番最近撮った写真を見せる', '1|one|自分のチャームポイントを3つ言う',
+    '1|one|子どもの頃のあだ名で呼ばれる', '1|one|10秒間ウインクし続ける', '1|one|好きな歌のサビを歌う', '1|one|好きな芸能人を発表', '1|one|今日の下着の色を言う', '1|one|元恋人の良かったところを言う',
+    '1|two|あっち向いてホイで勝負', '1|two|しりとりで負けたほうが一気', '1|two|お互いの第一印象を言い合う', '1|two|手押し相撲', '1|two|指相撲', '1|two|10秒間見つめ合う',
+    '1|two|お互いのいいところを3つずつ言う', '1|two|一緒に変顔で写真', '1|two|名前を呼び捨てで呼び合う', '1|two|ハイタッチ', '1|two|握手しながら自己紹介', '1|two|似顔絵を描き合う',
+    '1|all|全員で乾杯の音頭を順番に取る', '1|all|全員で一番恥ずかしい話を一つずつ', '1|all|全員で写真を撮る', '1|all|全員で好きなタイプを発表', '1|all|山手線ゲーム「好きなところ」', '1|all|全員で「せーの」で好きな人を指さす',
+    '2|two|手を繋いで30秒', '2|two|お互いの手の大きさを比べる', '2|two|肩を組んで一曲歌う', '2|two|恋人つなぎで1分', '2|two|相手の耳元で「好き」と囁く', '2|two|ポッキーゲーム',
+    '2|two|あーんで食べさせ合う', '2|two|お姫様抱っこ', '2|two|背中合わせで座って10秒', '2|two|相手の髪を撫でる', '2|two|膝の上に座る', '2|two|おでこをくっつけて10秒',
+    '2|two|相手の好きなところを本気で一つ言う', '2|two|カップルのふりで自撮り', '2|two|相手のグラスで一口飲む', '2|two|相手の手のひらに文字を書いて当てる', '2|two|ハグを5秒', '2|two|相手の手を握って告白の練習',
+    '2|king|王様にあーんで食べさせる', '2|king|王様の肩を揉む', '2|king|王様を全力で褒める', '2|king|王様と腕を組んで写真', '2|king|王様にラブレターを読み上げる', '2|king|王様の言うことを次のターンまで聞く',
+    '2|one|好きな人の名前のイニシャルを言う', '2|one|この中で一番タイプな人を指名', '2|one|この中で付き合うなら誰か答える', '2|one|最後にキスしたのはいつか答える', '2|one|今まで付き合った人数を答える', '2|one|一番最近のデートの話をする',
+    '2|all|全員で隣の人と手を繋いで一周', '2|all|この中で一番モテそうな人を投票', '2|all|この中で一番エロそうな人を投票', '2|all|全員の第一印象を順番に言う', '2|all|全員で一番キスが上手そうな人を投票', '2|all|全員が隣の人の好きなところを言う',
+    '3|two|ほっぺにキス', '3|two|ハグを30秒', '3|two|首筋の匂いを嗅ぐ', '3|two|膝枕を1分', '3|two|相手の上着を着る', '3|two|口移しで氷を渡す',
+    '3|two|壁ドンして口説く', '3|two|顎クイして見つめる', '3|two|耳に息を吹きかける', '3|two|ポッキーゲームを最後まで', '3|two|相手の膝の上で1分', '3|two|手の甲にキス',
+    '3|king|王様のほっぺにキス', '3|king|王様とハグ', '3|king|王様の膝の上に座る', '3|one|一番感じやすい場所を答える', '3|one|今まで一番すごかった夜の話をする', '3|one|自分の性癖を一つ告白',
+    '4|two|唇にキス', '4|two|10秒ディープキス', '4|two|二人でトイレに3分行ってくる', '4|two|服のボタンを一つ外してあげる', '4|two|首筋にキスマークをつける', '4|two|今夜一緒に帰る約束をする',
+    '1|one|最近の失恋を語る', '2|two|相手の名前を甘い声で呼ぶ', '3|two|相手の指を一本ずつ握る', '4|king|王様と一緒に帰る'
+  ].map(function (s) { var p = s.split('|'); return { lv: +p[0], who: p[1], t: p[2] }; });
+
+  function kingGame(ctx) {
+    var P = ctx.present(), rng = ctx.rng;
+    if (P.length < 3) { if (P.length === 2) ctx.say({ text: '二人しかいないので、王様ゲームは「じゃんけんで負けたほうが本音を一つ言う。私からね」に変更された。' }); return; }
+    var drunk = P.reduce(function (s, c) { return s + (c.flags.drunk || 0); }, 0) / P.length;
+    var cap = 1 + ctx.env.alcohol / 45 + ctx.env.mood / 70 + drunk / 40;
+    var rounds = 3 + (drunk > 50 ? 1 : 0);
+    ctx.say({ text: '割り箸のくじが回ってきた。「王様だーれだ！」' });
+    for (var r = 0; r < rounds; r++) {
+      var king = P[rng.int(P.length)];
+      var pool = ORDERS.filter(function (o) { return o.lv <= cap && (o.lv >= 2 || cap < 3 || rng() < 0.4); });
+      var heat = (king.tr.impulse + (king.flags.drunk || 0) / 100);
+      var O = HK.weighted(rng, pool, function (o) { return 1 + (o.lv - 1) * heat * 0.8; });
+      var others = rng.shuffle(P.filter(function (c) { return c !== king; }));
+      var a = others[0], b = O.who === 'king' ? king : others[1];
+      var text = '王様は' + king.name + '。「' + (O.who === 'two' ? a.name + 'と' + b.name + 'で' : O.who === 'king' ? a.name + 'が' : O.who === 'one' ? a.name + 'が' : '全員で') + O.t + '！」';
+      var cat = O.lv >= 2 ? 'romance' : 'bond', why = '王様ゲーム（強さ' + O.lv + '）';
+      var refuse = O.lv >= 3 && (a.tr.cp > 0.65 || (a.tr.ac > 0.6 && ctx.R(a, b).att < 25) || !HK.canLove(a, b)) && rng() < 0.6;
+      var fx;
+      if (O.who === 'all') {
+        fx = function () { P.forEach(function (c) { ctx.stress(c, -4); ctx.others(c).forEach(function (o) { ctx.mod(c, o, { aff: 1.5, att: O.lv >= 2 ? 1.5 : 0 }); }); }); };
+        text += ctx.pick(['全員がやけくそで従った。', '一番盛り上がったのは、言い出した' + king.name + 'だった。', a.name + 'の答えで場がざわついた。']);
+      } else if (O.who === 'one') {
+        fx = function () { ctx.stress(a, O.lv * 3); ctx.others(a).forEach(function (o) { ctx.mod(o, a, { aff: 2, att: O.lv >= 2 ? 2 : 0.5 }); }); };
+        text += a.tr.fc > 0.6 ? a.name + 'はノリノリでやりきった。' : a.tr.ac > 0.6 ? a.name + 'は真っ赤になりながら、小さな声でやりきった。' : a.tr.cp > 0.6 ? a.name + 'は「くだらない」と言いながら、律儀にやった。' : a.name + 'は照れ笑いでごまかしながらやった。';
+        why += '。' + a.name + 'の反応は気質（FC・AC・CP）で変わる';
+      } else if (refuse) {
+        fx = function () { a.flags.drunk = HK.clamp((a.flags.drunk || 0) + 15, 0, 100); ctx.mod(b, a, { ten: 4 }); ctx.mod(king, a, { ten: 3 }); };
+        text += a.name + 'は「無理」と首を振って、罰の一気を選んだ。' + ctx.pick(['場から「えー！」と声が上がった。', b.name + 'は少しだけほっとした顔をした。', b.name + 'は少しだけ残念そうだった。']);
+        why += '。' + a.name + (a.tr.cp > 0.65 ? 'のCP（理不尽な命令は拒む）' : !HK.canLove(a, b) ? 'の恋愛対象外' : 'のAC（照れ）と惹かれの不足');
+        cat = 'conflict';
+      } else {
+        var ab = ctx.R(a, b), ba = ctx.R(b, a);
+        var spark = HK.canLove(a, b) && HK.canLove(b, a) && ab.att + ba.att > 40;
+        fx = function () {
+          var g = O.lv * (spark ? 4 : 2);
+          if (HK.canLove(a, b)) ctx.mod(a, b, { att: g, aff: 2 }); else ctx.mod(a, b, { aff: 3 });
+          if (HK.canLove(b, a)) ctx.mod(b, a, { att: g, aff: 2 }); else ctx.mod(b, a, { aff: 3 });
+          if (O.lv >= 4 && spark && (a.flags.drunk || 0) + (b.flags.drunk || 0) > 80) ctx.pair(a, b).kgHot = true;
+        };
+        text += spark ? ctx.pick(['二人とも、思ったより長くそのままだった。', '囃し立てる声が、途中から静かになった。' + a.name + 'と' + b.name + 'の空気が、冗談で済まなくなっていた。', a.name + 'の耳が赤い。' + b.name + 'はそれに気づいて、目を逸らした。', '終わったあと、二人はしばらく目を合わせなかった。']) :
+          ctx.pick(['二人とも案外ノリノリだった。', 'あまりのぎこちなさに、全員が爆笑した。', b.name + 'は「はい終わり！」と三秒で切り上げた。', '王様が一番照れていた。']);
+        why += spark ? '。もともとの惹かれ（' + Math.round(ab.att) + '／' + Math.round(ba.att) + '）が火をつけた' : '。ノリでこなした';
+      }
+      ctx.act2({ actors: O.who === 'all' ? [king] : [a, b], cat: cat, fx: fx, text: text, why: why, mag: O.lv * 4 });
+    }
+  }
+
+  /* ---------- 組み込み ---------- */
+  var oldPhase = gk.phase;
+  gk.phase = function (ctx, s, n) {
+    var kg = ctx.env.kingsgame;
+    ctx.env.kingsgame = 'no';
+    oldPhase(ctx, s, n);
+    ctx.env.kingsgame = kg;
+    ctx.flush();
+    if (s >= 1 && s <= 3) { topicTurn(ctx); if (s === 2 || ctx.rng() < 0.4) topicTurn(ctx); }
+    if (s === 4 && kg === 'yes') kingGame(ctx);
+    if (s === 4 && kg !== 'yes') topicTurn(ctx);
+    if (s === 6) topicTurn(ctx);
+  };
+  HK.GOUKON_TOPICS = TOPICS; HK.KING_ORDERS = ORDERS;
+})();

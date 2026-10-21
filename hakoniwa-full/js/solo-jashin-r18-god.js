@@ -1,0 +1,103 @@
+/* 箱庭シミュレーター: 邪神村RTA（R18版のみ）― 神ごとの夜の出来事
+   ・シュブ＝ニグラス：実りの秋の収穫祭。葡萄酒と宴と、豊穣の母に捧げる交わりが、毎晩のように起きる
+   ・イグ：夢の中で蛇に犯される。好きな人がラミア（下半身が大蛇の姿）になって迫ってくる
+   ・チャウグナー・フォーン：チョー・チョー人の村人が残虐性をむき出しにして、参加者を襲う（無理やりの場面は抵抗と耐える声だけ）
+   全年齢版ではこのファイルは読み込まれない。登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK, JS = HK.JASHIN, ST = HK.Story;
+  if (!JS || !JS.R18 || !ST) return;
+  function L(s) { return s.split('|'); }
+  function M() { return HK.R18M; }
+  function fmt(t, o) { return ST.fmt(t, o); }
+  function ok(p, h, cd) { return p.lastNight == null || h - p.lastNight >= cd; }
+  function mark(p, h) { p.lastNight = h; p.cnt.r18 = (p.cnt.r18 || 0) + 1; }
+  function mates(S, p, live, h, cd) { return live.filter(function (q) { return q !== p && JS.alive(q) && !q.bound && ok(q, h, cd) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true); }); }
+
+  /* ================= シュブ＝ニグラス ================= */
+  var SHUB_FEAST = L('収穫祭の夜、広場の篝火のまわりで、葡萄酒の樽が次々と空けられた。酔った村人たちは、そのまま草の上で、相手を選ばずに抱き合い始めた。「＠豊穣の母さまは、子を宿す営みを、何よりお喜びになる」――{a}の杯にも、紫の酒がなみなみと注がれ、誰かの手が{a}の帯にかかった。|葡萄棚の下に、村人たちが筵を敷き詰めていた。熟れた房の甘い匂いの中で、何組もの男女が絡み合っていた。{a}は、葡萄酒で火照った体を、何本もの手に引き寄せられた。|収穫祭の宴の締めくくりに、篝火が一斉に落とされた。闇の中で、誰が誰とも分からない手が{a}を探り当て、葡萄酒の香りのする唇が、{a}の口を塞いだ。');
+  var SHUB_WINE = L('酒蔵の奥で、村の{w}が{a}に、新酒を口移しで飲ませた。「＠今年の初物です。母さまの恵みは、体の奥まで染みますでしょう」――葡萄酒が喉を落ちていくたびに、{a}の体は熱くとろけていった。{w}は、{a}を樽の陰の藁の上に押し倒した。|利き酒だと誘われた蔵の二階で、{a}は村の{w}と二人きりになった。杯を重ねるうちに、{w}の指が{a}の膝を割り、甘く熟れた葡萄の粒を、{a}の肌に押しつけて潰した。滴る果汁を、{w}は舌で辿っていった。');
+  var SHUB_PAIR = L('葡萄酒に酔った{x}と{y}は、宴を抜け出し、葡萄畑の奥へもつれ込んだ。熟れた房が二人の上でつぶれ、果汁が肌を伝った。{x}はその甘い滴を舐め取りながら、{y}を葡萄の褥に押し倒した。|収穫祭の篝火の明かりが届かない納屋で、{x}は{y}の着物の裾を割った。藁の匂いと葡萄酒の匂いの中で、二人は豊穣の母に捧げるように、何度も繋がった。|葡萄踏みの大桶に、{x}と{y}は着物のまま転がり落ちた。真っ赤な果汁にまみれた{y}の肌に、{x}が吸いついた。二人は桶の中で、果汁を跳ね上げながら交わった。');
+  var SHUB_GOAT = L('葡萄畑の暗がりで、木だと思っていたものが身を起こした。黒い仔山羊の、縄のような触手が{a}の手足を絡め取り、熟れた果実のような匂いのする粘液を、{a}の肌に塗りつけた。触手は着物の下に潜り込み、{a}を、母の新しい器として満たしていった。|黒い仔山羊の幹に開いた口のひとつが、{a}の首筋に吸いついた。もう一本の触手が{a}の脚を押し開き、ゆっくりと奥へ入り込んだ。蹄の音が、{a}のまわりを、祝うように踏み鳴らしていた。');
+  var SHUB_RITE = L('村の女たちが、{a}を森の石舞台へ連れていった。「＠今年の母さまの器は、あなたよ」石舞台の上に横たえられた{a}の下腹に、葡萄酒で紋が描かれた。森の闇の奥から、蹄の音が近づいてきた。|石舞台のまわりで、村人たちが豊穣の祝詞を唱えていた。{a}は葡萄の蔓で手足を舞台に括りつけられ、千の仔の母に捧げられた。闇の中から伸びてきたものは、温かく、湿っていて、果てしなく優しかった。');
+  var SHUB_PREG = L('翌朝、{a}の下腹は、実った果実のように、ふっくらと膨らんでいた。村の女たちが、それを撫でて微笑んだ。「母さまの仔が、宿りなさった」|{a}の下腹の奥で、何かが、葡萄の房が揺れるように、ことりと動いた。');
+  var W = ['娘', '若い衆', '女将', '杜氏'];
+  function shub(S, p, live, h) {
+    var rng = S.rng, lv = S.env.jlewd / 100, m = M();
+    if (!ok(p, h, 6) || rng() > lv * (p.aphro ? 0.55 : 0.4)) return false;
+    mark(p, h);
+    var r = rng(), t, why, mag = 28, act = [p];
+    var ms = mates(S, p, live, h, 6);
+    if (r < 0.25 && ms.length) {
+      var q = rng.pick(ms); mark(q, h); act = [p, q];
+      var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
+      t = fmt(ST.pick(S, SHUB_PAIR), { x: X.name, y: Y.name }) + (m ? m.sex(S, X, Y, { mood: 'drug', fore: false }) : '');
+      if (rng() < 0.5) { Y.preg = true; t += fmt(ST.pick(S, SHUB_PREG), { a: Y.name }); }
+      why = '収穫祭の葡萄酒に酔い、参加者どうしで交わった' + (m && m.lastPos(S) ? '（' + m.lastPos(S) + '）' : '') + (Y.preg ? '（' + Y.name + 'が疑似妊娠した）' : '');
+    } else if (r < 0.5) {
+      var others = ms.filter(function () { return rng() < 0.5; }).slice(0, 2);
+      others.forEach(function (q) { mark(q, h); });
+      act = [p].concat(others);
+      t = fmt(ST.pick(S, SHUB_FEAST), { a: p.name }) + (others.length ? '篝火の向こうでは、' + others.map(function (q) { return q.name; }).join('と') + 'も、村人たちの輪に引き込まれていた。' : '') + (m ? m.npc(S, 'villager') + (others.length ? m.group(S, act) : m.moans(S, p, ['start', 'mid', 'climax'])) : '');
+      why = '収穫祭の夜の交わり（豊穣の母に捧げる営み）' + (p.aphro ? '・媚薬と葡萄酒が回っていた' : '');
+    } else if (r < 0.72) {
+      t = fmt(ST.pick(S, SHUB_WINE), { a: p.name, w: rng.pick(W) }) + (m ? m.moans(S, p, ['start', 'mid', 'climax']) : '');
+      why = '初物の葡萄酒で酔わされ、村人に抱かれた';
+    } else if (r < 0.88) {
+      var strong = m && m.isStrong(p);
+      t = fmt(ST.pick(S, SHUB_GOAT), { a: p.name }) + (strong ? m.resist(S, 'god', p, { endure: false }) : '') + (m ? (strong ? m.say(S, p, 'endure') : m.moans(S, p, ['start', 'mid', 'climax'])) + m.npc(S, 'god', p) : '');
+      if (rng() < 0.5) { p.preg = true; t += fmt(ST.pick(S, SHUB_PREG), { a: p.name }); }
+      why = '黒い仔山羊に襲われた' + (p.preg ? '（疑似妊娠した）' : ''); mag = 30;
+    } else {
+      t = fmt(ST.pick(S, SHUB_RITE), { a: p.name }) + (m ? m.moans(S, p, ['start', 'mid', 'climax']) + m.npc(S, 'god', p) : '');
+      p.preg = true; t += fmt(ST.pick(S, SHUB_PREG), { a: p.name });
+      why = '豊穣の母の器として、石舞台に捧げられた（疑似妊娠した：生贄にされると巫女になりやすい）'; mag = 32;
+    }
+    ST.say(S, { actors: act, tag: '収穫祭の夜', kind: 'climax', text: t, why: why, mag: mag });
+    return true;
+  }
+
+  /* ================= イグ ================= */
+  var YIG_DREAM = L('夢の中で、{a}は蛇の巣穴の底に横たわっていた。何百匹もの蛇が、{a}の体の上を這い回り、手首に、足首に、首に巻きついて、{a}を地面に縫いとめた。一番太い一匹が、ゆっくりと{a}の脚のあいだへ頭を潜り込ませた。|夢の中で、{a}の布団の中に、冷たく重いものが滑り込んできた。大蛇だった。大蛇は{a}の体を締め上げ、二股の舌で{a}の肌をなぞり、ひくつく奥へ、鱗の擦れる音とともに入り込んできた。');
+  var YIG_WAKE = L('目覚めると、{a}の手首と足首に、鱗の跡が赤く残っていた。|目覚めると、布団の中に、脱ぎ捨てられた大きな蛇の抜け殻があった。|目覚めた{a}の太腿の内側に、小さな二つの牙の跡があった。');
+  var LAMIA = L('夜半、{a}の部屋の襖が開いた。入ってきたのは、{b}だった。――けれど、月明かりに浮かんだ{b}の下半身は、ぬめるような鱗に覆われた、長い大蛇の尾だった。{b}は、熱に浮かされたように囁いた。「ずっと、こうしたかった」{b}の尾が、{a}の体にゆっくりと巻きついていった。|{a}が目を覚ますと、{b}が枕元に座っていた。{b}の瞳は、蛇のように縦に裂けていた。腰から下は、畳の上をとぐろを巻く、太い大蛇の尾だった。{b}は二股に割れた舌で、{a}の唇を舐めた。「逃がさないよ」');
+  var LAMIA_ACT = L('鱗の尾が{a}の両脚を絡め取り、押し開いた。{b}は{a}を尾で締め上げたまま、上からのしかかった。|尾の先が{a}の手首を頭の上でひとまとめに縛り上げ、{b}は、蛇が獲物を呑むように、ゆっくりと{a}を味わっていった。');
+  var LAMIA_AFTER = L('朝、{b}は何も覚えていなかった。ただ、{a}の体じゅうに、鱗の擦れた赤い跡が残っていた。|夜明けとともに、{b}の尾は人の脚に戻っていた。{b}は自分の膝に残る鱗の欠片を見つめ、青ざめた。');
+  function yig(S, p, live, h) {
+    var rng = S.rng, lv = S.env.jlewd / 100, m = M();
+    if (!ok(p, h, 8) || rng() > lv * (p.aphro ? 0.4 : 0.25)) return false;
+    var lover = live.filter(function (q) { return q !== p && JS.alive(q) && !q.bound && JS.REL.bond(S, p, q) >= 0.35 && (HK.canLove ? HK.canLove(q, p) : true); }).sort(function (a, b) { return JS.REL.bond(S, p, b) - JS.REL.bond(S, p, a); })[0];
+    mark(p, h);
+    var strong = m && m.isStrong(p);
+    if (lover && rng() < 0.5) {
+      var t = fmt(ST.pick(S, LAMIA), { a: p.name, b: lover.name }) + (strong ? m.resist(S, { name: lover.name }, p, { endure: false }) : '') + fmt(ST.pick(S, LAMIA_ACT), { a: p.name, b: lover.name }) + (m ? m.say(S, lover, 'top') + (strong ? m.say(S, p, 'endure') : m.moans(S, p, ['start', 'mid', 'climax'])) + m.say(S, lover, 'topc') : '') + fmt(ST.pick(S, LAMIA_AFTER), { a: p.name, b: lover.name });
+      ST.say(S, { actors: [p, lover], tag: '蛇の夜', kind: 'climax', text: t, why: '蛇の父の呪いで、' + p.name + 'の想う相手（' + lover.name + '）がラミアの姿になって迫ってきた', mag: 32 });
+      return true;
+    }
+    var t2 = fmt(ST.pick(S, YIG_DREAM), { a: p.name }) + (strong ? m.resist(S, 'god', p, { endure: false }) : '') + (m ? (strong ? m.say(S, p, 'endure') : m.moans(S, p, ['start', 'mid', 'climax'])) : '') + fmt(ST.pick(S, YIG_WAKE), { a: p.name });
+    ST.say(S, { actors: [p], tag: '蛇の夢', kind: 'climax', text: t2, why: '夢の中で、蛇の父の眷属に犯された', mag: 28 });
+    return true;
+  }
+
+  /* ================= チャウグナー・フォーン（チョー・チョー人の残虐） ================= */
+  var TCHO = L('夜半、{a}の部屋に、子どものように小柄な村人たちが、音もなく入り込んできた。月明かりに、尖らせた歯が光った。|{a}は厠からの帰り、暗い廊下で、何本もの小さな手に足首を掴まれ、引き倒された。聞き慣れない言葉が、くすくすと笑い合っていた。|寺の裏に呼び出された{a}を、小柄な村人たちが取り囲んだ。誰もが老人の顔をしていて、誰もが笑っていた。');
+  var TCHO_ACT = L('村人たちは{a}の手足を縄で寺の柱に括りつけ、交代で{a}を犯した。順番を待つ者たちは、{a}の肩や脇腹に、尖った歯を立てて血を舐めていた。|村人の一人が{a}の髪を掴んで床に押しつけ、もう一人が背後からのしかかった。{a}が身をよじるたびに、別の誰かが、面白がって{a}の太腿に噛みついた。|村人たちは{a}を象の神の仏像の前に引きずり出し、その足元で{a}を組み敷いた。仏像の鼻がゆっくりと下りてきて、{a}の首筋から血を啜るあいだ、村人たちは代わる代わる{a}を貫き続けた。');
+  var TCHO_AFTER = L('夜明け前、村人たちは満足げに去っていった。{a}の体には、無数の歯形が残っていた。|朝、{a}は寺の柱に括りつけられたまま見つかった。肩には、肉を食いちぎられた跡があった。|村人たちは去り際に、{a}の頬を撫でて、聞き慣れない言葉で何か言った。それが「次は食べる」という意味だと、{a}には、なぜか分かった。');
+  function chaugnar(S, p, live, h) {
+    var rng = S.rng, lv = S.env.jlewd / 100, m = M();
+    if (!ok(p, h, 10) || rng() > lv * (0.18 + S.hostile / 400)) return false;
+    mark(p, h);
+    var t = fmt(ST.pick(S, TCHO), { a: p.name }) + (m ? m.resist(S, 'crowd', p, { endure: false }) : '') + fmt(ST.pick(S, TCHO_ACT), { a: p.name }) + (m ? m.say(S, p, 'endure') : '') + fmt(ST.pick(S, TCHO_AFTER), { a: p.name });
+    p.m.hp = Math.max(0, p.m.hp - 18); p.m.fear = Math.min(100, p.m.fear + 22);
+    ST.say(S, { actors: [p], tag: 'チョー・チョー人の夜', kind: 'climax', text: t, why: '象の神を奉じるチョー・チョー人の村人たちが、残虐性をむき出しにして襲ってきた（体力−18・恐怖＋22）', mag: 34 });
+    return true;
+  }
+
+  var GODR = { shub: shub, yig: yig, chaugnar: chaugnar };
+  var base = JS.R18.night;
+  JS.R18.night = function (S, p, live, h) {
+    var f = GODR[S.G.id];
+    if (f && f(S, p, live, h)) return true;
+    return base(S, p, live, h);
+  };
+})();
