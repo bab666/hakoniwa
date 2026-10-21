@@ -52,7 +52,8 @@
     }
     return out + q.slice(last);
   };
-  var YOU_RE = /(お前|おまえ|あんた|てめえ|貴様|君)(?=(?:たち|達|ら|は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なんか|なら|だけ|しか|だ|じゃ|より|まで|かも|こそ))/g;
+  /* お前・あんた などは後ろの語を問わずに置き換える（「お前か」「お前から」「お前一人」も）。「君」は熟語と紛れるので、後ろの語を見る */
+  var YOU_RE = /お前さん|おまえさん|(?:お前|おまえ|あんた|てめえ|貴様)(?!さん|方)|君(?=(?:たち|達|ら|は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なんか|なら|だけ|しか|だ|じゃ|より|まで|かも|こそ|か|な|から|へ|や|一人|自身))/g;
 
   /* ---------- 敬語（です・ます調に整える。完全ではないが、口調として読める程度に） ---------- */
   var POLITE_END = /(です|ます|ました|ません|でした|でしょう|ください|ございます|ませんか|ましょう|ませんでした|なさい|でしょうか|ですか|ますか)$/;
@@ -188,7 +189,7 @@
     if (ph) return ph + tail;
     var c = core(s, noTe);
     if (c) return c + (ask && /んです$/.test(c) ? 'か' : '') + tail;
-    if (ask && (isKanji(s.slice(-1)) || /[ァ-ヶー]$/.test(s) || /こと$/.test(s))) return s + 'ですか' + tail;
+    if (ask && (isKanji(s.slice(-1)) || /[ァ-ヶー]$/.test(s) || /(?:こと|あなた|みなさん)$/.test(s))) return s + 'ですか' + tail;
     var pm = s.match(PART);
     if (pm && s.length > pm[1].length) {
       var p = pm[1], rest = s.slice(0, -p.length), rc = POLITE_END.test(rest) ? rest : core(rest, noTe);
@@ -196,7 +197,7 @@
       if (pr && (p === 'よ' || p === 'って')) return pr + 'ね' + tail;
       if (p === 'な' && /る$/.test(rest)) { var rn = core(rest, noTe); return rn ? rn + 'ね' + tail : s0; }
       if (p === 'さ' && !/[ぁ-ん]$/.test(rest)) return s0;
-      if (!rc) rc = isKanji(rest.slice(-1)) || /[ァ-ヶーき]$/.test(rest) ? rest + 'です' : null;
+      if (!rc) rc = isKanji(rest.slice(-1)) || /(?:[ァ-ヶーき]|あなた|みなさん)$/.test(rest) ? rest + 'です' : null;
       if (!rc) return s0;
       var np = { 'よ': 'よ', 'ね': 'ね', 'よね': 'よね', 'よな': 'よね', 'さ': 'よ', 'ぞ': 'よ', 'ぜ': 'よ', 'わ': 'よ', 'わよ': 'よ', 'だよ': 'よ', 'のよ': 'よ', 'な': 'ね', 'か': 'か', 'かな': 'か', 'かしら': 'か', 'もん': 'から', 'ってば': 'ってば', 'の': 'か' }[p];
       if (p === 'の') return rc + 'か' + tail;

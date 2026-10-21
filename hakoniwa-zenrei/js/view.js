@@ -258,14 +258,16 @@
         var all = tl.who.every(function (w) { return e.actors.indexOf(w) >= 0; });
         if (!all) return;
       }
-      if (tl.keyOnly && !(ks[e.n] || e.kind === 'death' || e.odd || e.mag >= 25)) return;
+      if (tl.keyOnly && !(ks[e.n] || e.kind === 'death' || e.odd || e.mag >= 25 || e.goal || e.goalExit)) return;
       if (tl.cat !== 'all' && e.cat !== tl.cat && e.kind !== 'death') return;
       cur.items.push(e);
     });
     var html = groups.filter(function (g) { return g.items.length; }).map(function (g) {
       return '<div class="stepblk"><div class="when">' + esc(g.label) + '</div><ol>' + g.items.map(function (e) {
-        var cls = 'ev' + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '');
+        var cls = 'ev' + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '');
         var chip = e.kind === 'event' ? '<span class="c">' + esc(HK.CAT_NAME[e.cat] || e.cat) + '</span>' : '';
+        /* 出られない部屋：条件を満たした・扉が開いた出来事の札 */
+        if (e.goal || e.goalExit) chip = (e.goal || []).map(function (g) { return '<span class="goalb">条件達成：' + esc(g) + '</span>'; }).join('') + (e.goalExit ? '<span class="goalb exitb">扉が開いた</span>' : '') + chip;
         var who = (e.actors || []).slice(0, 3);
         var avs = who.length ? '<span class="avs">' + who.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
         return '<li class="' + cls + (avs ? ' hasav' : '') + (avs && e.kind === 'event' && /「/.test(e.text) ? ' talk' : '') + '">' + avs + '<div class="evb">' + chip + paint(e.text, res) + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';

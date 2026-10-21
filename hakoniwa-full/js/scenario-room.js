@@ -56,6 +56,31 @@
     if (T.type === 'consume') return (ctx.flags.consumed[rule.k] || 0) >= rule.n;
     return false;
   }
+  /* 直前の出来事で新しく満たされた条件と、部屋を出た人がいるか（e.goal・e.goalExit） */
+  function markGoals(ctx, e) {
+    var seen = ctx.flags.goalSeen, got = [];
+    ctx.rules.forEach(function (r) {
+      var T = K[r.k], lab = KLABEL[r.k] + (r.n > 1 ? ' ' + r.n + T.unit : '');
+      if (T.type === 'one') return;
+      if (T.type === 'consume') {
+        if (!seen[r.k] && (ctx.flags.consumed[r.k] || 0) >= r.n) { seen[r.k] = 1; got.push(lab); }
+        return;
+      }
+      ctx.chars.forEach(function (a) {
+        ctx.chars.forEach(function (b) {
+          if (a.i >= b.i || !ctx.flags.prog[key(a, b)]) return;
+          var sk = r.k + ':' + key(a, b);
+          if (seen[sk] || !ruleDone(ctx, r, a, b)) return;
+          seen[sk] = 1;
+          got.push(lab + (ctx.chars.length > 2 ? '（' + a.name + '×' + b.name + '）' : ''));
+        });
+      });
+    });
+    var outN = ctx.chars.filter(function (c) { return c.out; }).length;
+    if (got.length) e.goal = got;
+    if (outN > ctx.flags.goalOut) e.goalExit = true;
+    ctx.flags.goalOut = outN;
+  }
   /* 二人にとって、まだ足りないもの（扉が開かない理由を本文に出す） */
   function leftText(ctx, a, b) {
     var out = [];
@@ -318,6 +343,10 @@
       ctx.chars.forEach(function (c) { c.baseTr = JSON.parse(JSON.stringify(c.tr)); c.hp = 40 + ctx.stat(c, 'hp') * 12; });
       ctx.stepsTotal = scen.steps(ctx.env).length;
       ctx.stepH = Math.max(1, Math.ceil(+ctx.env.hours / 48));
+      /* 条件を満たした出来事・扉が開いた出来事に印をつける（経過の画面で色を変えて示す。view.js） */
+      ctx.flags.goalSeen = {}; ctx.flags.goalOut = 0;
+      var say0 = ctx.say;
+      ctx.say = function (o) { var e = say0.call(this, o); markGoals(ctx, e); return e; };
     },
     phase: function (ctx, s, n) {
       if (s === 0) {
