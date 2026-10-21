@@ -55,12 +55,34 @@
       .replace(/([^だ])だだ$/, '$1だ');
     return s;
   }
-  /* 喘ぎや短い声（ひらがなと記号だけ）は、そのまま */
-  function isVoice(q) { return q.length <= 14 && /^[…‥っ、。ぁ-んー！？!?♡\s（）]+$/.test(q) && /[…‥っぁぃぅぇぉ♡]/.test(q); }
+  /* 喘ぎや短い声（♡・小さい母音・声だけの音）は、そのまま */
+  function isVoice(q) {
+    if (q.length > 14 || !/^[…‥っ、。ぁ-んー！？!?♡\s（）]+$/.test(q)) return false;
+    return /[♡ぁぃぅぇぉ]|っ(?=[…‥、。！？!?]|$)/.test(q) || /^[あいうえおんっはひふへほくー…‥、。！？!?\s]+$/.test(q);
+  }
+  /* 丁寧な問いかけは、ため口の問いかけに先に直す（自動のため口化は「〜ます？」の活用を取り違えやすい）
+     「好きですか？」→「好き？」、「ととのいます？」→「ととのう？」、「信じます？」→「信じる？」 */
+  var ICHI = '信じ|感じ|閉じ|生き|起き|過ぎ|落ち|浴び|借り|降り|足り|飽き|伸び|延び|詫び|恥じ|満ち|見|着|寝|似|煮|居';
+  var I2U = { 'い': 'う', 'き': 'く', 'ぎ': 'ぐ', 'し': 'す', 'ち': 'つ', 'に': 'ぬ', 'び': 'ぶ', 'み': 'む', 'り': 'る' };
+  function isKanji(ch) { return /[一-鿿々]/.test(ch || ''); }
+  function dictForm(stem) {
+    var n = stem.length, last = stem.charAt(n - 1), prev = stem.charAt(n - 2), prev2 = stem.charAt(n - 3);
+    /* 〜し：漢字一字＋し（話し・出し・探し）は五段「す」、それ以外（し・勉強し・ほっとし）は「する」 */
+    if (last === 'し') return isKanji(prev) && !isKanji(prev2) ? stem.slice(0, -1) + 'す' : stem.slice(0, -1) + 'する';
+    /* 「います」「〜ています」「できます」「来ます」は一段・カ変 */
+    if (stem === 'い' || /[てで]い$/.test(stem) || /でき$/.test(stem) || last === '来') return stem + 'る';
+    if (new RegExp('(?:' + ICHI + ')$').test(stem) || /[えけげせぜてでねべめれ]$/.test(stem)) return stem + 'る';
+    return I2U[last] ? stem.slice(0, -1) + I2U[last] : stem + 'る';
+  }
+  function plainAsk(q) {
+    return q.replace(/(?:んですか|のですか|んでしょうか)(?=[？?])/g, 'の').replace(/(?:ですか|でしょうか)(?=[？?])/g, '')
+      .replace(/でした(?:か)?(?=[？?])/g, 'だった')
+      .replace(/([一-鿿々ぁ-ゖァ-ヶー]+?)ます(?:か)?(?=[？?])/g, function (m, st) { return dictForm(st); });
+  }
 
   function darui(q) {
     if (!q || isVoice(q)) return q;
-    q = casual(q);
+    q = casual(plainAsk(q));
     var h = hash(q);
     q = q.replace(YOU, 'あんた').replace(/(?:お前ら|おまえら|あなたたち|あんたたち|きみたち|君たち)/g, 'あんたたち');
     KANA.forEach(function (r) { q = q.replace(r[0], r[1]); });
@@ -81,7 +103,7 @@
     });
     var r = out.join('');
     /* ボソッと消えていく：最後を「……」で終える（ときどき） */
-    if (h % 5 < 2 && !/[？]$/.test(r) && !/…$/.test(r)) r += '……';
+    if (h % 5 === 0 && r.length >= 8 && !/[？]$/.test(r) && !/…$/.test(r)) r += '……';
     return r.replace(/…{3,}/g, '……').replace(/……、/g, '……').replace(/、……/g, '……');
   }
   V.toneConv2 = V.toneConv2 || {};
