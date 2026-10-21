@@ -30,6 +30,7 @@
   ST.fmt = function (t, v) { return String(t).replace(/\{(\w+)\}/g, function (m, k) { return v[k] != null ? v[k] : m; }); };
   ST.say = function (S, o) {
     if (S.textFilter && o.text) o.text = S.textFilter(o.text);
+    if (S.whyFilter && o.why) o.why = S.whyFilter(o.why);
     /* 「＠……」は村人など住人以外の台詞（口調を変えない）。見えない印（U+2060）に置き換えておく */
     if (o.text && o.text.indexOf('「＠') >= 0) o.text = o.text.replace(/「＠/g, '「\u2060');
     o.n = S.log.length; o.label = S.label; o.kind = o.kind || 'event';
