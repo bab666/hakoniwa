@@ -64,8 +64,17 @@
     tick0.apply(this, arguments);
     live = A(S);
     if (live.length < 2) return;
-    snatch(S, live, h) || detFight(S, live, h) || lhClash(S, live, h) || hateMove(S, live, h);
+    hkTick(S, live, h) || snatch(S, live, h) || detFight(S, live, h) || lhClash(S, live, h) || hateMove(S, live, h);
   };
+  /* 敵視の出来事（出会ったとき・嫌がらせ・無視・噛み合わない関係・衝突。hate-kit.js） */
+  function hkTick(S, live, h) {
+    if (!HK.HateKit) return false;
+    var r = HK.HateKit.storyTick(S, live, { rate: 0.1 + (JS.night(h) ? 0.03 : 0) });
+    if (!r) return false;
+    ST.say(S, { actors: r.actors, tag: r.cat === 'romance' ? '片恋と嫌悪' : '敵視', text: r.text, why: r.why, mag: r.mag });
+    edge(S, r.actors[0], r.actors[1], '敵視', 'enemy');
+    return true;
+  }
   function pairs(S, live, test) {
     var out = [];
     live.forEach(function (a) { live.forEach(function (b) { if (a !== b && test(a, b)) out.push([a, b]); }); });
@@ -91,7 +100,7 @@
   }
   /* 敵対している名探偵どうしの衝突 */
   function detFight(S, live, h) {
-    var rng = S.rng, C = JS.core, ps = pairs(S, live, function (a, b) { return a.job === 'sleuth' && b.job === 'sleuth' && a.i < b.i && FD.has(S, a, b, 'enemy,bad') && !FD.lovehate(S, a, b); });
+    var rng = S.rng, C = JS.core, ps = pairs(S, live, function (a, b) { return a.job === 'sleuth' && b.job === 'sleuth' && a.i < b.i && (FD.level(S, a, b) >= 65 || FD.level(S, b, a) >= 65 || (FD.level(S, a, b) >= 35 && FD.level(S, b, a) >= 35)) && !FD.lovehate(S, a, b); });
     if (!ps.length || rng() > 0.05 || S.detFought) return false;
     S.detFought = true;
     var pr = ps[0], a = pr[0].tr.aggr >= pr[1].tr.aggr ? pr[0] : pr[1], b = a === pr[0] ? pr[1] : pr[0];
@@ -122,7 +131,8 @@
   /* 憎しみだけの相手：生贄に差し出す・手にかける */
   function hateMove(S, live, h) {
     var rng = S.rng, C = JS.core, night = JS.night(h);
-    var ps = pairs(S, live, function (a, b) { return FD.hate(S, a, b) && !b.taken; });
+    /* 生贄に差し出す・手にかけるのは、敵対の強さの嫌悪（不仲なら、嫌がらせや口論にとどまる） */
+    var ps = pairs(S, live, function (a, b) { return FD.hateStrong(S, a, b) && !b.taken; });
     if (!ps.length) return false;
     var pr = rng.pick(ps), a = pr[0], b = pr[1];
     var urge = 0.012 + a.tr.aggr * 0.025 + a.tr.cold * 0.02 + a.m.fear / 2500 + (night ? 0.01 : 0) + (S.ygo ? (a.viol || 0) / 2000 : 0) + (h > S.deadline * 0.6 ? 0.012 : 0);
@@ -154,6 +164,7 @@
       return true;
     }
     a.m.hp = clamp(a.m.hp - 15, 0, 100); b.m.hp = clamp(b.m.hp - 10, 0, 100); b.m.fear = clamp(b.m.fear + 15, 0, 100);
+    if (HK.HateKit) { HK.HateKit.shift(S, b, a, 30); HK.HateKit.shift(S, a, b, 6); }
     ST.say(S, { actors: [a, b], tag: '殺意', kind: 'climax', text: t2 + a.name + 'が振り上げた石を、' + b.name + 'は寸前で受け止めた。もみ合いの末、' + a.name + 'は石を取り落とした。二人は、荒い息のまま睨み合った。', why: a.name + 'は' + b.name + '（' + FD.label(S, a, b) + '）を殺そうとしたが、返り討ちにされかけた', mag: 34 });
     return true;
   }

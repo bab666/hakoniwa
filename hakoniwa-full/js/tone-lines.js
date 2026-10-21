@@ -293,7 +293,8 @@
   HK.TL = {
     T: T,
     /* 台詞の中身だけ（{b} を埋める） */
-    text: function (p, id, b) { var row = T[id], t = row[keyOf(p)] || row.gentle; return t.replace(/\{b\}/g, b ? b.name : ''); },
+    /* row['@口調'] はその口調の書き下ろし（派生の口調用） */
+    text: function (p, id, b) { var row = T[id], t = row['@' + (HK.toneOf ? HK.toneOf(p) : p.tone)] || row[keyOf(p)] || row.gentle; return t.replace(/\{b\}/g, b ? b.name : ''); },
     /* 「名前「……」」 */
     line: function (p, id, b) { return p.name + '「' + HK.TL.text(p, id, b) + '」'; }
   };

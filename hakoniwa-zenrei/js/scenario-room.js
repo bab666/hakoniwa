@@ -466,8 +466,14 @@
         ctx.mod2(user, other, { att: 4 }, { att: other.tr.fc > 0.5 ? 5 : 1, ten: other.tr.cp > 0.65 ? 4 : 0 });
         ctx.flags.toolUsed = (ctx.flags.toolUsed || 0) + 1;
       }
+      /* 敵対の強さで嫌っていて、強引な性格の側がいれば、ちょっと乱暴に（R18版の描写は room-lewd.js） */
+      var HKr = HK.HateKit, rough = HKr && (r.k === 'h' || r.k === 'kiss') ? HKr.forcer(ctx, a, b) : null;
+      if (rough && !isH) {
+        var rv = rough === a ? b : a;
+        text = rough.name + 'は' + rv.name + 'の手首を掴んで、乱暴に壁へ押しつけた。' + HK.TL.line(rough, 'H_ROUGH', rv) + text;
+      }
       if (r.n > 1) text += '（' + T.noun + ' ' + p.act[r.k] + '/' + r.n + '）';
-      var whyT = wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった';
+      var whyT = rough ? rough.name + 'は' + (rough === a ? b : a).name + 'を敵視している（嫌悪 ' + Math.round(HKr.level(ctx, rough, rough === a ? b : a)) + '）・強引な性格。条件のために、乱暴に' : wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった';
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, r.k === 'h');
       if (p.act[r.k] >= r.n) text += '扉はまだ開かない。' + a.name + 'と' + b.name + 'に残っているのは、' + leftText(ctx, a, b) + '。';
       return { text: text, why: whyT, mag: first ? 15 : 5 };
@@ -567,8 +573,11 @@
       var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && (ctx.flags.consumed[x.k] || 0) < x.n; })[0];
       var I = ITEM[r.k], left = r.n - (ctx.flags.consumed[r.k] || 0);
       var boss = ctx.most(ctx.present(), function (c) { return c.tr.cp * (1 - c.tr.np); });
-      var drinker = a, forced = false;
-      if (boss === a && a.tr.cp > 0.7 && a.tr.np < 0.4 && ctx.rng() < 0.5) {
+      var drinker = a, forced = false, HKt = HK.HateKit;
+      /* 敵対の強さで嫌っている相手がいて、強引な性格なら、その相手に無理やり飲ませる */
+      var foe = HKt ? ctx.most(ctx.others(a).filter(function (o) { return HKt.forceful(ctx, a, o) && !o.flags.down; }), function (o) { return HKt.level(ctx, a, o); }) : null;
+      if (foe && ctx.rng() < 0.65) { drinker = foe; forced = 'hate'; }
+      else if (boss === a && a.tr.cp > 0.7 && a.tr.np < 0.4 && ctx.rng() < 0.5) {
         var meek = ctx.most(ctx.others(a), function (o) { return o.tr.ac; });
         if (meek && meek.tr.ac > 0.6) { drinker = meek; forced = true; }
       }
@@ -581,7 +590,13 @@
       var tk = topKey(drinker);
       var lines = I.lines[tk] || I.lines.np;
       var text;
-      if (forced) {
+      if (forced === 'hate') {
+        var resist = drinker.tr.cp * 0.4 + drinker.tr.aggr * 0.3 - drinker.tr.ac * 0.2 > 0.35 && ctx.rng() < 0.5;
+        text = a.name + 'は' + K[r.k].item + 'を掴むと、' + drinker.name + 'の顎を押さえつけた。' + HK.TL.line(a, 'H_FORCE_DRINK', drinker) + HK.TL.line(drinker, 'R_FORCED', a) +
+          (resist ? drinker.name + 'は身をよじり、半分を床にこぼしながらも、残りを飲み下させられた。' : drinker.name + 'は咳き込みながら、' + n + K[r.k].unit + '分を飲み下させられた。');
+        ctx.mod(drinker, a, { ten: 18, trust: -14, aff: -8 });
+        if (HKt) HKt.shift(ctx, drinker, a, 10);
+      } else if (forced) {
         text = a.name + 'は' + drinker.name + 'の前に' + K[r.k].item + 'を押しやった。「飲め」' + drinker.name + 'は逆らわずに' + n + K[r.k].unit + '空けた。';
         ctx.mod(drinker, a, { ten: 14, trust: -10 });
       } else text = ctx.t(ctx.pick(lines), drinker).replace(/\{n\}/g, String(n));
@@ -589,7 +604,7 @@
       if (st) text += ctx.t(st, drinker);
       var total = ctx.flags.consumed[r.k];
       text += '（' + K[r.k].item + ' ' + total + '/' + r.n + K[r.k].unit + '）';
-      var whyT = forced ? a.name + 'のCP高・NP低／' + drinker.name + 'のAC（断れない）' : drinker.name + 'の' + { np: 'NP（自分が引き受ける）', fc: '衝動性（面白がる）', cold: 'ドライさ（効率）', ac: 'AC（空気を読んで）', cp: 'CP（負けず嫌い）' }[tk];
+      var whyT = forced === 'hate' ? a.name + 'は' + drinker.name + 'を敵視している（嫌悪 ' + Math.round(HKt.level(ctx, a, drinker)) + '）・強引な性格。自分では飲まずに、無理やり飲ませた（' + drinker.name + 'の嫌悪も上がった）' : forced ? a.name + 'のCP高・NP低／' + drinker.name + 'のAC（断れない）' : drinker.name + 'の' + { np: 'NP（自分が引き受ける）', fc: '衝動性（面白がる）', cold: 'ドライさ（効率）', ac: 'AC（空気を読んで）', cp: 'CP（負けず嫌い）' }[tk];
       var e = { text: text, why: whyT, with: drinker !== a ? [drinker] : null, mag: 6 };
       if (total >= r.n) {
         ctx.say({ kind: 'event', cat: 'escape', actors: drinker !== a ? [a, drinker] : [a], text: text, why: whyT, mag: 10 });

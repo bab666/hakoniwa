@@ -19,7 +19,7 @@
     pparent: { mods: { att: 0.72, trust: 1.15 }, effect: '親代わり・育ての親のような関係。基本は親子と同じで親代わりは子を守ろうとするが、血の繋がりがないぶん恋愛に発展することもある', label: '擬似親子', dir: true, roleA: '親代わり', roleB: '子', like: 'parent', ab: { aff: 48, trust: 30, ten: 6 }, ba: { aff: 32, trust: 40, ten: 12 }, pol: 1, chem: 0.65, pull: 1.9, family: true, loveOK: true, biasA: { help: 2, conflict: 1.3, romance: 0.72, combat: 0.15, betray: 0.2 }, biasB: { help: 1.2, conflict: 1.4, romance: 0.82, combat: 0.3 } },
     crush: { mods: { att: 1.3 }, effect: '想う側だけが恋愛的に動きやすい', label: '片想い', dir: true, roleA: '想う側', roleB: '想われる側', ab: { aff: 40, att: 50 }, ba: { aff: 5 }, pol: 0, pull: 2, biasA: { romance: 1.8, help: 1.3 }, biasB: {} },
     rival: { mods: { ten: 1.25, att: 1.1 }, effect: 'ぶつかりやすいが、惹かれることもある', label: 'ライバル', ab: { ten: 35, att: 10, trust: 10, aff: 5 }, pol: 0, fric: 1.3, pull: 1.6, bias: { conflict: 1.6, bond: 1.1, combat: 1.3 } },
-    enemy: { mods: { aff: 0.5, trust: 0.5, att: 0.5, ten: 1.3 }, effect: '好意・信頼が育ちにくく、争いやすい', label: '敵対', ab: { ten: 60, aff: -40, trust: -40 }, pol: -2, fric: 1.4, pull: 1.8, bias: { conflict: 2, combat: 2, betray: 1.5, romance: 0.3, help: 0.4 } },
+    enemy: { mods: { aff: 0.5, trust: 0.5, att: 0.5, ten: 1.3 }, effect: '強い嫌悪。好意・信頼が育ちにくく、争いやすい。相手の気持ちを選ぶと一方的な敵視にもできる（相手は気にしていない・友人だと思っている・愛している…）。嫌悪の強さは箱庭の中で上下し、下がれば不仲と同じ振る舞いに', label: '敵対', dir: true, roleA: '敵視する側', roleB: '相手', hate: 2, ab: { ten: 60, aff: -40, trust: -40 }, pol: -2, fric: 1.4, pull: 1.8, bias: { conflict: 2, combat: 2, betray: 1.5, romance: 0.3, help: 0.4 } },
     lover: { mods: { att: 1.2, ten: 0.85 }, effect: '惹かれが育ちやすく、争いを避ける', label: '恋人', ab: { aff: 55, att: 55, trust: 40 }, pol: 2, chem: 1.3, pull: 2.4, couple: true, bias: { romance: 1.8, help: 1.4, combat: 0.15, betray: 0.4 } },
     fwb: { mods: { att: 1.15, aff: 0.85 }, effect: '体の距離は近いが、気持ちは育ちにくい', label: 'セフレ', ab: { att: 45, aff: 15, trust: 15 }, pol: 1, chem: 1.2, pull: 1.8, night: true, bias: { romance: 1.6, bond: 0.8 } },
     ex: { mods: { att: 1.1, ten: 1.15 }, effect: '未練と気まずさが残る', label: '元恋人', ab: { aff: 10, att: 25, ten: 30, trust: 5 }, pol: 0, pull: 1.5, bias: { conflict: 1.3, romance: 1.2 } },
@@ -30,7 +30,7 @@
     sibprot: { mods: { att: 0.06, trust: 1.15 }, effect: '兄姉が弟妹を我が子のように守ろうとする。恋愛はほぼ起きない', label: 'きょうだい（庇護）', dir: true, roleA: '兄姉', roleB: '弟妹', like: 'parent', ab: { aff: 50, trust: 32, ten: 5 }, ba: { aff: 35, trust: 45, ten: 10 }, pol: 1, chem: 0.03, pull: 1.8, family: true, biasA: { help: 2, conflict: 1.25, romance: 0.05, combat: 0.15, betray: 0.2 }, biasB: { help: 1.3, conflict: 1.3, romance: 0.05, combat: 0.3, betray: 0.3 } },
     sibclose: { mods: { att: 0.08, trust: 1.3, ten: 0.75 }, effect: '親友や幼馴染のように仲のいいきょうだい。気安く、助け合う。恋愛はほぼ起きない', label: 'きょうだい（親友のよう）', like: 'sibling', ab: { aff: 45, trust: 50, ten: 3 }, pol: 2, chem: 0.05, pull: 1.9, family: true, bias: { help: 1.7, bond: 1.6, conflict: 1.0, romance: 0.1, combat: 0.25, betray: 0.3 } },
     sibbad: { mods: { att: 0.08, aff: 0.8, ten: 1.25 }, effect: '血はつながっているが反りが合わないきょうだい。顔を合わせれば口喧嘩。それでも、いざとなると見捨てきれない。恋愛はほぼ起きない', label: 'きょうだい（不仲）', like: 'sibling', ab: { aff: -8, trust: 12, ten: 32 }, pol: -1, chem: 0.05, fric: 1.25, pull: 1.8, family: true, bias: { conflict: 1.9, help: 1.1, bond: 0.75, romance: 0.1, combat: 0.7, betray: 0.8 } },
-    bad: { mods: { aff: 0.75, trust: 0.8, ten: 1.15 }, effect: '気が合わず、何かと衝突する（敵対ほどではない）。いがみ合いながらも、きっかけがあれば打ち解けることもある', label: '不仲', ab: { aff: -18, trust: -8, ten: 34 }, pol: -1, fric: 1.25, pull: 1.4, bias: { conflict: 1.6, help: 0.7, bond: 0.75, romance: 0.6, combat: 1.1, betray: 1.15 } },
+    bad: { mods: { aff: 0.75, trust: 0.8, ten: 1.15 }, effect: '気が合わず、何かと衝突する（敵対ほど強い嫌悪ではない）。いがみ合いながらも、きっかけがあれば打ち解けることもある。相手の気持ちを選ぶと一方的な敵視にもできる。嫌悪が強まれば敵対と同じ振る舞いに', label: '不仲', dir: true, roleA: '敵視する側', roleB: '相手', hate: 1, ab: { aff: -18, trust: -8, ten: 34 }, pol: -1, fric: 1.25, pull: 1.4, bias: { conflict: 1.6, help: 0.7, bond: 0.75, romance: 0.6, combat: 1.1, betray: 1.15 } },
     master: { mods: { trust: 1.25 }, effect: '従は主を助けに動く', label: '主従', dir: true, roleA: '主', roleB: '従', ab: { trust: 20, aff: 15, ten: 8 }, ba: { trust: 55, aff: 30 }, pol: 1, pull: 1.8, biasA: { conflict: 1.2, help: 1.1 }, biasB: { help: 2, bond: 1.2, betray: 0.3, combat: 0.4 } }
   };
   /* 片想いの「想われる側」の温度（相手にされていない片想い） */
@@ -42,6 +42,23 @@
     other: { label: '想われる側：ほかに好きな人がいる', short: '他に好きな人', att: 0.15, ba: { aff: 5 } }
   };
   HK.CRUSH_COLD_ORDER = ['', 'none', 'friend', 'dislike', 'other'];
+  /* 不仲・敵対の「相手」の気持ち（一方的な敵視・噛み合わない関係）。空欄は、お互いに敵視している（以前の不仲・敵対と同じ）
+     ba=相手から敵視する側への初期値、mods=相手の側の関係値の伸び、bias=相手の側の行動の倍率 */
+  HK.HATE_BACK = {
+    '': { label: '相手：お互いに敵視している', short: '' },
+    none: { label: '相手：なんとも思っていない', short: '一方的', ba: { aff: 0 }, mods: {}, bias: {} },
+    normal: { label: '相手：ふつうに接している', short: '相手はふつう', ba: { aff: 10, trust: 8 }, mods: {}, bias: { bond: 1.1 } },
+    friend: { label: '相手：友人だと思っている', short: '相手は友人だと', ba: { aff: 28, trust: 25 }, mods: { trust: 1.1 }, bias: { bond: 1.4, help: 1.3 } },
+    love: { label: '相手：愛している', short: '相手は好き', ba: { aff: 42, att: 48, trust: 18 }, mods: { att: 1.25 }, bias: { romance: 1.8, help: 1.5, bond: 1.3 } }
+  };
+  HK.HATE_BACK_ORDER = ['', 'none', 'normal', 'friend', 'love'];
+  /* 関係の種類ごとの「相手の気持ち」の選択肢（片想い・不仲・敵対）。なければ null */
+  HK.coldOpts = function (type) {
+    if (type === 'crush' && HK.CRUSH_COLD) return { map: HK.CRUSH_COLD, order: HK.CRUSH_COLD_ORDER, aria: '想われる側の気持ち' };
+    if ((type === 'bad' || type === 'enemy') && HK.HATE_BACK) return { map: HK.HATE_BACK, order: HK.HATE_BACK_ORDER, aria: '相手の気持ち' };
+    return null;
+  };
+  var HATE_WORDS = [[/一方的|片思いならぬ|相手は気にして(?:い)?ない|相手は気づいて(?:い)?ない|なんとも思って(?:い)?ない/, 'none'], [/相手はふつう|相手は普通/, 'normal'], [/相手は友(?:達|人)だと|友達だと思って/, 'friend'], [/相手は(?:好き|愛して|惚れて)|片想いされ|好かれて/, 'love']];
   var COLD_WORDS = [[/脈なし|眼中に|相手にされ|興味がない|興味なし/, 'none'], [/友達としか|友達止まり|異性として見|恋愛対象外|対象外/, 'friend'], [/苦手|嫌われ|避けられ|避けて/, 'dislike'], [/他に好き|ほかに好き|別に好き|好きな人がいる/, 'other']];
   HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'parent', 'pparent', 'teacher', 'mentor', 'crush', 'bad', 'rival', 'enemy', 'lover', 'fwb', 'ex', 'fated', 'mate', 'master'];
 
@@ -82,7 +99,8 @@
       });
       found.sort(function (a, b) { return a.pos - b.pos; });
       /* 「セフレで片想い」のように、一行に複数の関係を書いてもよい */
-      var cold = '';
+      var cold = '', back = '';
+      HATE_WORDS.forEach(function (w) { var m = used.match(w[0]); if (m) { if (!back) back = w[1]; used = used.replace(w[0], function (x) { return Array(x.length + 1).join('\u0000'); }); } });
       COLD_WORDS.forEach(function (w) { var m = used.match(w[0]); if (m) { if (!cold) cold = w[1]; used = used.replace(w[0], function (x) { return Array(x.length + 1).join('\u0000'); }); } });
       var types = [];
       for (var k = 0; k < ALIAS.length; k++) {
@@ -102,6 +120,7 @@
         if (T[ty].dir && /の(子|子ども|息子|娘|従者|部下|後輩|生徒|弟子|弟|妹)|←/.test(line)) { var t = a; a = b; b = t; }
         var nt = { a: a, b: b, type: ty };
         if (ty === 'crush' && cold) nt.cold = cold;
+        if ((ty === 'bad' || ty === 'enemy') && back) nt.cold = back;
         out.push(nt);
       });
     });
@@ -111,7 +130,8 @@
   HK.tieText = function (tie, nameOf) {
     var D = T[tie.type];
     if (!D) return '';
-    if (D.dir) return nameOf(tie.a) + '（' + D.roleA + '）→ ' + nameOf(tie.b) + '（' + D.roleB + '）：' + D.label + (tie.type === 'crush' && tie.cold && HK.CRUSH_COLD[tie.cold] ? '（' + HK.CRUSH_COLD[tie.cold].short + '）' : '');
+    var CO = HK.coldOpts(tie.type);
+    if (D.dir) return nameOf(tie.a) + '（' + D.roleA + '）→ ' + nameOf(tie.b) + '（' + D.roleB + '）：' + D.label + (CO && tie.cold && CO.map[tie.cold] && CO.map[tie.cold].short ? '（' + CO.map[tie.cold].short + '）' : '');
     return nameOf(tie.a) + ' × ' + nameOf(tie.b) + '：' + D.label;
   };
 
@@ -144,15 +164,16 @@
         /* 二つめ以降の関係は、初期値を半分だけ足す（重ねすぎて振り切れないように） */
         var half = list.length ? 0.5 : 1;
         function addH(r, d) { var o = {}; for (var f in d) o[f] = d[f] * half; add(r, o); }
-        addH(ab, D.ab); addH(ba, D.ba || D.ab);
+        var HB = D.hate && t.cold && HK.HATE_BACK[t.cold] ? HK.HATE_BACK[t.cold] : null;
+        addH(ab, D.ab); addH(ba, HB ? HB.ba : D.ba || D.ab);
         var CD = t.type === 'crush' && t.cold ? HK.CRUSH_COLD[t.cold] : null;
         if (CD && CD.ba) add(ba, CD.ba);
         var p = ctx.pair(A, B);
         if (D.chem != null) p.chem = HK.clamp(p.chem * D.chem + (D.chem > 1 ? 0.2 : 0), 0.01, 2);
-        if (D.fric != null) p.fric = HK.clamp(p.fric * D.fric, 0.2, 2);
+        if (D.fric != null && !HB) p.fric = HK.clamp(p.fric * D.fric, 0.2, 2);
         if (D.couple) p.couple = true;
         if (D.night && ctx.scen.id !== 'classroom') p.night = true;
-        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD ? t.cold : '' };
+        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB ? t.cold : '' };
         list.push(o);
         list.sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
         ctx.ties[k] = list[0];
@@ -172,6 +193,12 @@
       for (var i = 0; i < l.length; i++) if (l[i].type === type || l[i].like === type) return l[i];
       return null;
     },
+    /* a が b を敵視する関係（不仲・敵対）。相手の気持ちが決まっている関係では、相手の側からは null */
+    hostile: function (ctx, a, b) {
+      var l = HK.Ties.all(ctx, a, b);
+      for (var i = 0; i < l.length; i++) { var D = T[l[i].type]; if (D && D.hate && (l[i].a === a.i || !l[i].cold)) return l[i]; }
+      return null;
+    },
     /* 向きのある関係で、from から向いているもの（片想いが両方向にあるときなど） */
     from: function (ctx, a, b, type) {
       var l = HK.Ties.all(ctx, a, b);
@@ -183,7 +210,8 @@
       var r = 1;
       HK.Ties.all(ctx, a, b).forEach(function (t) {
         var D = T[t.type], m;
-        if (D.dir) m = (t.a === a.i ? D.biasA : D.biasB) || {};
+        if (D.hate) m = t.a !== a.i && t.cold && HK.HATE_BACK[t.cold] ? HK.HATE_BACK[t.cold].bias : D.bias || {};
+        else if (D.dir) m = (t.a === a.i ? D.biasA : D.biasB) || {};
         else m = D.bias || {};
         if (m[cat] != null) r *= m[cat];
       });
@@ -194,6 +222,7 @@
       var r = 1;
       HK.Ties.all(ctx, a, b).forEach(function (t) {
         var D = T[t.type], m = D.mods && D.mods[f];
+        if (D.hate && t.a !== a.i && t.cold && HK.HATE_BACK[t.cold]) { var hm = HK.HATE_BACK[t.cold].mods[f]; if (hm != null) r *= hm; return; }
         if (t.type === 'crush' && t.a !== a.i) {
           /* 想われる側：相手にしていなければ、惹かれ（と苦手なら好意）がほとんど育たない */
           var CD = t.cold ? HK.CRUSH_COLD[t.cold] : null;

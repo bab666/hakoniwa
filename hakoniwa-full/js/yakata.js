@@ -39,7 +39,7 @@
   function ties(S, a, b) { return a && b && a.i != null && b.i != null ? S.ties.filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); }) : []; }
   function bond(S, a, b) {
     var best = 0, neg = 0;
-    ties(S, a, b).forEach(function (t) { var w = t.type === 'crush' ? (t.a === a.i ? 0.85 : 0.15) : W[t.type] != null ? W[t.type] : 0.1; if (w > best) best = w; if (w < neg) neg = w; });
+    ties(S, a, b).forEach(function (t) { var w = t.type === 'crush' ? (t.a === a.i ? 0.85 : 0.15) : W[t.type] != null ? W[t.type] : 0.1; if ((t.type === 'enemy' || t.type === 'bad') && t.cold && t.a !== a.i) w = { none: 0, normal: 0.1, friend: 0.5, love: 0.9 }[t.cold] || 0; if (w > best) best = w; if (w < neg) neg = w; });
     var base = best > 0 ? best + neg * 0.3 : neg;
     /* 館で深まった（こじれた）分を足す */
     return clamp(base + ((S.relD && S.relD[rk(a, b)]) || 0), -1, 1.2);

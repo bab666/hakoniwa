@@ -16,6 +16,8 @@
     var best = 0, neg = 0;
     tiesOf(S, a, b).forEach(function (t) {
       var w = t.type === 'crush' ? (t.a === a.i ? 0.85 : 0.15) : W[t.type] != null ? W[t.type] : 0.1;
+      /* 一方的な敵視：相手の側は、相手の気持ちで（なんとも思っていない・ふつう・友人・愛している） */
+      if ((t.type === 'enemy' || t.type === 'bad') && t.cold && t.a !== a.i) w = { none: 0, normal: 0.1, friend: 0.5, love: 0.9 }[t.cold] || 0;
       if (t.type === 'master' && t.b === a.i) w = 0.85; /* 従は主を守る */
       if (t.type === 'parent' || t.type === 'pparent' || t.type === 'sibprot') w = t.a === a.i ? w : w - 0.15;
       if (w > best) best = w; if (w < neg) neg = w;
@@ -28,6 +30,7 @@
   function cat(S, a, b) {
     var l = tiesOf(S, a, b).map(function (t) { return t; }), c = '';
     l.forEach(function (t) {
+      if ((t.type === 'enemy' || t.type === 'bad') && t.cold && t.a !== a.i) { var bk = { love: 'love', friend: 'close' }[t.cold] || ''; if (['love', 'family', 'crush', 'close', 'ex', 'bad', ''].indexOf(bk) < ['love', 'family', 'crush', 'close', 'ex', 'bad', ''].indexOf(c || '')) c = bk; return; }
       var k = inList(t.type, LOVE) ? 'love' : inList(t.type, FAMILY) ? 'family' : t.type === 'crush' ? (t.a === a.i ? 'crush' : '') : t.type === 'ex' ? 'ex' : inList(t.type, BAD) ? 'bad' : inList(t.type, CLOSE) ? 'close' : '';
       var order = ['love', 'family', 'crush', 'close', 'ex', 'bad', ''];
       if (order.indexOf(k) < order.indexOf(c || '')) c = k;

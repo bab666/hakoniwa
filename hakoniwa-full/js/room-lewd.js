@@ -114,8 +114,12 @@
       if (rv && ctx.rng() < 0.7) rl.push(rv.line(rp, B.persona, 'climax', 'b'));
       return rl.map(function (x) { return t(ctx, x, A, B); }).join('') + (opt.dash ? '――' : '');
     }
-    var st = styleOf(ctx, A, mode);
+    /* 敵対の強さで嫌っていて、強引な性格の側がいれば、その人がリードして、乱暴に（hate-kit.js） */
+    var HKr = HK.HateKit, rough = HKr ? HKr.forcer(ctx, A, B) : null;
+    if (rough && rough === B && !fx) { var sw = A; A = B; B = sw; }
+    var st = rough ? 'rough' : styleOf(ctx, A, mode);
     var lew = [];
+    if (rough && HK.TL) lew.push(A.name + 'は' + B.name + 'の手首を掴んで、ベッドへ乱暴に押し倒した。' + HK.TL.line(A, 'H_ROUGH', B));
     if (opt.toolText) lew.push(opt.toolText.replace(/――$/, ''));
     else if (mode !== 'repeat') lew.push(pick(ctx, OPEN[st]));
     if (mode === 'aphro') lew.push(pick(ctx, ['媚薬で敏感になった{b}は、触れられるだけで腰が跳ねた。', '媚薬の熱に浮かされた{b}は、自分から{a}に脚を開いた。', '{a}も{b}も、媚薬のせいで止まれなかった。']));

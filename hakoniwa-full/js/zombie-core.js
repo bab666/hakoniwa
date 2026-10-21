@@ -274,6 +274,15 @@
       var b = ctx.most(there, function (o) { return Math.abs(ctx.R(a, o).aff) + ctx.R(a, o).att + (tieT(ctx, a, o) ? 50 : 0); });
       there.forEach(function (o) { ctx.pair(a, o).zmet = true; });
       var to = a.z.area, t0 = tieT(ctx, a, b), TD = t0 ? HK.TIES[t0] : null;
+      /* 敵視している相手と、同じエリアで出会ったとき（hate-kit.js）：嫌悪の強さ・性格・相手の気持ちで反応が変わる */
+      if (HK.HateKit) {
+        var HKt = HK.HateKit, la = HKt.level(ctx, a, b), lb = HKt.level(ctx, b, a);
+        if (la >= 35 || lb >= 35) {
+          var hx = la >= lb ? a : b, hy = hx === a ? b : a, hm = HKt.meet(ctx, hx, hy, an(ctx, to) + 'で、');
+          (ctx.pair(hx, hy).hkMet = ctx.pair(hx, hy).hkMet || {})[hx.i] = 1;
+          return ctx.act2({ actors: [hx, hy], cat: hm.cat, text: hm.text, why: hm.why, mag: hm.mag });
+        }
+      }
       if (Z.reunion) { var rr = Z.reunion(ctx, a, b, to); if (rr) return ctx.act2(rr); }
       var kind = TD && TD.pol > 0 ? 'kin' : ctx.R(a, b).ten > 35 || (TD && TD.pol < 0) ? 'bad' : ctx.R(a, b).aff + ctx.R(b, a).aff > 40 ? 'good' : 'new';
       var T = {

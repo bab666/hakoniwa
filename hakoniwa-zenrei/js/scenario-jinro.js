@@ -166,6 +166,12 @@
       played = day;
       ST.step(S, day + '日目・昼');
       var A = alive(), lastEx = executed[executed.length - 1] || null, lastKill = killed[killed.length - 1] || null;
+      /* 敵視（hate-kit.js）：人狼では、好意が絡む二人のときだけ（片方が愛している・恋愛の関係がある） */
+      if (HK.HateKit) {
+        if (!S.ties) S.ties = input.ties || [];
+        var hk = HK.HateKit.storyTick(S, A, { kinds: 'love', rate: 0.35, place: '朝の広場で、' });
+        if (hk) ST.say(S, { actors: hk.actors, tag: hk.cat === 'romance' ? '片恋と嫌悪' : '敵視', text: hk.text, why: hk.why, mag: hk.mag });
+      }
 
       /* ---------- 占い師のCO・結果 ---------- */
       if (seer && seer.alive) {

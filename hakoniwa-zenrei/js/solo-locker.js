@@ -46,6 +46,7 @@
   var REL = { lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'fwb', master: 'master', crush: 'crush', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', senpai: 'friend', colleague: 'friend', acq: 'friend', almost: 'almost', rival: 'tension', bad: 'tension', enemy: 'tension', ex: 'ex', sibling: 'friend' };
   var REL_LABEL = { lover: '恋人', fwb: 'セフレ', master: '主従', crush: '片想い', friend: '知り合い', almost: '友達以上恋人未満', tension: '険悪', ex: '元恋人', stranger: '初対面' };
 
+  var LK_HATE_LEAD = ['狭いロッカーの中で、{b}は{a}の胸に、そっと額を預けた。', '{b}は、触れ合った{a}の手を、そのまま握ろうとした。', '{b}は、熱に浮かされた目で、{a}の顔を見上げた。'];
   function run(input) {
     var S = ST.state(input, 'locker'), rng = S.rng, env = S.env, P = S.P, lew = env.lewd || 'mid', V = HK.Voice;
     var A = P[0], B = P[1];
@@ -132,6 +133,18 @@
         var after = stage(p);
         if (after > before) ST.sayB(S, { actors: [p], tag: ['', '火照り', '発情', '限界'][after], text: ST.fmt(ST.pick(S, LK.GAS[after]), { a: p.name, b: p.o.name }), why: p.name + 'の発情 ' + Math.round(p.m.heat) + '・理性 ' + Math.round(p.m.reason) + '（我慢 ' + p.stats.gaman + '）', mag: after * 6 }, p.name + 'の発情が進んだ', after >= 3);
       });
+      /* 敵視（hate-kit.js）：狭いロッカーの中で、一方が近づき、一方が嫌悪する */
+      if (HK.HateKit && rng() < 0.3) {
+        if (!S.ties) S.ties = input.ties || [];
+        var HKt = HK.HateKit, hp = HKt.pairs(S, [A, B])[0];
+        if (hp) {
+          var hr = hp.st === 'love' ? HKt.loveGap(S, hp.a, hp.b, ST.fmt(ST.pick(S, LK_HATE_LEAD), { a: hp.a.name, b: hp.b.name })) : hp.st === 'hate' ? HKt.quarrel(S, hp.a, hp.b) : HKt.style(hp.a) === 'active' ? HKt.harass(S, hp.a, hp.b) : HKt.snub(S, hp.a, hp.b);
+          /* 嫌悪している側は、理性で踏みとどまる。近づいた側は、拒まれて熱を持て余す */
+          hp.a.m.reason = clamp(hp.a.m.reason + 6, 0, 100);
+          if (hp.st === 'love') hp.b.m.heat = clamp(hp.b.m.heat + 4, 0, 100);
+          ST.sayB(S, { actors: [hp.a, hp.b], tag: hp.st === 'love' ? '片恋と嫌悪' : '敵視', text: hr.text, why: hr.why + '（' + hp.a.name + 'の理性 +6）' }, hp.a.name + 'と' + hp.b.name + 'が揉めた');
+        }
+      }
       /* 手を出す */
       var lewdNow = false;
       var order = rng() < 0.5 ? [A, B] : [B, A];

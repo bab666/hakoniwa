@@ -73,7 +73,8 @@
     var D = HK.TIES[t.type], h = '<div class="one">' +
       '<select data-gf="ttype" data-k="' + k + '" aria-label="' + esc(o.name) + 'との関係の種類">' + typeOpts(t.type) + '</select>';
     if (D.dir) h += '<select data-gf="tdir" data-k="' + k + '" aria-label="関係の向き">' + opt('a', c.name + 'が' + D.roleA, t.a === c.id ? 'a' : 'b') + opt('b', c.name + 'が' + D.roleB, t.a === c.id ? 'a' : 'b') + '</select>';
-    if (t.type === 'crush' && HK.CRUSH_COLD) h += '<select data-gf="tcold" data-k="' + k + '" aria-label="想われる側の気持ち">' + HK.CRUSH_COLD_ORDER.map(function (id) { return opt(id, HK.CRUSH_COLD[id].label, t.cold || ''); }).join('') + '</select>';
+    var CO = HK.coldOpts ? HK.coldOpts(t.type) : null;
+    if (CO) h += '<select data-gf="tcold" data-k="' + k + '" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return opt(id, CO.map[id].label, t.cold || ''); }).join('') + '</select>';
     h += '<button type="button" class="btn ghost small" data-gact="tdel" data-k="' + k + '">外す</button></div>';
     return h + '<p class="gearhint">' + esc(D.effect || '') + '</p>';
   }
@@ -239,7 +240,7 @@
       case 'color': if (/^#[0-9a-fA-F]{6}$/.test(t.value)) { c.color = t.value; UI.applyColors(s.chars); changed(false); } break;
       case 'lock': if (isInput) return; c.loveLock = t.value; changed(false); break;
       case 'callone': c.calls = c.calls || {}; if (t.value.trim()) c.calls[t.dataset.o] = t.value.trim().slice(0, 16); else delete c.calls[t.dataset.o]; changed(false); sampleRefresh(); break;
-      case 'ttype': if (isInput || !tie) return; tie.type = t.value; if (t.value !== 'crush') delete tie.cold; changed(true); break;
+      case 'ttype': if (isInput || !tie) return; tie.type = t.value; var CO = HK.coldOpts ? HK.coldOpts(t.value) : null; if (!CO || !CO.map[tie.cold || '']) delete tie.cold; changed(true); break;
       case 'tdir': if (isInput || !tie) return; var me = t.value === 'a'; var o = tie.a === c.id ? tie.b : tie.a; tie.a = me ? c.id : o; tie.b = me ? o : c.id; changed(true); break;
       case 'tcold': if (isInput || !tie) return; if (t.value) tie.cold = t.value; else delete tie.cold; changed(false); break;
     }

@@ -41,7 +41,7 @@
     tick: function (S, day) {
       var live = free(S);
       if (live.length < 2) return;
-      snatch(S, live) || detFight(S, live) || lhClash(S, live, day) || hateMove(S, live, day);
+      hkTick(S, live) || snatch(S, live) || detFight(S, live) || lhClash(S, live, day) || hateMove(S, live, day);
     },
     /* 犯人 c に狙われた tgt を、愛憎の相手が守る。守ったら true */
     guard: function (S, tgt, c) {
@@ -61,6 +61,15 @@
     }
   };
 
+  /* 敵視の出来事（出会ったとき・嫌がらせ・無視・噛み合わない関係・衝突。hate-kit.js） */
+  function hkTick(S, live) {
+    if (!HK.HateKit) return false;
+    var r = HK.HateKit.storyTick(S, live, { rate: 0.22 });
+    if (!r) return false;
+    ST.say(S, { actors: r.actors, tag: r.cat === 'romance' ? '片恋と嫌悪' : '敵視', text: r.text, why: r.why, mag: r.mag });
+    rel(S, r.actors[0], r.actors[1], '敵視', 'enemy');
+    return true;
+  }
   /* 手がかりの奪い合い */
   function snatch(S, live) {
     var rng = S.rng, ps = pairs(live, function (a, b) { return (a.isDet || b.isDet) && FD.rival(S, a, b); });
@@ -79,7 +88,7 @@
   }
   /* 敵対している名探偵どうしの衝突 */
   function detFight(S, live) {
-    var rng = S.rng, ps = pairs(live, function (a, b) { return a.role === 'detective' && b.role === 'detective' && a.i < b.i && FD.has(S, a, b, 'enemy,bad') && !FD.lovehate(S, a, b); });
+    var rng = S.rng, ps = pairs(live, function (a, b) { return a.role === 'detective' && b.role === 'detective' && a.i < b.i && (FD.level(S, a, b) >= 65 || FD.level(S, b, a) >= 65 || (FD.level(S, a, b) >= 35 && FD.level(S, b, a) >= 35)) && !FD.lovehate(S, a, b); });
     if (!ps.length || rng() > 0.15 || S.detFought) return false;
     S.detFought = true;
     var a = ps[0][0].tr.aggr >= ps[0][1].tr.aggr ? ps[0][0] : ps[0][1], b = a === ps[0][0] ? ps[0][1] : ps[0][0];
@@ -103,7 +112,8 @@
   }
   /* 憎しみだけの相手：殺人騒ぎに紛れて、締め出す・手にかける */
   function hateMove(S, live, day) {
-    var rng = S.rng, ps = pairs(live, function (a, b) { return FD.hate(S, a, b) && !a.hateDone; });
+    /* 締め出し・手にかけるのは、敵対の強さの嫌悪（不仲なら、嫌がらせや口論にとどまる） */
+    var rng = S.rng, ps = pairs(live, function (a, b) { return FD.hateStrong(S, a, b) && !a.hateDone; });
     if (!ps.length || !S.kills.length) return false;
     var pr = rng.pick(ps), a = pr[0], b = pr[1];
     if (rng() > 0.05 + a.tr.aggr * 0.06 + a.tr.cold * 0.05 + a.m.fear / 1500) return false;
@@ -121,6 +131,7 @@
       return true;
     }
     b.m.fear = clamp(b.m.fear + 15, 0, 100); a.m.sus = clamp(a.m.sus + 12, 0, 100);
+    if (HK.HateKit) { HK.HateKit.shift(S, b, a, 30); HK.HateKit.shift(S, a, b, 6); }
     ST.say(S, { actors: [a, b], tag: '殺意', kind: 'climax', text: t + (lock ? 'しばらくして、物音に気づいた執事が閂を外した。雪まみれの' + b.name + 'は、震えながら' + a.name + 'を睨みつけた。' : a.name + 'が振り上げた火掻き棒を、' + b.name + 'は椅子で受け止めた。物音に、一行が駆けつけてきた。'), why: a.name + 'は' + b.name + '（' + FD.label(S, a, b) + '）を殺そうとしたが、失敗した（' + a.name + 'への疑い +12）', mag: 34 });
     return true;
   }

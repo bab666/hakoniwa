@@ -15,11 +15,17 @@
   function has(S, a, b, l) { return ties(S, a, b).some(function (t) { return inL(t.type, l); }); }
   /* 恋愛の関係（元恋人は、敵意と重なったときだけ愛憎の材料になる） */
   function love(S, a, b) { return ties(S, a, b).some(function (t) { return inL(t.type, LOVE) && (t.type !== 'crush' || t.a === a.i || t.b === a.i); }); }
+  /* a → b の嫌悪レベル（hate-kit.js があれば、箱庭の中で上下する値を使う） */
+  function lv(S, a, b) { return HK.HateKit ? HK.HateKit.level(S, a, b) : has(S, a, b, HATE) ? 50 : 0; }
   var F = HK.Feud = {
-    ties: ties, has: has,
-    lovehate: function (S, a, b) { return love(S, a, b) && has(S, a, b, HATE + ',' + RIVAL); },
-    hate: function (S, a, b) { return has(S, a, b, HATE) && !love(S, a, b); },
-    rival: function (S, a, b) { return has(S, a, b, RIVAL + ',' + HATE); },
+    ties: ties, has: has, level: lv,
+    /* 愛憎：恋愛の関係と、敵視（どちらかの嫌悪が不仲以上）かライバルが重なっている */
+    lovehate: function (S, a, b) { return love(S, a, b) && (lv(S, a, b) >= 35 || lv(S, b, a) >= 35 || has(S, a, b, RIVAL)); },
+    /* 憎しみ：a が b を嫌っていて、恋愛の関係がない（一方的でもよい） */
+    hate: function (S, a, b) { return lv(S, a, b) >= 35 && !love(S, a, b); },
+    /* 敵対の強さの憎しみ（生贄に差し出す・手にかけるのはこちら） */
+    hateStrong: function (S, a, b) { return lv(S, a, b) >= 65 && !love(S, a, b); },
+    rival: function (S, a, b) { return has(S, a, b, RIVAL) || lv(S, a, b) >= 35 || lv(S, b, a) >= 35; },
     /* 名探偵 sl から見た、ポンコツ探偵（またはもう一人の名探偵）pk との顔合わせの台詞の種類 */
     duo: function (S, sl, pk) {
       var sp = ties(S, sl, pk).filter(function (t) { return t.type === 'senpai'; })[0];

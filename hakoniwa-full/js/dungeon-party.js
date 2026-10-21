@@ -169,6 +169,20 @@
     else if (rng() < 0.12) assist(S);
     if (rng() < 0.2) lure(S);
   };
+  /* 敵視（hate-kit.js）：パーティの中のケンカ。嫌悪の強さで、口論から掴み合いまで */
+  var setup0 = DG.partySetup;
+  DG.partySetup = function (S, input) { S.ties = (input && input.ties) || []; return setup0(S, input); };
+  var after0 = DG.partyAfter;
+  DG.partyAfter = function (S, tgt, hit) {
+    after0(S, tgt, hit);
+    var H = HK.HateKit;
+    if (!H || S.rng() > 0.2) return;
+    var live = S.party.filter(function (x) { return !x.fallen; }), ps = H.pairs(S, live);
+    if (!ps.length) return;
+    var p = ps[(S.rng() * ps.length) | 0], r = p.st === 'hate' ? H.quarrel(S, p.a, p.b) : H.harass(S, p.a, p.b);
+    var rr = rel(S, p.a, p.b); if (rr) rr.ten = clamp(rr.ten + 6, 0, 100);
+    sayAs(S, p.a, { kind: 'ev', tag: 'ケンカ', text: r.text, why: r.why });
+  };
   DG.partyBoss = function (S, tgt) { if (S.rng() < 0.5) witness(S, tgt, { gain: 20 }); };
 
   /* 捕まった仲間を助けに行く */

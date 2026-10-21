@@ -80,7 +80,8 @@
     });
     S0.ties = (Array.isArray(S0.ties) ? S0.ties : []).filter(function (t) {
       if (!t || !HK.TIES[t.type] || !ids[t.a] || !ids[t.b] || t.a === t.b) return false;
-      if (t.cold && !(t.type === 'crush' && HK.CRUSH_COLD && HK.CRUSH_COLD[t.cold])) delete t.cold;
+      var CO = HK.coldOpts ? HK.coldOpts(t.type) : null;
+      if (t.cold && !(CO && CO.map[t.cold])) delete t.cold;
       return true;
     });
   }
@@ -233,7 +234,7 @@
         '<select id="ta-' + k + '" data-f="tie" data-k="' + k + '" data-p="a" aria-label="関係の起点">' + charOpts(t.a) + '</select>' +
         '<select id="tt-' + k + '" data-f="tie" data-k="' + k + '" data-p="type" aria-label="関係の種類">' + HK.TIE_ORDER.map(function (id) { var d = HK.TIES[id]; return '<option value="' + id + '"' + (id === t.type ? ' selected' : '') + '>' + esc(d.label) + (d.dir ? '（' + d.roleA + '→' + d.roleB + '）' : '') + '</option>'; }).join('') + '</select>' +
         '<select id="tb-' + k + '" data-f="tie" data-k="' + k + '" data-p="b" aria-label="関係の相手">' + charOpts(t.b) + '</select>' +
-        (t.type === 'crush' && HK.CRUSH_COLD ? '<select id="tc-' + k + '" data-f="tie" data-k="' + k + '" data-p="cold" aria-label="想われる側の気持ち">' + HK.CRUSH_COLD_ORDER.map(function (id) { return '<option value="' + id + '"' + ((t.cold || '') === id ? ' selected' : '') + '>' + esc(HK.CRUSH_COLD[id].label) + '</option>'; }).join('') + '</select>' : '') +
+        (function () { var CO = HK.coldOpts ? HK.coldOpts(t.type) : null; return CO ? '<select id="tc-' + k + '" data-f="tie" data-k="' + k + '" data-p="cold" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return '<option value="' + id + '"' + ((t.cold || '') === id ? ' selected' : '') + '>' + esc(CO.map[id].label) + '</option>'; }).join('') + '</select>' : ''; })() +
         '<button class="btn ghost small" data-act="tiedel" data-k="' + k + '">削除</button>' +
         '<span class="tiehint">' + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '') + '</span></div>';
     }).join('');
@@ -352,7 +353,8 @@
       var a = ref(t.a), b = ref(t.b);
       if (!a || !b || a === b || !HK.TIES[t.type]) return;
       S.ties = (S.ties || []).filter(function (x) { return !(x.type === t.type && ((x.a === a && x.b === b) || (x.a === b && x.b === a))); });
-      S.ties.push(t.cold && HK.CRUSH_COLD && HK.CRUSH_COLD[t.cold] ? { a: a, b: b, type: t.type, cold: t.cold } : { a: a, b: b, type: t.type }); tn++;
+      var CO2 = HK.coldOpts ? HK.coldOpts(t.type) : null;
+      S.ties.push(t.cold && CO2 && CO2.map[t.cold] ? { a: a, b: b, type: t.type, cold: t.cold } : { a: a, b: b, type: t.type }); tn++;
     });
     if (data.teacher != null && map[data.teacher]) S.teacher = map[data.teacher];
     /* 恋愛相手の固定と呼び方は、全員を読み込んでから番号を住人に戻す */
@@ -503,7 +505,7 @@
       ties: (function () {
         cleanTies();
         var J = castFor(S.scenId).map(function (c) { return c.id; });
-        return S.ties.filter(function (t) { return J.indexOf(t.a) >= 0 && J.indexOf(t.b) >= 0; }).map(function (t) { return { a: J.indexOf(t.a), b: J.indexOf(t.b), type: t.type, cold: t.type === 'crush' ? t.cold || '' : '' }; });
+        return S.ties.filter(function (t) { return J.indexOf(t.a) >= 0 && J.indexOf(t.b) >= 0; }).map(function (t) { return { a: J.indexOf(t.a), b: J.indexOf(t.b), type: t.type, cold: HK.coldOpts && HK.coldOpts(t.type) ? t.cold || '' : '' }; });
       })()
     };
   }
