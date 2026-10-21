@@ -1,0 +1,154 @@
+/* 箱庭シミュレーター: 吹雪の館の殺人 ― 罪のなすりつけが成功し、探偵が犯人を取り違える展開
+   ・犯人の工作（偽の証拠・偽の証言）が通っていると、正しく犯人を突き止めるはずだった推理の一部（約5分の1）が、なすりつけられた人へ向く
+   ・なすりつけられた人の反応は、気質（エゴグラムでいちばん強い因子）・犯人や探偵との関係・掴んでいた手がかりの量で分かれる
+     反論して推理をひっくり返す／犯人に気づき、かばって罪をかぶる／犯人に気づいて裏切りを責める／怒って掴みかかる／
+     泣き崩れる／吹雪の中へ逃げ出す／静かに受け入れ、次の殺人を予言する
+   ・親しい人が「そんなはずはない」と庇い、その人の掴んでいた手がかりが、ひっくり返す後押しになることもある
+   台詞は「名前「……」」の形で書き、表示のときに本人の口調・一人称・呼称に整う */
+(function () {
+  'use strict';
+  var HK = window.HK, ST = HK.Story, Y = HK.YAKATA;
+  if (!ST || !Y || !Y.showdown) return;
+  var clamp = HK.clamp;
+  function L(s) { return s.split('|'); }
+  function pk(S, a) { return ST.pick(S, a); }
+  function F(t, m) { return ST.fmt(t, m); }
+
+  var FR = Y.FRAME_T = {
+    /* 探偵が、なすりつけられた人を名指しする（{e}=決め手） */
+    point: L('{d}は、ゆっくりと{b}の前に立った。「決め手は、{e}。――{b}さん、あなたしかいない」|{d}は手帳を閉じた。「{e}。これで、すべて説明がつく。犯人は、{b}さんです」|{d}の視線が、{b}の上で止まった。「{e}。偶然とは言わせません」'),
+    /* 犯人の、そのときの様子 */
+    cul_cold: L('{c}は、うつむいたまま、口元だけで小さく笑った。|{c}は、誰よりも早く「信じられない」と声を上げた。目は、少しも驚いていなかった。|{c}は、静かに{b}から目を逸らした。その横顔には、何の色も浮かんでいなかった。'),
+    cul_guilt: L('{c}の指先が、かすかに震えていた。誰も、それに気づかなかった。|{c}は、{b}の顔を見ることができなかった。|{c}は唇を噛んで、床の一点を見つめていた。'),
+    /* 反応：気質ごとの第一声（{b}=なすりつけられた人 {d}=探偵） */
+    first: {
+      CP: L('{b}「ふざけるな。何の根拠があって、そんなことを」|{b}「……は？　私が？　冗談も大概にしろ」|{b}「今の言葉、取り消して」'),
+      NP: L('{b}「そんな……私、誰かを傷つけるなんて、そんなこと……」|{b}「待って、お願い、話を聞いて……」|{b}「どうして……みんなのこと、守りたかっただけなのに」'),
+      A: L('{b}「……なるほど。その証拠、少し見せてもらえるか」|{b}「推理としては筋が通っている。――前提が正しければ、の話だが」|{b}「落ち着いて考えよう。その証拠は、いつ、誰が見つけたの？」'),
+      FC: L('{b}「はあ!?　ちょっ、待って待って、違うって！」|{b}「えっ、え、私!?　うそでしょ!?」|{b}「冗談だよね？　ねえ、冗談なんでしょ!?」'),
+      AC: L('{b}「……っ、ち、違う……私、私じゃ……」|{b}「……」――{b}は、声が出なかった。|{b}「ご、ごめんなさい……でも、本当に、私じゃない……」')
+    },
+    /* 反論して、推理をひっくり返す（成功） */
+    rebut_ok: L('{b}「その{k}は、私の部屋にあった。だが、私があの部屋を出たのは夕食のあとだ。――時間が合わない。誰かが、あとから置いたんだ」|{b}「私が見つけた手がかりと、矛盾する。現場の痕跡は、私の背丈では残せない」|{b}「その証言をしたのは誰だ？　――{c}さん、あなただったな。どうして、わざわざ私の名前を出したの？」'),
+    rebut_turn: L('{d}は、黙って手帳をめくり直した。長い沈黙のあと、{d}は顔を上げた。「……すみません。間違えていたのは、私の方です」|{d}の目が、ゆっくりと{c}の方へ動いた。「――そうか。この証拠は、置かれたものだったのか」|{d}は額を押さえた。「仕組まれていた。私は、犯人の思うとおりに推理させられていた」'),
+    /* 反論したが届かない */
+    rebut_ng: L('{b}は必死に食い下がった。けれど、{d}の目に浮かんでいたのは、哀れみだけだった。|{b}の言葉は、もっともらしい言い逃れにしか聞こえなかった。誰も、{b}の側に立たなかった。|{b}「だから、違うと言っている……！」――その声は、誰にも届かなかった。'),
+    /* 犯人に気づくが、かばって罪をかぶる（犯人と親しい） */
+    shield: L('{b}は、{c}の方を一度だけ見た。――気づいてしまった。それから{b}は、黙って両手を差し出した。「……私がやった。それで、いい」|{b}の顔から、血の気が引いた。{b}だけが、偽の証拠を誰が置いたのか分かっていた。{b}「……そう、です。私が、やりました」|{b}は目を閉じた。{b}「……これで、いい。{c}、お前は、生きろ」――その言葉の意味が分かったのは、{c}だけだった。'),
+    /* 犯人に気づき、裏切りを責める（犯人と親しかったが、かばわない） */
+    betray: L('{b}は、{c}を見た。{b}「……あなたなのね。私に罪を着せたのは」――{c}は、何も答えなかった。|{b}「どうして……{c}、どうしてなんだ。信じてたのに」|{b}の声が震えた。{b}「あれを用意できたのは、{c}だけだ。――お前が、やったんだな」'),
+    betray_ok: L('{b}の言葉に、皆の視線が{c}へ集まった。{d}は、もう一度最初から証拠を並べ直した。|{c}の顔から、表情が消えた。それが、何よりの答えだった。'),
+    betray_ng: L('しかし、{c}は悲しげに首を振っただけだった。「……追い詰められて、人のせいにするのね」――皆は、{c}の言葉を信じた。|{b}の叫びは、罪を逃れるための言いがかりだと受け取られた。'),
+    /* 怒って掴みかかる */
+    rage: L('{b}は{d}の胸ぐらを掴んだ。{b}「ふざけるな……！　お前の推理ごっこで、人の人生を決めるな！」――周りの者たちが、慌てて{b}を引き剥がした。|{b}はテーブルを蹴り倒した。{b}「いいだろう、閉じ込めたければ閉じ込めろ。――だが、次に誰かが死んだら、それはお前のせいだ」|{b}は{d}に殴りかかった。拳は{d}の頬をかすめ、{b}は床に押さえつけられた。'),
+    /* 泣き崩れる */
+    despair: L('{b}は、その場に崩れ落ちた。言い返す言葉も、もう出てこなかった。|{b}は顔を覆って泣き出した。{b}「……どうして、誰も信じてくれないの……」|{b}は、ただ首を横に振り続けた。誰かが肩に手を置くと、{b}は小さく謝った。何に謝っているのか、自分でも分からなかった。'),
+    /* 吹雪の中へ逃げ出す */
+    flee: L('{b}は、誰かが止める前に玄関へ走った。扉が開き、吹雪が吹き込んだ。{b}の姿は、白い闇の中へ消えた。|{b}「閉じ込められるくらいなら……！」――{b}は窓を破り、吹雪の中へ飛び出していった。'),
+    flee_back: L('明け方、{b}は館の裏手で、雪に埋もれかけているところを見つかった。息は、かろうじてあった。|――{b}が戻ることは、なかった。'),
+    /* 静かに受け入れ、次の殺人を予言する */
+    calm: L('{b}は長く息を吐いた。{b}「……分かった。閉じ込めればいい。ただ、犯人は、まだこの中にいる。それだけは確かだ」|{b}は抵抗しなかった。{b}「次に誰かが死んだら、それが私の無実の証明だ。……そうならないことを、祈ってる」|{b}は自分から納屋へ歩いていった。振り返りもせずに、{b}は言った。{b}「――気をつけて。本当の犯人は、きっと笑っている」'),
+    /* 親しい人の庇い（{a}=庇う人） */
+    defend: L('{a}「待ってください！　{b}が、そんなことするはずない！」|{a}は{b}の前に立ちはだかった。{a}「{b}を連れて行くなら、私を倒してからにして」|{a}「私は{b}を知ってる。……人を殺せるような人じゃない」'),
+    defend_clue: L('{a}は、自分の手帳を開いた。{a}「私が見つけたことと、合わない。――あの時間、{b}は私と一緒にいたんだ」|{a}「その証拠、私が最初に調べたときには、そこになかった」'),
+    /* 閉じ込められる */
+    lock: L('{b}は、納屋に閉じ込められた。|{b}は手首を縛られ、使われていない客間に閉じ込められた。扉の外から、鍵のかかる音がした。|{b}は、地下の物置に移された。暗闇の中で、{b}はずっと膝を抱えていた。')
+  };
+
+  /* なすりつけが通っている相手（偽の証拠が見つかっている／工作で疑いが犯人より高い） */
+  function cand(S, d) {
+    var c = S.cul, al = Y.alive;
+    var ok = function (q) { return q && al(q) && !q.bound && q !== d && q !== c && !q.isAcc && !q.isDet; };
+    var fk = S.pool.filter(function (x) { return x.fake && x.found && ok(x.b); })[0];
+    if (fk) return { b: fk.b, e: fk.t, how: '偽の証拠' };
+    if (ok(S.framed) && S.framed.m.sus >= c.m.sus - 20) return { b: S.framed, e: '昨夜の' + S.framed.name + 'の不審な動きと、その部屋の前に落ちていた' + S.v1.name + 'の持ち物', how: '偽の証言と工作' };
+    return null;
+  }
+  /* 正しく犯人を突き止めるはずの推理のうち、なすりつけが通っていれば、この確率で取り違える */
+  var RATE = 0.58;
+
+  Y.frameTry = function (S, d, partial) {
+    var c = S.cul;
+    if (!c || S.mot.nobody || S.frameDone) return false;
+    var x = cand(S, d);
+    if (!x) return false;
+    /* 探偵の観察力が高いほど見抜く。ポンコツ探偵は引っかかりやすい */
+    var p = RATE * (1.15 - Y.skill(d, 'obs') * 0.35) * (d.role === 'ponkotsu' ? 1.3 : 1) * (d.seduced ? 1.3 : 1);
+    if (S.rng() > p) return false;
+    S.frameDone = true;
+    frameShow(S, d, x, partial);
+    return true;
+  };
+
+  /* 反論の中身：偽の証拠なら置かれた矛盾、偽の証言なら証言した人を突く */
+  function rebut(S, x) { var a = FR.rebut_ok; return x.how === '偽の証拠' ? pk(S, a.slice(0, 2)) : a[2]; }
+  function frameShow(S, d, x, partial) {
+    var rng = S.rng, c = S.cul, b = x.b, al = Y.alive;
+    var m = { d: d.name, b: b.name, c: c.name, v: S.v1.name, e: x.e.replace(/。$/, ''), k: x.how === '偽の証拠' ? '証拠' : '証言' };
+    ST.step(S, '推理');
+    var t = F(pk(S, Y.T.SHOW), { d: d.name }) + F(pk(S, FR.point), m);
+    t += F(pk(S, c.tr.cold + c.tr.a * 0.3 > 0.75 || c.tr.np < 0.35 ? FR.cul_cold : FR.cul_guilt), m);
+    var o = ST.say(S, { actors: [d, b], tag: '推理', kind: 'climax', text: t, why: d.name + 'は、' + c.name + 'のなすりつけ（' + x.how + '）に引っかかった。本当の犯人は' + c.name + '（' + d.name + 'の観察力 ' + Math.round(Y.skill(d, 'obs') * 100) + '）', mag: 48 });
+    ST.key(S, o, d.name + 'が' + b.name + 'を犯人と名指しした');
+
+    /* なすりつけられた人の反応 */
+    /* 振る舞いはエゴグラムから（口調の設定は台詞の言い回しだけに効く） */
+    var top = HK.egoType ? HK.egoType(b.eg).top : (b.top || 'A'), info = (b.cnt.clue || 0) + (b.approached ? 2 : 0), rc = Y.cat(S, b, c), bc = Y.bond(S, b, c);
+    var knows = info >= 1 && rng() < 0.35 + Y.skill(b, 'obs') * 0.4 + info * 0.12;
+    function FI(k) { return F(pk(S, FR.first[k] || FR.first.A), m); }
+    var react, why, reverse = false;
+    /* 親しい人が庇う */
+    var df = S.P.filter(function (q) { return al(q) && !q.bound && q !== b && q !== c && q !== d && (Y.cat(S, q, b) === 'love' || Y.cat(S, q, b) === 'family' || Y.bond(S, q, b) >= 0.6); })
+      .sort(function (p, q) { return Y.bond(S, q, b) - Y.bond(S, p, b); })[0];
+    var dfText = '', dfPush = 0;
+    if (df && rng() < 0.55 + df.tr.np * 0.3) {
+      dfText = F(pk(S, FR.defend), { a: df.name, b: b.name });
+      if ((df.cnt.clue || 0) > 0 && rng() < 0.5) { dfText += F(pk(S, FR.defend_clue), { a: df.name, b: b.name }); dfPush = 0.2; }
+      Y.setRel(S, df, b, 0.2, '信じ抜いた', df);
+    }
+    var ponk = d.role === 'ponkotsu' ? 0.1 : 0;
+    if (knows && (rc === 'love' || rc === 'family' || bc >= 0.6) && b.tr.np + b.tr.ac > 1.0 && rng() < 0.65) {
+      /* かばって罪をかぶる */
+      react = FI(top === 'CP' ? 'A' : top === 'FC' ? 'NP' : top) + F(pk(S, FR.shield), m); why = b.name + 'は真犯人が' + c.name + 'だと気づいたが、' + (Y.relLabel(S, b, c) || '大切な相手') + 'をかばって罪をかぶった（NP・AC）';
+      b.fate = c.name + 'をかばって、濡れ衣を受け入れた'; Y.setRel(S, b, c, 0.3, 'かばった', b);
+    } else if (knows && rng() < 0.75) {
+      /* 犯人に気づいて名指し返す（親しい相手なら、裏切りを責める） */
+      var close = rc === 'love' || rc === 'family' || bc >= 0.5;
+      var pOk = 0.3 + Y.skill(b, 'obs') * 0.25 + info * 0.06 + dfPush + ponk + (close ? 0.1 : 0) - (c.tr.lie || c.tr.a * 0.5) * 0.25;
+      reverse = rng() < pOk;
+      react = FI(top === 'CP' || top === 'FC' ? top : 'A') + (close ? F(pk(S, FR.betray), m) : F(rebut(S, x), m)) + dfText + F(pk(S, reverse ? (close ? FR.betray_ok : FR.rebut_turn) : (close ? FR.betray_ng : FR.rebut_ng)), m);
+      why = b.name + 'は' + (info >= 2 ? '多くの手がかりを掴んでいた' : '手がかりを掴んでいた') + '（' + info + '）。' + (close ? (Y.relLabel(S, b, c) || '親しい') + 'はずの' + c.name + 'の裏切りに気づいた' : '偽の証拠の矛盾を突いた') + (reverse ? '。推理がひっくり返った' : '。だが、届かなかった');
+      Y.setRel(S, b, c, close ? -0.9 : -0.4, close ? '裏切り' : '罪を着せた', b);
+    } else if (top === 'A' || (b.tr.a > 0.6 && rng() < 0.5)) {
+      reverse = info >= 1 && rng() < 0.15 + dfPush + ponk;
+      react = FI('A') + (reverse ? F(rebut(S, x), m) + dfText + F(pk(S, FR.rebut_turn), m) : dfText + F(pk(S, FR.calm), m));
+      why = b.name + 'は冷静だった（A）' + (reverse ? '。偽の証拠の矛盾を突き、推理をひっくり返した' : '。手がかりが足りず、受け入れるしかなかった');
+    } else if (top === 'CP' || (b.tr.aggr > 0.6 && rng() < 0.6)) {
+      react = FI('CP') + F(pk(S, FR.rage), m) + dfText; why = b.name + 'は激昂した（CP・攻撃性）';
+      Y.setRel(S, b, d, -0.6, '濡れ衣', b);
+      reverse = dfPush > 0 && rng() < 0.3;
+      if (reverse) react += F(pk(S, FR.rebut_turn), m);
+    } else if ((top === 'FC' || b.tr.impulse > 0.65) && rng() < 0.5) {
+      var dead = rng() < 0.4;
+      react = FI('FC') + dfText + F(pk(S, FR.flee), m) + F(FR.flee_back[dead ? 1 : 0], m);
+      why = b.name + 'は衝動的に逃げ出した（FC・衝動）';
+      if (dead) { b.alive = false; b.fate = '濡れ衣を着せられ、吹雪の中に消えた'; }
+    } else {
+      react = FI(top === 'NP' ? 'NP' : 'AC') + dfText + F(pk(S, FR.despair), m); why = b.name + (top === 'NP' ? 'は取り乱し、言い返せなかった（NP）' : 'は言い返せなかった（AC）');
+    }
+    ST.say(S, { actors: [b, d].concat(df && dfText ? [df] : []), tag: '濡れ衣', kind: 'climax', text: react, why: why, mag: 44 });
+    if (reverse) {
+      /* 推理がひっくり返り、本当の犯人を指す */
+      b.m.sus = 5; S.noStep = true;
+      return Y.showdown(S, d, false, partial);
+    }
+    if (al(b)) {
+      b.bound = true; if (!b.fate) b.fate = '濡れ衣を着せられた';
+      if (b.fate === '濡れ衣を着せられた' || /かばって/.test(b.fate)) ST.say(S, { actors: [b], tag: '拘束', text: F(pk(S, FR.lock), m), why: '真犯人の' + c.name + 'は、まだ自由に動ける' });
+      if (/かばって/.test(b.fate)) b.fateKeep = true;
+    }
+    c.m.sus = Math.max(0, c.m.sus - 20);
+    S.wrongOnce = (S.wrongOnce || 0) + 1;
+    if (S.wrongOnce >= 2 || S.env.days <= 2) S.over = 'wrong';
+  }
+})();

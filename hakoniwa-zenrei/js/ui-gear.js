@@ -1,0 +1,251 @@
+/* 箱庭シミュレーター ui: 住人ごとの設定（⚙️）
+   口調・一人称・基本の呼び方・性別・恋愛対象・受け攻め・イメージカラー・恋愛相手の固定と、
+   その住人が関わる既存の関係・相手ごとの呼び方を、住人ごとにまとめて設定する。
+   ※口調や関係は台詞・文面と関係の初期値に効く。行動の判断はエゴグラムの数値で決まる */
+(function () {
+  'use strict';
+  var HK = window.HK, esc = HK.escape;
+  if (!HK.UI) return;
+  var UI = HK.UI;
+  function S() { return UI.state(); }
+  function byId(id) { return S().chars.filter(function (c) { return c.id === id; })[0] || null; }
+  var GENDERS = [['', 'おまかせ'], ['m', '男性'], ['f', '女性'], ['x', 'その他']];
+  var LIKES = [['', 'おまかせ（制限なし）'], ['m', '男性'], ['f', '女性'], ['both', '男女両方'], ['none', 'なし']];
+  var POS = [['', 'おまかせ'], ['top', '攻め'], ['bottom', '受け'], ['riba', 'リバ']];
+  function lab(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === (v || '')) return list[i][1]; return ''; }
+  function toneLabel(k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return t ? t.label : ''; }
+  function callLabel(v) { var l = (HK.CALL_STYLES || []).filter(function (o) { return o.v === (v || ''); })[0]; return l ? l.label : ''; }
+  function tiesOf(c) { UI.cleanTies(); return (S().ties || []).filter(function (t) { return t.a === c.id || t.b === c.id; }); }
+
+  /* ---------- 住人の行に出す要約 ---------- */
+  UI.summary = function (c) {
+    var bits = [];
+    bits.push('口調：' + (c.tone ? toneLabel(c.tone) : 'おまかせ（' + UI.autoTone(c) + '）'));
+    if (c.fp) bits.push('一人称：' + c.fp);
+    if (c.call) bits.push('呼び方：' + callLabel(c.call));
+    if (c.gender) bits.push(lab(GENDERS, c.gender));
+    if (c.likes) bits.push('恋愛対象：' + lab(LIKES, c.likes));
+    if (c.pos) bits.push(lab(POS, c.pos));
+    var lk = c.loveLock && byId(c.loveLock);
+    if (lk) bits.push('恋愛相手：' + lk.name + 'だけ');
+    var n = tiesOf(c).length;
+    if (n) bits.push('関係 ' + n + '件');
+    return (c.color ? '<i class="csw" style="background:' + esc(c.color) + '" aria-hidden="true"></i>' : '') + esc(bits.join('・'));
+  };
+
+  /* ---------- イメージカラー：住人の並び（結果では参加者の並び）の番号の色を上書き ---------- */
+  var prev = [];
+  UI.applyColors = function (list) {
+    var root = document.documentElement;
+    if (HK.Icons && HK.Icons.colors) {
+      /* アイコンの枠は名前で色を引く（住人の一覧＋結果の参加者の両方） */
+      var all = (S().chars || []).concat(list || []);
+      HK.Icons.colors(all);
+      /* すでに描かれているアイコンの枠も塗り直す */
+      Array.prototype.forEach.call(document.querySelectorAll('.av[title]'), function (el) { var c = HK.Icons.color(el.getAttribute('title')); el.style.setProperty('--c', c || 'var(--p' + (el.getAttribute('data-p') || 0) + ')'); });
+    }
+    prev.forEach(function (p) { root.style.removeProperty(p); });
+    prev = [];
+    (list || []).forEach(function (c, i) {
+      if (c && typeof c.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(c.color)) { root.style.setProperty('--p' + i, c.color); prev.push('--p' + i); }
+    });
+  };
+
+  /* ---------- 見た目 ---------- */
+  var css = '.gearbtn{white-space:nowrap}.csum{font-size:12px;color:var(--muted);flex:1 1 100%;line-height:1.5}.csw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px;border:1px solid var(--line)}' +
+    '.gearov{position:fixed;inset:0;z-index:30;background:rgba(10,14,18,.45);display:flex;align-items:flex-start;justify-content:center;padding:max(12px,env(safe-area-inset-top,0px)) 12px 12px;overflow-y:auto;-webkit-overflow-scrolling:touch}' +
+    '.gearbox{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;width:100%;max-width:680px;padding:16px 16px 20px;box-shadow:0 10px 40px rgba(0,0,0,.25)}' +
+    '.gearhd{display:flex;align-items:center;gap:10px;margin-bottom:6px}.gearhd h2{font-size:18px;margin:0;flex:1}.gearsec{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}.gearsec h3{font-size:14px;margin:0 0 8px}' +
+    '.gearrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:6px 0}.gearrow label{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}.gearrow select,.gearrow input[type=text]{max-width:100%}' +
+    '.gearhint{font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.6}.tonesample{margin:8px 0 2px;padding:8px 12px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent);border-radius:0 8px 8px 0;font-size:13px;line-height:1.7;min-height:1.7em}.tonesample .tsl{display:block}.tonesample.anim .tsl{display:none}.tonesample.anim .tsl.on{display:block;animation:tsfade .5s ease}.tonesample .tsh{font-size:11px;color:var(--muted);display:block;margin-bottom:2px}@keyframes tsfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.tonesample.anim .tsl{display:block}.tonesample.anim .tsl.on{animation:none}}.gtie{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:8px 0}.gtie .who{font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:4px}' +
+    '.gtie .one{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.gtie input[type=text]{width:12em}' +
+    '@media (max-width:520px){.gearbox{padding:12px}.gtie input[type=text]{width:100%}}';
+  var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+
+  /* ---------- 設定の窓 ---------- */
+  var cur = null, ov = null, opener = null;
+  function opt(v, label, sel, title) { return '<option value="' + esc(v) + '"' + (v === sel ? ' selected' : '') + (title ? ' title="' + esc(title) + '"' : '') + '>' + esc(label) + '</option>'; }
+  function selOf(f, list, v, extra) { return '<select data-gf="' + f + '"' + (extra || '') + '>' + list.map(function (o) { return opt(o[0], o[1], v || ''); }).join('') + '</select>'; }
+  function typeOpts(sel) {
+    return HK.TIE_ORDER.map(function (id) { var d = HK.TIES[id]; return opt(id, d.label, sel); }).join('');
+  }
+  function tieRow(c, o, t, k) {
+    var D = HK.TIES[t.type], h = '<div class="one">' +
+      '<select data-gf="ttype" data-k="' + k + '" aria-label="' + esc(o.name) + 'との関係の種類">' + typeOpts(t.type) + '</select>';
+    if (D.dir) h += '<select data-gf="tdir" data-k="' + k + '" aria-label="関係の向き">' + opt('a', c.name + 'が' + D.roleA, t.a === c.id ? 'a' : 'b') + opt('b', c.name + 'が' + D.roleB, t.a === c.id ? 'a' : 'b') + '</select>';
+    if (t.type === 'crush' && HK.CRUSH_COLD) h += '<select data-gf="tcold" data-k="' + k + '" aria-label="想われる側の気持ち">' + HK.CRUSH_COLD_ORDER.map(function (id) { return opt(id, HK.CRUSH_COLD[id].label, t.cold || ''); }).join('') + '</select>';
+    h += '<button type="button" class="btn ghost small" data-gact="tdel" data-k="' + k + '">外す</button></div>';
+    return h + '<p class="gearhint">' + esc(D.effect || '') + '</p>';
+  }
+  /* 口調の見本：ふつうの言い回しの台詞を、この住人の口調・一人称・呼び方に直して見せる（数秒ごとに切り替わる） */
+  /* 口調ごとの見本（一人称は「私」、相手は{o}で書き、表示のときに本人の一人称・呼び方に直す） */
+  var SAMPLE = {
+    proud: ['{n}「俺は{n}だ。覚えとけ」', '{n}「は？　そんなの、聞いてねえぞ」', '{n}「{o}、ぼさっとすんな。こっち来い」', '{n}「……礼は言っとく。今回だけな」', '{n}「勘違いすんなよ。お前のためじゃねえ」'],
+    aniki: ['{n}「俺は{n}。困ったことがあったら、何でも言いな」', '{n}「おいおい、そりゃ聞いてねえな」', '{n}「{o}、無理すんな。ほら、肩貸してやる」', '{n}「よくやった。さすがだな」', '{n}「泣くなって。俺がついてる」'],
+    stern: ['{n}「私は{n}だ。よろしく頼む」', '{n}「待て。そのような話は聞いていない」', '{n}「{o}、こちらへ。離れるな」', '{n}「……礼を言う。助かった」', '{n}「己を律せよ。話はそれからだ」'],
+    tsun: ['{n}「私は{n}よ。……べ、別によろしくしなくていいけど」', '{n}「ちょっと！　そんなの聞いてないんだけど！」', '{n}「{o}、こっち来なさいよ。……し、心配なんかしてないから」', '{n}「……た、助かった。ちょっとだけね」', '{n}「勘違いしないでよね。あんたのためじゃないんだから」'],
+    tsun_n: ['{n}「私は{n}だ。……別に、よろしくしなくていい」', '{n}「ちょっと待て、そんなの聞いてない！」', '{n}「{o}、こっち来い。……心配なんかしてない」', '{n}「……た、助かった。少しだけな」', '{n}「勘違いするな。お前のためじゃない」'],
+    gentle: ['{n}「私は{n}です。ふふ、よろしくね」', '{n}「あら……それは、困ったね」', '{n}「{o}、こっちにおいで。お茶、淹れたから」', '{n}「ありがとう。とっても助かったよ」', '{n}「大丈夫、大丈夫。ゆっくりでいいからね」'],
+    gentle_n: ['{n}「私は{n}だよ。よろしく」', '{n}「うーん……それは、困ったね」', '{n}「{o}、こっちにおいで。お茶、淹れたから」', '{n}「ありがとう。すごく助かった」', '{n}「大丈夫。ゆっくりでいいから」'],
+    devoted: ['{n}「私は{n}と申します。精一杯がんばります」', '{n}「え……そ、そうなんですか？」', '{n}「{o}さん、こちらへ。私が先に行きます」', '{n}「ありがとうございます。……嬉しいです」', '{n}「お役に立てるなら、なんでもします」'],
+    devoted_p: ['{n}「私は{n}だよ。……がんばるね」', '{n}「え……そ、そうなの？」', '{n}「{o}、こっち。私が先に行くから」', '{n}「ありがとう。……嬉しい」', '{n}「役に立てるなら、なんでもするよ」'],
+    cool: ['{n}「私は{n}だ。用件は手短に頼む」', '{n}「想定外だな。前提を見直す必要がある」', '{n}「{o}、こっちだ。こちらの方が合理的だ」', '{n}「……助かった。計算に入れておく」', '{n}「感情論はいい。事実だけを話してくれ」'],
+    calm: ['{n}「私は{n}だ。よろしく」', '{n}「……そうか。聞いていなかったな」', '{n}「{o}、こっちだ。落ち着いて」', '{n}「助かった。ありがとう」', '{n}「焦らなくていい。大丈夫だ」'],
+    free: ['{n}「私は{n}だよ！　よろしくね！」', '{n}「えーっ、なにそれ、聞いてない！」', '{n}「{o}、こっちこっち！　早く来て！」', '{n}「やったー、めっちゃ助かった！」', '{n}「あはは、なんとかなるって！」'],
+    shy: ['{n}「あ、あの……わ、私、{n}、です。よろしく……」', '{n}「え、えっ……そ、そんなの聞いてない……」', '{n}「{o}……こ、こっち、来てくれる……？」', '{n}「あ、ありがとう……ごめんね、迷惑かけて……」', '{n}「み、見ないで……恥ずかしい……」'],
+    polite: ['{n}「私は{n}と申します。どうぞよろしくお願いいたします」', '{n}「まあ……それは、存じませんでした」', '{n}「{o}さん、こちらへどうぞ」', '{n}「ありがとうございます。大変助かりました」', '{n}「恐れ入りますが、少々お待ちいただけますか」'],
+    gentleman: ['{n}「私は{n}という。以後、お見知りおきを」', '{n}「おや、それは初耳だね」', '{n}「{o}、こちらへ来たまえ」', '{n}「ありがとう。実に助かったよ」', '{n}「慌てることはない。紅茶でもどうかね」'],
+    noja: ['{n}「私は{n}じゃ。よろしく頼むぞ」', '{n}「なんじゃと？　そんな話、聞いておらぬぞ」', '{n}「{o}、こっちへ来るのじゃ。よいものを見せてやろう」', '{n}「礼を言うぞ。まことに助かったのじゃ」', '{n}「案ずるでない。私がついておる」'],
+    mixed: ['{n}「私は{n}です。よろしくね」', '{n}「え、そうなんですか？　それ、聞いてないんだけど」', '{n}「{o}さん、こっちです。ほら、早く早く」', '{n}「ありがとうございます。ほんと助かった」', '{n}「大丈夫ですって。なんとかなるよ」'],
+    mukuchi: ['{n}「……{n}」', '{n}「……聞いてない」', '{n}「…………こっち」', '{n}「……ありがと」', '{n}「……」'],
+    kansai: ['{n}「私は{n}や。よろしゅうな」', '{n}「ちょ、そんなん聞いてへんわ！」', '{n}「{o}、こっち来て。ええもん見せたるわ」', '{n}「おおきに。ほんま助かったわ」', '{n}「なんとかなるって。心配せんとき」']
+  };
+  function sampleLines(c) {
+    var V = HK.Voice;
+    if (!V || !V.processText) return '';
+    var s = S(), o = s.chars.filter(function (x) { return x !== c; })[0] || { name: '相手', id: '' };
+    var me = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', calls: c.calls || null };
+    me.persona = HK.personaOf ? HK.personaOf({ tone: c.tone, eg: c.eg }) : 'gentle';
+    var ppl = [me, { name: o.name, fp: '', gender: o.gender || '', tone: '', persona: 'gentle' }];
+    if (me.calls && o.id && me.calls[o.id]) { me.calls = {}; me.calls[o.name] = c.calls[o.id]; } else me.calls = null;
+    var tk = me.tone && SAMPLE[me.tone] ? me.tone : SAMPLE[me.persona] ? me.persona : 'gentle';
+    return '<span class="tsh">台詞の見本（' + esc(toneLabel(tk)) + '・一人称と呼び方も反映）</span>' + SAMPLE[tk].map(function (t, i) {
+      var line = t.replace(/\{n\}/g, c.name).replace(/\{o\}/g, o.name);
+      var out = V.processText(line, ppl).replace(new RegExp('^' + c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), '');
+      return '<span class="tsl' + (i === 0 ? ' on' : '') + '">' + esc(out) + '</span>';
+    }).join('');
+  }
+  var tsTimer = null;
+  function sampleTick() {
+    if (tsTimer) clearInterval(tsTimer);
+    tsTimer = setInterval(function () {
+      var box = document.getElementById('tonesample');
+      if (!box || !ov || ov.hidden) { clearInterval(tsTimer); tsTimer = null; return; }
+      var ls = box.querySelectorAll('.tsl'); if (!ls.length) return;
+      var k = 0; ls.forEach(function (x, i) { if (x.classList.contains('on')) k = i; });
+      ls[k].classList.remove('on'); ls[(k + 1) % ls.length].classList.add('on');
+    }, 2600);
+  }
+  function sampleRefresh() { var c = byId(cur), box = document.getElementById('tonesample'); if (c && box) box.innerHTML = sampleLines(c); }
+  function body(c) {
+    var s = S(), others = s.chars.filter(function (x) { return x !== c; });
+    var autoK = HK.toneAuto ? HK.toneAuto(HK.traits(c.eg)) : HK.personaAuto(HK.traits(c.eg));
+    var keys = HK.TONE_KEYS || HK.PERSONA_KEYS;
+    var toneSel = '<select data-gf="tone" aria-label="口調">' + opt('', 'おまかせ（' + toneLabel(autoK) + '）', c.tone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.tone || '', t.desc); }).join('') + '</select>';
+    var tInfo = HK.toneInfo ? HK.toneInfo(c.tone || autoK) : HK.PERSONA[c.tone || autoK];
+    var callSel = '<select data-gf="call" aria-label="基本の呼び方">' + (HK.CALL_STYLES || [{ v: '', label: 'おまかせ' }]).map(function (o) { return opt(o.v, o.label, c.call || ''); }).join('') + '</select>';
+    var lockSel = '<select data-gf="lock" aria-label="恋愛相手の固定"><option value="">固定しない</option>' + others.map(function (o) { return opt(o.id, o.name + 'だけ', c.loveLock || ''); }).join('') + '</select>';
+    /* 関係（相手ごと） */
+    var ties = s.ties || [], groups = {};
+    ties.forEach(function (t, k) {
+      var oid = t.a === c.id ? t.b : t.b === c.id ? t.a : null;
+      if (!oid) return;
+      (groups[oid] = groups[oid] || []).push([t, k]);
+    });
+    var calls = c.calls || {};
+    var rel = others.filter(function (o) { return groups[o.id] || calls[o.id]; }).map(function (o) {
+      var i = s.chars.indexOf(o);
+      return '<div class="gtie"><div class="who">' + HK.Icons.html(o.name, i, 22) + esc(o.name) + '</div>' +
+        (groups[o.id] || []).map(function (x) { return tieRow(c, o, x[0], x[1]); }).join('') +
+        '<div class="one"><label>' + esc(c.name) + 'からの呼び方 <input type="text" data-gf="callone" data-o="' + o.id + '" value="' + esc(calls[o.id] || '') + '" maxlength="16" placeholder="' + esc(o.name + ({ name: '', san: 'さん', kun: 'くん', chan: 'ちゃん', sama: '様', senpai: '先輩', sensei: '先生' }[c.call] || '')) + '"></label>' +
+        '<button type="button" class="btn ghost small" data-gact="tadd" data-o="' + o.id + '">関係を重ねる</button></div></div>';
+    }).join('');
+    var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手">' + others.map(function (o) { return opt(o.id, o.name, ''); }).join('') + '</select></label>' +
+      '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + '</select></label><button type="button" class="btn small" data-gact="tnew">関係を追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
+    return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
+      '<p class="gearhint">行動や判断は、エゴグラムの数値だけで決まります。ここで決めるのは、その行動をとったときの話し方・呼び方と、関係の初期値です（口調で行動が制限されることはありません）。</p>' +
+      '<div class="gearsec"><h3>話し方</h3><div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
+      '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
+      '<div class="tonesample anim" id="tonesample" aria-live="polite">' + sampleLines(c) + '</div>' +
+      '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label></div><p class="gearhint">台詞の中で、ほかの住人の名前をどう呼ぶか。相手ごとの呼び方は下の「関係と呼び方」で決められます。</p></div>' +
+      '<div class="gearsec"><h3>プロフィール</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label><label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label></div>' +
+      '<p class="gearhint">受け攻めはR18の箱庭で使います。女性は攻めを選ばない限り受けとして扱います。</p>' +
+      '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div>' +
+      '<p class="gearhint">自動のときは、住人の並び順で色が決まります（エゴグラムとは関係ありません）。</p></div>' +
+      '<div class="gearsec"><h3>恋愛</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label></div><p class="gearhint">固定すると、その相手以外とは恋愛に発展しません（片想いのままでも使えます）。相手が箱庭にいないときは、誰とも恋愛しません。</p></div>' +
+      '<div class="gearsec"><h3>関係と呼び方</h3>' + (rel || '<p class="gearhint">まだ関係はありません。</p>') + addable + '</div>';
+  }
+  function render() {
+    var c = byId(cur);
+    if (!c) { close(); return; }
+    var box = ov.querySelector('.gearbox'), y = ov.scrollTop;
+    box.innerHTML = body(c);
+    ov.scrollTop = y;
+    sampleTick();
+  }
+  function open(id, from) {
+    cur = id; opener = from || null;
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.className = 'gearov';
+      ov.innerHTML = '<div class="gearbox" role="dialog" aria-modal="true" aria-labelledby="geartitle"></div>';
+      document.body.appendChild(ov);
+    }
+    ov.hidden = false;
+    document.body.style.overflow = 'hidden';
+    render();
+    var f = ov.querySelector('select,input,button'); if (f) f.focus();
+  }
+  function close() {
+    if (ov) ov.hidden = true;
+    document.body.style.overflow = '';
+    cur = null;
+    UI.renderCast();
+    UI.applyColors(S().chars);
+    var b = opener && document.querySelector('.res[data-id="' + opener + '"] .gearbtn');
+    if (b) b.focus();
+  }
+  function changed(rerender) { UI.save(); if (rerender) render(); }
+
+  document.addEventListener('click', function (ev) {
+    var g = ev.target.closest && ev.target.closest('[data-act="gear"]');
+    if (g) { var row = g.closest('.res'); if (row) open(row.dataset.id, row.dataset.id); return; }
+    if (!ov || ov.hidden) return;
+    if (ev.target === ov) { close(); return; }
+    var b = ev.target.closest('[data-gact]');
+    if (!b) return;
+    var c = byId(cur), s = S(), act = b.dataset.gact;
+    if (!c) return;
+    s.ties = s.ties || [];
+    if (act === 'close') close();
+    else if (act === 'tdel') { s.ties.splice(+b.dataset.k, 1); changed(true); }
+    else if (act === 'tadd' || act === 'tnew') {
+      var oid = act === 'tadd' ? b.dataset.o : (ov.querySelector('[data-gf="newo"]') || {}).value;
+      var ty = act === 'tadd' ? 'friend' : (ov.querySelector('[data-gf="newt"]') || {}).value || 'friend';
+      if (!oid || !byId(oid)) return;
+      if (s.ties.some(function (t) { return t.type === ty && ((t.a === c.id && t.b === oid) || (t.a === oid && t.b === c.id)); })) { UI.toast('同じ関係がすでにあります'); return; }
+      s.ties.push({ a: c.id, b: oid, type: ty });
+      changed(true);
+    }
+  });
+  document.addEventListener('keydown', function (ev) {
+    if (ov && !ov.hidden && ev.key === 'Escape') { ev.preventDefault(); close(); }
+  });
+  function onField(ev) {
+    var t = ev.target, f = t.dataset && t.dataset.gf;
+    if (!f || !ov || ov.hidden) return;
+    var c = byId(cur), s = S();
+    if (!c) return;
+    var tie = t.dataset.k != null ? (s.ties || [])[+t.dataset.k] : null;
+    var isInput = ev.type === 'input';
+    switch (f) {
+      case 'tone': if (isInput) return; c.tone = HK.toneValid && HK.toneValid(t.value) ? t.value : ''; changed(true); break;
+      case 'fp': c.fp = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;
+      case 'call': if (isInput) return; c.call = t.value; changed(true); break;
+      case 'gender': case 'likes': if (isInput) return; c[f] = t.value; changed(false); break;
+      case 'pos': if (isInput) return; c.pos = ['top', 'bottom', 'riba'].indexOf(t.value) >= 0 ? t.value : ''; changed(false); break;
+      case 'colorauto': if (isInput) return; if (t.checked) c.color = ''; else c.color = (ov.querySelector('[data-gf="color"]') || {}).value || '#3d6f93'; changed(true); UI.applyColors(s.chars); break;
+      case 'color': if (/^#[0-9a-fA-F]{6}$/.test(t.value)) { c.color = t.value; UI.applyColors(s.chars); changed(false); } break;
+      case 'lock': if (isInput) return; c.loveLock = t.value; changed(false); break;
+      case 'callone': c.calls = c.calls || {}; if (t.value.trim()) c.calls[t.dataset.o] = t.value.trim().slice(0, 16); else delete c.calls[t.dataset.o]; changed(false); sampleRefresh(); break;
+      case 'ttype': if (isInput || !tie) return; tie.type = t.value; if (t.value !== 'crush') delete tie.cold; changed(true); break;
+      case 'tdir': if (isInput || !tie) return; var me = t.value === 'a'; var o = tie.a === c.id ? tie.b : tie.a; tie.a = me ? c.id : o; tie.b = me ? o : c.id; changed(true); break;
+      case 'tcold': if (isInput || !tie) return; if (t.value) tie.cold = t.value; else delete tie.cold; changed(false); break;
+    }
+  }
+  document.addEventListener('input', onField);
+  document.addEventListener('change', onField);
+  UI.openGear = open;
+  /* ui.js が先に描いた住人の行に、要約と色を反映する */
+  if (UI.refresh) UI.refresh();
+})();

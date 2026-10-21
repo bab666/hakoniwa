@@ -1,0 +1,175 @@
+/* 箱庭シミュレーター: 媚薬ロッカー ― ロッカーを出たあとのベッドの展開
+   ・誘い方（おとなしかった方から誘う／がっついた方が引きずり込む／主が命じる／帰ろうとして引き戻される…）
+   ・最中の展開（中出しをせがむ・受けが自分から跨る・仕返しの寸止め・ロッカーに押しつけて・鏡の前・抜かずの二回戦…）
+   ・結び（中に出したあと・朝まで・シャワーで続き・次の約束…）
+   受け攻め：{a}=攻め（挿入する側） {b}=受け。誘い方だけは {q}=誘う人 {o}=相手。
+   リバ同士のときだけ、途中で主導権が入れ替わる展開がある（入れ替わったあとは {a}{b} も入れ替える） */
+(function () {
+  'use strict';
+  var HK = window.HK, LK = HK.LOCKER;
+  if (!LK) return;
+  var ST = HK.Story;
+  function L(s) { return s.split('|'); }
+
+  /* ---------- 誘い方 ---------- */
+  var INVITE = {
+    /* おとなしかった方から誘う：誘う人が攻めのとき／受けのとき */
+    quietTop: L('ロッカーの中では、ずっと{o}を嗜めていた{q}だった。その{q}が、扉が開くなり{o}の手首を掴んで、まっすぐベッドへ引いていった。「……我慢してたのが、自分だけだと思うなよ」|{q}は、ロッカーの中では一度も手を出さなかった。外に出て、{o}が「よかった、出られた」と息をついた瞬間、{q}はその体をベッドに押し倒した。「出られたんだから、もういいだろ」|「お先にどうぞ」と出口を譲ったのは{q}の方だった。けれど{o}が一歩踏み出す前に、{q}は後ろから{o}を抱きすくめていた。「……やっぱり、行かせない」'),
+    quietBottom: L('ロッカーの中では、ずっと理性を保っていたはずの{q}だった。その{q}が、ベッドの縁に腰かけて、自分からシャツのボタンを外し始めた。「……続き。ちゃんと、最後まで」|{q}は出口ではなく、ベッドの方へ歩いていった。振り返って、{o}の袖を指先でつまむ。「……あんなに煽っておいて、ここでやめるの？」|一番おとなしかった{q}が、一番最初にベッドに上がった。枕に顔を半分うずめたまま、{o}に向かって小さく手招きをした。'),
+    /* がっついた方が引きずり込む */
+    eager: L('ロッカーの扉が開いた瞬間、{q}は{o}を抱え上げるようにして、まっすぐベッドへ運んだ。|{q}は外に出るなり{o}の腰を引き寄せ、ベッドまでの数歩も待てずに唇を塞いだ。二人はそのまま、もつれ合うようにシーツに倒れ込んだ。|{q}は「もう無理」とだけ言って、{o}の手を引いた。出口の方には、一度も目を向けなかった。'),
+    /* 帰ろうとして、引き戻される */
+    stop: L('{o}は「……帰ろう。今なら、まだ戻れる」と出口へ向かいかけた。その手を、{q}が後ろから掴んだ。「戻らなくて、いい」――{o}の足は、それきり出口に向かなかった。|「ガスのせいだから、もう出よう」と言ったのは{o}だった。{q}は何も言わずに、{o}をベッドの方へ引き寄せた。{o}は、振りほどかなかった。'),
+    /* 主が命じる */
+    order: L('{q}はベッドに腰かけ、従者である{o}を見上げた。「来い。……今度は、我慢しなくていい」|{q}は乱れた服のまま、ベッドを指さした。「命令だ。最後まで付き合え」――{o}は、深く頭を下げてから従った。')
+  };
+
+  /* ---------- 最中の展開 ---------- */
+  /* w: 重み（関数）、t: 本文。once: 一度きり。tag: 見出し用の短い名前 */
+  var MID = [
+    { id: 'naka', tag: '中出しをせがむ', w: function (c) { return 1.3 + (c.tone === 'sweet' ? 0.4 : 0) + (c.y.tr.fc > 0.55 ? 0.4 : 0); },
+      t: L('果てる寸前、{a}が腰を引こうとした。{b}はその腰に脚を絡めて、離さなかった。|{a}が「もう、出る」と呻いた瞬間、{b}は{a}の背中に爪を立てて引き寄せた。|{b}は{a}の首に腕を回したまま、耳元で荒い息をこぼした。'), say: true },
+    { id: 'ride', tag: '受けが自分から跨る', w: function (c) { return 1 + (c.y.tr.fc > 0.5 ? 0.5 : 0) + (c.y === c.plotter ? 0.6 : 0) + (HK.Pos && HK.Pos.nori(c.y) ? 1.2 : 0); },
+      t: L('{b}は{a}の胸を押して仰向けにさせ、その上に跨った。「今度は、こっちが動く」――{b}は自分から{a}を迎え入れ、深く腰を沈めた。|{b}は{a}の上に跨ったまま、自分の一番いいところに当たる角度を探して、何度も腰を揺らした。{a}は下から{b}の腰を掴み、突き上げてそれに応えた。') },
+    { id: 'invite', tag: '受けが自分から誘う', w: function (c) { return HK.Pos && HK.Pos.nori(c.y) ? 1.4 : 0.15; },
+      t: L('体勢を変えようと{a}が一度抜けると、{b}は仰向けのまま自分で脚を開いた。「抜いちゃやだ。ほら、ここ。……もう一回、挿れて？」|{a}が息を整えようと離れた隙に、{b}は四つん這いになって振り返り、腰を揺らしてみせた。「休憩なんてしないよ？　早く、後ろから」|{b}は{a}を引き寄せ、耳元で「もっと奥まで、全部ちょうだい」と囁いた。{a}の理性は、そこで切れた。|{a}の動きが少し緩むと、{b}は自分から腰を押しつけて「止まんないで。もっと、ちょうだい」とねだった。') },
+    { id: 'sundome', tag: '仕返しの寸止め', w: function (c) { return 0.9 + (c.x.tr.cp + c.x.tr.a > 1.1 ? 0.6 : 0) + (c.pair.sexIn ? 0.5 : 0); },
+      t: L('「ロッカーの中で、散々焦らしてくれた分」――{a}は{b}が達しそうになるたびに、ぴたりと動きを止めた。三度目で、{b}は泣きそうな声で「お願い」と言った。|{a}は奥まで入れたまま、わざと動かなかった。{b}が自分から腰を揺らし始めるまで、{a}は意地悪く待った。') },
+    { id: 'locker', tag: 'ロッカーに押しつけて', w: function () { return 0.9; },
+      t: L('{a}は{b}を、さっきまで閉じ込められていたロッカーの扉に押しつけて、後ろから深く貫いた。扉ががたがたと鳴るたびに、{b}の声が跳ねた。|「さっきは狭すぎた」――{a}は{b}の片脚を抱え上げ、ロッカーの横の壁に背中を預けさせて、立ったまま奥まで沈めた。') },
+    { id: 'mirror', tag: '鏡の前で', w: function (c) { return 0.6 + (c.x.tr.cp > 0.55 ? 0.4 : 0); },
+      t: L('部屋の壁には大きな鏡があった。{a}は{b}をその前に立たせ、後ろから繋がった。「どんな顔してるか、わかる？」――{b}は鏡の中の蕩けた自分から、目を逸らせなかった。') },
+    { id: 'words', tag: '言葉で責める', w: function (c) { return 0.7 + (c.x.tr.cp > 0.55 || c.tone === 'rough' ? 0.6 : 0); },
+      t: L('{a}は{b}を突き上げながら、ロッカーの中で{b}がどんな声を出していたかを、一つずつ耳元で言葉にした。{b}は首まで真っ赤になって、それでも締めつけを強くした。|「ほら、さっきより正直」――{a}がそう囁くたびに、{b}の腰は勝手に{a}を追いかけた。') },
+    { id: 'name', tag: '名前を呼ぶ', w: function (c) { return 0.5 + (c.tone === 'sweet' ? 0.9 : 0) + (c.rel === 'crush' || c.rel === 'almost' ? 0.6 : 0); },
+      t: L('{a}は動きを止めて、{b}の名前を呼んだ。{b}が目を開けると、{a}はそのまま、深く、ゆっくりと{b}の奥へ押し入った。名前を呼ばれるたびに、{b}の中がきゅっと締まった。|「{b}」と呼ばれた瞬間、{b}はそれだけで達しそうになった。{a}は何度も名前を呼びながら、{b}の奥を優しく突いた。') },
+    { id: 'clothed', tag: '服を着たまま', w: function (c) { return 0.6 + (c.how === 'timeout' ? 0.3 : 0); },
+      t: L('服を脱ぐ時間さえ惜しかった。{a}は{b}の服を半分はだけさせただけで、そのまま{b}の中に入っていった。|{a}と{b}は、ほとんど服を着たまま繋がった。ずれた布地が擦れるたびに、{b}の肌が粟立った。') },
+    { id: 'nukazu', tag: '抜かずの二回戦', w: function (c) { return 0.8 + (c.dose >= 70 ? 0.5 : 0); },
+      t: L('一度果てても、媚薬の熱は引かなかった。{a}は{b}の中に入れたまま、すぐにまた動き始めた。{b}は「待って、まだ」と言いながら、{a}の腰を引き寄せた。|{a}は{b}の中で果てたあと、抜かずにそのまま二回目を始めた。さっき出したもので、中がぬるぬると滑った。') },
+    { id: 'quiet', tag: '声を我慢させる', w: function (c) { return 0.5 + (c.y.tr.ac > 0.55 ? 0.6 : 0); },
+      t: L('{b}は声を殺そうとして、自分の手の甲を噛んだ。{a}はその手をシーツに縫いとめた。「隠すな。もう、誰も見てない」|{b}は枕を抱えて顔を隠したまま突かれていた。{a}が枕を取り上げると、{b}の泣きそうな顔が出てきた。') },
+    { id: 'gas', tag: '媚薬の残り香', w: function (c) { return 0.6 + (c.dose >= 80 ? 0.6 : 0); },
+      t: L('開けっぱなしのロッカーから、甘い霧がまだ漏れ出していた。吸い込むたびに、{a}も{b}も感覚が鋭くなっていく。{a}の一突きごとに、{b}は小さく達した。') },
+    /* リバ同士だけ：主導権の取り合い。このあと {a}{b} が入れ替わる */
+    { id: 'swap', tag: '主導権の取り合い', riba: true, w: function () { return 1.4; },
+      t: L('途中で{b}が{a}を押し返し、体勢を入れ替えた。「次は、こっちの番」――そこから先、組み敷かれていたのは{a}の方だった。|{b}は{a}の手首を掴み返して、ベッドに押し倒した。「交代」――{a}は抵抗せずに、笑って脚を開いた。'), swap: true }
+  ];
+
+  /* 中出しをせがむ台詞（受けの口調ごと） */
+  var NAKA_SAY = {
+    proud: L('「……抜くな。中に、出せ」|「途中でやめたら、許さねえからな……っ、全部、寄越せ」'),
+    stern: L('「……抜くな。最後まで、中で」|「……責任は、取ってもらう。中に、出せ」'),
+    tsun: L('「べ、別に、そういうんじゃないけど……抜いたら、怒るから……っ」|「な、中……っ、中で、いいって、言ってるでしょ……！」'),
+    gentle: L('「いいよ……そのまま、中に出して」|「抜かないで……全部、受け止めてあげる」'),
+    devoted: L('「お願い、です……中に、ください……っ」|「あなたのを、全部……私の中に……」'),
+    cool: L('「……抜く必要は、ない。中で、いい」|「……いい、から……っ、そのまま……」'),
+    free: L('「やだ、抜いちゃやだ……！　中にちょうだい！」|「いいよ、いっぱい出して！　ぜんぶ！」'),
+    shy: L('「な、なか……っ、なかに、ほしい、です……っ」|「ぬ、抜かないで……くださ……っ」'),
+    polite: L('「……どうか、中に。お願い、いたします……っ」|「抜かずに……そのまま、ください……っ」')
+  };
+  /* 中出しをせがまれた攻めの返し（攻めの口調ごと） */
+  var NAKA_ANS = {
+    proud: L('{a}は「言われなくても」と唸って、{b}の一番奥に全部吐き出した。|{a}は{b}の腰を掴み直し、根元まで押し込んだまま果てた。'),
+    stern: L('{a}は短く「わかった」とだけ答え、{b}の奥に深く押しつけたまま果てた。'),
+    tsun: L('{a}は「ばか、そんなこと言われたら……っ」と真っ赤になって、そのまま{b}の中で果てた。'),
+    gentle: L('{a}は「うん、いっぱいあげる」と{b}を抱きしめ、奥でゆっくりと果てた。'),
+    devoted: L('{a}は「全部、あなたのものです」と囁き、{b}の奥に何度も注いだ。'),
+    cool: L('{a}は一瞬だけ迷って、それから{b}の奥に押しつけたまま、長く果てた。'),
+    free: L('{a}は「じゃあ遠慮なく！」と笑って、{b}の中にたっぷりと注ぎ込んだ。'),
+    shy: L('{a}は「い、いいの……？」と震える声で訊いて、{b}が頷いた瞬間に果てた。'),
+    polite: L('{a}は「かしこまりました」と囁き、{b}の一番奥で果てた。')
+  };
+
+  /* ---------- 結び ---------- */
+  var END = {
+    naka: L('{a}がゆっくり抜くと、{b}の中からとろりと白いものがあふれた。{b}はそれを、恥ずかしそうに太腿で隠した。|{b}は下腹に手を当てて、「……まだ、あったかい」と呟いた。{a}は黙って、その手に自分の手を重ねた。'),
+    morning: L('媚薬が切れたのは、窓の外が白み始めたころだった。二人とも、何回したのかは覚えていなかった。|気づけば朝だった。{a}の腕の中で、{b}は泥のように眠っていた。'),
+    shower: L('シャワーを浴びに行った二人は、そこでもう一回してしまった。|汗を流しに行ったはずのシャワールームで、{a}は{b}をタイルの壁に押しつけた。湯気の中で、二人はまた繋がった。'),
+    promise: L('{b}は{a}の胸に頬を乗せたまま、「……ガスがなくても、またしたい」と言った。{a}は返事の代わりに、{b}の髪にキスをした。|{a}は「次は、ロッカーなしで」と言った。{b}は顔を赤くして、それでも頷いた。'),
+    fight: L('正気に戻った{b}は、枕で{a}を叩いた。「やりすぎ！」――{a}は「誘ったのはそっち」と言い返した。二人とも、腰が立たなかった。|「……全部、ガスのせいだからな」「はいはい」――憎まれ口を叩きながら、二人はまだ指を絡めたままだった。'),
+    faint: L('最後の絶頂のあと、{b}はそのまま気を失うように眠ってしまった。{a}は乱れた前髪を払ってやり、毛布をかけた。|{b}は「もう、むり……」と呟いたきり、動かなくなった。寝息を立てていた。{a}は苦笑して、その隣に倒れ込んだ。')
+  };
+
+  function vv(x, y) { return { a: x.name, b: y.name }; }
+  function pickMid(S, c, n) {
+    var rng = S.rng, out = [], pool = MID.filter(function (m) { return !m.riba || c.riba; });
+    for (var k = 0; k < n && pool.length; k++) {
+      var m = HK.weighted(rng, pool, function (z) { return Math.max(0.05, z.w(c)); });
+      out.push(m); pool.splice(pool.indexOf(m), 1);
+      if (m.swap) pool = pool.filter(function (z) { return !z.swap; });
+    }
+    return out;
+  }
+
+  /* ロッカーを出たあとのベッド。o = { A, B, x(攻め), y(受け), rel, tone, how, plotter, servant, master, lew, dose, pair, moan, REL_LABEL } */
+  LK.bed = function (S, o) {
+    var rng = S.rng, V = HK.Voice, x = o.x, y = o.y, A = o.A, B = o.B, lew = o.lew;
+    var riba = HK.Pos ? !HK.Pos.fixed(x, y) : false;
+    var labels = [];
+
+    /* 誘い方：おとなしかった方（仕掛けた回数が少ない・嗜めた・耐えた）が誘うことがある */
+    var quiet = A.cnt.make < B.cnt.make ? A : B.cnt.make < A.cnt.make ? B : (A.m.reason >= B.m.reason ? A : B);
+    var loud = quiet.o;
+    var quietScore = (quiet.cnt.refuse + quiet.cnt.hold) * 0.25 + quiet.tr.ac * 0.3 + (quiet.cnt.make === 0 ? 0.25 : 0) + (o.rel === 'crush' && quiet !== o.plotter ? 0.15 : 0);
+    var q, oo, kind;
+    if (o.master && o.servant && o.servant.cnt.hold >= 1 && rng() < 0.6) { q = o.master; oo = o.servant; kind = 'order'; }
+    else if (HK.Pos && HK.Pos.nori(y) && y.cnt.make > 0 && rng() < 0.45) { q = y; oo = x; kind = 'nori'; }
+    else if (!o.plotter && rng() < 0.08 + quietScore * 0.7) { q = quiet; oo = loud; kind = q === x ? 'quietTop' : 'quietBottom'; }
+    else if (!o.plotter && rng() < 0.25) { q = loud; oo = quiet; kind = 'stop'; }
+    else { q = o.plotter || loud; oo = q.o; kind = 'eager'; }
+    if (kind === 'nori') INVITE.nori = LK.BED.noriInvite || INVITE.eager;
+    var inv = INVITE[kind].filter(function (l) { return (q.cnt.refuse > 0 || !/嗜め/.test(l)) && !(o.how === 'timeout' && /扉が開/.test(l)); });
+    var t1 = (o.how === 'timeout' ? LK.BED.timeout[0] : '') + ST.fmt(ST.pick(S, inv.length ? inv : INVITE[kind]), { q: q.name, o: oo.name }) + ST.fmt(ST.pick(S, LK.BED.strip), vv(x, y));
+    var whyInv = { quietTop: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った（仕掛けた ' + q.cnt.make + '回・嗜めた ' + q.cnt.refuse + '回）', quietBottom: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った（仕掛けた ' + q.cnt.make + '回・嗜めた ' + q.cnt.refuse + '回）', nori: '受けの' + q.name + 'がノリノリで、自分から誘った', eager: q.name + 'が待ちきれなかった' + (o.plotter === q ? '（思惑どおり）' : ''), stop: oo.name + 'は帰ろうとしたが、' + q.name + 'が引き止めた', order: '主の' + q.name + 'が、耐えた従者に許しを与えた' }[kind];
+    var o3 = ST.say(S, { actors: [A, B], tag: 'ベッドへ', text: t1, why: whyInv + '／発情 ' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + (o.pair.sexIn ? '／ロッカーの中では焦らされるだけだった' : ''), mag: 40 });
+    ST.key(S, o3, kind === 'quietTop' || kind === 'quietBottom' ? 'おとなしかった' + q.name + 'からベッドへ誘った' : '部屋から出ずにベッドへ');
+    labels.push({ quietTop: 'おとなしかった方から誘う', quietBottom: 'おとなしかった方から誘う', nori: '受けがノリノリで誘う', eager: '待ちきれずに', stop: '帰ろうとして引き戻される', order: '主の命令' }[kind]);
+
+    if (lew === 'low') {
+      ST.say(S, { actors: [A, B], tag: '激しいセックス', text: '――そこから先は、二人だけの秘密になった。', why: '関係：' + o.REL_LABEL[o.rel], mag: 45, kind: 'climax' });
+      ST.say(S, { actors: [A, B], tag: '絶頂', text: ST.fmt(ST.pick(S, LK.BED.climax), vv(x, y)).replace(/。.*/, '。'), why: '媚薬が切れるまで', mag: 45, kind: 'climax' });
+      return labels;
+    }
+
+    /* 最中：前戯→挿入→展開ふたつ */
+    var ctx = { x: x, y: y, tone: o.tone, rel: o.rel, plotter: o.plotter, pair: o.pair, how: o.how, dose: o.dose, riba: riba };
+    var mids = pickMid(S, ctx, 2);
+    var naka = mids.filter(function (m) { return m.id === 'naka'; })[0];
+    if (naka) { mids.splice(mids.indexOf(naka), 1); mids.push(naka); } /* 中出しは最後に */
+    var t2 = ST.fmt(ST.pick(S, LK.BED.fore), vv(x, y)) + ST.fmt(ST.pick(S, LK.BED.insert), vv(x, y)) + ST.fmt(ST.pick(S, LK.BED[o.tone]), vv(x, y));
+    var swapped = false, t3 = '';
+    mids.forEach(function (m, i) {
+      var line = ST.fmt(ST.pick(S, m.t), vv(x, y));
+      if (m.swap) { var tmp = x; x = y; y = tmp; swapped = true; }
+      if (m.id === 'naka') {
+        line += y.name + ST.pick(S, NAKA_SAY[y.persona] || NAKA_SAY.gentle) + o.moan(y) + ST.fmt(ST.pick(S, NAKA_ANS[x.persona] || NAKA_ANS.gentle), vv(x, y));
+        t3 += line;
+      } else if (i === 0) t2 += line;
+      else t3 += line;
+      labels.push(m.tag);
+    });
+    if (V && V.EDGE && V.EDGE[y.persona]) t2 += y.name + '「' + ST.pick(S, V.EDGE[y.persona]) + '」';
+    ST.say(S, { actors: [A, B], tag: mids[0] ? mids[0].tag : '激しいセックス', text: t2, why: '関係：' + o.REL_LABEL[o.rel] + '／' + (o.tone === 'rough' ? '噛みつくように' : '甘く') + (swapped ? '／リバ同士なので、途中で攻守交代' : ''), mag: 45, kind: 'climax' });
+
+    /* 絶頂と結び */
+    var endKey = naka ? 'naka' : null;
+    var pool = ['morning', 'shower', 'faint'].concat(o.tone === 'sweet' || o.rel === 'crush' || o.rel === 'almost' || o.rel === 'lover' ? ['promise', 'promise'] : ['fight', 'fight']);
+    if (!endKey) endKey = rng.pick(pool);
+    t3 += naka ? '' : ST.fmt(ST.pick(S, LK.BED.pos), vv(x, y)) + o.moan(x) + o.moan(y) + ST.fmt(ST.pick(S, LK.BED.climax), vv(x, y));
+    t3 += ST.fmt(ST.pick(S, END[endKey]), vv(x, y));
+    if (naka && rng() < 0.5) t3 += ST.fmt(ST.pick(S, END[rng.pick(pool)]), vv(x, y));
+    if (o.plotter) t3 += ST.fmt(ST.pick(S, LK.AFTER.plotwin), { a: o.plotter.name, b: o.plotter.o.name });
+    else if (V && V.AFTER && V.AFTER[x.persona] && rng() < 0.6) t3 += x.name + '「' + ST.pick(S, V.AFTER[x.persona]) + '」';
+    var o4 = ST.say(S, { actors: [A, B], tag: mids[1] ? mids[1].tag : '絶頂', text: t3, why: naka ? y.name + 'が中に出してとせがんだ（' + (y.tr.fc > 0.55 ? '素直さ' : '媚薬で理性が溶けていた') + '）' : '媚薬が切れるまで', mag: 45, kind: 'climax' });
+    if (naka) ST.key(S, o4, y.name + 'が中出しをせがんだ');
+    return labels;
+  };
+  LK.BED_COUNT = function () {
+    var n = 0;
+    Object.keys(INVITE).forEach(function (k) { n += INVITE[k].length; });
+    MID.forEach(function (m) { n += m.t.length; });
+    Object.keys(END).forEach(function (k) { n += END[k].length; });
+    return n;
+  };
+})();

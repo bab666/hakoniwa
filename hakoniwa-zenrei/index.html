@@ -1,0 +1,582 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>箱庭シミュレーター</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 砂箱の内側は水を表す青で塗る――箱庭療法の砂箱（57×72×7cm）を下敷きにした配色。
+   レイアウト：上部に工程タブ（住人→箱庭→経過と結末）、各タブは1カラム、結果は関係図＋カード＋時系列 */
+:root {
+  --bg: #edf0f2; --surface: #fbfcfc; --ink: #1b232b; --muted: #5b6672; --line: #d3d9df;
+  --accent: #2b5b7c; --accent-ink: #ffffff; --accent-soft: #dce8f1;
+  --sand: #e8e0cc; --sand-line: #cfc3a6; --tray: #3d6f93;
+  --love: #b83f66; --pine: #c5698b; --night: #9550ad; --obsess: #6f48a8; --enemy: #b0442f;
+  --kill: #4b1f1f; --partner: #2c7d61; --friend: #3f7f8b; --guard: #a97817; --none: #98a1aa;
+  --warn: #9a5b00; --odd: #a2420f;
+  --adult-bg: #fdeef3; --adult-line: #e7a3ba; --adult-tag: #d11f4f; --adult-tag-ink: #ffffff;
+  --p0: #c0392b; --p1: #2471a3; --p2: #1e8449; --p3: #9a6f00; --p4: #7d3c98; --p5: #b0498a;
+  --p6: #117a8b; --p7: #a04000; --p8: #4a5a9c; --p9: #5d7a14; --p10: #8e3b5b; --p11: #2e6f5a;
+  --f-display: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", "BIZ UDPMincho", serif;
+  --f-body: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo", "Noto Sans JP", system-ui, sans-serif;
+  --f-num: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Menlo", monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161b; --surface: #182027; --ink: #e3e8ed; --muted: #95a1ad; --line: #2b3640;
+    --accent: #7fb2d9; --accent-ink: #0d1820; --accent-soft: #1f3243;
+    --sand: #29271f; --sand-line: #4a4535; --tray: #5f93b8;
+    --love: #ec7a9c; --pine: #e39ab5; --night: #c597de; --obsess: #a98be0; --enemy: #e57a62;
+    --kill: #f09a8a; --partner: #6cc9a5; --friend: #79bcc8; --guard: #e2b456; --none: #6c7782;
+    --warn: #e2a64a; --odd: #f0915a;
+    --adult-bg: #2c1a22; --adult-line: #7d3c55; --adult-tag: #ff5c86; --adult-tag-ink: #1a0b10;
+    --p0: #f07c6e; --p1: #6fb1e6; --p2: #6cc98f; --p3: #e1bb53; --p4: #c08ae0; --p5: #ec8cc5;
+    --p6: #5fc6d6; --p7: #f09a5c; --p8: #9aa9ec; --p9: #a9c95a; --p10: #e08aab; --p11: #6bc4a5;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161b; --surface: #182027; --ink: #e3e8ed; --muted: #95a1ad; --line: #2b3640;
+  --accent: #7fb2d9; --accent-ink: #0d1820; --accent-soft: #1f3243;
+  --sand: #29271f; --sand-line: #4a4535; --tray: #5f93b8;
+  --love: #ec7a9c; --pine: #e39ab5; --night: #c597de; --obsess: #a98be0; --enemy: #e57a62;
+  --kill: #f09a8a; --partner: #6cc9a5; --friend: #79bcc8; --guard: #e2b456; --none: #6c7782;
+  --warn: #e2a64a; --odd: #f0915a;
+  --adult-bg: #2c1a22; --adult-line: #7d3c55; --adult-tag: #ff5c86; --adult-tag-ink: #1a0b10;
+  --p0: #f07c6e; --p1: #6fb1e6; --p2: #6cc98f; --p3: #e1bb53; --p4: #c08ae0; --p5: #ec8cc5;
+  --p6: #5fc6d6; --p7: #f09a5c; --p8: #9aa9ec; --p9: #a9c95a; --p10: #e08aab; --p11: #6bc4a5;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
+
+/* ヘッダー・タブ */
+.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-block: 22px 12px; }
+.brand h1 { font-family: var(--f-display); font-weight: 700; font-size: 30px; letter-spacing: 0.12em; margin: 0; line-height: 1.2; }
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 20px; overflow-x: auto; }
+.tab { appearance: none; -webkit-appearance: none; background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px 9px; cursor: pointer; color: var(--muted); white-space: nowrap; font-size: 14px; }
+.tab b { font-family: var(--f-num); font-weight: 500; margin-right: 6px; font-size: 12px; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.tab-saves { margin-left: auto; }
+.savebar { margin: 10px 0 14px; gap: 8px; flex-wrap: wrap; }
+.savehead h2 { margin: 0 0 6px; font-size: 18px; }
+.saverow { gap: 8px; flex-wrap: wrap; margin: 10px 0 16px; }
+.savelist { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.saveitem { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--card, var(--bg)); flex-wrap: wrap; }
+.savemain { flex: 1 1 320px; min-width: 0; }
+.savetop { display: flex; gap: 10px; align-items: baseline; font-size: 12px; color: var(--muted); }
+.savescen { font-weight: 600; color: var(--ink); }
+.savename { width: 100%; max-width: 420px; margin: 6px 0 4px; font-size: 14px; }
+.savetitle { margin: 2px 0; font-size: 14px; line-height: 1.5; }
+.savecast { margin: 2px 0 0; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.saveseed { opacity: .8; }
+.saveact { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+#view-saves .empty { color: var(--muted); padding: 24px 0; }
+@media (max-width: 760px) { .tab-saves { margin-left: 0; } .saveact { width: 100%; } }
+.tab:focus-visible, .btn:focus-visible, .chip:focus-visible, .scen:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 共通部品 */
+h2.sec { font-family: var(--f-display); font-size: 20px; font-weight: 700; margin: 28px 0 10px; letter-spacing: 0.04em; text-wrap: balance; }
+h2.sec:first-child { margin-top: 0; }
+.hint { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; }
+.btn { appearance: none; -webkit-appearance: none; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 7px 14px; cursor: pointer; font-size: 13px; line-height: 1.4; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; padding: 10px 22px; font-size: 15px; }
+.btn.small { padding: 3px 10px; font-size: 12px; }
+.btn.ghost { border-color: transparent; background: none; color: var(--muted); }
+.btn.ghost:hover { color: var(--ink); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.spacer { flex: 1; }
+textarea, input[type="text"], input[type="number"], select { background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; min-width: 0; }
+textarea { width: 100%; resize: vertical; font-family: var(--f-num); font-size: 13px; line-height: 1.6; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.warn { color: var(--warn); font-size: 13px; margin: 8px 0 0; padding-left: 1.2em; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 20px; font-size: 13px; z-index: 20; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 9px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); background: var(--surface); line-height: 1.6; white-space: nowrap; }
+button.chip { cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+
+/* 住人 */
+.import { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; }
+.fmt { font-size: 12px; color: var(--muted); }
+.fmt code { font-family: var(--f-num); background: var(--bg); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; display: block; margin: 3px 0; white-space: pre-wrap; word-break: break-all; }
+.cast { display: grid; gap: 10px; margin-top: 12px; }
+.res { display: grid; grid-template-columns: 50px minmax(120px, 170px) minmax(0, 1fr) 118px auto; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
+.res .who input { width: 100%; font-weight: 600; }
+.res .codeline { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.res .code { width: 78px; font-family: var(--f-num); font-size: 14px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; padding: 3px 4px; }
+.res .code.bad { border-color: var(--warn); }
+.res .who .ty { font-size: 12px; color: var(--muted); }
+.ego { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.ego label { display: grid; gap: 1px; font-size: 11px; color: var(--muted); text-align: center; font-family: var(--f-num); }
+.ego input { width: 100%; text-align: center; padding: 4px 2px; }
+.res .memo { grid-column: 2 / -1; }
+.res .memo { display: flex; gap: 6px; flex-wrap: wrap; }
+.res .memo input { flex: 1 1 200px; min-width: 0; font-size: 12px; }
+.res .memo select { font-size: 12px; }
+.res .memo input.fp { flex: 0 1 110px; }
+.res { position: relative; padding-left: 30px; }
+.res .draghandle { position: absolute; left: 3px; top: 50%; transform: translateY(-50%); width: 22px; height: 40px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 16px; line-height: 1; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
+.res .draghandle:hover, .res .draghandle:focus-visible { background: var(--line); color: var(--ink, inherit); }
+.res.dragging { opacity: .55; }
+.res.dragging .draghandle { cursor: grabbing; }
+.res.drop-before { box-shadow: 0 -3px 0 0 var(--accent, #3b6ea5); }
+.res.drop-after { box-shadow: 0 3px 0 0 var(--accent, #3b6ea5); }
+body.noselect { -webkit-user-select: none; user-select: none; cursor: grabbing; }
+.sample-note { font-size: 12px; color: var(--warn); margin: 8px 0 0; }
+
+/* 既存の関係 */
+.tiebox { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; }
+.ties { display: grid; gap: 6px; }
+.tierow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tierow select { max-width: 100%; }
+.tiehint { font-size: 11px; color: var(--muted); }
+
+/* 箱庭 */
+.scens { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.scen { position: relative; display: block; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; cursor: pointer; }
+.scen input { position: absolute; opacity: 0; pointer-events: none; }
+.scen .k { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
+.scen .n { font-family: var(--f-display); font-weight: 700; font-size: 17px; margin: 2px 0 4px; }
+.scen .d { font-size: 12px; color: var(--muted); line-height: 1.55; }
+.scen.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.envgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px 22px; }
+.envitem .lab { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 600; }
+.envitem .ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.envitem .desc { font-size: 11px; color: var(--muted); }
+.envitem select { width: 100%; margin-top: 4px; }
+.envitem.wide { grid-column: 1 / -1; }
+.roomlabel { font-family: var(--f-display); font-size: 17px; font-weight: 700; margin: 0 0 12px; }
+.uses { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.tblwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+table.per { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13px; }
+table.per th, table.per td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+table.per th { font-size: 12px; color: var(--muted); font-weight: 500; background: var(--bg); }
+table.per tr:last-child td { border-bottom: 0; }
+table.per tr.off td { opacity: 0.45; }
+table.per tr.off td:first-child { opacity: 1; }
+table.per select { max-width: 200px; }
+/* 箱庭ごとの住人表：見出し行と「参加・住人」の列を固定（横・縦にスクロールしても見失わない） */
+.tblwrap { overflow: auto; max-height: min(72vh, 760px); -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+table.per { border-collapse: separate; border-spacing: 0; }
+table.per thead th { position: sticky; top: 0; z-index: 2; box-shadow: 0 1px 0 var(--line); }
+table.per th:nth-child(1), table.per td:nth-child(1) { position: sticky; left: 0; z-index: 1; width: 44px; min-width: 44px; max-width: 44px; text-align: center; }
+table.per th:nth-child(2), table.per td:nth-child(2) { position: sticky; left: 44px; z-index: 1; min-width: 110px; max-width: 180px; box-shadow: 1px 0 0 var(--line), 4px 0 6px -4px rgba(0, 0, 0, .18); }
+table.per td:nth-child(1), table.per td:nth-child(2) { background: var(--surface); }
+table.per thead th:nth-child(1), table.per thead th:nth-child(2) { z-index: 3; background: var(--bg); }
+table.per tr.off td:nth-child(2) { opacity: 1; color: var(--muted); }
+table.per td:nth-child(2) b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 140px; vertical-align: middle; }
+.runbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 22px; padding: 14px 16px; background: var(--accent-soft); border-radius: var(--r); }
+.runbar input { width: 110px; }
+
+/* 結果 */
+.resulthead { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.resulthead h2 { font-family: var(--f-display); font-size: 24px; margin: 0; }
+.resulthead .meta { color: var(--muted); font-size: 13px; }
+.trayfig { margin: 14px 0 0; }
+.tray { border: 7px solid var(--tray); border-radius: 4px; background: var(--sand); background-image: radial-gradient(var(--sand-line) 0.6px, transparent 0.8px); background-size: 9px 9px; overflow-x: auto; }
+.tray svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.trayfig figcaption { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin-top: 6px; }
+.legend { display: flex; gap: 10px; flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: 4px; }
+.legend i { width: 14px; height: 3px; display: inline-block; border-radius: 2px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.pcard.sur { border-color: var(--odd); }
+.pcard .hd { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pcard .nm { font-weight: 700; }
+.lbl { font-weight: 700; font-size: 12px; padding: 1px 9px; border-radius: 999px; color: var(--surface); }
+.lbl.love { background: var(--love); } .lbl.pine { background: var(--pine); } .lbl.night { background: var(--night); }
+.lbl.obsess { background: var(--obsess); } .lbl.enemy { background: var(--enemy); } .lbl.kill { background: var(--kill); }
+.lbl.partner { background: var(--partner); } .lbl.friend { background: var(--friend); } .lbl.guard { background: var(--guard); }
+.lbl.none { background: var(--none); }
+.tiechip { font-size: 11px; color: var(--muted); border: 1px dashed var(--line); border-radius: 999px; padding: 0 8px; }
+.surtag { font-size: 11px; font-weight: 700; color: var(--odd); border: 1px solid var(--odd); border-radius: 3px; padding: 0 5px; }
+.pcard .txt { font-family: var(--f-display); font-size: 15px; line-height: 1.7; }
+.pcard .pred { font-size: 12px; color: var(--muted); }
+.pcard .pred b { color: var(--ink); font-weight: 600; }
+.spark { width: 100%; height: 54px; display: block; }
+.sparkleg { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--muted); }
+.keys { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.keys li { font-size: 13px; }
+.keys .st { font-family: var(--f-num); font-size: 11px; color: var(--muted); margin-right: 6px; }
+.keys .why { display: block; font-size: 11px; color: var(--muted); }
+.nums { font-family: var(--f-num); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.more { margin-top: 10px; }
+
+.ccard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 6px; min-width: 0; }
+.ccard .hd { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ccard .nm { font-family: var(--f-display); font-size: 18px; font-weight: 700; }
+.fate { font-size: 12px; font-weight: 700; padding: 0 8px; border-radius: 3px; border: 1px solid currentColor; }
+.fate.dead { color: var(--enemy); } .fate.ok { color: var(--partner); } .fate.mid { color: var(--muted); }
+.ccard .sub { font-size: 12px; color: var(--muted); }
+.ccard ul { margin: 0; padding-left: 1.1em; font-size: 13px; }
+.ccard .oddl { font-size: 12px; border-left: 2px solid var(--odd); padding-left: 8px; }
+
+/* 結末 */
+.ending { margin-top: 16px; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--tray); border-radius: var(--r); padding: 16px 18px; }
+.ending .eyebrow { font-size: 11px; letter-spacing: 0.16em; color: var(--muted); }
+.ending .ehead { font-family: var(--f-display); font-size: 20px; font-weight: 700; line-height: 1.6; margin: 4px 0 12px; text-wrap: balance; }
+.estats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 0 0 12px; }
+.estats div { background: var(--bg); border-radius: 4px; padding: 6px 10px; }
+.estats dt { font-size: 11px; color: var(--muted); }
+.estats dd { margin: 0; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.elines { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; font-size: 14px; }
+
+/* 派閥 */
+.fhead { margin: 0 0 10px; font-size: 14px; }
+.frow { display: flex; gap: 10px; flex-wrap: wrap; }
+.fgroup { display: inline-flex; gap: 8px; flex-wrap: wrap; align-items: center; border: 1px solid var(--line); border-radius: var(--r); padding: 6px 10px; background: var(--bg); font-size: 13px; }
+.fgroup b, .fgroup span { display: inline-flex; align-items: center; gap: 4px; }
+.fgroup.dict { border-color: var(--enemy); box-shadow: inset 0 0 0 1px var(--enemy); }
+.fgroup.lone { border-style: dashed; color: var(--muted); }
+.fhist { list-style: none; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px dashed var(--line); display: grid; gap: 4px; font-size: 13px; }
+.fhist .st { font-family: var(--f-num); font-size: 11px; color: var(--muted); display: inline-block; min-width: 72px; }
+.fhist .rg { font-weight: 700; margin-right: 10px; }
+
+/* ダンジョン */
+.dgend.over { border-left-color: var(--love); }
+.dgend.over .eyebrow { color: var(--love); font-weight: 700; }
+.dgend.ok { border-left-color: var(--partner); }
+.dggauge { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
+.dggauge svg { display: block; width: 100%; height: auto; }
+.dggauge figcaption { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.devbars { display: grid; gap: 5px; }
+.devrow { display: grid; grid-template-columns: 44px minmax(0, 1fr) 34px; gap: 8px; align-items: center; font-size: 12px; }
+.devrow .bar { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.devrow .bar i { display: block; height: 100%; background: var(--love); border-radius: 4px; }
+.chip.curse { border-color: var(--love); color: var(--love); }
+.ev.climax { border-left: 2px solid var(--love); padding-left: 6px; margin-left: -8px; }
+.dgadvice { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; font-size: 14px; }
+.dgturns { border-top: 0; padding-top: 0; }
+.ev .rn { font-family: var(--f-num); font-size: 10px; color: var(--muted); margin-right: 4px; }
+
+/* 時系列 */
+.tlbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.tl { position: relative; }
+.stepblk { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; padding-block: 10px; border-top: 1px solid var(--line); }
+.stepblk .when { font-family: var(--f-num); font-size: 12px; color: var(--muted); padding-top: 2px; }
+.stepblk ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ev { font-size: 14px; }
+.ev .c { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; margin-right: 6px; vertical-align: 1px; }
+.ev .why { display: block; font-size: 12px; color: var(--muted); }
+.ev.phase { color: var(--muted); font-style: normal; }
+.ev.death { font-weight: 700; color: var(--enemy); }
+.ev.key { background: var(--accent-soft); border-radius: 4px; padding: 2px 6px; margin-left: -6px; }
+.ev .oddb { font-size: 10px; font-weight: 700; color: var(--odd); margin-left: 6px; }
+.name { font-weight: 700; }
+.empty { text-align: center; padding: 48px 16px; color: var(--muted); }
+.empty .t { font-family: var(--f-display); font-size: 20px; color: var(--ink); margin-bottom: 6px; }
+.hist { display: grid; gap: 6px; }
+.hist button { text-align: left; display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; width: 100%; }
+.hist .when { font-family: var(--f-num); font-size: 11px; color: var(--muted); }
+
+@media (max-width: 760px) {
+  .import { grid-template-columns: minmax(0, 1fr); }
+  .res { grid-template-columns: 50px minmax(0, 1fr) auto; }
+  .res .ego { grid-column: 1 / -1; }
+  .res .gwrap { display: none; }
+  .res .memo { grid-column: 1 / -1; }
+  .stepblk { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .cards { grid-template-columns: minmax(0, 1fr); }
+  .brand h1 { font-size: 26px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pcard, .ccard { transition: border-color .2s; }
+}
+
+/* 共有バー・モーダル・25問診断・フッター */
+.sharebar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 4px; }
+.sharebar .hint a { color: var(--accent); }
+.modal { position: fixed; inset: 0; z-index: 50; background: rgba(10, 16, 22, 0.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.modal[hidden] { display: none; }
+.modal-box { background: var(--surface); color: var(--ink); border-radius: 10px; width: 100%; max-width: 560px; max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow: auto; -webkit-overflow-scrolling: touch; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+.modal-box input[type="text"], .modal-box select { width: 100%; box-sizing: border-box; font-size: 16px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); color: var(--ink); }
+.eqlab { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
+.eqmeta { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.eqprog { height: 6px; background: var(--line); border-radius: 3px; margin: 8px 0 18px; overflow: hidden; }
+.eqprog i { display: block; height: 100%; background: var(--accent); transition: width .2s; }
+.eqq { font-family: var(--f-display); font-size: 20px; line-height: 1.6; min-height: 3.2em; margin: 0 0 16px; }
+.eqans { display: grid; gap: 8px; }
+.eqans .btn { font-size: 16px; padding: 12px; }
+.eqans .btn.on { border-color: var(--accent); background: var(--accent-soft); }
+.eqcode { font-family: var(--f-display); font-size: 48px; text-align: center; letter-spacing: .12em; margin: 4px 0; }
+.eqbars div { display: grid; grid-template-columns: 34px 1fr 30px; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
+.eqbars div > i { display: block; height: 10px; background: var(--accent); border-radius: 5px; }
+.eqbars b { text-align: right; }
+.site-foot { margin: 40px 0 24px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.site-foot summary { cursor: pointer; }
+.foot-body p { margin: 8px 0; line-height: 1.7; }
+.foot-links { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 8px; }
+.foot-links a { display: inline-block; padding: 8px 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--accent); text-decoration: none; font-weight: 600; }
+.foot-links a:hover { border-color: var(--accent); }
+.disclaimer { margin: 6px 0 0; font-size: 12px; }
+
+/* キャラアイコン（丸・キャラ色のリング・パステル背景） */
+.av { display: inline-flex; align-items: center; justify-content: center; flex: none; border-radius: 50%; overflow: hidden; vertical-align: middle; position: relative;
+  background: var(--surface); background: color-mix(in srgb, var(--c) 20%, var(--surface)); color: var(--c);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--c); font-weight: 800; line-height: 1; letter-spacing: 0; }
+.av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.av b { font-weight: 800; transform: translateY(0.02em); }
+.av.gone { filter: grayscale(1); opacity: 0.6; }
+.avpair { display: inline-flex; padding-left: 3px; }
+.avpair .av + .av { margin-left: -9px; }
+.avset { position: relative; width: 44px; height: 44px; justify-self: center; }
+.avbtn { appearance: none; -webkit-appearance: none; border: 0; background: none; padding: 0; margin: 0; cursor: pointer; border-radius: 50%; display: block; }
+.avbtn .av { transition: transform .15s ease; }
+.avbtn:hover .av { transform: scale(1.07) rotate(-3deg); }
+.avbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.avplus { position: absolute; right: -3px; bottom: -3px; width: 17px; height: 17px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-style: normal; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface); pointer-events: none; }
+.avdel { position: absolute; right: -6px; top: -6px; width: 19px; height: 19px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-size: 11px; line-height: 1; padding: 0; cursor: pointer; }
+.avdel:hover { color: var(--enemy); border-color: var(--enemy); }
+.whochip { display: inline-flex; align-items: center; gap: 6px; }
+.whochip .av, .fgroup .av { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 2.5px var(--c); margin-right: 4px; }
+.ev.hasav { display: flex; gap: 10px; align-items: flex-start; }
+.ev .avs { display: flex; flex: none; padding: 2px 0 0 3px; }
+.ev .avs .av + .av { margin-left: -10px; }
+.ev .evb { min-width: 0; flex: 1; }
+.ev.talk .evb { background: var(--surface); border: 1px solid var(--line); border-radius: 4px 14px 14px 14px; padding: 6px 11px; }
+.ev.talk .evb .why { margin-top: 2px; }
+.scen .note { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.scen.adult { background: var(--adult-bg); border-color: var(--adult-line); }
+.scen.adult.on { border-color: var(--adult-tag); box-shadow: inset 0 0 0 1px var(--adult-tag); }
+.r18tag { display: inline-block; padding: 0 6px; margin-left: 2px; border-radius: 3px; background: var(--adult-tag); color: var(--adult-tag-ink); font-weight: 700; letter-spacing: 0.04em; line-height: 1.6; }
+.site-foot .updated { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+.scen.r18link { color: inherit; text-decoration: none; border-style: dashed; }
+.scen.r18link:hover, .scen.r18link:focus-visible { border-color: var(--accent); }
+.scnote { font-size: 12px; }
+
+/* 折りたたみ（項目ごと） */
+details.fold { margin: 0; }
+details.fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 28px 0 10px; border-radius: var(--r); -webkit-user-select: none; user-select: none; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::marker { content: ""; }
+details.fold > summary::before { content: ""; flex: none; width: 8px; height: 8px; margin: 0 2px 4px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(-45deg); transition: transform .15s; }
+details.fold[open] > summary::before { transform: rotate(45deg); margin: 0 2px 6px; }
+details.fold > summary h2.sec { margin: 0; }
+details.fold:first-child > summary { padding-top: 0; }
+details.fold:not([open]) > summary { padding-bottom: 4px; }
+details.fold:not([open]) > summary h2.sec::after { content: "（押すと開きます）"; font-family: var(--f-body); font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 8px; letter-spacing: 0; }
+details.fold > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* ゾンビの街のマップ */
+details.zmap { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; }
+details.zmap > summary { cursor: pointer; font-weight: 700; font-size: 15px; color: var(--accent); padding: 6px 10px; margin: 0 -10px; border-radius: var(--r); }
+details.zmap > summary:hover { background: var(--accent-soft); }
+.zm-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px; }
+.zm-g { margin: 0; }
+.zm-g figcaption { font-size: 12px; color: var(--muted); margin-bottom: 4px; font-weight: 700; }
+.zm-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; border: 5px solid var(--tray); border-radius: 4px; background: var(--tray); }
+.zm-c { position: relative; overflow: hidden; background: var(--sand); padding: 6px; min-height: 92px; display: flex; flex-direction: column; gap: 2px; }
+.zm-fog { position: absolute; inset: 0; background: var(--enemy); pointer-events: none; }
+.zm-c > *:not(.zm-fog) { position: relative; }
+.zm-n { font-size: 12px; line-height: 1.3; }
+.zm-z { font-size: 10px; color: var(--muted); }
+.zm-b { font-size: 10px; font-weight: 700; color: var(--partner); }
+.zm-ps { display: flex; flex-wrap: wrap; gap: 6px 4px; margin-top: auto; padding-top: 4px; }
+.zm-p { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; }
+.zm-p i { font-style: normal; font-size: 9px; line-height: 1.1; color: var(--ink); background: var(--surface); border-radius: 3px; padding: 0 3px; }
+.zm-p.z i, .zm-p.dead i { color: var(--enemy); }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>箱庭シミュレーター</h1>
+      <p>エゴグラムの住人を箱庭に放ち、誰と誰がどんな関係に落ち着くかを見届ける。</p>
+    </div>
+    <div class="row" id="topmeta"></div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="工程">
+    <button class="tab" role="tab" id="tab-cast" data-tab="cast"><b>1</b>住人</button>
+    <button class="tab" role="tab" id="tab-box" data-tab="box"><b>2</b>箱庭と環境</button>
+    <button class="tab" role="tab" id="tab-result" data-tab="result"><b>3</b>経過と結末</button>
+    <button class="tab tab-saves" role="tab" id="tab-saves" data-tab="saves"><b aria-hidden="true">💾</b>セーブ</button>
+  </nav>
+  <main>
+    <section id="view-cast" role="tabpanel"></section>
+    <section id="view-box" role="tabpanel" hidden></section>
+    <section id="view-result" role="tabpanel" hidden></section>
+    <section id="view-saves" role="tabpanel" hidden></section>
+  </main>
+  <footer class="site-foot">
+    <details>
+      <summary>このツールについて・ご利用上の注意</summary>
+      <div class="foot-body">
+        <p><b>診断について</b>　エゴグラムは、精神科医ジョン・M・デュセイが交流分析をもとに考案した性格の見方です。質問・文章・箱庭はすべてオリジナルで、既存の心理検査（TEGなど）とは関係がありません。医学的・心理学的な診断ではないので、創作や遊びの目安としてお使いください。</p>
+        <p><b>内容について</b>　「ゾンビの街」には死・自死・殺人の描写が含まれます。登場人物はすべて成人として扱います。結果をSNSに投稿するときは、各サービスの規約に沿ってご利用ください。</p>
+        <p><b>入力した情報について</b>　回答・名前・診断結果はお使いのブラウザの中だけで処理され、サーバーには送信されません。</p>
+      </div>
+    </details>
+    <nav class="foot-links" aria-label="関連リンク">
+      <a href="https://kaimin.sakura.ne.jp/archive/#/links" target="_blank" rel="noopener">Tool置き場</a>
+      <a href="https://bab666.booth.pm" target="_blank" rel="noopener">BOOTH</a>
+    </nav>
+    <p class="disclaimer">このツールは、AnthropicのAI「Claude」を使って作成しました。<br>© 2026 箱庭シミュレーター</p>
+    <p class="updated">最終更新：<time datetime="2026-10-21">2026年10月21日</time></p>
+  </footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="js/core.js?v=202610221700"></script>
+<script src="js/ties.js?v=202610221700"></script>
+<script src="js/events-common.js?v=202610221700"></script>
+<script src="js/persona.js?v=202610221700"></script>
+<script src="js/voice.js?v=202610221700"></script>
+<script src="js/voice-tone.js?v=202610221700"></script>
+<script src="js/tone-plus.js?v=202610221700"></script>
+<script src="js/tone-gentleman.js?v=202610221700"></script>
+<script src="js/tone-extra2.js?v=202610221700"></script>
+<script src="js/voice-more.js?v=202610221700"></script>
+<script src="js/voice-override.js?v=202610221700"></script>
+<script src="js/voice-override-rows.js?v=202610221700"></script>
+<script src="js/voice-override-rows2.js?v=202610221700"></script>
+<script src="js/voice-override-scenes.js?v=202610221700"></script>
+<script src="js/voice-override-scenes2.js?v=202610221700"></script>
+<script src="js/voice-override-solo.js?v=202610221700"></script>
+<script src="js/engine.js?v=202610221700"></script>
+<script src="js/fwb.js?v=202610221700"></script>
+<script src="js/scenarios-a.js?v=202610221700"></script>
+<script src="js/mini.js?v=202610221700"></script>
+<script src="js/mini-tails.js?v=202610221700"></script>
+<script src="js/scenarios-b.js?v=202610221700"></script>
+<script src="js/deathgame-kit.js?v=202610221700"></script>
+<script src="js/scenario-br.js?v=202610221700"></script>
+<script src="js/room-lewd.js?v=202610221700"></script>
+<script src="js/room-lewd-more.js?v=202610221700"></script>
+<script src="js/room-lewd-x.js?v=202610221700"></script>
+<script src="js/scenario-room.js?v=202610221700"></script>
+<script src="js/room-reluct.js?v=202610221700"></script>
+<script src="js/room-trio-lines.js?v=202610221700"></script>
+<script src="js/room-trio.js?v=202610221700"></script>
+<script src="js/room-know.js?v=202610221700"></script>
+<script src="js/scenario-trial.js?v=202610221700"></script>
+<script src="js/ego-image.js?v=202610221700"></script>
+<script src="js/omega-data.js?v=202610221700"></script>
+<script src="js/omega-jobs.js?v=202610221700"></script>
+<script src="js/omega-heat.js?v=202610221700"></script>
+<script src="js/omega-detective.js?v=202610221700"></script>
+<script src="js/omega-bond.js?v=202610221700"></script>
+<script src="js/omega-status.js?v=202610221700"></script>
+<script src="js/omega-jobs-extra.js?v=202610221700"></script>
+<script src="js/omega-jobs-each-a.js?v=202610221700"></script>
+<script src="js/omega-jobs-each-b.js?v=202610221700"></script>
+<script src="js/omega-jobs-pair.js?v=202610221700"></script>
+<script src="js/omega-jobs-pair2.js?v=202610221700"></script>
+<script src="js/scenario-omega.js?v=202610221700"></script>
+<script src="js/omega-passion.js?v=202610221700"></script>
+<script src="js/omega-love.js?v=202610221700"></script>
+<script src="js/omega-guard.js?v=202610221700"></script>
+<script src="js/incidents-social.js?v=202610221700"></script>
+<script src="js/incidents-survival.js?v=202610221700"></script>
+<script src="js/island-cook.js?v=202610221700"></script>
+<script src="js/island-life.js?v=202610221700"></script>
+<script src="js/island-hazard.js?v=202610221700"></script>
+<script src="js/mini-goukon.js?v=202610221700"></script>
+<script src="js/goukon-talk.js?v=202610221700"></script>
+<script src="js/drunk.js?v=202610221700"></script>
+<script src="js/mini-room.js?v=202610221700"></script>
+<script src="js/mini-room-cute.js?v=202610221700"></script>
+<script src="js/mini-classroom.js?v=202610221700"></script>
+<script src="js/mini-island.js?v=202610221700"></script>
+<script src="js/mini-br.js?v=202610221700"></script>
+<script src="js/mini-trial.js?v=202610221700"></script>
+<script src="js/mini-extra-a.js?v=202610221700"></script>
+<script src="js/mini-extra-b.js?v=202610221700"></script>
+<script src="js/mini-extra-c.js?v=202610221700"></script>
+<script src="js/mini-serifu.js?v=202610221700"></script>
+<script src="js/dungeon-lite.js?v=202610221700"></script>
+<script src="js/solo-kit.js?v=202610221700"></script>
+<script src="js/solo-massage-data.js?v=202610221700"></script>
+<script src="js/solo-massage.js?v=202610221700"></script>
+<script src="js/factions.js?v=202610221700"></script>
+<script src="js/classroom-life.js?v=202610221700"></script>
+<script src="js/classroom-teacher.js?v=202610221700"></script>
+<script src="js/endings.js?v=202610221700"></script>
+<script src="js/zombie-data.js?v=202610221700"></script>
+<script src="js/zombie-core.js?v=202610221700"></script>
+<script src="js/zombie-npc.js?v=202610221700"></script>
+<script src="js/zombie-opening.js?v=202610221700"></script>
+<script src="js/zombie-events.js?v=202610221700"></script>
+<script src="js/zombie-reunion.js?v=202610221700"></script>
+<script src="js/zombie-bite.js?v=202610221700"></script>
+<script src="js/zombie-love.js?v=202610221700"></script>
+<script src="js/zombie-together.js?v=202610221700"></script>
+<script src="js/zombie-solo.js?v=202610221700"></script>
+<script src="js/zombie-letter.js?v=202610221700"></script>
+<script src="js/rel-kit.js?v=202610221700"></script>
+<script src="js/zombie-rel.js?v=202610221700"></script>
+<script src="js/island-rel.js?v=202610221700"></script>
+<script src="js/rel-bad-engine.js?v=202610221700"></script>
+<script src="js/island-escape.js?v=202610221700"></script>
+<script src="js/island-stay.js?v=202610221700"></script>
+<script src="js/island-corpse.js?v=202610221700"></script>
+<script src="js/island-sea.js?v=202610221700"></script>
+<script src="js/unreq.js?v=202610221700"></script>
+<script src="js/fwbcrush.js?v=202610221700"></script>
+<script src="js/zombie-cure.js?v=202610221700"></script>
+<script src="js/zombie-assault.js?v=202610221700"></script>
+<script src="js/zombie-map.js?v=202610221700"></script>
+<script src="js/persona-final.js?v=202610221700"></script>
+<script src="js/pos.js?v=202610221700"></script>
+<script src="js/icons.js?v=202610221700"></script>
+<script src="js/view.js?v=202610221700"></script>
+<script src="js/dungeon-view.js?v=202610221700"></script>
+<script src="js/solo-story-kit.js?v=202610221700"></script>
+<script src="js/solo-saimin-data.js?v=202610221700"></script>
+<script src="js/solo-saimin.js?v=202610221700"></script>
+<script src="js/solo-locker-data.js?v=202610221700"></script>
+<script src="js/solo-locker-more.js?v=202610221700"></script>
+<script src="js/solo-locker-bed.js?v=202610221700"></script>
+<script src="js/solo-locker.js?v=202610221700"></script>
+<script src="js/rpg-data.js?v=202610221700"></script>
+<script src="js/scenario-rpg.js?v=202610221700"></script>
+<script src="js/jashin-data.js?v=202610221700"></script>
+<script src="js/jashin-gods.js?v=202610221700"></script>
+<script src="js/jashin-fx-a.js?v=202610221700"></script>
+<script src="js/jashin-fx-b.js?v=202610221700"></script>
+<script src="js/jashin-gods-rev.js?v=202610221700"></script>
+<script src="js/jashin-more.js?v=202610221700"></script>
+<script src="js/jashin-rel-text.js?v=202610221700"></script>
+<script src="js/jashin-rel.js?v=202610221700"></script>
+<script src="js/jashin-drama.js?v=202610221700"></script>
+<script src="js/jashin.js?v=202610221700"></script>
+<script src="js/jashin-cave.js?v=202610221700"></script>
+<script src="js/jashin-loop.js?v=202610221700"></script>
+<script src="js/jashin-mage.js?v=202610221700"></script>
+<script src="js/jashin-goals-text.js?v=202610221700"></script>
+<script src="js/jashin-goals.js?v=202610221700"></script>
+<script src="js/jashin-npc-text.js?v=202610221700"></script>
+<script src="js/jashin-npc.js?v=202610221700"></script>
+<script src="js/jashin-godev.js?v=202610221700"></script>
+<script src="js/jashin-godev-data-a.js?v=202610221700"></script>
+<script src="js/jashin-godev-data-b.js?v=202610221700"></script>
+<script src="js/jashin-godev-sp-a.js?v=202610221700"></script>
+<script src="js/jashin-godev-sp-b.js?v=202610221700"></script>
+<script src="js/yakata-data.js?v=202610221700"></script>
+<script src="js/yakata-tricks-a.js?v=202610221700"></script>
+<script src="js/yakata-tricks-b.js?v=202610221700"></script>
+<script src="js/yakata.js?v=202610221700"></script>
+<script src="js/yakata-frame.js?v=202610221700"></script>
+<script src="js/jinro-data.js?v=202610221700"></script>
+<script src="js/scenario-jinro.js?v=202610221700"></script>
+<script src="js/jinro-after.js?v=202610221700"></script>
+<script src="js/jinro-love.js?v=202610221700"></script>
+<script src="js/rel-bad-story.js?v=202610221700"></script>
+<script>window.HK_SAFE_BUILD = 1;</script>
+<script src="js/safe.js?v=202610221700"></script>
+<script src="js/safe-room.js?v=202610221700"></script>
+<script src="js/share-card.js?v=202610221700"></script>
+<script src="js/egoquiz.js?v=202610221700"></script>
+<script src="js/saves.js?v=202610221700"></script>
+<script src="js/ui.js?v=202610221700"></script>
+<script src="js/ui-gear.js?v=202610221700"></script>
+<script src="js/ui-fold.js?v=202610221700"></script>
+<script src="js/reset.js?v=202610221700"></script>
+
+</body></html>
