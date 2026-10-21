@@ -9,7 +9,11 @@ const { openBuild } = require('./lib');
   const [dir, out, seeds, r18] = process.argv.slice(2);
   if (!dir || !out) { console.error('使い方: node collect.js <ビルド> <出力.json> [seeds] [r18]'); process.exit(1); }
   const { browser, page, errors } = await openBuild(dir, r18 ? 'r18' : '');
-  const OPT = { n: +(seeds || 12), tone: process.env.TONE || '', fps: (process.env.FPS || '').split(',').filter(Boolean), only: (process.env.SCEN || '').split(',').filter(Boolean) };
+  /* TIES=0-1:lover,0-1:enemy,2-3:senpai で関係を、PICK=0:job=sleuth,1:role=ponkotsu で役割・職業を設定（住人の番号は0から） */
+  const TIES = (process.env.TIES || '').split(',').filter(Boolean).map(s => { const m = s.match(/^(\d+)-(\d+):(\w+)$/); return m ? { a: +m[1], b: +m[2], type: m[3] } : null; }).filter(Boolean);
+  const PICK = {};
+  (process.env.PICK || '').split(',').filter(Boolean).forEach(s => { const m = s.match(/^(\d+):(\w+)=(\w+)$/); if (m) (PICK[m[1]] = PICK[m[1]] || {})[m[2]] = m[3]; });
+  const OPT = { n: +(seeds || 12), tone: process.env.TONE || '', fps: (process.env.FPS || '').split(',').filter(Boolean), only: (process.env.SCEN || '').split(',').filter(Boolean), ties: TIES, pick: PICK };
   const data = await page.evaluate((OPT) => {
     const HK = window.HK, V = HK.Voice;
     let cur = null, curText = '', ovs = null; const rec = [];
@@ -35,11 +39,11 @@ const { openBuild } = require('./lib');
         for (let i = 0; i < n; i++) {
           const tone = OPT.tone || tones[(ti++) % tones.length];
           chars.push({ name: NAMES[i], eg: { CP: Math.round(r() * 20), NP: Math.round(r() * 20), A: Math.round(r() * 20), FC: Math.round(r() * 20), AC: Math.round(r() * 20) }, memo: '', gender: i % 3 === 0 ? 'm' : i % 3 === 1 ? 'f' : '', likes: '', tone, fp: OPT.fps.length ? OPT.fps[(i + s) % OPT.fps.length] : '', pos: '', color: '', call: '', calls: {}, loveLock: '' });
-          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
+          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: OPT.pick[i] || {}, role: '' });
         }
         const env = {}; (sc.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : ''); });
         const start = rec.length;
-        try { HK.simulate({ scenId: id, seed: 12345 + s * 101, env, chars, perChar, ties: [] }); }
+        try { HK.simulate({ scenId: id, seed: 12345 + s * 101, env, chars, perChar, ties: OPT.ties.filter(t => t.a < n && t.b < n) }); }
         catch (e) { fails.push({ id, s, err: String(e && e.stack || e) }); continue; }
         results.push({ id, s, chars: chars.map(c => ({ name: c.name, tone: c.tone, g: c.gender })), recs: rec.slice(start) });
       }

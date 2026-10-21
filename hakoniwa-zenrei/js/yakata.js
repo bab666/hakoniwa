@@ -84,7 +84,7 @@
     var dets = P.filter(function (p) { return p.isDet; });
     if (!dets.length) {
       var best = P.filter(function (p) { return p.role !== 'host'; }).sort(function (a, b) { return (b.tr.a + (b.stats.wit || 3) * 0.1) - (a.tr.a + (a.stats.wit || 3) * 0.1); })[0] || P[0];
-      best.role = 'detective'; best.isDet = true; best.roleLabel = '探偵'; best.autoDet = true; S.notes.push('探偵が決められていなかったので、推理力のいちばん高い' + best.name + 'が探偵になった');
+      best.role = 'detective'; best.isDet = true; best.roleLabel = '名探偵'; best.autoDet = true; S.notes.push('探偵役が決められていなかったので、推理力のいちばん高い' + best.name + 'が名探偵になった');
     } else if (dets.length > 4) {
       dets.slice(4).forEach(function (p) { p.isDet = false; p.role = 'civ'; p.roleLabel = '一般人'; });
       S.notes.push('探偵は4人までなので、5人目以降は一般人として参加した');
@@ -163,6 +163,7 @@
     ST.step(S, '1日目・夕方');
     ST.say(S, { kind: 'phase', text: pk(S, T.ARRIVE) + '館の名は、' + S.M + '。' + (S.host.npc ? F(pk(S, T.HOST_NPC), { h: S.host.name }) : F(pk(S, T.HOST_PC), { h: S.host.name, m: S.M })) + pk(S, T.SEAL) });
     arrive(S);
+    if (Y.FEUD) Y.FEUD.arrive(S);
     ST.snap(S, ['fear', 'sus', 'clue']);
 
     /* ---------- 夜ごとに ---------- */
@@ -190,6 +191,7 @@
         ST.budget(S, 4 + Math.ceil(P.length / 3));
         investigate(S);
         others(S);
+        if (Y.FEUD) Y.FEUD.tick(S, day + 1);
         bondTick(S);
         culpritMove(S);
         ST.flushShort(S, 'ほかに：');
@@ -292,6 +294,8 @@
     /* 占い師の予見・バディの守り */
     var seer = S.P.filter(function (q) { return alive(q) && q.role === 'seer' && q !== c; })[0];
     if (seer && rng() < 0.3) { ST.say(S, { actors: [seer, tgt], tag: '予見', text: F(pk(S, T.SEER), { a: seer.name, b: tgt.name }) + '一行は、' + tgt.name + 'の部屋の前で夜通し見張りをした。', why: '占い師の予見で、犯行を防いだ', mag: 24 }); c.m.sus = clamp(c.m.sus + 8, 0, 100); return; }
+    /* 愛憎の相手は、身を挺して守る（yakata-feud.js） */
+    if (Y.FEUD && Y.FEUD.guard(S, tgt, c)) return;
     var guard = tgt.isDet ? tgt.buddies.filter(alive)[0] : S.P.filter(function (q) { return alive(q) && q !== c && q !== tgt && bond(S, q, tgt) >= 0.75; })[0];
     if (guard && rng() < 0.45) {
       if (rng() < skill(guard, 'fight') + 0.25) {
@@ -719,6 +723,7 @@
     lines.push('動機：' + mot.cat + '「' + mot.label + '」――' + F(mot.why, fmtV(S, S.v1)));
     S.kills.forEach(function (k, i) { lines.push((i + 1) + '人目：' + k.v.name + '（' + k.trick.place + '・' + k.trick.method + '）――' + truthOf(S, k)); });
     if (S.acc) lines.push('共犯：' + S.acc.name);
+    (S.extraKills || []).forEach(function (x) { lines.push('事件とは別の殺人：' + x.a.name + 'が、憎んでいた' + x.b.name + 'を手にかけた'); });
     var rows = P.map(function (p) { return { i: p.i, rank: '', cells: [p.roleLabel, p.isCul ? '犯人' : p.isAcc ? '共犯' : S.kills.some(function (k) { return k.v === p; }) ? '被害者' : p.isDet ? '探偵役' : '', p.cnt.clue ? Math.round(p.cnt.clue) + 'つ' : '―', Math.round(p.m.sus) + '', p.fate] }; });
     return ST.result(S, input, {
       ending: { title: title, kind: /arrest|suicide|nobody/.test(S.over) ? 'ok' : 'over', lines: lines },
@@ -731,5 +736,6 @@
     });
   }
   Y.cat = cat; Y.showdown = showdown;
+  Y.gain = gain; Y.inv = inv;
   Y.skill = skill; Y.bond = bond; Y.setRel = setRel; Y.relLabel = relLabel; Y.alive = alive;
 })();

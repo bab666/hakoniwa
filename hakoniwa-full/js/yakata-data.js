@@ -11,7 +11,7 @@
 
   /* ---------- 役割と職業（sk：観察obs 知識lore 聞き込みtalk 検視med 捜索search 腕っぷしfight 隠しごとhide） ---------- */
   Y.ROLES = [
-    { id: 'detective', label: '探偵', group: '探偵役', sk: { obs: 0.4, lore: 0.2, talk: 0.15, search: 0.15 }, desc: '事件を推理で解く' },
+    { id: 'detective', label: '名探偵', group: '探偵役', sk: { obs: 0.4, lore: 0.2, talk: 0.15, search: 0.15 }, desc: '事件を推理で解く' },
     { id: 'ponkotsu', label: 'ポンコツ探偵', group: '探偵役', sk: { search: 0.15, talk: 0.05 }, desc: '自称名探偵。的外れな推理で場をかき回すが、たまに当たる' },
     { id: 'assistant', label: '助手', group: '探偵役', sk: { obs: 0.15, search: 0.2, talk: 0.15, fight: 0.1 }, desc: '探偵のバディ。手足となって動き、探偵を守る' },
     { id: 'host', label: '館の主', group: '館', sk: { lore: 0.25, hide: 0.2 }, desc: '館を知り尽くしている（隠し通路も）' },

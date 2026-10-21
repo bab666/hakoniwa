@@ -232,6 +232,16 @@
           P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 2); });
           return ctx.act2({ actors: P, cat: 'combat', text: fillN(ctx, '{a}は{n}たちに殴りかかったが、多勢に無勢だった。食料をほとんど奪われ、{a}は肋骨を押さえてうずくまった。', n, f), why: '略奪者のほうが多かった', mag: 26 });
         }
+        /* まれに、一人が犯される（R18版の solo-zombie-raid.js。襲われる人が「攻め」指定でないときだけ） */
+        if (Z.raiderAssault && ctx.env.zlewd !== 'off' && rng() < 0.3) {
+          var vs = P.filter(function (c) { return !(HK.Pos && HK.Pos.of(c) === 'top') && !c.flags.raided; });
+          if (vs.length) {
+            var v = HK.weighted(rng, vs, function (c) { return 1 + (1 - c.tr.cp) * 0.6 + (c.hp < 50 ? 0.4 : 0); });
+            P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 1); });
+            var ra = Z.raiderAssault(ctx, v, P.filter(function (c) { return c !== v; }), n);
+            return ctx.act2({ actors: ra.with, cat: 'betray', text: ra.text, why: ra.why, mag: ra.mag });
+          }
+        }
         P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 1); ctx.stress(c, 8); });
         ctx.act2({ actors: P, cat: 'conflict', text: fillN(ctx, '{n}たちは' + (n.gun ? '銃' : '鉄パイプ') + 'をちらつかせて、' + Z.names(P) + 'の食料を半分持っていった。「命までは取らねえよ。今日のところはな」', n), why: '逆らわないほうを選んだ（慎重さ）', mag: 18 });
       }

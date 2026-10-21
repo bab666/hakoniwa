@@ -74,7 +74,7 @@
       var rng = S.rng, eat = [], skip = [];
       S.P.forEach(function (p) {
         p.cnt.r18 = 0;
-        if (rng() < 0.85 - p.tr.caution * 0.5 - (p.job === 'detective' || p.job === 'doctor' ? 0.2 : 0)) { p.aphro = true; eat.push(p); } else skip.push(p);
+        if (rng() < 0.85 - p.tr.caution * 0.5 - (p.job === 'sleuth' || p.job === 'doctor' ? 0.2 : 0)) { p.aphro = true; eat.push(p); } else skip.push(p);
       });
       var t = ST.pick(S, MEAL) + eat.map(function (p) { return ST.fmt(ST.pick(S, MEAL_EAT), { a: p.name }); }).join('') + skip.map(function (p) { return ST.fmt(ST.pick(S, MEAL_SKIP), { a: p.name }); }).join('');
       ST.say(S, { actors: S.P, tag: '夕餉', text: t, why: '食事に媚薬が盛られていた（食べた：' + (eat.map(function (p) { return p.name; }).join('・') || 'なし') + '）。慎重な人ほど食べない', mag: 16 });

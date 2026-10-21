@@ -224,7 +224,7 @@
   }
 
   /* 表を借りる口調は base（辞書で書き下ろしに差し替わる）、それ以外は文面の表の口調 */
-  var BASE_TONES = { gentleman: 1, noja: 1, kansai: 1, mukuchi: 1, mixed: 1 };
+  var BASE_TONES = { gentleman: 1, noja: 1, kansai: 1, mukuchi: 1, mixed: 1, darui: 1 };   /* けだるげの書き下ろしは tone-darui.js */
   function keyOf(p) {
     var t = HK.toneOf ? HK.toneOf(p) : p.tone;
     if (BASE_TONES[t]) return 'base';
