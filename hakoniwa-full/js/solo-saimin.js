@@ -217,7 +217,7 @@
           if (p.m.plea >= 100) { cl++; p.m.plea = 30; }
           /* 小説調の山場：本番の暗示を受け入れて達したときは、段落に分けて厚く（solo-thick4.js） */
           /* 達しなかった本番の暗示でも、ときどき厚くする（そのときは一度達したことにする） */
-          var thick = full && g.lewd && (cl || rng() < 0.6) && HK.Thick4 && HK.Thick4.ok(S, lew) ? thickSug(S, p, fb, vk) : null;
+          var thick = full && g.lewd && (cl ? rng() < 0.85 : rng() < 0.3) && HK.Thick4 && HK.Thick4.ok(S, lew) ? thickSug(S, p, fb, vk) : null;
           if (thick) { t = t.replace(fb, thick); if (!cl) cl = 1; }
           if (cl) {
             p.cnt.climax += cl; p.m.fall = clamp(p.m.fall + cl * 3, 0, 100);
@@ -330,7 +330,7 @@
   }
   /* 我に返っても流された場面（afterSnap の swept）も、小説調ならときどき厚く */
   function snapThick(S, p, sr) {
-    if (!sr || sr.k !== 'swept' || !HK.Thick4 || !HK.Thick4.ok(S, S.env.lewd || 'mid') || S.rng() > 0.6) return sr;
+    if (!sr || sr.k !== 'swept' || !HK.Thick4 || !HK.Thick4.ok(S, S.env.lewd || 'mid') || S.rng() > 0.5) return sr;
     var hc = p.hc || { name: p.h, gender: p.ff ? 'f' : 'm' }, top = p.aTopLast, dom = top ? p : hc, sub = top ? hc : p;
     var sc = HK.Thick4.scene(S, { dom: dom, sub: sub, kind: p.ff ? 'ff' : 'in', lead: sr.text.replace(/[^。」]*「[^」]*」$/, ''), sad: HK.Thick4.rollSad(S, dom, sub),
       after: ST.fmt(ST.pick(S, ['正気のまま流されたことを、{a}はもう言い訳できなかった。', '{a}は天井を見上げたまま、自分の選んだことの重さを噛みしめていた。']), { a: p.name }) });
