@@ -124,7 +124,7 @@
     /* 解放のしかた：おまかせなら場所と運で決まる */
     var mode = env.release && env.release !== 'auto' ? env.release : (function () { var x = rng(); return x < 0.4 ? 'burst' : x < 0.62 ? 'drip' : x < 0.82 ? 'mid' : 'late'; })();
     /* 最中に戻る：途中で遮断が壊れ、そのあとは壁の向こうをそのまま感じる（自分で攻めを選んだ人には起きない） */
-    var LV = HK.HoleLive, live = false, liveTier = 0, liveN = 0, liveSeen = [];
+    var LV = HK.HoleLive, live = false, liveTier = 0, liveN = 0, liveSeen = [], sweetUsed = [];
     if (mode === 'mid' && (hardTop || !LV)) mode = 'burst';
     var tMid = mode === 'mid' ? Math.max(1, Math.round(H * (0.35 + rng() * 0.3))) : Infinity;
     var lpk = function (arr) { var f = arr.filter(function (x) { return !(topMe && LV.RECV.test(x)); }); return K.pick(S, f.length ? f : arr); };
@@ -140,6 +140,16 @@
         ' ' + K.fmt(S, lpk(LV.REACT[h.persona][t2])) + (t2 === 2 && rng() < 0.5 ? ' ' + K.fmt(S, K.pick(S, LV.ENJOY[topMe ? 'top' : 'recv'])) : '');
       liveN++; liveTier = t2;
       K.say(S, { kind: 'ev', tag: ['感じてしまう', '体が応える', '自分から求める'][t2], text: txt, why: '感覚は戻っている／' + ['まだ抵抗している', '嫌なのに体が応える', '壁の向こうを受け入れた'][t2] + '（堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
+      /* 激しくされて、甘イキが止まらなくなる（揺らぐ・享受の段階で、過激な出来事か、続けて果てたとき。一回の遊びで二度まで） */
+      if (t2 >= 1 && sweetUsed.length < 2 && (be.lv === 2 || r.climaxes.length >= 2 || rng() < 0.2 + t2 * 0.1)) {
+        var cand = LV.SWEET.filter(function (p) { return sweetUsed.indexOf(p) < 0; }), sp = cand[rng.int(cand.length)];
+        sweetUsed.push(sp);
+        var nC = 2 + rng.int(3) + (t2 === 2 ? 1 : 0) - r.climaxes.length;
+        for (var c2 = 0; c2 < nC; c2++) K.climax(S, { silent: true });
+        var osw = K.say(S, { kind: 'climax', tag: '甘イキが止まらない', text: K.fmt(S, LV.sweetText(sp, topMe)), why: '感覚が戻ったあと、激しくされて ' + (nC + r.climaxes.length) + '回続けて果てた（絶頂 ' + h.climax + '回目まで）' });
+        if (sweetUsed.length === 1) K.key(S, osw, '甘イキが止まらなくなった');
+        return;
+      }
       K.logClimax(S, r.climaxes);
     }
     /* 壁の向こうの出来事を、過激さに合わせて選ぶ */
