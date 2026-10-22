@@ -39,7 +39,7 @@
     rng.shuffle(pairs).forEach(function (pr) {
       var a = pr[0], b = pr[1];
       if (taken[a.i] || taken[b.i] || !HK.canLove(a, b) || !HK.canLove(b, a)) return;
-      if (['sibling', 'parent'].indexOf(tieType(ctx, a, b)) >= 0 && !(HK.Ties.get(ctx, a, b) && HK.TIES[HK.Ties.get(ctx, a, b).type].loveOK)) return;
+      if (HK.Ties.all(ctx, a, b).some(HK.tieNoLove)) return;
       var now = ao(a, b);
       /* スイッチすればα×Ωになる二人（スイッチした瞬間に気づく） */
       var later = !now && ((a.om.sw && (flip(a) + sx(b) === 'ao' || flip(a) + sx(b) === 'oa')) || (b.om.sw && (sx(a) + flip(b) === 'ao' || sx(a) + flip(b) === 'oa')));

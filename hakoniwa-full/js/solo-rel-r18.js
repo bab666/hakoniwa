@@ -32,7 +32,7 @@
   /* ======================= 無人島 ======================= */
   var isl = HK.SCENARIOS.island;
   if (isl) {
-    isl.env.push({ id: 'ilewd', label: '島の夜（R18）', type: 'select', def: 'fade', options: [{ v: 'off', label: '描かない' }, { v: 'fade', label: 'ほのめかす' }, { v: 'high', label: '描写する' }], desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜。家族と教師と生徒の組では起きません' });
+    isl.env.push({ id: 'ilewd', label: '島の夜（R18）', type: 'select', def: 'fade', options: [{ v: 'off', label: '描かない' }, { v: 'fade', label: 'ほのめかす' }, { v: 'high', label: '描写する' }], desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜。恋愛なしの家族と、教師と生徒の組では起きません' });
     var I = {
       ask: {
         lover: L('焚き火が小さくなった頃、{a}は{b}の手を引いて、岩陰の寝床へ連れていった。|{a}は{b}の耳元で囁いた。「……今夜は、二人で寝よう」|満月の浜辺で、{a}は{b}を後ろから抱きしめた。'),

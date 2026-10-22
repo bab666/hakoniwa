@@ -25,7 +25,7 @@
   /* 家族・教師と生徒（恋愛・性的な展開にしない組） */
   RK.noRomance = function (ctx, a, b) {
     var l = HK.Ties ? HK.Ties.all(ctx, a, b) : [];
-    return l.some(function (t) { return /^(parent|sibling|sibprot|sibclose|teacher)$/.test(t.type); });
+    return l.some(function (t) { return t.type === 'teacher' || HK.tieNoLove(t); });
   };
   RK.locked = function (a) { return a && a.lock != null; };
   RK.lockedTo = function (a, b) { return a && b && a.lock === b.i; };
