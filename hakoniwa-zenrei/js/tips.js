@@ -188,7 +188,9 @@
   var css = '.tipbtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:13px;font-weight:700;line-height:1;cursor:pointer;padding:0;margin-left:6px;vertical-align:2px;font-family:inherit}' +
     '.tipbtn:hover,.tipbtn:focus-visible{color:var(--accent);border-color:var(--accent)}' +
     '.tiplead{font-size:14px;line-height:1.7;margin:6px 0 0}.tipul{margin:0;padding-left:1.2em;font-size:13px;line-height:1.75}.tipul li{margin:3px 0}' +
-    '.tipscen{margin:4px 0 0}';
+    '.tipscen{display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:3px 10px 3px 4px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);font-size:11.5px;font-family:inherit;line-height:1.4;cursor:pointer}' +
+    '.tipscen .q{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;border:1px solid currentColor;font-weight:700;font-size:11px}' +
+    '.tipscen:hover,.tipscen:focus-visible{color:var(--accent);border-color:var(--accent)}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   var ov = null, opener = null;
@@ -231,7 +233,8 @@
     },
     scenBtn: function (id) {
       if (!HK.TIPS_SCEN[id]) return '';
-      return '<button type="button" class="btn small tipscen" data-tip="scen:' + esc(id) + '">？ この箱庭のTIPS</button>';
+      var sc = HK.SCENARIOS && HK.SCENARIOS[id];
+      return '<button type="button" class="tipscen" data-tip="scen:' + esc(id) + '" aria-label="' + esc(sc ? sc.name : id) + 'のTIPS"><span class="q" aria-hidden="true">？</span>この箱庭のTIPS</button>';
     }
   };
 })();

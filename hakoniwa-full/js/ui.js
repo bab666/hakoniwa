@@ -494,7 +494,7 @@
       var cd = CARD_DESC[id], full = s.desc + (s.note ? '\n' + s.note : '') + (/成人として扱/.test(s.note || '') ? '' : '\n※登場人物はすべて成人として扱います。');
       cd = Array.isArray(cd) ? cd[HK.SAFE_ON ? 0 : 1] : cd || s.desc;
       return '<label class="scen' + (adult ? ' adult' : '') + (id === S.scenId ? ' on' : '') + '" title="' + esc(full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (id === S.scenId ? ' checked' : '') + '>' +
-        '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div><div class="d">' + esc(cd) + '</div><div class="note">' + esc(cardNote(s.note)) + '</div></label>';
+        '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div><div class="d">' + esc(cd) + '</div><div class="note">' + esc(cardNote(s.note)) + '</div>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</label>';
     }).join('');
     /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url） */
     if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<a class="scen r18link" href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">' +
@@ -535,7 +535,7 @@
     }).join('');
 
     var html =
-      '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' + (HK.Tips ? HK.Tips.scenBtn(S.scenId) : '') +
+      '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' +
       '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + '</h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + '</div></div>' +
       '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
       '<p class="hint">エゴグラムから自動で計算する気質と、エゴグラムでは分からないので別に決めるステータスです。</p>' +
