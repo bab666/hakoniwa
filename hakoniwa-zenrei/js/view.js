@@ -13,7 +13,8 @@
 
   /* 本文中のキャラ名に色をつける */
   function paint(text, res) {
-    var t = esc(text);
+    /* 山場の長い描写は段落（改行）で区切ってある */
+    var t = esc(text).replace(/\n/g, '<br>');
     var list = res.chars.map(function (c) { return { n: esc(c.name), i: c.i }; }).sort(function (a, b) { return b.n.length - a.n.length; });
     if (!list.length) return t;
     var re = new RegExp(list.map(function (x) { return x.n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
