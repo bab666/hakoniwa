@@ -107,10 +107,12 @@
     var pair = { level: -1, sexIn: false, acts: 0, refusedHard: false };
     var v0 = { a: A.name, b: B.name };
 
+    /* 拘束の文：最初の仕掛けは「手錠の鍵」なので、手錠と書いてある文を優先する */
+    function bindLines() { var l = LK.BIND[bind], c = l.filter(function (x) { return /手錠/.test(x); }); return bind === 'none' || !c.length ? l : c; }
     /* ---------- 目覚め ---------- */
     ST.step(S, '閉じ込められた');
     ST.budget(S, 3);
-    ST.say(S, { actors: [A, B], tag: '目覚め', text: ST.fmt(pk(LK.INTRO), v0) + ST.fmt(pk(LK.BIND[bind]), boundOne ? { a: boundOne.name, b: boundOne.o.name } : v0), why: '二人の関係：' + REL_LABEL[rel] + '／拘束：' + { both: '二人とも', one: boundOne ? boundOne.name + 'だけ' : '', none: 'なし' }[bind] });
+    ST.say(S, { actors: [A, B], tag: '目覚め', text: ST.fmt(pk(LK.INTRO), v0) + ST.fmt(pk(bindLines()), boundOne ? { a: boundOne.name, b: boundOne.o.name } : v0), why: '二人の関係：' + REL_LABEL[rel] + '／拘束：' + { both: '二人とも', one: boundOne ? boundOne.name + 'だけ' : '', none: 'なし' }[bind] });
     ST.say(S, { kind: 'phase', text: pk(LK.SPEAKER) + '（仕掛け：' + gimmicks.map(function (g) { return g.name; }).join('→') + '）' });
     /* 体の関係にならない二人・相手が自分で攻めを選んだ人のときは、手を取って触れさせる文を使わない */
     var plotPush = plotter ? LK.PLOT.push.filter(function (l) { return !((clash || (hardTop(plotter.o) && !hardTop(plotter))) && /胸に押し当て|腰に回させ|任せて/.test(l)); }) : [];
@@ -319,6 +321,8 @@
         if (lv >= 3 && fcKind && LK.FC && !pair.fcShown) { pair.fcShown = true; t += ST.fmt(pk(LK.FC.inside[fcKind]), { c: crusher.name, o: crusher.o.name }); }
         if (lew === 'low' && lv >= 3) t = ST.fmt(pk(actPool), vA).replace(/。.*$/, '。') + '――その先は、ロッカーの扉の隙間からも見えなかった。';
         /* 自分で攻めを選んだ人は、相手に「イかされる」側にしない */
+        /* 繋がった瞬間には果てさせない（そこからの数コマを、続きの出来事で書く） */
+        if (lv === 4) { ax.m.plea = Math.min(ax.m.plea, 55); bx.m.plea = Math.min(bx.m.plea, 60); }
         if (bx.m.plea >= 100) { if (hardTop(bx)) bx.m.plea = 95; else t = climax(bx, t, !axTop); }
         var topC = tp.cnt.climax;
         if (ax.m.plea >= 100) t = climax(ax, t, axTop);
