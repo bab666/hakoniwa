@@ -378,9 +378,32 @@
     ST.key(S, o, a.name + 'の遭難');
   }
   function closest(S, a, ex) { return live(S).filter(function (q) { return q !== a && (!ex || ex.indexOf(q) < 0); }).sort(function (x, y) { return bond(S, y, a) - bond(S, x, a); })[0]; }
+  /* 星の生命体との夜（ship-r18-xeno2.js）：生命体ごと・型（誘い／強引／攫われる／実験）ごとの文。攻めを選んだ人は主導権を握る */
+  function xeno(S, a, d, onlyMode) {
+    var X2 = SH.X2, rng = S.rng;
+    if (!X2 || !a || !d) return false;
+    var ms = X2.modes(d).filter(function (m) { return !onlyMode || m[0] === onlyMode; });
+    if (!ms.length) return false;
+    var m = HK.weighted(rng, ms, function (x) { return x[1]; })[0];
+    var top = HK.Pos && HK.Pos.hardTop(a), b = closest(S, a) || { name: '仲間' }, v = { a: a.name, b: b.name, x: d.name };
+    var pick = function (arr) { return pk(S, arr); };
+    var body = top ? pick(X2.TOP[m]) : X2.text(S, d, m, pick);
+    if (!body) return false;
+    var t = F(body, v) + (top ? '' : F(pick(X2.AFTER[m]), v));
+    a.cnt.r18 = (a.cnt.r18 || 0) + 1;
+    if (!top) { stress(a, m === 'lure' ? 6 : m === 'probe' ? 8 : 14); a.m.fear = clamp(a.m.fear + (m === 'force' || m === 'take' ? 8 : 2), 0, 100); }
+    else stress(a, -5);
+    var o = ST.say(S, { actors: [a], tag: X2.TAG[m], kind: 'climax', text: t, why: d.name + '（' + LIFE_JP[d.kind] + '）／' + X2.MODE_NAME[m] + (top ? '／自分で攻めを選んでいるので、受けにはならず主導権を握った' : ''), mag: 30 });
+    if (!S.xenoKey) { S.xenoKey = true; ST.key(S, o, a.name + 'と' + d.name); }
+    return true;
+  }
   function lure(S) {
     var rng = S.rng, Pn = S.planet, X = SH.X, src = [];
-    Pn.life.forEach(function (l) { if (l.st >= 1 && /friendly|neutral/.test(l.d.kind)) src.push({ x: l.d.name, pool: X.lureLife }); });
+    /* 調べた生命体がいれば、半分以上は生命体ごとの文で */
+    var seen = Pn.life.filter(function (l) { return l.st >= 1; });
+    if (SH.X2 && seen.length && rng() < 0.7 && xeno(S, rng.pick(live(S)), rng.pick(seen).d)) return;
+    /* 生命体は xeno に任せる（「巨体にのしかかられる」文が小さな生き物に付かないように）。ここでは文明の住人だけ */
+    if (!SH.X2) Pn.life.forEach(function (l) { if (l.st >= 1 && /friendly|neutral/.test(l.d.kind)) src.push({ x: l.d.name, pool: X.lureLife }); });
     if (Pn.civ.st >= 1 && /primitive|living/.test(Pn.civ.d.state)) src.push({ x: Pn.civ.d.name, pool: X.lureCiv });
     if (!src.length) return;
     var o = rng.pick(src), a = rng.pick(live(S)), b = closest(S, a) || { name: '仲間' };
@@ -723,6 +746,7 @@
   }
   /* 異星の生き物：自分で攻めを選んだ人は、手懐けて主導権を握る */
   function alienR18(S, a, d) {
+    if (SH.X2 && S.rng() < 0.75 && xeno(S, a, d)) return;
     var R = SH.R18, top = HK.Pos && HK.Pos.hardTop(a);
     var X = SH.X, sp = !top && X && X.play[d.kind] && S.rng() < 0.6 ? X.play[d.kind] : null;
     if (!sp && !/friendly|symbiotic|parasite|plant/.test(d.kind)) return;
