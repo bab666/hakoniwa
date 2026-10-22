@@ -96,5 +96,7 @@
     }).join('');
   }
   V.aneQuote = ane;
+  /* 語尾の判定は、ほかの派生口調（tone-usan.js など）でも使う */
+  HK.TONE_END = { plain: PLAIN_END, na: NA_END, wh: WH };
   HK.toneFinish('ane', ane);
 })();
