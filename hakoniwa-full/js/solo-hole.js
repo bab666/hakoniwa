@@ -75,9 +75,16 @@
   };
 
   HK.SCENARIOS.hole = {
-    id: 'hole', name: '感覚遮断穴', kicker: 'ソロ・R18', solo: true, maxCast: 1, minCast: 1,
+    id: 'hole', name: '感覚遮断穴', kicker: '1〜4人・R18', solo: true, maxCast: 4, minCast: 1,
+    castHint: '1〜4人。役割「穴にはまる」の人が壁にはまり（決めなければ一人目）、ほかの人（3人まで）は壁の向こう、下半身の側にいる。途中で壁から突き出た体に出くわし、関係・性格・はまっている人の発情の見え方しだいで、助けるか、手を出すかが変わる。助け出されたら、その場で終わる。',
+    perFields: [{ id: 'side', label: '役割', auto: 'おまかせ（一人目が穴にはまる）', options: [{ id: 'stuck', label: '穴にはまる' }, { id: 'behind', label: '壁の向こう（下半身側）' }] }],
     desc: '壁の穴に下半身がはまり、向こう側の感覚は遮断されている。そこで何をされても分からない――解放されるまでは。※成人キャラクター向け',
-    unit: '時間', simulate: function (input) { return run(input); },
+    unit: '時間', simulate: function (input) {
+      var r = run(input), n = (input.chars || []).length;
+      /* 壁の向こうの住人も、結果の住人一覧に入れる（台詞の口調・名前の色） */
+      if (n > 1) { var si = HK.HoleBehind ? HK.HoleBehind.cast(input).si : 0; r.chars = input.chars.map(function (c, i) { return { name: c.name, i: i }; }); if (r.hero) r.hero.i = si; }
+      return r;
+    },
     derived: ['caution', 'cold', 'impulse', 'honesty'],
     env: [
       { id: 'place', label: '場所', type: 'select', def: 'lab', options: Object.keys(PLACE).map(function (k) { return { v: k, label: PLACE[k].n }; }) },
@@ -108,7 +115,12 @@
   };
 
   function run(input) {
-    var S = K.state(input, 'hole'), h = S.h, rng = S.rng, env = S.env;
+    var S = K.state(input, 'hole'), rng = S.rng, env = S.env;
+    /* 穴にはまる人と、壁の向こう（下半身側）の住人（solo-hole-behind.js） */
+    var BH = HK.HoleBehind, cast = BH ? BH.cast(input) : { si: 0, others: [] }, rescue = null;
+    if (cast.si) { S.h = K.hero(S, input.chars[cast.si], (input.perChar && input.perChar[cast.si]) || {}); S.h.i = cast.si; S.party = [S.h]; }
+    var h = S.h;
+    if (BH) BH.setup(S, input, cast);
     h.sens = 0.85 + (h.stats.sense - 3) * 0.12;
     var H = env.hours, pl = PLACE[env.place] || PLACE.lab;
     S.k = clamp(Math.pow(6 / H, 0.5), 0.5, 1.4);
@@ -205,6 +217,14 @@
         K.say(S, { kind: 'ev', tag: '壁の向こう', text: txt, why: hardTop ? '攻めの指定：手を出そうとした相手を追い払った' : metaWhy() + '（溜まった感覚 ' + Math.round(stored) + '）' });
         if (rng() > 0.5) break;
       }
+      /* 壁の向こうの住人が、突き出た体に出くわす */
+      if (BH && !S.behindDone && t >= S.behindAt) {
+        S.behindDone = true;
+        var bst = { live: live, stored: stored, hardTop: hardTop, topMe: topMe, meta: meta };
+        rescue = BH.encounter(S, bst);
+        stored = bst.stored;
+        if (rescue) break;
+      }
       /* こちら側に誰かが来る */
       if (!hardTop && stored > 60 && thisN < 2 && rng() < 0.22) {
         thisN++;
@@ -250,6 +270,12 @@
       K.settle(S);
       K.snap(S, { s: Math.min(100, stored / 8) });
       if (early) break;
+    }
+
+    /* ---------- 助け出された：その場で終わり ---------- */
+    if (rescue) {
+      var ER = BH.rescueEnd(S, input, { live: live, stored: stored, hardTop: hardTop }, rescue);
+      return K.finish(S, input, ER, ['壁の向こうの住人が助けるか手を出すかは、はまっている人との関係・その人の性格（NP・CP・FC・衝動）・発情の見え方で決まる。', '助け出された瞬間に、溜まっていた感覚は一度に戻る。'], { meta: pl.n + '・' + H + '時間・救出', estats: [['経過', S.step + '時間'], ['助けた人', rescue.rescued.name], ['手を出した人', rescue.doers.length ? rescue.doers.map(function (d) { return d.name; }).join('・') : 'いない'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
     }
 
     /* ---------- 解放 ---------- */
