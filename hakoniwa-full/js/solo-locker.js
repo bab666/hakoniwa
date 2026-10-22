@@ -285,6 +285,8 @@
           ST.sayB(S, { actors: [tq, bq], tag: LK.CONT.tag.again, text: ST.fmt(pk(contPool('again', tq, bq)), { a: tq.name, b: bq.name }), why: '一度果てても、媚薬の熱は引かなかった（' + a.name + 'の発情 ' + Math.round(a.m.heat) + '）', mag: 28, kind: 'climax' }, tq.name + 'と' + bq.name + '：もう一度', true);
           break;
         }
+        /* これ以上先へ進めない段階（全年齢版の「抱きしめる」など）を、毎コマ繰り返さない */
+        if (lv <= pair.level && pair.lastAct != null && turn - pair.lastAct < 2 && rng() < 0.7) continue;
         var act = LK.ACT[LV[lv]];
         a.cnt.make++;
         var w = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3, crush: crusher === b ? 0.45 : -0.05, friend: 0, tension: -0.3, ex: 0.05, stranger: -0.1, master: servant === b ? 0.35 : 0.2 }[rel] || 0) + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (plotter === b ? 0.8 : 0) + (fwbAll && rel !== 'fwb' ? 0.35 : 0) + (fcKind === 'mutual' ? 0.2 : 0) + (crusher === b && rel !== 'crush' ? 0.2 : 0) + (rng() - 0.5) * 0.3;
@@ -312,7 +314,7 @@
           ST.sayB(S, { actors: [a, b], tag: '嗜めた', text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は嗜めた（理性 ' + Math.round(b.m.reason) + '・CP）', mag: 18 }, b.name + 'が嗜めた', pair.acts === 0);
           continue;
         }
-        b.cnt.accept++; pair.level = lv; pair.acts++; lewdNow = true;
+        b.cnt.accept++; pair.level = lv; pair.acts++; pair.lastAct = turn; lewdNow = true;
         if (swap) t += ST.fmt(pk(LK.TAKE[b.bound ? 'bound' : 'free']), vT) + ST.fmt(pk(actPool), vA);
         else t += ST.fmt(pk(hands((resp === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); }), a, b)), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
         /* 最初の一回は、二人の関係で受け止め方が変わる */

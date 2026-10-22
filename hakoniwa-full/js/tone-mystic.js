@@ -246,5 +246,6 @@
     return out.replace(/かいかい/g, 'かい').replace(/さ(?:さ)+(?=[。！？…、」]|$)/g, 'さ').replace(/([！？!?])。/g, '$1');
   }
   V.mysticQuote = mystic;
-  HK.toneFinish('mystic', mystic);
+  /* ミステリアスは分析口調を借りるが、計算・確率・データといった言葉は使わない（冷静と同じ言い換え） */
+  HK.toneFinish('mystic', function (q, who) { return mystic(HK.calmText ? HK.calmText(q) : q, who); });
 })();

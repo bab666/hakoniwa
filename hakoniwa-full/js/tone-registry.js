@@ -15,6 +15,7 @@
    fp … 一人称 { m: 男性, f: 女性, x: 性別なし }
    neutral / plain / calm / kansai … tone-plus.js の言い換え（中性的な語尾・敬語を外す・分析口調を外す・関西弁）
    derive … この口調の台詞を作ってから、最後に語尾を付け替える（付け替えは HK.toneFinish で登録）
+   noBaseFix … derive の口調で、元の口調向けに書き下ろした台詞（tone-fix-g*.js）を引き継がない（引き継ぐと口調の個性が薄れるとき）
    egoTable … 文面の表がエゴグラムから決まり、それが敬語の表なら穏やかの表に替える（敬語の表だと言い換えが効かないため）
    noPolite … egoTable に加えて、敬語で話す健気の表も穏やかの表に替える
    lines: 'base' … 書き下ろしの列（tone-lines.js などの ROWS）を持つ口調。場面の台詞は元の表から引き、辞書で差し替える

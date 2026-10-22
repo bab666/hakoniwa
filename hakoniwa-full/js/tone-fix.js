@@ -2505,6 +2505,9 @@
       var ns = (people || []).map(function (p) { return p.name; }).filter(Boolean).sort(function (a, b) { return b.length - a.length; }), names = [];
       var key = ns.length ? q.replace(new RegExp(ns.map(esc).join('|'), 'g'), function (m) { names.push(m); return '〈〉'; }) : q;
       var v = T[key];
+      /* 派生の口調（チャラい・熱血など、registry の noBaseFix）は、元の口調向けに書き下ろした台詞（tone-fix-g*.js）を引き継がない */
+      var GK = V.TONE_FIX_G;
+      if (v != null && who._from && HK.toneOpt && HK.toneOpt(who._from, 'noBaseFix') && GK && GK[who.tone] && GK[who.tone][key]) v = null;
       /* 頭の「…」だけ違う台詞も同じものとして引く（頭の「…」は残す） */
       if (v == null) { var lead = (key.match(/^[…‥]+/) || [''])[0]; if (lead && T[key.slice(lead.length)] != null) v = lead + T[key.slice(lead.length)].replace(/^[…‥]+/, ''); }
       if (v != null) { var i = 0; return v.replace(/〈〉/g, function () { var n = names[Math.min(i, names.length - 1)]; i++; return n || ''; }); }
