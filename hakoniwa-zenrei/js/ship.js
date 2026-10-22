@@ -316,6 +316,18 @@
     ST.key(S, o, a.name + 'の遭難');
   }
   function closest(S, a, ex) { return live(S).filter(function (q) { return q !== a && (!ex || ex.indexOf(q) < 0); }).sort(function (x, y) { return bond(S, y, a) - bond(S, x, a); })[0]; }
+  function lure(S) {
+    var rng = S.rng, Pn = S.planet, X = SH.X, src = [];
+    Pn.life.forEach(function (l) { if (l.st >= 1 && /friendly|neutral/.test(l.d.kind)) src.push({ x: l.d.name, pool: X.lureLife }); });
+    if (Pn.civ.st >= 1 && /primitive|living/.test(Pn.civ.d.state)) src.push({ x: Pn.civ.d.name, pool: X.lureCiv });
+    if (!src.length) return;
+    var o = rng.pick(src), a = rng.pick(live(S)), b = closest(S, a) || { name: '仲間' };
+    var top = HK.Pos && HK.Pos.hardTop(a), m = { a: a.name, b: b.name, x: o.x };
+    var t = F(pk(S, o.pool), m) + (top ? F(pk(S, X.lureTop), m) : F(pk(S, X.huge), m) + F(pk(S, X.hugeAct), m) + F(pk(S, X.lureAfter), m));
+    a.cnt.r18 = (a.cnt.r18 || 0) + 1; stress(a, top ? -5 : 8);
+    var r = ST.say(S, { actors: [a], tag: '異種族の誘い', kind: 'climax', text: t, why: o.x + 'の誘い。言葉が通じず、誘われているとは分からなかった' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 32 });
+    if (!S.lureKey) { S.lureKey = true; ST.key(S, r, a.name + 'と' + o.x); }
+  }
   function crisis(S) {
     if (!SH.C) return;
     var rng = S.rng, Pn = S.planet, C = SH.C;
@@ -371,10 +383,15 @@
       var tm = [b].concat(L0.filter(function (q) { return q !== b; }).sort(function (x, y) { return skill(y, 'fight') + skill(y, 'talk') - skill(x, 'fight') - skill(x, 'talk'); }).slice(0, L0.length > 3 ? 2 : 1));
       var sk = skill(b, 'fight') * 0.45 + Math.max.apply(null, tm.map(function (q) { return skill(q, 'talk'); })) * 0.3 + Math.max(0, bond(S, b, a)) * 0.3 + tm.length * 0.05;
       var diff = 0.45 + Pn.civ.d.rare * 0.05 + (Pn.civ.d.state === 'advanced' ? 0.12 : 0) + S.env.danger / 100 * 0.1;
+      /* 研究（R18）：自分で攻めを選んだ人は、受けにならない */
+      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTop(a)) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
+        a.labbed = true; a.cnt.r18 = (a.cnt.r18 || 0) + 1;
+        ST.say(S, { actors: [a], tag: '研究', kind: 'climax', text: F(pk(S, SH.X.lab), { a: a.name, x: Pn.civ.d.name }), why: Pn.civ.d.name + 'は、' + a.name + 'を「標本」として調べた', mag: 30 });
+      }
       var t = F(pk(S, C.RESCUE_GO), { n: names(tm), a: a.name });
       if (sk + rng() * 0.5 >= diff) {
         a.away = null; stress(a, 12); setRel(S, a, b, 0.3); mark(S, a, b, 'calm'); tm.forEach(function (q) { if (q !== b) setRel(S, a, q, 0.1); }); S.saved.push([b.i, a.i]);
-        var o = ST.say(S, { actors: [b, a], tag: '救出', kind: 'climax', text: t + F(pk(S, C.RESCUE_OK), { a: a.name, b: b.name }), why: b.name + 'の救出（腕 ' + Math.round(sk * 100) + '・難しさ ' + Math.round(diff * 100) + '）', mag: 36 });
+        var o = ST.say(S, { actors: [b, a], tag: '救出', kind: 'climax', text: t + F(pk(S, C.RESCUE_OK), { a: a.name, b: b.name }) + (a.labbed && SH.X ? F(pk(S, SH.X.labAfter), { a: a.name }) : ''), why: b.name + 'の救出（腕 ' + Math.round(sk * 100) + '・難しさ ' + Math.round(diff * 100) + '）', mag: 36 });
         ST.key(S, o, b.name + 'が' + a.name + 'を救い出した');
       } else {
         b.m.hp = clamp(b.m.hp - 10, 1, 100); stress(b, 6);
@@ -398,6 +415,8 @@
       ST.sayB(S, { actors: L0.slice(0, 3), tag: '捜索', text: F(pk(S, C.SEARCH_NG), { a: a.name, n: names(L0.slice(0, 3)) }), why: '見つからなかった（' + a.awayM + 'か月目）' }, a.name + 'の捜索は空振りに終わった');
       if (a.awayM >= 3) { a.gone = true; a.fate = '遭難して行方不明（' + S.m + 'か月目）'; ST.say(S, { actors: [a], tag: '行方不明', text: F(pk(S, C.LOST_GONE), { a: a.name }), why: '三か月探しても見つからなかった', mag: 30 }); }
     });
+    /* 異種族の誘い（R18）：友好的だと思ってついていったら、言葉が通じず、誘われていたとは気づかなかった */
+    if (r18on(S) && SH.X && live(S).length >= 2 && rng() < S.env.slewd / 100 * 0.15) lure(S);
     /* 研究のための誘拐（文明のある星） */
     if (Pn.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(Pn.civ.d.state) && live(S).length >= 2 && rng() < 0.05 + S.env.danger / 100 * 0.08) {
       var v = HK.weighted(rng, live(S), function (q) { return 0.5 + q.cnt.find * 0.3; });
@@ -643,8 +662,9 @@
   /* 異星の生き物：自分で攻めを選んだ人は、手懐けて主導権を握る */
   function alienR18(S, a, d) {
     var R = SH.R18, top = HK.Pos && HK.Pos.hardTop(a);
-    if (!/friendly|symbiotic|parasite|plant/.test(d.kind)) return;
-    ST.say(S, { actors: [a], tag: '異星の生き物', kind: 'climax', text: F(pk(S, top ? R.alienTop : R.alien), { a: a.name }), why: d.name + '（' + LIFE_JP[d.kind] + '）' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 28 });
+    var X = SH.X, sp = !top && X && X.play[d.kind] && S.rng() < 0.6 ? X.play[d.kind] : null;
+    if (!sp && !/friendly|symbiotic|parasite|plant/.test(d.kind)) return;
+    ST.say(S, { actors: [a], tag: '異星の生き物', kind: 'climax', text: F(pk(S, sp || (top ? R.alienTop : R.alien)), { a: a.name, x: d.name }), why: d.name + '（' + LIFE_JP[d.kind] + '）' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 28 });
   }
 
   /* ---------- 結果 ---------- */
