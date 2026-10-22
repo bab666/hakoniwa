@@ -101,6 +101,8 @@
     if (/ん?ですか$/.test(s)) {
       if (/んですか$/.test(s)) return s.replace(/んですか$/, rough ? (WH.test(s) ? 'んだ' : 'のか') : 'の');
       if (/いですか$/.test(s)) return s.replace(/ですか$/, rough ? 'のか' : 'の');
+      /* 「多くなかったですか」→「多くなかったの」（「〜たなの」にしない） */
+      if (/たですか$/.test(s)) return s.replace(/ですか$/, 'のか');
       return s.replace(/ですか$/, rough ? (WH.test(s) ? 'だ' : /(好き|嫌い|苦手|得意)ですか$/.test(s) ? 'なのか' : 'か') : 'なの');
     }
     var rc = plainCore(rest, rough) || (/(が|けど|けれど|から|ので|し)$/.test(rest) && rest !== s ? plainSentence(rest, mode) : null);
