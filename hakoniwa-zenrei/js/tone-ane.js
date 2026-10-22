@@ -10,11 +10,13 @@
 
   var YOU = /(?:お前|おまえ|てめえ|貴様)(?!さん|方)|(?:きみ|(?<![大姫主父母諸細若暴])君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なら|だけ|たち|ら|だ|じゃ|か|な|から|へ|や|しか|まで|より|一人|自身))/g;
   /* もう女性的な語尾・敬語・頼みごと・呼びかけで終わる文は触らない */
-  var KEEP = /(?:わ|わよ|わね|のよ|のよね|かしら|よね|です|ます|ました|ません|でした|でしょう|ましょう|ください|なさい|ちょうだい|[てで]よ|[てで]ね|[てで])$/;
+  var KEEP = /(?:わ|わよ|わね|のよ|のよね|かしら|よね|(?:です|ます|ました|ません|でした)(?:よ|ね|よね)?|でしょう|ましょう|ください|なさい|ちょうだい|[てで]よ|[てで]ね|[てで])$/;
   /* 「〜わ」を足してよい終わり方（動詞・形容詞・「ない」「た」の言い切り） */
   var PLAIN_END = /(?:[るすむぬぐぶ]|(?<![一二三四五六七八九十幾い])つ|(?<![しか]|なんとな|ようや|おそら|しばら|まった|全|早|遅|強|弱|多|軽|深|長|短|近|遠|よ)く|(?<![おこそとのほもよろごぞどぼぽょ])う|思う|(?<!ちょうだ|なさ|くださ|^は|^お|^ね|^ほ|願|違|遣|合|伝|会|払|思|迷|戦|争|使|扱|祝|誘|呪|占|酔|匂|類|お互)い|た)$/;
 
-  function aneOne(s, ask, last) {
+  /* 「い」「つ」で終わっても名詞・形容動詞のもの（「〜わ」でなく「〜ね」） */
+  var NA_END = /(?:みたい|いっぱい|きれい|綺麗|キレイ|嫌い|きらい|大嫌い|せい|ぐらい|くらい|おしまい|あいまい|曖昧|愉快|やつ|ずつ)$/;
+  function aneOne(s, ask, last, trail) {
     var m;
     if (ask) {
       if (/(?:って|という)こと$/.test(s)) return s + 'ね';
@@ -32,9 +34,11 @@
     if ((m = s.match(/^(.*)(?:ん|の)だ(よ|よね|ね)?$/)) && m[1]) return m[1] + (m[2] === 'ね' ? 'のね' : m[2] === 'よね' ? 'のよね' : 'のよ');
     if (/だよ[ねな]$/.test(s)) return s.replace(/だよ[ねな]$/, 'よね');
     if (/(?:だろう|だろ)$/.test(s)) return s.replace(/(?:だろう|だろ)$/, 'でしょう');
+    if (/たくないかな$/.test(s)) return s.replace(/かな$/, 'の');
     if (/かな$/.test(s)) return s.replace(/かな$/, 'かしら');
+    if (/^そうか$/.test(s)) return 'そうなの';
     if (/じゃん$/.test(s)) return s.replace(/じゃん$/, 'じゃない');
-    if (/[ぞぜ]$/.test(s)) return s.replace(/(だ)?[ぞぜ]$/, function (x, d) { return d ? 'よ' : 'わよ'; });
+    if (/[ぞぜ]$/.test(s) && !/どうぞ$/.test(s)) return s.replace(/(だ)?[ぞぜ]$/, function (x, d) { return d ? 'よ' : 'わよ'; });
     /* 名詞・形容動詞＋だ／だよ／だね／だな → よ／ね（「本物だよ」→「本物よ」、「大げさだね」→「大げさね」）。「まだ」「やだ」はそのまま */
     if (/(?<![まやだ])だ(?:よ)?$/.test(s) && s.length > 2) return s.replace(/だ(?:よ)?$/, 'よ');
     if (/(?<![まやだ])だ[ねな]$/.test(s) && s.length > 2) return s.replace(/だ[ねな]$/, 'ね');
@@ -42,14 +46,18 @@
     if (/[いた]な$/.test(s)) return s.replace(/な$/, last ? 'わね' : 'ね');
     if (!last) return s;
     /* 最後の文だけ：「いいよ」→「いいわよ」、「頑張ったね」→「頑張ったわね」、「知ってる」→「知ってるわ」 */
-    if (/よ$/.test(s) && PLAIN_END.test(s.slice(0, -1))) return s.replace(/よ$/, 'わよ');
+    if (NA_END.test(s) || NA_END.test(s.replace(/[よね]$/, ''))) return s.replace(/[よね]?$/, 'ね');
+    /* 「うれしいよ」「楽になったよ」は「〜わ」、「帰るよ」「いいよ」は「〜わよ」 */
+    if (/よ$/.test(s) && PLAIN_END.test(s.slice(0, -1))) return s.replace(/よ$/, /(?:た|しい|たい)よ$/.test(s) ? 'わ' : 'わよ');
     if (/ね$/.test(s) && PLAIN_END.test(s.slice(0, -1)) && !/(?:また|じゃ)ね$/.test(s)) return s.replace(/ね$/, 'わね');
-    if (s.length >= 3 && PLAIN_END.test(s) && !/じゃない$/.test(s)) return s + 'わ';
+    /* 「……」で消えていく文（喘ぎ・つぶやき）には「わ」を付けない */
+    if (s.length >= 3 && PLAIN_END.test(s) && !/じゃない$/.test(s) && !trail) return s + 'わ';
     return s;
   }
   function ane(q) {
     q = q.replace(YOU, 'あなた').replace(/おやおや/g, 'あらあら').replace(/(^|[、…\s])おや(?=[、…])/g, '$1あら')
-      .replace(/(^|[、…\s])おい、/g, '$1ちょっと、').replace(/てやる(?=[。！？…、」]|$)/g, 'てあげる').replace(/てやろう/g, 'てあげよう').replace(/てやった/g, 'てあげた');
+      .replace(/(^|[、…\s])おい、/g, '$1ちょっと、').replace(/えへへ/g, 'ふふ').replace(/めっちゃ/g, 'すごく').replace(/デカ(?=い|く|かっ)/g, '大き').replace(/食っ(?=た|て)/g, '食べ').replace(/食う(?=[。！？…、」]|$)/g, '食べる')
+      .replace(/もん(?=ね?[。！？…、」]|ね?$)/g, 'もの').replace(/(?:^|(?<=[、…\s]))しよ(?:う|っ)か(?=[。！？…、」]|$)/g, 'しましょうか').replace(/(?:^|(?<=[、…\s]))しよう?(?=[。！？…、」]|$)/g, 'しましょう').replace(/(?<=[えけげせぜてでねべめれ見来着寝出]|し)ろよ(?=[。！？…、」]|$)/g, 'てよ').replace(/だなあ(?=[。！？…、」]|$)/g, 'ねえ').replace(/てやる(?=[。！？…、」]|$)/g, 'てあげる').replace(/てやろう/g, 'てあげよう').replace(/てやった/g, 'てあげた');
     var parts = q.split(/([。！？!?…‥」\n]+)/), lastI = -1;
     parts.forEach(function (seg, i) { if (!(i % 2) && /[^\s、]/.test(seg)) lastI = i; });
     return parts.map(function (seg, i) {
@@ -59,7 +67,7 @@
       if (/[！!]/.test(next) || /[っッぁぃぅぇぉー〜～♡]$/.test(seg)) return seg;
       var lead = (seg.match(/^[…‥、\s]+/) || [''])[0], tail = (seg.match(/[、]+$/) || [''])[0];
       var body = seg.slice(lead.length, seg.length - tail.length);
-      return body ? lead + aneOne(body, /[？?]/.test(next), i === lastI) + tail : seg;
+      return body ? lead + aneOne(body, /[？?]/.test(next), i === lastI, /^[…‥]/.test(next) && !/[^…‥」\s]/.test(parts.slice(i + 1).join(''))) + tail : seg;
     }).join('');
   }
   V.aneQuote = ane;
