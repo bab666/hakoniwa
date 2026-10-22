@@ -99,7 +99,11 @@
       if (f === 'ten' && d[f] > 0) m = pf.fric;
       if (d[f] > 0 && HK.Ties && this.ties) m *= HK.Ties.mult(this, a, b, f);
       if (f === 'att' && d[f] > 0 && !HK.canLove(a, b)) m *= a.lock != null && a.lock !== b.i ? 0 : 0.08;
+      /* 血のつながった家族：惹かれは育たず、信頼は減りにくく底がある */
+      if (pf.kin && f === 'att' && d[f] > 0) m = 0;
+      if (pf.kin && f === 'trust' && d[f] < 0) m *= 0.25;
       r[f] = HK.clamp(r[f] + d[f] * k * m, LIM[f][0], LIM[f][1]);
+      if (pf.trustFloor && f === 'trust' && r[f] < pf.trustFloor) r[f] = Math.max(r[f], Math.min(before, pf.trustFloor));
       this._mag += Math.abs(r[f] - before);
     }
     this._touched[key(a, b)] = [a, b];
@@ -127,7 +131,7 @@
     /* 恋愛の起こりやすさが0、または恋愛対象が「なし」・合わない相手は、片想いの相手にならない（仲がいいだけの友達を恋の相手にしない） */
     if (this.env && this.env.romance === 0 && !(this.scen && this.scen.romanceCore)) return null;
     this.chars.forEach(function (c) {
-      if (c === a || !c.alive || !HK.canLove(a, c)) return;
+      if (c === a || !c.alive || !HK.canLove(a, c) || self.pair(a, c).kin) return;
       var r = self.R(a, c), v = r.aff * 0.6 + r.att;
       if (v > bv) { bv = v; best = c; }
     });
@@ -173,6 +177,7 @@
   Ctx.prototype.romanceOk = function (actors) {
     var L = (actors || []).filter(Boolean), a = L[0], b = L[1];
     if (this.scen && this.scen.romanceCore) return true;
+    if (a && b && this.pair(a, b).kin) return false;
     if (a && b && this.pair(a, b).couple) return true;
     if (this.env && this.env.romance === 0) return false;
     if (a && b) return HK.canLove(a, b) && HK.canLove(b, a);
