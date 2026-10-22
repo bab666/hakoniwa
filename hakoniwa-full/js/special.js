@@ -127,7 +127,7 @@
       act: L('{a}は目を離した隙に、またどこかへ歩いていこうとした。|{a}は知らない道を、ぼんやりと歩き続けていた。') }
   ];
   var PERS = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy'];
-  var PMAP = { aniki: 'proud', tsun_n: 'tsun', gentle_n: 'gentle', devoted_p: 'devoted', calm: 'cool', polite: 'stern', kohai: 'devoted', ojou: 'proud', mixed: 'free', kansai: 'free', noja: 'proud', mukuchi: 'cool', darui: 'cool', gentleman: 'stern', ane: 'gentle', usan: 'free', yankee: 'proud' };
+  var PMAP = { aniki: 'proud', tsun_n: 'tsun', gentle_n: 'gentle', devoted_p: 'devoted', calm: 'cool', polite: 'stern', kohai: 'devoted', ojou: 'proud', mixed: 'free', kansai: 'free', noja: 'proud', mukuchi: 'cool', darui: 'cool', gentleman: 'stern', sondai: 'stern', ane: 'gentle', usan: 'free', yankee: 'proud' };
   SP.MAD = MAD;
   function pidx(p) { var k = PMAP[p.persona] || p.persona; var i = PERS.indexOf(k); return i < 0 ? 3 : i; }
   var CALM = L('{b}は{a}の手を握り、名前を何度も呼んだ。{a}の目に、ゆっくりと光が戻っていった。|{b}は暴れる{a}を後ろから抱きしめて、離さなかった。やがて{a}の体から、力が抜けた。|{b}は{a}の隣に座って、二人で過ごした日のことを話し続けた。{a}はいつの間にか、泣きながら頷いていた。|「大丈夫。ここにいる」――{b}の声に、{a}はようやく顔を上げた。');
