@@ -24,6 +24,9 @@ node lint.js out-full.json kansai 20  # 関西弁だけ、各20件
 
 # 4. 書き下ろしの作業リスト（まだ書き下ろしのない台詞を、出現回数の多い順に）
 node worklist.js noja 200 out-full.json out-zen.json > work-noja.txt
+
+# 5. 長い台詞順の作業リスト（長い台詞ほど言い換えの継ぎ目が目立つので、上から整える）
+node longest.js genki 100 out-full.json out-zen.json > long-genki.tsv   # 長さ・回数・箱庭・元の台詞・変換後
 ```
 
 Playwright が見つからないときは `npm i -D playwright` するか、`PLAYWRIGHT_MODULE` にモジュールのパスを、
