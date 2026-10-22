@@ -1,5 +1,5 @@
 /* 箱庭シミュレーター: 敬語から派生する口調（後輩・お嬢様）
-   どちらも文面と台詞の言い換えは「敬語」をそのまま使い（書き下ろし・直しも敬語のものを借りる）、
+   どちらも文面と台詞の言い換えは「敬語」をそのまま使い（書き下ろし・直しも敬語のものを借りる。その口調の直しがあればそちらを優先）、
    できあがった敬語の台詞の語尾だけを、最後に付け替える。
    ・後輩 … 「〜っす」「〜っすか」「〜じゃないっすか」「〜たっす」
    ・お嬢様 … 「〜ですわ」「〜ですの？」「〜ますわ」「〜くださいまし」 */
@@ -16,11 +16,18 @@
   });
   var KIN = { kohai: 1, ojou: 1 };
 
-  /* 書き下ろし・直しは敬語のものを引く */
+  /* その口調の直し（tone-fix.js に口調名で登録したもの）を先に引き、完成形としてそのまま使う（語尾の付け替えをしない印 U+2063 を付ける）。
+     なければ、書き下ろし・直しは敬語のものを引いて、あとで語尾を付け替える */
+  var DONE = '\u2063';
   var of0 = V.overrideFor;
   V.overrideFor = function (q, who, people) {
-    if (who && KIN[who.tone]) return of0 ? of0.call(this, q, Object.assign({}, who, { tone: 'polite' }), people) : null;
-    return of0 ? of0.apply(this, arguments) : null;
+    if (!of0) return null;
+    if (who && KIN[who.tone]) {
+      var own = of0.apply(this, arguments);
+      if (own != null) return DONE + own;
+      return of0.call(this, q, Object.assign({}, who, { tone: 'polite' }), people);
+    }
+    return of0.apply(this, arguments);
   };
 
   var P = '(よね|よ|ね|か)?';
@@ -101,6 +108,7 @@
 
   var tf0 = V.toneFinish;
   V.toneFinish = function (q, who) {
+    if (q.indexOf(DONE) >= 0) return q.replace(/\u2063/g, '');
     if (tf0) q = tf0(q, who);
     var t = who && who.tone;
     if (t === 'kohai') return kohai(q);
