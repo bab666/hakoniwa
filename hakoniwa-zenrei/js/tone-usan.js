@@ -11,27 +11,41 @@
 
   var YOU = /(?:あなた|お前|おまえ|てめえ|貴様)(?!さん|方)|(?:きみ|(?<![大姫主父母諸細若暴])君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なら|だけ|たち|ら|だ|じゃ|か|な|から|へ|や|しか|まで|より|一人|自身))/g;
   var KEEP = /(?:(?:です|ます|ました|ません|でした)(?:よ|ね|よね|か)?|でしょう|ましょう|ください|なさい|ちょうだい|[てで]|ねえ|かい|だい|さ)$/;
-  /* 形容詞・「ない」「たい」：「〜ねえ」、動詞・「た」：「〜よ」 */
-  var ADJ_END = /(?:い|ない|たい|しい)$/;
+  /* 形容詞・「たい」：「〜ねえ」、動詞・「ない」・「た」：「〜よ」（自分の否定・意志に「ねえ」を付けると他人事に聞こえる） */
+  var ADJ_END = /(?<!な)(?:い|たい|しい)$/;
+  var WH2 = /(?:何|なに|なん|誰|だれ|どこ|いつ|なぜ|どうして|どんな|どっち|どれ|どう|いくつ|いくら|どの)/;
 
   /* 「誰にでも」「何か」のような不定のものは問いかけの言葉に数えない */
-  function wh(s) { return WH.test(s.replace(/(?:何|なに|なん|誰|だれ|どこ|いつ)(?:にでも|でも|も|か|とか|度)/g, '')); }
-  function usanOne(s, ask, last) {
+  function wh(s) { return WH2.test(s.replace(/(?:何|なに|なん|誰|だれ|どこ|いつ|どう)(?:にでも|でも|も|か|とか|度|ぞ)/g, '')); }
+  /* 女性的な語尾を中性に（穏やかの女性の台詞から） */
+  function unfem(s) {
+    return s.replace(/([たいるうくすつむぬぐぶ])わね$/, '$1ねえ').replace(/([たいるうくすつむぬぐぶ])わよ$/, '$1よ').replace(/([一-鿿ァ-ヶー])(?:わね|ね)$/, '$1だねえ').replace(/のね$/, 'んだねえ').replace(/かしら$/, 'かねえ')
+      .replace(/(?<!ん)のよ$/, 'んだよ').replace(/だわ$/, 'だよ').replace(/([たいるうくすつむぬぐぶ])わ$/, '$1よ').replace(/([一-鿿ァ-ヶー])よ$/, '$1だよ').replace(/^いいの、よ$/, 'いいんだよ');
+  }
+  function usanOne(s, ask, last, askOK) {
     var m;
+    s = unfem(s);
     if (ask) {
+      if (!askOK) return s;
       if (KEEP.test(s) && !/[てで]$/.test(s)) return s;
       if (/(?:って|という)こと$/.test(s)) return s + 'かい';
+      if (/たくないかな$/.test(s)) return s.replace(/かな$/, 'んだよねえ');
       if (/かな$/.test(s)) return s.replace(/かな$/, 'かねえ');
       if (/(?:でしょう|でしょ|だろ)$/.test(s)) return s.replace(/(?:でしょう|でしょ|だろ)$/, 'だろう');
       if (/じゃない$/.test(s)) return s.replace(/(?<!ん)じゃない$/, 'んじゃない');
-      /* 「何してるの？」→「何してるんだい？」、「怒ってるの？」→「怒ってるのかい？」 */
-      if (/(?:の|ん)(?:だ)?$/.test(s)) return wh(s) ? s.replace(/(?:の|ん)(?:だ)?$/, 'んだい') : s.replace(/(?:の|ん)(?:だ)?$/, 'のかい');
-      if (/(?:何|なに|なん|誰|だれ|どこ|いつ|なぜ|どうして|どんな|どっち|どれ)$/.test(s)) return s + 'だい';
-      if (/だ$/.test(s)) return s.replace(/だ$/, wh(s) ? 'だい' : 'かい');
-      if (wh(s)) return s;
+      /* 疑問詞があれば「〜んだい？」（「何してるの？」→「何してるんだい？」「どう思う？」→「どう思うんだい？」） */
+      if (wh(s)) {
+        if (/(?:の|ん)(?:だ)?$/.test(s)) return s.replace(/(?:の|ん)(?:だ)?$/, 'んだい');
+        if (/(?:何|なに|なん|誰|だれ|どこ|いつ|なぜ|どうして|どんな|どっち|どれ|いくつ|いくら)$/.test(s)) return s + 'だい';
+        if (/だ$/.test(s)) return s.replace(/だ$/, 'だい');
+        if (PLAIN_END.test(s) && !/[たい]$/.test(s)) return s + 'んだい';
+        return s;
+      }
+      /* 誘い・確認：「飲む？」→「飲むかい？」、「怒ってるの？」→「怒ってるのかい？」 */
+      if (/(?:の|ん)$/.test(s)) return s.replace(/(?:の|ん)$/, 'のかい');
+      if (/だ$/.test(s)) return s.replace(/だ$/, 'かい');
       if (/[一-鿿ァ-ヶー]$/.test(s) && s.length >= 2) return s + 'かい';
-      if (/た$/.test(s) || ADJ_END.test(s)) return s + 'かい';
-      if (PLAIN_END.test(s)) return s + 'のかい';
+      if (PLAIN_END.test(s) || /ない$/.test(s)) return s + 'かい';
       return s;
     }
     if (KEEP.test(s)) return s;
@@ -39,36 +53,47 @@
     if (/^ありがとう$/.test(s)) return 'ありがとさん';
     if (/^ごめんね$/.test(s)) return '悪いねえ';
     if (/(?:だろう|だろ)$/.test(s)) return s.replace(/(?:だろう|だろ)$/, 'だろうねえ');
+    if (/たくないかな$/.test(s)) return s.replace(/かな$/, 'んだよねえ');
     if (/かな$/.test(s)) return s.replace(/かな$/, 'かねえ');
     if (/じゃん$/.test(s)) return s.replace(/じゃん$/, 'じゃないの');
     if (/[ぞぜ]$/.test(s) && !/どうぞ$/.test(s)) return s.replace(/[ぞぜ]$/, 'よ');
     if (!last) return s;
     /* 最後の文だけ */
     if (/よね$/.test(s)) return s + 'え';
-    if (/(?:また|じゃ)ね$/.test(s)) return s;
+    if (/(?:また|じゃ|[てで])ね$/.test(s)) return s;
+    if (/[一-鿿ァ-ヶーの]ね$/.test(s)) return s.replace(/の?ね$/, function (x) { return x === 'のね' ? 'んだねえ' : 'だねえ'; });
     if (/ね$/.test(s)) return s + 'え';
+    if (/[んの]だよ$/.test(s)) return s;
     if (/(?<![まやだ]|あい)だよ$/.test(s)) return s.replace(/だよ$/, 'さ');
     if ((m = s.match(/^(.*[一-鿿々]ん)だ$/))) return s + 'よ';
     if (/(?:ん|の)だ$/.test(s)) return s.replace(/(?:の)?だ$/, 'だよ');
     if (/(?<![まやだ]|あい)だ$/.test(s) && s.length > 2) return s + 'ねえ';
     if (NA_END.test(s)) return s + 'だねえ';
     if (/よ$/.test(s)) return s;
+    /* 「急いでるの」→「急いでるのさ」 */
+    if (/いいの$/.test(s)) return s + 'かい';
+    if (/[るたい]の$/.test(s)) return s + 'さ';
+    /* 短い否定の答え（「怒ってない」「なんでもない」）は「〜さ」、ほかの「ない」は「〜よ」 */
+    if (/(?:[てで]ない|でもない)$/.test(s) && s.length <= 7) return s + 'さ';
+    if (/ない$/.test(s) && !/じゃない$/.test(s)) return s + 'よ';
     if (s.length >= 3 && PLAIN_END.test(s) && !/じゃない$/.test(s)) return s + (ADJ_END.test(s) ? 'ねえ' : 'よ');
     return s;
   }
   function usan(q) {
-    q = q.replace(YOU, 'あんた').replace(/(?:あなた|きみ|君)たち/g, 'あんたたち').replace(/あらあら/g, 'おやおや').replace(/(^|[、…\s])あら(?=[、…])/g, '$1おや')
-      .replace(/^ねえ、/, 'ちょいと、').replace(/えへへ/g, 'へへ').replace(/困った(?=ね|な)/g, '参った').replace(/だなあ(?=[。！？…、」]|$)/g, 'だねえ')
-      .replace(/(^|[、…\s])しよ(?:う|っ)か(?=[。！？…、」]|$)/g, '$1しようじゃないの');
-    /* 呆れ・ため息は「やれやれ」（行頭の「はあ」「もう、」「まったく」「ったく」） */
-    q = q.replace(/^(?:はあ+|はぁ+|ふう+|ったく|まったく|全く)(?:[、…‥。]+|$)/, 'やれやれ……').replace(/^もう、(?!一|二|三|少|すこ|ちょっと|いい|無理|だめ|ダメ|限界)/, 'やれやれ、')
+    q = q.replace(YOU, 'あんた').replace(/(?:あなた|きみ|君)たち/g, 'あんたたち').replace(/あらあら|あらまあ/g, function (m) { return m === 'あらまあ' ? 'おやまあ' : 'おやおや'; }).replace(/(^|[、…\s])あら(?=[、…])/g, '$1おや')
+      .replace(/^ねえ、(?!ちょっと)/, 'ちょいと、').replace(/えへへ|うふふ/g, 'へへ').replace(/困った(?=わ?ね|な)/g, '参った').replace(/だなあ(?=[。！？…、」]|$)/g, 'だねえ').replace(/ごめんなさいね/g, '悪いねえ')
+      .replace(/(^|[、…\s])しよ(?:う|っ)か(?=[。！？…、」]|$)/g, '$1しようじゃないの').replace(/(?<=[えけげせぜてでねべめれ見来着寝出]|し)ろよ(?=[。！？…、」]|$)/g, 'なよ');
+    var moan = /[っッぁぃぅぇぉ♡]/.test(q);
+    /* 呆れ・ため息は「やれやれ」（行頭の「はあ」「もう、」「まったく」「ったく」）。喘ぎの台詞・問いかけには使わない */
+    if (!moan) q = q.replace(/^(?:はあ+|はぁ+|ふう+|ったく|まったく|全く)(?:[、…‥。]+|$)/, 'やれやれ……').replace(/^もう、(?!一|二|三|少|すこ|ちょっと|いい|無理|だめ|ダメ|限界)(?=[^？?]*$)/, 'やれやれ、')
       .replace(/^(?:しょうがない|しょうがねえ|仕方ない|仕方ないな)(?:なあ|な|ね|よ)?(?=[。…‥！!]|$)/, 'やれやれ、しょうがないねえ').replace(/^呆れた(?=[。…‥！!]|$)/, 'やれやれ、呆れたねえ')
-      .replace(/^いい加減にして(?=[。…‥！!]|$)/, 'やれやれ、いい加減にしてくれないかねえ').replace(/^また(?:か|かよ)?(?=[？?…‥]|$)/, 'やれやれ、またかい');
+      .replace(/^いい加減にして(?=[。…‥！!]|$)/, 'やれやれ、いい加減にしてくれないかねえ').replace(/(^|…)また(?:か|かよ)?(?=[？?…‥]|$)/, function (m, p) { return p ? p + 'またかい' : 'やれやれ、またかい'; });
     /* 飄々と受け流す（決まった言い回しだけ） */
     q = q.replace(/^大丈夫、大丈夫(?=[。…‥]|$)/, 'まあまあ、大丈夫だって').replace(/^(?:なんとか|何とか)なる(?:よ|って)?(?=[。…‥]|$)/, 'ま、なんとかなるさ').replace(/^気にしないで(?=[。…‥]|$)/, '気にしない、気にしない')
       .replace(/^冗談だって(?=[。…‥]|$)/, '冗談だよ、冗談').replace(/^(?:知らない|わかんない|分かんない|さあ)(?=[。…‥]|$)/, 'さあ、どうだろうねえ').replace(/(^|[、。…\s])まあ、/g, '$1ま、');
-    var parts = q.split(/([。！？!?…‥」\n]+)/), lastI = -1;
-    parts.forEach(function (seg, i) { if (!(i % 2) && /[^\s、]/.test(seg)) lastI = i; });
+    var parts = q.split(/([。！？!?…‥」\n]+)/), lastI = -1, lastAsk = -1;
+    var polite = /(?:です|ます|ません)/.test(q);
+    parts.forEach(function (seg, i) { if (!(i % 2) && /[^\s、]/.test(seg)) { lastI = i; if (/[？?]/.test(parts[i + 1] || '')) lastAsk = i; } });
     return parts.map(function (seg, i) {
       if (i % 2) return seg;
       var next = parts[i + 1] || '';
@@ -77,7 +102,8 @@
       var lead = (seg.match(/^[…‥、\s]+/) || [''])[0], tail = (seg.match(/[、]+$/) || [''])[0];
       var body = seg.slice(lead.length, seg.length - tail.length);
       var trail = /^[…‥]/.test(next) && !/[^…‥」\s]/.test(parts.slice(i + 1).join(''));
-      return body ? lead + usanOne(body, /[？?]/.test(next), i === lastI && !trail) + tail : seg;
+      /* 問いかけの「かい」「だい」は台詞の最後の問いだけ。丁寧語の台詞には付けない */
+      return body ? lead + usanOne(body, /[？?]/.test(next), i === lastI && !trail, i === lastAsk && !polite) + tail : seg;
     }).join('');
   }
   V.usanQuote = usan;
