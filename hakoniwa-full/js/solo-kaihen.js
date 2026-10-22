@@ -142,6 +142,8 @@
   function emoan(S, who, n) {
     var m = HK.Ero.moan(S, who, n);
     if (!who || who.npc) return m;
+    /* 自分で攻めを選んだ人は、♡で崩れる受け身の喘ぎではなく、攻めの声 */
+    if (HK.Pos && HK.Pos.hardTop(who) && HK.Ero.has('kaihen', 'moanTop.' + n)) return S.rng.pick(HK.Ero.T.kaihen['moanTop.' + n]);
     for (var i = 0; i < 6; i++) { var l = topL(who, [m]); if (l.length === 1 && l[0] === m) return m; m = HK.Ero.moan(S, who, n); }
     return S.rng.pick(topL(who, [m]));
   }
