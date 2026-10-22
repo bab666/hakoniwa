@@ -310,7 +310,8 @@
       var parts = [];
       while (h.pleasure >= 100 && parts.length < 3) parts.push(K.climax(S, { silent: true }));
       var lead = mode === 'late' && w === 0 ? K.fmt(S, pk(S, X.LATE)) + ' ' : mode === 'drip' && w > 0 && rng() < 0.5 ? K.fmt(S, topMe ? X.DRIP_TOP[1 + rng.int(X.DRIP_TOP.length - 1)] : X.DRIP[1 + rng.int(X.DRIP.length - 1)]) + ' ' : '';
-      var lineTxt = lead + (parts.length ? (parts[0].charAt(0) === '「' ? '' : K.moan(S)) + parts.join('') : K.fmt(S, pk(S, confList)));
+      /* 地の文のあとに「……」が続くと、話し手が分からず口調が付かない。そのときは名前を前に置く */
+      var lineTxt = lead + (parts.length ? (lead ? h.name : '') + (parts[0].charAt(0) === '「' ? '' : K.moan(S)) + parts.join('') : K.fmt(S, pk(S, confList)));
       if (parts.length && rng() < 0.7) lineTxt += ' ' + K.fmt(S, pk(S, confList));
       K.say(S, { kind: parts.length ? 'climax' : 'ev', tag: parts.length ? (parts.length > 1 ? '連続絶頂' : '絶頂') : '混乱', text: lineTxt, why: (w + 1) + '波目' + (parts.length ? '・' + parts.length + '回' : '') });
       K.settle(S);

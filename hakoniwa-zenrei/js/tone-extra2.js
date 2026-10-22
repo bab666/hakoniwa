@@ -31,7 +31,7 @@
   ];
   function noja(q) {
     q = casual(q.replace(/ありがとう、?ございま(?:す|した)/g, 'ありがとう'));
-    q = q.replace(/あらあら/g, 'おやおや').replace(YOU, 'おぬし').replace(/本当に/g, 'まことに').replace(/本当/g, 'まこと').replace(/すごく|とても/g, 'たいそう');
+    q = HK.thinIntj(q, { 'あらあら': 'ほほう', 'あらまあ': 'なんと', 'あら': 'おや' }).replace(YOU, 'おぬし').replace(/本当に/g, 'まことに').replace(/本当/g, 'まこと').replace(/すごく|とても/g, 'たいそう');
     q = q.replace(/^(?:ありがとう|ありがと)(?=[。！…]|$)/, '礼を言うぞ').replace(/(?:ごめんなさい|ごめん|すみません|すまない)(?=[。！…、」]|$)/g, 'すまぬ');
     NOJA.forEach(function (r) { q = q.replace(r[0], r[1]); });
     /* 言い切りの「だ」→「じゃ」（まだ・ただ などは除く） */

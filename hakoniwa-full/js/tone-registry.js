@@ -86,4 +86,22 @@
   /* 語尾の付け替え（derive の口調）：tone-polite-kin.js などで登録し、voice.js の V.toneFinish から呼ばれる */
   HK.TONE_FINISH = HK.TONE_FINISH || {};
   HK.toneFinish = function (k, fn) { HK.TONE_FINISH[k] = fn; };
+  /* 台詞ごとに決まる「くじ」（同じ台詞はいつも同じ結果）。n 回に 1 回 true */
+  HK.lineLot = function (q, n) { var h = 7; for (var i = 0; i < q.length; i++) h = (h * 31 + q.charCodeAt(i)) % 100003; return h % n === 0; };
+  /* 「あらあら」「あら」を口調の感嘆詞に替えるときの間引き。
+     喘ぎの台詞では「あ」にする。台詞がその感嘆詞だけなら替える。続きがある台詞は三回に一回だけ替え、残りは感嘆詞ごと外す
+     rep = { 'あらあら': 'おやおや', 'あらまあ': 'おやまあ', 'あら': 'おや' } */
+  HK.thinIntj = function (q, rep) {
+    var moan = /[っッぁぃぅぇぉ♡]/.test(q), lot = HK.lineLot(q, 3);
+    return q.replace(/(^|[、…‥「\s])(あらあら|あらまあ|あ、あら|あら)([、…‥。！？!?]*)/g, function (m, pre, w, p, at, all) {
+      if (w === 'あら' && !p) return m;
+      var rest = all.slice(at + m.length);
+      if (moan) return pre + (w === 'あ、あら' ? 'あ、あ' : 'あ') + p;
+      var r = w === 'あ、あら' ? rep['あら'] && rep['あら'].charAt(0) + '、' + rep['あら'] : rep[w] || rep['あら'];
+      if (!r) return m;
+      /* 続きが短い（「あら、上手」）なら外さない */
+      if (rest.replace(/[、…‥。！？!?」\s]/g, '').length <= 4 || lot) return pre + r + p;
+      return pre === '、' ? '' : pre;
+    });
+  };
 })();
