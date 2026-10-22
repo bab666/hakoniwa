@@ -1,7 +1,7 @@
 /* 全箱庭をシミュレーションして、住人の台詞（元の文・変換後・口調・文脈）を集める
    node collect.js <ビルドのフォルダ> <出力.json> [seeds=12] [r18]
    例：node collect.js ../../hakoniwa-full out-full.json 40 r18
-   環境変数 HOT=1 で過激さ・媚薬などの設定を最大に（R18の場面の台詞を集める）、TONE=gentleman で全員の口調を固定、FPS=俺,あたし で一人称を順に設定、SCEN=variety,saimin で箱庭を絞る */
+   環境変数 HOT=1 で過激さ・媚薬などの設定を最大に（R18の場面の台詞を集める）、TONE=gentleman で全員の口調を固定、FPS=俺,あたし で一人称を順に設定、SCEN=variety,saimin で箱庭を絞る、ENV=release=mid,lewd=80 で場面の設定を固定 */
 'use strict';
 const fs = require('fs');
 const { openBuild } = require('./lib');
@@ -13,7 +13,7 @@ const { openBuild } = require('./lib');
   const TIES = (process.env.TIES || '').split(',').filter(Boolean).map(s => { const m = s.match(/^(\d+)-(\d+):(\w+)$/); return m ? { a: +m[1], b: +m[2], type: m[3] } : null; }).filter(Boolean);
   const PICK = {};
   (process.env.PICK || '').split(',').filter(Boolean).forEach(s => { const m = s.match(/^(\d+):(\w+)=(\w+)$/); if (m) (PICK[m[1]] = PICK[m[1]] || {})[m[2]] = m[3]; });
-  const OPT = { n: +(seeds || 12), tone: process.env.TONE || '', fps: (process.env.FPS || '').split(',').filter(Boolean), only: (process.env.SCEN || '').split(',').filter(Boolean), ties: TIES, pick: PICK, hot: !!process.env.HOT, s0: +(process.env.SEED0 || 0) };
+  const OPT = { n: +(seeds || 12), tone: process.env.TONE || '', fps: (process.env.FPS || '').split(',').filter(Boolean), only: (process.env.SCEN || '').split(',').filter(Boolean), ties: TIES, pick: PICK, hot: !!process.env.HOT, s0: +(process.env.SEED0 || 0), env: (process.env.ENV || '').split(',').filter(Boolean).map(x => x.split('=')) };
   const data = await page.evaluate((OPT) => {
     const HK = window.HK, V = HK.Voice;
     let cur = null, curText = '', ovs = null; const rec = [];
@@ -49,6 +49,8 @@ const { openBuild } = require('./lib');
           else if (e.options && e.options.length > 1 && !/lewd|^mode$/.test(e.id) && (s + k) % 2) env[e.id] = e.options[(s + k) % e.options.length].v;
           if (e.id === 'mode' && e.options && e.options.some(o => o.v === 'lewd')) env[e.id] = 'lewd';
         });
+        /* ENV=release=mid,lewd=80 で場面の設定を固定 */
+        OPT.env.forEach(([k, v]) => { if (k in env) env[k] = isNaN(+v) ? v : +v; });
         const start = rec.length;
         try { HK.simulate({ scenId: id, seed: 12345 + s * 101, env, chars, perChar, ties: OPT.ties.filter(t => t.a < n && t.b < n) }); }
         catch (e) { fails.push({ id, s, err: String(e && e.stack || e) }); continue; }
