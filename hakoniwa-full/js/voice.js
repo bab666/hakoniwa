@@ -583,6 +583,8 @@
       return p;
     });
     var f = function (t, ac) { return V.processText(t, people, ac); };
+    /* 描写の作風「男性向け」（ero-kit.js）の結果では、はっきりした口調でも♡を残す（tone-firm.js） */
+    V._keepHeart = !HK.SAFE_ON && !!(input.env && input.env.style === 'ero');
     (res.log || []).forEach(function (e) { if (e && typeof e.text === 'string') e.text = f(e.text, e.actors); });
     var E = res.ending || res.end;
     if (E) {
@@ -590,6 +592,7 @@
       if (typeof E.text === 'string') E.text = f(E.text);
     }
     (res.chars || []).forEach(function (c) { if (typeof c.fateNote === 'string') c.fateNote = f(c.fateNote); if (Array.isArray(c.notes)) c.notes = c.notes.map(function (n) { return typeof n === 'string' ? f(n) : n; }); });
+    V._keepHeart = false;
     return res;
   };
 })();
