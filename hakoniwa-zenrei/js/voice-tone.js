@@ -37,7 +37,7 @@
     else if (/来$/.test(stem)) { irr = '来る'; cut = 1; }
     else if (/し$/.test(stem)) {
       var b1 = stem.slice(-2, -1), b2 = stem.slice(-3, -2);
-      var sahen = stem === 'し' || /何し$/.test(stem) || /[ァ-ヶーにとうくでをよいもは]/.test(b1) || (isKanji(b1) && (isKanji(b2) || /[ァ-ヶー]/.test(b2)));
+      var sahen = stem === 'し' || /(何|とか)し$/.test(stem) || /[ァ-ヶーにとうくでをよいもは]/.test(b1) || (isKanji(b1) && (isKanji(b2) || /[ァ-ヶー]/.test(b2)));
       if (sahen) { irr = 'する'; cut = 1; }
     }
     if (irr) return stem.slice(0, stem.length - cut) + FORMS[irr][fi];
@@ -69,6 +69,7 @@
     if (/でしょう$/.test(s) && rough && /(何|なに|なん|誰|だれ|どこ|いつ|どう|どれ|どっち|どんな|どの|なぜ)/.test(s)) return s.replace(/でしょう$/, /[たるいうくすつむぬぶぐ]でしょう$/.test(s) ? 'と思う' : 'だと思う');
     if (/でしょう$/.test(s)) return s.replace(/でしょう$/, rough ? 'だろ' : 'でしょ');
     if (/んです$/.test(s)) return s.replace(/んです$/, 'んだ');
+    if (/(きれい|綺麗|嫌い|きらい|大嫌い)です$/.test(s)) return s.replace(/です$/, 'だ');
     if (/[^し]いです$/.test(s) || /(ない|たい|しい)です$/.test(s)) return s.replace(/です$/, '');
     if (/です$/.test(s)) return s.replace(/です$/, 'だ');
     if (/(て|で)ください$/.test(s)) return s.replace(/ください$/, rough ? 'くれ' : '');
@@ -79,7 +80,7 @@
   function plainSentence(s, mode) {
     var r0 = plainSentence0(s, mode);
     /* 丁寧語を外したあとに残る謙譲語・尊敬語を、ふつうの言い方に */
-    return r0 == null ? r0 : r0.replace(/させていただく$/, 'する').replace(/ていただく$/, 'てもらう').replace(/お喜びいただいた/g, '喜んでもらった').replace(/いただいた(?=[^ぁ-ん]|$)/g, 'もらった').replace(/参る(?=[ねよ]?$)/, 'いく').replace(/お一人ずつ/g, '一人ずつ');
+    return r0 == null ? r0 : r0.replace(/(ない|しい|たい|かった|いい)だ(?=よね$|よ$|ね$)/, '$1').replace(/させていただく$/, 'させてもらう').replace(/ていただく$/, 'てもらう').replace(/お喜びいただいた/g, '喜んでもらった').replace(/いただいた(?=[^ぁ-ん]|$)/g, 'もらった').replace(/参る(?=[ねよ]?$)/, 'いく').replace(/お一人ずつ/g, '一人ずつ');
   }
   function plainSentence0(s, mode) {
     var rough = mode === 'proud', s1 = s;
@@ -228,7 +229,7 @@
       out = soften(body);
       var b3 = out || body;
       if (/[ぞぜ]$/.test(b3) && !/(どうぞ|まぜ|かぜ|風)$/.test(b3) && /[だるたいうくすつむぬぶ][ぞぜ]$/.test(b3)) out = b3.replace(/[ぞぜ]$/, /だ[ぞぜ]$/.test(b3) ? 'よ' : 'よ');
-      if (/だろう?$/.test(out || body)) out = (out || body).replace(/だろう?$/, 'でしょ');
+      if (/だろう?$/.test(out || body) && !/んだろう?$/.test(out || body)) out = (out || body).replace(/だろう?$/, 'でしょ');
       if (/^(くそ|クソ)っ?/.test(out || body)) out = (out || body).replace(/^(くそ|クソ)っ?/, mode === 'shy' ? 'う、うう' : 'もう');
       if (/[らかさたまわが]ねえ/.test(out || body)) out = (out || body).replace(/(.)([らかさたまわが])ねえ/g, function (m, p0, c) { return (c === 'た' && p0 === 'っ') || (c === 'わ' && /[たいるだよ]/.test(p0)) ? m : p0 + c + 'ない'; });
       /* やわらかい口調：荒い言い切り・問い詰めを、やわらかく（「呑気だな」→「呑気だね」、「大丈夫か？」→「大丈夫？」、「武器だ」→「武器だよ」） */

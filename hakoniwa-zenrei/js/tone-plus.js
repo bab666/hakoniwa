@@ -58,11 +58,11 @@
 
   /* ---------- 話し方の整形 ---------- */
   function endRe(s) { return new RegExp(s + '(?=[。！？!?…、」]|$)', 'g'); }
-  function neutral(q) {
-    return q.replace(/あらあら/g, 'おやおや').replace(/あら(?=[、…])/g, 'おや').replace(endRe('かしら'), 'かな').replace(endRe('ですわ'), 'です').replace(endRe('(だ|た|い)わよ'), '$1よ').replace(endRe('([るうくすつぬむぐぶ])わよ'), '$1よ').replace(endRe('([るうくすつぬむぐぶ])わね'), '$1ね').replace(endRe('(だ|た|い)わね'), '$1ね')
+  function neutral(q, t) {
+    return q.replace(/あらあら/g, 'おやおや').replace(/あ、あら(?=[、…])/g, 'お、おや').replace(/あら(?=[、…])/g, 'おや').replace(endRe('かしら'), 'かな').replace(endRe('ですわ'), 'です').replace(endRe('(だ|た|い)わよ'), '$1よ').replace(endRe('([るうくすつぬむぐぶ])わよ'), '$1よ').replace(endRe('([るうくすつぬむぐぶ])わね'), '$1ね').replace(endRe('(だ|た|い)わね'), '$1ね')
       .replace(endRe('のよ'), 'んだ').replace(endRe('なのね'), 'なんだね').replace(endRe('だわ'), 'だ').replace(endRe('([いたくうすつぬむるよ])わ'), '$1').replace(endRe('よね'), 'よね').replace(endRe('ちょうだい'), 'くれる？').replace(endRe('([一-鿿ァ-ヶー])ね'), '$1だね')
       /* 「倒れなさいよ」「何よ」「まだよ」も中性的に */
-      .replace(endRe('なさい(よ|ってば)?'), function (m, e) { return 'な' + (e || ''); }).replace(/(^|[、…「\s])何よ(?=もう|[！？!?…。、」]|$)/g, '$1何だよ').replace(/(^|[、…「\s])まだよ(?=[！!…。、」]|$)/g, '$1まだだ');
+      .replace(endRe('(?<!ごめん|お帰り|おかえり|いらっしゃい|おやすみ)なさい(よ|ってば)?'), function (m, e) { return (t === 'gentle_n' ? 'て' : 'な') + (e || ''); }).replace(/(^|[、…「\s])何よ(?=もう|[！？!?…。、」]|$)/g, '$1何だよ').replace(/(^|[、…「\s])まだよ(?=[！!…。、」]|$)/g, '$1まだだ');
   }
   var KANSAI = [
     [/本当に/g, 'ほんまに'], [/本当/g, 'ほんま'], [/ほんとに/g, 'ほんまに'], [/とても|すごく/g, 'めっちゃ'],
@@ -122,7 +122,7 @@
     if (ex.neutral) q = sq0(q, Object.assign({}, who, { gender: 'm' }));
     else if (who.tone === 'aniki') q = sq0(q, Object.assign({}, who, { persona: 'free' }));
     else q = sq0(q, who);
-    if (ex.neutral) q = neutral(q);
+    if (ex.neutral) q = neutral(q, who.tone);
     if (who.tone === 'aniki') q = aniki(q, who);
     if (ex.plain && V.casualQuote) q = V.casualQuote(q);
     if (ex.kansai) q = kansai(q);
