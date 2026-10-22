@@ -116,7 +116,7 @@
       }
       var l = TH[key];
       if (!l || !l.length) return '';
-      return ST.fmt(TV.voice(rng, ST.pick(S, l), b, t), { a: t.name, t: t.name, b: b.name, mc: mc });
+      return ST.fmt((VA.thickVoice || TV.voice)(rng, ST.pick(S, l), b, t), { a: t.name, t: t.name, b: b.name, mc: mc });
     }
     function fill(t, a, b) { return ST.fmt(t, { a: a ? a.name : '', b: b ? (b.name || b) : rng.pick(VA.ASSIST), mc: mc }); }
     function sayIf(o) { if (S.room == null || S.room > 0) { if (S.room != null) S.room--; ST.say(S, o); } }

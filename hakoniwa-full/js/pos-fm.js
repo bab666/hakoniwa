@@ -88,6 +88,12 @@
       var B = { name: bn }, st = styleOf(A), an = A.name, last = '', used = {};
       var reA = new RegExp(an + '(?:は|が|も)'), reB = new RegExp(bn + '(?:は|が|も)'), inB = new RegExp(bn + 'の(?:中|奥|後ろ|ナカ)'), partA = new RegExp(an + 'の(?:もの|モノ|昂り|先端|根元|竿|ちんぽ|肉棒|ペニス)');
       var changed = false;
+      /* 段落に分けた山場で、すでに女性上位（跨る・腰を落とす・呑み込む）の書き方になっている段落は直さない */
+      if (text.indexOf('\n\n') >= 0) {
+        var paras = text.split('\n\n'), hit = paras.some(function (p) { return RIDE.test(p) && p.indexOf(an) >= 0; });
+        /* 女性上位で組み立てた山場なら、直すのは書き出し（最初の段落）だけ */
+        if (hit) return paras.map(function (p, i) { return i === 0 && !(RIDE.test(p) && p.indexOf(an) >= 0) ? FM.fixWith(ctx, p, A, bn) : p; }).join('\n\n');
+      }
       var out = sentences(text).map(function (sen) {
         if (!sen) return sen;
         var body = sen.replace(/「[^」]*」/g, '');
