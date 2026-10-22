@@ -180,7 +180,8 @@
       if (!c) return;
       q = q.replace(new RegExp(esc(p.name) + '(?:さん|くん|君|ちゃん|様|さま|先輩|先生|殿)?', 'g'), function (m, off, str) {
         if (m !== p.name) return c;
-        if (!nameHere(p.name, str.charAt(off - 1), str.slice(off + m.length))) return m;
+        /* 印（U+2064）付きの名前は、名前として差し込まれた所なので、そのまま呼び方を付ける */
+        if (p.name.charAt(0) !== (HK.NAME_MARK || '\u2064') && !nameHere(p.name, str.charAt(off - 1), str.slice(off + m.length))) return m;
         return c;
       });
     });
