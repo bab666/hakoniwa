@@ -133,7 +133,8 @@
       var a = others[0], b = O.who === 'king' ? king : others[1];
       /* 二人への命令（壁ドン・顎クイなど {a} が仕掛けるもの）は、自分で攻めを選んだ人を仕掛けられる側にしない */
       if (O.who === 'two' && HK.Pos && HK.Pos.hardTop(b) && !HK.Pos.hardTop(a)) { var sw = a; a = b; b = sw; }
-      var text = '王様は' + king.name + '。「' + (O.who === 'two' ? a.name + 'と' + b.name + 'で' : O.who === 'king' ? a.name + 'が' : O.who === 'one' ? a.name + 'が' : '全員で') + O.t + '！」';
+      /* 命令はゲームの決まり文句なので、口調で「〜します！」に変えない（\u2060 は口調の整形を外す印） */
+      var text = '王様は' + king.name + '。「\u2060' + (O.who === 'two' ? a.name + 'と' + b.name + 'で' : O.who === 'king' ? a.name + 'が' : O.who === 'one' ? a.name + 'が' : '全員で') + O.t + '！」';
       var cat = O.lv >= 2 ? 'romance' : 'bond', why = '王様ゲーム（強さ' + O.lv + '）';
       var refuse = O.lv >= 3 && (a.tr.cp > 0.65 || (a.tr.ac > 0.6 && ctx.R(a, b).att < 25) || !HK.canLove(a, b)) && rng() < 0.6;
       /* いちばん強い命令（トイレに二人で・ボタンを外すなど）は、体の関係を持てない組（攻め×攻めなど）なら必ず断る */

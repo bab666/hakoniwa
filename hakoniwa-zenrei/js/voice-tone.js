@@ -37,13 +37,13 @@
     else if (/来$/.test(stem)) { irr = '来る'; cut = 1; }
     else if (/し$/.test(stem)) {
       var b1 = stem.slice(-2, -1), b2 = stem.slice(-3, -2);
-      var sahen = stem === 'し' || /[ぁ-んァ-ヶー]/.test(b1) || (isKanji(b1) && (isKanji(b2) || /[ァ-ヶー]/.test(b2)));
+      var sahen = stem === 'し' || /何し$/.test(stem) || /[ぁ-んァ-ヶー]/.test(b1) || (isKanji(b1) && (isKanji(b2) || /[ァ-ヶー]/.test(b2)));
       if (sahen) { irr = 'する'; cut = 1; }
     }
     if (irr) return stem.slice(0, stem.length - cut) + FORMS[irr][fi];
     var c = stem.slice(-1), pre = stem.slice(-2, -1);
     /* 「人います」「猫います」：名詞のあとの「い」は「いる」（「言い」「会い」などの動詞は除く） */
-    if (c === 'い' && isKanji(pre) && !/[言思会買使払笑願迷歌洗拭誘違吸追争祝救狙雇酔結揃匂舞這繕伴担戦失奪補従扱漂味叶通構呪貰養行誓拾庇伺敬繕問負]/.test(pre)) return stem.slice(0, -1) + FORMS['いる'][fi];
+    if (c === 'い' && isKanji(pre) && !/[言思会買使払笑願迷歌洗拭誘違吸追争祝救狙雇酔結揃匂舞這繕伴担戦失奪補従扱漂味叶通構呪貰養行誓拾庇伺敬繕問負合]/.test(pre)) return stem.slice(0, -1) + FORMS['いる'][fi];
     var ichidan = /[えけげせぜてでねへべめれ]$/.test(stem) || ICHI.test(stem) || (isKanji(c) && !I2U[c]);
     if (ichidan) return stem + ['る', 'ない', 'た', 'よう'][fi];
     if (!I2U[c] || !(isKanji(pre) || /[ぁ-ん]/.test(pre))) return null;
@@ -93,11 +93,12 @@
     if (/ん?ですか$/.test(s)) {
       if (/んですか$/.test(s)) return s.replace(/んですか$/, rough ? (WH.test(s) ? 'んだ' : 'のか') : 'の');
       if (/いですか$/.test(s)) return s.replace(/ですか$/, rough ? 'のか' : 'の');
-      return s.replace(/ですか$/, rough ? 'か' : 'なの');
+      return s.replace(/ですか$/, rough ? (WH.test(s) ? 'だ' : /(好き|嫌い|苦手|得意)ですか$/.test(s) ? 'なのか' : 'か') : 'なの');
     }
     var rc = plainCore(rest, rough) || (/(が|けど|けれど|から|ので|し)$/.test(rest) && rest !== s ? plainSentence(rest, mode) : null);
     if (!rc) return null;
     if (p === 'か' && /[よお]う$/.test(rc)) return rc + 'か';
+    if (p === 'ね' && rough && /[るうくすつぬむぶぐ]$/.test(rc) && !/[おこそとのほもよろごぞどぼょ]う$/.test(rc)) return rc + 'ぞ';
     var map = rough ? { 'よね': 'よな', 'ね': 'な', 'よ': 'ぞ', 'か': 'か' } : { 'よね': 'よね', 'ね': 'ね', 'よ': 'よ', 'か': 'の' };
     if (/くれ$/.test(rc)) return rc + (p === 'よ' ? 'よ' : '');
     if (p === 'か' && /だ$/.test(rc)) return rc.slice(0, -1) + (rough ? 'か' : 'なの');
@@ -159,18 +160,19 @@
       else if (mode === 'tsun' && /^(嬉しい|うれしい)(です|よ)?$/.test(body)) out = '……別に、嬉しくなんか';
       else out = plainSentence(body, mode === 'proud' ? 'proud' : 'casual');
       var b2 = out || body;
-      if (mode === 'proud') { var hd = harden(b2, 'proud'); if (hd) out = hd; }
+      if (mode === 'proud') { var hd = ask ? null : harden(b2, 'proud'); if (hd) out = hd; }
       if (mode === 'proud' && !out && !ask && /[たるうくいてっ]の$/.test(b2) && !/(もの|この|その|あの|どの)$/.test(b2)) out = b2.replace(/の$/, 'んだ');
       if (mode === 'proud' && !out) {
         if (/(だ|た|い|ない)ね$/.test(b2)) out = b2.replace(/ね$/, 'な');
-        else if (/[るうくすつぬむぶぐ]ね$/.test(b2) && !ask) out = b2.replace(/ね$/, 'な');
+        /* 「記録するね」を「記録するな」にすると禁止に読めるので「ぞ」に */
+        else if (/[るうくすつぬむぶぐ]ね$/.test(b2) && !ask) out = b2.replace(/ね$/, /[おこそとのほもよろごぞどぼょ]うね$/.test(b2) ? 'な' : 'ぞ');
         else if (/よね$/.test(b2)) out = b2.replace(/よね$/, 'よな');
         else if (/[^な]の$/.test(b2) && ask) out = b2.replace(/の$/, WH.test(b2) ? 'んだ' : 'のか');
       }
       if (mode === 'free' && !ask && !term && b2.length <= 8 && h % 2 === 0 && !/なさい$/.test(b2) && /[だいたるよねう]$/.test(out || body)) out = (out || body) + '！';
     } else if (mode === 'stern') {
       /* 厳格は敬語を使わない（「一人暮らしですか？」→「一人暮らしか？」） */
-      if (!/^(ありがとうございま|すみません|ごめんなさい|申し訳)/.test(body)) { var pl = plainSentence(body, 'casual'); if (pl) { body = pl.replace(/でしょ$/, 'だろう').replace(/なの$/, ask ? 'なのか' : 'なのだ').replace(/ちょうだい$/, 'くれ'); out = body; } }
+      if (!/^(ありがとうございま|すみません|ごめんなさい|申し訳)/.test(body)) { var pl = plainSentence(body, 'casual'); if (pl) { body = pl.replace(/でしょ$/, 'だろう').replace(/なの$/, ask ? (WH.test(body) ? 'なんだ' : 'なのか') : 'なのだ').replace(/ちょうだい$/, 'くれ'); out = body; } }
       var plain0 = out;
       if (/^(ごめん(ね|なさい)?|すみません|失礼(しました|いたしました))$/.test(body)) out = 'すまない';
       else if (/^(ありがとう|ありがと)(ございます|ございました)?$/.test(body)) out = '感謝する';
@@ -184,7 +186,7 @@
         if (/なんだから$/.test(body)) body = body.replace(/なんだから$/, 'なのだから');
         if (ask && /[^ょ]ない$/.test(body)) body = body + 'か';
         if (ask && /てる$/.test(body)) body = body.replace(/てる$/, 'ているのか');
-        out = harden(body, 'stern');
+        out = ask ? null : harden(body, 'stern');
         if (!out && body !== bm) out = body;
         if (!out && /(だ|た|い|ない)ね$/.test(body) && !/くださいね$/.test(body)) out = body.replace(/ね$/, 'な');
         if (!out && /よね$/.test(body)) out = body.replace(/よね$/, 'よな');
@@ -195,8 +197,8 @@
         /* 厳格：やわらかい語尾を、硬い言い切りに（「分かってるね」→「分かっているな」） */
         var b4 = out || body;
         if (!ask) {
-          if (/てる(ね|よ|よね)?$/.test(b4)) b4 = b4.replace(/てる(ね|よ|よね)?$/, function (m, e) { return 'ている' + (e === 'ね' ? 'な' : e === 'よね' ? 'な' : ''); });
-          else if (/[るうくすつぬむぶぐ]ね$/.test(b4)) b4 = b4.replace(/ね$/, 'な');
+          if (/てる(ね|よ|よね)?$/.test(b4) && !/(当|捨|育|慌|企|建|隔|果|捉|立|探|保|充)てる(ね|よ|よね)?$/.test(b4)) b4 = b4.replace(/てる(ね|よ|よね)?$/, function (m, e) { return 'ている' + (e === 'ね' ? 'な' : e === 'よね' ? 'な' : ''); });
+          else if (/[るうくすつぬむぶぐ]ね$/.test(b4)) b4 = b4.replace(/ね$/, /[おこそとのほもよろごぞどぼょ]うね$/.test(b4) ? 'な' : 'ぞ');
           else if (/だよ$/.test(b4)) b4 = b4.replace(/だよ$/, 'だ');
           else if (/[るうくすつぬむぶぐたい]よ$/.test(b4) && !/(でしょ|しよ|よう)$/.test(b4)) b4 = b4.replace(/よ$/, '');
           else if (/かな$/.test(b4)) b4 = b4.replace(/かな$/, 'か');

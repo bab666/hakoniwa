@@ -53,12 +53,14 @@
 
   /* ---------- 敬語まじりのため口 ---------- */
   function mixed(q) {
-    var parts = q.split(/(?<=[。！？!?])/).filter(function (x) { return x; });
+    var parts = q.split(/(?<=[。！？!?])(?![。！？!?」])/).filter(function (x) { return x; });
     var start = hash(q) % 2;
     if (parts.length === 1) {
       /* 一文だけのときは、読点の前と後で言い方を変えることも */
       var m = q.match(/^(.{3,}?[^、…])、(.{3,})$/);
-      if (m && hash(q) % 3 === 0) return V.polite(m[1]) + '、' + casual(m[2]);
+      /* 区切るのは、前半が言い切りで終わるときだけ（「〜て、」「〜の、」で切ると「話してくれてください、」のように崩れる） */
+      var cut = m && /(?:[いたよねなかうるす]|だ|ない)$/.test(m[1]) && !/(?:って|って|んない|の)$/.test(m[1]) && !/[、]/.test(m[1].replace(/^[^、]*、/, '').slice(-3)) && !/^(?:から|って|ください|くれ|ちょうだい|る|んだ|ね|よ)/.test(m[2]);
+      if (cut && hash(q) % 3 === 0) return V.polite(m[1]) + '、' + casual(m[2]);
       return hash(q) % 5 < 3 ? V.polite(q) : casual(q);
     }
     return parts.map(function (s, i) { return (i + start) % 2 ? V.polite(s) : casual(s); }).join('');
@@ -91,11 +93,20 @@
     return '……' + pick + (ask ? '？' : '');
   }
 
+  /* 敬語まじりのため口のため口側は、「〜てくれ」より「〜て」のほうが合う */
+  var mixed0 = mixed;
+  mixed = function (q) {
+    return mixed0(q).replace(/([てで])くれ(?=[…‥。！!？?」]|$)/g, '$1')
+      /* 厳格寄りの硬い形を敬語にしたときの崩れ（「何してるのです？」「怒ってるではないですか」） */
+      .replace(/のです(?=[？?])/g, 'んですか').replace(/ではないです(?=か|[。！？!?…」]|$)/g, 'じゃないです');
+  };
   var CONV = { noja: noja, mixed: mixed, mukuchi: mukuchi };
   V.toneConv2 = CONV;
   var sq0 = V.styleQuote;
   V.styleQuote = function (q, who) {
     if (!who || !CONV[who.tone]) return sq0(q, who);
+    /* 「見ないで、ください」の読点は先に詰める（口調の整形で「、くれ」だけ残らないように） */
+    if (who.tone === 'mixed') q = q.replace(/([てで])、(?=ください|ちょうだい)/g, '$1');
     q = sq0(q, who);
     return CONV[who.tone](q, who).replace(/([！？!?])。/g, '$1');
   };

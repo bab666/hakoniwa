@@ -114,7 +114,8 @@
     if (/でしょ$/.test(s)) return s + 'う';
     if (/じゃん$/.test(s)) return s.replace(/じゃん$/, 'じゃないですか');
     if (/だった$/.test(s)) return s.replace(/だった$/, 'でした');
-    if (/(なの|なんだ)$/.test(s)) return s.replace(/(なの|なんだ)$/, 'なんです');
+    if (/(なの|なんだ)$/.test(s) && !/[こそあど]んなの$/.test(s)) return s.replace(/(なの|なんだ)$/, 'なんです');
+    if (/(さん|ちゃん|様|先生)だ$/.test(s)) return s.replace(/だ$/, 'です');
     if ((m = s.match(/([うくすつぬぶむるぐいたなだ])んだ$/))) return s.replace(/んだ$/, 'んです');
     if (/(なんか|なんて|は|も|が|しか|じゃ|では|でも)ない$/.test(s)) return s + 'です';
     if (/んだ$/.test(s)) return s + 'んです';
@@ -183,7 +184,7 @@
   var PART = /(ってば|かしら|よね|よな|かな|だよ|わよ|わね|のよ|もん|よ|ね|な|ぞ|ぜ|わ|の|か)$/;
   /* 禁止（〜するな → 〜しないでください） */
   function prohibit(s) {
-    if (/(やる|いる|ある|なる|わかる|分かる|できる)な$/.test(s) || /[よょろそ]うな$/.test(s)) return null;
+    if (/(やる|いる|ある|なる|わかる|分かる|できる)な$/.test(s) || /[おこそとのほもよろごぞどぼょ]うな$/.test(s)) return null;
     if (/するな$/.test(s)) return s.replace(/するな$/, 'しないでください');
     /* くだけた禁止（「すんな」「見んな」「来んな」「触んな」） */
     if (/すんな$/.test(s)) return s.replace(/すんな$/, 'しないでください');
@@ -199,6 +200,8 @@
     return stem + { 'る': 'ら', 'う': 'わ', 'く': 'か', 'す': 'さ', 'つ': 'た', 'む': 'ま', 'ぶ': 'ば', 'ぐ': 'が', 'ぬ': 'な' }[last] + 'ないでください';
   }
   V.politeSentence = function (s0, noTe, ask) {
+    /* 問いかけの「〜て？」（「何が、入って……！？」）はお願いではない */
+    if (ask) noTe = true;
     var tail = (s0.match(/[っッー〜～…♡♪、]+$/) || [''])[0], s = s0.slice(0, s0.length - tail.length);
     if (!s) return s0;
     var lead = (s.match(/^[…‥・、\s]+/) || [''])[0], body = s.slice(lead.length);
