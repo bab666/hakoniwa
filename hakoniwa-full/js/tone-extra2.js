@@ -90,7 +90,7 @@
       for (var ci = cl.length - 1; ci >= 0; ci--) { var t = trim(cl[ci]); if (t.length >= 2 && t.length <= 12) { pick = t; ask = /[？?]/.test(sens[si]); ex = /[！!]/.test(sens[si]); break; } }
     }
     var h = hash(q) % 100;
-    if (!pick || (h < 18 && core.length <= 10)) { ask = /[？?]/.test(sens[0] || core); ex = /[！!]/.test(sens[0] || core); return ask ? '……？' : ex && h % 2 ? '……っ' : '……'; }
+    if (!pick || (h < 18 && core.length <= 6)) { ask = /[？?]/.test(sens[0] || core); ex = /[！!]/.test(sens[0] || core); return ask ? '……？' : ex && h % 2 ? '……っ' : '……'; }
     return '……' + pick + (ask ? '？' : '');
   }
 
