@@ -37,7 +37,7 @@
     else if (/来$/.test(stem)) { irr = '来る'; cut = 1; }
     else if (/し$/.test(stem)) {
       var b1 = stem.slice(-2, -1), b2 = stem.slice(-3, -2);
-      var sahen = stem === 'し' || /何し$/.test(stem) || /[ァ-ヶーにとうくでをよいがもは]/.test(b1) || (isKanji(b1) && (isKanji(b2) || /[ァ-ヶー]/.test(b2)));
+      var sahen = stem === 'し' || /何し$/.test(stem) || /[ァ-ヶーにとうくでをよいもは]/.test(b1) || (isKanji(b1) && (isKanji(b2) || /[ァ-ヶー]/.test(b2)));
       if (sahen) { irr = 'する'; cut = 1; }
     }
     if (irr) return stem.slice(0, stem.length - cut) + FORMS[irr][fi];
@@ -66,7 +66,7 @@
     if (/かったです$/.test(s)) return s.replace(/です$/, '');
     if (/でした$/.test(s)) return s.replace(/でした$/, 'だった');
     /* クイズの「誰でしょう？」「なんて書いたでしょう？」は、独り言の「だろ」にせず「〜と思う？」に */
-    if (/でしょう$/.test(s) && /(何|なに|なん|誰|だれ|どこ|いつ|どう|どれ|どっち|どんな|どの|なぜ)/.test(s)) return s.replace(/でしょう$/, /[たるいうくすつむぬぶぐ]でしょう$/.test(s) ? 'と思う' : 'だと思う');
+    if (/でしょう$/.test(s) && rough && /(何|なに|なん|誰|だれ|どこ|いつ|どう|どれ|どっち|どんな|どの|なぜ)/.test(s)) return s.replace(/でしょう$/, /[たるいうくすつむぬぶぐ]でしょう$/.test(s) ? 'と思う' : 'だと思う');
     if (/でしょう$/.test(s)) return s.replace(/でしょう$/, rough ? 'だろ' : 'でしょ');
     if (/んです$/.test(s)) return s.replace(/んです$/, 'んだ');
     if (/[^し]いです$/.test(s) || /(ない|たい|しい)です$/.test(s)) return s.replace(/です$/, '');
@@ -148,7 +148,7 @@
       return pre + TE2IMP[i][1];
     }
     if (/ないで$/.test(s)) return s + 'くれ';
-    var isReq = /[てで]$/.test(s) && !/(なんで|ので|たりして|だりして|なんて|として|にして|って|けど|かもしれなくて|すぎて|ないで|くて|てで|せいで|おかげで)$/.test(s) && V.politeSentence(s, false, false) === s + 'ください';
+    var isReq = /[てで]$/.test(s) && !/(なんで|ので|たりして|だりして|なんて|として|にして|って|けど|かもしれなくて|すぎて|ないで|くて|てで|せいで|おかげで|てて|でて)$/.test(s) && V.politeSentence(s, false, false) === s + 'ください';
     return isReq ? s + 'くれ' : null;
   }
 
@@ -172,10 +172,10 @@
         if (/(だ|た|い|ない)ね$/.test(b2)) out = b2.replace(/ね$/, 'な');
         /* 「記録するね」を「記録するな」にすると禁止に読めるので「ぞ」に */
         else if (/[るうくすつぬむぶぐ]ね$/.test(b2) && !ask) out = b2.replace(/ね$/, /([おこそとのほもよろごぞどぼょ]う|てる|ている)ね$/.test(b2) ? 'な' : 'ぞ');
-        else if (/よね$/.test(b2)) out = b2.replace(/よね$/, 'よな');
+        else if (/よね$/.test(b2) && !f) out = b2.replace(/よね$/, 'よな');
         else if (/[^な]の$/.test(b2) && ask) out = b2.replace(/の$/, WH.test(b2) ? 'んだ' : 'のか');
       }
-      if (mode === 'free' && !ask && !term && !/^[…‥っ]/.test(tail) && b2.length <= 8 && h % 2 === 0 && !/なさい$/.test(b2) && /[だいたるう]$/.test(out || body)) out = (out || body) + '！';
+      if (mode === 'free' && who.tone !== 'aniki' && !ask && !term && !/^[…‥っ]/.test(tail) && b2.length <= 8 && h % 2 === 0 && !/なさい$/.test(b2) && /[だいたるう]$/.test(out || body)) out = (out || body) + '！';
     } else if (mode === 'stern') {
       /* 厳格は敬語を使わない（「一人暮らしですか？」→「一人暮らしか？」） */
       if (!/^(ありがとうございま|すみません|ごめんなさい|申し訳)/.test(body)) { var pl = plainSentence(body, 'casual'); if (pl) { body = pl.replace(/でしょ$/, 'だろう').replace(/なの$/, ask ? (WH.test(body) ? 'なんだ' : 'なのか') : 'なのだ').replace(/ちょうだい$/, 'くれ'); out = body; } }
@@ -287,7 +287,7 @@
     if (!q) return q;
     /* 男性の台詞から、女性的な語尾を外す */
     /* 男性、または性別なしで強気・厳格・冷静の口調なら、女性的な語尾を外す */
-    if (who && (who.gender === 'm' || (who.gender !== 'f' && /^(proud|stern|cool|free)$/.test(who.persona)))) q = q.replace(/ものよ(?=[。！？…、]|$)/g, 'ものだ').replace(/あらあら/g, 'まあまあ').replace(/かしら(?=[。！？…」]|$)/g, 'かな').replace(/(だ|た|い)わよ(?=[。！？…、]|$)/g, '$1よ').replace(/([^ぁ-ん])わよ(?=[。！？…、]|$)/g, '$1だよ').replace(/のよ(?=[。！？…、]|$)/g, 'んだよ').replace(/(だ|た)わね(?=[。！？…、]|$)/g, '$1ね').replace(/だわ(?=[。！？…、]|$)/g, 'だ').replace(/(てる|ない|たい|しい)わ(?=[。！？…、]|$)/g, '$1よ').replace(/([るうくすつぬむぐぶ])わよ(?=[。！？…、]|$)/g, '$1よ').replace(/([るうくすつぬむぐぶい])わね(?=[。！？…、]|$)/g, '$1ね').replace(/なのね(?=[。！？…、]|$)/g, 'なんだね');
+    if (who && (who.gender === 'm' || (who.gender !== 'f' && /^(proud|stern|cool|free)$/.test(who.persona)))) q = q.replace(/ものよ(?=[。！？…、]|$)/g, 'ものだ').replace(/あらあら/g, 'おやおや').replace(/かしら(?=[。！？…」]|$)/g, 'かな').replace(/(だ|た|い)わよ(?=[。！？…、]|$)/g, '$1よ').replace(/([^ぁ-ん])わよ(?=[。！？…、]|$)/g, '$1だよ').replace(/のよ(?=[。！？…、]|$)/g, 'んだよ').replace(/(だ|た)わね(?=[。！？…、]|$)/g, '$1ね').replace(/だわ(?=[。！？…、]|$)/g, 'だ').replace(/(てる|ない|たい|しい)わ(?=[。！？…、]|$)/g, '$1よ').replace(/([るうくすつぬむぐぶ])わよ(?=[。！？…、]|$)/g, '$1よ').replace(/([るうくすつぬむぐぶい])わね(?=[。！？…、]|$)/g, '$1ね').replace(/なのね(?=[。！？…、]|$)/g, 'なんだね');
     if (!mode || mode === 'polite') return q;
     /* 敬語を使わない口調：文の途中の「〜ですから、」「〜ますが、」も外す（文末は下の一文ごとの整形で） */
     if (/^(proud|tsun|free|stern)$/.test(mode)) q = V.casualQuote(q, true);
