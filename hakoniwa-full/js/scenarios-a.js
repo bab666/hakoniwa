@@ -238,12 +238,30 @@
     unit: '月', preRel: 4, lethal: false, factions: true, maxCast: 30,
     derived: ['warmth', 'lead', 'jealous', 'caution'],
     env: [
-      { id: 'grade', label: '学年', type: 'select', def: '2', options: [{ v: '1', label: '高校1年' }, { v: '2', label: '高校2年（修学旅行あり）' }, { v: '3', label: '高校3年（受験）' }] },
+      { id: 'grade', label: '学年', type: 'select', def: '2', options: [{ v: '1', label: '高校1年' }, { v: '2', label: '高校2年（修学旅行あり）' }, { v: '3', label: '高校3年（受験）' }, { v: 'all', label: '学園全体（学年は住人ごと・先輩後輩あり）' }], desc: '学園全体にすると、住人ごとの「学年」で1〜3年生が混ざる。上級生と下級生は先輩・後輩になり、後輩は先輩に敬語で「〜先輩」と呼ぶ（呼び方や敬語を自分で決めた人はそのまま）' },
       { id: 'climate', label: 'クラスの雰囲気', min: 0, max: 100, def: 55, lo: '荒れている', hi: '仲がいい' },
       { id: 'faction', label: '派閥が生まれる人数', min: 3, max: 8, def: 4, lo: '3人から', hi: '8人から', unit: '人以上', desc: 'この人数を下回ると派閥には分かれない。上回っても、引っぱる人や信頼がなければ生まれない' },
       { id: 'bully', label: 'いじめ', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'あり（気質と雰囲気しだい）' }, { v: 'high', label: 'あり（起きやすい）' }, { v: 'off', label: 'なし' }], desc: '「なし」にすると、いじめも陰口・嫌がらせの小さな出来事も起きない' },
       { id: 'span', label: '期間', type: 'select', def: 'year', options: [{ v: 'year', label: '一年間' }, { v: 'term', label: '一学期だけ' }] }
     ],
+    perFields: [{ id: 'grade', label: '学年（学園全体のとき）', auto: 'おまかせ（2年）', options: [{ id: '1', label: '1年生' }, { id: '2', label: '2年生' }, { id: '3', label: '3年生' }] }],
+    /* 学園全体：住人ごとの学年を決め、学年の違う二人を先輩・後輩にする（台詞の敬語と「〜先輩」の呼び方も） */
+    extraTies: function (ctx, input) {
+      var all = ctx.env.grade === 'all';
+      ctx.chars.forEach(function (c) { c.grade = all ? (+((c.pick || {}).grade) || 2) : (+ctx.env.grade || 2); });
+      if (!all) return [];
+      var out = [], has = {};
+      (input.ties || []).forEach(function (t) { has[Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b)] = 1; });
+      ctx.chars.forEach(function (a) { ctx.chars.forEach(function (b) {
+        if (a.grade <= b.grade || a.role === 'teacher' || b.role === 'teacher') return;
+        if (!has[Math.min(a.i, b.i) + '-' + Math.max(a.i, b.i)]) out.push({ a: a.i, b: b.i, type: 'senpai' });
+        var y = input.chars[b.i];
+        if (y && !y.call && !(y.calls && y.calls[a.name])) { y.calls = Object.assign({}, y.calls || {}); y.calls[a.name] = a.name + '先輩'; }
+        if (y && !(y.keigo && Object.keys(y.keigo).length)) { y.keigoSenpai = y.keigoSenpai || {}; y.keigoSenpai[a.name] = 1; }
+      }); });
+      input.chars.forEach(function (y) { if (y.keigoSenpai) { y.keigo = Object.assign({}, y.keigo || {}, y.keigoSenpai); delete y.keigoSenpai; } });
+      return out;
+    },
     stats: [
       { id: 'study', label: '学力', desc: 'テストの順位に影響' },
       { id: 'sport', label: '運動', desc: '体育祭の活躍に影響' }
@@ -269,17 +287,18 @@
     phase: function (ctx, s, n) {
       var P = ctx.present(), rng = ctx.rng, m = ctx.label;
       var e;
-      if (s === 0) ctx.say({ text: '始業式。' + names(P) + 'は同じクラスになった。' });
+      if (s === 0) ctx.say({ text: ctx.env.grade === 'all' ? '始業式。' + [1, 2, 3].map(function (g) { var l = P.filter(function (c) { return c.grade === g; }); return l.length ? g + '年生の' + names(l) : ''; }).filter(Boolean).join('、') + '。同じ学園での一年が始まった。' : '始業式。' + names(P) + 'は同じクラスになった。' });
       if (m === '5月' || m === '12月') {
         var rank = P.map(function (c) { return { c: c, v: ctx.stat(c, 'study') * 10 + rng() * 25 + c.tr.a * 10 }; }).sort(function (x, y) { return y.v - x.v; });
         var top = rank[0].c, bot = rank[rank.length - 1].c;
         ctx.say({ text: (m === '5月' ? '中間' : '期末') + 'テストの結果が出た。トップは' + top.name + '、最下位は' + bot.name + '。' });
         P.forEach(function (c) { if (c !== top && c.tr.cp > 0.6) { ctx.k = 1; ctx.R(c, top).ten += 8; } });
-        if (ctx.env.grade === '3') P.forEach(function (c) { c.stress = HK.clamp(c.stress + 10, 0, 100); });
+        P.forEach(function (c) { if (c.grade === 3) c.stress = HK.clamp(c.stress + 10, 0, 100); });
       }
-      if (m === '11月' && ctx.env.grade === '2' && P.length >= 2) {
-        var sh = rng.shuffle(P);
-        ctx.say({ text: '修学旅行。消灯後、部屋のあちこちで話し声が続いた。' });
+      var P2 = P.filter(function (c) { return c.grade === 2; });
+      if (m === '11月' && P2.length >= 2) {
+        var sh = rng.shuffle(P2);
+        ctx.say({ text: (P2.length < P.length ? '二年生の' : '') + '修学旅行。消灯後、部屋のあちこちで話し声が続いた。' });
         for (var i = 0; i + 1 < sh.length; i += 2) {
           ctx.k = 1; ctx._mag = 0; ctx._touched = {};
           var a = sh[i], b = sh[i + 1];
@@ -293,9 +312,9 @@
     },
     after: function (ctx, s, n) { if (HK.ClassLife) HK.ClassLife.after(ctx, s, n); },
     finish: function (ctx) {
-      var g = ctx.env.grade === '3';
       if (HK.ClassLife) HK.ClassLife.finish(ctx);
       ctx.present().forEach(function (c) {
+        var g = c.grade === 3;
         if (c.stress > 75) { c.fate = '休みがちに'; c.fateNote = '三学期は教室にいないことが増えた'; }
         else { c.fate = g ? '卒業' : '進級'; c.fateNote = g ? '卒業式の日、' + (ctx.closest(c) ? ctx.closest(c).name + 'と写真を撮った' : '一人で校門を出た') : (ctx.closest(c) ? ctx.closest(c).name + 'と同じクラスになりたいと思っている' : '春休みを待っている'); }
       });

@@ -39,9 +39,9 @@
   }
   /* 「〜てしまいました」→「〜ちゃいました」（明るい台詞だけ） */
   function chau(q) {
-    return q.replace(/([てで])しま(いました|います|いません|いそう|って|った|う|おう|いましょう)/g, function (m, t, e) {
+    return q.replace(/([てで])しま(いました|います|いません|いそう|いたい|って|った|う|おう|いましょう)/g, function (m, t, e) {
       var c = t === 'て' ? 'ちゃ' : 'じゃ';
-      return c + { 'いました': 'いました', 'います': 'います', 'いません': 'いません', 'いそう': 'いそう', 'って': 'って', 'った': 'った', 'う': 'う', 'おう': 'おう', 'いましょう': 'いましょう' }[e];
+      return c + { 'いました': 'いました', 'います': 'います', 'いません': 'いません', 'いそう': 'いそう', 'いたい': 'いたい', 'って': 'って', 'った': 'った', 'う': 'う', 'おう': 'おう', 'いましょう': 'いましょう' }[e];
     });
   }
 
@@ -63,13 +63,14 @@
     var sad = SAD.test(q), shy = /[…‥]/.test(q);
     /* 驚きの「えっ」→「ええっ！？」（「えっと」は除く） */
     if (!shy) q = q.replace(/^えっ(?!と)[、。！？!?\s]*/, 'ええっ！？　').replace(/^ええっ！？　$/, 'ええっ！？');
-    if (sad || shy) return q;
+    if (sad) return q;
     q = chau(q);
+    if (shy) return q;
     /* 「やった」（間投詞）→「やったー！」 */
     q = q.replace(/(^|[。！？!?\s])やった[ぁあー]*(?:[、。！!]+|$)\s*/g, function (m, p, at, all) { return p + 'やったー！' + (at + m.length < all.length ? '　' : ''); });
 
     var parts = q.split(/([。！？!?…‥\n]+)/), bright = false, bang = false;
-    parts.forEach(function (seg, i) { if (!(i % 2) && UP.test(seg)) bright = true; });
+    parts.forEach(function (seg, i) { if (!(i % 2) && (UP.test(seg) || /(?<!あり)ませんよ$/.test(seg))) bright = true; });
     if (!bright) return q;
     for (var i = 0; i < parts.length; i += 2) {
       var seg = parts[i], punct = parts[i + 1] || '';
@@ -77,12 +78,13 @@
       var lead = (seg.match(/^[、\s]+/) || [''])[0];
       var body = seg.slice(lead.length);
       if (!body || /[ー〜～、か]$/.test(body)) continue;
-      var up = UP.test(body);
+      /* 「〜ませんよ」は言い返し（「負けませんよ〜！」） */
+      var up = UP.test(body) || /(?<!あり)ませんよ$/.test(body);
       /* 言い切りの文（打ち消しは、明るい目印がないかぎり除く） */
-      var polite = /(?:です|ます|ました|でした|ましょう|ください|ですよ|ですね|ますよ|ますね|ませんよ|ますって|ですって)$/.test(body);
+      var polite = /(?:(?:です|ます|ました|でした|ましょう|ください|ません)(?:よ|ね|よね)?|(?:です|ます)って)$/.test(body);
       var neg = /(?:ません|ない|なかった|ないです|ずに)(?:よ|ね|でした)?$/.test(body) && !up;
       /* 明るい目印のない文は、短い言い切り（「仁です」「近道を見つけました」）だけ */
-      var plain = /(?:です|ます|ました|でした)$/.test(body) && !/(?:から|けど|ので)/.test(body) && body.length <= 12;
+      var plain = /(?:です|ます|ました|でした)(?:よ|ね)?$/.test(body) && !/(?:から|けど|ので)/.test(body) && body.length <= 12;
       if (neg || !(up ? polite || body.length <= 10 : plain)) continue;
       if (up) body = stretch(body);
       parts[i] = lead + body;

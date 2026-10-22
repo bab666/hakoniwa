@@ -91,7 +91,7 @@
       var open = t.tr.np * 0.6 + R(ctx, s, t).trust / 60 > ctx.rng() * 0.9;
       ctx.act2({ actors: [t, s], cat: 'help', fx: function () { ctx.stress(s, open ? -18 : -4); ctx.mod(s, t, { trust: open ? 14 : 3, aff: open ? 8 : 0 }); }, text: open ? T(ctx, '{a}が家庭訪問に来た。{b}はドア越しに少しだけ話した。{a}「教室の席、ちゃんと空けてあるから」', t, s) : T(ctx, '{a}が家庭訪問に来た。{b}は部屋から出てこなかった。{a}はプリントと、手書きのメモを置いて帰った。', t, s), why: '担任の家庭訪問（NP ' + Math.round(t.eg.NP) + '）' });
     } },
-    { id: 'career', w: function (ctx) { return ctx.env.grade === '3' ? 1 : 0.3; }, run: function (ctx, t) {
+    { id: 'career', w: function (ctx) { return ctx.env.grade === '3' || (ctx.env.grade === 'all' && ctx.present().some(function (c) { return c.grade === 3; })) ? 1 : 0.3; }, run: function (ctx, t) {
       var s = pk(ctx, ctx.present());
       ctx.act2({ actors: [t, s], cat: 'bond', fx: function () { ctx.mod(s, t, { trust: 6 }); }, text: T(ctx, pk(ctx, ['三者面談で、{a}は{b}の親の前で「{b}さんは、人の痛みがわかる子です」と言った。{b}は帰り道、ずっと黙っていた。', '{a}「{b}は何がしたい？」{b}「…わかりません」{a}「わからないって言えるのは、ちゃんと考えてる証拠だよ」', '{a}は{b}の志望校の欄を見て、「もう一段上を狙ってみないか」と言った。', '{a}は{b}に、自分の大学時代の失敗談を話した。{b}は初めて{a}の前で笑った。']), t, s), why: '進路相談' });
     } },

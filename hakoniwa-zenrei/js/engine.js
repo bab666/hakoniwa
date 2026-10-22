@@ -333,7 +333,8 @@
         }
       });
     });
-    if (HK.Ties) HK.Ties.apply(ctx, input.ties);
+    /* 箱庭が自動で足す関係（学園全体の先輩後輩など）。ユーザーが決めた関係のある組には足さない */
+    if (HK.Ties) HK.Ties.apply(ctx, (input.ties || []).concat(scen.extraTies ? scen.extraTies(ctx, input) || [] : []));
     ctx.chars.forEach(function (a) { if (a.lock == null) return; ctx.chars.forEach(function (b) { if (b !== a && b.i !== a.lock) { var r = ctx.R(a, b); r.att = Math.min(r.att, 6); } }); });
     C.forEach(function (c) {
       if (c.goal && c.goal.needsFocus) {

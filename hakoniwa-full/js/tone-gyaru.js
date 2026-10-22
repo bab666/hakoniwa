@@ -9,6 +9,8 @@
   if (!V || !HK.toneFinish) return;
 
   /* 喘ぎ・息づかい（「ぁ」「♡」、語尾や区切りの「っ」）。「待って」「だった」の「っ」は数えない */
+  /* 驚きの「えっ！？」「あっ、」は喘ぎに数えない */
+  var SURPRISE = /^(?:えっ|あっ|おっ|うわっ)(?=[！？!?、])/;
   var MOAN = /[ぁぃぅぇぉ♡]|[っッ](?=[…‥、。！!？?\s」〜～ー]|$)|[ぁ-ん]ー?ん[…‥]/;
   /* どもり（「す、好き」「だ、だめ」） */
   var STUTTER = /(?:^|[、…‥\s])([ぁ-んァ-ン])、\1/;
@@ -18,7 +20,11 @@
   var KEIGO = /(?:です|ます|まし|ません|でした|ください|ござい|でしょう|いたし|申し|いただ|なさい|ちょうだい|お願いする|存じ|本日|お客様)/;
   /* 形容詞の語幹（「熱いね」→「熱くない？」）。「きれい」「嫌い」のような形容動詞は入れない */
   var ADJ = /(?:すご|かわい|可愛|おいし|美味し|うれし|嬉し|楽し|たのし|あったか|あたたか|暖か|温か|熱|暑|寒|さむ|涼し|すずし|うま|旨|面白|おもしろ|優し|やさし|甘|あま|まぶし|眩し|やわらか|柔らか|でか|デカ|多|速|早|強|高|長|話しやす|分かりやす|わかりやす|かっこよ|よ)$/;
-  var OK_END = /(?:[。！？!?…‥」\n]|$)/;
+  var ADJ_ONLY = new RegExp("^" + ADJ.source);
+  /* いたわり・慰めの台詞：「〜よね〜」「〜だし」で軽くしない */
+  var SOFT = /(?:しんど|大変|疲れ|無理し|ひとりに|一人に|心配|大丈夫|平気|帰る家|ごめん)/;
+  /* 決意・脅し・言い切りの「〜ない」には「し」を付けない */
+  var VOW = /(?:逃がさ|離さ|忘れ|負け|諦め|止まれ|させ|たまら|しれ|変わら|足りな|許さ|やめ|譲れ)ない$/;
 
   function lot(s, n) { return HK.lineLot(s, n); }
 
@@ -32,10 +38,10 @@
   }
 
   /* 語尾の付け替え。kind: 'q' 問い、'x' 叫び（！）、'' ふつう。戻り値 [文, 次の区切り] か null */
-  function ending(s, kind, i, quote) {
+  function ending(s, kind, i, quote, last) {
     var m;
     /* あいさつ・お礼（叫びでも） */
-    if (/^(?:じゃあ、|それじゃ、|今日は|今日も|これから|あとは|来週も|今後とも)?よろしく(?:ね|な|ー)?$/.test(s)) return s.replace(/よろしく(?:ね|な|ー)?$/, 'よろ〜');
+    if (/^(?:じゃあ、|それじゃ、|今日は|今日も|これから|来週も|今後とも)?よろしく(?:ね|な|ー)?$/.test(s)) return s.replace(/よろしく(?:ね|な|ー)?$/, 'よろ〜');
     if ((m = s.match(/^(.*?)(?:ありがとう|ありがと)(?:ね|な|よ)?$/)) && kind !== 'q') {
       if (!m[1] || /^(?:うん、|ほんと、|ほんとに|本当に|マジで|マジ)$/.test(m[1])) return (m[1] || '') + (lot(quote, 2) ? 'あざまる〜' : 'ありがと〜');
       return m[1] + 'ありがと〜';
@@ -43,7 +49,7 @@
     if (/^(?:おやすみ|またね|じゃあね|ばいばい|バイバイ|また明日|おつかれ|お疲れ)$/.test(s)) return s + '〜';
     if (kind === 'q') {
       if (/^(?:本当|ほんと|本気|マジ)(?:に|で)?$/.test(s)) return s.replace(/^(?:本当|ほんと|本気|マジ)(に|で)?$/, function (x, p) { return p ? 'マジで' : 'マジ'; });
-      if ((m = s.match(/^(.*?)(?:なん|ん|の)?でしょ$/)) && m[1]) return m[1] + 'っしょ';
+      if ((m = s.match(/^(.*?)(?:なん|ん|の)?でしょ$/)) && m[1] && !/、$/.test(m[1])) return m[1] + 'っしょ';
       return null;
     }
     /* 「知らない」→「知らんし」 */
@@ -53,51 +59,55 @@
     if (/(?:面白い|おもしろい|笑える)(?:ね|よ|な)?$/.test(s) && !/^(?:何|なに|どこ)/.test(s) && lot(quote, 2)) return s.replace(/(?:面白い|おもしろい|笑える)(?:ね|よ|な)?$/, 'ウケる');
     if (/(?:みたいな(?:感じ)?|って感じ)$/.test(s) && s.length > 5 && lot(quote, 2)) return s.replace(/(?:みたいな(?:感じ)?|って感じ)$/, '的な');
     /* 「〜でしょ」→「〜っしょ」（「〜なんでしょ」「〜ないんでしょ」も） */
-    if ((m = s.match(/^(.*?)(?:なん|ん|の)?でしょ$/)) && m[1]) return m[1] + 'っしょ';
-    if (kind === 'x') return null;
+    if ((m = s.match(/^(.*?)(?:なん|ん|の)?でしょ$/)) && m[1] && !/、$/.test(m[1])) return m[1] + 'っしょ';
+    if (kind === 'x') return /^(?:すごい|すげえ|すげー)$/.test(s) && lot(quote, 2) ? 'ヤバ' : null;
     /* 「すごいね」→「ヤバくない？」、「熱いね」→「熱くない？」（同意を求める「〜くない？」） */
     if ((m = s.match(/^(.*?)(い|いい)ね$/)) && (ADJ.test(m[1]) || m[2] === 'いい' && /(?:^|[、のがはもてに]|かっこ|気持ち|仲|頭|調子|運)$/.test(m[1])) && !/(?:たい|ない|しくない)ね$/.test(s) && lot(quote, 2)) {
       var stem = m[2] === 'いい' ? m[1] + 'よ' : m[1];
       if (/すご$/.test(stem) && lot(quote, 4)) stem = stem.replace(/すご$/, 'ヤバ');
       return [stem + 'くない', '？'];
     }
+    /* 一言の感想（「暑い」「おいしい」）→「マジ暑い」「マジおいしい」 */
+    if (/^[^、]{1,4}い$/.test(s) && ADJ_ONLY.test(s.slice(0, -1)) && !/^(?:い|よ)$/.test(s.slice(0, -1)) && lot(quote, 2)) return 'マジ' + s;
+    if (/(?:すご|スゴ)(?=かった|くて)/.test(s) && lot(quote, 2)) return s.replace(/(?:すご|スゴ)(?=かった|くて)/, 'ヤバ');
+    /* 形容詞・「〜すぎ」＋「だよ」「よ」→「じゃん」（「顔赤いよ」→「顔赤いじゃん」「考えすぎだよ」→「考えすぎじゃん」） */
+    if ((m = s.match(/^(.*?)(い|すぎだ)よ$/)) && (m[2] === 'すぎだ' || ADJ.test(m[1]) && !/(?:^|[^っ])よ$/.test(m[1])) && s.length >= 4 && lot(quote, 3)) return m[1] + (m[2] === 'すぎだ' ? 'すぎ' : 'い') + 'じゃん';
     if (/(?:すごい|スゴい)(?:ね|な|よ)?$/.test(s) && lot(quote, 2)) return s.replace(/(?:すごい|スゴい)(?:ね|な|よ)?$/, 'ヤバい');
     /* 「〜だよね」→「〜だよね〜」 */
-    if (/だよね$/.test(s)) return s + '〜';
-    if (/(?:[いたる]|じゃん)よね$/.test(s) && lot(quote, 2)) return s + '〜';
+    if (/(?:だ|[いたる]|じゃん)よね$/.test(s) && !SOFT.test(quote) && lot(quote, 2)) return s + '〜';
     /* 「そうだね」→「それな〜」、「〜だね」→「〜じゃん」 */
     if (/^(?:うん、)?そうだね$/.test(s) && lot(quote, 2)) return s.replace(/そうだね$/, 'それな〜');
-    if (/(?:[一-鿿ァ-ヶー々])だ(?:ね|な)$/.test(s) && !/[一-鿿]んだ[ねな]$/.test(s) && s.length > 3 && lot(quote, 2)) return s.replace(/だ(?:ね|な)$/, 'じゃん');
+    if (/(?:[一-鿿ァ-ヶー々])だ(?:ね|な)$/.test(s) && !/[一-鿿]んだ[ねな]$/.test(s) && s.length > 3 && !SOFT.test(quote) && lot(quote, 2)) return s.replace(/だ(?:ね|な)$/, 'じゃん');
     /* 言い切りの理由・否定に「〜し」（「Ωだから」→「Ωだし」「怒ってない」→「怒ってないし」） */
-    if (/(?:[一-鿿ァ-ヶー々]|なん)だから$/.test(s) && lot(quote, 2)) return s.replace(/から$/, 'し');
-    if (/(?<![じゃでくな])ない(?:よ|って)?$/.test(s) && !/(?:しかない|じゃない|しょうがない|仕方ない|かまわない|構わない|いけない|ならない|なくない)/.test(s) && s.length >= 4 && lot(quote, 3)) return s.replace(/ない(?:よ|って)?$/, 'ないし');
+    if (/(?:[一-鿿ァ-ヶー々]|なん)だから$/.test(s) && !SOFT.test(quote) && lot(quote, 2)) return s.replace(/から$/, 'し');
+    if (last && /[わらかさたまばがなけれ]ない(?:よ|って)?$/.test(s) && !VOW.test(s.replace(/(?:よ|って)$/, '')) && !/(?:しかない|じゃない|しょうがない|仕方ない|かまわない|構わない|いけない|ならない|なくない)/.test(s) && s.length >= 4 && s.length <= 14 && !SOFT.test(quote) && lot(quote, 3)) return s.replace(/ない(?:よ|って)?$/, 'ないし');
     return null;
   }
 
   function gyaru(q, who) {
-    if (!q || MOAN.test(q) || STUTTER.test(q)) return q;
+    if (!q || MOAN.test(q.replace(SURPRISE, '')) || STUTTER.test(q)) return q;
     var grave = GRAVE.test(q);
     /* 驚きの「えっ！？」「ええ！？」→「え〜！？」 */
     if (!grave) q = q.replace(/^(?:えっ|ええ|えー)(?=[！？!?])/, 'え〜').replace(/^ちょっと待って/, 'ちょ、待って').replace(/やばい|やべえ|ヤベえ|やべー/g, 'ヤバい').replace(/ヤバいっ(?=[！!])/g, 'ヤバっ');
-    if (grave) return q;
+    if (grave || KEIGO.test(q)) return q;
     var parts = q.split(/([。！？!?…‥」\n]+)/), slang = 0, swapped = false;
-    var out = parts.slice();
+    var out = parts.slice(), lastI = 0;
+    parts.forEach(function (seg, j) { if (!(j % 2) && /[^\s、]/.test(seg)) lastI = j; });
     for (var i = 0; i < parts.length; i += 2) {
       var seg = parts[i], next = parts[i + 1] || '', prev = i ? parts[i - 1] : '';
       if (!seg || /[〜～ー]$/.test(seg)) continue;
       /* 「……」で沈んだ文（前後が「…」）はそのまま */
-      if (/[…‥]/.test(prev) || /^[…‥]/.test(next) || /^[…‥、\s]/.test(seg)) continue;
+      if (/[…‥]/.test(prev) || /^[…‥]/.test(next) || /^[\s、]*[…‥]/.test(seg)) continue;
       var lead = (seg.match(/^[\s　、]+/) || [''])[0], body = seg.slice(lead.length);
       if (!body || KEIGO.test(body)) continue;
       var kind = /[？?]/.test(next) ? 'q' : /[！!]/.test(next) ? 'x' : '';
-      var limit = parts.length > 4 ? 2 : 1;
-      if (slang >= limit) break;
-      var b = body, nx = null;
+      /* 台詞全体で二つまで、一つの文には一つ（長い文なら二つ）まで */
+      if (slang >= 2) break;
+      var b = body, nx = null, here = 0, cap = body.length >= 12 ? 2 : 1;
       /* マジ・チョー：台詞に一回、二回に一回 */
-      if (!swapped && kind !== 'q' && lot(q + i, 2)) { var w = word(b); if (w) { b = w; swapped = true; slang++; } }
-      if (b.length < 9 && b !== body) { out[i] = lead + b; continue; }
-      if (slang < limit) {
-        var e = ending(b, kind, i, q);
+      if (!swapped && lot(q + i, 2)) { var w = word(b); if (w) { b = w; swapped = true; slang++; here++; } }
+      if (here < cap && slang < 2) {
+        var e = ending(b, kind, i, q, i >= lastI);
         if (e) {
           if (typeof e !== 'string') { nx = e[1]; e = e[0]; }
           /* 置き換えのあとでも、短い文に二つは重ねない */
