@@ -102,6 +102,8 @@
     setupPlus(S);
     JS.REL.setup(S, input);
     if (JS.SPEC) JS.SPEC.setup(S, input);
+    /* 役職×役職の特別な出来事（jashin-duo.js） */
+    if (JS.DUO) JS.DUO.setup(S);
     var keys = ['fear', 'hp', 'clue'];
 
     /* ---------- 到着 ---------- */
@@ -142,6 +144,7 @@
       npcTurn(S, live, h);
       tickPlus(S, P.filter(alive), h);
       JS.REL.tick(S, P.filter(alive), h);
+      if (JS.DUO) JS.DUO.tick(S, P.filter(alive), h);
       if (JS.GOALX) JS.GOALX.tick(S, P.filter(alive), h);
       if (JS.GODEV) JS.GODEV.tick(S, P.filter(alive), h);
       if (JS.LOOP) JS.LOOP.tick(S, P.filter(alive), h);
