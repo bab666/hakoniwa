@@ -37,7 +37,7 @@
     else if (/来$/.test(stem)) { irr = '来る'; cut = 1; }
     else if (/し$/.test(stem)) {
       var b1 = stem.slice(-2, -1), b2 = stem.slice(-3, -2);
-      var sahen = stem === 'し' || /(何|とか)し$/.test(stem) || (b1 === 'が' && !/(逃|焦|転|騒|揺る|剥|脱|泳|急|嗅|稼|注|仰|繋)がし$/.test(stem)) || /[ァ-ヶーにとうくでをよいもは]/.test(b1) || (isKanji(b1) && (isKanji(b2) || /[ァ-ヶー]/.test(b2)));
+      var sahen = stem === 'し' || /(何|とか)し$/.test(stem) || /([ぁ-んァ-ヶ]{2})\1し$/.test(stem) || (b1 === 'が' && !/(逃|焦|転|騒|揺る|剥|脱|泳|急|嗅|稼|注|仰|繋)がし$/.test(stem)) || /[ァ-ヶーにとうくでをよいもは]/.test(b1) || (isKanji(b1) && (isKanji(b2) || /[ァ-ヶー]/.test(b2)));
       if (sahen) { irr = 'する'; cut = 1; }
     }
     if (irr) return stem.slice(0, stem.length - cut) + FORMS[irr][fi];
