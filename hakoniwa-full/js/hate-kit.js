@@ -109,8 +109,12 @@
       var t = a.tr || {};
       return H.level(x, a, b) >= 65 && (t.aggr || 0) * 0.5 + (t.cp || 0) * 0.3 + (t.impulse || 0) * 0.2 > 0.45;
     },
-    /* 二人のうち、強引に出る側（いなければ null） */
-    forcer: function (x, a, b) { return H.forceful(x, a, b) ? a : H.forceful(x, b, a) ? b : null; },
+    /* 二人のうち、強引に出る側（いなければ null）。
+       受け攻めの指定に従う：強引な側が、その組で攻めに回れない（相手が自分で攻めを選んだ人など）なら、乱暴にはできない */
+    forcer: function (x, a, b) {
+      var P = HK.Pos, can = function (f, o) { return !P || P.order(f, o, [f, o])[0] === f; };
+      return H.forceful(x, a, b) && can(a, b) ? a : H.forceful(x, b, a) && can(b, a) ? b : null;
+    },
     /* a が b を敵視している二人（a→b）。lv は a の嫌悪レベル */
     pairs: function (x, list, min) {
       var out = [];

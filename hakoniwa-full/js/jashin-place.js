@@ -327,7 +327,8 @@
         return { bonus: -0.06 };
       }
       if (!lv) return null;
-      var x = lv[0], y = lv[1], f = r18(S);
+      /* 向きは受け攻めの指定どおり（攻めを選んだ人が引き寄せる側）。向きの決まらない組は、成人向けの描写にしない */
+      var lo = HK.Pos ? HK.Pos.order(lv[0], lv[1], [lv[0], lv[1]]) : lv, x = lo[0], y = lo[1], f = HK.Pos && !HK.Pos.okSex(x, y) ? null : r18(S);
       var head = x.name + 'の掌が、熱く脈打った。' + x.name + 'は' + y.name + 'の腕を掴んで引き寄せた。' + JS.placeLine(x, 'YGO_LUST', y);
       var body = f ? f(S, 'lust', x, y) : x.name + 'は' + y.name + 'を書架に押しつけ、貪るように唇を重ねた。' + y.name + 'も、拒まなかった。掌の口さまが、二人の欲を、根こそぎ引きずり出していた。仲間に肩を揺さぶられて、二人はようやく我に返った。';
       ST.key(S, ST.say(S, { actors: [x, y], tag: '欲情', kind: 'climax', text: head + body, why: '恋人どうし。掌の口さまが、二人の欲を煽った――封印の儀が遅れた', mag: 38 }), x.name + 'と' + y.name + 'が欲に呑まれた');
@@ -337,7 +338,7 @@
     shub: function (S, live) {
       var lv = pairs(S, live, LOVEISH)[0];
       if (!lv) return null;
-      var x = lv[0], y = lv[1], f = r18(S);
+      var lo = HK.Pos ? HK.Pos.order(lv[0], lv[1], [lv[0], lv[1]]) : lv, x = lo[0], y = lo[1], f = HK.Pos && !HK.Pos.okSex(x, y) ? null : r18(S);
       var body = f ? f(S, 'fertile', x, y) : '宴の甘い匂いに当てられて、' + x.name + 'と' + y.name + 'は、踊りの輪の中へ引き込まれていった。互いの顔しか見えなくなり、二人は輪の真ん中で、いつまでも抱き合っていた。仲間が二人を輪の外へ引きずり出したのは、ずいぶん経ってからだった。';
       ST.say(S, { actors: [x, y], tag: '豊穣の宴', kind: 'climax', text: x.name + 'は、' + y.name + 'の手を握ったまま、宴の方へふらりと歩き出した。' + body, why: '恋人どうし。豊穣の母の宴に呑まれた', mag: 36 });
       return { bonus: -0.04 };

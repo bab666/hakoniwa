@@ -21,7 +21,7 @@
     voice: { label: '嬌声の呪い', desc: '声を抑えられなくなり、羞恥で理性が削れる' },
     melt: { label: '衣溶けの呪い', desc: '身につけたものが少しずつ溶けていく' },
     obey: { label: '服従の刻印', desc: '命令する声に逆らえなくなる' },
-    dream: { label: '淫夢の呪い', desc: '休むたびに夢の中で嬲られる' }
+    dream: { label: '淫夢の呪い', desc: '休むたびに淫らな夢にうなされる' }
   };
   DG.ITEMS = {
     herb: { label: '鎮静の薬草', desc: '昂りを鎮め、理性を取り戻す' },
@@ -92,8 +92,22 @@
     r.push(t); if (r.length > 14) r.shift();
     return t;
   }
+  /* 自分で「攻め」を選んだ挑戦者（HK.Pos.hardTop）は、罠・魔物に「される」側にしない。
+     本文は DG.TOP の書き下ろし（罠を壊して逃れる・魔物を逆に組み伏せる・媚薬で自分の体が火照るだけ）に差し替える */
+  function isTop(h) { return !!(h && HK.Pos && HK.Pos.hardTop(h)); }
+  DG.isTop = isTop;
+  function evText(S, ev, kind) {
+    var T = DG.TOP;
+    if (!T || !isTop(S.h)) return fmt(S, pick(S, ev.texts), ev);
+    var k = kind || ev.kind;
+    var arr = T[k === 'mon' || k === 'spring' || k === 'captive' || k === 'cap' || k === 'boss' ? k : (ev.o && ev.o.mind) || k === 'odd' ? 'mind' : k === 'chest' ? 'chest' : 'trap'];
+    return fmt(S, pick(S, arr), ev);
+  }
+  DG.evText = function (S, ev, kind) { return evText(S, ev, kind); };
   var RICHMAP = { avoid: 'avoid', resist: 'resist', win: 'win', sneak: 'sneak', skipChest: 'skip', skipSpring: 'skip', rest: 'rest' };
   function line(S, key, ev) {
+    var TL = isTop(S.h) && DG.TOP && DG.TOP.lines[key];
+    if (TL) return fmt(S, pick(S, TL), ev);
     var rk = RICHMAP[key], R0 = rk && DG.RICH && DG.RICH[rk] && S.h && DG.RICH[rk][S.h.persona];
     if (R0) return fmt(S, pick(S, R0), ev);
     var L = DG.LINES[key];
@@ -129,11 +143,11 @@
 
   /* 本文＋気質による反応 */
   function react(S, force) {
-    var h = S.h, T = DG.TAILS[h.persona], sg = stage(h);
+    var h = S.h, T = isTop(h) && DG.TAILS_TOP ? DG.TAILS_TOP : DG.TAILS[h.persona], sg = stage(h);
     if (!T) return '';
     if (!force && sg === S.lastStage && S.rng() > 0.2) return '';
     S.lastStage = sg;
-    if (DG.ENDURE && sg <= 2 && S.rng() < 0.4) return ' ' + fmt(S, pick(S, DG.ENDURE[h.persona]));
+    if (DG.ENDURE && sg <= 2 && T !== DG.TAILS_TOP && S.rng() < 0.4) return ' ' + fmt(S, pick(S, DG.ENDURE[h.persona]));
     return ' ' + fmt(S, pick(S, T[sg]));
   }
   /* 直前の記録に短い補足を足す（行数を増やさない） */
@@ -178,7 +192,9 @@
     if (hasCurse(h, 'obey') && (o.mind || o.lure === 'ac')) gain *= 1.3;
     h.pleasure += gain;
     h.reason -= gain * (0.13 + (o.mind ? 0.08 : 0)) * (1 - w * 0.45) * S.k;
-    if (part === 'all') DG.PART_ORDER.forEach(function (k) { h.dev[k] = Math.min(10, (h.dev[k] || 0) + 0.35); });
+    /* 開発度（責められた部位ほど伸びる）は、攻めの挑戦者には付かない */
+    if (isTop(h)) { /* 伸ばさない */ }
+    else if (part === 'all') DG.PART_ORDER.forEach(function (k) { h.dev[k] = Math.min(10, (h.dev[k] || 0) + 0.35); });
     else h.dev[part] = Math.min(10, (h.dev[part] || 0) + (o.dev || 1));
     if (o.sens) h.sens += o.sens;
     if (o.cloth) clothDown(S, o.cloth);
@@ -215,8 +231,8 @@
       h.reason -= (4 + h.climax) * (1 - w * 0.4) * S.k;
       h.sens += 0.04 + (hasCurse(h, 'mark') ? 0.05 : 0);
       h.pleasure = 18 + rng.int(18) + (hasCurse(h, 'mark') ? 14 : 0) + (hasCurse(h, 'heat') ? 8 : 0);
-      var CL = DG.CLIMAX[h.persona][stage(h)], cn = h.climax, ctext = fmt(S, pick(S, CL), ev);
-      if (DG.MOAN && rng() < 0.45) ctext = '「' + pick(S, DG.MOAN[h.persona]) + '」' + ctext;
+      var top = isTop(h) && DG.CLIMAX_TOP, CL = top ? DG.CLIMAX_TOP[stage(h)] : DG.CLIMAX[h.persona][stage(h)], cn = h.climax, ctext = fmt(S, pick(S, CL), ev);
+      if (DG.MOAN && !top && rng() < 0.45) ctext = '「' + pick(S, DG.MOAN[h.persona]) + '」' + ctext;
       later(S, function () {
         var o = say(S, { kind: 'climax', tag: '絶頂', text: ctext, why: cn === 1 ? '初めての絶頂' : cn + '回目' });
         if (cn === 1) key(S, o, '最初の絶頂');
@@ -366,7 +382,7 @@
       return;
     }
     S.cnt.traps++;
-    var text = (deliberate ? line(S, 'seek', ev) + ' ' : '') + fmt(S, pick(S, ev.texts), ev);
+    var text = (deliberate ? line(S, 'seek', ev) + ' ' : '') + evText(S, ev, viaChest ? 'chest' : null);
     var before = h.pleasure;
     stim(S, ev, mult * (deliberate ? 1.15 : 1));
     var o = say(S, { kind: 'ev', tag: viaChest ? '宝箱' : ev.o.mind ? '幻惑' : '罠', text: text + react(S), why: (deliberate ? why + '／' : '') + DG.PARTS[ev.partNow] + '＋' + Math.round(h.pleasure - before > 0 ? h.pleasure - before : 0) });
@@ -377,6 +393,8 @@
 
   function hold(S, ev, n) {
     var h = S.h, rng = S.rng;
+    /* 攻めの挑戦者は捕まえられない（本文で、もう振りほどいている） */
+    if (isTop(h)) { S.defer = false; flushQ(S); return; }
     for (var i = 0; i < n; i++) {
       if (S.over || S.h.fallen) return;
       var esc = 0.22 + st(h, 'fight') * 0.06 + h.tr.cp * 0.2 + h.tr.a * 0.08 + h.hp / 500 - h.corrupt / 260 - h.pleasure / 500;
@@ -414,7 +432,7 @@
     S.cnt.traps++;
     var before = h.pleasure;
     stim(S, ev, 1);
-    say(S, { kind: 'ev', tag: '敗北', text: fmt(S, pick(S, ev.texts), ev) + react(S), why: DG.PARTS[ev.partNow] + '＋' + Math.round(Math.max(0, h.pleasure - before)) });
+    say(S, { kind: 'ev', tag: isTop(h) ? '逆襲' : '敗北', text: evText(S, ev) + react(S), why: DG.PARTS[ev.partNow] + '＋' + Math.round(Math.max(0, h.pleasure - before)) });
     if (settle(S)) return;
     if (h.hp <= 0) { capture(S, ev); return; }
     S.holdTarget = S.lastMain;
@@ -434,7 +452,7 @@
     S.h.capRounds++;
     ev = Object.create(ev); ev.name = S.h.captor.name;
     stim(S, ev, 1 + S.h.capRounds * 0.1);
-    say(S, { kind: 'ev', tag: '捕縛中', text: fmt(S, pick(S, ev.texts), ev) + react(S), why: '捕らわれて' + S.h.capRounds + '部屋分' });
+    say(S, { kind: 'ev', tag: '捕縛中', text: evText(S, ev, 'cap') + react(S), why: '捕らわれて' + S.h.capRounds + '部屋分' });
     if (settle(S)) return;
     var esc = 0.12 + h.tr.cp * 0.22 + h.tr.a * 0.1 + st(h, 'fight') * 0.03 + h.reason / 320 - h.corrupt / 220;
     if (S.h.goal.id === 'secret') esc -= 0.1;
@@ -472,7 +490,7 @@
     }
     S.cnt.traps++;
     stim(S, ev, 1);
-    say(S, { kind: 'ev', tag: '泉', text: fmt(S, pick(S, ev.texts), ev) + react(S), why: '' });
+    say(S, { kind: 'ev', tag: '泉', text: evText(S, ev) + react(S), why: '' });
   }
 
   function roomOdd(S, ev) {
@@ -492,7 +510,7 @@
     }
     S.cnt.traps++;
     stim(S, ev, 1);
-    say(S, { kind: 'ev', tag: '幻惑', text: fmt(S, pick(S, ev.texts), ev) + react(S), why: '' });
+    say(S, { kind: 'ev', tag: '幻惑', text: evText(S, ev, 'odd') + react(S), why: '' });
   }
 
   function roomCaptiveNpc(S, ev) {
@@ -514,7 +532,7 @@
     }
     S.cnt.traps++;
     stim(S, ev, 1.1);
-    say(S, { kind: 'ev', tag: '囚われ人', text: fmt(S, pick(S, ev.texts), ev) + react(S), why: '助けようとして、罠にかかった（NP ' + Math.round(h.eg.NP) + '）' });
+    say(S, { kind: 'ev', tag: '囚われ人', text: evText(S, ev, 'captive') + react(S), why: '助けようとして、罠にかかった（NP ' + Math.round(h.eg.NP) + '）' });
     S.holdTarget = S.lastMain;
     if (ev.o.hold) hold(S, ev, ev.o.hold);
   }
@@ -565,14 +583,16 @@
     for (var r = 0; r < rounds && !S.over; r++) {
       var F = freeOf(S);
       if (!F.length) break;
-      var h = S.h = HK.weighted(rng, F, function (x) { return 1.2 - x.tr.caution * 0.6 + x.corrupt / 150; });
+      /* 攻めの挑戦者はできるだけ標的から外す（全員が攻めなら、本文を差し替える） */
+      var Fv = F.filter(function (x) { return !isTop(x); });
+      var h = S.h = HK.weighted(rng, Fv.length ? Fv : F, function (x) { return 1.2 - x.tr.caution * 0.6 + x.corrupt / 150; });
       var mv = order[r % order.length], ev = bossEv(S, B, mv);
       stim(S, ev, 1 + r * 0.08);
-      say(S, { kind: 'ev', tag: S.bossTag, text: (mid && r === 0 ? B.name + '：' : '') + '《' + mv.n + '》' + fmt(S, pick(S, mv.texts), ev) + react(S), why: DG.PARTS[ev.partNow] });
+      say(S, { kind: 'ev', tag: S.bossTag, text: (mid && r === 0 ? B.name + '：' : '') + '《' + mv.n + '》' + evText(S, ev, 'boss') + react(S), why: DG.PARTS[ev.partNow] });
       S.holdTarget = S.lastMain;
       if (mv.o.hold) hold(S, ev, mv.o.hold);
       var splash = [];
-      F.forEach(function (x) { if (x !== h && rng() < 0.6) { S.h = x; stim(S, ev, 0.6); splash.push(x); } });
+      F.forEach(function (x) { if (x !== h && !isTop(x) && rng() < 0.6) { S.h = x; stim(S, ev, 0.6); splash.push(x); } });
       S.h = h;
       if (splash.length) { S.defer = false; note(S, '〔' + splash.map(function (x) { return x.name; }).join('・') + 'も巻き込まれた〕', null, S.holdTarget); flushQ(S); }
       splash.forEach(function (x) { S.h = x; if (settle(S)) DG.fallHero(S, x); });
@@ -587,13 +607,13 @@
       if (rng() < bp) {
         hits++; S.h = best;
         if (hits >= need) {
-          var o2 = say(S, { kind: 'sys', tag: '撃破', text: fmt(S, pick(S, B.hit), head) + ' ' + fmt(S, pick(S, B.win), head), why: best.name + '（戦闘力 ' + st(best, 'fight') + '・CP ' + Math.round(best.eg.CP) + '）' + (F.length > 1 ? '＋仲間' + (F.length - 1) + '人' : '') });
+          var o2 = say(S, { kind: 'sys', tag: '撃破', text: fmt(S, pick(S, hitLines(B, best)), head) + ' ' + fmt(S, pick(S, B.win), head), why: best.name + '（戦闘力 ' + st(best, 'fight') + '・CP ' + Math.round(best.eg.CP) + '）' + (F.length > 1 ? '＋仲間' + (F.length - 1) + '人' : '') });
           key(S, o2, B.name + 'を倒した');
           if (!mid) S.over = 'clear';
           else S.cnt.mids++;
           return;
         }
-        say(S, { kind: 'ev', tag: '反撃', text: fmt(S, pick(S, B.hit), head), why: '反撃 ' + hits + '/' + need });
+        say(S, { kind: 'ev', tag: '反撃', text: fmt(S, pick(S, hitLines(B, best)), head), why: '反撃 ' + hits + '/' + need });
       }
     }
     if (S.over) return;
@@ -607,6 +627,12 @@
     Fr.forEach(function (x) { S.h = x; capture(S, bossEv(S, B, B.moves[0])); x.bossCapture = true; });
   }
 
+  /* 反撃の文：攻めの挑戦者には「拘束から抜け出す」書き方を使わない（そもそも捕まっていない） */
+  function hitLines(B, x) {
+    if (!isTop(x)) return B.hit;
+    var l = B.hit.filter(function (t) { return !/抜け出|振り払|断ち切|引きちぎ|斬り落と|引き剥が|ほど|魅了/.test(t); });
+    return l.length ? l : ['{a}は{t}の懐に踏み込み、渾身の一撃を叩き込んだ。'];
+  }
   function pickBoss(S, th, tiers, used) {
     var list = DG.BOSSES.filter(function (b) { return b.th === th && tiers.indexOf(b.tier) >= 0 && used.indexOf(b.id) < 0; });
     if (!list.length) list = DG.BOSSES.filter(function (b) { return tiers.indexOf(b.tier) >= 0 && used.indexOf(b.id) < 0; });
@@ -776,7 +802,7 @@
       action: h.action.label, goal: h.goal.label, goalId: h.goal.id, autoAction: h.autoAction, autoGoal: h.autoGoal,
       reason: Math.max(0, Math.round(h.reason)), pleasure: Math.round(h.pleasure), corrupt: Math.round(h.corrupt), hp: Math.round(h.hp),
       sens: Math.round(h.sens * 100) / 100, climax: h.climax, dev: h.dev, cloth: h.cloth, curses: h.curses.slice(), items: h.items.slice(),
-      fate: fate, fallTitle: h.fallTitle || '', fallText: h.fallText || ''
+      fate: fate, fallTitle: h.fallTitle || '', fallText: h.fallText || '', hardTop: isTop(h)
     };
   }
   DG.finish = function (S, input) {
@@ -860,7 +886,7 @@
     var undetected = c.traps - c.seek;
     var nm = S.party.length > 1 ? h.name + 'の' : '';
     if (undetected >= 5 && st(h, 'scout') <= 3) A.push(nm + '罠察知が低め（' + st(h, 'scout') + '）。あと2あれば、発動した罠の多く（' + undetected + '回）を避けられたかもしれない。');
-    if (c.fights && c.won / c.fights < 0.5) A.push(nm + '戦闘力（' + st(h, 'fight') + '）が足りず、魔物に' + (c.fights - c.won) + '回組み伏せられた。');
+    if (c.fights && c.won / c.fights < 0.5) A.push(nm + '戦闘力（' + st(h, 'fight') + '）が足りず、' + (isTop(h) ? '魔物と' + (c.fights - c.won) + '回もつれ合った。そのたびに組み伏せ返したが、昂りと傷が残った。' : '魔物に' + (c.fights - c.won) + '回組み伏せられた。'));
     if ((S.cause.odd || 0) > 40 && st(h, 'magic') <= 3) A.push(nm + '幻惑への抵抗が弱い。魔力（' + st(h, 'magic') + '）か、A・ドライさがあれば心を守れた。');
     if (c.seek >= 2) A.push('自分から罠に触れた回数：' + c.seek + '回。FCの奔放さが、堕ちてからは仇になった。');
     if (h.climax >= 6 && h.eg.CP < 10) A.push(h.name + 'はCPが低め（' + Math.round(h.eg.CP) + '）で、絶頂のたびに踏ん張りがきかなかった。');

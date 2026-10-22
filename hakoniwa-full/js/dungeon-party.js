@@ -14,6 +14,8 @@
   function pn(S, s) { (S.partyNotes = S.partyNotes || []).push(s); }
   function sayAs(S, h, o) { var prev = S.h; S.h = h; var e = DG.say(S, o); S.h = prev; return e; }
   function canLove(a, b) { return HK.canLove ? HK.canLove(a, b) : true; }
+  /* 自分で「攻め」を選んだ人（罠や魔物に「される」側として書かない） */
+  function isTop(h) { return !!(HK.Pos && HK.Pos.hardTop(h)); }
 
   /* 仲間どうしの関係：相性＋登録された関係から */
   DG.partySetup = function (S, input) {
@@ -52,7 +54,7 @@
     if (pickx === 'arouse') {
       var g = (hit.gain || 15) * (0.35 + w.tr.fc * 0.3 + r.att / 200);
       w.pleasure += g; w.reason -= g * 0.1; w.corrupt += 1.2; r.att += 4;
-      sayAs(S, w, { kind: 'ev', tag: '見せつけ', text: t2(S, pk(S, ['{a}は{b}が責められる様子から目を離せなかった。体の奥が、勝手に火照っていく。', '{b}の上げた声に、{a}は喉を鳴らした。自分でも驚くほど、熱くなっていた。', '{a}は「見ちゃだめだ」と思いながら、指の隙間から{b}を見ていた。', '{a}は{b}の乱れた姿に、膝をこすり合わせた。', '{a}「…{b}、そんな顔、するんだ」声が掠れていた。']), w, tgt), why: w.name + 'のFC・衝動・' + tgt.name + 'への惹かれ（' + Math.round(r.att) + '）' });
+      sayAs(S, w, { kind: 'ev', tag: '見せつけ', text: t2(S, pk(S, isTop(tgt) ? ['熱に浮かされた{b}の横顔から、{a}は目を離せなかった。体の奥が、勝手に火照っていく。', '{b}の荒い息づかいに、{a}は喉を鳴らした。自分でも驚くほど、熱くなっていた。', '{a}は「見ちゃだめだ」と思いながら、指の隙間から{b}を見ていた。', '{a}「…{b}、そんな顔、するんだ」声が掠れていた。'] : ['{b}が責められる様子から、{a}は目を離せなかった。体の奥が、勝手に火照っていく。', '{b}の上げた声に、{a}は喉を鳴らした。自分でも驚くほど、熱くなっていた。', '{a}は「見ちゃだめだ」と思いながら、指の隙間から{b}を見ていた。', '{a}は{b}の乱れた姿に、膝をこすり合わせた。', '{a}「…{b}、そんな顔、するんだ」声が掠れていた。']), w, tgt), why: w.name + 'のFC・衝動・' + tgt.name + 'への惹かれ（' + Math.round(r.att) + '）' });
       return true;
     }
     if (pickx === 'disgust') {
@@ -66,17 +68,17 @@
       if (ok) {
         tgt.pleasure -= 12; tgt.reason += 3;
         if (tgt.captor) { tgt.captor = null; tgt.hp = Math.max(tgt.hp, 30); }
-        sayAs(S, w, { kind: 'ev', tag: '救援', text: t2(S, pk(S, ['{a}が刃を振るって、{b}に絡みつくものを断ち切った。「掴まれ！」', '{a}は{b}の腕を引っぱって、罠の中から力ずくで引きずり出した。', '{a}は松明を突き出して、{b}に群がるものを追い払った。「大丈夫か」', '{a}は自分の外套を{b}に被せて、肩を抱いた。「もう平気。見てないから」']), w, tgt), why: w.name + 'のNP・CP・戦闘力 ' + st(w, 'fight') + '（' + tgt.name + 'を助けた）' });
+        sayAs(S, w, { kind: 'ev', tag: '救援', text: t2(S, pk(S, isTop(tgt) ? ['{a}が{b}の隣に駆けつけ、二人がかりで残りの仕掛けを叩き壊した。', '{a}は{b}の背中を守るように立ち、寄ってくる魔物を追い払った。「大丈夫か」', '{a}は自分の外套を{b}に被せた。「少し休んで。熱が引くまで」'] : ['{a}が刃を振るって、{b}に絡みつくものを断ち切った。「掴まれ！」', '{a}は{b}の腕を引っぱって、罠の中から力ずくで引きずり出した。', '{a}は松明を突き出して、{b}に群がるものを追い払った。「大丈夫か」', '{a}は自分の外套を{b}に被せて、肩を抱いた。「もう平気。見てないから」']), w, tgt), why: w.name + 'のNP・CP・戦闘力 ' + st(w, 'fight') + '（' + tgt.name + 'を助けた）' });
         if (r.saved === 2) pn(S, w.name + 'は何度も' + tgt.name + 'を助けた。');
       } else {
         var ev = S.lastEv;
-        sayAs(S, w, { kind: 'ev', tag: '救援', text: t2(S, pk(S, ['{a}は{b}を助けようと飛び込み、一緒に絡め取られた。', '{a}の手が{b}に届く寸前で、{a}の足首にも何かが巻きついた。']), w, tgt), why: w.name + 'のNP（助けに入ったが、届かなかった）' });
+        sayAs(S, w, { kind: 'ev', tag: '救援', text: t2(S, pk(S, isTop(w) ? ['{a}は{b}を助けようと飛び込んだが、仕掛けの吐いた甘い霧を正面から浴びてしまった。', '{a}は{b}のもとへ駆け寄り、伸びてきたものを叩き落とした。飛び散った媚薬の飛沫が、肌を火照らせた。'] : isTop(tgt) ? ['{a}は{b}に加勢しようと飛び込み、足首を何かに絡め取られた。', '{a}は{b}のもとへ駆け寄る途中で、別の仕掛けに捕まった。'] : ['{a}は{b}を助けようと飛び込み、一緒に絡め取られた。', '{a}の手が{b}に届く寸前で、{a}の足首にも何かが巻きついた。']), w, tgt), why: w.name + 'のNP（助けに入ったが、届かなかった）' });
         if (ev && ev.power) { var prev2 = S.h; S.h = w; DG.stim(S, ev, 0.6); S.h = prev2; }
       }
       return true;
     }
     if (rng() < 0.5 && lvl) {
-      sayAs(S, w, { kind: 'ev', tag: '見せつけ', text: t2(S, pk(S, ['{a}は何もできずに、ただ{b}を見ていた。', '{a}は「すぐ終わる、すぐ終わるから」と{b}に繰り返した。']), w, tgt), why: '' });
+      sayAs(S, w, { kind: 'ev', tag: '見せつけ', text: t2(S, pk(S, isTop(tgt) ? ['{a}は何もできずに、ただ{b}を見ていた。'] : ['{a}は何もできずに、ただ{b}を見ていた。', '{a}は「すぐ終わる、すぐ終わるから」と{b}に繰り返した。']), w, tgt), why: '' });
       return true;
     }
     return false;
@@ -103,6 +105,8 @@
       if (r.intimate === 1) pn(S, a.name + 'と' + b.name + 'は、迷宮の中で一線を越えた。');
       return true;
     }
+    /* 襲う場面は、受け攻めの向きどおり（HK.Pos.order の先頭）が襲う側のときだけ。自分で攻めを選んだ人は襲われない */
+    if (HK.Pos && (HK.Pos.order(a, b, [a, b])[0] !== a || isTop(b))) return false;
     var third = P.filter(function (x) { return x !== a && x !== b; }).sort(function (x, y) { return (y.tr.np + y.tr.cp + rel(S, y, b).trust / 50) - (x.tr.np + x.tr.cp + rel(S, x, b).trust / 50); })[0];
     var stop = b.tr.cp * 0.4 + st(b, 'fight') * 0.06 + (third ? third.tr.np * 0.3 + third.tr.cp * 0.3 + st(third, 'fight') * 0.05 : 0) + rng() * 0.5;
     S.cnt.assault++; r.assault++; r.trust -= 20; r.ten += 25;
@@ -157,7 +161,7 @@
     var r = rel(S, v, f);
     var pull = r.att / 100 + r.trust / 150 + v.corrupt / 120;
     v.reason -= 4 + pull * 6; v.corrupt += 2 + pull * 4; v.pleasure += 10 + pull * 10;
-    sayAs(S, v, { kind: 'ev', tag: '堕ちた仲間', text: t2(S, pk(S, ['通路の奥で、堕ちた{b}が蕩けた顔で手招きしていた。「{a}も、おいでよ。気持ちいいよ」', '{b}の声がした。もう{a}の知っている声ではなかった。「どうして来てくれないの？」', '{a}は、罠に絡まれたまま幸せそうに笑う{b}を見てしまった。足が止まった。']), v, f), why: f.name + 'は迷宮に堕ちた。' + v.name + 'との絆（信頼 ' + Math.round(r.trust) + '）が引き寄せる' });
+    sayAs(S, v, { kind: 'ev', tag: '堕ちた仲間', text: t2(S, pk(S, ['通路の奥で、堕ちた{b}が蕩けた顔で手招きしていた。「{a}も、おいでよ。気持ちいいよ」', '{b}の声がした。もう{a}の知っている声ではなかった。「どうして来てくれないの？」', isTop(f) ? '{a}は、魔物を足元に侍らせて笑う{b}を見てしまった。足が止まった。' : '{a}は、罠に絡まれたまま幸せそうに笑う{b}を見てしまった。足が止まった。']), v, f), why: f.name + 'は迷宮に堕ちた。' + v.name + 'との絆（信頼 ' + Math.round(r.trust) + '）が引き寄せる' });
     return true;
   }
 
@@ -197,11 +201,11 @@
       var ok = rng() < 0.35 + st(a, 'fight') * 0.07 + fr.length * 0.08;
       if (ok) {
         c.captor = null; c.hp = 30; c.bossCapture = false; S.cnt.saved++; rel(S, a, c).trust += 15; rel(S, a, c).saved++;
-        var o = sayAs(S, a, { kind: 'ev', tag: '救出', text: t2(S, pk(S, ['{a}が巣に飛び込み、{b}を縛るものを断ち切った。「帰るぞ！」{b}は泣きながら{a}にしがみついた。', '{a}は囮になって魔物を引きつけ、その隙に{b}を連れ出した。', '{a}は{b}を背負って、巣から全力で駆け出した。']), a, c), why: a.name + 'のNP・戦闘力 ' + st(a, 'fight') + '（捕まった' + c.name + 'を救出）' });
+        var o = sayAs(S, a, { kind: 'ev', tag: '救出', text: t2(S, pk(S, [isTop(c) ? '{a}が巣に飛び込み、{b}を閉じ込めていた檻を叩き壊した。「帰るぞ！」{b}は「遅い」とだけ言って、{a}の肩を叩いた。' : '{a}が巣に飛び込み、{b}を縛るものを断ち切った。「帰るぞ！」{b}は泣きながら{a}にしがみついた。', '{a}は囮になって魔物を引きつけ、その隙に{b}を連れ出した。', '{a}は{b}を背負って、巣から全力で駆け出した。']), a, c), why: a.name + 'のNP・戦闘力 ' + st(a, 'fight') + '（捕まった' + c.name + 'を救出）' });
         DG.key(S, o, a.name + 'が' + c.name + 'を救い出した');
         pn(S, a.name + 'は捕らわれた' + c.name + 'を救い出した。');
       } else {
-        sayAs(S, a, { kind: 'ev', tag: '救出', text: t2(S, pk(S, ['{a}は{b}を助けに向かったが、巣の入り口で押し返された。{b}の声が、奥から聞こえ続けた。', '{a}の手は{b}に届かなかった。「必ず戻る」と叫んで、{a}は退いた。']), a, c), why: a.name + 'は救出に失敗した' });
+        sayAs(S, a, { kind: 'ev', tag: '救出', text: t2(S, pk(S, [isTop(c) ? '{a}は{b}を助けに向かったが、巣の入り口で押し返された。奥から、{b}が魔物を怒鳴りつける声が聞こえた。' : '{a}は{b}を助けに向かったが、巣の入り口で押し返された。{b}の声が、奥から聞こえ続けた。', '{a}の手は{b}に届かなかった。「必ず戻る」と叫んで、{a}は退いた。']), a, c), why: a.name + 'は救出に失敗した' });
         a.hp -= 10;
       }
     });

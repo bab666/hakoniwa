@@ -12,17 +12,20 @@
 
   var LUST = L('{x}は{y}を書架に押しつけ、服を引き裂くように剥ぎ取った。掌の口が{y}の肌のあちこちに吸いつき、{y}は仲間の目も構わずに声を上げた。|{x}は{y}を本の山の上に押し倒した。崩れた本のページが舞う中で、二人は獣のように互いを貪った。');
   var FERTILE = L('宴の輪の真ん中で、{x}と{y}は、村人たちに囲まれて交わった。土が二人の下で脈打ち、甘い葡萄酒の雨が肌を濡らした。|葡萄酒を口移しで飲まされた{x}は、{y}を苔の上に押し倒した。宴の歌が、二人の腰の動きに合わせて高まっていった。');
+  /* 女性どうしの豊穣の宴 */
+  var FERTILE_FF = L('宴の輪の真ん中で、{x}と{y}は、村人たちに囲まれて肌を重ねた。土が二人の下で脈打ち、甘い葡萄酒の雨が肌を濡らした。{x}は濡れた{y}の胸に唇を寄せ、指を脚のあいだへ滑らせた。|葡萄酒を口移しで飲まされた{x}は、{y}を苔の上に押し倒した。宴の歌が高まるにつれて、二人は脚を絡め、互いの熱いところを擦り合わせた。');
   var PREG = L('{y}の下腹に、熱いものが根を張る感覚があった。森の母が、{y}の中に仔を宿したのだった。|宴が静まったとき、{y}の下腹は、わずかに膨らんでいた。');
 
+  /* 呼ぶ側（jashin-place.js）は、向きの決まる組（HK.Pos.okSex）のときだけ呼ぶ */
   JS.R18.climaxRel = function (S, kind, a, b) {
     var R = M(), o = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b], X = o[0], Y = o[1], m = { x: X.name, y: Y.name };
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     if (kind === 'fertile') {
-      var t = ST.fmt(ST.pick(S, FERTILE), m) + (R ? R.sex(S, X, Y, { mood: 'drug', fore: false }) : '');
+      var t = ST.fmt(ST.pick(S, JS.R18.ff(X, Y) ? FERTILE_FF : FERTILE), m) + JS.R18.sex(S, X, Y, { mood: 'drug', fore: false });
       if (S.rng() < 0.6) { Y.preg = true; t += ST.fmt(ST.pick(S, PREG), m); }
       return t;
     }
-    return ST.fmt(ST.pick(S, LUST), m) + (R ? R.sex(S, X, Y, { mood: 'rough', fore: false }) : '') + '仲間が二人を引き剥がしたとき、' + X.name + 'の掌の口は、まだ物欲しげに開いたり閉じたりしていた。';
+    return ST.fmt(ST.pick(S, LUST), m) + JS.R18.sex(S, X, Y, { mood: 'rough', fore: false }) + '仲間が二人を引き剥がしたとき、' + X.name + 'の掌の口は、まだ物欲しげに開いたり閉じたりしていた。';
   };
 
   /* 場所ごとの眷属 */
@@ -39,6 +42,8 @@
   JS.R18.cave = function (S, live) {
     var PL = S.place, rng = S.rng, lv = S.env.jlewd / 100, R = M();
     if (!PL || PL.id === 'cave' || (!PLACE[PL.id] && PL.id !== 'bamboo')) return cave0(S, live);
+    /* 眷属に襲われるのは、攻めを選んでいない人だけ */
+    live = live.filter(function (q) { return !JS.R18.hardTop(q); });
     if (!live.length || rng() > lv * 0.6) return;
     var p = rng.pick(live); p.cnt.r18 = (p.cnt.r18 || 0) + 1;
     p.m.fear = Math.min(100, p.m.fear + 8);
