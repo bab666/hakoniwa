@@ -320,7 +320,7 @@
     /* 健気は敬語（見本：「精一杯がんばります」）。健気（くだけた）は tone-plus.js で敬語を外す。関西弁は敬語にしない */
     if (mode === 'devoted' && who.tone !== 'devoted_p' && who.tone !== 'kansai' && V.polite) q = V.polite(q);
     /* 敬語を使わない口調では、人狼の結果発表（「人狼ではありませんでした」）もため口に */
-    if (!/^(devoted|polite)$/.test(mode) && !/^(polite|devoted|mixed)$/.test(who.tone || '')) q = q.replace(/人狼(?:では|じゃ)ありませんでした/g, '人狼じゃなかった').replace(/人狼でした/g, '人狼だった').replace(/人間でした/g, '人間だった');
+    if (!/^(devoted|polite)$/.test(mode) && !/^(polite|devoted|mixed)$/.test(who.tone || '') && !/(です|ます|ました)[。！？!?…]/.test(q)) q = q.replace(/人狼(?:では|じゃ)ありませんでした/g, '人狼じゃなかった').replace(/人狼でした/g, '人狼だった').replace(/人間でした/g, '人間だった');
     /* 語尾に足した「！」と伸ばし・句点の重なり（「ありがと！ー！」「ごめんごめん！。」） */
     return q.replace(/！([ー〜])/g, '$1').replace(/！。/g, '！');
   };

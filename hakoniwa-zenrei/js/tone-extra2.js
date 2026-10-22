@@ -78,18 +78,23 @@
     var END = /(?:わね|わよ|のよね|んだよね|んだよな|んだよ|んだね|んだな|なんだ|んだ|のよね|のよ|のね|よね|よな|だよ|だね|だな|よ|ね|さ|ぞ|ぜ|わ)$/;
     var LEAD = /^(?:あらあら|あら|まあまあ|ふふ|えへへ|おーっと|あなた|お前|おまえ|きみ|君|あんた|ねえ|おい|あの|その|えっと|うん|ああ|ええ|はい|いや|よかったら|でも|だって|じゃあ|それで|それに|ほら)$/;
     function trim(c) {
-      c = c.replace(/[。！？!?…‥っッぁ〜」]+$/, '').replace(/([ぁ-ゖ])ー+$/, '$1').replace(/[。！？!?…‥っッぁ〜」]+$/, '').replace(/^[…‥\s]+/, '').replace(/^(?:だから|でも|じゃあ|それで|それに|さあ|まあ|ほら)(?=.)/, '').replace(END, '').replace(/([^るうか])な$/, '$1');
+      c = c.replace(/[。！？!?…‥っッぁ〜」]+$/, '').replace(/([ぁ-ゖ])ー+$/, '$1').replace(/[。！？!?…‥っッぁ〜」]+$/, '').replace(/^[…‥\s]+/, '').replace(/^(?:だから|でも|じゃあ|それで|それに|さあ|まあ|ほら)(?=.)/, '').replace(END, '').replace(/([^るうかくすつぬむぶぐ])な$/, '$1');
       /* 長いときは、助詞のところで前を落として述語のほうを残す */
-      for (var k = 1; c.length > 12 && k < c.length - 1; k++) if (/[はがもをにで]/.test(c.charAt(k - 1)) && !/[のをにがはでともか]/.test(c.charAt(k)) && c.length - k <= 12) { c = c.slice(k); break; }
+      for (var k = 1; c.length > 12 && k < c.length - 1; k++) if (/[はがもをにで]/.test(c.charAt(k - 1)) && /[一-鿿ァ-ヶー]/.test(c.charAt(k - 2)) && !/[のをにがはでともか]/.test(c.charAt(k)) && c.length - k <= 12) { c = c.slice(k); break; }
       return c;
     }
-    /* 文と読点で区切ったかたまりから、2〜12字のものを一つ選ぶ（最初の文の後ろのかたまり＝述語を優先） */
+    /* 文と読点で区切ったかたまりから、2〜12字のものを一つ選ぶ（最後の文の後ろのかたまり＝結論・述語を優先。「分かってる。でも、好きだ」→「……好き」） */
     var sens = core.split(/(?<=[。！？!?])/).filter(function (x) { return x.trim(); }), pick = null, ask = false, ex = false;
-    for (var si = 0; si < sens.length && !pick; si++) {
+    /* ただし最初の文が命令・禁止・数値なら、そちらを先に（「跪け。話はそれからだ」→「……跪け」） */
+    var firstFirst = sens.length > 1 && /([ろれけせえ]|[うくすつぬむぶぐる]な|[0-9０-９]|ml)[。！!]?$/.test(sens[0].replace(/[…‥っ]+$/, ''));
+    for (var sj = 0; sj < sens.length && !pick; sj++) {
+      var si = firstFirst ? sj : sens.length - 1 - sj;
       var cl = sens[si].split('、').filter(function (c) { return !LEAD.test(c.replace(/[…‥\s]/g, '')); });
       for (var ci = cl.length - 1; ci >= 0; ci--) { var t = trim(cl[ci]); if (t.length >= 2 && t.length <= 12) { pick = t; ask = /[？?]/.test(sens[si]); ex = /[！!]/.test(sens[si]); break; } }
     }
     var h = hash(q) % 100;
+    /* 選べるかたまりがないときも、短い文ならそのまま言う（中身を「……」で消さない） */
+    if (!pick && sens.length) { var ls = sens[sens.length - 1].replace(/^[…‥\s、]+/, '').replace(/[。！？!?…‥っ]+$/, ''); if (ls.length >= 2 && ls.length <= 20) { pick = ls.replace(END, ''); ask = /[？?]/.test(sens[sens.length - 1]); } }
     if (!pick || (h < 18 && core.length <= 6)) { ask = /[？?]/.test(sens[0] || core); ex = /[！!]/.test(sens[0] || core); return ask ? '……？' : ex && h % 2 ? '……っ' : '……'; }
     return '……' + pick + (ask ? '？' : '');
   }
