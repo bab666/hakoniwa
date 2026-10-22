@@ -74,7 +74,7 @@
     }
     if (r < save + (1 - save) * 0.4) {
       var vic = here && rng() < 0.5 ? L0 : ctx.most(mates, function (x) { return x.tr.np + x.tr.impulse * 0.5; });
-      var t2 = t + fill(ctx.pick(X.caught), { a: v.name, m: vic.name }) + fill(ctx.pick(lv === 'high' ? X.die : X.dieFade), m);
+      var t2 = t + fill(ctx.pick(X.caughtTop && HK.Pos && HK.Pos.hardTop(vic) ? X.caughtTop : X.caught), { a: v.name, m: vic.name }) + fill(ctx.pick(lv === 'high' ? X.die : X.dieFade), m);
       ctx.kill(v, null, 'ゾンビの群れに、仲間の前で犯されながら喰い殺された');
       vic.hp -= 40 + rng.int(25); ctx.stress(vic, 40);
       if (vic.hp <= 0) ctx.kill(vic, null, v.name + 'を助けに入り、ゾンビの群れに喰われた');

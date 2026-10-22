@@ -21,6 +21,8 @@
   /* a が想う側として、この二人の型を返す（セフレで、a が b を想っていなければ null） */
   FC.kind = function (ctx, a, b) {
     if (!a || !b || a === b || !has(ctx, a, b, 'fwb') || ctx.pair(a, b).couple) return null;
+    /* 関係が「セフレ」でも、体の関係を持てない組（攻め×攻めなど）には夜の出来事を起こさない */
+    if (HK.Pos && !HK.Pos.okSex(a, b)) return null;
     if (!wants(ctx, a, b)) return null;
     if (wants(ctx, b, a)) return 'mutual';
     var t = HK.Ties && HK.Ties.from(ctx, a, b, 'crush');

@@ -101,25 +101,66 @@
     { st: 'clumsy', t: '{a}は緊張で手が震えていたが、{b}が「ゆっくりでいい」と言ってくれた。時間はかかったけれど、二人はちゃんと最後まで一緒にたどり着いた。' }
   ];
   L.SPECIAL = SPECIAL;
-  /* 仕掛けた側（受け）が、縛った攻めの上に跨る */
-  var RIDE = L.RIDE = ['{b}は動けない{a}の上に跨り、自分から腰を沈めた。「動かなくていい。こっちで済ませる」――言葉とは裏腹に、{b}の腰はすぐに止まらなくなった。', '{b}は縛った{a}を見下ろしたまま、ゆっくりと{a}を自分の中に迎え入れた。主導権を握っているはずの{b}の方が、先に息を乱していた。', '{b}は{a}の胸に手をついて跨り、深く腰を落とした。{a}が下から突き上げるたびに、{b}の強気な顔が崩れていった。'];
+  /* 女性どうしの場面（白い部屋ならではの書き下ろし。指・舌・肌で。木箱があるときだけ道具も使う）。{a}=動く側 {b}=受ける側 */
+  var FF_OPEN = {
+    rough: ['{a}は{b}を白い壁に押しつけ、扉の紙が見えないように自分の体で視界を塞いだ。「もう、紙のことは考えなくていい」', '{a}は{b}の手首を掴んで簡易ベッドに引き倒し、シーツの擦れる音ごと唇を塞いだ。'],
+    gentle: ['{a}は簡易ベッドの縁に{b}を座らせ、白い照明の下で、確かめるように一枚ずつ服を脱がせた。「寒くない？」', '{a}は{b}の頬に手を添えて、額を合わせた。白い部屋の静けさの中で、二人の息づかいだけが聞こえた。'],
+    tease: ['{a}は{b}をベッドに座らせ、自分は床に膝をついて見上げた。「どこから触ってほしいか、扉の紙みたいに書いて見せて」', '{a}は{b}の鎖骨から胸の先へ、指一本で白い線を引くようになぞり、肝心なところの手前で止めた。'],
+    playful: ['{a}は「条件、二人で片づけよっか」と笑って{b}に抱きつき、二人そろって簡易ベッドに倒れ込んだ。', '{a}は{b}の首筋にキスマークを一つ付けて、「監視カメラに見せつけちゃう？」とからかった。'],
+    clinical: ['{a}は照明を一段落とし、「力を抜いて。すぐに楽になる」とだけ言って{b}を仰向けにした。', '{a}は{b}の脈を確かめるように首筋に指を当て、それから迷いのない手つきで服を緩めた。'],
+    clumsy: ['{a}は{b}のホックを外すのに三回失敗した。白い部屋の静けさの中で、二人は小さく吹き出した。', '{a}は「女の子とするの、初めてで……」と打ち明けた。{b}は「私も」と笑って、{a}の手を自分の胸に導いた。']
+  };
+  var FF_BODY = {
+    rough: ['{a}は{b}の脚を大きく開かせ、指を二本、ためらいなく沈めた。奥を掻くように動かすたび、{b}の踵がシーツを蹴った。', '{a}は{b}の太ももを押さえつけたまま顔を埋め、舌で容赦なく責め立てた。白い壁に、{b}の声が跳ね返った。'],
+    gentle: ['{a}は{b}の胸の先を唇で含みながら、指先でそっと花芯を転がした。{b}が息を呑んだ場所を、{a}は何度でも撫でた。', '{a}と{b}は向かい合って脚を絡め、互いの熱いところをゆっくりと擦り合わせた。簡易ベッドが小さく軋んだ。'],
+    tease: ['{a}は{b}の一番欲しいところだけを、わざと避け続けた。内ももばかりを撫でられて、{b}は涙目で腰を浮かせた。', '{a}は{b}の中に指を一本だけ入れて、動かさずに待った。焦れた{b}は、自分から腰を揺らし始めた。'],
+    playful: ['{a}と{b}は上になったり下になったりしながら、互いの弱いところを探し合った。笑い声は、いつの間にか甘い声に変わっていた。', '{a}は「ここ？　ここ？」と確かめながら指を動かし、{b}の反応がいい場所を見つけるたびに嬉しそうにした。'],
+    clinical: ['{a}は{b}の反応がいい場所だけを、一定のリズムで正確に撫で続けた。{b}の呼吸が、少しずつ浅くなっていった。', '{a}は指を揃えて、{b}の中のざらついたところを迷いなく押し上げた。'],
+    clumsy: ['{a}と{b}は手探りで、互いの気持ちいいところを教え合った。何度か噛み合わず、そのたびに照れ笑いした。', '{a}は{b}に「どこがいい？」と真剣に訊き、教えられたとおりに、丁寧すぎるほど丁寧に指を動かした。']
+  };
+  var FF_TOY = ['{a}は木箱から細身のローターを取り出し、震える先端を{b}の一番敏感なところに押し当てた。', '{a}は木箱の底にあった双頭の玩具を手に取り、片側を{b}に、もう片側を自分にあてがった。動くたびに、二人分の甘い声が重なった。', '{a}は木箱の張り型を手に取り、{b}の濡れたところにゆっくりと沈めていった。{b}はシーツを握りしめた。'];
+  var FF_CLIMAX = ['{b}は{a}の名前を呼びながら、背中を反らせて達した。{a}は、{b}が震え終わるまで手を止めなかった。', '二人は脚を絡めたまま、ほとんど同時に達した。白い部屋の中で、重なった鼓動がなかなか静まらなかった。', '散々焦らされたあと、{a}がようやく触れてほしい場所に触れると、{b}はひとたまりもなく達した。'];
+  var FF_AFTER = {
+    will: ['{a}は{b}の汗ばんだ前髪を指で払って、「かわいかった」と囁いた。{b}は{a}の胸に顔を埋めた。', '二人は狭い簡易ベッドで毛布にくるまり、指を絡めたまま天井の照明を見上げていた。'],
+    des: ['{a}は黙って毛布を{b}に掛け、自分は床に散らばった服を拾った。', '二人は背中合わせで身支度を整えた。どちらも、扉の方を見なかった。'],
+    aphro: ['熱が引いたあと、二人はしばらく顔を見られなかった。白い部屋には、まだ甘い匂いが残っていた。', '{b}は「……全部、媚薬のせいだから」と言った。{a}は「うん」とだけ答えた。']
+  };
+  var FF_REPEAT = ['{a}と{b}は、もう一度互いを抱き寄せた。さっきよりも、触れ方に遠慮がなかった。', '{a}は{b}の脚を開かせ、さっき覚えたばかりの弱いところを、迷いなく攻めた。'];
+  var FF_SPEED = ['{a}は動けない{b}の脚のあいだに膝をつき、指と舌で手早く{b}を追い上げた。', '{a}は縛った{b}の胸元を開き、「すぐ終わらせるから」と言って指を滑り込ませた。'];
+  function ffScene(ctx, A, B, mode, opt, st, roughLine) {
+    var tools = !!(ctx.flags && ctx.flags.toolbox), out = [];
+    if (roughLine) out.push(roughLine);
+    if (opt.toolText) out.push(opt.toolText.replace(/――$/, ''));
+    else if (mode === 'repeat') out.push(pick(ctx, FF_REPEAT));
+    else if (mode === 'speed') out.push(pick(ctx, FF_SPEED));
+    else out.push(pick(ctx, FF_OPEN[st] || FF_OPEN.gentle));
+    if (mode === 'aphro') out.push('媚薬で敏感になった{b}は、触れられるだけで腰が跳ねた。');
+    out.push(tools && (opt.toolText || ctx.rng() < 0.35) ? pick(ctx, FF_TOY) : pick(ctx, FF_BODY[st] || FF_BODY.gentle));
+    out.push(react(ctx, B));
+    out.push(pick(ctx, FF_CLIMAX));
+    var V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
+    if (V && ctx.rng() < 0.7) out.push(V.line(pf, B.persona, 'climax', 'b'));
+    if (FF_AFTER[mode]) out.push(pick(ctx, FF_AFTER[mode]));
+    var txt = out.map(function (s) { return t(ctx, s, A, B); }).join('');
+    if (HK.FF) txt = HK.FF.fix(ctx, txt, A, B, { tools: tools });
+    return txt + (opt.dash ? '――' : '');
+  }
   /* エッチの場面：mode = will | des | aphro | speed | group | repeat */
   L.scene = function (ctx, a, b, mode, opt) {
     opt = opt || {};
-    var lr = opt.lead ? (HK.Pos ? HK.Pos.order(a, b, ctx.rng() < 0.6 ? HK.Pos.fbFor(a, b) : [a, b]) : [a, b]) : L.lead(ctx, a, b), A = lr[0], B = lr[1];
-    var fx = fixed(A, B), ride = mode === 'speed' && A !== a;
-    if (ride) {
-      var rv = HK.Voice, rp = function (arr) { return ctx.pick(arr); };
-      var rl = [pick(ctx, RIDE), react(ctx, B), pick(ctx, ['最後は{b}の方が先に崩れ落ち、{a}も{b}の中で果てた。', '{b}は{a}の上で背中を反らせて達した。少し遅れて、{a}も{b}の奥で果てた。'])];
-      if (rv && ctx.rng() < 0.7) rl.push(rv.line(rp, B.persona, 'climax', 'b'));
-      return rl.map(function (x) { return t(ctx, x, A, B); }).join('') + (opt.dash ? '――' : '');
-    }
+    /* 体の関係を持てない組（攻め×攻めなど）には書かない（呼ぶ側で止めているが、念のため） */
+    if (HK.Pos && !HK.Pos.okSex(a, b)) return t(ctx, '{a}と{b}は、それ以上は触れ合わなかった。', a, b);
+    /* スピード型：縛った側がそのまま動く側（受け攻めの指定で、縛った側が攻めに回れるときだけ呼ばれる） */
+    var lr = mode === 'speed' ? (HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b]) : opt.lead ? (HK.Pos ? HK.Pos.order(a, b, opt.toolText ? [a, b] : ctx.rng() < 0.6 ? HK.Pos.fbFor(a, b) : [a, b]) : [a, b]) : L.lead(ctx, a, b), A = lr[0], B = lr[1];
+    var fx = fixed(A, B);
     /* 敵対の強さで嫌っていて、強引な性格の側がいれば、その人がリードして、乱暴に（hate-kit.js） */
     var HKr = HK.HateKit, rough = HKr ? HKr.forcer(ctx, A, B) : null;
     if (rough && rough === B && !fx) { var sw = A; A = B; B = sw; }
     var st = rough ? 'rough' : styleOf(ctx, A, mode);
     var lew = [];
-    if (rough && HK.TL) lew.push(A.name + 'は' + B.name + 'の手首を掴んで、ベッドへ乱暴に押し倒した。' + HK.TL.line(A, 'H_ROUGH', B));
+    var roughLine = rough && HK.TL ? A.name + 'は' + B.name + 'の手首を掴んで、ベッドへ乱暴に押し倒した。' + HK.TL.line(A, 'H_ROUGH', B) : '';
+    if (HK.Pos && HK.Pos.ff(A, B)) return ffScene(ctx, A, B, mode, opt, st, roughLine);
+    if (roughLine) lew.push(roughLine);
     if (opt.toolText) lew.push(opt.toolText.replace(/――$/, ''));
     else if (mode !== 'repeat') lew.push(pick(ctx, OPEN[st]));
     if (mode === 'aphro') lew.push(pick(ctx, ['媚薬で敏感になった{b}は、触れられるだけで腰が跳ねた。', '媚薬の熱に浮かされた{b}は、自分から{a}に脚を開いた。', '{a}も{b}も、媚薬のせいで止まれなかった。']));

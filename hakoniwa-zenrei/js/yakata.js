@@ -316,7 +316,8 @@
     var rng = S.rng, live = S.P.filter(alive);
     var pairs = [];
     live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i && cat(S, a, b) === 'love') pairs.push([a, b]); }); });
-    if (pairs.length && rng() < 0.5) { var pr = rng.pick(pairs); pr.forEach(function (p) { p.m.fear = clamp(p.m.fear - 8, 0, 100); }); ST.sayB(S, { actors: pr, tag: '夜', text: pr[0].name + 'と' + pr[1].name + 'は、同じ部屋で夜を明かした。互いの体温だけが、確かなものだった。', why: '関係：' + relLabel(S, pr[0], pr[1]) }, pr[0].name + 'と' + pr[1].name + 'が寄り添った'); }
+    /* 向きの決まらない組（HK.Pos.okSex でない二人）は、寄り添って夜を過ごさず、交代で見張って明かす */
+    if (pairs.length && rng() < 0.5) { var pr = rng.pick(pairs); pr.forEach(function (p) { p.m.fear = clamp(p.m.fear - 8, 0, 100); }); ST.sayB(S, { actors: pr, tag: '夜', text: pr[0].name + 'と' + pr[1].name + (HK.Pos && !HK.Pos.okSex(pr[0], pr[1]) ? 'は、同じ部屋で交代に見張りをしながら夜を明かした。扉の向こうの物音に、二人で耳を澄ませた。' : 'は、同じ部屋で夜を明かした。互いの体温だけが、確かなものだった。'), why: '関係：' + relLabel(S, pr[0], pr[1]) }, pr[0].name + 'と' + pr[1].name + 'が寄り添った'); }
     var sc = live.filter(function (p) { return p.m.fear > 60; })[0];
     if (sc && rng() < 0.5) { sc.locked = true; ST.sayB(S, { actors: [sc], tag: '恐怖', text: F(pk(S, T.PANIC), { a: sc.name }), why: '恐怖 ' + Math.round(sc.m.fear) }, sc.name + 'は閉じこもった'); }
   }

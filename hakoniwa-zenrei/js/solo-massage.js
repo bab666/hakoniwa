@@ -85,12 +85,36 @@
 
   /* 受け攻めの指定で、客（{a}）が攻めのとき */
   var POS_TOP = [
-    { n: '正常位', t: '{m}が施術台に仰向けになり、脚を開いた。「今度は、{a}さんの番です」――{a}は言われるままに、{m}の中へゆっくりと入っていった。' },
+    { n: '正常位', t: '{a}は{m}を施術台に仰向けにさせ、脚を開かせた。「今度は、こっちの番だ」――{a}は{m}の中へ、ゆっくりと入っていった。' },
     { n: '後背位', t: '{m}は施術台に手をつき、腰を上げた。「後ろから、どうぞ」――{a}は{m}の腰を掴み、奥まで沈めた。' },
-    { n: '騎乗位', t: '{a}が施術台に横になると、{m}がその上に跨った。「力を抜いていてくださいね」――{m}は{a}のものを、自分の中に深く迎え入れた。' },
+    { n: '騎乗位', t: '{a}は施術台に横になり、{m}の腰を掴んで自分の上に跨がらせた。「動いていいのは、言われたときだけ」――{a}は下から{m}を突き上げ、{m}の腰が逃げるたびに引き戻した。' },
     { n: '対面座位', t: '{m}は施術台に腰かけた{a}と向かい合い、膝の上に座って、ゆっくりと腰を落とした。「首に腕を回しても、いいですか」' },
-    { n: '立ちバック', t: '{m}は施術台に手をついて立ち、振り返った。「お好きなように」――{a}は膝を震わせながら、後ろから{m}を貫いた。' },
+    { n: '立ちバック', t: '{a}は{m}を施術台に手をつかせ、後ろに立った。「さっきの『力を抜いて』、そのまま返す」――{a}は{m}の腰を掴み、後ろから{m}を貫いた。' },
     { n: '側位', t: '{m}は施術台に横向きになり、片脚を上げた。「この角度だと、楽ですよ」――{a}は{m}を後ろから抱きすくめ、そのまま繋がった。' }
+  ];
+  /* 客（{a}）が攻めの女性で、施術者が男性のとき（立場逆転のあと） */
+  var POS_TOP_F = [
+    { n: '騎乗位', t: '{a}は{m}を施術台に仰向けにさせ、その腰に跨った。「動かないで。ペースは、こっちが決める」――{a}は見下ろしたまま、自分の好きな深さと速さで腰を揺らした。' },
+    { n: '手で', t: '{a}は{m}を施術台に座らせ、オイルを手に取った。「さっきのお返し」――{a}の手が、{m}のものをゆっくりと扱き上げた。{m}は何度も施術台の縁を掴み直した。' },
+    { n: '対面座位', t: '{a}は施術台に腰かけた{m}の膝に跨り、両肩を押さえつけた。「手は後ろ。触っていいとは言ってない」――{a}は自分のペースで動き、{m}の息が上がっていくのを見下ろしていた。' }
+  ];
+  /* 女性どうし（女性セラピストと女性の客）。マッサージの器具は使ってよい */
+  var POS_TOP_FF = [
+    { n: '指で', t: '{a}は{m}を施術台に仰向けにさせ、オイルで濡れた指を二本、{m}の脚のあいだにゆっくりと沈めた。「さっきの『特別な施術』、こうでしょう？」――{m}の囁き声が、上ずった。' },
+    { n: '器具で', t: '{a}は棚から施術用のハンディマッサージャーを取り、スイッチを入れた。「本来は肩用、だっけ」――振動する先端を押し当てられて、{m}は施術台の上で背中を反らせた。' },
+    { n: '脚を絡めて', t: '{a}は{m}の脚を開かせて自分の脚と交差させ、オイルで濡れた熱いところ同士を押しつけた。腰を揺らすのは{a}だけだった。{m}は施術台の縁を握りしめていた。' },
+    { n: '口で', t: '{a}は{m}を施術台の端に座らせ、その脚のあいだに顔を寄せた。「力を抜いて。深呼吸」――さっき言われた台詞を返しながら、{a}は舌でゆっくりと{m}を追い詰めた。' }
+  ];
+  var POS_FF = [
+    { n: '仰向け', t: '{m}「仰向けのまま、脚を開いてください」――{m}は{a}の脚のあいだに膝をつき、オイルで濡れた指を、ゆっくりと二本沈めた。' },
+    { n: '四つん這い', t: '{m}「四つん這いになって、腰を上げて」――{m}は後ろから{a}の腰を抱え、指先で中のざらついたところを探り当てた。' },
+    { n: '脚を絡めて', t: '{m}は施術台に上がり、{a}と脚を交差させた。「今度は、わたしも一緒に」――オイルで濡れた肌と肌が、一番熱いところで擦れ合った。' },
+    { n: '対面座位', t: '{m}は{a}を抱き起こし、向かい合って膝の上に座らせた。「首に腕を回して」――胸と胸が重なり、{m}の指が{a}の脚のあいだで動き始めた。' },
+    { n: 'うつ伏せ', t: '{m}「うつ伏せのまま、力を抜いて」――{m}は{a}の背中に胸を重ね、後ろから回した指で、{a}の一番敏感なところを転がした。' },
+    { n: '側位', t: '{m}は{a}を横向きに寝かせ、後ろから抱きすくめた。「片脚だけ、上げて」――首筋に唇が、脚のあいだに指が、同時に届いた。' },
+    { n: '器具', t: '{m}は施術用のハンディマッサージャーを手に取った。「本来は肩用なんですけど」――振動する先端が、{a}の一番敏感なところに押し当てられた。' },
+    { n: '背面座位', t: '{m}は{a}を後ろ向きに膝の上へ座らせた。「鏡、見てください」――鏡の中で、{m}の指が{a}の脚のあいだに沈んでいくのが見えた。' },
+    { n: '口で', t: '{m}は{a}を施術台の端に座らせ、自分は床に膝をついた。「最後は、口で流しますね」――温かい舌が、{a}の脚のあいだをゆっくりと舐め上げた。' }
   ];
 
   HK.SCENARIOS.massage = {
@@ -130,6 +154,10 @@
     var S = K.state(input, 'massage'), h = S.h, rng = S.rng, env = S.env;
     var staff = STAFF[env.staff] || STAFF.gentle;
     S.vars = { m: staff.n };
+    /* 受け攻め：自分で攻めを選んだ客は、施術者に「される」側に回らない。際どくなった時点で手を止めさせ、帰るか、立場を入れ替える */
+    var hardTop = !!(HK.Pos && HK.Pos.hardTop(h));
+    /* 女性どうし（女性セラピストと女性の客）：いちもつを前提にした描写を使わない */
+    var ff = h.gender === 'f' && staff.g === 'f';
     h.sens = 0.85 + (h.stats.sense - 3) * 0.1;
     var course = env.course;
     var seq = STAGES.slice();
@@ -160,7 +188,7 @@
     var M = HK.MassageMore, sleeping = 0, slept = false, reversed = false, extended = false, hands = 1;
     /* この回に起きるハプニング（2〜3個）を、どの段階で起こすか決めておく */
     var incAt = {};
-    S.rng.shuffle(M.INCIDENTS.filter(function (x) { return !x.when || x.when(env, h); })).slice(0, 2 + rng.int(2)).forEach(function (x) {
+    S.rng.shuffle(M.INCIDENTS.filter(function (x) { return (!x.when || x.when(env, h)) && (!hardTop || M.TOP_INC.indexOf(x.id) >= 0); })).slice(0, 2 + rng.int(2)).forEach(function (x) {
       for (var tries = 0; tries < 8; tries++) { var at = 1 + rng.int(Math.max(1, seq.length - 1)); if (!incAt[at]) { incAt[at] = x; break; } }
     });
     function band(l) { return l < 1.2 ? 0 : l < 2.8 ? 1 : 2; }
@@ -173,12 +201,50 @@
     K.say(S, { kind: 'sys', tag: '来店', text: K.fmt(S, K.pick(S, ['{a}は雑居ビルの三階、「癒しの手」と書かれた扉を押した。受付には{m}が一人。「お待ちしておりました」', '{a}はポイントカードを握りしめて、駅裏のマッサージ店に入った。迎えたのは{m}だった。', '{a}は口コミサイトで星4.8の店を予約した。レビューの八割が「また来ます」だったのが、少しだけ気になった。'])), why: '目標：' + h.goal.label + '／' + h.action.label });
     K.snap(S, { s: 0 });
 
+    /* 立場逆転：客が施術者を押し倒す（top＝自分で攻めを選んだ客が、際どい施術を止めたあと） */
+    function doReverse(top) {
+      reversed = true;
+      var orv = K.say(S, { kind: 'sys', tag: '立場逆転', text: K.fmt(S, K.pick(S, top ? M.TOP_REVERSE : M.REVERSE)), why: top ? '攻めの指定：触られる側には回らない／FC・攻撃性 ' + Math.round(h.tr.aggr * 100) + '・経験 ' + h.stats.exp : '強気・攻撃性 ' + Math.round(h.tr.aggr * 100) + '・経験 ' + h.stats.exp });
+      K.key(S, orv, '施術者を押し倒した');
+      var rv = dark ? [K.pick(S, MD.reverse)] : S.rng.shuffle(M.REVERSE_ACT).slice(0, 2);
+      rv.forEach(function (t2) { K.say(S, { kind: 'ev', tag: '逆転', text: K.fmt(S, t2), why: '' }); });
+      if (top && !dark) {
+        var tp = K.pick(S, ff ? POS_TOP_FF : h.gender === 'f' ? POS_TOP_F : POS_TOP);
+        K.say(S, { kind: 'ev', tag: tp.n, text: K.fmt(S, tp.t), why: '主導権は最後まで客の側' });
+      }
+      if (!top) { h.pleasure += 30; while (h.pleasure >= 100) K.climax(S); }
+      /* まれに、腕を見込まれてスカウトされる。受けるかどうかは性格と店の様子しだい */
+      if (M.SCOUT && rng() < 0.05 + h.tr.aggr * 0.08 + (h.stats.exp - 3) * 0.03 + (h.action.id === 'enjoy' ? 0.06 : 0) + (top ? 0.05 : 0)) {
+        var acc = h.tr.fc * 0.4 + h.tr.impulse * 0.25 + h.corrupt / 250 + (h.goal.id === 'secret' || h.goal.id === 'free' ? 0.2 : 0) + env.lewd / 500 - h.tr.cp * 0.25 - h.tr.a * 0.2 - h.tr.caution * 0.2 - (env.shady - 50) / 250 - (h.goal.id === 'suspect' || h.goal.id === 'heal' ? 0.2 : 0) + (rng() - 0.5) * 0.4;
+        S.flags.scout = acc > 0.55 ? 'yes' : 'no';
+        var osc = K.say(S, { kind: 'sys', tag: 'スカウト', text: K.fmt(S, K.pick(S, M.SCOUT)) + ' ' + K.fmt(S, K.pick(S, (S.flags.scout === 'yes' ? M.SCOUT_YES : M.SCOUT_NO)[h.persona] || M.SCOUT_NO.gentle)), why: '施術者を負かした腕を見込まれた（攻撃性・経験 ' + h.stats.exp + '）／' + (S.flags.scout === 'yes' ? '引き受けた（FC・衝動性・堕ち度）' : '断った（CP・A・慎重さ' + (env.shady > 60 ? '・店の怪しさ' : '') + '）') });
+        K.key(S, osc, S.flags.scout === 'yes' ? 'スカウトを受けた' : 'スカウトを断った');
+      }
+    }
+    /* 攻めの客：施術が際どくなった時点で手を止めさせ、帰るか、立場を入れ替える */
+    function topStop(st) {
+      S.flags.noticedAt = S.flags.noticedAt || st[1];
+      var o1 = K.say(S, { kind: 'ev', tag: st[0] + '（拒否）', text: K.fmt(S, K.pick(S, M.TOP_STOP)), why: '自分で「攻め」を選んでいる：施術者に触られる側には回らない' });
+      K.key(S, o1, st[1] + 'で手を止めさせた');
+      var rev = 0.25 + h.tr.fc * 0.3 + h.tr.aggr * 0.3 + (h.stats.exp - 3) * 0.08 + (h.goal.id === 'secret' ? 0.3 : 0) + (h.action.id === 'enjoy' ? 0.2 : 0) - (h.goal.id === 'suspect' || h.goal.id === 'heal' ? 0.15 : 0) - h.tr.caution * 0.2;
+      if (rng() < rev) { doReverse(true); return; }
+      left = true;
+      if (h.goal.id === 'suspect' && !S.flags.evidence && rng() < 0.6) {
+        S.flags.evidence = true;
+        K.say(S, { kind: 'ev', tag: '証拠集め', text: K.fmt(S, K.pick(S, M.EVIDENCE)), why: '噂を確かめに来た' });
+      }
+      var ol = K.say(S, { kind: 'sys', tag: '退店', text: K.fmt(S, K.pick(S, M.TOP_LEAVE)) + ' ' + K.fmt(S, K.pick(S, LEAVE)), why: '触られる側に回るつもりはなかった（攻めの指定）' });
+      K.key(S, ol, '店を出た');
+    }
+
     for (var i = 0; i < seq.length && !left && !fell; i++) {
       var st = seq[i], lvl = Math.min(5, st[4] + shift * (i / seq.length) * 1.5);
       S.step = i;
       K.step(S, (i + 1) + '. ' + st[1]);
+      if (hardTop && lvl >= 2) { topStop(st); break; }
       var power = st[3] * (0.6 + lvl * 0.12) * (env.lewd / 55) * (h.action.id === 'enjoy' ? 1.2 : h.action.id === 'endure' ? 0.85 : 1) * (env.staff === 'duo' ? 1.2 : 1) * hands * (sleeping ? 1.15 : 1);
-      var r = K.stim(S, power * 1.7, { part: st[2], shame: lvl >= 2, defer: true });
+      /* 攻めの客は、際どくなる前の普通の施術だけ（絶頂させられる展開にしない） */
+      var r = hardTop ? { gain: 0, climaxes: [] } : K.stim(S, power * 1.7, { part: st[2], shame: lvl >= 2, defer: true });
       var text = K.fmt(S, K.pick(S, dark && MD.act[st[0]] ? MD.act[st[0]] : ACT[st[0]])), bd = band(lvl);
       if (sleeping) {
         /* 寝ている間：本人の反応のかわりに、寝ている間の様子 */
@@ -191,7 +257,7 @@
           sus += 45;
         }
       } else {
-        var rx = rng() < 0.65 || dark ? ' ' + K.fmt(S, K.pick(S, M.REACT[h.persona][bd])) : K.tail(S, lvl >= 1 ? 0.55 : 0.2);
+        var rx = hardTop ? ' ' + K.fmt(S, K.pick(S, bd ? M.TOP_REACT : M.REACT[h.persona][0])) : rng() < 0.65 || dark ? ' ' + K.fmt(S, K.pick(S, M.REACT[h.persona][bd])) : K.tail(S, lvl >= 1 ? 0.55 : 0.2);
         var wrongNow = wrong && lvl >= 2 && M.WRONG && (wrongShown === 0 || rng() < 0.55);
         if (wrongNow) {
           wrongShown++; h.reason += 1; sus += 3;
@@ -201,15 +267,15 @@
         logC(r.climaxes);
       }
       /* 施術者の一言 */
-      if (rng() < 0.5) K.say(S, { kind: 'ev', tag: '施術者', text: K.fmt(S, K.pick(S, M.STAFF_TALK[env.staff] ? M.STAFF_TALK[env.staff][bd] : M.STAFF_TALK.gentle[bd])), why: '' });
+      if (rng() < 0.5) K.say(S, { kind: 'ev', tag: '施術者', text: K.fmt(S, K.pick(S, M.STAFF_TALK[env.staff] ? M.STAFF_TALK[env.staff][hardTop ? 0 : bd] : M.STAFF_TALK.gentle[hardTop ? 0 : bd])), why: '' });
       /* 方針ごとの小場面 */
       var AB = M.ACT[h.action.id];
-      if (!sleeping && AB && rng() < 0.45) {
+      if (!sleeping && AB && rng() < 0.45 && (!hardTop || !bd)) {
         fx(AB.fx[bd]);
         K.say(S, { kind: 'ev', tag: h.action.label, text: K.fmt(S, K.pick(S, AB.t[bd])), why: '方針「' + h.action.label + '」' });
       }
       /* 寝落ち（お任せでリラックスしている人ほど） */
-      if (!sleeping && !slept && !noticed && bd >= 1 && rng() < (h.action.id === 'relax' ? 0.3 : 0.06) + h.tr.cold * 0.12 + h.tr.ac * 0.08) {
+      if (!hardTop && !sleeping && !slept && !noticed && bd >= 1 && rng() < (h.action.id === 'relax' ? 0.3 : 0.06) + h.tr.cold * 0.12 + h.tr.ac * 0.08) {
         slept = true; sleeping = 1 + rng.int(h.action.id === 'relax' ? 4 : 2);
         var osl = K.say(S, { kind: 'ev', tag: '寝落ち', text: K.fmt(S, K.pick(S, M.SLEEP_IN)), why: 'リラックスしすぎた（ドライさ・AC）' });
         K.key(S, osl, '施術中に眠ってしまった');
@@ -225,19 +291,7 @@
       }
       /* 立場逆転：強気・奔放で経験のある客が、施術者を押し倒す */
       if (!reversed && !sleeping && (noticed || stayed) && h.corrupt > 25 && ((h.tr.cp > 0.6 && h.tr.np < 0.45) || h.tr.fc > 0.62 || h.tr.aggr > 0.6) && h.stats.exp >= 3 && rng() < 0.22 + h.tr.aggr * 0.3 + (h.stats.exp - 3) * 0.08) {
-        reversed = true;
-        var orv = K.say(S, { kind: 'sys', tag: '立場逆転', text: K.fmt(S, K.pick(S, M.REVERSE)), why: '強気・攻撃性 ' + Math.round(h.tr.aggr * 100) + '・経験 ' + h.stats.exp });
-        K.key(S, orv, '施術者を押し倒した');
-        var rv = dark ? [K.pick(S, MD.reverse)] : S.rng.shuffle(M.REVERSE_ACT).slice(0, 2);
-        rv.forEach(function (t2) { K.say(S, { kind: 'ev', tag: '逆転', text: K.fmt(S, t2), why: '' }); });
-        h.pleasure += 30; while (h.pleasure >= 100) K.climax(S);
-        /* まれに、腕を見込まれてスカウトされる。受けるかどうかは性格と店の様子しだい */
-        if (M.SCOUT && rng() < 0.05 + h.tr.aggr * 0.08 + (h.stats.exp - 3) * 0.03 + (h.action.id === 'enjoy' ? 0.06 : 0)) {
-          var acc = h.tr.fc * 0.4 + h.tr.impulse * 0.25 + h.corrupt / 250 + (h.goal.id === 'secret' || h.goal.id === 'free' ? 0.2 : 0) + env.lewd / 500 - h.tr.cp * 0.25 - h.tr.a * 0.2 - h.tr.caution * 0.2 - (env.shady - 50) / 250 - (h.goal.id === 'suspect' || h.goal.id === 'heal' ? 0.2 : 0) + (rng() - 0.5) * 0.4;
-          S.flags.scout = acc > 0.55 ? 'yes' : 'no';
-          var osc = K.say(S, { kind: 'sys', tag: 'スカウト', text: K.fmt(S, K.pick(S, M.SCOUT)) + ' ' + K.fmt(S, K.pick(S, (S.flags.scout === 'yes' ? M.SCOUT_YES : M.SCOUT_NO)[h.persona] || M.SCOUT_NO.gentle)), why: '施術者を負かした腕を見込まれた（攻撃性・経験 ' + h.stats.exp + '）／' + (S.flags.scout === 'yes' ? '引き受けた（FC・衝動性・堕ち度）' : '断った（CP・A・慎重さ' + (env.shady > 60 ? '・店の怪しさ' : '') + '）') });
-          K.key(S, osc, S.flags.scout === 'yes' ? 'スカウトを受けた' : 'スカウトを断った');
-        }
+        doReverse(false);
         break;
       }
       /* 気づくかどうか */
@@ -248,7 +302,7 @@
         sus += lvl * 9 * (0.6 + eye - blind * 0.6) + (env.shady - 50) / 12 + h.pleasure / 18;
         if (sus >= 55) {
           noticed = true; S.flags.noticedAt = st[1];
-          if ((h.goal.id === 'secret' && !(wrong && rng() < 0.6)) || (!wrong && h.tr.ac > 0.65 && h.tr.cp < 0.5 && rng() < 0.6)) {
+          if (!hardTop && ((h.goal.id === 'secret' && !(wrong && rng() < 0.6)) || (!wrong && h.tr.ac > 0.65 && h.tr.cp < 0.5 && rng() < 0.6))) {
             var os = K.say(S, { kind: 'ev', tag: '気づき', text: K.fmt(S, K.pick(S, SECRET)), why: '「' + st[1] + '」で気づいた。でも言い出せなかった（AC ' + Math.round(h.eg.AC) + '）' });
             K.key(S, os, '気づいたが黙っていた'); stayed = true;
           } else {
@@ -279,15 +333,15 @@
           }
         }
       }
-      if (!left && !sleeping && stayed && !asked && h.corrupt > (wrong ? 75 : 55) && rng() < (wrong ? 0.2 : 0.4) + h.tr.fc * 0.3) {
+      if (!hardTop && !left && !sleeping && stayed && !asked && h.corrupt > (wrong ? 75 : 55) && rng() < (wrong ? 0.2 : 0.4) + h.tr.fc * 0.3) {
         asked = true;
         K.say(S, { kind: 'ev', tag: 'おねだり', text: K.fmt(S, K.pick(S, ['{a}は自分から{m}の手を掴んで、そこへ導いた。「…もっと、ちゃんと」', '{a}は消え入りそうな声で言った。「…最後まで、してください」', '{a}「延長って、できますか」――声が震えていた。'])), why: '堕ち度 ' + Math.round(h.corrupt) });
       }
-      if (K.settle(S)) fell = true;
+      if (K.settle(S) && !hardTop) fell = true;
       K.snap(S, { s: sus });
     }
 
-    if (extended && !left && !reversed && !fell) {
+    if (extended && !hardTop && !left && !reversed && !fell) {
       S.step = seq.length; K.step(S, '延長');
       var rx2 = K.stim(S, 40, { part: 'all', mult: 1.2, defer: true });
       K.say(S, { kind: 'ev', tag: '延長', text: K.fmt(S, K.pick(S, ['延長の三十分は、それまでの九十分よりずっと長かった。{m}の手はもう、遠慮をしなかった。', '{m}「延長分は、特に念入りに」――{a}は延長を頼んだことを、ほんの少しだけ後悔した。', '延長の間、{a}は時計を見なかった。見る余裕がなかった。'])) + K.tail(S, 0.7), why: '延長した' });
@@ -299,7 +353,7 @@
       S.step = seq.length;
       K.step(S, '施術のあと');
       var nPos = 2 + rng.int(2) + (h.corrupt >= 100 ? 1 : 0);
-      var pool = S.rng.shuffle(HK.Pos && HK.Pos.vsNpc(h, '') === 'top' ? POS_TOP : POS).slice(0, nPos);
+      var pool = S.rng.shuffle(ff ? POS_FF : HK.Pos && HK.Pos.vsNpc(h, '') === 'top' ? POS_TOP : POS).slice(0, nPos);
       var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])), why: '快楽に負けた（堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
       K.key(S, head, '快楽に負けた');
       var custTop = HK.Pos && HK.Pos.vsNpc(h, '') === 'top';
@@ -317,8 +371,8 @@
         if (M.TRAINEE_ASK && !S.flags.trainee && j >= 1 && h.corrupt >= 100 && h.climax >= 6 && rng() < 0.55) {
           S.flags.trainee = true;
           var hesi = ['proud', 'stern', 'tsun', 'cool', 'shy', 'polite'].indexOf(h.persona) >= 0 ? rng() < 0.8 : rng() < 0.3;
-          var tt = K.fmt(S, K.pick(S, dark ? MD.traineeAsk : M.TRAINEE_ASK)) + ' ';
-          if (hesi) tt += K.fmt(S, K.pick(S, M.TRAINEE_HESITATE[h.persona] || M.TRAINEE_HESITATE.gentle)) + ' ' + K.fmt(S, K.pick(S, dark ? MD.traineePress : custTop ? M.TRAINEE_PRESS_TOP : M.TRAINEE_PRESS));
+          var tt = K.fmt(S, K.pick(S, dark ? MD.traineeAsk : ff ? M.TRAINEE_ASK_FF : M.TRAINEE_ASK)) + ' ';
+          if (hesi) tt += K.fmt(S, K.pick(S, M.TRAINEE_HESITATE[h.persona] || M.TRAINEE_HESITATE.gentle)) + ' ' + K.fmt(S, K.pick(S, dark ? MD.traineePress : custTop ? M.TRAINEE_PRESS_TOP : ff ? M.TRAINEE_PRESS_FF : M.TRAINEE_PRESS));
           else tt += K.fmt(S, K.pick(S, M.TRAINEE_YES[h.persona] || M.TRAINEE_YES.gentle));
           h.pleasure += 40; while (h.pleasure >= 100) K.climax(S);
           var otr = K.say(S, { kind: 'sys', tag: '練習台の約束', text: tt, why: '快楽に落ちきった（堕ち度 ' + Math.round(h.corrupt) + '・絶頂 ' + h.climax + '回）／もう断れなかった' + (hesi ? '（性格上、返事を渋った）' : '') });

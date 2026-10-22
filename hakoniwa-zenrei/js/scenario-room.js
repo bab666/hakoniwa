@@ -108,6 +108,8 @@
 
   function exitPair(ctx, a, b, text, why, night) {
     var stay = null;
+    /* 体の関係を持てない組（三人の場面で数えられただけの二人など）は、夜を過ごしたことにしない */
+    if (night && !okSex(a, b)) night = false;
     if (night && ctx.present().length >= 3) {
       [a, b].forEach(function (c) { if (!stay && eager(ctx, c) > 0.68 && ctx.rng() < 0.5) stay = c; });
     }
@@ -186,7 +188,7 @@
     },
     h: {
       will: ['{a}と{b}は、言葉少なに互いを確かめ合った。――そのあとのことは、二人だけが知っている。', '{b}が{a}のシャツのボタンに指をかけた。{a}はその手を止めずに、自分の手を重ねた。――照明が、気を利かせたように一段落ちた。', '「嫌だったら、すぐ言って」{a}の言葉に、{b}は答えの代わりに{a}を引き寄せた。――', '{a}と{b}は、ベッドの縁に並んで座ったまま、しばらく何も言わなかった。先に手を伸ばしたのは{b}だった。――', '{a}が{b}の名前を呼んだ。それだけで、{b}には十分だった。――'],
-      des: ['{a}と{b}は、何も言わずに条件を受け入れた。――終わったあとも、しばらくどちらも口をきかなかった。', '「出るためだ」と{a}は言った。{b}は頷いて、照明のスイッチを探した。――', '{a}と{b}は背中合わせで服を脱いだ。どちらも、相手の顔を見なかった。――']
+      des: ['{a}と{b}は、何も言わずに条件を呑んだ。――終わったあとも、しばらくどちらも口をきかなかった。', '「出るためだ」と{a}は言った。{b}は頷いて、照明のスイッチを探した。――', '{a}と{b}は背中合わせで服を脱いだ。どちらも、相手の顔を見なかった。――']
     }
   };
   /* 木箱の道具（エッチ・キスの条件のとき） */
@@ -303,23 +305,19 @@
   /* 既存の関係による抵抗感（足される惹かれの壁）。家族は軽い行為以外ほぼ不可 */
   function tieWall(ctx, a, b, lvl) {
     var t = HK.Ties ? HK.Ties.get(ctx, a, b) : null;
-    /* 攻め×攻め・受け×受け：エッチには乗り気にならない（追い詰められれば、どちらかが折れる） */
-    var pw = lvl >= 5 && posClash(a, b) ? 40 : 0;
-    if (!t) return pw;
+    if (!t) return 0;
     var D = HK.TIES[t.type];
-    if (D.family) return D.loveOK ? (lvl >= 3 ? 16 : 4) + pw : lvl >= 3 ? 999 : 0;
-    return ({ enemy: 20, rival: 12, ex: 6, lover: -30, fwb: -35, almost: -15, crush: -8, best: -4, childhood: -4 }[t.type] || 0) + pw;
+    if (D.family) return D.loveOK ? (lvl >= 3 ? 16 : 4) : lvl >= 3 ? 999 : 0;
+    return { enemy: 20, rival: 12, ex: 6, lover: -30, fwb: -35, almost: -15, crush: -8, best: -4, childhood: -4 }[t.type] || 0;
   }
   function posClash(a, b) { return !!(HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b)); }
   function clashH(ctx, a, b) { return posClash(a, b) && ctx.rules.some(function (r) { return r.k === 'h'; }); }
-  /* 攻め×攻め・受け×受けが、それでもエッチに至るとき：どちらが折れるか（{a}=上になる側、{b}=折れた側） */
-  var CLASH_TOP = {
-    cp: ['{a}と{b}は、どちらが抱く側に回るかで睨み合った。どちらも譲る気はなかった。最後は、扉の紙を睨んでいた{b}が舌打ちをして、先に目を逸らした。', '{b}は、自分が下になることだけは最後まで認めなかった。それでも、時間が尽きかけているのは{b}にも分かっていた。{b}は奥歯を噛んで、{a}に背中を預けた。'],
-    cold: ['{a}と{b}は、どちらも抱かれる側に回る気はなかった。しばらく無言の押し問答が続いたあと、このままでは出られないと見切った{b}のほうが、先に引いた。', '{b}は、どちらが上になるかで揉める時間すら惜しいと判断したらしい。表情を変えないまま、{a}に場所を譲った。'],
-    fc: ['{a}と{b}は、どっちが上かで揉めに揉めた。腕相撲で決めることになり、負けた{b}は、ベッドに大の字になって天井を仰いだ。', '{a}と{b}はじゃんけんで決めることにした。三回勝負に負けた{b}は、次は絶対に自分が上だと、何度も念を押した。'],
-    np: ['{a}と{b}は、どちらも抱く側のつもりだった。互いに譲らないまま時間だけが過ぎ、とうとう{b}のほうが、{a}の必死な顔に根負けした。', '{b}は、困ったように笑って肩をすくめた。今回だけは、{a}に譲ってやることにしたらしい。'],
-    ac: ['{a}と{b}は、どちらも抱く側だと思い込んでいた。{a}に押し倒されてようやく、{b}は自分が下になるのだと気づき、真っ赤になって固まった。', '{b}は言い出せないまま、気づけば{a}の下にいた。抗議しようとした口は、{a}の唇で塞がれた。']
-  };
+  /* 体の関係を持ってよい組か（受け攻めの指定と恋愛対象から。攻め×攻めなどは、恋人でも、焦りが限界でも、媚薬でも、しない） */
+  function okSex(a, b) { return !HK.Pos || HK.Pos.okSex(a, b); }
+  /* a が b に対して攻め（動く側）に回れる向きがあるか（向きの記憶は動かさずに確かめる） */
+  function canLead(a, b) { return !HK.Pos || HK.Pos.orients(a, b).some(function (o) { return o[0] === a; }); }
+  /* 自分で「受け」を選んだ二人（受けとリバも好む設定などで、組として成り立つとき）：どちらが動くか（{a}=覚悟を決めて動く側） */
+  function bothBottom(a, b) { var P = HK.Pos; return !!(P && P.explicit(a) && P.explicit(b) && P.isBottom(a) && P.isBottom(b) && P.okSex(a, b)); }
   var CLASH_BOTTOM = {
     cp: ['{a}と{b}は、どちらも相手がリードするものだと思っていた。気まずい沈黙のあと、{a}が仕方なさそうに、乱暴に袖をまくった。','{a}と{b}は、どちらも自分から動く気はなかった。見かねた{a}が、ため息をついて{b}の肩を押した。'],
     cold: ['{a}と{b}は、どちらも抱かれる側のつもりだった。このままでは埒が明かないと判断した{a}が、慣れない手つきで{b}に触れ始めた。'],
@@ -328,9 +326,9 @@
     ac: ['{a}と{b}は、どちらも自分から動けなかった。長い沈黙のあと、震える指で先に触れたのは、{a}のほうだった。']
   };
   function clashText(ctx, a, b) {
-    var o = HK.Pos.order(a, b, [a, b]), top = HK.Pos.isTop(a), y = top ? o[1] : o[0], t = y.tr;
+    var o = HK.Pos.order(a, b, [a, b]), y = o[0], t = y.tr;
     var k = [['cp', t.cp], ['cold', t.cold || 0], ['fc', t.fc], ['np', t.np], ['ac', t.ac]].sort(function (x, z) { return z[1] - x[1]; })[0][0];
-    return { text: ctx.t(ctx.pick((top ? CLASH_TOP : CLASH_BOTTOM)[k]), o[0], o[1]), why: top ? 'どちらも攻め。' + y.name + 'が折れた' : 'どちらも受け。' + y.name + 'が覚悟を決めた' };
+    return { text: ctx.t(ctx.pick(CLASH_BOTTOM[k]), o[0], o[1]), why: 'どちらも受け。' + y.name + 'が覚悟を決めた' };
   }
 
   var scen = {
@@ -474,6 +472,7 @@
       return ctx.rules.some(function (r) {
         var T = K[r.k];
         if (T.type !== 'act' || ruleDone(ctx, r, a, b)) return false;
+        if (T.lvl >= 5 && !okSex(a, b)) return false;   /* 向きの決まらない組は、条件がエッチでも満たせない（取り残される） */
         if (T.lvl >= 3 && (exclOther(ctx, a, b) || exclOther(ctx, b, a))) return false;
         return willing(ctx, a, b, T.lvl) || desperate(ctx, a, b, T.lvl);
       });
@@ -488,7 +487,7 @@
       return w;
     },
     run: function (ctx, a, b) {
-      var r = ctx.rules.filter(function (x) { var T = K[x.k]; return T.type === 'act' && !ruleDone(ctx, x, a, b) && (willing(ctx, a, b, T.lvl) || desperate(ctx, a, b, T.lvl)); })[0];
+      var r = ctx.rules.filter(function (x) { var T = K[x.k]; return T.type === 'act' && !ruleDone(ctx, x, a, b) && !(T.lvl >= 5 && !okSex(a, b)) && (willing(ctx, a, b, T.lvl) || desperate(ctx, a, b, T.lvl)); })[0];
       var T = K[r.k], p = prog(ctx, a, b), wl = willing(ctx, a, b, T.lvl);
       var first = !p.act[r.k];
       var span = Math.max(3, ctx.stepsTotal * 0.55);
@@ -502,7 +501,9 @@
         : first ? ctx.t(ctx.pick(pool), a, b)
         : LW && LW.repeat[r.k] && ctx.rng() < 0.8 ? ctx.t(ctx.pick(LW.repeat[r.k]), a, b) : ctx.t(ctx.pick(REPEAT), a, b);
       var user = ctx.most([a, b], function (c) { return c.tr.fc * 0.5 + c.tr.impulse * 0.3 + (ctx.stat(c, 'exp') - 3) * 0.1 + eager(ctx, c) * 0.3; });
-      if (ctx.flags.toolbox && (r.k === 'h' || r.k === 'kiss') && ctx.rng() < 0.22 + user.tr.fc * 0.25 + (ctx.stat(user, 'exp') - 3) * 0.06 + (a.flags.aphro || 0) * 0.03) {
+      /* 木箱の道具を相手に使うのは、受け攻めの指定で動く側（自分で攻めを選んだ人に、縛る・玩具を当てる、はしない）。体の関係を持てない組は使わない */
+      if (HK.Pos && okSex(a, b)) user = HK.Pos.order(a, b, [user, user === a ? b : a])[0];
+      if (ctx.flags.toolbox && okSex(a, b) && (r.k === 'h' || r.k === 'kiss') && ctx.rng() < 0.22 + user.tr.fc * 0.25 + (ctx.stat(user, 'exp') - 3) * 0.06 + (a.flags.aphro || 0) * 0.03) {
         var tool = ctx.pick(TOOLS), other = user === a ? b : a;
         var tt = ctx.t(ctx.pick(tool.t), user, other);
         text = isH ? LW.scene(ctx, user, other, wl ? 'will' : 'des', { toolText: tt, lead: true }) : tt.replace(/――$/, '') + ctx.t(ctx.pick(ACT_TEXT.kiss.will), user, other);
@@ -516,7 +517,7 @@
         var rv = rough === a ? b : a;
         text = rough.name + 'は' + rv.name + 'の手首を掴んで、乱暴に壁へ押しつけた。' + HK.TL.line(rough, 'H_ROUGH', rv) + text;
       }
-      var cl = r.k === 'h' && first && posClash(a, b) ? clashText(ctx, a, b) : null;
+      var cl = r.k === 'h' && first && bothBottom(a, b) ? clashText(ctx, a, b) : null;
       if (cl) text = cl.text + text;
       if (r.n > 1) text += '（' + T.noun + ' ' + p.act[r.k] + '/' + r.n + '）';
       var whyT = (cl ? cl.why + '／' : '') + (rough ? rough.name + 'は' + (rough === a ? b : a).name + 'を敵視している（嫌悪 ' + Math.round(HKr.level(ctx, rough, rough === a ? b : a)) + '）・強引な性格。条件のために、乱暴に' : wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった');
@@ -543,13 +544,14 @@
   }
   function willing(ctx, a, b, lvl) {
     if (lvl >= 5 && HK.RoomReluct && HK.RoomReluct.blocks(ctx, a, b)) return false;   /* 恋人でも場所を渋っている（room-reluct.js） */
-    if (lvl >= 5 && posClash(a, b)) return false;   /* 攻め×攻め・受け×受けは、乗り気では始めない（焦りが限界なら desperate で） */
+    if (lvl >= 5 && !okSex(a, b)) return false;   /* 攻め×攻めなど向きの決まらない組は、エッチをしない */
     var exp = (ctx.stat(a, 'exp') + ctx.stat(b, 'exp') - 6) * 3 + (ctx.present().length === 2 ? 4 : 0) - tieWall(ctx, a, b, lvl);
     var ab = R(ctx, a, b), ba = R(ctx, b, a);
     return ab.att + exp > LVL_ATT[lvl] && ba.att + exp > LVL_ATT[lvl] && ab.trust > LVL_TRUST[lvl] && ba.trust > LVL_TRUST[lvl] && ab.ten < 55 && ba.ten < 55;
   }
   function desperate(ctx, a, b, lvl) {
     if (lvl >= 5 && HK.RoomReluct && HK.RoomReluct.blocks(ctx, a, b)) return false;
+    if (lvl >= 5 && !okSex(a, b)) return false;   /* 焦りが限界でも、どちらかが折れて受けに回ることはない */
     var wall = tieWall(ctx, a, b, lvl);
     if (wall >= 999) return false;
     var des = 10 + lvl * 10 + Math.max(0, wall) * 0.6;
@@ -680,7 +682,7 @@
     run: function (ctx, a, b) {
       var r = R(ctx, a, b);
       if (a.tr.np > 0.55) { ctx.mod2(a, b, { att: 3 }, { trust: 12, aff: 8 }); ctx.stress(b, -6); return { text: ctx.t(ctx.pick(['{a}は水を汲んで{b}に渡し、手の届かない距離に座り直した。「辛かったら言って」', '{a}は自分の上着を脱いで、熱っぽい{b}の肩にかけた。', '{a}は{b}の額に濡らした布を当てた。「無理しないで」', '{a}は{b}の隣で、ただ黙って時間が過ぎるのを待った。']), a, b), why: a.name + 'のNP：相手の意思を待つ' }; }
-      if (r.att > 35) { ctx.mod2(a, b, { att: 9 }, { att: 6 }); return { cat: 'romance', text: ctx.t(ctx.pick(['{a}は、潤んだ目の{b}から視線を外せなくなっていた。', '{b}が袖を掴んできた。{a}はその手を振りほどけなかった。', '{a}は{b}の熱い指先が自分の手首に触れるのを、黙って受け入れた。']), a, b), why: a.name + 'の元々の惹かれ（' + Math.round(r.att) + '）' }; }
+      if (r.att > 35) { ctx.mod2(a, b, { att: 9 }, { att: 6 }); return { cat: 'romance', text: ctx.t(ctx.pick(['{a}は、潤んだ目の{b}から視線を外せなくなっていた。', '{b}が袖を掴んできた。{a}はその手を振りほどけなかった。', '{a}は{b}の熱い指先が自分の手首に触れるのを、黙って許した。']), a, b), why: a.name + 'の元々の惹かれ（' + Math.round(r.att) + '）' }; }
       if (a.tr.cp > 0.6) { ctx.mod(a, b, { ten: 6 }); return { cat: 'conflict', text: ctx.t(ctx.pick(['「考えなしに飲むからだ」{a}は壁際から動かなかった。', '{a}は{b}から一番遠い隅に移って、背中を向けた。']), a, b), why: a.name + 'のCP' }; }
       return { text: ctx.t(ctx.pick(['{a}はどうしていいか分からず、{b}の背中をぎこちなくさすった。', '{a}は{b}の様子を気にしながら、紙の文面を何度も読み返していた。']), a, b), why: '戸惑い' };
     }
@@ -721,29 +723,41 @@
       return { text: ctx.t(ctx.pick(['{a}は{b}の隣に移って、指先で{b}の手の甲をなぞった。「次は{b}の番かな」', '{a}「どうせなら、全員と仲良くなっといた方が早くない？」{b}は返事に困った。', '{a}は誰かと話しながらも、ずっと{b}に視線を送っていた。', '{a}は{b}の耳元で「あとで、ね」と囁いた。']), a, b) + (jealous ? ctx.t('それを見ていた{c}の顔が、少し曇った。', a, b, jealous) : ''), why: a.name + 'の積極性（' + Math.round(eager(ctx, a) * 100) + '）：一人に決めず、何人とでも' };
     }
   });
+  /* みんなで：積極的な人たちのうち、どの二人も体の関係を持ってよい組だけで輪を作る（攻め×攻めの二人は同じ輪に入らない） */
+  function groupOf(ctx, a) {
+    if (eager(ctx, a) <= 0.55 || a.flags.partner != null) return null;
+    var G = [a];
+    ctx.present().filter(function (c) { return c !== a && eager(ctx, c) > 0.55 && c.flags.partner == null; })
+      .sort(function (x, y) { return eager(ctx, y) - eager(ctx, x); })
+      .forEach(function (c) { if (G.length < 4 && G.every(function (g) { return okSex(g, c); })) G.push(c); });
+    return G.length >= 3 ? G : null;
+  }
   EV.push({
     id: 'group_h', cat: 'romance', scope: 'solo', pri: true,
     when: function (ctx, a) {
       if (!ctx.rules.some(function (r) { return r.k === 'h'; }) || ctx.flags.groupDone) return false;
-      var P = ctx.present();
-      return P.length >= 3 && eager(ctx, a) > 0.7 && P.filter(function (c) { return eager(ctx, c) > 0.55 && c.flags.partner == null; }).length >= 3;
+      return ctx.present().length >= 3 && eager(ctx, a) > 0.7 && !!groupOf(ctx, a);
     },
     w: function (ctx, a) { return 0.4 + eager(ctx, a); },
     run: function (ctx, a) {
-      var G = ctx.present().filter(function (c) { return eager(ctx, c) > 0.55 && c.flags.partner == null; }).slice(0, 4);
-      if (G.indexOf(a) < 0) G[G.length - 1] = a;
+      var G = groupOf(ctx, a);
+      if (!G) return null;
       ctx.flags.groupDone = true;
       var others = ctx.present().filter(function (c) { return G.indexOf(c) < 0; });
-      G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i && !posClash(x, y)) { ctx.pair(x, y).night = true; ctx.mod2(x, y, { att: 8, aff: 4 }, { att: 8, aff: 4 }); var p = prog(ctx, x, y); p.act.h = (p.act.h || 0) + 1; } }); });
+      G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i) { ctx.pair(x, y).night = true; ctx.mod2(x, y, { att: 8, aff: 4 }, { att: 8, aff: 4 }); var p = prog(ctx, x, y); p.act.h = (p.act.h || 0) + 1; } }); });
       others.forEach(function (o) { G.forEach(function (g) { ctx.mod(o, g, { ten: 6 }); }); ctx.stress(o, 8); });
-      var g2 = G.filter(function (c) { return c !== a; });
+      /* 輪の中心は、自分で攻めを選んだ人がいればその人（受ける側には回さない） */
+      var lead = (HK.Pos && G.filter(function (c) { return HK.Pos.hardTop(c); })[0]) || a, g2 = G.filter(function (c) { return c !== lead; });
       var text = ctx.t('{a}が「もう、みんなでいいじゃん」と笑った。', a) + names(G) + 'は顔を見合わせ、誰からともなく手を伸ばした。' +
         (function () {
-          /* 跨る場面は、受け攻めの指定どおりに（受けが攻めの上に跨る） */
-          var tb = HK.Pos ? HK.Pos.order(a, g2[0], [a, g2[0]]) : [a, g2[0]];
-          var gl = ['{a}は{b}に口づけながら、背後から伸びてきた{c}の手を拒まなかった。', 'ride', '{a}は{b}と{c}を交互に抱き寄せ、二人を順番にイカせた。'];
+          /* 受け攻めの指定どおりに：跨るのは受け、交互に抱くのは二人に対して攻めに回れる人、背後から触れられるのは攻めを選んでいない人 */
+          var tb = HK.Pos ? HK.Pos.order(lead, g2[0], [lead, g2[0]]) : [lead, g2[0]];
+          var both = !HK.Pos || (HK.Pos.order(lead, g2[0], [lead, g2[0]])[0] === lead && HK.Pos.order(lead, g2[1], [lead, g2[1]])[0] === lead);
+          var gl = ['ride'];
+          if (!HK.Pos || !HK.Pos.hardTop(lead)) gl.push('{a}は{b}に口づけながら、背後から伸びてきた{c}の手を拒まなかった。');
+          if (both) gl.push('{a}は{b}と{c}を交互に抱き寄せ、二人を順番にイカせた。');
           var pk = ctx.pick(gl);
-          return pk === 'ride' ? ctx.t('{b}が{a}の上に跨がり、{c}がその背中を抱きすくめた。誰の声なのか、もう分からなかった。', tb[0], tb[1], g2[1] || g2[0]) : ctx.t(pk, a, g2[0], g2[1] || g2[0]);
+          return pk === 'ride' ? ctx.t('{b}が{a}の上に跨がり、{c}がその背中を抱きすくめた。誰の声なのか、もう分からなかった。', tb[0], tb[1], g2[1]) : ctx.t(pk, lead, g2[0], g2[1]);
         })() +
         (G.length > 3 ? names(G.slice(3)) + 'も、すぐに輪の中に引き込まれた。' : '') + '――' + (others.length ? names(others) + 'は部屋の隅で、背中を向けて耳を塞いでいた。' : '');
       var exitTxt = [];
@@ -765,14 +779,17 @@
       if (a.flags.down || b.flags.down || ctx.pair(a, b).speedTried || speedy(a) < 0.38 || ctx.stepIndex < 1) return false;
       if (b.flags.partner != null && b.flags.partner !== a.i) return false;
       if (clashH(ctx, a, b)) return false;
+      /* 縛るのは、その組で攻めに回れる側だけ。自分で攻めを選んだ人を縛ることはない */
+      if (HK.Pos && (HK.Pos.hardTop(b) || !canLead(a, b))) return false;
       return ctx.rules.some(function (r) { return K[r.k].type === 'act' && K[r.k].lvl >= 2 && !ruleDone(ctx, r, a, b); }) && tieWall(ctx, a, b, 3) < 999 && HK.canLove(a, b);
     },
     w: function (ctx, a) { return (speedy(a) - 0.25) * 3 + a.stress / 120 + (a.goal.id === 'quick' ? 0.8 : 0); },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b); pf.speedTried = true;
+      var lockedOther = HK.Pos && okSex(a, b) && HK.Pos.order(a, b, [a, b])[0] !== a;
       var tool = ctx.flags.toolbox ? ctx.pick(['手錠', 'ロープ', '木箱の革ベルト']) : ctx.pick(['ネクタイ', 'ベルト', 'シーツを裂いた紐']);
       var dodge = b.tr.caution * 0.4 + b.tr.cp * 0.3 + b.tr.a * 0.2 + ctx.rng() * 0.5 + Math.max(0, tieWall(ctx, a, b, 3)) / 60;
-      if (dodge > 0.75) {
+      if (dodge > 0.75 || lockedOther) {
         ctx.mod2(a, b, { ten: 6 }, { ten: 22, trust: -20 });
         return { cat: 'conflict', text: ctx.t(ctx.pick(['{a}が{b}の背後に回り込んだ瞬間、{b}は振り向きざまに{a}の手首を掴んだ。「…何するつもり？」{a}は' + tool + 'を後ろ手に隠した。', '{a}は' + tool + 'を手に{b}の隙を窺っていたが、{b}は最後まで背中を見せなかった。', '{b}は{a}の手元の' + tool + 'に気づいて、部屋の反対側まで下がった。「近づかないで」']), a, b), why: a.name + 'のスピード型（ドライさ・攻撃性・衝動）／' + b.name + 'の慎重さが上回った' };
       }
@@ -806,7 +823,8 @@
       var mutual = (ba.att > 28 || (b.flags.aphro || 0) >= 3) && ba.ten < 55 && !(HK.Ties && HK.Ties.get(ctx, a, b) && HK.TIES[HK.Ties.get(ctx, a, b).type].family && !HK.TIES[HK.Ties.get(ctx, a, b).type].loveOK);
       var wild = a.tr.aggr + a.tr.impulse - a.tr.np + heat / 10;
       var text, why, cat = 'romance';
-      if (mutual && (heat > 6 || ab.att + ba.att > 70)) {
+      /* 体の関係を持てない組（攻め×攻めなど）は、媚薬が回っても抱き合わない */
+      if (mutual && okSex(a, b) && (heat > 6 || ab.att + ba.att > 70)) {
         pf.heatDone = true; pf.night = true;
         ctx.mod2(a, b, { att: 14, aff: 6 }, { att: 12, aff: 5 });
         text = ctx.t(ctx.pick(['{a}の熱い指が{b}の頬に触れた。{b}はその手を払わなかった。', '「ごめん、私、もう無理」{a}が掠れた声で言った。{b}は「…いいよ」とだけ答えて、{a}を引き寄せた。', '{b}も同じくらい熱かった。どちらからともなく唇が重なった。', '{a}は{b}の首筋に顔を埋めた。{b}の手が、ためらいながら{a}の背中に回った。']), a, b) + (HK.RoomLewd ? HK.RoomLewd.scene(ctx, a, b, 'aphro') : '――');
@@ -821,9 +839,11 @@
         var third = ctx.most(ctx.others(a).filter(function (o) { return o !== b && !o.flags.down; }), function (o) { return o.tr.np + o.tr.cp * 0.5; });
         var stop = b.tr.cp * 0.6 + b.tr.a * 0.3 + (third ? third.tr.np * 0.5 + third.tr.cp * 0.4 : 0) + ctx.rng() * 0.6;
         cat = 'conflict';
-        if (stop > 0.7) {
+        /* 押し倒せるのは、体の関係を持ってよい組で、受け攻めの指定で a が攻めに回れるときだけ。ほかは必ず止められる */
+        var mayForce = okSex(a, b) && canLead(a, b) && (!HK.Pos || HK.Pos.order(a, b, [a, b])[0] === a);
+        if (stop > 0.7 || !mayForce) {
           ctx.mod2(a, b, { ten: 10 }, { ten: 30, trust: -30, aff: -15 });
-          text = ctx.t('媚薬に呑まれた{a}が、{b}を床に押し倒した。', a, b) + (third && third.tr.np + third.tr.cp > b.tr.cp ? ctx.t('{c}が{a}を引き剥がした。「しっかりしろ！」', a, b, third) : ctx.t(ctx.pick(['{b}は{a}の肩を突き返した。「目を覚まして」', '{b}は{a}の手首を掴んで止めた。「それは、違う」']), a, b));
+          text = ctx.t(HK.Pos && HK.Pos.hardTop(b) ? '媚薬に呑まれた{a}が、{b}に掴みかかった。{b}はその手首を掴み返して、壁際まで押し戻した。' : '媚薬に呑まれた{a}が、{b}を床に押し倒した。', a, b) + (third && third.tr.np + third.tr.cp > b.tr.cp ? ctx.t('{c}が{a}を引き剥がした。「しっかりしろ！」', a, b, third) : ctx.t(ctx.pick(['{b}は{a}の肩を突き返した。「目を覚まして」', '{b}は{a}の手首を掴んで止めた。「それは、違う」']), a, b));
           if (third) ctx.mod(b, third, { trust: 15, aff: 8 });
           why = a.name + 'の攻撃性・衝動と媚薬（' + Math.round(heat) + '）。' + (third ? third.name + 'が止めた' : b.name + 'が拒んだ');
           a.flags.shame = true;

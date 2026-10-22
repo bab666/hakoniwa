@@ -70,7 +70,7 @@
       '<div class="uses">' + stats + chip('感度 ×' + h.sens.toFixed(2)) + (res.noGear ? '' : chip('装備 ' + DG.CLOTH[Math.max(0, Math.min(4, h.cloth))])) + '</div>' +
       (res.noGear ? '' : '<div class="sub">刻まれた呪い</div><div class="uses">' + curses + '</div>' +
       '<div class="sub">残った道具</div><div class="uses">' + items + '</div>') +
-      (res.party ? '<div class="sub">開発度</div>' + devBars(h) : '') + '</div>';
+      (res.party ? '<div class="sub">開発度' + (h.hardTop ? '（攻めなので伸びない）' : '') + '</div>' + devBars(h) : '') + '</div>';
   }
 
   function endingBlock(res) {
@@ -139,7 +139,7 @@
       '<h2 class="sec">理性と堕ちの推移</h2>' + gauge(res) +
       (res.party ? '<div class="cards" style="margin-top:12px">' + res.heroes.map(function (h) { return heroCard(res, h); }).join('') + '</div>' :
       '<div class="cards" style="margin-top:12px">' + heroCard(res, res.hero) +
-      '<div class="ccard"><div class="hd"><span class="nm" style="font-size:16px">開発度</span><span class="nums">罠や魔物に責められた部位ほど伸び、次から感じやすくなる</span></div>' + devBars(res.hero) + '</div></div>') +
+      '<div class="ccard"><div class="hd"><span class="nm" style="font-size:16px">開発度</span><span class="nums">' + (res.hero.hardTop ? '攻めの挑戦者は罠や魔物に責められないので、開発度は伸びない' : '罠や魔物に責められた部位ほど伸び、次から感じやすくなる') + '</span></div>' + devBars(res.hero) + '</div></div>') +
       '<h2 class="sec">足りなかったもの・効いたもの</h2><ul class="dgadvice">' + res.advice.map(function (a) { return '<li>' + paint(a, res) + '</li>'; }).join('') + '</ul>' +
       '<h2 class="sec" id="tlhead">探索の記録</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button></div><div class="tl" id="dgtl">' + timeline(res) + '</div>' +
       (histHtml || '');
