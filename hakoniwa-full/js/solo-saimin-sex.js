@@ -9,6 +9,19 @@
   var HK = window.HK, SM = HK.SAIMIN;
   if (!SM || !SM.SUG) return;
   function L(s) { return s.split('|'); }
+  /* かけられた側が攻めのときの、果てる声（solo-saimin.js の topVoice・afterSnap） */
+  SM.CLIMAX_TOP = {
+    proud: L('「っ……く、出る……っ」|「……は、っ……全部、くれてやる……っ」'),
+    stern: L('「……っ、く……！」|「……っ、果て、る……」'),
+    tsun: L('「……っ、あ……ばか、締めすぎ……っ」|「……っ、もう、出る……っ」'),
+    gentle: L('「……ん、っ……一緒に……」|「……っ、ぁ……いく、よ……」'),
+    devoted: L('「……っ、受け止めて……」|「……っ、ぁ……全部……」'),
+    cool: L('「……っ、く……計算、外だ……」|「……っ、は……」'),
+    free: L('「……っ、あは、出る、出るっ……」|「……っ、すっご……」'),
+    shy: L('「……っ、ぁ……で、出ちゃう……」|「……っ、ん……っ」'),
+    polite: L('「……っ、失礼、いたします……っ」|「……っ、ぁ……」')
+  };
+  SM.CLIMAX_TOP_FF = L('「……っ、ん……ぁ……」|「……は、ぁ……っ」|「……っ、く……」');
 
   /* 中に出されて我に返る */
   var SNAP = L('――{h}が奥で果てた瞬間、{a}の瞳に光が戻った。腹の奥に広がる熱。脚の間から伝い落ちるもの。{a}は自分が何をされていたのか、少しずつ理解して、声も出せずに{h}を見上げた。|――中に注がれる熱さで、{a}ははっと我に返った。「……え？」――繋がったままの体と、溢れてくるものに気づいて、{a}の顔から血の気が引き、それから真っ赤になった。|――{h}が深く押しつけたまま果てると、{a}の催眠がぷつりと切れた。「ま、待って、今……中に……？」――{a}は震える手で下腹を押さえた。そこはまだ、どくどくと脈打っていた。|――最後の一滴まで注がれたところで、{a}は夢から覚めるように瞬きをした。目の前には{h}の顔。中には{h}の熱。{a}は「なんで……」と呟いたきり、動けなかった。|――{h}が果てた拍子に、{a}は我に返った。逃げようとした腰を、まだ繋がったままの{h}に引き戻された。「今さら遅いよ」――{a}の中で、注がれたものが熱を持ったまま揺れた。');
@@ -107,6 +120,8 @@
       if (S.alt) sw = S.alt(swk, sw);
       var cv = HK.Voice && HK.Voice.CLIMAX[p.persona] ? (HK.R18M && HK.R18M.topLines ? HK.R18M.topLines(p, HK.Voice.CLIMAX[p.persona]) : HK.Voice.CLIMAX[p.persona]) : null;
       var cvE = S.cv ? S.cv(p, aTop) : null;
+      /* かけられた側が攻めなら、果てる側の声（弱気・受け身の台詞は使わない） */
+      if (aTop && SM.CLIMAX_TOP) { cvE = null; var ct = p.ff ? SM.CLIMAX_TOP_FF : (SM.CLIMAX_TOP[p.persona] || SM.CLIMAX_TOP.gentle); cv = ct.map(function (x) { return x.replace(/^「|」$/g, ''); }); }
       return { k: k, tag: '流されて', text: S.fmt(S.pick(sw), v) + (cvE ? p.name + '「' + cvE + '」' : cv ? p.name + '「' + S.pick(cv) + '」' : ''), why: '正気に戻っても流された（快楽堕ち ' + Math.round(fall * 100) + '・AC ' + Math.round(p.eg.AC) + '・FC ' + Math.round(p.eg.FC) + '）。' + (p.ff ? '続きを拒まなかった' : aTop ? '正気のまま、続きを止めなかった' : mid ? '続きを受け入れ、中出しも拒まなかった' : '二度目の中出しも受け入れた') };
     }
     if (k === 'report') {

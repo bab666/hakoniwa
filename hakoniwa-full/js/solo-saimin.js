@@ -118,12 +118,12 @@
       /* エッチな暗示のあとで目を覚ましたなら、そこからも分かれる（流される／通報／逃げる） */
       if (p.cnt.lewd >= 1 && lew !== 'low' && SM.afterSnap && !p.snapDone) {
         p.wokeMid = true; p.snapDone = true;
-        var sr = SM.afterSnap(wrapS(S, p), p);
+        var sr = snapThick(S, p, SM.afterSnap(wrapS(S, p), p));
         var o2 = say(p, { tag: sr.tag, text: sr.text, why: sr.why, mag: 40, kind: sr.k === 'swept' ? 'climax' : 'event' }, '', true);
         ST.key(S, o2, p.name + '：' + { swept: '我に返っても流された', report: 'その場で通報した', flee: '逃げ出した' }[sr.k]);
       }
     }
-    function tq(p) { return V && SM.TRANCE[p.persona] && rng() < 0.45 ? p.name + ST.pick(S, topL(p, SM.TRANCE[p.persona])) : ''; }
+    function tq(p) { return V && SM.TRANCE[p.persona] && rng() < 0.45 ? p.name + ST.pick(S, topVoice(p, 'TRANCE', SM.TRANCE[p.persona])) : ''; }
     function cmdText(p, g) { var c = ST.fmt(ST.pick(S, cmdOf(p, g)), { h: p.h, a: p.name }).replace(/^「|」$/g, ''); return p.h + 'は' + (S.rng() < 0.5 ? '低い声で' : '耳元で') + '「' + c + '」と囁いた。'; }
 
     /* ---------- 導入 ---------- */
@@ -216,13 +216,14 @@
           var cl = full ? (f.climax || 0) : 0;
           if (p.m.plea >= 100) { cl++; p.m.plea = 30; }
           /* 小説調の山場：本番の暗示を受け入れて達したときは、段落に分けて厚く（solo-thick4.js） */
-          var thick = cl && full && g.lewd && HK.Thick4 && HK.Thick4.ok(S, lew) ? thickSug(S, p, fb, vk) : null;
-          if (thick) t = t.replace(fb, thick);
+          /* 達しなかった本番の暗示でも、ときどき厚くする（そのときは一度達したことにする） */
+          var thick = full && g.lewd && (cl || rng() < 0.6) && HK.Thick4 && HK.Thick4.ok(S, lew) ? thickSug(S, p, fb, vk) : null;
+          if (thick) { t = t.replace(fb, thick); if (!cl) cl = 1; }
           if (cl) {
             p.cnt.climax += cl; p.m.fall = clamp(p.m.fall + cl * 3, 0, 100);
             /* 男性向けの文：本文に絶頂の喘ぎ（{m2}）がなければ、態度ごとの崩れた声を足す */
             if (lew !== 'low' && eroOn(S) && !aTop) { if (!/\{m2\}/.test(body)) t += p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; }
-            else if (!thick && lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + '「' + ST.pick(S, topL(p, V.CLIMAX[p.persona])) + '」';
+            else if (!thick && lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + (aTop && SM.CLIMAX_TOP ? ST.pick(S, topVoice(p, 'CLIMAX', [])) : '「' + ST.pick(S, topL(p, V.CLIMAX[p.persona])) + '」');
             why += '／絶頂 ' + cl + '回';
           }
           p.m.depth = clamp(p.m.depth + (full ? 5 : -5), 0, 100);
@@ -250,7 +251,7 @@
           ST.key(S, o, p.name + (p.wokeMid ? 'が行為の最中に我に返った' : 'が' + snapWord(p) + '我に返った'));
           p.snapDone = true;
           if (SM.afterSnap) {
-            var sr = SM.afterSnap(wrapS(S, p), p);
+            var sr = snapThick(S, p, SM.afterSnap(wrapS(S, p), p));
             var o2 = say(p, { tag: sr.tag, text: sr.text, why: sr.why, mag: 40, kind: sr.k === 'swept' ? 'climax' : 'event' }, '', true);
             ST.key(S, o2, p.name + '：' + { swept: '我に返っても流された', report: 'その場で通報した', flee: '逃げ出した' }[sr.k]);
           }
@@ -294,7 +295,7 @@
       var afL = !p.failed && p.cnt.lewd && !soft ? eL(S, afE + '.' + route, SM[afK][route]) : SM[afK][route];
       var t = eF(S, p, ST.fmt(ST.pick(S, afL), v));
       var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', body: null }[route];
-      if (mood && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, topL(p, SM.AFTER_SAY[mood][p.persona]));
+      if (mood && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, p.aTop && SM.AFTER_SAY_TOP && SM.AFTER_SAY_TOP[mood] ? (SM.AFTER_SAY_TOP[mood][p.persona] || SM.AFTER_SAY_TOP[mood].gentle) : topL(p, SM.AFTER_SAY[mood][p.persona]));
       if (p.trigger && (route === 'forget' || route === 'body') && rng() < 0.6) t += ST.fmt('――数日後、会議中に誰かが何気なく「おやすみ」と言った。{a}は理由も分からないまま、机の下で膝を震わせた。', v);
       var o = say(p, { tag: '結末', text: t, why: whyAfter(p, route), mag: 40 }, '', true);
       ST.key(S, o, p.name + '：' + p.fate);
@@ -326,6 +327,15 @@
     if (!top && kind === 'kneel' && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(me)) return null;
     return HK.Thick4.scene(S, { dom: dom, sub: sub, kind: kind, lead: fb, sad: HK.Thick4.rollSad(S, dom, sub),
       after: ST.pick(S, ['{a}の目には、まだ暗示の靄がかかっていた。', '自分が何をしたのか、{a}が知るのはもう少しあとのことだ。', '{h}は、まだとろんとしたままの{a}の目を覗き込み、満足げに息をついた。']).replace(/\{a\}/g, p.name).replace(/\{h\}/g, p.h) });
+  }
+  /* 我に返っても流された場面（afterSnap の swept）も、小説調ならときどき厚く */
+  function snapThick(S, p, sr) {
+    if (!sr || sr.k !== 'swept' || !HK.Thick4 || !HK.Thick4.ok(S, S.env.lewd || 'mid') || S.rng() > 0.6) return sr;
+    var hc = p.hc || { name: p.h, gender: p.ff ? 'f' : 'm' }, top = p.aTopLast, dom = top ? p : hc, sub = top ? hc : p;
+    var sc = HK.Thick4.scene(S, { dom: dom, sub: sub, kind: p.ff ? 'ff' : 'in', lead: sr.text.replace(/[^。」]*「[^」]*」$/, ''), sad: HK.Thick4.rollSad(S, dom, sub),
+      after: ST.fmt(ST.pick(S, ['正気のまま流されたことを、{a}はもう言い訳できなかった。', '{a}は天井を見上げたまま、自分の選んだことの重さを噛みしめていた。']), { a: p.name }) });
+    if (sc) sr.text = sc;
+    return sr;
   }
   function vkey(p, g, kind) {
     if (kind === 'part') {
@@ -365,6 +375,13 @@
   function cmdOf(p, g) { return (p.ff && g.cmdFF) || (p.aTop && g.cmdTop) || g.cmd; }
   /* 自分で攻めを選んだ人の台詞から、受け身の台詞を外す（solo-r18-moan.js の HK.R18M.topLines） */
   function topL(p, list) { return HK.R18M && HK.R18M.topLines ? HK.R18M.topLines(p, list) : list; }
+  /* かけられた側が攻め（p.aTop）のときの声：SM.TRANCE_TOP / SM.CLIMAX_TOP（女性どうしは CLIMAX_TOP_FF）。弱気・従順な台詞は使わない */
+  function topVoice(p, key, list) {
+    if (!p.aTop) return topL(p, list);
+    var T = key === 'CLIMAX' && p.ff && SM.CLIMAX_TOP_FF ? SM.CLIMAX_TOP_FF : SM[key + '_TOP'];
+    if (!T) return topL(p, list);
+    return Array.isArray(T) ? T : (T[p.persona] || T.gentle);
+  }
   /* 我に返ったきっかけの言い方 */
   function snapWord(p) { return p.ff ? '達した拍子に' : p.aTop ? '中に注いだ瞬間に' : '中に出された熱で'; }
   /* かけられた側が攻めのとき・向きの決まらない組のときは起こさないハプニング（{h}が{a}に触れる・{a}がねだる） */

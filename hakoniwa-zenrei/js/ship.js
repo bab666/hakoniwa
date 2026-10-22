@@ -448,6 +448,9 @@
     /* その後の反応は、受けた人のいちばん強い気質（エゴグラム）で変わる */
     var ft = a.eg && HK.egoType ? HK.egoType(a.eg).top : 'NP';
     var t = F(body, v) + (top ? '' : F(pick(X2.AFTER[m]), v) + (X2.REACT && X2.REACT[ft] && rng() < 0.7 ? F(pick(X2.REACT[ft]), v) : ''));
+    /* 三回に一回ほど、段落に分けた濃い版（ship-xeno-thick.js。R18版のみ） */
+    var tk = X2.thick && X2.thick(S, d, m, a, top, body, ft);
+    if (tk) t = F(tk, v);
     a.cnt.r18 = (a.cnt.r18 || 0) + 1;
     if (!top) { stress(a, m === 'lure' ? 6 : m === 'probe' ? 8 : 14); a.m.fear = clamp(a.m.fear + (m === 'force' || m === 'take' ? 8 : 2), 0, 100); }
     else stress(a, -5);

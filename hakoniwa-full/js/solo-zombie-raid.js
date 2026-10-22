@@ -48,6 +48,8 @@
     }
     var body = function () {
       if (lv !== 'high') return fill(ctx.pick(RT.fade), m);
+      /* ときどき長い版（dark-thick.js） */
+      if (HK.DarkThick && rng() < HK.DarkThick.RATE) return HK.DarkThick.raid(ctx, v, mates, m);
       return fill(ctx.pick(RT.act), m) + (mates.length && rng() < 0.6 ? fill(ctx.pick(RT.seen), m) : '') + fill(ctx.pick(RT.act2), m);
     };
     var drain = function (k) { v.hp -= 18 + rng.int(14) + (k || 0); ctx.stress(v, 48 + (k || 0)); v.flags.raided = true; v.z.raidAt = ctx.stepIndex; };
