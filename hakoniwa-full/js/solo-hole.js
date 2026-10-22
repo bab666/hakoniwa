@@ -133,7 +133,11 @@
     var EK = HK.Ero, eon = !!(EK && EK.on(S));
     var EL = function (key, base) { if (!eon) return base; if (topMe) return EK.L(S, 'hole', key + '.top', base); return EK.L(S, 'hole', key, base); };
     var say = function (S0, o) { if (eon && o && o.text) o.text = EK.fill(S, o.text, h); return K.say(S0, o); };
-    var pk = function (S0, arr) { var f = topMe ? arr.filter(function (x) { return !RECV_RE.test(x); }) : arr; return K.pick(S0, f.length ? f : arr); };
+    /* 同じ結果の中で、同じ台詞をなるべく繰り返さない */
+    var pk = function (S0, arr) {
+      var f = topMe ? arr.filter(function (x) { return !RECV_RE.test(x); }) : arr; if (!f.length) f = arr;
+      var u = S0._hseen = S0._hseen || {}, g = f.filter(function (x) { return !u[x]; }), x = K.pick(S0, g.length ? g : f); u[x] = 1; return x;
+    };
     var X = HK.HoleMore, plKey = PLACE[env.place] ? env.place : 'lab';
     var stored = 0, leaks = 0, visits = 0, people = 0, early = false, hot = 0, lostN = 0, meta = { cum: 0, tent: 0, mark: 0 }, thisN = 0;
     var mindList = MIND[h.persona].concat(X.MIND[h.persona] || []).filter(function (x) { return !hardTop || !/乱暴にしないで|お手柔らかに/.test(x); }), confList = EL('confuse.' + h.persona, CONFUSE[h.persona].concat(X.CONFUSE[h.persona] || []));

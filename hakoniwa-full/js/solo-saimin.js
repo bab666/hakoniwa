@@ -116,7 +116,11 @@
       if (typeof o.text === 'string') o.text = o.text.replace(new RegExp(p.name + '(は|が|も)' + p.name + '(の|に)', 'g'), p.name + '$1自分$2');
       /* 女性の攻め指定が男性の相手（モブを含む）と：入れる側の書き方を、跨る書き方に直す（pos-fm.js） */
       if (HK.FM && !HK.SAFE_ON && p.aTop && !p.ff && HK.Pos && HK.Pos.isF(p) && (!HY || !HK.Pos.isF(HY)) && typeof o.text === 'string')
-        o.text = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, o.text, p, p.h);
+        o.text = (function (ps) {
+          /* 段落に分けた山場（solo-thick4.js）は性別に合わせて組んであるので、直すのは最初の段落（暗示の文）だけ */
+          ps[0] = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, ps[0], p, p.h);
+          return ps.join('\n\n');
+        })(o.text.split('\n\n'));
       return ST.sayB(S, o, short, force);
     }
     function wake(p) {
@@ -391,7 +395,7 @@
   /* かけられた側が攻め（p.aTop）のときの声：SM.TRANCE_TOP / SM.CLIMAX_TOP（女性どうしは CLIMAX_TOP_FF）。弱気・従順な台詞は使わない */
   function topVoice(p, key, list) {
     if (!p.aTop) return topL(p, list);
-    var T = key === 'CLIMAX' && p.ff && SM.CLIMAX_TOP_FF ? SM.CLIMAX_TOP_FF : SM[key + '_TOP'];
+    var T = key === 'CLIMAX' && (p.ff || (HK.Pos && HK.Pos.isF && HK.Pos.isF(p))) && SM.CLIMAX_TOP_FF ? SM.CLIMAX_TOP_FF : SM[key + '_TOP'];  /* 女性の攻めには「出る」の声を使わない */
     if (!T) return topL(p, list);
     return Array.isArray(T) ? T : (T[p.persona] || T.gentle);
   }

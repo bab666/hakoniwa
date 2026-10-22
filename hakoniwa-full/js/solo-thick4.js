@@ -24,14 +24,14 @@
   /* 主導する側の台詞（落ち着き） */
   var DOM = {
     proud: L('逃げるな。……ほら、奥まで入ってる|声、我慢するなよ。全部聞かせろ|どうした。もう腰が勝手に動いてる|いい顔だ。もっと見せろ|まだだ。俺がいいと言うまで、イくな'),
-    stern: L('力を抜け。……そうだ、それでいい|目を逸らすな。こっちを見ろ|呼吸を合わせろ。急がなくていい'),
-    tsun: L('べ、別にあんたのためじゃないから。……ほら、もっと奥|……変な顔しないでよ。こっちまで、おかしくなる'),
-    gentle: L('大丈夫。ゆっくりでいいからね|ほら、ちゃんと気持ちいいって顔してる|力、抜いて。全部、受け止めてあげる'),
-    devoted: L('痛くないですか。……もっと、気持ちよくしますね|私でよければ、いくらでも|ここ、ですよね。ちゃんと、わかります'),
-    cool: L('反応が正直だな。……ここだろう|呼吸が乱れてる。もう少しで限界か|隠しても無駄だ。全部、顔に出てる'),
-    free: L('すっごい顔してる。かわいい|ね、ここ好きでしょ。わかるよ|まだまだ、これからだよ'),
-    shy: L('こ、ここ……で、いいの？　……もっと、するね|……声、かわいい……|ご、ごめん、止まれない、かも……'),
-    polite: L('失礼いたします。……こちらで、よろしいですか|どうか、そのままで。私が動きますから|お声、我慢なさらなくて結構ですよ')
+    stern: L('力を抜け。……そうだ、それでいい|目を逸らすな。こっちを見ろ|呼吸を合わせろ。急がなくていい|声を殺すな。全部、聞かせろ|……ここか。覚えておく'),
+    tsun: L('べ、別にあんたのためじゃないから。……ほら、もっと奥|……変な顔しないでよ。こっちまで、おかしくなる|か、勘違いしないでよね。……気持ちいいのは、あんただけじゃないし|ほら、ちゃんと掴まってなさいよ|……そ、そんな声出されたら、止まれなくなるでしょ'),
+    gentle: L('大丈夫。ゆっくりでいいからね|ほら、ちゃんと気持ちいいって顔してる|力、抜いて。全部、受け止めてあげる|ここ、好きなんだね。もっとしてあげる|かわいい声。……もっと聞かせて'),
+    devoted: L('痛くないですか。……もっと、気持ちよくしますね|私でよければ、いくらでも|ここ、ですよね。ちゃんと、わかります|あなたの気持ちいい顔、ずっと見ていたいです|もっと、私で感じてください'),
+    cool: L('反応が正直だな。……ここだろう|呼吸が乱れてる。もう少しで限界か|隠しても無駄だ。全部、顔に出てる|締めつけが強くなった。……わかりやすい|まだだ。もう少し、我慢できるだろう'),
+    free: L('すっごい顔してる。かわいい|ね、ここ好きでしょ。わかるよ|まだまだ、これからだよ|声、もっと聞かせて！　ね？|あは、また締まった。正直だね'),
+    shy: L('こ、ここ……で、いいの？　……もっと、するね|……声、かわいい……|ご、ごめん、止まれない、かも……|い、痛くない……？　……よかった|……すごい、あったかい……'),
+    polite: L('失礼いたします。……こちらで、よろしいですか|どうか、そのままで。私が動きますから|お声、我慢なさらなくて結構ですよ|こちらが、お好きなのですね|もう少しだけ、お付き合いくださいませ')
   };
   /* 崩れていく側：1＝こらえきれなくなる、2＝絶頂 */
   var SUB1 = {
@@ -46,7 +46,7 @@
     polite: L('……っ、そ、そこは……っ|お、お待ちくださ……っ|あ、っ……はしたない、声が……っ|ん……っ、そのように、されては……感じて、しまいます……|は、ぁ……っ、もう少し、だけ……')
   };
   var SUB2 = {
-    proud: L('あ、ぐ……っ、イ、く……っ！|くそ、っ……もう、無理……っ|あ、あぁっ……出る、イく……っ！|ぐ、ぅ……っ、奥、すげ……っ、イ……っ！'),
+    proud: L('あ、ぐ……っ、イ、く……っ！|くそ、っ……もう、無理……っ|あ、あぁっ……くる、イく……っ！|ぐ、ぅ……っ、奥、すげ……っ、イ……っ！'),
     stern: L('あ……っ、だめ、だ……っ、果て……っ|っ……く、もう……っ！|あ、ぁ……っ、もう、耐え、られん……っ！|んっ……く、ぁあ……っ！'),
     tsun: L('やっ、イっちゃ……っ、ばか、ぁ……っ|も、むり……っ、イく……っ！|あ、ぁっ……いい、すごい、の……っ、イく……っ！|ば、ばか……っ、とまんない……っ！'),
     gentle: L('あ、あぁっ……イく、イっちゃう……っ|一緒、に……っ、ね……っ|あ……っ、すごい……いく、いっちゃう……っ|ん、ぁあっ……奥、きもちいい……っ！'),
@@ -59,7 +59,7 @@
   /* 主導する側も、達する直前に声をこぼす（型ごと） */
   var TOPV = {
     in: L('っ……く、締まる……|は……っ、いい、そのまま……|もう、出る……っ'),
-    ride: L('ん、っ……奥、当たってる……|あ……っ、すごい、硬い……|は、ぁ……っ、私も、もう……'),
+    ride: L('ん、っ……奥、当たってる……|あ……っ、硬い……奥まで、届いてる……|は、ぁ……っ、私も、もう……|ん……っ、中で、跳ねてる……'),
     serve: L('ん……っ、すごい、熱い……|ほら、我慢しなくていい'),
     kneel: L('っ……く、上手だ……|は……っ、そのまま、奥まで……'),
     ff: L('ん……っ、すごく、濡れてる……|かわいい……もっと、声、聞かせて')
@@ -203,6 +203,11 @@
   function pick(S, l) { return l[S.rng.int(l.length)]; }
   /* 同じ場面の中で、同じ台詞を二度使わない */
   function pickNot(S, l, not) { var f = l.filter(function (x) { return x !== not; }); return pick(S, f.length ? f : l); }
+  /* 一回の結果の中で、同じ台詞・同じ段落をなるべく繰り返さない */
+  function pickF(S, l) {
+    var u = S._t4seen = S._t4seen || {}, f = l.filter(function (x) { return !u[x]; });
+    var x = pick(S, f.length ? f : l); u[x] = 1; return x;
+  }
 
   var T4 = HK.Thick4 = {
     /* 小説調の山場を厚くしてよいか（作風「男性向け」・ぼかす・全年齢版では使わない） */
@@ -231,29 +236,29 @@
       function pool(k, base) { return sp0 && sp0[k] && S.rng() < 0.75 ? sp0[k] : base; }
       if (o.lead) paras.push(o.lead);
       /* 書き出しが長いときは、体の感触の段落を省く（全体で 400 字前後） */
-      if (!o.lead || o.lead.length < 120 || hard) paras.push(pick(S, hard ? hard[kind].body : pool('body', tb.body)) + (FLAVOR[scn] && S.rng() < 0.6 ? pick(S, FLAVOR[scn]) : ''));
-      else if (FLAVOR[scn] && S.rng() < 0.6) paras.push(pick(S, FLAVOR[scn]));
+      if (!o.lead || o.lead.length < 120 || hard) paras.push(pickF(S, hard ? hard[kind].body : pool('body', tb.body)) + (FLAVOR[scn] && S.rng() < 0.6 ? pickF(S, FLAVOR[scn]) : ''));
+      else if (FLAVOR[scn] && S.rng() < 0.6) paras.push(pickF(S, FLAVOR[scn]));
       var dl = hard === CHOKE ? CHOKE_DOM : hard ? ROUGH_DOM : DOM[dp], sl = hard === CHOKE ? CHOKE_SUB : hard ? ROUGH_SUB : SUB1[sp];
-      var s1 = pick(S, sl);
-      paras.push('{T}「' + pick(S, dl) + '」' + pick(S, LINK) + '{B}「' + s1 + '」' + (hard === CHOKE ? '{T}「' + pick(S, CHOKE_MID) + '」' : ''));
+      var s1 = pickF(S, sl);
+      paras.push('{T}「' + pickF(S, dl) + '」' + pickF(S, LINK) + '{B}「' + s1 + '」' + (hard === CHOKE ? '{T}「' + pickF(S, CHOKE_MID) + '」' : ''));
       /* 書き出しが短いときだけ、律動の段落を挟む（全体で 400 字前後） */
-      if (!o.lead || o.lead.length < 60) paras.push(pick(S, hard === CHOKE ? CHOKE[kind].beat : pool('beat', tb.beat)));
+      if (!o.lead || o.lead.length < 60) paras.push(pickF(S, hard === CHOKE ? CHOKE[kind].beat : pool('beat', tb.beat)));
       /* 快楽の描写：受け止める側の体が反応していく。主導する側の快感も、ときどき添える。もう一度こらえきれない声 */
-      if (hard !== CHOKE && FEEL[kind]) paras.push(pick(S, FEEL[kind]) + (TFEEL[kind] && S.rng() < 0.5 ? pick(S, TFEEL[kind]) : '') + '{B}「' + pickNot(S, SUB1[sp], s1) + '」');
+      if (hard !== CHOKE && FEEL[kind]) paras.push(pickF(S, FEEL[kind]) + (TFEEL[kind] && S.rng() < 0.5 ? pickF(S, TFEEL[kind]) : '') + '{B}「' + pickNot(S, SUB1[sp], s1) + '」');
       /* o.peak：絶頂の段落を、箱庭の元の文（型ごとの決め台詞など）で置き換える */
-      paras.push('{B}「' + pick(S, SUB2[sp]) + '」' + (TOPV[kind] && S.rng() < 0.4 ? '{T}「' + pick(S, TOPV[kind]) + '」' : '') + (o.peak || pick(S, hard ? hard[kind].peak : pool('peak', tb.peak))));
-      paras.push(pick(S, hard === CHOKE ? CHOKE_AFTER : hard ? ROUGH_AFTER : pool('after', tb.after)) + (o.after ? o.after : ''));
+      paras.push('{B}「' + pickF(S, SUB2[sp]) + '」' + (TOPV[kind] && S.rng() < 0.4 ? '{T}「' + pickF(S, TOPV[kind]) + '」' : '') + (o.peak || pickF(S, hard ? hard[kind].peak : pool('peak', tb.peak))));
+      paras.push(pickF(S, hard === CHOKE ? CHOKE_AFTER : hard ? ROUGH_AFTER : pool('after', tb.after)) + (o.after ? o.after : ''));
       return paras.join('\n\n').replace(/\{T\}/g, D).replace(/\{B\}/g, B);
     },
     /* 感覚遮断穴：解放で溜まった感覚が戻る最初の絶頂（相手はいない。top＝攻め指定などで、壁の向こうでは竿を使われていた側）。
        ［戻ってきた感触］→［こらえきれない声］→［元の絶頂の文］。余韻は箱庭側の「余韻」の場面に任せる */
     flood: function (S, who, o) {
       var sp = ps(S, who), B = who.name;
-      var body = pick(S, o.top ? (isF(who) ? FLOOD_TOP_F : FLOOD_TOP) : FLOOD_RECV);
+      var body = pickF(S, o.top ? (isF(who) ? FLOOD_TOP_F : FLOOD_TOP) : FLOOD_RECV);
       /* 段落の頭が「…」だと話し手が分からないので、名前を前に置く */
       var lead = /^「/.test(o.lead || '') ? B + o.lead : o.lead;
-      var m1 = pick(S, SUB1[sp]);
-      return [body, '{B}「' + m1 + '」' + pick(S, FLOOD_LINK), pick(S, FLOOD_FEEL) + '{B}「' + pickNot(S, SUB1[sp], m1) + '」', lead].join('\n\n').replace(/\{B\}/g, B);
+      var m1 = pickF(S, SUB1[sp]);
+      return [body, '{B}「' + m1 + '」' + pickF(S, FLOOD_LINK), pickF(S, FLOOD_FEEL) + '{B}「' + pickNot(S, SUB1[sp], m1) + '」', lead].join('\n\n').replace(/\{B\}/g, B);
     },
     /* 嗜虐的な主導役なら、山場の 25% ほどでハードな支配を使う */
     rollSad: function (S, dom, sub) { return !!(HK.Ero && HK.Ero.sadist && HK.Ero.sadist(dom, sub)) && S.rng() < 0.25; },

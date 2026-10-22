@@ -203,7 +203,10 @@
         var q = rng.pick(mates); q.lastNight = h; q.cnt.r18 = (q.cnt.r18 || 0) + 1;
         var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
         var rough = S.ygo && (X.viol > 30 || Y.viol > 30);
-        var t = ST.fmt(ST.pick(S, rough ? YGO_SEX : isFF(X, Y) ? MUTUAL_FF : MUTUAL), { x: X.name, y: Y.name }) + pairSex(S, X, Y, { mood: rough ? 'rough' : p.aphro || q.aphro ? 'drug' : 'love', fore: false });
+        var t0 = ST.fmt(ST.pick(S, rough ? YGO_SEX : isFF(X, Y) ? MUTUAL_FF : MUTUAL), { x: X.name, y: Y.name });
+        /* 主導する側が女性・相手が男性なら、導入の文も跨る書き方に（合意の場面だけ） */
+        if (!rough && HK.FM && HK.FM.fixWith && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm') t0 = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, t0, X, Y.name);
+        var t = t0 + pairSex(S, X, Y, { mood: rough ? 'rough' : p.aphro || q.aphro ? 'drug' : 'love', fore: false });
         if (rng() < 0.5 + lv * 0.3) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(ST.pick(S, PREG), { y: Y.name }); }
         p.m.fear = Math.max(0, p.m.fear - 8); q.m.fear = Math.max(0, q.m.fear - 8);
         var strm = [X, Y].filter(function (c) { return c.job === 'streamer'; })[0];

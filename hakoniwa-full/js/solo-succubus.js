@@ -4,6 +4,14 @@
    その性格に応じたアドバイスをくれる */
 (function () {
   'use strict';
+  /* 同じ結果の中で、同じ文・台詞をなるべく繰り返さない（候補が尽きたら元どおりに引く） */
+  function pkF(S, arr) {
+    if (!arr || !arr.length) return window.HK.Story.pick(S, arr);
+    var u = S._pkSeen = S._pkSeen || [], f = arr.filter(function (x) { return u.indexOf(x) < 0; });
+    var x = window.HK.Story.pick(S, f.length ? f : arr);
+    if (typeof x === 'string') { u.push(x); if (u.length > 400) u.shift(); }
+    return x;
+  }
   var HK = window.HK, SB = HK.SUCCUBUS, ST = HK.Story, clamp = HK.clamp;
   function L(s) { return s.split('|'); }
 
@@ -82,16 +90,16 @@
       var charm = p.stats.charm, tech = p.stats.tech;
       var power = Math.round(charm * 12 + tech * 7 + p.tr.warmth * 10 + p.tr.fc * 6);
       var ck = charm >= 4 && tech <= 2 ? 'sexy' : charm <= 2 && tech >= 4 ? 'skill' : charm >= 4 && tech >= 4 ? 'ace' : charm <= 2 && tech <= 2 ? 'bad' : 'avg';
-      var comment = ST.pick(S, (SB.COMMENT && SB.COMMENT[ck]) || [{ sexy: '見た目の色香は十分。ただ、誘い方はまだぎこちない', skill: '派手さはないが、近づけば落とせる腕がある', ace: '色香も腕も揃った、天性のサキュバス', bad: '正直、サキュバスに向いているかは怪しい', avg: '平均的なサキュバス。勝負は獲物の選び方しだい' }[ck]]);
+      var comment = pkF(S, (SB.COMMENT && SB.COMMENT[ck]) || [{ sexy: '見た目の色香は十分。ただ、誘い方はまだぎこちない', skill: '派手さはないが、近づけば落とせる腕がある', ace: '色香も腕も揃った、天性のサキュバス', bad: '正直、サキュバスに向いているかは怪しい', avg: '平均的なサキュバス。勝負は獲物の選び方しだい' }[ck]]);
       p.power = power;
-      var o = ST.say(S, { actors: [p], tag: '魅力診断', text: (SB.TRANSFORM ? ST.fmt(ST.pick(S, SB.TRANSFORM), { a: p.name }) : p.name + 'の背中に小さな羽が、腰に細い尻尾が生えた。') + '誘惑の型は「' + p.style.label + '」（' + p.style.desc + '）。魅力' + charm + '・技巧' + tech + '――' + comment + '。', why: '誘惑の型は' + p.name + 'の' + (p.style.why || p.topWhy) + 'から／誘惑力 ' + power, mag: 10 });
+      var o = ST.say(S, { actors: [p], tag: '魅力診断', text: (SB.TRANSFORM ? ST.fmt(pkF(S, SB.TRANSFORM), { a: p.name }) : p.name + 'の背中に小さな羽が、腰に細い尻尾が生えた。') + '誘惑の型は「' + p.style.label + '」（' + p.style.desc + '）。魅力' + charm + '・技巧' + tech + '――' + comment + '。', why: '誘惑の型は' + p.name + 'の' + (p.style.why || p.topWhy) + 'から／誘惑力 ' + power, mag: 10 });
       ST.key(S, o, p.name + 'の誘惑の型');
     });
     if (sen) {
-      ST.say(S, { actors: [sen], tag: '先輩', text: sen.name + 'は先輩サキュバスとして、今夜は後輩たちの面倒を見ることになった。' + ST.fmt(ST.pick(S, senV(S, sen, 'start') || SE.start), { a: H.length > 1 ? 'みんな' : H[0].name }).replace('みんなちゃん', 'みんな'), why: '先輩の性格：' + SE.label + '（' + sen.topWhy + '）／' + SE.eff });
+      ST.say(S, { actors: [sen], tag: '先輩', text: sen.name + 'は先輩サキュバスとして、今夜は後輩たちの面倒を見ることになった。' + ST.fmt(pkF(S, senV(S, sen, 'start') || SE.start), { a: H.length > 1 ? 'みんな' : H[0].name }).replace('みんなちゃん', 'みんな'), why: '先輩の性格：' + SE.label + '（' + sen.topWhy + '）／' + SE.eff });
       H.forEach(function (p) {
         var weak = Object.keys(SB.PREY).filter(function (k) { return SB.PREY[k].weak === p.top && T.prey[k]; }).map(function (k) { return SB.PREY[k].name; });
-        ST.say(S, { actors: [sen, p], tag: 'アドバイス', text: sen.name + 'は' + p.name + 'に耳打ちした。' + ST.fmt(ST.pick(S, senV(S, sen, 'tip') || SE.tip), { a: p.name, style: p.style.label, weak: weak.length ? weak.slice(0, 2).join('や') : 'あなたに合う獲物' }), why: SE.label + 'のアドバイス' });
+        ST.say(S, { actors: [sen, p], tag: 'アドバイス', text: sen.name + 'は' + p.name + 'に耳打ちした。' + ST.fmt(pkF(S, senV(S, sen, 'tip') || SE.tip), { a: p.name, style: p.style.label, weak: weak.length ? weak.slice(0, 2).join('や') : 'あなたに合う獲物' }), why: SE.label + 'のアドバイス' });
         if (sen.top === 'A') p.intel = true;
       });
     }
@@ -108,7 +116,7 @@
         if (p.out) return;
         if (p.skip) { p.skip = false; return; }
         if (rng() < env.ev / 100 * 0.45 || (last && rng() < 0.4)) { if (happen(S, T, p, sen, SE, last)) return; }
-        if (rng() > 0.35 + env.prey / 100 * 0.65) return ST.sayB(S, { actors: [p], text: ST.fmt(ST.pick(S, (SB.NOPREY || L('{a}は{spot}で一時間粘ったが、めぼしい獲物は通らなかった。|{a}は{spot}の屋根の上から街を見下ろした。今夜は人通りが少ない。|{a}は{spot}をうろついたが、目が合う人がいなかった。'))), { a: p.name, spot: rng.pick(T.spots) }), why: '獲物の少なさ（' + env.prey + '）' }, p.name + 'は空振り');
+        if (rng() > 0.35 + env.prey / 100 * 0.65) return ST.sayB(S, { actors: [p], text: ST.fmt(pkF(S, (SB.NOPREY || L('{a}は{spot}で一時間粘ったが、めぼしい獲物は通らなかった。|{a}は{spot}の屋根の上から街を見下ろした。今夜は人通りが少ない。|{a}は{spot}をうろついたが、目が合う人がいなかった。'))), { a: p.name, spot: rng.pick(T.spots) }), why: '獲物の少なさ（' + env.prey + '）' }, p.name + 'は空振り');
         hunt(S, T, p, sen, SE);
       });
       ST.flushShort(S, 'ほかの狩り：');
@@ -150,7 +158,7 @@
     if (flw) { S.flags['sf_' + flw.id] = (S.flags['sf_' + flw.id] || 0) + 1; score += flw.score || 0; if (flw.id !== 'eye') why += '／入り方：' + { tail: '尾行', bar: 'バーで', reverse: '向こうから', rain: '雨宿り', lost: '迷子のふり', dream: '夢に忍び込む' }[flw.id]; }
     var again = p.seen[key] > 1 && SB.AGAIN && rng() < 0.6;
     if (again) { score += 10; why += '／前に会った相手と再会'; }
-    var t = ST.fmt(again ? ST.pick(S, SB.AGAIN) : flw ? ST.pick(S, flw.t) : '{spot}で、{a}は{t}に目をつけた。', v) + (flw && flw.id === 'dream' ? '' : ST.fmt(ty.ap ? SB.say(S, ST.pick(S, ty.ap), ty.id + '_ap', p) : ST.pick(S, p.style.approach), v)) + (VO && rng() < (ty.ap ? 0.2 : 0.5) ? p.name + ST.pick(S, VO.OPEN[p.persona] || VO.OPEN.gentle) : '') + (q.re && rng() < 0.65 ? ST.fmt(q.re, v) : '');
+    var t = ST.fmt(again ? pkF(S, SB.AGAIN) : flw ? pkF(S, flw.t) : '{spot}で、{a}は{t}に目をつけた。', v) + (flw && flw.id === 'dream' ? '' : ST.fmt(ty.ap ? SB.say(S, pkF(S, ty.ap), ty.id + '_ap', p) : pkF(S, p.style.approach), v)) + (VO && rng() < (ty.ap ? 0.2 : 0.5) ? p.name + pkF(S, VO.OPEN[p.persona] || VO.OPEN.gentle) : '') + (q.re && rng() < 0.65 ? ST.fmt(q.re, v) : '');
     var lew = env.lewd || 'mid', ml = 0, kind, rev = 0, leadP = '';
     /* 聖なる獲物で大失敗すると、祓われかける */
     if (q.hunter && score < 10) {
@@ -171,23 +179,23 @@
     var noRecv = function (arr) { if (!hTop) return arr; var f = arr.filter(function (x) { return !SB.RECV_RE.test(x); }); return f.length ? f : arr; };
     if (score < -5) {
       kind = 'fail'; p.cnt.fail++; p.cnt.streak++; p.m.mood -= 10; p.cnt.shame++;
-      t += ST.fmt(ST.pick(S, ty.fail && rng() < 0.6 ? ty.fail : SB.FAIL[p.top]), v) + (VO && rng() < 0.5 ? p.name + ST.pick(S, VO.FAIL[p.persona] || VO.FAIL.gentle) : '');
+      t += ST.fmt(pkF(S, ty.fail && rng() < 0.6 ? ty.fail : SB.FAIL[p.top]), v) + (VO && rng() < 0.5 ? p.name + pkF(S, VO.FAIL[p.persona] || VO.FAIL.gentle) : '');
     } else if (score < 15) {
       kind = 'half'; p.cnt.half++; p.cnt.streak++; ml = Math.round(2 + rng() * 6);
-      t += ST.fmt(ST.pick(S, EL(S, 'half', SB.HALF)), v);
+      t += ST.fmt(pkF(S, EL(S, 'half', SB.HALF)), v);
     } else if (SB.MELT && rng() < Math.max(0, 0.05 + p.m.plea / 100 * 0.32 + Math.max(0, 3 - p.stats.tech) * 0.05 + (q.stamina ? 0.1 : 0) + (q.incubus ? 0.08 : 0) + (p.top === 'AC' ? 0.05 : 0) + (ty.melt || 0) - (score >= 45 ? 0.06 : 0))) {
       /* 感じすぎて仕事にならない */
       kind = 'melt'; p.cnt.melt++; p.cnt.streak++; p.cnt.shame++; p.m.mood -= 12;
       ml = Math.round(q.vit * (0.1 + rng() * 0.2));
       why += '／感じすぎた（昂り ' + Math.round(p.m.plea) + '・技巧 ' + p.stats.tech + '）';
-      if (lew === 'low') t += ST.fmt(ST.pick(S, noRecv(SB.MELT_LOW)), v);
+      if (lew === 'low') t += ST.fmt(pkF(S, noRecv(SB.MELT_LOW)), v);
       else {
-        t += '――' + ST.fmt(ST.pick(S, sTop && EO(S) && HK.Pos.isF(p) ? EL(S, 'melt.topf', SB.MELT_TOP) : hTop && SB.MELT_HARD ? EL(S, 'melt.hard', SB.MELT_HARD) : sTop && SB.MELT_TOP ? EL(S, 'melt.top', SB.MELT_TOP) : EL(S, 'melt', SB.MELT)), v);
-        if (HK.Voice.CLIMAX[p.persona] && rng() < (EO(S) ? 0.3 : 0.6)) t += p.name + '「' + ST.pick(S, noRecv(HK.Voice.CLIMAX[p.persona])) + '」';
-        else if (SB.VOICE.MELT[p.persona]) t += p.name + ST.pick(S, noRecv(EL(S, 'voice.melt.' + p.persona, SB.VOICE.MELT[p.persona])));
+        t += '――' + ST.fmt(pkF(S, sTop && EO(S) && HK.Pos.isF(p) ? EL(S, 'melt.topf', SB.MELT_TOP) : hTop && SB.MELT_HARD ? EL(S, 'melt.hard', SB.MELT_HARD) : sTop && SB.MELT_TOP ? EL(S, 'melt.top', SB.MELT_TOP) : EL(S, 'melt', SB.MELT)), v);
+        if (HK.Voice.CLIMAX[p.persona] && rng() < (EO(S) ? 0.3 : 0.6)) t += p.name + '「' + pkF(S, noRecv(HK.Voice.CLIMAX[p.persona])) + '」';
+        else if (SB.VOICE.MELT[p.persona]) t += p.name + pkF(S, noRecv(EL(S, 'voice.melt.' + p.persona, SB.VOICE.MELT[p.persona])));
       }
-      t += ST.fmt(ST.pick(S, noRecv(EL(S, 'melt.after', SB.MELT_AFTER))), v) + (ml ? '（吸えたのは' + ml + 'mlだけ）' : '');
-      if (sTop && HK.FM && HK.Pos.isF(p)) t = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, t, p, q.name);
+      t += ST.fmt(pkF(S, noRecv(EL(S, 'melt.after', SB.MELT_AFTER))), v) + (ml ? '（吸えたのは' + ml + 'mlだけ）' : '');
+      if (sTop && HK.FM && HK.Pos.isF(p)) t = HK.FM.fixWith({ pick: function (a) { return pkF(S, a); } }, t, p, q.name);
       p.m.plea = 35;
       if (rng() < 0.4) { p.skip = true; why += '／腰が抜けて次の一時間は休み'; }
     } else {
@@ -196,23 +204,23 @@
       if (kind === 'big') p.cnt.big++;
       ml = Math.round(q.vit * (kind === 'big' ? 0.9 + rng() * 0.6 : 0.5 + rng() * 0.4) * (1 + p.stats.tech * 0.05) * (ty.ml || 1));
       if (lew === 'low') t += ST.fmt('――二人は{spot}の奥へ消えた。何があったのかは、{a}の満ち足りた顔だけが知っている。', v);
-      else if (ty.tk) { leadP = ST.fmt(SB.say(S, ST.pick(S, sTop ? (EO(S) && HK.Pos.isF(p) ? EL(S, 'topf', ty.top) : EL(S, 'top.' + ty.id, ty.top)) : EL(S, 'tk.' + ty.id, ty.tk)), ty.id + '_tk', p), v); t += '――' + leadP; }
-      else { t += '――' + ST.fmt(ST.pick(S, sTop && SB.TAKE_TOP ? SB.TAKE_TOP[p.top] : SB.TAKE[p.top]), v); }
-      if (q.stamina && hTop && SB.REVERSE_HARD && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.m.plea = 100; p.skip = true; rev = 1; ml = Math.round(ml * 1.4); t += ST.fmt(ST.pick(S, EO(S) && HK.Pos.isF(p) ? EL(S, 'reverse.topf', SB.REVERSE_HARD) : EL(S, 'reverse.hard', SB.REVERSE_HARD)), v); why += '／底なしの体力の相手に、朝まで主導権を渡さなかった'; }
-      else if (q.stamina && !hTop && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.cnt.reverse++; p.m.plea = 100; p.skip = true; rev = 1; ml = Math.round(ml * 1.4); t += ST.fmt(ST.pick(S, sTop && SB.REVERSE_TOP ? (EO(S) && HK.Pos.isF(p) ? EL(S, 'reverse.topf', SB.REVERSE_TOP) : EL(S, 'reverse.top', SB.REVERSE_TOP)) : EL(S, 'reverse', SB.REVERSE)), v); why += '／相手の底なしの体力に逆に搾られた'; }
+      else if (ty.tk) { leadP = ST.fmt(SB.say(S, pkF(S, sTop ? (EO(S) && HK.Pos.isF(p) ? EL(S, 'topf', ty.top) : EL(S, 'top.' + ty.id, ty.top)) : EL(S, 'tk.' + ty.id, ty.tk)), ty.id + '_tk', p), v); t += '――' + leadP; }
+      else { t += '――' + ST.fmt(pkF(S, sTop && SB.TAKE_TOP ? SB.TAKE_TOP[p.top] : SB.TAKE[p.top]), v); }
+      if (q.stamina && hTop && SB.REVERSE_HARD && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.m.plea = 100; p.skip = true; rev = 1; ml = Math.round(ml * 1.4); t += ST.fmt(pkF(S, EO(S) && HK.Pos.isF(p) ? EL(S, 'reverse.topf', SB.REVERSE_HARD) : EL(S, 'reverse.hard', SB.REVERSE_HARD)), v); why += '／底なしの体力の相手に、朝まで主導権を渡さなかった'; }
+      else if (q.stamina && !hTop && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.cnt.reverse++; p.m.plea = 100; p.skip = true; rev = 1; ml = Math.round(ml * 1.4); t += ST.fmt(pkF(S, sTop && SB.REVERSE_TOP ? (EO(S) && HK.Pos.isF(p) ? EL(S, 'reverse.topf', SB.REVERSE_TOP) : EL(S, 'reverse.top', SB.REVERSE_TOP)) : EL(S, 'reverse', SB.REVERSE)), v); why += '／相手の底なしの体力に逆に搾られた'; }
       else if (q.incubus && hTop) { ml = Math.round(ml * 0.6); t += ST.fmt('――ところが{t}も、{a}から吸い返そうとしてきた。{a}は{t}の手首を押さえつけ、一滴も吸い返させなかった。ただ、同業者の精は薄かった。', v); }
       else if (q.incubus) { ml = Math.round(ml * 0.6); t += ST.fmt('――ところが{t}も、{a}から吸い返そうとしてきた。同業者どうしの吸い合いは、引き分けに終わった。', v); }
       /* 小説調の山場（solo-thick4.js）：主導権を握ったまま搾りきった回は、段落に分けて厚く。サキュバスが攻めなら貫いて、そうでなければ跨って。型ごとの決め台詞の文は絶頂の段落に置く */
       if (leadP && !rev && !q.incubus && HK.Thick4 && HK.Thick4.ok(S, lew)) {
         var prey = { name: q.name, gender: 'm' };
-        t = t.replace('――' + leadP, '――' + HK.Thick4.scene(S, { dom: p, sub: prey, kind: sTop ? 'in' : 'ride', peak: leadP, sad: HK.Thick4.rollSad(S, p, prey),
-          after: ST.fmt(ST.pick(S, ['{a}の肌に、{ml}ml分の精がゆっくりと溶けていった。', '{a}は舌なめずりをして、満ちていく魔力を味わった。――{ml}ml。', '{a}の淫紋が、{ml}ml分の精を吸って淡く光った。']), { a: p.name, ml: ml }) }));
+        t = t.replace('――' + leadP, '――' + HK.Thick4.scene(S, { dom: p, sub: prey, kind: sTop ? 'in' : 'ride', peak: leadP.replace(/([。」])「/g, '$1' + p.name + '「'), sad: HK.Thick4.rollSad(S, p, prey),
+          after: ST.fmt(pkF(S, ['{a}の肌に、{ml}ml分の精がゆっくりと溶けていった。', '{a}は舌なめずりをして、満ちていく魔力を味わった。――{ml}ml。', '{a}の淫紋が、{ml}ml分の精を吸って淡く光った。']), { a: p.name, ml: ml }) }));
       }
-      else t += ST.fmt(ST.pick(S, EL(S, 'climax', SB.CLIMAX).concat(!sTop && EO(S) ? EL(S, 'climax.in', []) : [])), { a: p.name, t: q.name, ml: ml });
+      else t += ST.fmt(pkF(S, EL(S, 'climax', SB.CLIMAX).concat(!sTop && EO(S) ? EL(S, 'climax.in', []) : [])), { a: p.name, t: q.name, ml: ml });
       /* 女性のサキュバスが攻めのときは、女性上位（跨って搾る）の書き方にそろえる */
-      if (sTop && HK.FM && HK.Pos.isF(p)) t = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, t, p, q.name);
-      if (kind === 'big') t += ST.fmt(ST.pick(S, EL(S, 'big', SB.BIG)), v);
-      if (VO && rng() < 0.45) t += p.name + ST.pick(S, VO.WIN[p.persona] || VO.WIN.gentle);
+      if (sTop && HK.FM && HK.Pos.isF(p)) t = HK.FM.fixWith({ pick: function (a) { return pkF(S, a); } }, t, p, q.name);
+      if (kind === 'big') t += ST.fmt(pkF(S, EL(S, 'big', SB.BIG)), v);
+      if (VO && rng() < 0.45) t += p.name + pkF(S, VO.WIN[p.persona] || VO.WIN.gentle);
       p.m.plea = clamp(p.m.plea + 30 + (p.top === 'FC' ? 20 : 0), 0, 100);
     }
     /* 主導権を握って搾った回は、拒む喘ぎを使わない（感じすぎた・逆に搾られた回はそのまま） */
@@ -226,7 +234,7 @@
     if (o && p.cnt.win === 1 && kind === 'win') ST.key(S, o, p.name + 'の初めての獲物');
     /* 先輩から */
     if (sen && (kind === 'fail' || kind === 'melt') && p.cnt.streak >= 2) {
-      var e = ST.say(S, { actors: [sen, p], tag: '先輩から', text: (function () { var sv = senV(S, sen, 'fail'); return sv ? ST.fmt('{s}は{a}にメッセージを送った。' + ST.pick(S, sv), { a: p.name, s: sen.name }) : ST.fmt(ST.pick(S, SE.fail), { a: p.name, s: sen.name }); })(), why: SE.label + '（' + SE.eff + '）' });
+      var e = ST.say(S, { actors: [sen, p], tag: '先輩から', text: (function () { var sv = senV(S, sen, 'fail'); return sv ? ST.fmt('{s}は{a}にメッセージを送った。' + pkF(S, sv), { a: p.name, s: sen.name }) : ST.fmt(pkF(S, SE.fail), { a: p.name, s: sen.name }); })(), why: SE.label + '（' + SE.eff + '）' });
       if (sen.top === 'NP') p.m.mood += 15;
       if (sen.top === 'CP') p.m.mood -= 5;
       if (sen.top === 'FC' && S.rng() < 0.5) {
@@ -247,7 +255,7 @@
     p.cnt['ev_' + e.id] = (p.cnt['ev_' + e.id] || 0) + 1;
     /* 男性向けのハプニングは、自分で「攻め」を選んだサキュバスには使わない（跨る・咥える書き方があるため） */
     var et = HK.Pos && HK.Pos.hardTop(p) ? e.t : EL(S, 'ev.' + e.id, e.t);
-    var fx = e.fx, t = ST.fmt(ST.pick(S, et), { a: p.name, s: sen ? sen.name : '' }), why = '';
+    var fx = e.fx, t = ST.fmt(pkF(S, et), { a: p.name, s: sen ? sen.name : '' }), why = '';
     if (HK.Ero) t = HK.Ero.fill(S, t, p);
     if (sen && sen.top === 'AC' && (e.id === 'holy' || e.id === 'police') && rng() < 0.5) { t = sen.name + 'の「教会には近づかないで」を思い出して、' + p.name + 'は道を変えた。危ないところだった。'; fx = {}; why = '心配性の先輩の忠告が効いた'; }
     if (fx.mana) p.m.mana = clamp(p.m.mana + fx.mana, 0, 100);
@@ -271,13 +279,13 @@
     if (team) {
       var ml = Math.round(25 + rng() * 35);
       a.m.ml += Math.round(ml / 2); b.m.ml += Math.round(ml / 2);
-      var hard2 = HK.Pos && (HK.Pos.hardTop(a) || HK.Pos.hardTop(b)), tt = !hard2 && EO(S) ? HK.Ero.fill(S, ST.fmt(ST.pick(S, EL(S, 'team', [])), { a: a.name, b: b.name }), a) : '「半分こね」――' + a.style.label + 'と' + b.style.label + 'に挟まれた獲物は、朝まで帰してもらえなかった。';
+      var hard2 = HK.Pos && (HK.Pos.hardTop(a) || HK.Pos.hardTop(b)), tt = !hard2 && EO(S) ? HK.Ero.fill(S, ST.fmt(pkF(S, EL(S, 'team', [])), { a: a.name, b: b.name }), a) : '「半分こね」――' + a.style.label + 'と' + b.style.label + 'に挟まれた獲物は、朝まで帰してもらえなかった。';
       return ST.key(S, ST.say(S, { actors: [a, b], tag: '共闘', text: spot + 'で、' + a.name + 'と' + b.name + 'は同じ獲物に目をつけていた。顔を見合わせて、二人は笑った。' + tt + '（' + ml + 'mlを山分け）', why: '二人の人懐こさ（NP・FC）', mag: 30, kind: 'climax' }), a.name + 'と' + b.name + 'の共闘');
     }
     var sa = a.stats.charm * 10 + a.stats.tech * 6 + rng() * 40, sb = b.stats.charm * 10 + b.stats.tech * 6 + rng() * 40;
     var w = sa >= sb ? a : b, l = w === a ? b : a, ml2 = Math.round(15 + rng() * 25);
     w.m.ml += ml2; l.m.mood -= 10;
-    ST.say(S, { actors: [a, b], tag: '取り合い', text: spot + 'で、' + ST.fmt(ST.pick(S, SB.RIVAL || ['{a}と{b}が同じ獲物の両腕をそれぞれ掴んでいた。「私が先に見つけたの！」――獲物が選んだのは{w}だった。{l}は尻尾をしならせて、悔しそうに見送った。']), { a: a.name, b: b.name, w: w.name, l: l.name }) + '（' + w.name + ' +' + ml2 + 'ml）', why: w.name + 'の魅力と技巧が上回った', mag: 22 });
+    ST.say(S, { actors: [a, b], tag: '取り合い', text: spot + 'で、' + ST.fmt(pkF(S, SB.RIVAL || ['{a}と{b}が同じ獲物の両腕をそれぞれ掴んでいた。「私が先に見つけたの！」――獲物が選んだのは{w}だった。{l}は尻尾をしならせて、悔しそうに見送った。']), { a: a.name, b: b.name, w: w.name, l: l.name }) + '（' + w.name + ' +' + ml2 + 'ml）', why: w.name + 'の魅力と技巧が上回った', mag: 22 });
   }
 
   /* ---------- 結果 ---------- */
@@ -301,7 +309,7 @@
         p.rv = SB.review(S, sen, p, { rank: k, n: rank.length, T: T });
         p.notes.push('先輩' + sen.name + 'の講評：「' + p.rv.text + '」');
       } else if (sen) {
-        var rv = ST.fmt(ST.pick(S, senV(S, sen, GOOD[p.grade] ? 'good' : 'bad') || SE.review[GOOD[p.grade] ? 'good' : 'bad']), { a: p.name });
+        var rv = ST.fmt(pkF(S, senV(S, sen, GOOD[p.grade] ? 'good' : 'bad') || SE.review[GOOD[p.grade] ? 'good' : 'bad']), { a: p.name });
         p.notes.push('先輩' + sen.name + 'の講評：' + rv);
       }
     });

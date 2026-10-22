@@ -18,6 +18,11 @@
   function okP(a, b) { return !HK.Pos || HK.Pos.okSex(a, b); }
   function hardTop(p) { return !!(HK.Pos && HK.Pos.hardTop(p)); }
   function isFF(a, b) { return !!(HK.Pos && HK.Pos.ff(a, b)); }
+  /* 主導する側が女性・相手が男性（指定の有無を問わず）：導入の文の「入れる」書き方を、跨る書き方に直す（合意の場面だけ） */
+  function fmFix(S, t, x, y) {
+    var g = function (c) { return c.gender || (c.src && c.src.gender); };
+    return HK.FM && HK.FM.fixWith && g(x) === 'f' && g(y) === 'm' ? HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, t, x, y.name) : t;
+  }
   function od2(a, b) { return HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b]; }
   function SX(S, x, y, mood, short, allow) {
     var R = HK.R18M;
@@ -77,6 +82,9 @@
     guard: L('{a}は、一人だけ酒を飲んでいなかった。乱れた館の中、{a}は現場の扉の前に座り込み、朝まで誰も近づけなかった。|{a}は異変に気づいて、現場の部屋に鍵をかけた。鍵は、自分のポケットにしまった。')
   };
   var SEDUCE = L('{c}は、熱に浮かされた{d}の部屋を訪ねた。「探偵さん……ずっと、気になってたんです」――{c}は{d}の膝に跨り、ゆっくりと腰を沈めた。|{c}は{d}の首に腕を回してベッドへ誘い込み、耳元で囁いた。「事件のことなんて、今夜は忘れて」――{d}は{c}を組み敷いた。{c}の中で果てるたびに、推理の糸が一本ずつほどけていった。|{c}は{d}の手帳をそっと閉じ、その手を自分の胸に導いた。「謎解きより、楽しいことしませんか」');
+  /* 女性が主導して男性と交わるときの誘惑（女性の側に男性の体の書き方を当てない）：FMC＝誘った{c}が女性で主導、FMD＝探偵{d}が女性で主導 */
+  var SEDUCE_FMC = L('{c}は、熱に浮かされた{d}の部屋を訪ねた。「探偵さん……今夜は、私に任せて」――{c}は{d}を寝台に押し倒して跨り、自分の手で導いて、ゆっくりと腰を沈めた。{d}が何か言いかけるたびに、{c}は中をきゅうっと締めて、その言葉を溶かした。|{c}は{d}の膝に乗り、首に腕を回した。「推理なんて、朝まで忘れて」――根元まで呑み込んだまま腰を揺らす{c}に、{d}の思考は一つずつほどけていった。');
+  var SEDUCE_FMD = L('{c}は、熱に浮かされた{d}の部屋を訪ねた。「探偵さん……ずっと、気になってたんです」――けれど主導権を握ったのは{d}のほうだった。{d}は{c}を寝台に押し倒して跨り、見下ろしたまま、ゆっくりと腰を落とした。|{c}が寄り添ってきた瞬間、{d}はその肩を押して仰向けにさせた。「誘ったのは、そっちだよね」――{d}は{c}の上に跨り、熱を自分の中へ迎え入れて、好きな速さで腰を揺らした。');
   var SEDUCE_TOP = L('{c}は、熱に浮かされた{d}の部屋に忍び込み、そのまま{d}を組み敷いた。「探偵さん、今夜は何も考えなくていい」――{c}に奥まで貫かれるたびに、{d}の頭から推理が抜け落ちていった。|{c}は{d}の手首を押さえつけ、ゆっくりと腰を進めた。{d}は抗おうとしたが、媚薬に浮かされた体は、{c}を受け入れることしか知らなかった。|{c}は{d}の眼鏡を外し、机の上に置いた。「推理は、もうおしまい」――そのまま{d}を机に押し伏せた。');
   /* 翌朝（10通り） */
   /* 自分で攻めを選んだ人のところへ来た使用人：{a}のほうが組み伏せる */
@@ -112,7 +120,7 @@
         var pool = PLF(kind, SC[kind], od[0], od[1]);
         /* 探偵と助手：向きの決まった文は、探偵が攻めか受けかで選ぶ */
         if (kind === 'buddy' && !isFF(od[0], od[1]) && Y.R18T) pool = pool.concat(Y.R18T[od[0] === x ? 'buddyDT' : 'buddyDB'] || []);
-        ST.say(S, { actors: [od[0], od[1]], tag: '媚薬の夜', kind: 'climax', text: F(ST.pick(S, pool), m) + SX(S, od[0], od[1], kind === 'enemies' ? 'rough' : kind === 'lovers' || kind === 'crush' || kind === 'buddy' ? 'love' : 'drug'), why: why + PW(S), mag: 32 });
+        ST.say(S, { actors: [od[0], od[1]], tag: '媚薬の夜', kind: 'climax', text: fmFix(S, F(ST.pick(S, pool), m), od[0], od[1]) + SX(S, od[0], od[1], kind === 'enemies' ? 'rough' : kind === 'lovers' || kind === 'crush' || kind === 'buddy' ? 'love' : 'drug'), why: why + PW(S), mag: 32 });
         Y.setRel(S, x, y, kind === 'enemies' ? 0.35 : 0.2, kind === 'enemies' ? '憎しみの一夜' : kind === 'buddy' ? '一線を越えた' : kind === 'crush' ? '想いが溢れた' : '一夜', kind === 'crush' ? x : null);
         drunk.splice(drunk.indexOf(x), 1); if (drunk.indexOf(y) >= 0) drunk.splice(drunk.indexOf(y), 1);
         scenes++;
@@ -123,7 +131,7 @@
       var det = drunk.filter(function (q) { return q.isDet; })[0];
       if (det && rng() < 0.35 + lv * 0.3 && can(c, det)) {
         var o2 = HK.Pos ? HK.Pos.order(c, det, [c, det]) : [c, det];
-        ST.say(S, { actors: [c, det], tag: '誘惑', kind: 'climax', text: F(ST.pick(S, o2[0] === c ? PLF('seduceTop', SEDUCE_TOP, c, det) : PLF('seduce', SEDUCE, c, det)), { c: c.name, d: det.name }) + SX(S, o2[0], o2[1], 'drug'), why: c.name + 'は探偵の' + det.name + 'を誘惑した。' + det.name + 'は' + c.name + 'を疑いにくくなり、推理が狂いやすくなる', mag: 44 });
+        ST.say(S, { actors: [c, det], tag: '誘惑', kind: 'climax', text: F(ST.pick(S, HK.Pos && HK.Pos.isF(o2[0]) && !HK.Pos.isF(o2[1]) ? (o2[0] === c ? SEDUCE_FMC : SEDUCE_FMD) : o2[0] === c ? PLF('seduceTop', SEDUCE_TOP, c, det) : PLF('seduce', SEDUCE, c, det)), { c: c.name, d: det.name }) + SX(S, o2[0], o2[1], 'drug'), why: c.name + 'は探偵の' + det.name + 'を誘惑した。' + det.name + 'は' + c.name + 'を疑いにくくなり、推理が狂いやすくなる', mag: 44 });
         c.m.sus = Math.max(0, c.m.sus - 25); det.seduced = true; S.fake++;
         Y.setRel(S, c, det, 0.25, '誘惑', c); drunk.splice(drunk.indexOf(det), 1);
       }

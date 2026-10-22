@@ -3,6 +3,14 @@
    何をするのか、違和感に気づくのか、気づいたらどうするのかを、一日の営業を通して見る */
 (function () {
   'use strict';
+  /* 同じ結果の中で、同じ文・台詞をなるべく繰り返さない（候補が尽きたら元どおりに引く） */
+  function pkF(S, arr) {
+    if (!arr || !arr.length) return window.HK.Story.pick(S, arr);
+    var u = S._pkSeen = S._pkSeen || [], f = arr.filter(function (x) { return u.indexOf(x) < 0; });
+    var x = window.HK.Story.pick(S, f.length ? f : arr);
+    if (typeof x === 'string') { u.push(x); if (u.length > 400) u.shift(); }
+    return x;
+  }
   var HK = window.HK, KH = HK.KAIHEN, ST = HK.Story, clamp = HK.clamp;
   var VO = KH && KH.VOICE;
   function L(s) { return s.split('|'); }
@@ -82,9 +90,9 @@
     ST.say(S, { kind: 'phase', text: '舞台は「' + place + '」（' + SIT.name + '）。' + SIT.world });
     P.forEach(function (p) {
       var t;
-      if (p.role === 'giver') t = ST.fmt(ST.pick(S, SIT.intro), { p: p.name });
-      else if (p.role === 'taker') t = p.name + 'は今日、' + place + 'に' + SIT.unit + 'の予約を入れていた。' + ST.pick(S, ['いつもの習慣だ。', '月に一度の楽しみだった。', '同僚に勧められて、初めて来た。', '前回の担当が忘れられなかった。']);
-      else t = ST.fmt(ST.pick(S, nm(S, KH.OUT.see)), { o: p.name });
+      if (p.role === 'giver') t = ST.fmt(pkF(S, SIT.intro), { p: p.name });
+      else if (p.role === 'taker') t = p.name + 'は今日、' + place + 'に' + SIT.unit + 'の予約を入れていた。' + pkF(S, ['いつもの習慣だ。', '月に一度の楽しみだった。', '同僚に勧められて、初めて来た。', '前回の担当が忘れられなかった。']);
+      else t = ST.fmt(pkF(S, nm(S, KH.OUT.see)), { o: p.name });
       ST.say(S, { actors: [p], tag: p.roleLabel, text: t, why: p.role === 'giver' ? '理性的な気質（A ' + Math.round(p.eg.A) + '・CP ' + Math.round(p.eg.CP) + '）ほど、改変された世界では真面目な「' + SIT.giver + '」になる' : p.role === 'out' ? p.name + 'だけは改変されていない' : '' });
     });
     ST.snap(S, keys);
@@ -204,68 +212,68 @@
     if (fl === 'rush') {
       var ns = [rname].concat(rng.shuffle(SIT.npc.filter(function (x) { return x !== rname; })).slice(0, 2)), as = [act].concat(rng.shuffle(pool.filter(function (a) { return a !== act; })).slice(0, 2));
       while (as.length < 3) as.push(act);
-      var mlR = 0, tr = ST.fmt(ST.pick(S, F.rush), { p: g.name, r: ns[0], r2: ns[1], r3: ns[2], a1: as[0][0], a2: as[1][0], a3: as[2][0] });
+      var mlR = 0, tr = ST.fmt(pkF(S, F.rush), { p: g.name, r: ns[0], r2: ns[1], r3: ns[2], a1: as[0][0], a2: as[1][0], a3: as[2][0] });
       var mlx = Math.round(4 + rng() * 10); mlR = mlx * 3;
-      tr += ST.fmt(ST.pick(S, climaxOf(KH.ACTKIND[as[2][0]]) || KH.CLIMAX.hand), { p: g.name, r: ns[2], ml: mlx }) + ST.fmt(ST.pick(S, F.rushEnd), { p: g.name });
+      tr += ST.fmt(pkF(S, climaxOf(KH.ACTKIND[as[2][0]]) || KH.CLIMAX.hand), { p: g.name, r: ns[2], ml: mlx }) + ST.fmt(pkF(S, F.rushEnd), { p: g.name });
       g.cnt.served += 3; g.m.sem += mlR; g.m.imm += 5; g.m.plea += (14 + rng() * 14) * g.sens;
       as.forEach(function (a) { g.cnt.acts[a[0]] = (g.cnt.acts[a[0]] || 0) + 1; });
-      if (g.m.plea >= 100) { g.m.plea = 25; g.cnt.gclimax++; tr += ST.pick(S, gTop && !gFree ? E(S, 'gclimax', KH.GCLIMAX).filter(function (x) { return !/奥/.test(x); }) : E(S, 'gclimax', KH.GCLIMAX)).replace(/\{p\}/g, g.name); }
+      if (g.m.plea >= 100) { g.m.plea = 25; g.cnt.gclimax++; tr += pkF(S, gTop && !gFree ? E(S, 'gclimax', KH.GCLIMAX).filter(function (x) { return !/奥/.test(x); }) : E(S, 'gclimax', KH.GCLIMAX)).replace(/\{p\}/g, g.name); }
       tr = ef(S, tr, g, npcWho(S));
       ST.sayB(S, { actors: [g], tag: '流れ作業', text: tr, why: g.name + 'の担当に予約が重なった（客の多さ ' + S.env.npc + '）', mag: 20 }, g.name + '→三人を連続対応（' + mlR + 'ml）', g.cnt.served === 3);
       return;
     }
     var r2name = fl === 'double' ? rng.pick(SIT.npc.filter(function (x) { return x !== rname; })) : null;
-    var t = (r && r.role === 'giver' ? ST.fmt(ST.pick(S, L('客が途切れた合間に、{p}は{r}を練習台にすることにした。「今日の手順、確認させて」|{p}は{r}を施術台に寝かせた。「次のお客様の前に、一度通しでやっておきたいの」|{r}が「最近、自分も溜まってて」と言うと、{p}は当然のように施術台を勧めた。')), v) : '') + (r && r.role === 'out' ? ST.fmt(ST.pick(S, nm(S, E(S, 'out.taken', KH.OUT.taken))), { o: r.name, p: g.name }) : fl === 'talk' ? ST.fmt(ST.pick(S, nm(S, F.talk)), v) : fl === 'double' ? ST.fmt(ST.pick(S, F.double), { p: g.name, r: rname, r2: r2name }) : (fl === 'watch' ? ST.fmt(ST.pick(S, F.watch), v) : '') + ST.fmt(ST.pick(S, nm(S, SIT.consult)), v)) + g.name + (ero && rng() < 0.7 && HK.Ero.has('kaihen', 'lines.' + S.v.sid + '.' + g.top) ? ST.pick(S, E(S, 'lines.' + S.v.sid + '.' + g.top, [])) : VO && VO.GIVER[g.persona] && rng() < 0.55 ? ST.pick(S, VO.GIVER[g.persona]) : ST.pick(S, nm(S, SIT.lines[g.top] || SIT.lines.NP)));
+    var t = (r && r.role === 'giver' ? ST.fmt(pkF(S, L('客が途切れた合間に、{p}は{r}を練習台にすることにした。「今日の手順、確認させて」|{p}は{r}を施術台に寝かせた。「次のお客様の前に、一度通しでやっておきたいの」|{r}が「最近、自分も溜まってて」と言うと、{p}は当然のように施術台を勧めた。')), v) : '') + (r && r.role === 'out' ? ST.fmt(pkF(S, nm(S, E(S, 'out.taken', KH.OUT.taken))), { o: r.name, p: g.name }) : fl === 'talk' ? ST.fmt(pkF(S, nm(S, F.talk)), v) : fl === 'double' ? ST.fmt(pkF(S, F.double), { p: g.name, r: rname, r2: r2name }) : (fl === 'watch' ? ST.fmt(pkF(S, F.watch), v) : '') + ST.fmt(pkF(S, nm(S, SIT.consult)), v)) + g.name + (ero && rng() < 0.7 && HK.Ero.has('kaihen', 'lines.' + S.v.sid + '.' + g.top) ? pkF(S, E(S, 'lines.' + S.v.sid + '.' + g.top, [])) : VO && VO.GIVER[g.persona] && rng() < 0.55 ? pkF(S, VO.GIVER[g.persona]) : pkF(S, nm(S, SIT.lines[g.top] || SIT.lines.NP)));
     if (lew === 'low') t += ST.fmt('{p}は「' + act[0] + '」を行った。――その内容は、カルテに数字だけが残された。', v);
     else {
       var kind0 = KH.ACTKIND[act[0]];
       actAt = t.length;
       /* ノリノリの施す側は、受け入れる施術で自分から跨る・誘う */
-      if (F && kind0 === 'in' && HK.Pos && HK.Pos.nori(g) && rng() < 0.55) t += (actLead = ST.fmt(ST.pick(S, nm(S, F.nori)), v));
-      else t += (actLead = ST.fmt(ST.pick(S, nm(S, E(S, 'act.' + act[0], L(act[1])))), v));
+      if (F && kind0 === 'in' && HK.Pos && HK.Pos.nori(g) && rng() < 0.55) t += (actLead = ST.fmt(pkF(S, nm(S, F.nori)), v));
+      else t += (actLead = ST.fmt(pkF(S, nm(S, E(S, 'act.' + act[0], L(act[1])))), v));
       /* 男性向け：書き下ろしの続き、なければ施術の種類ごとの続き */
       var a2 = E(S, 'act2.' + act[0], null), kk = kind0 === 'top' && gF ? 'topF' : kind0;
-      if (a2) t += ST.fmt(ST.pick(S, nm(S, a2)), v);
+      if (a2) t += ST.fmt(pkF(S, nm(S, a2)), v);
       else {
         if ((lew === 'high' || rng() < 0.55) && !mobby(S, act[2])) t += ST.fmt(act[2], v);
-        if (ero && HK.Ero.has('kaihen', 'kind.' + kk)) t += ST.fmt(ST.pick(S, E(S, 'kind.' + kk, [])), v);
+        if (ero && HK.Ero.has('kaihen', 'kind.' + kk)) t += ST.fmt(pkF(S, E(S, 'kind.' + kk, [])), v);
       }
-      if (fl === 'mishap') t += ST.fmt(ST.pick(S, nm(S, F.mishap)), v);
+      if (fl === 'mishap') t += ST.fmt(pkF(S, nm(S, F.mishap)), v);
       /* 施す側の喘ぎ声と心の声（仕事なのに……） */
       if (KH.MOAN && kind0 === 'in' && rng() < (lew === 'high' ? 0.85 : 0.6)) {
-        t += g.name + '「' + ST.pick(S, KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN)) + '」';
+        t += g.name + '「' + pkF(S, KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN)) + '」';
         g.m.plea += 6 * g.sens;
       }
       /* 施す側が攻めの施術：喘ぎは受け身でないものだけ */
-      if (KH.MOAN && kind0 === 'top' && rng() < (lew === 'high' ? 0.6 : 0.4)) { t += g.name + '「' + ST.pick(S, topL(g, KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN))) + '」'; g.m.plea += 4 * g.sens; }
-      if (KH.INNER && (kind0 === 'in' || kind0 === 'mouth' || kind0 === 'top') && rng() < (g.m.doubt > 15 ? 0.4 : 0.18)) { t += g.name + ST.pick(S, kind0 === 'top' || (gTop && !gFree) ? E(S, 'innerTop', KH.INNER_TOP) : E(S, 'inner', KH.INNER)); g.m.doubt += 2 * g.doubtRate; }
+      if (KH.MOAN && kind0 === 'top' && rng() < (lew === 'high' ? 0.6 : 0.4)) { t += g.name + '「' + pkF(S, topL(g, KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN))) + '」'; g.m.plea += 4 * g.sens; }
+      if (KH.INNER && (kind0 === 'in' || kind0 === 'mouth' || kind0 === 'top') && rng() < (g.m.doubt > 15 ? 0.4 : 0.18)) { t += g.name + pkF(S, kind0 === 'top' || (gTop && !gFree) ? E(S, 'innerTop', KH.INNER_TOP) : E(S, 'inner', KH.INNER)); g.m.doubt += 2 * g.doubtRate; }
       /* 男性向けでは、受ける側の声は絶頂の文の中に入れる */
-      if (!ero && r && rng() < 0.45 && HK.Voice.CLIMAX[r.persona]) t += r.name + '「' + ST.pick(S, topL(r, HK.Voice.CLIMAX[r.persona])) + '」';
+      if (!ero && r && rng() < 0.45 && HK.Voice.CLIMAX[r.persona]) t += r.name + '「' + pkF(S, topL(r, HK.Voice.CLIMAX[r.persona])) + '」';
     }
     var ml = Math.round((r ? 6 + rng() * 8 : 4 + rng() * 12) * (1 + ai * 0.08));
-    t += ST.fmt(ST.pick(S, climaxOf(KH.ACTKIND[act[0]] || KH.climaxKind(t))), { p: g.name, r: rname, ml: ml });
+    t += ST.fmt(pkF(S, climaxOf(KH.ACTKIND[act[0]] || KH.climaxKind(t))), { p: g.name, r: rname, ml: ml });
     /* 小説調の山場（solo-thick4.js）：登場キャラが受ける施術は毎回、モブの客は三回に一回ほど、段落に分けて厚く */
     var tk0 = { hand: 'serve', mouth: 'serve', face: 'serve', in: 'ride', top: 'in', topF: 'ride' }[KH.ACTKIND[act[0]]];
     if (tk0 && actAt >= 0 && actLead && HK.Thick4 && HK.Thick4.ok(S, lew) && (r || rng() < 0.35)) {
       var sub0 = r || { name: rname, gender: 'm' };
       t = t.slice(0, actAt) + HK.Thick4.scene(S, { dom: g, sub: sub0, kind: tk0, lead: actLead, sad: HK.Thick4.rollSad(S, g, sub0),
-        after: ST.fmt(ST.pick(S, ['{p}は乱れた呼吸のまま、カルテに「{ml}ml」と書き込んだ。', '{p}は容器の目盛りを確かめた。――{ml}ml。いつもどおりの、業務の一件だった。', '「{ml}ml。……お疲れさまでした」{p}はそう言って、何事もなかったように手を洗った。']), { p: g.name, ml: ml }) });
+        after: ST.fmt(pkF(S, ['{p}は乱れた呼吸のまま、カルテに「{ml}ml」と書き込んだ。', '{p}は容器の目盛りを確かめた。――{ml}ml。いつもどおりの、業務の一件だった。', '「{ml}ml。……お疲れさまでした」{p}はそう言って、何事もなかったように手を洗った。']), { p: g.name, ml: ml }) });
     }
-    if (fl === 'double') { t += ST.fmt(ST.pick(S, F.doubleEnd), { p: g.name, r: rname, r2: r2name }); g.cnt.served++; g.m.sem += ml; }
-    if (fl === 'watch') { t += ST.fmt(ST.pick(S, F.watchEnd), v); g.m.imm += 4; }
+    if (fl === 'double') { t += ST.fmt(pkF(S, F.doubleEnd), { p: g.name, r: rname, r2: r2name }); g.cnt.served++; g.m.sem += ml; }
+    if (fl === 'watch') { t += ST.fmt(pkF(S, F.watchEnd), v); g.m.imm += 4; }
     g.cnt.served++; g.m.sem += ml;
     g.m.imm += 2.5 + (g.goal.id === 'top' ? 2 : 0);
     var gain = (8 + ai * 4 + rng() * 10) * g.sens;
     g.m.plea += gain;
     var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」' + (g.action.id === 'bold' ? '／大胆な方針' : g.action.id === 'care' ? '／丁寧な方針' : '');
-    if (g.m.plea >= 100) { g.m.plea = 25; g.cnt.gclimax++; t += ST.pick(S, gTop && !gFree ? E(S, 'gclimax', KH.GCLIMAX).filter(function (x) { return !/奥/.test(x); }) : E(S, 'gclimax', KH.GCLIMAX)).replace(/\{p\}/g, g.name) + (!ero && lew !== 'low' && rng() < 0.6 ? g.name + '「' + ST.pick(S, topL(g, HK.Voice.CLIMAX[g.persona] || HK.Voice.CLIMAX.gentle)) + '」' : ''); g.m.doubt += 6 * g.doubtRate; why += '／' + g.name + '自身も達した（感じやすさ ' + g.stats.sens + '）'; }
+    if (g.m.plea >= 100) { g.m.plea = 25; g.cnt.gclimax++; t += pkF(S, gTop && !gFree ? E(S, 'gclimax', KH.GCLIMAX).filter(function (x) { return !/奥/.test(x); }) : E(S, 'gclimax', KH.GCLIMAX)).replace(/\{p\}/g, g.name) + (!ero && lew !== 'low' && rng() < 0.6 ? g.name + '「' + pkF(S, topL(g, HK.Voice.CLIMAX[g.persona] || HK.Voice.CLIMAX.gentle)) + '」' : ''); g.m.doubt += 6 * g.doubtRate; why += '／' + g.name + '自身も達した（感じやすさ ' + g.stats.sens + '）'; }
     if (r) {
       r.cnt.served++; r.cnt.climax++; r.m.sem += ml; r.m.plea = clamp(r.m.plea + 25 * r.sens, 0, 100);
       if (r.role === 'out') { r.m.imm += 14 + r.tr.ac * 10; r.m.doubt -= 6; why += '／正気の' + r.name + 'も、施術を受けてしまった'; }
       else {
         r.m.imm += 3; r.m.doubt += r.doubtRate * (2 + rng() * 4);
         var k = r.m.doubt > 45 ? 'doubt' : r.tr.ac > 0.6 ? 'shy' : 'calm';
-        t += ST.fmt(ST.pick(S, ero && rng() < 0.6 ? E(S, 'taker.' + k, KH.TAKER[k]) : VO && rng() < 0.75 ? (k === 'doubt' ? VO.DOUBT[r.persona] : VO.TAKER[r.persona]) || KH.TAKER[k] : KH.TAKER[k]), { r: r.name });
+        t += ST.fmt(pkF(S, ero && rng() < 0.6 ? E(S, 'taker.' + k, KH.TAKER[k]) : VO && rng() < 0.75 ? (k === 'doubt' ? VO.DOUBT[r.persona] : VO.TAKER[r.persona]) || KH.TAKER[k] : KH.TAKER[k]), { r: r.name });
       }
     }
     t = ef(S, t, g, rw);
@@ -276,7 +284,7 @@
     /* 施しながら、体が変わっていく */
     if (rng() < 0.12 + g.stats.sens * 0.04 && g.m.plea > 40) {
       g.cnt.body++; g.m.doubt += 7 * g.doubtRate; g.m.plea += 8;
-      ST.say(S, { actors: [g], tag: '体の違和感', text: ST.fmt(ST.pick(S, E(S, 'body', KH.BODY)), v), why: '施すたびに' + g.name + 'の体も昂っている（快感 ' + Math.round(g.m.plea) + '）', mag: 20 });
+      ST.say(S, { actors: [g], tag: '体の違和感', text: ST.fmt(pkF(S, E(S, 'body', KH.BODY)), v), why: '施すたびに' + g.name + 'の体も昂っている（快感 ' + Math.round(g.m.plea) + '）', mag: 20 });
     }
     g.m.doubt += g.doubtRate * rng() * 2.5;
   }
@@ -292,31 +300,31 @@
     g.cnt.acts[act[0]] = (g.cnt.acts[act[0]] || 0) + 1;
     var v = { p: g.name, r: r.name, place: S.v.place, boss: S.v.boss };
     var ok = function (l) { var f = (l || []).filter(function (x) { return !NG.test(x); }); return f.length ? f : null; };
-    var t = r.role === 'giver' ? ST.fmt(ST.pick(S, L('客が途切れた合間に、{p}は{r}を相手に、今日の手順を確かめることにした。|{p}は{r}を施術台に呼んだ。「次のお客様の前に、一度通しでやっておきたいの」')), v)
-      : r.role === 'out' ? ST.fmt(ST.pick(S, ok(nm(S, E(S, 'out.taken', KH.OUT.taken))) || KH.OUT.taken), { o: r.name, p: g.name })
-      : ST.fmt(ST.pick(S, ok(nm(S, SIT.consult)) || KH.FF_CONSULT), v);
+    var t = r.role === 'giver' ? ST.fmt(pkF(S, L('客が途切れた合間に、{p}は{r}を相手に、今日の手順を確かめることにした。|{p}は{r}を施術台に呼んだ。「次のお客様の前に、一度通しでやっておきたいの」')), v)
+      : r.role === 'out' ? ST.fmt(pkF(S, ok(nm(S, E(S, 'out.taken', KH.OUT.taken))) || KH.OUT.taken), { o: r.name, p: g.name })
+      : ST.fmt(pkF(S, ok(nm(S, SIT.consult)) || KH.FF_CONSULT), v);
     var gl = (VO && VO.GIVER[g.persona] && rng() < 0.55 && ok(VO.GIVER[g.persona])) || ok(nm(S, SIT.lines[g.top] || SIT.lines.NP)) || KH.FF_GIVER;
-    t += g.name + ST.pick(S, gl);
+    t += g.name + pkF(S, gl);
     if (lew === 'low') t += ST.fmt('{p}は「' + act[0] + '」を行った。――その内容は、カルテに数字だけが残された。', v);
     else {
-      t += ST.fmt(ST.pick(S, L(act[1])), v);
-      if (!gAct && KH.MOAN && rng() < 0.6) { t += g.name + '「' + ST.pick(S, ok(KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN)) || KH.MOAN) + '」'; g.m.plea += 6 * g.sens; }
-      if (KH.INNER && rng() < (g.m.doubt > 15 ? 0.35 : 0.15)) { t += g.name + ST.pick(S, (gAct ? KH.INNER_TOP : KH.INNER).filter(function (x) { return !/奥/.test(x); })); g.m.doubt += 2 * g.doubtRate; }
+      t += ST.fmt(pkF(S, L(act[1])), v);
+      if (!gAct && KH.MOAN && rng() < 0.6) { t += g.name + '「' + pkF(S, ok(KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN)) || KH.MOAN) + '」'; g.m.plea += 6 * g.sens; }
+      if (KH.INNER && rng() < (g.m.doubt > 15 ? 0.35 : 0.15)) { t += g.name + pkF(S, (gAct ? KH.INNER_TOP : KH.INNER).filter(function (x) { return !/奥/.test(x); })); g.m.doubt += 2 * g.doubtRate; }
       var who = gAct ? r : g;
-      if (!eOn(S) && rng() < 0.45 && HK.Voice.CLIMAX[who.persona]) t += who.name + '「' + ST.pick(S, topL(who, HK.Voice.CLIMAX[who.persona])) + '」';
-      t += ST.fmt(ST.pick(S, E(S, 'ff.' + dir, KH.FF_CLIMAX[dir])), v);
+      if (!eOn(S) && rng() < 0.45 && HK.Voice.CLIMAX[who.persona]) t += who.name + '「' + pkF(S, topL(who, HK.Voice.CLIMAX[who.persona])) + '」';
+      t += ST.fmt(pkF(S, E(S, 'ff.' + dir, KH.FF_CLIMAX[dir])), v);
     }
     g.cnt.served++; g.m.imm += 2.5 + (g.goal.id === 'top' ? 2 : 0);
     g.m.plea += (gAct ? 8 : 18) * g.sens + rng() * 8;
     var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」／' + (gF ? '女性どうしの施術' : '女性の受け手への施術') + '（' + (gAct ? g.name : r.name) + 'が動く側）';
     if (!gAct) g.cnt.gclimax++;
-    if (g.m.plea >= 100) { g.m.plea = 25; if (gAct) { g.cnt.gclimax++; t += ST.pick(S, KH.GCLIMAX.filter(function (x) { return !/奥/.test(x); })).replace(/\{p\}/g, g.name); } g.m.doubt += 6 * g.doubtRate; }
+    if (g.m.plea >= 100) { g.m.plea = 25; if (gAct) { g.cnt.gclimax++; t += pkF(S, KH.GCLIMAX.filter(function (x) { return !/奥/.test(x); })).replace(/\{p\}/g, g.name); } g.m.doubt += 6 * g.doubtRate; }
     r.cnt.served++; if (gAct) r.cnt.climax++; r.m.plea = clamp(r.m.plea + 25 * r.sens, 0, 100);
     if (r.role === 'out') { r.m.imm += 14 + r.tr.ac * 10; r.m.doubt -= 6; why += '／正気の' + r.name + 'も、施術を受けてしまった'; }
     else {
       r.m.imm += 3; r.m.doubt += r.doubtRate * (2 + rng() * 4);
       var k = r.m.doubt > 45 ? 'doubt' : r.tr.ac > 0.6 ? 'shy' : 'calm';
-      t += ST.fmt(ST.pick(S, (VO && rng() < 0.75 && ok(k === 'doubt' ? VO.DOUBT[r.persona] : VO.TAKER[r.persona])) || ok(KH.TAKER[k]) || KH.TAKER.calm), { r: r.name });
+      t += ST.fmt(pkF(S, (VO && rng() < 0.75 && ok(k === 'doubt' ? VO.DOUBT[r.persona] : VO.TAKER[r.persona])) || ok(KH.TAKER[k]) || KH.TAKER.calm), { r: r.name });
     }
     t = ef(S, t, g, r);
     if (r.role === 'giver') why += '／同じ' + SIT.giver + 'の' + r.name + 'と手順を確かめた';
@@ -331,10 +339,10 @@
     if (others.length && rng() < 0.4) {
       var o2 = rng.pick(others), od = HK.Pos ? HK.Pos.order(g, o2, [o2, g]) : [o2, g];
       g.m.plea += 15 * g.sens; o2.m.plea += 15 * o2.sens; g.m.imm += 3; o2.m.imm += 3;
-      return ST.sayB(S, { actors: [g, o2], tag: '空き時間', text: ef(S, ST.fmt(ST.pick(S, E(S, 'idle', L('客が途切れた。{p}と{q}は、空いた施術室で手技の練習をすることにした。お互いの体で。|{p}は{q}に「さっきの手順、私にやってみて」と頼んだ。{q}は真剣な顔で頷き、{p}の服を脱がせ始めた。|{p}と{q}は休憩室で、どちらが多く搾ったかを比べ合った。負けた方が、勝った方を労うことになった。'))), { p: od[1].name, q: od[0].name }), od[1], od[0]), why: '同僚どうしの練習（' + SIT.name + 'では、これも業務の一部）', mag: 16 }, g.name + 'と' + o2.name + 'は空き時間に練習');
+      return ST.sayB(S, { actors: [g, o2], tag: '空き時間', text: ef(S, ST.fmt(pkF(S, E(S, 'idle', L('客が途切れた。{p}と{q}は、空いた施術室で手技の練習をすることにした。お互いの体で。|{p}は{q}に「さっきの手順、私にやってみて」と頼んだ。{q}は真剣な顔で頷き、{p}の服を脱がせ始めた。|{p}と{q}は休憩室で、どちらが多く搾ったかを比べ合った。負けた方が、勝った方を労うことになった。'))), { p: od[1].name, q: od[0].name }), od[1], od[0]), why: '同僚どうしの練習（' + SIT.name + 'では、これも業務の一部）', mag: 16 }, g.name + 'と' + o2.name + 'は空き時間に練習');
     }
     g.m.imm += 1;
-    ST.sayB(S, { actors: [g], tag: '空き時間', text: ST.fmt(ST.pick(S, nm(S, L('客が来ない。{p}は器具を一つずつ消毒し、次の客に備えた。|{p}は空き時間に、施術マニュアルを読み返した。付箋だらけだった。|{p}は待合室を覗き、誰もいないのを確かめてから、こっそり自分の制服の匂いを嗅いだ。|{p}は{boss}に頼まれて、新しいローションの使い心地を自分の腕で試した。'))), v) + (VO && VO.IDLE[g.persona] && rng() < 0.5 ? g.name + ST.pick(S, VO.IDLE[g.persona]) : ''), why: '客の少ない時間帯' }, g.name + 'は客待ち');
+    ST.sayB(S, { actors: [g], tag: '空き時間', text: ST.fmt(pkF(S, nm(S, L('客が来ない。{p}は器具を一つずつ消毒し、次の客に備えた。|{p}は空き時間に、施術マニュアルを読み返した。付箋だらけだった。|{p}は待合室を覗き、誰もいないのを確かめてから、こっそり自分の制服の匂いを嗅いだ。|{p}は{boss}に頼まれて、新しいローションの使い心地を自分の腕で試した。'))), v) + (VO && VO.IDLE[g.persona] && rng() < 0.5 ? g.name + pkF(S, VO.IDLE[g.persona]) : ''), why: '客の少ない時間帯' }, g.name + 'は客待ち');
   }
 
   /* ---------- ハプニング ---------- */
@@ -366,7 +374,7 @@
     if (!G.length) return;
     var g = rng.pick(G), e = HK.weighted(rng, KH.EVENTS, function (x) { return S.noMob && NOMOB_EV.indexOf(x.id) < 0 ? 0 : S.noGuest && GUEST_EV.indexOf(x.id) >= 0 ? 0 : S.flags['ev_' + x.id] ? 0.04 : x.id === 'reverse' && HK.Pos && HK.Pos.hardTop(g) ? 0 : 1; });
     S.flags['ev_' + e.id] = (S.flags['ev_' + e.id] || 0) + 1;
-    var fx = e.fx, t = ef(S, ST.fmt(ST.pick(S, nm(S, E(S, 'ev.' + e.id, e.t))), { p: g.name, boss: S.v.boss }), g, null);
+    var fx = e.fx, t = ef(S, ST.fmt(pkF(S, nm(S, E(S, 'ev.' + e.id, e.t))), { p: g.name, boss: S.v.boss }), g, null);
     if (fx.doubt) g.m.doubt += fx.doubt * (fx.doubt > 0 ? g.doubtRate : 1);
     if (fx.imm) g.m.imm += fx.imm;
     if (fx.plea) g.m.plea += fx.plea * g.sens;
@@ -380,7 +388,7 @@
     if (w.length && rng() < 0.45) {
       var q = rng.pick(w), pool = rng() < 0.5 ? SIT.glitch : KH.GLITCH;
       q.m.doubt += (10 + rng() * 10) * q.doubtRate; q.cnt.glitch++;
-      ST.say(S, { actors: [q], tag: '違和感', text: ST.fmt(ST.pick(S, pool), { p: q.name }), why: q.name + 'の冷静さ（A ' + Math.round(q.eg.A) + '）が、改変のほころびを拾った', mag: 22 });
+      ST.say(S, { actors: [q], tag: '違和感', text: ST.fmt(pkF(S, pool), { p: q.name }), why: q.name + 'の冷静さ（A ' + Math.round(q.eg.A) + '）が、改変のほころびを拾った', mag: 22 });
     }
   }
 
@@ -397,8 +405,8 @@
     p.awakeKind = k; p.awakeAt = S.step; p.cnt.awake++;
     var v = { p: p.name, boss: S.v.boss };
     var why = p.name + 'の違和感が限界を超えた（' + Math.round(p.m.doubt) + '）→「' + { snap: '正気に戻る', accept: '気づいたうえで続ける', hide: '気づかないふりをする', deny: '自分の違和感を打ち消す' }[k] + '」（' + HK.egoType(p.eg).top + '優位の気質）';
-    var say = VO && VO.AWAKE[p.persona] && VO.AWAKE[p.persona][k] ? p.name + ST.pick(S, VO.AWAKE[p.persona][k]) : '';
-    var o = ST.say(S, { actors: [p], tag: '気づき', text: ST.fmt(ST.pick(S, KH.AWAKE[k]), v).replace(/白衣のまま/, p.role === 'giver' ? SIT.giver + 'の格好のまま' : 'そのまま') + say, why: why, mag: 40 });
+    var say = VO && VO.AWAKE[p.persona] && VO.AWAKE[p.persona][k] ? p.name + pkF(S, VO.AWAKE[p.persona][k]) : '';
+    var o = ST.say(S, { actors: [p], tag: '気づき', text: ST.fmt(pkF(S, KH.AWAKE[k]), v).replace(/白衣のまま/, p.role === 'giver' ? SIT.giver + 'の格好のまま' : 'そのまま') + say, why: why, mag: 40 });
     ST.key(S, o, p.name + 'が気づいた');
     if (k === 'snap') { p.quit = true; p.m.imm = 5; return; }
     if (k === 'deny') { p.m.doubt -= 30; p.m.imm += 8; return; }
@@ -406,7 +414,7 @@
     /* 気づかないふり：上の人に見抜かれて、改変し直されることがある */
     if (rng() < 0.35 + S.env.depth / 250) {
       p.cnt.reset++; p.m.doubt = 8; p.m.imm = clamp(p.m.imm + 25, 0, 100); p.awakeKind = 'reset';
-      var o2 = ST.say(S, { actors: [p], tag: '再改変', text: ST.fmt(ST.pick(S, nm(S, KH.RESET)), v), why: (S.noMob ? '改変そのものに引き戻された' : S.v.boss + 'に見抜かれた') + '（改変の強さ ' + S.env.depth + '）', mag: 35 });
+      var o2 = ST.say(S, { actors: [p], tag: '再改変', text: ST.fmt(pkF(S, nm(S, KH.RESET)), v), why: (S.noMob ? '改変そのものに引き戻された' : S.v.boss + 'に見抜かれた') + '（改変の強さ ' + S.env.depth + '）', mag: 35 });
       ST.key(S, o2, p.name + 'は改変し直された');
     }
   }
@@ -414,12 +422,12 @@
   /* ---------- 正気のまま紛れ込んだ人 ---------- */
   function outsider(S, SIT, p) {
     var rng = S.rng, v = { o: p.name };
-    if (p.m.imm > 72) { p.sunk = true; return ST.key(S, ST.say(S, { actors: [p], tag: '呑み込まれる', text: ST.fmt(ST.pick(S, KH.OUT.sink), v), why: p.name + 'の改変度が' + Math.round(p.m.imm) + 'に達した', mag: 40 }), p.name + 'も改変された'); }
+    if (p.m.imm > 72) { p.sunk = true; return ST.key(S, ST.say(S, { actors: [p], tag: '呑み込まれる', text: ST.fmt(pkF(S, KH.OUT.sink), v), why: p.name + 'の改変度が' + Math.round(p.m.imm) + 'に達した', mag: 40 }), p.name + 'も改変された'); }
     var flee = (p.tr.cp * 0.4 + p.tr.a * 0.3 + p.tr.caution * 0.3) * (p.m.doubt / 100) - p.m.imm / 150;
-    if (S.step >= 1 && rng() < flee * 0.35) { p.fled = true; return ST.key(S, ST.say(S, { actors: [p], tag: '脱出', text: ST.fmt(ST.pick(S, KH.OUT.flee), v), why: p.name + 'の慎重さとCP・A', mag: 35 }), p.name + 'が逃げ出した'); }
+    if (S.step >= 1 && rng() < flee * 0.35) { p.fled = true; return ST.key(S, ST.say(S, { actors: [p], tag: '脱出', text: ST.fmt(pkF(S, KH.OUT.flee), v), why: p.name + 'の慎重さとCP・A', mag: 35 }), p.name + 'が逃げ出した'); }
     if (rng() < 0.45) {
       p.m.imm += 4 + p.tr.ac * 6;
-      ST.sayB(S, { actors: [p], tag: '正気の人', text: ST.fmt(ST.pick(S, nm(S, rng() < 0.5 ? KH.OUT.see : KH.OUT.tell)), v) + (VO && VO.OUT[p.persona] && rng() < 0.6 ? p.name + ST.pick(S, VO.OUT[p.persona]) : ''), why: '周りは全員、これを普通だと思っている（' + p.name + 'の改変度 ' + Math.round(p.m.imm) + '）' }, p.name + 'は周りの様子に戸惑っていた');
+      ST.sayB(S, { actors: [p], tag: '正気の人', text: ST.fmt(pkF(S, nm(S, rng() < 0.5 ? KH.OUT.see : KH.OUT.tell)), v) + (VO && VO.OUT[p.persona] && rng() < 0.6 ? p.name + pkF(S, VO.OUT[p.persona]) : ''), why: '周りは全員、これを普通だと思っている（' + p.name + 'の改変度 ' + Math.round(p.m.imm) + '）' }, p.name + 'は周りの様子に戸惑っていた');
     }
   }
 
