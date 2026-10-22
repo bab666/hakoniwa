@@ -108,6 +108,15 @@
   var POSSESS_REV = L('夜半、{y}が{x}の部屋に入ってきた。目が、{y}のものではなかった。「神さまに、捧げなきゃ」――のしかかろうとする{y}の手首を、{x}は掴んで布団に組み伏せた。正気に引き戻すように、{x}は{y}を荒々しく抱いた。|虚ろな目の{y}が、{x}の布団に這い込んできた。{x}は{y}の両手首をひとまとめに押さえつけ、名前を呼び続けながら、{y}の体に神ではなく自分を刻み込んでいった。');
   /* イゴーロナク：荒々しく */
   var YGO_SEX = L('{x}は{y}の髪を掴み、布団に押し伏せた。抑えていたものが、掌の口さまに引きずり出されていた。{y}が泣いても、{x}は止まらなかった。そして{y}も、どこかでそれを望んでいた。|{x}の掌の口が、{y}の肌を噛んだ。痛みと快楽の区別がつかなくなるまで、{x}は{y}を責め続けた。');
+  /* 配信者：配信を切り忘れて、夜のことがそのまま流れてしまう（{s}=配信者、{o}=相手） */
+  var STREAM_LEAK = L('――翌朝、{s}はスマホを見て青ざめた。配信は、切れていなかった。部屋の隅に置いたままのカメラが、夜通し二人を映し続けていた。同時接続は、過去最高の数字を記録していた。|――{s}の配信は、ずっと点いたままだった。コメント欄は「え」「待って」「これ大丈夫？」で埋まり、やがて「保存した」「切り抜き班はよ」が並んだ。|――翌朝、{s}のチャンネルには見たことのない数の通知が届いていた。切り抜きが、もう出回っていた。{o}は、しばらく{s}と目を合わせようとしなかった。|――{s}の胸元のアクションカメラは、赤いランプを点けたまま、一部始終を配信し続けていた。{s}がそれに気づいたのは、すべてが終わったあとだった。');
+  /* 配信者：夜這いの村人に、自分の機材でハメ撮りされる（受ける側のときだけ） */
+  var HAME = L('村人は、枕元に転がっていた{a}のカメラを拾い上げ、レンズを{a}に向けた。「いつもこれで撮ってるんだろ」――{a}の乱れた姿は、{a}自身の機材で、余すところなく記録された。|村人の一人が、{a}の自撮り棒にスマホを付けて、ずっと撮り続けていた。「撮れ高ってやつだ」――村人たちは笑った。|事が済むと、村人は{a}のスマホを取り上げ、撮ったばかりの動画を{a}の配信アカウントに上げようとした。{a}は泣きながら、それを止めた。|村人は{a}のカメラを三脚に据え、録画の赤いランプが点いたのを確かめてから、{a}にのしかかった。「祭りの記録だ。神さまにも見せねばならん」');
+  function streamAfter(S, p, o, recv) {
+    var rng = S.rng;
+    if (recv && rng() < 0.5) { p.m.fear = Math.min(100, p.m.fear + 10); p.hame = true; ST.say(S, { actors: [p], tag: 'ハメ撮り', text: ST.fmt(ST.pick(S, HAME), { a: p.name }), why: p.name + '（配信者）は、自分の機材で村人に撮られてしまった（恐怖 +10）', mag: 22 }); return; }
+    if (rng() < 0.4) { p.leak = true; ST.say(S, { actors: [p], tag: '配信事故', text: ST.fmt(ST.pick(S, STREAM_LEAK), { s: p.name, o: o }), why: p.name + '（配信者）は配信を切り忘れていた', mag: 22 }); }
+  }
   /* ドッキリだと思い込んだ大物 */
   var PRANK = L('夜這いに来た村人を、{a}は「仕掛け人さん、体張りますねえ」と笑って迎え入れた。それがドッキリでないと気づいたのは、奥まで貫かれてからだった。|{a}は「これ、誰の仕込み？」と囁きながら、村人に身を任せた。仕掛け人は、どこにもいなかった。');
   /* 洞窟の中で（クライマックス） */
@@ -193,7 +202,9 @@
         var t = ST.fmt(ST.pick(S, rough ? YGO_SEX : isFF(X, Y) ? MUTUAL_FF : MUTUAL), { x: X.name, y: Y.name }) + pairSex(S, X, Y, { mood: rough ? 'rough' : p.aphro || q.aphro ? 'drug' : 'love', fore: false });
         if (rng() < 0.5 + lv * 0.3) { Y.preg = true; t += ST.fmt(ST.pick(S, PREG), { y: Y.name }); }
         p.m.fear = Math.max(0, p.m.fear - 8); q.m.fear = Math.max(0, q.m.fear - 8);
+        var strm = [X, Y].filter(function (c) { return c.job === 'streamer'; })[0];
         ST.say(S, { actors: [X, Y], tag: '夜', kind: 'climax', text: t, why: '媚薬の熱と恐怖で、参加者どうしで交わった' + (HK.R18M && HK.R18M.lastPos(S) ? '（' + HK.R18M.lastPos(S) + '）' : '') + (Y.preg ? '（' + Y.name + 'が疑似妊娠した：生贄にされると巫女になりやすい）' : ''), mag: 30 });
+        if (strm) streamAfter(S, strm, strm === X ? Y.name : X.name, false);
         return true;
       }
       /* 村人の夜這い */
@@ -207,6 +218,7 @@
       }
       if (!top && rng() < 0.3 + lv * 0.3) p.preg = true;
       ST.say(S, { actors: [p], tag: '夜這い', kind: 'climax', text: (function () { var M = HK.R18M, ma = { a: p.name }; if (!M) return ST.fmt(ST.pick(S, top ? YOBAI_TOP : YOBAI), ma); if (top) return ST.fmt(ST.pick(S, HK.Pos && HK.Pos.isF(p) ? YOBAI_TOP_F : YOBAI_TOP), ma) + M.say(S, p, 'top') + ST.fmt(ST.pick(S, YOBAI_TOP_NPC), ma) + (HK.Pos && HK.Pos.isF(p) ? '' : M.say(S, p, 'topc')); if (!p.aphro || M.isStrong(p)) return ST.fmt(ST.pick(S, YOBAI_FORCE), ma) + M.resist(S, { name: '村の男' }, p, { endure: false }) + ST.fmt(ST.pick(S, YOBAI_ACT), ma) + M.say(S, p, 'endure'); return ST.fmt(ST.pick(S, YOBAI), ma) + M.npc(S, 'villager') + M.moans(S, p, ['start', 'mid', 'climax']); })() + (p.preg && !top ? ST.fmt(ST.pick(S, PREG), { y: p.name }) : ''), why: '村人の夜這い' + (p.aphro ? '（媚薬で抗えなかった）' : ''), mag: 26 });
+      if (p.job === 'streamer') streamAfter(S, p, '村人', !top);
       return true;
     },
     /* 洞窟の中で（クライマックス） */
