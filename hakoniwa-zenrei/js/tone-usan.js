@@ -46,7 +46,7 @@
       if (/(?:の|ん)$/.test(s)) return s.replace(/(?:の|ん)$/, 'のかい');
       /* 真意を聞き返す問い（「本気で言ってる？」「褒めてる？」）は「〜のかい？」 */
       if (/(?:言って|褒めて|ほめて|思って|考えて|からかって|ふざけて)る$/.test(s)) return s + 'のかい';
-      if (/だ$/.test(s)) return s.replace(/だ$/, 'かい');
+      if (/(?<![まやだ])だ$/.test(s)) return s.replace(/だ$/, 'かい');
       if (/[一-鿿ァ-ヶー]$/.test(s) && s.length >= 2) return s + 'かい';
       if (PLAIN_END.test(s) || /ない$/.test(s)) return s + 'かい';
       return s;
