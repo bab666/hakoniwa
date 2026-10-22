@@ -36,7 +36,7 @@
     this.chars = input.chars.map(function (c, i) {
       var pc = (input.perChar && input.perChar[i]) || {};
       return {
-        i: i, name: c.name, eg: c.eg, tr: HK.traits(c.eg), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', lock: c.loveLock == null || c.loveLock === '' || isNaN(+c.loveLock) ? null : +c.loveLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null,
+        i: i, name: c.name, eg: c.eg, tr: HK.traits(c.eg), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', lock: c.loveLock == null || c.loveLock === '' || isNaN(+c.loveLock) ? null : +c.loveLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null,
         hp: 100, alive: true, out: false, stress: 0,
         stats: {}, statsRaw: pc.stats || {}, weaponPick: pc.weapon || 'random',
         actionPick: pc.action || 'auto', goalPick: pc.goal || 'auto', role: pc.role || '', pick: pc.pick || {},

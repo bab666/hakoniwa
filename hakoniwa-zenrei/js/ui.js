@@ -40,7 +40,7 @@
   ].map(function (c) { return { name: c.name, eg: HK.fromCode(c.code), memo: c.memo }; });
 
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', color: c.color || '', loveLock: c.loveLock || '', call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {} }; }
+  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {} }; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -61,6 +61,7 @@
     if (['', 'm', 'f', 'x'].indexOf(c.gender || '') < 0) c.gender = '';
     if (['', 'm', 'f', 'both', 'none'].indexOf(c.likes || '') < 0) c.likes = '';
     if (['', 'top', 'bottom', 'riba'].indexOf(c.pos || '') < 0) c.pos = '';
+    if (['', 'tb', 'tr', 'br', 'any'].indexOf(c.posLike || '') < 0) c.posLike = '';
     c.tone = okTone(c.tone) ? c.tone || '' : '';
     c.fp = str(c.fp, 8).trim();
     c.color = typeof c.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(c.color) ? c.color : '';
@@ -283,6 +284,7 @@
       format: 'hakoniwa-residents', version: 1, exported: new Date().toISOString(),
       chars: S.chars.map(function (c) {
         var o = { name: c.name, code: HK.toCode(c.eg), eg: c.eg, memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '' };
+        if (c.posLike) o.posLike = c.posLike;
         if (c.icon) o.icon = c.icon;
         if (c.color) o.color = c.color;
         if (c.call) o.call = c.call;
@@ -332,6 +334,7 @@
       if (['', 'm', 'f', 'x'].indexOf(o.gender || '') >= 0) c.gender = o.gender || '';
       if (['', 'm', 'f', 'both', 'none'].indexOf(o.likes || '') >= 0) c.likes = o.likes || '';
       if (['', 'top', 'bottom', 'riba'].indexOf(o.pos || '') >= 0) c.pos = o.pos || '';
+      if (['', 'tb', 'tr', 'br', 'any'].indexOf(o.posLike || '') >= 0) c.posLike = o.posLike || '';
       if (o.tone == null || o.tone === '' || (HK.toneValid ? HK.toneValid(o.tone) : HK.PERSONA[o.tone])) c.tone = o.tone || '';
       if (typeof o.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(o.color)) c.color = o.color;
       if (typeof o.call === 'string') c.call = o.call;
@@ -502,7 +505,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', color: c.color || '', call: c.call || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '' };
+          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', call: c.call || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '' };
         });
       })(),
       perChar: castFor(S.scenId).map(function (c) {

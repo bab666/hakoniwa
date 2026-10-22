@@ -165,8 +165,9 @@
       '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label></div><p class="gearhint">台詞の中で、ほかの住人の名前をどう呼ぶか。相手ごとの呼び方は下の「関係と呼び方」で決められます。</p>' +
       (others.length ? '<div class="gearrow gkeigo"><span>敬語で話す相手</span>' + others.map(function (o) { return '<label><input type="checkbox" data-gf="keigo" data-o="' + o.id + '"' + (c.keigo && c.keigo[o.id] ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('') + '</div>' +
         '<p class="gearhint">' + ((c.tone || autoK) === 'polite' ? 'いまの口調は敬語なので、誰にでも敬語で話します。' : 'チェックした相手に話しかけるときだけ、敬語になります。ほかの相手には、いつもの口調のままです。') + '</p>' : '') + '</div>' +
-      '<div class="gearsec"><h3>プロフィール</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label><label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label></div>' +
-      '<p class="gearhint">受け攻めはR18の箱庭で使います。女性は攻めを選ばない限り受けとして扱います。</p>' +
+      '<div class="gearsec"><h3>プロフィール</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label><label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
+        '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label></div>' +
+      '<p class="gearhint">受け攻めはR18の箱庭で使います。女性は攻めを選ばない限り受けとして扱います（女性どうしでは、動く側に回ることもあります）。「攻め」を選んだ人は、どの場面でも受ける側にはなりません。<br>恋愛対象（受け攻め）は、恋愛や体の関係を持つ相手の受け攻めを絞ります。おまかせなら、攻めは受けとだけ、受けは攻めとだけ結ばれます。向きの決まらない組（攻めどうしなど）は、恋愛にも体の関係にもなりません。</p>' +
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div>' +
       '<p class="gearhint">自動のときは、住人の並び順で色が決まります（エゴグラムとは関係ありません）。</p></div>' +
       '<div class="gearsec"><h3>恋愛</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label></div><p class="gearhint">固定すると、その相手以外とは恋愛に発展しません（片想いのままでも使えます）。相手が箱庭にいないときは、誰とも恋愛しません。</p></div>' +
@@ -240,7 +241,8 @@
       case 'fp': c.fp = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;
       case 'call': if (isInput) return; c.call = t.value; changed(true); break;
       case 'gender': case 'likes': if (isInput) return; c[f] = t.value; changed(false); break;
-      case 'pos': if (isInput) return; c.pos = ['top', 'bottom', 'riba'].indexOf(t.value) >= 0 ? t.value : ''; changed(false); break;
+      case 'pos': if (isInput) return; c.pos = ['top', 'bottom', 'riba'].indexOf(t.value) >= 0 ? t.value : ''; changed(false); render(); break;
+      case 'posLike': if (isInput) return; c.posLike = HK.Pos && HK.Pos.likeValid(t.value) ? t.value : ''; changed(false); break;
       case 'colorauto': if (isInput) return; if (t.checked) c.color = ''; else c.color = (ov.querySelector('[data-gf="color"]') || {}).value || '#3d6f93'; changed(true); UI.applyColors(s.chars); break;
       case 'color': if (/^#[0-9a-fA-F]{6}$/.test(t.value)) { c.color = t.value; UI.applyColors(s.chars); changed(false); } break;
       case 'lock': if (isInput) return; c.loveLock = t.value; changed(false); break;
