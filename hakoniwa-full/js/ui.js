@@ -41,8 +41,19 @@
     { name: '千歳', code: 'BABCB', memo: '例：おっとりした長女気質の看護師' }
   ].map(function (c) { return { name: c.name, eg: HK.fromCode(c.code), memo: c.memo }; });
 
+  /* ---------- グループ（住人を「〇〇組」「原作A」などでまとめる。箱庭での参加者選びと並び替えに使う） ---------- */
+  function groupsOf() { var g = [], seen = {}; S.chars.forEach(function (c) { if (c.group && !seen[c.group]) { seen[c.group] = 1; g.push(c.group); } }); return g; }
+  /* グループ順に並べる（グループ名の順、グループなしは最後。グループ内の順は保つ） */
+  function sortByGroup() {
+    var idx = {}; S.chars.forEach(function (c, i) { idx[c.id] = i; });
+    S.chars.sort(function (a, b) {
+      var ga = a.group || '', gb = b.group || '';
+      if (ga !== gb) { if (!ga) return 1; if (!gb) return -1; return ga.localeCompare(gb, 'ja'); }
+      return idx[a.id] - idx[b.id];
+    });
+  }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
+  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -60,6 +71,7 @@
     c.name = str(c.name, 24).trim() || '名無し';
     c.eg = fixEg(c.eg);
     c.memo = str(c.memo, 80);
+    c.group = str(c.group, 20).trim();
     if (['', 'm', 'f', 'x'].indexOf(c.gender || '') < 0) c.gender = '';
     if (['', 'm', 'f', 'both', 'none'].indexOf(c.likes || '') < 0) c.likes = '';
     if (['', 'top', 'bottom', 'riba'].indexOf(c.pos || '') < 0) c.pos = '';
@@ -202,7 +214,7 @@
       }).join('') + '</div>' +
       '<div class="gwrap">' + egoGraph(c.eg, i) + '</div>' +
       '<button class="btn ghost small" data-act="del" aria-label="' + esc(c.name) + 'を削除">削除</button>' +
-      '<div class="memo"><input type="text" id="mm-' + c.id + '" data-f="memo" value="' + esc(c.memo) + '" placeholder="メモ（任意・結果には影響しません）" maxlength="80">' +
+      '<div class="memo"><input type="text" class="grp" id="gp-' + c.id + '" data-f="group" value="' + esc(c.group || '') + '" placeholder="グループ（任意）" maxlength="20" list="grplist" aria-label="' + esc(c.name) + 'のグループ" title="同じグループ名をつけた住人は、箱庭でまとめて選んだり、並び替えたりできます"><input type="text" id="mm-' + c.id + '" data-f="memo" value="' + esc(c.memo) + '" placeholder="メモ（任意・結果には影響しません）" maxlength="80">' +
       '<button type="button" class="btn small gearbtn" data-act="gear" aria-label="' + esc(c.name) + 'の設定（口調・呼び方・関係など）" title="口調・一人称・呼び方・性別・恋愛・イメージカラー・関係をまとめて設定"><span aria-hidden="true">⚙️</span> 設定</button>' +
       '<span class="csum">' + (HK.UI && HK.UI.summary ? HK.UI.summary(c) : '') + '</span></div>' +
       '</div>';
@@ -221,7 +233,9 @@
       '<h2 class="sec">住人　<span class="num" style="font-size:15px">' + S.chars.length + '/' + MAX + '</span>' + (HK.Tips ? HK.Tips.btn('cast') : '') + '</h2>' +
       (S.sample ? '<p class="sample-note">いま並んでいるのはサンプルの住人です。自分のキャラクターに置き換えてください。</p>' : '') +
       '<input type="file" id="iconfile" accept="image/*" hidden>' +
-      '<p class="hint" style="margin-top:-4px">≡ をドラッグで並び替え、左の丸でアイコンを設定できます。</p>' +
+      '<p class="hint" style="margin-top:-4px">≡ をドラッグで並び替え、左の丸でアイコンを設定できます。グループをつけると、箱庭でまとめて選べます。</p>' +
+      (groupsOf().length ? '<div class="row" style="margin:-2px 0 8px"><button class="btn small" data-act="sortgrp">グループ順に並べる</button><span class="hint" style="margin:0">グループ：' + groupsOf().map(function (g) { return esc(g) + '（' + S.chars.filter(function (c) { return c.group === g; }).length + '）'; }).join('・') + '</span></div>' : '') +
+      '<datalist id="grplist">' + groupsOf().map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>' +
       '<div class="cast" id="castlist">' + S.chars.map(resRow).join('') + '</div>' +
       '<div class="row" style="margin-top:12px"><button class="btn" data-act="add"' + (S.chars.length >= MAX ? ' disabled' : '') + '>1人追加</button><button class="btn" data-act="quiz"' + (S.chars.length >= MAX ? ' disabled' : '') + '>質問に答えて診断して追加</button><span class="hint" style="margin:0">「<a href="https://kaimin.sakura.ne.jp/archive/tools/ego/" target="_blank" rel="noopener">ふたりのエゴグラム</a>」と同じ25問で、エゴグラムを出して住人にできます。</span></div>' +
       tiesSection() +
@@ -259,8 +273,26 @@
       '<ul class="warn" id="tiewarns" hidden></ul></div></div>';
   }
 
+  /* 「【グループ名】」「# グループ名」「グループ：〇〇」の行から下を、そのグループとして読む */
+  var GRP_HEAD = /^\s*(?:【\s*(.+?)\s*】|[#＃]+\s*(.+?)|(?:グループ|group)\s*[:：]\s*(.+?))\s*$/i;
+  function parseGrouped(text) {
+    var segs = [{ g: '', lines: [] }];
+    String(text || '').split(/\r?\n/).forEach(function (ln) {
+      var m = ln.match(GRP_HEAD);
+      if (m) { var g = (m[1] || m[2] || m[3] || '').trim(); segs.push({ g: g === 'グループなし' ? '' : g.slice(0, 20), lines: [], head: true }); }
+      else segs[segs.length - 1].lines.push(ln);
+    });
+    var out = { chars: [], warnings: [] };
+    segs.forEach(function (sg) {
+      if (!sg.lines.join('').trim()) return;
+      var r = HK.parseRoster(sg.lines.join('\n'));
+      r.chars.forEach(function (c) { if (sg.head) c.group = sg.g; out.chars.push(c); });
+      out.warnings = out.warnings.concat(r.warnings);
+    });
+    return out;
+  }
   function importRoster(replace) {
-    var ta = $('#bulk'), r = HK.parseRoster(ta.value);
+    var ta = $('#bulk'), r = parseGrouped(ta.value);
     var w = $('#warns');
     if (!r.chars.length) {
       w.hidden = false;
@@ -272,7 +304,7 @@
     var added = 0, updated = 0;
     r.chars.forEach(function (c) {
       var ex = list.filter(function (x) { return x.name === c.name; })[0];
-      if (ex) { ex.eg = c.eg; if (c.memo) ex.memo = c.memo; updated++; }
+      if (ex) { ex.eg = c.eg; if (c.memo) ex.memo = c.memo; if (c.group != null) ex.group = c.group; updated++; }
       else if (list.length < MAX) { list.push(mk(c)); added++; }
     });
     S.chars = list; S.sample = false; save();
@@ -292,7 +324,7 @@
     return {
       format: 'hakoniwa-residents', version: 1, exported: new Date().toISOString(),
       chars: S.chars.map(function (c) {
-        var o = { name: c.name, code: HK.toCode(c.eg), eg: c.eg, memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '' };
+        var o = { name: c.name, code: HK.toCode(c.eg), eg: c.eg, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '' };
         if (c.posLike) o.posLike = c.posLike;
         if (c.icon) o.icon = c.icon;
         if (c.color) o.color = c.color;
@@ -346,6 +378,7 @@
       if (c) { c.eg = eg; updated++; }
       else { if (list.length >= MAX) { map[i] = null; skipped++; return; } c = mk({ name: name, eg: eg }); list.push(c); added++; }
       c.memo = String(o.memo || c.memo || '').slice(0, 80);
+      if (o.group != null) c.group = String(o.group).trim().slice(0, 20);
       if (['', 'm', 'f', 'x'].indexOf(o.gender || '') >= 0) c.gender = o.gender || '';
       if (['', 'm', 'f', 'both', 'none'].indexOf(o.likes || '') >= 0) c.likes = o.likes || '';
       if (['', 'top', 'bottom', 'riba'].indexOf(o.pos || '') >= 0) c.pos = o.pos || '';
@@ -521,7 +554,7 @@
       }).join('');
       var wp = scen.weapons ? '<td><select id="pw-' + c.id + '" data-f="weapon" data-id="' + c.id + '" aria-label="' + esc(c.name) + 'の武器"><option value="random">ランダム支給</option>' +
         HK.WEAPONS.map(function (w) { return '<option value="' + w.id + '"' + (p.weapon === w.id ? ' selected' : '') + '>' + esc(w.name) + '</option>'; }).join('') + '</select></td>' : '';
-      return '<tr' + (on ? '' : ' class="off"') + '><td><input type="checkbox" id="jn-' + c.id + '" data-f="join" data-id="' + c.id + '"' + (on ? ' checked' : '') + ' aria-label="' + esc(c.name) + 'を参加させる"></td><td><span class="row" style="flex-wrap:nowrap"><span class="dot" style="background:var(--p' + i + ')"></span><b>' + esc(c.name) + '</b></span></td><td>' + sel('action', scen.actions) + '</td><td>' + sel('goal', scen.goals) + '</td>' + st + wp + pfs.map(function (f) {
+      return '<tr' + (on ? '' : ' class="off"') + '><td><input type="checkbox" id="jn-' + c.id + '" data-f="join" data-id="' + c.id + '"' + (on ? ' checked' : '') + ' aria-label="' + esc(c.name) + 'を参加させる"></td><td><span class="row" style="flex-wrap:nowrap"><span class="dot" style="background:var(--p' + i + ')"></span><b>' + esc(c.name) + '</b>' + (c.group ? '<span class="grptag">' + esc(c.group) + '</span>' : '') + '</span></td><td>' + sel('action', scen.actions) + '</td><td>' + sel('goal', scen.goals) + '</td>' + st + wp + pfs.map(function (f) {
         if (f.type === 'text') {
           var tv = (p.pick || {})[f.id] || '', ph = f.placeholder ? f.placeholder(c) : '';
           return '<td><input type="text" id="pf-' + c.id + '-' + f.id + '" data-f="pf" data-id="' + c.id + '" data-k="' + f.id + '" value="' + esc(tv) + '" placeholder="' + esc(ph) + '" maxlength="40" style="min-width:14em" aria-label="' + esc(c.name) + 'の' + esc(f.label) + '"></td>';
@@ -543,7 +576,7 @@
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
       '<h2 class="sec">' + (scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
       (scen.castHint || scen.solo ? '<p class="hint">' + (scen.castHint ? esc(scen.castHint) : 'この箱庭は一人用です。チェックを入れた住人が挑みます。' + (HK.SAFE_ON ? '' : '登場人物はすべて成人として扱います。')) + '</p>' : '') +
-      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p><div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button></div><div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th><th>最初の行動</th><th>短期目標</th>' + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
+      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p><div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return c.group === g; }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button></span>'; }).join('') + '</div>' : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th><th>最初の行動</th><th>短期目標</th>' + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
       (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、カードの「この箱庭のTIPS」にあります。</p>' : '') +
       (sexCols && S.chars.length ? '<p class="hint" style="margin-top:8px">性別と恋愛対象は、住人タブの ⚙️ 設定と同じものです。</p>' : '') +
       (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') +
@@ -656,7 +689,10 @@
     switch (act) {
       case 'import-add': importRoster(false); break;
       case 'import-replace': importRoster(true); break;
-      case 'export': copy(HK.rosterToText(S.chars), '名簿をコピーしました'); break;
+      case 'export':
+        /* グループがあれば「【グループ名】」の見出しで区切る（読み込みでもそのまま使える） */
+        var gl = groupsOf();
+        copy(gl.length ? gl.concat(['']).map(function (g) { var mem = S.chars.filter(function (c) { return (c.group || '') === g; }); return mem.length ? '【' + (g || 'グループなし') + '】\n' + HK.rosterToText(mem) : ''; }).filter(Boolean).join('\n') : HK.rosterToText(S.chars), '名簿をコピーしました'); break;
       case 'add':
         if (S.chars.length >= MAX) return;
         if (S.sample) { S.sample = false; }
@@ -692,6 +728,20 @@
         S.join = S.join || {}; S.join[S.scenId] = S.chars.slice(0, smax(S.scenId)).map(function (c) { return c.id; });
         if (S.chars.length > smax(S.scenId)) toast('上限の' + smax(S.scenId) + '人まで参加にしました');
         save(); renderBox(); break;
+      case 'joingrp': case 'joingrpadd':
+        S.join = S.join || {};
+        var gmem = S.chars.filter(function (c) { return c.group === t.dataset.g; }).map(function (c) { return c.id; });
+        var gcur = act === 'joingrpadd' ? joined(S.scenId).map(function (x) { return x.id; }) : [];
+        gmem.forEach(function (id) { if (gcur.indexOf(id) < 0) gcur.push(id); });
+        var gmx = smax(S.scenId);
+        if (gcur.length > gmx) { gcur = gcur.slice(0, gmx); toast('上限の' + gmx + '人まで参加にしました'); }
+        else toast('「' + t.dataset.g + '」' + (act === 'joingrpadd' ? 'を参加に加えました' : 'だけを参加にしました'));
+        S.join[S.scenId] = S.chars.filter(function (c) { return gcur.indexOf(c.id) >= 0; }).map(function (c) { return c.id; });
+        save(); renderBox(); break;
+      case 'sortgrp':
+        sortByGroup(); save();
+        if (document.getElementById('castlist')) renderCast();
+        renderBox(); toast('グループ順に並べました'); break;
       case 'joinnone':
         S.join = S.join || {}; S.join[S.scenId] = []; save(); renderBox(); break;
       case 'gobox': setTab('box'); break;
@@ -757,6 +807,7 @@
     if (row) c = S.chars.filter(function (x) { return x.id === row.dataset.id; })[0];
     if (f === 'name' && c) { c.name = t.value.trim() || '名無し'; S.sample = false; }
     else if (f === 'memo' && c) c.memo = t.value;
+    else if (f === 'group' && c) { c.group = t.value.trim().slice(0, 20); }
     else if (f === 'tone' && c) c.tone = (HK.toneValid ? HK.toneValid(t.value) : HK.PERSONA[t.value]) ? t.value : '';
     else if (f === 'fp' && c) c.fp = t.value.trim().slice(0, 8);
     else if (f === 'pos' && c) c.pos = ['top', 'bottom', 'riba'].indexOf(t.value) >= 0 ? t.value : '';
