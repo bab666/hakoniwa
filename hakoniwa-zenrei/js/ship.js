@@ -82,7 +82,8 @@
     }[type] || 0.2;
     return clamp(base + ((role(p).sk || {})[type] || 0) - (p.m.hp < 40 ? 0.1 : 0), 0, 1.3);
   }
-  function alive(p) { return p.alive; }
+  /* 置き去り・誘拐・遭難で船を離れている人は、船の暮らしには加わらない */
+  function alive(p) { return p.alive && !p.away; }
   function live(S) { return S.P.filter(alive); }
   function best(S, type, ex) { return live(S).filter(function (p) { return !ex || ex.indexOf(p) < 0; }).sort(function (a, b) { return skill(b, type) - skill(a, type); })[0]; }
   function names(l) { return l.map(function (p) { return p.name; }).join(l.length > 2 ? '・' : 'と'); }
@@ -116,7 +117,7 @@
   function run(input) {
     var S = ST.state(input, 'ship'), rng = S.rng, env = S.env, P = S.P, T = SH.T;
     S.ties = (input.ties || []).filter(function (t) { return t.a !== t.b && t.a < P.length && t.b < P.length; });
-    S.relD = {}; S.relEv = {}; S.rom = {}; S.jeal = []; S.bday = {}; S.items = []; S.reports = []; S.planet = null; S.deaths = [];
+    S.relD = {}; S.relEv = {}; S.rom = {}; S.jeal = []; S.left = []; S.saved = []; S.bday = {}; S.items = []; S.reports = []; S.planet = null; S.deaths = [];
     var sup = env.supply / 100;
     S.ship = { hull: 85, power: 75 + sup * 15, o2: 85, food: 45 + sup * 45, morale: 60 };
     /* ---------- 役割 ---------- */
@@ -153,6 +154,7 @@
         if (!S.planet && rng() < env.contact / 100 * 0.45) space(S);
       } else if (S.planet.at < m) explore(S, m);
       if (rng() < 0.22 + env.danger / 100 * 0.35) trouble(S);
+      crisis(S);
       shipLife(S);
       if (R18ON && r18on(S)) nightR18(S);
       upkeep(S, m);
@@ -216,6 +218,7 @@
           ST.key(S, o, d.name + 'の正体が明らかになった');
         } else if (stg === 1 && x.kind === 'life') ST.key(S, o, '生命体「' + d.name + '」を見つけた');
         if (R18ON && r18on(S) && x.kind === 'life' && rng() < S.env.slewd / 100 * 0.35) alienR18(S, a, d);
+        if (x.kind === 'life' && /parasite|symbiotic/.test(d.kind) && rng() < 0.2) infect(S, a, d.name);
       } else {
         var hurt = 12 + rng.int(18) + (x.kind === 'life' && d.kind === 'hostile' ? 8 : 0);
         var dead = rng() < 0.03 + S.env.danger / 100 * 0.2 + d.rare * 0.02 + (x.kind === 'life' && d.kind === 'hostile' ? 0.08 : 0);
@@ -225,6 +228,8 @@
         t += F(x.kind === 'res' ? d.trouble : d.bad, { a: a.name, x: Pn.name });
         ST.say(S, { actors: tm, tag: '探索失敗', text: t, why: lab + 'の調査に失敗（' + a.name + 'の体力 -' + hurt + '）', mag: 20 });
         heal(S, a);
+        if (x.kind === 'life' && rng() < 0.35) infect(S, a, d.name);
+        else if (rng() < 0.12 + S.env.danger / 100 * 0.1) { lose(S, a); continue; }
       }
       if (rng() < 0.4) ST.sayB(S, { actors: tm, text: F(pk(S, SH.T.BACK), { a: a.name, x: Pn.name }), why: '' }, names(tm) + 'が帰船');
     }
@@ -298,8 +303,116 @@
       if (rng() < 0.45) nurse(S, sk);
     }
   }
+  /* ---------- 星での危機：感染症・研究のための誘拐・遭難 ---------- */
+  function infect(S, a, src) {
+    if (!SH.C || a.inf || !alive(a)) return;
+    a.inf = 1; a.infSrc = src; stress(a, 10); a.cnt.inf = (a.cnt.inf || 0) + 1;
+    ST.say(S, { actors: [a], tag: '感染症', text: F(pk(S, SH.C.INF_START), { a: a.name, x: src }), why: src + 'の調査で、未知の病原体に感染した', mag: 26 });
+  }
+  function lose(S, a) {
+    if (!SH.C || !alive(a) || live(S).length < 2) return;
+    a.away = 'lost'; a.awayM = 0; stress(a, 15);
+    var o = ST.say(S, { actors: [a], tag: '遭難', text: F(pk(S, SH.C.LOST), { a: a.name }), why: '探索の失敗で、仲間とはぐれた', mag: 30 });
+    ST.key(S, o, a.name + 'の遭難');
+  }
+  function closest(S, a, ex) { return live(S).filter(function (q) { return q !== a && (!ex || ex.indexOf(q) < 0); }).sort(function (x, y) { return bond(S, y, a) - bond(S, x, a); })[0]; }
+  function crisis(S) {
+    if (!SH.C) return;
+    var rng = S.rng, Pn = S.planet, C = SH.C;
+    /* 感染症の経過・感染拡大・置き去りの相談 */
+    live(S).filter(function (p) { return p.inf; }).forEach(function (a) {
+      if (!alive(a)) return;
+      var dr = live(S).filter(function (q) { return q !== a && !q.inf; }).sort(function (x, y) { return skill(y, 'med') - skill(x, 'med'); })[0];
+      if (dr && rng() < 0.1 + skill(dr, 'med') * 0.4) {
+        a.inf = 0; setRel(S, a, dr, 0.2); mark(S, a, dr, 'nurse'); stress(a, -10);
+        ST.say(S, { actors: [dr, a], tag: '感染症', text: F(pk(S, C.INF_CURE), { a: a.name, b: dr.name, x: a.infSrc || '星の生き物' }), why: dr.name + 'の医療の腕 ' + Math.round(skill(dr, 'med') * 100), mag: 22 });
+        return;
+      }
+      if (rng() < 0.08 + a.m.hp / 100 * 0.1) { a.inf = 0; ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_SELF), { a: a.name }), why: '自分の体の力で持ち直した' }, a.name + 'は病に打ち勝った'); return; }
+      a.inf++; a.m.hp = clamp(a.m.hp - 8 * a.inf, 1, 100); stress(a, 8);
+      live(S).forEach(function (q) { if (q !== a) stress(q, 3); });
+      if (a.inf >= 3 && rng() < 0.35 + S.env.danger / 100 * 0.2) { var w = closest(S, a) || { name: '仲間' }; die(S, a, '感染症で', F(pk(S, C.INF_DEATH), { v: a.name, w: w.name })); return; }
+      ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_WORSE), { a: a.name }), why: '病状が悪化した（段階 ' + a.inf + '・体力 ' + Math.round(a.m.hp) + '）' }, a.name + 'の病状が悪化した');
+      /* うつる：近しい人ほど、そばにいるのでうつりやすい */
+      var cand = live(S).filter(function (q) { return q !== a && !q.inf; });
+      var q = cand.length ? HK.weighted(rng, cand, function (z) { return 0.1 + Math.max(0, bond(S, z, a)) * 1.5 + (lover(S, z, a) ? 1 : 0); }) : null;
+      if (q && rng() < 0.12 + Math.max(0, bond(S, q, a)) * 0.25 + (lover(S, q, a) ? 0.15 : 0)) {
+        q.inf = 1; q.infSrc = a.infSrc; q.cnt.inf = (q.cnt.inf || 0) + 1; stress(q, 10);
+        ST.say(S, { actors: [a, q], tag: '感染拡大', text: F(pk(S, lover(S, a, q) && !family(S, a, q) && C.INF_SPREAD_LOVE ? C.INF_SPREAD_LOVE : C.INF_SPREAD), { a: a.name, b: q.name }), why: q.name + 'は' + a.name + 'のそばにいた（関係 ' + Math.round(bond(S, q, a) * 100) + '）', mag: 26 });
+      }
+      /* 置き去りの相談：星にいて、病が重いとき */
+      var oth = live(S).filter(function (z) { return z !== a; });
+      if (a.inf < 2 || a.abTalk || !onPlanet(S) || oth.length < 2) return;
+      var fear = oth.reduce(function (s0, z) { return s0 + z.m.fear + z.m.st; }, 0) / oth.length / 200;
+      if (rng() > 0.2 + fear * 0.4) return;
+      a.abTalk = true;
+      var c = HK.weighted(rng, oth, function (z) { return Math.max(0.05, 0.3 + z.tr.cp * 0.6 + z.tr.caution * 0.4 + (capt(z) ? 0.5 : 0) - Math.max(0, bond(S, z, a)) * 1.2); });
+      var t = F(pk(S, C.ABANDON_TALK), { a: a.name, c: c.name });
+      var pr = oth.filter(function (z) { return z !== c && bond(S, z, a) >= 0.45; }).sort(function (x, y) { return bond(S, y, a) - bond(S, x, a); })[0];
+      if (pr && rng() < 0.45 + bond(S, pr, a) * 0.4) {
+        setRel(S, pr, a, 0.25); setRel(S, pr, c, -0.2); mark(S, pr, a, 'calm'); mark(S, pr, c, 'quarrel'); stress(pr, 6);
+        var o1 = ST.say(S, { actors: [c, a, pr], tag: '置き去りの相談', text: t + F(pk(S, C.ABANDON_STOP), { a: a.name, b: pr.name }), why: c.name + 'が置き去りを提案したが、' + pr.name + 'が' + a.name + 'をかばった（関係 ' + Math.round(bond(S, pr, a) * 100) + '）', mag: 32 });
+        ST.key(S, o1, pr.name + 'が' + a.name + 'をかばった');
+        return;
+      }
+      a.away = 'left'; a.fate = '感染したまま' + Pn.name + 'に置き去りにされた（' + S.m + 'か月目）';
+      oth.forEach(function (z) { setRel(S, z, a, z === c ? -0.5 : -0.25); stress(z, 8); });
+      S.left.push([c.i, a.i]); S.ship.morale = clamp(S.ship.morale - 10, 0, 100);
+      var o2 = ST.say(S, { actors: [c, a], tag: '置き去り', kind: 'climax', text: t + F(pk(S, C.ABANDON), { a: a.name }), why: '感染の広がりを恐れた（皆の不安とストレス ' + Math.round(fear * 100) + '）', mag: 44 });
+      ST.key(S, o2, a.name + 'を星に置き去りにした');
+    });
+    if (!onPlanet(S)) return;
+    /* 連れ去られた人の救出 */
+    S.P.filter(function (p) { return p.alive && p.away === 'taken' && !p.gone; }).forEach(function (a) {
+      a.awayM++;
+      if (Pn.civ.d.state === 'transcendent' && rng() < 0.35) { a.away = null; stress(a, 10); ST.say(S, { actors: [a], tag: '帰還', text: F(pk(S, C.RETURN_ODD), { a: a.name }), why: '理解を超えた存在は、調べ終えた' + a.name + 'を返した', mag: 28 }); return; }
+      var L0 = live(S); if (!L0.length) return;
+      var b = HK.weighted(rng, L0, function (q) { return 0.2 + Math.max(0, bond(S, q, a)) * 1.5 + skill(q, 'fight') + (q.role === 'security' ? 0.6 : 0); });
+      var tm = [b].concat(L0.filter(function (q) { return q !== b; }).sort(function (x, y) { return skill(y, 'fight') + skill(y, 'talk') - skill(x, 'fight') - skill(x, 'talk'); }).slice(0, L0.length > 3 ? 2 : 1));
+      var sk = skill(b, 'fight') * 0.45 + Math.max.apply(null, tm.map(function (q) { return skill(q, 'talk'); })) * 0.3 + Math.max(0, bond(S, b, a)) * 0.3 + tm.length * 0.05;
+      var diff = 0.45 + Pn.civ.d.rare * 0.05 + (Pn.civ.d.state === 'advanced' ? 0.12 : 0) + S.env.danger / 100 * 0.1;
+      var t = F(pk(S, C.RESCUE_GO), { n: names(tm), a: a.name });
+      if (sk + rng() * 0.5 >= diff) {
+        a.away = null; stress(a, 12); setRel(S, a, b, 0.3); mark(S, a, b, 'calm'); tm.forEach(function (q) { if (q !== b) setRel(S, a, q, 0.1); }); S.saved.push([b.i, a.i]);
+        var o = ST.say(S, { actors: [b, a], tag: '救出', kind: 'climax', text: t + F(pk(S, C.RESCUE_OK), { a: a.name, b: b.name }), why: b.name + 'の救出（腕 ' + Math.round(sk * 100) + '・難しさ ' + Math.round(diff * 100) + '）', mag: 36 });
+        ST.key(S, o, b.name + 'が' + a.name + 'を救い出した');
+      } else {
+        b.m.hp = clamp(b.m.hp - 10, 1, 100); stress(b, 6);
+        ST.say(S, { actors: tm, tag: '救出失敗', text: t + F(pk(S, C.RESCUE_NG), { a: a.name, b: b.name }), why: '救出に失敗（' + a.awayM + '回目）', mag: 22 });
+        if (a.awayM >= 3) { a.gone = true; a.fate = Pn.civ.d.name + 'に連れ去られたまま（' + S.m + 'か月目）'; ST.say(S, { actors: [a], tag: '行方不明', text: F(pk(S, C.TAKEN_GONE), { a: a.name }), why: '三度の救出がすべて失敗した', mag: 30 }); }
+      }
+    });
+    /* 遭難した人の捜索 */
+    S.P.filter(function (p) { return p.alive && p.away === 'lost' && !p.gone; }).forEach(function (a) {
+      a.awayM++; a.m.hp = clamp(a.m.hp - 12, 0, 100);
+      var L0 = live(S); if (!L0.length) return;
+      var b = HK.weighted(rng, L0, function (q) { return 0.2 + Math.max(0, bond(S, q, a)) * 1.5 + skill(q, 'survive'); });
+      if (a.m.hp <= 0) { a.away = null; die(S, a, '遭難して', F(pk(S, C.LOST_DEAD), { v: a.name, w: b.name })); return; }
+      if (rng() < skill(a, 'survive') * 0.3) { a.away = null; ST.say(S, { actors: [a], tag: '生還', text: F(pk(S, C.LOST_SELF), { a: a.name }), why: a.name + 'の生き抜く力', mag: 26 }); return; }
+      if (rng() < 0.3 + skill(b, 'survive') * 0.3 + Math.max(0, bond(S, b, a)) * 0.2) {
+        a.away = null; setRel(S, a, b, 0.3); mark(S, a, b, 'calm'); S.saved.push([b.i, a.i]); stress(a, -5);
+        var o = ST.say(S, { actors: [b, a], tag: '捜索', kind: 'climax', text: F(pk(S, C.SEARCH_OK), { a: a.name, b: b.name }), why: b.name + 'が見つけ出した（関係 ' + Math.round(bond(S, b, a) * 100) + '）', mag: 32 });
+        ST.key(S, o, b.name + 'が' + a.name + 'を見つけた');
+        return;
+      }
+      ST.sayB(S, { actors: L0.slice(0, 3), tag: '捜索', text: F(pk(S, C.SEARCH_NG), { a: a.name, n: names(L0.slice(0, 3)) }), why: '見つからなかった（' + a.awayM + 'か月目）' }, a.name + 'の捜索は空振りに終わった');
+      if (a.awayM >= 3) { a.gone = true; a.fate = '遭難して行方不明（' + S.m + 'か月目）'; ST.say(S, { actors: [a], tag: '行方不明', text: F(pk(S, C.LOST_GONE), { a: a.name }), why: '三か月探しても見つからなかった', mag: 30 }); }
+    });
+    /* 研究のための誘拐（文明のある星） */
+    if (Pn.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(Pn.civ.d.state) && live(S).length >= 2 && rng() < 0.05 + S.env.danger / 100 * 0.08) {
+      var v = HK.weighted(rng, live(S), function (q) { return 0.5 + q.cnt.find * 0.3; });
+      v.away = 'taken'; v.awayM = 0; v.cnt.taken = (v.cnt.taken || 0) + 1; stress(v, 20);
+      var o3 = ST.say(S, { actors: [v], tag: '誘拐', kind: 'climax', text: F(pk(S, C.TAKEN), { a: v.name, x: Pn.civ.d.name }), why: Pn.civ.d.name + '（' + CIV_JP[Pn.civ.d.state] + '）が、研究のために連れ去った', mag: 38 });
+      ST.key(S, o3, v.name + 'が連れ去られた');
+    }
+    /* 星の生命体からの感染（調査とは別に） */
+    if (Pn.life.length && rng() < 0.03 + S.env.danger / 100 * 0.04) { var lf = rng.pick(Pn.life); if (lf.st >= 1) infect(S, rng.pick(live(S)), lf.d.name); }
+  }
   /* ---------- 絆が動く出来事 ---------- */
   function pairs(L0) { var o = []; L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i) o.push([a, b]); }); }); return o; }
+  /* 星に降りてからは、半分ほどの出来事が星の上（野営地など）での話になる */
+  function onPlanet(S) { return !!(S.planet && S.planet.at < S.m); }
+  function BP(S, k) { var B = SH.B; return onPlanet(S) && B[k + '_P'] && S.rng() < 0.6 ? B[k + '_P'] : B[k]; }
   function bondEv(S) {
     var rng = S.rng, L0 = live(S), sp = S.ship, T = SH.T, B = SH.B;
     var PR = pairs(L0), tense = (100 - sp.morale) / 100 + (sp.food < 20 ? 0.35 : 0) + (sp.o2 < 30 ? 0.2 : 0);
@@ -319,8 +432,8 @@
       if (!down) return;
       var wp = bond(S, pl, down);
       setRel(S, pl, down, 0.15); mark(S, pl, down, 'team'); stress(down, -12); stress(pl, 5); sp.morale = clamp(sp.morale + 3, 0, 100);
-      ST.sayB(S, { actors: [pl, down], tag: '機嫌取り', text: F(pk(S, B.PLEASE), { a: pl.name, b: down.name }), why: pl.name + 'は周りの機嫌をうかがう気質。' + down.name + 'のストレスを和らげた（関係 ' + Math.round(wp * 100) + '→' + Math.round(bond(S, pl, down) * 100) + '）' }, pl.name + 'が' + down.name + 'の機嫌を取った');
-      if (pl.m.st > 60 && rng() < 0.4) ST.sayB(S, { actors: [pl], tag: '機嫌取りの疲れ', text: F(pk(S, B.PLEASE_TIRED), { a: pl.name }), why: '人の気持ちを優先して、自分のストレスを溜め込んでいる（' + Math.round(pl.m.st) + '）' }, pl.name + 'はひとり疲れていた');
+      ST.sayB(S, { actors: [pl, down], tag: '機嫌取り', text: F(pk(S, BP(S, 'PLEASE')), { a: pl.name, b: down.name }), why: pl.name + 'は周りの機嫌をうかがう気質。' + down.name + 'のストレスを和らげた（関係 ' + Math.round(wp * 100) + '→' + Math.round(bond(S, pl, down) * 100) + '）' }, pl.name + 'が' + down.name + 'の機嫌を取った');
+      if (pl.m.st > 60 && rng() < 0.4) ST.sayB(S, { actors: [pl], tag: '機嫌取りの疲れ', text: F(pk(S, BP(S, 'PLEASE_TIRED')), { a: pl.name }), why: '人の気持ちを優先して、自分のストレスを溜め込んでいる（' + Math.round(pl.m.st) + '）' }, pl.name + 'はひとり疲れていた');
       return;
     }
     var BAD = /fight|drink_bad|ration|duty|game_bad|^bad$/.test(kind);
@@ -334,24 +447,24 @@
     if (BAD && (capt(a) || capt(b)) && rng() < 0.6) {
       var cp = capt(a) ? a : b, ot = cp === a ? b : a;
       setRel(S, cp, ot, 0.05); stress(cp, 3);
-      ST.sayB(S, { actors: [cp, ot], tag: '船長', text: F(pk(S, B.CAPTAIN), { a: cp.name, b: ot.name }), why: '船長の使命感で、揉めごとを自分の中で収めた' }, cp.name + 'が揉めごとを収めた');
+      ST.sayB(S, { actors: [cp, ot], tag: '船長', text: F(pk(S, BP(S, 'CAPTAIN')), { a: cp.name, b: ot.name }), why: '船長の使命感で、揉めごとを自分の中で収めた' }, cp.name + 'が揉めごとを収めた');
       return;
     }
     function say(pool, tag, d, why, mp) { ST.sayB(S, { actors: [a, b].concat(mp && mp.c ? [mp.c] : []), tag: tag, text: F(pk(S, pool), { a: a.name, b: b.name, c: mp && mp.c ? mp.c.name : '' }), why: why + '（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'と' + b.name); }
-    if (kind === 'drink') { stress(a, -8); stress(b, -8); setRel(S, a, b, 0.22); mark(S, a, b, 'drink'); sp.morale = clamp(sp.morale + 3, 0, 100); say(B.DRINK, '晩酌', 0, '二人きりの晩酌'); }
+    if (kind === 'drink') { stress(a, -8); stress(b, -8); setRel(S, a, b, 0.22); mark(S, a, b, 'drink'); sp.morale = clamp(sp.morale + 3, 0, 100); say(BP(S, 'DRINK'), '晩酌', 0, '二人きりの晩酌'); }
     else if (kind === 'drink_all') {
       var g = others.length > 2 ? rng.shuffle(others.slice()).slice(0, 1 + rng.int(others.length - 1)).concat([a, b]) : L0.slice();
       g.forEach(function (x) { stress(x, -6); g.forEach(function (y) { if (x.i < y.i) { setRel(S, x, y, 0.1); mark(S, x, y, 'drink'); } }); });
       sp.morale = clamp(sp.morale + 8, 0, 100);
-      ST.sayB(S, { actors: g, tag: '酒盛り', text: F(pk(S, B.DRINK_ALL), { n: names(g) }), why: '皆で飲んだ（士気 +8・全員の関係 +10）' }, names(g) + 'の酒盛り');
+      ST.sayB(S, { actors: g, tag: '酒盛り', text: F(pk(S, BP(S, 'DRINK_ALL')), { n: names(g) }), why: '皆で飲んだ（士気 +8・全員の関係 +10）' }, names(g) + 'の酒盛り');
     }
-    else if (kind === 'team') { stress(a, -4); stress(b, -4); setRel(S, a, b, 0.25); mark(S, a, b, 'team'); sp.hull = clamp(sp.hull + 2, 0, 100); say(B.TEAM, '共同作業', 0, '力を合わせて乗り切った'); }
-    else if (kind === 'confide') { stress(a, -10); stress(b, -4); setRel(S, a, b, 0.3); mark(S, a, b, 'confide'); a.m.fear = clamp(a.m.fear - 6, 0, 100); say(B.CONFIDE, '打ち明け話', 0, '誰にも言えなかったことを話した'); }
-    else if (kind === 'game') { stress(a, -5); stress(b, -5); setRel(S, a, b, 0.15); mark(S, a, b, 'game'); sp.morale = clamp(sp.morale + 3, 0, 100); say(B.GAME, '娯楽', 0, '退屈しのぎの勝負'); }
+    else if (kind === 'team') { stress(a, -4); stress(b, -4); setRel(S, a, b, 0.25); mark(S, a, b, 'team'); sp.hull = clamp(sp.hull + 2, 0, 100); say(BP(S, 'TEAM'), '共同作業', 0, '力を合わせて乗り切った'); }
+    else if (kind === 'confide') { stress(a, -10); stress(b, -4); setRel(S, a, b, 0.3); mark(S, a, b, 'confide'); a.m.fear = clamp(a.m.fear - 6, 0, 100); say(BP(S, 'CONFIDE'), '打ち明け話', 0, '誰にも言えなかったことを話した'); }
+    else if (kind === 'game') { stress(a, -5); stress(b, -5); setRel(S, a, b, 0.15); mark(S, a, b, 'game'); sp.morale = clamp(sp.morale + 3, 0, 100); say(BP(S, 'GAME'), '娯楽', 0, '退屈しのぎの勝負'); }
     else if (kind === 'nurse') { nurse(S, sick.sort(function (x, y) { return x.m.hp - y.m.hp; })[0]); }
     else if (kind === 'birthday') {
       if (S.bday[a.i]) return; S.bday[a.i] = 1; stress(a, -10);
-      setRel(S, a, b, 0.25); mark(S, a, b, 'bday'); others.forEach(function (q) { setRel(S, a, q, 0.06); }); sp.morale = clamp(sp.morale + 6, 0, 100); say(B.BIRTHDAY, '誕生日', 0, a.name + 'の誕生日を祝った');
+      setRel(S, a, b, 0.25); mark(S, a, b, 'bday'); others.forEach(function (q) { setRel(S, a, q, 0.06); }); sp.morale = clamp(sp.morale + 6, 0, 100); say(BP(S, 'BIRTHDAY'), '誕生日', 0, a.name + 'の誕生日を祝った');
     }
     else if (kind === 'good') { setRel(S, a, b, 0.15); mark(S, a, b, 'team'); say(T.PAIR_GOOD, '絆', 0, '日々の暮らしの中で'); }
     else if (kind === 'makeup') { stress(a, -6); stress(b, -6); setRel(S, a, b, 0.3); mark(S, a, b, 'makeup'); say(T.MAKEUP, '仲直り', 0, 'こじれた関係を修復した'); }
@@ -364,18 +477,18 @@
       var c = pickP(others.filter(function (q) { return lover(S, q, a) || bond(S, q, a) > 0.4; }), function (q) { return 0.3 + (q.tr.jealous || 0.4) + Math.max(0, bond(S, q, a)); });
       if (!c) return;
       stress(c, 8); setRel(S, a, b, 0.1); setRel(S, c, b, -0.25); setRel(S, c, a, -0.1); mark(S, c, b, 'jealous'); S.jeal.push([c.i, b.i]);
-      ST.sayB(S, { actors: [c, a, b], tag: '嫉妬', text: F(pk(S, B.JEALOUS), { a: a.name, b: b.name, c: c.name }), why: c.name + 'は' + a.name + 'に想いを寄せている（嫉妬 ' + Math.round((c.tr.jealous || 0) * 100) + '）' }, c.name + 'の嫉妬');
+      ST.sayB(S, { actors: [c, a, b], tag: '嫉妬', text: F(pk(S, BP(S, 'JEALOUS')), { a: a.name, b: b.name, c: c.name }), why: c.name + 'は' + a.name + 'に想いを寄せている（嫉妬 ' + Math.round((c.tr.jealous || 0) * 100) + '）' }, c.name + 'の嫉妬');
     }
     else if (kind === 'fight') {
       var st = others.length && rng() < 0.7 ? HK.weighted(rng, others, function (q) { return 0.2 + q.tr.lead + q.tr.warmth * 0.5 + (capt(q) ? 1 : 0) + (pleaser(q) ? 0.6 : 0); }) : null;
       stress(a, 10); stress(b, 10); setRel(S, a, b, st ? -0.25 : -0.38); mark(S, a, b, 'fight');
       a.m.hp = clamp(a.m.hp - (st ? 3 : 8), 1, 100); b.m.hp = clamp(b.m.hp - (st ? 3 : 8), 1, 100); sp.morale = clamp(sp.morale - 6, 0, 100);
-      var txt = F(pk(S, B.FIGHT), { a: a.name, b: b.name }) + (st ? F(pk(S, B.STOP), { c: st.name }) : '');
+      var txt = F(pk(S, BP(S, 'FIGHT')), { a: a.name, b: b.name }) + (st ? F(pk(S, BP(S, 'STOP')), { c: st.name }) : '');
       if (st) { setRel(S, st, a, 0.08); setRel(S, st, b, 0.08); mark(S, st, a, 'stop'); mark(S, st, b, 'stop'); }
       ST.sayB(S, { actors: [a, b].concat(st ? [st] : []), tag: 'ケンカ', text: txt, why: '張りつめた船内（士気 ' + Math.round(sp.morale) + '）' + (st ? '。' + st.name + 'が止めに入った' : '。誰も止めなかった（体力 -8）') + '（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'と' + b.name + 'のケンカ');
     }
     else {
-      var D = { drink_bad: [B.DRINK_BAD, '酒の席', -0.25, '酒が入って本音が出た'], ration: [B.RATION, '食料の取り合い', -0.22, '乏しい食料（食料 ' + Math.round(sp.food) + '）'], duty: [B.DUTY, '当番', -0.2, '当番の押し付け'], game_bad: [B.GAME_BAD, '娯楽', -0.18, '勝負がこじれた'], bad: [T.PAIR_BAD, '衝突', -0.18, '閉ざされた船の息苦しさ'] }[kind];
+      var D = { drink_bad: [BP(S, 'DRINK_BAD'), '酒の席', -0.25, '酒が入って本音が出た'], ration: [BP(S, 'RATION'), '食料の取り合い', -0.22, '乏しい食料（食料 ' + Math.round(sp.food) + '）'], duty: [BP(S, 'DUTY'), '当番', -0.2, '当番の押し付け'], game_bad: [BP(S, 'GAME_BAD'), '娯楽', -0.18, '勝負がこじれた'], bad: [T.PAIR_BAD, '衝突', -0.18, '閉ざされた船の息苦しさ'] }[kind];
       stress(a, 6); stress(b, 6); setRel(S, a, b, D[2]); mark(S, a, b, 'quarrel'); sp.morale = clamp(sp.morale - 3, 0, 100);
       say(D[0], D[1], 0, D[3]);
     }
@@ -387,7 +500,7 @@
     if (!a || !b.alive) return;
     var w0 = bond(S, a, b);
     b.m.hp = clamp(b.m.hp + 8, 0, 100); stress(b, -5); setRel(S, a, b, 0.28); mark(S, a, b, 'nurse');
-    ST.sayB(S, { actors: [a, b], tag: '看病', text: F(pk(S, B.NURSE), { a: a.name, b: b.name }), why: '弱っているところを支えた（体力 +8）（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'が' + b.name + 'を看病した');
+    ST.sayB(S, { actors: [a, b], tag: '看病', text: F(pk(S, BP(S, 'NURSE')), { a: a.name, b: b.name }), why: '弱っているところを支えた（体力 +8）（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'が' + b.name + 'を看病した');
     if (!r18on(S) || !R || !R.nurseTop || !Pz || !Pz.okSex(a, b) || family(S, a, b)) return;
     if (rng() > S.env.slewd / 100 * (lover(S, a, b) ? 1.2 : bond(S, a, b) > 0.3 ? 0.8 : 0.3)) return;
     /* 受け攻め：自分で攻めを選んだ人は、熱があっても受けにならない */
@@ -413,14 +526,14 @@
         sp.hull = clamp(sp.hull - 5, 0, 100); sp.morale = clamp(sp.morale - 8, 0, 100); a.m.hp = clamp(a.m.hp - 4, 1, 100);
         setRel(S, a, b, -0.15); mark(S, a, b, 'quarrel'); others.forEach(function (q) { setRel(S, a, q, -0.04); stress(q, 3); });
         a.cnt.rage = (a.cnt.rage || 0) + 1;
-        var t = F(pk(S, B.RAGE), { a: a.name, b: b.name });
-        if (c) { t += F(pk(S, B.CALM), { a: a.name, c: c.name }); setRel(S, a, c, 0.22); mark(S, a, c, 'calm'); a.m.st = 35; } else a.m.st = 55;
+        var t = F(pk(S, BP(S, 'RAGE')), { a: a.name, b: b.name });
+        if (c) { t += F(pk(S, BP(S, 'CALM')), { a: a.name, c: c.name }); setRel(S, a, c, 0.22); mark(S, a, c, 'calm'); a.m.st = 35; } else a.m.st = 55;
         ST.say(S, { actors: c ? [a, c] : [a], tag: '暴れる', text: t, why: 'ストレスが限界を越えた（' + st0 + '）。気の荒さ ' + Math.round(a.tr.aggr * 100) + '。船体 -5・士気 -8' + (c ? '。' + c.name + 'がなだめた' : ''), mag: 24 });
       } else {
         sp.food = clamp(sp.food - 1.5, 0, 100); sp.morale = clamp(sp.morale - 2, 0, 100); a.m.hp = clamp(a.m.hp - 8, 1, 100);
         a.cnt.deep = (a.cnt.deep || 0) + 1;
-        var t2 = F(pk(S, B.DEEP), { a: a.name });
-        if (c) { t2 += F(pk(S, B.DEEP_CARE), { a: a.name, c: c.name }); setRel(S, a, c, 0.15); mark(S, a, c, 'calm'); a.m.st = 40; } else a.m.st = 55;
+        var t2 = F(pk(S, BP(S, 'DEEP')), { a: a.name });
+        if (c) { t2 += F(pk(S, BP(S, 'DEEP_CARE')), { a: a.name, c: c.name }); setRel(S, a, c, 0.15); mark(S, a, c, 'calm'); a.m.st = 40; } else a.m.st = 55;
         ST.say(S, { actors: c ? [a, c] : [a], tag: '深酒', text: t2, why: 'ストレスが限界を越えた（' + st0 + '）。酒に逃げた（体力 -8）' + (c ? '。' + c.name + 'が面倒を見た' : ''), mag: 18 });
       }
     });
@@ -451,6 +564,8 @@
       else if (d <= -0.2) add(a, b, '★わだかまり', 'obsess', null);
       else if (bad >= 2 && good >= 2) add(a, b, '★揉めては戻る', 'friend', null);
     });
+    S.left.forEach(function (j) { add(j[0], j[1], '★置き去りにした', 'enemy', j[0]); });
+    S.saved.forEach(function (j) { add(j[0], j[1], '★助け出した', 'guard', j[0]); });
     S.jeal.forEach(function (j) { if ((S.relD[rk(P[j[0]], P[j[1]])] || 0) < 0) add(j[0], j[1], '★嫉妬', 'obsess', j[0]); });
     return {
       nodes: P.map(function (p) { return { i: p.i, name: p.name, sub: p.roleLabel, dead: !p.alive, fate: p.fate }; }),
@@ -541,6 +656,8 @@
   function finish(S, input) {
     var P = S.P, Pn = S.planet, L0 = live(S);
     P.forEach(function (p) {
+      if (!p.fate && p.alive && p.away === 'taken') p.fate = '連れ去られたまま、救出は間に合わなかった';
+      if (!p.fate && p.alive && p.away === 'lost') p.fate = '遭難したまま、一年が終わった';
       if (!p.fate) p.fate = '生還';
       p.notes.push('役割：' + p.roleLabel + (p.picked ? '（指定）' : '（気質から）') + (capt(p) ? '・使命感から揉めごとを収める' : '') + (pleaser(p) ? '・周りの機嫌を取る気質' : ''));
       var bits = [];
@@ -551,6 +668,8 @@
       if (p.cnt.r18) bits.push('夜の出来事 ' + p.cnt.r18 + '回');
       if (p.cnt.rage) bits.push('ストレスで暴れた ' + p.cnt.rage + '回');
       if (p.cnt.deep) bits.push('深酒 ' + p.cnt.deep + '回');
+      if (p.cnt.inf) bits.push('感染 ' + p.cnt.inf + '回');
+      if (p.cnt.taken) bits.push('連れ去られた ' + p.cnt.taken + '回');
       if (bits.length) p.notes.push(bits.join('・'));
     });
     var reveal = 0, total = 0;
