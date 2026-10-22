@@ -65,7 +65,7 @@
       else { var m = storyMap(x), k = a.i + '>' + b.i; m[k] = clamp((m[k] || 0) + d, 0, 100); }
       var b1 = H.band(H.level(x, a, b));
       if (b0 === b1) return '';
-      if (b1 === 'enemy') return a.name + 'の中で、' + b.name + 'への苛立ちは、はっきりとした敵意に変わった。';
+      if (b1 === 'enemy') return a.name + 'の胸の内で、' + b.name + 'への苛立ちは、はっきりとした敵意に変わった。';
       if (b0 === 'enemy') return a.name + 'の' + b.name + 'への敵意は、少しだけ角が取れた。まだ、好きにはなれないけれど。';
       if (b1 === 'bad') return a.name + 'は、いつの間にか' + b.name + 'のことを、はっきり嫌うようになっていた。';
       return a.name + 'は、もう前ほど' + b.name + 'を嫌ってはいなかった。';

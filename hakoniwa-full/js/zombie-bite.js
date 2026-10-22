@@ -104,7 +104,7 @@
         return { with: actors, text: t, why: why + '：けがを負った（化膿すると危ない）', mag: 18 };
       }
       /* まれに、犯される展開になる（R18版のみ。襲われる人が「攻め」指定でないときだけ） */
-      if (Z.ZA_TEXT && Z.zombieAssault && ctx.env.zlewd !== 'off' && !(HK.Pos && HK.Pos.of(v) === 'top') && !v.z.zassault && rng() < 0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) {
+      if (Z.ZA_TEXT && Z.zombieAssault && ctx.env.zlewd !== 'off' && !(HK.Pos && !HK.Pos.canReceive(v)) && !v.z.zassault && rng() < 0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) {
         v.z.zassault = true;
         var ra = Z.zombieAssault(ctx, v, [a].concat(mates).filter(function (o, i, arr) { return o !== v && arr.indexOf(o) === i; }), A);
         ra.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
@@ -196,7 +196,8 @@
       opts.push(['gift', c.tr.np * 0.4 + c.tr.a * 0.2 + 0.05]);
       var crush = mates.filter(function (o) { return ctx.R(c, o).att > 45 && o !== lover; }).sort(function (x, y) { return ctx.R(c, y).att - ctx.R(c, x).att; })[0];
       if (crush) { c.z.crush = crush.i; opts.push(['confess', 0.3 + ctx.R(c, crush).att / 150 + c.tr.fc * 0.2]); }
-      if (lover) opts.push(['lastnight', 0.35 + ctx.R(c, lover).att / 180]);
+      /* 最後の夜は、受け攻めの向きが決まる二人だけ（HK.Pos.okSex） */
+      if (lover && (!HK.Pos || HK.Pos.okSex(c, lover))) opts.push(['lastnight', 0.35 + ctx.R(c, lover).att / 180]);
     }
     opts.push(['video', c.tr.ac * 0.3 + c.tr.np * 0.3 + (c.z.family ? 0.35 : 0)]);
     opts.push(['berserk', c.tr.aggr * 0.45 + c.tr.fc * 0.15 - c.tr.ac * 0.2]);

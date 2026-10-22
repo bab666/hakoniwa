@@ -12,6 +12,8 @@
   /* セフレに落ち着くか */
   F.decide = function (ctx, a, b) {
     if (!F.allowed(ctx)) return false;
+    /* 体の関係を持てない組（攻め×攻めなど）はセフレにならない */
+    if (HK.Pos && !HK.Pos.okSex(a, b)) return false;
     var ab = ctx.R(a, b), ba = ctx.R(b, a), both = love(ab) && love(ba);
     var p = 0.12 + (F.lean(a) + F.lean(b)) / 2 * 0.65 - (both ? 0.3 : 0) + (love(ab) !== love(ba) ? 0.12 : 0);
     return ctx.rng() < HK.clamp(p, 0.03, 0.85);
@@ -44,7 +46,7 @@
   F.events = [
     {
       id: 'fwb_offer', cat: 'romance', scope: 'pair', pri: true,
-      when: function (ctx, a, b) { var pf = ctx.pair(a, b); return F.allowed(ctx) && pf.night && !pf.couple && !pf.fwb && !pf.fwbAsked && !pf.forced; },
+      when: function (ctx, a, b) { var pf = ctx.pair(a, b); return F.allowed(ctx) && pf.night && !pf.couple && !pf.fwb && !pf.fwbAsked && !pf.forced && (!HK.Pos || HK.Pos.okSex(a, b)); },
       w: function (ctx, a) { return 0.8 + F.lean(a) * 1.5; },
       run: function (ctx, a, b) {
         var pf = ctx.pair(a, b); pf.fwbAsked = true;
@@ -59,12 +61,14 @@
     },
     {
       id: 'fwb_again', cat: 'romance', scope: 'pair',
-      when: function (ctx, a, b) { var pf = ctx.pair(a, b); return F.allowed(ctx) && pf.fwb && !pf.couple && pf.night; },
+      when: function (ctx, a, b) { var pf = ctx.pair(a, b); return F.allowed(ctx) && pf.fwb && !pf.couple && pf.night && (!HK.Pos || HK.Pos.okSex(a, b)); },
       w: function (ctx, a, b) { return 0.9 + ctx.R(a, b).att / 60; },
       run: function (ctx, a, b) {
         var pf = ctx.pair(a, b); pf.nights = (pf.nights || 1) + 1;
         ctx.mod2(a, b, { att: 5 }, { att: 5 });
-        return { text: ctx.t(ctx.pick(AGAIN), a, b), why: 'セフレの関係（' + pf.nights + '回目）' };
+        /* 「抱く」側は受け攻めの指定どおり */
+        var o = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b];
+        return { text: ctx.t(ctx.pick(AGAIN), o[0], o[1]), why: 'セフレの関係（' + pf.nights + '回目）' };
       }
     }
   ];

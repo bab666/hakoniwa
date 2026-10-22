@@ -87,6 +87,13 @@
       p.mk = env.method !== 'random' && SM.METHODS[env.method] ? env.method : rng.pick(Object.keys(SM.METHODS));
       p.M = SM.METHODS[p.mk];
       p.bad = ty === 'grudge' || ty === 'stalker';
+      /* 受け攻め：かけられた側が攻めか（住人どうしは HK.Pos.order、モブ相手は HK.Pos.vsNpc）。
+         住人どうしで向きの決まらない組（HK.Pos.okSex が false）は、性的な暗示を一切かけない。女性どうしは専用の文 */
+      var Pz = HK.Pos;
+      p.noSex = !!(Pz && HY && !Pz.okSex(HY, p));
+      p.aTop = !!(Pz && !p.noSex && (HY ? Pz.order(HY, p, [HY, p])[0] === p : Pz.vsNpc(p, '') === 'top'));
+      p.ff = !!(Pz && HY && Pz.ff(HY, p));
+      p.aTopLast = p.aTop;
       p.peaceOnly = env.mode === 'mix' && rng() < ({ friend: 0.3, colleague: 0.15, lover: 0.1 }[ty] || 0);
       p.sens = 0.6 + (p.stats.sens || 3) * 0.18;
       /* かかりやすさ（0〜1） */
@@ -114,8 +121,8 @@
         ST.key(S, o2, p.name + '：' + { swept: '我に返っても流された', report: 'その場で通報した', flee: '逃げ出した' }[sr.k]);
       }
     }
-    function tq(p) { return V && SM.TRANCE[p.persona] && rng() < 0.45 ? p.name + ST.pick(S, SM.TRANCE[p.persona]) : ''; }
-    function cmdText(p, g) { var c = ST.fmt(ST.pick(S, g.cmd), { h: p.h, a: p.name }).replace(/^「|」$/g, ''); return p.h + 'は' + (S.rng() < 0.5 ? '低い声で' : '耳元で') + '「' + c + '」と囁いた。'; }
+    function tq(p) { return V && SM.TRANCE[p.persona] && rng() < 0.45 ? p.name + ST.pick(S, topL(p, SM.TRANCE[p.persona])) : ''; }
+    function cmdText(p, g) { var c = ST.fmt(ST.pick(S, cmdOf(p, g)), { h: p.h, a: p.name }).replace(/^「|」$/g, ''); return p.h + 'は' + (S.rng() < 0.5 ? '低い声で' : '耳元で') + '「' + c + '」と囁いた。'; }
 
     /* ---------- 導入 ---------- */
     ST.step(S, '導入');
@@ -160,7 +167,7 @@
         var v = { a: p.name, h: p.h };
         /* ハプニング */
         if (rng() < env.ev / 100 * 0.45) {
-          var e = HK.weighted(rng, SM.EVENTS, function (x) { return 1 / (1 + (p.used['ev_' + x.id] || 0) * 3) * (x.id === 'battery' && p.mk !== 'app' && p.mk !== 'aroma' ? 0.2 : 1); });
+          var e = HK.weighted(rng, SM.EVENTS, function (x) { return (EV_NG[x.id] && (p.aTop || p.noSex) ? 0 : 1) / (1 + (p.used['ev_' + x.id] || 0) * 3) * (x.id === 'battery' && p.mk !== 'app' && p.mk !== 'aroma' ? 0.2 : 1); });
           p.used['ev_' + e.id] = (p.used['ev_' + e.id] || 0) + 1; p.cnt.ev++;
           var fx = e.fx;
           if (fx.depth) p.m.depth = clamp(p.m.depth + fx.depth, 0, 100);
@@ -195,9 +202,9 @@
           if (f.smart && full) p.cnt.smart++;
           if (f.shame) p.cnt.shame += f.shame;
           if (f.trig && full) p.trigger = true;
-          /* 受け攻め：かけられた側が攻めなら、挿入の向きを入れ替えた文を使う */
-          var aTop = HK.Pos && (p.hc ? HK.Pos.order(p.hc, p, [p.hc, p])[0] === p : HK.Pos.vsNpc(p, '') === 'top');
-          var body = full ? ST.pick(S, lew === 'low' && g.softFull ? g.softFull : aTop && g.fullTop ? g.fullTop : g.full) : ST.pick(S, g.part);
+          /* 受け攻め・女性どうし：かけられた側が攻めなら攻めの文、女性どうしなら専用の文（variant） */
+          var aTop = p.aTop;
+          var body = full ? ST.pick(S, lew === 'low' && g.softFull ? g.softFull : variant(p, g, 'full')) : ST.pick(S, variant(p, g, 'part'));
           t += lew === 'low' && g.lewd && full ? ST.fmt(ST.pick(S, SM.SUG_LOW), v) : ST.fmt(body, v);
           t += tq(p);
           p.m.plea = clamp(p.m.plea + (f.plea || 0) * p.sens * (full ? 1 : 0.5), 0, 120);
@@ -206,16 +213,16 @@
           if (p.m.plea >= 100) { cl++; p.m.plea = 30; }
           if (cl) {
             p.cnt.climax += cl; p.m.fall = clamp(p.m.fall + cl * 3, 0, 100);
-            if (lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + '「' + ST.pick(S, V.CLIMAX[p.persona]) + '」';
+            if (lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + '「' + ST.pick(S, topL(p, V.CLIMAX[p.persona])) + '」';
             why += '／絶頂 ' + cl + '回';
           }
           p.m.depth = clamp(p.m.depth + (full ? 5 : -5), 0, 100);
           why += full ? '：受け入れた' : '：半分だけ受け入れた';
           /* 中に出された熱で、我に返る（快楽堕ちが進んでいるほど返りにくい） */
           if (full && g.snap && lew !== 'low' && SM.SNAP && rng() < g.snap * (1.2 - p.m.fall / 100)) {
-            t += ST.fmt(ST.pick(S, aTop && SM.SNAP_TOP ? SM.SNAP_TOP : SM.SNAP), v) + (SM.RESIST_SAY[p.persona] && rng() < 0.5 ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : '');
+            t += ST.fmt(ST.pick(S, p.ff ? (aTop ? SM.SNAP_FF_TOP : SM.SNAP_FF) : aTop && SM.SNAP_TOP ? SM.SNAP_TOP : SM.SNAP), v) + (SM.RESIST_SAY[p.persona] && rng() < 0.5 ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : '');
             p.woke = true; p.wokeCum = true; p.m.depth = 0; p.aTopLast = aTop;
-            why += '／中に出された熱で催眠が解けた（快楽堕ち ' + Math.round(p.m.fall) + '）';
+            why += '／' + snapWord(p) + '催眠が解けた（快楽堕ち ' + Math.round(p.m.fall) + '）';
             mag = 40;
           }
           /* 行為の最中に、ふと我に返る（半分しか効いていないとき・抵抗が強いときほど起きやすく、快楽堕ちが進むほど起きにくい） */
@@ -230,7 +237,7 @@
         var o = say(p, { tag: g.label, text: t, why: why, mag: mag, kind: res === 'full' && g.lewd ? 'climax' : 'event' }, p.name + '×「' + g.label + '」＝' + { full: '受け入れた', part: '半分', ng: '拒んだ' }[res], res === 'full' && (p.cnt.ok === 1 || k === 'buzama' || k === 'smart'));
         if (o && res === 'full' && p.cnt.ok === 1) ST.key(S, o, p.name + 'が最初に受け入れた暗示');
         if (o && (p.wokeCum || p.wokeMid) && !p.snapDone) {
-          ST.key(S, o, p.name + (p.wokeMid ? 'が行為の最中に我に返った' : 'が中に出されて我に返った'));
+          ST.key(S, o, p.name + (p.wokeMid ? 'が行為の最中に我に返った' : 'が' + snapWord(p) + '我に返った'));
           p.snapDone = true;
           if (SM.afterSnap) {
             var sr = SM.afterSnap({ rng: rng, pick: function (a) { return ST.pick(S, a); }, fmt: ST.fmt }, p);
@@ -268,10 +275,12 @@
       var route = after(S, p);
       p.route = route; p.fate = FATE[route];
       var v = { a: p.name, h: p.h };
-      var snapT = SM.SNAP_AFTER && ((route === 'report' && p.reportedNow) || (route === 'fall' && p.swept)) ? SM.SNAP_AFTER[route] : null;
-      var t = ST.fmt(ST.pick(S, snapT || (lew === 'low' && SM.AFTER_SOFT && SM.AFTER_SOFT[route] ? SM.AFTER_SOFT[route] : SM.AFTER[route])), v);
+      var snapT = SM.SNAP_AFTER && ((route === 'report' && p.reportedNow) || (route === 'fall' && p.swept)) ? ((p.ff && SM.SNAP_AFTER_FF && SM.SNAP_AFTER_FF[route]) || (p.aTop && SM.SNAP_AFTER_TOP && SM.SNAP_AFTER_TOP[route]) || SM.SNAP_AFTER[route]) : null;
+      /* 性的な暗示を一つも受けていないとき（向きの決まらない組など）は、いたずら向けの「その後」を使う */
+      var soft = (lew === 'low' || (!p.failed && !p.cnt.lewd)) && SM.AFTER_SOFT && SM.AFTER_SOFT[route];
+      var t = ST.fmt(ST.pick(S, snapT || (soft ? SM.AFTER_SOFT[route] : (p.aTop && SM.AFTER_TOP && SM.AFTER_TOP[route]) || SM.AFTER[route])), v);
       var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', body: null }[route];
-      if (mood && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, SM.AFTER_SAY[mood][p.persona]);
+      if (mood && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, topL(p, SM.AFTER_SAY[mood][p.persona]));
       if (p.trigger && (route === 'forget' || route === 'body') && rng() < 0.6) t += ST.fmt('――数日後、会議中に誰かが何気なく「おやすみ」と言った。{a}は理由も分からないまま、机の下で膝を震わせた。', v);
       var o = say(p, { tag: '結末', text: t, why: whyAfter(p, route), mag: 40 }, '', true);
       ST.key(S, o, p.name + '：' + p.fate);
@@ -289,8 +298,32 @@
     return o;
   }
 
+  /* 受け攻め・女性どうしに合わせた文を選ぶ（なければ null＝その暗示は使わない）。kind: 'full' | 'part' */
+  function variant(p, g, kind) {
+    if (kind === 'part') {
+      if (p.ff && p.aTop) return g.ffTopPart || g.partTop || g.ffPart || g.part;
+      if (p.ff) return g.ffPart || g.part;
+      return p.aTop && g.partTop ? g.partTop : g.part;
+    }
+    if (!g.lewd) return (p.aTop && g.fullTop) || g.full;
+    if (p.ff) return p.aTop ? g.ffTop || (g.ffOk && g.topOk ? g.full : null) : g.ff || (g.ffOk ? g.full : null);
+    if (p.aTop) return g.fullTop || (g.topOk ? g.full : null);
+    return g.full;
+  }
+  function cmdOf(p, g) { return (p.ff && g.cmdFF) || (p.aTop && g.cmdTop) || g.cmd; }
+  /* 自分で攻めを選んだ人の台詞から、受け身の台詞を外す（solo-r18-moan.js の HK.R18M.topLines） */
+  function topL(p, list) { return HK.R18M && HK.R18M.topLines ? HK.R18M.topLines(p, list) : list; }
+  /* 我に返ったきっかけの言い方 */
+  function snapWord(p) { return p.ff ? '達した拍子に' : p.aTop ? '中に注いだ瞬間に' : '中に出された熱で'; }
+  /* かけられた側が攻めのとき・向きの決まらない組のときは起こさないハプニング（{h}が{a}に触れる・{a}がねだる） */
+  var EV_NG = { beg: 1, mark: 1 };
+
   function okSug(p, k, env) {
     var g = SM.SUG[k];
+    /* 住人どうしで向きの決まらない組には、性的な暗示をかけない */
+    if (p.noSex && g.lewd) return false;
+    /* 受け攻め・女性どうしに合う文がない暗示は使わない */
+    if (env.lewd !== 'low' && g.lewd && !variant(p, g, 'full')) return false;
     if (g.notLover && p.ty === 'lover') return false;
     /* 実際の行為に進む暗示は、エッチな暗示をすでに受け入れたあとだけ */
     if (g.need && ((p.got || []).filter(function (x) { return SM.SUG[x] && SM.SUG[x].lewd; }).length < g.need)) return false;
@@ -298,7 +331,7 @@
     /* 描写を「ぼかす」にしたときは、いたずらの暗示と、性的でない暗示だけ */
     if (env.lewd === 'low') return !g.lewd;
     if ((env.mode === 'peace' || p.peaceOnly) && g.lewd) return false;
-    if (env.mode === 'lewd' && !g.lewd) return false;
+    if (env.mode === 'lewd' && !g.lewd && !p.noSex) return false;
     if (g.peace && (p.ty === 'grudge' || p.ty === 'stalker') && env.mode !== 'peace') return false;
     if (p.peaceOnly && k === 'freeze') return false;
     return true;
@@ -326,6 +359,8 @@
       depend: p.bad && fall > 0.55 ? fall * 1.3 : 0
     };
     if (p.cnt.smart && lewdN <= 1) w.peace = 0.6;
+    /* 向きの決まらない組：恋人になる・快楽に堕ちる結末にしない */
+    if (p.noSex) { w.couple = 0; w.fall = 0; w.depend = 0; }
     /* 中に出されて我に返ったあと：その場で通報した人は通報、流された人は快楽堕ちへ寄る */
     if (p.reportedNow) return 'report';
     if (p.swept) { w.angry *= 0.15; w.report = 0; w.revenge *= 0.2; w.counter = 0; w.shy *= 0.4; w.fall = w.fall * 2 + 1; if (p.bad) w.depend = (w.depend || 0) + 0.8; }
@@ -341,7 +376,7 @@
     var t = p.tr, bits = [];
     if (route === 'forget' || route === 'body') bits.push(p.erased === 'full' ? '記憶は消された' : '記憶は消えかけていた');
     else if (p.failed) bits.push('催眠にかからなかった');
-    else bits.push(p.woke ? (p.wokeCum || p.wokeMid ? (p.wokeMid ? '行為の最中に我に返った' : '中に出された瞬間、我に返った') + (p.swept ? '。それでも流された' : p.reportedNow ? '。その場で通報した' : p.fled ? '。逃げ出した' : '') : '途中で目を覚ました') : p.erased ? '記憶は消えきらなかった' : '記憶は消されなかった');
+    else bits.push(p.woke ? (p.wokeCum || p.wokeMid ? (p.wokeMid ? '行為の最中に我に返った' : snapWord(p) + '我に返った') + (p.swept ? '。それでも流された' : p.reportedNow ? '。その場で通報した' : p.fled ? '。逃げ出した' : '') : '途中で目を覚ました') : p.erased ? '記憶は消えきらなかった' : '記憶は消されなかった');
     bits.push('快楽堕ち ' + Math.round(p.m.fall));
     bits.push({ angry: 'CP ' + Math.round(p.eg.CP), report: 'CP・A（正義感と冷静さ）', revenge: '攻撃性とCP', counter: 'A・CP（冷静さと意志の強さ）', sweet: '相手が恋人・NP', shy: 'AC ' + Math.round(p.eg.AC), fall: '快楽に呑まれた', couple: 'NP・FCと、ほどよい堕ち', depend: '憎しみと快楽', laugh: 'FC・NP', noticed: 'A・慎重さ', peace: '平和な暗示だけだった', forget: '', body: '体に暗示が残った' }[route] || '');
     if (p.recorded) bits.push('録画されていた');

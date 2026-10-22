@@ -142,6 +142,8 @@
     id: 'om_forcekiss', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b);
+      /* 自分で攻めを選んだ人を、壁に押しつけて唇を奪う側には回さない（受け攻めの指定に従う） */
+      if (HK.Pos && HK.Pos.hardTop(b)) return false;
       return OM.isFated && HK.canLove(a, b) && !pf.couple && hateLove(ctx, a, b) && ctx.stepIndex - (pf.lastForce == null ? -9 : pf.lastForce) >= 3 && (ctx.om.met[key(a, b)] || !OM.isFated(ctx, a, b));
     },
     w: function (ctx, a, b) { var r = ctx.R(a, b); return (0.35 + a.tr.impulse * 0.8 + a.tr.aggr * 0.6 + r.ten / 90 + r.att / 120) * strifeK(ctx); },
@@ -234,11 +236,14 @@
       cp.cheat = { by: cheater.i, with: other.i, at: ctx.stepIndex, found: false };
       ctx.mod2(a, b, { att: 8, aff: 3 }, { att: 8, aff: 3 });
       ctx.stress(cheater, 12);
-      var motive = pb && ctx.R(a, pb).ten > 28 && a.tr.aggr > 0.45 ? 'rival' : pb ? 'steal' : 'cheat';
+      /* 受け攻めの指定：恋人を裏切る側（holder）が攻めなら、holder が抱かれ・痕をつけられる文は使わない */
+      var hTop = HK.Pos && HK.Pos.order(a, b, [a, b])[0] === holder;
+      var motive = pb && ctx.R(a, pb).ten > 28 && a.tr.aggr > 0.45 && !hTop ? 'rival' : pb ? 'steal' : 'cheat';
+      var nf = function (arr, re) { var f = arr.filter(function (l) { return !(hTop && re.test(l)); }); return f.length ? f : arr; };
       /* 寝取られる側（恋人を裏切る側）を、後半の文の主語にする */
-      var t2 = ctx.pick(lewd(ctx) === 'low' ? NT.low : NT.scene) + ctx.pick(NT.after);
+      var t2 = ctx.pick(lewd(ctx) === 'low' ? NT.low : nf(NT.scene, /快感/)) + ctx.pick(NT.after);
       if (motive === 'cheat') t2 = t2.replace(/\{a\}/g, '{A}').replace(/\{b\}/g, '{a}').replace(/\{A\}/g, '{b}').replace(/\{sa\}/g, '{SA}').replace(/\{sb\}/g, '{sa}').replace(/\{SA\}/g, '{sb}');
-      var t = ctx.pick(NT[motive]) + t2;
+      var t = ctx.pick(motive === 'cheat' && HK.Pos && !hTop && HK.Pos.hardTop(b) ? NT.cheat.filter(function (l) { return !/上着を脱がせた/.test(l); }) : NT[motive]) + t2;
       var why = motive === 'rival' ? a.name + 'は恋敵の' + pb.name + 'から奪いたかった（緊張 ' + Math.round(ctx.R(a, pb).ten) + '）' : motive === 'steal' ? a.name + 'の惹かれ（' + Math.round(ctx.R(a, b).att) + '）と衝動性。恋人のいる' + b.name + 'が拒みきれなかった' : a.name + 'には恋人（' + pa.name + '）がいる。それでも' + b.name + 'への惹かれ（' + Math.round(ctx.R(a, b).att) + '）が勝った';
       return { text: fill(ctx, t, a, b, part), why: why + (hateLove(ctx, a, b) ? '／愛憎' : ''), mag: 32 };
     }

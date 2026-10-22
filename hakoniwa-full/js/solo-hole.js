@@ -113,12 +113,14 @@
     var H = env.hours, pl = PLACE[env.place] || PLACE.lab;
     S.k = clamp(Math.pow(6 / H, 0.5), 0.5, 1.4);
     var topMe = HK.Pos && HK.Pos.vsNpc(h, '') === 'top';
+    /* 自分で「攻め」を選んだ人は、壁の向こうで「される」側にならない：手を出そうとした相手は追い払われ、感覚は何も溜まらない */
+    var hardTop = !!(HK.Pos && HK.Pos.hardTop(h));
     /* 攻めの指定なら「中に出された」系の文を避ける */
     var RECV_RE = /なか、|なかに|中に|中が|中を|お腹|内部|残留|残って|入っていた|注が|出され|太腿を伝|何人の方が|奥へ|奥に/;
     var pk = function (S0, arr) { var f = topMe ? arr.filter(function (x) { return !RECV_RE.test(x); }) : arr; return K.pick(S0, f.length ? f : arr); };
     var X = HK.HoleMore, plKey = PLACE[env.place] ? env.place : 'lab';
     var stored = 0, leaks = 0, visits = 0, people = 0, early = false, hot = 0, lostN = 0, meta = { cum: 0, tent: 0, mark: 0 }, thisN = 0;
-    var mindList = MIND[h.persona].concat(X.MIND[h.persona] || []), confList = CONFUSE[h.persona].concat(X.CONFUSE[h.persona] || []);
+    var mindList = MIND[h.persona].concat(X.MIND[h.persona] || []).filter(function (x) { return !hardTop || !/乱暴にしないで|お手柔らかに/.test(x); }), confList = CONFUSE[h.persona].concat(X.CONFUSE[h.persona] || []);
     /* 解放のしかた：おまかせなら場所と運で決まる */
     var mode = env.release && env.release !== 'auto' ? env.release : (function () { var x = rng(); return x < 0.5 ? 'burst' : x < 0.8 ? 'drip' : 'late'; })();
     /* 壁の向こうの出来事を、過激さに合わせて選ぶ */
@@ -126,6 +128,7 @@
       var lw = env.lewd / 100, wts = [1.2 - lw, 0.6 + lw * 0.2, lw * 1.6];
       /* 受け攻め：本人が攻めの指定なら、挿入される場面の代わりに「跨られる」場面を使う */
       var list = X.BEYOND[plKey];
+      if (hardTop && X.BEYOND_HARD) return K.pick(S, X.BEYOND_HARD[plKey]);
       if (topMe && X.BEYOND_TOP) list = list.filter(function (e) { return !X.PEN_RE.test(e.t) && !(e.fx.cum > 0); }).concat(X.BEYOND_TOP);
       return HK.weighted(rng, list, function (e) { return Math.max(0.03, wts[e.lv]); });
     }
@@ -149,13 +152,13 @@
       for (var ev = 0; ev < nEv; ev++) {
         var be = beyond(), f = be.fx;
         visits++; people += f.n || 0; meta.cum += f.cum || 0; meta.tent += f.tent || 0; meta.mark += f.mark || 0;
-        stored += (40 + env.lewd * 0.6) * (1 + be.lv * 0.45 + (f.cum || 0) * 0.15 + (f.tent || 0) * 0.12) * (0.7 + rng() * 0.6) * h.sens;
-        var txt = K.fmt(S, be.t.replace(/◯/g, String(H))) + (rng() < 0.55 ? K.fmt(S, pk(S, X.CONTRAST)) : '');
-        K.say(S, { kind: 'ev', tag: '壁の向こう', text: txt, why: metaWhy() + '（溜まった感覚 ' + Math.round(stored) + '）' });
+        if (!hardTop) stored += (40 + env.lewd * 0.6) * (1 + be.lv * 0.45 + (f.cum || 0) * 0.15 + (f.tent || 0) * 0.12) * (0.7 + rng() * 0.6) * h.sens;
+        var txt = K.fmt(S, be.t.replace(/◯/g, String(H))) + (!hardTop && rng() < 0.55 ? K.fmt(S, pk(S, X.CONTRAST)) : '');
+        K.say(S, { kind: 'ev', tag: '壁の向こう', text: txt, why: hardTop ? '攻めの指定：手を出そうとした相手を追い払った' : metaWhy() + '（溜まった感覚 ' + Math.round(stored) + '）' });
         if (rng() > 0.5) break;
       }
       /* こちら側に誰かが来る */
-      if (stored > 60 && thisN < 2 && rng() < 0.22) {
+      if (!hardTop && stored > 60 && thisN < 2 && rng() < 0.22) {
         thisN++;
         K.say(S, { kind: 'ev', tag: 'こちら側', text: K.fmt(S, pk(S, X.THIS[plKey])) + ' ' + K.fmt(S, pk(S, X.THIS_REACT[h.persona])), why: '上半身の側にも、人が来た' });
         h.reason -= 3; h.corrupt += 2;
@@ -164,7 +167,7 @@
       var imag = h.tr.fc * 0.35 + h.tr.ac * 0.25 + h.tr.impulse * 0.2 + (h.action.id === 'imagine' ? 0.35 : 0) + (h.goal.id === 'secret' ? 0.25 : 0);
       var calm = h.tr.a * 0.35 + h.tr.cold * 0.3 + (h.stats.mind - 3) * 0.1 + (h.action.id === 'count' || h.action.id === 'sleep' ? 0.2 : 0);
       var counter = h.action.id === 'count' || h.tr.a > 0.62 || (h.tr.cp > 0.62 && h.tr.fc < 0.45);
-      if (vis && rng() < imag) {
+      if (!hardTop && vis && rng() < imag) {
         h.reason -= 4 + imag * 6; h.corrupt += 2 + imag * 4; h.pleasure += 6; hot = 2;
         K.say(S, { kind: 'ev', tag: '想像', text: K.fmt(S, pk(S, IMAGINE)) + K.tail(S, 0.3, true), why: '想像してしまう（FC・AC・衝動）' });
       } else if (counter && t < H && rng() < (h.action.id === 'count' ? 0.8 : 0.5)) {
@@ -173,14 +176,14 @@
         K.say(S, { kind: 'ev', tag: ct.lost ? '数えられない' : '時間を数える', text: ct.text, why: ct.lost ? '遮断の揺らぎや想像で届いた熱が、数を溶かした' : '時間を数えてやり過ごす（A・慎重さ）' });
       } else if (h.action.id === 'sleep' && rng() < 0.55) {
         h.pleasure += 4;
-        K.say(S, { kind: 'ev', tag: '眠り', text: K.fmt(S, pk(S, X.DREAM)), why: '眠ってやり過ごす' });
+        K.say(S, { kind: 'ev', tag: '眠り', text: K.fmt(S, pk(S, hardTop ? X.DREAM.filter(function (x) { return !/抱かれ|触れられ|甘い声/.test(x); }) : X.DREAM)), why: '眠ってやり過ごす' });
       } else if (rng() < 0.6) {
         h.reason -= Math.max(0, 3 - calm * 4);
         K.say(S, { kind: 'ev', tag: '待機', text: K.fmt(S, pk(S, mindList)), why: '口調「' + (HK.toneLabel ? HK.toneLabel(h) : HK.PERSONA[h.persona].label) + '」' });
       }
       if (H >= 4 && rng() < 0.18) K.say(S, { kind: 'ev', tag: '待つ体', text: K.fmt(S, pk(S, X.BODY)), why: '' });
       /* 遮断の揺らぎ */
-      if (rng() < env.leak / 100 * 0.6 && stored > 30) {
+      if (!hardTop && rng() < env.leak / 100 * 0.6 && stored > 30) {
         leaks++; hot = 2;
         var r = K.stim(S, 14 + env.lewd / 10, { part: 'belly', defer: true });
         K.say(S, { kind: 'ev', tag: '揺らぎ', text: K.fmt(S, pk(S, LEAK)) + (r.climaxes.length ? '' : K.tail(S, 0.4, true)), why: '遮断の不完全さ ' + env.leak });
@@ -189,11 +192,11 @@
       /* 助けを呼ぶ */
       if (h.action.id === 'shout' && rng() < 0.5) K.say(S, { kind: 'ev', tag: '叫ぶ', text: K.fmt(S, pk(S, SHOUT)), why: '' });
       /* もがく */
-      if ((h.action.id === 'struggle' || h.goal.id === 'escape') && rng() < 0.5) {
-        if (rng() < 0.05 + h.tr.aggr * 0.08 + h.tr.cp * 0.05) { early = true; K.say(S, { kind: 'sys', tag: '脱出', text: K.fmt(S, '{a}は皮膚が擦りむけるのも構わず体をねじり、ついに壁から腰を引き抜いた。――遮断が、その場で解けた。'), why: '攻撃性・CP（自力脱出）' }); }
+      if ((h.action.id === 'struggle' || h.goal.id === 'escape' || hardTop) && rng() < 0.5) {
+        if (rng() < 0.05 + h.tr.aggr * 0.08 + h.tr.cp * 0.05 + (hardTop ? 0.12 : 0)) { early = true; K.say(S, { kind: 'sys', tag: '脱出', text: K.fmt(S, '{a}は皮膚が擦りむけるのも構わず体をねじり、ついに壁から腰を引き抜いた。――遮断が、その場で解けた。'), why: '攻撃性・CP（自力脱出）' }); }
         else K.say(S, { kind: 'ev', tag: 'もがく', text: K.fmt(S, pk(S, STRUGGLE)), why: '' });
       }
-      h.corrupt += vis * 0.8 * S.k;
+      if (!hardTop) h.corrupt += vis * 0.8 * S.k;
       if (hot > 0) hot--;
       K.settle(S);
       K.snap(S, { s: Math.min(100, stored / 8) });
@@ -204,6 +207,20 @@
     S.step = H + 1;
     var ho = Math.round(early ? t : H);
     if (early && mode === 'late') mode = 'burst';
+    if (hardTop) {
+      /* 攻めの指定：何もさせなかった。戻ってくる感覚はない。抜け出したあと、壁の向こうの相手を逆に締め上げることもある */
+      K.say(S, { kind: 'sys', tag: '解放', text: (early ? '' : K.fmt(S, pk(S, RELEASE))) + K.fmt(S, pk(S, X.TOP_RELEASE)), why: '壁の向こうには、何もさせなかった（追い払った相手 ' + visits + '）' });
+      var revenge = visits > 0 && rng() < 0.4 + h.tr.aggr * 0.3 + h.tr.cp * 0.2;
+      var ot = K.say(S, { kind: 'ev', tag: revenge ? '返り討ち' : '余韻', text: K.fmt(S, pk(S, revenge ? X.TOP_REVENGE[plKey] : X.TOP_AFTER)), why: revenge ? '壁の向こうに回り、手を出そうとした相手を逆に責めた（攻撃性・CP）' : '' });
+      K.key(S, ot, revenge ? '壁の向こうの相手を返り討ちにした' : '何もさせずに出てきた');
+      K.snap(S, { s: 0 });
+      var Et = { type: 'hold', kind: 'ok', title: revenge ? '返り討ち ― 壁の向こうを締め上げた' : early ? '自力脱出 ― 指一本触れさせなかった' : '何もさせなかった ― 脚が最後まで守りきった', lines: [
+        h.name + 'は' + pl.n + 'で' + ho + '時間を過ごした。壁の向こうには' + (people || visits) + '人が来ていた。',
+        visits ? '手を出そうとした相手は、全員追い払われた。' + h.name + 'の腰から下には、何も溜まらなかった。' : '壁の向こうには、結局誰も手を出してこなかった。',
+        revenge ? '最後に締め上げられたのは、壁の向こう側の方だった。' : ''
+      ].filter(Boolean) };
+      return K.finish(S, input, Et, ['自分で「攻め」を選んでいるので、壁の向こうで「される」側には回らなかった。', '抜け出せるかどうかは、攻撃性（' + Math.round(h.tr.aggr * 100) + '）とCP（' + Math.round(h.eg.CP) + '）しだい。'], { meta: pl.n + '・' + H + '時間', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['追い払った', visits + '回'], ['返り討ち', revenge ? 'あり' : 'なし']], gaugeS: '溜まった感覚' });
+    }
     K.step(S, early ? '脱出の瞬間' : mode === 'late' ? '解放……？' : '解放');
     var o0;
     if (mode === 'late') {

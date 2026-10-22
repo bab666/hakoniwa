@@ -78,7 +78,13 @@
   var REPORT_MID = L('{a}は{h}を突き飛ばし、はだけた服をかき寄せた。震える指でスマホを掴み、迷わず番号を押した。「……警察ですか。今、催眠をかけられて……」|{a}は{h}の頬を思いきり張った。「触るな。……今から警察を呼ぶ」――{h}は青ざめたまま、一歩も動けなかった。|{a}は無言で{h}から離れ、スマホのカメラで部屋と{h}を撮った。それから、静かに一一〇番を押した。');
   var FLEE_MID = L('{a}は服をかき集めて、部屋を飛び出した。廊下の角で、膝から崩れ落ちた。|{a}は何も言えずに{h}を押しのけ、靴も履かずに逃げ出した。|{a}は浴室に駆け込んで鍵をかけた。シャワーの音が、朝まで止まらなかった。');
   SM.midSnapOk = function (k) { return !!KIND[k]; };
-  SM.midSnap = function (S, p, k) { var kd = KIND[k] || 'touch'; return S.fmt(S.pick(MID[kd]), { a: p.name, h: p.h }); };
+  /* かけられた側が攻めのとき・女性どうしのときは、その向きの文（SM.MID_TOP / MID_FF / MID_FF_TOP。下の差し替えで足す） */
+  SM.midSnap = function (S, p, k) {
+    var kd = KIND[k] || 'touch';
+    var T = p.ff ? (p.aTop ? SM.MID_FF_TOP : SM.MID_FF) : p.aTop ? SM.MID_TOP : null;
+    var arr = (T && T[kd]) || (p.aTop && SM.MID_TOP && SM.MID_TOP[kd]) || (p.ff && kd !== 'touch' && kd !== 'kiss' ? SM.MID_FF.in : MID[kd]);
+    return S.fmt(S.pick(arr), { a: p.name, h: p.h });
+  };
   SM.afterSnap = function (S, p) {
     var mid = !!p.wokeMid;
     var rng = S.rng, t = p.tr, fall = p.m.fall / 100;
@@ -91,14 +97,16 @@
     var v = { a: p.name, h: p.h }, aTop = p.aTopLast;
     if (k === 'swept') {
       p.swept = true; p.m.fall = Math.min(100, p.m.fall + 25); p.cnt.climax += 1; p.cnt.lewd++;
-      return { k: k, tag: '流されて', text: S.fmt(S.pick(mid ? (aTop ? SWEPT_MID_TOP : SWEPT_MID) : aTop ? SWEPT_TOP : SWEPT), v) + (HK.Voice && HK.Voice.CLIMAX[p.persona] ? p.name + '「' + S.pick(HK.Voice.CLIMAX[p.persona]) + '」' : ''), why: '正気に戻っても流された（快楽堕ち ' + Math.round(fall * 100) + '・AC ' + Math.round(p.eg.AC) + '・FC ' + Math.round(p.eg.FC) + '）。' + (mid ? '続きを受け入れ、中出しも拒まなかった' : '二度目の中出しも受け入れた') };
+      var sw = p.ff ? (aTop ? SM.SWEPT_FF_TOP : SM.SWEPT_FF) : mid ? (aTop ? SWEPT_MID_TOP : SWEPT_MID) : aTop ? SWEPT_TOP : SWEPT;
+      var cv = HK.Voice && HK.Voice.CLIMAX[p.persona] ? (HK.R18M && HK.R18M.topLines ? HK.R18M.topLines(p, HK.Voice.CLIMAX[p.persona]) : HK.Voice.CLIMAX[p.persona]) : null;
+      return { k: k, tag: '流されて', text: S.fmt(S.pick(sw), v) + (cv ? p.name + '「' + S.pick(cv) + '」' : ''), why: '正気に戻っても流された（快楽堕ち ' + Math.round(fall * 100) + '・AC ' + Math.round(p.eg.AC) + '・FC ' + Math.round(p.eg.FC) + '）。' + (p.ff ? '続きを拒まなかった' : aTop ? '正気のまま、続きを止めなかった' : mid ? '続きを受け入れ、中出しも拒まなかった' : '二度目の中出しも受け入れた') };
     }
     if (k === 'report') {
       p.reportedNow = true;
-      return { k: k, tag: '通報', text: S.fmt(S.pick(mid ? REPORT_MID : REPORT), v) + (SM.AFTER_SAY && SM.AFTER_SAY.angry[p.persona] ? p.name + S.pick(SM.AFTER_SAY.angry[p.persona]) : ''), why: '怒りと冷静さ（CP ' + Math.round(p.eg.CP) + '・A ' + Math.round(p.eg.A) + '）が、快楽堕ち（' + Math.round(fall * 100) + '）に勝った' };
+      return { k: k, tag: '通報', text: S.fmt(S.pick(mid || aTop || p.ff ? REPORT_MID : REPORT), v) + (SM.AFTER_SAY && SM.AFTER_SAY.angry[p.persona] ? p.name + S.pick(SM.AFTER_SAY.angry[p.persona]) : ''), why: '怒りと冷静さ（CP ' + Math.round(p.eg.CP) + '・A ' + Math.round(p.eg.A) + '）が、快楽堕ち（' + Math.round(fall * 100) + '）に勝った' };
     }
     p.fled = true;
-    return { k: k, tag: '逃げ出した', text: S.fmt(S.pick(mid ? FLEE_MID : FLEE), v), why: '頭が真っ白になった（AC ' + Math.round(p.eg.AC) + '）' };
+    return { k: k, tag: '逃げ出した', text: S.fmt(S.pick(mid || aTop || p.ff ? FLEE_MID : FLEE), v), why: '頭が真っ白になった（AC ' + Math.round(p.eg.AC) + '）' };
   };
 })();
 /* 受け攻め・女性どうしの差し替え（solo-saimin.js の variant() が使う）

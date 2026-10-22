@@ -162,6 +162,9 @@
     }
     /* 受け攻め：サキュバスが攻めの指定なら、抱く側の文を使う */
     var sTop = HK.Pos && (HK.Pos.vsNpc(p, '') === 'top' || (HK.Pos.of(p) === 'riba' && rng() < 0.5));
+    /* 自分で「攻め」を選んだサキュバスは、獲物に主導権を取られたり、逆に搾られたりしない */
+    var hTop = !!(HK.Pos && HK.Pos.hardTop(p));
+    var noRecv = function (arr) { if (!hTop) return arr; var f = arr.filter(function (x) { return !SB.RECV_RE.test(x); }); return f.length ? f : arr; };
     if (score < -5) {
       kind = 'fail'; p.cnt.fail++; p.cnt.streak++; p.m.mood -= 10; p.cnt.shame++;
       t += ST.fmt(ST.pick(S, ty.fail && rng() < 0.6 ? ty.fail : SB.FAIL[p.top]), v) + (VO && rng() < 0.5 ? p.name + ST.pick(S, VO.FAIL[p.persona] || VO.FAIL.gentle) : '');
@@ -173,13 +176,13 @@
       kind = 'melt'; p.cnt.melt++; p.cnt.streak++; p.cnt.shame++; p.m.mood -= 12;
       ml = Math.round(q.vit * (0.1 + rng() * 0.2));
       why += '／感じすぎた（昂り ' + Math.round(p.m.plea) + '・技巧 ' + p.stats.tech + '）';
-      if (lew === 'low') t += ST.fmt(ST.pick(S, SB.MELT_LOW), v);
+      if (lew === 'low') t += ST.fmt(ST.pick(S, noRecv(SB.MELT_LOW)), v);
       else {
-        t += '――' + ST.fmt(ST.pick(S, sTop && SB.MELT_TOP ? SB.MELT_TOP : SB.MELT), v);
-        if (HK.Voice.CLIMAX[p.persona] && rng() < 0.6) t += p.name + '「' + ST.pick(S, HK.Voice.CLIMAX[p.persona]) + '」';
-        else if (SB.VOICE.MELT[p.persona]) t += p.name + ST.pick(S, SB.VOICE.MELT[p.persona]);
+        t += '――' + ST.fmt(ST.pick(S, hTop && SB.MELT_HARD ? SB.MELT_HARD : sTop && SB.MELT_TOP ? SB.MELT_TOP : SB.MELT), v);
+        if (HK.Voice.CLIMAX[p.persona] && rng() < 0.6) t += p.name + '「' + ST.pick(S, noRecv(HK.Voice.CLIMAX[p.persona])) + '」';
+        else if (SB.VOICE.MELT[p.persona]) t += p.name + ST.pick(S, noRecv(SB.VOICE.MELT[p.persona]));
       }
-      t += ST.fmt(ST.pick(S, SB.MELT_AFTER), v) + (ml ? '（吸えたのは' + ml + 'mlだけ）' : '');
+      t += ST.fmt(ST.pick(S, noRecv(SB.MELT_AFTER)), v) + (ml ? '（吸えたのは' + ml + 'mlだけ）' : '');
       p.m.plea = 35;
       if (rng() < 0.4) { p.skip = true; why += '／腰が抜けて次の一時間は休み'; }
     } else {
@@ -190,7 +193,9 @@
       if (lew === 'low') t += ST.fmt('――二人は{spot}の奥へ消えた。何があったのかは、{a}の満ち足りた顔だけが知っている。', v);
       else if (ty.tk) { t += '――' + ST.fmt(SB.say(S, ST.pick(S, sTop ? ty.top : ty.tk), ty.id + '_tk', p), v); }
       else { t += '――' + ST.fmt(ST.pick(S, sTop && SB.TAKE_TOP ? SB.TAKE_TOP[p.top] : SB.TAKE[p.top]), v); }
-      if (q.stamina && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.cnt.reverse++; p.m.plea = 100; p.skip = true; ml = Math.round(ml * 1.4); t += ST.fmt(ST.pick(S, sTop && SB.REVERSE_TOP ? SB.REVERSE_TOP : SB.REVERSE), v); why += '／相手の底なしの体力に逆に搾られた'; }
+      if (q.stamina && hTop && SB.REVERSE_HARD && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.m.plea = 100; p.skip = true; ml = Math.round(ml * 1.4); t += ST.fmt(ST.pick(S, SB.REVERSE_HARD), v); why += '／底なしの体力の相手に、朝まで主導権を渡さなかった'; }
+      else if (q.stamina && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.cnt.reverse++; p.m.plea = 100; p.skip = true; ml = Math.round(ml * 1.4); t += ST.fmt(ST.pick(S, sTop && SB.REVERSE_TOP ? SB.REVERSE_TOP : SB.REVERSE), v); why += '／相手の底なしの体力に逆に搾られた'; }
+      else if (q.incubus && hTop) { ml = Math.round(ml * 0.6); t += ST.fmt('――ところが{t}も、{a}から吸い返そうとしてきた。{a}は{t}の手首を押さえつけ、一滴も吸い返させなかった。ただ、同業者の精は薄かった。', v); }
       else if (q.incubus) { ml = Math.round(ml * 0.6); t += ST.fmt('――ところが{t}も、{a}から吸い返そうとしてきた。同業者どうしの吸い合いは、引き分けに終わった。', v); }
       t += ST.fmt(ST.pick(S, SB.CLIMAX), { a: p.name, t: q.name, ml: ml });
       if (kind === 'big') t += ST.fmt(ST.pick(S, SB.BIG), v);

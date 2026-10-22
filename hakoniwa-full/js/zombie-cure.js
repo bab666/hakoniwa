@@ -173,7 +173,9 @@
     var lv = Z.cureAssault ? (ctx.env.zlewd === 'high' ? 'high' : ctx.env.zlewd === 'off' ? 'off' : 'fade') : 'off';
     /* 犯される描写は、怪物になった側が「受け」でなく、襲われる側が「攻め」でないときだけ */
     /* 襲われる側が「攻め」指定なら、犯される展開にはしない（喰われる・助け出されるだけ） */
-    var sexual = lv !== 'off' && !(HK.Pos && HK.Pos.of(o) === 'bottom') && !(HK.Pos && HK.Pos.of(c) === 'top') && rng() < 0.6;
+    /* 怪物になった o が c を襲う向き（HK.Pos.order の先頭が o）で、二人の向きが決まる組（okSex）のときだけ */
+    function sexOK(x) { var P = HK.Pos; return !P || (P.canReceive(x) && P.okSex(o, x) && P.order(o, x, [o, x])[0] === o); }
+    var sexual = lv !== 'off' && sexOK(c) && rng() < 0.6;
     var lvr = Z.loverOf ? Z.loverOf(ctx, c, o) : null, lvHere = lvr && mates.indexOf(lvr) >= 0;
     var pow = mates.reduce(function (s0, x) { return s0 + (x.weapon ? x.weapon.pow : 0); }, 0);
     var brave = mates.reduce(function (s0, x) { return Math.max(s0, x.tr.np * 0.5 + x.tr.cp * 0.3 + x.tr.aggr * 0.3); }, 0);
@@ -211,7 +213,7 @@
     if (r2 < save + (1 - save) * 0.4) {
       /* 助けに入った仲間も、巻き込まれる */
       var vic = ctx.most(mates, function (x) { return x.tr.np + x.tr.impulse * 0.5; });
-      var body2 = sexual && !(HK.Pos && HK.Pos.of(vic) === 'top') ? Z.cureAssault(ctx, vic, o, mates.filter(function (x) { return x !== vic; }).concat([]), lv, { second: true, first: c }) : '';
+      var body2 = sexual && sexOK(vic) ? Z.cureAssault(ctx, vic, o, mates.filter(function (x) { return x !== vic; }).concat([]), lv, { second: true, first: c }) : '';
       ctx.act2({ actors: actors, cat: 'death', text: head + body + fill(ctx.pick(T.caught), { a: c.name, b: o.name, m: vic.name }) + body2 + fill(ctx.pick(sexual ? (lv === 'high' ? T.dieSex : T.dieFade) : T.eaten), mm), why: whyH + '――助けに入った' + vic.name + 'も巻き込まれた', mag: 64 });
       ctx.kill(c, null, sexual ? '治療薬で怪物になった' + o.name + 'に、仲間の前で犯されながら喰い殺された' : '治療薬で怪物になった' + o.name + 'に喰われた');
       vic.hp -= 45 + rng.int(30); ctx.stress(vic, 40);

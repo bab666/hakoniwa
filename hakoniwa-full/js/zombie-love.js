@@ -92,6 +92,8 @@
     id: 'z_lv_night', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) {
       if (Z.loveLv(ctx) === 'off' || !Z.isLover(ctx, a, b)) return false;
+      /* 受け攻めの向きが決まらない組（攻め×攻めなど）は、恋人でも夜を過ごさない */
+      if (HK.Pos && !HK.Pos.okSex(a, b)) return false;
       if (Z.part(ctx) < 2) return false;
       var pf = ctx.pair(a, b);
       if ((pf.zlvN || 0) >= 2 || (pf.zlvAt != null && ctx.stepIndex - pf.zlvAt < 6)) return false;
@@ -103,7 +105,9 @@
       ctx.mod2(a, b, { att: 8, aff: 8, trust: 6 }, { att: 8, aff: 8, trust: 6 });
       a.stress = Math.max(0, a.stress - 12); b.stress = Math.max(0, b.stress - 12);
       var lv = Z.loveLv(ctx), v = { a: a.name, b: b.name };
-      var ask = say(ctx, a, LV.nightAsk), t = (/^「/.test(ask) ? a.name : '') + fill(ask, v);
+      /* 誘う側が受けに回る組では、誘う側が相手を組み伏せる書き方（覆いかぶさる・手首を掴む）を使わない */
+      var lead = !HK.Pos || HK.Pos.order(a, b, [a, b])[0] === a, askL = (LV.nightAsk[a.persona] || LV.nightAsk.gentle).filter(function (s) { return lead || !/覆いかぶさ|手首を掴|引き寄せ/.test(s); });
+      var ask = ctx.pick(askL.length ? askL : LV.nightAsk.gentle), t = (/^「/.test(ask) ? a.name : '') + fill(ask, v);
       var body = lv === 'high' && LV.nightHigh ? LV.nightHigh(ctx, a, b) : fill(ctx.pick(LV.nightFade), v);
       return { text: t + body + fill(ctx.pick(LV.nightAfter), v), why: '恋人どうし（' + Z.day(ctx) + '日目の夜）。明日の保証がない（焦り ' + Math.round(a.stress) + '・' + Math.round(b.stress) + '）', mag: 34 };
     }
@@ -259,6 +263,8 @@
         ['press', a.tr.aggr * 0.45 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.tr.np * 0.2 - a.tr.ac * 0.25 + (a.goal.id === 'chaos' ? 0.3 : 0)],
         ['grave', a.tr.ac * 0.45 + a.tr.np * 0.3 + a.tr.caution * 0.2 - a.tr.honesty * 0.2 + (ctx.present().some(function (o) { return o !== a && o !== b && Z.isLover(ctx, b, o); }) ? 0.5 : 0)]
       ];
+      /* 自分で攻めを選んだ相手には、関係を迫って壁際に追い詰める場面にしない */
+      if (HK.Pos && HK.Pos.hardTop(b)) opts = opts.filter(function (o) { return o[0] !== 'press'; });
       var k = HK.weighted(rng, opts, function (o) { return Math.pow(Math.max(0.03, o[1]), 2); })[0];
       pf.zcr = k;
       var rb = ctx.R(b, a), loveOK = HK.canLove(b, a);

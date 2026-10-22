@@ -72,6 +72,9 @@
       AC: L('{b}は{a}の胸に顔を埋めたまま、「好き」と小さく言った。二度目は言ってくれなかった。|{b}は{a}の匂いの残るシャツを、こっそり抱きしめて眠った。')
     },
     bondAfter: L('番の二人は、互いの匂いに包まれたまま眠った。{o}のうなじの噛み跡に、{x}は眠る前にもう一度だけキスをした。|{x}は{o}の噛み跡を指でなぞりながら、「一生、離さない」と言った。{o}は「知ってる」と笑った。|翌朝、{b}の首筋には新しい印がいくつも増えていた。{b}はタートルネックを探しながら、まんざらでもない顔をしていた。'),
+    /* 女性どうし（女性のα×女性のΩなど）：この世界観に女性αの体の設定はないので、いちもつ・ノットは使わず、指・舌・肌・玩具で。{a}=動く側 */
+    playFF: L('{a}は{b}の首筋から胸へ、{sb}の匂いを確かめるように唇を這わせ、そのまま指をゆっくりと沈めていった。|{a}は{b}と脚を絡め、互いの熱いところを擦り合わせた。{sa}と{sb}の匂いが混ざって、二人だけの匂いになった。|{a}は{b}の脚のあいだに顔を埋め、{b}が「もう、だめ」と言うまで舌を止めなかった。|{a}は引き出しから玩具を取り出し、震える先端を{b}の一番敏感なところに押し当てた。{b}は{a}の腕にしがみついた。|{a}は双頭の玩具で{b}とつながり、額を合わせたまま、ゆっくりと腰を揺らした。|{a}は{b}の胸の先を唇で含みながら、指先で花芯をそっと転がした。{b}の指が、{a}の髪に絡んだ。'),
+    knotFF: L('二人はほとんど同時に達した。重なった鼓動と、混ざり合った匂いが、なかなか静まらなかった。|{b}は{a}の指をきつく締めつけながら、声にならない声を上げて達した。|{b}が達したあとも、{a}は{b}を抱きしめたまま、{b}の首筋の匂いを吸い込んでいた。'),
     low: L('――その夜、寝室の明かりは遅くまで消えなかった。|――翌朝、二人は同じ毛布にくるまって、昼過ぎまで起きてこなかった。|――そのあとのことは、二人だけが知っている。|――カーテンの隙間から朝日が差す頃、二人はようやく眠りについた。')
   };
 
@@ -80,25 +83,46 @@
     var fb = sx(y) === 'a' && sx(x) !== 'a' ? [y, x] : [x, y];
     var lr = HK.Pos ? HK.Pos.order(x, y, fb) : fb, A = lr[0], B = lr[1], cb = combo(A, B);
     var lew = ctx.env.lewd || 'mid', sc = OM.sc || function (t) { return t; };
-    var op = pick(ctx, bond ? T.bondOpen : T.coupleOpen);
+    var ff = HK.Pos && HK.Pos.ff(A, B), hardA = HK.Pos && HK.Pos.hardTop(A), fx = HK.Pos && HK.Pos.fixed(A, B);
+    var Oq = sx(B) === 'o' ? B : sx(A) === 'o' ? A : B;
+    /* Ω（{o}）が攻めのときは、αがΩに触れて力を抜かせる書き出しを使わない */
+    var bo = T.bondOpen.filter(function (l) { return Oq !== A || !/^\{x\}は\{o\}|\{o\}は小さく震えた|\{o\}の体から力が抜け/.test(l); });
+    var op = pick(ctx, bond ? (bo.length ? bo : T.coupleOpen) : T.coupleOpen);
     var out = [(ctx.rng() < 0.25 ? '' : pick(ctx, T.when)) + op];
+    /* 受け攻めの指定：攻めを選んだ人が跨がられて主導権を握られる書き方・あとで上下が入れ替わる書き方は使わない */
+    var plays = function (pl) { var l = (pl[cb] || pl.base).filter(function (x) { return !(hardA && /主導権/.test(x)); }); return l.length ? l : pl.base; };
     if (lew === 'low') out.push(pick(ctx, T.low));
-    else {
+    else if (ff) {
+      if (ctx.rng() < 0.6) out.push(pick(ctx, T.lead[top(A)]));
+      out.push(pick(ctx, T.playFF));
+      if (lew === 'high' && ctx.rng() < 0.5) out.push('それから、' + pick(ctx, T.playFF));
+      out.push(pick(ctx, T.knotFF));
+      var Vf = HK.Voice;
+      if (Vf && ctx.rng() < 0.7) out.push(Vf.line(function (arr) { return ctx.pick(arr); }, B.persona, 'climax', 'b'));
+    } else {
       if (ctx.rng() < 0.6) out.push(pick(ctx, T.lead[top(A)]));
       var pl = pick(ctx, T.play);
-      out.push(pick(ctx, pl[cb] || pl.base));
-      if (lew === 'high' && ctx.rng() < 0.5) { var p2 = pick(ctx, T.play); if (p2 !== pl) out.push('それから、' + pick(ctx, p2[cb] || p2.base)); }
-      if (ctx.rng() < (cb === 'ao' ? (bond ? 0.8 : 0.5) : 0.6)) out.push(pick(ctx, T.knot[cb]));
+      out.push(pick(ctx, plays(pl)));
+      if (lew === 'high' && ctx.rng() < 0.5) { var p2 = pick(ctx, T.play); if (p2 !== pl) out.push('それから、' + pick(ctx, plays(p2))); }
+      var kn = T.knot[cb].filter(function (x) { return !(fx && /次はこっちが上/.test(x)); });
+      if (ctx.rng() < (cb === 'ao' ? (bond ? 0.8 : 0.5) : 0.6)) out.push(pick(ctx, kn.length ? kn : T.knot[cb]));
       var V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
       if (V && ctx.rng() < 0.7) out.push(V.line(pf, B.persona, 'climax', 'b'));
     }
     out.push(pick(ctx, bond && ctx.rng() < 0.5 ? T.bondAfter : T.after[top(B)]));
     var O = sx(B) === 'o' ? B : sx(A) === 'o' ? A : B, X = O === A ? B : A;
-    return { text: out.map(function (s) { return sc(ctx.t(s.replace(/\{o\}/g, O.name).replace(/\{x\}/g, X.name), A, B), A, B); }).join(''), A: A, B: B, cb: cb };
+    var text = out.map(function (s) { return sc(ctx.t(s.replace(/\{o\}/g, O.name).replace(/\{x\}/g, X.name), A, B), A, B); }).join('');
+    if (ff && HK.FF) text = HK.FF.fix(ctx, text, A, B, { tools: true });
+    return { text: text, A: A, B: B, cb: cb };
   }
   OM.loveScene = scene;
   /* 発情期の場面にも、組み合わせごとのプレイを差し込む（A=攻め B=受け のテンプレートを返す） */
-  OM.lovePlay = function (ctx, A, B) { var pl = pick(ctx, T.play), cb = combo(A, B); return 'それから、' + pick(ctx, pl[cb] || pl.base); };
+  OM.lovePlay = function (ctx, A, B) {
+    if (HK.Pos && HK.Pos.ff(A, B)) return 'それから、' + pick(ctx, T.playFF);
+    var pl = pick(ctx, T.play), cb = combo(A, B), hardA = HK.Pos && HK.Pos.hardTop(A);
+    var l = (pl[cb] || pl.base).filter(function (x) { return !(hardA && /主導権/.test(x)); });
+    return 'それから、' + pick(ctx, l.length ? l : pl.base);
+  };
 
   var CB_LABEL = { ao: 'α攻め×Ω受け', oa: 'Ω攻め×α受け', aa: 'α同士', oo: 'Ω同士', b: 'βがいる組' };
   scen.events.push({
