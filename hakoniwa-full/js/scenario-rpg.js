@@ -103,6 +103,8 @@
 
   function run(input) {
     var ST = HK.Story, S = ST.state(input, 'rpg'), rng = S.rng, env = S.env, P = S.P;
+    /* 結果に「最も心を寄せた相手」とエゴグラムとの比較を出す（solo-story-kit.js）。関係の値はないので、設定した関係と記録のやりとりから */
+    S.egoNotes = true; S.bondFn = function (S0, a, b) { var t = tieOf(input, a, b); return /lover|mate|fated|best|crush|almost|yan/.test(t) ? 0.4 : /friend|buddy|childhood|sibling|sibclose|sibprot|parent|mentor/.test(t) ? 0.25 : /enemy|bad|rival/.test(t) ? -0.35 : 0; };
     var dmul = 0.7 + env.danger / 100 * 0.9, lmul = 0.6 + env.loot / 100 * 1.2;
     var pot = Math.max(1, Math.round(P.length * 0.7)), gold = 0, floor = 0, banked = 0, ended = '', bossDown = 0;
     P.forEach(function (p) {

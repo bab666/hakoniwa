@@ -58,7 +58,56 @@
   ST.snap = function (S, keys) {
     S.hist.push({ n: S.log.length, label: S.label, v: S.P.map(function (p) { return keys.map(function (k) { return Math.round(p.m[k] || 0); }); }) });
   };
+  /* ---------- エゴグラムらしさ・最も心を寄せた相手（ゾンビの街などの箱庭の結果に倣う） ----------
+     S.egoNotes を立てた物語型の箱庭で使う。S.bondFn(S, a, b) があれば関係の値（-1〜1）を、なければ記録の中のやりとりから見る */
+  var EGO_CAT = [
+    ['conflict', /故障|危機|感染|誘拐|遭難|失敗|置き去り|暴れ|ケンカ|喧嘩|口論|嫉妬|対立|裏切|襲|戦い|戦闘|奪い合い|敵視|処刑|告発|疑い|執着/],
+    ['romance', /夜|恋|キス|告白|デート|誘い|口説|ときめ|求愛|触れ合い|片恋/],
+    ['help', /治療|看病|救出|回避|守|助け|手当|かば|仲直り|慰め|弔い|身代わり/],
+    ['escape', /発見|探索|調査|レポート|研究|推理|手がかり|捜査|謎|占い|鑑定/],
+    ['bond', /食事|酒盛り|会話|絆|語ら|団らん|共同|二人で|機嫌|名探偵どうし|晩酌/]
+  ];
+  function egoCat(tag) { for (var i = 0; i < EGO_CAT.length; i++) if (EGO_CAT[i][1].test(tag || '')) return EGO_CAT[i][0]; return 'solo'; }
+  ST.egoNotes = function (S) {
+    /* 物語型では「脱出」の札を、探索・調査・推理の意味で使う */
+    var CN = Object.assign({}, HK.CAT_NAME || {}, { escape: '探索・調査' }), P = S.P, EXP = HK.EXPECT || {}, FH = HK.FACTOR_HIGH || {};
+    /* 記録の中のやりとり（a が主語で b と一緒の出来事） */
+    var inter = {};
+    S.log.forEach(function (e) {
+      if (!e.actors || e.actors.length < 2 || e.kind === 'step' || e.kind === 'phase') return;
+      var c = egoCat(e.tag), d = c === 'conflict' ? -1 : c === 'solo' || c === 'escape' ? 0.3 : 1, a0 = e.actors[0];
+      e.actors.slice(1).forEach(function (b0) { if (b0 === a0) return; var k = a0 + '>' + b0; inter[k] = (inter[k] || 0) + d; });
+    });
+    function val(a, b) {
+      var v = S.bondFn ? S.bondFn(S, a, b) * 100 : 0;
+      return v + (inter[a.i + '>' + b.i] || 0) * (S.bondFn ? 4 : 12);
+    }
+    P.forEach(function (p) {
+      var cats = {}, t = HK.egoType(p.eg);
+      S.log.forEach(function (e) { if (e.actors && e.actors[0] === p.i && e.tag && e.kind !== 'phase' && e.kind !== 'step') { var c = egoCat(e.tag); cats[c] = (cats[c] || 0) + 1; } });
+      /* 役割の仕事など「単独行動」に数えるものが多いので、ほかの種類が2回以上あればそちらを重心にする */
+      var ks = Object.keys(cats).sort(function (x, y) { return cats[y] - cats[x]; }), ks2 = ks.filter(function (k) { return k !== 'solo' && cats[k] >= 2; });
+      if (ks2.length) ks = ks2;
+      if (ks.length && cats[ks[0]] >= 2) {
+        var top = ks[0];
+        if ((EXP[t.top] || []).indexOf(top) < 0) p.notes.push('エゴグラムでは' + t.top + '優位（' + (FH[t.top] || '') + '）なのに、この箱庭では「' + (CN[top] || top) + '」に最も多く動いた。状況が別の面を引き出している。');
+        else p.notes.push('行動の重心は「' + (CN[top] || top) + '」。' + t.top + '優位の気質（' + (FH[t.top] || '') + '）がそのまま出た。');
+      }
+      var maxOut = null, mo = -999, maxIn = null, mi = -999, fear = null, fv = -25;
+      P.forEach(function (o) {
+        if (o === p) return;
+        var out = val(p, o), inn = val(o, p);
+        if (out > mo) { mo = out; maxOut = o; }
+        if (inn > mi) { mi = inn; maxIn = o; }
+        if (out < fv) { fv = out; fear = o; }
+      });
+      if (maxOut && maxIn && maxOut !== maxIn && mo > 25 && mi > 25) p.notes.push(p.name + 'が最も心を寄せたのは' + maxOut.name + 'だが、' + p.name + 'を最も想っていたのは' + maxIn.name + 'だった。');
+      else if (maxOut && mo > 25) p.notes.push('最も心を寄せた相手は' + maxOut.name + (maxOut === maxIn ? '。想いは向こうからも返ってきていた。' : '。'));
+      if (fear) p.notes.push('最も神経を尖らせていた相手は' + fear.name + '。');
+    });
+  };
   ST.result = function (S, input, o) {
+    if (S.egoNotes && !S.egoDone) { S.egoDone = true; ST.egoNotes(S); }
     var res = {
       solo: true, story: true, scenId: S.scen.id, seed: input.seed, env: S.env, input: input,
       log: S.log, hist: S.hist, turns: S.turns, ending: o.ending, estats: o.estats || [], table: o.table || null,

@@ -172,6 +172,8 @@
 
   function run(input) {
     var S = ST.state(input, 'ship'), rng = S.rng, env = S.env, P = S.P, T = SH.T;
+    /* 結果に「最も心を寄せた相手」とエゴグラムとの比較を出す（solo-story-kit.js） */
+    S.egoNotes = true; S.bondFn = bond;
     S.ties = (input.ties || []).filter(function (t) { return t.a !== t.b && t.a < P.length && t.b < P.length; });
     S.relD = {}; S.relEv = {}; S.rom = {}; S.jeal = []; S.left = []; S.saved = []; S.bday = {}; S.items = []; S.reports = []; S.planet = null; S.deaths = [];
     var sup = env.supply / 100;

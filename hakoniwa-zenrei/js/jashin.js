@@ -68,6 +68,8 @@
 
   function run(input) {
     var S = ST.state(input, 'jashin'), rng = S.rng, env = S.env, P = S.P;
+    /* 結果に「最も心を寄せた相手」とエゴグラムとの比較を出す（solo-story-kit.js） */
+    S.egoNotes = true; S.bondFn = function (S0, a, b) { return JS.REL ? JS.REL.bond(S0, a, b) : 0; };
     loopTag = '';
     /* 神と村 */
     var pool = env.god === 'myth' ? JS.GODS.filter(function (g) { return g.myth; }) : env.god === 'local' ? JS.GODS.filter(function (g) { return !g.myth; }) : JS.GODS;

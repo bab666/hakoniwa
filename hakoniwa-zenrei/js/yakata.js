@@ -68,6 +68,8 @@
 
   function run(input) {
     var S = ST.state(input, 'yakata'), rng = S.rng, env = S.env, P = S.P;
+    /* 結果に「最も心を寄せた相手」とエゴグラムとの比較を出す（solo-story-kit.js） */
+    S.egoNotes = true; S.bondFn = bond;
     S.ties = (input.ties || []).filter(function (t) { return t.a !== t.b && t.a < P.length && t.b < P.length; });
     S.M = rng.pick(Y.MANSIONS); S.kills = []; S.pool = []; S.need = 4; S.fake = 0; S.framed = null; S.over = null; S.notes = [];
     /* ---------- 役割 ---------- */
