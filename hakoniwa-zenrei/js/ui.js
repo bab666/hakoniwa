@@ -407,6 +407,15 @@
     return (S.per[c.id][scenId] = S.per[c.id][scenId] || { action: 'auto', goal: 'auto', stats: {}, weapon: 'random' });
   }
 
+  /* R18版で、設定や展開しだいで R18 の描写が入る箱庭の説明（常に R18 の箱庭はキャッチコピーの R18 で示す） */
+  /* 人数・R18 を外すと何も残らないキャッチコピーの代わり */
+  var KICK_GENRE = { dungeon: '罠・探索', massage: 'あやしい施術', hole: '壁の穴・放置', kaihen: '日常のずれ', succubus: '夜の街・比べられる', saimin: 'いたずら', variety: 'テレビ番組・対決', locker: '密室' };
+  var R18_PLOT = { goukon: 'お持ち帰りの夜', whiteroom: '条件がエッチ・媚薬などのとき' };
+  function scenR18(s, id) {
+    var env = (s.env || []).filter(function (e) { return /R-?18/.test(e.label || ''); }).map(function (e) { return '「' + e.label.replace(/（R-?18）/, '') + '」'; });
+    if (env.length) return '設定' + env.join('・') + 'で描写あり';
+    return R18_PLOT[id] ? R18_PLOT[id] + 'に描写あり' : '';
+  }
   function renderBox() {
     var scen = HK.SCENARIOS[S.scenId];
     /* 同じ箱庭が二重に登録されても、一覧には一度だけ出す */
@@ -422,9 +431,15 @@
       var s = HK.SCENARIOS[id];
       /* 成人向けの箱庭は、ピンクのボックスと赤いR18タグでひと目で分かるようにする */
       var adult = !HK.SAFE_ON && /R-?18/.test(s.kicker || '');
-      var kick = adult ? esc(s.kicker).replace(/R-?18/, '<span class="r18tag">R18</span>') : esc(s.kicker);
+      /* キャッチコピーに手書きで混ざった人数・R18 は外し、人数とR18の有無は下の一行にそろえて出す */
+      var kt = String(s.kicker || '').replace(/（\d+(?:〜\d+)?人）/, '').replace(/^\d+(?:〜\d+)?人・/, '').replace(/・?R-?18/, '').replace(/^ソロ(?:（[^）]*）)?・?/, '').replace(/^・|・$/g, '');
+      if (!kt) kt = KICK_GENRE[id] || '';
+      var kick = esc(kt) + (adult ? '<span class="r18tag">R18</span>' : '');
+      var lo = smin(id), hi = smax(id), meta = '参加 ' + (lo === hi ? lo + '人' : lo + '〜' + hi + '人');
+      var r18s = !HK.SAFE_ON && !adult ? scenR18(s, id) : '';
+      if (r18s) meta += '<span class="r18part"><span class="r18tag">R18</span>' + esc(r18s) + '</span>';
       return '<label class="scen' + (adult ? ' adult' : '') + (id === S.scenId ? ' on' : '') + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (id === S.scenId ? ' checked' : '') + '>' +
-        '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="d">' + esc(s.desc) + '</div>' + (s.note ? '<div class="note">' + esc(s.note) + '</div>' : '') + '</label>';
+        '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div><div class="d">' + esc(s.desc) + '</div>' + (s.note ? '<div class="note">' + esc(s.note) + '</div>' : '') + '</label>';
     }).join('');
     /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url） */
     if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<a class="scen r18link" href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">' +

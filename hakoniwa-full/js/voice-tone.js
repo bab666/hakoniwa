@@ -43,7 +43,7 @@
     if (irr) return stem.slice(0, stem.length - cut) + FORMS[irr][fi];
     var c = stem.slice(-1), pre = stem.slice(-2, -1);
     /* 「人います」「猫います」：名詞のあとの「い」は「いる」（「言い」「会い」などの動詞は除く） */
-    if (c === 'い' && isKanji(pre) && !/[言思会買使払笑願迷歌洗拭誘違吸追争祝救狙雇酔結揃匂舞這繕伴担戦失奪補従扱漂味叶通構呪貰養]/.test(pre)) return stem.slice(0, -1) + FORMS['いる'][fi];
+    if (c === 'い' && isKanji(pre) && !/[言思会買使払笑願迷歌洗拭誘違吸追争祝救狙雇酔結揃匂舞這繕伴担戦失奪補従扱漂味叶通構呪貰養行誓拾庇伺敬繕問負]/.test(pre)) return stem.slice(0, -1) + FORMS['いる'][fi];
     var ichidan = /[えけげせぜてでねへべめれ]$/.test(stem) || ICHI.test(stem) || (isKanji(c) && !I2U[c]);
     if (ichidan) return stem + ['る', 'ない', 'た', 'よう'][fi];
     if (!I2U[c] || !(isKanji(pre) || /[ぁ-ん]/.test(pre))) return null;
