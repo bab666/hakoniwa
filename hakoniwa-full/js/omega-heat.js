@@ -112,9 +112,11 @@
     if (extraPlay) out.splice(out.length - (rev || !opt.beta ? 1 : 1), 0, extraPlay);
     var V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
     if (V && lew !== 'low') {
-      if (ctx.rng() < 0.35) out.splice(out.length - 1, 0, V.line(pf, b.persona, 'edge', 'b'));
-      out.push(V.line(pf, b.persona, 'climax', 'b'));
-      if (ctx.rng() < 0.3) out.push(V.line(pf, a.persona, 'climax', 'a'));
+      /* 声は受ける側のもの（Ωが攻めのときは、相手の声） */
+      var rc = rev ? a : b, rk = rev ? 'a' : 'b', gv = rev ? b : a, gk = rev ? 'b' : 'a';
+      if (ctx.rng() < 0.35) out.splice(out.length - 1, 0, V.line(pf, rc.persona, 'edge', rk));
+      out.push(V.line(pf, rc.persona, 'climax', rk));
+      if (ctx.rng() < 0.3) out.push(V.line(pf, gv.persona, 'climax', gk));
     }
     var sc = OM.sc || function (t) { return t; };
     var txt = out.map(function (s) { return sc(ctx.t(s, a, b), a, b); }).join('');

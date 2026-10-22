@@ -210,7 +210,7 @@
     g.m.imm += 2.5 + (g.goal.id === 'top' ? 2 : 0);
     var gain = (8 + ai * 4 + rng() * 10) * g.sens;
     g.m.plea += gain;
-    var why = g.name + '（' + SIT.giver + '・' + g.topWhy + '）の「' + act[0] + '」' + (g.action.id === 'bold' ? '／大胆な方針' : g.action.id === 'care' ? '／丁寧な方針' : '');
+    var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」' + (g.action.id === 'bold' ? '／大胆な方針' : g.action.id === 'care' ? '／丁寧な方針' : '');
     if (g.m.plea >= 100) { g.m.plea = 25; g.cnt.gclimax++; t += ST.pick(S, gTop && !gFree ? KH.GCLIMAX.filter(function (x) { return !/奥/.test(x); }) : KH.GCLIMAX).replace(/\{p\}/g, g.name) + (lew !== 'low' && rng() < 0.6 ? g.name + '「' + ST.pick(S, topL(g, HK.Voice.CLIMAX[g.persona] || HK.Voice.CLIMAX.gentle)) + '」' : ''); g.m.doubt += 6 * g.doubtRate; why += '／' + g.name + '自身も達した（感じやすさ ' + g.stats.sens + '）'; }
     if (r) {
       r.cnt.served++; r.cnt.climax++; r.m.sem += ml; r.m.plea = clamp(r.m.plea + 25 * r.sens, 0, 100);
@@ -257,7 +257,7 @@
     }
     g.cnt.served++; g.m.imm += 2.5 + (g.goal.id === 'top' ? 2 : 0);
     g.m.plea += (gAct ? 8 : 18) * g.sens + rng() * 8;
-    var why = g.name + '（' + SIT.giver + '・' + g.topWhy + '）の「' + act[0] + '」／女性どうしの施術（' + (gAct ? g.name : r.name) + 'が動く側）';
+    var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」／女性どうしの施術（' + (gAct ? g.name : r.name) + 'が動く側）';
     if (!gAct) g.cnt.gclimax++;
     if (g.m.plea >= 100) { g.m.plea = 25; if (gAct) { g.cnt.gclimax++; t += ST.pick(S, KH.GCLIMAX.filter(function (x) { return !/奥/.test(x); })).replace(/\{p\}/g, g.name); } g.m.doubt += 6 * g.doubtRate; }
     r.cnt.served++; if (gAct) r.cnt.climax++; r.m.plea = clamp(r.m.plea + 25 * r.sens, 0, 100);
