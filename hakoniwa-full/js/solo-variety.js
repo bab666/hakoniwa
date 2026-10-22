@@ -207,9 +207,9 @@
         var cAct = P.filter(function (p) { return !p.away; });
         if (ce.id === 'sore') cAct = cAct.filter(function (x) { return x !== res.first; });
         var who = cAct.slice().sort(function (x, y) { return ce.fit(y.tr, y) - ce.fit(x.tr, x); })[0];
-        if (who && ce.fit(who.tr, who) > 0.45) {
+        if (who && ce.fit(who.tr, who) > 0.45 && !(ce.id === 'flirt' && !cAct.some(function (x) { return x !== who && okS(who, x); }))) {
           S.flags['ce_' + ce.id] = (S.flags['ce_' + ce.id] || 0) + 1;
-          var oth = rng.pick(cAct.filter(function (x) { return x !== who; })) || who;
+          var oth = rng.pick(cAct.filter(function (x) { return x !== who && (ce.id !== 'flirt' || okS(who, x)); })) || who;
           if (ce.id === 'kind' && res.last && res.last !== who) oth = res.last;
           var cf = ce.fx;
           if (cf.score) who.m.score += cf.score;
@@ -321,7 +321,7 @@
           else if ((K.stat === 'gaman' && !/笑|吹き出|拒否/.test(t)) || (K.stat !== 'gaman' && rng() < 0.3 && /喘|声|果て|イっ|達/.test(t))) { climax(p, 1); if (!win) t += moan(p); }
           if (win) { t += numFix(quote(p, winners.length > 1 && VA.WIN_TIE ? VA.WIN_TIE : VA.WIN), winners.length) + mcr(winners.length === 2 ? 'draw' : 'win'); p.cnt.first++; giveTitle(p, K, 0); if (!out.first) out.first = p; }
           var isFirstOut = !win && r.rv === minRv2;
-          if (isFirstOut) { giveTitle(p, K, 1); t += mcr('climax', 0.4); }
+          if (isFirstOut) { giveTitle(p, K, 1); if (!tp) t += mcr('climax', 0.4); }
           var pts = win ? 30 : rank === 2 ? 18 : rank === 3 ? 10 : 2;
           addPts(p, pts, dbl);
           if (isFirstOut) p.cnt.last++;
@@ -352,7 +352,7 @@
           /* 向きの決まらない組：アシスタントを相手に、別々に同じ勝負をする */
           if (!okS(a, b) && VA.DUEL_NG) {
             t = fill(ST.pick(S, VA.DUEL_NG.play), a, b);
-            if (draw) { t += fill(ST.pick(S, VA.DUEL_NG.draw), a, b); addPts(a, 10, dbl); addPts(b, 10, dbl); ST.sayB(S, { actors: [a, b], tag: '引き分け', text: t + mcr('draw', 0.5), why: K.name + '（別々に対戦）：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／両者+10点', mag: 18 }, a.name + '×' + b.name + '＝引き分け', i === 0); continue; }
+            if (draw) { t += fill(ST.pick(S, VA.DUEL_NG.draw), a, b); addPts(a, 10, dbl); addPts(b, 10, dbl); ST.sayB(S, { actors: [a, b], tag: '引き分け', text: t, why: K.name + '（別々に対戦）：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／両者+10点', mag: 18 }, a.name + '×' + b.name + '＝引き分け', i === 0); continue; }
             t += fill(ST.pick(S, VA.DUEL_NG.hit), w, l) + quote(w, VA.WIN) + (rng() < 0.5 ? quote(l, VA.LOSE) : '');
             addPts(w, 25, dbl); addPts(l, 3, dbl); w.cnt.first++;
             if (Math.min(va, vb) < wv) { wv = Math.min(va, vb); worst = l; }
@@ -367,7 +367,7 @@
             var oT = ord(a, b), T0 = oT[0], B0 = oT[1], vT = T0 === a ? va : vb, vB = T0 === a ? vb : va;
             t = fill(ST.pick(S, DP.play), T0, B0) + (ty === 'lover' || ty === 'mate' || ty === 'fwb' ? 'まさかの恋人同士の対決に、スタジオが沸いた。' : ty === 'rival' || ty === 'enemy' ? '因縁の二人の対決に、スタジオの空気が張り詰めた。' : '');
             if (draw) {
-              t += fill(ST.pick(S, VA.DUEL_POS_DRAW), T0, B0) + mcr('draw', 0.7);
+              t += fill(ST.pick(S, VA.DUEL_POS_DRAW), T0, B0);
               addPts(a, 10, dbl); addPts(b, 10, dbl);
               ST.sayB(S, { actors: [T0, B0], tag: '引き分け', text: t, why: K.name + '：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／両者+10点', mag: 22 }, a.name + '×' + b.name + '＝引き分け', i === 0);
               continue;
@@ -451,7 +451,7 @@
           return;
         }
         if (touch) touchN++;
-        var t = ST.fmt(ST.pick(S, touch ? K.play : VA.GUESS_LOOK), { a: p.name, h: H.name }) + ST.fmt(ST.pick(S, ok ? K.hit : K.miss), { a: p.name, h: H.name });
+        var t = ST.fmt(ST.pick(S, touch ? K.play : VA.GUESS_LOOK), { a: p.name, h: H.name }) + ST.fmt(ST.pick(S, touch ? (ok ? K.hit : K.miss) : (ok ? VA.GUESS_LOOK_HIT : VA.GUESS_LOOK_MISS)), { a: p.name, h: H.name });
         if (/lover|mate|fwb/.test(r.ty)) t += ok ? '恋人のものを外すわけにはいかなかった。' : '恋人のものを外した。' + H.name + 'の目が据わっていた。';
         var pts = ok ? (nCorrect === 0 ? 30 : 20) : 0;
         if (ok) { nCorrect++; p.att[H.i] = (p.att[H.i] || 0) + 1; } else wrong++;

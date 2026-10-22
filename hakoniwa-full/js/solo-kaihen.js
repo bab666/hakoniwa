@@ -135,7 +135,8 @@
   var G_RECV = { '壺洗い': 1 };
   var R_RECV = { '前立腺マッサージ': 1, 'ストレッチ': 1, '触診（全身）': 1 };
   function serve(S, SIT, g, r, lew) {
-    if (r && HK.Pos && HK.Pos.ff(g, r) && KH.FF_ACTS) return serveFF(S, SIT, g, r, lew);
+    /* 受ける側が女性なら、男性器を前提にした採取の手順は使えない（施す側が男性でも、女性どうしと同じ手順に） */
+    if (r && HK.Pos && KH.FF_ACTS && (HK.Pos.ff(g, r) || HK.Pos.isF(r))) return serveFF(S, SIT, g, r, lew);
     var rng = S.rng, npc = !r, rname = npc ? rng.pick(SIT.npc) : r.name;
     /* 受け攻め：施す側が攻めなら「攻めの施術」だけ、受けなら「受け入れる施術」だけを使う */
     var Pz = HK.Pos, gTop = false, gFree = false;
@@ -237,7 +238,10 @@
   function serveFF(S, SIT, g, r, lew) {
     var rng = S.rng, NG = KH.FF_NG, sid = S.v.sid, FA = KH.FF_ACTS[sid] || KH.FF_ACTS.clinic;
     var gAct = HK.Pos.order(g, r, [g, r])[0] === g, dir = gAct ? 'give' : 'take';
-    var act = rng.pick(FA[dir]);
+    /* 施す側が女性でないときは、施す側の体を女性として書いた手順（受ける側が指を沈める・脚を絡めて擦り合わせる）を除く */
+    var gF = HK.Pos.isF(g), MALE_NG = /重ね合わせ|擦り合わせ|脚を絡め|指を沈め|指が沈む/;
+    var acts = gF ? FA[dir] : FA[dir].filter(function (x) { return !MALE_NG.test(x[1]); });
+    var act = rng.pick(acts.length ? acts : FA[dir]);
     g.cnt.acts[act[0]] = (g.cnt.acts[act[0]] || 0) + 1;
     var v = { p: g.name, r: r.name, place: S.v.place, boss: S.v.boss };
     var ok = function (l) { var f = (l || []).filter(function (x) { return !NG.test(x); }); return f.length ? f : null; };
@@ -257,7 +261,7 @@
     }
     g.cnt.served++; g.m.imm += 2.5 + (g.goal.id === 'top' ? 2 : 0);
     g.m.plea += (gAct ? 8 : 18) * g.sens + rng() * 8;
-    var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」／女性どうしの施術（' + (gAct ? g.name : r.name) + 'が動く側）';
+    var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」／' + (gF ? '女性どうしの施術' : '女性の受け手への施術') + '（' + (gAct ? g.name : r.name) + 'が動く側）';
     if (!gAct) g.cnt.gclimax++;
     if (g.m.plea >= 100) { g.m.plea = 25; if (gAct) { g.cnt.gclimax++; t += ST.pick(S, KH.GCLIMAX.filter(function (x) { return !/奥/.test(x); })).replace(/\{p\}/g, g.name); } g.m.doubt += 6 * g.doubtRate; }
     r.cnt.served++; if (gAct) r.cnt.climax++; r.m.plea = clamp(r.m.plea + 25 * r.sens, 0, 100);

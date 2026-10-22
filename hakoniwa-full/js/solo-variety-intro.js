@@ -42,7 +42,8 @@
 
   /* 意気込みの一文を組み立てる */
   VA.introLine = function (S, p, P, mc) {
-    var rng = S.rng, others = P.filter(function (q) { return q !== p; });
+    /* 気になる共演者は、恋愛になりうる組（HK.Pos.okSex）から選ぶ */
+    var rng = S.rng, others = P.filter(function (q) { return q !== p && (!HK.Pos || HK.Pos.okSex(p, q)); });
     var c = others.length ? others[rng.int(others.length)].name : '共演者';
     var v = { a: p.name, c: c }, r = rng(), t;
     var combo = VA.INTRO_COMBO[p.action.id + '_' + p.goal.id];
