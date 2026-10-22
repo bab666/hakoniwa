@@ -165,7 +165,7 @@
       drunk.forEach(function (q) {
         if (rng() < 0.5) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, PL('solo', SC.solo)), { a: q.name }) + (HK.R18M ? HK.R18M.solo(S, q) : ''), why: '相手がいなかった' }, q.name + 'は一人で悶えた');
         else if (hardTop(q)) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, SERVANT_TOP), { a: q.name }) + (HK.R18M ? HK.R18M.say(S, q, 'top') : ''), why: '館の使用人が慰めに来たが、' + q.name + 'のほうが組み伏せた（受け攻めの指定：攻め）' }, q.name + 'は使用人と');
-        else ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, PL('servant', SC.servant)), { a: q.name }) + (HK.R18M ? HK.R18M.npc(S, 'servant') + HK.R18M.moans(S, q, ['start', 'mid', 'climax']) : ''), why: '館の使用人に慰められた' }, q.name + 'は使用人と');
+        else ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: HK.JDark && HK.JDark.roll(S, q) ? HK.JDark.text(S, 'servant', q) : F(ST.pick(S, PL('servant', SC.servant)), { a: q.name }) + (HK.R18M ? HK.R18M.npc(S, 'servant') + HK.R18M.moans(S, q, ['start', 'mid', 'climax']) : ''), why: '館の使用人に慰められた' }, q.name + 'は使用人と');
       });
       /* 正気の人が現場を守ると、手がかりは失われない */
       var gd = sober.filter(function (q) { return q.tr.caution + q.tr.cp > 0.9; })[0];
@@ -204,7 +204,9 @@
         var v = HK.weighted ? HK.weighted(rng, vs, function (q) { return 1 + q.m.fear / 50 + (q.tr.caution < 0.4 ? 1 : 0); }) : rng.pick(vs);
         var kill = S.kills.length < 5 && day <= S.env.days && rng() < 0.4 + c.tr.cold * 0.2;
         var mv = { c: c.name, v: v.name }, M = HK.R18M;
-        var t = (T.assault_in ? F(ST.pick(S, T.assault_in), mv) : '') + (M ? M.resist(S, c, v, { endure: false }) : '') + F(ST.pick(S, isFF(c, v) && T.ff ? T.ff.assault : T.assault), mv) + (M ? M.say(S, v, 'endure') : '') + F(ST.pick(S, kill ? T.assault_kill : T.assault_live), { c: c.name, v: v.name });
+        /* たまに長い版（jashin-dark-thick.js）。結末（殺す／口をつぐむ）の文はそのまま続ける */
+        var aLong = HK.JDark && HK.JDark.roll(S, v) ? HK.JDark.text(S, 'assault', v, c) + '\n\n' : '';
+        var t = (aLong || (T.assault_in ? F(ST.pick(S, T.assault_in), mv) : '') + (M ? M.resist(S, c, v, { endure: false }) : '') + F(ST.pick(S, isFF(c, v) && T.ff ? T.ff.assault : T.assault), mv) + (M ? M.say(S, v, 'endure') : '')) + F(ST.pick(S, kill ? T.assault_kill : T.assault_live), { c: c.name, v: v.name });
         ST.say(S, { actors: [c, v], tag: '凌辱', kind: 'climax', text: t, why: '快楽殺人の犯人' + c.name + 'が、' + v.name + 'を無理やり犯した（冷酷さ・衝動）。' + (kill ? 'そのまま殺した' : v.name + 'は恐怖で口をつぐんだ'), mag: 46 });
         Y.setRel(S, c, v, -0.8, '凌辱', c);
         if (kill) { S.forceTgt = v; S.forceWhy = '快楽殺人：' + v.name + 'を犯したあと、殺した'; }
