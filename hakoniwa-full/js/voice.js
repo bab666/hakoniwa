@@ -427,11 +427,15 @@
   V.addresseeOf = addresseeOf;
   /* who が、この台詞では敬語で話すか（ふだんの口調が敬語なら対象外） */
   function keigoHere(text, s, e, q, who, people, actors) {
-    if (!who || !who.keigo || who.persona === 'polite') return false;
-    var ks = Object.keys(who.keigo).filter(function (k) { return who.keigo[k]; });
-    if (!ks.length) return false;
+    if (!who || who.persona === 'polite') return false;
+    /* 「年上には敬語」：年齢が分かっていて、相手のほうが年上なら敬語 */
+    var older = who.keigoOlder && who.age > 0;
+    var ks = who.keigo ? Object.keys(who.keigo).filter(function (k) { return who.keigo[k]; }) : [];
+    if (!ks.length && !older) return false;
     var to = addresseeOf(text, s, e, q, who, people, actors);
-    return !!(to && who.keigo[to.name]);
+    if (!to) return false;
+    if (who.keigo && who.keigo[to.name]) return true;
+    return !!(older && to.age > who.age);
   }
 
   /* people: [{name, fp, tone, persona, gender, keigo}]。actors（任意）はその出来事の登場人物
@@ -495,7 +499,7 @@
     if (!res || !input || !input.chars) return res;
     var people = input.chars.map(function (c, i) {
       var r = (res.chars && res.chars[i]) || (res.heroes && res.heroes[i]) || {};
-      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', calls: c.calls || null, keigo: c.keigo || null };
+      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder };
       p.persona = r.persona || HK.personaOf({ tone: c.tone, eg: c.eg });
       return p;
     });

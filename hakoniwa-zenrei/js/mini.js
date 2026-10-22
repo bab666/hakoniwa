@@ -196,6 +196,14 @@
     return !L.some(function (x) { return x && x.likes === 'none'; });
   }
   HK.loveTalkOk = loveTalkOk; HK.LOVE_TXT = LOVE_TXT;
+  function ageFits(t, a, b) {
+    if (/同い年|同じ年/.test(t)) return a.age === b.age;
+    if (/\{b\}(?:が|は|の方が|のほうが)年上/.test(t)) return b.age > a.age;
+    if (/\{b\}(?:が|は|の方が|のほうが)年下/.test(t)) return b.age < a.age;
+    if (/\{a\}(?:が|は|の方が|のほうが)年上/.test(t)) return a.age > b.age;
+    if (/\{a\}(?:が|は|の方が|のほうが)年下/.test(t)) return a.age < b.age;
+    return true;
+  }
   /* DSL → エンジンのイベント形式 */
   HK.E = function (id, cat, scope, w, when, fx, texts) {
     var terms = parseExpr(w), conds = parseWhen(when), effects = parseFx(fx);
@@ -230,6 +238,8 @@
         }
         var cand = c ? list : list.filter(function (t) { return t.indexOf('{c}') < 0; });
         if (hasLove && !loveTalkOk(ctx, [a, b, c])) { var nl = cand.filter(function (t) { return !LOVE_TXT.test(t); }); if (nl.length) cand = nl; }
+        /* 年齢が決まっている二人なら、「同い年」「年上」の文は実際の年齢に合うものだけ */
+        if (b && a.age && b.age) { var ag = cand.filter(function (t) { return ageFits(t, a, b); }); if (ag.length) cand = ag; else return null; }
         var text = ctx.t(ctx.pick(cand.length ? cand : list), a, b, c);
         if (withTail && b && ctx.rng() < 0.55) text += tail(ctx, b, tcat, false, text);
         if (selfTail && ctx.rng() < 0.5) text += tail(ctx, a, 'solo', true);

@@ -296,7 +296,35 @@
   L.month = function (ctx, s) {
     var f = CAL[ctx.label];
     if (f) { f(ctx); ctx.flush(); }
+    birthdays(ctx);
   };
+
+  /* ======================= 誕生日（プロフィールの誕生月） ======================= */
+  var BD_GROUP = ['朝、{a}が教室に入ると、黒板いっぱいに「HAPPY BIRTHDAY」の文字が描かれていた。描いたのは{n}だった。', '{n}は、{a}の机にこっそり寄せ書きの色紙を置いておいた。{a}は昼休みまで気づかなかった。', '放課後、{n}は{a}を引き止めて、コンビニのケーキにろうそくを一本立てた。', '{n}は、{a}の誕生日に合わせて、昼休みに小さなお菓子の山を作った。{a}は「大げさだって」と言いながら、笑っていた。'];
+  var BD_ONE = ['{b}は{a}に「誕生日でしょ」と言って、紙パックのジュースを一本おごった。', '{b}は{a}の誕生日を覚えていた。帰り際、{a}の鞄に小さな包みを入れておいた。', '{b}は朝いちばんに「誕生日おめでとう」と言った。{a}は、それだけで一日機嫌がよかった。'];
+  var BD_LOVE = ['{b}は放課後の教室で、{a}に小さな箱を渡した。「誕生日、おめでとう。……一番に言いたかった」', '{b}は{a}の誕生日に、一緒に帰ろうと声をかけた。途中で寄った公園で、手作りのお守りを渡した。'];
+  var BD_NONE = ['今日が{a}の誕生日だということを、クラスの誰も知らなかった。{a}は帰り道、自分で小さなケーキを一つ買った。', '{a}は誕生日の一日を、いつも通りに過ごした。家に帰ってから、母親からのメッセージに気づいた。'];
+  function birthdays(ctx) {
+    var m = parseInt(ctx.label, 10);
+    if (!m) return;
+    ctx.flags.bday = ctx.flags.bday || {};
+    ctx.present().forEach(function (a) {
+      if (+a.bmonth !== m || ctx.flags.bday[a.i]) return;
+      ctx.flags.bday[a.i] = 1;
+      var fr = ctx.others(a).filter(function (o) { return R(ctx, o, a).aff > 20 && o.role !== 'teacher'; }).sort(function (x, y) { return R(ctx, y, a).aff - R(ctx, x, a).aff; });
+      var lv = fr.filter(function (o) { return ctx.romanceOk([o, a]) && (ctx.pair(o, a).couple || R(ctx, o, a).att > 40); })[0];
+      if (lv && ctx.rng() < 0.6) {
+        ctx.act2({ actors: [lv, a], cat: 'romance', fx: function () { ctx.mod2(lv, a, { att: 5, aff: 4 }, { att: 8, aff: 6 }); ctx.stress(a, -8); }, text: ctx.t(ctx.pick(BD_LOVE), a, lv), why: a.name + 'の誕生日（' + m + '月）。' + lv.name + 'の想い', mag: 14 });
+      } else if (fr.length >= 2) {
+        var g = fr.slice(0, Math.min(3, fr.length));
+        ctx.act2({ actors: [a].concat(g), cat: 'bond', fx: function () { g.forEach(function (o) { ctx.mod2(o, a, { aff: 3 }, { aff: 6, trust: 3 }); }); ctx.stress(a, -10); }, text: ctx.t(ctx.pick(BD_GROUP).replace(/\{n\}/g, g.map(function (o) { return o.name; }).join(g.length > 2 ? '・' : 'と')), a), why: a.name + 'の誕生日（' + m + '月）', mag: 12 });
+      } else if (fr.length) {
+        ctx.act2({ actors: [fr[0], a], cat: 'bond', fx: function () { ctx.mod2(fr[0], a, { aff: 3 }, { aff: 6, trust: 4 }); ctx.stress(a, -6); }, text: ctx.t(ctx.pick(BD_ONE), a, fr[0]), why: a.name + 'の誕生日（' + m + '月）', mag: 10 });
+      } else {
+        ctx.act2({ actors: [a], cat: 'solo', fx: function () { ctx.stress(a, 6); }, text: ctx.t(ctx.pick(BD_NONE), a), why: a.name + 'の誕生日（' + m + '月）。まだ、祝ってくれるほど親しい人がいない', mag: 8 });
+      }
+    });
+  }
 
   /* ======================= いじめ ======================= */
   var FORMS = [

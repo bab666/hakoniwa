@@ -42,7 +42,7 @@
   ].map(function (c) { return { name: c.name, eg: HK.fromCode(c.code), memo: c.memo }; });
 
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {} }; }
+  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder }; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -70,6 +70,10 @@
     c.call = okCall(c.call) ? c.call || '' : '';
     c.calls = obj(c.calls);
     c.keigo = obj(c.keigo);
+    /* 誕生月（1〜12）と年齢（1〜150）。分からなければ空 */
+    c.bmonth = +c.bmonth >= 1 && +c.bmonth <= 12 ? String(Math.floor(+c.bmonth)) : '';
+    c.age = +c.age >= 1 && +c.age <= 150 ? String(Math.floor(+c.age)) : '';
+    c.keigoOlder = !!c.keigoOlder;
     c.loveLock = typeof c.loveLock === 'string' ? c.loveLock : '';
     if (c.icon && !(typeof c.icon === 'string' && /^data:image\//.test(c.icon))) delete c.icon;
     return c;
@@ -290,6 +294,9 @@
         if (c.icon) o.icon = c.icon;
         if (c.color) o.color = c.color;
         if (c.call) o.call = c.call;
+        if (c.bmonth) o.bmonth = +c.bmonth;
+        if (c.age) o.age = +c.age;
+        if (c.keigoOlder) o.keigoOlder = true;
         if (c.loveLock && idx[c.loveLock] != null) o.loveLock = idx[c.loveLock];
         if (c.calls) { var cl = {}; Object.keys(c.calls).forEach(function (id) { if (idx[id] != null && c.calls[id]) cl[idx[id]] = c.calls[id]; }); if (Object.keys(cl).length) o.calls = cl; }
         if (c.keigo) { var kg = Object.keys(c.keigo).filter(function (id) { return idx[id] != null && c.keigo[id]; }).map(function (id) { return idx[id]; }); if (kg.length) o.keigo = kg; }
@@ -340,6 +347,9 @@
       if (o.tone == null || o.tone === '' || (HK.toneValid ? HK.toneValid(o.tone) : HK.PERSONA[o.tone])) c.tone = o.tone || '';
       if (typeof o.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(o.color)) c.color = o.color;
       if (typeof o.call === 'string') c.call = o.call;
+      if (o.bmonth != null) c.bmonth = o.bmonth;
+      if (o.age != null) c.age = o.age;
+      if (o.keigoOlder) c.keigoOlder = true;
       c._lk = o.loveLock; c._cl = o.calls; c._kg = o.keigo;
       if (o.fp != null) c.fp = String(o.fp).trim().slice(0, 8);
       if (typeof o.icon === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(o.icon) && o.icon.length < 400000) c.icon = o.icon;
@@ -555,7 +565,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', call: c.call || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '' };
+          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', call: c.call || '', bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '' };
         });
       })(),
       perChar: castFor(S.scenId).map(function (c) {
