@@ -59,6 +59,32 @@
     return out.join('');
   }
 
+  /* 女性が攻め・男性が受け：女性上位（押し倒して跨る）で組み立てる（HK.FM の文）。喘ぐのは主に受けの男性 */
+  function fmSex(S, x, y, opt) {
+    var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };
+    var ctx = { pick: function (a) { return pick(S, a); } };
+    var st = mood === 'rough' ? 'rough' : mood === 'love' ? 'gentle' : HK.FF && HK.FF.styleOf ? HK.FF.styleOf(x) : 'gentle';
+    var fill = function (s) { return s.replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name); };
+    var out = [];
+    if (opt.fore !== false) out.push(fill(HK.FM.pick(ctx, 'open', st)));
+    out.push(fill(HK.FM.pick(ctx, 'body', st)));
+    out.push(say(S, y, 'start'));
+    if (!opt.short) {
+      out.push(say(S, x, 'top'));
+      out.push(say(S, y, 'mid'));
+    }
+    out.push(say(S, y, 'climax'));
+    if (rng() < 0.35) {
+      /* 攻めの女性の果てる声から、「出す」「締める」など男性の体を前提にした台詞を外す */
+      var tc = (D.V[toneKey(x)] || D.V.gentle).topc.filter(function (s) { return !FF_TOPC_NG.test(s); });
+      out.push(x.name + '「' + pick(S, tc.length ? tc : TOP_OK) + '」');
+    }
+    out.push(fill(HK.FM.pick(ctx, 'climax', st)));
+    if (!opt.short && rng() < 0.6) out.push(say(S, rng() < 0.6 ? y : x, 'after'));
+    S.r18Last = '女性上位';
+    return out.join('');
+  }
+
   /* 体位を選ぶ */
   function pickPos(S, x, y, mood, allow) {
     var list = allow ? D.POS.filter(function (p) { return allow.indexOf(p.id) >= 0; }) : D.POS;
@@ -90,6 +116,7 @@
       /* 向きは必ず HK.Pos.order に従う（自分で攻めを選んだ人を受けの位置に置かない） */
       if (HK.Pos) { var od = HK.Pos.order(x, y, [x, y]); x = od[0]; y = od[1]; }
       if (HK.Pos && HK.FF && HK.Pos.ff(x, y)) return ffSex(S, x, y, opt);
+      if (HK.FM && HK.FM.on(x, y)) return fmSex(S, x, y, opt);
       var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };
       var pos = opt.pos ? D.POS.filter(function (p) { return p.id === opt.pos; })[0] : pickPos(S, x, y, mood, opt.allow);
       if (!pos) pos = pickPos(S, x, y, mood);
