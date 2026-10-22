@@ -100,22 +100,62 @@
   var PN_LETTER = ['b', 'c', 'd', 'e', 'f', 'g', 'h'];
   var PN_SUR = ['新', '第二の', ''];
   var PN_WORD = ['ガイア', 'エデン', 'テラ', 'ホープ', 'ヘイヴン', 'ソラリス', 'オアシス'];
-  function planetName(rng) {
-    var r = rng();
-    if (r < 0.28) return PN_CAT[rng.int(PN_CAT.length)] + (rng() < 0.5 ? '-' : '') + (10 + rng.int(990)) + PN_LETTER[rng.int(PN_LETTER.length)];
-    if (r < 0.5) return PN_CODE[rng.int(PN_CODE.length)] + (100 + rng.int(900));
-    if (r < 0.82) return PN_MYTH[rng.int(PN_MYTH.length)] + (rng() < 0.7 ? PN_ROMAN[rng.int(PN_ROMAN.length)] : '');
-    if (r < 0.92) return PN_SUR[rng.int(PN_SUR.length)] + PN_WORD[rng.int(PN_WORD.length)] + (rng() < 0.5 ? '-' + (2 + rng.int(8)) : '');
-    return PN_MYTH[rng.int(PN_MYTH.length)] + '・' + GREEK[rng.int(GREEK.length)];
+  /* 不思議な響きの名前（「ボボボボタ星」など）と、「赤の荒野」のような色の名前 */
+  var PN_KANA = ['ボ', 'バ', 'ポ', 'プ', 'ペ', 'ゾ', 'ズ', 'ギ', 'ガ', 'モ', 'ム', 'ヌ', 'ニ', 'ル', 'ラ', 'リ', 'タ', 'ト', 'ピ', 'ヨ', 'ケ', 'キ', 'ド', 'ダ', 'パ', 'ミ', 'メ', 'ノ', 'ヒ', 'フ'];
+  var PN_COLOR = ['赤', '青', '白', '黒', '金', '銀', '翠', '紫', '灰', '琥珀', '瑠璃', '薄紅'];
+  var PN_NOUN = ['荒野', '沈黙', '揺りかご', '涙', '庭', '果て', '眠り', '砂時計', '祈り', '迷宮', '微笑', '傷跡', '鏡', '花冠', '残響', '海'];
+  function oddName(rng) {
+    var k = function () { return PN_KANA[rng.int(PN_KANA.length)]; }, a = k(), b = k(), c = k();
+    var pat = rng.int(8);
+    var n = pat === 0 ? a + a + a + a + b : pat === 1 ? a + a + b : pat === 2 ? a + b + a + b : pat === 3 ? a + a + b + b : pat === 4 ? a + b + b + a : pat === 5 ? a + 'ン' + b + 'ン' : pat === 6 ? a + 'ー' + b + c : a + b + '・' + c + c;
+    return n + '星';
   }
-  function makePlanet(S) {
+  /* 船員が自分の名前をつける：飾りの言葉はいちばん強い気質（エゴグラム）で変わる */
+  var PN_SELF = {
+    CP: ['グレート', 'キング', 'インペリアル', '鉄の', '偉大なる'],
+    NP: ['スウィート', 'マザー', 'やさしい', 'ハッピー', 'ぬくもりの'],
+    A: ['ドクター', 'ロジカル', 'プロフェッサー', '観測者', '第一'],
+    FC: ['プリティ', 'スーパー', 'ミラクル', 'キラキラ', 'ファンキー'],
+    AC: ['リトル', 'ちいさな', 'ひっそり', 'おずおず', 'ささやかな']
+  };
+  function selfName(rng, p) {
+    var top = p.eg && HK.egoType ? HK.egoType(p.eg).top : 'FC', L0 = PN_SELF[top] || PN_SELF.FC, w = L0[rng.int(L0.length)];
+    return { name: (/^[ァ-ヶー]+$/.test(w) ? w + '・' : w) + p.name + '星', top: top, deco: w };
+  }
+  /* 名前をつけるのは見つけた船員。どんな名前にするかで、名づけの一言も変わる */
+  function planetName(rng, namer) {
+    var r = rng();
+    if (namer && r < 0.12) { var sn = selfName(rng, namer); return { name: sn.name, how: 'self', deco: sn.deco, top: sn.top }; }
+    if (r < 0.28) return { name: PN_CAT[rng.int(PN_CAT.length)] + (rng() < 0.5 ? '-' : '') + (10 + rng.int(990)) + PN_LETTER[rng.int(PN_LETTER.length)], how: 'cat' };
+    if (r < 0.42) return { name: PN_CODE[rng.int(PN_CODE.length)] + (100 + rng.int(900)), how: 'cat' };
+    if (r < 0.58) return { name: PN_MYTH[rng.int(PN_MYTH.length)] + (rng() < 0.7 ? PN_ROMAN[rng.int(PN_ROMAN.length)] : ''), how: 'myth' };
+    if (r < 0.65) return { name: PN_SUR[rng.int(PN_SUR.length)] + PN_WORD[rng.int(PN_WORD.length)] + (rng() < 0.5 ? '-' + (2 + rng.int(8)) : ''), how: 'hope' };
+    if (r < 0.82) return { name: oddName(rng), how: 'odd' };
+    if (r < 0.95) return { name: PN_COLOR[rng.int(PN_COLOR.length)] + 'の' + PN_NOUN[rng.int(PN_NOUN.length)], how: 'color' };
+    return { name: PN_MYTH[rng.int(PN_MYTH.length)] + '・' + GREEK[rng.int(GREEK.length)], how: 'myth' };
+  }
+  var NAMING = {
+    cat: L('{a}は、星図の決まりどおりに「{x}」と登録した。|{a}は、航法記録の番号をそのまま使って「{x}」と名づけた。{a}「覚えやすさより、正確さが大事だから」'),
+    myth: L('{a}は、古い神話から名を借りて「{x}」と名づけた。|{a}は、子どもの頃に読んだ星の物語を思い出し、その星を「{x}」と呼ぶことにした。'),
+    hope: L('{a}は、願いを込めて「{x}」と名づけた。ここが、新しい故郷になるようにと。|{a}は少し照れながら「{x}」と書き込んだ。誰も笑わなかった。'),
+    odd: L('{a}は、星を見た瞬間に浮かんだ響きのまま「{x}」と名づけた。{a}「そういう顔をしてたから」――意味を訊かれても、それしか答えなかった。|{a}が命名欄に「{x}」と書き込んだ。{b}は二度見したが、{a}はもう次の観測に移っていた。|{a}の口から、なぜか「{x}」という名前がこぼれ落ちた。言ってみると、もうそれ以外の名前は考えられなかった。'),
+    color: L('{a}は、窓いっぱいに広がる星の色を見つめて、「{x}」と名づけた。|{a}は星の第一印象をそのまま名前にした。「{x}」。誰も異を唱えなかった。')
+  };
+  var NAMING_SELF = {
+    CP: L('{a}は胸を張って「{x}」と命名した。{a}「見つけた者が名をつける。当然の権利だ」{b}は呆れたが、反対はしなかった。|{a}は堂々と「{x}」と書き込んだ。{b}の抗議は、{a}のひと睨みで静かになった。'),
+    NP: L('{a}は少し照れながら「{x}」と名づけた。{a}「みんなが帰ってこられる場所になってほしいから」{b}は笑って、そのまま採用した。|{a}は命名欄に「{x}」と書いて、すぐに消そうとした。{a}「やっぱり変かな」{b}がその手を止めた。'),
+    A: L('{a}は「{x}」と登録した。{a}「発見者の名を冠するのは、天文学の慣例だから」{b}は、{a}の耳が少し赤いのに気づいていた。|{a}は事務的な口調で「{x}」と命名した。ただ、記録を保存したあと、こっそり三回読み返していた。'),
+    FC: L('{a}「決めた！　この星は今日から{x}！」{b}が「自分の名前をつけるのはずるい」と言ったが、{a}はもう星に向かって手を振っていた。|{a}はうきうきと命名欄に「{x}」と打ち込み、勝手に記念写真まで撮った。{b}は頭を抱えたが、結局その名前で呼ぶことになった。'),
+    AC: L('{a}「だ、だめならいいんだけど……{x}って、どうかな」{b}が「いいじゃん」と言うと、{a}は真っ赤になってうつむいた。|{a}は誰にも言わずに、命名欄にそっと「{x}」と書き込んだ。{b}が気づいたのは、星に着いてからだった。')
+  };
+  function makePlanet(S, namer) {
     var rng = S.rng, T = SH.RES || [], LF = SH.LIFE || [], CV = SH.CIV || [];
     var res = rng.pick(T), civ = rng.pick(CV), n = rng() < 0.22 ? 0 : rng() < 0.55 ? 1 : rng() < 0.75 ? 2 : 3;
     var life = [], pool = LF.slice();
     for (var k = 0; k < n && pool.length; k++) { var x = pool.splice(rng.int(pool.length), 1)[0]; life.push({ d: x, st: 0 }); }
-    var name = planetName(rng);
+    var pn = planetName(rng, namer), name = pn.name;
     var rare = clamp(Math.round((res.rare + civ.rare + (life.length ? Math.max.apply(null, life.map(function (l) { return l.d.rare; })) : 1)) / 3 + (life.length >= 3 ? 0.6 : life.length === 2 ? 0.3 : 0)), 1, 5);
-    return { name: name, res: { d: res, st: 0 }, civ: { d: civ, st: 0 }, life: life, rare: rare, at: 0 };
+    return { name: name, naming: pn, res: { d: res, st: 0 }, civ: { d: civ, st: 0 }, life: life, rare: rare, at: 0 };
   }
   function stars(n) { return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
   /* 探索の対象：まだ分かっていないものほど選ばれやすい */
@@ -189,9 +229,12 @@
       if (rng() < 0.5) ST.sayB(S, { kind: 'phase', text: pk(S, SH.T.DRIFT), why: 'この月は、星に辿り着けなかった（運 ' + Math.round(ch * 100) + '%）' }, '星は見つからない');
       return;
     }
-    var Pn = S.planet = makePlanet(S); Pn.at = m;
     var a = nav || live(S)[0];
-    var o = ST.say(S, { actors: [a], tag: '星を発見', kind: 'climax', text: F(pk(S, SH.T.FOUND), { a: a.name, x: Pn.name }) + F(pk(S, SH.T.ARRIVE), { x: Pn.name }) + ' ' + Pn.res.d.sky + ' ' + (Pn.civ.d.sky || ''), why: m + 'か月目に、星に辿り着いた（運 ' + Math.round(ch * 100) + '%・' + a.name + 'の航法）。珍しさ ' + stars(Pn.rare) + '（まだ探索していないので、中身は分からない）', mag: 40 });
+    var Pn = S.planet = makePlanet(S, a); Pn.at = m;
+    /* 名づけ：見つけた船員が名前をつける（ときどき自分の名前をつける） */
+    var nb = live(S).filter(function (q) { return q !== a; })[0], nv = { a: a.name, b: nb ? nb.name : '仲間', x: Pn.name };
+    var nmT = Pn.naming.how === 'self' ? F(pk(S, NAMING_SELF[Pn.naming.top] || NAMING_SELF.FC), nv) : F(pk(S, NAMING[Pn.naming.how]), nv);
+    var o = ST.say(S, { actors: [a], tag: '星を発見', kind: 'climax', text: F(pk(S, SH.T.FOUND), { a: a.name, x: Pn.name }).split('惑星' + Pn.name).join(/星$/.test(Pn.name) ? Pn.name : '惑星' + Pn.name).split('星' + Pn.name).join(/星$/.test(Pn.name) ? Pn.name : '星' + Pn.name) + nmT + F(pk(S, SH.T.ARRIVE), { x: Pn.name }) + ' ' + Pn.res.d.sky + ' ' + (Pn.civ.d.sky || ''), why: m + 'か月目に、星に辿り着いた（運 ' + Math.round(ch * 100) + '%・' + a.name + 'の航法）。名づけたのは' + a.name + (Pn.naming.how === 'self' ? '（自分の名前に、' + Pn.naming.top + '優位らしい飾り「' + Pn.naming.deco + '」をつけた）' : '') + '。珍しさ ' + stars(Pn.rare) + '（まだ探索していないので、中身は分からない）', mag: 40 });
     ST.key(S, o, Pn.name + 'を発見した');
     a.cnt.find++;
   }
@@ -398,7 +441,9 @@
     var pick = function (arr) { return pk(S, arr); };
     var body = top ? pick(X2.TOP[m]) : X2.text(S, d, m, pick);
     if (!body) return false;
-    var t = F(body, v) + (top ? '' : F(pick(X2.AFTER[m]), v));
+    /* その後の反応は、受けた人のいちばん強い気質（エゴグラム）で変わる */
+    var ft = a.eg && HK.egoType ? HK.egoType(a.eg).top : 'NP';
+    var t = F(body, v) + (top ? '' : F(pick(X2.AFTER[m]), v) + (X2.REACT && X2.REACT[ft] && rng() < 0.7 ? F(pick(X2.REACT[ft]), v) : ''));
     a.cnt.r18 = (a.cnt.r18 || 0) + 1;
     if (!top) { stress(a, m === 'lure' ? 6 : m === 'probe' ? 8 : 14); a.m.fear = clamp(a.m.fear + (m === 'force' || m === 'take' ? 8 : 2), 0, 100); }
     else stress(a, -5);

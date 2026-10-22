@@ -230,6 +230,8 @@
         if (!out && /じゃん$/.test(body)) out = body.replace(/じゃん$/, 'ではないか');
         if (!out && /[^なさ]かな$/.test(body) && !ask) out = body.replace(/かな$/, 'か');
         if (!out && /[^な]の$/.test(body) && ask) out = body.replace(/の$/, WH.test(body) ? 'のだ' : 'のか');
+        /* 「どこ行ってたのだ」→「どこ行っていたのだ」（縮めた言い方と硬い語尾を混ぜない） */
+        if (out && /[てで]た(のだ|のか)$/.test(out)) out = out.replace(/([てで])た(のだ|のか)$/, '$1いた$2');
         if (!out && /なの$/.test(body) && ask) out = body.replace(/なの$/, 'なのか');
         /* 厳格：やわらかい語尾を、硬い言い切りに（「分かってるね」→「分かっているな」） */
         var b4 = out || body;

@@ -126,6 +126,8 @@
         var D = HK.TIES[t.type], k = VA.INTRO_KIN[t.type] ? t.type : VA.INTRO_KIN[D.like] ? D.like : 'sibling';
         kinDone[a.i] = kinDone[b.i] = 1;
         var tx = ST.fmt(ST.pick(S, VA.INTRO_KIN[k]), { a: a.name, b: b.name, mc: mc });
+        var bt = b.eg && HK.egoType ? HK.egoType(b.eg).top : '';
+        if (VA.KIN_REACT && VA.KIN_REACT[bt] && rng() < 0.6) tx += ST.fmt(ST.pick(S, VA.KIN_REACT[bt]), { a: a.name, b: b.name, mc: mc });
         if (kinBlock(a, b) && VA.INTRO_KIN_NOTE) tx += ST.fmt(ST.pick(S, VA.INTRO_KIN_NOTE), { a: a.name, b: b.name, mc: mc });
         ST.say(S, { actors: [a, b], tag: D.label + 'で出演', text: tx, why: '関係「' + D.label + '」の二人が出演' + (kinBlock(a, b) ? '（血縁なので、二人を組ませる企画はない）' : ''), mag: 16 });
       }); });

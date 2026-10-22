@@ -148,6 +148,8 @@
     if (/てない$/.test(s)) return s.replace(/てない$/, 'ていません');
     if (/しない$/.test(s)) return s.replace(/しない$/, 'しません');
     if (/こない$/.test(s)) return s.replace(/こない$/, 'きません');
+    /* 「本当にない」「ここにない」の「に」は助詞（似ない・煮ないは別） */
+    if (/[^似煮]にない$/.test(s)) return s.replace(/ない$/, 'ありません');
     if ((m = s.match(/(.)ない$/))) {
       if (NAI_STEM[m[1]]) return s.slice(0, -3) + NAI_STEM[m[1]] + 'ません';
       if (/[えけげせぜてでねへべめれいきぎじちにびみり]/.test(m[1]) || isKanji(m[1])) return s.slice(0, -2) + 'ません';

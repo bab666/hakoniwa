@@ -109,6 +109,14 @@
   var HEARD = L('「{p}で見た」という話を聞いた瞬間、{a}の目の色が変わった。|{p}の方で{b}らしい人を見た、という噂が耳に入った。');
   var NOHEAR = L('誰も{b}を見ていなかった。{a}は爪を噛んだ。|手がかりは何もなかった。{a}は「生きてる。絶対に」と自分に言い聞かせた。');
   var FOUND = L('{a}はついに{b}を見つけた。駆け寄って、確かめるように何度も{b}の顔に触れた。「……やっと会えた。もう離れないから」|{b}の姿を見つけた瞬間、{a}は泣き笑いのような顔になった。「探したんだよ。ずっと」|{a}は{b}の腕を掴んで、離さなかった。「どこに行ってたの。……どれだけ探したと思ってるの」');
+  /* 見つけられた側の反応（いちばん強い気質で変わる） */
+  var FOUND_RE = {
+    CP: L('{b}「……なんで来た？　危ないだろう」{b}はそう言いながら、{a}の手を振りほどかなかった。'),
+    NP: L('{b}「無事でよかった」{b}は{a}を抱きしめ返した。{a}の腕に、さらに力がこもった。'),
+    A: L('{b}「どうやってここが分かったの」{b}の問いに、{a}は笑うだけで答えなかった。'),
+    FC: L('{b}「うわ、ほんとに来た！」{b}は目を丸くして、それから少しだけ笑った。'),
+    AC: L('{b}は何も言えずに、{a}に抱きすくめられたまま震えていた。')
+  };
   var GO = L('{a}は、もう{b}のことしか考えられなかった。|{a}は{b}がこの街のどこかにいると信じて、立ち上がった。|{a}の頭の中は、{b}の安否でいっぱいだった。');
   function free(a) { return a.alive && !a.out && a.z && !a.z.alone && !a.z.vanished && a.z.cult == null && !a.z.bitten; }
   /* 探している相手（執着度 55 以上で、別のエリアにいる人） */
@@ -173,7 +181,8 @@
       a.goal = P || a.z.obPrev; a.focus = T; a.z.obKnow = null; a.goalHist = (a.goalHist || []).concat([a.goal.id || a.goal]);
       ctx.mod2(a, T, { att: 6, aff: 4 }, { ten: 4, att: 2 }); a.stress = Math.max(0, a.stress - 20);
       O.add(ctx, a, T, 4);
-      return { with: [T], cat: 'bond', text: ctx.t(ctx.pick(FOUND), a, T) + a.name + 'の目標が変わった：「' + from + '」→「' + a.goal.label + '」', why: O.why(ctx, a, T) + '。探し続けた相手に、ようやく会えた', mag: 22 };
+      var ft = T.eg && HK.egoType ? HK.egoType(T.eg).top : '', fre = FOUND_RE[ft] && ctx.rng() < 0.6 ? ctx.t(ctx.pick(FOUND_RE[ft]), a, T) : '';
+      return { with: [T], cat: 'bond', text: ctx.t(ctx.pick(FOUND), a, T) + fre + a.name + 'の目標が変わった：「' + from + '」→「' + a.goal.label + '」', why: O.why(ctx, a, T) + '。探し続けた相手に、ようやく会えた', mag: 22 };
   }
   /* 区切りの終わりに：移動で同じエリアに来ていれば、その場で会える。居場所を知っている人は、相手が動いても噂で追える */
   function seekAfter(ctx) {
