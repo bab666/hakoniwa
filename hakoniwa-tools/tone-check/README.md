@@ -29,6 +29,10 @@ node worklist.js noja 200 out-full.json out-zen.json > work-noja.txt
 Playwright が見つからないときは `npm i -D playwright` するか、`PLAYWRIGHT_MODULE` にモジュールのパスを、
 `CHROMIUM_PATH` にブラウザのパスを指定してください。
 
+`HOT=1` を付けると、過激さ・媚薬などの設定を最大にして集める（抵抗・喘ぎの台詞を点検したいとき）。
+`lint.js` は、はっきりした口調（強気・兄貴分・厳格・冷静・意地っ張り（中性的）・紳士・のじゃ）に
+「離して」「見ないで」「やだぁ」「〜のよ」のような弱々しい拒み・女性的な語尾が残っていないかも拾う（言い換えは js/tone-firm.js）。
+
 `TONE=gentleman` を付けると全員の口調を固定でき、`FPS=俺,あたし,自分` を付けると一人称を順に設定できます。
 
 ## 書き下ろし辞書の育て方

@@ -140,6 +140,7 @@
       return out;
     },
     /* 人でないもの・村人・使用人の声 */
-    npc: function (S, kind, a) { return F(pick(S, D.NPC[kind]), { a: a ? a.name : '' }); }
+    /* 村人・使用人などの台詞。「」の頭に \u2060 を付けて、住人の口調に言い換えられないようにする（voice.js） */
+    npc: function (S, kind, a) { return F(pick(S, D.NPC[kind]), { a: a ? a.name : '' }).replace(/「(?!\u2060)/g, '「\u2060'); }
   };
 })();
