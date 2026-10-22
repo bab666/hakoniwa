@@ -77,6 +77,7 @@
     c.age = +c.age >= 1 && +c.age <= 150 ? String(Math.floor(+c.age)) : '';
     c.keigoOlder = !!c.keigoOlder;
     c.you = str(c.you, 8).trim();
+    c.marks = str(c.marks, 30).trim();
     c.loveLock = typeof c.loveLock === 'string' ? c.loveLock : '';
     if (c.icon && !(typeof c.icon === 'string' && /^data:image\//.test(c.icon))) delete c.icon;
     return c;
@@ -301,6 +302,7 @@
         if (c.age) o.age = +c.age;
         if (c.keigoOlder) o.keigoOlder = true;
         if (c.you) o.you = c.you;
+        if (c.marks) o.marks = c.marks;
         if (c.loveLock && idx[c.loveLock] != null) o.loveLock = idx[c.loveLock];
         if (c.calls) { var cl = {}; Object.keys(c.calls).forEach(function (id) { if (idx[id] != null && c.calls[id]) cl[idx[id]] = c.calls[id]; }); if (Object.keys(cl).length) o.calls = cl; }
         if (c.keigo) { var kg = Object.keys(c.keigo).filter(function (id) { return idx[id] != null && c.keigo[id]; }).map(function (id) { return idx[id]; }); if (kg.length) o.keigo = kg; }
@@ -356,6 +358,7 @@
       if (o.age != null) c.age = o.age;
       if (o.keigoOlder) c.keigoOlder = true;
       if (o.you != null) c.you = String(o.you).trim().slice(0, 8);
+      if (o.marks != null) c.marks = String(o.marks).trim().slice(0, 30);
       c._lk = o.loveLock; c._cl = o.calls; c._kg = o.keigo;
       if (o.fp != null) c.fp = String(o.fp).trim().slice(0, 8);
       if (typeof o.icon === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(o.icon) && o.icon.length < 400000) c.icon = o.icon;
@@ -573,7 +576,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '' };
+          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '' };
         });
       })(),
       perChar: castFor(S.scenId).map(function (c) {

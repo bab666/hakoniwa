@@ -527,6 +527,8 @@
             if (who.you && !kg && !nounQ) q = V.applyYou(q, who.you);
             if (YOU_ST.test(q0)) q = fixYouStutter(q);
             if (V.applyCalls) q = V.applyCalls(q, who, people);
+            /* 語尾の記号（キャラごとの設定。複数あれば文ごとにランダム） */
+            if (who.marks && !nounQ) q = V.applyMarks(q, who.marks);
           }
           q = q.replace(/([！？!?])。/g, '$1');   /* 「ごめんごめん！。」のような重なりを整える */
           out += text.slice(last, start + 1) + q + '」';
@@ -537,11 +539,29 @@
     return (out + text.slice(last)).replace(/\u2062/g, '');
   };
   /* シミュレーション結果全体に適用 */
+  /* 語尾の記号：文末の「。」「！」を、設定した記号に置き換える（「分かった。引き受けよう」→「分かった！！！引き受けよう！！！」「分かった♣引き受けよう♦」）。
+     記号は空白・読点・カンマ区切りで複数（文ごとに台詞の文字から決まるくじで選ぶので、同じ台詞は同じ結果になる）。
+     問い（？）・言いよどみ（……）・伸ばし（ー〜）・喘ぎ（っ・♡）で終わる文はそのまま */
+  V.marksList = function (m) {
+    return String(m || '').split(/[\s、,，　]+/).map(function (x) { return x.replace(/[「」『』]/g, '').slice(0, 6); }).filter(Boolean).slice(0, 8);
+  };
+  V.applyMarks = function (q, marks) {
+    var L = V.marksList(marks);
+    if (!L.length || !q) return q;
+    var k = 0;
+    function pick() { var h = 0, t = q + '#' + (k++); for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return L[h % L.length]; }
+    var out = q.replace(/([^。！!？?…‥]*?)([。！!]+)(?![？?])/g, function (m, body, p) {
+      if (!body || /[？?…‥ー〜～っッ♡]$/.test(body)) return m;
+      return body + pick();
+    });
+    if (!/[。！!？?…‥ー〜～っッ♡♪」』）)\]]$/.test(out) && L.indexOf(out.slice(-1)) < 0 && !L.some(function (x) { return out.slice(-x.length) === x; })) out += pick();
+    return out;
+  };
   V.processResult = function (res, input) {
     if (!res || !input || !input.chars) return res;
     var people = input.chars.map(function (c, i) {
       var r = (res.chars && res.chars[i]) || (res.heroes && res.heroes[i]) || {};
-      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder, you: c.you || '' };
+      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '' };
       p.persona = r.persona || HK.personaOf({ tone: c.tone, eg: c.eg });
       return p;
     });
