@@ -76,7 +76,7 @@
           if (lastDead && bond(S, a, lastDead) >= 0.3 && bond(S, b, lastDead) >= 0.3) opts.push([a, b, 'shared', 1]);
         }
         if (w >= -0.1 && b.m.fear > 55) opts.push([a, b, 'protect', 0.3 + a.tr.np * 0.5]);
-        if (w >= 0.3 && !has(S, a, b, 'lover,mate,fated,sibling,sibprot,sibclose,sibbad,parent,pparent') && (!HK.canLove || HK.canLove(a, b)) && !S.dConfess) opts.push([a, b, 'confess', 0.25 + a.tr.fc * 0.4 + w * 0.4]);
+        if (w >= 0.3 && !has(S, a, b, 'lover,mate,fated') && !S.ties.some(function (t) { return ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)) && HK.tieNoLove(t); }) && (!HK.canLove || HK.canLove(a, b)) && !S.dConfess) opts.push([a, b, 'confess', 0.25 + a.tr.fc * 0.4 + w * 0.4]);
         if (a.tr.a > 0.5 && (b.traitor || b.plot || b.sold)) opts.push([a, b, 'distrust', 0.6]);
         if (S.ties.some(function (t) { return t.type === 'crush' && t.a === a.i && t.b === b.i; })) { var c = P.filter(function (q) { return q !== a && q !== b && bond(S, b, q) > 0.4; })[0]; if (c) opts.push([a, b, 'jealous', 0.5, c]); }
       });

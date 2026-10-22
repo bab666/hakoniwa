@@ -71,7 +71,7 @@
       var w = t.type === 'crush' ? (t.a === a ? 0.85 : 0.15) : W[t.type] != null ? W[t.type] : 0.1;
       if (LOVE.test(t.type)) love = true;
       if (t.type === 'crush' && t.a === a) crush = true;
-      if (FAMILY.test(t.type)) fam = true;
+      if (HK.tieNoLove ? HK.tieNoLove(t) : FAMILY.test(t.type)) fam = true;
       if (w > best) best = w; if (w < neg) neg = w;
     });
     return { w: best > 0 ? best + neg * 0.3 : neg, love: love, crush: crush, fam: fam };

@@ -34,8 +34,8 @@
       var r = rel(S, a, b), D = HK.TIES[t.type];
       r.tie = t.type;
       r.trust += D.pol * 15; r.ten += D.pol < 0 ? 30 : 0;
-      if (D.family && !D.loveOK) r.att = 0;
-      else if (D.loveOK) r.att += 8;
+      if (HK.tieNoLove(t)) r.att = 0;
+      else if (D.family) r.att += 8;
       else if (D.couple || D.night || t.type === 'almost') r.att += 40;
       else if (t.type === 'crush') r.att += 25;
     });

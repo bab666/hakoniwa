@@ -246,9 +246,10 @@
         '<select id="ta-' + k + '" data-f="tie" data-k="' + k + '" data-p="a" aria-label="関係の起点">' + charOpts(t.a) + '</select>' +
         '<select id="tt-' + k + '" data-f="tie" data-k="' + k + '" data-p="type" aria-label="関係の種類">' + HK.TIE_ORDER.map(function (id) { var d = HK.TIES[id]; return '<option value="' + id + '"' + (id === t.type ? ' selected' : '') + '>' + esc(d.label) + (d.dir ? '（' + d.roleA + '→' + d.roleB + '）' : '') + '</option>'; }).join('') + '</select>' +
         '<select id="tb-' + k + '" data-f="tie" data-k="' + k + '" data-p="b" aria-label="関係の相手">' + charOpts(t.b) + '</select>' +
+        (D.family && !D.loveOK ? '<select id="tl-' + k + '" data-f="tie" data-k="' + k + '" data-p="love" aria-label="恋愛"><option value=""' + (t.love === 'ok' ? '' : ' selected') + '>恋愛：なし</option><option value="ok"' + (t.love === 'ok' ? ' selected' : '') + '>恋愛：あり</option></select>' : '') +
         (function () { var CO = HK.coldOpts ? HK.coldOpts(t.type) : null; return CO ? '<select id="tc-' + k + '" data-f="tie" data-k="' + k + '" data-p="cold" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return '<option value="' + id + '"' + ((t.cold || '') === id ? ' selected' : '') + '>' + esc(CO.map[id].label) + '</option>'; }).join('') + '</select>' : ''; })() +
         '<button class="btn ghost small" data-act="tiedel" data-k="' + k + '">削除</button>' +
-        '<span class="tiehint">' + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '') + '</span></div>';
+        '<span class="tiehint">' + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '') + '</span></div>';
     }).join('');
     return '<h2 class="sec">住人どうしの既存の関係</h2>' +
       '<p class="hint">住人ごとの ⚙️ 設定からも、その住人の関係と呼び方をまとめて編集できます。ここでは全員分を一覧で編集・読み込みできます。知人・友人・同僚・先輩後輩・教師と生徒・師弟・バディ・親友・恋人・片想い・ライバル・敵対・親子・きょうだい・主従など。初期の好意や信頼が変わり、行動の傾向にも補正がかかります（恋人や家族は戦いを避け、敵対は衝突しやすい）。</p>' +
@@ -308,7 +309,7 @@
         if (S.per && S.per[c.id]) o.per = S.per[c.id];
         return o;
       }),
-      ties: (S.ties || []).filter(function (t) { return idx[t.a] != null && idx[t.b] != null; }).map(function (t) { var o = { a: idx[t.a], b: idx[t.b], type: t.type }; if (t.cold) o.cold = t.cold; return o; }),
+      ties: (S.ties || []).filter(function (t) { return idx[t.a] != null && idx[t.b] != null; }).map(function (t) { var o = { a: idx[t.a], b: idx[t.b], type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; return o; }),
       teacher: S.teacher && idx[S.teacher] != null ? idx[S.teacher] : null
     };
   }
@@ -379,7 +380,9 @@
       if (!a || !b || a === b || !HK.TIES[t.type]) return;
       S.ties = (S.ties || []).filter(function (x) { return !(x.type === t.type && ((x.a === a && x.b === b) || (x.a === b && x.b === a))); });
       var CO2 = HK.coldOpts ? HK.coldOpts(t.type) : null;
-      S.ties.push(t.cold && CO2 && CO2.map[t.cold] ? { a: a, b: b, type: t.type, cold: t.cold } : { a: a, b: b, type: t.type }); tn++;
+      var nt0 = t.cold && CO2 && CO2.map[t.cold] ? { a: a, b: b, type: t.type, cold: t.cold } : { a: a, b: b, type: t.type };
+      if (t.love === 'ok' && HK.TIES[t.type].family) nt0.love = 'ok';
+      S.ties.push(nt0); tn++;
     });
     if (data.teacher != null && map[data.teacher]) S.teacher = map[data.teacher];
     /* 恋愛相手の固定と呼び方は、全員を読み込んでから番号を住人に戻す */
@@ -582,7 +585,7 @@
       ties: (function () {
         cleanTies();
         var J = castFor(S.scenId).map(function (c) { return c.id; });
-        return S.ties.filter(function (t) { return J.indexOf(t.a) >= 0 && J.indexOf(t.b) >= 0; }).map(function (t) { return { a: J.indexOf(t.a), b: J.indexOf(t.b), type: t.type, cold: HK.coldOpts && HK.coldOpts(t.type) ? t.cold || '' : '' }; });
+        return S.ties.filter(function (t) { return J.indexOf(t.a) >= 0 && J.indexOf(t.b) >= 0; }).map(function (t) { return { a: J.indexOf(t.a), b: J.indexOf(t.b), type: t.type, cold: HK.coldOpts && HK.coldOpts(t.type) ? t.cold || '' : '', love: t.love === 'ok' ? 'ok' : '' }; });
       })()
     };
   }
@@ -814,7 +817,7 @@
     }
     else if (f === 'tie') {
       var tt = S.ties[+t.dataset.k];
-      if (tt) { tt[t.dataset.p] = t.value; if (t.dataset.p === 'type' || t.dataset.p === 'cold') { save(); renderCast(); return; } }
+      if (tt) { tt[t.dataset.p] = t.value; if (t.dataset.p === 'love' && !t.value) delete tt.love; if (t.dataset.p === 'type' || t.dataset.p === 'cold' || t.dataset.p === 'love') { save(); renderCast(); return; } }
     }
     else if (f === 'seed') S.seed = t.value.replace(/[^\d]/g, '');
     else if (f === 'teacher') { S.teacher = t.value; save(); renderBox(); return; }

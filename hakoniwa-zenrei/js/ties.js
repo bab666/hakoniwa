@@ -149,6 +149,9 @@
     for (var i = 0; i < l.length; i++) if (l[i].type === type || l[i].like === type) return l[i];
     return null;
   };
+  /* 血縁（きょうだい・親子）で恋愛が起きない関係か。関係ごとに「恋愛：あり」（t.love === 'ok'）にもできる */
+  HK.tieNoLove = function (t) { var D = t && T[t.type]; return !!(D && D.family && !D.loveOK && t.love !== 'ok'); };
+  HK.tieFamLove = function (t) { var D = t && T[t.type]; return !!(D && D.family && !D.loveOK && t.love === 'ok'); };
   HK.Ties = {
     apply: function (ctx, ties) {
       ctx.ties = {}; ctx.tiesAll = {};
@@ -169,13 +172,14 @@
         var CD = t.type === 'crush' && t.cold ? HK.CRUSH_COLD[t.cold] : null;
         if (CD && CD.ba) add(ba, CD.ba);
         var p = ctx.pair(A, B);
-        if (D.chem != null) p.chem = HK.clamp(p.chem * D.chem + (D.chem > 1 ? 0.2 : 0), 0.01, 2);
+        if (D.chem != null) p.chem = HK.clamp(p.chem * (HK.tieFamLove(t) ? 0.7 : D.chem) + (D.chem > 1 ? 0.2 : 0), 0.01, 2);
         if (D.fric != null && !HB) p.fric = HK.clamp(p.fric * D.fric, 0.2, 2);
         if (D.couple) p.couple = true;
         /* 血のつながった家族（きょうだい・親子）：恋愛には絶対にならず、喧嘩しても信頼は崩れにくい */
-        if (D.family && !D.loveOK) { p.kin = true; p.trustFloor = Math.max(p.trustFloor || 0, t.type === 'sibbad' ? 15 : 30); }
+        if (HK.tieNoLove(t)) p.kin = true;
+        if (D.family && !D.loveOK) p.trustFloor = Math.max(p.trustFloor || 0, t.type === 'sibbad' ? 15 : 30);
         if (D.night && ctx.scen.id !== 'classroom') p.night = true;
-        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB ? t.cold : '' };
+        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB ? t.cold : '', love: HK.tieFamLove(t) ? 'ok' : '' };
         list.push(o);
         list.sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
         ctx.ties[k] = list[0];
@@ -215,7 +219,7 @@
         if (D.hate) m = t.a !== a.i && t.cold && HK.HATE_BACK[t.cold] ? HK.HATE_BACK[t.cold].bias : D.bias || {};
         else if (D.dir) m = (t.a === a.i ? D.biasA : D.biasB) || {};
         else m = D.bias || {};
-        if (m[cat] != null) r *= m[cat];
+        if (m[cat] != null) r *= cat === 'romance' && HK.tieFamLove(t) ? Math.max(m[cat], 0.75) : m[cat];
       });
       return r;
     },
@@ -232,7 +236,7 @@
           else if (f !== 'att' && m != null) r *= m;
           return;
         }
-        if (m != null) r *= m;
+        if (m != null) r *= f === 'att' && HK.tieFamLove(t) ? Math.max(m, 0.8) : m;
       });
       return r;
     },

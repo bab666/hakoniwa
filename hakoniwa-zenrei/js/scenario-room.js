@@ -307,7 +307,7 @@
     var t = HK.Ties ? HK.Ties.get(ctx, a, b) : null;
     if (!t) return 0;
     var D = HK.TIES[t.type];
-    if (D.family) return D.loveOK ? (lvl >= 3 ? 16 : 4) : lvl >= 3 ? 999 : 0;
+    if (D.family) return !HK.tieNoLove(t) ? (lvl >= 3 ? 16 : 4) : lvl >= 3 ? 999 : 0;
     return { enemy: 20, rival: 12, ex: 6, lover: -30, fwb: -35, almost: -15, crush: -8, best: -4, childhood: -4 }[t.type] || 0;
   }
   function posClash(a, b) { return !!(HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b)); }
@@ -822,7 +822,7 @@
     run: function (ctx, a, b) {
       var ab = R(ctx, a, b), ba = R(ctx, b, a), pf = ctx.pair(a, b);
       var heat = (a.flags.aphro || 0) + (a.flags.aphroTotal || 0) * 0.3;
-      var mutual = (ba.att > 28 || (b.flags.aphro || 0) >= 3) && ba.ten < 55 && !(HK.Ties && HK.Ties.get(ctx, a, b) && HK.TIES[HK.Ties.get(ctx, a, b).type].family && !HK.TIES[HK.Ties.get(ctx, a, b).type].loveOK);
+      var mutual = (ba.att > 28 || (b.flags.aphro || 0) >= 3) && ba.ten < 55 && !(HK.Ties && HK.tieNoLove(HK.Ties.get(ctx, a, b)));
       var wild = a.tr.aggr + a.tr.impulse - a.tr.np + heat / 10;
       var text, why, cat = 'romance';
       /* 体の関係を持てない組（攻め×攻めなど）は、媚薬が回っても抱き合わない */

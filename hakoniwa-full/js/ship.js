@@ -63,7 +63,7 @@
     return clamp((best > 0 ? best + neg * 0.3 : neg) + (S.relD[rk(a, b)] || 0), -1, 1.2);
   }
   function lover(S, a, b) { return ties(S, a, b).some(function (t) { return LOVE.test(t.type); }) || !!S.rom[rk(a, b)]; }
-  function family(S, a, b) { return ties(S, a, b).some(function (t) { return FAMILY.test(t.type); }); }
+  function family(S, a, b) { return ties(S, a, b).some(function (t) { return HK.tieNoLove ? HK.tieNoLove(t) : FAMILY.test(t.type); }); }
   function setRel(S, a, b, d) { var k = rk(a, b); S.relD[k] = clamp((S.relD[k] || 0) + d, -1, 1); }
   /* 出来事の記録（関係図のラベルに使う） */
   /* 気質：船長は使命感でストレスを抱えにくく、揉めごとを収める側に回る。機嫌取りは人の気持ちを優先して、自分の疲れを溜め込む */
