@@ -2,7 +2,8 @@
    使い方: node pos-audit.js <ビルドのディレクトリ> [1シナリオあたりの回数=24] [シナリオid,…] [--samples]
    V1: 女性の住人だけが出てくる性的な場面に、男性の体を前提にした言葉（ちんぽ・射精など）が出た
    V2: 自分で「攻め」を選んだ住人が、受ける側の文（貫かれる・中に出される・押し倒される・縛られる など）になった
-   V3: 向きの決まらない組（攻め×攻め・恋愛対象の合わない組）の二人だけの性的な場面が起きた */
+   V3: 向きの決まらない組（攻め×攻め・恋愛対象の合わない組）の二人だけの性的な場面が起きた
+   V4: 自分で「攻め」を選んだ女性が、男性の体で描かれた（「自分のもの」で突く・射精する・相手の中に入る など） */
 const { openBuild } = require('./lib.js');
 (async () => {
   const dir = process.argv[2], N = +process.argv[3] || 24, only = process.argv[4] && !/^--/.test(process.argv[4]) ? process.argv[4].split(',') : null;
@@ -12,7 +13,7 @@ const { openBuild } = require('./lib.js');
     const P = HK.Pos, MALE = P.MALE_RE;
     const SEX = /抱い|抱かれ|エッチ|繋がっ|イカせ|イかせ|イった|イっ|果て|喘|挿れ|貫|舐め|愛撫|達し|体を重ね|奥まで|突き上げ|腰を(振|沈|打ち|揺)|跨[っが]|中に|犯/;
     const NPC_M = /男|客|触手|ゾンビ|魔物|オーク|ゴブリン|スライム|神|村人|教師|先生|店長|上司|略奪者|おじさん|兵|盗賊|医者|マッサージ師|施術師|整体師|司会|AD|カメラマン|監督|悪魔|インキュバス|獣|狼|蛇|蔦|植物|機械|ロボット|看守|看護|患者|社長|部長|課長|主人|旦那|夫|彼氏|王|騎士|勇者|魔王|山賊|漁師|船長/;
-    const out = { V1: [], V2: [], V3: [], n: { V1: 0, V2: 0, V3: 0 }, err: [], runs: 0, bySc: {} };
+    const out = { V1: [], V2: [], V3: [], V4: [], n: { V1: 0, V2: 0, V3: 0, V4: 0 }, err: [], runs: 0, bySc: {} };
     const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];
     /* 配役の型：女性だけ（指定いろいろ）／攻めの指定が多い／攻めどうしを恋人に結ぶ／受け攻めそろい */
     const CASTS = [
@@ -21,12 +22,15 @@ const { openBuild } = require('./lib.js');
       { g: ['m', 'm', 'f', 'm', 'f', 'm'], p: ['top', 'top', 'top', 'bottom', '', ''], l: [] },
       { g: ['m', 'f', 'm', 'f', 'm', 'm'], p: ['top', 'top', 'bottom', 'bottom', 'riba', 'top'], l: ['', 'tb', 'br', '', 'any', ''] },
       { g: ['m', 'm', 'm', 'm', 'm', 'm'], p: ['top', 'top', 'bottom', 'bottom', '', 'riba'], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'lover' }] },
-      { g: ['f', 'f', 'm', 'f', 'm', 'f'], p: ['top', 'top', 'top', 'bottom', 'bottom', ''], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 0, b: 3, type: 'fwb' }] }
+      { g: ['f', 'f', 'm', 'f', 'm', 'f'], p: ['top', 'top', 'top', 'bottom', 'bottom', ''], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 0, b: 3, type: 'fwb' }] },
+      /* 女性が攻め・男性が受けの組 */
+      { g: ['f', 'm', 'f', 'm', 'f', 'm'], p: ['top', 'bottom', 'top', '', 'top', 'bottom'], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'fwb' }] },
+      { g: ['m', 'f', 'm', 'f', 'm', 'f'], p: ['bottom', 'top', '', 'top', 'bottom', 'top'], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 4, b: 5, type: 'lover' }] }
     ];
     const ids = (only || Object.keys(HK.SCENARIOS));
     for (const sc of ids) {
       const scen = HK.SCENARIOS[sc]; if (!scen) continue;
-      out.bySc[sc] = { V1: 0, V2: 0, V3: 0, runs: 0 };
+      out.bySc[sc] = { V1: 0, V2: 0, V3: 0, V4: 0, runs: 0 };
       for (let s = 0; s < N; s++) {
         const cast = CASTS[s % CASTS.length];
         const n = Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 2 + (s % 5)));
@@ -67,12 +71,28 @@ const { openBuild } = require('./lib.js');
             ];
             for (const re of RX) {
               const m = t.match(re);
+              /* 「〜の後ろに隠れる」のような性的でない文は数えない */
+              if (m && /隠れ|半分/.test(t.slice(m.index, m.index + m[0].length + 12))) continue;
               if (m) {
                 /* 「攻めの名前」の前後に、ほかの人が主語として受けている書き方（例：「アキラはミナトを押し倒した」）は除く */
                 const i0 = m.index, seg = t.slice(Math.max(0, i0 - 18), i0 + m[0].length + 10);
                 out.n.V2++; out.bySc[sc].V2++; if (out.V2.length < 400) out.V2.push(sc + ' | 攻め=' + n0 + ' | …' + seg + '… || ' + t.slice(0, 260));
                 break;
               }
+            }
+          }
+          /* V4：女性の攻めが、男性の体で描かれた */
+          for (const T of tops.filter(c => c.gender === 'f')) {
+            const n0 = T.name;
+            const RX4 = [
+              new RegExp(n0 + '(?:は|が|も)[^。「」]{0,40}?(?:突き入れ|ねじ込ん|腰を打ちつけ|奥を突|突き上げ|貫い|中に出し|中に吐き出|射精|精を放|種付け|自分のものを|昂りを|熱を押し当て|穿)'),
+              new RegExp(n0 + 'の(?:もの|モノ|ちんぽ|ちんこ|肉棒|ペニス|陰茎|男根|いちもつ|一物|昂り|先端|根元|竿)(?:が|を|は|で|に)'),
+              new RegExp(n0 + 'は[^。「」]{0,30}?(?:の中|の奥)(?:に|へ|で)(?:果て|放|吐き出|出し)')
+            ];
+            for (const re of RX4) {
+              const m = t.match(re);
+              if (m && /上で|跨/.test(m[0])) continue;
+              if (m) { const i0 = m.index; out.n.V4++; out.bySc[sc].V4++; if (out.V4.length < 400) out.V4.push(sc + ' | 攻め(女)=' + n0 + ' | …' + t.slice(Math.max(0, i0 - 10), i0 + m[0].length + 10) + '…'); break; }
             }
           }
           /* V3：向きの決まらない二人だけの性的な場面 */
@@ -89,7 +109,7 @@ const { openBuild } = require('./lib.js');
   console.log('runs', r.runs, 'counts', JSON.stringify(r.n));
   console.log('by scenario', JSON.stringify(Object.fromEntries(Object.entries(r.bySc).filter(([k, v]) => v.V1 || v.V2 || v.V3))));
   if (r.err.length) console.log('ERRORS', r.err.slice(0, 8));
-  if (SAMPLES) for (const k of ['V1', 'V2', 'V3']) { console.log('##### ' + k); r[k].forEach(x => console.log(x)); }
+  if (SAMPLES) for (const k of ['V1', 'V2', 'V3', 'V4']) { console.log('##### ' + k); r[k].forEach(x => console.log(x)); }
   console.log('pageerr', errors.slice(0, 5));
   await browser.close();
 })();

@@ -241,6 +241,10 @@
     ctx.flags.lastTrioTags = used;
     var txt3 = out.join('');
     if (ffE && HK.FF) txt3 = HK.FF.fix(ctx, txt3, ffE[0], ffE[1], { tools: !!ctx.flags.toolbox });
+    /* 女性の攻めが入れる側に書かれた文は、男性の相手ごとに女性上位の文へ（pos-fm.js） */
+    if (HK.FM && HK.Pos) g.filter(function (c) { return HK.Pos.isF(c) && HK.Pos.isTop(c); }).forEach(function (f) {
+      g.forEach(function (m) { if (m !== f && !HK.Pos.isF(m)) txt3 = HK.FM.fixWith(ctx, txt3, f, m.name); });
+    });
     return txt3;
   }
   function scene(ctx, g, kind, first, nPresent) {

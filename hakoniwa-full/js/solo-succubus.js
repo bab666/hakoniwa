@@ -183,6 +183,7 @@
         else if (SB.VOICE.MELT[p.persona]) t += p.name + ST.pick(S, noRecv(SB.VOICE.MELT[p.persona]));
       }
       t += ST.fmt(ST.pick(S, noRecv(SB.MELT_AFTER)), v) + (ml ? '（吸えたのは' + ml + 'mlだけ）' : '');
+      if (sTop && HK.FM && HK.Pos.isF(p)) t = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, t, p, q.name);
       p.m.plea = 35;
       if (rng() < 0.4) { p.skip = true; why += '／腰が抜けて次の一時間は休み'; }
     } else {
@@ -198,6 +199,8 @@
       else if (q.incubus && hTop) { ml = Math.round(ml * 0.6); t += ST.fmt('――ところが{t}も、{a}から吸い返そうとしてきた。{a}は{t}の手首を押さえつけ、一滴も吸い返させなかった。ただ、同業者の精は薄かった。', v); }
       else if (q.incubus) { ml = Math.round(ml * 0.6); t += ST.fmt('――ところが{t}も、{a}から吸い返そうとしてきた。同業者どうしの吸い合いは、引き分けに終わった。', v); }
       t += ST.fmt(ST.pick(S, SB.CLIMAX), { a: p.name, t: q.name, ml: ml });
+      /* 女性のサキュバスが攻めのときは、女性上位（跨って搾る）の書き方にそろえる */
+      if (sTop && HK.FM && HK.Pos.isF(p)) t = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, t, p, q.name);
       if (kind === 'big') t += ST.fmt(ST.pick(S, SB.BIG), v);
       if (VO && rng() < 0.45) t += p.name + ST.pick(S, VO.WIN[p.persona] || VO.WIN.gentle);
       p.m.plea = clamp(p.m.plea + 30 + (p.top === 'FC' ? 20 : 0), 0, 100);

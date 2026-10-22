@@ -144,7 +144,10 @@
       if (r) { gTop = Pz.order(g, r, [r, g])[0] === g; gFree = !Pz.fixed(g, r); }
       else { var vp = Pz.vsNpc(g, ''); gTop = vp === 'top'; gFree = Pz.of(g) === 'riba'; }
     }
-    var pool = SIT.acts.concat((KH.TOP_ACTS && KH.TOP_ACTS[S.v.sid]) || []).filter(function (a) {
+    /* 施す側が女性なら、攻めの施術は女性上位（跨る）のものにする */
+    var gF = !!(Pz && Pz.isF(g)), TA = gF && KH.TOP_ACTS_F ? KH.TOP_ACTS_F : KH.TOP_ACTS;
+    var climaxOf = function (kind) { return kind === 'top' && gF && KH.CLIMAX.topF ? KH.CLIMAX.topF : KH.CLIMAX[kind]; };
+    var pool = SIT.acts.concat((TA && TA[S.v.sid]) || []).filter(function (a) {
       var kd = KH.ACTKIND[a[0]];
       if (mobby(S, a[0])) return false;
       if (gFree) return true;
@@ -177,7 +180,7 @@
       while (as.length < 3) as.push(act);
       var mlR = 0, tr = ST.fmt(ST.pick(S, F.rush), { p: g.name, r: ns[0], r2: ns[1], r3: ns[2], a1: as[0][0], a2: as[1][0], a3: as[2][0] });
       var mlx = Math.round(4 + rng() * 10); mlR = mlx * 3;
-      tr += ST.fmt(ST.pick(S, KH.CLIMAX[KH.ACTKIND[as[2][0]]] || KH.CLIMAX.hand), { p: g.name, r: ns[2], ml: mlx }) + ST.fmt(ST.pick(S, F.rushEnd), { p: g.name });
+      tr += ST.fmt(ST.pick(S, climaxOf(KH.ACTKIND[as[2][0]]) || KH.CLIMAX.hand), { p: g.name, r: ns[2], ml: mlx }) + ST.fmt(ST.pick(S, F.rushEnd), { p: g.name });
       g.cnt.served += 3; g.m.sem += mlR; g.m.imm += 5; g.m.plea += (14 + rng() * 14) * g.sens;
       as.forEach(function (a) { g.cnt.acts[a[0]] = (g.cnt.acts[a[0]] || 0) + 1; });
       if (g.m.plea >= 100) { g.m.plea = 25; g.cnt.gclimax++; tr += ST.pick(S, gTop && !gFree ? KH.GCLIMAX.filter(function (x) { return !/奥/.test(x); }) : KH.GCLIMAX).replace(/\{p\}/g, g.name); }
@@ -204,7 +207,7 @@
       if (r && rng() < 0.45 && HK.Voice.CLIMAX[r.persona]) t += r.name + '「' + ST.pick(S, topL(r, HK.Voice.CLIMAX[r.persona])) + '」';
     }
     var ml = Math.round((r ? 6 + rng() * 8 : 4 + rng() * 12) * (1 + ai * 0.08));
-    t += ST.fmt(ST.pick(S, KH.CLIMAX[KH.ACTKIND[act[0]] || KH.climaxKind(t)]), { p: g.name, r: rname, ml: ml });
+    t += ST.fmt(ST.pick(S, climaxOf(KH.ACTKIND[act[0]] || KH.climaxKind(t))), { p: g.name, r: rname, ml: ml });
     if (fl === 'double') { t += ST.fmt(ST.pick(S, F.doubleEnd), { p: g.name, r: rname, r2: r2name }); g.cnt.served++; g.m.sem += ml; }
     if (fl === 'watch') { t += ST.fmt(ST.pick(S, F.watchEnd), v); g.m.imm += 4; }
     g.cnt.served++; g.m.sem += ml;
