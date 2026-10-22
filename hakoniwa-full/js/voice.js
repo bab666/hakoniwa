@@ -460,10 +460,12 @@
                なければ元の口調の書き下ろしを引いて、最後に語尾を付け替える */
             var dv = !kg && !pre && !nounQ && HK.toneOpt ? HK.toneOpt(who.tone, 'derive') : null, own = false;
             if (dv && V.overrideFor) { if (ov != null) own = true; else ov = V.overrideFor(q, Object.assign({}, who, { tone: dv }), people); }
+            /* 派生元のない仕上げつきの口調（ヤンキーなど）も、その口調名の書き下ろし・直しは完成形として使う */
+            else if (ov != null && !kg && HK.TONE_FINISH && HK.TONE_FINISH[who.tone]) own = true;
             q = V.replaceFP(ov != null ? ov : q, who);
             if (ov == null && !pre) { if (who.persona === 'polite' || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(q, who); }
             /* 口調ごとの仕上げ（後輩の「〜っす」、お嬢様の「〜ですわ」など。HK.toneFinish で登録したもの） */
-            var fin = !own && HK.TONE_FINISH && HK.TONE_FINISH[who.tone];
+            var fin = !own && !nounQ && HK.TONE_FINISH && HK.TONE_FINISH[who.tone];
             if (fin) q = fin(q, who);
             if (YOU_ST.test(q0)) q = fixYouStutter(q);
             if (V.applyCalls) q = V.applyCalls(q, who, people);
