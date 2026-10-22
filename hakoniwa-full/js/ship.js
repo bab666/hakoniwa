@@ -66,6 +66,10 @@
   function family(S, a, b) { return ties(S, a, b).some(function (t) { return FAMILY.test(t.type); }); }
   function setRel(S, a, b, d) { var k = rk(a, b); S.relD[k] = clamp((S.relD[k] || 0) + d, -1, 1); }
   /* 出来事の記録（関係図のラベルに使う） */
+  /* 気質：船長は使命感でストレスを抱えにくく、揉めごとを収める側に回る。機嫌取りは人の気持ちを優先して、自分の疲れを溜め込む */
+  function capt(p) { return p.role === 'captain'; }
+  function pleaser(p) { return p.tr.ac > 0.55 && (p.tr.np > 0.45 || p.tr.warmth > 0.5); }
+  function stress(p, d) { p.m.st = clamp((p.m.st || 0) + (d > 0 ? d * (capt(p) ? 0.6 : 1) * (pleaser(p) ? 1.2 : 1) : d), 0, 100); }
   function mark(S, a, b, kind) { var k = rk(a, b), e = S.relEv[k] = S.relEv[k] || {}; e[kind] = (e[kind] || 0) + 1; }
 
   /* ---------- 能力 ---------- */
@@ -119,7 +123,7 @@
     var taken = {};
     P.forEach(function (p) {
       var want = (((input.perChar && input.perChar[p.i]) || {}).pick || {}).role;
-      p.alive = true; p.m = { hp: 70 + (p.stats.hp || 3) * 6, fear: 15 + p.tr.ac * 10, find: 0 }; p.cnt = { find: 0, item: 0, report: 0, fix: 0 }; p.notes = p.notes || [];
+      p.alive = true; p.m = { hp: 70 + (p.stats.hp || 3) * 6, fear: 15 + p.tr.ac * 10, find: 0, st: 10 + p.tr.ac * 10 }; p.cnt = { find: 0, item: 0, report: 0, fix: 0 }; p.notes = p.notes || [];
       if (ROLE[want]) { p.role = want; p.picked = true; taken[want] = (taken[want] || 0) + 1; }
     });
     /* おまかせは、まだ誰もいない大事な役割から気質で埋める */
@@ -131,7 +135,7 @@
       p.role = r; taken[r] = (taken[r] || 0) + 1;
     });
     P.forEach(function (p) { p.roleLabel = ROLE[p.role].label; });
-    var keys = ['hp', 'fear', 'find'];
+    var keys = ['hp', 'fear', 'find', 'st'];
 
     ST.step(S, '漂流のはじまり');
     ST.say(S, { kind: 'phase', text: pk(S, L('警報が鳴り止んだとき、船はもう航路を外れていた。主機関は沈黙し、救難信号に応える声はない。|小惑星帯をかすめた衝撃で、船は航路を失った。窓の外には、見知らぬ星座だけが広がっていた。|ワープの失敗で、船は星図にない宙域に投げ出された。帰り道は、もう分からなかった。')) + names(P) + 'は、新しい星を探して漂い続けることに決めた。' });
@@ -288,9 +292,10 @@
     var lo = L0.filter(function (p) { return p.m.fear > 55 || p.tr.ac > 0.6; })[0];
     if (lo && rng() < 0.3) { lo.m.fear = clamp(lo.m.fear + 4, 0, 100); ST.sayB(S, { actors: [lo], tag: '孤独', text: F(pk(S, T.LONELY), { a: lo.name }), why: '' }, lo.name + 'は宇宙の静けさに沈んだ'); }
     if (rng() < 0.12 + S.env.danger / 100 * 0.08) {
-      var sk = rng.pick(L0); sk.m.hp = clamp(sk.m.hp - 12, 1, 100);
+      var sk = rng.pick(L0); sk.m.hp = clamp(sk.m.hp - 12, 1, 100); stress(sk, 5);
       ST.sayB(S, { actors: [sk], tag: '病気', text: F(pk(S, T.SICK), { a: sk.name }), why: '体力 -12' }, sk.name + 'が体調を崩した');
       heal(S, sk);
+      if (rng() < 0.45) nurse(S, sk);
     }
   }
   /* ---------- 絆が動く出来事 ---------- */
@@ -304,55 +309,66 @@
     var opts = [
       ['drink', 1.0], ['team', 1.0], ['confide', 0.7], ['game', 0.7], ['nurse', sick.length ? 0.9 : 0], ['birthday', 0.25], ['drink_all', L0.length >= 3 ? 0.3 : 0],
       ['fight', 0.25 + tense * 0.9], ['drink_bad', 0.2 + tense * 0.4], ['ration', sp.food < 35 ? 0.3 + tense * 0.6 : 0.05], ['duty', 0.2 + tense * 0.4], ['game_bad', 0.15 + tense * 0.2],
-      ['good', 0.6], ['bad', 0.15 + tense * 0.4], ['jealous', L0.length >= 3 ? 0.35 : 0], ['makeup', neg.length ? 0.8 : 0], ['love', lv.length ? 0.6 : 0]
+      ['good', 0.6], ['bad', 0.15 + tense * 0.4], ['please', L0.some(pleaser) ? 0.6 + tense * 0.5 : 0], ['jealous', L0.length >= 3 ? 0.35 : 0], ['makeup', neg.length ? 0.8 : 0], ['love', lv.length ? 0.6 : 0]
     ];
     var kind = HK.weighted(rng, opts, function (o) { return o[1]; })[0];
     /* 二人を選ぶ：揉めごとは気の荒い・相性の悪い二人、仲が深まる出来事は誰とでも */
     function pickP(list, f) { return list.length ? HK.weighted(rng, list, f) : null; }
+    if (kind === 'please') {
+      var pl = pickP(L0.filter(pleaser), function (q) { return 0.5 + q.tr.ac; }), down = pl && L0.filter(function (q) { return q !== pl; }).sort(function (x, y) { return (y.m.st || 0) - (x.m.st || 0); })[0];
+      if (!down) return;
+      var wp = bond(S, pl, down);
+      setRel(S, pl, down, 0.15); mark(S, pl, down, 'team'); stress(down, -12); stress(pl, 5); sp.morale = clamp(sp.morale + 3, 0, 100);
+      ST.sayB(S, { actors: [pl, down], tag: '機嫌取り', text: F(pk(S, B.PLEASE), { a: pl.name, b: down.name }), why: pl.name + 'は周りの機嫌をうかがう気質。' + down.name + 'のストレスを和らげた（関係 ' + Math.round(wp * 100) + '→' + Math.round(bond(S, pl, down) * 100) + '）' }, pl.name + 'が' + down.name + 'の機嫌を取った');
+      if (pl.m.st > 60 && rng() < 0.4) ST.sayB(S, { actors: [pl], tag: '機嫌取りの疲れ', text: F(pk(S, B.PLEASE_TIRED), { a: pl.name }), why: '人の気持ちを優先して、自分のストレスを溜め込んでいる（' + Math.round(pl.m.st) + '）' }, pl.name + 'はひとり疲れていた');
+      return;
+    }
     var BAD = /fight|drink_bad|ration|duty|game_bad|^bad$/.test(kind);
     var pr = kind === 'makeup' ? pickP(neg, function () { return 1; }) : kind === 'love' ? pickP(lv, function (x) { return 0.5 + Math.max(0, bond(S, x[0], x[1])); })
-      : BAD ? pickP(PR, function (x) { return Math.max(0.05, 0.5 + (x[0].tr.aggr + x[1].tr.aggr) * 0.6 - bond(S, x[0], x[1]) * 0.6); })
+      : BAD ? pickP(PR, function (x) { return Math.max(0.05, 0.5 + (x[0].tr.aggr + x[1].tr.aggr) * 0.6 - bond(S, x[0], x[1]) * 0.6 + ((x[0].m.st || 0) + (x[1].m.st || 0)) / 200) * (capt(x[0]) || capt(x[1]) ? 0.35 : 1); })
         : pickP(PR, function (x) { return 0.6 + Math.max(0, bond(S, x[0], x[1])) * 0.6 + (x[0].tr.warmth + x[1].tr.warmth) * 0.3; });
     if (!pr) return;
     var a = rng() < 0.5 ? pr[0] : pr[1], b = a === pr[0] ? pr[1] : pr[0], w0 = bond(S, a, b);
     var others = L0.filter(function (q) { return q !== a && q !== b; });
+    /* 船長の使命感：自分が揉めかけても、その場で収めてしまうことが多い */
+    if (BAD && (capt(a) || capt(b)) && rng() < 0.6) {
+      var cp = capt(a) ? a : b, ot = cp === a ? b : a;
+      setRel(S, cp, ot, 0.05); stress(cp, 3);
+      ST.sayB(S, { actors: [cp, ot], tag: '船長', text: F(pk(S, B.CAPTAIN), { a: cp.name, b: ot.name }), why: '船長の使命感で、揉めごとを自分の中で収めた' }, cp.name + 'が揉めごとを収めた');
+      return;
+    }
     function say(pool, tag, d, why, mp) { ST.sayB(S, { actors: [a, b].concat(mp && mp.c ? [mp.c] : []), tag: tag, text: F(pk(S, pool), { a: a.name, b: b.name, c: mp && mp.c ? mp.c.name : '' }), why: why + '（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'と' + b.name); }
-    if (kind === 'drink') { setRel(S, a, b, 0.22); mark(S, a, b, 'drink'); sp.morale = clamp(sp.morale + 3, 0, 100); say(B.DRINK, '晩酌', 0, '二人きりの晩酌'); }
+    if (kind === 'drink') { stress(a, -8); stress(b, -8); setRel(S, a, b, 0.22); mark(S, a, b, 'drink'); sp.morale = clamp(sp.morale + 3, 0, 100); say(B.DRINK, '晩酌', 0, '二人きりの晩酌'); }
     else if (kind === 'drink_all') {
       var g = others.length > 2 ? rng.shuffle(others.slice()).slice(0, 1 + rng.int(others.length - 1)).concat([a, b]) : L0.slice();
-      g.forEach(function (x) { g.forEach(function (y) { if (x.i < y.i) { setRel(S, x, y, 0.1); mark(S, x, y, 'drink'); } }); });
+      g.forEach(function (x) { stress(x, -6); g.forEach(function (y) { if (x.i < y.i) { setRel(S, x, y, 0.1); mark(S, x, y, 'drink'); } }); });
       sp.morale = clamp(sp.morale + 8, 0, 100);
       ST.sayB(S, { actors: g, tag: '酒盛り', text: F(pk(S, B.DRINK_ALL), { n: names(g) }), why: '皆で飲んだ（士気 +8・全員の関係 +10）' }, names(g) + 'の酒盛り');
     }
-    else if (kind === 'team') { setRel(S, a, b, 0.25); mark(S, a, b, 'team'); sp.hull = clamp(sp.hull + 2, 0, 100); say(B.TEAM, '共同作業', 0, '力を合わせて乗り切った'); }
-    else if (kind === 'confide') { setRel(S, a, b, 0.3); mark(S, a, b, 'confide'); a.m.fear = clamp(a.m.fear - 6, 0, 100); say(B.CONFIDE, '打ち明け話', 0, '誰にも言えなかったことを話した'); }
-    else if (kind === 'game') { setRel(S, a, b, 0.15); mark(S, a, b, 'game'); sp.morale = clamp(sp.morale + 3, 0, 100); say(B.GAME, '娯楽', 0, '退屈しのぎの勝負'); }
-    else if (kind === 'nurse') {
-      b = sick.sort(function (x, y) { return x.m.hp - y.m.hp; })[0];
-      var nu = L0.filter(function (q) { return q !== b; }).sort(function (x, y) { return (bond(S, y, b) + y.tr.warmth) - (bond(S, x, b) + x.tr.warmth); })[0];
-      if (!nu) return; a = nu; w0 = bond(S, a, b);
-      b.m.hp = clamp(b.m.hp + 8, 0, 100); setRel(S, a, b, 0.28); mark(S, a, b, 'nurse'); say(B.NURSE, '看病', 0, '弱っているところを支えた（体力 +8）');
-    }
+    else if (kind === 'team') { stress(a, -4); stress(b, -4); setRel(S, a, b, 0.25); mark(S, a, b, 'team'); sp.hull = clamp(sp.hull + 2, 0, 100); say(B.TEAM, '共同作業', 0, '力を合わせて乗り切った'); }
+    else if (kind === 'confide') { stress(a, -10); stress(b, -4); setRel(S, a, b, 0.3); mark(S, a, b, 'confide'); a.m.fear = clamp(a.m.fear - 6, 0, 100); say(B.CONFIDE, '打ち明け話', 0, '誰にも言えなかったことを話した'); }
+    else if (kind === 'game') { stress(a, -5); stress(b, -5); setRel(S, a, b, 0.15); mark(S, a, b, 'game'); sp.morale = clamp(sp.morale + 3, 0, 100); say(B.GAME, '娯楽', 0, '退屈しのぎの勝負'); }
+    else if (kind === 'nurse') { nurse(S, sick.sort(function (x, y) { return x.m.hp - y.m.hp; })[0]); }
     else if (kind === 'birthday') {
-      if (S.bday[a.i]) return; S.bday[a.i] = 1;
+      if (S.bday[a.i]) return; S.bday[a.i] = 1; stress(a, -10);
       setRel(S, a, b, 0.25); mark(S, a, b, 'bday'); others.forEach(function (q) { setRel(S, a, q, 0.06); }); sp.morale = clamp(sp.morale + 6, 0, 100); say(B.BIRTHDAY, '誕生日', 0, a.name + 'の誕生日を祝った');
     }
     else if (kind === 'good') { setRel(S, a, b, 0.15); mark(S, a, b, 'team'); say(T.PAIR_GOOD, '絆', 0, '日々の暮らしの中で'); }
-    else if (kind === 'makeup') { setRel(S, a, b, 0.3); mark(S, a, b, 'makeup'); say(T.MAKEUP, '仲直り', 0, 'こじれた関係を修復した'); }
+    else if (kind === 'makeup') { stress(a, -6); stress(b, -6); setRel(S, a, b, 0.3); mark(S, a, b, 'makeup'); say(T.MAKEUP, '仲直り', 0, 'こじれた関係を修復した'); }
     else if (kind === 'love') {
-      setRel(S, a, b, 0.18); mark(S, a, b, 'love'); if (bond(S, a, b) > 0.6) S.rom[rk(a, b)] = 1;
+      stress(a, -6); stress(b, -6); setRel(S, a, b, 0.18); mark(S, a, b, 'love'); if (bond(S, a, b) > 0.6) S.rom[rk(a, b)] = 1;
       say(T.PAIR_LOVE, '想い', 0, '閉ざされた船で、想いが育った');
     }
     else if (kind === 'jealous') {
       /* {c}：{a}に想いを寄せている人が、{a}と{b}の親しさを見てしまう */
       var c = pickP(others.filter(function (q) { return lover(S, q, a) || bond(S, q, a) > 0.4; }), function (q) { return 0.3 + (q.tr.jealous || 0.4) + Math.max(0, bond(S, q, a)); });
       if (!c) return;
-      setRel(S, a, b, 0.1); setRel(S, c, b, -0.25); setRel(S, c, a, -0.1); mark(S, c, b, 'jealous'); S.jeal.push([c.i, b.i]);
+      stress(c, 8); setRel(S, a, b, 0.1); setRel(S, c, b, -0.25); setRel(S, c, a, -0.1); mark(S, c, b, 'jealous'); S.jeal.push([c.i, b.i]);
       ST.sayB(S, { actors: [c, a, b], tag: '嫉妬', text: F(pk(S, B.JEALOUS), { a: a.name, b: b.name, c: c.name }), why: c.name + 'は' + a.name + 'に想いを寄せている（嫉妬 ' + Math.round((c.tr.jealous || 0) * 100) + '）' }, c.name + 'の嫉妬');
     }
     else if (kind === 'fight') {
-      var st = others.length && rng() < 0.7 ? HK.weighted(rng, others, function (q) { return 0.2 + q.tr.lead + q.tr.warmth * 0.5; }) : null;
-      setRel(S, a, b, st ? -0.25 : -0.38); mark(S, a, b, 'fight');
+      var st = others.length && rng() < 0.7 ? HK.weighted(rng, others, function (q) { return 0.2 + q.tr.lead + q.tr.warmth * 0.5 + (capt(q) ? 1 : 0) + (pleaser(q) ? 0.6 : 0); }) : null;
+      stress(a, 10); stress(b, 10); setRel(S, a, b, st ? -0.25 : -0.38); mark(S, a, b, 'fight');
       a.m.hp = clamp(a.m.hp - (st ? 3 : 8), 1, 100); b.m.hp = clamp(b.m.hp - (st ? 3 : 8), 1, 100); sp.morale = clamp(sp.morale - 6, 0, 100);
       var txt = F(pk(S, B.FIGHT), { a: a.name, b: b.name }) + (st ? F(pk(S, B.STOP), { c: st.name }) : '');
       if (st) { setRel(S, st, a, 0.08); setRel(S, st, b, 0.08); mark(S, st, a, 'stop'); mark(S, st, b, 'stop'); }
@@ -360,14 +376,60 @@
     }
     else {
       var D = { drink_bad: [B.DRINK_BAD, '酒の席', -0.25, '酒が入って本音が出た'], ration: [B.RATION, '食料の取り合い', -0.22, '乏しい食料（食料 ' + Math.round(sp.food) + '）'], duty: [B.DUTY, '当番', -0.2, '当番の押し付け'], game_bad: [B.GAME_BAD, '娯楽', -0.18, '勝負がこじれた'], bad: [T.PAIR_BAD, '衝突', -0.18, '閉ざされた船の息苦しさ'] }[kind];
-      setRel(S, a, b, D[2]); mark(S, a, b, 'quarrel'); sp.morale = clamp(sp.morale - 3, 0, 100);
+      stress(a, 6); stress(b, 6); setRel(S, a, b, D[2]); mark(S, a, b, 'quarrel'); sp.morale = clamp(sp.morale - 3, 0, 100);
       say(D[0], D[1], 0, D[3]);
     }
+  }
+  /* 看病：弱った船員のそばに、いちばん近しい人がつく（R18版では、そのまま肌を重ねることもある） */
+  function nurse(S, b) {
+    var rng = S.rng, L0 = live(S), B = SH.B, R = SH.R18, Pz = HK.Pos;
+    var a = L0.filter(function (q) { return q !== b; }).sort(function (x, y) { return (bond(S, y, b) + y.tr.warmth) - (bond(S, x, b) + x.tr.warmth); })[0];
+    if (!a || !b.alive) return;
+    var w0 = bond(S, a, b);
+    b.m.hp = clamp(b.m.hp + 8, 0, 100); stress(b, -5); setRel(S, a, b, 0.28); mark(S, a, b, 'nurse');
+    ST.sayB(S, { actors: [a, b], tag: '看病', text: F(pk(S, B.NURSE), { a: a.name, b: b.name }), why: '弱っているところを支えた（体力 +8）（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'が' + b.name + 'を看病した');
+    if (!r18on(S) || !R || !R.nurseTop || !Pz || !Pz.okSex(a, b) || family(S, a, b)) return;
+    if (rng() > S.env.slewd / 100 * (lover(S, a, b) ? 1.2 : bond(S, a, b) > 0.3 ? 0.8 : 0.3)) return;
+    /* 受け攻め：自分で攻めを選んだ人は、熱があっても受けにならない */
+    var o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
+    if (Pz.hardTop(u)) return;
+    var body = F(pk(S, Pz.isF(t) && Pz.isF(u) ? R.nurseFf : Pz.isF(t) ? R.nurseRide : R.nursePen), { t: t.name, u: u.name });
+    setRel(S, a, b, 0.15); mark(S, a, b, 'night');
+    a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
+    var open = F(pk(S, t === a ? R.nurseTop : R.nurseSick), { t: t.name, u: u.name });
+    ST.say(S, { actors: [a, b], tag: '看病の夜', kind: 'climax', text: open + body + F(pk(S, R.nurseAfter), { a: a.name, b: b.name }), why: '熱に浮かされた' + b.name + 'と、看病していた' + a.name + '／関係の近さ ' + Math.round(bond(S, a, b) * 100), mag: 30 });
+  }
+  /* ストレスの限界：気の荒い人は暴れ、そうでない人は深酒に逃げる。近しい人がなだめたり、面倒を見たりする */
+  function outburst(S) {
+    var rng = S.rng, L0 = live(S), sp = S.ship, B = SH.B, n = 0;
+    L0.slice().sort(function (x, y) { return y.m.st - x.m.st; }).forEach(function (a) {
+      if (n >= 2 || a.m.st < 78 || rng() > 0.65 || L0.length < 2) return;
+      n++;
+      var others = L0.filter(function (q) { return q !== a; });
+      var c = rng() < 0.75 ? HK.weighted(rng, others, function (q) { return 0.2 + Math.max(0, bond(S, q, a)) * 1.5 + q.tr.warmth * 0.5 + (capt(q) ? 0.6 : 0) + (pleaser(q) ? 0.8 : 0); }) : null;
+      var st0 = Math.round(a.m.st);
+      if (rng() < 0.2 + a.tr.aggr * 0.7) {
+        var b = rng.pick(others);
+        sp.hull = clamp(sp.hull - 5, 0, 100); sp.morale = clamp(sp.morale - 8, 0, 100); a.m.hp = clamp(a.m.hp - 4, 1, 100);
+        setRel(S, a, b, -0.15); mark(S, a, b, 'quarrel'); others.forEach(function (q) { setRel(S, a, q, -0.04); stress(q, 3); });
+        a.cnt.rage = (a.cnt.rage || 0) + 1;
+        var t = F(pk(S, B.RAGE), { a: a.name, b: b.name });
+        if (c) { t += F(pk(S, B.CALM), { a: a.name, c: c.name }); setRel(S, a, c, 0.22); mark(S, a, c, 'calm'); a.m.st = 35; } else a.m.st = 55;
+        ST.say(S, { actors: c ? [a, c] : [a], tag: '暴れる', text: t, why: 'ストレスが限界を越えた（' + st0 + '）。気の荒さ ' + Math.round(a.tr.aggr * 100) + '。船体 -5・士気 -8' + (c ? '。' + c.name + 'がなだめた' : ''), mag: 24 });
+      } else {
+        sp.food = clamp(sp.food - 1.5, 0, 100); sp.morale = clamp(sp.morale - 2, 0, 100); a.m.hp = clamp(a.m.hp - 8, 1, 100);
+        a.cnt.deep = (a.cnt.deep || 0) + 1;
+        var t2 = F(pk(S, B.DEEP), { a: a.name });
+        if (c) { t2 += F(pk(S, B.DEEP_CARE), { a: a.name, c: c.name }); setRel(S, a, c, 0.15); mark(S, a, c, 'calm'); a.m.st = 40; } else a.m.st = 55;
+        ST.say(S, { actors: c ? [a, c] : [a], tag: '深酒', text: t2, why: 'ストレスが限界を越えた（' + st0 + '）。酒に逃げた（体力 -8）' + (c ? '。' + c.name + 'が面倒を見た' : ''), mag: 18 });
+      }
+    });
   }
   function bonds(S) {
     if (!SH.B || live(S).length < 2) return;
     var n = 1 + (S.rng() < 0.6 ? 1 : 0) + (live(S).length >= 5 && S.rng() < 0.4 ? 1 : 0);
     for (var k = 0; k < n; k++) bondEv(S);
+    outburst(S);
   }
   /* ---------- 関係図 ---------- */
   function relmap(S) {
@@ -380,10 +442,10 @@
     var keys = Object.keys(S.relD).concat(Object.keys(S.relEv)).filter(function (k, x, arr) { return arr.indexOf(k) === x; });
     keys.forEach(function (k) {
       var ab = k.split('-'), a = +ab[0], b = +ab[1], d = S.relD[k] || 0, e = S.relEv[k] || {};
-      var bad = (e.fight || 0) + (e.quarrel || 0), good = (e.drink || 0) + (e.team || 0) + (e.confide || 0) + (e.nurse || 0) + (e.game || 0) + (e.makeup || 0) + (e.bday || 0);
+      var bad = (e.fight || 0) + (e.quarrel || 0), good = (e.drink || 0) + (e.team || 0) + (e.confide || 0) + (e.nurse || 0) + (e.calm || 0) + (e.game || 0) + (e.makeup || 0) + (e.bday || 0);
       if (S.rom[k] && !hasLove[k]) add(a, b, '★恋仲', 'love', null);
       if (e.night) add(a, b, '★夜を共にした', 'night', null);
-      if (d >= 0.55) add(a, b, bad >= 2 ? '★ケンカするほど仲がいい' : e.nurse ? '★支え合う' : e.confide ? '★深い絆' : (e.drink || 0) >= 2 ? '★飲み仲間' : '★深い絆', 'guard', null);
+      if (d >= 0.55) add(a, b, bad >= 2 ? '★ケンカするほど仲がいい' : e.nurse || e.calm ? '★支え合う' : e.confide ? '★深い絆' : (e.drink || 0) >= 2 ? '★飲み仲間' : '★深い絆', 'guard', null);
       else if (d >= 0.25) add(a, b, (e.drink || 0) >= 2 ? '★飲み仲間' : e.team ? '★相棒' : e.makeup ? '★和解' : '★仲間', e.team ? 'partner' : 'friend', null);
       else if (d <= -0.45) add(a, b, (e.fight || 0) >= 2 ? '★犬猿の仲' : '★険悪', 'enemy', null);
       else if (d <= -0.2) add(a, b, '★わだかまり', 'obsess', null);
@@ -414,6 +476,7 @@
       if (sp.o2 < 15) p.m.hp -= 10;
       if (sp.hull <= 0) p.m.hp -= 15;
       p.m.fear = clamp(p.m.fear + (sp.morale < 30 ? 4 : 1), 0, 100);
+      stress(p, 3 + (sp.morale < 40 ? 4 : 0) + (sp.food < 20 ? 5 : 0) + (p.m.hp < 50 ? 3 : 0) + (sp.o2 < 30 ? 3 : 0) - (S.planet ? 2 : 0));
       p.m.hp = clamp(p.m.hp + (sp.food > 20 ? 4 : 0), 0, 100);
     });
     var cause = sp.food <= 0 ? '飢えで' : sp.o2 < 15 ? '空気が尽きかけて' : sp.hull <= 0 ? '壊れかけた船の中で' : '';
@@ -433,7 +496,7 @@
     ST.key(S, o, v.name + 'の死');
     S.ship.morale = clamp(S.ship.morale - 12, 0, 100);
     var g = live(S).filter(function (q) { return bond(S, q, v) >= 0.4; }).sort(function (a, b) { return bond(S, b, v) - bond(S, a, v); })[0];
-    live(S).forEach(function (q) { q.m.fear = clamp(q.m.fear + 10 + Math.max(0, bond(S, q, v)) * 15, 0, 100); });
+    live(S).forEach(function (q) { q.m.fear = clamp(q.m.fear + 10 + Math.max(0, bond(S, q, v)) * 15, 0, 100); stress(q, 10 + Math.max(0, bond(S, q, v)) * 20); });
     if (g) ST.say(S, { actors: [g, v], tag: '弔い', text: F(pk(S, SH.T.GRIEF), { a: g.name, v: v.name }), why: g.name + 'と' + v.name + 'の関係' });
   }
 
@@ -479,13 +542,15 @@
     var P = S.P, Pn = S.planet, L0 = live(S);
     P.forEach(function (p) {
       if (!p.fate) p.fate = '生還';
-      p.notes.push('役割：' + p.roleLabel + (p.picked ? '（指定）' : '（気質から）'));
+      p.notes.push('役割：' + p.roleLabel + (p.picked ? '（指定）' : '（気質から）') + (capt(p) ? '・使命感から揉めごとを収める' : '') + (pleaser(p) ? '・周りの機嫌を取る気質' : ''));
       var bits = [];
       if (p.cnt.find) bits.push('発見・調査の成功 ' + p.cnt.find + '回');
       if (p.cnt.item) bits.push('持ち帰った物品 ' + p.cnt.item + 'つ');
       if (p.cnt.report) bits.push('レポート ' + p.cnt.report + '本');
       if (p.cnt.fix) bits.push('修理 ' + p.cnt.fix + '回');
       if (p.cnt.r18) bits.push('夜の出来事 ' + p.cnt.r18 + '回');
+      if (p.cnt.rage) bits.push('ストレスで暴れた ' + p.cnt.rage + '回');
+      if (p.cnt.deep) bits.push('深酒 ' + p.cnt.deep + '回');
       if (bits.length) p.notes.push(bits.join('・'));
     });
     var reveal = 0, total = 0;
@@ -511,7 +576,7 @@
       ending: { title: title, kind: L0.length && Pn ? 'ok' : 'over', lines: lines },
       estats: [['星', Pn ? Pn.name : '―'], ['珍しさ', Pn ? stars(Pn.rare) : '―'], ['判明度', Pn ? pct + '%' : '―'], ['物品', S.items.length + 'つ'], ['レポート', S.reports.length + '本'], ['生還', L0.length + '/' + P.length + '人']],
       table: { title: '船員', hint: '調査：星の探索で成功した回数。', cols: ['役割', '調査', '物品', 'レポート', '結末'], rows: rows },
-      meters: [{ label: '体力', color: '--accent' }, { label: '不安', color: '--enemy', dash: true }, { label: '発見', color: '--love', max: 6 }],
+      meters: [{ label: '体力', color: '--accent' }, { label: '不安', color: '--enemy', dash: true }, { label: '発見', color: '--love', max: 6 }, { label: 'ストレス', color: '--warn', dash: true }],
       meta: (Pn ? Pn.name : '星なし') + '・12か月',
       relmap: relmap(S),
       summary: '宇宙船漂流記：' + title

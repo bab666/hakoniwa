@@ -130,7 +130,7 @@
     if (/(行け|出し切れ)$/.test(core)) return core.replace(/行け$/, '行って').replace(/出し切れ$/, '出し切って') + (tail === 'よ' ? 'よ' : '');
     var gm = core.match(/^(.*[一-鿿々])([けげせてべめれえ])$/);
     /* 「来て」「見て」などは、もともとて形（命令形ではない） */
-    if (gm && gm[2] === 'て' && /(来|見|着|寝|出|居|似|煮|得|経|捨|当|育|慌|企|建|隔|果|捉)て$/.test(core)) return null;
+    if (gm && gm[2] === 'て' && /(来|見|診|着|寝|出|居|似|煮|得|経|捨|当|育|慌|企|建|隔|果|捉)て$/.test(core)) return null;
     if (gm && !/の$/.test(gm[1].slice(0, -1)) && !GNOUN.test(core)) return gm[1] + GTE[gm[2]] + (tail === 'よ' ? 'よ' : '');
     var p = V.politeSentence(core, false, false);
     if (p !== core && /(て|で)ください$/.test(p) && p !== core + 'ください') return p.slice(0, -4) + (tail === 'よ' ? 'よ' : '');
