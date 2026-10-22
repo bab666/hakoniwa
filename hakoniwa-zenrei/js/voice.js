@@ -180,6 +180,8 @@
     if (/する$/.test(s)) return s.replace(/する$/, 'します');
     if (/(くる|来る)$/.test(s)) return s.replace(/(くる|来る)$/, function (x) { return x === '来る' ? '来ます' : 'きます'; });
     if (/(いる|ある|できる|なる|わかる|分かる|やる)$/.test(s)) return s.replace(/(いる|ある|できる|なる|わかる|分かる|やる)$/, function (x) { return { 'いる': 'います', 'ある': 'あります', 'できる': 'できます', 'なる': 'なります', 'わかる': 'わかります', '分かる': '分かります', 'やる': 'やります' }[x]; });
+    /* ひらがなで書いた五段動詞（「しゃべる」「はしる」）は「ります」（「食べる」型と取り違えない） */
+    if (/(しゃべ|にぎ|あせ|すべ|ねば|はし|しげ|ののし)る$/.test(s) || /(^|[にへでをがもはと、])はいる$/.test(s)) return s.slice(0, -1) + 'ります';
     if ((m = s.match(/(.)る$/))) {
       if (/[えけげせぜてでねへべめれいきぎじちにびみり]/.test(m[1])) return s.slice(0, -1) + 'ます';
       if (isKanji(m[1])) return s.slice(0, -1) + (GODAN_KANJI.indexOf(m[1]) >= 0 ? 'ります' : 'ます');
@@ -451,7 +453,7 @@
           var q = text.slice(start + 1, i), who = q.charAt(0) === '\u2060' ? null : speakerOf(text, start, i + 1, people);
           if (who) {
             var q0 = q;
-            var nounQ = /^(?:を|の|に|が|へ|や|という|って書|と書)/.test(text.slice(i + 1, i + 4)) ||
+            var nounQ = /^(?:を|の|に|が|へ|や|という|って書|と書|とある|と記|と刻|と彫|と印|と読め)/.test(text.slice(i + 1, i + 4)) ||
               /* 「引いたのは「人妻と配達員」だった」のような題名も台詞ではない */
               (/^だ/.test(text.slice(i + 1, i + 2)) && /(?:のは|お題は|テーマは|題名は|企画は)$/.test(text.slice(Math.max(0, start - 6), start)));
             /* 口調ごとの書き下ろし（voice-override.js）があれば、自動の言い換えより優先する */
