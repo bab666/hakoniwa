@@ -169,7 +169,7 @@
     if (/(です|ます|でしょう)か$/.test(body)) ask = true;
     if (mode === 'proud' || mode === 'tsun' || mode === 'free') {
       if (/^(ありがとう(ございます|ございました)?|ありがと)$/.test(body)) out = { proud: '……礼は言っとく', tsun: '……ありがと。べ、別に、感謝してるわけじゃないから', free: 'ありがと！' }[mode];
-      else if (/^(ごめん(ね|なさい)?|すみません|すまない|申し訳(ありません|ございません|ない)|失礼(しました|いたしました))$/.test(body)) out = { proud: '……悪かった', tsun: f ? '……悪かったわよ' : '……悪かったな', free: 'ごめんごめん' }[mode];
+      else if (/^(ごめん(ね|なさい)?|すみません|すまない|申し訳(ありません|ございません|ない)|失礼(しました|いたしました))$/.test(body)) out = { proud: '……悪かった', tsun: f ? '……悪かったわよ' : '……悪かったな', free: who.tone === 'aniki' ? null : 'ごめんごめん' }[mode];
       else if (mode === 'tsun' && /^(好き|好きだ|好きです|大好き)(よ|だよ)?$/.test(body)) out = '……す、好き。……悪い？';
       else if (mode === 'tsun' && /^(嬉しい|うれしい)(です|よ)?$/.test(body)) out = '……別に、嬉しくなんか';
       else out = plainSentence(body, mode === 'proud' ? 'proud' : 'casual');
@@ -180,7 +180,7 @@
         if (/(だ|た|い|ない)ね$/.test(b2)) out = b2.replace(/ね$/, 'な');
         /* 「記録するね」を「記録するな」にすると禁止に読めるので「ぞ」に */
         else if (/[るうくすつぬむぶぐ]ね$/.test(b2) && !ask) out = b2.replace(/ね$/, /([おこそとのほもよろごぞどぼょ]う|てる|ている)ね$/.test(b2) ? 'な' : 'ぞ');
-        else if (/よね$/.test(b2) && !f) out = b2.replace(/よね$/, 'よな');
+        else if (/よね$/.test(b2) && !/[てで]よね$/.test(b2) && !f) out = b2.replace(/よね$/, 'よな');
         else if (/[^な]の$/.test(b2) && ask && !/(もの|この|その|あの|どの)$/.test(b2)) out = b2.replace(/の$/, WH.test(b2) ? 'んだ' : 'のか');
       }
       if (mode === 'free' && who.tone !== 'aniki' && !ask && !term && !/^[…‥っ]/.test(tail) && b2.length <= 8 && h % 2 === 0 && !/なさい$/.test(b2) && /[だいたるう]$/.test(out || body)) out = (out || body) + '！';
@@ -207,7 +207,7 @@
         out = ask ? null : harden(body, 'stern');
         if (!out && body !== bm) out = body;
         if (!out && /(だ|た|い|ない)ね$/.test(body) && !/くださいね$/.test(body)) out = body.replace(/ね$/, 'な');
-        if (!out && /よね$/.test(body)) out = body.replace(/よね$/, 'よな');
+        if (!out && /よね$/.test(body) && !/[てで]よね$/.test(body)) out = body.replace(/よね$/, 'よな');
         if (!out && /じゃん$/.test(body)) out = body.replace(/じゃん$/, 'ではないか');
         if (!out && /[^なさ]かな$/.test(body) && !ask) out = body.replace(/かな$/, 'か');
         if (!out && /[^な]の$/.test(body) && ask) out = body.replace(/の$/, WH.test(body) ? 'のだ' : 'のか');

@@ -104,8 +104,8 @@
       .replace(endRe('いいのよ'), 'いいんだよ').replace(endRe('のよ'), 'んだよ').replace(endRe('なのね'), 'なんだね').replace(endRe('(だ|た)わね'), '$1ね').replace(endRe('だわ'), 'だ')
       .replace(endRe('(てる|ない|たい|しい)わ'), '$1よ').replace(endRe('([るうくすつぬむぐぶ])わよ'), '$1よ').replace(endRe('([るうくすつぬむぐぶい])わね'), '$1ね');
     q = q.replace(/(?:少々)?お待ち(?:くださいませ|ください|ちょうだい)/g, 'ちょっと待ってて').replace(/お忘れ(?:くださいませ|ください|ちょうだい)/g, '忘れちまいな');
-    if (who.gender === 'm') q = q.replace(endRe('ちょうだい'), 'くれ').replace(endRe('([^だ])よね'), '$1よな');
-    if (who.gender === 'm') q = q.replace(endRe('だよ'), 'だぜ').replace(endRe('(だ|た|い)ね'), '$1な');
+    if (who.gender === 'm') q = q.replace(endRe('ちょうだい'), 'くれ').replace(endRe('([^だてで])よね'), '$1よな');
+    if (who.gender === 'm') q = q.replace(endRe('(?<!ん)(?<!(?:何|なん|誰|どこ|いつ|どう)[^。！？!?]{0,10})だよ'), 'だぜ').replace(endRe('(だ|た|い)ね'), '$1な');
     else q = q.replace(endRe('だよ'), 'だよ').replace(endRe('かな'), 'かね');
     return q;
   }
