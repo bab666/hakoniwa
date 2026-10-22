@@ -193,6 +193,8 @@
     if (z.cult != null) { var np = ctx.zb.npcs[z.cult]; if (np && np.alive) return np.area; }
     if (z.alone) return z.area;
     if (Z.cureDest) { var cd = Z.cureDest(ctx, c); if (cd != null) return cd; }
+    /* 執着している相手を探す（obsess-install.js） */
+    if (Z.obsDest) { var od = Z.obsDest(ctx, c); if (od != null) return od; }
     if (ctx.env.end === 'burn' && (z.know.burn || day(ctx) >= ctx.env.days - 1)) return exitArea(ctx, c);
     if (lastDay(ctx) && z.heliAt != null) return z.heliAt;
     if (g === 'escape') return exitArea(ctx, c);
@@ -239,21 +241,22 @@
   function moveAll(ctx) {
     var rng = ctx.rng, night = part(ctx) === 3, lines = [];
     groups(ctx).forEach(function (g) {
-      var lead = ctx.most(g, function (c) { return c.tr.lead + (c.goal.id === 'escape' || c.goal.id === 'family' ? 0.2 : 0); });
+      var lead = ctx.most(g, function (c) { return c.tr.lead + (c.goal.id === 'escape' || c.goal.id === 'family' ? 0.2 : c.goal.id === 'obsess' ? 0.35 : 0); });
       var gd = destOf(ctx, lead);
       /* 行き先の違う仲間は、別行動を選ぶことがある */
       var go = g.slice();
       if (g.length > 1) g.forEach(function (c) {
         if (c === lead) return;
         var d = destOf(ctx, c);
-        if (d !== gd && d !== c.z.area && (c.goal.id === 'family' || c.goal.id === 'protect' || (c.goal.id === 'escape' && rng() < 0.4)) && rng() < 0.55 - ctx.R(c, lead).aff / 250) {
+        if (d !== gd && d !== c.z.area && (c.goal.id === 'family' || c.goal.id === 'protect' || c.goal.id === 'obsess' || (c.goal.id === 'escape' && rng() < 0.4)) && rng() < (c.goal.id === 'obsess' ? 0.85 : 0.55) - ctx.R(c, lead).aff / 250) {
           go.splice(go.indexOf(c), 1);
           moveOne(ctx, [c], d, lines);
           ctx.act2({ actors: [c, lead], cat: 'solo', fx: function () { ctx.mod2(c, lead, { trust: -3 }, { trust: -2, ten: 3 }); }, text: ctx.t(ctx.pick(['{a}は「ここで別れる」と言った。{b}が止める前に、{a}はもう背中を向けていた。', '{a}は{b}たちに頭を下げて、一人で' + an(ctx, Z.step(c.z.area === d ? lead.z.area : c.z.path[c.z.path.length - 1], d)) + 'の方へ歩き出した。', '「行かなきゃいけない場所がある」――{a}は{b}の制止を振り切った。']), c, lead), why: c.name + 'の目標「' + c.goal.label + '」が、群れの行き先と違った' });
         }
       });
       if (!go.length || gd === lead.z.area) return;
-      if (night && rng() < 0.75 && AR(ctx, lead.z.area).z < 70) return;
+      /* 夜は動かない（執着している相手を探している人は、夜でも出ていくことがある） */
+      if (night && rng() < (lead.goal.id === 'obsess' ? 0.35 : 0.75) && AR(ctx, lead.z.area).z < 70) return;
       moveOne(ctx, go, gd, lines);
     });
     if (lines.length) ctx.say({ kind: 'phase', cat: 'phase', text: '移動：' + lines.join('／') });

@@ -351,7 +351,7 @@
     scen.obsessKit = opt = opt || {};
     var W = opt.w || 1;
     var after0 = scen.after;
-    scen.after = function (ctx) { var r = after0 ? after0.apply(this, arguments) : undefined; O.tick(ctx); return r; };
+    scen.after = function (ctx) { var r = after0 ? after0.apply(this, arguments) : undefined; O.tick(ctx); if (opt.after) opt.after(ctx); return r; };
     scen.events.push({
       /* 執着は箱庭の進行役のイベント（pri）と同じ扱い：設定した執着が、ほかの出来事に埋もれないように */
       id: 'ob_act', cat: 'conflict', noOdd: true, pri: true,

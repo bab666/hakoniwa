@@ -36,7 +36,7 @@
     id: 'trial', name: '裁判デスゲーム', kicker: 'デスゲーム・推理', zenreiOnly: true,
     desc: 'ホテルに閉じ込められ「殺せば生きて帰れる」と告げられる。殺人が起きれば裁判。犯人を当てれば処刑、外せば犯人以外が全滅。',
     note: '※『ダンガンロンパ』や既存のデスゲーム作品のパロディです。',
-    unit: '日', perUnit: 4, preRel: 3, lethal: true,
+    unit: '日', perUnit: 4, preRel: 3, lethal: true, minCast: 2, maxCast: 16,
     derived: ['caution', 'aggr', 'cold', 'jealous'],
     exclude: ['take_charge'],
     env: [

@@ -557,7 +557,7 @@
     var t = '足取り：' + path.join('→') + '　武器：' + wname(c) + (z.kills ? '　倒したゾンビ ' + z.kills + '体' : '');
     if (f && f.pc == null) t += '　家族：' + f.rel + '（' + (f.inside ? '街の中' : '街の外') + (f.found ? '・' + { ok: '合流できた', zombie: 'ゾンビになっていた', dead: '亡くなっていた' }[f.state] : f.heard ? '・悪い知らせが届いた' : '') + '）';
     if (z.cut) t += '　咬まれた腕を処置して助かった';
-    if (c.goalHist && c.goalHist.length) t += '　目標の変化：' + c.goalHist.map(function (g) { return GOAL[g].label; }).join('→');
+    if (c.goalHist && c.goalHist.length) t += '　目標の変化：' + c.goalHist.map(function (g) { return GOAL[g] ? GOAL[g].label : (g && g.label) || String(g); }).join('→');
     var rum = [];
     if (z.safe != null) rum.push('「' + an(ctx, z.safe) + 'は安全」' + (z.safe === ctx.zb.safeOrig ? '（本当）' : '（デマ）'));
     if (z.heliAt != null) rum.push('「ヘリは' + an(ctx, z.heliAt) + '」' + (ctx.env.end === 'heli' && z.heliAt === ctx.zb.heli ? '（本当）' : '（デマ）'));

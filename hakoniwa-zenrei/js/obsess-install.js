@@ -102,29 +102,101 @@
 
   /* pace：執着の積もる速さ／cool：執着の出来事どうしの間（区切りの数） */
   if (SC.classroom) O.install(SC.classroom, { w: 1.4, pace: 2.2, cool: 1 });
-  /* ゾンビの街：離れたエリアにいる執着の相手を、群れを抜けてでも探しに行く */
-  var SEEK = L('{a}は{b}の足取りを追って、{p}までたどり着いた。{b}の姿を見つけた瞬間、{a}は泣きそうな顔で笑った。「……やっと見つけた」|{a}は群れのあいだを縫うように走り抜け、{b}のいる{p}に転がり込んだ。「離れないでって、言ったでしょ」|{a}は{b}が{p}にいると聞くなり、止める声も聞かずに飛び出していった。');
+  /* ゾンビの街：執着の相手が別のエリアにいると、目標が「〇〇と会う」に変わる。
+     噂を聞き回って居場所の見当をつけ（情報の錯綜が高いほど外れやすい）、群れを離れてでもそこへ向かう。会えたら「大切な人を守る」になる */
+  var Z = HK.ZB;
+  var ASK = L('{a}は出会う人ごとに{b}の特徴を伝えて、見かけなかったかと尋ねて回った。|{a}は壁の伝言板を端から読み、{b}の名前を探した。|{a}は無線機のつまみを回し続け、{b}の手がかりを探した。|{a}は避難してきた人を捕まえて、{b}のことを根掘り葉掘り訊いた。');
+  var HEARD = L('「{p}で見た」という話を聞いた瞬間、{a}の目の色が変わった。|{p}の方で{b}らしい人を見た、という噂が耳に入った。');
+  var NOHEAR = L('誰も{b}を見ていなかった。{a}は爪を噛んだ。|手がかりは何もなかった。{a}は「生きてる。絶対に」と自分に言い聞かせた。');
+  var FOUND = L('{a}はついに{b}を見つけた。駆け寄って、確かめるように何度も{b}の顔に触れた。「……やっと会えた。もう離れないから」|{b}の姿を見つけた瞬間、{a}は泣き笑いのような顔になった。「探したんだよ。ずっと」|{a}は{b}の腕を掴んで、離さなかった。「どこに行ってたの。……どれだけ探したと思ってるの」');
+  var GO = L('{a}は、もう{b}のことしか考えられなかった。|{a}は{b}がこの街のどこかにいると信じて、立ち上がった。|{a}の頭の中は、{b}の安否でいっぱいだった。');
+  function free(a) { return a.alive && !a.out && a.z && !a.z.alone && !a.z.vanished && a.z.cult == null && !a.z.bitten; }
+  /* 探している相手（執着度 55 以上で、別のエリアにいる人） */
   function seekT(ctx, a) {
-    if (!a.z || a.z.alone || a.z.vanished) return null;
-    var best = null, bv = 34;
+    if (!free(a)) return null;
+    var best = null, bv = 54;
     ctx.chars.forEach(function (o) {
-      if (o === a || !o.alive || !o.z || o.z.alone || o.z.vanished || o.z.area === a.z.area) return;
+      if (o === a || !o.alive || o.out || !o.z || o.z.area === a.z.area) return;
       var v = (ctx.pair(a, o).ob && ctx.pair(a, o).ob[a.i]) || O.yanTie(ctx, a, o) ? O.level(ctx, a, o) : 0;
       if (v > bv) { bv = v; best = o; }
     });
     return best;
   }
-  if (SC.zombie) O.install(SC.zombie, { w: 1.4, pace: 2.4, cool: 1, extra: [{
-    id: 'ob_seek', cat: 'conflict', noOdd: true, pri: true,
-    when: function (ctx, a) { return !!seekT(ctx, a); },
-    w: function (ctx, a) { return 1.5 + O.level(ctx, a, seekT(ctx, a)) / 40; },
+  function goalObj(T) { return { id: 'obsess', label: T.name + 'と会う', bias: { help: 0.8, bond: 0.7 } }; }
+  if (Z) Z.obsDest = function (ctx, c) {
+    if (!c.goal || c.goal.id !== 'obsess') return null;
+    var T = ctx.chars[c.z.obT];
+    if (!T || !T.alive || T.out) return null;
+    /* 噂で聞いた場所へ。手がかりがなければ、近くを探して回る */
+    if (c.z.obKnow != null && c.z.obKnow !== c.z.area) return c.z.obKnow;
+    /* まだ探していない（足を運んだ回数の少ない）方へ */
+    var adj = Z.adj(c.z.area), seen = function (x) { return c.z.path.filter(function (p) { return p === x; }).length; };
+    return adj.slice().sort(function (x, y) { return seen(x) - seen(y) || ((x + ctx.stepIndex + c.i) % 3) - ((y + ctx.stepIndex + c.i) % 3); })[0];
+  };
+  var SEEK_EV = [{
+    /* 目標が「〇〇と会う」に変わる */
+    id: 'ob_seekgoal', cat: 'solo', noOdd: true, pri: true,
+    when: function (ctx, a) { return a.goal && a.goal.id !== 'obsess' && !!seekT(ctx, a); },
+    w: function (ctx, a) { return 2 + O.level(ctx, a, seekT(ctx, a)) / 30; },
     run: function (ctx, a) {
-      var b = seekT(ctx, a), to = b.z.area;
-      a.z.area = to; a.z.moved = true; a.z.path.push(to);
-      ctx.stress(a, 6); ctx.mod(b, a, { ten: 4, att: 2 });
-      return { with: [b], cat: 'conflict', text: ctx.t(ctx.pick(SEEK), a, b).replace(/\{p\}/g, ctx.zb.A[to].name), why: O.why(ctx, a, b) + '。離れた場所にいる相手を、危険を冒して探しに行った', mag: 14 };
+      var T = seekT(ctx, a), from = a.goal.label;
+      a.z.obPrev = a.goal; a.z.obT = T.i; a.z.obKnow = null;
+      a.goal = goalObj(T); a.goalHist = (a.goalHist || []).concat([a.goal]);
+      return { with: [T], cat: 'solo', text: ctx.t(ctx.pick(GO), a, T) + a.name + 'の目標が変わった：「' + from + '」→「' + a.goal.label + '」', why: O.why(ctx, a, T) + '。離れた場所にいる相手に、どうしても会いたい', mag: 14 };
     }
-  }] });
-  if (SC.goukon) O.install(SC.goukon, { w: 1.8, pace: 3.2, cool: 0, shinju: false, lethal: false });
+  }, {
+    /* 噂を聞き回る */
+    id: 'ob_ask', cat: 'solo', noOdd: true, pri: true,
+    when: function (ctx, a) { var T = a.goal && a.goal.id === 'obsess' && ctx.chars[a.z.obT]; return !!(T && T.alive && !T.out && free(a) && T.z.area !== a.z.area && (a.z.obKnow == null || a.z.obKnow === a.z.area)); },
+    w: function () { return 6; },
+    run: function (ctx, a) {
+      var T = ctx.chars[a.z.obT], rng = ctx.rng, hit = rng() < 0.75, wrong = hit && rng() < ctx.env.rumor / 100 * 0.5;
+      var t = ctx.t(ctx.pick(ASK), a, T);
+      if (hit) {
+        var cand = Z.adj(T.z.area).filter(function (x) { return x !== a.z.area; });
+        var p = wrong && cand.length ? rng.pick(cand) : T.z.area;
+        a.z.obKnow = p;
+        t += ctx.t(ctx.pick(HEARD), a, T).replace(/\{p\}/g, ctx.zb.A[p].name);
+      } else t += ctx.t(ctx.pick(NOHEAR), a, T);
+      ctx.stress(a, 4);
+      return { with: [], cat: 'solo', text: t, why: a.name + 'の目標「' + a.goal.label + '」。噂を聞き回った' + (hit ? (wrong ? '（デマ：情報の錯綜 ' + ctx.env.rumor + '）' : '（本当の情報）') : '（手がかりなし）'), mag: 10 };
+    }
+  }, {
+    /* 会えた */
+    id: 'ob_found', cat: 'bond', noOdd: true, pri: true,
+    when: function (ctx, a) { var T = a.goal && a.goal.id === 'obsess' && ctx.chars[a.z.obT]; return !!(T && free(a) && T.alive && !T.out && T.z.area === a.z.area); },
+    w: function () { return 9; },
+    run: function (ctx, a) { return found(ctx, a); }
+  }];
+  function found(ctx, a) {
+      var T = ctx.chars[a.z.obT], from = a.goal.label, P = HK.SCENARIOS.zombie.goals.filter(function (g) { return g.id === 'protect'; })[0];
+      a.goal = P || a.z.obPrev; a.focus = T; a.z.obKnow = null; a.goalHist = (a.goalHist || []).concat([a.goal.id || a.goal]);
+      ctx.mod2(a, T, { att: 6, aff: 4 }, { ten: 4, att: 2 }); a.stress = Math.max(0, a.stress - 20);
+      O.add(ctx, a, T, 4);
+      return { with: [T], cat: 'bond', text: ctx.t(ctx.pick(FOUND), a, T) + a.name + 'の目標が変わった：「' + from + '」→「' + a.goal.label + '」', why: O.why(ctx, a, T) + '。探し続けた相手に、ようやく会えた', mag: 22 };
+  }
+  /* 区切りの終わりに：移動で同じエリアに来ていれば、その場で会える。居場所を知っている人は、相手が動いても噂で追える */
+  function seekAfter(ctx) {
+    ctx.chars.forEach(function (a) {
+      if (!a.goal || a.goal.id !== 'obsess' || !free(a)) return;
+      var T = ctx.chars[a.z.obT];
+      if (!T || !T.alive || T.out) return;
+      if (T.z.area === a.z.area) { var r = found(ctx, a); ctx.say({ kind: 'event', cat: r.cat, actors: [a, T], text: r.text, why: r.why, mag: r.mag }); return; }
+      if (a.z.obKnow != null && a.z.obKnow !== T.z.area && ctx.rng() < 0.4) a.z.obKnow = T.z.area;
+    });
+  }
+  /* 探している相手が死ぬか街を出たら、元の目標に戻る */
+  SEEK_EV.push({
+    id: 'ob_seeklost', cat: 'solo', noOdd: true, pri: true,
+    when: function (ctx, a) { var T = a.goal && a.goal.id === 'obsess' && ctx.chars[a.z.obT]; return !!(T && (!T.alive || T.out)); },
+    w: function () { return 9; },
+    run: function (ctx, a) {
+      var T = ctx.chars[a.z.obT], from = a.goal.label;
+      a.goal = a.z.obPrev || HK.SCENARIOS.zombie.goals[0]; a.goalHist = (a.goalHist || []).concat([a.goal.id || a.goal]);
+      ctx.stress(a, 25);
+      return { with: [], cat: 'solo', text: ctx.t(T.alive ? '{a}は、{b}がもう街を出たと知った。{a}はしばらく、その場から動けなかった。' : '{a}は、{b}がもうこの世にいないと知った。{a}の中で、何かが音を立てて崩れた。', a, T) + a.name + 'の目標が変わった：「' + from + '」→「' + a.goal.label + '」', why: '探していた' + T.name + 'に、もう会えない', mag: 20 };
+    }
+  });
+  if (SC.zombie) O.install(SC.zombie, { w: 1.4, pace: 2.4, cool: 1, extra: SEEK_EV, after: seekAfter });
   if (SC.whiteroom) O.install(SC.whiteroom, { w: 1.6, pace: 3, cool: 0 });
 })();
