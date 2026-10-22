@@ -61,6 +61,9 @@
     if ((m = s.match(/^(.*)ませんでした$/))) { var n0 = conj(m[1], 'nai'); return n0 ? n0.replace(/ない$/, 'なかった') : null; }
     if ((m = s.match(/^(.*)ません$/))) return conj(m[1], 'nai');
     if ((m = s.match(/^(.*)ましょう$/))) return conj(m[1], 'vol');
+    /* 「ありがとうございました」は動詞の「〜ました」ではない（一言なら丁寧なまま、文の一部なら「ありがとう」） */
+    if (/^ありがとうございま(?:す|した)$/.test(s)) return null;
+    if (/ありがとうございま(?:す|した)$/.test(s)) return s.replace(/ありがとうございま(?:す|した)$/, 'ありがとう');
     if ((m = s.match(/^(.*)ました$/))) return conj(m[1], 'ta');
     if ((m = s.match(/^(.*)ます$/))) return conj(m[1], 'u');
     if (/かったです$/.test(s)) return s.replace(/です$/, '');
