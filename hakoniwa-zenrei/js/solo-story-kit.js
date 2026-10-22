@@ -165,7 +165,9 @@
     var nodes = R.nodes.map(function (nd, k) {
       var P = pos[k], col = pc(nd.i);
       return '<g' + (nd.dead ? ' opacity="0.5"' : '') + '><circle cx="' + P.x.toFixed(1) + '" cy="' + P.y.toFixed(1) + '" r="' + NR + '" style="fill:var(--surface);stroke:' + col + ';stroke-width:3"/>' +
-        '<text x="' + P.x.toFixed(1) + '" y="' + (P.y + 5).toFixed(1) + '" text-anchor="middle" style="fill:' + col + ';font-weight:700;font-size:14px">' + esc(nd.name.charAt(0)) + '</text>' +
+        /* 顔アイコンがあれば丸の中に、なければ頭文字 */
+        ((HK.Icons && HK.Icons.url(nd.name) && HK.Icons.svg(nd.name, nd.i, P.x, P.y, NR - 1.5, 'sk' + k)) ||
+        '<text x="' + P.x.toFixed(1) + '" y="' + (P.y + 5).toFixed(1) + '" text-anchor="middle" style="fill:' + col + ';font-weight:700;font-size:14px">' + esc(HK.Icons ? HK.Icons.initial(nd.name) : nd.name.charAt(0)) + '</text>') +
         '<text x="' + P.x.toFixed(1) + '" y="' + (P.y + NR + 16).toFixed(1) + '" text-anchor="middle" class="rnm" style="fill:' + col + '">' + esc(nd.name.length > 8 ? nd.name.slice(0, 8) + '…' : nd.name) + (nd.dead ? '（故）' : '') + '</text>' +
         '<text x="' + P.x.toFixed(1) + '" y="' + (P.y + NR + 30).toFixed(1) + '" text-anchor="middle" class="rsub">' + esc(nd.sub || '') + '</text></g>';
     }).join('');
