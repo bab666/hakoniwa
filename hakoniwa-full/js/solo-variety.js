@@ -128,6 +128,7 @@
         if (env.mix !== 'random' && x.type === env.mix) w *= 3.5;
         if (x.type === 'duel' && P.length < 2) w = 0;
         if (VA.NO_TOP && VA.NO_TOP.indexOf(x.name) >= 0 && P.some(function (p) { return !p.away && hTop(p); })) w = 0;
+        if (VA.NEED_PENIS && VA.NEED_PENIS.indexOf(x.name) >= 0 && P.some(function (p) { return p.gender === 'f'; })) w = 0;
         if (x.type === 'team' && P.length < 4) w *= 0.15;
         if (used.length && used[used.length - 1].type === x.type) w *= 0.45;
         return w;

@@ -127,7 +127,7 @@
     function beyond() {
       var lw = env.lewd / 100, wts = [1.2 - lw, 0.6 + lw * 0.2, lw * 1.6];
       /* 受け攻め：本人が攻めの指定なら、挿入される場面の代わりに「跨られる」場面を使う */
-      var list = X.BEYOND[plKey];
+      var list = X.beyondFor ? X.beyondFor(h, plKey) : X.BEYOND[plKey];
       if (hardTop && X.BEYOND_HARD) return K.pick(S, X.BEYOND_HARD[plKey]);
       if (topMe && X.BEYOND_TOP) list = list.filter(function (e) { return !X.PEN_RE.test(e.t) && !(e.fx.cum > 0); }).concat(X.BEYOND_TOP);
       return HK.weighted(rng, list, function (e) { return Math.max(0.03, wts[e.lv]); });
