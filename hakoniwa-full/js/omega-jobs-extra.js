@@ -102,7 +102,7 @@
 
   /* 職業だけの出来事を選ぶ（scenario-omega.js の職業イベントから呼ばれる） */
   OM.jobSpecific = function (ctx, a, b, sc) {
-    var list = (OM.JOB_EVENTS_ID[a.om.job] || []).filter(function (e) { return (!e.sx || e.sx === a.om.sex) && e.sc === sc; });
+    var list = (OM.JOB_EVENTS_ID[a.om.job] || []).filter(function (e) { return (!e.sx || e.sx === a.om.sex) && e.sc === sc && !(e.cat === 'romance' && !ctx.romanceOk(sc === 'p' ? [a, b] : [a])); });
     if (!list.length) return null;
     var e = ctx.pick(list), bb = sc === 'p' ? b : null;
     if (e.fx.ab && bb) ctx.mod(a, bb, e.fx.ab);

@@ -631,7 +631,7 @@
       }
       if (OM.jobSpecific && OM.JOB_EVENTS_ID && OM.JOB_EVENTS_ID[a.om.job] && ctx.rng() < 0.85) { var js = OM.jobSpecific(ctx, a, b, sc); if (js) return js; }
       var ban = OM.JOB_BAN && OM.JOB_BAN[a.om.job];
-      var list = (OM.JOB_EVENTS[job(a).cat] || []).filter(function (e) { return (!e.sx || e.sx === sx(a)) && e.sc === sc && !(ban && e.texts.some(function (t) { return ban.test(t); })); });
+      var list = (OM.JOB_EVENTS[job(a).cat] || []).filter(function (e) { return (!e.sx || e.sx === sx(a)) && e.sc === sc && !(e.cat === 'romance' && !ctx.romanceOk(sc === 'p' ? [a, b] : [a])) && !(ban && e.texts.some(function (t) { return ban.test(t); })); });
       if (!list.length && OM.jobSpecific && OM.JOB_EVENTS_ID && OM.JOB_EVENTS_ID[a.om.job]) return OM.jobSpecific(ctx, a, b, sc);
       if (!list.length) return null;
       var e = ctx.pick(list), bb = sc === 'p' ? b : null;

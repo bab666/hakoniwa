@@ -11,7 +11,8 @@
   function AR(ctx, i) { return ctx.zb.A[i]; }
   function an(ctx, i) { return ctx.zb.A[i].name; }
   function inArea(ctx, i) { return ctx.present().filter(function (o) { return o.z.area === i; }); }
-  function here(ctx, c) { return ctx.present().filter(function (o) { return o !== c && o.z.area === c.z.area; }); }
+  /* 咬まれて一人で離れた人（z.alone）は、同じエリアにいても一行とは別行動（一緒に数えない） */
+  function here(ctx, c) { if (c.z.alone) return []; return ctx.present().filter(function (o) { return o !== c && o.z.area === c.z.area && !o.z.alone; }); }
   function tieT(ctx, a, b) { var t = HK.Ties && HK.Ties.get(ctx, a, b); return t ? (t.like || t.type) : ''; }
   function day(ctx) { return Math.floor(ctx.stepIndex / 4) + 1; }
   function part(ctx) { return ctx.stepIndex % 4; }
@@ -60,7 +61,7 @@
       { id: 'chaos', label: 'この混乱を利用する', fit: function (t) { return t.cold * 0.5 + t.aggr * 0.5 - t.np * 0.4; }, bias: { betray: 2, combat: 1.4, help: 0.5 } }
     ],
     steps: function (env) { var s = []; for (var d = 1; d <= env.days; d++) PARTS.forEach(function (p) { s.push(d + '日目・' + p); }); return s; },
-    othersFor: function (ctx, a) { return ctx.present().filter(function (c) { return c !== a && c.z && a.z && c.z.area === a.z.area; }); },
+    othersFor: function (ctx, a) { if (a.z && a.z.alone) return []; return ctx.present().filter(function (c) { return c !== a && c.z && a.z && c.z.area === a.z.area && !c.z.alone; }); },
     longRun: function (env) { return env.days >= 6; },
     setup: function (ctx) { setup(ctx); },
     phase: function (ctx, s, n) { phase(ctx, s, n); },

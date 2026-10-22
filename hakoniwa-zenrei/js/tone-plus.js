@@ -152,13 +152,34 @@
     if (who.call && SUFFIX[who.call] != null) return target.name + SUFFIX[who.call];
     return null;
   };
+  /* 名前が普通の言葉と同じとき（「楽」「敬語」など）、言葉として使われている所には呼び方をつけない。
+     ・漢字の名前の前後に漢字、カタカナの名前の前後にカタカナが続く（「快楽」「楽園」）
+     ・名前のあとに動詞や形容詞が続く（「敬語やめよ」「楽しい」）
+     ・「〜が楽」「〜は楽」のように、助詞のすぐあとで文が終わる（述語として使われている） */
+  var KJ = /[一-鿿々]/, KT = /[ァ-ヶー]/, HR = /[ぁ-ゖ]/;
+  var NEXT_OK = /^(?:[、。！？!?…‥」』）)\s〜ー♡っ]|$|は|が|を|に|と|も|の|って|なら|だけ|まで|から|より|へ|さ(?![ぁ-ゖ])|ね|よ|こそ|しか|たち|ら(?![ぁ-ゖ])|ってば|ってさ|か(?=[？?、。」]|$)|だ|です|じゃ)/;
+  function nameHere(name, prev, next) {
+    var first = name.charAt(0), last = name.charAt(name.length - 1);
+    if (KJ.test(first) && KJ.test(prev || '')) return false;
+    if (KT.test(first) && KT.test(prev || '')) return false;
+    if (KJ.test(last) && KJ.test(next.charAt(0))) return false;
+    if (KT.test(last) && KT.test(next.charAt(0))) return false;
+    if (!NEXT_OK.test(next)) return false;
+    /* 一、二字の漢字やひらがなの名前（普通の言葉と重なりやすい）だけ、述語に使われていないかも見る */
+    if (/^(?:[一-鿿々]{1,2}|[ぁ-ゖ]{1,3})$/.test(name) && /[がはもをでの]$/.test(prev || '') && /^(?:[。！？!?…‥」]|$|に|だ|です|じゃ|な(?!ら))/.test(next)) return false;
+    return true;
+  }
   V.applyCalls = function (q, who, people) {
     if (!who || (!who.call && !who.calls)) return q;
     people.forEach(function (p) {
       if (p === who || !p.name) return;
       var c = V.callFor(who, p);
       if (!c) return;
-      q = q.replace(new RegExp(esc(p.name) + '(?:さん|くん|君|ちゃん|様|さま|先輩|先生|殿)?', 'g'), c);
+      q = q.replace(new RegExp(esc(p.name) + '(?:さん|くん|君|ちゃん|様|さま|先輩|先生|殿)?', 'g'), function (m, off, str) {
+        if (m !== p.name) return c;
+        if (!nameHere(p.name, str.charAt(off - 1), str.slice(off + m.length))) return m;
+        return c;
+      });
     });
     return q;
   };

@@ -189,6 +189,13 @@
     });
   }
 
+  var LOVE_TXT = /恋|好きな人|好きか|誰が誰を|付き合って|告白|片想い|本命|デート|キス|ときめ|惹かれ|両想い/;
+  function loveTalkOk(ctx, L) {
+    if (ctx.scen && ctx.scen.romanceCore) return true;
+    if (ctx.env && ctx.env.romance === 0) return false;
+    return !L.some(function (x) { return x && x.likes === 'none'; });
+  }
+  HK.loveTalkOk = loveTalkOk; HK.LOVE_TXT = LOVE_TXT;
   /* DSL → エンジンのイベント形式 */
   HK.E = function (id, cat, scope, w, when, fx, texts) {
     var terms = parseExpr(w), conds = parseWhen(when), effects = parseFx(fx);
@@ -197,6 +204,8 @@
     var GRP = /皆|全員|みんな|何人か|周り|周囲|誰か|一同|クラス中|教室中|ほかの誰|他の誰|誰も/;
     var allGroup = list.every(function (t) { return GRP.test(t.replace(/\{[a-z]+\}/g, '')); });
     var tcat = cat === 'romance' || cat === 'conflict' || cat === 'help' ? cat : 'bond';
+    /* 恋の話の文（恋バナ・告白・片想いなど）。恋愛の起こりやすさが0か、恋愛対象「なし」の人がいるときは使わない */
+    var loveOnly = list.every(function (t) { return LOVE_TXT.test(t); }), hasLove = list.some(function (t) { return LOVE_TXT.test(t); });
     var withTail = scope === 'p+', selfTail = scope === 's+';
     return {
       id: id, cat: cat, scope: sc, mini: true,
@@ -211,7 +220,7 @@
         }
         return true;
       } : null,
-      w: function (ctx, a, b) { if ((scope === 'g' || allGroup) && ctx.present().length < 3) return 0; return Math.max(0, evalTerms(ctx, a, b, terms)); },
+      w: function (ctx, a, b) { if ((scope === 'g' || allGroup) && ctx.present().length < 3) return 0; if (loveOnly && !loveTalkOk(ctx, [a, b])) return 0; return Math.max(0, evalTerms(ctx, a, b, terms)); },
       run: function (ctx, a, b) {
         applyFx(ctx, a, b, effects);
         var c = null;
@@ -220,6 +229,7 @@
           c = pool.length ? ctx.pick(pool) : null;
         }
         var cand = c ? list : list.filter(function (t) { return t.indexOf('{c}') < 0; });
+        if (hasLove && !loveTalkOk(ctx, [a, b, c])) { var nl = cand.filter(function (t) { return !LOVE_TXT.test(t); }); if (nl.length) cand = nl; }
         var text = ctx.t(ctx.pick(cand.length ? cand : list), a, b, c);
         if (withTail && b && ctx.rng() < 0.55) text += tail(ctx, b, tcat, false, text);
         if (selfTail && ctx.rng() < 0.5) text += tail(ctx, a, 'solo', true);

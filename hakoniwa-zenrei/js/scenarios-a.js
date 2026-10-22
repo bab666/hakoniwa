@@ -285,7 +285,7 @@
           var a = sh[i], b = sh[i + 1];
           ctx.mod2(a, b, { trust: 8, att: 4 }, { trust: 8, att: 4 });
           var ab = R(ctx, a, b);
-          e = ctx.say({ kind: 'event', cat: ab.att > 35 ? 'romance' : 'bond', actors: [a, b], text: ab.att > 35 ? a.name + 'と' + b.name + 'は、旅館の廊下の自販機の前で偶然二人になった。' : a.name + 'と' + b.name + 'は同じ布団の列で、眠くなるまで話した。', why: '修学旅行の夜（ランダムな組み合わせ）', mag: ctx._mag });
+          e = ctx.say({ kind: 'event', cat: ab.att > 35 && ctx.romanceOk([a, b]) ? 'romance' : 'bond', actors: [a, b], text: ab.att > 35 && ctx.romanceOk([a, b]) ? a.name + 'と' + b.name + 'は、旅館の廊下の自販機の前で偶然二人になった。' : a.name + 'と' + b.name + 'は同じ布団の列で、眠くなるまで話した。', why: '修学旅行の夜（ランダムな組み合わせ）', mag: ctx._mag });
           ctx.pair(a, b).moments.push({ n: e.n, mag: e.mag });
         }
       }

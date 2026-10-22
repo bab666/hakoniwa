@@ -124,8 +124,10 @@
   /* aが最も惹かれている相手（いなければnull） */
   Ctx.prototype.crush = function (a, min) {
     var best = null, bv = min == null ? 60 : min, self = this;
+    /* 恋愛の起こりやすさが0、または恋愛対象が「なし」・合わない相手は、片想いの相手にならない（仲がいいだけの友達を恋の相手にしない） */
+    if (this.env && this.env.romance === 0 && !(this.scen && this.scen.romanceCore)) return null;
     this.chars.forEach(function (c) {
-      if (c === a || !c.alive) return;
+      if (c === a || !c.alive || !HK.canLove(a, c)) return;
       var r = self.R(a, c), v = r.aff * 0.6 + r.att;
       if (v > bv) { bv = v; best = c; }
     });
@@ -141,7 +143,7 @@
     var m = 1;
     if (a.action && a.action.bias && a.action.bias[cat] != null) m *= a.action.bias[cat];
     if (a.goal && a.goal.bias && a.goal.bias[cat] != null) m *= a.goal.bias[cat];
-    if (cat === 'romance') m *= 0.3 + this.env.romance / 50 * 0.7;
+    if (cat === 'romance') m *= this.env.romance === 0 && !this.scen.romanceCore ? 0 : 0.3 + this.env.romance / 50 * 0.7;
     if (cat === 'conflict' || cat === 'combat' || cat === 'betray') m *= 0.3 + this.env.strife / 50 * 0.7;
     if (this.scen.catBias && this.scen.catBias[cat] != null) m *= this.scen.catBias[cat];
     return m;
@@ -149,6 +151,8 @@
   Ctx.prototype.stat = function (a, id) { return a.stats[id] == null ? 3 : a.stats[id]; };
 
   Ctx.prototype.say = function (o) {
+    /* 恋愛が起きない組の恋愛の出来事は、記録に残さない（呼び出し側が e.n などを使えるよう、空の出来事を返す） */
+    if (o.cat === 'romance' && o.kind !== 'phase' && !this.romanceOk(o.actors)) return { n: this.log.length, step: this.stepIndex, cat: 'romance', actors: [], text: '', mag: 0, kind: 'event', skipped: true };
     var e = {
       n: this.log.length, step: this.stepIndex, label: this.label, cat: o.cat || 'phase',
       actors: (o.actors || []).map(function (c) { return c.i; }), text: o.text, why: o.why || '',
@@ -165,7 +169,17 @@
   };
 
   /* 出来事の中で一人ずつの反応を記録する。o: {actors, cat, text|fn→text, why, fx, mag, k} */
+  /* 恋愛の出来事を起こしてよいか：恋愛の起こりやすさが0、恋愛対象が「なし」・合わない人どうしでは起こさない（もう恋人どうしの二人は別） */
+  Ctx.prototype.romanceOk = function (actors) {
+    var L = (actors || []).filter(Boolean), a = L[0], b = L[1];
+    if (this.scen && this.scen.romanceCore) return true;
+    if (a && b && this.pair(a, b).couple) return true;
+    if (this.env && this.env.romance === 0) return false;
+    if (a && b) return HK.canLove(a, b) && HK.canLove(b, a);
+    return !(a && a.likes === 'none');
+  };
   Ctx.prototype.act2 = function (o) {
+    if (o.cat === 'romance' && !this.romanceOk(o.actors)) return null;
     this.k = o.k || (0.8 + this.rng() * 0.4);
     this._mag = 0; this._touched = {};
     var r = o.fx ? o.fx() : null;
@@ -409,6 +423,7 @@
       var bb = e.scope === 'pair' ? b : null;
       if (e.when && !e.when(ctx, a, bb)) return;
       if (e.cat === 'romance' && bb && a.lock != null && a.lock !== bb.i) return;
+      if (e.cat === 'romance' && !ctx.romanceOk(bb ? [a, bb] : [a])) return;
       var w = e.w(ctx, a, bb);
       if (!(w > 0)) return;
       w *= ctx.bias(a, e.cat);
@@ -438,6 +453,8 @@
     var res = pick.e.run(ctx, a, pick.b);
     if (!res) return;
     var cat = res.cat || pick.e.cat;
+    /* 出来事の側で恋愛に変わったときも、恋愛が起きない組なら書かない */
+    if (cat === 'romance' && !ctx.romanceOk(pick.b ? [a, pick.b] : [a])) return;
     var actors = [a];
     if (pick.b) actors.push(pick.b);
     if (res.with) res.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });

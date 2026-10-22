@@ -335,6 +335,8 @@
     id: 'whiteroom', name: '出られない部屋', kicker: '密室・関係性',
     desc: '目覚めると白い部屋。扉の紙には脱出条件。条件は自由に組み立てられる（例：媚薬を10本飲み切って、エッチしないと出られない部屋）。',
     unit: '時間', preRel: 0, lethal: false,
+    /* 脱出条件そのものが恋愛・性的な行為なので、「恋愛の起こりやすさ」0や恋愛対象で止めない（部屋の側の嫌がり方で扱う） */
+    romanceCore: true,
     catBias: { romance: 1.5, escape: 1.2 }, decay: 0.995, miniShare: 0.75, priBoost: 3,
     derived: ['caution', 'honesty', 'impulse', 'cold'],
     exclude: ['take_charge'],
