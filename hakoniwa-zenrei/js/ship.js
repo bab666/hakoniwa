@@ -669,7 +669,7 @@
     /* 受け攻め：自分で攻めを選んだ人は、熱があっても受けにならない */
     var o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
     if (Pz.hardTop(u)) return;
-    var body = F(pk(S, Pz.isF(t) && Pz.isF(u) ? R.nurseFf : Pz.isF(t) ? R.nurseRide : R.nursePen), { t: t.name, u: u.name });
+    var body = (R.thick && R.thick(S, t, u, 'nurse')) || F(pk(S, Pz.isF(t) && Pz.isF(u) ? R.nurseFf : Pz.isF(t) ? R.nurseRide : R.nursePen), { t: t.name, u: u.name });
     setRel(S, a, b, 0.15); mark(S, a, b, 'night');
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     var open = F(pk(S, t === a ? R.nurseTop : R.nurseSick), { t: t.name, u: u.name });
@@ -784,7 +784,9 @@
     var Pz = HK.Pos, o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
     if (Pz.hardTop(u)) return '';
     var R = SH.R18, pool = Pz.isF(t) && Pz.isF(u) ? R.ff : Pz.isF(t) ? R.ride : R.pen;
-    return F(pk(S, pool), { t: t.name, u: u.name });
+    /* 山場を段落に分けて厚く書く（R18版の ship-thick.js） */
+    var th = R.thick && R.thick(S, t, u, 'night');
+    return th || F(pk(S, pool), { t: t.name, u: u.name });
   }
   function nightR18(S) {
     var rng = S.rng, L0 = live(S), R = SH.R18;

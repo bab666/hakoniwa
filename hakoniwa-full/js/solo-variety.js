@@ -104,6 +104,20 @@
     }
     function quote(p, T) { var l = T[p.persona] || T.gentle; return p.name + ST.pick(S, l); }
     function moan(p) { return lew !== 'low' && V && V.CLIMAX[p.persona] ? p.name + '「' + ST.pick(S, V.CLIMAX[p.persona]) + '」' : ''; }
+    /* 山場の厚い場面（R18版・描写が「ぼかす」以外。solo-variety-thick.js）。tb＝[攻める側, 受ける側] */
+    function thick(kind, tb) {
+      var TH = VA.THICK, TV = HK.ThickVM;
+      if (HK.SAFE_ON || lew === 'low' || !TH || !TV) return '';
+      var t = tb[0], b = tb[1], key = kind;
+      if (kind === 'pair' || kind === 'gone') {
+        var tf = t.gender === 'f', bf = b.gender === 'f';
+        key = kind + (tf && bf ? 'FF' : tf ? 'FM' : 'M');
+        if (kind === 'gone' && key === 'goneM' && TV.sad(rng, t, b)) key = 'goneSad';
+      }
+      var l = TH[key];
+      if (!l || !l.length) return '';
+      return ST.fmt(TV.voice(rng, ST.pick(S, l), b, t), { a: t.name, t: t.name, b: b.name, mc: mc });
+    }
     function fill(t, a, b) { return ST.fmt(t, { a: a ? a.name : '', b: b ? (b.name || b) : rng.pick(VA.ASSIST), mc: mc }); }
     function sayIf(o) { if (S.room == null || S.room > 0) { if (S.room != null) S.room--; ST.say(S, o); } }
     function mcr(tag, pr) { return VA.MCR && VA.MCR[tag] && rng() < (pr == null ? 0.5 : pr) ? '――' + mc + ST.pick(S, VA.MCR[tag]) + (VA.CATCH && VA.CATCH[mc] && rng() < 0.12 ? 'お決まりの' + VA.CATCH[mc] + 'も飛び出した。' : '') : ''; }
@@ -526,14 +540,16 @@
     if (P.length >= 3 && lasts0.length > 1 && VA.FINAL_PAIR) {
       var fs = !grpOk(lasts0);
       lasts0.forEach(function (x) { x.cnt.penalty++; x.m.shame = clamp(x.m.shame + 20, 0, 100); if (!fs) climax(x, lew === 'low' ? 1 : 3); x.finalPen = true; });
-      ST.say(S, { actors: lasts0, tag: '最終罰ゲーム', text: fmtN(fs ? 'FINAL_SAFE' : 'FINAL_PAIR', lasts0) + (fs ? '' : lasts0.slice(0, 3).map(moan).join('')), why: '同点最下位（' + minS + '点）', mag: 32, kind: fs ? 'event' : 'climax' });
+      var pairTx = !fs && lasts0.length === 2 && okS(lasts0[0], lasts0[1]) ? thick('pair', ord(lasts0[0], lasts0[1])) : '';
+      ST.say(S, { actors: lasts0, tag: '最終罰ゲーム', text: pairTx || (fmtN(fs ? 'FINAL_SAFE' : 'FINAL_PAIR', lasts0) + (fs ? '' : lasts0.slice(0, 3).map(moan).join(''))), why: '同点最下位（' + minS + '点）', mag: 32, kind: fs ? 'event' : 'climax' });
     } else if (P.length >= 3) {
       last.cnt.penalty++; last.finalPen = true; last.m.shame = clamp(last.m.shame + 20, 0, 100);
       /* 共演者が責める罰ゲームは、全員が last と okSex で、責める側が攻めになるときだけ */
       var costarOk = P.every(function (x) { return x === last || (okS(x, last) && ord(x, last)[0] === x); });
       var lt = hTop(last);
       var fpool = lt ? VA.FINAL_PENALTY_TOP : VA.FINAL_PENALTY.filter(function (x) { return costarOk || !/共演者/.test(x); });
-      ST.say(S, { actors: [last], tag: '最終罰ゲーム', text: fill(ST.pick(S, fpool), last) + (lt ? '' : moan(last)), why: '最下位（' + Math.round(last.m.score) + '点）' + (lt ? '／攻めの指定：罰ゲームでも責められる側には回らない' : ''), mag: 30, kind: lt ? 'event' : 'climax' });
+      var finTx = thick(lt ? 'finalTop' : 'final', [last, last]);
+      ST.say(S, { actors: [last], tag: '最終罰ゲーム', text: finTx || (fill(ST.pick(S, fpool), last) + (lt ? '' : moan(last))), why: '最下位（' + Math.round(last.m.score) + '点）' + (lt ? '／攻めの指定：罰ゲームでも責められる側には回らない' : ''), mag: 30, kind: lt ? 'event' : 'climax' });
       if (!lt) climax(last, lew === 'low' ? 1 : 3);
     }
     /* 恋の芽生え */
@@ -547,6 +563,7 @@
       var tx = cd.gone ? ST.pick(S, ['楽屋に消えた' + a.name + 'と' + b.name + 'は、エンディングのあとも楽屋から出てこなかった。翌朝、清掃のスタッフが二人を起こした。', a.name + 'と' + b.name + 'は、番組の打ち上げにも来なかった。二人の楽屋には「起こさないでください」の札がかかっていた。'])
         : cd.lov ? ST.pick(S, ['エンディングの最中、' + a.name + 'が' + b.name + 'の手を握った。恋人同士の公開いちゃつきに、' + mc + 'が「お幸せにー！」と叫んだ。', '収録後、' + a.name + 'と' + b.name + 'は「今日のは仕事だから」と言い合いながら、同じ家に帰っていった。'])
         : ST.pick(S, ['収録後の楽屋で、' + a.name + 'は' + b.name + 'に連絡先を渡した。「……今日の企画、忘れられなくて」', 'エンディングのあと、' + a.name + 'と' + b.name + 'は二人で同じタクシーに乗り込んだ。スタッフは見て見ぬふりをした。', '翌週の週刊誌に、' + a.name + 'と' + b.name + 'の熱愛記事が載った。きっかけはあの番組だった。']);
+      if (cd.gone) { var gTx = thick('gone', ord(a, b)); if (gTx) tx = gTx; }
       ST.key(S, ST.say(S, { actors: [a, b], tag: 'カップル成立', text: tx, why: cd.gone ? '楽屋に消えた二人' : cd.lov ? '恋人同士' : '企画やハプニングで何度も絡んだ二人', mag: 30 }), a.name + 'と' + b.name + 'がカップルに');
     });
     P.forEach(function (p) { if (p.producer && VA.PRODUCER_AFTER) ST.say(S, { actors: [p], tag: '収録後', text: ST.fmt(ST.pick(S, VA.PRODUCER_AFTER), { a: p.name }), why: 'ちんちん当てでプロデューサーに媚びた' }); });

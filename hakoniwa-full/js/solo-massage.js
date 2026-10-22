@@ -201,6 +201,15 @@
     K.say(S, { kind: 'sys', tag: '来店', text: K.fmt(S, K.pick(S, ['{a}は雑居ビルの三階、「癒しの手」と書かれた扉を押した。受付には{m}が一人。「お待ちしておりました」', '{a}はポイントカードを握りしめて、駅裏のマッサージ店に入った。迎えたのは{m}だった。', '{a}は口コミサイトで星4.8の店を予約した。レビューの八割が「また来ます」だったのが、少しだけ気になった。'])), why: '目標：' + h.goal.label + '／' + h.action.label });
     K.snap(S, { s: 0 });
 
+    /* 山場の厚い場面（R18版だけ。HK.MassageThick と HK.ThickVM がないときは null） */
+    function thick(top) {
+      var MT = HK.MassageThick, TV = HK.ThickVM;
+      if (HK.SAFE_ON || !MT || !TV) return null;
+      var key = top ? (ff ? 'topFF' : h.gender === 'f' && staff.g === 'm' ? 'topF' : TV.sad(rng, h, null) ? 'topSad' : 'top')
+        : ff ? 'fallFF' : staff.g === 'f' && h.gender !== 'f' ? 'fallLady' : 'fall';
+      var sc = MT[key] && MT[key].length ? K.pick(S, MT[key]) : null;
+      return sc ? { n: sc.n, t: TV.voice(rng, sc.t, h, h), thick: true } : null;
+    }
     /* 立場逆転：客が施術者を押し倒す（top＝自分で攻めを選んだ客が、際どい施術を止めたあと） */
     function doReverse(top) {
       reversed = true;
@@ -209,7 +218,7 @@
       var rv = dark ? [K.pick(S, MD.reverse)] : S.rng.shuffle(M.REVERSE_ACT).slice(0, 2);
       rv.forEach(function (t2) { K.say(S, { kind: 'ev', tag: '逆転', text: K.fmt(S, t2), why: '' }); });
       if (top && !dark) {
-        var tp = K.pick(S, ff ? POS_TOP_FF : h.gender === 'f' ? POS_TOP_F : POS_TOP);
+        var tp = thick(true) || K.pick(S, ff ? POS_TOP_FF : h.gender === 'f' ? POS_TOP_F : POS_TOP);
         K.say(S, { kind: 'ev', tag: tp.n, text: K.fmt(S, tp.t), why: '主導権は最後まで客の側' });
       }
       if (!top) { h.pleasure += 30; while (h.pleasure >= 100) K.climax(S); }
@@ -360,11 +369,13 @@
       var darkN = 0, c0 = h.climax;
       if (dark) K.say(S, { kind: 'sys', tag: '暗転', text: K.fmt(S, K.pick(S, MD.blackout)), why: '描写：軽め（暗転）' });
       pool.forEach(function (p, j) {
+        /* 最後の体位は山場：R18版では段落に分けた厚い場面（solo-massage-thick.js） */
+        if (!dark && j === pool.length - 1) { var thp = thick(custTop); if (thp) p = thp; }
         positions.push(p.n);
         var rr = K.stim(S, 34 + j * 6, { part: 'all', mult: 1.3, defer: true });
         if (dark) darkN += rr.climaxes.length;
         else {
-          K.say(S, { kind: 'ev', tag: p.n, text: K.fmt(S, p.t) + (rr.climaxes.length ? '' : K.tail(S, 0.8)), why: '体位の指定：' + p.n });
+          K.say(S, { kind: 'ev', tag: p.n, text: K.fmt(S, p.t) + (rr.climaxes.length || p.thick ? '' : K.tail(S, 0.8)), why: '体位の指定：' + p.n });
           K.logClimax(S, rr.climaxes);
         }
         /* 落ちすぎた客は、行為の最中に新人の練習台に誘われる（断れない） */

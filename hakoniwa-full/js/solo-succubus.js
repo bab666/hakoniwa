@@ -151,7 +151,7 @@
     var again = p.seen[key] > 1 && SB.AGAIN && rng() < 0.6;
     if (again) { score += 10; why += '／前に会った相手と再会'; }
     var t = ST.fmt(again ? ST.pick(S, SB.AGAIN) : flw ? ST.pick(S, flw.t) : '{spot}で、{a}は{t}に目をつけた。', v) + (flw && flw.id === 'dream' ? '' : ST.fmt(ty.ap ? SB.say(S, ST.pick(S, ty.ap), ty.id + '_ap', p) : ST.pick(S, p.style.approach), v)) + (VO && rng() < (ty.ap ? 0.2 : 0.5) ? p.name + ST.pick(S, VO.OPEN[p.persona] || VO.OPEN.gentle) : '') + (q.re && rng() < 0.65 ? ST.fmt(q.re, v) : '');
-    var lew = env.lewd || 'mid', ml = 0, kind, rev = 0;
+    var lew = env.lewd || 'mid', ml = 0, kind, rev = 0, leadP = '';
     /* 聖なる獲物で大失敗すると、祓われかける */
     if (q.hunter && score < 10) {
       p.cnt.holy++; p.m.mana -= 35; p.m.mood -= 20;
@@ -196,13 +196,19 @@
       if (kind === 'big') p.cnt.big++;
       ml = Math.round(q.vit * (kind === 'big' ? 0.9 + rng() * 0.6 : 0.5 + rng() * 0.4) * (1 + p.stats.tech * 0.05) * (ty.ml || 1));
       if (lew === 'low') t += ST.fmt('――二人は{spot}の奥へ消えた。何があったのかは、{a}の満ち足りた顔だけが知っている。', v);
-      else if (ty.tk) { t += '――' + ST.fmt(SB.say(S, ST.pick(S, sTop ? (EO(S) && HK.Pos.isF(p) ? EL(S, 'topf', ty.top) : EL(S, 'top.' + ty.id, ty.top)) : EL(S, 'tk.' + ty.id, ty.tk)), ty.id + '_tk', p), v); }
+      else if (ty.tk) { leadP = ST.fmt(SB.say(S, ST.pick(S, sTop ? (EO(S) && HK.Pos.isF(p) ? EL(S, 'topf', ty.top) : EL(S, 'top.' + ty.id, ty.top)) : EL(S, 'tk.' + ty.id, ty.tk)), ty.id + '_tk', p), v); t += '――' + leadP; }
       else { t += '――' + ST.fmt(ST.pick(S, sTop && SB.TAKE_TOP ? SB.TAKE_TOP[p.top] : SB.TAKE[p.top]), v); }
       if (q.stamina && hTop && SB.REVERSE_HARD && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.m.plea = 100; p.skip = true; rev = 1; ml = Math.round(ml * 1.4); t += ST.fmt(ST.pick(S, EO(S) && HK.Pos.isF(p) ? EL(S, 'reverse.topf', SB.REVERSE_HARD) : EL(S, 'reverse.hard', SB.REVERSE_HARD)), v); why += '／底なしの体力の相手に、朝まで主導権を渡さなかった'; }
       else if (q.stamina && !hTop && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.cnt.reverse++; p.m.plea = 100; p.skip = true; rev = 1; ml = Math.round(ml * 1.4); t += ST.fmt(ST.pick(S, sTop && SB.REVERSE_TOP ? (EO(S) && HK.Pos.isF(p) ? EL(S, 'reverse.topf', SB.REVERSE_TOP) : EL(S, 'reverse.top', SB.REVERSE_TOP)) : EL(S, 'reverse', SB.REVERSE)), v); why += '／相手の底なしの体力に逆に搾られた'; }
       else if (q.incubus && hTop) { ml = Math.round(ml * 0.6); t += ST.fmt('――ところが{t}も、{a}から吸い返そうとしてきた。{a}は{t}の手首を押さえつけ、一滴も吸い返させなかった。ただ、同業者の精は薄かった。', v); }
       else if (q.incubus) { ml = Math.round(ml * 0.6); t += ST.fmt('――ところが{t}も、{a}から吸い返そうとしてきた。同業者どうしの吸い合いは、引き分けに終わった。', v); }
-      t += ST.fmt(ST.pick(S, EL(S, 'climax', SB.CLIMAX).concat(!sTop && EO(S) ? EL(S, 'climax.in', []) : [])), { a: p.name, t: q.name, ml: ml });
+      /* 小説調の山場（solo-thick4.js）：主導権を握ったまま搾りきった回は、段落に分けて厚く。サキュバスが攻めなら貫いて、そうでなければ跨って */
+      if (leadP && !rev && !q.incubus && HK.Thick4 && HK.Thick4.ok(S, lew)) {
+        var prey = { name: q.name, gender: 'm' };
+        t = t.replace('――' + leadP, '――' + HK.Thick4.scene(S, { dom: p, sub: prey, kind: sTop ? 'in' : 'ride', lead: leadP, sad: HK.Thick4.rollSad(S, p, prey),
+          after: ST.fmt(ST.pick(S, ['{a}の肌に、{ml}ml分の精がゆっくりと溶けていった。', '{a}は舌なめずりをして、満ちていく魔力を味わった。――{ml}ml。', '{a}の淫紋が、{ml}ml分の精を吸って淡く光った。']), { a: p.name, ml: ml }) }));
+      }
+      else t += ST.fmt(ST.pick(S, EL(S, 'climax', SB.CLIMAX).concat(!sTop && EO(S) ? EL(S, 'climax.in', []) : [])), { a: p.name, t: q.name, ml: ml });
       /* 女性のサキュバスが攻めのときは、女性上位（跨って搾る）の書き方にそろえる */
       if (sTop && HK.FM && HK.Pos.isF(p)) t = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, t, p, q.name);
       if (kind === 'big') t += ST.fmt(ST.pick(S, EL(S, 'big', SB.BIG)), v);

@@ -1,0 +1,39 @@
+/* 箱庭シミュレーター: 媚薬ロッカー（R18版のみ）― ロッカーを出たあとのベッドの山場を、段落に分けて厚くする
+   solo-locker-bed.js の LK.bed を包み、そのあいだだけ前戯・挿入・体位・絶頂の文を、thick-sex.js（HK.ThickSex）の段落と差し替える。
+   女性どうし・描写「ぼかす」・全年齢モードは、これまでどおり。リバ同士（途中で主導権が入れ替わりうる組）は、絶頂の文を差し替えない */
+(function () {
+  'use strict';
+  var HK = window.HK, LK = HK.LOCKER, T = HK.ThickSex, ST = HK.Story;
+  if (!LK || !LK.bed || !LK.BED || !T || !ST) return;
+  function L(s) { return s.split('|'); }
+
+  /* 前戯：ロッカーの中で焦らされた分を取り返す */
+  var FORE = L('{a}は{b}の全身に唇を這わせた。ロッカーの中で触れられなかった場所を、一つ残らず。鎖骨、脇腹、腰のくぼみ――媚薬で敏感になった肌は、唇が触れるたびに小さく跳ねた。\n\n{a}「さっきから、ずっとこうしたかった」|{a}は{b}をベッドの縁に座らせ、脚のあいだに膝をついた。ロッカーの中で散々焦らされた熱は、触れる前から{b}の肌を震わせていた。\n\n{a}「……もう、こんなになってる」|{a}は{b}の指を一本ずつ口に含み、それから首筋へ、胸元へと唇を下ろしていった。狭い箱の中で溜め込んだ熱が、{b}の吐く息をひどく甘くしていた。');
+  /* 体位を変えて、溜めた欲を吐き出す */
+  var POS = L('狭いロッカーで溜めに溜めた欲は、一度では収まらなかった。{a}は{b}を抱え直し、角度を変えては、また奥を確かめた。\n\n{b}の喉から、媚薬に溶けた声が途切れ途切れに漏れる。|{a}は{b}を横向きに寝かせ、背中から抱きしめたまま深く繋がり直した。うなじに唇を押しつけながら、ゆっくり、深く揺らす。\n\n{b}の指が、シーツの上で{a}の手を探した。|{a}は{b}をうつ伏せにして、腰だけを高く上げさせた。媚薬の熱で赤く染まった背中に、汗が一筋流れていく。\n\n{a}「ロッカーの中で煽った分、全部返してもらう」');
+
+  function para(arr, pre) { return arr.map(function (x) { return (pre ? '\n\n' : '') + x + '\n\n'; }); }
+
+  var bed0 = LK.bed;
+  LK.bed = function (S, o) {
+    if (HK.SAFE_ON || !o || o.ff || o.lew === 'low') return bed0.apply(this, arguments);
+    var x = o.x, y = o.y, B = LK.BED, rng = S.rng;
+    var riba = HK.Pos ? !HK.Pos.fixed(x, y) : false;
+    var fem = HK.Pos && HK.Pos.isF, fm = fem && fem(x) && !fem(y);
+    var st = o.tone === 'rough' ? 'rough' : T.style(x);
+    var hard = !fm && !riba && T.hard(rng, x, y);
+    var g = T.fmGroup(st);
+    var save = { fore: B.fore, insert: B.insert, pos: B.pos, climax: B.climax }, say0 = ST.say;
+    B.fore = para(FORE);
+    B.insert = para(fm ? T.FM_BODY[g] : hard ? T.ROUGH_BODY : T.BODY[st] || T.BODY.gentle);
+    B.pos = para(POS, true);
+    if (!riba) B.climax = para(fm ? T.FM_CLIMAX[g] : hard ? T.ROUGH_CLIMAX : T.CLIMAX[st] || T.CLIMAX.gentle, true);
+    /* 段落の区切りを整える（末尾の改行・三つ以上の改行） */
+    ST.say = function (S2, e) {
+      if (e && typeof e.text === 'string') e.text = e.text.replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '');
+      return say0.apply(this, arguments);
+    };
+    try { return bed0.apply(this, arguments); }
+    finally { B.fore = save.fore; B.insert = save.insert; B.pos = save.pos; B.climax = save.climax; ST.say = say0; }
+  };
+})();

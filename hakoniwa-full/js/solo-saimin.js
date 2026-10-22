@@ -208,17 +208,21 @@
           var aTop = p.aTop;
           var vk = full ? (lew === 'low' && g.softFull ? 'softFull' : vkey(p, g, 'full')) : vkey(p, g, 'part');
           var body = ST.pick(S, eL(S, 'sug.' + k + '.' + ekey(p, vk), g[vk]));
-          t += lew === 'low' && g.lewd && full ? ST.fmt(ST.pick(S, SM.SUG_LOW), v) : eF(S, p, ST.fmt(body, v));
+          var fb = lew === 'low' && g.lewd && full ? ST.fmt(ST.pick(S, SM.SUG_LOW), v) : eF(S, p, ST.fmt(body, v));
+          t += fb;
           t += tq(p);
           p.m.plea = clamp(p.m.plea + (f.plea || 0) * p.sens * (full ? 1 : 0.5), 0, 120);
           p.m.fall = clamp(p.m.fall + (f.fall || 0) * (full ? 1 : 0.45), 0, 100);
           var cl = full ? (f.climax || 0) : 0;
           if (p.m.plea >= 100) { cl++; p.m.plea = 30; }
+          /* 小説調の山場：本番の暗示を受け入れて達したときは、段落に分けて厚く（solo-thick4.js） */
+          var thick = cl && full && g.lewd && HK.Thick4 && HK.Thick4.ok(S, lew) ? thickSug(S, p, fb, vk) : null;
+          if (thick) t = t.replace(fb, thick);
           if (cl) {
             p.cnt.climax += cl; p.m.fall = clamp(p.m.fall + cl * 3, 0, 100);
             /* 男性向けの文：本文に絶頂の喘ぎ（{m2}）がなければ、態度ごとの崩れた声を足す */
             if (lew !== 'low' && eroOn(S) && !aTop) { if (!/\{m2\}/.test(body)) t += p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; }
-            else if (lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + '「' + ST.pick(S, topL(p, V.CLIMAX[p.persona])) + '」';
+            else if (!thick && lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + '「' + ST.pick(S, topL(p, V.CLIMAX[p.persona])) + '」';
             why += '／絶頂 ' + cl + '回';
           }
           p.m.depth = clamp(p.m.depth + (full ? 5 : -5), 0, 100);
@@ -311,6 +315,18 @@
   /* 受け攻め・女性どうしに合わせた文を選ぶ（なければ null＝その暗示は使わない）。kind: 'full' | 'part'。
      vkey はその文の項目名（'full' / 'fullTop' / 'ff' など）、variant はその文 */
   function first(g, ks) { for (var i = 0; i < ks.length; i++) if (g[ks[i]]) return ks[i]; return null; }
+  /* 小説調の山場（solo-thick4.js）：かけられた側が攻めなら {a} が主導、それ以外はかける側が主導。本番の文でなければ厚くしない */
+  function thickSug(S, p, fb, vk) {
+    var kind = /咥え|口いっぱい|喉の奥/.test(fb) ? 'kneel' : /押し入|貫|沈め|呑み込|跨|奥まで|注ぎ|繋が/.test(fb) ? 'in' : null;
+    if (!kind) return null;
+    var me = p, hc = p.hc || { name: p.h, gender: p.ff ? 'f' : 'm' };
+    if (p.ff) kind = 'ff';
+    var top = /Top/.test(vk) || p.aTop, dom = top ? me : hc, sub = top ? hc : me;
+    /* 攻めの {a} が口で奉仕される側なら kneel のまま、{a} が奉仕する文は使わない */
+    if (!top && kind === 'kneel' && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(me)) return null;
+    return HK.Thick4.scene(S, { dom: dom, sub: sub, kind: kind, lead: fb, sad: HK.Thick4.rollSad(S, dom, sub),
+      after: ST.pick(S, ['{a}の目には、まだ暗示の靄がかかっていた。', '自分が何をしたのか、{a}が知るのはもう少しあとのことだ。', '{h}は、まだとろんとしたままの{a}の目を覗き込み、満足げに息をついた。']).replace(/\{a\}/g, p.name).replace(/\{h\}/g, p.h) });
+  }
   function vkey(p, g, kind) {
     if (kind === 'part') {
       if (p.ff && p.aTop) return first(g, ['ffTopPart', 'partTop', 'ffPart', 'part']);

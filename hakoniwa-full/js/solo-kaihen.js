@@ -159,6 +159,7 @@
   var G_RECV = { '壺洗い': 1 };
   var R_RECV = { '前立腺マッサージ': 1, 'ストレッチ': 1, '触診（全身）': 1 };
   function serve(S, SIT, g, r, lew) {
+    var actAt = -1, actLead = '';
     /* 受ける側が女性なら、男性器を前提にした採取の手順は使えない（施す側が男性でも、女性どうしと同じ手順に） */
     if (r && HK.Pos && KH.FF_ACTS && (HK.Pos.ff(g, r) || HK.Pos.isF(r))) return serveFF(S, SIT, g, r, lew);
     var rng = S.rng, npc = !r, rname = npc ? rng.pick(SIT.npc) : r.name, ero = eOn(S), rw = r || npcWho(S);
@@ -218,9 +219,10 @@
     if (lew === 'low') t += ST.fmt('{p}は「' + act[0] + '」を行った。――その内容は、カルテに数字だけが残された。', v);
     else {
       var kind0 = KH.ACTKIND[act[0]];
+      actAt = t.length;
       /* ノリノリの施す側は、受け入れる施術で自分から跨る・誘う */
-      if (F && kind0 === 'in' && HK.Pos && HK.Pos.nori(g) && rng() < 0.55) t += ST.fmt(ST.pick(S, nm(S, F.nori)), v);
-      else t += ST.fmt(ST.pick(S, nm(S, E(S, 'act.' + act[0], L(act[1])))), v);
+      if (F && kind0 === 'in' && HK.Pos && HK.Pos.nori(g) && rng() < 0.55) t += (actLead = ST.fmt(ST.pick(S, nm(S, F.nori)), v));
+      else t += (actLead = ST.fmt(ST.pick(S, nm(S, E(S, 'act.' + act[0], L(act[1])))), v));
       /* 男性向け：書き下ろしの続き、なければ施術の種類ごとの続き */
       var a2 = E(S, 'act2.' + act[0], null), kk = kind0 === 'top' && gF ? 'topF' : kind0;
       if (a2) t += ST.fmt(ST.pick(S, nm(S, a2)), v);
@@ -242,6 +244,13 @@
     }
     var ml = Math.round((r ? 6 + rng() * 8 : 4 + rng() * 12) * (1 + ai * 0.08));
     t += ST.fmt(ST.pick(S, climaxOf(KH.ACTKIND[act[0]] || KH.climaxKind(t))), { p: g.name, r: rname, ml: ml });
+    /* 小説調の山場（solo-thick4.js）：登場キャラが受ける施術は毎回、モブの客は三回に一回ほど、段落に分けて厚く */
+    var tk0 = { hand: 'serve', mouth: 'serve', face: 'serve', in: 'ride', top: 'in', topF: 'ride' }[KH.ACTKIND[act[0]]];
+    if (tk0 && actAt >= 0 && actLead && HK.Thick4 && HK.Thick4.ok(S, lew) && (r || rng() < 0.35)) {
+      var sub0 = r || { name: rname, gender: 'm' };
+      t = t.slice(0, actAt) + HK.Thick4.scene(S, { dom: g, sub: sub0, kind: tk0, lead: actLead, sad: HK.Thick4.rollSad(S, g, sub0),
+        after: ST.fmt(ST.pick(S, ['{p}は乱れた呼吸のまま、カルテに「{ml}ml」と書き込んだ。', '{p}は容器の目盛りを確かめた。――{ml}ml。いつもどおりの、業務の一件だった。', '「{ml}ml。……お疲れさまでした」{p}はそう言って、何事もなかったように手を洗った。']), { p: g.name, ml: ml }) });
+    }
     if (fl === 'double') { t += ST.fmt(ST.pick(S, F.doubleEnd), { p: g.name, r: rname, r2: r2name }); g.cnt.served++; g.m.sem += ml; }
     if (fl === 'watch') { t += ST.fmt(ST.pick(S, F.watchEnd), v); g.m.imm += 4; }
     g.cnt.served++; g.m.sem += ml;
