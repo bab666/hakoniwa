@@ -217,6 +217,14 @@
       var diff = 0.35 + d.rare * 0.07 + stg * 0.08 + (x.kind === 'life' && d.kind === 'hostile' ? 0.12 : 0) + (x.kind === 'civ' && d.state === 'advanced' ? 0.08 : 0) + S.env.danger / 100 * 0.12;
       var ok = sk + rng() * 0.55 >= diff;
       var t = F(pk(S, SH.T.LAND), { a: a.name, x: Pn.name }) + (tm.length > 1 ? names(tm.slice(1)) + 'も同行した。' : '');
+      /* 見つけにくい生命体（電磁波・気体・位相など。ship-life2.js の stealth）：まだ見つけていないうちは、腕がよくても気づけないことがある */
+      if (x.kind === 'life' && !x.o.st && d.stealth && d.miss && rng() < d.stealth * (1.15 - sk * 0.35)) {
+        x.o.missed = (x.o.missed || 0) + 1;
+        a.m.fear = clamp(a.m.fear + 4, 0, 100);
+        ST.say(S, { actors: tm, tag: '探索：何も見つからない', text: t + F(pk(S, d.miss), { a: a.name, x: Pn.name }), why: '何かがいる気配はあったが、正体に気づけなかった（見つけにくさ ' + Math.round(d.stealth * 100) + '・空振り ' + x.o.missed + '回目）', mag: 14 });
+        if (R18ON && r18on(S) && rng() < S.env.slewd / 100 * 0.3) xeno(S, a, d, 'invade', true);
+        continue;
+      }
       var lab = KIND_JP[x.kind] + (x.kind === 'life' ? '「' + (x.o.st ? d.name : '未知の生命体') + '」' : '');
       if (ok) {
         x.o.st = stg;
@@ -367,7 +375,7 @@
   }
   /* ---------- 星での危機：感染症・研究のための誘拐・遭難 ---------- */
   function infect(S, a, src) {
-    if (!SH.C || a.inf || !alive(a)) return;
+    if (!SH.C || !a || a.inf || !alive(a)) return;
     a.inf = 1; a.infSrc = src; stress(a, 10); a.cnt.inf = (a.cnt.inf || 0) + 1;
     ST.say(S, { actors: [a], tag: '感染症', text: F(pk(S, SH.C.INF_START), { a: a.name, x: src }), why: src + 'の調査で、未知の病原体に感染した', mag: 26 });
   }
@@ -379,13 +387,14 @@
   }
   function closest(S, a, ex) { return live(S).filter(function (q) { return q !== a && (!ex || ex.indexOf(q) < 0); }).sort(function (x, y) { return bond(S, y, a) - bond(S, x, a); })[0]; }
   /* 星の生命体との夜（ship-r18-xeno2.js）：生命体ごと・型（誘い／強引／攫われる／実験）ごとの文。攻めを選んだ人は主導権を握る */
-  function xeno(S, a, d, onlyMode) {
+  function xeno(S, a, d, onlyMode, hidden) {
     var X2 = SH.X2, rng = S.rng;
     if (!X2 || !a || !d) return false;
     var ms = X2.modes(d).filter(function (m) { return !onlyMode || m[0] === onlyMode; });
     if (!ms.length) return false;
     var m = HK.weighted(rng, ms, function (x) { return x[1]; })[0];
-    var top = HK.Pos && HK.Pos.hardTop(a), b = closest(S, a) || { name: '仲間' }, v = { a: a.name, b: b.name, x: d.name };
+    /* hidden：まだ正体に気づいていない生命体（名前の代わりに「正体の分からない何か」） */
+    var top = HK.Pos && HK.Pos.hardTop(a), b = closest(S, a) || { name: '仲間' }, v = { a: a.name, b: b.name, x: hidden ? '正体の分からない何か' : d.name };
     var pick = function (arr) { return pk(S, arr); };
     var body = top ? pick(X2.TOP[m]) : X2.text(S, d, m, pick);
     if (!body) return false;
@@ -393,7 +402,7 @@
     a.cnt.r18 = (a.cnt.r18 || 0) + 1;
     if (!top) { stress(a, m === 'lure' ? 6 : m === 'probe' ? 8 : 14); a.m.fear = clamp(a.m.fear + (m === 'force' || m === 'take' ? 8 : 2), 0, 100); }
     else stress(a, -5);
-    var o = ST.say(S, { actors: [a], tag: X2.TAG[m], kind: 'climax', text: t, why: d.name + '（' + LIFE_JP[d.kind] + '）／' + X2.MODE_NAME[m] + (top ? '／自分で攻めを選んでいるので、受けにはならず主導権を握った' : ''), mag: 30 });
+    var o = ST.say(S, { actors: [a], tag: X2.TAG[m], kind: 'climax', text: t, why: (hidden ? 'まだ正体に気づいていない生命体（のちに分かる名は「' + d.name + '」）' : d.name + '（' + LIFE_JP[d.kind] + '）') + '／' + X2.MODE_NAME[m] + (top ? '／自分で攻めを選んでいるので、受けにはならず主導権を握った' : ''), mag: 30 });
     if (!S.xenoKey) { S.xenoKey = true; ST.key(S, o, a.name + 'と' + d.name); }
     return true;
   }
@@ -510,7 +519,7 @@
       ST.key(S, o3, v.name + 'が連れ去られた');
     }
     /* 星の生命体からの感染（調査とは別に） */
-    if (Pn.life.length && rng() < 0.03 + S.env.danger / 100 * 0.04) { var lf = rng.pick(Pn.life); if (lf.st >= 1) infect(S, rng.pick(live(S)), lf.d.name); }
+    if (Pn.life.length && live(S).length && rng() < 0.03 + S.env.danger / 100 * 0.04) { var lf = rng.pick(Pn.life); if (lf.st >= 1) infect(S, rng.pick(live(S)), lf.d.name); }
   }
   /* ---------- 絆が動く出来事 ---------- */
   function pairs(L0) { var o = []; L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i) o.push([a, b]); }); }); return o; }
