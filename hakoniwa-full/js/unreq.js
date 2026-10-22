@@ -183,11 +183,12 @@
       }),
     /* 恋敵に当たる（a と c の組で起きる） */
     { id: 'u_rival', cat: 'conflict', scope: 'pair', mini: true, sig: true,
-      when: function (ctx, a, c) { return !!rivalOf(ctx, a, c) && (ctx.pair(a, c).urival || 0) < 2; },
+      when: function (ctx, a, c) { var b = rivalOf(ctx, a, c); return !!b && (ctx.pair(a, c).urival || 0) < 2 && (!HK.Obsess || HK.Obsess.jealOk(ctx, a, b)); },
       w: function (ctx, a) { return 0.4 + a.tr.jealous * 0.8 + a.tr.aggr * 0.3; },
       run: function (ctx, a, c) {
         var b = rivalOf(ctx, a, c), m = { a: a.name, b: b.name, c: c.name };
         ctx.pair(a, c).urival = (ctx.pair(a, c).urival || 0) + 1;
+        if (HK.Obsess) HK.Obsess.feed(ctx, a, b, 6);
         ctx.mod2(a, c, { ten: 8 }, { ten: 4 });
         return { text: fill(ctx.pick(D.rival), m), why: a.name + 'の想う' + b.name + 'は、' + c.name + 'を想っている（嫉妬・執着）', with: [b] };
       } },

@@ -95,7 +95,7 @@
     },
     {
       id: 'jealous', cat: 'conflict', scope: 'pair',
-      when: function (ctx, a, b) { var c = ctx.crush(a, 50); return c && c !== b && c.alive && R(ctx, c, b).aff + R(ctx, c, b).att > 45; },
+      when: function (ctx, a, b) { var c = ctx.crush(a, 50); return c && c !== b && c.alive && R(ctx, c, b).aff + R(ctx, c, b).att > 45 && (!HK.Obsess || HK.Obsess.jealOk(ctx, a, c)); },
       w: function (ctx, a) { return a.tr.jealous * 1.6; },
       run: function (ctx, a, b) {
         var c = ctx.crush(a, 50);
@@ -104,6 +104,7 @@
         ctx.pair(a, b).jealous++;
         ctx.pair(a, c).jealous++;
         ctx.stress(a, 10);
+        if (HK.Obsess) HK.Obsess.feed(ctx, a, c, 6);
         return {
           with: [c],
           text: ctx.t(ctx.pick(['{a}は、{c}と親しげに話す{b}から目を逸らせなかった。', '{c}の隣にいるのが自分ではなく{b}だという事実が、{a}を静かに苛立たせた。']), a, b, c),

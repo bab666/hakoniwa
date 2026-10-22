@@ -32,7 +32,7 @@
         var c = pick[b.i];
         ctx.act2({ actors: [a, b], cat: 'romance', fx: function () {
           ctx.mod(b, a, { att: b.tr.ac > 0.55 ? 8 : 4 }); ctx.stress(a, 6);
-          if (c) { ctx.mod(a, c, { ten: 8 }); ctx.pair(a, c).jealous++; }
+          if (c && (!HK.Obsess || HK.Obsess.jealOk(ctx, a, b))) { ctx.mod(a, c, { ten: 8 }); ctx.pair(a, c).jealous++; if (HK.Obsess) HK.Obsess.feed(ctx, a, b, 5); }
         }, text: ctx.t(prefix + '{a}は{b}を指さした。' + (c ? '{b}の指は{c}を向いていた。' : ''), a, b, c), why: why + '：' + a.name + 'の惹かれ（' + Math.round(R(ctx, a, b).att) + '）' });
       }
     });

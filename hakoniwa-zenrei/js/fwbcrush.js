@@ -102,10 +102,11 @@
       }),
     /* 嫉妬（文句を言う権利はない） */
     mk('fc_jealous', 'conflict', function (ctx, a) { return 0.6 + a.tr.jealous * 0.8; },
-      function (ctx, a, b) { return FC.kind(ctx, a, b) && !!other(ctx, a, b) && !ctx.pair(a, b).fcJ; },
+      function (ctx, a, b) { return FC.kind(ctx, a, b) && !!other(ctx, a, b) && !ctx.pair(a, b).fcJ && (!HK.Obsess || HK.Obsess.jealOk(ctx, a, b)); },
       function (ctx, a, b) {
         var k = FC.kind(ctx, a, b), c = other(ctx, a, b), m = { a: a.name, b: b.name, c: c.name };
         ctx.pair(a, b).fcJ = true;
+        if (HK.Obsess) HK.Obsess.feed(ctx, a, b, 6);
         ctx.stress(a, 8); ctx.mod(a, c, { ten: 5 });
         if (k !== 'cold') ctx.mod(b, a, { att: 6 });
         return { text: fill(ctx.pick(D.jealous), m) + fill(ctx.pick(D.jealousRe[k]), m), why: FC.why(ctx, a, b, k) + '／嫉妬する権利はない', with: [c] };

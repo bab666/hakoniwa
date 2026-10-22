@@ -720,8 +720,8 @@
     w: function (ctx, a) { return 0.5 + eager(ctx, a) * 1.2; },
     run: function (ctx, a, b) {
       ctx.mod2(a, b, { att: 7 }, { att: eager(ctx, b) > 0.5 ? 6 : 2, ten: eager(ctx, b) > 0.5 ? 0 : 4 });
-      var jealous = ctx.present().filter(function (o) { return o !== a && o !== b && R(ctx, o, a).att > 30; })[0];
-      if (jealous) { ctx.pair(jealous, a).jealous++; ctx.mod(jealous, a, { ten: 8 }); }
+      var jealous = ctx.present().filter(function (o) { return o !== a && o !== b && R(ctx, o, a).att > 30 && (!HK.Obsess || HK.Obsess.jealOk(ctx, o, a)); })[0];
+      if (jealous) { ctx.pair(jealous, a).jealous++; ctx.mod(jealous, a, { ten: 8 }); if (HK.Obsess) HK.Obsess.feed(ctx, jealous, a, 6); }
       return { text: ctx.t(ctx.pick(['{a}は{b}の隣に移って、指先で{b}の手の甲をなぞった。「次は{b}の番かな」', '{a}「どうせなら、全員と仲良くなっといた方が早くない？」{b}は返事に困った。', '{a}は誰かと話しながらも、ずっと{b}に視線を送っていた。', '{a}は{b}の耳元で「あとで、ね」と囁いた。']), a, b) + (jealous ? ctx.t('それを見ていた{c}の顔が、少し曇った。', a, b, jealous) : ''), why: a.name + 'の積極性（' + Math.round(eager(ctx, a) * 100) + '）：一人に決めず、何人とでも' };
     }
   });

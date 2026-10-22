@@ -88,7 +88,7 @@
         P.forEach(function (o) {
           if (o === a || o === b) return;
           var c = crushOf(ctx, o, 55);
-          if (c === a || c === b) ctx.act2({ actors: [o, c], cat: 'conflict', fx: function () { ctx.mod(o, c === a ? b : a, { ten: 12 }); ctx.stress(o, 15); ctx.pair(o, c === a ? b : a).jealous++; },
+          if ((c === a || c === b) && (!HK.Obsess || HK.Obsess.jealOk(ctx, o, c))) ctx.act2({ actors: [o, c], cat: 'conflict', fx: function () { ctx.mod(o, c === a ? b : a, { ten: 12 }); ctx.stress(o, 15); if (HK.Obsess) HK.Obsess.feed(ctx, o, c, 6); ctx.pair(o, c === a ? b : a).jealous++; },
             text: ctx.t('{a}は、屋台の灯りの向こうに二人の後ろ姿を見つけてしまった。', o), why: o.name + 'は' + c.name + 'に惹かれていた' });
         });
       });
@@ -261,7 +261,7 @@
         }, text: ctx.t(line, a, c), why: a.name + 'の惹かれ（' + Math.round(R(ctx, a, c).att) + '）と本音の出やすさ／' + c.name + 'の側：惹かれ ' + Math.round(rc.att) + (taken ? '・すでに恋人がいる' : '') });
         P.forEach(function (o) {
           if (o === a || o === c) return;
-          if (crushOf(ctx, o, 55) === c) ctx.act2({ actors: [o, a], cat: 'conflict', fx: function () { ctx.mod(o, a, { ten: 14 }); ctx.stress(o, 12); ctx.pair(o, a).jealous++; }, text: ctx.t(ctx.pick(['{a}は、{b}が{c}に箱を渡すところを見てしまった。', '{a}は一日中、{c}の鞄の中身のことばかり考えていた。', '{a}の手の中で、渡せなかった箱が少し潰れた。']), o, a, c), why: o.name + 'も' + c.name + 'に惹かれていた' });
+          if (crushOf(ctx, o, 55) === c && (!HK.Obsess || HK.Obsess.jealOk(ctx, o, c))) ctx.act2({ actors: [o, a], cat: 'conflict', fx: function () { ctx.mod(o, a, { ten: 14 }); ctx.stress(o, 12); ctx.pair(o, a).jealous++; }, text: ctx.t(ctx.pick(['{a}は、{b}が{c}に箱を渡すところを見てしまった。', '{a}は一日中、{c}の鞄の中身のことばかり考えていた。', '{a}の手の中で、渡せなかった箱が少し潰れた。']), o, a, c), why: o.name + 'も' + c.name + 'に惹かれていた' });
         });
         return;
       }

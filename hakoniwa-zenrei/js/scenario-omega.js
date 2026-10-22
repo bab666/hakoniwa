@@ -570,11 +570,12 @@
   /* 一人のΩを取り合う */
   EV.push({
     id: 'om_rival', cat: 'conflict', scope: 'pair',
-    when: function (ctx, a, b) { return sx(a) === 'a' && sx(b) === 'a' && !ctx.pair(a, b).couple && !!rivalTarget(ctx, a, b); },
+    when: function (ctx, a, b) { var o = sx(a) === 'a' && sx(b) === 'a' && !ctx.pair(a, b).couple && rivalTarget(ctx, a, b); return !!o && (!HK.Obsess || HK.Obsess.jealOk(ctx, a, o)); },
     w: function (ctx, a, b) { return 1 + a.tr.aggr + a.tr.jealous * 0.6; },
     run: function (ctx, a, b) {
       var o = rivalTarget(ctx, a, b), k = key(a, b);
       ctx.om.rival[k] = o.i;
+      if (HK.Obsess) HK.Obsess.feed(ctx, a, o, 8);
       ctx.mod2(a, b, { ten: 12, aff: -6 }, { ten: 12, aff: -6 });
       var won = partnerOf(ctx, o);
       var t = won ? ctx.t(won === a ? '{b}は、{c}の隣に立つ{a}を睨みつけた。αの威圧がぶつかり、店のグラスが鳴った。' : '{a}は{c}の恋人である{b}に、真正面から言った。「譲る気はない」', a, b, o)
@@ -885,6 +886,8 @@
     var couples = [];
     P.forEach(function (a) { P.forEach(function (b) { if (a.i < b.i && ctx.pair(a, b).couple) couples.push([a, b]); }); });
     P.forEach(function (c) {
+      /* 心中など（obsess-omega.js）で亡くなった人は、そのまま */
+      if (!c.alive) return;
       var p = couples.filter(function (x) { return x[0] === c || x[1] === c; })[0];
       var o = p ? (p[0] === c ? p[1] : p[0]) : null;
       c.fate = o ? (om.bonded[key(c, o)] ? '番' : '恋人あり') : om.scar[c.i] ? '傷を負った' : '独り身';

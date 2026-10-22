@@ -508,6 +508,9 @@
     var love = function (r) { return r.aff > 38 && r.att > 42; };
     var dir = null;
     if (ctx.scen.classifyFirst) { var sf = ctx.scen.classifyFirst(ctx, A, B, pf); if (sf) return sf; }
+    /* 執着（obsess-kit.js）：心中は殺害より先に、監禁・執着・共依存は殺害のない組だけ */
+    var ob = HK.Obsess && ctx.scen.obsessKit ? HK.Obsess.classify(ctx, A, B, pf) : null;
+    if (ob && (ob.id === 'shinju' || !pf.kill)) return ob;
     if (pf.kill) {
       var both = (pf.attacks[A.i] || 0) > 0 && (pf.attacks[B.i] || 0) > 0;
       return { id: both ? 'mutualkill' : 'kill', dir: pf.kill.by };
@@ -552,6 +555,7 @@
     if (ctx.scen.pairText) { var st = ctx.scen.pairText(ctx, A, B, cl); if (st) return st; }
     var n = function (i) { return ctx.chars[i].name; };
     var other = function (i) { return i === A.i ? B.name : A.name; };
+    if (HK.Obsess && HK.Obsess.pairText) { var ot = HK.Obsess.pairText(ctx, A, B, cl); if (ot) return ot; }
     switch (cl.id) {
       case 'kill': return n(cl.dir) + 'が' + other(cl.dir) + 'を殺した。';
       case 'mutualkill': return '互いに刃を向け合い、最後は' + n(cl.dir) + 'が' + other(cl.dir) + 'の命を奪った。';

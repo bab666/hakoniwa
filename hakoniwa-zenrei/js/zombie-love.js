@@ -215,7 +215,7 @@
     var rng = ctx.rng, m = { v: o.name, z: c.name };
     var unreq = HK.Unreq && HK.Unreq.cold(ctx, o, c);
     var opts = [
-      ['keep', o.tr.jealous * 0.55 + o.tr.ac * 0.25 + o.stress / 160 + (unreq ? 0.25 : 0) - o.tr.cp * 0.15 - o.tr.np * 0.1],
+      ['keep', (HK.Obsess && !HK.Obsess.jealOk(ctx, o, c) ? -9 : 0) + o.tr.jealous * 0.55 + o.tr.ac * 0.25 + o.stress / 160 + (unreq ? 0.25 : 0) - o.tr.cp * 0.15 - o.tr.np * 0.1],
       ['say', 0.35 + o.tr.honesty * 0.3 + o.tr.np * 0.2],
       ['self', o.tr.cp * 0.3 + o.tr.a * 0.25 + o.tr.cold * 0.2 + (o.weapon && o.weapon.pow >= 3 ? 0.15 : 0)]
     ];

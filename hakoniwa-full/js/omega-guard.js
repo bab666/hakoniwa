@@ -27,12 +27,14 @@
   };
   var REACT_OWN = L('{b}は首元に触れて、少しだけ顔を赤くした。「……重いよ」――それでも、外そうとはしなかった。|{b}は留め具の名前を指でなぞった。逃げ場がなくなったのに、なぜか安心していた。|{b}は「束縛だ」と笑った。笑いながら、{a}の手を首元に引き寄せた。');
 
+  /* 独占欲（関係「執着なし」の相手には向かない） */
+  function jea(ctx, a, b) { return HK.Obsess && !HK.Obsess.jealOk(ctx, a, b) ? 0 : a.tr.jealous; }
   function ok(ctx, a, b) {
     var om = ctx.om;
-    return om && sx(a) === 'a' && sx(b) === 'o' && om.bonded[key(a, b)] && ctx.pair(a, b).couple && a.alive !== false && b.alive !== false && !(om.guard || {})[b.i] && (kind(a.tr) >= 0.55 || a.tr.jealous >= 0.55);
+    return om && sx(a) === 'a' && sx(b) === 'o' && om.bonded[key(a, b)] && ctx.pair(a, b).couple && a.alive !== false && b.alive !== false && !(om.guard || {})[b.i] && (kind(a.tr) >= 0.55 || jea(ctx, a, b) >= 0.55);
   }
   function give(ctx, a, b) {
-    var om = ctx.om, k = kind(a.tr), j = a.tr.jealous;
+    var om = ctx.om, k = kind(a.tr), j = jea(ctx, a, b);
     var why = k >= 0.55 && j >= 0.55 ? 'both' : j > k ? 'own' : 'kind';
     (om.guard = om.guard || {})[b.i] = { by: a.i, why: why, at: ctx.stepIndex };
     var react = why === 'kind' || ctx.rng() < 0.4 ? ctx.pick(REACT[top(b)] || REACT.NP) : ctx.pick(REACT_OWN);
