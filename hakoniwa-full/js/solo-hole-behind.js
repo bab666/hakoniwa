@@ -78,6 +78,9 @@
   }
 
   var BH = HK.HoleBehind = {};
+  /* 描写の作風「男性向け」（solo-hole-ero.js の 'behind.*'）。地の文の差し込みは ero-kit.js の HK.Ero.fill */
+  function EB(S, key, base) { return HK.Ero ? HK.Ero.L(S, 'hole', 'behind.' + key, base) : base; }
+  function EZ(S, t) { return HK.Ero && HK.Ero.on(S) ? HK.Ero.fill(S, t, S.h) : t; }
   /* はまる人と、壁の向こうの人を決める（役割「穴にはまる」の人、いなければ一人目） */
   BH.cast = function (input) {
     var n = (input.chars || []).length, pick = function (i) { return ((input.perChar && input.perChar[i] && input.perChar[i].pick) || {}).side; };
@@ -174,18 +177,20 @@
     }
     /* 手を出す */
     doers.forEach(function (b, k) {
-      var tx = (k ? F(K.pick(S, T.join), { b: b.name }) : '') + (b.punish ? F(K.pick(S, T.punish), { b: b.name }) : '') + F(K.pick(S, T[b.kind]), { b: b.name });
+      var tx = (k ? F(K.pick(S, T.join), { b: b.name }) : '') + (b.punish ? F(K.pick(S, EB(S, 'punish', T.punish)), { b: b.name }) : '') + F(K.pick(S, EB(S, b.kind, T[b.kind])), { b: b.name });
       var pw = { pen: 34, finger: 26, tease: 20, ride: 28 }[b.kind] + (b.punish ? 8 : 0);
       if (st.live) {
         var r = K.stim(S, pw, { part: 'belly', defer: true });
-        tx += ' ' + F(K.pick(S, T.feel));
+        tx += ' ' + F(K.pick(S, EB(S, b.kind === 'pen' || b.kind === 'finger' ? 'feel' : 'feel.other', T.feel)));
+        tx = EZ(S, tx);
         K.say(S, { kind: 'ev', tag: b.punish ? 'お仕置き' : '壁の向こうの住人', text: tx, why: whyOf(b) + '／感覚は戻っている' });
         K.logClimax(S, r.climaxes);
       } else {
         st.stored += (60 + env.lewd * 0.5) * (b.kind === 'pen' ? 1.3 : b.kind === 'ride' ? 1.1 : 0.9) * (b.punish ? 1.25 : 1) * h.sens;
         if (b.kind === 'pen' || b.kind === 'ride') st.meta.cum++;
         h.corrupt += 3 * (S.k || 1);
-        tx += ' ' + F(K.pick(S, T.unaware));
+        tx += ' ' + F(K.pick(S, b.kind === 'pen' || b.kind === 'finger' ? EB(S, 'unaware', T.unaware) : T.unaware));
+        tx = EZ(S, tx);
         K.say(S, { kind: 'ev', tag: b.punish ? 'お仕置き' : '壁の向こうの住人', text: tx, why: whyOf(b) + '／本人は感じていない（溜まった感覚 ' + Math.round(st.stored) + '）' });
       }
       K.settle(S);
@@ -216,7 +221,7 @@
     else {
       h.pleasure += st.stored * 0.8; h.reason -= st.stored * 0.07; h.corrupt += st.stored * 0.03 * (S.k || 1);
       var parts = []; while (h.pleasure >= 100 && parts.length < 4) parts.push(K.climax(S, { silent: true }));
-      var oc = K.say(S, { kind: 'climax', tag: parts.length > 1 ? '連続絶頂' : '絶頂', text: F(K.pick(S, T.rescued)) + (parts.length ? ' ' + h.name + parts.join('') : ''), why: '助け出された瞬間に、溜まっていた感覚（' + Math.round(st.stored) + '）が戻った' });
+      var oc = K.say(S, { kind: 'climax', tag: parts.length > 1 ? '連続絶頂' : '絶頂', text: EZ(S, F(K.pick(S, EB(S, st.topMe ? 'rescued.top' : 'rescued', T.rescued)))) + (parts.length ? ' ' + h.name + parts.join('') : ''), why: '助け出された瞬間に、溜まっていた感覚（' + Math.round(st.stored) + '）が戻った' });
       K.key(S, oc, b.name + 'に抱きついたまま達した');
     }
     K.settle(S); K.snap(S, { s: 0 });

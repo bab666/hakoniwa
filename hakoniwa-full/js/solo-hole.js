@@ -93,7 +93,7 @@
       { id: 'leak', label: '遮断の不完全さ', min: 0, max: 100, def: 30, lo: '完璧', hi: 'ときどき漏れる', desc: '高いと、遮断中にも一瞬だけ感覚が届く' },
       { id: 'lewd', label: '向こう側の過激さ', min: 0, max: 100, def: 55, lo: 'いたずら程度', hi: '容赦なし' },
       { id: 'release', label: '解放のしかた', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ' }, { v: 'burst', label: '一気に戻る' }, { v: 'drip', label: '少しずつ戻る' }, { v: 'mid', label: '最中に戻る' }, { v: 'late', label: '帰り道で遅れて戻る' }] }
-    ],
+    ].concat(HK.Ero ? [HK.Ero.OPT] : []),
     stats: [
       { id: 'sense', label: '感じやすさ', desc: '高いほど戻ってきた感覚に耐えられない' },
       { id: 'mind', label: '精神力', desc: '待っている間に心が削れにくい' }
@@ -129,10 +129,14 @@
     var hardTop = !!(HK.Pos && HK.Pos.hardTop(h));
     /* 攻めの指定なら「中に出された」系の文を避ける */
     var RECV_RE = /なか、|なかに|中に|中が|中を|お腹|内部|残留|残って|入っていた|注が|出され|太腿を伝|何人の方が|奥へ|奥に/;
+    /* 描写の作風「男性向け」（ero-kit.js・solo-hole-ero.js）：攻め寄りの人には「.top」の文があればそれを、なければ小説調の文を使う */
+    var EK = HK.Ero, eon = !!(EK && EK.on(S));
+    var EL = function (key, base) { if (!eon) return base; if (topMe) return EK.L(S, 'hole', key + '.top', base); return EK.L(S, 'hole', key, base); };
+    var say = function (S0, o) { if (eon && o && o.text) o.text = EK.fill(S, o.text, h); return K.say(S0, o); };
     var pk = function (S0, arr) { var f = topMe ? arr.filter(function (x) { return !RECV_RE.test(x); }) : arr; return K.pick(S0, f.length ? f : arr); };
     var X = HK.HoleMore, plKey = PLACE[env.place] ? env.place : 'lab';
     var stored = 0, leaks = 0, visits = 0, people = 0, early = false, hot = 0, lostN = 0, meta = { cum: 0, tent: 0, mark: 0 }, thisN = 0;
-    var mindList = MIND[h.persona].concat(X.MIND[h.persona] || []).filter(function (x) { return !hardTop || !/乱暴にしないで|お手柔らかに/.test(x); }), confList = CONFUSE[h.persona].concat(X.CONFUSE[h.persona] || []);
+    var mindList = MIND[h.persona].concat(X.MIND[h.persona] || []).filter(function (x) { return !hardTop || !/乱暴にしないで|お手柔らかに/.test(x); }), confList = EL('confuse.' + h.persona, CONFUSE[h.persona].concat(X.CONFUSE[h.persona] || []));
     /* 解放のしかた：おまかせなら場所と運で決まる */
     var mode = env.release && env.release !== 'auto' ? env.release : (function () { var x = rng(); return x < 0.4 ? 'burst' : x < 0.62 ? 'drip' : x < 0.82 ? 'mid' : 'late'; })();
     /* 最中に戻る：途中で遮断が壊れ、そのあとは壁の向こうをそのまま感じる（自分で攻めを選んだ人には起きない） */
@@ -147,18 +151,18 @@
       h.corrupt += (3 + tr * 2 + (f.cum || 0) + (f.tent || 0)) * (1.25 - K.will(h)) * S.k;
       var t2 = LV.tier(h);
       /* 感覚の文は出来事の重さに合わせる（触れる程度なら軽い文、中に出されていなければ「注がれる」文を使わない） */
-      var feels = be.lv === 0 && !(f.tent) ? LV.FEEL_LIGHT[t2] : LV.FEEL[topMe ? 'top' : 'recv'][t2].filter(function (x) { return f.cum || !/注が|果てる/.test(x); });
-      var txt = K.fmt(S, be.t.replace(/◯/g, String(H))) + (rng() < 0.65 ? ' ' + K.fmt(S, lpk(LV.LIVE[plKey][t2])) : '') + ' ' + K.fmt(S, K.pick(S, feels.length ? feels : LV.FEEL_LIGHT[t2])) +
-        ' ' + K.fmt(S, lpk(LV.REACT[h.persona][t2])) + (t2 === 2 && rng() < 0.5 ? ' ' + K.fmt(S, K.pick(S, LV.ENJOY[topMe ? 'top' : 'recv'])) : '');
+      var feels = be.lv === 0 && !(f.tent) ? LV.FEEL_LIGHT[t2] : (eon ? EK.L(S, 'hole', 'feel.' + (topMe ? 'top' : 'recv') + '.' + t2, LV.FEEL[topMe ? 'top' : 'recv'][t2]) : LV.FEEL[topMe ? 'top' : 'recv'][t2]).filter(function (x) { return f.cum || !/注が|果てる/.test(x); });
+      var txt = K.fmt(S, be.t.replace(/◯/g, String(H))) + (rng() < 0.65 ? ' ' + K.fmt(S, lpk(eon ? EK.L(S, 'hole', 'live.' + plKey + '.' + t2, LV.LIVE[plKey][t2]) : LV.LIVE[plKey][t2])) : '') + ' ' + K.fmt(S, K.pick(S, feels.length ? feels : LV.FEEL_LIGHT[t2])) +
+        ' ' + K.fmt(S, lpk(eon && !topMe ? EK.L(S, 'hole', 'react.' + h.persona + '.' + t2, LV.REACT[h.persona][t2]) : LV.REACT[h.persona][t2])) + (t2 === 2 && rng() < 0.5 ? ' ' + K.fmt(S, K.pick(S, eon ? EK.L(S, 'hole', 'enjoy.' + (topMe ? 'top' : 'recv'), LV.ENJOY[topMe ? 'top' : 'recv']) : LV.ENJOY[topMe ? 'top' : 'recv'])) : '');
       liveN++; liveTier = t2;
-      K.say(S, { kind: 'ev', tag: ['感じてしまう', '体が応える', '自分から求める'][t2], text: txt, why: '感覚は戻っている／' + ['まだ抵抗している', '嫌なのに体が応える', '壁の向こうを受け入れた'][t2] + '（堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
+      say(S, { kind: 'ev', tag: ['感じてしまう', '体が応える', '自分から求める'][t2], text: txt, why: '感覚は戻っている／' + ['まだ抵抗している', '嫌なのに体が応える', '壁の向こうを受け入れた'][t2] + '（堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
       /* 激しくされて、甘イキが止まらなくなる（揺らぐ・享受の段階で、過激な出来事か、続けて果てたとき。一回の遊びで二度まで） */
       if (t2 >= 1 && sweetUsed.length < 2 && (be.lv === 2 || r.climaxes.length >= 2 || rng() < 0.2 + t2 * 0.1)) {
         var cand = LV.SWEET.filter(function (p) { return sweetUsed.indexOf(p) < 0; }), sp = cand[rng.int(cand.length)];
         sweetUsed.push(sp);
         var nC = 2 + rng.int(3) + (t2 === 2 ? 1 : 0) - r.climaxes.length;
         for (var c2 = 0; c2 < nC; c2++) K.climax(S, { silent: true });
-        var osw = K.say(S, { kind: 'climax', tag: '甘イキが止まらない', text: K.fmt(S, LV.sweetText(sp, topMe)), why: '感覚が戻ったあと、激しくされて ' + (nC + r.climaxes.length) + '回続けて果てた（絶頂 ' + h.climax + '回目まで）' });
+        var osw = say(S, { kind: 'climax', tag: '甘イキが止まらない', text: K.fmt(S, LV.sweetText(sp, topMe)), why: '感覚が戻ったあと、激しくされて ' + (nC + r.climaxes.length) + '回続けて果てた（絶頂 ' + h.climax + '回目まで）' });
         if (sweetUsed.length === 1) K.key(S, osw, '甘イキが止まらなくなった');
         return;
       }
@@ -171,6 +175,8 @@
       var list = X.beyondFor ? X.beyondFor(h, plKey) : X.BEYOND[plKey];
       if (hardTop && X.BEYOND_HARD) return K.pick(S, X.BEYOND_HARD[plKey]);
       if (topMe && X.BEYOND_TOP) list = list.filter(function (e) { return !X.PEN_RE.test(e.t) && !(e.fx.cum > 0); }).concat(X.BEYOND_TOP);
+      /* 男性向け：書き下ろしの出来事を多めに混ぜる */
+      if (eon) { var ex = topMe ? EK.L(S, 'hole', 'beyondTop', []) : EK.L(S, 'hole', 'beyond.' + plKey, []); list = list.concat(ex, ex); }
       return HK.weighted(rng, list, function (e) { return Math.max(0.03, wts[e.lv]); });
     }
     function metaWhy() {
@@ -180,7 +186,7 @@
       if (meta.mark) m.push('記録・落書き ' + meta.mark);
       return '本人は感じていない' + (m.length ? '／' + m.join('・') : '');
     }
-    K.say(S, { kind: 'sys', tag: '開始', text: K.fmt(S, pl.in.replace('◯', String(H))) + K.fmt(S, '腰から下の感覚は、きれいに消えていた。何をされても、分からない。'), why: '目標：' + h.goal.label + '／' + h.action.label });
+    say(S, { kind: 'sys', tag: '開始', text: K.fmt(S, pl.in.replace('◯', String(H))) + K.fmt(S, '腰から下の感覚は、きれいに消えていた。何をされても、分からない。'), why: '目標：' + h.goal.label + '／' + h.action.label });
     K.snap(S, { s: 0 });
     var stepH = Math.max(1, Math.ceil(H / 8));
     for (var t = stepH; t <= H; t += stepH) {
@@ -191,7 +197,7 @@
       for (var q = 0; q < stepH; q++) vis += rng() < env.traffic / 100 * 0.9 ? 1 + (rng() < env.traffic / 200 ? 1 : 0) : 0;
       if (!live && t >= tMid && t < H + 1) {
         live = true;
-        var ob = K.say(S, { kind: 'sys', tag: '遮断が壊れた', text: K.fmt(S, K.pick(S, LV.BREAK[plKey])) + ' ' + K.fmt(S, K.pick(S, LV.FLOOD)), why: '解放のしかた：最中に戻る（溜まっていた感覚 ' + Math.round(stored) + '）' });
+        var ob = say(S, { kind: 'sys', tag: '遮断が壊れた', text: K.fmt(S, K.pick(S, LV.BREAK[plKey])) + ' ' + K.fmt(S, K.pick(S, LV.FLOOD)), why: '解放のしかた：最中に戻る（溜まっていた感覚 ' + Math.round(stored) + '）' });
         K.key(S, ob, '最中に感覚が戻った');
         h.pleasure += stored * 0.5; h.reason -= stored * 0.06; h.corrupt += stored * 0.04 * S.k; stored = 0;
         var bc = []; while (h.pleasure >= 100 && bc.length < 3) bc.push(K.climax(S, { silent: true }));
@@ -199,7 +205,7 @@
         K.settle(S);
       }
       var nEv = vis ? Math.min(2, vis) : 0;
-      if (live && !nEv) K.say(S, { kind: 'ev', tag: '間', text: K.fmt(S, K.pick(S, LV.LULL[LV.tier(h)])), why: '' });
+      if (live && !nEv) say(S, { kind: 'ev', tag: '間', text: K.fmt(S, K.pick(S, LV.LULL[LV.tier(h)])), why: '' });
       for (var ev = 0; ev < nEv; ev++) {
         var be = beyond(), f = be.fx;
         if (live) {
@@ -213,8 +219,8 @@
         }
         visits++; people += f.n || 0; meta.cum += f.cum || 0; meta.tent += f.tent || 0; meta.mark += f.mark || 0;
         if (!hardTop) stored += (40 + env.lewd * 0.6) * (1 + be.lv * 0.45 + (f.cum || 0) * 0.15 + (f.tent || 0) * 0.12) * (0.7 + rng() * 0.6) * h.sens;
-        var txt = K.fmt(S, be.t.replace(/◯/g, String(H))) + (!hardTop && rng() < 0.55 ? K.fmt(S, pk(S, X.CONTRAST)) : '');
-        K.say(S, { kind: 'ev', tag: '壁の向こう', text: txt, why: hardTop ? '攻めの指定：手を出そうとした相手を追い払った' : metaWhy() + '（溜まった感覚 ' + Math.round(stored) + '）' });
+        var txt = K.fmt(S, be.t.replace(/◯/g, String(H))) + (!hardTop && rng() < 0.55 ? K.fmt(S, pk(S, EL('contrast', X.CONTRAST))) : '');
+        say(S, { kind: 'ev', tag: '壁の向こう', text: txt, why: hardTop ? '攻めの指定：手を出そうとした相手を追い払った' : metaWhy() + '（溜まった感覚 ' + Math.round(stored) + '）' });
         if (rng() > 0.5) break;
       }
       /* 壁の向こうの住人が、突き出た体に出くわす */
@@ -228,7 +234,7 @@
       /* こちら側に誰かが来る */
       if (!hardTop && stored > 60 && thisN < 2 && rng() < 0.22) {
         thisN++;
-        K.say(S, { kind: 'ev', tag: 'こちら側', text: K.fmt(S, pk(S, X.THIS[plKey])) + ' ' + K.fmt(S, pk(S, X.THIS_REACT[h.persona])), why: '上半身の側にも、人が来た' });
+        say(S, { kind: 'ev', tag: 'こちら側', text: K.fmt(S, pk(S, X.THIS[plKey])) + ' ' + K.fmt(S, pk(S, X.THIS_REACT[h.persona])), why: '上半身の側にも、人が来た' });
         h.reason -= 3; h.corrupt += 2;
       }
       /* こちら側の心 */
@@ -238,32 +244,32 @@
       var counter = h.action.id === 'count' || h.tr.a > 0.62 || (h.tr.cp > 0.62 && h.tr.fc < 0.45);
       if (!hardTop && vis && rng() < imag) {
         h.reason -= 4 + imag * 6; h.corrupt += 2 + imag * 4; h.pleasure += 6; hot = 2;
-        K.say(S, { kind: 'ev', tag: '想像', text: K.fmt(S, pk(S, IMAGINE)) + K.tail(S, 0.3, true), why: '想像してしまう（FC・AC・衝動）' });
+        say(S, { kind: 'ev', tag: '想像', text: K.fmt(S, pk(S, IMAGINE)) + K.tail(S, 0.3, true), why: '想像してしまう（FC・AC・衝動）' });
       } else if (counter && t < H && rng() < (h.action.id === 'count' ? 0.8 : 0.5)) {
         var ct = countText(S, t, H, hot > 0 || h.pleasure > 35);
         if (ct.lost) { lostN++; h.reason -= 3; h.corrupt += 2; }
-        K.say(S, { kind: 'ev', tag: ct.lost ? '数えられない' : '時間を数える', text: ct.text, why: ct.lost ? '遮断の揺らぎや想像で届いた熱が、数を溶かした' : '時間を数えてやり過ごす（A・慎重さ）' });
+        say(S, { kind: 'ev', tag: ct.lost ? '数えられない' : '時間を数える', text: ct.text, why: ct.lost ? '遮断の揺らぎや想像で届いた熱が、数を溶かした' : '時間を数えてやり過ごす（A・慎重さ）' });
       } else if (h.action.id === 'sleep' && rng() < 0.55) {
         h.pleasure += 4;
-        K.say(S, { kind: 'ev', tag: '眠り', text: K.fmt(S, pk(S, hardTop ? X.DREAM.filter(function (x) { return !/抱かれ|触れられ|甘い声/.test(x); }) : X.DREAM)), why: '眠ってやり過ごす' });
+        say(S, { kind: 'ev', tag: '眠り', text: K.fmt(S, pk(S, hardTop ? X.DREAM.filter(function (x) { return !/抱かれ|触れられ|甘い声/.test(x); }) : X.DREAM)), why: '眠ってやり過ごす' });
       } else if (rng() < 0.6) {
         h.reason -= Math.max(0, 3 - calm * 4);
-        K.say(S, { kind: 'ev', tag: '待機', text: K.fmt(S, pk(S, mindList)), why: '口調「' + (HK.toneLabel ? HK.toneLabel(h) : HK.PERSONA[h.persona].label) + '」' });
+        say(S, { kind: 'ev', tag: '待機', text: K.fmt(S, pk(S, mindList)), why: '口調「' + (HK.toneLabel ? HK.toneLabel(h) : HK.PERSONA[h.persona].label) + '」' });
       }
-      if (H >= 4 && rng() < 0.18) K.say(S, { kind: 'ev', tag: '待つ体', text: K.fmt(S, pk(S, X.BODY)), why: '' });
+      if (H >= 4 && rng() < 0.18) say(S, { kind: 'ev', tag: '待つ体', text: K.fmt(S, pk(S, X.BODY)), why: '' });
       /* 遮断の揺らぎ */
       if (!hardTop && rng() < env.leak / 100 * 0.6 && stored > 30) {
         leaks++; hot = 2;
         var r = K.stim(S, 14 + env.lewd / 10, { part: 'belly', defer: true });
-        K.say(S, { kind: 'ev', tag: '揺らぎ', text: K.fmt(S, pk(S, LEAK)) + (r.climaxes.length ? '' : K.tail(S, 0.4, true)), why: '遮断の不完全さ ' + env.leak });
+        say(S, { kind: 'ev', tag: '揺らぎ', text: K.fmt(S, pk(S, EL('leak', LEAK))) + (r.climaxes.length ? '' : K.tail(S, 0.4, true)), why: '遮断の不完全さ ' + env.leak });
         K.logClimax(S, r.climaxes);
       }
       /* 助けを呼ぶ */
-      if (h.action.id === 'shout' && rng() < 0.5) K.say(S, { kind: 'ev', tag: '叫ぶ', text: K.fmt(S, pk(S, SHOUT)), why: '' });
+      if (h.action.id === 'shout' && rng() < 0.5) say(S, { kind: 'ev', tag: '叫ぶ', text: K.fmt(S, pk(S, SHOUT)), why: '' });
       /* もがく */
       if ((h.action.id === 'struggle' || h.goal.id === 'escape' || hardTop) && rng() < 0.5) {
-        if (rng() < 0.05 + h.tr.aggr * 0.08 + h.tr.cp * 0.05 + (hardTop ? 0.12 : 0)) { early = true; K.say(S, { kind: 'sys', tag: '脱出', text: K.fmt(S, '{a}は皮膚が擦りむけるのも構わず体をねじり、ついに壁から腰を引き抜いた。――遮断が、その場で解けた。'), why: '攻撃性・CP（自力脱出）' }); }
-        else K.say(S, { kind: 'ev', tag: 'もがく', text: K.fmt(S, pk(S, STRUGGLE)), why: '' });
+        if (rng() < 0.05 + h.tr.aggr * 0.08 + h.tr.cp * 0.05 + (hardTop ? 0.12 : 0)) { early = true; say(S, { kind: 'sys', tag: '脱出', text: K.fmt(S, '{a}は皮膚が擦りむけるのも構わず体をねじり、ついに壁から腰を引き抜いた。――遮断が、その場で解けた。'), why: '攻撃性・CP（自力脱出）' }); }
+        else say(S, { kind: 'ev', tag: 'もがく', text: K.fmt(S, pk(S, STRUGGLE)), why: '' });
       }
       if (!hardTop) h.corrupt += vis * 0.8 * S.k;
       if (hot > 0) hot--;
@@ -274,7 +280,7 @@
 
     /* ---------- 助け出された：その場で終わり ---------- */
     if (rescue) {
-      var ER = BH.rescueEnd(S, input, { live: live, stored: stored, hardTop: hardTop }, rescue);
+      var ER = BH.rescueEnd(S, input, { live: live, stored: stored, hardTop: hardTop, topMe: topMe }, rescue);
       return K.finish(S, input, ER, ['壁の向こうの住人が助けるか手を出すかは、はまっている人との関係・その人の性格（NP・CP・FC・衝動）・発情の見え方で決まる。', '助け出された瞬間に、溜まっていた感覚は一度に戻る。'], { meta: pl.n + '・' + H + '時間・救出', estats: [['経過', S.step + '時間'], ['助けた人', rescue.rescued.name], ['手を出した人', rescue.doers.length ? rescue.doers.map(function (d) { return d.name; }).join('・') : 'いない'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
     }
 
@@ -284,9 +290,9 @@
     if (early && mode === 'late') mode = 'burst';
     if (hardTop) {
       /* 攻めの指定：何もさせなかった。戻ってくる感覚はない。抜け出したあと、壁の向こうの相手を逆に締め上げることもある */
-      K.say(S, { kind: 'sys', tag: '解放', text: (early ? '' : K.fmt(S, pk(S, RELEASE))) + K.fmt(S, pk(S, X.TOP_RELEASE)), why: '壁の向こうには、何もさせなかった（追い払った相手 ' + visits + '）' });
+      say(S, { kind: 'sys', tag: '解放', text: (early ? '' : K.fmt(S, pk(S, RELEASE))) + K.fmt(S, pk(S, X.TOP_RELEASE)), why: '壁の向こうには、何もさせなかった（追い払った相手 ' + visits + '）' });
       var revenge = visits > 0 && rng() < 0.4 + h.tr.aggr * 0.3 + h.tr.cp * 0.2;
-      var ot = K.say(S, { kind: 'ev', tag: revenge ? '返り討ち' : '余韻', text: K.fmt(S, pk(S, revenge ? X.TOP_REVENGE[plKey] : X.TOP_AFTER)), why: revenge ? '壁の向こうに回り、手を出そうとした相手を逆に責めた（攻撃性・CP）' : '' });
+      var ot = say(S, { kind: 'ev', tag: revenge ? '返り討ち' : '余韻', text: K.fmt(S, pk(S, revenge ? X.TOP_REVENGE[plKey] : X.TOP_AFTER)), why: revenge ? '壁の向こうに回り、手を出そうとした相手を逆に責めた（攻撃性・CP）' : '' });
       K.key(S, ot, revenge ? '壁の向こうの相手を返り討ちにした' : '何もさせずに出てきた');
       K.snap(S, { s: 0 });
       var Et = { type: 'hold', kind: 'ok', title: revenge ? '返り討ち ― 壁の向こうを締め上げた' : early ? '自力脱出 ― 指一本触れさせなかった' : '何もさせなかった ― 脚が最後まで守りきった', lines: [
@@ -299,11 +305,11 @@
     if (live) {
       K.step(S, '解放');
       var tierE = LV.tier(h);
-      var oe = K.say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, K.pick(S, LV.END[tierE])), why: '感覚が戻ってから ' + liveN + '回、壁の向こうを感じた' });
+      var oe = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, K.pick(S, topMe ? LV.END[tierE] : EL('end.' + tierE, LV.END[tierE]))), why: '感覚が戻ってから ' + liveN + '回、壁の向こうを感じた' });
       K.key(S, oe, '解放の時間');
       K.settle(S);
       var stL = h.fallen || h.corrupt >= 100 ? 'fall' : tierE === 2 ? 'enjoy' : tierE === 1 ? 'broken' : 'hold';
-      var oa2 = K.say(S, { kind: 'sys', tag: stL === 'fall' || stL === 'enjoy' ? '陥落' : '余韻', text: K.fmt(S, pk(S, stL === 'hold' ? AFTER.hold[h.persona] : stL === 'enjoy' ? AFTER.fall : AFTER[stL])), why: '絶頂 ' + h.climax + '回・堕ち度 ' + Math.round(h.corrupt) });
+      var oa2 = say(S, { kind: 'sys', tag: stL === 'fall' || stL === 'enjoy' ? '陥落' : '余韻', text: K.fmt(S, pk(S, stL === 'hold' ? EL('after.hold.' + h.persona, AFTER.hold[h.persona]) : stL === 'enjoy' ? EL('after.fall', AFTER.fall) : EL('after.' + stL, AFTER[stL]))), why: '絶頂 ' + h.climax + '回・堕ち度 ' + Math.round(h.corrupt) });
       K.key(S, oa2, stL === 'fall' ? '快楽に堕ちた' : stL === 'enjoy' ? '壁の向こうを受け入れた' : stL === 'broken' ? '崩れ落ちた' : '耐えきった');
       K.snap(S, { s: 0 });
       var metaL = [];
@@ -320,10 +326,10 @@
     K.step(S, early ? '脱出の瞬間' : mode === 'late' ? '解放……？' : '解放');
     var o0;
     if (mode === 'late') {
-      o0 = K.say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, RELEASE)) + ' ' + K.fmt(S, pk(S, X.LATE_IN)), why: '感覚は、まだ戻っていない' });
+      o0 = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, RELEASE)) + ' ' + K.fmt(S, pk(S, X.LATE_IN)), why: '感覚は、まだ戻っていない' });
       S.step = H + 2; K.step(S, '帰り道');
     } else {
-      o0 = K.say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, RELEASE)) + ' ' + (mode === 'drip' ? K.fmt(S, topMe ? X.DRIP_TOP[0] : X.DRIP[0]) : K.fmt(S, pk(S, FLOOD), { h: ho })), why: '溜まっていた感覚 ' + Math.round(stored) + '（訪問 ' + visits + '回）／解放：' + X.RELEASE_MODE[mode] });
+      o0 = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, RELEASE)) + ' ' + (mode === 'drip' ? K.fmt(S, topMe ? X.DRIP_TOP[0] : EL('drip', [X.DRIP[0]])[0]) : K.fmt(S, pk(S, EL('flood', FLOOD)), { h: ho })), why: '溜まっていた感覚 ' + Math.round(stored) + '（訪問 ' + visits + '回）／解放：' + X.RELEASE_MODE[mode] });
     }
     K.key(S, o0, '感覚が戻った');
     var wave = Math.min(mode === 'drip' ? 10 : 8, Math.max(mode === 'drip' ? 3 : 1, Math.round(stored / (mode === 'drip' ? 55 : 80))));
@@ -339,17 +345,20 @@
       /* 地の文のあとに「……」が続くと、話し手が分からず口調が付かない。そのときは名前を前に置く */
       var lineTxt = lead + (parts.length ? (lead ? h.name : '') + (parts[0].charAt(0) === '「' ? '' : K.moan(S)) + parts.join('') : K.fmt(S, pk(S, confList)));
       if (parts.length && rng() < 0.7) lineTxt += ' ' + K.fmt(S, pk(S, confList));
-      K.say(S, { kind: parts.length ? 'climax' : 'ev', tag: parts.length ? (parts.length > 1 ? '連続絶頂' : '絶頂') : '混乱', text: lineTxt, why: (w + 1) + '波目' + (parts.length ? '・' + parts.length + '回' : '') });
+      /* 男性向け：絶頂の前に、戻ってきた感覚の地の文を置く */
+      var wv = parts.length ? EL('wave', []) : [];
+      if (wv.length) lineTxt = K.fmt(S, pk(S, wv)) + ' ' + lineTxt;
+      say(S, { kind: parts.length ? 'climax' : 'ev', tag: parts.length ? (parts.length > 1 ? '連続絶頂' : '絶頂') : '混乱', text: lineTxt, why: (w + 1) + '波目' + (parts.length ? '・' + parts.length + '回' : '') });
       K.settle(S);
     }
     var state = h.fallen || h.corrupt >= 100 ? 'fall' : h.corrupt >= 70 || h.climax >= 6 ? 'broken' : 'hold';
-    var oa = K.say(S, { kind: 'sys', tag: state === 'fall' ? '陥落' : '余韻', text: K.fmt(S, pk(S, mode === 'late' ? X.LATE_AFTER[state] : state === 'hold' ? AFTER.hold[h.persona] : AFTER[state])), why: '絶頂 ' + h.climax + '回・堕ち度 ' + Math.round(h.corrupt) });
+    var oa = say(S, { kind: 'sys', tag: state === 'fall' ? '陥落' : '余韻', text: K.fmt(S, pk(S, mode === 'late' ? X.LATE_AFTER[state] : state === 'hold' ? EL('after.hold.' + h.persona, AFTER.hold[h.persona]) : EL('after.' + state, AFTER[state]))), why: '絶頂 ' + h.climax + '回・堕ち度 ' + Math.round(h.corrupt) });
     K.key(S, oa, state === 'fall' ? '快楽に堕ちた' : state === 'broken' ? '崩れ落ちた' : '耐えきった');
     /* 壁の向こうを見に行く */
     var peeked = false;
     if (state !== 'fall' && mode !== 'late' && rng() < 0.2 + h.tr.fc * 0.25 + h.tr.a * 0.15 + (h.goal.id === 'secret' ? 0.3 : 0)) {
       peeked = true;
-      K.say(S, { kind: 'ev', tag: '壁の向こう側へ', text: K.fmt(S, pk(S, X.PEEK), { marks: String(Math.max(1, Math.ceil((meta.mark + people) / 5))), visits: String(people || visits) }), why: '好奇心（FC・A）' });
+      say(S, { kind: 'ev', tag: '壁の向こう側へ', text: K.fmt(S, pk(S, EL('peek', X.PEEK)), { marks: String(Math.max(1, Math.ceil((meta.mark + people) / 5))), visits: String(people || visits) }), why: '好奇心（FC・A）' });
     }
     K.snap(S, { s: 0 });
 
