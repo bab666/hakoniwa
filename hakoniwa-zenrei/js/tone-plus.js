@@ -31,7 +31,8 @@
     if (HK.PERSONA[t]) return t;
     var p = (EX[t] && EX[t].base) || HK.personaAuto(trOf(c));
     /* 文面の表がエゴグラムから決まる口調（egoTable）は、敬語の表だと話し方の整形が効かないので、穏やかの表を使う */
-    return EX[t] && EX[t].egoTable && p === 'polite' ? 'gentle' : p;
+    /* noPolite（ヤンキーなど）は、敬語で話す健気の表も穏やかの表に替える */
+    return EX[t] && EX[t].egoTable && (p === 'polite' || (EX[t].noPolite && p === 'devoted')) ? 'gentle' : p;
   };
   var vt0 = HK.voiceTop;
   HK.voiceTop = function (c) {
