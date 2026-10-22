@@ -333,6 +333,8 @@
         /* 「〇〇の声が」「〇〇の残したメモには」のような所有の形も、話し手として扱う */
         var poss = nx === 'の' && /^の(?:声|口|唇|喉|残した|書き残した|書いた|メモ|手紙|字|書き置き|置き手紙)/.test(span.slice(at + p.name.length));
         if (/[はがも「、]/.test(nx) || endHere || poss) {
+          /* 「AはBが果てそうになるたびに、「……」」の B は従属節の主語。前に「Aは」があれば A を話し手にする */
+          if (best && nx === 'が' && span.charAt(bp + best.name.length) === 'は' && /^が[^、。「」]{0,20}(?:たびに|たび、|ときに|とき、|うちに|間に|あいだ)/.test(span.slice(at + p.name.length))) continue;
           if (at > bp || (at === bp && best && p.name.length > best.name.length)) { bp = at; best = p; }
         }
       }
