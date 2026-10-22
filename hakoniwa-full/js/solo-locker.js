@@ -147,10 +147,15 @@
     /* 女性の攻め（t）×男性の受け（u）か：女性が跨る書き方にする */
     function fmPair(t, u) { return !!(Pos && !ff && Pos.isF(t) && !Pos.isF(u)); }
     /* 手錠の人に、手を使う文（H:攻めの手／B:受けの手）を使わない */
+    /* 手錠の人の手を使う文（応じる・嗜める・なだめる）は使わない。全部消えるときは元のまま */
+    function hands(arr, a, b) {
+      var r = arr.filter(function (l) { return !(a.bound && /\{a\}の(手|指)/.test(l)) && !(b.bound && (/\{b\}の(手|指)/.test(l) || /\{b\}は[^。「]*(手で|手を|指で|手首を|両手)/.test(l))); });
+      return r.length ? r : arr;
+    }
     function hb(arr, tp, bt) { return arr.filter(function (l) { return !(/^H:/.test(l) && tp.bound) && !(/^B:/.test(l) && bt.bound); }).map(function (l) { return l.replace(/^[HB]:/, ''); }); }
     function contPool(k, tp, bt) { var C = LK.CONT, m = ff ? 'ff' : fmPair(tp, bt) ? 'fm' : 'ins'; return hb((C[m][k] || []).concat(C.any[k] || []), tp, bt); }
     /* ロッカーの中で繋がる（一回目・二回目）。繋がっているあいだは、5分ごとに一つだけ「続き」の出来事を書く */
-    function startConn(tp) { pair.conn = true; pair.top = tp; pair.bot = tp.o; pair.rounds = (pair.rounds || 0) + 1; pair.done = false; pair.hushed = false; }
+    function startConn(tp) { pair.conn = true; pair.top = tp; pair.bot = tp.o; pair.rounds = (pair.rounds || 0) + 1; pair.done = false; pair.hushed = false; pair.lowT = 0; }
     function contTurn() {
       var tp = pair.top, bt = pair.bot, C = LK.CONT, ph, vv = { a: tp.name, b: bt.name };
       if (pair.done) ph = 'after';
@@ -158,6 +163,8 @@
         bt.m.plea += (14 + rng() * 12) * bt.sens; tp.m.plea += (10 + rng() * 10) * tp.sens;
         P.forEach(function (p) { p.m.heat = clamp(p.m.heat + 3, 0, 100); });
         ph = bt.m.plea >= 100 || tp.m.plea >= 100 ? 'climax' : !pair.hushed && rng() < 0.3 ? 'hush' : bt.m.plea >= 70 ? 'edge' : 'move';
+        /* ぼかすときは、一コマ置いてすぐ果てる（ぼかした文を何コマも並べない） */
+        if (lew === 'low') { ph = pair.lowT ? 'climax' : 'move'; pair.lowT = 1; }
       }
       var t = lew === 'low' ? pk(C.low) : ST.fmt(pk(contPool(ph, tp, bt)), vv);
       if (ph === 'hush') {
@@ -240,7 +247,7 @@
           /* 手で楽にするのは、体の関係になれる二人で、楽にされる側が自分で攻めを選んだ人でないときだけ */
           if (kind === 'give' && (clash || hardTop(a))) kind = 'help';
           if (kind === 'tempted') b.m.heat = clamp(b.m.heat + 15, 0, 100);
-          var tt = ST.fmt(pk(LK.ONE[kind]), { a: a.name, b: b.name });
+          var tt = ST.fmt(pk(hands(LK.ONE[kind], a, b)), { a: a.name, b: b.name });
           if (kind === 'give') { a.m.plea += 50; if (a.m.plea >= 100) tt = climax(a, tt); pair.acts++; lewdNow = true; }
           ST.sayB(S, { actors: [a, b], tag: { help: 'なだめる', give: '手で楽に', tempted: 'つられる' }[kind], text: tt, why: a.name + 'だけが発情していた（' + Math.round(a.m.heat) + ' 対 ' + Math.round(b.m.heat) + '）／' + b.name + 'の' + (kind === 'give' ? 'NP' : kind === 'tempted' ? '揺らぎ' : '冷静さ'), mag: 18 }, b.name + 'が' + a.name + 'を' + { help: 'なだめた', give: '手で楽にした', tempted: 'つられかけた' }[kind]);
           continue;
@@ -300,14 +307,14 @@
         var t = swap ? ST.fmt(pk(LK.TEMPT), vT) : ST.fmt(pk(actPool), vA);
         if (resp === 'refuse') {
           b.cnt.refuse++; a.m.reason = clamp(a.m.reason + 6, 0, 100);
-          t += ST.fmt(pk(LK.REFUSE), { a: a.name, b: b.name }) + (rng() < 0.7 ? say2(b, LK.REFUSE_SAY) : '');
+          t += ST.fmt(pk(hands(LK.REFUSE, a, b)), { a: a.name, b: b.name }) + (rng() < 0.7 ? say2(b, LK.REFUSE_SAY) : '');
           if (b.cnt.refuse >= 2 && lv >= 2) pair.refusedHard = true;
           ST.sayB(S, { actors: [a, b], tag: '嗜めた', text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は嗜めた（理性 ' + Math.round(b.m.reason) + '・CP）', mag: 18 }, b.name + 'が嗜めた', pair.acts === 0);
           continue;
         }
         b.cnt.accept++; pair.level = lv; pair.acts++; lewdNow = true;
         if (swap) t += ST.fmt(pk(LK.TAKE[b.bound ? 'bound' : 'free']), vT) + ST.fmt(pk(actPool), vA);
-        else t += ST.fmt(pk((resp === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); })), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
+        else t += ST.fmt(pk(hands((resp === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); }), a, b)), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
         /* 最初の一回は、二人の関係で受け止め方が変わる */
         var RF = LK.REL && LK.REL.first[rel];
         if (pair.acts === 1 && RF && rng() < 0.75) t += ST.fmt(pk(RF), { a: a.name, b: b.name, c: (crusher || a).name, o: (crusher || a).o.name });
@@ -319,7 +326,7 @@
         if (lv === 4) { pair.sexIn = true; startConn(tp); t += ST.fmt(pk(ff && LK.FF_ACT ? LK.FF_ACT.tease : fmPair(tp, tp.o) && LK.FM_ACT ? LK.FM_ACT.tease : LK.TEASE), { a: tp.name, b: tp.o.name }); }
         /* セフレで片想い：いつもの体なのに、想う側の心だけが違う */
         if (lv >= 3 && fcKind && LK.FC && !pair.fcShown) { pair.fcShown = true; t += ST.fmt(pk(LK.FC.inside[fcKind]), { c: crusher.name, o: crusher.o.name }); }
-        if (lew === 'low' && lv >= 3) t = ST.fmt(pk(actPool), vA).replace(/。.*$/, '。') + '――その先は、ロッカーの扉の隙間からも見えなかった。';
+        if (lew === 'low' && lv >= 3) t = ST.fmt(pk(actPool), vA).replace(/。.*$/, '。') + pk(LK.FADE || ['――その先は、ロッカーの扉の隙間からも見えなかった。']);
         /* 自分で攻めを選んだ人は、相手に「イかされる」側にしない */
         /* 繋がった瞬間には果てさせない（そこからの数コマを、続きの出来事で書く） */
         if (lv === 4) { ax.m.plea = Math.min(ax.m.plea, 55); bx.m.plea = Math.min(bx.m.plea, 60); }
@@ -347,11 +354,15 @@
         /* 繋がっているあいだは、仕掛けに手が回らない */
         if (pair.conn && !G2.lewd) { /* 何もしない */ }
         else if (workers.length && !G2.lewd) {
+          /* 片方だけ手錠のときは、自由な方が相手の鍵を外す */
+          var free = G2.bind && bind === 'one' ? workers.filter(function (p) { return !p.bound; }) : [];
+          var GT = free.length && LK.CUFF1 ? LK.CUFF1 : G2;
+          if (free.length) workers = free;
           var wk = workers.slice().sort(function (x, y) { return (y.stats.dex * G2.dex + y.tr.a * 5 * G2.brain) - (x.stats.dex * G2.dex + x.tr.a * 5 * G2.brain); })[0];
           var pw = 10 + (wk.stats.dex || 3) * 6 * G2.dex + wk.tr.a * 30 * G2.brain + rng() * 28 + workers.length * 6 - G2.diff * 0.25 - env.diff * 0.2 - (lewdNow ? 14 : 0) - wk.m.heat * 0.12;
           prog = clamp(prog + Math.max(4, pw), 0, 100);
           var ok = prog >= 100;
-          ST.sayB(S, { actors: [wk], tag: G2.name, text: ST.fmt(pk(G2.try), { a: wk.name, b: wk.o.name }) + ST.fmt(pk(ok ? G2.ok : G2.ng), { a: wk.name, b: wk.o.name }), why: '進み具合 ' + Math.round(prog) + '％（' + wk.name + 'の器用さ ' + wk.stats.dex + (G2.brain > 0.5 ? '・A' : '') + (lewdNow ? '・いちゃついていて集中できない' : '') + '）', mag: ok ? 22 : 10 }, wk.name + '：' + G2.name + ' ' + Math.round(prog) + '％', ok);
+          ST.sayB(S, { actors: [wk], tag: G2.name, text: ST.fmt(pk(GT.try), { a: wk.name, b: wk.o.name }) + ST.fmt(pk(ok ? GT.ok : GT.ng), { a: wk.name, b: wk.o.name }), why: '進み具合 ' + Math.round(prog) + '％（' + wk.name + 'の器用さ ' + wk.stats.dex + (G2.brain > 0.5 ? '・A' : '') + (lewdNow ? '・いちゃついていて集中できない' : '') + '）', mag: ok ? 22 : 10 }, wk.name + '：' + G2.name + ' ' + Math.round(prog) + '％', ok);
           if (ok) wk.cnt.solve++;
         } else if (G2.lewd && rng() < 0.05 + (A.m.heat + B.m.heat) / 450 + ({ lover: 0.3, fwb: 0.25, almost: 0.2, tension: -0.15 }[rel] || 0)) {
           prog = 100;
