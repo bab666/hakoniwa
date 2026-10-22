@@ -85,7 +85,10 @@
     /* 受け攻め：自分で攻めを選んだ人は、企画でも罰ゲームでも「される」側にしない。住人どうしの性的な企画は、向きの決まる組（okSex）だけ */
     var PO = HK.Pos;
     function hTop(p) { return !!(PO && PO.hardTop(p)); }
-    function okS(a, b) { return !PO || PO.okSex(a, b); }
+    /* 血縁（恋愛：なし）の二人は、性的な企画で組まない（関係で「恋愛：あり」にした組と、擬似親子は別） */
+    function kinTie(a, b) { var L0 = (input.ties || []).filter(function (x) { return (x.a === a.i && x.b === b.i) || (x.a === b.i && x.b === a.i); }); for (var i = 0; i < L0.length; i++) { var D = HK.TIES && HK.TIES[L0[i].type]; if (D && D.family) return L0[i]; } return null; }
+    function kinBlock(a, b) { var t = kinTie(a, b), D = t && HK.TIES[t.type]; return !!(t && !D.loveOK && !(HK.tieFamLove && HK.tieFamLove(t))); }
+    function okS(a, b) { return !kinBlock(a, b) && (!PO || PO.okSex(a, b)); }
     function ord(a, b) { return PO ? PO.order(a, b, [a, b]) : [a, b]; }
     /* アシスタントを選ぶ：いちもつ前提の企画や、女性の挑戦者が受ける企画では男性のアシスタントにする（女性どうしにしない） */
     function assist(p, K) {
@@ -113,6 +116,20 @@
     ST.say(S, { kind: 'phase', text: '深夜のお色気バラエティ「' + show + '」、生放送スタート！　' + mc + 'の呼び込みで、' + P.map(function (p) { return p.name; }).join('・') + 'がスタジオに登場した。' + (VA.MC_OPEN ? mc + ST.pick(S, VA.MC_OPEN) : '') });
     ST.budget(S, 2);
     var intro = shuffle(rng, P).slice(0, 2);
+    /* 血縁で出演している組は、オープニングで紹介する */
+    if (VA.INTRO_KIN) {
+      var kinDone = {};
+      P.forEach(function (a) { P.forEach(function (b) {
+        if (a === b || kinDone[a.i] || kinDone[b.i]) return;
+        var t = kinTie(a, b);
+        if (!t || t.a !== a.i) return;
+        var D = HK.TIES[t.type], k = VA.INTRO_KIN[t.type] ? t.type : VA.INTRO_KIN[D.like] ? D.like : 'sibling';
+        kinDone[a.i] = kinDone[b.i] = 1;
+        var tx = ST.fmt(ST.pick(S, VA.INTRO_KIN[k]), { a: a.name, b: b.name, mc: mc });
+        if (kinBlock(a, b) && VA.INTRO_KIN_NOTE) tx += ST.fmt(ST.pick(S, VA.INTRO_KIN_NOTE), { a: a.name, b: b.name, mc: mc });
+        ST.say(S, { actors: [a, b], tag: D.label + 'で出演', text: tx, why: '関係「' + D.label + '」の二人が出演' + (kinBlock(a, b) ? '（血縁なので、二人を組ませる企画はない）' : ''), mag: 16 });
+      }); });
+    }
     intro.forEach(function (p) {
       ST.say(S, { actors: [p], tag: '意気込み', text: VA.introLine ? VA.introLine(S, p, P, mc) : p.name + 'は' + ({ win: '「優勝しか見てない」と言い切った。', fun: '「楽しんだもん勝ちでしょ！」とカメラに手を振った。', safe: '緊張で顔がこわばっていた。' }[p.action.id]), why: '方針「' + p.action.label + '」・目標「' + p.goal.label + '」' });
     });
@@ -408,8 +425,13 @@
         return out;
       }
       /* チーム対抗 */
-      var sh2 = shuffle(rng, P), A = [], B = [];
-      sh2.forEach(function (p, i) { (i % 2 ? B : A).push(p); });
+      /* 体を寄せ合う企画もあるので、血縁（恋愛：なし）の二人は別々のチームに分ける */
+      var A = [], B = [], kinIn = function (T0) { return T0.some(function (x) { return T0.some(function (y) { return x !== y && kinBlock(x, y); }); }); };
+      for (var tries = 0; tries < 30; tries++) {
+        var sh2 = shuffle(rng, P); A = []; B = [];
+        sh2.forEach(function (p, i) { (i % 2 ? B : A).push(p); });
+        if (!kinIn(A) && !kinIn(B)) break;
+      }
       var nA = 'チーム' + A[0].name, nB = 'チーム' + B[0].name;
       var sA = A.reduce(function (s, p) { return s + skill(p, K.stat); }, 0) / A.length, sB = B.reduce(function (s, p) { return s + skill(p, K.stat); }, 0) / B.length;
       var W = sA >= sB ? A : B, Lo = W === A ? B : A, nW = W === A ? nA : nB, nL = W === A ? nB : nA;

@@ -1,0 +1,45 @@
+/* 箱庭シミュレーター: 記録（経過）の見た目にメリハリをつける
+   ・区切り（〇日目など）を色つきの札に
+   ・出来事の種類ごとに、左の帯と種類の札に色をつける（cat-〇〇 / cc-〇〇。箱庭の記録は view.js、ひとりの物語は solo-story-kit.js が付ける）
+   ・トラブル（故障・危機・感染など。e.trouble）は赤い枠と「トラブル」の札
+   ・死は濃い赤の札、山場（climax）は少し色を敷き、状況の説明は控えめに */
+(function () {
+  'use strict';
+  var C = {
+    romance: 'var(--love)', bond: 'var(--partner)', help: 'var(--guard)', conflict: 'var(--enemy)', combat: 'var(--kill)',
+    betray: 'var(--obsess)', solo: 'var(--muted)', escape: 'var(--night)', death: 'var(--kill)'
+  };
+  var css = '';
+  /* 区切り */
+  css += 'html body .stepblk{border-top:1px dashed var(--line);padding-block:12px}' +
+    'html body .stepblk .when{align-self:start;justify-self:start;display:inline-block;font-weight:700;font-size:12px;color:var(--accent-ink,var(--accent));background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:999px;padding:2px 11px;letter-spacing:.03em;line-height:1.6}' +
+    'html body .stepblk ol{gap:9px}';
+  /* 種類の札と左の帯 */
+  Object.keys(C).forEach(function (k) {
+    var c = C[k];
+    css += 'html body .ev .c.cc-' + k + '{color:' + c + ';background:color-mix(in srgb,' + c + ' 13%,transparent);border-color:color-mix(in srgb,' + c + ' 45%,transparent)}' +
+      'html body .ev.cat-' + k + ':not(.talk):not(.phase):not(.trouble):not(.death) .evb{border-left:3px solid color-mix(in srgb,' + c + ' 70%,transparent);padding-left:9px}' +
+      'html body .ev.talk.cat-' + k + ':not(.trouble) .evb{border-left:3px solid color-mix(in srgb,' + c + ' 70%,transparent)}';
+  });
+  css += 'html body .ev .c{border-radius:999px;padding:0 7px;font-weight:700}';
+  /* 状況の説明：控えめに */
+  css += 'html body .ev.phase .evb{font-size:13px;color:var(--muted);border-left:2px dotted var(--line);padding-left:9px}';
+  /* 山場 */
+  css += 'html body .ev.climax{border-left:0;padding-left:0;margin-left:0}' +
+    'html body .ev.climax:not(.trouble):not(.death) .evb{background:color-mix(in srgb,var(--accent) 7%,var(--surface));border-radius:6px;padding:6px 10px;font-weight:500}';
+  /* 決め手・転機 */
+  css += 'html body .ev.key{background:none;padding:0;margin-left:0}' +
+    'html body .ev.key .evb{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 55%,transparent);background:var(--accent-soft);border-radius:6px;padding:6px 10px}';
+  /* トラブル：赤い枠 */
+  css += 'html body .ev.trouble .evb{border:2px solid #d93a3a;border-left-width:6px;background:color-mix(in srgb,#d93a3a 8%,var(--surface));border-radius:8px;padding:7px 11px}' +
+    'html body .ev.trouble .evb::before{content:"⚠ トラブル";display:inline-block;font-size:10px;font-weight:700;color:#fff;background:#d93a3a;border-radius:999px;padding:0 7px;margin-right:6px;vertical-align:1px}' +
+    'html body .ev.trouble .c{color:#d93a3a;border-color:color-mix(in srgb,#d93a3a 50%,transparent);background:color-mix(in srgb,#d93a3a 12%,transparent)}';
+  /* 死 */
+  css += 'html body .ev.death .evb{border:1px solid color-mix(in srgb,var(--kill) 60%,transparent);border-left:6px solid var(--kill);background:color-mix(in srgb,var(--kill) 12%,var(--surface));border-radius:8px;padding:7px 11px;color:var(--ink)}' +
+    'html body .ev.death .evb::before{content:"✝";font-weight:700;color:var(--kill);margin-right:6px}' +
+    'html body .ev.death.trouble .evb::before{content:"✝ 全滅・死";color:#fff;background:var(--kill);border-radius:999px;padding:0 7px;font-size:10px}';
+  /* 理由の行は、本文と分かれて読めるように */
+  css += 'html body .ev .why{margin-top:3px;padding-top:2px;border-top:1px dotted color-mix(in srgb,var(--line) 80%,transparent)}' +
+    'html body .ev.phase .why{border-top:0}';
+  var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+})();

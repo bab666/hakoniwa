@@ -92,12 +92,28 @@
 
   /* ---------- 星を作る ---------- */
   var GREEK = ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ'];
+  /* 星の名前：SF映画の惑星のような響きで、書き方を何通りかに散らす */
+  var PN_CAT = ['ケプラー', 'グリーゼ', 'ウルフ', 'ロス', 'ラカイユ', 'ティーガーデン', 'ラランド', 'ルイテン', 'カプタイン', 'ヴァン・マーネン'];
+  var PN_CODE = ['LV-', 'PX-', 'KX-', 'RX-', 'XT-', 'NV-', 'ZR-', 'HX-', 'TQ-', 'SR-'];
+  var PN_MYTH = ['タルタロス', 'ヘリオス', 'ニュクス', 'セレス', 'オルフェウス', 'ヴァルハラ', 'イシュタル', 'アルカディア', 'ネメシス', 'ハイペリオン', 'エレボス', 'ティアマト', 'アスフォデル', 'ミネルヴァ', 'ヨトゥン', 'ニブルヘイム', 'エリュシオン', 'アヴァロン', 'ケツァル', 'ベレニケ', 'セドナ', 'カリスト', 'オベロン', 'ラグナ', 'ゼフィロス', 'アトラス'];
+  var PN_ROMAN = ['Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ', 'Ⅸ', 'Ⅻ'];
+  var PN_LETTER = ['b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  var PN_SUR = ['新', '第二の', ''];
+  var PN_WORD = ['ガイア', 'エデン', 'テラ', 'ホープ', 'ヘイヴン', 'ソラリス', 'オアシス'];
+  function planetName(rng) {
+    var r = rng();
+    if (r < 0.28) return PN_CAT[rng.int(PN_CAT.length)] + (rng() < 0.5 ? '-' : '') + (10 + rng.int(990)) + PN_LETTER[rng.int(PN_LETTER.length)];
+    if (r < 0.5) return PN_CODE[rng.int(PN_CODE.length)] + (100 + rng.int(900));
+    if (r < 0.82) return PN_MYTH[rng.int(PN_MYTH.length)] + (rng() < 0.7 ? PN_ROMAN[rng.int(PN_ROMAN.length)] : '');
+    if (r < 0.92) return PN_SUR[rng.int(PN_SUR.length)] + PN_WORD[rng.int(PN_WORD.length)] + (rng() < 0.5 ? '-' + (2 + rng.int(8)) : '');
+    return PN_MYTH[rng.int(PN_MYTH.length)] + '・' + GREEK[rng.int(GREEK.length)];
+  }
   function makePlanet(S) {
     var rng = S.rng, T = SH.RES || [], LF = SH.LIFE || [], CV = SH.CIV || [];
     var res = rng.pick(T), civ = rng.pick(CV), n = rng() < 0.22 ? 0 : rng() < 0.55 ? 1 : rng() < 0.75 ? 2 : 3;
     var life = [], pool = LF.slice();
     for (var k = 0; k < n && pool.length; k++) { var x = pool.splice(rng.int(pool.length), 1)[0]; life.push({ d: x, st: 0 }); }
-    var name = 'ケプラー' + (100 + rng.int(900)) + GREEK[rng.int(GREEK.length)];
+    var name = planetName(rng);
     var rare = clamp(Math.round((res.rare + civ.rare + (life.length ? Math.max.apply(null, life.map(function (l) { return l.d.rare; })) : 1)) / 3 + (life.length >= 3 ? 0.6 : life.length === 2 ? 0.3 : 0)), 1, 5);
     return { name: name, res: { d: res, st: 0 }, civ: { d: civ, st: 0 }, life: life, rare: rare, at: 0 };
   }
@@ -154,6 +170,7 @@
         if (!S.planet && rng() < env.contact / 100 * 0.45) space(S);
       } else if (S.planet.at < m) explore(S, m);
       if (rng() < 0.22 + env.danger / 100 * 0.35) trouble(S);
+      doom(S, m);
       crisis(S);
       shipLife(S);
       if (R18ON && r18on(S)) nightR18(S);
@@ -251,18 +268,63 @@
     if (ok) {
       fx.cnt.fix++;
       t += F(tr.ok, { a: fx.name });
-      ST.say(S, { actors: [fx], tag: '故障：' + tr.name, text: t, why: fx.name + 'が直した（修理の腕 ' + Math.round(skill(fx, 'repair') * 100) + '）', mag: 18 });
+      ST.say(S, { actors: [fx], tag: '故障：' + tr.name, trouble: true, text: t, why: fx.name + 'が直した（修理の腕 ' + Math.round(skill(fx, 'repair') * 100) + '）', mag: 18 });
       return;
     }
     var sp = S.ship, dmg = 15 + rng.int(15);
     if (tr.stat === 'crew') live(S).forEach(function (p) { p.m.hp = clamp(p.m.hp - 8, 1, 100); });
     else if (sp[tr.stat] != null) sp[tr.stat] = clamp(sp[tr.stat] - dmg, 0, 100);
     S.ship.morale = clamp(S.ship.morale - 6, 0, 100);
-    if (rng() < 0.06 + S.env.danger / 100 * 0.32) {
+    /* 残りが二人以下なら、死に至るほどの事故は起きにくい（全滅は大きなトラブルの doom で） */
+    if (rng() < (0.06 + S.env.danger / 100 * 0.32) * (live(S).length <= 2 ? 0.35 : live(S).length === 3 ? 0.7 : 1)) {
       var v = rng.pick(live(S)), w = live(S).filter(function (q) { return q !== v; })[0];
       return die(S, v, tr.name + 'で', t + F(tr.ng, { a: fx.name }) + F(tr.death, { v: v.name, w: w ? w.name : '仲間' }));
     }
-    ST.say(S, { actors: [fx], tag: '故障：' + tr.name, text: t + F(tr.ng, { a: fx.name }), why: '修理に失敗（' + ({ hull: '船体', power: '動力', o2: '生命維持', food: '食料', crew: '全員の体力' }[tr.stat] || '') + 'が減った）', mag: 22 });
+    ST.say(S, { actors: [fx], tag: '故障：' + tr.name, trouble: true, text: t + F(tr.ng, { a: fx.name }), why: '修理に失敗（' + ({ hull: '船体', power: '動力', o2: '生命維持', food: '食料', crew: '全員の体力' }[tr.stat] || '') + 'が減った）', mag: 22 });
+  }
+
+  /* ---------- 船を滅ぼしかねない大きなトラブル（全滅もありうる。一回の漂流で一度まで） ----------
+     兆しの翌月から立ち向かい、二度続けて失敗すると全滅する。人数が少ないと、もともと全滅しやすいので起きにくくする */
+  function doom(S, m) {
+    var rng = S.rng, D = S.doom, L0 = live(S), DM = SH.DOOM;
+    if (!DM || !L0.length) return;
+    var x = S.planet ? S.planet.name : '';
+    if (!D) {
+      if (m < 2 || S.doomDone) return;
+      var n = S.P.length, k = n >= 5 ? 1.5 : n === 4 ? 0.8 : n === 3 ? 0.3 : 0;
+      if (rng() >= (0.012 + S.env.danger / 100 * 0.02) * k) return;
+      var d = rng.pick(DM.filter(function (y) { return !y.planet || S.planet; }));
+      S.doom = { d: d, tries: 0, at: m };
+      S.ship.morale = clamp(S.ship.morale - 10, 0, 100);
+      L0.forEach(function (q) { stress(q, 12); q.m.fear = clamp(q.m.fear + 12, 0, 100); });
+      var o0 = ST.say(S, { actors: [], tag: '危機：' + d.name, kind: 'climax', trouble: true, doom: d.id, text: F(pk(S, d.start), { x: x }), why: '船そのものを滅ぼしかねないトラブル（宇宙の過酷さ ' + S.env.danger + '）。食い止められなければ、全員の命はない', mag: 40 });
+      ST.key(S, o0, d.name + 'の兆し');
+      return;
+    }
+    if (D.at === m) return;
+    var a = best(S, D.d.skill) || L0[0], help = L0.filter(function (q) { return q !== a && skill(q, D.d.skill) >= 0.45; }).length;
+    var ch = 0.38 + skill(a, D.d.skill) * 0.3 + Math.min(help, 2) * 0.05 - S.env.danger / 100 * 0.1 - D.tries * 0.05;
+    D.tries++;
+    var SKJ = { repair: '修理', med: '医療', sci: '科学', fight: '戦い' }[D.d.skill] || '';
+    if (rng() < ch) {
+      S.doom = null; S.doomDone = true; a.cnt.fix++;
+      S.ship.morale = clamp(S.ship.morale + 12, 0, 100);
+      L0.forEach(function (q) { if (q !== a) setRel(S, q, a, 0.1); stress(q, -8); });
+      var o1 = ST.say(S, { actors: [a], tag: '危機を回避：' + D.d.name, kind: 'climax', trouble: true, text: F(pk(S, D.d.ok), { a: a.name, x: x }), why: a.name + 'の' + SKJ + 'の腕（' + Math.round(skill(a, D.d.skill) * 100) + '）' + (help ? '・手伝える仲間 ' + help + '人' : '') + '（成功の見込み ' + Math.round(ch * 100) + '%）', mag: 40 });
+      ST.key(S, o1, a.name + 'が' + D.d.name + 'を食い止めた');
+      return;
+    }
+    if (D.tries < 2) {
+      S.ship.morale = clamp(S.ship.morale - 8, 0, 100);
+      L0.forEach(function (q) { stress(q, 10); });
+      ST.say(S, { actors: [a], tag: '危機：' + D.d.name, kind: 'climax', trouble: true, text: F(pk(S, D.d.ng), { a: a.name, x: x }), why: a.name + 'が立ち向かったが、食い止められなかった（成功の見込み ' + Math.round(ch * 100) + '%）。次で止められなければ終わりだ', mag: 35 });
+      return;
+    }
+    var all = L0.slice();
+    var o2 = ST.say(S, { actors: all.map(function (q) { return q; }), tag: '全滅：' + D.d.name, kind: 'climax', trouble: true, doom: D.d.id, text: F(pk(S, D.d.ng), { a: a.name, x: x }) + F(pk(S, D.d.end), { n: names(all), x: x }), why: '二度目も食い止められなかった（成功の見込み ' + Math.round(ch * 100) + '%）', mag: 70 });
+    ST.key(S, o2, D.d.name + 'で全滅');
+    all.forEach(function (q) { q.alive = false; q.fate = '死亡（' + m + 'か月目・' + D.d.name + '）'; S.deaths.push(q); });
+    S.doom = null; S.doomDone = true; S.wipeBy = D.d;
   }
 
   /* ---------- 宇宙での遭遇 ---------- */
@@ -675,6 +737,9 @@
   }
   function finish(S, input) {
     var P = S.P, Pn = S.planet, L0 = live(S);
+    /* 記録の中のトラブル（故障・危機・感染・誘拐・遭難など）は、赤い枠で目立たせる */
+    var TROUBLE = /^(故障|危機|全滅|感染症|感染拡大|誘拐|遭難|行方不明|探索失敗|救出失敗|置き去り|病気|暴れる)/;
+    S.log.forEach(function (e) { if (e.tag && TROUBLE.test(e.tag)) e.trouble = true; });
     P.forEach(function (p) {
       if (!p.fate && p.alive && p.away === 'taken') p.fate = '連れ去られたまま、救出は間に合わなかった';
       if (!p.fate && p.alive && p.away === 'lost') p.fate = '遭難したまま、一年が終わった';
@@ -695,7 +760,7 @@
     var reveal = 0, total = 0;
     if (Pn) { [Pn.res, Pn.civ].concat(Pn.life).forEach(function (o) { reveal += o.st; total += 3; }); }
     var pct = total ? Math.round(reveal / total * 100) : 0;
-    var title = !L0.length ? '全滅 ― 船は誰も乗せないまま漂い続けた' : Pn ? Pn.name + 'に辿り着いた ― 珍しさ' + stars(Pn.rare) + '・判明度 ' + pct + '%' : '星は見つからなかった ― 一年の漂流';
+    var title = !L0.length ? '全滅 ― ' + (S.wipeBy ? S.wipeBy.name + 'で、' : '') + '船は誰も乗せないまま漂い続けた' : Pn ? Pn.name + 'に辿り着いた ― 珍しさ' + stars(Pn.rare) + '・判明度 ' + pct + '%' : '星は見つからなかった ― 一年の漂流';
     var lines = P.map(function (p) { return p.name + '（' + p.roleLabel + '）：' + p.fate; });
     var END = SH.T.END || {};
     lines.push(F(pk(S, !L0.length ? END.wiped : Pn ? END.found : END.none), { x: Pn ? Pn.name : '' }));

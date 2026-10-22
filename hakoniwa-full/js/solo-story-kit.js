@@ -104,6 +104,20 @@
     return '<h2 class="sec">' + esc(T.title || '比較') + '</h2>' + (T.hint ? '<p class="hint">' + esc(T.hint) + '</p>' : '') + '<div class="tblwrap"><table class="per"><thead><tr><th></th><th>住人</th>' + T.cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
       T.rows.map(function (r) { return '<tr><td>' + esc(r.rank || '') + '</td><td><span class="row" style="flex-wrap:nowrap">' + av(res, r.i, 22) + '<b>' + esc(res.heroes[r.i].name) + '</b></span></td>' + r.cells.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
   }
+  /* 札（tag）の言葉から、記録の色分けを決める（ui-log.js の cat-〇〇） */
+  var TAG_CLS = [
+    ['death', /^(死|全滅|弔い|処刑|殉|最期)/],
+    ['conflict', /故障|危機|感染|誘拐|遭難|行方不明|失敗|置き去り|病気|暴れ|ケンカ|喧嘩|口論|嫉妬|対立|裏切|襲|罠|戦い|戦闘|事故|発狂/],
+    ['romance', /夜|恋|キス|告白|デート|誘い|口説|ときめ|求愛|触れ合い|愛撫|絶頂|激しい|甘い/],
+    ['help', /治療|看病|救出|回避|生還|帰還|助け|手当|守|仲直り|慰め/],
+    ['escape', /発見|探索|調査|レポート|研究|遭遇|脱出|成功|クリア/],
+    ['bond', /食事|酒盛り|会話|絆|友情|語ら|団らん|船長|機嫌/]
+  ];
+  function tagCls(e) {
+    if (e.kind === 'phase' || !e.tag) return '';
+    for (var i = 0; i < TAG_CLS.length; i++) if (TAG_CLS[i][1].test(e.tag)) return TAG_CLS[i][0];
+    return 'solo';
+  }
   function timeline(res) {
     var groups = [], cur = null, ks = {};
     res.turns.forEach(function (t) { ks[t.n] = 1; });
@@ -117,7 +131,8 @@
     var html = groups.filter(function (g) { return g.items.length; }).map(function (g) {
       return '<div class="stepblk"><div class="when">' + esc(g.label) + '</div><ol>' + g.items.map(function (e) {
         var avs = e.actors.length ? '<span class="avs">' + e.actors.slice(0, 3).map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
-        return '<li class="ev' + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (avs ? ' hasav' : '') + (avs && /「/.test(e.text) ? ' talk' : '') + '">' + avs + '<div class="evb">' + (e.tag ? '<span class="c">' + esc(e.tag) + '</span>' : '') + paint(e.text, res) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+        var tc = tagCls(e);
+        return '<li class="ev' + (tc ? ' cat-' + tc : '') + (e.trouble ? ' trouble' : '') + (tc === 'death' ? ' death' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (avs ? ' hasav' : '') + (avs && /「/.test(e.text) ? ' talk' : '') + '">' + avs + '<div class="evb">' + (e.tag ? '<span class="c' + (tc ? ' cc-' + tc : '') + '">' + esc(e.tag) + '</span>' : '') + paint(e.text, res) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';

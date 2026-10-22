@@ -264,8 +264,8 @@
     });
     var html = groups.filter(function (g) { return g.items.length; }).map(function (g) {
       return '<div class="stepblk"><div class="when">' + esc(g.label) + '</div><ol>' + g.items.map(function (e) {
-        var cls = 'ev' + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '');
-        var chip = e.kind === 'event' ? '<span class="c">' + esc(HK.CAT_NAME[e.cat] || e.cat) + '</span>' : '';
+        var cls = 'ev' + (e.kind === 'event' && e.cat ? ' cat-' + e.cat : '') + (e.trouble ? ' trouble' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '');
+        var chip = e.kind === 'event' ? '<span class="c cc-' + esc(e.cat) + '">' + esc(HK.CAT_NAME[e.cat] || e.cat) + '</span>' : '';
         /* 出られない部屋：条件を満たした・扉が開いた出来事の札 */
         if (e.goal || e.goalExit) chip = (e.goal || []).map(function (g) { return '<span class="goalb">条件達成：' + esc(g) + '</span>'; }).join('') + (e.goalExit ? '<span class="goalb exitb">扉が開いた</span>' : '') + chip;
         var who = (e.actors || []).slice(0, 3);
