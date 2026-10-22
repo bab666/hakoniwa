@@ -257,7 +257,9 @@
       var body = pickF(S, o.top ? (isF(who) ? FLOOD_TOP_F : FLOOD_TOP) : FLOOD_RECV);
       /* 段落の頭が「…」だと話し手が分からないので、名前を前に置く */
       var lead = /^「/.test(o.lead || '') ? B + o.lead : o.lead;
-      var m1 = pickF(S, SUB1[sp]);
+      /* 壁の向こうに相手はいない：命令・頼みの台詞は使わない */
+      var fl = SUB1[sp].filter(function (x) { return !/(しろ|して|ください|くれ|待|ま、待)/.test(x); }); if (!fl.length) fl = SUB1[sp];
+      var m1 = pickF(S, fl);
       return [body, '{B}「' + m1 + '」' + pickF(S, FLOOD_LINK), pickF(S, FLOOD_FEEL) + '{B}「' + pickNot(S, SUB1[sp], m1) + '」', lead].join('\n\n').replace(/\{B\}/g, B);
     },
     /* 嗜虐的な主導役なら、山場の 25% ほどでハードな支配を使う */
