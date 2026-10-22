@@ -29,7 +29,7 @@
   function conj(stem, form) {
     var fi = FI[form], irr = null, cut = 0;
     if (/でき$/.test(stem)) { irr = 'できる'; cut = 2; }
-    else if (/(^|[^ぁ-ん]|[はがもにでと、])あり$/.test(stem) || stem === 'あり' || /(では|じゃ|て|で)あり$/.test(stem)) { irr = 'ある'; cut = 2; }
+    else if (/(^|[^ぁ-ん]|[はがもにでと、くて])あり$/.test(stem) || stem === 'あり' || /(では|じゃ|て|で)あり$/.test(stem)) { irr = 'ある'; cut = 2; }
     else if (/行き$/.test(stem)) { irr = '行く'; cut = 2; }
     else if (/[てで]いき$/.test(stem) || stem === 'いき') { irr = 'いく'; cut = 2; }
     else if (stem === 'い' || /[てで]い$/.test(stem) || (/[ぁ-んァ-ヶー、\s]い$/.test(stem) && !/(ととのい|もらい|しまい|かまい|ちがい|あらい|うたい|あい|かい|すい|ぬぐい|はらい|わらい|まよい|ねがい|つかい|おもい|いい)$/.test(stem))) { irr = 'いる'; cut = 1; }
@@ -37,7 +37,7 @@
     else if (/来$/.test(stem)) { irr = '来る'; cut = 1; }
     else if (/し$/.test(stem)) {
       var b1 = stem.slice(-2, -1), b2 = stem.slice(-3, -2);
-      var sahen = stem === 'し' || /(何|とか)し$/.test(stem) || /[ァ-ヶーにとうくでをよいもは]/.test(b1) || (isKanji(b1) && (isKanji(b2) || /[ァ-ヶー]/.test(b2)));
+      var sahen = stem === 'し' || /(何|とか)し$/.test(stem) || (b1 === 'が' && /[ぁ-んァ-ヶー]/.test(b2)) || /[ァ-ヶーにとうくでをよいもは]/.test(b1) || (isKanji(b1) && (isKanji(b2) || /[ァ-ヶー]/.test(b2)));
       if (sahen) { irr = 'する'; cut = 1; }
     }
     if (irr) return stem.slice(0, stem.length - cut) + FORMS[irr][fi];
