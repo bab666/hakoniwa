@@ -7,9 +7,9 @@
 const { openBuild } = require('./lib.js');
 (async () => {
   const dir = process.argv[2], N = +process.argv[3] || 24, only = process.argv[4] && !/^--/.test(process.argv[4]) ? process.argv[4].split(',') : null;
-  const SAMPLES = process.argv.includes('--samples');
+  const SAMPLES = process.argv.includes('--samples'), FF = process.argv.includes('--ff'), HOT = process.argv.includes('--hot');
   const { browser, page, errors } = await openBuild(dir, '');
-  const r = await page.evaluate(({ N, only }) => {
+  const r = await page.evaluate(({ N, only, FF, HOT }) => {
     const P = HK.Pos, MALE = P.MALE_RE;
     const SEX = /抱い|抱かれ|エッチ|繋がっ|イカせ|イかせ|イった|イっ|果て|喘|挿れ|貫|舐め|愛撫|達し|体を重ね|奥まで|突き上げ|腰を(振|沈|打ち|揺)|跨[っが]|中に|犯/;
     const NPC_M = /男|客|触手|ゾンビ|魔物|オーク|ゴブリン|スライム|神|村人|教師|先生|店長|上司|略奪者|おじさん|兵|盗賊|医者|マッサージ師|施術師|整体師|司会|AD|カメラマン|監督|悪魔|インキュバス|獣|狼|蛇|蔦|植物|機械|ロボット|看守|看護|患者|社長|部長|課長|主人|旦那|夫|彼氏|王|騎士|勇者|魔王|山賊|漁師|船長/;
@@ -27,6 +27,15 @@ const { openBuild } = require('./lib.js');
       { g: ['f', 'm', 'f', 'm', 'f', 'm'], p: ['top', 'bottom', 'top', '', 'top', 'bottom'], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'fwb' }] },
       { g: ['m', 'f', 'm', 'f', 'm', 'f'], p: ['bottom', 'top', '', 'top', 'bottom', 'top'], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 4, b: 5, type: 'lover' }] }
     ];
+    /* --ff：女性だけの配役（受け攻めの指定いろいろ・恋人や片想いで結ぶ） */
+    const FFC = [
+      { g: ['f', 'f', 'f', 'f', 'f', 'f'], p: ['', '', '', '', '', ''], l: [], ties: [{ a: 0, b: 1, type: 'lover' }] },
+      { g: ['f', 'f', 'f', 'f', 'f', 'f'], p: ['top', 'bottom', 'top', 'riba', '', 'bottom'], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'fwb' }] },
+      { g: ['f', 'f', 'f', 'f', 'f', 'f'], p: ['riba', 'riba', '', 'top', 'bottom', ''], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 3, b: 4, type: 'lover' }] },
+      { g: ['f', 'f', 'f', 'f', 'f', 'f'], p: ['bottom', '', 'bottom', '', 'top', 'riba'], l: [], ties: [{ a: 1, b: 0, type: 'crush' }, { a: 4, b: 2, type: 'lover' }] },
+      { g: ['f', 'f', 'f', 'f', 'f', 'f'], p: ['', 'top', 'riba', 'bottom', '', ''], l: [], ties: [{ a: 0, b: 2, type: 'enemy' }, { a: 1, b: 3, type: 'lover' }] }
+    ];
+    if (FF) CASTS.splice(0, CASTS.length, ...FFC);
     const ids = (only || Object.keys(HK.SCENARIOS));
     for (const sc of ids) {
       const scen = HK.SCENARIOS[sc]; if (!scen) continue;
@@ -42,6 +51,12 @@ const { openBuild } = require('./lib.js');
         const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
         /* 選択肢のある設定は回ごとにずらして、いろいろな条件を通す */
         (scen.env || []).forEach((e, k) => { if (e.options && e.options.length > 1 && (s + k) % 3 === 0) env[e.id] = e.options[(s + k) % e.options.length].v; });
+        /* --hot：性的な場面が起きやすい設定に */
+        if (HOT) (scen.env || []).forEach(e => {
+          if (e.max != null && /lewd|dose|shady|heat|prey|pleasure|traffic|ev$|aphro|night/.test(e.id)) env[e.id] = e.max;
+          else if (e.options && /lewd/.test(e.id)) { const hi = e.options.filter(o => /high|max|lewd/.test(o.v))[0]; if (hi) env[e.id] = hi.v; }
+          if (e.id === 'mode' && e.options && e.options.some(o => o.v === 'lewd')) env[e.id] = 'lewd';
+        });
         const ties = (cast.ties || []).filter(t => t.a < n && t.b < n);
         let res;
         try { res = HK.simulate({ scenId: sc, seed: 2000 + s, env, chars, perChar, ties }); } catch (e) { out.err.push(sc + ': ' + String(e && e.stack || e).slice(0, 300)); continue; }
@@ -58,7 +73,8 @@ const { openBuild } = require('./lib.js');
           const PEN = /奥まで沈め|深く沈め|腰を沈め|腰を落と|繋がっ|繋がり|貫|突い|突き上げ|突かれ|一突き|中に入っ|中へ入っ|入ってき|熱を吐き出|腰を打ちつけ|中で果て|奥で果て|最奥で|自分の中に導|迎え入れ|受け入れ|挿れ|挿入|抜き差し|根元まで|ピストン|穿/;
           const TOOLW = /指|舌|玩具|張り型|ローター|双頭|ディルド|バイブ|器具|道具|触手/;
           const penFF = t.split(/[。！？]/).some(x => PEN.test(x) && !TOOLW.test(x));
-          if ((MALE.test(t) || penFF) && named.length >= 2 && named.every(c => c.gender === 'f') && !NPC_M.test(t)) {
+          const allF = chars.every(c => c.gender === 'f');
+          if ((MALE.test(t) || penFF) && (named.length >= 2 || (allF && named.length >= 1 && SEX.test(t))) && named.every(c => c.gender === 'f') && !NPC_M.test(t)) {
             out.n.V1++; out.bySc[sc].V1++; if (out.V1.length < 400) out.V1.push(sc + ' | ' + t.slice(0, 400));
           }
           /* V2：攻めが受ける側 */
@@ -82,7 +98,7 @@ const { openBuild } = require('./lib.js');
             }
           }
           /* V4：女性の攻めが、男性の体で描かれた */
-          for (const T of tops.filter(c => c.gender === 'f')) {
+          for (const T of chars.filter(c => c.gender === 'f')) {
             const n0 = T.name;
             const RX4 = [
               new RegExp(n0 + '(?:は|が|も)[^。「」]{0,40}?(?:突き入れ|ねじ込ん|腰を打ちつけ|奥を突|突き上げ|貫い|中に出し|中に吐き出|射精|精を放|種付け|自分のものを|昂りを|熱を押し当て|穿)'),
@@ -105,7 +121,7 @@ const { openBuild } = require('./lib.js');
       }
     }
     return out;
-  }, { N, only });
+  }, { N, only, FF, HOT });
   console.log('runs', r.runs, 'counts', JSON.stringify(r.n));
   console.log('by scenario', JSON.stringify(Object.fromEntries(Object.entries(r.bySc).filter(([k, v]) => v.V1 || v.V2 || v.V3))));
   if (r.err.length) console.log('ERRORS', r.err.slice(0, 8));
