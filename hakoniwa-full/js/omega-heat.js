@@ -73,25 +73,42 @@
   };
   H.LOW = L('――カーテンの隙間から朝日が差すまで、部屋の明かりは消えなかった。|――そのあとのことは、二人だけが知っている。|――三日後、二人はようやく揃って玄関から出てきた。');
 
+  /* 女性どうし（女性のα×女性のΩなど）：この世界観では女性αの体の設定は書かれていないので、いちもつ・ノットの描写は使わず、指・舌・肌・玩具で書く。
+     {a}=動く側（受け攻めの指定に従う） {b}=受ける側 */
+  H.ACT_FF = {
+    mid: L('{a}は{b}の熱い肌に唇を這わせ、{sb}の匂いがいちばん濃いところへ、ゆっくりと指を沈めていった。発情した体は、触れられるだけで震えた。|{a}は{b}と脚を絡め、互いの熱いところを擦り合わせた。{sa}と{sb}の匂いが混ざって、二人とも息が続かなくなった。|{a}は{b}の脚のあいだに顔を埋め、熱を鎮めるように、溶かすように舌を使った。{b}の指が、{a}の髪に絡んだ。|{a}は巣の中で{b}を抱き寄せ、胸の先を唇で含みながら、指先で花芯をそっと転がした。'),
+    high: L('{a}は{b}の脚を大きく開かせ、指を二本、奥まで沈めた。発情期の体は貪るように締めつけ、{b}は何度も続けざまに達した。|{a}は枕元の玩具の電源を入れ、震える先端を{b}の一番敏感なところに押し当てた。{b}が泣いてねだっても、{a}は強さを上げるばかりだった。|{a}は双頭の玩具の片側を自分に、もう片側を{b}にあてがい、発情の熱ごと二人をつないだ。動くたびに、二人分の甘い声が巣の中で重なった。|{a}は{b}の太ももを押さえつけたまま舌で責め立て、熱が引くまで何度でも{b}を追い上げた。')
+  };
+  H.AFTERGLOW_FF = L('熱が少し引くと、二人は汗ばんだ脚を絡めたまま、互いの匂いの中で息を整えた。|{b}は{a}の首筋に鼻を埋めて、「{sa}の匂い……落ち着く」と呟いた。|二人は巣の中で、指を絡めたまま、しばらく何も言わなかった。');
   function top(c) { return HK.voiceTop(c); }
   /* 発情期の場面を組み立てる。opt: { beta, lewd } */
   H.scene = function (ctx, a, b, opt) {
     opt = opt || {};
     var pk = function (arr) { return ctx.pick(arr); }, ta = top(a), tb = top(b), lew = ctx.env.lewd || 'mid';
-    var out = [pk(H.COME[ta]), pk(H.STATE[tb]), pk(H.MOE)];
     /* 受け攻めの指定：発情期のΩ（{b}）の方が攻めなら、抱く側を入れ替える */
-    var rev = HK.Pos && HK.Pos.order(a, b, [a, b])[0] === b;
+    var rev = HK.Pos && HK.Pos.order(a, b, [a, b])[0] === b, ff = HK.Pos && HK.Pos.ff(a, b);
+    /* Ωの側が攻めのときは、Ωが触れられ・満たされる側に回る書き方を除く */
+    var noRecv = function (arr, re) { if (!rev) return arr; var f = arr.filter(function (l) { return !re.test(l); }); return f.length ? f : arr; };
+    var moe = H.MOE.filter(function (l) { return !(ff && /喉仏/.test(l)); });
+    var out = [pk(H.COME[ta]), pk(noRecv(H.STATE[tb], /触れた瞬間|さわって|ほどくと/)), pk(noRecv(moe, /いっぱいにして|噛まない|肩がびくりと/))];
     if (lew === 'low') out.push(pk(H.LOW));
+    else if (ff) {
+      /* 女性どうし：動く側（受け攻めの指定どおり）が、指・舌・玩具で */
+      out.push(rev ? pk(H.ACT_FF[lew === 'high' ? 'high' : 'mid']).replace(/\{a\}/g, '\u0001').replace(/\{b\}/g, '{a}').replace(/\u0001/g, '{b}').replace(/\{sa\}/g, '\u0002').replace(/\{sb\}/g, '{sa}').replace(/\u0002/g, '{sb}') : pk(H.ACT_FF[lew === 'high' ? 'high' : 'mid']));
+      if (ctx.rng() < 0.5) out.push(pk(H.AFTERGLOW_FF));
+    }
     else if (rev) {
       out.push(pk(H.ACT_R[lew === 'high' ? 'high' : 'mid'][tb]));
       if (ctx.rng() < (lew === 'high' ? 0.7 : 0.4)) out.push(pk(H.KNOT_R));
     } else {
-      out.push(H.NORI && HK.Pos && HK.Pos.nori(b) && ctx.rng() < 0.45 ? pk(H.NORI) : pk(H.ACT[lew === 'high' ? 'high' : 'mid'][ta]));
+      /* 受けが自分から跨る（NORI）：自分で攻めを選んだ相手を押し倒す書き方は除く */
+      var nori = H.NORI ? H.NORI.filter(function (l) { return !(HK.Pos && HK.Pos.hardTop(a) && /押し倒/.test(l)); }) : [];
+      out.push(nori.length && HK.Pos && HK.Pos.nori(b) && ctx.rng() < 0.45 ? pk(nori) : pk(H.ACT[lew === 'high' ? 'high' : 'mid'][ta]));
       if (opt.beta) out.push(pk(H.BETA));
       else if (ctx.rng() < (lew === 'high' ? 0.8 : 0.5)) out.push(pk(H.KNOT));
     }
     /* 二人の第二性の組み合わせごとのプレイを足す（omega-love.js）。テンプレートは{a}=攻め{b}=受けなので、Ω攻めのときは入れ替えて埋める */
-    var extraPlay = lew !== 'low' && OM.lovePlay && ctx.rng() < 0.55 ? (rev ? OM.lovePlay(ctx, b, a).replace(/\{a\}/g, '\u0001').replace(/\{b\}/g, '{a}').replace(/\u0001/g, '{b}') : OM.lovePlay(ctx, a, b)) : null;
+    var extraPlay = lew !== 'low' && !ff && OM.lovePlay && ctx.rng() < 0.55 ? (rev ? OM.lovePlay(ctx, b, a).replace(/\{a\}/g, '\u0001').replace(/\{b\}/g, '{a}').replace(/\u0001/g, '{b}') : OM.lovePlay(ctx, a, b)) : null;
     if (extraPlay) out.splice(out.length - (rev || !opt.beta ? 1 : 1), 0, extraPlay);
     var V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
     if (V && lew !== 'low') {
@@ -101,7 +118,10 @@
     }
     var sc = OM.sc || function (t) { return t; };
     var txt = out.map(function (s) { return sc(ctx.t(s, a, b), a, b); }).join('');
-    return txt + (opt.insert || '') + sc(ctx.t(pk(H.AFTER[tb]), a, b), a, b) + (V && ctx.rng() < 0.35 ? ctx.t(V.line(pf, b.persona, 'after', 'b'), a, b) : '');
+    var res = txt + (opt.insert || '') + sc(ctx.t(pk(noRecv(H.AFTER[tb], /腰が抜け/)), a, b), a, b) + (V && ctx.rng() < 0.35 ? ctx.t(V.line(pf, b.persona, 'after', 'b'), a, b) : '');
+    /* 取りこぼし対策：女性どうしで男性の体を前提にした文が混じったら差し替える（オメガバースは玩具を使ってよい） */
+    if (ff && HK.FF) { var o2 = HK.Pos.order(a, b, [a, b]); res = HK.FF.fix(ctx, res, o2[0], o2[1], { tools: true }); }
+    return res;
   };
   H.count = function () {
     var n = H.MOE.length + H.KNOT.length + H.BETA.length + H.LOW.length;

@@ -48,6 +48,12 @@
         mid: L('潮騒に合わせるように、{x}は{y}を深く揺さぶった。|{y}は{x}の背中に爪を立て、何度も「もっと」とねだった。|洞窟の壁に、二人の荒い息だけが反響していた。'),
         end: L('{x}は{y}の奥で果て、そのまま砂の上で{y}を抱きしめた。|{y}が先に達し、{x}もすぐにその後を追った。夜明けまで、二人は離れなかった。|果てたあとも、二人は波の音を聞きながら、互いの鼓動を数えていた。')
       },
+      /* 女性どうし：挿入の描写を使わず、指・舌・脚を絡めて（島の夜らしく、砂・潮・焚き火の中で） */
+      ffHigh: {
+        insert: L('{x}は{y}の脚のあいだに指を滑り込ませ、潮で濡れたのとは違う熱を確かめた。{y}は砂を掴み、声を殺しきれずに{x}の名前を呼んだ。|{x}は焚き火の明かりの中で{y}の膝を割り、そこへ顔を埋めた。舌が這うたびに、{y}の踵が砂を掻いた。|{x}と{y}は椰子の葉の寝床で脚を交差させ、互いの一番熱いところを重ね合わせた。焚き火の熱より、ずっと熱かった。'),
+        mid: L('潮騒に合わせるように、{x}は{y}の中で指をゆっくりと動かした。|{y}は{x}の背中に爪を立て、何度も「もっと」とねだった。|洞窟の壁に、二人の荒い息だけが反響していた。'),
+        end: L('{x}の指が弱いところを押し上げた瞬間、{y}は背中を反らせて達した。{x}はそのまま砂の上で{y}を抱きしめた。|{y}が先に達し、脚を絡めたままの{x}も、すぐにその後を追った。夜明けまで、二人は離れなかった。|達したあとも、二人は波の音を聞きながら、互いの鼓動を数えていた。')
+      },
       after: {
         lover: L('朝、{a}と{b}は同じ毛布の中で目を覚ました。救助なんて、来なくてもいい気がした。|{a}は{b}の髪についた砂を払った。「……誰にも言うなよ」「言わないよ」'),
         fwb: L('朝になると、{a}は何事もなかったように漁に出た。{b}も、何も言わなかった。|{a}と{b}は、昨夜のことには触れずに朝食をとった。目だけが、何度も合った。'),
@@ -74,7 +80,7 @@
         ctx.stress(a, -10); ctx.stress(b, -10);
         var v = { a: a.name, b: b.name, x: o[0].name, y: o[1].name };
         var t = fill(ctx.pick(I.ask[k]), v);
-        if (lv === 'high') t += ['fore', 'insert', 'mid', 'end'].map(function (s) { return fill(ctx.pick(I.high[s]), v); }).join('');
+        if (lv === 'high') t += ['fore', 'insert', 'mid', 'end'].map(function (s) { var H = HK.Pos && HK.Pos.ff(o[0], o[1]) && I.ffHigh[s] ? I.ffHigh : I.high; return fill(ctx.pick(H[s]), v); }).join('');
         else t += ctx.pick(I.fade);
         if (RK.tone(o[0]) === 'aniki' && ctx.rng() < 0.6) t += o[0].name + fill(ctx.pick(ANIKI), v);
         t += fill(ctx.pick(I.after[k]), v);
@@ -96,6 +102,10 @@
         fore: L('{x}は{y}の服を、一枚ずつ確かめるように脱がせた。咬み跡がないか確かめるたびに、唇を落とした。|{x}は{y}を毛布の上に押し倒し、首筋に何度も口づけた。'),
         insert: L('{x}はゆっくりと{y}の中に入った。{y}は声を殺そうとして、殺しきれずに{x}の肩に噛みついた。|{y}は自分から{x}を迎え入れた。「……生きてる。ちゃんと、生きてる」'),
         end: L('{x}は{y}の奥で果てた。外の呻き声は、いつの間にか遠ざかっていた。|二人は果てたあとも、夜明けまで抱き合っていた。')
+      },
+      ffHigh: {
+        insert: L('{x}は{y}の脚のあいだに指を沈め、ゆっくりと動かした。{y}は声を殺そうとして、殺しきれずに{x}の肩に噛みついた。|{y}は自分から{x}の手を取り、熱いところへ導いた。「……生きてる。ちゃんと、生きてる」'),
+        end: L('{y}は{x}の指をきつく締めつけて達した。外の呻き声は、いつの間にか遠ざかっていた。|二人は達したあとも、脚を絡めたまま夜明けまで抱き合っていた。')
       },
       after: {
         lock: L('朝、{a}は{b}の寝顔を見つめた。この人だけを想って、ここまで生き延びてきた。'),
@@ -121,7 +131,7 @@
         ctx.mod2(a, b, { att: 8, aff: 8, trust: 6 }, { att: 8, aff: 8, trust: 6 });
         a.stress = Math.max(0, a.stress - 12); b.stress = Math.max(0, b.stress - 12);
         var v = { a: a.name, b: b.name, x: o[0].name, y: o[1].name };
-        var t = fill(ctx.pick(ZT.ask[k]), v) + (lv === 'high' ? ['fore', 'insert', 'end'].map(function (s) { return fill(ctx.pick(ZT.high[s]), v); }).join('') : ctx.pick(ZT.fade));
+        var t = fill(ctx.pick(ZT.ask[k]), v) + (lv === 'high' ? ['fore', 'insert', 'end'].map(function (s) { var H = HK.Pos && HK.Pos.ff(o[0], o[1]) && ZT.ffHigh[s] ? ZT.ffHigh : ZT.high; return fill(ctx.pick(H[s]), v); }).join('') : ctx.pick(ZT.fade));
         if (RK.tone(o[0]) === 'aniki' && ctx.rng() < 0.6) t += o[0].name + fill(ctx.pick(ANIKI), v);
         return { text: t + fill(ctx.pick(ZT.after[k]), v), why: (k === 'lock' ? a.name + 'が想い続けた相手' : '師弟の一線') + '（' + Z.day(ctx) + '日目の夜）', mag: 26 };
       }

@@ -1,7 +1,7 @@
 /* 箱庭シミュレーター: 女性どうしの体の関係の描写（R18版）
    いちもつを前提にした描写（挿入・射精など）を使わず、指・舌・肌の重ね方で書く。
    {a}=動く側（受け攻めの指定があれば攻め）、{b}=受ける側。
-   道具（玩具）は、その箱庭が許すとき（opt.tools）だけ使う：オメガバース・出られない部屋の木箱・媚薬ロッカーの備品など。
+   道具（玩具）は、その箱庭が許すとき（opt.tools）だけ使う：オメガバース・出られない部屋の木箱など。
    使い方：HK.FF.scene(ctx, a, b, mode, opt) … mode は 'will'（望んで）/'des'（仕方なく）/'aphro'（媚薬）/'repeat'（二度目以降）/'speed'（拘束して）
            HK.FF.pick(ctx, kind, st, opt) … kind は 'open'/'body'/'climax'/'after'/'toy'/'repeat'。st は room-lewd.js と同じ型（rough/gentle/tease/playful/clinical/clumsy）
            HK.FF.fix(ctx, text, a, b, opt) … 男性の体を前提にした文が混じっていたら、女性どうしの文に差し替える（取りこぼし対策） */

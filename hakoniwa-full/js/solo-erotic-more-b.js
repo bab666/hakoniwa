@@ -47,8 +47,8 @@
       };
       Object.keys(S2).forEach(function (k) {
         var g = SM.SUG[k]; if (!g) return;
+        /* かけられた側が攻めのときの文（fullTop）には足さない（どれも{a}が受ける側の文なので） */
         add(g.full, S2[k]);
-        if (g.fullTop) add(g.fullTop, S2[k]);
       });
       var P2 = {
         sens: '{a}は「……なんか、変」と呟いて、自分の腕を抱いた。肌が、少しだけ敏感になっていた。',
@@ -59,6 +59,9 @@
         free: '{a}のまぶたが震えた。{h}の手が止まると、{a}の呼吸も少しだけ落ち着いた。'
       };
       Object.keys(P2).forEach(function (k) { var g = SM.SUG[k]; if (g) add(g.part, P2[k]); });
+      /* 攻めのときの「半分だけ効いた」文（{h}が{a}に触れる文は入れない） */
+      var P2T = { sens: '{a}は「……なんか、変」と呟いて、自分の腕を抱いた。指先が、少しだけ敏感になっていた。', free: '{a}は{h}の肩に手を伸ばしかけて、まぶたを震わせた。その手は、宙で止まったままだった。' };
+      Object.keys(P2T).forEach(function (k) { var g = SM.SUG[k]; if (g && g.partTop) add(g.partTop, P2T[k]); });
     }
     addP(SM.AFTER, {
       peace: '{a}はその週、仕事のミスが一度もなかった。「何かコツでもあるの？」と訊かれて、{a}は{h}の顔を思い浮かべた。|{a}は「また頭すっきりするやつ、お願い」とメッセージを送ってきた。',

@@ -146,7 +146,7 @@
             text: ctx.t('牙が{b}に向かった瞬間、{a}が流木で猪を殴りつけた。猪は逃げ、{a}の腕には深い傷が残った。', rescuer, victim), why: rescuer.name + 'の' + (rescuer.tr.np > rescuer.tr.aggr ? 'NP（守りたい）' : '攻撃性（迷わず殴る）') });
         } else {
           ctx.act2({ actors: [victim], cat: 'solo', fx: function () { hurt(ctx, victim, 18, '猪に襲われた傷がもとで'); },
-            text: ctx.t('{a}は猪に脚を突かれた。誰も間に合わなかった。', victim), why: '偶然' });
+            text: ctx.t('{a}は猪の牙に脚をやられた。誰も間に合わなかった。', victim), why: '偶然' });
         }
         if (runner && runner !== rescuer && runner.tr.caution > 0.6) {
           ctx.act2({ actors: [runner, victim], cat: 'solo', fx: function () { ctx.mod(victim, runner, { aff: -8, ten: 8 }); },
@@ -181,7 +181,7 @@
         P.forEach(function (c) { c.stress = HK.clamp(c.stress + 16, 0, 100); });
         var blamer = ctx.most(ctx.others(sig), function (o) { return o.tr.aggr + o.stress / 100; });
         if (blamer && blamer.tr.aggr > 0.55) ctx.act2({ actors: [blamer, sig], cat: 'conflict', fx: function () { ctx.mod2(blamer, sig, { ten: 14, aff: -6 }, { ten: 10 }); },
-          text: ctx.t('「火を焚くのが遅かったんだ」{a}が{b}を責めた。', blamer, sig), why: blamer.name + 'の攻撃性と失望' });
+          text: ctx.t('「火を焚くのが遅かったんだ」{a}は{b}のせいにした。', blamer, sig), why: blamer.name + 'の攻撃性と失望' });
         var comf = ctx.most(P, function (c) { return c.tr.np + c.tr.fc * 0.3; });
         var low = ctx.most(ctx.others(comf), function (o) { return o.stress; });
         if (comf && low && comf.tr.np > 0.5) ctx.act2({ actors: [comf, low], cat: 'help', fx: function () { ctx.stress(low, -15); ctx.mod(low, comf, { aff: 8, trust: 8 }); },

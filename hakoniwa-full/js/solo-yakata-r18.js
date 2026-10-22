@@ -13,9 +13,26 @@
   function F(t, m) { return ST.fmt(t, m); }
   /* 描写はシチュエーションごとに約10通り（solo-yakata-r18-text.js の文を足す） */
   /* 交わりの描写（体位・口調ごとの喘ぎ）：solo-r18-moan.js */
-  function SX(S, x, y, mood, short, allow) { return HK.R18M ? HK.R18M.sex(S, x, y, { mood: mood, fore: false, short: short, allow: allow }) : ''; }
+  /* 受け攻めの決まり（pos.js）：住人どうしは向きの決まる組（HK.Pos.okSex）だけ、{x}=HK.Pos.order の先頭。
+     自分で攻めを選んだ人は、使用人・犯人の凌辱などで「される」側にしない。女性どうしは Y.R18T.ff の文と HK.FF で */
+  function okP(a, b) { return !HK.Pos || HK.Pos.okSex(a, b); }
+  function hardTop(p) { return !!(HK.Pos && HK.Pos.hardTop(p)); }
+  function isFF(a, b) { return !!(HK.Pos && HK.Pos.ff(a, b)); }
+  function od2(a, b) { return HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b]; }
+  function SX(S, x, y, mood, short, allow) {
+    var R = HK.R18M;
+    if (isFF(x, y) && HK.FF) {
+      var ctx = { pick: function (a) { return ST.pick(S, a); } }, st = mood === 'rough' ? 'rough' : mood === 'love' ? 'gentle' : HK.FF.styleOf(x);
+      var f = function (t) { return t.replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name); };
+      S.r18Last = '';
+      return f(HK.FF.pick(ctx, 'body', st, { tools: S.drugTools })) + (R ? R.say(S, y, 'start') + (short ? '' : R.say(S, x, 'top') + R.say(S, y, 'mid')) + R.say(S, y, 'climax') : '') + f(HK.FF.pick(ctx, 'climax', st));
+    }
+    return R ? R.sex(S, x, y, { mood: mood, fore: false, short: short, allow: allow }) : '';
+  }
   function PW(S) { return HK.R18M && HK.R18M.lastPos(S) ? '（' + HK.R18M.lastPos(S) + '）' : ''; }
   function PL(k, base) { var T = Y.R18T || {}; return base.concat(T[k] || []); }
+  /* 女性どうしなら女性どうしの文（Y.R18T.ff）、そうでなければ PL */
+  function PLF(k, base, x, y) { var T = Y.R18T || {}; return isFF(x, y) && T.ff && T.ff[k] ? T.ff[k] : PL(k, base); }
   scen.env.push({ id: 'ylewd', label: '夜の出来事（R18）', min: 0, max: 100, def: 40, lo: '起きない', hi: 'たびたび', desc: '犯人が媚薬を盛って事件をうやむやにしたり、探偵を誘惑したりする頻度' });
 
   scen.env.push({ id: 'ypleasure', label: '快楽殺人の起きやすさ（R18）', min: 0, max: 100, def: 15, lo: '起きない', hi: 'いつも', desc: '犯人の動機が「快楽殺人（楽しかったから）」になる確率。快楽殺人の犯人は、夜に誰かを無理やり犯し、そのまま殺すことがある。動機を指定したときはそちらが優先' });
@@ -57,9 +74,11 @@
     silence: L('{c}は、手がかりを掴みかけていた{a}の部屋を訪ねた。「ねえ……今夜は、私のことだけ考えて」――{a}が目を覚ましたとき、手帳のページが一枚、破り取られていた。|{c}は熱に浮かされた{a}を抱きながら、耳元で囁き続けた。「全部、忘れて」――翌朝、{a}は自分が何を調べていたのか、うまく思い出せなかった。'),
     guard: L('{a}は、一人だけ酒を飲んでいなかった。乱れた館の中、{a}は現場の扉の前に座り込み、朝まで誰も近づけなかった。|{a}は異変に気づいて、現場の部屋に鍵をかけた。鍵は、自分のポケットにしまった。')
   };
-  var SEDUCE = L('{c}は、熱に浮かされた{d}の部屋を訪ねた。「探偵さん……ずっと、気になってたんです」――{c}は{d}の膝に跨り、ゆっくりと腰を沈めた。|{c}は{d}をベッドに押し倒し、耳元で囁いた。「事件のことなんて、今夜は忘れて」――{d}は抗えなかった。{c}の中で果てるたびに、推理の糸が一本ずつほどけていった。|{c}は{d}の手帳をそっと閉じ、その手を自分の胸に導いた。「謎解きより、楽しいことしませんか」');
+  var SEDUCE = L('{c}は、熱に浮かされた{d}の部屋を訪ねた。「探偵さん……ずっと、気になってたんです」――{c}は{d}の膝に跨り、ゆっくりと腰を沈めた。|{c}は{d}の首に腕を回してベッドへ誘い込み、耳元で囁いた。「事件のことなんて、今夜は忘れて」――{d}は{c}を組み敷いた。{c}の中で果てるたびに、推理の糸が一本ずつほどけていった。|{c}は{d}の手帳をそっと閉じ、その手を自分の胸に導いた。「謎解きより、楽しいことしませんか」');
   var SEDUCE_TOP = L('{c}は、熱に浮かされた{d}の部屋に忍び込み、そのまま{d}を組み敷いた。「探偵さん、今夜は何も考えなくていい」――{c}に奥まで貫かれるたびに、{d}の頭から推理が抜け落ちていった。|{c}は{d}の手首を押さえつけ、ゆっくりと腰を進めた。{d}は抗おうとしたが、媚薬に浮かされた体は、{c}を受け入れることしか知らなかった。|{c}は{d}の眼鏡を外し、机の上に置いた。「推理は、もうおしまい」――そのまま{d}を机に押し伏せた。');
   /* 翌朝（10通り） */
+  /* 自分で攻めを選んだ人のところへ来た使用人：{a}のほうが組み伏せる */
+  var SERVANT_TOP = L('館の古い使用人が、{a}の部屋の扉を叩いた。「お休みになれないご様子でしたので」――{a}はその手首を掴んで部屋に引き入れ、寝台に押し倒した。夜明けまで、使用人は{a}の下で声を殺し続けた。|{a}が廊下でうずくまっていると、館の使用人が黙って肩を貸してくれた。運ばれた使用人部屋のベッドで、{a}は使用人の燕尾服の襟を掴み、自分の下に組み敷いた。');
   var MORNING = L('翌朝、館の誰もが、昨夜のことを口にしようとしなかった。乱れた広間は、いつの間にか片づけられていた――事件の現場ごと。|翌朝、皆はぼんやりとした頭で目を覚ました。昨夜の記憶は、甘い靄に包まれていた。現場に残っていたはずの痕跡も、誰かが踏み荒らしていた。|朝食の席で、誰も目を合わせようとしなかった。それどころではない事件が起きているはずなのに。|翌朝、何人かは見知らぬベッドで目を覚ました。慌てて服を探しているうちに、現場の証拠のことなど、誰も覚えていなかった。|翌朝、館じゅうに甘い香りが残っていた。窓を開けても、その匂いはなかなか消えなかった。|「昨夜は……飲みすぎましたね」誰かがそう言い、皆が気まずく笑った。笑いの中に、犯人の安堵が混じっていた。|翌朝、現場の扉は開け放たれ、床には誰かの浴衣の帯が落ちていた。何が証拠で、何がそうでないのか、もう分からなかった。|翌朝の館は、嘘のように静かだった。昨夜のことを思い出すたびに、誰もが顔を赤らめた。|翌朝、探偵の手帳は、昨夜のページだけが白紙だった。|翌朝、何人かの首筋には、隠しきれない痕が残っていた。互いの顔を見るたびに、昨夜の熱がぶり返した。');
   var MORNING_SAFE = L('翌朝、館は乱れきっていた。ただ一つ、{a}が守った現場だけは、昨夜のままだった。');
 
@@ -80,6 +99,7 @@
       var drunk = [], sober = [];
       live.forEach(function (q) { if (q === c) return; var ok = rng() < 0.85 - q.tr.caution * 0.5 - (q.role === 'doctor' || q.role === 'detective' ? 0.15 : 0); (ok ? drunk : sober).push(q); q.drugged = ok; });
       var t = F(ST.pick(S, D.t), { c: c.name }) + ST.pick(S, D.e);
+      S.drugTools = D.id === 'oil';
       sober.slice(0, 2).forEach(function (q) { t += F(ST.pick(S, SKIP), { a: q.name }); });
       var o = ST.say(S, { actors: [c].concat(drunk), tag: '媚薬', kind: 'climax', text: t, why: '犯人の' + c.name + 'が媚薬を盛った（' + { wine: 'ワイン', hotwine: 'ホットワイン', spirits: '強い酒', incense: 'お香', bath: '大浴場の湯', sweets: '菓子', heater: '暖房', tea: '紅茶', oil: 'マッサージオイル', dark: '停電と香水' }[D.id] + '）。追い詰められるほど盛りやすい（夜の出来事 ' + S.env.ylewd + '）。その夜、事件はうやむやになる', mag: 40 });
       ST.key(S, o, c.name + 'が媚薬を盛った');
@@ -87,25 +107,30 @@
       function pairScene(kind, x, y, extra, why) {
         var od = HK.Pos ? HK.Pos.order(x, y, [x, y]) : [x, y];
         var m = { x: od[0].name, y: od[1].name, p: P, d: (extra && extra.d) || '', b: (extra && extra.b) || '' };
-        ST.say(S, { actors: [od[0], od[1]], tag: '媚薬の夜', kind: 'climax', text: F(ST.pick(S, PL(kind, SC[kind])), m) + SX(S, od[0], od[1], kind === 'enemies' ? 'rough' : kind === 'lovers' || kind === 'crush' || kind === 'buddy' ? 'love' : 'drug'), why: why + PW(S), mag: 32 });
+        var pool = PLF(kind, SC[kind], od[0], od[1]);
+        /* 探偵と助手：向きの決まった文は、探偵が攻めか受けかで選ぶ */
+        if (kind === 'buddy' && !isFF(od[0], od[1]) && Y.R18T) pool = pool.concat(Y.R18T[od[0] === x ? 'buddyDT' : 'buddyDB'] || []);
+        ST.say(S, { actors: [od[0], od[1]], tag: '媚薬の夜', kind: 'climax', text: F(ST.pick(S, pool), m) + SX(S, od[0], od[1], kind === 'enemies' ? 'rough' : kind === 'lovers' || kind === 'crush' || kind === 'buddy' ? 'love' : 'drug'), why: why + PW(S), mag: 32 });
         Y.setRel(S, x, y, kind === 'enemies' ? 0.35 : 0.2, kind === 'enemies' ? '憎しみの一夜' : kind === 'buddy' ? '一線を越えた' : kind === 'crush' ? '想いが溢れた' : '一夜', kind === 'crush' ? x : null);
         drunk.splice(drunk.indexOf(x), 1); if (drunk.indexOf(y) >= 0) drunk.splice(drunk.indexOf(y), 1);
         scenes++;
       }
-      function can(a, b) { return !HK.canLove || HK.canLove(a, b); }
+      function can(a, b) { return (!HK.canLove || HK.canLove(a, b)) && okP(a, b); }
       function tie(a, b, list) { return (S.ties || []).some(function (t) { return ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)) && list.split(',').indexOf(t.type) >= 0; }); }
       /* 探偵への誘惑 */
       var det = drunk.filter(function (q) { return q.isDet; })[0];
       if (det && rng() < 0.35 + lv * 0.3 && can(c, det)) {
         var o2 = HK.Pos ? HK.Pos.order(c, det, [c, det]) : [c, det];
-        ST.say(S, { actors: [c, det], tag: '誘惑', kind: 'climax', text: F(ST.pick(S, o2[0] === c ? PL('seduceTop', SEDUCE_TOP) : PL('seduce', SEDUCE)), { c: c.name, d: det.name }) + SX(S, o2[0], o2[1], 'drug'), why: c.name + 'は探偵の' + det.name + 'を誘惑した。' + det.name + 'は' + c.name + 'を疑いにくくなり、推理が狂いやすくなる', mag: 44 });
+        ST.say(S, { actors: [c, det], tag: '誘惑', kind: 'climax', text: F(ST.pick(S, o2[0] === c ? PLF('seduceTop', SEDUCE_TOP, c, det) : PLF('seduce', SEDUCE, c, det)), { c: c.name, d: det.name }) + SX(S, o2[0], o2[1], 'drug'), why: c.name + 'は探偵の' + det.name + 'を誘惑した。' + det.name + 'は' + c.name + 'を疑いにくくなり、推理が狂いやすくなる', mag: 44 });
         c.m.sus = Math.max(0, c.m.sus - 25); det.seduced = true; S.fake++;
         Y.setRel(S, c, det, 0.25, '誘惑', c); drunk.splice(drunk.indexOf(det), 1);
       }
       /* 手がかりを持つ人の口封じ（体で） */
       var holder = drunk.filter(function (q) { return q.cnt.clue > 0 || q.approached; }).sort(function (a, b) { return b.cnt.clue - a.cnt.clue; })[0];
       if (holder && rng() < 0.4 && can(c, holder)) {
-        ST.say(S, { actors: [c, holder], tag: '媚薬の夜', kind: 'climax', text: F(ST.pick(S, PL('silence', SC.silence)), { c: c.name, a: holder.name }) + (function () { var o3 = HK.Pos ? HK.Pos.order(c, holder, [c, holder]) : [c, holder]; return SX(S, o3[0], o3[1], 'drug', true); })(), why: c.name + 'は、手がかりを掴みかけていた' + holder.name + 'を抱いて、記憶を曖昧にさせた（' + holder.name + 'の手がかり探しが鈍る）', mag: 36 });
+        /* 犯人が受けの組は、犯人が自分から跨って聞き出す（silenceB） */
+        var o3 = od2(c, holder), sl = o3[0] === c ? PLF('silence', SC.silence, c, holder) : PLF('silenceB', [], c, holder);
+        ST.say(S, { actors: [c, holder], tag: '媚薬の夜', kind: 'climax', text: F(ST.pick(S, sl), { c: c.name, a: holder.name }) + SX(S, o3[0], o3[1], 'drug', true), why: c.name + 'は、手がかりを掴みかけていた' + holder.name + 'を抱いて、記憶を曖昧にさせた（' + holder.name + 'の手がかり探しが鈍る）', mag: 36 });
         holder.approached = false; holder.cnt.clue = Math.max(0, holder.cnt.clue - 1); Y.setRel(S, c, holder, 0.2, '口封じの一夜', c);
         drunk.splice(drunk.indexOf(holder), 1);
       }
@@ -129,12 +154,15 @@
       while (drunk.length >= 2 && scenes < 4) {
         var x = drunk[0], y = drunk.slice(1).filter(function (q) { return can(x, q); }).sort(function (a, b) { return Y.bond(S, x, b) - Y.bond(S, x, a); })[0];
         if (!y) { drunk.shift(); continue; }
-        if (drunk.length >= 3 && rng() < lv * 0.5) { var g = drunk.slice(0, Math.min(drunk.length, 3 + Math.floor(rng() * 2))); ST.say(S, { actors: g, tag: '媚薬の夜', kind: 'climax', text: F(ST.pick(S, PL('group', SC.group)), { p: P }) + (HK.R18M ? HK.R18M.group(S, g) : ''), why: '媚薬の熱で、' + g.map(function (q) { return q.name; }).join('・') + 'が絡み合った', mag: 34 }); g.forEach(function (q) { drunk.splice(drunk.indexOf(q), 1); }); scenes++; continue; }
+        /* 乱交には、自分で攻めを選んだ人を入れない（誰に何をされるか分からない場面のため） */
+        var gp = drunk.filter(function (q) { return !hardTop(q); });
+        if (gp.length >= 3 && rng() < lv * 0.5) { var g = gp.slice(0, Math.min(gp.length, 3 + Math.floor(rng() * 2))); ST.say(S, { actors: g, tag: '媚薬の夜', kind: 'climax', text: F(ST.pick(S, g.every(function (q) { return HK.Pos && HK.Pos.isF(q); }) && Y.R18T && Y.R18T.ff ? Y.R18T.ff.group : PL('group', SC.group)), { p: P }) + (HK.R18M ? HK.R18M.group(S, g) : ''), why: '媚薬の熱で、' + g.map(function (q) { return q.name; }).join('・') + 'が絡み合った', mag: 34 }); g.forEach(function (q) { drunk.splice(drunk.indexOf(q), 1); }); scenes++; continue; }
         pairScene('casual', x, y, null, '媚薬の熱（' + (Y.relLabel(S, x, y) || '関係なし') + '）');
       }
       /* 一人あぶれた人 */
       drunk.forEach(function (q) {
         if (rng() < 0.5) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, PL('solo', SC.solo)), { a: q.name }) + (HK.R18M ? HK.R18M.solo(S, q) : ''), why: '相手がいなかった' }, q.name + 'は一人で悶えた');
+        else if (hardTop(q)) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, SERVANT_TOP), { a: q.name }) + (HK.R18M ? HK.R18M.say(S, q, 'top') : ''), why: '館の使用人が慰めに来たが、' + q.name + 'のほうが組み伏せた（受け攻めの指定：攻め）' }, q.name + 'は使用人と');
         else ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, PL('servant', SC.servant)), { a: q.name }) + (HK.R18M ? HK.R18M.npc(S, 'servant') + HK.R18M.moans(S, q, ['start', 'mid', 'climax']) : ''), why: '館の使用人に慰められた' }, q.name + 'は使用人と');
       });
       /* 正気の人が現場を守ると、手がかりは失われない */
@@ -159,7 +187,9 @@
     if (!T || rng() > lv * 0.7) return false;
     var live = S.P.filter(function (q) { return Y.alive(q) && !q.bound; });
     if (live.length < 2) return false;
-    function can(a, b) { return !HK.canLove || HK.canLove(a, b); }
+    function can(a, b) { return (!HK.canLove || HK.canLove(a, b)) && okP(a, b); }
+    /* 犯人 c が攻めに回る組（凌辱・脅しは、犯人が攻めのときだけ） */
+    function cTop(q) { return can(c, q) && od2(c, q)[0] === c; }
     function od(a, b) { return HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b]; }
     function pairs(f) { var r = []; live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i && can(a, b) && f(a, b)) r.push([a, b]); }); }); return r; }
     var cOk = c && Y.alive(c) && !c.bound && !S.mot.nobody;
@@ -167,12 +197,12 @@
     var EV = [];
     /* 凌辱：快楽殺人の犯人だけ */
     if (cOk && S.mot.id === 'pleasure' && !c.lock) {
-      var vs = others.filter(function (q) { return can(c, q); });
+      var vs = others.filter(function (q) { return cTop(q); });
       if (vs.length) EV.push({ w: 3 + c.tr.cold * 2, f: function () {
         var v = HK.weighted ? HK.weighted(rng, vs, function (q) { return 1 + q.m.fear / 50 + (q.tr.caution < 0.4 ? 1 : 0); }) : rng.pick(vs);
         var kill = S.kills.length < 5 && day <= S.env.days && rng() < 0.4 + c.tr.cold * 0.2;
         var mv = { c: c.name, v: v.name }, M = HK.R18M;
-        var t = (T.assault_in ? F(ST.pick(S, T.assault_in), mv) : '') + (M ? M.resist(S, c, v, { endure: false }) : '') + F(ST.pick(S, T.assault), mv) + (M ? M.say(S, v, 'endure') : '') + F(ST.pick(S, kill ? T.assault_kill : T.assault_live), { c: c.name, v: v.name });
+        var t = (T.assault_in ? F(ST.pick(S, T.assault_in), mv) : '') + (M ? M.resist(S, c, v, { endure: false }) : '') + F(ST.pick(S, isFF(c, v) && T.ff ? T.ff.assault : T.assault), mv) + (M ? M.say(S, v, 'endure') : '') + F(ST.pick(S, kill ? T.assault_kill : T.assault_live), { c: c.name, v: v.name });
         ST.say(S, { actors: [c, v], tag: '凌辱', kind: 'climax', text: t, why: '快楽殺人の犯人' + c.name + 'が、' + v.name + 'を無理やり犯した（冷酷さ・衝動）。' + (kill ? 'そのまま殺した' : v.name + 'は恐怖で口をつぐんだ'), mag: 46 });
         Y.setRel(S, c, v, -0.8, '凌辱', c);
         if (kill) { S.forceTgt = v; S.forceWhy = '快楽殺人：' + v.name + 'を犯したあと、殺した'; }
@@ -181,7 +211,7 @@
     }
     /* 犯人の脅し：手がかりを掴んだ人を体で黙らせる */
     if (cOk) {
-      var hs = others.filter(function (q) { return (q.cnt.clue > 0 || q.approached) && !q.isDet && can(c, q); });
+      var hs = others.filter(function (q) { return (q.cnt.clue > 0 || q.approached) && !q.isDet && cTop(q); });
       if (hs.length) EV.push({ w: 1 + c.tr.cold + (S.mot.id === 'pleasure' ? 1 : 0), f: function () {
         var v = hs.sort(function (a, b) { return b.cnt.clue - a.cnt.clue; })[0];
         ST.say(S, { actors: [c, v], tag: '脅迫', kind: 'climax', text: (HK.R18M && HK.R18M.isStrong(v) ? HK.R18M.resist(S, c, v) : F(ST.pick(S, T.blackmail), { c: c.name, v: v.name })), why: c.name + 'は、秘密に近づいた' + v.name + 'を脅し、体で黙らせた（' + v.name + 'は手がかりを口にできなくなる）', mag: 38 });
@@ -192,23 +222,25 @@
     /* 吊り橋効果：怖がっている二人 */
     var br = pairs(function (a, b) { return a.m.fear + b.m.fear > 80 && Y.bond(S, a, b) > -0.2; });
     if (br.length) EV.push({ w: 2, f: function () { var pr = rng.pick(br), o = od(pr[0], pr[1]);
-      ST.say(S, { actors: o, tag: '吊り橋', kind: 'climax', text: F(ST.pick(S, T.bridge), { x: o[0].name, y: o[1].name }) + SX(S, o[0], o[1], 'love'), why: PW(S) + '恐怖の夜に、' + o[0].name + 'と' + o[1].name + 'が求め合った（恐怖 ' + Math.round(o[0].m.fear) + '・' + Math.round(o[1].m.fear) + '）', mag: 32 });
+      ST.say(S, { actors: o, tag: '吊り橋', kind: 'climax', text: F(ST.pick(S, PLF('bridge', T.bridge, o[0], o[1])), { x: o[0].name, y: o[1].name }) + SX(S, o[0], o[1], 'love'), why: PW(S) + '恐怖の夜に、' + o[0].name + 'と' + o[1].name + 'が求め合った（恐怖 ' + Math.round(o[0].m.fear) + '・' + Math.round(o[1].m.fear) + '）', mag: 32 });
       o.forEach(function (q) { q.m.fear = Math.max(0, q.m.fear - 20); }); Y.setRel(S, o[0], o[1], 0.35, '吊り橋の一夜'); } });
     /* 大浴場で鉢合わせ */
     var bp = pairs(function (a, b) { return Y.bond(S, a, b) > -0.4; });
     if (bp.length) EV.push({ w: 1.2, f: function () { var pr = rng.pick(bp), o = od(pr[0], pr[1]);
-      ST.say(S, { actors: o, tag: '大浴場', kind: 'climax', text: F(ST.pick(S, T.bath), { x: o[0].name, y: o[1].name }) + SX(S, o[0], o[1], 'plain', false, ['tachi', 'taimen', 'haimen', 'kijo', 'kuchi', 'yubi']), why: PW(S) + '夜の大浴場で、' + o[0].name + 'と' + o[1].name + 'が鉢合わせた', mag: 30 });
+      ST.say(S, { actors: o, tag: '大浴場', kind: 'climax', text: F(ST.pick(S, PLF('bath', T.bath, o[0], o[1])), { x: o[0].name, y: o[1].name }) + SX(S, o[0], o[1], 'plain', false, ['tachi', 'taimen', 'haimen', 'kijo', 'kuchi', 'yubi']), why: PW(S) + '夜の大浴場で、' + o[0].name + 'と' + o[1].name + 'が鉢合わせた', mag: 30 });
       Y.setRel(S, o[0], o[1], 0.25, '湯けむりの一夜'); } });
     /* 凍えた体を温め合う：捜索で外に出た二人 */
     var wp = pairs(function (a, b) { return Y.bond(S, a, b) > -0.1 && (a.tr.cp + b.tr.cp > 0.8 || a.isDet || b.isDet || a.role === 'butler' || b.role === 'butler'); });
     if (wp.length) EV.push({ w: 1, f: function () { var pr = rng.pick(wp), o = od(pr[0], pr[1]);
-      ST.say(S, { actors: o, tag: '凍える夜', kind: 'climax', text: F(ST.pick(S, T.warmth), { x: o[0].name, y: o[1].name }) + SX(S, o[0], o[1], 'love', false, ['soku', 'taimen', 'seijo', 'haimen']), why: PW(S) + '吹雪の中を捜索した' + o[0].name + 'と' + o[1].name + 'が、肌で温め合った', mag: 30 });
+      ST.say(S, { actors: o, tag: '凍える夜', kind: 'climax', text: F(ST.pick(S, PLF('warmth', T.warmth, o[0], o[1])), { x: o[0].name, y: o[1].name }) + SX(S, o[0], o[1], 'love', false, ['soku', 'taimen', 'seijo', 'haimen']), why: PW(S) + '吹雪の中を捜索した' + o[0].name + 'と' + o[1].name + 'が、肌で温め合った', mag: 30 });
       Y.setRel(S, o[0], o[1], 0.3, '温め合った'); } });
     /* 取り調べでの誘惑：疑われている人が、取り調べ役を落とす */
     var sus = live.filter(function (q) { return q.m.sus > 40 && q.tr.fc + (q.tr.lie || q.tr.a * 0.5 || 0) > 0.8; }).sort(function (a, b) { return b.m.sus - a.m.sus; })[0];
     if (sus) { var iv = live.filter(function (q) { return q !== sus && (q.isDet || q.tr.cp > 0.5) && can(sus, q); })[0];
       if (iv) EV.push({ w: 1.5 + (sus === c ? 1 : 0), f: function () {
-        ST.say(S, { actors: [sus, iv], tag: '誘惑の取り調べ', kind: 'climax', text: F(ST.pick(S, T.interrogate), { x: sus.name, y: iv.name }) + (function () { var o4 = HK.Pos ? HK.Pos.order(sus, iv, [sus, iv]) : [sus, iv]; return SX(S, o4[0], o4[1], 'plain', true); })(), why: '疑われていた' + sus.name + 'が、取り調べ役の' + iv.name + 'を誘惑した（嘘・FC）。' + sus.name + 'への疑いが薄れる', mag: 34 });
+        /* 疑われた人が攻めなら膝に座らせ、受けなら自分から跨る */
+        var o4 = od2(sus, iv);
+        ST.say(S, { actors: [sus, iv], tag: '誘惑の取り調べ', kind: 'climax', text: F(ST.pick(S, T.interrogate.concat(T[o4[0] === sus ? 'interrogateT' : 'interrogateB'] || [])), { x: sus.name, y: iv.name }) + SX(S, o4[0], o4[1], 'plain', true), why: '疑われていた' + sus.name + 'が、取り調べ役の' + iv.name + 'を誘惑した（嘘・FC）。' + sus.name + 'への疑いが薄れる', mag: 34 });
         sus.m.sus = Math.max(0, sus.m.sus - 20); if (sus === c) S.fake++; if (iv.isDet) iv.seduced = true;
         Y.setRel(S, sus, iv, 0.25, '取り調べの夜', sus); } }); }
     if (!EV.length) return false;

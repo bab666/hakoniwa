@@ -16,8 +16,9 @@
   };
   FD.r18Clash = function (S, a, b) {
     var R = HK.R18M, o = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b], X = o[0], Y = o[1];
-    var t = ST.fmt(ST.pick(S, OPEN), { a: a.name, b: b.name });
+    /* 押さえ込む側・抗う側も向きに合わせる（自分で攻めを選んだ人は、押さえ込まれる側にしない） */
+    var t = ST.fmt(ST.pick(S, OPEN), { a: X.name, b: Y.name });
     if (!R) return t;
-    return t + R.resist(S, a, b, { endure: false }) + R.sex(S, X, Y, { mood: 'rough', fore: false, short: true });
+    return t + R.resist(S, X, Y, { endure: false }) + R.sex(S, X, Y, { mood: 'rough', fore: false, short: true });
   };
 })();

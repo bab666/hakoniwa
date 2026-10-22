@@ -54,6 +54,11 @@
     '{a}は{b}に、自分の名前を呼ばせ続けた。呼ぶたびに、深くなった。',
     '{c}が見ている前で、{a}はわざと{b}の声を引き出した。'
   ];
+  /* 詰め寄った側が、受け攻めの指定では受けのとき（{b} が攻め）：自分から「上書き」をねだる */
+  var CLAIM_SEX_B = [
+    '{a}は{b}の首に腕を回して引き寄せ、「{c}が触ったところ、全部、{b}で塗り替えて」とねだった。',
+    '{a}は{b}の手を取って、{c}の痕が残る場所へ一つずつ導いた。{b}はそのたびに、そこへ自分の痕を重ねた。'
+  ];
   var CLAIM_AFTER_ROUGH = [
     '{a}は果てたあとも、{b}を離さなかった。{a}「……もう、他の奴に触らせるな」',
     '{b}は息を整えながら、{a}の背中に腕を回した。{b}「……分かってる。お前のだよ」',
@@ -146,11 +151,11 @@
       var sk = seenKind(ctx, a, b), t = m(ctx.pick(sk === 'h' ? CLAIM_OPEN : KISS_OPEN)), why;
       if (k === 'claim' && HK.canLove(a, b) && HK.canLove(b, a)) {
         var rk = b.tr.ac > 0.6 || R(ctx, b, a).att > 60 ? 'sorry' : b.tr.cp > 0.6 ? 'defy' : 'tease';
-        t += m(ctx.pick(CLAIM[grp(a)])) + m(ctx.pick(REPLY[grp(b)][rk]));
         var LW = HK.RoomLewd;
-        /* 「奥まで沈めた」は {a} が攻めのときだけ（受け攻めの指定で {a} が受けなら、ほかの描写から選ぶ） */
-        var aTop = !HK.Pos || HK.Pos.topOf(a, b, [a, b]) === a;
-        t += m(ctx.pick(aTop ? CLAIM_SEX : CLAIM_SEX.filter(function (l) { return l.indexOf('沈めた') < 0; }))) + (LW ? LW.scene(ctx, a, b, (A.prog(ctx, a, b).act.h || 0) ? 'repeat' : 'will', { lead: true }) : '') + (function () { var r = ctx.rng(); return r < 0.4 ? m(CLAIM_AFTER[grp(a)][0]) : r < 0.8 ? m(CLAIM_AFTER[grp(b)][1]) : m(CLAIM_AFTER.rough[2]); })();
+        /* 受け攻めの指定に従う：{a} が受けなら、{b}（攻め）を押し倒したり、{b}の体に「上書き」したりはしない */
+        var aTop = !HK.Pos || HK.Pos.topOf(a, b, [a, b]) === a, ffP = HK.Pos && HK.Pos.ff(a, b);
+        t += m(ctx.pick(aTop ? CLAIM[grp(a)] : CLAIM[grp(a)].filter(function (l) { return !/押し倒/.test(l); }))) + m(ctx.pick(REPLY[grp(b)][rk]));
+        t += m(ctx.pick(aTop ? CLAIM_SEX.filter(function (l) { return !ffP || !/沈めた|深くなった/.test(l); }) : CLAIM_SEX_B)) + (LW ? LW.scene(ctx, a, b, (A.prog(ctx, a, b).act.h || 0) ? 'repeat' : 'will', { lead: true }) : '') + (function () { var r = ctx.rng(); return r < 0.4 ? m(CLAIM_AFTER[grp(a)][0]) : r < 0.8 ? m(CLAIM_AFTER[grp(b)][1]) : m(CLAIM_AFTER.rough[2]); })();
         var p = A.prog(ctx, a, b); p.act.h = (p.act.h || 0) + 1;
         ctx.pair(a, b).night = true;
         ctx.mod2(a, b, { att: 10, aff: 6, ten: 2 }, { att: 8, aff: 4 });
@@ -166,7 +171,7 @@
         ctx.mod2(a, b, { ten: 8, att: -6 }, { ten: 3 });
         t += m(ctx.pick(CHANGE[grp(a)]));
         var d = ctx.present().filter(function (q) { return q !== a && q !== b && free(q) && HK.canLove(a, q) && HK.canLove(q, a); }).sort(function (x, y) { return R(ctx, a, y).att - R(ctx, a, x).att; })[0];
-        if (d && ctx.rng() < 0.6) { t += m(ctx.pick(SHOW[grp(a)]), d); ctx.mod2(a, d, { att: 10 }, { att: A.eager(ctx, d) > 0.5 ? 8 : 3 }); }
+        if (d && ctx.rng() < 0.6) { t += m(ctx.pick(SHOW[grp(a)].filter(function (l) { return !(HK.Pos && HK.Pos.hardTop(d)) || !/押しつけ/.test(l); })), d); ctx.mod2(a, d, { att: 10 }, { att: A.eager(ctx, d) > 0.5 ? 8 : 3 }); }
         why = a.name + 'は、' + b.name + 'がほかの人と抱き合うのを見て、「一人だけ」の決め事を捨てた（積極性・FC）。三人やほかの相手との場面にも加わるようになる';
         return { text: t, why: why, mag: 24, with: d ? [d] : [] };
       }

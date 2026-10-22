@@ -30,6 +30,24 @@
   function pairsOf(g) { var o = []; for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) o.push([g[i], g[j]]); return o; }
   function done3(ctx, g) { return pairsOf(g).every(function (p) { return A.pairDone(ctx, p[0], p[1]); }); }
   function family(ctx, a, b) { return A.tieWall(ctx, a, b, 3) >= 999; }
+  function okSex(a, b) { return !HK.Pos || HK.Pos.okSex(a, b); }
+  /* 体の関係の形：三人の全組が体の関係を持てるなら全員で、そうでなければ二人の両方と持てる一人を中心に（つながらない二人は直接は触れ合わない）。どれも無理なら null */
+  function sexShape(g, hubOnly) {
+    if (!hubOnly && okSex(g[0], g[1]) && okSex(g[0], g[2]) && okSex(g[1], g[2])) return { sg: g, hubOnly: false };
+    for (var i = 0; i < 3; i++) {
+      var h = g[i], r = g.filter(function (c) { return c !== h; });
+      if (okSex(h, r[0]) && okSex(h, r[1])) return { sg: [h].concat(r), hubOnly: true };
+    }
+    return null;
+  }
+  /* きっかけごとの形。取り合われた人・誘われた人が中心のきっかけでは、その人が中心になれなければ成り立たない */
+  function shapeFor(ctx, g, kind) {
+    var x = g[1], y = g[2];
+    var hub = kind === 'hub' || (kind === 'invite' && !(HK.canLove(x, y) && HK.canLove(y, x) && R(ctx, x, y).att > 10));
+    var sp = sexShape(g, hub);
+    if (sp && sp.hubOnly && sp.sg[0] !== g[0] && (kind === 'hub' || kind === 'invite')) return null;
+    return sp;
+  }
 
   /* 準備：最初から書いてあるとき */
   var setup0 = scen.setup, phase0 = scen.phase, finish0 = scen.finish;
@@ -122,6 +140,8 @@
         cands.push({ kind: 'warm', h: g[0], v: 1.0 });
       cands.forEach(function (cd) {
         cd.g = cd.h ? [cd.h].concat(g.filter(function (x) { return x !== cd.h; })) : g;
+        /* 条件がエッチなら、受け攻めの指定で成り立つ形があるときだけ（中心がずれるきっかけは、中心を先頭に） */
+        if (hasH(ctx)) { var sh = shapeFor(ctx, cd.g, cd.kind); if (!sh) return; if (sh.hubOnly) cd.g = sh.sg; }
         if (!best || cd.v > best.v) best = cd;
       });
     });
@@ -179,22 +199,31 @@
   function sexScene(ctx, g, kind, sp, hubOnly, first) {
     var X = HK.TrioLines, V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
     var r = { h: g[0], x: g[1], y: g[2], t: sp.t, m: sp.m, u: sp.u };
-    var ok = function (o) { return (!o.kinds || o.kinds.split(' ').indexOf(kind) >= 0) && (!o.shapes || o.shapes.split(' ').indexOf(sp.p) >= 0); };
-    var noHub = function (l) { return !hubOnly || !/同時に触れ合|抱きしめ合/.test(l); };
+    /* 受ける側の役（recv）に、自分で攻めを選んだ人を置かない */
+    var hard = function (c) { return !!(c && HK.Pos && HK.Pos.hardTop(c)); };
+    var sTop = function (k) { var c = g.slice().sort(function (p, q) { return q.tr[k] - p.tr[k]; })[0]; return c.tr[k] > 0.55 ? c : null; };
+    var recvOK = function (o) { return !o.recv || !o.recv.split(' ').some(function (k) { return hard(k === 's' ? sTop(o.who) : r[k]); }); };
+    /* 女性どうしで繋がる組があれば、挿入の描写を使わない（白い部屋の木箱の玩具はよい） */
+    var E = { oneTwo: [[sp.t, sp.m], [sp.t, sp.u]], twoOne: [[sp.t, sp.u], [sp.m, sp.u]], sandwich: [[sp.t, sp.m], [sp.m, sp.u]], ring: [[sp.t, sp.m], [sp.m, sp.u], [sp.u, sp.t]] }[sp.p];
+    var ffE = HK.Pos ? E.filter(function (e) { return HK.Pos.ff(e[0], e[1]); })[0] : null;
+    var PEN = /奥まで沈|深く沈|腰を沈|腰を落と|繋が|貫|突い|突き|突く|突か|中に入|入って|熱を吐き出|腰を打ちつけ|果てて.*中|最奥|迎え入れ|受け入れ|挿れ|挿入|抜き差し|根元|穿|口に含/;
+    var penOK = function (l) { return !ffE || !PEN.test(l); };
+    var ok = function (o) { return (!o.kinds || o.kinds.split(' ').indexOf(kind) >= 0) && (!o.shapes || o.shapes.split(' ').indexOf(sp.p) >= 0) && recvOK(o); };
+    var noHub = function (l) { return (!hubOnly || !/同時に触れ合|抱きしめ合/.test(l)) && penOK(l); };
     if (!X) return ctx.pick(SEX[sp.p]).replace(/\{t\}/g, sp.t.name).replace(/\{m\}/g, sp.m.name).replace(/\{u\}/g, sp.u.name) + ctx.pick(CLIMAX3);
     var out = [];
     /* 前戯（初回だけ） */
     if (first) {
-      var wm = X.WARM.filter(ok), w = ctx.pick(wm.length ? wm : X.WARM), wl = w.t.filter(noHub);
+      var wm = X.WARM.filter(ok), w = ctx.pick(wm.length ? wm : X.WARM.filter(recvOK)), wl = w.t.filter(noHub);
       out.push(X.fill(ctx.pick(wl.length ? wl : w.t), r));
     }
     /* 本番 */
-    var ml = X.MAIN[sp.p].filter(noHub);
+    var ml = ffE && X.MAIN_FF ? X.MAIN_FF[sp.p].concat(ctx.flags.toolbox ? X.TOY_FF[sp.p] || [] : []) : X.MAIN[sp.p].filter(noHub);
     out.push(X.fill(ctx.pick(ml.length ? ml : X.MAIN[sp.p]), r));
     if (V && ctx.rng() < 0.75) out.push(X.fill(V.line(pf, sp.u.persona, ctx.rng() < 0.5 ? 'edge' : 'climax', 'b').replace(/\{b\}/g, '{u}').replace(/\{a\}/g, '{t}'), r));
     /* 見所：一つか二つ */
     var top = function (k, th) { var c = g.slice().sort(function (p, q) { return q.tr[k] - p.tr[k]; })[0]; return c.tr[k] > th ? c : null; };
-    var hl = X.HL.filter(function (o) { return ok(o) && (!o.who || top(o.who, 0.55)); });
+    var hl = X.HL.filter(function (o) { return ok(o) && (!o.who || top(o.who, 0.55)) && o.t.every(penOK); });
     var n = first ? (ctx.rng() < 0.6 ? 2 : 1) : 1, used = [];
     for (var k = 0; k < n && hl.length; k++) {
       var o = HK.weighted(ctx.rng, hl, function (z) { return (z.kinds ? 2.2 : 1) * (z.shapes ? 1.6 : 1) * (z.who ? 1.3 : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); });
@@ -210,7 +239,9 @@
     if (!r.synced) out.push(ctx.pick(X.CLIMAX));
     if (ctx.rng() < (first ? 0.7 : 0.4)) out.push(X.fill(ctx.pick(X.AFTER), r));
     ctx.flags.lastTrioTags = used;
-    return out.join('');
+    var txt3 = out.join('');
+    if (ffE && HK.FF) txt3 = HK.FF.fix(ctx, txt3, ffE[0], ffE[1], { tools: !!ctx.flags.toolbox });
+    return txt3;
   }
   function scene(ctx, g, kind, first, nPresent) {
     var h = g[0], x = g[1], y = g[2], V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
@@ -219,12 +250,10 @@
       : (HK.TrioLines ? HK.TrioLines.fill(ctx.pick(HK.TrioLines.ROUND2), { h: h, x: x, y: y }) : ctx.t('三人は、もう一度身を寄せ合った。', h, x, y));
     var rk = pairRules(ctx), sex = rk.some(function (r) { return r.k === 'h'; });
     if (sex) {
-      var hubOnly = kind === 'hub' || kind === 'invite' && !(HK.canLove(x, y) && HK.canLove(y, x) && R(ctx, x, y).att > 10);
-      /* 攻め×攻め・受け×受けの二人は直接は繋がらない：残る一人を中心にする */
-      var cl = HK.Pos && HK.Pos.clash ? pairsOf(g).filter(function (p) { return HK.Pos.clash(p[0], p[1]); })[0] : null, sg = g;
-      if (cl) { var hub = g.filter(function (c) { return cl.indexOf(c) < 0; })[0]; if (hub) sg = [hub].concat(cl); hubOnly = true; }
-      var sp = shape(ctx, sg, hubOnly);
-      txt += sexScene(ctx, g, kind, sp, hubOnly, first, nPresent);
+      /* 体の関係を持てない二人（攻め×攻めなど）は直接は繋がらない：両方と持てる一人を中心にする */
+      var sh = shapeFor(ctx, g, kind);
+      if (sh) txt += sexScene(ctx, sh.sg, kind, shape(ctx, sh.sg, sh.hubOnly), sh.hubOnly, first, nPresent);
+      else txt += '三人は身を寄せ合ったが、それ以上は進まなかった。';
     }
     rk.forEach(function (r) { if (r.k !== 'h' && SOFT[r.k]) txt += ctx.t(ctx.pick(SOFT[r.k]), h, x, y); });
     return txt;
@@ -259,7 +288,7 @@
       c.fateNote = g.filter(function (o) { return o !== c; }).map(function (o) { return o.name; }).join('と') + 'と、' + kn(g.length) + 'で部屋を出た';
       c.flags.trio = g.map(function (o) { return o.i; });
     });
-    pairsOf(g).forEach(function (pr) { ctx.mod2(pr[0], pr[1], { trust: 8, aff: 4 }, { trust: 8, aff: 4 }); if (night) ctx.pair(pr[0], pr[1]).night = true; });
+    pairsOf(g).forEach(function (pr) { ctx.mod2(pr[0], pr[1], { trust: 8, aff: 4 }, { trust: 8, aff: 4 }); if (night && okSex(pr[0], pr[1])) ctx.pair(pr[0], pr[1]).night = true; });
     var ex = { group: g.map(function (c) { return c.i; }), label: ctx.label, trio: true, night: !!night, kind: kind || 'warm' };
     (ctx.flags.exits = ctx.flags.exits || []).push(ex);
     ctx.flags.trios.push(ex);

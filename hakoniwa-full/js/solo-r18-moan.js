@@ -15,12 +15,49 @@
     var b = HK.personaOf ? HK.personaOf(p) : 'gentle';
     return D.V[b] ? b : 'gentle';
   }
+  /* 受け身を前提にした喘ぎ・台詞（奥まで届く・離して・ゆっくりして など）。自分で攻めを選んだ人には言わせない */
+  var RECV = /奥|深[いく…っ、]|深$|届い|いっぱい|ちょうだい|くださ|ください|中に|入って|好きにし|お好きな|離せ|離、せ|離して|はなさ|やめ|止まって|止まれ|待て|待って|待……|待っ|ゆっくり|そこ[、はっ]|ばっか|触って|触んな|触る|どこ触|お許し|ご勘弁|許して|許、せ|ゆるして|あなたの、で|もっと|ずるい|反則|見るな|見ないで|みないで|見ん、な|見んな|のに|調子に|だめ、ぇ|勝手に|されたら|されては|される|させ、|させ……|壊れ|堕ち|満足か|覚えて|覚え、|負けて|負け、|ちが|ご、ごめん|ごめんなさ|すみ|申し訳|失礼|恥ずかし|はずかし|はしたな|いけませ|いけない|ならん|情けな|不覚|屈|助け|たすけ|ひっ|やだ|いや/;
+  var TOP_OK = L('っ……ぁ|は、ぁ……っ|く……っ、ぁ……|……っ、ん……|ん、ッ……は……|……ふ、ぅ……っ|あ、あ……っ');
+  /* 自分で攻めを選んだ人の台詞を、受け身でないものに絞る（残らなければ短い息づかいだけ） */
+  function topLines(p, list) {
+    if (!list || !HK.Pos || !HK.Pos.hardTop(p)) return list;
+    var f = list.filter(function (x) { return !RECV.test(x); });
+    return f.length ? f : TOP_OK;
+  }
+  function L(s) { return s.split('|'); }
   function say(S, p, kind) {
     var t = toneKey(p);
     if (kind === 'endure') return p.name + '「' + pick(S, D.ENDURE[t] || D.ENDURE.gentle) + '」';
-    var v = D.V[t]; return p.name + '「' + pick(S, v[kind] || v.mid) + '」';
+    var v = D.V[t], list = v[kind] || v.mid;
+    if (kind !== 'top' && kind !== 'topc') list = topLines(p, list);
+    return p.name + '「' + pick(S, list) + '」';
   }
   function moodOf(m) { return m === 'rough' || m === 'drug' || m === 'love' ? m : 'plain'; }
+
+  /* 女性どうし：体位（挿入）の文を使わず、指・舌・脚を絡める描写（HK.FF）と喘ぎで組み立てる。x=動く側 */
+  var FF_TOPC_NG = /出|受け止め|受け取|中に|締め|全部、くれて/;
+  function ffSex(S, x, y, opt) {
+    var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };
+    var ctx = { pick: function (a) { return pick(S, a); } };
+    var st = mood === 'rough' ? 'rough' : mood === 'love' ? 'gentle' : HK.FF.styleOf(x);
+    var out = [];
+    if (opt.fore !== false) out.push(F(pick(S, D.FORE[mood === 'plain' || rng() < 0.3 ? 'plain' : mood]), m));
+    out.push(HK.FF.pick(ctx, 'body', st).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name));
+    out.push(say(S, y, 'start'));
+    if (!opt.short) {
+      out.push(say(S, x, 'top'));
+      out.push(say(S, y, 'mid'));
+    }
+    out.push(say(S, y, 'climax'));
+    if (rng() < 0.35) {
+      var tc = (D.V[toneKey(x)] || D.V.gentle).topc.filter(function (s) { return !FF_TOPC_NG.test(s); });
+      out.push(x.name + '「' + pick(S, tc.length ? tc : TOP_OK) + '」');
+    }
+    out.push(HK.FF.pick(ctx, 'climax', st).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name));
+    if (!opt.short && rng() < 0.6) out.push(say(S, rng() < 0.6 ? y : x, 'after'));
+    S.r18Last = '指と舌';
+    return out.join('');
+  }
 
   /* 体位を選ぶ */
   function pickPos(S, x, y, mood, allow) {
@@ -46,8 +83,13 @@
     /* 一人の喘ぎ（kinds: ['start','mid','climax'] など） */
     moans: function (S, p, kinds) { return (kinds || ['start', 'climax']).map(function (k) { return say(S, p, k); }).join(''); },
     /* 二人の交わり。opt.fore=false で前戯を省く（すでに場面の文があるとき）。opt.short で短く */
+    /* 自分で攻めを選んだ人の喘ぎ・絶頂の声を、受け身でないものに絞る（ほかの箱庭からも使う） */
+    topLines: topLines,
     sex: function (S, x, y, opt) {
       opt = opt || {};
+      /* 向きは必ず HK.Pos.order に従う（自分で攻めを選んだ人を受けの位置に置かない） */
+      if (HK.Pos) { var od = HK.Pos.order(x, y, [x, y]); x = od[0]; y = od[1]; }
+      if (HK.Pos && HK.FF && HK.Pos.ff(x, y)) return ffSex(S, x, y, opt);
       var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };
       var pos = opt.pos ? D.POS.filter(function (p) { return p.id === opt.pos; })[0] : pickPos(S, x, y, mood, opt.allow);
       if (!pos) pos = pickPos(S, x, y, mood);
