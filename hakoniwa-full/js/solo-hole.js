@@ -348,8 +348,8 @@
       /* 男性向け：絶頂の前に、戻ってきた感覚の地の文を置く */
       var wv = parts.length ? EL('wave', []) : [];
       if (wv.length) lineTxt = K.fmt(S, pk(S, wv)) + ' ' + lineTxt;
-      /* 小説調の山場（solo-thick4.js）：感覚が戻って最初に達した波は、段落に分けて厚く */
-      if (parts.length && !floodThick && HK.Thick4 && HK.Thick4.ok(S, 'mid')) { lineTxt = HK.Thick4.flood(S, h, { top: topMe, lead: lineTxt }); floodThick = true; }
+      /* 小説調の山場（solo-thick4.js）：感覚が戻って最初に達した波は、段落に分けて厚く（帰り道で遅れて届くときは使わない） */
+      if (parts.length && !floodThick && mode !== 'late' && HK.Thick4 && HK.Thick4.ok(S, 'mid')) { lineTxt = HK.Thick4.flood(S, h, { top: topMe, lead: lineTxt }); floodThick = true; }
       say(S, { kind: parts.length ? 'climax' : 'ev', tag: parts.length ? (parts.length > 1 ? '連続絶頂' : '絶頂') : '混乱', text: lineTxt, why: (w + 1) + '波目' + (parts.length ? '・' + parts.length + '回' : '') });
       K.settle(S);
     }

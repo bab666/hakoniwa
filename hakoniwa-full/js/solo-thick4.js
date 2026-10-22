@@ -141,7 +141,8 @@
       if (kind === 'ride' || kind === 'serve') return sf ? 'ff' : kind;
       return kind;
     },
-    /* o = { dom, sub（{name, persona, eg, tr, gender}）, kind, lead（元の文・埋めたもの）, sad（ハードな支配を使うか）, after（余韻に足す一文・埋めたもの） } */
+    /* o = { dom, sub（{name, persona, eg, tr, gender}）, kind, lead（元の文・埋めたもの）, peak（絶頂の段落を元の文で置き換えるとき）,
+           sad（嗜虐的な振る舞いを使うか）, jealous（嫉妬エッチの場面か）, after（余韻に足す一文・埋めたもの） } */
     scene: function (S, o) {
       var dom = o.dom || {}, sub = o.sub || {}, kind = T4.kindFor(o.kind || 'in', dom, sub), tb = P[kind] || P.in;
       var sad = !!(o.sad && ROUGH[kind] && HK.Ero && HK.Ero.sadist && HK.Ero.sadist(dom, sub));
@@ -150,12 +151,14 @@
       var sp = ps(S, sub), dp = ps(S, dom), D = dom.name || '相手', B = sub.name || '相手';
       var paras = [];
       if (o.lead) paras.push(o.lead);
-      paras.push(pick(S, hard ? hard[kind].body : tb.body));
+      /* 書き出しが長いときは、体の感触の段落を省く（全体で 400 字前後） */
+      if (!o.lead || o.lead.length < 120 || hard) paras.push(pick(S, hard ? hard[kind].body : tb.body));
       var dl = hard === CHOKE ? CHOKE_DOM : hard ? ROUGH_DOM : DOM[dp], sl = hard === CHOKE ? CHOKE_SUB : hard ? ROUGH_SUB : SUB1[sp];
       paras.push('{T}「' + pick(S, dl) + '」' + pick(S, LINK) + '{B}「' + pick(S, sl) + '」' + (hard === CHOKE ? '{T}「' + pick(S, CHOKE_MID) + '」' : ''));
       /* 書き出しが短いときだけ、律動の段落を挟む（全体で 400 字前後） */
       if (!o.lead || o.lead.length < 60) paras.push(pick(S, hard === CHOKE ? CHOKE[kind].beat : tb.beat));
-      paras.push('{B}「' + pick(S, SUB2[sp]) + '」' + pick(S, hard ? hard[kind].peak : tb.peak));
+      /* o.peak：絶頂の段落を、箱庭の元の文（型ごとの決め台詞など）で置き換える */
+      paras.push('{B}「' + pick(S, SUB2[sp]) + '」' + (o.peak || pick(S, hard ? hard[kind].peak : tb.peak)));
       paras.push(pick(S, hard === CHOKE ? CHOKE_AFTER : hard ? ROUGH_AFTER : tb.after) + (o.after ? o.after : ''));
       return paras.join('\n\n').replace(/\{T\}/g, D).replace(/\{B\}/g, B);
     },
@@ -164,7 +167,9 @@
     flood: function (S, who, o) {
       var sp = ps(S, who), B = who.name;
       var body = pick(S, o.top ? FLOOD_TOP : FLOOD_RECV);
-      return [body, '{B}「' + pick(S, SUB1[sp]) + '」' + pick(S, FLOOD_LINK), o.lead].join('\n\n').replace(/\{B\}/g, B);
+      /* 段落の頭が「…」だと話し手が分からないので、名前を前に置く */
+      var lead = /^「/.test(o.lead || '') ? B + o.lead : o.lead;
+      return [body, '{B}「' + pick(S, SUB1[sp]) + '」' + pick(S, FLOOD_LINK), lead].join('\n\n').replace(/\{B\}/g, B);
     },
     /* 嗜虐的な主導役なら、山場の 25% ほどでハードな支配を使う */
     rollSad: function (S, dom, sub) { return !!(HK.Ero && HK.Ero.sadist && HK.Ero.sadist(dom, sub)) && S.rng() < 0.25; },
