@@ -209,7 +209,7 @@
 
   function renderCast() {
     var html =
-      '<h2 class="sec">住人をまとめて登録</h2>' +
+      '<h2 class="sec">住人をまとめて登録' + (HK.Tips ? HK.Tips.btn('cast-import') : '') + '</h2>' +
       '<p class="hint">「<a href="https://kaimin.sakura.ne.jp/archive/tools/ego/" target="_blank" rel="noopener">ふたりのエゴグラム</a>」の5文字コード（CP→NP→A→FC→AC の順、A＝とても強い〜D＝控えめ）を名前と並べて貼るだけで登録できます。診断結果の文（「〇〇のエゴグラムは「ABADC」筋を通す観測者でした。」とURL）をそのまま貼ってもOK。タイプ名はメモに入ります。1行に1人。点数で細かく指定することもできます。</p>' +
       '<div class="import"><div>' +
       '<textarea id="bulk" rows="6" placeholder="- 朝霧 BDACD\n・鷹野：CABAB\nミナト bbbca // 後輩"></textarea>' +
@@ -219,7 +219,7 @@
       '<ul class="warn" id="warns" hidden></ul></div>' +
       '<div class="fmt">読める書き方<code>- 名前 ABBCD</code>（大文字・小文字どちらでも。A≒17点 B≒12点 C≒8点 D≒3点として扱います）<code>- 名前 CP14 NP6 A16 FC12 AC4</code><code>・名前：CP=8, NP=18, A=10…</code><code>名前 10 12 14 8 16</code>（数字だけならCP・NP・A・FC・ACの順）<code>名前 CP高 NP中 A低 FC高 AC低</code><code>名前,CP,NP,A,FC,AC</code>（見出し行つきのCSV／TSV）100点満点の数値は自動で20点満点に換算します。<code>// 以降はメモ</code><code>名前のエゴグラムは「ABADC」○○でした。</code>（診断結果の文。下のURL行は自動で読み飛ばします）</div>' +
       '</div>' +
-      '<h2 class="sec">住人　<span class="num" style="font-size:15px">' + S.chars.length + '/' + MAX + '</span></h2>' +
+      '<h2 class="sec">住人　<span class="num" style="font-size:15px">' + S.chars.length + '/' + MAX + '</span>' + (HK.Tips ? HK.Tips.btn('cast') : '') + '</h2>' +
       (S.sample ? '<p class="sample-note">いま並んでいるのはサンプルの住人です。自分のキャラクターに置き換えてください。</p>' : '') +
       '<input type="file" id="iconfile" accept="image/*" hidden>' +
       '<p class="hint" style="margin-top:-4px">左端の ≡ をドラッグすると並び替えられます（上下キーでも可。JSONの書き出しにもこの順番が入ります）。左の丸を押すと、キャラアイコンを設定できます（画像は128px四方に縮めて、このブラウザにだけ保存します）。関係図・経過・結果画像に表示されます。</p>' +
@@ -251,7 +251,7 @@
         '<button class="btn ghost small" data-act="tiedel" data-k="' + k + '">削除</button>' +
         '<span class="tiehint">' + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '') + '</span></div>';
     }).join('');
-    return '<h2 class="sec">住人どうしの既存の関係</h2>' +
+    return '<h2 class="sec">住人どうしの既存の関係' + (HK.Tips ? HK.Tips.btn('ties') : '') + '</h2>' +
       '<p class="hint">住人ごとの ⚙️ 設定からも、その住人の関係と呼び方をまとめて編集できます。ここでは全員分を一覧で編集・読み込みできます。知人・友人・同僚・先輩後輩・教師と生徒・師弟・バディ・親友・恋人・片想い・ライバル・敵対・親子・きょうだい・主従など。初期の好意や信頼が変わり、行動の傾向にも補正がかかります（恋人や家族は戦いを避け、敵対は衝突しやすい）。</p>' +
       '<div class="tiebox"><div class="ties">' + (rows || '<p class="hint" style="margin:0">まだ関係は登録されていません。</p>') + '</div>' +
       '<div class="row" style="margin-top:8px"><button class="btn" data-act="tieadd"' + (S.chars.length < 2 ? ' disabled' : '') + '>関係を1つ追加</button></div>' +
@@ -535,12 +535,12 @@
     }).join('');
 
     var html =
-      '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' +
-      '<h2 class="sec">環境値</h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + '</div></div>' +
-      '<h2 class="sec">この箱庭で効くもの</h2>' +
+      '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' + (HK.Tips ? HK.Tips.scenBtn(S.scenId) : '') +
+      '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + '</h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + '</div></div>' +
+      '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
       '<p class="hint">エゴグラムから自動で計算する気質と、エゴグラムでは分からないので別に決めるステータスです。</p>' +
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
-      '<h2 class="sec">' + (scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + '</h2>' +
+      '<h2 class="sec">' + (scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
       '<p class="hint">' + (scen.castHint ? esc(scen.castHint) + ' ' : '') + (scen.castHint ? '' : scen.solo ? 'この箱庭は一人用です。チェックを入れた住人が挑みます。「おまかせ」は気質から方針を選びます。登場人物はすべて成人として扱います。' : '「おまかせ」は気質に合う選択肢から抽選します。あえて気質と逆の行動を選ぶと、意外な関係が出やすくなります。') + '</p>' +
       (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p><div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button></div><div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th><th>最初の行動</th><th>短期目標</th>' + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
       (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">結末（37通り）が決まるまで自動で進みます（複数人なら誰かが結ばれた時点で終了、最長3年）。第二性・スイッチ・職業は「おまかせ」ならランダム（職業は気質に合うものから）。<b>探偵</b>と<b>探偵助手</b>がそろうとバディになり、一緒に殺人事件を追います。<b>フェロモンの匂い</b>は自由に書けます。空欄なら、<a href="https://kaimin.sakura.ne.jp/archive/tools/ego/" target="_blank" rel="noopener">ふたりのエゴグラム</a>の診断結果（5文字コード）と同じ「香り」になります。スイッチする体質の人は、見守る期間のどこかでα⇄Ωに転換します（βは後天的にΩになることがあります）。<b>運命の番</b>は、住人タブの「住人どうしの既存の関係」で選べます。恋人同士にしておくと、デートの様子が見られます。</p>' : '') +

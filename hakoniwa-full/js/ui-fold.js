@@ -18,7 +18,7 @@
     var tab = host.id, cur = null;
     kids.forEach(function (el) {
       if (el.tagName === 'H2' && el.classList.contains('sec')) {
-        var title = norm(el.textContent), k = tab + ':' + title;
+        var title = norm(el.textContent.replace(/？/g, '')), k = tab + ':' + title;
         var d = document.createElement('details');
         d.className = 'fold';
         if (el.id) { d.id = 'fold-' + el.id; }

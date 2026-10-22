@@ -146,13 +146,13 @@
       '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + '</select></label><button type="button" class="btn small" data-gact="tnew">関係を追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
       '<p class="gearhint">行動や判断は、エゴグラムの数値だけで決まります。ここで決めるのは、その行動をとったときの話し方・呼び方と、関係の初期値です（口調で行動が制限されることはありません）。</p>' +
-      '<div class="gearsec"><h3>話し方</h3><div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
+      '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3><div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
       '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
       '<div class="tonesample anim" id="tonesample" aria-live="polite">' + sampleLines(c) + '</div>' +
       '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label><label><input type="checkbox" data-gf="keigoOlder"' + (c.keigoOlder ? ' checked' : '') + '> 年上の相手には敬語（年齢を決めた人どうし）</label></div><p class="gearhint">台詞の中で、ほかの住人の名前をどう呼ぶか。相手ごとの呼び方は下の「関係と呼び方」で決められます。</p>' +
       (others.length ? '<div class="gearrow gkeigo"><span>敬語で話す相手</span>' + others.map(function (o) { return '<label><input type="checkbox" data-gf="keigo" data-o="' + o.id + '"' + (c.keigo && c.keigo[o.id] ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('') + '</div>' +
         '<p class="gearhint">' + ((c.tone || autoK) === 'polite' ? 'いまの口調は敬語なので、誰にでも敬語で話します。' : 'チェックした相手に話しかけるときだけ、敬語になります。ほかの相手には、いつもの口調のままです。') + '</p>' : '') + '</div>' +
-      '<div class="gearsec"><h3>プロフィール</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
+      '<div class="gearsec"><h3>プロフィール' + (HK.Tips ? HK.Tips.btn('gear-profile') : '') + '</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
         '<label>誕生月 ' + selOf('bmonth', [['', '決めない']].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (m) { return [String(m), m + '月']; })), c.bmonth || '') + '</label>' +
         '<label>年齢 <input type="number" data-gf="age" min="1" max="150" value="' + esc(c.age || '') + '" placeholder="決めない" style="width:5em"></label>' +
         '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
@@ -160,8 +160,8 @@
       '<p class="gearhint">受け攻めはR18の箱庭で使います。女性は攻めを選ばない限り受けとして扱います（女性どうしでは、動く側に回ることもあります）。「攻め」を選んだ人は、どの場面でも受ける側にはなりません。<br>恋愛対象（受け攻め）は、恋愛や体の関係を持つ相手の受け攻めを絞ります。おまかせなら、攻めは受けとだけ、受けは攻めとだけ結ばれます。向きの決まらない組（攻めどうしなど）は、恋愛にも体の関係にもなりません。</p>' +
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div>' +
       '<p class="gearhint">自動のときは、住人の並び順で色が決まります（エゴグラムとは関係ありません）。</p></div>' +
-      '<div class="gearsec"><h3>恋愛</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label></div><p class="gearhint">固定すると、その相手以外とは恋愛に発展しません（片想いのままでも使えます）。相手が箱庭にいないときは、誰とも恋愛しません。</p></div>' +
-      '<div class="gearsec"><h3>関係と呼び方</h3>' + (rel || '<p class="gearhint">まだ関係はありません。</p>') + addable + '</div>';
+      '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label></div><p class="gearhint">固定すると、その相手以外とは恋愛に発展しません（片想いのままでも使えます）。相手が箱庭にいないときは、誰とも恋愛しません。</p></div>' +
+      '<div class="gearsec"><h3>関係と呼び方' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + (rel || '<p class="gearhint">まだ関係はありません。</p>') + addable + '</div>';
   }
   function render() {
     var c = byId(cur);
