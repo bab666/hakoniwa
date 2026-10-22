@@ -234,8 +234,9 @@
       if (!vp.warn) { vp.warn = true; A.setHp(p, A.hp(p) - 10); A.say({ actors: [p], tag: '渇き', text: fmt(pick(A, V.thirst), { a: p.name }) + fmt(pick(A, V.weak), { a: p.name }), why: '吸血鬼：三日に一度、人の血を吸わなければならない' + (lockP ? '（決めた相手からしか吸えない）' : '') + '。吸えないと弱っていき、吸える相手がどこにもいなければ灰になる', mag: 20 }); return true; }
       return false;
     }
-    /* 誰から吸うか：恋仲・好意のある人ほど */
-    var b = wpick(A, cand, function (q) { var r = A.rel(p, q); return 0.15 + Math.max(0, r.w) * 2 + (r.love ? 3 : 0) + (q === lockP ? 5 : 0); }) || cand[0];
+    /* 誰から吸うか：恋仲を最優先、次に好感度の高い人（好意が高いほど強く偏る。好意のない相手を襲うのは、ほかに誰もいないときくらい） */
+    var lv = cand.filter(function (q) { return A.rel(p, q).love; });
+    var b = wpick(A, lv.length ? lv : cand, function (q) { var w = A.rel(p, q).w; return Math.pow(Math.max(0.02, w + 0.25), 4); }) || cand[0];
     var rb = A.rel(b, p), t = fmt(pick(A, V.thirst), { a: p.name }), how = '', hp = 12 + Math.floor(A.rng() * 10), stress = 10, sex = null;
     var wary = (b.tr && (b.tr.caution || 0) > 0.62) || (b.tr && (b.tr.ac || 0) < 0.25 && (b.tr.cp || 0) > 0.6);
     if (rb.love && A.rng() < 0.95) { t += fmt(pick(A, V.consentLove), { a: p.name, b: b.name }); how = '同意（恋仲）'; stress = 0; }
