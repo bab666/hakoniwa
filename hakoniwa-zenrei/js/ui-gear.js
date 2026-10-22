@@ -59,11 +59,12 @@
     '.gearrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:6px 0}.gearrow label{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}.gearrow select,.gearrow input[type=text]{max-width:100%}' +
     '.gearhint{font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.6}.tonesample{margin:8px 0 2px;padding:8px 12px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent);border-radius:0 8px 8px 0;font-size:13px;line-height:1.7;min-height:1.7em}.tonesample .tsl{display:block}.tonesample.anim .tsl{display:none}.tonesample.anim .tsl.on{display:block;animation:tsfade .5s ease}.tonesample .tsh{font-size:11px;color:var(--muted);display:block;margin-bottom:2px}@keyframes tsfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.tonesample.anim .tsl{display:block}.tonesample.anim .tsl.on{animation:none}}.gtie{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:8px 0}.gtie .who{font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:4px}' +
     '.gtie .one{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.gtie input[type=text]{width:12em}' +
+    'details.gkeigo{margin:8px 0 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px}details.gkeigo summary{cursor:pointer;font-size:13px;color:var(--muted)}details.gkeigo .gkn{font-size:12px;margin-left:4px;color:var(--ink)}details.gkeigo[open] summary{margin-bottom:4px}' +
     '@media (max-width:520px){.gearbox{padding:12px}.gtie input[type=text]{width:100%}}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   /* ---------- 設定の窓 ---------- */
-  var cur = null, ov = null, opener = null;
+  var cur = null, ov = null, opener = null, keigoOpen = false;
   function opt(v, label, sel, title) { return '<option value="' + esc(v) + '"' + (v === sel ? ' selected' : '') + (title ? ' title="' + esc(title) + '"' : '') + '>' + esc(label) + '</option>'; }
   function selOf(f, list, v, extra) { return '<select data-gf="' + f + '"' + (extra || '') + '>' + list.map(function (o) { return opt(o[0], o[1], v || ''); }).join('') + '</select>'; }
   function typeOpts(sel) {
@@ -145,22 +146,20 @@
     var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手">' + others.map(function (o) { return opt(o.id, o.name, ''); }).join('') + '</select></label>' +
       '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + '</select></label><button type="button" class="btn small" data-gact="tnew">関係を追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
-      '<p class="gearhint">行動や判断は、エゴグラムの数値だけで決まります。ここで決めるのは、その行動をとったときの話し方・呼び方と、関係の初期値です（口調で行動が制限されることはありません）。</p>' +
+      '<p class="gearhint">行動はエゴグラムだけで決まります。ここで決めるのは台詞の見た目と関係の初期値です。見出しの ？ に詳しい説明があります。</p>' +
       '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3><div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
       '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
       '<div class="tonesample anim" id="tonesample" aria-live="polite">' + sampleLines(c) + '</div>' +
-      '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label><label><input type="checkbox" data-gf="keigoOlder"' + (c.keigoOlder ? ' checked' : '') + '> 年上の相手には敬語（年齢を決めた人どうし）</label></div><p class="gearhint">台詞の中で、ほかの住人の名前をどう呼ぶか。相手ごとの呼び方は下の「関係と呼び方」で決められます。</p>' +
-      (others.length ? '<div class="gearrow gkeigo"><span>敬語で話す相手</span>' + others.map(function (o) { return '<label><input type="checkbox" data-gf="keigo" data-o="' + o.id + '"' + (c.keigo && c.keigo[o.id] ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('') + '</div>' +
-        '<p class="gearhint">' + ((c.tone || autoK) === 'polite' ? 'いまの口調は敬語なので、誰にでも敬語で話します。' : 'チェックした相手に話しかけるときだけ、敬語になります。ほかの相手には、いつもの口調のままです。') + '</p>' : '') + '</div>' +
+      '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label><label><input type="checkbox" data-gf="keigoOlder"' + (c.keigoOlder ? ' checked' : '') + '> 年上の相手には敬語（年齢を決めた人どうし）</label></div>' +
+      (others.length ? '<details class="gkeigo"' + (keigoOpen ? ' open' : '') + '><summary>敬語で話す相手 <span class="gkn">' + (function () { var n = others.filter(function (o) { return c.keigo && c.keigo[o.id]; }).length; return n ? n + '人' : 'なし'; })() + '</span></summary><div class="gearrow">' + others.map(function (o) { return '<label><input type="checkbox" data-gf="keigo" data-o="' + o.id + '"' + (c.keigo && c.keigo[o.id] ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('') + '</div>' +
+        ((c.tone || autoK) === 'polite' ? '<p class="gearhint">いまの口調は敬語なので、誰にでも敬語で話します。</p>' : '') + '</details>' : '') + '</div>' +
       '<div class="gearsec"><h3>プロフィール' + (HK.Tips ? HK.Tips.btn('gear-profile') : '') + '</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
         '<label>誕生月 ' + selOf('bmonth', [['', '決めない']].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (m) { return [String(m), m + '月']; })), c.bmonth || '') + '</label>' +
         '<label>年齢 <input type="number" data-gf="age" min="1" max="150" value="' + esc(c.age || '') + '" placeholder="決めない" style="width:5em"></label>' +
         '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
         '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label></div>' +
-      '<p class="gearhint">受け攻めはR18の箱庭で使います。女性は攻めを選ばない限り受けとして扱います（女性どうしでは、動く側に回ることもあります）。「攻め」を選んだ人は、どの場面でも受ける側にはなりません。<br>恋愛対象（受け攻め）は、恋愛や体の関係を持つ相手の受け攻めを絞ります。おまかせなら、攻めは受けとだけ、受けは攻めとだけ結ばれます。向きの決まらない組（攻めどうしなど）は、恋愛にも体の関係にもなりません。</p>' +
-      '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div>' +
-      '<p class="gearhint">自動のときは、住人の並び順で色が決まります（エゴグラムとは関係ありません）。</p></div>' +
-      '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label></div><p class="gearhint">固定すると、その相手以外とは恋愛に発展しません（片想いのままでも使えます）。相手が箱庭にいないときは、誰とも恋愛しません。</p></div>' +
+      '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
+      '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label></div></div>' +
       '<div class="gearsec"><h3>関係と呼び方' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + (rel || '<p class="gearhint">まだ関係はありません。</p>') + addable + '</div>';
   }
   function render() {
@@ -172,12 +171,14 @@
     sampleTick();
   }
   function open(id, from) {
+    if (cur !== id) keigoOpen = false;
     cur = id; opener = from || null;
     if (!ov) {
       ov = document.createElement('div');
       ov.className = 'gearov';
       ov.innerHTML = '<div class="gearbox" role="dialog" aria-modal="true" aria-labelledby="geartitle"></div>';
       document.body.appendChild(ov);
+      ov.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('gkeigo')) keigoOpen = e.target.open; }, true);
     }
     ov.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -241,7 +242,7 @@
       case 'colorauto': if (isInput) return; if (t.checked) c.color = ''; else c.color = (ov.querySelector('[data-gf="color"]') || {}).value || '#3d6f93'; changed(true); UI.applyColors(s.chars); break;
       case 'color': if (/^#[0-9a-fA-F]{6}$/.test(t.value)) { c.color = t.value; UI.applyColors(s.chars); changed(false); } break;
       case 'lock': if (isInput) return; c.loveLock = t.value; changed(false); break;
-      case 'keigo': if (isInput) return; c.keigo = c.keigo || {}; if (t.checked) c.keigo[t.dataset.o] = 1; else delete c.keigo[t.dataset.o]; changed(false); sampleRefresh(); break;
+      case 'keigo': if (isInput) return; c.keigo = c.keigo || {}; if (t.checked) c.keigo[t.dataset.o] = 1; else delete c.keigo[t.dataset.o]; changed(false); sampleRefresh(); (function () { var kn = ov && ov.querySelector('.gkn'), n = ov ? ov.querySelectorAll('[data-gf="keigo"]:checked').length : 0; if (kn) kn.textContent = n ? n + '人' : 'なし'; })(); break;
       case 'callone': c.calls = c.calls || {}; if (t.value.trim()) c.calls[t.dataset.o] = t.value.trim().slice(0, 16); else delete c.calls[t.dataset.o]; changed(false); sampleRefresh(); break;
       case 'ttype': if (isInput || !tie) return; tie.type = t.value; var CO = HK.coldOpts ? HK.coldOpts(t.value) : null; if (!CO || !CO.map[tie.cold || '']) delete tie.cold; changed(true); break;
       case 'tdir': if (isInput || !tie) return; var me = t.value === 'a'; var o = tie.a === c.id ? tie.b : tie.a; tie.a = me ? c.id : o; tie.b = me ? o : c.id; changed(true); break;
