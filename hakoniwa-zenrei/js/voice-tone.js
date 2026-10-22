@@ -66,7 +66,7 @@
     if (/かったです$/.test(s)) return s.replace(/です$/, '');
     if (/でした$/.test(s)) return s.replace(/でした$/, 'だった');
     /* クイズの「誰でしょう？」「なんて書いたでしょう？」は、独り言の「だろ」にせず「〜と思う？」に */
-    if (/でしょう$/.test(s) && WH.test(s)) return s.replace(/でしょう$/, /[たるいうくすつむぬぶぐ]でしょう$/.test(s) ? 'と思う' : 'だと思う');
+    if (/でしょう$/.test(s) && /(何|なに|なん|誰|だれ|どこ|いつ|どう|どれ|どっち|どんな|どの|なぜ)/.test(s)) return s.replace(/でしょう$/, /[たるいうくすつむぬぶぐ]でしょう$/.test(s) ? 'と思う' : 'だと思う');
     if (/でしょう$/.test(s)) return s.replace(/でしょう$/, rough ? 'だろ' : 'でしょ');
     if (/んです$/.test(s)) return s.replace(/んです$/, 'んだ');
     if (/[^し]いです$/.test(s) || /(ない|たい|しい)です$/.test(s)) return s.replace(/です$/, '');
