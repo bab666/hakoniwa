@@ -31,7 +31,13 @@
     { id: 'detective', label: '探偵', sk: { obs: 0.3, talk: 0.1 }, desc: '嘘と矛盾を見抜く' },
     { id: 'sleuth', label: '名探偵', sk: { obs: 0.45, lore: 0.2, talk: 0.15 }, desc: '頭脳明晰。仲間の死や村の殺人事件の真相を推理で暴く' },
     { id: 'ponkotsu', label: 'ポンコツ探偵', sk: { explore: 0.15, talk: 0.05 }, luck: 1, desc: '自称名探偵。的外れな推理で邪魔ばかりするが、たまに当たる' },
-    { id: 'priest', label: '神職', sk: { lore: 0.2, rite: 0.3, spirit: 0.15 }, desc: '祀りの作法を知っている' }
+    { id: 'priest', label: '神職', sk: { lore: 0.2, rite: 0.3, spirit: 0.15 }, desc: '祀りの作法を知っている' },
+    /* 未成年（全年齢版のみ。おまかせでは選ばれない。恋愛は同じ未成年どうしだけ、幼子は恋愛しない） */
+    { id: 'hs_sport', label: '高校生・運動部', sk: { explore: 0.25, fight: 0.15 }, minor: 'teen', desc: '足が速く体力がある。若い村人とすぐ打ち解ける' },
+    { id: 'hs_club', label: '高校生・文化部', sk: { obs: 0.2, lore: 0.15 }, minor: 'teen', desc: '図書委員や新聞部・委員会で鍛えた調べ物の腕。細かいことに気づく' },
+    { id: 'hs_work', label: '高校生・バイト', sk: { talk: 0.25, explore: 0.1 }, minor: 'teen', desc: '接客で鍛えた愛想で、村人から話を引き出す' },
+    { id: 'ojou', label: '令嬢', sk: { talk: 0.15, rite: 0.15, lore: 0.1 }, minor: 'teen', desc: '名家の娘。育ちのよさで旧家の大人たちに受けがいい' },
+    { id: 'child', label: '幼子', sk: { spirit: 0.35, explore: 0.1 }, minor: 'child', desc: '大人には見えないものが見える。村人も子どもには油断する' }
   ];
   JS.JOB = {}; JS.JOBS.forEach(function (j) { JS.JOB[j.id] = j; });
   /* おまかせのときの職業（気質から） */

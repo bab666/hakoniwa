@@ -13,7 +13,7 @@
   var scen = {
     id: 'jashin', name: '邪神村RTA', kicker: 'ホラー・脱出（1〜6人）', solo: true, maxCast: 6, minCast: 1,
     desc: '地図にない山奥の村に迷い込んだ住人たち。村には得体の知れない神が祀られ、祭りの夜が近づいている。神の正体を示す手がかりを集め、対抗策を突き止めて、生きて村を出られるか。何時間で脱出できたかを記録する。',
-    note: '※ホラー表現（死・失踪）を含みます。登場人物はすべて成人として扱います。',
+    note: '※ホラー表現（死・失踪）を含みます。登場人物は、未成年の職業（高校生・令嬢・幼子）を選んだ人以外は成人として扱います。',
     unit: '時間', simulate: function (input) { return run(input); },
     castHint: '1〜6人で挑みます（多すぎると雰囲気が出ないため6人まで）。「職業」で、手がかりの見つけやすさや、できることが変わります。「目標」（恋人を作る・借金返済のために盗む・誰かを殺す・村の儀式を乗っ取る・儀式で別の神を呼ぶ・事件を解決する など）と職業の組み合わせで、振る舞いや手口が変わります。おまかせなら気質と職業から抽選し、探偵はほとんど「事件を解決する」になります。仲間の失踪や死で緊迫感が高まると、生きて帰りたい人は自分の目標より脱出や村の秘密を優先します。',
     env: [
@@ -82,11 +82,14 @@
       var jp = (pc.pick || {}).job;
       /* 魔術師は職業から外した（以前のデータはオカルト研究家＋儀式の目標として読む） */
       var legacyMage = jp === 'mage'; if (legacyMage) jp = 'occult';
-      p.job = JS.JOB[jp] ? jp : HK.weighted(rng, JS.JOBS, function (j) { return Math.pow(Math.max(0.05, JS.JOB_FIT[j.id](p.tr)), 2.5); }).id;
+      p.job = JS.JOB[jp] ? jp : HK.weighted(rng, JS.JOBS.filter(function (j) { return !j.minor && JS.JOB_FIT[j.id]; }), function (j) { return Math.pow(Math.max(0.05, JS.JOB_FIT[j.id](p.tr)), 2.5); }).id;
+      p.minor = (JS.JOB[p.job] && JS.JOB[p.job].minor) || '';
       p.jobAuto = !JS.JOB[jp];
       p.action = resolve(S, p, JS.ACTIONS, pc.action, 2.2); p.goal = resolve(S, p, JS.GOALS, pc.goal, 2.2);
       var gAuto = !pc.goal || pc.goal === 'auto';
       if (gAuto && legacyMage) p.goal = JS.GOAL[rng() < 0.6 ? 'ritual' : 'meet'];
+      /* 幼子は恋人を作ろうとしない */
+      if (p.minor === 'child' && p.goal && p.goal.id === 'love') p.goal = JS.GOAL.escape || p.goal;
       /* 探偵は、おまかせならほとんど「事件を解決する」 */
       else if (gAuto && /^(detective|sleuth|ponkotsu)$/.test(p.job) && rng() < 0.85) p.goal = JS.GOAL.solve;
       p.goal0 = p.goal; p.surv = p.goal.surv != null ? p.goal.surv : 1;

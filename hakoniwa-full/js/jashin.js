@@ -82,11 +82,14 @@
       var jp = (pc.pick || {}).job;
       /* 魔術師は職業から外した（以前のデータはオカルト研究家＋儀式の目標として読む） */
       var legacyMage = jp === 'mage'; if (legacyMage) jp = 'occult';
-      p.job = JS.JOB[jp] ? jp : HK.weighted(rng, JS.JOBS, function (j) { return Math.pow(Math.max(0.05, JS.JOB_FIT[j.id](p.tr)), 2.5); }).id;
+      p.job = JS.JOB[jp] ? jp : HK.weighted(rng, JS.JOBS.filter(function (j) { return !j.minor && JS.JOB_FIT[j.id]; }), function (j) { return Math.pow(Math.max(0.05, JS.JOB_FIT[j.id](p.tr)), 2.5); }).id;
+      p.minor = (JS.JOB[p.job] && JS.JOB[p.job].minor) || '';
       p.jobAuto = !JS.JOB[jp];
       p.action = resolve(S, p, JS.ACTIONS, pc.action, 2.2); p.goal = resolve(S, p, JS.GOALS, pc.goal, 2.2);
       var gAuto = !pc.goal || pc.goal === 'auto';
       if (gAuto && legacyMage) p.goal = JS.GOAL[rng() < 0.6 ? 'ritual' : 'meet'];
+      /* 幼子は恋人を作ろうとしない */
+      if (p.minor === 'child' && p.goal && p.goal.id === 'love') p.goal = JS.GOAL.escape || p.goal;
       /* 探偵は、おまかせならほとんど「事件を解決する」 */
       else if (gAuto && /^(detective|sleuth|ponkotsu)$/.test(p.job) && rng() < 0.85) p.goal = JS.GOAL.solve;
       p.goal0 = p.goal; p.surv = p.goal.surv != null ? p.goal.surv : 1;

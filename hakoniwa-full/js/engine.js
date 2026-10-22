@@ -56,6 +56,8 @@
     /* 恋愛相手を決めた人は、その相手以外とは恋愛しない（相手が箱庭にいなければ誰とも） */
     if (a && b && a.lock != null && a.lock !== b.i) return false;
     if (a.role === 'teacher' || b.role === 'teacher') return false;
+    /* 未成年（全年齢版の職業など）：幼子は恋愛しない。未成年と大人も恋愛しない */
+    if (a.minor === 'child' || b.minor === 'child' || (a.minor || '') !== (b.minor || '')) return false;
     if (!a.likes || a.likes === 'both') return true;
     if (a.likes === 'none') return false;
     if (!b.gender || b.gender === 'x') return true;

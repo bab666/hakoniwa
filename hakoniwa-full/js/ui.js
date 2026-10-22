@@ -454,7 +454,7 @@
     var m = n && n.match(/※([^。]*?)(?:の描写|表現)/), head = '';
     if (n && /パロディ/.test(n)) head = '※' + (n.match(/『[^』]+』/) || ['パロディ'])[0].replace(/^(?!『)/, '') + (/『/.test(n) ? 'のパロディ' : '');
     else if (m) head = '※' + m[1].replace(/（[^）]*）/, '') + 'の描写あり';
-    return (head ? head + '　' : '') + ADULT_NOTE;
+    return (head ? head + '　' : '') + (n && /未成年/.test(n) ? '※未成年の職業を選んだ人以外は成人として扱います' : ADULT_NOTE);
   }
   var R18_PLOT = { goukon: 'お持ち帰りの夜', whiteroom: '条件がエッチ・媚薬などのとき' };
   function scenR18(s, id) {
