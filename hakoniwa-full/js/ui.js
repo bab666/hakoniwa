@@ -433,12 +433,13 @@
     rpg: 'パーティを組んでダンジョンへ。階ごとに戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、どこで引き返し、いくら持ち帰れるか。',
     jinro: '住人どうしで人狼ゲーム。人狼は性格で騙りや潜伏を選び、村は仕切り役しだいで方針が変わる。信頼と協力、そして裏切り。'
   };
-  /* 注意書きはカードでは短く（全文は title に） */
+  /* 注意書きはカードでは短く（全文は title に）。どの箱庭にも「※成人として扱います」を付ける */
+  var ADULT_NOTE = '※成人として扱います';
   function cardNote(n) {
-    if (!n) return '';
-    if (/パロディ/.test(n)) return '※' + (n.match(/『[^』]+』/) || ['パロディ'])[0].replace(/^(?!『)/, '') + (/『/.test(n) ? 'のパロディ' : '');
-    var m = n.match(/※([^。]*?)(?:の描写|表現)/);
-    return m ? '※' + m[1].replace(/（[^）]*）/, '') + 'の描写あり' : '※成人として扱います';
+    var m = n && n.match(/※([^。]*?)(?:の描写|表現)/), head = '';
+    if (n && /パロディ/.test(n)) head = '※' + (n.match(/『[^』]+』/) || ['パロディ'])[0].replace(/^(?!『)/, '') + (/『/.test(n) ? 'のパロディ' : '');
+    else if (m) head = '※' + m[1].replace(/（[^）]*）/, '') + 'の描写あり';
+    return (head ? head + '　' : '') + ADULT_NOTE;
   }
   var R18_PLOT = { goukon: 'お持ち帰りの夜', whiteroom: '条件がエッチ・媚薬などのとき' };
   function scenR18(s, id) {
@@ -468,10 +469,10 @@
       var lo = smin(id), hi = smax(id), meta = '参加 ' + (lo === hi ? lo + '人' : lo + '〜' + hi + '人');
       var r18s = !HK.SAFE_ON && !adult ? scenR18(s, id) : '';
       if (r18s) meta += '<span class="r18part"><span class="r18tag">R18</span>' + esc(r18s) + '</span>';
-      var cd = CARD_DESC[id], full = s.desc + (s.note ? '\n' + s.note : '');
+      var cd = CARD_DESC[id], full = s.desc + (s.note ? '\n' + s.note : '') + (/成人として扱/.test(s.note || '') ? '' : '\n※登場人物はすべて成人として扱います。');
       cd = Array.isArray(cd) ? cd[HK.SAFE_ON ? 0 : 1] : cd || s.desc;
       return '<label class="scen' + (adult ? ' adult' : '') + (id === S.scenId ? ' on' : '') + '" title="' + esc(full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (id === S.scenId ? ' checked' : '') + '>' +
-        '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div><div class="d">' + esc(cd) + '</div>' + (s.note ? '<div class="note">' + esc(cardNote(s.note)) + '</div>' : '') + '</label>';
+        '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div><div class="d">' + esc(cd) + '</div><div class="note">' + esc(cardNote(s.note)) + '</div></label>';
     }).join('');
     /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url） */
     if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<a class="scen r18link" href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">' +
