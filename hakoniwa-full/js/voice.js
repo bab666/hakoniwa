@@ -458,6 +458,8 @@
             var ov = pre ? null : !nounQ && V.overrideFor ? V.overrideFor(q, kg ? Object.assign({}, who, { tone: 'polite' }) : who, people) : null;
             q = V.replaceFP(ov != null ? ov : q, who);
             if (ov == null && !pre) { if (who.persona === 'polite' || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(q, who); }
+            /* 口調ごとの仕上げ（後輩の「〜っす」、お嬢様の「〜ですわ」など。tone-polite-kin.js） */
+            if (V.toneFinish) q = V.toneFinish(q, who);
             if (YOU_ST.test(q0)) q = fixYouStutter(q);
             if (V.applyCalls) q = V.applyCalls(q, who, people);
           }
