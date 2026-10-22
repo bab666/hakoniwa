@@ -5,12 +5,6 @@
   'use strict';
   var HK = window.HK, V = HK.Voice, EX = HK.TONE_EXTRA;
   if (!V || !EX) return;
-  EX.gentleman = { label: '古風な紳士', desc: '「〜したまえ」「〜ということだね」「〜かい？」。落ち着いた、古風で品のある話し方', base: 'stern', top: 'A', fp: { m: '私', f: '私', x: '私' } };
-  if (HK.TONE_KEYS && HK.TONE_KEYS.indexOf('gentleman') < 0) {
-    var at = HK.TONE_KEYS.indexOf('polite');
-    HK.TONE_KEYS.splice(at >= 0 ? at + 1 : HK.TONE_KEYS.length, 0, 'gentleman');
-  }
-
   var E = '(?=[。！？!?…、」]|$)';
   function re(s) { return new RegExp(s + E, 'g'); }
   /* 命令・お願い → 「〜たまえ」 */

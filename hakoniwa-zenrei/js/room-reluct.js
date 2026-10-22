@@ -21,7 +21,7 @@
   function score(ctx, c) {
     var x = c.tr, t = toneKey(c);
     var s = x.cp * 0.45 + x.ac * 0.35 + (x.caution || 0) * 0.3 + (1 - x.fc) * 0.2 - (x.impulse || 0) * 0.3 - (API.eager ? API.eager(ctx, c) : 0.4) * 0.4;
-    s += { shy: 0.2, stern: 0.18, polite: 0.15, tsun: 0.12, tsun_n: 0.12, cool: 0.05, free: -0.25, aniki: -0.05, kansai: -0.05, noja: 0.08, mukuchi: 0.12, mixed: 0.05 }[t] || 0;
+    s += (HK.toneOpt && HK.toneOpt(t, 'reluct')) || 0;   /* 口調ごとの補正は tone-registry.js の reluct */
     if (ctx.present().length >= 3) s += 0.3;
     s -= (c.flags.aphro || 0) * 0.06;
     return s;

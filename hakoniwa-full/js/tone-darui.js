@@ -17,16 +17,6 @@
   'use strict';
   var HK = window.HK, V = HK.Voice, EX = HK.TONE_EXTRA;
   if (!V || !EX) return;
-  EX.darui = { label: 'けだるげ（ダウナー）', desc: '「……あ。……来たんだ」「……めんどい」。テンションは最低、省エネ。何が起きても「……別に」と受け流す。態度はエゴグラムから決まる', base: null, top: null, fp: { m: '俺', f: 'わたし', x: 'わたし' } };
-  if (HK.TONE_KEYS && HK.TONE_KEYS.indexOf('darui') < 0) HK.TONE_KEYS.push('darui');
-
-  /* 文面の表はエゴグラムから（敬語の表だと話し方の整形が効かないので、敬語なら穏やかの表を使う） */
-  var po0 = HK.personaOf;
-  HK.personaOf = function (c) {
-    var p = po0(c), t = HK.toneOf ? HK.toneOf(c) : c && c.tone;
-    return t === 'darui' && p === 'polite' ? 'gentle' : p;
-  };
-
   var E = '(?=[。！？!?…、」]|$)';
   function re(s, f) { return new RegExp(s + E, f || 'g'); }
   function hash(s) { var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100003; return h; }

@@ -12,17 +12,9 @@
   var HK = window.HK, V = HK.Voice;
   if (!HK.PERSONA || !V) return;
 
-  HK.TONE_EXTRA = {
-    aniki: { label: '頼れる兄貴・姉貴分', desc: 'CP・NP高。面倒見がよく、さっぱりした物言い／兄貴肌・姉御肌', base: 'proud', top: 'NP', fp: { m: '俺', f: 'あたし', x: '俺' } },
-    tsun_n: { label: '意地っ張り（中性的）', desc: '意地っ張りの、語尾が中性的な話し方', base: 'tsun', top: 'CP', neutral: true, fp: { m: '俺', f: '私', x: '僕' } },
-    gentle_n: { label: '穏やか（中性的）', desc: '穏やかの、語尾が中性的な話し方', base: 'gentle', top: 'NP', neutral: true, fp: { m: '僕', f: '私', x: '僕' } },
-    devoted_p: { label: '健気（くだけた）', desc: '健気の、敬語を使わない話し方', base: 'devoted', top: 'AC', plain: true },
-    calm: { label: '冷静（落ち着き）', desc: '動じない、落ち着いた話し方。分析や計算はしない', base: 'cool', top: 'A', calm: true, fp: { m: '俺', f: '私', x: '私' } },
-    kansai: { label: '関西弁（軽め）', desc: '語尾がやわらかい関西弁。態度はエゴグラムから決まる', base: null, top: null, kansai: true, fp: { m: '俺', f: 'うち', x: 'うち' } }
-  };
+  /* 追加の口調の名前・一人称・借りる表と、選択欄の並びは tone-registry.js（HK.TONES）から */
   var EX = HK.TONE_EXTRA;
-  /* 選択欄の並び */
-  HK.TONE_KEYS = ['proud', 'aniki', 'stern', 'tsun', 'tsun_n', 'gentle', 'gentle_n', 'devoted', 'devoted_p', 'cool', 'calm', 'free', 'shy', 'polite', 'kansai'].filter(function (k) { return HK.PERSONA[k] || EX[k]; });
+  if (!EX) return;
   HK.toneValid = function (k) { return !!(k && (HK.PERSONA[k] || EX[k])); };
   HK.toneInfo = function (k) { return HK.PERSONA[k] || EX[k] || null; };
   function trOf(c) { return (c && c.tr) || HK.traits((c && c.eg) || { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 }); }
@@ -37,7 +29,9 @@
   HK.personaOf = function (c) {
     var t = HK.toneOf(c);
     if (HK.PERSONA[t]) return t;
-    return (EX[t] && EX[t].base) || HK.personaAuto(trOf(c));
+    var p = (EX[t] && EX[t].base) || HK.personaAuto(trOf(c));
+    /* 文面の表がエゴグラムから決まる口調（egoTable）は、敬語の表だと話し方の整形が効かないので、穏やかの表を使う */
+    return EX[t] && EX[t].egoTable && p === 'polite' ? 'gentle' : p;
   };
   var vt0 = HK.voiceTop;
   HK.voiceTop = function (c) {

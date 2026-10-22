@@ -76,8 +76,8 @@
   ];
 
   /* ---------- 口調ごとの言い回し（強い口調／やわらかい口調／敬語）。台詞の変換に任せると語尾が混ざるので、書き分ける ---------- */
-  var SOFT_T = { gentle: 1, gentle_n: 1, shy: 1, devoted_p: 1, mukuchi: 1 }, POLITE_T = { polite: 1, devoted: 1 };
-  function grp(p) { var t = HK.toneOf ? HK.toneOf(p) : p.tone; return POLITE_T[t] ? 'polite' : SOFT_T[t] ? 'soft' : 'rough'; }
+  /* 口調の分類は tone-registry.js の group */
+  function grp(p) { var t = HK.toneOf ? HK.toneOf(p) : p.tone, g = HK.toneOpt && HK.toneOpt(t, 'group'); return g === 'polite' || g === 'soft' ? g : 'rough'; }
   var CLAIM = {
     rough: CLAIM_ROUGH,
     soft: [

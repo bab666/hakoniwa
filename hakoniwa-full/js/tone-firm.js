@@ -9,7 +9,8 @@
   var HK = window.HK, V = HK && HK.Voice;
   if (!V || !V.styleQuote) return;
 
-  var PLAIN = { proud: 1, aniki: 1, stern: 1, cool: 1, calm: 1, tsun_n: 1 };
+  /* どの口調をどの言い換えにするかは tone-registry.js の firm（'plain' / 'noja' / 'gentleman'） */
+  function firmOf(t) { return HK.toneOpt ? HK.toneOpt(t, 'firm') : null; }
   /* 区切り（文の切れ目・読点・言いよどみ） */
   var B = '(?=[…‥。！？!?、っッー〜～」♡\\s]|$)';
   function R(s, f) { return new RegExp(s, f || 'g'); }
@@ -125,10 +126,8 @@
   V.firmQuote = function (q, who) {
     var t = who && (HK.toneOf ? HK.toneOf(who) : who.tone);
     V._firmTone = t;
-    if (PLAIN[t]) return firm(q, 'plain');
-    if (t === 'noja') return firm(q, 'noja');
-    if (t === 'gentleman') return firm(q, 'gentleman');
-    return q;
+    var k = firmOf(t);
+    return k ? firm(q, k) : q;
   };
   /* 書き下ろし辞書の台詞（のじゃ・紳士など）にも、拒み方だけは同じ言い換えをかける */
   var of0 = V.overrideFor;
@@ -138,7 +137,7 @@
     var t = who && (HK.toneOf ? HK.toneOf(who) : who.tone);
     if (t === 'gentle_n') q = q.replace(/いいの、よ/g, 'いいんだ').replace(/大丈夫よ(?=[…‥。！？!?、」]|$)/g, '大丈夫だよ').replace(/、よ(?=[…‥。！？!?」]|$)/g, '').replace(/(^|[、…‥「\s])まあ、/g, '$1ああ、');
     /* 口調ごとの整形が「ください」「ちょうだい」を先にいじって崩さないよう、はっきりした口調では先に外しておく */
-    if (PLAIN[t] || t === 'noja' || t === 'gentleman') q = q.replace(/([てで])、?(?:くださいませ|ください|ちょうだい)(?![たさ])/g, '$1').replace(/([てで])、くれ(?![たさるれ])/g, '$1');
+    if (firmOf(t)) q = q.replace(/([てで])、?(?:くださいませ|ください|ちょうだい)(?![たさ])/g, '$1').replace(/([てで])、くれ(?![たさるれ])/g, '$1');
     var out = V.firmQuote(sq0.call(this, q, who), who);
     /* 全口調の後始末：言い換えで重なった読点、敬語の口調で残った「して。」 */
     out = out.replace(/、{2,}/g, '、').replace(/、([…‥])/g, '$1');

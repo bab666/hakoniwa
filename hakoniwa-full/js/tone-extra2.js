@@ -7,19 +7,6 @@
   'use strict';
   var HK = window.HK, V = HK.Voice, EX = HK.TONE_EXTRA;
   if (!V || !EX) return;
-  EX.noja = { label: 'のじゃ（古風）', desc: '「〜なのじゃ」「〜じゃろう」「〜ぞ」「おぬし」。古風で少し尊大な話し方。態度はエゴグラムから決まる', base: null, top: null, fp: { m: 'わし', f: 'わらわ', x: 'わし' } };
-  EX.mixed = { label: '敬語まじりのため口', desc: '「〜ですよね。でもさ、〜じゃん」。敬語とため口が混ざる、距離感のゆれる話し方', base: null, top: null };
-  EX.mukuchi = { label: '無口', desc: '「……」「……ん」。ほとんど喋らず、話してもひと言だけ。態度はエゴグラムから決まる', base: null, top: null };
-  var MINE = { noja: 1, mixed: 1, mukuchi: 1, kansai: 1 };
-  if (HK.TONE_KEYS) ['noja', 'mixed', 'mukuchi'].forEach(function (k) { if (HK.TONE_KEYS.indexOf(k) < 0) HK.TONE_KEYS.push(k); });
-
-  /* 文面の表はエゴグラムから（敬語の表だと話し方の整形が効かないので、敬語なら穏やかの表を使う） */
-  var po0 = HK.personaOf;
-  HK.personaOf = function (c) {
-    var p = po0(c), t = HK.toneOf ? HK.toneOf(c) : c && c.tone;
-    return MINE[t] && p === 'polite' ? 'gentle' : p;
-  };
-
   var E = '(?=[。！？!?…、」]|$)';
   function re(s, f) { return new RegExp(s + E, f || 'g'); }
   function hash(s) { var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100003; return h; }

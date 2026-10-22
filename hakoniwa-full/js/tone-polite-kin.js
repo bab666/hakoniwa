@@ -5,30 +5,10 @@
    ・お嬢様 … 「〜ですわ」「〜ですの？」「〜ますわ」「〜くださいまし」 */
 (function () {
   'use strict';
-  var HK = window.HK, V = HK && HK.Voice, EX = HK && HK.TONE_EXTRA;
-  if (!V || !EX) return;
-  EX.kohai = { label: '後輩（〜っす）', desc: '「〜っす」「〜じゃないっすか」。人なつっこい後輩の話し方。文面は敬語のものを使う', base: 'polite', top: 'AC', fp: { m: '俺', f: '私', x: '自分' } };
-  EX.ojou = { label: 'お嬢様（〜ですわ）', desc: '「〜ですわ」「〜ですの？」「〜くださいまし」。上品なお嬢様の話し方。文面は敬語のものを使う', base: 'polite', top: 'CP', fp: { m: 'わたくし', f: 'わたくし', x: 'わたくし' } };
-  /* 選択欄では、後輩は健気（くだけた）の後ろ、お嬢様は敬語の後ろに並べる */
-  [['kohai', 'devoted_p'], ['ojou', 'polite']].forEach(function (p) {
-    var K = HK.TONE_KEYS; if (!K || K.indexOf(p[0]) >= 0) return;
-    var i = K.indexOf(p[1]); if (i < 0) K.push(p[0]); else K.splice(i + 1, 0, p[0]);
-  });
-  var KIN = { kohai: 1, ojou: 1 };
-
-  /* その口調の直し（tone-fix.js に口調名で登録したもの）を先に引き、完成形としてそのまま使う（語尾の付け替えをしない印 U+2063 を付ける）。
-     なければ、書き下ろし・直しは敬語のものを引いて、あとで語尾を付け替える */
-  var DONE = '\u2063';
-  var of0 = V.overrideFor;
-  V.overrideFor = function (q, who, people) {
-    if (!of0) return null;
-    if (who && KIN[who.tone]) {
-      var own = of0.apply(this, arguments);
-      if (own != null) return DONE + own;
-      return of0.call(this, q, Object.assign({}, who, { tone: 'polite' }), people);
-    }
-    return of0.apply(this, arguments);
-  };
+  var HK = window.HK, V = HK && HK.Voice;
+  if (!V || !HK.toneFinish) return;
+  /* 名前・一人称・並び・派生元（derive: 'polite'）は tone-registry.js。
+     その口調名の直し（tone-fix.js）があればそれを完成形として使い、なければ敬語の書き下ろし・直しを引いて、ここで語尾を付け替える（voice.js） */
 
   var P = '(よね|よ|ね|か)?';
   function casual(s) { return V.casualQuote ? V.casualQuote(s) : s; }
@@ -108,13 +88,6 @@
     }).join('');
   }
 
-  var tf0 = V.toneFinish;
-  V.toneFinish = function (q, who) {
-    if (q.indexOf(DONE) >= 0) return q.replace(/\u2063/g, '');
-    if (tf0) q = tf0(q, who);
-    var t = who && who.tone;
-    if (t === 'kohai') return kohai(q);
-    if (t === 'ojou') return ojou(q);
-    return q;
-  };
+  HK.toneFinish('kohai', kohai);
+  HK.toneFinish('ojou', ojou);
 })();
