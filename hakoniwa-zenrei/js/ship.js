@@ -200,7 +200,7 @@
         a.cnt.find++; a.m.find++;
         if (stg === 2) {
           if (x.kind !== 'res' && d.good) t += F(d.good, { a: a.name, x: Pn.name });
-          if (d.item) { S.items.push({ name: d.item, desc: d.itemDesc || '', by: a.name, kind: x.kind }); a.cnt.item++; t += '――' + a.name + 'は「' + d.item + '」を船に持ち帰った。'; useItem(S, d, x.kind); }
+          if (d.item) { S.items.push({ name: d.item, desc: d.itemDesc || '', by: a.name, kind: x.kind }); a.cnt.item++; t += '――' + a.name + 'は『' + d.item + '』を船に持ち帰った。'; useItem(S, d, x.kind); }
         }
         var o = ST.say(S, { actors: tm, tag: '探索：' + lab, text: t, why: KIND_JP[x.kind] + 'の調査に成功（' + ['', '手がかり', '詳細', '最深部'][stg] + 'まで判明）／' + a.name + 'の' + (x.kind === 'res' ? '科学' : x.kind === 'life' ? '生物学' : '交渉') + 'の腕 ' + Math.round(sk * 100) + '・難しさ ' + Math.round(diff * 100), mag: stg === 3 ? 34 : 22 });
         if (stg === 3) {
@@ -261,7 +261,7 @@
     var t = en.intro;
     if (ok) {
       t += F(en.ok, { a: a.name });
-      if (en.item) { S.items.push({ name: en.item, desc: en.itemDesc || '', by: a.name, kind: 'space' }); a.cnt.item++; t += '――「' + en.item + '」を手に入れた。'; }
+      if (en.item) { S.items.push({ name: en.item, desc: en.itemDesc || '', by: a.name, kind: 'space' }); a.cnt.item++; t += '――『' + en.item + '』を手に入れた。'; }
       var o = ST.say(S, { actors: [a], tag: '未知との遭遇：' + en.name, text: t, why: a.name + 'の判断（科学・航法）', mag: 26 });
       return ST.key(S, o, en.name + 'に出会った');
     }
