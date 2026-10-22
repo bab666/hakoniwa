@@ -12,6 +12,8 @@
   /* 体位を変えて、溜めた欲を吐き出す */
   var POS = L('狭いロッカーで溜めに溜めた欲は、一度では収まらなかった。{a}は{b}を抱え直し、角度を変えては、また奥を確かめた。\n\n{b}の喉から、媚薬に溶けた声が途切れ途切れに漏れる。|{a}は{b}を横向きに寝かせ、背中から抱きしめたまま深く繋がり直した。うなじに唇を押しつけながら、ゆっくり、深く揺らす。\n\n{b}の指が、シーツの上で{a}の手を探した。|{a}は{b}をうつ伏せにして、腰だけを高く上げさせた。媚薬の熱で赤く染まった背中に、汗が一筋流れていく。\n\n{a}「ロッカーの中で煽った分、全部返してもらう」');
 
+  var FM_BAD = /押し入|奥まで入れ|入れたまま|中に入れ|貫|突き上げ|突いた|深く突|注ぎ込/;
+  var FM_SAFE = L('{a}は{b}の上で腰を沈めたまま、わざと動かずに{b}の顔を見下ろした。|{a}は{b}の胸に手をついて、少しずつ深さを変えながら腰を揺らした。|{a}は{b}の上で、締めつけては緩め、{b}が息を詰めるたびに腰の動きを止めた。');
   function para(arr, pre) { return arr.map(function (x) { return (pre ? '\n\n' : '') + x + '\n\n'; }); }
 
   var bed0 = LK.bed;
@@ -23,17 +25,29 @@
     var st = o.tone === 'rough' ? 'rough' : T.style(x);
     var hard = !fm && !riba && T.hard(rng, x, y);
     var g = T.fmGroup(st);
-    var save = { fore: B.fore, insert: B.insert, pos: B.pos, climax: B.climax }, say0 = ST.say;
+    var tk = o.tone === 'rough' || o.tone === 'sweet' ? o.tone : null;
+    var save = { fore: B.fore, insert: B.insert, pos: B.pos, climax: B.climax, tone: tk ? B[tk] : null }, say0 = ST.say;
+    /* 荒々しい攻めの回は、甘い／拘束する言い回しを挟まない（荒々しさは差し替えた挿入の段落で書く） */
+    if (hard && tk) B[tk] = [''];
     B.fore = para(FORE);
     B.insert = para(fm ? T.FM_BODY[g] : hard ? T.ROUGH_BODY : T.BODY[st] || T.BODY.gentle);
     B.pos = para(POS, true);
     if (!riba) B.climax = para(fm ? T.FM_CLIMAX[g] : hard ? T.ROUGH_CLIMAX : T.CLIMAX[st] || T.CLIMAX.gentle, true);
     /* 段落の区切りを整える（末尾の改行・三つ以上の改行） */
     ST.say = function (S2, e) {
-      if (e && typeof e.text === 'string') e.text = e.text.replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '');
+      if (e && typeof e.text === 'string') {
+        /* 女性の攻めが男性の受けに「入れる」文（最中の展開の文）を、跨る書き方に差し替える */
+        if (fm) e.text = e.text.split(/(?<=。)/).map(function (sen) {
+          if (sen.indexOf(x.name + 'は') >= 0 && FM_BAD.test(sen)) return S.rng.pick(FM_SAFE).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name);
+          /* 男性の受けの「中・奥」を言う文は、腰の跳ね方に */
+          if (new RegExp(y.name + 'の(中|奥)').test(sen) && !/「/.test(sen)) return sen.replace(new RegExp(y.name + 'の(中|奥)が?[^。]*。'), y.name + 'の腰が、そのたびに小さく跳ねた。');
+          return sen;
+        }).join('');
+        e.text = e.text.replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '');
+      }
       return say0.apply(this, arguments);
     };
     try { return bed0.apply(this, arguments); }
-    finally { B.fore = save.fore; B.insert = save.insert; B.pos = save.pos; B.climax = save.climax; ST.say = say0; }
+    finally { B.fore = save.fore; B.insert = save.insert; B.pos = save.pos; B.climax = save.climax; if (tk) B[tk] = save.tone; ST.say = say0; }
   };
 })();
