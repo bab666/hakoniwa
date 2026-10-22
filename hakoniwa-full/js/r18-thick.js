@@ -2,8 +2,9 @@
    HK.R18M.sex をこの二つの箱庭のときだけ包み、段落（\n\n）に分けて組み立て直す（山場1つで400字前後）。
    体位に入る → 攻めの一言 → 受けの声と最中の手触り → 崩れていく受けと余裕を崩さない攻め → 果てる瞬間 → 余韻。
    ・受けの崩れ方は気の強さで分ける（気の強い人は唇を噛んで堪え、やわらかい人はしがみついて蕩ける）
-   ・ハードな支配（首を押さえる・手首を縛る）は、攻めが嗜虐的なとき（HK.Ero.sadist）だけ、山場の2割5分ほど。
-     恋人・その場の勢い（love・plain）の夜だけで、媚薬・憎しみ・憑依の夜には使わない。受けが攻め指定のときは使わない
+   ・攻めが嗜虐的なとき（HK.Ero.sadist）は、山場の2割5分ほどを少し乱暴に（髪を掴む・押し倒す・強く腰を掴んで打ちつける）。
+     恋人・その場の勢い（love・plain）の夜だけで、媚薬・憎しみ・憑依の夜には使わない。受けが攻め指定のときは使わない。
+     首を押さえるのは、嫉妬・独占欲がきっかけの場面（opt.jealous）だけで、途中で必ず緩める。拘束はしない
    ・opt.short（愛憎の揉み合い・口封じ）は短いまま、段落だけ分ける。余韻は甘くしない
    ・女性どうし（HK.FF）・女性が攻め（HK.FM）は、挿入を前提にしない文で同じ流れに
    全年齢版ではこのファイルは読み込まれない。登場人物はすべて成人として扱う */
@@ -53,10 +54,14 @@
     plain: L('{y}は{x}の胸に頬を預けたまま、まだ小さく震えていた。{x}はその背中を、ゆっくりと撫で下ろした。|二人は並んで横たわり、互いの荒い息が静まるのを待った。肌に残った熱が、妙に長く残った。')
   };
 
-  /* 嗜虐的な攻め（HK.Ero.sadist）のときだけ：首・手首を押さえて支配する。{x}の台詞は口調の言い換えを通る */
-  var HARD = [
-    { open: '{x}は{y}を仰向けに押し倒すと、大きな手でその喉を覆った。指の腹が脈に触れ、親指が喉の少し上を押さえる。力はまだ入れていない。', say: '{x}「動くな」', mid: '{x}は突き上げるたびに指へ力を込め、引くときに緩めた。息を与えては奪われるたびに、{y}の内側がきゅんと強く締まり、視界がうっすらと白く滲んでいった。', say2: '{x}「苦しいか。でも、腰は逃げてないぞ」', peak: '最後に深く打ちつけると同時に、{x}は喉への力をほんの一瞬だけ強めた。{y}は大きく背を反らして達し、{x}もその締めつけの中で奥へ熱を注ぎ込んだ。', after: '{x}はすぐに手を離した。息が一気に流れ込み、{y}は咳き込みながら大きく呼吸を繰り返した。{x}は涙で濡れた頬を親指で拭い、喉に残った赤い指の跡をそっと撫でた。' },
-    { open: '{x}は{y}の両手首をまとめて掴み、頭の上で敷布に縫いとめた。片手だけで、{y}はもう身動きが取れなかった。', say: '{x}「隠すな。全部見せろ」', mid: '{x}は手首を押さえたまま、ゆっくりと、深く腰を沈めた。逃げ場のない快感に{y}の体が跳ねるたびに、手首を押さえる力がわずかに強まった。', say2: '{x}「手を離してほしいか。……まだだ」', peak: '{x}が一番奥で動きを止め、低く「いけ」と囁いた。{y}はその声だけで弾けるように達し、{x}も押さえつけたまま奥へ注いだ。', after: '{x}は手首を離し、赤くなったところを指でなぞった。{y}がぼんやりと見上げると、{x}は何も言わずにその手首に口づけた。' }
+  /* 嗜虐的な攻め（HK.Ero.sadist）のとき：少し乱暴に（髪を掴む・乱暴に押し倒す・強く腰を掴んで激しく打ちつける）。首・拘束は使わない。{x}の台詞は口調の言い換えを通る */
+  var ROUGH_SADIST = [
+    { open: '{x}は{y}を乱暴に押し倒し、腰を掴んで引き寄せた。指が肌に食い込み、{y}の喉から短い声が漏れた。', say: '{x}「逃げるな」', mid: '{x}は手加減なしに腰を打ちつけた。肌のぶつかる音が部屋に響き、{y}は揺さぶられるまま、敷布を掴む指に力を込めるしかなかった。', say2: '{x}「まだ足りないって顔してるぞ」', peak: '{x}は{y}の腰を両手で固定し、一番奥に叩きつけるようにして果てた。{y}は大きく背を反らし、熱が注がれる感触に震えながら達した。', after: '{x}は荒い息のまま体を離し、{y}の乱れた髪を雑にかき上げた。{y}の腰には、指の跡が赤く残っていた。' },
+    { open: '{x}は{y}の髪を掴んで顔を上げさせ、そのまま背後から一気に貫いた。', say: '{x}「声、我慢するな」', mid: '{x}は髪を掴んだまま、深く、速く腰を打ちつけた。引き寄せられるたびに奥を抉られ、{y}の声はだんだん言葉にならなくなっていった。', say2: '{x}「ほら、自分から腰振ってる」', peak: '最後に強く打ちつけた瞬間、{y}の内側が{x}を締め上げた。{x}は短く呻き、掴んだ髪を引き寄せたまま奥へ注ぎ込んだ。', after: '{x}が手を離すと、{y}は敷布に崩れ落ちた。{x}はその背中を見下ろし、汗で貼りついた髪を指で払ってやった。' }
+  ];
+  /* 嫉妬・独占欲がきっかけの行為（opt.jealous）のときだけ：首を押さえる。途中で必ず緩める */
+  var JEALOUS_CHOKE = [
+    { open: '{x}は{y}を仰向けに押し倒すと、大きな手でその喉を覆った。指の腹が脈に触れる。力はまだ入れていない。', say: '{x}「誰のものか、言ってみろ」', mid: '{x}は突き上げるたびに指へ少しだけ力を込め、引くときに緩めた。息を与えては奪われるたびに、{y}の内側がきゅんと強く締まった。', say2: '{x}「ほかのやつに、こんな顔見せるなよ」', peak: '最後に深く打ちつけると同時に、{x}は喉への力をほんの一瞬だけ強め、すぐに緩めた。{y}は大きく背を反らして達し、{x}もその締めつけの中で奥へ熱を注ぎ込んだ。', after: '{x}はすぐに手を離した。息が一気に流れ込み、{y}は咳き込みながら大きく呼吸を繰り返した。{x}は涙で濡れた頬を親指で拭い、喉に残った赤い跡をそっと撫でた。' }
   ];
 
   function moodOf(m) { return m === 'rough' || m === 'drug' || m === 'love' ? m : 'plain'; }
@@ -76,15 +81,25 @@
       return Math.max(0.02, w / (1 + n * 2.5));
     });
   }
-  function hardOk(S, x, y, mood, opt) {
-    if (opt.short || !(mood === 'love' || mood === 'plain')) return false;
-    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(y)) return false;
-    return !!(HK.Ero && HK.Ero.sadist && HK.Ero.sadist(x, y)) && S.rng() < 0.25;
+  /* 嗜虐的な攻めの山場（2割5分ほど）。受けが攻め指定なら使わない。首は嫉妬（opt.jealous）のときだけ */
+  function hardSet(S, x, y, mood, opt) {
+    if (opt.short || !(mood === 'love' || mood === 'plain' || opt.jealous)) return null;
+    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(y)) return null;
+    if (!(HK.Ero && HK.Ero.sadist && HK.Ero.sadist(x, y)) || S.rng() >= 0.25) return null;
+    return opt.jealous ? JEALOUS_CHOKE : ROUGH_SADIST;
   }
   /* 段落をつなぐ（空の段落は飛ばす） */
   function J(a) { return a.filter(function (x) { return x; }).join(P); }
 
   /* x=攻め（男性器のある側）・y=受け */
+  /* 合意の場面（love・plain・媚薬）では、受ける側の「触んな」「やめろ」のような拒む台詞を引き直す（乱暴な攻めの回でも、嫌がっているようには見せない） */
+  var REFUSE = /触んな|触るな|やめ|離せ|離し|嫌だ|いや……|見るな|ふざけ|来るな|よせ/;
+  function sayOk(S, who, kind, mood) {
+    var t = R.say(S, who, kind);
+    if (mood === 'rough') return t;
+    for (var i = 0; i < 8 && REFUSE.test(t); i++) t = R.say(S, who, kind);
+    return REFUSE.test(t) ? '' : t;
+  }
   function mm(S, x, y, opt) {
     var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };
     var pos = opt.pos ? D.POS.filter(function (p) { return p.id === opt.pos; })[0] : pickPos(S, x, y, mood, opt.allow);
@@ -96,21 +111,22 @@
     if (pos.oral) {
       /* 口・指は元の流れのまま、段落に分ける */
       if (pos.id === 'kuchi') return J([fore, F(pick(S, pos.t), m) + R.say(S, x, 'top'), opt.short ? '' : R.say(S, x, 'topc'), F(D.CLIMAX.oral[0], m)]);
-      return J([fore, F(pick(S, pos.t), m), R.say(S, y, 'start') + (opt.short ? '' : R.say(S, y, 'mid')), R.say(S, y, 'climax') + F(D.CLIMAX.oral[1], m)]);
+      return J([fore, F(pick(S, pos.t), m), sayOk(S, y, 'start', mood) + (opt.short ? '' : R.say(S, y, 'mid')), R.say(S, y, 'climax') + F(D.CLIMAX.oral[1], m)]);
     }
     if (opt.short) {
-      return J([F(pick(S, pos.t), m) + F(pick(S, ENTER[mid]), m), R.say(S, y, 'start'), F(pick(S, PEAK[mid]), m) + R.say(S, y, 'climax')]);
+      return J([F(pick(S, pos.t), m) + F(pick(S, ENTER[mid]), m), sayOk(S, y, 'start', mood), F(pick(S, PEAK[mid]), m) + R.say(S, y, 'climax')]);
     }
-    if (hardOk(S, x, y, mood, opt)) {
-      var h = pick(S, HARD);
-      return J([fore, F(h.open, m), F(h.say, m), R.say(S, y, 'start') + F(h.mid, m), F(h.say2, m), R.say(S, y, 'mid'), F(h.peak, m) + R.say(S, y, 'climax'), F(h.after, m)]);
+    var hs = hardSet(S, x, y, mood, opt);
+    if (hs) {
+      var h = pick(S, hs);
+      return J([fore, F(h.open, m), F(h.say, m), sayOk(S, y, 'start', mood) + F(h.mid, m), F(h.say2, m), R.say(S, y, 'mid'), F(h.peak, m) + R.say(S, y, 'climax'), F(h.after, m)]);
     }
     var strong = R.isStrong(y);
     return J([
       fore,
       F(pick(S, pos.t), m) + F(pick(S, ENTER[mood]), m),
       R.say(S, x, 'top'),
-      R.say(S, y, 'start') + F(pick(S, (strong ? MID_STRONG : MID_SOFT)[mid]), m),
+      sayOk(S, y, 'start', mood) + F(pick(S, (strong ? MID_STRONG : MID_SOFT)[mid]), m),
       R.say(S, y, 'mid'),
       F(pick(S, PEAK[mid]), m) + R.say(S, y, 'climax') + (rng() < 0.45 ? R.say(S, x, 'topc') : ''),
       F(pick(S, AFTER[mood]), m) + (rng() < 0.6 ? R.say(S, rng() < 0.6 ? y : x, 'after') : '')
@@ -144,10 +160,12 @@
     opt = opt || {};
     /* 向きは必ず HK.Pos.order に従う（自分で攻めを選んだ人を受けの位置に置かない） */
     if (HK.Pos) { var od = HK.Pos.order(x, y, [x, y]); x = od[0]; y = od[1]; }
+    if (HK.R18Thick.log) HK.R18Thick.log.push([x, y]);
     if (HK.Pos && HK.FF && HK.Pos.ff(x, y)) return soft(S, x, y, opt, 'ff');
     if (HK.FM && HK.FM.on(x, y)) return soft(S, x, y, opt, 'fm');
     return mm(S, x, y, opt);
   };
   /* 女性どうしを自前で組み立てる箱庭（邪神村 pairSex・吹雪の館 SX）用 */
-  HK.R18Thick = { on: on, ff: function (S, x, y, opt) { return soft(S, x, y, opt || {}, 'ff'); } };
+  /* log：点検用（配列を入れると、組み立てた組 [攻め, 受け] を記録する） */
+  HK.R18Thick = { on: on, log: null, ff: function (S, x, y, opt) { if (HK.R18Thick.log) HK.R18Thick.log.push([x, y]); return soft(S, x, y, opt || {}, 'ff'); } };
 })();

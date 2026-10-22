@@ -22,10 +22,10 @@
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     if (kind === 'fertile') {
       var t = ST.fmt(ST.pick(S, JS.R18.ff(X, Y) ? FERTILE_FF : FERTILE), m) + JS.R18.sex(S, X, Y, { mood: 'drug', fore: false });
-      if (S.rng() < 0.6) { Y.preg = true; t += ST.fmt(ST.pick(S, PREG), m); }
+      if (S.rng() < 0.6) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(ST.pick(S, PREG), m); }
       return t;
     }
-    return ST.fmt(ST.pick(S, LUST), m) + JS.R18.sex(S, X, Y, { mood: 'rough', fore: false }) + '仲間が二人を引き剥がしたとき、' + X.name + 'の掌の口は、まだ物欲しげに開いたり閉じたりしていた。';
+    return ST.fmt(ST.pick(S, LUST), m) + JS.R18.sex(S, X, Y, { mood: 'rough', fore: false }) + (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + '仲間が二人を引き剥がしたとき、' + X.name + 'の掌の口は、まだ物欲しげに開いたり閉じたりしていた。';
   };
 
   /* 場所ごとの眷属 */

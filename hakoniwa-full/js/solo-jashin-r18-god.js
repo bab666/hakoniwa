@@ -40,7 +40,7 @@
       var q = rng.pick(ms); mark(q, h); act = [p, q];
       var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
       t = fmt(ST.pick(S, JS.R18.ff(X, Y) ? SHUB_PAIR_FF : SHUB_PAIR), { x: X.name, y: Y.name }) + JS.R18.sex(S, X, Y, { mood: 'drug', fore: false });
-      if (rng() < 0.5) { Y.preg = true; t += fmt(ST.pick(S, SHUB_PREG), { a: Y.name }); }
+      if (rng() < 0.5) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + fmt(ST.pick(S, SHUB_PREG), { a: Y.name }); }
       why = '収穫祭の葡萄酒に酔い、参加者どうしで交わった' + (m && m.lastPos(S) ? '（' + m.lastPos(S) + '）' : '') + (Y.preg ? '（' + Y.name + 'が疑似妊娠した）' : '');
     } else if (top(p)) {
       /* 自分で攻めを選んだ人：誘ってきた村人を組み伏せるか、仔山羊・石舞台をはねのける */

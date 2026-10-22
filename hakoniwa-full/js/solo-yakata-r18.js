@@ -22,6 +22,8 @@
   function SX(S, x, y, mood, short, allow) {
     var R = HK.R18M;
     if (isFF(x, y) && HK.FF) {
+      /* 山場を段落に分けて厚く（r18-thick.js） */
+      if (HK.R18Thick && HK.R18Thick.on(S)) return HK.R18Thick.ff(S, x, y, { mood: mood, short: short, fore: false, tools: S.drugTools });
       var ctx = { pick: function (a) { return ST.pick(S, a); } }, st = mood === 'rough' ? 'rough' : mood === 'love' ? 'gentle' : HK.FF.styleOf(x);
       var f = function (t) { return t.replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name); };
       S.r18Last = '';

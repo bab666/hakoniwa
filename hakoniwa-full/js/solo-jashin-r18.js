@@ -135,6 +135,8 @@
     var R = HK.R18M;
     opt = opt || {};
     if (isFF(x, y) && HK.FF) {
+      /* 山場を段落に分けて厚く（r18-thick.js） */
+      if (HK.R18Thick && HK.R18Thick.on(S)) return HK.R18Thick.ff(S, x, y, opt);
       var ctx = { pick: function (a) { return ST.pick(S, a); } }, st = opt.mood === 'rough' ? 'rough' : opt.mood === 'love' ? 'gentle' : HK.FF.styleOf(x);
       var f = function (t) { return t.replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name); };
       return f(HK.FF.pick(ctx, 'body', st)) + (R ? R.say(S, y, 'start') + (opt.short ? '' : R.say(S, x, 'top') + R.say(S, y, 'mid')) + R.say(S, y, 'climax') : '') + f(HK.FF.pick(ctx, 'climax', st));
@@ -200,7 +202,7 @@
         var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
         var rough = S.ygo && (X.viol > 30 || Y.viol > 30);
         var t = ST.fmt(ST.pick(S, rough ? YGO_SEX : isFF(X, Y) ? MUTUAL_FF : MUTUAL), { x: X.name, y: Y.name }) + pairSex(S, X, Y, { mood: rough ? 'rough' : p.aphro || q.aphro ? 'drug' : 'love', fore: false });
-        if (rng() < 0.5 + lv * 0.3) { Y.preg = true; t += ST.fmt(ST.pick(S, PREG), { y: Y.name }); }
+        if (rng() < 0.5 + lv * 0.3) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(ST.pick(S, PREG), { y: Y.name }); }
         p.m.fear = Math.max(0, p.m.fear - 8); q.m.fear = Math.max(0, q.m.fear - 8);
         var strm = [X, Y].filter(function (c) { return c.job === 'streamer'; })[0];
         ST.say(S, { actors: [X, Y], tag: '夜', kind: 'climax', text: t, why: '媚薬の熱と恐怖で、参加者どうしで交わった' + (HK.R18M && HK.R18M.lastPos(S) ? '（' + HK.R18M.lastPos(S) + '）' : '') + (Y.preg ? '（' + Y.name + 'が疑似妊娠した：生贄にされると巫女になりやすい）' : ''), mag: 30 });
