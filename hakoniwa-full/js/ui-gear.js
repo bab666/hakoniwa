@@ -82,6 +82,8 @@
   /* 口調ごとの見本は tone-registry.js の sample（一人称は「私」、相手は{o}で書き、表示のときに本人の一人称・呼び方に直す） */
   var SAMPLE = {};
   Object.keys(HK.TONES || {}).forEach(function (k) { if (HK.TONES[k].sample) SAMPLE[k] = HK.TONES[k].sample; });
+  /* 性別で見本を分けている口調（sampleF / sampleM）は、その性別のときだけそちらを使う */
+  function sampleOf(tk, g) { var T = HK.TONES[tk] || {}; return (g === 'f' && T.sampleF) || (g === 'm' && T.sampleM) || SAMPLE[tk]; }
   function sampleLines(c) {
     var V = HK.Voice;
     if (!V || !V.processText) return '';
@@ -92,11 +94,12 @@
     var ppl = [me, { name: o.name, fp: '', gender: o.gender || '', tone: '', persona: 'gentle' }];
     if (me.calls && o.id && me.calls[o.id]) { me.calls = {}; me.calls[o.name] = c.calls[o.id]; } else me.calls = null;
     var tk = me.tone && SAMPLE[me.tone] ? me.tone : SAMPLE[me.persona] ? me.persona : 'gentle';
-    var lines = SAMPLE[tk].map(function (t) { return esc(V.processText(t.replace(/\{n\}/g, c.name).replace(/\{o\}/g, o.name), ppl).replace(new RegExp('^' + c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), '')); });
+    var SL = sampleOf(tk, c.gender);
+    var lines = SL.map(function (t) { return esc(V.processText(t.replace(/\{n\}/g, c.name).replace(/\{o\}/g, o.name), ppl).replace(new RegExp('^' + c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), '')); });
     /* 敬語で話す相手がいれば、その相手への一言も見本に足す */
     if (kgo && me.persona !== 'polite' && me.tone !== 'polite') {
       var km = Object.assign({}, me, { keigo: {}, calls: c.calls && c.calls[kgo.id] ? {} : null }); km.keigo[kgo.name] = 1; if (km.calls) km.calls[kgo.name] = c.calls[kgo.id];
-      lines.push(esc(V.processText(SAMPLE[tk][2].replace(/\{n\}/g, c.name).replace(/\{o\}/g, kgo.name), [km, { name: kgo.name, fp: '', gender: kgo.gender || '', tone: '', persona: 'gentle' }]).replace(new RegExp('^' + c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), '')) + '（敬語の相手へ）');
+      lines.push(esc(V.processText(SL[2].replace(/\{n\}/g, c.name).replace(/\{o\}/g, kgo.name), [km, { name: kgo.name, fp: '', gender: kgo.gender || '', tone: '', persona: 'gentle' }]).replace(new RegExp('^' + c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), '')) + '（敬語の相手へ）');
     }
     return '<span class="tsh">台詞の見本（' + esc(toneLabel(tk)) + '・一人称と呼び方も反映）</span>' + lines.map(function (l, i) { return '<span class="tsl' + (i === 0 ? ' on' : '') + '">' + l + '</span>'; }).join('');
   }
@@ -224,7 +227,7 @@
       case 'fp': c.fp = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;
       case 'you': c.you = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;
       case 'call': if (isInput) return; c.call = t.value; changed(true); break;
-      case 'gender': case 'likes': if (isInput) return; c[f] = t.value; changed(false); break;
+      case 'gender': case 'likes': if (isInput) return; c[f] = t.value; changed(false); if (f === 'gender') sampleRefresh(); break;
       case 'bmonth': if (isInput) return; c.bmonth = t.value; changed(false); break;
       case 'age': c.age = +t.value >= 1 && +t.value <= 150 ? String(Math.floor(+t.value)) : ''; changed(false); break;
       case 'keigoOlder': if (isInput) return; c.keigoOlder = t.checked; changed(false); sampleRefresh(); break;

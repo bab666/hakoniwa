@@ -226,6 +226,20 @@
     if (!s) return s0;
     var lead = (s.match(/^[…‥・、\s]+/) || [''])[0], body = s.slice(lead.length);
     for (var i = 0; i < LEX.length; i++) if (LEX[i][0].test(body)) return lead + body.replace(LEX[i][0], LEX[i][1]) + tail;
+    /* 敵意のある台詞を敬語にするとき（後輩から先輩へ など）の崩れを防ぐ
+       ・「うわ、ハルカ先輩だ」→「うわ、ハルカ先輩」（名前に「です」を付けない）
+       ・「消えな」→「消えてください」（命令の「〜な」）
+       ・「無事だったか、よかった」→「無事だったんですね、よかったです」
+       ・「話したくないかな」→「話したくないです」（自分の気持ちに「でしょうか」を付けない）
+       ・「今日はついてない」→「今日はついてないですね」 */
+    var ex = body.match(/^(うわ|うっわ|げっ|げ|うげ|うえ)、(.{1,14}?(?:先輩|さん|くん|君|ちゃん|[一-鿿ァ-ヶー]))(?:だ|かよ)?$/);
+    if (ex) return lead + ex[1] + '、' + ex[2] + tail;
+    var imp = body.match(/^(.*[一-鿿][えけせてねべめれ])な$/);
+    if (imp) return lead + imp[1] + 'てください' + tail;
+    body = body.replace(/だったか、(?=.)/g, 'だったんですね、');
+    if (/(?:たい|たくない)かな$/.test(body)) return lead + body.replace(/かな$/, 'です') + tail;
+    if (/ついてない$/.test(body)) return lead + body + 'ですね' + tail;
+    s = lead + body;
     if (/^(?:ねえ|ねぇ|なあ|おい)$/.test(body)) return lead + 'あの' + tail;
     if (/^[ぁ-んァ-ヶー…っッ、!！?？\s]{1,4}$/.test(s) && !(/[^まただや]だ$/.test(s) && s.length >= 3)) return s0;
     /* 「〜ねえ」（知らねえ・許さねえ・仕方ねえ）は「〜ない」として言い換える */
