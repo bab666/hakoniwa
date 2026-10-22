@@ -12,7 +12,7 @@
   var HK = window.HK, JS = HK.JASHIN, ST = HK.Story;
   if (!JS || !ST) return;
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-  var RATE = 0.38;
+  var RATE = 0.42;
   var TAG = { clue: '手がかり', lose: '手がかりの危機', death: '死線', save: '予感', rescue: '救出', bond: '二人', r18: '夜' };
   var SK = { obs: '観察', lore: '知識', talk: '聞き込み', spirit: '霊感', explore: '探索', fight: '腕っぷし', rite: '作法' };
   function jobL(id) { var j = JS.JOB && JS.JOB[id]; return j ? j.label : id; }
@@ -41,8 +41,8 @@
         });
         if (!cands.length || rng() > RATE) return;
         var pr = cands[Math.floor(rng() * cands.length)];
-        var last = Math.max(6, Math.min(S.deadline - 4, 40));
-        var at = 2 * Math.round((4 + rng() * (last - 4)) / 2);
+        /* 早く脱出する回も多いので、序盤（2〜10時間）に置く */
+        var at = Math.min(S.deadline - 2, 2 + 2 * Math.floor(rng() * 5));
         S.duoQ.push({ e: e, a: pr[0], b: pr[1], at: at, done: false });
       });
       S.duoQ.sort(function (x, y) { return x.at - y.at; });
@@ -57,8 +57,9 @@
         if (!free(a) || !free(b) || (e.mode === 'foe') !== hostile(S, a, b)) { if (h > q.at + 8) q.done = true; return; }
         var x = null;
         if (e.type === 'rescue') {
-          x = S.P.filter(function (p) { return p !== a && p !== b && p.alive && p.taken; })[0];
-          if (!x) { if (h >= S.deadline - 2) q.done = true; return; }
+          /* 連れ去られた仲間がいればその人。いなければ、いま連れ去られかけている三人目（失敗すると本当に連れ去られる） */
+          x = S.P.filter(function (p) { return p !== a && p !== b && p.alive && p.taken; })[0] || S.P.filter(function (p) { return p !== a && p !== b && JS.alive(p); })[0];
+          if (!x) { if (h > q.at + 8) q.done = true; return; }
         }
         if (e.type === 'lose' && !S.found.length) { if (h > q.at + 16) q.done = true; return; }
         q.done = true; fired++;
@@ -70,7 +71,7 @@
   function fire(S, q, x, h) {
     var rng = S.rng, e = q.e, a = q.a, b = q.b, foe = e.mode === 'foe';
     var sa = JS.skill(a, e.s1), sb = JS.skill(b, e.s2), sum = sa + sb, roll = sum + (rng() - 0.5) * 0.5;
-    var ok = roll >= (foe ? 1.0 : 0.9);
+    var ok = roll >= (foe ? 1.1 : 1.0);
     if (JS.DUO.onFire) JS.DUO.onFire(e, ok);
     var m = { a: a.name, b: b.name, x: x ? x.name : '' };
     var t = ST.fmt(e.intro, m), why = jobL(a.job) + '×' + jobL(b.job) + (foe ? '（敵対している二人）' : '（協力できる二人）') + '／' + (ok ? '成功' : '失敗') + '：' + SK[e.s1] + '＋' + SK[e.s2] + 'の合計 ' + Math.round(sum * 100);
@@ -115,7 +116,11 @@
           t += ST.fmt(e.ok, m); x.taken = false; x.m.fear = clamp(x.m.fear - 10, 0, 100);
           rel(S, a, b, foe ? 0.45 : 0.35, lab); rel(S, x, a, 0.25); rel(S, x, b, 0.25);
           edge(S, a, x, '救った', 'guard'); mag = 32; key = a.name + 'と' + b.name + 'が' + x.name + 'を救い出した';
-        } else { t += ST.fmt(e.ng, m); [a, b].forEach(function (p) { p.m.fear = clamp(p.m.fear + 10, 0, 100); }); rel(S, a, b, -0.35, lab); }
+        } else {
+          t += ST.fmt(e.ng, m); [a, b].forEach(function (p) { p.m.fear = clamp(p.m.fear + 10, 0, 100); }); rel(S, a, b, -0.35, lab);
+          if (!x.taken) { x.taken = true; x.takenAt = h; why += '／' + x.name + 'は村人に連れ去られた'; }
+          key = x.name + 'が連れ去られた';
+        }
         break;
       case 'bond':
         t += ST.fmt(ok ? e.ok : e.ng, m);
