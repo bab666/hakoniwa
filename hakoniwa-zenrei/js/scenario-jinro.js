@@ -379,7 +379,7 @@
       var cand = preTop != null ? P[+preTop] : null;
       if (cand && cand === hunter && hunterCO.indexOf(hunter) < 0 && rng() < 0.5 + hunter.tr.caution * 0.3) {
         hunterCO.push(hunter);
-        say({ actors: [hunter.i], tag: '狩人CO', text: F(pk(J.hunterCO), { a: hunter.name, x: guardLast ? guardLast.name : '' }), why: hunter.name + 'は本物の狩人。吊られそうになってCOした（慎重さ）' });
+        say({ actors: [hunter.i], tag: '狩人CO', text: F(pk(guardLast ? J.hunterCO : J.hunterCO.filter(function (t) { return t.indexOf('{x}') < 0; })), { a: hunter.name, x: guardLast ? guardLast.name : '' }), why: hunter.name + 'は本物の狩人。吊られそうになってCOした（慎重さ）' });
         A.forEach(function (q) { bump(q, hunter, -30 * (0.5 + q.acc * 0.5)); });
         var cw = A.filter(function (w) { return isW(w) && w.bold > 0.8; })[0];
         if (cw && rng() < 0.5) { hunterCO.push(cw); cw.cnt.lies++; moments.push(cw.name + 'が狩人に対抗した'); say({ actors: [cw.i, hunter.i], tag: '狩人対抗', text: F(pk(J.hunterCounter), { a: cw.name, x: hunter.name }), why: cw.name + 'は人狼。狩人を騙って対抗した（堂々さ）' }); A.forEach(function (q) { bump(q, hunter, 18 * (1 - q.acc)); bump(q, cw, 18 * q.acc); }); }
