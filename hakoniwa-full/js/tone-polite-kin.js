@@ -77,7 +77,7 @@
       var o = body ? kohaiOne(body, /[？?]/.test(parts[i + 1] || '')) : '';
       if (o && /[？?]/.test(parts[i + 1] || '') && /っす$/.test(o)) o += 'か';
       return body ? lead + o + tail : seg;
-    }).join('').replace(/([^、。！？!?…‥\s「」]*?)(?:ます|ません)(?=から|けど|が、|し、)/g, function (m) { var c = casual(m); return c === m ? m : c + 'っす'; }).replace(/です(?=けど|から|が、|し、)/g, 'っす').replace(/っすっす/g, 'っす').replace(/([るたいうなだ])(?:の|ん)っす/g, '$1んす').replace(/(?<!(?:^|[、。…‥\s「])ま)だっす/g, 'っす').replace(/だったが、/g, 'だったけど、');
+    }).join('').replace(/([^、。！？!?…‥\s「」]*?)(?:ます|ません)(?=から|けど|が、|し、)/g, function (m) { var c = casual(m); return c === m ? m : c + 'っす'; }).replace(/です(?=けど|から|が、|し、)/g, 'っす').replace(/っすっす/g, 'っす').replace(/([るたいうなだ])(?:の|ん)っす/g, '$1んす').replace(/(?<!(?:^|[、。…‥\s「])ま)だっす/g, 'っす').replace(/だったが、/g, 'だったけど、').replace(/(^|[、。！？!?…‥\s])(確認|質問|悪いん|正直)?なんだけど、/g, function (m, p, w) { return p + (w || '') + 'なんすけど、'; });
   }
 
   /* ---------- お嬢様 ---------- */
