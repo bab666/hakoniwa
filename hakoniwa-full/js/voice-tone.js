@@ -223,6 +223,8 @@
         if (/なんだから$/.test(body)) body = body.replace(/なんだから$/, 'なのだから');
         if (ask && /[^ょ]ない$/.test(body)) body = body + 'か';
         if (ask && /てる$/.test(body)) body = body.replace(/てる$/, 'ているのか');
+        /* 「見てて」「待ってて」→「見ていろ」「待っていろ」 */
+        if (!ask && /(?:見|待っ|聞い|黙っ)てて$/.test(body)) body = body.replace(/てて$/, 'ていろ');
         out = ask ? null : harden(body, 'stern');
         if (!out && body !== bm) out = body;
         if (!out && /(だ|た|い|ない)ね$/.test(body) && !/くださいね$/.test(body)) out = body.replace(/ね$/, 'な');

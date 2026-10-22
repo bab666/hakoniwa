@@ -179,6 +179,11 @@
   var after0 = DG.partyAfter;
   DG.partyAfter = function (S, tgt, hit) {
     after0(S, tgt, hit);
+    /* 執着（ヤンデレ。obsess-story.js） */
+    if (HK.Obsess && HK.Obsess.storyTick) {
+      var ob = HK.Obsess.storyTick(S, S.party.filter(function (x) { return !x.fallen; }), { rate: 0.12 });
+      if (ob) { sayAs(S, ob.actors[0], { kind: 'ev', tag: ob.tag, text: ob.text, why: ob.why }); return; }
+    }
     var H = HK.HateKit;
     if (!H || S.rng() > 0.2) return;
     var live = S.party.filter(function (x) { return !x.fallen; }), ps = H.pairs(S, live);

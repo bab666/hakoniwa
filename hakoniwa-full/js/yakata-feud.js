@@ -41,7 +41,7 @@
     tick: function (S, day) {
       var live = free(S);
       if (live.length < 2) return;
-      hkTick(S, live) || snatch(S, live) || detFight(S, live) || lhClash(S, live, day) || hateMove(S, live, day);
+      obTick(S, live) || hkTick(S, live) || snatch(S, live) || detFight(S, live) || lhClash(S, live, day) || hateMove(S, live, day);
     },
     /* 犯人 c に狙われた tgt を、愛憎の相手が守る。守ったら true */
     guard: function (S, tgt, c) {
@@ -61,6 +61,14 @@
     }
   };
 
+  /* 執着（ヤンデレ。obsess-story.js） */
+  function obTick(S, live) {
+    var r = HK.Obsess && HK.Obsess.storyTick ? HK.Obsess.storyTick(S, live, { rate: 0.2 }) : null;
+    if (!r) return false;
+    ST.say(S, { actors: r.actors, tag: r.tag, kind: r.kind, text: r.text, why: r.why, mag: r.mag });
+    rel(S, r.actors[0], r.actors[1], r.tag, 'obsess');
+    return true;
+  }
   /* 敵視の出来事（出会ったとき・嫌がらせ・無視・噛み合わない関係・衝突。hate-kit.js） */
   function hkTick(S, live) {
     if (!HK.HateKit) return false;

@@ -64,8 +64,16 @@
     tick0.apply(this, arguments);
     live = A(S);
     if (live.length < 2) return;
-    hkTick(S, live, h) || snatch(S, live, h) || detFight(S, live, h) || lhClash(S, live, h) || hateMove(S, live, h);
+    obTick(S, live) || hkTick(S, live, h) || snatch(S, live, h) || detFight(S, live, h) || lhClash(S, live, h) || hateMove(S, live, h);
   };
+  /* 執着（ヤンデレ。obsess-story.js） */
+  function obTick(S, live) {
+    var r = HK.Obsess && HK.Obsess.storyTick ? HK.Obsess.storyTick(S, live, { rate: 0.12 }) : null;
+    if (!r) return false;
+    ST.say(S, { actors: r.actors, tag: r.tag, kind: r.kind, text: r.text, why: r.why, mag: r.mag });
+    edge(S, r.actors[0], r.actors[1], r.tag, 'obsess');
+    return true;
+  }
   /* 敵視の出来事（出会ったとき・嫌がらせ・無視・噛み合わない関係・衝突。hate-kit.js） */
   function hkTick(S, live, h) {
     if (!HK.HateKit) return false;

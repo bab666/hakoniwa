@@ -205,6 +205,12 @@
       return { b: B, res: res, pre: pre, note: note, actors: act };
     }
     function special(A, a, b, usedK) {
+      /* 執着（ヤンデレ。obsess-story.js） */
+      if (HK.Obsess && HK.Obsess.storyTick) {
+        if (!S.ties) S.ties = input.ties || [];
+        var ob = HK.Obsess.storyTick(S, A, { rate: 0.35 });
+        if (ob) { ST.say(S, { actors: ob.actors.map(function (q) { return q.i; }), tag: ob.tag, kind: ob.kind, text: ob.text, why: ob.why, mag: ob.mag }); return true; }
+      }
       var opts = [];
       function can(k, gap) { return !usedK['sp_' + k] && (lastSp[k] == null || floor - lastSp[k] >= gap); }
       if (b && can('quarrel', 5) && grudges.length < 2) opts.push(['quarrel', 0.4 + A.reduce(function (m0, x) { return Math.max(m0, x.tr.aggr + x.tr.cp * 0.5 + x.tr.jealous * 0.4); }, 0) * 0.5]);

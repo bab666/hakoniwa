@@ -213,6 +213,8 @@
       doom(S, m);
       crisis(S);
       shipLife(S);
+      /* 執着（ヤンデレ。obsess-story.js） */
+      if (HK.Obsess && HK.Obsess.storyTick) { var ob = HK.Obsess.storyTick(S, live(S), { rate: 0.3 }); if (ob) { ST.say(S, { actors: ob.actors, tag: ob.tag, kind: ob.kind, text: ob.text, why: ob.why, mag: ob.mag }); setRel(S, ob.actors[0], ob.actors[1], 0.04); mark(S, ob.actors[0], ob.actors[1], 'jealous'); } }
       if (R18ON && r18on(S)) nightR18(S);
       upkeep(S, m);
       ST.flushShort(S, 'ほかに：');
@@ -632,7 +634,8 @@
     }
     else if (kind === 'jealous') {
       /* {c}：{a}に想いを寄せている人が、{a}と{b}の親しさを見てしまう */
-      var c = pickP(others.filter(function (q) { return lover(S, q, a) || bond(S, q, a) > 0.4; }), function (q) { return 0.3 + (q.tr.jealous || 0.4) + Math.max(0, bond(S, q, a)); });
+      /* 関係「執着なし」の相手のことでは嫉妬しない */
+      var c = pickP(others.filter(function (q) { return (lover(S, q, a) || bond(S, q, a) > 0.4) && !ties(S, q, a).some(function (t) { return t.type === 'noobs'; }); }), function (q) { return 0.3 + (q.tr.jealous || 0.4) + Math.max(0, bond(S, q, a)); });
       if (!c) return;
       stress(c, 8); setRel(S, a, b, 0.1); setRel(S, c, b, -0.25); setRel(S, c, a, -0.1); mark(S, c, b, 'jealous'); S.jeal.push([c.i, b.i]);
       ST.sayB(S, { actors: [c, a, b], tag: '嫉妬', text: F(pk(S, BP(S, 'JEALOUS')), { a: a.name, b: b.name, c: c.name }), why: c.name + 'は' + a.name + 'に想いを寄せている（嫉妬 ' + Math.round((c.tr.jealous || 0) * 100) + '）' }, c.name + 'の嫉妬');

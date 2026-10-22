@@ -55,7 +55,7 @@
   function endRe(s) { return new RegExp(s + '(?=[。！？!?…、」]|$)', 'g'); }
   function neutral(q, t) {
     return HK.thinIntj(q, { 'あらあら': 'おやおや', 'あらまあ': 'おやまあ', 'あら': 'おや' }).replace(endRe('かしら'), 'かな').replace(endRe('ですわ'), 'です').replace(endRe('(だ|た|い)わよ'), '$1よ').replace(endRe('([るうくすつぬむぐぶ])わよ'), '$1よ').replace(endRe('([るうくすつぬむぐぶ])わね'), '$1ね').replace(endRe('(だ|た|い)わね'), '$1ね')
-      .replace(endRe('のよ'), 'んだ').replace(endRe('なのね'), 'なんだね').replace(endRe('だわ'), 'だ').replace(endRe('([いたくうすつぬむるよ])わ'), '$1').replace(endRe('よね'), 'よね').replace(endRe('ちょうだい'), 'くれる？').replace(endRe('([一-鿿ァ-ヶー])ね'), '$1だね')
+      .replace(endRe('のよ'), 'んだ').replace(endRe('なのね'), 'なんだね').replace(endRe('だわ'), 'だ').replace(endRe('([いたくすつぬむるよ]|(?<!^|[、…‥。！？!?「\\s])う)わ'), '$1').replace(endRe('よね'), 'よね').replace(endRe('ちょうだい'), 'くれる？').replace(endRe('([一-鿿ァ-ヶー])ね'), '$1だね')
       /* 「倒れなさいよ」「何よ」「まだよ」も中性的に */
       .replace(endRe('(?<!ごめん|お帰り|おかえり|いらっしゃい|おやすみ)なさい(よ|ってば)?'), function (m, e) { return (t === 'gentle_n' ? 'て' : 'な') + (e || ''); }).replace(/(^|[、…「\s])何よ(?=もう|[！？!?…。、」]|$)/g, '$1何だよ').replace(/(^|[、…「\s])まだよ(?=[！!…。、」]|$)/g, '$1まだだ');
   }

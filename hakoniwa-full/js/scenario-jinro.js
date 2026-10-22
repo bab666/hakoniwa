@@ -172,6 +172,12 @@
         var hk = HK.HateKit.storyTick(S, A, { kinds: 'love', rate: 0.35, place: '朝の広場で、' });
         if (hk) ST.say(S, { actors: hk.actors, tag: hk.cat === 'romance' ? '片恋と嫌悪' : '敵視', text: hk.text, why: hk.why, mag: hk.mag });
       }
+      /* 執着（ヤンデレ。obsess-story.js） */
+      if (HK.Obsess && HK.Obsess.storyTick) {
+        if (!S.ties) S.ties = input.ties || [];
+        var ob = HK.Obsess.storyTick(S, A, { rate: 0.3, place: '朝の広場で、' });
+        if (ob) ST.say(S, { actors: ob.actors, tag: ob.tag, kind: ob.kind, text: ob.text, why: ob.why, mag: ob.mag });
+      }
 
       /* ---------- 占い師のCO・結果 ---------- */
       if (seer && seer.alive) {
