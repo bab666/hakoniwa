@@ -86,7 +86,7 @@
     /* 「〜ますから」「〜ですけど」：つなぎの言葉の前の丁寧語も外す */
     var cj = s.match(/^(.*(?:です|ます|ません|でした|ました|ましょう))(が|けど|けれど|けれども|から|ので|し)$/);
     if (cj) { var cr = /^(です|ます)$/.test(cj[1]) ? 'だ' : plainSentence(cj[1], mode); if (cr == null) return null; if (cj[2] === 'ので' && /だ$/.test(cr)) cr = cr.slice(0, -1) + 'な'; return cr + cj[2]; }
-    s = s.replace(/くださいませ$/, 'ください').replace(/ありがとう、ございま(?:す|した)$/, 'ありがとう').replace(/^お疲れ(?:さま|様)(?:でした|です)$/, 'お疲れ').replace(/ございません$/, 'ありません').replace(/ございました$/, 'ありました').replace(/([てで])おり(ます|ました|ません|ましょう)/, '$1い$2').replace(/おります$/, 'いる').replace(/でございます$/, 'だ').replace(/でございました$/, 'だった').replace(/ございます$/, 'ある').replace(/いたします$/, 'する').replace(/いたしました$/, 'した').replace(/いたしましょう$/, 'しよう');
+    s = s.replace(/くださいませ$/, 'ください').replace(/ありがとう、ございま(?:す|した)$/, 'ありがとう').replace(/^お疲れ(?:さま|様)(?:でした|です)$/, 'お疲れ').replace(/ございません$/, 'ありません').replace(/(?<!ありがとう)ございました$/, 'ありました').replace(/([てで])おり(ます|ました|ません|ましょう)/, '$1い$2').replace(/おります$/, 'いる').replace(/でございます$/, 'だ').replace(/でございました$/, 'だった').replace(/ございます$/, 'ある').replace(/いたします$/, 'する').replace(/いたしました$/, 'した').replace(/いたしましょう$/, 'しよう');
     if (/^(ありがとうございます|ありがとうございました)$/.test(s)) return null;
     if (/(おはよう|おめでとう)ございます$/.test(s)) return s.replace(/ございます$/, '');
     if (/^(すみません|ごめんなさい|申し訳ありません|申し訳ございません|失礼しました)$/.test(s)) return null;
@@ -105,6 +105,7 @@
     var rc = plainCore(rest, rough) || (/(が|けど|けれど|から|ので|し)$/.test(rest) && rest !== s ? plainSentence(rest, mode) : null);
     if (!rc) return null;
     if (p === 'か' && /[よお]う$/.test(rc)) return rc + 'か';
+    if (p === 'ね' && /でしょ$/.test(rc)) return rc + 'うね';
     if (p === 'ね' && rough && /[るうくすつぬむぶぐ]$/.test(rc) && !/([おこそとのほもよろごぞどぼょ]う|てる|ている)$/.test(rc)) return rc + 'ぞ';
     var map = rough ? { 'よね': 'よな', 'ね': 'な', 'よ': 'ぞ', 'か': 'か' } : { 'よね': 'よね', 'ね': 'ね', 'よ': 'よ', 'か': 'の' };
     if (/くれ$/.test(rc)) return rc + (p === 'よ' ? 'よ' : '');
@@ -164,6 +165,8 @@
     if (!s || /^[ぁ-んァ-ヶー…っッ、\s]{1,2}$/.test(s)) return s0;
     var lead = (s.match(/^[…‥・、\s]+/) || [''])[0], body = s.slice(lead.length), out = null;
     if (!body) return s0;
+    /* 「？」のない「〜ですか」「〜ますか」も問いかけ */
+    if (/(です|ます|でしょう)か$/.test(body)) ask = true;
     if (mode === 'proud' || mode === 'tsun' || mode === 'free') {
       if (/^(ありがとう(ございます|ございました)?|ありがと)$/.test(body)) out = { proud: '……礼は言っとく', tsun: '……ありがと。べ、別に、感謝してるわけじゃないから', free: 'ありがと！' }[mode];
       else if (/^(ごめん(ね|なさい)?|すみません|すまない|申し訳(ありません|ございません|ない)|失礼(しました|いたしました))$/.test(body)) out = { proud: '……悪かった', tsun: f ? '……悪かったわよ' : '……悪かったな', free: 'ごめんごめん' }[mode];
@@ -316,6 +319,8 @@
     if (mode === 'shy' && h % 5 === 1 && !/^…/.test(q) && q.length >= 4) q = '……' + q;
     /* 健気は敬語（見本：「精一杯がんばります」）。健気（くだけた）は tone-plus.js で敬語を外す。関西弁は敬語にしない */
     if (mode === 'devoted' && who.tone !== 'devoted_p' && who.tone !== 'kansai' && V.polite) q = V.polite(q);
+    /* 敬語を使わない口調では、人狼の結果発表（「人狼ではありませんでした」）もため口に */
+    if (!/^(devoted|polite)$/.test(mode) && !/^(polite|devoted|mixed)$/.test(who.tone || '')) q = q.replace(/人狼(?:では|じゃ)ありませんでした/g, '人狼じゃなかった').replace(/人狼でした/g, '人狼だった').replace(/人間でした/g, '人間だった');
     /* 語尾に足した「！」と伸ばし・句点の重なり（「ありがと！ー！」「ごめんごめん！。」） */
     return q.replace(/！([ー〜])/g, '$1').replace(/！。/g, '！');
   };
