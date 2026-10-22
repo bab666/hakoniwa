@@ -13,7 +13,7 @@
     var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1];
     if (!TK.ok(T, U)) return n0.apply(this, arguments);
     var pk = function (arr) { return ctx.pick(arr); };
-    var t = TK.body(T, U, { pick: pk, rng: ctx.rng, bed: '毛布', lead: pk(LEAD), finish: pk(FIN), noAfter: true });
+    var t = TK.body(T, U, { flav: 'zombie', pick: pk, rng: ctx.rng, bed: '毛布', lead: pk(LEAD), finish: pk(FIN), noAfter: true });
     return '\n\n' + TK.names(t, T, U) + '\n\n';
   };
 })();

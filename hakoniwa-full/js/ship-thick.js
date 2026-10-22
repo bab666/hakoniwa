@@ -19,7 +19,7 @@
     if (HK.SAFE_ON || !HK.Voice || !TK.ok(t, u)) return null;
     var pk = function (arr) { return S.rng.pick(arr); };
     var k = kind === 'nurse' ? 'nurse' : 'night';
-    var body = TK.body(t, u, { pick: pk, rng: S.rng, bed: '敷布', lead: pk(LEAD[k]), finish: pk(FIN[k]), noAfter: true });
+    var body = TK.body(t, u, { flav: 'ship', pick: pk, rng: S.rng, bed: '敷布', lead: pk(LEAD[k]), finish: pk(FIN[k]), noAfter: true });
     return '\n\n' + TK.names(body, t, u) + '\n\n';
   };
   /* 異星の生き物（{a}=船員、{x}=生き物の名前）：段落に分けて厚く */
