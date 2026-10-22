@@ -41,6 +41,8 @@
     ],
     events: []
   };
+  /* 描写の作風（R18版の ero-kit.js があるときだけ）：男性向けの文は solo-saimin-ero.js */
+  if (HK.Ero && HK.Ero.OPT) scen.env.push(HK.Ero.OPT);
   HK.SCENARIOS.saimin = scen;
   HK.SCEN_ORDER.push('saimin');
 
@@ -116,7 +118,7 @@
       /* エッチな暗示のあとで目を覚ましたなら、そこからも分かれる（流される／通報／逃げる） */
       if (p.cnt.lewd >= 1 && lew !== 'low' && SM.afterSnap && !p.snapDone) {
         p.wokeMid = true; p.snapDone = true;
-        var sr = SM.afterSnap({ rng: rng, pick: function (a) { return ST.pick(S, a); }, fmt: ST.fmt }, p);
+        var sr = SM.afterSnap(wrapS(S, p), p);
         var o2 = say(p, { tag: sr.tag, text: sr.text, why: sr.why, mag: 40, kind: sr.k === 'swept' ? 'climax' : 'event' }, '', true);
         ST.key(S, o2, p.name + '：' + { swept: '我に返っても流された', report: 'その場で通報した', flee: '逃げ出した' }[sr.k]);
       }
@@ -204,8 +206,9 @@
           if (f.trig && full) p.trigger = true;
           /* 受け攻め・女性どうし：かけられた側が攻めなら攻めの文、女性どうしなら専用の文（variant） */
           var aTop = p.aTop;
-          var body = full ? ST.pick(S, lew === 'low' && g.softFull ? g.softFull : variant(p, g, 'full')) : ST.pick(S, variant(p, g, 'part'));
-          t += lew === 'low' && g.lewd && full ? ST.fmt(ST.pick(S, SM.SUG_LOW), v) : ST.fmt(body, v);
+          var vk = full ? (lew === 'low' && g.softFull ? 'softFull' : vkey(p, g, 'full')) : vkey(p, g, 'part');
+          var body = ST.pick(S, eL(S, 'sug.' + k + '.' + ekey(p, vk), g[vk]));
+          t += lew === 'low' && g.lewd && full ? ST.fmt(ST.pick(S, SM.SUG_LOW), v) : eF(S, p, ST.fmt(body, v));
           t += tq(p);
           p.m.plea = clamp(p.m.plea + (f.plea || 0) * p.sens * (full ? 1 : 0.5), 0, 120);
           p.m.fall = clamp(p.m.fall + (f.fall || 0) * (full ? 1 : 0.45), 0, 100);
@@ -213,21 +216,24 @@
           if (p.m.plea >= 100) { cl++; p.m.plea = 30; }
           if (cl) {
             p.cnt.climax += cl; p.m.fall = clamp(p.m.fall + cl * 3, 0, 100);
-            if (lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + '「' + ST.pick(S, topL(p, V.CLIMAX[p.persona])) + '」';
+            /* 男性向けの文：本文に絶頂の喘ぎ（{m2}）がなければ、態度ごとの崩れた声を足す */
+            if (lew !== 'low' && eroOn(S) && !aTop) { if (!/\{m2\}/.test(body)) t += p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; }
+            else if (lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + '「' + ST.pick(S, topL(p, V.CLIMAX[p.persona])) + '」';
             why += '／絶頂 ' + cl + '回';
           }
           p.m.depth = clamp(p.m.depth + (full ? 5 : -5), 0, 100);
           why += full ? '：受け入れた' : '：半分だけ受け入れた';
           /* 中に出された熱で、我に返る（快楽堕ちが進んでいるほど返りにくい） */
           if (full && g.snap && lew !== 'low' && SM.SNAP && rng() < g.snap * (1.2 - p.m.fall / 100)) {
-            t += ST.fmt(ST.pick(S, p.ff ? (aTop ? SM.SNAP_FF_TOP : SM.SNAP_FF) : aTop && SM.SNAP_TOP ? SM.SNAP_TOP : SM.SNAP), v) + (SM.RESIST_SAY[p.persona] && rng() < 0.5 ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : '');
+            var snk = p.ff ? (aTop ? 'SNAP_FF_TOP' : 'SNAP_FF') : aTop && SM.SNAP_TOP ? 'SNAP_TOP' : 'SNAP';
+            t += eF(S, p, ST.fmt(ST.pick(S, eL(S, snk, SM[snk])), v)) + (SM.RESIST_SAY[p.persona] && rng() < 0.5 ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : '');
             p.woke = true; p.wokeCum = true; p.m.depth = 0; p.aTopLast = aTop;
             why += '／' + snapWord(p) + '催眠が解けた（快楽堕ち ' + Math.round(p.m.fall) + '）';
             mag = 40;
           }
           /* 行為の最中に、ふと我に返る（半分しか効いていないとき・抵抗が強いときほど起きやすく、快楽堕ちが進むほど起きにくい） */
           if (!p.woke && g.lewd && lew !== 'low' && SM.midSnap && SM.midSnapOk(k) && p.cnt.lewd >= 2 && rng() < (0.03 + (full ? 0 : 0.05) + p.m.resist / 1000 + Math.max(0, 40 - p.m.depth) / 500) * (1.1 - p.m.fall / 100)) {
-            t += SM.midSnap({ rng: rng, pick: function (a) { return ST.pick(S, a); }, fmt: ST.fmt }, p, k);
+            t += SM.midSnap(wrapS(S, p), p, k);
             p.woke = true; p.wokeMid = true; p.m.depth = 0; p.aTopLast = aTop;
             why += '／行為の最中に我に返った（快楽堕ち ' + Math.round(p.m.fall) + '・抵抗 ' + Math.round(p.m.resist) + '）';
           }
@@ -240,7 +246,7 @@
           ST.key(S, o, p.name + (p.wokeMid ? 'が行為の最中に我に返った' : 'が' + snapWord(p) + '我に返った'));
           p.snapDone = true;
           if (SM.afterSnap) {
-            var sr = SM.afterSnap({ rng: rng, pick: function (a) { return ST.pick(S, a); }, fmt: ST.fmt }, p);
+            var sr = SM.afterSnap(wrapS(S, p), p);
             var o2 = say(p, { tag: sr.tag, text: sr.text, why: sr.why, mag: 40, kind: sr.k === 'swept' ? 'climax' : 'event' }, '', true);
             ST.key(S, o2, p.name + '：' + { swept: '我に返っても流された', report: 'その場で通報した', flee: '逃げ出した' }[sr.k]);
           }
@@ -275,10 +281,14 @@
       var route = after(S, p);
       p.route = route; p.fate = FATE[route];
       var v = { a: p.name, h: p.h };
-      var snapT = SM.SNAP_AFTER && ((route === 'report' && p.reportedNow) || (route === 'fall' && p.swept)) ? ((p.ff && SM.SNAP_AFTER_FF && SM.SNAP_AFTER_FF[route]) || (p.aTop && SM.SNAP_AFTER_TOP && SM.SNAP_AFTER_TOP[route]) || SM.SNAP_AFTER[route]) : null;
+      var snapK = SM.SNAP_AFTER && ((route === 'report' && p.reportedNow) || (route === 'fall' && p.swept)) ? ((p.ff && SM.SNAP_AFTER_FF && SM.SNAP_AFTER_FF[route]) ? 'SNAP_AFTER_FF' : (p.aTop && SM.SNAP_AFTER_TOP && SM.SNAP_AFTER_TOP[route]) ? 'SNAP_AFTER_TOP' : 'SNAP_AFTER') : null;
       /* 性的な暗示を一つも受けていないとき（向きの決まらない組など）は、いたずら向けの「その後」を使う */
       var soft = (lew === 'low' || (!p.failed && !p.cnt.lewd)) && SM.AFTER_SOFT && SM.AFTER_SOFT[route];
-      var t = ST.fmt(ST.pick(S, snapT || (soft ? SM.AFTER_SOFT[route] : (p.aTop && SM.AFTER_TOP && SM.AFTER_TOP[route]) || SM.AFTER[route])), v);
+      var afK = snapK || (soft ? 'AFTER_SOFT' : (p.aTop && SM.AFTER_TOP && SM.AFTER_TOP[route]) ? 'AFTER_TOP' : 'AFTER');
+      /* 男性向けの「その後」は、性的な暗示を受けたときだけ（かからなかった・いたずらだけのときは元の文） */
+      var afE = afK === 'AFTER' && p.ff ? 'AFTER_FF' : afK === 'AFTER' && p.aTop ? 'AFTER_TOP' : afK;
+      var afL = !p.failed && p.cnt.lewd && !soft ? eL(S, afE + '.' + route, SM[afK][route]) : SM[afK][route];
+      var t = eF(S, p, ST.fmt(ST.pick(S, afL), v));
       var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', body: null }[route];
       if (mood && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, topL(p, SM.AFTER_SAY[mood][p.persona]));
       if (p.trigger && (route === 'forget' || route === 'body') && rng() < 0.6) t += ST.fmt('――数日後、会議中に誰かが何気なく「おやすみ」と言った。{a}は理由も分からないまま、机の下で膝を震わせた。', v);
@@ -298,17 +308,43 @@
     return o;
   }
 
-  /* 受け攻め・女性どうしに合わせた文を選ぶ（なければ null＝その暗示は使わない）。kind: 'full' | 'part' */
-  function variant(p, g, kind) {
+  /* 受け攻め・女性どうしに合わせた文を選ぶ（なければ null＝その暗示は使わない）。kind: 'full' | 'part'。
+     vkey はその文の項目名（'full' / 'fullTop' / 'ff' など）、variant はその文 */
+  function first(g, ks) { for (var i = 0; i < ks.length; i++) if (g[ks[i]]) return ks[i]; return null; }
+  function vkey(p, g, kind) {
     if (kind === 'part') {
-      if (p.ff && p.aTop) return g.ffTopPart || g.partTop || g.ffPart || g.part;
-      if (p.ff) return g.ffPart || g.part;
-      return p.aTop && g.partTop ? g.partTop : g.part;
+      if (p.ff && p.aTop) return first(g, ['ffTopPart', 'partTop', 'ffPart', 'part']);
+      if (p.ff) return first(g, ['ffPart', 'part']);
+      return p.aTop && g.partTop ? 'partTop' : 'part';
     }
-    if (!g.lewd) return (p.aTop && g.fullTop) || g.full;
-    if (p.ff) return p.aTop ? g.ffTop || (g.ffOk && g.topOk ? g.full : null) : g.ff || (g.ffOk ? g.full : null);
-    if (p.aTop) return g.fullTop || (g.topOk ? g.full : null);
-    return g.full;
+    if (!g.lewd) return p.aTop && g.fullTop ? 'fullTop' : 'full';
+    if (p.ff) return p.aTop ? (g.ffTop ? 'ffTop' : g.ffOk && g.topOk && g.full ? 'full' : null) : (g.ff ? 'ff' : g.ffOk && g.full ? 'full' : null);
+    if (p.aTop) return g.fullTop ? 'fullTop' : g.topOk && g.full ? 'full' : null;
+    return 'full';
+  }
+  function variant(p, g, kind) { var k = vkey(p, g, kind); return k ? g[k] : null; }
+  /* ---------- 描写の作風「男性向け」（ero-kit.js・solo-saimin-ero.js） ----------
+     元の文を流用した組（女性どうしで full を使う・攻めで full を使う）は、男性向けの文も向きに合わせた項目名で引く（なければ元の文） */
+  function eroOn(S) { return !!(HK.Ero && HK.Ero.on(S)); }
+  function ekey(p, k) {
+    if (k === 'full' && p.ff) return p.aTop ? 'ffTop' : 'ff';
+    if (k === 'full' && p.aTop) return 'fullTop';
+    if (k === 'part' && p.ff) return p.aTop ? 'ffTopPart' : 'ffPart';
+    if (k === 'part' && p.aTop) return 'partTop';
+    return k;
+  }
+  function eL(S, key, arr) { return HK.Ero ? HK.Ero.L(S, 'saimin', key, arr) : arr; }
+  /* {m0}〜{m2} は {a} の喘ぎ、{hm0}〜{hm2} は {h} の喘ぎ（かける側がモブなら穏やかの喘ぎ）、{s:wet} などは擬音 */
+  function eF(S, p, t) {
+    if (!eroOn(S)) return t;
+    t = String(t).replace(/\{hm([012])\}/g, function (m, n) { return HK.Ero.moan(S, p.hc || { persona: 'gentle' }, +n); });
+    return HK.Ero.fill(S, t, p);
+  }
+  /* solo-saimin-sex.js の afterSnap / midSnap に渡す道具（男性向けの文に差し替える alt・喘ぎを埋める fmt・絶頂の声 cv） */
+  function wrapS(S, p) {
+    return { rng: S.rng, pick: function (a) { return ST.pick(S, a); }, fmt: function (t, v) { return eF(S, p, ST.fmt(t, v)); },
+      alt: function (key, arr) { return eL(S, key, arr); },
+      cv: function (q, top) { return eroOn(S) && !top ? HK.Ero.moan(S, q, 2) : null; } };
   }
   function cmdOf(p, g) { return (p.ff && g.cmdFF) || (p.aTop && g.cmdTop) || g.cmd; }
   /* 自分で攻めを選んだ人の台詞から、受け身の台詞を外す（solo-r18-moan.js の HK.R18M.topLines） */
