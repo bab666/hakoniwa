@@ -13,7 +13,7 @@ const { openBuild } = require('./lib');
   const TIES = (process.env.TIES || '').split(',').filter(Boolean).map(s => { const m = s.match(/^(\d+)-(\d+):(\w+)$/); return m ? { a: +m[1], b: +m[2], type: m[3] } : null; }).filter(Boolean);
   const PICK = {};
   (process.env.PICK || '').split(',').filter(Boolean).forEach(s => { const m = s.match(/^(\d+):(\w+)=(\w+)$/); if (m) (PICK[m[1]] = PICK[m[1]] || {})[m[2]] = m[3]; });
-  const OPT = { n: +(seeds || 12), tone: process.env.TONE || '', fps: (process.env.FPS || '').split(',').filter(Boolean), only: (process.env.SCEN || '').split(',').filter(Boolean), ties: TIES, pick: PICK, hot: !!process.env.HOT };
+  const OPT = { n: +(seeds || 12), tone: process.env.TONE || '', fps: (process.env.FPS || '').split(',').filter(Boolean), only: (process.env.SCEN || '').split(',').filter(Boolean), ties: TIES, pick: PICK, hot: !!process.env.HOT, s0: +(process.env.SEED0 || 0) };
   const data = await page.evaluate((OPT) => {
     const HK = window.HK, V = HK.Voice;
     let cur = null, curText = '', ovs = null; const rec = [];
@@ -34,7 +34,7 @@ const { openBuild } = require('./lib');
     HK.SCEN_ORDER.slice().forEach(id => {
       const sc = HK.SCENARIOS[id]; if (!sc || (OPT.only.length && OPT.only.indexOf(id) < 0)) return;
       const n = Math.max(sc.minCast || 2, Math.min(sc.maxCast || 6, 6));
-      for (let s = 0; s < OPT.n; s++) {
+      for (let s = OPT.s0; s < OPT.s0 + OPT.n; s++) {
         const r = rnd(1000 + s * 77 + id.length), chars = [], perChar = [];
         for (let i = 0; i < n; i++) {
           const tone = OPT.tone || tones[(ti++) % tones.length];

@@ -139,7 +139,8 @@ body.noselect { -webkit-user-select: none; user-select: none; cursor: grabbing; 
 
 /* 箱庭 */
 .scens { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
-.scen { position: relative; display: block; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; cursor: pointer; }
+@media (max-width: 520px) { .scens { grid-template-columns: repeat(2, minmax(0, 1fr)); } .scen { padding: 10px 11px; } .scen .n { font-size: 15px; } }
+.scen { position: relative; display: block; aspect-ratio: 1 / 1; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; cursor: pointer; }
 .scen input { position: absolute; opacity: 0; pointer-events: none; }
 .scen .k { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
 .scen .n { font-family: var(--f-display); font-weight: 700; font-size: 17px; margin: 2px 0 4px; }

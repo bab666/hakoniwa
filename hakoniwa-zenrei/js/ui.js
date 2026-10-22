@@ -410,10 +410,40 @@
   /* R18版で、設定や展開しだいで R18 の描写が入る箱庭の説明（常に R18 の箱庭はキャッチコピーの R18 で示す） */
   /* 人数・R18 を外すと何も残らないキャッチコピーの代わり */
   var KICK_GENRE = { dungeon: '罠・探索', massage: 'あやしい施術', hole: '壁の穴・放置', kaihen: '日常のずれ', succubus: '夜の街・比べられる', saimin: 'いたずら', variety: 'テレビ番組・対決', locker: '密室' };
+  /* 一覧カードの短い概要（カードがほぼ正方形に収まる長さ）。元の詳しい説明はカードの title（マウスを乗せると出る）に */
+  var CARD_DESC = {
+    goukon: '居酒屋の個室で一晩。最後に誰と帰ったかで決着。',
+    whiteroom: '白い部屋と扉の脱出条件。条件は自由に組める。',
+    classroom: '同じクラスの一年。行事ごとに関係が動く。',
+    island: '漂着した島で救助待ち。食料も関係も削れる。',
+    br: '首輪と武器一つ。最後の一人だけが帰れる。',
+    trial: '殺せば帰れるホテル。殺人が起きれば裁判。',
+    zombie: 'ゾンビの街で7日間を生き延びる。',
+    jashin: '邪神の祀られた村から、何時間で脱出できるか。',
+    yakata: '吹雪の館で起きる殺人。探偵と犯人の攻防。',
+    omega: '第二性のある世界で、関係の結末を見守る。',
+    dungeon: '淫らな罠の迷宮。全員が堕ちる前に踏破を。',
+    massage: ['施術は少しずつあやしくなる。いつ気づく？', '施術は少しずつ際どくなる。いつ気づく？'],
+    hole: '壁の穴にはまり、向こう側の感覚がない。',
+    kaihen: 'エロいことが当たり前の仕事になった世界。',
+    succubus: 'サキュバスになって一晩、街で精を集める。',
+    saimin: ['誰かに催眠をかけられる。どこまでしてしまうか。', '誰かに催眠をかけられる。どこまでしてしまうか。'],
+    variety: '深夜のお色気番組で、約50の企画を競う。',
+    locker: ['媚薬の充満するロッカーに二人きり。', '媚薬の充満するロッカーに二人きり。'],
+    rpg: 'パーティでダンジョンへ。何階まで行けるか。',
+    jinro: '住人どうしの人狼ゲーム。信頼と裏切り。'
+  };
+  /* 注意書きはカードでは短く（全文は title に） */
+  function cardNote(n) {
+    if (!n) return '';
+    if (/パロディ/.test(n)) return '※' + (n.match(/『[^』]+』/) || ['パロディ'])[0].replace(/^(?!『)/, '') + (/『/.test(n) ? 'のパロディ' : '');
+    var m = n.match(/※([^。]*?)(?:の描写|表現)/);
+    return m ? '※' + m[1].replace(/（[^）]*）/, '') + 'の描写あり' : '※成人として扱います';
+  }
   var R18_PLOT = { goukon: 'お持ち帰りの夜', whiteroom: '条件がエッチ・媚薬などのとき' };
   function scenR18(s, id) {
     var env = (s.env || []).filter(function (e) { return /R-?18/.test(e.label || ''); }).map(function (e) { return '「' + e.label.replace(/（R-?18）/, '') + '」'; });
-    if (env.length) return '設定' + env.join('・') + 'で描写あり';
+    if (env.length) return '設定' + env[0] + (env.length > 1 ? 'など' : '') + 'で描写あり';
     return R18_PLOT[id] ? R18_PLOT[id] + 'に描写あり' : '';
   }
   function renderBox() {
@@ -438,12 +468,14 @@
       var lo = smin(id), hi = smax(id), meta = '参加 ' + (lo === hi ? lo + '人' : lo + '〜' + hi + '人');
       var r18s = !HK.SAFE_ON && !adult ? scenR18(s, id) : '';
       if (r18s) meta += '<span class="r18part"><span class="r18tag">R18</span>' + esc(r18s) + '</span>';
-      return '<label class="scen' + (adult ? ' adult' : '') + (id === S.scenId ? ' on' : '') + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (id === S.scenId ? ' checked' : '') + '>' +
-        '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div><div class="d">' + esc(s.desc) + '</div>' + (s.note ? '<div class="note">' + esc(s.note) + '</div>' : '') + '</label>';
+      var cd = CARD_DESC[id], full = s.desc + (s.note ? '\n' + s.note : '');
+      cd = Array.isArray(cd) ? cd[HK.SAFE_ON ? 0 : 1] : cd || s.desc;
+      return '<label class="scen' + (adult ? ' adult' : '') + (id === S.scenId ? ' on' : '') + '" title="' + esc(full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (id === S.scenId ? ' checked' : '') + '>' +
+        '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div><div class="d">' + esc(cd) + '</div>' + (s.note ? '<div class="note">' + esc(cardNote(s.note)) + '</div>' : '') + '</label>';
     }).join('');
     /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url） */
     if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<a class="scen r18link" href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">' +
-      '<div class="k">BOOTHで頒布中・18歳以上向け</div><div class="n">R-18版 ↗</div><div class="d">エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。オメガバース・媚薬ロッカー・マッサージ・催眠や、無人島・ゾンビの街の夜の場面も、ぼかさずに描きます。</div></a>';
+      '<div class="k">BOOTHで頒布中・18歳以上向け</div><div class="n">R-18版 ↗</div><div class="d">成人向けの箱庭を5つ追加。夜の場面もぼかさずに描きます。</div></a>';
     var derived = (scen.derived || []).map(function (k) { return '<span class="chip" title="' + esc(HK.TRAIT_SRC[k]) + '">' + esc(HK.TRAIT_NAME[k]) + '<span class="nums">' + esc(HK.TRAIT_SRC[k]) + '</span></span>'; }).join('');
     var extra = (scen.stats || []).map(function (s) { return '<span class="chip" title="' + esc(s.desc) + '">' + esc(s.label) + '</span>'; }).join('') + (scen.weapons ? '<span class="chip">支給武器</span>' : '');
     var sexCols = S.scenId === 'goukon' || S.scenId === 'omega';
