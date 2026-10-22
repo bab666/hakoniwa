@@ -170,7 +170,7 @@
     if (mode === 'proud' || mode === 'tsun' || mode === 'free') {
       if (/^(ありがとう(ございます|ございました)?|ありがと)$/.test(body)) out = { proud: '……礼は言っとく', tsun: '……ありがと。べ、別に、感謝してるわけじゃないから', free: 'ありがと！' }[mode];
       else if (/^(ごめん(ね|なさい)?|すみません|すまない|申し訳(ありません|ございません|ない)|失礼(しました|いたしました))$/.test(body)) out = { proud: '……悪かった', tsun: f ? '……悪かったわよ' : '……悪かったな', free: 'ごめんごめん' }[mode];
-      else if (mode === 'tsun' && /^(好き|好きだ|好きです|大好き)(よ|だよ)?$/.test(body)) out = '……別に、嫌いじゃないだけ';
+      else if (mode === 'tsun' && /^(好き|好きだ|好きです|大好き)(よ|だよ)?$/.test(body)) out = '……す、好き。……悪い？';
       else if (mode === 'tsun' && /^(嬉しい|うれしい)(です|よ)?$/.test(body)) out = '……別に、嬉しくなんか';
       else out = plainSentence(body, mode === 'proud' ? 'proud' : 'casual');
       var b2 = out || body;
