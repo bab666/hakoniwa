@@ -672,7 +672,7 @@
   function thickFall(S, h) {
     var TH = DG.THICK, TV = window.HK.ThickVM;
     if (window.HK.SAFE_ON || !TH || !TV || S.env.lewd < 15) return '';
-    var top = isTop(h), l = top ? TH.fallTop : (TH.fall[S.themeKey] || []).concat(S.themeKey === 'mix' || !TH.fall[S.themeKey] ? TH.fall.any : []);
+    var top = isTop(h), l = top ? (h.gender === 'f' && TH.fallTopF ? TH.fallTopF : TH.fallTop) : (TH.fall[S.themeKey] || []).concat(S.themeKey === 'mix' || !TH.fall[S.themeKey] ? TH.fall.any : []);
     if (!top && TH.fall[S.themeKey] && S.rng() < 0.3) l = l.concat(TH.fall.any);
     if (!l || !l.length) return '';
     return fmt(S, TV.voice(S.rng, pick(S, l), h, h), h.captor || S.lastEv);
