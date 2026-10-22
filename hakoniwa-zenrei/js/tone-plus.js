@@ -153,6 +153,8 @@
     /* 相手の性別で分ける：男性・女性・その他ごとに決めた敬称（決めていなければ くん・ちゃん・さん） */
     if (who.call === 'gender') { var gk = target.gender === 'm' ? 'm' : target.gender === 'f' ? 'f' : 'x', cg = (who.callG || {})[gk] || { m: 'kun', f: 'chan', x: 'san' }[gk]; return SUFFIX[cg] != null ? target.name + SUFFIX[cg] : null; }
     if (who.call && SUFFIX[who.call] != null) return target.name + SUFFIX[who.call];
+    /* 呼び方が「おまかせ」で、敬語で話す口調（敬語・明るい敬語・お嬢様・健気）は「〇〇さん」（呼び捨てと「さん」付けが混ざらないように） */
+    if (!who.call && /^(?:polite|genki|ojou|devoted)$/.test(who.tone || '')) return target.name + 'さん';
     return null;
   };
   /* 名前が普通の言葉と同じとき（「楽」「敬語」など）、言葉として使われている所には呼び方をつけない。
@@ -173,13 +175,15 @@
     return true;
   }
   V.applyCalls = function (q, who, people) {
-    if (!who || (!who.call && !who.calls)) return q;
+    if (!who || (!who.call && !who.calls && !/^(?:polite|genki|ojou|devoted)$/.test(who.tone || ''))) return q;
     people.forEach(function (p) {
       if (p === who || !p.name) return;
       var c = V.callFor(who, p);
       if (!c) return;
+      /* 呼び方を決めていない敬語の口調の「さん」は、台詞にもともと付いている呼び方（「〇〇先輩」「〇〇くん」）を上書きしない */
+      var dflt = !who.call && !(who.calls && who.calls[p.name]);
       q = q.replace(new RegExp(esc(p.name) + '(?:さん|くん|君|ちゃん|様|さま|先輩|先生|殿)?', 'g'), function (m, off, str) {
-        if (m !== p.name) return c;
+        if (m !== p.name) return dflt ? m : c;
         /* 印（U+2064）付きの名前は、名前として差し込まれた所なので、そのまま呼び方を付ける */
         if (p.name.charAt(0) !== (HK.NAME_MARK || '\u2064') && !nameHere(p.name, str.charAt(off - 1), str.slice(off + m.length))) return m;
         return c;

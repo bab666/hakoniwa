@@ -55,6 +55,8 @@
   /* 丁寧な文末をくだけた文末に（変えられなければ null）。rough = 強気・厳格寄りの語尾 */
   function plainCore(s, rough) {
     var m;
+    /* 「確認します」「お受けします」「お断りします」（する動詞）→「確認する」など。一字の漢字＋「します」は五段（「話します」→「話す」）なので除く */
+    if ((m = s.match(/^(.*?(?:[一-鿿々]{2,}|[ァ-ヶー]{2,}|お[一-鿿]{1,2}[ぁ-ん]?[いきしちにびみりけげせてねべめれ]|受け|断り))し(ます|ました|ません|ましょう)$/))) return m[1] + { 'ます': 'する', 'ました': 'した', 'ません': 'しない', 'ましょう': 'しよう' }[m[2]];
     if (/[ちじ]ゃいます$/.test(s)) return s.replace(/([ちじ])ゃいます$/, '$1ゃう');
     if (/[ちじ]ゃいましょう$/.test(s)) return s.replace(/([ちじ])ゃいましょう$/, '$1ゃおう');
     if (/[ちじ]ゃいました$/.test(s)) return s.replace(/([ちじ])ゃいました$/, '$1ゃった');
@@ -182,6 +184,13 @@
       else if (mode === 'tsun' && /^(好き|好きだ|好きです|大好き)(よ|だよ)?$/.test(body)) out = '……す、好き。……悪い？';
       else if (mode === 'tsun' && /^(嬉しい|うれしい)(です|よ)?$/.test(body)) out = '……別に、嬉しくなんか';
       else out = plainSentence(body, mode === 'proud' ? 'proud' : 'casual');
+      /* 奔放の女性は、男っぽい命令（「選ばせろ」「聞かせろ」「飲め」）をお願いの形に（「選ばせて」「聞かせて」「飲んで」） */
+      if (mode === 'free' && f && who.tone !== 'hero') {
+        var sf = /って$/.test(body) ? null : soften(out || body); if (sf) out = sf;
+        /* 「お前」→「あんた」、「行くぞ」→「行くよ」 */
+        var sx = (out || body).replace(/お前(?=[^らた達]|$)/g, 'あんた'); if (!tail) sx = sx.replace(/(?<!どう)ぞ$/, 'よ');
+        if (sx !== (out || body)) out = sx;
+      }
       var b2 = out || body;
       if (mode === 'proud') { var hd = ask ? null : harden(b2, 'proud'); if (hd) out = hd; }
       if (mode === 'proud' && !out && !ask && /[たるうくいてっ]の$/.test(b2) && !/(もの|この|その|あの|どの)$/.test(b2)) out = b2.replace(/の$/, 'んだ');
@@ -192,7 +201,8 @@
         else if (/よね$/.test(b2) && !/[てで]よね$/.test(b2) && !f) out = b2.replace(/よね$/, 'よな');
         else if (/[^な]の$/.test(b2) && ask && !/(もの|この|その|あの|どの)$/.test(b2)) out = b2.replace(/の$/, WH.test(b2) ? 'んだ' : 'のか');
       }
-      if (mode === 'free' && who.tone !== 'aniki' && who.tone !== 'hero' && !ask && !term && !/^[…‥っ]/.test(tail) && b2.length <= 8 && h % 2 === 0 && !/なさい$/.test(b2) && /[だいたるう]$/.test(out || body)) out = (out || body) + '！';
+      /* 伸ばし（「下がるー」）や「……」で沈んだ文（「…わかった」）には「！」を足さない */
+      if (mode === 'free' && who.tone !== 'aniki' && who.tone !== 'hero' && !ask && !term && !tail && !lead && b2.length <= 8 && h % 2 === 0 && !/なさい$/.test(b2) && /[だいたるう]$/.test(out || body)) out = (out || body) + '！';
     } else if (mode === 'stern') {
       /* 厳格は敬語を使わない（「一人暮らしですか？」→「一人暮らしか？」） */
       /* 厳格：若い口語の言い回しを硬く（「ねえ、」「えへへ」「ほんと」「じゃあ、」「ごめん、」） */
@@ -306,6 +316,17 @@
     return r == null && b !== b0 ? b : r;
   }
   /* q: 台詞の中身、who: { persona, gender, ... } */
+  /* 尊敬の「お〜ください」「〜なさってください」はふつうのお願いにしてから言い換える（「お待ちくれ」「お好きになさって」にしない）。
+     「？」のない「〜ですか」「〜ますか」には「？」を付ける（ため口にしたあとも問いのまま）。敬語を使わない口調の言い換えの前に voice.js から呼ぶ */
+  V.unHonor = function (q) {
+    return q.replace(/(?:いた|致)し(?=ま[すしせ])/g, 'し').replace(/いかが(?=です|でしょう)/g, 'どう').replace(/でございま(?=[すし])/g, 'で').replace(/(?<!ありがとう|おはよう|おめでとう)ございま(?=[すし])/g, 'ありま').replace(/恐れ入りますが、?/g, 'すみません、').replace(/かしこまりました/g, 'わかりました')
+      .replace(/お好きになさってください/g, '好きにしてください').replace(/なさってください/g, 'してください').replace(/少々お待ち/g, 'ちょっとお待ち').replace(/少々/g, 'ちょっと').replace(/おどきください/g, 'どいてください').replace(/おやめください/g, 'やめてください')
+      .replace(/お(?!願い|疲れ|待たせ|世話|大事|元気|気を)([一-鿿]{1,2}[ぁ-ん]?)([いきぎしちにびみりえけげせてねべめれ])ください/g, function (m, k, e) {
+        var TE = { 'い': 'って', 'ち': 'って', 'り': 'って', 'き': 'いて', 'ぎ': 'いで', 'し': 'して', 'に': 'んで', 'び': 'んで', 'み': 'んで' };
+        return k + (/[えけげせてねべめれ]/.test(e) ? e + 'て' : TE[e]) + 'ください';
+      })
+      .replace(/((?:です|ます|でしょう)か)(?=[。」]|$)/g, '$1？');
+  };
   V.styleQuote = function (q, who) {
     var mode = who && who.persona;
     if (!q) return q;
