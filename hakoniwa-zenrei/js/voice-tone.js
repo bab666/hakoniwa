@@ -80,7 +80,7 @@
   function plainSentence(s, mode) {
     var r0 = plainSentence0(s, mode);
     /* 丁寧語を外したあとに残る謙譲語・尊敬語を、ふつうの言い方に */
-    return r0 == null ? r0 : r0.replace(/(ない|しい|たい|かった|いい)だ(?=よね$|よ$|ね$)/, '$1').replace(/させていただく$/, 'させてもらう').replace(/ていただく$/, 'てもらう').replace(/お喜びいただいた/g, '喜んでもらった').replace(/いただいた(?=[^ぁ-ん]|$)/g, 'もらった').replace(/参る(?=[ねよ]?$)/, 'いく').replace(/お一人ずつ/g, '一人ずつ');
+    return r0 == null ? r0 : r0.replace(/いただけ(?=る|ない|た)/g, 'もらえ').replace(/(ない|しい|たい|かった|いい)だ(?=よね$|よ$|ね$)/, '$1').replace(/させていただく$/, 'させてもらう').replace(/ていただく$/, 'てもらう').replace(/お喜びいただいた/g, '喜んでもらった').replace(/いただいた(?=[^ぁ-ん]|$)/g, 'もらった').replace(/参る(?=[ねよ]?$)/, 'いく').replace(/お一人ずつ/g, '一人ずつ');
   }
   function plainSentence0(s, mode) {
     var rough = mode === 'proud', s1 = s;
@@ -321,6 +321,8 @@
     if (mode === 'cool') {
       /* 冷静は敬語を使わず、語尾も淡々と */
       q = V.casualQuote(q).replace(/じゃん(?=[。！？…、」]|$)/g, 'じゃないか').replace(/でしょ(?=[。！？…、」]|$)/g, 'だろう').replace(/ちょうだい(?=[。！？…、」]|$)/g, 'くれ');
+      /* 助けを呼ぶ・危険を知らせる叫びは、冷静な人でも「！」を残す */
+      if (/誰か|助け|逃げ|危な|伏せ|出して|やめろ|止まれ|離れろ|火事|来るな/.test(q)) return q;
       return q.replace(/！+(?=[？?])/g, '').replace(/！+[　 ]*(?=.)/g, '。').replace(/[！!]+$/, '').replace(/。。+/g, '。');
     }
     var parts = q.split(/([。！？!?\n]+)/);
