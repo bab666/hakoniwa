@@ -159,7 +159,7 @@
   /* ---------- 星を探す ---------- */
   function searchPlanet(S, m) {
     var rng = S.rng, nav = best(S, 'nav'), com = best(S, 'talk', nav ? [nav] : []);
-    var ch = 0.03 + S.env.find / 100 * 0.22 + (nav ? skill(nav, 'nav') * 0.06 : 0) + (com ? skill(com, 'talk') * 0.02 : 0) + (S.ship.power > 40 ? 0.02 : -0.02);
+    var ch = 0.01 + S.env.find / 100 * 0.14 + (nav ? skill(nav, 'nav') * 0.05 : 0) + (com ? skill(com, 'talk') * 0.02 : 0) + (S.ship.power > 40 ? 0.02 : -0.02);
     if (rng() >= ch) {
       if (rng() < 0.5) ST.sayB(S, { kind: 'phase', text: pk(S, SH.T.DRIFT), why: 'この月は、星に辿り着けなかった（運 ' + Math.round(ch * 100) + '%）' }, '星は見つからない');
       return;
@@ -212,7 +212,7 @@
         if (R18ON && r18on(S) && x.kind === 'life' && rng() < S.env.slewd / 100 * 0.35) alienR18(S, a, d);
       } else {
         var hurt = 12 + rng.int(18) + (x.kind === 'life' && d.kind === 'hostile' ? 8 : 0);
-        var dead = rng() < 0.06 + S.env.danger / 100 * 0.12 + d.rare * 0.02 + (x.kind === 'life' && d.kind === 'hostile' ? 0.08 : 0);
+        var dead = rng() < 0.03 + S.env.danger / 100 * 0.2 + d.rare * 0.02 + (x.kind === 'life' && d.kind === 'hostile' ? 0.08 : 0);
         var v = tm.length > 1 && rng() < 0.4 ? tm[1] : a;
         if (dead) { die(S, v, Pn.name + 'の' + KIND_JP[x.kind] + 'の調査中に', t + F(d.death, { v: v.name, w: (tm.filter(function (q) { return q !== v; })[0] || { name: '仲間' }).name, x: Pn.name })); continue; }
         a.m.hp = clamp(a.m.hp - hurt, 1, 100); a.m.fear = clamp(a.m.fear + 10, 0, 100);
@@ -247,7 +247,7 @@
     if (tr.stat === 'crew') live(S).forEach(function (p) { p.m.hp = clamp(p.m.hp - 8, 1, 100); });
     else if (sp[tr.stat] != null) sp[tr.stat] = clamp(sp[tr.stat] - dmg, 0, 100);
     S.ship.morale = clamp(S.ship.morale - 6, 0, 100);
-    if (rng() < 0.12 + S.env.danger / 100 * 0.2) {
+    if (rng() < 0.06 + S.env.danger / 100 * 0.32) {
       var v = rng.pick(live(S)), w = live(S).filter(function (q) { return q !== v; })[0];
       return die(S, v, tr.name + 'で', t + F(tr.ng, { a: fx.name }) + F(tr.death, { v: v.name, w: w ? w.name : '仲間' }));
     }
@@ -309,7 +309,7 @@
   /* ---------- 毎月の消耗 ---------- */
   function upkeep(S, m) {
     var sp = S.ship, L0 = live(S), rng = S.rng;
-    sp.food = clamp(sp.food - L0.length * 1.4 - 2, 0, 100);
+    sp.food = clamp(sp.food - L0.length * 0.8 - 1.5 + (S.planet && S.planet.at < m ? 3 : 0), 0, 100);
     sp.o2 = clamp(sp.o2 - 2 - (sp.power < 25 ? 6 : 0), 0, 100);
     sp.power = clamp(sp.power - 3, 0, 100);
     sp.morale = clamp(sp.morale - 2 + (S.planet ? 3 : 0), 0, 100);
