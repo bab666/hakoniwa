@@ -522,7 +522,7 @@
     if (!res || !input || !input.chars) return res;
     var people = input.chars.map(function (c, i) {
       var r = (res.chars && res.chars[i]) || (res.heroes && res.heroes[i]) || {};
-      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder, you: c.you || '' };
+      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder, you: c.you || '' };
       p.persona = r.persona || HK.personaOf({ tone: c.tone, eg: c.eg });
       return p;
     });

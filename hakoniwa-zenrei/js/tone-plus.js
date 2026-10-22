@@ -142,7 +142,7 @@
   HK.CALL_STYLES = [
     { v: '', label: 'おまかせ（文のまま）' }, { v: 'name', label: '呼び捨て' }, { v: 'san', label: 'さん付け' }, { v: 'kun', label: 'くん付け' },
     { v: 'chan', label: 'ちゃん付け' }, { v: 'sama', label: '様付け' }, { v: 'senpai', label: '先輩' }, { v: 'sensei', label: '先生' },
-    { v: 'gender', label: '相手の性別で（男性くん・女性ちゃん・ほかはさん）' }
+    { v: 'gender', label: '相手の性別で分ける（男性・女性・その他ごとに選ぶ）' }
   ];
   function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   /* who が target をどう呼ぶか（null なら文のまま） */
@@ -150,7 +150,8 @@
     if (!who || !target || who === target) return null;
     var own = who.calls && who.calls[target.name];
     if (own) return String(own).trim().slice(0, 16) || null;
-    if (who.call === 'gender') return target.name + (target.gender === 'm' ? 'くん' : target.gender === 'f' ? 'ちゃん' : 'さん');
+    /* 相手の性別で分ける：男性・女性・その他ごとに決めた敬称（決めていなければ くん・ちゃん・さん） */
+    if (who.call === 'gender') { var gk = target.gender === 'm' ? 'm' : target.gender === 'f' ? 'f' : 'x', cg = (who.callG || {})[gk] || { m: 'kun', f: 'chan', x: 'san' }[gk]; return SUFFIX[cg] != null ? target.name + SUFFIX[cg] : null; }
     if (who.call && SUFFIX[who.call] != null) return target.name + SUFFIX[who.call];
     return null;
   };
