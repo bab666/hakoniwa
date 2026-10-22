@@ -55,7 +55,7 @@
     return out + q.slice(last);
   };
   /* お前・あんた などは後ろの語を問わずに置き換える（「お前か」「お前から」「お前一人」も）。「君」は熟語と紛れるので、後ろの語を見る */
-  var YOU_RE = /お前さん|おまえさん|(?:お前|おまえ|あんた|てめえ|貴様)(?!さん|方)|(?<![大姫主父母諸細若暴])君(?=(?:たち|達|ら|は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なんか|なら|だけ|しか|だ|じゃ|より|まで|かも|こそ|か|な|から|へ|や|一人|自身))/g;
+  var YOU_RE = /お前さん|おまえさん|(?:お前|おまえ|あんた|てめえ|貴様)(?!さん|方)|(?<![大姫主父母諸細若暴ァ-ヶー一-鿿A-Za-z])君(?=(?:たち|達|ら|は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なんか|なら|だけ|しか|だ|じゃ|より|まで|かも|こそ|か|な|から|へ|や|一人|自身))/g;
 
   /* ---------- 敬語（です・ます調に整える。完全ではないが、口調として読める程度に） ---------- */
   var POLITE_END = /(です|ます|ました|ません|でした|でしょう|ください|ございます|ませんか|ましょう|ませんでした|なさい|でしょうか|ですか|ますか)$/;
@@ -426,6 +426,10 @@
   }
   V.addresseeOf = addresseeOf;
   /* who が、この台詞では敬語で話すか（ふだんの口調が敬語なら対象外） */
+  /* 二人称を、設定した言い方にそろえる（「あなた」「お前」「きみ」「あんた」「おぬし」など → 設定の二人称）。
+     名前のあとの「君」（アキラ君）や「大君」などの言葉は変えない */
+  var YOU2 = /(?:あなた|あんた|お前|おまえ|てめえ|貴様|おぬし|そなた|お主)(?!さん|方|様)|(?:きみ|(?<![大姫主父母諸細若暴ァ-ヶー一-鿿A-Za-z])君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なら|だけ|たち|ら|だ|じゃ|か|な|から|へ|や|しか|まで|より|一人|自身))/g;
+  V.applyYou = function (q, you) { return you ? q.replace(YOU2, you) : q; };
   function keigoHere(text, s, e, q, who, people, actors) {
     if (!who || who.persona === 'polite') return false;
     /* 「年上には敬語」：年齢が分かっていて、相手のほうが年上なら敬語 */
@@ -483,6 +487,8 @@
             /* 口調ごとの仕上げ（後輩の「〜っす」、お嬢様の「〜ですわ」など。HK.toneFinish で登録したもの） */
             var fin = !own && !nounQ && HK.TONE_FINISH && HK.TONE_FINISH[who.tone];
             if (fin) q = fin(q, who);
+            /* 二人称の設定（敬語の相手への台詞は除く） */
+            if (who.you && !kg && !nounQ) q = V.applyYou(q, who.you);
             if (YOU_ST.test(q0)) q = fixYouStutter(q);
             if (V.applyCalls) q = V.applyCalls(q, who, people);
           }
@@ -499,7 +505,7 @@
     if (!res || !input || !input.chars) return res;
     var people = input.chars.map(function (c, i) {
       var r = (res.chars && res.chars[i]) || (res.heroes && res.heroes[i]) || {};
-      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder };
+      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder, you: c.you || '' };
       p.persona = r.persona || HK.personaOf({ tone: c.tone, eg: c.eg });
       return p;
     });
