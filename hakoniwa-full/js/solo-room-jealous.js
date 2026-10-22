@@ -155,7 +155,7 @@
         /* 受け攻めの指定に従う：{a} が受けなら、{b}（攻め）を押し倒したり、{b}の体に「上書き」したりはしない */
         var aTop = !HK.Pos || HK.Pos.topOf(a, b, [a, b]) === a, ffP = HK.Pos && HK.Pos.ff(a, b);
         t += m(ctx.pick(aTop ? CLAIM[grp(a)] : CLAIM[grp(a)].filter(function (l) { return !/押し倒/.test(l); }))) + m(ctx.pick(REPLY[grp(b)][rk]));
-        t += m(ctx.pick(aTop ? CLAIM_SEX.filter(function (l) { return !ffP || !/沈めた|深くなった/.test(l); }) : CLAIM_SEX_B)) + (LW ? LW.scene(ctx, a, b, (A.prog(ctx, a, b).act.h || 0) ? 'repeat' : 'will', { lead: true, jealous: true }) : '') + (function () { var r = ctx.rng(); return r < 0.4 ? m(CLAIM_AFTER[grp(a)][0]) : r < 0.8 ? m(CLAIM_AFTER[grp(b)][1]) : m(CLAIM_AFTER.rough[2]); })();
+        t += m(ctx.pick(aTop ? CLAIM_SEX.filter(function (l) { return !(ffP || (HK.Pos && HK.Pos.isF(a) && !HK.Pos.isF(b))) || !/沈めた|深くなった/.test(l); }) : CLAIM_SEX_B)) + (LW ? LW.scene(ctx, a, b, (A.prog(ctx, a, b).act.h || 0) ? 'repeat' : 'will', { lead: true, jealous: true }) : '') + (function () { var r = ctx.rng(); return r < 0.4 ? m(CLAIM_AFTER[grp(a)][0]) : r < 0.8 ? m(CLAIM_AFTER[grp(b)][1]) : m(CLAIM_AFTER.rough[2]); })();
         var p = A.prog(ctx, a, b); p.act.h = (p.act.h || 0) + 1;
         ctx.pair(a, b).night = true;
         ctx.mod2(a, b, { att: 10, aff: 6, ten: 2 }, { att: 8, aff: 4 });

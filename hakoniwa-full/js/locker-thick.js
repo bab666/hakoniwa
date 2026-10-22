@@ -12,6 +12,8 @@
   /* 体位を変えて、溜めた欲を吐き出す */
   var POS = L('狭いロッカーで溜めに溜めた欲は、一度では収まらなかった。{a}は{b}を抱え直し、角度を変えては、また奥を確かめた。\n\n{b}の喉から、媚薬に溶けた声が途切れ途切れに漏れる。|{a}は{b}を横向きに寝かせ、背中から抱きしめたまま深く繋がり直した。うなじに唇を押しつけながら、ゆっくり、深く揺らす。\n\n{b}の指が、シーツの上で{a}の手を探した。|{a}は{b}をうつ伏せにして、腰だけを高く上げさせた。媚薬の熱で赤く染まった背中に、汗が一筋流れていく。\n\n{a}「ロッカーの中で煽った分、全部返してもらう」');
 
+  /* 女性の攻めが男性に跨るときの、体位を変える段落（「奥を確かめる」「繋がり直す」のような入れる側の言葉を使わない） */
+  var POS_FM = L('{a}は{b}に跨ったまま向きを変え、背中を見せて腰を落とし直した。{b}の目の前で、{a}の腰がゆっくりと上下する。\n\n{b}の手が、たまらず{a}の腰を掴んだ。|{a}は{b}の胸に両手をついて上体を起こし、腰を前後にくねらせ始めた。狭いロッカーではできなかった動きだった。\n\n{a}「ずっと、こうしたかった」|{a}は{b}を横向きに寝かせて脚を絡め、自分から深く迎え入れ直した。汗ばんだ背中が、{b}の胸にぴたりと重なる。');
   var FM_BAD = /押し入|奥まで入れ|入れたまま|中に入れ|貫|突き上げ|突いた|深く突|注ぎ込/;
   var FM_SAFE = L('{a}は{b}の上で腰を沈めたまま、わざと動かずに{b}の顔を見下ろした。|{a}は{b}の胸に手をついて、少しずつ深さを変えながら腰を揺らした。|{a}は{b}の上で、締めつけては緩め、{b}が息を詰めるたびに腰の動きを止めた。');
   function para(arr, pre) { return arr.map(function (x) { return (pre ? '\n\n' : '') + x + '\n\n'; }); }
@@ -30,8 +32,12 @@
     /* 荒々しい攻めの回は、甘い／拘束する言い回しを挟まない（荒々しさは差し替えた挿入の段落で書く） */
     if (hard && tk) B[tk] = [''];
     B.fore = para(FORE);
-    B.insert = para(fm ? T.FM_BODY[g] : hard ? T.ROUGH_BODY : T.BODY[st] || T.BODY.gentle);
-    B.pos = para(POS, true);
+    /* 繋がる段落のあとに、感じていく段落（受けの快感・喘ぎ・ロッカーならではの一文）を添える */
+    var pk = function (arr) { return rng.pick(arr); }, mode = fm ? 'fm' : 'mf';
+    var feel = function () { return '\n\n' + pk(fm ? T.FEEL_FM : T.FEEL).replace('{mb}', T.moan(pk, y)) + '\n\n' + pk(T.PLACE.locker) + pk(T.FEEL_A[mode]) + T.react(pk, y); };
+    B.insert = (fm ? T.FM_BODY[g] : hard ? T.ROUGH_BODY : T.BODY[st] || T.BODY.gentle).map(function (x) { return x + feel() + '\n\n'; });
+    B.pos = para(fm ? POS_FM : POS, true);
+    /* 絶頂の声は solo-locker-bed.js の o.moan が足すので、ここでは足さない */
     if (!riba) B.climax = para(fm ? T.FM_CLIMAX[g] : hard ? T.ROUGH_CLIMAX : T.CLIMAX[st] || T.CLIMAX.gentle, true);
     /* 段落の区切りを整える（末尾の改行・三つ以上の改行） */
     ST.say = function (S2, e) {

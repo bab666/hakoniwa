@@ -110,7 +110,15 @@
       p.roleLabel = 'かけられる側（' + p.T.label + '・' + p.M.name + '）';
     });
 
-    function say(p, o, short, force) { o.actors = HY ? [p, HY] : [p]; return ST.sayB(S, o, short, force); }
+    function say(p, o, short, force) {
+      o.actors = HY ? [p, HY] : [p];
+      /* かける側の呼び名が「アキラの元患者」のようなとき、「アキラはアキラの元患者を」→「アキラは自分の元患者を」 */
+      if (typeof o.text === 'string') o.text = o.text.replace(new RegExp(p.name + '(は|が|も)' + p.name + '(の|に)', 'g'), p.name + '$1自分$2');
+      /* 女性の攻め指定が男性の相手（モブを含む）と：入れる側の書き方を、跨る書き方に直す（pos-fm.js） */
+      if (HK.FM && !HK.SAFE_ON && p.aTop && !p.ff && HK.Pos && HK.Pos.isF(p) && (!HY || !HK.Pos.isF(HY)) && typeof o.text === 'string')
+        o.text = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, o.text, p, p.h);
+      return ST.sayB(S, o, short, force);
+    }
     function wake(p) {
       p.woke = true;
       var o = say(p, { tag: '目覚め', text: ST.fmt(ST.pick(S, L('{a}がはっと目を見開いた。目の前に{h}の顔があった。自分の格好を見下ろして、{a}は息を呑んだ。|{a}の瞳に、急に光が戻った。「……え。何、してるの」|{a}は跳ね起きた。体はまだ火照っているのに、頭だけが冷えていた。')), { a: p.name, h: p.h }) + (SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: '催眠が浅くなって、途中で目を覚ました（深さ ' + Math.round(p.m.depth) + '）', mag: 35 }, '', true);
@@ -123,7 +131,12 @@
         ST.key(S, o2, p.name + '：' + { swept: '我に返っても流された', report: 'その場で通報した', flee: '逃げ出した' }[sr.k]);
       }
     }
-    function tq(p) { return V && SM.TRANCE[p.persona] && rng() < 0.45 ? p.name + ST.pick(S, topVoice(p, 'TRANCE', SM.TRANCE[p.persona])) : ''; }
+    /* 同じ人の台詞は、一回の結果の中でなるべく繰り返さない */
+    function fresh(p, list) {
+      var u = p._said = p._said || {}, f = list.filter(function (x) { return !u[x]; });
+      var x = ST.pick(S, f.length ? f : list); u[x] = 1; return x;
+    }
+    function tq(p) { return V && SM.TRANCE[p.persona] && rng() < 0.45 ? p.name + fresh(p, topVoice(p, 'TRANCE', SM.TRANCE[p.persona])) : ''; }
     function cmdText(p, g) { var c = ST.fmt(ST.pick(S, cmdOf(p, g)), { h: p.h, a: p.name }).replace(/^「|」$/g, ''); return p.h + 'は' + (S.rng() < 0.5 ? '低い声で' : '耳元で') + '「' + c + '」と囁いた。'; }
 
     /* ---------- 導入 ---------- */
@@ -223,7 +236,7 @@
             p.cnt.climax += cl; p.m.fall = clamp(p.m.fall + cl * 3, 0, 100);
             /* 男性向けの文：本文に絶頂の喘ぎ（{m2}）がなければ、態度ごとの崩れた声を足す */
             if (lew !== 'low' && eroOn(S) && !aTop) { if (!/\{m2\}/.test(body)) t += p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; }
-            else if (!thick && lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + (aTop && SM.CLIMAX_TOP ? ST.pick(S, topVoice(p, 'CLIMAX', [])) : '「' + ST.pick(S, topL(p, V.CLIMAX[p.persona])) + '」');
+            else if (!thick && lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + (aTop && SM.CLIMAX_TOP ? fresh(p, topVoice(p, 'CLIMAX', [])) : '「' + fresh(p, topL(p, V.CLIMAX[p.persona])) + '」');
             why += '／絶頂 ' + cl + '回';
           }
           p.m.depth = clamp(p.m.depth + (full ? 5 : -5), 0, 100);
@@ -383,7 +396,7 @@
     return Array.isArray(T) ? T : (T[p.persona] || T.gentle);
   }
   /* 我に返ったきっかけの言い方 */
-  function snapWord(p) { return p.ff ? '達した拍子に' : p.aTop ? '中に注いだ瞬間に' : '中に出された熱で'; }
+  function snapWord(p) { return p.ff || (p.aTop && HK.Pos && HK.Pos.isF && HK.Pos.isF(p)) ? '達した拍子に' : p.aTop ? '中に注いだ瞬間に' : '中に出された熱で'; }
   /* かけられた側が攻めのとき・向きの決まらない組のときは起こさないハプニング（{h}が{a}に触れる・{a}がねだる） */
   var EV_NG = { beg: 1, mark: 1 };
 

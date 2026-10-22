@@ -68,10 +68,14 @@
   };
   function flav(S) { var l = FLAVOR[S.scen.id]; return l && S.rng() < 0.55 ? pick(S, l) : ''; }
   /* 喘ぎ（小説調なので♡は付けない）：0＝こらえながら感じる／1＝崩れる。態度ごと（thick-vmd.js の声を使う） */
-  function moan(S, who, st) {
+  /* 主導している側（dom）は「見るな」「ふざけ」のような拒む声を使わない。合意の場面の受ける側も、強く拒む声（やめ・ふざけ・離せ）は使わない */
+  var M_DOM = /見るな|見ないで|ふざけ|やめ|離せ|調子に|待っ|ちょっと|感じてなんか|勘違い|そこは、いけない/, M_REF = /ふざけ|やめ|離せ|触んな/;
+  function moan(S, who, st, dom) {
     var V = HK.ThickVM && HK.ThickVM.VB, ps = (who && (who.persona || (HK.personaOf ? HK.personaOf(who) : ''))) || 'gentle';
     var l = V && (V[ps] || V.gentle);
-    return l ? who.name + '「' + pick(S, l[st]) + '」' : '';
+    if (!l) return '';
+    var re = dom ? M_DOM : M_REF, c = l[st].filter(function (x) { return !re.test(x); });
+    return who.name + '「' + pick(S, c.length ? c : l[st]) + '」';
   }
   /* 嗜虐的な攻め（HK.Ero.sadist）のとき：少し乱暴に（髪を掴む・乱暴に押し倒す・強く腰を掴んで激しく打ちつける）。首・拘束は使わない。{x}の台詞は口調の言い換えを通る */
   var ROUGH_SADIST = [
@@ -159,7 +163,7 @@
   };
   var SOFT_AFTER = {
     ff: L('二人は絡めた脚をほどかないまま、しばらく天井を見ていた。{x}が{y}の汗ばんだ髪を耳にかけると、{y}は照れたように目を伏せた。|{y}は{x}の肩に額を預け、乱れた息を整えた。肌に残った熱が、なかなか引かなかった。|{x}は{y}の濡れた指先に口づけ、いたずらっぽく笑った。{y}は真っ赤になって、{x}の肩に顔を隠した。'),
-    fm: L('{x}は{y}の上から降りると、乱れた髪をかき上げた。{y}はまだ息を整えられないまま、{x}の背中をぼんやりと見ていた。|{x}は{y}の胸に頬を預けた。{y}の鼓動が、まだ速く鳴っていた。|{x}は繋がったまま{y}の胸に倒れ込み、満足げに喉を鳴らした。{y}の手が、汗ばんだ{x}の背中をゆっくりと撫でた。')
+    fm: L('{x}は乱れた髪をかき上げ、まだ息を整えられない{y}を見下ろして、小さく笑った。|{x}は{y}の胸に頬を預けた。{y}の鼓動が、まだ速く鳴っていた。|{x}は繋がったまま{y}の胸に倒れ込み、満足げに喉を鳴らした。{y}の手が、汗ばんだ{x}の背中をゆっくりと撫でた。')
   };
   function soft(S, x, y, opt, kind) {
     var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };
@@ -168,9 +172,10 @@
     var fill = function (s) { return s.replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name); };
     S.r18Last = kind === 'ff' ? '指と舌' : '女性上位';
     var body = fill(K.pick(ctx, 'body', st, kind === 'ff' && opt.tools ? { tools: opt.tools } : undefined)), peak = fill(K.pick(ctx, 'climax', st));
-    if (opt.short) return J([body, R.say(S, y, 'start'), R.say(S, y, 'climax') + peak]);
+    if (opt.short) return J([body, sayOk(S, y, 'start', mood), R.say(S, y, 'climax') + peak]);
     var open = opt.fore !== false && kind === 'fm' ? fill(K.pick(ctx, 'open', st)) : opt.fore !== false ? F(pick(S, D.FORE[mood === 'plain' ? 'plain' : mood]), m) : '';
-    return J([open, body, R.say(S, y, 'start') + F(pick(S, SOFT_MID[kind]), m), R.say(S, x, 'top') + moan(S, y, 0) + (kind === 'fm' && rng() < 0.6 ? moan(S, x, 0) : ''), (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + peak, flav(S) + F(pick(S, SOFT_AFTER[kind]), m) + (rng() < 0.5 ? R.say(S, y, 'after') : '')]);
+    var midL = SOFT_MID[kind].filter(function (t) { return !((/舌/.test(t) && /舌/.test(body)) || (/指/.test(t) && /指/.test(body)) || (/交差|擦り合わせ/.test(t) && /交差|擦り合わせ|擦り合う/.test(body))); });
+    return J([open, body, sayOk(S, y, 'start', mood) + F(pick(S, midL.length ? midL : SOFT_MID[kind]), m), R.say(S, x, 'top') + moan(S, y, 0) + (kind === 'fm' && rng() < 0.6 ? moan(S, x, 0, true) : ''), (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + peak, flav(S) + F(pick(S, SOFT_AFTER[kind]), m) + (rng() < 0.5 ? R.say(S, y, 'after') : '')]);
   }
 
   var sex0 = R.sex;
