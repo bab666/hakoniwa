@@ -174,7 +174,7 @@
     /* 「？」のない「〜ですか」「〜ますか」も問いかけ */
     if (/(です|ます|でしょう)か$/.test(body)) ask = true;
     if (mode === 'proud' || mode === 'tsun' || mode === 'free') {
-      if (/^(ありがとう(ございます|ございました)?|ありがと)$/.test(body)) out = { proud: '……礼は言っとく', tsun: '……ありがと。べ、別に、感謝してるわけじゃないから', free: 'ありがと！' }[mode];
+      if (/^(ありがとう(ございます|ございました)?|ありがと)$/.test(body)) out = { proud: '……礼は言っとく', tsun: '……ありがと。べ、別に、感謝してるわけじゃないから', free: who.tone === 'hero' ? 'ありがと' : 'ありがと！' }[mode];
       else if (/^(ごめん(ね|なさい)?|すみません|すまない|申し訳(ありません|ございません|ない)|失礼(しました|いたしました))$/.test(body)) out = { proud: '……悪かった', tsun: f ? '……悪かったわよ' : '……悪かったな', free: null }[mode];
       else if (mode === 'tsun' && /^(好き|好きだ|好きです|大好き)(よ|だよ)?$/.test(body)) out = '……す、好き。……悪い？';
       else if (mode === 'tsun' && /^(嬉しい|うれしい)(です|よ)?$/.test(body)) out = '……別に、嬉しくなんか';
@@ -189,7 +189,7 @@
         else if (/よね$/.test(b2) && !/[てで]よね$/.test(b2) && !f) out = b2.replace(/よね$/, 'よな');
         else if (/[^な]の$/.test(b2) && ask && !/(もの|この|その|あの|どの)$/.test(b2)) out = b2.replace(/の$/, WH.test(b2) ? 'んだ' : 'のか');
       }
-      if (mode === 'free' && who.tone !== 'aniki' && !ask && !term && !/^[…‥っ]/.test(tail) && b2.length <= 8 && h % 2 === 0 && !/なさい$/.test(b2) && /[だいたるう]$/.test(out || body)) out = (out || body) + '！';
+      if (mode === 'free' && who.tone !== 'aniki' && who.tone !== 'hero' && !ask && !term && !/^[…‥っ]/.test(tail) && b2.length <= 8 && h % 2 === 0 && !/なさい$/.test(b2) && /[だいたるう]$/.test(out || body)) out = (out || body) + '！';
     } else if (mode === 'stern') {
       /* 厳格は敬語を使わない（「一人暮らしですか？」→「一人暮らしか？」） */
       /* 厳格：若い口語の言い回しを硬く（「ねえ、」「えへへ」「ほんと」「じゃあ、」「ごめん、」） */

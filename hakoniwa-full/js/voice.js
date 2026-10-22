@@ -496,7 +496,14 @@
             /* 別の口調から派生する口調（tone-registry.js の derive。後輩・お嬢様など）：その口調名の書き下ろし・直しがあれば完成形としてそのまま使い、
                なければ元の口調の書き下ろしを引いて、最後に語尾を付け替える */
             var dv = !kg && !pre && !nounQ && HK.toneOpt ? HK.toneOpt(who.tone, 'derive') : null, own = false;
-            if (dv && V.overrideFor) { if (ov != null) own = true; else ov = V.overrideFor(q, Object.assign({}, who, { tone: dv }), people); }
+            if (dv && V.overrideFor) {
+              if (ov != null) own = true;
+              else {
+                ov = V.overrideFor(q, Object.assign({}, who, { tone: dv }), people);
+                /* 派生元の書き下ろしが足した「！」を使わない口調（熱血：言い切りは言い切りのまま） */
+                if (ov != null && HK.toneOpt(who.tone, 'noBang') && !/[！!]$/.test(q)) ov = ov.replace(/！$/, '');
+              }
+            }
             /* 派生元のない仕上げつきの口調（ヤンキーなど）も、その口調名の書き下ろし・直しは完成形として使う */
             else if (ov != null && !kg && HK.TONE_FINISH && HK.TONE_FINISH[who.tone]) own = true;
             q = V.replaceFP(ov != null ? ov : q, who);
