@@ -101,6 +101,7 @@
     });
     setupPlus(S);
     JS.REL.setup(S, input);
+    if (JS.SPEC) JS.SPEC.setup(S, input);
     var keys = ['fear', 'hp', 'clue'];
 
     /* ---------- 到着 ---------- */
@@ -108,7 +109,7 @@
     ST.say(S, { kind: 'phase', text: (tour ? '一行は、' + tourT + 'の参加者だった。マイクロバスが止まった先は――' : '') + '山道の先に、地図にない村があった。' + V + '。' + ST.fmt(ST.pick(S, JS.WELCOME), { v: V }) });
     P.forEach(function (p) {
       if (p.amn) return JS.REL.amnArrive(S, p);
-      ST.say(S, { actors: [p], tag: '来た理由', text: p.name + '（' + jobOf(p).label + '）がこの村に来たのは――' + p.reason + '。最初は「' + p.action.label + '」' + (p.goal.secret ? '。目標は、誰にも話さなかった。' : '、目標は「' + p.goal.label + '」。'), why: (p.goal.secret ? '本当の目標「' + p.goal.label + '」（周りには隠している）。' : '') + (tour ? 'シークレットツアー（全員が同じ理由）' : '理由は気質と職業から抽選') + '／職業：' + jobOf(p).label + (p.jobAuto ? '（気質から）' : '') + '・' + jobOf(p).desc });
+      ST.say(S, { actors: [p], tag: '来た理由', text: p.name + '（' + jobOf(p).label + (p.spec ? '・' + HK.Special.LABEL[p.spec] : '') + '）がこの村に来たのは――' + p.reason + '。最初は「' + p.action.label + '」' + (p.goal.secret ? '。目標は、誰にも話さなかった。' : '、目標は「' + p.goal.label + '」。'), why: (p.goal.secret ? '本当の目標「' + p.goal.label + '」（周りには隠している）。' : '') + (tour ? 'シークレットツアー（全員が同じ理由）' : '理由は気質と職業から抽選') + '／職業：' + jobOf(p).label + (p.jobAuto ? '（気質から）' : '') + '・' + jobOf(p).desc });
     });
     ST.say(S, { kind: 'phase', tag: '村の様子', text: G.look + '村人たちは、祀っている神を「' + G.call + '」と呼んでいた。' + (S.ygo ? ST.pick(S, M.YGO_START) : '') });
     arrivePlus(S);
@@ -127,6 +128,8 @@
     while (!end) {
       h += 2;
       S.h = h;
+      /* 不死・吸血鬼は、死んでも蘇る（jashin-special.js） */
+      if (JS.SPEC) JS.SPEC.revive(S);
       var live = P.filter(alive);
       if (!live.length) { end = 'none'; break; }
       if (h >= S.deadline) { end = 'ritual'; break; }
@@ -146,6 +149,15 @@
       live = P.filter(alive);
       live.forEach(function (p) {
         if (!alive(p) || p.bound) return;
+        /* 発狂中は動けない。そのぶん死の罠や村人の襲撃を引きやすい（jashin-special.js） */
+        if (JS.SPEC && JS.SPEC.mad(p)) {
+          var dg = JS.SPEC.danger(p);
+          if (rng() < trapRate(S, p, h) * dg) return trap(S, p, P.filter(alive), false);
+          if (rng() < (S.hostile / 100) * (night(h) ? 0.16 : 0.05) * dg * (S.shrineRage ? 1.8 : 1)) return attack(S, p, live);
+          return JS.SPEC.act(S, p);
+        }
+        /* 渇いた吸血鬼は、ほかのことより先に血を求める */
+        if (JS.SPEC && JS.SPEC.act(S, p)) return;
         if (JS.R18 && JS.R18.on(S) && night(h) && JS.R18.night(S, p, P.filter(alive), h)) return;
         if (JS.MUNO && JS.MUNO.act(S, p, h, P.filter(alive))) return;
         var evp = env.ev / 100;
@@ -174,6 +186,7 @@
         if (sl && rng() < 0.22 + skill(sl, 'obs') * 0.15) { ST.say(S, { actors: [sl], tag: '推理', text: ST.fmt(ST.pick(S, JS.RELT.SLEUTH_INFER), { a: sl.name }), why: '名探偵は、手がかりが二つ足りなくても推理で埋められる', mag: 20 }); solve(S, true, sl); }
       }
       P.forEach(function (p) { if (alive(p)) { p.m.fear = clamp(p.m.fear + (night(h) ? 3 : 1), 0, 100); p.m.clue = p.cnt.clue; } });
+      if (JS.SPEC) JS.SPEC.wear(S, P.filter(alive));
       ST.snap(S, keys);
       if (S.solved) { end = 'climax'; break; }
     }
@@ -183,6 +196,7 @@
     if (S.rewind && JS.LOOP && JS.LOOP.restart(S)) { h = 0; end = null; loopTag = '二周目 '; continue; }
     break;
     }
+    if (JS.SPEC) JS.SPEC.revive(S);
     if (JS.GODEV) JS.GODEV.end(S, end);
     if (JS.UNPC) JS.UNPC.end(S, end);
     P.forEach(function (p) { if (p.goal0) p.goal = p.goal0; });
@@ -532,6 +546,7 @@
       if (S.ygo && p.viol > 40) bits.push('暴力性 ' + Math.round(p.viol));
       if (p.cnt.trap) bits.push('死の罠 ' + p.cnt.trap + '回');
       if (p.cnt.magic) bits.push('魔術 ' + p.cnt.magic + '回');
+      if (JS.SPEC && JS.SPEC.note(p)) bits.push(JS.SPEC.note(p));
       if (bits.length) p.notes.push(bits.join('・'));
     });
     var out = P.filter(function (p) { return p.out; }), dead = P.filter(function (p) { return !p.alive; });

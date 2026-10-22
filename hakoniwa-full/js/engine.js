@@ -337,7 +337,7 @@
       p *= scen.actRate || 1;
       for (var ai = 0; ai < actors.length; ai++) {
         var a = actors[ai];
-        if (!a.alive || a.out || a.flags.down) continue;
+        if (!a.alive || a.out || a.flags.down || a.mad) continue;
         if (rng() > p) continue;
         act(ctx, a, pool);
       }

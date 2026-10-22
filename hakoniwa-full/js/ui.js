@@ -2,6 +2,8 @@
 (function () {
   'use strict';
   var HK = window.HK, esc = HK.escape, V = HK.View;
+  /* 死のある箱庭に「特殊役職」の欄を足す（special.js） */
+  if (HK.Special) HK.Special.install();
   var MAX = 100;   /* 登録できる住人の上限（箱庭に参加できるのは最大30人） */
   var JOIN_MAX = 30;
   /* 13人目以降の色トークン（明暗それぞれ。100人分） */

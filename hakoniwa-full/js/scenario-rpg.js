@@ -118,11 +118,15 @@
       p.roleLabel = J.label + '（' + (pick && JOBS[pick] ? '指定' : 'エゴグラムから') + '）';
     });
     var alive = function () { return P.filter(function (p) { return p.alive; }); };
+    /* 特殊役職（不死・吸血鬼）（rpg-special.js） */
+    var SPX = HK.RPG_SPEC;
+    if (SPX) SPX.setup(S, input);
     var leader = P.slice().sort(function (a, b) { return (b.tr.lead + b.tr.cp * 0.5) - (a.tr.lead + a.tr.cp * 0.5); })[0];
     function snap() { P.forEach(function (p) { p.m.hp = Math.round(p.hp / p.mhp * 100); p.m.gold = p.found; }); ST.snap(S, ['hp', 'gold']); }
     function hurt(p, d) {
       d = Math.max(1, Math.round(d - p.def * 0.5));
       p.hp -= d;
+      if (SPX) SPX.hurt(p, d);
       if (p.hp <= 0) {
         p.hp = 0; p.alive = false; p.down++;
         var pr = alive().filter(function (x) { return JOBS[x.job].heal; })[0];
@@ -141,7 +145,7 @@
       while (hp > 0 && alive().length && rounds < 8) {
         rounds++;
         alive().forEach(function (p) {
-          if (hp <= 0) return;
+          if (hp <= 0 || p.mad) return;
           var front = p.action.id === 'front' ? 1.2 : p.action.id === 'support' ? 0.8 : 1;
           var crit = rng() < 0.06 + (p.stats.luck || 3) * 0.02;
           var d = p.atk * front * (0.7 + rng() * 0.6) * (crit ? 1.8 : 1) * (1 + p.lv * 0.08);
@@ -286,16 +290,21 @@
       ST.say(S, { actors: [c.i].concat(hero ? [hero.i] : []), tag: res.win ? '救出' : '救出失敗', kind: 'climax', text: t, why: res.win ? (hero ? hero.name + 'の誓い（攻撃力＋2）' : '') + '・' + c.name + 'を取り返した' : '魔術師に返り討ちにされた' });
       if (!res.win) captive.at = floor + 2;
     }
-    ST.say(S, { kind: 'phase', actors: P.map(function (p) { return p.i; }), text: P.map(function (p) { return p.name + '（' + JOBS[p.job].label + '）'; }).join('・') + 'のパーティが、ダンジョンの入口に立った。' + (P.length > 1 ? 'リーダーは' + leader.name + '。' : ''), why: '職業はエゴグラムから（戦士＝攻撃性・CP／魔法使い＝A／僧侶＝NP／盗賊＝FC・衝動性／狩人＝慎重さ／吟遊詩人＝FC・NP）' });
+    ST.say(S, { kind: 'phase', actors: P.map(function (p) { return p.i; }), text: P.map(function (p) { return p.name + '（' + JOBS[p.job].label + (SPX ? SPX.label(p) : '') + '）'; }).join('・') + 'のパーティが、ダンジョンの入口に立った。' + (P.length > 1 ? 'リーダーは' + leader.name + '。' : ''), why: '職業はエゴグラムから（戦士＝攻撃性・CP／魔法使い＝A／僧侶＝NP／盗賊＝FC・衝動性／狩人＝慎重さ／吟遊詩人＝FC・NP）' });
     snap();
     var maxF = env.floors, last = {};
-    for (floor = 1; floor <= maxF && alive().length; floor++) {
+    /* 階を下りる前に、倒れた不死・吸血鬼が起き上がる */
+    function goOn() { if (SPX) SPX.revive(S, floor); return alive().length; }
+    for (floor = 1; floor <= maxF && goOn(); floor++) {
       ST.step(S, '地下' + floor + '階');
+      if (SPX) SPX.floor(S, floor);
       if (captive && floor >= captive.at && alive().length) rescue();
       var tier = Math.min(3, Math.floor((floor - 1) / Math.max(3, maxF / 4)));
       var nEv = 2 + (rng() < 0.5 ? 1 : 0), usedK = {};
       for (var e = 0; e < nEv && alive().length; e++) {
-        var A = alive(), a = A[Math.floor(rng() * A.length)], b = A.filter(function (x) { return x !== a; })[Math.floor(rng() * Math.max(1, A.length - 1))] || null;
+        var A = alive().filter(function (x) { return !x.mad; });
+        if (!A.length) break;
+        var a = A[Math.floor(rng() * A.length)], b = A.filter(function (x) { return x !== a; })[Math.floor(rng() * Math.max(1, A.length - 1))] || null;
         var r = rng(), loot = env.loot / 100;
         if (rng() < 0.26 && special(A, a, b, usedK)) continue;
         /* 同じ階で同じ種類の出来事を重ねない（戦闘は除く）。商人・分け前・泉は数階に一度 */
@@ -356,7 +365,7 @@
           if (other) ST.say(S, { actors: [gr.i, other.i], tag: '分け前', text: fillT(pickT(GREED), gr, other), why: gr.name + 'の執着・ドライさ' });
         }
       }
-      if (!alive().length) break;
+      if (!goOn()) break;
       /* 階層の主 */
       if (floor % 5 === 0) {
         var bo = bossFight();
@@ -365,7 +374,7 @@
         if (br.win) { bossDown++; P.forEach(function (p) { if (p.alive) { p.lv++; p.mhp += 4; p.hp = Math.min(p.mhp, p.hp + 6); } }); }
       }
       snap();
-      if (!alive().length) break;
+      if (!goOn()) break;
       /* 引き返すか：リーダーの慎重さと、パーティの消耗・お金の目標 */
       if (env.retreat === 'auto' && floor < maxF) {
         var A2 = alive(), ratio = A2.reduce(function (s0, p) { return s0 + p.hp / p.mhp; }, 0) / A2.length, lost = P.length - A2.length;
@@ -378,6 +387,7 @@
         }
       }
     }
+    goOn();
     var A3 = alive(), reached = Math.min(floor, maxF) - (ended === 'retreat' || A3.length ? 0 : 1);
     if (!A3.length) { banked = Math.round(gold * 0.1); ended = 'wipe'; }
     else { banked = gold; ended = ended || 'clear'; }
@@ -387,6 +397,7 @@
       p.fate = p.captive ? '魔術師に囚われたまま' : !p.alive ? '力尽きた' : ended === 'clear' ? '踏破した' : '生還した';
       p.notes.push(JOBS[p.job].label + '・Lv' + p.lv + '・撃破 ' + p.kills + '・見つけたお金 ' + p.found + 'G・倒れた ' + p.down + '回' + (p.cnt.heal ? '・仲間を救った ' + p.cnt.heal + '回' : ''));
       p.notes.push('方針：' + p.action.label + '／目標：' + p.goal.label);
+      if (SPX && SPX.note(p)) p.notes.push(SPX.note(p));
     });
     var title = ended === 'clear' ? '踏破！ ― 地下' + maxF + '階の最深部まで' : ended === 'retreat' ? '生還 ― 地下' + cleared + '階で引き返した' : '全滅 ― 地下' + floor + '階で力尽きた';
     var lines = [ended === 'wipe' ? 'パーティは全滅した。拾ったお金のほとんどは、迷宮に残された。持ち帰れたのは ' + banked + 'G だけだった。' : 'パーティは ' + banked + 'G を持ち帰った。', 'いちばん活躍したのは' + mvp.name + '（撃破 ' + mvp.kills + '・' + mvp.found + 'G）。'];

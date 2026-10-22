@@ -159,6 +159,9 @@
     if (!inv(S).length) successor(S, null, true);
     S.cnt0 = 0;
 
+    /* 特殊役職（不死・吸血鬼）（yakata-special.js） */
+    if (Y.SPEC) Y.SPEC.setup(S, input);
+
     /* ---------- 到着 ---------- */
     ST.step(S, '1日目・夕方');
     ST.say(S, { kind: 'phase', text: pk(S, T.ARRIVE) + '館の名は、' + S.M + '。' + (S.host.npc ? F(pk(S, T.HOST_NPC), { h: S.host.name }) : F(pk(S, T.HOST_PC), { h: S.host.name, m: S.M })) + pk(S, T.SEAL) });
@@ -173,6 +176,7 @@
       ST.say(S, { kind: 'phase', text: pk(S, T.NIGHT) });
       S.curDay = day;
       nightScenes(S, day);
+      if (Y.SPEC) Y.SPEC.night(S, day);
       if (day === 1) murder(S, S.v1, day, true);
       else if (day <= env.days && !(Y.R18 && Y.R18.on(S) && (Y.R18.night(S, day) || (Y.R18.extra && Y.R18.extra(S, day))))) nightMurder(S, day);
       ST.flushShort(S, 'ほかに：');
@@ -182,6 +186,7 @@
       ST.step(S, label(day + 1, '朝'));
       ST.budget(S, 4);
       discover(S, day + 1);
+      if (Y.SPEC) Y.SPEC.revive(S, day + 1, 'morning');
       ST.flushShort(S, 'ほかに：');
       if (S.over) break;
       /* 昼と夕方：捜査 */
@@ -189,6 +194,7 @@
         if (S.over) return;
         ST.step(S, label(day + 1, ph));
         ST.budget(S, 4 + Math.ceil(P.length / 3));
+        if (Y.SPEC) Y.SPEC.revive(S, day + 1, k ? 'eve' : 'noon');
         investigate(S);
         others(S);
         if (Y.FEUD) Y.FEUD.tick(S, day + 1);
@@ -197,6 +203,7 @@
         ST.flushShort(S, 'ほかに：');
         deduce(S, day >= env.days && k === 1);
         P.forEach(function (p) { if (alive(p)) { p.m.fear = clamp(p.m.fear + 2, 0, 100); p.m.clue = p.cnt.clue; } });
+        if (Y.SPEC) Y.SPEC.wear(S, day + 1, k ? 'eve' : 'noon');
         ST.snap(S, ['fear', 'sus', 'clue']);
       });
     }
@@ -288,7 +295,7 @@
     var tgt, why;
     if (threat && (!plan || rng() < 0.6)) { tgt = top; why = top.approached ? '探りを入れてきた' + top.name + 'の口を封じた' : top.cnt.clue ? '証拠を掴んでいた' + top.name + 'の口を封じた' : '探偵の' + top.name + 'を消そうとした'; }
     else if (S.acc && alive(S.acc) && rng() < 0.15 + S.cul.tr.cold * 0.2) { tgt = S.acc; why = '共犯の' + S.acc.name + 'の口を封じた'; }
-    else { tgt = HK.weighted(rng, live, function (q) { return 1 + Math.max(0, -bond(S, c, q)) * 3 - Math.max(0, bond(S, c, q)) * 0.8 - (S.mot.triangle && q === S.x ? 0.9 : 0); }); why = plan ? '最初から次の獲物を決めていた（動機「' + S.mot.label + '」）' : '連続殺人（起きやすさ ' + S.env.serial + '）'; }
+    else { tgt = HK.weighted(rng, live, function (q) { return (1 + Math.max(0, -bond(S, c, q)) * 3 - Math.max(0, bond(S, c, q)) * 0.8 - (S.mot.triangle && q === S.x ? 0.9 : 0)) * (Y.SPEC ? Y.SPEC.danger(q) : 1); }); why = plan ? '最初から次の獲物を決めていた（動機「' + S.mot.label + '」）' : '連続殺人（起きやすさ ' + S.env.serial + '）'; }
     if (!tgt) return;
     S.nextWhy = why;
     /* 占い師の予見・バディの守り */
@@ -374,7 +381,7 @@
   function investigate(S) {
     var rng = S.rng;
     if (S.lateHeir) { var h = S.lateHeir; S.lateHeir = null; ST.say(S, { actors: [h], tag: '探偵役', text: S.cul.name + 'の推理は、どこか事件から目を逸らさせようとしているように聞こえた。' + h.name + 'は手帳を開いた。「……私が、調べる」', why: (S.cul.fakeDet ? '探偵の' + S.cul.name + 'が犯人なので、' : '') + h.name + 'が探偵役になった', mag: 30 }); }
-    inv(S).forEach(function (d) {
+    inv(S).filter(function (d) { return !d.mad; }).forEach(function (d) {
       if (!alive(d)) return;
       var left = S.pool.filter(function (c) { return !c.found && !c.lost; });
       if (!left.length) return;
@@ -441,7 +448,7 @@
   /* 探偵役以外の動き（職業ごと） */
   function others(S) {
     var rng = S.rng, v = S.kills[S.kills.length - 1];
-    S.P.filter(function (p) { return alive(p) && !p.isDet && !p.bound; }).forEach(function (p) {
+    S.P.filter(function (p) { return alive(p) && !p.isDet && !p.bound && !p.mad; }).forEach(function (p) {
       if (rng() > 0.3) return;
       var r = p.role, g, why = '';
       var mk = function (pool, type, tag, w) { if (p.isCul) return false; g = gain(S, p, type); if (!g) return false; ST.say(S, { actors: [p], tag: tag, text: F(pk(S, pool), { a: p.name, v: v ? v.v.name : '' }) + '――' + g + '。', why: w, mag: 20 }); return true; };
@@ -527,7 +534,7 @@
 
   /* ---------- 推理 ---------- */
   function deduce(S, last) {
-    var rng = S.rng, ds = inv(S);
+    var rng = S.rng, ds = inv(S).filter(function (d) { return !d.mad; });
     if (!ds.length || S.over) return;
     var real = S.pool.filter(function (x) { return x.found && !x.fake && !x.misread; }).length;
     var bad = S.pool.filter(function (x) { return x.found && (x.fake || x.misread); });
@@ -711,6 +718,7 @@
       if (!p.fate) p.fate = alive(p) ? (p.bound ? '拘束された' : '生き延びた') : p.gone ? '行方不明' : '死亡';
       p.notes.push('役割：' + p.roleLabel + (p.buddy ? '（' + p.buddy.name + 'のバディ）' : '') + (p.isCul ? '・犯人' : p.isAcc ? '・共犯' : ''));
       p.notes.push('見つけた手がかり ' + p.cnt.clue + 'つ・恐怖 ' + Math.round(p.m.fear) + (HK.DGK && p.kn ? '・検死の知識：' + HK.DGK.KNOW_LABEL[p.kn] : ''));
+      if (Y.SPEC && Y.SPEC.note(p)) p.notes.push(Y.SPEC.note(p));
     });
     var titles = {
       arrest: c.name + 'が犯人だった。――逮捕', suicide: c.name + 'が犯人だった。――自ら命を絶った', flee: c.name + 'が犯人だった。――吹雪の中へ消えた',
