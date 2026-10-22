@@ -149,7 +149,7 @@
     var others = S.P.filter(function (p) { return al(p) && mur.indexOf(p) < 0; });
     others.forEach(function (q) {
       var r = rng();
-      if (q.job === 'streamer' || q.job === 'celeb' && q.prank) ST.sayB(S, { actors: [q], tag: '殺人バトル', text: F(pk(S, B.stream), { a: q.name }), why: q.name + 'は配信していた' }, q.name + 'は実況していた');
+      if (q.job === 'streamer') ST.sayB(S, { actors: [q], tag: '殺人バトル', text: F(pk(S, B.stream), { a: q.name }), why: q.name + 'は配信していた' }, q.name + 'は実況していた');
       else if (q.tr.fc > 0.7 && r < 0.3) ST.sayB(S, { actors: [q], tag: '殺人バトル', text: F(pk(S, B.cheer), { a: q.name }), why: 'FCが高すぎた' }, q.name + 'は観戦していた');
       else ST.sayB(S, { actors: [q], tag: '殺人バトル', text: F(pk(S, B.hide), { a: q.name }), why: q.name + 'は隠れた（慎重さ）' }, q.name + 'は隠れた');
     });

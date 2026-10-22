@@ -52,6 +52,8 @@
     /* 術者（目標で決まる）は儀式と知識に強い。儀式を乗っ取る人は、支度を重ねるほど儀式の力が増す */
     if (p.magic) adj += type === 'rite' ? 0.35 : type === 'lore' ? 0.15 : 0;
     if (p.hj && type === 'rite') adj += p.hj.pow;
+    /* 無能：推理・調べる力はほぼゼロ（腕っぷしだけは人並み） */
+    if (p.job === 'muno' && type !== 'fight') return clamp((base + adj) * 0.08, 0, 0.1);
     return clamp(base + (j[type] || 0) + adj - p.m.fear / 400, 0, 1.2);
   }
   function resolve(S, p, list, pick, bias) {
@@ -145,6 +147,7 @@
       live.forEach(function (p) {
         if (!alive(p) || p.bound) return;
         if (JS.R18 && JS.R18.on(S) && night(h) && JS.R18.night(S, p, P.filter(alive), h)) return;
+        if (JS.MUNO && JS.MUNO.act(S, p, h, P.filter(alive))) return;
         var evp = env.ev / 100;
         var r = rng();
         if (rng() < trapRate(S, p, h)) return trap(S, p, P.filter(alive), false);
@@ -284,6 +287,7 @@
     ST.key(S, o, p.name + 'の死');
     prankReal(S, p);
     JS.REL.onDeath(S, p);
+    if (JS.MUNO) JS.MUNO.onDeath(S, p);
   }
 
   /* ---------- 早い脱出の試み（RTA） ---------- */
@@ -383,7 +387,7 @@
     });
   }
 
-  /* ---------- 追加：芸能人のドッキリ・魔術師のたくらみ・イゴーロナク ---------- */
+  /* ---------- 追加：大物のドッキリ・魔術師のたくらみ・イゴーロナク ---------- */
   function setupPlus(S) {
     var rng = S.rng, P = S.P;
     S.FX = JS.FX && JS.FX[S.G.id]; S.trapUsed = []; S.horUsed = [];
@@ -400,7 +404,7 @@
   }
   function arrivePlus(S) {
     S.P.forEach(function (p) {
-      if (p.prank) ST.say(S, { actors: [p], tag: 'ドッキリ？', text: ST.fmt(ST.pick(S, M.PRANK_START), { a: p.name }), why: p.name + '（芸能人）は、これをテレビのドッキリ企画だと思い込んだ（怖がりにくいが、無茶をする）', mag: 14 });
+      if (p.prank) ST.say(S, { actors: [p], tag: 'ドッキリ？', text: ST.fmt(ST.pick(S, M.PRANK_START), { a: p.name }), why: p.name + '（大物）は、これを誰かが仕込んだドッキリだと思い込んだ（怖がりにくいが、無茶をする）', mag: 14 });
       if (p.plot) ST.say(S, { actors: [p], tag: '企み', text: ST.fmt(ST.pick(S, M.MAGE_HINT), { a: p.name }), why: '儀式を企む' + p.name + 'は、仲間を生贄にして別の神（' + p.plot.god.n + '）を呼ぶつもりでいる（必要な生贄 ' + p.plot.need + '人）。冷たさ・攻撃性が高いほど企む', mag: 12 });
     });
   }

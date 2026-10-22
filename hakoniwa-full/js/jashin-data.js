@@ -12,7 +12,9 @@
   /* ---------- 職業（調べる力の補正：obs 観察 lore 知識 talk 聞き込み spirit 霊感 explore 探索 fight 腕っぷし rite 儀式） ---------- */
   JS.JOBS = [
     { id: 'civ', label: '一般人', sk: { talk: 0.1, explore: 0.05 }, luck: 1, desc: '巻き込まれただけ。運だけは強い' },
-    { id: 'celeb', label: '芸能人', sk: { talk: 0.3 }, desc: '村人に顔を知られていて、話を聞きやすい（目立つ）' },
+    { id: 'journalist', label: '記者', sk: { talk: 0.3, obs: 0.15, explore: 0.05 }, desc: '取材慣れしていて、聞き込みと裏取りが得意。記事のために深入りしがち' },
+    { id: 'muno', label: '無能', sk: {}, desc: '推理も調査もほぼできない。自分の目標ばかり追って空回りし、場をかき乱す。敵対している相手の足を強烈に引っ張り、巻き添えにして死ぬ' },
+    { id: 'celeb', label: '大物', sk: { talk: 0.3 }, desc: 'その界隈では知らない人がいない有名人。村人にも顔を知られていて、話を聞きやすい（目立つ）' },
     { id: 'writer', label: '作家', sk: { obs: 0.25, lore: 0.15 }, desc: '小さな違和感を見逃さない' },
     { id: 'manager', label: 'マネージャー', sk: { talk: 0.15, fight: 0.1 }, protect: 1, desc: '仲間を守るために動く' },
     { id: 'occult', label: 'オカルト研究家', sk: { lore: 0.35, explore: 0.1 }, desc: '伝承と邪神の知識がある' },
@@ -34,7 +36,7 @@
   JS.JOB = {}; JS.JOBS.forEach(function (j) { JS.JOB[j.id] = j; });
   /* おまかせのときの職業（気質から） */
   JS.JOB_FIT = {
-    civ: function (t) { return 0.4 + t.ac * 0.2; }, celeb: function (t) { return t.fc * 0.5 + t.warmth * 0.3; }, writer: function (t) { return t.a * 0.4 + (1 - t.fc) * 0.2 + t.cold * 0.2; },
+    civ: function (t) { return 0.4 + t.ac * 0.2; }, journalist: function (t) { return t.warmth * 0.3 + t.fc * 0.2 + t.a * 0.2; }, muno: function (t) { return 0.12 + t.impulse * 0.25 + (1 - t.a) * 0.15; }, celeb: function (t) { return t.fc * 0.5 + t.warmth * 0.3; }, writer: function (t) { return t.a * 0.4 + (1 - t.fc) * 0.2 + t.cold * 0.2; },
     manager: function (t) { return t.np * 0.4 + t.ac * 0.3; }, occult: function (t) { return t.fc * 0.3 + t.a * 0.3 + t.impulse * 0.2; }, psychic: function (t) { return t.ac * 0.4 + t.np * 0.2; },
     seer: function (t) { return t.np * 0.3 + t.fc * 0.3; }, prof: function (t) { return t.a * 0.5 + t.cp * 0.3; },
     student: function (t) { return t.fc * 0.4 + t.impulse * 0.3; }, ghost: function (t) { return t.a * 0.3 + t.fc * 0.3; }, musician: function (t) { return t.fc * 0.5 + (1 - t.cp) * 0.2; },
@@ -53,7 +55,7 @@
     R('廃村探索の動画を撮るため', 'streamer,celeb', function (t) { return t.fc * 0.5 + t.impulse * 0.3; }),
     R('古文書に記された祭祀の実地調査', 'prof,folk', function (t) { return t.a * 0.6; }),
     R('新作のネタ探しの取材旅行', 'writer', function (t) { return t.a * 0.3 + t.fc * 0.2; }),
-    R('ロケハンの下見', 'celeb,manager,musician', function (t) { return t.cp * 0.3 + t.ac * 0.2; }),
+    R('講演会の前乗りで、近くに泊まっていた', 'celeb,manager,musician', function (t) { return t.cp * 0.3 + t.ac * 0.2; }),
     R('担当タレントの付き添い', 'manager', function (t) { return t.np * 0.4 + t.ac * 0.3; }),
     R('ゼミの合宿のはずだった', 'student,prof', function (t) { return t.ac * 0.3 + t.fc * 0.2; }),
     R('行方不明になった兄を捜して', 'civ,police,detective,sleuth,ponkotsu', function (t) { return t.np * 0.4 + t.cp * 0.3; }),
@@ -75,7 +77,7 @@
     R('失踪事件の捜査で', 'police,detective,sleuth,ponkotsu', function (t) { return t.cp * 0.5 + t.lead * 0.2; }),
     R('村から届いた差出人不明の招待状', 'civ,writer,celeb', function (t) { return t.fc * 0.3 + t.ac * 0.2; }),
     R('秘湯の宿の宿泊券が当たった', 'civ,manager', function (t) { return t.fc * 0.3 + t.warmth * 0.2; }),
-    R('古民家カフェ特集の取材', 'writer,celeb', function (t) { return t.warmth * 0.4; }),
+    R('古民家カフェ特集の取材', 'writer,celeb,journalist', function (t) { return t.warmth * 0.4; }),
     R('村おこしのイベントにゲストとして呼ばれた', 'celeb,musician', function (t) { return t.fc * 0.4 + t.warmth * 0.3; }),
     R('祭りの奉納演奏を頼まれた', 'musician,priest', function (t) { return t.fc * 0.3 + t.np * 0.2; }),
     R('卒業論文のフィールドワーク', 'student,folk', function (t) { return t.a * 0.4 + t.ac * 0.2; }),
@@ -87,7 +89,7 @@
     R('村の診療所に赴任することになった', 'doctor', function (t) { return t.np * 0.5; }),
     R('村の分校に教えに来た', 'prof', function (t) { return t.np * 0.4 + t.cp * 0.2; }),
     R('民宿の住み込みバイトの募集を見て', 'student,civ', function (t) { return t.ac * 0.4; }),
-    R('雑誌の「日本のミステリースポット」企画の取材', 'writer,ghost,celeb', function (t) { return t.fc * 0.4; }),
+    R('雑誌の「日本のミステリースポット」企画の取材', 'writer,ghost,celeb,journalist', function (t) { return t.fc * 0.4; }),
     R('依頼人に「娘を連れ戻してほしい」と頼まれて', 'detective,sleuth,ponkotsu,police', function (t) { return t.np * 0.3 + t.cp * 0.3; }),
     R('師匠が最後に向かった場所を追って', 'occult,psychic,priest', function (t) { return t.np * 0.3 + t.cp * 0.3; }),
     R('流星の落ちた場所を探しに', 'prof,student', function (t) { return t.fc * 0.4 + t.a * 0.2; }),
@@ -97,7 +99,7 @@
     R('配信の視聴者から「ここに来て」と座標が送られてきた', 'streamer', function (t) { return t.fc * 0.4 + t.impulse * 0.3; }),
     R('都市伝説「見た者は帰れない祭り」の真偽を確かめに', 'occult,ghost,streamer', function (t) { return t.impulse * 0.3 + t.a * 0.3; }),
     R('ダム建設の事前調査', 'prof,civ', function (t) { return t.cp * 0.3 + t.a * 0.3; }),
-    R('撮影で使う「古い祭具」を借りに来た', 'celeb,manager', function (t) { return t.cp * 0.3; }),
+    R('展示に使う「古い祭具」を借りに来た', 'celeb,manager', function (t) { return t.cp * 0.3; }),
     R('昔、この村で神隠しにあったことを思い出して', 'civ,writer,psychic', function (t) { return t.ac * 0.4 + t.np * 0.2; }),
     R('骨董の買い付け', 'civ,writer', function (t) { return t.cold * 0.3 + t.a * 0.2; }),
     R('ネットで知り合った人のオフ会', 'civ,student,streamer', function (t) { return t.fc * 0.4 + t.warmth * 0.2; }),
@@ -109,8 +111,8 @@
 
   /* ---------- 初動 ---------- */
   JS.ACTIONS = [
-    { id: 'ask', label: '村人に話を聞く', fit: function (t) { return t.warmth * 0.6 + t.np * 0.2; }, jobs: 'celeb,manager,detective,sleuth,ponkotsu,folk,student', type: 'talk' },
-    { id: 'explore', label: '村を歩き回る', fit: function (t) { return t.fc * 0.4 + t.impulse * 0.4; }, jobs: 'streamer,student,police', type: 'explore' },
+    { id: 'ask', label: '村人に話を聞く', fit: function (t) { return t.warmth * 0.6 + t.np * 0.2; }, jobs: 'celeb,journalist,manager,detective,sleuth,ponkotsu,folk,student', type: 'talk' },
+    { id: 'explore', label: '村を歩き回る', fit: function (t) { return t.fc * 0.4 + t.impulse * 0.4; }, jobs: 'streamer,student,police,muno', type: 'explore' },
     { id: 'watch', label: '宿で様子を見る', fit: function (t) { return t.caution * 0.7 + t.ac * 0.2; }, jobs: 'civ,writer', type: 'obs' },
     { id: 'record', label: '記録を取る', fit: function (t) { return t.a * 0.6 + t.cold * 0.2; }, jobs: 'ghost,prof,writer,detective,sleuth,ponkotsu', type: 'obs' },
     { id: 'polite', label: '村の作法に従う', fit: function (t) { return t.ac * 0.5 + t.cp * 0.3; }, jobs: 'priest,manager,doctor', type: 'talk' },
