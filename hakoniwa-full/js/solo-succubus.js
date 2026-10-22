@@ -151,7 +151,7 @@
     var again = p.seen[key] > 1 && SB.AGAIN && rng() < 0.6;
     if (again) { score += 10; why += '／前に会った相手と再会'; }
     var t = ST.fmt(again ? ST.pick(S, SB.AGAIN) : flw ? ST.pick(S, flw.t) : '{spot}で、{a}は{t}に目をつけた。', v) + (flw && flw.id === 'dream' ? '' : ST.fmt(ty.ap ? SB.say(S, ST.pick(S, ty.ap), ty.id + '_ap', p) : ST.pick(S, p.style.approach), v)) + (VO && rng() < (ty.ap ? 0.2 : 0.5) ? p.name + ST.pick(S, VO.OPEN[p.persona] || VO.OPEN.gentle) : '') + (q.re && rng() < 0.65 ? ST.fmt(q.re, v) : '');
-    var lew = env.lewd || 'mid', ml = 0, kind;
+    var lew = env.lewd || 'mid', ml = 0, kind, rev = 0;
     /* 聖なる獲物で大失敗すると、祓われかける */
     if (q.hunter && score < 10) {
       p.cnt.holy++; p.m.mana -= 35; p.m.mood -= 20;
@@ -198,8 +198,8 @@
       if (lew === 'low') t += ST.fmt('――二人は{spot}の奥へ消えた。何があったのかは、{a}の満ち足りた顔だけが知っている。', v);
       else if (ty.tk) { t += '――' + ST.fmt(SB.say(S, ST.pick(S, sTop ? (EO(S) && HK.Pos.isF(p) ? EL(S, 'topf', ty.top) : EL(S, 'top.' + ty.id, ty.top)) : EL(S, 'tk.' + ty.id, ty.tk)), ty.id + '_tk', p), v); }
       else { t += '――' + ST.fmt(ST.pick(S, sTop && SB.TAKE_TOP ? SB.TAKE_TOP[p.top] : SB.TAKE[p.top]), v); }
-      if (q.stamina && hTop && SB.REVERSE_HARD && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.m.plea = 100; p.skip = true; ml = Math.round(ml * 1.4); t += ST.fmt(ST.pick(S, EO(S) && HK.Pos.isF(p) ? EL(S, 'reverse.topf', SB.REVERSE_HARD) : EL(S, 'reverse.hard', SB.REVERSE_HARD)), v); why += '／底なしの体力の相手に、朝まで主導権を渡さなかった'; }
-      else if (q.stamina && !hTop && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.cnt.reverse++; p.m.plea = 100; p.skip = true; ml = Math.round(ml * 1.4); t += ST.fmt(ST.pick(S, sTop && SB.REVERSE_TOP ? (EO(S) && HK.Pos.isF(p) ? EL(S, 'reverse.topf', SB.REVERSE_TOP) : EL(S, 'reverse.top', SB.REVERSE_TOP)) : EL(S, 'reverse', SB.REVERSE)), v); why += '／相手の底なしの体力に逆に搾られた'; }
+      if (q.stamina && hTop && SB.REVERSE_HARD && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.m.plea = 100; p.skip = true; rev = 1; ml = Math.round(ml * 1.4); t += ST.fmt(ST.pick(S, EO(S) && HK.Pos.isF(p) ? EL(S, 'reverse.topf', SB.REVERSE_HARD) : EL(S, 'reverse.hard', SB.REVERSE_HARD)), v); why += '／底なしの体力の相手に、朝まで主導権を渡さなかった'; }
+      else if (q.stamina && !hTop && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.cnt.reverse++; p.m.plea = 100; p.skip = true; rev = 1; ml = Math.round(ml * 1.4); t += ST.fmt(ST.pick(S, sTop && SB.REVERSE_TOP ? (EO(S) && HK.Pos.isF(p) ? EL(S, 'reverse.topf', SB.REVERSE_TOP) : EL(S, 'reverse.top', SB.REVERSE_TOP)) : EL(S, 'reverse', SB.REVERSE)), v); why += '／相手の底なしの体力に逆に搾られた'; }
       else if (q.incubus && hTop) { ml = Math.round(ml * 0.6); t += ST.fmt('――ところが{t}も、{a}から吸い返そうとしてきた。{a}は{t}の手首を押さえつけ、一滴も吸い返させなかった。ただ、同業者の精は薄かった。', v); }
       else if (q.incubus) { ml = Math.round(ml * 0.6); t += ST.fmt('――ところが{t}も、{a}から吸い返そうとしてきた。同業者どうしの吸い合いは、引き分けに終わった。', v); }
       t += ST.fmt(ST.pick(S, EL(S, 'climax', SB.CLIMAX).concat(!sTop && EO(S) ? EL(S, 'climax.in', []) : [])), { a: p.name, t: q.name, ml: ml });
@@ -209,7 +209,8 @@
       if (VO && rng() < 0.45) t += p.name + ST.pick(S, VO.WIN[p.persona] || VO.WIN.gentle);
       p.m.plea = clamp(p.m.plea + 30 + (p.top === 'FC' ? 20 : 0), 0, 100);
     }
-    if (HK.Ero) t = HK.Ero.fill(S, t, p);
+    /* 主導権を握って搾った回は、拒む喘ぎを使わない（感じすぎた・逆に搾られた回はそのまま） */
+    if (HK.Ero) t = HK.Ero.fill(S, t, kind === 'win' || kind === 'big' ? (rev ? p : Object.assign({}, p, { eroDom: true })) : p);
     p.m.ml += ml;
     if (ml && (!p.best || ml > p.best.ml)) p.best = { name: q.name, ml: ml };
     var tag = { fail: '失敗', half: 'あと一歩', win: '成功', big: '大成功', melt: '感じすぎ' }[kind];

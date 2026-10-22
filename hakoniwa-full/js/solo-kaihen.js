@@ -150,6 +150,8 @@
   /* {mp0}〜{mp2}＝施す側、{mr0}〜{mr2}＝受ける側の喘ぎ。擬音（{s:…}）も埋める */
   function ef(S, t, g, rw) {
     if (!eOn(S) || !t) return t;
+    /* 施す側の絶頂の声は、一つの場面で一度だけ（絶頂の文と「自分も達した」の文で二重にならないように） */
+    if (g && g.name) { var nmp = 0; t = t.split(g.name + '「{mp2}」').map(function (x, i) { return i === 0 ? x : (nmp++ ? '' : g.name + '「{mp2}」') + x; }).join(''); }
     t = t.replace(/\{mp([012])\}/g, function (m, n) { return emoan(S, g, +n); }).replace(/\{mr([012])\}/g, function (m, n) { return emoan(S, rw || npcWho(S), +n); });
     return HK.Ero.fill(S, t, g);
   }
