@@ -226,7 +226,7 @@
     if (/[一-鿿]んだ$/.test(s)) return s;
     if (/ないんだ$/.test(s)) return s;
     if (/(?:ん|の)だ$/.test(s)) return HK.lineLot(s, 2) ? s.replace(/[んの]だ$/, 'んだぜ') : s;
-    if (core.length < 5 || !PLAIN.test(s) || /(?:じゃない|たい|ちゃう|ちゃった|ている|ていた|ほしい|欲しい)$/.test(s)) return s;
+    if (core.length < 5 || !PLAIN.test(s) || /(?:じゃない|たい|ちゃう|ちゃった|ている|ていた|ほしい|欲しい|すぎた|悪かった|ごめん|ありがとう)$/.test(s)) return s;
     /* 叫びでない文の否定（「許せなかった」「向かない」）には言い足さない */
     if (!shout && /(?:ない|なかった)$/.test(s)) return s;
     return HK.lineLot(s, shout ? 2 : 3) ? s + 'ぜ' : s;
