@@ -50,7 +50,7 @@
       if (/だよ[ねな]$/.test(s)) return s.replace(/だよ[ねな]$/, 'だよな');
       if (/よね$/.test(s)) return s.replace(/よね$/, 'よな');
       /* 「何してるの？」→「何してるんだ？」、「帰るの？」→「帰るのか？」、「普通なの？」→「普通なのか？」（「いつもの？」はそのまま） */
-      if (/(?:[るたいうくすつむぐぶ]|てる)の$/.test(s) || /なの$/.test(s) && !/どんなの$/.test(s)) {
+      if (/(?:[るたいうくすつむぐぶ]|てる)の$/.test(s) || /[^、\s]なの$/.test(s) && !/どんなの$/.test(s)) {
         if (w) return s.replace(/なの$/, 'なんだ').replace(/([^な])の$/, '$1んだ');
         return s + 'か';
       }
@@ -117,13 +117,12 @@
   function hero(q, who) {
     /* 喘ぎの台詞はそのまま */
     if (/(?:[ぁぃぅぇぉ♡]|っ[…‥、！!？?]|[…‥、]っ|っ$)/.test(q)) return q;
-    var moanQ = false;
     q = phrase(q);
     var parts = q.split(/([。！？!?…‥」\n]+)/), lastI = -1;
     parts.forEach(function (seg, i) { if (!(i % 2) && /[^\s、…‥]/.test(seg)) lastI = i; });
     return parts.map(function (seg, i) {
       if (i % 2) return seg;
-      var next = parts[i + 1] || '', prev = parts[i - 1] || '';
+      var next = parts[i + 1] || '';
       /* 喘ぎ・叫び声（っ・ぁ・♡・伸ばし）の文はそのまま */
       if (MOAN.test(seg.slice(-1)) || /[ー〜～]$/.test(seg)) return seg;
       var lead = (seg.match(/^[…‥、\s　]+/) || [''])[0], tail = (seg.match(/[、]+$/) || [''])[0];
