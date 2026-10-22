@@ -668,13 +668,23 @@
     return h;
   }
 
+  /* 陥落の山場：R18版では段落に分けた厚い場面（dungeon-thick.js）。攻めの指定は、魔物を組み伏せる側の場面 */
+  function thickFall(S, h) {
+    var TH = DG.THICK, TV = window.HK.ThickVM;
+    if (window.HK.SAFE_ON || !TH || !TV || S.env.lewd < 15) return '';
+    var top = isTop(h), l = top ? TH.fallTop : (TH.fall[S.themeKey] || []).concat(S.themeKey === 'mix' || !TH.fall[S.themeKey] ? TH.fall.any : []);
+    if (!top && TH.fall[S.themeKey] && S.rng() < 0.3) l = l.concat(TH.fall.any);
+    if (!l || !l.length) return '';
+    return fmt(S, TV.voice(S.rng, pick(S, l), h, h), h.captor || S.lastEv);
+  }
   DG.fallHero = function (S, h) {
     if (h.fallLogged) return;
     h.fallLogged = true; h.fallen = true;
     S.h = h;
     var f = DG.pickFall(S);
     h.fallTitle = f.title; h.fallText = fmt(S, f.text, h.captor || S.lastEv);
-    var of = say(S, { kind: 'sys', tag: '陥落', text: line(S, 'fall', h.captor || S.lastEv) + (S.party.length > 1 ? fmt(S, pick(S, DG.LINES.fallParty || ['{a}は仲間の呼ぶ声に、もう振り返らなかった。'])) : ''), why: h.name + '：堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) });
+    var thk = thickFall(S, h);
+    var of = say(S, { kind: 'sys', tag: '陥落', text: (thk || line(S, 'fall', h.captor || S.lastEv)) + (S.party.length > 1 && thk ? '\n\n' : '') + (S.party.length > 1 ? fmt(S, pick(S, DG.LINES.fallParty || ['{a}は仲間の呼ぶ声に、もう振り返らなかった。'])) : ''), why: h.name + '：堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) });
     key(S, of, h.name + 'が快楽に堕ちた');
     if (S.party.every(function (x) { return x.fallen; })) S.over = 'fall';
   };

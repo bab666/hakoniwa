@@ -123,6 +123,9 @@
   var ROUGH_SUB = L('あ、ぐ……っ、はげし……っ|ま、待っ……っ、そんな、乱暴に……っ|ひ、ぁ……っ、奥、潰れ……っ');
   var ROUGH_AFTER = L('{T}が手を離すと、{B}の腰には指の形の赤い痕がくっきりと残っていた。{B}はそれを見下ろしたまま、まだ震える息を吐いた。|乱れた髪のまま、{B}はしばらく動けなかった。{T}はその頭をくしゃりと撫で、何も言わずに隣へ横たわった。');
 
+  var FLOOD_RECV = L('最初に来たのは、熱だった。腰の奥に溜まっていた何時間分もの感触が、遅れてまとめて神経を駆け上がってくる。抉られた記憶、擦られた記憶、注がれた記憶。それが一度に、{B}の内側で弾けた。|{B}の膝が勝手に跳ねた。壁の向こうで何をされていたのか、体のほうが先に答えを知っていた。何も入っていないはずの奥が、まだ何かを咥え込んでいるように締まる。|腹の奥が、じわりと重くなった。注がれていたものの熱と、擦られ続けた場所の疼きが、遅れて一度に押し寄せる。{B}は壁に爪を立て、背を丸めた。');
+  var FLOOD_TOP = L('最初に来たのは、熱だった。壁の向こうで何度も搾られていた竿の感触が、遅れてまとめて腰の芯を駆け上がってくる。跨られ、締めつけられ、吐き出させられた記憶。それが一度に、{B}の下腹で弾けた。|{B}の腰が勝手に跳ねた。何も触れていないはずの竿が、壁の向こうでびくびくと脈打っているのがわかる。');
+  var FLOOD_LINK = L('――声を噛み殺そうとしても、波は待ってくれなかった。|――息を整える暇もなく、次の波が来た。|――{B}は壁に額を押しつけ、歯を食いしばった。');
   var NPC_PS = ['proud', 'cool', 'gentle', 'stern', 'free'];
   function ps(S, c) { var p = c && (c.persona || (HK.personaOf && c.eg ? HK.personaOf(c) : null)); return p && DOM[p] ? p : NPC_PS[S.rng.int(NPC_PS.length)]; }
   function pick(S, l) { return l[S.rng.int(l.length)]; }
@@ -155,6 +158,13 @@
       paras.push('{B}「' + pick(S, SUB2[sp]) + '」' + pick(S, hard ? hard[kind].peak : tb.peak));
       paras.push(pick(S, hard === CHOKE ? CHOKE_AFTER : hard ? ROUGH_AFTER : tb.after) + (o.after ? o.after : ''));
       return paras.join('\n\n').replace(/\{T\}/g, D).replace(/\{B\}/g, B);
+    },
+    /* 感覚遮断穴：解放で溜まった感覚が戻る最初の絶頂（相手はいない。top＝攻め指定などで、壁の向こうでは竿を使われていた側）。
+       ［戻ってきた感触］→［こらえきれない声］→［元の絶頂の文］。余韻は箱庭側の「余韻」の場面に任せる */
+    flood: function (S, who, o) {
+      var sp = ps(S, who), B = who.name;
+      var body = pick(S, o.top ? FLOOD_TOP : FLOOD_RECV);
+      return [body, '{B}「' + pick(S, SUB1[sp]) + '」' + pick(S, FLOOD_LINK), o.lead].join('\n\n').replace(/\{B\}/g, B);
     },
     /* 嗜虐的な主導役なら、山場の 25% ほどでハードな支配を使う */
     rollSad: function (S, dom, sub) { return !!(HK.Ero && HK.Ero.sadist && HK.Ero.sadist(dom, sub)) && S.rng() < 0.25; },

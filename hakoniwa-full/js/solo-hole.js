@@ -333,7 +333,7 @@
     }
     K.key(S, o0, '感覚が戻った');
     var wave = Math.min(mode === 'drip' ? 10 : 8, Math.max(mode === 'drip' ? 3 : 1, Math.round(stored / (mode === 'drip' ? 55 : 80))));
-    var restore = stored;
+    var restore = stored, floodThick = false;
     for (var w = 0; w < wave && restore > 0; w++) {
       var chunk = Math.min(restore, mode === 'drip' ? 40 + rng() * 40 : 70 + rng() * 60);
       restore -= chunk;
@@ -348,6 +348,8 @@
       /* 男性向け：絶頂の前に、戻ってきた感覚の地の文を置く */
       var wv = parts.length ? EL('wave', []) : [];
       if (wv.length) lineTxt = K.fmt(S, pk(S, wv)) + ' ' + lineTxt;
+      /* 小説調の山場（solo-thick4.js）：感覚が戻って最初に達した波は、段落に分けて厚く */
+      if (parts.length && !floodThick && HK.Thick4 && HK.Thick4.ok(S, 'mid')) { lineTxt = HK.Thick4.flood(S, h, { top: topMe, lead: lineTxt }); floodThick = true; }
       say(S, { kind: parts.length ? 'climax' : 'ev', tag: parts.length ? (parts.length > 1 ? '連続絶頂' : '絶頂') : '混乱', text: lineTxt, why: (w + 1) + '波目' + (parts.length ? '・' + parts.length + '回' : '') });
       K.settle(S);
     }
