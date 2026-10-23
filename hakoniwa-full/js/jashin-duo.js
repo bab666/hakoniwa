@@ -133,7 +133,16 @@
         var mm = { a: a.name, b: b.name, t: o[0].name, u: o[1].name };
         /* 組ごとの文のあとに、協力／因縁ごとの空気・明け方・断られたあとを足して、一本道にしない（R18版の jashin-duo-r18.js） */
         var X = JS.DUO_R18X && JS.DUO_R18X[foe ? 'foe' : 'ally'];
-        t = ST.fmt(e.intro, mm) + (X && S.rng() < 0.5 ? ST.fmt(ST.pick(S, X.intro), mm) : '') + ST.fmt(ok ? e.ok : e.ng, mm) + (X ? ST.fmt(ST.pick(S, ok ? X.after : X.ng), mm) : '');
+        /* 組ごとの文は3通り（introL・okL・ngL）。同じ番目どうしで場面がそろうので、番目を一つ選ぶ */
+        var k = e.introL ? Math.floor(S.rng() * e.introL.length) : 0, at = function (l, d) { return l && l.length ? l[Math.min(k, l.length - 1)] : d; };
+        /* 結ばれた夜は、性別の組ごとの一文（男性が攻め／女性どうし／女性が攻め×男性）と、受けの態度ごとの喘ぎを足す */
+        var ck = Pz.ff(o[0], o[1]) ? 'ff' : Pz.isF(o[0]) && !Pz.isF(o[1]) ? 'fm' : 'm', R = HK.R18M;
+        var body = ok && X && X.body ? ST.fmt(ST.pick(S, X.body[ck]), mm) + (R ? R.say(S, o[1], 'mid') + R.say(S, o[1], 'climax') : '') : '';
+        var main = ST.fmt(ok ? at(e.okL, e.ok) : at(e.ngL, e.ng), mm), cut = main.slice(0, -1).lastIndexOf('。');
+        /* 組ごとの文の最後の一文が「果てた」なら、性別の組ごとの一文と喘ぎはその前に挟む */
+        if (body && cut >= 0 && /果て/.test(main.slice(cut + 1))) main = main.slice(0, cut + 1) + body + main.slice(cut + 1);
+        else main += body;
+        t = ST.fmt(at(e.introL, e.intro), mm) + (X && S.rng() < 0.5 ? ST.fmt(ST.pick(S, X.intro), mm) : '') + main + (X ? ST.fmt(ST.pick(S, ok ? X.after : X.ng), mm) : '');
         if (ok) { a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1; rel(S, a, b, foe ? 0.35 : 0.6, foe ? '歪んだ関係' : '一夜'); if (!foe) edge(S, a, b, '一夜', 'love'); }
         else rel(S, a, b, -0.5, '決裂');
         mag = 30; key = ok ? a.name + 'と' + b.name + 'の夜' : '';
