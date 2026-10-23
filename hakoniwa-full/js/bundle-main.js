@@ -32239,11 +32239,14 @@
       return v + rng() * 45;
     }
     function quote(p, T) { var l = T[p.persona] || T.gentle; return p.name + ST.pick(S, l); }
-    function moan(p) { return lew !== 'low' && V && V.CLIMAX[p.persona] ? p.name + '「' + ST.pick(S, V.CLIMAX[p.persona]) + '」' : ''; }
+    /* R18の描写の設定（lewd-unify.js）：男性向けなら ♡ の喘ぎ（ero-kit.js）・山場に段落を足す、濃いなら延長戦・もう一度、短くなら山場を段落にしない */
+    var LX = HK.Lewd, lcf = LX && LX.conf('variety'), ero = !!(lcf && HK.Ero && HK.Ero.on(S) && lew !== 'low'), high = !!(lcf && lew === 'high');
+    function moan(p) { if (ero) return p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; return lew !== 'low' && V && V.CLIMAX[p.persona] ? p.name + '「' + ST.pick(S, V.CLIMAX[p.persona]) + '」' : ''; }
     /* 山場の厚い場面（R18版・描写が「ぼかす」以外。solo-variety-thick.js）。tb＝[攻める側, 受ける側] */
     function thick(kind, tb) {
       var TH = VA.THICK, TV = HK.ThickVM;
       if (HK.SAFE_ON || lew === 'low' || !TH || !TV) return '';
+      if (lcf && LX.short(env, rng)) return '';
       var t = tb[0], b = tb[1], key = kind;
       if (kind === 'pair' || kind === 'gone') {
         /* ふたなり（HK.Pos.futa）が攻めに回るときは男性の体で書く（M）。受ける側は体の性別のまま */
@@ -32253,7 +32256,21 @@
       }
       var l = TH[key];
       if (!l || !l.length) return '';
-      return ST.fmt((VA.thickVoice || TV.voice)(rng, ST.pick(S, l), b, t), { a: t.name, t: t.name, b: b.name, mc: mc });
+      var out = (VA.thickVoice || TV.voice)(rng, ST.pick(S, l), b, t), pk = function (a) { return ST.pick(S, a); };
+      if (ero && VA.THICK_ERO && VA.THICK_ERO[key]) out += '\n\n' + HK.Ero.fill(S, pk(VA.THICK_ERO[key]), b);
+      if (high) {
+        if ((kind === 'pair' || kind === 'gone') && HK.ThickEro) out += '\n\n' + HK.ThickEro.again(S, pk, t, b, ero, false).replace(/\{a\}/g, t.name).replace(/\{b\}/g, b.name);
+        else if (VA.THICK_AGAIN && VA.THICK_AGAIN[key]) out += '\n\n' + pk(VA.THICK_AGAIN[key]);
+      }
+      return ST.fmt(out, { a: t.name, t: t.name, b: b.name, mc: mc });
+    }
+    /* 男性向け：段落に分けない（数行で短く）場面にも、男性向けの一段を足す */
+    function eroAdd(kind, tb) {
+      if (!ero || !VA.THICK_ERO) return '';
+      var t = tb[0], b = tb[1], key = kind;
+      if (kind === 'pair' || kind === 'gone') { var tf = PO ? PO.isF(t) : t.gender === 'f', bf = PO ? PO.isFBody(b) : b.gender === 'f'; key = kind + (tf && bf ? 'FF' : tf ? 'FM' : 'M'); }
+      var l = VA.THICK_ERO[key];
+      return l && l.length ? ST.fmt(HK.Ero.fill(S, ST.pick(S, l), b), { a: t.name, t: t.name, b: b.name, mc: mc }) : '';
     }
     function fill(t, a, b) { return ST.fmt(t, { a: a ? a.name : '', b: b ? (b.name || b) : rng.pick(VA.ASSIST), mc: mc }); }
     function sayIf(o) { if (S.room == null || S.room > 0) { if (S.room != null) S.room--; ST.say(S, o); } }
@@ -32678,7 +32695,7 @@
       var fs = !grpOk(lasts0);
       lasts0.forEach(function (x) { x.cnt.penalty++; x.m.shame = clamp(x.m.shame + 20, 0, 100); if (!fs) climax(x, lew === 'low' ? 1 : 3); x.finalPen = true; });
       var pairTx = !fs && lasts0.length === 2 && okS(lasts0[0], lasts0[1]) ? thick('pair', ord(lasts0[0], lasts0[1])) : '';
-      ST.say(S, { actors: lasts0, tag: '最終罰ゲーム', text: pairTx || (fmtN(fs ? 'FINAL_SAFE' : 'FINAL_PAIR', lasts0) + (fs ? '' : lasts0.slice(0, 3).map(moan).join(''))), why: '同点最下位（' + minS + '点）', mag: 32, kind: fs ? 'event' : 'climax' });
+      ST.say(S, { actors: lasts0, tag: '最終罰ゲーム', text: pairTx || (fmtN(fs ? 'FINAL_SAFE' : 'FINAL_PAIR', lasts0) + (fs ? '' : lasts0.slice(0, 3).map(moan).join('') + (lasts0.length === 2 && okS(lasts0[0], lasts0[1]) ? eroAdd('pair', ord(lasts0[0], lasts0[1])) : ''))), why: '同点最下位（' + minS + '点）', mag: 32, kind: fs ? 'event' : 'climax' });
     } else if (P.length >= 3) {
       last.cnt.penalty++; last.finalPen = true; last.m.shame = clamp(last.m.shame + 20, 0, 100);
       /* 共演者が責める罰ゲームは、全員が last と okSex で、責める側が攻めになるときだけ */
@@ -32686,7 +32703,7 @@
       var lt = hTop(last);
       var fpool = lt ? VA.FINAL_PENALTY_TOP : VA.FINAL_PENALTY.filter(function (x) { return costarOk || !/共演者/.test(x); });
       var finTx = thick(lt ? 'finalTop' : 'final', [last, last]);
-      ST.say(S, { actors: [last], tag: '最終罰ゲーム', text: finTx || (fill(ST.pick(S, fpool), last) + (lt ? '' : moan(last))), why: '最下位（' + Math.round(last.m.score) + '点）' + (lt ? '／攻めの指定：罰ゲームでも責められる側には回らない' : ''), mag: 30, kind: lt ? 'event' : 'climax' });
+      ST.say(S, { actors: [last], tag: '最終罰ゲーム', text: finTx || (fill(ST.pick(S, fpool), last) + (lt ? '' : moan(last)) + eroAdd(lt ? 'finalTop' : 'final', [last, last])), why: '最下位（' + Math.round(last.m.score) + '点）' + (lt ? '／攻めの指定：罰ゲームでも責められる側には回らない' : ''), mag: 30, kind: lt ? 'event' : 'climax' });
       if (!lt) climax(last, lew === 'low' ? 1 : 3);
     }
     /* 恋の芽生え */
@@ -32701,7 +32718,7 @@
         : kinTie(a, b) ? ST.pick(S, ['収録後、' + a.name + 'と' + b.name + 'は家族の顔に戻って、並んで家路についた。……繋いだ手だけは、最後まで離さなかった。', 'エンディングで' + mc + 'に「ご家族で出演、ありがとうございました！」と言われ、' + a.name + 'と' + b.name + 'は目を合わせずに頭を下げた。耳まで赤いのは、二人とも同じだった。', '打ち上げを抜けた' + a.name + 'と' + b.name + 'は、「家で続きね」と小声で言い合って、同じ家に帰っていった。'])
         : cd.lov ? ST.pick(S, ['エンディングの最中、' + a.name + 'が' + b.name + 'の手を握った。恋人同士の公開いちゃつきに、' + mc + 'が「お幸せにー！」と叫んだ。', '収録後、' + a.name + 'と' + b.name + 'は「今日のは仕事だから」と言い合いながら、同じ家に帰っていった。'])
         : ST.pick(S, ['収録後の楽屋で、' + a.name + 'は' + b.name + 'に連絡先を渡した。「……今日の企画、忘れられなくて」', 'エンディングのあと、' + a.name + 'と' + b.name + 'は二人で同じタクシーに乗り込んだ。スタッフは見て見ぬふりをした。', '翌週の週刊誌に、' + a.name + 'と' + b.name + 'の熱愛記事が載った。きっかけはあの番組だった。']);
-      if (cd.gone) { var gTx = thick('gone', ord(a, b)); if (gTx) tx = gTx; }
+      if (cd.gone) { var gTx = thick('gone', ord(a, b)); if (gTx) tx = gTx; else tx += eroAdd('gone', ord(a, b)); }
       ST.key(S, ST.say(S, { actors: [a, b], tag: 'カップル成立', text: tx, why: cd.gone ? '楽屋に消えた二人' : cd.lov ? '恋人同士' : '企画やハプニングで何度も絡んだ二人', mag: 30 }), a.name + 'と' + b.name + 'がカップルに');
     });
     P.forEach(function (p) { if (p.producer && VA.PRODUCER_AFTER) ST.say(S, { actors: [p], tag: '収録後', text: ST.fmt(ST.pick(S, VA.PRODUCER_AFTER), { a: p.name }), why: 'ちんちん当てでプロデューサーに媚びた' }); });
@@ -51008,6 +51025,8 @@
   X.install('succubus', { desc: '搾精の場面の描き方。ほのめかす＝短くぼかす／ほどほど＝描写する／濃い＝より多く深く' });
   /* 催眠：もとの「描写の濃さ」と「描写の作風」をそのまま読み替える（値は同じ）。全年齢では「ほのめかす」だけ（作風は出さない） */
   X.install('saimin', { desc: '暗示の場面の描き方。ほのめかす＝性的な暗示は選ばれず、いたずらだけ／ほどほど＝描写する／濃い＝より多く深く' });
+  /* エロバラエティ番組：もとの「描写の濃さ」をそのまま読み替え、長さ・作風を追加（solo-variety.js・solo-variety-thick.js） */
+  X.install('variety', { desc: '罰ゲームや楽屋の場面の描き方。ほのめかす＝ぼかす／ほどほど＝描写する／濃い＝延長戦・もう一度まで' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */
