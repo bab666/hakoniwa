@@ -100,6 +100,18 @@
   HK.toneOpt = function (k, name) { var d = k && TONES[k]; return d ? d[name] : undefined; };
   /* 語尾の付け替え（derive の口調）：tone-polite-kin.js などで登録し、voice.js の V.toneFinish から呼ばれる */
   HK.TONE_FINISH = HK.TONE_FINISH || {};
+  /* 口調ごとの既定の二人称（キャラの二人称の設定が空のとき）。文面の表から来た「あなた」「お前」「きみ」の混ざりを、口調と性別でそろえる。
+     {m, f, x} で性別ごとに。文字列なら性別を問わない。voice.js の仕上げの後に HK.Voice.applyYou で置き換える */
+  var MF = function (m, f) { return { m: m, f: f, x: m }; };
+  HK.TONE_YOU = {
+    proud: MF('お前', 'あんた'), aniki: MF('お前', 'あんた'), yankee: MF('お前', 'あんた'), hero: MF('お前', 'あんた'), chara: MF('お前', 'あんた'),
+    stern: MF('お前', 'あなた'), gentleman: '君', sondai: '君', cool: MF('お前', 'あなた'), calm: MF('君', 'あなた'), mystic: '君',
+    tsun: 'あんた', tsun_n: 'あんた', gyaru: MF('お前', 'あんた'), free: MF('お前', 'あんた'), usan: 'あんた', darui: 'あんた',
+    gentle: 'きみ', gentle_n: 'きみ', ane: 'あなた', devoted: 'あなた', devoted_p: 'あなた', shy: 'あなた',
+    polite: 'あなた', ojou: 'あなた', kohai: 'あなた', genki: 'あなた', mixed: 'あなた',
+    kansai: MF('お前', 'あんた'), noja: 'おぬし', mukuchi: MF('お前', 'あんた')
+  };
+  HK.toneYou = function (tone, gender) { var v = HK.TONE_YOU[tone]; if (!v) return ''; if (typeof v === 'string') return v; return v[gender === 'f' ? 'f' : gender === 'x' ? 'x' : 'm'] || ''; };
   HK.toneFinish = function (k, fn) { HK.TONE_FINISH[k] = fn; };   /* fn(台詞, 話し手, { kg: 敬語の相手か, raw: 元の台詞 }) */
   /* 台詞ごとに決まる「くじ」（同じ台詞はいつも同じ結果）。n 回に 1 回 true */
   HK.lineLot = function (q, n) { var h = 7; for (var i = 0; i < q.length; i++) h = (h * 31 + q.charCodeAt(i)) % 100003; return h % n === 0; };

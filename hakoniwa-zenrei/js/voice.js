@@ -480,7 +480,7 @@
   /* who が、この台詞では敬語で話すか（ふだんの口調が敬語なら対象外） */
   /* 二人称を、設定した言い方にそろえる（「あなた」「お前」「きみ」「あんた」「おぬし」など → 設定の二人称）。
      名前のあとの「君」（アキラ君）や「大君」などの言葉は変えない */
-  var YOU2 = /(?:あなた|あんた|お前|おまえ|てめえ|貴様|おぬし|そなた|お主)(?!さん|方|様)|(?:きみ|(?<![大姫主父母諸細若暴ァ-ヶー一-鿿A-Za-z])君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なら|だけ|たち|ら|だ|じゃ|か|な|から|へ|や|しか|まで|より|一人|自身))/g;
+  var YOU2 = /(?:あなた|あんた|お前|おまえ|てめえ|貴様|おぬし|そなた|お主)(?!さん|方|様)|(?:きみ|(?<![大姫主父母諸細若暴ァ-ヶー一-鿿A-Za-z])君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なら|だけ|たち|ら|だ|じゃ|か|な|から|へ|や|しか|まで|より|一人|自身|こそ|最高|大好き|好き|〜|～|ー|ったら|たって))/g;
   V.applyYou = function (q, you) { return you ? q.replace(YOU2, you) : q; };
   function keigoHere(text, s, e, q, who, people, actors) {
     if (!who || who.persona === 'polite') return false;
@@ -551,8 +551,9 @@
             var fin = !own && !nounQ && HK.TONE_FINISH && HK.TONE_FINISH[who.tone];
             /* 仕上げには、敬語で話す相手への台詞か（kg）を渡す。派生の口調が敬語の文を崩すときの判断に使う */
             if (fin) q = fin(q, who, { kg: kg, raw: q0 });
-            /* 二人称の設定（敬語の相手への台詞は除く） */
-            if (who.you && !kg && !nounQ) q = V.applyYou(q, who.you);
+            /* 二人称の設定（敬語の相手への台詞は除く）。設定が空なら、口調と性別の既定（tone-registry.js の HK.TONE_YOU）でそろえる */
+            var youW = who.you || (HK.toneYou ? HK.toneYou(who.tone, who.gender) : '');
+            if (youW && !kg && !nounQ) q = V.applyYou(q, youW);
             if (YOU_ST.test(q0)) q = fixYouStutter(q);
             if (V.applyCalls) q = V.applyCalls(q, who, people);
             /* 語尾の記号（キャラごとの設定。複数あれば文ごとにランダム） */
