@@ -129,6 +129,7 @@
     if (!grave) q = q.replace(/^(?:えっ|ええ|えー)(?=[！？!?])/, 'え〜').replace(/^ちょっと待って/, 'ちょ、待って').replace(/やばい|やべえ|ヤベえ|やべー/g, 'ヤバい').replace(/ヤバいっ(?=[！!])/g, 'ヤバっ');
     if (grave || KEIGO.test(q)) return q;
     /* 「〜だろ」はギャルには硬い：「〜っしょ」（ひとりごとの「〜んだろ」「何〜だろ」は除く） */
+    q = q.replace(/(?<!どう)ぞ(?=[。！!…、」]|$)/g, 'よ').replace(/(?<!どう)ぞ(?=[？?])/g, 'の');
     q = q.replace(/(?<!ん)だろ(?=[？?。！!…、」]|$)/g, function (m, off, str) { return /(?:何|なに|誰|どこ|なんで|どう|いつ)[^。！？!?]*$/.test(str.slice(0, off)) ? m : 'っしょ'; });
     var parts = q.split(/([。！？!?…‥」\n]+)/), slang = 0, swapped = false;
     var out = parts.slice(), lastI = 0;
