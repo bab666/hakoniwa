@@ -224,6 +224,10 @@
     }
     var r2name = fl === 'double' ? rng.pick(SIT.npc.filter(function (x) { return x !== rname; })) : null;
     var t = (r && r.role === 'giver' ? ST.fmt(pkF(S, L('客が途切れた合間に、{p}は{r}を練習台にすることにした。「今日の手順、確認させて」|{p}は{r}を施術台に寝かせた。「次のお客様の前に、一度通しでやっておきたいの」|{r}が「最近、自分も溜まってて」と言うと、{p}は当然のように施術台を勧めた。')), v) : '') + (r && r.role === 'out' ? ST.fmt(pkF(S, nm(S, E(S, 'out.taken', KH.OUT.taken))), { o: r.name, p: g.name }) : fl === 'talk' ? ST.fmt(pkF(S, nm(S, F.talk)), v) : fl === 'double' ? ST.fmt(pkF(S, F.double), { p: g.name, r: rname, r2: r2name }) : (fl === 'watch' ? ST.fmt(pkF(S, F.watch), v) : '') + ST.fmt(pkF(S, nm(S, SIT.consult)), v)) + g.name + (ero && rng() < 0.7 && HK.Ero.has('kaihen', 'lines.' + S.v.sid + '.' + g.top) ? pkF(S, E(S, 'lines.' + S.v.sid + '.' + g.top, [])) : VO && VO.GIVER[g.persona] && rng() < 0.55 ? pkF(S, VO.GIVER[g.persona]) : pkF(S, nm(S, SIT.lines[g.top] || SIT.lines.NP)));
+    /* 施術中の掛け合い（solo-kaihen-talk.js）：始める前の説明 */
+    var kindT = KH.ACTKIND[act[0]] || 'hand', talkWhy = '';
+    var tp = KH.talk && rng() < 0.55 ? KH.talk(S, 'pre', g, r, rname, kindT, false) : null;
+    if (tp) { t += tp.text; talkWhy = tp.why; }
     if (lew === 'low') t += ST.fmt('{p}は「' + act[0] + '」を行った。――その内容は、カルテに数字だけが残された。', v);
     else {
       var kind0 = KH.ACTKIND[act[0]];
@@ -231,12 +235,15 @@
       /* ノリノリの施す側は、受け入れる施術で自分から跨る・誘う */
       if (F && kind0 === 'in' && HK.Pos && HK.Pos.nori(g) && rng() < 0.55) t += (actLead = ST.fmt(pkF(S, nm(S, F.nori)), v));
       else t += (actLead = ST.fmt(pkF(S, nm(S, E(S, 'act.' + act[0], L(act[1])))), v));
+      /* 掛け合い：最中の確認（厚い山場では書き出しに含める） */
+      var tm = KH.talk && rng() < 0.5 ? KH.talk(S, 'mid', g, r, rname, kindT, false) : null;
+      if (tm) { t += tm.text; actLead += tm.text; talkWhy = talkWhy || tm.why; }
       /* 男性向け：書き下ろしの続き、なければ施術の種類ごとの続き */
       var a2 = E(S, 'act2.' + act[0], null), kk = kind0 === 'top' && gF ? 'topF' : kind0;
       if (a2 && !(ero && HK.Ero.has('kaihen', 'kind.' + kk) && rng() < 0.3)) t += ST.fmt(pkF(S, nm(S, a2)), v);
       else if (a2) t += ST.fmt(pkF(S, E(S, 'kind.' + kk, a2)), v);
       else {
-        if ((lew === 'high' || rng() < 0.55) && !mobby(S, act[2])) t += ST.fmt(act[2], v);
+        if ((lew === 'high' || rng() < 0.55) && !mobby(S, act[2])) t += ST.fmt(pkF(S, L(act[2])), v);
         if (ero && HK.Ero.has('kaihen', 'kind.' + kk)) t += ST.fmt(pkF(S, E(S, 'kind.' + kk, [])), v);
       }
       if (fl === 'mishap') t += ST.fmt(pkF(S, nm(S, F.mishap)), v);
@@ -254,12 +261,17 @@
     var ml = Math.round((r ? 6 + rng() * 8 : 4 + rng() * 12) * (1 + ai * 0.08));
     t += ST.fmt(pkF(S, climaxOf(KH.ACTKIND[act[0]] || KH.climaxKind(t))), { p: g.name, r: rname, ml: ml });
     /* 小説調の山場（solo-thick4.js）：登場キャラが受ける施術は毎回、モブの客は三回に一回ほど、段落に分けて厚く */
-    var tk0 = { hand: 'serve', mouth: 'serve', face: 'serve', in: 'ride', top: 'in', topF: 'ride' }[KH.ACTKIND[act[0]]];
+    var tk0 = { hand: 'serve', glove: 'serve', mouth: 'serve', face: 'serve', in: 'ride', top: 'in', topF: 'ride' }[KH.ACTKIND[act[0]]];
     if (tk0 && actAt >= 0 && actLead && HK.Thick4 && HK.Thick4.ok(S, lew) && (r || rng() < 0.35)) {
       var sub0 = r || { name: rname, gender: 'm' };
       t = t.slice(0, actAt) + HK.Thick4.scene(S, { dom: g, sub: sub0, kind: tk0, lead: actLead, sad: HK.Thick4.rollSad(S, g, sub0),
         after: ST.fmt(pkF(S, ['{p}は乱れた呼吸のまま、カルテに「{ml}ml」と書き込んだ。', '{p}は容器の目盛りを確かめた。――{ml}ml。いつもどおりの、業務の一件だった。', '「{ml}ml。……お疲れさまでした」{p}はそう言って、何事もなかったように手を洗った。']), { p: g.name, ml: ml }) });
     }
+    /* 掛け合い：終わりの締め／居合わせた正気の人の突っ込み */
+    var te = KH.talk && rng() < 0.45 ? KH.talk(S, 'end', g, r, rname, kindT, false) : null;
+    if (te) { t += te.text; talkWhy = talkWhy || te.why; }
+    var tc = KH.talkCut && r && r.role !== 'out' ? KH.talkCut(S, g) : null;
+    if (tc) { t += tc.text; talkWhy = talkWhy || tc.who.name + 'は正気のまま居合わせた'; }
     if (fl === 'double') { t += ST.fmt(pkF(S, F.doubleEnd), { p: g.name, r: rname, r2: r2name }); g.cnt.served++; g.m.sem += ml; }
     if (fl === 'watch') { t += ST.fmt(pkF(S, F.watchEnd), v); g.m.imm += 4; }
     g.cnt.served++; g.m.sem += ml;
@@ -279,6 +291,7 @@
     }
     t = ef(S, t, g, rw);
     if (r && r.role === 'giver') why += '／モブなし：同じ' + SIT.giver + 'の' + r.name + 'を練習台にした';
+    if (talkWhy) why += '／' + talkWhy;
     if (fl !== 'std') why += '／' + { talk: '常連との世間話', double: '二人同時の対応', watch: S.v.boss + 'の立ち会い', mishap: 'ちょっとしたトラブル' }[fl];
     var o = ST.sayB(S, { actors: r ? [g, r] : [g], tag: act[0], text: t, why: why, mag: 18 + ai * 3 }, g.name + '→' + rname + '（' + act[0] + '・' + ml + 'ml）', g.cnt.served === 1 || (r && r.cnt.served === 1));
     if (o && g.cnt.served === 1) ST.key(S, o, g.name + 'の最初の' + SIT.unit);
@@ -311,15 +324,23 @@
       : ST.fmt(pkF(S, ok(nm(S, SIT.consult)) || KH.FF_CONSULT), v);
     var gl = (VO && VO.GIVER[g.persona] && rng() < 0.55 && ok(VO.GIVER[g.persona])) || ok(nm(S, SIT.lines[g.top] || SIT.lines.NP)) || KH.FF_GIVER;
     t += g.name + pkF(S, gl);
+    /* 施術中の掛け合い（女性の受け手：男性の体を前提にした言葉を外す） */
+    var ffK = FMT ? 'hand' : 'ff', talkWhy = '';
+    var tp = KH.talk && rng() < 0.55 ? KH.talk(S, 'pre', g, r, r.name, ffK, true) : null;
+    if (tp) { t += tp.text; talkWhy = tp.why; }
     if (lew === 'low') t += ST.fmt('{p}は「' + act[0] + '」を行った。――その内容は、カルテに数字だけが残された。', v);
     else {
       t += ST.fmt(pkF(S, act[1]), v);
+      var tm = KH.talk && rng() < 0.5 ? KH.talk(S, 'mid', g, r, r.name, ffK, true) : null;
+      if (tm) { t += tm.text; talkWhy = talkWhy || tm.why; }
       if (!gAct && KH.MOAN && rng() < 0.6) { t += g.name + '「' + pkF(S, ok(KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN)) || KH.MOAN) + '」'; g.m.plea += 6 * g.sens; }
       if (KH.INNER && rng() < (g.m.doubt > 15 ? 0.35 : 0.15)) { t += g.name + pkF(S, (gAct ? KH.INNER_TOP : KH.INNER).filter(function (x) { return !/奥/.test(x); })); g.m.doubt += 2 * g.doubtRate; }
       var who = gAct ? r : g;
       if (!eOn(S) && rng() < 0.45 && HK.Voice.CLIMAX[who.persona]) t += who.name + '「' + pkF(S, topL(who, HK.Voice.CLIMAX[who.persona])) + '」';
-      t += ST.fmt(pkF(S, FMT ? E(S, 'fm.take', KH.FM_CLIMAX) : E(S, 'ff.' + dir, KH.FF_CLIMAX[dir])), v);
+      t += ST.fmt(pkF(S, FMT ? E(S, 'fm.take', KH.FM_CLIMAX) : /手袋|ミトン|グローブ/.test(act[0]) && gAct && HK.Ero && HK.Ero.has('kaihen', 'ff.glove') && eOn(S) ? HK.Ero.T.kaihen['ff.glove'] : E(S, 'ff.' + dir, KH.FF_CLIMAX[dir])), v);
     }
+    var te = KH.talk && rng() < 0.45 ? KH.talk(S, 'end', g, r, r.name, ffK, true) : null;
+    if (te) { t += te.text; talkWhy = talkWhy || te.why; }
     g.cnt.served++; g.m.imm += 2.5 + (g.goal.id === 'top' ? 2 : 0);
     g.m.plea += (gAct ? 8 : 18) * g.sens + rng() * 8;
     var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」／' + (gF ? '女性どうしの施術' : FMT ? '女性の受け手が上になる施術' : '女性の受け手への施術') + '（' + (gAct ? g.name : r.name) + 'が動く側）';
@@ -334,6 +355,7 @@
     }
     t = ef(S, t, g, r);
     if (r.role === 'giver') why += '／同じ' + SIT.giver + 'の' + r.name + 'と手順を確かめた';
+    if (talkWhy) why += '／' + talkWhy;
     var o = ST.sayB(S, { actors: [g, r], tag: act[0], text: t, why: why, mag: 20 }, g.name + '→' + r.name + '（' + act[0] + '）', g.cnt.served === 1 || r.cnt.served === 1);
     if (o && g.cnt.served === 1) ST.key(S, o, g.name + 'の最初の' + SIT.unit);
     g.m.doubt += g.doubtRate * rng() * 2.5;
