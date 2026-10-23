@@ -129,6 +129,8 @@
   /* ---------- 一回の狩り ---------- */
   function hunt(S, T, p, sen, SE) {
     var rng = S.rng, env = S.env;
+    /* 恋愛対象（likes）が女性なら女性の獲物、両方なら3回に1回。女性の獲物は SB.PREY_F（狩り場ごとの顔ぶれ） */
+    if (SB.PREY_F && (p.likes === 'f' || (p.likes === 'both' && rng() < 0.35))) return huntF(S, T, p, sen, SE);
     var key = HK.weighted(rng, Object.keys(T.prey), function (k) {
       var q = SB.PREY[k], w = T.prey[k];
       if (q.holy) w *= 0.3 + env.holy / 60 * (sen && sen.top === 'AC' ? 0.4 : 1);
@@ -158,7 +160,7 @@
     if (flw) { S.flags['sf_' + flw.id] = (S.flags['sf_' + flw.id] || 0) + 1; score += flw.score || 0; if (flw.id !== 'eye') why += '／入り方：' + { tail: '尾行', bar: 'バーで', reverse: '向こうから', rain: '雨宿り', lost: '迷子のふり', dream: '夢に忍び込む' }[flw.id]; }
     var again = p.seen[key] > 1 && SB.AGAIN && rng() < 0.6;
     if (again) { score += 10; why += '／前に会った相手と再会'; }
-    var t = ST.fmt(again ? pkF(S, SB.AGAIN) : flw ? pkF(S, flw.t) : '{spot}で、{a}は{t}に目をつけた。', v) + (flw && flw.id === 'dream' ? '' : ST.fmt(ty.ap ? SB.say(S, pkF(S, ty.ap), ty.id + '_ap', p) : pkF(S, p.style.approach), v)) + (VO && rng() < (ty.ap ? 0.2 : 0.5) ? p.name + pkF(S, VO.OPEN[p.persona] || VO.OPEN.gentle) : '') + (q.re && rng() < 0.65 ? ST.fmt(q.re, v) : '');
+    var t = ST.fmt(again ? pkF(S, SB.AGAIN) : flw ? pkF(S, flw.t) : '{spot}で、{a}は{t}に目をつけた。', v) + (flw && flw.id === 'dream' ? '' : ST.fmt(apText(S, p, ty), v)) + (VO && rng() < (ty.ap ? 0.2 : 0.5) ? p.name + pkF(S, VO.OPEN[p.persona] || VO.OPEN.gentle) : '') + (q.re && rng() < 0.65 ? ST.fmt(q.re, v) : '');
     var lew = env.lewd || 'mid', ml = 0, kind, rev = 0, leadP = '';
     /* 聖なる獲物で大失敗すると、祓われかける */
     if (q.hunter && score < 10) {
@@ -204,7 +206,7 @@
       if (kind === 'big') p.cnt.big++;
       ml = Math.round(q.vit * (kind === 'big' ? 0.9 + rng() * 0.6 : 0.5 + rng() * 0.4) * (1 + p.stats.tech * 0.05) * (ty.ml || 1));
       if (lew === 'low') t += ST.fmt('――二人は{spot}の奥へ消えた。何があったのかは、{a}の満ち足りた顔だけが知っている。', v);
-      else if (ty.tk) { leadP = ST.fmt(SB.say(S, pkF(S, sTop ? (EO(S) && HK.Pos.isF(p) ? EL(S, 'topf', ty.top) : EL(S, 'top.' + ty.id, ty.top)) : EL(S, 'tk.' + ty.id, ty.tk)), ty.id + '_tk', p), v); t += '――' + leadP; }
+      else if (ty.tk) { leadP = ST.fmt(SB.say(S, pkF(S, takeList(S, p, ty, sTop)), ty.id + '_tk', p), v); t += '――' + leadP; }
       else { t += '――' + ST.fmt(pkF(S, sTop && SB.TAKE_TOP ? SB.TAKE_TOP[p.top] : SB.TAKE[p.top]), v); }
       if (q.stamina && hTop && SB.REVERSE_HARD && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.m.plea = 100; p.skip = true; rev = 1; ml = Math.round(ml * 1.4); t += ST.fmt(pkF(S, EO(S) && HK.Pos.isF(p) ? EL(S, 'reverse.topf', SB.REVERSE_HARD) : EL(S, 'reverse.hard', SB.REVERSE_HARD)), v); why += '／底なしの体力の相手に、朝まで主導権を渡さなかった'; }
       else if (q.stamina && !hTop && rng() < 0.5 - p.stats.tech * 0.06 + (ty.rev || 0)) { p.cnt.reverse++; p.m.plea = 100; p.skip = true; rev = 1; ml = Math.round(ml * 1.4); t += ST.fmt(pkF(S, sTop && SB.REVERSE_TOP ? (EO(S) && HK.Pos.isF(p) ? EL(S, 'reverse.topf', SB.REVERSE_TOP) : EL(S, 'reverse.top', SB.REVERSE_TOP)) : EL(S, 'reverse', SB.REVERSE)), v); why += '／相手の底なしの体力に逆に搾られた'; }
@@ -268,6 +270,88 @@
     if (fx.love) ST.key(S, o, p.name + 'の一目惚れ');
     if (fx.bonusPrey) { hunt(S, T, p, sen, SE); return true; }
     return !!(fx.skip || fx.love);
+  }
+
+  /* ---------- 型の誘い・搾精の候補 ----------
+     型（solo-succubus-types.js）の文に、型の強い因子の旧来の文（SB.STYLE[因子].approach・SB.TAKE・SB.TAKE_TOP）を4割で混ぜる。
+     男性のサキュバスが受け入れるときは tkM（後ろで迎える・自分のものも張りつめる）、ふたなりが抱くときは TOP_FUTA を混ぜる。
+     男性向けは、女性のサキュバスが攻めなら型ごとの topf.<型>（なければ共通の topf）、男性のサキュバスが受け入れるなら tkm.<型> */
+  function apText(S, p, ty) {
+    var old = SB.STYLE[p.top] && SB.STYLE[p.top].approach; /* 型の因子＝本人のいちばん強い因子（typeOf）。ty.top は抱く側の文の配列 */
+    if (old && old.length && (!ty.ap || S.rng() < 0.4)) return pkF(S, old);
+    return ty.ap ? SB.say(S, pkF(S, ty.ap), ty.id + '_ap', p) : pkF(S, p.style.approach);
+  }
+  function takeList(S, p, ty, sTop) {
+    var P0 = HK.Pos, f = P0 && P0.isF(p), male = !P0 || !P0.isFBody(p), futa = P0 && P0.futa(p), k = p.top;
+    if (EO(S)) {
+      if (sTop && f) return HK.Ero.has('succubus', 'topf.' + ty.id) ? EL(S, 'topf.' + ty.id, ty.top) : EL(S, 'topf', ty.top);
+      if (sTop) return EL(S, 'top.' + ty.id, ty.top).concat(futa ? EL(S, 'top.futa', []) : []);
+      if (male && HK.Ero.has('succubus', 'tkm.' + ty.id)) return EL(S, 'tkm.' + ty.id, ty.tk);
+      return EL(S, 'tk.' + ty.id, ty.tk);
+    }
+    var base = sTop ? ty.top : ty.tk, old = sTop ? SB.TAKE_TOP && SB.TAKE_TOP[k] : SB.TAKE && SB.TAKE[k];
+    if (old && old.length && S.rng() < 0.4) base = old;
+    if (sTop && futa && SB.TOP_FUTA && S.rng() < 0.45) base = SB.TOP_FUTA;
+    if (!sTop && male && ty.tkM && S.rng() < 0.6) base = ty.tkM;
+    return base;
+  }
+
+  /* ---------- 女性の獲物（恋愛対象が女性のサキュバス） ----------
+     女性のサキュバス×女性の獲物：指・舌・肌で精気を吸う（いちもつの語・挿入の動詞を使わない）。型ごとの ff。
+     男性（ふたなり）のサキュバス×女性の獲物：サキュバスが抱く（型の top）。自分で「受け」を選んだ男性なら、獲物が跨る（RIDE_F。女性が導く）。
+     底なしの体力・同業者・退魔師の分岐はない */
+  function huntF(S, T, p, sen, SE) {
+    var rng = S.rng, env = S.env, P0 = HK.Pos;
+    var keys = Object.keys(SB.PREY_F).filter(function (k) { return SB.PREY_F[k].towns.indexOf(T.id) >= 0; });
+    var key = HK.weighted(rng, keys, function (k) { var q0 = SB.PREY_F[k]; var w = 1; if ((p.action.id === 'pick' || p.intel) && q0.weak === p.top) w *= 2.4; return w / (1 + ((p.seenF || {})[k] || 0) * 0.8); });
+    p.seenF = p.seenF || {}; p.seenF[key] = (p.seenF[key] || 0) + 1;
+    var q = SB.PREY_F[key], spot = rng.pick(T.spots), v = { a: p.name, t: q.name, spot: spot, s: sen ? sen.name : '' };
+    p.cnt.tries++;
+    var ty = p.style || {}, match = q.weak === p.top;
+    var score = (ty.score || 0) + p.stats.charm * 10 + p.stats.tech * 6 + (match ? 22 * (sen && sen.top === 'A' ? 1.5 : 1) : 0) + p.tr.warmth * 8 + rng() * 38 - q.resist - 20 + (p.m.mood - 60) / 4;
+    var why = q.name + '（抵抗 ' + q.resist + '・' + SB.STYLE[q.weak].label + 'に弱い）に、' + p.style.label + 'で挑んだ' + (match ? '：相性ぴったり' : '') + '／恋愛対象が女性なので、女性の獲物';
+    if (p.m.mana >= 20 && (p.action.id === 'magic' ? rng() < 0.6 : rng() < 0.15 + (score < 0 ? 0.2 : 0))) { p.m.mana -= 18; score += 16; p.cnt.magic++; why += '／魅了の魔眼を使った'; }
+    if (sen) { if (sen.top === 'CP') score += 6; if (sen.top === 'NP' && p.cnt.streak >= 1) score += 12; if (sen.top === 'FC') score += (rng() - 0.45) * 30; if (sen.top === 'AC') score -= 4; }
+    if (p.m.mana < 15) { score -= 10; why += '／魔力切れで変身が不安定'; }
+    var t = ST.fmt('{spot}で、{a}は{t}に目をつけた。', v) + ST.fmt(apText(S, p, ty), v) + (VO && rng() < 0.2 ? p.name + pkF(S, VO.OPEN[p.persona] || VO.OPEN.gentle) : '') + (q.re ? ST.fmt(pkF(S, q.re), v) : '');
+    var ff = !P0 || P0.isF(p), ride = !ff && P0 && P0.of(p) === 'bottom' && P0.explicit(p);
+    var lew = env.lewd || 'mid', ml = 0, kind;
+    if (score < -5) {
+      kind = 'fail'; p.cnt.fail++; p.cnt.streak++; p.m.mood -= 10; p.cnt.shame++;
+      t += ST.fmt(pkF(S, ty.fail && rng() < 0.6 ? ty.fail : SB.FAIL[p.top]), v) + (VO && rng() < 0.5 ? p.name + pkF(S, VO.FAIL[p.persona] || VO.FAIL.gentle) : '');
+    } else if (score < 15) {
+      kind = 'half'; p.cnt.half++; p.cnt.streak++; ml = Math.round(2 + rng() * 5);
+      t += ST.fmt(pkF(S, EL(S, 'half.f', SB.HALF_F)), v);
+    } else if (rng() < Math.max(0, 0.05 + p.m.plea / 100 * 0.3 + Math.max(0, 3 - p.stats.tech) * 0.05 + (ty.melt || 0) - (score >= 45 ? 0.06 : 0))) {
+      kind = 'melt'; p.cnt.melt++; p.cnt.streak++; p.cnt.shame++; p.m.mood -= 12;
+      ml = Math.round(q.vit * (0.1 + rng() * 0.2));
+      why += '／感じすぎた（昂り ' + Math.round(p.m.plea) + '・技巧 ' + p.stats.tech + '）';
+      t += lew === 'low' ? ST.fmt(pkF(S, SB.MELT_LOW.slice(0, 1).concat(SB.MELT_LOW.slice(2))), v) : '――' + ST.fmt(pkF(S, EL(S, 'melt.f', SB.MELT_F)), v);
+      t += ST.fmt(pkF(S, SB.MELT_AFTER.filter(function (x) { return !SB.RECV_RE.test(x); })), v) + (ml ? '（吸えたのは' + ml + 'mlだけ）' : '');
+      p.m.plea = 35;
+      if (rng() < 0.4) { p.skip = true; why += '／腰が抜けて次の一時間は休み'; }
+    } else {
+      kind = score >= 45 ? 'big' : 'win';
+      p.cnt.win++; p.cnt.streak = 0; p.m.mood += 8;
+      if (kind === 'big') p.cnt.big++;
+      ml = Math.round(q.vit * (kind === 'big' ? 0.9 + rng() * 0.6 : 0.5 + rng() * 0.4) * (1 + p.stats.tech * 0.05) * (ty.ml || 1));
+      if (lew === 'low') t += ST.fmt('――二人は{spot}の奥へ消えた。何があったのかは、{a}の満ち足りた顔だけが知っている。', v);
+      else {
+        var lst = ff ? (EO(S) ? EL(S, 'ff.' + ty.id, EL(S, 'ff.tk', ty.ff || [])) : ty.ff) : ride ? EL(S, 'mf.ride', SB.RIDE_F) : EO(S) ? EL(S, 'mf.top', ty.top) : ty.top;
+        t += '――' + ST.fmt(SB.say(S, pkF(S, lst && lst.length ? lst : ty.tk), ty.id + '_tk', p), v);
+      }
+      t += ST.fmt(pkF(S, EL(S, 'climax.f', SB.CLIMAX_F)), { a: p.name, t: q.name, ml: ml });
+      if (kind === 'big') t += ST.fmt(pkF(S, EL(S, 'big.f', SB.BIG_F)), v);
+      if (VO && rng() < 0.45) t += p.name + pkF(S, VO.WIN[p.persona] || VO.WIN.gentle);
+      p.m.plea = clamp(p.m.plea + 30 + (p.top === 'FC' ? 20 : 0), 0, 100);
+    }
+    if (HK.Ero) t = HK.Ero.fill(S, t, kind === 'win' || kind === 'big' ? Object.assign({}, p, { eroDom: true }) : p);
+    p.m.ml += ml;
+    if (ml && (!p.best || ml > p.best.ml)) p.best = { name: q.name, ml: ml };
+    var tag = { fail: '失敗', half: 'あと一歩', win: '成功', big: '大成功', melt: '感じすぎ' }[kind];
+    var o = ST.sayB(S, { actors: [p], tag: tag, text: t, why: why + '（誘惑の出来 ' + Math.round(score) + '）', mag: kind === 'big' ? 40 : kind === 'win' ? 26 : 12, kind: kind === 'big' || kind === 'win' || kind === 'melt' ? 'climax' : 'event' }, p.name + '×' + q.name + '＝' + tag + (ml ? ' ' + ml + 'ml' : ''), kind === 'big' || (p.cnt.win === 1 && kind === 'win') || (kind === 'melt' && p.cnt.melt === 1));
+    if (o && kind === 'big') ST.key(S, o, p.name + 'の大成功');
+    if (o && p.cnt.win === 1 && kind === 'win') ST.key(S, o, p.name + 'の初めての獲物');
   }
 
   /* ---------- サキュバスどうしが鉢合わせる ---------- */
