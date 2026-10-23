@@ -19394,6 +19394,12 @@
     var dark = lcf ? LWX.lv(env) === 'low' : env.desc === 'dark', MD = HK.MassageMore.DARK;
     S.dark = dark;
     var eroOn = !!(lcf && !dark && LWX.ero(env) && HK.Ero && HK.MassageThick && HK.MassageThick.ERO), highOn = !!(lcf && LWX.high(env));
+    /* 後半の山場を厚くする段落（solo-massage-lewd.js）。物語とは別の乱数で選ぶ。kindR＝客が受ける組、kindT＝客が主導する組 */
+    var ML = !dark && HK.MassageLewd;
+    S.lwSeed = input.seed || 1;
+    var kindR = ff ? 'ff' : staff.g === 'f' && h.gender !== 'f' ? 'lady' : 'recv', kindT = custF ? (staff.g === 'm' ? 'topF' : 'topFF') : 'top';
+    function lwc(dom) { return { S: S, h: h, ero: eroOn, dom: dom, fmt: function (t) { return K.fmt(S, t); } }; }
+    function lwOn() { return !!(ML && ML.on(S, env)); }
     function logC(list) {
       if (!dark) return K.logClimax(S, list);
       if (!list.length) return;
@@ -19443,6 +19449,8 @@
       K.key(S, orv, '施術者を押し倒した');
       var rv = dark ? [K.pick(S, MD.reverse)] : S.rng.shuffle(M.REVERSE_ACT).slice(0, 2);
       rv.forEach(function (t2) { K.say(S, { kind: 'ev', tag: '逆転', text: K.fmt(S, t2), why: '' }); });
+      /* 厚く：客が施術者を責めはじめるところを段落で */
+      if (!dark && lwOn()) K.say(S, { kind: 'ev', tag: '逆転', text: ML.rev(lwc(true), kindT).replace(/^\n\n/, ''), why: '主導権は客の側' });
       if (top && !dark) {
         var tp = thick(true) || K.pick(S, posTop());
         K.say(S, { kind: 'ev', tag: tp.n, text: K.fmt(S, tp.t), why: '主導権は最後まで客の側' });
@@ -19579,7 +19587,7 @@
     if (extended && !hardTop && !left && !reversed && !fell) {
       S.step = seq.length; K.step(S, '延長');
       var rx2 = K.stim(S, 40, { part: 'all', mult: 1.2, defer: true });
-      K.say(S, { kind: 'ev', tag: '延長', text: K.fmt(S, K.pick(S, ['延長の三十分は、それまでの九十分よりずっと長かった。{m}の手はもう、遠慮をしなかった。', '{m}「延長分は、特に念入りに」――{a}は延長を頼んだことを、ほんの少しだけ後悔した。', '延長の間、{a}は時計を見なかった。見る余裕がなかった。'])) + K.tail(S, 0.7), why: '延長した' });
+      K.say(S, { kind: 'ev', tag: '延長', text: K.fmt(S, K.pick(S, ['延長の三十分は、それまでの九十分よりずっと長かった。{m}の手はもう、遠慮をしなかった。', '{m}「延長分は、特に念入りに」――{a}は延長を頼んだことを、ほんの少しだけ後悔した。', '延長の間、{a}は時計を見なかった。見る余裕がなかった。'])) + K.tail(S, 0.7) + (lwOn() ? ML.ext(lwc(false)) : ''), why: '延長した' });
       logC(rx2.climaxes);
       if (K.settle(S)) fell = true;
     }
@@ -19593,6 +19601,8 @@
       var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])), why: '快楽に負けた（堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
       K.key(S, head, '快楽に負けた');
       var custTop = HK.Pos && HK.Pos.vsNpc(h, '') === 'top';
+      /* 厚く：堕ちた瞬間を段落で（客が主導する組は、体位の場面のほうで厚くする） */
+      if (!dark && !custTop && lwOn()) head.text += ML.fall(lwc(false), kindR);
       var darkN = 0, c0 = h.climax;
       if (dark) K.say(S, { kind: 'sys', tag: '暗転', text: K.fmt(S, K.pick(S, MD.blackout)), why: '描写：軽め（暗転）' });
       pool.forEach(function (p, j) {
@@ -19610,7 +19620,11 @@
             ex = (p.thick ? '\n\n' : '') + K.fmt(S, HK.Ero.fill(S, K.pick(S, EK[ek]), h));
             h.eroDom = d0;
           }
-          K.say(S, { kind: 'ev', tag: p.n, text: K.fmt(S, p.t) + ex + (rr.climaxes.length || p.thick ? '' : K.tail(S, 0.8)), why: '体位の指定：' + p.n });
+          /* 厚く：二つめ以降の体位は盛り上がっていく段落、最後の体位は果てるまでの段落（濃いなら、もう一度）を足す */
+          var lw = '', lk = custTop ? kindT : kindR;
+          if (j === pool.length - 1) { if (lwOn()) lw = ML.peak(lwc(custTop), lk, highOn); }
+          else if (j >= 1 && lwOn()) lw = ML.mid(lwc(custTop), lk);
+          K.say(S, { kind: 'ev', tag: p.n, text: K.fmt(S, p.t) + ex + lw + (function (tl) { return lw ? '' : tl; })(rr.climaxes.length || p.thick ? '' : K.tail(S, 0.8)), why: '体位の指定：' + p.n });
           K.logClimax(S, rr.climaxes);
         }
         /* 落ちすぎた客は、行為の最中に新人の練習台に誘われる（断れない） */
@@ -19813,6 +19827,9 @@
     var EK = HK.Ero, eon = !!(EK && EK.on(S));
     var EL = function (key, base) { if (!eon) return base; if (topMe) return EK.L(S, 'hole', key + '.top', base); return EK.L(S, 'hole', key, base); };
     var say = function (S0, o) { if (eon && o && o.text) o.text = EK.fill(S, o.text, h); return K.say(S0, o); };
+    /* 描写の長さ「段落分けして厚く」（hole-thick.js）：後半の山場に段落を足す。足す文は物語とは別の乱数で選ぶ */
+    var HT = HK.HoleThick;
+    function thickAdd(o, t, before) { if (o && t) o.text = before ? t + '\n\n' + o.text : o.text + '\n\n' + t; }
     /* 同じ結果の中で、同じ台詞をなるべく繰り返さない */
     var pk = function (S0, arr) {
       var f = topMe ? arr.filter(function (x) { return !RECV_RE.test(x); }) : arr; if (!f.length) f = arr;
@@ -19847,6 +19864,7 @@
         var nC = 2 + rng.int(3) + (t2 === 2 ? 1 : 0) - r.climaxes.length;
         for (var c2 = 0; c2 < nC; c2++) K.climax(S, { silent: true });
         var osw = say(S, { kind: 'climax', tag: '甘イキが止まらない', text: K.fmt(S, LV.sweetText(sp, topMe)), why: '感覚が戻ったあと、激しくされて ' + (nC + r.climaxes.length) + '回続けて果てた（絶頂 ' + h.climax + '回目まで）' });
+        if (HT) thickAdd(osw, HT.peak(S, 'sweet', h, { topMe: topMe }), true);
         if (sweetUsed.length === 1) K.key(S, osw, '甘イキが止まらなくなった');
         return;
       }
@@ -19884,6 +19902,7 @@
       if (!live && t >= tMid && t < H + 1) {
         live = true;
         var ob = say(S, { kind: 'sys', tag: '遮断が壊れた', text: K.fmt(S, K.pick(S, LV.BREAK[plKey])) + ' ' + K.fmt(S, K.pick(S, LV.FLOOD)), why: '解放のしかた：最中に戻る（溜まっていた感覚 ' + Math.round(stored) + '）' });
+        if (HT) thickAdd(ob, HT.peak(S, 'break', h, { topMe: topMe }));
         K.key(S, ob, '最中に感覚が戻った');
         h.pleasure += stored * 0.5; h.reason -= stored * 0.06; h.corrupt += stored * 0.04 * S.k; stored = 0;
         var bc = []; while (h.pleasure >= 100 && bc.length < 3) bc.push(K.climax(S, { silent: true }));
@@ -19996,6 +20015,8 @@
       K.settle(S);
       var stL = h.fallen || h.corrupt >= 100 ? 'fall' : tierE === 2 ? 'enjoy' : tierE === 1 ? 'broken' : 'hold';
       var oa2 = say(S, { kind: 'sys', tag: stL === 'fall' || stL === 'enjoy' ? '陥落' : '余韻', text: K.fmt(S, pk(S, stL === 'hold' ? EL('after.hold.' + h.persona, AFTER.hold[h.persona]) : stL === 'enjoy' ? EL('after.fall', AFTER.fall) : EL('after.' + stL, AFTER[stL]))), why: '絶頂 ' + h.climax + '回・堕ち度 ' + Math.round(h.corrupt) });
+      /* 厚く：陥落・崩れ落ちた余韻は、段落に分けた版に差し替える */
+      if (HT) { var ta2 = HT.after(S, stL === 'fall' || stL === 'enjoy' ? 'fall' : stL, h, { topMe: topMe }); if (ta2) oa2.text = ta2; }
       K.key(S, oa2, stL === 'fall' ? '快楽に堕ちた' : stL === 'enjoy' ? '壁の向こうを受け入れた' : stL === 'broken' ? '崩れ落ちた' : '耐えきった');
       K.snap(S, { s: 0 });
       var metaL = [];
@@ -20022,7 +20043,7 @@
     /* 描写の有無「濃い」（lewd-unify.js）：戻ってくる感覚が多くなる（波が増える） */
     if (HK.Lewd && HK.Lewd.conf('hole') && HK.Lewd.high(env)) stored = Math.round(stored * 1.3);
     var wave = Math.min(mode === 'drip' ? 10 : 8, Math.max(mode === 'drip' ? 3 : 1, Math.round(stored / (mode === 'drip' ? 55 : 80))));
-    var restore = stored, floodThick = false;
+    var restore = stored, floodThick = false, lastWave = null, thick4O = null;
     for (var w = 0; w < wave && restore > 0; w++) {
       var chunk = Math.min(restore, mode === 'drip' ? 40 + rng() * 40 : 70 + rng() * 60);
       restore -= chunk;
@@ -20039,11 +20060,15 @@
       if (wv.length) lineTxt = K.fmt(S, pk(S, wv)) + ' ' + lineTxt;
       /* 小説調の山場（solo-thick4.js）：感覚が戻って最初に達した波は、段落に分けて厚く（帰り道で遅れて届くときは使わない） */
       if (parts.length && !floodThick && mode !== 'late' && HK.Thick4 && HK.Thick4.ok(S, 'mid')) { lineTxt = HK.Thick4.flood(S, h, { top: topMe, lead: lineTxt }); floodThick = true; }
-      say(S, { kind: parts.length ? 'climax' : 'ev', tag: parts.length ? (parts.length > 1 ? '連続絶頂' : '絶頂') : '混乱', text: lineTxt, why: (w + 1) + '波目' + (parts.length ? '・' + parts.length + '回' : '') });
+      var ow = say(S, { kind: parts.length ? 'climax' : 'ev', tag: parts.length ? (parts.length > 1 ? '連続絶頂' : '絶頂') : '混乱', text: lineTxt, why: (w + 1) + '波目' + (parts.length ? '・' + parts.length + '回' : '') });
+      if (parts.length) { lastWave = ow; if (floodThick && !thick4O) thick4O = ow; }
       K.settle(S);
     }
+    /* 厚く：戻ってきた波のうち、最後のいちばん大きな絶頂を段落に分ける（小説調の最初の波は solo-thick4.js が厚くしている） */
+    if (HT && lastWave && lastWave !== thick4O) thickAdd(lastWave, HT.peak(S, 'flood', h, { topMe: topMe }), true);
     var state = h.fallen || h.corrupt >= 100 ? 'fall' : h.corrupt >= 70 || h.climax >= 6 ? 'broken' : 'hold';
     var oa = say(S, { kind: 'sys', tag: state === 'fall' ? '陥落' : '余韻', text: K.fmt(S, pk(S, mode === 'late' ? X.LATE_AFTER[state] : state === 'hold' ? EL('after.hold.' + h.persona, AFTER.hold[h.persona]) : EL('after.' + state, AFTER[state]))), why: '絶頂 ' + h.climax + '回・堕ち度 ' + Math.round(h.corrupt) });
+    if (HT && mode !== 'late') { var ta = HT.after(S, state, h, { topMe: topMe }); if (ta) oa.text = ta; }
     K.key(S, oa, state === 'fall' ? '快楽に堕ちた' : state === 'broken' ? '崩れ落ちた' : '耐えきった');
     /* 壁の向こうを見に行く */
     var peeked = false;
@@ -31293,13 +31318,16 @@
           if (p.m.plea >= 100) { cl++; p.m.plea = 30; }
           /* 小説調の山場：本番の暗示を受け入れて達したときは、段落に分けて厚く（solo-thick4.js） */
           /* 達しなかった本番の暗示でも、ときどき厚くする（そのときは一度達したことにする） */
-          var thick = full && g.lewd && (cl ? rng() < 0.85 : rng() < 0.3) && HK.Thick4 && HK.Thick4.ok(S, lew) ? thickSug(S, p, fb, vk) : null;
+          /* 描写の長さ「厚く」：盛り上がったとき（二つ目以降のエッチな暗示）は、段落を多く重ねた大きな山場に（solo-saimin-thick.js。R18版だけ） */
+          var big = full && g.lewd && SM.bigScene ? SM.bigScene(S, p, fb, vk, cl) : null;
+          if (big) { t = t.replace(fb, big); if (!cl) cl = 1; }
+          var thick = !big && full && g.lewd && (cl ? rng() < 0.85 : rng() < 0.3) && HK.Thick4 && HK.Thick4.ok(S, lew) ? thickSug(S, p, fb, vk) : null;
           if (thick) { t = t.replace(fb, thick); if (!cl) cl = 1; }
           if (cl) {
             p.cnt.climax += cl; p.m.fall = clamp(p.m.fall + cl * 3, 0, 100);
             /* 男性向けの文：本文に絶頂の喘ぎ（{m2}）がなければ、態度ごとの崩れた声を足す */
-            if (lew !== 'low' && eroOn(S) && !aTop) { if (!/\{m2\}/.test(body)) t += p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; }
-            else if (!thick && lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + (aTop && SM.CLIMAX_TOP ? fresh(p, topVoice(p, 'CLIMAX', [])) : '「' + fresh(p, topL(p, V.CLIMAX[p.persona])) + '」');
+            if (lew !== 'low' && eroOn(S) && !aTop) { if (!big && !/\{m2\}/.test(body)) t += p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; }
+            else if (!thick && !big && lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + (aTop && SM.CLIMAX_TOP ? fresh(p, topVoice(p, 'CLIMAX', [])) : '「' + fresh(p, topL(p, V.CLIMAX[p.persona])) + '」');
             why += '／絶頂 ' + cl + '回';
           }
           p.m.depth = clamp(p.m.depth + (full ? 5 : -5), 0, 100);
@@ -31372,6 +31400,8 @@
       var t = eF(S, p, ST.fmt(ST.pick(S, afL), v));
       var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', body: null }[route];
       if (mood && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, p.aTop && SM.AFTER_SAY_TOP && SM.AFTER_SAY_TOP[mood] ? (SM.AFTER_SAY_TOP[mood][p.persona] || SM.AFTER_SAY_TOP[mood].gentle) : topL(p, SM.AFTER_SAY[mood][p.persona]));
+      /* 完堕ち：描写の長さ「厚く」なら、自分から戻ってきて堕ちきるまでを段落で（solo-saimin-thick.js。R18版だけ） */
+      if ((route === 'fall' || route === 'depend') && SM.bigFall) t += SM.bigFall(S, p, route);
       if (p.trigger && (route === 'forget' || route === 'body') && rng() < 0.6) t += ST.fmt('――数日後、会議中に誰かが何気なく「おやすみ」と言った。{a}は理由も分からないまま、机の下で膝を震わせた。', v);
       var o = say(p, { tag: '結末', text: t, why: whyAfter(p, route), mag: 40 }, '', true);
       ST.key(S, o, p.name + '：' + p.fate);

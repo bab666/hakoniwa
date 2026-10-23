@@ -194,6 +194,9 @@
         var r = K.stim(S, pw, { part: 'belly', defer: true });
         tx += ' ' + F(K.pick(S, EB(S, b.kind === 'pen' || b.kind === 'finger' ? 'feel' : 'feel.other', T.feel)));
         tx = EZ(S, tx);
+        /* 描写の長さ「段落分けして厚く」（hole-thick.js）：感覚が戻ったあとの行為は段落に分けて厚く */
+        var dtk = HK.HoleThick && HK.HoleThick.doer(S, b.kind, h, b, { topMe: st.topMe });
+        if (dtk) tx += '\n\n' + dtk;
         K.say(S, { kind: 'ev', tag: b.punish ? 'お仕置き' : '壁の向こうの住人', text: tx, why: whyOf(b) + '／感覚は戻っている' });
         K.logClimax(S, r.climaxes);
       } else {
@@ -242,6 +245,8 @@
       h.pleasure += st.stored * 0.8; h.reason -= st.stored * 0.07; h.corrupt += st.stored * 0.03 * (S.k || 1);
       var parts = []; while (h.pleasure >= 100 && parts.length < 4) parts.push(K.climax(S, { silent: true }));
       var oc = K.say(S, { kind: 'climax', tag: parts.length > 1 ? '連続絶頂' : '絶頂', text: EZ(S, F(K.pick(S, EB(S, st.topMe ? 'rescued.top' : HK.Pos && HK.Pos.isF(h) && HK.Pos.isF(b) ? 'rescued.ff' : 'rescued', T.rescued)))) + (parts.length ? ' ' + (parts[0].charAt(0) === '「' ? h.name : '') + parts.join('') : ''), why: '助け出された瞬間に、溜まっていた感覚（' + Math.round(st.stored) + '）が戻った' });
+      var rtk = HK.HoleThick && HK.HoleThick.peak(S, 'rescued', h, { topMe: st.topMe, b: b });
+      if (rtk) oc.text = rtk + '\n\n' + oc.text;
       K.key(S, oc, b.name + 'に抱きついたまま達した');
     }
     K.settle(S); K.snap(S, { s: 0 });

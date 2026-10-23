@@ -118,11 +118,13 @@ js/solo-kit.js
 late js/solo-massage-data.js
 js/solo-massage-thick.js
 js/solo-massage.js
+late js/solo-massage-lewd.js
 late js/solo-thick4.js
 late js/solo-hole-data.js
 late js/solo-hole-live.js
 late js/solo-hole-behind.js
 late js/solo-hole-ero.js
+late js/hole-thick.js
 js/solo-hole.js
 js/dungeon-events-a.js
 js/dungeon-events-b.js
@@ -189,6 +191,7 @@ js/solo-saimin-data.js
 js/solo-saimin-more.js
 js/solo-saimin-sex.js
 late js/solo-saimin-ero.js
+late js/solo-saimin-thick.js
 js/solo-saimin.js
 js/solo-variety-data.js
 js/solo-variety-more.js
