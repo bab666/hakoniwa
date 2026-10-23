@@ -67,6 +67,8 @@
     lovers_aa: ['α同士で寄り添う', '周りに何を言われても、{a}と{b}は手を離さなかった。α同士の恋は、二人の意地と愛情で続いている。'],
     lovers_oo: ['Ω同士で寄り添う', '発情期のたびに抑制剤を分け合い、守られるのではなく守り合う。{a}と{b}はΩ同士で生きていくと決めた。'],
     lovers_resist: ['運命より、あなたを', '運命の番が現れても、{a}は{b}の手を離さなかった。本能より、積み重ねた日々を選んだ。'],
+    bond_instinct: ['本能が先に噛んだ', '発情期の熱の中で、{a}は約束も順番も待たずに{b}のうなじを噛んだ。運命の匂いの前では、理性は役に立たなかった。二人は番になった。'],
+    fated_free: ['運命でも、選ばなかった', '{a}と{b}は運命の番だった。それでも二人は、匂いに手を引かれるままにはならなかった。運命の番でも、人は選べる。'],
     lovers_scar: ['傷を抱えたまま、それでも', '番に捨てられた傷は消えない。それでも{a}と{b}は、新しい関係を少しずつ育てている。'],
     lovers_nobond: ['恋人のまま', '{a}と{b}は恋人として穏やかに過ごしている。うなじを噛む日は、まだ来ていない。'],
     break_drift: ['すれ違いの末に', '{a}と{b}は別れた。どちらが悪かったわけでもない。ただ、少しずつずれていった。'],
@@ -99,6 +101,7 @@
     if (pf.fwb && !pf.couple && !om.bonded[k]) return mk(ctx, 'fwb', a, b);
     if (om.bonded[k] && pf.couple) {
       var A = B.alpha(a, b), O = B.omega(a, b), how = om.bondHow[k];
+      if (how === 'instinct') return mk(ctx, 'bond_instinct', A, O);
       if (fatedT) return mk(ctx, 'bond_fated', A, O);
       if (pf.buddy) return mk(ctx, 'bond_buddy', A, O);
       if (A.om.switched || O.om.switched) return mk(ctx, 'bond_switch', A, O);
@@ -126,6 +129,8 @@
     if (om.hesitate[k] >= 2) return mk(ctx, 'hesitate', a, b);
     if ((pf.nights || 0) >= 2) return mk(ctx, 'fwb', a, b);
     if ((pf.nights || 0) === 1) return mk(ctx, 'onenight', a, b);
+    /* 運命の抗えなさが低い世界では、出会った運命の番が結ばれないまま終わることがある */
+    if (fatedT && om.met[k] && (OM.destiny ? OM.destiny(ctx) : 0.5) < 0.35) return mk(ctx, 'fated_free', a, b);
     if (love(ab) && love(ba)) return mk(ctx, 'pining', a, b);
     if (love(ab) !== love(ba)) { var lv = love(ab) ? a : b; return mk(ctx, 'reject', lv, lv === a ? b : a); }
     if (a.om.quit || b.om.quit) return mk(ctx, 'quit_alone', a.om.quit ? a : b, a.om.quit ? b : a);
@@ -178,6 +183,9 @@
     if (partner) return c.name + 'は' + partner.name + 'と' + (om.bonded[key(c, partner)] ? '番になっている。' : '付き合っている。');
     var fw = ctx.chars.filter(function (o) { return o !== c && ctx.pair(c, o).fwb && !ctx.pair(c, o).couple; })[0];
     if (fw) return E.fwb[0] + '：' + c.name + 'は' + fw.name + 'と、恋人ではないまま夜だけを重ねている。';
+    /* 運命の番だったのに、相手は積み重ねた恋人を選んだ（抗い切った結末） */
+    var fm = main.filter(function (m) { return OM.isFated && OM.isFated(ctx, c, m) && om.met[key(c, m)] && ctx.pair(main[0], main[1]).couple; })[0];
+    if (fm) return E.fated_free[0] + '：' + c.name + 'は' + fm.name + 'の運命の番だった。それでも' + fm.name + 'が選んだのは、積み重ねてきた相手だった。';
     var crush = main.filter(function (m) { return ctx.R(c, m).att > 38 && ctx.R(c, m).aff > 20; })[0];
     if (crush) {
       var rk = Object.keys(om.rival).filter(function (k) { return k.split('-').indexOf(String(c.i)) >= 0; })[0];

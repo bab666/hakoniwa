@@ -54,6 +54,11 @@
     if (fx.hp) a.hp = HK.clamp(a.hp + fx.hp, 1, 100);
   }
   function note(ctx, s) { (ctx.flags.endNotes = ctx.flags.endNotes || []).push(s); }
+  /* 運命の抗えなさ（環境値 destiny）：0〜1。0.5 が従来どおりで、上は本能寄り・下は理性寄り */
+  function dest(ctx) { return (ctx.env.destiny == null ? 50 : ctx.env.destiny) / 100; }
+  /* 「なぜ」に添える一言（真ん中あたりの値では添えない） */
+  function destWhy(ctx, always) { var d = dest(ctx); return always || d >= 0.65 || d <= 0.35 ? '／運命の抗えなさ ' + Math.round(d * 100) : ''; }
+  OM.destiny = dest; OM.destinyWhy = destWhy;
   function mom(ctx) { return ctx.om; }
 
   var scen = {
@@ -75,6 +80,7 @@
     ],
     env: [
       { id: 'heat', label: '発情期の重さ', min: 0, max: 100, def: 50, lo: '抑制剤がよく効く', hi: '抗えない', desc: '高いほど発情期・ラットで理性が飛びやすく、一線を越えやすい' },
+      { id: 'destiny', label: '運命の抗えなさ', min: 0, max: 100, def: 50, lo: '理性で抗える', hi: '本能に呑まれる', desc: '運命の番と本能の強さ。高いほど運命の番に一目で落ち、恋人を捨てて運命へ走り、発情期に合意を待たずにうなじを噛んでしまう。低いほど「運命の番でも人は選べる」世界になり、積み重ねた関係が運命に勝つ' },
       { id: 'society', label: 'α優位の社会（Ωへの偏見）', min: 0, max: 100, def: 60, lo: 'ほぼ対等', hi: 'αが絶対', desc: 'αが社会の上に立ち、Ωが弱い立場に置かれる度合い。高いほどαは地位の高い職に就きやすく、Ωは差別・離職・αの威圧にさらされやすい' },
       { id: 'lewd', label: '描写の濃さ', type: 'select', def: 'mid', options: [{ v: 'low', label: '朝チュン（ぼかす）' }, { v: 'mid', label: 'ほどほど' }, { v: 'high', label: '濃いめ' }] }
     ],
@@ -129,6 +135,9 @@
       if (ctx.present().length === 2) { var P = ctx.present(); ctx.mod2(P[0], P[1], { trust: 1.2, att: ctx.R(P[0], P[1]).att > 25 ? 0.4 : 0 }, { trust: 1.2, att: ctx.R(P[1], P[0]).att > 25 ? 0.4 : 0 }); }
       /* α×Ωは、会うたびにフェロモンで少しずつ惹かれ合う */
       ctx.present().forEach(function (x) { ctx.present().forEach(function (y) { if (x !== y && ao(x, y) && met(ctx, x, y) && HK.canLove(x, y) && ctx.R(x, y).att > 25) ctx.R(x, y).att = HK.clamp(ctx.R(x, y).att + 1.2 + (ctx.stat(y, 'charm') - 3) * 0.4, 0, 100); }); });
+      /* 運命の番どうしは、運命の抗えなさが高いほど、会うたびに本能が引き寄せる（低ければ普通のα×Ωと同じ） */
+      var dd = dest(ctx);
+      if (dd > 0.5) ctx.present().forEach(function (x) { ctx.present().forEach(function (y) { if (x !== y && fated(ctx, x, y) && met(ctx, x, y) && HK.canLove(x, y)) ctx.R(x, y).att = HK.clamp(ctx.R(x, y).att + (dd - 0.5) * 4, 0, 100); }); });
       /* 時間が経てば、ぎすぎすは少しずつ薄れる（恋人同士はなおさら） */
       ctx.chars.forEach(function (x) { ctx.chars.forEach(function (y) { var r = ctx.rel[x.i][y.i]; if (r) r.ten *= ctx.pair(x, y).couple ? 0.95 : 0.96; }); });
   }
@@ -194,7 +203,8 @@
         if (OM.DET.buddyCtx(ctx, a, b)) { pf.buddy = true; [ctx.R(a, b), ctx.R(b, a)].forEach(function (r) { r.trust = HK.clamp(r.trust + 25, -100, 100); r.aff = HK.clamp(r.aff + 15, -100, 100); }); }
         if (fated(ctx, a, b)) {
           if (pf.couple) { ctx.om.met[key(a, b)] = true; return; }
-          var at = 1 + rng.int(6);
+          /* 運命の抗えなさが低いと、出会っても気づくまでに時間がかかる */
+          var at = 1 + rng.int(6) + (dest(ctx) < 0.4 ? rng.int(1 + Math.round((0.4 - dest(ctx)) * 10)) : 0);
           om.fatedMeetAt[key(a, b)] = at;
           /* 出会うまでは、運命の番どうしの惹かれは眠っている */
           ['att', 'aff'].forEach(function (k) { pf['sleep_' + k] = [ctx.R(a, b)[k], ctx.R(b, a)[k]]; ctx.R(a, b)[k] = 0; ctx.R(b, a)[k] = 0; });
@@ -222,16 +232,24 @@
       var ij = k.split('-'), a = ctx.chars[+ij[0]], b = ctx.chars[+ij[1]];
       if (!a.alive || !b.alive) return;
       om.met[k] = true;
-      var pf = ctx.pair(a, b);
-      ctx.R(a, b).att = HK.clamp(pf.sleep_att[0] + 30, 0, 100); ctx.R(b, a).att = HK.clamp(pf.sleep_att[1] + 30, 0, 100);
-      ctx.R(a, b).aff = pf.sleep_aff[0] + 10; ctx.R(b, a).aff = pf.sleep_aff[1] + 10;
+      var pf = ctx.pair(a, b), d = dest(ctx);
+      /* 惹かれの立ち上がり：抗えなさが高いほど一目で落ちる（+10〜+50）、低いほど気づくのに時間がかかる */
+      var up = 10 + d * 40, upAff = 4 + d * 12;
+      ctx.R(a, b).att = HK.clamp(pf.sleep_att[0] + up, 0, 100); ctx.R(b, a).att = HK.clamp(pf.sleep_att[1] + up, 0, 100);
+      ctx.R(a, b).aff = pf.sleep_aff[0] + upAff; ctx.R(b, a).aff = pf.sleep_aff[1] + upAff;
       var where = rng.pick(['駅の改札', '雨宿りの軒先', '取引先の会議室', 'コンビニのレジ待ち', '友人の結婚式の二次会', '病院の待合室', '深夜の交差点']);
-      var t = rng.pick([
+      var t = rng.pick(d < 0.3 ? [
+        where + 'で、' + a.name + 'と' + b.name + 'はすれ違った。' + a.name + 'は一瞬だけ足を止め、それから何事もなかったように歩き出した。――その匂いが何だったのか、気づくのは何日も経ってからだった。',
+        where + 'で' + a.name + 'と' + b.name + 'の目が合った。妙に落ち着く匂いだ、と思った。それだけだった。運命の番だと知るのは、ずっとあとになる。'
+      ] : d > 0.7 ? [
+        where + 'で、' + a.name + 'と' + b.name + 'はすれ違った。次の瞬間、二人とも立ち止まっていた。――匂いが、理性を素通りして体を掴んだ。膝が震えた。',
+        where + 'で' + a.name + 'と' + b.name + 'の目が合った。息が止まった。名前も知らないのに、もう離れられないと分かってしまった。'
+      ] : [
         where + 'で、' + a.name + 'と' + b.name + 'はすれ違った。振り返ったのは同時だった。――匂いが、体の奥の何かを叩いた。',
         where + 'で' + a.name + 'と' + b.name + 'の目が合った。知らない人のはずなのに、ずっと探していた気がした。',
         a.name + 'は' + where + 'で、知らない匂いに足を止めた。その先に' + b.name + 'がいた。'
       ]);
-      ctx.say({ kind: 'event', cat: 'romance', actors: [a, b], text: t + a.name + 'からは' + short(a) + '、' + b.name + 'からは' + short(b) + 'の匂いがした。運命の番だった。', why: '運命の番の出会い（遺伝子レベルの惹かれ）', mag: 40 });
+      ctx.say({ kind: 'event', cat: 'romance', actors: [a, b], text: t + a.name + 'からは' + short(a) + '、' + b.name + 'からは' + short(b) + 'の匂いがした。' + (d < 0.3 ? '――それが運命の番の匂いだと、二人はまだ知らなかった。' : '運命の番だった。'), why: '運命の番の出会い（遺伝子レベルの惹かれ）／運命の抗えなさ ' + Math.round(d * 100) + (d < 0.3 ? '：出会っても気づくのに時間がかかる' : d > 0.7 ? '：一目で落ちる' : ''), mag: 40 });
       [a, b].forEach(function (x) {
         var y = x === a ? b : a, p = partnerOf(ctx, x);
         if (p && p !== y) { ctx.pair(x, p).fatedPending = true; ctx.say({ kind: 'event', cat: 'romance', actors: [x, p], text: x.name + 'には、' + p.name + 'という恋人がいる。' + x.name + 'はその夜、' + p.name + 'からの連絡に返事ができなかった。', why: '運命の番と、今の恋人', mag: 15 }); }
@@ -250,8 +268,11 @@
         c.om.heatAt = s + 5 + rng.int(2);
         om.heats++;
         var txt = rng.pick(['{a}の発情期が来た。', '{a}は朝起きた瞬間に分かった。――来た。', '{a}の体温が上がり始めた。周期どおりの発情期だった。']);
-        var sup = ctx.env.heat < 40 || c.tr.caution > 0.6;
-        ctx.say({ kind: 'event', cat: 'solo', actors: [c], text: ctx.t(txt, c) + (sup ? '抑制剤を飲んで、どうにか日常を保った。' : '抑制剤が効きにくい。部屋のカーテンを閉め切った。'), why: 'Ωの発情期（周期）' + (sup ? '・抑制剤が効いた' : ''), mag: 6 });
+        var sup = ctx.env.heat < 40 || c.tr.caution > 0.6, d = dest(ctx), dw = '';
+        /* 運命の抗えなさ：高いと抑制剤も理性も本能に負けやすく、低いと理性で抑えやすい */
+        if (sup && d > 0.5 && rng() < (d - 0.5) * 0.9) { sup = false; dw = '・抑制剤が本能に負けた（運命の抗えなさ ' + Math.round(d * 100) + '）'; }
+        else if (!sup && d < 0.5 && rng() < (0.5 - d) * 0.6) { sup = true; dw = '・理性で抑えた（運命の抗えなさ ' + Math.round(d * 100) + '）'; }
+        ctx.say({ kind: 'event', cat: 'solo', actors: [c], text: ctx.t(txt, c) + (sup ? '抑制剤を飲んで、どうにか日常を保った。' : '抑制剤が効きにくい。部屋のカーテンを閉め切った。'), why: 'Ωの発情期（周期）' + (sup ? '・抑制剤が効いた' : '') + dw, mag: 6 });
         if (sup) c.om.heat = Math.max(0, c.om.heat - 1) || 1;
         c.om.supp = sup;
       }
@@ -355,14 +376,14 @@
       if (s === 'aa' || s === 'oo') return false;
       return met(ctx, a, b) && !ctx.pair(a, b).couple && HK.canLove(a, b) && love(ctx.R(a, b)) && !partnerOf(ctx, a) && !(ctx.pair(a, b).rejected != null && ctx.stepIndex - ctx.pair(a, b).rejected < 4) && !ctx.om.fatedSplit[key(a, b)] && !(ctx.pair(a, b).night && !ctx.pair(a, b).fwbAsked && HK.FWB.lean(a) > 0.5) && !(ctx.pair(a, b).fwb && HK.FWB.lean(a) > 0.55 && ctx.rng() < 0.7);
     },
-    w: function (ctx, a, b) { return 0.8 + a.tr.honesty + ctx.R(a, b).att / 60 + (a.goal.id === 'mate' ? 0.8 : 0); },
+    w: function (ctx, a, b) { return 0.8 + a.tr.honesty + ctx.R(a, b).att / 60 + (a.goal.id === 'mate' ? 0.8 : 0) + (fated(ctx, a, b) ? Math.max(0, dest(ctx) - 0.5) * 3 : 0); },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b), rb = ctx.R(b, a), p2 = partnerOf(ctx, b);
       if (love(rb) && !p2) {
         pf.couple = true; pf.since = ctx.stepIndex; pf.broke = null;
         ctx.mod2(a, b, { aff: 12, trust: 10 }, { aff: 12, trust: 10 });
         var t = fated(ctx, a, b) ? ctx.pick(['言葉はいらなかった。{a}が手を伸ばすより先に、{b}がその手を取っていた。', '{a}「私、初めて会った気がしない」{b}「……私も」']) : ctx.pick(['{a}は{b}に「好きだ」と言った。{b}は少し驚いて、それから笑った。「遅いよ」', '{a}の告白は、噛んで二回言い直した。{b}は三回目を待たずに頷いた。', '帰り道、{a}は立ち止まって「付き合ってほしい」と言った。{b}は「うん」とだけ言った。', '{a}「番とか、そういうの抜きで、私は{b}が好き」{b}「抜かなくていいよ」']);
-        return { text: ctx.t(t, a, b), why: '両想い（惹かれ ' + Math.round(ctx.R(a, b).att) + '／' + Math.round(rb.att) + '）' + (fated(ctx, a, b) ? '・運命の番' : ''), mag: 30 };
+        return { text: ctx.t(t, a, b), why: '両想い（惹かれ ' + Math.round(ctx.R(a, b).att) + '／' + Math.round(rb.att) + '）' + (fated(ctx, a, b) ? '・運命の番' + destWhy(ctx) : ''), mag: 30 };
       }
       pf.rejected = ctx.stepIndex; pf.rejCount = (pf.rejCount || 0) + 1; pf.rejBy = a.i;
       ctx.mod2(a, b, { aff: -6, ten: 8, att: pf.rejCount >= 2 ? -15 : 0 }, { ten: 6 });
@@ -446,9 +467,11 @@
   function heatScene(ctx, a, b) {
     var om = ctx.om, pf = ctx.pair(a, b), k = key(a, b);
     var O = sx(a) === 'o' && a.om.heat > 0 ? a : sx(b) === 'o' && b.om.heat > 0 ? b : sx(a) === 'o' ? a : b, X = O === a ? b : a;
-    var rX = ctx.R(X, O), rO = ctx.R(O, X), heat = ctx.env.heat / 100;
+    var rX = ctx.R(X, O), rO = ctx.R(O, X), heat = ctx.env.heat / 100, d = dest(ctx), isF = fated(ctx, a, b);
+    /* 運命の抗えなさ：高いほど発情期の本能に流されやすい（発情期の重さに足し引きする） */
+    heat = HK.clamp(heat + (d - 0.5) * 0.5, 0, 1.2);
     var mutual = rX.att > 35 && rO.att > 35 && HK.canLove(X, O) && HK.canLove(O, X);
-    var bound = pf.couple || fated(ctx, a, b);
+    var bound = pf.couple || isF;
     var mate = BD.mateOf(ctx, O);
     /* 番のいるΩは、番以外を体が拒む */
     if (mate && mate !== X) {
@@ -460,20 +483,34 @@
     if ((sx(X) === 'a' || sx(X) === 'b') && (bound && mutual || casual || (mutual && rX.trust > 20 && rO.trust > 20 && heat + X.tr.impulse * 0.4 > 0.75 && ctx.rng() < 0.55))) {
       pf.night = true; pf.nights = (pf.nights || 0) + 1;
       ctx.mod2(X, O, { att: 10, aff: 6 }, { att: 10, aff: 6 });
-      var willBite = BD.canBite(ctx, X, O) && (pf.couple || fated(ctx, a, b)) && rX.trust > 30 && rO.trust > 30 && ctx.rng() < 0.55 + (fated(ctx, a, b) ? 0.3 : 0);
+      /* 噛む（番にする）：運命の抗えなさが高いほど、信頼が浅くても噛んでしまう・噛まれてしまう。低いほど信頼を待つ */
+      var need = 30 - (d - 0.5) * 30;
+      var willBite = BD.canBite(ctx, X, O) && (pf.couple || isF) && rX.trust > need && rO.trust > need && ctx.rng() < 0.55 + (isF ? 0.3 : 0) + (d - 0.5) * 0.4;
       /* Ωの側が攻め（受け攻めの指定）なら、Ωが自分からうなじを差し出す形だけ（行為の最中に噛まれて「ものになる」形は使わない） */
       var oLead = HK.Pos && HK.Pos.order(X, O, [X, O])[0] === O;
+      /* 本能が先に噛む：抗えなさが高く、αが攻めで、まだ合意と呼べる信頼がないのに歯を立ててしまう（執着の「奪う番」とは別。相手も拒みはしない） */
+      var instinct = !willBite && !oLead && BD.canBite(ctx, X, O) && isF && d > 0.6 && !(HK.Obsess && ctx.pair(X, O).ob && ctx.pair(X, O).ob[X.i] && ctx.pair(X, O).ob[X.i].lv >= 40) && ctx.rng() < (d - 0.6) * 1.2;
       var biteL = ['{b}は自分から髪をかき上げて、うなじを差し出した。「噛んで」――{a}の歯が沈んだ瞬間、二人は番になった。', '「いいの？一生だよ」{a}の問いに、{b}は頷いた。{a}はうなじに深く歯を立てた。'];
       if (!oLead) biteL.push('果てる寸前、{a}は{b}のうなじに深く歯を立てた。{b}は痛みと熱の中で、自分が{a}のものになったのを感じた。');
-      var biteT = willBite ? ctx.t(ctx.pick(biteL), X, O) : '';
+      var instL = ['「待って、まだ――」{b}の声が終わる前に、{a}の歯はうなじに沈んでいた。運命の匂いの前では、約束も順番も意味をなさなかった。', '噛まないつもりだった。{a}はそう思っていた。気づいたときには口の中に血の味があり、{b}のうなじに自分の歯形があった。{b}は泣きながら、{a}の背中に腕を回した。'];
+      var biteT = willBite ? ctx.t(ctx.pick(biteL), X, O) : instinct ? ctx.t(ctx.pick(instL), X, O) : '';
       var t = heatLine.scene(ctx, X, O, { beta: sx(X) === 'b', insert: biteT });
       var why = '発情期（' + O.name + '）と、互いの惹かれ' + (bound ? '・' + (pf.couple ? '恋人' : '運命の番') : '') + '／' + X.name + 'は' + HK.egoType(X.eg).top + '優位、' + O.name + 'は' + HK.egoType(O.eg).top + '優位';
       /* 番になる（同意のうえで、αがΩのうなじを噛む） */
       if (willBite) {
         BD.bite(ctx, X, O, 'heat');
         ctx.mod2(X, O, { trust: 20, aff: 12 }, { trust: 20, aff: 12 });
-        why += '／信頼が十分で、二人とも番を望んだ';
+        why += '／信頼が十分で、二人とも番を望んだ' + destWhy(ctx);
         return { text: t, why: why, mag: 45 };
+      }
+      if (instinct) {
+        BD.bite(ctx, X, O, 'instinct');
+        ctx.om.instinctBite = ctx.om.instinctBite || {}; ctx.om.instinctBite[k] = X.i;
+        if (!pf.couple) { pf.couple = true; pf.since = ctx.stepIndex; }
+        ctx.mod2(X, O, { att: 10, aff: 6 }, { att: 12, aff: 4, trust: -8, ten: 10 });
+        ctx.stress(O, 15); ctx.stress(X, 10);
+        why += '／合意を待たずに噛んでしまった：運命の抗えなさ ' + Math.round(d * 100);
+        return { text: t, why: why, mag: 50 };
       }
       if (!pf.couple) why += '（まだ恋人ではない）';
       return { text: t, why: why, mag: 25 };
@@ -482,11 +519,11 @@
       var stop = X.tr.a * 0.5 + X.tr.cp * 0.4 + X.tr.np * 0.3 - heat * 0.5 - X.tr.impulse * 0.3;
       if (stop > 0.15 || !mutual) {
         ctx.mod2(X, O, { trust: 4 }, { trust: 10, aff: 6 });
-        return { cat: 'help', text: sc(ctx.t(ctx.pick(['{a}は{b}の{sb}の匂いに膝が崩れかけた。自分の腕に爪を立て、「薬、どこ」とだけ訊いた。', '{a}は{b}に背を向けたまま、扉の外から抑制剤を差し入れた。「開けるな。俺が持たない」', '{a}は救急車を呼び、到着するまで廊下の端で壁に額をつけて待った。']), X, O), X, O), why: X.name + 'の理性（A・CP）が発情期の匂いに勝った', mag: 18 };
+        return { cat: 'help', text: sc(ctx.t(ctx.pick(['{a}は{b}の{sb}の匂いに膝が崩れかけた。自分の腕に爪を立て、「薬、どこ」とだけ訊いた。', '{a}は{b}に背を向けたまま、扉の外から抑制剤を差し入れた。「開けるな。俺が持たない」', '{a}は救急車を呼び、到着するまで廊下の端で壁に額をつけて待った。']), X, O), X, O), why: X.name + 'の理性（A・CP）が発情期の匂いに勝った' + (d <= 0.35 ? destWhy(ctx) : ''), mag: 18 };
       }
       pf.night = true; pf.nights = (pf.nights || 0) + 1;
       ctx.mod2(X, O, { att: 6, ten: 6 }, { att: 8, ten: 4 });
-      return { text: ctx.t(ctx.pick(['{b}の匂いに呑まれて、{a}の理性が切れた。{b}も拒まなかった。', '「だめだ」と言いながら、{a}は{b}を抱き寄せていた。{b}の指が、{a}の背中に食い込んだ。']), X, O) + heatLine.scene(ctx, X, O, {}) + ctx.t('朝、二人は目を合わせられなかった。', X, O), why: '発情期の匂い（重さ ' + ctx.env.heat + '）と' + X.name + 'の衝動性', mag: 22 };
+      return { text: ctx.t(ctx.pick(['{b}の匂いに呑まれて、{a}の理性が切れた。{b}も拒まなかった。', '「だめだ」と言いながら、{a}は{b}を抱き寄せていた。{b}の指が、{a}の背中に食い込んだ。']), X, O) + heatLine.scene(ctx, X, O, {}) + ctx.t('朝、二人は目を合わせられなかった。', X, O), why: '発情期の匂い（重さ ' + ctx.env.heat + '）と' + X.name + 'の衝動性' + (d >= 0.65 ? destWhy(ctx) : ''), mag: 22 };
     }
     if (sx(X) === 'b') {
       ctx.mod2(X, O, { trust: 4, aff: 3 }, { trust: 10, aff: 6 });
@@ -533,11 +570,12 @@
       var t = ctx.t(ctx.pick(T[tl] || T.NP), lead, oth);
       var A = alphaOf(a, b), O = omegaOf(a, b);
       /* うなじを噛む＝番。αとΩで、信頼が十分で、Ωが番を望んだとき */
-      if (ao(a, b) && BD.canBite(ctx, A, O) && pf.amagami >= 2 && ctx.stepIndex - (pf.since || 0) >= 4 && ctx.R(A, O).trust > 45 && ctx.R(O, A).trust > 45 && ctx.rng() < 0.3 + (pf.amagami - 2) * 0.2) {
+      var dA = dest(ctx), needA = 45 - (dA - 0.5) * 30;
+      if (ao(a, b) && BD.canBite(ctx, A, O) && pf.amagami >= 2 && ctx.stepIndex - (pf.since || 0) >= 4 && ctx.R(A, O).trust > needA && ctx.R(O, A).trust > needA && ctx.rng() < 0.3 + (pf.amagami - 2) * 0.2 + (dA - 0.5) * 0.3) {
         BD.bite(ctx, A, O, 'vow');
         ctx.mod2(A, O, { trust: 15, aff: 10 }, { trust: 15, aff: 10 });
         t += ctx.t(ctx.pick(['――{b}は髪をかき上げて、うなじを見せた。「ここも」{a}は息を呑み、それからゆっくりと、深く噛んだ。二人は番になった。', '――「次は、うなじにして」{b}の囁きに、{a}の手が震えた。噛み跡が残った瞬間、二人は番になった。']), A, O);
-        return { text: t, why: '両想いの愛咬から、番へ（信頼 ' + Math.round(ctx.R(A, O).trust) + '／' + Math.round(ctx.R(O, A).trust) + '）', mag: 45 };
+        return { text: t, why: '両想いの愛咬から、番へ（信頼 ' + Math.round(ctx.R(A, O).trust) + '／' + Math.round(ctx.R(O, A).trust) + '）' + destWhy(ctx), mag: 45 };
       }
       if (ao(a, b) && !BD.canBite(ctx, A, O) && ctx.om.everBonded[O.i] && BD.mateOf(ctx, O) !== A) t += ctx.t('{b}のうなじには、もう別の誰かの古い噛み跡がある。{a}はそこにだけは、決して歯を立てなかった。', A, O);
       return { text: t, why: '両想いの愛咬（' + lead.name + 'の' + tl + '優位な気質）', mag: 15 };
@@ -604,11 +642,13 @@
       var who = x && fated(ctx, a, x) ? a : b, left = who === a ? b : a;
       var wasBond = !!ctx.om.bonded[key(a, b)];
       var hold = ctx.R(who, left).aff + ctx.R(who, left).trust - (x ? ctx.R(who, x).att : 0) + (wasBond ? 30 : 0) + (wasBond && sx(who) === 'o' ? 200 : 0);
-      var keep = HK.clamp((hold - 60) / 120 + (who.tr.cp + who.tr.np - 0.9) * 0.4, 0.08, 0.8);
+      /* 運命の抗えなさ：高いほど恋人を捨てて運命へ走り、低いほど抗って今の恋人を選ぶ */
+      var d = dest(ctx), dw = '／運命の抗えなさ ' + Math.round(d * 100);
+      var keep = HK.clamp((hold - 60) / 120 + (who.tr.cp + who.tr.np - 0.9) * 0.4 + (0.5 - d) * 0.7, 0.03, 0.95);
       if (ctx.rng() < keep) {
-        pf.fatedPending = false; pf.resisted = true;
+        pf.fatedPending = false; pf.resisted = true; pf.resistedAt = ctx.stepIndex;
         ctx.mod2(who, left, { trust: 12, aff: 8 }, { trust: 15, aff: 10 });
-        return { text: ctx.t('{a}は{b}に、運命の番に出会ったことを打ち明けた。「それでも、選ぶのは{b}だ」――{b}は泣きながら笑った。', who, left), why: who.name + 'の積み上げた想い（好意＋信頼）が本能に勝った', mag: 35 };
+        return { text: ctx.t(d < 0.3 ? ctx.pick(['{a}は{b}に、運命の番に出会ったことを打ち明けた。「運命だって言われても、私が選んできたのは{b}だ」――{b}は泣きながら笑った。', '{a}は運命の番の匂いを知った。それでも帰る場所は変わらなかった。「本能に決めさせる気はない」{a}は{b}の手を取った。']) : '{a}は{b}に、運命の番に出会ったことを打ち明けた。「それでも、選ぶのは{b}だ」――{b}は泣きながら笑った。', who, left), why: who.name + 'の積み上げた想い（好意＋信頼）が本能に勝った' + dw, mag: 35 };
       }
       pf.couple = false; pf.fatedPending = false;
       ctx.om.fatedSplit[key(a, b)] = true;
@@ -616,8 +656,41 @@
       if (wasBond && sx(who) === 'a') BD.abandon(ctx, who, left, 'fated');
       ctx.mod2(who, left, { att: -15, ten: 8 }, { aff: -10, ten: 20, att: -5 });
       ctx.stress(left, 30);
-      if (wasBond) return { text: ctx.t('{a}と{b}は番だった。それでも、{a}の本能は運命の番の方を向いてしまった。{a}は{b}を置いて去った。――Ωの番は一生に一人。{b}のうなじの噛み跡は、その日から疼き続けている。', who, left), why: '運命の番（' + x.name + '）が、番の絆さえ上書きした', with: [x], mag: 45 };
-      return { text: ctx.t(ctx.pick(['「ごめん。会ってしまったんだ」{a}の言葉の意味を、{b}はすぐに理解した。運命の番には、勝てない。', '{b}は{a}の首元から、知らない誰かの匂いがすることに気づいていた。「……行きなよ」――二人は別れた。', '{a}は最後のデートの帰り道、{b}に別れを告げた。{b}は「運命って、ずるいね」とだけ言った。']), who, left), why: '運命の番（' + (x ? x.name : '') + '）が現れた', with: x ? [x] : null, mag: 40 };
+      if (wasBond) return { text: ctx.t('{a}と{b}は番だった。それでも、{a}の本能は運命の番の方を向いてしまった。{a}は{b}を置いて去った。――Ωの番は一生に一人。{b}のうなじの噛み跡は、その日から疼き続けている。', who, left), why: '運命の番（' + x.name + '）が、番の絆さえ上書きした' + dw, with: [x], mag: 45 };
+      return { text: ctx.t(d > 0.7 ? ctx.pick(['{a}は{b}に別れを告げるつもりはなかった。それでも足は、運命の番の匂いのする方へ勝手に向いた。「……ごめん。体が、もう」{b}は何も言えなかった。', '{b}は{a}の目を見て分かった。そこにいるのはもう、自分を見ている{a}ではなかった。運命の番の匂いが、{a}の理性を連れていってしまった。']) : ctx.pick(['「ごめん。会ってしまったんだ」{a}の言葉の意味を、{b}はすぐに理解した。運命の番には、勝てない。', '{b}は{a}の首元から、知らない誰かの匂いがすることに気づいていた。「……行きなよ」――二人は別れた。', '{a}は最後のデートの帰り道、{b}に別れを告げた。{b}は「運命って、ずるいね」とだけ言った。']), who, left), why: '運命の番（' + (x ? x.name : '') + '）が現れた' + dw, with: x ? [x] : null, mag: 40 };
+    }
+  });
+
+  /* 抗ったあとも、運命の抗えなさが高いと再び揺れる（揺れた末に、結局運命へ走ることもある） */
+  EV.push({
+    id: 'om_fated_waver', cat: 'romance', scope: 'pair', pri: true,
+    when: function (ctx, a, b) {
+      var pf = ctx.pair(a, b);
+      if (!pf.couple || !pf.resisted || dest(ctx) <= 0.5) return false;
+      if (ctx.stepIndex - (pf.waverAt == null ? pf.resistedAt || 0 : pf.waverAt) < 3) return false;
+      return ctx.present().some(function (o) { return o !== a && o !== b && (fated(ctx, a, o) || fated(ctx, b, o)) && ctx.om.met[key(fated(ctx, a, o) ? a : b, o)] && !partnerOf(ctx, o); });
+    },
+    w: function (ctx) { return (dest(ctx) - 0.5) * 3; },
+    run: function (ctx, a, b) {
+      var pf = ctx.pair(a, b), d = dest(ctx);
+      var x = ctx.present().filter(function (o) { return o !== a && o !== b && (fated(ctx, a, o) || fated(ctx, b, o)) && !partnerOf(ctx, o); })[0];
+      if (!x) return null;
+      var who = fated(ctx, a, x) ? a : b, left = who === a ? b : a;
+      pf.waverAt = ctx.stepIndex; pf.waver = (pf.waver || 0) + 1;
+      var dw = '／運命の抗えなさ ' + Math.round(d * 100);
+      /* 揺れた末に、本能が勝つ */
+      if (ctx.rng() < (d - 0.5) * 0.9 + pf.waver * 0.1 - (ctx.R(who, left).aff + ctx.R(who, left).trust) / 600) {
+        pf.couple = false; pf.resisted = false; pf.fatedWho = who.i;
+        ctx.om.fatedSplit[key(a, b)] = true;
+        if (ctx.om.bonded[key(a, b)] && sx(who) === 'a') BD.abandon(ctx, who, left, 'fated');
+        ctx.mod2(who, left, { att: -10, ten: 6 }, { aff: -12, ten: 18 });
+        ctx.stress(left, 30);
+        return { text: ctx.t(ctx.pick(['一度は抗った。それでも{a}の体は、{c}の匂いを忘れてくれなかった。「ごめん。もう、嘘がつけない」――{b}は{a}を引き止めなかった。', '{a}は{b}に「選ぶのは{b}だ」と言った。その言葉を、{a}自身の本能が裏切った。夜中、{a}は{c}の家の前に立っていた。']), who, left, x), why: who.name + 'は一度抗ったが、本能が勝った' + dw, with: [x], mag: 42 };
+      }
+      ctx.mod2(who, left, { att: -3, ten: 5 }, { ten: 6, trust: -4 });
+      ctx.mod(who, x, { att: 6 });
+      ctx.stress(who, 12);
+      return { cat: 'conflict', text: ctx.t(ctx.pick(['{a}は{c}とすれ違っただけで、その日一日、仕事が手につかなかった。帰ってきた{a}の顔を見て、{b}は何も訊かなかった。', '{a}は夜中に目を覚まし、{c}の匂いを探すように窓を開けた。隣で眠る{b}に気づかれないように、静かに閉めた。', '「まだ、あの人のこと考えてる？」{b}の問いに、{a}は「考えてない」と答えた。答えるのに、一秒だけ時間がかかった。']), who, left, x), why: who.name + 'の本能が、抗った決意を揺らしている' + dw, with: [x], mag: 16 };
     }
   });
 
@@ -671,11 +744,11 @@
     when: function (ctx, a, b) { return ctx.pair(a, b).couple && ao(a, b) && BD.canBite(ctx, alphaOf(a, b), omegaOf(a, b)) && !a.om.heat && !b.om.heat; },
     w: function () { return 0.7; },
     run: function (ctx, a, b) {
-      var A = alphaOf(a, b), O = omegaOf(a, b), rO = ctx.R(O, A), rA = ctx.R(A, O);
-      if (BD.canBite(ctx, A, O) && rO.trust > 45 && rA.trust > 45 && ctx.rng() < 0.5) {
+      var A = alphaOf(a, b), O = omegaOf(a, b), rO = ctx.R(O, A), rA = ctx.R(A, O), dB = dest(ctx), needB = 45 - (dB - 0.5) * 30;
+      if (BD.canBite(ctx, A, O) && rO.trust > needB && rA.trust > needB && ctx.rng() < 0.5 + (dB - 0.5) * 0.4) {
         BD.bite(ctx, A, O, 'vow');
         ctx.mod2(A, O, { trust: 15, aff: 10 }, { trust: 15, aff: 10 });
-        return { text: ctx.t(ctx.pick(['静かな夜だった。{b}は「今なら私、怖くない」と言って、うなじを差し出した。{a}は長いことためらってから、そっと噛んだ。二人は番になった。', '{a}は指輪の箱を開けた。「番になってほしい。順番、逆かもしれないけど」――{b}は笑って、うなじの髪を払った。']), A, O), why: '十分な信頼（' + Math.round(rA.trust) + '／' + Math.round(rO.trust) + '）。発情期でなくても番を選んだ', mag: 40 };
+        return { text: ctx.t(ctx.pick(['静かな夜だった。{b}は「今なら私、怖くない」と言って、うなじを差し出した。{a}は長いことためらってから、そっと噛んだ。二人は番になった。', '{a}は指輪の箱を開けた。「番になってほしい。順番、逆かもしれないけど」――{b}は笑って、うなじの髪を払った。']), A, O), why: '十分な信頼（' + Math.round(rA.trust) + '／' + Math.round(rO.trust) + '）。発情期でなくても番を選んだ' + destWhy(ctx), mag: 40 };
       }
       ctx.mod2(A, O, { att: 2 }, { att: 2 });
       return { text: ctx.t(ctx.pick(['{b}はうなじに触れながら「いつか」と言った。{a}は「いつでも」と言った。', '{a}は{b}のうなじを見つめて、目を逸らした。まだ、その覚悟はなかった。', '{b}は首を守るチョーカーを、{a}の前でだけ外すようになった。']), A, O), why: '番になるかどうか、まだ迷っている' };
@@ -907,7 +980,7 @@
     ctx.flags.omega = {
       months: Math.ceil((ctx.stepIndex + 1) / 2), ending: E, couples: couples.map(function (x) { return [x[0].i, x[1].i, !!om.bonded[key(x[0], x[1])]]; }),
       bites: om.bites, heats: om.heats, amagami: om.amagami, switched: om.switched.slice(), quit: om.quit.slice(), dates: om.dates.slice(), gifts: om.gifts.slice(),
-      fatedSplit: Object.keys(om.fatedSplit), hesitate: Object.keys(om.hesitate).filter(function (k) { return om.hesitate[k]; }),
+      fatedSplit: Object.keys(om.fatedSplit), resisted: Object.keys(ctx.pf).filter(function (k) { return ctx.pf[k].resisted; }), instinctBites: Object.keys(om.instinctBite || {}), destiny: ctx.env.destiny, hesitate: Object.keys(om.hesitate).filter(function (k) { return om.hesitate[k]; }),
       rivals: Object.keys(om.rival).map(function (k) { return { k: k, o: om.rival[k] }; }), scars: Object.keys(om.scar).map(function (i) { return { i: +i, kind: om.scar[i].kind, by: om.scar[i].by }; }),
       cases: om.det.solved,
       sex: P.map(function (c) { return c.om.sex; }), orig: P.map(function (c) { return c.om.orig; }), job: P.map(function (c) { return jobName(c); })

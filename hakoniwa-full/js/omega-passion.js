@@ -61,8 +61,9 @@
     var om = ctx.om, k = key(a, b), pf = ctx.pair(a, b);
     if (om.fatedKnown[k]) return null;
     om.fatedKnown[k] = true; om.met[k] = true; om.fatedVia[k] = via;
-    var A = alphaOf(a, b), O = omegaOf(a, b), mate = BD.mateOf(ctx, O);
-    [[a, b], [b, a]].forEach(function (x) { var r = ctx.R(x[0], x[1]); r.att = HK.clamp(r.att + 28, 0, 100); r.aff = HK.clamp(r.aff + 8, -100, 100); });
+    var A = alphaOf(a, b), O = omegaOf(a, b), mate = BD.mateOf(ctx, O), d = OM.destiny ? OM.destiny(ctx) : 0.5;
+    /* 気づいた瞬間の惹かれの立ち上がりは、運命の抗えなさで変わる（+12〜+44） */
+    [[a, b], [b, a]].forEach(function (x) { var r = ctx.R(x[0], x[1]); r.att = HK.clamp(r.att + 12 + d * 32, 0, 100); r.aff = HK.clamp(r.aff + 4 + d * 8, -100, 100); });
     var late = mate && mate !== A;
     var vk = late ? 'late' : via;
     var t = ctx.pick(REALIZE[vk]);
@@ -70,7 +71,7 @@
     t = t.replace(/\{o\}/g, O.name).replace(/\{x\}/g, A.name).replace(/\{so\}/g, OM.shortScent(O)).replace(/\{m\}/g, mate ? mate.name : '')
       .replace(/\{c\}/g, c.name).replace(/\{d\}/g, d.name).replace(/\{sd\}/g, OM.shortScent(d)).replace(/\{x2\}/g, I(a) === '俺' ? '俺' : '私');
     t = OM.sc(ctx.t(t, a, b), a, b);
-    var why = '運命の番（住人のなかに隠れていた）に気づいた：' + { heat: '発情期の匂い', touch: '触れた瞬間', kiss: '唇・肌が触れた瞬間', test: 'フェロモン適合検査', dream: '重なる周期と夢', sw: 'スイッチでα×Ωになった' }[via];
+    var why = '運命の番（住人のなかに隠れていた）に気づいた：' + { heat: '発情期の匂い', touch: '触れた瞬間', kiss: '唇・肌が触れた瞬間', test: 'フェロモン適合検査', dream: '重なる周期と夢', sw: 'スイッチでα×Ωになった' }[via] + (OM.destinyWhy ? OM.destinyWhy(ctx) : '');
     if (late) {
       om.fatedLate[k] = true; om.lateEndAt = ctx.stepIndex + 6;
       ctx.mod2(A, O, { ten: 10 }, { ten: 10 }); ctx.stress(O, 25); ctx.stress(A, 15);
@@ -225,10 +226,14 @@
       var holder = pb ? b : a, part = pb || pa, rh = ctx.R(holder, part), other = holder === b ? a : b;
       var hold = rh.aff + rh.trust * 0.6 + (holder.tr.cp + holder.tr.ac) * 20 - ctx.R(holder, other).att * 1.15 - holder.tr.impulse * 28 - rh.ten * 0.5 - (heatOn(holder) || heatOn(other) ? 30 : 0) + (pf.night ? -10 : 0);
       if (holder === a) hold -= 25; /* 自分から浮気を仕掛ける側は、もう半分踏み外している */
+      /* 相手が運命の番なら、運命の抗えなさが高いほど踏みとどまれない（低ければ逆に踏みとどまる） */
+      var fd = OM.isFated && OM.isFated(ctx, a, b) ? ((OM.destiny ? OM.destiny(ctx) : 0.5) - 0.5) * 70 : 0;
+      hold -= fd;
+      var fdw = fd ? OM.destinyWhy(ctx) : '';
       if (hold > ctx.rng() * 90) {
         ctx.mod2(a, b, { att: 2, ten: 7 }, { ten: 8, trust: -6 });
         if (pb) ctx.mod(b, pb, { trust: 5, aff: 3 });
-        return { cat: 'conflict', text: fill(ctx, ctx.pick(holder === a ? NT.refuseSelf : NT.refuse).replace(/私／俺/, I(b)), a, b, pb || pa), why: holder.name + 'は恋人（' + part.name + '）への想い（好意 ' + Math.round(rh.aff) + '・信頼 ' + Math.round(rh.trust) + '）で踏みとどまった', with: part ? [part] : null, mag: 14 };
+        return { cat: 'conflict', text: fill(ctx, ctx.pick(holder === a ? NT.refuseSelf : NT.refuse).replace(/私／俺/, I(b)), a, b, pb || pa), why: holder.name + 'は恋人（' + part.name + '）への想い（好意 ' + Math.round(rh.aff) + '・信頼 ' + Math.round(rh.trust) + '）で踏みとどまった' + fdw, with: part ? [part] : null, mag: 14 };
       }
       pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.affair = true;
       var cheater = holder, victim = part;
@@ -245,7 +250,7 @@
       if (motive === 'cheat') t2 = t2.replace(/\{a\}/g, '{A}').replace(/\{b\}/g, '{a}').replace(/\{A\}/g, '{b}').replace(/\{sa\}/g, '{SA}').replace(/\{sb\}/g, '{sa}').replace(/\{SA\}/g, '{sb}');
       var t = ctx.pick(motive === 'cheat' && HK.Pos && !hTop && HK.Pos.hardTop(b) ? NT.cheat.filter(function (l) { return !/上着を脱がせた/.test(l); }) : NT[motive]) + t2;
       var why = motive === 'rival' ? a.name + 'は恋敵の' + pb.name + 'から奪いたかった（緊張 ' + Math.round(ctx.R(a, pb).ten) + '）' : motive === 'steal' ? a.name + 'の惹かれ（' + Math.round(ctx.R(a, b).att) + '）と衝動性。恋人のいる' + b.name + 'が拒みきれなかった' : a.name + 'には恋人（' + pa.name + '）がいる。それでも' + b.name + 'への惹かれ（' + Math.round(ctx.R(a, b).att) + '）が勝った';
-      return { text: fill(ctx, t, a, b, part), why: why + (hateLove(ctx, a, b) ? '／愛憎' : ''), mag: 32 };
+      return { text: fill(ctx, t, a, b, part), why: why + (hateLove(ctx, a, b) ? '／愛憎' : '') + (fd ? '／運命の番' + fdw : ''), mag: 32 };
     }
   });
 
