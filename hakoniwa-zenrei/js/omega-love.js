@@ -145,7 +145,8 @@
       var bond = bonded(ctx, a, b), pf = ctx.pair(a, b);
       pf.loveAt = ctx.stepIndex; pf.nights = (pf.nights || 0) + 1;
       ctx.om.sexN = (ctx.om.sexN || 0) + 1;
-      var s = scene(ctx, a, b, bond);
+      /* OM.loveScene を通す（R18版では omega-thick.js が段落に分けた版・男性向けに包む） */
+      var s = (OM.loveScene || scene)(ctx, a, b, bond);
       ctx.mod2(a, b, { att: 5, aff: 4, trust: 3 }, { att: 5, aff: 4, trust: 3 });
       ctx.stress(a, -10); ctx.stress(b, -10);
       return { text: s.text, why: (bond ? '番になった二人。番の匂いが、何度でも二人を引き寄せる' : '恋人どうし（互いの惹かれ）') + '／' + CB_LABEL[s.cb] + '（' + s.A.name + 'が攻め）', mag: bond ? 22 : 15 };

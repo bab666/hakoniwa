@@ -6557,6 +6557,7 @@
   };
   /* 場所ならではの一文（感じていく段落に添える） */
   T.PLACE = {
+    omega: L('二人分のフェロモンが混ざり合い、部屋じゅうが甘い匂いで満ちていた。|うなじの奥が、触れられてもいないのにじんと疼いた。|抑制剤の効き目は、とうに切れていた。|熱に浮かされた肌が、触れ合うたびに汗で吸いついた。|甘い匂いが濃くなるたびに、理性が一枚ずつ剥がれていった。'),
     ship: L('寝台の固定帯が、二人分の重みで軋んだ。|観測窓の外を、名も知らない星がゆっくり流れていった。|換気扇の低い唸りが、二人の荒い息をかき消していった。|重力の弱い夜で、揺れるたびに二人の体がふわりと浮きかけた。|非常灯の赤い光が、汗ばんだ肌をぼんやりと照らしていた。'),
     island: L('寄せては返す波の音が、二人の荒い息をさらっていった。|焚き火の明かりが、重なった二つの影を岩壁に大きく映していた。|背中の下で、椰子の葉の寝床がかさかさと鳴った。|潮の匂いと汗の匂いが混ざって、どちらの肌のものか分からなくなった。|洞窟の奥に、二人分の声だけがこもって響いた。'),
     zombie: L('窓の外で、ゾンビの呻き声が遠ざかっては近づいた。二人は声を殺し、それでも止まれなかった。|バリケードの向こうで何かが倒れる音がした。二人は息を止め、それから、もっと強く抱き合った。|懐中電灯の消えた暗闇で、確かなのは互いの体温だけだった。|生きている。触れ合うたびに、その実感が体の奥から込み上げてきた。|埃っぽい毛布の上で、二人分の熱い息が混ざり合った。'),
@@ -14627,7 +14628,8 @@
       var bond = bonded(ctx, a, b), pf = ctx.pair(a, b);
       pf.loveAt = ctx.stepIndex; pf.nights = (pf.nights || 0) + 1;
       ctx.om.sexN = (ctx.om.sexN || 0) + 1;
-      var s = scene(ctx, a, b, bond);
+      /* OM.loveScene を通す（R18版では omega-thick.js が段落に分けた版・男性向けに包む） */
+      var s = (OM.loveScene || scene)(ctx, a, b, bond);
       ctx.mod2(a, b, { att: 5, aff: 4, trust: 3 }, { att: 5, aff: 4, trust: 3 });
       ctx.stress(a, -10); ctx.stress(b, -10);
       return { text: s.text, why: (bond ? '番になった二人。番の匂いが、何度でも二人を引き寄せる' : '恋人どうし（互いの惹かれ）') + '／' + CB_LABEL[s.cb] + '（' + s.A.name + 'が攻め）', mag: bond ? 22 : 15 };
@@ -15259,6 +15261,24 @@
   }
   /* 女性どうしで、二人ともリバでないときは、脚を重ねる・双頭の玩具の文を除く */
   function ffOk(riba) { return function (x) { return riba || !/擦り合わせ|双頭/.test(x); }; }
+  /* R18の描写の設定（lewd-unify.js）：数行で短く＝元の一段落の版、男性向け＝thick-sex-ero.js の山場＋結びの男性向けの一文 */
+  function lw(ctx) {
+    var X = HK.Lewd, c = X && X.conf('omega');
+    return { short: c ? X.short(ctx.env, ctx.rng) : false, ero: !!(c && X.ero(ctx.env) && HK.ThickEro) };
+  }
+  /* 結び（α×Ω）の男性向け：{a}＝α（攻め）、{b}＝受け */
+  var KNOT_ERO = L('{a}の根元がぐぷりと膨らみ、{b}のナカに深く結びついた。抜けなくなったまま、熱いものがどくどくと注がれ続ける。{s:cum}。{b}「{mb2}」|結ばれたまま奥をぐりぐりと押し上げられて、{b}はイきっぱなしになった。{s:cum}。{b}「{mb2}」――注がれるたびに、うなじの奥が甘く疼いた。|{a}は{b}のうなじに歯を立てながら、結びついた根元で最後の一滴まで注ぎ込んだ。{s:cum}。{b}「{mb2}」');
+  function eroScene(ctx, T, U, head, after, kd) {
+    var pk = function (arr) { return ctx.pick(arr); }, TE = HK.ThickEro, st = lw.last;
+    var r = st && st.short ? TE.short({ S: ctx, pick: pk, a: T, b: U }) : TE.scene({ S: ctx, pick: pk, rng: ctx.rng, a: T, b: U, style: HK.ThickSex ? HK.ThickSex.style(T) : 'gentle', place: 'omega', again: ctx.env.lewd === 'high' });
+    var t = r.text;
+    var aT = !!(T.om && T.om.sex === 'a');
+    if (kd !== 'ff' && kd !== 'ride' && aT && !(st && st.short)) t += '\n\n' + TE.fill(ctx, pk(KNOT_ERO), T, U);
+    t = t.replace(/\{a\}/g, T.name).replace(/\{b\}/g, U.name);
+    if (HK.Pos.ff(T, U) && HK.FF) t = HK.FF.fix(ctx, t, T, U, { tools: true });
+    var sc = OM.sc || function (x) { return x; };
+    return (head ? head + (st && st.short ? '' : '\n\n') : '') + sc(t, T, U) + (after ? (st && st.short ? '' : '\n\n') + after : '');
+  }
   var h0 = H.scene;
   H.scene = function (ctx, a, b, opt) {
     opt = opt || {};
@@ -15267,6 +15287,12 @@
     /* {a}=相手、{b}=発情期のΩ。受け攻めの指定でΩが攻めなら入れ替える */
     var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1], rev = T === b;
     if (!TK.ok(T, U)) return h0.apply(this, arguments);
+    var L1 = lw.last = lw(ctx);
+    if (L1.short && !L1.ero) return h0.apply(this, arguments);
+    if (L1.ero) {
+      var sc0 = OM.sc || function (t) { return t; };
+      return eroScene(ctx, T, U, sc0(ctx.t(ctx.pick(H.COME[HK.voiceTop(a)]) + ctx.pick(H.STATE[HK.voiceTop(b)]), a, b), a, b), sc0(ctx.t(ctx.pick(H.AFTER[HK.voiceTop(b)]), a, b), a, b), TK.kind(T, U, 'omega'));
+    }
     var ff = HK.Pos.ff(a, b), kT = rev ? 'b' : 'a', kU = rev ? 'a' : 'b', hi = lew === 'high', lk = hi ? 'high' : 'mid';
     var pk = function (arr) { return ctx.pick(arr); };
     var kd = TK.kind(T, U, 'omega'), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(T, U);
@@ -15297,6 +15323,9 @@
     if (!TK.on(lew) || !HK.Pos || !HK.Voice || !s || !s.A) return s;
     var A = s.A, B = s.B, LV = OM.LOVE;
     if (!TK.ok(A, B)) return s;
+    var L2 = lw.last = lw(ctx);
+    if (L2.short && !L2.ero) return s;
+    if (L2.ero) { s.text = (s.text.match(/^[^。]*。/) || [''])[0] + (L2.short ? '' : '\n\n') + eroScene(ctx, A, B, '', '', TK.kind(A, B, 'omega')); return s; }
     var pk = function (arr) { return ctx.pick(arr); }, ff = HK.Pos.ff(A, B), hi = lew === 'high';
     var kd = TK.kind(A, B, 'omega'), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(A, B);
     var cp = cbPlay(pk, A, B, kd, riba), extra = [cp.play];
@@ -15328,9 +15357,13 @@
     e.run = function (ctx, a, b) {
       var res = r0.apply(this, arguments);
       var lew = ctx.env.lewd || 'mid';
-      if (!res || typeof res.text !== 'string' || !TK.on(lew) || !HK.Pos || !HK.Voice || ctx.rng() > 0.5) return res;
+      if (!res || typeof res.text !== 'string' || !TK.on(lew) || !HK.Pos || !HK.Voice) return res;
+      /* 描写の長さ：厚く＝いつも段落の版、混ぜる＝半分、短く＝元の文のまま（設定をそろえる前の入力は半分） */
+      var X = HK.Lewd, cf = X && X.conf('omega'), L3 = lw.last = lw(ctx);
+      if (cf ? (L3.short && !L3.ero) : ctx.rng() > 0.5) return res;
       var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1];
       if (!TK.ok(T, U)) return res;
+      if (L3.ero) { res.text = (res.text.match(/^[^。]*。/) || [''])[0] + (L3.short ? '' : '\n\n') + eroScene(ctx, T, U, '', '', TK.kind(T, U, 'omega')); return res; }
       var pk = function (arr) { return ctx.pick(arr); }, ff = HK.Pos.ff(a, b);
       var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: lew === 'high' ? 3 : 1, rough: hate, lead: hate ? pk(HATE_LEAD) : '', after: hate ? pk(HATE_END) : null });
       var sc = OM.sc || function (t) { return t; };
@@ -50910,6 +50943,9 @@
   X.install('jashin', { desc: '夜の出来事の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで' });
   /* 吹雪の館の殺人：媚薬の夜・誘惑・吊り橋・大浴場・凍える夜など（solo-yakata-r18.js・r18-thick.js・story-lewd.js）。「夜の出来事の起こりやすさ」「快楽殺人の起きやすさ」はそのまま残す */
   X.install('yakata', { desc: '夜の出来事の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで' });
+  /* オメガバース：もとの「描写の濃さ」（朝チュン・ほどほど・濃いめ）を描写の有無にそのまま読み替える（値は同じ low/mid/high）。
+     発情期の夜・恋人と番の夜・勢いの夜・愛憎の夜（omega-heat.js・omega-love.js・omega-thick.js）。濃い＝プレイと結びを重ねて深く */
+  X.install('omega', { desc: '夜の描き方。ほのめかす＝朝チュン／ほどほど＝描写する／濃い＝プレイや結びを重ねて深く描く' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */

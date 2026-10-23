@@ -533,6 +533,24 @@
   }
   /* 女性どうしで、二人ともリバでないときは、脚を重ねる・双頭の玩具の文を除く */
   function ffOk(riba) { return function (x) { return riba || !/擦り合わせ|双頭/.test(x); }; }
+  /* R18の描写の設定（lewd-unify.js）：数行で短く＝元の一段落の版、男性向け＝thick-sex-ero.js の山場＋結びの男性向けの一文 */
+  function lw(ctx) {
+    var X = HK.Lewd, c = X && X.conf('omega');
+    return { short: c ? X.short(ctx.env, ctx.rng) : false, ero: !!(c && X.ero(ctx.env) && HK.ThickEro) };
+  }
+  /* 結び（α×Ω）の男性向け：{a}＝α（攻め）、{b}＝受け */
+  var KNOT_ERO = L('{a}の根元がぐぷりと膨らみ、{b}のナカに深く結びついた。抜けなくなったまま、熱いものがどくどくと注がれ続ける。{s:cum}。{b}「{mb2}」|結ばれたまま奥をぐりぐりと押し上げられて、{b}はイきっぱなしになった。{s:cum}。{b}「{mb2}」――注がれるたびに、うなじの奥が甘く疼いた。|{a}は{b}のうなじに歯を立てながら、結びついた根元で最後の一滴まで注ぎ込んだ。{s:cum}。{b}「{mb2}」');
+  function eroScene(ctx, T, U, head, after, kd) {
+    var pk = function (arr) { return ctx.pick(arr); }, TE = HK.ThickEro, st = lw.last;
+    var r = st && st.short ? TE.short({ S: ctx, pick: pk, a: T, b: U }) : TE.scene({ S: ctx, pick: pk, rng: ctx.rng, a: T, b: U, style: HK.ThickSex ? HK.ThickSex.style(T) : 'gentle', place: 'omega', again: ctx.env.lewd === 'high' });
+    var t = r.text;
+    var aT = !!(T.om && T.om.sex === 'a');
+    if (kd !== 'ff' && kd !== 'ride' && aT && !(st && st.short)) t += '\n\n' + TE.fill(ctx, pk(KNOT_ERO), T, U);
+    t = t.replace(/\{a\}/g, T.name).replace(/\{b\}/g, U.name);
+    if (HK.Pos.ff(T, U) && HK.FF) t = HK.FF.fix(ctx, t, T, U, { tools: true });
+    var sc = OM.sc || function (x) { return x; };
+    return (head ? head + (st && st.short ? '' : '\n\n') : '') + sc(t, T, U) + (after ? (st && st.short ? '' : '\n\n') + after : '');
+  }
   var h0 = H.scene;
   H.scene = function (ctx, a, b, opt) {
     opt = opt || {};
@@ -541,6 +559,12 @@
     /* {a}=相手、{b}=発情期のΩ。受け攻めの指定でΩが攻めなら入れ替える */
     var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1], rev = T === b;
     if (!TK.ok(T, U)) return h0.apply(this, arguments);
+    var L1 = lw.last = lw(ctx);
+    if (L1.short && !L1.ero) return h0.apply(this, arguments);
+    if (L1.ero) {
+      var sc0 = OM.sc || function (t) { return t; };
+      return eroScene(ctx, T, U, sc0(ctx.t(ctx.pick(H.COME[HK.voiceTop(a)]) + ctx.pick(H.STATE[HK.voiceTop(b)]), a, b), a, b), sc0(ctx.t(ctx.pick(H.AFTER[HK.voiceTop(b)]), a, b), a, b), TK.kind(T, U, 'omega'));
+    }
     var ff = HK.Pos.ff(a, b), kT = rev ? 'b' : 'a', kU = rev ? 'a' : 'b', hi = lew === 'high', lk = hi ? 'high' : 'mid';
     var pk = function (arr) { return ctx.pick(arr); };
     var kd = TK.kind(T, U, 'omega'), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(T, U);
@@ -571,6 +595,9 @@
     if (!TK.on(lew) || !HK.Pos || !HK.Voice || !s || !s.A) return s;
     var A = s.A, B = s.B, LV = OM.LOVE;
     if (!TK.ok(A, B)) return s;
+    var L2 = lw.last = lw(ctx);
+    if (L2.short && !L2.ero) return s;
+    if (L2.ero) { s.text = (s.text.match(/^[^。]*。/) || [''])[0] + (L2.short ? '' : '\n\n') + eroScene(ctx, A, B, '', '', TK.kind(A, B, 'omega')); return s; }
     var pk = function (arr) { return ctx.pick(arr); }, ff = HK.Pos.ff(A, B), hi = lew === 'high';
     var kd = TK.kind(A, B, 'omega'), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(A, B);
     var cp = cbPlay(pk, A, B, kd, riba), extra = [cp.play];
@@ -602,9 +629,13 @@
     e.run = function (ctx, a, b) {
       var res = r0.apply(this, arguments);
       var lew = ctx.env.lewd || 'mid';
-      if (!res || typeof res.text !== 'string' || !TK.on(lew) || !HK.Pos || !HK.Voice || ctx.rng() > 0.5) return res;
+      if (!res || typeof res.text !== 'string' || !TK.on(lew) || !HK.Pos || !HK.Voice) return res;
+      /* 描写の長さ：厚く＝いつも段落の版、混ぜる＝半分、短く＝元の文のまま（設定をそろえる前の入力は半分） */
+      var X = HK.Lewd, cf = X && X.conf('omega'), L3 = lw.last = lw(ctx);
+      if (cf ? (L3.short && !L3.ero) : ctx.rng() > 0.5) return res;
       var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1];
       if (!TK.ok(T, U)) return res;
+      if (L3.ero) { res.text = (res.text.match(/^[^。]*。/) || [''])[0] + (L3.short ? '' : '\n\n') + eroScene(ctx, T, U, '', '', TK.kind(T, U, 'omega')); return res; }
       var pk = function (arr) { return ctx.pick(arr); }, ff = HK.Pos.ff(a, b);
       var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: lew === 'high' ? 3 : 1, rough: hate, lead: hate ? pk(HATE_LEAD) : '', after: hate ? pk(HATE_END) : null });
       var sc = OM.sc || function (t) { return t; };

@@ -14697,7 +14697,8 @@
       var bond = bonded(ctx, a, b), pf = ctx.pair(a, b);
       pf.loveAt = ctx.stepIndex; pf.nights = (pf.nights || 0) + 1;
       ctx.om.sexN = (ctx.om.sexN || 0) + 1;
-      var s = scene(ctx, a, b, bond);
+      /* OM.loveScene を通す（R18版では omega-thick.js が段落に分けた版・男性向けに包む） */
+      var s = (OM.loveScene || scene)(ctx, a, b, bond);
       ctx.mod2(a, b, { att: 5, aff: 4, trust: 3 }, { att: 5, aff: 4, trust: 3 });
       ctx.stress(a, -10); ctx.stress(b, -10);
       return { text: s.text, why: (bond ? '番になった二人。番の匂いが、何度でも二人を引き寄せる' : '恋人どうし（互いの惹かれ）') + '／' + CB_LABEL[s.cb] + '（' + s.A.name + 'が攻め）', mag: bond ? 22 : 15 };
@@ -40137,6 +40138,9 @@
   X.install('jashin', { desc: '夜の出来事の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで' });
   /* 吹雪の館の殺人：媚薬の夜・誘惑・吊り橋・大浴場・凍える夜など（solo-yakata-r18.js・r18-thick.js・story-lewd.js）。「夜の出来事の起こりやすさ」「快楽殺人の起きやすさ」はそのまま残す */
   X.install('yakata', { desc: '夜の出来事の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで' });
+  /* オメガバース：もとの「描写の濃さ」（朝チュン・ほどほど・濃いめ）を描写の有無にそのまま読み替える（値は同じ low/mid/high）。
+     発情期の夜・恋人と番の夜・勢いの夜・愛憎の夜（omega-heat.js・omega-love.js・omega-thick.js）。濃い＝プレイと結びを重ねて深く */
+  X.install('omega', { desc: '夜の描き方。ほのめかす＝朝チュン／ほどほど＝描写する／濃い＝プレイや結びを重ねて深く描く' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */
