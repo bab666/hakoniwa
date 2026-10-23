@@ -43485,6 +43485,21 @@
     var x = TE.again(S, function (arr) { return S.rng.pick(arr); }, t, u, false, short).replace(/\{a\}/g, t.name).replace(/\{b\}/g, u.name);
     return short ? x : x + '\n\n';
   };
+  /* ---------- 書き足し用の型（作者が書く欄。空のあいだは何も出ない） ----------
+     描写の作風「男性向け」で、生き物に襲われる側（自分で攻めを選んでいない人）の場面のあとに足す段落。
+     ・場面の種類ごとの欄：lure（誘われていると分からなかった）／force（強引に迫られた）／take（攫われた）／probe（体を調べられた）／
+       invade（体の中に入り込まれた）／civ（文明の住人の誘い）／alien（そのほかの異星の生き物）。any はどの種類にも使う
+     ・一つの欄に何文でも入れられる（そのたびに一つを選ぶ）。文は '…' で囲んで , で区切る
+     ・使える差し込み：{a}＝襲われた船員の名前、{x}＝生き物の名前、{b}＝その船員といちばん近しい仲間の名前、
+       {m0}{m1}{m2}＝{a} の喘ぎ（0 こらえる／1 とろける／2 崩れる。態度9種で ero-kit.js が選ぶ。「{a}「{m1}」」のように台詞の中に置く）、
+       {s:wet}{s:hit}{s:cum}{s:suck}＝擬音
+     ・段落の区切りは \n\n。登場人物はすべて成人として扱うこと
+     xEroAgainV：描写の有無「濃い」のとき、上の段落のあとに足すもう一段（空なら小説調の xAgain を使う） */
+  R.xEroV = { lure: [], force: [], take: [], probe: [], invade: [], civ: [], alien: [], any: [] };
+  R.xEroAgainV = [];
+  /* 書いた文の欄を選ぶ（空の欄は飛ばす） */
+  R.xEroPool = function (kind) { var V = R.xEroV || {}; return (V[kind] || []).concat(V.any || []).filter(function (t) { return t && String(t).trim(); }); };
+
   /* 生き物の場面の喘ぎ・擬音を埋める */
   R.xFill = function (S, text, a, top) {
     if (!E) return text;
@@ -44086,7 +44101,7 @@
     var lw0 = lewdOf(S), xl = HK.Lewd && HK.Lewd.conf('ship') ? S.env.lewdLen : 'mix';
     var tk = xl !== 'short' && lw0.lv !== 'low' && X2.thick && X2.thick(S, d, m, a, top, body, ft, xl === 'thick');
     if (tk) t = F(tk, v);
-    t = xLewd(S, a, top, t, v);
+    t = xLewd(S, a, top, t, v, m);
     a.cnt.r18 = (a.cnt.r18 || 0) + 1;
     if (!top) { stress(a, m === 'lure' ? 6 : m === 'probe' ? 8 : 14); a.m.fear = clamp(a.m.fear + (m === 'force' || m === 'take' ? 8 : 2), 0, 100); }
     else stress(a, -5);
@@ -44106,7 +44121,7 @@
     var o = rng.pick(src), a = rng.pick(live(S)), b = closest(S, a) || { name: '仲間' };
     var top = HK.Pos && HK.Pos.hardTop(a), m = { a: a.name, b: b.name, x: o.x };
     var t = F(pk(S, o.pool), m) + (top ? F(pk(S, X.lureTop), m) : F(pk(S, X.huge), m) + F(pk(S, X.hugeAct), m) + F(pk(S, X.lureAfter), m));
-    t = xLewd(S, a, top, t, m);
+    t = xLewd(S, a, top, t, m, o.pool === X.lureCiv ? 'civ' : 'lure');
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; stress(a, top ? -5 : 8);
     var r = ST.say(S, { actors: [a], tag: '異種族の誘い', kind: 'climax', text: t, why: o.x + 'の誘い。言葉が通じず、誘われているとは分からなかった' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 32 });
     if (!S.lureKey) { S.lureKey = true; ST.key(S, r, a.name + 'と' + o.x); }
@@ -44444,13 +44459,20 @@
     return bodyOf(S, t, u, 'night');
   }
   /* 異星の生き物との場面：ほのめかす＝ぼかした一文、男性向け＝段落を足す、濃い＝もう一度 */
-  function xLewd(S, a, top, text, v) {
+  /* kind：lure／force／take／probe／invade（xeno の型）・civ（文明の住人の誘い）・alien（そのほか） */
+  function xLewd(S, a, top, text, v, kind) {
     var R = SH.R18, lw = lewdOf(S);
     if (!R || !R.xFade) return text;
     if (lw.lv === 'low') return F(pk(S, top ? R.xFadeTop : R.xFade), v);
-    /* 男性向けの段落は、自分で攻めを選んで生き物を責める側のときだけ（襲われる場面は合意がないので足さない） */
-    if (lw.ero && top) text += (/\n\n/.test(text) ? '\n\n' : '') + F(R.xFill(S, pk(S, R.xEroTop), a, top), v);
-    if (lw.high) text += (/\n\n/.test(text) ? '\n\n' : '') + F(pk(S, R.xAgain), v);
+    var sep = function () { return /\n\n/.test(text) ? '\n\n' : ''; };
+    /* 男性向けの段落：自分で攻めを選んで生き物を責める側は xEroTop。襲われる側は、作者が書き足す欄（ship-lewd.js の R.xEroV）に文があるときだけ */
+    var pool = lw.ero && !top && R.xEroPool ? R.xEroPool(kind || 'alien') : [], added = false;
+    if (lw.ero && top) text += sep() + F(R.xFill(S, pk(S, R.xEroTop), a, top), v);
+    else if (pool.length) { text += sep() + F(R.xFill(S, pk(S, pool), a, false), v); added = true; }
+    if (lw.high) {
+      var ag = added && R.xEroAgainV ? R.xEroAgainV.filter(function (t) { return t && String(t).trim(); }) : [];
+      text += sep() + F(ag.length ? R.xFill(S, pk(S, ag), a, false) : pk(S, R.xAgain), v);
+    }
     return text;
   }
   function nightR18(S) {
@@ -44476,7 +44498,7 @@
     var R = SH.R18, top = HK.Pos && HK.Pos.hardTop(a);
     var X = SH.X, sp = !top && X && X.play[d.kind] && S.rng() < 0.6 ? X.play[d.kind] : null;
     if (!sp && !/friendly|symbiotic|parasite|plant/.test(d.kind)) return;
-    ST.say(S, { actors: [a], tag: '異星の生き物', kind: 'climax', text: xLewd(S, a, top, F(pk(S, sp || (top ? R.alienTop : R.alien)), { a: a.name, x: d.name }), { a: a.name, x: d.name }), why: d.name + '（' + LIFE_JP[d.kind] + '）' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 28 });
+    ST.say(S, { actors: [a], tag: '異星の生き物', kind: 'climax', text: xLewd(S, a, top, F(pk(S, sp || (top ? R.alienTop : R.alien)), { a: a.name, x: d.name }), { a: a.name, x: d.name, b: (closest(S, a) || { name: '仲間' }).name }, 'alien'), why: d.name + '（' + LIFE_JP[d.kind] + '）' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 28 });
   }
 
   /* ---------- 結果 ---------- */

@@ -36,6 +36,21 @@
     var x = TE.again(S, function (arr) { return S.rng.pick(arr); }, t, u, false, short).replace(/\{a\}/g, t.name).replace(/\{b\}/g, u.name);
     return short ? x : x + '\n\n';
   };
+  /* ---------- 書き足し用の型（作者が書く欄。空のあいだは何も出ない） ----------
+     描写の作風「男性向け」で、生き物に襲われる側（自分で攻めを選んでいない人）の場面のあとに足す段落。
+     ・場面の種類ごとの欄：lure（誘われていると分からなかった）／force（強引に迫られた）／take（攫われた）／probe（体を調べられた）／
+       invade（体の中に入り込まれた）／civ（文明の住人の誘い）／alien（そのほかの異星の生き物）。any はどの種類にも使う
+     ・一つの欄に何文でも入れられる（そのたびに一つを選ぶ）。文は '…' で囲んで , で区切る
+     ・使える差し込み：{a}＝襲われた船員の名前、{x}＝生き物の名前、{b}＝その船員といちばん近しい仲間の名前、
+       {m0}{m1}{m2}＝{a} の喘ぎ（0 こらえる／1 とろける／2 崩れる。態度9種で ero-kit.js が選ぶ。「{a}「{m1}」」のように台詞の中に置く）、
+       {s:wet}{s:hit}{s:cum}{s:suck}＝擬音
+     ・段落の区切りは \n\n。登場人物はすべて成人として扱うこと
+     xEroAgainV：描写の有無「濃い」のとき、上の段落のあとに足すもう一段（空なら小説調の xAgain を使う） */
+  R.xEroV = { lure: [], force: [], take: [], probe: [], invade: [], civ: [], alien: [], any: [] };
+  R.xEroAgainV = [];
+  /* 書いた文の欄を選ぶ（空の欄は飛ばす） */
+  R.xEroPool = function (kind) { var V = R.xEroV || {}; return (V[kind] || []).concat(V.any || []).filter(function (t) { return t && String(t).trim(); }); };
+
   /* 生き物の場面の喘ぎ・擬音を埋める */
   R.xFill = function (S, text, a, top) {
     if (!E) return text;
