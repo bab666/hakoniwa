@@ -6,7 +6,7 @@
   var HK = window.HK, ST = HK.Story, FD = HK.Feud;
   if (!FD || !ST) return;
   function L(s) { return s.split('|'); }
-  var OPEN = L('{a}は{b}の手首を掴んで、壁に押しつけた。{b}が身をよじるほど、{a}の指は深く食い込んだ。|{a}は{b}を床に組み伏せ、抗う腕を頭の上で押さえつけた。|{a}は{b}の襟元を掴み、そのまま布団の上に投げ出した。');
+  var OPEN = L('{a}は{b}の手首を掴んで、壁に押しつけた。{b}が身をよじるほど、{a}の指は深く食い込んだ。|{a}は{b}を床に組み伏せ、抗う腕を頭の上で押さえつけた。|{a}は{b}の襟元を掴み、そのまま布団の上に投げ出した。|{a}は{b}の胸ぐらを掴んで引き寄せ、言い返す口を噛みつくように塞いだ。|{a}は{b}を壁際に追い詰め、逃げ道を塞ぐように両腕をついた。睨み合う距離が、息のかかるほど近くなった。');
   FD.r18On = function (S) {
     if (HK.SAFE_ON) return false;
     var id = S.scen && S.scen.id, JS = HK.JASHIN, Y = HK.YAKATA;

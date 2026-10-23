@@ -1,6 +1,6 @@
 /* 箱庭シミュレーター（R18版のみ）― 交わりの描写を組み立てる
    前戯 → 体位（どう繋がったか）→ 受けの喘ぎ → 最中 → 攻めの台詞 → 果てる声 → 果てる瞬間 → 事後の一言
-   喘ぎと台詞は口調ごと（15種類）。体位は、関係（恋人・敵・媚薬など）と気質で選ばれやすさが変わり、同じゲームでは続きにくい。
+   喘ぎと台詞は口調ごと（17種類）。女性どうし（HK.FF）・女性の攻め×男性の受け（HK.FM）は、挿入を前提にしない文と D.FF_MID／D.FM_MID の最中で同じ流れに。体位は、関係（恋人・敵・媚薬など）と気質で選ばれやすさが変わり、同じゲームでは続きにくい。
    HK.R18M.sex(S, 攻め, 受け, {mood, allow:[体位id], fore, short}) … mood: love（恋人・想い）/ rough（敵・荒々しく）/ drug（媚薬）/ plain（その場の勢い）
    全年齢版ではこのファイルは読み込まれない。登場人物はすべて成人として扱う */
 (function () {
@@ -34,53 +34,71 @@
   }
   function moodOf(m) { return m === 'rough' || m === 'drug' || m === 'love' ? m : 'plain'; }
 
-  /* 女性どうし：体位（挿入）の文を使わず、指・舌・脚を絡める描写（HK.FF）と喘ぎで組み立てる。x=動く側 */
+  /* 女性が攻めのときの果てる声：女性の攻め向けの表（D.TOPC_F）と、口調ごとの果てる声のうち男性の体を前提にしないもの */
   var FF_TOPC_NG = /出|受け止め|受け取|中に|締め|全部、くれて/;
+  function topcF(S, x) {
+    var t = toneKey(x), base = (D.V[t] || D.V.gentle).topc.filter(function (s) { return !FF_TOPC_NG.test(s); });
+    var l = (D.TOPC_F && (D.TOPC_F[t] || D.TOPC_F.gentle) || []).concat(base);
+    return x.name + '「' + pick(S, l.length ? l : TOP_OK) + '」';
+  }
+  /* 同じ二人がこの回ですでに体を重ねたか（二度目以降の書き出しに使う） */
+  function seenPair(S, x, y) {
+    var k = [x.name, y.name].sort().join('\u0001'), m = S.r18Seen || (S.r18Seen = {}), r = !!m[k];
+    m[k] = 1;
+    return r;
+  }
+  /* その場の勢い（plain）の最中は、攻めの気質で love か rough に */
+  function midOf(S, x, mood) { return mood === 'plain' ? (S.rng() < 0.25 + ((x.tr && x.tr.aggr) || 0) * 0.4 ? 'rough' : 'love') : mood; }
+
+  /* 女性どうし：体位（挿入）の文を使わず、指・舌・脚を絡める描写（HK.FF）と喘ぎで組み立てる。x=動く側
+     書き出しは前戯（D.FORE）か HK.FF の書き出し（二度目以降は repeat）、最中は D.FF_MID、事後は HK.FF の事後か一言 */
   function ffSex(S, x, y, opt) {
     var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };
-    var ctx = { pick: function (a) { return pick(S, a); } };
-    var st = mood === 'rough' ? 'rough' : mood === 'love' ? 'gentle' : HK.FF.styleOf(x);
+    var ctx = { pick: function (a) { return pick(S, a); } }, FF = HK.FF;
+    var st = mood === 'rough' ? 'rough' : mood === 'love' ? 'gentle' : FF.styleOf(x);
+    var f = function (s) { return s.replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name); };
+    var riba = !!(HK.Pos.bothRiba && HK.Pos.bothRiba(x, y)), again = seenPair(S, x, y), mid = midOf(S, x, mood);
     var out = [];
-    if (opt.fore !== false) out.push(F(pick(S, D.FORE[mood === 'plain' || rng() < 0.3 ? 'plain' : mood]), m));
-    out.push(HK.FF.pick(ctx, 'body', st).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name));
+    if (opt.fore !== false) {
+      if (again && FF.lead && rng() < 0.6) out.push(f(FF.lead(ctx, st, { repeat: true, riba: riba })));
+      else if (FF.lead && rng() < 0.45) out.push(f(FF.lead(ctx, st)));
+      else out.push(F(pick(S, D.FORE[mood === 'plain' || rng() < 0.3 ? 'plain' : mood]), m));
+    }
+    out.push(f(FF.pick(ctx, 'body', st, { riba: riba })));
     out.push(say(S, y, 'start'));
     if (!opt.short) {
+      if (D.FF_MID) out.push(F(pick(S, D.FF_MID[mid] || D.FF_MID.love), m));
       out.push(say(S, x, 'top'));
       out.push(say(S, y, 'mid'));
     }
     out.push(say(S, y, 'climax'));
-    if (rng() < 0.35) {
-      var tc = (D.V[toneKey(x)] || D.V.gentle).topc.filter(function (s) { return !FF_TOPC_NG.test(s); });
-      out.push(x.name + '「' + pick(S, tc.length ? tc : TOP_OK) + '」');
-    }
-    out.push(HK.FF.pick(ctx, 'climax', st).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name));
-    if (!opt.short && rng() < 0.6) out.push(say(S, rng() < 0.6 ? y : x, 'after'));
+    if (rng() < 0.35) out.push(topcF(S, x));
+    out.push(f(FF.pick(ctx, 'climax', st)));
+    if (!opt.short && rng() < 0.6) out.push(FF.after && rng() < 0.45 ? f(FF.after(ctx, FF.afterMode(mood))) : say(S, rng() < 0.6 ? y : x, 'after'));
     S.r18Last = '指と舌';
     return out.join('');
   }
 
-  /* 女性が攻め・男性が受け：女性上位（押し倒して跨る）で組み立てる（HK.FM の文）。喘ぐのは主に受けの男性 */
+  /* 女性が攻め・男性が受け：女性上位（押し倒して跨る）で組み立てる（HK.FM の文と D.FM_MID）。喘ぐのは主に受けの男性 */
   function fmSex(S, x, y, opt) {
     var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };
     var ctx = { pick: function (a) { return pick(S, a); } };
     var st = mood === 'rough' ? 'rough' : mood === 'love' ? 'gentle' : HK.FF && HK.FF.styleOf ? HK.FF.styleOf(x) : 'gentle';
     var fill = function (s) { return s.replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name); };
-    var out = [];
+    var mid = midOf(S, x, mood), out = [];
     if (opt.fore !== false) out.push(fill(HK.FM.pick(ctx, 'open', st)));
     out.push(fill(HK.FM.pick(ctx, 'body', st)));
     out.push(say(S, y, 'start'));
     if (!opt.short) {
+      if (D.FM_MID) out.push(F(pick(S, D.FM_MID[mid] || D.FM_MID.love), m));
       out.push(say(S, x, 'top'));
       out.push(say(S, y, 'mid'));
     }
     out.push(say(S, y, 'climax'));
-    if (rng() < 0.35) {
-      /* 攻めの女性の果てる声から、「出す」「締める」など男性の体を前提にした台詞を外す */
-      var tc = (D.V[toneKey(x)] || D.V.gentle).topc.filter(function (s) { return !FF_TOPC_NG.test(s); });
-      out.push(x.name + '「' + pick(S, tc.length ? tc : TOP_OK) + '」');
-    }
+    /* 攻めの女性の果てる声（「出す」「締める」など男性の体を前提にした台詞は使わない） */
+    if (rng() < 0.35) out.push(topcF(S, x));
     out.push(fill(HK.FM.pick(ctx, 'climax', st)));
-    if (!opt.short && rng() < 0.6) out.push(say(S, rng() < 0.6 ? y : x, 'after'));
+    if (!opt.short && rng() < 0.6) out.push(HK.FM.POOLS.after && rng() < 0.45 ? fill(HK.FM.pick(ctx, 'after', st)) : say(S, rng() < 0.6 ? y : x, 'after'));
     S.r18Last = '女性上位';
     return out.join('');
   }
@@ -111,6 +129,8 @@
     /* 二人の交わり。opt.fore=false で前戯を省く（すでに場面の文があるとき）。opt.short で短く */
     /* 自分で攻めを選んだ人の喘ぎ・絶頂の声を、受け身でないものに絞る（ほかの箱庭からも使う） */
     topLines: topLines,
+    /* 女性が攻めのときの果てる声（r18-thick の女性どうし・女性の攻めでも使う） */
+    topcF: topcF,
     sex: function (S, x, y, opt) {
       opt = opt || {};
       /* 向きは必ず HK.Pos.order に従う（自分で攻めを選んだ人を受けの位置に置かない） */
@@ -121,7 +141,7 @@
       var pos = opt.pos ? D.POS.filter(function (p) { return p.id === opt.pos; })[0] : pickPos(S, x, y, mood, opt.allow);
       if (!pos) pos = pickPos(S, x, y, mood);
       (S.r18Pos || (S.r18Pos = [])).push(pos.id);
-      var mid = mood === 'plain' ? (rng() < 0.25 + ((x.tr && x.tr.aggr) || 0) * 0.4 ? 'rough' : 'love') : mood;
+      var mid = midOf(S, x, mood);
       var out = [];
       if (opt.fore !== false) out.push(F(pick(S, D.FORE[mood === 'plain' || rng() < 0.3 ? 'plain' : mood]), m));
       out.push(F(pick(S, pos.t), m));
@@ -129,7 +149,7 @@
         /* 口での奉仕：喘ぐのは攻め */
         out.push(say(S, x, 'top'));
         if (!opt.short) out.push(say(S, x, 'topc'));
-        out.push(F(D.CLIMAX.oral[0], m));
+        out.push(F(pick(S, D.CLIMAX.kuchi), m));
       } else {
         out.push(say(S, y, 'start'));
         if (!opt.short) {
@@ -139,7 +159,7 @@
         }
         out.push(say(S, y, 'climax'));
         if (pos.id !== 'yubi' && rng() < 0.45) out.push(say(S, x, 'topc'));
-        out.push(F(pos.id === 'yubi' ? D.CLIMAX.oral[1] : pick(S, D.CLIMAX[mid]), m));
+        out.push(F(pick(S, pos.id === 'yubi' ? D.CLIMAX.yubi : D.CLIMAX[mid]), m));
       }
       if (!opt.short && rng() < 0.6) out.push(say(S, rng() < 0.6 ? y : x, 'after'));
       S.r18Last = pos.label;

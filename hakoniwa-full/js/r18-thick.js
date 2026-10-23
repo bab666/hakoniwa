@@ -57,8 +57,8 @@
   /* 攻める側も感じている（気分ごと） */
   var PLEASE = {
     love: L('{x}の呼吸も、いつの間にか乱れていた。締めつけられるたびに眉根を寄せ、{y}の名前を掠れた声で呼んだ。|{x}は{y}の中の熱さに、低く呻いた。余裕を装っていた腰の動きが、少しずつ速くなっていった。|{x}は{y}の額に額を押し当て、熱い息を混ぜ合わせた。「……気持ちいい」と、零れるように呟いた。'),
-    rough: L('{x}の額から汗が滴り、{y}の胸に落ちた。荒い息の合間に、{x}は満足げに喉を鳴らした。|締めつけられるたびに、{x}の腰が深く沈んだ。{x}も、もう長くは持たなかった。'),
-    drug: L('{y}の熱に煽られて、{x}の息も荒くなっていた。絡みつく内側に、{x}は何度も奥歯を噛んだ。|甘い香りは{x}の頭にも回っていた。{x}は{y}の首筋に唇を押しつけ、獣のような息を吐いた。'),
+    rough: L('{x}の額から汗が滴り、{y}の胸に落ちた。荒い息の合間に、{x}は満足げに喉を鳴らした。|締めつけられるたびに、{x}の腰が深く沈んだ。{x}も、もう長くは持たなかった。|{x}は荒い息を噛み殺し、{y}の締めつけを味わうように、動きを一瞬だけ止めた。'),
+    drug: L('{y}の熱に煽られて、{x}の息も荒くなっていた。絡みつく内側に、{x}は何度も奥歯を噛んだ。|甘い香りは{x}の頭にも回っていた。{x}は{y}の首筋に唇を押しつけ、獣のような息を吐いた。|{x}も薬の香りに当てられ、腰の動きを抑えられなくなっていた。{y}の名前を呼ぶ声が、掠れていた。'),
     plain: L('{x}の息が、だんだん荒く短くなっていった。{y}が締めつけるたびに、{x}の腰が小さく震えた。|{x}は{y}の首筋に顔を埋め、熱い息を吐いた。{y}の中は、溶けそうなほど熱かった。|{x}は動きを止めて、深く息を吐いた。そうしないと、すぐにでも果ててしまいそうだった。')
   };
   /* 箱庭ごとの手触り（村の夜・館の吹雪） */
@@ -81,10 +81,15 @@
   var ROUGH_SADIST = [
     { open: '{x}は{y}を乱暴に押し倒し、腰を掴んで引き寄せた。指が肌に食い込み、{y}の喉から短い声が漏れた。', say: '{x}「逃げるな」', mid: '{x}は手加減なしに腰を打ちつけた。肌のぶつかる音が部屋に響き、{y}は揺さぶられるまま、敷布を掴む指に力を込めるしかなかった。', say2: '{x}「まだ足りないって顔してるぞ」', peak: '{x}は{y}の腰を両手で固定し、一番奥に叩きつけるようにして果てた。{y}は大きく背を反らし、熱が注がれる感触に震えながら達した。', after: '{x}は荒い息のまま体を離し、{y}の乱れた髪を雑にかき上げた。{y}の腰には、指の跡が赤く残っていた。' },
     { open: '{x}は{y}の髪を掴んで顔を上げさせ、そのまま背後から一気に貫いた。', say: '{x}「声、我慢するな」', mid: '{x}は髪を掴んだまま、深く、速く腰を打ちつけた。引き寄せられるたびに奥を抉られ、{y}の声はだんだん言葉にならなくなっていった。', say2: '{x}「ほら、自分から腰振ってる」', peak: '最後に強く打ちつけた瞬間、{y}の内側が{x}を締め上げた。{x}は短く呻き、掴んだ髪を引き寄せたまま奥へ注ぎ込んだ。', after: '{x}が手を離すと、{y}は敷布に崩れ落ちた。{x}はその背中を見下ろし、汗で貼りついた髪を指で払ってやった。' },
+    { open: '{x}は{y}の背中を押して敷布にうつ伏せに倒し、腰だけを乱暴に引き上げた。', say: '{x}「腰、落とすなよ」', mid: '{x}は腰骨を掴む指に力を込め、深く、重く、休みなく打ちつけた。{y}が前へ逃げるたびに引き戻され、奥を抉られる角度はかえって深くなった。', say2: '{x}「逃げても無駄だって、体が覚えたな」', peak: '{x}は最後に{y}の腰を両手で引き寄せ、一番奥に押しつけたまま果てた。{y}は敷布に顔を押しつけたまま、声を殺しきれずに達した。', after: '{x}が手を離すと、{y}の腰はがくりと落ちた。{x}はその背中を見下ろし、汗で濡れた腰に残る指の跡を、親指でなぞった。' },
+    { open: '{x}は{y}の髪をかき上げるように掴み、そのまま仰向けに押し倒した。', say: '{x}「目、逸らすな」', mid: '{x}は{y}の膝を大きく割り開き、真上から叩きつけるように腰を沈めた。突かれるたびに{y}の体が上へずり上がり、そのたびに{x}は腰を掴んで引き戻した。', say2: '{x}「まだ足りない。……もっと鳴け」', peak: '{x}は{y}の腰を骨が軋むほど掴み、奥に打ちつけたまま低く唸って果てた。{y}は弓なりに背を反らし、押し出されるように達した。', after: '{x}は乱れた息のまま{y}の顎を持ち上げ、潤んだ目を覗き込んだ。それから、噛みつくように一度だけ口づけた。' },
+    { open: '{x}は{y}を壁に押しつけ、両手首をまとめて頭上の壁に押さえつけた。', say: '{x}「そのまま立ってろ」', mid: '{x}は{y}の片脚を抱え上げ、下から容赦なく突き上げた。爪先立ちの{y}の体は突かれるたびに浮き、壁に押さえつけられた手首だけが支えだった。', say2: '{x}「膝、震えてるぞ」', peak: '{x}は最後に深く突き上げ、{y}の手首を押さえたまま奥で果てた。{y}は壁に背を預けたまま全身を震わせて達し、ずるずると崩れ落ちかけた。', after: '{x}は崩れかけた{y}の体を片腕で抱きとめ、そのまま寝床へ運んだ。手首には、指の形が赤く残っていた。' },
     { open: '{x}は{y}の両手首をまとめて掴み、頭の上で敷布に押さえつけた。片手で足りるほど、その力は強かった。', say: '{x}「隠すな。全部見せろ」', mid: '{x}は手首を押さえたまま、真上から深く腰を沈めた。逃がす場所のない体を何度も奥まで打ちつけられ、{y}は押さえられた指先を空しく握り込むしかなかった。', say2: '{x}「手、動かすなよ」', peak: '{x}は手首を押さえる力を強め、のしかかるようにして最奥へ突き入れた。{y}の背がしなり、押さえつけられたまま全身を震わせて達した。{x}もその締めつけに低く呻き、奥へ熱を注ぎ込んだ。', after: '{x}がようやく手を離すと、{y}の手首には指の形が赤く残っていた。{x}はそこを親指でなぞり、それから汗ばんだ額に軽く唇を落とした。' }
   ];
   /* 嫉妬・独占欲がきっかけの行為（opt.jealous）のときだけ：首を押さえる。途中で必ず緩める */
   var JEALOUS_CHOKE = [
+    { open: '{x}は{y}を寝床に押し倒し、首筋に残る誰かの気配を確かめるように、そこへ鼻先を押し当てた。それから、掌を喉に添えた。', say: '{x}「今夜は、ほかの名前を呼ぶな」', mid: '{x}は深く沈めるたびに喉の掌へわずかに力を込め、引くたびに緩めた。息を奪われるたびに{y}の内側は熱く締まり、緩められるたびに甘い声が零れた。', say2: '{x}「……そうだ。こっちだけ見てろ」', peak: '最後の一突きと同時に、{x}は掌の力をほんの一瞬だけ強め、すぐに離した。流れ込む息と一緒に{y}は大きく達し、{x}もその締めつけの中で奥に熱を注いだ。', after: '{x}は手を離すとすぐに{y}を抱き起こし、咳き込む背中をさすった。喉に残った赤い跡に、何度も唇を押し当てた。' },
+    { open: '{x}は{y}を後ろから抱きすくめたまま寝床に膝をつかせ、片腕を胸に、もう片方の掌を喉に回した。', say: '{x}「誰に笑いかけてた？」', mid: '{x}は後ろから深く繋がり、突き上げるたびに喉の掌を少しだけ締めては緩めた。{y}の背中が反るたびに、内側が{x}をきつく締めつけた。', say2: '{x}「答えなくていい。……体が答えてる」', peak: '{x}は喉の手を離して{y}を胸に強く抱きしめ、一番奥で果てた。{y}は{x}の腕の中で背を反らし、震えながら達した。', after: '{x}は{y}を抱いたまま横たわり、喉に残った指の跡を、詫びるように親指で撫で続けた。' },
     { open: '{x}は{y}を仰向けに押し倒すと、大きな手でその喉を覆った。指の腹が脈に触れる。力はまだ入れていない。', say: '{x}「誰のものか、言ってみろ」', mid: '{x}は突き上げるたびに指へ少しだけ力を込め、引くときに緩めた。息を与えては奪われるたびに、{y}の内側がきゅんと強く締まった。', say2: '{x}「ほかのやつに、こんな顔見せるなよ」', peak: '最後に深く打ちつけると同時に、{x}は喉への力をほんの一瞬だけ強め、すぐに緩めた。{y}は大きく背を反らして達し、{x}もその締めつけの中で奥へ熱を注ぎ込んだ。', after: '{x}はすぐに手を離した。息が一気に流れ込み、{y}は咳き込みながら大きく呼吸を繰り返した。{x}は涙で濡れた頬を親指で拭い、喉に残った赤い跡をそっと撫でた。' }
   ];
 
@@ -112,6 +117,8 @@
     if (!(HK.Ero && HK.Ero.sadist && HK.Ero.sadist(x, y)) || S.rng() >= 0.25) return null;
     return opt.jealous ? JEALOUS_CHOKE : ROUGH_SADIST;
   }
+  /* 最中・攻めの快感・果てる瞬間の候補：その場の勢い（mood が plain）の夜は、振り分けた love／rough の表に plain 用の表を混ぜる */
+  function byMid(T, mid, mood) { return mood === 'plain' && T.plain ? T[mid].concat(T.plain) : T[mid]; }
   /* 段落をつなぐ（空の段落は飛ばす） */
   function J(a) { return a.filter(function (x) { return x; }).join(P); }
 
@@ -134,11 +141,11 @@
     var fore = opt.fore !== false ? F(pick(S, D.FORE[mood === 'plain' || rng() < 0.3 ? 'plain' : mood]), m) : '';
     if (pos.oral) {
       /* 口・指は元の流れのまま、段落に分ける */
-      if (pos.id === 'kuchi') return J([fore, F(pick(S, pos.t), m) + R.say(S, x, 'top'), opt.short ? '' : R.say(S, x, 'topc'), F(D.CLIMAX.oral[0], m)]);
-      return J([fore, F(pick(S, pos.t), m), sayOk(S, y, 'start', mood) + (opt.short ? '' : R.say(S, y, 'mid')), R.say(S, y, 'climax') + F(D.CLIMAX.oral[1], m)]);
+      if (pos.id === 'kuchi') return J([fore, F(pick(S, pos.t), m) + R.say(S, x, 'top'), opt.short ? '' : R.say(S, x, 'topc'), F(pick(S, D.CLIMAX.kuchi), m)]);
+      return J([fore, F(pick(S, pos.t), m), sayOk(S, y, 'start', mood) + (opt.short ? '' : R.say(S, y, 'mid')), R.say(S, y, 'climax') + F(pick(S, D.CLIMAX.yubi), m)]);
     }
     if (opt.short) {
-      return J([F(pick(S, pos.t), m) + F(pick(S, ENTER[mid]), m), sayOk(S, y, 'start', mood), F(pick(S, PEAK[mid]), m) + R.say(S, y, 'climax')]);
+      return J([F(pick(S, pos.t), m) + F(pick(S, ENTER[mid]), m), sayOk(S, y, 'start', mood), F(pick(S, byMid(PEAK, mid, mood)), m) + R.say(S, y, 'climax')]);
     }
     var hs = hardSet(S, x, y, mood, opt);
     if (hs) {
@@ -150,33 +157,60 @@
       fore,
       F(pick(S, pos.t), m) + F(pick(S, ENTER[mood]), m),
       R.say(S, x, 'top'),
-      sayOk(S, y, 'start', mood) + F(pick(S, (strong ? MID_STRONG : MID_SOFT)[mid]), m),
-      moan(S, y, 0) + F(pick(S, PLEASE[mid]), m),
-      F(pick(S, PEAK[mid]), m) + (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (rng() < 0.35 ? R.say(S, x, 'topc') : ''),
+      sayOk(S, y, 'start', mood) + F(pick(S, byMid(strong ? MID_STRONG : MID_SOFT, mid, mood)), m),
+      moan(S, y, 0) + F(pick(S, byMid(PLEASE, mid, mood)), m),
+      F(pick(S, byMid(PEAK, mid, mood)), m) + (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (rng() < 0.35 ? R.say(S, x, 'topc') : ''),
       flav(S) + F(pick(S, AFTER[mood]), m) + (rng() < 0.5 ? R.say(S, rng() < 0.6 ? y : x, 'after') : '')
     ]);
   }
 
   /* 女性どうし・女性が攻め：挿入を前提にしない言い方で、同じ流れ */
   var SOFT_MID = {
-    ff: L('{x}の指が、{y}の一番弱いところを探り当てた。{y}がびくりと腰を跳ねさせると、{x}は小さく笑って、そこだけをゆっくりとなぞり続けた。|{x}は{y}の胸元に唇を這わせながら、脚のあいだを撫でる指の速さを少しずつ上げていった。{y}の吐息が、どんどん浅くなっていった。|{x}は指を二本沈め、中の柔らかいところをゆっくりと押し上げた。{y}の腰が震え、甘い声が零れた。|{x}は{y}の脚のあいだに顔を埋め、舌先で一番敏感なところを転がした。{y}は{x}の髪を掴み、腰を浮かせた。|{x}は{y}と脚を絡め、熱く濡れたところ同士を擦り合わせた。ぬるりと滑るたびに、二人の吐息が重なって甘く乱れた。'),
-    fm: L('{x}は{y}の上で腰をくねらせ、{y}が声を上げるたびに、わざと動きを緩めた。{y}の手が{x}の腰を掴もうとすると、{x}はその手を払いのけた。|{x}は{y}を見下ろしたまま、ゆっくりと、深く腰を落とした。{y}の喉から、堪えきれない声が漏れた。|{x}は{y}を根元まで呑み込んだまま、腰をゆっくりと回した。中で擦れるたびに、{x}自身の吐息も甘く震えた。|{x}が腰を沈めるたびに、{y}の腰が勝手に突き上がった。{x}は小さく喘ぎながら、{y}の胸に爪を立てた。|{x}の中がきゅうっと{y}を締めつけた。{y}は堪えきれずに声を漏らし、{x}の腰を掴んだ。')
+    ff: L('{x}の指が、{y}の一番弱いところを探り当てた。{y}がびくりと腰を跳ねさせると、{x}は小さく笑って、そこだけをゆっくりとなぞり続けた。|{x}は{y}の胸元に唇を這わせながら、脚のあいだを撫でる指の速さを少しずつ上げていった。{y}の吐息が、どんどん浅くなっていった。|{x}は指を二本沈め、中の柔らかいところをゆっくりと押し上げた。{y}の腰が震え、甘い声が零れた。|{x}は{y}の脚のあいだに顔を埋め、舌先で一番敏感なところを転がした。{y}は{x}の髪を掴み、腰を浮かせた。|{x}は{y}と脚を絡め、熱く濡れたところ同士を擦り合わせた。ぬるりと滑るたびに、二人の吐息が重なって甘く乱れた。|{x}は{y}の膝の裏に手を差し入れて脚を開かせ、内腿に唇を這わせながら、じりじりと中心へ近づいていった。|{x}は{y}の胸の先を指先で摘まみ、転がし、もう片方の手で下腹をゆっくりと撫で下ろした。{y}の背中が、敷布から浮いた。|{x}は{y}の耳元で名前を囁きながら、濡れた指をゆっくりと出し入れした。{y}の腰が、その動きを追いかけた。'),
+    fm: L('{x}は{y}の上で腰をくねらせ、{y}が声を上げるたびに、わざと動きを緩めた。{y}の手が{x}の腰を掴もうとすると、{x}はその手を払いのけた。|{x}は{y}を見下ろしたまま、ゆっくりと、深く腰を落とした。{y}の喉から、堪えきれない声が漏れた。|{x}は{y}を根元まで呑み込んだまま、腰をゆっくりと回した。中で擦れるたびに、{x}自身の吐息も甘く震えた。|{x}が腰を沈めるたびに、{y}の腰が勝手に突き上がった。{x}は小さく喘ぎながら、{y}の胸に爪を立てた。|{x}の中がきゅうっと{y}を締めつけた。{y}は堪えきれずに声を漏らし、{x}の腰を掴んだ。|{x}は{y}の胸に手をついて体を起こし、腰を前後にゆっくりと滑らせた。{y}の吐息が、そのたびに甘く崩れた。|{x}は{y}の上で上体を倒し、耳たぶを甘噛みしながら、腰だけを小刻みに揺らした。|{x}は{y}の手を取って自分の胸に当てさせ、その上から自分の手を重ねたまま、深く腰を落とした。')
   };
   var SOFT_AFTER = {
-    ff: L('二人は絡めた脚をほどかないまま、しばらく天井を見ていた。{x}が{y}の汗ばんだ髪を耳にかけると、{y}は照れたように目を伏せた。|{y}は{x}の肩に額を預け、乱れた息を整えた。肌に残った熱が、なかなか引かなかった。|{x}は{y}の濡れた指先に口づけ、いたずらっぽく笑った。{y}は真っ赤になって、{x}の肩に顔を隠した。'),
-    fm: L('{x}は乱れた髪をかき上げ、まだ息を整えられない{y}を見下ろして、小さく笑った。|{x}は{y}の胸に頬を預けた。{y}の鼓動が、まだ速く鳴っていた。|{x}は繋がったまま{y}の胸に倒れ込み、満足げに喉を鳴らした。{y}の手が、汗ばんだ{x}の背中をゆっくりと撫でた。')
+    ff: L('二人は絡めた脚をほどかないまま、しばらく天井を見ていた。{x}が{y}の汗ばんだ髪を耳にかけると、{y}は照れたように目を伏せた。|{y}は{x}の肩に額を預け、乱れた息を整えた。肌に残った熱が、なかなか引かなかった。|{x}は{y}の濡れた指先に口づけ、いたずらっぽく笑った。{y}は真っ赤になって、{x}の肩に顔を隠した。|{y}は{x}の腕の中で、とろんとした目のまま小さく笑った。{x}はその頬に、そっと唇を落とした。'),
+    fm: L('{x}は乱れた髪をかき上げ、まだ息を整えられない{y}を見下ろして、小さく笑った。|{x}は{y}の胸に頬を預けた。{y}の鼓動が、まだ速く鳴っていた。|{x}は繋がったまま{y}の胸に倒れ込み、満足げに喉を鳴らした。{y}の手が、汗ばんだ{x}の背中をゆっくりと撫でた。|{x}は{y}の上から降りて隣に寝転がり、汗ばんだ指先で{y}の頬をつついた。「……どうだった？」')
   };
+  /* 攻める側も感じている（女性どうし・女性の攻め） */
+  var SOFT_PLEASE = {
+    ff: L('{x}の脚のあいだも、{y}の声を聞くたびに熱く疼いていた。|{x}は{y}の乱れる顔から目を離せず、自分の吐息まで甘く湿らせていた。|{x}の指先まで、{y}の震えが伝わってきた。{x}は小さく息を呑んだ。|{x}は{y}の首筋に顔を埋め、熱い息を吐いた。「……かわいすぎる」'),
+    fm: L('{x}も、自分の奥を擦られるたびに小さく肩を震わせた。|{x}の内腿が、快感に細かく震えていた。それでも、腰の動きは止めなかった。|{x}は唇を噛んで甘い声をこらえたが、腰を落とすたびに、こらえきれずに零れた。|{x}の頬は上気し、汗が{y}の胸にぽたりと落ちた。')
+  };
+  /* 同じ二人がこの回ですでに体を重ねたか（女性どうしの二度目以降の書き出しに使う） */
+  function seen(S, x, y) {
+    var k = [x.name, y.name].sort().join('\u0001'), sm = S.r18Seen || (S.r18Seen = {}), r = !!sm[k];
+    sm[k] = 1;
+    return r;
+  }
+  /* 女性どうし・女性の攻めの組み立て。
+     書き出し：ff は前戯（D.FORE）か HK.FF の書き出し（二度目以降は repeat、短い揉み合いは急ぐ場面の文）、fm は HK.FM の書き出し
+     最中：SOFT_MID と R18M の D.FF_MID／D.FM_MID（気分ごと）。事後：SOFT_AFTER と HK.FF／HK.FM の事後 */
   function soft(S, x, y, opt, kind) {
     var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };
     var ctx = { pick: function (a) { return pick(S, a); } }, K = kind === 'ff' ? HK.FF : HK.FM;
     var st = mood === 'rough' ? 'rough' : mood === 'love' ? 'gentle' : HK.FF && HK.FF.styleOf ? HK.FF.styleOf(x) : 'gentle';
     var fill = function (s) { return s.replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name); };
     S.r18Last = kind === 'ff' ? '指と舌' : '女性上位';
-    var body = fill(K.pick(ctx, 'body', st, kind === 'ff' && opt.tools ? { tools: opt.tools } : undefined)), peak = fill(K.pick(ctx, 'climax', st));
-    if (opt.short) return J([body, sayOk(S, y, 'start', mood), R.say(S, y, 'climax') + peak]);
-    var open = opt.fore !== false && kind === 'fm' ? fill(K.pick(ctx, 'open', st)) : opt.fore !== false ? F(pick(S, D.FORE[mood === 'plain' ? 'plain' : mood]), m) : '';
-    var midL = SOFT_MID[kind].filter(function (t) { return !((/舌/.test(t) && /舌/.test(body)) || (/指/.test(t) && /指/.test(body)) || (/交差|擦り合わせ/.test(t) && /交差|擦り合わせ|擦り合う/.test(body))); });
-    return J([open, body, sayOk(S, y, 'start', mood) + F(pick(S, midL.length ? midL : SOFT_MID[kind]), m), R.say(S, x, 'top') + moan(S, y, 0) + (kind === 'fm' && rng() < 0.6 ? moan(S, x, 0, true) : ''), (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + peak, flav(S) + F(pick(S, SOFT_AFTER[kind]), m) + (rng() < 0.5 ? R.say(S, y, 'after') : '')]);
+    var riba = !!(kind === 'ff' && HK.Pos && HK.Pos.bothRiba && HK.Pos.bothRiba(x, y)), again = kind === 'ff' && seen(S, x, y);
+    var bo = kind === 'ff' ? { tools: opt.tools, riba: riba } : undefined;
+    var body = fill(K.pick(ctx, 'body', st, bo)), peak = fill(K.pick(ctx, 'climax', st));
+    /* 短い揉み合い（ff・rough）は、急ぐ場面の書き出しを添えることがある（縛る文は使わない） */
+    if (opt.short) return J([(kind === 'ff' && mood === 'rough' && K.lead && rng() < 0.4 ? fill(K.lead(ctx, st, { speed: true })) : '') + body, sayOk(S, y, 'start', mood), R.say(S, y, 'climax') + peak]);
+    var open = '';
+    if (opt.fore !== false) {
+      if (kind === 'fm') open = fill(K.pick(ctx, 'open', st));
+      else if (again && K.lead && rng() < 0.6) open = fill(K.lead(ctx, st, { repeat: true, riba: riba }));
+      else if (K.lead && rng() < 0.45) open = fill(K.lead(ctx, st));
+      else open = F(pick(S, D.FORE[mood === 'plain' ? 'plain' : mood]), m);
+    }
+    var mid = mood === 'plain' ? (rng() < 0.25 + ((x.tr && x.tr.aggr) || 0) * 0.4 ? 'rough' : 'love') : mood;
+    var DM = kind === 'ff' ? D.FF_MID : D.FM_MID, midAll = SOFT_MID[kind].concat(DM && DM[mid] || []);
+    var midL = midAll.filter(function (t) { return !((/舌/.test(t) && /舌/.test(body)) || (/指/.test(t) && /指/.test(body)) || (/交差|擦り合わせ/.test(t) && /交差|擦り合わせ|擦り合う/.test(body))); });
+    if (kind === 'ff' && !riba && HK.Pos && HK.Pos.MUTUAL_RE) midL = midL.filter(function (t) { return !HK.Pos.MUTUAL_RE.test(t); });
+    var aft = kind === 'ff' && K.after && rng() < 0.45 ? fill(K.after(ctx, K.afterMode(mood))) : kind === 'fm' && K.POOLS.after && rng() < 0.45 ? fill(K.pick(ctx, 'after', st)) : F(pick(S, SOFT_AFTER[kind]), m);
+    return J([open, body, sayOk(S, y, 'start', mood) + F(pick(S, midL.length ? midL : SOFT_MID[kind]), m), R.say(S, x, 'top') + moan(S, y, 0) + (kind === 'fm' && rng() < 0.6 ? moan(S, x, 0, true) : '') + F(pick(S, SOFT_PLEASE[kind]), m), (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (R.topcF && rng() < 0.3 ? R.topcF(S, x) : '') + peak, flav(S) + aft + (rng() < 0.5 ? R.say(S, y, 'after') : '')]);
   }
 
   var sex0 = R.sex;
