@@ -31,9 +31,8 @@ const ip = path.join(dir, 'index.html');
 let html = fs.readFileSync(ip, 'utf8');
 if (!/<!-- scripts:begin/.test(html)) throw new Error('index.html に <!-- scripts:begin --> がありません');
 html = html.replace(/<!-- scripts:begin[\s\S]*?<!-- scripts:end -->/, block);
-/* あとで読む分は、先に読む分と並行して先読みしておく */
+/* あとで読む分は先読みしない（先に読む分と回線を取り合って、画面が出るのが遅くなるため）。以前の先読み指定は消す */
 html = html.replace(/<link rel="preload" as="script" href="js\/bundle-late\.js[^>]*>\n?/g, '');
-if (late) html = html.replace('</head>', '<link rel="preload" as="script" href="' + lateUrl + '">\n</head>');
 fs.writeFileSync(ip, html);
 const kb = n => Math.round(Buffer.byteLength(n) / 1024) + 'KB';
 console.log(path.basename(dir) + '：先に読む ' + order.filter(o => !o.late).length + '本 ' + kb(main) + '／あとで読む ' + order.filter(o => o.late).length + '本 ' + kb(late));

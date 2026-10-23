@@ -11,17 +11,17 @@ js/tone-gentleman.js
 js/tone-extra2.js
 js/voice-more.js
 js/voice-override.js
-js/voice-override-rows.js
-js/voice-override-rows2.js
-js/voice-override-scenes.js
-js/voice-override-scenes2.js
+late js/voice-override-rows.js
+late js/voice-override-rows2.js
+late js/voice-override-scenes.js
+late js/voice-override-scenes2.js
 js/voice-override-solo.js
 js/tone-lines.js
-js/tone-lines-hate.js
-js/tone-mixed-more.js
+late js/tone-lines-hate.js
+late js/tone-mixed-more.js
 js/hate-kit.js
 js/feud-kit.js
-js/tone-darui.js
+late js/tone-darui.js
 js/tone-firm.js
 late js/tone-fix.js
 late js/tone-fix-g1.js
@@ -34,11 +34,11 @@ js/tone-polite-kin.js
 js/tone-ane.js
 js/tone-usan.js
 js/tone-yankee.js
-js/tone-hero.js
+late js/tone-hero.js
 js/tone-gyaru.js
 js/tone-chara.js
 js/tone-mystic.js
-js/tone-genki.js
+late js/tone-genki.js
 js/tone-sondai.js
 js/tone-long.js
 js/engine.js
@@ -75,8 +75,8 @@ js/omega-passion.js
 js/omega-mob.js
 js/omega-love.js
 js/omega-guard.js
-js/incidents-social.js
-js/incidents-survival.js
+late js/incidents-social.js
+late js/incidents-survival.js
 js/island-cook.js
 js/island-life.js
 js/island-hazard.js
@@ -95,27 +95,27 @@ js/mini-extra-c.js
 js/mini-serifu.js
 js/dungeon-lite.js
 js/solo-kit.js
-js/solo-massage-data.js
+late js/solo-massage-data.js
 js/solo-massage.js
 js/factions.js
-js/classroom-life.js
+late js/classroom-life.js
 js/classroom-teacher.js
 js/endings.js
 js/zombie-data.js
 js/zombie-core.js
-js/zombie-npc.js
+late js/zombie-npc.js
 js/zombie-opening.js
 js/zombie-events.js
-js/zombie-reunion.js
+late js/zombie-reunion.js
 js/zombie-bite.js
 js/zombie-love.js
 js/zombie-together.js
 js/zombie-solo.js
 js/zombie-letter.js
 js/rel-kit.js
-js/zombie-rel.js
+late js/zombie-rel.js
 js/island-rel.js
-js/rel-bad-engine.js
+late js/rel-bad-engine.js
 js/island-escape.js
 js/island-stay.js
 js/island-corpse.js
@@ -146,7 +146,7 @@ js/scenario-rpg.js
 js/jashin-data.js
 js/jashin-gods.js
 js/jashin-fx-a.js
-js/jashin-fx-b.js
+late js/jashin-fx-b.js
 js/jashin-gods-rev.js
 js/jashin-more.js
 js/jashin-rel-text.js
@@ -170,7 +170,7 @@ js/jashin-godev-data-b.js
 js/jashin-godev-sp-a.js
 js/jashin-godev-sp-b.js
 js/jashin-place-lines.js
-js/jashin-place.js
+late js/jashin-place.js
 js/jashin-feud.js
 js/yakata-data.js
 js/yakata-tricks-a.js
@@ -187,21 +187,21 @@ js/ship-crisis.js
 js/ship.js
 js/yakata-frame.js
 js/yakata-feud.js
-js/jinro-data.js
+late js/jinro-data.js
 js/scenario-jinro.js
-js/jinro-after.js
+late js/jinro-after.js
 js/jinro-love.js
-js/rel-bad-story.js
+late js/rel-bad-story.js
 js/safe.js
 js/safe-room.js
 js/share-card.js
 js/egoquiz.js
 js/saves.js
 js/tips.js
-js/tips-scen-a.js
-js/tips-scen-b.js
-js/tips-scen-c.js
-js/tips-scen-d.js
+late js/tips-scen-a.js
+late js/tips-scen-b.js
+late js/tips-scen-c.js
+late js/tips-scen-d.js
 js/ui.js
 js/ui-gear.js
 js/ui-fold.js

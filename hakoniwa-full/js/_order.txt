@@ -11,21 +11,21 @@ js/tone-gentleman.js
 js/tone-extra2.js
 js/voice-more.js
 js/voice-override.js
-js/voice-override-rows.js
-js/voice-override-rows2.js
-js/voice-override-scenes.js
-js/voice-override-scenes2.js
+late js/voice-override-rows.js
+late js/voice-override-rows2.js
+late js/voice-override-scenes.js
+late js/voice-override-scenes2.js
 js/voice-override-solo.js
 js/tone-lines.js
-js/tone-lines-hate.js
-js/tone-mixed-more.js
+late js/tone-lines-hate.js
+late js/tone-mixed-more.js
 js/hate-kit.js
 js/feud-kit.js
-js/tone-darui.js
+late js/tone-darui.js
 js/tone-firm.js
 late js/tone-fix.js
-js/voice-override-r18.js
-js/tone-mixed-more-r18.js
+late js/voice-override-r18.js
+late js/tone-mixed-more-r18.js
 late js/tone-fix-r18.js
 late js/tone-fix-g1.js
 late js/tone-fix-g1-r18.js
@@ -43,11 +43,11 @@ js/tone-polite-kin.js
 js/tone-ane.js
 js/tone-usan.js
 js/tone-yankee.js
-js/tone-hero.js
+late js/tone-hero.js
 js/tone-gyaru.js
 js/tone-chara.js
 js/tone-mystic.js
-js/tone-genki.js
+late js/tone-genki.js
 js/tone-sondai.js
 js/tone-long.js
 js/engine.js
@@ -86,8 +86,8 @@ js/omega-mob.js
 js/omega-love.js
 js/omega-guard.js
 js/omega-thick.js
-js/incidents-social.js
-js/incidents-survival.js
+late js/incidents-social.js
+late js/incidents-survival.js
 js/island-cook.js
 js/island-life.js
 js/island-hazard.js
@@ -104,45 +104,45 @@ js/mini-extra-b.js
 js/mini-extra-c.js
 js/mini-serifu.js
 js/thick-vmd.js
-js/dungeon-lines.js
+late js/dungeon-lines.js
 js/dungeon-rich.js
 js/dungeon-persona.js
 js/dungeon.js
-js/dungeon-thick.js
+late js/dungeon-thick.js
 js/dungeon-bosses.js
 js/dungeon-party.js
 js/solo-kit.js
-js/solo-massage-data.js
+late js/solo-massage-data.js
 js/solo-massage-thick.js
 js/solo-massage.js
-js/solo-thick4.js
-js/solo-hole-data.js
-js/solo-hole-live.js
-js/solo-hole-behind.js
+late js/solo-thick4.js
+late js/solo-hole-data.js
+late js/solo-hole-live.js
+late js/solo-hole-behind.js
 late js/solo-hole-ero.js
 js/solo-hole.js
 js/dungeon-events-a.js
 js/dungeon-events-b.js
 js/dungeon-events-c.js
 js/factions.js
-js/classroom-life.js
+late js/classroom-life.js
 js/classroom-teacher.js
 js/endings.js
 js/zombie-data.js
 js/zombie-core.js
-js/zombie-npc.js
+late js/zombie-npc.js
 js/zombie-opening.js
 js/zombie-events.js
-js/zombie-reunion.js
+late js/zombie-reunion.js
 js/zombie-bite.js
 js/zombie-love.js
 js/zombie-together.js
 js/zombie-solo.js
 js/zombie-letter.js
 js/rel-kit.js
-js/zombie-rel.js
+late js/zombie-rel.js
 js/island-rel.js
-js/rel-bad-engine.js
+late js/rel-bad-engine.js
 js/island-escape.js
 js/island-stay.js
 js/island-corpse.js
@@ -174,11 +174,11 @@ js/solo-kaihen-data.js
 js/solo-kaihen-more.js
 js/solo-kaihen-voice.js
 late js/solo-kaihen-ero.js
-js/solo-kaihen-talk.js
+late js/solo-kaihen-talk.js
 js/solo-kaihen.js
 js/solo-succubus-data.js
 js/solo-succubus-more.js
-js/solo-succubus-types.js
+late js/solo-succubus-types.js
 js/solo-succubus-kohyo.js
 late js/solo-succubus-ero.js
 js/solo-succubus.js
@@ -189,11 +189,11 @@ late js/solo-saimin-ero.js
 js/solo-saimin.js
 js/solo-variety-data.js
 js/solo-variety-more.js
-js/solo-variety-extra.js
-js/solo-erotic-more-a.js
-js/solo-erotic-more-b.js
+late js/solo-variety-extra.js
+late js/solo-erotic-more-a.js
+late js/solo-erotic-more-b.js
 js/solo-variety-intro.js
-js/solo-variety-thick.js
+late js/solo-variety-thick.js
 js/solo-flow.js
 js/solo-variety.js
 js/solo-locker-data.js
@@ -206,7 +206,7 @@ js/scenario-rpg.js
 js/jashin-data.js
 js/jashin-gods.js
 js/jashin-fx-a.js
-js/jashin-fx-b.js
+late js/jashin-fx-b.js
 js/jashin-gods-rev.js
 js/jashin-more.js
 js/jashin-rel-text.js
@@ -230,7 +230,7 @@ js/jashin-godev-data-b.js
 js/jashin-godev-sp-a.js
 js/jashin-godev-sp-b.js
 js/jashin-place-lines.js
-js/jashin-place.js
+late js/jashin-place.js
 js/jashin-feud.js
 js/deathgame-kit.js
 js/yakata-data.js
@@ -246,7 +246,7 @@ js/ship-text.js
 js/ship-r18.js
 js/ship-r18-xeno.js
 js/ship-r18-xeno2.js
-js/ship-xeno-thick.js
+late js/ship-xeno-thick.js
 js/ship-thick.js
 js/ship-bond.js
 js/ship-crisis.js
@@ -256,20 +256,20 @@ js/yakata-feud.js
 js/solo-r18-moan-data.js
 js/solo-r18-moan.js
 js/solo-feud-r18.js
-js/r18-thick.js
+late js/r18-thick.js
 js/jashin-dark-thick.js
-js/solo-yakata-r18-text.js
+late js/solo-yakata-r18-text.js
 js/solo-yakata-r18.js
 js/solo-jashin-r18.js
 js/jashin-duo-r18.js
-js/solo-jashin-r18-god.js
-js/solo-jashin-r18-godnight.js
+late js/solo-jashin-r18-god.js
+late js/solo-jashin-r18-godnight.js
 js/solo-jashin-r18-climax.js
-js/jinro-data.js
+late js/jinro-data.js
 js/scenario-jinro.js
-js/jinro-after.js
+late js/jinro-after.js
 js/jinro-love.js
-js/rel-bad-story.js
+late js/rel-bad-story.js
 js/solo-rel-bad.js
 js/safe.js
 js/safe-room.js
@@ -277,10 +277,10 @@ js/share-card.js
 js/egoquiz.js
 js/saves.js
 js/tips.js
-js/tips-scen-a.js
-js/tips-scen-b.js
-js/tips-scen-c.js
-js/tips-scen-d.js
+late js/tips-scen-a.js
+late js/tips-scen-b.js
+late js/tips-scen-c.js
+late js/tips-scen-d.js
 js/ui.js
 js/ui-gear.js
 js/ui-fold.js
