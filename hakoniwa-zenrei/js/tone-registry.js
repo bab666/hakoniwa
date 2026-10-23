@@ -100,7 +100,7 @@
   HK.toneOpt = function (k, name) { var d = k && TONES[k]; return d ? d[name] : undefined; };
   /* 語尾の付け替え（derive の口調）：tone-polite-kin.js などで登録し、voice.js の V.toneFinish から呼ばれる */
   HK.TONE_FINISH = HK.TONE_FINISH || {};
-  HK.toneFinish = function (k, fn) { HK.TONE_FINISH[k] = fn; };
+  HK.toneFinish = function (k, fn) { HK.TONE_FINISH[k] = fn; };   /* fn(台詞, 話し手, { kg: 敬語の相手か, raw: 元の台詞 }) */
   /* 台詞ごとに決まる「くじ」（同じ台詞はいつも同じ結果）。n 回に 1 回 true */
   HK.lineLot = function (q, n) { var h = 7; for (var i = 0; i < q.length; i++) h = (h * 31 + q.charCodeAt(i)) % 100003; return h % n === 0; };
   /* 「あらあら」「あら」を口調の感嘆詞に替えるときの間引き。

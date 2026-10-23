@@ -545,7 +545,8 @@
             if (ov == null && !pre) { if (who.persona === 'polite' || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(V.unHonor ? V.unHonor(q) : q, who); }
             /* 口調ごとの仕上げ（後輩の「〜っす」、お嬢様の「〜ですわ」など。HK.toneFinish で登録したもの） */
             var fin = !own && !nounQ && HK.TONE_FINISH && HK.TONE_FINISH[who.tone];
-            if (fin) q = fin(q, who);
+            /* 仕上げには、敬語で話す相手への台詞か（kg）を渡す。派生の口調が敬語の文を崩すときの判断に使う */
+            if (fin) q = fin(q, who, { kg: kg, raw: q0 });
             /* 二人称の設定（敬語の相手への台詞は除く） */
             if (who.you && !kg && !nounQ) q = V.applyYou(q, who.you);
             if (YOU_ST.test(q0)) q = fixYouStutter(q);
