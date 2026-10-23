@@ -1,6 +1,7 @@
 /* 箱庭シミュレーター: 媚薬ロッカー（R18版のみ）― ロッカーを出たあとのベッドの山場を、段落に分けて厚くする
    solo-locker-bed.js の LK.bed を包み、そのあいだだけ前戯・挿入・体位・絶頂の文を、thick-sex.js（HK.ThickSex）の段落と差し替える。
-   女性どうし・描写「ぼかす」・全年齢モードは、これまでどおり。リバ同士（途中で主導権が入れ替わりうる組）は、絶頂の文を差し替えない */
+   女性どうし・描写「ぼかす」・全年齢モードは、これまでどおり。リバ同士（途中で主導権が入れ替わりうる組）は、絶頂の文を差し替えない
+   一段落版の前戯・体位の文（LK.BED.fore／pos）も候補に混ぜ、描写「ほどほど」では繋がる一文（LK.BED.insert）も使う */
 (function () {
   'use strict';
   var HK = window.HK, LK = HK.LOCKER, T = HK.ThickSex, ST = HK.Story;
@@ -31,12 +32,16 @@
     var save = { fore: B.fore, insert: B.insert, pos: B.pos, climax: B.climax, tone: tk ? B[tk] : null }, say0 = ST.say;
     /* 荒々しい攻めの回は、甘い／拘束する言い回しを挟まない（荒々しさは差し替えた挿入の段落で書く） */
     if (hard && tk) B[tk] = [''];
-    B.fore = para(FORE);
+    /* 前戯・体位を変える段落には、厚い版の文に、一段落版（solo-locker-data／more.js の LK.BED）の文も候補として混ぜる */
+    B.fore = para(FORE.concat(save.fore || []));
     /* 繋がる段落のあとに、感じていく段落（受けの快感・喘ぎ・ロッカーならではの一文）を添える */
     var pk = function (arr) { return rng.pick(arr); }, mode = fm ? 'fm' : 'mf';
     var feel = function () { return '\n\n' + pk(fm ? T.FEEL_FM : T.FEEL).replace('{mb}', T.moan(pk, y)) + '\n\n' + pk(T.PLACE.locker) + pk(T.FEEL_A[mode]) + T.react(pk, y); };
-    B.insert = (fm ? T.FM_BODY[g] : hard ? T.ROUGH_BODY : T.BODY[st] || T.BODY.gentle).map(function (x) { return x + feel() + '\n\n'; });
-    B.pos = para(fm ? POS_FM : POS, true);
+    /* 描写「ほどほど」では、一段落版の繋がる一文（男性が動く形）も候補に。「濃いめ」は厚い版だけ */
+    var ins = (fm ? T.FM_BODY[g] : hard ? T.ROUGH_BODY : T.BODY[st] || T.BODY.gentle).concat(!fm && !hard && o.lew === 'mid' ? save.insert || [] : []);
+    B.insert = ins.map(function (x) { return x + feel() + '\n\n'; });
+    var oldPos = (save.pos || []).filter(function (l) { return !fm || !(FM_BAD.test(l) || /うつ伏せ|覆いかぶさ|繋がり|奥/.test(l)); });
+    B.pos = para((fm ? POS_FM : POS).concat(oldPos), true);
     /* 絶頂の声は solo-locker-bed.js の o.moan が足すので、ここでは足さない */
     if (!riba) B.climax = para(fm ? T.FM_CLIMAX[g] : hard ? T.ROUGH_CLIMAX : T.CLIMAX[st] || T.CLIMAX.gentle, true);
     /* 段落の区切りを整える（末尾の改行・三つ以上の改行） */
