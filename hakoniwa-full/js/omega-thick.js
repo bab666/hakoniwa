@@ -13,8 +13,10 @@
   if (!HK) return;
   function L(s) { return s.split('|'); }
 
-  /* 各プールは6本。箱庭の味付け（o.flav：omega=0・ship=1・zombie=2）ごとに i%3 で引き分けるので、同じ文が箱庭をまたいで出にくい。
-     差し込み：{fl}{fl2}=箱庭ごとの感覚の一文、{mU0}=受ける側の高まる喘ぎ、{mU1}=受ける側の絶頂の声、{mT}=攻める側の快感の声、{edge}{climax}=性格別の台詞 */
+  /* 各プールは6本以上。どの箱庭からも全部を引く（以前は箱庭ごとに i%3 で引き分けていたが、1箱庭あたり各段落2本にしかならなかった）。
+     箱庭の味付けは {fl}{fl2}（o.flav：omega・ship・zombie）で出す。
+     差し込み：{fl}{fl2}=箱庭ごとの感覚の一文、{mU0}=受ける側の高まる喘ぎ、{mU1}=受ける側の絶頂の声、{mT}=攻める側の快感の声、{edge}{climax}=性格別の台詞
+     本文のあとで足すもの：GX＝体の組み合わせ（男性どうし・男女）の一文、BRK＝受ける側の態度9種の崩れ方、DEEP＝長めのときの段落、FF_RIBA＝二人ともリバの女性どうし */
   var CORE = {
     CP: {
       open: L(
@@ -208,28 +210,36 @@
       '{T}は{U}の上に腰を下ろし、熱を確かめるように擦りつけた。{U}の喉から、堪えきれない声が漏れた。|' +
       '{T}は{U}の両手を{bed}に押さえ、見下ろしたまま微笑んだ。「今日は、私の番」|' +
       '{T}は{U}の服を脱がせながら、自分も一枚ずつ脱いでいった。最後の一枚が落ちる頃には、{U}はもう限界まで硬くなっていた。|' +
-      '{T}は{U}の膝に跨って口づけ、舌を絡めながら、そっと腰を沈めはじめた。'),
+      '{T}は{U}の膝に跨って口づけ、舌を絡めながら、そっと腰を沈めはじめた。|' +
+      '{T}は{U}の脚のあいだに膝をつき、張りつめたものに指を絡めてゆっくりと扱いた。{U}が息を詰めるのを見下ろしながら、{T}は自分の腰をその上へ運んだ。|' +
+      '{T}は{U}の腰に跨ったまま、自分の胸元のボタンを一つずつ外していった。見上げる{U}の喉が、ごくりと鳴った。'),
     mid: L(
       '{T}「動かないで。……私の好きにさせて」\n\n浅いところで焦らしては、不意に根元まで呑み込む。{U}が思わず腰を突き上げると、{T}はその胸に手をついて押さえつけた。{fl}\n\n{mU0}|' +
       '{T}の中が、熱く{U}を包み込んだ。ゆっくりと腰を回すたびに、{T}自身の口からも甘い声が漏れる。{fl}\n\n{mU0}|' +
       '{T}は{U}の上で背を反らし、自分のいいところに当たるように角度を変えた。その姿に、{U}の熱がいっそう硬くなる。{fl}\n\n{edge}|' +
       '{T}「どう？　私の中」\n\n答えられない{U}を見下ろして、{T}は満足げに腰をくねらせた。{fl}\n\n{mU0}|' +
       '{T}は浅く、深く、と緩急をつけて腰を上下させた。根元まで呑み込まれるたびに、{U}の腰が震えた。{fl}\n\n{mU0}|' +
-      '{T}は{U}の手を自分の胸に導き、揺れる腰の動きをさらに速めた。{T}の中がきゅうっと締まり、{U}は息を呑んだ。{fl}\n\n{edge}'),
+      '{T}は{U}の手を自分の胸に導き、揺れる腰の動きをさらに速めた。{T}の中がきゅうっと締まり、{U}は息を呑んだ。{fl}\n\n{edge}|' +
+      '{T}は{U}の胸に両手をつき、膝で{U}の腰を挟み込んだ。深く呑み込んだまま前後に揺らすと、根元から先端までを内側で擦られて、{U}の腰が跳ねた。{fl}\n\n{mU0}|' +
+      '{T}「目、逸らさないで」\n\n見つめ合ったまま、{T}は一度だけ根元まで腰を落とし、そこで内側をきゅっと締めた。{U}の口から、情けない声が漏れた。{fl}\n\n{edge}'),
     peak: L(
       '{T}の中が、きゅうっと{U}を締め上げる。限界を訴えられても、{T}はむしろ深く腰を落とした。{fl2}\n\n{T}「まだ。……いいって言うまで」\n\n{T}が自分の頂へ駆け上がるのと同時に、許しが出た。{U}は{T}の腰を掴んだまま、奥で果てた。{mU1}|' +
       '{T}の腰の動きが速くなり、自分の快感を追うように夢中で揺れた。{U}の腰も、勝手に{T}を追いかけて浮いた。{fl2}\n\n{mU1}\n\n{T}は背を反らして達し、その締めつけに{U}も果てた。|' +
       '{T}「一緒に、イって」\n\n{T}が深く腰を沈めた瞬間、二人の体が同時に震えた。{fl2}\n\n{climax}|' +
       '{U}が限界を訴えると、{T}は動きを止めてじっと見下ろした。焦らされた末に一度だけ深く沈められて、{U}は{T}の中で弾けた。{fl2}\n\n{mU1}|' +
       '{T}は{U}の胸に爪を立て、自分の快感だけを貪るように腰を振った。その姿に煽られて、{U}も限界を越えた。{fl2}\n\n{mU1}\n\n{T}も遅れて、甘い声を上げて達した。|' +
-      '快感が高まるにつれ、{T}の余裕のある笑みが崩れていった。{fl2}\n\n{mU1}\n\n{T}は{U}の上で震えながら達し、そのまま胸に倒れ込んだ。'),
+      '快感が高まるにつれ、{T}の余裕のある笑みが崩れていった。{fl2}\n\n{mU1}\n\n{T}は{U}の上で震えながら達し、そのまま胸に倒れ込んだ。|' +
+      '{T}は{U}の手を自分の腰に導き、「掴んでて」と囁いた。導かれるまま引き寄せた瞬間、{T}の中が激しく波打ち、{U}は耐えきれずに果てた。{fl2}\n\n{mU1}|' +
+      '{T}は自分の頂が近いのを悟ると、{U}を見下ろしたまま腰の動きを一気に速めた。{fl2}\n\n{mU1}\n\n{T}が震えながら達した締めつけに搾り取られて、{U}も熱を放った。'),
     after: L(
       '{T}は{U}の胸に倒れ込み、汗ばんだ首筋に頬を寄せた。{T}「……悪くなかった」――主導権は、最後まで{T}のものだった。|' +
       '{T}は{U}の上に跨ったまま、乱れた髪をかき上げて微笑んだ。|' +
       '{T}は{U}の唇に軽く口づけ、「よくできました」と囁いた。|' +
       '{U}がまだ息を整えていると、{T}は満足げにその頬を撫でた。|' +
       '{T}は{U}の隣に寝転び、「次も私が上ね」と笑った。|' +
-      '{T}は{U}の胸の上で、しばらく鼓動を聞いていた。')
+      '{T}は{U}の胸の上で、しばらく鼓動を聞いていた。|' +
+      '{T}は{U}の上からゆっくり降りると、汗に濡れた{U}の前髪をかき上げて、「顔、真っ赤」と笑った。|' +
+      '{T}は{U}の胸に指で円を描きながら、「今度はもっと焦らしてあげる」と囁いた。')
   };
   /* 女性どうし：指と舌 */
   var FF = {
@@ -250,7 +260,8 @@
     peak: L(
       '{T}は指を止めないまま、敏感な芽に舌を這わせた。外と内を同時に責められ、{U}は{bed}を握りしめて首を振る。{fl2}\n\n{T}「いいよ、イって」\n\n囁かれた瞬間、{U}は{T}の指を締めつけて達した。{mU1}|' +
       '快感が押し寄せ、{U}の腿が{T}の頭を挟み込んだ。{T}は舌を休めず、{U}を高みへ押し上げた。{fl2}\n\n{mU1}|' +
-      '{T}は{U}と脚を絡め、濡れたところ同士を擦り合わせた。二人の腰が同じ速さで揺れ、同時に震えた。{fl2}\n\n{climax}|' +
+      '{T}は{U}の胸の先を口に含んだまま、内側を探る指を二本に増やした。{U}の腰が浮き、{T}の手首を濡らした。{fl2}\n\n{climax}|' +
+      '{T}は{U}の耳元で名前を囁きながら、外の芽を親指で、内側を中指で、同じ速さで撫で続けた。{fl2}\n\n{mU1}\n\n{U}が崩れ落ちるまで、{T}は手を止めなかった。|' +
       '{T}の指の動きが速くなり、{U}の中が波打つように締まった。{fl2}\n\n{mU1}\n\n{T}は{U}の震えが収まるまで、指を抜かずに抱きしめていた。|' +
       '何度目かの波に、{U}の体がしなった。{T}はその唇に口づけ、甘い声ごと飲み込んだ。{fl2}\n\n{mU1}|' +
       '{T}「もう一回、イけるよね」\n\n達したばかりの{U}を、{T}はさらに優しく責め立てた。二度目の波は、一度目よりずっと深かった。{fl2}\n\n{mU1}'),
@@ -261,6 +272,92 @@
       '二人は額を合わせ、互いの吐息を感じながら目を閉じた。|' +
       '{T}は濡れた指を{U}に見せつけて笑い、{U}に軽く叩かれた。|' +
       '{T}は{U}を抱きしめ、背中をゆっくりと撫で続けた。')
+  };
+  /* 二人ともリバのときだけ：脚を交差させて重ねる・上下の入れ替わり（女性どうし） */
+  var FF_RIBA = {
+    mid: L(
+      '{T}と{U}は脚を交差させ、濡れたところ同士をぴたりと重ねた。どちらからともなく腰が揺れはじめ、擦れ合う熱に二人の声が重なる。{fl}\n\n{mU0}|' +
+      '{U}が{T}の手を取り、自分から脚を絡めてきた。重なった場所を確かめるように、二人はゆっくりと腰を擦り合わせた。{fl}\n\n{mU0}'),
+    peak: L(
+      '{T}は{U}と脚を絡め、濡れたところ同士を擦り合わせた。二人の腰が同じ速さで揺れ、同時に震えた。{fl2}\n\n{climax}|' +
+      '重なったところから響く濡れた音が、二人の律動をさらに速めた。{T}と{U}は互いの名前を呼び合い、ほとんど同じ瞬間に背を反らせた。{fl2}\n\n{mU1}'),
+    deep: L(
+      '途中で{U}が{T}を押し倒し、上と下が入れ替わった。今度は{U}の指が{T}の中を探り、二人は息を乱しながら互いを追い上げていく。{fl}\n\n{mU0}|' +
+      '{T}と{U}は向かい合って座り、互いの脚のあいだへ同時に指を伸ばした。相手が感じるたびに自分の指も震えて、どちらが先に崩れるかの競い合いになった。{fl}\n\n{mU0}')
+  };
+  /* 体の組み合わせごとの一文（{gx}＝最中、{gx2}＝頂の直前）。攻めの因子の本文（CORE・ROUGH）に足す
+     mm＝男性×男性（受けの前を扱く・後ろを押し広げられる）、mf＝男性×女性（胸・芽・腿） */
+  var GX = {
+    mm: {
+      mid: L('{T}は律動に合わせて{U}の前に手を回し、張りつめたものを根元から扱き上げた。前と後ろを同時に責められて、{U}の腰が逃げ場を失う。|' +
+        '{U}の昂りが、揺さぶられるたびに二人の腹のあいだで擦れて、濡れた跡を残していった。|' +
+        '後ろを押し広げられる感覚に、{U}の背筋がぞくりと震えた。内側の一点を掠められるたび、触れられてもいない前がひくりと跳ねる。|' +
+        '{T}は{U}の先端から零れたものを指で掬い、見せつけるように竿へ塗り広げた。|' +
+        '男の体の硬さと重みが、遠慮なく{U}の上にのしかかっていた。汗ばんだ胸板どうしが擦れ合い、互いの鼓動がじかに響く。'),
+      peak: L('触れられてもいない{U}の前から、とろとろと雫が溢れ続けていた。|' +
+        '腹のあいだで擦られ続けた{U}の昂りが、限界を訴えるように張りつめた。|' +
+        '{T}は{U}の前を握り込み、後ろを突く速さに合わせて扱き立てた。|' +
+        '内側のしこりを押し潰されるたび、{U}の腰から下が溶けたように痺れた。|' +
+        '{U}のものが{T}の手の中でびくびくと脈打ち、もう少しも持ちこたえられないと訴えていた。')
+    },
+    mf: {
+      mid: L('{T}は揺れる{U}の胸を手のひらで包み、硬く尖った先を指の腹で転がした。|' +
+        '繋がったところのすぐ上で膨らんだ小さな芽を、{T}の親指が律動に合わせて撫でた。|' +
+        '{U}の柔らかな腿が{T}の腰に絡みつき、もっと奥へと引き寄せた。|' +
+        '動くたびに、{U}の濡れた音が恥ずかしいほど大きく響いた。|' +
+        '{T}は{U}の腰の下に枕を差し入れ、角度を変えて、腹の内側の弱いところを狙った。'),
+      peak: L('{U}の中が、搾り取るように波打ちはじめた。|' +
+        '揺さぶられる胸の先を口に含まれて、{U}の内側がきゅうっと収縮した。|' +
+        '芽を指で捏ねられながら奥を突かれ、{U}の腿が小刻みに震えはじめる。|' +
+        '溢れた蜜が腿を伝い、{bed}に染みを広げていた。|' +
+        '{U}は{T}の腰に脚を絡めたまま、離すまいと締めつけた。')
+    }
+  };
+  /* 濃いめのとき（depth 3）に足す段落（体位を変える・焦らす・二度目へ）。体の組み合わせごと */
+  var DEEP = {
+    core: L(
+      '{T}は一度抜け出ると、{U}を裏返して腰を高く引き上げた。後ろから一息に貫かれ、{U}は{bed}に顔を埋めてくぐもった声を上げた。{fl}\n\n{mU0}|' +
+      '{T}は{U}を抱き起こし、膝の上に向かい合わせに座らせた。自分の重みで深く沈み込む感覚に、{U}は{T}の肩にしがみついた。{fl}\n\n{mU0}|' +
+      '{T}は{U}の片脚を抱え上げ、横向きのまま深く繋がり直した。さっきとは違う場所を擦られて、{U}の声の高さが変わる。{fl}\n\n{mU0}|' +
+      '{T}「まだ、終わらせない」\n\n動きをわざと緩め、浅いところで焦らしては不意に奥を叩く。そのたびに{U}の中が{T}を引き留めるように締まった。{fl}\n\n{mU0}|' +
+      '汗で滑る肌がぶつかり合う音が、いつの間にか一定の速さになっていた。{T}は{U}の耳元で名前を呼び、呼ぶたびに奥を一つ抉った。{fl}\n\n{mU0}|' +
+      '{T}は{U}を{bed}の端まで引き寄せ、立ったまま腰を打ちつけた。宙に浮いた{U}の爪先が、律動のたびに小さく跳ねた。{fl}\n\n{mU0}'),
+    rough: L(
+      '{T}は{U}の顎を掴んで横を向かせ、喘ぐ口に指を押し込んだ。舌を弄ばれながら奥を叩かれ、{U}の声は意味をなさなくなった。{fl}\n\n{mU0}|' +
+      '{T}「誰が休んでいいって言った」\n\n崩れかけた{U}の腰を引き戻し、{T}は同じ深さで何度も打ちつけた。{fl}\n\n{mU0}|' +
+      '{T}は{U}の尻を平手で打った。乾いた音と同時に中がきゅっと締まり、{T}は低く笑ってさらに深く沈んだ。{fl}\n\n{mU0}|' +
+      '{T}は{U}を{bed}に押しつけたまま体重をかけ、逃げられない角度で奥だけを穿ち続けた。{fl}\n\n{mU0}'),
+    ride: L(
+      '{T}は一度腰を浮かせ、{U}の先端だけを入口に咥えたまま止まった。{U}が懇願するように見上げると、{T}は笑って、ゆっくり根元まで沈み直した。{fl}\n\n{mU0}|' +
+      '{T}は{U}に背を向けて跨り直し、自分のいいところに当たる角度で腰を揺らした。目の前で揺れる腰の線に、{U}は息を詰めた。{fl}\n\n{mU0}|' +
+      '{T}は{U}の両手首を枕の上で押さえ、上体を倒して胸を重ねた。口づけたまま腰だけを小刻みに揺らされ、{U}は逃げ場なく追い詰められていく。{fl}\n\n{mU0}|' +
+      '{T}「まだ出しちゃだめ」\n\n{U}の根元を指で締めつけたまま、{T}は自分だけ快感を貪るように腰を回した。{fl}\n\n{mU0}'),
+    ff: L(
+      '{T}は{U}をうつ伏せにさせ、背中に口づけを落としながら、後ろから指を沈め直した。{bed}に押しつけられた胸の先が擦れて、{U}の声が上ずる。{fl}\n\n{mU0}|' +
+      '{T}は{U}の脚のあいだに顔を埋め、指を抜き差ししながら、敏感な芽を唇で吸い上げた。{fl}\n\n{mU0}|' +
+      '{T}は{U}を膝の上に抱き寄せ、胸と胸を擦り合わせながら、後ろから回した指で奥を探った。{fl}\n\n{mU0}|' +
+      '{T}は指を三本に増やし、{U}の内側をゆっくり押し広げた。満たされる感覚に、{U}は{T}の肩に額を押しつけて震えた。{fl}\n\n{mU0}')
+  };
+  /* 受ける側の崩れ方（態度9種）：m＝最中の崩れはじめ（{brk0}）、p＝頂での崩れ切り（{brk}）。地の文（♡なし） */
+  var BRK = {
+    proud: { m: L('強がるように{T}を睨み返していた{U}の目が、少しずつ焦点を失っていく。|{U}は唇を噛んで声を殺そうとしたが、噛みしめる力のほうが先に抜けていった。|負けず嫌いの{U}は、自分から腰を揺らしていることにまだ気づいていなかった。|「この程度で」と言い返した{U}の声は、語尾で情けなく裏返った。'),
+      p: L('張り合う気力はもう残っていなかった。{U}は悔しそうに眉を寄せたまま、{T}の首にしがみついた。|最後まで余裕を装っていた{U}の声から、棘がひとつ残らず抜け落ちた。|「負けない」と言い張っていた口が、今は{T}の名前しか紡げなくなっていた。|{U}は勝ち気な目に涙をためたまま、それでも{T}から顔を逸らさなかった。') },
+    stern: { m: L('{U}は乱れる呼吸を律しようと、何度も深く息を吸い直した。そのたびに、吐く息のほうが甘く崩れた。|背筋を伸ばして生きてきた{U}の体が、{T}の腕の中でだけ、だらしなくしなっていく。|{U}は眉間に皺を寄せて耐えていたが、きつく結んだ唇の端から、隠しきれない吐息が漏れた。'),
+      p: L('{U}の厳しい表情が、ついにほどけた。自分を律していた糸が、一本ずつ切れていく。|己を戒める言葉はもう出てこなかった。{U}はただ、{T}の背に爪を立てて耐えた。|堅く閉ざしていたものが決壊したように、{U}の体が大きく震えた。|規律も体面も手放した{U}の顔は、誰にも見せたことのない色をしていた。') },
+    tsun: { m: L('「別に」と言いかけた{U}の口から、続きの代わりに甘い声が零れた。|{U}は顔を背けて意地を張っていたが、{T}の手を離そうとはしなかった。|文句を言うたびに声が裏返り、{U}は真っ赤になって{T}の肩に顔を埋めた。'),
+      p: L('意地を張る余裕は、もうどこにもなかった。{U}は{T}にしがみつき、拗ねたような声で名前を呼んだ。|「ばか」と詰る声さえ、最後はほとんど甘えた響きになっていた。|素直になれない{U}の体だけが、正直に{T}を離すまいとしていた。|{U}は「見るな」と言ったきり、{T}の胸に顔を押しつけて震えた。') },
+    gentle: { m: L('{U}は{T}の髪を撫でながら、触れられるたびに柔らかく息をこぼした。|穏やかだった{U}の呼吸が、少しずつ浅く、速くなっていく。|{U}は微笑もうとして、途中で甘い吐息に変わった口元を手で覆った。'),
+      p: L('{U}はいつもの穏やかさを手放し、{T}の名前を何度も、すがるように呼んだ。|包み込むようだった{U}の腕に力がこもり、{T}を強く抱き寄せた。|やわらかな笑みの消えた{U}の顔は、快感だけに染まっていた。|{U}の目尻から、こらえきれなかった涙がひとすじ流れた。') },
+    devoted: { m: L('{U}は{T}の動きに合わせようと、健気に腰を揺らした。|{U}は「もっと」と言いかけて恥じらい、代わりに{T}の手をぎゅっと握った。|{T}に悦んでほしい一心で、{U}は自分から体を差し出した。'),
+      p: L('{U}は涙を浮かべたまま、{T}を見上げて微笑んだ。満たされているのは自分のほうだった。|尽くすつもりでいた{U}のほうが、先に何も考えられなくなっていた。|{U}は{T}の背に回した腕を決して緩めず、すべてを預けるように身を委ねた。|{U}は何度も{T}の名前を呼び、そのたびに嬉しそうに震えた。') },
+    cool: { m: L('{U}は平静を装っていたが、浅くなる呼吸までは隠せなかった。|冷静に状況を測ろうとする{U}の思考が、快感に何度も途切れる。|表情を崩さない{U}の、耳の先だけが赤く染まっていた。'),
+      p: L('計算も分析も、もうどこにもなかった。{U}の無表情が、初めて大きく崩れた。|{U}の冷えた声色が熱に溶け、自分でも聞いたことのない声が溢れた。|{U}は理屈を探すのをやめ、ただ{T}にしがみついた。|伏せていた{U}の睫毛が震え、焦点の合わない目が{T}だけを映した。') },
+    free: { m: L('{U}は楽しげに笑いながら、自分から{T}を引き寄せた。|{U}は恥じらう素振りも見せず、気持ちいいところを素直にねだった。|奔放な{U}の腰つきが、{T}の律動を煽るように揺れた。'),
+      p: L('笑う余裕もなくなった{U}は、夢中で{T}を求めた。|{U}は声を抑えることなど考えもせず、快感をそのまま叫んだ。|好き勝手に振る舞っていた{U}が、初めて{T}に翻弄されるまま身を任せた。|{U}は{T}の背中に脚を絡め、もっと、と全身でねだった。') },
+    shy: { m: L('{U}は両手で顔を覆おうとしたが、{T}にそっと手首を外された。|自分の声が恥ずかしくて、{U}は枕に顔を押しつけた。耳まで真っ赤だった。|{U}は{T}と目が合うたびに視線を逸らし、それでも体は素直に震えた。'),
+      p: L('恥ずかしがる余裕さえ、もう残っていなかった。{U}は顔を隠すことも忘れて{T}にすがった。|{U}は真っ赤な顔のまま、消え入りそうな声で{T}の名前を呼んだ。|堪えていた声が、堰を切ったように{U}の喉から溢れ出した。|{U}は{T}の胸に顔を埋めたまま、体じゅうを小さく震わせた。') },
+    polite: { m: L('{U}は「失礼を」と言いかけて、途中で息を呑んだ。丁寧な言葉が、喘ぎに途切れていく。|{U}は乱れまいと居住まいを正そうとしたが、{T}に引き戻された。|礼儀正しかった{U}の言葉遣いが、ところどころ崩れはじめていた。'),
+      p: L('丁寧な言葉を選ぶ余裕はもうなかった。{U}は{T}の名前を、何度も短く呼んだ。|{U}は「申し訳ありません」と繰り返しながら、{T}の腕の中で乱れていった。|慎み深い{U}の顔が、見たこともないほど蕩けきっていた。|{U}は乱れた髪を直すことも忘れ、{T}にすべてを委ねていた。') }
   };
   /* 箱庭ごとの感覚の一文（{fl}＝最中、{fl2}＝頂の直前） */
   var FLAV = [
@@ -308,29 +405,50 @@
   var TK = HK.TKC = {
     on: function (lew) { return !HK.SAFE_ON && lew !== 'low' && lew !== 'off' && lew !== 'fade'; },
     ok: function (T, U) { return !(HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U)); },
+    /* 体の組み合わせ：ff＝女性どうし、ride＝女性が攻め×男性、mf＝男性（ふたなりの攻めを含む）×女性、mm＝男性どうし。
+       オメガバース（flav:'omega'）は、ふたなりの設定を使わない（体の性別で見る）。ほかの箱庭では、ふたなりの攻めは男性の体で書く */
+    kind: function (T, U, flav) {
+      var Pz = HK.Pos;
+      if (!Pz || !Pz.isFBody) return 'mf';
+      var fT = flav === 'omega' || !Pz.isF ? Pz.isFBody(T) : Pz.isF(T), fU = Pz.isFBody(U);
+      return fT && fU ? 'ff' : fT ? 'ride' : fU ? 'mf' : 'mm';
+    },
+    /* o.depth：1＝短め（書き出し・最中・頂）、2＝ふつう（最中に体の一文と崩れはじめを足す）、3＝長め（さらに体位を変える段落を足す）
+       o.extra：最中のあとに差し込む段落（場面ごとの文。呼び出し側の差し込み記号のまま） */
     body: function (T, U, o) {
-      var pk = o.pick, Pz = HK.Pos, V = HK.Voice, rng = o.rng;
-      var fB = Pz && (Pz.isFBody || Pz.isF), fT = fB && fB(T), fU = fB && fB(U);   /* オメガバースは、ふたなりの設定を使わない（体の性別で見る） */
-      var set = fT && fU ? FF : fT && !fU ? RIDE : o.rough || (HK.Ero && HK.Ero.sadist && HK.Ero.sadist(T, U) && rng() < 0.3) ? ROUGH : (CORE[topOf(T)] || CORE.NP);
-      /* 箱庭ごとの味付け：同じプールでも i%3 で引き分ける（omega=0・ship=1・zombie=2。それ以外は全部から） */
+      var pk = o.pick, Pz = HK.Pos, V = HK.Voice, rng = o.rng, dp = o.depth || 2;
+      var kd = TK.kind(T, U, o.flav), riba = kd === 'ff' && Pz && Pz.bothRiba && Pz.bothRiba(T, U);
+      var rough = kd !== 'ff' && kd !== 'ride' && !!(o.rough || (HK.Ero && HK.Ero.sadist && HK.Ero.sadist(T, U) && rng() < 0.3));
+      var set = kd === 'ff' ? FF : kd === 'ride' ? RIDE : rough ? ROUGH : (CORE[topOf(T)] || CORE.NP);
+      /* 二人ともリバの女性どうしだけ、脚を重ねる・上下の入れ替わりを混ぜる */
+      var pool = function (k) { return riba && FF_RIBA[k] ? set[k].concat(FF_RIBA[k]) : set[k]; };
       var f = o.flav === 'omega' ? 0 : o.flav === 'ship' ? 1 : o.flav === 'zombie' ? 2 : -1;
-      var part = function (arr) { if (f < 0) return arr; var a = arr.filter(function (x, i) { return i % 3 === f; }); return a.length ? a : arr; };
       var used = RUN.get(rng) || {}; RUN.set(rng, used);
       var fresh = function (arr) { var a = arr.filter(function (x) { return !used[x]; }); var x = pk(a.length ? a : arr); used[x] = 1; return x; };
-      /* 味付けの分を使い切ったら、ほかの箱庭の分からも引く（一つの結果に場面が多い漂流記で、同じ文が続かないように） */
-      var freshP = function (arr) { var a = part(arr).filter(function (x) { return !used[x]; }); if (!a.length) a = arr.filter(function (x) { return !used[x]; }); var x = pk(a.length ? a : part(arr)); used[x] = 1; return x; };
       var pf = function (a) { return pk(a); };
       var ps = function (c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || 'gentle'; };
-      var nov = NOV[ps(U)] || NOV.gentle;
+      var nov = NOV[ps(U)] || NOV.gentle, brk = BRK[ps(U)] || BRK.gentle;
       var vl = function (k) { var t = ''; for (var i = 0; i < 5; i++) { t = V && V.line ? V.line(pf, U.persona || 'gentle', k, 'U') : ''; if (!used[t]) break; } used[t] = 1; return t; };
       var edge = vl('edge'), climax = vl('climax');
-      var FL = f >= 0 ? FLAV[f] : null;
-      var paras = [(o.lead || '') + freshP(set.open), freshP(set.mid), freshP(set.peak)];
+      /* 箱庭ごとの感覚の一文。女性どうしでは、突き上げ・繋がりの文を使わない */
+      var FL = f >= 0 ? FLAV[f] : null, flp = function (arr) { if (kd !== 'ff') return arr; var a = arr.filter(function (x) { return !/突き上げ|繋がっ/.test(x); }); return a.length ? a : ['']; };
+      var gx = GX[kd], mid = fresh(pool('mid')), peak = fresh(pool('peak'));
+      /* 最中：体の一文・崩れはじめ（ふつう以上）。頂：体の一文（短めは半分）・崩れ切り */
+      if (dp >= 2) mid = mid.replace('{fl}', (gx && rng() < 0.75 ? fresh(gx.mid) : '') + '{fl}' + (rng() < 0.8 ? fresh(brk.m) : ''));
+      peak = peak.replace('{fl2}', (gx && rng() < (dp >= 2 ? 0.75 : 0.4) ? fresh(gx.peak) : '') + '{fl2}' + fresh(brk.p));
+      var paras = [(o.lead || '') + fresh(pool('open')), mid];
+      (o.extra || []).forEach(function (x) { if (x) paras.push(x); });
+      if (dp >= 3) {
+        var dk = kd === 'ff' ? 'ff' : kd === 'ride' ? 'ride' : rough ? 'rough' : 'core';
+        var dd = fresh(riba ? DEEP.ff.concat(FF_RIBA.deep) : DEEP[dk]);
+        paras.push(gx && rng() < 0.5 ? dd.replace('{fl}', fresh(gx.mid) + '{fl}') : dd);
+      }
+      paras.push(peak);
       if (o.finish) paras.push(o.finish);
-      if (!o.noAfter) paras.push(o.after || freshP(set.after));
+      if (!o.noAfter) paras.push(o.after || fresh(set.after));
       return paras.join('\n\n')
-        .replace(/\{fl\}/g, function () { return FL ? fresh(FL.fl) : ''; })
-        .replace(/\{fl2\}/g, function () { return FL ? fresh(FL.fl2) : ''; })
+        .replace(/\{fl\}/g, function () { return FL ? fresh(flp(FL.fl)) : ''; })
+        .replace(/\{fl2\}/g, function () { return FL ? fresh(flp(FL.fl2)) : ''; })
         .replace(/\{mU0\}/g, function () { return '{U}「' + fresh(nov[0]) + '」'; })
         .replace(/\{mU1\}/g, function () { return '{U}「' + fresh(nov[1]) + '」'; })
         .replace(/\{mT\}/g, function () { return '{T}「' + fresh(TOPV[topOf(T)] || TOPV.NP) + '」'; })
@@ -342,7 +460,11 @@
     map: function (t, kT, kU) { return t.replace(/\{T\}/g, '{' + kT + '}').replace(/\{U\}/g, '{' + kU + '}'); }
   };
 
-  /* ---------------- オメガバース ---------------- */
+  /* ---------------- オメガバース ----------------
+     描写の濃さ：ほどほど（mid）＝短め（depth 1：書き出し・最中・第二性の段落1つ・頂・結び）、
+     濃いめ（high）＝長め（depth 3：最中に体の一文と崩れはじめ、気質の段落と第二性の段落、体位を変える段落、頂・結び）。
+     第二性の組（ao＝α攻め×Ω受け／oa＝Ω攻め×α受け／aa＝α同士／oo＝Ω同士／b＝βがいる）の文は、
+     omega-heat.js（ACT・ACT_R・ACT_FF・KNOT・KNOT_R・BETA・AFTERGLOW_FF）と omega-love.js（T.lead・play・knot・after・bondAfter・playFF・knotFF）から段落に組み込む */
   var OM = HK.OMEGA;
   if (!OM || !OM.HEAT) return;
   var H = OM.HEAT;
@@ -351,6 +473,66 @@
   var KNOT = L('ノットが膨らみ、二人は繋がったまま動けなくなった。根元で栓をされたまま、熱が何度も奥へ脈打つ。{U}は{T}の胸に額を押しつけて、小さく震えていた。|結ばれたまま、{T}は{U}の背中をゆっくり撫で続けた。腹の奥が満たされていく感覚に、{U}はうっとりと目を閉じた。');
   var KNOT_R = L('{T}は{U}の奥で果てても、発情の熱は引かなかった。繋がったまま{U}を抱きすくめ、また緩やかに腰を揺らし始める。|果てたあとも、{T}は{U}を離さなかった。{sT}の匂いが、{U}の体の奥まで染み込んでいた。');
   var BETA = L('βの{T}には、ノットも匂いに酔う本能もない。それでも{T}は、{U}の熱が引くまで何度でも抱いた。|{T}「匂いが分からなくても、欲しがってるのは分かる」――βの{T}は、{U}が満たされるまで離さなかった。');
+  /* 女性が攻め×男性が受け（跨る）の第二性の組の段落と結び。{T}=女性（攻め） {U}=男性 */
+  var RIDE_CB = {
+    ao: L('αの{T}は{U}に跨り、{sU}の匂いを胸いっぱいに吸い込みながら腰を沈めた。主導権を握られたΩの{U}は、匂いに溺れたまま下から見上げるしかなかった。|{T}は{U}のうなじに顔を寄せ、αの匂いを擦りつけるように跨ったまま腰を揺らした。{U}は番を求める本能に抗えず、ただ{T}の名前を呼んだ。|{T}は跨ったまま{U}のうなじに歯を当て、噛みはしなかった。そのたびにΩの{U}の体がびくりと跳ね、{T}の中で熱を増した。'),
+    oa: L('Ωの{T}はαの{U}の上に跨り、「今日は私が決める」と笑った。αの本能が押し倒せと叫んでも、{U}の腕は{T}の腰を支えることしかできなかった。|{T}は{U}の根元がわずかに膨らみはじめるのを感じて、わざと浅いところで腰を止めた。αの{U}は、Ωに焦らされる悔しさと快感に歯を食いしばった。|{sT}の甘い匂いを撒き散らしながら、{T}は{U}の上で腰を揺らした。αの理性が、跨るΩの重みの下で一枚ずつ剥がれていく。'),
+    aa: L('αどうしの主導権争いは、{T}が{U}に跨ったところで決着した。睨み上げる{U}の目が、腰を沈められた瞬間に揺らいだ。|{T}は{U}の両肩を押さえて跨ったまま、「αなら、我慢くらいできるでしょ」と囁いた。{U}は意地で耐えようとして、すぐに耐えられなくなった。|αどうしの強い匂いがぶつかり合い、部屋の空気が張りつめた。{T}はその緊張ごと呑み込むように、{U}の上へ腰を落とした。'),
+    oo: L('Ωどうしの甘い匂いが混ざり合い、二人とも熱に浮かされていた。{T}は{U}に跨り、互いの熱を鎮めるように腰を揺らした。|発情の波が二人同時に押し寄せていた。{T}は{U}の上で何度も体勢を変えながら、溢れる熱を分け合った。|{sU}と{sT}の匂いが溶け合い、どちらが求めているのか分からなくなった。{T}は{U}の胸に手をつき、夢中で腰を沈めた。'),
+    b: L('匂いに導かれない分、{T}は{U}の顔をまっすぐ見下ろしたまま、確かめるように腰を沈めた。|βのいる二人には、発情の熱も匂いの酔いもない。それでも{T}は{U}の上で、互いの体温だけを頼りに何度も腰を揺らした。|{T}は{U}に跨ったまま、「匂いなんかなくても分かる」と囁いた。{U}の熱は、言葉より正直に{T}に応えていた。')
+  };
+  var RIDE_KN = {
+    ao: L('αの{T}にノットはない。代わりに{T}は、果てたあとも{U}の上から降りず、うなじに何度も口づけを落とした。|跨ったまま達した{T}は、Ωの{U}を見下ろして、満足げにうなじを撫でた。{U}の中にはまだ、{T}の匂いの熱が残っていた。|{T}は{U}の胸に倒れ込み、Ωの匂いの染みた首筋に鼻を埋めた。「……これで、私のもの」'),
+    oa: L('{U}のノットが{T}の中で膨らみ、二人は繋がったまま動けなくなった。跨ったまま、{T}は「逃がさないのは私のほう」と笑った。|{U}の根元に栓をされたまま、{T}は{U}の胸に倒れ込んだ。αの熱が、何度も{T}の奥で脈打った。|結ばれて動けないまま、{T}は{U}の唇をついばんだ。αの{U}は、Ωに組み敷かれたまま果てた悔しさを、口づけで誤魔化された。'),
+    aa: L('{U}の根元が膨らみ、{T}は跨ったまま身動きが取れなくなった。αどうしの意地の張り合いは、どちらも離れられないまま引き分けた。|ノットに繋ぎ止められたまま、{T}は「次も私が上」と言い、{U}は悔しそうに笑った。|果てたあとも、二人は睨み合うように見つめ合っていた。先に目を逸らしたのは、下にいる{U}だった。'),
+    oo: L('Ωどうしの熱は、一度果てても引かなかった。{T}は{U}の上に跨ったまま、もう一度ゆっくりと腰を揺らしはじめた。|二人は汗まみれのまま抱き合い、甘い匂いの中でしばらく動けなかった。|{T}は{U}の胸に頬を寄せ、二人分の熱がゆっくり引いていくのを待った。'),
+    b: L('ノットも匂いの酔いもない交わりだった。{T}は{U}の胸に頬を寄せ、互いの鼓動が落ち着くのを待った。|{T}は果てたあとも{U}の上から降りず、汗ばんだ額に口づけた。|{T}は{U}の隣に転がり、「匂いがなくても、ちゃんと分かったでしょ」と笑った。')
+  };
+  /* 女性どうしの第二性の組の段落（指・舌・肌。{T}=動く側） */
+  var FF_CB = {
+    ao: L('αの{T}は、Ωの{U}の匂いに誘われるまま、首筋から胸、脚のあいだへと唇を下ろしていった。|{T}は{U}のうなじに口づけながら、後ろから回した指で{U}の熱いところを探った。Ωの体は、αの指にだけ従順にほどけていく。|{T}はΩの{U}のうなじに歯を当て、噛まずに離した。そのたびに{U}の内側が、{T}の指をきゅっと締めつけた。'),
+    oa: L('Ωの{T}はαの{U}を仰向けにさせ、「αでも、こうされると弱いんだ」と笑って指を沈めた。|{sT}の甘い匂いにαの{U}の理性が揺らぐ。{T}はその隙に、{U}のいちばん敏感なところへ舌を這わせた。|αの{U}は、Ωの{T}に組み敷かれたまま、悔しさと快感の間で何度も首を振った。'),
+    aa: L('αどうしの{T}と{U}は、どちらが先に相手を崩すか張り合うように肌を重ねた。先に指を沈めたのは{T}だった。|強い匂いをぶつけ合いながら、{T}は{U}の脚を割り、意地を溶かすように舌を使った。|αの意地で声を殺す{U}の唇を、{T}は口づけでこじ開けた。'),
+    oo: L('Ωどうしの二人は、発情の熱を分け合うように肌を寄せ合った。{T}の指が{U}の中を探るたび、二人分の甘い匂いが濃くなっていく。|{T}と{U}は巣の中で抱き合い、互いの熱いところを指で慰め合った。|{sT}と{sU}の匂いが混ざり合い、{T}の舌が触れるたびに{U}の腰が甘く跳ねた。'),
+    b: L('匂いの導きがない分、{T}は{U}の表情だけを見つめて、指の角度を少しずつ変えていった。|βのいる二人には、匂いの酔いがない。{T}は{U}の声だけを頼りに、いちばん感じるところを探り当てた。|{T}は{U}の反応を一つずつ確かめながら、焦らすように舌を這わせた。')
+  };
+  function sxOf(c) { return c.om && c.om.sex; }
+  /* {a}=攻めのテンプレート（omega-love.js）を {T}{U} に。aIsT=false なら入れ替える。{x}{o}（Ωとそうでない側）も埋める */
+  function toTU(s, aIsT, T, U) {
+    var O = sxOf(U) === 'o' ? U : sxOf(T) === 'o' ? T : U, oT = O === T;
+    return s.replace(/\{sa\}/g, aIsT ? '{sT}' : '{sU}').replace(/\{sb\}/g, aIsT ? '{sU}' : '{sT}')
+      .replace(/\{a\}/g, aIsT ? '{T}' : '{U}').replace(/\{b\}/g, aIsT ? '{U}' : '{T}')
+      .replace(/\{o\}/g, oT ? '{T}' : '{U}').replace(/\{x\}/g, oT ? '{U}' : '{T}');
+  }
+  /* 第二性の組（T=攻め U=受け）で引く段落と結び。kd：TK.kind の体の組み合わせ。riba：二人ともリバ */
+  function cbPlay(pk, T, U, kd, riba) {
+    var LV = OM.LOVE, cb = LV ? LV.combo(T, U) : 'b', hardT = HK.Pos && HK.Pos.hardTop(T);
+    if (kd === 'ride') return { cb: cb, play: pk(RIDE_CB[cb] || RIDE_CB.b) };
+    if (kd === 'ff') return { cb: cb, play: pk(FF_CB[cb] || FF_CB.b) };
+    var arr = [];
+    if (LV) LV.T.play.forEach(function (p) { if (p[cb]) arr = arr.concat(p[cb]); });
+    arr = arr.filter(function (x) { return !(hardT && /主導権/.test(x)); });
+    if (!arr.length && LV) arr = pk(LV.T.play).base;
+    return { cb: cb, play: arr.length ? toTU(pk(arr), true, T, U) : '' };
+  }
+  function cbKnot(pk, T, U, kd, cb, o) {
+    var LV = OM.LOVE, fx = HK.Pos && HK.Pos.fixed(T, U);
+    if (kd === 'ride') return pk(RIDE_KN[cb] || RIDE_KN.b);
+    if (kd === 'ff') {
+      var fk = (LV ? LV.T.knotFF.map(function (x) { return toTU(x, true, T, U); }) : []).concat((H.AFTERGLOW_FF || []).map(function (x) { return toTU(x, true, T, U); }));
+      return fk.length ? pk(fk) : '';
+    }
+    var kn = LV ? (LV.T.knot[cb] || []).filter(function (x) { return !(fx && /次はこっちが上/.test(x)); }).map(function (x) { return toTU(x, true, T, U); }) : [];
+    /* 発情期：ノット（α攻め×Ω受け）・Ω攻めの結び・βの結び */
+    if (o && o.heat) {
+      if (o.beta && !o.rev) kn = BETA.concat((H.BETA || []).map(function (x) { return toTU(x, !o.rev, T, U); }));
+      else if (o.rev) kn = kn.concat(KNOT_R, (H.KNOT_R || []).map(function (x) { return toTU(x, false, T, U); }));
+      else if (cb === 'ao') kn = kn.concat(KNOT, (H.KNOT || []).map(function (x) { return toTU(x, true, T, U); }));
+    }
+    return kn.length ? pk(kn) : '';
+  }
+  /* 女性どうしで、二人ともリバでないときは、脚を重ねる・双頭の玩具の文を除く */
+  function ffOk(riba) { return function (x) { return riba || !/擦り合わせ|双頭/.test(x); }; }
   var h0 = H.scene;
   H.scene = function (ctx, a, b, opt) {
     opt = opt || {};
@@ -359,13 +541,20 @@
     /* {a}=相手、{b}=発情期のΩ。受け攻めの指定でΩが攻めなら入れ替える */
     var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1], rev = T === b;
     if (!TK.ok(T, U)) return h0.apply(this, arguments);
-    var ff = HK.Pos.ff(a, b), kT = rev ? 'b' : 'a', kU = rev ? 'a' : 'b';
+    var ff = HK.Pos.ff(a, b), kT = rev ? 'b' : 'a', kU = rev ? 'a' : 'b', hi = lew === 'high', lk = hi ? 'high' : 'mid';
     var pk = function (arr) { return ctx.pick(arr); };
+    var kd = TK.kind(T, U, 'omega'), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(T, U);
     var noRecv = function (arr, re) { if (!rev) return arr; var f = arr.filter(function (l) { return !re.test(l); }); return f.length ? f : arr; };
     var moe = H.MOE.filter(function (l) { return !(ff && /喉仏/.test(l)); });
     var head = pk(H.COME[HK.voiceTop(a)]) + pk(noRecv(H.STATE[HK.voiceTop(b)], /触れた瞬間|さわって|ほどくと/)) + pk(noRecv(moe, /いっぱいにして|噛まない|肩がびくりと/));
-    var fin = ff ? '' : opt.beta && !rev ? pk(BETA) : ctx.rng() < (lew === 'high' ? 0.8 : 0.55) ? pk(rev ? KNOT_R : KNOT) : '';
-    var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', lead: ff ? '' : pk(rev ? LEAD_HEAT_R : LEAD_HEAT), finish: fin, noAfter: true });
+    /* 気質の段落（相手の因子。Ωが攻めならΩの因子）と、第二性の組の段落 */
+    var cp = cbPlay(pk, T, U, kd, riba), act = '';
+    if (kd === 'ff') { var af = (H.ACT_FF[lk] || []).filter(ffOk(riba)); if (af.length) act = toTU(pk(af), true, T, U); }
+    else if (kd !== 'ride') act = rev ? toTU(pk(H.ACT_R[lk][HK.voiceTop(b)]), false, T, U) : toTU(pk(H.ACT[lk][HK.voiceTop(a)]), true, T, U);
+    var extra = hi ? [act, cp.play] : [act + cp.play];
+    /* 結び：濃いめは必ず、ほどほどは6割 */
+    var fin = hi || ctx.rng() < 0.6 ? cbKnot(pk, T, U, kd, cp.cb, { heat: true, rev: rev, beta: opt.beta }) : '';
+    var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: hi ? 3 : 1, lead: kd === 'ff' ? '' : pk(rev ? LEAD_HEAT_R : LEAD_HEAT), extra: extra, finish: fin, noAfter: true });
     body = TK.map(body.replace(/\{sT\}/g, '{s' + kT + '}').replace(/\{sU\}/g, '{s' + kU + '}'), kT, kU);
     var sc = OM.sc || function (t) { return t; };
     var V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
@@ -373,19 +562,29 @@
     if (ff && HK.FF) res = HK.FF.fix(ctx, res, T, U, { tools: true });
     return res;
   };
-  /* 恋人・番の夜（omega-love.js） */
+  /* 恋人・番の夜（omega-love.js）：はじまり（気質）・第二性の組のプレイ・結び・事後（受ける側の気質／番） */
   var BOND_LEAD = L('{U}のうなじの噛み跡に、{T}がそっと唇を寄せた。そこに触れられるだけで、{U}の体から力が抜けていく。|番の匂いが混ざり合って、どちらの熱なのか分からなくなっていた。|');
   var l0 = OM.loveScene;
   if (l0) OM.loveScene = function (ctx, x, y, bond) {
     var s = l0.apply(this, arguments);
     var lew = ctx.env.lewd || 'mid';
     if (!TK.on(lew) || !HK.Pos || !HK.Voice || !s || !s.A) return s;
-    var A = s.A, B = s.B;
+    var A = s.A, B = s.B, LV = OM.LOVE;
     if (!TK.ok(A, B)) return s;
-    var pk = function (arr) { return ctx.pick(arr); }, ff = HK.Pos.ff(A, B);
-    var body = TK.body(A, B, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', lead: bond && !ff ? pk(BOND_LEAD) : '' });
+    var pk = function (arr) { return ctx.pick(arr); }, ff = HK.Pos.ff(A, B), hi = lew === 'high';
+    var kd = TK.kind(A, B, 'omega'), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(A, B);
+    var cp = cbPlay(pk, A, B, kd, riba), extra = [cp.play];
+    /* 濃いめ：組み合わせを問わないプレイをもう一つ（女性どうしは指・舌の文） */
+    if (hi && LV) {
+      if (kd === 'ff') { var pf2 = LV.T.playFF.filter(ffOk(riba)); if (pf2.length) extra.push('それから、' + toTU(pk(pf2), true, A, B)); }
+      else if (kd !== 'ride') extra.push('それから、' + toTU(pk(pk(LV.T.play).base), true, A, B));
+    }
+    var lead = (bond && !ff ? pk(BOND_LEAD) : '') + (LV && kd !== 'ride' && ctx.rng() < 0.6 ? toTU(pk(LV.T.lead[HK.voiceTop(A)] || LV.T.lead.NP), true, A, B) : '');
+    var fin = hi || ctx.rng() < 0.7 ? cbKnot(pk, A, B, kd, cp.cb) : '';
+    var aft = LV && ctx.rng() < 0.7 ? toTU(pk(bond && ctx.rng() < 0.5 ? LV.T.bondAfter : LV.T.after[HK.voiceTop(B)] || LV.T.after.NP), true, A, B) : null;
+    var body = TK.body(A, B, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: hi ? 3 : 1, lead: lead, extra: extra, finish: fin, after: aft });
     var sc = OM.sc || function (t) { return t; };
-    var text = sc(ctx.t(TK.map(body, 'a', 'b'), A, B), A, B);
+    var text = sc(ctx.t(TK.map(body.replace(/\{sT\}/g, '{sa}').replace(/\{sU\}/g, '{sb}'), 'a', 'b'), A, B), A, B);
     if (ff && HK.FF) text = HK.FF.fix(ctx, text, A, B, { tools: true });
     /* 書き出し（いつ・どこで）は元の場面の最初の一文を残す */
     var first = (s.text.match(/^[^。]*。/) || [''])[0];
@@ -407,7 +606,7 @@
       var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1];
       if (!TK.ok(T, U)) return res;
       var pk = function (arr) { return ctx.pick(arr); }, ff = HK.Pos.ff(a, b);
-      var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', rough: hate, lead: hate ? pk(HATE_LEAD) : '', after: hate ? pk(HATE_END) : null });
+      var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: lew === 'high' ? 3 : 1, rough: hate, lead: hate ? pk(HATE_LEAD) : '', after: hate ? pk(HATE_END) : null });
       var sc = OM.sc || function (t) { return t; };
       var text = sc(ctx.t(TK.map(body, 'a', 'b'), T, U), T, U);
       if (ff && HK.FF) text = HK.FF.fix(ctx, text, T, U, { tools: true });
