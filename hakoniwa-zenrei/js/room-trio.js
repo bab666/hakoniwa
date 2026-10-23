@@ -275,6 +275,11 @@
     var toyOK = function (l) { return !/双頭/.test(l) || bothRiba(sp.t, sp.m); };
     if (!X) return ctx.pick(SEX[sp.p]).replace(/\{t\}/g, sp.t.name).replace(/\{m\}/g, sp.m.name).replace(/\{u\}/g, sp.u.name) + ctx.pick(CLIMAX3);
     var out = [], used = [];
+    /* R18の描写の設定（lewd-unify.js）：ほのめかす＝暗転の一文（safe-room.js）、短く＝本番と絶頂だけ、男性向け＝thick-sex-ero.js の三人の文、濃い＝もう一度 */
+    var LV = HK.Lewd, r18 = !HK.SAFE_ON && LV;
+    if (r18 && LV.lv(ctx.env) === 'low' && HK.RoomFade3) return HK.RoomFade3(ctx);
+    var tShort = r18 && LV.short(ctx.env, ctx.rng), TE = r18 && LV.ero(ctx.env) && HK.ThickEro && HK.ThickEro.TRIO ? HK.ThickEro : null, tHigh = r18 && LV.high(ctx.env);
+    var efill = function (l) { return X.fill(TE.trioFill(ctx, l, r), r); };
     var pickTagged = function (pool, wfn) {
       var cands = pool.filter(ok).filter(function (o) { return o.t.some(penOK); });
       if (!cands.length) return null;
@@ -285,13 +290,19 @@
       return { o: o, text: X.fill(ctx.pick(ls.length ? ls : o.t), r) };
     };
     /* 前戯（初回だけ）：嫉妬・開放度・きっかけに合う文を優先 */
-    if (first) {
+    if (first && !tShort) {
       var w = pickTagged(X.WARM.filter(function (o) { return o.t.some(noHub); }), function (z) { return (z.jeal ? 2.6 : 1) * (z.open ? 1.8 : 1) * (z.kinds ? 2 : 1); });
       if (w) { out.push(w.text); if (w.o.jeal || w.o.open) used.push(w.o.jeal ? '嫉妬の前戯' : OPEN_LABEL[op] + 'な受け'); }
     }
     /* 本番 */
     var ml = ffE && X.MAIN_FF ? X.MAIN_FF[sp.p].filter(swapOK).concat(ctx.flags.toolbox ? (X.TOY_FF[sp.p] || []).filter(toyOK).filter(swapOK) : []) : X.MAIN[sp.p].filter(noHub).filter(swapOK);
     out.push(X.fill(ctx.pick(ml.length ? ml : X.MAIN[sp.p].filter(swapOK)), r));
+    /* 男性向け：入れる側がみな男性なら挿入の文、そうでなければ指・舌・口の文を足す */
+    if (TE) {
+      var pens = { oneTwo: [sp.t], twoOne: [sp.t, sp.m], sandwich: [sp.t, sp.m], ring: [sp.t, sp.m, sp.u] }[sp.p] || [sp.t];
+      var penM = !ffE && HK.Pos && pens.every(function (c) { return !HK.Pos.isF(c); }) && TE.TRIO.pen[sp.p];
+      out.push(efill(ctx.pick(penM ? TE.TRIO.pen[sp.p] : TE.TRIO.soft)));
+    }
     /* リバ同士の二人がいれば、入れ替わりの一文を足すことがある */
     var rb = (ffE ? X.RIBA_FF : X.RIBA) || [];
     rb = rb.filter(function (o) { return (!o.shapes || o.shapes.split(' ').indexOf(sp.p) >= 0) && ribaOK(o); });
@@ -315,22 +326,26 @@
       if (o.after) after = o.after;
       return true;
     };
+    if (!tShort) {
     var hlJ = X.HL.filter(function (o) { return o.jeal; }), hlO = X.HL.filter(function (o) { return o.open && !o.jeal; }), hlG = X.HL.filter(function (o) { return !o.jeal && !o.open; });
     var nJ = J.jeal !== 'none' ? (ctx.rng() < 0.85 ? 1 : 0) : (ctx.rng() < 0.45 ? 1 : 0);
     if (nJ) addHL(hlJ);
     if (ctx.rng() < (first ? 0.6 : 0.35)) addHL(hlO);
     var nG = first ? (ctx.rng() < 0.6 ? 1 : 0) + (used.length < 2 ? 1 : 0) : (used.length ? 0 : 1);
     for (var k = 0; k < nG; k++) addHL(hlG, function (z) { return (z.kinds ? 2.2 : 1) * (z.shapes ? 1.6 : 1) * (z.who ? 1.3 : 1); });
+    }
     if (sp.p === 'sandwich' && V && !hardTop(sp.m) && ctx.rng() < 0.6) out.push(X.fill(V.line(pf, sp.m.persona, 'climax', 'b').replace(/\{b\}/g, '{m}').replace(/\{a\}/g, '{t}'), r));
     /* 絶頂：形・嫉妬・開放度に合う文があれば優先 */
-    if (!r.synced) {
+    if (TE) out.push(efill(ctx.pick(TE.TRIO.climax)));
+    else if (!r.synced) {
       var cx = (X.CLIMAX_X || []).filter(function (o) { return ok(o) && o.t.some(penOK) && (!o.after || o.after === after); });
       var c = cx.length && ctx.rng() < 0.7 ? HK.weighted(ctx.rng, cx, function (z) { return (z.jeal ? 2 : 1) * (z.open ? 1.5 : 1) * (z.kinds ? 2 : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
       if (c) { ctx.flags.trioHL[c.id] = (ctx.flags.trioHL[c.id] || 0) + 1; var cl = c.t.filter(penOK); out.push(X.fill(ctx.pick(cl.length ? cl : c.t), r)); }
       else out.push(X.fill(ctx.pick(X.CLIMAX.filter(penOK)), r));
     }
+    if (tHigh && HK.ThickEro) out.push(TE ? efill(ctx.pick(TE.TRIO.again)) : X.fill(ctx.pick(HK.ThickEro.TRIO.againNovel), r));
     /* 余韻：見所の結末（折れた／険悪／連帯）と嫉妬・開放度に合わせる */
-    if (ctx.rng() < (first ? 0.75 : 0.4)) {
+    if (!tShort && ctx.rng() < (first ? 0.75 : 0.4)) {
       var ax = (X.AFTER_X || []).filter(function (o) { return ok(o) && o.t.some(rolesOK) && (!o.after || o.after === after || (!after && o.after === 'bond' && J.jeal === 'none')); });
       var a = ax.length && ctx.rng() < (after ? 0.9 : 0.6) ? HK.weighted(ctx.rng, ax, function (z) { return (z.after && z.after === after ? 3 : 1) * (z.jeal ? 1.6 : 1) * (z.kinds ? 2 : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
       var al = a ? a.t.filter(rolesOK) : [];

@@ -9674,6 +9674,11 @@
     var toyOK = function (l) { return !/双頭/.test(l) || bothRiba(sp.t, sp.m); };
     if (!X) return ctx.pick(SEX[sp.p]).replace(/\{t\}/g, sp.t.name).replace(/\{m\}/g, sp.m.name).replace(/\{u\}/g, sp.u.name) + ctx.pick(CLIMAX3);
     var out = [], used = [];
+    /* R18の描写の設定（lewd-unify.js）：ほのめかす＝暗転の一文（safe-room.js）、短く＝本番と絶頂だけ、男性向け＝thick-sex-ero.js の三人の文、濃い＝もう一度 */
+    var LV = HK.Lewd, r18 = !HK.SAFE_ON && LV;
+    if (r18 && LV.lv(ctx.env) === 'low' && HK.RoomFade3) return HK.RoomFade3(ctx);
+    var tShort = r18 && LV.short(ctx.env, ctx.rng), TE = r18 && LV.ero(ctx.env) && HK.ThickEro && HK.ThickEro.TRIO ? HK.ThickEro : null, tHigh = r18 && LV.high(ctx.env);
+    var efill = function (l) { return X.fill(TE.trioFill(ctx, l, r), r); };
     var pickTagged = function (pool, wfn) {
       var cands = pool.filter(ok).filter(function (o) { return o.t.some(penOK); });
       if (!cands.length) return null;
@@ -9684,13 +9689,19 @@
       return { o: o, text: X.fill(ctx.pick(ls.length ? ls : o.t), r) };
     };
     /* 前戯（初回だけ）：嫉妬・開放度・きっかけに合う文を優先 */
-    if (first) {
+    if (first && !tShort) {
       var w = pickTagged(X.WARM.filter(function (o) { return o.t.some(noHub); }), function (z) { return (z.jeal ? 2.6 : 1) * (z.open ? 1.8 : 1) * (z.kinds ? 2 : 1); });
       if (w) { out.push(w.text); if (w.o.jeal || w.o.open) used.push(w.o.jeal ? '嫉妬の前戯' : OPEN_LABEL[op] + 'な受け'); }
     }
     /* 本番 */
     var ml = ffE && X.MAIN_FF ? X.MAIN_FF[sp.p].filter(swapOK).concat(ctx.flags.toolbox ? (X.TOY_FF[sp.p] || []).filter(toyOK).filter(swapOK) : []) : X.MAIN[sp.p].filter(noHub).filter(swapOK);
     out.push(X.fill(ctx.pick(ml.length ? ml : X.MAIN[sp.p].filter(swapOK)), r));
+    /* 男性向け：入れる側がみな男性なら挿入の文、そうでなければ指・舌・口の文を足す */
+    if (TE) {
+      var pens = { oneTwo: [sp.t], twoOne: [sp.t, sp.m], sandwich: [sp.t, sp.m], ring: [sp.t, sp.m, sp.u] }[sp.p] || [sp.t];
+      var penM = !ffE && HK.Pos && pens.every(function (c) { return !HK.Pos.isF(c); }) && TE.TRIO.pen[sp.p];
+      out.push(efill(ctx.pick(penM ? TE.TRIO.pen[sp.p] : TE.TRIO.soft)));
+    }
     /* リバ同士の二人がいれば、入れ替わりの一文を足すことがある */
     var rb = (ffE ? X.RIBA_FF : X.RIBA) || [];
     rb = rb.filter(function (o) { return (!o.shapes || o.shapes.split(' ').indexOf(sp.p) >= 0) && ribaOK(o); });
@@ -9714,22 +9725,26 @@
       if (o.after) after = o.after;
       return true;
     };
+    if (!tShort) {
     var hlJ = X.HL.filter(function (o) { return o.jeal; }), hlO = X.HL.filter(function (o) { return o.open && !o.jeal; }), hlG = X.HL.filter(function (o) { return !o.jeal && !o.open; });
     var nJ = J.jeal !== 'none' ? (ctx.rng() < 0.85 ? 1 : 0) : (ctx.rng() < 0.45 ? 1 : 0);
     if (nJ) addHL(hlJ);
     if (ctx.rng() < (first ? 0.6 : 0.35)) addHL(hlO);
     var nG = first ? (ctx.rng() < 0.6 ? 1 : 0) + (used.length < 2 ? 1 : 0) : (used.length ? 0 : 1);
     for (var k = 0; k < nG; k++) addHL(hlG, function (z) { return (z.kinds ? 2.2 : 1) * (z.shapes ? 1.6 : 1) * (z.who ? 1.3 : 1); });
+    }
     if (sp.p === 'sandwich' && V && !hardTop(sp.m) && ctx.rng() < 0.6) out.push(X.fill(V.line(pf, sp.m.persona, 'climax', 'b').replace(/\{b\}/g, '{m}').replace(/\{a\}/g, '{t}'), r));
     /* 絶頂：形・嫉妬・開放度に合う文があれば優先 */
-    if (!r.synced) {
+    if (TE) out.push(efill(ctx.pick(TE.TRIO.climax)));
+    else if (!r.synced) {
       var cx = (X.CLIMAX_X || []).filter(function (o) { return ok(o) && o.t.some(penOK) && (!o.after || o.after === after); });
       var c = cx.length && ctx.rng() < 0.7 ? HK.weighted(ctx.rng, cx, function (z) { return (z.jeal ? 2 : 1) * (z.open ? 1.5 : 1) * (z.kinds ? 2 : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
       if (c) { ctx.flags.trioHL[c.id] = (ctx.flags.trioHL[c.id] || 0) + 1; var cl = c.t.filter(penOK); out.push(X.fill(ctx.pick(cl.length ? cl : c.t), r)); }
       else out.push(X.fill(ctx.pick(X.CLIMAX.filter(penOK)), r));
     }
+    if (tHigh && HK.ThickEro) out.push(TE ? efill(ctx.pick(TE.TRIO.again)) : X.fill(ctx.pick(HK.ThickEro.TRIO.againNovel), r));
     /* 余韻：見所の結末（折れた／険悪／連帯）と嫉妬・開放度に合わせる */
-    if (ctx.rng() < (first ? 0.75 : 0.4)) {
+    if (!tShort && ctx.rng() < (first ? 0.75 : 0.4)) {
       var ax = (X.AFTER_X || []).filter(function (o) { return ok(o) && o.t.some(rolesOK) && (!o.after || o.after === after || (!after && o.after === 'bond' && J.jeal === 'none')); });
       var a = ax.length && ctx.rng() < (after ? 0.9 : 0.6) ? HK.weighted(ctx.rng, ax, function (z) { return (z.after && z.after === after ? 3 : 1) * (z.jeal ? 1.6 : 1) * (z.kinds ? 2 : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
       var al = a ? a.t.filter(rolesOK) : [];
@@ -36385,6 +36400,60 @@
     box.querySelector('#agemode-no').addEventListener('click', function () { ask.hidden = true; });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', toggleUI); else toggleUI();
+  /* ---------- 結果の文をまろやかにする ---------- */
+  /* はっきり性的な文：その場面を「二人だけの秘密」に置き換える */
+  var HARD = /挿入|挿れ|中出し|中に出|精液|白濁|射精|イく|イっ|イッ|イか|イキ|絶頂|乳首|股間|陰部|ペニス|性器|秘所|秘部|腰を振|腰を打ち|突き上げ|奥まで|奥へ|奥に|奥を|最奥|膣|フェラ|咥え|口に含|舐め|舌を這|愛液|勃|跨|騎乗|正常位|後背位|座位|寝バック|立ちバック|全裸|裸に|服を剥|服の中|下着|胸を揉|揉みしだ|押し倒|セックス|性行為|避妊|孕|ノット|結び目|種付|注ぎ込|腰を沈|腰を落と|喘ぎ|喘い|果て|あられもない|しゃぶ|迎え入れ|受け入れていた|繋がり|繋がった|繋がって|押し入|達し|寸止め|一突き|揺れ続け|唇を這わ|全身に唇|服は[^。]*床に落ち|数ミリの揺れ|身悶え|擦れ|軋む|軋ん/;
+  /* ほのめかし程度の文：黙って消す */
+  var SOFT = /乾いている|しよ？|楽しもう|ガスのせいにしちゃ|我慢しなくていい|脱ぎ|ベルトを外|服にも手を|濡れて|濡らし|脱が|脱い|気持ちよ|気持ちい|感じて|感じる|感じや|焦らさ|焦らし|焦れ|ねだ|数センチ|脚を絡|脚の間|きちゃ|疼|敏感|太腿|内腿|ずぶ|吸い付|吸いつ|腰に触れ|腰をすり|指を這|乱れた息|とろけ|蕩け|弄|声を漏らし|甘い声|甘い音|体の奥|潤滑|谷間|胸の膨らみ|鼠径|お尻の丸み|そこへ導/;
+  var FADE = ['――その先のことは、二人だけの秘密だ。', '――そこから先は、閉じた扉の向こうの話だ。', '――夜は、静かに更けていった。', '――翌朝、二人は少しだけ照れくさそうに目を逸らした。'];
+  var WORD = [[/発情していた/g, '火照っていた'], [/発情して/g, '火照って'], [/発情し/g, '火照っ'], [/ベッドで激しく/g, 'ベッドで朝まで'], [/激しいセックス/g, '二人きりの夜'], [/絶頂/g, '高鳴り'], [/快感/g, '高鳴り'], [/堕ちた/g, '流された'], [/発情/g, '火照り'], [/媚薬/g, '媚薬'], [/喘ぎ声/g, '吐息'], [/堕ち度/g, '揺らぎ'], [/快楽に/g, '誘惑に'], [/快楽/g, '心地よさ'], [/堕ち/g, '流され']];
+  /* 先に言い換える語（施術の名前・方針の名前など） */
+  var PRE = [[/太腿と脚の付け根/g, '脚のむくみ'], [/気持ちよさに身を委ねる/g, '心地よさに身を委ねる'], [/お尻まわり/g, '腰まわり'], [/臀部/g, '腰まわり'], [/を押し倒した/g, 'と立場が逆転した'], [/仰向けでデコルテ/g, '仰向けで首まわり']];
+  function word(t) { WORD.forEach(function (w) { t = t.replace(w[0], w[1]); }); return t; }
+  /* 喘ぎ声だけの台詞（短く、「ぁ」「♡」「っ」が多いもの） */
+  function moanQ(q) {
+    var n = (q.match(/[ぁぃぅぇぉ♡ッ]|っ|ん、|ん…|んあ|あっ|あ、|ひ、|ふ、|は、/g) || []).length;
+    return (q.length < 30 && n >= 2) || (q.length < 50 && n >= 3) || (q.length < 25 && /[っッ]/.test(q) && /……/.test(q)) || (/そこ|もっと|奥|中/.test(q) && /っ|……/.test(q) && q.length < 40);
+  }
+  /* 文に分ける：「」の中の。では切らない */
+  function sentences(t) {
+    var out = [], cur = '', d = 0;
+    for (var i = 0; i < t.length; i++) {
+      var ch = t[i]; cur += ch;
+      if (ch === '「') d++;
+      else if (ch === '」') { d = Math.max(0, d - 1); if (d === 0 && !/[とっ、。をがのにはもや]/.test(t[i + 1] || '')) { out.push(cur); cur = ''; } }
+      else if (d === 0 && /[。！？!?]/.test(ch)) { out.push(cur); cur = ''; }
+    }
+    if (cur) out.push(cur);
+    return out;
+  }
+  var fi = 0, curId = '';
+  function softText(t) {
+    if (typeof t !== 'string' || !t) return t;
+    PRE.forEach(function (w) { t = t.replace(w[0], w[1]); });
+    /* 見出しや数値の名前のような短い語は、言い換えだけ */
+    if (t.length <= 14 && !/[。「」]/.test(t)) { var w0 = word(t); if (!HARD.test(w0) && !SOFT.test(w0)) return w0; }
+    /* 喘ぎだけの台詞を消す（名前「……」の形も） */
+    t = t.replace(/([^\s。、「」――]{1,12})?「([^「」]*)」/g, function (all, who, q) {
+      if (!moanQ(q)) return all;
+      /* 「名前「……」」の形なら名前ごと消し、地の文の中の台詞なら「……」にする */
+      return who && /^[^はがもをにと]*$/.test(who) && !/[はがもをにと]$/.test(who) ? '' : (who || '') + '「……」';
+    });
+    if (HARD.test(t) || SOFT.test(t)) {
+      /* はっきり性的な文が二つ以上あるか、全部消えてしまうときだけ「秘密」の一文を入れる。それ以外は黙って消す */
+      var parts = sentences(t), out = [], hard = 0, at = -1;
+      parts.forEach(function (p) {
+        if (HARD.test(p)) { hard++; if (at < 0) at = out.length; }
+        else if (!SOFT.test(p)) out.push(p);
+      });
+      if (hard && (hard >= 2 || !out.join('').trim())) out.splice(at, 0, FADE[fi++ % FADE.length]);
+      t = out.join('');
+    }
+    WORD.forEach(function (w) { t = t.replace(w[0], w[1]); });
+    return t.replace(/(――[^。]*。)(?:――[^。]*。)+/g, '$1');
+  }
+  HK.SafeText = softText;   /* 出られない部屋など、ほかの箱庭の仕上げにも使う（safe-room.js）。R18版の描写の有無「ほのめかす」でも使う（lewd-unify.js） */
+
   /* パロディの箱庭（バトルロワイヤル・裁判デスゲーム）は全年齢版だけに置く。R18モードでは出さない */
   if (!ON) {
     HK.SCEN_ORDER = (HK.SCEN_ORDER || []).filter(function (id) { var s = HK.SCENARIOS[id]; if (s && s.zenreiOnly) { delete HK.SCENARIOS[id]; return false; } return true; });
@@ -36486,59 +36555,6 @@
     try { return fn(); } finally { Object.keys(keep).forEach(function (k) { if (keep[k] === undefined) delete DG[k]; else DG[k] = keep[k]; }); }
   }
 
-  /* ---------- 結果の文をまろやかにする ---------- */
-  /* はっきり性的な文：その場面を「二人だけの秘密」に置き換える */
-  var HARD = /挿入|挿れ|中出し|中に出|精液|白濁|射精|イく|イっ|イッ|イか|イキ|絶頂|乳首|股間|陰部|ペニス|性器|秘所|秘部|腰を振|腰を打ち|突き上げ|奥まで|奥へ|奥に|奥を|最奥|膣|フェラ|咥え|口に含|舐め|舌を這|愛液|勃|跨|騎乗|正常位|後背位|座位|寝バック|立ちバック|全裸|裸に|服を剥|服の中|下着|胸を揉|揉みしだ|押し倒|セックス|性行為|避妊|孕|ノット|結び目|種付|注ぎ込|腰を沈|腰を落と|喘ぎ|喘い|果て|あられもない|しゃぶ|迎え入れ|受け入れていた|繋がり|繋がった|繋がって|押し入|達し|寸止め|一突き|揺れ続け|唇を這わ|全身に唇|服は[^。]*床に落ち|数ミリの揺れ|身悶え|擦れ|軋む|軋ん/;
-  /* ほのめかし程度の文：黙って消す */
-  var SOFT = /乾いている|しよ？|楽しもう|ガスのせいにしちゃ|我慢しなくていい|脱ぎ|ベルトを外|服にも手を|濡れて|濡らし|脱が|脱い|気持ちよ|気持ちい|感じて|感じる|感じや|焦らさ|焦らし|焦れ|ねだ|数センチ|脚を絡|脚の間|きちゃ|疼|敏感|太腿|内腿|ずぶ|吸い付|吸いつ|腰に触れ|腰をすり|指を這|乱れた息|とろけ|蕩け|弄|声を漏らし|甘い声|甘い音|体の奥|潤滑|谷間|胸の膨らみ|鼠径|お尻の丸み|そこへ導/;
-  var FADE = ['――その先のことは、二人だけの秘密だ。', '――そこから先は、閉じた扉の向こうの話だ。', '――夜は、静かに更けていった。', '――翌朝、二人は少しだけ照れくさそうに目を逸らした。'];
-  var WORD = [[/発情していた/g, '火照っていた'], [/発情して/g, '火照って'], [/発情し/g, '火照っ'], [/ベッドで激しく/g, 'ベッドで朝まで'], [/激しいセックス/g, '二人きりの夜'], [/絶頂/g, '高鳴り'], [/快感/g, '高鳴り'], [/堕ちた/g, '流された'], [/発情/g, '火照り'], [/媚薬/g, '媚薬'], [/喘ぎ声/g, '吐息'], [/堕ち度/g, '揺らぎ'], [/快楽に/g, '誘惑に'], [/快楽/g, '心地よさ'], [/堕ち/g, '流され']];
-  /* 先に言い換える語（施術の名前・方針の名前など） */
-  var PRE = [[/太腿と脚の付け根/g, '脚のむくみ'], [/気持ちよさに身を委ねる/g, '心地よさに身を委ねる'], [/お尻まわり/g, '腰まわり'], [/臀部/g, '腰まわり'], [/を押し倒した/g, 'と立場が逆転した'], [/仰向けでデコルテ/g, '仰向けで首まわり']];
-  function word(t) { WORD.forEach(function (w) { t = t.replace(w[0], w[1]); }); return t; }
-  /* 喘ぎ声だけの台詞（短く、「ぁ」「♡」「っ」が多いもの） */
-  function moanQ(q) {
-    var n = (q.match(/[ぁぃぅぇぉ♡ッ]|っ|ん、|ん…|んあ|あっ|あ、|ひ、|ふ、|は、/g) || []).length;
-    return (q.length < 30 && n >= 2) || (q.length < 50 && n >= 3) || (q.length < 25 && /[っッ]/.test(q) && /……/.test(q)) || (/そこ|もっと|奥|中/.test(q) && /っ|……/.test(q) && q.length < 40);
-  }
-  /* 文に分ける：「」の中の。では切らない */
-  function sentences(t) {
-    var out = [], cur = '', d = 0;
-    for (var i = 0; i < t.length; i++) {
-      var ch = t[i]; cur += ch;
-      if (ch === '「') d++;
-      else if (ch === '」') { d = Math.max(0, d - 1); if (d === 0 && !/[とっ、。をがのにはもや]/.test(t[i + 1] || '')) { out.push(cur); cur = ''; } }
-      else if (d === 0 && /[。！？!?]/.test(ch)) { out.push(cur); cur = ''; }
-    }
-    if (cur) out.push(cur);
-    return out;
-  }
-  var fi = 0, curId = '';
-  function softText(t) {
-    if (typeof t !== 'string' || !t) return t;
-    PRE.forEach(function (w) { t = t.replace(w[0], w[1]); });
-    /* 見出しや数値の名前のような短い語は、言い換えだけ */
-    if (t.length <= 14 && !/[。「」]/.test(t)) { var w0 = word(t); if (!HARD.test(w0) && !SOFT.test(w0)) return w0; }
-    /* 喘ぎだけの台詞を消す（名前「……」の形も） */
-    t = t.replace(/([^\s。、「」――]{1,12})?「([^「」]*)」/g, function (all, who, q) {
-      if (!moanQ(q)) return all;
-      /* 「名前「……」」の形なら名前ごと消し、地の文の中の台詞なら「……」にする */
-      return who && /^[^はがもをにと]*$/.test(who) && !/[はがもをにと]$/.test(who) ? '' : (who || '') + '「……」';
-    });
-    if (HARD.test(t) || SOFT.test(t)) {
-      /* はっきり性的な文が二つ以上あるか、全部消えてしまうときだけ「秘密」の一文を入れる。それ以外は黙って消す */
-      var parts = sentences(t), out = [], hard = 0, at = -1;
-      parts.forEach(function (p) {
-        if (HARD.test(p)) { hard++; if (at < 0) at = out.length; }
-        else if (!SOFT.test(p)) out.push(p);
-      });
-      if (hard && (hard >= 2 || !out.join('').trim())) out.splice(at, 0, FADE[fi++ % FADE.length]);
-      t = out.join('');
-    }
-    WORD.forEach(function (w) { t = t.replace(w[0], w[1]); });
-    return t.replace(/(――[^。]*。)(?:――[^。]*。)+/g, '$1');
-  }
-  HK.SafeText = softText;   /* 出られない部屋など、ほかの箱庭の仕上げにも使う（safe-room.js） */
   function softTag(t) { if (typeof t !== 'string') return t; t = word(t); return HARD.test(t) || SOFT.test(t) ? '秘密の時間' : softText(t); }
   var MILDS = {
     locker: ['狭い空間の空気が、甘く重くなっていた。', '鼓動が、うるさいほど耳に響いていた。', '頬が熱い。ガスのせいだと、自分に言い聞かせた。', '息をするたびに、相手の匂いがした。'],
@@ -36585,16 +36601,11 @@
 /* 箱庭シミュレーター: 全年齢版 ― 出られない部屋の「エッチ」の場面を、少し曖昧に描く
    ・触れ合い（キス・抱きしめる・照明を落とす）までは書き、その先は暗転する
    ・誰がリードするか、どんな雰囲気かは R18版と同じく気質で決まる（文だけ差し替える）
-   R18版（全年齢モードでないとき）は何もしない */
+   R18版でも、描写の有無が「ほのめかす」のときは、この書き方を使う（HK.RoomFade。room-thick.js が呼ぶ）。
+   全年齢モードでないときは、それ以外は何もしない */
 (function () {
   'use strict';
   var HK = window.HK, L = HK.RoomLewd;
-  if (!HK.SAFE_ON) return;
-  /* R18版だけの描写の設定（合コンのお持ち帰りの夜・出られない部屋のエッチ）は、全年齢モードでは出さない */
-  [['whiteroom', 'rmlewd']].forEach(function (x) {
-    var sc = HK.SCENARIOS && HK.SCENARIOS[x[0]];
-    if (sc && Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== x[1]; });
-  });
   if (!L) return;
   function st(c) {
     var x = c.tr;
@@ -36624,7 +36635,7 @@
   var MID_FM = ['{a}は{b}の上に跨ったまま、わざとゆっくり照明を落とした。', '{a}は{b}のシャツのボタンを、焦らすように一つずつ外していった。{b}が身じろぎするたびに、{a}は「まだ」と笑った。', '{b}が手を伸ばすと、{a}はその手首をまた押さえつけた。「動いていいって、言ってない」'];
   function fmLead(A, B) { var P = HK.Pos; return !!(P && P.isF(A) && P.isTop(A) && (B.gender || (B.src && B.src.gender)) === 'm'); }
   var lead0 = L.lead;
-  L.scene = function (ctx, a, b, mode, opt) {
+  function fadeScene(ctx, a, b, mode, opt) {
     opt = opt || {};
     var lr = lead0 ? lead0(ctx, a, b) : [a, b], A = lr[0], B = lr[1], s = st(A);
     var fm = fmLead(A, B);
@@ -36637,7 +36648,13 @@
       out.push(ctx.pick(af.length ? af : AFTER[mode]));
     }
     return out.map(function (x) { return ctx.t(x, A, B); }).join('') + (opt.dash ? '――' : '');
-  };
+  }
+  HK.RoomFade = fadeScene;
+  /* 三人の場面のほのめかし（room-trio.js が呼ぶ） */
+  var FADE3 = ['三人は照明を落とし、毛布の中で身を寄せ合った。――その先のことは、三人だけの秘密だ。', '誰からともなく、三人の唇が重なった。――そこから先は、閉じた扉の向こうの話だ。', '三人は簡易ベッドに身を沈めた。――しばらくのあいだ、部屋には三人分の息づかいだけがあった。'];
+  HK.RoomFade3 = function (ctx) { return ctx.pick(FADE3); };
+  if (!HK.SAFE_ON) return;
+  L.scene = fadeScene;
   var recap0 = L.recap;
   L.recap = function (ctx, a, b, k, n) { if (k === 'h') return ctx.t('{a}と{b}は、しばらく寄り添ったままでいた。', a, b) + (n > 1 ? '（' + n + '回目）' : ''); return recap0.apply(this, arguments); };
   /* 念のため：出られない部屋の結果に残ったはっきりした文は、ほかの箱庭と同じ方法でまろやかにする */
@@ -40039,12 +40056,20 @@
     high: function (env) { return X.lv(env) === 'high'; },
     low: function (env) { return X.lv(env) === 'low'; }
   };
-  /* 結果を作る前に、古い設定の値を読み替える */
+  /* 結果を作る前に、古い設定の値を読み替える。
+     R18版で描写の有無が「ほのめかす」のときは、共通の出来事（執着・敵対など）に残ったはっきりした文を、全年齢と同じ方法でまろやかにする（safe.js の HK.SafeText） */
+  var EXPL = /果て|達し|イ[っッくかきキ]|挿|喘|貫|腰を[振沈打揺使]|繋が|奥まで|突き上げ|絶頂|♡|射精|精液|ちんぽ|ナカ/;
   if (HK.simulate && !HK.simulate._lewd) {
     var sim0 = HK.simulate;
     HK.simulate = function (input) {
-      if (input && input.scenId && input.env && CONF[input.scenId]) X.norm(input.scenId, input.env);
-      return sim0.apply(this, arguments);
+      var id = input && input.scenId;
+      if (id && input.env && CONF[id]) X.norm(id, input.env);
+      var r = sim0.apply(this, arguments);
+      if (r && id && CONF[id] && CONF[id].soften !== false && !safe() && X.lv(input.env) === 'low' && HK.SafeText) {
+        (r.log || []).forEach(function (e) { if (e && typeof e.text === 'string' && EXPL.test(e.text)) e.text = HK.SafeText(e.text); });
+        if (r.ending && Array.isArray(r.ending.lines)) r.ending.lines = r.ending.lines.map(function (l) { return typeof l === 'string' && EXPL.test(l) ? HK.SafeText(l) : l; });
+      }
+      return r;
     };
     HK.simulate._lewd = true;
   }
@@ -40056,6 +40081,8 @@
   var HK = window.HK, X = HK && HK.Lewd;
   if (!X) return;
   /* 合コン：お持ち帰りの夜（solo-goukon-night.js）。古い設定「お持ち帰りの夜（R18）」は描写の長さへ */
+  /* 出られない部屋：条件「エッチ」の場面（room-thick.js）と三人の場面（room-trio.js）。古い設定「エッチの描写（R18）」は描写の長さへ */
+  X.install('whiteroom', { old: ['rmlewd'], from: { lewdLen: function (e) { return e.rmlewd; } }, desc: '条件「エッチ」の場面の描き方。ほのめかす＝触れ合いまでで暗転／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで（三人の場面も同じ）' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */

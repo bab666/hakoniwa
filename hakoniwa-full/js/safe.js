@@ -45,6 +45,60 @@
     box.querySelector('#agemode-no').addEventListener('click', function () { ask.hidden = true; });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', toggleUI); else toggleUI();
+  /* ---------- 結果の文をまろやかにする ---------- */
+  /* はっきり性的な文：その場面を「二人だけの秘密」に置き換える */
+  var HARD = /挿入|挿れ|中出し|中に出|精液|白濁|射精|イく|イっ|イッ|イか|イキ|絶頂|乳首|股間|陰部|ペニス|性器|秘所|秘部|腰を振|腰を打ち|突き上げ|奥まで|奥へ|奥に|奥を|最奥|膣|フェラ|咥え|口に含|舐め|舌を這|愛液|勃|跨|騎乗|正常位|後背位|座位|寝バック|立ちバック|全裸|裸に|服を剥|服の中|下着|胸を揉|揉みしだ|押し倒|セックス|性行為|避妊|孕|ノット|結び目|種付|注ぎ込|腰を沈|腰を落と|喘ぎ|喘い|果て|あられもない|しゃぶ|迎え入れ|受け入れていた|繋がり|繋がった|繋がって|押し入|達し|寸止め|一突き|揺れ続け|唇を這わ|全身に唇|服は[^。]*床に落ち|数ミリの揺れ|身悶え|擦れ|軋む|軋ん/;
+  /* ほのめかし程度の文：黙って消す */
+  var SOFT = /乾いている|しよ？|楽しもう|ガスのせいにしちゃ|我慢しなくていい|脱ぎ|ベルトを外|服にも手を|濡れて|濡らし|脱が|脱い|気持ちよ|気持ちい|感じて|感じる|感じや|焦らさ|焦らし|焦れ|ねだ|数センチ|脚を絡|脚の間|きちゃ|疼|敏感|太腿|内腿|ずぶ|吸い付|吸いつ|腰に触れ|腰をすり|指を這|乱れた息|とろけ|蕩け|弄|声を漏らし|甘い声|甘い音|体の奥|潤滑|谷間|胸の膨らみ|鼠径|お尻の丸み|そこへ導/;
+  var FADE = ['――その先のことは、二人だけの秘密だ。', '――そこから先は、閉じた扉の向こうの話だ。', '――夜は、静かに更けていった。', '――翌朝、二人は少しだけ照れくさそうに目を逸らした。'];
+  var WORD = [[/発情していた/g, '火照っていた'], [/発情して/g, '火照って'], [/発情し/g, '火照っ'], [/ベッドで激しく/g, 'ベッドで朝まで'], [/激しいセックス/g, '二人きりの夜'], [/絶頂/g, '高鳴り'], [/快感/g, '高鳴り'], [/堕ちた/g, '流された'], [/発情/g, '火照り'], [/媚薬/g, '媚薬'], [/喘ぎ声/g, '吐息'], [/堕ち度/g, '揺らぎ'], [/快楽に/g, '誘惑に'], [/快楽/g, '心地よさ'], [/堕ち/g, '流され']];
+  /* 先に言い換える語（施術の名前・方針の名前など） */
+  var PRE = [[/太腿と脚の付け根/g, '脚のむくみ'], [/気持ちよさに身を委ねる/g, '心地よさに身を委ねる'], [/お尻まわり/g, '腰まわり'], [/臀部/g, '腰まわり'], [/を押し倒した/g, 'と立場が逆転した'], [/仰向けでデコルテ/g, '仰向けで首まわり']];
+  function word(t) { WORD.forEach(function (w) { t = t.replace(w[0], w[1]); }); return t; }
+  /* 喘ぎ声だけの台詞（短く、「ぁ」「♡」「っ」が多いもの） */
+  function moanQ(q) {
+    var n = (q.match(/[ぁぃぅぇぉ♡ッ]|っ|ん、|ん…|んあ|あっ|あ、|ひ、|ふ、|は、/g) || []).length;
+    return (q.length < 30 && n >= 2) || (q.length < 50 && n >= 3) || (q.length < 25 && /[っッ]/.test(q) && /……/.test(q)) || (/そこ|もっと|奥|中/.test(q) && /っ|……/.test(q) && q.length < 40);
+  }
+  /* 文に分ける：「」の中の。では切らない */
+  function sentences(t) {
+    var out = [], cur = '', d = 0;
+    for (var i = 0; i < t.length; i++) {
+      var ch = t[i]; cur += ch;
+      if (ch === '「') d++;
+      else if (ch === '」') { d = Math.max(0, d - 1); if (d === 0 && !/[とっ、。をがのにはもや]/.test(t[i + 1] || '')) { out.push(cur); cur = ''; } }
+      else if (d === 0 && /[。！？!?]/.test(ch)) { out.push(cur); cur = ''; }
+    }
+    if (cur) out.push(cur);
+    return out;
+  }
+  var fi = 0, curId = '';
+  function softText(t) {
+    if (typeof t !== 'string' || !t) return t;
+    PRE.forEach(function (w) { t = t.replace(w[0], w[1]); });
+    /* 見出しや数値の名前のような短い語は、言い換えだけ */
+    if (t.length <= 14 && !/[。「」]/.test(t)) { var w0 = word(t); if (!HARD.test(w0) && !SOFT.test(w0)) return w0; }
+    /* 喘ぎだけの台詞を消す（名前「……」の形も） */
+    t = t.replace(/([^\s。、「」――]{1,12})?「([^「」]*)」/g, function (all, who, q) {
+      if (!moanQ(q)) return all;
+      /* 「名前「……」」の形なら名前ごと消し、地の文の中の台詞なら「……」にする */
+      return who && /^[^はがもをにと]*$/.test(who) && !/[はがもをにと]$/.test(who) ? '' : (who || '') + '「……」';
+    });
+    if (HARD.test(t) || SOFT.test(t)) {
+      /* はっきり性的な文が二つ以上あるか、全部消えてしまうときだけ「秘密」の一文を入れる。それ以外は黙って消す */
+      var parts = sentences(t), out = [], hard = 0, at = -1;
+      parts.forEach(function (p) {
+        if (HARD.test(p)) { hard++; if (at < 0) at = out.length; }
+        else if (!SOFT.test(p)) out.push(p);
+      });
+      if (hard && (hard >= 2 || !out.join('').trim())) out.splice(at, 0, FADE[fi++ % FADE.length]);
+      t = out.join('');
+    }
+    WORD.forEach(function (w) { t = t.replace(w[0], w[1]); });
+    return t.replace(/(――[^。]*。)(?:――[^。]*。)+/g, '$1');
+  }
+  HK.SafeText = softText;   /* 出られない部屋など、ほかの箱庭の仕上げにも使う（safe-room.js）。R18版の描写の有無「ほのめかす」でも使う（lewd-unify.js） */
+
   /* パロディの箱庭（バトルロワイヤル・裁判デスゲーム）は全年齢版だけに置く。R18モードでは出さない */
   if (!ON) {
     HK.SCEN_ORDER = (HK.SCEN_ORDER || []).filter(function (id) { var s = HK.SCENARIOS[id]; if (s && s.zenreiOnly) { delete HK.SCENARIOS[id]; return false; } return true; });
@@ -146,59 +200,6 @@
     try { return fn(); } finally { Object.keys(keep).forEach(function (k) { if (keep[k] === undefined) delete DG[k]; else DG[k] = keep[k]; }); }
   }
 
-  /* ---------- 結果の文をまろやかにする ---------- */
-  /* はっきり性的な文：その場面を「二人だけの秘密」に置き換える */
-  var HARD = /挿入|挿れ|中出し|中に出|精液|白濁|射精|イく|イっ|イッ|イか|イキ|絶頂|乳首|股間|陰部|ペニス|性器|秘所|秘部|腰を振|腰を打ち|突き上げ|奥まで|奥へ|奥に|奥を|最奥|膣|フェラ|咥え|口に含|舐め|舌を這|愛液|勃|跨|騎乗|正常位|後背位|座位|寝バック|立ちバック|全裸|裸に|服を剥|服の中|下着|胸を揉|揉みしだ|押し倒|セックス|性行為|避妊|孕|ノット|結び目|種付|注ぎ込|腰を沈|腰を落と|喘ぎ|喘い|果て|あられもない|しゃぶ|迎え入れ|受け入れていた|繋がり|繋がった|繋がって|押し入|達し|寸止め|一突き|揺れ続け|唇を這わ|全身に唇|服は[^。]*床に落ち|数ミリの揺れ|身悶え|擦れ|軋む|軋ん/;
-  /* ほのめかし程度の文：黙って消す */
-  var SOFT = /乾いている|しよ？|楽しもう|ガスのせいにしちゃ|我慢しなくていい|脱ぎ|ベルトを外|服にも手を|濡れて|濡らし|脱が|脱い|気持ちよ|気持ちい|感じて|感じる|感じや|焦らさ|焦らし|焦れ|ねだ|数センチ|脚を絡|脚の間|きちゃ|疼|敏感|太腿|内腿|ずぶ|吸い付|吸いつ|腰に触れ|腰をすり|指を這|乱れた息|とろけ|蕩け|弄|声を漏らし|甘い声|甘い音|体の奥|潤滑|谷間|胸の膨らみ|鼠径|お尻の丸み|そこへ導/;
-  var FADE = ['――その先のことは、二人だけの秘密だ。', '――そこから先は、閉じた扉の向こうの話だ。', '――夜は、静かに更けていった。', '――翌朝、二人は少しだけ照れくさそうに目を逸らした。'];
-  var WORD = [[/発情していた/g, '火照っていた'], [/発情して/g, '火照って'], [/発情し/g, '火照っ'], [/ベッドで激しく/g, 'ベッドで朝まで'], [/激しいセックス/g, '二人きりの夜'], [/絶頂/g, '高鳴り'], [/快感/g, '高鳴り'], [/堕ちた/g, '流された'], [/発情/g, '火照り'], [/媚薬/g, '媚薬'], [/喘ぎ声/g, '吐息'], [/堕ち度/g, '揺らぎ'], [/快楽に/g, '誘惑に'], [/快楽/g, '心地よさ'], [/堕ち/g, '流され']];
-  /* 先に言い換える語（施術の名前・方針の名前など） */
-  var PRE = [[/太腿と脚の付け根/g, '脚のむくみ'], [/気持ちよさに身を委ねる/g, '心地よさに身を委ねる'], [/お尻まわり/g, '腰まわり'], [/臀部/g, '腰まわり'], [/を押し倒した/g, 'と立場が逆転した'], [/仰向けでデコルテ/g, '仰向けで首まわり']];
-  function word(t) { WORD.forEach(function (w) { t = t.replace(w[0], w[1]); }); return t; }
-  /* 喘ぎ声だけの台詞（短く、「ぁ」「♡」「っ」が多いもの） */
-  function moanQ(q) {
-    var n = (q.match(/[ぁぃぅぇぉ♡ッ]|っ|ん、|ん…|んあ|あっ|あ、|ひ、|ふ、|は、/g) || []).length;
-    return (q.length < 30 && n >= 2) || (q.length < 50 && n >= 3) || (q.length < 25 && /[っッ]/.test(q) && /……/.test(q)) || (/そこ|もっと|奥|中/.test(q) && /っ|……/.test(q) && q.length < 40);
-  }
-  /* 文に分ける：「」の中の。では切らない */
-  function sentences(t) {
-    var out = [], cur = '', d = 0;
-    for (var i = 0; i < t.length; i++) {
-      var ch = t[i]; cur += ch;
-      if (ch === '「') d++;
-      else if (ch === '」') { d = Math.max(0, d - 1); if (d === 0 && !/[とっ、。をがのにはもや]/.test(t[i + 1] || '')) { out.push(cur); cur = ''; } }
-      else if (d === 0 && /[。！？!?]/.test(ch)) { out.push(cur); cur = ''; }
-    }
-    if (cur) out.push(cur);
-    return out;
-  }
-  var fi = 0, curId = '';
-  function softText(t) {
-    if (typeof t !== 'string' || !t) return t;
-    PRE.forEach(function (w) { t = t.replace(w[0], w[1]); });
-    /* 見出しや数値の名前のような短い語は、言い換えだけ */
-    if (t.length <= 14 && !/[。「」]/.test(t)) { var w0 = word(t); if (!HARD.test(w0) && !SOFT.test(w0)) return w0; }
-    /* 喘ぎだけの台詞を消す（名前「……」の形も） */
-    t = t.replace(/([^\s。、「」――]{1,12})?「([^「」]*)」/g, function (all, who, q) {
-      if (!moanQ(q)) return all;
-      /* 「名前「……」」の形なら名前ごと消し、地の文の中の台詞なら「……」にする */
-      return who && /^[^はがもをにと]*$/.test(who) && !/[はがもをにと]$/.test(who) ? '' : (who || '') + '「……」';
-    });
-    if (HARD.test(t) || SOFT.test(t)) {
-      /* はっきり性的な文が二つ以上あるか、全部消えてしまうときだけ「秘密」の一文を入れる。それ以外は黙って消す */
-      var parts = sentences(t), out = [], hard = 0, at = -1;
-      parts.forEach(function (p) {
-        if (HARD.test(p)) { hard++; if (at < 0) at = out.length; }
-        else if (!SOFT.test(p)) out.push(p);
-      });
-      if (hard && (hard >= 2 || !out.join('').trim())) out.splice(at, 0, FADE[fi++ % FADE.length]);
-      t = out.join('');
-    }
-    WORD.forEach(function (w) { t = t.replace(w[0], w[1]); });
-    return t.replace(/(――[^。]*。)(?:――[^。]*。)+/g, '$1');
-  }
-  HK.SafeText = softText;   /* 出られない部屋など、ほかの箱庭の仕上げにも使う（safe-room.js） */
   function softTag(t) { if (typeof t !== 'string') return t; t = word(t); return HARD.test(t) || SOFT.test(t) ? '秘密の時間' : softText(t); }
   var MILDS = {
     locker: ['狭い空間の空気が、甘く重くなっていた。', '鼓動が、うるさいほど耳に響いていた。', '頬が熱い。ガスのせいだと、自分に言い聞かせた。', '息をするたびに、相手の匂いがした。'],

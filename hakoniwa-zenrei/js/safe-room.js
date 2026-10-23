@@ -1,16 +1,11 @@
 /* 箱庭シミュレーター: 全年齢版 ― 出られない部屋の「エッチ」の場面を、少し曖昧に描く
    ・触れ合い（キス・抱きしめる・照明を落とす）までは書き、その先は暗転する
    ・誰がリードするか、どんな雰囲気かは R18版と同じく気質で決まる（文だけ差し替える）
-   R18版（全年齢モードでないとき）は何もしない */
+   R18版でも、描写の有無が「ほのめかす」のときは、この書き方を使う（HK.RoomFade。room-thick.js が呼ぶ）。
+   全年齢モードでないときは、それ以外は何もしない */
 (function () {
   'use strict';
   var HK = window.HK, L = HK.RoomLewd;
-  if (!HK.SAFE_ON) return;
-  /* R18版だけの描写の設定（合コンのお持ち帰りの夜・出られない部屋のエッチ）は、全年齢モードでは出さない */
-  [['whiteroom', 'rmlewd']].forEach(function (x) {
-    var sc = HK.SCENARIOS && HK.SCENARIOS[x[0]];
-    if (sc && Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== x[1]; });
-  });
   if (!L) return;
   function st(c) {
     var x = c.tr;
@@ -40,7 +35,7 @@
   var MID_FM = ['{a}は{b}の上に跨ったまま、わざとゆっくり照明を落とした。', '{a}は{b}のシャツのボタンを、焦らすように一つずつ外していった。{b}が身じろぎするたびに、{a}は「まだ」と笑った。', '{b}が手を伸ばすと、{a}はその手首をまた押さえつけた。「動いていいって、言ってない」'];
   function fmLead(A, B) { var P = HK.Pos; return !!(P && P.isF(A) && P.isTop(A) && (B.gender || (B.src && B.src.gender)) === 'm'); }
   var lead0 = L.lead;
-  L.scene = function (ctx, a, b, mode, opt) {
+  function fadeScene(ctx, a, b, mode, opt) {
     opt = opt || {};
     var lr = lead0 ? lead0(ctx, a, b) : [a, b], A = lr[0], B = lr[1], s = st(A);
     var fm = fmLead(A, B);
@@ -53,7 +48,13 @@
       out.push(ctx.pick(af.length ? af : AFTER[mode]));
     }
     return out.map(function (x) { return ctx.t(x, A, B); }).join('') + (opt.dash ? '――' : '');
-  };
+  }
+  HK.RoomFade = fadeScene;
+  /* 三人の場面のほのめかし（room-trio.js が呼ぶ） */
+  var FADE3 = ['三人は照明を落とし、毛布の中で身を寄せ合った。――その先のことは、三人だけの秘密だ。', '誰からともなく、三人の唇が重なった。――そこから先は、閉じた扉の向こうの話だ。', '三人は簡易ベッドに身を沈めた。――しばらくのあいだ、部屋には三人分の息づかいだけがあった。'];
+  HK.RoomFade3 = function (ctx) { return ctx.pick(FADE3); };
+  if (!HK.SAFE_ON) return;
+  L.scene = fadeScene;
   var recap0 = L.recap;
   L.recap = function (ctx, a, b, k, n) { if (k === 'h') return ctx.t('{a}と{b}は、しばらく寄り添ったままでいた。', a, b) + (n > 1 ? '（' + n + '回目）' : ''); return recap0.apply(this, arguments); };
   /* 念のため：出られない部屋の結果に残ったはっきりした文は、ほかの箱庭と同じ方法でまろやかにする */

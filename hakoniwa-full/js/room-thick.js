@@ -4,7 +4,8 @@
    リード役の決め方・敵視の強引さ・受け攻めの指定は room-lewd.js と同じ。文は thick-sex.js（HK.ThickSex）。
    形（男性×／女性が跨る／女性どうし）は二人の性別から決まる（thick-sex.js）。女性どうしの道具は、挿入の言葉を使わない書き方で。
    嫉妬で取り戻しに行った場面（solo-room-jealous.js の opt.jealous）で、嫉妬した本人が攻めのときだけ、首を押さえる書き方がありうる
-   設定「エッチの描写（R18）」（solo-room-jealous.js で足す）：厚く（既定）／まぜる／短く（room-lewd.js の一段落版をそのまま使う）。
+   設定（lewd-unify.js）：描写の有無＝ほのめかす（safe-room.js の HK.RoomFade）／ほどほど／濃い（果てたあと、もう一度の段落を足す）、
+   描写の長さ＝厚く（既定）／まぜる／短く（room-lewd.js の一段落版をそのまま使う）、描写の作風＝男性向け（thick-sex-ero.js）。
    厚い版でも、一段落版の始まり・二回目の入り・媚薬・余韻・最中と体位の文（女性どうしは指・舌・木箱の玩具）を段の候補に混ぜる。
    受けの態度（persona 9種）ごとに、始まり・果てた直後・事後の様子を添える */
 (function () {
@@ -96,11 +97,18 @@
   var s0 = LW.scene;
   LW.scene = function (ctx, a, b, mode, opt) {
     opt = opt || {};
+    var LV = HK.Lewd, lowLv = !HK.SAFE_ON && LV && LV.lv(ctx.env) === 'low';
+    if (lowLv && HK.RoomFade) return HK.RoomFade(ctx, a, b, mode, opt);
     if (HK.SAFE_ON || !(mode === 'will' || mode === 'des' || mode === 'aphro' || mode === 'repeat' || mode === 'speed')) return s0.apply(this, arguments);
     if (HK.Pos && !HK.Pos.okSex(a, b)) return s0.apply(this, arguments);
-    /* 設定「エッチの描写（R18）」：短く＝一段落版（room-lewd.js）、まぜる＝半々 */
-    var lv = (ctx.env && ctx.env.rmlewd) || 'thick';
-    if (lv === 'short' || (lv === 'mix' && ctx.rng() < 0.5)) return s0.apply(this, arguments);
+    /* 描写の長さ：短く＝一段落版（room-lewd.js）、まぜる＝半々。濃い：もう一度の一文／段落を足す。男性向け：thick-sex-ero.js */
+    var short = LV ? LV.short(ctx.env, ctx.rng) : false, ero = LV && LV.ero(ctx.env) && HK.ThickEro, high = LV && LV.high(ctx.env) && HK.ThickEro;
+    if (short && !ero) {
+      var s1 = s0.apply(this, arguments);
+      if (!high || mode === 'speed') return s1;
+      var dash = /――$/.test(s1), lr1 = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b];
+      return s1.replace(/――$/, '') + ctx.t(HK.ThickEro.again(ctx, function (arr) { return ctx.pick(arr); }, lr1[0], lr1[1], false, true), lr1[0], lr1[1]) + (dash ? '――' : '');
+    }
     var lr = mode === 'speed' ? (HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b]) : opt.lead ? (HK.Pos ? HK.Pos.order(a, b, opt.toolText ? [a, b] : ctx.rng() < 0.6 ? HK.Pos.fbFor(a, b) : [a, b]) : [a, b]) : LW.lead(ctx, a, b), A = lr[0], B = lr[1];
     var fx = HK.Pos ? HK.Pos.fixed(A, B) : false;
     var HKr = HK.HateKit, rough = HKr ? HKr.forcer(ctx, A, B) : null;
@@ -138,7 +146,16 @@
     var pk2 = mid ? function (arr) { var s = pick(arr); if (arr === T.PLACE.room && mid) { s = mid + '\n\n' + s; mid = ''; } return s; } : pick;
     var API = HK.RoomAPI, opened = !API || !API.pairDone || API.pairDone(ctx, a, b);
     var al = ff && LF.AFTER && LF.AFTER[mode] ? AFTER[mode].concat(LF.AFTER[mode]) : AFTER[mode] || AFTER.will, af = opened ? al : al.filter(function (l) { return !OPENED.test(l); });
-    var tail = (ctx.rng() < 0.7 ? pick(PEAK_PS[ps] || PEAK_PS.gentle) + '\n\n' : '') + pick(af.length ? af : al) + (ctx.rng() < 0.5 ? pick(AFTER_PS[ps] || AFTER_PS.gentle) : '');
+    var peak = ctx.rng() < 0.7 ? pick(PEAK_PS[ps] || PEAK_PS.gentle) + '\n\n' : '';
+    if (high && mode !== 'speed') peak += HK.ThickEro.again(ctx, pick, A, B, !!ero, false) + '\n\n';
+    var tail = peak + pick(af.length ? af : al) + (ctx.rng() < 0.5 ? pick(AFTER_PS[ps] || AFTER_PS.gentle) : '');
+    if (ero) {
+      var er = short ? HK.ThickEro.short({ S: ctx, pick: pick, a: A, b: B, open: open.split('\n\n')[0], again: high && mode !== 'speed', after: pick(af.length ? af : al) })
+        : HK.ThickEro.scene({ S: ctx, pick: pk2, rng: ctx.rng, a: A, b: B, style: st, open: open, after: tail, place: 'room' });
+      var etx = ctx.t(er.text, A, B);
+      if (ff && HK.FF && HK.FF.fix) etx = HK.FF.fix(ctx, etx, A, B, { tools: !!(ctx.flags && ctx.flags.toolbox) });
+      return etx + (opt.dash ? '――' : '');
+    }
     var r = T.scene({ pick: pk2, rng: ctx.rng, a: A, b: B, style: st, open: open, after: tail, place: 'room', jealous: !!opt.jealous && A === a });
     var txt = ctx.t(r.text, A, B);
     if (ff && HK.FF && HK.FF.fix) txt = HK.FF.fix(ctx, txt, A, B, { tools: !!(ctx.flags && ctx.flags.toolbox) });

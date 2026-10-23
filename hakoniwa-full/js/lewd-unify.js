@@ -59,12 +59,20 @@
     high: function (env) { return X.lv(env) === 'high'; },
     low: function (env) { return X.lv(env) === 'low'; }
   };
-  /* 結果を作る前に、古い設定の値を読み替える */
+  /* 結果を作る前に、古い設定の値を読み替える。
+     R18版で描写の有無が「ほのめかす」のときは、共通の出来事（執着・敵対など）に残ったはっきりした文を、全年齢と同じ方法でまろやかにする（safe.js の HK.SafeText） */
+  var EXPL = /果て|達し|イ[っッくかきキ]|挿|喘|貫|腰を[振沈打揺使]|繋が|奥まで|突き上げ|絶頂|♡|射精|精液|ちんぽ|ナカ/;
   if (HK.simulate && !HK.simulate._lewd) {
     var sim0 = HK.simulate;
     HK.simulate = function (input) {
-      if (input && input.scenId && input.env && CONF[input.scenId]) X.norm(input.scenId, input.env);
-      return sim0.apply(this, arguments);
+      var id = input && input.scenId;
+      if (id && input.env && CONF[id]) X.norm(id, input.env);
+      var r = sim0.apply(this, arguments);
+      if (r && id && CONF[id] && CONF[id].soften !== false && !safe() && X.lv(input.env) === 'low' && HK.SafeText) {
+        (r.log || []).forEach(function (e) { if (e && typeof e.text === 'string' && EXPL.test(e.text)) e.text = HK.SafeText(e.text); });
+        if (r.ending && Array.isArray(r.ending.lines)) r.ending.lines = r.ending.lines.map(function (l) { return typeof l === 'string' && EXPL.test(l) ? HK.SafeText(l) : l; });
+      }
+      return r;
     };
     HK.simulate._lewd = true;
   }
@@ -76,5 +84,7 @@
   var HK = window.HK, X = HK && HK.Lewd;
   if (!X) return;
   /* 合コン：お持ち帰りの夜（solo-goukon-night.js）。古い設定「お持ち帰りの夜（R18）」は描写の長さへ */
+  /* 出られない部屋：条件「エッチ」の場面（room-thick.js）と三人の場面（room-trio.js）。古い設定「エッチの描写（R18）」は描写の長さへ */
+  X.install('whiteroom', { old: ['rmlewd'], from: { lewdLen: function (e) { return e.rmlewd; } }, desc: '条件「エッチ」の場面の描き方。ほのめかす＝触れ合いまでで暗転／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで（三人の場面も同じ）' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
