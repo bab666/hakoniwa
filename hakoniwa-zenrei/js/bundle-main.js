@@ -36441,7 +36441,7 @@
 ;/* ==== js/safe.js ==== */
 /* 箱庭シミュレーター: 全年齢モード
    ・全年齢版のビルドでは常に有効（index.html で window.HK_SAFE_BUILD = 1 を立てる）
-   ・R18版では、上の切り替えボタンで「全年齢」にできる（ブラウザに覚えておく。保存できない環境ではそのページ限り）
+   ・R18版では、上のリンクから全年齢版のページへ移れる。以前に全年齢モードにした人は、ボタンでR18版に戻せる（ブラウザに覚えておく。保存できない環境ではそのページ限り）
    全年齢モードのとき：
    ・R18の箱庭のうち、媚薬ロッカー／オメガバース／マッサージ／催眠だけを、描写をまろやかにして残す
      （エロバラエティ・サキュバス・常識改変・エロトラップダンジョン・感覚遮断穴は出さない）
@@ -36461,6 +36461,7 @@
   HK.SAFE_BUILD = BUILD; HK.SAFE_ON = ON;
 
   /* ---------- 切り替えボタン（R18版だけ） ---------- */
+  var SAFE_URL = 'https://kaimin.sakura.ne.jp/archive/tools/hakoniwa/';
   function toggleUI() {
     if (BUILD) return;
     var brand = document.querySelector('header.top .brand');
@@ -36468,11 +36469,12 @@
     var box = document.createElement('div');
     box.className = 'agemode';
     box.innerHTML = '<span class="now">' + (ON ? '全年齢モード' : 'R18モード') + '</span>' +
-      '<button type="button" class="btn small" id="agemode-btn">' + (ON ? 'R18版に切り替える' : '全年齢版に切り替える') + '</button>' +
+      /* R18モードでは、全年齢版のページへのリンク。全年齢モードにしたままの人は、R18版に戻すボタン */
+      (ON ? '<button type="button" class="btn small" id="agemode-btn">R18版に切り替える</button>' : '<a class="btn small" href="' + SAFE_URL + '">全年齢版へ</a>') +
       '<span class="ask" hidden>18歳以上ですか？ <button type="button" class="btn small" id="agemode-yes">はい、切り替える</button> <button type="button" class="btn small" id="agemode-no">やめる</button></span>';
     brand.appendChild(box);
     var st = document.createElement('style');
-    st.textContent = '.agemode{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:6px;font-size:12px;color:var(--muted)}.agemode .now{border:1px solid var(--line);border-radius:999px;padding:1px 9px}.agemode .ask{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}.agemode .ask[hidden]{display:none}';
+    st.textContent = '.agemode{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:6px;font-size:12px;color:var(--muted)}.agemode .now{border:1px solid var(--line);border-radius:999px;padding:1px 9px}.agemode .ask{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}.agemode .ask[hidden]{display:none}.agemode a.btn{text-decoration:none;display:inline-flex;align-items:center;color:inherit}';
     document.head.appendChild(st);
     function go(safe) {
       var ok = save(safe ? '1' : '0');
@@ -36481,7 +36483,8 @@
       else location.replace(base + (safe ? '#safe' : '#r18')), location.reload();
     }
     var ask = box.querySelector('.ask');
-    box.querySelector('#agemode-btn').addEventListener('click', function () { if (ON) ask.hidden = false; else go(true); });
+    var btn = box.querySelector('#agemode-btn');
+    if (btn) btn.addEventListener('click', function () { ask.hidden = false; });
     box.querySelector('#agemode-yes').addEventListener('click', function () { go(false); });
     box.querySelector('#agemode-no').addEventListener('click', function () { ask.hidden = true; });
   }
