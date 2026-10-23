@@ -212,4 +212,34 @@
     }
     return out;
   };
+
+  /* ---------- 穏やか・穏やか（中性的）・内気：借りた文面に残った敬語の文（「規定の深さです」「幽霊って信じます？」）は、
+     敬語で話す相手（ctx.kg）でなければ崩してから、その口調の言い回しに通す（「規定の深さだよ」「幽霊って信じる？」）。
+     喘ぎ・短いつぶやきは V.unPoliteQuote が触らない。書き下ろしの敬語の行はそのまま（voice.js で仕上げを通らない） ---------- */
+  if (HK.toneFinish && V.unPoliteQuote) ['gentle', 'gentle_n'].forEach(function (t) {
+    HK.toneFinish(t, function (q, who, ctx) {
+      if (ctx && ctx.kg) return q;
+      var c = V.unPoliteQuote(q);
+      if (c === q) return q;
+      c = c.replace(/お疲れさま(?:だった|だ)(?=[。…‥」！!]|$)/g, 'お疲れさま').replace(/(?<=[、。…‥\s]|^)お疲れ(?=[。…‥」]|$)/g, 'お疲れさま');
+      /* 崩したあとの硬い言い残し（「失礼だが」「すまない」）は、やわらかい口調に合わせる */
+      c = c.replace(/(だ|た)が(?=、)/g, '$1けど').replace(/(^|[、。…‥\s])すまない(?=[、。…‥」]|$)/g, function (m, p) { return p + (p === '' || /[。]/.test(p) ? 'ごめんね' : 'ごめん'); });
+      c = c.replace(/す、ごめん/g, 'ご、ごめん');
+      return V.styleQuote ? V.styleQuote(c, who) : c;
+    });
+  });
+  /* 内気：手書きの台詞が「〜、です……」調なので敬語は崩さず、残った敬語の文に内気らしい間を入れる（「規定の深さです」→「規定の深さ、です……」）。
+     喘ぎ・短いつぶやき・敬語で話す相手への台詞はそのまま */
+  if (HK.toneFinish && V.unPoliteQuote) HK.toneFinish('shy', function (q, who, ctx) {
+    if ((ctx && ctx.kg) || V.unPoliteQuote(q) === q) return q;
+    var parts = q.split(/([。！？!?…‥」\n]+)/), lastI = -1;
+    parts.forEach(function (seg, i) { if (!(i % 2) && /[^\s、]/.test(seg)) lastI = i; });
+    if (lastI < 0) return q;
+    var seg = parts[lastI], next = parts[lastI + 1] || '';
+    if (/[！!]/.test(next)) return q;
+    seg = seg.replace(/([^、\s…‥っ])(です|でした|ですね|でしたね)$/, '$1、$2');
+    if (!/[？?…‥]/.test(next)) parts[lastI + 1] = '……' + next.replace(/^。/, '');
+    parts[lastI] = seg;
+    return parts.join('');
+  });
 })();
