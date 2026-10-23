@@ -129,7 +129,7 @@
       { id: 'course', label: 'コース', type: 'select', def: 'oil', options: [{ v: 'normal', label: '整体（60分）' }, { v: 'oil', label: 'アロマオイル（90分）' }, { v: 'lymph', label: '全身リンパ（120分）' }, { v: 'special', label: '「特別コース」（90分）' }] },
       { id: 'staff', label: '施術者', type: 'select', def: 'gentle', options: Object.keys(STAFF).map(function (k) { return { v: k, label: STAFF[k].n + '（' + STAFF[k].desc + '）' }; }) },
       { id: 'shady', label: '店の怪しさ', min: 0, max: 100, def: 60, lo: '健全そう', hi: '看板からして怪しい', desc: '高いほど施術が早く際どくなり、気づかれやすくもなる' },
-      { id: 'lewd', label: '施術の過激さ', min: 0, max: 100, def: 55, lo: 'ぎりぎり整体', hi: '隠す気がない' }
+      { id: 'harsh', label: '施術の過激さ', min: 0, max: 100, def: 55, lo: 'ぎりぎり整体', hi: '隠す気がない' }
       ,{ id: 'desc', label: '行為の描写', type: 'select', def: 'full', options: [{ v: 'full', label: '描写する' }, { v: 'dark', label: '軽め（暗転して回数だけ）' }], desc: '軽めにすると、快楽に負けたあとの行為は暗転し、体位の数と回数だけが分かる' }
     ],
     stats: [
@@ -183,7 +183,11 @@
     if (wrong) S.k = 1.25 * 0.85;
     var sus = 0, noticed = false, deceived = 0, stayed = false, left = false, fell = false, asked = false;
     /* 描写を軽めに：快楽に負けたあとは暗転して回数だけ。最中の絶頂は短い一文に */
-    var dark = env.desc === 'dark', MD = HK.MassageMore.DARK;
+    /* 描写の有無（lewd-unify.js）：ほのめかす＝軽め（暗転）。設定をそろえる前の入力は「行為の描写」を見る */
+    var LWX = HK.Lewd, lcf = LWX && LWX.conf('massage');
+    var dark = lcf ? LWX.lv(env) === 'low' : env.desc === 'dark', MD = HK.MassageMore.DARK;
+    S.dark = dark;
+    var eroOn = !!(lcf && !dark && LWX.ero(env) && HK.Ero && HK.MassageThick && HK.MassageThick.ERO), highOn = !!(lcf && LWX.high(env));
     function logC(list) {
       if (!dark) return K.logClimax(S, list);
       if (!list.length) return;
@@ -219,6 +223,8 @@
     function thick(top) {
       var MT = HK.MassageThick, TV = HK.ThickVM;
       if (HK.SAFE_ON || !MT || !TV) return null;
+      /* 描写の長さ：数行で短く（混ぜるなら半分）なら、段落に分けた場面にしない */
+      if (lcf && LWX.short(env, rng)) return null;
       var key = top ? (ffTop ? 'topFF' : custF && staff.g === 'm' ? 'topF' : TV.sad(rng, h, null) ? 'topSad' : 'top')
         : ff ? 'fallFF' : staff.g === 'f' && h.gender !== 'f' ? 'fallLady' : 'fall';
       var sc = MT[key] && MT[key].length ? K.pick(S, noMut(MT[key])) : null;
@@ -238,7 +244,7 @@
       if (!top) { h.pleasure += 30; while (h.pleasure >= 100) K.climax(S); }
       /* まれに、腕を見込まれてスカウトされる。受けるかどうかは性格と店の様子しだい */
       if (M.SCOUT && rng() < 0.05 + h.tr.aggr * 0.08 + (h.stats.exp - 3) * 0.03 + (h.action.id === 'enjoy' ? 0.06 : 0) + (top ? 0.05 : 0)) {
-        var acc = h.tr.fc * 0.4 + h.tr.impulse * 0.25 + h.corrupt / 250 + (h.goal.id === 'secret' || h.goal.id === 'free' ? 0.2 : 0) + env.lewd / 500 - h.tr.cp * 0.25 - h.tr.a * 0.2 - h.tr.caution * 0.2 - (env.shady - 50) / 250 - (h.goal.id === 'suspect' || h.goal.id === 'heal' ? 0.2 : 0) + (rng() - 0.5) * 0.4;
+        var acc = h.tr.fc * 0.4 + h.tr.impulse * 0.25 + h.corrupt / 250 + (h.goal.id === 'secret' || h.goal.id === 'free' ? 0.2 : 0) + env.harsh / 500 - h.tr.cp * 0.25 - h.tr.a * 0.2 - h.tr.caution * 0.2 - (env.shady - 50) / 250 - (h.goal.id === 'suspect' || h.goal.id === 'heal' ? 0.2 : 0) + (rng() - 0.5) * 0.4;
         S.flags.scout = acc > 0.55 ? 'yes' : 'no';
         var osc = K.say(S, { kind: 'sys', tag: 'スカウト', text: K.fmt(S, K.pick(S, M.SCOUT)) + ' ' + K.fmt(S, K.pick(S, (S.flags.scout === 'yes' ? M.SCOUT_YES : M.SCOUT_NO)[h.persona] || M.SCOUT_NO.gentle)), why: '施術者を負かした腕を見込まれた（攻撃性・経験 ' + h.stats.exp + '）／' + (S.flags.scout === 'yes' ? '引き受けた（FC・衝動性・堕ち度）' : '断った（CP・A・慎重さ' + (env.shady > 60 ? '・店の怪しさ' : '') + '）') });
         K.key(S, osc, S.flags.scout === 'yes' ? 'スカウトを受けた' : 'スカウトを断った');
@@ -265,7 +271,7 @@
       S.step = i;
       K.step(S, (i + 1) + '. ' + st[1]);
       if (hardTop && lvl >= 2) { topStop(st); break; }
-      var power = st[3] * (0.6 + lvl * 0.12) * (env.lewd / 55) * (h.action.id === 'enjoy' ? 1.2 : h.action.id === 'endure' ? 0.85 : 1) * (env.staff === 'duo' ? 1.2 : 1) * hands * (sleeping ? 1.15 : 1);
+      var power = st[3] * (0.6 + lvl * 0.12) * (env.harsh / 55) * (h.action.id === 'enjoy' ? 1.2 : h.action.id === 'endure' ? 0.85 : 1) * (env.staff === 'duo' ? 1.2 : 1) * hands * (sleeping ? 1.15 : 1);
       /* 攻めの客は、際どくなる前の普通の施術だけ（絶頂させられる展開にしない） */
       var r = hardTop ? { gain: 0, climaxes: [] } : K.stim(S, power * 1.7, { part: st[2], shame: lvl >= 2, defer: true });
       var text = K.fmt(S, K.pick(S, dark && MD.act[st[0]] ? MD.act[st[0]] : ACT[st[0]])), bd = band(lvl);
@@ -375,7 +381,7 @@
     if (fell || (asked && !left)) {
       S.step = seq.length;
       K.step(S, '施術のあと');
-      var nPos = 2 + rng.int(2) + (h.corrupt >= 100 ? 1 : 0);
+      var nPos = 2 + rng.int(2) + (h.corrupt >= 100 ? 1 : 0) + (highOn ? 1 : 0);
       /* 客が攻めなら客が主導する体位（女性どうし・女性の客×男性の施術者・男性の体で攻める客）、受けなら施術者が主導する体位 */
       var pool = S.rng.shuffle(noMut(HK.Pos && HK.Pos.vsNpc(h, '') === 'top' ? posTop() : ff ? POS_FF : POS)).slice(0, nPos);
       var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])), why: '快楽に負けた（堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
@@ -390,7 +396,15 @@
         var rr = K.stim(S, 34 + j * 6, { part: 'all', mult: 1.3, defer: true });
         if (dark) darkN += rr.climaxes.length;
         else {
-          K.say(S, { kind: 'ev', tag: p.n, text: K.fmt(S, p.t) + (rr.climaxes.length || p.thick ? '' : K.tail(S, 0.8)), why: '体位の指定：' + p.n });
+          /* 男性向け：客が自分から求めた（おねだり）か、客が主導するときだけ。最初と最後の体位に段落を足す */
+          var ex = '';
+          if (eroOn && (asked || custTop) && (j === 0 || j === pool.length - 1)) {
+            var EK = HK.MassageThick.ERO, ek = custTop ? 'top' : ff ? 'ff' : staff.g === 'f' && h.gender !== 'f' ? 'lady' : 'recv', d0 = h.eroDom;
+            h.eroDom = custTop;
+            ex = (p.thick ? '\n\n' : '') + K.fmt(S, HK.Ero.fill(S, K.pick(S, EK[ek]), h));
+            h.eroDom = d0;
+          }
+          K.say(S, { kind: 'ev', tag: p.n, text: K.fmt(S, p.t) + ex + (rr.climaxes.length || p.thick ? '' : K.tail(S, 0.8)), why: '体位の指定：' + p.n });
           K.logClimax(S, rr.climaxes);
         }
         /* 落ちすぎた客は、行為の最中に新人の練習台に誘われる（断れない） */
@@ -419,7 +433,7 @@
     else adv.push('気づいたのは「' + S.flags.noticedAt + '」の段階。');
     if (fell) adv.push('快楽に負けたのは、感じやすさ ' + h.stats.sense + '・CP ' + Math.round(h.eg.CP) + 'で、昂りに理性が追いつかなかったから。');
     if (left) adv.push('帰る決断ができたのは、CP（' + Math.round(h.eg.CP) + '）と理性の残り（' + Math.round(h.reason) + '）のおかげ。');
-    return K.finish(S, input, E, adv, { meta: staff.n + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['気づいた', S.flags.noticedAt || '気づかず'], ['騙された', deceived + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)], ['理性', Math.max(0, Math.round(h.reason))]].concat(positions.length ? [env.desc === 'dark' ? (HK.SAFE_ON ? ['暗闇の中で姿勢を変えた', positions.length + '回'] : ['暗闇の中の体位', positions.length + 'つ']) : ['指定された体位', positions.join('→')]] : []), label3: '施術' });
+    return K.finish(S, input, E, adv, { meta: staff.n + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['気づいた', S.flags.noticedAt || '気づかず'], ['騙された', deceived + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)], ['理性', Math.max(0, Math.round(h.reason))]].concat(positions.length ? [dark ? (HK.SAFE_ON ? ['暗闇の中で姿勢を変えた', positions.length + '回'] : ['暗闇の中の体位', positions.length + 'つ']) : ['指定された体位', positions.join('→')]] : []), label3: '施術' });
   }
 
   function ending(S, x) {
@@ -431,7 +445,7 @@
     else if (x.left) { kind = 'ok'; title = '途中で帰った ― 「' + S.flags.noticedAt + '」で見抜いた'; L0.push(h.name + 'はその日のうちに口コミサイトに長文を書いた。星は一つだった。'); }
     else if (x.fell && S.flags.trainee) { kind = 'over'; title = '新人の練習台になった ― 研修日は毎週水曜'; L0.push(HK.SoloKit.fmt(S, S.rng.pick(M.TRAINEE_END))); }
     else if (x.fell && h.goal.id === 'secret') { kind = 'over'; title = '常連になった ― 毎週水曜、同じ時間に'; L0.push(h.name + 'の予約は、もう三ヶ月先まで埋まっている。指名はいつも' + x.staff.n + 'だった。'); }
-    else if (x.fell) { kind = 'over'; title = '快楽に負けた ― ' + (x.positions.length ? (S.env.desc === 'dark' ? (HK.SAFE_ON ? '暗闇の中で、' + x.positions.length + '回姿勢を変えて' : '暗闇の中で、' + x.positions.length + 'つの体位を') : x.positions.join('、') + 'で') : '延長の三十分で'); L0.push(h.name + 'は帰り道、駅のホームで何度も膝が笑った。財布には、次回割引券が入っていた。'); }
+    else if (x.fell) { kind = 'over'; title = '快楽に負けた ― ' + (x.positions.length ? (S.dark ? (HK.SAFE_ON ? '暗闇の中で、' + x.positions.length + '回姿勢を変えて' : '暗闇の中で、' + x.positions.length + 'つの体位を') : x.positions.join('、') + 'で') : '延長の三十分で'); L0.push(h.name + 'は帰り道、駅のホームで何度も膝が笑った。財布には、次回割引券が入っていた。'); }
     else if (x.asked) { kind = 'over'; title = '自分からねだった ― 延長料金は払った'; L0.push(h.name + 'は会計のとき、' + x.staff.n + 'と目を合わせられなかった。'); }
     else if (!x.noticed && x.deceived) { kind = 'mid'; title = '騙されたまま ― 「また来ます」'; L0.push(h.name + 'は' + x.deceived + '回疑って、' + x.deceived + '回納得した。体は軽くなった気がした。'); }
     else if (!x.noticed) { kind = 'mid'; title = '最後まで気づかなかった ― 星5のレビューを書いた'; L0.push(h.name + '「すごく丁寧な施術でした。特にリンパのところが効きました」――レビューには「参考になった」が千件ついた。'); }

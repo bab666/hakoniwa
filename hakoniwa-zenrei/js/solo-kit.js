@@ -74,7 +74,8 @@
     var h = S.h, rng = S.rng;
     var part = opt.part || 'all';
     var dev = part === 'all' ? 0 : h.dev[part] || 0;
-    var lew = S.env.lewd != null ? S.env.lewd : 55;
+    /* 刺激の強さ：マッサージの「施術の過激さ」（harsh）・感覚遮断穴の「向こう側の過激さ」（wild）。ほかは今までどおり lewd */
+    var lew = S.env.harsh != null ? S.env.harsh : S.env.wild != null ? S.env.wild : S.env.lewd != null ? S.env.lewd : 55;
     var gain = power * (0.55 + lew / 100 * 0.9) * h.sens * (1 + dev * 0.13) * (opt.mult || 1) * rng.range(0.8, 1.2);
     var w = K.will(h);
     gain *= 1.12 - w * 0.42;
