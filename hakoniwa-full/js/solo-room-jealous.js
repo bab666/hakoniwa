@@ -7,6 +7,11 @@
 (function () {
   'use strict';
   var HK = window.HK, A = HK.RoomAPI;
+  /* R18版だけの設定：条件「エッチ」の場面の描写（room-thick.js が見る。全年齢モードでは safe-room.js が外す） */
+  var WR = HK.SCENARIOS && HK.SCENARIOS.whiteroom;
+  if (WR && Array.isArray(WR.env) && !WR.env.some(function (e) { return e.id === 'rmlewd'; })) {
+    WR.env.push({ id: 'rmlewd', label: 'エッチの描写（R18）', type: 'select', def: 'thick', options: [{ v: 'thick', label: '段落に分けて厚く' }, { v: 'mix', label: '厚い版と短い版をまぜる' }, { v: 'short', label: '一段落で短く' }], desc: '「短く」は、リードする側の型ごとの一段落（体位・シチュエーション約40種、受けの気質ごとの反応、女性どうし専用の文あり）で描く' });
+  }
   if (!A) return;
   function R(ctx, a, b) { return ctx.R(a, b); }
   function free(c) { return !c.out && !c.flags.down; }

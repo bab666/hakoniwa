@@ -60,6 +60,7 @@
     if (!out.length) out.push.apply(out, ['{b}の指先が、{a}の腕に爪を立てた。', '{b}は堪えきれずに、甘い声を漏らした。'].concat(X.none || []));
     return pick(ctx, out);
   }
+  L.react = react;
   var CLIMAX = {
     rough: ['{b}が首を振るのも構わず、{a}は責める手を緩めなかった。そのまま{b}を強引にイカせ、震えが収まる前にもう一度追い上げた。', '{a}は{b}を二度、三度と立て続けにイカせてから、ようやく自分も{b}の奥で果てた。', '「もう無理」と泣く{b}を、{a}は無理やりもう一度イカせた。'],
     gentle: ['{b}が達する瞬間、{a}は{b}の手を強く握っていた。少し遅れて、{a}も{b}の中で果てた。', '{a}は{b}を先にイカせてから、{b}が落ち着くのを待って、もう一度ゆっくりと抱いた。', '{a}と{b}はほとんど同時に達した。{a}は{b}の額に、汗で張りついた前髪を払ってやった。'],
@@ -127,6 +128,12 @@
   };
   var FF_REPEAT = ['{a}と{b}は、もう一度互いを抱き寄せた。さっきよりも、触れ方に遠慮がなかった。', '{a}は{b}の脚を開かせ、さっき覚えたばかりの弱いところを、迷いなく攻めた。'];
   var FF_SPEED = ['{a}は動けない{b}の脚のあいだに膝をつき、指と舌で手早く{b}を追い上げた。', '{a}は縛った{b}の胸元を開き、「すぐ終わらせるから」と言って指を滑り込ませた。'];
+  /* 媚薬が回っているとき・二回目以降の書き出し（男性が動く形） */
+  var APHRO = ['媚薬で敏感になった{b}は、触れられるだけで腰が跳ねた。', '媚薬の熱に浮かされた{b}は、自分から{a}に脚を開いた。', '{a}も{b}も、媚薬のせいで止まれなかった。'];
+  var REPEAT = ['{a}と{b}は、もう一度体を重ねた。今度は{b}が{a}の上になった。', '{a}と{b}は、息が整うのも待たずに二回目を始めた。', '回数を重ねるごとに、{b}は{a}の触れ方を覚えていった。', '次は{b}の方から{a}の服に手をかけた。'];
+  /* 厚い版（room-thick.js）からも、この一段落版の文を段の候補として使えるように */
+  L.FF_POOLS = { OPEN: FF_OPEN, BODY: FF_BODY, TOY: FF_TOY, CLIMAX: FF_CLIMAX, AFTER: FF_AFTER, REPEAT: FF_REPEAT, SPEED: FF_SPEED };
+  L.APHRO = APHRO; L.REPEAT = REPEAT;
   function ffScene(ctx, A, B, mode, opt, st, roughLine) {
     var tools = !!(ctx.flags && ctx.flags.toolbox), out = [];
     if (roughLine) out.push(roughLine);
@@ -163,7 +170,7 @@
     if (roughLine) lew.push(roughLine);
     if (opt.toolText) lew.push(opt.toolText.replace(/――$/, ''));
     else if (mode !== 'repeat') lew.push(pick(ctx, OPEN[st]));
-    if (mode === 'aphro') lew.push(pick(ctx, ['媚薬で敏感になった{b}は、触れられるだけで腰が跳ねた。', '媚薬の熱に浮かされた{b}は、自分から{a}に脚を開いた。', '{a}も{b}も、媚薬のせいで止まれなかった。']));
+    if (mode === 'aphro') lew.push(pick(ctx, APHRO));
     var sp = SPECIAL.filter(function (x) { return x.st.indexOf(st) >= 0 && !(opt.toolText && /^\{b\}(が|は\{a\}の上)/.test(x.t)) && !(fx && x.swap); });
     var special = sp.length && ctx.rng() < 0.45 ? pick(ctx, sp).t.replace(/私／俺/, B.tr.cp + B.tr.fc > 1 ? '俺' : '私') : null;
     /* 仕掛けた側が受けのとき：縛った相手の上に自分から跨る */
@@ -183,7 +190,7 @@
       if (V && ctx.rng() < 0.8) lew.push(V.line(pf, B.persona, 'climax', 'b'));
       if (V && ctx.rng() < 0.25) lew.push(V.line(pf, A.persona, 'climax', 'a'));
     }
-    if (mode === 'repeat') lew.splice(0, 0, pick(ctx, ['{a}と{b}は、もう一度体を重ねた。今度は{b}が{a}の上になった。', '{a}と{b}は、息が整うのも待たずに二回目を始めた。', '回数を重ねるごとに、{b}は{a}の触れ方を覚えていった。', '次は{b}の方から{a}の服に手をかけた。']));
+    if (mode === 'repeat') lew.splice(0, 0, pick(ctx, REPEAT));
     if (mode === 'will' || mode === 'des' || mode === 'aphro') {
       /* まだ条件が残っている組には、扉が開く・部屋を出る締めを使わない */
       var API = HK.RoomAPI, open = !API || !API.pairDone || API.pairDone(ctx, a, b);

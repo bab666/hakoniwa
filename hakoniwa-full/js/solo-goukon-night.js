@@ -334,4 +334,6 @@
     if (ff && HK.FF) txt = HK.FF.fix(ctx, txt, A, B);
     return { text: txt, kind: k, label: LABEL[k] + (out ? '→' + END_LABEL[out] : '') };
   };
+  /* 点検用（文の数え直し） */
+  HK.GoukonNight.POOLS = { N: N, FF: FF, AFTER: AFTER, END: END, THICK_OPEN: THICK_OPEN, OPEN_N: OPEN_N, OPEN_FF: OPEN_FF, OPEN_FM: OPEN_FM, OPEN_PS: OPEN_PS, PEAK_PS: PEAK_PS, AFTER_PS: AFTER_PS };
 })();
