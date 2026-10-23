@@ -265,6 +265,59 @@
     });
   };
 
+  /* 長い場面の整形（表示・書き出しの直前に通す）
+     ・140字以上の文だけ。段落ごとに改行し、「名前「……」」の台詞は前後に空行を置いて一行にする
+     ・地の文は句点で区切って、だいたい2〜3文（60〜110字）ごとに改行する
+     ・もとから改行のある文（段落に分けた山場）は、段落の形は変えず、台詞だけを独立させる
+     names：登場人物の名前の一覧（台詞の話者の判定に使う。名前の直後の「 だけを台詞とみなす） */
+  HK.fmtLong = function (text, names) {
+    var s = String(text == null ? '' : text);
+    if (s.length < 140 || !/[。！？」]/.test(s)) return s;
+    var nm = (names || []).filter(Boolean).map(String).sort(function (a, b) { return b.length - a.length; });
+    var NAME = nm.length ? '(?:' + nm.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')' : null;
+    /* 台詞の塊：文頭か句点・閉じ括弧・ダッシュのあとに続く 名前「…」（「…」が続けて並ぶものも一つ） */
+    var SPEECH = NAME ? new RegExp('(^|[。！？」）\\s―…])(' + NAME + '(?:「[^「」]*」)+)(?!と|って|、と|など)', 'g') : null;
+    var LONE = /(^|[。！？」）\s―…])((?:「[^「」]*」)+)(?=$|[^と、っな])/g;
+    var hadNL = /\n/.test(s);
+    var TK = '\u0000';
+    var out = s.split(/\n+/).map(function (line) {
+      line = line.trim();
+      if (!line) return '';
+      var blocks = [];
+      var marked = line;
+      if (SPEECH) marked = marked.replace(SPEECH, function (m, pre, sp) { return pre + TK + sp + TK; });
+      marked = marked.replace(LONE, function (m, pre, sp) { return pre + TK + sp + TK; });
+      marked.split(TK).forEach(function (seg, k) {
+        seg = seg.replace(/^\s+|\s+$/g, '');
+        if (!seg) return;
+        blocks.push({ sp: k % 2 === 1, t: seg });
+      });
+      var res = [];
+      blocks.forEach(function (b) {
+        if (b.sp) { res.push({ sp: true, t: b.t }); return; }
+        var paras = [];
+        if (hadNL || b.t.length < 120) paras = [b.t.replace(/\s+/g, '')];
+        else {
+          var sents = b.t.split(/(?<=[。！？](?:」|）)?)\s*/).filter(Boolean), cur = '', n = 0, first = !res.length;
+          sents.forEach(function (x) {
+            x = x.replace(/^\s+/, '');
+            /* 場面の最初の一文が短ければ（情景の一文）、それだけで一段落にする */
+            if (cur && ((cur.length >= 60 && n >= 2) || cur.length >= 110 || cur.length + x.length > 150 || (first && !paras.length && n === 1 && cur.length <= 48))) { paras.push(cur); cur = ''; n = 0; }
+            cur += x; n++;
+          });
+          if (cur) paras.push(cur);
+        }
+        paras.forEach(function (p) { res.push({ sp: false, t: p }); });
+      });
+      return res.map(function (b, i) {
+        var prev = res[i - 1];
+        if (!prev) return b.t;
+        return (b.sp || prev.sp ? '\n\n' : '\n') + b.t;
+      }).join('');
+    });
+    return out.filter(function (x, i, arr) { return x || (i > 0 && i < arr.length - 1); }).join(hadNL ? '\n\n' : '\n').replace(/\n{3,}/g, '\n\n');
+  };
+
   HK.store = {
     get: function (k, d) { try { var v = window.localStorage.getItem('hakoniwa:' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
     set: function (k, v) { try { window.localStorage.setItem('hakoniwa:' + k, JSON.stringify(v)); return true; } catch (e) { return false; /* 保存できない環境・容量超過 */ } }

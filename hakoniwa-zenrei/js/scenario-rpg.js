@@ -1,7 +1,9 @@
 /* 箱庭シミュレーター: ダンジョンRPG（ローグライク）
    パーティでダンジョンに潜り、階ごとにランダムな出来事（戦闘・宝箱・罠・商人・泉・休憩…）を乗り越える。
    ・職業はエゴグラムから（選んでもよい）。戦い方・宝箱を開けるか・撤退するかは、気質の数値で決まる
-   ・何階まで踏破し、いくら稼いだか（持ち帰れたか）が結果になる
+   ・終わり方は三つだけ。目標の階（初期値は地下30階）の主を倒せば「踏破（クリア）」、リーダーが引き返せば「帰還（撤退）」、全員倒れれば「全滅」
+     標準的な3〜5人のパーティで、おおよそ 踏破1割／帰還7割／全滅2割 になるように調整している（強いパーティは踏破が増え、無謀なパーティは全滅が増える）
+   ・5階ごと（と目標の階）に階層の主が階段を守る。倒すまで下りられない。倒しきれなければ、引き返すか、態勢を立て直してもう一度挑む
    ・階層の主は20体（仕掛けつき）。喧嘩・魔術師の人質・謎かけ・呪いの装備・賭場・女神像・隠し部屋・料理も起きる（rpg-data.js）
    全年齢・R18版の両方で使う */
 (function () {
@@ -60,16 +62,16 @@
 
   var scen = {
     id: 'rpg', name: 'ダンジョンRPG', kicker: 'パーティ・冒険',
-    desc: 'パーティを組んでダンジョンへ。階ごとにランダムな戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、誰が宝箱に手を伸ばし、どこで引き返すのか。何階まで踏破し、いくら持ち帰れるか。',
+    desc: 'パーティを組んでダンジョンへ。階ごとにランダムな戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、誰が宝箱に手を伸ばし、どこで引き返すのか。地下30階の主を倒せば踏破、引き返せば帰還、全員倒れれば全滅。',
     solo: true, minCast: 1, maxCast: 6, unit: '階',
-    castHint: '1〜6人のパーティで潜ります。職業は「おまかせ」ならエゴグラムから決まります。前に出るか、宝箱を開けるか、引き返すかは気質の数値で決まります。',
+    castHint: '1〜6人のパーティで潜ります。職業は「おまかせ」ならエゴグラムから決まります。前に出るか、宝箱を開けるか、引き返すかは気質の数値で決まります。踏破できるのは一割ほど。多くは途中で引き返します。',
     simulate: function (input) { return run(input); },
     derived: ['caution', 'aggr', 'impulse', 'lead'],
     env: [
-      { id: 'floors', label: '目標の階層', min: 5, max: 50, def: 15, lo: '5階', hi: '50階', unit: '階', desc: '5階ごとに階層の主（ボス）が出る' },
+      { id: 'floors', label: '目標の階層', min: 5, max: 50, def: 30, lo: '5階', hi: '50階', unit: '階', desc: '5階ごとに階層の主（ボス）が階段を守る。目標の階の主を倒せば踏破（クリア）' },
       { id: 'danger', label: '魔物の強さ', min: 0, max: 100, def: 50, lo: 'やさしい', hi: '鬼畜' },
       { id: 'loot', label: 'お宝の多さ', min: 0, max: 100, def: 50, lo: 'しょっぱい', hi: '黄金郷' },
-      { id: 'retreat', label: '撤退', type: 'select', def: 'auto', options: [{ v: 'auto', label: '気質しだいで引き返す' }, { v: 'never', label: '行けるところまで' }] }
+      { id: 'retreat', label: '撤退', type: 'select', def: 'auto', options: [{ v: 'auto', label: '気質しだいで引き返す' }, { v: 'never', label: '絶対に引き返さない（踏破か全滅か）' }] }
     ],
     stats: [
       { id: 'str', label: '腕っぷし', desc: '戦闘での強さ' },
@@ -106,7 +108,7 @@
     /* 結果に「最も心を寄せた相手」とエゴグラムとの比較を出す（solo-story-kit.js）。関係の値はないので、設定した関係と記録のやりとりから */
     S.egoNotes = true; S.bondFn = function (S0, a, b) { var t = tieOf(input, a, b); return /lover|mate|fated|best|crush|almost|yan/.test(t) ? 0.4 : /friend|buddy|childhood|sibling|sibclose|sibprot|parent|mentor/.test(t) ? 0.25 : /enemy|bad|rival/.test(t) ? -0.35 : 0; };
     var dmul = 0.7 + env.danger / 100 * 0.9, lmul = 0.6 + env.loot / 100 * 1.2;
-    var pot = Math.max(1, Math.round(P.length * 0.7)), gold = 0, floor = 0, banked = 0, ended = '', bossDown = 0;
+    var pot = Math.max(1, Math.round(P.length * 0.7)), gold = 0, floor = 0, banked = 0, ended = '', bossDown = 0, retreatBy = null, retreatWhy = '';
     P.forEach(function (p) {
       var pc = (input.perChar && input.perChar[p.i]) || {}, pick = (pc.pick || {}).job;
       p._r = rng;
@@ -133,24 +135,26 @@
         p.hp = 0; p.alive = false; p.down++;
         var pr = alive().filter(function (x) { return JOBS[x.job].heal; })[0];
         if (pr && rng() < 0.55 + pr.tr.np * 0.3) { p.alive = true; p.hp = Math.round(p.mhp * 0.35); pr.cnt.heal++; return p.name + 'が倒れた！――' + pr.name + 'の祈りで、' + p.name + 'は立ち上がった。'; }
-        if (pot > 0 && rng() < 0.7) { pot--; p.alive = true; p.hp = Math.round(p.mhp * 0.4); return p.name + 'が倒れた！――仲間が回復薬を飲ませ、' + p.name + 'は息を吹き返した。'; }
+        if (pot > 0 && rng() < 0.68) { pot--; p.alive = true; p.hp = Math.round(p.mhp * 0.4); return p.name + 'が倒れた！――仲間が回復薬を飲ませ、' + p.name + 'は息を吹き返した。'; }
         return p.name + 'は倒れた。';
       }
       return '';
     }
-    /* 戦闘：パーティの攻撃と敵の反撃を数回くり返す */
-    function battle(mon, boss) {
-      var hp = mon[1] * dmul * (boss ? 6 : 3), pow = mon[1] * dmul, t = (boss ? '階層の主《' + mon[0] + '》が立ちはだかった！' : HK.RPGData.ENC[Math.floor(rng() * HK.RPGData.ENC.length)].replace(/\{m\}/g, mon[0])), rounds = 0, hit = [];
+    /* 戦闘：パーティの攻撃と敵の反撃を数回くり返す。hp0 は再戦のとき、前回削った残り */
+    function battle(mon, boss, hp0) {
+      /* 敵の体力は人数に合わせる（3人で0.73倍、5人で1.2倍）。少人数でも戦えるように。主は体力が多く、一撃は普通の魔物の九割。深い階ほど一撃が重い（目標の階で1.5倍）。一撃の重さも人数で少し変わる（3人で0.94倍、5人で1.2倍） */
+      var hp = hp0 != null ? hp0 : mon[1] * dmul * (boss ? 6 : 3) * (0.04 + Math.min(5, P.length) * 0.23) * (1 + floor / Math.max(5, maxF) * 0.4) * (boss && floor === maxF ? 1.3 : 1), pow = mon[1] * dmul * (boss ? 0.9 : 1) * (1 + floor / Math.max(5, maxF) * 0.5) * (0.55 + Math.min(5, P.length) * 0.13), t = (boss ? '階層の主《' + mon[0] + '》が立ちはだかった！' : HK.RPGData.ENC[Math.floor(rng() * HK.RPGData.ENC.length)].replace(/\{m\}/g, mon[0])), rounds = 0, hit = [];
       /* 先に気づくか（慎重さ・狩人） */
       var scout = alive().reduce(function (m, p) { return Math.max(m, p.tr.caution + (p.job === 'hunter' ? 0.3 : 0)); }, 0);
       if (!boss && rng() < scout * 0.35) { t += '――先に気づいたので、奇襲をかけた。'; hp *= 0.7; }
+      var hpMax = hp;
       while (hp > 0 && alive().length && rounds < 8) {
         rounds++;
         alive().forEach(function (p) {
           if (hp <= 0 || p.mad) return;
           var front = p.action.id === 'front' ? 1.2 : p.action.id === 'support' ? 0.8 : 1;
           var crit = rng() < 0.06 + (p.stats.luck || 3) * 0.02;
-          var d = p.atk * front * (0.7 + rng() * 0.6) * (crit ? 1.8 : 1) * (1 + p.lv * 0.08);
+          var d = p.atk * front * (0.7 + rng() * 0.6) * (crit ? 1.8 : 1) * (1 + (p.lv - 1) * 0.14);
           if (JOBS[p.job].bard) { alive().forEach(function (q) { q.atk += 0.05; }); }
           hp -= d;
           if (crit) hit.push(p.name + 'の会心の一撃！');
@@ -165,8 +169,21 @@
         if (cover && tg.hp < tg.mhp * 0.5) { hit.push(cover.name + 'が' + tg.name + 'をかばった！'); tg = cover; }
         var msg = hurt(tg, pow * (0.6 + rng() * 0.8));
         if (msg) hit.push(msg); else if (rng() < 0.25) hit.push(say(tg, 'hurt'));
+        /* 主との戦いで押し切られそうなら、全滅する前に距離を取る（撤退「気質しだい」のとき。慎重な人ほど早く退く） */
+        if (boss && env.retreat === 'auto' && alive().length) {
+          var A1 = alive(), rt = A1.reduce(function (s0, p) { return s0 + p.hp / p.mhp; }, 0) / A1.length, dead = P.length - A1.length - P.filter(function (p) { return p.captive; }).length;
+          var ld = A1.indexOf(leader) >= 0 ? leader : A1[0];
+          if ((rt < 0.3 || (dead > 0 && rt < 0.5)) && rng() < 0.15 + ld.tr.caution * 0.6 - ld.tr.aggr * 0.15) { hit.push(ld.name + 'が叫んだ。「下がれ！　一度退くぞ！」'); break; }
+        }
       }
-      if (hp > 0) return { win: false, text: t + hit.slice(0, 4).join('') };
+      if (hp > 0) return { win: false, hpLeft: hp, hpMax: hpMax, text: t + hit.slice(0, 4).join('') };
+      /* 勝ったあと、倒れていた仲間が息を吹き返すことがある（僧侶がいれば高い）。戻らなければ、そのまま失われる */
+      P.forEach(function (p) {
+        if (p.alive || p.captive || p.spec) return;
+        var pr = alive().filter(function (x) { return JOBS[x.job].heal; })[0];
+        if (rng() < (pr ? 0.45 + pr.tr.np * 0.25 : 0.25) + p.tr.cp * 0.1) { p.alive = true; p.hp = Math.round(p.mhp * 0.25); hit.push(pick2([p.name + 'は戦いが終わると、仲間に揺り起こされて目を開けた。', pr ? pr.name + 'の長い祈りのあと、' + p.name + 'の指が動いた。' : '仲間が' + p.name + 'の傷を縛り、水を飲ませた。やがて、かすかに息が戻った。'])); }
+        else hit.push(p.name + 'は、もう目を開けなかった。');
+      });
       var g = Math.round(mon[2] * lmul * (0.8 + rng() * 0.4));
       var top = P.slice().sort(function (a, b) { return b.kills - a.kills; })[0];
       gold += g; top.found += g;
@@ -180,14 +197,22 @@
     function F(t, m) { return String(t).replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
     function pick2(arr) { return arr[Math.floor(rng() * arr.length)]; }
     function tieStrong(a, b) { return /lover|mate|best|parent|sibprot|sibclose|sibling|buddy|childhood|crush|almost/.test(tieOf(input, a, b)); }
-    function bossFight() {
+    /* again があれば、倒しきれなかった同じ主への再戦（削った分は残る。仕掛けはもう一度は起きない） */
+    function bossFight(again) {
       var frac = floor / Math.max(5, maxF), tierB = Math.min(3, Math.floor(frac * 4 - 0.01));
       var pool = RD.BOSSES.filter(function (x) { return x.t === tierB && !usedBoss[x.n]; });
       if (!pool.length) pool = RD.BOSSES.filter(function (x) { return !usedBoss[x.n]; });
       if (!pool.length) pool = RD.BOSSES;
-      var B = pick2(pool); usedBoss[B.n] = 1;
+      var B = again ? again.b : pick2(pool); usedBoss[B.n] = 1;
       var A = alive(), a = pick2(A), b = A.filter(function (x) { return x !== a; }).sort(function (x, y) { return (tieStrong(y, a) ? 1 : 0) + y.tr.np - (tieStrong(x, a) ? 1 : 0) - x.tr.np; })[0] || null;
       var pow = B.p + floor * 0.6, m = { a: a.name, b: b ? b.name : '', x: B.n }, pre = B.in + F(pick2(RD.GIM[B.k]), m), note = '', act = [], broke = false, k = B.k, atkSave = null;
+      if (again) {
+        pre = pick2(['傷を負った' + B.n + 'が、再び行く手を塞いだ。', B.n + 'は前の戦いの傷を引きずりながら、なお階段の前に立っていた。', '態勢を立て直したパーティが、' + B.n + 'にもう一度挑んだ。']);
+        if (/summon|split|twin|rage|time|armor/.test(k)) pow *= 1.1;
+        var resA = battle([B.n, pow, B.g], true, again.hpLeft);
+        resA.text = resA.text.replace(/^階層の主《[^》]+》が立ちはだかった！/, '');
+        return { b: B, res: resA, pre: pre, note: '再戦', actors: [] };
+      }
       /* 仕掛けを破れるか：謎かけ・見抜く＝A、正気に戻す・庇う＝NPや関係、糸を切る＝盗賊 */
       if (k === 'riddle' || k === 'armor') { var sm = A.slice().sort(function (x, y) { return (y.tr.a + y.intel0) - (x.tr.a + x.intel0); })[0]; broke = sm.tr.a + sm.intel0 > 0.9 && rng() < 0.75; if (broke) { m.a = sm.name; act.push(sm.i); } }
       else if (b && /charm|stone|terror|bind|greed/.test(k)) broke = rng() < 0.3 + b.tr.np * 0.3 + (tieStrong(a, b) ? 0.25 : 0) + (k === 'bind' && JOBS[b.job].thief ? 0.3 : 0) + (k === 'terror' ? -a.tr.ac * 0.2 : 0);
@@ -217,7 +242,7 @@
       function can(k, gap) { return !usedK['sp_' + k] && (lastSp[k] == null || floor - lastSp[k] >= gap); }
       if (b && can('quarrel', 5) && grudges.length < 2) opts.push(['quarrel', 0.4 + A.reduce(function (m0, x) { return Math.max(m0, x.tr.aggr + x.tr.cp * 0.5 + x.tr.jealous * 0.4); }, 0) * 0.5]);
       if (grudges.length && can('make', 2)) opts.push(['make', 1.4]);
-      if (b && !hostUsed && floor >= 2 && floor <= maxF - 2 && A.length >= 2) opts.push(['host', 0.7]);
+      if (b && !hostUsed && floor >= 2 && floor <= maxF - 2 && A.length >= 3) opts.push(['host', 0.7]);
       if (captive && can('captive', 2)) opts.push(['captive', 0.8]);
       if (can('riddle', 4)) opts.push(['riddle', 0.8]);
       if (can('cursed', 5)) opts.push(['cursed', 0.6]);
@@ -288,9 +313,10 @@
     }
     function rescue() {
       var c = captive.p, A = alive(), hero = A.filter(function (q) { return q.vow; })[0] || A[0];
-      var wz = ['黒衣の魔術師', 14 + floor * 1.6, 60 + floor * 10];
+      var wz = ['黒衣の魔術師', 10 + floor * 1.2, 60 + floor * 10];
       if (hero) hero.atk += 2;
-      var res = battle(wz, true);
+      /* 魔術師は階層の主より脆い（体力は主の三分の二ほど） */
+      var res = battle(wz, true, wz[1] * dmul * 4 * (0.4 + P.length * 0.15));
       res.text = res.text.replace(/^階層の主《[^》]+》が立ちはだかった！/, '');
       if (hero) hero.atk -= 2;
       var t = F(pick2(RD.HOST.rescue), { a: c.name, b: hero ? hero.name : '' }) + res.text;
@@ -374,48 +400,76 @@
         }
       }
       if (!goOn()) break;
-      /* 階層の主 */
-      if (floor % 5 === 0) {
-        var bo = bossFight();
-        var br = bo.res;
-        ST.say(S, { actors: alive().map(function (p) { return p.i; }).concat(bo.actors), tag: br.win ? '階層の主' : '全滅の危機', kind: 'climax', text: bo.pre + br.text, why: '地下' + floor + '階の主《' + bo.b.n + '》' + (bo.note ? '／' + bo.note : '') });
-        if (br.win) { bossDown++; P.forEach(function (p) { if (p.alive) { p.lv++; p.mhp += 4; p.hp = Math.min(p.mhp, p.hp + 6); } }); }
+      /* 階層の主（5階ごとと、目標の階）。倒すまで階段は下りられない。倒しきれなければ、引き返すか再戦 */
+      if (floor % 5 === 0 || floor === maxF) {
+        var bo = null, tries = 0;
+        while (goOn()) {
+          bo = bossFight(bo && !bo.res.win ? { b: bo.b, hpLeft: bo.res.hpLeft } : null);
+          var br = bo.res, final = floor === maxF;
+          tries++;
+          ST.say(S, { actors: alive().map(function (p) { return p.i; }).concat(bo.actors), tag: br.win ? (final ? '最深部の主' : '階層の主') : alive().length ? '退却' : '全滅の危機', kind: 'climax', text: bo.pre + br.text + (br.win || !alive().length ? '' : pick2(['――倒しきれず、パーティは一度、上の階の通路まで退いた。', '――決着はつかず、パーティは息を切らして距離を取った。'])), why: '地下' + floor + '階の主《' + bo.b.n + '》' + (bo.note ? '／' + bo.note : '') + (br.win ? '' : '／主の残り体力 ' + Math.round(br.hpLeft / Math.max(1, br.hpMax) * 100) + '%') });
+          if (br.win) { bossDown++; P.forEach(function (p) { if (p.alive || p.captive) { p.lv++; p.mhp += 6; p.def += 0.4; p.hp = Math.min(p.mhp, p.hp + Math.round(p.mhp * 0.3)); } }); break; }
+          if (!goOn()) break;
+          /* 再戦の前に息を整える（何度も退いていると、休む余裕もなくなる）。それから、引き返すか（主の前では、慎重な人ほど退く） */
+          if (tries < 4) alive().forEach(function (p) { p.hp = Math.min(p.mhp, p.hp + Math.round(p.mhp * 0.3)); });
+          if (pot > 0 && rng() < 0.6) { pot--; var low = alive().sort(function (x, y) { return x.hp / x.mhp - y.hp / y.mhp; })[0]; low.hp = Math.min(low.mhp, low.hp + Math.round(low.mhp * 0.4)); }
+          if (env.retreat === 'auto' && judgeRetreat(0.1, bo.b.n)) break;
+        }
+        if (ended) break;
       }
       snap();
       if (!goOn()) break;
-      /* 引き返すか：リーダーの慎重さと、パーティの消耗・お金の目標 */
-      if (env.retreat === 'auto' && floor < maxF) {
-        var A2 = alive(), ratio = A2.reduce(function (s0, p) { return s0 + p.hp / p.mhp; }, 0) / A2.length, lost = P.length - A2.length;
-        var L0 = A2.indexOf(leader) >= 0 ? leader : A2[0];
-        var fear = (1 - ratio) * 1.2 + lost * 0.3 + L0.tr.caution * 0.4 - L0.tr.aggr * 0.3 - (L0.goal.id === 'deep' ? 0.25 : 0) + (pot === 0 ? 0.2 : 0);
-        if (fear > 0.85) {
-          var greedy = A2.filter(function (p) { return p !== L0 && (p.goal.id === 'gold' || p.goal.id === 'deep') && p.tr.impulse > 0.5; })[0];
-          ST.say(S, { actors: A2.map(function (p) { return p.i; }), tag: '撤退', text: L0.name + 'は「ここまでだ。引き返す」と決めた。' + (greedy ? greedy.name + 'は「もう少しだけ！」と粘ったが、最後には折れた。' : ''), why: L0.name + 'の判断（消耗 ' + Math.round((1 - ratio) * 100) + '%・慎重さ）' });
-          ended = 'retreat'; break;
-        }
-      }
+      /* 引き返すか：リーダーの慎重さと、パーティの消耗・失った仲間・残りの階数 */
+      if (env.retreat === 'auto' && floor < maxF && judgeRetreat(0, '')) break;
+    }
+    /* 引き返すか。bonus は主の前での上乗せ。決めたら記録に「誰が・なぜ」を一文入れて true */
+    function judgeRetreat(bonus, bossName) {
+      var A2 = alive(); if (!A2.length) return false;
+      var ratio = A2.reduce(function (s0, p) { return s0 + p.hp / p.mhp; }, 0) / A2.length, lost = P.filter(function (p) { return !p.alive && !p.captive; }).length, left = maxF - floor;
+      var L0 = A2.indexOf(leader) >= 0 ? leader : A2.slice().sort(function (a, b) { return (b.tr.lead + b.tr.cp * 0.5) - (a.tr.lead + a.tr.cp * 0.5); })[0];
+      /* 消耗への敏感さは慎重さで変わる（無謀なリーダーは体力が減っても粘り、全滅しやすい） */
+      var fear = (1 - ratio) * (0.85 + L0.tr.caution * 0.9) + lost * (0.3 + L0.tr.caution * 0.3) + L0.tr.caution * 0.45 - L0.tr.aggr * 0.35 - (L0.goal.id === 'deep' ? 0.25 : 0) + (pot === 0 ? 0.15 : 0) + bonus
+        + Math.min(0.2, floor / maxF * 0.2) - (left <= 3 ? 0.3 : left <= 6 ? 0.15 : 0) + (A2.length <= 2 ? 0.15 : 0) + (P.length <= 3 ? 0.12 : 0);
+      if (fear <= 1.0) return false;
+      /* 理由を組む：体力・失った仲間・気質・残りの階数 */
+      var why = [], low = A2.slice().sort(function (a, b) { return a.hp / a.mhp - b.hp / b.mhp; })[0];
+      if (ratio < 0.5) why.push((low === L0 ? '自分' : low.name) + 'の体力は残り' + Math.round(low.hp / low.mhp * 100) + '%、パーティ全体でも' + Math.round(ratio * 100) + '%');
+      if (lost) why.push(P.filter(function (p) { return !p.alive && !p.captive; }).map(function (p) { return p.name; }).join('と') + 'を失っていた');
+      if (pot === 0) why.push('回復薬も尽きていた');
+      if (bossName) why.push('目の前の' + bossName + 'は倒しきれそうになかった');
+      if (L0.tr.caution > 0.55) why.push('慎重な性分が「生きて帰る」を選ばせた');
+      else if (L0.goal.id === 'live') why.push('全員で生きて帰ることが目標だった');
+      else if (!why.length) why.push('リーダーとしての勘が、ここが潮時だと告げていた');
+      var greedy = A2.filter(function (p) { return p !== L0 && (p.goal.id === 'gold' || p.goal.id === 'deep') && (p.tr.impulse > 0.5 || p.tr.aggr > 0.55); })[0];
+      var text = L0.name + 'は「ここまでだ。引き返す」と決めた。' + why.join('。') + '。あと' + left + '階――' + (left <= 5 ? '目標はもう見えていたが、' : left <= 12 ? '半分は越えていたが、' : 'まだ先は長く、') + L0.name + 'は無理をしなかった。' + (greedy ? greedy.name + 'は「もう少しだけ！」と粘ったが、最後には折れた。' : '');
+      ST.say(S, { actors: A2.map(function (p) { return p.i; }), tag: '撤退', kind: 'climax', text: text, why: L0.name + 'の判断（消耗 ' + Math.round((1 - ratio) * 100) + '%・失った仲間 ' + lost + '人・慎重さ ' + Math.round(L0.tr.caution * 100) + '・残り' + left + '階）' });
+      ended = 'retreat'; retreatBy = L0; retreatWhy = why[0];
+      return true;
     }
     goOn();
-    var A3 = alive(), reached = Math.min(floor, maxF) - (ended === 'retreat' || A3.length ? 0 : 1);
-    if (!A3.length) { banked = Math.round(gold * 0.1); ended = 'wipe'; }
+    if (!alive().length) { banked = Math.round(gold * 0.1); ended = 'wipe'; }
     else { banked = gold; ended = ended || 'clear'; }
-    var cleared = ended === 'clear' ? maxF : ended === 'retreat' ? floor : Math.max(0, floor - 1);
+    /* 到達した階：全滅はその階、帰還はその階まで、踏破は目標の階 */
+    var cleared = ended === 'clear' ? maxF : Math.min(floor, maxF);
     var mvp = P.slice().sort(function (a, b) { return (b.kills * 10 + b.found / 10) - (a.kills * 10 + a.found / 10); })[0];
     P.forEach(function (p) {
-      p.fate = p.captive ? '魔術師に囚われたまま' : !p.alive ? '力尽きた' : ended === 'clear' ? '踏破した' : '生還した';
+      p.fate = p.captive ? (ended === 'clear' ? '最深部の主が倒れ、塔から解放された' : '魔術師に囚われたまま') : !p.alive ? '力尽きた' : ended === 'clear' ? '踏破した' : '帰還した';
+      /* 踏破すれば、魔術師に囚われていた人も解放される */
+      if (p.captive && ended === 'clear') { p.captive = false; p.alive = true; p.hp = Math.max(p.hp, Math.round(p.mhp * 0.3)); }
       p.notes.push(JOBS[p.job].label + '・Lv' + p.lv + '・撃破 ' + p.kills + '・見つけたお金 ' + p.found + 'G・倒れた ' + p.down + '回' + (p.cnt.heal ? '・仲間を救った ' + p.cnt.heal + '回' : ''));
       p.notes.push('方針：' + p.action.label + '／目標：' + p.goal.label);
       if (SPX && SPX.note(p)) p.notes.push(SPX.note(p));
     });
-    var title = ended === 'clear' ? '踏破！ ― 地下' + maxF + '階の最深部まで' : ended === 'retreat' ? '生還 ― 地下' + cleared + '階で引き返した' : '全滅 ― 地下' + floor + '階で力尽きた';
-    var lines = [ended === 'wipe' ? 'パーティは全滅した。拾ったお金のほとんどは、迷宮に残された。持ち帰れたのは ' + banked + 'G だけだった。' : 'パーティは ' + banked + 'G を持ち帰った。', 'いちばん活躍したのは' + mvp.name + '（撃破 ' + mvp.kills + '・' + mvp.found + 'G）。'];
+    var A3 = alive();
+    var title = ended === 'clear' ? '踏破（クリア） ― 地下' + maxF + '階の主を倒した' : ended === 'retreat' ? '帰還（地下' + cleared + '階で撤退）' : '全滅（地下' + cleared + '階）';
+    var lines = [ended === 'wipe' ? 'パーティは地下' + cleared + '階で全滅した。拾ったお金のほとんどは、迷宮に残された。持ち帰れたのは ' + banked + 'G だけだった。' : ended === 'retreat' ? retreatBy.name + 'の判断で、パーティは地下' + cleared + '階から引き返した（' + retreatWhy + '）。' + banked + 'G を持ち帰った。' : '地下' + maxF + '階の主を倒し、ダンジョンを踏破した。パーティは ' + banked + 'G を持ち帰った。', 'いちばん活躍したのは' + mvp.name + '（撃破 ' + mvp.kills + '・' + mvp.found + 'G）。'];
     if (bossDown) lines.push('倒した階層の主：' + bossDown + '体。');
     return ST.result(S, input, {
       ending: { title: title, kind: ended === 'wipe' ? 'over' : 'ok', lines: lines },
-      estats: [['踏破した階', cleared + '／' + maxF + '階'], ['持ち帰ったお金', banked + 'G'], ['拾ったお金', gold + 'G'], ['階層の主', bossDown + '体'], ['生き残り', A3.length + '／' + P.length + '人']],
+      estats: [['結果', ended === 'clear' ? '踏破' : ended === 'retreat' ? '帰還' : '全滅'], ['到達した階', cleared + '／' + maxF + '階'], ['持ち帰ったお金', banked + 'G'], ['拾ったお金', gold + 'G'], ['階層の主', bossDown + '体'], ['生き残り', A3.length + '／' + P.length + '人']],
       table: { title: 'パーティの成績', cols: ['職業', 'Lv', '撃破', '見つけたお金', '倒れた', '結末'], rows: P.slice().sort(function (a, b) { return b.kills - a.kills; }).map(function (p, k) { return { i: p.i, rank: k === 0 ? 'MVP' : '', cells: [JOBS[p.job].label, String(p.lv), String(p.kills), p.found + 'G', p.down + '回', p.fate] }; }) },
       meters: [{ label: '体力', color: '--partner' }, { label: '見つけたお金', color: '--guard', dash: true, max: Math.max(100, P.reduce(function (m, p) { return Math.max(m, p.found); }, 0)), unit: 'G' }],
-      meta: '地下' + maxF + '階・' + P.length + '人パーティ',
+      meta: '目標 地下' + maxF + '階・' + P.length + '人パーティ',
       summary: 'ダンジョンRPG：' + title + '・' + banked + 'G'
     });
     function pickT(arr) { return arr[Math.floor(rng() * arr.length)]; }

@@ -6,7 +6,7 @@
   var keyOnly = false, lastHost = null, lastRes = null;
 
   function paint(text, res) {
-    var t = esc(text);
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, (res.heroes || [res.hero]).map(function (h) { return h && h.name; })) : text);
     (res.heroes || [res.hero]).slice().sort(function (a, b) { return b.name.length - a.name.length; }).forEach(function (h) {
       var n = esc(h.name);
       if (n) t = t.split(n).join('\u0001' + (h.i || 0) + '\u0002');
@@ -172,7 +172,7 @@
     L.push('■ 探索の記録');
     res.log.forEach(function (e) {
       if (e.kind === 'step') L.push('― ' + e.text);
-      else L.push('　' + (e.room + 1) + '［' + (e.tag || '') + '］' + e.text);
+      else L.push('　' + (e.room + 1) + '［' + (e.tag || '') + '］' + (HK.fmtLong ? HK.fmtLong(e.text, (res.heroes || [res.hero]).map(function (h) { return h && h.name; })) : e.text));
     });
     return L.join('\n');
   };

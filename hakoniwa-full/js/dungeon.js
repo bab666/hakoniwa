@@ -1,5 +1,9 @@
 /* 箱庭診断: ソロ用エロトラップダンジョン（本体・進行計算）
-   一人の住人が階層を下りながら罠・魔物・宝箱に出会う。快楽堕ちしたらゲームオーバー。
+   一人〜四人の住人が階層を下りながら罠・魔物・宝箱に出会う。
+   終わり方は二つだけ：最深部の主を倒せば「踏破（クリア）」（S.over = 'clear'）、全員が快楽に堕ちれば「陥落」（S.over = 'fall'）。
+   ・一人が堕ちても残りがいれば続く。主を倒せば、捕らわれていた人も解放される
+   ・帰還の巻物は「その場から抜け出して探索を続ける」道具で、終わりにはならない。主に捕まって逃げ出した人は、また主の間に戻る
+   ・部屋数の上限に達したら「主の間に辿り着いた」として最終戦へ進み、必ずどちらかの終わり方に収束させる
    イベント本文は dungeon-events-*.js、表示は dungeon-view.js */
 (function () {
   'use strict';
@@ -29,7 +33,7 @@
     charm: { label: '守りの護符', desc: '罠を一度だけ無効にする' },
     map: { label: '階層の地図', desc: 'その階の罠を見抜きやすくなる' },
     cloak: { label: '予備の外套', desc: '傷んだ装備を一段階戻す' },
-    scroll: { label: '帰還の巻物', desc: 'その場からダンジョンの外へ戻れる' }
+    scroll: { label: '脱出の巻物', desc: '罠や魔物の手から抜け出し、その階の階段の前まで飛ぶ（迷宮の外には出られない）' }
   };
   DG.THEMES = {
     imp: { label: '淫魔の城', floors: ['城門の回廊', '甘い香の広間', '鏡張りの舞踏室', '紅い寝所の階', '淫魔の玉座'], boss: '城主の大淫魔', bossK: 'imp' },
@@ -279,14 +283,16 @@
       useItem(h, 'cloak'); h.cloth += 2;
       note(S, '〔予備の外套を羽織った〕');
     }
-    if (hasItem(h, 'scroll')) {
+    /* 脱出の巻物：捕まっているときに使って抜け出す。迷宮の外には出られないので、探索は続く */
+    if (hasItem(h, 'scroll') && h.captor && !S.over && !h.fallen) {
       var g = S.h.goal.id;
-      var th = g === 'escape' ? (h.corrupt > 50 || h.reason < 38) : g === 'treasure' || g === 'curse' ? (h.corrupt > 88) : g === 'secret' ? false : (h.corrupt > 75 && h.tr.caution > 0.45);
+      var th = g === 'secret' ? (h.corrupt > 70 || h.reason < 25) : g === 'escape' || h.tr.caution > 0.45 ? true : (h.capRounds >= 1 || h.corrupt > 50 || h.reason < 38);
       if (th) {
         useItem(h, 'scroll');
-        var o = say(S, { kind: 'sys', tag: '撤退', text: line(S, 'useScroll'), why: '帰還の巻物（目標：' + S.h.goal.label + '）' });
-        key(S, o, '撤退を決めた');
-        S.over = 'retreat';
+        var wasBoss = h.bossCapture;
+        h.captor = null; h.bossCapture = false; h.hp = Math.max(h.hp, 30);
+        var o = say(S, { kind: 'sys', tag: '脱出', text: line(S, 'useScroll') + (wasBoss ? ' ' + fmt(S, pick(S, DG.LINES.bossReturn)) : ''), why: '脱出の巻物（目標：' + S.h.goal.label + '）' });
+        key(S, o, '巻物で抜け出した');
       }
     }
   }
@@ -458,9 +464,10 @@
     if (S.h.goal.id === 'secret') esc -= 0.1;
     if (rng() < esc) {
       h.hp = 30; S.h.captor = null;
-      if (h.bossCapture) { h.bossCapture = false; if (S.party.every(function (x) { return x.fallen || !x.captor; })) S.over = 'flee'; }
-      var o = say(S, { kind: 'sys', tag: '脱出', text: line(S, 'capEscape'), why: '脱出（CP ' + Math.round(h.eg.CP) + '・理性 ' + Math.round(h.reason) + '）' });
-      key(S, o, '捕縛から逃げ出した');
+      /* 主から逃げ出しても迷宮の外には出られない。主の間に戻って、もう一度挑む */
+      var wasBoss = !!h.bossCapture; h.bossCapture = false;
+      var o = say(S, { kind: 'sys', tag: '脱出', text: line(S, 'capEscape') + (wasBoss ? ' ' + fmt(S, pick(S, DG.LINES.bossReturn)) : ''), why: '脱出（CP ' + Math.round(h.eg.CP) + '・理性 ' + Math.round(h.reason) + '）' + (wasBoss ? '／主の間へ戻る' : '') });
+      key(S, o, wasBoss ? S.theme.boss + 'の手から逃げ出した' : '捕縛から逃げ出した');
     }
   }
 
@@ -576,7 +583,11 @@
   function freeOf(S) { return S.party.filter(function (x) { return !x.fallen && !x.captor; }); }
   function roomBoss(S, B, mid) {
     var rng = S.rng, head = { name: B.name };
-    if (!mid) { var o = say(S, { kind: 'sys', tag: 'ボス', text: fmt(S, pick(S, B.intro), head), why: '最深部の主' }); key(S, o, B.name + 'と対峙'); }
+    if (!mid) {
+      /* 二度目からは（逃げ出して戻ってきたとき）、短く */
+      if (!S.bossMet) { S.bossMet = true; var o = say(S, { kind: 'sys', tag: 'ボス', text: fmt(S, pick(S, B.intro), head), why: '最深部の主' }); key(S, o, B.name + 'と対峙'); }
+      else say(S, { kind: 'sys', tag: 'ボス', text: fmt(S, pick(S, DG.LINES.bossAgain), head), why: '最深部の主との再戦' });
+    }
     S.bossTag = mid ? '番人' : '技';
     var need = mid ? 1 : (S.floors >= 7 ? 3 : 2) + (S.party.length >= 3 ? 1 : 0), hits = 0, rounds = mid ? 2 : 5 + Math.min(2, S.party.length - 1);
     var order = rng.shuffle(B.moves);
@@ -798,9 +809,34 @@
         if (S.floor >= S.floors) { S.over = 'clear'; }
       }
     }
-    if (!S.over) S.over = S.party.every(function (x) { return x.fallen || x.captor; }) ? 'fall' : 'lost';
-    if (S.over === 'fall') S.party.forEach(function (x) { if (!x.fallen) { x.corrupt = Math.max(x.corrupt, 100); DG.fallHero(S, x); } });
-    if (S.over === 'clear') S.party.forEach(function (x) { if (!x.fallen && x.captor) { x.captor = null; x.freedAtEnd = true; } });
+    /* 部屋数の上限に達しても終わっていなければ、主の間に辿り着いたことにして最終戦へ。
+       捕まっている人は責められながら脱出を試み、抜け出せれば主の間に戻る。踏破か全員陥落のどちらかに必ず収束する */
+    if (!S.over) {
+      var live0 = S.party.filter(function (x) { return !x.fallen; });
+      S.floor = S.floors - 1; S.room = S.rooms - 1; S.floorName = floorName(S, S.floor);
+      say(S, { kind: 'step', text: S.floorName });
+      S.h = live0.filter(function (x) { return !x.captor; })[0] || live0[0];
+      say(S, { kind: 'sys', tag: '最深部', text: fmt(S, pick(S, DG.LINES.reachBoss)), why: '長い探索の果てに、主の間へ' });
+      for (var guard = 0; !S.over && guard < 400; guard++) {
+        var caps2 = S.party.filter(function (x) { return !x.fallen && x.captor; });
+        caps2.forEach(function (h) {
+          if (S.over || h.fallen) return;
+          S.h = h; roomCaptive(S); S.defer = false; flushQ(S);
+          if (settle(S)) DG.fallHero(S, h); else useItems(S);
+        });
+        if (S.over) break;
+        var fr2 = S.party.filter(function (x) { return !x.fallen && !x.captor; });
+        if (fr2.length) { S.h = fr2[0]; roomBoss(S, S.finalBoss, false); S.defer = false; flushQ(S); }
+        S.party.forEach(function (x) { if (x.fallen || S.over) return; S.h = x; if (settle(S)) DG.fallHero(S, x); });
+        snap(S);
+        if (!S.over && S.party.every(function (x) { return x.fallen; })) S.over = 'fall';
+      }
+      if (!S.over) S.over = 'fall';
+    }
+    /* 堕ち度が100に達して fallen になったのに陥落の場面が書かれていない人（判定だけ通った人）は、ここで書く */
+    S.party.forEach(function (x) { if (x.fallen && !x.fallLogged) DG.fallHero(S, x); });
+    if (S.over === 'fall') S.party.forEach(function (x) { if (!x.fallLogged) { x.corrupt = Math.max(x.corrupt, 100); DG.fallHero(S, x); } });
+    if (S.over === 'clear') S.party.forEach(function (x) { if (!x.fallen && x.captor) { x.captor = null; x.bossCapture = false; x.freedAtEnd = true; } });
     return DG.finish(S, input);
   };
 
@@ -811,7 +847,8 @@
 
   /* ---------- 結果のまとめ ---------- */
   function heroOut(S, h) {
-    var fate = h.fallen ? '陥落' : S.over === 'clear' ? '踏破' : S.over === 'retreat' ? '撤退' : S.over === 'flee' ? '敗走' : h.captor ? '囚われ' : '迷走';
+    /* 終わり方は踏破か全員陥落の二つなので、人の結末も「陥落」か「踏破」のどちらか（踏破なら囚われていた人も解放される） */
+    var fate = h.fallen ? '陥落' : '踏破';
     return {
       i: h.i, name: h.name, eg: h.eg, memo: h.memo, top: h.top, persona: h.persona, tone: h.tone, stats: h.stats, tr: h.tr,
       action: h.action.label, goal: h.goal.label, goalId: h.goal.id, autoAction: h.autoAction, autoGoal: h.autoGoal,
@@ -842,26 +879,15 @@
     var floorTxt = '地下' + (Math.min(S.floor, S.floors - 1) + 1) + '階';
     if (type === 'fall') {
       kind = 'over';
-      title = 'GAME OVER ― ' + h.fallTitle;
+      title = '陥落 ― ' + h.fallTitle + '（' + floorTxt + '）';
       L.push(h.fallText);
-    } else if (type === 'retreat') {
-      kind = 'mid';
-      title = '撤退 ― ' + floorTxt + 'で帰還の巻物を使った';
-      L.push(h.corrupt > 70 ? h.name + 'は地上に戻った。けれど夜になると、あの迷宮の湿った空気を思い出してしまう。' : h.name + 'は秘宝を諦めて地上に戻った。命と心は持ち帰れた。');
-    } else if (type === 'flee') {
-      kind = 'mid';
-      title = '敗走 ― ' + S.theme.boss + 'から逃げ延びた';
-      L.push(h.name + 'は最深部から這うようにして逃げ帰った。秘宝には手が届かなかった。');
-    } else if (type === 'lost') {
-      kind = 'mid';
-      title = '迷走 ― 出口にたどり着けなかった';
-      L.push(h.name + 'は' + floorTxt + 'をさまよい続けている。まだ、堕ちてはいない。');
     } else {
       kind = 'ok';
       if (h.corrupt < 20 && h.climax === 0) title = '完全踏破 ― 指一本触れさせなかった';
-      else if (h.corrupt < 25) title = '踏破 ― 誇りを守って帰還';
-      else if (h.corrupt < 55) title = '踏破 ― 痕を残して帰還';
-      else title = '辛勝 ― 堕ちる寸前で踏破';
+      else if (h.corrupt < 25) title = '踏破（クリア） ― 誇りを守って帰還';
+      else if (h.corrupt < 55) title = '踏破（クリア） ― 痕を残して帰還';
+      else title = '踏破（クリア） ― 堕ちる寸前の辛勝';
+      if (h.freedAtEnd) L.push(S.theme.boss + 'が倒れると、' + h.name + 'を縛っていたものがほどけた。');
       L.push(h.corrupt < 25 ? h.name + 'は' + S.theme.boss + 'を下し、最深部の秘宝を手に地上へ戻った。' :
         h.corrupt < 55 ? h.name + 'は秘宝を持ち帰った。ただ、体に残った熱はまだ引かない。' :
           h.name + 'は秘宝を抱えて地上に出た。陽の光の下で、自分がまだ「戻りたい」と思っていることに気づいて、ぞっとした。');
@@ -877,11 +903,12 @@
     } else {
       var fell = P.filter(function (x) { return x.fallen; }), live = P.filter(function (x) { return !x.fallen; });
       var nm = function (l) { return l.map(function (x) { return x.name; }).join('・'); };
-      if (type === 'fall') { kind = 'over'; title = 'GAME OVER ― 全員が快楽に堕ちた'; }
-      else if (type === 'clear') { kind = fell.length ? 'mid' : 'ok'; title = fell.length ? '踏破 ― ' + live.length + '人で帰還（' + fell.length + '人は迷宮に残った）' : '踏破 ― ' + P.length + '人そろって帰還'; L.push(nm(live) + 'は' + S.theme.boss + 'を下し、秘宝を手に地上へ戻った。'); }
-      else if (type === 'retreat') { kind = 'mid'; title = '撤退 ― 帰還の巻物で' + live.length + '人が地上へ'; L.push(nm(live) + 'は巻物の光に包まれて、地上に戻った。'); }
-      else if (type === 'flee') { kind = 'mid'; title = '敗走 ― ' + S.theme.boss + 'から逃げ延びた'; L.push(nm(live) + 'は最深部から這うようにして逃げ帰った。'); }
-      else { kind = 'mid'; title = '迷走 ― 出口にたどり着けなかった'; L.push(nm(live) + 'は迷宮をさまよい続けている。'); }
+      if (type === 'fall') { kind = 'over'; title = '陥落 ― 全員が快楽に堕ちた（地下' + (Math.min(S.floor, S.floors - 1) + 1) + '階）'; }
+      else {
+        var freed = live.filter(function (x) { return x.freedAtEnd; });
+        kind = fell.length ? 'mid' : 'ok'; title = fell.length ? '踏破（クリア） ― ' + live.length + '人で帰還（' + fell.length + '人は迷宮に残った）' : '踏破（クリア） ― ' + P.length + '人そろって帰還';
+        L.push(nm(live.filter(function (x) { return !x.freedAtEnd; })) + 'は' + S.theme.boss + 'を下し、秘宝を手に地上へ戻った。' + (freed.length ? '主が倒れると、捕らわれていた' + nm(freed) + 'を縛っていたものもほどけた。' : ''));
+      }
       fell.forEach(function (x) { L.push(x.name + '：' + (x.fallTitle || '快楽堕ち') + '。' + (x.fallText || x.name + 'は迷宮の甘い熱に呑まれ、仲間の呼ぶ声に振り返らなかった。')); });
       live.forEach(function (x) { if (type !== 'fall') L.push(x.name + '：堕ち度 ' + Math.round(x.corrupt) + '・絶頂 ' + x.climax + '回' + (x.curses.length ? '・呪い「' + x.curses.map(function (c) { return DG.CURSES[c].label; }).join('・') + '」が残った' : '')); });
       (S.partyNotes || []).slice(0, 3).forEach(function (n) { L.push(n); });
