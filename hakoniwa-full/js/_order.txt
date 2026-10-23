@@ -53,6 +53,7 @@ js/tone-long.js
 js/engine.js
 js/ero-kit.js
 js/thick-sex.js
+js/thick-sex-ero.js
 js/fwb.js
 js/scenarios-a.js
 js/mini.js
@@ -294,4 +295,5 @@ js/obsess-story.js
 js/obsess-install.js
 js/obsess-omega.js
 js/dark-thick.js
+js/lewd-unify.js
 js/reset.js

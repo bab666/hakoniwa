@@ -6617,6 +6617,148 @@
     return { text: out.join('\n\n'), hard: hard, jealous: jl, mode: mode };
   };
 })();
+;/* ==== js/thick-sex-ero.js ==== */
+/* 箱庭シミュレーター（R18版のみ）: 描写の作風「男性向け」の山場を組み立てる共通部品（HK.ThickEro）
+   thick-sex.js（小説調の山場）と同じ組み立て（始まり／繋がって揺れる／感じていく／果てる／余韻）で、
+   擬音（{s:hit} など）・♡のついた喘ぎ・淫語・おねだりの多い書き方にする。描写の作風「男性向け」を選んだ箱庭で使う。
+   ■ 形は thick-sex.js と同じ：mf（{a}が男性で繋がる）／fm（女性の{a}が男性の{b}に跨る）／ff（女性どうし。指・舌）
+   ■ 型：mf は hard（荒い）／soft（やさしい）／tease（焦らす）／play（じゃれる）、fm・ff は dom／soft／play
+   ■ 喘ぎ：{mb0}{mb1}{mb2}＝受け（{b}）の喘ぎ（ero-kit.js の態度9種×段階）、{ma1}＝攻め（{a}）の主導する側の声
+   ■ 濃い（描写の有無「濃い」）：HK.ThickEro.again で、果てたあともう一度求め合う段落を足す（小説調の文もここに置く）
+   ■ 首を押さえる・縛る拘束は書かない。受けが自分で「攻め」を選んだ人のときは、押し倒す・組み敷く書き方を避ける（呼び出し側の責任）
+   登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK || !HK.Ero) return;
+  function L(s) { return s.split('|'); }
+  var E = HK.Ero, X = HK.ThickEro = {};
+
+  X.group = function (st, mode) {
+    if (mode === 'fm' || mode === 'ff') return st === 'gentle' || st === 'clumsy' ? 'soft' : st === 'playful' ? 'play' : 'dom';
+    return st === 'rough' ? 'hard' : st === 'tease' || st === 'clinical' ? 'tease' : st === 'playful' ? 'play' : 'soft';
+  };
+  X.mode = function (a, b) {
+    var P = HK.Pos, fem = P && P.isF;
+    return fem && fem(a) && fem(b) ? 'ff' : fem && fem(a) && !fem(b) ? 'fm' : 'mf';
+  };
+
+  /* ---------- 始まり（呼ぶ側が場所の文を渡さないとき） ---------- */
+  X.OPEN = {
+    mf: L('{a}は{b}をベッドに押し倒し、服の上から硬くなったものを押しつけた。{a}「ほら、もうこんなになってる。……{b}のせい」|{a}は{b}の唇を貪りながら、下着の中に手を滑り込ませた。指先がぬるりと滑る。{a}「キスだけで、もうぐちょぐちょじゃん」|{a}は{b}の服を剥ぎ取り、胸の先にしゃぶりついた。{s:suck}。{b}「{mb0}」'),
+    fm: L('{a}は{b}をベッドに突き倒し、その腰に跨った。下着越しに、熱くなったところをわざとゆっくり擦りつける。{a}「もう硬い。……期待してたんだ？」|{a}は{b}のものを取り出して握り、先っぽを親指でぐりぐりと撫でた。{a}「ほら、お汁出てきた。かわいい」|{a}は{b}の脚のあいだに顔を埋め、根元まで咥え込んだ。{s:suck}。{b}「{mb0}」'),
+    ff: L('{a}は{b}の下着を引き下ろし、とろとろに濡れたところを指でなぞった。{a}「もうこんなに。……えっち」|{a}は{b}の胸を揉みしだきながら、乳首を舌で転がした。{s:suck}。{b}「{mb0}」|{a}は{b}をベッドに寝かせ、脚を大きく開かせた。{a}「ぜんぶ見せて。……ひくひくしてる」')
+  };
+
+  /* ---------- 繋がって揺れる（mf：{a} は男性） ---------- */
+  X.BODY = {
+    hard: L('{a}は{b}の腰を掴み、一気に根元までねじ込んだ。{s:hit}。{b}「{mb1}」\n\n{a}「奥、当たってるでしょ。ほら、もっと締めて」\n\n容赦のない突き上げが続く。{a}の腰が打ちつけられるたびに、結合部からいやらしい音が溢れた。|{a}は{b}を四つん這いにさせ、後ろから奥まで突き入れた。{s:hit}。\n\n{a}「声、我慢すんな。ナカ、ぎゅうぎゅう締めつけてる」\n\n{b}「{mb1}」――{b}の腕から力が抜け、尻だけを高く掲げた格好で揺さぶられ続けた。|{a}は{b}の両脚を肩に担ぎ、真上から体重をかけて奥を抉った。{s:hit}。\n\n{a}「ここでしょ。一番奥、とんとんされるの好きだよね」\n\n{b}「{mb1}」――突かれるたびに{b}の腰が跳ね、シーツにとろりと染みが広がった。'),
+    soft: L('{a}は{b}と指を絡め、ゆっくりと根元まで沈めた。{s:wet}。{b}「{mb1}」\n\n{a}「{b}のナカ、あったかくて、とろとろ……」\n\n奥に押し当てたまま腰を回すと、{b}の中がきゅうきゅうと甘えるように吸いついた。|{a}は{b}を抱きしめ、奥をこねるように優しく揺らした。{s:wet}。\n\n{a}「ここ、好き？　いっぱいしてあげる」\n\n{b}「{mb1}」――同じところを何度もとんとんと撫でられて、{b}の目がとろんと蕩けていった。|{a}は{b}の脚を抱えて、浅いところと深いところを交互に、ゆっくりと突いた。{s:wet}。\n\n{a}「すごい、吸いついてくる……」\n\n{b}「{mb1}」――{b}は{a}にしがみついて、もっと、とねだった。'),
+    tease: L('{a}は先っぽだけを{b}の入口に押し当て、ぬるぬると擦りつけるだけで、なかなか入れなかった。\n\n{a}「欲しいなら、おねだりして。ちゃんと言えるよね？」\n\n{b}「{mb1}」――{b}が泣きそうな声でねだった。それを聞いて、{a}はようやく一番奥まで、一息に突き入れた。{s:hit}。|{a}は奥まで沈めたまま、少しも動かなかった。ナカがひくひくと勝手に締まる。\n\n{a}「自分で腰振ってる。……えっちだね」\n\n{b}「{mb1}」――{b}は我慢できずに腰を揺らした。{a}は笑って、激しく突き上げ始めた。{s:hit}。|{a}は{b}がイきそうになるたびに腰を止め、また浅いところから追い上げ直した。{s:wet}。\n\n{a}「まだイっちゃだめ。……あと一回、我慢」\n\n{b}「{mb1}」――三度目に止められたとき、{b}は涙をこぼして「お願い」と繰り返した。'),
+    play: L('{a}は{b}を後ろから抱きかかえ、耳たぶを甘噛みしながら下から突き上げた。{s:hit}。\n\n{a}「声出したら負けね。……はい、もう負け」\n\n{b}「{mb1}」――笑い声が、突かれるたびに甘く崩れていった。|{a}は角度を変えながら「ここ？　こっち？」と{b}の弱いところを探した。{s:wet}。\n\n{a}「当たり。ナカがきゅって言った」\n\n{b}「{mb1}」――見つかった場所を、{a}は面白がって何度も突いた。|{a}は{b}を抱えたまま上になったり下になったりしながら繋がり続けた。{s:hit}。\n\n{a}「どの体勢が一番イイか、ぜんぶ試そ」\n\n{b}「{mb1}」')
+  };
+  X.CLIMAX = {
+    hard: L('{a}は最後に{b}の腰を強く引き寄せ、一番奥に押しつけたまま吐き出した。{s:cum}。\n\n{b}「{mb2}」\n\n注がれる熱に{b}の体がびくびくと跳ね、抜かれたあとも、溢れたものが太ももを伝った。|{a}は{b}がイっても止まらず、痙攣するナカをさらに突き続けてから奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{b}は白目を剥きかけながら、何度も何度もイき続けた。|{a}「出すぞ、奥で全部受け止めろ」――{s:hit}、そして{s:cum}。\n\n{b}「{mb2}」\n\n{b}はつま先をぴんと伸ばしたまま、長いあいだ震えていた。'),
+    soft: L('{a}は{b}をぎゅっと抱きしめ、一番奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{b}もそれに合わせてイき、二人は繋がったまま、何度もキスをした。|{a}「一緒にイこ」――{b}が頷いた瞬間、二人は同時に果てた。{s:cum}。\n\n{b}「{mb2}」\n\n奥に広がる熱に、{b}は幸せそうに目を細めた。|{a}が奥をこねるように押し上げると、{b}は甘い声を上げてイった。その締めつけに、{a}もたまらず中に注いだ。{s:cum}。\n\n{b}「{mb2}」'),
+    tease: L('{a}「いいよ、イって」――許された瞬間、{b}は堰を切ったようにイった。{a}もその締めつけの中で、奥にたっぷりと出した。{s:cum}。\n\n{b}「{mb2}」|焦らされ続けた体は、一度崩れたら止まらなかった。{b}が何度もイくあいだ、{a}は奥を突き続け、最後に一番深いところで果てた。{s:cum}。\n\n{b}「{mb2}」|{a}「ほら、おねだりできたご褒美」――{s:hit}。{b}は声にならない声を上げてイき、{a}も奥で脈打った。{s:cum}。\n\n{b}「{mb2}」'),
+    play: L('{a}「先にイったほうの負けね」――負けたのは{b}だった。{a}は笑いながら、その痙攣するナカで果てた。{s:cum}。\n\n{b}「{mb2}」|{b}がイってしがみつくと、{a}もつられて奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\n汗だくのまま、二人は顔を見合わせて吹き出した。|{a}「せーの」――掛け声と同時に深く突かれて、{b}は本当にイってしまった。{a}も笑いながら中に出した。{s:cum}。\n\n{b}「{mb2}」')
+  };
+
+  /* ---------- 女性の {a} が男性の {b} に跨る（fm） ---------- */
+  X.FM_BODY = {
+    dom: L('{a}は{b}のちんぽを掴んで自分の入口にあてがい、見下ろしたまま、ゆっくりと腰を落とした。{s:wet}。\n\n{a}「ほら、ぜんぶ入った。……まだ動かないで」\n\n{b}「{mb1}」――{a}が腰を上下させるたびに、ぱちゅん、ぱちゅんと音が響いた。|{a}は{b}の胸に手をつき、腰だけを使って{b}を搾るように揺れた。{s:hit}。\n\n{a}「イきそうな顔。……まだ出しちゃだめ」\n\n{b}「{mb1}」――{b}が腰を浮かせると、{a}はその腰を押さえつけて、また焦らした。|{a}は{b}の手首をシーツに縫いとめ、ナカをきゅうっと締め上げながら腰を回した。{s:wet}。\n\n{a}「我慢してる顔、かわいい。……もっと見せて」\n\n{b}「{mb1}」'),
+    soft: L('{a}は{b}の上にそっと跨り、少しずつ腰を沈めた。{s:wet}。\n\n{a}「ん……おっきい……♡」\n\n{b}「{mb1}」――根元まで繋がると、{a}は{b}の胸に額を預けて、甘えるように腰を揺らした。|{a}は{b}の手を自分の腰に添えさせ、その手に導かれるように揺れた。{s:wet}。\n\n{a}「{b}の、ナカでびくびくしてる……♡」\n\n{b}「{mb1}」|{a}は{b}に跨ったまま唇を重ね、舌を絡めながらゆっくりと腰を上下させた。{s:wet}。\n\n{b}「{mb1}」'),
+    play: L('{a}は{b}のお腹の上に陣取り、「捕まえた」と笑ってから腰を落とした。{s:hit}。\n\n{a}「先に声出したほうの負けね」\n\n{b}「{mb1}」――{a}は{b}が声を上げるたびに「一点」と数えた。|{a}は{b}に跨ったまま腰を回し、「ここ？　それとも、こっち？」と囁いた。{s:wet}。\n\n{b}「{mb1}」――{b}の反応を見つけるたびに、{a}は楽しそうに同じ動きを繰り返した。|{a}は弾むように腰を振りながら、{b}の乳首を指でつまんだ。{s:hit}。\n\n{a}「ここも弱いんだ。……いいこと知っちゃった」\n\n{b}「{mb1}」')
+  };
+  X.FM_CLIMAX = {
+    dom: L('{a}が深く腰を落とし、ナカをきつく締め上げた。{a}「いいよ、出して」――{b}は腰を跳ね上げ、{a}の奥に何度も吐き出した。{s:cum}。\n\n{b}「{mb2}」|{a}は{b}が限界を迎える寸前で一度止め、それから一番深く腰を沈めた。{s:cum}。\n\n{b}「{mb2}」\n\n{a}は脈打つ熱を奥で受け止めながら、満足そうに{b}を見下ろした。|{a}「ほら、ぜんぶ搾りとってあげる」――{s:hit}。{b}は耐えきれずに果てた。{s:cum}。\n\n{b}「{mb2}」'),
+    soft: L('{a}が深く腰を沈めた瞬間、{b}は{a}を抱きしめて果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{a}も小さく震え、{b}の胸の上に崩れ落ちた。|二人は額を合わせたまま、ほとんど同時に果てた。{s:cum}。\n\n{b}「{mb2}」|{a}のナカがきゅうっと締まり、{b}はたまらず{a}の腰を抱き寄せて奥に注いだ。{s:cum}。\n\n{b}「{mb2}」'),
+    play: L('{b}が先に果てた。{s:cum}。{a}「勝った♡」――{a}は笑いながら{b}の胸に倒れ込んだ。\n\n{b}「{mb2}」|{a}「せーの」――深く腰を落とされて、{b}は本当にそれで果てた。{s:cum}。\n\n{b}「{mb2}」|{a}がイってナカを痙攣させると、{b}もつられて奥に吐き出した。{s:cum}。\n\n{b}「{mb2}」')
+  };
+
+  /* ---------- 女性どうし（ff） ---------- */
+  X.FF_BODY = {
+    dom: L('{a}は{b}の脚を大きく開かせ、指を二本、根元まで沈めた。奥のざらついたところを掻くように動かす。{s:wet}。\n\n{a}「ここでしょ。……逃げないで」\n\n{b}「{mb1}」――空いた手で胸の先をつままれ、{b}の背中が弓なりに反った。|{a}は{b}の太ももを押さえつけ、脚のあいだに顔を埋めた。{s:suck}。\n\n{b}「{mb1}」――舌でクリをしつこく弾かれ、{b}の腰がシーツから浮いた。|{a}は{b}のナカを指で掻き回しながら、耳元で囁いた。{s:wet}。\n\n{a}「すごい音。……聞こえる？」\n\n{b}「{mb1}」'),
+    soft: L('{a}は{b}の乳首を唇で含みながら、指先でそっとクリを撫でた。{s:wet}。\n\n{a}「ここ、好き？」\n\n{b}「{mb1}」――{b}が頷くと、{a}は指を一本だけ中に沈め、ゆっくりと揺らした。|{a}は{b}の脚のあいだに顔を寄せ、溢れたものを舌ですくい取った。{s:suck}。\n\n{b}「{mb1}」|{a}は{b}を抱きしめたまま、指で入口をくちくちと撫で続けた。{s:wet}。\n\n{a}「とろとろ。……かわいい」\n\n{b}「{mb1}」'),
+    play: L('{a}は{b}の脚のあいだに指を滑らせ、「どっちが先にイくか、勝負」と笑った。{s:wet}。\n\n{b}「{mb1}」|{a}は{b}の弱いところを探すように、指をあちこちに滑らせた。{s:wet}。{a}「みーつけた」\n\n{b}「{mb1}」|{a}は{b}の胸に頬ずりしながら、指でナカを浅くかき混ぜた。{s:wet}。\n\n{a}「声、かわいい。もっと聞かせて」\n\n{b}「{mb1}」')
+  };
+  X.FF_CLIMAX = {
+    dom: L('{a}がナカの一番弱いところを押し上げた瞬間、{b}は潮を噴いてイった。{s:wet}。\n\n{b}「{mb2}」\n\n{a}は震えが収まるまで、指を抜かなかった。|{a}がクリを強く吸い上げると、{b}の腰が大きく跳ねた。{s:suck}。\n\n{b}「{mb2}」|{a}は{b}がイっても指を止めず、二度目の波まで追い上げた。{s:wet}。\n\n{b}「{mb2}」'),
+    soft: L('甘い痺れが{b}の腰の奥から広がり、{b}は{a}にしがみついてイった。{s:wet}。\n\n{b}「{mb2}」|{a}の舌がやわらかくクリを押した瞬間、{b}は小さく声を上げてイった。{s:suck}。\n\n{b}「{mb2}」|{a}の指にナカをゆっくり撫でられ続けて、{b}はとろけるようにイった。{s:wet}。\n\n{b}「{mb2}」'),
+    play: L('{b}が先にイって、{a}は「勝ち♡」と笑った。{s:wet}。\n\n{b}「{mb2}」|笑い声が途切れた瞬間、{b}はびくびくと腰を震わせてイった。{s:wet}。\n\n{b}「{mb2}」|{a}「イっちゃえ」――耳元で囁かれた瞬間、{b}は{a}の指を締めつけてイった。{s:wet}。\n\n{b}「{mb2}」')
+  };
+
+  /* ---------- 感じていく（受けの快感。男性向け） ---------- */
+  X.FEEL = {
+    mf: L('奥を突かれるたびに、{b}の頭の中が真っ白になっていった。{b}「{mb1}」――自分からも腰を押しつけて、{b}は{a}のちんぽを奥へ奥へと欲しがった。|{b}のナカは{a}の形を覚えたみたいに、ぎゅうっと吸いついて離さない。{s:wet}。{b}「{mb1}」|{b}はシーツを握りしめ、だらしなく開いた口から涎をこぼした。{b}「{mb1}」'),
+    fm: L('{a}のナカに根元まで搾られて、{b}の腰がびくびくと勝手に跳ねた。{b}「{mb1}」|熱くてぬるぬるのナカに締めつけられるたび、{b}の目の前がちかちかと白く瞬いた。{s:wet}。{b}「{mb1}」|{a}が腰を落とすたびに、ぱちゅんと音が鳴り、{b}は情けない声を止められなかった。{b}「{mb1}」'),
+    ff: L('{b}の脚のあいだから、くちゅくちゅといやらしい音が絶え間なく響いた。{b}「{mb1}」|{b}の腰が、{a}の指を追うように勝手に揺れた。とろとろに溢れたものが、シーツまで濡らしていく。{b}「{mb1}」|{b}は自分の胸を抱くようにして、何度も小さく震えた。{b}「{mb1}」')
+  };
+  /* 攻め側の声（主導する側の喘ぎ） */
+  X.FEEL_A = {
+    mf: L('{a}「{ma1}」――{a}の腰も、だんだん余裕をなくしていった。|{a}「{ma1}」|{a}の額から汗が落ち、{b}の胸の上で弾けた。{a}「{ma1}」'),
+    fm: L('{a}「{ma1}」――{a}の内腿も、快感に震えていた。|{a}は自分の胸を揉みながら腰を振った。{a}「{ma1}」|{a}「{ma1}」'),
+    ff: L('{a}「{ma1}」――{a}の脚のあいだも、熱く濡れていた。|{a}は{b}の反応に、自分まで息を荒くしていた。{a}「{ma1}」|{a}「{ma1}」')
+  };
+
+  /* ---------- 短い版（数行。始まり＋最中＋果て） ---------- */
+  X.SHORT = {
+    mf: L('{a}は{b}の脚を開かせ、一気に奥までねじ込んだ。{s:hit}。{b}「{mb1}」――何度も奥を突かれたあと、{a}は一番奥でたっぷりと吐き出した。{s:cum}。{b}「{mb2}」|{a}は{b}を後ろから抱えて、ぬるぬるのナカを激しく突き上げた。{s:hit}。最後は奥に押しつけたまま果てて、{b}もびくびくとイき続けた。{b}「{mb2}」|{a}は{b}と指を絡めたまま、ゆっくり奥をこね続けた。{s:wet}。{b}「{mb1}」――二人はほとんど同時に果てた。{s:cum}。{b}「{mb2}」|{a}は焦らすように先っぽだけを擦りつけ、{b}が泣きながらおねだりしたところで、根元まで突き入れた。{s:hit}。{b}「{mb2}」――そのまま奥で、熱いものが弾けた。{s:cum}。'),
+    fm: L('{a}は{b}に跨って、ちんぽを根元まで呑み込んだ。{s:wet}。{a}「まだ出しちゃだめ」――焦らされたあと、{b}は{a}の奥に何度も吐き出した。{s:cum}。{b}「{mb2}」|{a}は{b}の胸に手をつき、ぱちゅんぱちゅんと腰を打ちつけた。{s:hit}。{b}「{mb1}」――搾りとられるように、{b}は{a}のナカで果てた。{s:cum}。{b}「{mb2}」|{a}は{b}の上で甘えるように腰を揺らした。{s:wet}。{b}「{mb2}」――二人は抱き合ったまま、一緒に果てた。{s:cum}。'),
+    ff: L('{a}は{b}のナカに指を二本沈め、弱いところをしつこく掻いた。{s:wet}。{b}「{mb2}」――{b}は潮を噴きながらイった。|{a}は{b}の脚のあいだに顔を埋め、クリを強く吸い上げた。{s:suck}。{b}「{mb2}」――{b}の腰が大きく跳ねた。|{a}は{b}の乳首を舌で転がしながら、指で入口をくちくちと撫で続けた。{s:wet}。{b}「{mb2}」――{b}はとろけるようにイった。')
+  };
+
+  /* ---------- 濃い：果てたあと、もう一度（小説調／男性向け） ---------- */
+  X.AGAIN = {
+    novel: {
+      mf: L('一度果てても、{a}は{b}を離さなかった。抜かないまま、また硬さを取り戻していく。{b}が息を整える間もなく、{a}はふたたびゆっくりと腰を揺らし始めた。二度目は一度目よりも長く、深く、{b}は声が枯れるまで{a}の名前を呼んだ。|{b}は{a}の胸に頬を預けたまま、まだ熱の残る指で{a}の肌をなぞった。それが合図だった。{a}は{b}を組み敷き直し、今度は後ろから、もう一度深く繋がった。|汗の引かない肌を重ねたまま、二人はもう一度求め合った。ゆっくりと、確かめるように。夜が白むころ、二人はようやく眠りに落ちた。|「……まだ」――{b}のその一言で、{a}はまた{b}を抱き寄せた。二度目、三度目と重ねるうちに、どちらが先に果てたのかも分からなくなった。'),
+      fm: L('一度果てても、{a}は{b}の上から降りなかった。{b}のものがナカでまた硬くなっていくのを感じて、{a}は小さく笑い、もう一度腰を揺らし始めた。|{a}は{b}の胸に崩れ落ちたまま、しばらく息を整えた。それから顔を上げ、「まだ、終わりじゃないよ」と囁いて、ふたたび{b}を自分の奥へ導いた。|汗に濡れた体を重ねたまま、二人はもう一度求め合った。今度は{a}が、ゆっくりと、{b}の顔を見下ろしながら。'),
+      ff: L('一度達しても、{a}は{b}を離さなかった。まだ震えの残る{b}の脚のあいだに、もう一度指を沈める。{b}は首を振りながら、それでも{a}の手を止めなかった。|二人は互いの体を確かめ合うように、何度も何度も触れ合った。夜が白むころには、どちらの指がどちらのものかも分からなくなっていた。|{b}が今度は{a}を引き寄せ、そのまま二人で、もう一度熱の中へ沈んでいった。')
+    },
+    ero: {
+      mf: L('{a}「まだ硬いの、分かる？」――抜かないまま、{a}はまた腰を動かし始めた。{s:hit}。{b}「{mb2}」――イったばかりの敏感なナカを突かれ、{b}は何度も連続でイかされた。最後にもう一度奥に注がれる。{s:cum}。|{a}は{b}をうつ伏せにして、溢れた精液をちんぽで塗り広げるように、もう一度後ろから突き入れた。{s:hit}。{b}「{mb2}」――二回戦は、一回戦より長かった。|{b}「もっと、ちょうだい……♡」――おねだりされて、{a}は{b}の脚を抱え直した。{s:hit}。朝までに、{a}は三回、{b}の奥に吐き出した。{s:cum}。'),
+      fm: L('{a}「まだ出せるよね？」――{a}は{b}の上で、また腰を揺らし始めた。{s:wet}。{b}「{mb2}」――イったばかりのちんぽを搾られて、{b}は情けない声を上げた。|{a}は{b}のものを口で綺麗にしてから、もう一度跨った。{s:suck}。{b}「{mb2}」――二回目も、{a}のナカでたっぷりと搾りとられた。{s:cum}。|{a}「あと一回だけ……♡」――結局、{b}が空っぽになるまで、{a}は降りてくれなかった。{s:hit}。'),
+      ff: L('{a}「まだイけるでしょ？」――イったばかりの{b}のナカを、{a}はまた指で掻き回した。{s:wet}。{b}「{mb2}」――連続でイかされて、{b}はシーツをびしょびしょにした。|{b}が今度は{a}の脚のあいだに顔を埋めた。{s:suck}。二人は交代で何度もイかせ合って、朝まで止まらなかった。|{a}はとろとろになった{b}の脚を開かせ、もう一度舌を這わせた。{s:suck}。{b}「{mb2}」')
+    },
+    /* 短い版の一文 */
+    shortNovel: L('一度では終わらず、二人は夜が白むまで何度も求め合った。|果てたあとも、{a}は{b}を離さなかった。二度目は、一度目より長かった。|息が整うより先に、二人はまた唇を重ねていた。'),
+    shortEro: L('{a}「まだ終わりじゃないよ」――二回戦、三回戦と、{b}は朝までイかされ続けた。{s:hit}。|抜かないまま二回目が始まり、{b}はイきっぱなしのまま何度も注がれた。{s:cum}。|{b}「もっと……♡」――おねだりは朝まで止まらなかった。{s:wet}。')
+  };
+
+  /* 喘ぎと擬音を埋める（S は rng.int を持つもの：箱庭の ctx や物語型の S） */
+  X.fill = function (S, text, a, b) {
+    var t = String(text).replace(/\{mb([012])\}/g, function (m, n) { return E.moan(S, b, +n); })
+      .replace(/\{ma([012])\}/g, function (m, n) { var d = a.eroDom; a.eroDom = true; var r = E.moan(S, a, +n); a.eroDom = d; return r; })
+      .replace(/\{s:(\w+)\}/g, function (m, k) { return E.sfx(S, k); });
+    return t;
+  };
+
+  /* 一場面ぶん（段落）。opt = { S, pick, rng, a, b, style, open, after, place } → { text, mode }（{a}{b} は呼ぶ側で埋める） */
+  X.scene = function (opt) {
+    var pick = opt.pick, a = opt.a, b = opt.b, mode = X.mode(a, b), g = X.group(opt.style || 'gentle', mode), out = [];
+    var TS = HK.ThickSex;
+    out.push(opt.open || pick(X.OPEN[mode]));
+    out.push(pick(mode === 'ff' ? X.FF_BODY[g] : mode === 'fm' ? X.FM_BODY[g] : X.BODY[g]));
+    var pl = opt.place && TS && TS.PLACE && TS.PLACE[opt.place] ? pick(TS.PLACE[opt.place]) : '';
+    out.push(pick(X.FEEL[mode]) + (pl ? pl : '') + pick(X.FEEL_A[mode]));
+    out.push(pick(mode === 'ff' ? X.FF_CLIMAX[g] : mode === 'fm' ? X.FM_CLIMAX[g] : X.CLIMAX[g]));
+    if (opt.again) out.push(pick(X.AGAIN.ero[mode]));
+    if (opt.after) out.push(opt.after);
+    return { text: X.fill(opt.S, out.join('\n\n'), a, b), mode: mode };
+  };
+  /* 短い版。opt.open（場所・関係の一文）があれば頭に置く */
+  X.short = function (opt) {
+    var pick = opt.pick, a = opt.a, b = opt.b, mode = X.mode(a, b);
+    var t = (opt.open || '') + pick(X.SHORT[mode]) + (opt.again ? pick(X.AGAIN.shortEro) : '') + (opt.after || '');
+    return { text: X.fill(opt.S, t, a, b), mode: mode };
+  };
+  /* 濃い：もう一度の段落（小説調・男性向け。短い版は一文） */
+  X.again = function (S, pick, a, b, ero, short) {
+    var mode = X.mode(a, b);
+    var t = short ? pick(ero ? X.AGAIN.shortEro : X.AGAIN.shortNovel) : pick(X.AGAIN[ero ? 'ero' : 'novel'][mode]);
+    return ero ? X.fill(S, t, a, b) : t;
+  };
+})();
 ;/* ==== js/fwb.js ==== */
 /* 箱庭シミュレーター: 甘い恋だけでなく「セフレ」に落ち着く流れ（全箱庭共通。クラスメイトとバトルロワイヤルは除く）
    一線を越えたあと、恋人にならずに体の関係だけを続けるかどうかを、二人の気質で決める */
@@ -16177,7 +16319,7 @@
 /* 箱庭シミュレーター: 合コン（R18版のみ）― お持ち帰りのあとの夜
    二人の関係（初対面・勢い・今夜付き合った・恋人・元恋人・友達・職場・片想い・犬猿・セフレ・王様ゲームの続き）で、
    夜の描写を変える（各9通り前後、全部で100通り）。夜のあとに恋人になる／セフレに落ち着く／なかったことにする／まだ答えが出ない、も描く。{a}=抱く側（攻め） {b}=抱かれる側（受け）。受け攻めの指定に従う。
-   設定「お持ち帰りの夜（R18）」：厚く（thick-sex.js で段落に分ける。既定）／まぜる／短く（一段落の版）。
+   設定「描写の有無」（ほのめかす＝書かない／ほどほど／濃い＝もう一度求め合う段落を足す）・「描写の長さ」（厚く＝thick-sex.js で段落に分ける／まぜる／短く＝一段落の版）・「描写の作風」（男性向け＝thick-sex-ero.js）。
    厚い版の始まりは、関係ごとの文に、一段落版の書き出し（繋がる前まで）と、女性どうし・女性が攻めの専用の文を足して選ぶ。
    受けの態度（persona 9種）ごとに、始まり・果てた直後・事後の様子を一文ずつ添える。
    全年齢版では読み込まれず（ビルドで外れる）、R18版でも「全年齢モード」のときは使わない。登場人物はすべて成人として扱う */
@@ -16465,14 +16607,12 @@
   function psOf(c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || c.persona || 'gentle'; }
   function slash(t, rng) { return t.replace(/／襟元/g, '').replace(/スカート／ズボン/g, rng() < 0.5 ? 'スカート' : 'ズボン'); }
 
-  /* R18版だけの設定：お持ち帰りの夜の描写（全年齢モードでは safe-room.js が外す） */
-  var GK = HK.SCENARIOS && HK.SCENARIOS.goukon;
-  if (GK && Array.isArray(GK.env) && !GK.env.some(function (e) { return e.id === 'gnlewd'; })) {
-    GK.env.push({ id: 'gnlewd', label: 'お持ち帰りの夜（R18）', type: 'select', def: 'thick', options: [{ v: 'thick', label: '段落に分けて厚く' }, { v: 'mix', label: '厚い版と短い版をまぜる' }, { v: 'short', label: '一段落で短く' }], desc: '「短く」は、関係ごとの一段落の夜（約100通り・女性どうし専用の文あり）と、夜のあとの一文で描く' });
-  }
+  /* 描写の設定（描写の有無・長さ・作風）は lewd-unify.js でそろえる。ほのめかすときは、scenarios-a.js の翌朝の一文だけ */
 
+  function okList(l, f) { var o = l.filter(f); return o.length ? o : l; }
   HK.GoukonNight = function (ctx, a, b, out) {
-    if (HK.SAFE_ON) return null;
+    var LW = HK.Lewd;
+    if (HK.SAFE_ON || (LW && LW.lv(ctx.env) === 'low')) return null;
     var o = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b], A = o[0], B = o[1];
     var k = kindOf(ctx, a, b), rng = ctx.rng;
     var ff = HK.Pos && HK.Pos.ff(A, B);
@@ -16482,7 +16622,7 @@
     /* 受け攻めの指定：自分で攻めを選んだ人を押し倒す・仰向けにする・翻弄する書き方は使わない */
     var noTop = function (l) { return !(HK.Pos && HK.Pos.hardTop(A) && /\{b\}は(自分から)?\{a\}を押し倒|\{a\}を仰向けにして|翻弄/.test(l)); };
     var pool = ff ? FF[k] : N[k].filter(noTop);
-    var lv = (ctx.env && ctx.env.gnlewd) || 'thick', short = lv === 'short' || (lv === 'mix' && rng() < 0.5);
+    var short = LW ? LW.short(ctx.env, rng) : false, ero = LW && LW.ero(ctx.env) && HK.ThickEro, high = LW && LW.high(ctx.env);
     /* 余韻：受けの態度ごとの様子か、果てたあとの一文（行き先の文と同じ書き出しは重ねない）＋夜のあとの行き先 */
     var endT = out && END[out] ? pk(END[out]) : '';
     var af = AFTER.filter(function (l) { return !(/^果てたあと/.test(l) && /^果てたあと/.test(endT)) && !(out === 'keep' && /また会える|帰るタイミング/.test(l)) && !(out === 'lover' && /帰るタイミング/.test(l)); });
@@ -16493,18 +16633,29 @@
     if (TS && THICK_OPEN[k] && !short) {
       var opens = THICK_OPEN[k].concat(ff ? OPEN_FF[k] : fm ? OPEN_FM[k] : OPEN_N[k]).filter(noTop);
       var op = slash(pk(opens), rng) + (rng() < 0.7 ? pk(OPEN_PS[ps] || OPEN_PS.gentle) : '');
-      var tail = (rng() < 0.75 ? pk(PEAK_PS[ps] || PEAK_PS.gentle) + '\n\n' : '') + glow + endT;
-      var r = TS.scene({ pick: pk, rng: rng, a: A, b: B, style: TS.style(A), open: op, after: tail, place: 'goukon', jealous: k === 'lover' });
+      var tail = (rng() < 0.75 ? pk(PEAK_PS[ps] || PEAK_PS.gentle) + '\n\n' : '');
+      /* 濃い：果てたあと、もう一度求め合う段落を足す。男性向け：擬音・♡の喘ぎの山場（thick-sex-ero.js） */
+      if (high && HK.ThickEro) tail += HK.ThickEro.again(ctx, pk, A, B, !!ero, false) + '\n\n';
+      tail += glow + endT;
+      var r = ero ? HK.ThickEro.scene({ S: ctx, pick: pk, rng: rng, a: A, b: B, style: TS.style(A), open: op, after: tail, place: 'goukon', again: false })
+        : TS.scene({ pick: pk, rng: rng, a: A, b: B, style: TS.style(A), open: op, after: tail, place: 'goukon', jealous: k === 'lover' });
       var tx = ctx.t(r.text, A, B);
       if (ff && HK.FF) tx = HK.FF.fix(ctx, tx, A, B);
       return { text: '\n\n' + tx, kind: k, label: LABEL[k] + (out ? '→' + END_LABEL[out] : '') };
     }
     /* 一段落の短い版。女性が攻めのときは、跨る始まり＋女性上位の最中と果て（pos-fm.js） */
     var t;
+    if (ero) {
+      var sh = HK.ThickEro.short({ S: ctx, pick: pk, a: A, b: B, open: slash(pk(okList((ff ? OPEN_FF[k] : fm ? OPEN_FM[k] : OPEN_N[k]), noTop)), rng), again: high, after: glow + endT });
+      var tx2 = ctx.t(sh.text, A, B);
+      if (ff && HK.FF) tx2 = HK.FF.fix(ctx, tx2, A, B);
+      return { text: tx2, kind: k, label: LABEL[k] + (out ? '→' + END_LABEL[out] : '') };
+    }
     if (fm && HK.FM && HK.FM.pick) {
       var st = HK.FF && HK.FF.styleOf ? HK.FF.styleOf(A) : 'gentle', fp = { pick: pk };
       t = pk(OPEN_FM[k]) + HK.FM.pick(fp, 'body', st) + HK.FM.pick(fp, 'climax', st);
     } else t = slash(pk(pool), rng);
+    if (high && HK.ThickEro) t += HK.ThickEro.again(ctx, pk, A, B, false, true);
     t += glow + endT;
     var txt = ctx.t(t, A, B);
     if (ff && HK.FF) txt = HK.FF.fix(ctx, txt, A, B);
@@ -46949,7 +47100,7 @@
   var HK = window.HK, L = HK.RoomLewd;
   if (!HK.SAFE_ON) return;
   /* R18版だけの描写の設定（合コンのお持ち帰りの夜・出られない部屋のエッチ）は、全年齢モードでは出さない */
-  [['goukon', 'gnlewd'], ['whiteroom', 'rmlewd']].forEach(function (x) {
+  [['whiteroom', 'rmlewd']].forEach(function (x) {
     var sc = HK.SCENARIOS && HK.SCENARIOS[x[0]];
     if (sc && Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== x[1]; });
   });
@@ -48388,6 +48539,8 @@
   /* ---------- 箱庭 ---------- */
   function envVal(e, scenId) {
     var src = HK.GLOBAL_ENV.indexOf(e) >= 0 ? S.glob : (S.env[scenId] = S.env[scenId] || {});
+    /* R18の描写の設定をそろえる前に選んでいた値を、新しい設定に読み替える（lewd-unify.js） */
+    if (src !== S.glob && HK.Lewd) HK.Lewd.norm(scenId, src);
     return src[e.id] == null ? e.def : src[e.id];
   }
   function envItem(e, scenId) {
@@ -50471,6 +50624,87 @@
       return r;
     };
   }
+})();
+;/* ==== js/lewd-unify.js ==== */
+/* 箱庭シミュレーター: R18の描写の設定を、どの箱庭でも同じ三つにそろえる
+   ・描写の有無（lewd）：ほのめかす（low）／ほどほど（mid）／濃い（high）。全年齢版・全年齢モードでは「ほのめかす」だけ
+   ・描写の長さ（lewdLen）：段落分けして厚く（thick）／厚いのと短いのを混ぜる（mix）／数行で短く（short）。全年齢にはない
+   ・描写の作風（style）：小説調（novel）／男性向け（ero）。全年齢にはない
+   ■ 箱庭ごとに HK.Lewd.install(id, { len, style, def, old, from }) で設定を差し替える
+     old：消す古い設定の id。from：古い設定の値を新しい設定に読み替える（保存してあった入力のため）
+   ■ 本文では HK.Lewd.lv(env) / HK.Lewd.short(env, rng) / HK.Lewd.ero(env) で読む */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK) return;
+  var LV = [{ v: 'low', label: 'ほのめかす' }, { v: 'mid', label: 'ほどほど' }, { v: 'high', label: '濃い' }];
+  var LEN = [{ v: 'thick', label: '段落分けして厚く' }, { v: 'mix', label: '厚いのと短いのを混ぜる' }, { v: 'short', label: '数行で短く' }];
+  var STY = [{ v: 'novel', label: '小説調' }, { v: 'ero', label: '男性向け' }];
+  var CONF = {};
+  function safe() { return !!HK.SAFE_ON; }
+  var X = HK.Lewd = {
+    CONF: CONF,
+    /* 箱庭の設定を差し替える（R18版でも全年齢版でも呼ぶ。全年齢では「ほのめかす」だけを出す） */
+    install: function (id, o) {
+      o = o || {};
+      CONF[id] = o;
+      var sc = HK.SCENARIOS && HK.SCENARIOS[id];
+      if (!sc || !Array.isArray(sc.env)) return;
+      var old = ['lewd', 'lewdLen', 'style'].concat(o.old || []);
+      var at = -1;
+      sc.env.forEach(function (e, i) { if (at < 0 && old.indexOf(e.id) >= 0) at = i; });
+      sc.env = sc.env.filter(function (e) { return old.indexOf(e.id) < 0; });
+      if (at < 0 || at > sc.env.length) at = sc.env.length;
+      var add = [];
+      if (safe()) add.push({ id: 'lewd', label: '描写の有無', type: 'select', def: 'low', options: [{ v: 'low', label: 'ほのめかす（全年齢版）' }] });
+      else {
+        add.push({ id: 'lewd', label: '描写の有無', type: 'select', def: o.def || 'mid', options: LV, desc: o.desc || 'ほのめかす＝行為は書かずに雰囲気と翌朝だけ／ほどほど＝行為を描写する／濃い＝さらにもう一度求め合うところまで描く' });
+        if (o.len !== false) add.push({ id: 'lewdLen', label: '描写の長さ', type: 'select', def: o.lenDef || 'thick', options: LEN });
+        if (o.style !== false) add.push({ id: 'style', label: '描写の作風', type: 'select', def: 'novel', options: STY, desc: '男性向け＝擬音・♡のついた喘ぎ・おねだりの多い書き方' });
+      }
+      sc.env.splice.apply(sc.env, [at, 0].concat(add));
+    },
+    conf: function (id) { return CONF[id] || null; },
+    /* 古い設定の値を読み替える（保存してあった入力に新しい設定がないとき） */
+    norm: function (id, env) {
+      var o = CONF[id];
+      if (!o || !env || !o.from) return env;
+      Object.keys(o.from).forEach(function (k) { var f = o.from[k]; if (env[k] == null && f) { var v = f(env); if (v != null) env[k] = v; } });
+      return env;
+    },
+    lv: function (env) {
+      if (safe()) return 'low';
+      var v = env && env.lewd;
+      return v === 'low' || v === 'mid' || v === 'high' ? v : 'mid';
+    },
+    /* この場面を短く書くか（数行で短く／混ぜる。全年齢ではいつも短い） */
+    short: function (env, rng) {
+      if (safe()) return true;
+      var v = env && env.lewdLen;
+      return v === 'short' || (v === 'mix' && (rng ? rng() : Math.random()) < 0.5);
+    },
+    ero: function (env) { return !safe() && !!(env && env.style === 'ero'); },
+    high: function (env) { return X.lv(env) === 'high'; },
+    low: function (env) { return X.lv(env) === 'low'; }
+  };
+  /* 結果を作る前に、古い設定の値を読み替える */
+  if (HK.simulate && !HK.simulate._lewd) {
+    var sim0 = HK.simulate;
+    HK.simulate = function (input) {
+      if (input && input.scenId && input.env && CONF[input.scenId]) X.norm(input.scenId, input.env);
+      return sim0.apply(this, arguments);
+    };
+    HK.simulate._lewd = true;
+  }
+})();
+
+/* ---------- 箱庭ごとの差し替え（上の箱庭から順にそろえていく） ---------- */
+(function () {
+  'use strict';
+  var HK = window.HK, X = HK && HK.Lewd;
+  if (!X) return;
+  /* 合コン：お持ち帰りの夜（solo-goukon-night.js）。古い設定「お持ち帰りの夜（R18）」は描写の長さへ */
+  X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */
 /* 箱庭シミュレーター: 保存データ（キャッシュ）の消去

@@ -1,5 +1,5 @@
 /* 受け攻め・女性どうしの描写の点検
-   使い方: node pos-audit.js <ビルドのディレクトリ> [1シナリオあたりの回数=24] [シナリオid,…] [--samples]
+   使い方: node pos-audit.js <ビルドのディレクトリ> [1シナリオあたりの回数=24] [シナリオid,…] [--samples] [--env=lewd:high,style:ero]（設定を固定して回す）
    V1: 女性の住人だけが出てくる性的な場面に、男性の体を前提にした言葉（ちんぽ・射精など）が出た
    V2: 自分で「攻め」を選んだ住人が、受ける側の文（貫かれる・中に出される・押し倒される・縛られる など）になった
    V3: 向きの決まらない組（攻め×攻め・恋愛対象の合わない組）の二人だけの性的な場面が起きた
@@ -7,9 +7,10 @@
 const { openBuild } = require('./lib.js');
 (async () => {
   const dir = process.argv[2], N = +process.argv[3] || 24, only = process.argv[4] && !/^--/.test(process.argv[4]) ? process.argv[4].split(',') : null;
+  const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
   const SAMPLES = process.argv.includes('--samples'), FF = process.argv.includes('--ff'), HOT = process.argv.includes('--hot');
   const { browser, page, errors } = await openBuild(dir, '');
-  const r = await page.evaluate(({ N, only, FF, HOT }) => {
+  const r = await page.evaluate(({ N, only, FF, HOT, ENVSET }) => {
     const P = HK.Pos, MALE = P.MALE_RE;
     const SEX = /抱い|抱かれ|エッチ|繋がっ|イカせ|イかせ|イった|イっ|果て|喘|挿れ|貫|舐め|愛撫|達し|体を重ね|奥まで|突き上げ|腰を(振|沈|打ち|揺)|跨[っが]|中に|犯/;
     const NPC_M = /男|客|触手|ゾンビ|魔物|オーク|ゴブリン|スライム|神|村人|教師|先生|店長|上司|略奪者|おじさん|兵|盗賊|医者|マッサージ師|施術師|整体師|司会|AD|カメラマン|監督|悪魔|インキュバス|獣|狼|蛇|蔦|植物|機械|ロボット|看守|看護|患者|社長|部長|課長|主人|旦那|夫|彼氏|王|騎士|勇者|魔王|山賊|漁師|船長/;
@@ -57,6 +58,7 @@ const { openBuild } = require('./lib.js');
           else if (e.options && /lewd/.test(e.id)) { const hi = e.options.filter(o => /high|max|lewd/.test(o.v))[0]; if (hi) env[e.id] = hi.v; }
           if (e.id === 'mode' && e.options && e.options.some(o => o.v === 'lewd')) env[e.id] = 'lewd';
         });
+        ENVSET.forEach(kv => { env[kv[0]] = isNaN(+kv[1]) ? kv[1] : +kv[1]; });
         const ties = (cast.ties || []).filter(t => t.a < n && t.b < n);
         let res;
         try { res = HK.simulate({ scenId: sc, seed: 2000 + s, env, chars, perChar, ties }); } catch (e) { out.err.push(sc + ': ' + String(e && e.stack || e).slice(0, 300)); continue; }
@@ -121,7 +123,7 @@ const { openBuild } = require('./lib.js');
       }
     }
     return out;
-  }, { N, only, FF, HOT });
+  }, { N, only, FF, HOT, ENVSET });
   console.log('runs', r.runs, 'counts', JSON.stringify(r.n));
   console.log('by scenario', JSON.stringify(Object.fromEntries(Object.entries(r.bySc).filter(([k, v]) => v.V1 || v.V2 || v.V3))));
   if (r.err.length) console.log('ERRORS', r.err.slice(0, 8));

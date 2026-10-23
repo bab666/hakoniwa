@@ -1,0 +1,80 @@
+/* 箱庭シミュレーター: R18の描写の設定を、どの箱庭でも同じ三つにそろえる
+   ・描写の有無（lewd）：ほのめかす（low）／ほどほど（mid）／濃い（high）。全年齢版・全年齢モードでは「ほのめかす」だけ
+   ・描写の長さ（lewdLen）：段落分けして厚く（thick）／厚いのと短いのを混ぜる（mix）／数行で短く（short）。全年齢にはない
+   ・描写の作風（style）：小説調（novel）／男性向け（ero）。全年齢にはない
+   ■ 箱庭ごとに HK.Lewd.install(id, { len, style, def, old, from }) で設定を差し替える
+     old：消す古い設定の id。from：古い設定の値を新しい設定に読み替える（保存してあった入力のため）
+   ■ 本文では HK.Lewd.lv(env) / HK.Lewd.short(env, rng) / HK.Lewd.ero(env) で読む */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK) return;
+  var LV = [{ v: 'low', label: 'ほのめかす' }, { v: 'mid', label: 'ほどほど' }, { v: 'high', label: '濃い' }];
+  var LEN = [{ v: 'thick', label: '段落分けして厚く' }, { v: 'mix', label: '厚いのと短いのを混ぜる' }, { v: 'short', label: '数行で短く' }];
+  var STY = [{ v: 'novel', label: '小説調' }, { v: 'ero', label: '男性向け' }];
+  var CONF = {};
+  function safe() { return !!HK.SAFE_ON; }
+  var X = HK.Lewd = {
+    CONF: CONF,
+    /* 箱庭の設定を差し替える（R18版でも全年齢版でも呼ぶ。全年齢では「ほのめかす」だけを出す） */
+    install: function (id, o) {
+      o = o || {};
+      CONF[id] = o;
+      var sc = HK.SCENARIOS && HK.SCENARIOS[id];
+      if (!sc || !Array.isArray(sc.env)) return;
+      var old = ['lewd', 'lewdLen', 'style'].concat(o.old || []);
+      var at = -1;
+      sc.env.forEach(function (e, i) { if (at < 0 && old.indexOf(e.id) >= 0) at = i; });
+      sc.env = sc.env.filter(function (e) { return old.indexOf(e.id) < 0; });
+      if (at < 0 || at > sc.env.length) at = sc.env.length;
+      var add = [];
+      if (safe()) add.push({ id: 'lewd', label: '描写の有無', type: 'select', def: 'low', options: [{ v: 'low', label: 'ほのめかす（全年齢版）' }] });
+      else {
+        add.push({ id: 'lewd', label: '描写の有無', type: 'select', def: o.def || 'mid', options: LV, desc: o.desc || 'ほのめかす＝行為は書かずに雰囲気と翌朝だけ／ほどほど＝行為を描写する／濃い＝さらにもう一度求め合うところまで描く' });
+        if (o.len !== false) add.push({ id: 'lewdLen', label: '描写の長さ', type: 'select', def: o.lenDef || 'thick', options: LEN });
+        if (o.style !== false) add.push({ id: 'style', label: '描写の作風', type: 'select', def: 'novel', options: STY, desc: '男性向け＝擬音・♡のついた喘ぎ・おねだりの多い書き方' });
+      }
+      sc.env.splice.apply(sc.env, [at, 0].concat(add));
+    },
+    conf: function (id) { return CONF[id] || null; },
+    /* 古い設定の値を読み替える（保存してあった入力に新しい設定がないとき） */
+    norm: function (id, env) {
+      var o = CONF[id];
+      if (!o || !env || !o.from) return env;
+      Object.keys(o.from).forEach(function (k) { var f = o.from[k]; if (env[k] == null && f) { var v = f(env); if (v != null) env[k] = v; } });
+      return env;
+    },
+    lv: function (env) {
+      if (safe()) return 'low';
+      var v = env && env.lewd;
+      return v === 'low' || v === 'mid' || v === 'high' ? v : 'mid';
+    },
+    /* この場面を短く書くか（数行で短く／混ぜる。全年齢ではいつも短い） */
+    short: function (env, rng) {
+      if (safe()) return true;
+      var v = env && env.lewdLen;
+      return v === 'short' || (v === 'mix' && (rng ? rng() : Math.random()) < 0.5);
+    },
+    ero: function (env) { return !safe() && !!(env && env.style === 'ero'); },
+    high: function (env) { return X.lv(env) === 'high'; },
+    low: function (env) { return X.lv(env) === 'low'; }
+  };
+  /* 結果を作る前に、古い設定の値を読み替える */
+  if (HK.simulate && !HK.simulate._lewd) {
+    var sim0 = HK.simulate;
+    HK.simulate = function (input) {
+      if (input && input.scenId && input.env && CONF[input.scenId]) X.norm(input.scenId, input.env);
+      return sim0.apply(this, arguments);
+    };
+    HK.simulate._lewd = true;
+  }
+})();
+
+/* ---------- 箱庭ごとの差し替え（上の箱庭から順にそろえていく） ---------- */
+(function () {
+  'use strict';
+  var HK = window.HK, X = HK && HK.Lewd;
+  if (!X) return;
+  /* 合コン：お持ち帰りの夜（solo-goukon-night.js）。古い設定「お持ち帰りの夜（R18）」は描写の長さへ */
+  X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
+})();

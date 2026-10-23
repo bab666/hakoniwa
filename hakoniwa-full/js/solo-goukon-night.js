@@ -1,7 +1,7 @@
 /* 箱庭シミュレーター: 合コン（R18版のみ）― お持ち帰りのあとの夜
    二人の関係（初対面・勢い・今夜付き合った・恋人・元恋人・友達・職場・片想い・犬猿・セフレ・王様ゲームの続き）で、
    夜の描写を変える（各9通り前後、全部で100通り）。夜のあとに恋人になる／セフレに落ち着く／なかったことにする／まだ答えが出ない、も描く。{a}=抱く側（攻め） {b}=抱かれる側（受け）。受け攻めの指定に従う。
-   設定「お持ち帰りの夜（R18）」：厚く（thick-sex.js で段落に分ける。既定）／まぜる／短く（一段落の版）。
+   設定「描写の有無」（ほのめかす＝書かない／ほどほど／濃い＝もう一度求め合う段落を足す）・「描写の長さ」（厚く＝thick-sex.js で段落に分ける／まぜる／短く＝一段落の版）・「描写の作風」（男性向け＝thick-sex-ero.js）。
    厚い版の始まりは、関係ごとの文に、一段落版の書き出し（繋がる前まで）と、女性どうし・女性が攻めの専用の文を足して選ぶ。
    受けの態度（persona 9種）ごとに、始まり・果てた直後・事後の様子を一文ずつ添える。
    全年齢版では読み込まれず（ビルドで外れる）、R18版でも「全年齢モード」のときは使わない。登場人物はすべて成人として扱う */
@@ -289,14 +289,12 @@
   function psOf(c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || c.persona || 'gentle'; }
   function slash(t, rng) { return t.replace(/／襟元/g, '').replace(/スカート／ズボン/g, rng() < 0.5 ? 'スカート' : 'ズボン'); }
 
-  /* R18版だけの設定：お持ち帰りの夜の描写（全年齢モードでは safe-room.js が外す） */
-  var GK = HK.SCENARIOS && HK.SCENARIOS.goukon;
-  if (GK && Array.isArray(GK.env) && !GK.env.some(function (e) { return e.id === 'gnlewd'; })) {
-    GK.env.push({ id: 'gnlewd', label: 'お持ち帰りの夜（R18）', type: 'select', def: 'thick', options: [{ v: 'thick', label: '段落に分けて厚く' }, { v: 'mix', label: '厚い版と短い版をまぜる' }, { v: 'short', label: '一段落で短く' }], desc: '「短く」は、関係ごとの一段落の夜（約100通り・女性どうし専用の文あり）と、夜のあとの一文で描く' });
-  }
+  /* 描写の設定（描写の有無・長さ・作風）は lewd-unify.js でそろえる。ほのめかすときは、scenarios-a.js の翌朝の一文だけ */
 
+  function okList(l, f) { var o = l.filter(f); return o.length ? o : l; }
   HK.GoukonNight = function (ctx, a, b, out) {
-    if (HK.SAFE_ON) return null;
+    var LW = HK.Lewd;
+    if (HK.SAFE_ON || (LW && LW.lv(ctx.env) === 'low')) return null;
     var o = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b], A = o[0], B = o[1];
     var k = kindOf(ctx, a, b), rng = ctx.rng;
     var ff = HK.Pos && HK.Pos.ff(A, B);
@@ -306,7 +304,7 @@
     /* 受け攻めの指定：自分で攻めを選んだ人を押し倒す・仰向けにする・翻弄する書き方は使わない */
     var noTop = function (l) { return !(HK.Pos && HK.Pos.hardTop(A) && /\{b\}は(自分から)?\{a\}を押し倒|\{a\}を仰向けにして|翻弄/.test(l)); };
     var pool = ff ? FF[k] : N[k].filter(noTop);
-    var lv = (ctx.env && ctx.env.gnlewd) || 'thick', short = lv === 'short' || (lv === 'mix' && rng() < 0.5);
+    var short = LW ? LW.short(ctx.env, rng) : false, ero = LW && LW.ero(ctx.env) && HK.ThickEro, high = LW && LW.high(ctx.env);
     /* 余韻：受けの態度ごとの様子か、果てたあとの一文（行き先の文と同じ書き出しは重ねない）＋夜のあとの行き先 */
     var endT = out && END[out] ? pk(END[out]) : '';
     var af = AFTER.filter(function (l) { return !(/^果てたあと/.test(l) && /^果てたあと/.test(endT)) && !(out === 'keep' && /また会える|帰るタイミング/.test(l)) && !(out === 'lover' && /帰るタイミング/.test(l)); });
@@ -317,18 +315,29 @@
     if (TS && THICK_OPEN[k] && !short) {
       var opens = THICK_OPEN[k].concat(ff ? OPEN_FF[k] : fm ? OPEN_FM[k] : OPEN_N[k]).filter(noTop);
       var op = slash(pk(opens), rng) + (rng() < 0.7 ? pk(OPEN_PS[ps] || OPEN_PS.gentle) : '');
-      var tail = (rng() < 0.75 ? pk(PEAK_PS[ps] || PEAK_PS.gentle) + '\n\n' : '') + glow + endT;
-      var r = TS.scene({ pick: pk, rng: rng, a: A, b: B, style: TS.style(A), open: op, after: tail, place: 'goukon', jealous: k === 'lover' });
+      var tail = (rng() < 0.75 ? pk(PEAK_PS[ps] || PEAK_PS.gentle) + '\n\n' : '');
+      /* 濃い：果てたあと、もう一度求め合う段落を足す。男性向け：擬音・♡の喘ぎの山場（thick-sex-ero.js） */
+      if (high && HK.ThickEro) tail += HK.ThickEro.again(ctx, pk, A, B, !!ero, false) + '\n\n';
+      tail += glow + endT;
+      var r = ero ? HK.ThickEro.scene({ S: ctx, pick: pk, rng: rng, a: A, b: B, style: TS.style(A), open: op, after: tail, place: 'goukon', again: false })
+        : TS.scene({ pick: pk, rng: rng, a: A, b: B, style: TS.style(A), open: op, after: tail, place: 'goukon', jealous: k === 'lover' });
       var tx = ctx.t(r.text, A, B);
       if (ff && HK.FF) tx = HK.FF.fix(ctx, tx, A, B);
       return { text: '\n\n' + tx, kind: k, label: LABEL[k] + (out ? '→' + END_LABEL[out] : '') };
     }
     /* 一段落の短い版。女性が攻めのときは、跨る始まり＋女性上位の最中と果て（pos-fm.js） */
     var t;
+    if (ero) {
+      var sh = HK.ThickEro.short({ S: ctx, pick: pk, a: A, b: B, open: slash(pk(okList((ff ? OPEN_FF[k] : fm ? OPEN_FM[k] : OPEN_N[k]), noTop)), rng), again: high, after: glow + endT });
+      var tx2 = ctx.t(sh.text, A, B);
+      if (ff && HK.FF) tx2 = HK.FF.fix(ctx, tx2, A, B);
+      return { text: tx2, kind: k, label: LABEL[k] + (out ? '→' + END_LABEL[out] : '') };
+    }
     if (fm && HK.FM && HK.FM.pick) {
       var st = HK.FF && HK.FF.styleOf ? HK.FF.styleOf(A) : 'gentle', fp = { pick: pk };
       t = pk(OPEN_FM[k]) + HK.FM.pick(fp, 'body', st) + HK.FM.pick(fp, 'climax', st);
     } else t = slash(pk(pool), rng);
+    if (high && HK.ThickEro) t += HK.ThickEro.again(ctx, pk, A, B, false, true);
     t += glow + endT;
     var txt = ctx.t(t, A, B);
     if (ff && HK.FF) txt = HK.FF.fix(ctx, txt, A, B);

@@ -474,6 +474,8 @@
   /* ---------- 箱庭 ---------- */
   function envVal(e, scenId) {
     var src = HK.GLOBAL_ENV.indexOf(e) >= 0 ? S.glob : (S.env[scenId] = S.env[scenId] || {});
+    /* R18の描写の設定をそろえる前に選んでいた値を、新しい設定に読み替える（lewd-unify.js） */
+    if (src !== S.glob && HK.Lewd) HK.Lewd.norm(scenId, src);
     return src[e.id] == null ? e.def : src[e.id];
   }
   function envItem(e, scenId) {
