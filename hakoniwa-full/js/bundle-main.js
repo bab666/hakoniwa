@@ -13973,12 +13973,19 @@
   var SCENTS = ['白檀', '雨上がりの土', '焦がしたキャラメル', '鉄と雪', '夜のジャスミン', '煙草と革', '青い林檎', '潮風', '墨', '焚き火', 'ラベンダー', 'ウイスキー', '蜂蜜', '冷たい金属', '真夏の草', '古い本'];
   var WHERE = ['駅の改札', '雨宿りの軒先', '取引先の会議室', 'コンビニのレジ待ち', '深夜の交差点', '病院の待合室', '行きつけの店のカウンター', 'バスの最後列'];
 
+  /* 環境値「運命の番の相手」：住人の中からだけにすると、街の外の運命の番（モブ）は現れない */
+  var fi = -1;
+  scen.env.forEach(function (e, k) { if (e.id === 'fate') fi = k; });
+  scen.env.splice(fi + 1, 0, { id: 'fateFrom', label: '運命の番の相手', type: 'select', def: 'any', options: [{ v: 'any', label: '住人の中からも、街の外からも' }, { v: 'res', label: '住人の中からだけ' }], desc: '「住人の中からだけ」にすると、街の外から来る運命の番（住人ではないモブ）は現れず、運命の番は住人どうしの間にだけ生まれる' });
+  function resOnly(ctx) { return ctx.env.fateFrom === 'res'; }
+
   /* ======================= 準備：モブの運命の番を割り当てる ======================= */
   var setup0 = scen.setup;
   scen.setup = function (ctx) {
     setup0(ctx);
     var om = ctx.om, rng = ctx.rng, P = ctx.chars;
     om.mob = {};
+    if (resOnly(ctx)) return;
     var p = HK.clamp((fateV(ctx) - 0.3) * 1.1, 0, 0.8);
     if (p <= 0) return;
     var used = {};
@@ -27700,7 +27707,7 @@
   var keyOnly = false, lastHost = null, lastRes = null;
 
   function paint(text, res) {
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, (res.heroes || [res.hero]).map(function (h) { return h && h.name; })) : text);
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, (res.heroes || [res.hero]).map(function (h) { return h && h.name; })) : text).replace(/\n/g, '<br>');
     (res.heroes || [res.hero]).slice().sort(function (a, b) { return b.name.length - a.name.length; }).forEach(function (h) {
       var n = esc(h.name);
       if (n) t = t.split(n).join('\u0001' + (h.i || 0) + '\u0002');
@@ -28000,7 +28007,7 @@
   function pc(i) { return 'var(--p' + (i % 30) + ')'; }
   function av(res, i, size) { var h = res.heroes[i]; return h && HK.Icons ? HK.Icons.html(h.name, i, size) : ''; }
   function paint(text, res) {
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.heroes.map(function (h) { return h.name; })) : text);
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.heroes.map(function (h) { return h.name; })) : text).replace(/\n/g, '<br>');
     res.heroes.slice().sort(function (a, b) { return b.name.length - a.name.length; }).forEach(function (h) { var n = esc(h.name); if (n) t = t.split(n).join('\u0001' + h.i + '\u0002'); });
     return t.replace(/\u0001(\d+)\u0002/g, function (m, i) { return '<span class="name" style="color:' + pc(+i) + '">' + esc(res.heroes[+i].name) + '</span>'; });
   }

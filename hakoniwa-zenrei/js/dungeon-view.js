@@ -6,7 +6,7 @@
   var keyOnly = false, lastHost = null, lastRes = null;
 
   function paint(text, res) {
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, (res.heroes || [res.hero]).map(function (h) { return h && h.name; })) : text);
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, (res.heroes || [res.hero]).map(function (h) { return h && h.name; })) : text).replace(/\n/g, '<br>');
     (res.heroes || [res.hero]).slice().sort(function (a, b) { return b.name.length - a.name.length; }).forEach(function (h) {
       var n = esc(h.name);
       if (n) t = t.split(n).join('\u0001' + (h.i || 0) + '\u0002');

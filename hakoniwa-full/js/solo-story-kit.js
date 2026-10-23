@@ -126,7 +126,7 @@
   function pc(i) { return 'var(--p' + (i % 30) + ')'; }
   function av(res, i, size) { var h = res.heroes[i]; return h && HK.Icons ? HK.Icons.html(h.name, i, size) : ''; }
   function paint(text, res) {
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.heroes.map(function (h) { return h.name; })) : text);
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.heroes.map(function (h) { return h.name; })) : text).replace(/\n/g, '<br>');
     res.heroes.slice().sort(function (a, b) { return b.name.length - a.name.length; }).forEach(function (h) { var n = esc(h.name); if (n) t = t.split(n).join('\u0001' + h.i + '\u0002'); });
     return t.replace(/\u0001(\d+)\u0002/g, function (m, i) { return '<span class="name" style="color:' + pc(+i) + '">' + esc(res.heroes[+i].name) + '</span>'; });
   }
