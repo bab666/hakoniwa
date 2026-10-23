@@ -111,6 +111,7 @@ js/dungeon-rich.js
 js/dungeon-persona.js
 js/dungeon.js
 late js/dungeon-thick.js
+late js/dungeon-lewd.js
 js/dungeon-bosses.js
 js/dungeon-party.js
 js/solo-kit.js

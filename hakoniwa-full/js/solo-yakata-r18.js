@@ -157,6 +157,48 @@
   /* 翌朝（10通り） */
   /* 自分で攻めを選んだ人のところへ来た使用人：{a}のほうが組み伏せる */
   var SERVANT_TOP = L('館の古い使用人が、{a}の部屋の扉を叩いた。「お休みになれないご様子でしたので」――{a}はその手首を掴んで部屋に引き入れ、寝台に押し倒した。夜明けまで、使用人は{a}の下で声を殺し続けた。|{a}が廊下でうずくまっていると、館の使用人が黙って肩を貸してくれた。運ばれた使用人部屋のベッドで、{a}は使用人の燕尾服の襟を掴み、自分の下に組み敷いた。|館の使用人が「お慰めを」と囁いて{a}の寝台に上がってきた。{a}はその肩を押し倒し、逆に組み伏せた。夜が明けるまで、主導権が使用人に渡ることはなかった。');
+  /* ---------- 描写の作風「男性向け」・描写の有無「濃い」（lewd-unify.js・story-lewd.js）で、二人の場面以外も切り替える ----------
+     一人で悶える・乱交・使用人を組み伏せる・媚薬が回る場面。凌辱・脅迫・使用人に慰められる場面（合意のない場面）には足さない */
+  function lwEro(S) { return !!(HK.Ero && HK.Lewd && HK.Lewd.storyEro && HK.Lewd.storyEro(S)); }
+  function lwHi(S) { return !!(HK.Lewd && !HK.SAFE_ON && HK.Lewd.lv(S.env) === 'high'); }
+  function lwShort(S) { return !!(HK.Lewd && HK.Lewd.storyShort && HK.Lewd.storyShort(S)); }
+  /* 男性の体で書くか（女性でふたなりでない人は女性の体） */
+  function mBody(p) { return !(HK.Pos && HK.Pos.isF(p)); }
+  function EF(S, t, p, m) { return HK.Ero.fill(S, F(t, m || { a: p.name }), p); }
+  var Y_ERO = {
+    /* 媚薬が回ったとき（一人ずつ。{m0}＝こらえる声） */
+    drug: L('{a}は服の擦れる感触だけで、びくりと腰を跳ねさせた。慌てて膝を閉じても、熱は脚の間に溜まっていく一方だった。{a}「{m0}」|{a}は椅子の上で膝をきつく閉じ、もじもじと腰を揺らしていた。じわりと下着が湿っていくのが、自分でも分かった。{a}「{m0}」|{a}は胸の先が布に擦れるたびに、小さく息を呑んだ。尖ったそこが、薄い服の上からでも分かるほどだった。{a}「{m0}」'),
+    soloM: L('{a}は布団を跳ねのけ、張りつめたちんぽを握りしめた。先走りでぬるぬるになった手を上下させるたびに、腰が勝手に跳ねた。{s:wet}。{a}「{m1}」――止めようと思っても、手は速くなる一方だった。|{a}は浴室の壁に額を押しつけ、熱を持て余したちんぽを扱き上げた。シャワーの水音に、いやらしい音が混ざって響いた。{s:wet}。{a}「{m1}」――声を殺そうとして噛んだ唇が、すぐにほどけた。|{a}は寝台の縁に腰かけ、脈打つものを両手で包み込んだ。媚薬のせいで、少し擦るだけで頭の奥が白く弾けそうだった。{s:wet}。{a}「{m1}」――指の間から、とろりと先走りが溢れた。'),
+    soloF: L('{a}は寝間着の裾をたくし上げ、とろとろに濡れたそこへ指を沈めた。一本では足りず、すぐに二本目を咥え込んだ。{s:wet}。{a}「{m1}」――指を曲げるたびに、腰が勝手に浮いた。|{a}は浴室の壁にもたれ、脚の間に指を這わせた。膨らんだ芽を擦るたびに、膝ががくがくと震えた。{s:wet}。{a}「{m1}」――水音にまぎれて、甘い声が浴室に響いた。|{a}は枕を脚の間に挟み、腰を擦りつけた。それでは足りなくて、自分の指で奥を掻き回した。{s:wet}。{a}「{m1}」――シーツに、恥ずかしい染みが広がっていった。'),
+    soloMc: L('{a}「{m2}」――{a}は背を反らし、びゅくびゅくと何度も吐き出した。{s:cum}。シーツに散った白いものを見下ろしても、熱はまだ引かなかった。|{a}「{m2}」――手の中で、ちんぽが大きく跳ねた。{s:cum}。吐き出しても吐き出しても、硬さは少しも収まらなかった。|{a}「{m2}」――腰を突き出したまま、{a}は勢いよく精を放った。{s:cum}。濡れた手を見つめて、{a}は荒い息をついた。'),
+    soloFc: L('{a}「{m2}」――{a}は指を咥え込んだまま、びくびくと痙攣して果てた。中が指をきゅうきゅうと締めつけて、なかなか離さなかった。溢れた蜜が、手首まで伝っていた。|{a}「{m2}」――爪先をぴんと伸ばして、{a}はイった。ぷしゃっ、と恥ずかしい音がして、シーツがぐっしょりと濡れた。それでも、疼きは消えなかった。|{a}「{m2}」――腰を浮かせたまま、{a}は長く果てた。指を抜いたあとも、中がひくひくと物欲しげに震えていた。'),
+    soloAgain: L('{a}は息を整える間もなく、また手を伸ばした。二度目は、一度目よりずっと敏感だった。{a}「{m2}」――夜が白むまで、{a}の部屋から甘い声が途切れることはなかった。|一度果てても、媚薬の熱は少しも引かなかった。{a}は濡れた手のまま、また自分を慰め始めた。{a}「{m1}」――三度目を数えたところで、{a}は数えるのをやめた。'),
+    /* 濃い・小説調：一人の夜の続き */
+    soloAgainN: L('一度果てても、熱は少しも引かなかった。{a}は乱れた息のまま、また自分の体に手を伸ばした。二度目は、一度目よりずっと長かった。|{a}は果てたあとも、疼きを持て余して寝返りを打った。結局、もう一度だけ、と自分に言い訳をした。その「もう一度」は、夜明けまで続いた。'),
+    /* 使用人を組み伏せる（自分で攻めを選んだ人。{m1}＝主導する側の声） */
+    topM: L('{a}は使用人を寝台に這わせ、後ろから一気に奥まで突き入れた。使用人が声を殺そうとするたびに、{a}はわざと奥を抉った。{s:hit}。{a}「{m1}」――最後は使用人の奥に、たっぷりと吐き出した。{s:cum}。|{a}は使用人の脚を抱え上げ、自分の好きな速さで腰を打ちつけた。使用人の喉から、堪えきれない声が漏れた。{s:hit}。{a}「{m1}」――{a}が満足するまで、使用人は解放されなかった。'),
+    topF: L('{a}は使用人を寝台に押し倒して跨り、自分のいいところに当たるように腰をくねらせた。使用人が果てそうになるたびに、{a}は動きを止めて焦らした。{s:wet}。{a}「{m1}」――{a}が満足するまで、使用人は解放されなかった。|{a}は使用人の顔の上に跨り、舌で奉仕させた。使用人の舌が奥まで這うたびに、{a}は髪を掴んで引き寄せた。{s:wet}。{a}「{m1}」――{a}は使用人の顔をびしょびしょに濡らして果てた。'),
+    topAgain: L('{a}はひと息つくと、また使用人を組み敷いた。夜は、まだ長かった。使用人が部屋を出られたのは、空が白みはじめてからだった。|一度では収まらず、{a}は使用人に二度目を命じた。使用人は、もう逆らう気力も残っていなかった。夜明けまで、{a}は使用人を手放さなかった。'),
+    /* 乱交（{a}{b}{c}＝その場の三人。{ma}{mb}{mc}＝それぞれの声） */
+    group: L('{s:hit}。{s:wet}。{p}のあちこちで、肌のぶつかる音と水音が重なり合った。後ろから突かれながら、{a}は目の前の誰かの肌に縋りついた。{a}「{ma}」――その声に煽られて、{b}も夢中で腰を揺らした。{b}「{mb}」――{c}が果てる声を合図に、絡み合った体が次々に震えた。{c}「{mc}」|{p}の床で、{a}は誰かのちんぽを咥えさせられたまま、別の誰かに奥を突き上げられていた。{s:hit}。{a}「{ma}」――隣では{b}が、両側から胸と脚の間を同時に責められていた。{b}「{mb}」――{c}は誰に注がれたのかも分からないまま、とろけた顔でまた次をねだった。{c}「{mc}」'),
+    groupFF: L('指と舌が、誰のものか分からないまま肌を這い回った。{s:wet}。{a}は{b}の指を奥まで咥え込み、{c}に胸の先を吸われていた。{a}「{ma}」――{b}は{a}に脚を絡めたまま、{c}の指で何度も果てた。{b}「{mb}」――最後に{c}が、二人に挟まれて甘い声を上げた。{c}「{mc}」|{p}のソファの上で、三人は脚を絡め合い、互いの濡れたところへ指を伸ばした。{s:wet}。{a}「{ma}」――{b}は{a}の胸に顔を埋め、{c}の指を奥へ奥へと誘い込んだ。{b}「{mb}」――{c}は二人の舌に挟まれて、腰を浮かせたまま震えた。{c}「{mc}」')
+  };
+  /* 一人で悶える場面の本文（男性向け）。濃い＝もう一度。短く＝山場だけ */
+  function soloEro(S, q) {
+    var m = mBody(q), t = (lwShort(S) ? '' : EF(S, ST.pick(S, m ? Y_ERO.soloM : Y_ERO.soloF), q)) + EF(S, ST.pick(S, m ? Y_ERO.soloMc : Y_ERO.soloFc), q);
+    return t + (lwHi(S) ? EF(S, ST.pick(S, Y_ERO.soloAgain), q) : '');
+  }
+  function topEro(S, q) {
+    var d = q.eroDom; q.eroDom = true;
+    var t = EF(S, ST.pick(S, mBody(q) ? Y_ERO.topM : Y_ERO.topF), q) + (lwHi(S) ? F(ST.pick(S, Y_ERO.topAgain), { a: q.name }) : '');
+    q.eroDom = d;
+    return t;
+  }
+  function groupEro(S, g, P) {
+    var a = g.slice(0, 3).sort(function (x, y) { return mBody(x) - mBody(y); }), ff = a.every(function (q) { return HK.Pos && HK.Pos.isF(q); });
+    var m = { p: P, a: a[0].name, b: a[1].name, c: a[2].name, ma: HK.Ero.moan(S, a[0], 1), mb: HK.Ero.moan(S, a[1], 2), mc: HK.Ero.moan(S, a[2], 2) };
+    return HK.Ero.fill(S, F(ST.pick(S, ff ? Y_ERO.groupFF : Y_ERO.group), m), a[0]);
+  }
   var MORNING = L('翌朝、館の誰もが、昨夜のことを口にしようとしなかった。乱れた広間は、いつの間にか片づけられていた――事件の現場ごと。|翌朝、皆はぼんやりとした頭で目を覚ました。昨夜の記憶は、甘い靄に包まれていた。現場に残っていたはずの痕跡も、誰かが踏み荒らしていた。|朝食の席で、誰も目を合わせようとしなかった。それどころではない事件が起きているはずなのに。|翌朝、何人かは見知らぬベッドで目を覚ました。慌てて服を探しているうちに、現場の証拠のことなど、誰も覚えていなかった。|翌朝、館じゅうに甘い香りが残っていた。窓を開けても、その匂いはなかなか消えなかった。|「昨夜は……飲みすぎましたね」誰かがそう言い、皆が気まずく笑った。笑いの中に、犯人の安堵が混じっていた。|翌朝、現場の扉は開け放たれ、床には誰かの浴衣の帯が落ちていた。何が証拠で、何がそうでないのか、もう分からなかった。|翌朝の館は、嘘のように静かだった。昨夜のことを思い出すたびに、誰もが顔を赤らめた。|翌朝、探偵の手帳は、昨夜のページだけが白紙だった。|翌朝、何人かの首筋には、隠しきれない痕が残っていた。互いの顔を見るたびに、昨夜の熱がぶり返した。');
   var MORNING_SAFE = L('翌朝、館は乱れきっていた。ただ一つ、{a}が守った現場だけは、昨夜のままだった。|翌朝、誰もが寝不足の顔で起きてきた。{a}だけが、一晩じゅう現場の前に座っていた。手がかりは、無事だった。|翌朝、荒れた館の中で、{a}が鍵をかけた部屋だけが、昨夜のまま残されていた。');
 
@@ -179,7 +221,7 @@
       var t = F(ST.pick(S, D.t), { c: c.name }) + ST.pick(S, D.e);
       S.drugTools = D.id === 'oil';
       sober.slice(0, 2).forEach(function (q) { t += F(ST.pick(S, SKIP), { a: q.name }); });
-      drunk.slice(0, 2).forEach(function (q) { if (rng() < 0.5) t += pz(S, q, 'drug'); });
+      drunk.slice(0, 2).forEach(function (q) { if (lwEro(S)) t += EF(S, ST.pick(S, Y_ERO.drug), q); else if (rng() < 0.5) t += pz(S, q, 'drug'); });
       var o = ST.say(S, { actors: [c].concat(drunk), tag: '媚薬', kind: 'climax', text: t, why: '犯人の' + c.name + 'が媚薬を盛った（' + { wine: 'ワイン', hotwine: 'ホットワイン', spirits: '強い酒', incense: 'お香', bath: '大浴場の湯', sweets: '菓子', heater: '暖房', tea: '紅茶', oil: 'マッサージオイル', dark: '停電と香水' }[D.id] + '）。追い詰められるほど盛りやすい（夜の出来事 ' + S.env.ylewd + '）。その夜、事件はうやむやになる', mag: 40 });
       ST.key(S, o, c.name + 'が媚薬を盛った');
       var P = D.p, scenes = 0;
@@ -235,13 +277,13 @@
         if (!y) { drunk.shift(); continue; }
         /* 乱交には、自分で攻めを選んだ人を入れない（誰に何をされるか分からない場面のため） */
         var gp = drunk.filter(function (q) { return !hardTop(q); });
-        if (gp.length >= 3 && rng() < lv * 0.5) { var g = gp.slice(0, Math.min(gp.length, 3 + Math.floor(rng() * 2))); ST.say(S, { actors: g, tag: '媚薬の夜', kind: 'climax', text: F(ST.pick(S, g.every(function (q) { return HK.Pos && HK.Pos.isF(q); }) && Y.R18T && Y.R18T.ff ? Y.R18T.ff.group : PL('group', SC.group)), { p: P }) + (HK.R18M ? HK.R18M.group(S, g) : ''), why: '媚薬の熱で、' + g.map(function (q) { return q.name; }).join('・') + 'が絡み合った', mag: 34 }); g.forEach(function (q) { drunk.splice(drunk.indexOf(q), 1); }); scenes++; continue; }
+        if (gp.length >= 3 && rng() < lv * 0.5) { var g = gp.slice(0, Math.min(gp.length, 3 + Math.floor(rng() * 2))); ST.say(S, { actors: g, tag: '媚薬の夜', kind: 'climax', text: F(ST.pick(S, g.every(function (q) { return HK.Pos && HK.Pos.isF(q); }) && Y.R18T && Y.R18T.ff ? Y.R18T.ff.group : PL('group', SC.group)), { p: P }) + (lwEro(S) ? groupEro(S, g, P) : HK.R18M ? HK.R18M.group(S, g) : ''), why: '媚薬の熱で、' + g.map(function (q) { return q.name; }).join('・') + 'が絡み合った', mag: 34 }); g.forEach(function (q) { drunk.splice(drunk.indexOf(q), 1); }); scenes++; continue; }
         pairScene('casual', x, y, null, '媚薬の熱（' + (Y.relLabel(S, x, y) || '関係なし') + '）');
       }
       /* 一人あぶれた人 */
       drunk.forEach(function (q) {
-        if (rng() < 0.5) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, PL('solo', SC.solo)), { a: q.name }) + (HK.R18M ? HK.R18M.solo(S, q) : ''), why: '相手がいなかった' }, q.name + 'は一人で悶えた');
-        else if (hardTop(q)) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, SERVANT_TOP), { a: q.name }) + (HK.R18M ? HK.R18M.say(S, q, 'top') : ''), why: '館の使用人が慰めに来たが、' + q.name + 'のほうが組み伏せた（受け攻めの指定：攻め）' }, q.name + 'は使用人と');
+        if (rng() < 0.5) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, PL('solo', SC.solo)), { a: q.name }) + (lwEro(S) ? soloEro(S, q) : HK.R18M ? HK.R18M.solo(S, q) : '') + (!lwEro(S) && lwHi(S) ? F(ST.pick(S, Y_ERO.soloAgainN), { a: q.name }) : ''), why: '相手がいなかった' }, q.name + 'は一人で悶えた');
+        else if (hardTop(q)) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, SERVANT_TOP), { a: q.name }) + (lwEro(S) ? topEro(S, q) : (HK.R18M ? HK.R18M.say(S, q, 'top') : '') + (lwHi(S) ? F(ST.pick(S, Y_ERO.topAgain), { a: q.name }) : '')), why: '館の使用人が慰めに来たが、' + q.name + 'のほうが組み伏せた（受け攻めの指定：攻め）' }, q.name + 'は使用人と');
         else ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: HK.JDark && HK.JDark.roll(S, q) ? HK.JDark.text(S, 'servant', q) : F(ST.pick(S, PL('servant', SC.servant)), { a: q.name }) + (HK.R18M ? HK.R18M.npc(S, 'servant') + pz(S, q, 'react') + HK.R18M.moans(S, q, ['start', 'mid', 'climax']) : ''), why: '館の使用人に慰められた' }, q.name + 'は使用人と');
       });
       /* 正気の人が現場を守ると、手がかりは失われない */

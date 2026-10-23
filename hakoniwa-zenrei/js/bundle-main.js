@@ -40181,12 +40181,12 @@
   /* 邪神村RTA：参加者どうしの夜・媚薬・夜這い・清めの湯・洞窟・儀式・神ごとの夜（solo-jashin-r18*.js・r18-thick.js・story-lewd.js）。「夜の出来事の起こりやすさ」は起きる頻度として残す */
   X.install('jashin', { desc: '夜の出来事の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで' });
   /* 吹雪の館の殺人：媚薬の夜・誘惑・吊り橋・大浴場・凍える夜など（solo-yakata-r18.js・r18-thick.js・story-lewd.js）。「夜の出来事の起こりやすさ」「快楽殺人の起きやすさ」はそのまま残す */
-  X.install('yakata', { desc: '夜の出来事の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで' });
+  X.install('yakata', { desc: '夜の出来事が起きたときの描き方（起きる回数は「夜の出来事の起こりやすさ」で決まる）。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで' });
   /* オメガバース：もとの「描写の濃さ」（朝チュン・ほどほど・濃いめ）を描写の有無にそのまま読み替える（値は同じ low/mid/high）。
      発情期の夜・恋人と番の夜・勢いの夜・愛憎の夜（omega-heat.js・omega-love.js・omega-thick.js）。濃い＝プレイと結びを重ねて深く */
   X.install('omega', { desc: '夜の描き方。ほのめかす＝朝チュン／ほどほど＝描写する／濃い＝プレイや結びを重ねて深く描く' });
   /* エロトラップダンジョン：もとの「罠の淫らさ」（id lewd・数値）は罠の強さとして trap に移す。陥落の山場（dungeon-thick.js） */
-  X.install('dungeon', { from: { trap: function (e) { return typeof e.lewd === 'number' ? e.lewd : null; } }, fix: function (e) { if (typeof e.lewd === 'number') delete e.lewd; }, desc: '陥落の場面の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝堕ちたあとも続くところまで。男性向けは、攻めの挑戦者が魔物を組み伏せる場面だけ' });
+  X.install('dungeon', { from: { trap: function (e) { return typeof e.lewd === 'number' ? e.lewd : null; } }, fix: function (e) { if (typeof e.lewd === 'number') delete e.lewd; }, desc: '陥落の場面の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝堕ちたあとも続くところまで、絶頂のあとも罠が止まらない。厚く＝絶頂の前に体の様子の段落を足す。男性向け＝絶頂や罠に擬音と♡の喘ぎ' });
   /* マッサージ：もとの「施術の過激さ」（id lewd・数値）は harsh に、「行為の描写」（描写する・軽め）は描写の有無（ほどほど・ほのめかす）に読み替える */
   X.install('massage', { old: ['desc'], fix: function (e) { if (typeof e.lewd === 'number') { if (e.harsh == null) e.harsh = e.lewd; e.lewd = e.desc === 'dark' ? 'low' : 'mid'; } }, from: {}, desc: '施術のあとの描き方。ほのめかす＝暗転して回数だけ／ほどほど＝描写する／濃い＝体位をひとつ多く。男性向けは、客が自分から求めたときと客が主導するときだけ' });
   /* 感覚遮断穴：もとの「向こう側の過激さ」（id lewd・数値）は wild に。描写の作風は元からある男性向け（solo-hole-ero.js）。濃い＝戻ってくる感覚が多い */

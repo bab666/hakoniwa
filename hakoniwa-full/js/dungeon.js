@@ -126,6 +126,8 @@
   function pct(v) { return Math.round(v * 100) + '%'; }
 
   function say(S, o) {
+    /* R18の描写の設定（長さ・作風・濃い）に合わせて本文を足す（dungeon-lewd.js） */
+    if (DG.lewdHook) DG.lewdHook(S, o);
     o.floor = S.floor; o.room = S.room; o.n = S.log.length;
     o.v = { r: Math.round(S.h.reason), p: Math.round(S.h.pleasure), c: Math.round(S.h.corrupt) };
     S.log.push(o);
@@ -225,7 +227,7 @@
         h.corrupt += 2;
         S.cnt.edge++;
         var et = line(S, 'edge', ev);
-        later(S, function () { say(S, { kind: 'climax', tag: '寸止め', text: et, why: '寸止めの呪い' }); });
+        later(S, function () { S.lwWho = h; S.lwEv = ev; say(S, { kind: 'climax', tag: '寸止め', text: et, why: '寸止めの呪い' }); S.lwWho = null; });
         break;
       }
       h.climax++;
@@ -238,7 +240,10 @@
       var top = isTop(h) && DG.CLIMAX_TOP, CL = top ? DG.CLIMAX_TOP[stage(h)] : DG.CLIMAX[h.persona][stage(h)], cn = h.climax, ctext = fmt(S, pick(S, CL), ev);
       if (DG.MOAN && !top && rng() < 0.45) ctext = '「' + pick(S, DG.MOAN[h.persona]) + '」' + ctext;
       later(S, function () {
+        /* 絶頂した本人（パーティーでは書くときに別の人の番になっていることがある。dungeon-lewd.js が読む） */
+        S.lwWho = h; S.lwEv = ev;
         var o = say(S, { kind: 'climax', tag: '絶頂', text: ctext, why: cn === 1 ? '初めての絶頂' : cn + '回目' });
+        S.lwWho = null;
         if (cn === 1) key(S, o, '最初の絶頂');
         if (cn === 5 || cn === 10) key(S, o, cn + '回目の絶頂');
       });
