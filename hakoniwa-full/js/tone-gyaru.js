@@ -122,6 +122,7 @@
   function gyaru(q, who) {
     if (!q) return q;
     if (who && who.gender !== 'm') q = q.replace(/お前(?!さん)/g, 'あんた');
+    q = q.replace(/ウチたち/g, 'ウチら');
     if (MOAN.test(q.replace(SURPRISE, '')) || STUTTER.test(q)) return q;
     var grave = GRAVE.test(q);
     /* 驚きの「えっ！？」「ええ！？」→「え〜！？」 */

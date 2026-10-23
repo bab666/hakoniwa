@@ -39,11 +39,16 @@
       if (/(?<![まやだ])だ$/.test(s)) return s.replace(/だ$/, 'なの');
       return s;
     }
-    if (KEEP.test(s)) return s;
-    if (/のか$/.test(s)) return s.replace(/のか$/, 'のね');
+    if (KEEP.test(s) || /^(?:はいはい|はーい|はい)$/.test(s)) return s;
+    /* 「どんな顔で死ぬのか」のような問いを含む「のか」は言い切りのまま（「のね」にしない） */
+    if (/のか$/.test(s)) return WH.test(s) ? s : s.replace(/のか$/, 'のね');
+    /* 「村人なんだ」「苦手なんだ」は説明の「〜なのよ」（「なん」を問いの「何」と取り違えない） */
+    if (/(?:なん|何)なんだ$/.test(s)) return s.replace(/なんだ$/, 'なの');
+    if (/.なんだ$/.test(s) && !WH.test(s.replace(/なんだ$/, ''))) return s.replace(/なんだ$/, 'なのよ');
     if (/だろうが$/.test(s)) return s.replace(/だろうが$/, 'じゃない');
     /* 「？」のない問いかけ（「何してる」「誰だ」）は「〜の」 */
     if (WH.test(s) && !/(?:何でも|なんでも|誰でも|どこでも|いつでも|何も|誰も|何か|誰か|どこか|いつか|何とか|なんとか|何度|なんか)/.test(s)) {
+      if (/なんだ$/.test(s)) return s.replace(/なんだ$/, 'なの');
       if (/(?<![まやだ])だ$/.test(s)) return s.replace(/だ$/, 'なの');
       if (PLAIN_END.test(s) && !/[一-鿿]ん?だ$/.test(s)) return s + 'の';
     }
