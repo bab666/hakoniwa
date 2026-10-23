@@ -26,6 +26,8 @@
   function od2(a, b) { return HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b]; }
   function SX(S, x, y, mood, short, allow) {
     var R = HK.R18M;
+    /* 描写の作風「男性向け」（story-lewd.js）。合意のない場面はこの関数を通らない */
+    if (HK.Lewd && HK.Lewd.storyEro && HK.Lewd.storyEro(S)) return HK.Lewd.storyEroSex(S, x, y);
     if (isFF(x, y) && HK.FF) {
       /* 山場を段落に分けて厚く（r18-thick.js） */
       if (HK.R18Thick && HK.R18Thick.on(S)) return HK.R18Thick.ff(S, x, y, { mood: mood, short: short, fore: false, tools: S.drugTools });
@@ -106,9 +108,9 @@
   }
   /* 翌朝の一文（4割ほど。厚い版のあとは段落を分ける） */
   function aft(S, p) { return S.rng() < 0.4 ? (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + pz(S, p, 'after') : ''; }
-  scen.env.push({ id: 'ylewd', label: '夜の出来事（R18）', min: 0, max: 100, def: 40, lo: '起きない', hi: 'たびたび', desc: '犯人が媚薬を盛って事件をうやむやにしたり、探偵を誘惑したりする頻度' });
+  scen.env.push({ id: 'ylewd', label: '夜の出来事の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: 'たびたび', desc: '犯人が媚薬を盛って事件をうやむやにしたり、探偵を誘惑したりする頻度' });
 
-  scen.env.push({ id: 'ypleasure', label: '快楽殺人の起きやすさ（R18）', min: 0, max: 100, def: 15, lo: '起きない', hi: 'いつも', desc: '犯人の動機が「快楽殺人（楽しかったから）」になる確率。快楽殺人の犯人は、夜に誰かを無理やり犯し、そのまま殺すことがある。動機を指定したときはそちらが優先' });
+  scen.env.push({ id: 'ypleasure', label: '快楽殺人の起きやすさ', min: 0, max: 100, def: 15, lo: '起きない', hi: 'いつも', desc: '犯人の動機が「快楽殺人（楽しかったから）」になる確率。快楽殺人の犯人は、夜に誰かを無理やり犯し、そのまま殺すことがある。動機を指定したときはそちらが優先' });
   /* 快楽殺人の起きやすさ：冷酷さ・FCの高い犯人ほど少しなりやすい */
   function pleasure(S, env, cul) {
     if (HK.SAFE_ON) return null;

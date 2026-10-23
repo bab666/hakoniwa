@@ -40135,6 +40135,8 @@
   X.install('zombie', { old: ['zlewd'], def: 'low', from: { lewd: function (e) { return e.zlewd ? (e.zlewd === 'high' ? 'mid' : 'low') : null; } }, desc: '恋人たちの夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
   /* 邪神村RTA：参加者どうしの夜・媚薬・夜這い・清めの湯・洞窟・儀式・神ごとの夜（solo-jashin-r18*.js・r18-thick.js・story-lewd.js）。「夜の出来事の起こりやすさ」は起きる頻度として残す */
   X.install('jashin', { desc: '夜の出来事の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで' });
+  /* 吹雪の館の殺人：媚薬の夜・誘惑・吊り橋・大浴場・凍える夜など（solo-yakata-r18.js・r18-thick.js・story-lewd.js）。「夜の出来事の起こりやすさ」「快楽殺人の起きやすさ」はそのまま残す */
+  X.install('yakata', { desc: '夜の出来事の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */
