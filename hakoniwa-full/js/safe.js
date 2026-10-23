@@ -124,7 +124,7 @@
   Object.keys(HK.SCENARIOS).forEach(function (id) {
     var sc = HK.SCENARIOS[id];
     if (Array.isArray(sc.events)) sc.events = sc.events.filter(function (e) { return !e.r18; });
-    if (Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== 'ilewd' && e.id !== 'jlewd' && e.id !== 'ylewd'; });
+    if (Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== 'ilewd' && e.id !== 'jlewd' && e.id !== 'ylewd' && e.id !== 'slewd' && e.id !== 'ypleasure'; });
   });
   if (HK.ZB && HK.ZB.scen && HK.ZB.scen.events && HK.ZB.scen !== HK.SCENARIOS.zombie) HK.ZB.scen.events = HK.ZB.scen.events.filter(function (e) { return !e.r18; });
   function only(scen, id, opt) { (scen && scen.env || []).forEach(function (e) { if (e.id === id) { e.def = opt.v; e.options = [opt]; } }); }

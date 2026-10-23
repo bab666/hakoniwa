@@ -251,6 +251,7 @@ js/ship-r18-xeno.js
 js/ship-r18-xeno2.js
 late js/ship-xeno-thick.js
 js/ship-thick.js
+js/ship-lewd.js
 js/ship-bond.js
 js/ship-crisis.js
 js/ship.js

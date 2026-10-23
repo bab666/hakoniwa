@@ -6557,6 +6557,7 @@
   };
   /* 場所ならではの一文（感じていく段落に添える） */
   T.PLACE = {
+    ship: L('寝台の固定帯が、二人分の重みで軋んだ。|観測窓の外を、名も知らない星がゆっくり流れていった。|換気扇の低い唸りが、二人の荒い息をかき消していった。|重力の弱い夜で、揺れるたびに二人の体がふわりと浮きかけた。|非常灯の赤い光が、汗ばんだ肌をぼんやりと照らしていた。'),
     island: L('寄せては返す波の音が、二人の荒い息をさらっていった。|焚き火の明かりが、重なった二つの影を岩壁に大きく映していた。|背中の下で、椰子の葉の寝床がかさかさと鳴った。|潮の匂いと汗の匂いが混ざって、どちらの肌のものか分からなくなった。|洞窟の奥に、二人分の声だけがこもって響いた。'),
     zombie: L('窓の外で、ゾンビの呻き声が遠ざかっては近づいた。二人は声を殺し、それでも止まれなかった。|バリケードの向こうで何かが倒れる音がした。二人は息を止め、それから、もっと強く抱き合った。|懐中電灯の消えた暗闇で、確かなのは互いの体温だけだった。|生きている。触れ合うたびに、その実感が体の奥から込み上げてきた。|埃っぽい毛布の上で、二人分の熱い息が混ざり合った。'),
     goukon: L('酒の残る息が混ざり合い、ホテルの薄い壁の向こうまで聞こえそうだった。|さっきまで店で笑い合っていた声が、今は知らない高さで漏れていた。|乾杯のグラスを持っていた指が、今はシーツを握りしめていた。|酔いの熱と体の熱が、どちらがどちらか分からなくなった。|窓の外の終電の音が、遠く聞こえた。'),
@@ -6705,7 +6706,7 @@
 
   /* ---------- 短い版（数行。始まり＋最中＋果て） ---------- */
   X.SHORT = {
-    mf: L('{a}は{b}の脚を開かせ、一気に奥までねじ込んだ。{s:hit}。{b}「{mb1}」――何度も奥を突かれたあと、{a}は一番奥でたっぷりと吐き出した。{s:cum}。{b}「{mb2}」|{a}は{b}を後ろから抱えて、ぬるぬるのナカを激しく突き上げた。{s:hit}。最後は奥に押しつけたまま果てて、{b}もびくびくとイき続けた。{b}「{mb2}」|{a}は{b}と指を絡めたまま、ゆっくり奥をこね続けた。{s:wet}。{b}「{mb1}」――二人はほとんど同時に果てた。{s:cum}。{b}「{mb2}」|{a}は焦らすように先っぽだけを擦りつけ、{b}が泣きながらおねだりしたところで、根元まで突き入れた。{s:hit}。{b}「{mb2}」――そのまま奥で、熱いものが弾けた。{s:cum}。'),
+    mf: L('{a}は{b}の脚を開かせ、一気に奥までねじ込んだ。{s:hit}。{b}「{mb1}」――何度も奥を突かれたあと、{a}は一番奥でたっぷりと吐き出した。{s:cum}。{b}「{mb2}」|{a}は{b}を後ろから抱えて、ぬるぬるのナカを激しく突き上げた。{s:hit}。最後は奥に押しつけたまま果てて、{b}もびくびくとイき続けた。{b}「{mb2}」|{a}は{b}と指を絡めたまま、ゆっくり奥をこね続けた。{s:wet}。{b}「{mb1}」――二人はほとんど同時に果てた。{s:cum}。{b}「{mb2}」|{a}は焦らすように先っぽだけを擦りつけた。{b}が泣きながらおねだりした。{a}はそこでようやく、根元まで突き入れた。{s:hit}。{b}「{mb2}」――そのまま奥で、熱いものが弾けた。{s:cum}。'),
     fm: L('{a}は{b}に跨って、ちんぽを根元まで呑み込んだ。{s:wet}。{a}「まだ出しちゃだめ」――焦らされたあと、{b}は{a}の奥に何度も吐き出した。{s:cum}。{b}「{mb2}」|{a}は{b}の胸に手をつき、ぱちゅんぱちゅんと腰を打ちつけた。{s:hit}。{b}「{mb1}」――搾りとられるように、{b}は{a}のナカで果てた。{s:cum}。{b}「{mb2}」|{a}は{b}の上で甘えるように腰を揺らした。{s:wet}。{b}「{mb2}」――二人は抱き合ったまま、一緒に果てた。{s:cum}。'),
     ff: L('{a}は{b}のナカに指を二本沈め、弱いところをしつこく掻いた。{s:wet}。{b}「{mb2}」――{b}は潮を噴きながらイった。|{a}は{b}の脚のあいだに顔を埋め、クリを強く吸い上げた。{s:suck}。{b}「{mb2}」――{b}の腰が大きく跳ねた。|{a}は{b}の乳首を舌で転がしながら、指で入口をくちくちと撫で続けた。{s:wet}。{b}「{mb2}」――{b}はとろけるようにイった。')
   };
@@ -43253,6 +43254,7 @@
     night: L('寝台の固定帯が、二人分の重みでかすかに軋んでいた。|重力の弱い夜で、果てたあとの二人の体は、抱き合ったままふわりと浮いた。|しばらくのあいだ、狭い船室には二人の荒い息だけが残っていた。|照明が朝の色に切り替わるまで、二人は狭い寝台で肩を寄せ合っていた。|{T}は漂いかけた毛布を引き寄せ、{U}の汗ばんだ肩にかけた。換気扇の音だけが、静かな船室に戻ってきた。'),
     nurse: L('熱のこもった{U}の体の内側は、驚くほど熱かった。{T}は{U}が眠りに落ちるまで、繋がったまま背中を撫でていた。|果てたあと、{U}は{T}の胸にもたれて、熱とは違う理由で頬を染めていた。|{U}の額の汗を拭いながら、{T}は「熱、上がったかもね」と苦笑した。{U}は答えず、{T}の手を握ったまま目を閉じた。|点滴の雫が落ちる音を数えるうちに、{U}は穏やかな寝息を立てはじめた。{T}はその寝顔から、しばらく目を離せなかった。')
   };
+  R.LEAD = LEAD;
   /* 二度目（短い版の本文 pen・ride・ff と、看病の nursePen・nurseRide・nurseFf を、場所を変えた二度目として使う）。{t}{u} は {T}{U} に */
   var ROUND2 = {
     night: L('一度では、熱は引かなかった。|しばらく抱き合ったまま息を整えてから、二人はもう一度求め合った。|夜間照明に切り替わっても、二人は眠らなかった。|'),
@@ -43280,6 +43282,57 @@
   /* 異星の生き物（{a}=船員、{x}=生き物の名前）：段落に分けて厚い版を、ship-r18.js の短い版（alien 8・alienTop 4）に足す */
   R.alien = (R.alien || []).concat(L('沼から伸びた半透明の触手が、{a}の足首に絡みついた。ひんやりとした感触は、腿を這い上がるうちに熱を帯びていく。\n\n{a}「っ……離、せ……」\n\n言葉とは裏腹に、膝から力が抜けた。触手は装備の隙間から入り込み、肌の敏感なところばかりを探り当てて、ゆっくりと撫で回した。\n\nやがて一本が脚のあいだに潜り込み、奥へと沈んでいく。内側を優しく、しつこくかき回されて、{a}は泥の上で背を反らせた。\n\n波が引くように触手が離れたあと、{a}はしばらく起き上がれなかった。肌に残ったぬめりが、まだ脈打っているような気がした。|花のような生き物が、{a}の体を柔らかな花弁で包み込んだ。粘る蜜が全身に塗り広げられ、触れられたところから甘い痺れが走る。\n\n{a}「なに、これ……体が、熱い……」\n\n脈打つ花弁が胸を、脇腹を、内腿をくまなく撫でていく。蜜が肌に染み込むたびに感覚が鋭くなり、{a}は花の中で何度も身をよじった。\n\n最後に花弁がきゅうっと閉じたとき、{a}は声を上げて昇りつめた。\n\n花がほどけたあと、{a}の肌には甘い香りがいつまでも残っていた。|発光する触手が{a}の肌を這うたび、触れた跡が淡く光った。首筋、鎖骨、腹へと、光の筋がゆっくり描かれていく。\n\n{a}「……見ないで、こんな……」\n\n誰に向けた言葉なのか、{a}自身にも分からなかった。光の筋が増えるほど、体の奥が疼いていく。\n\n触手が脚のあいだに辿り着いた瞬間、{a}は全身を光らせて達した。\n\n明滅がおさまるまで、{a}は暗い洞窟の中でぼんやりと自分の肌を眺めていた。'));
   R.alienTop = (R.alienTop || []).concat(L('絡みつこうとした触手を、{a}は逆に掴み取った。根元から指でしごき上げると、くねる生き物が{a}の手の中で震えた。\n\n{a}「暴れるな。……そう、いい子だ」\n\n逃げようとする先端を舌でなぞり、敏感な器官を一つずつ探り当てていく。生き物の明滅が、だんだん速くなった。\n\n最後に強く握りしめると、生き物は全身を震わせ、果てたように光を消した。\n\n{a}は手についた蜜を払い、満足げに息をついた。生き物はもう、{a}の足元から離れようとしなかった。|求愛してきた異星生物を、{a}は岩の上に押さえつけて見下ろした。\n\n{a}「主導権は、こっちだ」\n\n伸びてきた蔓を手首に巻き取り、逆に引き寄せて組み伏せる。震える器官を指と舌で執拗に責め立てると、生き物は甘い鳴き声を上げはじめた。\n\n鳴き声が途切れ、光が一度大きく明滅して消えた。\n\n{a}は乱れた息を整えながら、ぐったりした生き物の背をそっと撫でてやった。'));
+})();
+;/* ==== js/ship-lewd.js ==== */
+/* 箱庭シミュレーター（R18版のみ）: 宇宙船漂流記 ― R18の描写の設定（lewd-unify.js）に合わせた文
+   ・ほのめかす：船員どうしの夜・看病の夜・異星の生き物との場面を、ぼかした一文にする（fade・nurseFade・xFade）
+   ・男性向け：船員どうしの夜・看病の夜は thick-sex-ero.js の山場（始まりは ship-thick.js の LEAD）、
+     異星の生き物は、元の場面のあとに男性向けの段落を足す（xEro：受ける側／xEroTop：自分で攻めを選んだ人）
+   ・濃い：もう一度の段落・一文（again・xAgain）
+   {t}＝攻め、{u}＝受け、{a}＝生き物と出会った船員、{x}＝生き物。登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK, SH = HK.SHIP;
+  if (!SH || !SH.R18) return;
+  function L(s) { return s.split('|'); }
+  var R = SH.R18, E = HK.Ero;
+  R.fade = L('{t}は{u}を寝台に横たえ、船室の照明を落とした。――そこから先は、二人だけの航海日誌に書かれている。|{u}の指が、{t}の作業着の留め具にかかった。――観測窓の外の星だけが、その先を見ていた。|二人は狭い寝台で、互いの体温を確かめ合った。――換気扇の音が、しばらく二人の息遣いをかき消していた。|{t}は{u}を抱き寄せ、扉のロックを閉めた。――その夜のことは、船の記録には残っていない。');
+  R.nurseFade = L('{t}は熱っぽい{u}の額に口づけ、医務室の明かりを落とした。――その先は、点滴の雫の音だけが知っている。|{u}は{t}の手を自分の胸に引き寄せた。――熱のせいだと、二人とも言い訳をしなかった。|{t}は{u}の汗ばんだ肌を拭い、そのまま隣に横たわった。――医務室の小さな明かりが消えたのは、それからずいぶん経ってからだった。');
+  R.xFade = L('{x}は{a}の体に絡みつき、ゆっくりと岩陰へ引き寄せた。――その先のことは、{a}自身もよく覚えていない。|{a}の肌に、{x}の柔らかなものが触れた。――気がつくと、{a}は野営地の外で、甘い匂いに包まれて座り込んでいた。|{x}は{a}をそっと包み込んだ。――戻ってきた{a}は、何があったのか誰にも話さなかった。');
+  R.xFadeTop = L('{a}は{x}を手懐け、そのまま主導権を握った。――その先は、{a}と{x}だけが知っている。|{a}は伸びてきた{x}を逆に掴み取った。――しばらくして、{x}はおとなしく{a}の足元に寄り添っていた。');
+  /* 男性向け：異星の生き物（受ける側）。{m1}{m2}＝{a} の喘ぎ */
+  R.xEro = L('触手の先が{a}の脚のあいだに潜り込み、ぬるぬると奥まで這い入った。{s:wet}。{a}「{m1}」――ナカを内側から撫で回されるたびに、{a}の腰ががくがくと跳ねる。触手が一斉に脈打った瞬間、{a}は泥の上でびくびくとイった。{a}「{m2}」|粘液に濡れた器官が、{a}の胸の先と脚のあいだを同時に吸い上げた。{s:suck}。{a}「{m1}」――何度イかされても、{x}は放してくれなかった。{a}「{m2}」|{x}は{a}の奥に、どろりと温かいものを注ぎ込んだ。{s:cum}。{a}「{m2}」――注がれるたびに頭が真っ白になり、{a}はとろけた顔のまま何度も果てた。|太い触手が{a}の奥をぐぽぐぽと突き上げた。{s:hit}。{a}「{m1}」――ナカの弱いところを覚えた{x}は、そこばかりを執拗に責め立て、{a}を何度もイかせた。{a}「{m2}」');
+  /* 男性向け：自分で攻めを選んだ人が生き物を責める（{m1}＝主導する側の声） */
+  R.xEroTop = L('{a}は{x}の敏感な器官を握り込み、ぐちゅぐちゅと音を立ててしごき上げた。{s:wet}。{a}「{m1}」――{x}は甘い鳴き声を上げ、{a}の手の中で何度も震えて果てた。|{a}は逃げようとする{x}を押さえつけ、震える先端を舌でしつこく責めた。{s:suck}。{x}が全身を明滅させて果てるまで、{a}は手を緩めなかった。{a}「{m1}」');
+  R.xAgain = L('一度では終わらなかった。{x}は日が沈むまで、何度も{a}を求め続けた。|しばらくして、{x}はまた{a}の体に絡みついてきた。二度目は、一度目よりずっと長かった。|{a}が野営地に戻れたのは、夜が明けてからだった。');
+  R.xAgainEro = L('{x}は一度では満足せず、{a}をまた絡め取った。{s:hit}。{a}「{m2}」――イきっぱなしのまま、{a}は夜明けまで責め続けられた。|二度目、三度目と注ぎ込まれ、{a}のお腹はぽっこりと膨らんでいた。{s:cum}。{a}「{m2}」');
+  /* 船員どうしの夜（男性向け）：始まりは ship-thick.js の LEAD を使う */
+  R.ero = function (S, t, u, kind, short, high) {
+    var TE = HK.ThickEro;
+    if (!TE) return null;
+    var pick = function (arr) { return S.rng.pick(arr); };
+    var lead = R.LEAD && R.LEAD[kind === 'nurse' ? 'nurse' : 'night'];
+    var op = lead ? pick(lead).replace(/\{T\}/g, '{a}').replace(/\{U\}/g, '{b}') : '';
+    var r = short ? TE.short({ S: S, pick: pick, a: t, b: u, open: op, again: high }) : TE.scene({ S: S, pick: pick, rng: S.rng, a: t, b: u, style: HK.ThickSex ? HK.ThickSex.style(t) : 'gentle', open: op || null, place: 'ship', again: high });
+    var tx = r.text.replace(/\{a\}/g, t.name).replace(/\{b\}/g, u.name);
+    if (HK.Pos && HK.Pos.ff(t, u) && HK.FF && HK.FF.fix) tx = HK.FF.fix(S, tx, t, u);
+    return short ? tx : '\n\n' + tx + '\n\n';
+  };
+  /* 濃い：船員どうしの夜のもう一度（小説調） */
+  R.again = function (S, t, u, short) {
+    var TE = HK.ThickEro;
+    if (!TE) return '';
+    var x = TE.again(S, function (arr) { return S.rng.pick(arr); }, t, u, false, short).replace(/\{a\}/g, t.name).replace(/\{b\}/g, u.name);
+    return short ? x : x + '\n\n';
+  };
+  /* 生き物の場面の喘ぎ・擬音を埋める */
+  R.xFill = function (S, text, a, top) {
+    if (!E) return text;
+    var d = a.eroDom; if (top) a.eroDom = true;
+    var r = E.fill(S, text, a);
+    a.eroDom = d;
+    return r;
+  };
 })();
 ;/* ==== js/ship-bond.js ==== */
 /* 箱庭シミュレーター: 宇宙船漂流記 ― 船員どうしの絆が動く出来事の文（仕組みは ship.js）
@@ -43464,7 +43517,7 @@
       { id: 'danger', label: '宇宙の過酷さ', min: 0, max: 100, def: 45, lo: '穏やか', hi: '過酷', desc: '故障や事故、探索の危険の起きやすさ' },
       { id: 'supply', label: '積んでいる物資', min: 0, max: 100, def: 50, lo: 'ぎりぎり', hi: '潤沢', desc: '食料と修理部品の量' },
       { id: 'contact', label: '未知との遭遇', min: 0, max: 100, def: 50, lo: 'めったにない', hi: 'たびたび', desc: '漂流中に、不思議なものに出会う頻度' }
-    ].concat(R18ON ? [{ id: 'slewd', label: '夜の出来事（R18）', min: 0, max: 100, def: 40, lo: '起きない', hi: 'たびたび', desc: '船員どうしの夜、星の花粉、異星の生き物、文明の儀式の起きやすさ' }] : []),
+    ].concat(R18ON ? [{ id: 'slewd', label: '夜の出来事の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: 'たびたび', desc: '船員どうしの夜、星の花粉、異星の生き物、文明の儀式の起きやすさ' }] : []),
     stats: [{ id: 'hp', label: '体力', desc: '怪我や飢え、探索の危険への強さ' }, { id: 'tech', label: '技術', desc: '修理・航法・調査の腕' }],
     perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（気質から）', options: ROLES.map(function (r) { return { id: r.id, label: r.label }; }) }],
     actions: [], goals: [], events: []
@@ -43869,9 +43922,11 @@
     /* その後の反応は、受けた人のいちばん強い気質（エゴグラム）で変わる */
     var ft = a.eg && HK.egoType ? HK.egoType(a.eg).top : 'NP';
     var t = F(body, v) + (top ? '' : F(pick(X2.AFTER[m]), v) + (X2.REACT && X2.REACT[ft] && rng() < 0.7 ? F(pick(X2.REACT[ft]), v) : ''));
-    /* 三回に一回ほど、段落に分けた濃い版（ship-xeno-thick.js。R18版のみ） */
-    var tk = X2.thick && X2.thick(S, d, m, a, top, body, ft);
+    /* 段落に分けた濃い版（ship-xeno-thick.js。R18版のみ）：描写の長さが厚くならいつも、混ぜるなら三回に一回ほど、短くなら使わない */
+    var lw0 = lewdOf(S), xl = HK.Lewd && HK.Lewd.conf('ship') ? S.env.lewdLen : 'mix';
+    var tk = xl !== 'short' && lw0.lv !== 'low' && X2.thick && X2.thick(S, d, m, a, top, body, ft, xl === 'thick');
     if (tk) t = F(tk, v);
+    t = xLewd(S, a, top, t, v);
     a.cnt.r18 = (a.cnt.r18 || 0) + 1;
     if (!top) { stress(a, m === 'lure' ? 6 : m === 'probe' ? 8 : 14); a.m.fear = clamp(a.m.fear + (m === 'force' || m === 'take' ? 8 : 2), 0, 100); }
     else stress(a, -5);
@@ -43891,6 +43946,7 @@
     var o = rng.pick(src), a = rng.pick(live(S)), b = closest(S, a) || { name: '仲間' };
     var top = HK.Pos && HK.Pos.hardTop(a), m = { a: a.name, b: b.name, x: o.x };
     var t = F(pk(S, o.pool), m) + (top ? F(pk(S, X.lureTop), m) : F(pk(S, X.huge), m) + F(pk(S, X.hugeAct), m) + F(pk(S, X.lureAfter), m));
+    t = xLewd(S, a, top, t, m);
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; stress(a, top ? -5 : 8);
     var r = ST.say(S, { actors: [a], tag: '異種族の誘い', kind: 'climax', text: t, why: o.x + 'の誘い。言葉が通じず、誘われているとは分からなかった' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 32 });
     if (!S.lureKey) { S.lureKey = true; ST.key(S, r, a.name + 'と' + o.x); }
@@ -44093,7 +44149,7 @@
     /* 受け攻め：自分で攻めを選んだ人は、熱があっても受けにならない */
     var o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
     if (Pz.hardTop(u)) return;
-    var body = (R.thick && R.thick(S, t, u, 'nurse')) || F(pk(S, Pz.isF(t) && Pz.isF(u) ? R.nurseFf : Pz.isF(t) ? R.nurseRide : R.nursePen), { t: t.name, u: u.name });
+    var body = bodyOf(S, t, u, 'nurse');
     setRel(S, a, b, 0.15); mark(S, a, b, 'night');
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     var open = F(pk(S, t === a ? R.nurseTop : R.nurseSick), { t: t.name, u: u.name });
@@ -44204,13 +44260,37 @@
 
   /* ---------- R18 ---------- */
   function r18on(S) { return R18ON && !HK.SAFE_ON && (S.env.slewd || 0) > 0; }
+  /* R18の描写の設定（lewd-unify.js）：描写の有無・長さ・作風・濃さ */
+  function lewdOf(S) {
+    var X = HK.Lewd;
+    if (!X || !X.conf('ship')) return { lv: 'mid', short: false, ero: false, high: false };
+    return { lv: X.lv(S.env), short: X.short(S.env, S.rng), ero: X.ero(S.env), high: X.high(S.env) };
+  }
+  /* 船員どうしの夜・看病の夜の本文（kind：'night'|'nurse'） */
+  function bodyOf(S, t, u, kind) {
+    var R = SH.R18, Pz = HK.Pos, lw = lewdOf(S), nm = { t: t.name, u: u.name };
+    if (lw.lv === 'low' && R.fade) return F(pk(S, kind === 'nurse' ? R.nurseFade : R.fade), nm);
+    if (lw.ero && R.ero) { var e = R.ero(S, t, u, kind, lw.short, lw.high); if (e) return e; }
+    var pool = kind === 'nurse' ? (Pz.isF(t) && Pz.isF(u) ? R.nurseFf : Pz.isF(t) ? R.nurseRide : R.nursePen) : (Pz.isF(t) && Pz.isF(u) ? R.ff : Pz.isF(t) ? R.ride : R.pen);
+    /* 山場を段落に分けて厚く書く（R18版の ship-thick.js）。数行で短くなら一文の版 */
+    var th = !lw.short && R.thick && R.thick(S, t, u, kind);
+    var out = th || F(pk(S, pool), nm);
+    if (lw.high && R.again) out += R.again(S, t, u, !th);
+    return out;
+  }
   function bodyFor(S, a, b) {
     var Pz = HK.Pos, o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
     if (Pz.hardTop(u)) return '';
-    var R = SH.R18, pool = Pz.isF(t) && Pz.isF(u) ? R.ff : Pz.isF(t) ? R.ride : R.pen;
-    /* 山場を段落に分けて厚く書く（R18版の ship-thick.js） */
-    var th = R.thick && R.thick(S, t, u, 'night');
-    return th || F(pk(S, pool), { t: t.name, u: u.name });
+    return bodyOf(S, t, u, 'night');
+  }
+  /* 異星の生き物との場面：ほのめかす＝ぼかした一文、男性向け＝段落を足す、濃い＝もう一度 */
+  function xLewd(S, a, top, text, v) {
+    var R = SH.R18, lw = lewdOf(S);
+    if (!R || !R.xFade) return text;
+    if (lw.lv === 'low') return F(pk(S, top ? R.xFadeTop : R.xFade), v);
+    if (lw.ero) text += (/\n\n/.test(text) ? '\n\n' : '') + F(R.xFill(S, pk(S, top ? R.xEroTop : R.xEro), a, top), v);
+    if (lw.high) text += (/\n\n/.test(text) ? '\n\n' : '') + F(lw.ero && !top ? R.xFill(S, pk(S, R.xAgainEro), a, false) : pk(S, R.xAgain), v);
+    return text;
   }
   function nightR18(S) {
     var rng = S.rng, L0 = live(S), R = SH.R18;
@@ -44235,7 +44315,7 @@
     var R = SH.R18, top = HK.Pos && HK.Pos.hardTop(a);
     var X = SH.X, sp = !top && X && X.play[d.kind] && S.rng() < 0.6 ? X.play[d.kind] : null;
     if (!sp && !/friendly|symbiotic|parasite|plant/.test(d.kind)) return;
-    ST.say(S, { actors: [a], tag: '異星の生き物', kind: 'climax', text: F(pk(S, sp || (top ? R.alienTop : R.alien)), { a: a.name, x: d.name }), why: d.name + '（' + LIFE_JP[d.kind] + '）' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 28 });
+    ST.say(S, { actors: [a], tag: '異星の生き物', kind: 'climax', text: xLewd(S, a, top, F(pk(S, sp || (top ? R.alienTop : R.alien)), { a: a.name, x: d.name }), { a: a.name, x: d.name }), why: d.name + '（' + LIFE_JP[d.kind] + '）' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 28 });
   }
 
   /* ---------- 結果 ---------- */
@@ -47047,7 +47127,7 @@
   Object.keys(HK.SCENARIOS).forEach(function (id) {
     var sc = HK.SCENARIOS[id];
     if (Array.isArray(sc.events)) sc.events = sc.events.filter(function (e) { return !e.r18; });
-    if (Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== 'ilewd' && e.id !== 'jlewd' && e.id !== 'ylewd'; });
+    if (Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== 'ilewd' && e.id !== 'jlewd' && e.id !== 'ylewd' && e.id !== 'slewd' && e.id !== 'ypleasure'; });
   });
   if (HK.ZB && HK.ZB.scen && HK.ZB.scen.events && HK.ZB.scen !== HK.SCENARIOS.zombie) HK.ZB.scen.events = HK.ZB.scen.events.filter(function (e) { return !e.r18; });
   function only(scen, id, opt) { (scen && scen.env || []).forEach(function (e) { if (e.id === id) { e.def = opt.v; e.options = [opt]; } }); }
@@ -50802,6 +50882,8 @@
   X.install('whiteroom', { old: ['rmlewd'], from: { lewdLen: function (e) { return e.rmlewd; } }, desc: '条件「エッチ」の場面の描き方。ほのめかす＝触れ合いまでで暗転／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで（三人の場面も同じ）' });
   /* 無人島：島の夜（solo-rel-r18.js）と状況の夜（solo-sit-night-r18.js）。古い「島の夜（R18）」：描かない・ほのめかす＝ほのめかす、描写する＝ほどほど・数行で短く */
   X.install('island', { old: ['ilewd'], def: 'low', from: { lewd: function (e) { return e.ilewd ? (e.ilewd === 'high' ? 'mid' : 'low') : null; }, lewdLen: function (e) { return e.ilewd === 'high' ? 'short' : null; } }, desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
+  /* 宇宙船漂流記：船員どうしの夜・看病の夜・異星の生き物（ship.js・ship-lewd.js）。「夜の出来事の起こりやすさ」は起きる頻度として残す */
+  X.install('ship', { desc: '夜の出来事（船員どうし・看病・異星の生き物）の描き方。ほのめかす＝ぼかした一文／ほどほど＝描写する／濃い＝もう一度求め合うところまで' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */

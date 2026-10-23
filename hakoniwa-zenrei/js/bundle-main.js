@@ -34603,7 +34603,7 @@
       { id: 'danger', label: '宇宙の過酷さ', min: 0, max: 100, def: 45, lo: '穏やか', hi: '過酷', desc: '故障や事故、探索の危険の起きやすさ' },
       { id: 'supply', label: '積んでいる物資', min: 0, max: 100, def: 50, lo: 'ぎりぎり', hi: '潤沢', desc: '食料と修理部品の量' },
       { id: 'contact', label: '未知との遭遇', min: 0, max: 100, def: 50, lo: 'めったにない', hi: 'たびたび', desc: '漂流中に、不思議なものに出会う頻度' }
-    ].concat(R18ON ? [{ id: 'slewd', label: '夜の出来事（R18）', min: 0, max: 100, def: 40, lo: '起きない', hi: 'たびたび', desc: '船員どうしの夜、星の花粉、異星の生き物、文明の儀式の起きやすさ' }] : []),
+    ].concat(R18ON ? [{ id: 'slewd', label: '夜の出来事の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: 'たびたび', desc: '船員どうしの夜、星の花粉、異星の生き物、文明の儀式の起きやすさ' }] : []),
     stats: [{ id: 'hp', label: '体力', desc: '怪我や飢え、探索の危険への強さ' }, { id: 'tech', label: '技術', desc: '修理・航法・調査の腕' }],
     perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（気質から）', options: ROLES.map(function (r) { return { id: r.id, label: r.label }; }) }],
     actions: [], goals: [], events: []
@@ -35008,9 +35008,11 @@
     /* その後の反応は、受けた人のいちばん強い気質（エゴグラム）で変わる */
     var ft = a.eg && HK.egoType ? HK.egoType(a.eg).top : 'NP';
     var t = F(body, v) + (top ? '' : F(pick(X2.AFTER[m]), v) + (X2.REACT && X2.REACT[ft] && rng() < 0.7 ? F(pick(X2.REACT[ft]), v) : ''));
-    /* 三回に一回ほど、段落に分けた濃い版（ship-xeno-thick.js。R18版のみ） */
-    var tk = X2.thick && X2.thick(S, d, m, a, top, body, ft);
+    /* 段落に分けた濃い版（ship-xeno-thick.js。R18版のみ）：描写の長さが厚くならいつも、混ぜるなら三回に一回ほど、短くなら使わない */
+    var lw0 = lewdOf(S), xl = HK.Lewd && HK.Lewd.conf('ship') ? S.env.lewdLen : 'mix';
+    var tk = xl !== 'short' && lw0.lv !== 'low' && X2.thick && X2.thick(S, d, m, a, top, body, ft, xl === 'thick');
     if (tk) t = F(tk, v);
+    t = xLewd(S, a, top, t, v);
     a.cnt.r18 = (a.cnt.r18 || 0) + 1;
     if (!top) { stress(a, m === 'lure' ? 6 : m === 'probe' ? 8 : 14); a.m.fear = clamp(a.m.fear + (m === 'force' || m === 'take' ? 8 : 2), 0, 100); }
     else stress(a, -5);
@@ -35030,6 +35032,7 @@
     var o = rng.pick(src), a = rng.pick(live(S)), b = closest(S, a) || { name: '仲間' };
     var top = HK.Pos && HK.Pos.hardTop(a), m = { a: a.name, b: b.name, x: o.x };
     var t = F(pk(S, o.pool), m) + (top ? F(pk(S, X.lureTop), m) : F(pk(S, X.huge), m) + F(pk(S, X.hugeAct), m) + F(pk(S, X.lureAfter), m));
+    t = xLewd(S, a, top, t, m);
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; stress(a, top ? -5 : 8);
     var r = ST.say(S, { actors: [a], tag: '異種族の誘い', kind: 'climax', text: t, why: o.x + 'の誘い。言葉が通じず、誘われているとは分からなかった' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 32 });
     if (!S.lureKey) { S.lureKey = true; ST.key(S, r, a.name + 'と' + o.x); }
@@ -35232,7 +35235,7 @@
     /* 受け攻め：自分で攻めを選んだ人は、熱があっても受けにならない */
     var o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
     if (Pz.hardTop(u)) return;
-    var body = (R.thick && R.thick(S, t, u, 'nurse')) || F(pk(S, Pz.isF(t) && Pz.isF(u) ? R.nurseFf : Pz.isF(t) ? R.nurseRide : R.nursePen), { t: t.name, u: u.name });
+    var body = bodyOf(S, t, u, 'nurse');
     setRel(S, a, b, 0.15); mark(S, a, b, 'night');
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     var open = F(pk(S, t === a ? R.nurseTop : R.nurseSick), { t: t.name, u: u.name });
@@ -35343,13 +35346,37 @@
 
   /* ---------- R18 ---------- */
   function r18on(S) { return R18ON && !HK.SAFE_ON && (S.env.slewd || 0) > 0; }
+  /* R18の描写の設定（lewd-unify.js）：描写の有無・長さ・作風・濃さ */
+  function lewdOf(S) {
+    var X = HK.Lewd;
+    if (!X || !X.conf('ship')) return { lv: 'mid', short: false, ero: false, high: false };
+    return { lv: X.lv(S.env), short: X.short(S.env, S.rng), ero: X.ero(S.env), high: X.high(S.env) };
+  }
+  /* 船員どうしの夜・看病の夜の本文（kind：'night'|'nurse'） */
+  function bodyOf(S, t, u, kind) {
+    var R = SH.R18, Pz = HK.Pos, lw = lewdOf(S), nm = { t: t.name, u: u.name };
+    if (lw.lv === 'low' && R.fade) return F(pk(S, kind === 'nurse' ? R.nurseFade : R.fade), nm);
+    if (lw.ero && R.ero) { var e = R.ero(S, t, u, kind, lw.short, lw.high); if (e) return e; }
+    var pool = kind === 'nurse' ? (Pz.isF(t) && Pz.isF(u) ? R.nurseFf : Pz.isF(t) ? R.nurseRide : R.nursePen) : (Pz.isF(t) && Pz.isF(u) ? R.ff : Pz.isF(t) ? R.ride : R.pen);
+    /* 山場を段落に分けて厚く書く（R18版の ship-thick.js）。数行で短くなら一文の版 */
+    var th = !lw.short && R.thick && R.thick(S, t, u, kind);
+    var out = th || F(pk(S, pool), nm);
+    if (lw.high && R.again) out += R.again(S, t, u, !th);
+    return out;
+  }
   function bodyFor(S, a, b) {
     var Pz = HK.Pos, o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
     if (Pz.hardTop(u)) return '';
-    var R = SH.R18, pool = Pz.isF(t) && Pz.isF(u) ? R.ff : Pz.isF(t) ? R.ride : R.pen;
-    /* 山場を段落に分けて厚く書く（R18版の ship-thick.js） */
-    var th = R.thick && R.thick(S, t, u, 'night');
-    return th || F(pk(S, pool), { t: t.name, u: u.name });
+    return bodyOf(S, t, u, 'night');
+  }
+  /* 異星の生き物との場面：ほのめかす＝ぼかした一文、男性向け＝段落を足す、濃い＝もう一度 */
+  function xLewd(S, a, top, text, v) {
+    var R = SH.R18, lw = lewdOf(S);
+    if (!R || !R.xFade) return text;
+    if (lw.lv === 'low') return F(pk(S, top ? R.xFadeTop : R.xFade), v);
+    if (lw.ero) text += (/\n\n/.test(text) ? '\n\n' : '') + F(R.xFill(S, pk(S, top ? R.xEroTop : R.xEro), a, top), v);
+    if (lw.high) text += (/\n\n/.test(text) ? '\n\n' : '') + F(lw.ero && !top ? R.xFill(S, pk(S, R.xAgainEro), a, false) : pk(S, R.xAgain), v);
+    return text;
   }
   function nightR18(S) {
     var rng = S.rng, L0 = live(S), R = SH.R18;
@@ -35374,7 +35401,7 @@
     var R = SH.R18, top = HK.Pos && HK.Pos.hardTop(a);
     var X = SH.X, sp = !top && X && X.play[d.kind] && S.rng() < 0.6 ? X.play[d.kind] : null;
     if (!sp && !/friendly|symbiotic|parasite|plant/.test(d.kind)) return;
-    ST.say(S, { actors: [a], tag: '異星の生き物', kind: 'climax', text: F(pk(S, sp || (top ? R.alienTop : R.alien)), { a: a.name, x: d.name }), why: d.name + '（' + LIFE_JP[d.kind] + '）' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 28 });
+    ST.say(S, { actors: [a], tag: '異星の生き物', kind: 'climax', text: xLewd(S, a, top, F(pk(S, sp || (top ? R.alienTop : R.alien)), { a: a.name, x: d.name }), { a: a.name, x: d.name }), why: d.name + '（' + LIFE_JP[d.kind] + '）' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 28 });
   }
 
   /* ---------- 結果 ---------- */
@@ -36479,7 +36506,7 @@
   Object.keys(HK.SCENARIOS).forEach(function (id) {
     var sc = HK.SCENARIOS[id];
     if (Array.isArray(sc.events)) sc.events = sc.events.filter(function (e) { return !e.r18; });
-    if (Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== 'ilewd' && e.id !== 'jlewd' && e.id !== 'ylewd'; });
+    if (Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== 'ilewd' && e.id !== 'jlewd' && e.id !== 'ylewd' && e.id !== 'slewd' && e.id !== 'ypleasure'; });
   });
   if (HK.ZB && HK.ZB.scen && HK.ZB.scen.events && HK.ZB.scen !== HK.SCENARIOS.zombie) HK.ZB.scen.events = HK.ZB.scen.events.filter(function (e) { return !e.r18; });
   function only(scen, id, opt) { (scen && scen.env || []).forEach(function (e) { if (e.id === id) { e.def = opt.v; e.options = [opt]; } }); }
@@ -40095,6 +40122,8 @@
   X.install('whiteroom', { old: ['rmlewd'], from: { lewdLen: function (e) { return e.rmlewd; } }, desc: '条件「エッチ」の場面の描き方。ほのめかす＝触れ合いまでで暗転／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで（三人の場面も同じ）' });
   /* 無人島：島の夜（solo-rel-r18.js）と状況の夜（solo-sit-night-r18.js）。古い「島の夜（R18）」：描かない・ほのめかす＝ほのめかす、描写する＝ほどほど・数行で短く */
   X.install('island', { old: ['ilewd'], def: 'low', from: { lewd: function (e) { return e.ilewd ? (e.ilewd === 'high' ? 'mid' : 'low') : null; }, lewdLen: function (e) { return e.ilewd === 'high' ? 'short' : null; } }, desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
+  /* 宇宙船漂流記：船員どうしの夜・看病の夜・異星の生き物（ship.js・ship-lewd.js）。「夜の出来事の起こりやすさ」は起きる頻度として残す */
+  X.install('ship', { desc: '夜の出来事（船員どうし・看病・異星の生き物）の描き方。ほのめかす＝ぼかした一文／ほどほど＝描写する／濃い＝もう一度求め合うところまで' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */
