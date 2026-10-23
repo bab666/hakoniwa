@@ -672,10 +672,15 @@
   function thickFall(S, h) {
     var TH = DG.THICK, TV = window.HK.ThickVM;
     if (window.HK.SAFE_ON || !TH || !TV || S.env.lewd < 15) return '';
-    var top = isTop(h), l = top ? (h.gender === 'f' && TH.fallTopF ? TH.fallTopF : TH.fallTop) : (TH.fall[S.themeKey] || []).concat(S.themeKey === 'mix' || !TH.fall[S.themeKey] ? TH.fall.any : []);
+    /* 女性の体で攻めなら跨る側（ふたなりは男性の体で書く fallTop）。恋愛対象が女性の、女性の挑戦者は女性の魔物に堕とされる（fallFF） */
+    var P = window.HK.Pos, fem = P ? P.isF(h) : h.gender === 'f';
+    var top = isTop(h), l = top ? (fem && TH.fallTopF ? TH.fallTopF : TH.fallTop) : (TH.fall[S.themeKey] || []).concat(S.themeKey === 'mix' || !TH.fall[S.themeKey] ? TH.fall.any : []);
     if (!top && TH.fall[S.themeKey] && S.rng() < 0.3) l = l.concat(TH.fall.any);
+    if (!top && fem && h.likes === 'f' && TH.fallFF) l = (TH.fallFF[S.themeKey] || []).concat(TH.fallFF.any);
     if (!l || !l.length) return '';
-    return fmt(S, TV.voice(S.rng, pick(S, l), h, h), h.captor || S.lastEv);
+    /* 態度ごとの結びを添える */
+    var cd = TH.coda && TH.coda[h.persona];
+    return fmt(S, TV.voice(S.rng, pick(S, l), h, h) + (cd ? '\n\n' + pick(S, cd) : ''), h.captor || S.lastEv);
   }
   DG.fallHero = function (S, h) {
     if (h.fallLogged) return;
