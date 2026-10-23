@@ -674,7 +674,15 @@
     return top.map(function (p) { return res.chars[p.a].name + '×' + res.chars[p.b].name + '＝' + p.name; }).join('、');
   }
 
+  /* あとで読む分（js/bundle-late.js）がまだのうちに動かそうとしたら、読み終わるのを待ってから動かす */
+  var pendingSim = null;
+  HK.onLate = function () {
+    if (HK.LATE_FAILED) toast('データの一部を読み込めませんでした。ページを読み込み直してください');
+    if (tab === 'cast') renderCast(); else if (tab === 'box') renderBox();
+    if (pendingSim) { var ps = pendingSim; pendingSim = null; simulate(ps[0], ps[1]); }
+  };
   function simulate(input, record) {
+    if (HK.LATE_READY === false) { pendingSim = [input, record]; toast('データを読み込んでいます。終わりしだい動かします…'); return; }
     var res;
     try { res = HK.simulate(input); }
     catch (err) { toast('シミュレーション中にエラーが起きました：' + err.message); if (window.console) console.error(err); return; }

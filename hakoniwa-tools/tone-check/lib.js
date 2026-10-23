@@ -16,7 +16,8 @@ async function openBuild(dir, hash) {
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
   await page.goto('file://' + path.resolve(dir) + '/index.html' + (hash ? '#' + hash : ''));
-  await page.waitForFunction(() => window.HK && window.HK.simulate && window.HK.TONE_KEYS);
+  /* あとで読む分（bundle-late.js）があれば、読み終わるまで待つ */
+  await page.waitForFunction(() => window.HK && window.HK.simulate && window.HK.TONE_KEYS && window.HK.LATE_READY !== false, null, { timeout: 120000 });
   return { browser, page, errors };
 }
 module.exports = { openBuild };
