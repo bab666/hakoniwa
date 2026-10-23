@@ -119,6 +119,8 @@
     S0.env = obj(S0.env); S0.glob = obj(S0.glob); S0.per = obj(S0.per); S0.join = obj(S0.join);
     S0.seed = str(S0.seed, 12).replace(/[^\d]/g, '');
     if (typeof S0.teacher !== 'string') S0.teacher = '';
+    if (typeof S0.randFrom !== 'string') S0.randFrom = '';
+    S0.randN = Math.max(0, Math.min(100, parseInt(S0.randN, 10) || 0)) || '';
     normRefs(S0);
     return S0;
   }
@@ -608,7 +610,7 @@
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
       '<h2 class="sec">' + (scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
       (scen.castHint || scen.solo ? '<p class="hint">' + (scen.castHint ? esc(scen.castHint) : 'この箱庭は一人用です。チェックを入れた住人が挑みます。' + (HK.SAFE_ON ? '' : '登場人物はすべて成人として扱います。')) + '</p>' : '') +
-      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p><div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return c.group === g; }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button></span>'; }).join('') + '</div>' : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th><th>最初の行動</th><th>短期目標</th>' + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
+      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p><div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return c.group === g; }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button></span>'; }).join('') + '</div>' : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th><th>最初の行動</th><th>短期目標</th>' + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
       (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、カードの「この箱庭のTIPS」にあります。</p>' : '') +
       (sexCols && S.chars.length ? '<p class="hint" style="margin-top:8px">性別と恋愛対象は、住人タブの ⚙️ 設定と同じものです。</p>' : '') +
       (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') +
@@ -616,6 +618,16 @@
     $('#view-box').innerHTML = html;
   }
 
+  /* 人数を決めてランダムに参加者を選ぶ（対象は全員か、グループ一つ） */
+  function randRow(jmax) {
+    var gs = groupsOf(), from = S.randFrom && gs.indexOf(S.randFrom) >= 0 ? S.randFrom : '';
+    var pool = S.chars.filter(function (c) { return !from || c.group === from; }).length, mx = Math.min(jmax, pool), mn = Math.min(smin(S.scenId), mx);
+    var n = HK.clamp(+S.randN || Math.min(mx, Math.max(mn, 4)), mn, mx);
+    return '<div class="row randjoin" style="margin-bottom:8px;gap:6px;flex-wrap:wrap"><span class="hint" style="margin:0">ランダムに選ぶ：</span>' +
+      (gs.length ? '<select id="randfrom" data-f="randfrom" aria-label="ランダムに選ぶ対象"><option value="">住人全員から</option>' + gs.map(function (g) { return '<option value="' + esc(g) + '"' + (g === from ? ' selected' : '') + '>【' + esc(g) + '】から</option>'; }).join('') + '</select>' : '') +
+      '<input type="number" id="randn" data-f="randn" min="' + mn + '" max="' + mx + '" value="' + n + '" inputmode="numeric" style="width:4.5em" aria-label="ランダムに選ぶ人数"><span class="hint" style="margin:0">人</span>' +
+      '<button class="btn small" data-act="joinrand"' + (mx < 1 ? ' disabled' : '') + '>ランダムに選ぶ</button></div>';
+  }
   function envNow() {
     var env = {};
     HK.SCENARIOS[S.scenId].env.forEach(function (e) { env[e.id] = envVal(e, S.scenId); });
@@ -675,6 +687,8 @@
       HK.store.set('history', hist);
     }
     setTab('result');
+    /* 箱庭を動かしたら、結果の頭（画面のいちばん上）から読めるように */
+    if (record) window.scrollTo(0, 0);
   }
 
   function run(newSeed) {
@@ -787,6 +801,16 @@
         sortByGroup(); save();
         if (document.getElementById('castlist')) renderCast();
         renderBox(); toast('グループ順に並べました'); break;
+      case 'joinrand':
+        var rf = S.randFrom || '', rpool = S.chars.filter(function (c) { return !rf || c.group === rf; });
+        var rmx = Math.min(smax(S.scenId), rpool.length), rin = $('#randn'), rn = HK.clamp(parseInt(rin && rin.value, 10) || 0, Math.min(smin(S.scenId), rmx), rmx);
+        S.randN = rn;
+        var sh = rpool.slice();
+        for (var ri = sh.length - 1; ri > 0; ri--) { var rj = Math.floor(Math.random() * (ri + 1)), rt = sh[ri]; sh[ri] = sh[rj]; sh[rj] = rt; }
+        var rpick = sh.slice(0, rn).map(function (c) { return c.id; });
+        S.join = S.join || {}; S.join[S.scenId] = S.chars.filter(function (c) { return rpick.indexOf(c.id) >= 0; }).map(function (c) { return c.id; });
+        toast((rf ? '【' + rf + '】から' : '') + rn + '人をランダムに選びました：' + S.chars.filter(function (c) { return rpick.indexOf(c.id) >= 0; }).map(function (c) { return c.name; }).join('・'));
+        save(); renderBox(); break;
       case 'joinnone':
         S.join = S.join || {}; S.join[S.scenId] = []; save(); renderBox(); break;
       case 'gobox': setTab('box'); break;
@@ -927,6 +951,8 @@
     }
     else if (f === 'seed') S.seed = t.value.replace(/[^\d]/g, '');
     else if (f === 'teacher') { S.teacher = t.value; save(); renderBox(); return; }
+    else if (f === 'randfrom') { S.randFrom = t.value; save(); renderBox(); return; }
+    else if (f === 'randn') S.randN = parseInt(t.value, 10) || '';
     save();
   }
   /* 一部の住人だけ書き出す：チェックの切り替え */
@@ -1026,6 +1052,25 @@
 
   HK.UI = HK.UI || {};
   HK.UI.state = function () { return S; };
+  /* 画面の上へ／下へ移動するボタン（右下に固定） */
+  (function () {
+    if (document.getElementById('pagejump')) return;
+    var st = document.createElement('style');
+    st.textContent = '#pagejump{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px;z-index:50}' +
+      '#pagejump button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--accent);font-size:18px;line-height:1;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.15);opacity:.88}' +
+      '#pagejump button:hover{opacity:1;border-color:var(--accent)}@media print{#pagejump{display:none}}';
+    document.head.appendChild(st);
+    var d = document.createElement('div');
+    d.id = 'pagejump';
+    d.innerHTML = '<button type="button" data-jump="top" aria-label="画面のいちばん上へ" title="いちばん上へ">↑</button><button type="button" data-jump="bottom" aria-label="画面のいちばん下へ" title="いちばん下へ">↓</button>';
+    d.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-jump]');
+      if (!b) return;
+      var y = b.dataset.jump === 'top' ? 0 : Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+      try { window.scrollTo({ top: y, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, y); }
+    });
+    document.body.appendChild(d);
+  })();
   HK.UI.save = save; HK.UI.renderCast = renderCast; HK.UI.cleanTies = cleanTies; HK.UI.toast = toast;
   HK.UI.refresh = function () { setTab(tab); };
   HK.UI.autoTone = autoTone;
