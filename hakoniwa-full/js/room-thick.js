@@ -3,7 +3,10 @@
    道具を使う場面（opt.toolText）、スピード型（speed：縛った側が動く）、女性どうしの場面を、すべて厚くする。
    リード役の決め方・敵視の強引さ・受け攻めの指定は room-lewd.js と同じ。文は thick-sex.js（HK.ThickSex）。
    形（男性×／女性が跨る／女性どうし）は二人の性別から決まる（thick-sex.js）。女性どうしの道具は、挿入の言葉を使わない書き方で。
-   嫉妬で取り戻しに行った場面（solo-room-jealous.js の opt.jealous）で、嫉妬した本人が攻めのときだけ、首を押さえる書き方がありうる */
+   嫉妬で取り戻しに行った場面（solo-room-jealous.js の opt.jealous）で、嫉妬した本人が攻めのときだけ、首を押さえる書き方がありうる
+   設定「エッチの描写（R18）」（solo-room-jealous.js で足す）：厚く（既定）／まぜる／短く（room-lewd.js の一段落版をそのまま使う）。
+   厚い版でも、一段落版の始まり・二回目の入り・媚薬・余韻・最中と体位の文（女性どうしは指・舌・木箱の玩具）を段の候補に混ぜる。
+   受けの態度（persona 9種）ごとに、始まり・果てた直後・事後の様子を添える */
 (function () {
   'use strict';
   var HK = window.HK, LW = HK.RoomLewd, T = HK.ThickSex;
@@ -31,34 +34,112 @@
     will: L('終わったあと、{b}は{a}の腕の中で、しばらく扉の方を見なかった。{a}は{b}の背中に毛布をかけて、汗の引いていく肩を撫で続けた。|{a}と{b}は汗ばんだ額を合わせたまま、息が整うのを待った。{b}は{a}の胸に頬を寄せ、規則正しい鼓動を聞いていた。|二人は狭い簡易ベッドで毛布にくるまり、指を絡めたまま天井の白い照明を見上げていた。'),
     des: L('終わったあと、二人は背中合わせで服を着た。どちらも何も言わなかった。シーツに残った熱だけが、妙に長く消えなかった。|{a}は「……ごめん」と言った。{b}は首を振ったが、顔は上げなかった。白い照明が、やけに眩しかった。|{b}は乱れた服を整えながら、さっきの自分の声を思い出して顔を覆った。'),
     aphro: L('媚薬が抜けるまで、二人は何度も求め合った。正気に戻ったとき、どちらも顔を上げられなかった。|熱が引いたあと、{b}は顔を覆って「全部、媚薬のせいだから」と繰り返した。{a}は「うん」とだけ答えて、乱れた髪を直してやった。'),
-    repeat: L('二人はシーツに沈んだまま、しばらく天井を見ていた。{b}の指が、まだ{a}の手を探していた。|{a}は{b}の汗ばんだ髪に顔を埋め、「もう一回は、さすがに無理」と笑った。'),
-    speed: L('{a}は手早く{b}の手首をほどき、赤くなった跡を指でさすった。|{a}は縛り目をほどいてから、{b}の乱れた服を黙って直してやった。')
+    repeat: L('二人はシーツに沈んだまま、しばらく天井を見ていた。{b}の指が、まだ{a}の手を探していた。|{a}は{b}の汗ばんだ髪に顔を埋め、「もう一回は、さすがに無理」と笑った。|{a}は{b}の背中に毛布を掛け直し、「回数、ちゃんと数えてる？」と訊いた。{b}は「もう覚えてない」と笑った。|{b}は{a}の腕の中で、さっきより少しだけ自然に呼吸ができていることに気づいた。|シーツはもう、どこが乾いているのか分からなかった。二人は顔を見合わせて、少しだけ笑った。'),
+    speed: L('{a}は手早く{b}の手首をほどき、赤くなった跡を指でさすった。|{a}は縛り目をほどいてから、{b}の乱れた服を黙って直してやった。|{a}は{b}の手首の赤い跡に、そっと唇を押しあてた。「痛かった？」|ほどいた紐を床に落とすと、{b}は自由になった腕で、すぐに{a}を抱き寄せた。|{a}は{b}の手首をさすりながら、「次は、ほどいたままで」と小さく言った。')
   };
+  /* 媚薬の余韻を一文足す（媚薬の甘い匂いが抜けていく） */
+  AFTER.aphro.push('媚薬の甘い匂いが薄れていくにつれて、二人の呼吸もようやく落ち着いていった。{b}は{a}の胸に額を押しつけたまま、しばらく動かなかった。');
   var OPENED = /扉|錠|出られる|行こう/;
+
+  /* ---------- 一段落版（room-lewd*.js）の文を、厚い版の段の候補に混ぜる ----------
+     始まり（型ごと）・二回目の入り・媚薬・余韻はそのまま候補に足す。最中と体位の文（SPECIAL・受けが跨る NORI）は
+     「感じていく」段落のあとに、体位を変える一段落として差し込む（果てる・縛る・髪を掴む文は除く） */
+  var LP = LW.POOLS || {}, LF = LW.FF_POOLS || {};
+  function cat(a, b) { return (a || []).concat(b || []); }
+  ['will', 'des', 'aphro'].forEach(function (m) { if (LP.AFTER && LP.AFTER[m]) AFTER[m] = AFTER[m].concat(LP.AFTER[m]); });
+  /* 女性が攻め・男性が受け（fm）の、白い部屋ならではの始まりと、体位を変える段落（女性が跨って主導する） */
+  var ROOM_FM = L('{a}は扉の紙を指で弾いて、「条件、こっちが仕切るから」と{b}を簡易ベッドに押し倒した。|{a}は{b}を白い壁際に追い詰め、その胸に手をついて見上げた。「逃げ場、ないね」|{a}は{b}を仰向けに寝かせると、その腰に跨って監視カメラを振り返った。「見せつけてあげよっか」|{a}は{b}の両手首を簡易ベッドの柵に押さえつけ、上から唇を塞いだ。|白い照明を背に、{a}は{b}の上に跨って、ゆっくりとシャツのボタンを外していった。');
+  var MID_FM = L('{a}は{b}の胸に両手をつき、角度を変えて腰を落とし直した。簡易ベッドが、白い部屋に響くほど軋んだ。|{a}は繋がったまま上体を倒し、{b}の耳元で「まだ、だめ」と囁いた。腰だけが、ゆっくりと円を描き続けた。|{a}は{b}の手を自分の胸に導き、その上に自分の手を重ねた。見下ろす目が、楽しそうに細められた。|{a}は一度腰を浮かせて、{b}が息を詰めるのを眺めてから、また深く沈んだ。|{a}は背中を反らせて{b}の膝に手をつき、自分のいちばん好きな深さを探すように腰を揺らした。');
+  var NO_MID = /達し|イカせ|イッ|イか|果て|限界|負け|音を上げ|縛|ネクタイ|髪を掴|首筋に何度も歯/;
+
+  /* ---------- 箱庭固有の態度（persona）の書き分け：受け {b} の態度ごと ---------- */
+  /* 始まり：条件を前にした受けの様子（はじめての場面だけ。始まりの段落に添える） */
+  var OPEN_PS = {
+    proud: L('{b}は扉の紙を一瞥して、「……条件だからな。勘違いするなよ」と言った。声が、少しだけ上ずっていた。|{b}は腕を組んだまま、「さっさと済ませろ」と顎をしゃくった。耳まで赤かった。|{b}は{a}の視線を真っ向から受け止めた。「……好きにすればいい」'),
+    stern: L('{b}は自分で上着を畳んでベッドの端に置き、それから{a}に向き直った。|{b}は「規則は規則だ」と自分に言い聞かせるように呟き、目を閉じた。|{b}は背筋を伸ばしたまま、{a}の手が肩に触れるのを待った。'),
+    tsun: L('{b}は「べ、別に、期待なんかしてないから」と言いながら、{a}のほうへ一歩寄った。|{b}はそっぽを向いたまま、{a}の手首を掴んで自分の頬に当てた。|「条件のためだからね。それだけだから」――{b}は何度も念を押した。'),
+    gentle: L('{b}は{a}の手を取り、「大丈夫。二人なら」と微笑んだ。|{b}は{a}の強張った肩をそっと撫で、「急がなくていいよ」と囁いた。|{b}は白い毛布を広げて、{a}をその中に招き入れた。'),
+    devoted: L('{b}は「{a}になら、いい」と小さく言って、自分から上着のボタンを外した。|{b}は{a}の胸に額を預けて、「全部、任せる」と囁いた。|{b}は{a}の手を両手で包み、そのまま自分の胸元へ導いた。'),
+    cool: L('{b}は扉の紙をもう一度読み、「条件は明確だ」と頷いてから、自分で服を緩めた。|{b}は表情を変えずに{a}を見上げた。握り返した指先だけが、わずかに震えていた。|{b}は「監視カメラの死角はあそこだ」と淡々と指さした。'),
+    free: L('{b}は「どうせなら楽しもうよ」と笑って、{a}の首に腕を回した。|{b}は簡易ベッドに勢いよく飛び乗り、「ほら、早く」と手招きした。|{b}は監視カメラにひらひらと手を振ってから、{a}に唇を寄せた。'),
+    shy: L('{b}は真っ赤な顔で、「照明、もう少し暗くできないかな」と消え入りそうな声で言った。|{b}は{a}と目が合うたびに視線を落とし、毛布の端をぎゅっと握った。|{b}は{a}の胸に顔を埋めて、しばらく顔を上げられなかった。'),
+    polite: L('{b}は「不束者ですが、よろしくお願いします」と律儀に頭を下げた。|{b}は「失礼します」と小さく断ってから、{a}の手に自分の手を重ねた。|{b}は服を丁寧に畳んで床の隅に置き、それから恥ずかしそうに{a}を振り返った。')
+  };
+  /* 山場のあと：果てた直後の受けの様子（果てる段落と余韻のあいだに一段落） */
+  var PEAK_PS = {
+    proud: L('{b}は荒い息のまま天井を睨み、「……今のは、条件だからだ」と言い張った。説得力はなかった。|{b}は崩れた顔を腕で隠し、それでも{a}の手は離さなかった。|{b}は悔しそうに唇を噛んだ。「……覚えてろ」――その目は、まだ潤んでいた。'),
+    stern: L('{b}は乱れた呼吸を数えようとして、途中でやめた。|{b}は「……取り乱した」とだけ言い、{a}の肩に額を押しつけた。|{b}は白い天井を見上げたまま、しばらく自分の鼓動を聞いていた。'),
+    tsun: L('{b}は「い、今のは聞かなかったことにして」と毛布をかぶった。|{b}は{a}の胸を拳で軽く叩いた。「……ばか」――叩いた手は、そのまま{a}の背中に回った。|{b}は顔を背けたまま、{a}の指に自分の指を絡めた。'),
+    gentle: L('{b}は汗ばんだ{a}の髪を指で梳き、「頑張ったね」と笑った。|{b}は{a}を抱き寄せて、背中をゆっくり撫でた。白い部屋の静けさが戻ってきた。|{b}はとろけた目のまま、{a}の額にキスを落とした。'),
+    devoted: L('{b}は潤んだ目で{a}を見上げ、「……ちゃんと、できてた？」と訊いた。|{b}は{a}にしがみついたまま、「まだ、離れないで」と囁いた。|{b}は震える指で{a}の頬に触れ、幸せそうに目を細めた。'),
+    cool: L('{b}は乱れた前髪の下で目を閉じ、「……想定より、ずっと」とだけ呟いた。|{b}はしばらく黙っていたが、やがて小さく息を吐いた。「計算が、全部飛んだ」|{b}のいつもの冷静な顔は、なかなか戻ってこなかった。'),
+    free: L('{b}は笑いながら仰向けに転がった。「やば。この部屋、ちょっと好きかも」|{b}は息を切らしたまま{a}に抱きつき、「ね、もう一回」とねだった。|{b}は満足そうに伸びをして、{a}の肩に頭を預けた。'),
+    shy: L('{b}は毛布を頭まで引き上げて、中から「……見てないよね」と訊いた。|{b}は自分の声を思い出して、{a}の胸に顔を押しつけたまま動けなくなった。|{b}は真っ赤な顔で、毛布の端から{a}を盗み見た。'),
+    polite: L('{b}は乱れた息の合間に、「……お見苦しいところを」と律儀に詫びた。|{b}は崩れた髪を整えようとして、指がまだ震えていることに気づいた。|{b}は「とても、その……ありがとうございました」と言ってから、自分の言葉に赤くなった。')
+  };
+  /* 事後：余韻の文のあとに置く受けの様子（扉が開くかどうかを問わない書き方） */
+  var AFTER_PS = {
+    proud: L('{b}は誰より先に服を着て、何事もなかったように壁にもたれた。首筋の痕だけが残っていた。|{b}は「水」とだけ言って手を出した。{a}がボトルを渡すと、黙って受け取った。|{b}は乱れたシーツを見下ろし、「……悪くはなかった」と認めた。'),
+    stern: L('{b}は脱いだ服を一枚ずつ拾い、きちんと畳み直した。|{b}は時計を見上げて、「残り時間を確認しておく」といつもの声で言った。|{b}は乱れたシーツを無言で直した。指先がまだ少し震えていた。'),
+    tsun: L('{b}は背中を向けたまま、「……寒いだけだから」と言って{a}の腕を自分に回させた。|{b}は「別に、よかったとか思ってないから」と言った。誰も訊いていなかった。|{b}は{a}の寝顔を見ていたことに気づかれて、慌てて目をそらした。'),
+    gentle: L('{b}は備え付けの水を二つ持ってきて、一つを{a}に手渡した。|{b}は{a}の頭を胸に抱いたまま、ゆっくりと背中を撫で続けた。|{b}は毛布を{a}の肩まで引き上げて、「少し休もう」と言った。'),
+    devoted: L('{b}は{a}の汗をタオルでそっと拭い、それから自分も隣に横になった。|{b}は{a}の腕枕の中で、眠るのが惜しくて目を開けていた。|{b}は「何か、飲むもの持ってくる」と言って、{a}の返事を待たずにベッドを抜け出した。'),
+    cool: L('{b}は天井を見上げたまま、「条件の解釈としては、これで十分だ」と呟いた。|{b}はシャワー室から戻ると、もういつもの涼しい顔だった。|{b}は{a}の腕の中で、珍しく何も考えずに目を閉じた。'),
+    free: L('{b}は大の字になって、「あー、すっきりした」と言った。|{b}は監視カメラに向かって、もう一度ひらひらと手を振った。|{b}は{a}の背中に指で落書きをして、「何て書いたか当てて」と笑った。'),
+    shy: L('{b}は服を着るあいだ、ずっと{a}に背中を向けていた。|{b}は毛布にくるまったまま、しばらく顔を出さなかった。|{b}は自分の首筋の痕に気づいて、声にならない声を上げた。'),
+    polite: L('{b}は乱れた髪を手櫛で整え、「お水を、いただけますか」と訊いた。|{b}は身支度を終えると、{a}に向かって小さく頭を下げた。|{b}は{a}の隣で背筋を伸ばして座り直し、それから少しだけ{a}の肩にもたれた。')
+  };
+  function psOf(c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || c.persona || 'gentle'; }
+  /* 点検用（文の数え直し） */
+  LW.THICK = { ROOM: ROOM, ROOM_FM: ROOM_FM, MID_FM: MID_FM, APHRO: APHRO, REPEAT: REPEAT, SPEED: SPEED, FF_TOY: FF_TOY, AFTER: AFTER, OPEN_PS: OPEN_PS, PEAK_PS: PEAK_PS, AFTER_PS: AFTER_PS };
 
   var s0 = LW.scene;
   LW.scene = function (ctx, a, b, mode, opt) {
     opt = opt || {};
     if (HK.SAFE_ON || !(mode === 'will' || mode === 'des' || mode === 'aphro' || mode === 'repeat' || mode === 'speed')) return s0.apply(this, arguments);
     if (HK.Pos && !HK.Pos.okSex(a, b)) return s0.apply(this, arguments);
+    /* 設定「エッチの描写（R18）」：短く＝一段落版（room-lewd.js）、まぜる＝半々 */
+    var lv = (ctx.env && ctx.env.rmlewd) || 'thick';
+    if (lv === 'short' || (lv === 'mix' && ctx.rng() < 0.5)) return s0.apply(this, arguments);
     var lr = mode === 'speed' ? (HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b]) : opt.lead ? (HK.Pos ? HK.Pos.order(a, b, opt.toolText ? [a, b] : ctx.rng() < 0.6 ? HK.Pos.fbFor(a, b) : [a, b]) : [a, b]) : LW.lead(ctx, a, b), A = lr[0], B = lr[1];
     var fx = HK.Pos ? HK.Pos.fixed(A, B) : false;
     var HKr = HK.HateKit, rough = HKr ? HKr.forcer(ctx, A, B) : null;
     if (rough && rough === B && !fx) { var sw = A; A = B; B = sw; }
-    var ff = HK.Pos && HK.Pos.ff(A, B);
+    var P = HK.Pos, ff = P && P.ff(A, B), fm = !ff && P && P.isF(A) && !P.isF(B);
     var x = A.tr || {}, exp = ctx.stat ? ctx.stat(A, 'exp') : null;
     var st = rough ? 'rough' : mode === 'des' && x.cold > 0.55 ? 'clinical' : T.style(A, exp);
     var pick = function (arr) { return ctx.pick(arr); };
+    var tools = !!(ctx.flags && ctx.flags.toolbox), riba = P && P.bothRiba && P.bothRiba(A, B), MUT = P && P.MUTUAL_RE;
+    var noMut = function (l) { return riba || !MUT || !MUT.test(l); };
+    var ps = psOf(B);
     var head = rough && HK.TL ? A.name + 'は' + B.name + 'の手首を掴んで、ベッドへ乱暴に押し倒した。' + HK.TL.line(A, 'H_ROUGH', B) : '';
     var open;
-    if (opt.toolText) open = head + opt.toolText.replace(/――$/, '') + (ff && ctx.rng() < 0.5 ? pick(FF_TOY) : '');
-    else if (mode === 'repeat') open = head + pick(REPEAT);
-    else if (mode === 'speed') open = head + pick(SPEED);
-    else open = head + pick(ROOM[st] || ROOM.gentle) + pick(T.OPEN[st] || T.OPEN.gentle);
-    if (mode === 'aphro') open += pick(APHRO);
+    if (opt.toolText) open = head + opt.toolText.replace(/――$/, '') + (ff && ctx.rng() < 0.5 ? pick(FF_TOY.filter(noMut)) : '');
+    else if (mode === 'repeat') open = head + pick(ff ? cat(REPEAT, LF.REPEAT) : fm ? REPEAT : cat(REPEAT, LW.REPEAT));
+    else if (mode === 'speed') open = head + pick(ff ? cat(SPEED, LF.SPEED) : SPEED);
+    else if (fm && ctx.rng() < 0.6) open = head + pick(ROOM_FM);
+    else open = head + pick(ROOM[st] || ROOM.gentle) + pick(cat(T.OPEN[st] || T.OPEN.gentle, ff ? LF.OPEN && LF.OPEN[st] : fm ? null : LP.OPEN && LP.OPEN[st]));
+    if (mode === 'aphro') open += pick(fm ? APHRO : cat(APHRO, LW.APHRO));
+    /* はじめての場面では、受けの態度ごとの様子を始まりに添える */
+    if (!opt.toolText && mode !== 'repeat' && mode !== 'speed' && ctx.rng() < 0.65) open += pick(OPEN_PS[ps] || OPEN_PS.gentle);
+    /* 体位を変える一段落（感じていく段落のあと）：男性が動く形は一段落版の最中・体位の文、女性どうしは指・舌（木箱があれば玩具も）、女性が攻めは跨る文 */
+    var mid = '';
+    if (ctx.rng() < 0.6) {
+      var mp;
+      if (ff) mp = cat(LF.BODY && LF.BODY[st], tools ? LF.TOY : null).filter(noMut);
+      else if (fm) mp = MID_FM;
+      else {
+        var sp = (LW.SPECIAL || []).filter(function (o) { return o.st.indexOf(st) >= 0 && !(fx && o.swap) && !(P && P.hardTop(A) && o.swap); }).map(function (o) { return o.t.replace(/私／俺/, B.tr && B.tr.cp + B.tr.fc > 1 ? '俺' : '私'); });
+        mp = cat(cat(sp, LP.BODY && LP.BODY[st]), P && P.nori(B) ? LW.NORI : null);
+      }
+      mp = (mp || []).filter(function (l) { return !NO_MID.test(l); });
+      if (mp.length) mid = pick(mp) + (LW.react && ctx.rng() < 0.5 ? LW.react(ctx, B) : '');
+    }
+    var pk2 = mid ? function (arr) { var s = pick(arr); if (arr === T.PLACE.room && mid) { s = mid + '\n\n' + s; mid = ''; } return s; } : pick;
     var API = HK.RoomAPI, opened = !API || !API.pairDone || API.pairDone(ctx, a, b);
-    var al = AFTER[mode] || AFTER.will, af = opened ? al : al.filter(function (l) { return !OPENED.test(l); });
-    var r = T.scene({ pick: pick, rng: ctx.rng, a: A, b: B, style: st, open: open, after: pick(af.length ? af : al), place: 'room', jealous: !!opt.jealous && A === a });
+    var al = ff && LF.AFTER && LF.AFTER[mode] ? AFTER[mode].concat(LF.AFTER[mode]) : AFTER[mode] || AFTER.will, af = opened ? al : al.filter(function (l) { return !OPENED.test(l); });
+    var tail = (ctx.rng() < 0.7 ? pick(PEAK_PS[ps] || PEAK_PS.gentle) + '\n\n' : '') + pick(af.length ? af : al) + (ctx.rng() < 0.5 ? pick(AFTER_PS[ps] || AFTER_PS.gentle) : '');
+    var r = T.scene({ pick: pk2, rng: ctx.rng, a: A, b: B, style: st, open: open, after: tail, place: 'room', jealous: !!opt.jealous && A === a });
     var txt = ctx.t(r.text, A, B);
     if (ff && HK.FF && HK.FF.fix) txt = HK.FF.fix(ctx, txt, A, B, { tools: !!(ctx.flags && ctx.flags.toolbox) });
     return txt + (opt.dash ? '――' : '');
