@@ -51004,6 +51004,8 @@
   X.install('hole', { from: {}, fix: function (e) { if (typeof e.lewd === 'number') { if (e.wild == null) e.wild = e.lewd; delete e.lewd; } }, desc: '戻ってくる感覚の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝戻ってくる感覚が多くなる' });
   /* 常識改変：もとの「描写の濃さ」（ぼかす・ほどほど・濃いめ）と「描写の作風」をそのまま読み替える（値は同じ）。段落に分けた山場は solo-thick4.js */
   X.install('kaihen', { desc: '施術の描き方。ほのめかす＝内容は数字だけ／ほどほど＝描写する／濃い＝施術の続きや声を多く' });
+  /* サキュバスの一夜：もとの「描写の濃さ」と「描写の作風」をそのまま読み替える（値は同じ）。段落に分けた山場は solo-thick4.js */
+  X.install('succubus', { desc: '搾精の場面の描き方。ほのめかす＝短くぼかす／ほどほど＝描写する／濃い＝より多く深く' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */
