@@ -191,7 +191,9 @@
         else { var na = rng.pick(Z.adj(c.z.area)); c.z.area = na; c.z.path.push(na); endQuest(ctx, c, 'escape'); }
         return;
       }
-      ctx.act2({ actors: [c, o], cat: 'death', text: head + body + fill(ctx.pick(sexual ? (lv === 'high' ? T.dieSex : T.dieFade) : T.eaten), mm), why: whyH + '（その場に、誰もいなかった）', mag: 60 });
+      /* ときどき、襲われてから喰い殺されるまでを一続きで書いた文（R18版の solo-zombie-love.js の CURE_R18・CURE_R18_FADE） */
+      var whole = sexual && Z.CURE_R18 && rng() < 0.35 ? (lv === 'high' ? Z.CURE_R18 : Z.CURE_R18_FADE) : null;
+      ctx.act2({ actors: [c, o], cat: 'death', text: head + (whole ? fill(ctx.pick(T.grab), mm) + fill(ctx.pick(whole), mm) : body + fill(ctx.pick(sexual ? (lv === 'high' ? T.dieSex : T.dieFade) : T.eaten), mm)), why: whyH + '（その場に、誰もいなかった）', mag: 60 });
       ctx.kill(c, null, sexual ? '治療薬で怪物になった' + o.name + 'に、犯されながら喰い殺された' : '治療薬で怪物になった' + o.name + 'に喰われた');
       return;
     }

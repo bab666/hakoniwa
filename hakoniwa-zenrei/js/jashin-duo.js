@@ -131,7 +131,9 @@
         var Pz = HK.Pos, o = Pz.order(a, b, [a, b]);
         if (!Pz.okSex(a, b) || Pz.hardTop(o[1])) return;
         var mm = { a: a.name, b: b.name, t: o[0].name, u: o[1].name };
-        t = ST.fmt(e.intro, mm) + ST.fmt(ok ? e.ok : e.ng, mm);
+        /* 組ごとの文のあとに、協力／因縁ごとの空気・明け方・断られたあとを足して、一本道にしない（R18版の jashin-duo-r18.js） */
+        var X = JS.DUO_R18X && JS.DUO_R18X[foe ? 'foe' : 'ally'];
+        t = ST.fmt(e.intro, mm) + (X && S.rng() < 0.5 ? ST.fmt(ST.pick(S, X.intro), mm) : '') + ST.fmt(ok ? e.ok : e.ng, mm) + (X ? ST.fmt(ST.pick(S, ok ? X.after : X.ng), mm) : '');
         if (ok) { a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1; rel(S, a, b, foe ? 0.35 : 0.6, foe ? '歪んだ関係' : '一夜'); if (!foe) edge(S, a, b, '一夜', 'love'); }
         else rel(S, a, b, -0.5, '決裂');
         mag = 30; key = ok ? a.name + 'と' + b.name + 'の夜' : '';
