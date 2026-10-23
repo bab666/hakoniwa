@@ -32417,15 +32417,21 @@
       }
       /* 罰ゲーム */
       var lasts = (res.lasts || (res.last ? [res.last] : [])).filter(function (x) { return x !== hid; });
-      if (lasts.length > 1 && VA.PENALTY_PAIR && rng() < env.penalty / 100 * 0.7) {
+      /* 罰ゲームの頻度：「毎回」（100）なら必ず。最下位の決まらない企画（全員が脱落せず・当てられる側が最下位など）は、ここまでの得点がいちばん低い人 */
+      var penOn = env.penalty >= 100 || rng() < env.penalty / 100 * 0.7, penWhy = 'この企画の最下位';
+      if (penOn && !lasts.length && !(res.last && res.last !== hid)) {
+        var low = AP.filter(function (x) { return x !== hid; }).sort(function (a2, b2) { return a2.m.score - b2.m.score; })[0];
+        if (low) { res.last = low; penWhy = 'この企画では最下位が決まらず、ここまでの得点がいちばん低い'; }
+      }
+      if (lasts.length > 1 && VA.PENALTY_PAIR && penOn) {
         var l2 = lasts.slice(), safe2 = !grpOk(l2);
         l2.forEach(function (x) { x.cnt.penalty++; x.m.shame = clamp(x.m.shame + 18, 0, 100); x.m.pop = clamp(x.m.pop + 6, 0, 100); });
         rating += 0.8;
         ST.sayB(S, { actors: l2, tag: '罰ゲーム', text: fmtN(safe2 ? 'PENALTY_SAFE' : 'PENALTY_PAIR', l2) + (rng() < 0.6 ? quote(l2[0], VA.LOSE) : '') + mcr('penalty', 0.45), why: 'この企画の同率最下位', mag: 24 }, nmList(l2) + 'は罰ゲーム', true);
-      } else if (res.last && res.last !== hid && rng() < env.penalty / 100 * 0.7) {
+      } else if (res.last && res.last !== hid && penOn) {
         var lp = res.last;
         lp.cnt.penalty++; lp.m.shame = clamp(lp.m.shame + 18, 0, 100); lp.m.pop = clamp(lp.m.pop + 6, 0, 100); rating += 0.5;
-        ST.sayB(S, { actors: [lp], tag: '罰ゲーム', text: fill(ST.pick(S, hTop(lp) ? VA.PENALTY.filter(function (x) { return !VA.PENALTY_RECV_RE.test(x); }).concat(VA.PENALTY_TOP) : VA.PENALTY), lp) + (rng() < 0.5 ? quote(lp, VA.LOSE) : '') + mcr('penalty', 0.45), why: 'この企画の最下位', mag: 22 }, lp.name + 'は罰ゲーム');
+        ST.sayB(S, { actors: [lp], tag: '罰ゲーム', text: fill(ST.pick(S, hTop(lp) ? VA.PENALTY.filter(function (x) { return !VA.PENALTY_RECV_RE.test(x); }).concat(VA.PENALTY_TOP) : VA.PENALTY), lp) + (rng() < 0.5 ? quote(lp, VA.LOSE) : '') + mcr('penalty', 0.45), why: penWhy, mag: 22 }, lp.name + 'は罰ゲーム', true);
       }
       if (rng() < 0.25) sayIf({ kind: 'phase', text: fill(ST.pick(S, VA.MC_SAY)) });
       ST.flushShort(S, 'ほかの結果：');
