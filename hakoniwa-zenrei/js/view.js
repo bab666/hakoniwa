@@ -13,9 +13,9 @@
 
   /* 本文中のキャラ名に色をつける */
   function paint(text, res) {
-    /* 山場の長い描写は段落（改行）で区切ってある */
-    var t = esc(text).replace(/\n/g, '<br>');
+    /* 山場の長い描写は段落（改行）で区切ってある。長い文は段落と台詞で改行する（HK.fmtLong） */
     var list = res.chars.map(function (c) { return { n: esc(c.name), i: c.i }; }).sort(function (a, b) { return b.n.length - a.n.length; });
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.chars.map(function (c) { return c.name; })) : text).replace(/\n/g, '<br>');
     if (!list.length) return t;
     var re = new RegExp(list.map(function (x) { return x.n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
     return t.replace(re, function (m) {
@@ -420,9 +420,10 @@
     });
     L.push('');
     L.push('■ 時系列');
+    var nmList = res.chars.map(function (c) { return c.name; });
     res.log.forEach(function (e) {
       if (e.kind === 'step') L.push('― ' + e.label);
-      else L.push('　' + e.text);
+      else L.push('　' + (HK.fmtLong ? HK.fmtLong(e.text, nmList) : e.text));
     });
     return L.join('\n');
   };
