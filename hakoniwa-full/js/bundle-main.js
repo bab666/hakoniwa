@@ -6329,7 +6329,12 @@
   var T = {};
   var E = HK.Ero = {
     OPT: { id: 'style', label: '描写の作風', type: 'select', def: 'novel', options: [{ v: 'novel', label: '小説調' }, { v: 'ero', label: '男性向け（擬音・♡喘ぎ・おねだり）' }] },
-    on: function (S) { return !HK.SAFE_ON && !!(S && S.env && S.env.style === 'ero'); },
+    on: function (S) {
+      if (HK.SAFE_ON || !(S && S.env && S.env.style === 'ero')) return false;
+      /* 描写の有無が「ほのめかす」なら使わない（lewd-unify.js） */
+      var X = HK.Lewd, id = S.scen && S.scen.id;
+      return !(X && id && X.conf(id) && X.lv(S.env) === 'low');
+    },
     add: function (scen, tbl) { var o = T[scen] = T[scen] || {}; Object.keys(tbl).forEach(function (k) { o[k] = (o[k] || []).concat(tbl[k]); }); },
     has: function (scen, key) { return !!(T[scen] && T[scen][key] && T[scen][key].length); },
     L: function (S, scen, key, base) { return E.on(S) && E.has(scen, key) ? T[scen][key] : base; },
@@ -19746,7 +19751,7 @@
       { id: 'hours', label: '解放までの時間', min: 1, max: 24, def: 6, lo: '1時間', hi: '24時間', unit: '時間' },
       { id: 'traffic', label: '壁の向こうの人通り', min: 0, max: 100, def: 50, lo: '誰も来ない', hi: '行列', desc: '多いほど、解放の瞬間に戻ってくる感覚が増える' },
       { id: 'leak', label: '遮断の不完全さ', min: 0, max: 100, def: 30, lo: '完璧', hi: 'ときどき漏れる', desc: '高いと、遮断中にも一瞬だけ感覚が届く' },
-      { id: 'lewd', label: '向こう側の過激さ', min: 0, max: 100, def: 55, lo: 'いたずら程度', hi: '容赦なし' },
+      { id: 'wild', label: '向こう側の過激さ', min: 0, max: 100, def: 55, lo: 'いたずら程度', hi: '容赦なし' },
       { id: 'release', label: '解放のしかた', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ' }, { v: 'burst', label: '一気に戻る' }, { v: 'drip', label: '少しずつ戻る' }, { v: 'mid', label: '最中に戻る' }, { v: 'late', label: '帰り道で遅れて戻る' }] }
     ].concat(HK.Ero ? [HK.Ero.OPT] : []),
     stats: [
@@ -19814,7 +19819,7 @@
     var lpk = function (arr) { var f = arr.filter(function (x) { return !(topMe && LV.RECV.test(x)); }); return K.pick(S, f.length ? f : arr); };
     function liveFx(be) {
       var tr = LV.tier(h), f = be.fx || {};
-      var r = K.stim(S, 16 + be.lv * 9 + env.lewd / 9, { part: 'belly', defer: true, mind: tr < 2 });
+      var r = K.stim(S, 16 + be.lv * 9 + env.wild / 9, { part: 'belly', defer: true, mind: tr < 2 });
       /* 意志が強いほど、受け入れていくのはゆっくり */
       h.corrupt += (3 + tr * 2 + (f.cum || 0) + (f.tent || 0)) * (1.25 - K.will(h)) * S.k;
       var t2 = LV.tier(h);
@@ -19838,7 +19843,7 @@
     }
     /* 壁の向こうの出来事を、過激さに合わせて選ぶ */
     function beyond() {
-      var lw = env.lewd / 100, wts = [1.2 - lw, 0.6 + lw * 0.2, lw * 1.6];
+      var lw = env.wild / 100, wts = [1.2 - lw, 0.6 + lw * 0.2, lw * 1.6];
       /* 受け攻め：本人が攻めの指定なら、挿入される場面の代わりに「跨られる」場面を使う */
       var list = (X.beyondFor ? X.beyondFor(h, plKey) : X.BEYOND[plKey]).concat(AMB);
       if (hardTop && X.BEYOND_HARD) return K.pick(S, X.BEYOND_HARD[plKey]);
@@ -19888,7 +19893,7 @@
           continue;
         }
         visits++; people += f.n || 0; meta.cum += f.cum || 0; meta.tent += f.tent || 0; meta.mark += f.mark || 0; meta.ride += f.ride || 0;
-        if (!hardTop) stored += (40 + env.lewd * 0.6) * (1 + be.lv * 0.45 + (f.cum || 0) * 0.15 + (f.tent || 0) * 0.12) * (0.7 + rng() * 0.6) * h.sens;
+        if (!hardTop) stored += (40 + env.wild * 0.6) * (1 + be.lv * 0.45 + (f.cum || 0) * 0.15 + (f.tent || 0) * 0.12) * (0.7 + rng() * 0.6) * h.sens;
         var txt = K.fmt(S, be.t.replace(/◯/g, String(H))) + (!hardTop && !f.amb && rng() < 0.55 ? K.fmt(S, pk(S, EL('contrast', X.CONTRAST))) : '');
         say(S, { kind: 'ev', tag: '壁の向こう', text: txt, why: hardTop ? '攻めの指定：手を出そうとした相手を追い払った' : metaWhy() + '（溜まった感覚 ' + Math.round(stored) + '）' });
         if (rng() > 0.5) break;
@@ -19930,7 +19935,7 @@
       /* 遮断の揺らぎ */
       if (!hardTop && rng() < env.leak / 100 * 0.6 && stored > 30) {
         leaks++; hot = 2;
-        var r = K.stim(S, 14 + env.lewd / 10, { part: 'belly', defer: true });
+        var r = K.stim(S, 14 + env.wild / 10, { part: 'belly', defer: true });
         say(S, { kind: 'ev', tag: '揺らぎ', text: K.fmt(S, pk(S, EL('leak', LEAK))) + (r.climaxes.length ? '' : K.tail(S, 0.4, true)), why: '遮断の不完全さ ' + env.leak });
         K.logClimax(S, r.climaxes);
       }
@@ -19991,7 +19996,7 @@
         '途中で遮断が壊れ、そこから先は、壁の向こうで起きることをすべて感じていた。' + (metaL.length ? metaL.join('、') + '。' : ''),
         K.fmt(S, LV.LINE[tierE]) + h.name + 'は' + h.climax + '回果てた。'
       ] };
-      var advL = ['最中に感覚が戻ると、溜まっていた分が一度に届き、そのあとは一つ一つを生で感じる。', '受け入れていく早さは、意志（CP・A・理性）で遅くなり、過激さ ' + env.lewd + '・感じやすさ ' + h.stats.sense + 'で早くなる。'];
+      var advL = ['最中に感覚が戻ると、溜まっていた分が一度に届き、そのあとは一つ一つを生で感じる。', '受け入れていく早さは、意志（CP・A・理性）で遅くなり、過激さ ' + env.wild + '・感じやすさ ' + h.stats.sense + 'で早くなる。'];
       return K.finish(S, input, EL, advL, { meta: pl.n + '・' + H + '時間・最中に戻る', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['感覚が戻ってから', liveN + '回'], [topMe ? '中で果てた回数' : '奥に注がれた回数', meta.cum + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
     }
     K.step(S, early ? '脱出の瞬間' : mode === 'late' ? '解放……？' : '解放');
@@ -20003,6 +20008,8 @@
       o0 = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, RELEASE)) + ' ' + (mode === 'drip' ? K.fmt(S, topMe ? X.DRIP_TOP[0] : pk(S, EL('drip', [X.DRIP[0]]))) : K.fmt(S, pk(S, EL('flood', FLOOD)), { h: ho })), why: '溜まっていた感覚 ' + Math.round(stored) + '（訪問 ' + visits + '回）／解放：' + X.RELEASE_MODE[mode] });
     }
     K.key(S, o0, '感覚が戻った');
+    /* 描写の有無「濃い」（lewd-unify.js）：戻ってくる感覚が多くなる（波が増える） */
+    if (HK.Lewd && HK.Lewd.conf('hole') && HK.Lewd.high(env)) stored = Math.round(stored * 1.3);
     var wave = Math.min(mode === 'drip' ? 10 : 8, Math.max(mode === 'drip' ? 3 : 1, Math.round(stored / (mode === 'drip' ? 55 : 80))));
     var restore = stored, floodThick = false;
     for (var w = 0; w < wave && restore > 0; w++) {
@@ -20048,7 +20055,7 @@
     ].filter(Boolean) };
     var adv = [];
     adv.push('待っている間に削れたのは、' + (h.tr.fc + h.tr.ac > h.tr.a + h.tr.cold ? '想像力（FC・AC）のせい。何も感じないのに、心だけが先に熱くなった。' : '時間そのもの。A・ドライさのおかげで、想像には呑まれにくかった。'));
-    adv.push('戻ってきた感覚の量は、人通り ' + env.traffic + '・過激さ ' + env.lewd + '・感じやすさ ' + h.stats.sense + 'で決まった。解放のしかたは「' + X.RELEASE_MODE[mode] + '」。');
+    adv.push('戻ってきた感覚の量は、人通り ' + env.traffic + '・過激さ ' + env.wild + '・感じやすさ ' + h.stats.sense + 'で決まった。解放のしかたは「' + X.RELEASE_MODE[mode] + '」。');
     if (state !== 'hold') adv.push('精神力（' + h.stats.mind + '）とCP（' + Math.round(h.eg.CP) + '）がもう少しあれば、最後の波に耐えられたかもしれない。');
     return K.finish(S, input, E, adv, { meta: pl.n + '・' + H + '時間・' + X.RELEASE_MODE[mode], estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], [topMe ? '中で果てた回数' : '奥に注がれた回数', meta.cum + '回'], ['触手・道具', meta.tent + '回'], ['遮断の揺らぎ', leaks + '回'], ['解放時の絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
   }
@@ -50993,6 +51000,8 @@
   X.install('dungeon', { from: { trap: function (e) { return typeof e.lewd === 'number' ? e.lewd : null; } }, fix: function (e) { if (typeof e.lewd === 'number') delete e.lewd; }, desc: '陥落の場面の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝堕ちたあとも続くところまで。男性向けは、攻めの挑戦者が魔物を組み伏せる場面だけ' });
   /* マッサージ：もとの「施術の過激さ」（id lewd・数値）は harsh に、「行為の描写」（描写する・軽め）は描写の有無（ほどほど・ほのめかす）に読み替える */
   X.install('massage', { old: ['desc'], fix: function (e) { if (typeof e.lewd === 'number') { if (e.harsh == null) e.harsh = e.lewd; e.lewd = e.desc === 'dark' ? 'low' : 'mid'; } }, from: {}, desc: '施術のあとの描き方。ほのめかす＝暗転して回数だけ／ほどほど＝描写する／濃い＝体位をひとつ多く。男性向けは、客が自分から求めたときと客が主導するときだけ' });
+  /* 感覚遮断穴：もとの「向こう側の過激さ」（id lewd・数値）は wild に。描写の作風は元からある男性向け（solo-hole-ero.js）。濃い＝戻ってくる感覚が多い */
+  X.install('hole', { from: {}, fix: function (e) { if (typeof e.lewd === 'number') { if (e.wild == null) e.wild = e.lewd; delete e.lewd; } }, desc: '戻ってくる感覚の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝戻ってくる感覚が多くなる' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */

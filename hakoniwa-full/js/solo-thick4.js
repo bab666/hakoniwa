@@ -211,7 +211,13 @@
 
   var T4 = HK.Thick4 = {
     /* 小説調の山場を厚くしてよいか（作風「男性向け」・ぼかす・全年齢版では使わない） */
-    ok: function (S, lew) { return !HK.SAFE_ON && !(HK.Ero && HK.Ero.on(S)) && lew !== 'low'; },
+    ok: function (S, lew) {
+      if (HK.SAFE_ON || (HK.Ero && HK.Ero.on(S)) || lew === 'low') return false;
+      /* R18の描写の設定（lewd-unify.js）：ほのめかす・数行で短く（混ぜるなら半分）のときは厚くしない */
+      var X = HK.Lewd, id = S && S.scen && S.scen.id;
+      if (X && id && X.conf(id) && (X.lv(S.env) === 'low' || X.short(S.env, S.rng))) return false;
+      return true;
+    },
     /* 型を、性別に合わせて直す */
     kindFor: function (kind, dom, sub) {
       var df = isF(dom), sf = isF(sub);

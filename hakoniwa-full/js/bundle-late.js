@@ -22404,7 +22404,13 @@
 
   var T4 = HK.Thick4 = {
     /* 小説調の山場を厚くしてよいか（作風「男性向け」・ぼかす・全年齢版では使わない） */
-    ok: function (S, lew) { return !HK.SAFE_ON && !(HK.Ero && HK.Ero.on(S)) && lew !== 'low'; },
+    ok: function (S, lew) {
+      if (HK.SAFE_ON || (HK.Ero && HK.Ero.on(S)) || lew === 'low') return false;
+      /* R18の描写の設定（lewd-unify.js）：ほのめかす・数行で短く（混ぜるなら半分）のときは厚くしない */
+      var X = HK.Lewd, id = S && S.scen && S.scen.id;
+      if (X && id && X.conf(id) && (X.lv(S.env) === 'low' || X.short(S.env, S.rng))) return false;
+      return true;
+    },
     /* 型を、性別に合わせて直す */
     kindFor: function (kind, dom, sub) {
       var df = isF(dom), sf = isF(sub);
@@ -23189,7 +23195,7 @@
   /* 出くわす：st = { live, stored, hardTop, topMe, meta } を更新する。助け出されたら { rescued: 助けた人 } */
   BH.encounter = function (S, st) {
     var h = S.h, rng = S.rng, B = S.behind, env = S.env;
-    var vis = Math.min(2, Math.floor((st.stored / 14 + h.corrupt * 0.6 + (st.live ? h.pleasure * 0.5 : 0) + env.lewd * 0.15) / 25));
+    var vis = Math.min(2, Math.floor((st.stored / 14 + h.corrupt * 0.6 + (st.live ? h.pleasure * 0.5 : 0) + env.wild * 0.15) / 25));
     if (st.hardTop) vis = Math.min(vis, 1);
     var F = function (t, v) { return K.fmt(S, t, v); };
     var t0 = B.length === 1 ? F(K.pick(S, T.arrive1), { b: B[0].name }) : F(K.pick(S, T.arriveN), { n: names(B) });
@@ -23203,7 +23209,7 @@
       if (st.topMe && (b.kind === 'pen' || b.kind === 'finger') && !(HK.Pos && HK.Pos.hardTop(b))) b.kind = 'ride';
       var v = vis / 2;
       b.help = 0.12 + Math.max(0, w) * 0.9 + t.np * 0.35 + t.cp * 0.15 + t.caution * 0.1 - v * (t.fc * 0.3 + t.impulse * 0.3) - (b.know && b.r.fam ? 0 : 0);
-      b.lewd = b.kind ? 0.05 + v * (0.45 + t.fc * 0.5 + t.impulse * 0.5 + t.aggr * 0.25) + (love ? v * 0.45 : 0) + Math.max(0, -w) * 0.5 + env.lewd / 250 - t.warmth * 0.15 - (love ? 0 : Math.max(0, w) * 0.35) - (b.know && b.r.fam ? 1 : 0) : 0;
+      b.lewd = b.kind ? 0.05 + v * (0.45 + t.fc * 0.5 + t.impulse * 0.5 + t.aggr * 0.25) + (love ? v * 0.45 : 0) + Math.max(0, -w) * 0.5 + env.wild / 250 - t.warmth * 0.15 - (love ? 0 : Math.max(0, w) * 0.35) - (b.know && b.r.fam ? 1 : 0) : 0;
       b.punish = !!(b.kind && love && t.jealous > 0.5 && vis >= 1 && rng() < 0.4 + t.jealous * 0.4);
       if (b.punish) b.lewd += 0.5;
       b.leave = 0.12 + t.cold * 0.25 + t.caution * 0.1;
@@ -23264,7 +23270,7 @@
         K.say(S, { kind: 'ev', tag: b.punish ? 'お仕置き' : '壁の向こうの住人', text: tx, why: whyOf(b) + '／感覚は戻っている' });
         K.logClimax(S, r.climaxes);
       } else {
-        st.stored += (60 + env.lewd * 0.5) * (b.kind === 'pen' ? 1.3 : b.kind === 'ride' ? 1.1 : 0.9) * (b.punish ? 1.25 : 1) * h.sens;
+        st.stored += (60 + env.wild * 0.5) * (b.kind === 'pen' ? 1.3 : b.kind === 'ride' ? 1.1 : 0.9) * (b.punish ? 1.25 : 1) * h.sens;
         if (b.kind === 'pen' || b.kind === 'ride') st.meta.cum++;
         h.corrupt += 3 * (S.k || 1);
         tx += ' ' + F(K.pick(S, b.kind === 'pen' || b.kind === 'finger' ? EB(S, 'unaware', T.unaware) : T.unaware));
@@ -30080,6 +30086,7 @@
         '受け攻めを「攻め」に設定すると、壁の向こうで手を出そうとした相手は追い払われ、何も溜まりません。「最中に戻る」も起きず、抜け出したあと相手を返り討ちにすることがあります。',
         '「場所」は始まり方と出来事の雰囲気を変えます。壁の向こうに住人を置きたいときは、役割を指定すると分かりやすくなります。',
         '「描写の作風」を「男性向け」にすると、行為の場面が擬音・♡の喘ぎ・おねだり・堕ちていく様子の濃い描写に替わります（性格ごとに喘ぎ方が変わり、言葉が崩れるのは絶頂のときだけ）。小説調に戻すこともできます。'
+        '「描写の有無」で、ほのめかす（ぼかした書き方）・ほどほど・濃い（戻ってくる感覚が多くなる）を選べます。「描写の長さ」を「数行で短く」にすると、段落に分けた山場を使いません。',
       ] },
       { h: '結末', items: [
         '解放で戻ってきた感覚によって、堕ち度が100なら快楽堕ち、堕ち度70以上か絶頂6回以上なら崩れ落ちる、それ以外は耐えきった、になります。',

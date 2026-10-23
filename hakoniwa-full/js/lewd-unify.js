@@ -115,5 +115,7 @@
   X.install('dungeon', { from: { trap: function (e) { return typeof e.lewd === 'number' ? e.lewd : null; } }, fix: function (e) { if (typeof e.lewd === 'number') delete e.lewd; }, desc: '陥落の場面の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝堕ちたあとも続くところまで。男性向けは、攻めの挑戦者が魔物を組み伏せる場面だけ' });
   /* マッサージ：もとの「施術の過激さ」（id lewd・数値）は harsh に、「行為の描写」（描写する・軽め）は描写の有無（ほどほど・ほのめかす）に読み替える */
   X.install('massage', { old: ['desc'], fix: function (e) { if (typeof e.lewd === 'number') { if (e.harsh == null) e.harsh = e.lewd; e.lewd = e.desc === 'dark' ? 'low' : 'mid'; } }, from: {}, desc: '施術のあとの描き方。ほのめかす＝暗転して回数だけ／ほどほど＝描写する／濃い＝体位をひとつ多く。男性向けは、客が自分から求めたときと客が主導するときだけ' });
+  /* 感覚遮断穴：もとの「向こう側の過激さ」（id lewd・数値）は wild に。描写の作風は元からある男性向け（solo-hole-ero.js）。濃い＝戻ってくる感覚が多い */
+  X.install('hole', { from: {}, fix: function (e) { if (typeof e.lewd === 'number') { if (e.wild == null) e.wild = e.lewd; delete e.lewd; } }, desc: '戻ってくる感覚の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝戻ってくる感覚が多くなる' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();

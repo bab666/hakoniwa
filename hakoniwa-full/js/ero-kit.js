@@ -14,7 +14,12 @@
   var T = {};
   var E = HK.Ero = {
     OPT: { id: 'style', label: '描写の作風', type: 'select', def: 'novel', options: [{ v: 'novel', label: '小説調' }, { v: 'ero', label: '男性向け（擬音・♡喘ぎ・おねだり）' }] },
-    on: function (S) { return !HK.SAFE_ON && !!(S && S.env && S.env.style === 'ero'); },
+    on: function (S) {
+      if (HK.SAFE_ON || !(S && S.env && S.env.style === 'ero')) return false;
+      /* 描写の有無が「ほのめかす」なら使わない（lewd-unify.js） */
+      var X = HK.Lewd, id = S.scen && S.scen.id;
+      return !(X && id && X.conf(id) && X.lv(S.env) === 'low');
+    },
     add: function (scen, tbl) { var o = T[scen] = T[scen] || {}; Object.keys(tbl).forEach(function (k) { o[k] = (o[k] || []).concat(tbl[k]); }); },
     has: function (scen, key) { return !!(T[scen] && T[scen][key] && T[scen][key].length); },
     L: function (S, scen, key, base) { return E.on(S) && E.has(scen, key) ? T[scen][key] : base; },
