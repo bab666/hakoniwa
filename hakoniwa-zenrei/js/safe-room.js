@@ -5,7 +5,13 @@
 (function () {
   'use strict';
   var HK = window.HK, L = HK.RoomLewd;
-  if (!HK.SAFE_ON || !L) return;
+  if (!HK.SAFE_ON) return;
+  /* R18版だけの描写の設定（合コンのお持ち帰りの夜・出られない部屋のエッチ）は、全年齢モードでは出さない */
+  [['goukon', 'gnlewd'], ['whiteroom', 'rmlewd']].forEach(function (x) {
+    var sc = HK.SCENARIOS && HK.SCENARIOS[x[0]];
+    if (sc && Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== x[1]; });
+  });
+  if (!L) return;
   function st(c) {
     var x = c.tr;
     if (x.aggr > 0.6 && x.np < 0.5) return 'rough';
