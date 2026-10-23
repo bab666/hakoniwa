@@ -228,7 +228,8 @@
       '<div class="import"><div>' +
       '<textarea id="bulk" rows="6" placeholder="- 朝霧 BDACD\n・鷹野：CABAB\nミナト bbbca // 後輩"></textarea>' +
       '<div class="row" style="margin-top:8px"><button class="btn" data-act="import-add">追加で読み込む</button><button class="btn" data-act="import-replace">名簿を置き換える</button><span class="spacer"></span><button class="btn ghost" data-act="export">名簿をテキストでコピー</button></div>' +
-      '<div class="row" style="margin-top:6px"><button class="btn" data-act="jsonout">住人をJSONで書き出す</button><button class="btn" data-act="jsonadd">JSONを読み込む（追加）</button><button class="btn" data-act="jsonrep">JSONで置き換える</button><input type="file" id="jsonfile" accept=".json,application/json" hidden></div>' +
+      '<div class="row" style="margin-top:6px"><button class="btn" data-act="jsonout">住人をJSONで書き出す</button><button class="btn" data-act="jpick" aria-expanded="' + (jpOpen ? 'true' : 'false') + '">選んだ住人だけ書き出す</button><button class="btn" data-act="jsonadd">JSONを読み込む（追加）</button><button class="btn" data-act="jsonrep">JSONで置き換える</button><input type="file" id="jsonfile" accept=".json,application/json" hidden></div>' +
+      pickPanel() +
       '<ul class="warn" id="warns" hidden></ul></div>' +
       '</div>' +
       '<h2 class="sec">住人　<span class="num" style="font-size:15px">' + S.chars.length + '/' + MAX + '</span>' + (HK.Tips ? HK.Tips.btn('cast') : '') + '</h2>' +
@@ -319,12 +320,17 @@
   }
 
   /* ---------- JSONでの書き出し・読み込み ---------- */
-  function rosterJSON() {
-    var idx = {};
-    S.chars.forEach(function (c, i) { idx[c.id] = i; });
+  /* only（住人の id の配列）を渡すと、その住人だけを書き出す。
+     選ばなかった住人との関係・恋愛相手の固定・呼び方・敬語の相手は、番号ではなく名前で書く（読み込む側で同じ名前の住人につながる） */
+  function rosterJSON(only) {
+    var idx = {}, name = {}, list = only ? S.chars.filter(function (c) { return only.indexOf(c.id) >= 0; }) : S.chars;
+    list.forEach(function (c, i) { idx[c.id] = i; });
+    S.chars.forEach(function (c) { name[c.id] = c.name; });
+    var ref = function (id) { return idx[id] != null ? idx[id] : only && name[id] ? name[id] : null; };
     return {
       format: 'hakoniwa-residents', version: 1, exported: new Date().toISOString(),
-      chars: S.chars.map(function (c) {
+      partial: only ? true : undefined,
+      chars: list.map(function (c) {
         var o = { name: c.name, code: HK.toCode(c.eg), eg: c.eg, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '' };
         if (c.posLike) o.posLike = c.posLike;
         if (c.icon) o.icon = c.icon;
@@ -337,25 +343,26 @@
         if (c.futa) o.futa = true;
         if (c.you) o.you = c.you;
         if (c.marks) o.marks = c.marks;
-        if (c.loveLock && idx[c.loveLock] != null) o.loveLock = idx[c.loveLock];
-        if (c.calls) { var cl = {}; Object.keys(c.calls).forEach(function (id) { if (idx[id] != null && c.calls[id]) cl[idx[id]] = c.calls[id]; }); if (Object.keys(cl).length) o.calls = cl; }
-        if (c.keigo) { var kg = Object.keys(c.keigo).filter(function (id) { return idx[id] != null && c.keigo[id]; }).map(function (id) { return idx[id]; }); if (kg.length) o.keigo = kg; }
+        if (c.loveLock && ref(c.loveLock) != null) o.loveLock = ref(c.loveLock);
+        if (c.calls) { var cl = {}; Object.keys(c.calls).forEach(function (id) { if (ref(id) != null && c.calls[id]) cl[ref(id)] = c.calls[id]; }); if (Object.keys(cl).length) o.calls = cl; }
+        if (c.keigo) { var kg = Object.keys(c.keigo).filter(function (id) { return ref(id) != null && c.keigo[id]; }).map(ref); if (kg.length) o.keigo = kg; }
         if (S.per && S.per[c.id]) o.per = S.per[c.id];
         return o;
       }),
-      ties: (S.ties || []).filter(function (t) { return idx[t.a] != null && idx[t.b] != null; }).map(function (t) { var o = { a: idx[t.a], b: idx[t.b], type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; return o; }),
+      ties: (S.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; return o; }),
       teacher: S.teacher && idx[S.teacher] != null ? idx[S.teacher] : null
     };
   }
-  function exportJSON() {
-    var text = JSON.stringify(rosterJSON(), null, 1);
-    var d = new Date(), name = 'hakoniwa-residents-' + d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '.json';
+  function exportJSON(only) {
+    var data = rosterJSON(only), text = JSON.stringify(data, null, 1);
+    var d = new Date(), tag = only ? '-part' + data.chars.length : '';
+    var name = 'hakoniwa-residents' + tag + '-' + d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '.json';
     try {
       var blob = new Blob([text], { type: 'application/json' }), url = URL.createObjectURL(blob), a = document.createElement('a');
       if (!('download' in a)) throw new Error('nodl');
       a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-      toast(S.chars.length + '人分をJSONで書き出しました');
+      toast(data.chars.length + '人分をJSONで書き出しました' + (only ? '（読み込む側で「JSONを読み込む（追加）」を使うと、同じ名前の住人だけが更新されます）' : ''));
     } catch (e) { copy(text, 'ファイルを保存できない環境なので、JSONをクリップボードにコピーしました'); }
   }
   function num(v) { v = parseFloat(v); return isNaN(v) ? null : HK.clamp(v, 0, 20); }
@@ -439,6 +446,28 @@
     toast('JSONから' + (parts.join('・') || '0人を読み込み') + 'しました' + (skipped ? '（' + skipped + '件は読めないか上限超えのため省略）' : '') + (ok ? '' : '。ブラウザに保存しきれませんでした'));
   }
   var jsonMode = 'add';
+  /* 一部の住人だけ書き出す：チェックした住人（id → true）。画面を描き直しても選択は残す */
+  var jpOpen = false, jpSel = {};
+  function pickPanel() {
+    if (!jpOpen) return '';
+    var ids = S.chars.map(function (c) { return c.id; });
+    Object.keys(jpSel).forEach(function (id) { if (ids.indexOf(id) < 0) delete jpSel[id]; });
+    var n = Object.keys(jpSel).length, gs = groupsOf();
+    return '<div class="jpick" id="jpick" style="margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)">' +
+      '<p class="hint" style="margin:0 0 6px">書き出す住人にチェックを入れてください。受け取った人が「JSONを読み込む（追加）」で読み込むと、同じ名前の住人だけが更新され、ほかの住人はそのまま残ります。選ばなかった住人との関係も、名前でつながります。</p>' +
+      '<div class="row" style="margin:0 0 6px;flex-wrap:wrap;gap:6px"><button class="btn small" data-act="jpall">全員</button><button class="btn small" data-act="jpnone">選択を外す</button>' +
+      gs.map(function (g) { return '<button class="chip" data-act="jpgrp" data-g="' + esc(g) + '">【' + esc(g) + '】</button>'; }).join('') + '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:4px 14px">' + S.chars.map(function (c) {
+        return '<label style="white-space:nowrap"><input type="checkbox" data-jp="' + c.id + '"' + (jpSel[c.id] ? ' checked' : '') + '> ' + esc(c.name) + (c.group ? '<span class="hint" style="margin:0">（' + esc(c.group) + '）</span>' : '') + '</label>';
+      }).join('') + '</div>' +
+      '<div class="row" style="margin-top:8px"><button class="btn primary" data-act="jpout" id="jpout"' + (n ? '' : ' disabled') + '>選んだ<span id="jpn">' + n + '</span>人をJSONで書き出す</button></div></div>';
+  }
+  function jpSync() {
+    var n = Object.keys(jpSel).length, b = $('#jpout'), c = $('#jpn');
+    if (c) c.textContent = n;
+    if (b) b.disabled = !n;
+    Array.prototype.forEach.call(document.querySelectorAll('#jpick input[data-jp]'), function (x) { x.checked = !!jpSel[x.dataset.jp]; });
+  }
 
   /* ---------- 箱庭 ---------- */
   function envVal(e, scenId) {
@@ -769,6 +798,15 @@
         if (cd) { delete cd.icon; save(); renderCast(); }
         break;
       case 'jsonout': exportJSON(); break;
+      case 'jpick': jpOpen = !jpOpen; renderCast(); break;
+      case 'jpall': S.chars.forEach(function (c) { jpSel[c.id] = true; }); jpSync(); break;
+      case 'jpnone': jpSel = {}; jpSync(); break;
+      case 'jpgrp':
+        var gm = S.chars.filter(function (c) { return c.group === t.dataset.g; }), allOn = gm.every(function (c) { return jpSel[c.id]; });
+        gm.forEach(function (c) { if (allOn) delete jpSel[c.id]; else jpSel[c.id] = true; }); jpSync(); break;
+      case 'jpout':
+        var pick = S.chars.filter(function (c) { return jpSel[c.id]; }).map(function (c) { return c.id; });
+        if (pick.length) exportJSON(pick); break;
       case 'jsonadd': case 'jsonrep':
         jsonMode = act === 'jsonrep' ? 'rep' : 'add';
         var jf = $('#jsonfile'); if (jf) { jf.value = ''; jf.click(); }
@@ -891,6 +929,13 @@
     else if (f === 'teacher') { S.teacher = t.value; save(); renderBox(); return; }
     save();
   }
+  /* 一部の住人だけ書き出す：チェックの切り替え */
+  document.addEventListener('change', function (ev) {
+    var id = ev.target && ev.target.dataset && ev.target.dataset.jp;
+    if (!id) return;
+    if (ev.target.checked) jpSel[id] = true; else delete jpSel[id];
+    jpSync();
+  });
   document.addEventListener('change', function (ev) {
     if (ev.target.id !== 'jsonfile') return;
     var f = ev.target.files && ev.target.files[0];
