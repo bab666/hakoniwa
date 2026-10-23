@@ -35420,7 +35420,7 @@
     var sep = function () { return /\n\n/.test(text) ? '\n\n' : ''; };
     /* 男性向けの段落：自分で攻めを選んで生き物を責める側は xEroTop。襲われる側は、作者が書き足す欄（ship-lewd.js の R.xEroV）に文があるときだけ */
     var pool = lw.ero && !top && R.xEroPool ? R.xEroPool(kind || 'alien') : [], added = false;
-    if (lw.ero && top) text += sep() + F(R.xFill(S, pk(S, R.xEroTop), a, top), v);
+    if (lw.ero && top) text += sep() + F(R.xFill(S, pk(S, R.xEroTop.concat(R.xEroTopM && !HK.Pos.isF(a) ? R.xEroTopM : [])), a, top), v);
     else if (pool.length) { text += sep() + F(R.xFill(S, pk(S, pool), a, false), v); added = true; }
     if (lw.high) {
       var ag = added && R.xEroAgainV ? R.xEroAgainV.filter(function (t) { return t && String(t).trim(); }) : [];
