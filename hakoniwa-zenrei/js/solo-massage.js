@@ -96,14 +96,17 @@
   var POS_TOP_F = [
     { n: '騎乗位', t: '{a}は{m}を施術台に仰向けにさせ、その腰に跨った。「動かないで。ペースは、こっちが決める」――{a}は見下ろしたまま、自分の好きな深さと速さで腰を揺らした。' },
     { n: '手で', t: '{a}は{m}を施術台に座らせ、オイルを手に取った。「さっきのお返し」――{a}の手が、{m}のものをゆっくりと扱き上げた。{m}は何度も施術台の縁を掴み直した。' },
-    { n: '対面座位', t: '{a}は施術台に腰かけた{m}の膝に跨り、両肩を押さえつけた。「手は後ろ。触っていいとは言ってない」――{a}は自分のペースで動き、{m}の息が上がっていくのを見下ろしていた。' }
+    { n: '対面座位', t: '{a}は施術台に腰かけた{m}の膝に跨り、両肩を押さえつけた。「手は後ろ。触っていいとは言ってない」――{a}は自分のペースで動き、{m}の息が上がっていくのを見下ろしていた。' },
+    { n: '背面騎乗', t: '{a}は{m}に背を向けて跨り、ゆっくりと腰を落とした。「手は、施術台の上」――{m}が言われたとおりにすると、{a}は前後に腰を滑らせ始めた。' },
+    { n: '焦らし', t: '{a}は{m}の上に跨ったまま、腰を浮かせては止めた。「さっき、何回『もう少し』って言われたっけ」――{m}は答えられずに、施術台の縁を握りしめた。' }
   ];
   /* 女性どうし（女性セラピストと女性の客）。マッサージの器具は使ってよい */
   var POS_TOP_FF = [
     { n: '指で', t: '{a}は{m}を施術台に仰向けにさせ、オイルで濡れた指を二本、{m}の脚のあいだにゆっくりと沈めた。「さっきの『特別な施術』、こうでしょう？」――{m}の囁き声が、上ずった。' },
     { n: '器具で', t: '{a}は棚から施術用のハンディマッサージャーを取り、スイッチを入れた。「本来は肩用、だっけ」――振動する先端を押し当てられて、{m}は施術台の上で背中を反らせた。' },
     { n: '脚を絡めて', t: '{a}は{m}の脚を開かせて自分の脚と交差させ、オイルで濡れた熱いところ同士を押しつけた。腰を揺らすのは{a}だけだった。{m}は施術台の縁を握りしめていた。' },
-    { n: '口で', t: '{a}は{m}を施術台の端に座らせ、その脚のあいだに顔を寄せた。「力を抜いて。深呼吸」――さっき言われた台詞を返しながら、{a}は舌でゆっくりと{m}を追い詰めた。' }
+    { n: '口で', t: '{a}は{m}を施術台の端に座らせ、その脚のあいだに顔を寄せた。「力を抜いて。深呼吸」――さっき言われた台詞を返しながら、{a}は舌でゆっくりと{m}を追い詰めた。' },
+    { n: '胸と指で', t: '{a}は{m}を後ろから抱きすくめ、オイルで濡れた手で胸を包んだ。「さっきのお返し、全部ね」――もう片方の手が脚のあいだに滑り込むと、{m}の背中が{a}にもたれかかった。' }
   ];
   var POS_FF = [
     { n: '仰向け', t: '{m}「仰向けのまま、脚を開いてください」――{m}は{a}の脚のあいだに膝をつき、オイルで濡れた指を、ゆっくりと二本沈めた。' },
@@ -158,6 +161,9 @@
     var hardTop = !!(HK.Pos && HK.Pos.hardTop(h));
     /* 女性どうし（女性セラピストと女性の客）：いちもつを前提にした描写を使わない */
     var ff = h.gender === 'f' && staff.g === 'f';
+    /* ふたなり（HK.Pos.futa。攻め・リバの女性）：施術は女性の客として受け、客が攻めに回る場面だけ男性の体で書く */
+    h.futa = !!(input.chars[0] && input.chars[0].futa);
+    var custF = HK.Pos ? HK.Pos.isF(h) : h.gender === 'f', ffTop = ff && custF;
     h.sens = 0.85 + (h.stats.sense - 3) * 0.1;
     var course = env.course;
     var seq = STAGES.slice();
@@ -201,13 +207,21 @@
     K.say(S, { kind: 'sys', tag: '来店', text: K.fmt(S, K.pick(S, ['{a}は雑居ビルの三階、「癒しの手」と書かれた扉を押した。受付には{m}が一人。「お待ちしておりました」', '{a}はポイントカードを握りしめて、駅裏のマッサージ店に入った。迎えたのは{m}だった。', '{a}は口コミサイトで星4.8の店を予約した。レビューの八割が「また来ます」だったのが、少しだけ気になった。'])), why: '目標：' + h.goal.label + '／' + h.action.label });
     K.snap(S, { s: 0 });
 
+    function posTop() { return noMut(ffTop ? POS_TOP_FF : custF && staff.g === 'm' ? POS_TOP_F : POS_TOP); }
+    /* 女性どうしで脚を絡めて熱いところを重ねる（対等に繋がる）書き方は、客がリバのときだけ */
+    function noMut(arr) {
+      var P = HK.Pos, MU = P && P.MUTUAL_RE;
+      if (!ff || !MU || (P.of && P.of(h) === 'riba')) return arr;
+      var o = arr.filter(function (x) { return !MU.test(x.t) && !/擦れ合|脚を交差/.test(x.t); });
+      return o.length ? o : arr;
+    }
     /* 山場の厚い場面（R18版だけ。HK.MassageThick と HK.ThickVM がないときは null） */
     function thick(top) {
       var MT = HK.MassageThick, TV = HK.ThickVM;
       if (HK.SAFE_ON || !MT || !TV) return null;
-      var key = top ? (ff ? 'topFF' : h.gender === 'f' && staff.g === 'm' ? 'topF' : TV.sad(rng, h, null) ? 'topSad' : 'top')
+      var key = top ? (ffTop ? 'topFF' : custF && staff.g === 'm' ? 'topF' : TV.sad(rng, h, null) ? 'topSad' : 'top')
         : ff ? 'fallFF' : staff.g === 'f' && h.gender !== 'f' ? 'fallLady' : 'fall';
-      var sc = MT[key] && MT[key].length ? K.pick(S, MT[key]) : null;
+      var sc = MT[key] && MT[key].length ? K.pick(S, noMut(MT[key])) : null;
       return sc ? { n: sc.n, t: TV.voice(rng, sc.t, h, h), thick: true } : null;
     }
     /* 立場逆転：客が施術者を押し倒す（top＝自分で攻めを選んだ客が、際どい施術を止めたあと） */
@@ -218,7 +232,7 @@
       var rv = dark ? [K.pick(S, MD.reverse)] : S.rng.shuffle(M.REVERSE_ACT).slice(0, 2);
       rv.forEach(function (t2) { K.say(S, { kind: 'ev', tag: '逆転', text: K.fmt(S, t2), why: '' }); });
       if (top && !dark) {
-        var tp = thick(true) || K.pick(S, ff ? POS_TOP_FF : h.gender === 'f' ? POS_TOP_F : POS_TOP);
+        var tp = thick(true) || K.pick(S, posTop());
         K.say(S, { kind: 'ev', tag: tp.n, text: K.fmt(S, tp.t), why: '主導権は最後まで客の側' });
       }
       if (!top) { h.pleasure += 30; while (h.pleasure >= 100) K.climax(S); }
@@ -362,7 +376,8 @@
       S.step = seq.length;
       K.step(S, '施術のあと');
       var nPos = 2 + rng.int(2) + (h.corrupt >= 100 ? 1 : 0);
-      var pool = S.rng.shuffle(ff ? POS_FF : HK.Pos && HK.Pos.vsNpc(h, '') === 'top' ? POS_TOP : POS).slice(0, nPos);
+      /* 客が攻めなら客が主導する体位（女性どうし・女性の客×男性の施術者・男性の体で攻める客）、受けなら施術者が主導する体位 */
+      var pool = S.rng.shuffle(noMut(HK.Pos && HK.Pos.vsNpc(h, '') === 'top' ? posTop() : ff ? POS_FF : POS)).slice(0, nPos);
       var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])), why: '快楽に負けた（堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
       K.key(S, head, '快楽に負けた');
       var custTop = HK.Pos && HK.Pos.vsNpc(h, '') === 'top';
