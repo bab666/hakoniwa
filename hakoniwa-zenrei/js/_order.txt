@@ -121,6 +121,7 @@ js/island-escape.js
 js/island-stay.js
 js/island-corpse.js
 js/island-sea.js
+js/island-love.js
 js/unreq.js
 js/fwbcrush.js
 js/zombie-cure.js

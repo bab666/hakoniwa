@@ -680,6 +680,7 @@
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     var open = F(pk(S, t === a ? R.nurseTop : R.nurseSick), { t: t.name, u: u.name });
     ST.say(S, { actors: [a, b], tag: '看病の夜', kind: 'climax', text: open + body + F(pk(S, R.nurseAfter), { a: a.name, b: b.name }), why: '熱に浮かされた' + b.name + 'と、看病していた' + a.name + '／関係の近さ ' + Math.round(bond(S, a, b) * 100), mag: 30 });
+    if (SH.NIGHT && SH.NIGHT.after) SH.NIGHT.after(S, NAPI, a, b);
   }
   /* ストレスの限界：気の荒い人は暴れ、そうでない人は深酒に逃げる。近しい人がなだめたり、面倒を見たりする */
   function outburst(S) {
@@ -726,13 +727,15 @@
       var ab = k.split('-'), a = +ab[0], b = +ab[1], d = S.relD[k] || 0, e = S.relEv[k] || {};
       var bad = (e.fight || 0) + (e.quarrel || 0), good = (e.drink || 0) + (e.team || 0) + (e.confide || 0) + (e.nurse || 0) + (e.calm || 0) + (e.game || 0) + (e.makeup || 0) + (e.bday || 0);
       if (S.rom[k] && !hasLove[k]) add(a, b, '★恋仲', 'love', null);
-      if (e.night) add(a, b, '★夜を共にした', 'night', null);
+      if (e.night && !(S.nightNo && S.nightNo[k])) add(a, b, '★夜を共にした', 'night', null);
       if (d >= 0.55) add(a, b, bad >= 2 ? '★ケンカするほど仲がいい' : e.nurse || e.calm ? '★支え合う' : e.confide ? '★深い絆' : (e.drink || 0) >= 2 ? '★飲み仲間' : '★深い絆', 'guard', null);
       else if (d >= 0.25) add(a, b, (e.drink || 0) >= 2 ? '★飲み仲間' : e.team ? '★相棒' : e.makeup ? '★和解' : '★仲間', e.team ? 'partner' : 'friend', null);
       else if (d <= -0.45) add(a, b, (e.fight || 0) >= 2 ? '★犬猿の仲' : '★険悪', 'enemy', null);
       else if (d <= -0.2) add(a, b, '★わだかまり', 'obsess', null);
       else if (bad >= 2 && good >= 2) add(a, b, '★揉めては戻る', 'friend', null);
     });
+    /* 夜のあとの関係（一夜の過ち・体の関係・恋に落ちた・実らなかった想いなど。ship-night.js） */
+    if (SH.NIGHT && SH.NIGHT.rel) SH.NIGHT.rel(S, add);
     S.left.forEach(function (j) { add(j[0], j[1], '★置き去りにした', 'enemy', j[0]); });
     S.saved.forEach(function (j) { add(j[0], j[1], '★助け出した', 'guard', j[0]); });
     S.jeal.forEach(function (j) { if ((S.relD[rk(P[j[0]], P[j[1]])] || 0) < 0) add(j[0], j[1], '★嫉妬', 'obsess', j[0]); });
@@ -826,7 +829,11 @@
     }
     return text;
   }
+  /* 夜の出来事の仕組み（ship-night.js。R18版のみ）に渡す道具 */
+  var NAPI = { bond: bond, lover: lover, family: family, setRel: setRel, mark: mark, rk: rk, live: live, bodyFor: bodyFor, F: F, pk: pk, stress: stress };
   function nightR18(S) {
+    /* 関係の深さで夜の種類が変わる（勢いの夜・二度目の夜・恋人の夜）、過ちだと渋る人、夜をきっかけに恋に落ちて告白する人 */
+    if (SH.NIGHT) { SH.NIGHT.run(S, NAPI); return; }
     var rng = S.rng, L0 = live(S), R = SH.R18;
     if (L0.length < 2 || rng() > S.env.slewd / 100 * 0.45) return;
     var pairs = [];

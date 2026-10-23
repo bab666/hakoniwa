@@ -152,6 +152,7 @@ js/island-escape.js
 js/island-stay.js
 js/island-corpse.js
 js/island-sea.js
+js/island-love.js
 js/unreq.js
 js/fwbcrush.js
 js/zombie-cure.js
@@ -161,6 +162,7 @@ js/zombie-thick.js
 js/solo-zombie-raid.js
 js/solo-rel-r18.js
 js/solo-sit-night-r18.js
+js/island-love-r18.js
 js/zombie-map.js
 js/pos.js
 js/special.js
@@ -256,6 +258,7 @@ js/ship-r18-xeno2.js
 late js/ship-xeno-thick.js
 js/ship-thick.js
 js/ship-lewd.js
+js/ship-night.js
 js/ship-bond.js
 js/ship-crisis.js
 js/ship.js
