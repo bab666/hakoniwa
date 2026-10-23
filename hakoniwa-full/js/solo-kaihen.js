@@ -233,7 +233,8 @@
       else t += (actLead = ST.fmt(pkF(S, nm(S, E(S, 'act.' + act[0], L(act[1])))), v));
       /* 男性向け：書き下ろしの続き、なければ施術の種類ごとの続き */
       var a2 = E(S, 'act2.' + act[0], null), kk = kind0 === 'top' && gF ? 'topF' : kind0;
-      if (a2) t += ST.fmt(pkF(S, nm(S, a2)), v);
+      if (a2 && !(ero && HK.Ero.has('kaihen', 'kind.' + kk) && rng() < 0.3)) t += ST.fmt(pkF(S, nm(S, a2)), v);
+      else if (a2) t += ST.fmt(pkF(S, E(S, 'kind.' + kk, a2)), v);
       else {
         if ((lew === 'high' || rng() < 0.55) && !mobby(S, act[2])) t += ST.fmt(act[2], v);
         if (ero && HK.Ero.has('kaihen', 'kind.' + kk)) t += ST.fmt(pkF(S, E(S, 'kind.' + kk, [])), v);
@@ -245,7 +246,7 @@
         g.m.plea += 6 * g.sens;
       }
       /* 施す側が攻めの施術：喘ぎは受け身でないものだけ */
-      if (KH.MOAN && kind0 === 'top' && rng() < (lew === 'high' ? 0.6 : 0.4)) { t += g.name + '「' + pkF(S, topL(g, KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN))) + '」'; g.m.plea += 4 * g.sens; }
+      if (KH.MOAN && kind0 === 'top' && rng() < (lew === 'high' ? 0.6 : 0.4)) { var mtk = 'moanTop.' + (g.m.plea < 35 ? 0 : g.m.plea < 70 ? 1 : 2); t += g.name + '「' + pkF(S, ero && !gF && HK.Ero.has('kaihen', mtk) && rng() < 0.6 ? E(S, mtk, []) : topL(g, KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN))) + '」'; g.m.plea += 4 * g.sens; }
       if (KH.INNER && (kind0 === 'in' || kind0 === 'mouth' || kind0 === 'top') && rng() < (g.m.doubt > 15 ? 0.4 : 0.18)) { t += g.name + pkF(S, kind0 === 'top' || (gTop && !gFree) ? E(S, 'innerTop', KH.INNER_TOP) : E(S, 'inner', KH.INNER)); g.m.doubt += 2 * g.doubtRate; }
       /* 男性向けでは、受ける側の声は絶頂の文の中に入れる */
       if (!ero && r && rng() < 0.45 && HK.Voice.CLIMAX[r.persona]) t += r.name + '「' + pkF(S, topL(r, HK.Voice.CLIMAX[r.persona])) + '」';
@@ -295,8 +296,13 @@
     var gAct = HK.Pos.order(g, r, [g, r])[0] === g, dir = gAct ? 'give' : 'take';
     /* 施す側が女性でないときは、施す側の体を女性として書いた手順（受ける側が指を沈める・脚を絡めて擦り合わせる）を除く */
     var gF = HK.Pos.isF(g), MALE_NG = /重ね合わせ|擦り合わせ|脚を絡め|指を沈め|指が沈む/;
-    var acts = gF ? FA[dir] : FA[dir].filter(function (x) { return !MALE_NG.test(x[1]); });
-    var act = rng.pick(acts.length ? acts : FA[dir]);
+    /* 文ごとに選ぶ：二人が対等に繋がる書き方（重ね合わせ・擦り合わせ）は二人ともリバのときだけ。施す側が女性でなければ、施す側の体を女性として書いた文を外す */
+    var both = HK.Pos.bothRiba(g, r);
+    var okLine = function (l) { return (both || !HK.Pos.MUTUAL_RE.test(l)) && (gF || !MALE_NG.test(l)); };
+    /* 施す側が男性で、受ける女性が動く側（女性が攻め）：女性上位の手順（KH.FM_TAKE。跨る・導く・搾る） */
+    var FMT = !gF && !gAct && KH.FM_TAKE ? KH.FM_TAKE : null;
+    var acts = (FMT || FA[dir]).map(function (x) { return [x[0], L(x[1]).filter(okLine)]; }).filter(function (x) { return x[1].length; });
+    var act = rng.pick(acts.length ? acts : FA[dir].map(function (x) { return [x[0], L(x[1])]; }));
     g.cnt.acts[act[0]] = (g.cnt.acts[act[0]] || 0) + 1;
     var v = { p: g.name, r: r.name, place: S.v.place, boss: S.v.boss };
     var ok = function (l) { var f = (l || []).filter(function (x) { return !NG.test(x); }); return f.length ? f : null; };
@@ -307,16 +313,16 @@
     t += g.name + pkF(S, gl);
     if (lew === 'low') t += ST.fmt('{p}は「' + act[0] + '」を行った。――その内容は、カルテに数字だけが残された。', v);
     else {
-      t += ST.fmt(pkF(S, L(act[1])), v);
+      t += ST.fmt(pkF(S, act[1]), v);
       if (!gAct && KH.MOAN && rng() < 0.6) { t += g.name + '「' + pkF(S, ok(KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN)) || KH.MOAN) + '」'; g.m.plea += 6 * g.sens; }
       if (KH.INNER && rng() < (g.m.doubt > 15 ? 0.35 : 0.15)) { t += g.name + pkF(S, (gAct ? KH.INNER_TOP : KH.INNER).filter(function (x) { return !/奥/.test(x); })); g.m.doubt += 2 * g.doubtRate; }
       var who = gAct ? r : g;
       if (!eOn(S) && rng() < 0.45 && HK.Voice.CLIMAX[who.persona]) t += who.name + '「' + pkF(S, topL(who, HK.Voice.CLIMAX[who.persona])) + '」';
-      t += ST.fmt(pkF(S, E(S, 'ff.' + dir, KH.FF_CLIMAX[dir])), v);
+      t += ST.fmt(pkF(S, FMT ? E(S, 'fm.take', KH.FM_CLIMAX) : E(S, 'ff.' + dir, KH.FF_CLIMAX[dir])), v);
     }
     g.cnt.served++; g.m.imm += 2.5 + (g.goal.id === 'top' ? 2 : 0);
     g.m.plea += (gAct ? 8 : 18) * g.sens + rng() * 8;
-    var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」／' + (gF ? '女性どうしの施術' : '女性の受け手への施術') + '（' + (gAct ? g.name : r.name) + 'が動く側）';
+    var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」／' + (gF ? '女性どうしの施術' : FMT ? '女性の受け手が上になる施術' : '女性の受け手への施術') + '（' + (gAct ? g.name : r.name) + 'が動く側）';
     if (!gAct) g.cnt.gclimax++;
     if (g.m.plea >= 100) { g.m.plea = 25; if (gAct) { g.cnt.gclimax++; t += pkF(S, KH.GCLIMAX.filter(function (x) { return !/奥/.test(x); })).replace(/\{p\}/g, g.name); } g.m.doubt += 6 * g.doubtRate; }
     r.cnt.served++; if (gAct) r.cnt.climax++; r.m.plea = clamp(r.m.plea + 25 * r.sens, 0, 100);

@@ -100,6 +100,8 @@
     var ok = (top ? FALLS_TOP : FALLS).filter(function (f) { return f.when(S); });
     var f = ok[0];
     if (ok.length > 2 && S.rng() < 0.35) f = ok[1];
-    return { title: f.title(S), text: f.text || (S.h.captor && S.h.captor.boss ? S.h.captor.boss.fall.replace(/\{t\}/g, S.h.captor.boss.name) : '{a}は甘い熱の中に沈んだ。') };
+    var bf = S.h.captor && S.h.captor.boss && S.h.captor.boss.fall;
+    if (bf && !Array.isArray(bf)) bf = [bf];
+    return { title: f.title(S), text: f.text || (bf ? bf[S.rng.int(bf.length)].replace(/\{t\}/g, S.h.captor.boss.name) : '{a}は甘い熱の中に沈んだ。') };
   };
 })();
