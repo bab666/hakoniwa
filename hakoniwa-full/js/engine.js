@@ -99,6 +99,9 @@
       var before = r[f], m = 1;
       if (f === 'att' && d[f] > 0) m = pf.chem;
       if (f === 'ten' && d[f] > 0) m = pf.fric;
+      /* 環境値「恋愛の起こりやすさ」「争いの起こりやすさ」：惹かれ・緊張の育ち方にも効かせる（既定の50で1倍、0で0.5倍、100で1.5倍） */
+      if (f === 'att' && d[f] > 0 && this.env && this.env.romance != null) m *= 0.5 + this.env.romance / 100;
+      if (f === 'ten' && d[f] > 0 && this.env && this.env.strife != null) m *= 0.5 + this.env.strife / 100;
       if (d[f] > 0 && HK.Ties && this.ties) m *= HK.Ties.mult(this, a, b, f);
       if (f === 'att' && d[f] > 0 && !HK.canLove(a, b)) m *= a.lock != null && a.lock !== b.i ? 0 : 0.08;
       /* 血のつながった家族：惹かれは育たず、信頼は減りにくく底がある */

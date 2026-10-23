@@ -5678,6 +5678,9 @@
       var before = r[f], m = 1;
       if (f === 'att' && d[f] > 0) m = pf.chem;
       if (f === 'ten' && d[f] > 0) m = pf.fric;
+      /* 環境値「恋愛の起こりやすさ」「争いの起こりやすさ」：惹かれ・緊張の育ち方にも効かせる（既定の50で1倍、0で0.5倍、100で1.5倍） */
+      if (f === 'att' && d[f] > 0 && this.env && this.env.romance != null) m *= 0.5 + this.env.romance / 100;
+      if (f === 'ten' && d[f] > 0 && this.env && this.env.strife != null) m *= 0.5 + this.env.strife / 100;
       if (d[f] > 0 && HK.Ties && this.ties) m *= HK.Ties.mult(this, a, b, f);
       if (f === 'att' && d[f] > 0 && !HK.canLove(a, b)) m *= a.lock != null && a.lock !== b.i ? 0 : 0.08;
       /* 血のつながった家族：惹かれは育たず、信頼は減りにくく底がある */
@@ -22047,6 +22050,23 @@
       else ctx.mod2(a, b, { att: -4 }, { aff: 4 });
       var t = a.z.bitten ? '{a}は咬み跡を隠したまま、{b}に言った。「死ぬ前に、言っておきたかった。好きだった」' : ctx.pick(['「どうせ明日死ぬかもしれないなら」――{a}は{b}に、ずっと言えなかったことを言った。', '{a}は、崩れかけたビルの非常階段で、{b}に好きだと言った。']);
       return { text: ctx.t(t + (yes ? '{b}は返事の代わりに、{a}を強く抱きしめた。' : '{b}は「生き延びたら、もう一回言って」と答えた。'), a, b), why: '追い詰められた状況で、' + a.name + 'の本音（本音の出やすさ ' + Math.round(a.tr.honesty * 100) + '）が出た', mag: 30 };
+    }
+  });
+  /* 落ち着いた時間の告白（z_last は追い詰められたとき。こちらは見張りの合間・隠れ家の夜など、ふだんの気持ちが育ったとき）。
+     起こりやすさは恋愛の出来事として「恋愛の起こりやすさ」に連動する */
+  /* 恋愛の起こりやすさ（既定50）が高いほど、告白に踏み切る・受け入れる気持ちの敷居が下がる */
+  function romShift(ctx) { return ctx.env.romance == null ? 0 : (ctx.env.romance - 50) / 50; }
+  EV.push({
+    id: 'z_confess', cat: 'romance', scope: 'pair',
+    when: function (ctx, a, b) { var r = ctx.R(a, b), pf = ctx.pair(a, b), d = romShift(ctx); return HK.canLove(a, b) && r.att > 38 - d * 12 && r.aff > 20 - d * 10 && !pf.couple && !pf.zconf && !pf.kin && (a.lock == null || a.lock === b.i); },
+    w: function (ctx, a, b) { return 0.35 + a.tr.honesty * 0.8 + ctx.R(a, b).att / 120; },
+    run: function (ctx, a, b) {
+      var d = romShift(ctx), rb = ctx.R(b, a), yes = rb.att > 30 - d * 10 && rb.aff > 15 - d * 8 && (b.lock == null || b.lock === a.i), pf = ctx.pair(a, b);
+      pf.zconf = true;
+      if (yes) { pf.couple = true; ctx.mod2(a, b, { aff: 10, trust: 8, att: 8 }, { aff: 10, trust: 8, att: 8 }); }
+      else { ctx.mod2(a, b, { att: -4 }, { aff: 2 }); ctx.stress(a, 10); }
+      var t = ctx.pick(['見張りの交代のとき、{a}は{b}の隣に座ったまま言った。「こんな時に言うことじゃないけど……好きだ」', '隠れ家の暗がりで、{a}は{b}にだけ聞こえる声で言った。「生き延びたら、じゃなくて、今言っておきたい。好き」', '缶詰を分け合いながら、{a}はふと手を止めた。「……{b}のこと、ずっと見てた」']);
+      return { text: ctx.t(t + (yes ? ctx.pick(['{b}は少し黙ってから、{a}の手を握り返した。', '{b}は「知ってた」と小さく笑って、{a}の肩に頭を預けた。']) : ctx.pick(['{b}は困ったように目を伏せた。「今は、生き延びることしか考えられない」', '{b}は答えず、見張りの窓の外へ目をやった。'])), a, b), why: a.name + 'の惹かれ（' + Math.round(ctx.R(a, b).att) + '）と本音の出やすさ。' + b.name + 'の惹かれ（' + Math.round(rb.att) + '）・好意（' + Math.round(rb.aff) + '）', mag: yes ? 28 : 18 };
     }
   });
   EV.push({
@@ -40307,7 +40327,7 @@
   /* ---------- 捜査 ---------- */
   function conceal(S, c) {
     var h = S.mot.nobody ? skill(S.v1.i != null ? S.v1 : S.cul, 'hide') : skill(S.cul, 'hide');
-    return clamp(h * 0.27 + (c && c.kill ? c.kill.trick.diff * 0.07 : 0.1) + (S.acc ? 0.05 : 0) - (S.sloppy ? 0.15 : 0) + S.env.hard / 1000, 0, 0.65);
+    return clamp(h * 0.27 + (c && c.kill ? c.kill.trick.diff * 0.07 : 0.1) + (S.acc ? 0.05 : 0) - (S.sloppy ? 0.15 : 0) + 0.05 + (S.env.hard - 50) / 250, 0, 0.75);
   }
   function gain(S, p, pref) {
     var left = S.pool.filter(function (c) { return !c.found && !c.lost && !c.fake; });

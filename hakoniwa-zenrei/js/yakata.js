@@ -371,7 +371,7 @@
   /* ---------- 捜査 ---------- */
   function conceal(S, c) {
     var h = S.mot.nobody ? skill(S.v1.i != null ? S.v1 : S.cul, 'hide') : skill(S.cul, 'hide');
-    return clamp(h * 0.27 + (c && c.kill ? c.kill.trick.diff * 0.07 : 0.1) + (S.acc ? 0.05 : 0) - (S.sloppy ? 0.15 : 0) + S.env.hard / 1000, 0, 0.65);
+    return clamp(h * 0.27 + (c && c.kill ? c.kill.trick.diff * 0.07 : 0.1) + (S.acc ? 0.05 : 0) - (S.sloppy ? 0.15 : 0) + 0.05 + (S.env.hard - 50) / 250, 0, 0.75);
   }
   function gain(S, p, pref) {
     var left = S.pool.filter(function (c) { return !c.found && !c.lost && !c.fake; });

@@ -88,6 +88,7 @@ js/omega-guard.js
 js/omega-thick.js
 late js/incidents-social.js
 late js/incidents-survival.js
+late js/incidents-extra.js
 js/island-cook.js
 js/island-life.js
 js/island-hazard.js

@@ -449,6 +449,23 @@
       return { text: ctx.t(t + (yes ? '{b}は返事の代わりに、{a}を強く抱きしめた。' : '{b}は「生き延びたら、もう一回言って」と答えた。'), a, b), why: '追い詰められた状況で、' + a.name + 'の本音（本音の出やすさ ' + Math.round(a.tr.honesty * 100) + '）が出た', mag: 30 };
     }
   });
+  /* 落ち着いた時間の告白（z_last は追い詰められたとき。こちらは見張りの合間・隠れ家の夜など、ふだんの気持ちが育ったとき）。
+     起こりやすさは恋愛の出来事として「恋愛の起こりやすさ」に連動する */
+  /* 恋愛の起こりやすさ（既定50）が高いほど、告白に踏み切る・受け入れる気持ちの敷居が下がる */
+  function romShift(ctx) { return ctx.env.romance == null ? 0 : (ctx.env.romance - 50) / 50; }
+  EV.push({
+    id: 'z_confess', cat: 'romance', scope: 'pair',
+    when: function (ctx, a, b) { var r = ctx.R(a, b), pf = ctx.pair(a, b), d = romShift(ctx); return HK.canLove(a, b) && r.att > 38 - d * 12 && r.aff > 20 - d * 10 && !pf.couple && !pf.zconf && !pf.kin && (a.lock == null || a.lock === b.i); },
+    w: function (ctx, a, b) { return 0.35 + a.tr.honesty * 0.8 + ctx.R(a, b).att / 120; },
+    run: function (ctx, a, b) {
+      var d = romShift(ctx), rb = ctx.R(b, a), yes = rb.att > 30 - d * 10 && rb.aff > 15 - d * 8 && (b.lock == null || b.lock === a.i), pf = ctx.pair(a, b);
+      pf.zconf = true;
+      if (yes) { pf.couple = true; ctx.mod2(a, b, { aff: 10, trust: 8, att: 8 }, { aff: 10, trust: 8, att: 8 }); }
+      else { ctx.mod2(a, b, { att: -4 }, { aff: 2 }); ctx.stress(a, 10); }
+      var t = ctx.pick(['見張りの交代のとき、{a}は{b}の隣に座ったまま言った。「こんな時に言うことじゃないけど……好きだ」', '隠れ家の暗がりで、{a}は{b}にだけ聞こえる声で言った。「生き延びたら、じゃなくて、今言っておきたい。好き」', '缶詰を分け合いながら、{a}はふと手を止めた。「……{b}のこと、ずっと見てた」']);
+      return { text: ctx.t(t + (yes ? ctx.pick(['{b}は少し黙ってから、{a}の手を握り返した。', '{b}は「知ってた」と小さく笑って、{a}の肩に頭を預けた。']) : ctx.pick(['{b}は困ったように目を伏せた。「今は、生き延びることしか考えられない」', '{b}は答えず、見張りの窓の外へ目をやった。'])), a, b), why: a.name + 'の惹かれ（' + Math.round(ctx.R(a, b).att) + '）と本音の出やすさ。' + b.name + 'の惹かれ（' + Math.round(rb.att) + '）・好意（' + Math.round(rb.aff) + '）', mag: yes ? 28 : 18 };
+    }
+  });
   EV.push({
     id: 'z_close', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { var pf = ctx.pair(a, b); return HK.canLove(a, b) && HK.canLove(b, a) && (pf.couple || (ctx.R(a, b).att > 40 && ctx.R(b, a).att > 36)) && !pf.zclose; },
