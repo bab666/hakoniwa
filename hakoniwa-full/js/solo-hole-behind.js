@@ -51,6 +51,14 @@
     ride: L('{b}は{a}の腰に跨り、突き出た体を使うように、ゆっくりと腰を揺らした。|{b}は壁に手をつき、{a}の上に跨って、熱を擦りつけるように腰を振った。|{b}は{a}の上で身をくねらせ、壁の向こうの体を好きなように味わった。'),
     punish: L('{b}は低く呟いた。「……誰にこんな顔を見せたの」――嫉妬に任せて、{b}は{a}の体を自分のものだと刻みつけるように責め立てた。|{b}の目に、暗い光が宿った。「こんな格好で、誰を待ってたの」――{b}は{a}を許すつもりはなかった。|{b}は{a}の腰に爪を立てた。「ここは私のものだって、分からせてあげる」'),
     join: L('{b}も、黙って隣に並んだ。|それを見て、{b}も我慢できなくなった。|{b}は笑って、順番を待たずに手を伸ばした。'),
+    /* 性別の組ごとの書き分け（kind の文に混ぜて引く）。
+       fingerFF / teaseFF：女性どうし（指・舌。いちもつの語を使わない）／rideFM：女性が男性の体に跨る（女性が導き、搾り取る）／
+       fingerFM：女性が攻めで男性の体に触れる（握る・扱く。女性を押し入る主語にしない）／penFuta：ふたなりの人が男性の体で挿れる */
+    fingerFF: L('{b}は{a}の濡れたところを指先でそっと割り開いた。女どうしだから分かる場所を、一つずつ確かめるように撫でていった。|{b}は前の芽を親指で転がしながら、二本の指を奥へ沈めた。腰が跳ねるたびに、{b}は指の角度を少しずつ変えた。|{b}は{a}の内腿に頬を寄せ、指で奥の弱いところを探り当てた。そこを押し上げるたびに、壁の向こうの腰がきゅっと縮こまった。'),
+    teaseFF: L('{b}は{a}の脚の間に顔を埋め、舌先で前の芽をゆっくりと転がした。|{b}は{a}の濡れたところに唇を寄せ、溢れるものを舌で掬い上げた。|{b}は{a}の腰を抱き寄せ、柔らかい唇で、熱を持ったところに何度も口づけた。'),
+    rideFM: L('{b}は{a}のものを手のひらで包んで硬さを確かめ、それから跨って、自分の中へゆっくりと導き入れた。|{b}は壁に背を預け、{a}のものの上に腰を沈めた。好きな深さ、好きな速さで、搾り取るように腰を揺らした。|{b}は{a}のものに跨ったまま、果てそうになるたびに動きを止めた。「まだ、だめ」――壁の向こうの腰が、焦れて震えた。'),
+    fingerFM: L('{b}は{a}のものを握り、根元から先まで、搾るようにゆっくりと扱き上げた。|{b}は{a}のものの先を指先で撫で回し、溢れてきたものを塗り広げながら、手首を返して扱いた。|{b}は片手で{a}のものを扱き、もう片方の手で、張りつめた付け根を柔らかく揉みしだいた。'),
+    penFuta: L('{b}はスカートの奥から自分のものを取り出し、{a}の腰を両手で掴んで、ゆっくりと奥まで沈めていった。|{b}は女の体に似合わない硬さを{a}の入り口に押し当て、一息に貫いた。壁が、{b}のリズムで軋みはじめた。|{b}は息を荒げながら{a}の腰を引き寄せ、自分のもので深いところを何度も突き上げた。'),
     unaware: L('壁のこちら側の{a}は、何も感じないまま天井を見上げていた。|こちら側の{a}は、壁が揺れる理由を知らなかった。|{a}は、壁の向こうで誰が何をしているのか、まるで知らなかった。'),
     feel: L('{a}は、壁の向こうから伝わる熱に、声を殺して身をよじった。|戻っていた感覚が、壁の向こうの動きを一つ残らず{a}に伝えた。{a}は壁に爪を立てた。'),
     after: {
@@ -124,6 +132,8 @@
       b.know = rng() < 0.15 + Math.max(0, b.r.w) * 0.6 + (b.r.love ? 0.15 : 0) + (h.action.id === 'shout' ? 0.2 : 0);
       var w = b.know ? b.r.w : 0, love = b.know && (b.r.love || b.r.crush), t = b.tr;
       b.kind = kindOf(S, b, h);
+      /* 本人が攻め寄り（跨られる側）に回っている回は、自分で攻めを選んだ人を除いて、挿れる代わりに跨る */
+      if (st.topMe && (b.kind === 'pen' || b.kind === 'finger') && !(HK.Pos && HK.Pos.hardTop(b))) b.kind = 'ride';
       var v = vis / 2;
       b.help = 0.12 + Math.max(0, w) * 0.9 + t.np * 0.35 + t.cp * 0.15 + t.caution * 0.1 - v * (t.fc * 0.3 + t.impulse * 0.3) - (b.know && b.r.fam ? 0 : 0);
       b.lewd = b.kind ? 0.05 + v * (0.45 + t.fc * 0.5 + t.impulse * 0.5 + t.aggr * 0.25) + (love ? v * 0.45 : 0) + Math.max(0, -w) * 0.5 + env.lewd / 250 - t.warmth * 0.15 - (love ? 0 : Math.max(0, w) * 0.35) - (b.know && b.r.fam ? 1 : 0) : 0;
@@ -177,7 +187,8 @@
     }
     /* 手を出す */
     doers.forEach(function (b, k) {
-      var tx = (k ? F(K.pick(S, T.join), { b: b.name }) : '') + (b.punish ? F(K.pick(S, EB(S, 'punish', T.punish)), { b: b.name }) : '') + F(K.pick(S, EB(S, b.kind, T[b.kind])), { b: b.name });
+      var vk = variantOf(b, h), body = vk ? (HK.Ero && HK.Ero.has('hole', 'behind.' + vk) ? EB(S, vk, T[vk]) : vk === 'fingerFM' ? T[vk] : EB(S, b.kind, T[vk].concat(T[vk], T[b.kind]))) : EB(S, b.kind, T[b.kind]);
+      var tx = (k ? F(K.pick(S, T.join), { b: b.name }) : '') + (b.punish ? F(K.pick(S, EB(S, 'punish', T.punish)), { b: b.name }) : '') + F(K.pick(S, body), { b: b.name });
       var pw = { pen: 34, finger: 26, tease: 20, ride: 28 }[b.kind] + (b.punish ? 8 : 0);
       if (st.live) {
         var r = K.stim(S, pw, { part: 'belly', defer: true });
@@ -209,6 +220,15 @@
     K.key(S, o, rescuer.name + 'に助け出された');
     return { rescued: rescuer, doers: doers };
   };
+  /* 性別の組の書き分け（女性どうし・女性が上・ふたなり） */
+  function variantOf(b, h) {
+    var Pz = HK.Pos; if (!Pz) return '';
+    if (b.kind === 'pen' && Pz.futa(b)) return 'penFuta';
+    if (b.kind === 'finger') return Pz.isF(h) ? 'fingerFF' : Pz.isF(b) ? 'fingerFM' : '';
+    if (b.kind === 'tease' && Pz.isF(b) && Pz.isF(h)) return 'teaseFF';
+    if (b.kind === 'ride' && Pz.isF(b) && !Pz.isF(h)) return 'rideFM';
+    return '';
+  }
   function whyOf(b) {
     var k = { pen: '挿入', finger: '指で', tease: '触れる・舐める（受けなので挿入しない）', ride: '跨る（受けなので自分からは挿入しない）' }[b.kind];
     return b.name + 'が手を出した：' + k + (b.punish ? '／嫉妬深く、恋人（想い人）の体だと気づいたので、お仕置き' : '') + (b.know ? '' : '／誰の体か分からないまま');
@@ -221,7 +241,7 @@
     else {
       h.pleasure += st.stored * 0.8; h.reason -= st.stored * 0.07; h.corrupt += st.stored * 0.03 * (S.k || 1);
       var parts = []; while (h.pleasure >= 100 && parts.length < 4) parts.push(K.climax(S, { silent: true }));
-      var oc = K.say(S, { kind: 'climax', tag: parts.length > 1 ? '連続絶頂' : '絶頂', text: EZ(S, F(K.pick(S, EB(S, st.topMe ? 'rescued.top' : 'rescued', T.rescued)))) + (parts.length ? ' ' + h.name + parts.join('') : ''), why: '助け出された瞬間に、溜まっていた感覚（' + Math.round(st.stored) + '）が戻った' });
+      var oc = K.say(S, { kind: 'climax', tag: parts.length > 1 ? '連続絶頂' : '絶頂', text: EZ(S, F(K.pick(S, EB(S, st.topMe ? 'rescued.top' : HK.Pos && HK.Pos.isF(h) && HK.Pos.isF(b) ? 'rescued.ff' : 'rescued', T.rescued)))) + (parts.length ? ' ' + (parts[0].charAt(0) === '「' ? h.name : '') + parts.join('') : ''), why: '助け出された瞬間に、溜まっていた感覚（' + Math.round(st.stored) + '）が戻った' });
       K.key(S, oc, b.name + 'に抱きついたまま達した');
     }
     K.settle(S); K.snap(S, { s: 0 });

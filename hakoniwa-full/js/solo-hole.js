@@ -15,8 +15,9 @@
     white: { n: '白い部屋', in: '{a}が目を覚ますと、白い部屋の壁に腰まで埋まっていた。紙が一枚。「◯時間、耐えてください」' }
   };
 
-  /* 壁の向こう（本人には分からない） */
+  /* 壁の向こう（本人には分からない）。こちら側に聞こえる気配だけの出来事として、HoleMore.BEYOND に混ぜて使う（amb：落差の文を続けない） */
   var BEYOND = L('壁の向こうで、誰かが小さく笑う声がした。{a}には、それが自分に向けたものかどうか分からなかった。|壁が、とん、とん、と規則正しく揺れた。{a}は何も感じない自分の腰を、ぼんやりと見下ろした。|向こう側で、何かの機械が低く唸り始めた。{a}の体は、何も伝えてこなかった。|壁越しに、複数の足音と、ひそひそ話す声が聞こえた。「…これ、本当に感じてないの？」|壁がわずかに温かくなった気がした。{a}は気のせいだと思うことにした。|向こう側から、ぬちゃ、という湿った音がした。{a}は耳を塞ぎたかったが、手が届かなかった。|壁の向こうで、誰かが「次、俺な」と言った。{a}は聞かなかったことにした。|しばらく静かだった。それから、壁が長いこと小刻みに震え続けた。');
+  var AMB = BEYOND.map(function (t) { return { lv: 0, t: t, fx: { amb: 1 } }; });
   /* こちら側の心の動き（態度ごと） */
   var MIND = {
     proud: L('{a}は「出たら全員殴る」と天井に向かって宣言した。|{a}は腕を組み、苛立たしげに壁を拳で叩いた。「何がしたいんだ、これは」'),
@@ -67,10 +68,10 @@
     fall: L('{a}はしばらく動けなかった。やがて震える手で壁を撫で、小さな声で言った。「…もう一回、入れて」|{a}は解放されたあとも、壁の穴の前から離れなかった。次に入るのを、待っているようだった。|{a}は自分から、もう一度壁の穴へ腰を戻した。向こう側から、拍手が聞こえた。'),
     broken: L('{a}は床にへたり込んだまま、焦点の合わない目で天井を見ていた。何を言われても、しばらく返事ができなかった。|{a}は自分の腰に恐る恐る触れて、そこにまだ熱が残っているのを確かめ、顔を覆った。'),
     hold: {
-      proud: L('{a}は膝を震わせながらも、自分の足で立った。「二度と来るか、こんなところ」'), stern: L('{a}は壁に額をつけたまま、長い長い息を吐いた。それから黙って服を整え、背筋を伸ばして部屋を出た。'),
-      tsun: L('{a}は真っ赤な顔で「き、記憶にないから！何も覚えてないから！」と叫んで走り去った。'), gentle: L('{a}は「あらあら…大変だったわね、わたし」と自分の頭を撫でて、ふらふらと立ち上がった。'),
-      devoted: L('{a}は泣きながら笑った。「…耐えた。ちゃんと、耐えたよ」'), cool: L('{a}はしばらく無言で天井を見つめ、「…記録には残さない」とだけ言った。'),
-      polite: L('{a}は乱れた服を丁寧に整え、壁に向かって一礼してから部屋を出た。膝は、まだ震えていた。'), free: L('{a}は床に大の字になって、「すっご…なにあれ…」と天井に向かって呟いた。'), shy: L('{a}は乱れた服を整え、何もなかった顔で部屋を出た。廊下に出た瞬間、壁に手をついてしゃがみ込んだ。')
+      proud: L('{a}は膝を震わせながらも、自分の足で立った。「二度と来るか、こんなところ」|{a}は壁を一度だけ蹴りつけ、乱れた息のまま顎を上げた。「……この程度で、折れるかよ」|{a}は震える指で襟を正し、誰もいない部屋を睨み回した。「覚えてろ。仕掛けたやつ、全員だ」'), stern: L('{a}は壁に額をつけたまま、長い長い息を吐いた。それから黙って服を整え、背筋を伸ばして部屋を出た。|{a}は膝の震えが収まるまで、目を閉じて呼吸を数えた。百を数え終えると、何事もなかったように歩き出した。|{a}は乱れた襟元を一つずつ留め直した。最後のボタンを留める指だけが、わずかに震えていた。'),
+      tsun: L('{a}は真っ赤な顔で「き、記憶にないから！何も覚えてないから！」と叫んで走り去った。|{a}は壁を振り返りかけて、慌てて前を向いた。「べ、別に、何ともなかったし。……ほんとに」|{a}は赤い顔のまま、壁に向かって「二度と来ないから！」と言い捨てた。声が、少し裏返っていた。'), gentle: L('{a}は「あらあら…大変だったわね、わたし」と自分の頭を撫でて、ふらふらと立ち上がった。|{a}は壁にそっと手を当てて、「よく頑張ったわね」と自分の腰に言い聞かせるように撫でた。|{a}はゆっくり息を整え、乱れた髪を指で梳いた。「ふふ……帰ったら、お風呂に長く浸かりましょう」'),
+      devoted: L('{a}は泣きながら笑った。「…耐えた。ちゃんと、耐えたよ」|{a}は自分の両肩を抱きしめて、しばらく震えていた。それから小さく頷いた。「……帰ろう。待ってる人がいる」|{a}は涙を拭って、壁に頭を下げた。「……ちゃんと、最後まで、わたしのままでいられた」'), cool: L('{a}はしばらく無言で天井を見つめ、「…記録には残さない」とだけ言った。|{a}は手首の脈を測り、正常に戻るまでの秒数を数えた。「……回復まで四分。想定より長い」|{a}は壁の継ぎ目を一瞥し、構造を頭に叩き込んでから部屋を出た。二度と、同じ手には乗らない。'),
+      polite: L('{a}は乱れた服を丁寧に整え、壁に向かって一礼してから部屋を出た。膝は、まだ震えていた。|{a}は深く息を吐き、「大変、失礼いたしました」と誰にともなく詫びてから、ゆっくりと立ち上がった。|{a}は乱れた裾を整え、背筋を伸ばした。「……お世話に、なりました」――声だけが、まだ少し掠れていた。'), free: L('{a}は床に大の字になって、「すっご…なにあれ…」と天井に向かって呟いた。|{a}は笑いながら床を転がった。「やば、腰抜けた。……でも、ちょっと面白かったかも」|{a}は大きく伸びをして、「あー、生きてる」と天井に言った。脚は、まだ笑っていた。'), shy: L('{a}は乱れた服を整え、何もなかった顔で部屋を出た。廊下に出た瞬間、壁に手をついてしゃがみ込んだ。|{a}は顔を両手で覆ったまま、しばらく動けなかった。指の隙間から見える頬は、耳まで真っ赤だった。|{a}は誰にも会いませんようにと祈りながら、壁伝いに出口へ向かった。一歩ごとに、膝が小さく笑った。')
     }
   };
 
@@ -124,9 +125,18 @@
     h.sens = 0.85 + (h.stats.sense - 3) * 0.12;
     var H = env.hours, pl = PLACE[env.place] || PLACE.lab;
     S.k = clamp(Math.pow(6 / H, 0.5), 0.5, 1.4);
-    var topMe = HK.Pos && HK.Pos.vsNpc(h, '') === 'top';
+    /* ふたなりの設定（SoloKit の住人には載らないので、ここで写す） */
+    h.futa = !!(input.chars[cast.si || 0] || {}).futa;
     /* 自分で「攻め」を選んだ人は、壁の向こうで「される」側にならない：手を出そうとした相手は追い払われ、感覚は何も溜まらない */
     var hardTop = !!(HK.Pos && HK.Pos.hardTop(h));
+    /* 攻め寄り（跨られる側）：自分で攻めを選んだ人は上の hardTop の流れへ抜けるので、ここに来るのは
+       受け攻めを決めていないリバ・おまかせの男性（とふたなりのリバ）が、気質（CP・攻撃性・FC）で主導する側に回ったとき。
+       壁の向こうの人は{a}のものに跨り、挿入される出来事は起きない。女性の体の人は受ける側のまま（跨られる体がないので） */
+    var topMe = false;
+    if (HK.Pos && !hardTop && !HK.Pos.isF(h) && (HK.Pos.of(h) === 'riba' || (HK.Pos.of(h) === '' && h.gender === 'm'))) {
+      var lead0 = (HK.Pos.of(h) === 'riba' ? 0.45 : 0.25) + (h.tr.cp - 0.5) * 0.5 + (h.tr.aggr - 0.5) * 0.35 + (h.tr.fc - 0.5) * 0.2 - (h.tr.ac - 0.5) * 0.3;
+      topMe = rng() < clamp(lead0, 0.08, 0.8);
+    }
     /* 攻めの指定なら「中に出された」系の文を避ける */
     var RECV_RE = /なか、|なかに|中に|中が|中を|お腹|内部|残留|残って|入っていた|注が|出され|太腿を伝|何人の方が|奥へ|奥に/;
     /* 描写の作風「男性向け」（ero-kit.js・solo-hole-ero.js）：攻め寄りの人には「.top」の文があればそれを、なければ小説調の文を使う */
@@ -139,7 +149,7 @@
       var u = S0._hseen = S0._hseen || {}, g = f.filter(function (x) { return !u[x]; }), x = K.pick(S0, g.length ? g : f); u[x] = 1; return x;
     };
     var X = HK.HoleMore, plKey = PLACE[env.place] ? env.place : 'lab';
-    var stored = 0, leaks = 0, visits = 0, people = 0, early = false, hot = 0, lostN = 0, meta = { cum: 0, tent: 0, mark: 0 }, thisN = 0;
+    var stored = 0, leaks = 0, visits = 0, people = 0, early = false, hot = 0, lostN = 0, meta = { cum: 0, tent: 0, mark: 0, ride: 0 }, thisN = 0;
     var mindList = MIND[h.persona].concat(X.MIND[h.persona] || []).filter(function (x) { return !hardTop || !/乱暴にしないで|お手柔らかに/.test(x); }), confList = EL('confuse.' + h.persona, CONFUSE[h.persona].concat(X.CONFUSE[h.persona] || []));
     /* 解放のしかた：おまかせなら場所と運で決まる */
     var mode = env.release && env.release !== 'auto' ? env.release : (function () { var x = rng(); return x < 0.4 ? 'burst' : x < 0.62 ? 'drip' : x < 0.82 ? 'mid' : 'late'; })();
@@ -176,9 +186,10 @@
     function beyond() {
       var lw = env.lewd / 100, wts = [1.2 - lw, 0.6 + lw * 0.2, lw * 1.6];
       /* 受け攻め：本人が攻めの指定なら、挿入される場面の代わりに「跨られる」場面を使う */
-      var list = X.beyondFor ? X.beyondFor(h, plKey) : X.BEYOND[plKey];
+      var list = (X.beyondFor ? X.beyondFor(h, plKey) : X.BEYOND[plKey]).concat(AMB);
       if (hardTop && X.BEYOND_HARD) return K.pick(S, X.BEYOND_HARD[plKey]);
-      if (topMe && X.BEYOND_TOP) list = list.filter(function (e) { return !X.PEN_RE.test(e.t) && !(e.fx.cum > 0); }).concat(X.BEYOND_TOP);
+      /* 攻め寄り：挿入される出来事を外し、跨られる出来事（女性が跨る FM も含む）に差し替える */
+      if (topMe && X.BEYOND_TOP) list = list.filter(function (e) { return e.fx.ride || (!X.PEN_RE.test(e.t) && !(e.fx.cum > 0)); }).concat(X.BEYOND_TOP);
       /* 男性向け：書き下ろしの出来事を多めに混ぜる */
       if (eon) { var ex = topMe ? EK.L(S, 'hole', 'beyondTop', []) : EK.L(S, 'hole', 'beyond.' + plKey, []); list = list.concat(ex, ex); }
       return HK.weighted(rng, list, function (e) { return Math.max(0.03, wts[e.lv]); });
@@ -186,6 +197,7 @@
     function metaWhy() {
       var m = [];
       if (meta.cum) m.push((topMe ? '中で果てた ' : '中に出された ') + meta.cum + '回');
+      if (meta.ride) m.push('跨られた ' + meta.ride + '回');
       if (meta.tent) m.push('触手・道具 ' + meta.tent + '回');
       if (meta.mark) m.push('記録・落書き ' + meta.mark);
       return '本人は感じていない' + (m.length ? '／' + m.join('・') : '');
@@ -214,16 +226,16 @@
         var be = beyond(), f = be.fx;
         if (live) {
           /* 「本人は知らない」書き方の出来事と、直近に出た出来事は引き直す */
-          for (var tries = 0; tries < 6 && (LV.UNAWARE.test(be.t) || liveSeen.indexOf(be.t) >= 0); tries++) be = beyond();
+          for (var tries = 0; tries < 6 && (be.fx.amb || LV.UNAWARE.test(be.t) || liveSeen.indexOf(be.t) >= 0); tries++) be = beyond();
           liveSeen.push(be.t); if (liveSeen.length > 4) liveSeen.shift(); f = be.fx;
-          visits++; people += f.n || 0; meta.cum += f.cum || 0; meta.tent += f.tent || 0; meta.mark += f.mark || 0;
+          visits++; people += f.n || 0; meta.cum += f.cum || 0; meta.tent += f.tent || 0; meta.mark += f.mark || 0; meta.ride += f.ride || 0;
           liveFx(be); K.settle(S);
           if (rng() > 0.6) break;
           continue;
         }
-        visits++; people += f.n || 0; meta.cum += f.cum || 0; meta.tent += f.tent || 0; meta.mark += f.mark || 0;
+        visits++; people += f.n || 0; meta.cum += f.cum || 0; meta.tent += f.tent || 0; meta.mark += f.mark || 0; meta.ride += f.ride || 0;
         if (!hardTop) stored += (40 + env.lewd * 0.6) * (1 + be.lv * 0.45 + (f.cum || 0) * 0.15 + (f.tent || 0) * 0.12) * (0.7 + rng() * 0.6) * h.sens;
-        var txt = K.fmt(S, be.t.replace(/◯/g, String(H))) + (!hardTop && rng() < 0.55 ? K.fmt(S, pk(S, EL('contrast', X.CONTRAST))) : '');
+        var txt = K.fmt(S, be.t.replace(/◯/g, String(H))) + (!hardTop && !f.amb && rng() < 0.55 ? K.fmt(S, pk(S, EL('contrast', X.CONTRAST))) : '');
         say(S, { kind: 'ev', tag: '壁の向こう', text: txt, why: hardTop ? '攻めの指定：手を出そうとした相手を追い払った' : metaWhy() + '（溜まった感覚 ' + Math.round(stored) + '）' });
         if (rng() > 0.5) break;
       }
@@ -317,7 +329,8 @@
       K.key(S, oa2, stL === 'fall' ? '快楽に堕ちた' : stL === 'enjoy' ? '壁の向こうを受け入れた' : stL === 'broken' ? '崩れ落ちた' : '耐えきった');
       K.snap(S, { s: 0 });
       var metaL = [];
-      if (meta.cum) metaL.push((topMe ? '向こう側の誰かの中で果てたのは' : '中に出されたのは') + meta.cum + '回');
+      if (meta.cum) metaL.push((topMe ? '向こう側の誰かの中で果てたのは' : '奥に注がれたのは') + meta.cum + '回');
+      if (meta.ride) metaL.push('跨られたのは' + meta.ride + '回');
       if (meta.tent) metaL.push('触手や道具に責められたのは' + meta.tent + '回');
       var EL = { type: stL === 'enjoy' ? 'fall' : stL, kind: stL === 'fall' || stL === 'enjoy' ? 'over' : stL === 'broken' ? 'mid' : 'ok', title: stL === 'fall' ? '快楽堕ち ― 最中に戻った感覚に呑まれた' : LV.TITLE[tierE], lines: [
         h.name + 'は' + pl.n + 'で' + ho + '時間を過ごした。壁の向こうには' + (people || visits) + '人が来ていた。',
@@ -325,7 +338,7 @@
         K.fmt(S, LV.LINE[tierE]) + h.name + 'は' + h.climax + '回果てた。'
       ] };
       var advL = ['最中に感覚が戻ると、溜まっていた分が一度に届き、そのあとは一つ一つを生で感じる。', '受け入れていく早さは、意志（CP・A・理性）で遅くなり、過激さ ' + env.lewd + '・感じやすさ ' + h.stats.sense + 'で早くなる。'];
-      return K.finish(S, input, EL, advL, { meta: pl.n + '・' + H + '時間・最中に戻る', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['感覚が戻ってから', liveN + '回'], [topMe ? '中で果てた回数' : '中に出された回数', meta.cum + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
+      return K.finish(S, input, EL, advL, { meta: pl.n + '・' + H + '時間・最中に戻る', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['感覚が戻ってから', liveN + '回'], [topMe ? '中で果てた回数' : '奥に注がれた回数', meta.cum + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
     }
     K.step(S, early ? '脱出の瞬間' : mode === 'late' ? '解放……？' : '解放');
     var o0;
@@ -333,7 +346,7 @@
       o0 = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, RELEASE)) + ' ' + K.fmt(S, pk(S, X.LATE_IN)), why: '感覚は、まだ戻っていない' });
       S.step = H + 2; K.step(S, '帰り道');
     } else {
-      o0 = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, RELEASE)) + ' ' + (mode === 'drip' ? K.fmt(S, topMe ? X.DRIP_TOP[0] : EL('drip', [X.DRIP[0]])[0]) : K.fmt(S, pk(S, EL('flood', FLOOD)), { h: ho })), why: '溜まっていた感覚 ' + Math.round(stored) + '（訪問 ' + visits + '回）／解放：' + X.RELEASE_MODE[mode] });
+      o0 = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, RELEASE)) + ' ' + (mode === 'drip' ? K.fmt(S, topMe ? X.DRIP_TOP[0] : pk(S, EL('drip', [X.DRIP[0]]))) : K.fmt(S, pk(S, EL('flood', FLOOD)), { h: ho })), why: '溜まっていた感覚 ' + Math.round(stored) + '（訪問 ' + visits + '回）／解放：' + X.RELEASE_MODE[mode] });
     }
     K.key(S, o0, '感覚が戻った');
     var wave = Math.min(mode === 'drip' ? 10 : 8, Math.max(mode === 'drip' ? 3 : 1, Math.round(stored / (mode === 'drip' ? 55 : 80))));
@@ -370,7 +383,8 @@
 
     var title = state === 'fall' ? '快楽堕ち ― 自分から穴に戻った' : mode === 'late' ? '帰り道で ― 遅れて届いた' + ho + '時間' : state === 'broken' ? '崩れ落ちた ― ' + h.climax + '回の波に呑まれて' : early ? '自力脱出 ― 溜まった分だけで済んだ' : peeked ? '見てしまった ― 壁の裏側の記録' : '耐えきった ― 最後まで心は折れなかった';
     var metaLine = [];
-    if (meta.cum) metaLine.push((topMe ? '向こう側の誰かの中で果てたのは' : '中に出されたのは') + meta.cum + '回');
+    if (meta.cum) metaLine.push((topMe ? '向こう側の誰かの中で果てたのは' : '奥に注がれたのは') + meta.cum + '回');
+    if (meta.ride) metaLine.push('跨られたのは' + meta.ride + '回');
     if (meta.tent) metaLine.push('触手や道具に責められたのは' + meta.tent + '回');
     var E = { type: state, kind: state === 'fall' ? 'over' : state === 'broken' ? 'mid' : 'ok', title: title, lines: [
       h.name + 'は' + pl.n + 'で' + ho + '時間を過ごした。壁の向こうには' + (people || visits) + '人が来ていた。',
@@ -382,7 +396,7 @@
     adv.push('待っている間に削れたのは、' + (h.tr.fc + h.tr.ac > h.tr.a + h.tr.cold ? '想像力（FC・AC）のせい。何も感じないのに、心だけが先に熱くなった。' : '時間そのもの。A・ドライさのおかげで、想像には呑まれにくかった。'));
     adv.push('戻ってきた感覚の量は、人通り ' + env.traffic + '・過激さ ' + env.lewd + '・感じやすさ ' + h.stats.sense + 'で決まった。解放のしかたは「' + X.RELEASE_MODE[mode] + '」。');
     if (state !== 'hold') adv.push('精神力（' + h.stats.mind + '）とCP（' + Math.round(h.eg.CP) + '）がもう少しあれば、最後の波に耐えられたかもしれない。');
-    return K.finish(S, input, E, adv, { meta: pl.n + '・' + H + '時間・' + X.RELEASE_MODE[mode], estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], [topMe ? '中で果てた回数' : '中に出された回数', meta.cum + '回'], ['触手・道具', meta.tent + '回'], ['遮断の揺らぎ', leaks + '回'], ['解放時の絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
+    return K.finish(S, input, E, adv, { meta: pl.n + '・' + H + '時間・' + X.RELEASE_MODE[mode], estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], [topMe ? '中で果てた回数' : '奥に注がれた回数', meta.cum + '回'], ['触手・道具', meta.tent + '回'], ['遮断の揺らぎ', leaks + '回'], ['解放時の絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
   }
   HK.SCEN_ORDER.push('hole');
 })();
