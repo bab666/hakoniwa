@@ -17,7 +17,8 @@
   function F(t, m) { return ST.fmt(t, m); }
   function pick(S, a) { return ST.pick(S, a); }
   var SCEN = { jashin: 1, yakata: 1 };
-  function on(S) { return !HK.SAFE_ON && S && S.scen && SCEN[S.scen.id]; }
+  /* 描写の長さが「数行で短く」（混ぜるなら半分）のときは、段落に分けない（story-lewd.js の HK.Lewd.storyShort） */
+  function on(S) { return !HK.SAFE_ON && S && S.scen && SCEN[S.scen.id] && !(HK.Lewd && HK.Lewd.storyShort && HK.Lewd.storyShort(S)); }
   var P = '\n\n';
 
   /* 繋がった直後の手触り（気分ごと） */

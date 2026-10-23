@@ -269,6 +269,7 @@ js/jashin-duo-r18.js
 late js/solo-jashin-r18-god.js
 late js/solo-jashin-r18-godnight.js
 js/solo-jashin-r18-climax.js
+late js/story-lewd.js
 late js/jinro-data.js
 js/scenario-jinro.js
 late js/jinro-after.js

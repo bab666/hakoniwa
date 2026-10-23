@@ -814,8 +814,9 @@
     var R = SH.R18, lw = lewdOf(S);
     if (!R || !R.xFade) return text;
     if (lw.lv === 'low') return F(pk(S, top ? R.xFadeTop : R.xFade), v);
-    if (lw.ero) text += (/\n\n/.test(text) ? '\n\n' : '') + F(R.xFill(S, pk(S, top ? R.xEroTop : R.xEro), a, top), v);
-    if (lw.high) text += (/\n\n/.test(text) ? '\n\n' : '') + F(lw.ero && !top ? R.xFill(S, pk(S, R.xAgainEro), a, false) : pk(S, R.xAgain), v);
+    /* 男性向けの段落は、自分で攻めを選んで生き物を責める側のときだけ（襲われる場面は合意がないので足さない） */
+    if (lw.ero && top) text += (/\n\n/.test(text) ? '\n\n' : '') + F(R.xFill(S, pk(S, R.xEroTop), a, top), v);
+    if (lw.high) text += (/\n\n/.test(text) ? '\n\n' : '') + F(pk(S, R.xAgain), v);
     return text;
   }
   function nightR18(S) {

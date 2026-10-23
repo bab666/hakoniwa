@@ -8,7 +8,7 @@
   var HK = window.HK, JS = HK.JASHIN, ST = HK.Story, scen = HK.SCENARIOS && HK.SCENARIOS.jashin;
   if (!JS || !scen || !ST) return;
   function L(s) { return s.split('|'); }
-  scen.env.push({ id: 'jlewd', label: '夜の出来事（R18）', min: 0, max: 100, def: 40, lo: '起きない', hi: '毎晩', desc: '媚薬の食事・夜這い・参加者どうしの夜・儀式での行為の起きやすさ' });
+  scen.env.push({ id: 'jlewd', label: '夜の出来事の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: '毎晩', desc: '媚薬の食事・夜這い・参加者どうしの夜・儀式での行為の起きやすさ' });
 
   var MEAL = L('歓迎の膳には、山菜と川魚と、甘い香りの濁り酒が並んだ。|女将が「村の名物です」と、とろりとした汁物をよそった。|夕餉の膳に、見たことのない赤い茸が添えられていた。');
   var MEAL_EAT = L('{a}は箸をつけた。しばらくすると、体の芯がじんわりと熱くなってきた。|{a}は濁り酒を一杯飲み干した。頬が火照り、肌が着物に擦れるだけで息が上がった。|{a}は勧められるままに食べた。夜が更けるほど、熱は下腹に溜まっていった。');
@@ -261,6 +261,8 @@
   function pairSex(S, x, y, opt) {
     var R = HK.R18M;
     opt = opt || {};
+    /* 描写の作風「男性向け」（story-lewd.js） */
+    if (HK.Lewd && HK.Lewd.storyEro && HK.Lewd.storyEro(S)) return HK.Lewd.storyEroSex(S, x, y);
     if (isFF(x, y) && HK.FF) {
       /* 山場を段落に分けて厚く（r18-thick.js） */
       if (HK.R18Thick && HK.R18Thick.on(S)) return HK.R18Thick.ff(S, x, y, opt);
