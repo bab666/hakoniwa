@@ -193,7 +193,8 @@
       else if (mode === 'tsun' && /^(嬉しい|うれしい)(です|よ)?$/.test(body)) out = '……別に、嬉しくなんか';
       else out = plainSentence(body, mode === 'proud' ? 'proud' : 'casual');
       /* 奔放の女性は、男っぽい命令（「選ばせろ」「聞かせろ」「飲め」）をお願いの形に（「選ばせて」「聞かせて」「飲んで」） */
-      if (mode === 'free' && f && who.tone !== 'hero') {
+      /* 熱血・兄貴分・ヤンキーは、女性でも命令は命令のまま（「伏せろ！」を「伏せて！」にしない） */
+      if (mode === 'free' && f && !/^(?:hero|aniki|yankee)$/.test(who.tone)) {
         var sf = /って$/.test(body) ? null : soften(out || body); if (sf) out = sf;
         /* 「お前」→「あんた」、「行くぞ」→「行くよ」 */
         var sx = (out || body).replace(/お前(?=[^らた達]|$)/g, 'あんた'); if (!tail) sx = sx.replace(/(?<!どう)ぞ$/, 'よ');
