@@ -273,6 +273,8 @@
 
   JS.R18 = {
     hardTop: hardTop, okPair: okPair, ff: isFF, sex: pairSex,
+    /* 態度9種ごとの書き分け（JP）を、神ごとの夜（solo-jashin-r18-god.js）からも使う */
+    pz: pz,
     on: function (S) { return !HK.SAFE_ON && (S.env.jlewd || 0) > 0; },
     arrive: function (S) {
       S.P.forEach(function (p) { p.cnt.r18 = 0; });
