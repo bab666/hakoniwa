@@ -79,10 +79,29 @@
   }
   /* 状況ごとの夜（solo-sit-night-r18.js）が同じ部品を使えるように */
   var RN = HK.RelNight = { order: order, okPair: okPair, combo: combo, noMut: noMut, psOf: psOf, REACT: REACT, AFTER_PS: AFTER_PS, ANIKI: ANIKI };
+  /* R18の描写の設定（lewd-unify.js）：描写の有無（low＝ほのめかす）。設定をそろえていない箱庭では null */
+  RN.lv = function (ctx) { var X = HK.Lewd; return X && X.conf(ctx.scen.id) ? X.lv(ctx.env) : null; };
+  /* 本番の書き方：数行で短く＝呼び出し側の短い文（shortFn）／段落分けして厚く＝thick-sex.js／男性向け＝thick-sex-ero.js／濃い＝もう一度。
+     x＝攻め、y＝受け。openFn：厚い版・男性向けの始まりの段（その場所らしい前戯の一文）。厚い版は前後に段落の区切りを付けて返す。設定をそろえていない箱庭では shortFn のまま */
+  RN.body = function (ctx, place, x, y, shortFn, openFn) {
+    var X = HK.Lewd, TS = HK.ThickSex, TE = HK.ThickEro;
+    if (!X || !X.conf(ctx.scen.id)) return shortFn();
+    var pick = function (a) { return ctx.pick(a); };
+    var ero = X.ero(ctx.env) && TE, short = X.short(ctx.env, ctx.rng), high = X.high(ctx.env) && TE, t;
+    var op = (ero || !short) && openFn ? openFn() : null;
+    if (op) op = op.split(x.name).join('{a}').split(y.name).join('{b}');
+    if (ero) t = short ? TE.short({ S: ctx, pick: pick, a: x, b: y, open: op || '', again: high }).text : TE.scene({ S: ctx, pick: pick, rng: ctx.rng, a: x, b: y, style: TS ? TS.style(x) : 'gentle', place: place, open: op, again: high }).text;
+    else if (!short && TS) t = TS.scene({ pick: pick, rng: ctx.rng, a: x, b: y, style: TS.style(x), place: place, open: op }).text + (high ? '\n\n' + TE.again(ctx, pick, x, y, false, false) : '');
+    else return shortFn() + (high ? fill(TE.again(ctx, pick, x, y, false, true), { a: x.name, b: y.name }) : '');
+    t = fill(t, { a: x.name, b: y.name });
+    if (HK.Pos && HK.Pos.ff(x, y) && HK.FF && HK.FF.fix) t = HK.FF.fix(ctx, t, x, y);
+    return short ? t : '\n\n' + t + '\n\n';
+  };
 
   /* ======================= 無人島 ======================= */
   var isl = HK.SCENARIOS.island;
   if (isl) {
+    /* 描写の設定は lewd-unify.js（古い「島の夜（R18）」はそこで外して読み替える） */
     isl.env.push({ id: 'ilewd', label: '島の夜（R18）', type: 'select', def: 'fade', options: [{ v: 'off', label: '描かない' }, { v: 'fade', label: 'ほのめかす' }, { v: 'high', label: '描写する' }], desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜。恋愛なしの家族と、教師と生徒の組では起きません' });
     var I = {
       ask: {
@@ -128,7 +147,7 @@
     isl.events.push({
       id: 'ir18_night', cat: 'romance', scope: 'pair', r18: true,
       when: function (ctx, a, b) {
-        if ((ctx.env.ilewd || 'fade') === 'off' || !okPair(ctx, a, b)) return false;
+        if (!okPair(ctx, a, b)) return false;
         var pf = ctx.pair(a, b);
         if ((pf.irN || 0) >= 2 || (pf.irAt != null && ctx.stepIndex - pf.irAt < 6)) return false;
         /* 状況の夜（solo-sit-night-r18.js）の翌日には重ねない */
@@ -138,14 +157,14 @@
       w: function (ctx, a, b) { var k = kindOf(ctx, a, b); return 0.5 + (ctx.R(a, b).att + ctx.R(b, a).att) / 120 + a.tr.fc * 0.2 + a.tr.impulse * 0.2 + (k === 'lock' ? 1 : 0) + (ctx.env.storm > 60 ? 0.3 : 0); },
       run: function (ctx, a, b) {
         if (!RK.lockedTo(a, b) && RK.lockedTo(b, a)) { var sw = a; a = b; b = sw; }
-        var pf = ctx.pair(a, b), k = kindOf(ctx, a, b), lv = ctx.env.ilewd || 'fade', o = order(a, b);
+        var pf = ctx.pair(a, b), k = kindOf(ctx, a, b), lv = RN.lv(ctx) === 'low' ? 'fade' : 'high', o = order(a, b);
         pf.irN = (pf.irN || 0) + 1; pf.irAt = ctx.stepIndex; pf.night = true;
         if (k === 'lock' || k === 'lover' || k === 'new') pf.couple = pf.couple || k !== 'new' || ctx.rng() < 0.5;
         ctx.mod2(a, b, { att: 8, aff: 6, trust: 4 }, { att: 8, aff: 6, trust: 4 });
         ctx.stress(a, -10); ctx.stress(b, -10);
         var v = { a: a.name, b: b.name, x: o[0].name, y: o[1].name };
         var t = fill(ctx.pick(I.ask[k]), v);
-        if (lv === 'high') t += highText(ctx, I.high, ['fore', 'insert', 'mid', 'end'], o, v);
+        if (lv === 'high') t += RN.body(ctx, 'island', o[0], o[1], function () { return highText(ctx, I.high, ['fore', 'insert', 'mid', 'end'], o, v); }, function () { return highText(ctx, I.high, ['fore'], o, v); });
         else t += ctx.pick(I.fade);
         if (RK.tone(o[0]) === 'aniki' && ctx.rng() < 0.6) t += o[0].name + fill(ctx.pick(ANIKI), v);
         t += fill(ctx.pick(I.after[k]), v);

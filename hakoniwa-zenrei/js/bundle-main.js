@@ -40041,6 +40041,16 @@
       Object.keys(o.from).forEach(function (k) { var f = o.from[k]; if (env[k] == null && f) { var v = f(env); if (v != null) env[k] = v; } });
       return env;
     },
+    /* 結果を作るとき：新しい設定がない入力（保存してあった古い結果など）は、箱庭の初期値で埋める */
+    fill: function (id, env) {
+      var o = CONF[id];
+      if (!o || !env) return env;
+      X.norm(id, env);
+      if (env.lewd == null) env.lewd = o.def || 'mid';
+      if (env.lewdLen == null) env.lewdLen = o.lenDef || 'thick';
+      if (env.style == null) env.style = 'novel';
+      return env;
+    },
     lv: function (env) {
       if (safe()) return 'low';
       var v = env && env.lewd;
@@ -40063,7 +40073,7 @@
     var sim0 = HK.simulate;
     HK.simulate = function (input) {
       var id = input && input.scenId;
-      if (id && input.env && CONF[id]) X.norm(id, input.env);
+      if (id && input.env && CONF[id]) X.fill(id, input.env);
       var r = sim0.apply(this, arguments);
       if (r && id && CONF[id] && CONF[id].soften !== false && !safe() && X.lv(input.env) === 'low' && HK.SafeText) {
         (r.log || []).forEach(function (e) { if (e && typeof e.text === 'string' && EXPL.test(e.text)) e.text = HK.SafeText(e.text); });
@@ -40083,6 +40093,8 @@
   /* 合コン：お持ち帰りの夜（solo-goukon-night.js）。古い設定「お持ち帰りの夜（R18）」は描写の長さへ */
   /* 出られない部屋：条件「エッチ」の場面（room-thick.js）と三人の場面（room-trio.js）。古い設定「エッチの描写（R18）」は描写の長さへ */
   X.install('whiteroom', { old: ['rmlewd'], from: { lewdLen: function (e) { return e.rmlewd; } }, desc: '条件「エッチ」の場面の描き方。ほのめかす＝触れ合いまでで暗転／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで（三人の場面も同じ）' });
+  /* 無人島：島の夜（solo-rel-r18.js）と状況の夜（solo-sit-night-r18.js）。古い「島の夜（R18）」：描かない・ほのめかす＝ほのめかす、描写する＝ほどほど・数行で短く */
+  X.install('island', { old: ['ilewd'], def: 'low', from: { lewd: function (e) { return e.ilewd ? (e.ilewd === 'high' ? 'mid' : 'low') : null; }, lewdLen: function (e) { return e.ilewd === 'high' ? 'short' : null; } }, desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */

@@ -6557,6 +6557,8 @@
   };
   /* 場所ならではの一文（感じていく段落に添える） */
   T.PLACE = {
+    island: L('寄せては返す波の音が、二人の荒い息をさらっていった。|焚き火の明かりが、重なった二つの影を岩壁に大きく映していた。|背中の下で、椰子の葉の寝床がかさかさと鳴った。|潮の匂いと汗の匂いが混ざって、どちらの肌のものか分からなくなった。|洞窟の奥に、二人分の声だけがこもって響いた。'),
+    zombie: L('窓の外で、ゾンビの呻き声が遠ざかっては近づいた。二人は声を殺し、それでも止まれなかった。|バリケードの向こうで何かが倒れる音がした。二人は息を止め、それから、もっと強く抱き合った。|懐中電灯の消えた暗闇で、確かなのは互いの体温だけだった。|生きている。触れ合うたびに、その実感が体の奥から込み上げてきた。|埃っぽい毛布の上で、二人分の熱い息が混ざり合った。'),
     goukon: L('酒の残る息が混ざり合い、ホテルの薄い壁の向こうまで聞こえそうだった。|さっきまで店で笑い合っていた声が、今は知らない高さで漏れていた。|乾杯のグラスを持っていた指が、今はシーツを握りしめていた。|酔いの熱と体の熱が、どちらがどちらか分からなくなった。|窓の外の終電の音が、遠く聞こえた。'),
     room: L('白い壁に、二人分の荒い息が跳ね返った。|監視カメラのランプが点いていることも、もうどうでもよかった。|音のない白い部屋で、濡れた音と喘ぎだけがやけに大きく響いた。|簡易ベッドの軋む音が、白い天井に吸い込まれていった。|扉の紙のことは、とうに頭から消えていた。'),
     locker: L('ロッカーの中で溜め込んだ熱が、堰を切ったように溢れ出した。|狭い箱の中で触れられなかった分を取り返すように、二人は求め合った。|まだ肌に残る媚薬の甘い匂いが、二人を急き立てた。|広いベッドが、さっきまでの狭さを嘘のように感じさせた。|ロッカーで擦れ合っていた場所が、今は直に触れ合っていた。')
@@ -6652,7 +6654,7 @@
 
   /* ---------- 繋がって揺れる（mf：{a} は男性） ---------- */
   X.BODY = {
-    hard: L('{a}は{b}の腰を掴み、一気に根元までねじ込んだ。{s:hit}。{b}「{mb1}」\n\n{a}「奥、当たってるでしょ。ほら、もっと締めて」\n\n容赦のない突き上げが続く。{a}の腰が打ちつけられるたびに、結合部からいやらしい音が溢れた。|{a}は{b}を四つん這いにさせ、後ろから奥まで突き入れた。{s:hit}。\n\n{a}「声、我慢すんな。ナカ、ぎゅうぎゅう締めつけてる」\n\n{b}「{mb1}」――{b}の腕から力が抜け、尻だけを高く掲げた格好で揺さぶられ続けた。|{a}は{b}の両脚を肩に担ぎ、真上から体重をかけて奥を抉った。{s:hit}。\n\n{a}「ここでしょ。一番奥、とんとんされるの好きだよね」\n\n{b}「{mb1}」――突かれるたびに{b}の腰が跳ね、シーツにとろりと染みが広がった。'),
+    hard: L('{a}は{b}の腰を掴み、一気に根元までねじ込んだ。{s:hit}。{b}「{mb1}」\n\n{a}「奥、当たってるでしょ。ほら、もっと締めて」\n\n容赦のない突き上げが続く。{a}の腰が打ちつけられるたびに、結合部からいやらしい音が溢れた。|{a}は{b}を四つん這いにさせ、後ろから奥まで突き入れた。{s:hit}。\n\n{a}「声、我慢すんな。ナカ、ぎゅうぎゅう締めつけてる」\n\n{b}「{mb1}」――{b}の腕から力が抜け、尻だけを高く掲げた格好で揺さぶられ続けた。|{a}は{b}の両脚を肩に担ぎ、真上から体重をかけて奥を抉った。{s:hit}。\n\n{a}「ここでしょ。一番奥、とんとんされるの好きだよね」\n\n{b}「{mb1}」――突かれるたびに{b}の腰が跳ね、二人の下にとろりと染みが広がった。'),
     soft: L('{a}は{b}と指を絡め、ゆっくりと根元まで沈めた。{s:wet}。{b}「{mb1}」\n\n{a}「{b}のナカ、あったかくて、とろとろ……」\n\n奥に押し当てたまま腰を回すと、{b}の中がきゅうきゅうと甘えるように吸いついた。|{a}は{b}を抱きしめ、奥をこねるように優しく揺らした。{s:wet}。\n\n{a}「ここ、好き？　いっぱいしてあげる」\n\n{b}「{mb1}」――同じところを何度もとんとんと撫でられて、{b}の目がとろんと蕩けていった。|{a}は{b}の脚を抱えて、浅いところと深いところを交互に、ゆっくりと突いた。{s:wet}。\n\n{a}「すごい、吸いついてくる……」\n\n{b}「{mb1}」――{b}は{a}にしがみついて、もっと、とねだった。'),
     tease: L('{a}は先っぽだけを{b}の入口に押し当て、ぬるぬると擦りつけるだけで、なかなか入れなかった。\n\n{a}「欲しいなら、おねだりして。ちゃんと言えるよね？」\n\n{b}「{mb1}」――{b}が泣きそうな声でねだった。それを聞いて、{a}はようやく一番奥まで、一息に突き入れた。{s:hit}。|{a}は奥まで沈めたまま、少しも動かなかった。ナカがひくひくと勝手に締まる。\n\n{a}「自分で腰振ってる。……えっちだね」\n\n{b}「{mb1}」――{b}は我慢できずに腰を揺らした。{a}は笑って、激しく突き上げ始めた。{s:hit}。|{a}は{b}がイきそうになるたびに腰を止め、また浅いところから追い上げ直した。{s:wet}。\n\n{a}「まだイっちゃだめ。……あと一回、我慢」\n\n{b}「{mb1}」――三度目に止められたとき、{b}は涙をこぼして「お願い」と繰り返した。'),
     play: L('{a}は{b}を後ろから抱きかかえ、耳たぶを甘噛みしながら下から突き上げた。{s:hit}。\n\n{a}「声出したら負けね。……はい、もう負け」\n\n{b}「{mb1}」――笑い声が、突かれるたびに甘く崩れていった。|{a}は角度を変えながら「ここ？　こっち？」と{b}の弱いところを探した。{s:wet}。\n\n{a}「当たり。ナカがきゅって言った」\n\n{b}「{mb1}」――見つかった場所を、{a}は面白がって何度も突いた。|{a}は{b}を抱えたまま上になったり下になったりしながら繋がり続けた。{s:hit}。\n\n{a}「どの体勢が一番イイか、ぜんぶ試そ」\n\n{b}「{mb1}」')
@@ -6666,7 +6668,7 @@
 
   /* ---------- 女性の {a} が男性の {b} に跨る（fm） ---------- */
   X.FM_BODY = {
-    dom: L('{a}は{b}のちんぽを掴んで自分の入口にあてがい、見下ろしたまま、ゆっくりと腰を落とした。{s:wet}。\n\n{a}「ほら、ぜんぶ入った。……まだ動かないで」\n\n{b}「{mb1}」――{a}が腰を上下させるたびに、ぱちゅん、ぱちゅんと音が響いた。|{a}は{b}の胸に手をつき、腰だけを使って{b}を搾るように揺れた。{s:hit}。\n\n{a}「イきそうな顔。……まだ出しちゃだめ」\n\n{b}「{mb1}」――{b}が腰を浮かせると、{a}はその腰を押さえつけて、また焦らした。|{a}は{b}の手首をシーツに縫いとめ、ナカをきゅうっと締め上げながら腰を回した。{s:wet}。\n\n{a}「我慢してる顔、かわいい。……もっと見せて」\n\n{b}「{mb1}」'),
+    dom: L('{a}は{b}のちんぽを掴んで自分の入口にあてがい、見下ろしたまま、ゆっくりと腰を落とした。{s:wet}。\n\n{a}「ほら、ぜんぶ入った。……まだ動かないで」\n\n{b}「{mb1}」――{a}が腰を上下させるたびに、ぱちゅん、ぱちゅんと音が響いた。|{a}は{b}の胸に手をつき、腰だけを使って{b}を搾るように揺れた。{s:hit}。\n\n{a}「イきそうな顔。……まだ出しちゃだめ」\n\n{b}「{mb1}」――{b}が腰を浮かせると、{a}はその腰を押さえつけて、また焦らした。|{a}は{b}の手首を押さえつけ、ナカをきゅうっと締め上げながら腰を回した。{s:wet}。\n\n{a}「我慢してる顔、かわいい。……もっと見せて」\n\n{b}「{mb1}」'),
     soft: L('{a}は{b}の上にそっと跨り、少しずつ腰を沈めた。{s:wet}。\n\n{a}「ん……おっきい……♡」\n\n{b}「{mb1}」――根元まで繋がると、{a}は{b}の胸に額を預けて、甘えるように腰を揺らした。|{a}は{b}の手を自分の腰に添えさせ、その手に導かれるように揺れた。{s:wet}。\n\n{a}「{b}の、ナカでびくびくしてる……♡」\n\n{b}「{mb1}」|{a}は{b}に跨ったまま唇を重ね、舌を絡めながらゆっくりと腰を上下させた。{s:wet}。\n\n{b}「{mb1}」'),
     play: L('{a}は{b}のお腹の上に陣取り、「捕まえた」と笑ってから腰を落とした。{s:hit}。\n\n{a}「先に声出したほうの負けね」\n\n{b}「{mb1}」――{a}は{b}が声を上げるたびに「一点」と数えた。|{a}は{b}に跨ったまま腰を回し、「ここ？　それとも、こっち？」と囁いた。{s:wet}。\n\n{b}「{mb1}」――{b}の反応を見つけるたびに、{a}は楽しそうに同じ動きを繰り返した。|{a}は弾むように腰を振りながら、{b}の乳首を指でつまんだ。{s:hit}。\n\n{a}「ここも弱いんだ。……いいこと知っちゃった」\n\n{b}「{mb1}」')
   };
@@ -6678,7 +6680,7 @@
 
   /* ---------- 女性どうし（ff） ---------- */
   X.FF_BODY = {
-    dom: L('{a}は{b}の脚を大きく開かせ、指を二本、根元まで沈めた。奥のざらついたところを掻くように動かす。{s:wet}。\n\n{a}「ここでしょ。……逃げないで」\n\n{b}「{mb1}」――空いた手で胸の先をつままれ、{b}の背中が弓なりに反った。|{a}は{b}の太ももを押さえつけ、脚のあいだに顔を埋めた。{s:suck}。\n\n{b}「{mb1}」――舌でクリをしつこく弾かれ、{b}の腰がシーツから浮いた。|{a}は{b}のナカを指で掻き回しながら、耳元で囁いた。{s:wet}。\n\n{a}「すごい音。……聞こえる？」\n\n{b}「{mb1}」'),
+    dom: L('{a}は{b}の脚を大きく開かせ、指を二本、根元まで沈めた。奥のざらついたところを掻くように動かす。{s:wet}。\n\n{a}「ここでしょ。……逃げないで」\n\n{b}「{mb1}」――空いた手で胸の先をつままれ、{b}の背中が弓なりに反った。|{a}は{b}の太ももを押さえつけ、脚のあいだに顔を埋めた。{s:suck}。\n\n{b}「{mb1}」――舌でクリをしつこく弾かれ、{b}の腰が浮いた。|{a}は{b}のナカを指で掻き回しながら、耳元で囁いた。{s:wet}。\n\n{a}「すごい音。……聞こえる？」\n\n{b}「{mb1}」'),
     soft: L('{a}は{b}の乳首を唇で含みながら、指先でそっとクリを撫でた。{s:wet}。\n\n{a}「ここ、好き？」\n\n{b}「{mb1}」――{b}が頷くと、{a}は指を一本だけ中に沈め、ゆっくりと揺らした。|{a}は{b}の脚のあいだに顔を寄せ、溢れたものを舌ですくい取った。{s:suck}。\n\n{b}「{mb1}」|{a}は{b}を抱きしめたまま、指で入口をくちくちと撫で続けた。{s:wet}。\n\n{a}「とろとろ。……かわいい」\n\n{b}「{mb1}」'),
     play: L('{a}は{b}の脚のあいだに指を滑らせ、「どっちが先にイくか、勝負」と笑った。{s:wet}。\n\n{b}「{mb1}」|{a}は{b}の弱いところを探すように、指をあちこちに滑らせた。{s:wet}。{a}「みーつけた」\n\n{b}「{mb1}」|{a}は{b}の胸に頬ずりしながら、指でナカを浅くかき混ぜた。{s:wet}。\n\n{a}「声、かわいい。もっと聞かせて」\n\n{b}「{mb1}」')
   };
@@ -6690,9 +6692,9 @@
 
   /* ---------- 感じていく（受けの快感。男性向け） ---------- */
   X.FEEL = {
-    mf: L('奥を突かれるたびに、{b}の頭の中が真っ白になっていった。{b}「{mb1}」――自分からも腰を押しつけて、{b}は{a}のちんぽを奥へ奥へと欲しがった。|{b}のナカは{a}の形を覚えたみたいに、ぎゅうっと吸いついて離さない。{s:wet}。{b}「{mb1}」|{b}はシーツを握りしめ、だらしなく開いた口から涎をこぼした。{b}「{mb1}」'),
+    mf: L('奥を突かれるたびに、{b}の頭の中が真っ白になっていった。{b}「{mb1}」――自分からも腰を押しつけて、{b}は{a}のちんぽを奥へ奥へと欲しがった。|{b}のナカは{a}の形を覚えたみたいに、ぎゅうっと吸いついて離さない。{s:wet}。{b}「{mb1}」|{b}は指先を震わせ、だらしなく開いた口から涎をこぼした。{b}「{mb1}」'),
     fm: L('{a}のナカに根元まで搾られて、{b}の腰がびくびくと勝手に跳ねた。{b}「{mb1}」|熱くてぬるぬるのナカに締めつけられるたび、{b}の目の前がちかちかと白く瞬いた。{s:wet}。{b}「{mb1}」|{a}が腰を落とすたびに、ぱちゅんと音が鳴り、{b}は情けない声を止められなかった。{b}「{mb1}」'),
-    ff: L('{b}の脚のあいだから、くちゅくちゅといやらしい音が絶え間なく響いた。{b}「{mb1}」|{b}の腰が、{a}の指を追うように勝手に揺れた。とろとろに溢れたものが、シーツまで濡らしていく。{b}「{mb1}」|{b}は自分の胸を抱くようにして、何度も小さく震えた。{b}「{mb1}」')
+    ff: L('{b}の脚のあいだから、くちゅくちゅといやらしい音が絶え間なく響いた。{b}「{mb1}」|{b}の腰が、{a}の指を追うように勝手に揺れた。とろとろに溢れたものが、太ももまで濡らしていく。{b}「{mb1}」|{b}は自分の胸を抱くようにして、何度も小さく震えた。{b}「{mb1}」')
   };
   /* 攻め側の声（主導する側の喘ぎ） */
   X.FEEL_A = {
@@ -6718,7 +6720,7 @@
     ero: {
       mf: L('{a}「まだ硬いの、分かる？」――抜かないまま、{a}はまた腰を動かし始めた。{s:hit}。{b}「{mb2}」――イったばかりの敏感なナカを突かれ、{b}は何度も連続でイかされた。最後にもう一度奥に注がれる。{s:cum}。|{a}は{b}をうつ伏せにして、溢れた精液をちんぽで塗り広げるように、もう一度後ろから突き入れた。{s:hit}。{b}「{mb2}」――二回戦は、一回戦より長かった。|{b}「もっと、ちょうだい……♡」――おねだりされて、{a}は{b}の脚を抱え直した。{s:hit}。朝までに、{a}は三回、{b}の奥に吐き出した。{s:cum}。'),
       fm: L('{a}「まだ出せるよね？」――{a}は{b}の上で、また腰を揺らし始めた。{s:wet}。{b}「{mb2}」――イったばかりのちんぽを搾られて、{b}は情けない声を上げた。|{a}は{b}のものを口で綺麗にしてから、もう一度跨った。{s:suck}。{b}「{mb2}」――二回目も、{a}のナカでたっぷりと搾りとられた。{s:cum}。|{a}「あと一回だけ……♡」――結局、{b}が空っぽになるまで、{a}は降りてくれなかった。{s:hit}。'),
-      ff: L('{a}「まだイけるでしょ？」――イったばかりの{b}のナカを、{a}はまた指で掻き回した。{s:wet}。{b}「{mb2}」――連続でイかされて、{b}はシーツをびしょびしょにした。|{b}が今度は{a}の脚のあいだに顔を埋めた。{s:suck}。二人は交代で何度もイかせ合って、朝まで止まらなかった。|{a}はとろとろになった{b}の脚を開かせ、もう一度舌を這わせた。{s:suck}。{b}「{mb2}」')
+      ff: L('{a}「まだイけるでしょ？」――イったばかりの{b}のナカを、{a}はまた指で掻き回した。{s:wet}。{b}「{mb2}」――連続でイかされて、{b}は下に敷いたものまでびしょびしょにした。|{b}が今度は{a}の脚のあいだに顔を埋めた。{s:suck}。二人は交代で何度もイかせ合って、朝まで止まらなかった。|{a}はとろとろになった{b}の脚を開かせ、もう一度舌を這わせた。{s:suck}。{b}「{mb2}」')
     },
     /* 短い版の一文 */
     shortNovel: L('一度では終わらず、二人は夜が白むまで何度も求め合った。|果てたあとも、{a}は{b}を離さなかった。二度目は、一度目より長かった。|息が整うより先に、二人はまた唇を重ねていた。'),
@@ -25645,10 +25647,29 @@
   }
   /* 状況ごとの夜（solo-sit-night-r18.js）が同じ部品を使えるように */
   var RN = HK.RelNight = { order: order, okPair: okPair, combo: combo, noMut: noMut, psOf: psOf, REACT: REACT, AFTER_PS: AFTER_PS, ANIKI: ANIKI };
+  /* R18の描写の設定（lewd-unify.js）：描写の有無（low＝ほのめかす）。設定をそろえていない箱庭では null */
+  RN.lv = function (ctx) { var X = HK.Lewd; return X && X.conf(ctx.scen.id) ? X.lv(ctx.env) : null; };
+  /* 本番の書き方：数行で短く＝呼び出し側の短い文（shortFn）／段落分けして厚く＝thick-sex.js／男性向け＝thick-sex-ero.js／濃い＝もう一度。
+     x＝攻め、y＝受け。openFn：厚い版・男性向けの始まりの段（その場所らしい前戯の一文）。厚い版は前後に段落の区切りを付けて返す。設定をそろえていない箱庭では shortFn のまま */
+  RN.body = function (ctx, place, x, y, shortFn, openFn) {
+    var X = HK.Lewd, TS = HK.ThickSex, TE = HK.ThickEro;
+    if (!X || !X.conf(ctx.scen.id)) return shortFn();
+    var pick = function (a) { return ctx.pick(a); };
+    var ero = X.ero(ctx.env) && TE, short = X.short(ctx.env, ctx.rng), high = X.high(ctx.env) && TE, t;
+    var op = (ero || !short) && openFn ? openFn() : null;
+    if (op) op = op.split(x.name).join('{a}').split(y.name).join('{b}');
+    if (ero) t = short ? TE.short({ S: ctx, pick: pick, a: x, b: y, open: op || '', again: high }).text : TE.scene({ S: ctx, pick: pick, rng: ctx.rng, a: x, b: y, style: TS ? TS.style(x) : 'gentle', place: place, open: op, again: high }).text;
+    else if (!short && TS) t = TS.scene({ pick: pick, rng: ctx.rng, a: x, b: y, style: TS.style(x), place: place, open: op }).text + (high ? '\n\n' + TE.again(ctx, pick, x, y, false, false) : '');
+    else return shortFn() + (high ? fill(TE.again(ctx, pick, x, y, false, true), { a: x.name, b: y.name }) : '');
+    t = fill(t, { a: x.name, b: y.name });
+    if (HK.Pos && HK.Pos.ff(x, y) && HK.FF && HK.FF.fix) t = HK.FF.fix(ctx, t, x, y);
+    return short ? t : '\n\n' + t + '\n\n';
+  };
 
   /* ======================= 無人島 ======================= */
   var isl = HK.SCENARIOS.island;
   if (isl) {
+    /* 描写の設定は lewd-unify.js（古い「島の夜（R18）」はそこで外して読み替える） */
     isl.env.push({ id: 'ilewd', label: '島の夜（R18）', type: 'select', def: 'fade', options: [{ v: 'off', label: '描かない' }, { v: 'fade', label: 'ほのめかす' }, { v: 'high', label: '描写する' }], desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜。恋愛なしの家族と、教師と生徒の組では起きません' });
     var I = {
       ask: {
@@ -25694,7 +25715,7 @@
     isl.events.push({
       id: 'ir18_night', cat: 'romance', scope: 'pair', r18: true,
       when: function (ctx, a, b) {
-        if ((ctx.env.ilewd || 'fade') === 'off' || !okPair(ctx, a, b)) return false;
+        if (!okPair(ctx, a, b)) return false;
         var pf = ctx.pair(a, b);
         if ((pf.irN || 0) >= 2 || (pf.irAt != null && ctx.stepIndex - pf.irAt < 6)) return false;
         /* 状況の夜（solo-sit-night-r18.js）の翌日には重ねない */
@@ -25704,14 +25725,14 @@
       w: function (ctx, a, b) { var k = kindOf(ctx, a, b); return 0.5 + (ctx.R(a, b).att + ctx.R(b, a).att) / 120 + a.tr.fc * 0.2 + a.tr.impulse * 0.2 + (k === 'lock' ? 1 : 0) + (ctx.env.storm > 60 ? 0.3 : 0); },
       run: function (ctx, a, b) {
         if (!RK.lockedTo(a, b) && RK.lockedTo(b, a)) { var sw = a; a = b; b = sw; }
-        var pf = ctx.pair(a, b), k = kindOf(ctx, a, b), lv = ctx.env.ilewd || 'fade', o = order(a, b);
+        var pf = ctx.pair(a, b), k = kindOf(ctx, a, b), lv = RN.lv(ctx) === 'low' ? 'fade' : 'high', o = order(a, b);
         pf.irN = (pf.irN || 0) + 1; pf.irAt = ctx.stepIndex; pf.night = true;
         if (k === 'lock' || k === 'lover' || k === 'new') pf.couple = pf.couple || k !== 'new' || ctx.rng() < 0.5;
         ctx.mod2(a, b, { att: 8, aff: 6, trust: 4 }, { att: 8, aff: 6, trust: 4 });
         ctx.stress(a, -10); ctx.stress(b, -10);
         var v = { a: a.name, b: b.name, x: o[0].name, y: o[1].name };
         var t = fill(ctx.pick(I.ask[k]), v);
-        if (lv === 'high') t += highText(ctx, I.high, ['fore', 'insert', 'mid', 'end'], o, v);
+        if (lv === 'high') t += RN.body(ctx, 'island', o[0], o[1], function () { return highText(ctx, I.high, ['fore', 'insert', 'mid', 'end'], o, v); }, function () { return highText(ctx, I.high, ['fore'], o, v); });
         else t += ctx.pick(I.fade);
         if (RK.tone(o[0]) === 'aniki' && ctx.rng() < 0.6) t += o[0].name + fill(ctx.pick(ANIKI), v);
         t += fill(ctx.pick(I.after[k]), v);
@@ -26261,13 +26282,17 @@
       if (!ok.length && sc === 'island') { var zb = RN.ZT.high; ok = RN.noMut(zb[g][s] || zb.mf[s], x, y).filter(function (z) { return !ZONLY.test(z) && !(av && av.test(z)); }); }
       return fill(ctx.pick(ok.length ? ok : arr), v);
     }
-    var mid = pickF(ctx, RN.noMut(BG.mid, x, y), v);
-    t += BG.fore ? pickF(ctx, RN.noMut(BG.fore, x, y), v) : stage('fore');
-    if (!SETUP.test(mid)) t += stage('insert');
-    t += mid;
-    t += pickF(ctx, REACT[GROUP[st.id]][RN.psOf(y)] || REACT[GROUP[st.id]].gentle, v);
-    t += stage('end');
-    if (RK.tone(x) === 'aniki' && ctx.rng() < 0.5) t += x.name + fill(ctx.pick(RN.ANIKI), v);
+    /* 本番：描写の長さ・作風・濃さ（solo-rel-r18.js の RN.body）。数行で短くなら、状況ごとの文で組む */
+    t += RN.body(ctx, sc, x, y, function () {
+      var u = '', mid = pickF(ctx, RN.noMut(BG.mid, x, y), v);
+      u += BG.fore ? pickF(ctx, RN.noMut(BG.fore, x, y), v) : stage('fore');
+      if (!SETUP.test(mid)) u += stage('insert');
+      u += mid;
+      u += pickF(ctx, REACT[GROUP[st.id]][RN.psOf(y)] || REACT[GROUP[st.id]].gentle, v);
+      u += stage('end');
+      if (RK.tone(x) === 'aniki' && ctx.rng() < 0.5) u += x.name + fill(ctx.pick(RN.ANIKI), v);
+      return u;
+    }, function () { return BG.fore ? pickF(ctx, RN.noMut(BG.fore, x, y), v) : stage('fore'); });
     t += pickF(ctx, T.after, v);
     if (ctx.rng() < 0.6) t += fill(ctx.pick(RN.AFTER_PS[RN.psOf(y)] || RN.AFTER_PS.gentle), v);
     return t + pickF(ctx, REL.after[r.k], v);
@@ -26315,7 +26340,7 @@
     isl.events.push({
       id: 'ir18_sit', cat: 'romance', scope: 'pair', r18: true,
       when: function (ctx, a, b) {
-        if ((ctx.env.ilewd || 'fade') === 'off' || !baseOk(ctx, a, b, 2)) return false;
+        if (!baseOk(ctx, a, b, 2)) return false;
         return cands(ctx, a, b, 'island').list.length > 0;
       },
       w: function (ctx, a, b) {
@@ -26323,7 +26348,7 @@
         return (cr ? 1.1 : 0.3) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 200;
       },
       run: function (ctx, a, b) {
-        var C = cands(ctx, a, b, 'island'), st = chooseSit(ctx, C.list), r = C.r, lv = ctx.env.ilewd || 'fade';
+        var C = cands(ctx, a, b, 'island'), st = chooseSit(ctx, C.list), r = C.r, lv = RN.lv(ctx) === 'low' ? 'fade' : 'high';
         settle(ctx, st, r);
         return { text: compose(ctx, 'island', st, r, lv), why: '島の夜：' + why(ctx, st, r, '', 'island'), mag: CRISIS[st.id] ? 28 : 22 };
       }
@@ -50723,6 +50748,16 @@
       Object.keys(o.from).forEach(function (k) { var f = o.from[k]; if (env[k] == null && f) { var v = f(env); if (v != null) env[k] = v; } });
       return env;
     },
+    /* 結果を作るとき：新しい設定がない入力（保存してあった古い結果など）は、箱庭の初期値で埋める */
+    fill: function (id, env) {
+      var o = CONF[id];
+      if (!o || !env) return env;
+      X.norm(id, env);
+      if (env.lewd == null) env.lewd = o.def || 'mid';
+      if (env.lewdLen == null) env.lewdLen = o.lenDef || 'thick';
+      if (env.style == null) env.style = 'novel';
+      return env;
+    },
     lv: function (env) {
       if (safe()) return 'low';
       var v = env && env.lewd;
@@ -50745,7 +50780,7 @@
     var sim0 = HK.simulate;
     HK.simulate = function (input) {
       var id = input && input.scenId;
-      if (id && input.env && CONF[id]) X.norm(id, input.env);
+      if (id && input.env && CONF[id]) X.fill(id, input.env);
       var r = sim0.apply(this, arguments);
       if (r && id && CONF[id] && CONF[id].soften !== false && !safe() && X.lv(input.env) === 'low' && HK.SafeText) {
         (r.log || []).forEach(function (e) { if (e && typeof e.text === 'string' && EXPL.test(e.text)) e.text = HK.SafeText(e.text); });
@@ -50765,6 +50800,8 @@
   /* 合コン：お持ち帰りの夜（solo-goukon-night.js）。古い設定「お持ち帰りの夜（R18）」は描写の長さへ */
   /* 出られない部屋：条件「エッチ」の場面（room-thick.js）と三人の場面（room-trio.js）。古い設定「エッチの描写（R18）」は描写の長さへ */
   X.install('whiteroom', { old: ['rmlewd'], from: { lewdLen: function (e) { return e.rmlewd; } }, desc: '条件「エッチ」の場面の描き方。ほのめかす＝触れ合いまでで暗転／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで（三人の場面も同じ）' });
+  /* 無人島：島の夜（solo-rel-r18.js）と状況の夜（solo-sit-night-r18.js）。古い「島の夜（R18）」：描かない・ほのめかす＝ほのめかす、描写する＝ほどほど・数行で短く */
+  X.install('island', { old: ['ilewd'], def: 'low', from: { lewd: function (e) { return e.ilewd ? (e.ilewd === 'high' ? 'mid' : 'low') : null; }, lewdLen: function (e) { return e.ilewd === 'high' ? 'short' : null; } }, desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */

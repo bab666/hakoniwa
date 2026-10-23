@@ -465,13 +465,17 @@
       if (!ok.length && sc === 'island') { var zb = RN.ZT.high; ok = RN.noMut(zb[g][s] || zb.mf[s], x, y).filter(function (z) { return !ZONLY.test(z) && !(av && av.test(z)); }); }
       return fill(ctx.pick(ok.length ? ok : arr), v);
     }
-    var mid = pickF(ctx, RN.noMut(BG.mid, x, y), v);
-    t += BG.fore ? pickF(ctx, RN.noMut(BG.fore, x, y), v) : stage('fore');
-    if (!SETUP.test(mid)) t += stage('insert');
-    t += mid;
-    t += pickF(ctx, REACT[GROUP[st.id]][RN.psOf(y)] || REACT[GROUP[st.id]].gentle, v);
-    t += stage('end');
-    if (RK.tone(x) === 'aniki' && ctx.rng() < 0.5) t += x.name + fill(ctx.pick(RN.ANIKI), v);
+    /* 本番：描写の長さ・作風・濃さ（solo-rel-r18.js の RN.body）。数行で短くなら、状況ごとの文で組む */
+    t += RN.body(ctx, sc, x, y, function () {
+      var u = '', mid = pickF(ctx, RN.noMut(BG.mid, x, y), v);
+      u += BG.fore ? pickF(ctx, RN.noMut(BG.fore, x, y), v) : stage('fore');
+      if (!SETUP.test(mid)) u += stage('insert');
+      u += mid;
+      u += pickF(ctx, REACT[GROUP[st.id]][RN.psOf(y)] || REACT[GROUP[st.id]].gentle, v);
+      u += stage('end');
+      if (RK.tone(x) === 'aniki' && ctx.rng() < 0.5) u += x.name + fill(ctx.pick(RN.ANIKI), v);
+      return u;
+    }, function () { return BG.fore ? pickF(ctx, RN.noMut(BG.fore, x, y), v) : stage('fore'); });
     t += pickF(ctx, T.after, v);
     if (ctx.rng() < 0.6) t += fill(ctx.pick(RN.AFTER_PS[RN.psOf(y)] || RN.AFTER_PS.gentle), v);
     return t + pickF(ctx, REL.after[r.k], v);
@@ -519,7 +523,7 @@
     isl.events.push({
       id: 'ir18_sit', cat: 'romance', scope: 'pair', r18: true,
       when: function (ctx, a, b) {
-        if ((ctx.env.ilewd || 'fade') === 'off' || !baseOk(ctx, a, b, 2)) return false;
+        if (!baseOk(ctx, a, b, 2)) return false;
         return cands(ctx, a, b, 'island').list.length > 0;
       },
       w: function (ctx, a, b) {
@@ -527,7 +531,7 @@
         return (cr ? 1.1 : 0.3) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 200;
       },
       run: function (ctx, a, b) {
-        var C = cands(ctx, a, b, 'island'), st = chooseSit(ctx, C.list), r = C.r, lv = ctx.env.ilewd || 'fade';
+        var C = cands(ctx, a, b, 'island'), st = chooseSit(ctx, C.list), r = C.r, lv = RN.lv(ctx) === 'low' ? 'fade' : 'high';
         settle(ctx, st, r);
         return { text: compose(ctx, 'island', st, r, lv), why: '島の夜：' + why(ctx, st, r, '', 'island'), mag: CRISIS[st.id] ? 28 : 22 };
       }
