@@ -77,6 +77,8 @@
       return t;
     }).join('');
   }
+  /* 状況ごとの夜（solo-sit-night-r18.js）が同じ部品を使えるように */
+  var RN = HK.RelNight = { order: order, okPair: okPair, combo: combo, noMut: noMut, psOf: psOf, REACT: REACT, AFTER_PS: AFTER_PS, ANIKI: ANIKI };
 
   /* ======================= 無人島 ======================= */
   var isl = HK.SCENARIOS.island;
@@ -122,12 +124,15 @@
         new: L('翌朝、{a}と{b}は互いの顔をまともに見られなかった。島に、新しい噂が一つ増えた。|朝の浜辺で、{a}は{b}の隣に座った。昨日までより、少しだけ近かった。|{a}は水汲みの途中で{b}と目が合い、慌てて桶を落とした。{b}が、くすりと笑った。')
       }
     };
+    RN.I = I;
     isl.events.push({
       id: 'ir18_night', cat: 'romance', scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if ((ctx.env.ilewd || 'fade') === 'off' || !okPair(ctx, a, b)) return false;
         var pf = ctx.pair(a, b);
         if ((pf.irN || 0) >= 2 || (pf.irAt != null && ctx.stepIndex - pf.irAt < 6)) return false;
+        /* 状況の夜（solo-sit-night-r18.js）の翌日には重ねない */
+        if (pf.sitAt != null && ctx.stepIndex - pf.sitAt < 2) return false;
         return ready(ctx, a, b, kindOf(ctx, a, b));
       },
       w: function (ctx, a, b) { var k = kindOf(ctx, a, b); return 0.5 + (ctx.R(a, b).att + ctx.R(b, a).att) / 120 + a.tr.fc * 0.2 + a.tr.impulse * 0.2 + (k === 'lock' ? 1 : 0) + (ctx.env.storm > 60 ? 0.3 : 0); },
@@ -185,6 +190,7 @@
         mentor: L('翌朝、{a}は{b}に何も言わなかった。それでも、背中を預ける距離が、少しだけ近くなっていた。|{a}は{b}の銃を手入れしてから、黙って手渡した。指が触れたまま、少しだけ離れなかった。|翌朝、{b}は{a}の背中を守る位置に、当たり前のように立っていた。')
       }
     };
+    RN.ZT = ZT;
     Z.scen.events.push({
       id: 'zr18_night', cat: 'romance', scope: 'pair', r18: true,
       when: function (ctx, a, b) {
@@ -194,6 +200,7 @@
         if (Z.part(ctx) < 1) return false;
         var pf = ctx.pair(a, b);
         if ((pf.zr18 || 0) >= 2 || (pf.zr18At != null && ctx.stepIndex - pf.zr18At < 6)) return false;
+        if (pf.sitAt != null && ctx.stepIndex - pf.sitAt < 4) return false;
         return ready(ctx, a, b, k);
       },
       w: function (ctx, a, b) { return 1 + (a.stress + b.stress) / 120 + ctx.R(a, b).att / 90; },

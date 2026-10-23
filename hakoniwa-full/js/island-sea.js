@@ -100,7 +100,7 @@
         a.flags.bigTry = (a.flags.bigTry || 0) + 1;
         var helper = ctx.others(a).filter(function (o) { return R(ctx, o, a).aff > 15 && o.tr.np + R(ctx, o, a).aff / 100 > 0.6 && rng() < 0.5; })[0] || null;
         var power = sk(ctx, a, 'fish') * 0.12 + a.hp / 300 + a.tr.a * 0.1 + a.tr.caution * 0.08 + rng() * 0.5 + (helper ? 0.2 : 0) - F.pull * 0.35;
-        var hook = a.name + 'の竿が、折れそうなほどしなった。' + pk(ctx, ['糸の先で、' + F.n + 'が暴れていた。', '海面が割れて、' + F.n + 'の背中が見えた。', a.name + '「で、でかい！　なんかでかいの来た！」']);
+        var hook = a.name + 'の釣り竿が、折れそうなほどしなった。' + pk(ctx, ['糸の先で、' + F.n + 'が暴れていた。', '海面が割れて、' + F.n + 'の背中が見えた。', a.name + '「で、でかい！　なんかでかいの来た！」']);
         if (power > 0.86) {
           var fan = ctx.others(a).length ? ctx.most(ctx.others(a), function (o) { return o.tr.fc + o.tr.warmth + R(ctx, o, a).aff / 100; }) : null;
           ctx.food += F.food;

@@ -97,6 +97,8 @@
       if (Z.part(ctx) < 2) return false;
       var pf = ctx.pair(a, b);
       if ((pf.zlvN || 0) >= 2 || (pf.zlvAt != null && ctx.stepIndex - pf.zlvAt < 6)) return false;
+      /* R18版の「状況の夜」（solo-sit-night-r18.js）と同じ日には重ねない（全年齢版では sitAt は付かない） */
+      if (pf.sitAt != null && ctx.stepIndex - pf.sitAt < 4) return false;
       return Z.day(ctx) >= 2 || a.stress > 35 || b.stress > 35 || a.z.bitten || b.z.bitten;
     },
     w: function (ctx, a, b) { return 1.2 + (a.stress + b.stress) / 120 + ctx.R(a, b).att / 90 + (Z.part(ctx) === 3 ? 0.8 : 0); },
