@@ -17779,7 +17779,7 @@
     ev.partNow = part;
     var dev = part === 'all' ? avgDev(h) : h.dev[part] || 0;
     var clothMul = 1 + (4 - h.cloth) * 0.09;
-    var gain = ev.power * (0.55 + S.env.lewd / 100 * 0.9) * h.sens * (1 + dev * 0.13) * clothMul * (mult || 1) * rng.range(0.78, 1.22);
+    var gain = ev.power * (0.55 + S.env.trap / 100 * 0.9) * h.sens * (1 + dev * 0.13) * clothMul * (mult || 1) * rng.range(0.78, 1.22);
     var w = will(h);
     gain *= 1.12 - w * 0.42;
     if (o.mind) gain *= 1.15 - h.tr.cold * 0.35 - st(h, 'magic') * 0.04;
@@ -17796,7 +17796,7 @@
     if (o.hp) h.hp -= o.hp;
     S.cause[ev.kind] = (S.cause[ev.kind] || 0) + gain;
     S.lastEv = ev;
-    if (o.curse && rng() < 0.55 + S.env.lewd / 250) addCurse(S, o.curse, ev.name);
+    if (o.curse && rng() < 0.55 + S.env.trap / 250) addCurse(S, o.curse, ev.name);
     climaxCheck(S, ev);
     return gain;
   }
@@ -17903,7 +17903,7 @@
   /* ---------- 判定 ---------- */
   function detectP(S) {
     var h = S.h, t = h.tr;
-    var p = 0.1 + t.caution * 0.3 + st(h, 'scout') * 0.07 + t.a * 0.08 - S.env.lewd / 1000 - h.pleasure / 420 - (h.outfit === 'armor' ? 0.05 : 0);
+    var p = 0.1 + t.caution * 0.3 + st(h, 'scout') * 0.07 + t.a * 0.08 - S.env.trap / 1000 - h.pleasure / 420 - (h.outfit === 'armor' ? 0.05 : 0);
     if (S.mapFloor === S.floor) p += 0.2;
     if (S.party && S.party.length > 1) { var bs = 0; S.party.forEach(function (x) { if (x !== h && !x.fallen && !x.captor) bs = Math.max(bs, st(x, 'scout') + x.tr.caution * 2); }); p += Math.max(0, bs - st(h, 'scout')) * 0.015; }
     if (S.h.action.id === 'careful') p += 0.15;
@@ -17941,7 +17941,7 @@
   function roomKind(S) {
     var env = S.env, h = S.h;
     var W = {
-      trap: 0.36 + env.lewd / 400,
+      trap: 0.36 + env.trap / 400,
       mon: 0.12 + env.monsters / 300 + (S.h.action.id === 'fight' ? 0.06 : 0),
       chest: 0.1 + (S.h.action.id === 'loot' ? 0.05 : 0),
       spring: 0.05 + env.mercy / 1000,
@@ -18158,7 +18158,7 @@
   function roomStairs(S) {
     var h = S.h, rng = S.rng;
     var next = S.floor + 1 < S.floors ? floorName(S, S.floor + 1) : '';
-    if (rng() < 0.25 + S.env.lewd / 400) {
+    if (rng() < 0.25 + S.env.trap / 400) {
       var ev = pickEv(S, 'trap');
       roomTrap(S, ev);
     } else if (rng() < 0.3) {
@@ -18273,7 +18273,10 @@
   /* 陥落の山場：R18版では段落に分けた厚い場面（dungeon-thick.js）。攻めの指定は、魔物を組み伏せる側の場面 */
   function thickFall(S, h) {
     var TH = DG.THICK, TV = window.HK.ThickVM;
-    if (window.HK.SAFE_ON || !TH || !TV || S.env.lewd < 15) return '';
+    if (window.HK.SAFE_ON || !TH || !TV || S.env.trap < 15) return '';
+    /* R18の描写の設定（lewd-unify.js）：数行で短く（混ぜるなら半分）なら段落の場面にしない */
+    var X = window.HK.Lewd, cf = X && X.conf('dungeon');
+    if (cf && (X.lv(S.env) === 'low' || X.short(S.env, S.rng))) return '';
     /* 女性の体で攻めなら跨る側（ふたなりは男性の体で書く fallTop）。恋愛対象が女性の、女性の挑戦者は女性の魔物に堕とされる（fallFF） */
     var P = window.HK.Pos, fem = P ? P.isF(h) : h.gender === 'f';
     var top = isTop(h), l = top ? (fem && TH.fallTopF ? TH.fallTopF : TH.fallTop) : (TH.fall[S.themeKey] || []).concat(S.themeKey === 'mix' || !TH.fall[S.themeKey] ? TH.fall.any : []);
@@ -18282,7 +18285,11 @@
     if (!l || !l.length) return '';
     /* 態度ごとの結びを添える */
     var cd = TH.coda && TH.coda[h.persona];
-    return fmt(S, TV.voice(S.rng, pick(S, l), h, h) + (cd ? '\n\n' + pick(S, cd) : ''), h.captor || S.lastEv);
+    /* 男性向け：攻めの挑戦者が魔物を組み伏せる場面だけ（堕とされる場面は合意がないので足さない）。濃い：堕ちたあとも続く一段 */
+    var ex = '';
+    if (cf && top && X.ero(S.env) && TH.fallTopEro && window.HK.Ero) { var d0 = h.eroDom; h.eroDom = true; ex += '\n\n' + window.HK.Ero.fill(S, pick(S, TH.fallTopEro), h); h.eroDom = d0; }
+    if (cf && X.high(S.env) && TH.fallAgain) ex += '\n\n' + pick(S, top ? TH.fallAgainTop : TH.fallAgain);
+    return fmt(S, TV.voice(S.rng, pick(S, l), h, h) + ex + (cd ? '\n\n' + pick(S, cd) : ''), h.captor || S.lastEv);
   }
   DG.fallHero = function (S, h) {
     if (h.fallLogged) return;
@@ -18543,7 +18550,7 @@
       { id: 'outfit', label: '装備', type: 'select', def: 'light', options: [{ v: 'armor', label: '重装鎧（破れにくいが鈍い）' }, { v: 'light', label: '軽装' }, { v: 'robe', label: '法衣（魔力＋1・薄い）' }, { v: 'thin', label: '布一枚' }] },
       { id: 'floors', label: '階層', min: 3, max: 10, def: 5, lo: '3階', hi: '10階', unit: '階' },
       { id: 'rooms', label: '1階層の部屋数', min: 2, max: 8, def: 3, lo: '3', hi: '8', unit: '部屋' },
-      { id: 'lewd', label: '罠の淫らさ', min: 0, max: 100, def: 55, lo: 'いたずら程度', hi: '容赦なし', desc: '罠の強さと発動率。高いほど堕ちやすい' },
+      { id: 'trap', label: '罠の淫らさ', min: 0, max: 100, def: 55, lo: 'いたずら程度', hi: '容赦なし', desc: '罠の強さと発動率。高いほど堕ちやすい' },
       { id: 'monsters', label: '魔物の多さ', min: 0, max: 100, def: 50, lo: '少ない', hi: '巣窟' },
       { id: 'mercy', label: '救済', min: 0, max: 100, def: 40, lo: '無慈悲', hi: '手厚い', desc: '休める部屋・癒しの泉・役に立つ道具の出やすさ' }
     ],
@@ -50878,6 +50885,7 @@
       var o = CONF[id];
       if (!o || !env || !o.from) return env;
       Object.keys(o.from).forEach(function (k) { var f = o.from[k]; if (env[k] == null && f) { var v = f(env); if (v != null) env[k] = v; } });
+      if (o.fix) o.fix(env);
       return env;
     },
     /* 結果を作るとき：新しい設定がない入力（保存してあった古い結果など）は、箱庭の初期値で埋める */
@@ -50946,6 +50954,8 @@
   /* オメガバース：もとの「描写の濃さ」（朝チュン・ほどほど・濃いめ）を描写の有無にそのまま読み替える（値は同じ low/mid/high）。
      発情期の夜・恋人と番の夜・勢いの夜・愛憎の夜（omega-heat.js・omega-love.js・omega-thick.js）。濃い＝プレイと結びを重ねて深く */
   X.install('omega', { desc: '夜の描き方。ほのめかす＝朝チュン／ほどほど＝描写する／濃い＝プレイや結びを重ねて深く描く' });
+  /* エロトラップダンジョン：もとの「罠の淫らさ」（id lewd・数値）は罠の強さとして trap に移す。陥落の山場（dungeon-thick.js） */
+  X.install('dungeon', { from: { trap: function (e) { return typeof e.lewd === 'number' ? e.lewd : null; } }, fix: function (e) { if (typeof e.lewd === 'number') delete e.lewd; }, desc: '陥落の場面の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝堕ちたあとも続くところまで。男性向けは、攻めの挑戦者が魔物を組み伏せる場面だけ' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */

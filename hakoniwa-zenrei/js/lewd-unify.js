@@ -42,6 +42,7 @@
       var o = CONF[id];
       if (!o || !env || !o.from) return env;
       Object.keys(o.from).forEach(function (k) { var f = o.from[k]; if (env[k] == null && f) { var v = f(env); if (v != null) env[k] = v; } });
+      if (o.fix) o.fix(env);
       return env;
     },
     /* 結果を作るとき：新しい設定がない入力（保存してあった古い結果など）は、箱庭の初期値で埋める */
@@ -110,5 +111,7 @@
   /* オメガバース：もとの「描写の濃さ」（朝チュン・ほどほど・濃いめ）を描写の有無にそのまま読み替える（値は同じ low/mid/high）。
      発情期の夜・恋人と番の夜・勢いの夜・愛憎の夜（omega-heat.js・omega-love.js・omega-thick.js）。濃い＝プレイと結びを重ねて深く */
   X.install('omega', { desc: '夜の描き方。ほのめかす＝朝チュン／ほどほど＝描写する／濃い＝プレイや結びを重ねて深く描く' });
+  /* エロトラップダンジョン：もとの「罠の淫らさ」（id lewd・数値）は罠の強さとして trap に移す。陥落の山場（dungeon-thick.js） */
+  X.install('dungeon', { from: { trap: function (e) { return typeof e.lewd === 'number' ? e.lewd : null; } }, fix: function (e) { if (typeof e.lewd === 'number') delete e.lewd; }, desc: '陥落の場面の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝堕ちたあとも続くところまで。男性向けは、攻めの挑戦者が魔物を組み伏せる場面だけ' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
