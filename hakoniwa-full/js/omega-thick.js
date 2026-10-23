@@ -310,7 +310,7 @@
     ok: function (T, U) { return !(HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U)); },
     body: function (T, U, o) {
       var pk = o.pick, Pz = HK.Pos, V = HK.Voice, rng = o.rng;
-      var fT = Pz && Pz.isF && Pz.isF(T), fU = Pz && Pz.isF && Pz.isF(U);
+      var fB = Pz && (Pz.isFBody || Pz.isF), fT = fB && fB(T), fU = fB && fB(U);   /* オメガバースは、ふたなりの設定を使わない（体の性別で見る） */
       var set = fT && fU ? FF : fT && !fU ? RIDE : o.rough || (HK.Ero && HK.Ero.sadist && HK.Ero.sadist(T, U) && rng() < 0.3) ? ROUGH : (CORE[topOf(T)] || CORE.NP);
       /* 箱庭ごとの味付け：同じプールでも i%3 で引き分ける（omega=0・ship=1・zombie=2。それ以外は全部から） */
       var f = o.flav === 'omega' ? 0 : o.flav === 'ship' ? 1 : o.flav === 'zombie' ? 2 : -1;

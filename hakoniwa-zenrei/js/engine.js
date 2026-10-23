@@ -36,7 +36,7 @@
     this.chars = input.chars.map(function (c, i) {
       var pc = (input.perChar && input.perChar[i]) || {};
       return {
-        i: i, name: c.name, eg: c.eg, tr: HK.traits(c.eg), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', lock: c.loveLock == null || c.loveLock === '' || isNaN(+c.loveLock) ? null : +c.loveLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder,
+        i: i, name: c.name, eg: c.eg, tr: HK.traits(c.eg), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, lock: c.loveLock == null || c.loveLock === '' || isNaN(+c.loveLock) ? null : +c.loveLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder,
         hp: 100, alive: true, out: false, stress: 0,
         stats: {}, statsRaw: pc.stats || {}, weaponPick: pc.weapon || 'random',
         actionPick: pc.action || 'auto', goalPick: pc.goal || 'auto', role: pc.role || '', pick: pc.pick || {},
@@ -350,6 +350,7 @@
 
     for (var s = 0; s < labels.length; s++) {
       ctx.stepIndex = s; ctx.label = labels[s];
+      var relPre = relState(ctx), logStart = ctx.log.length;
       ctx.say({ kind: 'step', cat: 'phase', text: labels[s] });
       if (scen.phase) scen.phase(ctx, s, labels.length);
       ctx.flush();
@@ -370,9 +371,10 @@
       var dec = scen.decay || 0.95;
       C.forEach(function (x) { C.forEach(function (y) { var r = ctx.rel[x.i][y.i]; if (r) { r.att *= dec; r.ten *= (dec + 1) / 2; } }); });
       snapshot(ctx);
+      markRel(ctx, relPre, logStart);
       if (scen.end && scen.end(ctx, s, labels.length)) break;
     }
-    if (scen.finish) scen.finish(ctx);
+    if (scen.finish) { var relPreF = relState(ctx), logStartF = ctx.log.length; scen.finish(ctx); ctx.flush(); markRel(ctx, relPreF, logStartF); }
     ctx.flush();
     C.forEach(function (c) { if (!c.fate) c.fate = c.alive ? '生存' : '死亡'; });
     return finalize(ctx);
@@ -402,6 +404,50 @@
     ctx.flush();
   }
 
+  /* 決定的な関係の節目（付き合い始めた・別れた・体だけの関係になった・浮気）を、その節目を起こした出来事に札（e.mark）として付ける。
+     段階の前後で恋人（pf.couple）・夜（pf.night）・セフレ（pf.fwb）の状態を比べ、変わった組の二人が出る、その段階の最後の出来事に付ける。
+     浮気：恋人がいる人が、恋人以外と夜を過ごしたとき（夜の記録が初めて付いたときに一度だけ） */
+  HK.MARK_NAME = { couple: '付き合い始めた', break: '別れた', fwb: '体だけの関係に', cheat: '浮気', affair: '恋人以外と（無理やり）' };
+  function relState(ctx) {
+    var st = {}, C = ctx.chars;
+    for (var i = 0; i < C.length; i++) for (var j = i + 1; j < C.length; j++) {
+      var pf = ctx.pair(C[i], C[j]);
+      st[i + '-' + j] = { couple: !!pf.couple, night: !!pf.night, fwb: !!pf.fwb, nights: pf.nights || 0 };
+    }
+    return st;
+  }
+  function markRel(ctx, pre, logStart) {
+    if (!pre) return;
+    var C = ctx.chars, now = relState(ctx);
+    function partnerPre(i, notJ) { for (var k = 0; k < C.length; k++) { if (k === i || k === notJ) continue; var key = Math.min(i, k) + '-' + Math.max(i, k); if (pre[key] && pre[key].couple) return k; } return -1; }
+    function find(i, j) {
+      var e = null, any = null;
+      for (var n = ctx.log.length - 1; n >= logStart; n--) {
+        var x = ctx.log[n]; if (x.kind !== 'event' || !x.text) continue;
+        var hi = x.actors.indexOf(i) >= 0, hj = x.actors.indexOf(j) >= 0;
+        if (hi && hj) { e = x; break; }
+        if (!any && (hi || hj)) any = x;
+      }
+      return e || any;
+    }
+    function put(i, j, m, e) {
+      e = e || find(i, j); if (!e) return;
+      if (!e.mark) e.mark = []; if (e.mark.indexOf(m) < 0) e.mark.push(m);
+    }
+    for (var i = 0; i < C.length; i++) for (var j = i + 1; j < C.length; j++) {
+      var k = i + '-' + j, a = pre[k], b = now[k]; if (!a || !b) continue;
+      if (!a.couple && b.couple) put(i, j, 'couple');
+      else if (a.couple && !b.couple) put(i, j, b.fwb && !a.fwb ? 'fwb' : 'break');
+      else if (!a.fwb && b.fwb && !b.couple) put(i, j, 'fwb');
+      /* 浮気：この段階で初めて夜を過ごした二人のどちらかに、段階の始めに別の恋人がいた */
+      if ((!a.night && b.night) || b.nights > a.nights) {
+        var pi = partnerPre(i, j), pj = partnerPre(j, i), ev = find(i, j);
+        /* 恋人も一緒の場面（三人で）は浮気ではない。無理やりの場面（争い・裏切り）は「浮気」とは呼ばない */
+        if (ev && (pi >= 0 || pj >= 0) && !(pi >= 0 && ev.actors.indexOf(pi) >= 0) && !(pj >= 0 && ev.actors.indexOf(pj) >= 0))
+          put(i, j, /^(?:conflict|betray|combat)$/.test(ev.cat) ? 'affair' : 'cheat', ev);
+      }
+    }
+  }
   function snapshot(ctx) {
     var snap = {};
     var C = ctx.chars;

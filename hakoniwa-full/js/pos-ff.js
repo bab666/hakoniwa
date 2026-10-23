@@ -45,6 +45,9 @@
   var SPEED = L('{a}は動けない{b}の脚のあいだに膝をつき、指と舌で手早く{b}を追い上げた。|{a}は縛った{b}の胸元を開き、「すぐ終わらせるから」と言って指を滑り込ませた。');
 
   var POOLS = { open: OPEN, body: BODY, climax: CLIMAX, after: AFTER, toy: { all: TOY }, repeat: { all: REPEAT }, speed: { all: SPEED } };
+  /* 二人が対等に繋がる描写（双頭の玩具・貝合わせ・上下の入れ替わり）は、二人ともリバのときだけ。それ以外の組では候補から外す */
+  var MUTUAL_RE = HK.Pos && HK.Pos.MUTUAL_RE ? HK.Pos.MUTUAL_RE : /双頭|貝合わせ|擦り合わせ|擦りつけ合|擦り付け合|重ね合わせ|上になったり下になったり|入れ替わ/;
+  function noMutual(arr, riba) { if (riba) return arr; var r = arr.filter(function (s) { return !MUTUAL_RE.test(s); }); return r.length ? r : arr; }
   function pickArr(ctx, arr) { return ctx && ctx.pick ? ctx.pick(arr) : arr[Math.floor(Math.random() * arr.length)]; }
   function fill(ctx, s, a, b) {
     if (ctx && ctx.t) return ctx.t(s, a, b);
@@ -65,7 +68,7 @@
     pick: function (ctx, kind, st, opt) {
       var P = POOLS[kind] || BODY, arr = P[st] || P.all || P.gentle;
       if (kind === 'body' && opt && opt.tools && pickArr(ctx, [0, 0, 1]) === 1) arr = TOY;
-      return pickArr(ctx, arr);
+      return pickArr(ctx, noMutual(arr, opt && opt.riba));
     },
     /* 一場面ぶん。a/b は指定どおりに並べ替える（自分で攻めを選んだ人は必ず a） */
     scene: function (ctx, a, b, mode, opt) {
@@ -75,7 +78,8 @@
       if (mode === 'repeat') out.push(pickArr(ctx, REPEAT));
       else if (mode === 'speed') out.push(pickArr(ctx, SPEED));
       else out.push(pickArr(ctx, OPEN[st] || OPEN.gentle));
-      out.push(opt.tools && pickArr(ctx, [0, 1]) ? pickArr(ctx, TOY) : pickArr(ctx, BODY[st] || BODY.gentle));
+      var riba = HK.Pos && HK.Pos.bothRiba && HK.Pos.bothRiba(A, B);
+      out.push(opt.tools && pickArr(ctx, [0, 1]) ? pickArr(ctx, noMutual(TOY, riba)) : pickArr(ctx, noMutual(BODY[st] || BODY.gentle, riba)));
       out.push(pickArr(ctx, CLIMAX[st] || CLIMAX.gentle));
       if (AFTER[mode]) out.push(pickArr(ctx, AFTER[mode]));
       return out.map(function (s) { return fill(ctx, s, A, B); }).join('') + (opt.dash ? '――' : '');
@@ -89,6 +93,44 @@
         if (!sen || !RE.test(sen)) return sen;
         return fill(ctx, pickArr(ctx, /果て|達し|イ[っか]|絶頂/.test(sen) ? (CLIMAX[st] || CLIMAX.gentle) : (BODY[st] || BODY.gentle)), A, B);
       });
+    },
+    /* 二人が対等に繋がる文（双頭の玩具・貝合わせ・上下の入れ替わり）を、リバ同士でない組では指・舌の文に差し替える */
+    fixMutual: function (ctx, text, a, b, opt) {
+      if (typeof text !== 'string' || !MUTUAL_RE.test(text)) return text;
+      var o = HK.Pos.order(a, b, [a, b]), A = o[0], B = o[1], st = (opt && opt.st) || styleOf(A);
+      return text.replace(/[^。！？」\n]*(?:「[^」]*」[^。！？」\n]*)*[。！？]?/g, function (sen) {
+        if (!sen || !MUTUAL_RE.test(sen)) return sen;
+        return fill(ctx, pickArr(ctx, noMutual(/果て|達し|イ[っか]|絶頂/.test(sen) ? (CLIMAX[st] || CLIMAX.gentle) : (BODY[st] || BODY.gentle), false)), A, B);
+      });
     }
   };
+
+  /* どの箱庭の結果も最後に一度見直す：女性の体どうしの組（リバ同士を除く）の二人が出る文に、対等な繋がりの描写が残っていれば直す */
+  var sim0 = HK.simulate;
+  if (!sim0) return;
+  HK.simulate = function (input) {
+    var res = sim0.apply(this, arguments);
+    try {
+      var P = HK.Pos, cs = (input && input.chars) || [];
+      var Fs = cs.filter(function (c) { return P.isFBody ? P.isFBody(c) : P.isF(c); });
+      if (Fs.length < 2 || !res) return res;
+      var pairs = [];
+      for (var i = 0; i < Fs.length; i++) for (var j = i + 1; j < Fs.length; j++) if (!(P.bothRiba && P.bothRiba(Fs[i], Fs[j]))) pairs.push([Fs[i], Fs[j]]);
+      if (!pairs.length) return res;
+      var rng = HK.rng ? HK.rng(((input.seed || 1) * 6007 + 29) >>> 0) : null;
+      var ctx = { pick: function (a) { return a[rng ? rng.int(a.length) : Math.floor(Math.random() * a.length)]; } };
+      var items = (res.log || []).slice();
+      if (res.ending && Array.isArray(res.ending.lines)) res.ending.lines.forEach(function (l, i) { items.push({ _end: i, text: l }); });
+      items.forEach(function (e) {
+        if (!e || typeof e.text !== 'string' || !MUTUAL_RE.test(e.text)) return;
+        for (var k = 0; k < pairs.length; k++) {
+          var p = pairs[k];
+          if (e.text.indexOf(p[0].name) >= 0 && e.text.indexOf(p[1].name) >= 0) e.text = FF.fixMutual(ctx, e.text, p[0], p[1]);
+        }
+        if (e._end != null) res.ending.lines[e._end] = e.text;
+      });
+    } catch (err) { /* 見直しに失敗しても結果は返す */ }
+    return res;
+  };
+  for (var k in sim0) if (Object.prototype.hasOwnProperty.call(sim0, k)) HK.simulate[k] = sim0[k];
 })();

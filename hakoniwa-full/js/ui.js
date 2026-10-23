@@ -53,7 +53,7 @@
     });
   }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
+  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -88,6 +88,7 @@
     c.bmonth = +c.bmonth >= 1 && +c.bmonth <= 12 ? String(Math.floor(+c.bmonth)) : '';
     c.age = +c.age >= 1 && +c.age <= 150 ? String(Math.floor(+c.age)) : '';
     c.keigoOlder = !!c.keigoOlder;
+    c.futa = !!c.futa;
     c.you = str(c.you, 8).trim();
     c.marks = str(c.marks, 30).trim();
     c.loveLock = typeof c.loveLock === 'string' ? c.loveLock : '';
@@ -333,6 +334,7 @@
         if (c.bmonth) o.bmonth = +c.bmonth;
         if (c.age) o.age = +c.age;
         if (c.keigoOlder) o.keigoOlder = true;
+        if (c.futa) o.futa = true;
         if (c.you) o.you = c.you;
         if (c.marks) o.marks = c.marks;
         if (c.loveLock && idx[c.loveLock] != null) o.loveLock = idx[c.loveLock];
@@ -390,6 +392,7 @@
       if (o.bmonth != null) c.bmonth = o.bmonth;
       if (o.age != null) c.age = o.age;
       if (o.keigoOlder) c.keigoOlder = true;
+      if (o.futa) c.futa = true;
       if (o.you != null) c.you = String(o.you).trim().slice(0, 8);
       if (o.marks != null) c.marks = String(o.marks).trim().slice(0, 30);
       c._lk = o.loveLock; c._cl = o.calls; c._kg = o.keigo;
@@ -571,7 +574,7 @@
 
     var html =
       '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' +
-      '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + '</h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + '</div></div>' +
+      '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + ' <span class="envbtns"><button type="button" class="mini" data-act="envreset" title="この箱庭の環境値を初期値に戻す">初期値に戻す</button><button type="button" class="mini" data-act="envrand" title="環境値をランダムに決める（文字の項目はそのまま）">ランダム</button></span></h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + '</div></div>' +
       '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
       '<h2 class="sec">' + (scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
@@ -609,7 +612,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '' };
+          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '' };
         });
       })(),
       perChar: castFor(S.scenId).map(function (c) {
@@ -687,6 +690,19 @@
     if (t.dataset.tab) { setTab(t.dataset.tab); return; }
     var act = t.dataset.act, row = t.closest('.res');
     switch (act) {
+      /* 環境値：初期値に戻す／ランダムに決める（文字の項目はそのまま） */
+      case 'envreset': case 'envrand': (function () {
+        var scen = HK.SCENARIOS[S.scenId]; if (!scen) return;
+        genv(scen).forEach(function (e) {
+          var src = HK.GLOBAL_ENV.indexOf(e) >= 0 ? S.glob : (S.env[S.scenId] = S.env[S.scenId] || {});
+          if (act === 'envreset') { delete src[e.id]; return; }
+          if (e.type === 'text') return;
+          if (e.type === 'select') { var os = (e.options || []).filter(function (o) { return !o.disabled; }); if (os.length) src[e.id] = os[Math.floor(Math.random() * os.length)].v; return; }
+          var lo = +e.min, hi = +e.max; if (isNaN(lo) || isNaN(hi)) return;
+          src[e.id] = lo + Math.floor(Math.random() * (hi - lo + 1));
+        });
+        renderBox(); toast(act === 'envreset' ? '環境値を初期値に戻しました' : '環境値をランダムに決めました');
+      })(); break;
       case 'import-add': importRoster(false); break;
       case 'import-replace': importRoster(true); break;
       case 'export':

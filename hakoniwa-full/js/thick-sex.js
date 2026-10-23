@@ -165,7 +165,11 @@
     var hard = mode === 'mf' && T.hard(opt.rng, a, b), jl = hard && !!opt.jealous, g = fmG(st), out = [];
     out.push(opt.open || pick(T.OPEN[st] || T.OPEN.gentle));
     /* 女性どうしは、指・舌・貝合わせの書き方を、最中と頂で合わせる（同じ番号の文） */
-    var ffi = mode === 'ff' ? Math.floor(opt.rng() * (T.FF_BODY[g] || T.FF_BODY.soft).length) : 0;
+    /* 貝合わせ・上下の入れ替わりのように二人が対等に繋がる文は、二人ともリバ（HK.Pos.bothRiba）のときだけ */
+    var ffList = T.FF_BODY[g] || T.FF_BODY.soft, MUT = P && P.MUTUAL_RE, riba = P && P.bothRiba && P.bothRiba(a, b);
+    var ffIdx = ffList.map(function (s, i) { return i; }).filter(function (i) { return riba || !MUT || !MUT.test(ffList[i]); });
+    if (!ffIdx.length) ffIdx = ffList.map(function (s, i) { return i; });
+    var ffi = mode === 'ff' ? ffIdx[Math.floor(opt.rng() * ffIdx.length)] : 0;
     if (mode === 'ff') out.push((T.FF_BODY[g] || T.FF_BODY.soft)[ffi]);
     else if (mode === 'fm') out.push(pick(T.FM_BODY[g]));
     else out.push(pick(jl ? T.JEALOUS_BODY : hard ? T.ROUGH_BODY : T.BODY[st] || T.BODY.gentle));
