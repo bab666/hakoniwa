@@ -127,7 +127,12 @@
       return T ? T[p.persona] || T.gentle : null;
     }
     /* top：その人が攻めとして果てる */
-    function moan(p, top) { var l = lew === 'low' || !V ? null : top ? topV(p, 'moan') : V.CLIMAX[p.persona]; return l && l.length ? p.name + '「' + pk(l) + '」' : ''; }
+    /* R18の描写の設定（lewd-unify.js）：男性向けは、相手が応じた行為（accept）と、扉が開いたあとの夜だけ（eroNow の間）。♡の喘ぎ（ero-kit.js） */
+    var LX = HK.Lewd, lcf = LX && LX.conf('locker'), eroOn = !!(lcf && HK.Ero && HK.Ero.on(S) && HK.ThickEro && lew !== 'low'), eroNow = false;
+    function moan(p, top) {
+      if (eroOn && eroNow) { var d0 = p.eroDom; p.eroDom = !!top; var m = HK.Ero.moan(S, p, 2); p.eroDom = d0; return p.name + '「' + m + '」'; }
+      var l = lew === 'low' || !V ? null : top ? topV(p, 'moan') : V.CLIMAX[p.persona]; return l && l.length ? p.name + '「' + pk(l) + '」' : '';
+    }
     function say2(p, T) { var l = T[p.persona] || T.gentle; return p.name + pk(l); }
     function climax(p, t, top) { p.cnt.climax++; p.m.plea = 25; p.m.heat = clamp(p.m.heat - 10, 0, 100); return t + moan(p, top); }
     function canHands(p) { return !p.bound; }
@@ -315,6 +320,7 @@
           continue;
         }
         b.cnt.accept++; pair.level = lv; pair.acts++; pair.lastAct = turn; lewdNow = true;
+        eroNow = resp === 'accept';
         if (swap) t += ST.fmt(pk(LK.TAKE[b.bound ? 'bound' : 'free']), vT) + ST.fmt(pk(actPool), vA);
         else t += ST.fmt(pk(hands((resp === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); }), a, b)), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
         /* 最初の一回は、二人の関係で受け止め方が変わる */
@@ -329,6 +335,12 @@
         /* セフレで片想い：いつもの体なのに、想う側の心だけが違う */
         if (lv >= 3 && fcKind && LK.FC && !pair.fcShown) { pair.fcShown = true; t += ST.fmt(pk(LK.FC.inside[fcKind]), { c: crusher.name, o: crusher.o.name }); }
         if (lew === 'low' && lv >= 3) t = ST.fmt(pk(actPool), vA).replace(/。.*$/, '。') + pk(LK.FADE || ['――その先は、ロッカーの扉の隙間からも見えなかった。']);
+        /* 男性向け：相手が応じたときの口・繋がる行為に、狭いロッカーならではの段落を足す（thick-sex-ero.js の喘ぎ・擬音） */
+        else if (eroOn && eroNow && lv >= 3 && LK.ERO_ACT && LK.ERO_ACT[lv]) {
+          /* 口（3）は元の文と同じ向き（ax が bx に）、繋がる（4）は攻め {a} が受けに */
+          var eg = lv === 3 ? ax : tp, er = lv === 3 ? bx : tp.o;
+          t += HK.ThickEro.fill(S, pk(ff && LK.ERO_ACT_FF && LK.ERO_ACT_FF[lv] ? LK.ERO_ACT_FF[lv] : LK.ERO_ACT[lv]), eg, er).replace(/\{a\}/g, eg.name).replace(/\{b\}/g, er.name);
+        }
         /* 自分で攻めを選んだ人は、相手に「イかされる」側にしない */
         /* 繋がった瞬間には果てさせない（そこからの数コマを、続きの出来事で書く） */
         if (lv === 4) { ax.m.plea = Math.min(ax.m.plea, 55); bx.m.plea = Math.min(bx.m.plea, 60); }
@@ -340,6 +352,7 @@
         /* キスで開く扉（キスより先のことをしている最中なら、その最中に開く） */
         var G = gimmicks[gi];
         if (G && G.lewd && lv >= 1) { prog = 100; t += ST.fmt(pk(lv >= 2 && LK.KISS_MID ? LK.KISS_MID : G.ok), { a: a.name, b: b.name }); }
+        eroNow = false;
         var o2 = ST.sayB(S, { actors: [a, b], tag: actLabel(lv), text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた（' + (hardTop(b) ? '攻め' : '動く側') + '）' : resp === 'accept' ? '乗った' : '流された') + '（関係：' + REL_LABEL[rel] + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(lv), lv >= 3 || pair.acts === 1);
         if (o2 && pair.acts === 1) ST.key(S, o2, '最初に手を出したのは' + a.name);
         if (o2 && lv === 4 && !pair.keySex) { pair.keySex = true; ST.key(S, o2, ff ? 'ロッカーの中で肌を重ねた' : 'ロッカーの中で繋がった'); }
@@ -411,7 +424,9 @@
       var vv = { a: x.name, b: y.name };
       var tone = rel === 'tension' || rel === 'ex' ? 'rough' : rel === 'lover' || rel === 'almost' || rel === 'crush' ? 'sweet' : rng() < 0.5 ? 'rough' : 'sweet';
       /* ベッドの展開は solo-locker-bed.js（誘い方・最中の展開・結び） */
-      bedLabels = LK.bed(S, { A: A, B: B, x: x, y: y, rel: rel, tone: tone, how: how, plotter: plotter, servant: servant, master: master, lew: lew, dose: env.dose, pair: pair, moan: moan, REL_LABEL: REL_LABEL, ff: ff });
+      /* 扉が開いたあとの夜：描写の長さ（短く＝一段落版）と、男性向け（企みのある夜は除く） */
+      eroNow = eroOn && !plotter;
+      bedLabels = LK.bed(S, { short: !!(lcf && LX.short(env, rng)), ero: eroNow, A: A, B: B, x: x, y: y, rel: rel, tone: tone, how: how, plotter: plotter, servant: servant, master: master, lew: lew, dose: env.dose, pair: pair, moan: moan, REL_LABEL: REL_LABEL, ff: ff });
       A.cnt.climax += 2 + rng.int(3); B.cnt.climax += 2 + rng.int(3);
     } else if (endure) {
       outcome = 'endure';

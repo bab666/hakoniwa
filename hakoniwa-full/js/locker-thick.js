@@ -19,9 +19,36 @@
   var FM_SAFE = L('{a}は{b}の上で腰を沈めたまま、わざと動かずに{b}の顔を見下ろした。|{a}は{b}の胸に手をついて、少しずつ深さを変えながら腰を揺らした。|{a}は{b}の上で、締めつけては緩め、{b}が息を詰めるたびに腰の動きを止めた。');
   function para(arr, pre) { return arr.map(function (x) { return (pre ? '\n\n' : '') + x + '\n\n'; }); }
 
+  /* 描写の作風「男性向け」：ロッカーの中で相手が応じた行為（3＝口、4＝繋がる）に足す段落。{a}＝攻め {b}＝受け（{mb1}{mb2}＝受けの声） */
+  LK.ERO_ACT = {
+    3: L('狭いロッカーの中で、{a}は{b}の脚のあいだに顔を埋めた。{s:suck}。{b}「{mb1}」――逃げ場のない暗闇で、音だけがやけに大きく響いた。|{a}は{b}の下着の中に手を滑り込ませ、とろとろになったところを指でかき回した。{s:wet}。{b}「{mb1}」――媚薬のせいで、触れられたそばから腰が勝手に揺れた。|{s:suck}。{b}「{mb2}」――{b}は{a}の口の中で、びくびくと震えながら果てた。'),
+    4: L('{a}は{b}をロッカーの壁に押しつけたまま、奥まで繋がった。{s:hit}。{b}「{mb1}」――狭くて動けないぶん、一突きごとが深く奥に響いた。|媚薬で敏感になった{b}のナカは、{a}を咥え込んで離さなかった。{s:wet}。{b}「{mb2}」――{b}は扉に額を押しつけたまま、びくびくとイった。|{s:hit}。{b}「{mb2}」――ロッカーががたがたと揺れるのも構わず、二人は腰をぶつけ合った。')
+  };
+  /* 女性どうしの「繋がる」（4）：指と肌で */
+  LK.ERO_ACT_FF = {
+    4: L('{a}は{b}をロッカーの壁に押しつけたまま、指を二本、奥まで沈めた。{s:wet}。{b}「{mb1}」――狭くて逃げられないぶん、弱いところを何度も擦られた。|媚薬で敏感になった{b}のナカは、{a}の指をきゅうきゅうと締めつけて離さなかった。{s:wet}。{b}「{mb2}」――{b}は扉に額を押しつけたまま、びくびくとイった。|{a}は{b}の脚のあいだに太腿を割り込ませ、濡れたところを擦り上げた。{s:wet}。{b}「{mb2}」')
+  };
+  /* 扉が開いたあとの夜（男性向け）：最中の段落に男性向けの最中を、絶頂の段落の頭に男性向けの果てる段を足す（thick-sex-ero.js の文） */
+  function eroBed(S, o, run) {
+    var TE = HK.ThickEro, x = o.x, y = o.y, mode = TE.mode(x, y), g = TE.group(T.style(x), mode), pk = function (a) { return S.rng.pick(a); }, n = 0, say1 = ST.say;
+    var nm = function (t) { return TE.fill(S, t, x, y).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name); };
+    ST.say = function (S2, e) {
+      if (e && typeof e.text === 'string' && e.tag !== 'ベッドへ') {
+        n++;
+        var sep = /\n\n/.test(e.text) ? '\n\n' : '';
+        if (n === 1) e.text += sep + nm(pk(mode === 'ff' ? TE.FF_BODY[g] : mode === 'fm' ? TE.FM_BODY[g] : TE.BODY[g])) + sep + nm(pk(TE.FEEL[mode]));
+        else if (n === 2) e.text = nm(pk(mode === 'ff' ? TE.FF_CLIMAX[g] : mode === 'fm' ? TE.FM_CLIMAX[g] : TE.CLIMAX[g])) + sep + e.text;
+      }
+      return say1.apply(this, arguments);
+    };
+    try { return run(); } finally { ST.say = say1; }
+  }
   var bed0 = LK.bed;
   LK.bed = function (S, o) {
-    if (HK.SAFE_ON || !o || o.ff || o.lew === 'low') return bed0.apply(this, arguments);
+    var self = this, args = arguments;
+    if (o && o.ero && !HK.SAFE_ON && o.lew !== 'low' && HK.ThickEro) { var o2 = Object.assign({}, o, { ero: false }); return eroBed(S, o2, function () { return LK.bed.call(self, S, o2); }); }
+    /* 描写の長さ「数行で短く」（混ぜるなら半分）：一段落版（solo-locker-bed.js） */
+    if (HK.SAFE_ON || !o || o.ff || o.lew === 'low' || o.short) return bed0.apply(this, arguments);
     var x = o.x, y = o.y, B = LK.BED, rng = S.rng;
     var riba = HK.Pos ? !HK.Pos.fixed(x, y) : false;
     var fem = HK.Pos && HK.Pos.isF, fm = fem && fem(x) && !fem(y);
