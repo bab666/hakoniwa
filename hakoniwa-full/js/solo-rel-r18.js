@@ -131,6 +131,8 @@
         if ((ctx.env.ilewd || 'fade') === 'off' || !okPair(ctx, a, b)) return false;
         var pf = ctx.pair(a, b);
         if ((pf.irN || 0) >= 2 || (pf.irAt != null && ctx.stepIndex - pf.irAt < 6)) return false;
+        /* 状況の夜（solo-sit-night-r18.js）の翌日には重ねない */
+        if (pf.sitAt != null && ctx.stepIndex - pf.sitAt < 2) return false;
         return ready(ctx, a, b, kindOf(ctx, a, b));
       },
       w: function (ctx, a, b) { var k = kindOf(ctx, a, b); return 0.5 + (ctx.R(a, b).att + ctx.R(b, a).att) / 120 + a.tr.fc * 0.2 + a.tr.impulse * 0.2 + (k === 'lock' ? 1 : 0) + (ctx.env.storm > 60 ? 0.3 : 0); },
@@ -198,6 +200,7 @@
         if (Z.part(ctx) < 1) return false;
         var pf = ctx.pair(a, b);
         if ((pf.zr18 || 0) >= 2 || (pf.zr18At != null && ctx.stepIndex - pf.zr18At < 6)) return false;
+        if (pf.sitAt != null && ctx.stepIndex - pf.sitAt < 4) return false;
         return ready(ctx, a, b, k);
       },
       w: function (ctx, a, b) { return 1 + (a.stress + b.stress) / 120 + ctx.R(a, b).att / 90; },

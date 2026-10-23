@@ -524,7 +524,7 @@
       },
       w: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'island'), cr = C.list.some(function (s) { return CRISIS[s.id]; });
-        return (cr ? 1.1 : 0.45) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 200;
+        return (cr ? 1.1 : 0.3) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 200;
       },
       run: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'island'), st = chooseSit(ctx, C.list), r = C.r, lv = ctx.env.ilewd || 'fade';
@@ -546,7 +546,7 @@
       },
       w: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'zombie'), cr = C.list.some(function (s) { return CRISIS[s.id]; });
-        return (cr ? 1.2 : 0.4) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 160;
+        return (cr ? 1.2 : 0.3) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 160;
       },
       run: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'zombie'), st = chooseSit(ctx, C.list), r = C.r;
