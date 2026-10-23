@@ -163,6 +163,7 @@ js/jashin-loop.js
 js/jashin-mage.js
 js/jashin-goals-text.js
 js/jashin-goals.js
+js/jashin-love.js
 js/jashin-npc-text.js
 js/jashin-npc.js
 js/jashin-godev.js

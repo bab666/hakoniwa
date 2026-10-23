@@ -7,12 +7,42 @@
   function R(ctx, a, b) { return ctx.R(a, b); }
   function names(list) { return list.map(function (c) { return c.name; }).join('・'); }
   function add(s) { HK.SCENARIOS[s.id] = s; HK.SCEN_ORDER.push(s.id); }
+  /* 合コン：恋愛の起こりやすさ（既定の50で1、0で0、100で2） */
+  function gRom(ctx) { return (ctx.env.romance == null ? 50 : ctx.env.romance) / 50; }
+  function gTaken(ctx, a) { return ctx.chars.some(function (c) { return c !== a && ctx.pair(a, c).couple; }); }
+  var WALK_LOVE = [
+    '改札の前で、{a}が足を止めた。「また会いたい。今度は、二人で」――{b}は笑って頷いた。その場で、次の約束が決まった。',
+    '駅までの道で、{a}の手の甲が何度も{b}の手に触れた。三度目で、{b}のほうから指を絡めた。「……付き合う？」「うん」',
+    '終電を一本見送って、{a}と{b}はホームのベンチで話し込んだ。次の電車が来る前に、二人は恋人になっていた。',
+    '「今日のこと、酔ってたからって忘れないでね」と{b}が言った。{a}は「忘れない。ちゃんと付き合いたい」と返した。'
+  ];
+  var G_CONFESS = [
+    'トイレから戻る廊下で、{a}は{b}を呼び止めた。「今日、来てよかった。……{b}に会えたから」',
+    '店の外の自販機の前で、{a}は{b}に向き直った。「酔った勢いって思われてもいい。好きになった」',
+    '席替えのあと、{a}はテーブルの下で{b}の指先に触れた。「このあと、ちゃんと言いたいことがある。……好き、かもしれない」',
+    '{a}は{b}のグラスに自分のグラスを当てて、小さな声で言った。「初対面でこんなこと言うの、変かな。……付き合ってほしい」',
+    '盛り上がる声に紛れて、{a}は{b}の耳元に口を寄せた。「さっきから、{b}のことしか見てない」',
+    '取り皿を渡すふりをして、{a}は{b}にだけ聞こえる声で言った。「次は、二人で会いたい。……恋人になってほしい」'
+  ];
+  var G_YES = [
+    '{b}は一瞬目を丸くして、それから笑った。「……同じこと、考えてた」',
+    '{b}は返事の代わりに、{a}の指をきゅっと握り返した。',
+    '{b}は耳まで赤くして頷いた。「じゃあ、今日から、ね」',
+    '{b}はスマホを差し出した。「連絡先、一番上にピン留めしといて」'
+  ];
+  var G_NO = [
+    '{b}は困ったように笑った。「今日会ったばかりだし……まずは友達から、じゃだめ？」',
+    '{b}は「酔ってるでしょ」と笑って、{a}の額を指でつついた。',
+    '{b}は少し黙ってから、「ごめん」と小さく言った。'
+  ];
 
   /* ======================= 合コン ======================= */
   add({
     id: 'goukon', name: '合コン', kicker: '恋愛・社交',
     desc: '居酒屋の個室で一晩。酒が回るほど本音と衝動が出る。最後に誰と帰ったかで決着。',
     unit: '時刻', preRel: 0, lethal: false,
+    /* 恋愛が主役の箱庭：恋愛の出来事を多めに */
+    catBias: { romance: 1.7 },
     derived: ['impulse', 'honesty', 'warmth', 'jealous'],
     env: [
       { id: 'alcohol', label: '酒の進み', min: 0, max: 100, def: 55, lo: 'ソフドリ', hi: '飲み放題の暴走' },
@@ -46,9 +76,11 @@
     },
     setup: function (ctx) {
       ctx.place = '居酒屋の個室';
+      /* 出会いを求めて来た場なので、最初から少し惹かれ合っている（恋愛の起こりやすさで増減） */
+      var rf = gRom(ctx);
       ctx.chars.forEach(function (c) {
         c.flags.drunk = 0; c.baseTr = JSON.parse(JSON.stringify(c.tr));
-        ctx.others(c).forEach(function (o) { if (HK.canLove(o, c)) ctx.R(o, c).att = HK.clamp(ctx.R(o, c).att + (ctx.stat(c, 'looks') - 3) * 6, 0, 100); });
+        ctx.others(c).forEach(function (o) { if (HK.canLove(o, c)) ctx.R(o, c).att = HK.clamp(ctx.R(o, c).att + (ctx.stat(c, 'looks') - 3) * 6 + (8 + ctx.rng() * 16) * rf, 0, 100); });
       });
     },
     phase: function (ctx, s) {
@@ -104,11 +136,11 @@
         if (pf.couple) return 'lover';
         var imp = (a.tr.impulse + b.tr.impulse) / 2, warm = (a.tr.warmth + b.tr.warmth) / 2;
         /* 好意が深く、二人とも誠実寄りなら恋人に。ドライさ・衝動の強さが勝てば、なかったことに */
-        if (mutual >= 46 && Math.min(ab.att, ba.att) >= 58 && warm > 0.42) return 'lover';
+        if (mutual >= 46 - rf * 8 && Math.min(ab.att, ba.att) >= 58 - rf * 8 && warm > 0.36) return 'lover';
         if (mutual < 26 || dry > 0.56 || (tieHas(a, b, 'rival') && mutual < 36) || (imp > 0.72 && mutual < 36)) return 'forget';
         return 'unsure';
       }
-      var cand = [];
+      var rf = gRom(ctx), cand = [];
       for (var i = 0; i < P.length; i++) for (var j = i + 1; j < P.length; j++) {
         var a = P[i], b = P[j], ab = R(ctx, a, b), ba = R(ctx, b, a);
         var v = Math.min(ab.att, ba.att) + Math.min(ab.aff, ba.aff) * 0.5 + (ctx.pair(a, b).couple ? 30 : 0);
@@ -116,7 +148,7 @@
       }
       cand.sort(function (x, y) { return y.v - x.v; });
       cand.forEach(function (c) {
-        if (used[c.a.i] || used[c.b.i] || c.v < 55 || !HK.canLove(c.a, c.b) || !HK.canLove(c.b, c.a)) return;
+        if (used[c.a.i] || used[c.b.i] || c.v < 55 - rf * 20 || !HK.canLove(c.a, c.b) || !HK.canLove(c.b, c.a)) return;
         used[c.a.i] = used[c.b.i] = 1;
         var imp = (c.a.tr.impulse + c.b.tr.impulse) / 2;
         var night = imp > 0.55 && rng() < imp * 0.9;
@@ -134,12 +166,15 @@
         if (outc) { var on = { keep: '恋人どうしの夜を過ごした', lover: 'そのまま付き合うことになった', fwb: '恋人ではない関係に落ち着いた', forget: '翌朝、なかったことにした', unsure: '関係はまだ決まっていない' }[outc]; c.a.fateNote += '。' + on; c.b.fateNote += '。' + on; }
         var gn = night && HK.GoukonNight ? HK.GoukonNight(ctx, c.a, c.b, outc) : null;
         if (outc === 'lover' || outc === 'keep') ctx.pair(c.a, c.b).couple = true;
+        /* 一緒に帰っただけの二人も、想いが通じ合っていれば帰り道で付き合うことに */
+        var walkLove = !night && !ctx.pair(c.a, c.b).couple && Math.min(R(ctx, c.a, c.b).aff, R(ctx, c.b, c.a).aff) >= 36 - rf * 6 && Math.min(R(ctx, c.a, c.b).att, R(ctx, c.b, c.a).att) >= 50 - rf * 6;
+        if (walkLove) { ctx.pair(c.a, c.b).couple = true; c.a.fateNote += '。帰り道で付き合うことになった'; c.b.fateNote += '。帰り道で付き合うことになった'; }
         if (outc === 'forget') ctx.pair(c.a, c.b).forgot = true;
         var e = ctx.say({ kind: 'event', cat: 'romance', actors: [c.a, c.b], text: night ? c.a.name + 'と' + c.b.name + 'は、店を出たあと同じタクシーに乗った。' + (gn ? gn.text : 'その先のことは、二人しか知らない。') + (gn ? '' : (function () {
           /* 受け攻めの指定どおりの「翌朝」 */
           var tb = HK.Pos ? HK.Pos.order(c.a, c.b, [c.a, c.b]) : [c.a, c.b];
           return ctx.t(rng.pick(['――翌朝、{b}は少しだけ腰をかばうように歩いていた。{a}はそれに気づいて、黙って{b}の荷物を持った。', '――翌朝、{a}の背中には{b}の爪の痕が残っていた。{b}は目を合わせずに「……強すぎ」とだけ言った。', '――翌朝、{b}は{a}のシャツを着たまま、ベッドから起き上がれずにいた。', '――翌朝、{a}は先に起きて、まだ眠っている{b}の髪をそっと撫でた。']), tb[0], tb[1]);
-        })()) + (!gn && outc ? rng.pick(SOFT_END[outc]) : '') : c.a.name + 'と' + c.b.name + 'は駅まで一緒に歩いた。改札で別れるのに少し時間がかかった。', why: '互いの惹かれ（' + Math.round(Math.min(R(ctx, c.a, c.b).att, R(ctx, c.b, c.a).att)) + '）' + (night ? 'と酔いによる衝動性' : '') + (gn ? '／夜：' + gn.label : outc ? '／その後：' + { keep: '恋人のまま', lover: '恋人になる', fwb: 'セフレに落ち着く', forget: 'なかったことにする', unsure: 'まだ答えが出ない' }[outc] : ''), mag: 25 });
+        })()) + (!gn && outc ? rng.pick(SOFT_END[outc]) : '') : c.a.name + 'と' + c.b.name + 'は駅まで一緒に歩いた。' + (walkLove ? ctx.t(rng.pick(WALK_LOVE), c.a, c.b) : (ctx.pair(c.a, c.b).couple ? '繋いだ手を、改札の前でなかなか離せなかった。' : '改札で別れるのに少し時間がかかった。')), why: '互いの惹かれ（' + Math.round(Math.min(R(ctx, c.a, c.b).att, R(ctx, c.b, c.a).att)) + '）' + (night ? 'と酔いによる衝動性' : '') + (gn ? '／夜：' + gn.label : outc ? '／その後：' + { keep: '恋人のまま', lover: '恋人になる', fwb: 'セフレに落ち着く', forget: 'なかったことにする', unsure: 'まだ答えが出ない' }[outc] : ''), mag: 25 });
         ctx.pair(c.a, c.b).moments.push({ n: e.n, mag: 25 });
         if (fwbNow) {
           HK.FWB.mark(ctx, c.a, c.b);
@@ -206,6 +241,20 @@
         run: function (ctx, a, b) {
           ctx.mod2(a, b, { att: 9, trust: 5, aff: 4 }, { att: 9, trust: 5, aff: 4 });
           return { text: ctx.t('「ちょっと外の空気吸ってくる」と言った{a}に、{b}がついてきた。戻ってくるまで十五分かかった。', a, b), why: '互いの惹かれと' + a.name + 'の衝動性' };
+        }
+      },
+      {
+        /* 告白：通じれば、その場で恋人に */
+        id: 'g_confess', cat: 'romance', scope: 'pair',
+        when: function (ctx, a, b) { var pf = ctx.pair(a, b); return ctx.stepIndex >= 2 && HK.canLove(a, b) && !pf.couple && !pf.gconf && !pf.kin && !gTaken(ctx, a) && R(ctx, a, b).att > 44 - gRom(ctx) * 12; },
+        w: function (ctx, a, b) { return (0.4 + a.tr.honesty * 0.7 + a.tr.impulse * 0.4 + R(ctx, a, b).att / 100) * (a.goal.id === 'lover' ? 1.8 : 1); },
+        run: function (ctx, a, b) {
+          var d = gRom(ctx), rb = R(ctx, b, a), pf = ctx.pair(a, b);
+          var yes = HK.canLove(b, a) && !gTaken(ctx, b) && (b.lock == null || b.lock === a.i) && rb.att > 36 - d * 10 && rb.aff > 8 - d * 6;
+          pf.gconf = true;
+          if (yes) { pf.couple = true; ctx.mod2(a, b, { att: 8, aff: 10, trust: 6 }, { att: 8, aff: 10, trust: 6 }); }
+          else { ctx.mod2(a, b, { att: -3 }, { aff: 2 }); ctx.stress(a, 10); }
+          return { text: ctx.t(ctx.pick(G_CONFESS) + ctx.pick(yes ? G_YES : G_NO), a, b), why: a.name + 'の惹かれ（' + Math.round(R(ctx, a, b).att) + '）と本音の出やすさ。' + b.name + 'の惹かれ（' + Math.round(rb.att) + '）・好意（' + Math.round(rb.aff) + '）' + (yes ? '。その場で恋人に' : ''), mag: yes ? 26 : 16 };
         }
       },
       {
