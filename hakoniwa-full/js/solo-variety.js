@@ -90,6 +90,8 @@
     function kinBlock(a, b) { var t = kinTie(a, b), D = t && HK.TIES[t.type]; return !!(t && !D.loveOK && !(HK.tieFamLove && HK.tieFamLove(t))); }
     function okS(a, b) { return !kinBlock(a, b) && (!PO || PO.okSex(a, b)); }
     function ord(a, b) { return PO ? PO.order(a, b, [a, b]) : [a, b]; }
+    /* いちもつのある人（男性と、ふたなりの女性）。男性器前提の企画・当てっこは、ふたなりがいても外さない */
+    function hasP(p) { return PO ? !PO.isF(p) : p.gender === 'm'; }
     /* アシスタントを選ぶ：いちもつ前提の企画や、女性の挑戦者が受ける企画では男性のアシスタントにする（女性どうしにしない） */
     function assist(p, K) {
       var pool = VA.ASSIST;
@@ -110,7 +112,8 @@
       if (HK.SAFE_ON || lew === 'low' || !TH || !TV) return '';
       var t = tb[0], b = tb[1], key = kind;
       if (kind === 'pair' || kind === 'gone') {
-        var tf = t.gender === 'f', bf = b.gender === 'f';
+        /* ふたなり（HK.Pos.futa）が攻めに回るときは男性の体で書く（M）。受ける側は体の性別のまま */
+        var tf = PO ? PO.isF(t) : t.gender === 'f', bf = PO ? PO.isFBody(b) : b.gender === 'f';
         key = kind + (tf && bf ? 'FF' : tf ? 'FM' : 'M');
         if (kind === 'gone' && key === 'goneM' && TV.sad(rng, t, b)) key = 'goneSad';
       }
@@ -162,7 +165,7 @@
         if (env.mix !== 'random' && x.type === env.mix) w *= 3.5;
         if (x.type === 'duel' && P.length < 2) w = 0;
         if (VA.NO_TOP && VA.NO_TOP.indexOf(x.name) >= 0 && P.some(function (p) { return !p.away && hTop(p); })) w = 0;
-        if (VA.NEED_PENIS && VA.NEED_PENIS.indexOf(x.name) >= 0 && P.some(function (p) { return p.gender === 'f'; })) w = 0;
+        if (VA.NEED_PENIS && VA.NEED_PENIS.indexOf(x.name) >= 0 && P.some(function (p) { return !hasP(p); })) w = 0;
         if (x.type === 'team' && P.length < 4) w *= 0.15;
         if (used.length && used[used.length - 1].type === x.type) w *= 0.45;
         return w;
@@ -181,7 +184,7 @@
       if (AP.length < 2) { P.forEach(function (p) { p.away = 0; }); AP = P.slice(); }
       var hid = null;
       if (K.type === 'guess') {
-        var males = AP.filter(function (p) { return p.gender === 'm'; });
+        var males = AP.filter(hasP);
         if (/ちんちん/.test(K.name) && !males.length) {
           var alt = pool.filter(function (x) { return x.type === 'guess'; })[0];
           used.pop();
