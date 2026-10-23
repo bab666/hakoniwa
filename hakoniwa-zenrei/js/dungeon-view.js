@@ -106,6 +106,14 @@
     }).join('') + '</ol>';
   }
 
+  /* 記録のアイコン：本文に名前の出る挑戦者（出てくる順に3人まで）。一人で挑む箱庭は、名前がなくてもその人 */
+  function avsOf(res, e) {
+    if (!HK.Icons) return '';
+    var hs = (res.heroes || [res.hero]).filter(Boolean), t = e.text || '';
+    var who = hs.filter(function (h) { return h.name && t.indexOf(h.name) >= 0; }).sort(function (a, b) { return t.indexOf(a.name) - t.indexOf(b.name); });
+    if (!who.length && hs.length === 1) who = hs;
+    return who.length ? '<span class="avs">' + who.slice(0, 3).map(function (h) { return HK.Icons.html(h.name, h.i || 0, 26); }).join('') + '</span>' : '';
+  }
   function timeline(res) {
     var out = [], cur = null;
     res.log.forEach(function (e) {
@@ -117,8 +125,9 @@
     return out.filter(function (b) { return b.items.length; }).map(function (b) {
       return '<div class="stepblk"><div class="when">' + esc(b.label.replace(/^地下(\d+)階・/, 'B$1 ')) + '</div><ol>' + b.items.map(function (e) {
         var cls = 'ev' + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (e.tag === '陥落' ? ' death' : '');
-        return '<li class="' + cls + '">' + (res.noGear ? '' : '<span class="rn">' + (e.room + 1) + '</span>') + '<span class="c">' + esc(e.tag || '') + '</span>' + paint(e.text, res) +
-          ((e.why || e.key || e.kind === 'climax') ? '<span class="why">' + (e.why ? esc(e.why) : '') + (e.key || e.kind === 'climax' ? '<span class="nums">　理性' + e.v.r + '・堕ち' + e.v.c + '</span>' : '') + '</span>' : '') + '</li>';
+        var avs = avsOf(res, e);
+        return '<li class="' + cls + (avs ? ' hasav' : '') + '">' + avs + '<div class="evb">' + (res.noGear ? '' : '<span class="rn">' + (e.room + 1) + '</span>') + '<span class="c">' + esc(e.tag || '') + '</span>' + paint(e.text, res) +
+          ((e.why || e.key || e.kind === 'climax') ? '<span class="why">' + (e.why ? esc(e.why) : '') + (e.key || e.kind === 'climax' ? '<span class="nums">　理性' + e.v.r + '・堕ち' + e.v.c + '</span>' : '') + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
   }
