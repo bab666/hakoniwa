@@ -100,5 +100,8 @@
   X.install('island', { old: ['ilewd'], def: 'low', from: { lewd: function (e) { return e.ilewd ? (e.ilewd === 'high' ? 'mid' : 'low') : null; }, lewdLen: function (e) { return e.ilewd === 'high' ? 'short' : null; } }, desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
   /* 宇宙船漂流記：船員どうしの夜・看病の夜・異星の生き物（ship.js・ship-lewd.js）。「夜の出来事の起こりやすさ」は起きる頻度として残す */
   X.install('ship', { desc: '夜の出来事（船員どうし・看病・異星の生き物）の描き方。ほのめかす＝ぼかした一文／ほどほど＝描写する／濃い＝もう一度求め合うところまで' });
+  /* ゾンビの街：恋人たちの夜（zombie-love.js・zombie-thick.js）・想い続けた相手の夜・状況の夜（solo-rel-r18.js・solo-sit-night-r18.js）。
+     襲われる場面も描写の有無に従う（男性向けの文は足さない）。古い「恋人たちの夜（R18）」：描かない・ほのめかす＝ほのめかす、描写する＝ほどほど */
+  X.install('zombie', { old: ['zlewd'], def: 'low', from: { lewd: function (e) { return e.zlewd ? (e.zlewd === 'high' ? 'mid' : 'low') : null; } }, desc: '恋人たちの夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();

@@ -22567,7 +22567,7 @@
         return { with: actors, text: t, why: why + '：けがを負った（化膿すると危ない）', mag: 18 };
       }
       /* まれに、犯される展開になる（R18版のみ。襲われる人が「攻め」指定でないときだけ） */
-      if (Z.ZA_TEXT && Z.zombieAssault && ctx.env.zlewd !== 'off' && !(HK.Pos && !HK.Pos.canReceive(v)) && !v.z.zassault && rng() < 0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) {
+      if (Z.ZA_TEXT && Z.zombieAssault && Z.loveLv(ctx) !== 'off' && !(HK.Pos && !HK.Pos.canReceive(v)) && !v.z.zassault && rng() < 0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) {
         v.z.zassault = true;
         var ra = Z.zombieAssault(ctx, v, [a].concat(mates).filter(function (o, i, arr) { return o !== v && arr.indexOf(o) === i; }), A);
         ra.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
@@ -22737,7 +22737,12 @@
     return HK.canLove(a, b) && ctx.R(a, b).att > 48 && ctx.R(b, a).att < 30;
   };
   /* 夜の描写の度合い：off（描かない）・fade（ほのめかす）・high（描写する／R18版のみ） */
-  Z.loveLv = function (ctx) { var v = ctx.env.zlewd; return v === 'off' || v === 'high' ? v : 'fade'; };
+  /* 夜の描き方：R18の描写の設定（lewd-unify.js）の「ほのめかす」なら fade、それ以外は high（設定をそろえる前の入力は zlewd を見る） */
+  Z.loveLv = function (ctx) {
+    var X = HK.Lewd;
+    if (X && X.conf('zombie')) return X.lv(ctx.env) === 'low' ? 'fade' : 'high';
+    var v = ctx.env.zlewd; return v === 'off' || v === 'high' ? v : 'fade';
+  };
 
   var LV = Z.LOVE = {
     /* ---------- 恋人：最後かもしれない夜（{a}=誘う側） ---------- */
@@ -25107,7 +25112,7 @@
     ctx.stress(c, 40);
     /* その場にいる仲間：多いほど、助かる見込みが上がる */
     var mates = Z.here(ctx, c).filter(function (x) { return x !== o && alive(x); });
-    var lv = Z.cureAssault ? (ctx.env.zlewd === 'high' ? 'high' : ctx.env.zlewd === 'off' ? 'off' : 'fade') : 'off';
+    var lv = Z.cureAssault ? Z.loveLv(ctx) : 'off';
     /* 犯される描写は、怪物になった側が「受け」でなく、襲われる側が「攻め」でないときだけ */
     /* 襲われる側が「攻め」指定なら、犯される展開にはしない（喰われる・助け出されるだけ） */
     /* 怪物になった o が c を襲う向き（HK.Pos.order の先頭が o）で、二人の向きが決まる組（okSex）のときだけ */
@@ -25244,7 +25249,7 @@
 
   /* ゾンビに襲われ、犯される。z_trouble の「咬まれる」かわりに、まれに起きる。返り値は出来事の結果 */
   Z.zombieAssault = function (ctx, v, mates, A) {
-    var rng = ctx.rng, X = Z.ZA_TEXT, lv = ctx.env.zlewd === 'high' ? 'high' : 'fade';
+    var rng = ctx.rng, X = Z.ZA_TEXT, lv = Z.loveLv(ctx) === 'high' ? 'high' : 'fade';
     var L0 = Z.loverOf(ctx, v), here = L0 && mates.indexOf(L0) >= 0;
     var pow = mates.reduce(function (s0, x) { return s0 + (x.weapon ? x.weapon.pow : 0); }, 0);
     var brave = mates.reduce(function (s0, x) { return Math.max(s0, x.tr.np * 0.5 + x.tr.cp * 0.3 + x.tr.aggr * 0.3); }, 0);
@@ -25298,7 +25303,7 @@
   function L(s) { return s.split('|'); }
   function fill(t, m) { return t.replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
 
-  Z.scen.env.push({ id: 'zlewd', label: '恋人たちの夜（R18）', type: 'select', def: 'fade', options: [{ v: 'off', label: '描かない' }, { v: 'fade', label: 'ほのめかす' }, { v: 'high', label: '描写する' }] });
+  /* 描写の設定は lewd-unify.js（古い「恋人たちの夜（R18）」はそこで外して読み替える） */
 
   var HIGH = {
     fore: L('{x}は{y}の服を、一枚ずつ確かめるように脱がせた。傷がないか、咬み跡がないか――確かめるたびに、唇を落とした。|狭い倉庫の床に毛布を敷き、{x}は{y}を押し倒した。埃と汗の匂いの中で、{y}の肌だけが温かかった。|{y}は{x}のベルトに自分から手をかけた。指が震えていたのは、寒さのせいではなかった。'),
@@ -25434,8 +25439,20 @@
     var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1];
     if (!TK.ok(T, U)) return n0.apply(this, arguments);
     var pk = function (arr) { return ctx.pick(arr); }, LH = Z.LOVE_HIGH;
-    /* 3割ほどは、元の短い版（書き出し・挿入・最中・結びを一文ずつ。女性どうし・女性が攻めの組にも専用の文） */
-    if (LH && ctx.rng() < 0.3) return n0.apply(this, arguments);
+    /* R18の描写の設定（lewd-unify.js）：数行で短く＝元の短い版、男性向け＝thick-sex-ero.js、濃い＝もう一度 */
+    var X = HK.Lewd, cf = X && X.conf('zombie'), TE = HK.ThickEro;
+    var ero = cf && X.ero(ctx.env) && TE, high = cf && X.high(ctx.env) && TE, short = cf ? X.short(ctx.env, ctx.rng) : null;
+    var nm = function (s) { return s.replace(/\{a\}/g, T.name).replace(/\{b\}/g, U.name); };
+    if (ero) {
+      var r = short ? TE.short({ S: ctx, pick: pk, a: T, b: U, open: pk(LEAD).replace(/\{T\}/g, '{a}').replace(/\{U\}/g, '{b}'), again: high })
+        : TE.scene({ S: ctx, pick: pk, rng: ctx.rng, a: T, b: U, style: HK.ThickSex ? HK.ThickSex.style(T) : 'gentle', open: pk(LEAD).replace(/\{T\}/g, '{a}').replace(/\{U\}/g, '{b}'), place: 'zombie', again: high });
+      var et = nm(r.text);
+      if (HK.Pos.ff(T, U) && HK.FF && HK.FF.fix) et = HK.FF.fix(ctx, et, T, U);
+      return short ? et : '\n\n' + et + '\n\n';
+    }
+    if (short) return n0.apply(this, arguments) + (high ? nm(TE.again(ctx, pk, T, U, false, true)) : '');
+    /* 設定をそろえる前の入力：3割ほどは、元の短い版（書き出し・挿入・最中・結びを一文ずつ。女性どうし・女性が攻めの組にも専用の文） */
+    if (short === null && LH && ctx.rng() < 0.3) return n0.apply(this, arguments);
     var kd = TK.kind(T, U, 'zombie'), set = LH ? (kd === 'ff' ? LH.ff : kd === 'ride' ? LH.ride : LH.mf) : null;
     var ok = LH && kd === 'ff' ? LH.ffOk(T, U) : function () { return true; };
     var mids = set ? set.mid.filter(ok) : [];
@@ -25444,7 +25461,7 @@
     var extra = mids.length && ctx.rng() < 0.7 ? [xy(pk(mids))] : [];
     var finish = pk(FIN);
     var t = TK.body(T, U, { flav: 'zombie', pick: pk, rng: ctx.rng, bed: '毛布', depth: ctx.rng() < 0.4 ? 3 : 2, lead: lead, extra: extra, finish: finish, noAfter: true });
-    return '\n\n' + TK.names(t, T, U) + '\n\n';
+    return '\n\n' + TK.names(t, T, U) + '\n\n' + (high ? nm(TE.again(ctx, pk, T, U, false, false)) + '\n\n' : '');
   };
 })();
 ;/* ==== js/solo-zombie-raid.js ==== */
@@ -25488,7 +25505,7 @@
 
   /* 略奪者に襲われ、犯される。v=襲われる人、mates=居合わせた仲間、n=略奪者（NPC） */
   Z.raiderAssault = function (ctx, v, mates, n) {
-    var rng = ctx.rng, lv = ctx.env.zlewd === 'high' ? 'high' : 'fade';
+    var rng = ctx.rng, lv = Z.loveLv(ctx) === 'high' ? 'high' : 'fade';
     var L0 = Z.loverOf ? Z.loverOf(ctx, v) : null, here = L0 && mates.indexOf(L0) >= 0;
     var m = { a: v.name, n: n.label, m: mates.length ? Z.names(mates.slice(0, 2)) : '', L: L0 ? L0.name : '' };
     var t = fill(ctx.pick(mates.length ? RT.openM : RT.open), m) + TL.line(v, 'RAID_BEG');
@@ -25799,7 +25816,7 @@
         ctx.mod2(a, b, { att: 8, aff: 8, trust: 6 }, { att: 8, aff: 8, trust: 6 });
         a.stress = Math.max(0, a.stress - 12); b.stress = Math.max(0, b.stress - 12);
         var v = { a: a.name, b: b.name, x: o[0].name, y: o[1].name };
-        var t = fill(ctx.pick(ZT.ask[k]), v) + (lv === 'high' ? highText(ctx, ZT.high, ['fore', 'insert', 'mid', 'end'], o, v) : ctx.pick(ZT.fade));
+        var t = fill(ctx.pick(ZT.ask[k]), v) + (lv === 'high' ? RN.body(ctx, 'zombie', o[0], o[1], function () { return highText(ctx, ZT.high, ['fore', 'insert', 'mid', 'end'], o, v); }, function () { return highText(ctx, ZT.high, ['fore'], o, v); }) : ctx.pick(ZT.fade));
         if (RK.tone(o[0]) === 'aniki' && ctx.rng() < 0.6) t += o[0].name + fill(ctx.pick(ANIKI), v);
         return { text: t + fill(ctx.pick(ZT.after[k]), v), why: (k === 'lock' ? a.name + 'が想い続けた相手' : '師弟の一線') + '（' + Z.day(ctx) + '日目の夜）', mag: 26 };
       }
@@ -26949,7 +26966,7 @@
     var A = ctx.spA;
     if (!A) A = ctx.spA = {
       rng: ctx.rng, all: ctx.chars,
-      r18: !HK.SAFE_ON && ctx.env.zlewd != null && ctx.env.zlewd !== 'off', lewd: ctx.env.zlewd === 'high' ? 0.55 : 0.3,
+      r18: !HK.SAFE_ON && (ctx.env.zlewd != null || !!(HK.Lewd && HK.Lewd.conf('zombie'))) && Z.loveLv(ctx) !== 'off', lewd: Z.loveLv(ctx) === 'high' ? 0.55 : 0.3,
       alive: function (c) { return !!c.alive; },
       here: function (c) { return !c.out; },
       near: function (a, b) { return a.z && b.z && a.z.area === b.z.area; },
@@ -50884,6 +50901,9 @@
   X.install('island', { old: ['ilewd'], def: 'low', from: { lewd: function (e) { return e.ilewd ? (e.ilewd === 'high' ? 'mid' : 'low') : null; }, lewdLen: function (e) { return e.ilewd === 'high' ? 'short' : null; } }, desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
   /* 宇宙船漂流記：船員どうしの夜・看病の夜・異星の生き物（ship.js・ship-lewd.js）。「夜の出来事の起こりやすさ」は起きる頻度として残す */
   X.install('ship', { desc: '夜の出来事（船員どうし・看病・異星の生き物）の描き方。ほのめかす＝ぼかした一文／ほどほど＝描写する／濃い＝もう一度求め合うところまで' });
+  /* ゾンビの街：恋人たちの夜（zombie-love.js・zombie-thick.js）・想い続けた相手の夜・状況の夜（solo-rel-r18.js・solo-sit-night-r18.js）。
+     襲われる場面も描写の有無に従う（男性向けの文は足さない）。古い「恋人たちの夜（R18）」：描かない・ほのめかす＝ほのめかす、描写する＝ほどほど */
+  X.install('zombie', { old: ['zlewd'], def: 'low', from: { lewd: function (e) { return e.zlewd ? (e.zlewd === 'high' ? 'mid' : 'low') : null; } }, desc: '恋人たちの夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */

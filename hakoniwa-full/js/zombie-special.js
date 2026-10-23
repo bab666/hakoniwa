@@ -12,7 +12,7 @@
     var A = ctx.spA;
     if (!A) A = ctx.spA = {
       rng: ctx.rng, all: ctx.chars,
-      r18: !HK.SAFE_ON && ctx.env.zlewd != null && ctx.env.zlewd !== 'off', lewd: ctx.env.zlewd === 'high' ? 0.55 : 0.3,
+      r18: !HK.SAFE_ON && (ctx.env.zlewd != null || !!(HK.Lewd && HK.Lewd.conf('zombie'))) && Z.loveLv(ctx) !== 'off', lewd: Z.loveLv(ctx) === 'high' ? 0.55 : 0.3,
       alive: function (c) { return !!c.alive; },
       here: function (c) { return !c.out; },
       near: function (a, b) { return a.z && b.z && a.z.area === b.z.area; },

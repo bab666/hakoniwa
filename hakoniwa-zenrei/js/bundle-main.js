@@ -19537,7 +19537,7 @@
         return { with: actors, text: t, why: why + '：けがを負った（化膿すると危ない）', mag: 18 };
       }
       /* まれに、犯される展開になる（R18版のみ。襲われる人が「攻め」指定でないときだけ） */
-      if (Z.ZA_TEXT && Z.zombieAssault && ctx.env.zlewd !== 'off' && !(HK.Pos && !HK.Pos.canReceive(v)) && !v.z.zassault && rng() < 0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) {
+      if (Z.ZA_TEXT && Z.zombieAssault && Z.loveLv(ctx) !== 'off' && !(HK.Pos && !HK.Pos.canReceive(v)) && !v.z.zassault && rng() < 0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) {
         v.z.zassault = true;
         var ra = Z.zombieAssault(ctx, v, [a].concat(mates).filter(function (o, i, arr) { return o !== v && arr.indexOf(o) === i; }), A);
         ra.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
@@ -19707,7 +19707,12 @@
     return HK.canLove(a, b) && ctx.R(a, b).att > 48 && ctx.R(b, a).att < 30;
   };
   /* 夜の描写の度合い：off（描かない）・fade（ほのめかす）・high（描写する／R18版のみ） */
-  Z.loveLv = function (ctx) { var v = ctx.env.zlewd; return v === 'off' || v === 'high' ? v : 'fade'; };
+  /* 夜の描き方：R18の描写の設定（lewd-unify.js）の「ほのめかす」なら fade、それ以外は high（設定をそろえる前の入力は zlewd を見る） */
+  Z.loveLv = function (ctx) {
+    var X = HK.Lewd;
+    if (X && X.conf('zombie')) return X.lv(ctx.env) === 'low' ? 'fade' : 'high';
+    var v = ctx.env.zlewd; return v === 'off' || v === 'high' ? v : 'fade';
+  };
 
   var LV = Z.LOVE = {
     /* ---------- 恋人：最後かもしれない夜（{a}=誘う側） ---------- */
@@ -22077,7 +22082,7 @@
     ctx.stress(c, 40);
     /* その場にいる仲間：多いほど、助かる見込みが上がる */
     var mates = Z.here(ctx, c).filter(function (x) { return x !== o && alive(x); });
-    var lv = Z.cureAssault ? (ctx.env.zlewd === 'high' ? 'high' : ctx.env.zlewd === 'off' ? 'off' : 'fade') : 'off';
+    var lv = Z.cureAssault ? Z.loveLv(ctx) : 'off';
     /* 犯される描写は、怪物になった側が「受け」でなく、襲われる側が「攻め」でないときだけ */
     /* 襲われる側が「攻め」指定なら、犯される展開にはしない（喰われる・助け出されるだけ） */
     /* 怪物になった o が c を襲う向き（HK.Pos.order の先頭が o）で、二人の向きが決まる組（okSex）のときだけ */
@@ -22214,7 +22219,7 @@
 
   /* ゾンビに襲われ、犯される。z_trouble の「咬まれる」かわりに、まれに起きる。返り値は出来事の結果 */
   Z.zombieAssault = function (ctx, v, mates, A) {
-    var rng = ctx.rng, X = Z.ZA_TEXT, lv = ctx.env.zlewd === 'high' ? 'high' : 'fade';
+    var rng = ctx.rng, X = Z.ZA_TEXT, lv = Z.loveLv(ctx) === 'high' ? 'high' : 'fade';
     var L0 = Z.loverOf(ctx, v), here = L0 && mates.indexOf(L0) >= 0;
     var pow = mates.reduce(function (s0, x) { return s0 + (x.weapon ? x.weapon.pow : 0); }, 0);
     var brave = mates.reduce(function (s0, x) { return Math.max(s0, x.tr.np * 0.5 + x.tr.cp * 0.3 + x.tr.aggr * 0.3); }, 0);
@@ -22830,7 +22835,7 @@
     var A = ctx.spA;
     if (!A) A = ctx.spA = {
       rng: ctx.rng, all: ctx.chars,
-      r18: !HK.SAFE_ON && ctx.env.zlewd != null && ctx.env.zlewd !== 'off', lewd: ctx.env.zlewd === 'high' ? 0.55 : 0.3,
+      r18: !HK.SAFE_ON && (ctx.env.zlewd != null || !!(HK.Lewd && HK.Lewd.conf('zombie'))) && Z.loveLv(ctx) !== 'off', lewd: Z.loveLv(ctx) === 'high' ? 0.55 : 0.3,
       alive: function (c) { return !!c.alive; },
       here: function (c) { return !c.out; },
       near: function (a, b) { return a.z && b.z && a.z.area === b.z.area; },
@@ -40124,6 +40129,9 @@
   X.install('island', { old: ['ilewd'], def: 'low', from: { lewd: function (e) { return e.ilewd ? (e.ilewd === 'high' ? 'mid' : 'low') : null; }, lewdLen: function (e) { return e.ilewd === 'high' ? 'short' : null; } }, desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
   /* 宇宙船漂流記：船員どうしの夜・看病の夜・異星の生き物（ship.js・ship-lewd.js）。「夜の出来事の起こりやすさ」は起きる頻度として残す */
   X.install('ship', { desc: '夜の出来事（船員どうし・看病・異星の生き物）の描き方。ほのめかす＝ぼかした一文／ほどほど＝描写する／濃い＝もう一度求め合うところまで' });
+  /* ゾンビの街：恋人たちの夜（zombie-love.js・zombie-thick.js）・想い続けた相手の夜・状況の夜（solo-rel-r18.js・solo-sit-night-r18.js）。
+     襲われる場面も描写の有無に従う（男性向けの文は足さない）。古い「恋人たちの夜（R18）」：描かない・ほのめかす＝ほのめかす、描写する＝ほどほど */
+  X.install('zombie', { old: ['zlewd'], def: 'low', from: { lewd: function (e) { return e.zlewd ? (e.zlewd === 'high' ? 'mid' : 'low') : null; } }, desc: '恋人たちの夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
 ;/* ==== js/reset.js ==== */

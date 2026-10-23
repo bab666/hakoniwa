@@ -38,7 +38,7 @@
 
   /* 略奪者に襲われ、犯される。v=襲われる人、mates=居合わせた仲間、n=略奪者（NPC） */
   Z.raiderAssault = function (ctx, v, mates, n) {
-    var rng = ctx.rng, lv = ctx.env.zlewd === 'high' ? 'high' : 'fade';
+    var rng = ctx.rng, lv = Z.loveLv(ctx) === 'high' ? 'high' : 'fade';
     var L0 = Z.loverOf ? Z.loverOf(ctx, v) : null, here = L0 && mates.indexOf(L0) >= 0;
     var m = { a: v.name, n: n.label, m: mates.length ? Z.names(mates.slice(0, 2)) : '', L: L0 ? L0.name : '' };
     var t = fill(ctx.pick(mates.length ? RT.openM : RT.open), m) + TL.line(v, 'RAID_BEG');

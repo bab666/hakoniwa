@@ -16576,7 +16576,7 @@
           return ctx.act2({ actors: P, cat: 'combat', text: fillN(ctx, '{a}は{n}たちに殴りかかったが、多勢に無勢だった。食料をほとんど奪われ、{a}は肋骨を押さえてうずくまった。', n, f), why: '略奪者のほうが多かった', mag: 26 });
         }
         /* まれに、一人が犯される（R18版の solo-zombie-raid.js。襲われる人が「攻め」指定でないときだけ） */
-        if (Z.raiderAssault && ctx.env.zlewd !== 'off' && rng() < 0.3) {
+        if (Z.raiderAssault && Z.loveLv(ctx) !== 'off' && rng() < 0.3) {
           var vs = P.filter(function (c) { return !(HK.Pos && !HK.Pos.canReceive(c)) && !c.flags.raided; });
           if (vs.length) {
             var v = HK.weighted(rng, vs, function (c) { return 1 + (1 - c.tr.cp) * 0.6 + (c.hp < 50 ? 0.4 : 0); });
@@ -18740,7 +18740,7 @@
       }
     ],
     "safe": [
-      "「恋人たちの夜」の設定はなく、恋人たちの夜はほのめかす程度で描かれます。",
+      "描写の有無は「ほのめかす」だけで、恋人たちの夜はほのめかす程度で描かれます。",
       "執着が暴走しても、相手を引き止める・恋敵に釘を刺す程度にとどまります。"
     ]
   };

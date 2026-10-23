@@ -42,7 +42,7 @@
 
   /* ゾンビに襲われ、犯される。z_trouble の「咬まれる」かわりに、まれに起きる。返り値は出来事の結果 */
   Z.zombieAssault = function (ctx, v, mates, A) {
-    var rng = ctx.rng, X = Z.ZA_TEXT, lv = ctx.env.zlewd === 'high' ? 'high' : 'fade';
+    var rng = ctx.rng, X = Z.ZA_TEXT, lv = Z.loveLv(ctx) === 'high' ? 'high' : 'fade';
     var L0 = Z.loverOf(ctx, v), here = L0 && mates.indexOf(L0) >= 0;
     var pow = mates.reduce(function (s0, x) { return s0 + (x.weapon ? x.weapon.pow : 0); }, 0);
     var brave = mates.reduce(function (s0, x) { return Math.max(s0, x.tr.np * 0.5 + x.tr.cp * 0.3 + x.tr.aggr * 0.3); }, 0);

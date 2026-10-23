@@ -7,7 +7,7 @@
   function L(s) { return s.split('|'); }
   function fill(t, m) { return t.replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
 
-  Z.scen.env.push({ id: 'zlewd', label: '恋人たちの夜（R18）', type: 'select', def: 'fade', options: [{ v: 'off', label: '描かない' }, { v: 'fade', label: 'ほのめかす' }, { v: 'high', label: '描写する' }] });
+  /* 描写の設定は lewd-unify.js（古い「恋人たちの夜（R18）」はそこで外して読み替える） */
 
   var HIGH = {
     fore: L('{x}は{y}の服を、一枚ずつ確かめるように脱がせた。傷がないか、咬み跡がないか――確かめるたびに、唇を落とした。|狭い倉庫の床に毛布を敷き、{x}は{y}を押し倒した。埃と汗の匂いの中で、{y}の肌だけが温かかった。|{y}は{x}のベルトに自分から手をかけた。指が震えていたのは、寒さのせいではなかった。'),

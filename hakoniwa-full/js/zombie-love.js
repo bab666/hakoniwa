@@ -25,7 +25,12 @@
     return HK.canLove(a, b) && ctx.R(a, b).att > 48 && ctx.R(b, a).att < 30;
   };
   /* 夜の描写の度合い：off（描かない）・fade（ほのめかす）・high（描写する／R18版のみ） */
-  Z.loveLv = function (ctx) { var v = ctx.env.zlewd; return v === 'off' || v === 'high' ? v : 'fade'; };
+  /* 夜の描き方：R18の描写の設定（lewd-unify.js）の「ほのめかす」なら fade、それ以外は high（設定をそろえる前の入力は zlewd を見る） */
+  Z.loveLv = function (ctx) {
+    var X = HK.Lewd;
+    if (X && X.conf('zombie')) return X.lv(ctx.env) === 'low' ? 'fade' : 'high';
+    var v = ctx.env.zlewd; return v === 'off' || v === 'high' ? v : 'fade';
+  };
 
   var LV = Z.LOVE = {
     /* ---------- 恋人：最後かもしれない夜（{a}=誘う側） ---------- */

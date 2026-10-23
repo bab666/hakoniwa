@@ -230,7 +230,7 @@
         ctx.mod2(a, b, { att: 8, aff: 8, trust: 6 }, { att: 8, aff: 8, trust: 6 });
         a.stress = Math.max(0, a.stress - 12); b.stress = Math.max(0, b.stress - 12);
         var v = { a: a.name, b: b.name, x: o[0].name, y: o[1].name };
-        var t = fill(ctx.pick(ZT.ask[k]), v) + (lv === 'high' ? highText(ctx, ZT.high, ['fore', 'insert', 'mid', 'end'], o, v) : ctx.pick(ZT.fade));
+        var t = fill(ctx.pick(ZT.ask[k]), v) + (lv === 'high' ? RN.body(ctx, 'zombie', o[0], o[1], function () { return highText(ctx, ZT.high, ['fore', 'insert', 'mid', 'end'], o, v); }, function () { return highText(ctx, ZT.high, ['fore'], o, v); }) : ctx.pick(ZT.fade));
         if (RK.tone(o[0]) === 'aniki' && ctx.rng() < 0.6) t += o[0].name + fill(ctx.pick(ANIKI), v);
         return { text: t + fill(ctx.pick(ZT.after[k]), v), why: (k === 'lock' ? a.name + 'が想い続けた相手' : '師弟の一線') + '（' + Z.day(ctx) + '日目の夜）', mag: 26 };
       }

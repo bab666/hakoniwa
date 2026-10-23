@@ -170,7 +170,7 @@
     ctx.stress(c, 40);
     /* その場にいる仲間：多いほど、助かる見込みが上がる */
     var mates = Z.here(ctx, c).filter(function (x) { return x !== o && alive(x); });
-    var lv = Z.cureAssault ? (ctx.env.zlewd === 'high' ? 'high' : ctx.env.zlewd === 'off' ? 'off' : 'fade') : 'off';
+    var lv = Z.cureAssault ? Z.loveLv(ctx) : 'off';
     /* 犯される描写は、怪物になった側が「受け」でなく、襲われる側が「攻め」でないときだけ */
     /* 襲われる側が「攻め」指定なら、犯される展開にはしない（喰われる・助け出されるだけ） */
     /* 怪物になった o が c を襲う向き（HK.Pos.order の先頭が o）で、二人の向きが決まる組（okSex）のときだけ */
