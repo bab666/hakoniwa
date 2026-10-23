@@ -32239,14 +32239,13 @@
       return v + rng() * 45;
     }
     function quote(p, T) { var l = T[p.persona] || T.gentle; return p.name + ST.pick(S, l); }
-    /* R18の描写の設定（lewd-unify.js）：男性向けなら ♡ の喘ぎ（ero-kit.js）・山場に段落を足す、濃いなら延長戦・もう一度、短くなら山場を段落にしない */
+    /* R18の描写の設定（lewd-unify.js）：男性向けなら ♡ の喘ぎ（ero-kit.js）・山場に段落を足す、濃いなら延長戦・もう一度。テンポを重視するので、描写の長さの設定はない */
     var LX = HK.Lewd, lcf = LX && LX.conf('variety'), ero = !!(lcf && HK.Ero && HK.Ero.on(S) && lew !== 'low'), high = !!(lcf && lew === 'high');
     function moan(p) { if (ero) return p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; return lew !== 'low' && V && V.CLIMAX[p.persona] ? p.name + '「' + ST.pick(S, V.CLIMAX[p.persona]) + '」' : ''; }
     /* 山場の厚い場面（R18版・描写が「ぼかす」以外。solo-variety-thick.js）。tb＝[攻める側, 受ける側] */
     function thick(kind, tb) {
       var TH = VA.THICK, TV = HK.ThickVM;
       if (HK.SAFE_ON || lew === 'low' || !TH || !TV) return '';
-      if (lcf && LX.short(env, rng)) return '';
       var t = tb[0], b = tb[1], key = kind;
       if (kind === 'pair' || kind === 'gone') {
         /* ふたなり（HK.Pos.futa）が攻めに回るときは男性の体で書く（M）。受ける側は体の性別のまま */
@@ -51068,7 +51067,7 @@
   /* 催眠：もとの「描写の濃さ」と「描写の作風」をそのまま読み替える（値は同じ）。全年齢では「ほのめかす」だけ（作風は出さない） */
   X.install('saimin', { desc: '暗示の場面の描き方。ほのめかす＝性的な暗示は選ばれず、いたずらだけ／ほどほど＝描写する／濃い＝より多く深く' });
   /* エロバラエティ番組：もとの「描写の濃さ」をそのまま読み替え、長さ・作風を追加（solo-variety.js・solo-variety-thick.js） */
-  X.install('variety', { desc: '罰ゲームや楽屋の場面の描き方。ほのめかす＝ぼかす／ほどほど＝描写する／濃い＝延長戦・もう一度まで' });
+  X.install('variety', { len: false, desc: '罰ゲームや楽屋の場面の描き方。ほのめかす＝ぼかす／ほどほど＝描写する／濃い＝延長戦・もう一度まで' });
   /* 媚薬ロッカー：もとの「描写の濃さ」をそのまま読み替え、長さ・作風を追加（solo-locker.js・locker-thick.js）。男性向けは、相手が応じた行為と扉が開いたあとの夜だけ */
   X.install('locker', { desc: 'ロッカーの中と、扉が開いたあとの描き方。ほのめかす＝ぼかす／ほどほど＝描写する／濃い＝より深く' });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });

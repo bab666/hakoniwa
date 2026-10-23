@@ -105,14 +105,13 @@
       return v + rng() * 45;
     }
     function quote(p, T) { var l = T[p.persona] || T.gentle; return p.name + ST.pick(S, l); }
-    /* R18の描写の設定（lewd-unify.js）：男性向けなら ♡ の喘ぎ（ero-kit.js）・山場に段落を足す、濃いなら延長戦・もう一度、短くなら山場を段落にしない */
+    /* R18の描写の設定（lewd-unify.js）：男性向けなら ♡ の喘ぎ（ero-kit.js）・山場に段落を足す、濃いなら延長戦・もう一度。テンポを重視するので、描写の長さの設定はない */
     var LX = HK.Lewd, lcf = LX && LX.conf('variety'), ero = !!(lcf && HK.Ero && HK.Ero.on(S) && lew !== 'low'), high = !!(lcf && lew === 'high');
     function moan(p) { if (ero) return p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; return lew !== 'low' && V && V.CLIMAX[p.persona] ? p.name + '「' + ST.pick(S, V.CLIMAX[p.persona]) + '」' : ''; }
     /* 山場の厚い場面（R18版・描写が「ぼかす」以外。solo-variety-thick.js）。tb＝[攻める側, 受ける側] */
     function thick(kind, tb) {
       var TH = VA.THICK, TV = HK.ThickVM;
       if (HK.SAFE_ON || lew === 'low' || !TH || !TV) return '';
-      if (lcf && LX.short(env, rng)) return '';
       var t = tb[0], b = tb[1], key = kind;
       if (kind === 'pair' || kind === 'gone') {
         /* ふたなり（HK.Pos.futa）が攻めに回るときは男性の体で書く（M）。受ける側は体の性別のまま */
