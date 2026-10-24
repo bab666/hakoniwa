@@ -95,6 +95,8 @@
       }
       if (s === 4 && ctx.env.kingsgame === 'yes' && P.length >= 2) {
         var two = rng.shuffle(P).slice(0, 2), a = two[0], b = two[1];
+        /* 恋愛・R18にしない組（HK.ngPair）は組ませない。組める二人がいなければ王様ゲームの命令は出さない */
+        if (HK.ngPair(a, b)) { var okp = []; P.forEach(function (x, i) { P.slice(i + 1).forEach(function (y) { if (!HK.ngPair(x, y)) okp.push([x, y]); }); }); if (!okp.length) return; var pr = okp[rng.int(okp.length)]; a = pr[0]; b = pr[1]; }
         var lines = ['見つめ合って10秒', 'ポッキーゲーム', '相手のいいところを3つ言う'];
         var order = rng.pick(lines);
         ctx.k = 1; ctx._mag = 0; ctx._touched = {};
@@ -224,7 +226,7 @@
       },
       {
         id: 'wingman', cat: 'help', scope: 'pair',
-        when: function (ctx, a, b) { var c = ctx.crush(b, 45); return c && c !== a && c.alive && !c.out; },
+        when: function (ctx, a, b) { var c = ctx.crush(b, 45); return c && c !== a && c.alive && !c.out && !HK.ngPair(b, c); },
         w: function (ctx, a, b) { return (a.tr.np * 0.7 + a.tr.fc * 0.3) * (a.focus === b ? 2.5 : 1); },
         run: function (ctx, a, b) {
           var c = ctx.crush(b, 45);

@@ -47,7 +47,8 @@
   /* ---------- 準備 ---------- */
   function setup(S, input) {
     var rng = S.rng, n = S.P.length;
-    S.ties = (input.ties || []).filter(function (t) { return t.a !== t.b && t.a < n && t.b < n && t.a >= 0 && t.b >= 0; });
+    /* 恋愛・R18にしない組（HK.ngPair）には、恋愛の関係（恋人・セフレ・片想いなど）を当てない（ties.js と同じ） */
+    S.ties = (input.ties || []).filter(function (t) { return t.a !== t.b && t.a < n && t.b < n && t.a >= 0 && t.b >= 0 && !(HK.ngPair(S.P[t.a], S.P[t.b]) && /^(lover|fwb|mate|fated|crush|almost|ex|yan)$/.test(t.type)); });
     S.cases = []; S.relCnt = 0;
     var rate = (S.env.amnesia == null ? 8 : S.env.amnesia) / 100;
     S.P.forEach(function (p) {

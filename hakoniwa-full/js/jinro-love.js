@@ -78,6 +78,8 @@
       flirt: (t.fc * 0.4 + p.bold * 0.4) * (/恋人|番|友達以上|セフレ|片想い|元恋人/.test(q.tieL[p.i] || p.tieL[q.i] || '') ? 1.6 : 0.6),
       pride: t.cp * 0.6 + t.a * 0.2 + (per === 'proud' || per === 'stern' || per === 'cool' || per === 'polite' ? 0.5 : 0)
     };
+    /* 恋愛・R18にしない組（HK.ngPair）には、距離を詰める（口説く）手を使わない */
+    if (HK.ngPair(p, q)) delete w.flirt;
     var kind = HK.weighted(rng, Object.keys(w), function (k) { return Math.pow(Math.max(0.02, w[k]), 2); });
     /* 成功は嘘の技能（演技力）。好かれているほど、相手の推理力が低いほど通りやすい */
     var chance = clamp(p.act * 0.6 + q.aff[p.i] * 0.3 - q.acc * 0.25 + (c.isW(p) ? 0 : 0.1) + 0.1, 0.05, 0.9);

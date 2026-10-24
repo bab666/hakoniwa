@@ -130,7 +130,15 @@
       var heat = (king.tr.impulse + (king.flags.drunk || 0) / 100);
       var O = HK.weighted(rng, pool, function (o) { return 1 + (o.lv - 1) * heat * 0.8; });
       var others = rng.shuffle(P.filter(function (c) { return c !== king; }));
+      /* 恋愛・R18にしない組（HK.ngPair）には、二人でやる色っぽい命令（強さ2以上）を出さない。
+         ほかに組める二人がいればその二人に、いなければ別の命令にする */
+      var okTwo = [], okKing = others.filter(function (c) { return !HK.ngPair(c, king); });
+      others.forEach(function (x, i) { others.slice(i + 1).forEach(function (y) { if (!HK.ngPair(x, y)) okTwo.push([x, y]); }); });
+      var badO = function (o) { return o.lv >= 2 && ((o.who === 'two' && !okTwo.length) || (o.who === 'king' && !okKing.length)); };
+      if (badO(O)) { var pool2 = pool.filter(function (o) { return !badO(o); }); O = pool2.length ? HK.weighted(rng, pool2, function (o) { return 1 + (o.lv - 1) * heat * 0.8; }) : ORDERS[0]; }
       var a = others[0], b = O.who === 'king' ? king : others[1];
+      if (O.lv >= 2 && O.who === 'two' && HK.ngPair(a, b)) { var pr = okTwo[rng.int(okTwo.length)]; a = pr[0]; b = pr[1]; }
+      if (O.lv >= 2 && O.who === 'king' && HK.ngPair(a, b)) a = okKing[rng.int(okKing.length)];
       /* 二人への命令（壁ドン・顎クイなど {a} が仕掛けるもの）は、自分で攻めを選んだ人を仕掛けられる側にしない */
       if (O.who === 'two' && HK.Pos && HK.Pos.hardTop(b) && !HK.Pos.hardTop(a)) { var sw = a; a = b; b = sw; }
       /* 命令はゲームの決まり文句なので、口調で「〜します！」に変えない（\u2060 は口調の整形を外す印） */
