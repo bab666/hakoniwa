@@ -312,6 +312,7 @@ js/obsess-kit.js
 js/obsess-story.js
 js/obsess-install.js
 js/obsess-omega.js
+js/grief-kit.js
 js/dark-thick.js
 js/lewd-unify.js
 js/reset.js

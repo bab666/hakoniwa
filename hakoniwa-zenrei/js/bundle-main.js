@@ -6741,6 +6741,130 @@
   /* 合コン：恋愛の起こりやすさ（既定の50で1、0で0、100で2） */
   function gRom(ctx) { return (ctx.env.romance == null ? 50 : ctx.env.romance) / 50; }
   function gTaken(ctx, a) { return ctx.chars.some(function (c) { return c !== a && ctx.pair(a, c).couple; }); }
+  /* 二股（合コンの中で交際相手が二人になる）まわり。
+     関係の設定で恋人・番・運命の番にしてある二人（gTie）は「設定どおりの恋人」。
+     恋人を設定で二人以上にしてある人（gMulti）は、二人目ができても二股とは見ない（なりにくくもしない） */
+  function gTie(ctx, x, y) { var T = HK.Ties; return !!(T && T.has && (T.has(ctx, x, y, 'lover') || T.has(ctx, x, y, 'mate') || T.has(ctx, x, y, 'fated'))); }
+  function gMulti(ctx, x) { var n = 0; ctx.chars.forEach(function (o) { if (o !== x && gTie(ctx, x, o)) n++; }); return n >= 2; }
+  /* x に y 以外の交際相手がいるか */
+  function gOther(ctx, x, y) { return ctx.chars.some(function (o) { return o !== x && o !== y && ctx.pair(x, o).couple; }); }
+  /* a と b が恋人になると、どちらかに二人目の交際相手ができる（設定で恋人を複数にしてある人は除く） */
+  function gSecond(ctx, a, b) { return (gOther(ctx, a, b) && !gMulti(ctx, a)) || (gOther(ctx, b, a) && !gMulti(ctx, b)); }
+  /* 二人目の交際相手ができる経路を通す割合（目安：今の半分〜3分の1） */
+  var G_SECOND_PASS = 0.4;
+  /* a と b の両方を恋人にしている人（c）。二人とも関係の設定で c の恋人にしてあるなら対象外 */
+  function gShared(ctx, a, b) {
+    var L = ctx.chars.filter(function (c) { return c !== a && c !== b && c.alive && !c.out && ctx.pair(a, c).couple && ctx.pair(b, c).couple && !(gTie(ctx, a, c) && gTie(ctx, b, c)); });
+    return L[0] || null;
+  }
+  /* a の恋人（c）の、もう一人の恋人（b）。同じ組では二回まで、続けては起こさない */
+  function gRivalOf(ctx, a) {
+    if (!a.alive || a.out) return null;
+    var hit = null;
+    ctx.chars.forEach(function (b) {
+      if (hit || b === a || !b.alive || b.out) return;
+      var pf = ctx.pair(a, b);
+      if ((pf.gTwo || 0) >= 2 || (pf.gTwoAt != null && ctx.stepIndex <= pf.gTwoAt + 1)) return;
+      var c = gShared(ctx, a, b);
+      if (c) hit = { b: b, c: c };
+    });
+    return hit;
+  }
+  /* 嫉妬の出かた（a が c の、もう一人の恋人 b に向ける）：嫉妬・執着、CP、衝動性で強まり、NP で和らぐ。AC が高いと内にこもる */
+  function gHeat(a) { return a.tr.jealous * 0.55 + a.tr.cp * 0.35 + a.tr.impulse * 0.2 - a.tr.np * 0.2; }
+  function gTwoKind(a, b) {
+    var h = gHeat(a);
+    if (a.tr.ac > 0.62 && h < 0.6) return 'sulk';
+    if (h > 0.58 && gHeat(b) > 0.45) return 'grab';
+    if (h > 0.46) return 'press';
+    return 'spar';
+  }
+  var G_TWO = {
+    /* さや当て：笑顔のまま牽制し合う */
+    spar: [
+      '{a}は{b}の隣に座り直して、にこやかにグラスを差し出した。{a}「{c}とは、いつから？」{b}「今日から」――二人は笑顔のまま、音を立てずにグラスを触れ合わせた。',
+      '{a}と{b}は、{c}を挟んで同じタイミングで取り皿を差し出した。{a}「どうぞ、お先に」{b}「いえ、そちらこそ」声は柔らかいのに、二人の目はまったく笑っていなかった。',
+      '{a}は{b}に聞こえるように、{c}の好きな食べ物を注文した。{b}はそれに張り合うように、{c}の好きな曲の話を始めた。テーブルの上で、静かな点の取り合いが続いた。'
+    ],
+    /* 取り合い：二人とも引かない */
+    grab: [
+      '{a}が{c}の右腕を取ると、{b}がすかさず左腕を取った。{a}「{c}は、私と帰る」{b}「決めるのは{c}だ」二人に挟まれて、{c}は身動きが取れなくなった。',
+      '{a}は{c}の肩を抱き寄せて、{b}をまっすぐ見た。{b}は一歩も引かずに、{c}の手を握った。{a}「先に付き合ったのは、私」{b}「順番は関係ない」二人の声が、だんだん大きくなっていった。',
+      '{a}と{b}は、{c}の隣の席を巡って立ったまま睨み合った。周りの会話が、一つずつ止まっていった。{b}「座るなら、どうぞ」{a}「遠慮はしない」'
+    ],
+    /* 問い詰める：c に向かう */
+    press: [
+      '{a}は{c}を廊下に呼び出した。{a}「{b}とも付き合ってるって、本当？」{c}が言葉を探すあいだ、{a}は腕を組んだまま一度も目を逸らさなかった。',
+      '{a}はグラスを置いて、{c}に向き直った。{a}「私と{b}、どっちが本気か答えて」テーブルの向こうで、{b}も箸を止めて{c}の答えを待っていた。',
+      'トイレから戻った{c}を、{a}が席の手前で待っていた。{a}「さっき{b}に、私に向けるのと同じ顔をしてた」声は低く、少しも震えていなかった。'
+    ],
+    /* 内にこもる：何も言えずに見ている */
+    sulk: [
+      '{a}は、{c}と{b}が笑い合うのを向かいの席から見ていた。何か言おうとして、言葉の代わりにウーロン茶を一口飲んだ。グラスを握る指先だけが、白くなっていた。',
+      '{b}が{c}の耳元で何か囁いた。{a}はそれに気づかないふりをして、メニューを何度もめくった。同じページを、もう三度は見ていた。',
+      '{a}「楽しそう」――{a}はそれだけ言って、{c}と{b}から目を逸らした。その一言のほかは、誰とも話さなかった。{a}の前の料理は、ほとんど手つかずのまま冷めていった。'
+    ]
+  };
+  /* 板挟みになった c の反応 */
+  var G_TWO_C = {
+    soothe: [
+      '{c}は二人の顔を交互に見た。{c}「どっちも大事だから、喧嘩はしないでほしい」その言葉で、空気はかえって冷たくなった。',
+      '{c}は慌てて二人のグラスにビールを注ぎ足した。{c}「ほら、今日は楽しく飲もう」笑ったのは、{c}だけだった。',
+      '{c}は二人の間に割って入って、両方の手を握った。{c}「ちゃんと話すから、今はやめよう」{a}も{b}も、その手を握り返さなかった。'
+    ],
+    shrink: [
+      '{c}は小さくなった。{c}「ごめん、ごめん」誰に向けた「ごめん」なのか、{c}自身にも分からなかった。',
+      '{c}はおろおろと二人の顔を見比べた。言い訳を言いかけては飲み込み、結局何も言えなかった。その沈黙が、二人の苛立ちをさらに煽った。',
+      '{c}は耳まで赤くして、グラスの縁ばかり見ていた。{c}「こんなつもりじゃなかった」{a}も{b}も、その言葉を信じてはいなかった。'
+    ],
+    dodge: [
+      '{c}は笑って、話題を王様ゲームに切り替えようとした。誰もそれには乗らなかった。{c}だけが、何事もない顔でスマホをいじっていた。',
+      '{c}は肩をすくめた。{c}「今日はそういう話、なしにしない？」はぐらかされたのは、{a}にも{b}にも分かった。',
+      '{c}は涼しい顔をしていた。{c}「どっちとも付き合ってる。何か問題？」テーブルが一瞬で静まり返り、{a}と{b}は初めて同じ顔をした。'
+    ]
+  };
+  /* 問い詰めたあと、その場で別れる */
+  var G_TWO_END = [
+    '{a}は長いため息をついた。{a}「もういい。{b}と、どうぞお幸せに」そう言って、{a}は{c}の手を離した。',
+    '{a}はグラスに残った酒を飲み干した。{a}「別れよう。二番目でいるのは、無理」{c}は、引き止める言葉を見つけられなかった。',
+    '{a}はしばらく黙っていたが、やがて静かに立ち上がった。{a}「今日で終わりにする」その一言だけを残して、{a}は席を移った。'
+  ];
+  /* 告白しかけて踏みとどまる（二人目の交際相手になりかけたとき） */
+  var G_HOLD = {
+    self: [
+      '{a}は{b}に何か言いかけて、口をつぐんだ。スマホの待ち受けには、恋人の写真がまだ残っていた。{a}「……なんでもない」{a}は笑って、グラスを持ち直した。',
+      '{a}は{b}を店の外に誘い出したところで、足を止めた。{a}「ごめん。今の私が言っていいことじゃなかった」{b}はその意味を察して、黙って頷いた。',
+      '{a}は{b}への言葉を、喉の奥で何度か転がした。けれど、恋人の顔が先に浮かんだ。{a}はその言葉を、ビールと一緒に飲み込んだ。'
+    ],
+    other: [
+      '{a}が想いを告げると、{b}は少し困ったように笑った。{b}「ありがとう。でも、私には付き合ってる人がいる」{a}は頷いて、ぎこちなくグラスを空けた。',
+      '{a}の言葉を、{b}は最後まで聞いてから首を振った。{b}「その気持ちは嬉しい。でも、恋人を裏切ることはできない」{b}の声は、思ったよりずっと穏やかだった。',
+      '{a}が想いを口にしかけたところで、{b}がそっと手を上げて止めた。{b}「それ以上は、聞かないでおく。恋人がいるから」{a}は伸ばしかけた手を、テーブルの下に戻した。'
+    ]
+  };
+  /* 結末：合コンのあとで恋人が二人になっていたとき（{a}＝前からの恋人、{b}＝二股の人、{c}＝新しい恋人） */
+  var GC_TWO = {
+    rage: [
+      '翌朝、{a}のスマホに、{b}と{c}が一緒に帰る写真が届いた。{a}はすぐに{b}へ電話をかけた。{a}「説明して」三人の関係は、その朝から一気にこじれ始めた。',
+      '{a}は、{b}が{c}と店を出ていくのを見ていた。その夜、{a}から{b}へのメッセージは二十件を超えた。最後の一件には、「{c}にも会わせて」とあった。',
+      '次の週末、{a}は{c}を呼び出した。{a}「{b}は私の恋人。手を引いて」{c}「それは{b}が決めること」三人のグループチャットは、その日から修羅場になった。'
+    ],
+    cold: [
+      '{a}は、{b}が{c}と帰っていったことを翌日の噂で知った。{a}は泣きもせず、怒りもしなかった。その日のうちに、{a}は{b}に別れのメッセージを送った。',
+      '{a}は、{b}と{c}が並んで歩いていく後ろ姿を、改札の向こうから見送った。{a}「分かった」誰にともなく呟いて、次の朝、{a}は{b}の連絡先を消した。',
+      '{b}から「昨日はごめん」とメッセージが届いた。{a}が返したのは、「{c}とお幸せに」の一言だけだった。それきり、{a}から連絡が来ることはなかった。'
+    ],
+    ache: [
+      '{a}は、{b}が{c}と帰ったことに気づいていた。それでも翌朝、{a}は何も知らないふりをして「おはよう」と送った。返事を待つあいだ、{a}は何度もスマホを伏せては、また表に返した。',
+      '{a}は一人で終電に乗り、窓に映る自分の顔をぼんやり見ていた。{b}の隣にいたのが{c}だったことを、何度も思い出した。問い詰める勇気は、まだ湧かなかった。',
+      '{a}は{b}に「楽しかった？」とだけ送った。{c}のことは、一言も書かなかった。既読がついたまま、返事はなかなか来なかった。'
+    ],
+    both: [
+      '{b}には、この夜のうちに恋人が二人になっていた。{a}と{c}は、互いの存在を知ったまま、それぞれの電車に乗った。どちらも、{b}を手放すつもりはなかった。',
+      '{a}と{c}は、どちらも{b}の恋人として店を出た。駅前で三人の足が止まり、気まずい沈黙が流れた。{b}「また連絡する」{b}は二人に、まったく同じ言葉を言った。',
+      '翌日から、{b}のスマホには{a}と{c}のメッセージが交互に届くようになった。二人とも、相手より先に返事が来るかを気にしていた。{b}の二股は、合コンの夜をまたいで続いていくことになった。'
+    ]
+  };
   var WALK_LOVE = [
     '改札の前で、{a}が足を止めた。「また会いたい。今度は、二人で」――{b}は笑って頷いた。その場で、次の約束が決まった。',
     '駅までの道で、{a}の手の甲が何度も{b}の手に触れた。三度目で、{b}のほうから指を絡めた。「……付き合う？」「うん」',
@@ -6861,6 +6985,38 @@
       '全員がそれぞれの電車で帰り、合コンは何事もなく終わった。恋は始まらなかったが、それもまた一つの結末だった。'
     ]
   };
+  /* 結末：合コンのあとで恋人が二人になっていた人（二股）。二人とも関係の設定で恋人にしてある場合は出さない */
+  function gCloseTwo(ctx, P, T) {
+    P.forEach(function (b) {
+      var ps = P.filter(function (o) { return o !== b && ctx.pair(b, o).couple; });
+      if (ps.length < 2 || ps.every(function (o) { return gTie(ctx, b, o); })) return;
+      var nt = null;
+      T.forEach(function (t) { if (t.newLove && (t.a === b.i || t.b === b.i)) nt = ctx.chars[t.a === b.i ? t.b : t.a]; });
+      var a, c, k;
+      if (nt && ps.indexOf(nt) >= 0) {
+        c = nt;
+        /* 前からの恋人：設定の恋人を優先、いなければ嫉妬の強い方 */
+        var rest = ps.filter(function (o) { return o !== c; }).sort(function (x, y) { return (gTie(ctx, b, y) - gTie(ctx, b, x)) || (gHeat(y) - gHeat(x)); });
+        a = rest[0];
+        var h = gHeat(a);
+        k = h > 0.58 ? 'rage' : !gTie(ctx, a, b) && (a.tr.cold > 0.55 || (h > 0.42 && a.tr.np < 0.4)) ? 'cold' : 'ache';
+      } else {
+        /* 合コンの中でできた恋人を {c} に、もう一人を {a} に（二人とも設定の恋人という組は出さない） */
+        c = ps.filter(function (o) { return !gTie(ctx, b, o); })[0];
+        a = ps.filter(function (o) { return o !== c; })[0]; k = 'both';
+      }
+      var why = '結末：' + b.name + 'には恋人が二人（' + a.name + '・' + c.name + '）。二股の夜のあと／' + a.name + 'の嫉妬・執着 ' + Math.round(a.tr.jealous * 100) + '・CP ' + Math.round(a.eg.CP);
+      if (k === 'cold') {
+        var pf = ctx.pair(a, b);
+        pf.couple = false; pf.gTwoBroke = true;
+        a.fateNote = (a.fateNote || '') + '。' + b.name + 'とは別れた';
+        why += '。' + a.name + 'は別れを選んだ';
+      } else if (k === 'rage') why += '。' + a.name + 'は黙っていなかった';
+      else if (k === 'ache') why += '。' + a.name + 'は問い詰められずにいる';
+      b.fateNote = (b.fateNote || '') + (k === 'cold' ? '。' + a.name + 'に振られた' : '。恋人が二人になった');
+      ctx.say({ kind: 'event', cat: 'conflict', text: ctx.t(ctx.pick(GC_TWO[k]), a, b, c), actors: [a, b, c], mag: 26, why: why });
+    });
+  }
   function gClose(ctx, P, used) {
     var T = (ctx.flags.together || []).filter(function (t) { return ctx.chars[t.a] && ctx.chars[t.b]; });
     var second = ctx.env.second === 'yes';
@@ -6876,6 +7032,7 @@
       kinds.push(k);
       ctx.say({ text: ctx.t(ctx.pick(GC_PAIR[k]), a, b), actors: [a, b], mag: 25, why: '結末：一緒に帰った二人（' + { keep: 'もとから恋人', lover: '恋人になった', fwb: '恋人ではない関係', forget: 'なかったことに', unsure: 'まだ決まらない', walkLove: '帰り道で恋人に', couple: '店で恋人に', walk: '一緒に帰っただけ' }[k] + '）' });
     });
+    gCloseTwo(ctx, P, T);
     var solos = P.filter(function (c) { return !used[c.i]; }), shown = solos.slice(0, 4), rest = solos.slice(4);
     shown.forEach(function (c) {
       var cr = ctx.crush(c, 45), k, b = null;
@@ -7001,11 +7158,14 @@
       function nightOutcome(ctx, a, b, fwb) {
         var pf = ctx.pair(a, b), ab = R(ctx, a, b), ba = R(ctx, b, a), mutual = Math.min(ab.aff, ba.aff), dry = (a.tr.cold + b.tr.cold) / 2;
         if (fwb) return 'fwb';
+        /* 恋愛はしないが体の関係は許されている二人（engine.js の HK.lockSexOnly）：一夜の関係で、恋人にはならない */
+        if (HK.lockSexOnly && HK.lockSexOnly(a, b)) return tieHas(a, b, 'fwb') ? 'fwb' : 'forget';
         if (tieHas(a, b, 'lover') || tieHas(a, b, 'mate')) return 'keep';
         if (pf.couple) return 'lover';
         var imp = (a.tr.impulse + b.tr.impulse) / 2, warm = (a.tr.warmth + b.tr.warmth) / 2;
         /* 好意が深く、二人とも誠実寄りなら恋人に。ドライさ・衝動の強さが勝てば、なかったことに */
-        if (mutual >= 46 - rf * 8 && Math.min(ab.att, ba.att) >= 58 - rf * 8 && warm > 0.36) return 'lover';
+        /* どちらかにもう交際相手がいれば（二股になる）、恋人になるのは一部だけ。残りは答えを出さないまま */
+        if (mutual >= 46 - rf * 8 && Math.min(ab.att, ba.att) >= 58 - rf * 8 && warm > 0.36) return !gSecond(ctx, a, b) || rng() < G_SECOND_PASS ? 'lover' : 'unsure';
         if (mutual < 26 || dry > 0.56 || (tieHas(a, b, 'rival') && mutual < 36) || (imp > 0.72 && mutual < 36)) return 'forget';
         return 'unsure';
       }
@@ -7017,10 +7177,13 @@
       }
       cand.sort(function (x, y) { return y.v - x.v; });
       cand.forEach(function (c) {
-        if (used[c.a.i] || used[c.b.i] || c.v < 55 - rf * 20 || !HK.canLove(c.a, c.b) || !HK.canLove(c.b, c.a)) return;
+        /* 恋愛はしないが体の関係は許されている二人は、恋愛相手の固定を外して恋愛対象の向きだけを見る（帰るなら、お持ち帰りの夜だけ） */
+        var so = HK.lockSexOnly && HK.lockSexOnly(c.a, c.b), ca = so ? Object.assign({}, c.a, { lock: null }) : c.a, cb = so ? Object.assign({}, c.b, { lock: null }) : c.b;
+        if (used[c.a.i] || used[c.b.i] || c.v < 55 - rf * 20 || !HK.canLove(ca, cb) || !HK.canLove(cb, ca)) return;
+        if (so && !(HK.Pos && HK.Pos.okSex(c.a, c.b))) return;
         used[c.a.i] = used[c.b.i] = 1;
         var imp = (c.a.tr.impulse + c.b.tr.impulse) / 2;
-        var night = imp > 0.55 && rng() < imp * 0.9;
+        var night = so || (imp > 0.55 && rng() < imp * 0.9);
         if (night) ctx.pair(c.a, c.b).night = true;
         c.a.fate = c.b.fate = night ? 'お持ち帰り' : '一緒に帰った';
         var tg = { a: c.a.i, b: c.b.i, night: night };
@@ -7035,10 +7198,13 @@
         var outc = night ? nightOutcome(ctx, c.a, c.b, fwbNow) : null;
         if (outc) { var on = { keep: '恋人どうしの夜を過ごした', lover: 'そのまま付き合うことになった', fwb: '恋人ではない関係に落ち着いた', forget: '翌朝、なかったことにした', unsure: '関係はまだ決まっていない' }[outc]; c.a.fateNote += '。' + on; c.b.fateNote += '。' + on; }
         var gn = night && HK.GoukonNight ? HK.GoukonNight(ctx, c.a, c.b, outc) : null;
+        var wasCouple = !!ctx.pair(c.a, c.b).couple;
         if (outc === 'lover' || outc === 'keep') ctx.pair(c.a, c.b).couple = true;
         /* 一緒に帰っただけの二人も、想いが通じ合っていれば帰り道で付き合うことに */
         var walkLove = !night && !ctx.pair(c.a, c.b).couple && Math.min(R(ctx, c.a, c.b).aff, R(ctx, c.b, c.a).aff) >= 36 - rf * 6 && Math.min(R(ctx, c.a, c.b).att, R(ctx, c.b, c.a).att) >= 50 - rf * 6;
-        tg.outc = outc; tg.walk = walkLove;
+        /* どちらかにもう交際相手がいれば（二股になる）、帰り道で付き合うのは一部だけ */
+        if (walkLove && gSecond(ctx, c.a, c.b) && rng() >= G_SECOND_PASS) walkLove = false;
+        tg.outc = outc; tg.walk = walkLove; tg.newLove = !wasCouple && (outc === 'lover' || walkLove);
         if (walkLove) { ctx.pair(c.a, c.b).couple = true; c.a.fateNote += '。帰り道で付き合うことになった'; c.b.fateNote += '。帰り道で付き合うことになった'; }
         if (outc === 'forget') ctx.pair(c.a, c.b).forgot = true;
         var e = ctx.say({ kind: 'event', cat: 'romance', actors: [c.a, c.b], text: night ? c.a.name + 'と' + c.b.name + 'は、店を出たあと同じタクシーに乗った。' + (gn ? gn.text : 'その先のことは、二人しか知らない。') + (gn ? '' : (function () {
@@ -7127,6 +7293,32 @@
           if (yes) { pf.couple = true; ctx.mod2(a, b, { att: 8, aff: 10, trust: 6 }, { att: 8, aff: 10, trust: 6 }); }
           else { ctx.mod2(a, b, { att: -3 }, { aff: 2 }); ctx.stress(a, 10); }
           return { text: ctx.t(ctx.pick(G_CONFESS) + ctx.pick(yes ? G_YES : G_NO), a, b), why: a.name + 'の惹かれ（' + Math.round(R(ctx, a, b).att) + '）と本音の出やすさ。' + b.name + 'の惹かれ（' + Math.round(rb.att) + '）・好意（' + Math.round(rb.aff) + '）' + (yes ? '。その場で恋人に' : ''), mag: yes ? 26 : 16 };
+        }
+      },
+      {
+        /* 二股：同じ人（c）の恋人どうしになった a と b が、互いに嫉妬する（さや当て・取り合い・問い詰める・黙って耐える）。c は板挟みになる。
+           二人とも関係の設定で c の恋人にしてある場合（恋人を複数にした円満な関係）は起きない */
+        /* 相手（b）は場の誰でもよいわけではないので、一人で起こす出来事にして中で選ぶ */
+        id: 'g_two', cat: 'conflict', scope: 'solo', pri: true,
+        when: function (ctx, a) { return !!gRivalOf(ctx, a); },
+        w: function (ctx, a) { return 0.8 + a.tr.jealous * 1.8 + a.tr.cp * 0.6 + a.tr.impulse * 0.3; },
+        run: function (ctx, a) {
+          var rv = gRivalOf(ctx, a), b = rv.b, c = rv.c, pf = ctx.pair(a, b), pc = ctx.pair(a, c), rc = R(ctx, a, c);
+          var k = gTwoKind(a, b), h = gHeat(a);
+          pf.gTwo = (pf.gTwo || 0) + 1; pf.gTwoAt = ctx.stepIndex;
+          ctx.mod2(a, b, { ten: 8 + h * 14, aff: -4 - h * 6 }, { ten: 6 + gHeat(b) * 12, aff: -3 });
+          ctx.mod(a, c, { trust: k === 'sulk' ? -4 : -7, ten: k === 'press' || k === 'grab' ? 8 : 3 });
+          ctx.stress(a, k === 'sulk' ? 14 : 9); ctx.stress(c, 12);
+          if (HK.Obsess && HK.Obsess.feed) HK.Obsess.feed(ctx, a, c, 4 + Math.round(h * 6));
+          var ck = c.tr.np > 0.55 && c.tr.np >= c.tr.cold ? 'soothe' : c.tr.cold > 0.55 || c.tr.ac < 0.3 ? 'dodge' : 'shrink';
+          var t = ctx.pick(G_TWO[k]) + ctx.pick(G_TWO_C[ck]);
+          /* 問い詰めた側が、その場で別れを選ぶことがある（合コンの中でできた恋人どうしのときだけ）。好意・信頼・NP で踏みとどまり、嫉妬・CP で切る */
+          var keep = rc.aff * 0.8 + rc.trust * 0.4 + a.tr.np * 35 + a.tr.ac * 10 - a.tr.cp * 25 - a.tr.jealous * 35 - (ck === 'dodge' ? 15 : 0) + 15;
+          var end = k === 'press' && !gTie(ctx, a, c) && keep < ctx.rng() * 100;
+          if (end) { pc.couple = false; pc.gTwoBroke = true; ctx.mod2(a, c, { aff: -14, ten: 10 }, { aff: -4, ten: 6 }); t += ctx.pick(G_TWO_END); }
+          var KN = { spar: '笑顔のさや当て', grab: c.name + 'の取り合い', press: c.name + 'を問い詰めた', sulk: '何も言えずに見ていた' }, CN = { soothe: 'なだめようとした（NP）', shrink: '縮こまった', dodge: 'はぐらかした（ドライさ）' };
+          return { text: ctx.t(t, a, b, c), with: [b, c], mag: end ? 32 : 24,
+            why: '二股：' + c.name + 'の恋人が二人（' + a.name + '・' + b.name + '）。' + a.name + 'の嫉妬・執着 ' + Math.round(a.tr.jealous * 100) + '・CP ' + Math.round(a.eg.CP) + '・AC ' + Math.round(a.eg.AC) + '→' + KN[k] + '／' + c.name + 'は' + CN[ck] + (end ? '／' + a.name + 'はその場で別れを選んだ' : '') };
         }
       },
       {
@@ -7299,6 +7491,36 @@
       }
     ]
   });
+
+  /* 合コンで、すでに交際相手がいる人が二人目の交際相手を作る経路をなりにくくする（設定で恋人を複数にしてある人は除く）。
+     共通の告白（confess）は、二股になるときは一部だけ通し、残りは踏みとどまる／断られる文にする。
+     片想い・両片想い・セフレからの告白（u_confess・pn_rival・pn_confess・fc_slip）は、二股になるときは起こりにくく */
+  var G_COUPLE_W = { u_confess: 1, pn_rival: 1, pn_confess: 1, fc_slip: 1 };
+  var bp0 = HK.buildPool;
+  if (bp0) HK.buildPool = function (scen) {
+    var pool = bp0.apply(this, arguments);
+    if (!scen || scen.id !== 'goukon') return pool;
+    return pool.map(function (e) {
+      if (!e || e.scope !== 'pair') return e;
+      if (e.id === 'confess') {
+        var w = Object.create(e);
+        w.run = function (ctx, a, b) {
+          if (!b || !gSecond(ctx, a, b) || ctx.rng() < G_SECOND_PASS) return e.run.apply(this, arguments);
+          var p = ctx.pair(a, b), self = gOther(ctx, a, b) && !gMulti(ctx, a);
+          if (p.confessed) p.confessed[a.i] = true;
+          ctx.stress(a, 6); ctx.mod2(a, b, { att: -2 }, { trust: 3 });
+          return { text: ctx.t(ctx.pick(G_HOLD[self ? 'self' : 'other']), a, b), why: (self ? a.name : b.name) + 'にはもう恋人がいる。二股にはならなかった（' + a.name + 'の惹かれ ' + Math.round(R(ctx, a, b).att) + '）', mag: 14 };
+        };
+        return w;
+      }
+      if (G_COUPLE_W[e.id] && typeof e.w === 'function') {
+        var w2 = Object.create(e);
+        w2.w = function (ctx, a, b) { var v = e.w.apply(this, arguments); return b && gSecond(ctx, a, b) ? v * G_SECOND_PASS : v; };
+        return w2;
+      }
+      return e;
+    });
+  };
 })();
 ;/* ==== js/mini.js ==== */
 /* 箱庭診断: 小イベントの記述形式（DSL）と、相手の気質で変わる反応の結び
@@ -42600,6 +42822,377 @@
     }
     return h || (hit0 ? hit0(ctx, s) : null);
   };
+})();
+;/* ==== js/grief-kit.js ==== */
+/* 箱庭シミュレーター: 喪失（仲の良い人を亡くしたあとの心の傷）の共通部品
+   ・住人が死んだとき、その人と仲の良かった住人（恋人・番・親友・きょうだい・幼なじみなどの関係、または好意・信頼が高い人）に、
+     大きなストレスと喪失の状態（c.flags.loss = { who, name, rel, at, lv, lv0, type, ... }）を付ける。
+     もとからある c.flags.grief（亡くした人の番号）は、まだ付いていなければ付ける（小イベントの「griev」やゾンビの街の絶望が拾う）
+   ・強さ（lv）は関係の深さ×性格。性格の型（エゴグラムのいちばん強い因子）：
+       NP 深く沈む／AC 自分を責める／CP 表に出さず抱え込む（あとで一人で崩れる）／FC 空元気／A 淡々として、あとから崩れる
+   ・その後の区切りで、喪失の状態に応じた独り言・出来事（遺品・名前を呼ぶ・眠れない・口癖・無茶）が出る。区切りごとに少しずつ薄れ、
+     慰める側の出来事（慰める人の性格で変わる）でも薄れる。引きずっている人のふだんの出来事にも、ときどき一言が混ざる
+   ・engine.js には触らず、箱庭の phase／after を包み、出来事を足す（G.install）。組み込みはこのファイルの最後 */
+(function () {
+  'use strict';
+  var HK = window.HK, SC = HK && HK.SCENARIOS;
+  if (!SC) return;
+  var G = HK.Grief = {};
+  function L(s) { return s.split('|'); }
+  function fill(t, m) { return String(t).replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  /* ---------- 性格の型 ---------- */
+  var TYPE_OF = { CP: 'hold', NP: 'sink', A: 'flat', FC: 'bright', AC: 'blame' };
+  var TYPE_NAME = { hold: '表に出さず抱え込む', sink: '深く沈む', flat: '淡々として、あとから崩れる', bright: '空元気でごまかす', blame: '自分を責める' };
+  /* 沈み方の深さ（NP・AC は深く、A は最初は浅く見える） */
+  var MULT = { sink: 1.2, blame: 1.2, hold: 1.05, bright: 0.95, flat: 0.9 };
+  function typeOf(c) { var t = HK.egoType ? HK.egoType(c.eg).top : 'NP'; return TYPE_OF[t] || 'sink'; }
+  G.TYPE_NAME = TYPE_NAME;
+
+  /* ---------- 関係の深さ（o から見た v） ---------- */
+  var TIE_W = {
+    lover: 60, mate: 65, fated: 55, parent: 60, pparent: 55, sibprot: 60, sibclose: 55, sibling: 45, best: 50, buddy: 45,
+    childhood: 42, almost: 40, mentor: 35, teacher: 30, master: 30, friend: 22, senpai: 15, colleague: 12, ex: 18, fwb: 12, acq: 5, rival: 8
+  };
+  function relWord(type, mine) {
+    switch (type) {
+      case 'lover': return '恋人';
+      case 'mate': return '番';
+      case 'fated': return '運命の相手';
+      case 'parent': case 'pparent': return '家族';
+      case 'sibprot': case 'sibclose': case 'sibling': return 'きょうだい';
+      case 'best': return '親友';
+      case 'buddy': return '相棒';
+      case 'childhood': return '幼なじみ';
+      case 'almost': return '特別な人';
+      case 'crush': case 'yan': return '想い人';
+      case 'mentor': return mine ? '弟子' : '師匠';
+      case 'teacher': return mine ? '教え子' : '先生';
+      case 'master': return mine ? '従者' : '主';
+      case 'friend': return '友だち';
+      default: return '';
+    }
+  }
+  G.depth = function (ctx, o, v, opt) {
+    var best = 0, rel = '';
+    (HK.Ties ? HK.Ties.all(ctx, o, v) : []).forEach(function (t) {
+      var w = TIE_W[t.type] || 0, mine = t.a === o.i;
+      if (t.type === 'crush' || t.type === 'yan') w = mine ? 40 : 12;
+      if (w > best) { best = w; rel = relWord(t.type, mine) || rel; }
+    });
+    var pf = ctx.pair(o, v);
+    if (pf.couple && best < 55) { best = 55; rel = '恋人'; }
+    var key = o.i < v.i ? o.i + '-' + v.i : v.i + '-' + o.i;
+    if ((pf.amagami || (ctx.om && ctx.om.bonded && ctx.om.bonded[key])) && best < 65) { best = 65; rel = '番'; }
+    if (o.lock === v.i && best < 50) { best = 50; rel = rel || 'ただ一人と決めた人'; }
+    var r = ctx.R(o, v);
+    var d = best + Math.max(0, r.aff) * 0.55 + Math.max(0, r.trust) * 0.25 + Math.max(0, r.att) * 0.2 - Math.max(0, r.ten - 50) * 0.3;
+    if (r.aff < 0) d *= 0.4;
+    if (!rel) rel = r.aff >= 50 || r.trust >= 55 ? '大切な' + ((opt && opt.mate) || '仲間') : ((opt && opt.mate) || '仲間');
+    return { d: d, rel: rel };
+  };
+
+  /* ======================= 文 ======================= */
+  /* {a} 残された人／{b} 亡くなった人／{rel} {a}から見た{b}の続き柄（「恋人の{b}」の形で使う）／{item} 遺品／{spot} 場所 */
+  var REACT = {
+    sink: L('{a}は{b}の名前を何度も呼んだ。返事がないと分かっても、呼ぶのをやめられなかった。やがて声はかすれ、{a}はその場に膝をついて泣き崩れた。|{rel}の{b}がもういないと聞いた瞬間、{a}の顔から血の気が引いた。{a}「嘘だ。さっきまで、隣にいた」――そう言ったきり、{a}は両手で顔を覆った。肩の震えは、いつまでも止まらなかった。|{a}は{item}を胸に抱いたまま、声を上げて泣いた。誰が肩に手を置いても、{a}は顔を上げなかった。その夜、{a}は一口も食べられなかった。'),
+    blame: L('{a}「私のせいだ。私が、もっと早く気づいていれば」――{a}は何度も同じことを繰り返した。誰が違うと言っても、{a}は首を横に振るばかりだった。握りしめた拳に、爪が食い込んでいた。|{b}を失ったと知った{a}は、誰とも目を合わせなくなった。{a}「あのとき、私が代わっていれば」――小さな声が、{spot}にぽつりと落ちた。{a}はそのまま、膝を抱えて動かなくなった。|{a}は{b}が最後に言った言葉を、何度も思い返した。あのとき引き止めていれば、と考えるたびに、胸の奥がきしんだ。{a}はその晩、一睡もできなかった。'),
+    hold: L('{a}は{b}の死を聞いても、顔色ひとつ変えなかった。{a}「……分かった。やるべきことをやろう」――そう言って、{a}は黙々と次の段取りを始めた。ただ、その手は一度だけ、小さく震えていた。|泣き崩れる周りをよそに、{a}は{b}の荷物を静かにまとめた。{a}「泣くのは、全部終わってからでいい」――誰に言うでもない声だった。その背中は、いつもより少しだけ硬く見えた。|{a}は{rel}の{b}のことを、誰にも何も言わなかった。いつもどおりに動き、いつもどおりに食事をとった。ただ、{item}だけは、誰にも触らせなかった。'),
+    bright: L('{a}「大丈夫、大丈夫。{b}なら、きっと笑って許してくれる」――{a}はやけに明るい声でそう言った。その笑顔は、誰の目にも引きつって見えた。{a}は一人になると、すぐに唇を噛んだ。|{a}は{b}を失った夜も、いつもどおり冗談を言った。誰も笑わなかったが、{a}は話すのをやめなかった。黙ってしまえば、何かが崩れてしまいそうだった。|{a}「ほら、元気出そう。{b}が見たら、怒る」――{a}は皆の背中を順番に叩いて回った。誰より声を張っていたのは、{a}自身だった。夜になって、{a}の寝床からは、押し殺した嗚咽が漏れていた。'),
+    flat: L('{a}は{b}の死を、驚くほど落ち着いて受け止めた。何が起きたのかを確かめ、やるべきことを順に片付け、次にすべきことを皆に伝えた。{a}自身でさえ、まだ何も感じていなかった。|{a}「……そうか。分かった」――{a}はそれだけ言って、{b}の荷物を整理した。手つきは丁寧で、迷いがなかった。泣いていない自分を、{a}はどこか遠くから眺めていた。|{a}は{rel}の{b}がいなくなったことを、ひとつの事実として書き留めるように飲み込んだ。{a}「今は、残った者のことを考える」――その声には、少しの揺れもなかった。けれど{a}は、その夜、明け方まで目を開けたままだった。')
+  };
+  /* 引きずる（深い deep／半ば mid／薄れてきた late）。A の deep は「淡々としている」頃、崩れたあとは mid から */
+  var BEAT = {
+    sink: {
+      deep: L('{a}は{item}を、ずっと手放さなかった。眠るときも胸に抱いたままで、ときどき顔をうずめていた。{b}の匂いが、まだ少しだけ残っている気がした。|{a}は{spot}で、ふいに{b}の名前を呼んだ。振り返っても、そこには誰もいなかった。{a}はしばらく口を開けたまま立ち尽くし、それから静かに泣いた。|{a}は食事にほとんど手をつけなかった。{a}「{b}の分も、ちゃんと食べないといけないのに」――そう言いながら、手はまた止まった。目の前の食べ物は、すっかり冷めていた。'),
+      mid: L('誰かの笑い声を聞いた拍子に、{a}は{b}の笑い方を思い出した。こらえようとしたが、涙が勝手にこぼれた。{a}は袖で目元をぬぐって、何もなかったふりをした。|{a}は{b}が好きだったものを見つけて、思わず手に取った。{a}「これ、{b}に見せたかった」――言ってから、もう見せる相手がいないことに気づいた。{a}はそれを、そっと元の場所に戻した。|{a}は夜中に目を覚まして、隣に手を伸ばした。そこにあるのは、冷たい空気だけだった。{a}は毛布を頭までかぶり、朝が来るのを待った。'),
+      late: L('{a}は{item}を、ようやく荷物の奥にしまった。捨てることは、まだできなかった。{a}「もう少しだけ、そばに置いておく」|{a}は{b}の話を、少しだけ笑って話せるようになった。それでも話の終わりには、決まって声が小さくなった。{a}は上を見上げて、小さく息を吐いた。|{a}は{spot}を通るたびに、足を止めるのが癖になっていた。{b}がよく立っていた場所だった。{a}は一度だけ目を閉じてから、また歩き出した。')
+    },
+    blame: {
+      deep: L('{a}は眠れない夜を過ごしていた。目を閉じるたびに、{b}の最後の姿がまぶたの裏に浮かんだ。{a}「ごめん。ごめん」――誰もいない暗がりで、{a}は謝り続けた。|{a}は{b}を失ったときのことばかり考えていた。あのとき別の道を選んでいれば、と何度も頭の中でやり直した。どの道を選んでも、{b}は戻ってこなかった。|{a}は食事をほとんど口にしなくなった。{a}「私だけ、普通に食べていいはずがない」――止められても、{a}は聞かなかった。頬は日に日にこけていった。'),
+      mid: L('{a}は誰かに名前を呼ばれるたび、びくりと肩を震わせた。{b}の声に似ていた気がしたからだ。違うと分かると、{a}はまた黙ってうつむいた。|{a}は{item}を握りしめて、{spot}の隅に座っていた。{a}「私が生き残って、どうするんだ」――つぶやきは、誰の耳にも届かなかった。{a}は膝に額をつけたまま、しばらく動かなかった。|{a}は誰かが嫌な役を引き受けようとすると、必ず先に手を挙げた。{a}「私が行く。もう誰も、私の代わりにさせない」――その目は、どこか自分を投げ出しているように見えた。周りは、{a}を一人にしないように気をつけた。'),
+      late: L('{a}は{b}の夢を見た。夢の中の{b}は、何も責めずに笑っていた。目が覚めたとき、{a}は久しぶりに少しだけ泣けた。|{a}は{b}に宛てて、言えなかったことを小声で並べた。謝る言葉の合間に、ありがとうがひとつ混ざった。{a}はそこで言葉を切って、深く息を吸った。|{a}はまだ、自分を許せてはいなかった。それでも{b}の分まで生きなければ、と考えるようになった。{a}は顔を上げて、皆のいるほうへ戻っていった。')
+    },
+    hold: {
+      deep: L('{a}は今日も、誰より早く起きて誰より遅くまで働いた。{b}がやっていた分の仕事まで、黙って引き受けていた。休めと言われても、{a}は首を振るだけだった。|{a}は{b}の名前が出るたびに、さりげなく話題を変えた。表情は少しも崩れなかった。ただ、その夜の{a}は、いつまでも寝床に戻ってこなかった。|{a}は{item}を、誰にも見られないようにしまっていた。人前では一度も出さなかった。夜、皆が寝静まったあとにだけ、{a}はそれを取り出して長いこと眺めていた。'),
+      mid: L('{a}は{b}がよく言っていた言葉を、口の中で繰り返した。{a}「『無理は、しないこと』……か」――自分で言っておいて、{a}は小さく苦笑した。その無理をしているのは、{a}自身だった。|誰かが{b}の思い出話を始めると、{a}は黙って席を立った。{spot}で一人になってから、{a}は壁に手をついて長く息を吐いた。戻ってきたときには、もういつもの顔に戻っていた。|{a}は皆に指示を出す途中で、ふと言葉を止めた。{b}に相談するつもりで、振り返りかけていた。{a}「……いや、いい。続ける」'),
+      late: L('{a}は{b}のやり方を、自分のやり方に少しずつ取り入れていた。前の{a}なら、決してしなかったやり方だった。{a}「{b}なら、こうした」――そう言ったときの声は、少しだけ柔らかかった。|{a}は{b}の荷物から、まだ使えるものを皆に分けた。{a}「{b}も、そうしろと言うはずだ」――最後に{item}だけを残して、{a}は荷物を閉じた。その手つきは、前よりずっと穏やかだった。|{a}は{spot}に、{b}のための小さな目印を作った。誰にも言わずに、毎日そこを通るようにしていた。{a}は目印の前で短く頭を下げ、いつもの仕事に戻った。')
+    },
+    bright: {
+      deep: L('{a}は今日も、誰より大きな声で笑っていた。{a}「平気、平気。私がしょげてたら、{b}に笑われる」――その目の下には、濃い隈ができていた。笑い声は、ときどき不自然に途切れた。|{a}は{b}の口癖を、わざと大げさに真似してみせた。皆が少し笑うと、{a}も笑った。けれど次の瞬間、{a}は急に黙り込み、くるりと背を向けた。|{a}は一人になる時間を、とにかく作らないようにしていた。誰かの隣に座り、誰かの手伝いをして、ひっきりなしに話し続けた。夜、皆が寝静まると、{a}は毛布の中で声を殺して泣いた。'),
+      mid: L('{a}は{b}の好きだった歌を、鼻歌で口ずさんでいた。途中で歌詞が出てこなくなって、{a}は首をかしげた。{a}「……そこ、いつも{b}が歌ってたところだ」――そのまま、歌は止まった。|冗談を言った{a}は、いつものように隣を見た。そこで突っ込みを入れてくれるはずの{b}は、もういなかった。{a}は笑顔のまま固まり、それからゆっくり視線を落とした。|{a}は{item}を手に取って、わざとおどけて見せた。{a}「見て、{b}の忘れ物。取りに来ないなら、私がもらう」――誰も何も言えなかった。{a}は笑ったまま、それを強く握りしめていた。'),
+      late: L('{a}の笑い声に、少しずつ本当の明るさが戻ってきた。{b}の話をするときも、もう無理に声を張らなくなった。{a}「{b}がいたら、今の、絶対に笑ってた」|{a}は{b}の口癖を、今度は自然に口にしていた。言ってから気づいて、{a}は小さく吹き出した。{a}「うつってた。いつの間にか」|{a}は{spot}で、{b}の分まで遠くを眺めた。{a}「そっちは、退屈してない？」――答えはなかったが、{a}は少しだけ笑えた。それから、皆のところへ駆け戻っていった。')
+    },
+    flat: {
+      deep: L('{a}は{b}のことについて、事実だけを淡々と皆に伝えた。いつ、どこで、何が起きたのか。話し終えた{a}は、次の予定の確認に移った。|{a}は{b}が使っていた物を、きっちり整理した。{a}「残された物は、無駄にしない。それが一番いい」――手つきは正確で、手早かった。周りのほうが、かえって{a}の顔を見られなかった。|{a}はいつもどおりの時間に起き、いつもどおりにやるべきことをこなした。{b}がいない以外は、何も変わらない一日だった。{a}は、それをおかしいとも思わなかった。'),
+      mid: L('{a}は考え事の途中で、ふと{b}の意見を聞きたくなった。答えはもう返ってこないと分かっていて、{a}はしばらく黙り込んだ。{a}「……計算どおりには、いかないものだ」|{a}は{b}のいた場所を、つい目で確かめてしまう癖がついた。そこが空いていると分かるたびに、胸の奥が小さく痛んだ。{a}は目元を押さえ、深く息をついた。|{a}は眠れない夜に、{b}と交わした会話を一つずつ思い出した。どれも、ありふれたやりとりだった。そのありふれたことが、もう二度とないのだと、{a}はようやく分かった。'),
+      late: L('{a}は{b}のことを、落ち着いて話せるようになっていた。{a}「{b}がいたから、私はここまで来られた」――淡々とした声だったが、そこにはちゃんと温度があった。聞いていた者も、黙ってうなずいた。|{a}は{item}を、手入れしてから大事にしまった。{a}「これは、持っていく」――迷いのない声だった。{a}にとってそれは、もう悲しみだけの品ではなかった。|{a}は{spot}で、しばらく{b}のことを考えていた。泣きはしなかったが、急ぐこともしなかった。日が傾くころ、{a}は静かに立ち上がった。')
+    }
+  };
+  /* A：淡々としていた人が、あとから崩れる */
+  var CRASH = L('{a}は何気なく{item}を見つけて、手を止めた。その瞬間、それまで押し込めていたものが、一度にあふれ出した。{a}「……{b}」――{a}はその場に座り込み、子どものように泣きじゃくった。|誰かが{b}の名前を口にしたとき、{a}の手から持っていたものが滑り落ちた。{a}は拾おうとして、そのまま動けなくなった。{a}「今になって、どうして」――震える声で、{a}は何度も同じことを言った。|{a}は夜中に飛び起きた。夢の中で、{b}が{a}を呼んでいた。{a}は暗がりの中で自分の腕を抱き、初めて声を上げて泣いた。');
+  /* CP：抱え込んでいた人が、一人きりで崩れる */
+  var BREAK = L('一人きりになった{spot}で、{a}はついに膝をついた。{a}「……どうして、置いていった」――ずっと飲み込んできた言葉が、ようやく声になった。{a}は誰にも見られないまま、長いあいだ泣いた。|{a}は{item}を握りしめたまま、壁にもたれて座り込んだ。張りつめていた糸が、ぷつりと切れたようだった。{a}の目から、こらえていた涙がとめどなく流れた。|皆の前ではいつもどおりだった{a}が、ふと姿を消した。探しに行った先で、{a}は{b}の名前を呼びながら、声を殺して泣いていた。{a}「すまない。少しだけ、このままでいたい」');
+  /* 少しだけ前を向く（喪失が薄れてきたとき、一度だけ） */
+  var ACCEPT = {
+    sink: L('{a}は{spot}で、{b}のために静かに手を合わせた。{a}「ずっと泣いてばかりで、ごめん。もう少しだけ、ちゃんと生きてみる」――顔を上げた{a}の目に、ほんの少しだけ光が戻っていた。{a}はもう一度だけ深く頭を下げてから、皆のところへ戻った。|{a}は{b}の分まで食べると決めて、久しぶりに出されたものを残さず食べた。{a}「おいしい。……{b}にも、食べさせたかった」――涙はこぼれたが、手は止まらなかった。食べ終えた{a}は、小さく「ごちそうさま」と言った。|{a}は{item}に、小さく「おやすみ」と言ってから眠った。その夜、{a}は久しぶりに朝まで目を覚まさなかった。起きたとき、{a}の顔は少しだけ穏やかだった。'),
+    blame: L('{a}は{b}に向かって、初めて「ありがとう」と言った。ずっと謝ることしかできなかった口から出た、別の言葉だった。{a}はそれで、少しだけ肩の力が抜けた。|{a}「{b}は、私に生きてほしかったんだと思う」――{a}はぽつりとそう言った。自分を許したわけではなかった。それでも、前を向く理由にはなった。|嫌な役を、{a}はもう自分だけで背負わなくなった。{a}「一緒に行こう。一人では行かない」――{b}を失ってから、{a}が初めて口にした言葉だった。隣にいた者は、黙ってうなずいた。'),
+    hold: L('{a}は皆の前で、初めて{b}の話をした。短く、言葉少なだったが、声は最後まで崩れなかった。話し終えた{a}の顔は、少しだけ軽くなって見えた。|{a}は引き受けすぎていた仕事を、ようやく人に任せた。{a}「{b}にも、よく言われていた。一人で抱えすぎだと」――そう言って、{a}は珍しく自分から休んだ。その寝顔は、久しぶりに穏やかだった。|{a}は{item}を、誰の目にも見える場所に置いた。もう隠しておく必要はなかった。{a}「{b}も、ここにいればいい」'),
+    bright: L('{a}は{b}の話をしながら、心から笑った。笑いながら少しだけ泣いて、また笑った。{a}「ちゃんと泣けた。……やっと」|{a}は{b}の口癖で、皆を笑わせた。今度の笑い声は、誰の耳にも本物に聞こえた。{a}「{b}の分も、私が笑っておく」|{a}はもう、一人になる時間を怖がらなくなった。{spot}で静かに座り、{b}のことを思い出す時間を持つようになった。戻ってきた{a}の笑顔は、前よりずっと自然だった。'),
+    flat: L('{a}は{b}について、自分なりの区切りをつけた。{a}「悲しいのは、ちゃんと大切だったからだ」――そう言葉にできて、{a}は小さくうなずいた。それは、{a}にとって何より確かな答えだった。|{a}は{b}の残したやり方を、皆に教え始めた。{a}「{b}のやり方は、残しておく価値がある」――{b}の名前を出しても、もう声は揺れなかった。教わる者たちは、{b}の名前ごと、そのやり方を覚えていった。|{a}は{b}のいない日々を、ひとつずつ数えるのをやめた。代わりに、{b}と過ごした日のことを、ときどき思い出すことにした。{a}の表情は、前よりもやわらかくなっていた。')
+  };
+  /* 無茶をする（どこでも起きる文／生き残りの箱庭の文は opt.reckless） */
+  var RECKLESS = L('{a}は休めと言われても、聞こうとしなかった。ふらつく足で、{b}がやっていたことにまで手を伸ばした。倒れる寸前まで、{a}は手を止めなかった。|{a}は{b}を失ってから、自分の身を守ることをやめてしまったように見えた。危ないと言われることにも、ためらわずに踏み込んでいった。{a}「怖くない。もう、怖いものなんてない」|{a}は食べることも眠ることも忘れて、ただ体を動かし続けた。じっとしていると、{b}のことしか考えられなかった。{a}の顔色は、見るたびに悪くなっていった。');
+  var STOP = L('{c}が{a}の腕を強くつかんだ。{c}「一人で行かせない。{b}も、そんなことは望んでいない」|気づいた{c}が、黙って{a}の前に立ちふさがった。{a}はしばらく{c}を睨んでいたが、やがて力なくうなだれた。|{c}は{a}を追いかけて、無理やり連れ戻した。{c}「あなたまでいなくなったら、私はどうすればいい」');
+  /* 慰める（{a} 慰める人／{b} 残された人／{d} 亡くなった人）。慰める人の性格の型で変わる。shared：慰める人も同じ人を亡くしている */
+  var COMFORT = {
+    hold: L('{a}は{b}の前に立ち、まっすぐに目を見た。{a}「{d}の分まで生きる。それが、残った者の役目だ」――厳しい言葉だったが、{a}の手は{b}の肩にしっかりと置かれていた。{b}はその重みに、少しだけ背筋を伸ばした。|{a}は{b}に、小さな仕事をひとつ任せた。{a}「手を動かしていれば、少しは楽になる。私もそうしてきた」――{b}は黙ってうなずき、言われたことをこなした。終わったとき、{b}の顔色はわずかに戻っていた。|{a}は{b}が食事を抜こうとするのを、許さなかった。{a}「食べて。{d}が見ていたら、同じことを言うはずだ」――{b}は渋々、手を伸ばした。{a}は{b}が食べ終わるまで、そばを離れなかった。'),
+    sink: L('{a}は何も言わずに、{b}を抱きしめた。{b}の体は、驚くほど冷えていた。{a}の腕の中で、{b}はようやく声を上げて泣いた。|{a}は温かい飲み物を用意して、{b}の手に持たせた。{a}「無理に話さなくていい。そばにいる」――{b}は両手でそれを包み、少しずつ口をつけた。湯気の向こうで、{b}の目がにじんだ。|{a}は{b}の隣に座り、{d}の思い出をひとつずつ聞いた。{b}が言葉に詰まるたび、{a}は黙って背中をさすった。話し終えたとき、{b}は少しだけ楽な顔をしていた。'),
+    flat: L('{a}は{b}に、眠れているかどうかを静かに尋ねた。{a}「今日は、私が代わる。少し横になって」――{b}が断ろうとしても、{a}は譲らなかった。その日、{b}は久しぶりに長く眠った。|{a}は{b}の話を、最後まで口を挟まずに聞いた。{a}「{b}のせいじゃない。あの状況では、誰にも止められなかった」――落ち着いた声で、{a}は一つずつ理由を挙げた。{b}は唇を噛んで、小さくうなずいた。|{a}は{b}の顔色を見て、黙って負担の軽い役目に入れ替えた。{a}「しばらくは、これでいい。急がなくていい」――{b}が礼を言いかけると、{a}は首を振った。それ以上、二人とも何も言わなかった。'),
+    bright: L('{a}は{b}の隣にどかっと座り、{d}の失敗談を話し始めた。{a}「覚えてる？　あのとき{d}が――」――{b}は最初こそ黙っていたが、やがて泣きながら吹き出した。二人はしばらく、{d}の話で笑って泣いた。|{a}は{b}の手を引いて、{spot}まで連れ出した。{a}「じっとしていると、気持ちまで沈む」――{b}は渋々ついてきたが、少しだけ顔を上げた。{a}はそれ以上何も言わず、隣で一緒に深呼吸をした。|{a}は{b}の目の前で、{d}の口癖を真似してみせた。{b}は一瞬あっけにとられ、それから小さく笑った。{a}「ほら、笑えた。{d}も、きっとそっちのほうがいい」'),
+    blame: L('{a}は何を言えばいいのか分からず、ただ{b}の隣に座った。{a}「……うまく言えない。でも、ここにいる」――それだけ言うと、{a}も一緒に泣いた。二人はしばらく、肩を寄せ合っていた。|{a}はそっと{b}の袖を引いた。{a}「一人で泣かないで。私も、ここにいる」――{b}は驚いたように{a}を見て、それから小さくうなずいた。袖をつかむ{a}の指は、少しだけ震えていた。|{a}は{b}が眠れるまで、小さな声で話しかけ続けた。何を話したのかは、{b}もあとでよく覚えていなかった。ただ、{a}の声がずっとそばにあったことだけは覚えていた。'),
+    shared: L('{a}と{b}は、{d}の話をしながら一緒に泣いた。{a}「{d}がいないと、静かすぎる」――{b}は涙をぬぐいながら、何度もうなずいた。同じ人を失った者どうしにしか分からない沈黙が、二人のあいだに流れた。|{a}は{b}に、{d}が最後に笑っていたときのことを話した。{b}も、自分の知っている{d}の話をした。二人の知らない{d}が、少しずつつながっていった。|{a}は{b}の手を握った。{a}「{d}のこと、私たちは忘れない。だから、二人で生き延びる」――{b}は強く握り返した。二人の手は冷えていたが、握り合ったところだけは温かかった。')
+  };
+  /* 慰められた人の受け止め方（残された人の型） */
+  var ANSWER = {
+    sink: L('{b}はしゃくり上げながら、{a}の服の裾をつかんで離さなかった。|{b}は泣き腫らした目で、「ありがとう」とだけ言った。|{b}はようやく、小さく息を吐いた。'),
+    blame: L('{b}「……でも、私が」――言いかけた{b}の言葉を、{a}は首を振って止めた。|{b}は何度も謝ろうとして、そのたびに言葉を飲み込んだ。|{b}は少しだけ、自分を責める言葉を口にしなくなった。'),
+    hold: L('{b}「……大丈夫だ。もう、大丈夫」――そう言った{b}の声は、少しだけ震えていた。|{b}は表情を変えなかったが、{a}の手を振り払いはしなかった。|{b}は短く「すまない」と言って、目を伏せた。'),
+    bright: L('{b}「やだな、泣かせないで」――{b}は笑いながら、目元をぬぐった。|{b}はいつもの軽口を言いかけて、途中で声を詰まらせた。|{b}は照れくさそうに笑ったが、その笑顔は前より自然だった。'),
+    flat: L('{b}は少し考えてから、「そうかもしれない」と静かに答えた。|{b}は黙ってうなずき、{a}の言葉を胸の中で繰り返した。|{b}「……ありがとう。少し、整理できた」')
+  };
+  /* ふだんの出来事に混ざる一言（{a} 残された人／{b} 亡くなった人） */
+  var ASIDE = {
+    sink: L('{a}「{b}がいたら……」――そうつぶやいて、{a}は少し目を伏せた。|{a}はふと隣を見て、そこに{b}がいないことを思い出した。|{a}「{b}にも、見せたかった」――声が少しだけ震えた。'),
+    blame: L('{a}「{b}がいたら、もっとうまくやれた」――{a}は小さく唇を噛んだ。|{a}は一瞬、{b}の名前を呼びかけて、口をつぐんだ。|{a}の顔が、ほんの一瞬だけ曇った。{b}のことを思い出したようだった。'),
+    hold: L('{a}は{b}ならどうしたかを、口には出さずに考えていた。|{a}は一度だけ{b}のいた場所に目をやり、すぐに視線を戻した。|{a}「……{b}なら、こう言った」'),
+    bright: L('{a}「{b}がいたら、絶対に茶化してた」――{a}は笑ったが、声が少しだけかすれた。|{a}は{b}の口癖をつい口にして、それから黙った。|{a}は笑いながら、{b}のいない隣に話しかけそうになった。'),
+    flat: L('{a}は手を止めて、{b}がいた頃のことを一瞬だけ思い返した。|{a}「{b}なら、もっと早く気づいていた」|{a}は{b}の分まで数えかけて、静かに数え直した。')
+  };
+  var DEF_ITEMS = L('{b}の上着|{b}が使っていた物|{b}の靴');
+  var DEF_SPOTS = L('部屋の隅|窓辺|いつもの場所');
+
+  /* ======================= 仕組み ======================= */
+  function ok(c) { return c && c.alive && !c.out && !c.mad && !(c.flags && c.flags.caged != null); }
+  function lossOf(c) { var l = c && c.flags && c.flags.loss; return l && !l.done ? l : null; }
+  G.of = lossOf;
+  function stage(l) {
+    if (l.type === 'flat') return l.calm ? 'deep' : l.lv >= 28 ? 'mid' : 'late';
+    return l.lv >= 55 ? 'deep' : l.lv >= 28 ? 'mid' : 'late';
+  }
+  function vars(ctx, l, opt, extra) {
+    var dn = l.name, items = opt.items || DEF_ITEMS, spots = opt.spots || DEF_SPOTS;
+    var m = { b: dn, d: dn, rel: l.rel };
+    m.item = fill(ctx.pick(items), { b: dn });
+    m.spot = fill(ctx.pick(spots), { b: dn });
+    for (var k in extra) m[k] = extra[k];
+    return m;
+  }
+  function why(a, l, what) {
+    return a.name + 'は、' + (l.rel ? l.rel + 'の' : '') + l.name + 'を失った（喪失：' + TYPE_NAME[l.type] + '・深さ ' + Math.round(l.lv) + '）' + (what ? '／' + what : '');
+  }
+  function addStress(c, v) { c.stress = clamp((c.stress || 0) + v, 0, 100); }
+
+  /* 亡くなった人を見つけて、仲の良かった人に喪失を付ける */
+  function scan(ctx, s, n, opt) {
+    var seen = ctx.flags.gfSeen || (ctx.flags.gfSeen = {});
+    /* 生き返った人（ゾンビの街の治療など）は、もう一度亡くなったときにまた数える */
+    ctx.chars.forEach(function (v) { if (v.alive && seen[v.i]) delete seen[v.i]; });
+    var dead = ctx.chars.filter(function (v) { return !v.alive && !v.out && !seen[v.i]; });
+    if (!dead.length) return;
+    var react = [];
+    dead.forEach(function (v) {
+      seen[v.i] = 1;
+      ctx.chars.forEach(function (o) {
+        if (o === v || !ok(o)) return;
+        var dp = G.depth(ctx, o, v, opt);
+        if (dp.d < (opt.min || 40)) return;
+        var cur = lossOf(o), type = cur ? cur.type : typeOf(o);
+        var lv = clamp(dp.d * MULT[type], 30, 100);
+        var l = { who: v.i, name: v.name, rel: dp.rel, at: s, lv: lv, lv0: lv, type: type, last: s, aside: -9, comfortAt: -9, others: [], reckless: 0 };
+        if (type === 'flat') { l.calm = true; l.crashAt = s + (opt.crash || 2) + (ctx.rng() < 0.5 ? 1 : 0); }
+        if (cur && cur.lv >= lv) { cur.others.push(v.name); cur.lv = Math.min(100, cur.lv + 10); cur.lv0 = Math.max(cur.lv0, cur.lv); l = cur; }
+        else {
+          if (cur) { l.others = cur.others.concat([cur.name]); l.lv = l.lv0 = Math.min(100, lv + 8); l.calm = cur.calm; l.crashAt = cur.crashAt; l.broke = cur.broke; }
+          o.flags.loss = l;
+        }
+        addStress(o, lv * (type === 'flat' ? 0.25 : type === 'hold' ? 0.4 : 0.5));
+        if (o.flags.grief == null) o.flags.grief = v.i;
+        if (l.who === v.i) react.push({ o: o, l: l });
+      });
+    });
+    react.sort(function (x, y) { return y.l.lv - x.l.lv; });
+    react.slice(0, opt.reactMax || 3).forEach(function (x) {
+      var o = x.o, l = x.l;
+      ctx.act2({ actors: [o], cat: 'solo', text: fill(ctx.pick(REACT[l.type]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '知らせを受けて'), mag: 18 + l.lv / 5 });
+    });
+  }
+  function beat(ctx, o, l, opt) {
+    l.last = ctx.stepIndex;
+    addStress(o, 3);
+    return { text: fill(ctx.pick(BEAT[l.type][stage(l)]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, stage(l) === 'late' ? '少しずつ薄れてきた' : 'まだ引きずっている'), mag: 8 + l.lv / 8 };
+  }
+  function comfort(ctx, a, b, opt) {
+    var l = lossOf(b), al = lossOf(a), shared = al && al.who === l.who;
+    var key = shared ? 'shared' : typeOf(a);
+    var spots = (opt.spots || DEF_SPOTS).filter(function (x) { return x.indexOf('{b}') < 0; });
+    var m = vars(ctx, l, { items: opt.items, spots: spots.length ? spots : DEF_SPOTS }, { a: a.name, b: b.name, d: l.name });
+    var t = fill(ctx.pick(COMFORT[key]), m) + fill(ctx.pick(ANSWER[l.type]), m);
+    l.comfortAt = ctx.stepIndex; l.last = ctx.stepIndex; l.comforts = (l.comforts || 0) + 1;
+    l.lv = Math.max(0, l.lv - (shared ? 8 : 6));
+    if (l.type === 'flat' && l.calm) l.crashAt = Math.min(l.crashAt, ctx.stepIndex + 1);
+    addStress(b, -10);
+    ctx.mod(b, a, { trust: 6, aff: 5 }); ctx.mod(a, b, { aff: 3 });
+    return { text: t, why: a.name + 'が、' + l.name + 'を失った' + b.name + 'に寄り添った（慰める側：' + (shared ? '同じ人を亡くした者どうし' : TYPE_NAME[key] + 'の型') + '／' + b.name + '：' + TYPE_NAME[l.type] + '・深さ ' + Math.round(l.lv) + '）', mag: 14 };
+  }
+  function nearFriend(ctx, o, except) {
+    var best = null, bv = 15;
+    ctx.others(o).forEach(function (c) { if (!ok(c) || c === except) return; var v = ctx.R(c, o).aff + c.tr.np * 20 + ctx.rng() * 10; if (v > bv) { bv = v; best = c; } });
+    return best;
+  }
+  /* 区切りの終わり：崩れる・強制の一場面・薄れる */
+  function tick(ctx, s, n, opt) {
+    var beats = 0, comforts = 0;
+    ctx.chars.forEach(function (o) {
+      var l = lossOf(o);
+      if (l && ctx.chars[l.who] && ctx.chars[l.who].alive) { l.done = true; return; }
+      if (!l || !ok(o) || l.at === s) return;
+      var t = null;
+      if (l.type === 'flat' && l.calm && s >= l.crashAt) {
+        l.calm = false; l.lv = Math.min(100, l.lv + 15); l.lv0 = Math.max(l.lv0, l.lv); l.last = s; addStress(o, 25);
+        t = { text: fill(ctx.pick(CRASH), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '淡々としていた分、あとから崩れた'), mag: 25 };
+      } else if (l.type === 'hold' && !l.broke && l.lv >= 40 && (o.stress >= 65 || s - l.at >= 4) && ctx.rng() < 0.5) {
+        l.broke = true; l.last = s; addStress(o, -10);
+        t = { text: fill(ctx.pick(BREAK), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '人前では抱え込んでいたものが、一人のときに崩れた'), mag: 22 };
+      } else if (!l.accepted && !l.calm && l.lv < Math.max(24, l.lv0 * 0.5) && s - l.at >= Math.max(3, (n - l.at) * 0.5)) {
+        l.accepted = true; l.last = s;
+        t = { text: fill(ctx.pick(ACCEPT[l.type]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '少しだけ前を向いた'), mag: 15 };
+      } else if (comforts < 1 && l.lv >= 45 && s - l.comfortAt >= 3 && (l.comforts || 0) < 4 && ctx.rng() < 0.35) {
+        var c = nearFriend(ctx, o, null);
+        if (c && !(lossOf(c) && lossOf(c).who !== l.who && lossOf(c).lv > 60)) { comforts++; var r = comfort(ctx, c, o, opt); ctx.act2({ actors: [c, o], cat: 'help', text: r.text, why: r.why, mag: r.mag }); }
+      } else if (beats < 2 && l.lv >= 30 && s - l.last >= (l.lv >= 60 ? 2 : 3) && ctx.rng() < 0.55) {
+        beats++; t = beat(ctx, o, l, opt);
+      }
+      if (t) ctx.act2({ actors: [o], cat: 'solo', text: t.text, why: t.why, mag: t.mag });
+      /* ストレスが抜けきらない */
+      addStress(o, l.lv / 20);
+      /* 薄れる（残りの区切り、または opt.span の区切りで、はじめの深さの6割ほど）。淡々としているあいだは薄れない */
+      if (!l.calm) l.lv = Math.max(0, l.lv - Math.max(1.5, l.lv0 * 0.6 / Math.max(2, Math.min(n - l.at, opt.span || 99))));
+      if (l.lv <= 6 && l.accepted) l.done = true;
+    });
+  }
+
+  /* 引きずっている人のふだんの出来事に、ときどき一言 */
+  var SKIP_CAT = /^(?:romance|lewd|sex|death|combat|betray)$/;
+  function aside(ctx, a, r, cat) {
+    if (!r || typeof r.text !== 'string' || !r.text) return r;
+    if (SKIP_CAT.test(r.cat || cat || '')) return r;
+    var l = lossOf(a);
+    if (!l || l.lv < 25 || l.calm || ctx.stepIndex - l.at < 1 || ctx.stepIndex - l.aside < 3 || (l.asides || 0) >= 6 || r.text.indexOf(l.name) >= 0) return r;
+    if (ctx.rng() > 0.08 + l.lv / 500) return r;
+    l.aside = ctx.stepIndex; l.asides = (l.asides || 0) + 1;
+    r.text += fill(ctx.pick(ASIDE[l.type]), { a: a.name, b: l.name });
+    r.why = (r.why ? r.why + '／' : '') + a.name + 'は、まだ' + l.name + 'のことを引きずっている（喪失：' + TYPE_NAME[l.type] + '）';
+    return r;
+  }
+  var MINE = [];
+  var bp0 = HK.buildPool;
+  HK.buildPool = function (scen) {
+    var pool = bp0.apply(this, arguments);
+    if (!scen || !scen.griefKit) return pool;
+    return pool.map(function (e) {
+      /* 慰める出来事には受け止め方の文が入っているので、二人の出来事の反応（pair-react.js）を重ねない */
+      var pr = e && Object.getPrototypeOf(e);
+      if (pr && MINE.indexOf(pr) >= 0) return pr;
+      if (!e || typeof e.run !== 'function' || /^gf_/.test(e.id || '') || e.r18 || SKIP_CAT.test(e.cat || '')) return e;
+      var w = Object.create(e);
+      w.run = function (ctx, a) { return aside(ctx, a, e.run.apply(this, arguments), e.cat); };
+      return w;
+    });
+  };
+
+  G.install = function (scen, opt) {
+    if (!scen || !scen.events || scen.griefKit) return;
+    scen.griefKit = opt = opt || {};
+    var ph0 = scen.phase, af0 = scen.after;
+    scen.phase = function (ctx, s, n) { var r = ph0 ? ph0.apply(this, arguments) : undefined; ctx.flush(); scan(ctx, s, n, opt); return r; };
+    scen.after = function (ctx, s, n) { var r = af0 ? af0.apply(this, arguments) : undefined; ctx.flush(); scan(ctx, s, n, opt); tick(ctx, s, n, opt); return r; };
+    var n0 = scen.events.length;
+    scen.events.push({
+      id: 'gf_think', cat: 'solo', scope: 'solo', noOdd: true,
+      when: function (ctx, a) { var l = lossOf(a); return !!l && l.lv >= 15 && ctx.stepIndex - l.last >= 2; },
+      w: function (ctx, a) { return (0.4 + lossOf(a).lv / 30) * (opt.w || 1); },
+      run: function (ctx, a) { return beat(ctx, a, lossOf(a), opt); }
+    });
+    scen.events.push({
+      id: 'gf_reckless', cat: 'solo', scope: 'solo', noOdd: true,
+      when: function (ctx, a) { var l = lossOf(a); return !!l && l.lv >= 50 && !l.calm && l.reckless < 2 && l.type !== 'flat' && ctx.stepIndex - l.at >= 1; },
+      w: function (ctx, a) { var l = lossOf(a); return (0.2 + a.tr.impulse * 0.8 + (l.type === 'blame' || l.type === 'bright' ? 0.4 : 0)) * (opt.w || 1); },
+      run: function (ctx, a) {
+        var l = lossOf(a), c = nearFriend(ctx, a, null);
+        l.reckless++; l.last = ctx.stepIndex; addStress(a, 5);
+        var list = opt.reckless ? RECKLESS.concat(opt.reckless) : RECKLESS;
+        var t = fill(ctx.pick(list), vars(ctx, l, opt, { a: a.name }));
+        if (c) { t += fill(ctx.pick(STOP), { a: a.name, b: l.name, c: c.name }); ctx.mod(a, c, { trust: 5 }); ctx.mod(c, a, { aff: 3 }); }
+        return { text: t, why: why(a, l, '自分を大事にできなくなっている') + (c ? '／' + c.name + 'が止めた' : ''), mag: 16, with: c ? [c] : null };
+      }
+    });
+    scen.events.push({
+      id: 'gf_comfort', cat: 'help', scope: 'pair', noOdd: true,
+      when: function (ctx, a, b) {
+        var l = lossOf(b);
+        if (!l || l.lv < 20 || l.who === a.i || ctx.stepIndex - l.comfortAt < 3 || (l.comforts || 0) >= 4 || !ok(b)) return false;
+        var la = lossOf(a); if (la && la.who !== l.who && la.lv > 60) return false;
+        return ctx.R(a, b).aff > 5;
+      },
+      w: function (ctx, a, b) { return (0.3 + a.tr.np * 0.9 + Math.max(0, ctx.R(a, b).aff) / 100) * (lossOf(b).lv / 70) * (opt.w || 1); },
+      run: function (ctx, a, b) { return comfort(ctx, a, b, opt); }
+    });
+    MINE = MINE.concat(scen.events.slice(n0));
+  };
+
+  /* ======================= 箱庭ごとの組み込み ======================= */
+  var SURVIVE = L('{a}は誰にも告げずに、一番危ない役目を引き受けた。{a}「どうなってもいい。今はそれでいい」――そのつぶやきを聞いた者は、背筋が冷たくなった。{a}は無事に戻ったが、その顔には何の色も浮かんでいなかった。');
+  /* ゾンビの街は一日が四つの区切り（朝・昼・夕方・夜）なので、A の人が崩れるのは一日あまりあと */
+  G.install(SC.zombie, {
+    crash: 5, span: 20,
+    items: L('{b}が使っていた懐中電灯|{b}の上着|{b}の腕時計|{b}が最後まで持っていた鞄'),
+    spots: L('バリケードの陰|見張り台|隠れ家の屋上|崩れた非常階段'),
+    reckless: SURVIVE.concat(L('{a}は武器も持たずに、{b}を失った場所へ一人で向かおうとした。{a}「{b}を、置いてきたままにできない」――外にはまだ、呻き声がいくつも響いていた。{a}の足は、それでも止まらなかった。|{a}はわざと物音を立てて、ゾンビの群れのほうへ歩いていった。まるで、自分から見つかろうとしているようだった。寸前で引き返したのは、ほとんど偶然だった。|{a}は見張りの番を、何日も続けて誰にも譲らなかった。眠らずに暗がりを見つめる目は、どこか焦点が合っていなかった。{a}「来るなら来ればいい。私が全部、相手をする」'))
+  });
+  G.install(SC.island, {
+    items: L('{b}が編んだ籠|{b}の上着|{b}が拾った貝殻|{b}の靴'),
+    spots: L('浜辺|焚き火のそば|岩場|見晴らしのいい丘'),
+    reckless: SURVIVE.concat(L('{a}は荒れた海に、一人で漁に出ようとした。{a}「じっとしていると、{b}のことばかり考える」――波は、岩場を白く洗っていた。引き止められなければ、{a}は本当に沖へ出ていた。|{a}は誰も行かない崖の上まで、食べ物を探しに登っていった。足場の悪い斜面を、{a}はほとんど確かめもせずに進んだ。戻ってきた{a}の腕は、擦り傷だらけだった。|{a}は{b}が最後に向かった森の奥へ、何度も一人で入っていった。何かを探しているようでもあり、何かから逃げているようでもあった。{a}は夕暮れまで戻らなかった。'))
+  });
+  G.install(SC.classroom, {
+    mate: 'クラスメイト', span: 6,
+    items: L('{b}に借りたままのノート|{b}の机に置かれた花|{b}と撮った写真|{b}のシャープペン'),
+    spots: L('教室の窓際|屋上|いつもの帰り道|{b}の空いた席の前')
+  });
+  G.install(SC.whiteroom, {
+    span: 24,
+    items: L('{b}の上着|{b}が壁に刻んだ印|{b}の靴'),
+    spots: L('部屋の隅|白い壁の前|ベッドの端|扉の前')
+  });
+  /* オメガバースは半月ごとの区切りで長いので、半年ほどで薄れる */
+  G.install(SC.omega, {
+    span: 12,
+    items: L('{b}の匂いが残る服|{b}の上着|{b}と撮った写真|{b}のマグカップ'),
+    spots: L('窓辺|部屋の隅|二人でよく座ったベンチ|ベランダ')
+  });
+  /* 全年齢版だけの箱庭（R18版にはない） */
+  G.install(SC.br, {
+    items: L('{b}の上着|{b}が持っていた地図|{b}の水筒'),
+    spots: L('岩陰|廃屋の陰|茂みの奥|崖の上'),
+    reckless: SURVIVE, reactMax: 2
+  });
+  G.install(SC.trial, {
+    items: L('{b}の上着|{b}の部屋の鍵|{b}が使っていたペン'),
+    spots: L('ホテルの廊下|{b}の部屋の前|食堂の隅|ロビーのソファ'),
+    reactMax: 2
+  });
 })();
 ;/* ==== js/lewd-unify.js ==== */
 /* 箱庭シミュレーター: R18の描写の設定を、どの箱庭でも同じ三つにそろえる
