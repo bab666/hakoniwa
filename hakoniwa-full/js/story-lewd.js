@@ -101,7 +101,7 @@
       var acts = (o.actors || []).map(function (a) { return who(S, a); }).filter(Boolean), sep = /\n\n/.test(o.text) ? '\n\n' : '';
       var er = X.ero(S.env), hi = X.high(S.env), add = [];
       if (acts.length === 1) {
-        var a = acts[0], top = !!(HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(a)), d = a.eroDom;
+        var a = acts[0], top = !!(HK.Pos && HK.Pos.hardTopNpc && HK.Pos.hardTopNpc(a)), d = a.eroDom;
         a.eroDom = top;
         /* 一人が受ける場面は合意のない場面なので、男性向けの文は足さない（濃いは、ぼかした一文だけ） */
         if (er && top) add.push(E.fill(S, pick(S, SOLO_TOP), a));

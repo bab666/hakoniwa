@@ -71,7 +71,7 @@
     });
   }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
+  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -109,6 +109,7 @@
     c.futa = !!c.futa;
     c.daku = !!c.daku;
     c.noR18 = !!c.noR18;
+    c.posNpc = c.posNpc === 'bottom' ? 'bottom' : '';
     c.you = str(c.you, 8).trim();
     c.marks = str(c.marks, 30).trim();
     c.loveLock = typeof c.loveLock === 'string' ? c.loveLock : '';
@@ -374,6 +375,7 @@
         if (c.futa) o.futa = true;
         if (c.daku) o.daku = true;
         if (c.noR18) o.noR18 = true;
+        if (c.posNpc === 'bottom') o.posNpc = 'bottom';
         if (c.you) o.you = c.you;
         if (c.marks) o.marks = c.marks;
         if (c.loveLock && ref(c.loveLock) != null) o.loveLock = ref(c.loveLock);
@@ -438,6 +440,7 @@
       if (o.futa) c.futa = true;
       if (o.daku) c.daku = true;
       if (o.noR18) c.noR18 = true;
+      if (o.posNpc === 'bottom') c.posNpc = 'bottom';
       if (o.you != null) c.you = String(o.you).trim().slice(0, 8);
       if (o.marks != null) c.marks = String(o.marks).trim().slice(0, 30);
       c._lk = o.loveLock; c._sl = o.sexLock; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
@@ -695,7 +698,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '', sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock ? ids.indexOf(c.sexLock) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '', sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock ? ids.indexOf(c.sexLock) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
         });
       })(),
       perChar: castFor(S.scenId).map(function (c) {

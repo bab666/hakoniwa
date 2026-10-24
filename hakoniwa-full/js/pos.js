@@ -148,13 +148,17 @@
   /* 名前のない相手（モブ・魔物・道具）との組：キャラが攻めなら 'top'、受けなら 'bottom'、どちらでもよければ def。
      自分で攻めを選んだ人は、def が何であっても 'top'（受ける場面にしない） */
   P.vsNpc = function (c, def) {
+    /* 「攻めだが、モブには受け」（キャラの設定 posNpc）：住人には攻めのまま、モブ・魔物・村人には受ける */
+    if (c && c.posNpc === 'bottom') return 'bottom';
     var v = P.of(c);
     if (v === 'top') return 'top';
     if (v === 'bottom') return 'bottom';
     return def || '';
   };
   /* モブ・魔物・道具に「される」場面に入れてよいか（自分で攻めを選んだ人は不可） */
-  P.canReceive = function (c) { return !P.hardTop(c); };
+  P.canReceive = function (c) { return !P.hardTop(c) || !!(c && c.posNpc === 'bottom'); };
+  /* モブ・魔物との場面で、攻めに回る人か（攻め指定でも「モブには受け」なら受ける） */
+  P.hardTopNpc = function (c) { return P.hardTop(c) && !(c && c.posNpc === 'bottom'); };
   P.reset = function () { lock = {}; };
   /* ノリノリな性格（奔放・衝動的）：受けやおまかせでも、自分から跨ったり誘ったりする */
   P.nori = function (c) { var t = (c && c.tr) || {}; if ((t.ac || 0) > 0.62 && (t.fc || 0) < 0.5) return false; return (t.fc || 0) > 0.6 || (t.impulse || 0) > 0.66; };

@@ -449,7 +449,7 @@
     if (!ms.length) return false;
     var m = HK.weighted(rng, ms, function (x) { return x[1]; })[0];
     /* hidden：まだ正体に気づいていない生命体（名前の代わりに「正体の分からない何か」） */
-    var top = HK.Pos && HK.Pos.hardTop(a), b = closest(S, a) || { name: '仲間' }, v = { a: a.name, b: b.name, x: hidden ? '正体の分からない何か' : d.name };
+    var top = HK.Pos && HK.Pos.hardTopNpc(a), b = closest(S, a) || { name: '仲間' }, v = { a: a.name, b: b.name, x: hidden ? '正体の分からない何か' : d.name };
     var pick = function (arr) { return pk(S, arr); };
     var body = top ? pick(X2.TOP[m]) : X2.text(S, d, m, pick);
     if (!body) return false;
@@ -480,7 +480,7 @@
     if (!src.length) return;
     if (!xl.length) return;
     var o = rng.pick(src), a = rng.pick(xl), b = closest(S, a) || { name: '仲間' };
-    var top = HK.Pos && HK.Pos.hardTop(a), m = { a: a.name, b: b.name, x: o.x };
+    var top = HK.Pos && HK.Pos.hardTopNpc(a), m = { a: a.name, b: b.name, x: o.x };
     var t = F(pk(S, o.pool), m) + (top ? F(pk(S, X.lureTop), m) : F(pk(S, X.huge), m) + F(pk(S, X.hugeAct), m) + F(pk(S, X.lureAfter), m));
     t = xLewd(S, a, top, t, m, o.pool === X.lureCiv ? 'civ' : 'lure');
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; stress(a, top ? -5 : 8);
@@ -543,7 +543,7 @@
       var sk = skill(b, 'fight') * 0.45 + Math.max.apply(null, tm.map(function (q) { return skill(q, 'talk'); })) * 0.3 + Math.max(0, bond(S, b, a)) * 0.3 + tm.length * 0.05;
       var diff = 0.45 + Pn.civ.d.rare * 0.05 + (Pn.civ.d.state === 'advanced' ? 0.12 : 0) + S.env.danger / 100 * 0.1;
       /* 研究（R18）：自分で攻めを選んだ人は、受けにならない */
-      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTop(a)) && !(HK.State && !HK.State.mobSexOk(a)) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
+      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTopNpc(a)) && !(HK.State && !HK.State.mobSexOk(a)) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
         a.labbed = true; a.cnt.r18 = (a.cnt.r18 || 0) + 1;
         ST.say(S, { actors: [a], tag: '研究', kind: 'climax', text: F(pk(S, SH.X.lab), { a: a.name, x: Pn.civ.d.name }), why: Pn.civ.d.name + 'は、' + a.name + 'を「標本」として調べた', mag: 30 });
       }
@@ -865,7 +865,7 @@
   function alienR18(S, a, d) {
     if (HK.State && !HK.State.mobSexOk(a)) return;
     if (SH.X2 && S.rng() < 0.75 && xeno(S, a, d)) return;
-    var R = SH.R18, top = HK.Pos && HK.Pos.hardTop(a);
+    var R = SH.R18, top = HK.Pos && HK.Pos.hardTopNpc(a);
     var X = SH.X, sp = !top && X && X.play[d.kind] && S.rng() < 0.6 ? X.play[d.kind] : null;
     if (!sp && !/friendly|symbiotic|parasite|plant/.test(d.kind)) return;
     ST.say(S, { actors: [a], tag: '異星の生き物', kind: 'climax', text: xLewd(S, a, top, F(pk(S, sp || (top ? R.alienTop : R.alien)), { a: a.name, x: d.name }), { a: a.name, x: d.name, b: (closest(S, a) || { name: '仲間' }).name }, 'alien'), why: d.name + '（' + LIFE_JP[d.kind] + '）' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 28 });

@@ -192,7 +192,7 @@
     var staff = STAFF[env.staff] || STAFF.gentle;
     S.vars = { m: staff.n };
     /* 受け攻め：自分で攻めを選んだ客は、施術者に「される」側に回らない。際どくなった時点で手を止めさせ、帰るか、立場を入れ替える */
-    var hardTop = !!(HK.Pos && HK.Pos.hardTop(h));
+    var hardTop = !!(HK.Pos && HK.Pos.hardTopNpc(h));
     /* 女性どうし（女性セラピストと女性の客）：いちもつを前提にした描写を使わない */
     var ff = h.gender === 'f' && staff.g === 'f';
     /* ふたなり（HK.Pos.futa。攻め・リバの女性）：施術は女性の客として受け、客が攻めに回る場面だけ男性の体で書く */

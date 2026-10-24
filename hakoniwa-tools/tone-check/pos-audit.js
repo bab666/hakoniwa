@@ -12,9 +12,9 @@ const { openBuild } = require('./lib.js');
 (async () => {
   const dir = process.argv[2], N = +process.argv[3] || 24, only = process.argv[4] && !/^--/.test(process.argv[4]) ? process.argv[4].split(',') : null;
   const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
-  const SAMPLES = process.argv.includes('--samples'), WHY = process.argv.includes('--why'), FF = process.argv.includes('--ff'), HOT = process.argv.includes('--hot');
+  const NPCBOT = !!process.env.NPCBOT, SAMPLES = process.argv.includes('--samples'), WHY = process.argv.includes('--why'), FF = process.argv.includes('--ff'), HOT = process.argv.includes('--hot');
   const { browser, page, errors } = await openBuild(dir, '');
-  const r = await page.evaluate(({ N, only, FF, HOT, ENVSET, WHY }) => {
+  const r = await page.evaluate(({ N, only, FF, HOT, ENVSET, WHY, NPCBOT }) => {
     const P = HK.Pos, MALE = P.MALE_RE;
     const SEX = /抱い|抱かれ|エッチ|繋がっ|イカせ|イかせ|イった|イっ|果て|喘|挿れ|貫|舐め|愛撫|達し|体を重ね|奥まで|突き上げ|腰を(振|沈|打ち|揺)|跨[っが]|中に|犯/;
     const NPC_M = /男|客|触手|ゾンビ|魔物|オーク|ゴブリン|スライム|神|村人|教師|先生|店長|上司|略奪者|おじさん|兵|盗賊|医者|マッサージ師|施術師|整体師|司会|AD|カメラマン|監督|悪魔|インキュバス|獣|狼|蛇|蔦|植物|機械|ロボット|看守|看護|患者|社長|部長|課長|主人|旦那|夫|彼氏|王|騎士|勇者|魔王|山賊|漁師|船長/;
@@ -64,7 +64,7 @@ const { openBuild } = require('./lib.js');
         const n = Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 2 + (s % 5)));
         const chars = [], perChar = [];
         for (let i = 0; i < n; i++) {
-          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: cast.g[i], likes: '', tone: '', fp: '', pos: cast.p[i], posLike: cast.l[i] || '', color: '', call: '', calls: {}, loveLock: '' });
+          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: cast.g[i], likes: '', tone: '', fp: '', pos: cast.p[i], posLike: cast.l[i] || '', color: '', call: '', calls: {}, loveLock: '', posNpc: NPCBOT && (cast.p[i] === 'top' || cast.p[i] === 'riba') ? 'bottom' : '' });
           perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
         }
         const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
@@ -103,6 +103,8 @@ const { openBuild } = require('./lib.js');
           /* V2：攻めが受ける側 */
           for (const T of tops) {
             const n0 = T.name;
+            /* 「攻めだが、モブには受け」の人が、住人の名前の出ない文（モブ・魔物が相手）で受けるのは正しい */
+            if (T.posNpc === 'bottom' && (named.length <= 1 || hasMobM(t0) || NPC_M.test(t0))) continue;
             const RX = [
               new RegExp(n0 + '(?:は|が|も|を)?[^。「」]{0,30}?(?:貫かれ|突かれ|突き上げられ|挿れられ|挿入され|犯され|中に出され|注がれ|イかされ|イカされ|責められ|組み敷かれ|押し倒され|縛られ|拘束され|跨がられ|跨られ|抱かれ|穿たれ|嬲られ|弄ばれ|鳴かされ|啼かされ|孕まされ|種付けされ|開発され|ほぐされ|慣らされ|受け入れ)'),
               new RegExp(n0 + 'の(?:中|奥|最奥|中に|奥に|後ろ|後孔|秘部|蕾|入り口|ナカ)(?:へ|に|を|で|まで)'),
@@ -152,13 +154,15 @@ const { openBuild } = require('./lib.js');
           const ids2 = [...new Set(ac.filter(x => x != null))];
           if (ids2.length === 2 && SEX.test(t) && SEXCORE.test(t) && /(抱|エッチ|繋が|イ[かっカ]|果て|喘|挿|貫|舐|愛撫|達し|体を重ね)/.test(t)) {
             const a = chars[ids2[0]], b = chars[ids2[1]];
+            /* モブ（略奪者・男たち・村人など）が相手の場面に、もう一人の住人が居合わせただけの文は数えない */
+            if (a && b && /男たち|略奪者|目出し帽|村人たち|村の男|若い衆/.test(t0)) continue;
             if (a && b && !P.okSex(a, b) && t.indexOf(a.name) >= 0 && t.indexOf(b.name) >= 0) { out.n.V3++; out.bySc[sc].V3++; if (out.V3.length < 200) out.V3.push(sc + ' | ' + a.name + '(' + (a.pos || '-') + a.gender + ')×' + b.name + '(' + (b.pos || '-') + b.gender + ') | ' + t.slice(0, 300)); }
           }
         }
       }
     }
     return out;
-  }, { N, only, FF, HOT, ENVSET, WHY });
+  }, { N, only, FF, HOT, ENVSET, WHY, NPCBOT });
   console.log('runs', r.runs, 'counts', JSON.stringify(r.n));
   console.log('by scenario', JSON.stringify(Object.fromEntries(Object.entries(r.bySc).filter(([k, v]) => v.V1 || v.V2 || v.V3 || v.V4))));
   if (r.err.length) console.log('ERRORS', r.err.slice(0, 8));

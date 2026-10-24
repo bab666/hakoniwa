@@ -13,7 +13,7 @@
 
   function pk(S, a) { return DG.pick(S, a); }
   function nm(s, a, b) { return s.replace(/\{a\}/g, a.name).replace(/\{b\}/g, b ? b.name : ''); }
-  function isTop(h) { return !!(HK.Pos && HK.Pos.hardTop(h)); }
+  function isTop(h) { return !!(HK.Pos && HK.Pos.hardTopNpc(h)); }
   function low(S) { var X = HK.Lewd; return !!HK.SAFE_ON || !!(X && X.low && X.low(S.env)); }
   /* 体の書き分け：fb 女性の体で受ける／mb 男性の体で受ける／ft 女性の攻め（跨る）／mt 男性の攻め（ふたなりの攻めもこちら） */
   function bodyKey(h) {

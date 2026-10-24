@@ -222,7 +222,7 @@
     /* 受け攻め：サキュバスが攻めの指定なら、抱く側の文を使う */
     var sTop = HK.Pos && (HK.Pos.vsNpc(p, '') === 'top' || (HK.Pos.of(p) === 'riba' && rng() < 0.5));
     /* 自分で「攻め」を選んだサキュバスは、獲物に主導権を取られたり、逆に搾られたりしない */
-    var hTop = !!(HK.Pos && HK.Pos.hardTop(p));
+    var hTop = !!(HK.Pos && HK.Pos.hardTopNpc(p));
     var noRecv = function (arr) { if (!hTop) return arr; var f = arr.filter(function (x) { return !SB.RECV_RE.test(x); }); return f.length ? f : arr; };
     if (score < -5) {
       kind = 'fail'; p.cnt.fail++; p.cnt.streak++; p.m.mood -= 10; p.cnt.shame++;
@@ -303,7 +303,7 @@
     if (!e) return false;
     p.cnt['ev_' + e.id] = (p.cnt['ev_' + e.id] || 0) + 1;
     /* 男性向けのハプニングは、自分で「攻め」を選んだサキュバスには使わない（跨る・咥える書き方があるため） */
-    var et = HK.Pos && HK.Pos.hardTop(p) ? e.t : EL(S, 'ev.' + e.id, e.t);
+    var et = HK.Pos && HK.Pos.hardTopNpc(p) ? e.t : EL(S, 'ev.' + e.id, e.t);
     var fx = e.fx, t = ST.fmt(pkF(S, et), { a: p.name, s: sen ? sen.name : '' }), why = '';
     if (HK.Ero) t = HK.Ero.fill(S, t, p);
     if (sen && sen.top === 'AC' && (e.id === 'holy' || e.id === 'police') && rng() < 0.5) { t = sen.name + 'の「教会には近づかないで」を思い出して、' + p.name + 'は道を変えた。危ないところだった。'; fx = {}; why = '心配性の先輩の忠告が効いた'; }

@@ -67,6 +67,8 @@
     var core = !!(scenId && HK.State && HK.State.R18_CORE[scenId]);
     dst.noR18 = !!src.noR18 && !HK.SAFE_ON && !core;
     if (src.sexLock === 'loverOnly') { dst.sexLock = 'lover'; dst.noMob = !core; } else dst.noMob = !!dst.noMob;
+    /* 攻めだが、モブには受け（攻め・リバのときだけ） */
+    dst.posNpc = src.posNpc === 'bottom' && (src.pos === 'top' || src.pos === 'riba') ? 'bottom' : '';
     return dst;
   };
   HK.ngPairHard = function (a, b) {

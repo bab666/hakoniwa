@@ -289,8 +289,11 @@
       }
       /* 一人あぶれた人 */
       drunk.forEach(function (q) {
+        /* R18に参加しない人は出さない。「恋人だけ」の人は、使用人（モブ）の場面にしない */
+        if (HK.State && !HK.State.r18ok(q)) return;
+        if (q.noMob) return;
         if (rng() < 0.5) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, PL('solo', SC.solo)), { a: q.name }) + (lwEro(S) ? soloEro(S, q) : HK.R18M ? HK.R18M.solo(S, q) : '') + (!lwEro(S) && lwHi(S) ? F(ST.pick(S, Y_ERO.soloAgainN), { a: q.name }) : ''), why: '相手がいなかった' }, q.name + 'は一人で悶えた');
-        else if (hardTop(q)) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, SERVANT_TOP), { a: q.name }) + (lwEro(S) ? topEro(S, q) : (HK.R18M ? HK.R18M.say(S, q, 'top') : '') + (lwHi(S) ? F(ST.pick(S, Y_ERO.topAgain), { a: q.name }) : '')), why: '館の使用人が慰めに来たが、' + q.name + 'のほうが組み伏せた（受け攻めの指定：攻め）' }, q.name + 'は使用人と');
+        else if (HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(q) : hardTop(q)) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, SERVANT_TOP), { a: q.name }) + (lwEro(S) ? topEro(S, q) : (HK.R18M ? HK.R18M.say(S, q, 'top') : '') + (lwHi(S) ? F(ST.pick(S, Y_ERO.topAgain), { a: q.name }) : '')), why: '館の使用人が慰めに来たが、' + q.name + 'のほうが組み伏せた（受け攻めの指定：攻め）' }, q.name + 'は使用人と');
         else ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: HK.JDark && HK.JDark.roll(S, q) ? HK.JDark.text(S, 'servant', q) : F(ST.pick(S, PL('servant', SC.servant)), { a: q.name }) + (HK.R18M ? HK.R18M.npc(S, 'servant') + pz(S, q, 'react') + HK.R18M.moans(S, q, ['start', 'mid', 'climax']) : ''), why: '館の使用人に慰められた' }, q.name + 'は使用人と');
       });
       /* 正気の人が現場を守ると、手がかりは失われない */

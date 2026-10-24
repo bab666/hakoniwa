@@ -312,7 +312,7 @@
       if (rng() > lv * (p.aphro ? 0.32 : 0.12)) return false;
       p.lastNight = h; p.cnt.r18 = (p.cnt.r18 || 0) + 1;
       var mates = live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) && okPair(p, q); });
-      var top = hardTop(p);
+      var top = HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(p) : hardTop(p);
       var r0 = rng();
       /* 「恋人だけ（モブにも襲われない）」の人：夢の神・清めの湯・村人の夜這いには進まず、住人どうしの夜だけ */
       if (p.noMob) { if (!mates.length) return false; r0 = 0.5; }
@@ -382,7 +382,7 @@
       var rng = S.rng, lv = S.env.jlewd / 100;
       if (HK.State) live = live.filter(HK.State.mobSexOk);
       /* 眷属に襲われるのは、攻めを選んでいない人だけ */
-      live = live.filter(function (q) { return !hardTop(q); });
+      live = live.filter(function (q) { return !(HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(q) : hardTop(q)); });
       if (!live.length || rng() > lv * 0.6) return;
       var p = rng.pick(live); p.cnt.r18 = (p.cnt.r18 || 0) + 1;
       if (rng() < lv * 0.4) p.preg = true;

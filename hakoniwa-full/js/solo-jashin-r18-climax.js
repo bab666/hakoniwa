@@ -47,7 +47,7 @@
     if (HK.State) live = live.filter(HK.State.mobSexOk);
     if (!PL || PL.id === 'cave' || (!PLACE[PL.id] && PL.id !== 'bamboo')) return cave0(S, live);
     /* 眷属に襲われるのは、攻めを選んでいない人だけ */
-    live = live.filter(function (q) { return !JS.R18.hardTop(q); });
+    live = live.filter(function (q) { return !(HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(q) : JS.R18.hardTop(q)); });
     if (!live.length || rng() > lv * 0.6) return;
     var p = rng.pick(live); p.cnt.r18 = (p.cnt.r18 || 0) + 1;
     p.m.fear = Math.min(100, p.m.fear + 8);

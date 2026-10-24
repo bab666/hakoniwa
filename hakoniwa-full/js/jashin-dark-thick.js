@@ -69,7 +69,7 @@
   function on(S) { return !!(HK.R18Thick && HK.R18Thick.on ? HK.R18Thick.on(S) : true); }
   var J = HK.JDark = {
     /* 長い版にするか（3〜4回に1回）。攻めを選んだ人には使わない */
-    roll: function (S, p) { return on(S) && !(HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(p)) && S.rng() < 0.3; },
+    roll: function (S, p) { return on(S) && !(HK.Pos && HK.Pos.hardTopNpc && HK.Pos.hardTopNpc(p)) && S.rng() < 0.3; },
     text: function (S, kind, p, x) {
       var m = { a: p.name, g: (S.G && S.G.call) || '何か', c: x ? x.name : '' };
       var strong = !!(HK.R18M && HK.R18M.isStrong(p));

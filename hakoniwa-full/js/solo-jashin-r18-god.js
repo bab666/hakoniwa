@@ -15,7 +15,7 @@
   function mark(p, h) { p.lastNight = h; p.cnt.r18 = (p.cnt.r18 || 0) + 1; }
   function mates(S, p, live, h, cd) { return live.filter(function (q) { return q !== p && (!HK.State || HK.State.mobSexOk(q)) && JS.alive(q) && !q.bound && ok(q, h, cd) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) && JS.R18.okPair(p, q); }); }
   /* 自分で攻めを選んだ人（村人・眷属・神に「される」場面に入れない） */
-  function top(p) { return JS.R18.hardTop(p); }
+  function top(p) { return (HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(p) : JS.R18.hardTop(p)); }
 
   /* ================= シュブ＝ニグラス ================= */
   var SHUB_FEAST = L('収穫祭の夜、広場の篝火のまわりで、葡萄酒の樽が次々と空けられた。酔った村人たちは、そのまま草の上で、相手を選ばずに抱き合い始めた。「＠豊穣の母さまは、子を宿す営みを、何よりお喜びになる」――{a}の杯にも、紫の酒がなみなみと注がれ、誰かの手が{a}の帯にかかった。|葡萄棚の下に、村人たちが筵を敷き詰めていた。熟れた房の甘い匂いの中で、何組もの男女が絡み合っていた。{a}は、葡萄酒で火照った体を、何本もの手に引き寄せられた。|収穫祭の宴の締めくくりに、篝火が一斉に落とされた。闇の中で、誰が誰とも分からない手が{a}を探り当て、葡萄酒の香りのする唇が、{a}の口を塞いだ。');

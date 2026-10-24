@@ -101,7 +101,7 @@
     { when: function () { return true; }, title: function () { return '快楽堕ち'; }, text: '{a}は甘い熱に呑まれ、迷宮の魔物を狩る側として生きることを選んだ。地上へ帰る理由は、もう忘れた。' }
   ];
   DG.pickFall = function (S) {
-    var P = window.HK.Pos, top = P && P.hardTop(S.h);
+    var P = window.HK.Pos, top = P && P.hardTopNpc(S.h);
     var ok = (top ? FALLS_TOP : FALLS).filter(function (f) { return f.when(S); });
     var f = ok[0];
     if (ok.length > 2 && S.rng() < 0.35) f = ok[1];

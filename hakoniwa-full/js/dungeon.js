@@ -108,7 +108,7 @@
   }
   /* 自分で「攻め」を選んだ挑戦者（HK.Pos.hardTop）は、罠・魔物に「される」側にしない。
      本文は DG.TOP の書き下ろし（罠を壊して逃れる・魔物を逆に組み伏せる・媚薬で自分の体が火照るだけ）に差し替える */
-  function isTop(h) { return !!(h && HK.Pos && HK.Pos.hardTop(h)); }
+  function isTop(h) { return !!(h && HK.Pos && HK.Pos.hardTopNpc(h)); }
   DG.isTop = isTop;
   function evText(S, ev, kind) {
     var T = DG.TOP;
