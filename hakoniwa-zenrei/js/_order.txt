@@ -40,6 +40,7 @@ js/tone-chara.js
 js/tone-mystic.js
 late js/tone-genki.js
 js/tone-sondai.js
+js/tone-stern.js
 js/tone-long.js
 js/engine.js
 js/fwb.js
