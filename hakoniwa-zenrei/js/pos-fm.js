@@ -51,7 +51,8 @@
   var BOT_ACT = /跨|腰を沈め|腰を落と|覆いかぶさ|押し倒|組み敷|貫|突き|突か|押し入|挿れ|抱き潰|犯し|犯さ|背後から|後ろから|四つん這い|脚を抱え上げ|片脚を抱え|繋が[っりる]|奥まで|壁に向かって立たせ|膝の上に乗せ|膝の上で/;
 
   /* 性的な場面か（推理や喧嘩の「押し倒す」などは直さない） */
-  var SEXCTX = /押し入|注ぎ込|貫|突き|突い|挿|抱い|抱か|エッチ|繋が|果て|喘|挿|舐め|愛撫|達し|体を重ね|肌を重ね|腰を|奥まで|奥を|中に|犯し|犯さ|イ[かっカ]|跨|交わ|貪/;
+  /* 性的な場面の文か（「腰を抱えて」「後ろから」「洞窟の奥まで」「中に入った」のような、ふつうの文には反応しないように絞る） */
+  var SEXCTX = /押し入|注ぎ込|貫[いかきく]|突き上げ|突き入|奥を突|奥まで突|奥まで沈|挿[れ入]|エッチ|繋が[っりる]|果て|喘|舐め|愛撫|達し|体を重ね|肌を重ね|腰を(?:振|打ち|沈|落と|揺ら|動か|使|くねら)|中に(?:出|注|吐)|犯し|犯さ|イ[かっカッ]|跨|交わ|貪/;
   /* 「」の中の句点で切らないように、文に分ける */
   function sentences(t) {
     var out = [], cur = '', d = 0;
@@ -121,7 +122,9 @@
       var F = cs.filter(function (c) { return P.isF(c) && P.isTop(c); }), M = cs.filter(isM);
       if (!F.length || !M.length || !res) return res;
       var pairs = [];
-      F.forEach(function (f) { M.forEach(function (m) { if (FM.on(f, m)) pairs.push([f, m]); }); });
+      /* 恋愛・R18にしない組（キャラの設定 loveNG：相手の番号）は、そもそも性的な場面にならないので直さない */
+      var ng = function (x, y) { var ix = cs.indexOf(x), iy = cs.indexOf(y); return (Array.isArray(x.loveNG) && x.loveNG.indexOf(iy) >= 0) || (Array.isArray(y.loveNG) && y.loveNG.indexOf(ix) >= 0); };
+      F.forEach(function (f) { M.forEach(function (m) { if (FM.on(f, m) && !ng(f, m)) pairs.push([f, m]); }); });
       if (!pairs.length) return res;
       var rng = HK.rng ? HK.rng(((input.seed || 1) * 7919 + 17) >>> 0) : null;
       var ctx = { pick: function (a) { return a[rng ? rng.int(a.length) : Math.floor(Math.random() * a.length)]; } };
