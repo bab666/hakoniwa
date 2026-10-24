@@ -21,12 +21,13 @@
 
   var scen = {
     id: 'kaihen', name: '常識改変', kicker: '1〜6人・R18', solo: true, maxCast: 6, minCast: 1,
-    desc: 'エロいことが当たり前の仕事になった世界。搾精クリニック・おもてなしホテル・福利厚生の会社・洗い屋の銭湯・搾精ジムで、理性的な人ほど真面目に「施す側」として働く。何をするのか、体の違和感に気づくのか。※成人キャラクター向け',
+    desc: 'エロいことが当たり前の仕事になった世界。搾精クリニック・おもてなしホテル・福利厚生の会社・洗い屋の銭湯・搾精ジム・満員の客席の前で見せる公開施術の舞台で、理性的な人ほど真面目に「施す側」として働く。何をするのか、体の違和感に気づくのか。ひとりだけ正気の人を混ぜることもできる。※成人キャラクター向け',
     note: '※登場人物はすべて成人として扱います。',
     unit: 'コマ', simulate: function (input) { return run(input); },
-    castHint: '1〜6人。「おまかせ」なら、理性的な人（A・CPが高い）ほど施す側になり、残りは客として通います。「正気のまま紛れ込む」を選ぶと、ひとりだけ改変されていない人が混ざります。',
+    castHint: '1〜6人。「おまかせ」なら、理性的な人（A・CPが高い）ほど施す側になり、残りは客として通います。「正気のまま紛れ込む」を選ぶか、設定の「正気の人」で「片方だけ正気」「複数人が正気」を選ぶと、改変されていない人が混ざります。',
     env: [
-      { id: 'sit', label: '舞台', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'clinic', label: '搾精クリニック（医師と患者）' }, { v: 'hotel', label: '特別おもてなしホテル（客室係と宿泊客）' }, { v: 'office', label: '福利厚生の手厚い会社（処理当番と社員）' }, { v: 'spa', label: '洗い屋のいる銭湯（洗い屋と入浴客）' }, { v: 'gym', label: '搾精トレーニングジム（トレーナーと会員）' }] },
+      { id: 'sit', label: '舞台', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'clinic', label: '搾精クリニック（医師と患者）' }, { v: 'hotel', label: '特別おもてなしホテル（客室係と宿泊客）' }, { v: 'office', label: '福利厚生の手厚い会社（処理当番と社員）' }, { v: 'spa', label: '洗い屋のいる銭湯（洗い屋と入浴客）' }, { v: 'gym', label: '搾精トレーニングジム（トレーナーと会員）' }, { v: 'stage', label: '公開施術の舞台（演者と志願者・満員の客席の前で）' }] },
+      { id: 'sane', label: '正気の人', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ' }, { v: 'none', label: '全員改変されている' }, { v: 'one', label: '片方だけ正気（ひとりだけ）' }, { v: 'multi', label: '複数人が正気（3人以上のとき）' }], desc: '正気の人だけが、まわり（客・観客・ほかの住人）の当たり前をおかしいと分かっている。態度ごとに、気づく・止めようとする・流されていく。おまかせは、公開施術の舞台で2人以上のときだけ半々でひとりを正気にする。役割で選んだ人はその役割のまま（「正気のまま紛れ込む」を選んだ人は、どの設定でも正気）。複数人は3人以上のとき（2人以下ならひとり）' },
       { id: 'depth', label: '改変の強さ', min: 0, max: 100, def: 60, lo: 'ほころびだらけ', hi: '完璧', desc: '強いほど違和感に気づきにくい。弱いと、理性的な人ほどすぐに気づく' },
       { id: 'slots', label: '営業時間', min: 4, max: 16, def: 9, lo: '4時間', hi: '16時間', unit: '時間' },
       { id: 'mob', label: 'モブ（ほかの客・上司など）', type: 'select', def: 'on', options: [{ v: 'on', label: 'あり' }, { v: 'off', label: 'なし（登場キャラだけ）' }], desc: '「なし」にすると、登場キャラどうしだけで施術が進む（ほかの客・上司・同僚・新人などは出てこない）。2人以上で使うのがおすすめ' },
@@ -53,7 +54,7 @@
   HK.SCENARIOS.kaihen = scen;
   HK.SCEN_ORDER.push('kaihen');
 
-  var START = { clinic: 9, hotel: 15, office: 9, spa: 14, gym: 10 };
+  var START = { clinic: 9, hotel: 15, office: 9, spa: 14, gym: 10, stage: 13 };
   var ROLE = { giver: '施す側', taker: '受ける側', out: '正気の人' };
 
   function resolve(S, p, list, pick) {
@@ -72,10 +73,25 @@
     /* 役割 */
     var order = P.slice().sort(function (a, b) { return (b.eg.A + b.eg.CP) - (a.eg.A + a.eg.CP); });
     var nG = P.length === 1 ? 1 : Math.ceil(P.length / 2);
+    var pkOf = function (p) { var pk = (input.perChar && input.perChar[p.i] && input.perChar[p.i].pick || {}).role; return pk && ROLE[pk] ? pk : ''; };
+    /* 正気の人（設定「正気の人」）：役割を自分で選んでいない人から、施す側になりにくい人（A・CPが低い人）を正気にする。
+       2人以上のときは、施す側を少なくとも一人残す。役割で「正気のまま紛れ込む」を選んだ人は、どの設定でも正気 */
+    var saneMode = env.sane || 'auto', saneSet = [];
+    if (saneMode === 'auto') saneMode = sid === 'stage' && P.length >= 2 && !P.some(function (p) { return pkOf(p) === 'out'; }) && rng() < 0.5 ? 'one' : 'none';
+    S.saneMode = saneMode;
+    if (saneMode === 'one' || saneMode === 'multi') {
+      var want = saneMode === 'multi' && P.length >= 3 ? clamp(Math.floor(P.length / 2), 2, P.length - 1) : 1;
+      var free = order.filter(function (p) { return !pkOf(p); }).reverse();
+      var keepG = P.length >= 2 && !P.some(function (p) { return pkOf(p) === 'giver'; }) ? 1 : 0;
+      var need = Math.min(want - P.filter(function (p) { return pkOf(p) === 'out'; }).length, free.length - keepG);
+      saneSet = need > 0 ? free.slice(0, need) : [];
+    }
+    var rest = order.filter(function (p) { return saneSet.indexOf(p) < 0; }), nG2 = rest.length <= 1 ? 1 : Math.ceil(rest.length / 2);
     P.forEach(function (p) {
-      var pk = (input.perChar && input.perChar[p.i] && input.perChar[p.i].pick || {}).role;
-      p.role = pk && ROLE[pk] ? pk : order.indexOf(p) < nG ? 'giver' : 'taker';
-      p.roleLabel = p.role === 'giver' ? SIT.giver : p.role === 'taker' ? SIT.taker : '正気のまま紛れ込んだ人';
+      var pk = pkOf(p);
+      p.role = pk || (saneSet.indexOf(p) >= 0 ? 'out' : (saneSet.length ? rest.indexOf(p) < nG2 : order.indexOf(p) < nG) ? 'giver' : 'taker');
+      p.saneBy = !pk && p.role === 'out';
+      p.roleLabel = p.role === 'giver' ? SIT.giver : p.role === 'taker' ? SIT.taker : sid === 'stage' ? '正気のままの観客' : p.saneBy ? '正気のままの' + SIT.taker : '正気のまま紛れ込んだ人';
       var pc = (input.perChar && input.perChar[p.i]) || {};
       p.action = resolve(S, p, scen.actions, pc.action); p.goal = resolve(S, p, scen.goals, pc.goal);
       var sens = p.stats.sens || 3;
@@ -83,7 +99,7 @@
       p.m = { imm: p.role === 'out' ? 0 : clamp(depth * 70 + p.tr.ac * 15 + (1 - p.tr.a) * 10, 5, 95), doubt: p.role === 'out' ? 75 : clamp(p.tr.a * 12 + (1 - depth) * 25 + (p.goal.id === 'odd' ? 15 : 0), 0, 60), plea: 0, sem: 0 };
       /* 違和感の伸びやすさ：理性的（A・CP）ほど、改変が弱いほど、気づきやすい */
       p.doubtRate = (0.35 + p.tr.a * 0.9 + p.tr.cp * 0.35 - p.tr.ac * 0.2) * (1.35 - depth);
-      p.cnt = { served: 0, climax: 0, gclimax: 0, glitch: 0, body: 0, awake: 0, reset: 0, acts: {} };
+      p.cnt = { served: 0, climax: 0, gclimax: 0, glitch: 0, body: 0, awake: 0, reset: 0, acts: {}, notice: 0, stop: 0, swept: 0 };
       p.usedActs = [];
     });
     var gs = function () { return P.filter(function (p) { return p.role === 'giver' && !p.quit; }); };
@@ -95,9 +111,9 @@
     P.forEach(function (p) {
       var t;
       if (p.role === 'giver') t = ST.fmt(pkF(S, SIT.intro), { p: p.name });
-      else if (p.role === 'taker') t = p.name + 'は今日、' + place + 'に' + SIT.unit + 'の予約を入れていた。' + pkF(S, ['いつもの習慣だ。', '月に一度の楽しみだった。', '同僚に勧められて、初めて来た。', '前回の担当が忘れられなかった。']);
-      else t = ST.fmt(pkF(S, nm(S, KH.OUT.see)), { o: p.name });
-      ST.say(S, { actors: [p], tag: p.roleLabel, text: t, why: p.role === 'giver' ? '理性的な気質（A ' + Math.round(p.eg.A) + '・CP ' + Math.round(p.eg.CP) + '）ほど、改変された世界では真面目な「' + SIT.giver + '」になる' : p.role === 'out' ? p.name + 'だけは改変されていない' : '' });
+      else if (p.role === 'taker') t = SIT.takerIntro ? ST.fmt(pkF(S, nm(S, SIT.takerIntro)), { r: p.name, place: place }) : p.name + 'は今日、' + place + 'に' + SIT.unit + 'の予約を入れていた。' + pkF(S, ['いつもの習慣だ。', '月に一度の楽しみだった。', '同僚に勧められて、初めて来た。', '前回の担当が忘れられなかった。']);
+      else t = ST.fmt(pkF(S, nm(S, outPool(SIT, 'see'))), { o: p.name });
+      ST.say(S, { actors: [p], tag: p.roleLabel, text: t, why: p.role === 'giver' ? '理性的な気質（A ' + Math.round(p.eg.A) + '・CP ' + Math.round(p.eg.CP) + '）ほど、改変された世界では真面目な「' + SIT.giver + '」になる' : p.role === 'out' ? p.name + 'だけは改変されていない' + (p.saneBy ? '（設定「正気の人」：' + (saneMode === 'multi' ? '複数人が正気' : '片方だけ正気') + (env.sane === 'auto' ? '。おまかせで決まった' : '') + '）' : '') : '' });
     });
     ST.snap(S, keys);
 
@@ -117,7 +133,8 @@
         if (tf.length && rng() < 0.45) { r = rng.pick(tf); takersFree.splice(takersFree.indexOf(r), 1); }
         /* 正気のまま紛れ込んだ人を無理やり施術台に乗せる場面：自分で攻めを選んだ人は標的にしない */
         var outs = P.filter(function (p) { return p.role === 'out' && !p.fled && !p.sunk && okPair(g, p) && !(HK.Pos && HK.Pos.hardTop(p)); });
-        if (!r && outs.length && rng() < 0.3) r = rng.pick(outs);
+        /* 衆人環視の舞台では、正気の人が「志願者」として壇上に上げられやすい */
+        if (!r && outs.length && rng() < (sid === 'stage' ? 0.45 : 0.3)) r = rng.pick(outs);
         if (!r && S.noGuest) {
           /* モブなし：登場キャラの中から相手を選ぶ（受ける側→正気の人→ほかの施す側を練習台に） */
           var tk = P.filter(function (x) { return x.role === 'taker' && !x.quit && takersFree.indexOf(x) >= 0 && okPair(g, x); });
@@ -256,7 +273,7 @@
       return;
     }
     var r2name = fl === 'double' ? rng.pick(SIT.npc.filter(function (x) { return x !== rname; })) : null;
-    var t = (r && r.role === 'giver' ? ST.fmt(pkF(S, L('客が途切れた合間に、{p}は{r}を練習台にすることにした。「今日の手順、確認させて」|{p}は{r}を施術台に寝かせた。「次のお客様の前に、一度通しでやっておきたいの」|{r}が「最近、自分も溜まってて」と言うと、{p}は当然のように施術台を勧めた。')), v) : '') + (r && r.role === 'out' ? ST.fmt(pkF(S, nm(S, E(S, 'out.taken', KH.OUT.taken))), { o: r.name, p: g.name }) : fl === 'talk' ? ST.fmt(pkF(S, nm(S, F.talk)), v) : fl === 'double' ? ST.fmt(pkF(S, F.double), { p: g.name, r: rname, r2: r2name }) : (fl === 'watch' ? ST.fmt(pkF(S, F.watch), v) : '') + ST.fmt(pkF(S, nm(S, SIT.consult)), v)) + g.name + (ero && rng() < 0.7 && HK.Ero.has('kaihen', 'lines.' + S.v.sid + '.' + g.top) ? pkF(S, E(S, 'lines.' + S.v.sid + '.' + g.top, [])) : VO && VO.GIVER[g.persona] && rng() < 0.55 ? pkF(S, VO.GIVER[g.persona]) : pkF(S, nm(S, SIT.lines[g.top] || SIT.lines.NP)));
+    var t = (r && r.role === 'giver' ? ST.fmt(pkF(S, L('客が途切れた合間に、{p}は{r}を練習台にすることにした。「今日の手順、確認させて」|{p}は{r}を施術台に寝かせた。「次のお客様の前に、一度通しでやっておきたいの」|{r}が「最近、自分も溜まってて」と言うと、{p}は当然のように施術台を勧めた。')), v) : '') + (r && r.role === 'out' ? ST.fmt(pkF(S, nm(S, SIT.out ? SIT.out.taken : E(S, 'out.taken', KH.OUT.taken))), { o: r.name, p: g.name }) : fl === 'talk' ? ST.fmt(pkF(S, nm(S, F.talk)), v) : fl === 'double' ? ST.fmt(pkF(S, F.double), { p: g.name, r: rname, r2: r2name }) : (fl === 'watch' ? ST.fmt(pkF(S, F.watch), v) : '') + ST.fmt(pkF(S, nm(S, SIT.consult)), v)) + g.name + (ero && rng() < 0.7 && HK.Ero.has('kaihen', 'lines.' + S.v.sid + '.' + g.top) ? pkF(S, E(S, 'lines.' + S.v.sid + '.' + g.top, [])) : VO && VO.GIVER[g.persona] && rng() < 0.55 ? pkF(S, VO.GIVER[g.persona]) : pkF(S, nm(S, SIT.lines[g.top] || SIT.lines.NP)));
     /* 施術中の掛け合い（solo-kaihen-talk.js）：始める前の説明 */
     var kindT = KH.ACTKIND[act[0]] || 'hand', talkWhy = '';
     var tp = KH.talk && rng() < 0.55 ? KH.talk(S, 'pre', g, r, rname, kindT, false) : null;
@@ -303,7 +320,7 @@
     /* 掛け合い：終わりの締め／居合わせた正気の人の突っ込み */
     var te = KH.talk && rng() < 0.45 ? KH.talk(S, 'end', g, r, rname, kindT, false) : null;
     if (te) { t += te.text; talkWhy = talkWhy || te.why; }
-    var tc = KH.talkCut && r && r.role !== 'out' ? KH.talkCut(S, g) : null;
+    var tc = KH.talkCut && r && r.role !== 'out' && S.v.sid !== 'stage' ? KH.talkCut(S, g) : null;
     if (tc) { t += tc.text; talkWhy = talkWhy || tc.who.name + 'は正気のまま居合わせた'; }
     if (fl === 'double') { t += ST.fmt(pkF(S, F.doubleEnd), { p: g.name, r: rname, r2: r2name }); g.cnt.served++; g.m.sem += ml; }
     if (fl === 'watch') { t += ST.fmt(pkF(S, F.watchEnd), v); g.m.imm += 4; }
@@ -324,12 +341,16 @@
         t += ST.fmt(pkF(S, ero && rng() < 0.6 ? E(S, 'taker.' + k, KH.TAKER[k]) : VO && rng() < 0.75 ? (k === 'doubt' ? VO.DOUBT[r.persona] : VO.TAKER[r.persona]) || KH.TAKER[k] : KH.TAKER[k]), { r: r.name });
       }
     }
+    /* 正気の人が施される：態度ごとの反応（止めようとする／流される）。衆人環視の舞台では、客席の反応も */
+    if (r && r.role === 'out' && lew !== 'low') { var sx = saneTaken(S, SIT, r, g.name); t += sx.text + stageCrowd(S, g.name, rname, true); why += sx.why; }
+    else t += stageCrowd(S, g.name, rname, false);
     t = ef(S, t, g, rw);
     if (r && r.role === 'giver') why += '／モブなし：同じ' + SIT.giver + 'の' + r.name + 'を練習台にした';
     if (talkWhy) why += '／' + talkWhy;
     if (fl !== 'std') why += '／' + { talk: '常連との世間話', double: '二人同時の対応', watch: S.v.boss + 'の立ち会い', mishap: 'ちょっとしたトラブル' }[fl];
     var o = ST.sayB(S, { actors: r ? [g, r] : [g], tag: act[0], text: t, why: why, mag: 18 + ai * 3 }, g.name + '→' + rname + '（' + act[0] + '・' + ml + 'ml）', g.cnt.served === 1 || (r && r.cnt.served === 1));
     if (o && g.cnt.served === 1) ST.key(S, o, g.name + 'の最初の' + SIT.unit);
+    saneWatch(S, SIT, g, r, o);
     /* 施しながら、体が変わっていく */
     if (rng() < 0.12 + g.stats.sens * 0.04 && g.m.plea > 40) {
       g.cnt.body++; g.m.doubt += 7 * g.doubtRate; g.m.plea += 8;
@@ -355,7 +376,7 @@
     var v = { p: g.name, r: r.name, place: S.v.place, boss: S.v.boss };
     var ok = function (l) { var f = (l || []).filter(function (x) { return !NG.test(x); }); return f.length ? f : null; };
     var t = r.role === 'giver' ? ST.fmt(pkF(S, L('客が途切れた合間に、{p}は{r}を相手に、今日の手順を確かめることにした。|{p}は{r}を施術台に呼んだ。「次のお客様の前に、一度通しでやっておきたいの」')), v)
-      : r.role === 'out' ? ST.fmt(pkF(S, ok(nm(S, E(S, 'out.taken', KH.OUT.taken))) || KH.OUT.taken), { o: r.name, p: g.name })
+      : r.role === 'out' ? ST.fmt(pkF(S, ok(nm(S, SIT.out ? SIT.out.taken : E(S, 'out.taken', KH.OUT.taken))) || KH.OUT.taken), { o: r.name, p: g.name })
       : ST.fmt(pkF(S, ok(nm(S, SIT.consult)) || KH.FF_CONSULT), v);
     var gl = (VO && VO.GIVER[g.persona] && rng() < 0.55 && ok(VO.GIVER[g.persona])) || ok(nm(S, SIT.lines[g.top] || SIT.lines.NP)) || KH.FF_GIVER;
     t += g.name + pkF(S, gl);
@@ -365,7 +386,7 @@
     if (tp) { t += tp.text; talkWhy = tp.why; }
     if (lew === 'low') t += ST.fmt('{p}は「' + act[0] + '」を行った。――その内容は、カルテに数字だけが残された。', v);
     else {
-      t += ST.fmt(pkF(S, act[1]), v);
+      t += ST.fmt(pkF(S, nm(S, act[1])), v);
       var tm = KH.talk && rng() < 0.5 ? KH.talk(S, 'mid', g, r, r.name, ffK, true) : null;
       if (tm) { t += tm.text; talkWhy = talkWhy || tm.why; }
       if (!gAct && KH.MOAN && rng() < 0.6) { t += g.name + '「' + pkF(S, ok(KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN)) || KH.MOAN) + '」'; g.m.plea += 6 * g.sens; }
@@ -389,11 +410,14 @@
       var k = r.m.doubt > 45 ? 'doubt' : r.tr.ac > 0.6 ? 'shy' : 'calm';
       t += ST.fmt(pkF(S, (VO && rng() < 0.75 && ok(k === 'doubt' ? VO.DOUBT[r.persona] : VO.TAKER[r.persona])) || ok(KH.TAKER[k]) || KH.TAKER.calm), { r: r.name });
     }
+    if (r.role === 'out' && lew !== 'low') { var sx = saneTaken(S, SIT, r, g.name); t += sx.text + stageCrowd(S, g.name, r.name, true); why += sx.why; }
+    else t += stageCrowd(S, g.name, r.name, false);
     t = ef(S, t, g, r);
     if (r.role === 'giver') why += '／同じ' + SIT.giver + 'の' + r.name + 'と手順を確かめた';
     if (talkWhy) why += '／' + talkWhy;
     var o = ST.sayB(S, { actors: [g, r], tag: act[0], text: t, why: why, mag: 20 }, g.name + '→' + r.name + '（' + act[0] + '）', g.cnt.served === 1 || r.cnt.served === 1);
     if (o && g.cnt.served === 1) ST.key(S, o, g.name + 'の最初の' + SIT.unit);
+    saneWatch(S, SIT, g, r, o);
     g.m.doubt += g.doubtRate * rng() * 2.5;
   }
   function idle(S, g, SIT) {
@@ -406,7 +430,7 @@
       return ST.sayB(S, { actors: [g, o2], tag: '空き時間', text: ef(S, ST.fmt(pkF(S, E(S, 'idle', L('客が途切れた。{p}と{q}は、空いた施術室で手技の練習をすることにした。お互いの体で。|{p}は{q}に「さっきの手順、私にやってみて」と頼んだ。{q}は真剣な顔で頷き、{p}の服を脱がせ始めた。|{p}と{q}は休憩室で、どちらが多く搾ったかを比べ合った。負けた方が、勝った方を労うことになった。'))), { p: od[1].name, q: od[0].name }), od[1], od[0]), why: '同僚どうしの練習（' + SIT.name + 'では、これも業務の一部）', mag: 16 }, g.name + 'と' + o2.name + 'は空き時間に練習');
     }
     g.m.imm += 1;
-    ST.sayB(S, { actors: [g], tag: '空き時間', text: ST.fmt(pkF(S, nm(S, L('客が来ない。{p}は器具を一つずつ消毒し、次の客に備えた。|{p}は空き時間に、施術マニュアルを読み返した。付箋だらけだった。|{p}は待合室を覗き、誰もいないのを確かめてから、こっそり自分の制服の匂いを嗅いだ。|{p}は{boss}に頼まれて、新しいローションの使い心地を自分の腕で試した。'))), v) + (VO && VO.IDLE[g.persona] && rng() < 0.5 ? g.name + pkF(S, VO.IDLE[g.persona]) : ''), why: '客の少ない時間帯' }, g.name + 'は客待ち');
+    ST.sayB(S, { actors: [g], tag: '空き時間', text: ST.fmt(pkF(S, nm(S, SIT.idle || L('客が来ない。{p}は器具を一つずつ消毒し、次の客に備えた。|{p}は空き時間に、施術マニュアルを読み返した。付箋だらけだった。|{p}は待合室を覗き、誰もいないのを確かめてから、こっそり自分の制服の匂いを嗅いだ。|{p}は{boss}に頼まれて、新しいローションの使い心地を自分の腕で試した。'))), v) + (VO && VO.IDLE[g.persona] && rng() < 0.5 ? g.name + pkF(S, VO.IDLE[g.persona]) : ''), why: '客の少ない時間帯' }, g.name + 'は客待ち');
   }
 
   /* ---------- ハプニング ---------- */
@@ -414,7 +438,7 @@
   var NOMOB_EV = ['machine', 'blackout', 'camera', 'diary', 'self'];
   /* 客が来る出来事（客の多さ0のときは起きない） */
   var GUEST_EV = ['double', 'regular', 'friend', 'complaint'];
-  var MOB = /\{boss\}|団体|新人|同僚|隣の人|周りの人|誰も気にして|スタッフ|監査|業者|ほかの客|他の客|客たち|お客たち/;
+  var MOB = /\{boss\}|団体|新人|同僚|隣の人|周りの人|誰も気にして|スタッフ|監査|業者|ほかの客|他の客|客たち|お客たち|観客|客席|係員|係の人間|司会|皆さん|隣の席|後ろの席/;
   function mobby(S, t) { return S.noMob && (MOB.test(t) || (S.v.boss && t.indexOf(S.v.boss) >= 0)); }
   /* モブなし：文の中で、モブ（上司・同僚・新人など）が出てくる一文を取り除く（括弧の中では切らない） */
   function dropMob(S, t) {
@@ -486,13 +510,117 @@
   /* ---------- 正気のまま紛れ込んだ人 ---------- */
   function outsider(S, SIT, p) {
     var rng = S.rng, v = { o: p.name };
-    if (p.m.imm > 72) { p.sunk = true; return ST.key(S, ST.say(S, { actors: [p], tag: '呑み込まれる', text: ST.fmt(pkF(S, KH.OUT.sink), v), why: p.name + 'の改変度が' + Math.round(p.m.imm) + 'に達した', mag: 40 }), p.name + 'も改変された'); }
-    var flee = (p.tr.cp * 0.4 + p.tr.a * 0.3 + p.tr.caution * 0.3) * (p.m.doubt / 100) - p.m.imm / 150;
-    if (S.step >= 1 && rng() < flee * 0.35) { p.fled = true; return ST.key(S, ST.say(S, { actors: [p], tag: '脱出', text: ST.fmt(pkF(S, KH.OUT.flee), v), why: p.name + 'の慎重さとCP・A', mag: 35 }), p.name + 'が逃げ出した'); }
+    if (p.m.imm > 72) { p.sunk = true; return ST.key(S, ST.say(S, { actors: [p], tag: '呑み込まれる', text: ST.fmt(pkF(S, nm(S, outPool(SIT, 'sink'))), v), why: p.name + 'の改変度が' + Math.round(p.m.imm) + 'に達した', mag: 40 }), p.name + 'も改変された'); }
+    /* 止めようとしても誰も取り合わないと、逃げ出したくなる */
+    var flee = (p.tr.cp * 0.4 + p.tr.a * 0.3 + p.tr.caution * 0.3) * (p.m.doubt / 100) - p.m.imm / 150 + (p.cnt.stop || 0) * 0.04;
+    if (S.step >= 1 && rng() < flee * 0.35) { p.fled = true; return ST.key(S, ST.say(S, { actors: [p], tag: '脱出', text: ST.fmt(pkF(S, nm(S, outPool(SIT, 'flee'))), v), why: p.name + 'の慎重さとCP・A' + (p.cnt.stop ? '（止めようとして、誰にも取り合ってもらえなかった）' : ''), mag: 35 }), p.name + 'が逃げ出した'); }
+    if (p.takenAt === S.step) return;
+    /* 衆人環視の舞台：モブの演者に、志願者として壇上に上げられる */
+    if (S.v.sid === 'stage' && canStage(S, p) && rng() < (S.P.some(function (x) { return x.role === 'giver' && !x.quit; }) ? 0.22 : 0.5)) return stageMob(S, SIT, p);
     if (rng() < 0.45) {
       p.m.imm += 4 + p.tr.ac * 6;
-      ST.sayB(S, { actors: [p], tag: '正気の人', text: ST.fmt(pkF(S, nm(S, rng() < 0.5 ? KH.OUT.see : KH.OUT.tell)), v) + (VO && VO.OUT[p.persona] && rng() < 0.6 ? p.name + pkF(S, VO.OUT[p.persona]) : ''), why: '周りは全員、これを普通だと思っている（' + p.name + 'の改変度 ' + Math.round(p.m.imm) + '）' }, p.name + 'は周りの様子に戸惑っていた');
+      /* 態度ごとの反応（気づく・止めようとする・流される）：まわりのようすの一文のあとに */
+      if (VO && VO.SANE && rng() < 0.55) {
+        var k = saneKind(S, p, 'watch'), sc = ST.fmt(pkF(S, nm(S, SANE_SCENE[S.v.sid === 'stage' ? 'stage' : 'any'])), { crowd: crowdOf(S), unit: SIT.unit }), t = saneSay(S, SIT, p, k);
+        if (k === 'stop') t += saneNorm(S, SIT, p, '');
+        return ST.sayB(S, { actors: [p], tag: '正気の人', text: sc + t, why: '周りは全員、これを普通だと思っている→' + p.name + 'は「' + KIND_JA[k] + '」（' + toneJa(p) + '・改変度 ' + Math.round(p.m.imm) + '）', mag: k === 'stop' ? 24 : 14 }, p.name + 'は周りの様子に戸惑っていた');
+      }
+      ST.sayB(S, { actors: [p], tag: '正気の人', text: ST.fmt(pkF(S, nm(S, rng() < 0.5 ? outPool(SIT, 'see') : outPool(SIT, 'tell'))), v) + (VO && VO.OUT[p.persona] && rng() < 0.6 ? p.name + pkF(S, VO.OUT[p.persona]) : ''), why: '周りは全員、これを普通だと思っている（' + p.name + 'の改変度 ' + Math.round(p.m.imm) + '）' }, p.name + 'は周りの様子に戸惑っていた');
     }
+  }
+
+  /* ---------- 正気の人：まわりの全員が当たり前だと思っている中で、ひとりだけおかしいと分かっている ----------
+     反応は態度9種（solo-kaihen-voice.js の KH.VOICE.SANE）：気づく（notice）・止めようとする（stop）・流される（見ていて sweptW／施されていて sweptT）。
+     止めようとすると、まわり（客・観客）・施している側・ほかの住人が、当たり前のこととして返す（KH.SANE_NORM） */
+  function outPool(SIT, k) { return (SIT.out && SIT.out[k]) || KH.OUT[k]; }
+  function crowdOf(S) { return S.noMob ? 'まわりのみんな' : (KH.CROWD && KH.CROWD[S.v.sid]) || 'まわりの人たち'; }
+  function toneJa(p) { return (HK.PERSONA && HK.PERSONA[p.persona] ? HK.PERSONA[p.persona].label : p.persona) + 'の態度'; }
+  var KIND_JA = { notice: '気づく', stop: '止めようとする', sweptW: '流される', sweptT: '流される' };
+  /* 正気の人がひとりで反応するときの、まわりのようす（{crowd}・{unit}） */
+  var SANE_SCENE = {
+    stage: L('舞台の上では、次の実演が始まっていた。|スポットライトの下で、また一人、志願者が施術台に寝かされた。客席は静まり返って、その手元を見つめていた。|幕が上がり、次の演目が告げられた。客席から、待ちかねたような拍手が起きた。|大型スクリーンに、舞台の上の実演が大きく映し出された。誰も、目を逸らしてはいなかった。'),
+    any: L('{crowd}の前で、また次の{unit}が始まった。|すぐそばで、いつもどおりの{unit}が続いていた。誰も、それを気にしていなかった。|壁越しに、誰かの{unit}の声が聞こえてきた。{crowd}は、穏やかな顔でそれを聞き流していた。')
+  };
+  function sanes(S, but) { return S.P.filter(function (p) { return p.role === 'out' && !p.fled && !p.sunk && p !== but; }); }
+  /* 反応の種類：ctx＝'watch'（見ている）／'taken'（自分が施されている）。改変度が上がるほど流されやすい。CPが高いほど止めようとする */
+  function saneKind(S, o, ctx) {
+    var t = o.tr, im = o.m.imm;
+    if (ctx === 'taken') return HK.weighted(S.rng, ['stop', 'sweptT'], function (k) { return k === 'stop' ? Math.max(0.05, 1 - im / 45) * (0.6 + t.cp * 0.4) : 0.08 + Math.pow(im / 60, 1.5) + t.fc * 0.1; });
+    if (!o.cnt.notice) return 'notice';
+    return HK.weighted(S.rng, ['notice', 'stop', 'sweptW'], function (k) {
+      return k === 'notice' ? 0.35 * (1 - im / 100) + t.a * 0.2 : k === 'stop' ? Math.max(0.03, (t.cp * 0.6 + (1 - t.ac) * 0.3 + t.a * 0.2) * (1 - im / 80)) : 0.1 + im / 60 + t.fc * 0.2 + t.ac * 0.15;
+    });
+  }
+  function saneSay(S, SIT, o, kind) {
+    var VS = VO && VO.SANE && (VO.SANE[o.persona] || VO.SANE.gentle);
+    if (!VS || !VS[kind]) return '';
+    o.cnt[kind === 'sweptW' || kind === 'sweptT' ? 'swept' : kind]++;
+    if (kind === 'notice') { o.m.doubt += 4; o.m.imm -= 2; }
+    else if (kind === 'stop') { o.m.doubt += 3; o.m.imm -= 4; }
+    else o.m.imm += kind === 'sweptT' ? 8 : 6 + o.tr.ac * 4;
+    o.m.imm = clamp(o.m.imm, 0, 100); o.m.doubt = clamp(o.m.doubt, 0, 100);
+    return ST.fmt(pkF(S, nm(S, VS[kind])), { o: o.name, crowd: crowdOf(S) });
+  }
+  /* 止めようとしたときの返し。gname＝施している側（いなければ ''） */
+  function saneNorm(S, SIT, o, gname) {
+    var rng = S.rng, N = KH.SANE_NORM, v = { o: o.name, crowd: crowdOf(S), unit: SIT.unit, g: gname };
+    if (!N) return '';
+    var q = S.P.filter(function (x) { return x !== o && x.role !== 'out' && !x.quit && x.name !== gname; }), pool = null;
+    if (gname && rng() < 0.45) pool = N.giver;
+    else if (!S.noMob && rng() < 0.65) pool = S.v.sid === 'stage' && rng() < 0.6 ? N.stage : N.crowd;
+    else if (q.length) { v.q = rng.pick(q).name; pool = N.res; }
+    else if (gname) pool = N.giver;
+    else if (!S.noMob) pool = N.crowd;
+    return pool ? ST.fmt(pkF(S, pool), v) : '';
+  }
+  /* 自分が施されている最中の反応（施術の文に足す） */
+  function saneTaken(S, SIT, o, gname) {
+    var k = saneKind(S, o, 'taken'), t = saneSay(S, SIT, o, k);
+    if (k === 'stop') t += saneNorm(S, SIT, o, gname);
+    o.takenAt = S.step;
+    return { text: t, why: '／正気の' + o.name + 'は「' + KIND_JA[k] + '」（' + toneJa(o) + '・改変度 ' + Math.round(o.m.imm) + '）' };
+  }
+  /* 衆人環視の舞台：実演のあとの客席（モブありのときだけ）。must＝正気の人が施された回は必ず */
+  function stageCrowd(S, pn, rn, must) {
+    if (S.v.sid !== 'stage' || S.noMob || !KH.STAGE_CROWD) return '';
+    if (!must && S.rng() > 0.5) return '';
+    return ST.fmt(pkF(S, KH.STAGE_CROWD), { p: pn, r: rn });
+  }
+  /* 施術を、正気の人が見ている（施術の記録のあとに、正気の人だけの一件として） */
+  function saneWatch(S, SIT, g, r, said) {
+    if (!said) return;
+    var w = sanes(S, r).filter(function (x) { return x.takenAt !== S.step; });
+    if (!w.length || S.rng() > (S.v.sid === 'stage' ? 0.45 : 0.2)) return;
+    var o = S.rng.pick(w), k = saneKind(S, o, 'watch'), t = saneSay(S, SIT, o, k);
+    if (!t) return;
+    if (k === 'stop') t += saneNorm(S, SIT, o, g.name);
+    ST.say(S, { actors: [o], tag: '正気の人', text: t, why: o.name + 'だけは改変されていない。まわりは誰も、' + g.name + 'の' + SIT.unit + 'をおかしいと思っていない→「' + KIND_JA[k] + '」（' + toneJa(o) + '・改変度 ' + Math.round(o.m.imm) + '）', mag: k === 'stop' ? 24 : 14 });
+  }
+  /* 衆人環視の舞台：モブの演者が、正気の人を志願者として壇上に上げる。
+     モブとの場面に出してよい人（HK.State.mobSexOk）だけ。自分で攻めを選んだ人は、「モブには受け」にしていなければ連れていかない（HK.Pos.hardTopNpc）。
+     演者の性別は恋愛対象に合わせる（恋愛対象が「なし」の人は連れていかない） */
+  function canStage(S, p) { return !S.noMob && !!KH.STAGE_MOB && (!HK.State || HK.State.mobSexOk(p)) && !(HK.Pos && HK.Pos.hardTopNpc(p)) && p.likes !== 'none'; }
+  var PAIR_JA = { fm: '女性の演者×男性', mf: '男性の演者×女性', ff: '女性どうし', mm: '男性どうし' };
+  function stageMob(S, SIT, p) {
+    var rng = S.rng, SM = KH.STAGE_MOB, bodyF = HK.Pos ? HK.Pos.isF(p) : p.gender === 'f';
+    var mg = p.likes === 'm' ? 'm' : p.likes === 'f' ? 'f' : bodyF ? (rng() < 0.6 ? 'm' : 'f') : 'f';
+    var pair = mg + (bodyF ? 'f' : 'm'), A = SM[pair], ak = rng.pick(Object.keys(A)), act = A[ak];
+    var mname = rng.pick(SM.perf[mg]), ml = bodyF ? 0 : Math.round(5 + rng() * 9), first = !p.cnt.served;
+    var v = { o: p.name, m: mname, p: mname, ml: ml }, sx = null;
+    var t = first || rng() < 0.4 ? ST.fmt(pkF(S, outPool(SIT, 'taken')), v) : '';
+    if (S.env.lewd === 'low') t += ST.fmt('{m}は{o}を施術台に寝かせ、満員の客席の前で実演を行った。――その内容は、パンフレットに演目の名前だけが残された。', v);
+    else {
+      t += ST.fmt(pkF(S, act.lead), v) + ST.fmt(pkF(S, E(S, 'smob.' + pair + '.' + ak + '.mid', act.mid)), v);
+      sx = saneTaken(S, SIT, p, mname);
+      t += sx.text;
+      if (!eOn(S) && rng() < 0.5 && HK.Voice.CLIMAX[p.persona]) t += p.name + '「' + pkF(S, topL(p, HK.Voice.CLIMAX[p.persona])) + '」';
+      t += ST.fmt(pkF(S, E(S, 'smob.' + pair + '.' + ak + '.climax', act.climax)), v) + stageCrowd(S, mname, p.name, true);
+    }
+    t = ef(S, t, null, p);
+    p.cnt.served++; p.cnt.climax++; p.m.sem += ml; p.m.plea = clamp(p.m.plea + 25 * p.sens, 0, 100);
+    p.m.imm += 12 + p.tr.ac * 8; p.m.doubt -= 4; p.takenAt = S.step;
+    var o = ST.sayB(S, { actors: [p], tag: '公開実演', text: t, why: p.name + 'は正気のまま、志願者として壇上に上げられた（' + mname + '・' + PAIR_JA[pair] + (p.likes === 'm' || p.likes === 'f' ? '。演者は恋愛対象に合わせた' : '') + '）' + (sx ? sx.why : ''), mag: 30 }, p.name + '→壇上で公開実演', first);
+    if (o && first) ST.key(S, o, p.name + 'が観客の前で施された');
   }
 
   /* ---------- 終業：営業時間が終わったら一日の区切り（その回の結末に合わせた締め） ---------- */
@@ -501,7 +629,8 @@
     hotel: { label: 'おもてなしの終わり', t: L('{end}時、フロントの照明が夜間用に切り替わった。{place}の今日のおもてなしは、これでおしまいだ。|最後の客室の扉が閉まり、廊下に静けさが戻った。{place}のおもてなしの時間が、今日も終わった。|{end}時、館内放送が今日のおもてなしの終了を告げた。客室係の台車が一台ずつ、裏の通路へ戻っていった。') },
     office: { label: '終業のチャイム', t: L('{end}時、終業のチャイムがフロアに鳴り響いた。{place}の一日の業務が、これで終わった。|終業のチャイムとともに、パソコンの画面が一台ずつ暗くなっていった。{place}の福利厚生室にも、鍵がかけられた。|{end}時、終業のチャイム。打刻機の前に短い列ができ、{place}のフロアから人が引いていった。') },
     spa: { label: '暖簾を下ろす', t: L('{end}時、番台の前に『本日終了』の札が下がった。{place}の暖簾が下ろされ、湯気だけが天井に残った。|最後の客が湯から上がると、洗い場の桶がきれいに積み直された。{place}の一日が、今日も終わった。|{end}時、表の暖簾が下ろされた。{place}の湯船の湯が抜かれ、タイルを流す音だけが響いていた。') },
-    gym: { label: '閉館', t: L('{end}時、閉館の音楽が流れ始めた。{place}のマシンが一台ずつ拭き上げられ、照明が落とされた。|最後のセッションが終わり、{place}のシャッターが下ろされた。汗とタオルのにおいが、静かなフロアに残った。|{end}時、出退勤のボードが一斉に『退館』に変わった。{place}の一日の営業が終わった。') }
+    gym: { label: '閉館', t: L('{end}時、閉館の音楽が流れ始めた。{place}のマシンが一台ずつ拭き上げられ、照明が落とされた。|最後のセッションが終わり、{place}のシャッターが下ろされた。汗とタオルのにおいが、静かなフロアに残った。|{end}時、出退勤のボードが一斉に『退館』に変わった。{place}の一日の営業が終わった。') },
+    stage: { label: '終演', t: L('{end}時、カーテンコールの拍手がようやく鳴りやんだ。緞帳が下り、{place}の今日の公演が終わった。|最後の演目が終わり、ホールの照明がゆっくりと灯った。観客たちは満ち足りた顔で、{place}の出口へ流れていった。|{end}時、終演のアナウンスが流れた。舞台の施術台にシーツが掛けられ、{place}の幕が静かに下りた。') }
   };
   var FATE_END = {
     '完全に改変された': L('{p}は{role}の制服をきちんと畳んでロッカーにしまった。今日の{unit}は{n}件。誇らしい一日だった、と{p}は本気で思っていた。|{p}は道具を一つずつ消毒して棚に戻した。{n}件の{unit}をこなした手は、もう次の営業日の段取りを考えている。|帰り支度をしながら、{p}は今日いちばん喜んでくれた相手の顔を思い出して、満足そうに頷いた。{p}にとって、これはただの立派な仕事だった。'),
@@ -528,7 +657,7 @@
     ST.say(S, { kind: 'phase', text: ST.fmt(pkF(S, C.t), { end: end, place: place }) });
     P.forEach(function (p) {
       var pool = FATE_END[p.fate] || FATE_END[p.role === 'giver' ? '完全に改変された' : '常連客になった'];
-      if (!p.cnt.served) pool = pool.filter(function (x) { return x.indexOf('{n}') < 0 && x.indexOf('{ml}') < 0; });
+      if (!p.cnt.served || !Math.round(p.m.sem)) pool = pool.filter(function (x) { return (p.cnt.served || x.indexOf('{n}') < 0) && x.indexOf('{ml}') < 0; });
       ST.say(S, { actors: [p], tag: '一日の終わり', text: ST.fmt(pkF(S, pool), { p: p.name, role: p.roleLabel, unit: SIT.unit, n: p.cnt.served, ml: Math.round(p.m.sem), place: place }), why: p.name + 'の結末：' + p.fate });
     });
     var k = woke.length ? 'woke' : noticed.length ? 'noticed' : 'none';
@@ -555,12 +684,13 @@
       else p.notes.push((p.role === 'out' ? '受けてしまった施術' : '受けた' + SIT.unit) + ' ' + p.cnt.served + '回・出した量 ' + Math.round(p.m.sem) + 'ml');
       p.notes.push('違和感 ' + Math.round(p.m.doubt) + '／改変度 ' + Math.round(p.m.imm) + (p.cnt.body ? '・体の違和感 ' + p.cnt.body + '回' : '') + (p.cnt.glitch ? '・ほころびに触れた ' + p.cnt.glitch + '回' : '') + (p.cnt.reset ? '・再改変 ' + p.cnt.reset + '回' : ''));
       p.notes.push('方針「' + p.action.label + '」・目標「' + p.goal.label + '」');
+      if (p.role === 'out' && (p.cnt.notice || p.cnt.stop || p.cnt.swept)) p.notes.push('正気のままの反応（' + toneJa(p) + '）：気づいた ' + p.cnt.notice + '回・止めようとした ' + p.cnt.stop + '回・流された ' + p.cnt.swept + '回');
     });
     var G = P.filter(function (p) { return p.role === 'giver'; });
     var woke = P.filter(function (p) { return p.awakeKind === 'snap' || p.fled; });
     var noticed = P.filter(function (p) { return p.cnt.awake || p.role === 'out'; });
     var topG = G.slice().sort(function (a, b) { return b.m.sem - a.m.sem; })[0];
-    var title = '「' + place + '」は今日も平常運転。' + (woke.length ? names(woke) + 'だけが、おかしさに気づいて正気に戻った。' : noticed.length ? names(noticed) + 'は違和感に触れたが、世界は何も変わらなかった。' : '誰ひとり、違和感に気づかなかった。');
+    var title = (sid === 'stage' ? '「' + place + '」の公演は、今日も満員だった。' : '「' + place + '」は今日も平常運転。') + (woke.length ? names(woke) + 'だけが、おかしさに気づいて正気に戻った。' : noticed.length ? names(noticed) + 'は違和感に触れたが、世界は何も変わらなかった。' : '誰ひとり、違和感に気づかなかった。');
     var lines = P.map(function (p) { return p.name + '（' + p.roleLabel + '）：' + p.fate; });
     if (topG) lines.push('いちばん搾ったのは' + topG.name + '（' + Math.round(topG.m.sem) + 'ml）');
     var total = G.reduce(function (s, g) { return s + g.cnt.served; }, 0), sem = G.reduce(function (s, g) { return s + g.m.sem; }, 0);
