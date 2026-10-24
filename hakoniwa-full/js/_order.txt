@@ -309,6 +309,7 @@ late js/story-lewd.js
 late js/jinro-data.js
 js/scenario-jinro.js
 late js/jinro-after.js
+late js/jinro-wolfnight.js
 js/jinro-love.js
 late js/rel-bad-story.js
 js/solo-rel-bad.js
