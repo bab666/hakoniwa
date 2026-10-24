@@ -532,7 +532,7 @@
     return kn.length ? pk(kn) : '';
   }
   /* 女性どうしで、二人ともリバでないときは、脚を重ねる・双頭の玩具の文を除く */
-  function ffOk(riba) { return function (x) { return riba || !/擦り合わせ|双頭/.test(x); }; }
+  function ffOk(riba) { return function (x) { return riba || !/擦り合わせ|双頭の玩具|双頭ディルド/.test(x); }; }
   /* R18の描写の設定（lewd-unify.js）：数行で短く＝元の一段落の版、男性向け＝thick-sex-ero.js の山場＋結びの男性向けの一文 */
   function lw(ctx) {
     var X = HK.Lewd, c = X && X.conf('omega');

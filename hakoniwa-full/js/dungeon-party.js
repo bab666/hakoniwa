@@ -14,6 +14,8 @@
   function pn(S, s) { (S.partyNotes = S.partyNotes || []).push(s); }
   function sayAs(S, h, o) { var prev = S.h; S.h = h; var e = DG.say(S, o); S.h = prev; return e; }
   function canLove(a, b) { return HK.canLove ? HK.canLove(a, b) : true; }
+  /* 恋愛・R18にしない組（キャラ設定の「恋愛・R18にしない相手」）：火照る・誘う場面にはしない */
+  function ng(a, b) { return !!(HK.ngPair && HK.ngPair(a, b)); }
   /* 自分で「攻め」を選んだ人（罠や魔物に「される」側として書かない） */
   function isTop(h) { return !!(HK.Pos && HK.Pos.hardTop(h)); }
 
@@ -50,6 +52,7 @@
     var disgust = w.tr.cp * 0.4 + w.tr.cold * 0.3 + (r.ten / 80) - r.att / 100 + (canLove(w, tgt) ? 0 : 0.3);
     var rescue = w.tr.np * 0.5 + w.tr.cp * 0.2 + r.trust / 80 + st(w, 'fight') * 0.05 - w.corrupt / 150;
     var lvl = (tgt.captor || hit.gain > 18) ? 1 : 0;
+    if (ng(w, tgt)) arouse = 0;
     var pickx = HK.weighted(rng, ['arouse', 'disgust', 'rescue', 'look'], function (x) { return Math.max(0, { arouse: arouse, disgust: disgust, rescue: rescue * (lvl ? 1.4 : 0.6), look: 0.35 }[x]); });
     if (pickx === 'arouse') {
       var g = (hit.gain || 15) * (0.35 + w.tr.fc * 0.3 + r.att / 200);
@@ -153,10 +156,12 @@
 
   /* 堕ちた仲間が手招きする */
   function lure(S) {
-    var fell = S.party.filter(function (x) { return x.fallen; });
     var P = free(S);
+    var fell = S.party.filter(function (x) { return x.fallen && P.some(function (y) { return !ng(x, y); }); });
     if (!fell.length || !P.length) return false;
-    var f = fell[S.rng.int(fell.length)], v = HK.weighted(S.rng, P, function (x) { return Math.max(0.05, 0.3 + rel(S, x, f).att / 50 + rel(S, x, f).trust / 80 + x.tr.np * 0.3); });
+    var f = fell[S.rng.int(fell.length)];
+    P = P.filter(function (x) { return !ng(x, f); });
+    var v = HK.weighted(S.rng, P, function (x) { return Math.max(0.05, 0.3 + rel(S, x, f).att / 50 + rel(S, x, f).trust / 80 + x.tr.np * 0.3); });
     if (!v) return false;
     var r = rel(S, v, f);
     var pull = r.att / 100 + r.trust / 150 + v.corrupt / 120;

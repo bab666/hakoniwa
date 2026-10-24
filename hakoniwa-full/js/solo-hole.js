@@ -115,12 +115,15 @@
     steps: function () { return []; }
   };
 
+  function ngOf(c) { return c && Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : []; }
   function run(input) {
     var S = K.state(input, 'hole'), rng = S.rng, env = S.env;
     /* 穴にはまる人と、壁の向こう（下半身側）の住人（solo-hole-behind.js） */
     var BH = HK.HoleBehind, cast = BH ? BH.cast(input) : { si: 0, others: [] }, rescue = null;
     if (cast.si) { S.h = K.hero(S, input.chars[cast.si], (input.perChar && input.perChar[cast.si]) || {}); S.h.i = cast.si; S.party = [S.h]; }
     var h = S.h;
+    /* 恋愛・R18にしない相手（HK.ngPair で見る）：SoloKit の住人には載らないので、ここで写す */
+    h.i = cast.si || 0; h.ng = ngOf(input.chars[h.i]);
     if (BH) BH.setup(S, input, cast);
     h.sens = 0.85 + (h.stats.sense - 3) * 0.12;
     var H = env.hours, pl = PLACE[env.place] || PLACE.lab;
