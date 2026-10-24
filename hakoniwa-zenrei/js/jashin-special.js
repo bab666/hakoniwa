@@ -12,7 +12,7 @@
     var A = S.spA;
     if (A) { A.nowH = S.h || 0; return A; }
     A = S.spA = {
-      rng: S.rng, all: S.P, nowH: S.h || 0,
+      rng: S.rng, all: S.P, nowH: S.h || 0, env: S.env, scenId: 'jashin',
       r18: !!(JS.R18 && JS.R18.on(S)), lewd: clamp((S.env.jlewd || 0) / 100, 0.15, 0.85),
       alive: function (p) { return !!p.alive; },
       here: function (p) { return !p.out && !p.taken; },

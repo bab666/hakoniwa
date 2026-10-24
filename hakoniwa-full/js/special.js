@@ -1,5 +1,5 @@
 /* 箱庭シミュレーター: 特殊役職（不死・吸血鬼）と発狂（全年齢版・R18版共通）
-   死のある箱庭（ダンジョンRPG・ゾンビの街・邪神村RTA・吹雪の館の殺人）の住人の欄に「特殊役職」を足す。
+   死のある箱庭（ダンジョンRPG・ゾンビの街・邪神村RTA・吹雪の館の殺人・宇宙船漂流記）の住人の欄に「特殊役職」を足す。
    ・不死／吸血鬼：死んでも傷が塞がり、体力満タンで起き上がる。攫われて行方不明になることはある（そのときは戻らない）
    ・精神が摩耗しすぎると発狂して動けなくなる。仲の良い人が落ち着かせるまで戻らず、そのあいだは死の出来事を引きやすい
    ・吸血鬼は三日に一度、人の血を吸う（ゾンビ・感染した人の血は吸えない）。好意のある相手を襲うか、同意を得て吸う。
@@ -33,7 +33,7 @@
   }
 
   var SP = HK.Special = {};
-  SP.SCENES = ['rpg', 'zombie', 'jashin', 'yakata'];
+  SP.SCENES = ['rpg', 'zombie', 'jashin', 'yakata', 'ship'];
   SP.LABEL = { immortal: '不死', vampire: '吸血鬼' };
   SP.FIELD = { id: 'special', label: '特殊役職', auto: 'なし', options: [{ id: 'immortal', label: '不死（死んでも蘇る）' }, { id: 'vampire', label: '吸血鬼（死んでも蘇る・三日に一度血を吸う）' }] };
   /* 箱庭の欄に足す（箱庭がそろったあと、ui.js から一度） */
@@ -265,8 +265,10 @@
     /* R18：無理やり体を重ねることもある（自分で攻めを選んだ人を受けにはしない） */
     if (A.r18 && SP.R18 && how !== '同意（恋仲）' && how !== '同意') {
       var Pz = HK.Pos;
-      if (Pz && Pz.okSex(p, b) && A.rng() < (A.lewd || 0.4) * (how === '催眠' ? 1 : 0.7)) sex = SP.R18.text(A, p, b, how);
-    } else if (A.r18 && SP.R18 && HK.Pos && HK.Pos.okSex(p, b) && A.rng() < (A.lewd || 0.4) * 0.5) sex = SP.R18.text(A, p, b, how);
+      /* 同意のない体の関係は、内容のスイッチ「合意のない展開」が入のときだけ（content.js） */
+      var forceOk = !HK.Content || HK.Content.on(A.env, 'force', A.scenId);
+      if (forceOk && Pz && Pz.okSex(p, b) && !(HK.State && !(HK.State.r18ok(p) && HK.State.r18ok(b))) && !(HK.sexBlocked && HK.sexBlocked(p, b)) && A.rng() < (A.lewd || 0.4) * (how === '催眠' ? 1 : 0.7)) sex = SP.R18.text(A, p, b, how);
+    } else if (A.r18 && SP.R18 && HK.Pos && HK.Pos.okSex(p, b) && !(HK.State && !(HK.State.r18ok(p) && HK.State.r18ok(b))) && !(HK.sexBlocked && HK.sexBlocked(p, b)) && A.rng() < (A.lewd || 0.4) * 0.5) sex = SP.R18.text(A, p, b, how);
     if (sex) t += sex;
     t += fmt(pick(A, how === '催眠' ? V.afterHypno : V.after), { a: p.name, b: b.name });
     A.setHp(b, A.hp(b) - hp); A.addStress(b, stress);

@@ -20974,6 +20974,70 @@
     };
   };
 })();
+;/* ==== js/island-after.js ==== */
+/* 箱庭シミュレーター: 無人島の結末に、人ごとの「その後」を足す（全年齢版も同じ）
+   endings.js の E.island のあとに、生きている人ひとりずつ一行（エロトラップダンジョンの dungeon-end.js と同じ形）。
+   ・帰り方：救助・イカダ・抜け駆け（一人で島を出た）・島に残った
+   ・恋人と一緒に帰った人／島に残った人は、二人の「その後」
+   ・まとめ役だった人、島で誰かを手にかけた人は専用の結び
+   ・それ以外は、いちばん強い因子（CP・NP・A・FC・AC）で書き分ける
+   文の選び方は名前と回の種から決める（同じ結果なら同じ文） */
+(function () {
+  'use strict';
+  var HK = window.HK, E = HK && HK.Endings;
+  if (!E || !E.island) return;
+  function L(s) { return s.split('|'); }
+  function hash(s) { var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 99991; return h; }
+  /* 同じ結末の中では同じ文を二度使わない（used に使った文を覚える） */
+  function pick(arr, key, used) { var h = hash(key); for (var k = 0; k < arr.length; k++) { var t = arr[(h + k) % arr.length]; if (!used[t]) { used[t] = 1; return t; } } return arr[h % arr.length]; }
+  function topOf(c) { var eg = c.eg || {}, best = 'NP', bv = -1; ['CP', 'NP', 'A', 'FC', 'AC'].forEach(function (k) { if ((eg[k] || 0) > bv) { bv = eg[k] || 0; best = k; } }); return best; }
+  var T = {
+    home: {
+      CP: L('{a}は帰国後、島での日々を誰にも愚痴らなかった。ただ、非常用の水と食料だけは、今も家に必ず置いている。|{a}は戻ってすぐ、仕事に復帰した。「休んでいる暇はない」――そう言いながら、ときどき窓の外の海の方角を見ていた。|{a}は島で決めた当番表の写しを、いまも手帳に挟んでいる。'),
+      NP: L('{a}は帰国後も、島で一緒だった人たちに季節ごとに連絡を入れた。「元気？　ちゃんと食べてる？」|{a}は島で覚えた火の起こし方を、近所の子どもたちに教えるようになった。|{a}は戻ってからしばらく、温かいお風呂に入るたびに少し泣いた。'),
+      A: L('{a}は島での記録をまとめ、遭難したときの手引きとして公開した。思いのほか読まれた。|{a}は帰国後、あの島の潮の流れを調べ直し、自分たちが流れ着いた理由を突き止めた。|{a}は島で何日目に何をしたかを、今でも正確に言える。'),
+      FC: L('{a}は帰国の翌週には、島の話を面白おかしく語る人気者になっていた。|{a}は「また行きたい」と言って周りを呆れさせた。半分は本気だった。|{a}は島で焼いた魚の味が忘れられず、釣りを始めた。'),
+      AC: L('{a}は戻ってからも、ふとした物音で目を覚ます夜が続いた。それでも、少しずつ眠れるようになった。|{a}は島で助けてくれた人に、帰国後に改めて手紙を書いた。何度も書き直した。|{a}は、島では言えなかった「ありがとう」を、帰りの船の上でようやく口にした。')
+    },
+    lead: L('まとめ役だった{a}は、帰国後も皆から頼られ続けた。本人は「もう島じゃないんだから」と苦笑いしていた。|{a}は島で皆をまとめた経験を、二度と使いたくないと思いつつ、職場で何度も役立てることになった。|{a}は、全員の名前を書いた紙を、いまも財布に入れている。'),
+    kill: L('{a}は帰国後、島で起きたことを一度も口にしなかった。夢の中でだけ、何度もあの浜に立っていた。|{a}は帰ってきた。けれど、手を洗う回数だけは、島に行く前より増えていた。|{a}は、島で自分がしたことを、誰にも許してもらおうとは思わなかった。'),
+    solo: L('一人で島を出た{a}は、残してきた人たちのことを、帰ってからも考え続けた。|{a}は無事に帰り着いた。けれど、島の話を振られるたびに、黙って話題を変えた。|{a}は、自分だけ先に島を出たことを、最後まで誰にも謝れなかった。'),
+    stay: L('{a}は島に残った。今では、浜に流れ着く瓶を拾っては、中の手紙を読むのが日課になっている。|{a}は島に小屋を建て直し、自分だけの暮らしを始めた。「ここのほうが、息がしやすい」|{a}は島に残り、毎朝、水平線に船影がないかを確かめる。見つけても、手は振らないかもしれない。'),
+    pairHome: L('{a}と{b}は、帰国後も一緒に暮らし始めた。部屋の隅には、島で拾った貝殻が並んでいる。|{a}と{b}は、毎年、島から戻った日に二人で海を見に行く。|{a}と{b}は、島での日々を「最悪で、最高だった」と口をそろえて言う。'),
+    pairStay: L('{a}と{b}は、二人で島に残った。小屋は少しずつ大きくなり、浜には二人分の足跡が毎朝つく。|{a}と{b}は、迎えの船を見送った。「ここが、二人の家だから」|{a}と{b}は島に残り、夕暮れになると、並んで火を焚いた。')
+  };
+  var isl0 = E.island;
+  E.island = function (res, X) {
+    var out = isl0.apply(this, arguments);
+    if (!out || !Array.isArray(out.lines) || !X || !X.C) return out;
+    var seed = String(res.seed != null ? res.seed : ''), done = {}, used = {};
+    var lovers = (res.pairs || []).filter(function (p) { return p.label === 'lovers'; });
+    function homeOf(c) { return c.alive && /救助|イカダ|抜け出した|助けを呼びに/.test(c.fate || ''); }
+    function stayOf(c) { return c.alive && /島に残った/.test(c.fate || ''); }
+    var after = [];
+    lovers.forEach(function (p) {
+      var a = X.C[p.a], b = X.C[p.b];
+      if (!a || !b || done[a.i] || done[b.i]) return;
+      var both = homeOf(a) && homeOf(b) ? 'pairHome' : stayOf(a) && stayOf(b) ? 'pairStay' : '';
+      if (!both) return;
+      done[a.i] = done[b.i] = true;
+      after.push(a.name + 'と' + b.name + 'のその後――' + pick(T[both], a.name + b.name + seed, used).replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name));
+    });
+    X.C.forEach(function (c) {
+      if (done[c.i] || !c.alive) return;
+      var pool;
+      if (stayOf(c)) pool = T.stay;
+      else if (!homeOf(c)) return;
+      else if (/抜け出した/.test(c.fate || '')) pool = T.solo;
+      else if (c.kills > 0) pool = T.kill;
+      else if (c.leader) pool = T.lead;
+      else pool = T.home[topOf(c)];
+      after.push(c.name + 'のその後――' + pick(pool, c.name + seed, used).replace(/\{a\}/g, c.name));
+    });
+    after.slice(0, 8).forEach(function (l) { out.lines.push(l); });
+    return out;
+  };
+})();
 ;/* ==== js/zombie-data.js ==== */
 /* 箱庭シミュレーター: ゾンビの街 ― 街の9つのエリア・武器・NPC・噂（デマ）・家族のデータ
    エリアは3×3のマス目。隣り合うエリアへ、一区切りに一つずつ動ける
@@ -26909,7 +26973,7 @@
 })();
 ;/* ==== js/special.js ==== */
 /* 箱庭シミュレーター: 特殊役職（不死・吸血鬼）と発狂（全年齢版・R18版共通）
-   死のある箱庭（ダンジョンRPG・ゾンビの街・邪神村RTA・吹雪の館の殺人）の住人の欄に「特殊役職」を足す。
+   死のある箱庭（ダンジョンRPG・ゾンビの街・邪神村RTA・吹雪の館の殺人・宇宙船漂流記）の住人の欄に「特殊役職」を足す。
    ・不死／吸血鬼：死んでも傷が塞がり、体力満タンで起き上がる。攫われて行方不明になることはある（そのときは戻らない）
    ・精神が摩耗しすぎると発狂して動けなくなる。仲の良い人が落ち着かせるまで戻らず、そのあいだは死の出来事を引きやすい
    ・吸血鬼は三日に一度、人の血を吸う（ゾンビ・感染した人の血は吸えない）。好意のある相手を襲うか、同意を得て吸う。
@@ -26943,7 +27007,7 @@
   }
 
   var SP = HK.Special = {};
-  SP.SCENES = ['rpg', 'zombie', 'jashin', 'yakata'];
+  SP.SCENES = ['rpg', 'zombie', 'jashin', 'yakata', 'ship'];
   SP.LABEL = { immortal: '不死', vampire: '吸血鬼' };
   SP.FIELD = { id: 'special', label: '特殊役職', auto: 'なし', options: [{ id: 'immortal', label: '不死（死んでも蘇る）' }, { id: 'vampire', label: '吸血鬼（死んでも蘇る・三日に一度血を吸う）' }] };
   /* 箱庭の欄に足す（箱庭がそろったあと、ui.js から一度） */
@@ -27175,8 +27239,10 @@
     /* R18：無理やり体を重ねることもある（自分で攻めを選んだ人を受けにはしない） */
     if (A.r18 && SP.R18 && how !== '同意（恋仲）' && how !== '同意') {
       var Pz = HK.Pos;
-      if (Pz && Pz.okSex(p, b) && A.rng() < (A.lewd || 0.4) * (how === '催眠' ? 1 : 0.7)) sex = SP.R18.text(A, p, b, how);
-    } else if (A.r18 && SP.R18 && HK.Pos && HK.Pos.okSex(p, b) && A.rng() < (A.lewd || 0.4) * 0.5) sex = SP.R18.text(A, p, b, how);
+      /* 同意のない体の関係は、内容のスイッチ「合意のない展開」が入のときだけ（content.js） */
+      var forceOk = !HK.Content || HK.Content.on(A.env, 'force', A.scenId);
+      if (forceOk && Pz && Pz.okSex(p, b) && !(HK.State && !(HK.State.r18ok(p) && HK.State.r18ok(b))) && !(HK.sexBlocked && HK.sexBlocked(p, b)) && A.rng() < (A.lewd || 0.4) * (how === '催眠' ? 1 : 0.7)) sex = SP.R18.text(A, p, b, how);
+    } else if (A.r18 && SP.R18 && HK.Pos && HK.Pos.okSex(p, b) && !(HK.State && !(HK.State.r18ok(p) && HK.State.r18ok(b))) && !(HK.sexBlocked && HK.sexBlocked(p, b)) && A.rng() < (A.lewd || 0.4) * 0.5) sex = SP.R18.text(A, p, b, how);
     if (sex) t += sex;
     t += fmt(pick(A, how === '催眠' ? V.afterHypno : V.after), { a: p.name, b: b.name });
     A.setHp(b, A.hp(b) - hp); A.addStress(b, stress);
@@ -27203,7 +27269,7 @@
   function adapter(ctx) {
     var A = ctx.spA;
     if (!A) A = ctx.spA = {
-      rng: ctx.rng, all: ctx.chars,
+      rng: ctx.rng, all: ctx.chars, env: ctx.env, scenId: 'zombie',
       r18: !HK.SAFE_ON && (ctx.env.zlewd != null || !!(HK.Lewd && HK.Lewd.conf('zombie'))) && Z.loveLv(ctx) !== 'off', lewd: Z.loveLv(ctx) === 'high' ? 0.55 : 0.3,
       alive: function (c) { return !!c.alive; },
       here: function (c) { return !c.out; },
@@ -27450,7 +27516,7 @@
   function adapter(S, floor) {
     var A = S.spA;
     if (!A) A = S.spA = {
-      rng: S.rng, all: S.P, r18: false,
+      rng: S.rng, all: S.P, r18: false, env: S.env, scenId: 'rpg',
       alive: function (p) { return !!(p.alive || p.captive); },
       here: function (p) { return !p.captive; },
       say: function (o) { var r = HK.Story.say(S, o); if (o.key && r) HK.Story.key(S, r, o.key); return r; },
@@ -33822,7 +33888,7 @@
     var A = S.spA;
     if (A) { A.nowH = S.h || 0; return A; }
     A = S.spA = {
-      rng: S.rng, all: S.P, nowH: S.h || 0,
+      rng: S.rng, all: S.P, nowH: S.h || 0, env: S.env, scenId: 'jashin',
       r18: !!(JS.R18 && JS.R18.on(S)), lewd: clamp((S.env.jlewd || 0) / 100, 0.15, 0.85),
       alive: function (p) { return !!p.alive; },
       here: function (p) { return !p.out && !p.taken; },
@@ -38510,7 +38576,7 @@
   function adapter(S, h) {
     var A = S.spA;
     if (!A) A = S.spA = {
-      rng: S.rng, all: S.P,
+      rng: S.rng, all: S.P, env: S.env, scenId: 'yakata',
       r18: !!(Y.R18 && Y.R18.on(S)), lewd: clamp((S.env.ylewd || 0) / 100, 0.15, 0.85),
       alive: function (p) { return !!p.alive; },
       here: function (p) { return !p.gone; },
@@ -40160,6 +40226,8 @@
       p.role = r; taken[r] = (taken[r] || 0) + 1;
     });
     P.forEach(function (p) { p.roleLabel = ROLE[p.role].label; });
+    /* 特殊役職（不死・吸血鬼。ship-special.js） */
+    if (SH.SPEC) SH.SPEC.setup(S, input);
     var keys = ['hp', 'fear', 'find', 'st'];
 
     ST.step(S, '漂流のはじまり');
@@ -40169,6 +40237,8 @@
 
     for (var m = 1; m <= 12; m++) {
       S.m = m;
+      /* 不死・吸血鬼の蘇り・発狂・吸血（ship-special.js） */
+      if (SH.SPEC) SH.SPEC.month(S);
       if (!live(S).length) break;
       ST.step(S, m + 'か月目');
       ST.budget(S, 4 + Math.ceil(live(S).length / 2));
@@ -40964,6 +41034,7 @@
       if (!p.fate) p.fate = '生還';
       p.notes.push('役割：' + p.roleLabel + (p.picked ? '（指定）' : '（気質から）') + (capt(p) ? '・使命感から揉めごとを収める' : '') + (pleaser(p) ? '・周りの機嫌を取る気質' : ''));
       var bits = [];
+      if (SH.SPEC && p.spec) bits.push(SH.SPEC.note(p));
       if (p.cnt.find) bits.push('発見・調査の成功 ' + p.cnt.find + '回');
       if (p.cnt.item) bits.push('持ち帰った物品 ' + p.cnt.item + 'つ');
       if (p.cnt.report) bits.push('レポート ' + p.cnt.report + '本');
@@ -41005,6 +41076,67 @@
     });
   }
   SH.skill = skill; SH.bond = bond;
+})();
+;/* ==== js/ship-special.js ==== */
+/* 箱庭シミュレーター: 宇宙船漂流記 ― 特殊役職（不死・吸血鬼）（special.js の組み込み。全年齢版も同じ）
+   ・死んだ不死・吸血鬼は、次の月のはじめに蘇る（船の外で行方不明になった・連れ去られた人は戻らない。全滅したあとは蘇らない）
+   ・特殊役職の人は、ストレスの高い月が続くと発狂して動けなくなる（仲の良い人が落ち着かせるまで）
+   ・吸血鬼は月に一度、人の血を吸う（船の上は時間の流れが単調なので、ひと月を三日分として数える）
+   ship.js の月の流れから SH.SPEC.setup・SH.SPEC.month を呼ぶ */
+(function () {
+  'use strict';
+  var HK = window.HK, SH = HK.SHIP, SP = HK.Special, ST = HK.Story;
+  if (!SH || !SP || !ST) return;
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function full(p) { return 70 + ((p.stats && p.stats.hp) || 3) * 6; }
+  function adapter(S) {
+    var A = S.spA;
+    if (!A) A = S.spA = {
+      rng: S.rng, all: S.P, env: S.env, scenId: 'ship',
+      r18: !HK.SAFE_ON && (S.env.slewd || 0) > 0, lewd: clamp((S.env.slewd || 0) / 100, 0.15, 0.85),
+      alive: function (p) { return !!p.alive; },
+      here: function (p) { return !p.away && !p.gone; },
+      say: function (o) { var r = ST.say(S, o); if (o.key && r) ST.key(S, r, o.key); return r; },
+      hp: function (p) { return p.m.hp; },
+      setHp: function (p, v) { p.m.hp = clamp(v, 0, full(p)); },
+      full: full,
+      stress: function (p) { return Math.max(p.m.st || 0, p.m.fear || 0); },
+      addStress: function (p, v) { p.m.st = clamp((p.m.st || 0) + v, 0, 100); },
+      rel: function (a, b) { var w = SH.bond ? SH.bond(S, a, b) : 0; return { love: w >= 0.95, w: w }; },
+      revive: function (p) {
+        p.alive = true; p.fate = '';
+        var k = S.deaths.indexOf(p); if (k >= 0) S.deaths.splice(k, 1);
+      },
+      kill: function (p, how, text) {
+        p.alive = false; p.fate = '死亡（' + S.m + 'か月目・' + how.replace(/で$|に$/, '') + '）';
+        S.deaths.push(p);
+        var o = ST.say(S, { actors: [p], tag: '死', kind: 'climax', text: text, why: how + '命を落とした', mag: 40 });
+        ST.key(S, o, p.name + 'の死');
+      },
+      zombie: function () { return false; }
+    };
+    A.nowH = (S.m || 0) * 72;
+    return A;
+  }
+  SH.SPEC = {
+    setup: function (S, input) {
+      SP.setup(adapter(S), S.P, function (p) { return input.perChar && input.perChar[p.i]; });
+      S.P.forEach(function (p) { if (p.spec) p.roleLabel += '・' + SP.LABEL[p.spec]; });
+    },
+    /* 月のはじめ：蘇り → 発狂中の人の番 → 渇いた吸血鬼 → 精神の摩耗 */
+    month: function (S) {
+      if (!S.P.some(function (p) { return p.spec; })) return;
+      var A = adapter(S);
+      if (!S.wipeBy) SP.revive(A);
+      S.P.forEach(function (p) {
+        if (!p.spec || !p.alive || p.away) return;
+        if (p.mad) { SP.madTurn(A, p); return; }
+        SP.vampTurn(A, p);
+        SP.wear(A, p, { base: 65 });
+      });
+    },
+    note: function (p) { return SP.endNote(p); }
+  };
 })();
 ;/* ==== js/yakata-frame.js ==== */
 /* 箱庭シミュレーター: 吹雪の館の殺人 ― 罪のなすりつけが成功し、探偵が犯人を取り違える展開

@@ -151,6 +151,7 @@ js/factions.js
 late js/classroom-life.js
 js/classroom-teacher.js
 js/endings.js
+js/island-after.js
 js/zombie-data.js
 js/zombie-core.js
 late js/zombie-npc.js
@@ -289,6 +290,7 @@ js/ship-night.js
 js/ship-bond.js
 js/ship-crisis.js
 js/ship.js
+js/ship-special.js
 js/yakata-frame.js
 js/yakata-feud.js
 js/solo-r18-moan-data.js

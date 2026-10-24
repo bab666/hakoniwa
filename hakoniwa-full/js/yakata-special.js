@@ -11,7 +11,7 @@
   function adapter(S, h) {
     var A = S.spA;
     if (!A) A = S.spA = {
-      rng: S.rng, all: S.P,
+      rng: S.rng, all: S.P, env: S.env, scenId: 'yakata',
       r18: !!(Y.R18 && Y.R18.on(S)), lewd: clamp((S.env.ylewd || 0) / 100, 0.15, 0.85),
       alive: function (p) { return !!p.alive; },
       here: function (p) { return !p.gone; },

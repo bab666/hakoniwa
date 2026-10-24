@@ -15,7 +15,7 @@
   function adapter(S, floor) {
     var A = S.spA;
     if (!A) A = S.spA = {
-      rng: S.rng, all: S.P, r18: false,
+      rng: S.rng, all: S.P, r18: false, env: S.env, scenId: 'rpg',
       alive: function (p) { return !!(p.alive || p.captive); },
       here: function (p) { return !p.captive; },
       say: function (o) { var r = HK.Story.say(S, o); if (o.key && r) HK.Story.key(S, r, o.key); return r; },

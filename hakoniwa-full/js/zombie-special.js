@@ -11,7 +11,7 @@
   function adapter(ctx) {
     var A = ctx.spA;
     if (!A) A = ctx.spA = {
-      rng: ctx.rng, all: ctx.chars,
+      rng: ctx.rng, all: ctx.chars, env: ctx.env, scenId: 'zombie',
       r18: !HK.SAFE_ON && (ctx.env.zlewd != null || !!(HK.Lewd && HK.Lewd.conf('zombie'))) && Z.loveLv(ctx) !== 'off', lewd: Z.loveLv(ctx) === 'high' ? 0.55 : 0.3,
       alive: function (c) { return !!c.alive; },
       here: function (c) { return !c.out; },

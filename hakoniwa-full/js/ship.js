@@ -199,6 +199,8 @@
       p.role = r; taken[r] = (taken[r] || 0) + 1;
     });
     P.forEach(function (p) { p.roleLabel = ROLE[p.role].label; });
+    /* 特殊役職（不死・吸血鬼。ship-special.js） */
+    if (SH.SPEC) SH.SPEC.setup(S, input);
     var keys = ['hp', 'fear', 'find', 'st'];
 
     ST.step(S, '漂流のはじまり');
@@ -208,6 +210,8 @@
 
     for (var m = 1; m <= 12; m++) {
       S.m = m;
+      /* 不死・吸血鬼の蘇り・発狂・吸血（ship-special.js） */
+      if (SH.SPEC) SH.SPEC.month(S);
       if (!live(S).length) break;
       ST.step(S, m + 'か月目');
       ST.budget(S, 4 + Math.ceil(live(S).length / 2));
@@ -1003,6 +1007,7 @@
       if (!p.fate) p.fate = '生還';
       p.notes.push('役割：' + p.roleLabel + (p.picked ? '（指定）' : '（気質から）') + (capt(p) ? '・使命感から揉めごとを収める' : '') + (pleaser(p) ? '・周りの機嫌を取る気質' : ''));
       var bits = [];
+      if (SH.SPEC && p.spec) bits.push(SH.SPEC.note(p));
       if (p.cnt.find) bits.push('発見・調査の成功 ' + p.cnt.find + '回');
       if (p.cnt.item) bits.push('持ち帰った物品 ' + p.cnt.item + 'つ');
       if (p.cnt.report) bits.push('レポート ' + p.cnt.report + '本');
