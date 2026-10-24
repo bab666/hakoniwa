@@ -44,7 +44,7 @@
 
   var LV = ['touch', 'kiss', 'grope', 'oral', 'sex'];
   var REL = { lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'fwb', master: 'master', crush: 'crush', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', senpai: 'friend', colleague: 'friend', acq: 'friend', almost: 'almost', rival: 'tension', bad: 'tension', enemy: 'tension', ex: 'ex', sibling: 'friend' };
-  var REL_LABEL = { lover: '恋人', fwb: 'セフレ', master: '主従', crush: '片想い', friend: '知り合い', almost: '友達以上恋人未満', tension: '険悪', ex: '元恋人', stranger: '初対面' };
+  var REL_LABEL = { lover: '恋人', fwb: 'セフレ', master: '主従', crush: '片想い', mutual: '両片想い', friend: '知り合い', almost: '友達以上恋人未満', tension: '険悪', ex: '元恋人', stranger: '初対面' };
 
   var LK_HATE_LEAD = ['狭いロッカーの中で、{b}は{a}の胸に、そっと額を預けた。', '{b}は、触れ合った{a}の手を、そのまま握ろうとした。', '{b}は、熱に浮かされた目で、{a}の顔を見上げた。'];
   function run(input) {
@@ -63,6 +63,9 @@
     if (mtie) { master = P[mtie.a]; servant = P[mtie.b]; }
     var crushL = tieL.filter(function (t) { return t.type === 'crush'; });
     if (crushL.length) crusher = P[crushL[0].a];
+    /* 両片想い：どちらからも片想いがある二人（ties.js が向きを逆にした片想い二本に開く）。片想いの枝より先に、両片想いの枝へ */
+    var mutualCrush = crushL.length > 1 && crushL.some(function (t) { return t.a !== crushL[0].a; });
+    if (rel === 'crush' && mutualCrush) rel = 'mutual';
     var fwbAll = tieL.some(function (t) { return t.type === 'fwb'; });
     var intimate = fwbAll || rel === 'lover';
     /* セフレで片想い：相手の気持ちで三つに分かれる */
@@ -116,7 +119,7 @@
     ST.say(S, { kind: 'phase', text: pk(LK.SPEAKER) + '（仕掛け：' + gimmicks.map(function (g) { return g.name; }).join('→') + '）' });
     /* 体の関係にならない二人・相手が自分で攻めを選んだ人のときは、手を取って触れさせる文を使わない */
     var plotPush = plotter ? LK.PLOT.push.filter(function (l) { return !((clash || (hardTop(plotter.o) && !hardTop(plotter))) && /胸に押し当て|腰に回させ|任せて/.test(l)); }) : [];
-    if (plotter) { var o = ST.say(S, { actors: [plotter], tag: '思惑', text: ST.fmt(pk(plotPush.length ? plotPush : LK.PLOT.push), { a: plotter.name, b: plotter.o.name }), why: plotter.name + 'は、自分から望んでここにいる' + (crusher === plotter ? '（' + plotter.o.name + 'への片想い）' : ''), mag: 20 }); ST.key(S, o, plotter.name + 'の思惑'); }
+    if (plotter) { var o = ST.say(S, { actors: [plotter], tag: '思惑', text: ST.fmt(pk(plotPush.length ? plotPush : LK.PLOT.push), { a: plotter.name, b: plotter.o.name }), why: plotter.name + 'は、自分から望んでここにいる' + (rel === 'mutual' ? '（' + plotter.o.name + 'への片想い。実は向こうも同じ）' : crusher === plotter ? '（' + plotter.o.name + 'への片想い）' : ''), mag: 20 }); ST.key(S, o, plotter.name + 'の思惑'); }
     ST.snap(S, keys);
 
     function stage(p) { return p.m.heat >= 85 ? 3 : p.m.heat >= 60 ? 2 : p.m.heat >= 35 ? 1 : 0; }
@@ -187,7 +190,7 @@
       var po = plotter.o, caught = (plotter.sabotage || 0) >= 1 && rng() < 0.15 + po.tr.a * 0.3;
       if (!caught && rng() > 0.18) return;
       pair.plotShown = true;
-      var soft = !caught && ({ lover: 1, almost: 1, fwb: 1 }[rel] || crusher === po || po.m.heat >= 65), v = { a: plotter.name, b: po.name };
+      var soft = !caught && ({ lover: 1, almost: 1, fwb: 1, mutual: 1 }[rel] || crusher === po || po.m.heat >= 65), v = { a: plotter.name, b: po.name };
       var rv = (caught ? LK.PLOT.caught : LK.PLOT.reveal).filter(function (l) { return !plotter.bound || !/手を|指を/.test(l); });
       if (soft) po.m.heat = clamp(po.m.heat + 8, 0, 100); else { po.m.reason = clamp(po.m.reason + 15, 0, 100); plotter.sabotage = 99; pair.plotMad = true; }
       ST.key(S, ST.sayB(S, { actors: [plotter, po], tag: caught ? '見抜かれた' : '打ち明けた', text: ST.fmt(pk(rv), v) + ST.fmt(pk(LK.PLOT.react[soft ? 'soft' : 'mad']), v), why: caught ? po.name + 'は、' + plotter.name + 'の細工に気づいた（A）' : plotter.name + 'は、自分から仕組んだことを打ち明けた', mag: 26 }, '', true), caught ? plotter.name + 'の細工がばれた' : plotter.name + 'が仕組んだと打ち明けた');
@@ -227,6 +230,12 @@
         }
       }
       if (plotter && !pair.plotShown && turn >= 2 && !pair.conn) plotEvent();
+      /* 両片想い：お互いに想っているのに、相手は何とも思っていないと思い込んで、すれ違う（一度だけ） */
+      if (rel === 'mutual' && LK.MUT && !pair.mutShown && turn >= 1 && !pair.conn && rng() < 0.4) {
+        pair.mutShown = true;
+        var mf = rng() < 0.5 ? A : B;
+        ST.sayB(S, { actors: [A, B], tag: '両片想い', text: ST.fmt(pk(LK.MUT.inside), { a: mf.name, b: mf.o.name }), why: '両片想い：二人とも相手を想っているのに、相手は自分を何とも思っていないと思い込んでいる', mag: 14 }, A.name + 'と' + B.name + 'がすれ違った');
+      }
       /* 手を出す（一コマに受け入れる出来事は一つまで。繋がっているあいだは、その続きだけ） */
       var lewdNow = false;
       var order = rng() < 0.5 ? [A, B] : [B, A];
@@ -234,7 +243,7 @@
       else if (pair.rest > 0) { pair.rest--; order = []; }
       for (var k = 0; k < order.length; k++) {
         var a = order[k], b = a.o;
-        var urge = (a.goal && a.goal.id === 'want' ? 0.12 : a.goal && a.goal.id === 'out' ? -0.08 : 0) + (a.action && a.action.id === 'flow' ? 0.08 : a.action && a.action.id === 'solve' ? -0.06 : 0) + a.m.heat / 100 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.m.reason / 130 - a.tr.cp * 0.12 + (plotter === a ? 0.45 : 0) + ({ lover: 0.15, fwb: 0.2, almost: 0.1, crush: crusher === a ? 0.2 : 0, tension: -0.1 }[rel] || 0) + (fwbAll && rel !== 'fwb' ? 0.2 : 0) + (crusher === a && rel !== 'crush' ? 0.15 : 0);
+        var urge = (a.goal && a.goal.id === 'want' ? 0.12 : a.goal && a.goal.id === 'out' ? -0.08 : 0) + (a.action && a.action.id === 'flow' ? 0.08 : a.action && a.action.id === 'solve' ? -0.06 : 0) + a.m.heat / 100 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.m.reason / 130 - a.tr.cp * 0.12 + (plotter === a ? 0.45 : 0) + ({ lover: 0.15, fwb: 0.2, almost: 0.1, crush: crusher === a ? 0.2 : 0, mutual: 0.2, tension: -0.1 }[rel] || 0) + (fwbAll && rel !== 'fwb' ? 0.2 : 0) + (crusher === a && rel !== 'crush' && rel !== 'mutual' ? 0.15 : 0);
         /* 従者は主に手を出さないよう耐える */
         if (servant === a && plotter !== a) {
           var order2 = !clash && !a.ordered && master.m.heat > 70 && master.tr.cp + master.tr.fc > 0.8 && rng() < 0.5;
@@ -294,7 +303,7 @@
         if (lv <= pair.level && pair.lastAct != null && turn - pair.lastAct < 2 && rng() < 0.7) continue;
         var act = LK.ACT[LV[lv]];
         a.cnt.make++;
-        var w = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3, crush: crusher === b ? 0.45 : -0.05, friend: 0, tension: -0.3, ex: 0.05, stranger: -0.1, master: servant === b ? 0.35 : 0.2 }[rel] || 0) + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (plotter === b ? 0.8 : 0) + (fwbAll && rel !== 'fwb' ? 0.35 : 0) + (fcKind === 'mutual' ? 0.2 : 0) + (crusher === b && rel !== 'crush' ? 0.2 : 0) + (rng() - 0.5) * 0.3;
+        var w = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3, crush: crusher === b ? 0.45 : -0.05, mutual: 0.45, friend: 0, tension: -0.3, ex: 0.05, stranger: -0.1, master: servant === b ? 0.35 : 0.2 }[rel] || 0) + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (plotter === b ? 0.8 : 0) + (fwbAll && rel !== 'fwb' ? 0.35 : 0) + (fcKind === 'mutual' ? 0.2 : 0) + (crusher === b && rel !== 'crush' && rel !== 'mutual' ? 0.2 : 0) + (rng() - 0.5) * 0.3;
         if (b.lock != null && b.lock !== a.i) w -= 0.5;
         var resp = w > 0.55 ? 'accept' : w > 0.32 ? 'passive' : 'refuse';
         /* 受け攻め：挿入では、仕掛けた側が攻めか受けかで書き分ける */
@@ -422,7 +431,7 @@
       /* 受け攻め：ベッドでは攻めを {a} に（ロッカーの中と同じ向き） */
       if (HK.Pos && HK.Pos.order(x, y, [x, y])[0] !== x) { y = x; x = x.o; }
       var vv = { a: x.name, b: y.name };
-      var tone = rel === 'tension' || rel === 'ex' ? 'rough' : rel === 'lover' || rel === 'almost' || rel === 'crush' ? 'sweet' : rng() < 0.5 ? 'rough' : 'sweet';
+      var tone = rel === 'tension' || rel === 'ex' ? 'rough' : rel === 'lover' || rel === 'almost' || rel === 'crush' || rel === 'mutual' ? 'sweet' : rng() < 0.5 ? 'rough' : 'sweet';
       /* ベッドの展開は solo-locker-bed.js（誘い方・最中の展開・結び） */
       /* 扉が開いたあとの夜：描写の長さ（短く＝一段落版）と、男性向け（企みのある夜は除く） */
       eroNow = eroOn && !plotter;
@@ -470,6 +479,8 @@
     if (pair.level >= 0) lines.push('ロッカーの中でいちばん進んだのは「' + actLabel(pair.level) + '」');
     if (bedLabels.length) lines.push('ベッドでは：' + bedLabels.join('→'));
     if (fcKind && LK.FC) lines.push(ST.fmt(pk(LK.FC.end[fcKind]), { c: crusher.name, o: crusher.o.name }));
+    /* 両片想い：何かあった二人は「……こっちの台詞」と通じる。何もなかった二人は、すれ違ったまま */
+    if (rel === 'mutual' && LK.MUT) lines.push(ST.fmt(pk(LK.MUT.end[outcome === 'bed' || (pair.acts >= 1 && outcome !== 'angry' && outcome !== 'plotfail') ? 'told' : 'miss']), v0));
     var rows = P.map(function (p) { return { i: p.i, rank: '', cells: [Math.round(p.m.heat) + '', Math.round(p.m.reason) + '', String(p.cnt.make), String(p.cnt.refuse), String(p.cnt.climax), String(p.cnt.solve), p.fate] }; });
     return ST.result(S, input, {
       ending: { title: title, kind: outcome === 'clean' ? 'ok' : 'over', lines: lines },

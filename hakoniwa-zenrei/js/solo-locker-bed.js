@@ -42,7 +42,7 @@
       t: L('部屋の壁には大きな鏡があった。{a}は{b}をその前に立たせ、後ろから繋がった。「どんな顔してるか、わかる？」――{b}は鏡の中の蕩けた自分から、目を逸らせなかった。') },
     { id: 'words', tag: '言葉で責める', w: function (c) { return 0.7 + (c.x.tr.cp > 0.55 || c.tone === 'rough' ? 0.6 : 0); },
       t: L('{a}は{b}を突き上げながら、ロッカーの中で{b}がどんな声を出していたかを、一つずつ耳元で言葉にした。{b}は首まで真っ赤になって、それでも締めつけを強くした。|「ほら、さっきより正直」――{a}がそう囁くたびに、{b}の腰は勝手に{a}を追いかけた。') },
-    { id: 'name', tag: '名前を呼ぶ', w: function (c) { return 0.5 + (c.tone === 'sweet' ? 0.9 : 0) + (c.rel === 'crush' || c.rel === 'almost' ? 0.6 : 0); },
+    { id: 'name', tag: '名前を呼ぶ', w: function (c) { return 0.5 + (c.tone === 'sweet' ? 0.9 : 0) + (c.rel === 'crush' || c.rel === 'mutual' || c.rel === 'almost' ? 0.6 : 0); },
       t: L('{a}は動きを止めて、{b}の名前を呼んだ。{b}が目を開けると、{a}はそのまま、深く、ゆっくりと{b}の奥へ押し入った。名前を呼ばれるたびに、{b}の中がきゅっと締まった。|「{b}」と呼ばれた瞬間、{b}はそれだけで達しそうになった。{a}は何度も名前を呼びながら、{b}の奥を優しく突いた。') },
     { id: 'clothed', tag: '服を着たまま', w: function (c) { return 0.6 + (c.how === 'timeout' ? 0.3 : 0); },
       t: L('服を脱ぐ時間さえ惜しかった。{a}は{b}の服を半分はだけさせただけで、そのまま{b}の中に入っていった。|{a}と{b}は、ほとんど服を着たまま繋がった。ずれた布地が擦れるたびに、{b}の肌が粟立った。') },
@@ -155,6 +155,7 @@
   var END_REL = {
     lover: L('朝、{b}は{a}の腕の中で目を覚ました。「おはよう」の声が、いつもより少しだけ照れていた。|恋人になって何度目かの朝なのに、二人は初めての朝みたいに顔を赤くした。'),
     crush: L('朝になっても、{b}は{a}の腕から抜け出そうとしなかった。媚薬は、とっくに切れていたのに。|目を覚ました二人は、どちらが先に「好き」と言うか、目だけで探り合っていた。'),
+    mutual: L('朝、目を覚ました{b}は、「昨日のは、媚薬のせいだから」と先に言った。{a}も、まったく同じ言葉を用意していた。二人は顔を見合わせて、どちらからともなく目をそらした。|朝の光の中で、{a}はようやく「……ずっと、好きだった」と言った。{b}は枕に顔を埋めたまま、「……それ、こっちの台詞」と返した。媚薬は、とっくに切れていた。|目を覚ました二人は、同時に「あのさ」と言った。「先にどうぞ」「そっちこそ」と譲り合ううちに、二人とも吹き出した。続きの「好き」は、笑い声にまぎれて同時にこぼれた。|{b}は、{a}が帰り支度を始めるのを、寂しい気持ちで待っていた。{a}もまた、{b}に帰ってと言われるのを待っていた。昼になっても、二人ともベッドから出なかった。'),
     friend: L('朝、二人は背中合わせのまま、「友達、だよね」と言い合った。どちらも、返事をしなかった。|次に会うとき、どんな顔をすればいいのか。二人とも、少しだけ楽しみにしていた。'),
     almost: L('朝の光の中で、{a}は、付き合おうか、と小さく言った。{b}は枕に顔を埋めたまま、何度も頷いた。|曖昧だった二人の関係に、名前がついたのは、その朝だった。'),
     tension: L('朝、正気に戻った二人は、同時に「最悪」と言った。それから、同時に吹き出した。|目を覚ました{b}は、隣で眠る{a}の顔を見て、文句を言うのを、なぜか忘れた。'),
@@ -187,7 +188,7 @@
     /* 誘い方：おとなしかった方（仕掛けた回数が少ない・嗜めた・耐えた）が誘うことがある */
     var quiet = A.cnt.make < B.cnt.make ? A : B.cnt.make < A.cnt.make ? B : (A.m.reason >= B.m.reason ? A : B);
     var loud = quiet.o;
-    var quietScore = (quiet.cnt.refuse + quiet.cnt.hold) * 0.25 + quiet.tr.ac * 0.3 + (quiet.cnt.make === 0 ? 0.25 : 0) + (o.rel === 'crush' && quiet !== o.plotter ? 0.15 : 0);
+    var quietScore = (quiet.cnt.refuse + quiet.cnt.hold) * 0.25 + quiet.tr.ac * 0.3 + (quiet.cnt.make === 0 ? 0.25 : 0) + ((o.rel === 'crush' || o.rel === 'mutual') && quiet !== o.plotter ? 0.15 : 0);
     var q, oo, kind;
     if (o.master && o.servant && o.servant.cnt.hold >= 1 && rng() < 0.6) { q = o.master; oo = o.servant; kind = 'order'; }
     else if (HK.Pos && HK.Pos.nori(y) && y.cnt.make > 0 && rng() < 0.45) { q = y; oo = x; kind = 'nori'; }
@@ -236,7 +237,7 @@
 
     /* 絶頂と結び */
     var endKey = naka ? 'naka' : null;
-    var pool = ['morning', 'shower', 'faint'].concat(o.tone === 'sweet' || o.rel === 'crush' || o.rel === 'almost' || o.rel === 'lover' ? ['promise', 'promise'] : ['fight', 'fight']);
+    var pool = ['morning', 'shower', 'faint'].concat(o.tone === 'sweet' || o.rel === 'crush' || o.rel === 'mutual' || o.rel === 'almost' || o.rel === 'lover' ? ['promise', 'promise'] : ['fight', 'fight']);
     if (!endKey) endKey = rng.pick(pool);
     t3 += naka ? '' : ST.fmt(pick(S, ff ? FF.pos : LK.BED.pos), vv(x, y)) + o.moan(x, true) + o.moan(y) + ST.fmt(pick(S, ff ? FF.climax : LK.BED.climax), vv(x, y));
     function endOf(k) { return ff && k === 'shower' ? FF.shower : fm && k === 'shower' ? FM.shower : fm && k === 'naka' ? FM.endNaka : END[k]; }
