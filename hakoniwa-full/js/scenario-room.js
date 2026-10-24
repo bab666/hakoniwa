@@ -433,6 +433,9 @@
   HK.roomWsNoSex = wsNoSex;
   function tieWall(ctx, a, b, lvl) {
     if (wsNoSex(ctx, a, b)) return lvl >= 3 ? 999 : 0;
+    /* 本命がほかにいる人：キス以上は壁が高い。焦りが限界・媚薬が強いときは妥協して低くなる */
+    var hw = 0; [a, b].forEach(function (c, k) { var o = k ? a : b; if (c.honmei != null && c.honmei !== o.i && lvl >= 3) hw += HK.honmeiDesperate(ctx, c) ? 6 : 28; });
+    if (hw) return hw + (function () { var t0 = HK.Ties ? HK.Ties.get(ctx, a, b) : null; return t0 && HK.TIES[t0.type] && !HK.TIES[t0.type].family ? ({ enemy: 20, rival: 12, ex: 6, lover: -30, fwb: -35, almost: -15, crush: -8, best: -4, childhood: -4 }[t0.type] || 0) : 0; })();
     var t = HK.Ties ? HK.Ties.get(ctx, a, b) : null;
     if (!t) return 0;
     var D = HK.TIES[t.type];

@@ -73,6 +73,20 @@
   };
   /* 関係ごとの専用の場面の id（関係性イベントをオフにしたとき外す。tie-rel.js・room-tie.js・omega-ties.js・zombie-bonds.js など） */
   HK.TIE_EV_RE = /^(?:tie_|rt_|om_tie|zb_(?:boss|worship|benefactor|relative|spouse))/;
+  /* 本命（関係 honmei）がいる人の、恋愛・夜の出来事の重み。本命となら上げ、ほかの人とは下げる。
+     耐えがたい状況（強い媚薬・焦りの限界・出られない部屋の重い条件）では、ほかの人とも妥協するので下げ幅が小さくなる */
+  HK.honmeiDesperate = function (ctx, c) {
+    var aph = c && c.flags && c.flags.aphro || 0;
+    var room = ctx && ctx.scen && ctx.scen.id === 'whiteroom' && ctx.rules && ctx.rules.some(function (r) { return r.k === 'h' || r.k === 'kiss'; });
+    return !!c && ((c.stress || 0) > 75 || aph > 1.2 || (room && (c.stress || 0) > 55) || (c.m && c.m.heat > 70));
+  };
+  HK.honmeiFactor = function (ctx, a, b) {
+    if (!a || !b) return 1;
+    var f = 1;
+    if (a.honmei != null) f *= a.honmei === b.i ? 2.2 : HK.honmeiDesperate(ctx, a) ? 0.75 : 0.2;
+    if (b.honmei != null && b.honmei !== a.i) f *= HK.honmeiDesperate(ctx, b) ? 0.8 : 0.35;
+    return f;
+  };
   HK.ngPairHard = function (a, b) {
     if (!a || !b || a === b) return false;
     if ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0)) return true;
@@ -626,6 +640,7 @@
       if (!(w > 0)) return;
       w *= ctx.bias(a, e.cat);
       if (bb && HK.Ties) w *= HK.Ties.bias(ctx, a, bb, e.cat);
+      if (bb && e.cat === 'romance' && (a.honmei != null || bb.honmei != null)) w *= HK.honmeiFactor(ctx, a, bb);
       if (w <= 0) return;
       if (e.pri) w *= (ctx.scen.priBoost || 2.4);
       cands.push({ e: e, w: w, b: bb });

@@ -284,6 +284,8 @@
         /* 敵対している二人：攻めの側は、苛立ちごとぶつけるように手を出しやすい */
         if (hateP && HSX.order(S, a, b)[0] === a) urge += 0.35;
         if (nt) urge += NT.urge(nt, a);
+        /* 本命がほかにいる人は、一途に踏みとどまる（媚薬の熱が限界なら妥協する） */
+        if (a.honmei != null && a.honmei !== b.i) urge -= HK.honmeiDesperate && HK.honmeiDesperate(null, a) ? 0.05 : 0.3;
         /* 従者は主に手を出さないよう耐える */
         if (servant === a && plotter !== a) {
           var order2 = !clash && !a.ordered && master.m.heat > 70 && master.tr.cp + master.tr.fc > (svW ? NT.ordTh(nt) : 0.8) && rng() < 0.5;

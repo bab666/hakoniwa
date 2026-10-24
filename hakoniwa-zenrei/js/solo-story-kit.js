@@ -20,6 +20,8 @@
       (scen.stats || []).forEach(function (s) { var v = pc.stats && pc.stats[s.id]; p.stats[s.id] = v == null || v === 'random' ? 1 + S.rng.int(5) : +v; });
       return p;
     });
+    /* 関係「本命」：想う人に本命の印（engine.js の HK.honmeiFactor・HK.honmeiDesperate） */
+    (input.ties || []).forEach(function (t) { if (t && t.type === 'honmei' && S.P[t.a] && S.P[t.b] && t.a !== t.b) S.P[t.a].honmei = t.b; });
     return S;
   };
   /* 最近使った文を避けて選ぶ */
