@@ -48,7 +48,13 @@
   function pq(S, key, p, m) { var t = Y.PQ[key]; return F(pk(S, t[p.persona] || t.gentle), m); }
   function hasTie(S, a, b, list) { return ties(S, a, b).some(function (t) { return list.split(',').indexOf(t.type) >= 0; }); }
   function cat(S, a, b) { var w = bond(S, a, b); if (w <= -0.2) return 'bad'; if (hasTie(S, a, b, 'lover,mate,fated,almost,crush,fwb')) return 'love'; if (hasTie(S, a, b, 'sibling,sibprot,sibclose,sibbad,parent,pparent')) return 'family'; return w >= 0.3 ? 'close' : ''; }
-  function relLabel(S, a, b) { return ties(S, a, b).map(function (t) { return HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).join('・'); }
+  /* 両片想い：どちらからも片想いがある二人（恋人になったら外れる） */
+  function crushTo(S, a, b) { return S.ties.some(function (t) { return t.type === 'crush' && t.a === a.i && t.b === b.i; }); }
+  function pining(S, a, b) { return !!(a && b && a !== b && a.i != null && b.i != null) && crushTo(S, a, b) && crushTo(S, b, a) && !hasTie(S, a, b, 'lover,mate,fated'); }
+  function relLabel(S, a, b) {
+    var both = a && b && crushTo(S, a, b) && crushTo(S, b, a), one = false;
+    return ties(S, a, b).map(function (t) { if (both && t.type === 'crush') { if (one) return null; one = true; return '両片想い'; } return HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).filter(function (x) { return x; }).join('・');
+  }
 
   /* ---------- 能力 ---------- */
   function role(p) { return Y.ROLE[p.role] || Y.ROLE.civ; }
@@ -230,6 +236,7 @@
       var c = cat(S, g[0], g[1]), first = ties(S, g[0], g[1])[0], kind = first && first.type === 'crush' ? 'crush' : c || 'close';
       if (g.length > 2) kind = g.some(function (a) { return g.some(function (b) { return a !== b && bond(S, a, b) < -0.2; }); }) ? 'mixed' : 'many';
       var x = g[0], y = g[1];
+      if (kind === 'crush' && pining(S, x, y)) kind = 'pining';
       if (kind === 'crush' && first.a === g[1].i) { x = g[1]; y = g[0]; }
       ST.say(S, { actors: g, tag: '一行', text: F(pk(S, A.GROUP[kind]), { n: join(g), a: x.name, b: y.name }), why: '関係のある人どうしで、一緒にやってきた：' + rel.join('／') });
       g.forEach(function (p) { done.push(p); });
@@ -326,7 +333,7 @@
     var pairs = [];
     live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i && cat(S, a, b) === 'love') pairs.push([a, b]); }); });
     /* 向きの決まらない組（HK.Pos.okSex でない二人）は、寄り添って夜を過ごさず、交代で見張って明かす */
-    if (pairs.length && rng() < 0.5) { var pr = rng.pick(pairs); pr.forEach(function (p) { p.m.fear = clamp(p.m.fear - 8, 0, 100); }); ST.sayB(S, { actors: pr, tag: '夜', text: pr[0].name + 'と' + pr[1].name + (HK.Pos && !HK.Pos.okSex(pr[0], pr[1]) ? 'は、同じ部屋で交代に見張りをしながら夜を明かした。扉の向こうの物音に、二人で耳を澄ませた。' : 'は、同じ部屋で夜を明かした。互いの体温だけが、確かなものだった。'), why: '関係：' + relLabel(S, pr[0], pr[1]) }, pr[0].name + 'と' + pr[1].name + 'が寄り添った'); }
+    if (pairs.length && rng() < 0.5) { var pr = rng.pick(pairs); pr.forEach(function (p) { p.m.fear = clamp(p.m.fear - 8, 0, 100); }); ST.sayB(S, { actors: pr, tag: '夜', text: pining(S, pr[0], pr[1]) && T.PINE_NIGHT && (!HK.Pos || HK.Pos.okSex(pr[0], pr[1])) ? F(pk(S, T.PINE_NIGHT), { a: pr[0].name, b: pr[1].name }) : pr[0].name + 'と' + pr[1].name + (HK.Pos && !HK.Pos.okSex(pr[0], pr[1]) ? 'は、同じ部屋で交代に見張りをしながら夜を明かした。扉の向こうの物音に、二人で耳を澄ませた。' : 'は、同じ部屋で夜を明かした。互いの体温だけが、確かなものだった。'), why: '関係：' + relLabel(S, pr[0], pr[1]) }, pr[0].name + 'と' + pr[1].name + 'が寄り添った'); }
     var sc = live.filter(function (p) { return p.m.fear > 60; })[0];
     if (sc && rng() < 0.5) { sc.locked = true; ST.sayB(S, { actors: [sc], tag: '恐怖', text: F(pk(S, T.PANIC), { a: sc.name }), why: '恐怖 ' + Math.round(sc.m.fear) }, sc.name + 'は閉じこもった'); }
   }
@@ -349,7 +356,7 @@
       var c = cat(S, q, k.v); if (!c || c === 'close' && rng() < 0.5) return;
       if (c === 'bad') q.m.sus = clamp(q.m.sus + 15, 0, 100);
       q.m.fear = clamp(q.m.fear + (c === 'love' ? 20 : 10), 0, 100);
-      ST.say(S, { actors: [q, k.v], tag: '喪失', text: F(pk(S, T.GRIEF[c] || T.GRIEF.close), { b: q.name, v: k.v.name }), why: '関係：' + relLabel(S, q, k.v) + (c === 'bad' ? '（仲が悪かったので、疑いが向いた）' : '') + (q.isCul ? '。……' + q.name + 'が犯人だ' : ''), mag: c === 'love' ? 30 : 18 });
+      ST.say(S, { actors: [q, k.v], tag: '喪失', text: F(pk(S, (c === 'love' && pining(S, q, k.v) && T.GRIEF.pining) || T.GRIEF[c] || T.GRIEF.close), { b: q.name, v: k.v.name }), why: '関係：' + relLabel(S, q, k.v) + (pining(S, q, k.v) ? '（どちらも想いを伝えられないままだった）' : '') + (c === 'bad' ? '（仲が悪かったので、疑いが向いた）' : '') + (q.isCul ? '。……' + q.name + 'が犯人だ' : ''), mag: c === 'love' ? 30 : 18 });
     });
     /* 探偵が死んだら引き継ぐ */
     if (k.v.isDet && !inv(S).length) successor(S, k.v, false);
@@ -625,7 +632,7 @@
       .filter(function (q) { return Math.abs(bond(S, q, c)) >= 0.3 || (c.buddies || []).indexOf(q) >= 0 || c.buddy === q; })
       .sort(function (a, b) { return Math.abs(bond(S, b, c)) - Math.abs(bond(S, a, c)); });
     qs.slice(0, 3).forEach(function (q) {
-      var k = (c.buddies || []).indexOf(q) >= 0 || c.buddy === q ? 'buddy' : S.ties.some(function (t) { return t.type === 'crush' && t.a === q.i && t.b === c.i; }) ? 'crush' : hasTie(S, q, c, 'lover,mate,fated,almost,fwb') ? 'love' : hasTie(S, q, c, 'sibling,sibprot,sibclose,sibbad,parent,pparent') ? 'family' : bond(S, q, c) < 0 ? 'bad' : !ties(S, q, c).length ? 'trust' : 'close';
+      var k = (c.buddies || []).indexOf(q) >= 0 || c.buddy === q ? 'buddy' : pining(S, q, c) && Y.REVEAL.pining ? 'pining' : S.ties.some(function (t) { return t.type === 'crush' && t.a === q.i && t.b === c.i; }) ? 'crush' : hasTie(S, q, c, 'lover,mate,fated,almost,fwb') ? 'love' : hasTie(S, q, c, 'sibling,sibprot,sibclose,sibbad,parent,pparent') ? 'family' : bond(S, q, c) < 0 ? 'bad' : !ties(S, q, c).length ? 'trust' : 'close';
       q.m.fear = clamp(q.m.fear + (k === 'bad' ? 0 : 20), 0, 100);
       ST.say(S, { actors: [q, c], tag: '動揺', text: F(pk(S, Y.REVEAL[k]), { b: q.name, c: c.name }), why: q.name + 'は真相を知らなかった（' + (relLabel(S, q, c) || (S.relLab && S.relLab[rk(q, c)]) || '館で深まった関係') + '）', mag: k === 'bad' ? 20 : 36 });
     });
@@ -651,6 +658,7 @@
           if (w < -0.1) { opts.push([a, b, 'quarrel', 0.6]); opts.push([a, b, 'makeup', 0.25 + a.tr.np * 0.3]); }
           else { opts.push([a, b, 'talk', 0.5 + a.tr.np * 0.3 + b.tr.np * 0.3]); opts.push([a, b, 'team', (a.isDet || b.isDet) ? 0.2 : 0.4]); }
           if (last && last.v.i != null && bond(S, a, last.v) >= 0.3 && bond(S, b, last.v) >= 0.3) opts.push([a, b, 'shared', 1.2]);
+          if (pining(S, a, b) && B.pine) opts.push([a, b, 'pine', 0.7]);
         }
         if (w >= -0.1 && b.m.fear > 45) opts.push([a, b, 'protect', 0.4 + a.tr.np * 0.5]);
         if (w >= 0.3 && !lover && !hasTie(S, a, b, 'sibling,sibprot,sibclose,sibbad,parent,pparent') && (!HK.canLove || HK.canLove(a, b)) && !S.confessed) opts.push([a, b, 'confess', 0.3 + a.tr.fc * 0.4 + w * 0.5]);
@@ -659,7 +667,9 @@
     });
     if (!opts.length) return;
     var o = HK.weighted(rng, opts, function (x) { return x[3]; }), a = o[0], b = o[1], k = o[2];
-    var m = { a: a.name, b: b.name, v: last ? last.v.name : '' }, t = F(pk(S, B[k]), m), why = '';
+    var pin = (k === 'confess' || k === 'pine') && pining(S, a, b) && B.pconfess;
+    var m = { a: a.name, b: b.name, v: last ? last.v.name : '' }, t = F(pk(S, k === 'confess' && pin ? B.pconfess : B[k]), m), why = '';
+    if (k === 'pine') { setRel(S, a, b, 0.05); why = '両片想い：どちらも、相手は自分を何とも思っていないと思い込んでいる'; }
     if (k === 'talk') { setRel(S, a, b, 0.15, '打ち解けた'); why = '夜の語らいで、距離が縮まった'; }
     if (k === 'protect') { setRel(S, a, b, 0.2, '信頼', a); b.m.fear = clamp(b.m.fear - 12, 0, 100); why = a.name + 'は怯える' + b.name + 'を放っておけなかった（NP）'; }
     if (k === 'team') { setRel(S, a, b, 0.15, '協力'); why = '二人で調べるうちに、息が合ってきた'; }
@@ -669,9 +679,9 @@
     if (k === 'distrust') { setRel(S, a, b, -0.2, '不信', a); b.m.sus = clamp(b.m.sus + 8, 0, 100); why = a.name + 'の観察眼が、' + b.name + 'の綻びを捉えた' + (b === S.cul ? '（……' + b.name + 'は犯人だ）' : ''); }
     if (k === 'confess') {
       S.confessed = true;
-      var yes = rng() < 0.25 + bond(S, b, a) * 0.5 + b.tr.warmth * 0.2;
-      t += F(pk(S, yes ? B.yes : B.no), m);
-      if (yes) { S.ties.push({ a: a.i, b: b.i, type: 'lover', born: true }); setRel(S, a, b, 0.2, '恋人'); why = '吹雪の館で、恋が実った'; }
+      var yes = pin || rng() < 0.25 + bond(S, b, a) * 0.5 + b.tr.warmth * 0.2;
+      t += F(pk(S, pin ? B.pyes : yes ? B.yes : B.no), m);
+      if (yes) { S.ties.push({ a: a.i, b: b.i, type: 'lover', born: true }); setRel(S, a, b, 0.2, '恋人'); why = pin ? '両片想いが、吹雪の館でやっと通じた（どちらも、自分だけの片想いだと思っていた）' : '吹雪の館で、恋が実った'; }
       else { S.ties.push({ a: a.i, b: b.i, type: 'crush', born: true }); setRel(S, a, b, -0.05, '片想い', a); why = '想いは届かなかった'; }
       if (a === S.cul || b === S.cul) why += '（……' + S.cul.name + 'は犯人だ）';
       var o2 = ST.say(S, { actors: [a, b], tag: '想いを告げる', kind: 'climax', text: t, why: why, mag: 32 }); ST.key(S, o2, a.name + 'が' + b.name + 'に告白'); return;
@@ -684,7 +694,10 @@
     var P = S.P, edges = [], seen = {};
     function add(a, b, label, cls, dir) { var k = rk(P[a], P[b]) + label; if (seen[k]) return; seen[k] = 1; edges.push({ a: a, b: b, label: label, cls: cls, dir: dir }); }
     var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', acq: 'none' };
-    S.ties.forEach(function (t) { var lab = HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; add(t.a, t.b, (t.born ? '★' : '') + lab, CLS[t.type] || 'friend', t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null); });
+    S.ties.forEach(function (t) {
+      /* 両片想い（逆向きの片想いもある）は、向きのない「両片想い」一本にまとめる */
+      if (t.type === 'crush' && crushTo(S, P[t.b], P[t.a])) return add(Math.min(t.a, t.b), Math.max(t.a, t.b), (t.born ? '★' : '') + '両片想い', 'pine', null);
+      var lab = HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; add(t.a, t.b, (t.born ? '★' : '') + lab, CLS[t.type] || 'friend', t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null); });
     Object.keys(S.relLab || {}).forEach(function (k) {
       var ab = k.split('-'), a = +ab[0], b = +ab[1], lab = S.relLab[k];
       if (lab === '恋人' || lab === '片想い') return;
@@ -748,5 +761,5 @@
   }
   Y.cat = cat; Y.showdown = showdown;
   Y.gain = gain; Y.inv = inv;
-  Y.skill = skill; Y.bond = bond; Y.setRel = setRel; Y.relLabel = relLabel; Y.alive = alive;
+  Y.skill = skill; Y.bond = bond; Y.setRel = setRel; Y.relLabel = relLabel; Y.alive = alive; Y.pining = pining;
 })();

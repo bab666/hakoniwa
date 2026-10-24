@@ -141,6 +141,8 @@
     lovers: L('{p}で、{x}は{y}を抱き寄せた。「今夜は……我慢できない」――殺人犯がいるかもしれない館で、二人はいつもより激しく求め合った。{x}は{y}の奥を何度も突き上げ、{y}は{x}の名前を呼び続けた。|恋人どうしの{x}と{y}は、{p}の扉に鍵をかけるのももどかしく絡み合った。{y}は自分から脚を開き、{x}を深く迎え入れた。|{x}は{y}を{p}の壁に押しつけた。「怖いの、全部忘れさせて」――{y}の囁きに、{x}は何度も応えた。|{y}は{x}の上に跨り、熱に浮かされたまま腰を揺らした。{x}が{y}の中で果てても、二人は離れなかった。'),
     enemies: L('{p}で鉢合わせた{x}と{y}は、いつものように睨み合った。――次の瞬間、どちらからともなく唇を奪い合っていた。憎しみと熱が、ひとつに混ざった。|{x}は{y}の胸ぐらを掴んだ。「……お前なんか、大嫌いだ」そう言いながら、{x}は{y}を{p}の床に押し倒し、乱暴に奥まで沈めた。|罵り合いながら、{x}と{y}は互いの服を剥ぎ取った。{y}は{x}の背中に爪を立て、声を噛み殺しながら果てた。'),
     crush: L('ずっと{y}を想っていた{x}は、媚薬の熱に背中を押された。「ごめん……もう、抑えられない」――{x}は{p}で{y}を抱きしめ、唇を重ねた。|{x}は{y}の部屋を訪ねた。「ずっと、こうしたかった」――{y}は戸惑いながらも、熱に浮かされた体で{x}を受け入れた。|{x}は、{p}で眠り込んだ{y}の寝顔を見つめていた。媚薬の熱に負けて、そっと{y}の肌に触れた。{y}は目を覚まし――拒まなかった。'),
+    /* 両片想い：どちらも自分だけの片想いだと思っていて、媚薬の夜に同時に溢れる */
+    pining: L('媚薬の熱に浮かされた{x}は、{p}で{y}と鉢合わせた。「ごめん……ずっと、好きだった。薬のせいにさせて」――言い終わる前に、{y}の方から唇が重なってきた。「……こっちの台詞。薬のせいになんて、しないで」――{x}は{y}を抱き寄せ、そのまま深く繋がった。|{x}が{y}の部屋の扉を叩いたのと、{y}が扉を開けたのは同時だった。{y}も、ちょうど{x}の部屋へ行こうとしていたところだった。二人は言葉もなく抱き合って寝台に倒れ込み、{x}はゆっくりと{y}の奥へ沈んでいった。|{x}は{y}を抱きながら、何度も「好き」と繰り返した。どうせ片想いだから、今夜だけは言ってしまおうと思っていた。けれど{y}は、そのたびに「私も」と返して、{x}の背中にしがみついた。'),
     buddy: L('探偵の{d}と助手の{b}は、{p}で二人きりになった。「先生……変なんです、体が」――その夜、二人は「相棒」の一線を越えた。|{b}は熱に浮かされた{d}を介抱しようとした。けれど、触れた指先から熱が移り、気づけば二人はベッドの上で絡み合っていた。|「推理の続きは、明日にしましょう」――{d}は{b}の手を引いた。いつも背中を預け合っていた相棒の肌は、思っていたよりずっと熱かった。'),
     casual: L('{x}は{y}の手を引いて、{p}に転がり込んだ。扉が閉まる前から、二人の唇は重なっていた。{x}は熱に浮かされたまま、何度も{y}の奥まで突き上げた。|{p}の絨毯の上で、{x}は{y}を組み敷いた。{y}は自分から脚を開き、{x}の腰を引き寄せた。|{y}は廊下で{x}にしがみついた。「熱いの……どうにかして」――{x}は{y}を壁に押しつけ、その場で繋がった。|名前くらいしか知らない相手だった。それでも{x}と{y}は、{p}で夜明けまで互いを貪った。'),
     group: L('{p}では、もう誰が誰と抱き合っているのか分からなかった。服が床に散らばり、喘ぎ声と水音が重なり合っていた。|気がつけば、{p}で三人が絡み合っていた。誰の手が誰の肌を這っているのか、誰にも分からなかった。|{p}のソファの上で、何人もの体が重なり合っていた。吹雪の音も、殺人犯のことも、誰の頭にも残っていなかった。'),
@@ -231,8 +233,8 @@
         var pool = PLF(kind, SC[kind], od[0], od[1]);
         /* 探偵と助手：向きの決まった文は、探偵が攻めか受けかで選ぶ */
         if (kind === 'buddy' && !isFF(od[0], od[1]) && Y.R18T) pool = pool.concat(Y.R18T[od[0] === x ? 'buddyDT' : 'buddyDB'] || []);
-        ST.say(S, { actors: [od[0], od[1]], tag: '媚薬の夜', kind: 'climax', text: fmFix(S, F(ST.pick(S, pool), m), od[0], od[1]) + (S.rng() < 0.6 ? pz(S, od[1], 'react') : '') + SX(S, od[0], od[1], kind === 'enemies' ? 'rough' : kind === 'lovers' || kind === 'crush' || kind === 'buddy' ? 'love' : 'drug') + aft(S, od[1]), why: why + PW(S), mag: 32 });
-        Y.setRel(S, x, y, kind === 'enemies' ? 0.35 : 0.2, kind === 'enemies' ? '憎しみの一夜' : kind === 'buddy' ? '一線を越えた' : kind === 'crush' ? '想いが溢れた' : '一夜', kind === 'crush' ? x : null);
+        ST.say(S, { actors: [od[0], od[1]], tag: '媚薬の夜', kind: 'climax', text: fmFix(S, F(ST.pick(S, pool), m), od[0], od[1]) + (S.rng() < 0.6 ? pz(S, od[1], 'react') : '') + SX(S, od[0], od[1], kind === 'enemies' ? 'rough' : kind === 'lovers' || kind === 'crush' || kind === 'pining' || kind === 'buddy' ? 'love' : 'drug') + aft(S, od[1]), why: why + PW(S), mag: 32 });
+        Y.setRel(S, x, y, kind === 'enemies' ? 0.35 : 0.2, kind === 'enemies' ? '憎しみの一夜' : kind === 'buddy' ? '一線を越えた' : kind === 'crush' ? '想いが溢れた' : kind === 'pining' ? '想いが通じた' : '一夜', kind === 'crush' ? x : null);
         drunk.splice(drunk.indexOf(x), 1); if (drunk.indexOf(y) >= 0) drunk.splice(drunk.indexOf(y), 1);
         scenes++;
       }
@@ -266,7 +268,10 @@
         var cand = drunk.filter(function (y) { return y !== x && can(x, y); });
         var lov = cand.filter(function (y) { return tie(x, y, 'lover,mate,fated,almost,fwb'); })[0];
         if (lov) return pairScene('lovers', x, lov, null, '恋人どうし（' + Y.relLabel(S, x, lov) + '）');
-        var cr = cand.filter(function (y) { return (S.ties || []).some(function (t) { return t.type === 'crush' && t.a === x.i && t.b === y.i; }); })[0];
+        /* 両片想い（どちらからも片想い）は、片想いより先に見る */
+        var pn = Y.pining ? cand.filter(function (y) { return Y.pining(S, x, y); })[0] : null;
+        if (pn && rng() < 0.8) return pairScene('pining', x, pn, null, x.name + 'と' + pn.name + 'の両片想いが、媚薬の勢いで溢れた（どちらも、自分だけの片想いだと思っていた）');
+        var cr = cand.filter(function (y) { return !(Y.pining && Y.pining(S, x, y)) && (S.ties || []).some(function (t) { return t.type === 'crush' && t.a === x.i && t.b === y.i; }); })[0];
         if (cr && rng() < 0.7) return pairScene('crush', x, cr, null, x.name + 'の片想いが、媚薬の勢いで溢れた');
         var en = cand.filter(function (y) { return Y.bond(S, x, y) < -0.2; })[0];
         if (en && rng() < 0.5) return pairScene('enemies', x, en, null, '仲の悪い二人（' + Y.relLabel(S, x, en) + '）が、憎しみごと抱き合った');
