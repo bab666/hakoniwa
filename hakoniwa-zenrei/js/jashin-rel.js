@@ -140,6 +140,8 @@
   function relLabel(S, a, b) {
     var bo = both(S, a, b), l = tiesOf(S, a, b).filter(function (t) { return !(bo && t.type === 'crush'); }).map(function (t) { return HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; });
     if (bo) l.unshift('両片想い');
+    /* 同じ関係が二度足されていても（恋人になる出来事が重なったときなど）、一度だけ書く */
+    l = l.filter(function (x, i) { return l.indexOf(x) === i; });
     return l.join('・') || 'なし';
   }
 
@@ -363,6 +365,8 @@
       live.forEach(function (b) {
         if (done || a === b) return;
         var ts = tiesOf(S, a, b);
+        /* もう恋人（番）になっている二人は、告白しない */
+        if (ts.some(function (t) { return t.type === 'lover' || t.type === 'mate' || t.type === 'fated'; })) return;
         var ok = ts.some(function (t) { return (t.type === 'crush' && t.a === a.i) || ((t.type === 'almost' || t.type === 'ex') && a.i < b.i); });
         if (!ok || rng() > 0.55) return;
         done = 1; a.m.fear = clamp(a.m.fear - 10, 0, 100); b.m.fear = clamp(b.m.fear - 6, 0, 100);
@@ -371,7 +375,7 @@
           S.ties.push({ a: a.i, b: b.i, type: 'lover', born: true }); if (JS.DRAMA) JS.DRAMA.setRel(S, a, b, 0.2, '恋人');
           return ST.say(S, { actors: [a, b], tag: '告白', text: pickT(S, T.CONFESS_MUTUAL, { a: a.name, b: b.name }), why: '関係：両片想い。死を前にして想いを口にし、ようやく通じた（どちらも、自分の片想いだと思っていた）', mag: 32 });
         }
-        ST.say(S, { actors: [a, b], tag: '告白', text: pickT(S, T.CONFESS, { a: a.name, b: b.name }), why: '関係：' + relLabel(S, a, b) + '。死を前にして、想いを口にした', mag: 30 });
+        ST.say(S, { actors: [a, b], tag: '告白', text: pickT(S, ts.some(function (t) { return t.type === 'ex'; }) && T.CONFESS_EX ? T.CONFESS_EX : T.CONFESS, { a: a.name, b: b.name }), why: '関係：' + relLabel(S, a, b) + '。死を前にして、想いを口にした', mag: 30 });
       });
     });
   }

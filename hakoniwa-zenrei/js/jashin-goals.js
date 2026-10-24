@@ -101,7 +101,7 @@
       var ok = rng() < 0.25 + bond(S, b, p) * 0.5 + b.tr.fc * 0.15 + b.tr.np * 0.1 - b.tr.cp * 0.15 - (hasLover(S, b) ? 0.35 : 0) + (S.tension > 50 ? 0.1 : 0);
       var t = F(pk(S, T.LOVE_CONFESS), m) + F(pk(S, ok ? T.LOVE_OK : T.LOVE_FAIL), m);
       if (ok) {
-        L0.done = true; S.ties.push({ a: p.i, b: b.i, type: 'lover' }); setRel(S, p, b, 0.4, '恋人'); edge(S, p, b, '恋人になった', 'love');
+        L0.done = true; if (!(S.ties || []).some(function (t) { return t.type === 'lover' && ((t.a === p.i && t.b === b.i) || (t.a === b.i && t.b === p.i)); })) S.ties.push({ a: p.i, b: b.i, type: 'lover' }); setRel(S, p, b, 0.4, '恋人'); edge(S, p, b, '恋人になった', 'love');
         p.m.fear = clamp(p.m.fear - 15, 0, 100); b.m.fear = clamp(b.m.fear - 12, 0, 100);
         /* 恋が叶うと、二人で生きて帰ることが目標になる */
         p.goal = p.goal0 = JS.GOAL.protect; p.surv = 1;

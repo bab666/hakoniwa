@@ -22351,7 +22351,7 @@
    関係「片想い」の想われる側の気持ちを「実は想っている（両片想い）」にした二人や、どちらからも片想いを設定した二人に起きる出来事。
    相手にされていない片想い（unreq.js）と同じく、合コン・教室・無人島・出られない部屋・ゾンビの街で起きる。
    目が合ってそらす／言いかけてやめる／相手の優しさを別の誰かへの好意と勘違いする／同じ人に恋の相談をする／冗談めかして言って流される、
-   を重ねたあと、どちらかが告白して実る（重ねるほど起きやすい）。{a}{b}=両片想いの二人、{c}=巻き込まれる人
+   を重ねたあと、どちらかが告白して実る（重ねるほど起きやすい）。ほかの誰かが近づいて焦って告白する展開もある（合コンでは起きやすく、踏み切るのは2割ほど、控え目どうしなら1割ほど）。{a}{b}=両片想いの二人、{c}=巻き込まれる人
    ・設定の「両片想い」は、箱庭に渡す前に向きを逆にした片想い二本に開く（HK.Ties.expand） */
 (function () {
   'use strict';
@@ -22383,6 +22383,16 @@
     ctx.chars.forEach(function (c) {
       if (c === a || c === b || !alive(c)) return;
       var v = Math.min(ctx.R(a, c).trust + ctx.R(a, c).aff, ctx.R(b, c).trust + ctx.R(b, c).aff) / 2;
+      if (v > bv) { bv = v; best = c; }
+    });
+    return best;
+  }
+  /* b に近づく第三者（b を恋愛の相手にできる人。惹かれの強い人ほど） */
+  function suitor(ctx, a, b) {
+    var best = null, bv = -1;
+    ctx.chars.forEach(function (c) {
+      if (c === a || c === b || !alive(c) || !HK.canLove(c, b) || ctx.pair(c, b).couple) return;
+      var v = ctx.R(c, b).att + ctx.R(c, b).aff * 0.3;
       if (v > bv) { bv = v; best = c; }
     });
     return best;
@@ -22421,6 +22431,19 @@
       any: '二人きりになったとき、{a}はとうとう口を開いた。'
     },
     confess: L('「ずっと好きだった。……迷惑なら、忘れて」――{b}は目を丸くして、それから、泣きそうな顔で笑った。「……こっちの台詞なんだけど」|「好きだ」――{a}がそう言うと、{b}は長いあいだ黙っていた。「……なんで先に言うの。ずっと言おうと思ってたのに」|「{b}のことが好き」――言い終わる前に、{b}も「好き」と言っていた。二人の声が重なって、どちらが先だったのか分からなかった。|{a}は「好きなんだ」と言った。{b}は「知らなかった」と言った。「……私も、ずっと、そうだったのに」|「振られるのは分かってる。でも、言わないと後悔するから」――{b}は首を振った。「振らないよ。……ずっと、待ってた」'),
+    /* ほかの誰か（{c}）が、{b}に近づく。それを見た{a}が焦る */
+    approach: {
+      goukon: L('{c}が席を替わって{b}の隣に座り、「このあと、二人で飲み直しません？」と声を潜めた。{b}は曖昧に笑っていた。グラスを持つ{a}の手に、力がこもった。|{c}は{b}に連絡先を訊いていた。{b}がスマホを取り出すのを、{a}は向かいの席から黙って見ていた。|「{b}さんって、彼氏とか彼女とかいるの？」――{c}がそう訊くのが、{a}の耳にも届いた。{b}が「いないよ」と答えると、{c}は「じゃあ立候補しようかな」と笑った。'),
+      classroom: L('昼休み、{c}が{b}を廊下に呼び出したという噂が、{a}の耳に入った。「告白されたらしいよ」――{a}は、弁当の味がしなくなった。|{c}が{b}を、文化祭を一緒に回ろうと誘っていた。{b}が「考えとく」と答えるのを、{a}は少し離れた席で聞いていた。'),
+      island: L('{c}は、{b}のために一番大きな貝を採ってきて、照れくさそうに差し出した。{b}が礼を言って笑うのを、{a}は焚き火の向こうから見ていた。|夜の浜辺で、{c}が{b}の隣に腰を下ろすのが見えた。二人の影は、{a}が思っていたよりずっと近かった。'),
+      whiteroom: L('{c}が{b}の肩に上着をかけて、「寒くない？」と囁いた。白い部屋では、その声は{a}にもはっきり聞こえた。|{c}は「ここを出たら、ご飯でも行こうよ」と{b}を誘った。{b}は「いいね」と頷いた。{a}は壁を見つめたまま、拳を握った。'),
+      zombie: L('{c}は「俺が守るから」と言って、{b}の隣で見張りを買って出た。{b}が「ありがとう」と笑うのを、{a}は暗がりから見ていた。|{c}が{b}の怪我の手当てをしていた。指先がやけに優しく見えて、{a}は目を逸らした。'),
+      any: L('{c}が{b}に親しげに話しかけ、{b}も笑って応えていた。{a}は、その様子から目を離せなかった。|{c}は{b}を二人きりに誘った。{b}がすぐに断らなかったのを、{a}は見てしまった。')
+    },
+    /* 焦って告白（{c}が割って入る前に） */
+    rush: L('{a}は立ち上がり、{b}の腕を掴んだ。「ちょっと、いい？」――人のいないところまで連れ出して、{a}は息を吸った。「……ほかの人のところに行かないで。好きなんだ、ずっと」――{b}は呆然として、それから、耳まで赤くなった。「……今それ言う？　こっちは、ずっと言えなかったのに」|{a}は{c}と{b}のあいだに割って入った。「ごめん、{b}は先約があるから」――{b}が「え？」と見上げると、{a}は目を逸らしたまま言った。「……私が、誘うつもりだったから。ずっと前から」――{b}は少し黙って、「……遅いよ」と笑った。その目は、少し潤んでいた。|{c}が離れた隙に、{a}は{b}の隣に滑り込んだ。「さっきの、行くの？」「……どうしようかなって」「行かないでほしい。……好きだから」――{b}は手元のグラスを見つめたまま、小さく言った。「それ、こっちがずっと言いたかったやつ」'),
+    /* 焦ったけれど、言えなかった */
+    stall: L('{a}は何か言おうとして、結局、グラスの中身を飲み干しただけだった。{b}は、{a}が引き止めてくれないことに、少しだけ傷ついていた。|{a}は「よかったじゃん」と笑ってみせた。{b}も「でしょ」と笑った。二人とも、ひどく下手な笑い方だった。|{a}はその場を離れた。{b}は{c}の話に相槌を打ちながら、去っていく{a}の背中ばかり見ていた。'),
     after: L('お互いに「何とも思われていない」と思い込んでいた時間を数えて、二人は同時に吹き出した。|{c}は、ようやくくっついた二人を見て、「長かった……」と心の底から呟いた。|{a}と{b}は、それまでのすれ違いを一つずつ答え合わせした。どれも、全部、勘違いだった。')
   };
   function sc(ctx, tbl) { return tbl[ctx.scen.id] || tbl.any; }
@@ -22470,6 +22493,25 @@
         var pf = bump(ctx, a, b); pf.pnJo = true;
         ctx.mod2(a, b, { att: 4 }, { att: 4 });
         return { text: fill(ctx.pick(D.joke), { a: a.name, b: b.name }), why: WHY(a, b) + '／本気の言葉が、冗談として流れていった', mag: 18 };
+      }),
+    /* ほかの誰かが近づいて、焦って告白する（合コンでは特に起きやすい）。合コン一回で、この展開になるのは2割ほど（近づかれるのが4割強、そこで踏み切るのが半分弱）、控え目どうしなら1割ほど */
+    mk('pn_rival', 'romance', function (ctx) { return ctx.scen.id === 'goukon' ? 4 : 0.8; },
+      function (ctx, a, b) { return P.is(ctx, a, b) && !ctx.pair(a, b).pnRv && !!suitor(ctx, a, b); },
+      function (ctx, a, b) {
+        var pf = bump(ctx, a, b), c = suitor(ctx, a, b), m = { a: a.name, b: b.name, c: c.name };
+        pf.pnRv = true;
+        ctx.mod(c, b, { att: 6 }); ctx.stress(a, 10);
+        var shy = function (x) { return x.tr.ac > 0.6 && x.tr.fc < 0.45; };
+        var p = shy(a) && shy(b) ? 0.22 : shy(a) ? 0.33 : 0.46;
+        var open = fill(ctx.pick(sc(ctx, D.approach)), m);
+        if (ctx.rng() < p && HK.canLove(a, b) && HK.canLove(b, a)) {
+          pf.couple = true; pf.pnDone = true;
+          ctx.mod2(a, b, { att: 14, aff: 12, trust: 10 }, { att: 14, aff: 12, trust: 10 });
+          ctx.stress(a, -14); ctx.stress(b, -10);
+          return { text: open + fill(ctx.pick(D.rush), m), why: WHY(a, b) + '／' + c.name + 'が' + b.name + 'に近づいたのを見て、' + a.name + 'は焦って想いを口にした。両片想いが、両想いになった', mag: 44, with: [c] };
+        }
+        ctx.stress(b, 6);
+        return { text: open + fill(ctx.pick(D.stall), m), why: WHY(a, b) + '／' + c.name + 'が' + b.name + 'に近づいた。' + a.name + 'は焦ったが、言えなかった' + (shy(a) ? '（控え目な性格）' : ''), mag: 26, with: [c] };
       }),
     /* 告白：すれ違いを重ねるほど、背中を押されているほど起きやすい */
     mk('pn_confess', 'romance', function (ctx, a, b) { var pf = ctx.pair(a, b); return 0.4 + (pf.pn || 0) * 0.6 + (pf.pnHint ? 1.2 : 0) + a.tr.honesty * 0.4 + a.tr.impulse * 0.3 + a.stress / 200; },
@@ -27931,7 +27973,9 @@
     QUARREL: L('{a}と{b}が、民宿の廊下で怒鳴り合っていた。「お前のせいで！」村人たちが、障子の隙間からそれを見ていた。|{a}は{b}の調べた結果を、わざと無視した。二人の間の空気は、最悪だった。'),
     MAKEUP: L('{a}と{b}は、殴り合い寸前の口論のあと、黙って並んで座った。「……生きて帰ったら、続きをやろう」|{a}が差し出した手を、{b}は少し迷ってから握った。今だけは、休戦だった。'),
     /* 洞窟の前の告白（片想い・友達以上恋人未満・元恋人） */
-    CONFESS: L('洞窟の入口で、{a}は{b}の手を取った。「……戻ったら、ちゃんと言うつもりだった。でも、今言う。好きだ」|{a}は{b}の背中に向かって言った。「死ぬかもしれないから言っとく。ずっと、好きだった」――{b}は振り返らずに、「……知ってた」と答えた。|「もう一回、やり直せないかな」――洞窟の暗闇の前で、{a}は{b}にそう言った。'),
+    CONFESS: L('洞窟の入口で、{a}は{b}の手を取った。「……戻ったら、ちゃんと言うつもりだった。でも、今言う。好きだ」|{a}は{b}の背中に向かって言った。「死ぬかもしれないから言っとく。ずっと、好きだった」――{b}は振り返らずに、「……知ってた」と答えた。'),
+    /* 元恋人どうしの告白 */
+    CONFESS_EX: L('「もう一回、やり直せないかな」――洞窟の暗闇の前で、{a}は{b}にそう言った。|洞窟の暗い口を前にして、{a}は{b}の袖を掴んだ。「別れたこと、ずっと後悔してた。……生きて帰れたら、もう一度だけ、隣にいさせて」|{b}が洞窟へ踏み出す前に、{a}は呼び止めた。「あのとき、ちゃんと引き止めればよかった。今度は離さないから」'),
     /* 洞窟の前の告白（両片想い：言ってみたら、相手も同じだった） */
     CONFESS_MUTUAL: L('洞窟の入口で、{a}は{b}の手を取った。「死ぬかもしれないから言っとく。ずっと、好きだった」――{b}は目を見開いて、それから泣き笑いの顔になった。「……それ、こっちの台詞」|「{b}、あのさ」「{a}、あの」――洞窟の前で、二人の声が重なった。譲り合って、また重なった。最後に{b}が笑った。「……たぶん、同じこと言おうとしてる」|{a}は{b}に背を向けたまま言った。「どうせ迷惑だろうけど、好きだった」――返事の代わりに、背中に{b}の額が押し当てられた。「迷惑なわけない。……ずっと、私の片想いだと思ってた」'),
     /* 恋人・家族が魔術師をかばう */
@@ -28125,6 +28169,8 @@
   function relLabel(S, a, b) {
     var bo = both(S, a, b), l = tiesOf(S, a, b).filter(function (t) { return !(bo && t.type === 'crush'); }).map(function (t) { return HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; });
     if (bo) l.unshift('両片想い');
+    /* 同じ関係が二度足されていても（恋人になる出来事が重なったときなど）、一度だけ書く */
+    l = l.filter(function (x, i) { return l.indexOf(x) === i; });
     return l.join('・') || 'なし';
   }
 
@@ -28348,6 +28394,8 @@
       live.forEach(function (b) {
         if (done || a === b) return;
         var ts = tiesOf(S, a, b);
+        /* もう恋人（番）になっている二人は、告白しない */
+        if (ts.some(function (t) { return t.type === 'lover' || t.type === 'mate' || t.type === 'fated'; })) return;
         var ok = ts.some(function (t) { return (t.type === 'crush' && t.a === a.i) || ((t.type === 'almost' || t.type === 'ex') && a.i < b.i); });
         if (!ok || rng() > 0.55) return;
         done = 1; a.m.fear = clamp(a.m.fear - 10, 0, 100); b.m.fear = clamp(b.m.fear - 6, 0, 100);
@@ -28356,7 +28404,7 @@
           S.ties.push({ a: a.i, b: b.i, type: 'lover', born: true }); if (JS.DRAMA) JS.DRAMA.setRel(S, a, b, 0.2, '恋人');
           return ST.say(S, { actors: [a, b], tag: '告白', text: pickT(S, T.CONFESS_MUTUAL, { a: a.name, b: b.name }), why: '関係：両片想い。死を前にして想いを口にし、ようやく通じた（どちらも、自分の片想いだと思っていた）', mag: 32 });
         }
-        ST.say(S, { actors: [a, b], tag: '告白', text: pickT(S, T.CONFESS, { a: a.name, b: b.name }), why: '関係：' + relLabel(S, a, b) + '。死を前にして、想いを口にした', mag: 30 });
+        ST.say(S, { actors: [a, b], tag: '告白', text: pickT(S, ts.some(function (t) { return t.type === 'ex'; }) && T.CONFESS_EX ? T.CONFESS_EX : T.CONFESS, { a: a.name, b: b.name }), why: '関係：' + relLabel(S, a, b) + '。死を前にして、想いを口にした', mag: 30 });
       });
     });
   }
@@ -30343,7 +30391,7 @@
       var ok = rng() < 0.25 + bond(S, b, p) * 0.5 + b.tr.fc * 0.15 + b.tr.np * 0.1 - b.tr.cp * 0.15 - (hasLover(S, b) ? 0.35 : 0) + (S.tension > 50 ? 0.1 : 0);
       var t = F(pk(S, T.LOVE_CONFESS), m) + F(pk(S, ok ? T.LOVE_OK : T.LOVE_FAIL), m);
       if (ok) {
-        L0.done = true; S.ties.push({ a: p.i, b: b.i, type: 'lover' }); setRel(S, p, b, 0.4, '恋人'); edge(S, p, b, '恋人になった', 'love');
+        L0.done = true; if (!(S.ties || []).some(function (t) { return t.type === 'lover' && ((t.a === p.i && t.b === b.i) || (t.a === b.i && t.b === p.i)); })) S.ties.push({ a: p.i, b: b.i, type: 'lover' }); setRel(S, p, b, 0.4, '恋人'); edge(S, p, b, '恋人になった', 'love');
         p.m.fear = clamp(p.m.fear - 15, 0, 100); b.m.fear = clamp(b.m.fear - 12, 0, 100);
         /* 恋が叶うと、二人で生きて帰ることが目標になる */
         p.goal = p.goal0 = JS.GOAL.protect; p.surv = 1;
