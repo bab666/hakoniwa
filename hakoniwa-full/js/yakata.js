@@ -624,7 +624,16 @@
     ST.say(S, { actors: [c], tag: '結末', kind: 'climax', text: F(pk(S, T.END_ARREST), { c: c.name }), why: c.name + 'は観念した', mag: 46 });
   }
   /* 自作自演のときは、仕掛けたのは被害者自身 */
-  function truthOf(S, k) { var m = {}; for (var x in k.m) m[x] = k.m[x]; if (S.mot.nobody) m.c = k.v.name; return F(k.trick.truth, m); }
+  function truthOf(S, k) {
+    var m = {}; for (var x in k.m) m[x] = k.m[x]; if (S.mot.nobody) m.c = k.v.name;
+    var t = F(k.trick.truth, m);
+    /* 殺されたあとに蘇った不死・吸血鬼（yakata-special.js で k.revived）：真相の語りにも、蘇ったことを添える */
+    if (k.revived && k.v) t += pk(S, ['もっとも、' + k.v.name + 'はそのあと、何事もなかったように起き上がったのだが。', '――その' + k.v.name + 'が、翌朝には息を吹き返していたことを除けば。', '殺したはずの' + k.v.name + 'が蘇ったことが、計画の唯一の誤算だった。']);
+    return t;
+  }
+  Y.truthOf = truthOf;
+  Y.gainClue = function (S, p, pref) { return gain(S, p, pref); };
+  Y.investigators = function (S) { return inv(S).filter(function (d) { return !d.mad; }); };
   function found(S) { return S.pool.filter(function (x) { return x.found; }).length; }
 
 

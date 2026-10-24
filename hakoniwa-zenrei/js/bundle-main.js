@@ -9203,11 +9203,13 @@
     sake: { type: 'consume', item: '酒', unit: '杯', fin: function (n) { return '酒を' + n + '杯飲み干さないと'; }, mid: function (n) { return '酒を' + n + '杯飲み干して'; } },
     spicy: { type: 'consume', item: '激辛ラーメン', unit: '杯', fin: function (n) { return '激辛ラーメンを' + n + '杯完食しないと'; }, mid: function (n) { return '激辛ラーメンを' + n + '杯完食して'; } },
     pill: { type: 'consume', item: '謎の錠剤', unit: '錠', fin: function (n) { return '謎の錠剤を' + n + '錠飲み切らないと'; }, mid: function (n) { return '謎の錠剤を' + n + '錠飲み切って'; } },
-    one: { type: 'one', fin: function () { return '一人しか'; }, mid: function () { return ''; } }
+    one: { type: 'one', fin: function () { return '一人しか'; }, mid: function () { return ''; } },
+    /* 誰かを殺さないと出られない（全年齢版は「気絶させる」：誰かを気絶させると、ほかの人が出られる） */
+    kill: { type: 'kill', noun: '誰かの命', unit: '人', fin: function (n) { return (HK.SAFE_ON ? '誰かを' + (n > 1 ? n + '人' : '') + '気絶させないと' : '誰かを' + (n > 1 ? n + '人' : '') + '殺さないと'); }, mid: function (n) { return HK.SAFE_ON ? '誰かを気絶させて' : '誰かを殺して'; } }
   };
   var KLABEL = {
     h: 'エッチ', kiss: 'キス', hug: 'ハグ', hand: '手を繋ぐ', lap: '膝枕', love: '「好き」と言い合う', honne: '本音を打ち明け合う', praise: '相手のいいところを言う',
-    aphro: '媚薬を飲み切る', sake: '酒を飲み干す', spicy: '激辛ラーメンを完食', pill: '謎の錠剤を飲み切る', one: '一人しか出られない'
+    aphro: '媚薬を飲み切る', sake: '酒を飲み干す', spicy: '激辛ラーメンを完食', pill: '謎の錠剤を飲み切る', one: '一人しか出られない', kill: '誰かを殺す（全年齢では気絶させる）'
   };
   HK.ROOM_KINDS = K;
 
@@ -9221,32 +9223,71 @@
     var r = rulesOf(env);
     if (r[0].k === 'one') return '一人しか出られない部屋';
     var s = r.length > 1 ? K[r[0].k].mid(r[0].n) + '、' + K[r[1].k].fin(r[1].n) : K[r[0].k].fin(r[0].n);
-    return s + '出られない部屋';
+    /* 「一人しか出られない」をほかの条件と併用（env.only1）：条件を満たしても、扉をくぐれるのは一人 */
+    return s + (env.only1 === 'on' ? '出られない部屋（ただし、出られるのは一人だけ）' : '出られない部屋');
   };
+  /* 「一人しか出られない」：条件1で選ぶ（ほかの条件なし）か、ほかの条件と併用する（env.only1） */
+  HK.roomOnlyOne = function (env) { return rulesOf(env)[0].k === 'one' || env.only1 === 'on'; };
   HK.roomRules = rulesOf;
 
   var options = Object.keys(KLABEL).map(function (k) { return { v: k, label: KLABEL[k] }; });
 
   /* ---------- 進捗 ---------- */
   function prog(ctx, a, b) { var k = key(a, b); return (ctx.flags.prog[k] = ctx.flags.prog[k] || { act: {}, said: {} }); }
-  function ruleDone(ctx, rule, a, b) {
-    var T = K[rule.k], p = prog(ctx, a, b);
-    if (T.type === 'act') return (p.act[rule.k] || 0) >= rule.n;
-    if (T.type === 'word') {
-      var ab = p.said[rule.k + a.i] || 0, ba = p.said[rule.k + b.i] || 0;
-      return T.mode === 'sum' ? ab + ba >= rule.n : ab >= rule.n && ba >= rule.n;
-    }
-    if (T.type === 'consume') return (ctx.flags.consumed[rule.k] || 0) >= rule.n;
-    return false;
+  /* 誰かを殺す（気絶させる）条件で数える人数：住人の手で死んだ人と、気絶させられた人 */
+  function killCount(ctx) { return ctx.chars.filter(function (c) { return (c.alive === false && c.killedBy != null) || c.flags.knocked; }).length; }
+  /* 条件の生の数（二人の組なら [a の分, b の分]） */
+  function rawOf(ctx, rule, a, b) {
+    var T = K[rule.k];
+    if (T.type === 'consume') return [(ctx.flags.consumed[rule.k] || 0), 0];
+    if (T.type === 'kill') return [killCount(ctx), 0];
+    var p = prog(ctx, a, b);
+    if (T.type === 'act') return [p.act[rule.k] || 0, 0];
+    if (T.type === 'word') return [p.said[rule.k + a.i] || 0, p.said[rule.k + b.i] || 0];
+    return [0, 0];
   }
+  /* 条件の順番（env.order が seq）：条件2は、条件1を満たしたあとの分だけ数える。満たした時点の数を基準として覚えておく */
+  function seqOn(ctx) { return ctx.env.order === 'seq' && ctx.rules.length === 2; }
+  function effOf(ctx, rule, a, b) {
+    if (!seqOn(ctx) || rule !== ctx.rules[1]) return rawOf(ctx, rule, a, b);
+    var T = K[rule.k], glob = T.type === 'consume' || T.type === 'kill', r0glob = K[ctx.rules[0].k].type === 'consume' || K[ctx.rules[0].k].type === 'kill';
+    if (glob) { if (!ctx.flags.seqOpen && !(r0glob && ruleDone(ctx, ctx.rules[0], a, b))) return null; }
+    else if (!ruleDone(ctx, ctx.rules[0], a, b)) return null;
+    /* 条件1を満たした最初の時点で、それまでに数えた条件2の分を0に戻す（先に満たした条件2は数えない） */
+    if (glob) {
+      if (!ctx.flags.seqResetG) { ctx.flags.seqResetG = true; if (T.type === 'consume') ctx.flags.consumed[rule.k] = 0; else ctx.flags.killBase = killCount(ctx); }
+    } else {
+      var p = prog(ctx, a, b);
+      if (!p.seqReset) { p.seqReset = true; p.act[rule.k] = 0; p.said[rule.k + a.i] = 0; p.said[rule.k + b.i] = 0; }
+    }
+    var v = rawOf(ctx, rule, a, b);
+    if (T.type === 'kill') v[0] = Math.max(0, v[0] - (ctx.flags.killBase || 0));
+    return v;
+  }
+  function ruleDone(ctx, rule, a, b) {
+    var T = K[rule.k];
+    if (T.type === 'one') return false;
+    var v = effOf(ctx, rule, a, b);
+    if (!v) return false;
+    var ok = T.type === 'word' ? (T.mode === 'sum' ? v[0] + v[1] >= rule.n : v[0] >= rule.n && v[1] >= rule.n) : v[0] >= rule.n;
+    if (ok && seqOn(ctx) && rule === ctx.rules[0]) ctx.flags.seqOpen = true;
+    return ok;
+  }
+  /* 部屋全体で数える条件（飲む・殺す）の残り。順番があって条件1がまだなら、条件2の飲む条件は始めない（0 を返す） */
+  function globLeft(ctx, r) {
+    var v = effOf(ctx, r, null, null);
+    return v ? Math.max(0, r.n - v[0]) : 0;
+  }
+  function globDone(ctx, r) { var v = effOf(ctx, r, null, null); return !!v && v[0] >= r.n; }
+  HK.roomGlobLeft = function (ctx, r) { return globLeft(ctx, r); };
   /* 直前の出来事で新しく満たされた条件と、部屋を出た人がいるか（e.goal・e.goalExit） */
   function markGoals(ctx, e) {
     var seen = ctx.flags.goalSeen, got = [];
     ctx.rules.forEach(function (r) {
       var T = K[r.k], lab = KLABEL[r.k] + (r.n > 1 ? ' ' + r.n + T.unit : '');
       if (T.type === 'one') return;
-      if (T.type === 'consume') {
-        if (!seen[r.k] && (ctx.flags.consumed[r.k] || 0) >= r.n) { seen[r.k] = 1; got.push(lab); }
+      if (T.type === 'consume' || T.type === 'kill') {
+        if (!seen[r.k] && globDone(ctx, r)) { seen[r.k] = 1; got.push(lab); }
         return;
       }
       ctx.chars.forEach(function (a) {
@@ -9269,7 +9310,10 @@
     var out = [];
     ctx.rules.forEach(function (r) {
       if (ruleDone(ctx, r, a, b)) return;
-      var T = K[r.k], p = prog(ctx, a, b);
+      var T = K[r.k], v0 = effOf(ctx, r, a, b) || [0, 0];
+      /* 順番があって条件1がまだのときは、条件2は「そのあと」として全部の数を出す */
+      var p = { act: {}, said: {} }; p.act[r.k] = v0[0]; p.said[r.k + a.i] = v0[0]; p.said[r.k + b.i] = v0[1];
+      if (seqOn(ctx) && r === ctx.rules[1] && !ruleDone(ctx, ctx.rules[0], a, b)) { out.push('そのあと' + (T.type === 'consume' ? T.item + 'を' + r.n + T.unit : T.type === 'kill' ? '誰かの命' : T.noun + (r.n > 1 ? 'を' + r.n + T.unit : ''))); return; }
       if (T.type === 'act') out.push(T.noun + (r.n > 1 ? 'があと' + (r.n - (p.act[r.k] || 0)) + T.unit : ''));
       else if (T.type === 'word' && T.mode === 'both') {
         var who = [a, b].filter(function (c) { return (p.said[r.k + c.i] || 0) < r.n; }).map(function (c) { return c.name; });
@@ -9277,7 +9321,8 @@
         if (r.n > 1) out.push(whoN.map(function (c) { return c.name + 'の' + T.noun + 'があと' + (r.n - (p.said[r.k + c.i] || 0)) + T.unit; }).join('、'));
         else out.push((who.length > 1 ? 'お互いの' : who[0] + 'の') + T.noun);
       } else if (T.type === 'word') out.push(T.noun + 'があと' + (r.n - (p.said[r.k + a.i] || 0) - (p.said[r.k + b.i] || 0)) + T.unit);
-      else if (T.type === 'consume') out.push(T.item + 'があと' + (r.n - (ctx.flags.consumed[r.k] || 0)) + T.unit);
+      else if (T.type === 'consume') out.push(T.item + 'があと' + globLeft(ctx, r) + T.unit);
+      else if (T.type === 'kill') out.push(HK.SAFE_ON ? '誰かを気絶させること' : '誰かの命');
     });
     return out.join('、');
   }
@@ -9301,7 +9346,36 @@
   function loveWaitKey(a, b) { return Math.min(a.i, b.i) + '-' + Math.max(a.i, b.i); }
   /* 二人とも残って三人で出るのを待っている（一度知らせたら、区切りごとの見回りで出さない） */
   function loveWaiting(ctx, a, b) { return !!(ctx.flags.loveWait && ctx.flags.loveWait[loveWaitKey(a, b)] && loveThird(ctx, a, b)); }
+  /* 一人しか出られない（併用）：扉が開いても、くぐれるのは一人。優しい人は相手を押し出し、ドライな人は先に出る */
+  function oneDoor(ctx, list, text, why, night) {
+    /* もう一人が出たあとは、扉は二度と開かない */
+    if (ctx.flags.oneOut) return { cat: 'escape', mag: 10, text: text + '扉は、もう開かなかった。', why: why + '／一人しか出られない部屋。もう一人が出たあとだった' };
+    var rng = ctx.rng, L = list.filter(function (c) { return !c.out && c.alive !== false; });
+    if (!L.length) return { cat: 'escape', mag: 10, text: text, why: why };
+    if (night && L.length === 2 && okSex(L[0], L[1])) ctx.pair(L[0], L[1]).night = true;
+    var giver = ctx.most(L, function (c) { var others = L.filter(function (o) { return o !== c; }); return c.tr.np * 1.2 + (others.length ? Math.max.apply(null, others.map(function (o) { return ctx.R(c, o).aff; })) / 80 : 0) - c.tr.cold * 0.4; });
+    var taker = ctx.most(L, function (c) { return c.tr.cold * 0.7 + c.tr.aggr * 0.5 + c.stress / 200 - c.tr.np * 0.4; });
+    var gv = giver.tr.np * 1.2 + (L.length > 1 ? Math.max.apply(null, L.filter(function (o) { return o !== giver; }).map(function (o) { return ctx.R(giver, o).aff; })) / 80 : 0);
+    var go, how, t;
+    if (L.length > 1 && gv > 0.95 && rng() < 0.7) {
+      var cand = L.filter(function (o) { return o !== giver; });
+      go = cand.slice().sort(function (x, y) { return ctx.R(giver, y).aff - ctx.R(giver, x).aff; })[0]; how = 'sacrifice';
+      t = ctx.t(ctx.pick(['扉の鍵が外れた。けれど紙の下には、小さな字で「ただし、一人だけ」と足されていた。{a}は迷わず{b}の背中を押した。「先に行って」', '扉が開いた。誰が出るのか、と誰もが黙った。{a}が{b}の手を取って、扉の前まで連れていった。「{b}が出て。私はいい」', '鍵の外れる音のあと、扉の上の文字が光った。「一人だけ」――{a}は{b}を振り返り、笑ってみせた。「行きなよ」']), giver, go);
+      giver.fate = '残った'; giver.fateNote = go.name + 'を先に出した';
+      ctx.mod2(giver, go, { aff: 10 }, { aff: 25, trust: 25, att: 10 });
+    } else {
+      go = L.length > 1 ? taker : L[0]; how = 'grab';
+      var rest = L.filter(function (o) { return o !== go; });
+      t = rest.length ? ctx.t(ctx.pick(['扉の鍵が外れた。「一人だけ」と書き足された紙を読むより早く、{a}は扉に手をかけていた。{b}の声に、{a}は振り返らなかった。', '扉が開いた瞬間、{a}は{b}を押しのけて外へ出た。扉は、すぐに閉まった。', '「一人しか出られないなら」{a}はそれだけ言って、扉をくぐった。残された{b}は、閉まった扉を見つめていた。']), go, rest[0]) : ctx.t('扉の鍵が外れた。{a}は一人で、扉をくぐった。', go);
+      rest.forEach(function (o) { ctx.mod(o, go, { aff: -25, ten: 30, trust: -35 }); });
+    }
+    go.out = true; go.fate = '脱出'; go.fateNote = how === 'sacrifice' ? giver.name + 'に背中を押されて一人で出た' : '一人で扉をくぐった';
+    ctx.flags.oneOut = true;
+    (ctx.flags.exits = ctx.flags.exits || []).push({ a: go.i, b: (how === 'sacrifice' ? giver : (L.filter(function (o) { return o !== go; })[0] || go)).i, label: ctx.label, how: how });
+    return { cat: how === 'sacrifice' ? 'help' : 'betray', mag: 45, text: text + t, why: why + '／一人しか出られない部屋（' + (how === 'sacrifice' ? giver.name + 'の優しさ' : go.name + 'のドライさ') + '）' };
+  }
   function exitPair(ctx, a, b, text, why, night) {
+    if (ctx.flags.oneCond) return oneDoor(ctx, [a, b], text, why, night);
     var stay = null, lt = loveThird(ctx, a, b);
     if (lt) {
       var multiOk = (ctx.env.multi || 'open') !== 'no' && ctx.flags.multiKnown;
@@ -9361,9 +9435,9 @@
   /* 条件の数え方は出来事ごとに散らばっている（会話・三人・口論の中の行為など）。
      区切りの終わりに、条件がそろったのにまだ部屋にいる組があれば、その場で扉を開ける */
   function sweepExits(ctx) {
-    if (ctx.flags.isOne) return;
+    if (ctx.flags.isOne || (ctx.flags.oneCond && ctx.flags.oneOut)) return;
     if (!hasPairRule(ctx)) {
-      if (ctx.present().length && ctx.rules.every(function (r) { return ((ctx.flags.consumed || {})[r.k] || 0) >= r.n; })) exitAll(ctx);
+      if (ctx.present().length && ctx.rules.every(function (r) { return globDone(ctx, r); })) exitAll(ctx);
       return;
     }
     var P = ctx.present(), night = ctx.rules.some(function (r) { return r.k === 'h'; });
@@ -9375,15 +9449,23 @@
     }
   }
   function exitAll(ctx) {
-    var P = ctx.present();
-    P.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = '条件を満たし、全員で部屋を出た'; });
+    var P = ctx.present().filter(function (c) { return !c.flags.knocked; });
+    if (!P.length) return;
+    var kr = ctx.rules.some(function (r) { return r.k === 'kill'; });
+    var vic = kr ? ctx.chars.filter(function (c) { return (c.alive === false && c.killedBy != null) || c.flags.knocked; }) : [];
+    if (ctx.flags.oneCond) { var od = oneDoor(ctx, P, '', '部屋全体の条件がそろった'); ctx.say({ kind: 'event', cat: od.cat, actors: P, text: od.text, why: od.why, mag: od.mag }); return; }
+    var vn = names(vic);
+    P.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = kr ? (HK.SAFE_ON ? vn + 'を気絶させて開いた扉から、部屋を出た' : vn + 'の命と引き換えに開いた扉から、部屋を出た') : '条件を満たし、全員で部屋を出た'; });
     (ctx.flags.exits = ctx.flags.exits || []).push({ group: P.map(function (c) { return c.i; }), label: ctx.label });
-    ctx.say({ kind: 'event', cat: 'escape', actors: P, text: '最後の一' + K[ctx.rules[0].k].unit + 'が空になった瞬間、扉が音もなく開いた。' + names(P) + 'は、顔を見合わせてから外へ出た。', why: '部屋全体の条件を満たした', mag: 30 });
+    var et = kr ? ctx.pick(HK.SAFE_ON ? ['扉の鍵が外れる音がした。' + names(P) + 'は、床に倒れた' + vn + 'を振り返り、それから外へ出た。', '扉が開いた。' + names(P) + 'は、まだ目を覚まさない' + vn + 'を残して、扉をくぐった。'] : ['扉の鍵が外れる音がした。' + names(P) + 'は、' + vn + 'のほうを見ないようにして外へ出た。', '扉が音もなく開いた。' + names(P) + 'は、誰も口をきかないまま、' + vn + 'を残して部屋を出た。'])
+      : '最後の一' + K[ctx.rules[0].k].unit + 'が空になった瞬間、扉が音もなく開いた。' + names(P) + 'は、顔を見合わせてから外へ出た。';
+    ctx.say({ kind: 'event', cat: 'escape', actors: P, text: et, why: '部屋全体の条件を満たした', mag: 30 });
   }
   /* 進捗が動いたあと、出られる組がいれば出す */
   function checkExit(ctx, a, b) {
+    if (ctx.flags.oneCond && ctx.flags.oneOut) return null;
     if (!hasPairRule(ctx)) {
-      if (ctx.rules.every(function (r) { return (ctx.flags.consumed[r.k] || 0) >= r.n; })) exitAll(ctx);
+      if (ctx.rules.every(function (r) { return globDone(ctx, r); })) exitAll(ctx);
       return null;
     }
     if (a && b && !a.out && !b.out && pairDone(ctx, a, b) && !loveWaiting(ctx, a, b)) return true;
@@ -9576,6 +9658,8 @@
       { id: 'n1', label: '条件1の回数・本数', min: 1, max: 100, def: 1, lo: '1', hi: '100', desc: '「キスを10回」「媚薬を10本」の数字' },
       { id: 'cond2', label: '条件2（任意）', type: 'select', def: 'none', options: [{ v: 'none', label: 'なし' }].concat(options.filter(function (o) { return o.v !== 'one'; })) },
       { id: 'n2', label: '条件2の回数・本数', min: 1, max: 100, def: 1, lo: '1', hi: '100' },
+      { id: 'order', label: '条件の順番', type: 'select', def: 'any', options: [{ v: 'any', label: 'どちらからでも' }, { v: 'seq', label: '条件1を満たしてから条件2（先に満たした条件2は数えない）' }], desc: '例：媚薬を飲み切ってから、エッチしないと出られない部屋' },
+      { id: 'only1', label: '一人しか出られない（ほかの条件と併用）', type: 'select', def: 'off', options: [{ v: 'off', label: 'なし' }, { v: 'on', label: 'あり：条件を満たしても、扉をくぐれるのは一人だけ' }] },
       { id: 'label', label: '部屋の名前（空欄なら自動）', type: 'text', def: '', placeholder: '例：媚薬を10本飲み切らないと出られない部屋' },
       { id: 'hours', label: '閉じ込められる時間', min: 4, max: 240, def: 10, lo: '4時間', hi: '10日', unit: '時間', desc: '48時間を超えると、経過は数時間ごとにまとめ、結果は重要な出来事だけの短縮版で表示する' },
       { id: 'pressure', label: '部屋の圧', min: 0, max: 100, def: 50, lo: '居心地がいい', hi: '息苦しい', desc: '高いほど焦りが溜まり、覚悟が早く決まる' }
@@ -9610,6 +9694,8 @@
       ctx.flags.romantic = ctx.rules.some(function (r) { var T = K[r.k]; return (T.type === 'act' && T.lvl >= 2) || r.k === 'love' || r.k === 'aphro'; });
       ctx.flags.hasAphroRule = ctx.rules.some(function (r) { return r.k === 'aphro'; });
       ctx.flags.isOne = ctx.rules[0].k === 'one';
+      /* 「一人しか出られない」をほかの条件と併用：条件を満たした組（全員の条件なら全員）のうち、扉をくぐれるのは一人 */
+      ctx.flags.oneCond = !ctx.flags.isOne && ctx.env.only1 === 'on';
       ctx.flags.toolbox = ctx.rules.some(function (r) { return r.k === 'h' || r.k === 'kiss'; });
       ctx.chars.forEach(function (c) { c.baseTr = JSON.parse(JSON.stringify(c.tr)); c.hp = 40 + ctx.stat(c, 'hp') * 12; });
       ctx.stepsTotal = scen.steps(ctx.env).length;
@@ -9640,14 +9726,14 @@
         if (c.flags.belly > 0) c.flags.belly = Math.max(0, c.flags.belly - 1);
       });
     },
-    end: function (ctx) { return ctx.flags.oneOut || ctx.present().length <= (hasPairRule(ctx) ? 1 : 0); },
+    end: function (ctx) { return ctx.flags.oneOut || ctx.present().filter(function (c) { return !c.flags.knocked; }).length <= (hasPairRule(ctx) ? 1 : 0); },
     finish: function (ctx) {
       sweepExits(ctx);
       ctx.present().forEach(function (c) {
         /* 条件を満たしたのに、自分の意思で残った人（exitPair の stay）は「取り残された」ではない */
         if (c.flags.stayed) { c.fate = '自分から残った'; c.fateNote = '条件を満たしたが、自分の意思で部屋に残った'; return; }
         c.fate = '取り残された';
-        c.fateNote = ctx.flags.isOne && ctx.flags.oneOut ? '扉はもう開かなかった' : '最後まで条件を満たせなかった';
+        c.fateNote = c.flags.knocked ? (c.flags.knockedBy != null ? ctx.chars[c.flags.knockedBy].name + 'に' : '') + '気絶させられ、部屋に残された' : (ctx.flags.isOne || ctx.flags.oneCond) && ctx.flags.oneOut ? '扉はもう開かなかった' : '最後まで条件を満たせなかった';
       });
       ctx.flags.outcome = ctx.flags.roomLabel;
     },
@@ -9850,14 +9936,14 @@
   /* 消費（媚薬・酒・激辛・錠剤） */
   EV.push({
     id: 'consume', cat: 'escape', scope: 'solo', pri: true,
-    when: function (ctx, a) { return !a.flags.down && ctx.rules.some(function (r) { return K[r.k].type === 'consume' && (ctx.flags.consumed[r.k] || 0) < r.n; }); },
+    when: function (ctx, a) { return !a.flags.down && ctx.rules.some(function (r) { return K[r.k].type === 'consume' && globLeft(ctx, r) > 0; }); },
     w: function (ctx, a) {
-      var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && (ctx.flags.consumed[x.k] || 0) < x.n; })[0];
+      var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && globLeft(ctx, x) > 0; })[0];
       return 0.8 + ITEM[r.k].fit(a) * 1.5 + a.stress / 120 + ctx.stepIndex / Math.max(4, ctx.env.hours) * 1.5;
     },
     run: function (ctx, a) {
-      var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && (ctx.flags.consumed[x.k] || 0) < x.n; })[0];
-      var I = ITEM[r.k], left = r.n - (ctx.flags.consumed[r.k] || 0);
+      var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && globLeft(ctx, x) > 0; })[0];
+      var I = ITEM[r.k], left = globLeft(ctx, r);
       var boss = ctx.most(ctx.present(), function (c) { return c.tr.cp * (1 - c.tr.np); });
       var drinker = a, forced = false, HKt = HK.HateKit;
       /* 敵対の強さで嫌っている相手がいて、強引な性格なら、その相手に無理やり飲ませる */
@@ -9888,7 +9974,7 @@
       } else text = ctx.t(ctx.pick(lines), drinker).replace(/\{n\}/g, String(n));
       var st = I.state(drinker);
       if (st) text += ctx.t(st, drinker);
-      var total = ctx.flags.consumed[r.k];
+      var total = r.n - globLeft(ctx, r);
       text += '（' + K[r.k].item + ' ' + total + '/' + r.n + K[r.k].unit + '）';
       var whyT = forced === 'hate' ? a.name + 'は' + drinker.name + 'を敵視している（嫌悪 ' + Math.round(HKt.level(ctx, a, drinker)) + '）・強引な性格。自分では飲まずに、無理やり飲ませた（' + drinker.name + 'の嫌悪も上がった）' : forced ? a.name + 'のCP高・NP低／' + drinker.name + 'のAC（断れない）' : drinker.name + 'の' + { np: 'NP（自分が引き受ける）', fc: '衝動性（面白がる）', cold: 'ドライさ（効率）', ac: 'AC（空気を読んで）', cp: 'CP（負けず嫌い）' }[tk];
       var e = { text: text, why: whyT, with: drinker !== a ? [drinker] : null, mag: 6 };
@@ -10119,6 +10205,30 @@
         return { text: ctx.t(ctx.pick(['{a}のお腹が、聞いたことのない音を立てた。{a}は部屋の隅の仕切りへ駆け込んだ。', '{a}「…ちょっと、向こう向いてて。しばらく」', '{a}は脂汗を浮かべて、お腹を抱えてうずくまった。「辛いのって、二回来るんだ…」', '{a}は仕切りの向こうから「絶対に聞かないで」と三回言った。', '{a}は三度目のトイレから戻って、無言で床に倒れた。']), a), why: '激辛でお腹を壊した（体力 ' + ctx.stat(a, 'hp') + '）' };
       }
       return { text: ctx.t(ctx.pick(['{a}の唇はまだ腫れていた。「たらこみたい」と言われて、{a}は口を押さえた。', '{a}は「牛乳…牛乳が欲しい…」と天井に向かって呟いた。', '{a}のしゃっくりが止まらない。', '{a}は汗が止まらず、シャツの襟をばたばたさせた。']), a), why: '激辛の後遺症' };
+    }
+  });
+
+  /* 誰かを殺さないと出られない（全年齢版・全年齢モードは、気絶させる）。ドライで攻撃的な人ほど踏み切り、優しい人・相手を想う人は踏みとどまる */
+  function killRule(ctx) { return ctx.rules.filter(function (r) { return r.k === 'kill'; })[0]; }
+  EV.push({
+    id: 'cond_kill', cat: 'betray', scope: 'pair', pri: true,
+    when: function (ctx, a, b) { var r = killRule(ctx); return !!r && !globDone(ctx, r) && ctx.stepIndex > 0 && !a.flags.down && !b.flags.knocked && b.alive !== false && a.stress > 40; },
+    w: function (ctx, a, b) { return Math.max(0.02, a.tr.cold * 0.6 + a.tr.aggr * 0.5 - a.tr.np * 0.6 + a.stress / 140 - Math.max(0, ctx.R(a, b).aff) / 120 - 0.3); },
+    run: function (ctx, a, b) {
+      var will = a.tr.cold * 0.6 + a.tr.aggr * 0.5 + a.stress / 160 - a.tr.np * 0.5 - Math.max(0, ctx.R(a, b).aff) / 90;
+      var safe = HK.SAFE_ON;
+      if (ctx.rng() > HK.clamp(will, 0.05, 0.9)) {
+        ctx.stress(a, 10); ctx.mod(b, a, { ten: 12, trust: -10 });
+        return { mag: 20, text: ctx.t(ctx.pick(safe ? ['{a}は{b}の背後で拳を握りしめた。……けれど、振り下ろせなかった。', '{a}は{b}の首筋に手を伸ばしかけて、震える指を引っ込めた。', '「……できるわけ、ないだろ」{a}は扉の紙を睨んで、床に座り込んだ。'] : ['{a}は{b}の背後で、割れた照明の破片を握りしめた。……けれど、振り下ろせなかった。', '{a}は眠る{b}の首に手をかけて、そのまま動けなくなった。指先が、ひどく冷たかった。', '「……できるわけ、ないだろ」{a}は扉の紙を握りつぶして、壁に背を預けた。']), a, b), why: a.name + 'は条件を満たそうとして、踏みとどまった（優しさ・' + b.name + 'への好意）' };
+      }
+      if (safe) {
+        b.flags.knocked = true; b.flags.down = 999; b.flags.knockedBy = a.i;
+        ctx.mod(b, a, { aff: -40, ten: 40, trust: -50 }); ctx.others(a).forEach(function (o) { if (o !== b) ctx.mod(o, a, { ten: 20, trust: -25 }); });
+        return { mag: 45, text: ctx.t(ctx.pick(['{a}は{b}の背後に回り、首筋を強く打った。{b}は声もなく崩れ落ちた。扉の紙の文字が、一つ消えた。', '{a}は{b}の口元に、部屋の隅にあった薬を染み込ませた布を押し当てた。{b}の体から、ゆっくりと力が抜けていった。', '揉み合いになった末、{b}は壁に頭を打ちつけて動かなくなった。息はある。{a}は扉の紙を見上げた。']), a, b), why: a.name + 'は条件のために、' + b.name + 'を気絶させた（ドライさ・攻撃性・焦り）' };
+      }
+      ctx.kill(b, a, '部屋の条件のために');
+      ctx.others(a).forEach(function (o) { ctx.mod(o, a, { aff: -40, ten: 45, trust: -60 }); });
+      return { mag: 60, text: ctx.t(ctx.pick(['{a}は{b}の背後に回り、迷いを振り切るように腕に力を込めた。{b}がもがくのをやめたとき、扉の鍵が外れる音がした。', '{a}は割れた照明の破片を、{b}の胸に突き立てた。{b}は信じられないものを見る目で、{a}を見上げた。', '「ごめん」――それが、{a}が{b}にかけた最後の言葉だった。']), a, b), why: a.name + 'は条件のために、' + b.name + 'を手にかけた（ドライさ・攻撃性・焦り）' };
     }
   });
 
@@ -10654,7 +10764,7 @@
   ], desc: '「三人以上で同時にした場合、全員がそれぞれ満たしたものとみなす」。回数が一回でも、三人の場面一度で全員分が数えられます。三人ちょうどでエッチか媚薬の部屋なら、受けに回れる人が一人でもいれば三人の場面（3P）が起こります' });
 
   function multiOf(ctx) { return ctx.env.multi || 'open'; }
-  function allowed(ctx) { return multiOf(ctx) !== 'no' && !ctx.flags.isOne && A.hasPairRule(ctx); }
+  function allowed(ctx) { return multiOf(ctx) !== 'no' && !ctx.flags.isOne && !ctx.flags.oneCond && A.hasPairRule(ctx); }
   /* 受け攻めの部品（親が pos.js に足す予定のものは、無ければ自前の判定に戻す） */
   /* pos.js はこのファイルより後に読み込まれるので、HK.Pos は呼ぶたびに見る（読み込み時に束縛しない） */
   function isF(c) { var P = HK.Pos; return !!(P && P.isF(c)); }
@@ -11373,7 +11483,7 @@
   EV.push({
     id: 'trio_heat', cat: 'romance', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
-      if (multiOf(ctx) === 'no' || ctx.flags.isOne || A.hasPairRule(ctx) || !ctx.flags.hasAphroRule || ctx.flags.trioHeat) return false;
+      if (multiOf(ctx) === 'no' || ctx.flags.isOne || ctx.flags.oneCond || A.hasPairRule(ctx) || !ctx.flags.hasAphroRule || ctx.flags.trioHeat) return false;
       var g = ctx.present();
       if (g.length !== 3 || !g.every(free) || !aphroHot(ctx, g)) return false;
       if (pairsOf(g).some(function (p) { return family(ctx, p[0], p[1]); })) return false;
@@ -20187,7 +20297,7 @@
   E.whiteroom = function (res, X) {
     var ex = res.end.exits, room = res.end.room || {};
     var out = X.byFate(/脱出/), stayed = X.byFate(/自分から残った/), left = X.C.filter(function (c) { return !/脱出|自分から残った/.test(c.fate); });
-    var isOne = HK.roomRules(res.env)[0].k === 'one';
+    var isOne = HK.roomOnlyOne ? HK.roomOnlyOne(res.env) : HK.roomRules(res.env)[0].k === 'one';
     var headline, lines = ['部屋：「' + (room.label || HK.roomLabel(res.env)) + '」'];
     if (isOne) {
       var e = ex[0];
@@ -37642,7 +37752,16 @@
     ST.say(S, { actors: [c], tag: '結末', kind: 'climax', text: F(pk(S, T.END_ARREST), { c: c.name }), why: c.name + 'は観念した', mag: 46 });
   }
   /* 自作自演のときは、仕掛けたのは被害者自身 */
-  function truthOf(S, k) { var m = {}; for (var x in k.m) m[x] = k.m[x]; if (S.mot.nobody) m.c = k.v.name; return F(k.trick.truth, m); }
+  function truthOf(S, k) {
+    var m = {}; for (var x in k.m) m[x] = k.m[x]; if (S.mot.nobody) m.c = k.v.name;
+    var t = F(k.trick.truth, m);
+    /* 殺されたあとに蘇った不死・吸血鬼（yakata-special.js で k.revived）：真相の語りにも、蘇ったことを添える */
+    if (k.revived && k.v) t += pk(S, ['もっとも、' + k.v.name + 'はそのあと、何事もなかったように起き上がったのだが。', '――その' + k.v.name + 'が、翌朝には息を吹き返していたことを除けば。', '殺したはずの' + k.v.name + 'が蘇ったことが、計画の唯一の誤算だった。']);
+    return t;
+  }
+  Y.truthOf = truthOf;
+  Y.gainClue = function (S, p, pref) { return gain(S, p, pref); };
+  Y.investigators = function (S) { return inv(S).filter(function (d) { return !d.mad; }); };
   function found(S) { return S.pool.filter(function (x) { return x.found; }).length; }
 
 
@@ -37804,9 +37923,12 @@
       here: function (p) { return !p.gone; },
       say: function (o) {
         var a0 = o.actors[0];
-        if (o.tag === '蘇生' && S.kills.some(function (k) { return k.v === a0; })) o.text += NOTE[Math.floor(S.rng() * NOTE.length)].replace(/\{a\}/g, a0.name);
+        var kk = o.tag === '蘇生' ? S.kills.filter(function (k) { return k.v === a0 && !k.revived; })[0] : null;
+        if (kk) o.text += NOTE[Math.floor(S.rng() * NOTE.length)].replace(/\{a\}/g, a0.name);
         var r = o.short && S.room != null ? ST.sayB(S, o, o.short) : ST.say(S, o);
         if (o.key && r) ST.key(S, r, o.key);
+        /* 殺された人が蘇った：犯人の反応と、探偵が証言から手がかりを拾う（推理にも残す） */
+        if (kk) { kk.revived = true; a0.spRevealed = true; reactRevive(S, a0); }
         return r;
       },
       hp: function (p) { return p.hpS == null ? 100 : p.hpS; },
@@ -37826,6 +37948,26 @@
     };
     A.nowH = h;
     return A;
+  }
+  /* 犯人の反応（冷たい人は平然を装い、衝動的な人は動揺し、ほかは確かめに行く） */
+  var CUL = {
+    cold: ['{c}は、眉ひとつ動かさなかった。ただ、カップを持つ指先だけが白くなっていた。', '{c}は「よかった」とだけ言った。その声は、ほかの誰よりも落ち着いていた。', '{c}は窓の外の吹雪に目をやったまま、{a}のほうを一度も見なかった。'],
+    shaken: ['{c}の手から、持っていたものが床に落ちた。{c}は慌てて拾い上げ、「驚いて」とだけ言った。', '{c}の顔から、さっと血の気が引いた。誰よりも早く、{c}はその場を離れた。', '{c}は「嘘だろ」と呟きかけて、口をつぐんだ。その一言を、何人かが聞いていた。'],
+    check: ['夜更け、{c}は{a}の部屋の前で長いこと立ち止まっていた。足音に気づいて、{c}は何も言わずに去った。', '{c}は、{a}に「本当に何も覚えていないのか」と、二度も確かめた。', '{c}は、蘇った{a}の首筋の傷を、じっと見つめていた。その目は、心配しているようには見えなかった。']
+  };
+  var CLUE = ['{a}の話を聞いた{d}は、手帳に何かを書き足した。――{t}', '{d}は{a}に、襲われた時刻と場所を繰り返し尋ねた。――{t}', '「顔は見ていない。でも、匂いだけは覚えている」{a}の一言で、{d}は一つの線を引いた。――{t}'];
+  function reactRevive(S, a) {
+    var rng = S.rng, c = S.cul, F = function (t, v) { return ST.fmt(t, v); };
+    if (c && c !== a && c.alive && !c.gone && !c.bound) {
+      var t = c.tr || {}, k = (t.cold || 0) > 0.55 ? 'cold' : (t.impulse || 0) > 0.5 ? 'shaken' : 'check';
+      c.m.sus = clamp((c.m.sus || 0) + (k === 'shaken' ? 18 : k === 'check' ? 10 : 4), 0, 100);
+      ST.say(S, { actors: [c, a], tag: '動揺', text: F(CUL[k][Math.floor(rng() * CUL[k].length)], { a: a.name, c: c.name }), why: '殺したはずの' + a.name + 'が蘇った（' + c.name + 'の反応：' + { cold: '平然を装う', shaken: '動揺する', check: '確かめに行く' }[k] + '）', mag: 24 });
+    }
+    var ds = Y.investigators ? Y.investigators(S).filter(function (d) { return d !== a && d !== c; }) : [];
+    if (ds.length && Y.gainClue && rng() < 0.6) {
+      var d = ds[0], tc = Y.gainClue(S, d, 'witness');
+      if (tc) ST.say(S, { actors: [d, a], tag: '手がかり', text: F(CLUE[Math.floor(rng() * CLUE.length)], { a: a.name, d: d.name, t: tc }), why: '蘇った' + a.name + 'の証言', mag: 22 });
+    }
   }
   function hourOf(day, ph) { return (day - 1) * 24 + ({ night: 22, morning: 8, noon: 12, eve: 17 }[ph] || 0); }
   Y.SPEC = {
@@ -44280,7 +44422,8 @@
     var safe = SAFE(), stn = O.stance(ctx, b, a), opts = [];
     if (opt.cage !== false) opts.push(['cage', ty === 'bind' ? 3 : ty === 'devote' ? 2 : 1.4]);
     if (opt.harm !== false && c) opts.push(['harm', ty === 'purge' ? 3.5 : ty === 'bind' ? 1.4 : 0.6]);
-    if (opt.shinju !== false) opts.push(['shinju', ty === 'depend' ? 3 : stn === 'mutual' ? 2.2 : 0.7]);
+    /* 心中の起こりやすさは箱庭ごとに opt.shinjuW で下げられる（出られない部屋は 0.35） */
+    if (opt.shinju !== false) opts.push(['shinju', (ty === 'depend' ? 3 : stn === 'mutual' ? 2.2 : 0.7) * (opt.shinjuW == null ? 1 : opt.shinjuW)]);
     /* 箱庭ごとの暴走（opt.more → [[id, 重み, run(ctx, a, b, s, ty, c)], ...]） */
     var more = opt.more ? opt.more(ctx, a, b, s, ty, c, safe) || [] : [];
     more.forEach(function (m) { if (m[1] > 0) opts.push(m); });
@@ -44791,7 +44934,8 @@
   });
   if (SC.zombie) O.install(SC.zombie, { w: 1.4, pace: 2.4, cool: 1, extra: SEEK_EV, after: seekAfter });
   if (SC.goukon) O.install(SC.goukon, { w: 1.8, pace: 3.2, cool: 0, shinju: false, lethal: false });
-  if (SC.whiteroom) O.install(SC.whiteroom, { w: 1.6, pace: 3, cool: 0 });
+  /* 出られない部屋：閉じた部屋で暴走は起きやすいが、心中は起きにくく（監禁・引き止めのほうに寄せる） */
+  if (SC.whiteroom) O.install(SC.whiteroom, { w: 1.6, pace: 3, cool: 0, shinjuW: 0.35 });
 })();
 ;/* ==== js/obsess-omega.js ==== */
 /* 箱庭シミュレーター: オメガバースの執着（ヤンデレ）

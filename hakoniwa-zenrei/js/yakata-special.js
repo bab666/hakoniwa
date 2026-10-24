@@ -17,9 +17,12 @@
       here: function (p) { return !p.gone; },
       say: function (o) {
         var a0 = o.actors[0];
-        if (o.tag === '蘇生' && S.kills.some(function (k) { return k.v === a0; })) o.text += NOTE[Math.floor(S.rng() * NOTE.length)].replace(/\{a\}/g, a0.name);
+        var kk = o.tag === '蘇生' ? S.kills.filter(function (k) { return k.v === a0 && !k.revived; })[0] : null;
+        if (kk) o.text += NOTE[Math.floor(S.rng() * NOTE.length)].replace(/\{a\}/g, a0.name);
         var r = o.short && S.room != null ? ST.sayB(S, o, o.short) : ST.say(S, o);
         if (o.key && r) ST.key(S, r, o.key);
+        /* 殺された人が蘇った：犯人の反応と、探偵が証言から手がかりを拾う（推理にも残す） */
+        if (kk) { kk.revived = true; a0.spRevealed = true; reactRevive(S, a0); }
         return r;
       },
       hp: function (p) { return p.hpS == null ? 100 : p.hpS; },
@@ -39,6 +42,26 @@
     };
     A.nowH = h;
     return A;
+  }
+  /* 犯人の反応（冷たい人は平然を装い、衝動的な人は動揺し、ほかは確かめに行く） */
+  var CUL = {
+    cold: ['{c}は、眉ひとつ動かさなかった。ただ、カップを持つ指先だけが白くなっていた。', '{c}は「よかった」とだけ言った。その声は、ほかの誰よりも落ち着いていた。', '{c}は窓の外の吹雪に目をやったまま、{a}のほうを一度も見なかった。'],
+    shaken: ['{c}の手から、持っていたものが床に落ちた。{c}は慌てて拾い上げ、「驚いて」とだけ言った。', '{c}の顔から、さっと血の気が引いた。誰よりも早く、{c}はその場を離れた。', '{c}は「嘘だろ」と呟きかけて、口をつぐんだ。その一言を、何人かが聞いていた。'],
+    check: ['夜更け、{c}は{a}の部屋の前で長いこと立ち止まっていた。足音に気づいて、{c}は何も言わずに去った。', '{c}は、{a}に「本当に何も覚えていないのか」と、二度も確かめた。', '{c}は、蘇った{a}の首筋の傷を、じっと見つめていた。その目は、心配しているようには見えなかった。']
+  };
+  var CLUE = ['{a}の話を聞いた{d}は、手帳に何かを書き足した。――{t}', '{d}は{a}に、襲われた時刻と場所を繰り返し尋ねた。――{t}', '「顔は見ていない。でも、匂いだけは覚えている」{a}の一言で、{d}は一つの線を引いた。――{t}'];
+  function reactRevive(S, a) {
+    var rng = S.rng, c = S.cul, F = function (t, v) { return ST.fmt(t, v); };
+    if (c && c !== a && c.alive && !c.gone && !c.bound) {
+      var t = c.tr || {}, k = (t.cold || 0) > 0.55 ? 'cold' : (t.impulse || 0) > 0.5 ? 'shaken' : 'check';
+      c.m.sus = clamp((c.m.sus || 0) + (k === 'shaken' ? 18 : k === 'check' ? 10 : 4), 0, 100);
+      ST.say(S, { actors: [c, a], tag: '動揺', text: F(CUL[k][Math.floor(rng() * CUL[k].length)], { a: a.name, c: c.name }), why: '殺したはずの' + a.name + 'が蘇った（' + c.name + 'の反応：' + { cold: '平然を装う', shaken: '動揺する', check: '確かめに行く' }[k] + '）', mag: 24 });
+    }
+    var ds = Y.investigators ? Y.investigators(S).filter(function (d) { return d !== a && d !== c; }) : [];
+    if (ds.length && Y.gainClue && rng() < 0.6) {
+      var d = ds[0], tc = Y.gainClue(S, d, 'witness');
+      if (tc) ST.say(S, { actors: [d, a], tag: '手がかり', text: F(CLUE[Math.floor(rng() * CLUE.length)], { a: a.name, d: d.name, t: tc }), why: '蘇った' + a.name + 'の証言', mag: 22 });
+    }
   }
   function hourOf(day, ph) { return (day - 1) * 24 + ({ night: 22, morning: 8, noon: 12, eve: 17 }[ph] || 0); }
   Y.SPEC = {

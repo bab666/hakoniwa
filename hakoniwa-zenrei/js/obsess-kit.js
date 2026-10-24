@@ -279,7 +279,8 @@
     var safe = SAFE(), stn = O.stance(ctx, b, a), opts = [];
     if (opt.cage !== false) opts.push(['cage', ty === 'bind' ? 3 : ty === 'devote' ? 2 : 1.4]);
     if (opt.harm !== false && c) opts.push(['harm', ty === 'purge' ? 3.5 : ty === 'bind' ? 1.4 : 0.6]);
-    if (opt.shinju !== false) opts.push(['shinju', ty === 'depend' ? 3 : stn === 'mutual' ? 2.2 : 0.7]);
+    /* 心中の起こりやすさは箱庭ごとに opt.shinjuW で下げられる（出られない部屋は 0.35） */
+    if (opt.shinju !== false) opts.push(['shinju', (ty === 'depend' ? 3 : stn === 'mutual' ? 2.2 : 0.7) * (opt.shinjuW == null ? 1 : opt.shinjuW)]);
     /* 箱庭ごとの暴走（opt.more → [[id, 重み, run(ctx, a, b, s, ty, c)], ...]） */
     var more = opt.more ? opt.more(ctx, a, b, s, ty, c, safe) || [] : [];
     more.forEach(function (m) { if (m[1] > 0) opts.push(m); });

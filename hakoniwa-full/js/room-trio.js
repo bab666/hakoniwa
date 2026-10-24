@@ -23,7 +23,7 @@
   ], desc: '「三人以上で同時にした場合、全員がそれぞれ満たしたものとみなす」。回数が一回でも、三人の場面一度で全員分が数えられます。三人ちょうどでエッチか媚薬の部屋なら、受けに回れる人が一人でもいれば三人の場面（3P）が起こります' });
 
   function multiOf(ctx) { return ctx.env.multi || 'open'; }
-  function allowed(ctx) { return multiOf(ctx) !== 'no' && !ctx.flags.isOne && A.hasPairRule(ctx); }
+  function allowed(ctx) { return multiOf(ctx) !== 'no' && !ctx.flags.isOne && !ctx.flags.oneCond && A.hasPairRule(ctx); }
   /* 受け攻めの部品（親が pos.js に足す予定のものは、無ければ自前の判定に戻す） */
   /* pos.js はこのファイルより後に読み込まれるので、HK.Pos は呼ぶたびに見る（読み込み時に束縛しない） */
   function isF(c) { var P = HK.Pos; return !!(P && P.isF(c)); }
@@ -742,7 +742,7 @@
   EV.push({
     id: 'trio_heat', cat: 'romance', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
-      if (multiOf(ctx) === 'no' || ctx.flags.isOne || A.hasPairRule(ctx) || !ctx.flags.hasAphroRule || ctx.flags.trioHeat) return false;
+      if (multiOf(ctx) === 'no' || ctx.flags.isOne || ctx.flags.oneCond || A.hasPairRule(ctx) || !ctx.flags.hasAphroRule || ctx.flags.trioHeat) return false;
       var g = ctx.present();
       if (g.length !== 3 || !g.every(free) || !aphroHot(ctx, g)) return false;
       if (pairsOf(g).some(function (p) { return family(ctx, p[0], p[1]); })) return false;

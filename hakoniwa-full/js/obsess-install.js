@@ -259,5 +259,6 @@
   });
   if (SC.zombie) O.install(SC.zombie, { w: 1.4, pace: 2.4, cool: 1, extra: SEEK_EV, after: seekAfter });
   if (SC.goukon) O.install(SC.goukon, { w: 1.8, pace: 3.2, cool: 0, shinju: false, lethal: false });
-  if (SC.whiteroom) O.install(SC.whiteroom, { w: 1.6, pace: 3, cool: 0 });
+  /* 出られない部屋：閉じた部屋で暴走は起きやすいが、心中は起きにくく（監禁・引き止めのほうに寄せる） */
+  if (SC.whiteroom) O.install(SC.whiteroom, { w: 1.6, pace: 3, cool: 0, shinjuW: 0.35 });
 })();

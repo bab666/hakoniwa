@@ -82,7 +82,7 @@
   E.whiteroom = function (res, X) {
     var ex = res.end.exits, room = res.end.room || {};
     var out = X.byFate(/脱出/), stayed = X.byFate(/自分から残った/), left = X.C.filter(function (c) { return !/脱出|自分から残った/.test(c.fate); });
-    var isOne = HK.roomRules(res.env)[0].k === 'one';
+    var isOne = HK.roomOnlyOne ? HK.roomOnlyOne(res.env) : HK.roomRules(res.env)[0].k === 'one';
     var headline, lines = ['部屋：「' + (room.label || HK.roomLabel(res.env)) + '」'];
     if (isOne) {
       var e = ex[0];
