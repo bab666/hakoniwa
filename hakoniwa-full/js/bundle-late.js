@@ -26108,8 +26108,8 @@
   function L(s) { return s.split('|'); }
   /* この回でまだ使っていない文から選ぶ（solo-hole.js の HK.HoleFresh） */
   function P(S, a) { return HK.HoleFresh ? HK.HoleFresh(S, a) : K.pick(S, a); }
-  var LOVE = /^(lover|mate|fated|almost|fwb)$/, W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7, sibbad: -0.15, bad: -0.4 };
-  var FAMILY = /^(sibling|sibprot|sibclose|sibbad|parent|pparent)$/;
+  var LOVE = /^(lover|mate|fated|almost|fwb)$/, W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, classmate: 0.4, boss: 0.45, benefactor: 0.6, relative: 0.6, worship: 0.85, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7, sibbad: -0.15, bad: -0.4 };
+  var FAMILY = /^(sibling|sibprot|sibclose|sibbad|parent|pparent|relative)$/;
 
   var T = {
     arrive1: L('{b}は、壁の向こう側の小部屋に足を踏み入れた。壁から、人の下半身が突き出ていた。|物音を辿って裏の通路に入った{b}は、壁の穴から生えた誰かの腰に出くわした。|{b}が扉を開けると、壁から腰から下だけがこちら側に突き出していた。'),
@@ -27695,6 +27695,17 @@
     spark: L('{area}で{b}と目が合った瞬間、{a}は場違いに胸が高鳴った。こんな時に、何を考えているんだろう。|{area}の薄暗がりで{b}の顔を見つけて、{a}はなぜか、まず髪を整えたくなった。'),
     good: L('{area}の物陰から現れたのは、{b}だった。{a}は構えた{w}を、ゆっくり下ろした。|{a}は{area}で、見覚えのある顔を見つけた。{b}だ。知った顔がこんなに嬉しいとは思わなかった。'),
     bad: L('{a}は{area}で{b}と鉢合わせた。どちらも、武器を下ろさなかった。|{area}にいたのは{b}だった。{a}は舌打ちをこらえた。よりによって、こいつか。'),
+    /* 新しい関係：同級生・上司と部下・執着（信仰）・恩人・親族・執着（ヤンデレ） */
+    classmate: L('{area}で、{a}は見覚えのある横顔を見つけた。学生のころ同じクラスだった{b}だ。{a}「{b}……？　生きてたんだ」――{b}は、あの頃と同じ顔で笑った。|{a}と{b}は、{area}の瓦礫越しに目が合った。一瞬の間のあと、二人は同時に、学生時代のあだ名を口にした。|{a}は{area}で{b}と鉢合わせた。卒業以来の再会が、こんな街の真ん中になるとは思わなかった。{a}「{b}、変わってないな」'),
+    bossA: L('{area}で、{a}は部下の{b}を見つけた。{a}「{b}、無事か。報告は後でいい」――{b}の肩を叩いた{a}の手は、わずかに震えていた。|{a}は{area}で{b}の姿を見つけると、真っ先に怪我の有無を確かめた。{a}「よく生き延びた。ここからは一緒に動く」'),
+    bossB: L('{area}で、{a}は上司の{b}を見つけた。{a}「{b}……！　無事だった」――思わず駆け寄った{a}に、{b}はいつもの調子で「遅いぞ」と返した。|{a}は{area}で{b}を見つけて、背筋を伸ばした。こんな状況でも、{b}の前では部下の顔に戻っていた。'),
+    worshipA: L('{area}で{b}の姿を見つけた瞬間、{a}はその場に膝をついた。{a}「{b}……よかった。本当によかった」――{a}は祈るように両手を組んだまま、しばらく顔を上げられなかった。|{a}は{area}で{b}を見つけると、駆け寄って{b}の前に立ちはだかった。{a}「もう大丈夫。ここからは、私が{b}の盾になる」'),
+    worshipB: L('{area}にいたのは{b}だった。{a}の姿を見た瞬間、{b}は持っていた荷物を取り落とし、泣きそうな顔で駆け寄ってきた。|{a}は{area}で{b}と再会した。{b}は{a}の無事を確かめると、何度も何度も頭を下げた。'),
+    beneA: L('{area}で、{a}はかつて助けた{b}を見つけた。{b}は{a}に気づくと、深々と頭を下げた。{a}「頭なんか下げなくていい。生きててくれれば、それで十分だ」|{a}は{area}で{b}と再会した。{a}の顔を見た{b}の目が、みるみる潤んでいった。'),
+    beneB: L('{area}で、{a}は恩人の{b}を見つけた。{a}「{b}……！　今度は、私が恩を返す番だ」――{a}は{b}の荷物を、半ば奪うように背負った。|{a}は{area}で{b}を見つけて、言葉より先に頭を下げていた。あの日{b}に救われなければ、{a}は今ここにいなかった。'),
+    relative: L('{area}にいたのは、親戚の{b}だった。{a}「{b}！　よかった、無事で」――二人はしばらく、互いの家族の消息を確かめ合った。|{a}は{area}で{b}を見つけて、思わず子どもの頃の呼び方で名前を呼んだ。親戚の集まりでしか会わなかった顔が、今はこんなにも心強かった。'),
+    yanA: L('{area}で{b}を見つけた瞬間、{a}は駆け寄って{b}の手首を掴んだ。{a}「やっと見つけた。……もう、離さないから」――その指には、痛いほどの力がこもっていた。|{a}は{area}で{b}の姿を見つけて、息を呑んだ。{a}「{b}。ずっと、ずっと探してた」――{a}は{b}から一瞬も目を離さなかった。'),
+    yanB: L('{area}にいたのは{b}だった。{b}は{a}を見るなり、まっすぐ歩み寄ってきた。その目は、少しも笑っていなかった。|{a}が{area}に着くと、{b}が待っていたかのように立っていた。{b}「遅かったね、{a}」'),
     new: L('{a}は{area}で、{b}と出くわした。生きている人間を見るのは、半日ぶりだった。|{area}の暗がりから、{b}が両手を上げて出てきた。「噛まれてない。人間だ」|{a}が{area}に着くと、先に{b}がいた。{b}は武器を握ったまま、{a}をじっと見ていた。|{a}は{area}で{b}と鉢合わせ、互いに武器を向けたまま十秒見つめ合った。先に「……ゾンビじゃないよな」と言ったのは{b}だった。')
   };
 
@@ -27791,6 +27802,10 @@
       if (ty === 'parent' || ty === 'pparent') return first ? 'parent' : 'child';
       if (ty === 'senpai') return first ? 'senpaiA' : 'senpaiB';
       if (ty === 'master') return first ? 'masterA' : 'masterB';
+      if (ty === 'worship') return first ? 'worshipA' : 'worshipB';
+      if (ty === 'benefactor') return first ? 'beneA' : 'beneB';
+      if (ty === 'boss') return first ? 'bossA' : 'bossB';
+      if (ty === 'yan') return first ? 'yanA' : 'yanB';
       if (ty === 'crush') return HK.Ties.pining && HK.Ties.pining(ctx, a, b) ? 'crushM' : first ? 'crushA' : 'crushB';
       if (SCENE[ty]) return ty;
     }
@@ -27799,21 +27814,24 @@
     if (ra.aff + rb.aff > 40) return 'good';
     return 'new';
   }
-  var MOOD = { protA: 'joy', protB: 'joy', sibclose: 'joy', teacherA: 'joy', teacherB: 'joy', mentorA: 'joy', mentorB: 'joy', lover: 'joy', fwb: 'shy', almost: 'shy', crushA: 'shy', crushB: 'joy', crushM: 'shy', ex: 'shy', parent: 'joy', child: 'joy', sibling: 'joy', best: 'joy', childhood: 'joy', buddy: 'joy', friend: 'joy', colleague: 'joy', senpaiA: 'joy', senpaiB: 'joy', masterA: 'joy', masterB: 'joy', rival: 'tense', enemy: 'tense', acq: 'joy', spark: 'shy', good: 'joy', bad: 'tense', new: null };
+  var MOOD = { protA: 'joy', protB: 'joy', sibclose: 'joy', teacherA: 'joy', teacherB: 'joy', mentorA: 'joy', mentorB: 'joy', lover: 'joy', fwb: 'shy', almost: 'shy', crushA: 'shy', crushB: 'joy', crushM: 'shy', ex: 'shy', parent: 'joy', child: 'joy', sibling: 'joy', best: 'joy', childhood: 'joy', buddy: 'joy', friend: 'joy', colleague: 'joy', senpaiA: 'joy', senpaiB: 'joy', masterA: 'joy', masterB: 'joy', rival: 'tense', enemy: 'tense', acq: 'joy', spark: 'shy', good: 'joy', bad: 'tense', new: null, classmate: 'joy', bossA: 'joy', bossB: 'joy', worshipA: 'joy', worshipB: 'joy', beneA: 'joy', beneB: 'joy', relative: 'joy', yanA: 'shy', yanB: null };
   var FX = {
     protA: [12, 10, 0, 0], protB: [12, 10, 0, 0], sibclose: [12, 12, 0, 0], teacherA: [8, 10, 0, 0], teacherB: [8, 10, 0, 0], mentorA: [8, 12, 0, 0], mentorB: [10, 14, 0, 0],
     lover: [12, 10, 8, 0], fwb: [8, 6, 8, 0], almost: [10, 8, 10, 0], crushA: [8, 6, 10, 0], crushB: [8, 8, 4, 0], crushM: [8, 6, 10, 0], ex: [6, 4, 6, 4], parent: [12, 10, 0, 0], child: [12, 10, 0, 0], sibling: [10, 10, 0, 2],
     best: [12, 12, 0, 0], childhood: [10, 10, 2, 0], buddy: [8, 14, 0, 0], friend: [8, 8, 0, 0], colleague: [6, 8, 0, 0], senpaiA: [8, 8, 0, 0], senpaiB: [8, 10, 2, 0], masterA: [6, 8, 0, 0], masterB: [8, 12, 0, 0],
-    rival: [3, 5, 2, 4], enemy: [0, -2, 0, 8], acq: [5, 5, 0, 0], spark: [6, 4, 8, 0], good: [8, 8, 0, 0], bad: [0, 0, 0, 6], new: [3, 5, 0, 0]
+    rival: [3, 5, 2, 4], enemy: [0, -2, 0, 8], acq: [5, 5, 0, 0], spark: [6, 4, 8, 0], good: [8, 8, 0, 0], bad: [0, 0, 0, 6], new: [3, 5, 0, 0],
+    classmate: [8, 8, 0, 0], bossA: [6, 10, 0, 0], bossB: [8, 12, 0, 0], worshipA: [10, 10, 0, 0], worshipB: [6, 6, 0, 0], beneA: [8, 8, 0, 0], beneB: [12, 12, 0, 0], relative: [10, 10, 0, 0], yanA: [6, 2, 6, 2], yanB: [2, -2, 0, 6]
   };
 
   Z.reunion = function (ctx, a, b, to) {
     var rng = ctx.rng, k = kindOf(ctx, a, b), A = ctx.zb.A[to];
     var m = { a: a.name, b: b.name, area: A.name, w: wname(a) };
-    var t = fill(ctx.pick(SCENE[k]), m), extra = '', mood = MOOD[k], why = (k === 'new' ? '居合わせた（' : '再会（') + ({ protA: '我が子のように守ってきた弟妹', protB: '守ってくれた兄姉', sibclose: 'きょうだい', teacherA: '教え子', teacherB: '先生', mentorA: '弟子', mentorB: '師匠', lover: '恋人', fwb: 'セフレ', almost: '友達以上恋人未満', crushA: '片想いの相手', crushB: '自分を想う相手', crushM: '両片想いの相手', ex: '元恋人', parent: '我が子', child: '親', sibling: 'きょうだい', best: '親友', childhood: '幼馴染', buddy: 'バディ', friend: '友人', colleague: '同僚', senpaiA: '後輩', senpaiB: '先輩', masterA: '従者', masterB: '主', rival: 'ライバル', enemy: '敵対', acq: '知人', spark: '惹かれていた相手', good: '好意のある相手', bad: '緊張のある相手', new: '初対面' }[k]) + '）';
+    var t = fill(ctx.pick(SCENE[k]), m), extra = '', mood = MOOD[k], why = (k === 'new' ? '居合わせた（' : '再会（') + ({ protA: '我が子のように守ってきた弟妹', protB: '守ってくれた兄姉', sibclose: 'きょうだい', teacherA: '教え子', teacherB: '先生', mentorA: '弟子', mentorB: '師匠', lover: '恋人', fwb: 'セフレ', almost: '友達以上恋人未満', crushA: '片想いの相手', crushB: '自分を想う相手', crushM: '両片想いの相手', ex: '元恋人', parent: '我が子', child: '親', sibling: 'きょうだい', best: '親友', childhood: '幼馴染', buddy: 'バディ', friend: '友人', colleague: '同僚', senpaiA: '後輩', senpaiB: '先輩', masterA: '従者', masterB: '主', rival: 'ライバル', enemy: '敵対', acq: '知人', spark: '惹かれていた相手', good: '好意のある相手', bad: '緊張のある相手', new: '初対面', classmate: '同級生', bossA: '部下', bossB: '上司', worshipA: '信仰する相手', worshipB: '自分を信仰する相手', beneA: 'かつて助けた相手', beneB: '恩人', relative: '親族', yanA: '執着する相手', yanB: '自分に執着する相手' }[k]) + '）';
     var close = k !== 'new' && k !== 'bad' && k !== 'enemy' && k !== 'rival' && k !== 'acq';
-    /* 探していた */
-    if (close && (a.focus === b || (a.action && a.action.id === 'seek' && tie(ctx, a, b)) || (a.z.family && a.z.family.pc === b.i)) && rng() < 0.6) { extra += fill(ctx.pick(k === 'sibclose' ? FLAT.sought : k === 'crushM' ? PIN_SOUGHT : STATE.sought), m); why += k === 'crushM' ? '／二人とも互いを探していたが、どちらもそれを隠した' : '／' + a.name + 'は' + b.name + 'を探していた'; }
+    /* 探していた：目標「〇〇を探す」（zombie-seek.js）なら、探し続けた末の再会にする */
+    var sk = Z.seekMet ? Z.seekMet(ctx, a, b) : null;
+    if (sk) { extra += sk.pre; why += '／' + sk.who.join('／'); }
+    else if (close && (a.focus === b || (a.action && a.action.id === 'seek' && tie(ctx, a, b)) || (a.z.family && a.z.family.pc === b.i)) && rng() < 0.6) { extra += fill(ctx.pick(k === 'sibclose' ? FLAT.sought : k === 'crushM' ? PIN_SOUGHT : STATE.sought), m); why += k === 'crushM' ? '／二人とも互いを探していたが、どちらもそれを隠した' : '／' + a.name + 'は' + b.name + 'を探していた'; }
     /* 相手の状態 */
     var bz = b.z;
     if (bz.bitten && bz.aware && !bz.hiding && close && rng() < 0.7) {
@@ -27828,6 +27846,8 @@
     if (bz.child && rng() < 0.7) extra += fill(ctx.pick(STATE.child), m);
     /* 口調の一言（着いた側）と、先にいた側の返し */
     var sayA = mood && SAY[mood][a.persona] ? a.name + ctx.pick(SAY[mood][a.persona]) : '';
+    /* 新しい関係の場面は、着いた側の台詞が場面の中にあるので重ねない（執着・信仰する側の口調の一言は場面に合わないことがある） */
+    if (/^(?:classmate|bossA|bossB|worshipA|worshipB|beneA|beneB|relative|yanA|yanB)$/.test(k) && (t.indexOf(a.name + '「') >= 0 || k === 'worshipA')) sayA = '';
     var moodB = mood === 'grief' ? null : k === 'crushA' ? 'joy' : k === 'crushB' ? 'shy' : mood;
     var sayB = moodB && rng() < 0.55 && SAY[moodB][b.persona] ? b.name + ctx.pick(SAY[moodB][b.persona]) : '';
     /* 親友のようなきょうだい：言葉は対等なやりとりに、気遣いはお互いさまに */
@@ -27844,7 +27864,7 @@
     return {
       actors: [a, b], cat: k === 'enemy' || k === 'bad' || k === 'rival' ? 'conflict' : k === 'lover' || k === 'spark' || k === 'almost' || k === 'crushM' ? 'romance' : 'bond',
       fx: function () { ctx.mod2(a, b, { aff: f[0], trust: f[1], att: f[2], ten: f[3] }, { aff: f[0], trust: f[1], att: f[2], ten: f[3] }); },
-      text: t + extra + sayA + sayB, why: why, mag: close ? (mood === 'grief' ? 40 : 18) : 8
+      text: t + extra + sayA + sayB + (sk ? sk.post : ''), why: why, mag: close ? (mood === 'grief' ? 40 : 18) : 8
     };
   };
 })();
@@ -32760,7 +32780,7 @@
     if (t.cold > 0.55 && t.aggr < 0.5) return 'cool';
     return t.cp > 0.55 || t.aggr > 0.55 ? 'smug' : 'sorry';
   }
-  var TW = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.5, best: 0.8, buddy: 0.75, childhood: 0.7, sibling: 0.65, sibclose: 0.8, sibprot: 0.8, parent: 0.8, pparent: 0.75, friend: 0.5, mentor: 0.5, master: 0.55, teacher: 0.45, senpai: 0.35, colleague: 0.25, acq: 0.1, crush: 0.85, rival: -0.35, enemy: -0.85 , sibbad: -0.15, bad: -0.4 };
+  var TW = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.5, best: 0.8, buddy: 0.75, childhood: 0.7, sibling: 0.65, sibclose: 0.8, sibprot: 0.8, parent: 0.8, pparent: 0.75, friend: 0.5, mentor: 0.5, master: 0.55, teacher: 0.45, senpai: 0.35, colleague: 0.25, classmate: 0.35, boss: 0.4, benefactor: 0.6, relative: 0.55, worship: 0.85, acq: 0.1, crush: 0.85, rival: -0.35, enemy: -0.85 , sibbad: -0.15, bad: -0.4 };
   function closeness(input, a, b) {
     if (a.aff && a.aff[b.i] != null) return a.aff[b.i];
     var w = 0;

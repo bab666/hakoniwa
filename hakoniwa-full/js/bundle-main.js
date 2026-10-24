@@ -374,6 +374,16 @@
     bad: { mods: { aff: 0.75, trust: 0.8, ten: 1.15 }, effect: '気が合わず、何かと衝突する（敵対ほど強い嫌悪ではない）。いがみ合いながらも、きっかけがあれば打ち解けることもある。相手の気持ちを選ぶと一方的な敵視にもできる。嫌悪が強まれば敵対と同じ振る舞いに', label: '不仲', dir: true, roleA: '敵視する側', roleB: '相手', hate: 1, ab: { aff: -18, trust: -8, ten: 34 }, pol: -1, fric: 1.25, pull: 1.4, bias: { conflict: 1.6, help: 0.7, bond: 0.75, romance: 0.6, combat: 1.1, betray: 1.15 } },
     yan: { mods: { att: 1.25, ten: 1.1 }, effect: '執着する側は、相手が誰かと親しくするたびに嫉妬し、執着を深めていく。深まると監視・束縛・恋敵への敵意に変わり、R18版では監禁・恋敵への危害・心中まで暴走することがある（全年齢版ではほのめかす程度）', label: '執着（ヤンデレ）', dir: true, roleA: '執着する側', roleB: '執着される側', ab: { aff: 30, att: 55, trust: -5, ten: 10 }, ba: { aff: 5 }, pol: 0, chem: 1.3, pull: 2, biasA: { romance: 1.6, conflict: 1.2 }, obsess: true },
     noobs: { mods: {}, effect: 'この二人のあいだでは、嫉妬も執着も生まれない（ほかの関係に重ねて使う）', label: '執着なし', ab: {}, pol: 0, pull: 0, noObsess: true },
+    /* 同級生：同じ学年・クラスだった（いる）仲。職業や立場によらない */
+    classmate: { mods: { trust: 1.1 }, effect: '同じ学年・同じクラスだった（いる）仲。気安く話せて、昔話で打ち解けやすい。張り合うこともある', label: '同級生', ab: { aff: 15, trust: 15, ten: 3 }, pol: 1, pull: 1.3, bias: { bond: 1.4, help: 1.15, conflict: 1.05 } },
+    /* 上司と部下：職業によらない（医者と警察でも、同じ組織・現場で上下があればこれ） */
+    boss: { mods: { trust: 1.15 }, effect: '上司は部下に指示を出して守り、部下は上司を立てて従う。職場の外では立場が揺らぐことも、恋愛に発展することもある', label: '上司と部下', dir: true, roleA: '上司', roleB: '部下', ab: { aff: 12, trust: 25, ten: 6 }, ba: { aff: 15, trust: 30, ten: 8 }, pol: 1, chem: 0.85, pull: 1.6, biasA: { help: 1.4, conflict: 1.2, bond: 1.1 }, biasB: { help: 1.5, bond: 1.1, betray: 0.5 } },
+    /* 執着（信仰）：相手を崇め、すべてを捧げようとする。想いは揺らぎにくい（stiffA・floorA）。恋愛に発展するかは「恋愛」の選択（loveOpt）、相手の気持ちは WORSHIP_BACK */
+    worship: { mods: { trust: 1.3, aff: 1.2 }, effect: '信仰する側は相手を崇め、すべてを捧げようとする。その想いは揺らぎにくく、相手のためなら身を投げ出す。恋愛に発展するかは選べる。相手の気持ち（気づいていない・受け入れている・戸惑っている・支配している・大切に思っている）も選べる', label: '執着（信仰）', dir: true, roleA: '信仰する側', roleB: '信仰される側', ab: { aff: 55, trust: 70, att: 8 }, ba: { aff: 10, trust: 10 }, pol: 1, chem: 0.7, pull: 2.4, loveOpt: true, worship: true, stiffA: { aff: 0.12, trust: 0.12 }, floorA: { aff: 35, trust: 45 }, biasA: { help: 2.2, bond: 1.4, betray: 0.05, combat: 0.2, conflict: 0.4 }, biasB: { help: 1.1 } },
+    /* 恩人：恩を受けた側の感謝は消えにくい（stiffB） */
+    benefactor: { mods: { trust: 1.15 }, effect: '恩を受けた側は恩人に深く感謝し、恩を返そうとする。恩人は相手を気にかける。恩は簡単には消えない', label: '恩人', dir: true, roleA: '恩人', roleB: '恩を受けた側', ab: { aff: 22, trust: 25 }, ba: { aff: 40, trust: 55 }, pol: 2, pull: 1.8, stiffB: { aff: 0.35, trust: 0.3 }, floorB: { aff: 5, trust: 20 }, biasA: { help: 1.4, bond: 1.2 }, biasB: { help: 2, bond: 1.3, betray: 0.15, conflict: 0.7 } },
+    /* 親族（親子・きょうだいでない）：いとこ・おじおば・甥姪など */
+    relative: { mods: { att: 0.1, trust: 1.1 }, effect: 'いとこ・おじおば・甥姪など、親子やきょうだいでない親族。気安いが遠慮もあり、いざとなれば助け合う。恋愛にはならない（「恋愛：あり」も選べる）', label: '親族', ab: { aff: 25, trust: 30, ten: 5 }, pol: 1, chem: 0.05, pull: 1.5, family: true, bias: { help: 1.5, bond: 1.2, romance: 0.1, betray: 0.4, combat: 0.4 } },
     master: { mods: { trust: 1.25 }, effect: '従は主を助けに動く', label: '主従', dir: true, roleA: '主', roleB: '従', ab: { trust: 20, aff: 15, ten: 8 }, ba: { trust: 55, aff: 30 }, pol: 1, pull: 1.8, biasA: { conflict: 1.2, help: 1.1 }, biasB: { help: 2, bond: 1.2, betray: 0.3, combat: 0.4 } }
   };
   /* 片想いの「想われる側」の温度（相手にされていない片想い） */
@@ -407,21 +417,33 @@
     mutual: { label: '執着される側：共依存（同じくらい想っている）', short: '共依存', ba: { aff: 38, att: 50, trust: 10 } }
   };
   HK.OBS_BACK_ORDER = ['', 'afraid', 'hate', 'accept', 'mutual'];
+  /* 執着（信仰）の「信仰される側」の気持ち。ba=信仰される側から信仰する側への初期値。dominate は信仰を利用して相手を支配している */
+  HK.WORSHIP_BACK = {
+    '': { label: '信仰される側：気づいていない', short: '' },
+    accept: { label: '信仰される側：受け入れている', short: '受け入れている', ba: { aff: 28, trust: 30 } },
+    confused: { label: '信仰される側：戸惑っている（重荷に感じている）', short: '戸惑っている', ba: { aff: 5, ten: 16 } },
+    dominate: { label: '信仰される側：支配している（信仰を利用して従わせている）', short: '支配している', ba: { aff: 6, trust: 12, ten: 4 }, dominate: true },
+    cherish: { label: '信仰される側：大切に思っている', short: '大切に思っている', ba: { aff: 45, trust: 45, att: 6 } }
+  };
+  HK.WORSHIP_BACK_ORDER = ['', 'accept', 'confused', 'dominate', 'cherish'];
   /* 関係の種類ごとの「相手の気持ち」の選択肢（片想い・不仲・敵対）。なければ null */
   HK.coldOpts = function (type) {
     if (type === 'crush' && HK.CRUSH_COLD) return { map: HK.CRUSH_COLD, order: HK.CRUSH_COLD_ORDER, aria: '想われる側の気持ち' };
     if ((type === 'bad' || type === 'enemy') && HK.HATE_BACK) return { map: HK.HATE_BACK, order: HK.HATE_BACK_ORDER, aria: '相手の気持ち' };
     if (type === 'yan' && HK.OBS_BACK) return { map: HK.OBS_BACK, order: HK.OBS_BACK_ORDER, aria: '執着される側の気持ち' };
+    if (type === 'worship' && HK.WORSHIP_BACK) return { map: HK.WORSHIP_BACK, order: HK.WORSHIP_BACK_ORDER, aria: '信仰される側の気持ち' };
     return null;
   };
   var HATE_WORDS = [[/一方的|片思いならぬ|相手は気にして(?:い)?ない|相手は気づいて(?:い)?ない|なんとも思って(?:い)?ない/, 'none'], [/相手はふつう|相手は普通/, 'normal'], [/相手は友(?:達|人)だと|友達だと思って/, 'friend'], [/相手は(?:好き|愛して|惚れて)|片想いされ|好かれて/, 'love']];
   var COLD_WORDS = [[/両片想い|両片思い|実は相手も/, 'mutual'], [/脈なし|眼中に|相手にされ|興味がない|興味なし/, 'none'], [/友達としか|友達止まり|異性として見|恋愛対象外|対象外/, 'friend'], [/苦手|嫌われ|避けられ|避けて/, 'dislike'], [/他に好き|ほかに好き|別に好き|好きな人がいる/, 'other']];
-  HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'parent', 'pparent', 'teacher', 'mentor', 'crush', 'yan', 'bad', 'rival', 'enemy', 'lover', 'fwb', 'ex', 'fated', 'mate', 'master', 'noobs'];
+  HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'classmate', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'relative', 'parent', 'pparent', 'teacher', 'mentor', 'boss', 'benefactor', 'crush', 'yan', 'worship', 'bad', 'rival', 'enemy', 'lover', 'fwb', 'ex', 'fated', 'mate', 'master', 'noobs'];
 
   /* 文字から関係の種類を推定（長い語から順に照合） */
   var ALIAS = [
     ['きょうだい（不仲）', 'sibbad'], ['兄弟姉妹（不仲）', 'sibbad'], ['兄弟（不仲）', 'sibbad'], ['姉妹（不仲）', 'sibbad'], ['不仲なきょうだい', 'sibbad'], ['不仲な兄弟', 'sibbad'], ['仲の悪いきょうだい', 'sibbad'], ['仲の悪い兄弟', 'sibbad'], ['兄弟（仲が悪い）', 'sibbad'], ['姉妹（仲が悪い）', 'sibbad'],
-    ['執着なし', 'noobs'], ['嫉妬しない', 'noobs'], ['ヤンデレ', 'yan'], ['執着', 'yan'],
+    ['執着なし', 'noobs'], ['嫉妬しない', 'noobs'], ['執着（信仰）', 'worship'], ['信仰', 'worship'], ['崇拝', 'worship'], ['心酔', 'worship'], ['ヤンデレ', 'yan'], ['執着', 'yan'],
+    ['同級生', 'classmate'], ['クラスメイト', 'classmate'], ['同窓', 'classmate'], ['上司と部下', 'boss'], ['上司', 'boss'], ['部下', 'boss'], ['恩人', 'benefactor'], ['命の恩人', 'benefactor'],
+    ['親族', 'relative'], ['親戚', 'relative'], ['いとこ', 'relative'], ['従兄弟', 'relative'], ['従姉妹', 'relative'], ['叔父', 'relative'], ['叔母', 'relative'], ['伯父', 'relative'], ['伯母', 'relative'], ['おじ', 'relative'], ['おば', 'relative'], ['甥', 'relative'], ['姪', 'relative'],
     ['片想い', 'crush'], ['片思い', 'crush'],
     ['友達以上恋人未満', 'almost'], ['友達以上', 'almost'], ['恋人未満', 'almost'], ['いい感じ', 'almost'],
     ['幼なじみ', 'childhood'], ['幼馴染', 'childhood'], ['親友', 'best'], ['知り合い', 'acq'], ['知人', 'acq'],
@@ -435,7 +457,7 @@
     ['先輩後輩', 'senpai'], ['先輩', 'senpai'], ['後輩', 'senpai'], ['センパイ', 'senpai'],
     ['バディ', 'buddy'], ['相棒', 'buddy'], ['コンビ', 'buddy'], ['相方', 'buddy'],
     ['同僚', 'colleague'], ['同期', 'colleague'], ['仕事仲間', 'colleague'], ['職場', 'colleague'], ['バイト仲間', 'colleague'],
-    ['主従', 'master'], ['主人', 'master'], ['従者', 'master'], ['部下', 'master'], ['主', 'master'],
+    ['主従', 'master'], ['主人', 'master'], ['従者', 'master'], ['主', 'master'],
     ['の子', 'parent'], ['子ども', 'parent'], ['息子', 'parent'], ['娘', 'parent'], ['の親', 'parent'], ['父', 'parent'], ['母', 'parent'],
     ['兄', 'sibling'], ['弟', 'sibling'], ['姉', 'sibling'], ['妹', 'sibling'], ['友', 'friend']
   ];
@@ -499,7 +521,7 @@
   /* ---------- エンジンへの適用 ----------
      同じ二人に複数の関係（セフレ＋片想い など）を重ねられる。
      get() は代表の関係（PRIO の先頭に近いもの）を返し、has() で個々の関係を調べる */
-  var PRIO = ['mate', 'fated', 'lover', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'master', 'mentor', 'teacher', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'friend', 'acq', 'noobs'];
+  var PRIO = ['mate', 'fated', 'lover', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'relative', 'master', 'worship', 'mentor', 'teacher', 'benefactor', 'boss', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'classmate', 'friend', 'acq', 'noobs'];
   function keyOf(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   /* 関係を持っているか（どのファイルからでも安全に呼べる形）。古いファイルが混ざっても止まらないように */
   HK.tieHas = function (ctx, a, b, type) {
@@ -513,6 +535,9 @@
   /* 血縁（きょうだい・親子）で恋愛が起きない関係か。関係ごとに「恋愛：あり」（t.love === 'ok'）にもできる */
   HK.tieNoLove = function (t) { var D = t && T[t.type]; return !!(D && D.family && !D.loveOK && t.love !== 'ok'); };
   HK.tieFamLove = function (t) { var D = t && T[t.type]; return !!(D && D.family && !D.loveOK && t.love === 'ok'); };
+  /* 恋愛に発展するかを選べる関係（執着（信仰）など。loveOpt）：「発展しない」なら、この二人のあいだでは惹かれが育たず、恋愛の出来事も起きにくい */
+  HK.tieLoveOpt = function (t) { var D = t && T[t.type]; return !!(D && D.loveOpt); };
+  HK.tieOptNoLove = function (t) { return HK.tieLoveOpt(t) && t.love !== 'ok'; };
   HK.Ties = {
     /* 片想いの「両片想い」を、向きを逆にした片想い二本に開く（どちらも mutual: true）。箱庭に渡す前に一度だけ */
     expand: function (ties) {
@@ -565,7 +590,11 @@
         if (CD && CD.ba) add(ba, CD.ba);
         var OB = t.type === 'yan' && t.cold && HK.OBS_BACK ? HK.OBS_BACK[t.cold] : null;
         if (OB && OB.ba) add(ba, OB.ba);
+        var WB = t.type === 'worship' && t.cold && HK.WORSHIP_BACK ? HK.WORSHIP_BACK[t.cold] : null;
+        if (WB && WB.ba) add(ba, WB.ba);
         var p = ctx.pair(A, B);
+        /* 信仰される側が相手を支配している */
+        if (WB && WB.dominate) p.dominate = B.i;
         if (D.chem != null) p.chem = HK.clamp(p.chem * (HK.tieFamLove(t) ? 0.7 : D.chem) + (D.chem > 1 ? 0.2 : 0), 0.01, 2);
         if (D.fric != null && !HB) p.fric = HK.clamp(p.fric * D.fric, 0.2, 2);
         if (D.couple) p.couple = true;
@@ -573,7 +602,9 @@
         if (HK.tieNoLove(t)) p.kin = true;
         if (D.family && !D.loveOK) p.trustFloor = Math.max(p.trustFloor || 0, t.type === 'sibbad' ? 15 : 30);
         if (D.night && ctx.scen.id !== 'classroom') p.night = true;
-        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB ? t.cold : '', love: HK.tieFamLove(t) ? 'ok' : '', mutual: !!t.mutual };
+        /* 恋愛に発展しない信仰：最初の惹かれも低く抑える */
+        if (D.loveOpt && t.love !== 'ok') { ab.att = Math.min(ab.att, 8); ba.att = Math.min(ba.att, 8); }
+        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB || WB ? t.cold : '', love: HK.tieFamLove(t) || (D.loveOpt && t.love === 'ok') ? 'ok' : '', mutual: !!t.mutual };
         list.push(o);
         list.sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
         ctx.ties[k] = list[0];
@@ -614,6 +645,7 @@
         else if (D.dir) m = (t.a === a.i ? D.biasA : D.biasB) || {};
         else m = D.bias || {};
         if (m[cat] != null) r *= cat === 'romance' && HK.tieFamLove(t) ? Math.max(m[cat], 0.75) : m[cat];
+        if (cat === 'romance' && HK.tieOptNoLove(t)) r *= 0.1;
       });
       return r;
     },
@@ -631,9 +663,30 @@
           return;
         }
         if (m != null) r *= f === 'att' && HK.tieFamLove(t) ? Math.max(m, 0.8) : m;
+        if (f === 'att' && HK.tieOptNoLove(t)) r *= 0.05;
       });
       return r;
     },
+    /* 減る方向の倍率（揺らぎにくい想い：信仰する側・恩を受けた側の好意と信頼）。1 より小さいほど減りにくい */
+    stiff: function (ctx, a, b, f) {
+      var r = 1;
+      HK.Ties.all(ctx, a, b).forEach(function (t) {
+        var D = T[t.type], m = D.dir ? (t.a === a.i ? D.stiffA : D.stiffB) : D.stiff;
+        if (m && m[f] != null) r *= m[f];
+      });
+      return r;
+    },
+    /* 下限（信仰する側の好意・信頼は、ここより下がらない） */
+    floor: function (ctx, a, b, f) {
+      var v = null;
+      HK.Ties.all(ctx, a, b).forEach(function (t) {
+        var D = T[t.type], m = D.dir ? (t.a === a.i ? D.floorA : D.floorB) : D.floor;
+        if (m && m[f] != null) v = Math.max(v == null ? -100 : v, m[f]);
+      });
+      return v;
+    },
+    /* 執着（信仰）：a が b を信仰しているか（その関係を返す） */
+    worship: function (ctx, a, b) { var t = HK.Ties.from(ctx, a, b, 'worship'); return t || null; },
     pull: function (ctx, a, b) {
       var v = 0;
       HK.Ties.all(ctx, a, b).forEach(function (t) { v = Math.max(v, T[t.type].pull || 1); });
@@ -1147,6 +1200,279 @@
       return { text: ctx.t(line, a, b), why: a.name + 'の口調・態度「' + (HK.toneLabel ? HK.toneLabel(a) : HK.PERSONA[a.persona].label) + '」' };
     }
   });
+})();
+;/* ==== js/tie-rel.js ==== */
+/* 箱庭シミュレーター: 新しい関係（同級生・同僚・上司と部下・執着（信仰）・恩人・親族）の小場面（全エンジン箱庭で共通）
+   関係ごとに「ふだんの小場面（向きのある関係は両側の視点）」「関係を保つ出来事」「関係が深まる・変わる出来事」を持つ。
+   ・恋に変わる分岐は HK.canLove（両方向）を通した組だけ。執着（信仰）・親族は、さらに「恋愛：あり」（t.love === 'ok'）のときだけ
+   ・執着（信仰）は信仰される側の気持ち（t.cold：''／accept／confused／dominate／cherish）で反応を変える。dominate は支配と服従が深まる
+   ・信仰する側は、嫌われても突き放されても想いを捨てない（値の減りは ties.js の stiff・floor が抑える）
+   ・関係が深まった印は pf.tieGrow[種類] に残す（結末の分類 HK.TieRel.refine が使う） */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  function L(s) { return s.split('|'); }
+  var TR = (HK.TieRel = {});
+
+  function both(a, b) { return !!(HK.canLove && HK.canLove(a, b) && HK.canLove(b, a)); }
+  function grow(ctx, a, b, k) { var pf = ctx.pair(a, b); pf.tieGrow = pf.tieGrow || {}; pf.tieGrow[k] = (pf.tieGrow[k] || 0) + 1; }
+  function has(ctx, a, b, ty) { return HK.Ties && HK.Ties.has ? HK.Ties.has(ctx, a, b, ty) : null; }
+  /* 発展の分岐に入る見込み（二人の好意と信頼の平均が高いほど） */
+  function warmth(ctx, a, b) { var x = ctx.R(a, b), y = ctx.R(b, a); return (x.aff + y.aff + x.trust + y.trust) / 4; }
+  function push(ev) { if (HK.COMMON) HK.COMMON.push(ev); }
+
+  /* ---------- 同級生（向きなし） ---------- */
+  var CLASSMATE = {
+    pat: L('{a}と{b}は、同じクラスだったころの担任の口癖を同時に思い出して、声をそろえて笑った。|{a}「{b}、学生のころから全然変わらない」{b}「それ、褒めてる？」{a}「半分くらいは」|{a}は{b}の字を見て、ノートを借りていたころを思い出した。癖のある字は、あのころのままだった。|{a}と{b}は、卒業アルバムの寄せ書きに誰が何を書いたかで小さく言い合った。どちらの記憶も、少しずつ間違っていた。|{a}は{b}の横顔に、窓際の席に座っていたころの面影を見た。|{a}「同じクラスだったの、もうずいぶん前のことになった」{b}「数えたくない」'),
+    keep: L('{a}と{b}は、学生のころのあだ名で互いを呼んでみた。少し照れくさかったが、それだけで肩の力が抜けた。|{a}は{b}が困っているのに気づいて、学生のころと同じように、黙って半分を引き受けた。{b}も、あのころと同じように小さく礼を言った。|{a}「{b}がいると、学生のころに戻ったみたいで落ち着く」{b}「私も。……今がいつなのか、忘れそうになる」|{a}と{b}は、同じクラスにいた顔ぶれの近況を教え合った。知らない話ばかりで、二人とも少し笑った。'),
+    clash: L('{a}と{b}は、テストの点で張り合っていたころのように、どちらが先に片づけるかで競い合った。終わってみると、二人とも少し笑っていた。|{b}「学生のころは、{a}に一度も勝てなかった」{a}「今度は私が勝つかもしれない」{b}「言ったな」|{a}と{b}は、昔の文化祭でどちらの案が通ったかを蒸し返して、しばらく言い合いになった。'),
+    grow: L('{a}は、学生のころ{b}に言えなかったことを、ようやく口にした。{a}「あのとき、かばってくれてありがとう」{b}はしばらく黙って、それから「覚えてたんだ」と小さく笑った。|{a}と{b}は、卒業してから会わなかった年月の話をした。空白は思ったより短く感じられた。昔の同級生は、いつの間にかいちばん話しやすい相手になっていた。|{b}「同じクラスだったころより、今の{a}のほうがずっと近い気がする」{a}「私も、そう思ってた」'),
+    love: L('{a}「学生のころ、私、{b}のことずっと見てた」{b}「……知らなかった」{a}「言わなかったから」――二人のあいだで、昔の教室の空気が少しだけ違う色に変わった。|{b}は{a}の手をとった。{b}「同じクラスだったころには、こんなふうになるなんて思わなかった」{a}は答えのかわりに、その手を握り返した。|{a}は{b}に、卒業式の日に言えなかった言葉があったと打ち明けた。{b}「今なら、聞ける」{a}は少し迷ってから、ずっとしまっていた気持ちを口にした。')
+  };
+  push({
+    id: 'tie_classmate', cat: 'bond', scope: 'pair',
+    when: function (ctx, a, b) { return !!has(ctx, a, b, 'classmate'); },
+    w: function () { return 1; },
+    run: function (ctx, a, b) {
+      var ra = ctx.R(a, b), rb = ctx.R(b, a), k;
+      var g = warmth(ctx, a, b);
+      if (both(a, b) && ra.att > 30 && rb.att > 22 && g > 30 && ctx.rng() < 0.45) k = 'love';
+      else if (g > 32 && ctx.rng() < 0.35) k = 'grow';
+      else if ((ra.ten > 20 || rb.ten > 20 || a.tr.cp > 0.6) && ctx.rng() < 0.35) k = 'clash';
+      else k = ctx.rng() < 0.55 ? 'pat' : 'keep';
+      if (k === 'love') { ctx.mod2(a, b, { att: 7, aff: 4 }, { att: 7, aff: 4 }); grow(ctx, a, b, 'classmate'); }
+      else if (k === 'grow') { ctx.mod2(a, b, { aff: 6, trust: 6 }, { aff: 6, trust: 6 }); grow(ctx, a, b, 'classmate'); }
+      else if (k === 'clash') ctx.mod2(a, b, { ten: 4, aff: 1 }, { ten: 4, trust: 2 });
+      else if (k === 'keep') ctx.mod2(a, b, { aff: 3, trust: 4 }, { aff: 3, trust: 4 });
+      else ctx.mod2(a, b, { aff: 3, trust: 2 }, { aff: 3, trust: 2 });
+      return { cat: k === 'love' ? 'romance' : k === 'clash' ? 'conflict' : 'bond', text: ctx.t(ctx.pick(CLASSMATE[k]), a, b), why: a.name + 'と' + b.name + 'は同級生' + { pat: '：昔の思い出', keep: '：変わらない気安さ', clash: '：昔からの張り合い', grow: '：昔話からの再接近', love: '：昔の同級生が特別な人に' }[k] };
+    }
+  });
+
+  /* ---------- 同僚（向きなし）：persona.js の tie_colleague（ふだんの小場面）に、保つ・深まる出来事を足す ---------- */
+  var COLLEAGUE = {
+    keep: L('{a}は{b}の分の作業を、何も言わずに半分引き取った。{b}「助かる。……借りがまた増えた」{a}「職場に戻ったら、まとめて返して」|{a}と{b}は、仕事でやっていたのと同じように、やることを書き出して分担した。段取りが決まると、二人とも少し落ち着いた。|{b}「{a}と同じ職場でよかった。知らない人ばかりだったら、たぶん心が折れてた」{a}「私も、同じことを思ってた」|{a}は{b}の疲れた顔を見て、職場でいつもそうしていたように、温かい飲み物を黙って置いた。'),
+    grow: L('{a}と{b}は、職場では一度もしたことのない話をした。家族のこと、昔の夢のこと。同僚という言葉だけでは足りない距離になっていた。|{a}「仕事に戻っても、こうやって話せたらいいな」{b}「なら、まずは昼休みに」――仕事の外での約束は、二人とも初めてだった。|{b}は{a}に、職場では誰にも言えなかった失敗を打ち明けた。{a}は笑わずに聞いて、自分の失敗も一つ話した。'),
+    love: L('{a}は{b}の横顔を見て、職場で隣にいたころにはなかった気持ちに気づいた。{a}「{b}、私……同僚のままでいるの、やめたいかもしれない」|{b}は{a}の手に、自分の手を重ねた。仕事の話は、もう出てこなかった。{b}「職場では、{a}のこんな顔、見たことなかった」{a}「{b}の前だけ」|{a}と{b}は、職場で交わしたどの言葉より短い言葉で、互いの気持ちを確かめた。同僚と呼ぶには、もう近すぎた。')
+  };
+  push({
+    id: 'tie_colleague2', cat: 'bond', scope: 'pair',
+    when: function (ctx, a, b) { return !!has(ctx, a, b, 'colleague'); },
+    w: function () { return 0.6; },
+    run: function (ctx, a, b) {
+      var ra = ctx.R(a, b), rb = ctx.R(b, a), g = warmth(ctx, a, b), k;
+      if (both(a, b) && ra.att > 32 && rb.att > 24 && g > 30 && ctx.rng() < 0.45) k = 'love';
+      else if (g > 30 && ctx.rng() < 0.4) k = 'grow';
+      else k = 'keep';
+      if (k === 'love') { ctx.mod2(a, b, { att: 7, aff: 4 }, { att: 7, aff: 4 }); grow(ctx, a, b, 'colleague'); }
+      else if (k === 'grow') { ctx.mod2(a, b, { aff: 6, trust: 6 }, { aff: 6, trust: 5 }); grow(ctx, a, b, 'colleague'); }
+      else ctx.mod2(a, b, { trust: 4, aff: 2 }, { trust: 4, aff: 2 });
+      return { cat: k === 'love' ? 'romance' : 'bond', text: ctx.t(ctx.pick(COLLEAGUE[k]), a, b), why: a.name + 'と' + b.name + 'は同僚' + { keep: '：いつもの分担', grow: '：仕事の外の顔', love: '：同僚から恋へ' }[k] };
+    }
+  });
+
+  /* ---------- 上司と部下（{a}=上司 {b}=部下） ---------- */
+  var BOSS = {
+    a: L('{a}は{b}の報告を最後まで聞いてから、短く頷いた。{a}「よくやった」{b}は背筋を伸ばしたまま、少しだけ口元を緩めた。|{a}は危ない役目を{b}に回さず、黙って自分で引き受けた。部下を守るのが上司の仕事だと思っていた。|{a}は{b}の顔色を見て、手を止めさせた。{a}「{b}、今日はもう休んで。これは指示」|{a}「{b}、判断は任せる。責任は私が取る」{b}は一瞬目を見開いて、それから力強く頷いた。'),
+    b: L('{b}は{a}の指示を待たずに、次に要るものを先に揃えておいた。{a}は気づいて、何も言わずに頷いた。|{b}は{a}の背中を見ながら、職場で初めて叱られた日のことを思い出した。あの日から、ずっとこの人の下で働いてきた。|{b}「それは私がやる。{a}は全体を見ていて」{a}は少し驚いて、それから任せた。|{b}は{a}の癖を誰よりも知っていた。考えごとをするとき、決まって腕を組むことも。'),
+    clash: L('{b}は初めて{a}の指示に異を唱えた。{a}は眉をひそめたが、最後まで聞いて、{b}の案を採った。|{a}と{b}は進め方で意見が割れた。職場なら{a}の一言で決まるところだが、今は{b}も引かなかった。|{a}「{b}、それは命令違反だ」{b}「分かってる。でも、こっちのほうが{a}を危ない目に遭わせずに済む」'),
+    keep: L('{a}は{b}に、仕事のときと同じ調子で「いつもの手順で」と言った。{b}もいつもの調子で応じた。慣れたやり取りが、二人を落ち着かせた。|{b}は{a}の分の食事を、先に取り分けておいた。{a}「部下に気を遣わせる上司って、どうなんだろう」{b}「私がやりたくてやってる」|{a}と{b}は、職場で何度も乗り越えてきた修羅場の話をした。あのときも、二人でどうにかした。'),
+    grow: L('{a}は{b}に、上司としてではなく、一人の人として弱音をこぼした。{b}は黙って最後まで聞いた。{b}「肩書きなんて、今はいらないと思う」――二人のあいだの上下が、少しだけ平らになった。|{a}「{b}、今のは命令じゃない。お願い」{b}は驚いて{a}を見て、それから笑った。{b}「お願いなら、喜んで引き受ける」|{b}が{a}の失敗を黙って埋めた。{a}は礼を言ってから、つけ加えた。{a}「職場に戻ったら、{b}を部下じゃなくて、同じ目線の相手として頼りたい」'),
+    love: L('{b}は{a}を見つめた。{b}「職場の外では、{a}を上司として見られない」{a}はしばらく黙って、{b}の名前を呼んだ。肩書きのない呼び方だった。|{a}は{b}の髪に触れかけて、手を止めた。{a}「部下にこんなことを思うなんて、上司失格だ」{b}「なら、今だけ上司をやめて」|{a}と{b}は、職場では決して見せない顔で向き合った。指示も報告もない言葉が、二人のあいだに初めて落ちた。')
+  };
+  push({
+    id: 'tie_boss', cat: 'help', scope: 'pair',
+    when: function (ctx, a, b) { return !!has(ctx, a, b, 'boss'); },
+    w: function () { return 1; },
+    run: function (ctx, a, b) {
+      var t = has(ctx, a, b, 'boss'), S = ctx.chars[t.a], K = ctx.chars[t.b];
+      var rs = ctx.R(S, K), rk = ctx.R(K, S), g = warmth(ctx, S, K), k;
+      if (both(S, K) && rk.att > 32 && rs.att > 24 && g > 32 && ctx.rng() < 0.45) k = 'love';
+      else if (g > 34 && ctx.rng() < 0.35) k = 'grow';
+      else if ((rs.ten > 22 || rk.ten > 22 || K.tr.cp > 0.62) && ctx.rng() < 0.35) k = 'clash';
+      else { var x = ctx.rng(); k = x < 0.38 ? 'a' : x < 0.76 ? 'b' : 'keep'; }
+      if (k === 'love') { ctx.mod2(S, K, { att: 7, aff: 4 }, { att: 7, aff: 4 }); grow(ctx, S, K, 'boss'); }
+      else if (k === 'grow') { ctx.mod2(S, K, { trust: 7, aff: 5 }, { trust: 6, aff: 6 }); grow(ctx, S, K, 'boss'); }
+      else if (k === 'clash') ctx.mod2(S, K, { ten: 5, trust: 2 }, { ten: 4, trust: 2 });
+      else if (k === 'a') ctx.mod2(S, K, { aff: 2, trust: 2 }, { trust: 5, aff: 3 });
+      else if (k === 'b') ctx.mod2(S, K, { trust: 5, aff: 3 }, { aff: 2, trust: 2 });
+      else ctx.mod2(S, K, { trust: 4, aff: 2 }, { trust: 4, aff: 2 });
+      return { cat: k === 'love' ? 'romance' : k === 'clash' ? 'conflict' : k === 'grow' || k === 'keep' ? 'bond' : 'help', text: ctx.t(ctx.pick(BOSS[k]), S, K), why: S.name + '（上司）と' + K.name + '（部下）' + { a: '：上司の責任', b: '：部下の支え', clash: '：部下の反論', keep: '：いつものやり取り', grow: '：肩書きの外の信頼', love: '：上司と部下を越えて' }[k] };
+    }
+  });
+
+  /* ---------- 恩人（{a}=恩人 {b}=恩を受けた側） ---------- */
+  var BENE = {
+    a: L('{a}は{b}が無理をしていないか、何度も気にかけた。昔助けたときから、{b}のことはどうしても放っておけなかった。|{a}「{b}、昔のことなんて、もう気にしなくていいのに」{b}は首を振った。忘れられるはずがなかった。|{a}は{b}が笑っているのを見て、助けてよかったと、あらためて思った。'),
+    b: L('{b}は{a}の荷物を、言われる前に持っていた。あの日の恩を思えば、これくらい何でもなかった。|{b}は{a}が眠ったのを確かめてから、そっと上着をかけた。昔、{a}が自分にしてくれたのと同じように。|{b}「{a}がいなかったら、今の私はいない」{a}「大げさすぎ」{b}「大げさじゃない」|{b}は{a}の言葉なら、どんな小さなことでも覚えていた。'),
+    keep: L('{a}と{b}は、出会ったころの話をした。{b}は何度でも礼を言い、{a}は何度でも照れくさそうに手を振った。|{b}は{a}を守るように隣に立った。{a}は苦笑いしたが、その場を譲った。|{a}は{b}に、困ったら頼っていいと言った。{b}「頼ってばかりだから、今度は私が」{a}「その気持ちだけで十分」'),
+    grow: L('{b}は危ないところで{a}の手を引いた。{a}は息を整えてから、{b}を見た。{a}「……昔と逆になった」{b}「やっと、少しだけ返せた」|{b}は{a}が倒れかけたとき、迷わず肩を貸した。{a}「助けられる日が来るなんて」{b}「ずっと、この日を待ってた」|{a}「もう恩なんて言わないで。{b}は私の大事な人だから」――{b}はうつむいて、しばらく顔を上げられなかった。'),
+    love: L('{b}は{a}の手を握った。{b}「最初は恩返しのつもりだった。でも今は、ただ{a}のそばにいたい」{a}は目を伏せて、その手を離さなかった。|{a}は{b}を見て、助けたあの日にはなかった気持ちに気づいた。守る相手だった{b}が、いつの間にか隣に並んでいた。{a}「{b}、私……」その先は、{b}が先に言った。')
+  };
+  push({
+    id: 'tie_benefactor', cat: 'help', scope: 'pair',
+    when: function (ctx, a, b) { return !!has(ctx, a, b, 'benefactor'); },
+    w: function () { return 1; },
+    run: function (ctx, a, b) {
+      var t = has(ctx, a, b, 'benefactor'), S = ctx.chars[t.a], K = ctx.chars[t.b];
+      var rs = ctx.R(S, K), rk = ctx.R(K, S), g = warmth(ctx, S, K), k;
+      var weak = S.stress > 45 || S.hp < 60;
+      if (both(S, K) && rk.att > 32 && rs.att > 24 && g > 34 && ctx.rng() < 0.4) k = 'love';
+      else if ((g > 34 || weak) && ctx.rng() < (weak ? 0.5 : 0.3)) k = 'grow';
+      else { var x = ctx.rng(); k = x < 0.35 ? 'a' : x < 0.78 ? 'b' : 'keep'; }
+      if (k === 'love') { ctx.mod2(S, K, { att: 7, aff: 4 }, { att: 7, aff: 4 }); grow(ctx, S, K, 'benefactor'); }
+      else if (k === 'grow') { ctx.mod2(S, K, { aff: 7, trust: 8 }, { aff: 4, trust: 4 }); ctx.stress(S, -8); grow(ctx, S, K, 'benefactor'); }
+      else if (k === 'a') ctx.mod2(S, K, { aff: 3 }, { aff: 3, trust: 3 });
+      else if (k === 'b') ctx.mod2(S, K, { aff: 4, trust: 4 }, { aff: 2 });
+      else ctx.mod2(S, K, { aff: 3, trust: 3 }, { aff: 3, trust: 3 });
+      return { cat: k === 'love' ? 'romance' : k === 'a' || k === 'b' || k === 'grow' ? 'help' : 'bond', text: ctx.t(ctx.pick(BENE[k]), S, K), why: S.name + '（恩人）と' + K.name + '（恩を受けた側）' + { a: '：恩人の気遣い', b: '：消えない感謝', keep: '：恩でつながる二人', grow: '：恩返し', love: '：恩が恋に変わる' }[k] };
+    }
+  });
+
+  /* ---------- 親族（向きなし。親子・きょうだいでない） ---------- */
+  var REL = {
+    pat: L('{a}と{b}は、親戚の集まりでいつも隅の席に並んでいたことを思い出して笑った。|{a}「田舎の家の縁側、覚えてる？」{b}「夏になると、二人でスイカの種を飛ばしてた」|{a}は{b}の仕草に、親族の誰かの面影を見つけた。血のつながりは、こういうところに出るらしい。|{b}「{a}とは、法事くらいでしか会わなかったのに」{a}「こんなところで会うなんて」'),
+    keep: L('{a}は{b}の分まで食べ物を取っておいた。親戚の家で、いつもそうしてもらっていたのと同じだった。|{a}と{b}は、家族には言えない愚痴を互いにこぼした。近すぎず遠すぎない親族だから、言えることがあった。|{b}は{a}の寝癖を見て、昔から変わらないと笑った。{a}は少しむくれて、それでも直そうとはしなかった。'),
+    grow: L('{a}と{b}は、落ち着いたら一緒に親戚の家へ顔を出そうと約束した。遠い親族だった二人が、家族と呼べる距離になっていた。|{b}「{a}は、私にとっていちばん頼れる家族だ」{a}は照れくさそうに笑って、{b}の背中を軽く叩いた。|{a}は{b}が泣きそうになっているのに気づいて、子どものころのように頭に手を置いた。{a}「大丈夫。親族なんだから、頼っていい」'),
+    love: L('{a}は{b}の手を握ったまま、離せなくなった。{a}「親族なのに、こんな気持ちになるなんて」{b}「……私も、同じ」|{b}は{a}を見つめた。親戚の集まりで隣に座っていたころとは、もう違う目だった。{b}「{a}を、家族としてだけ見るのは無理かもしれない」')
+  };
+  push({
+    id: 'tie_relative', cat: 'help', scope: 'pair',
+    when: function (ctx, a, b) { return !!has(ctx, a, b, 'relative'); },
+    w: function () { return 1; },
+    run: function (ctx, a, b) {
+      var t = has(ctx, a, b, 'relative'), ra = ctx.R(a, b), rb = ctx.R(b, a), g = warmth(ctx, a, b), k;
+      if (t.love === 'ok' && both(a, b) && ra.att > 28 && rb.att > 22 && g > 32 && ctx.rng() < 0.4) k = 'love';
+      else if (g > 32 && ctx.rng() < 0.35) k = 'grow';
+      else k = ctx.rng() < 0.55 ? 'pat' : 'keep';
+      if (k === 'love') { ctx.mod2(a, b, { att: 6, aff: 4 }, { att: 6, aff: 4 }); grow(ctx, a, b, 'relative'); }
+      else if (k === 'grow') { ctx.mod2(a, b, { aff: 7, trust: 6 }, { aff: 7, trust: 6 }); grow(ctx, a, b, 'relative'); }
+      else if (k === 'keep') ctx.mod2(a, b, { aff: 3, trust: 4 }, { aff: 3, trust: 4 });
+      else ctx.mod2(a, b, { aff: 3, trust: 2 }, { aff: 3, trust: 2 });
+      return { cat: k === 'love' ? 'romance' : k === 'pat' ? 'bond' : 'help', text: ctx.t(ctx.pick(REL[k]), a, b), why: a.name + 'と' + b.name + 'は親族' + { pat: '：親戚の思い出', keep: '：気安い助け合い', grow: '：家族としての絆', love: '：親族を越えた想い' }[k] };
+    }
+  });
+
+  /* ---------- 執着（信仰）（{a}=信仰する側 {b}=信仰される側） ---------- */
+  var WS = {
+    /* 信仰する側のふだん（どの気持ちの相手にも） */
+    a: L('{a}は{b}が通ったあとまで、丁寧に片づけて回った。{b}のためにできることなら、どんな小さなことでも嬉しかった。|{a}は{b}の言葉を一つも聞き漏らすまいと、じっと耳を傾けていた。|{a}「{b}のためなら、私は何でもする」――その声には、迷いが一つもなかった。|{a}は{b}の分の食事を先に用意して、自分の分には手をつけなかった。|{a}は{b}を危ないものから遠ざけるように、いつも半歩前に立っていた。'),
+    /* 信仰される側の反応（t.cold ごと） */
+    back: {
+      '': L('{b}は{a}がなぜそこまでしてくれるのか分からず、首をかしげた。{b}「{a}って、誰にでもこうなの？」{a}は答えずに、ただ微笑んだ。|{b}は{a}の視線に気づかないまま、別の話を始めた。{a}はそれでも満ち足りていた。|{b}は{a}の差し出したものを、何の気なしに受け取った。{a}にとっては、それが何よりの恵みだった。'),
+      accept: L('{b}は{a}の差し出したものを、当たり前のように受け取った。{b}「ありがとう、{a}」――その一言で、{a}の一日は報われた。|{b}は{a}の頭に手を置いた。{b}「{a}は、本当によく尽くしてくれる」{a}は目を閉じて、その手の重みを確かめた。|{b}は{a}の献身を、静かに受け入れていた。{a}が隣に控えていることが、もう当たり前になっていた。'),
+      confused: L('{b}は{a}の献身に、困ったように眉を寄せた。{b}「そこまでしなくていい。……正直、少し重い」{a}は頷いたが、次の日も同じように尽くした。|{b}は{a}から目を逸らした。どう応えればいいのか分からなかった。{a}は、それでも{b}のそばを離れなかった。|{b}「{a}、私はそんな立派な人間じゃない」{a}「知ってる。それでも、{b}がいい」{b}は返す言葉を見つけられなかった。'),
+      dominate: L('{b}は{a}に、わざと面倒な用事を言いつけた。{a}は嫌な顔一つせず、むしろ嬉しそうに従った。{b}は、その従順さを確かめるように小さく笑った。|{b}「{a}は、私の言うことなら何でも聞くんだよね」{a}「うん」――ためらいのない返事に、{b}は満足そうに目を細めた。|{b}は{a}に、ほかの誰とも口をきかないよう言いつけた。{a}は黙ってうなずいた。{b}の言葉は、{a}にとって何より重かった。'),
+      cherish: L('{b}は{a}の手を取って、その指先の傷に気づいた。{b}「{a}、自分のことも大事にして。お願い」{a}は戸惑って、それからおずおずと頷いた。|{b}は{a}に、自分の分の食事を半分渡した。{b}「{a}が倒れたら、私が困る」{a}は受け取った器を、両手で大事そうに抱えた。|{b}は{a}の名前を、ほかの誰を呼ぶときよりも柔らかく呼んだ。{a}はそのたびに、胸の奥が温かくなった。')
+    },
+    /* 嫌われても、突き放されても、想いを捨てない */
+    spurn: L('{b}は{a}を冷たく突き放した。{a}は少しだけ俯いて、それでも{b}の背中を見送った。{a}「嫌われても、私の想いは変わらない」|{b}に避けられても、{a}は{b}の無事だけを祈っていた。見返りを求めたことは、一度もなかった。|{b}に投げつけられた言葉を、{a}は胸の奥にしまい込んだ。{b}から向けられたものなら、痛みでも手放せなかった。|{b}「もう、私に構わないで」{a}「構わない。でも、離れもしない」――{a}は一歩だけ下がって、そこから{b}を見守り続けた。'),
+    /* 関係を保つ（信仰する側の祈り・信仰される側の受け止め） */
+    keep: L('{a}は{b}のそばに控え、{b}が何か言う前に必要なものを差し出した。それが{a}にとっての祈りだった。|{a}は夜ごと、{b}の無事を確かめてから眠った。そうしないと、目を閉じられなかった。|{a}は{b}の好きなものを、{b}よりも正確に覚えていた。'),
+    /* 発展：気持ちごと（恋にしない） */
+    grow: {
+      '': L('{b}はようやく、{a}がずっと自分を見ていたことに気づいた。{b}「……いつから？」{a}「最初から」{b}は答えに困って、それでも目を逸らさなかった。|{b}は{a}の献身の理由を、初めて真剣に訊いた。{a}は少し考えてから、「{b}が{b}だから」とだけ答えた。'),
+      accept: L('{b}「{a}がいてくれて、私は救われてる」{a}は言葉を失って、ただ深く頭を下げた。信じてきた人に、初めて報われた気がした。|{b}は{a}に、自分の弱さを一つだけ見せた。{a}はそれを、宝物のように受け取った。崇める想いに、守りたいという想いが重なった。'),
+      confused: L('{b}は{a}に、もうやめてほしいと言った。{a}は静かに頷いて、それでも最後にこう言った。{a}「やめられない。{b}を想うことは、私の一部だから」|{b}は{a}の重さから逃げるのをやめて、正面から向き合った。{b}「なら、せめて自分を粗末にしないで」{a}は少しだけ迷ってから、その約束を受け入れた。'),
+      cherish: L('{b}は{a}を抱き寄せた。{b}「崇められなくていい。{a}が隣にいてくれれば、それでいい」{a}は震える手で、{b}の服の裾を掴んだ。|{b}は{a}に、かしこまらずに名前で呼んでほしいと言った。{a}は何度も口ごもってから、やっと{b}の名前を呼んだ。')
+    },
+    /* 支配と服従が深まる（dominate） */
+    rule: L('{b}は{a}の顎に指をかけて、顔を上げさせた。{b}「{a}は、私のものだよね」{a}「うん。{b}のもの」――答えた瞬間、{a}の中で何かが静かに定まった。|{b}は{a}に、明日の分まで指示を言い渡した。{a}は一つ残らず覚えて、{b}の望むとおりに動いた。{b}の支配が深まるほど、{a}の顔は穏やかになっていった。|{a}は{b}の足もとに膝をついた。{b}は止めなかった。二人のあいだの上下は、もう誰にも崩せないほど固まっていた。|{b}は{a}がほかの誰かに笑いかけたのを咎めた。{a}は青ざめて謝り、二度としないと誓った。{b}はその誓いを、当然のように受け取った。'),
+    /* 恋に変わる（t.love === 'ok' のときだけ） */
+    love: L('{b}は{a}の手を取った。{b}「崇められるより、隣にいてほしい」{a}は震える声で、{b}の名前を呼んだ。祈るような想いが、恋という形を見つけた。|{a}は{b}に触れられて、息を止めた。ずっと遠くから仰いでいた人が、今は手の届くところにいた。{a}「{b}を、好きになってもいいの？」{b}「とっくに、なってる」|{a}は{b}への想いが、崇めるだけのものではなくなっていることに気づいた。{a}「ごめん。{b}を、ひとりの人として好きになった」{b}は少し驚いて、それから笑って{a}を引き寄せた。')
+  };
+  push({
+    id: 'tie_worship', cat: 'help', scope: 'pair',
+    when: function (ctx, a, b) { return !!has(ctx, a, b, 'worship'); },
+    w: function () { return 1.15; },
+    run: function (ctx, a, b) {
+      var t = has(ctx, a, b, 'worship'), S = ctx.chars[t.a], K = ctx.chars[t.b];
+      var cold = HK.WORSHIP_BACK && HK.WORSHIP_BACK[t.cold] ? t.cold : '';
+      var rs = ctx.R(S, K), rk = ctx.R(K, S), pf = ctx.pair(S, K), k, text;
+      var dom = cold === 'dominate' || pf.dominate === K.i;
+      var loveOk = t.love === 'ok' && !(HK.tieOptNoLove && HK.tieOptNoLove(t)) && both(S, K) && !dom;
+      var cold2 = rk.aff < 0 || rk.ten > 40 || (cold === 'confused' && rk.aff < 15);
+      var x = ctx.rng();
+      if (loveOk && rs.att > 26 && rk.att > 18 && rk.aff > 25 && x < 0.4) k = 'love';
+      else if (dom && x < 0.4) k = 'rule';
+      else if (cold2 && x < 0.45) k = 'spurn';
+      else if ((rk.aff > 18 || cold === '') && x < 0.6 && ctx.rng() < 0.45) k = 'grow';
+      else k = ctx.rng() < 0.3 ? 'keep' : 'pat';
+      if (k === 'pat') {
+        /* 信仰する側のふだん＋信仰される側の反応 */
+        text = ctx.t(ctx.pick(WS.a), S, K);
+        if (ctx.rng() < 0.75) text += ctx.t(ctx.pick(WS.back[dom ? 'dominate' : cold]), S, K);
+        ctx.mod2(S, K, { aff: 2, trust: 2 }, dom ? { trust: 3 } : cold === 'confused' ? { ten: 2, aff: 1 } : { aff: 3, trust: 2 });
+      } else if (k === 'keep') {
+        text = ctx.t(ctx.pick(WS.keep), S, K);
+        ctx.mod2(S, K, { aff: 3, trust: 3 }, dom ? { trust: 3 } : { aff: 3, trust: 3 });
+      } else if (k === 'spurn') {
+        text = ctx.t(ctx.pick(WS.spurn), S, K);
+        /* 想いは減らない。信仰される側だけが気まずさを抱える */
+        ctx.mod2(S, K, { aff: 2, trust: 1 }, { ten: 2, aff: 1 });
+        ctx.stress(S, 4);
+      } else if (k === 'rule') {
+        text = ctx.t(ctx.pick(WS.rule), S, K);
+        ctx.mod2(S, K, { trust: 5, aff: 4 }, { trust: 3, aff: 1 });
+        grow(ctx, S, K, 'worship_rule');
+      } else if (k === 'love') {
+        text = ctx.t(ctx.pick(WS.love), S, K);
+        ctx.mod2(S, K, { att: 8, aff: 4 }, { att: 8, aff: 5 });
+        grow(ctx, S, K, 'worship');
+      } else {
+        var gk = dom ? 'accept' : cold;
+        text = ctx.t(ctx.pick(WS.grow[gk]), S, K);
+        ctx.mod2(S, K, { aff: 4, trust: 4 }, cold === 'confused' ? { aff: 5, ten: -4 } : { aff: 6, trust: 6 });
+        grow(ctx, S, K, 'worship');
+      }
+      var why = S.name + 'は' + K.name + 'を信仰している' + (cold && HK.WORSHIP_BACK[cold].short ? '（' + K.name + '：' + HK.WORSHIP_BACK[cold].short + '）' : '');
+      why += { pat: '：捧げる日々', keep: '：変わらない祈り', spurn: '：拒まれても揺るがない想い', rule: '：支配と服従が深まる', love: '：信仰が恋に変わる', grow: '：想いが届きはじめる' }[k];
+      return { cat: k === 'love' ? 'romance' : k === 'spurn' ? 'conflict' : k === 'rule' ? 'bond' : 'help', text: text, why: why };
+    }
+  });
+
+  /* ---------- 結末の分類（engine.js の classify から呼んでもらう形。呼ばれなければ使われない） ----------
+     cl＝ふつうの分類の結果。新しい関係の組で、上書きしてよい結果のときだけ別の結末を返す（恋人・殺害・破局などは上書きしない） */
+  var LABELS = {
+    wdevote: { name: '信仰を捧げたまま', cls: 'guard', pol: 1 },
+    wsubmit: { name: '支配と服従', cls: 'obsess', pol: 0 },
+    repaid: { name: '恩を返した', cls: 'partner', pol: 2 },
+    bossbeyond: { name: '上司と部下を越えた', cls: 'partner', pol: 2 },
+    classre: { name: '昔の同級生から特別な人へ', cls: 'friend', pol: 2 },
+    relbond: { name: '親族として支え合う', cls: 'partner', pol: 2 }
+  };
+  TR.LABELS = LABELS;
+  TR.install = function () { if (HK.LABELS) for (var k in LABELS) if (!HK.LABELS[k]) HK.LABELS[k] = LABELS[k]; };
+  var SOFT = /^(friends|partners|guard|strangers|awkward|oneway|obsess|dislike|pining|kinbond|accomplice)$/;
+  TR.refine = function (ctx, A, B, pf, cl) {
+    if (!cl || !HK.Ties || !SOFT.test(cl.id) || pf.kill || pf.couple) return null;
+    TR.install();
+    var G = pf.tieGrow || {}, t;
+    if ((t = has(ctx, A, B, 'worship'))) {
+      var S = ctx.chars[t.a], K = ctx.chars[t.b], rs = ctx.R(S, K);
+      if ((pf.dominate === K.i || t.cold === 'dominate') && rs.aff >= 30 && cl.id !== 'pining') return { id: 'wsubmit', dir: S.i };
+      if (rs.aff >= 30 && cl.id !== 'pining' && cl.id !== 'partners') return { id: 'wdevote', dir: S.i };
+    }
+    var ab = ctx.R(A, B), ba = ctx.R(B, A), warm = ab.aff > 22 && ba.aff > 22;
+    if ((t = has(ctx, A, B, 'benefactor')) && G.benefactor && warm && /^(friends|partners|guard)$/.test(cl.id)) return { id: 'repaid', dir: t.b };
+    if ((t = has(ctx, A, B, 'boss')) && G.boss && warm && ab.trust > 30 && ba.trust > 30 && /^(friends|partners|guard)$/.test(cl.id)) return { id: 'bossbeyond' };
+    if (has(ctx, A, B, 'classmate') && G.classmate && ab.aff > 35 && ba.aff > 35 && /^(friends|partners)$/.test(cl.id)) return { id: 'classre' };
+    if (has(ctx, A, B, 'relative') && (G.relative || cl.id === 'kinbond') && warm && /^(kinbond|guard|friends|partners)$/.test(cl.id)) return { id: 'relbond' };
+    return null;
+  };
+  TR.pairText = function (ctx, A, B, cl) {
+    if (!cl || !LABELS[cl.id]) return null;
+    var n = function (i) { return ctx.chars[i].name; }, other = function (i) { return i === A.i ? B.name : A.name; };
+    switch (cl.id) {
+      case 'wdevote': return n(cl.dir) + 'は最後まで' + other(cl.dir) + 'を信じ、その想いを捧げ続けた。';
+      case 'wsubmit': return other(cl.dir) + 'が命じ、' + n(cl.dir) + 'が従う。信仰は、支配と服従の形に固まった。';
+      case 'repaid': return n(cl.dir) + 'はようやく恩を返し、' + other(cl.dir) + 'と並んで立てるようになった。';
+      case 'bossbeyond': return '上司と部下という肩書きを越えて、互いを頼れる相手になった。';
+      case 'classre': return '昔の同級生は、今はいちばん近くにいる特別な人になった。';
+      case 'relbond': return '遠い親族だった二人が、家族として互いを支え合う形に落ち着いた。';
+    }
+    return null;
+  };
 })();
 ;/* ==== js/voice.js ==== */
 /* 箱庭シミュレーター: 台詞の声（一人称と敬語）
@@ -2016,7 +2342,7 @@
         /* 厳格：やわらかい語尾を、硬い言い切りに（「分かってるね」→「分かっているな」） */
         var b4 = out || body;
         if (!ask) {
-          if (/てる(ね|よ|よね)?$/.test(b4) && !/(当|捨|育|慌|企|建|隔|果|捉|立|探|保|充)てる(ね|よ|よね)?$/.test(b4)) b4 = b4.replace(/てる(ね|よ|よね)?$/, function (m, e) { return 'ている' + (e === 'ね' ? 'な' : e === 'よね' ? 'な' : ''); });
+          if (/てる(ね|よ|よね)?$/.test(b4) && !/(当|捨|育|慌|企|建|隔|果|捉|立|探|保|充|勝|待|持|打|放|撃)てる(ね|よ|よね)?$/.test(b4)) b4 = b4.replace(/てる(ね|よ|よね)?$/, function (m, e) { return 'ている' + (e === 'ね' ? 'な' : e === 'よね' ? 'な' : ''); });
           else if (/[るうくすつぬむぶぐ]ね$/.test(b4)) b4 = b4.replace(/ね$/, /よろしくね$/.test(b4) ? '' : /([おこそとのほもよろごぞどぼょ]う|てる|ている)ね$/.test(b4) ? 'な' : 'ぞ');
           else if (/だよ$/.test(b4)) b4 = b4.replace(/だよ$/, 'だ');
           else if (/[るうくすつぬむぶぐたい]よ$/.test(b4) && !/(でしょ|しよ|よう)$/.test(b4)) b4 = b4.replace(/よ$/, '');
@@ -2691,7 +3017,7 @@
     [/じゃないか/g, 'ではないか'], [/じゃない(?=[かの]?[？?])/g, 'ではないか'], [re('じゃない'), 'ではない'], [re('じゃん'), 'じゃろう'],
     [re('(?:だろう|だろ|でしょう|でしょ)'), 'じゃろう'], [re('(?:だよね|だよな)'), 'じゃよな'], [re('だよ'), 'じゃよ'], [re('(?:だね|だな)'), 'じゃな'],
     [/なの(?=[？?])/g, 'なのか'], [re('(?:のだ|(?<!さ)(?<!ちゃ)んだ)'), 'のじゃ'], [/(?<!さ)(?<!ちゃ)んだから/g, 'のじゃから'], [/(^|[。、…‥！？!?\s])だから(?=[、。…])/g, '$1じゃから'], [re('(?:なのよ|なの)(?!じゃ)'), 'なのじゃ'], [re('(?:のよ|わよ)'), 'のじゃ'], [re('だわ'), 'じゃ'], [re('(?:かしら|かな)'), 'かのう'],
-    [/ている(?=[。！？!?…、」のんか]|$)/g, 'ておる'], [/てる(?=[。！？!?…、」のんかよね]|$)/g, 'ておる'], [/ていた(?=[。！？!?…、」のんか]|$)/g, 'ておった'], [/てた(?=[。！？!?…、」のんか]|$)/g, 'ておった'],
+    [/ている(?=[。！？!?…、」のんか]|$)/g, 'ておる'], [/(?<!当|捨|育|慌|企|建|隔|果|捉|立|探|保|充|勝|待|持|打|放|撃)てる(?=[。！？!?…、」のんかよね]|$)/g, 'ておる'], [/ていた(?=[。！？!?…、」のんか]|$)/g, 'ておった'], [/てた(?=[。！？!?…、」のんか]|$)/g, 'ておった'],
     [/(ここ|そこ|あそこ|に|が)いる(?=[。！？!?…、」よのか]|$)/g, '$1おる'], [/(に|が)いた(?=[。！？!?…、」よのか]|$)/g, '$1おった'],
     /* 打ち消しの「ない」→「ぬ」（動詞のあとだけ） */
     [/しないで(?=[。！!…」]|$)/g, 'するでない'], [/しない(?=！)/g, 'せぬ'], [/しない(?=[。!…、」よのかぞ]|$)/g, 'せぬ'], [/しない(?=[？?])/g, 'せぬか'],
@@ -3903,7 +4229,7 @@
     for (var i = 0; i < l.length; i++) { var D = HK.TIES[l[i].type]; if (D && D.hate && l[i].a === a.i && l[i].cold) return l[i].cold; }
     return '';
   }
-  var LOVE_T = 'lover,mate,fated,almost,crush,fwb', FRIEND_T = 'friend,best,buddy,childhood,colleague,sibclose,sibling,senpai,mentor';
+  var LOVE_T = 'lover,mate,fated,almost,crush,fwb', FRIEND_T = 'friend,best,buddy,childhood,colleague,sibclose,sibling,senpai,mentor,classmate,boss,benefactor,relative,worship';
   function hasT(x, a, b, list) { return tieList(x, a, b).some(function (t) { return list.split(',').indexOf(t.type) >= 0 && (t.type !== 'crush' || t.a === a.i); }); }
 
   /* 物語型：嫌悪レベルの表（設定した関係から始める） */
@@ -4185,7 +4511,7 @@
   'use strict';
   var HK = window.HK;
   if (!HK || !HK.TL) return;
-  var LOVE = 'lover,mate,fated,almost,crush,fwb,ex', HATE = 'enemy,bad,sibbad', RIVAL = 'rival', CLOSE = 'friend,colleague,buddy,childhood,best,sibling,sibprot,sibclose,parent,pparent,mentor,master,teacher';
+  var LOVE = 'lover,mate,fated,almost,crush,fwb,ex', HATE = 'enemy,bad,sibbad', RIVAL = 'rival', CLOSE = 'friend,colleague,buddy,childhood,best,sibling,sibprot,sibclose,parent,pparent,mentor,master,teacher,classmate,boss,benefactor,relative,worship';
   function inL(t, l) { return l.split(',').indexOf(t) >= 0; }
   function ties(S, a, b) { return (S.ties || []).filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); }); }
   function has(S, a, b, l) { return ties(S, a, b).some(function (t) { return inL(t.type, l); }); }
@@ -4634,6 +4960,8 @@
     if (/[ぞぜ]$/.test(s) && !/どうぞ$/.test(s)) return s.replace(/(だ)?[ぞぜ]$/, function (x, d) { return d ? 'よ' : 'わよ'; });
     /* 名詞・形容動詞＋だ／だよ／だね／だな → よ／ね（「本物だよ」→「本物よ」、「大げさだね」→「大げさね」）。「まだ」「やだ」はそのまま */
     if (/(?<![まやだ]|あい)だ(?:よ)?$/.test(s) && (s.length > 2 || /^(?:私|俺|僕|あたし|嘘|うそ)だ$/.test(s))) return s.replace(/だ(?:よ)?$/, 'よ');
+    /* 「なんだな」「なんだね」は「なのね」（「なんね」にしない） */
+    if (/なんだ[ねな]$/.test(s)) return s.replace(/なんだ[ねな]$/, 'なのね');
     if (/(?<![まやだ])だ[ねな]$/.test(s) && s.length > 2) return s.replace(/だ[ねな]$/, 'ね');
     if (/[おこそとのほもよろごぞどぼぽ]うな$/.test(s)) return s.replace(/な$/, 'ね');
     if (/[いた]な$/.test(s)) return s.replace(/な$/, last ? 'わね' : 'ね');
@@ -5906,6 +6234,9 @@
   HK.lockSexOnly = function (a, b) { return !!(a && b && a !== b && HK.lockConflict(a, b) && !HK.ngExplicit(a, b) && !coNG(a, b) && !HK.sexNG(a, b)); };
   HK.canLove = function (a, b) {
     if (HK.ngPair(a, b)) return false;
+    /* 執着（信仰）で「恋愛に発展：しない」組（信仰される側が支配していない）：恋愛にしない */
+    var c0 = HK._curCtx;
+    if (c0 && c0.ties && HK.Ties && HK.tieOptNoLove && a && b && c0.chars && c0.chars[a.i] === a && HK.Ties.all(c0, a, b).some(function (t) { return t.type === 'worship' && HK.tieOptNoLove(t) && t.cold !== 'dominate'; })) return false;
     /* 恋愛相手を決めた人は、その相手以外とは恋愛しない（相手が箱庭にいなければ誰とも） */
     if (a && b && a.lock != null && a.lock !== b.i) return false;
     if (a.role === 'teacher' || b.role === 'teacher') return false;
@@ -5966,8 +6297,12 @@
       /* 血のつながった家族：惹かれは育たず、信頼は減りにくく底がある */
       if (pf.kin && f === 'att' && d[f] > 0) m = 0;
       if (pf.kin && f === 'trust' && d[f] < 0) m *= 0.25;
+      /* 揺らぎにくい想い（信仰する側・恩を受けた側）：減りにくく、下限がある（ties.js の stiff・floor） */
+      if (d[f] < 0 && HK.Ties && HK.Ties.stiff && this.ties) m *= HK.Ties.stiff(this, a, b, f);
       r[f] = HK.clamp(r[f] + d[f] * k * m, LIM[f][0], LIM[f][1]);
       if (pf.trustFloor && f === 'trust' && r[f] < pf.trustFloor) r[f] = Math.max(r[f], Math.min(before, pf.trustFloor));
+      var fl = d[f] < 0 && HK.Ties && HK.Ties.floor && this.ties ? HK.Ties.floor(this, a, b, f) : null;
+      if (fl != null && r[f] < fl) r[f] = Math.min(before, fl);
       this._mag += Math.abs(r[f] - before);
     }
     this._touched[key(a, b)] = [a, b];
@@ -6463,7 +6798,12 @@
     allybreak: { name: '同盟決裂', cls: 'enemy', pol: -1 }
   };
 
+  /* 新しい関係（信仰・恩人・上司と部下・同級生・親族）の結末は tie-rel.js が上書きする（恋人・殺害などは上書きしない） */
   function classify(ctx, A, B, pf) {
+    var c = classify0(ctx, A, B, pf);
+    return (HK.TieRel && HK.TieRel.refine && HK.TieRel.refine(ctx, A, B, pf, c)) || c;
+  }
+  function classify0(ctx, A, B, pf) {
     var ab = ctx.R(A, B), ba = ctx.R(B, A);
     var love = function (r) { return r.aff > 38 && r.att > 42; };
     var dir = null;
@@ -6521,6 +6861,7 @@
     var n = function (i) { return ctx.chars[i].name; };
     var other = function (i) { return i === A.i ? B.name : A.name; };
     if (HK.Obsess && HK.Obsess.pairText) { var ot = HK.Obsess.pairText(ctx, A, B, cl); if (ot) return ot; }
+    if (HK.TieRel && HK.TieRel.pairText) { var tt = HK.TieRel.pairText(ctx, A, B, cl); if (tt) return tt; }
     switch (cl.id) {
       case 'kill': return n(cl.dir) + 'が' + other(cl.dir) + 'を殺した。';
       case 'mutualkill': return '互いに刃を向け合い、最後は' + n(cl.dir) + 'が' + other(cl.dir) + 'の命を奪った。';
@@ -9952,7 +10293,14 @@
   var LVL_ATT = [0, -8, 4, 26, 36, 42];
   var LVL_TRUST = [0, -10, -2, 6, 12, 16];
   /* 既存の関係による抵抗感（足される惹かれの壁）。家族は軽い行為以外ほぼ不可 */
+  /* 執着（信仰）で「恋愛に発展：しない」かつ支配（dominate）でない組は、キス以上・夜（体の関係）にしない */
+  function wsNoSex(ctx, a, b) {
+    if (!ctx || !ctx.tiesAll || !HK.Ties || !a || !b || a === b) return false;
+    return HK.Ties.all(ctx, a, b).some(function (t) { return t.type === 'worship' && HK.tieOptNoLove && HK.tieOptNoLove(t) && t.cold !== 'dominate'; });
+  }
+  HK.roomWsNoSex = wsNoSex;
   function tieWall(ctx, a, b, lvl) {
+    if (wsNoSex(ctx, a, b)) return lvl >= 3 ? 999 : 0;
     var t = HK.Ties ? HK.Ties.get(ctx, a, b) : null;
     if (!t) return 0;
     var D = HK.TIES[t.type];
@@ -9962,7 +10310,7 @@
   function posClash(a, b) { return !!(HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b)); }
   function clashH(ctx, a, b) { return posClash(a, b) && ctx.rules.some(function (r) { return r.k === 'h'; }); }
   /* 体の関係を持ってよい組か（受け攻めの指定と恋愛対象から。攻め×攻めなどは、恋人でも、焦りが限界でも、媚薬でも、しない） */
-  function okSex(a, b) { return !HK.Pos || HK.Pos.okSex(a, b); }
+  function okSex(a, b) { return (!HK.Pos || HK.Pos.okSex(a, b)) && !wsNoSex(HK._curCtx, a, b); }
   /* a が b に対して攻め（動く側）に回れる向きがあるか（向きの記憶は動かさずに確かめる） */
   function canLead(a, b) { return !HK.Pos || HK.Pos.orients(a, b).some(function (o) { return o[0] === a; }); }
   /* 自分で「受け」を選んだ二人（受けとリバも好む設定などで、組として成り立つとき）：どちらが動くか（{a}=覚悟を決めて動く側） */
@@ -11114,7 +11462,7 @@
   function pairsOf(g) { var o = []; for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) o.push([g[i], g[j]]); return o; }
   function done3(ctx, g) { return pairsOf(g).every(function (p) { return A.pairDone(ctx, p[0], p[1]); }); }
   function family(ctx, a, b) { return A.tieWall(ctx, a, b, 3) >= 999; }
-  function okSex(a, b) { return !HK.Pos || HK.Pos.okSex(a, b); }
+  function okSex(a, b) { return (!HK.Pos || HK.Pos.okSex(a, b)) && !(HK.roomWsNoSex && HK.roomWsNoSex(HK._curCtx, a, b)); }
   /* 円満な三人：三人のどの二人も恋人（番・運命の番を含む）どうし。三人の場面は成り行きではなく、恋人どうしの円満な場面（love）にする */
   function loveTie(ctx, a, b) { var T0 = HK.Ties; return ctx.pair(a, b).couple || !!(T0 && T0.has && (T0.has(ctx, a, b, 'lover') || T0.has(ctx, a, b, 'mate') || T0.has(ctx, a, b, 'fated'))); }
   /* 中心の人と恋人／友達以上恋人未満 */
@@ -12343,6 +12691,514 @@
     closing(ctx, late);
     return r;
   };
+})();
+;/* ==== js/room-tie.js ==== */
+/* 箱庭シミュレーター: 出られない部屋 ―― 新しい関係（同僚・同級生・上司と部下・執着（信仰）・恩人・親族）ならではの場面
+   ・関係ごとの小場面（rt_pat）：向きのある関係は両側の視点。部屋のお題（行為・言葉・飲み食い・一人しか出られない）に合わせた文もまぜる
+   ・関係を保つ出来事（rt_keep）：落ち着かせる・かばう・いつもの関係を確かめ合う。信頼と好意が少し上がる
+   ・関係を発展させる出来事（rt_grow）：恋愛してよい組なら恋に変わる分岐。信仰は「恋愛に発展：する」のときだけ恋、支配なら支配と服従が深まる。
+     恩人は恩返し、上司と部下は職場の外での対等な信頼、同級生は昔話からの再接近、親族は家族としての絆
+   ・信仰する側は、冷たくされても想いを捨てない（値の減りは ties.js が抑える。ここでは文と挙動で）
+   全箱庭共通の小場面（tie-rel.js・persona.js）と重ならないよう、白い部屋・扉の紙・お題の状況に寄せて書く。
+   {a}＝関係の t.a 側（上司・信仰する側・恩人）、{b}＝t.b 側（部下・信仰される側・恩を受けた側）。向きのない関係は出来事の二人の順。
+   登場人物はすべて成人として扱う。全年齢版にも同じファイルを置く */
+(function () {
+  'use strict';
+  var HK = window.HK, scen = HK.SCENARIOS && HK.SCENARIOS.whiteroom;
+  if (!scen || !HK.RoomAPI) return;
+  var API = HK.RoomAPI;
+  function L(s) { return s.split('|'); }
+  var TYPES = ['boss', 'worship', 'benefactor', 'relative', 'classmate', 'colleague'];
+  var LABEL = { colleague: '同僚', classmate: '同級生', boss: '上司と部下', worship: '執着（信仰）', benefactor: '恩人', relative: '親族' };
+
+  function tieOf(ctx, a, b) {
+    if (!HK.Ties || !a || !b || a === b) return null;
+    var got = TYPES.map(function (k) { return HK.Ties.has(ctx, a, b, k); }).filter(Boolean);
+    return got.length ? got[Math.floor(ctx.rng() * got.length)] : null;
+  }
+  function hasTie(ctx, a, b) { return !!HK.Ties && TYPES.some(function (k) { return HK.Ties.has(ctx, a, b, k); }); }
+  /* 恋愛に進んでよい組か（恋愛・R18にしない組・恋愛の対象・血縁・「恋愛に発展：しない」を通す） */
+  function loveOk(ctx, a, b) {
+    if (HK.ngPair && HK.ngPair(a, b)) return false;
+    if (HK.canLove && (!HK.canLove(a, b) || !HK.canLove(b, a))) return false;
+    return !HK.Ties.all(ctx, a, b).some(function (t) { return (HK.tieNoLove && HK.tieNoLove(t)) || (HK.tieOptNoLove && HK.tieOptNoLove(t)); });
+  }
+  /* 体の関係のお題（キス以上）に触れてよい組か */
+  function heavyOk(ctx, a, b) { return loveOk(ctx, a, b) && sexOk(ctx, a, b); }
+  /* 体の関係にしてよい組か（恋愛・R18にしない組・恋愛の対象・血縁・性行為の相手の固定・受け攻め）。信仰の支配は「恋愛に発展：しない」でも通す */
+  function sexOk(ctx, a, b) {
+    if (HK.SAFE_ON || (HK.ngPair && HK.ngPair(a, b)) || (HK.sexBlocked && HK.sexBlocked(a, b))) return false;
+    if (HK.canLove && (!HK.canLove(a, b) || !HK.canLove(b, a))) return false;
+    if (HK.Pos && !HK.Pos.okSex(a, b)) return false;
+    return !HK.Ties.all(ctx, a, b).some(function (t) { return HK.tieNoLove && HK.tieNoLove(t); });
+  }
+  function domOf(ctx, t) { var pf = ctx.pair(ctx.chars[t.a], ctx.chars[t.b]); return t.type === 'worship' && (t.cold === 'dominate' || pf.dominate === t.b); }
+
+  /* 部屋の状況：まだ済んでいないお題の種類 */
+  function sit(ctx, a, b) {
+    if (ctx.flags.isOne) return 'one';
+    var rs = (ctx.rules || []).filter(function (r) { return !API.ruleDone(ctx, r, a, b); });
+    if (!rs.length) return '';
+    var T = API.K[rs[0].k];
+    if (T.type === 'act') return T.lvl >= 3 ? 'heavy' : 'light';
+    return T.type === 'consume' ? 'consume' : T.type === 'word' ? 'word' : '';
+  }
+  function qn(ctx, a, b) {
+    var rs = (ctx.rules || []).filter(function (r) { return !API.ruleDone(ctx, r, a, b); }), r = rs[0];
+    if (!r) return 'お題';
+    var T = API.K[r.k];
+    return T.type === 'consume' ? T.item : T.noun || 'お題';
+  }
+  function fmt(ctx, s, a, b) { return ctx.t(String(s).replace(/\{q\}/g, qn(ctx, a, b)), a, b); }
+
+  /* ================= 関係ごとの小場面 ================= */
+  /* x＝向きのない関係／A＝t.a 側が動く／B＝t.b 側が動く。お題の状況ごとの文は S[状況] */
+  var PAT = {
+    colleague: {
+      x: L('{a}は扉の紙を読み上げて、腕を組んだ。{a}「要件がこれだけって、職場で回ってくる依頼よりひどい」{b}「でも、締め切りがないぶんまし」|{a}と{b}は、いつもの打ち合わせのように壁際に並んで座り、分かっていることと分かっていないことを床に指で書き分けた。手順の踏み方まで、二人はそっくりだった。|{b}「{a}、こういうとき、いつも最初に出口を確かめるよね」{a}「{b}こそ、最初に非常ベルを探してた」二人は同時に、天井の何もない隅を見上げた。|{a}は白い壁を叩いて回り、{b}は叩いた場所を順に覚えていった。職場で何度も組んだ分担が、ここでもそのまま出た。|{a}「職場に連絡がつかないのが、地味にいちばん怖い」{b}「無断欠勤の言い訳、二人で考えておこう」'),
+      S: {
+        heavy: L('{a}は扉の紙の「{q}」の字から目を逸らした。{a}「……明日から、どんな顔で同じ職場に行けばいいの」{b}「それは、出てから二人で考えよう」|{b}「{a}とは、仕事の相棒のままでいたかった」{a}「今だって相棒だ。お題が変なだけ」二人は顔を見合わせて、少しだけ笑った。'),
+        one: L('{a}「一人しか出られないなら、出た人が助けを呼ぶ。それが一番早い」{b}「職場と同じで、報告が先ってことか」二人は、どちらが出るかをまだ決めなかった。'),
+        consume: L('{a}は並んだ{q}を数えて、{b}と半分ずつに分けた。{a}「仕事と同じ。分担すれば早い」{b}「残業代は出ないけどね」'),
+        word: L('{a}「{q}を言えって、評価面談より難しい」{b}「面談なら、前もって書いて持っていけるのに」')
+      }
+    },
+    classmate: {
+      x: L('{a}「同じクラスだったころ、{b}とこんなに長く二人で話したことあったっけ」{b}「なかった。席、いちばん遠かったし」|{a}と{b}は、担任の口癖を思い出しては交互にまねをした。白い部屋に、学生のころの笑い声が少しだけ戻った。|{b}は白い壁をじっと見て言った。{b}「なんか、テスト前の自習室みたい」{a}「自習室に扉の紙は貼ってなかった」|{a}は、{b}が考え込むときに髪をいじる癖が、学生のころから変わっていないことに気づいた。|{a}「卒業してから、みんなどうしてるんだろう」{b}「少なくとも、ここにいる二人はろくな目に遭ってない」'),
+      S: {
+        heavy: L('{b}は扉の紙の「{q}」を見て、顔を覆った。{b}「同級生と、これ……同窓会でどんな顔すればいいの」{a}「言わなきゃ誰にも分からない」{b}「{a}、そういうところ昔から変わらない」'),
+        one: L('{a}「一人しか出られないなら、くじ引きにしよう。学生のころの席替えみたいに」{b}「あのくじ、{a}がいつもいい席を引いてた」'),
+        consume: L('{a}「{q}を前に二人で並ぶの、学生のころの悪ふざけみたい」{b}「あのころより、だいぶ体力ないけどね」'),
+        word: L('{a}「{q}を言うの、卒業文集の寄せ書き以来かも」{b}「あれ、{a}に何て書いたか覚えてる？」{a}は覚えていなかった。{b}は少しだけ拗ねた顔をした。')
+      }
+    },
+    boss: {
+      A: L('{a}は扉と壁と紙を順に確かめてから、{b}に指示を出した。{a}「{b}は右の壁を。私は左を見る。何かあったらすぐ呼んで」{b}は職場と同じ返事をした。|{a}「{b}、慌てなくていい。状況の整理は私がする」{a}の声は、いつもの朝の打ち合わせと同じ、落ち着いた調子だった。|{a}は、閉じ込められてからの時間を袖口に書きつけていた。{a}「出たら、ちゃんと記録を残す。{b}の欠勤も、私の責任で処理する」'),
+      B: L('{b}は{a}の分の水を先に確かめて、黙って手渡した。{a}が礼を言うと、{b}は職場と同じように小さく頭を下げた。|{b}は{a}が考え込んでいる間、物音を立てないように壁際で待っていた。職場で何度も見てきた、{a}が答えを出す前の沈黙だった。|{b}「{a}は、こういうとき絶対に弱音を吐かない。だから私が代わりに吐いておく」{b}がわざと大きくため息をつくと、{a}の口元が少しゆるんだ。'),
+      S: {
+        heavyA: L('{a}は扉の紙の「{q}」を読んで、{b}の前に立った。{a}「{b}、これは命令でも仕事でもない。嫌なら、私は絶対に何もしない」{b}は、上司のその言い方に少しだけ救われた。'),
+        heavyB: L('{b}は「{q}」の文字を見て青ざめた。{b}「{a}と、そんな……職場に戻れなくなる」{a}「戻れるようにするのが、私の仕事だ」{a}は冗談めかして言ったが、目は真剣だった。'),
+        oneA: L('{a}「一人しか出られないなら、{b}が出て。部下を置いて先に出る上司はいない」{b}「上司を置いて先に出る部下だって、いない」二人はしばらく睨み合った。'),
+        oneB: L('{b}「{a}が出るべきだ。{a}がいないと、職場が回らない」{a}「私の代わりはいる。{b}の代わりはいない」{b}は言い返せなかった。'),
+        consumeA: L('{a}は{q}を手に取り、{b}より先に口をつけた。{a}「何が入っているか分からない。最初は私が確かめる」'),
+        consumeB: L('{b}は{q}の数を数えて、{a}の分まで自分のほうに寄せた。{b}「こういうのは部下の仕事。{a}は無理しなくていい」'),
+        wordA: L('{a}「{q}か。{b}の評価面談なら、言うことはいくらでもあるんだけど」{b}は笑っていいのか分からない顔をした。'),
+        wordB: L('{b}は{a}を前に、{q}を言うために何度も息を吸った。職場では一度も言えなかったことばかりが、喉の奥で渋滞していた。')
+      }
+    },
+    worship: {
+      A: L('{a}は、{b}が座る場所の床を袖で丁寧に拭ってから、{b}を座らせた。白い部屋のどこにいても、{a}の視線は{b}から離れなかった。|{a}「{b}がここにいるなら、この部屋だって悪くない」{a}は本気でそう言った。{b}がどんな顔をしても、{a}の目の色は変わらなかった。|{a}は{b}の言葉を一つも聞き漏らさないよう、{b}が口を開くたびに体ごと向き直った。'),
+      B: {
+        '': L('{b}は、{a}がずっと自分の世話を焼いていることを、ただの親切だと思っていた。{b}「{a}って、本当に面倒見がいい」{a}は何も言わずに微笑んだ。|{b}は、{a}がいつも自分の少し後ろに座ることに気づかなかった。扉に何かあれば、{a}がいちばんに{b}の前へ出られる位置だった。'),
+        accept: L('{b}は{a}が差し出した水を、当たり前のように受け取った。{b}「ありがとう、{a}」――その一言で、{a}は空腹も疲れも忘れた顔をした。|{b}は{a}の膝に頭を預けて目を閉じた。{a}は息をひそめて、その重さを噛みしめていた。'),
+        confused: L('{b}は、{a}の視線が自分から片時も離れないことに気づいて、落ち着かなげに膝を抱えた。{b}「{a}、そんなに見なくても、どこにも行かない」{a}「分かってる。それでも見ていたい」|{b}は、{a}が自分の分の食べ物まで差し出してくるのを、困った顔で押し返した。{b}「{a}も食べて。そういうのは、少し重い」{a}は素直にうなずいて、それでも半分しか食べなかった。'),
+        dominate: L('{b}は壁にもたれたまま、指先だけで{a}を呼んだ。{a}はすぐに膝をついて{b}の前に控えた。{b}「肩が凝った」――その一言で、{a}の両手はもう{b}の肩にあった。|{b}は{a}に、扉の紙を読み上げるよう命じた。{a}が読み終えると、{b}は「もう一度」と言った。{a}は何度でも、うれしそうに読み直した。'),
+        cherish: L('{b}は{a}の手を取って、自分の隣に座らせた。{b}「{a}、私の前でひざまずかなくていい。隣にいてくれればいい」{a}は戸惑いながら、言われたとおりに隣に座った。|{b}は、{a}が自分のことばかりで眠っていないのに気づいて、毛布で{a}をくるんだ。{b}「今度は、私が{a}の番をする」')
+      },
+      S: {
+        heavyL: L('{a}は扉の紙の「{q}」を読むと、迷わず{b}の前にひざまずいた。{a}「{b}が望むなら、私は何でも差し出す。お題のためでも、{b}のためなら喜んで」|{a}「{q}なんて、{b}が嫌なら私が別の出口を探す。でも、{b}がいいと言うなら――私には、それ以上の幸せはない」'),
+        heavyN: L('{a}は扉の紙の「{q}」を読むと、静かに首を振った。{a}「{b}に、したくないことはさせない。別の出口を、私が探す」{a}はそれから、一睡もせずに壁を調べ続けた。'),
+        heavyD: L('{b}は扉の紙の「{q}」を一瞥して、{a}に顎で示した。{b}「{a}、お題だ。私がいいと言うまで、そこで待っていて」{a}は頬を染めて、うれしそうに頭を下げた。'),
+        oneA: L('{a}「一人しか出られないなら、出るのは{b}だ。{b}のいない外より、{b}を外に出せたこの部屋のほうがいい」{a}は扉の前から一歩も動かなかった。'),
+        oneD: L('{b}「一人しか出られないなら、私が出る。{a}は、ここで私の帰りを待っていればいい」{a}「{b}がそう言うなら」――{a}は少しもためらわなかった。'),
+        consumeA: L('{a}は{q}を全部自分の前に集めた。{a}「{b}の分も、私が飲む。{b}の体に、知らないものを入れさせたくない」'),
+        consumeD: L('{b}は{q}を{a}の前に押しやった。{b}「全部飲んで。{a}ならできる」{a}は一つ目に手を伸ばしながら、{b}に命じられたことをむしろ喜んでいた。'),
+        wordA: L('{a}は{q}を言う番が来ると、止まらなくなった。{b}の声、{b}の指、{b}の考え方――{a}がいつまでも並べ続けるので、{b}のほうが先に音を上げた。')
+      }
+    },
+    benefactor: {
+      A: L('{a}は、{b}がちゃんと食べて眠っているかを、昔と同じように気にかけていた。{a}「{b}、顔色が悪い。少し横になって」|{a}「{b}が困ったときに手を出すのは、私の癖みたいなもの。気にしなくていい」{a}はそう言って、扉の仕掛けの前に立った。'),
+      B: L('{b}は、{a}が壁を調べる間ずっと、そのすぐ後ろについて回った。{b}「{a}には返しきれない恩がある。ここでくらい、役に立ちたい」|{b}は、{a}に助けてもらったあの日のことを思い出していた。あのときの{a}の手の温かさを、{b}は今でも覚えていた。|{b}は{a}の寝床を整え、{a}の靴の埃まで払った。{a}が「そこまでしなくていい」と言っても、{b}の手は止まらなかった。'),
+      S: {
+        oneA: L('{a}「出るのは{b}だ。私が{b}を助けたのは、こんなところで終わらせるためじゃない」'),
+        oneB: L('{b}「一人しか出られないなら、{a}が出て。あのとき{a}が助けてくれなかったら、私は今ここにいない。だから、今度は私の番」'),
+        consumeB: L('{b}は{q}を{a}より先に手に取った。{b}「これは私が飲む。今度は、私が{a}を助ける番だから」'),
+        heavyA: L('{a}は「{q}」の文字を見て、{b}に言った。{a}「{b}、私に恩があるからって、無理に応じなくていい。それだけは忘れないで」'),
+        heavyB: L('{b}は扉の紙の「{q}」を見て、{a}の前で唇を噛んだ。{b}「{a}に、恩返しのつもりでこんなことをさせたくない」{a}「恩なんて、とっくに返してもらってる」'),
+        wordB: L('{b}は{q}を言う番になると、{a}への感謝ばかりを並べた。{a}が「それ、お題と違う気がする」と言っても、{b}は止まらなかった。')
+      }
+    },
+    relative: {
+      x: L('{a}「{b}と二人きりって、親戚の集まりで子ども用の席に押し込まれて以来かも」{b}「あのとき、{a}がジュースをこぼして、二人で怒られた」|{a}と{b}は、子どものころ親戚の家で並んで寝た夏の話をした。白い天井を見上げると、あの家の木の天井を思い出した。|{b}「おばあちゃんに知られたら、二人とも説教だ」{a}「『あんたたちは昔から』で始まるやつ」二人は声をそろえて、その口癖をまねた。|{a}は、{b}が困ったときに耳を触る癖が、子どものころから変わっていないことに気づいて笑った。|{a}「出たら、正月にこの話をしよう。誰も信じないだろうけど」{b}「親戚中の話の種になる」'),
+      S: {
+        heavy: L('{a}と{b}は扉の紙の「{q}」を見て、同時に顔をしかめた。{a}「親戚どうしで、これは……」{b}「法事で顔を合わせられなくなる」'),
+        one: L('{b}「一人しか出られないなら、{a}が出て。{a}がいなくなったら、親戚中が泣く」{a}「{b}がいなくなっても同じ。だから二人で出る方法を探す」'),
+        consume: L('{a}は{q}を前に、子どものころ{b}に苦い薬を半分飲んでもらったことを思い出した。{a}「今回は、私が半分飲む」'),
+        word: L('{a}「{q}って、親戚に言うのはなんか照れる」{b}「子どものころは、平気で言ってたのに」')
+      }
+    }
+  };
+
+  /* 小場面の文を選ぶ。返り値 [文, 説明] */
+  function patLine(ctx, t, a, b) {
+    var P = PAT[t.type], X = ctx.chars[t.a], Y = ctx.chars[t.b], s = sit(ctx, a, b), side, pool, S = P.S || {};
+    if (P.x) {
+      pool = S[s] && (s !== 'heavy' || ctx.rng() < 0.7) && ctx.rng() < 0.55 ? S[s] : P.x;
+      return [fmt(ctx, ctx.pick(pool), a, b), ''];
+    }
+    side = a === X ? 'A' : 'B';
+    if (t.type === 'worship') {
+      var dom = domOf(ctx, t);
+      var sk = s === 'heavy' ? (dom && sexOk(ctx, X, Y) ? 'heavyD' : heavyOk(ctx, X, Y) ? 'heavyL' : 'heavyN') : s === 'one' ? (dom ? 'oneD' : 'oneA') : s === 'consume' ? (dom ? 'consumeD' : 'consumeA') : s === 'word' ? 'wordA' : '';
+      if (sk && ctx.rng() < 0.5) return [fmt(ctx, ctx.pick(S[sk]), X, Y), '：部屋のお題と信仰'];
+      pool = side === 'A' ? P.A : P.B[dom ? 'dominate' : t.cold || ''] || P.B[''];
+      return [fmt(ctx, ctx.pick(pool), X, Y), side === 'A' ? '：信仰する側から' : '：信仰される側から'];
+    }
+    var k = s + side, k2 = s + (side === 'A' ? 'B' : 'A');
+    var sp = S[k] || S[k2];
+    if (sp && ctx.rng() < 0.5) return [fmt(ctx, ctx.pick(sp), X, Y), '：部屋のお題と立場'];
+    return [fmt(ctx, ctx.pick(P[side]), X, Y), ''];
+  }
+
+  scen.events.push({
+    id: 'rt_pat', cat: 'bond', scope: 'pair',
+    when: function (ctx, a, b) { return !a.flags.down && !b.flags.down && hasTie(ctx, a, b); },
+    w: function () { return 0.85; },
+    run: function (ctx, a, b) {
+      var t = tieOf(ctx, a, b), r = patLine(ctx, t, a, b);
+      ctx.mod2(a, b, { aff: 2, trust: 2 }, { aff: 2, trust: 2 });
+      return { cat: 'bond', text: r[0], why: ctx.chars[t.a].name + 'と' + ctx.chars[t.b].name + 'は' + LABEL[t.type] + r[1] };
+    }
+  });
+
+  /* ================= 関係を保つ出来事 ================= */
+  var KEEP = {
+    colleague: L('{b}の手が止まったのを見て、{a}は黙って隣に座った。{a}「締め切り前の徹夜よりはまし。あのときも二人で乗り切った」{b}は小さく笑って、もう一度扉の紙を読み直した。|{a}は{b}の肩を軽く叩いた。{a}「ここを出たら、まず二人で報告書を出そう。『出られない部屋に閉じ込められました』って」{b}「誰も信じない」二人は笑って、少しだけ肩の力が抜けた。|{a}と{b}は、職場の誰が今ごろ二人の空いた席に気づいているか、名前を挙げて当てっこをした。他愛ない話のうちに、白い部屋の息苦しさが少し遠のいた。'),
+    classmate: L('{b}がうつむいたままなのを見て、{a}は学生のころの話を始めた。文化祭の準備で夜遅くまで残ったこと、二人で先生に叱られたこと。{b}はいつの間にか笑っていた。|{a}「{b}、覚えてる？　修学旅行で迷子になったときも、結局なんとかなった」{b}「なんとかしたのは、私」{a}「それ。今回もよろしく」|{a}と{b}は、クラスの誰が今いちばん出世していそうかを言い合った。どうでもいい話のおかげで、白い部屋の時計の音が気にならなくなった。'),
+    bossA: L('{b}の呼吸が浅くなっているのに気づいて、{a}は{b}の正面にしゃがみ込んだ。{a}「{b}、私を見て。吸って、吐いて。……大丈夫、ここでも責任は私が持つ」{b}はゆっくりうなずいて、震える指を握りしめた。|{a}は{b}の肩に自分の上着を掛けた。{a}「職場でもここでも、{b}を守るのは私の役目だ」{b}は上着の端を握って、小さくうなずいた。|{a}は扉の紙を前に固まる{b}に、一つずつ手順を区切って示した。{a}「全部いっぺんに考えなくていい。次にやることだけ考えて」――それは、{b}が新人のころに{a}から教わったやり方だった。'),
+    bossB: L('{a}が壁を殴りかけた拳を、{b}が両手で包んで止めた。{b}「{a}が怪我をしたら、誰が指示を出すの」{a}は拳をほどいて、苦く笑った。|{b}は、{a}が一睡もしていないことに気づいていた。{b}「見張りは私がやる。{a}は少し休んで。これは部下からのお願い」{a}は笑って、言われたとおりに目を閉じた。|{a}が自分を責めるようにうつむくと、{b}はきっぱりと言った。{b}「{a}のせいじゃない。こんな部屋、誰にも予想できない」{a}は顔を上げて、{b}をしばらく見ていた。'),
+    worship: L('{a}は、{b}が眠っている間ずっと、扉と{b}の間に座っていた。{a}「{b}が目を覚ましたとき、最初に見るのが扉じゃなくて私ならいい」――独り言は、白い壁に吸い込まれた。|{a}は自分の分の食べ物を、何も言わずに{b}の手元に置いた。{b}が気づいて押し返しても、{a}は首を振って受け取らなかった。|{a}「{b}が笑ってくれるなら、私はそれで一日を生きられる」{b}が冗談だと思って笑うと、{a}は本当に満ち足りた顔をした。'),
+    worshipStill: L('{b}は苛立って、{a}に「もう構わないで」と言った。{a}はうなずいて一歩下がった。けれど、{b}が寒そうに肩をすくめたとき、毛布を掛けにきたのはやはり{a}だった。|{b}の冷たい言葉にも、{a}の目の色は変わらなかった。{a}「{b}が私を嫌いでもいい。私が{b}を想う理由は、{b}の気持ちとは関係ないから」|{b}に突き放されたあと、{a}は壁際で一人膝を抱えていた。それでも、{b}が扉の紙の前で立ち止まったとき、真っ先に隣へ駆け寄ったのは{a}だった。'),
+    worshipDom: L('{b}は{a}に、部屋の隅から隅まで歩いて壁を確かめるよう命じた。{a}は何十往復でも文句一つ言わなかった。戻ってきた{a}の髪を、{b}は褒美のように一度だけ撫でた。|{b}「{a}、そこに座って。私がいいと言うまで動かないで」{a}は言われたとおり、一時間でも動かなかった。{b}に従っている間、{a}はひどく穏やかな顔をしていた。|{b}は脚を組んで、{a}に靴を脱がせた。{a}はうやうやしくそれを受け取り、白い床に揃えて置いた。{b}「よくできた」――その一言を、{a}は宝物のように胸にしまった。'),
+    benefactor: L('{b}がうつむいていると、{a}は昔と同じように{b}の頭に手を置いた。{a}「大丈夫。前も、なんとかなった」{b}は、その手の重さに泣きそうになった。|{b}は{a}の手のひらの小さな傷に気づいて、手当てをした。{b}「{a}の手当てをするのは、これが初めてだ」{a}「上手になった」|{a}が疲れて壁にもたれると、{b}はすかさず自分の上着を{a}の背中に挟んだ。{a}「ありがとう」{b}「お礼を言うのは、いつも私のほうだったから」'),
+    relative: L('{b}が眠れずにいると、{a}は子どものころと同じように背中をとんとんと叩いた。{b}は「もう子どもじゃない」と言いながら、すぐに眠ってしまった。|{a}「{b}が泣き虫だったころ、私がいつも手を引いてた」{b}「今は、私のほうが背が高い」二人は言い合いながら、自然と並んで扉の前に立った。|{a}と{b}は、それぞれの親の近況を話し合った。遠い家の話をしている間だけは、閉じ込められていることを忘れられた。')
+  };
+  function keepKey(ctx, t) {
+    var X = ctx.chars[t.a], Y = ctx.chars[t.b];
+    if (t.type === 'boss') return Y.stress >= X.stress || ctx.rng() < 0.3 ? 'bossA' : 'bossB';
+    if (t.type === 'worship') {
+      var ry = ctx.R(Y, X);
+      if (domOf(ctx, t) && ctx.rng() < 0.65) return 'worshipDom';
+      if (ry.aff < 10 || ry.ten > 25 || t.cold === 'confused') return ctx.rng() < 0.6 ? 'worshipStill' : 'worship';
+      return 'worship';
+    }
+    return t.type;
+  }
+  scen.events.push({
+    id: 'rt_keep', cat: 'help', scope: 'pair',
+    when: function (ctx, a, b) {
+      if (a.flags.down || b.flags.down || !hasTie(ctx, a, b)) return false;
+      var pf = ctx.pair(a, b);
+      return pf.rtKeepAt == null || ctx.stepIndex - pf.rtKeepAt >= 2;
+    },
+    w: function (ctx, a, b) { return 0.6 + Math.max(a.stress, b.stress) / 120; },
+    run: function (ctx, a, b) {
+      var t = tieOf(ctx, a, b), X = ctx.chars[t.a], Y = ctx.chars[t.b], k = keepKey(ctx, t), pf = ctx.pair(a, b);
+      pf.rtKeepAt = ctx.stepIndex;
+      var helped = k === 'bossB' ? X : k === 'benefactor' || k === 'worship' || k === 'worshipStill' || k === 'bossA' ? Y : (a.stress >= b.stress ? a : b);
+      if (k === 'worshipStill') ctx.mod2(X, Y, { aff: 3, trust: 2 }, { trust: 3, ten: -2 });
+      else if (k === 'worshipDom') ctx.mod2(X, Y, { aff: 4, trust: 4 }, { aff: 2, trust: 3 });
+      else ctx.mod2(X, Y, { trust: 4, aff: 3 }, { trust: 4, aff: 3 });
+      ctx.stress(helped, -6);
+      var why = { bossA: '：上司が部下を落ち着かせる', bossB: '：部下が上司をかばう', worshipStill: '：冷たくされても、信仰する側の想いは揺らがない', worshipDom: '：信仰される側が命じ、信仰する側は喜んで従う', worship: '：信仰する側の献身' }[k] || '：いつもの関係を確かめ合う';
+      /* 向きのない関係は、支える側を {a}、支えられる側を {b} に */
+      var sym = !HK.TIES[t.type].dir, A0 = sym ? (helped === a ? b : a) : X, B0 = sym ? helped : Y;
+      return { cat: 'help', text: fmt(ctx, ctx.pick(KEEP[k]), A0, B0), why: X.name + 'と' + Y.name + 'は' + LABEL[t.type] + why };
+    }
+  });
+
+  /* ================= 関係を発展させる出来事 ================= */
+  var GROW = {
+    colleague: {
+      deep: L('{a}は、職場では言ったことのない話を{b}にした。仕事は好きなのに、ときどき全部投げ出したくなること。{b}「私もだ。{a}がいるから続いてるだけ」二人は、同僚という言葉では足りないものを、白い部屋で確かめ合った。|{b}「出たら、仕事の話抜きで一度ご飯に行こう」{a}「仕事の話抜きで、何を話すの」{b}「それを、ここで考えておく」――{a}は思わず笑って、うなずいた。|{a}と{b}は、扉の仕掛けを解く手がかりを二人で一つずつ潰していった。言葉にしなくても相手の次の手が分かる。職場で積み上げてきた信頼が、ここでは命綱になっていた。'),
+      love: L('{a}は、隣で考え込む{b}の横顔を見ていた。職場で毎日見ているはずの顔が、白い照明の下ではまるで違って見えた。{a}「{b}、私、たぶんずっと前から{b}のことが気になってた」{b}は動きを止めて、{a}を見た。|{b}「職場では、こういうこと言えないから」{b}は{a}の袖を引いた。{b}「{a}のこと、同僚としてだけ見るのは、もう無理みたい」――扉の紙より先に、{a}の顔が熱くなった。|{a}と{b}は、壁にもたれて肩を並べていた。いつもならデスク一つぶん空いている距離が、今日はなかった。どちらからともなく手が触れて、どちらも離さなかった。')
+    },
+    classmate: {
+      deep: L('{b}は、卒業してから一度も連絡しなかった理由を、ぽつりと話した。{b}「忙しかったんじゃなくて、{a}に今の自分を見られるのが嫌だった」{a}「私も同じこと考えてた」――学生のころには言えなかった話を、二人は一つずつ埋めていった。|{a}「出たら、ちゃんと連絡先を交換し直そう。今度は途切れないように」{b}「卒業式の日も、同じこと言ってた」{a}「今度は本当」{b}は、学生のころと同じ顔で笑った。|{a}と{b}は、同じクラスにいたのに知らなかったお互いの話をした。部活のこと、家のこと、進路で迷ったこと。白い部屋で、二人の間の空白の年月が少しずつ縮んでいった。'),
+      love: L('{a}は、学生のころ{b}の後ろ姿ばかり見ていたことを打ち明けた。{a}「言えないまま卒業したの、ずっと心残りだった」{b}はしばらく黙っていたが、やがて{a}の手に自分の手を重ねた。{b}「……私も、{a}のこと見てた」|{b}「同じクラスだったとき、{a}のこと好きだった」{b}は白い壁に向かって言った。{b}「こんなところで言うことになるとは思わなかった」{a}は{b}の隣に座り直し、{b}の肩にそっと頭を預けた。|{a}と{b}は、卒業アルバムの話をしていたはずだった。気づけば二人は、学生のころよりずっと近い距離で、お互いの目を見ていた。')
+    },
+    boss: {
+      deep: L('{a}は扉の前で、ふっと肩の力を抜いた。{a}「{b}、ここには職場も役職もない。ここでは、私をただの{a}として扱って」{b}は少し迷ってから、初めて肩書き抜きで{a}の名前を呼んだ。|{b}は、職場ではずっと言えなかった案を{a}に話した。扉の仕掛けについての、少し無茶な案だった。{a}「……いい案だ。どうして今まで黙ってた」{b}「上司に意見するのが怖かった」{a}「これからは、遠慮なく言って」――二人の間の段差が、一つ低くなった。|{a}は{b}に、今の立場になったばかりのころの失敗を話した。誰にも話したことのない話だった。{b}「{a}にも、そんなときがあったんだ」{b}は初めて、上司ではない{a}の顔を見た気がした。'),
+      love: L('{a}は、{b}の寝顔を見ながら長いこと黙っていた。上司として、言ってはいけないと思っていた言葉があった。{b}が目を開けたとき、{a}はとうとうそれを口にした。{a}「{b}、私は、部下としてだけ{b}を見ていたわけじゃない」|{b}「出たら、私、異動の希望を出す」{a}が顔を上げると、{b}は真っ赤な顔で続けた。{b}「{a}の部下のままだと、{a}を好きでいられないから」|{a}と{b}は、職場では決して並ばない距離で座っていた。{a}の手が{b}の手に重なっても、{b}はもう、誰かに見られたらとは言わなかった。')
+    },
+    worship: {
+      love: L('{a}は、ずっと胸の内に置いてきた言葉を、とうとう{b}に告げた。{a}「{b}を崇めるだけじゃ足りなくなった。{b}に、触れたい」{b}は驚いた顔で{a}を見て、それから、そっと{a}の頬に手を添えた。|{b}「{a}は、私を見上げてばかりいる」{b}は{a}の顎を指ですくって、目の高さを合わせた。{b}「たまには、同じ高さで見て」――{a}の目に映った{b}は、崇める相手ではなく、一人の人だった。|{a}は、{b}の手の甲に唇を寄せた。祈るような口づけだった。けれど{b}が手を返して{a}の指を握ったとき、それは祈りではなくなった。'),
+      dom: L('{b}は{a}を足元に座らせ、その首筋に指を這わせた。{b}「{a}は、誰のもの？」{a}「{b}のもの」――{a}の答えには、一片の迷いもなかった。白い部屋で、二人の上下はいっそうはっきりと形になった。|{b}は、{a}に一つずつ約束をさせた。ここを出ても{b}のそばを離れないこと。{b}以外の誰の言葉にも従わないこと。{a}は一つ約束するたびに、うれしそうにうなずいた。|{b}は{a}の手首を掴み、印をつけるように強く握った。痕が残るほどの力だったのに、{a}はその痕を愛おしそうに撫でた。{a}「{b}が残してくれたものなら、何でもうれしい」'),
+      '': L('{b}は、{a}が自分のために何度も無茶をしていることに、ようやく気づいた。{b}「{a}、どうしてそこまでしてくれるの」{a}は答えずに、ただ微笑んだ。{b}の中で、{a}を見る目が少し変わった。|{b}は、扉の前でいつも自分をかばう位置に立つ{a}に気づいた。{b}「{a}、もしかして、ずっとそうしてた？」{a}「{b}が気づかなくても、私は同じことをした」'),
+      accept: L('{b}は、{a}が差し出す献身を、拒まずに受け取ると決めた。{b}「{a}がそうしたいなら、私はそれを受け取る。その代わり、無理はしないで」{a}は、許された喜びに目を潤ませた。|{b}は{a}に、自分の世話を焼く役目を正式に任せると言った。{a}は、白い部屋でいちばん大切な仕事をもらったように背筋を伸ばした。'),
+      confused: L('{b}「{a}、私はそんなに立派な人じゃない」{b}は、重荷を下ろすように言った。{a}「知ってる。それでも、私にとっては{b}がすべてだ」――{b}は困った顔で笑うしかなかった。|{b}は、{a}の想いの重さに耐えかねて、正直に「少し怖い」と言った。{a}は傷ついた顔もせずにうなずいた。{a}「{b}が怖くない距離にいる。それでも、そばにはいる」'),
+      cherish: L('{b}は{a}の両手を握った。{b}「{a}が私を大事にしてくれるぶん、私も{a}を大事にしたい」{a}は、信じていたものに初めて手を握り返されたような顔をした。|{b}は、{a}が自分のために削ってきたものを一つずつ数えて、{a}に返していった。眠る時間、食べる分、笑う余裕。{a}は戸惑いながら、それを受け取った。')
+    },
+    benefactor: {
+      deep: L('{b}は、{a}が眠っている間に、一人で扉の仕掛けを最後まで調べ上げた。目を覚ました{a}に、{b}は書き出した手がかりを差し出した。{b}「今度は、私が{a}を助ける」{a}はしばらく何も言えなかった。|{a}が弱音をこぼしたとき、{b}は迷わず{a}の手を握った。{b}「{a}があの日してくれたことを、今、全部返す」――助けられる側だった{b}の手は、もう震えていなかった。|{b}「恩返しのつもりだった。でも、もう違う。{a}が大事だから、助けたい」{a}は、助けたはずの相手に助けられている自分に気づいて、照れくさそうに笑った。'),
+      love: L('{b}は、感謝と呼んでいた気持ちの正体に、白い部屋でようやく気づいた。{b}「{a}、恩人としてじゃなく、{a}のことが好きだ」{a}は目を見開いて、それから、{b}の手をそっと握り返した。|{a}は、助けたあの日から{b}を見守ってきた。いつの間にか、見守るだけでは足りなくなっていた。{a}「{b}、私はもう、{b}の恩人のままでいたくない」|{b}は{a}の胸に額を押しあてた。{b}「返しきれないなら、ずっとかけて返す。そばにいさせて」{a}は答えの代わりに、{b}の背中を抱きしめた。')
+    },
+    relative: {
+      deep: L('{b}は、家族にも言えずにいた悩みを、{a}にだけ打ち明けた。{a}は黙って最後まで聞いてから、{b}の肩を抱いた。{a}「親戚なんて遠いと思ってたけど、{b}のことは、ちゃんと家族だと思ってる」|{a}「出たら、一度うちに遊びに来て。子どものころみたいに」{b}「もうお年玉はもらえないけど」{a}「それは私も」――二人は笑って、子どものころの約束をもう一度した。|{a}と{b}は、亡くなった祖父の話をした。二人とも同じ口癖を覚えていて、同じところで笑った。つながった血が、白い部屋の中で静かに温かかった。'),
+      love: L('{a}は、子どものころから{b}を特別だと思っていたことを打ち明けた。{a}「親戚だから、ずっと言っちゃいけないと思ってた」{b}は長い沈黙のあと、{a}の手を握った。{b}「……私も、同じだった」|{b}「正月に会うたびに、{a}のことを目で追ってた。親戚の誰にも、気づかれないように」{a}は、子どものころとは違う意味で、{b}の手を引いた。|{a}と{b}は、子どものころに並んで寝た夏の話をしていた。話が途切れたとき、二人はあのころよりずっと近くで、お互いの息づかいを聞いていた。')
+    }
+  };
+  var GROW_WHY = {
+    colleague: { deep: '：仕事仲間から、仕事抜きでも信じ合える仲へ', love: '：同僚から恋へ' },
+    classmate: { deep: '：昔話から、もう一度近づく', love: '：同級生から恋へ' },
+    boss: { deep: '：職場の外で、対等に信頼し合う', love: '：上司と部下から恋へ' },
+    worship: { love: '：信仰が恋に変わる（恋愛に発展：する）', dom: '：支配と服従が深まる（信仰される側が支配している）', '': '：信仰される側が、想いに気づき始める', accept: '：信仰される側が、献身を受け入れる', confused: '：信仰される側は戸惑うが、信仰する側は揺らがない', cherish: '：信仰される側も、相手を大切にし返す' },
+    benefactor: { deep: '：恩を受けた側が、今度は恩人を助ける', love: '：恩が恋に変わる' },
+    relative: { deep: '：家族としての絆', love: '：親族から恋へ（恋愛：あり）' }
+  };
+  function growKind(ctx, t) {
+    var X = ctx.chars[t.a], Y = ctx.chars[t.b], rx = ctx.R(X, Y), ry = ctx.R(Y, X);
+    var lv = loveOk(ctx, X, Y) && (rx.att + ry.att > 45 || (rx.att > 30 || ry.att > 30) && rx.aff + ry.aff > 70) && ctx.rng() < 0.65;
+    if (t.type === 'worship') {
+      if (lv && t.love === 'ok') return 'love';
+      if (domOf(ctx, t)) return 'dom';
+      return t.cold || '';
+    }
+    return lv ? 'love' : 'deep';
+  }
+  scen.events.push({
+    id: 'rt_grow', cat: 'bond', scope: 'pair',
+    when: function (ctx, a, b) {
+      if (a.flags.down || b.flags.down || ctx.stepIndex < 1 || !hasTie(ctx, a, b)) return false;
+      var pf = ctx.pair(a, b);
+      return (pf.rtGrow || 0) < 3 && (pf.rtGrowAt == null || ctx.stepIndex - pf.rtGrowAt >= 2);
+    },
+    w: function (ctx, a, b) { return 0.55 + Math.max(0, ctx.R(a, b).trust + ctx.R(b, a).trust) / 200; },
+    run: function (ctx, a, b) {
+      var t = tieOf(ctx, a, b), X = ctx.chars[t.a], Y = ctx.chars[t.b], k = growKind(ctx, t), pf = ctx.pair(a, b);
+      pf.rtGrow = (pf.rtGrow || 0) + 1; pf.rtGrowAt = ctx.stepIndex;
+      var pool = GROW[t.type][k] || GROW[t.type].deep || GROW[t.type][''];
+      var cat = k === 'love' ? 'romance' : 'bond';
+      if (k === 'love') ctx.mod2(X, Y, { att: 8, aff: 5, trust: 3 }, { att: 8, aff: 5, trust: 3 });
+      else if (k === 'dom') ctx.mod2(X, Y, { aff: 5, trust: 6 }, { aff: 3, trust: 4, ten: -2 });
+      else if (t.type === 'worship') ctx.mod2(X, Y, { aff: 3, trust: 3 }, k === 'confused' ? { trust: 3 } : { aff: 5, trust: 5 });
+      else if (t.type === 'benefactor') ctx.mod2(X, Y, { trust: 6, aff: 5 }, { trust: 4, aff: 4 });
+      else ctx.mod2(X, Y, { trust: 6, aff: 4 }, { trust: 6, aff: 4 });
+      var A0 = X, B0 = Y;
+      if (!HK.TIES[t.type].dir && ctx.rng() < 0.5) { A0 = Y; B0 = X; }
+      return { cat: cat, text: fmt(ctx, ctx.pick(pool), A0, B0), why: X.name + 'と' + Y.name + 'は' + LABEL[t.type] + (GROW_WHY[t.type][k] || ''), mag: k === 'love' || k === 'dom' ? 14 : 8 };
+    }
+  });
+
+  HK.RoomTie = { tieOf: tieOf, loveOk: loveOk, heavyOk: heavyOk, sexOk: sexOk, domOf: domOf, TYPES: TYPES };
+})();
+;/* ==== js/room-tie-r18.js ==== */
+/* 箱庭シミュレーター（R18版のみ）: 出られない部屋 ―― 新しい関係（同僚・同級生・上司と部下・執着（信仰）・恩人・親族）の、お題のエッチ
+   条件「エッチ」の部屋で、関係のある二人が、その関係ならではの導入と反応で体を重ねる（room-tie.js の判定を使う）。
+   ・起きる組：恋愛してよい組（HK.canLove／HK.ngPair／HK.sexBlocked／受け攻め HK.Pos.okSex）だけ。
+     執着（信仰）は「恋愛に発展：する」か、信仰される側が支配している（dominate）ときだけ。支配は、支配する側が命じ、信仰する側が喜んで差し出す合意の形。
+     親族は「恋愛：あり」の組だけ。どちらかに別の恋人がいる組・場所を渋っている組では起こさない
+   ・攻め／受けは受け攻めの指定どおり（HK.RoomLewd.lead → HK.Pos.order）。攻めを選んだ人は受ける側にしない
+   ・文：導入と受けの反応は関係と向き（上司が攻め／部下が攻め など11通り）ごと。最中は関係の系統×性別の組（m＝攻めが男性の体／ff＝女性どうし／fm＝女性の攻めが上）、
+     果ては性別の組ごと、山場（受けが求める）は態度9種。喘ぎは ero-kit.js（口調・濁点の設定）
+   ・描写の設定（lewd-unify.js）：ほのめかす＝暗転の一文／短く＝最中を省く／男性向け＝擬音と♡の段落
+   全年齢版にはこのファイルはない。登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK || !HK.Ero || !HK.RoomAPI || !HK.RoomTie) return;
+  var A = HK.RoomAPI, RT = HK.RoomTie;
+  function L(s) { return s.split('|'); }
+  var PS = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite'];
+  function ps(c) { var p = HK.personaOf ? HK.personaOf(c) : c.persona; return PS.indexOf(p) >= 0 ? p : 'gentle'; }
+  function isF(c) { return !!(HK.Pos && HK.Pos.isF(c)); }
+  function kindOf(t, b) { return isF(t) ? (isF(b) ? 'ff' : 'fm') : 'm'; }
+  function pick(x, arr) { var r = function (l) { return l[Math.floor(x.rng() * l.length)]; }; return HK.Ero.fresh ? HK.Ero.fresh(x, arr, r) : r(arr); }
+  function fill(x, t, a, b) { return HK.Ero.fill(x, String(t).replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name), b); }
+
+  /* ---------- 導入（{a}＝攻め、{b}＝受け。関係と向きごと） ---------- */
+  var OPEN = {
+    col: L('扉の紙のお題を前に、{a}と{b}は職場の打ち合わせのように短く確かめ合った。{a}「嫌になったら、すぐ言って」{b}がうなずくと、{a}は毎日隣の席で見ていた{b}の襟元に、初めて指をかけた。|{a}「明日からも、ちゃんと同僚でいられる？」{b}「……今は、それを考えたくない」その答えを合図に、{a}は{b}を白いシーツの上へ押し倒した。いつも書類を受け渡していた手が、今は{b}の肌をなぞっていた。|{a}と{b}は、同じ職場で何年も並んで働いてきた。その距離が、白い部屋の簡易ベッドの上で一気になくなった。{a}は{b}の目を確かめながら、ゆっくりと服を脱がせていった。'),
+    cls: L('{a}「学生のころの{b}が見たら、驚くだろうね」{b}「……今の{a}にも、驚いてる」{a}は笑って、同じ教室にいたころには一度も触れなかった{b}の頬に手を添え、唇を重ねた。|{a}は簡易ベッドに{b}を横たえて、上から覗き込んだ。{a}「同じクラスだったとき、こういうこと考えたことあった？」{b}が目を逸らすと、それが答えだった。{a}は{b}の服の裾から、そっと手を滑り込ませた。|卒業してから止まっていた時間が、白い部屋で急に動き出した。{a}は{b}を壁際に追い詰め、学生のころよりずっと大人びた{b}の首筋に唇を落とした。{b}は息をのんで、{a}の背中に手を回した。'),
+    bossA: L('{a}は{b}の顎に指を添えて、上を向かせた。{a}「{b}、これは命令じゃない。でも、私に任せてほしい」{b}が小さくうなずくと、{a}は職場で指示を出すときと同じ落ち着いた手つきで、{b}の服のボタンを一つずつ外していった。|{a}は{b}を簡易ベッドに座らせ、その前に立った。いつも会議の席で{b}を見ていた目が、今は熱を帯びていた。{a}「力を抜いて。全部、私が責任を持つ」{a}はそう言って、{b}をそっと押し倒した。|{a}「{b}、こっちを見て」――職場で何度も聞いた声が、白い部屋ではまるで違う響きを持っていた。{b}は逆らえずに顔を上げ、{a}の唇を受け入れた。{a}の手は、部下の体を一つずつ確かめていった。'),
+    bossB: L('{b}がためらうように視線を逸らすと、{a}はその手を取って引き寄せた。{a}「{b}、ここでは私の上司じゃない。今だけは、私に任せて」いつも指示を仰いできた相手を、{a}は簡易ベッドに押し倒した。|{a}は、職場では決して触れられなかった{b}の髪に指を差し入れた。{b}が何か言う前に、{a}はその唇を塞いだ。{b}「……っ、{a}」{a}「今日は、私がリードする」|{a}は{b}をベッドの縁に座らせ、その前に膝をついた。{a}「いつも、{b}の背中ばかり見てた」{a}は上司の上着を肩から滑り落とし、その下の肌に初めて唇で触れた。'),
+    wsLA: L('{a}は{b}の足元にひざまずき、祈るように{b}の手の甲へ口づけた。{a}「{b}に触れていいと言われる日が来るなんて」{a}はそれから、壊れものを扱うようにそっと{b}を簡易ベッドに横たえた。|{a}の指は、{b}の服のボタンを外すたびに震えた。崇め続けてきた相手の肌が、白い照明の下で少しずつあらわになっていく。{a}は一つあらわになるたびに、そこへ唇を落とした。|{a}「{b}を、全部覚えておきたい」{a}は{b}を横たえると、髪の先から爪先まで、一つ残らず確かめるように口づけていった。{b}はくすぐったそうに身をよじりながら、{a}の頭をそっと撫でた。'),
+    wsLB: L('{a}は、足元にひざまずこうとした{b}の腕を取って引き上げた。{a}「今日は、そこじゃない」{a}は{b}を簡易ベッドに押し倒し、崇めるばかりだった目を、自分だけに向けさせた。|{b}「{a}に、触れてもらえるなんて……」震える声で言う{b}の唇を、{a}は自分の唇で塞いだ。{a}「{b}が欲しがってたもの、全部あげる」{b}は信じられないものを見るような目で、{a}を見上げた。|{a}は{b}の頬に手を添えて、ゆっくりと服を脱がせた。{b}は差し出すように自分から腕を上げ、{a}の手に身を任せた。崇める相手に触れられるたびに、{b}の肌は粟立った。'),
+    wsDA: L('{b}は簡易ベッドに腰かけて脚を組み、{a}を見下ろした。{b}「お題だ。{a}、奉仕して」{a}は頬を紅潮させてうなずき、喜んで{b}の足元にひざまずいた。|{b}「脱がせて。手は震わせないで」その命令に、{a}はうっとりとした顔でうなずいた。崇める相手の服を一枚ずつ脱がせることを許されて、{a}の指は幸福で熱くなっていた。|{b}は{a}の顎を指先で持ち上げた。{b}「{a}の体は、私を満たすためにある」{a}「はい。{b}のために」{a}は命じられるのを待ちきれないように、{b}の体に唇を寄せた。'),
+    wsDB: L('{a}は{b}の顎を指先で持ち上げた。{a}「{b}、お題だ。脱いで、そこに横になって」{b}は迷いなくうなずいた。命じられることそのものが、{b}にとっては何よりのご褒美だった。|{a}は{b}を足元にひざまずかせ、髪に指を絡めて顔を上げさせた。{a}「{b}は、誰のもの？」{b}「{a}のもの」――答えを聞いて満足げに笑うと、{a}は{b}を簡易ベッドに押し倒した。|{b}は、{a}に命じられる前から服を脱いで待っていた。{a}「いい子だ」――その一言で、{b}の体は熱くなった。{a}は差し出された{b}の体を、自分のもののように引き寄せた。'),
+    benA: L('{a}は、震える{b}の肩を抱き寄せた。{a}「恩返しのつもりなら、やめていい」{b}「違う。{a}だから、こうしたい」その答えに、{a}は{b}をそっと簡易ベッドに横たえた。|{a}は、あの日助けた{b}の手を取り、その指先に口づけた。{a}「強くなったね、{b}」{b}が照れて首を振ると、{a}は{b}の服をゆっくりと脱がせていった。|{a}は、{b}を見守るばかりだった手で、初めて{b}の肌に触れた。{b}は息をのんで、それから自分から{a}の首に腕を回した。{b}「ずっと、{a}にこうしてほしかった」'),
+    benB: L('{a}は{b}の手を取って、簡易ベッドに座らせた。{a}「いつも{b}に助けてもらってばかりだった。今日は、私が{b}を満たしたい」{b}が驚いて目を見開くと、{a}はその唇を塞いだ。|{a}は、恩人の上着をそっと脱がせた。{b}の肩には、昔{a}をかばったときの小さな傷が残っていた。{a}はその傷に唇を寄せてから、{b}を簡易ベッドに押し倒した。|{b}「{a}、無理しなくていい」{a}「無理じゃない。恩返しでもない」{a}はそう言って、守られるばかりだった腕で、今度は{b}を抱きしめ、シーツの上に横たえた。'),
+    rel: L('{a}「子どものころ、こうやって並んで寝たよね」{b}「……こんなふうには、寝てない」{b}の照れた声に笑って、{a}は{b}を簡易ベッドに横たえ、子どものころには知らなかった顔で口づけた。|{a}と{b}は、親戚の誰にも言えない秘密を、白い部屋で一つ作ろうとしていた。{a}は{b}の頬に手を添え、確かめるように何度も唇を重ねた。{b}は目を閉じて、{a}の背中に腕を回した。|{a}は、正月に会うたびに目で追っていた{b}の手を、初めてしっかりと握った。{a}「法事で顔を合わせたら、きっと思い出す」{b}「それでいい」――二人はそのまま、白いシーツの上に倒れ込んだ。')
+  };
+  /* ---------- 受けの、関係ならではの反応 ---------- */
+  var REACT = {
+    col: L('{b}は、職場で毎日聞いている{a}の声が耳元で掠れるたびに、体の奥がきゅっと縮むのを感じた。明日、あの声で書類の話をされたら、きっと思い出してしまう。{b}は考えるのをやめて、{a}にしがみついた。|{b}は、キーボードを叩く{a}の指を何度も見てきた。その指が今、自分のいちばん弱いところに触れている。{b}はそれを思うだけで、声を抑えられなくなった。|{b}は「同僚なのに」と言いかけて、言葉を飲み込んだ。同僚だからこそ知っていた{a}の癖が、今は{b}を追い詰めていた。'),
+    cls: L('{b}は、学生のころ遠くから見ていた{a}の横顔を思い出していた。その{a}が、今は自分だけを見下ろしている。{b}は恥ずかしさに顔を覆ったが、{a}にその手をそっと外された。|{b}「{a}、学生のころより、ずっと……」その先は言葉にならなかった。{a}が動くたびに、{b}は同じクラスだったころには知らなかった声を上げた。|{b}は、同窓会で{a}とどんな顔で会えばいいのか、もう考えられなかった。考えられないくらい、{a}の触れ方に夢中になっていた。'),
+    bossA: L('{b}は、職場で{a}に名前を呼ばれるたびに背筋を伸ばしてきた。その同じ声で名前を呼ばれながら、今は背中を反らせている。{b}は自分の体の正直さに、耳まで赤くなった。|{a}「{b}、いい子だ」――仕事を褒められるときと同じ言葉に、{b}の体はびくりと跳ねた。{b}は上司の背中に爪を立てて、声を殺そうとした。|{b}は、{a}の指示に従うことに慣れていた。力を抜いてと言われれば抜き、声を聞かせてと言われれば、恥ずかしさに震えながらも従った。'),
+    bossB: L('{b}は、職場では決して見せない顔をしていた。部下に組み敷かれて、乱れた息を隠すこともできずにいる。{b}は腕で顔を覆ったが、{a}にそっと外された。|{b}「……っ、{a}、そこは……」いつもは的確な指示を出す口が、今は意味のある言葉を作れなかった。{a}はその様子を、愛おしそうに見下ろしていた。|{b}は、部下の前でこんな声を上げている自分が信じられなかった。それでも{a}が動くたびに、{b}の腕は{a}をいっそう強く引き寄せた。'),
+    wsLA: L('{b}は、{a}がまるで祈るように自分に触れるのを感じていた。一つ触れるたびに{a}が名前を呼ぶので、{b}は自分がひどく大切なものになった気がした。{b}は{a}の髪を撫でて、「もっと」と小さくねだった。|{b}は、崇められることには慣れていたつもりだった。けれど、こんなふうに全身で求められるのは初めてだった。{b}は{a}の熱に溶かされて、言葉を失った。|{b}「{a}、そんなに大事そうに触らなくても……」言いかけた{b}の声は、途中でほどけて甘い息になった。{b}は{a}の肩を掴んで、もう何も言えなくなった。'),
+    wsLB: L('{b}は、崇めてきた相手に抱かれていることが信じられなかった。{a}が触れるたびに、{b}の目から涙がこぼれた。悲しいのではなく、幸せすぎて。|{b}「{a}……{a}……」{b}は祈りの言葉のように、何度も名前を呼んだ。{a}がそれに応えて動くたびに、{b}の体は喜びに震えた。|{b}は、{a}に与えられるものを一つ残らず受け取ろうとしていた。熱も重さも、すべてが{a}からの贈り物のように思えた。'),
+    wsDA: L('{b}は、奉仕する{a}を見下ろして、満足げに目を細めた。{b}「そう、そこ。……上手」褒められるたびに{a}の動きは熱を増し、{b}の命じる声も、少しずつ甘く崩れていった。|{b}「まだ止めていいとは言ってない」{b}は{a}の髪を掴んで引き寄せた。命令の形をしていても、{b}の腰はもう{a}を求めて揺れていた。|{b}は、自分の命じたとおりに動く{a}を見ているうちに、命じることを忘れていった。{b}「……っ、{a}、そのまま……」それは命令というより、懇願に近かった。'),
+    wsDB: L('{b}は、{a}に命じられるまま、自分から脚を開いた。恥ずかしさよりも、{a}の望みどおりにできる喜びのほうが大きかった。{a}が「いい子」と言うたびに、{b}の体はとろけていった。|{a}「声を我慢して」――命じられて、{b}は唇を噛んだ。命令を守りたい一心で耐える{b}の姿に、{a}は満足げに笑って、さらに深く責めた。|{b}は、{a}のものとして扱われることに震えるほどの幸福を感じていた。{a}「{b}は、誰のもの？」{b}「{a}の、もの……っ」答えるたびに、{b}の体はきつく{a}を締めつけた。'),
+    benA: L('{b}は、あの日自分を救ってくれた手に触れられていることに、胸がいっぱいになった。{b}「{a}、ありがとう……」{a}は「お礼はいらない」と笑って、{b}をいっそう深く抱いた。|{b}は、{a}に何かをしてもらうばかりだった自分を思い出して、せめてと{a}の名前を呼び続けた。名前を呼ばれるたびに、{a}の手つきは優しくなった。|{b}は、{a}の腕の中で、守られていたころとは違う安心を覚えていた。それはもう、恩人に向ける気持ちではなかった。'),
+    benB: L('{b}は、守ってきた相手に組み敷かれている自分に戸惑っていた。けれど、{a}が触れるたびにその戸惑いはほどけていった。{b}「……いつの間に、こんなに」{a}「{b}が見てない間に」|{b}は、{a}の手が自分を気遣うように動くのを感じて、胸が詰まった。あの日、自分が{a}にしたのと同じ優しさだった。|{b}は、恩人として気を張り続けてきた肩の力を、ようやく抜いた。{a}に身を任せると、{b}の口からは長いあいだ忘れていた甘い声がこぼれた。'),
+    rel: L('{b}は、子どものころから知っている{a}の声が、聞いたこともない響きで自分の名前を呼ぶのを聞いた。{b}は恥ずかしさに顔を背けたが、体は正直に{a}に応えていた。|{b}「親戚の誰にも、言えない……っ」{b}がそう呟くと、{a}は「言わなくていい」と耳元で囁いた。秘密を分け合う熱に、{b}の体は震えた。|{b}は、子どものころ並んで寝た{a}の体温を、まるで違う形で知っていた。懐かしさと知らない熱が混ざり合って、{b}は{a}にしがみついた。')
+  };
+  /* ---------- 最中（関係の系統×性別の組） ---------- */
+  var BODY = {
+    work: {
+      m: L('{a}は{b}の脚を開かせ、ゆっくりと奥まで沈めた。職場で並んでいたときには想像もしなかった熱が、二人の間で繋がった。{a}は{b}の反応を一つずつ確かめながら、少しずつ動きを深くしていった。|{a}は{b}をうつ伏せにして腰を引き寄せ、後ろから深く貫いた。白いシーツを握る{b}の指を、{a}は自分の指で上から包み込んだ。打ちつけるたびに、簡易ベッドが軋んだ。|{a}は{b}の体を知り尽くすように、時間をかけて責めた。いつも段取りよく仕事を片づける{a}が、今は少しも急がなかった。{b}が焦れて腰を揺らすまで、{a}は浅いところばかりを擦った。'),
+      ff: L('{a}は{b}の脚の間に指を滑らせ、熱く濡れたところをゆっくりとなぞった。いつも書類をめくっていた指が、今は{b}のいちばん弱いところを探り当てる。{b}の腰が跳ねるたびに、{a}は同じ場所を丁寧に撫でた。|{a}は{b}の胸の先を口に含みながら、指を二本、そっと{b}の中に沈めた。{b}が息をのむと、{a}は指を曲げてざらついたところを押し上げた。白い部屋に、濡れた音が小さく響いた。|{a}は{b}の太腿を押し開いて顔を埋め、舌で花芯を転がした。{b}は{a}の髪を掴んで、声を殺そうとした。殺しきれない声が、白い壁に跳ね返った。'),
+      fm: L('{a}は{b}の腰に跨り、硬くなったものを自分の中へゆっくりと迎え入れた。いつも隣の席で見ていた{b}の顔が、下から自分を見上げて歪む。{a}はその顔を見下ろしながら、腰を前後に揺らし始めた。|{a}は{b}の胸に手をついて、深く腰を沈めた。{b}が思わず{a}の腰を掴むと、{a}は「動かないで」と言って、自分のペースで上下に動いた。{b}は歯を食いしばったが、声はこぼれた。|{a}は{b}のものを手で扱いて硬さを確かめてから、その上に腰を下ろした。根元まで呑み込むと、{a}は{b}の両手首をシーツに縫いとめた。{a}「今日は、私の段取りでやる」')
+    },
+    cls: {
+      m: L('{a}は{b}の体を抱き寄せ、確かめるようにゆっくりと繋がった。学生のころには知らなかった{b}の熱が、{a}を包み込んだ。{a}は{b}の額に額を合わせて、少しずつ動き始めた。|{a}は{b}の片脚を抱え上げ、横向きに寝たまま後ろから深く貫いた。耳元で{b}の名前を呼ぶたびに、{b}の体はきゅっと強張った。{a}は{b}のうなじに口づけながら、何度も奥を突いた。|{a}は{b}を仰向けにして、膝を胸に押しつけるように深く沈めた。{b}が「そんなに奥……」と言いかけると、{a}は笑って同じところをもう一度擦った。簡易ベッドの軋みが、だんだん速くなった。'),
+      ff: L('{a}は{b}と脚を絡め、熱く濡れたところどうしをゆっくりと擦り合わせた。{b}は学生のころと同じように照れて笑ったが、すぐに笑っていられなくなった。二人の吐息が、白い部屋で重なった。|{a}は{b}の中に指を沈め、もう片方の手で{b}の胸を包んだ。{b}が身をよじると、{a}は「逃げないで」と囁いて指を曲げた。{b}の腰が、勝手に{a}の指を追いかけた。|{a}は{b}の脚の間に顔を埋め、舌先で花芯を弾くように舐めた。{b}は{a}の頭を太腿で挟み込んで、甘い声を漏らした。{a}は{b}が震えるまで、同じ場所を責め続けた。'),
+      fm: L('{a}は{b}の上に跨り、ゆっくりと腰を沈めて{b}を呑み込んだ。{a}は{b}の顔を見下ろして、「同じクラスだったとき、こんな顔見たことなかった」と笑った。それから、深く腰を揺らした。|{a}は{b}の胸に手をついて、浅く、深くと腰の動きを変えた。{b}が下から突き上げようとすると、{a}はわざと腰を浮かせて焦らした。{b}は悔しそうに、{a}の腰を掴んだ。|{a}は{b}に背を向けて跨り、腰を落として深く繋がった。振り返って{b}の表情を確かめながら、{a}は自分のいいところに当たるように腰を回した。{b}の呼吸が、どんどん荒くなった。')
+    },
+    wsUp: {
+      m: L('{a}は{b}の体に負担をかけないよう、ゆっくりと沈めていった。{b}が少しでも顔をしかめれば、{a}はすぐに動きを止めた。崇める相手の中に迎えられた喜びに、{a}の体は震えていた。|{a}は{b}の望む速さと深さを、息づかい一つから読み取って動いた。{b}が求めれば奥まで、{b}が焦れれば浅く。{a}にとってそれは、行為である前に奉仕だった。|{a}は{b}の脚に口づけてから、その間に体を沈めた。{a}は{b}の顔だけを見つめて、{b}がいちばん気持ちいい場所を、何度でも丁寧に突いた。'),
+      ff: L('{a}は{b}の脚の間にひざまずき、崇めるように花芯へ舌を這わせた。{b}が少しでも身をよじれば、{a}はそこを覚えて、何度でも丁寧になぞった。{a}の奉仕は、{b}が震え出すまで終わらなかった。|{a}は{b}の中に指を沈め、{b}の反応を一つも見逃さないように顔を見上げていた。{b}が息をのむ場所を見つけると、{a}は宝物を見つけたように微笑んで、そこを押し上げ続けた。|{a}は{b}の胸から腹へ、腹から脚の付け根へと、祈るように口づけを落としていった。最後にたどり着いた熱いところを、{a}は舌と指で丁寧に愛した。'),
+      fm: L('{a}は{b}の上にそっと跨り、{b}のものを自分の中へゆっくりと迎え入れた。{a}「{b}の、全部……」{a}はうっとりと呟いて、{b}がいちばん気持ちよさそうな顔をする速さで腰を揺らした。|{a}は{b}の胸に手を添えて、{b}を見下ろしながら腰を沈めた。見下ろしていても、{a}の目は崇める相手を見上げるときと同じ色をしていた。{a}は{b}のために、何度でも深く腰を落とした。|{a}は{b}のものに口づけてから、その上に腰を下ろした。{b}が呻くたびに{a}は幸福そうに目を細め、{b}を気持ちよくすることだけに全身を使った。')
+    },
+    wsDown: {
+      m: L('{a}は{b}の脚を大きく開かせ、ためらいなく奥まで沈めた。{b}は崇める相手に貫かれた喜びに、背中を反らせた。{a}は{b}の反応を見下ろしながら、思うままに動いた。|{a}は{b}をうつ伏せにさせ、腰を高く上げさせた。差し出された{b}の体を、{a}は自分のもののように深く貫いた。{b}は枕に顔を埋めて、{a}の名前を何度も呼んだ。|{a}は{b}の両手首をまとめてシーツに押さえ、ゆっくりと、それから深く突き上げた。{b}は少しも拒まず、{a}にすべてを委ねて喘いだ。'),
+      ff: L('{a}は{b}の脚を開かせ、指を二本、奥まで沈めた。{b}は崇める相手の指を受け入れて、信じられないものを見るように{a}を見上げた。{a}は笑って、中のいちばん弱いところを擦り上げた。|{a}は{b}の胸の先を指でつまみながら、もう片方の手で{b}の熱いところをなぞった。{b}は{a}に触れられるたびに、許しを乞うように甘い声を上げた。{a}はその声を、満足げに聞いていた。|{a}は{b}の腰の上に跨り、{b}の手を取って自分の脚の間へ導いた。それから、自分の指を{b}の中に沈めた。{a}「私に合わせて」――{b}は、言われるままに夢中で指を動かした。'),
+      fm: L('{a}は{b}の腰に跨り、{b}のものを根元まで一気に呑み込んだ。{b}が声を上げると、{a}は{b}の顎を掴んで自分のほうを向かせた。{a}「目を逸らさないで」{b}は崇める相手の顔を見上げたまま、震えた。|{a}は{b}の上で、自分の好きな速さで腰を揺らした。{b}が下から突き上げようとすると、{a}は「勝手に動かないで」と言って腰を止めた。{b}は焦れながらも、命じられたとおりにじっと耐えた。|{a}は{b}の胸に手をついて体重をかけ、深く、ゆっくりと腰を回した。{b}は崇める相手に搾り取られるような感覚に、何度も{a}の名前を呼んだ。')
+    },
+    ben: {
+      m: L('{a}は{b}を抱き寄せたまま、ゆっくりと深く繋がった。{a}は{b}の背中を撫で、{b}の呼吸に合わせて少しずつ動いた。あの日と同じ優しさが、今は別の熱を帯びていた。|{a}は{b}の脚を自分の腰に絡ませ、奥を探るように動いた。{b}が{a}の首にしがみつくと、{a}はその耳元で何度も名前を呼んだ。白い部屋に、二人分の荒い息が満ちていった。|{a}は{b}を膝の上に向かい合わせで座らせ、下から深く突き上げた。{b}は{a}の肩に額を押しつけて、揺さぶられるたびに甘い声を漏らした。{a}は{b}の背中を、守るように抱き寄せていた。'),
+      ff: L('{a}は{b}の脚の間に指を滑らせ、濡れたところをそっと撫でた。{b}が身を震わせると、{a}は「大丈夫」と囁いて、指をゆっくり中へ沈めた。いつも{b}を気遣ってきた手が、今は{b}を溶かしていった。|{a}は{b}と向かい合って脚を絡め、互いの熱いところを擦り合わせた。{b}は{a}の背中に腕を回し、恩も何も関係ない、ただの{a}を抱きしめた。二人の吐息が、だんだん速くなった。|{a}は{b}の太腿の内側に口づけを落とし、それから舌で花芯を包み込んだ。{b}は{a}の髪に指を差し入れて、何度も名前を呼んだ。{a}は{b}が震えるたびに、もっと丁寧に舌を動かした。'),
+      fm: L('{a}は{b}の上に跨り、ゆっくりと腰を沈めて{b}を受け入れた。{a}は{b}の手を取って指を絡め、見つめ合ったまま腰を揺らした。{b}の目には、もう感謝ではない熱が宿っていた。|{a}は{b}の胸に手をついて、深く、浅くと腰を動かした。{b}が呻くたびに、{a}は{b}の頬を撫でた。{a}「我慢しなくていい」|{a}は{b}のものを手で優しく扱いてから、その上にゆっくりと腰を下ろした。{b}が息をのむと、{a}は{b}が慣れるまで動かずに待った。それから、少しずつ腰を揺らし始めた。')
+    },
+    rel: {
+      m: L('{a}は{b}の体を抱きしめたまま、ゆっくりと奥まで沈めた。子どものころから知っている{b}の体温が、まるで知らない熱になって{a}を包んだ。{a}は{b}の髪に顔を埋めて、少しずつ動き始めた。|{a}は{b}の脚を抱え上げ、深く、確かめるように突いた。{b}は声を漏らすまいと手の甲を噛んだが、{a}にその手を外された。{a}「誰も聞いてない。二人だけの秘密だ」|{a}は{b}を後ろから抱きしめるように横たわり、背中越しに繋がった。{b}のうなじに口づけながら、{a}はゆっくりと腰を揺らした。{b}は{a}の腕を掴んで、甘い声を漏らした。'),
+      ff: L('{a}は{b}の脚の間に指を滑らせ、熱く濡れたところを確かめた。{b}が恥ずかしそうに顔を背けると、{a}は笑って、指をそっと中へ沈めた。{b}の腰が、{a}の指を追って揺れた。|{a}は{b}と向かい合って横たわり、互いの脚の間に手を伸ばした。二人は額を合わせたまま、相手のいちばん弱いところを探り合った。子どものころの内緒話のような、小さな声で。|{a}は{b}の胸から腹へ口づけを落とし、最後に花芯を舌で包み込んだ。{b}は{a}の名前を呼びながら、シーツを握りしめた。{a}は{b}が震え出しても、舌を離さなかった。'),
+      fm: L('{a}は{b}の腰に跨り、ゆっくりと{b}を自分の中へ迎え入れた。{a}「親戚の誰が見ても、卒倒する」{a}は照れたように笑って、それから深く腰を揺らした。|{a}は{b}の胸に手をついて、自分のペースで腰を上下させた。{b}が下から{a}の腰を掴むと、{a}はその手に自分の手を重ねた。二人は指を絡めたまま、同じリズムで揺れた。|{a}は{b}のものを手で撫でてから、その上にそっと腰を下ろした。根元まで呑み込むと、{a}は{b}の顔を見下ろして、子どものころとは違う顔で微笑んだ。')
+    }
+  };
+  /* 男性向けの最中（擬音・♡） */
+  var ERO_BODY = {
+    m: L('{s:hit}――{a}が腰を打ちつけるたびに、白い部屋にいやらしい音が響いた。{b}は奥を突かれるたびに体をきゅうきゅうと強張らせ、蕩けた顔で{a}を見上げた。{a}が「いつもと全然違う顔」と囁くと、{b}はさらに強く{a}にしがみついた。|{a}は{b}の脚を肩に担いで、真上から深く叩きつけた。{s:wet}――繋がったところから溢れたものが、白いシーツに染みを広げていく。{b}は首を振りながら、自分から腰を押しつけていた。|{s:hit}{s:hit}――{a}は{b}の腰を掴んで引き寄せ、奥の奥まで抉るように突き上げた。{b}の口からは、もう言葉にならない甘い声しか出てこなかった。{a}は{b}が震えるたびに、同じところを何度も責めた。'),
+    ff: L('{s:wet}――{a}の指が{b}の中を掻き回すたびに、濡れた音が白い部屋に響いた。{b}は「聞かせないで」と顔を覆ったが、腰は{a}の指を追いかけて止まらない。{a}が指を止めると、{b}は自分から腰を擦りつけてきた。|{a}は{b}の脚を大きく開かせ、熱く濡れたところにわざと音を立てて舌を這わせた。{s:wet}――啜られるたびに、{b}は甘く鳴いて腰を浮かせた。{a}は逃げようとする腰を、両腕でしっかり抱え込んだ。|{s:wet}{s:wet}――{a}は指を二本揃えて、{b}の中のざらついたところを休まず擦り上げた。{b}の太腿ががくがくと震え、溢れた蜜が{a}の手首まで伝った。{a}は「まだ」と囁いて、指を止めなかった。'),
+    fm: L('{s:hit}――{a}は{b}の上で激しく腰を振り、肌と肌がぶつかる音を響かせた。{b}は下から何度も{a}を突き上げ、{a}の腰を掴んで離さなかった。{a}は「そんなに欲しかった？」と笑って、さらに深く腰を落とした。|{a}はわざと腰を浮かせて、先だけを咥え込んだまま止まった。{s:wet}――焦らされた{b}のものが、{a}の中でびくびくと跳ねる。我慢しきれなくなった{b}は、自分から{a}の腰を掴んで深く引き下ろした。|{s:hit}{s:hit}――{a}は{b}の胸に手をついて、根元まで呑み込んだまま腰を前後に擦りつけた。{b}は歯を食いしばって耐えようとしたが、{a}の中にきつく締めつけられて、情けない声を漏らした。')
+  };
+  /* ---------- 果て ---------- */
+  var PEAK = {
+    m: L('{b}が先に達した。{b}の体が震えるのを感じて、{a}もすぐに{b}の奥で果てた。二人はしばらく重なり合ったまま、白い天井を見上げて息を整えた。|{a}が最後に深く突き上げた瞬間、{b}は{a}の名前を呼んで背中を反らせた。{a}も低く呻いて、{b}の中に熱を吐き出した。簡易ベッドの軋みが、ようやく止んだ。|{b}は{a}にしがみついたまま、長く達した。{a}は{b}の震えが収まるのを待ってから、自分も{b}の奥で果てた。汗ばんだ額を合わせて、二人は小さく笑った。'),
+    ff: L('{b}は{a}の名前を呼びながら、背中を反らせて達した。{a}は{b}が震え終わるまで指を止めず、それから{b}を抱きしめた。白い部屋に、二人の荒い息だけが残った。|二人は脚を絡めたまま、ほとんど同時に達した。{b}は{a}の肩に顔を埋めて、しばらく動かなかった。重なった鼓動が、なかなか静まらなかった。|{a}が花芯を強く吸い上げると、{b}は腰を跳ねさせて果てた。震える太腿に挟まれたまま、{a}は{b}が戻ってくるまで優しく撫で続けた。{b}は{a}の髪に指を絡めたまま、長い息を吐いた。'),
+    fm: L('{a}が深く腰を落とした瞬間、{b}は堪えきれずに{a}の中で果てた。{a}も{b}の上で体を震わせ、その胸に崩れ落ちた。重なった心臓の音が、うるさいほど響いていた。|{a}が先に達して、{b}をきつく締めつけた。{b}も呻いて、{a}の奥に熱を吐き出した。{a}は{b}の胸に額を預けて、しばらく動かなかった。|{b}は{a}の腰を掴んで最後に深く突き上げ、そのまま果てた。{a}は{b}の上で背中を反らせて達し、それから{b}の首筋に顔を埋めた。二人はしばらく、繋がったまま息を整えた。')
+  };
+  var ERO_PEAK = {
+    m: L('{s:hit}{s:hit}――{a}が奥を抉った瞬間、{b}の体がびくびくと跳ねた。「イく、イっちゃ……♡」――蕩けた声を上げて、{b}は{a}にしがみついて果てた。{s:cum}――{a}も{b}の奥に、熱をたっぷりと注ぎ込んだ。|{a}は{b}の腰を掴んで、最後に一番深いところへ叩きつけた。「あっ、あ……♡　{a}、{a}……っ♡」――{b}は名前を呼びながら達し、全身を痙攣させた。{s:cum}――{a}も呻いて、{b}の中に全部吐き出した。|{s:hit}――打ちつける音が速くなり、{b}の声が甘く裏返った。「だめ、もう……っ♡」――{b}が果てると同時に、{a}も{b}の奥で脈打った。{s:cum}――溢れたものが、白いシーツを汚した。'),
+    ff: L('{s:wet}――{a}の指が一番弱いところを擦り上げた瞬間、{b}は背中を反らせて果てた。「イっ……♡　{a}、見ないで……♡」――{b}の中は、{a}の指をきゅうきゅうと締めつけていた。|{a}が花芯を強く吸い上げると、{b}は腰を跳ねさせて達した。「あっ、あ……♡　とまらな……っ♡」――震える太腿で{a}の頭を挟み込んだまま、{b}はしばらく戻ってこられなかった。|{s:wet}{s:wet}――二人の熱いところが擦れ合う音が速くなり、{b}が先に声を上げた。「いっしょ、に……っ♡」――{a}も{b}の名前を呼んで、二人はもつれ合うように果てた。'),
+    fm: L('{s:hit}――{a}が激しく腰を落とすたびに、{b}は呻いた。「出る、っ……{a}……♡」――{s:cum}――{b}は{a}の中で果て、{a}も{b}の上で背中を反らせて達した。|{a}は{b}の上で最後の一滴まで搾り取るように腰を揺らした。「ほら、出して」と囁かれて、{b}は堪えきれずに果てた。{s:cum}――{b}は{a}の腰を掴んだまま、しばらく震えていた。|{s:hit}{s:hit}――{a}は{b}の胸に爪を立てて、自分も限界まで腰を振った。「いっしょに……♡」――{s:cum}――{b}が{a}の奥で脈打つのと同時に、{a}も甘い声を上げて果てた。')
+  };
+  /* ---------- 山場：いつもの関係を越えて、受けが求める（態度9種） ---------- */
+  var YIELD = {
+    proud: L('{b}「……っ、こんな顔、{a}にしか見せない……っ」――誇り高い{b}が、自分から{a}を引き寄せた。悔しそうに歪んだ顔のまま、{b}の脚は{a}の腰に絡みついていた。|{b}「……止めるな。止めたら、許さない……っ」――命じるような口ぶりのまま、{b}の声は甘く崩れていた。{b}は{a}の背中に爪を立てて、自分から腰を押しつけた。|{b}「{a}なら……いい。{a}だけだ……っ」――{b}はそう言って、{a}の首に腕を回した。いつもの強気な目は、もうとろけていた。'),
+    stern: L('{b}「……っ、続けて。……今だけは、許す」――{b}は厳しい顔のまま、{a}の手首を掴んで自分の体へ押しつけた。眉間の皺が、ほどけかけていた。|{b}「……これ以上、我慢させないで……っ」――いつも人を律してきた{b}の声が、震えていた。{b}は{a}を引き寄せて、自分から唇を重ねた。|{b}「……ここでのことは、二人だけの……っ」――最後まで言えずに、{b}は{a}にしがみついた。張りつめていた背中から、すっと力が抜けた。'),
+    tsun: L('{b}「べ、別に、{a}だからってわけじゃ……っ、ないんだから……っ」――言いながら、{b}は{a}の背中をぎゅっと抱きしめた。真っ赤な顔は、少しも説得力がなかった。|{b}「……ばか、{a}の、ばか……っ、もっと……っ」――罵る言葉と、ねだる言葉が、同じ息で出てきた。{b}は自分から腰を押しつけて、{a}を離さなかった。|{b}「やめろなんて、言ってない、から……っ」――さっきまでの強がりを、{b}は真っ赤な顔でなかったことにした。{a}は笑って、望みどおりにした。'),
+    gentle: L('{b}「{a}……いいの、そのまま……」――{b}は{a}の頬を両手で包んで、潤んだ目で見上げた。拒む言葉は、もうどこにもなかった。|{b}「……ずっと、こうしたかったのかも」――{b}は困ったように笑って、{a}を抱きしめた。その腕は、ひどく温かかった。|{b}「お願い、離れないで……」――{b}は{a}の髪を撫でながら、自分から{a}を深く迎え入れた。'),
+    devoted: L('{b}「……っ、{a}に、全部……あげたい……」――{b}は泣きそうな顔で、{a}にしがみついた。差し出すことが、{b}にとってはいちばんの喜びだった。|{b}「やめないで……{a}の好きなように、して……っ」――{b}は真っ赤になって、それでも{a}から目を逸らさなかった。|{b}「{a}……{a}……っ」――{b}は名前を呼ぶことしかできなかった。そのたびに、{b}の体は{a}に寄り添っていった。'),
+    cool: L('{b}「……認める。{a}とこうなるのは、悪くない……っ」――{b}は息を乱したまま、それでも冷静を装って言った。言い終わる前に、{b}は自分から{a}を引き寄せていた。|{b}「……理屈は、あとで考える……っ」――{b}は考えるのをやめて、{a}の首筋に唇を押しあてた。いつもの涼しい顔は、どこにもなかった。|{b}「……計算外だ。こんなに、{a}が……っ」――その先を、{b}は言葉にできなかった。{b}は{a}の腰を引き寄せて、深く息を吐いた。'),
+    free: L('{b}「あーもう、知らない！　{a}、もっと……っ」――{b}は開き直ったように笑って、{a}の首に飛びついた。夢中で{a}を求める{b}に、ためらいはもうなかった。|{b}「やば、きもち、いい……っ、{a}、すご……っ」――{b}は笑いながら泣きそうな声で、{a}にしがみついた。|{b}「今の、ナシ……っ、でも、やめないで……っ」――言ってから、{b}は自分で吹き出した。吹き出したまま、{b}は{a}を離さなかった。'),
+    shy: L('{b}「……っ、や、やめないで……っ」――蚊の鳴くような声だった。言ってから、{b}は真っ赤になって{a}の胸に顔を隠した。|{b}「……{a}と、だから……っ、いい……」――{b}は目を閉じたまま、震える声でそう言った。{a}は{b}の顔を上げさせて、優しく口づけた。|{b}「……っ、み、見ないで、でも……っ、離れないで……」――{b}は両手で顔を覆いながら、脚だけは{a}の腰に絡めていた。'),
+    polite: L('{b}「……っ、ど、どうか……おやめに、ならないで……」――{b}は丁寧な言葉のまま、はしたない願いを口にした。言ってから、{b}は両手で顔を覆った。|{b}「{a}……失礼を承知で、もっと……っ」――{b}は震える声でそう言って、{a}の腕にすがった。|{b}「こんな、はしたない……でも、{a}となら……っ」――{b}はその先を言えずに、{a}の胸に額を押しあてた。')
+  };
+  /* ---------- 事後（関係ごと。信仰の支配は向きごと） ---------- */
+  var AFTER = {
+    col: L('終わったあと、{a}と{b}は簡易ベッドで並んで天井を見上げた。{b}「……次の会議、隣に座れる気がしない」{a}「じゃあ、向かいに座って」二人は顔を見合わせて、声を殺して笑った。|{a}は{b}の乱れた襟を、職場で書類を整えるような手つきで直してやった。{b}は{a}の手を止めて、その指に自分の指を絡めた。言葉はなかったが、明日からの距離はもう元には戻らなかった。|{b}は{a}の肩に頭を預けて、小さく言った。{b}「これ、仕事中の事故ってことにならない？」{a}「ならない」{a}は笑って、{b}の髪をくしゃりと撫でた。'),
+    cls: L('{b}は毛布にくるまって、{a}を見上げた。{b}「同窓会、どんな顔で行けばいいの」{a}「二人で行けばいい」――その答えに、{b}は毛布の中で小さく笑った。|{a}と{b}は、狭い簡易ベッドで肩を寄せ合っていた。{a}「学生のころの私に、教えてやりたい」{b}「やめて。恥ずかしい」――そう言いながら、{b}は{a}の手を離さなかった。|{a}は{b}の汗ばんだ前髪を払ってやった。{b}は学生のころと同じ顔で照れて、それから学生のころには見せなかった顔で、{a}に口づけた。'),
+    boss: L('終わったあと、{a}と{b}はしばらく黙って並んでいた。職場では今まで通りに――どちらもそう言いかけて、どちらも口をつぐんだ。今まで通りにはできないと、二人とも分かっていた。|{b}は{a}の胸に額を預けて、小さく息を吐いた。上司と部下という肩書きは、白い部屋の床に脱ぎ捨てた服と一緒に転がっていた。{a}は{b}の背中を、いつまでも撫でていた。|{a}は{b}に上着を掛けてやり、{b}はその袖を握った。{b}「出たら、ちゃんと話そう。仕事の外で」{a}はうなずいて、{b}の手を握り返した。'),
+    wsL: L('終わったあと、{a}と{b}は抱き合ったまま動かなかった。崇める者と崇められる者は、白いシーツの上で、ただの恋人どうしのように指を絡めていた。|{a}と{b}は毛布にくるまって、額を合わせていた。どちらの目にも涙の跡があって、二人は互いにそれを指で拭い合った。|{a}と{b}は、しばらく互いの名前を呼び合うだけだった。白い部屋の静けさが、二人の間にあった段差をすっかり埋めていた。'),
+    wsDA: L('終わったあと、{b}は満足げに{a}の髪を撫でた。{b}「よくできた」{a}はその一言に頬をすり寄せて、何よりの褒美をもらった顔で目を閉じた。|{b}は{a}に、自分の体を拭くよう命じた。{a}はうやうやしく、汗の一滴まで丁寧に拭い取った。{b}「次も、私が呼んだらすぐ来て」{a}「はい」|{b}は{a}の首筋に、自分の印のように痕を一つ残した。{a}はその痕を指でなぞって、うっとりと微笑んだ。'),
+    wsDB: L('終わったあと、{a}は{b}の髪を撫でながら言った。{a}「いい子だった」{b}はその一言に、全身で喜びを噛みしめるように身を震わせた。|{a}は{b}の首筋に残した痕を指でなぞった。{a}「{b}が誰のものか、これで忘れない」{b}「忘れたこと、一度もない」――{b}は幸福そうに微笑んだ。|{b}は{a}の足元に身を寄せて、そのまま眠ってしまった。{a}は{b}を足元に置いたまま、満足げに白い天井を見上げた。'),
+    ben: L('終わったあと、{a}と{b}は抱き合ったまま、互いの鼓動を聞いていた。恩人と、恩を受けた側――その言葉は、もう二人のどちらにも似合わなかった。|{b}は{a}の手を取って、自分の頬に当てた。{b}「あの日から、ずっとこの手が好きだった」{a}は照れくさそうに笑って、{b}を抱き寄せた。|{a}と{b}は、毛布の中で指を絡めていた。助けた日のことも、助けられた日のことも、今はただ二人だけの思い出の一つになっていた。'),
+    rel: L('終わったあと、{b}は{a}の腕の中で小さく笑った。{b}「正月、どんな顔して会えばいいの」{a}「いつも通りの顔で。二人だけ知ってればいい」|{a}と{b}は、子どものころのように並んで寝転んでいた。違うのは、指がしっかりと絡んでいることだけだった。|{a}は{b}の髪を撫でながら、子守歌のように名前を呼んだ。{b}は{a}の胸に顔を埋めて、親戚の誰にも言えない秘密を、大事に胸の中にしまった。')
+  };
+  /* ---------- ほのめかす ---------- */
+  var FADE = L('――扉の紙の文字を背に、二人の影が簡易ベッドの上で重なった。その先のことは、白い部屋だけが知っている。|――照明が一段落ちた。いつもの関係を越えた二人の息づかいだけが、しばらく白い部屋に満ちていた。|――二人は互いの名前を呼び合い、やがて言葉は要らなくなった。乱れたシーツが、何があったかを物語っていた。');
+
+  var GROUP = { col: 'work', bossA: 'work', bossB: 'work', cls: 'cls', wsLA: 'wsUp', wsDA: 'wsUp', wsLB: 'wsDown', wsDB: 'wsDown', benA: 'ben', benB: 'ben', rel: 'rel' };
+  var AFT = { col: 'col', cls: 'cls', bossA: 'boss', bossB: 'boss', wsLA: 'wsL', wsLB: 'wsL', wsDA: 'wsDA', wsDB: 'wsDB', benA: 'ben', benB: 'ben', rel: 'rel' };
+  var WHY = {
+    col: '同僚どうし', cls: '同級生どうし', bossA: '上司が部下をリードする', bossB: '部下が上司をリードする',
+    wsLA: '信仰が恋に変わった二人。信仰する側が、崇める相手に触れる', wsLB: '信仰が恋に変わった二人。信仰される側が、相手を抱き寄せる',
+    wsDA: '信仰される側が支配している。支配する側が命じ、信仰する側が喜んで奉仕する', wsDB: '信仰される側が支配している。支配する側が命じ、信仰する側は喜んで身を差し出す',
+    benA: '恩人が、恩を受けた側を抱く', benB: '恩を受けた側が、今度は恩人を満たす', rel: '親族（恋愛：あり）'
+  };
+
+  /* ---------- 判定 ---------- */
+  /* この二人に、場面を書ける新しい関係があるか（あれば関係を返す） */
+  function tieFor(ctx, a, b) {
+    if (!RT.sexOk(ctx, a, b)) return null;
+    var got = RT.TYPES.map(function (k) { return HK.Ties.has(ctx, a, b, k); }).filter(function (t) {
+      if (!t) return false;
+      if (t.type === 'worship') return (t.love === 'ok' && RT.loveOk(ctx, a, b)) || RT.domOf(ctx, t);
+      if (t.type === 'relative') return t.love === 'ok' && RT.loveOk(ctx, a, b);
+      return RT.loveOk(ctx, a, b);
+    });
+    return got[0] || null;
+  }
+  function subOf(ctx, t, T) {
+    var X = ctx.chars[t.a];
+    if (t.type === 'colleague') return 'col';
+    if (t.type === 'classmate') return 'cls';
+    if (t.type === 'relative') return 'rel';
+    if (t.type === 'boss') return T === X ? 'bossA' : 'bossB';
+    if (t.type === 'benefactor') return T === X ? 'benA' : 'benB';
+    /* 信仰：{a}＝攻め。X＝信仰する側 */
+    if (RT.domOf(ctx, t)) return T === X ? 'wsDA' : 'wsDB';
+    return T === X ? 'wsLA' : 'wsLB';
+  }
+  function taken(ctx, a, b) { return !!(HK.HateSex && HK.HateSex.taken && HK.HateSex.taken(ctx, a, b)); }
+
+  var TS = HK.RoomTieSex = {
+    OPEN: OPEN, REACT: REACT, BODY: BODY, ERO_BODY: ERO_BODY, PEAK: PEAK, ERO_PEAK: ERO_PEAK, YIELD: YIELD, AFTER: AFTER, FADE: FADE,
+    tieFor: tieFor,
+    /* 一場面。opt.env（描写の設定）・opt.low（ほのめかす） */
+    scene: function (ctx, a, b, t, opt) {
+      opt = opt || {};
+      var lr = HK.RoomLewd && HK.RoomLewd.lead ? HK.RoomLewd.lead(ctx, a, b) : HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b];
+      var T = lr[0], B = lr[1], sub = subOf(ctx, t, T), k = kindOf(T, B), p = ps(B), env = opt.env || ctx.env || {}, LW = HK.Lewd;
+      var low = opt.low || (LW && LW.lv(env) === 'low'), short = LW && LW.short(env, ctx.rng), ero = LW && LW.ero(env);
+      var out = [pick(ctx, OPEN[sub])];
+      if (low) { out.push(pick(ctx, FADE)); out.push(pick(ctx, AFTER[AFT[sub]])); return { text: fill(ctx, out.join(''), T, B), T: T, B: B, sub: sub }; }
+      if (!short) {
+        out.push(pick(ctx, ero ? ERO_BODY[k] : BODY[GROUP[sub]][k]));
+        out.push('{b}「{m0}」');
+      }
+      out.push(pick(ctx, REACT[sub]));
+      out.push('{b}「{m1}」');
+      out.push(pick(ctx, YIELD[p]));
+      out.push('{b}「{m2}」');
+      out.push(pick(ctx, ero ? ERO_PEAK[k] : PEAK[k]));
+      out.push(pick(ctx, AFTER[AFT[sub]]));
+      return { text: fill(ctx, out.join(''), T, B), T: T, B: B, sub: sub };
+    }
+  };
+
+  /* ---------- 出られない部屋：条件「エッチ」の部屋で、新しい関係の二人が ---------- */
+  A.EV.push({
+    id: 'tie_sex', cat: 'romance', scope: 'pair', pri: true, r18: true,
+    when: function (ctx, a, b) {
+      if (HK.SAFE_ON || ctx.flags.isOne || ctx.flags.trioCur) return false;
+      if (a.out || b.out || a.flags.down || b.flags.down || a.flags.cagePair != null || b.flags.cagePair != null) return false;
+      if (!ctx.rules.some(function (r) { return r.k === 'h' && !A.ruleDone(ctx, r, a, b); })) return false;
+      var pf = ctx.pair(a, b);
+      if (pf.tieSexAt != null && ctx.stepIndex - pf.tieSexAt < 2) return false;
+      if (A.tieWall && A.tieWall(ctx, a, b, 5) >= 999) return false;
+      if (HK.RoomReluct && HK.RoomReluct.blocks(ctx, a, b)) return false;
+      var t = tieFor(ctx, a, b);
+      if (!t || taken(ctx, a, b)) return false;
+      /* 互いに惹かれているか、焦りが限界か。支配では、支配する側が命じて、信仰する側は喜んで応じる */
+      return A.willing(ctx, a, b, 5) || A.desperate(ctx, a, b, 5) || (RT.domOf(ctx, t) && ctx.stepIndex >= 1);
+    },
+    w: function (ctx, a, b) { return 1.4 + (ctx.R(a, b).att + ctx.R(b, a).att) / 120 + ctx.stepIndex / Math.max(1, ctx.stepsTotal); },
+    run: function (ctx, a, b) {
+      var t = tieFor(ctx, a, b), pf = ctx.pair(a, b), p = A.prog(ctx, a, b), r = ctx.rules.filter(function (q) { return q.k === 'h'; })[0];
+      p.act.h = Math.min(r ? r.n : 1, (p.act.h || 0) + 1);
+      pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.tieSexAt = ctx.stepIndex;
+      var dom = RT.domOf(ctx, t);
+      if (dom) ctx.mod2(ctx.chars[t.a], ctx.chars[t.b], { aff: 6, trust: 4, att: 4 }, { aff: 3, trust: 3, att: 4 });
+      else ctx.mod2(a, b, { att: 10, aff: 5, trust: 3 }, { att: 10, aff: 5, trust: 3 });
+      var sc = TS.scene(ctx, a, b, t, {});
+      var why = sc.T.name + 'と' + sc.B.name + '：' + WHY[sc.sub] + '／条件のエッチ（' + sc.T.name + 'が攻め）';
+      if (A.pairDone(ctx, a, b)) { var ex = A.exitPair(ctx, a, b, sc.text, why, true); ex.cat = 'romance'; return ex; }
+      return { cat: 'romance', text: sc.text + (r && r.n > 1 ? '（エッチ ' + p.act.h + '/' + r.n + '）' : '') + '扉はまだ開かない。', why: why, mag: 30 };
+    }
+  });
 })();
 ;/* ==== js/solo-room-jealous.js ==== */
 /* 箱庭シミュレーター: 出られない部屋（R18版のみ）― 「相手は一人だけ」と決めた人が、その相手がほかの人と抱き合うのを見たとき
@@ -15109,7 +15965,9 @@
     var rX = ctx.R(X, O), rO = ctx.R(O, X), heat = ctx.env.heat / 100, d = dest(ctx), isF = fated(ctx, a, b);
     /* 運命の抗えなさ：高いほど発情期の本能に流されやすい（発情期の重さに足し引きする） */
     heat = HK.clamp(heat + (d - 0.5) * 0.5, 0, 1.2);
-    var mutual = rX.att > 35 && rO.att > 35 && HK.canLove(X, O) && HK.canLove(O, X);
+    /* 執着（信仰）で「恋愛に発展：しない」組（支配しているときを除く）は、発情期の相手にしない（omega-ties.js の OM.worshipNoNight） */
+    var noW = !!(OM.worshipNoNight && OM.worshipNoNight(ctx, X, O));
+    var mutual = !noW && rX.att > 35 && rO.att > 35 && HK.canLove(X, O) && HK.canLove(O, X);
     var bound = pf.couple || isF;
     var mate = BD.mateOf(ctx, O);
     /* 番のいるΩは、番以外を体が拒む */
@@ -15118,7 +15976,7 @@
       return { cat: 'help', text: ctx.t(ctx.pick(['{a}が近づいた瞬間、{b}は口元を押さえてうずくまった。番以外のαの匂いを、体が受けつけない。', '{b}は熱に浮かされながらも、{a}の手を振り払った。「だめ……私／俺には、番がいる」']).replace(/私／俺/, O.tr.cp + O.tr.fc > 1 ? '俺' : '私'), X, O) + (mate ? ctx.t('{b}が呼んだのは、{c}の名前だった。', X, O, mate) : ''), why: O.name + 'には番（' + mate.name + '）がいる。番のいるΩは、ほかのαを拒む', mag: 12 };
     }
     var heatLine = OM.HEAT;
-    var casual = !pf.couple && rX.att > 25 && rO.att > 25 && HK.canLove(X, O) && (HK.FWB.lean(X) + HK.FWB.lean(O)) / 2 > 0.45 && ctx.rng() < 0.5;
+    var casual = !noW && !pf.couple && rX.att > 25 && rO.att > 25 && HK.canLove(X, O) && (HK.FWB.lean(X) + HK.FWB.lean(O)) / 2 > 0.45 && ctx.rng() < 0.5;
     if ((sx(X) === 'a' || sx(X) === 'b') && (bound && mutual || casual || (mutual && rX.trust > 20 && rO.trust > 20 && heat + X.tr.impulse * 0.4 > 0.75 && ctx.rng() < 0.55))) {
       pf.night = true; pf.nights = (pf.nights || 0) + 1;
       ctx.mod2(X, O, { att: 10, aff: 6 }, { att: 10, aff: 6 });
@@ -16622,6 +17480,416 @@
     return r;
   };
 })();
+;/* ==== js/omega-ties.js ==== */
+/* 箱庭シミュレーター: オメガバース ― 新しい関係（同僚・同級生・上司と部下・執着（信仰）・恩人・親族）ごとの、オメガバースならではの場面
+   発情期・抑制剤・番・フェロモン・第二性への偏見と絡めて、関係ごとに三つの出来事を持たせる。
+   ・om_tie_*（ふだんの小場面）：向きのある関係は両側の視点。発情期・ラット・偏見・隠れΩ・支配（信仰）などの状況があれば、その場面を優先する
+   ・om_tiekeep_*（関係を保つ）：いつもの関係を確かめ合う・支える（値が少し上がる）
+   ・om_tiegrow_*（発展させる）：関係が深まる・変わる。恋愛してよい組なら恋に変わる分岐（信仰は「恋愛に発展：する」のときだけ）。
+     信仰で相手が支配している（dominate）なら支配と服従が深まる。恩人は恩返し、上司部下は職場の外での対等な関係、同級生は昔話からの再接近、親族は家族としての絆
+   上司と部下・同僚は職業によらない言葉（職場・仕事・同じ組織）で書く。同級生は「学生のころ」「同じクラス」。登場人物はすべて成人。
+   向きのある関係（上司と部下・信仰・恩人）の文は、いつも {a}=t.a（上司・信仰する側・恩人）、{b}=t.b（部下・信仰される側・恩を受けた側）。
+   向きのない関係は、場面ごとに {a}{b} を決める（発情期なら {a}=発情期の人、偏見なら {a}=偏見を受ける人）。
+   恋愛・番の判定は既存のもの（HK.canLove・HK.ngPair・HK.tieOptNoLove・omega-bond.js）に従い、このファイルでは番にしない（言葉だけ） */
+(function () {
+  'use strict';
+  var HK = window.HK, OM = HK.OMEGA, scen = HK.SCENARIOS && HK.SCENARIOS.omega;
+  if (!scen || !OM || !HK.Ties) return;
+  function L(s) { return s.split('|'); }
+  function sx(c) { return c && c.om && c.om.sex; }
+  function ao(a, b) { return (sx(a) === 'a' && sx(b) === 'o') || (sx(a) === 'o' && sx(b) === 'a'); }
+  function inHeat(c) { return sx(c) === 'o' && c.om.heat > 0; }
+  function inRut(c) { return sx(c) === 'a' && c.om.rut > 0; }
+  function partnerOf(ctx, a) { var p = null; ctx.present().forEach(function (o) { if (o !== a && ctx.pair(a, o).couple) p = o; }); return p; }
+  function nonWorker(c) { return OM.nonWorker ? OM.nonWorker(c) : false; }
+  function fill(ctx, t, a, b) { var s = OM.fill ? OM.fill(ctx, t, a, b) : ctx.t(t, a, b); return OM.sc ? OM.sc(s, a, b) : s; }
+  function soc(ctx) { return ctx.env.society == null ? 60 : ctx.env.society; }
+  function mateOf(ctx, c) { return OM.B && OM.B.mateOf ? OM.B.mateOf(ctx, c) : null; }
+
+  /* ================= 文 ================= */
+  var D = {};
+
+  /* ---------- 同僚（向きなし） ---------- */
+  D.colleague = {
+    label: '同僚',
+    day: L('{a}は{b}の机に、栄養ドリンクを一本だけ置いていった。{b}は付箋の「発情期明けでしょ、無理しない」という字を見て、少し笑った。|{a}と{b}は、職場の休憩室で抑制剤の新しい銘柄の話をした。どちらが効くか、どちらが眠くならないか。第二性が違っても、仕事の愚痴は同じだった。|{a}は{b}の匂いが、締め切り前だけ少し尖ることを知っていた。{a}「{b}、今日は早く上がったほうがいい。匂いで分かる」|{a}と{b}は、同じ仕事を分け合って片づけた。どちらがαでどちらがβかなんて、職場の机の上では関係なかった。|{a}は会議の前、{b}にだけ聞こえる声で言った。{a}「今日の相手、αの圧が強い。私が先にしゃべるから、{b}は後ろで数字を出して」|{a}と{b}は、同じ組織の中で何年も肩を並べてきた。{b}の第二性を知ったのも、知ってなお態度を変えなかったのも、{a}だけだった。'),
+    old: L('{a}と{b}は、同じ職場にいたころの話をした。{b}の発情期のたびに、{a}が黙って仕事を引き取ってくれていたことを、{b}は今も覚えていた。|{a}は、前の職場で{b}と組んでいたころの癖が抜けなかった。人混みに入ると、自然に{b}の風下に立ってしまう。|{a}と{b}は、もう同じ職場にはいない。それでも抑制剤の切れそうな季節になると、{a}から短い連絡が来た。'),
+    heat: {
+      al: L('{a}の発情期の兆しに、最初に気づいたのは隣の席の{b}だった。αの{b}は息を止めて立ち上がり、{a}の荷物をまとめて渡した。{b}「早退の連絡は私がしておく。今日はもう、誰にも会わないで帰って」|{a}の抑制剤が効ききらないまま、仕事の山場が来た。{b}は窓を開け、自分の席を一番遠い場所へ移した。{b}「匂いに当てられる前に、私が距離を取る。{a}は仕事だけしていればいい」|{a}の匂いが職場に漂いはじめた朝、αの{b}は自分の手首に爪を立てたまま、{a}の分の仕事を全部引き受けた。{b}「同僚の発情期で理性をなくすようなαには、なりたくない」'),
+      nal: L('{a}の発情期が予定より早く来た。{b}は職場の誰より先に気づいて、{a}の机に抑制剤と水を置いた。{b}「残りの仕事は私が回しておく。休んで」|{a}が発情期休暇を取っている間、{b}は{a}の仕事を黙って片づけ、戻ってきた{a}に引き継ぎのメモを渡した。そこには「おかえり」とだけ書き足してあった。|{a}は発情期の熱で、仕事の手が止まった。{b}は職場のαたちが近づかないように、さりげなく{a}の席の前に立ち続けた。')
+    },
+    rut: L('{a}のラットが来ていることに、{b}は匂いで気づいた。{b}「今日の打ち合わせ、私が代わりに出る。{a}は人に会わないほうがいい」|{a}は苛立ちを隠せないまま、職場で{b}にだけ事情を話した。ラットだった。{b}は黙って、{a}の予定を全部組み替えた。'),
+    bias: L('Ωの{a}が大きな仕事から外された。理由は「発情期があるから」だった。{b}は会議の席で手を挙げた。{b}「{a}の発情期は周期どおりで、穴を開けたことは一度もない。外す理由にはならない」|職場の誰かが「Ωは番を見つけて辞めるから」と言った。{b}はその場で、{a}がこれまで仕上げた仕事の一覧を机に置いた。|{a}がΩだと分かってから、職場の空気が少し変わった。{b}だけは変わらなかった。{b}「{a}は{a}だ。第二性で仕事の出来は変わらない」'),
+    keep: L('{a}と{b}は、職場の帰りに同じ店で同じものを頼んだ。「いつもの」で通じる関係が、二人には心地よかった。|{a}は{b}の抑制剤の残りが少ないことに気づいて、自分の分を半分渡した。{b}は次の週、同じ数だけ返してきた。貸し借りのない関係だった。|{a}と{b}は、職場で起きた小さな失敗を二人だけの秘密にした。互いに一つずつ、借りがある。|{a}「{b}がいる職場だから、私はまだ辞めないでいられる」{b}「それは言いすぎ」――そう言いながら、{b}はまんざらでもなさそうだった。'),
+    grow: L('{a}と{b}は、初めて仕事の話をしないまま一晩を過ごした。好きな映画、苦手な食べ物、第二性が分かった日のこと。同僚という言葉では足りなくなっていた。|{a}は自分の第二性のことで悩んでいると、初めて職場の外で{b}に打ち明けた。{b}は最後まで聞いて、「話してくれてありがとう」とだけ言った。|職場で大きな失敗をした{a}をかばったのは、{b}だった。{a}はその夜、仕事仲間以上の信頼を{b}に預けることにした。'),
+    love: L('{a}は{b}の匂いを、職場の誰の匂いよりも先に探していることに気づいた。もう、同僚としては見られなかった。|{a}「仕事のあとも、{b}と一緒にいたい。同僚じゃなくて」――{b}は少し驚いて、それから頷いた。|{b}の発情期が明けた日、{a}は職場の外で{b}を待っていた。{a}「次の発情期は、休暇の連絡じゃなくて、私を呼んでほしい」')
+  };
+
+  /* ---------- 同級生（向きなし） ---------- */
+  D.classmate = {
+    label: '同級生',
+    day: L('{a}と{b}は、学生のころの話になった。第二性の検査の結果が出た日、二人して保健室の前で紙を見せ合ったこと。{a}「あの日から、{b}の匂いは変わってない」|{a}は同じクラスだった{b}と、駅で偶然再会した。{b}の首元のネックガードに目が行き、それから慌てて目をそらした。|{a}と{b}は、同級生の誰が誰と番になったかという噂話で盛り上がった。{b}「学生のころの{a}は、番なんて一生いらないって言ってた」|{a}は、学生のころ{b}が発情期で休むたびにノートを取っていた。{b}はそのノートを、今も捨てられずにいる。|{a}と{b}は、同じクラスにいたころの呼び方で呼び合った。年を重ねても、二人のあいだだけは時間が止まっていた。|{a}「{b}、学生のころから全然変わらない」{b}「{a}は変わった。匂いが落ち着いた」'),
+    heat: {
+      al: L('{a}の発情期が来たと聞いて、{b}は学生のころと同じように、{a}の部屋の前に差し入れを置いた。αの{b}は扉を叩かずに帰った。{b}「昔からそうしてきた。今さら変えない」|{a}の発情期の匂いに、αの{b}は思わず足を止めた。それでも同級生の顔のまま、{b}は{a}を家まで送り届けた。{b}「学生のころ、約束した。{a}の発情期には、絶対に手を出さないって」|αの{b}は、{a}の発情期の匂いに当てられそうになって、学生のころと同じように窓を開けた。{b}「{a}の匂いは、昔より強くなった」{a}「{b}の我慢は、昔より上手になった」'),
+      nal: L('{a}の発情期が来た。同じクラスだったころから、{b}はその周期を覚えていた。{b}は抑制剤と好物を持って、{a}の部屋を訪ねた。|学生のころ、発情期の{a}をかばってくれたのは{b}だけだった。今回も、{b}は真っ先に駆けつけて、{a}の部屋の窓を全部閉めてくれた。|{a}の発情期の熱が引くまで、{b}は電話をつないだまま、学生のころのくだらない話をし続けた。')
+    },
+    rut: L('{a}のラットに、{b}は学生のころから気づいていた。{b}「{a}、今日は飲みに行くのやめよう。ラットのときの{a}は、昔から喧嘩っ早い」'),
+    bias: L('{a}がΩだと分かったのは、学生のころだった。クラスの空気が変わった日のことを、{b}は今も覚えている。{b}「あのとき、私はちゃんと{a}の隣にいた。今もいる」|同窓会で、誰かが{a}に「Ωなのに、まだ番がいないの？」と言った。{b}はグラスを置いて、静かに言い返した。{b}「学生のころから、そういうところは変わらないね」|{a}は学生のころ、Ωだからという理由で部活の代表を外された。それを笑い話にできるようになったのは、{b}がずっと怒ってくれたからだった。'),
+    keep: L('{a}と{b}は、年に一度は必ず会う約束を守っていた。学生のころから続く、二人だけの決まりだった。|{a}は{b}の誕生日に、学生のころと同じお菓子を贈った。{b}「まだ覚えてたの」{a}「忘れるわけがない」|{a}と{b}は、同級生の誰にも言えないことを、互いにだけ話した。番のこと、抑制剤のこと、家族のこと。|{a}が落ち込んでいると、{b}は学生のころの失敗談を一つ持ち出して、{a}を笑わせた。'),
+    grow: L('{a}と{b}は、卒業してから会わなかった年月を、一晩かけて埋めた。話し終えたころには、学生のころよりずっと近くにいた。|{a}は{b}に、学生のころ言えなかったことを打ち明けた。第二性の判定が出た日、本当は怖かったこと。{b}「知ってた。だから隣にいた」|{a}と{b}は、昔のクラスの写真を一緒に見返した。写真の中の二人より、今の二人のほうが、互いのことをよく分かっていた。'),
+    love: L('{a}は{b}の匂いが、学生のころとは違って聞こえることに気づいた。友達の匂いではなくなっていた。|{a}「学生のころから、{b}のことが好きだった。言えなかっただけで」――{b}は少し黙ってから、「私も」と言った。|同窓会の帰り道、{a}は{b}の手を取った。{a}「昔のクラスメイトのままでいるのは、もう無理だ」')
+  };
+
+  /* ---------- 上司と部下（{a}=上司 {b}=部下） ---------- */
+  D.boss = {
+    label: '上司と部下', dir: true,
+    day: {
+      a: L('{a}は{b}の書類に赤を入れながら、ふと{b}の顔色を見た。{a}「発情期が近いなら、無理に今週中にしなくていい。予定は私が組み直す」|{a}は部下の{b}の第二性を、職場の誰にも話さなかった。上司として当然のことだと思っていた。|{a}は、{b}が仕事でαの相手に気圧されていないか、いつも少し離れたところから見ていた。|{a}「{b}、この仕事は任せる。何かあったら責任は私が取る」――{b}は背筋を伸ばして頷いた。'),
+      b: L('{b}は上司の{a}の机に、頼まれる前に資料を置いた。{a}の段取りの癖は、もう全部覚えていた。|{b}は{a}の匂いが、疲れている日だけ少し薄くなることを知っていた。{b}「{a}さん、今日は抑制剤、飲みましたか」――言ってから、余計なことを言ったかと首をすくめた。|{b}は{a}に褒められた日の仕事のメモを、手帳に挟んでとっておいた。|{b}は職場で、上司の{a}の悪口を言う人がいると、黙って席を立った。')
+    },
+    old: L('{a}と{b}は、同じ職場にいたころの話をした。上司と部下だったころの呼び方が、まだどちらからも抜けなかった。|{b}は、{a}の下で働いていたころに教わったことを、今も守っている。発情期の前には、仕事を前倒しにしておくこと。|{a}は、もう上司ではない。それでも{b}の発情期の季節になると、{a}は昔と同じように、{b}の体調を気にかけていた。'),
+    heat: {
+      /* 上司が発情期（部下が気づく・抑制剤切れ） */
+      a: {
+        al: L('{b}は上司の{a}の匂いが、朝から甘く濃くなっていることに気づいた。抑制剤が切れている。αの{b}は息を詰め、{a}の部屋の扉を外から閉めた。{b}「今日の来客は全部、私が断る。{a}さんは出てこないで」|{a}の抑制剤切れに最初に気づいたのは、部下の{b}だった。αの{b}は自分の衝動に歯を食いしばりながら、職場で一番信頼できるβの同僚に、{a}の抑制剤を買いに走らせた。|上司の{a}の発情期の匂いが、職場に漂いはじめた。αの{b}は誰よりも先に窓を開け、{a}の周りから人を遠ざけた。{b}「上司の弱みにつけ込むようなαには、なりたくない」'),
+        nal: L('{b}は上司の{a}の手が震えているのに気づいた。抑制剤が切れかけている。{b}は自分の鞄から予備を出し、黙って{a}の机に置いた。|部下の{b}は、上司の{a}が発情期を隠して出勤していることに気づいた。{b}「{a}さんの仕事、私が今日中に片づける。帰って」――{a}は少し迷ってから、初めて部下に頼った。|{a}の発情期の兆しを、{b}は職場の誰にも気づかれないように隠した。会議の時間をずらし、来客を断り、{a}を裏口から帰らせた。')
+      },
+      /* 部下が発情期（上司が守る） */
+      b: {
+        al: L('部下の{b}の発情期の匂いに、αの{a}は一瞬だけ足を止めた。それから上司の顔に戻り、{b}を休憩室に入れて鍵を渡した。{a}「中から鍵をかけて。私が外にいるあいだは、誰も入れない」|{b}の発情期が仕事中に来た。αの{a}は自分の腕に爪を立てて匂いに耐え、職場のαたちを会議室から追い出した。{a}「部下を守るのは上司の仕事だ。私も含めて、近づくな」|αの{a}は、発情期の{b}を家まで送るのを、あえてβの部下に任せた。{a}「私が行けば、{b}を守れない。私自身から」'),
+        nal: L('部下の{b}の発情期休暇を、上の人間が渋った。上司の{a}は、申請書を握ったまま会議室に乗り込んだ。{a}「休暇は制度だ。私の部下から取り上げるなら、私が辞める」|{b}は仕事中に発情期の兆しを感じて、青い顔で{a}を見た。{a}はすぐに立ち上がり、{b}を職場の外まで送り出した。{a}「仕事のことは考えなくていい。全部、私が預かる」|発情期明けで出てきた{b}の机には、{a}の字で引き継ぎのメモが置いてあった。「無理しないこと。上司命令」')
+      }
+    },
+    rut: {
+      a: L('部下の{b}は、上司の{a}の苛立ちがいつもと違うことに気づいた。ラットだ。{b}は{a}の予定をすべて組み替え、来客を断った。{b}「{a}さん、今日はもう誰にも会わないで。私が回す」|{b}は上司の{a}の抑制剤が切れていることに気づき、黙って自分の分を差し出した。{a}「……情けないところを見せた」{b}「上司だって、ラットくらい来る」'),
+      b: L('上司の{a}は、部下の{b}がラットで苛立っているのに気づき、その日の仕事を全部一人で片づけた。{a}「今日の{b}は、休むのが仕事だ」|{a}は、ラットで顔色の悪い部下の{b}を、何も言わずに早退させた。理由は報告書に「体調不良」とだけ書いた。')
+    },
+    bias: {
+      a: L('「Ωの上司の下では働けない」と言った人がいた。部下の{b}はその人の前に立った。{b}「{a}さんの下で働けないなら、私の分の仕事も代わりにやってもらう」|上司の{a}がΩだと知られてから、取引先の態度が変わった。{b}は会議のたびに、{a}の隣の席に座るようにした。|{b}は、上司の{a}が「Ωのくせに」と陰で言われているのを聞いた。その日、{b}は初めて職場で声を荒らげた。'),
+      b: L('Ωの{b}が昇進の話から外された。上司の{a}は理由を問いただし、「番もいないΩに責任は任せられない」という答えを聞いて、書類を突き返した。{a}「私の部下を、第二性で測るな」|上司の{a}は、部下の{b}にだけ番の予定を訊いた人事の担当者を、その場で注意した。{a}「同じ質問を、αの社員にもしているか」|{a}は、Ωの{b}を大きな仕事から外そうとする上の判断に、真っ向から反対した。{a}「この仕事は{b}にしかできない。私が保証する」')
+    },
+    hidden: L('上司の{a}は、部下の{b}が抑制剤の空き殻を急いで捨てるのを見てしまった。βだと名乗っている{b}は、Ωだった。{a}は何も言わず、その日から{b}の発情期の周期に合わせて、仕事の割り振りを変えた。|{a}は、{b}が第二性を偽っていることに気づいた。上司として、報告すべきかどうか迷った。{a}「{b}の秘密は、私が墓まで持っていく。だから、無理だけはするな」'),
+    keep: L('{a}は{b}の仕事の出来を、誰よりも先に褒めた。{b}は上司のその一言のために、もう少しだけ頑張れた。|{b}は{a}の好きな飲み物を、頼まれる前に机に置いた。{a}「よく見ているな」{b}「上司の観察も、仕事のうち」|{a}と{b}は、仕事の終わりに今日の反省を短く話した。上司と部下の、いつもの決まりだった。|{a}は、{b}の発情期の周期を手帳に書き込み、その週には大事な仕事を入れなかった。{b}はそれに気づいて、いっそう仕事に励んだ。'),
+    grow: L('職場の外で、{a}と{b}は初めて上司と部下ではなく、ただの二人として話した。{a}「職場の外では、さん付けはなしにしよう」|{a}は{b}に、自分の第二性のことで悩んでいた時期の話をした。上司が弱みを見せたのは、それが初めてだった。{b}は、{a}を前よりずっと近くに感じた。|{b}が仕事で大きな成果を出した夜、{a}は{b}に言った。{a}「もう私の部下じゃない。対等な仕事仲間だ」――{b}は少しだけ泣きそうになった。'),
+    love: L('{a}は部下の{b}の匂いに、仕事中でも意識が向いてしまうことに気づいた。上司として、いちばん持ってはいけない気持ちだった。|{b}「{a}さんの部下でいるのは、もう苦しい。上司としてじゃなく、見てほしい」――{a}は長いあいだ黙って、それから{b}の手を取った。|{a}は{b}を職場の外で呼び止めた。{a}「上司と部下のままじゃ、{b}の発情期にそばにいられない。それが嫌だ」')
+  };
+
+  /* ---------- 執着（信仰）（{a}=信仰する側 {b}=信仰される側） ---------- */
+  D.worship = {
+    label: '執着（信仰）', dir: true,
+    day: {
+      a: L('{a}は{b}の匂いがかすかに残った上着を、誰にも見られないようにそっと畳んだ。{a}にとって、それは何より大切なものだった。|{a}は{b}が通る道を、毎朝少しだけ早く歩いた。すれ違うだけで、一日分の祈りが満たされた。|{a}「{b}が望むなら、私は何でもする。第二性も、仕事も、命も、全部捧げていい」|{a}は{b}の発情期の周期を、本人より正確に覚えていた。その週には必ず、{b}の家の前に抑制剤と花を置いていった。|{a}は{b}の{sb}の匂いを、世界でいちばん尊いものだと思っていた。それを汚す者は、誰であっても許せなかった。'),
+      b: {
+        '': L('{b}は、自分の周りがいつも少しだけ整っていることに、まだ気づいていなかった。抑制剤が切れる前に、なぜか補充されていることにも。|{b}は{a}の視線を感じることがあった。振り返ると、{a}はいつも目をそらして、深く頭を下げた。'),
+        accept: L('{b}は{a}の捧げものを、黙って受け取った。それが{a}を生かしていることを、{b}は知っていた。|{b}「{a}がそうしたいなら、そうすればいい」――{b}の一言で、{a}の顔は光が差したように明るくなった。'),
+        confused: L('{b}は、{a}の祈るような目が少し怖かった。{b}「私は、{a}が思うような人間じゃない」――{a}はそれでも、首を横に振るだけだった。|{b}は{a}の贈りものを、どう扱えばいいのか分からなかった。重すぎる想いは、受け取るだけで息が詰まった。'),
+        dominate: L('{b}は{a}を指先ひとつで呼び寄せた。{a}は迷わず膝をついた。{b}「いい子」――その一言だけで、{a}は何でも差し出した。|{b}は{a}の信仰を、使えるものだと思っていた。抑制剤の買い出しも、面倒な仕事も、{a}に命じればいい。|{b}がわずかにフェロモンを強めると、{a}の目から迷いが消えた。{b}は満足そうに、{a}の顎を指で持ち上げた。'),
+        cherish: L('{b}は{a}の手を取って、そっと言った。{b}「{a}がくれるものも大事だけど、{a}自身のほうがもっと大事だ」|{b}は、{a}が自分のために無理をしていないか、いつも気にかけていた。{b}「今日はもう、私のために何もしなくていい」')
+      }
+    },
+    heat: {
+      /* 信仰する側が発情期 */
+      a: {
+        al: L('{a}は発情期の熱に浮かされながら、αの{b}の匂いを遠ざけるように部屋に閉じこもった。{a}「{b}を、こんな体で汚したくない」――ドアの外で、{b}の足音が止まり、また遠ざかった。|発情期の{a}は、{b}の前に出ることを自分に禁じた。αの{b}に匂いを嗅がせることさえ、畏れ多いことだと思っていた。{a}は抑制剤を規定の倍飲んで、熱が引くのをひとりで待った。|{a}は発情期のさなか、αの{b}から届いた見舞いの品を、抱きしめたまま朝まで泣いた。触れてほしいとは、口が裂けても言えなかった。'),
+        nal: L('{a}は発情期でも、{b}への捧げものを欠かさなかった。熱でふらつく足で、{b}の家の前に包みを置いた。|発情期の{a}は、{b}の写真を胸に抱いて熱に耐えた。{a}「{b}がいる世界なら、この熱だって祈りになる」')
+      },
+      /* 信仰される側が発情期 */
+      b: {
+        al: L('{b}の発情期の匂いに、αの{a}は膝をついた。けれど触れはしなかった。{a}「{b}の熱には、私なんかが触れていいはずがない」――{a}は{b}の部屋の前に座り込み、ほかのαが来ないように一晩中見張った。|αの{a}は、{b}の発情期の匂いに理性が崩れそうになると、自分の腕に爪を立てた。{a}「{b}を守るためなら、この本能だって捨てる」|{b}の発情期が来たと知って、αの{a}は抑制剤と食べ物を抱えて走った。扉越しに荷物を置き、{a}は一度も顔を見せずに帰った。'),
+        nal: L('{b}の発情期が来た。{a}は{b}のために、部屋の空気を入れ替え、抑制剤と水を枕元に並べ、そっと部屋を出た。{a}「何もいらない。{b}が楽になれば、それでいい」|{a}は発情期の{b}の看病を、一睡もせずに続けた。{b}が「ありがとう」と言うたびに、{a}の目に涙がにじんだ。')
+      }
+    },
+    /* 裏切られても、嫌われても、想いを捨てない（{a}=信仰する側） */
+    unwaver: L('{b}に冷たくあしらわれても、{a}の祈りは変わらなかった。{a}「{b}が私を嫌っても、私が{b}を想うことは、誰にも止められない」|{b}がほかの誰かを選んだと聞いても、{a}は{b}の幸せを願った。{a}「{b}が笑っているなら、その隣が私でなくてもかまわない」|{b}に「もう来るな」と言われた翌朝も、{b}の家の前には、いつものように抑制剤と花が置いてあった。|{b}に裏切られたと知っても、{a}は{b}を責めなかった。{a}「{b}が私を裏切るなら、それには理由がある。私はそれを信じる」'),
+    /* 支配と服従（{b}が{a}の信仰を利用して支配している） */
+    dom: {
+      a: L('{b}のフェロモンが、命じるように強まった。αの威圧を浴びた{a}は、考えるより先に膝をついていた。{b}「明日からは、私の言うことだけ聞けばいい」|{b}はαの匂いを{a}に浴びせ、仕事も予定も全部取り上げた。{a}は逆らわなかった。逆らえないことが、なぜか嬉しかった。|{b}が低い声で名前を呼ぶと、{a}の体はαのフェロモンに縛られたように動かなくなった。{b}「{a}は、私のものだ」'),
+      o: L('{b}は{sb}の甘い匂いをわざと漂わせて、{a}を呼び寄せた。{a}は熱に浮かされたように、{b}の足元にひざまずいた。{b}「欲しいなら、言うことを聞いて」|{b}は自分のΩの匂いが{a}をどう縛るかを、よく知っていた。{a}は{b}の匂いのする上着を渡されるたびに、また一つ{b}の命令を受け入れた。'),
+      b: L('{b}にはフェロモンの力はない。それでも{b}の一言で、{a}は何でも差し出した。{b}「私が望んでいるのは、そういうことだ」|βの{b}は、言葉だけで{a}を支配した。匂いがなくても、{a}の信仰はそれで十分だった。')
+    },
+    keep: L('{a}は、{b}のために選んだ抑制剤を、毎月同じ日に届けた。それが{a}の祈りの形だった。|{a}は{b}の匂いの好みを全部覚えていて、{b}の部屋の柔軟剤まで同じものにした。{b}はそれに、まだ気づいていない。|{a}は{b}に会えた日を、手帳に小さな印で残した。印の数が増えるたびに、{a}は少しだけ生きている気がした。|{a}は{b}の一言を、何度も頭の中で繰り返した。{b}「ありがとう」――それだけで、{a}は一週間を生きられた。'),
+    grow: {
+      /* 気持ちが届いて、信仰が絆になる（恋愛なし） */
+      bond: L('{b}は、{a}の捧げものに初めてお返しをした。小さな包みだった。{a}はそれを開けられないまま、何日も眺めていた。|{b}「{a}の気持ちは、ちゃんと届いてる。だから、自分のことも大事にして」――{a}は崇めるだけだった相手に、初めて守られた気がした。|{a}は{b}の役に立てたと知った日、初めて自分のことを少しだけ好きになれた。'),
+      /* 支配と服従が深まる */
+      dom: L('{b}の命令は、少しずつ{a}の暮らしの全部になっていった。何を食べ、いつ眠り、誰と話すか。{a}はそれを、救いだと感じていた。|{a}は{b}に、自分の家の鍵を差し出した。{b}は黙って受け取り、ポケットにしまった。{a}にはもう、逃げる場所はなかった。逃げたいとも思わなかった。|{b}が{a}の首筋に指を這わせると、{a}は自分から首を差し出した。{a}「{b}の好きにしてほしい。私は{b}のものだから」'),
+      /* 恋に変わる（恋愛に発展：する） */
+      love: L('{a}は、祈るだけでは足りなくなっている自分に気づいた。{b}の匂いに触れたい。信仰は、いつの間にか恋になっていた。|{b}「{a}がくれるもの、全部嬉しい。でも、{a}自身がいちばん欲しい」――{a}は信じられないという顔で、{b}を見つめた。|{a}は{b}の前にひざまずいたまま、震える声で言った。{a}「崇めるだけじゃなく、{b}を愛してもいいだろうか」'),
+      /* 番になりたいと願う（α×Ω。番の判定は omega-bond.js のまま、ここでは願うだけ） */
+      mateO: L('{a}は、{b}にうなじを噛まれる夢を何度も見た。{b}のものになれるなら、一生ほかの誰にも噛まれなくていい。{a}「{b}の番になりたい。それ以外の願いは、もう何もない」|{a}はネックガードの留め具に触れながら、{b}のことを想った。この首を差し出す相手は、生まれる前から決まっていた気がした。'),
+      mateA: L('{a}は、{b}のうなじに噛み跡をつける自分を想像して、慌ててその考えを打ち消した。{a}「{b}を番にしたいなんて、望んでいいはずがない」――それでも、願いは消えなかった。|{a}は{b}の首元に目が行くたびに、自分の歯がうずくのを感じた。{a}「いつか{b}が望んでくれるなら、一生をかけて守る」')
+    }
+  };
+
+  /* ---------- 恩人（{a}=恩人 {b}=恩を受けた側） ---------- */
+  D.benefactor = {
+    label: '恩人', dir: true,
+    /* 再会（最初の一度だけ）。o=恩を受けた側がΩ／n=それ以外 */
+    meet: {
+      o: L('{b}は、昔の発情期の夜を思い出した。路上で熱にうずくまっていた{b}を、αたちの目から隠して病院まで運んでくれた人がいた。その人が今、目の前にいる。{b}「{a}さん……ずっと、お礼を言いたかった」|{a}は{b}の顔を見て、すぐに思い出した。抑制剤を買うお金もなく、発情期を一人で耐えていた若いΩに、薬を分けた日のことを。{a}「元気そうでよかった」|{b}が抑制剤のない夜を越えられたのは、あのとき{a}が部屋の鍵を貸してくれたからだった。{b}は再会した{a}に、深く頭を下げた。'),
+      n: L('{b}は、昔「第二性で人の価値は決まらない」と言ってくれた人の顔を、ずっと覚えていた。偏見に潰されかけていた{b}を救ったのは、{a}だった。|{a}と{b}は、何年かぶりに再会した。{a}が昔、αの圧に押しつぶされそうだった{b}をかばったことを、{b}は一日も忘れていなかった。|{b}の人生が変わったのは、{a}のおかげだった。第二性で道を閉ざされかけた{b}に、別の道を見せてくれた人。{b}「{a}さんのことを、ずっと探していた」')
+    },
+    day: {
+      a: L('{a}は、{b}が立派に暮らしているのを見るだけで満足だった。{a}「恩なんて、もう返してもらった。{b}が元気でいるなら、それでいい」|{a}は{b}の発情期の季節になると、昔と同じように、それとなく様子を訊いた。|{a}は、恩を返そうとする{b}を見て、少し困ったように笑った。{a}「私がしたことは、大したことじゃない」'),
+      b: L('{b}は{a}の誕生日を手帳に書き込み、毎年欠かさず贈りものをした。{a}が昔くれたものに比べれば、まだ全然足りなかった。|{b}は、{a}が困っていると聞くと、仕事を放り出してでも駆けつけた。|{b}「{a}さんがいなかったら、私は今ここにいない」――{b}はその言葉を、何度でも繰り返した。')
+    },
+    heat: {
+      /* 恩人が発情期（恩を返す） */
+      a: {
+        al: L('恩人の{a}が発情期で倒れたと聞いて、αの{b}は駆けつけた。扉の前で匂いに膝が崩れかけても、{b}は中に入らなかった。{b}「昔、{a}さんが私にしてくれたことを、今度は私が返す」――{b}は扉の外から抑制剤を差し入れ、一晩中見張りに立った。|{b}は、発情期の{a}の部屋の前に、食料と抑制剤を一週間分運んだ。αの{b}は一度も扉を開けなかった。それが{b}なりの恩返しだった。'),
+        nal: L('{a}の発情期が来た。{b}は昔の恩を返すように、{a}の看病を引き受けた。冷たいタオル、水、抑制剤。{b}「今度は私の番」|{b}は、発情期で動けない{a}の代わりに、{a}の仕事と家のことを全部片づけた。{a}「こんなことをさせるために、助けたんじゃない」{b}「分かってる。だから、させて」')
+      },
+      /* 恩を受けた側が発情期（恩人がまた助ける） */
+      b: {
+        al: L('{b}の発情期の匂いに、αの{a}は顔をしかめて距離を取った。{a}「昔と同じだ。私は外にいる。{b}は中で休んで」――{a}はあの夜と同じように、扉の外で{b}を守った。|αの{a}は、発情期の{b}をほかのαから遠ざけて、自分も決して近づかなかった。{a}「{b}を助けるのに、私の本能はいらない」'),
+        nal: L('{b}の発情期が来た。{a}は昔のように、抑制剤を持って{b}の部屋を訪ねた。{b}「また、{a}さんに助けられてしまった」|{a}は発情期の{b}の看病をしながら、昔のことを思い出していた。あのときも、{b}はこうして申し訳なさそうに笑っていた。')
+      }
+    },
+    bias: {
+      a: L('恩人の{a}がΩだというだけで、悪く言う人がいた。{b}はその人の前に立ちはだかった。{b}「{a}さんは、私の命の恩人だ。第二性で人を測るなら、私が相手になる」|{b}は、Ωの{a}が「番もいないのに」と陰口を叩かれているのを聞いて、その場で言い返した。'),
+      b: L('Ωの{b}が偏見に晒されていると知って、{a}はまた昔のように手を差し伸べた。{a}「何度でも助ける。{b}が自分の足で立てるまで」|{a}は、{b}を「Ωのくせに」と見下した人に、静かに言った。{a}「この人がどれだけ努力してきたか、私は知っている」')
+    },
+    keep: L('{b}は{a}に、季節の果物を送った。{a}は「もういいのに」と言いながら、毎回きちんと礼状を返した。|{a}と{b}は、年に一度、助けられた日に同じ店で食事をした。二人だけの記念日だった。|{b}は{a}の体調を気遣って、抑制剤の新しい銘柄の情報をこまめに送った。|{a}は、{b}が少しずつ恩人の自分を必要としなくなっていくのを、嬉しく思っていた。'),
+    grow: L('{b}はついに、{a}が困っていた借金を、黙って肩代わりした。{a}「こんなことをさせるつもりじゃなかった」{b}「これでやっと、少しだけ恩を返せた」|{a}が仕事で窮地に立たされたとき、{b}は自分の立場を賭けて{a}をかばった。恩人と恩を受けた側だった二人は、その日から対等になった。|{b}が{a}を助けた夜、{a}は初めて{b}に頼った。{a}「昔は、{b}を助けるのが私の役目だと思っていた。今は、{b}に助けられるのが嬉しい」'),
+    love: L('{b}は、{a}への想いが感謝だけではないことに気づいた。恩人の匂いを、恋しいと感じていた。|{a}「恩返しはもういい。代わりに、そばにいてほしい」――{b}は少し驚いて、それから{a}の手を握った。|{b}「{a}さんに助けられたあの日から、ずっと好きだった。恩人だから言えなかっただけで」')
+  };
+
+  /* ---------- 親族（向きなし。いとこ・おじおば・甥姪など） ---------- */
+  D.relative = {
+    label: '親族',
+    day: L('{a}と{b}は、親戚の集まりで隣の席になった。子どものころからの呼び名で呼ばれると、少しだけ照れくさかった。|{a}は、親戚の中で{b}だけが第二性の話をしないでいてくれることに、ずっと救われていた。|{a}と{b}は、法事の帰りに二人で寄り道をした。親戚のうるさい話から逃げるのは、昔からの二人の作戦だった。|{a}「{b}の匂い、子どものころと全然違う」{b}「第二性が分かってから、親戚中に同じことを言われた」|{a}と{b}は、親戚の誰が番を見つけたかという噂を、苦笑いしながら聞き流した。'),
+    heat: {
+      al: L('{a}の発情期が来たと聞いて、親戚のαの{b}は抑制剤を届けに来た。扉越しに荷物を置き、{b}は中に入らずに帰った。{b}「親戚だから、心配するのは当たり前だ」|αの{b}は、発情期の{a}を親戚の集まりから連れ出した。{b}「おじさんたちのαの匂いの中にいたら、{a}がもたない」'),
+      nal: L('{a}の発情期の間、親戚の{b}が毎日様子を見に来た。{b}「家族なんだから、遠慮しないで」|{a}は発情期で寝込んでいるあいだ、{b}が親戚中に「体調を崩している」とだけ伝えてくれていたことを、あとで知った。')
+    },
+    /* 親族の第二性への偏見（{a}=偏見を受ける側 {b}=もう一人の親族）。o=Ω a=α b=β */
+    bias: {
+      o: L('親戚の集まりで、年長のおじが{a}に言った。「Ωなんだから、早く番を見つけて家に入れ」――{b}はその場で箸を置いた。{b}「{a}の人生は{a}が決める。第二性で決めるものじゃない」|正月の集まりで、親戚の誰かが「Ωの子は仕事なんかしなくていい」と言った。{b}は{a}の手をテーブルの下で握り、黙って席を立たせた。|{a}がΩだと分かってから、親戚の態度が変わった。{b}だけは昔と同じように、{a}の名前を呼んだ。{b}「{a}は{a}だ。何も変わってない」'),
+      a: L('親戚の集まりで、{a}は「αなんだから、家を継いで当然だ」と言われた。{b}は{a}の顔色を見て、さりげなく話題を変えた。|{a}は、αだというだけで親戚中の期待を背負わされてきた。{b}「{a}は、αである前に{a}だ。好きに生きていい」'),
+      b: L('親戚は{a}に「βで良かった、面倒がなくて」と言った。{a}が笑ってやり過ごすのを、{b}は黙って見ていた。帰り道、{b}は言った。{b}「βだって、面倒なことはたくさんあるのに」|{a}はβだというだけで、親戚の中でいつも「普通の子」として扱われてきた。{b}だけが、{a}の話をちゃんと聞いた。')
+    },
+    /* 親族自身が偏見を持っていて、ぶつかる（{a}=偏見を受ける側 {b}=偏見を持つ親族） */
+    clash: L('{b}は{a}に、つい言ってしまった。{b}「Ωなんだから、もう少し気をつけたほうがいい」――{a}の顔がこわばったのを見て、{b}は自分が親戚のおじたちと同じことを言ったと気づいた。|{b}は、{a}が番を作らないことに口を出した。{a}「{b}まで、親戚と同じことを言うんだ」――{b}は言い返せなかった。'),
+    keep: L('{a}と{b}は、親戚の集まりのたびに、こっそり同じ席に座った。それが二人の決まりだった。|{b}は、{a}が親戚から第二性のことで何か言われるたびに、さりげなく話をそらした。|{a}は{b}に、子どものころと同じお菓子を手土産にした。{b}「まだ好きだと思ってるの」{a}「好きでしょう」――{b}は笑って受け取った。|{a}と{b}は、親戚の誰にも言えない悩みを、互いにだけ打ち明けていた。'),
+    grow: L('{a}は親戚の前で、初めて自分の第二性のことをはっきり話した。隣に座る{b}が、何も言わずに{a}の背中に手を添えていた。|{b}が親戚中から責められたとき、{a}だけが{b}の味方をした。{b}「家族の中に、{a}がいてよかった」|{a}と{b}は、親戚の誰より互いを家族だと思っていることに気づいた。血のつながりより、もっと強いものだった。'),
+    love: L('{a}は、{b}の匂いを親戚の匂いとして感じられなくなっていることに気づいた。家族だと思っていた相手だった。|{b}「親戚に何て言われても、もう{a}のことを家族としては見られない」――{a}は長いあいだ黙って、それから頷いた。|{a}は親戚の集まりの帰り道、{b}の手を握った。{a}「この気持ちは、家族の好きとは違う」')
+  };
+
+  /* ================= 判定 ================= */
+  function tieOf(ctx, a, b, type) { return HK.Ties.has(ctx, a, b, type); }
+  /* 向きのある関係は t.a / t.b、向きのない関係は呼ばれた順 */
+  function roles(ctx, t, a, b) {
+    var Dd = HK.TIES[t.type];
+    if (Dd && Dd.dir) return [ctx.chars[t.a], ctx.chars[t.b]];
+    return [a, b];
+  }
+  /* 恋愛に進んでよい組か（既存の判定に従う） */
+  function loveOk(ctx, A, B, t) {
+    if (!HK.canLove(A, B) || !HK.canLove(B, A)) return false;
+    if (HK.ngPair && HK.ngPair(A, B)) return false;
+    if (HK.tieOptNoLove && HK.tieOptNoLove(t)) return false;
+    if (HK.tieNoLove && HK.tieNoLove(t)) return false;
+    if (HK.TIES[t.type] && HK.TIES[t.type].family && t.love !== 'ok') return false;
+    if (!ctx.romanceOk([A, B])) return false;
+    if (ctx.pair(A, B).kin) return false;
+    var pa = partnerOf(ctx, A), pb = partnerOf(ctx, B);
+    if ((pa && pa !== B) || (pb && pb !== A)) return false;
+    var mA = mateOf(ctx, A), mB = mateOf(ctx, B);
+    if ((mA && mA !== B) || (mB && mB !== A)) return false;
+    return true;
+  }
+  function heatWho(A, B) { return inHeat(A) ? A : inHeat(B) ? B : null; }
+  function rutWho(A, B) { return inRut(A) ? A : inRut(B) ? B : null; }
+  /* 職場の関係で、どちらかが今は働いていない（学生・無職・元〇〇） */
+  function oldWork(t, A, B) { return (t.type === 'colleague' || t.type === 'boss') && (nonWorker(A) || nonWorker(B)); }
+  function pick(ctx, arr) { return ctx.pick(arr); }
+  function res(ctx, text, A, B, cat, why, mag) { return { cat: cat, text: fill(ctx, text, A, B), why: why, mag: mag || 0 }; }
+
+  /* ---------- ふだんの小場面 ---------- */
+  function pattern(ctx, a, b, type) {
+    var t = tieOf(ctx, a, b, type), R = roles(ctx, t, a, b), A = R[0], B = R[1], X = D[type], pf = ctx.pair(A, B);
+    var lab = X.label, nm = A.name + 'と' + B.name;
+    /* 恩人：最初の一度は再会 */
+    if (type === 'benefactor' && !(pf.omTie && pf.omTie.met)) {
+      (pf.omTie = pf.omTie || {}).met = true;
+      ctx.mod2(A, B, { aff: 4, trust: 3 }, { aff: 6, trust: 5 });
+      return res(ctx, pick(ctx, X.meet[sx(B) === 'o' ? 'o' : 'n']), A, B, 'bond', A.name + '（恩人）と' + B.name + '（恩を受けた側）：再会', 10);
+    }
+    /* 発情期（恋人どうしのときは om_heat に任せる） */
+    var H = heatWho(A, B);
+    if (H && !pf.couple && ctx.rng() < 0.8) {
+      var O = H === A ? B : A, al = sx(O) === 'a' ? 'al' : 'nal', mt = mateOf(ctx, H);
+      var pool;
+      if (X.dir) pool = X.heat[H === A ? 'a' : 'b'][al];
+      else pool = X.heat[al];
+      var txt = X.dir ? fill(ctx, pick(ctx, pool), A, B) : fill(ctx, pick(ctx, pool), H, O);
+      ctx.mod2(O, H, { trust: 3, aff: 2 }, { trust: 6, aff: 4 });
+      return { cat: 'help', text: txt, why: nm + '（' + lab + '）／' + H.name + 'の発情期' + (al === 'al' ? '：αの' + O.name + 'は本能より関係を選んだ' : '') + (mt && mt !== O ? '（' + H.name + 'には番がいる）' : ''), mag: 8 };
+    }
+    /* ラット */
+    var Rr = rutWho(A, B);
+    if (Rr && X.rut && ctx.rng() < 0.6) {
+      var Q = Rr === A ? B : A;
+      var rp = X.dir ? X.rut[Rr === A ? 'a' : 'b'] : X.rut;
+      var rt = X.dir ? fill(ctx, pick(ctx, rp), A, B) : fill(ctx, pick(ctx, rp), Rr, Q);
+      ctx.mod2(Q, Rr, { trust: 2 }, { trust: 5, aff: 3 });
+      return { cat: 'help', text: rt, why: nm + '（' + lab + '）／' + Rr.name + 'のラット', mag: 6 };
+    }
+    /* 信仰：支配している相手が、フェロモン（なければ言葉）で従わせる */
+    if (type === 'worship' && pf.dominate === B.i && ctx.rng() < 0.35) {
+      ctx.mod2(A, B, { trust: 3, ten: 2 }, { trust: 1 });
+      ctx.stress(A, 3);
+      var dk = sx(B) === 'a' ? 'a' : sx(B) === 'o' ? 'o' : 'b';
+      return res(ctx, pick(ctx, X.dom[dk]), A, B, 'conflict', B.name + 'は' + A.name + 'の信仰を利用して支配している' + (dk === 'b' ? '（βなので言葉で）' : '（' + (dk === 'a' ? 'αの威圧' : 'Ωの匂い') + 'で従わせる）'), 8);
+    }
+    /* 信仰：嫌われても・裏切られても想いを捨てない */
+    if (type === 'worship') {
+      var rb = ctx.R(B, A), cold = t.cold;
+      if ((rb.aff < 0 || rb.ten > 30 || cold === 'confused' || (partnerOf(ctx, B) && partnerOf(ctx, B) !== A)) && ctx.rng() < 0.4) {
+        ctx.mod(A, B, { aff: 2, trust: 2 });
+        return res(ctx, pick(ctx, X.unwaver), A, B, 'bond', A.name + 'は' + B.name + 'を信仰している。想いは揺らがない（相手が' + (rb.aff < 0 ? '冷たくても' : cold === 'confused' ? '戸惑っていても' : 'ほかを見ていても') + '）', 6);
+      }
+    }
+    /* 第二性への偏見（Ωへの偏見。親族はαやβへの決めつけも） */
+    var s0 = soc(ctx);
+    if (type === 'relative') {
+      var tg = ctx.rng() < 0.5 ? A : B, ot = tg === A ? B : A;
+      if (sx(tg) !== 'o' && (sx(ot) === 'o' && ctx.rng() < 0.7)) { var sw = tg; tg = ot; ot = sw; }
+      if (ctx.rng() < 0.1 + s0 / 400) {
+        /* 親族自身が偏見を持っている（CP高・NP低） */
+        if (sx(tg) === 'o' && ot.tr.cp > 0.62 && ot.tr.np < 0.45 && ctx.rng() < 0.6) {
+          ctx.mod2(tg, ot, { ten: 6, aff: -2 }, { ten: 3 });
+          return res(ctx, pick(ctx, X.clash), tg, ot, 'conflict', ot.name + 'も、親族の第二性への偏見に染まっていた（CP高・NP低）／α優位の社会（' + s0 + '）', 8);
+        }
+        ctx.mod2(tg, ot, { trust: 4, aff: 3 }, { trust: 2, aff: 2 });
+        return res(ctx, pick(ctx, X.bias[sx(tg) || 'b']), tg, ot, 'help', '親族の第二性への偏見（' + tg.name + 'は' + OM.SEX[sx(tg)] + '）／α優位の社会（' + s0 + '）', 8);
+      }
+    } else if ((sx(A) === 'o' || sx(B) === 'o') && s0 >= 30 && ctx.rng() < 0.12 + s0 / 300) {
+      var Om = sx(B) === 'o' && (sx(A) !== 'o' || ctx.rng() < 0.5) ? B : A, Ot = Om === A ? B : A;
+      if (!oldWork(t, A, B) || type === 'classmate' || type === 'worship') {
+        var bp = X.dir ? X.bias && X.bias[Om === A ? 'a' : 'b'] : X.bias;
+        if (bp) {
+          ctx.mod2(Ot, Om, { trust: 2 }, { trust: 5, aff: 4 });
+          return { cat: 'help', text: X.dir ? fill(ctx, pick(ctx, bp), A, B) : fill(ctx, pick(ctx, bp), Om, Ot), why: nm + '（' + lab + '）／Ωへの偏見（α優位の社会 ' + s0 + '）', mag: 8 };
+        }
+      }
+    }
+    /* 上司と部下：部下が隠れΩだと、上司が気づく（一度だけ） */
+    if (type === 'boss' && B.om.hidden && !(pf.omTie && pf.omTie.hid) && !oldWork(t, A, B) && ctx.rng() < 0.4) {
+      (pf.omTie = pf.omTie || {}).hid = true;
+      ctx.mod2(A, B, { trust: 3 }, { trust: 6, aff: 3 });
+      return res(ctx, pick(ctx, X.hidden), A, B, 'help', A.name + '（上司）は、' + B.name + '（部下）が隠れΩだと気づいた', 10);
+    }
+    /* ふだんの場面 */
+    if (oldWork(t, A, B) && X.old) {
+      ctx.mod2(A, B, { aff: 2, trust: 2 }, { aff: 2, trust: 2 });
+      return res(ctx, pick(ctx, X.old), A, B, 'bond', nm + '（' + lab + '）／今は同じ職場ではない', 0);
+    }
+    if (X.dir) {
+      var side = ctx.rng() < 0.5 ? 'a' : 'b', pl = X.day[side];
+      if (side === 'b' && type === 'worship') pl = pl[t.cold || ''] || pl[''];
+      if (side === 'a') ctx.mod2(A, B, { aff: 2 }, { trust: 3, aff: 2 }); else ctx.mod2(A, B, { trust: 2, aff: 2 }, { aff: 2 });
+      return res(ctx, pick(ctx, pl), A, B, 'bond', nm + '（' + HK.TIES[type].roleA + 'と' + HK.TIES[type].roleB + '）：' + (side === 'a' ? HK.TIES[type].roleA : HK.TIES[type].roleB) + 'の視点', 0);
+    }
+    ctx.mod2(A, B, { aff: 2, trust: 2 }, { aff: 2, trust: 2 });
+    return res(ctx, pick(ctx, X.day), A, B, 'bond', nm + 'は' + lab, 0);
+  }
+
+  /* ---------- 関係を保つ ---------- */
+  function keep(ctx, a, b, type) {
+    var t = tieOf(ctx, a, b, type), R = roles(ctx, t, a, b), A = R[0], B = R[1], X = D[type];
+    var pf = ctx.pair(A, B); pf.omTie = pf.omTie || {}; pf.omTie.keepAt = ctx.stepIndex;
+    if (type === 'worship') ctx.mod2(A, B, { aff: 3, trust: 3 }, { aff: 1, trust: 1 });
+    else if (type === 'benefactor') ctx.mod2(A, B, { aff: 2, trust: 2 }, { aff: 3, trust: 3 });
+    else ctx.mod2(A, B, { aff: 3, trust: 3 }, { aff: 3, trust: 3 });
+    return res(ctx, pick(ctx, X.keep), A, B, 'bond', A.name + 'と' + B.name + '（' + X.label + '）：いつもの関係を確かめ合う', 4);
+  }
+
+  /* ---------- 発展させる ---------- */
+  function growKind(ctx, A, B, t) {
+    var type = t.type, rab = ctx.R(A, B), rba = ctx.R(B, A), pf = ctx.pair(A, B);
+    if (pf.couple) return type === 'worship' ? (pf.dominate === B.i ? 'dom' : 'bond') : 'grow';
+    var lv = loveOk(ctx, A, B, t);
+    if (type === 'worship') {
+      if (pf.dominate === B.i) return 'dom';
+      if (lv && rab.att > 30) {
+        if (ao(A, B) && OM.B && OM.B.canBite && OM.B.canBite(ctx, sx(A) === 'a' ? A : B, sx(A) === 'o' ? A : B) && ctx.rng() < 0.45) return sx(A) === 'o' ? 'mateO' : 'mateA';
+        if (rba.att > 22 || t.cold === 'cherish' || t.cold === 'accept') return 'love';
+      }
+      return 'bond';
+    }
+    if (lv && rab.att > 32 && rba.att > 26) return 'love';
+    return 'grow';
+  }
+  function grow(ctx, a, b, type) {
+    var t = tieOf(ctx, a, b, type), R = roles(ctx, t, a, b), A = R[0], B = R[1], X = D[type];
+    var pf = ctx.pair(A, B); pf.omTie = pf.omTie || {}; pf.omTie.grow = (pf.omTie.grow || 0) + 1; pf.omTie.growAt = ctx.stepIndex;
+    var k = growKind(ctx, A, B, t), nm = A.name + 'と' + B.name + '（' + X.label + '）';
+    /* 向きのない関係で恋に変わるのは、惹かれの強いほうから */
+    if (!X.dir && k === 'love' && ctx.R(B, A).att > ctx.R(A, B).att) { var s = A; A = B; B = s; }
+    if (type === 'worship') {
+      var arr = X.grow[k];
+      if (k === 'dom') { ctx.mod2(A, B, { trust: 5, aff: 3, ten: 2 }, { trust: 2 }); ctx.stress(A, 2); return res(ctx, pick(ctx, arr), A, B, 'conflict', nm + '：' + B.name + 'が信仰を利用して支配している。支配と服従が深まる', 12); }
+      if (k === 'love') { ctx.mod2(A, B, { att: 7, aff: 4 }, { att: 6, aff: 4 }); return res(ctx, pick(ctx, arr), A, B, 'romance', nm + '：「恋愛に発展：する」。信仰が恋に変わる', 14); }
+      if (k === 'mateO' || k === 'mateA') { ctx.mod2(A, B, { att: 6, aff: 3 }, { att: 3, aff: 2 }); return res(ctx, pick(ctx, arr), A, B, 'romance', nm + '：「恋愛に発展：する」。' + A.name + 'は' + B.name + 'の番になりたいと願う（α×Ω）', 14); }
+      ctx.mod2(A, B, { trust: 4, aff: 3 }, { trust: 5, aff: 5 });
+      return res(ctx, pick(ctx, arr), A, B, 'bond', nm + '：想いが届き、信仰が絆になる', 10);
+    }
+    if (k === 'love') {
+      ctx.mod2(A, B, { att: 7, aff: 4 }, { att: 6, aff: 3 });
+      return res(ctx, pick(ctx, X.love), A, B, 'romance', nm + '：' + { colleague: '同僚から恋へ', classmate: '昔話からの再接近が恋に', boss: '上司と部下から恋へ', benefactor: '恩が恋に変わる', relative: '親族（恋愛：あり）から恋へ' }[type], 14);
+    }
+    var gl = oldWork(t, A, B) ? X.grow.filter(function (x) { return !/職場で大きな|仕事で大きな/.test(x); }) : X.grow;
+    ctx.mod2(A, B, { trust: 6, aff: 4 }, { trust: 6, aff: 4 });
+    return res(ctx, pick(ctx, gl.length ? gl : X.grow), A, B, 'bond', nm + '：' + { colleague: '職場の外での信頼', classmate: '昔話からの再接近', boss: '職場の外での対等な関係', benefactor: '恩返し', relative: '家族としての絆' }[type], 10);
+  }
+
+  /* ---------- 出来事の登録 ---------- */
+  ['colleague', 'classmate', 'boss', 'worship', 'benefactor', 'relative'].forEach(function (type) {
+    function has(ctx, a, b) { return !!(b && a.om && b.om && tieOf(ctx, a, b, type)); }
+    scen.events.push({
+      id: 'om_tie_' + type, cat: 'bond', scope: 'pair',
+      when: function (ctx, a, b) { return has(ctx, a, b); },
+      w: function (ctx, a, b) { var hx = heatWho(a, b) || rutWho(a, b); return 1.1 + (hx ? 1.2 : 0) + (type === 'worship' ? 0.3 : 0); },
+      run: function (ctx, a, b) { return pattern(ctx, a, b, type); }
+    });
+    scen.events.push({
+      id: 'om_tiekeep_' + type, cat: 'bond', scope: 'pair',
+      when: function (ctx, a, b) { if (!has(ctx, a, b)) return false; var o = ctx.pair(a, b).omTie; return !(o && o.keepAt != null && ctx.stepIndex - o.keepAt < 3); },
+      w: function () { return 0.6; },
+      run: function (ctx, a, b) { return keep(ctx, a, b, type); }
+    });
+    scen.events.push({
+      id: 'om_tiegrow_' + type, cat: 'bond', scope: 'pair',
+      when: function (ctx, a, b) {
+        if (!has(ctx, a, b)) return false;
+        var o = ctx.pair(a, b).omTie || {};
+        if ((o.grow || 0) >= 2 || (o.growAt != null && ctx.stepIndex - o.growAt < 5)) return false;
+        return ctx.stepIndex >= 3 && (ctx.R(a, b).trust > 30 || ctx.R(b, a).trust > 30 || ctx.R(a, b).att > 30);
+      },
+      w: function () { return 0.7; },
+      run: function (ctx, a, b) { return grow(ctx, a, b, type); }
+    });
+  });
+  OM.TIE_TEXT = D;
+
+  /* 執着（信仰）で「恋愛に発展：しない」組は、支配している（dominate）とき以外、夜・発情期の相手にも恋愛の出来事の相手にもしない。
+     発情期の場面（scenario-omega.js の heatScene）はこれを見て、看病・距離を取る側の分岐に回す */
+  OM.worshipNoNight = function (ctx, a, b) {
+    var l = HK.Ties.all(ctx, a, b);
+    for (var i = 0; i < l.length; i++) if (l[i].type === 'worship' && HK.tieOptNoLove && HK.tieOptNoLove(l[i]) && l[i].cold !== 'dominate') return true;
+    return false;
+  };
+  /* 恋愛の出来事（匂い・告白・勢いの夜・愛憎の夜・寝取りなど）の when に足す。発情期（om_heat）は場面の中で分岐するので除く。
+     このファイルの「信仰が恋に変わる」分岐は、もともと「恋愛に発展：する」のときだけ */
+  scen.events.forEach(function (e) {
+    if (e.scope !== 'pair' || e.id === 'om_heat' || /^om_tie/.test(e.id || '') || e._noW) return;
+    if (e.cat !== 'romance' && !/night|steal|affair|kiss/.test(e.id || '')) return;
+    var w0 = e.when;
+    e._noW = true;
+    e.when = function (ctx, a, b) { if (b && OM.worshipNoNight(ctx, a, b)) return false; return w0 ? w0.apply(this, arguments) : true; };
+  });
+})();
 ;/* ==== js/omega-thick.js ==== */
 /* 箱庭シミュレーター: R18版の山場（小説調）を段落に分けて厚くする ― 共通の組み立て（HK.TKC）とオメガバース（R18版のみ）
    ■ 山場（本番・絶頂）だけ、400字前後・段落（\n\n）区切りで書く。前後の小さな場面は元のまま
@@ -17278,6 +18546,195 @@
       return res;
     };
   });
+})();
+;/* ==== js/omega-ties-r18.js ==== */
+/* 箱庭シミュレーター（R18版のみ）: オメガバース ― 発情期の夜に、新しい関係（同僚・同級生・上司と部下・執着（信仰）・恩人・親族）ならではの導入と反応を足す
+   発情期の場面（omega-heat.js・omega-thick.js の OM.HEAT.scene）を包む。夜になるかどうか・攻め受け・番になるかは既存の判定のまま（ここでは文を足すだけ）。
+   ・導入（関係×発情期の人の側×体の組）：場面の前に一段。体の組は m＝攻めが男性の体／ff＝女性どうし（指・舌・肌）／fm＝女性の攻めが男性に跨る
+   ・山場の反応（受ける側の態度9種）：頂のすぐあと（opt.insert の位置）に一段。喘ぎは ero-kit.js の態度別（{mb1}{mb2}）
+   ・男性向けの作風：山場の反応のかわりに、擬音と♡の段落（体の組ごと）
+   ・事後（関係ごと）：場面の最後に一段
+   {T}=攻め {U}=受け（HK.Pos.order） {O}=発情期のΩ {X}=その相手 {rel}=受けから見た攻めの立場（上司・同僚・恩人など）
+   {sO}{sX}=それぞれのフェロモンの匂い。描写の有無が「ほのめかす」のときは事後だけを足す。
+   血縁の親族（恋愛：なし）の組には足さない。登場人物はすべて成人。全年齢版にはこのファイルはない */
+(function () {
+  'use strict';
+  var HK = window.HK, OM = HK && HK.OMEGA;
+  if (!OM || !OM.HEAT || !HK.Ties) return;
+  function L(s) { return s.split('|'); }
+  var PS = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite'];
+  function ps(c) { var p = HK.personaOf ? HK.personaOf(c) : c.persona; return PS.indexOf(p) >= 0 ? p : 'gentle'; }
+  function isF(c) { return !!(HK.Pos && HK.Pos.isF(c)); }
+  function kindOf(T, U) { return isF(T) ? (isF(U) ? 'ff' : 'fm') : 'm'; }
+
+  /* ================= 導入 ================= */
+  /* sym の関係は x、向きのある関係は a（発情期の人が t.a の側）／b（t.b の側） */
+  var INTRO = {
+    colleague: { x: {
+      m: L('{X}が{O}の部屋を訪ねたのは、職場に置き忘れた抑制剤を届けるためだった。扉が開いた瞬間、{sO}の匂いが廊下まで溢れ出し、同僚として保ってきた距離が一息で消えた。{T}は{U}の手首を掴んで部屋の中へ引き入れ、玄関の壁に押しつけたまま唇を奪った。|発情期の{O}を家まで送ったのは、隣の席の{X}だった。玄関で「明日の仕事は私が回す」と言いかけた{X}の襟元を、{O}の熱い指が掴んで引き寄せた。{T}は{U}をソファに押し倒し、硬くなったものを服越しに押しつけながら、何年も並んで仕事をしてきた相手の匂いを深く吸い込んだ。|「同僚なのに」と{X}は言った。言いながら、{O}の首筋から立ちのぼる{sO}の匂いから顔を離せなかった。{T}は{U}のシャツのボタンを外す手を止められず、熱に濡れた肌に唇を落としていった。'),
+      ff: L('{X}が{O}の部屋を訪ねたのは、職場に置き忘れた抑制剤を届けるためだった。扉が開くと、{sO}の甘い匂いがふわりと溢れ、同僚の顔をしていられなくなった。{T}は{U}の頬を両手で包み、柔らかな唇を重ねたまま、ゆっくりとベッドのほうへ導いた。|毎日同じ職場で顔を合わせてきた{X}の指が、今夜は{O}の熱い肌をなぞっていた。{T}は{U}のブラウスのボタンを一つずつ外し、ふくらみの先に口づけを落とした。{U}は「仕事のときと全然違う」と震える声で笑った。|発情期の熱で潤んだ{O}の目を見て、{X}は同僚として引くべき線を越えることにした。{T}は{U}をシーツに寝かせ、脚のあいだへそっと指を滑らせた。そこはもう、触れる前から熱く濡れていた。'),
+      fm: L('{X}が{O}の部屋を訪ねたのは、職場に置き忘れた抑制剤を届けるためだった。扉が開いた瞬間、{sO}の匂いに膝が揺れ、同僚の顔はどこかへ消えた。{T}は{U}の胸を押してベッドに倒し、その腰の上に跨って見下ろした。|毎日隣の席で仕事をしてきた相手を、{T}は今夜、上から見下ろしていた。{T}は{U}のベルトを外し、硬くなったものを手で確かめてから、ゆっくりと腰を沈める位置を探った。{U}は息を呑んで、{T}の太腿を掴んだ。|「仕事中は、こんな顔しないくせに」と{T}は笑った。熱に浮かされた{O}の匂いに、二人とも同僚の距離を忘れていた。{T}は{U}の両手をシーツに縫いとめ、跨ったまま唇を重ねた。')
+    } },
+    classmate: { x: {
+      m: L('学生のころ、{O}の発情期には絶対に近づかないと{X}は約束していた。その約束が、今夜{sO}の匂いの前で音を立てて崩れた。{T}は{U}を抱き寄せ、同じクラスだったころには触れられなかった首筋に、熱い唇を押しあてた。|同窓会の帰り、{O}の発情期が予定より早く来た。介抱するつもりで部屋に入った{X}は、昔と変わらない匂いに理性を失った。{T}は{U}をベッドに押し倒し、硬くなったものを押しつけながら、学生のころの呼び名で{U}を呼んだ。|{X}「学生のころから、ずっとこうしたかった」――{O}は熱に潤んだ目で、それを聞いた。{T}は{U}の服を一枚ずつ剥ぎ、昔は見ることさえできなかった肌に手のひらを這わせた。{U}の肌は、発情の熱で驚くほど熱かった。'),
+      ff: L('学生のころ、{O}の発情期には絶対に近づかないと{X}は約束していた。その約束は、今夜{sO}の匂いの前で静かにほどけた。{T}は{U}の髪を指で梳き、同じクラスだったころには触れられなかった唇に、そっと自分の唇を重ねた。|昔、体育の授業で並んだ肩が、今夜はシーツの上で触れ合っていた。{T}は{U}の胸のふくらみを手のひらで包み、先端を指先で転がした。{U}は「昔はこんなこと、考えもしなかった」と、熱に浮かされた声で笑った。|同窓会の帰り、発情期の熱に倒れた{O}を、{X}は自分の部屋に連れ帰った。{T}は{U}の服を脱がせ、脚のあいだへ指を沈めていった。学生のころから知っている声が、知らない甘さで漏れた。'),
+      fm: L('学生のころ、{O}の発情期には絶対に近づかないと{X}は約束していた。その約束を最初に破ったのは、熱に浮かされた{T}のほうだった。{T}は{U}を仰向けに押し倒し、その腰に跨って、昔のあだ名で{U}を呼んだ。|同窓会の帰り道、{T}は{U}の手を引いて自分の部屋の鍵を開けた。{T}は{U}のシャツをはだけさせ、硬くなったものを手で包んで確かめてから、ゆっくりと腰を沈めた。{U}は同じクラスだった相手の重みに、息を詰めた。|{T}「学生のころは、こんなふうに見下ろせるなんて思わなかった」――{T}は{U}の上で笑い、髪をかき上げた。{sO}の匂いが二人のあいだで甘く膨らみ、{U}は{T}の腰を掴んで引き寄せた。{T}は{U}のものを手で確かめ、ゆっくりと腰を沈めた。')
+    } },
+    relative: { x: {
+      m: L('親戚の集まりのあと、発情期の{O}を部屋まで送ったのは{X}だった。子どものころから知っている匂いが、今夜は知らない甘さで{X}を呼んでいた。{T}は{U}を抱き寄せ、家族の前では決して見せない顔で唇を奪った。|{X}「親戚に何て言われてもいい」――{X}はそう言って、{O}の部屋の扉を閉めた。{T}は{U}をベッドに押し倒し、硬くなったものを押しあてながら、震える体を逃がさないように抱きすくめた。{U}は家族だった相手の背中に、熱い指を回した。|発情期の{O}の匂いは、法事の席でも隠しきれないほど濃くなっていた。{X}は{O}を連れて親戚の家を抜け出し、空いている客間に入った。{T}は{U}の服を乱暴に脱がせ、熱く濡れた肌に唇を落とした。'),
+      ff: L('親戚の集まりのあと、発情期の{O}を部屋まで送ったのは{X}だった。子どものころ同じ布団で眠った相手の肌が、今夜は熱く甘い匂いを放っていた。{T}は{U}の頬に口づけ、そのまま柔らかな唇を重ねた。|{T}は{U}の胸に手を這わせ、家族として見ていたはずの体の柔らかさに息を呑んだ。{U}は「親戚なのに」と言いかけて、{T}の指が脚のあいだに触れた瞬間に言葉をなくした。そこはもう、熱く溶けていた。|法事の帰り、{X}は発情期の{O}を客間に連れ込み、内側から鍵をかけた。{T}は{U}の着物の合わせを緩め、白い肌に唇を這わせていった。親戚の話し声が、襖一枚向こうでかすかに聞こえていた。'),
+      fm: L('親戚の集まりのあと、{T}は{U}の手を引いて空いている客間に入った。子どものころから知っている顔を、こんなふうに見下ろすのは初めてだった。{T}は{U}を畳に押し倒し、その腰の上に跨った。|{T}は{U}のものを手のひらで包み、硬くなっているのを確かめて小さく笑った。{T}「親戚なのに、こんなになってる」――{U}は顔を背けたが、腰は正直に{T}を求めていた。{T}はそのまま、ゆっくりと腰を沈めた。|発情期の{sO}の匂いが、客間の空気を甘く満たしていた。{T}は{U}のシャツをはだけさせ、跨ったまま胸に手をついた。襖の向こうの親戚の気配が、二人の息をいっそう浅くした。')
+    } },
+    boss: {
+      /* 上司が発情期 */
+      a: {
+        m: L('抑制剤の切れた上司の{O}を家まで送ったのは、部下の{X}だった。玄関で頭を下げて帰ろうとした{X}の手首を、{O}が掴んだ。{T}は{U}を壁に押しつけ、職場では一度も見せたことのない顔で、硬くなったものを押しあてた。|{X}「上司の{O}さんに、こんなこと」――{X}の声はかすれていた。それでも{sO}の匂いが、部下の遠慮を端から溶かしていった。{T}は{U}をベッドに押し倒し、乱れたシャツの奥の熱い肌に唇を落とした。|発情期の上司の部屋で、{X}は職場の上下を忘れた。{T}は{U}の服を一枚ずつ剥ぎ、仕事中には決して触れられない場所に指を這わせた。{U}は息を乱しながら、職場で呼ぶのと同じ呼び方で相手の名前を呼んだ。'),
+        ff: L('抑制剤の切れた上司の{O}を家まで送ったのは、部下の{X}だった。玄関で帰ろうとした{X}の袖を、{O}が熱い指で掴んで離さなかった。{T}は{U}を抱き寄せ、職場では決して触れない唇に、そっと自分の唇を重ねた。|{T}は{U}のブラウスのボタンを外し、ふくらみの先を口に含んだ。仕事中のきびしい声が、甘く崩れていく。{U}は「職場の誰にも、言わないで」と囁き、{T}の指を脚のあいだへ導いた。|発情期の上司の部屋で、{X}は職場の上下を忘れた。{T}は{U}をシーツに寝かせ、熱く濡れたところへゆっくりと指を沈めた。上司と部下の距離は、指一本ぶんもなくなっていた。'),
+        fm: L('抑制剤の切れた上司の{O}を家まで送ったのは、部下の{X}だった。玄関で頭を下げた{X}を、{O}は熱に浮かされた目で見つめた。次の瞬間、{T}は{U}をベッドに突き倒し、その腰の上に跨っていた。|@TO {T}「部下に見られたくなかった顔、全部見せてあげる」――{T}は{U}のベルトを外し、硬くなったものを手で確かめた。{U}は上司の重みを腰に受けながら、息を詰めた。{T}はゆっくりと腰を沈めはじめた。|@TO 職場では毎日指示を出していた相手を、{T}は今夜、跨ったまま見下ろしていた。{sO}の匂いに酔った{U}は、上司の腰を掴むことしかできなかった。{T}は{U}の両手を胸の上で押さえ、主導権を最後まで渡さなかった。|@TX 部下の{T}は、熱に浮かされた上司の{U}をベッドに押し倒し、その腰の上に跨った。{T}「今夜だけは、私が上」――{T}は{U}のものを手で確かめ、ゆっくりと腰を沈めた。{U}は部下に見下ろされながら、発情の熱に喉を鳴らした。')
+      },
+      /* 部下が発情期 */
+      b: {
+        m: L('部下の{O}の発情期が仕事中に来た。家まで送り届けた上司の{X}は、扉の前で引き返すつもりだった。{T}は{U}の熱い体を抱きとめ、硬くなったものを押しつけながら、職場の上下を投げ捨てるように唇を奪った。|{O}「上司なのに、ずるい」――熱に潤んだ目でそう言われて、{X}は理性の最後の糸を手放した。{T}は{U}をベッドに押し倒し、乱れた服の奥の肌に唇を落としていった。硬くなったものが服越しに触れると、{U}は小さく息を呑んだ。|上司の{X}は、発情期の部下の部屋で長いあいだ立ち尽くしていた。{sO}の匂いが、守るべき部下という言葉を少しずつ溶かしていく。{T}は{U}の服を脱がせ、震える体に覆いかぶさった。'),
+        ff: L('部下の{O}の発情期が仕事中に来た。家まで送り届けた上司の{X}は、玄関で{O}の熱い指に袖を掴まれた。{T}は{U}の頬に手を添え、職場では決して見せない顔で唇を重ねた。|{T}は{U}の服を脱がせ、ふくらみに唇を這わせた。部下の甘い声が、上司の{X}の耳を熱くした。{T}の指が脚のあいだに滑り込むと、そこはもう熱く濡れて震えていた。|{X}「上司としては、止めなきゃいけないのに」――{X}はそう言いながら、{O}の熱から手を離せなかった。{T}は{U}をシーツに寝かせ、ゆっくりと指を沈めた。部下の声が、知らない甘さで崩れた。'),
+        fm: L('部下の{O}の発情期が仕事中に来た。家まで送ってくれた上司の{X}を、{O}は玄関で引き止めた。{T}は{U}をベッドに押し倒し、その腰の上に跨った。|@TO {T}「職場では、ずっと上司の言うことを聞いてきた。今夜は私の番」――{T}は{U}のものを手で包み、硬くなったのを確かめて腰を沈めた。上司の{U}は、部下の重みに息を詰めた。{O}の匂いが、上司と部下の境目を甘く溶かしていった。|@TO {sO}の匂いを撒き散らしながら、{T}は{U}の上で腰を揺らした。いつも冷静な上司の顔が、少しずつ崩れていく。{T}はその顔を見下ろして、満足そうに笑った。|@TX 上司の{T}は、発情期の熱に震える部下の{U}を仰向けに寝かせ、その腰に跨った。{T}「今夜は、上司命令は出さない」――{T}は{U}のものを手で包み、硬くなったのを確かめてから腰を沈めた。{U}は上司の重みに、熱い息を漏らした。')
+      }
+    },
+    benefactor: {
+      /* 恩人が発情期 */
+      a: {
+        m: L('昔助けてくれた恩人の{O}が、発情期の熱にうずくまっていた。今度は自分が助ける番だと思っていた{X}は、{sO}の匂いの前で動けなくなった。{T}は{U}を抱き寄せ、恩も遠慮も呑み込むように唇を奪った。|{X}「恩返しのつもりだった。こんなこと、するつもりじゃなかった」――そう言いながら、{X}の手は{O}を離さなかった。{T}は{U}をベッドに押し倒し、硬くなったものを押しあてながら、熱い肌に唇を落とした。{U}の指が、{T}の背中にすがるように食い込んだ。'),
+        ff: L('昔助けてくれた恩人の{O}が、発情期の熱にうずくまっていた。看病に来た{X}の手を、{O}は熱い指で握って離さなかった。{T}は{U}の頬に口づけ、柔らかな唇を重ねた。|発情期の{sO}の匂いが、恩人と恩を受けた側の距離を少しずつ溶かしていった。{T}は{U}をシーツに横たえ、胸のふくらみに唇を寄せた。指が脚のあいだに沈むと、{U}の口から甘い声がこぼれた。|@TX {T}は{U}の胸のふくらみに唇を寄せ、恩人の甘い声を初めて聞いた。{U}は「こんなつもりで助けたんじゃない」と笑いかけて、{T}の指が脚のあいだに触れた瞬間に言葉をなくした。そこはもう、熱く濡れて震えていた。'),
+        fm: L('昔助けてくれた恩人の{O}が、看病に来た{X}を熱に浮かされた目で見上げた。次の瞬間、{T}は{U}をベッドに押し倒し、その腰に跨っていた。{T}は{U}のものを手で確かめ、ゆっくりと腰を沈めた。|@TO {T}「恩を返したいなら、今夜は私の好きにさせて」――{T}は{U}の上で髪をかき上げた。恩を受けた{U}は、恩人の重みを受け止めながら、息を詰めた。{T}はそのまま、ゆっくりと腰を沈めた。|@TX 恩を受けた{T}は、熱に震える恩人の{U}をベッドに横たえ、その腰に跨った。{T}「今度は私が、{U}を楽にする番」――{T}は{U}のものを手で確かめ、ゆっくりと腰を沈めた。{U}は恩人の熱に、言葉もなく喉を鳴らした。')
+      },
+      /* 恩を受けた側が発情期 */
+      b: {
+        m: L('@TX {O}の発情期の夜、駆けつけたのは昔と同じ恩人の{X}だった。扉の外で待つつもりだった{X}を、{O}は自分から部屋に引き入れた。{T}は{U}を抱きすくめ、昔守ってくれた腕で今夜は強く引き寄せた。|{O}「ずっと、{X}さんにこうしてほしかった」――熱に潤んだ声に、恩人の{X}は理性を手放した。{T}は{U}をベッドに押し倒し、硬くなったものを押しあてながら、熱く濡れた肌に唇を落とした。{U}は昔と同じ腕の中で、昔とは違う声を漏らした。|{O}の発情期の匂いが、恩人の{X}の記憶の中のどの夜より甘く部屋に満ちていた。{T}は{U}をベッドに押し倒し、硬くなったものを押しあてた。昔の恩も今夜の熱も、二人の吐息に溶けていった。'),
+        ff: L('{O}の発情期の夜、駆けつけたのは昔と同じ恩人の{X}だった。抑制剤を差し出した{X}の手を、{O}は自分の頬に押しあてた。{T}は{U}の唇を、そっと自分の唇で塞いだ。|{T}は{U}の服をゆっくりと脱がせ、熱を持った肌に唇を這わせた。昔助けた相手の甘い匂いが、恩人の{X}の胸を締めつけた。{T}の指が脚のあいだに沈むと、{U}は小さく名前を呼んだ。'),
+        fm: L('@TO {O}の発情期の夜、駆けつけた恩人の{X}を、{O}は熱に浮かされた目で見上げた。{T}は{U}をベッドに押し倒し、その腰に跨った。{T}「今度は私が、{U}さんを助けたい」{U}は驚いた顔のまま、{T}の腰に手を添えた。|@TO {T}は{U}のものを手で包み、硬くなったのを確かめてから、ゆっくりと腰を沈めた。恩人の{U}は、昔助けた相手の熱に、息を詰めて耐えていた。{T}は{U}の胸に手をつき、腰を揺らしはじめた。|@TX 恩人の{T}は、発情期の熱に震える{U}を仰向けにさせ、その腰に跨った。{T}「昔みたいに、全部預けて」――{T}は{U}のものを手で包み、硬くなったのを確かめてから、ゆっくりと腰を沈めた。{U}は熱に浮かされたまま、恩人の腰に縋った。|発情期の{sO}の匂いが、二人の昔の記憶を甘く塗り替えていった。{T}は{U}をシーツに押し倒し、その腰の上に跨った。{T}は{U}のものを手で確かめ、迷いを振り切るように腰を沈めた。')
+      }
+    },
+    worship: {
+      /* 信仰する側が発情期 */
+      a: {
+        m: L('発情期の熱の中で、{O}は崇めてきた{X}の名前を呼び続けていた。部屋に来てくれた{X}を見た瞬間、{O}の目から涙がこぼれた。{T}は{U}を抱き寄せ、震える体をベッドに押し倒して、硬くなったものを押しあてた。|{O}「{X}に触れてもらえるなら、この熱だって祈りになる」――{O}はそう言って、自分から服の前を開いた。{T}は{U}の熱い肌に唇を落とし、何も言わずにその体を抱きしめた。硬くなったものが触れると、{U}は祈るように目を閉じた。'),
+        ff: L('発情期の熱の中で、{O}は崇めてきた{X}の名前を呼び続けていた。部屋に来てくれた{X}の手を、{O}は祈るように両手で包んだ。{T}は{U}の頬に口づけ、そのまま柔らかな唇を重ねた。|発情期の熱で、{O}の肌はどこに触れても震えた。{T}は{U}の胸に口づけ、ゆっくりと脚のあいだへ指を滑らせた。崇めてきた者と崇められてきた者の境目が、熱の中で溶けていった。|@TX {T}は{U}の胸に唇を這わせ、震える体を指先でなぞった。崇める相手に触れられて、{U}は泣きながら笑った。{T}の指が脚のあいだに沈むと、そこはもう熱く溶けていた。'),
+        fm: L('@TO 発情期の熱の中で、{O}は崇めてきた{X}の名前を呼んでいた。部屋に来てくれた{X}を、{O}は震える手でベッドに導いた。{T}は{U}の腰に跨り、崇める相手を見下ろすことの畏れに体を震わせた。|@TO {T}は{U}のものを手で包み、祈るように確かめてから腰を沈めた。{T}「{U}を、私の熱で汚してしまう」――そう言いながら、{T}はもう止まれなかった。{U}は崇められる者の静かな目で、{T}を見上げていた。|@TX 崇められてきた{T}は、熱に震える{U}を仰向けに寝かせ、その腰に跨った。{T}「そんなに欲しかったなら、あげる」――{T}は{U}のものを手で確かめ、ゆっくりと腰を沈めた。{U}は崇める相手の重みに、祈るように目を閉じた。|{sO}の匂いが、祈りと欲の境目を溶かしていった。{T}は{U}をシーツに押し倒し、その腰に跨った。{T}は{U}のものを手で包み、確かめるように腰を沈めた。')
+      },
+      /* 信仰される側が発情期 */
+      b: {
+        m: L('{sO}の匂いが、信仰と欲の区別を奪っていった。{T}は{U}をベッドに押し倒し、硬くなったものを熱い肌に押しあてた。崇める者と崇められる者は、熱の中でただの二人になった。|@TX {O}の発情期の匂いに、信仰を捧げてきた{X}は膝をついた。触れてはいけないと思っていた相手が、熱に潤んだ目で{X}を呼んでいた。{T}は{U}を抱き寄せ、震える手で服を脱がせながら、硬くなったものを押しあてた。|@TO {O}は熱に浮かされた目で、ひざまずく{X}を見下ろした。{T}は{U}をベッドに押し倒し、硬くなったものを押しあてた。{U}は崇めてきた相手に求められて、震える息を漏らした。|@TX {O}「来て」――その一言だけで、{X}の世界のすべてが決まった。{T}は{U}をベッドに横たえ、祈るように肌のひとつひとつに唇を落としていった。硬くなったものを押しあてると、{U}は甘く息を漏らした。'),
+        ff: L('@TX {O}の発情期の匂いに、信仰を捧げてきた{X}は膝をついた。{O}は熱に潤んだ目で、{X}の手を自分の胸元に引き寄せた。{T}は{U}の唇に、畏れるようにそっと自分の唇を重ねた。|@TO {O}は熱に潤んだ目で、ひざまずく{X}の顎を持ち上げた。{T}は{U}をシーツに横たえ、その胸のふくらみに唇を這わせた。崇めてきた相手の指が脚のあいだに沈むと、{U}は祈るような声を漏らした。|{sO}の甘い匂いの中で、二人の指が絡み合った。{T}は{U}の胸に唇を寄せ、熱を持った肌をゆっくりとなぞった。{U}の甘い声が、祈りのように部屋に満ちた。|@TX {T}は{U}の胸のふくらみに口づけ、崇めてきた肌の熱を確かめた。{U}の甘い声が漏れるたびに、{T}の指先が震えた。{T}はそのまま、ゆっくりと脚のあいだへ指を沈めた。'),
+        fm: L('@TO {O}の発情期の匂いに、信仰を捧げてきた{X}は膝をついた。{O}は{X}を仰向けに押し倒し、その腰の上に跨った。{T}「欲しいなら、じっとしていて」{U}は崇める相手の重みに、身動きひとつできなかった。|@TO {T}は{U}のものを手で包み、硬くなったのを確かめてから、ゆっくりと腰を沈めた。崇める相手の重みを受けて、{U}は祈るように目を閉じた。{T}は{U}の胸に手をつき、熱に任せて腰を揺らした。|@TX 信仰を捧げてきた{T}は、熱に震える{U}を畏れるように仰向けに寝かせ、その腰に跨った。{T}は{U}のものを手で包み、祈るようにゆっくりと腰を沈めた。{U}の熱い吐息が、{T}の信仰をいっそう深くした。|{sO}の匂いが部屋を満たし、崇める者と崇められる者の境目を曖昧にした。{T}は{U}を仰向けにさせ、その腰の上に跨った。{T}は{U}のものを手で確かめ、ゆっくりと腰を沈めた。')
+      },
+      /* 信仰される側が支配している（{T}が信仰される側のとき） */
+      dom: {
+        m: L('{T}が命じるように名前を呼ぶと、{U}は熱に浮かされたまま膝をついた。{T}のフェロモンが、{U}の信仰をさらに深く縛っていく。{T}は{U}の顎を指で持ち上げ、ベッドに押し倒して、硬くなったものを押しあてた。|{T}「欲しいなら、自分で言って」――{U}は崇める相手の命令に、熱に震えながら従った。{T}は満足そうに笑い、{U}の服を剥いでいった。{U}の肌は、命令を待つあいだにも熱を増していった。|{T}は{U}をベッドの端に座らせ、自分の前で服を脱ぐように命じた。{U}は崇める相手の言葉に、震える指で従った。{T}は満足そうに{U}を押し倒し、硬くなったものを押しつけた。'),
+        ff: L('{T}が命じるように名前を呼ぶと、{U}は熱に浮かされたまま膝をついた。{T}は{U}の顎を指で持ち上げ、ご褒美のように唇を重ねた。{U}は崇める相手の口づけに、それだけで腰を震わせた。|{T}「脚を開いて。私が見たいから」――{U}は崇める相手の言葉に、震えながら従った。{T}は濡れたところに指を這わせ、{U}が何度ねだっても焦らし続けた。{U}の腰が、命令を待ちきれずに揺れた。|{T}は{U}をシーツに横たえ、自分の許しがあるまで声を出すなと命じた。{U}は唇を噛んで頷いた。{T}の指が胸の先をつまむと、{U}の体は命令に逆らうように跳ねた。'),
+        fm: L('{T}が命じるように名前を呼ぶと、{U}は熱に浮かされたまま仰向けになった。{T}は{U}の腰に跨り、崇められる者の顔で見下ろした。{T}「動いていいとは言ってない」{U}は唇を噛んで、命令に従った。|{T}は{U}のものを手で確かめ、じらすようにゆっくりと腰を沈めた。{U}は信仰する相手の重みの下で、命令が下るのをただ待っていた。{T}はその従順さに、満足そうに目を細めた。|{T}は{U}の両手首を頭の上でまとめ、「私が許すまで、出したらだめ」と囁いた。{U}は崇める相手の言葉に、喉を鳴らして頷いた。{T}はその上で、焦らすように腰を揺らしはじめた。')
+      }
+    }
+  };
+  /* 関係ごとの導入（体の組によらない。体の組の文とあわせて引く） */
+  var INTRO_ANY = {
+    colleague: { x: L('{O}の発情期の匂いは、職場で毎日嗅いでいた匂いとはまるで違った。同僚の{X}は、自分がどれほど長いあいだそれを我慢していたのかを、そのとき初めて知った。二人は言葉もなく、互いの服に手をかけた。') },
+    classmate: { x: L('同じクラスだったころの{O}の匂いを、{X}は今もはっきり覚えていた。発情期の熱でその匂いが甘く変わったとき、{X}の中で何年分もの想いが溢れ出した。二人は学生のころの呼び名で呼び合いながら、互いを引き寄せた。') },
+    relative: { x: L('親戚だから、と何度も自分に言い聞かせてきた。けれど発情期の{O}の匂いの前では、その言葉は何の役にも立たなかった。{X}は{O}の手を取り、家族の誰も知らない夜へ踏み出した。') },
+    boss: { a: L('職場では上司と部下だった。発情期の熱の前では、その上下はあっけなく崩れた。二人は互いの名前を、さん付けを外して呼んだ。'), b: L('職場では上司と部下だった。発情期の熱の前では、その上下はあっけなく崩れた。二人は互いの名前を、さん付けを外して呼んだ。') },
+    benefactor: { a: L('恩人と恩を受けた側――その関係が、発情期の匂いの中で静かに形を変えた。{X}は、いつか返したいと思っていたものの代わりに、自分自身を差し出した。{O}はそれを、熱に震える腕で受け取った。'), b: L('昔、{O}を救ったのは{X}だった。今夜、{O}は救われるのではなく、求めることを選んだ。{X}は恩人の顔を脱ぎ捨てて、その想いに応えた。') },
+    worship: { a: L('崇めることしかできなかった相手が、目の前にいた。{O}は発情期の熱に震えながら、{X}の足元にひざまずいた。{X}はその頭をそっと撫で、立たせて抱き寄せた。'), b: L('信仰を捧げてきた相手が、熱に潤んだ目で{X}を見ていた。{X}にとって、それは祈りが届いた瞬間だった。{X}は震える手で、{O}の熱い肌に触れた。') }
+  };
+
+  /* ================= 山場の反応（受ける側の態度9種）。{U}=受け {T}=攻め {rel}=受けから見た攻めの立場 ================= */
+  var PEAK = {
+    proud: L('頂に押し上げられる瞬間まで、{U}は{rel}の{T}に弱みを見せまいとした。それでも発情の熱は意地を溶かし、{U}は{T}の背中に爪を立てて果てた。{U}「{mb2}……っ、{T}なんかに……」――悔しげな声とは裏腹に、{U}は{T}を離さなかった。|{U}は最後まで「誰が」と言い張った。けれど{T}に奥を満たされた瞬間、その強がりは甘い悲鳴に変わった。{U}は{rel}の{T}の肩に顔をうずめ、震えが止まるまで黙っていた。|{U}は{rel}の{T}を睨みつけたまま、頂へ押し上げられた。睨む目の端から、涙がひとすじこぼれた。{U}「{mb2}……覚えてろ、っ……」'),
+    stern: L('{U}は唇を引き結び、{rel}の{T}の前で声を殺そうとした。けれど頂の波は容赦なく、固い表情ごと{U}を押し流した。{U}「{mb2}」――乱れた声を恥じるように、{U}は{T}の胸に額を押しつけた。|果てる瞬間、{U}は{rel}の{T}の名前を、いつもより低い声で呼んだ。それは命令でも叱責でもなく、縋る声だった。{T}はそれを聞いて、{U}をいっそう強く抱きしめた。|{U}は果てる直前まで、{rel}の{T}の腕を掴んで離さなかった。押し返すためではなく、縋るためだった。{U}「{mb2}」――乱れた息のあと、{U}は「……誰にも言うな」とだけ言った。'),
+    tsun: L('{U}「べ、別に、{T}だからじゃないし……っ」――言い終わる前に、頂が{U}をさらった。{U}は{rel}の{T}にしがみついて果て、真っ赤な顔を腕で隠した。{U}「{mb2}……見るな、ばか……」|{U}は「全然よくない」と言い張りながら、{rel}の{T}の腰に脚を絡めて離さなかった。果てた瞬間、その強がりは甘い声にほどけた。{U}は悔しそうに、{T}の肩を弱く叩いた。|{U}「も、もう無理……{T}のせいだからな……っ」――頂に達した瞬間、{U}は{rel}の{T}の首にしがみついた。{U}「{mb2}」――しばらくして、{U}は小さく「……よかった」と呟いた。'),
+    gentle: L('頂が近づくと、{U}は{rel}の{T}の頬を両手で包んだ。{U}「大丈夫、ちゃんとここにいるから……っ」――そう囁いた声が、次の瞬間に甘く崩れた。{U}は{T}を抱きしめたまま果て、その髪を何度も撫でた。|{U}は{rel}の{T}を受け止めるように、腕を広げて抱き寄せた。果てる瞬間も、{U}は{T}の名前を優しく呼び続けた。{U}「{mb2}……いいよ、全部……」|{U}は果てる瞬間、{rel}の{T}の額にそっと口づけた。熱に溶けた声で、{U}は何度も{T}の名前を呼んだ。{U}「{mb2}……ありがとう……」'),
+    devoted: L('{U}「{T}さん、{T}さん……っ」――{U}は{rel}の{T}の名前を、祈るように繰り返した。頂に押し上げられた瞬間、{U}は涙をこぼしながら果てた。{U}「{mb2}……嬉しい……」|{U}は果てる瞬間まで、{rel}の{T}が気持ちよくなれているかを気にしていた。{T}がそれに気づいて口づけると、{U}は安心したように、甘い声を上げて達した。{U}は{T}の胸で、幸せそうに目を閉じた。|{U}は{rel}の{T}にしがみついて、離れないでと何度も懇願した。頂に押し上げられた瞬間、その願いは甘い声に変わった。{U}「{mb2}……ずっと、こうしていたい……」'),
+    cool: L('{U}は最後まで、自分の呼吸を整えようとしていた。けれど{rel}の{T}の熱に奥を満たされた瞬間、冷静な声はどこにも残らなかった。{U}「{mb2}……計算、外れた……」|果てる瞬間、{U}の理屈はすべて止まった。{U}は{rel}の{T}の肩を掴み、言葉にならない声を漏らした。しばらくして、{U}は「……悪くない」とだけ呟いた。|{U}は{rel}の{T}の顔をまっすぐ見つめたまま果てた。平静を装った目が、最後の瞬間だけ大きく揺れた。{U}「{mb2}」――{U}は小さく息をつき、「……想定外だ」と言った。'),
+    free: L('{U}「すご、っ、{T}、すごい……っ」――{U}は{rel}の{T}にしがみつき、思ったことを全部口に出しながら果てた。笑いと喘ぎが混ざった声が、部屋に響いた。{U}「{mb2}……もっかい、しよ？」|{U}は頂の直前、{rel}の{T}の顔を見て笑った。{U}「こんな顔、職場でも学校でも見たことない」――次の瞬間、その笑い声は甘い悲鳴に変わった。{U}は{T}の背中に腕を回したまま、何度も体を震わせた。|{U}は{rel}の{T}の上で、くすぐったそうに笑いながら頂に駆け上がった。笑い声は途中から、甘くかすれた悲鳴になった。{U}「{mb2}……ねえ、今のすごくなかった？」'),
+    shy: L('{U}は顔を覆った指の隙間から、{rel}の{T}を見上げていた。頂が来ると、{U}は小さく首を振りながら果てた。{U}「{mb2}……み、見ないで……」|{U}は声を出すまいと、{rel}の{T}の肩に口を押しあてた。それでも果てる瞬間、こらえきれない甘い声が漏れた。{U}は耳まで真っ赤になって、{T}の胸に顔をうずめた。|{U}は{rel}の{T}の名前を、消え入りそうな声で呼んだ。頂が来ると、{U}は{T}の胸に顔を押しつけて震えた。{U}「{mb2}……は、恥ずかしい……」'),
+    polite: L('{U}「{T}さま、もう……っ、失礼、いたします……っ」――丁寧な言葉は、頂の波の中でほどけていった。{U}は{rel}の{T}の腕に縋って果てた。{U}「{mb2}」|{U}は果てる瞬間まで、{rel}の{T}への言葉遣いを崩さなかった。けれどその声は甘く震え、言葉の端が溶けていた。{U}は息を整えると、「……申し訳ございません、はしたなくて」と小さく言った。|{U}「{T}さま……っ、どうか、このまま……っ」――{U}は{rel}の{T}の手を握りしめて果てた。乱れた呼吸の合間に、{U}は小さく礼を言った。{U}「{mb2}」')
+  };
+  /* 信仰ならではの山場の一言（PEAK のあとに添える。{a}側＝信仰する側が受けのとき／信仰される側が受けのとき） */
+  var PEAK_W = {
+    U_believer: L('{U}は果てたあとも、{T}の手を両手で包んで離さなかった。崇めてきた相手に満たされたことが、まだ信じられなかった。{U}の頬を、静かに涙が伝った。|{U}は震える声で、{T}の名前を祈りのように呼んだ。体の奥に残る熱が、何よりも尊いものに思えた。{U}は{T}の胸に額を押しつけ、目を閉じた。|{U}は{T}の汗ばんだ肌に口づけた。触れることさえ畏れ多いと思っていた相手だった。{U}の体はまだ震えていたが、心は不思議なほど静かだった。'),
+    U_worshipped: L('{T}は果てたあとも、{U}の体から離れようとしなかった。崇めてきた相手を抱いたことが、まだ夢のようだった。{T}は{U}の手の甲に、祈るように口づけた。|{T}は{U}の汗ばんだ額に、そっと唇を寄せた。この人に触れていいのは、世界で自分だけでありたかった。{U}はそれに気づかないふりをして、{T}の髪を撫でた。|{T}は{U}の胸に耳を当て、その鼓動を聞いていた。信仰してきた人の音だった。{T}の目から、ひとすじ涙がこぼれた。')
+  };
+
+  /* ================= 男性向けの山場（擬音と♡）。体の組ごと ================= */
+  var ERO_PEAK = {
+    m: L('{s:hit}――{T}が奥を突き上げるたびに、{sO}の甘い匂いが部屋に溢れた。{U}「{mb2}」――{rel}の{T}に貫かれて、{U}はとろけた顔で何度もイった。{s:cum}――{T}は{U}の一番奥に、熱をたっぷりと注ぎ込んだ。|「{rel}なのに、こんな……っ♡」――{U}は自分の言葉に煽られるように、{T}のものをきゅうきゅうと締めつけた。{s:hit}{s:hit}――{T}は容赦なく腰を打ちつけた。{U}「{mb2}」――{s:cum}、奥で脈打つ熱に、{U}は舌を出したまま震えた。|{T}は{U}の腰を抱え直して、発情でとろとろになったナカを深く抉った。{s:wet}――溢れた蜜が太腿を伝う。{U}「{mb2}」――{s:cum}、{rel}の熱を注がれて、{U}はうなじを震わせながらイき続けた。'),
+    ff: L('{s:wet}――{T}の指が{U}のナカを掻き回すたびに、発情の蜜がとめどなく溢れた。{U}「{mb2}」――{rel}の{T}に一番弱いところを擦り上げられて、{U}は背中を反らせて何度もイった。{U}の太腿が、{T}の手首をぎゅっと挟み込んだ。|「{rel}の指で、こんなに……っ♡」――{U}は自分の言葉に真っ赤になりながら、腰を{T}の指に擦りつけた。{s:wet}{s:wet}――{T}がわざと音を立てて舐め上げると、{U}は甘く鳴いた。{U}「{mb2}」――{U}は痙攣しながら、{T}の髪を掴んで離さなかった。|{T}は{U}の花芯を舌で転がしながら、指を二本、奥まで沈めた。{s:wet}――{sO}の匂いが濃くなっていく。{U}「{mb2}」――{U}はびくびくと腰を跳ねさせて、{rel}の{T}の名前を呼びながらイった。'),
+    fm: L('{s:hit}――{T}は{U}の上で激しく腰を振り、{sO}の匂いを撒き散らした。{U}「{mb2}」――{rel}の{T}に搾り取られるように締めつけられて、{U}は堪えきれずに果てた。{s:cum}――{T}も{U}の上で背中を反らせて、甘い声を上げた。|「{rel}の上で、こんなに……っ♡」――{T}は{U}を見下ろしながら、根元まで咥え込んだ腰をぐりぐりと押しつけた。{s:wet}――繋がったところから、いやらしい音が響く。{U}「{mb2}」――{s:cum}、{U}は{T}の腰を掴んだまま、奥に何度も吐き出した。|{T}はわざと浅いところで腰を止め、{U}が自分から突き上げるのを待った。我慢できなくなった{U}が腰を跳ね上げると、{T}は♡の混じった声で笑った。{s:hit}――{U}「{mb2}」――{s:cum}、{U}は{rel}の{T}の中で果て、{T}もその熱に震えながらイった。')
+  };
+
+  /* ================= 事後（関係ごと。体の組によらない） ================= */
+  var AFTER = {
+    colleague: L('朝、{X}と{O}は同じ時間に目を覚ました。今日も職場で顔を合わせる。二人は「おはよう」の言い方を、いつもと少しだけ変えて練習した。|熱が引いたあと、{O}は{X}の腕の中で小さく笑った。{O}「明日、職場でどんな顔をすればいいの」{X}「いつもの顔でいい。私だけが知ってればいい」|{X}は{O}の首筋に残った自分の匂いを、指でそっとなぞった。月曜の職場で、誰かに気づかれるかもしれない。それでもかまわないと、{X}は思った。'),
+    classmate: L('熱が引いたあと、{X}と{O}は並んで天井を見上げた。{O}「学生のころの私に言っても、絶対に信じない」{X}「私も」――二人は顔を見合わせて笑った。|朝、{O}は{X}の寝顔を見ながら、同じクラスだったころの{X}を思い出していた。あのころ言えなかったことを、今夜は全部言えた気がした。{O}は{X}の髪を、そっと撫でた。|{X}は{O}の首筋に残る自分の匂いを確かめて、小さく息をついた。同窓会で会う誰も、二人のこの夜を知らない。それが少しだけ、誇らしかった。'),
+    relative: L('朝、{X}と{O}は親戚からの連絡に、どちらも返事をしなかった。家族の誰にも言えない夜だった。それでも二人は、繋いだ手を離さなかった。|熱が引いたあと、{O}は{X}の胸で小さく呟いた。{O}「次の親戚の集まり、どんな顔で行けばいいんだろう」{X}「いつもどおり。隣に座ればいい」|{X}は{O}の首筋に残った自分の匂いを、そっと指で隠した。親戚の誰かに気づかれたら、そのときは二人で受け止めればいい。{X}は{O}の額に口づけた。'),
+    boss: L('朝、{X}と{O}は別々の時間に家を出ることにした。職場では、上司と部下の顔に戻らなければならない。玄関で、二人は一度だけ長く口づけた。|熱が引いたあと、{O}は{X}の腕の中で言った。{O}「職場では、今までどおりでいて」{X}「無理だ」――{X}は笑って、{O}の髪に顔をうずめた。|週明けの職場で、{X}と{O}は何事もなかったように挨拶を交わした。けれど書類を受け渡す指先が、ほんの少しだけ長く触れていた。誰も気づかなかった。'),
+    benefactor: L('熱が引いたあと、{X}と{O}はしばらく黙って抱き合っていた。恩人と、恩を受けた側。その言葉はもう、二人のどちらにも似合わなかった。|朝、{O}は{X}の寝顔を見ながら、初めて会った日のことを思い出していた。あの日救われたものが、今夜ようやく形になった気がした。{O}は{X}の手を、そっと握った。|{X}は{O}の首筋に残った匂いを、指でなぞった。{X}「恩返しなんて、もういらない」――{O}は笑って、{X}の胸に顔をうずめた。'),
+    worship: L('熱が引いたあと、{X}と{O}は同じ毛布にくるまっていた。崇める者と崇められる者の距離は、今夜だけはどこにもなかった。祈りのような沈黙が、部屋を満たしていた。|朝、信仰を捧げてきた側は、相手の寝顔から目を離せなかった。夢ではないことを、何度も確かめた。触れた指先が、まだ震えていた。|{X}は{O}の首筋に残る匂いを、宝物のようにそっとなぞった。この夜のことは、一生忘れない。{X}はそれを、言葉にせずに胸にしまった。')
+  };
+
+  /* ================= 組み立て ================= */
+  var PRIO = ['worship', 'boss', 'benefactor', 'relative', 'classmate', 'colleague'];
+  function tieOf(ctx, a, b) {
+    for (var i = 0; i < PRIO.length; i++) { var t = HK.Ties.has(ctx, a, b, PRIO[i]); if (t) return t; }
+    return null;
+  }
+  function relWord(t, T) {
+    var isA = T.i === t.a;
+    return { colleague: '同僚', classmate: '同級生', relative: '親戚', boss: isA ? '上司' : '部下', benefactor: isA ? '恩人' : '昔助けた相手', worship: isA ? '自分を崇めてきた相手' : '崇めてきた相手' }[t.type];
+  }
+  function pk(ctx, arr) { var r = function (l) { return l[Math.floor(ctx.rng() * l.length)]; }; return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx, arr, r) : r(arr); }
+  function fillT(ctx, s, m) {
+    var t = String(s).replace(/\{sO\}/g, '{sb}').replace(/\{sX\}/g, '{sa}')
+      .replace(/\{rel\}/g, m.rel).replace(/\{T\}/g, m.T.name).replace(/\{U\}/g, m.U.name).replace(/\{O\}/g, m.O.name).replace(/\{X\}/g, m.X.name);
+    if (HK.ThickEro && HK.ThickEro.fill) t = HK.ThickEro.fill(ctx, t, m.T, m.U);
+    else if (HK.Ero && HK.Ero.fill) t = HK.Ero.fill(ctx, t, m.U);
+    return OM.sc ? OM.sc(t, m.X, m.O) : t;
+  }
+  var h0 = OM.HEAT.scene;
+  OM.HEAT.scene = function (ctx, a, b, opt) {
+    opt = opt || {};
+    var t = a && b && tieOf(ctx, a, b);
+    if (!t || !HK.Pos || (HK.tieNoLove && HK.tieNoLove(t)) || (HK.sexBlocked && HK.sexBlocked(a, b))) return h0.apply(this, arguments);
+    var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1];
+    var m = { T: T, U: U, O: b, X: a, rel: relWord(t, T) };
+    var lew = HK.Lewd ? HK.Lewd.lv(ctx.env) : (ctx.env.lewd || 'mid');
+    var after = fillT(ctx, pk(ctx, AFTER[t.type]), m);
+    if (lew === 'low') { var r0 = h0.apply(this, arguments); return r0 + after; }
+    var ero = !!(HK.Lewd && HK.Lewd.conf && HK.Lewd.conf('omega') && HK.Lewd.ero(ctx.env));
+    var kd = kindOf(T, U), D0 = HK.TIES[t.type], dk = D0 && D0.dir ? (b.i === t.a ? 'a' : 'b') : 'x';
+    var IN = INTRO[t.type], pool;
+    /* 信仰：支配している側が攻めなら、支配の導入 */
+    if (t.type === 'worship' && t.cold === 'dominate' && T.i === t.b) pool = IN.dom[kd];
+    else pool = IN[dk][kd].concat(INTRO_ANY[t.type][dk] || []);
+    /* @TO＝攻めが発情期の人のときだけ／@TX＝攻めが相手のときだけの文 */
+    var tO = T === b;
+    pool = pool.filter(function (x) { return !/^@T[OX] /.test(x) || (x.slice(0, 4) === (tO ? '@TO ' : '@TX ')); }).map(function (x) { return x.replace(/^@T[OX] /, ''); });
+    var intro = fillT(ctx, pk(ctx, pool), m);
+    /* 山場：男性向けは擬音と♡、小説調は受ける側の態度9種（信仰は一言添える） */
+    var peak = fillT(ctx, pk(ctx, ero ? ERO_PEAK[kd] : PEAK[ps(U)]), m);
+    if (!ero && t.type === 'worship') peak += fillT(ctx, pk(ctx, PEAK_W[U.i === t.a ? 'U_believer' : 'U_worshipped']), m);
+    var thick = HK.Lewd ? !(HK.Lewd.short(ctx.env, function () { return 0.99; })) : true;
+    var br = thick ? '\n\n' : '';
+    var o2 = {}; for (var k in opt) o2[k] = opt[k];
+    if (!ero) o2.insert = (opt.insert ? opt.insert + br : '') + peak;
+    var s = h0.call(this, ctx, a, b, o2);
+    if (typeof s !== 'string') return s;
+    if (ero) {
+      /* 男性向けの場面は opt.insert を使わないので、最後の段（事後）の前に山場を入れる */
+      var parts = s.split('\n\n');
+      if (parts.length >= 3) { parts.splice(parts.length - 1, 0, peak); s = parts.join('\n\n'); }
+      else s += br + peak;
+    }
+    return intro + br + s + br + after;
+  };
+  OM.TIE_R18 = { INTRO: INTRO, INTRO_ANY: INTRO_ANY, PEAK: PEAK, PEAK_W: PEAK_W, ERO_PEAK: ERO_PEAK, AFTER: AFTER };
 })();
 ;/* ==== js/island-cook.js ==== */
 /* 箱庭診断: 無人島の料理（食材の種類×腕前×味付けで献立を組む）と、料理の手伝いイベント */
@@ -18509,8 +19966,8 @@
     if (HK.Ties && HK.Ties.from && HK.Ties.from(ctx, a, b, 'crush') && HK.Ties.from(ctx, b, a, 'crush')) return 'pining';
     if (tie(ctx, a, b, 'crush') || tie(ctx, a, b, 'almost')) return 'crush';
     if (tie(ctx, a, b, 'rival') || tie(ctx, a, b, 'enemy')) return 'rival';
-    if (tie(ctx, a, b, 'colleague') || tie(ctx, a, b, 'senpai')) return 'work';
-    if (tie(ctx, a, b, 'friend') || tie(ctx, a, b, 'best') || tie(ctx, a, b, 'childhood') || tie(ctx, a, b, 'buddy')) return 'friend';
+    if (tie(ctx, a, b, 'colleague') || tie(ctx, a, b, 'senpai') || tie(ctx, a, b, 'boss')) return 'work';
+    if (tie(ctx, a, b, 'friend') || tie(ctx, a, b, 'best') || tie(ctx, a, b, 'childhood') || tie(ctx, a, b, 'buddy') || tie(ctx, a, b, 'classmate')) return 'friend';
     if (pf.kgHot) return 'king';
     if (pf.couple) return 'newCouple';
     if (dr > 60) return 'tipsy';
@@ -23501,6 +24958,8 @@
     if (Z.cureDest) { var cd = Z.cureDest(ctx, c); if (cd != null) return cd; }
     /* 執着している相手を探す（obsess-install.js） */
     if (Z.obsDest) { var od = Z.obsDest(ctx, c); if (od != null) return od; }
+    /* はぐれた大切な人を探す（zombie-seek.js） */
+    if (Z.seekDest && g === 'seek') { var sd = Z.seekDest(ctx, c); if (sd != null) return sd; }
     if (ctx.env.end === 'burn' && (z.know.burn || day(ctx) >= ctx.env.days - 1)) return exitArea(ctx, c);
     if (lastDay(ctx) && z.heliAt != null) return z.heliAt;
     if (g === 'escape') return exitArea(ctx, c);
@@ -23547,14 +25006,14 @@
   function moveAll(ctx) {
     var rng = ctx.rng, night = part(ctx) === 3, lines = [];
     groups(ctx).forEach(function (g) {
-      var lead = ctx.most(g, function (c) { return c.tr.lead + (c.goal.id === 'escape' || c.goal.id === 'family' ? 0.2 : c.goal.id === 'obsess' ? 0.35 : 0); });
+      var lead = ctx.most(g, function (c) { return c.tr.lead + (c.goal.id === 'escape' || c.goal.id === 'family' ? 0.2 : c.goal.id === 'obsess' ? 0.35 : c.goal.id === 'seek' ? 0.3 : 0); });
       var gd = destOf(ctx, lead);
       /* 行き先の違う仲間は、別行動を選ぶことがある */
       var go = g.slice();
       if (g.length > 1) g.forEach(function (c) {
         if (c === lead) return;
         var d = destOf(ctx, c);
-        if (d !== gd && d !== c.z.area && (c.goal.id === 'family' || c.goal.id === 'protect' || c.goal.id === 'obsess' || (c.goal.id === 'escape' && rng() < 0.4)) && rng() < (c.goal.id === 'obsess' ? 0.85 : 0.55) - ctx.R(c, lead).aff / 250) {
+        if (d !== gd && d !== c.z.area && (c.goal.id === 'family' || c.goal.id === 'protect' || c.goal.id === 'obsess' || c.goal.id === 'seek' || (c.goal.id === 'escape' && rng() < 0.4)) && rng() < (c.goal.id === 'obsess' || (Z.seekBold && Z.seekBold(ctx, c)) ? 0.85 : c.goal.id === 'seek' ? 0.6 : 0.55) - ctx.R(c, lead).aff / 250) {
           go.splice(go.indexOf(c), 1);
           moveOne(ctx, [c], d, lines);
           ctx.act2({ actors: [c, lead], cat: 'solo', fx: function () { ctx.mod2(c, lead, { trust: -3 }, { trust: -2, ten: 3 }); }, text: ctx.t(ctx.pick(['{a}は「ここで別れる」と言った。{b}が止める前に、{a}はもう背中を向けていた。', '{a}は{b}たちに頭を下げて、一人で' + an(ctx, Z.step(c.z.area === d ? lead.z.area : c.z.path[c.z.path.length - 1], d)) + 'の方へ歩き出した。', '「行かなきゃいけない場所がある」――{a}は{b}の制止を振り切った。']), c, lead), why: c.name + 'の目標「' + c.goal.label + '」が、群れの行き先と違った' });
@@ -23562,7 +25021,8 @@
       });
       if (!go.length || gd === lead.z.area) return;
       /* 夜は動かない（執着している相手を探している人は、夜でも出ていくことがある） */
-      if (night && rng() < (lead.goal.id === 'obsess' ? 0.35 : 0.75) && AR(ctx, lead.z.area).z < 70) return;
+      /* 探している相手が執着・信仰の相手なら、夜でも危険を顧みずに出ていく（zombie-seek.js） */
+      if (night && rng() < (lead.goal.id === 'obsess' ? 0.35 : Z.seekBold && Z.seekBold(ctx, lead) ? 0.2 : lead.goal.id === 'seek' ? 0.6 : 0.75) && AR(ctx, lead.z.area).z < 70) return;
       moveOne(ctx, go, gd, lines);
     });
     if (lines.length) ctx.say({ kind: 'phase', cat: 'phase', text: '移動：' + lines.join('／') });
@@ -23680,6 +25140,8 @@
   function victim(ctx, g, v, A) {
     var rng = ctx.rng, out = { text: '', why: '', mag: 28, with: [] };
     var others = g.filter(function (o) { return o !== v; });
+    /* 関係ならではの動き（上司が残る・恩返し・信仰する側が盾になる・支配する側が囮を命じる・親族が引き戻す。zombie-bonds.js） */
+    if (Z.tieVictim) { var tv = Z.tieVictim(ctx, g, v, A); if (tv) return tv; }
     /* 身代わり：Vを想う者が前に出る */
     var saver = others.filter(function (o) { return ctx.R(o, v).aff > 45 && o.tr.np > 0.5; }).sort(function (x, y) { return ctx.R(y, v).aff - ctx.R(x, v).aff; })[0];
     if (saver && rng() < 0.18 + saver.tr.np * 0.3) {
@@ -25684,6 +27146,17 @@
     ex: L('「別れたあとも、結局頼ってばかりだった。ごめん。それから、ありがとう。」|「あのころ、もっと素直になればよかった。……今さら遅いけど。」|「次は、ちゃんと幸せになって。ほかの誰かと。」'),
     rival: L('「勝負は、お前の勝ちでいい。だから、絶対に生き残れ。負けたら許さない。」|「最後まで張り合えて、楽しかった。……絶対に言わないつもりだったけど。」|「決着は、あの世でつける。それまで来るなよ。」'),
     enemy: L('「お前のことは最後まで嫌いだった。でも、死ねとは思ってない。」|「これで清々するだろう。……せいぜい、長生きしろ。」|「借りは返した。これで、貸し借りなしだ。」'),
+    /* 新しい関係：執着（信仰）・恩人・上司と部下・同級生・親族・執着（ヤンデレ） */
+    worshipA: L('「{b}のために生きられて、幸せだった。これからも、遠くから祈ってる。」|「{b}は、私のすべてだった。だから、私のことで泣かないで。{b}が笑っていてくれれば、それでいい。」|「最後まで盾でいられなかった。ごめん。どうか生きて。それだけが、最後の願い。」'),
+    worshipB: L('「{b}へ。私を追ってこないで。{b}の命は、{b}のものだ。」|「ずっと支えてくれてありがとう。これからは、自分のために生きて。」|「{b}が信じてくれたから、ここまで来られた。でも、もう私を探さなくていい。」'),
+    beneA: L('「恩なんて、もう十分返してもらった。これからは、自分のために生きて。」|「あの日{b}を助けたことは、私の人生でいちばんいい選択だった。」|「借りを返そうなんて思わなくていい。生きていてくれれば、それで十分。」'),
+    beneB: L('「受けた恩を、最後まで返しきれなかった。それだけが心残り。」|「{b}に救ってもらった命を、ここで手放すことを許して。」|「あの日、手を差し伸べてくれてありがとう。おかげで、いい人生だった。」'),
+    bossA: L('「最後の指示だ。私を探すな。生き延びて、皆をまとめろ。」|「{b}は、私の自慢の部下だった。あとは任せる。」|「上司らしいことを、最後に一つだけ。振り返らずに行け。」'),
+    bossB: L('「最後に勝手なことをして、すみません。仕事のことも、それ以外のことも、教わってばかりでした。」|「{b}の下で働けてよかった。どうか、生き延びてください。」|「報告します。私は、ここまでです。お世話になりました。」'),
+    classmate: L('「学生のころ、もっと話しておけばよかった。また会えて嬉しかった。」|「卒業アルバムの寄せ書き、覚えてる？　あそこに書いたこと、本当だったよ。」|「同じクラスでよかった。元気で。」'),
+    relative: L('「親戚の皆に会ったら、よろしく伝えて。私の分まで、家族を頼む。」|「子どものころ、親戚の集まりで遊んでもらったこと、ずっと覚えてる。ありがとう。」|「家族のこと、頼んだ。{b}なら、きっと大丈夫。」'),
+    yanA: L('「{b}を一人にしたくなかった。ずっと、ずっと見てた。……ごめんね、最後まで重くて。」|「私がいなくなっても、{b}が誰かのものになるのは嫌。でも、生きて。それだけは、本当。」'),
+    yanB: L('「追いかけてこないで。今度だけは、言うことを聞いて。」|「{b}の気持ちは、重かった。でも、嫌いじゃなかった。」'),
     friend: L('「今までありがとう。楽しかったよ。」|「急にいなくなって、ごめん。理由は、聞かないで。」|「生き延びて、いつか誰かに、この話をしてやって。」'),
     colleague: L('「お疲れさまでした。引き継ぎは、できませんでした。」|「職場で隣の席だったころが、今はすごく懐かしいです。どうかお元気で。」|「最後の業務連絡です。生き延びてください。以上。」'),
     acq: L('「短いあいだでしたが、お世話になりました。」|「名前くらいしか知らないのに、ここまで一緒に来てくれてありがとう。」|「どうか、ご無事で。」'),
@@ -25730,7 +27203,15 @@
       if (T.from(ctx, b, a, 'senpai')) return 'kohai';
       if (T.from(ctx, a, b, 'master')) return 'master';
       if (T.from(ctx, b, a, 'master')) return 'servant';
-      var order = ['sibling', 'best', 'buddy', 'childhood', 'almost', 'fwb', 'ex', 'rival', 'enemy', 'friend', 'colleague', 'acq'];
+      if (T.from(ctx, a, b, 'worship')) return 'worshipA';
+      if (T.from(ctx, b, a, 'worship')) return 'worshipB';
+      if (T.from(ctx, a, b, 'yan')) return 'yanA';
+      if (T.from(ctx, b, a, 'yan')) return 'yanB';
+      if (T.from(ctx, a, b, 'benefactor')) return 'beneA';
+      if (T.from(ctx, b, a, 'benefactor')) return 'beneB';
+      if (T.from(ctx, a, b, 'boss')) return 'bossA';
+      if (T.from(ctx, b, a, 'boss')) return 'bossB';
+      var order = ['sibling', 'relative', 'best', 'buddy', 'childhood', 'almost', 'fwb', 'ex', 'rival', 'enemy', 'friend', 'classmate', 'colleague', 'acq'];
       for (var i = 0; i < order.length; i++) if (T.has(ctx, a, b, order[i])) return order[i];
       if (T.has(ctx, a, b, 'fated') || T.has(ctx, a, b, 'mate')) return 'almost';
     }
@@ -25776,6 +27257,303 @@
       return t;
     };
   }
+})();
+;/* ==== js/zombie-seek.js ==== */
+/* 箱庭シミュレーター: ゾンビの街 ― はぐれた大切な人を探す（目標「〇〇を探す」）
+   ・別のエリアにいる（まだ会えていない・はぐれた）相手との関係が深いほど、目標が「〇〇を探す」に変わりやすい。
+     深さは grief-kit.js の HK.Grief.depth（関係の種類＋好意・信頼・惹かれ）。執着（ヤンデレ）・執着（信仰）の側は特に強く、危険を顧みない
+   ・噂を聞き回って居場所の見当をつけ（情報の錯綜が高いほど外れやすい）、群れを離れても、夜でもそこへ向かう（zombie-core.js の destOf・moveAll）
+   ・見つからないあいだは焦りが募る。見つけたら「大切な人を守る」に変わる（初めての合流なら zombie-reunion.js の再会の場面に重ねる）
+   ・相手が死ぬか街を出たら、元の目標に戻る
+   ・執着の目標「〇〇と会う」（obsess-install.js）が付いている人は、そちらに任せる */
+(function () {
+  'use strict';
+  var HK = window.HK, Z = HK.ZB;
+  if (!Z || !Z.scen) return;
+  var scen = Z.scen, EV = scen.events;
+  function L(s) { return s.split('|'); }
+  function fill(t, m) { return String(t).replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
+  function free(a) { return a && a.alive && !a.out && a.z && !a.z.alone && !a.z.vanished && a.z.cult == null && !a.z.bitten && !(a.flags && a.flags.caged != null); }
+  function present(o) { return o && o.alive && !o.out && o.z; }
+
+  /* ---------- a から見た o との関係（探し方・文の分け方） ---------- */
+  function kind(ctx, a, o) {
+    var T = HK.Ties;
+    if (!T) return 'care';
+    if (T.from(ctx, a, o, 'worship')) return 'worship';
+    if (T.from(ctx, a, o, 'yan')) return 'yan';
+    var all = T.all(ctx, a, o);
+    function has(t) { return all.some(function (x) { return x.type === t; }); }
+    if (has('lover') || has('mate') || has('fated') || ctx.pair(a, o).couple) return 'lover';
+    if (T.from(ctx, a, o, 'parent') || T.from(ctx, a, o, 'pparent')) return 'parent';
+    if (T.from(ctx, o, a, 'parent') || T.from(ctx, o, a, 'pparent')) return 'child';
+    if (has('sibling') || has('sibprot') || has('sibclose') || has('sibbad')) return 'sib';
+    if (has('relative')) return 'relative';
+    if (T.from(ctx, a, o, 'benefactor')) return 'beneA';
+    if (T.from(ctx, o, a, 'benefactor')) return 'beneB';
+    if (T.from(ctx, a, o, 'boss')) return 'bossA';
+    if (T.from(ctx, o, a, 'boss')) return 'bossB';
+    if (T.from(ctx, o, a, 'worship')) return 'worshipped';
+    if (T.from(ctx, a, o, 'crush') || has('almost')) return 'crush';
+    if (has('best') || has('childhood') || has('buddy')) return 'best';
+    if (has('classmate')) return 'classmate';
+    if (has('colleague') || has('senpai')) return 'colleague';
+    return 'care';
+  }
+  var GROUP = { lover: 'love', crush: 'love', parent: 'fam', child: 'fam', sib: 'fam', relative: 'fam', beneA: 'bene', beneB: 'bene', bossA: 'boss', bossB: 'boss', worship: 'worship', yan: 'yan', worshipped: 'friend', best: 'friend', classmate: 'friend', colleague: 'friend', care: 'friend' };
+  var KNAME = { lover: '恋人', crush: '想いを寄せる相手', parent: '我が子', child: '親', sib: 'きょうだい', relative: '親族', beneA: 'かつて助けた相手', beneB: '恩人', bossA: '部下', bossB: '上司', worship: '信仰する相手', yan: '執着する相手', worshipped: '自分を慕う相手', best: '親友', classmate: '同級生', colleague: '同僚', care: '大切な相手' };
+  /* 執着・信仰する側：危険を顧みず探しに行く */
+  function bold(k) { return k === 'worship' || k === 'yan'; }
+  /* 関係の深さ（grief-kit の深さ。読み込まれていなければ好意から） */
+  function depth(ctx, a, o) {
+    if (HK.Grief && HK.Grief.depth) return HK.Grief.depth(ctx, a, o).d;
+    var r = ctx.R(a, o);
+    return Math.max(0, r.aff) * 0.8 + Math.max(0, r.trust) * 0.3;
+  }
+  Z.seekKind = kind;
+  Z.seekDepth = depth;
+
+  /* ---------- 文 ---------- */
+  var GO = {
+    lover: L('{a}は、{b}がいないまま夜を越すことに耐えられなかった。{a}「{b}を探しに行く。止めても無駄だ」|{a}は{b}と最後に交わした言葉を思い出していた。あれが最後になるなんて、認めない。{a}は黙って荷物をまとめた。|{a}は、{b}の笑った顔ばかり思い出していた。{a}「{b}は生きてる。迎えに行く」'),
+    parent: L('{a}は{b}の名前を何度もつぶやいた。我が子がこの街のどこかにいる。それだけで、じっとしてはいられなかった。|{a}「{b}を探す。親が探さないで、誰が探すんだ」――{a}の声は、少しも震えていなかった。'),
+    child: L('{a}は、{b}がまだどこかで自分を待っている気がしてならなかった。{a}「親を探しに行く。……一人でも」|{a}は{b}の顔を思い浮かべて、唇を噛んだ。今度は、自分が迎えに行く番だった。'),
+    sib: L('{a}は{b}のことを考えていた。きょうだいなら、きっとどこかで踏ん張っている。{a}「{b}を探しに行く」|{a}「{b}のことだ、どうせ無茶をしてる。迎えに行ってやらないと」――{a}は笑ってみせたが、目は笑っていなかった。'),
+    relative: L('{a}は、{b}のことが頭から離れなかった。同じ家に住んでいなくても、親族は親族だ。{a}「{b}を探す。放ってはおけない」|{a}は、親戚の集まりで{b}と並んで座った日のことを思い出した。あの顔を、もう一度見たかった。'),
+    beneA: L('{a}は、かつて手を差し伸べた{b}のことを思った。あのとき助けた命を、こんなところで終わらせたくない。{a}「{b}を探しに行く」|{a}「{b}は一人で抱え込む性分だ。誰かが行ってやらないと」――{a}は立ち上がった。'),
+    beneB: L('{a}は、{b}に救われた日のことを思い出していた。今度は自分が恩を返す番だ。{a}「{b}を探す。この命は、{b}にもらったものだから」|{a}「{b}がいなければ、私はとっくにいなかった」――{a}は迷わず、外へ出る支度を始めた。'),
+    bossA: L('{a}は、散り散りになった部下のことを考えていた。{a}「{b}を探す。部下を置いて、上の人間だけ逃げるわけにはいかない」|{a}は{b}の仕事ぶりを思い出した。几帳面で、無理をする部下だった。{a}は黙って装備を確かめた。'),
+    bossB: L('{a}は、{b}の指示がない心細さに気づいた。いつも先頭にいた背中が、今はどこにもない。{a}「{b}を探しに行く」|{a}「{b}は、きっと誰かをかばって無茶をしてる」――{a}は、上司の性分をよく知っていた。'),
+    worship: L('{a}にとって、{b}のいない世界には何の意味もなかった。{a}「{b}を探す。{b}のためなら、この身がどうなってもいい」|{a}は祈るように手を組み、{b}の名前を唱えた。それから、群れのうろつく通りへ迷わず踏み出した。|{a}「{b}が生きている限り、私も生きる。だから、探す」――{a}の目には、もう{b}しか映っていなかった。'),
+    worshipped: L('{a}は、いつもそばにいた{b}の姿がないことに、思いのほか動揺していた。{a}「……{b}を探しに行く」|{a}は、{b}がいつも自分の後ろを歩いていたことを思い出した。振り返っても、そこには誰もいなかった。'),
+    yan: L('{a}は、{b}が自分の目の届かないところにいることが、何より耐えられなかった。{a}「{b}を見つける。誰より先に」|{a}は爪を噛みながら、地図の上の{b}がいそうな場所に印をつけた。印は、街じゅうに増えていった。'),
+    crush: L('{a}は、{b}に想いを伝えないまま離ればなれになったことを悔やんでいた。{a}「{b}を探す。言いたいことが、まだ残ってる」|{a}は{b}の声を思い出して、胸を押さえた。会えないまま終わるのは、嫌だった。'),
+    best: L('{a}には、{b}がどこで踏ん張っているか、手に取るように分かる気がした。{a}「{b}を迎えに行く。一人にはさせない」|{a}「{b}が死ぬわけがない。……だから、探しに行く」'),
+    classmate: L('{a}は、学生のころ同じクラスだった{b}の顔を思い出した。あの頃の仲間で、生きていると信じられるのは{b}だけだった。{a}「{b}を探す」|{a}は、教室の窓際で{b}と話した放課後を思い出していた。{a}「{b}を見つけて、あの頃の話をしたい」'),
+    colleague: L('{a}は、同じ職場の{b}のことを考えていた。{a}「{b}を探す。仕事仲間を見捨てるのは、性に合わない」|{a}は、職場で毎朝顔を合わせていた{b}を思い出した。あの挨拶が、急に恋しくなった。'),
+    care: L('{a}は、{b}のことが気がかりでならなかった。{a}「{b}を探しに行く」|{a}は、別れ際の{b}の顔を思い出していた。あのまま、終わりにしたくなかった。')
+  };
+  var ASK = {
+    base: L('{a}は出会う生存者ごとに、{b}の背格好を伝えて回った。|{a}は避難所の掲示板に貼られた尋ね人の紙を、端から一枚ずつ確かめた。|{a}は壁に「{b}へ。{area}にいる」と書き残し、自分の名前を添えた。|{a}は崩れた交番の無線機で、{b}の名前を何度も呼びかけた。'),
+    worship: L('{a}はゾンビのうろつく大通りの真ん中で、{b}の名前を叫んだ。呻き声が近づいてきても、{a}は呼ぶのをやめなかった。|{a}は群れの切れ目を突っ切って、向こう側にいた生存者に{b}のことを訊きに行った。|{a}は崩れかけた建物に一人で入り、部屋という部屋をのぞいて回った。{b}がそこにいるかもしれない、それだけの理由だった。'),
+    yan: L('{a}は{b}の足跡らしきものを、地面に這いつくばって追った。|{a}は{b}を見かけたという生存者の肩を掴み、何度も同じことを訊き直した。|{a}は{b}が通りそうな道に、一人で夜通し立っていた。')
+  };
+  var HEARD = L('{p}で{b}を見た、という話が聞けた。{a}の顔に、ようやく血の気が戻った。|{p}の方で、{b}によく似た人を見たという噂が耳に入った。{a}はすぐに地図を広げた。');
+  var NOHEAR = L('{b}を見た人はいなかった。{a}は「生きてる」と、自分に言い聞かせた。|手がかりは何もなかった。{a}は人のいない通りを、長いあいだ見つめていた。');
+  var RISK = L('――叫び声に引き寄せられたゾンビが、{a}に掴みかかった。振りほどいたとき、腕にはっきりと歯形が残っていた。|――物陰から伸びてきた手が、{a}の足首を掴んだ。{a}が気づいたときには、ふくらはぎを咬まれていた。');
+  var HURT = L('――飛び出してきたゾンビを振り払うとき、{a}は腕を深く切った。それでも、{a}は止まらなかった。|――{a}は群れに追われて転び、膝をひどく擦りむいた。痛みより、{b}の手がかりのほうが大事だった。');
+  var FRET = {
+    love: L('{a}は眠れなかった。{b}が今どこで、どんな目に遭っているのか。考えるたびに胸が潰れそうだった。|{a}は{b}の写真を何度も見返した。画面が暗くなるたび、また明かりをつけた。電池が減っていくのも構わなかった。|{a}「{b}、どこにいるの」――つぶやいた声は、夜の呻き声にかき消された。'),
+    fam: L('{a}は{b}の好物の缶詰を見つけて、鞄にしまった。会えたら渡す。そう決めておかないと、立っていられなかった。|{a}「どこにいるんだ、{b}」――つぶやいた声は、夜の呻き声にかき消された。|{a}は、{b}がまだ小さかったころの顔ばかり思い出していた。いまの{b}がどこにいるのか、誰も知らなかった。'),
+    bene: L('{a}は、{b}に何ひとつ返せていないことばかり考えていた。このまま会えなかったら――その先は、考えたくなかった。|{a}は{b}にもらった言葉を、口の中で何度も繰り返した。そうしていないと、焦りで叫び出しそうだった。'),
+    boss: L('{a}は時計を見た。{b}と最後に言葉を交わしてから、もうずいぶん経つ。{a}「……遅い」|{a}は{b}ならどう動くかを考えた。考えるほど、{b}が危ない場所にいる気がしてならなかった。'),
+    worship: L('{a}は{b}の名前を唱え続けていた。食べることも眠ることも、もうどうでもよかった。{a}「{b}のいない朝なんて、来なくていい」|{a}は自分の腕に爪を立てて、痛みで焦りをごまかした。{b}が見つかるまで、休むことは許されない気がした。|{a}は夜の街へ出ようとして、扉の前で止められた。{a}「{b}が待ってる。行かせて」――{a}は本気で、止めた手を振りほどこうとした。'),
+    yan: L('{a}は、{b}が自分以外の誰かと一緒にいるかもしれないと考えて、壁を殴った。拳から血がにじんでも、{a}は気づかなかった。|{a}は{b}の名前を、手帳の端から端まで書き連ねていた。|{a}「{b}は私のことを待ってる。待ってるに決まってる」――{a}は誰に言うでもなく、同じ言葉を繰り返した。'),
+    friend: L('{a}は{b}のことを考えて、何度も通りの向こうに目をやった。|{a}「{b}なら、きっと大丈夫だ」――そう言いながら、{a}の足はそわそわと落ち着かなかった。')
+  };
+  var FOUND = {
+    love: L('{a}はついに{b}を見つけた。走り寄って抱きしめると、{b}の体温が確かにそこにあった。{a}「探した。……もう離れない」|{a}は{area}で{b}の背中を見つけて、名前を叫んだ。振り向いた{b}の顔を見た瞬間、{a}の膝から力が抜けた。'),
+    fam: L('{a}は{area}で{b}の姿を見つけて、その場に崩れ落ちそうになった。{a}「よかった……本当に、よかった」――{a}は{b}の手を握って離さなかった。|{a}は{area}で{b}を見つけるなり、全身に傷がないか確かめた。{a}「探したんだぞ。……無事でよかった」'),
+    bene: L('{a}は{area}で{b}を見つけた。{a}「やっと会えた。今度は、私が力になる番だ」|{a}は{area}で{b}の無事な姿を見て、深く頭を下げた。顔を上げたとき、{a}の目は赤くなっていた。'),
+    boss: L('{a}は{area}で{b}と合流した。{a}「無事か」――短い言葉に、探し回った時間の重さがこもっていた。|{a}は{area}で{b}を見つけて、大きく息を吐いた。{a}「よかった。……本当に、よかった」'),
+    worship: L('{a}は{area}で{b}を見つけた瞬間、膝をついた。{a}「{b}……生きていてくれた」――{a}は{b}の足元で、子どものように泣いた。|{a}は{b}の姿を見つけて、震える手を伸ばした。触れていいのか分からず、指先は{b}の袖の手前で止まった。{a}「探しました。ずっと」'),
+    yan: L('{a}は{area}で{b}を見つけると、腕を掴んで引き寄せた。{a}「どこに行ってたの。……もう、目を離さない」|{a}は{b}の顔を両手で挟んで、何度も確かめた。{a}「本物だ。{b}だ。……もう、どこにも行かせない」'),
+    friend: L('{a}は{area}で{b}を見つけて、大きく手を振った。{a}「やっと見つけた！」|{a}は{area}で{b}の肩を叩いた。{a}「探したぞ。生きててよかった」')
+  };
+  /* 信仰される側の返し（相手の気持ちで変わる） */
+  var WB_RE = {
+    '': L('{b}は、自分を探し回っていたという{a}の話に、目を丸くした。'),
+    accept: L('{b}は{a}の頭にそっと手を置いた。{b}「よく来た。……ありがとう」'),
+    confused: L('{b}は困ったように目をそらした。{b}「そこまでしなくても……」――それでも{a}は、{b}の無事を喜び続けていた。'),
+    dominate: L('{b}は足元の{a}を見下ろした。{b}「遅い。……まあいい、ついてこい」――{a}は、それだけで救われたような顔をした。'),
+    cherish: L('{b}は{a}を立たせて、まっすぐ目を見た。{b}「探してくれてありがとう。{a}も、無事でよかった」')
+  };
+  /* 再会の場面に重ねる一言（初めての合流のとき） */
+  var SOUGHT = {
+    base: L('{a}は、ずっと{b}を探して街を歩き回っていた。|{a}は、{b}を探して、いくつものエリアを越えてきたのだった。'),
+    worship: L('{a}は群れのいる通りを何度も越えて、{b}を探し続けてきたのだった。服は破れ、腕には擦り傷がいくつもあった。|{a}は、{b}を探すために、危険と言われる場所ばかりを選んで歩いてきた。'),
+    yan: L('{a}は、{b}のいそうな場所を一つ残らず回ってきたのだった。その目は、少し血走っていた。')
+  };
+  var LOST = {
+    dead: L('{a}は、探していた{b}がもういないと知った。足元が崩れていくようだった。|{a}は、{b}がもうこの世にいないと聞いた。握りしめていた地図が、手から落ちた。'),
+    deadW: L('{a}は、{b}がもうこの世にいないと知った。{a}は何も言わなかった。祈る言葉も、もう出てこなかった。'),
+    deadY: L('{a}は、{b}がもうこの世にいないと知った。{a}「嘘。{b}は私を置いていかない」――{a}は笑おうとして、うまく笑えなかった。'),
+    out: L('{a}は、{b}がすでに街を出たと知った。安堵と寂しさが、同時に押し寄せた。|{a}は、{b}が救助されて街を離れたと聞いた。{a}「……そうか。よかった」')
+  };
+
+  /* ---------- 目標 ---------- */
+  function goalObj(T) { return { id: 'seek', label: T.name + 'を探す', bias: { help: 1.15, bond: 1.2, solo: 1.1 } }; }
+  function goalText(a, from) { return a.name + 'の目標が変わった：「' + from + '」→「' + a.goal.label + '」'; }
+  function protectGoal() { return scen.goals.filter(function (g) { return g.id === 'protect'; })[0]; }
+  function target(ctx, a) { return a.goal && a.goal.id === 'seek' && a.z.skT != null ? ctx.chars[a.z.skT] : null; }
+  Z.seekTarget = target;
+  Z.seekBold = function (ctx, a) { var T = target(ctx, a); return !!(T && bold(kind(ctx, a, T))); };
+  /* 探しに行く気持ちの強さ（区切りごとの確率）。深さが 52 を超えたぶんだけ上がる */
+  function urge(ctx, a, o) {
+    var d = depth(ctx, a, o), k = kind(ctx, a, o);
+    var p = HK.clamp((d - 52) / 220, 0, 0.35);
+    if (!p) return { p: 0, d: d, k: k };
+    p *= 0.7 + (a.tr.warmth || 0.5) * 0.6;
+    p *= 1 - (a.tr.cold || 0) * 0.4;
+    if (bold(k)) p *= 2.2;
+    else if (k === 'lover' || k === 'parent' || k === 'child') p *= 1.25;
+    else if (k === 'beneB') p *= 1.2;
+    if (a.action && a.action.id === 'seek') p *= 1.4;
+    if (a.goal.id === 'chaos') p *= 0.4;
+    if ((a.z.skQuit || {})[o.i] != null && ctx.stepIndex - a.z.skQuit[o.i] < 8) p *= 0.2;
+    return { p: Math.min(0.9, p), d: d, k: k };
+  }
+  function eligible(ctx, a) {
+    if (!free(a) || !a.goal) return false;
+    var g = a.goal.id;
+    if (g === 'seek' || g === 'obsess') return false;
+    return true;
+  }
+  /* 探したい相手（別のエリアにいて、いちばん深い人） */
+  function pickT(ctx, a) {
+    var best = null;
+    ctx.chars.forEach(function (o) {
+      if (o === a || !present(o) || o.z.area === a.z.area) return;
+      if (a.goal.id === 'protect' && a.focus === o) return;
+      if (a.goal.id === 'family' && a.z.family && a.z.family.pc === o.i) return;
+      var u = urge(ctx, a, o);
+      if (u.p > 0 && (!best || u.d > best.d)) { best = u; best.o = o; }
+    });
+    return best;
+  }
+  function start(ctx, a, u) {
+    var T = u.o, from = a.goal.label;
+    a.z.skPrev = a.goal; a.z.skT = T.i; a.z.skKnow = null; a.z.skAt = ctx.stepIndex; a.z.skFret = ctx.stepIndex; a.z.skFrets = 0; a.z.skK = u.k;
+    a.goal = goalObj(T); a.goalHist = (a.goalHist || []).concat([a.goal]);
+    a.z.skCount = (a.z.skCount || 0) + 1;
+    ctx.stress(a, bold(u.k) ? 10 : 5);
+    var m = { a: a.name, b: T.name, area: Z.an(ctx, a.z.area) };
+    ctx.act2({ actors: [a, T], cat: 'solo', text: ctx.t(fill(ctx.pick(GO[u.k] || GO.care), m), a, T) + goalText(a, from),
+      why: a.name + 'にとって' + T.name + 'は' + KNAME[u.k] + '（関係の深さ ' + Math.round(u.d) + '）。別の場所にいて、まだ会えていない' + (bold(u.k) ? '／' + (u.k === 'worship' ? '信仰' : '執着') + 'する側は、危険を顧みずに探しに行く' : ''), mag: 14 + (bold(u.k) ? 6 : 0) });
+  }
+  function done(ctx, a, T, how) {
+    var from = a.goal.label, k = a.z.skK || kind(ctx, a, T);
+    if (how === 'found') { var P = protectGoal(); a.goal = P || a.z.skPrev; a.focus = T; }
+    else { a.goal = a.z.skPrev || scen.goals[0]; if (how === 'quit') (a.z.skQuit = a.z.skQuit || {})[T.i] = ctx.stepIndex; }
+    a.goalHist = (a.goalHist || []).concat([a.goal.id || a.goal]);
+    a.z.skT = null; a.z.skKnow = null;
+    return goalText(a, from);
+  }
+  /* 見つけたときの文（再会の場面でないとき） */
+  function foundText(ctx, a, T) {
+    var k = a.z.skK || kind(ctx, a, T), g = GROUP[k] || 'friend', m = { a: a.name, b: T.name, area: Z.an(ctx, a.z.area) };
+    var t = ctx.t(fill(ctx.pick(FOUND[g]), m), a, T);
+    if (k === 'worship') { var wt = HK.Ties.from(ctx, a, T, 'worship'), re = WB_RE[(wt && wt.cold) || ''] || WB_RE['']; t += ctx.t(fill(ctx.pick(re), m), a, T); }
+    return t;
+  }
+  function foundFx(ctx, a, T, k) {
+    ctx.mod2(a, T, { aff: 6, trust: 5 }, { aff: bold(k) ? 3 : 6, trust: 5 });
+    if (k === 'yan') ctx.mod(a, T, { att: 4 });
+    a.stress = Math.max(0, a.stress - (bold(k) ? 30 : 20));
+  }
+  /* zombie-reunion.js から：初めての合流で、どちらかがもう一方を探していたとき。再会の場面に重ねる文を返す */
+  Z.seekMet = function (ctx, a, b) {
+    var out = { pre: '', post: '', who: [] };
+    [[a, b], [b, a]].forEach(function (p) {
+      var s = p[0], T = p[1];
+      if (target(ctx, s) !== T) return;
+      var k = s.z.skK || kind(ctx, s, T), m = { a: s.name, b: T.name };
+      out.pre += fill(ctx.pick(SOUGHT[k] || SOUGHT.base), m);
+      foundFx(ctx, s, T, k);
+      out.post += done(ctx, s, T, 'found');
+      out.who.push(s.name + 'は' + T.name + '（' + KNAME[k] + '）を探していた');
+    });
+    return out.who.length ? out : null;
+  };
+
+  /* ---------- 探す行動（噂を聞き回る） ---------- */
+  EV.push({
+    id: 'zs_ask', cat: 'solo', scope: 'solo', noOdd: true, pri: true,
+    when: function (ctx, a) { var T = target(ctx, a); return !!(T && present(T) && free(a) && T.z.area !== a.z.area && (a.z.skKnow == null || a.z.skKnow === a.z.area)); },
+    w: function (ctx, a) { return 3 + (Z.seekBold(ctx, a) ? 2 : 0); },
+    run: function (ctx, a) {
+      var T = target(ctx, a), rng = ctx.rng, k = a.z.skK, A = ctx.zb.A[a.z.area];
+      var hit = rng() < (bold(k) ? 0.8 : 0.7), wrong = hit && rng() < ctx.env.rumor / 100 * 0.5;
+      var m = { a: a.name, b: T.name, area: A.name };
+      var t = ctx.t(fill(ctx.pick(ASK[k] || ASK.base), m), a, T), why = a.name + 'の目標「' + a.goal.label + '」。';
+      /* 危険を顧みない探し方：声や物音で群れを呼び、咬まれることもある */
+      var risky = bold(k) && A.z > 25;
+      if (risky) {
+        A.z = Math.min(100, A.z + 3);
+        var rb = rng();
+        if (rb < A.z / 100 * 0.12) { t += fill(ctx.pick(RISK), m); Z.infect(ctx, a, 'horde', true); why += '危険を顧みずに探し回り、咬まれた（' + A.name + 'のゾンビの多さ ' + Math.round(A.z) + '）'; ctx.stress(a, 6); return { text: t, why: why, mag: 30 }; }
+        if (rb < A.z / 100 * 0.45) { a.hp -= 6 + rng.int(8); if (a.z.wound < 0) a.z.wound = ctx.stepIndex; t += fill(ctx.pick(HURT), m); why += '危険を顧みずに探し回って、けがをした／'; }
+      }
+      if (hit) {
+        var cand = Z.adj(T.z.area).filter(function (x) { return x !== a.z.area; });
+        var p = wrong && cand.length ? rng.pick(cand) : T.z.area;
+        a.z.skKnow = p;
+        t += ctx.t(fill(ctx.pick(HEARD), m).replace(/\{p\}/g, ctx.zb.A[p].name), a, T);
+      } else t += ctx.t(fill(ctx.pick(NOHEAR), m), a, T);
+      ctx.stress(a, 3);
+      return { text: t, why: why + '噂を聞き回った' + (hit ? (wrong ? '（デマ：情報の錯綜 ' + ctx.env.rumor + '）' : '（本当の情報）') : '（手がかりなし）'), mag: 10 };
+    }
+  });
+
+  /* 行き先（zombie-core.js の destOf から）：噂で聞いた場所へ。手がかりがなければ、まだ足を運んでいない方へ */
+  Z.seekDest = function (ctx, c) {
+    var T = target(ctx, c);
+    if (!T || !present(T)) return null;
+    if (c.z.skKnow != null && c.z.skKnow !== c.z.area) return c.z.skKnow;
+    var adj = Z.adj(c.z.area), seen = function (x) { return c.z.path.filter(function (p) { return p === x; }).length; };
+    return adj.slice().sort(function (x, y) { return seen(x) - seen(y) || ((x + ctx.stepIndex + c.i) % 3) - ((y + ctx.stepIndex + c.i) % 3); })[0];
+  };
+
+  /* ---------- 区切りの終わり：目標が変わる・見つける・焦る・あきらめる ---------- */
+  function tick(ctx, s, n) {
+    if (s >= n - 1) return;
+    var shown = 0;
+    ctx.chars.forEach(function (a) {
+      if (!a.alive || a.out || !a.z) return;
+      var T = target(ctx, a);
+      if (T) {
+        var k = a.z.skK || kind(ctx, a, T), m = { a: a.name, b: T.name };
+        /* 相手がいなくなった */
+        if (!T.alive || T.out) {
+          var lt = !T.alive ? (k === 'worship' ? LOST.deadW : k === 'yan' ? LOST.deadY : LOST.dead) : LOST.out;
+          if (!T.alive) ctx.stress(a, bold(k) ? 30 : 20);
+          var tx = ctx.t(fill(ctx.pick(lt), m), a, T);
+          ctx.act2({ actors: [a], cat: 'solo', text: tx + done(ctx, a, T, 'lost'), why: '探していた' + T.name + 'に、もう会えない', mag: 20 });
+          return;
+        }
+        if (!free(a)) return;
+        /* 同じエリアに来た */
+        if (T.z.area === a.z.area && !T.z.alone) {
+          foundFx(ctx, a, T, k);
+          var ft = foundText(ctx, a, T);
+          ctx.act2({ actors: [a, T], cat: 'bond', text: ft + done(ctx, a, T, 'found'), why: a.name + 'は' + KNAME[k] + 'の' + T.name + 'を探し続けていた（探し始めてから ' + (ctx.stepIndex - a.z.skAt) + ' 区切り）。ようやく会えた', mag: 22 });
+          return;
+        }
+        /* 噂の場所に着いたのに、相手は動いていた：噂を追い直す */
+        if (a.z.skKnow != null && a.z.skKnow !== T.z.area && ctx.rng() < 0.35) a.z.skKnow = T.z.area;
+        /* 見つからない焦り */
+        var gap = bold(k) ? 2 : 3;
+        if (ctx.stepIndex - a.z.skFret >= gap && shown < 3 && ctx.rng() < 0.7) {
+          shown++;
+          a.z.skFret = ctx.stepIndex; a.z.skFrets++;
+          ctx.stress(a, bold(k) ? 9 : 5);
+          var g = GROUP[k] || 'friend';
+          ctx.act2({ actors: [a], cat: 'solo', text: ctx.t(fill(ctx.pick(FRET[g]), m), a, T), why: a.name + 'は' + T.name + 'を探しているが、まだ見つからない（' + (ctx.stepIndex - a.z.skAt) + ' 区切り）' + (bold(k) ? '。焦りは日ごとに深くなる' : ''), mag: 10 + (bold(k) ? 4 : 0) });
+          /* 浅い関係なら、そのうち区切りをつける（執着・信仰する側はあきらめない） */
+          if (!bold(k) && a.z.skFrets >= 3 && depth(ctx, a, T) < 80 && ctx.rng() < 0.4) {
+            ctx.act2({ actors: [a], cat: 'solo', text: ctx.t(fill('{a}は、{b}を探すのをいったんやめることにした。{a}「生きていれば、きっとどこかで会える」', m), a, T) + done(ctx, a, T, 'quit'), why: '探しても見つからず、区切りをつけた（関係の深さ ' + Math.round(depth(ctx, a, T)) + '）', mag: 10 });
+          }
+        }
+        return;
+      }
+      /* 目標が「〇〇を探す」に変わる */
+      if (s < 0 || !eligible(ctx, a)) return;
+      var u = pickT(ctx, a);
+      if (u && ctx.rng() < u.p) start(ctx, a, u);
+    });
+  }
+  var af0 = scen.after;
+  scen.after = function (ctx, s, n) { var r = af0 ? af0.apply(this, arguments) : undefined; tick(ctx, s, n); ctx.flush(); return r; };
 })();
 ;/* ==== js/rel-kit.js ==== */
 /* 箱庭シミュレーター: 関係・口調・恋愛相手の固定を使う出来事の共通部品（無人島・ゾンビの街で使う）
@@ -25832,6 +27610,292 @@
         return { text: RK.fill(ctx.pick(TEXT[k] || TEXT.lock), { a: a.name, b: o.name }), why: a.name + 'は、' + o.name + 'を失った（' + ({ protA: '我が子のように守ってきた弟妹', protB: '守ってくれた兄姉', sibclose: '親友のようなきょうだい', teacherA: '教え子', teacherB: '先生', mentorA: '弟子', mentorB: '師匠', lock: 'ただ一人と決めていた相手' })[k] + '）', mag: 30, with: [o] };
       }
     });
+  };
+})();
+;/* ==== js/zombie-bonds.js ==== */
+/* 箱庭シミュレーター: ゾンビの街 ― 新しい関係（同級生・同僚・上司と部下・執着（信仰）・恩人・親族）の出来事
+   ・関係ごとのふだんの小場面（向きのある関係は両側の視点）、関係を保つ出来事、関係を発展させる出来事
+     （恋愛してよい組なら恋に変わる分岐。信仰は「恋愛に発展：する」のときだけ恋、支配なら支配と服従が深まる。恩人は恩返し、上司と部下は職場の外での対等な信頼、同級生は昔話からの再接近、親族は家族としての絆）
+   ・信仰する側は、突き放されても囮にされても想いを捨てない
+   ・群れに捕まったとき（zombie-core.js の victim から Z.tieVictim）：上司が部下を逃がすために残る／恩を受けた側が命を張って恩を返す／
+     信仰する側が盾になる／信仰を利用して支配している側が囮を命じる／親族が力ずくで引き戻す */
+(function () {
+  'use strict';
+  var HK = window.HK, Z = HK.ZB, RK = HK.RelKit;
+  if (!Z || !Z.scen || !RK) return;
+  var EV = Z.scen.events, L = RK.L;
+  function fill(t, m) { return String(t).replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
+  function tie(ctx, a, b, type) { return HK.Ties && HK.Ties.has(ctx, a, b, type); }
+  function ok(c) { return c && c.alive && !c.out && c.z && !c.z.alone; }
+  /* 恋愛に発展してよい組か（恋愛の可否・恋愛相手の固定・家族・信仰の「恋愛に発展しない」を通す） */
+  function loveOk(ctx, x, y, t) {
+    if (!HK.canLove || !HK.canLove(x, y) || !HK.canLove(y, x)) return false;
+    if (!ctx.romanceOk([x, y]) || RK.noRomance(ctx, x, y)) return false;
+    if (t && HK.tieOptNoLove && HK.tieOptNoLove(t)) return false;
+    if ((x.lock != null && x.lock !== y.i) || (y.lock != null && y.lock !== x.i)) return false;
+    return true;
+  }
+  function grown(ctx, a, b, aff, trust) { return ctx.R(a, b).aff > aff && ctx.R(b, a).aff > aff && ctx.R(a, b).trust > trust && ctx.R(b, a).trust > trust; }
+  /* 深まった関係が恋に変わる確率：惹かれが強いほど、すでに一度深まっているほど高い */
+  function loveP(ctx, a, b, before) { var m = Math.max(ctx.R(a, b).att, ctx.R(b, a).att); return (before ? 0.4 : 0.12) + HK.clamp(m / 100, 0, 0.4); }
+  function att(ctx, a, b, v) { return ctx.R(a, b).att > v || ctx.R(b, a).att > v; }
+
+  var T = {
+    cm: {
+      pat: L('{a}と{b}は、見張りの合間に学生のころの話をした。誰が何をやらかしたか、二人ともよく覚えていた。|{a}は{b}に、同じクラスだった誰かの名前を挙げて「生きてると思う？」と訊いた。{b}は少し黙ってから、「生きてる」と答えた。|{a}「学生のころ、避難訓練なんて真面目にやってなかったな」――{b}は「今なら満点が取れる」と笑った。'),
+      keep: L('{a}は{b}の分の水を、黙って取り分けておいた。学生のころ、弁当を分け合ったのと同じ手つきだった。|{a}と{b}は、昔の席順みたいに並んで眠った。どちらかが寝返りを打つたび、もう一人が目を開けて確かめた。|{a}は、{b}が学生のころから暗い場所を苦手にしていたのを覚えていた。夜の見回りは、いつも{a}が先に立った。'),
+      grow: L('{a}は{b}に、学生のころ言えなかったことを打ち明けた。{a}「本当は、もっと{b}と話したかった」――{b}は驚いた顔をしてから、「同じことを思ってた」と言った。|{a}と{b}は、卒業してからの年月を埋めるように話し続けた。気づけば、学生のころより近くにいた。'),
+      love: L('{a}は{b}の横顔を見ながら、学生のころの淡い気持ちを思い出していた。あの頃は言えなかった。{a}「……今なら、言ってもいいかな」――{b}は答える代わりに、{a}の手を握った。|{a}と{b}は、昔話の途中で黙り込んだ。目が合ったまま、どちらも視線を外さなかった。同級生のままでいるには、二人とも近づきすぎていた。')
+    },
+    co: {
+      pat: L('{a}と{b}は、職場の当番表みたいに見張りの順番を決めた。決めるのに一分もかからなかった。|{a}は物資の数を数えて、{b}に伝えた。{b}「了解。じゃあ明日の分はこう割り振る」――仕事の打ち合わせと、何も変わらなかった。|{a}「職場の誰が一番うまく生き延びてると思う？」――{b}は即答で、同じ名前を挙げた。'),
+      keep: L('{a}は疲れきった{b}の見張りを、黙って代わった。{a}「貸しにしとく」――職場でよく交わした言葉だった。|{a}と{b}は、残り少ない食料をきっちり半分にした。どちらも相手の分を多くしようとして、少し揉めた。'),
+      grow: L('{a}は{b}に、職場では見せたことのない弱音をこぼした。{b}は笑わずに聞いて、{a}の肩に手を置いた。仕事仲間という言葉では、もう足りなかった。|{a}と{b}は、仕事の話をしなくなった。代わりに、子どものころの話や、本当にやりたかったことを話した。'),
+      love: L('{a}は、職場で毎日見ていたはずの{b}の顔を、初めて見るような気がした。{a}「仕事のときより、今の{b}のほうがいい」――言ってから、{a}は自分の言葉に赤くなった。|{a}と{b}は、肩を寄せ合って夜を越した。同僚の距離では、もう眠れなかった。')
+    },
+    boss: {
+      patA: L('{a}は{b}に短く指示を出した。{a}「右の通路を確認。三分で戻れ」――{b}は返事より先に動いていた。|{a}は{b}の報告を聞きながら、地図に印を足していった。職場でも、この街でも、二人のやり方は変わらなかった。|{a}は、{b}の顔色が悪いことに気づいて、何も言わずに休憩を指示した。'),
+      patB: L('{b}は{a}の指示を待たずに、次に要るものを用意していた。長年の仕事で身についた癖だった。|{b}は{a}の背中を見ながら歩いた。どんな現場でも、この背中についていけば何とかなる。そう思わせる上司だった。|{b}「{a}、物資の残りは三日分」――報告を受けた{a}は、小さくうなずいた。'),
+      keepA: L('{a}は自分の分の食料を、さりげなく{b}の側に寄せた。{a}「上の人間は、腹が減っても平気なものだ」|{a}は夜中に起き出して、{b}の毛布をかけ直した。職場では、決して見せない顔だった。'),
+      keepB: L('{b}は{a}の手の傷に気づいて、黙って手当てをした。{a}「大げさだ」――{b}「上司に倒れられたら困る」|{b}は、{a}が無理をしすぎないよう、見張りの順番をこっそり入れ替えた。'),
+      grow: L('{a}は{b}に言った。{a}「もう職場じゃない。上も下もない」――{b}は少し迷ってから、初めて{a}を肩書きなしで呼んだ。|{b}が{a}の判断に、初めて真っ向から異を唱えた。{a}は黙って聞き、それから{b}の案を採った。{a}「{b}のほうが正しい」――二人のあいだで、何かが変わった。|{a}と{b}は、職場では一度もしなかった話をした。仕事を離れたら、二人はこんなにも話が合った。'),
+      love: L('{a}は{b}を見つめて、言葉を探した。{a}「部下として見られなくなった。……困ったことに」――{b}は笑って、{a}の手を取った。|{b}は{a}の肩にもたれた。{a}は払いのけなかった。職場の外で、二人はただの二人になっていた。')
+    },
+    ws: {
+      patA: L('{a}は自分の食料を削って、{b}の分を多くした。{a}「{b}が食べてくれれば、それでいい」|{a}は夜通し、{b}の眠る部屋の前に座って見張りを続けた。誰に頼まれたわけでもなかった。|{a}は{b}の言葉を、一言も聞き漏らすまいとしていた。{b}が何気なく言ったことまで、{a}は大切に覚えていた。|{a}は手に入れたばかりの武器を、{b}に差し出した。{a}「{b}が持っているほうが、私は安心できる」'),
+      patB: {
+        '': L('{b}は、なぜか自分の荷物がいつも整っていることに首をかしげた。{a}が毎晩直していることには、まだ気づいていなかった。|{b}は{a}がいつも近くにいることを、ただの偶然だと思っていた。'),
+        accept: L('{b}は{a}の差し出した水を、礼を言って受け取った。{a}はそれだけで、満ち足りた顔をした。|{b}は{a}の献身を、静かに受け入れていた。{b}「{a}がいてくれて、助かってる」'),
+        confused: L('{b}は、また自分の分だけ多い食料を見て、困った顔をした。{b}「{a}、こういうのはやめてほしい」――{a}は笑って首を振るだけだった。|{b}は{a}の視線の重さに、ときどき息苦しさを覚えた。それでも、{a}を突き放すことはできなかった。'),
+        dominate: L('{b}は{a}に、一番危ない見回りを命じた。{a}は迷わずうなずいた。{b}にとって{a}は、都合のいい駒だった。|{b}は{a}の持ってきた食料を、礼も言わずに取り上げた。{a}はそれを、当然のことのように見ていた。'),
+        cherish: L('{b}は{a}の分の食料を、{a}の前に押し戻した。{b}「{a}も食べて。私のために倒れられたら、困る」|{b}は、自分を守ろうとする{a}の手を握った。{b}「{a}が無事でいることが、私には一番大事だ」')
+      },
+      keep: L('{a}は{b}の靴紐を結び直し、上着のほつれを繕った。{b}が気づく前に、すべて済ませていた。|{a}は{b}が眠りにつくまで、そばで祈るように手を組んでいた。|{a}は{b}の通る道の瓦礫を、先回りして片付けておいた。'),
+      love: L('{b}は、自分を崇めるように見つめる{a}の頬に、そっと手を添えた。{b}「{a}、崇めるんじゃなくて、隣にいてほしい」――{a}は信じられないという顔で、{b}の手に自分の手を重ねた。|{a}は{b}の前でひざまずこうとして、{b}に引き止められた。{b}は{a}を立たせて、そのまま抱き寄せた。崇拝は、ゆっくりと恋に変わっていった。'),
+      dominate: L('{b}は{a}に命じた。{b}「私以外の言うことは聞くな」――{a}は迷わずうなずいた。その従順さに、{b}は満足そうに笑った。|{b}は{a}の忠誠を試すように、無理な命令を重ねた。{a}はひとつも拒まなかった。支配と服従は、日ごとに深くなっていった。'),
+      cherish: L('{b}は{a}に、自分のために命を投げ出すようなことはしないでほしいと頼んだ。{a}は長いあいだ黙っていたが、やがて小さくうなずいた。{a}「{b}が望むなら、生きる」|{b}は{a}と並んで座り、自分の弱さを打ち明けた。{a}は初めて、{b}をただの人として見た。それでも、想いは少しも揺らがなかった。'),
+      confused: L('{b}は{a}を突き放そうとした。{b}「私は、{a}が思うような人間じゃない」――{a}は首を振った。{a}「それでも、{b}は私の光だ」|{b}は{a}に、自分を崇めるのはやめてほしいと言った。{a}は静かに聞いてから、それでもいつもと同じように{b}の水を汲んできた。'),
+      grow: L('{a}は{b}を守るためなら、何でもすると誓った。{b}は困ったように笑ったが、その誓いを拒まなかった。|{a}は{b}の役に立てた日には、眠る前に小さく祈った。{a}にとって、{b}のそばにいることが信仰そのものだった。'),
+      firm: L('{b}に冷たく突き放されても、{a}の想いは少しも揺らがなかった。{a}「{b}がどう思っていてもいい。私は、{b}を信じている」|{a}は{b}に怒鳴られても、黙って頭を下げた。そして次の朝も、いつもと同じように{b}の分の水を汲んできた。'),
+      firmBait: L('{b}に囮にされたことを、{a}は少しも恨んでいなかった。{a}「{b}の役に立てたなら、それでいい」――その言葉に、嘘はひとつもなかった。|{a}は群れに咬まれかけた腕をさすりながら、{b}の隣に戻った。{a}「次も、{b}のためなら行く」')
+    },
+    bn: {
+      patA: L('{a}は{b}の様子を、何かと気にかけていた。{a}「無理はするな。せっかく拾った命だ」|{a}は{b}に、生き延びるための知恵を一つずつ教えた。かつて{b}を助けた日と同じように。'),
+      patB: L('{b}は{a}の荷物を、当然のように自分が背負った。{b}「{a}に受けた恩に比べれば、こんなもの」|{b}は、{a}が少しでも休めるよう、見張りを率先して引き受けた。|{b}は{a}の好みを覚えていて、見つけた食料の中から{a}の好きなものを取り分けた。'),
+      keep: L('{a}「もう恩は返してもらったよ」――{b}は首を振った。{b}「まだ、全然足りない」|{b}が差し出した缶詰を、{a}は半分だけ受け取った。{a}「残りは{b}が食べる。それが、私への恩返しだ」'),
+      grow: L('{b}は{a}が群れに囲まれかけたとき、迷わず飛び込んで{a}を引きずり出した。{b}「あの日の借りを、ようやく返せた」――{a}は息を切らしながら、{b}の肩を抱いた。|{b}は、熱を出した{a}を一晩じゅう看病した。{a}が目を開けると、{b}は泣き笑いの顔をしていた。{b}「今度は、私が助ける番だった」|{a}は{b}に言った。{a}「もう、恩人と恩を受けた側じゃない。対等な仲間だ」――{b}は少し迷ってから、その言葉を受け取った。'),
+      love: L('{b}は、感謝だけでは説明のつかない気持ちに気づいていた。{b}「{a}のそばにいたいのは、恩のためだけじゃない」――{a}は、驚いたように{b}を見つめ返した。|{a}は、恩を返そうと必死な{b}の手を止めた。{a}「もういい。恩じゃなくて、{b}自身にそばにいてほしい」')
+    },
+    rl: {
+      pat: L('{a}と{b}は、親戚の誰がどこにいるはずだったかを指折り数えた。半分も数えないうちに、二人とも黙り込んだ。|{a}「祖母の家のほう、無事だと思う？」――{b}は答えられずに、遠くの煙を見つめた。|{a}と{b}は、最後に親族みんなで集まった日の話をした。誰が何を持ってきて、誰が酔いつぶれたか。笑っているうちに、二人とも目が赤くなった。'),
+      fam: L('{a}は{b}に、{f}の消息を尋ねた。{b}も同じことを訊こうとしていた。親族どうし、案じている顔は同じだった。|{a}は、{f}と最後に連絡が取れたときのことを{b}に話した。{b}は黙って聞いて、{a}の肩を抱いた。'),
+      keep: L('{a}は{b}の擦り傷に、子どものころのように絆創膏を貼ってやった。{b}「いつまで子ども扱いする気？」――そう言いながら、{b}は嬉しそうだった。|{a}と{b}は、親族の誰かに会えたときのために、伝言を書いて壁に貼った。二人の名前を、並べて書いた。'),
+      grow: L('{a}は{b}に言った。{a}「親戚なんて、年に一度会うだけだと思ってた。……今は、{b}がいてくれてよかった」――{b}は黙って、{a}の背中を叩いた。|{a}と{b}は、生き延びたら親族みんなで集まろうと約束した。誰が残っているかは分からなかった。それでも、二人は約束をやめなかった。'),
+      love: L('{a}は{b}を見つめて、ふと言葉を失った。親戚として見てきたはずの顔が、今は違って見えた。|{a}と{b}は、親族の誰にも言えない気持ちを抱えたまま、肩を寄せ合っていた。')
+    }
+  };
+
+  /* ---------- 同級生・同僚（向きのない関係） ---------- */
+  function flatEv(id, type, key, label) {
+    EV.push({
+      id: id, cat: 'bond', scope: 'pair',
+      when: function (ctx, a, b) { return !!tie(ctx, a, b, type) && RK.cool(ctx, a, b, id, 2); },
+      w: function (ctx, a, b) { return 1 + (a.tr.np + a.tr.fc) * 0.3; },
+      run: function (ctx, a, b) {
+        RK.mark(ctx, a, b, id);
+        var t = tie(ctx, a, b, type), rng = ctx.rng, P = T[key], pf = ctx.pair(a, b), k;
+        if (grown(ctx, a, b, 35, 30) && RK.cool(ctx, a, b, id + 'G', 8) && rng() < 0.45) {
+          RK.mark(ctx, a, b, id + 'G');
+          k = loveOk(ctx, a, b, t) && rng() < loveP(ctx, a, b, pf['_zb_' + key]) ? 'love' : 'grow';
+        } else k = rng() < 0.4 ? 'keep' : 'pat';
+        if (k === 'love') ctx.mod2(a, b, { att: 8, aff: 5 }, { att: 8, aff: 5 });
+        else if (k === 'grow') { pf['_zb_' + key] = (pf['_zb_' + key] || 0) + 1; var la = loveOk(ctx, a, b, t) ? 3 : 0; ctx.mod2(a, b, { aff: 7, trust: 8, att: la }, { aff: 7, trust: 8, att: la }); }
+        else if (k === 'keep') { ctx.mod2(a, b, { aff: 3, trust: 4 }, { aff: 3, trust: 4 }); ctx.stress(b, -4); }
+        else ctx.mod2(a, b, { aff: 2, trust: 2 }, { aff: 2, trust: 2 });
+        return { cat: k === 'love' ? 'romance' : k === 'keep' ? 'help' : 'bond', text: ctx.t(ctx.pick(P[k]), a, b),
+          why: a.name + 'と' + b.name + 'は' + label + ({ pat: '', keep: '／いつもの距離で支え合う', grow: '／' + (key === 'cm' ? '昔話から距離が縮まった' : '仕事の外で信頼が深まった') + '（好意・信頼が高い）', love: '／親しさが恋に変わった（惹かれ）' }[k]) };
+      }
+    });
+  }
+  flatEv('zb_classmate', 'classmate', 'cm', '同級生');
+  flatEv('zb_colleague', 'colleague', 'co', '同僚');
+
+  /* ---------- 上司と部下 ---------- */
+  EV.push({
+    id: 'zb_boss', cat: 'bond', scope: 'pair',
+    when: function (ctx, a, b) { return !!tie(ctx, a, b, 'boss') && RK.cool(ctx, a, b, 'zb_boss', 2); },
+    w: function (ctx, a, b) { return 1 + a.tr.cp * 0.3 + a.tr.np * 0.2; },
+    run: function (ctx, a, b) {
+      RK.mark(ctx, a, b, 'zb_boss');
+      var t = tie(ctx, a, b, 'boss'), A = ctx.chars[t.a], B = ctx.chars[t.b], rng = ctx.rng, pf = ctx.pair(A, B), k;
+      if (grown(ctx, A, B, 30, 40) && RK.cool(ctx, A, B, 'zb_bossG', 8) && rng() < 0.45) {
+        RK.mark(ctx, A, B, 'zb_bossG');
+        k = loveOk(ctx, A, B, t) && rng() < loveP(ctx, A, B, pf._zb_boss) ? 'love' : 'grow';
+      } else if (rng() < 0.4) k = a === A ? 'keepA' : 'keepB';
+      else k = a === A ? 'patA' : 'patB';
+      if (k === 'love') ctx.mod2(A, B, { att: 8, aff: 5 }, { att: 8, aff: 5 });
+      else if (k === 'grow') { pf._zb_boss = (pf._zb_boss || 0) + 1; var lb = loveOk(ctx, A, B, t) ? 3 : 0; ctx.mod2(A, B, { aff: 6, trust: 10, ten: -4, att: lb }, { aff: 7, trust: 8, ten: -4, att: lb }); }
+      else if (k === 'keepA') { ctx.mod2(A, B, { aff: 3 }, { trust: 5, aff: 3 }); ctx.stress(B, -5); }
+      else if (k === 'keepB') { ctx.mod2(A, B, { trust: 5, aff: 3 }, { aff: 2 }); A.hp = Math.min(100, A.hp + 3); }
+      else ctx.mod2(A, B, { trust: 3 }, { trust: 4 });
+      return { cat: k === 'love' ? 'romance' : /^keep/.test(k) ? 'help' : 'bond', text: ctx.t(ctx.pick(T.boss[k]), A, B),
+        why: A.name + '（上司）と' + B.name + '（部下）' + ({ patA: '：上司として指示を出し、部下を守る', patB: '：部下として上司を立てる', keepA: '：部下を気づかう', keepB: '：上司を支える', grow: '：職場の外で、対等な信頼に変わった（好意・信頼が高い）', love: '：上下の関係が恋に変わった（惹かれ）' }[k]) };
+    }
+  });
+
+  /* ---------- 執着（信仰） ---------- */
+  EV.push({
+    id: 'zb_worship', cat: 'help', scope: 'pair',
+    when: function (ctx, a, b) { return !!tie(ctx, a, b, 'worship') && RK.cool(ctx, a, b, 'zb_worship', 2); },
+    w: function (ctx, a, b) { var t = tie(ctx, a, b, 'worship'); return t.a === a.i ? 1.1 + a.tr.ac * 0.3 + a.tr.np * 0.2 : 0.6; },
+    run: function (ctx, a, b) {
+      RK.mark(ctx, a, b, 'zb_worship');
+      var t = tie(ctx, a, b, 'worship'), A = ctx.chars[t.a], B = ctx.chars[t.b], rng = ctx.rng, cold = t.cold || '', pf = ctx.pair(A, B), k, txt;
+      var rb = ctx.R(B, A);
+      /* 突き放されても、囮にされても、想いを捨てない */
+      if ((pf.zbBait && !pf.zbBaitSeen) || ((rb.ten > 30 || rb.aff < 0 || cold === 'confused' || cold === 'dominate') && RK.cool(ctx, A, B, 'zb_wsFirm', 6) && rng() < 0.3)) {
+        var bait = pf.zbBait && !pf.zbBaitSeen;
+        if (bait) pf.zbBaitSeen = true;
+        RK.mark(ctx, A, B, 'zb_wsFirm');
+        ctx.mod(A, B, { aff: 3, trust: 3 });
+        ctx.stress(A, 4);
+        return { cat: 'solo', text: ctx.t(ctx.pick(bait ? T.ws.firmBait : T.ws.firm), A, B), why: A.name + 'は' + B.name + 'を信仰している。' + (bait ? '囮にされても' : '冷たくされても') + '、その想いは揺らがない' };
+      }
+      if (grown(ctx, A, B, 20, 20) && RK.cool(ctx, A, B, 'zb_wsG', 7) && rng() < 0.4) {
+        RK.mark(ctx, A, B, 'zb_wsG');
+        if (cold === 'dominate') k = 'dominate';
+        else if (t.love === 'ok' && loveOk(ctx, A, B, t) && rb.aff > 25 && (att(ctx, A, B, 6) || rb.aff > 45) && rng() < 0.6) k = 'love';
+        else k = cold === 'cherish' ? 'cherish' : cold === 'confused' ? 'confused' : 'grow';
+      } else k = rng() < 0.35 ? 'keep' : a === A ? 'patA' : 'patB';
+      if (k === 'love') ctx.mod2(A, B, { att: 10, aff: 4 }, { att: 10, aff: 8 });
+      else if (k === 'dominate') { pf.zbDom = (pf.zbDom || 0) + 1; ctx.mod2(A, B, { trust: 4 }, { trust: 5, aff: -2 }); ctx.stress(A, 6); }
+      else if (k === 'cherish') { ctx.mod2(A, B, { aff: 5, trust: 5 }, { aff: 8, trust: 6 }); ctx.stress(A, -10); }
+      else if (k === 'confused') { ctx.mod2(A, B, { aff: 2 }, { ten: 4, aff: 2 }); }
+      else if (k === 'grow') ctx.mod2(A, B, { aff: 5, trust: 5 }, { aff: 4, trust: 4 });
+      else if (k === 'keep') ctx.mod2(A, B, { aff: 3, trust: 3 }, { trust: cold === 'dominate' ? 1 : 3, aff: cold === 'cherish' || cold === 'accept' ? 3 : 1 });
+      else if (k === 'patB') ctx.mod2(A, B, { aff: 2 }, { aff: cold === 'dominate' ? 0 : 2 });
+      else ctx.mod2(A, B, { aff: 2, trust: 2 }, { trust: 2 });
+      txt = k === 'patB' ? (T.ws.patB[cold] || T.ws.patB['']) : T.ws[k];
+      return { cat: k === 'love' ? 'romance' : k === 'dominate' ? 'conflict' : k === 'patB' || k === 'confused' ? 'bond' : 'help', text: ctx.t(ctx.pick(txt), A, B),
+        why: A.name + 'は' + B.name + 'を信仰している' + (cold && HK.WORSHIP_BACK && HK.WORSHIP_BACK[cold] ? '（' + B.name + 'は' + HK.WORSHIP_BACK[cold].short + '）' : '') + ({ patA: '：すべてを捧げようとする', patB: '：信仰される側から見た' + A.name, keep: '：変わらない献身', love: '：「恋愛に発展：する」の組。崇拝が恋に変わった', dominate: '：信仰を利用した支配と服従が深まった', cherish: '：大切に思う相手が、生きてほしいと願った', confused: '：重荷に感じる相手が突き放そうとしても、想いは変わらない', grow: '：献身が深まった' }[k]) };
+    }
+  });
+
+  /* ---------- 恩人 ---------- */
+  EV.push({
+    id: 'zb_benefactor', cat: 'help', scope: 'pair',
+    when: function (ctx, a, b) { return !!tie(ctx, a, b, 'benefactor') && RK.cool(ctx, a, b, 'zb_bene', 2); },
+    w: function (ctx, a, b) { var t = tie(ctx, a, b, 'benefactor'); return t.b === a.i ? 1 + a.tr.ac * 0.3 : 0.7 + a.tr.np * 0.3; },
+    run: function (ctx, a, b) {
+      RK.mark(ctx, a, b, 'zb_bene');
+      var t = tie(ctx, a, b, 'benefactor'), A = ctx.chars[t.a], B = ctx.chars[t.b], rng = ctx.rng, pf = ctx.pair(A, B), k;
+      var need = A.hp < 70 || A.stress > 45 || ctx.zb.A[A.z.area].z > 40;
+      if (need && RK.cool(ctx, A, B, 'zb_beneG', 7) && rng() < 0.45) {
+        RK.mark(ctx, A, B, 'zb_beneG');
+        k = loveOk(ctx, A, B, t) && rng() < loveP(ctx, A, B, pf.zbRepaid) ? 'love' : 'grow';
+      } else k = rng() < 0.35 ? 'keep' : a === A ? 'patA' : 'patB';
+      if (k === 'love') ctx.mod2(A, B, { att: 8, aff: 5 }, { att: 8, aff: 5 });
+      else if (k === 'grow') { pf.zbRepaid = (pf.zbRepaid || 0) + 1; var lr = loveOk(ctx, A, B, t) ? 3 : 0; ctx.mod2(A, B, { aff: 8, trust: 10, att: lr }, { aff: 4, trust: 6, att: lr }); A.hp = Math.min(100, A.hp + 6); ctx.stress(A, -8); }
+      else if (k === 'keep') ctx.mod2(A, B, { aff: 3, trust: 2 }, { aff: 3, trust: 3 });
+      else if (k === 'patB') { ctx.mod2(A, B, { aff: 2, trust: 3 }, { aff: 2 }); ctx.stress(A, -3); }
+      else ctx.mod2(A, B, { aff: 2 }, { trust: 3, aff: 2 });
+      return { cat: k === 'love' ? 'romance' : 'help', text: ctx.t(ctx.pick(T.bn[k]), A, B),
+        why: A.name + '（恩人）と' + B.name + '（恩を受けた側）' + ({ patA: '：恩人は相手を気にかける', patB: '：恩を返そうとする', keep: '：恩は簡単には消えない', grow: '：恩返し（' + A.name + 'が弱っていた／危ない場所だった）。関係が対等に近づいた', love: '：恩返しの先で、感謝が恋に変わった（惹かれ）' }[k]) };
+    }
+  });
+
+  /* ---------- 親族 ---------- */
+  EV.push({
+    id: 'zb_relative', cat: 'bond', scope: 'pair',
+    when: function (ctx, a, b) { return !!tie(ctx, a, b, 'relative') && RK.cool(ctx, a, b, 'zb_rel', 2); },
+    w: function (ctx, a, b) { return 0.8 + a.tr.np * 0.3; },
+    run: function (ctx, a, b) {
+      RK.mark(ctx, a, b, 'zb_rel');
+      var t = tie(ctx, a, b, 'relative'), rng = ctx.rng, pf = ctx.pair(a, b), k, m = { f: '' };
+      var fam = a.z.family && a.z.family.pc == null ? a.z.family : b.z.family && b.z.family.pc == null ? b.z.family : null;
+      if (grown(ctx, a, b, 35, 40) && RK.cool(ctx, a, b, 'zb_relG', 8) && rng() < 0.45) {
+        RK.mark(ctx, a, b, 'zb_relG');
+        k = HK.tieFamLove && HK.tieFamLove(t) && loveOk(ctx, a, b, null) && rng() < loveP(ctx, a, b, pf._zb_rel) ? 'love' : 'grow';
+      } else if (rng() < 0.35) k = 'keep';
+      else k = fam && rng() < 0.6 ? 'fam' : 'pat';
+      if (k === 'fam') m.f = (fam === a.z.family ? a.name : b.name) + 'の' + fam.rel;
+      if (k === 'love') ctx.mod2(a, b, { att: 7, aff: 4 }, { att: 7, aff: 4 });
+      else if (k === 'grow') { pf._zb_rel = (pf._zb_rel || 0) + 1; var lf = HK.tieFamLove && HK.tieFamLove(t) && loveOk(ctx, a, b, null) ? 3 : 0; ctx.mod2(a, b, { aff: 7, trust: 9, att: lf }, { aff: 7, trust: 9, att: lf }); }
+      else if (k === 'keep') { ctx.mod2(a, b, { aff: 3, trust: 4 }, { aff: 3, trust: 4 }); ctx.stress(b, -4); }
+      else { ctx.mod2(a, b, { aff: 3, trust: 3 }, { aff: 3, trust: 3 }); ctx.stress(a, 2); ctx.stress(b, 2); }
+      return { cat: k === 'love' ? 'romance' : k === 'keep' ? 'help' : 'bond', text: ctx.t(fill(ctx.pick(T.rl[k]), m), a, b),
+        why: a.name + 'と' + b.name + 'は親族' + ({ pat: '：家族の消息を案じ合う', fam: '：家族の消息を案じ合う', keep: '：いざとなれば助け合う', grow: '：家族としての絆が深まった（好意・信頼が高い）', love: '：「恋愛：あり」の親族。想いが変わった（惹かれ）' }[k]) };
+    }
+  });
+
+  /* ======================= 群れに捕まったとき ======================= */
+  var VT = {
+    decoy: L('――{d}は{w}に命じた。{d}「囮になれ」――{w}は一瞬もためらわず、群れの前へ飛び出していった。{d}はその背中を振り返りもせずに逃げた。|――{d}は{w}の背中を押して、短く言った。{d}「行け。私が逃げるまで、引きつけろ」――{w}は黙ってうなずき、わざと大きな音を立てて走り出した。'),
+    shield: L('――{w}は{v}の前に身を投げ出した。{w}「{v}には、指一本触れさせない」|――{w}は{v}に伸びた腕の前へ、迷わず自分の体を差し出した。{w}にとって、{v}を守ること以上に大事なことはなかった。'),
+    bene: L('――{w}は{v}に伸びた腕の前へ飛び込んだ。{w}「あの日の恩、ここで返す」|――{w}は{v}を突き飛ばして、自分が群れの前に残った。{w}「{v}に助けてもらった命だ。使いどころは、ここしかない」'),
+    boss: L('――{w}は{v}の背中を押した。{w}「先に行け。ここは私が食い止める」――{v}が振り返ったときには、{w}はもう群れのほうを向いていた。|――{w}は{v}を扉の内側へ押し込んだ。{w}「部下を逃がすのが、上の人間の仕事だ」'),
+    rel: L('――{w}は{v}の襟首を掴んで、力任せに引き戻した。{w}「親族を、こんなところで死なせはしない」――二人はもつれ合うように転がり、群れの手からかろうじて逃れた。|――{w}は{v}の腕を掴んで、群れの中から引きずり出した。{w}「離すな。家族に会うまで、絶対に離すな」')
+  };
+  var OUT = {
+    die: L('{w}の声は、すぐに群れの呻き声に呑まれた。|{w}の姿は、群れの向こうに消えた。それきり、戻ってこなかった。'),
+    bite: L('戻ってきた{w}の腕には、くっきりと歯形が残っていた。|{w}の肩に、ゾンビの歯が深く食い込んでいた。それでも{w}は、最後まで退かなかった。'),
+    hurt: L('{w}は傷だらけで戻ってきた。それでも{w}は、無事な姿を確かめて、ほっとしたように息をついた。|{w}はしばらくして、足を引きずりながら戻ってきた。咬まれては、いなかった。')
+  };
+  var DEC_OUT = {
+    bite: L('戻ってきた{w}の腕には、歯形が残っていた。{w}「役に立てた」――{w}はそれだけ言って、{d}に笑いかけた。'),
+    hurt: L('{w}は血まみれで戻ってきた。それでも{d}の無事を確かめると、{w}はほっとしたように息をついた。')
+  };
+  var REL_HURT = L('{w}の腕には擦り傷ができていたが、咬まれてはいなかった。|{w}は{v}の無事を確かめてから、ようやく自分の傷に気づいた。');
+  var BOSS_HURT = L('{w}はしばらくして、足を引きずりながら戻ってきた。{w}「部下を置いて、上の人間だけ逃げられない」');
+  function outcome(ctx, w, v, kind, A, out, m) {
+    var rng = ctx.rng, r = rng(), die = kind === 'rel' ? 0 : kind === 'decoy' ? 0.2 : 0.16, bite = kind === 'rel' ? 0.12 : 0.45;
+    if (r < die) {
+      out.text += fill(ctx.pick(OUT.die), m);
+      ctx.pair(w, v).sacrifice = w.i;
+      ctx.kill(w, null, kind === 'decoy' ? v.name + 'の命令で囮になり、群れに呑まれた' : v.name + 'をかばって、' + A.name + 'で群れに呑まれた');
+      return 'die';
+    }
+    if (r < bite) { out.text += fill(ctx.pick(kind === 'decoy' ? DEC_OUT.bite : OUT.bite), m); Z.infect(ctx, w, 'horde', true); return 'bite'; }
+    w.hp -= 10 + rng.int(10); if (w.z.wound < 0) w.z.wound = ctx.stepIndex;
+    out.text += fill(ctx.pick(kind === 'decoy' ? DEC_OUT.hurt : kind === 'boss' ? BOSS_HURT : kind === 'rel' ? REL_HURT : OUT.hurt), m);
+    return 'hurt';
+  }
+  Z.tieVictim = function (ctx, g, v, A) {
+    var rng = ctx.rng, H = HK.Ties;
+    if (!H) return null;
+    var others = g.filter(function (o) { return o !== v && o.alive && !o.out && !o.z.bitten && !o.z.alone; });
+    if (!others.length) return null;
+    var out = { text: '', why: '', mag: 40, with: [] }, w = null, kind = '', d = null;
+    /* 信仰を利用して支配している側（v）が、信仰する側に囮を命じる */
+    others.forEach(function (o) { var t = !w && H.from(ctx, o, v, 'worship'); if (t && t.cold === 'dominate' && rng() < 0.6) { w = o; kind = 'decoy'; d = v; } });
+    /* 信仰する側が盾になる */
+    if (!w) others.forEach(function (o) { var t = !w && H.from(ctx, o, v, 'worship'); if (t && t.cold !== 'dominate' && rng() < 0.55 + o.tr.ac * 0.2) { w = o; kind = 'shield'; } });
+    /* 恩を受けた側が、命を張って恩を返す */
+    if (!w) others.forEach(function (o) { if (!w && H.from(ctx, v, o, 'benefactor') && ctx.R(o, v).aff > 30 && rng() < 0.4 + o.tr.np * 0.2) { w = o; kind = 'bene'; } });
+    /* 上司が、部下を逃がすために残る */
+    if (!w) others.forEach(function (o) { if (!w && H.from(ctx, o, v, 'boss') && ctx.R(o, v).trust > 20 && rng() < 0.25 + o.tr.np * 0.25 + o.tr.cp * 0.15) { w = o; kind = 'boss'; } });
+    /* 親族が力ずくで引き戻す */
+    if (!w) others.forEach(function (o) { if (!w && H.has(ctx, o, v, 'relative') && ctx.R(o, v).aff > 20 && rng() < 0.3 + o.tr.np * 0.2) { w = o; kind = 'rel'; } });
+    if (!w) return null;
+    var m = { w: w.name, v: v.name, d: d ? d.name : '' };
+    out.text = fill(ctx.pick(VT[kind]), m);
+    out.with = [w];
+    var res = outcome(ctx, w, v, kind, A, out, m);
+    if (kind === 'decoy') {
+      ctx.pair(w, v).zbBait = (ctx.pair(w, v).zbBait || 0) + 1;
+      ctx.mod(v, w, { trust: 4 });
+      ctx.mod(w, v, { trust: 2 });
+      g.forEach(function (o) { if (o !== w && o !== v && o.alive) ctx.mod(o, v, { trust: -15, ten: 12 }); });
+      out.why = v.name + 'は' + w.name + 'の信仰を利用して支配している。群れに捕まりかけた' + v.name + 'は、' + w.name + 'に囮を命じた（' + w.name + '：' + { die: '群れに呑まれた', bite: '咬まれた', hurt: 'けがをして戻った' }[res] + '）';
+    } else {
+      ctx.mod(v, w, { aff: kind === 'rel' ? 12 : 22, trust: kind === 'rel' ? 15 : 25, att: kind === 'shield' || kind === 'bene' ? 4 : 0 });
+      if (kind === 'bene') ctx.pair(w, v).zbRepaid = (ctx.pair(w, v).zbRepaid || 0) + 1;
+      if (kind === 'rel') { v.hp -= 4 + rng.int(6); }
+      ctx.stress(v, res === 'die' ? 30 : 10);
+      out.why = { shield: w.name + 'は' + v.name + 'を信仰している。迷わず盾になった', bene: w.name + 'は恩人の' + v.name + 'に、命を張って恩を返した', boss: '上司の' + w.name + 'が、部下の' + v.name + 'を逃がすために残った', rel: '親族の' + w.name + 'が、' + v.name + 'を力ずくで引き戻した' }[kind] + '（' + w.name + '：' + { die: '群れに呑まれた', bite: '咬まれた', hurt: kind === 'rel' ? '二人とも逃げ延びた' : 'けがをして戻った' }[res] + '）';
+    }
+    out.mag = res === 'die' ? 45 : 36;
+    return out;
   };
 })();
 ;/* ==== js/island-rel.js ==== */
@@ -30283,8 +32347,8 @@
     var T = HK.Ties, has = function (t) { return !!(T && T.has && T.has(ctx, a, b, t)); };
     var r = ctx.R(b, a), pf = ctx.pair(a, b), H = HK.HateKit, hl = H && H.level ? H.level(ctx, b, a) : 0;
     if (has('enemy') || has('bad') || has('rival') || hl >= 35 || (r.ten >= 45 && r.aff < 5)) return 'hostile';
-    if (pf.couple || ['lover', 'mate', 'fated', 'best', 'childhood', 'sibclose', 'sibprot', 'buddy'].some(has) || (r.aff >= 55 && r.trust >= 40)) return 'deep';
-    if (['friend', 'colleague', 'senpai', 'mentor', 'almost', 'sibling'].some(has) || r.aff >= 25 || r.trust >= 25) return 'warm';
+    if (pf.couple || ['lover', 'mate', 'fated', 'best', 'childhood', 'sibclose', 'sibprot', 'buddy', 'worship', 'benefactor'].some(has) || (r.aff >= 55 && r.trust >= 40)) return 'deep';
+    if (['friend', 'colleague', 'senpai', 'mentor', 'almost', 'sibling', 'classmate', 'boss', 'relative'].some(has) || r.aff >= 25 || r.trust >= 25) return 'warm';
     return 'plain';
   }
 
@@ -30366,7 +32430,7 @@
   'use strict';
   var HK = window.HK, SP = HK.Special;
   if (!SP) return;
-  var LOVE = /^(lover|mate|fated|almost|fwb)$/, FAM = /^(sibling|sibprot|sibclose|parent|pparent)$/, CLOSE = /^(best|buddy|childhood|friend|mentor|master|teacher|senpai|colleague)$/, BAD = /^(enemy|rival|bad|sibbad)$/;
+  var LOVE = /^(lover|mate|fated|almost|fwb)$/, FAM = /^(sibling|sibprot|sibclose|parent|pparent|relative)$/, CLOSE = /^(best|buddy|childhood|friend|mentor|master|teacher|senpai|colleague|classmate|boss|benefactor|worship)$/, BAD = /^(enemy|rival|bad|sibbad)$/;
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function tie(S, a, b) {
     var t = (S.ties || []).filter(function (x) { return (x.a === a.i && x.b === b.i) || (x.a === b.i && x.b === a.i); })[0];
@@ -34616,7 +36680,7 @@
   HK.SCENARIOS.saimin = scen;
   HK.SCEN_ORDER.push('saimin');
 
-  var TIEMAP = { teacher: 'colleague', mentor: 'colleague', lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'lover', colleague: 'colleague', senpai: 'colleague', master: 'colleague', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', acq: 'friend', almost: 'friend', enemy: 'grudge', rival: 'grudge', ex: 'grudge', crush: 'stalker' };
+  var TIEMAP = { teacher: 'colleague', mentor: 'colleague', lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'lover', colleague: 'colleague', senpai: 'colleague', master: 'colleague', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', acq: 'friend', almost: 'friend', enemy: 'grudge', rival: 'grudge', ex: 'grudge', crush: 'stalker', classmate: 'friend', boss: 'colleague', benefactor: 'friend', worship: 'friend' };
   var FATE = { peace: '頭が良くなって喜んだ', forget: '何も覚えていない', body: '体だけが覚えている', angry: '激怒した', report: '通報した', revenge: 'やり返した', counter: '逆催眠をかけた', sweet: '照れながら許した', shy: '恥ずかしくて避けた', fall: '快楽に堕ちた（自分からねだる）', couple: '恋人になった', depend: '憎みながら離れられない', laugh: 'かからずに笑い飛ばした', noticed: '見破った' };
 
   function resolve(S, p, list, pick) {
@@ -37231,6 +39295,699 @@
     finally { B.fore = save.fore; B.insert = save.insert; B.pos = save.pos; B.climax = save.climax; if (tk) B[tk] = save.tone; ST.say = say0; }
   };
 })();
+;/* ==== js/locker-ties.js ==== */
+/* 箱庭シミュレーター: 媚薬ロッカー ― 新しい関係（同僚・同級生・上司と部下・執着（信仰）・恩人・親族）
+   solo-locker.js から呼ぶ（LK.TIES）。全年齢版にも同じファイルを置く（R18の文は locker-ties-r18.js。R18版のみ）
+   ・閉じ込められたときの反応（関係ごと。向きのある関係は両側の視点）
+   ・関係を保つ出来事（一度。理性が少し戻り、絆が深まる）
+   ・発展させる出来事（一度。恋愛してよい組なら恋に変わる分岐。信仰は「恋愛に発展：する」のときだけ恋、支配なら支配と服従が深まる。
+     恩人は恩返し（仕掛けが進む）、上司と部下は職場の外で対等に、同級生は昔話からの再接近、親族は家族の絆）
+   ・信仰する側の想いは揺らがない（拒まれても、嫌がられても、想いを捨てない一文）
+   ・親族（恋愛：なし）・信仰（恋愛に発展：しない。支配しているとき以外）の二人は、恋愛・R18にしない組として扱う（solo-locker.js が clash にする）
+     信仰で恋愛に発展しない・支配している組は、命じられての体の関係だけ（恋の結末・恋の文にしない。ベッドは荒く）
+   {u}=向きのある関係の t.a（上司・信仰する側・恩人）、{d}=t.b（部下・信仰される側・恩を受けた側）。向きのない関係は {a}{b}
+   登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK, LK = HK.LOCKER, ST = HK.Story;
+  if (!LK || !ST) return;
+  function L(s) { return s.split('|'); }
+  var NEW = { colleague: 1, classmate: 1, boss: 1, worship: 1, benefactor: 1, relative: 1 };
+  var ROM = /^(lover|mate|fated|fwb|crush|almost|ex)$/;
+  var LABEL = { colleague: '同僚', classmate: '同級生', boss: '上司と部下', worship: '執着（信仰）', benefactor: '恩人', relative: '親族' };
+
+  /* ---------- 1. 閉じ込められたときの反応 ---------- */
+  var PAT = {
+    colleague: L('{a}は狭いロッカーの中で{b}と肩をぶつけ、思わず苦笑した。{a}「職場の外で{b}とこんなに近いのは、初めてだ」|{a}と{b}は、閉じ込められたと分かった瞬間、同時に扉の継ぎ目を確かめ始めた。いつもの仕事と同じ、無駄のない分担だった。|{a}「明日の仕事、間に合うかな」――こんな状況でまず仕事の心配をする{a}に、{b}は呆れたように息をついた。|{b}は暗がりの中で、{a}の匂いが職場ですれ違うときと同じだと気づいて、なぜか落ち着かなくなった。'),
+    classmate: L('{a}「こういうの、学生のころの肝試しを思い出す」――{a}が囁くと、{b}は暗がりの中で小さく吹き出した。|同じクラスだったころは、ほとんど話したこともない二人だった。それが今、肩が触れ合う距離で閉じ込められている。|{b}は{a}の横顔を見て、学生のころと変わらない癖――困ると眉を寄せる癖に気づいた。|{a}「{b}、昔からこういうとき、妙に落ち着いてたよね」{b}「{a}が騒ぎすぎだっただけ」'),
+    relative: L('{a}「親戚の集まりで、二人で押し入れに隠れたことがあったな」――{a}が言うと、{b}は「あれは{a}が出られなくしたんでしょう」と笑った。|{a}と{b}は、親族だからこその遠慮のなさで、狭いロッカーの中の場所を取り合った。|{b}は、子どものころから知っている{a}の声を聞いて、少しだけ落ち着いた。|{a}「このことは、親族の誰にも言わない。約束だ」{b}「言えるわけない」'),
+    boss: {
+      u: L('{u}は狭いロッカーの中で、まず{d}の顔色を確かめた。{u}「怪我はない？　落ち着いて、一つずつ確かめよう」――職場で指示を出すときと同じ声だった。|{u}は、部下の前で取り乱すわけにはいかない、と背筋を伸ばした。背筋を伸ばしたせいで、{d}との距離がさらに縮まった。|{u}は{d}を扉から遠い側に寄せ、自分が通気口の前に立った。いつも現場で、危ない役を先に引き受けるのと同じだった。'),
+      d: L('{d}は反射的に{u}の指示を待った。待ってから、ここが職場ではないことに気づいて、少しだけ恥ずかしくなった。|{d}「すみません、つい職場の癖で」――{d}は狭い中で姿勢を正そうとして、{u}の胸に額をぶつけた。|{d}は、上司の前で弱音は吐けないと思った。けれど暗がりの中で{u}の手が肩に置かれると、張り詰めていたものが少しだけ緩んだ。')
+    },
+    benefactor: {
+      u: L('{u}は、{d}が真っ青になっているのに気づいて、肩を叩いた。{u}「前にも言ったはず。一人で抱えなくていい」|{u}は、昔{d}を助けたときのことを思い出していた。あのときも、{d}はこんなふうに震えていた。|{u}「{d}、落ち着いて。こういうのは、焦ったほうが負けだ」――{u}は、恩を着せるようなことは一度も言わなかった。'),
+      d: L('{d}は、{u}だけは何があっても無事に外へ出すと心に決めた。あの日{u}に救われた借りを、まだ返せていなかった。|{d}「{u}、今度は私の番。ここから出す」――{d}は、震える指で扉の仕掛けに手を伸ばした。|{d}は、狭い中で{u}の体を気遣い、少しでも{u}のほうに空間を作ろうと身を縮めた。')
+    },
+    worship: {
+      u: L('{u}は狭いロッカーの中で、真っ先に{d}を自分の腕でかばった。{u}「{d}には、指一本触れさせない。……ガスにも」|{u}は、{d}と同じ空気を吸っていることに、恐れ多さで息が浅くなった。こんな場所でも、{d}は{u}にとって特別な人だった。|{u}「{d}が無事なら、私はどうなってもいい」――{u}は本気だった。暗がりの中でも、その目は{d}だけを見ていた。'),
+      '': L('{d}は、{u}がなぜここまで自分をかばうのか分からず、首をかしげた。{d}「{u}、そんなに気を遣わなくていいのに」|{d}は、{u}がずっと自分の方を見ていることに気づいたが、暗くて不安なのだろうと思った。|{d}は何も知らないまま、{u}の肩に寄りかかった。{u}の体が、石のように固まった。'),
+      accept: L('{d}は{u}の視線を、いつものように静かに受け止めた。{d}「大丈夫。{u}がいるなら、何とかなる」|{d}は、自分を崇めるような{u}の目にも、もう慣れていた。慣れたうえで、それを拒まなかった。|{d}は{u}の手をそっと握った。{u}が息を呑むのも、{d}にはいつものことだった。'),
+      confused: L('{d}は、ガスより{u}のまっすぐすぎる視線のほうが息苦しかった。{d}「{u}、そんなふうに見ないで。……私は、そんな立派な人じゃない」|{d}は{u}にかばわれるたびに、申し訳なさで胸が重くなった。これほどの想いに、どう返せばいいのか分からなかった。|{d}は{u}から少しでも離れようとしたが、狭いロッカーには逃げ場がなかった。'),
+      dominate: L('{d}は狭いロッカーの中で、当然のように{u}に命じた。{d}「{u}、扉を調べて。私はここで待ってる」――{u}は、迷わず従った。|{d}は{u}を見つめて、薄く笑った。{d}「こんなところでも、私のために動けるよね、{u}」|{d}は{u}の肩に手を置き、そこを足場のように扱った。{u}は、それを光栄なことのように受け入れた。'),
+      cherish: L('{d}は{u}に、かばうのをやめさせようとした。{d}「{u}も、自分を大事にして。……私にとって、{u}は大切な人だから」|{d}は{u}の震える手を包んだ。崇められるより、隣で同じように怖がってほしかった。|{d}は、自分より先に{u}の具合を確かめた。{u}は、そんなことをしてもらう資格はないと首を振った。')
+    }
+  };
+
+  /* ---------- 2. 関係を保つ ---------- */
+  var KEEP = {
+    colleague: L('{a}は扉の仕掛けを読み上げ、{b}が手早く試した。{a}「次」{b}「了解」――職場と同じ呼吸で、二人は黙々と手を動かした。|{b}がうまくいかずに苛立つと、{a}は「仕事で詰まったときと同じ。一回休もう」と言った。{b}は、言われたとおりに深呼吸した。|{a}「{b}がいて助かった。職場でも、いつもそう思ってる」{b}「……今、それを言う？」――言いながら、{b}の声は少し和らいでいた。'),
+    classmate: L('二人は、学生のころの思い出話で気を紛らわせた。同じ先生の口癖を、同時に真似して笑った。|{a}「試験の前、{b}のノートに何度も助けられた」{b}「知ってる。返ってこなかったから」――暗がりの中で、二人は笑い合った。|{b}が不安そうに黙ると、{a}は学生のころに流行った歌を小さく口ずさんだ。{b}も、いつの間にか一緒に口ずさんでいた。'),
+    relative: L('{a}は親族の誰かの困った話をして、{b}を笑わせた。笑っているあいだだけ、ガスの甘さを忘れられた。|{b}が不安そうに黙ると、{a}は「出たら、親戚に話せない話が一つ増える」と言った。{b}は小さく笑った。|{a}と{b}は、子どものころの呼び名で互いを呼んだ。それだけで、狭いロッカーが少しだけ広く感じられた。'),
+    boss: L('{u}は{d}の手順を黙って見守り、うまくいくと短く「いい判断だ」と言った。{d}は、職場で褒められたときと同じように頬を緩めた。|{d}は、{u}が額に汗を浮かべているのに気づき、自分の袖でそっと拭った。{u}「……助かる」――立場が逆になったような、小さなやりとりだった。|{u}「責任は私が取る。{d}は、思うとおりにやって」――{d}は頷いた。現場でいつも背中を押してくれた言葉だった。|{d}「{u}の指示があれば、どんな現場でもやれる気がする。……ここでも」{u}は照れくさそうに目を逸らした。'),
+    benefactor: L('{d}は{u}が楽な姿勢を取れるよう、自分が窮屈な体勢を引き受けた。{u}「無理しないで」{d}「このくらい、させて」|{u}は{d}の手が震えているのに気づき、上から包んだ。{u}「大丈夫。前も、どうにかなっただろう」――{d}は、あの日と同じように頷いた。|{d}「{u}には、返しきれないほどの恩がある」{u}「返さなくていい。{d}が元気なら、それで十分」'),
+    worship: {
+      '': L('{u}は{d}の足元を何度も確かめ、{d}が楽に立てるよう体をずらし続けた。{d}は、{u}の気遣いをただの親切だと思って、素直に礼を言った。|{u}は、{d}の髪についた埃を、息を詰めて払った。{d}「ありがとう、{u}」――その一言で、{u}は十分だった。|{d}がふらつくと、{u}は自分の体を壁にしてそれを受け止めた。{d}は何も知らずに、{u}の胸に体を預けた。'),
+      accept: L('{u}は{d}の前に膝をつき、ほどけた靴紐を結び直した。{d}は、それを当たり前のように受け入れ、{u}の頭にそっと手を置いた。|{d}「{u}、ありがとう」――{d}がそう言うたびに、{u}の背筋が伸びた。{d}は、それをよく知っていた。|{u}は{d}のために通気口の前を空け続けた。{d}は、捧げられたものを拒まずに受け取った。それが二人のいつもの形だった。'),
+      confused: L('{u}は{d}の代わりに、ガスの濃いほうへ身を寄せた。{d}「やめて、{u}。そこまでしなくていい」――{u}は、それでもやめなかった。|{d}は、{u}の献身を受け取るたびに、戸惑いを隠せなかった。それでも、{u}が差し出した水だけは、黙って受け取った。|{u}「{d}が困るなら、私は離れる」{d}「……離れなくていい。ただ、自分のことも考えて」'),
+      dominate: L('{d}「{u}、もっと急いで」――{d}の命令に、{u}は指先を傷つけながらも手を早めた。{d}は満足そうに目を細めた。|{d}は{u}に自分の上着を持たせ、仕掛けを解かせ、そのあいだずっと見つめていた。{u}は、使われることに喜びを感じていた。|{d}「よくできたね、{u}」――たった一言のねぎらいで、{u}の疲れは消えた。{d}は、それをよく分かっていて言った。'),
+      cherish: L('{d}は{u}の手を取り、汗ばんだ指を自分のハンカチで拭いた。{d}「{u}も、ちゃんと休んで」――{u}は、恐れ多さに言葉を失った。|{u}が{d}をかばおうとすると、{d}はその腕を引いて、隣に並ばせた。{d}「並んで。そのほうが、私は安心する」|{d}は{u}に寄りかかって目を閉じた。{d}「{u}がいてくれてよかった」――{u}は、この言葉を一生忘れないと思った。')
+    }
+  };
+
+  /* ---------- 3. 発展させる（rom＝恋に変わる／それ以外は関係ごと） ---------- */
+  var DEV = {
+    colleague: {
+      rom: L('{a}は暗がりの中で、{b}の手を探し当てた。{a}「職場では言えなかったけど……{b}のこと、ずっと気になってた」{b}は、その手を離さなかった。|仕事仲間としてしか見ていなかったはずの{b}の横顔から、{a}は目が離せなくなっていた。ガスのせいだと言い訳するのも、難しかった。|{b}「ここを出たら、仕事抜きで食事に行こう」――{b}がそう言うと、{a}は暗がりの中で、ゆっくりと頷いた。'),
+      plain: L('{a}「ここを出たら、{b}と組む仕事をもっと増やしたい」{b}「同じことを考えてた」――二人の信頼は、狭いロッカーの中で一段深くなった。|{b}は、{a}の判断に迷わず従った。従ってみて、自分がどれほど{a}を信頼していたか、初めて気づいた。|二人は、職場では一度も話したことのない本音を、暗がりの中で打ち明け合った。明日からの仕事は、きっと少し変わる。')
+    },
+    classmate: {
+      rom: L('{a}「実は学生のころ、{b}のことが好きだった」――暗がりの中の告白に、{b}は息を呑んだ。{b}「……今さら言うの、ずるい」|昔話の途中で、二人の言葉が途切れた。同じクラスにいたころには気づかなかった気持ちが、狭い暗がりの中で形になっていった。|{b}は{a}の肩に頭を預けた。{b}「学生のころ、こうしてみたかった」――{a}は、その頭をそっと抱き寄せた。'),
+      plain: L('{a}「卒業してから、ずっと連絡しなくてごめん」{b}「お互いさま」――途切れていた時間が、ロッカーの中で少しずつ埋まっていった。|二人は、学生のころにはできなかった話をした。今の暮らしのこと、うまくいかなかったこと。昔よりずっと近くに、互いを感じた。|{b}「ここを出たら、同級生の誰かを誘って、また集まろう」{a}「その前に、二人で一回」――約束は、すんなりと決まった。')
+    },
+    boss: {
+      rom: L('{d}「職場の外でなら……{u}を、上司としてじゃなく見てもいい？」――{u}は答える代わりに、{d}の手を握った。上司と部下の線が、静かに消えた。|{u}は、部下として見てきたはずの{d}を、いつの間にか一人の人として見ていた。暗がりの中で、その気持ちはもう隠せなかった。|{u}「仕事のことは、ここでは忘れる」――そう言った{u}の声は、職場では一度も聞いたことのない柔らかさだった。{d}は、その声に頬を熱くした。'),
+      plain: L('{u}は、仕掛けの手順を{d}に任せた。{u}「ここでは、{d}のほうが上手い。指示をくれ」――職場の外で、二人は初めて対等に並んだ。|{d}「{u}も、怖いときは怖いって言っていい」――{u}は少し驚いて、それから小さく笑った。{u}「……実は、少し怖い」|立場を外した二人は、仕事の愚痴を言い合って笑った。職場に戻っても、この信頼はきっと変わらない。')
+    },
+    benefactor: {
+      rom: L('{d}は、恩を返したい気持ちが、いつの間にか別の想いに変わっていたことに気づいた。{d}「{u}。……恩だけじゃない。{u}が好きだ」|{u}は、助けたあの日から{d}を見守ってきた。見守るだけのつもりだった気持ちが、暗がりの中で揺れていた。|{d}「恩返しが終わっても、{u}のそばにいたい」――{u}は、答えの代わりに{d}の手を強く握った。'),
+      plain: L('{d}は、{u}が手こずっていた仕掛けを、自分から引き受けて進めてみせた。{d}「あの日の借り、少しだけ返せた」――{u}は、誇らしそうに笑った。|{d}はガスの濃いほうへ自分が移り、{u}を通気口の前に押しやった。そのまま扉の仕掛けに取りついた。{d}「今度は、私が{u}を守る番」|{u}「もう十分に返してもらった」{d}「まだ全然。一生かけて返す」――{d}は言いながら、仕掛けの手順を一つ先へ進めた。恩は、二人を結ぶ絆に変わっていた。')
+    },
+    relative: {
+      rom: L('{a}は、親族として見てきたはずの{b}に、それ以上の想いを抱いていたことを認めた。{a}「親戚の集まりで会うたびに、本当は……」{b}は、黙って{a}の手を握り返した。|子どものころから知っている相手だった。だからこそ、今まで言えなかった。{b}「……{a}だから、ずっと黙ってた」|{a}と{b}は、親族には決して言えない気持ちを、暗がりの中で確かめ合った。'),
+      plain: L('{a}「何があっても、{b}は私の家族だ」――{b}は暗がりの中で、少しだけ泣きそうになった。|二人は、亡くなった祖父母や、親族の昔話をした。同じ人たちを覚えているというだけで、心強かった。|{b}「出たら、久しぶりに二人で実家のほうへ顔を出そう」{a}「みんな驚くだろうな」――家族としての絆が、静かに結び直された。')
+    },
+    worship: {
+      romWarm: L('{d}は、崇めるような{u}の目を、一人の人として見つめ返した。{d}「{u}。私は神様じゃなくて、{u}の隣にいたい」――{u}の信仰は、そのまま恋に変わった。|{u}は、祈るように{d}の手に額を当てた。{d}はその手を引き寄せ、{u}の頬に触れた。崇める想いと恋しい想いが、もう区別できなかった。|{d}「{u}の想いは、ちゃんと届いてる。……私も、同じ気持ちで返したい」――{u}は、信じられないものを見るように{d}を見つめた。'),
+      romConfused: L('重荷だと思っていた{u}の想いに、{d}は初めて胸の高鳴りを覚えた。{d}「……困る。{u}のことを、こんなふうに思うなんて」|{d}は戸惑いながらも、{u}の手を振り払わなかった。{u}が自分だけを見ていることが、怖さより嬉しさに変わりはじめていた。|{u}「{d}を困らせるなら、この想いは胸にしまう」{d}「しまわなくていい。……しまわないで」'),
+      romUnaware: L('{d}は、{u}の献身がただの親切ではなかったことに、ようやく気づいた。{d}「{u}……ずっと、そんなふうに私を？」――{u}は、否定しなかった。|{d}は、自分を見る{u}の目に込められたものを、初めて正面から受け止めた。驚きのあとに来たのは、不思議な温かさだった。|{u}「気づかれなくてよかった。でも、気づかれて、もっとよかった」――{d}は、{u}の告白に頬を染めた。'),
+      dom: L('{d}は{u}の顎に指をかけ、こちらを向かせた。{d}「{u}は私のもの。そうでしょう？」{u}「……{d}のものだ。最初から」――{u}の目に、迷いはひとつもなかった。|{d}「ここを出ても、私の言うことだけを聞いて」――{u}は深く頷いた。命じられることが、{u}にとって何よりの救いだった。|{d}は{u}に、跪くよう命じた。狭いロッカーの中で、{u}はためらわずに膝を折った。支配する者と従う者の形が、より深く刻まれた。'),
+      plainWarm: L('{u}は、{d}のために生きると改めて心に誓った。{d}は、その誓いを黙って受け取り、{u}の髪を撫でた。|{d}「{u}がそうしたいなら、そばにいて」――{u}にとって、それは何よりの許しだった。信仰は、静かに深まった。|{u}は、{d}が笑うのを見るためだけに、仕掛けに向かい続けた。{d}は、その背中に小さく「ありがとう」と言った。'),
+      plainConfused: L('{d}は{u}に、もっと自分を大事にしてほしいと伝えた。{u}は頷いたが、想いが変わることはなかった。{d}は、その頑なさに少しだけ笑った。|{d}は、{u}の想いを重荷だと思っていた自分を、少しだけ恥じた。返せなくても、受け取ることはできるのかもしれない。|{u}「{d}が私を遠ざけても、私は{d}を想い続ける」――{d}は困った顔のまま、それでも{u}の隣を離れなかった。'),
+      plainUnaware: L('{d}は、{u}がいつも自分の味方でいてくれることに、改めて感謝した。その想いの深さには、まだ気づいていなかった。|{u}は、{d}を守れたことだけで満たされていた。{d}が何も知らなくても、{u}の想いは少しも揺らがなかった。|{d}「{u}って、本当に頼りになる」――{u}は笑ってみせた。それ以上の言葉は、胸の奥にしまった。')
+    }
+  };
+  var DEV_TAG = { colleague: '深まる信頼', classmate: '昔話から再接近', boss: '職場の外で対等に', benefactor: '恩返し', relative: '家族の絆', worship: '揺らがない信仰' };
+  var KEEP_TAG = { colleague: '息の合う同僚', classmate: '同級生の昔話', boss: '上司と部下の信頼', benefactor: '恩と気遣い', relative: '親族の気安さ', worship: '捧げる想い' };
+  var PAT_TAG = { colleague: '仕事仲間', classmate: '同級生', boss: '上司と部下', benefactor: '恩人', relative: '親族', worship: '信仰' };
+
+  /* ---------- 4. 信仰する側の想いは揺らがない（拒まれても、嫌われても） ---------- */
+  var STEADY = L('拒まれても、{u}の目から{d}への想いは消えなかった。{u}「{d}がそう望むなら、そうする。……想うことだけは、許してほしい」|{u}は押し返された手を、胸の前でそっと握った。{d}に嫌われても、{u}にとって{d}が特別であることは変わらなかった。|{u}は{d}の冷たい言葉を、黙って受け止めた。どんな言葉をかけられても、{u}の信仰は少しも揺らがなかった。|{u}「{d}が私をどう思っても、私は{d}を想い続ける」――その声は静かで、どこまでもまっすぐだった。');
+
+  /* ---------- 信仰する側は、崇める相手に自分から触れない（従者の耐え方に倣う。{a}=信仰する側、{b}=信仰される側） ---------- */
+  var SV = {
+    hold: L('{a}は、熱に浮かされた体を必死に{b}から遠ざけた。{a}「{b}に、こんな形で触れるわけにはいかない」|{a}は唇を噛んで耐えた。崇める相手を、ガスのせいで汚すことだけは、どうしても許せなかった。|{a}は{b}の足元に視線を落としたまま、拳を握りしめた。{a}「{b}が許すまで、私は何もしない」'),
+    break: L('{a}は、震える手で{b}の指先に口づけた。{a}「許してほしい。……もう、こらえきれない」|{a}は{b}の名前を、祈るように何度も呼んだ。崇めるだけだった想いが、熱に押されて溢れ出した。|{a}の理性が、とうとう尽きた。{a}は恐る恐る{b}の手を取り、自分の頬に当てた。'),
+    order: {
+      dom: L('{b}は{a}を見つめて、冷たく笑った。{b}「我慢しなくていい。……命令だ。私に触れなさい」|{b}は{a}の顎を指で持ち上げた。{b}「{a}は、私の言うとおりにすればいい。来て」|{b}「よく耐えた、{a}。ご褒美をあげる。……ほら、言われたとおりにして」'),
+      warm: L('{b}は{a}の頬に手を添えた。{b}「もう、我慢しなくていい。{a}なら、いい」|{b}は{a}の手を取り、自分の頬に導いた。{b}「{a}の想いは、知ってる。……触れて」|{b}「許す。{a}が触れたいなら、私も、そうしてほしい」――{a}の目から、最後のためらいが消えた。'),
+      confused: L('{b}は迷った末に、{a}の手をそっと握った。{b}「……苦しそうな{a}を、見ていられない。今だけ、いい」|{b}は戸惑いながら、{a}の名前を呼んだ。{b}「こんなの、どうしていいか分からない。でも……触れていい」|{b}「私は、{a}が思うような人じゃない。それでもいいなら……」――{a}は、震えながら頷いた。'),
+      unaware: L('{b}は、苦しそうな{a}を見かねて言った。{b}「我慢しないで、{a}。……私なら、平気だから」|{b}は何も知らないまま、{a}の手を取った。{b}「つらいなら、つかまって」――{a}の中で、何かが音を立てて切れた。|{b}「{a}、そんなに耐えなくていい」――その一言が{a}にとってどれほどの許しなのか、{b}はまだ知らなかった。')
+    }
+  };
+
+  /* ---------- 最初に手を出したとき／外に出たあと（solo-locker-more.js の LK.REL に足す。全年齢版でも出るので穏やかに） ---------- */
+  var FIRST = {
+    colleague: L('明日も職場で顔を合わせる相手だった。そのことを考える余裕は、もう二人のどちらにもなかった。|いつも隣で仕事をしている相手の体温を、{a}は初めて知った。|仕事仲間の線を越えた瞬間、{b}は、自分が思っていたほど驚いていないことに驚いた。'),
+    classmate: L('同じクラスだったころには、指先すら触れたことがなかった。その相手に、{a}は今、自分から触れていた。|学生のころの{b}の面影が、暗がりの中で一瞬だけ重なって、すぐに消えた。|昔話をしていた唇が、昔話の続きのように重なった。'),
+    boss: L('職場では、決して越えてはいけないはずの線だった。{u}と{d}は、ガスの熱の中でそれを越えた。|{d}は、いつも職場で背中を見ている{u}の顔が、こんなに近くにあることが信じられなかった。|上司と部下という肩書きは、狭いロッカーの中では何の役にも立たなかった。'),
+    worship: L('{u}は、崇めてきた{d}に触れている自分が信じられなかった。指先が、祈るように震えていた。|{d}に触れることは、{u}にとって何より恐れ多く、何より望んでいたことだった。|{u}の触れ方は、どこまでも恭しかった。{d}は、その恭しさに息を詰めた。'),
+    benefactor: L('恩を返したいと思い続けてきた相手だった。こんな形になるとは、{d}は思ってもいなかった。|{u}は、昔助けた{d}が、もう守られるだけの相手ではないことを、体温で思い知った。|恩人と、恩を受けた側。その距離が、ガスの熱の中で一度に溶けた。'),
+    relative: L('親族として過ごしてきた長い時間が、たった数分で塗り替えられていった。|子どものころから知っている相手なのに、こんな顔は一度も見たことがなかった。|親戚の誰にも言えない秘密が、ロッカーの暗がりの中で一つ増えた。')
+  };
+  var AFTER = {
+    colleague: L('翌日、二人は職場でいつも通りに挨拶をした。目が合った一瞬だけ、どちらも言葉に詰まった。|{a}は帰り道、明日からどんな顔で仕事をすればいいのか、ずっと考えていた。|次の打ち合わせの席で、二人は隣に座った。誰も気づかなかったが、二人の肩は少しだけ近かった。'),
+    classmate: L('外に出た二人は、同級生の誰にもこの話はしないと誓い合った。それから、照れくさそうに笑った。|学生のころの思い出に、とんでもない続きができてしまった。{b}は、次の同窓会が少し怖くなった。|別れ際、{a}は「また連絡する」と言った。学生のころには言えなかった一言だった。'),
+    boss: L('翌朝、{d}はいつも通りに{u}へ報告を上げた。{u}の返事は、いつもより一拍遅かった。|職場に戻った二人は、上司と部下の顔に戻った。ただ、書類を受け渡す指先だけが、ぎこちなかった。|{u}は「今日のことは、仕事とは関係ない」と言った。{d}は、その言葉の意味を一晩じゅう考えた。'),
+    worship: L('{u}は外に出ても、{d}の一歩後ろを歩いた。触れてしまった指先を、宝物のように握りしめて。|{d}は、{u}の想いが少しも変わっていないことに気づいた。むしろ、前より深くなっていた。|{u}は「{d}のためなら、何度でも」とだけ言った。その目に、迷いはなかった。'),
+    benefactor: L('帰り道、{d}は「また恩が増えた気がする」と笑った。{u}は「数えなくていい」と返した。|{u}は、守ってきたはずの{d}の背中が、思っていたより大きいことに気づいた。|恩人と、恩を受けた側。その関係に、今夜もう一つ、名前のない何かが加わった。'),
+    relative: L('次の親族の集まりで、二人は少しだけ離れて座った。それでも目が合うと、どちらも先にそらした。|二人は、この日のことを親族の誰にも話さないと決めた。決めたことが、二人をかえって近づけた。|{a}は帰り道、子どものころの{b}の顔と、今日の{b}の顔を、何度も思い比べた。')
+  };
+  if (LK.REL) Object.keys(FIRST).forEach(function (k) { LK.REL.first[k] = FIRST[k]; LK.REL.after[k] = AFTER[k]; });
+
+  /* ---------- 結末の一文（rom＝恋に変わった／dom＝支配が深まった／bond＝絆が深まった） ---------- */
+  var ENDL = {
+    colleague: { rom: L('{a}と{b}は、職場の誰にも内緒で、仕事のあとに会う約束をした。|仕事仲間だった二人の関係に、新しい名前がつきかけていた。|{a}は翌日、職場で{b}の姿を探している自分に気づいた。'), bond: L('{a}と{b}は、職場でいちばん息の合う二人になった。|ロッカーで組んだ二人は、次の仕事でも自然と同じ組になった。|{a}は「次の仕事も、{b}と組みたい」と、自分から言い出した。') },
+    classmate: { rom: L('同窓会の案内が届いたとき、{a}と{b}は、二人で行くと返事をした。|学生のころに言えなかったことを、二人はやっと言い合えた。|{b}は、学生のころの自分に「待っていてよかった」と言ってやりたかった。'), bond: L('途切れていた同級生の縁が、ロッカーの中で結び直された。|二人は、月に一度は会う約束をした。学生のころより、ずっと気楽な仲だった。|{a}と{b}は、昔話のできる数少ない相手を、もう一度見つけた。') },
+    boss: { rom: L('職場の外で、{u}と{d}は名前で呼び合うようになった。|{d}は、{u}の「おつかれさま」に、前とは違う響きを聞くようになった。|上司と部下の二人は、職場の誰にも言えない約束を一つ交わした。'), bond: L('職場に戻った{u}は、{d}に大きな仕事を任せるようになった。|{d}は、{u}を上司としてだけでなく、一人の人として信頼するようになった。|上司と部下の二人のあいだに、職場の外でしか生まれない信頼が残った。') },
+    benefactor: { rom: L('恩人と、恩を受けた側。二人の関係は、恋人と呼ぶほうが近いものに変わった。|{d}はもう「恩返し」とは言わなかった。代わりに「一緒にいたい」と言った。|{u}は、守るだけだった相手に、守られる日が来るとは思っていなかった。'), bond: L('{d}は、また一つ{u}への恩を返した。{u}は「もう十分」と笑った。|恩人と、恩を受けた側。二人の縁は、前よりずっと対等なものになった。|{u}は、助けた相手に助けられる日が来たことを、誇らしく思った。') },
+    relative: { rom: L('二人は、親族の誰にも言えない関係になった。|次の親戚の集まりで、二人はテーブルの下でそっと手を繋いだ。|子どものころから知っている相手を、{a}は初めて「好きな人」と呼んだ。'), bond: L('二人は、親族の中でいちばん頼れる相手どうしになった。|次の親戚の集まりで、二人は並んで座り、ロッカーの話で笑い合った。|{a}は、何かあったらまず{b}に連絡しようと決めた。') },
+    worship: {
+      rom: L('{u}の信仰は、恋に変わった。崇める想いは、少しも減らなかった。|{d}は、{u}の想いに、自分の想いで応えると決めた。|崇める者と崇められる者は、隣を歩く二人になった。それでも{u}は、{d}を見るたびに、祈るような目をした。'),
+      dom: L('{u}は、ロッカーを出てからも、{d}の言葉一つで動いた。それを、何より幸せだと思っていた。|{d}の支配は、前より深くなった。{u}の服従もまた、前より深くなった。|{d}が「来なさい」と言えば、{u}はどこへでも行く。二人の形は、もう変わらなかった。'),
+      bond: L('{u}の想いは、ロッカーに閉じ込められる前と、少しも変わらなかった。|何があっても、{u}にとって{d}が特別な人であることは揺らがなかった。|{u}は、これからも{d}を想い続ける。それだけは、誰にも変えられなかった。')
+    }
+  };
+
+  /* 信仰される側の気持ちの束ね方 */
+  function grp(c) { return c === 'accept' || c === 'cherish' ? 'warm' : c === 'confused' ? 'confused' : c === 'dominate' ? 'dom' : 'unaware'; }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function vars(nt, a, b) { return { a: a.name, b: b.name, u: nt.u.name, d: nt.d.name }; }
+  function noLoveOf(t) {
+    if (t.type === 'relative') return HK.tieNoLove ? HK.tieNoLove(t) : t.love !== 'ok';
+    if (t.type === 'worship') return HK.tieOptNoLove ? HK.tieOptNoLove(t) : t.love !== 'ok';
+    return false;
+  }
+
+  var NT = LK.TIES = {
+    LABEL: LABEL,
+    /* 二人の関係（tieL は solo-locker.js が強い順に並べたもの）から、新しい関係を一つ選ぶ */
+    setup: function (S, A, B, tieL) {
+      var t = (tieL || []).filter(function (x) { return NEW[x.type]; })[0];
+      if (!t) return null;
+      var D = HK.TIES && HK.TIES[t.type] || {}, u = S.P[t.a], d = S.P[t.b];
+      if (!u || !d || u === d) return null;
+      if (!D.dir) { u = A; d = B; }
+      var romTie = tieL.some(function (x) { return ROM.test(x.type); });
+      var cold = t.type === 'worship' ? t.cold || '' : '';
+      var nt = { type: t.type, t: t, u: u, d: d, dir: !!D.dir, cold: cold, g: grp(cold), love: t.love === 'ok', noLove: !romTie && noLoveOf(t) && cold !== 'dominate', dom: t.type === 'worship' && cold === 'dominate', bond: 0, pats: 0, kept: false, dev: '', rom: false, steady: 0, label: LABEL[t.type] };
+      nt.nlWhy = t.type === 'relative' ? '親族（恋愛にしない関係）' : '恋愛に発展しない信仰（執着）';
+      return nt;
+    },
+    /* 役割の札（roleLabel に足す） */
+    role: function (nt, p) {
+      if (!nt || !nt.dir) return '';
+      var R = { boss: ['上司', '部下'], worship: ['信仰する側', '信仰される側'], benefactor: ['恩人', '恩を受けた側'] }[nt.type];
+      return R ? '（' + (p === nt.u ? R[0] : R[1]) + '）' : '';
+    },
+    /* 恋愛に進んでよい組か（恋愛・R18にしない組・恋愛の対象にならない組では恋に変えない） */
+    romOK: function (nt, ngP) {
+      if (ngP || nt.noLove) return false;
+      if (nt.type === 'worship' && !nt.love) return false;
+      return !HK.canLove || (HK.canLove(nt.u, nt.d) && HK.canLove(nt.d, nt.u));
+    },
+    /* 閉じ込められたとき（目覚め）の反応 */
+    wake: function (S, nt) {
+      var rng = S.rng, P0 = PAT[nt.type], side = !nt.dir ? null : nt.type === 'worship' ? (rng() < 0.5 ? 'u' : nt.cold) : (rng() < 0.5 ? 'u' : 'd');
+      var arr = side == null ? P0 : P0[side] || P0.u, a = side === 'u' || side == null ? nt.u : nt.d;
+      if (side == null && rng() < 0.5) a = nt.d;
+      var b = a === nt.u ? nt.d : nt.u;
+      nt.pats++; nt.patSide = side;
+      return ST.say(S, { actors: [a, b], tag: PAT_TAG[nt.type], text: ST.fmt(LK.pick(S, arr), vars(nt, a, b)), why: '二人の関係：' + nt.label + (nt.type === 'worship' ? '（' + (HK.WORSHIP_BACK && HK.WORSHIP_BACK[nt.cold] ? HK.WORSHIP_BACK[nt.cold].label : '') + '）' : nt.dir ? '（' + a.name + 'の側から）' : ''), mag: 12 });
+    },
+    /* 5分ごと：反応・保つ・発展のどれか一つ（繋がっているあいだは起こさない）。戻り値 { prog } で仕掛けが進む */
+    turn: function (S, nt, c) {
+      if (c.pair.conn) return null;
+      var rng = S.rng, u = nt.u, d = nt.d;
+      /* 3. 発展（一度） */
+      if (!nt.dev && c.turn >= 3 && (nt.kept || c.turn >= 5) && rng() < 0.4) {
+        var k, pool, why, eff = null, D0 = DEV[nt.type];
+        if (nt.dom) { k = 'dom'; pool = D0.dom; }
+        else if (NT.romOK(nt, c.ngP) && rng() < (nt.type === 'worship' ? 0.75 : 0.55)) { k = 'rom'; pool = nt.type === 'worship' ? D0['rom' + cap(nt.g)] : D0.rom; }
+        else { k = 'plain'; pool = nt.type === 'worship' ? D0['plain' + cap(nt.g)] : D0.plain; }
+        nt.dev = k;
+        if (k === 'rom') { nt.rom = true; u.m.heat = Math.min(100, u.m.heat + 6); d.m.heat = Math.min(100, d.m.heat + 6); why = '関係が恋に変わった（' + nt.label + (nt.type === 'worship' ? '・恋愛に発展：する' : '') + '）'; }
+        else if (k === 'dom') { nt.domDeep = true; u.m.reason = Math.max(0, u.m.reason - 6); why = d.name + 'は' + u.name + 'の信仰を利用して、支配を深めた（' + u.name + 'の理性 -6）'; }
+        else {
+          nt.bond += 2; u.m.reason = Math.min(100, u.m.reason + 6); d.m.reason = Math.min(100, d.m.reason + 6);
+          if (nt.type === 'benefactor') eff = { prog: 12 };
+          why = { colleague: '仕事仲間としての信頼が深まった', classmate: '昔話から、途切れていた縁が結び直された', boss: '職場の外で、二人は対等に並んだ', benefactor: d.name + 'が恩を返した（仕掛けが進んだ）', relative: '家族としての絆が結び直された', worship: u.name + 'の想いは揺らがない' }[nt.type] + '（理性 +6）';
+        }
+        var a0 = nt.dir ? u : rng() < 0.5 ? u : d, b0 = a0 === u ? d : u;
+        var o = ST.sayB(S, { actors: nt.dir ? [u, d] : [a0, b0], tag: k === 'rom' ? '恋に変わる' : k === 'dom' ? '支配と服従' : DEV_TAG[nt.type], text: ST.fmt(LK.pick(S, pool), vars(nt, a0, b0)), why: why, mag: 22 }, u.name + 'と' + d.name + '：' + (k === 'rom' ? '恋に変わる' : DEV_TAG[nt.type]), true);
+        if (o) ST.key(S, o, u.name + 'と' + d.name + 'の関係が' + (k === 'rom' ? '恋に変わった' : k === 'dom' ? '支配と服従に深まった' : '深まった'));
+        return eff;
+      }
+      /* 2. 保つ（一度） */
+      if (!nt.kept && c.turn >= 1 && rng() < 0.35) {
+        nt.kept = true; nt.bond++;
+        var arr = nt.type === 'worship' ? KEEP.worship[nt.cold] || KEEP.worship[''] : KEEP[nt.type];
+        var ru = nt.dom ? 0 : 4, rd = nt.type === 'boss' ? 5 : 4;
+        u.m.reason = Math.min(100, u.m.reason + ru); d.m.reason = Math.min(100, d.m.reason + rd);
+        var a1 = nt.dir ? u : rng() < 0.5 ? u : d, b1 = a1 === u ? d : u;
+        ST.sayB(S, { actors: nt.dir ? [u, d] : [a1, b1], tag: KEEP_TAG[nt.type], text: ST.fmt(LK.pick(S, arr), vars(nt, a1, b1)), why: 'いつもの関係を確かめ合った（' + nt.label + '／理性 ' + u.name + ' +' + ru + '・' + d.name + ' +' + rd + '）', mag: 14 }, u.name + 'と' + d.name + '：' + KEEP_TAG[nt.type]);
+        return null;
+      }
+      /* 1. 反応（もう一度。目覚めとは別の視点から） */
+      if (nt.pats < 2 && c.turn >= 2 && rng() < 0.22) {
+        var P0 = PAT[nt.type], side = !nt.dir ? null : nt.patSide === 'u' ? (nt.type === 'worship' ? nt.cold : 'd') : 'u';
+        var arr2 = side == null ? P0 : P0[side] || P0.u, a2 = side === 'u' || side == null ? (rng() < 0.5 || nt.dir ? u : d) : d, b2 = a2 === u ? d : u;
+        nt.pats++;
+        ST.sayB(S, { actors: [a2, b2], tag: PAT_TAG[nt.type], text: ST.fmt(LK.pick(S, arr2), vars(nt, a2, b2)), why: '二人の関係：' + nt.label, mag: 10 }, a2.name + 'と' + b2.name + '：' + PAT_TAG[nt.type]);
+      }
+      return null;
+    },
+    /* 手を出す気持ち・応じる気持ちの補正 */
+    urge: function (nt, a) {
+      var v = nt.rom ? 0.12 : 0;
+      if (nt.type === 'boss') v -= 0.05;
+      return v;
+    },
+    accW: function (nt, a, b) {
+      var v = (nt.rom ? 0.2 : 0) + nt.bond * 0.03;
+      if (nt.type === 'worship') v += b === nt.u ? 0.45 : { warm: 0.25, confused: -0.1, dom: 0.2, unaware: 0.05 }[nt.g];
+      else if (nt.type === 'benefactor') v += b === nt.d ? 0.15 : 0.05;
+      else v += { colleague: 0.05, classmate: 0.08, boss: 0, relative: 0.05 }[nt.type] || 0;
+      return v;
+    },
+    /* 信仰：崇める相手から許し（命令）が出るのに要る、相手の CP+FC */
+    ordTh: function (nt) { return nt.dom ? (nt.domDeep ? 0.2 : 0.4) : nt.g === 'warm' ? (nt.rom ? 0.5 : 0.7) : nt.g === 'confused' ? 1.0 : 1.1; },
+    sv: function (nt) { return { hold: SV.hold, break: SV.break, order: SV.order[nt.g] || SV.order.warm }; },
+    /* 信仰する側（u）が、崇める相手（d）に拒まれたとき：想いは揺らがない */
+    refused: function (S, nt, a, b) {
+      if (nt.type !== 'worship' || a !== nt.u || b !== nt.d || nt.steady >= 2 || S.rng() > 0.75) return '';
+      nt.steady++;
+      a.m.reason = Math.min(100, a.m.reason + 4);
+      return ST.fmt(LK.pick(S, STEADY), vars(nt, a, b));
+    },
+    /* 自分から閉じ込められた相手が崇める人なら、信仰する側は怒らない */
+    plotSoft: function (nt, po) { return !!(nt && nt.type === 'worship' && po === nt.u); },
+    /* 外に出たあと：信仰する側が拒まれた・怒られたまま終わるときも、想いは揺らがない */
+    afterNote: function (S, nt, outcome, plotter) {
+      if (nt.type !== 'worship') return '';
+      var hurt = nt.d.cnt.refuse > 0 || outcome === 'angry' || (outcome === 'plotfail' && plotter === nt.u);
+      if (!hurt || nt.steady >= 3) return '';
+      nt.steady++;
+      return ST.fmt(LK.pick(S, STEADY), vars(nt, nt.u, nt.d));
+    },
+    /* 結末の一行 */
+    endLine: function (S, nt) {
+      var E = ENDL[nt.type], k = nt.rom ? 'rom' : nt.dom && nt.domDeep ? 'dom' : nt.bond >= 1 || nt.type === 'worship' ? 'bond' : null;
+      if (!k || !E[k]) return '';
+      var a = nt.dir || S.rng() < 0.5 ? nt.u : nt.d;
+      return ST.fmt(LK.pick(S, E[k]), vars(nt, a, a === nt.u ? nt.d : nt.u));
+    },
+    /* 信仰する側の結末（従者の結末の代わり） */
+    fate: function (nt, p) { return p.broke ? '崇める相手に手を伸ばしてしまった' : p.ordered ? (nt.dom ? '命じられるままに身を委ねた' : '許されて触れた') : p.cnt.hold ? '最後まで崇める相手に触れなかった' : '想いを捧げ続けた'; },
+    /* ベッドの空気（甘く／荒く）。恋に変わった・信仰の二人は甘く */
+    tone: function (nt, rng) { return nt.dom && !nt.love ? 'rough' : nt.rom || nt.type === 'worship' ? 'sweet' : rng() < 0.5 ? 'rough' : 'sweet'; },
+    COUNT: function () {
+      var n = 0;
+      function add(x) { if (Array.isArray(x)) n += x.length; else if (x && typeof x === 'object') Object.keys(x).forEach(function (k) { add(x[k]); }); }
+      [PAT, KEEP, DEV, STEADY, SV, FIRST, AFTER, ENDL].forEach(add);
+      return n;
+    }
+  };
+})();
+;/* ==== js/locker-ties-r18.js ==== */
+/* 箱庭シミュレーター: 媚薬ロッカー（R18版のみ）― 新しい関係（同僚・同級生・上司と部下・執着（信仰）・恩人・親族）ならではのえっち
+   ・扉が開いたあとのベッド（LK.bed を包む）：導入（「ベッドへ」に足す。信仰される側が支配しているときは、命じる形の導入に差し替える）・
+     最中（地の文＋関係の言葉）・山場（関係の言葉＋地の文。男性向けは擬音と♡の段）・事後
+   ・ロッカーの中で繋がったとき（solo-locker.js の LK.TIES.r18Act）：最中の地の文と関係の言葉
+   ・地の文は性別の組（m＝攻めが男性の体／ff＝女性どうし／fm＝女性の攻めが男性に跨る）ごとに3文以上。関係の言葉は態度9種で書き分け（各2文）
+   ・{a}=攻め {b}=受け（体の動きは必ず {a}{b} で書く）。{u}{d}=関係の向き（上司・信仰する側・恩人／部下・信仰される側・恩を受けた側）。
+     言葉の {o}=話しかける相手。信仰される側が支配しているときは、信仰される側が命じ、信仰する側が従う（体の向きは受け攻めの指定どおり）
+   ・恋愛・R18にしない組（親族の恋愛：なし・恋愛に発展しない信仰）は、solo-locker.js の判定でここまで来ない
+   全年齢版にはこのファイルはない。登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK, LK = HK.LOCKER, NT = LK && LK.TIES, ST = HK.Story;
+  if (!NT || !LK.bed || !ST || !HK.Ero) return;
+  function L(s) { return s.split('|'); }
+  var PS = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite'];
+  function ps(c) { var p = HK.personaOf ? HK.personaOf(c) : c.persona; return PS.indexOf(p) >= 0 ? p : 'gentle'; }
+  function isF(c) { return !!(HK.Pos && HK.Pos.isF(c)); }
+  function kindOf(t, b) { return isF(t) ? (isF(b) ? 'ff' : 'fm') : 'm'; }
+  function pick(S, arr) { return LK.pick(S, arr); }
+
+  /* ---------- 導入（ベッドへ） ---------- */
+  var INTRO = {
+    colleague: {
+      m: L('職場では毎日すれ違うだけの体だった。{a}は{b}の服のボタンを外しながら、明日、職場で{b}の顔をまともに見られる気がしない、と思った。それでも、手は止まらなかった。|{a}は{b}をベッドに横たえ、首元を緩めた。仕事中に何度も見てきたはずの喉元が、今は知らない人のもののように艶めいていた。{b}は「同僚に見せる顔じゃない」と腕で顔を隠した。|{a}は{b}の上に覆いかぶさり、耳元で囁いた。「明日も、隣の席だな」――{b}は真っ赤になって{a}の背中を叩いた。叩いた手は、そのまま{a}の肩にしがみついた。'),
+      ff: L('{a}は{b}のブラウスのボタンを、一つずつ外していった。職場で何度も見てきた襟元の奥を、{a}は初めて目にした。{b}は「同僚なのに」と呟いて、それでも{a}の手を止めなかった。|二人はベッドの上で向かい合い、互いの服を脱がせ合った。いつも仕事の段取りを確かめ合う手が、今は相手の肌を確かめていた。|{a}は{b}の首元に顔を埋めた。職場ですれ違うたびにかすかに香っていた匂いが、今は胸いっぱいに満ちた。{a}「職場の誰も、こんな{b}を知らない」'),
+      fm: L('{a}は{b}をベッドに座らせ、その膝の上に跨った。仕事中は対等に意見をぶつけ合う相手を、上から見下ろすのは初めてだった。{a}「明日、どんな顔で会えばいい？」|{a}は{b}の襟元を掴んで引き寄せ、そのままベッドに倒して上に跨った。職場では見慣れた襟元が、今はやけに無防備に見えた。{b}は抵抗もせず、{a}の唇を受け入れた。|{a}は{b}の上に跨り、ゆっくりと服を脱いでいった。{b}は、毎日隣で仕事をしている同僚の素肌から、目を逸らせなかった。')
+    },
+    classmate: {
+      m: L('{a}は{b}の服を脱がせながら、学生のころの{b}を思い出していた。あのころは、指先が触れるだけで大騒ぎしていたのに。今、{a}の指は{b}の素肌の上にあった。|{b}はベッドに沈みながら、天井を見上げて笑った。「同じクラスだったころの私に、教えてやりたい」――{a}はその笑いを、唇で塞いだ。|{a}は{b}の体を抱き寄せ、肩口に顔を埋めた。学生のころより、ずっと大人の体だった。{a}は、その変化を一つずつ確かめるように手を滑らせた。'),
+      ff: L('{a}と{b}は、学生のころ放課後に並んで座ったときのように、ベッドの縁に並んで腰かけた。違うのは、互いの服のボタンに手をかけていることだけだった。|{a}は{b}の鎖骨に口づけた。学生のころ、更衣室で目を逸らしていた肌だった。{b}「……あのころから、見てたの？」{a}は答えずに、もう一度口づけた。|二人はシーツの上で脚を絡めた。同じ教室にいたころには知らなかった互いの体温を、確かめるように寄せ合った。'),
+      fm: L('{a}は{b}を仰向けにして、その上に跨った。学生のころ遠くから眺めるだけだった相手を、今はすぐ真下に見下ろしている。|{a}は{b}の服をはだけさせ、その胸に手を置いた。{b}の鼓動は、学生のころ廊下ですれ違ったときより、ずっと速かった。|{a}は{b}の上に跨ったまま、ゆっくりと上着を脱ぎ捨てた。{b}は、同窓会の写真でしか知らなかった今の{a}を、初めて間近で見た。')
+    },
+    boss: {
+      m: L('{a}は{b}をベッドに横たえ、その上に覆いかぶさった。職場では机を挟んで向かい合う二人の間に、今は何もなかった。{u}も{d}も、肩書きは扉の外に置いてきた。|{u}は「これは命令じゃない」と言った。{d}は「分かってる」と答えて、自分から服に手をかけた。職場では決して見せない、互いの素肌だった。|{a}は{b}の首筋に唇を落とした。いつも職場で言葉を交わす距離より、ずっと近かった。{b}の息が乱れるのを、{a}は職場では一度も聞いたことがなかった。'),
+      ff: L('{a}は{b}のシャツのボタンを外していった。職場で毎日見ている服の下を、{u}も{d}も、初めて互いに見せ合った。|{u}は「職場の外だから、立場は関係ない」と囁いた。{d}は頷いて、{u}の髪に指を差し入れた。二人はそのまま、シーツの上で肌を重ねた。|{a}は{b}をベッドに横たえ、その手首に口づけた。書類を受け渡すたびに見ていた手首だった。{b}は、ぎゅっと目を閉じた。'),
+      fm: L('{a}は{b}の上に跨り、上から見下ろした。{u}と{d}――職場の上下が、ベッドの上では何の意味も持たなかった。|{a}は{b}の服をはだけさせ、その胸に手のひらを当てた。{b}の鼓動は、大事な仕事の前よりずっと速かった。|{u}は「明日の仕事のことは、今は忘れて」と言った。{d}は頷き、{a}が{b}の上に跨るのを、二人とも息を詰めて待った。')
+    },
+    worship: {
+      m: L('{u}は、ベッドに横たわる{d}を、祭壇でも見るように見つめた。触れることを許された指先が、恭しく{d}の肌をなぞる。{a}が{b}を抱き寄せたとき、{u}の目には涙がにじんでいた。|{a}は{b}の服を、一枚ずつ丁寧に脱がせた。{u}にとって、それは儀式のようなものだった。{d}は、その恭しさにかえって頬を熱くした。|{u}は{d}の足先に口づけてから、ゆっくりと体を重ねていった。崇める相手と肌を合わせることを、{u}は夢の中でしか自分に許したことがなかった。'),
+      ff: L('{u}は{d}の手を取り、その指の一本一本に口づけた。{a}が{b}をシーツに横たえると、{u}は「{d}に触れられる日が来るなんて」と呟いた。|{a}は{b}の肌を、壊れものを扱うようにそっと撫でた。{u}の指先は震えていた。崇めてきた{d}の体温が、今は掌の中にあった。|{u}は{d}の前に膝をつき、その腰にそっと腕を回した。{d}が髪を撫でると、{u}は祈るように目を閉じた。二人はそのまま、ベッドに倒れ込んだ。'),
+      fm: L('{a}は{b}をベッドに横たえ、その上に跨った。{u}は、{d}と肌を合わせていることが信じられないというように、何度も{d}の名前を呼んだ。|{a}は{b}の上に跨り、両手で{b}の頬を包んだ。{u}にとって、{d}と肌を重ねることは、信仰の答えそのものだった。|{u}は{d}の服を脱がせる前に、一度だけ許しを乞うように{d}を見つめた。{d}が頷くと、{a}は{b}の上に跨り、その素肌に唇を落とした。')
+    },
+    /* 信仰される側が支配している：命じる形（「ベッドへ」の文と差し替える） */
+    worship_dom: {
+      m: L('{d}はベッドに腰かけ、{u}を見つめた。{d}「脱いで。全部、私に見せなさい」――{u}は迷わず従った。{a}が{b}をシーツに沈めるときも、{u}は{d}の次の言葉を待つように息を詰めていた。|{d}は{u}の顎を指で持ち上げた。{d}「ここからは、私が言ったことだけをして」――{u}は「はい」と答えた。二人がベッドに倒れ込むまで、{u}は{d}の言葉を一つも聞き漏らさなかった。|{d}「来なさい、{u}」――たった一言で、{u}はベッドに上がった。{a}が{b}の服をはだけさせるあいだ、{d}は満足そうに{u}の様子を見ていた。'),
+      ff: L('{d}はベッドの上で脚を組み、{u}に命じた。{d}「跪いて。それから、私に触れていいか、ちゃんと聞いて」――{u}は膝をつき、震える声で許しを乞うた。|{d}は{u}の髪を掴んで引き寄せた。{d}「{u}は私のもの。そうでしょう？」――{u}が頷くと、{d}はそのままシーツの上へ{u}を連れていった。|{d}「服を脱がせて。ゆっくり」――{u}は言われたとおりに、{d}の服を一枚ずつ丁寧に外していった。最後の一枚が落ちると、{d}は「いい子」と微笑んだ。'),
+      fm: L('{d}はベッドを指さした。{d}「上がって、{u}。……私がいいと言うまで、勝手に触れないで」――{u}は命じられたとおりにした。|{d}は{u}の手首を掴み、その甲に唇を落としてから言った。{d}「今夜は、私の言うとおりにして」――{u}の目に、恍惚とした光が宿った。|{d}「見ていてあげる。{u}が私のためにどこまでできるか」――{a}が{b}の上に跨るあいだも、{d}の声は少しも揺らがなかった。')
+    },
+    benefactor: {
+      m: L('{d}は「恩返しなんかじゃない」と言いながら、{u}の服に手をかけた。{a}が{b}をベッドに横たえると、二人の間にあった恩も借りも、一度に溶けていった。|{u}は、助けたあの日の{d}の顔を思い出していた。あのとき震えていた{d}が、今は熱に潤んだ目で{u}を見つめている。{a}は{b}の首筋に唇を寄せた。|{a}は{b}の体をゆっくりとシーツに沈めた。{d}「ずっと、こうして返したかった」{u}「返さなくていいと言っただろう」――それでも、二人の手は離れなかった。'),
+      ff: L('{d}は{u}の手を取り、その手のひらに頬を寄せた。この手に救われた日のことを、{d}は一日も忘れなかった。{a}が{b}を抱き寄せ、二人はシーツに倒れ込んだ。|{a}は{b}の服を、ゆっくりと脱がせていった。{u}は、守ってきた{d}の肌に触れるたびに、確かめるように指を止めた。|{d}「今夜は、私が{u}を満たしたい」――{d}の声に、{u}は小さく息を呑んだ。二人はベッドの上で、互いの服を脱がせ合った。'),
+      fm: L('{a}は{b}をベッドに横たえ、その上に跨った。{u}と{d}――救った者と救われた者の距離が、肌の上で一度に縮まった。|{d}は「恩人にこんなこと」と言いかけて、やめた。{a}が{b}の上に跨ると、もう恩のことなど考えられなかった。|{a}は{b}の胸に手を置いて、その鼓動を確かめた。{u}にとっても{d}にとっても、あの日から続く縁が、今夜は別の形に変わろうとしていた。')
+    },
+    relative: {
+      m: L('親族の誰にも言えないことをしている――その思いが、{a}と{b}をかえって熱くした。{a}は{b}をベッドに横たえ、子どものころから知っている顔を、初めて見る表情で見下ろした。|{b}は「次の法事で、どんな顔をすればいいの」と笑った。笑い声は、{a}の唇に塞がれて途切れた。|{a}は{b}の服を脱がせながら、親戚の集まりで隣に座っていた日々を思い出していた。そのころから、この肌に触れたかったのかもしれない。'),
+      ff: L('{a}と{b}は、親族として何度も同じ部屋で眠ってきた。けれど、同じベッドで肌を重ねるのは、これが初めてだった。|{a}は{b}の髪を撫で、その額に口づけた。子どものころと同じ仕草だった。違うのは、そのまま唇が首筋へ降りていったことだけだった。|{b}「親戚の誰にも、絶対に言えない」{a}「言わない。二人だけの秘密」――二人はシーツの上で、互いの服を脱がせ合った。'),
+      fm: L('{a}は{b}の上に跨り、子どものころから知っているその顔を見下ろした。{b}は、親族の誰も知らない{a}の表情に、息を呑んだ。|{a}は{b}の服をはだけさせながら、「親戚の集まりのたびに、こうしたかった」と囁いた。{b}は答える代わりに、{a}の腰に手を回した。|親族という言葉が、ベッドの上では遠く聞こえた。{a}は{b}の胸に手をつき、ゆっくりと体を重ねていった。')
+    }
+  };
+
+  /* ---------- 最中（ベッドとロッカーの両方で使うので、場所を書かない） ---------- */
+  var MID = {
+    colleague: {
+      m: L('{a}が腰を打ちつけるたびに、{b}の口から職場では決して聞けない声がこぼれた。{a}は、その声を一つも聞き逃すまいと、{b}の顔を覗き込んだ。{b}は「見るな」と顔を覆ったが、腰は{a}を追いかけていた。|{a}は{b}の奥まで繋がったまま、わざと動きを止めた。仕事で焦らされるのは慣れていても、これには慣れていない。{b}は悔しそうに、{a}の腰を自分から引き寄せた。|いつも息の合う二人は、ここでも息が合った。{a}が深く沈めば、{b}が腰を浮かせる。打ち合わせなど要らなかった。'),
+      ff: L('{a}の指が{b}の中で曲げられるたびに、{b}は職場では聞かせたことのない声を上げた。{a}は、その声を自分だけのものにするように、唇で塞いだ。|{a}は{b}の脚のあいだに顔を埋め、舌で丹念に確かめていった。仕事と同じように、手を抜かなかった。{b}はシーツを握りしめ、腰を震わせた。|二人は脚を絡め合い、濡れたところを擦りつけ合った。いつもは書類越しに交わす視線が、今は互いの蕩けた顔だけを映していた。'),
+      fm: L('{a}は{b}の上で、ゆっくりと腰を揺らした。職場では対等に張り合う相手が、自分の下で息を乱している。{a}は、その顔をもっと見たくて、動きを速めた。|{a}は{b}の胸に手をつき、腰を深く沈めたまま円を描いた。{b}は「明日、仕事にならない」と呻いた。{a}は笑って、さらに深く腰を落とした。|{a}が腰を上下させるたびに、{b}の手が{a}の太腿を掴んだ。いつも隣で仕事をしている手が、今は{a}にすがりついていた。')
+    },
+    classmate: {
+      m: L('{a}は{b}の奥を、一度ずつ確かめるように突いた。学生のころには想像もしなかった声が、{b}の唇から漏れる。{a}は、その声をずっと覚えていようと思った。|{b}は{a}の背中に腕を回し、耳元で{a}の名前を呼んだ。教室で呼び合っていたのと同じ名前なのに、まるで違う響きだった。{a}は、その声に応えるように深く沈めた。|二人は、離れていた年月を取り戻すように求め合った。{a}が腰を打ちつけるたびに、{b}は昔話の続きのように笑い、それから甘く喘いだ。'),
+      ff: L('{a}は{b}の中に指を沈め、ゆっくりとかき回した。{b}は{a}の肩に顔を埋めて、学生のころには決して見せなかった顔で喘いだ。|{a}は{b}の胸に唇を寄せ、舌先で転がした。{b}は「昔から、こういうところ器用だった」と息を乱して笑った。笑い声は、すぐに甘い声に変わった。|二人は脚を絡めて、互いの濡れたところを重ねた。同じ教室で並んでいたころより、ずっと近くに、互いがいた。'),
+      fm: L('{a}は{b}の上で腰を揺らしながら、学生のころの{b}を思い出していた。あのころの{b}が、今は自分の下で息を乱している。{a}は、それが可笑しくて、愛おしかった。|{a}は{b}の手を取り、指を絡めたまま腰を沈めた。{b}は、昔は廊下ですれ違うだけだった相手の重みに、何度も喉を鳴らした。|{a}が腰を前後に揺らすたびに、{b}の腰が浮いた。{b}「同窓会で、絶対に思い出す」――{a}は笑って、もっと深く腰を落とした。')
+    },
+    boss: {
+      m: L('{a}は{b}を組み敷いたまま、深く腰を打ちつけた。{u}も{d}も、職場の上下などとうに忘れていた。ここでは、ただ求め合う二人だった。|{a}は{b}の両手に指を絡め、シーツに縫いとめた。職場では見せたことのない乱れた顔で、{b}は{a}を見上げた。{a}は、その顔を誰にも見せたくないと思った。|{a}の動きに合わせて、{b}の声が上ずっていく。いつも仕事の指示が飛び交う二人の間に、今は荒い息だけが行き交っていた。'),
+      ff: L('{a}は{b}の中に指を沈め、弱いところを探り当てた。{b}が声を上げるたびに、{u}と{d}の間にあった線が、一本ずつ消えていった。|{a}は{b}の脚を開かせ、その奥に舌を這わせた。職場ではいつも気を張っている相手が、今はシーツを握りしめて震えていた。|二人は互いの手で、互いを追い詰めていった。職場で何度も呼吸を合わせてきた二人は、ここでも同じ速さで息を乱した。'),
+      fm: L('{a}は{b}の上に跨り、ゆっくりと腰を落とした。{b}の喉から、職場では一度も聞いたことのない声が漏れた。{a}は、その声をもっと聞きたくて腰を揺らした。|{a}は{b}の胸に手をつき、深く沈めたまま動きを止めた。{b}が焦れて腰を揺らすと、{a}は「仕事と同じ。焦らない」と囁いた。|{a}が腰を上下させるたびに、{b}の喉が鳴った。{u}と{d}は、明日のことなど一度も口にしなかった。')
+    },
+    worship: {
+      m: L('{a}が奥まで沈むたびに、{b}の喉から甘い声がこぼれた。{u}にとって、{d}と繋がっていること自体が、祈りへの答えだった。{u}は何度も{d}の名前を呼んだ。|{a}は{b}を抱きしめたまま、恭しいほどゆっくりと動いた。{u}の触れ方は、どれほど熱に浮かされても、崇める者のそれだった。{d}は、その丁寧さに焦れて身をよじった。|{u}は{d}の手を取り、自分の頬に押し当てたまま体を重ねた。{d}が息を乱すたびに、{u}は、それを何より尊いもののように見つめた。'),
+      ff: L('{a}の指が{b}の中で優しく動くたびに、{b}の腰が震えた。{u}は、{d}が感じている顔を、まばたきも惜しんで見つめていた。|{a}は{b}の脚のあいだに顔を埋め、祈るように舌を這わせた。{u}にとって、二人で肌を重ねることは、奉仕であり、礼拝だった。{b}はシーツを握りしめて喘いだ。|二人は肌を重ね、脚を絡めた。{u}は{d}の名前を、何度も、何度も呼んだ。呼ぶたびに、{d}の体が{u}に応えた。'),
+      fm: L('{a}は{b}の上で、ゆっくりと腰を揺らした。{u}は、{d}と一つになっていることが信じられないというように、何度も{d}の頬に触れた。|{a}は{b}の胸に両手をつき、深く腰を沈めた。{u}にとって、{d}の吐息ひとつが、どんな言葉より尊かった。|{a}が腰を上下させるたびに、{b}の手が{a}の腰を掴んだ。{u}は、{d}に求められていることに、涙をにじませた。')
+    },
+    worship_dom: {
+      m: L('{d}「まだ。私がいいと言うまで、果てたら許さない」――命じられるたびに、{u}は唇を噛んで耐えた。{a}が{b}の奥を突くたびに、{d}の声だけが二人の動きを支配していた。|{u}は、{d}の命令を待つように動きを止めた。{d}「もっと」――その一言で、二人の繋がりは深くなった。{u}にとって、{d}の声は何よりの快楽だった。|{d}「顔を見せて、{u}。……そう、その顔」――{d}は、{u}が乱れていくのを、満足そうに見つめていた。{a}が深く沈むたびに、{u}は{d}の名前を呼んだ。'),
+      ff: L('{d}「止まらないで、{u}。……私が許すまで」――{u}は命じられるまま、{d}に尽くし続けた。二人の指と肌が絡み合うたびに、{d}の声だけが、その速さを決めていた。|{d}は{u}の髪を掴み、自分の方へ顔を向けさせた。{d}「ちゃんと私を見て」――{u}は、蕩けた目で{d}を見つめ返した。二人の濡れた肌が、何度も擦れ合った。|{d}「いい子、{u}。……そのまま」――ねぎらいの言葉ひとつで、{u}の体が震えた。{a}と{b}は脚を絡め合い、{d}の声に合わせて息を乱した。'),
+      fm: L('{d}「まだ果てないで。私が決める」――{d}の命令に、{u}は唇を噛んで従った。{a}が{b}の上で腰を揺らすあいだも、主導権はずっと{d}の声の中にあった。|{d}「もっと私を欲しがって、{u}」――{u}は言われるまま、{d}の名前を呼び続けた。{a}は{b}の胸に手をつき、深く腰を沈めた。|{d}は{u}の顎を指でなぞり、「誰のもの？」と訊いた。{u}「{d}の……」――答えるたびに、{a}の腰の動きが深くなった。')
+    },
+    benefactor: {
+      m: L('{a}は{b}の奥まで繋がったまま、{b}の額に口づけた。{u}と{d}の間にあった恩も借りも、今は肌の熱に溶けていた。{a}が動き始めると、{b}は{a}の背中にしがみついた。|{d}は、{u}に与えられるばかりだった自分を、今夜だけは忘れようとした。{a}が腰を打ちつけるたびに、{b}は自分からも腰を押しつけた。|{a}の動きは、どこまでも丁寧だった。{u}にとって{d}は、守るべき相手であり、今はそれ以上の相手だった。{b}の声が、少しずつ甘く崩れていった。'),
+      ff: L('{a}は{b}の中に指を沈め、ゆっくりと動かした。{d}は、救われた日と同じように{u}にしがみつき、けれどあの日とはまるで違う声を上げた。|{a}は{b}の胸に唇を寄せ、丁寧に愛撫した。{u}は、{d}が感じるたびに、守ってきたものの重さを確かめるように抱きしめた。|二人は脚を絡めて、互いの熱を擦りつけ合った。恩人と、恩を受けた側――その区別は、シーツの上ではもう誰にもつけられなかった。'),
+      fm: L('{a}は{b}の上で腰を揺らしながら、{b}の頬を両手で包んだ。{u}と{d}は、あの日から続く縁を、肌の熱で確かめ合った。|{a}は{b}の胸に手をつき、深く沈めたまま動きを止めた。{d}「{u}に、今夜は全部返す」――{a}は、ゆっくりとまた腰を揺らし始めた。|{a}が腰を上下させるたびに、{b}の手が{a}の腰を掴んだ。救った者と救われた者が、今は同じ熱に溺れていた。')
+    },
+    relative: {
+      m: L('{a}は{b}の奥まで繋がったまま、子どものころから知っている顔が蕩けていくのを見つめた。親族の誰も知らない顔だった。{a}が動くたびに、{b}は声を殺そうとして、殺しきれなかった。|{b}は{a}の背中に爪を立て、昔の呼び名で{a}を呼んだ。その呼び名が、こんなときに口からこぼれるとは思わなかった。{a}は、それに応えるように深く沈めた。|二人は、禁じられたものに触れるように、何度も求め合った。{a}が腰を打ちつけるたびに、{b}は親族には決して聞かせられない声を上げた。'),
+      ff: L('{a}は{b}の中に指を沈め、ゆっくりとかき回した。{b}は、子どものころから知っている{a}の指に、知らなかった快楽を教えられていた。|{a}は{b}の脚のあいだに顔を埋め、舌で丁寧に愛撫した。{b}は「こんなの、親戚の誰にも」と言いかけて、甘い声に呑まれた。|二人は脚を絡め合い、互いの熱を重ねた。親族どうしの、誰にも言えない秘密が、シーツの上で深くなっていった。'),
+      fm: L('{a}は{b}の上で、ゆっくりと腰を揺らした。{b}は、子どものころから知っている{a}が、こんな顔をするとは思ってもいなかった。|{a}は{b}の胸に手をつき、深く腰を沈めた。{b}「親戚の集まりで、どんな顔をすれば」――言葉の続きは、{a}の動きに奪われた。|{a}が腰を上下させるたびに、{b}の手が{a}の太腿を掴んだ。親族という言葉が、二人の熱をかえって煽っていた。')
+    }
+  };
+
+  /* ---------- 山場 ---------- */
+  var PEAK = {
+    colleague: {
+      m: L('{b}は{a}の名前を呼びながら、背中を反らせて果てた。{a}も低く呻き、{b}の奥で熱を吐き出した。明日の仕事のことは、二人とも、もう考えられなかった。|果てる瞬間、{b}は{a}の肩に歯を立てた。職場では残せない痕だった。{a}は構わずに最後まで腰を打ちつけ、{b}の中で果てた。|二人は、締め切りに駆け込むように、同時に果てた。崩れ落ちた{a}の重みを、{b}は黙って受け止めた。'),
+      ff: L('{a}の指が一番弱いところを擦り上げた瞬間、{b}は声を上げて果てた。痙攣する体を、{a}はしっかりと抱きしめていた。|{b}は{a}の名前を呼びながら、脚を突っ張らせて果てた。{a}は、職場では見られない{b}の顔を、最後まで目に焼きつけた。|二人は肌を擦り合わせたまま、ほとんど同時に達した。荒い息が重なって、どちらのものか分からなかった。'),
+      fm: L('{a}が深く腰を沈めた瞬間、{b}は呻いて果てた。{a}も{b}の上で背中を反らせ、震えながら達した。|{b}は{a}の腰を掴んだまま、こらえきれずに果てた。{a}は、同僚の果てる顔を見下ろしながら、自分も高みへ昇りつめた。|{a}は{b}の胸に崩れ落ちながら果てた。{b}も、{a}の中で熱を放っていた。二人は、しばらく言葉を交わせなかった。')
+    },
+    classmate: {
+      m: L('{b}は{a}にしがみついて、{a}の名前を何度も呼びながら果てた。{a}もその声に引きずられるように、{b}の奥で果てた。|果てる瞬間、二人は額を合わせて笑った。同じ教室にいたころには、想像もしなかった瞬間だった。{a}は{b}の中に、熱を残らず吐き出した。|{a}が深く沈めた瞬間、{b}は声を上げて果てた。{a}も呻き、{b}の上に崩れ落ちた。離れていた年月が、一度に埋まった気がした。'),
+      ff: L('{a}の指に追い詰められて、{b}は背中を反らせて果てた。{a}は{b}を抱きしめ、その額に口づけた。|{b}は{a}の名前を呼びながら達した。{a}も、{b}の声に引きずられるように、ほとんど同時に果てた。|二人は脚を絡め合ったまま、震えながら果てた。学生のころのどんな秘密より、ずっと大きな秘密ができた。'),
+      fm: L('{a}が腰を深く落とした瞬間、{b}は呻いて果てた。{a}も{b}の上で体を震わせ、その胸に崩れ落ちた。|{b}は{a}の手を強く握ったまま果てた。{a}は、昔の{b}からは想像もできない顔を見下ろしながら、自分も達した。|{a}は{b}の上で背中を反らせて果てた。{b}も、{a}の中で熱を放っていた。重なった胸の鼓動が、うるさいほど響いた。')
+    },
+    boss: {
+      m: L('{u}と{d}は、職場の呼び方ではなく、名前で呼び合いながら果てた。{a}は{b}の奥で、熱を残らず吐き出した。|果てる瞬間、{b}は{a}の背中に爪を立てた。職場では決して見せない顔だった。{a}も、こらえきれずに{b}の中で果てた。|{a}が最後に深く沈めた瞬間、二人は同時に果てた。{u}と{d}は、しばらく抱き合ったまま、何も言わなかった。'),
+      ff: L('{a}の指が一番奥を擦り上げた瞬間、{b}は声を上げて果てた。{u}と{d}の間に、もう上も下もなかった。|{b}は{a}にしがみついて達した。{a}は、職場では誰も知らない{b}の顔を、そっと胸に抱き寄せた。|二人は肌を擦り合わせたまま、ほとんど同時に果てた。息が整うまで、二人は互いの名前だけを呼んでいた。'),
+      fm: L('{a}が深く腰を落とした瞬間、{b}は呻いて果てた。{a}も{b}の上で背中を反らせ、震えながら達した。|{b}は{a}の腰を掴んだまま果てた。{a}は、上下のない場所で、自分も高みへ昇りつめた。|{a}は{b}の胸に崩れ落ちながら果てた。{u}と{d}は、職場では決して交わさない口づけを交わした。')
+    },
+    worship: {
+      m: L('果てる瞬間、{u}は{d}の名前を祈るように呼んだ。{a}は{b}の奥で熱を吐き出し、{b}も{a}にしがみついて果てた。{u}の目から、一筋だけ涙がこぼれた。|{d}が果てるのを見届けてから、{u}も果てた。{u}にとっては、{d}の悦びこそが自分の悦びだった。{a}は{b}を抱きしめたまま、しばらく動かなかった。|{a}が最後に深く沈めた瞬間、二人は同時に果てた。{u}は{d}の手を取り、その甲に震える唇を押し当てた。'),
+      ff: L('{a}の指に追い詰められて、{b}は背中を反らせて果てた。{u}は、{d}と一緒に昇りつめられたことを、何より尊いもののように噛みしめていた。|{b}は{a}にしがみついて達した。{u}は{d}の名前を呼び続け、その声のまま、自分も果てた。|二人は肌を擦り合わせたまま、ほとんど同時に果てた。{u}は{d}の胸に額を寄せ、祈るように目を閉じた。'),
+      fm: L('{a}が深く腰を落とした瞬間、二人は同時に果てた。{u}は{d}の名前を呼び、その声は涙にかすれていた。|{b}は{a}の腰を掴んだまま果てた。{a}も{b}の上で背中を反らせて達した。{u}は、{d}と分かち合ったこの瞬間を、一生忘れないと誓った。|{a}は{b}の胸に崩れ落ちながら果てた。{u}は{d}の手を両手で包み、そっと口づけた。')
+    },
+    worship_dom: {
+      m: L('{d}「……いいよ、{u}。許す」――その一言を待っていたように、{u}は果てた。{a}は{b}の奥で熱を吐き出し、{b}も{a}にしがみついて達した。|{d}は{u}が果てる瞬間を、目を逸らさずに見届けた。{d}「よく我慢したね」――{u}は、その言葉だけで、もう一度震えた。{a}は{b}の中で、最後の熱を吐き出した。|{d}が許した瞬間、二人は同時に果てた。{u}は{d}の名前を呼び、{d}は{u}の髪を掴んで引き寄せた。'),
+      ff: L('{d}「果てていいよ、{u}」――許しを与えられた瞬間、{u}は声を上げて達した。{a}は{b}を抱きしめ、二人は震えながら昇りつめた。|{d}は、{u}が許しを乞う顔を、満足そうに見つめた。{d}「いいよ」――その一言で、{a}と{b}は同時に果てた。|{a}の指に追い詰められて、{b}は背中を反らせて果てた。{d}の許しを得て、{u}も堪えていたものを手放した。'),
+      fm: L('{d}「……許す」――その一言で、{u}は堪えていたものを手放した。{a}は{b}の上で背中を反らせ、二人は同時に果てた。|{d}は{u}の顎を掴み、果てる顔を正面から見つめた。{b}は{a}の中で熱を放ち、{a}も震えながら達した。|{a}が深く腰を落とした瞬間、{d}の許しが下りた。二人は、ほとんど同時に果てた。{u}は、恍惚とした顔で{d}を見つめた。')
+    },
+    benefactor: {
+      m: L('{b}は{a}の名前を呼びながら、背中を反らせて果てた。{a}も低く呻いて、{b}の奥で熱を吐き出した。恩も借りも、熱の中に溶けて消えた。|果てる瞬間、{d}は{u}にしがみついて、「ありがとう」と囁いた。何に対する礼なのか、{d}自身にも分からなかった。{a}は{b}の中で果てた。|{a}が最後に深く沈めた瞬間、二人は同時に果てた。{u}は{d}を抱きしめ、その髪に顔を埋めた。'),
+      ff: L('{a}の指に追い詰められて、{b}は声を上げて果てた。{u}は{d}を抱きしめ、あの日と同じように「大丈夫」と囁いた。|{b}は{a}にしがみついて達した。{d}は、{u}の腕の中でなら、どんな姿を見せてもいいと思えた。|二人は肌を擦り合わせたまま、ほとんど同時に果てた。恩人と恩を受けた側は、ただの二人として、荒い息を重ねた。'),
+      fm: L('{a}が深く腰を落とした瞬間、{b}は呻いて果てた。{a}も{b}の上で背中を反らせ、震えながら達した。|{b}は{a}の腰を掴んだまま果てた。{u}と{d}は、言葉にできない何かを、肌の熱で確かめ合った。|{a}は{b}の胸に崩れ落ちながら果てた。{d}は{u}の背中を撫で、「これで、少しは返せた？」と笑った。')
+    },
+    relative: {
+      m: L('{b}は{a}の名前を呼びながら、背中を反らせて果てた。{a}も低く呻いて、{b}の奥で熱を吐き出した。親族の誰にも言えない夜が、また一つ深くなった。|果てる瞬間、{b}は昔の呼び名で{a}を呼んだ。{a}はその声に引きずられるように、{b}の中で果てた。|{a}が深く沈めた瞬間、二人は同時に果てた。子どものころから知っている顔が、涙と汗でぐしゃぐしゃになっていた。'),
+      ff: L('{a}の指に追い詰められて、{b}は声を上げて果てた。{a}は{b}を抱きしめ、子どものころと同じように背中を撫でた。|{b}は{a}にしがみついて達した。{a}も、{b}の声に引きずられるように果てた。|二人は脚を絡め合ったまま、震えながら果てた。親族どうしの秘密が、取り返しのつかないほど深くなった。'),
+      fm: L('{a}が深く腰を落とした瞬間、{b}は呻いて果てた。{a}も{b}の上で体を震わせ、その胸に崩れ落ちた。|{b}は{a}の腰を掴んだまま果てた。{a}は、子どものころから知っている顔が快楽に歪むのを、見下ろしながら達した。|{a}は{b}の上で背中を反らせて果てた。{b}も、{a}の中で熱を放っていた。二人は、親族には決して見せられない顔で抱き合った。')
+    }
+  };
+  /* 男性向けの山場（擬音と♡。{mb2}＝受けの喘ぎ） */
+  var ERO_PEAK = {
+    colleague: {
+      m: L('{s:hit}――{a}は{b}の腰を掴んで、容赦なく打ちつけた。{b}「{mb2}」――職場では澄ました顔の同僚が、蕩けた顔で喘いでいる。{s:cum}――{a}は{b}の一番奥に、熱をたっぷりと注ぎ込んだ。|{a}が奥を抉るたびに、{b}の中がきゅうきゅうと締めつけた。{b}「{mb2}」――{s:hit}――{a}は「明日、仕事中に思い出せ」と囁いて、{b}の奥で果てた。{s:cum}'),
+      ff: L('{s:wet}――{a}の指が{b}の中を激しくかき回した。{b}「{mb2}」――職場では聞いたことのない声で、{b}は{a}の指をきゅうきゅうと締めつけて果てた。|{a}は{b}の一番弱いところを、舌と指で同時に責め立てた。{s:wet}――{b}「{mb2}」――{b}の腰が跳ね、{a}の顔を太腿で挟んだまま達した。'),
+      fm: L('{s:hit}――{a}は{b}の上で、激しく腰を打ちつけた。{b}「{mb2}」――{s:cum}――{b}は{a}の中で果て、{a}も同僚の顔を見下ろしながら背中を反らせた。|{a}は{b}の胸に爪を立てて、腰を何度も落とした。{s:hit}――{b}「{mb2}」――{a}がきゅっと締めつけた瞬間、{b}はこらえきれずに熱を放った。{s:cum}')
+    },
+    classmate: {
+      m: L('{s:hit}――{a}は離れていた年月をぶつけるように、{b}の奥を突き上げた。{b}「{mb2}」――{s:cum}――{a}は{b}の一番奥に、熱を残らず注ぎ込んだ。|{a}が腰を打ちつけるたびに、{b}は学生のころには知らなかった声で喘いだ。{b}「{mb2}」――{s:hit}――{s:cum}――{a}は{b}を抱きしめたまま、奥で果てた。'),
+      ff: L('{s:wet}――{a}の指が{b}の中で激しく動いた。{b}「{mb2}」――{b}は{a}にしがみつき、きゅうきゅうと指を締めつけて果てた。|{a}は{b}の花芯を舌で転がしながら、指を奥まで沈めた。{s:wet}――{b}「{mb2}」――{b}の体が大きく跳ねた。'),
+      fm: L('{s:hit}――{a}は{b}の上で激しく腰を振った。{b}「{mb2}」――{s:cum}――{b}は{a}の中で果て、{a}も{b}の上で背中を反らせた。|{a}は{b}の手を握ったまま、腰を深く落とし続けた。{s:hit}――{b}「{mb2}」――{a}が締めつけた瞬間、{b}は{a}の中に熱を放った。{s:cum}')
+    },
+    boss: {
+      m: L('{s:hit}――{a}は{b}の腰を掴み、何度も奥を抉った。{b}「{mb2}」――職場では見せない顔で、{b}は{a}にすがりついた。{s:cum}――{a}は{b}の奥に、熱をたっぷりと注ぎ込んだ。|{a}は{b}の両手首をシーツに押さえつけ、激しく腰を打ちつけた。{s:hit}――{b}「{mb2}」――{s:cum}――{a}は{b}の一番奥で果てた。'),
+      ff: L('{s:wet}――{a}の指が{b}の中を激しくかき回した。{b}「{mb2}」――{b}は職場では決して出さない声を上げて果てた。|{a}は{b}の脚を大きく開かせ、舌と指で同時に責めた。{s:wet}――{b}「{mb2}」――{b}は{a}の髪を掴んで達した。'),
+      fm: L('{s:hit}――{a}は{b}の上で激しく腰を打ちつけた。{b}「{mb2}」――{s:cum}――{b}は{a}の中で果て、{a}も背中を反らせて達した。|{a}は{b}の胸に手をつき、腰を何度も深く落とした。{s:hit}――{b}「{mb2}」――{a}が締めつけた瞬間、{b}はこらえきれずに熱を放った。{s:cum}')
+    },
+    worship: {
+      m: L('{s:hit}――{a}は{b}の奥を、何度も深く抉った。{b}「{mb2}」――{u}は{d}の名前を祈るように呼び続けた。{s:cum}――{a}は{b}の一番奥に、熱を残らず注ぎ込んだ。|{a}が奥まで沈むたびに、{b}の中がきゅうきゅうと締めつけた。{b}「{mb2}」――{s:hit}――{s:cum}――{u}は、{d}と一つになったまま果てる悦びに、涙をこぼした。'),
+      ff: L('{s:wet}――{a}の指が{b}の中で激しく動いた。{b}「{mb2}」――{u}は、{d}の果てる顔から一瞬も目を離さなかった。|{a}は{b}の花芯に舌を這わせながら、指を奥まで沈めた。{s:wet}――{b}「{mb2}」――{b}の体が大きく跳ね、{u}は{d}の名前を呼んだ。'),
+      fm: L('{s:hit}――{a}は{b}の上で激しく腰を振った。{b}「{mb2}」――{s:cum}――{b}は{a}の中で果て、{u}は{d}の名前を呼びながら達した。|{a}は{b}の胸に手をつき、腰を深く落とし続けた。{s:hit}――{b}「{mb2}」――{s:cum}――{u}は、{d}と分かち合う絶頂に、涙をにじませた。')
+    },
+    worship_dom: {
+      m: L('{d}「まだ……まだ、だめ」――{s:hit}――{a}は{b}の奥を抉り続けた。{b}「{mb2}」――{d}「……いいよ」――{s:cum}――許しが下りた瞬間、{a}は{b}の一番奥に熱を注ぎ込んだ。|{s:hit}――{d}の命令どおりに、二人の繋がりはどこまでも深くなった。{b}「{mb2}」――{d}「果てて、{u}」――{s:cum}――{u}は命じられるまま、果てた。'),
+      ff: L('{d}「止まらないで」――{s:wet}――{a}の指が{b}の中を激しくかき回した。{b}「{mb2}」――{d}「……いいよ」――許された瞬間、{b}は背中を反らせて果てた。|{s:wet}――{d}の声に合わせて、二人の濡れた肌が擦れ合った。{b}「{mb2}」――{d}「果てていいよ、{u}」――その一言で、{u}は震えながら達した。'),
+      fm: L('{d}「まだ、果てないで」――{s:hit}――{a}は{b}の上で激しく腰を振った。{b}「{mb2}」――{d}「……許す」――{s:cum}――二人は同時に果てた。|{s:hit}――{a}が腰を落とすたびに、{d}の命令が飛んだ。{b}「{mb2}」――{d}「いい子、{u}」――{s:cum}――{u}は、その言葉だけで果てた。')
+    },
+    benefactor: {
+      m: L('{s:hit}――{a}は{b}の奥を、何度も深く突いた。{b}「{mb2}」――{s:cum}――{a}は{b}の一番奥に熱を注ぎ込み、{u}と{d}は、恩も借りもない顔で抱き合った。|{a}が腰を打ちつけるたびに、{b}の中がきゅうきゅうと締めつけた。{b}「{mb2}」――{s:hit}――{s:cum}――{a}は{b}を抱きしめたまま、奥で果てた。'),
+      ff: L('{s:wet}――{a}の指が{b}の中を激しくかき回した。{b}「{mb2}」――{b}は{a}にしがみつき、指を締めつけて果てた。|{a}は{b}の花芯を舌で転がしながら、指を奥に沈めた。{s:wet}――{b}「{mb2}」――{b}の腰が跳ね上がった。'),
+      fm: L('{s:hit}――{a}は{b}の上で激しく腰を振った。{b}「{mb2}」――{s:cum}――{b}は{a}の中で果て、{a}も背中を反らせて達した。|{a}は{b}の胸に手をつき、腰を何度も深く落とした。{s:hit}――{b}「{mb2}」――{a}が締めつけた瞬間、{b}は{a}の中に熱を放った。{s:cum}')
+    },
+    relative: {
+      m: L('{s:hit}――{a}は{b}の腰を掴み、何度も奥を抉った。{b}「{mb2}」――親族の誰も知らない声だった。{s:cum}――{a}は{b}の一番奥に、熱をたっぷりと注ぎ込んだ。|{a}が腰を打ちつけるたびに、{b}の中がきゅうきゅうと締めつけた。{b}「{mb2}」――{s:hit}――{s:cum}――{a}は{b}の奥で果てた。'),
+      ff: L('{s:wet}――{a}の指が{b}の中を激しくかき回した。{b}「{mb2}」――{b}は{a}にしがみついて果てた。|{a}は{b}の花芯を舌で転がしながら、指を奥に沈めた。{s:wet}――{b}「{mb2}」――{b}の体が大きく跳ねた。'),
+      fm: L('{s:hit}――{a}は{b}の上で激しく腰を振った。{b}「{mb2}」――{s:cum}――{b}は{a}の中で果て、{a}も背中を反らせて達した。|{a}は{b}の胸に手をつき、腰を何度も深く落とした。{s:hit}――{b}「{mb2}」――{a}が締めつけた瞬間、{b}は{a}の中に熱を放った。{s:cum}')
+    }
+  };
+
+  /* ---------- 事後 ---------- */
+  var AFTER = {
+    colleague: {
+      m: L('果てたあと、{a}は{b}の汗ばんだ背中を撫でた。{b}は「明日、どんな顔で出勤すれば」と枕に顔を埋めた。{a}は「いつもの顔で」と笑ったが、自分にもできる気がしなかった。|{b}は{a}の腕の中で、ぼんやりと天井を見ていた。{b}「職場の誰にも、言えないね」{a}「言わない。……でも、またしたい」|朝、二人は並んで身支度をした。{a}が{b}の襟を直してやると、{b}は「職場でも、それやって」と小さく笑った。'),
+      ff: L('果てたあと、{a}は{b}の髪を指で梳いた。{b}は「明日、目を合わせられない」と言いながら、{a}の胸から離れなかった。|{b}は{a}の肩に頭を預け、「仕事仲間に戻れる？」と訊いた。{a}は答える代わりに、{b}の額に口づけた。|朝、二人は同じ鏡の前で身支度をした。鏡越しに目が合うと、二人とも吹き出した。'),
+      fm: L('果てたあと、{a}は{b}の胸の上に頬を乗せたまま、しばらく動かなかった。{b}は{a}の背中を撫でながら、「明日、仕事にならない」と呟いた。|{a}は{b}の上から降りると、「職場では今までどおり」と言った。{b}は頷いたが、{a}の手を離さなかった。|朝、{b}が目を覚ますと、{a}はもう身支度を終えていた。{a}「先に出る。……隣の席で待ってる」')
+    },
+    classmate: {
+      m: L('果てたあと、二人は並んで天井を見上げた。{b}「学生のころの私が聞いたら、気絶する」{a}「私も」――二人は顔を見合わせて笑った。|{a}は{b}を腕の中に抱き寄せた。{b}は、学生のころに言えなかった言葉を、ようやく口にした。{a}は、それを黙って聞いていた。|朝、{b}は{a}の寝顔を見つめていた。教室の窓際で居眠りしていた横顔と、少しも変わっていなかった。'),
+      ff: L('果てたあと、二人は毛布にくるまって、学生のころの思い出話をした。同じ話でも、今は少しだけ違って聞こえた。|{b}は{a}の手を握り、「次の同窓会、隣に座って」と言った。{a}は「最初から、そのつもり」と笑った。|朝、二人は並んで歯を磨いた。学生のころの合宿みたいだと、{b}がくすくす笑った。'),
+      fm: L('果てたあと、{a}は{b}の上に寝そべったまま、学生のころの話をした。{b}は{a}の髪を撫でながら、懐かしそうに聞いていた。|{a}は{b}の胸に耳を当て、「昔より、ずっと速い」と言った。{b}は「誰のせいだと思ってる」と笑った。|朝、{b}が目を覚ますと、{a}が学生のころと同じ顔で笑っていた。{a}「おはよう。……やっと言えた」')
+    },
+    boss: {
+      m: L('果てたあと、{u}は{d}の髪を撫でながら言った。{u}「明日からも、職場では今までどおりだ」{d}は頷いて、それから小さく付け足した。{d}「職場の外では？」|{d}は{u}の腕の中で、「報告書、何て書けばいいんだろう」と呟いた。{u}は吹き出して、{d}をもう一度抱きしめた。|朝、二人は別々に部屋を出た。職場で顔を合わせたとき、{u}の「おはよう」は、いつもより一拍だけ遅れた。'),
+      ff: L('果てたあと、{u}は{d}の頬にかかった髪をよけた。{u}「職場の外では、名前で呼んで」――{d}は、照れながらその名前を呼んだ。|{d}は{u}の胸に頭を預けた。上司の鼓動を聞く日が来るなんて、思ってもいなかった。|朝、{u}は{d}の襟元を直してやった。{u}「今日の会議、遅れないように」――いつもの口調なのに、目だけが柔らかかった。'),
+      fm: L('果てたあと、{a}は{b}の胸に頬を寄せて、しばらく動かなかった。{u}も{d}も、明日の仕事のことは口にしなかった。|{d}は「職場でこの顔を思い出したら、仕事にならない」と言った。{u}は「それは困る」と笑い、{d}の額に口づけた。|朝、{u}は先に身支度を整え、振り返って言った。{u}「今日も、頼りにしてる」――{d}には、その言葉が少しだけ違って聞こえた。')
+    },
+    worship: {
+      m: L('果てたあと、{u}は{d}の手を取り、その甲にそっと口づけた。{u}「{d}に触れられた。それだけで、私はもう何もいらない」――{d}は、困ったように、けれど優しく笑った。|{u}は{d}の寝顔を、朝まで一睡もせずに見守っていた。{d}が目を覚ますと、{u}は「おはよう」と、祈るように言った。|{d}は{u}の髪を撫でながら、「{u}は、本当に私が好きなんだね」と言った。{u}は迷わず頷いた。想いは、前よりもっと深くなっていた。'),
+      ff: L('果てたあと、{u}は{d}の足元に額を寄せた。{d}が「そんなことしなくていい」と言っても、{u}はしばらく顔を上げなかった。|{u}は{d}の髪を、一本ずつ丁寧に梳いた。{d}は、そのくすぐったさに目を細めた。|朝、{d}が目を覚ますと、{u}はもう着替えを揃えて待っていた。{u}「{d}のために、何でもしたい」'),
+      fm: L('果てたあと、{u}は{d}の胸に耳を寄せて、その鼓動を聞いていた。{u}「{d}が生きている音だ」――{d}は照れくさそうに、{u}の頭を撫でた。|{u}は{d}の指先に、一つずつ口づけていった。{d}は「くすぐったい」と笑いながら、手を引かなかった。|朝、{u}は{d}の寝顔を見つめて、心の中で誓いを新しくした。この人のためなら、何度でも。')
+    },
+    worship_dom: {
+      m: L('果てたあと、{d}は{u}の髪を掴んで顔を上げさせた。{d}「次も、私が呼んだら来なさい」{u}「……はい」――{u}の目は、恍惚としたままだった。|{d}はベッドに横たわったまま、{u}に水を取ってこさせた。{u}は嬉しそうにグラスを差し出し、{d}が飲み終えるまで膝をついて待った。|朝、{d}は{u}に服を着せさせた。{u}の指が震えているのを見て、{d}は「いい子」と頭を撫でた。'),
+      ff: L('果てたあと、{d}は{u}を足元に侍らせたまま、髪を撫でていた。{d}「{u}は、私のもの。忘れないで」――{u}は、うっとりと目を閉じた。|{d}は{u}の顎を指で持ち上げ、「よくできました」と囁いた。{u}は、その一言のためなら何でもすると思った。|朝、{d}は{u}に髪を梳かせた。鏡越しに目が合うと、{u}は慌てて目を伏せた。{d}は満足そうに笑った。'),
+      fm: L('果てたあと、{d}は{u}の頬を軽く叩いた。{d}「起きて。まだ、終わりなんて言ってない」――{u}は、喜んで身を起こした。|{d}は{u}の胸に指で円を描きながら、「次はもっと我慢してね」と言った。{u}は、それを最高の褒美のように受け取った。|朝、{u}は{d}の靴を揃えて待っていた。{d}が礼も言わずに履くと、{u}は満ち足りた顔で微笑んだ。')
+    },
+    /* 信仰される側が戸惑っている（恋愛に発展：する） */
+    worship_conf: {
+      m: L('果てたあと、{d}は{u}の腕の中で、困ったように天井を見上げた。{d}「こんなに想われて、私はどう返せばいいの」{u}「返さなくていい。想わせてくれれば」|{d}は{u}から少しだけ体を離した。それでも、{u}が伸ばした手は払わなかった。重荷だったはずの想いが、少しだけ温かかった。|朝、{d}は「昨日のは、ガスのせい」と言った。{u}は頷いて、それでも「{d}への想いは、ガスのせいじゃない」と付け足した。'),
+      ff: L('果てたあと、{d}は毛布を胸元まで引き上げて、{u}を見つめた。{d}「{u}の気持ち、まだ全部は受け止められない」{u}「それでいい」|{d}は{u}の髪を撫でかけて、ためらうように手を止めた。{u}は、その手のひらに自分から頬を寄せた。|朝、{d}が目を覚ますと、{u}は少し離れた椅子に座って、静かに{d}を見守っていた。{d}は戸惑いながらも、「こっちに来て」と言った。'),
+      fm: L('果てたあと、{d}は{u}の胸に手を当てて、「どうして、そこまで」と訊いた。{u}は「{d}だから」とだけ答えた。|{d}は{u}から目を逸らしたまま、それでも{u}の手を握っていた。戸惑いと温もりが、同じ手のひらにあった。|朝、{u}は{d}に「迷惑だったら言って」と言った。{d}は首を振った。その答えに、{d}自身がいちばん驚いていた。')
+    },
+    benefactor: {
+      m: L('果てたあと、{d}は{u}の腕の中で「また恩が増えた」と笑った。{u}は「数えるな」と言って、{d}の髪をくしゃりと撫でた。|{u}は{d}の寝顔を見つめながら、助けたあの日のことを思い出していた。あの日の{d}が、今は自分の腕の中で安らかに眠っている。|朝、{d}は{u}のために朝食を作った。{u}「恩返しのつもり？」{d}「ただ、作りたかっただけ」'),
+      ff: L('果てたあと、{d}は{u}の手を握って、「この手に、二度救われた」と言った。{u}は照れくさそうに、その手を握り返した。|{u}は{d}を抱き寄せ、背中をゆっくりと撫でた。あの日と同じ仕草なのに、意味はまるで違っていた。|朝、二人は向かい合って紅茶を飲んだ。{d}「これからは、恩人じゃなくて」{u}「分かってる」'),
+      fm: L('果てたあと、{a}は{b}の胸に頬を寄せて、しばらく動かなかった。{d}は「これで、少しは返せた？」と冗談めかして訊いた。{u}は「もらいすぎだ」と笑った。|{u}は{d}の手を取って、「もう恩なんて言うな」と言った。{d}は頷いて、その手に自分の指を絡めた。|朝、{d}は{u}の寝顔を見つめて、「今度は、私が{u}を守る」と心の中で誓った。')
+    },
+    relative: {
+      m: L('果てたあと、{b}は{a}の腕の中で、「次の法事で、絶対に目が合わせられない」と呻いた。{a}は笑って、{b}の髪に口づけた。|{a}は{b}を抱き寄せ、子どものころと同じように頭を撫でた。{b}は「もう子どもじゃない」と言いながら、その手を払わなかった。|朝、二人は親族からの連絡に、同時に肩を跳ねさせた。顔を見合わせて、二人は声を殺して笑った。'),
+      ff: L('果てたあと、二人は毛布にくるまって、親族の昔話をした。同じ人たちの話なのに、今夜は少しだけ後ろめたかった。|{b}は{a}の肩に頭を預けて、「親戚には、一生言えない」と呟いた。{a}は「言わなくていい」と、その手を握った。|朝、{a}は{b}の寝癖を手で直してやった。子どものころ、親戚の集まりでよくしてやったのと同じように。'),
+      fm: L('果てたあと、{a}は{b}の胸の上で、しばらく息を整えていた。{b}は{a}の背中を撫でながら、「親戚の誰にも言わない」と囁いた。|{a}は{b}の上から降りて、その隣に寝転んだ。{a}「子どものころ、こうして並んで昼寝したね」{b}「全然違う」|朝、{b}が目を覚ますと、{a}は窓辺に立っていた。{a}「次に親戚で集まるとき、どんな顔をしよう」――そう言う{a}の顔は、少しも困っていなかった。')
+    }
+  };
+
+  /* ---------- 関係の言葉（態度9種・各2文。{o}=話しかける相手） ---------- */
+  var W = {
+    colleague: {
+      proud: L('こんな顔、職場の誰にも見せるな。{o}のこれは、私だけが知っていればいい|明日、職場ですました顔ができるか見ものだな、{o}'),
+      stern: L('……仕事のときより、ずっと正直だな、{o}|明日からも職場では今までどおりだ。……今だけは、違う'),
+      tsun: L('べ、別に、職場でずっと見てたわけじゃないから……っ|{o}のくせに……っ、なんで、こんなに……'),
+      gentle: L('{o}……ずっと隣にいたのに、こんなに近くは初めて|大丈夫。明日も、ちゃんと{o}の隣にいる'),
+      devoted: L('{o}のためなら、どんな残業より頑張れる……っ|職場でも、ここでも、{o}の役に立ちたい……'),
+      cool: L('……仕事より、{o}のほうが手強い|効率は最悪だ。……でも、やめる気はない'),
+      free: L('やばい、明日{o}の顔見たら絶対思い出す……っ|ねえ、これ、職場のみんなには内緒ね……っ'),
+      shy: L('しょ、職場で会ったら……どんな顔すれば……っ|{o}……っ、明日、目、合わせられない……'),
+      polite: L('……明日からも、どうか今までどおりに、{o}|同僚として、失礼のないようにと……っ、思っていたのに')
+    },
+    classmate: {
+      proud: L('学生のころから、{o}は私のものになると決まっていた|昔の{o}より、今の{o}のほうがずっといい'),
+      stern: L('……あのころ、言っておけばよかった|昔話は、あとだ。今は{o}だけを見る'),
+      tsun: L('べ、別に、学生のころから好きだったとか、そういうんじゃ……っ|昔から、{o}はずるい……っ'),
+      gentle: L('{o}……あのころより、ずっと素敵になった|同じ教室にいたころから、こうしたかったのかも'),
+      devoted: L('学生のころから、ずっと{o}のことを見てた……|{o}……今度は、ずっとそばにいさせて'),
+      cool: L('……卒業してから、こんなことになるとは計算外だ|昔の{o}の記録は、全部更新された'),
+      free: L('ねえ、同窓会でこれ思い出したらどうしよ……っ|学生のころの私に、自慢したい……っ'),
+      shy: L('む、昔は……話しかけることも、できなかったのに……っ|{o}……っ、学生のころから、ずっと……'),
+      polite: L('あのころは、まさか{o}とこうなるとは、思いもしませんでした|……昔のよしみで、どうか今夜のことは内密に')
+    },
+    relative: {
+      proud: L('親族だろうと、{o}を誰にも渡すつもりはない|子どものころから、{o}は私のものだった'),
+      stern: L('……親族に顔向けできないことをしている|{o}、このことは誰にも言うな'),
+      tsun: L('べ、別に、子どものころから好きだったとか……っ|親戚なのに……っ、{o}のばか……'),
+      gentle: L('{o}……子どものころから、ずっと大切だった|親族でも、{o}が好き'),
+      devoted: L('{o}のためなら、親族を敵に回してもいい……っ|子どものころから、ずっと{o}だけ……'),
+      cool: L('……親族という言葉に、今は意味がない|{o}のことは、子どものころから知っている。……この顔以外は'),
+      free: L('親戚の集まりで、絶対思い出しちゃう……っ|{o}とこんなの、みんな腰抜かすよ……っ'),
+      shy: L('し、親戚なのに……っ、こんな……|{o}……っ、子どものころから、ずっと……っ'),
+      polite: L('……親族として、許されることではありません……っ|{o}、どうか今夜のことは、内密に')
+    },
+    boss_u: {
+      proud: L('職場の外でも、{o}を手放すつもりはない|いい顔だ、{o}。……職場では、二度と見せるな'),
+      stern: L('……今だけは、上司でいるのをやめる|明日からも、{o}の仕事ぶりには期待している。……これとは別に'),
+      tsun: L('べ、別に、部下だからって特別扱いしてたわけじゃ……っ|{o}が悪い……っ、いつも、真面目すぎるから……'),
+      gentle: L('{o}……いつも頑張ってくれて、ありがとう|職場の外では、ただの私でいさせて'),
+      devoted: L('{o}を守るのが、私の仕事だと思ってた……今も|{o}のためなら、どんな責任も取れる……っ'),
+      cool: L('……公私混同は、本来なら許されない|{o}の評価は、職場では今までどおりにつける。……ここでは、満点だ'),
+      free: L('もう上司とか部下とか、どうでもいい……っ|{o}、職場じゃ見られない顔してる……っ'),
+      shy: L('ぶ、部下に、こんな顔……見られるなんて……っ|{o}……っ、職場で、思い出しちゃう……'),
+      polite: L('……職場での立場は、今夜は忘れてください、{o}|上司として、示しがつきません……っ、それでも')
+    },
+    boss_d: {
+      proud: L('職場では従ってやっている。……ここでは、私の番だ|{o}のそんな顔、職場の誰も知らない'),
+      stern: L('……仕事と同じだ。{o}の期待には、必ず応える|今夜のことは、報告しない'),
+      tsun: L('べ、別に、ずっと{o}を見てたとかじゃないから……っ|上司のくせに……っ、ずるい……'),
+      gentle: L('{o}……いつも守ってくれて、ありがとう|職場の外の{o}も、ずっと見ていたい'),
+      devoted: L('{o}について行くと、ずっと前から決めてた……|{o}の役に立てるなら、何でもする……っ'),
+      cool: L('……上司の弱点を知ってしまった|職場での指示より、今のほうがずっと分かりやすい'),
+      free: L('ねえ、明日{o}に指示されたら、絶対笑っちゃう……っ|上司とこんなの、ばれたら大変……っ'),
+      shy: L('じょ、上司に、こんな……っ、だめ、なのに……|{o}……っ、明日、顔、見られない……'),
+      polite: L('……この先も、どうかおそばで働かせてください、{o}|上司にこのような……っ、失礼を、お許しください')
+    },
+    worship_u: {
+      proud: L('{o}以外に、私が跪く相手はいない|{o}を想うことだけは、誰にも譲らない'),
+      stern: L('……{o}に誓う。この身は、すべて{o}のものだ|{o}が望むなら、私は何でもする'),
+      tsun: L('べ、別に、崇めてるとかじゃ……っ、ただ、{o}が特別なだけで……|{o}のこと、ずっと……っ、ずっと見てたんだから……'),
+      gentle: L('{o}……触れられるなんて、夢みたい|{o}がいてくれるだけで、私は救われる'),
+      devoted: L('{o}……私の全部を、{o}に捧げる……っ|{o}のためなら、この身なんて、どうなってもいい……'),
+      cool: L('……{o}を想うことに、理由はいらない|{o}以外は、何も見えない'),
+      free: L('{o}、{o}……っ、ずっと、ずっと{o}だけ……っ|もう、{o}しか見えない……っ'),
+      shy: L('さ、触れて……いいの……？　{o}に……っ|{o}……っ、こんなに近くで……っ'),
+      polite: L('{o}……この身に余る光栄です……っ|どうか、{o}のおそばに置いてください……')
+    },
+    worship_dom: {
+      proud: L('跪け、{o}。……私が許すまで、果てるな|{o}は私のものだ。その声も、全部'),
+      stern: L('……まだだ。私がいいと言うまで、耐えろ|{o}、私の目を見ろ。逸らすな'),
+      tsun: L('べ、別に、{o}のためじゃないから……っ、私が、そうしたいだけ……|ちゃんと私の言うこと聞いて……っ、{o}'),
+      gentle: L('{o}、いい子。……そのまま、私だけを見ていて|まだだめ。私がいいって言うまで、我慢して'),
+      devoted: L('{o}の全部、私にちょうだい。……命令だよ|{o}は、私のためにいるんだよね？'),
+      cool: L('……私の許可なく、果てるな|{o}、私の名前を呼べ。何度でも'),
+      free: L('だーめ、まだ許してあげない、{o}|ほら、{o}、もっと私を欲しがって？'),
+      shy: L('わ、私が……いいって、言うまで……だめ……|{o}……っ、ちゃんと、私を見て……っ'),
+      polite: L('……まだ、お許ししておりません、{o}|{o}、私の命令にだけ、従ってくださいね')
+    },
+    worship_d: {
+      proud: L('そんなに私が欲しいなら、全部受け取れ、{o}|{o}の想いは、私が受け止めてやる'),
+      stern: L('……{o}の想いは、もう疑わない|私を崇めるより、隣にいろ、{o}'),
+      tsun: L('べ、別に、崇められて嬉しいとかじゃ……っ、{o}だから……|そんなに見つめないで……っ、{o}のばか……'),
+      gentle: L('{o}……そんなに想ってくれて、ありがとう|私も、{o}が大切だよ'),
+      devoted: L('{o}の想いに、私も応えたい……っ|{o}が捧げてくれた分、私も返したい……'),
+      cool: L('……{o}の想いの重さは、ちゃんと分かっている|崇められるより、こうしているほうがいい'),
+      free: L('{o}ってば、ほんとに私のこと大好きだね……っ|いいよ、{o}、全部ちょうだい……っ'),
+      shy: L('そ、そんなに想われてたなんて……っ|{o}……っ、私も、{o}が……'),
+      polite: L('{o}のお気持ち、確かに受け取りました……っ|どうか、これからも私のそばに……')
+    },
+    benefactor_u: {
+      proud: L('恩を返せなどと言った覚えはない。……{o}が欲しかっただけだ|助けたあの日から、{o}は私のものだった'),
+      stern: L('……恩に縛られて、こうしているのではないな、{o}|{o}を守ると決めたのは私だ。最後まで、守る'),
+      tsun: L('べ、別に、恩を売ったつもりなんかないから……っ|{o}が勝手に懐いてきただけで……っ'),
+      gentle: L('{o}……もう、恩なんて考えなくていい|{o}が元気でいてくれて、本当によかった'),
+      devoted: L('{o}を助けられたことが、私の誇り……|これからも、{o}を守らせて……'),
+      cool: L('……恩と、これとは別の勘定だ|{o}への投資は、十分すぎるほど返ってきた'),
+      free: L('恩返しにしては、やりすぎだよ、{o}……っ|{o}を助けたあの日の私、えらすぎ……っ'),
+      shy: L('お、恩とか……そういうのじゃ、なくて……っ|{o}……っ、助けたときより、どきどきする……'),
+      polite: L('……恩義など、お気になさらず、{o}|{o}をお助けできたこと、私の喜びです')
+    },
+    benefactor_d: {
+      proud: L('恩は返す。……一生かけて、{o}に|{o}に救われたこの身だ。{o}のものにしていい'),
+      stern: L('……この恩は、必ず返すと決めていた|{o}がいなければ、今の私はいない'),
+      tsun: L('べ、別に、恩返しのつもりじゃないから……っ|{o}に助けられたこと、ずっと気にしてたわけじゃ……っ'),
+      gentle: L('{o}……あのとき助けてくれて、ありがとう|今度は、私が{o}を幸せにしたい'),
+      devoted: L('{o}のためなら、何だってする……っ、あの日からずっと|{o}に救われた命、{o}に捧げたい……'),
+      cool: L('……借りは、返す主義だ|{o}への借りは、一生かけても返しきれない'),
+      free: L('恩返し、まだまだ足りないよね、{o}……っ|{o}に助けてもらって、ほんとによかった……っ'),
+      shy: L('お、恩返し……ちゃんと、できてる……？|{o}……っ、助けてくれた日から、ずっと……'),
+      polite: L('……このご恩は、一生忘れません、{o}|どうか、恩返しをさせてください……っ')
+    }
+  };
+
+  function keyOf(nt) { return nt.type === 'worship' && nt.dom ? 'worship_dom' : nt.type; }
+  function afterKey(nt) { return nt.type === 'worship' ? (nt.dom ? 'worship_dom' : nt.g === 'confused' ? 'worship_conf' : 'worship') : nt.type; }
+  function V(nt, x, y) { return { a: x.name, b: y.name, u: nt.u.name, d: nt.d.name }; }
+  /* 話す人と言葉の表：[mid の話し手, 山場の話し手] */
+  function speakers(S, nt, x, y) {
+    var u = nt.u, d = nt.d, rng = S.rng;
+    if (nt.type === 'worship') {
+      /* 支配：最中・山場の地の文に信仰される側の命令が入るので、最中は信仰する側の言葉、山場の前に信仰される側の命令 */
+      if (nt.dom) return [[u, 'worship_u'], [d, 'worship_dom']];
+      return [[u, 'worship_u'], nt.g === 'warm' || nt.rom ? [d, 'worship_d'] : [u, 'worship_u']];
+    }
+    if (nt.type === 'boss' || nt.type === 'benefactor') {
+      var f = rng() < 0.5, A1 = [u, nt.type + '_u'], B1 = [d, nt.type + '_d'];
+      return f ? [A1, B1] : [B1, A1];
+    }
+    var p = rng() < 0.5 ? x : y;
+    return [[p, nt.type], [p === x ? y : x, nt.type]];
+  }
+  function word(S, nt, sp) {
+    var p = sp[0], o = p === nt.u ? nt.d : nt.u, T = W[sp[1]];
+    if (!T) return '';
+    return p.name + '「' + ST.fmt(pick(S, T[ps(p)]), { o: o.name }) + '」';
+  }
+
+  /* ロッカーの中で繋がったとき（攻め tp、受け bt） */
+  NT.r18Act = function (S, nt, tp, bt, o) {
+    if (HK.SAFE_ON) return '';
+    var k = kindOf(tp, bt), M = MID[keyOf(nt)];
+    if (!M) return '';
+    var sp = speakers(S, nt, tp, bt);
+    return ST.fmt(pick(S, M[k]), V(nt, tp, bt)) + word(S, nt, sp[0]);
+  };
+
+  /* 扉が開いたあとのベッド */
+  var bed0 = LK.bed;
+  LK.bed = function (S, o) {
+    var nt = o && o.nt;
+    /* locker-thick.js の包みが LK.bed を呼び直すので、二重に足さない（印をつけて渡す） */
+    if (!nt || o.ntDone || HK.SAFE_ON || o.lew === 'low') return bed0.apply(this, arguments);
+    var start = S.log.length, res = bed0.call(this, S, Object.assign({}, o, { ntDone: true }));
+    var es = S.log.slice(start).filter(function (e) { return e && typeof e.text === 'string' && e.kind !== 'step' && e.kind !== 'phase'; });
+    if (!es.length) return res;
+    var x = o.x, y = o.y, k = kindOf(x, y), key = keyOf(nt), vv = V(nt, x, y), sp = speakers(S, nt, x, y);
+    /* 導入 */
+    var inv = es[0].tag === 'ベッドへ' ? es[0] : null;
+    if (inv && INTRO[key]) {
+      var it = ST.fmt(pick(S, INTRO[key][k]), vv);
+      if (nt.dom) {
+        /* 支配している信仰される側が命じる：誘い方の文と差し替える */
+        inv.text = (o.how === 'timeout' && LK.BED.timeout ? LK.BED.timeout[0] : '') + it;
+        inv.why = nt.d.name + 'が命じ、' + nt.u.name + 'が従った（信仰される側が支配している）';
+        if (res && res.length) res[0] = '命じられて';
+      } else inv.text += it;
+    }
+    var rest = es.filter(function (e) { return e !== inv; });
+    if (!rest.length) return res;
+    /* 最中：地の文と、関係の言葉 */
+    var mid = rest[0], fin = rest[rest.length - 1];
+    mid.text += ST.fmt(pick(S, MID[key][k]), vv) + word(S, nt, sp[0]);
+    /* 山場：関係の言葉と、地の文（男性向けは擬音と♡）。最後の段の頭に */
+    var useEro = o.ero && HK.ThickEro && ERO_PEAK[key];
+    var pk = useEro ? HK.ThickEro.fill(S, ST.fmt(pick(S, ERO_PEAK[key][k]), vv), x, y) : ST.fmt(pick(S, PEAK[key][k]), vv);
+    var pkT = word(S, nt, sp[1]) + pk + (o.moan ? o.moan(y) : '');
+    /* 事後 */
+    var af = ST.fmt(pick(S, AFTER[afterKey(nt)][k]), vv);
+    if (fin === mid) fin.text += pkT + af;
+    else fin.text = pkT + (/\n\n/.test(fin.text) ? '\n\n' : '') + fin.text + (/\n\n/.test(fin.text) ? '\n\n' : '') + af;
+    fin.why = (fin.why || '') + '／' + NT.LABEL[nt.type] + 'の二人';
+    if (res && res.push) res.push(NT.LABEL[nt.type] + 'の夜');
+    return res;
+  };
+  LK.TIES_R18 = { INTRO: INTRO, MID: MID, PEAK: PEAK, ERO_PEAK: ERO_PEAK, AFTER: AFTER, W: W };
+})();
 ;/* ==== js/solo-locker.js ==== */
 /* 箱庭シミュレーター: 媚薬ロッカー（R18）
    媚薬の充満する狭いロッカーに閉じ込められた二人。仕掛けを解いて脱出できるか。
@@ -37277,8 +40034,8 @@
   HK.SCEN_ORDER.push('locker');
 
   var LV = ['touch', 'kiss', 'grope', 'oral', 'sex'];
-  var REL = { lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'fwb', master: 'master', crush: 'crush', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', senpai: 'friend', colleague: 'friend', acq: 'friend', almost: 'almost', rival: 'tension', bad: 'tension', enemy: 'tension', ex: 'ex', sibling: 'friend' };
-  var REL_LABEL = { lover: '恋人', fwb: 'セフレ', master: '主従', crush: '片想い', mutual: '両片想い', friend: '知り合い', almost: '友達以上恋人未満', tension: '険悪', ex: '元恋人', stranger: '初対面' };
+  var REL = { lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'fwb', master: 'master', crush: 'crush', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', senpai: 'friend', colleague: 'colleague', classmate: 'classmate', boss: 'boss', worship: 'worship', benefactor: 'benefactor', relative: 'relative', acq: 'friend', almost: 'almost', rival: 'tension', bad: 'tension', enemy: 'tension', ex: 'ex', sibling: 'friend' };
+  var REL_LABEL = { lover: '恋人', fwb: 'セフレ', master: '主従', crush: '片想い', mutual: '両片想い', friend: '知り合い', almost: '友達以上恋人未満', tension: '険悪', ex: '元恋人', stranger: '初対面', colleague: '同僚', classmate: '同級生', boss: '上司と部下', worship: '執着（信仰）', benefactor: '恩人', relative: '親族' };
 
   var LK_HATE_LEAD = ['狭いロッカーの中で、{b}は{a}の胸に、そっと額を預けた。', '{b}は、触れ合った{a}の手を、そのまま握ろうとした。', '{b}は、熱に浮かされた目で、{a}の顔を見上げた。'];
   function run(input) {
@@ -37288,7 +40045,7 @@
     if (!B) { B = A; }
     /* 関係 */
     /* 同じ二人に関係を重ねられる（セフレで片想い など）。代表の関係は強いものから */
-    var PRIO = ['mate', 'fated', 'lover', 'master', 'fwb', 'ex', 'crush', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'mentor', 'teacher', 'colleague', 'friend', 'acq', 'pparent', 'parent', 'sibprot', 'sibling', 'sibclose', 'sibbad'];
+    var PRIO = ['mate', 'fated', 'lover', 'master', 'worship', 'fwb', 'ex', 'crush', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'mentor', 'teacher', 'benefactor', 'boss', 'colleague', 'classmate', 'friend', 'acq', 'relative', 'pparent', 'parent', 'sibprot', 'sibling', 'sibclose', 'sibbad'];
     var tieL = (input.ties || []).filter(function (t) { return (t.a === A.i && t.b === B.i) || (t.a === B.i && t.b === A.i); }).sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
     var tie = tieL[0];
     var rel = tie ? REL[tie.type] || REL[(HK.TIES[tie.type] || {}).like] || 'friend' : 'stranger';
@@ -37297,6 +40054,10 @@
     if (mtie) { master = P[mtie.a]; servant = P[mtie.b]; }
     var crushL = tieL.filter(function (t) { return t.type === 'crush'; });
     if (crushL.length) crusher = P[crushL[0].a];
+    /* 新しい関係（同僚・同級生・上司と部下・執着（信仰）・恩人・親族）：locker-ties.js（LK.TIES）。
+       信仰する側は、崇める相手に自分から触れない（従者の耐え方に倣う。文と許しの出方は信仰される側の気持ちで変わる） */
+    var NT = LK.TIES, nt = NT ? NT.setup(S, A, B, tieL) : null, svW = false, SV = LK.SERVANT;
+    if (!mtie && nt && nt.type === 'worship') { servant = nt.u; master = nt.d; svW = true; SV = NT.sv(nt); }
     /* 両片想い：どちらからも片想いがある二人（ties.js が向きを逆にした片想い二本に開く）。片想いの枝より先に、両片想いの枝へ */
     var mutualCrush = crushL.length > 1 && crushL.some(function (t) { return t.a !== crushL[0].a; });
     if (rel === 'crush' && mutualCrush) rel = 'mutual';
@@ -37311,6 +40072,9 @@
     /* 恋愛・R18にしない二人：相手を落とすために自分から閉じ込められる人はいない（役割の指定があっても、巻き込まれた側として扱う） */
     /* 恋愛相手の固定が食い違うだけで、体の関係は許されている二人（engine.js の HK.lockSexOnly）は、恋愛・R18にしない組として扱わない */
     var ngP = !!(HK.ngPair && HK.ngPair(A, B)) && !(HK.lockSexOnly && HK.lockSexOnly(A, B));
+    /* 親族（恋愛：なし）・信仰（恋愛に発展：しない。支配しているとき以外）も、恋愛・R18にしない組として扱う */
+    var tieNL = !ngP && !!(nt && nt.noLove);
+    if (tieNL) ngP = true;
     /* 性行為の相手を別の人に固定している（または固定した相手がこの箱庭にいない）：体の関係にならない（pos.js の向きの判定で clash になる） */
     var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (A.sexLock != null && A.sexLock !== B.i ? A : B) : null;
     var sexWhy = sexP ? sexWho.name + 'は、性行為の相手を' + (input.chars[sexWho.sexLock] ? input.chars[sexWho.sexLock].name + 'に' : 'ほかの人に') + '決めている' : '';
@@ -37325,13 +40089,13 @@
       p.cnt = { make: 0, refuse: 0, accept: 0, climax: 0, solve: 0, hold: 0 };
       var pc = (input.perChar && input.perChar[p.i]) || {};
       p.action = pick(scen.actions, pc.action, p); p.goal = pick(scen.goals, pc.goal, p);
-      p.roleLabel = (plotter === p ? '自分から閉じ込められた人' : '閉じ込められた人') + '・' + REL_LABEL[rel] + (servant === p ? '（従者）' : master === p ? '（主）' : '');
+      p.roleLabel = (plotter === p ? '自分から閉じ込められた人' : '閉じ込められた人') + '・' + REL_LABEL[rel] + (svW || (nt && !mtie) ? NT.role(nt, p) : servant === p ? '（従者）' : master === p ? '（主）' : '');
       p.sens = (0.6 + (6 - (p.stats.gaman || 3)) * 0.1 - p.tr.cp * 0.15) * (0.7 + rng() * 0.7);
     });
     function pick(list, id, p) { if (id && id !== 'auto') for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return HK.weighted(rng, list, function (o) { return Math.pow(Math.max(0.02, o.fit(p.tr)), 3); }); }
     var boundOne = null;
     /* 受け攻め：向きの決まらない二人（攻め×攻めなど）は体の関係にならない。女性どうしは、いちもつの描写を使わない */
-    var Pos = HK.Pos, clash = !!(Pos && Pos.clash(A, B)), ff = !!(Pos && Pos.ff(A, B)), R18 = !HK.SAFE_ON;
+    var Pos = HK.Pos, clash = !!(Pos && Pos.clash(A, B)) || tieNL, ff = !!(Pos && Pos.ff(A, B)), R18 = !HK.SAFE_ON;
     /* 敵対している二人（関係がライバル・不仲・敵対）：攻めの側から強引に手を出し、受けは口では嫌がるが、まんざらではない応じ方をする（hate-sex-r18.js。R18版のみ） */
     if (!S.ties) S.ties = input.ties || [];
     var HSX = R18 && HK.HateSex, hateP = !!(HSX && rel === 'tension' && !ngP && !clash && HSX.hostile(S, A, B));
@@ -37363,6 +40127,7 @@
     ST.say(S, { kind: 'phase', text: pk(LK.SPEAKER) + '（仕掛け：' + gimmicks.map(function (g) { return g.name; }).join('→') + '）' });
     /* 体の関係にならない二人・相手が自分で攻めを選んだ人のときは、手を取って触れさせる文を使わない */
     var plotPush = plotter ? LK.PLOT.push.filter(function (l) { return !((clash || (hardTop(plotter.o) && !hardTop(plotter))) && /胸に押し当て|腰に回させ|任せて/.test(l)); }) : [];
+    if (nt) NT.wake(S, nt);
     if (plotter) { var o = ST.say(S, { actors: [plotter], tag: '思惑', text: ST.fmt(pk(plotPush.length ? plotPush : LK.PLOT.push), { a: plotter.name, b: plotter.o.name }), why: plotter.name + 'は、自分から望んでここにいる' + (rel === 'mutual' ? '（' + plotter.o.name + 'への片想い。実は向こうも同じ）' : crusher === plotter ? '（' + plotter.o.name + 'への片想い）' : ''), mag: 20 }); ST.key(S, o, plotter.name + 'の思惑'); }
     ST.snap(S, keys);
 
@@ -37394,7 +40159,7 @@
       a.cnt.hold++; a.m.reason = clamp(a.m.reason + 3, 0, 100); a.m.plea = clamp(a.m.plea + 8, 0, 90);
       if (a.cnt.hold > 3 && rng() < 0.5) return;
       var ty = clashType(a), C = LK.CLASH;
-      ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + 'は発情していた（' + Math.round(a.m.heat) + '）が、' + b.name + (ngP ? 'とは恋愛・R18にしない組なので、手は出さなかった（' : sexP ? 'とは体の関係にならない（' + sexWhy + '）ので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
+      ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + 'は発情していた（' + Math.round(a.m.heat) + '）が、' + b.name + (ngP ? 'とは' + (tieNL ? nt.nlWhy + 'の二人' : '恋愛・R18にしない組') + 'なので、手は出さなかった（' : sexP ? 'とは体の関係にならない（' + sexWhy + '）ので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
     }
     /* 女性の攻め（t）×男性の受け（u）か：女性が跨る書き方にする */
     function fmPair(t, u) { return !!(Pos && !ff && Pos.isF(t) && !Pos.isF(u)); }
@@ -37434,7 +40199,7 @@
       var po = plotter.o, caught = (plotter.sabotage || 0) >= 1 && rng() < 0.15 + po.tr.a * 0.3;
       if (!caught && rng() > 0.18) return;
       pair.plotShown = true;
-      var soft = !caught && ({ lover: 1, almost: 1, fwb: 1, mutual: 1 }[rel] || crusher === po || po.m.heat >= 65), v = { a: plotter.name, b: po.name };
+      var soft = (!caught && ({ lover: 1, almost: 1, fwb: 1, mutual: 1 }[rel] || crusher === po || po.m.heat >= 65)) || !!(nt && NT.plotSoft(nt, po)), v = { a: plotter.name, b: po.name };
       var rv = (caught ? LK.PLOT.caught : LK.PLOT.reveal).filter(function (l) { return !plotter.bound || !/手を|指を/.test(l); });
       if (soft) po.m.heat = clamp(po.m.heat + 8, 0, 100); else { po.m.reason = clamp(po.m.reason + 15, 0, 100); plotter.sabotage = 99; pair.plotMad = true; }
       ST.key(S, ST.sayB(S, { actors: [plotter, po], tag: caught ? '見抜かれた' : '打ち明けた', text: ST.fmt(pk(rv), v) + ST.fmt(pk(LK.PLOT.react[soft ? 'soft' : 'mad']), v), why: caught ? po.name + 'は、' + plotter.name + 'の細工に気づいた（A）' : plotter.name + 'は、自分から仕組んだことを打ち明けた', mag: 26 }, '', true), caught ? plotter.name + 'の細工がばれた' : plotter.name + 'が仕組んだと打ち明けた');
@@ -37483,6 +40248,8 @@
         var mf = rng() < 0.5 ? A : B;
         ST.sayB(S, { actors: [A, B], tag: '両片想い', text: ST.fmt(pk(LK.MUT.inside), { a: mf.name, b: mf.o.name }), why: '両片想い：二人とも相手を想っているのに、相手は自分を何とも思っていないと思い込んでいる', mag: 14 }, A.name + 'と' + B.name + 'がすれ違った');
       }
+      /* 新しい関係：閉じ込められたときの反応・関係を保つ・発展させる（locker-ties.js）。恩返しは仕掛けを進める */
+      if (nt) { var ntE = NT.turn(S, nt, { turn: turn, pair: pair, ngP: ngP }); if (ntE && ntE.prog && gimmicks[gi] && !gimmicks[gi].lewd) prog = clamp(prog + ntE.prog, 0, 99); }
       /* 手を出す（一コマに受け入れる出来事は一つまで。繋がっているあいだは、その続きだけ） */
       var lewdNow = false;
       var order = rng() < 0.5 ? [A, B] : [B, A];
@@ -37493,16 +40260,17 @@
         var urge = (a.goal && a.goal.id === 'want' ? 0.12 : a.goal && a.goal.id === 'out' ? -0.08 : 0) + (a.action && a.action.id === 'flow' ? 0.08 : a.action && a.action.id === 'solve' ? -0.06 : 0) + a.m.heat / 100 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.m.reason / 130 - a.tr.cp * 0.12 + (plotter === a ? 0.45 : 0) + ({ lover: 0.15, fwb: 0.2, almost: 0.1, crush: crusher === a ? 0.2 : 0, mutual: 0.2, tension: -0.1 }[rel] || 0) + (fwbAll && rel !== 'fwb' ? 0.2 : 0) + (crusher === a && rel !== 'crush' && rel !== 'mutual' ? 0.15 : 0);
         /* 敵対している二人：攻めの側は、苛立ちごとぶつけるように手を出しやすい */
         if (hateP && HSX.order(S, a, b)[0] === a) urge += 0.35;
+        if (nt) urge += NT.urge(nt, a);
         /* 従者は主に手を出さないよう耐える */
         if (servant === a && plotter !== a) {
-          var order2 = !clash && !a.ordered && master.m.heat > 70 && master.tr.cp + master.tr.fc > 0.8 && rng() < 0.5;
-          if (order2) { a.ordered = true; a.m.reason = 0; ST.sayB(S, { actors: [a, b], tag: '主の許し', text: ST.fmt(pk(LK.SERVANT.order), { a: a.name, b: b.name }), why: '主の' + b.name + 'も発情していた（' + Math.round(b.m.heat) + '）', mag: 26 }, b.name + 'が許しを与えた', true); urge += 0.6; }
+          var order2 = !clash && !a.ordered && master.m.heat > 70 && master.tr.cp + master.tr.fc > (svW ? NT.ordTh(nt) : 0.8) && rng() < 0.5;
+          if (order2) { a.ordered = true; a.m.reason = 0; ST.sayB(S, { actors: [a, b], tag: svW ? (nt.dom ? '命令' : '許し') : '主の許し', text: ST.fmt(pk(SV.order), { a: a.name, b: b.name }), why: (svW ? '信仰される側の' : '主の') + b.name + 'も発情していた（' + Math.round(b.m.heat) + '）', mag: 26 }, b.name + 'が' + (svW && nt.dom ? '命じた' : '許しを与えた'), true); urge += 0.6; }
           else if (urge > 0.4 && a.m.reason > 8 + a.tr.ac * 10) {
             a.cnt.hold++; a.m.reason = clamp(a.m.reason - 6, 0, 100);
-            if (a.cnt.hold <= 2) ST.sayB(S, { actors: [a, b], tag: '耐える従者', text: ST.fmt(pk(LK.SERVANT.hold), { a: a.name, b: b.name }), why: '主への忠誠（CP・理性 ' + Math.round(a.m.reason) + '）', mag: 20 }, a.name + 'は耐えた', a.cnt.hold === 1);
+            if (a.cnt.hold <= 2) ST.sayB(S, { actors: [a, b], tag: svW ? '崇める相手に触れない' : '耐える従者', text: ST.fmt(pk(SV.hold), { a: a.name, b: b.name }), why: (svW ? '信仰（崇める相手には、許されるまで触れない' : '主への忠誠（CP') + '・理性 ' + Math.round(a.m.reason) + '）', mag: 20 }, a.name + 'は耐えた', a.cnt.hold === 1);
             continue;
           } else if (urge > 0.4 && clash) { holdClash(a, b); continue; }
-          else if (urge > 0.4 && !a.broke) { a.broke = true; ST.key(S, ST.sayB(S, { actors: [a, b], tag: '理性が切れた', text: ST.fmt(pk(LK.SERVANT.break.filter(function (l) { return !hardTop(b) || !/押しつけ/.test(l); })), { a: a.name, b: b.name }), why: a.name + 'の理性が尽きた（耐えた回数 ' + a.cnt.hold + '）', mag: 34 }, '', true), a.name + 'が主に手を出した'); urge += 0.3; }
+          else if (urge > 0.4 && !a.broke) { a.broke = true; ST.key(S, ST.sayB(S, { actors: [a, b], tag: '理性が切れた', text: ST.fmt(pk(SV.break.filter(function (l) { return !hardTop(b) || !/押しつけ/.test(l); })), { a: a.name, b: b.name }), why: a.name + 'の理性が尽きた（耐えた回数 ' + a.cnt.hold + '）', mag: 34 }, '', true), a.name + (svW ? 'が崇める相手に手を伸ばした' : 'が主に手を出した')); urge += 0.3; }
         }
         /* 片方だけ発情 */
         if (a.m.heat >= 70 && b.m.heat < 40 && urge > 0.5 && rng() < 0.6) {
@@ -37557,6 +40325,7 @@
         a.cnt.make++;
         var w = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3, crush: crusher === b ? 0.45 : -0.05, mutual: 0.45, friend: 0, tension: -0.3, ex: 0.05, stranger: -0.1, master: servant === b ? 0.35 : 0.2 }[rel] || 0) + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (plotter === b ? 0.8 : 0) + (fwbAll && rel !== 'fwb' ? 0.35 : 0) + (fcKind === 'mutual' ? 0.2 : 0) + (crusher === b && rel !== 'crush' && rel !== 'mutual' ? 0.2 : 0) + (rng() - 0.5) * 0.3;
         if (b.lock != null && b.lock !== a.i) w -= 0.5;
+        if (nt) w += NT.accW(nt, a, b);
         var resp = w > 0.55 ? 'accept' : w > 0.32 ? 'passive' : 'refuse';
         /* 受け攻め：挿入では、仕掛けた側が攻めか受けかで書き分ける */
         var aTop = !Pos || Pos.order(a, b, LV[lv] === 'sex' ? Pos.fbFor(a, b) : [a, b])[0] === a;
@@ -37582,6 +40351,8 @@
           var lateR = b.rxLv >= 1 && !b.rxCool && LK.REFUSE_LATE;
           t += ST.fmt(pk(hands(lateR ? LK.REFUSE_LATE : LK.REFUSE, a, b)), { a: a.name, b: b.name }) + (rng() < 0.7 ? say2(b, lateR && LK.REFUSE_SAY_LATE ? LK.REFUSE_SAY_LATE : LK.REFUSE_SAY) : '');
           if (b.cnt.refuse >= 2 && lv >= 2) pair.refusedHard = true;
+          /* 信仰する側は、崇める相手に拒まれても想いを捨てない */
+          if (nt) t += NT.refused(S, nt, a, b);
           ST.sayB(S, { actors: [a, b], tag: '嗜めた', text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + (lateR ? 'は、そこから先だけ止めた（さっきは応じていた／理性 ' : 'は嗜めた（理性 ') + Math.round(b.m.reason) + '・CP）', mag: 18 }, b.name + 'が嗜めた', pair.acts === 0);
           continue;
         }
@@ -37596,7 +40367,7 @@
         else t += (giveIn ? ST.fmt(pk(hands(giveIn, a, b)), { a: a.name, b: b.name }) : '') + ST.fmt(pk(hands((rxText === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); }), a, b)), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
         /* 最初の一回は、二人の関係で受け止め方が変わる */
         var RF = LK.REL && LK.REL.first[rel];
-        if (pair.acts === 1 && RF && rng() < 0.75) t += ST.fmt(pk(RF), { a: a.name, b: b.name, c: (crusher || a).name, o: (crusher || a).o.name });
+        if (pair.acts === 1 && RF && rng() < 0.75) t += ST.fmt(pk(RF), { a: a.name, b: b.name, c: (crusher || a).name, o: (crusher || a).o.name, u: nt ? nt.u.name : '', d: nt ? nt.d.name : '' });
         var gain = [15, 20, 30, 40, 50][lv];
         ax.m.plea += gain * ax.sens * 0.8; bx.m.plea += gain * bx.sens;
         a.m.heat = clamp(a.m.heat + 4, 0, 100); b.m.heat = clamp(b.m.heat + 8, 0, 100);
@@ -37612,6 +40383,8 @@
           var eg = lv === 3 ? ax : tp, er = lv === 3 ? bx : tp.o;
           t += HK.ThickEro.fill(S, pk(ff && LK.ERO_ACT_FF && LK.ERO_ACT_FF[lv] ? LK.ERO_ACT_FF[lv] : LK.ERO_ACT[lv]), eg, er).replace(/\{a\}/g, eg.name).replace(/\{b\}/g, er.name);
         }
+        /* 新しい関係ならではの最中（R18版のみ。locker-ties-r18.js） */
+        if (nt && NT.r18Act && R18 && lew !== 'low' && lv === 4 && !nt.r18In) { nt.r18In = true; t += NT.r18Act(S, nt, tp, tp.o, { moan: moan }); }
         /* 自分で攻めを選んだ人は、相手に「イかされる」側にしない */
         /* 繋がった瞬間には果てさせない（そこからの数コマを、続きの出来事で書く） */
         if (lv === 4) { ax.m.plea = Math.min(ax.m.plea, 55); bx.m.plea = Math.min(bx.m.plea, 60); }
@@ -37693,17 +40466,17 @@
       /* 受け攻め：ベッドでは攻めを {a} に（ロッカーの中と同じ向き） */
       if (HK.Pos && HK.Pos.order(x, y, [x, y])[0] !== x) { y = x; x = x.o; }
       var vv = { a: x.name, b: y.name };
-      var tone = rel === 'tension' || rel === 'ex' ? 'rough' : rel === 'lover' || rel === 'almost' || rel === 'crush' || rel === 'mutual' ? 'sweet' : rng() < 0.5 ? 'rough' : 'sweet';
+      var tone = nt ? NT.tone(nt, rng) : rel === 'tension' || rel === 'ex' ? 'rough' : rel === 'lover' || rel === 'almost' || rel === 'crush' || rel === 'mutual' ? 'sweet' : rng() < 0.5 ? 'rough' : 'sweet';
       /* ベッドの展開は solo-locker-bed.js（誘い方・最中の展開・結び） */
       /* 扉が開いたあとの夜：描写の長さ（短く＝一段落版）と、男性向け（企みのある夜は除く） */
       eroNow = eroOn && !plotter;
-      bedLabels = LK.bed(S, { short: !!(lcf && LX.short(env, rng)), ero: eroNow, A: A, B: B, x: x, y: y, rel: rel, tone: tone, how: how, plotter: plotter, servant: servant, master: master, lew: lew, dose: env.dose, pair: pair, moan: moan, REL_LABEL: REL_LABEL, ff: ff });
+      bedLabels = LK.bed(S, { short: !!(lcf && LX.short(env, rng)), ero: eroNow, A: A, B: B, x: x, y: y, rel: rel, tone: tone, how: how, plotter: plotter, servant: svW ? null : servant, master: svW ? null : master, nt: nt, lew: lew, dose: env.dose, pair: pair, moan: moan, REL_LABEL: REL_LABEL, ff: ff });
       A.cnt.climax += 2 + rng.int(3); B.cnt.climax += 2 + rng.int(3);
     } else if (endure) {
       outcome = 'endure';
       /* 理性の残っていた方が、性格に合わせたやり方で二人を引き離す */
       var ke = A.m.reason >= B.m.reason ? A : B, tye = clashType(ke);
-      ST.key(S, ST.say(S, { actors: [A, B], tag: '耐え抜いた', text: (how === 'timeout' ? LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/, '') : '') + ST.fmt(pk(LK.CLASH.bed[tye]), { a: ke.name, b: ke.o.name }), why: '二人とも発情していた（' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）が、' + (sexP ? '体の関係にならない二人（' + sexWhy + '）なので' : '受け攻めの向きが合わない二人なので') + '、ベッドには行かなかった（' + ke.name + 'の理性 ' + Math.round(ke.m.reason) + '）', mag: 30 }), '結末');
+      ST.key(S, ST.say(S, { actors: [A, B], tag: '耐え抜いた', text: (how === 'timeout' ? LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/, '') : '') + ST.fmt(pk(LK.CLASH.bed[tye]), { a: ke.name, b: ke.o.name }), why: '二人とも発情していた（' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）が、' + (tieNL ? nt.nlWhy + 'の二人なので' : sexP ? '体の関係にならない二人（' + sexWhy + '）なので' : '受け攻めの向きが合わない二人なので') + '、ベッドには行かなかった（' + ke.name + 'の理性 ' + Math.round(ke.m.reason) + '）', mag: 30 }), '結末');
     } else {
       /* ロッカーの中で最後までした二人は「怒りの脱出」にしない（そのあと受け入れている） */
       outcome = how === 'timeout' ? 'rescue' : plotter && !plotOk ? 'plotfail' : pair.refusedHard && pair.acts >= 1 && !pair.sexIn ? 'angry' : pair.acts >= 1 ? 'awkward' : (A.cnt.make + B.cnt.make) > 0 || (clash && A.cnt.hold + B.cnt.hold > 0) ? 'near' : 'clean';
@@ -37713,7 +40486,8 @@
       var tA = ST.fmt(pk(aft.length ? aft : AF[outcome]), { a: who0.name, b: who0.o.name });
       /* 何かあった二人は、関係ごとの一文を添える。思惑どおりに行った人は、こっそり満足する */
       var RA = LK.REL && LK.REL.after[rel];
-      if (RA && pair.acts >= 1 && outcome !== 'angry' && outcome !== 'plotfail' && rng() < 0.7) tA += ST.fmt(pk(RA), { a: who0.name, b: who0.o.name, c: (crusher || A).name, o: (crusher || A).o.name });
+      if (RA && pair.acts >= 1 && outcome !== 'angry' && outcome !== 'plotfail' && rng() < 0.7) tA += ST.fmt(pk(RA), { a: who0.name, b: who0.o.name, c: (crusher || A).name, o: (crusher || A).o.name, u: nt ? nt.u.name : '', d: nt ? nt.d.name : '' });
+      if (nt) tA += NT.afterNote(S, nt, outcome, plotter);
       if (plotter && plotOk && pair.acts >= 1) tA += ST.fmt(pk(AF.plotwin.filter(function (l) { return !/ベッド|眠|寝顔/.test(l); })), { a: plotter.name, b: plotter.o.name });
       ST.key(S, ST.say(S, { actors: [A, B], tag: { clean: '無事に脱出', near: '踏みとどまった', awkward: '気まずい脱出', angry: '怒りの脱出', plotfail: '計画失敗', rescue: '時間切れ' }[outcome], text: tA, why: '手を出した回数 ' + pair.acts + '・嗜めた回数 ' + (A.cnt.refuse + B.cnt.refuse) + '・発情 ' + Math.round(A.m.heat) + '／' + Math.round(B.m.heat), mag: 30 }), '結末');
     }
@@ -37722,6 +40496,7 @@
     P.forEach(function (p) {
       var f;
       if (plotter === p) f = outcome === 'bed' ? '相手をモノにした' : pair.sexIn && outcome !== 'plotfail' ? 'ロッカーの中で相手をモノにした' : pair.acts >= 1 && outcome !== 'plotfail' ? '少しだけ思いを遂げた' : '計画が空回りした';
+      else if (svW && servant === p) f = NT.fate(nt, p);
       else if (servant === p) f = p.broke ? '主に手を出してしまった' : p.ordered ? '主の許しで身を委ねた' : p.cnt.hold ? '主に手を出さず耐えきった' : '主に身を委ねた';
       else if (clash && (p.cnt.hold || outcome === 'endure')) f = '触れずに耐え抜いた';
       else if (p.cnt.make >= 2 && p.cnt.make === p.o.cnt.make && p.o !== plotter && p.o !== servant) f = '一緒に堕ちた';
@@ -37742,6 +40517,7 @@
     if (bedLabels.length) lines.push('ベッドでは：' + bedLabels.join('→'));
     if (fcKind && LK.FC) lines.push(ST.fmt(pk(LK.FC.end[fcKind]), { c: crusher.name, o: crusher.o.name }));
     /* 両片想い：何かあった二人は「……こっちの台詞」と通じる。何もなかった二人は、すれ違ったまま */
+    if (nt) { var ntL = NT.endLine(S, nt); if (ntL) lines.push(ntL); }
     if (rel === 'mutual' && LK.MUT) lines.push(ST.fmt(pk(LK.MUT.end[outcome === 'bed' || (pair.acts >= 1 && outcome !== 'angry' && outcome !== 'plotfail') ? 'told' : 'miss']), v0));
     var rows = P.map(function (p) { return { i: p.i, rank: '', cells: [Math.round(p.m.heat) + '', Math.round(p.m.reason) + '', String(p.cnt.make), String(p.cnt.refuse), String(p.cnt.climax), String(p.cnt.solve), p.fate] }; });
     return ST.result(S, input, {
@@ -39172,8 +41948,8 @@
   var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, clamp = HK.clamp, T = JS && JS.RELT;
   if (!ST || !JS || !T) return;
 
-  var LOVE = 'lover,mate,fated,almost,fwb', FAMILY = 'sibling,sibprot,sibclose,sibbad,parent,pparent', CLOSE = 'best,buddy,childhood,friend,mentor,master,teacher,senpai,colleague', BAD = 'enemy,rival,bad';
-  var W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7 , sibbad: -0.15, bad: -0.4 };
+  var LOVE = 'lover,mate,fated,almost,fwb', FAMILY = 'sibling,sibprot,sibclose,sibbad,parent,pparent,relative', CLOSE = 'best,buddy,childhood,friend,mentor,master,teacher,senpai,colleague,classmate,boss,benefactor,worship', BAD = 'enemy,rival,bad';
+  var W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, classmate: 0.4, boss: 0.45, benefactor: 0.6, relative: 0.6, worship: 0.85, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7 , sibbad: -0.15, bad: -0.4 };
   function inList(t, l) { return l.split(',').indexOf(t) >= 0; }
   function tiesOf(S, a, b) { return (S.ties || []).filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); }); }
   /* a から b への近さ（-1〜1）。片想いは想う側からだけ強い */
@@ -39746,7 +42522,7 @@
   /* ---------- 関係図 ---------- */
   function relmap(S) {
     var P = S.P, edges = [];
-    var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', acq: 'none' };
+    var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', classmate: 'friend', boss: 'partner', benefactor: 'guard', relative: 'guard', worship: 'guard', acq: 'none' };
     (S.ties || []).forEach(function (t) {
       /* 両片想い（向きを逆にした片想い二本）は、一本の「両片想い」にまとめる */
       if (t.type === 'crush' && (S.ties || []).some(function (u) { return u.type === 'crush' && u.a === t.b && u.b === t.a; })) { if (t.a < t.b) edges.push({ a: t.a, b: t.b, label: (t.born ? '★' : '') + '両片想い', cls: 'pine', dir: null }); return; }
@@ -44369,7 +47145,7 @@
   HK.SCEN_ORDER.splice(at >= 0 ? at + 1 : HK.SCEN_ORDER.length, 0, 'yakata');
 
   /* ---------- 関係 ---------- */
-  var W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7 , sibbad: -0.15, bad: -0.4 };
+  var W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, classmate: 0.4, boss: 0.45, benefactor: 0.6, relative: 0.6, worship: 0.85, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7 , sibbad: -0.15, bad: -0.4 };
   function ties(S, a, b) { return a && b && a.i != null && b.i != null ? S.ties.filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); }) : []; }
   function bond(S, a, b) {
     var best = 0, neg = 0;
@@ -45028,7 +47804,7 @@
   function relmap(S) {
     var P = S.P, edges = [], seen = {};
     function add(a, b, label, cls, dir) { var k = rk(P[a], P[b]) + label; if (seen[k]) return; seen[k] = 1; edges.push({ a: a, b: b, label: label, cls: cls, dir: dir }); }
-    var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', acq: 'none' };
+    var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', classmate: 'friend', boss: 'partner', benefactor: 'guard', relative: 'guard', worship: 'guard', acq: 'none' };
     S.ties.forEach(function (t) {
       /* 両片想い（逆向きの片想いもある）は、向きのない「両片想い」一本にまとめる */
       if (t.type === 'crush' && crushTo(S, P[t.b], P[t.a])) return add(Math.min(t.a, t.b), Math.max(t.a, t.b), (t.born ? '★' : '') + '両片想い', 'pine', null);
@@ -47935,7 +50711,7 @@
   HK.SCEN_ORDER.splice(at >= 0 ? at + 1 : HK.SCEN_ORDER.length, 0, 'ship');
 
   /* ---------- 関係 ---------- */
-  var W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7, sibbad: -0.15, bad: -0.4 };
+  var W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, classmate: 0.4, boss: 0.45, benefactor: 0.6, relative: 0.6, worship: 0.85, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7, sibbad: -0.15, bad: -0.4 };
   var LOVE = /^(lover|mate|fated|almost|fwb|crush)$/, FAMILY = /^(sibling|sibprot|sibclose|sibbad|parent|pparent)$/;
   function rk(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   function ties(S, a, b) { return S.ties.filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); }); }
@@ -48603,7 +51379,7 @@
   function relmap(S) {
     var P = S.P, edges = [], seen = {};
     function add(a, b, label, cls, dir) { var k = rk(P[a], P[b]) + label; if (seen[k]) return; seen[k] = 1; edges.push({ a: a, b: b, label: label, cls: cls, dir: dir }); }
-    var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', acq: 'none' };
+    var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', classmate: 'friend', boss: 'partner', benefactor: 'guard', relative: 'guard', worship: 'guard', acq: 'none' };
     S.ties.forEach(function (t) { var lab = HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; add(t.a, t.b, lab, CLS[t.type] || 'friend', t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null); });
     var hasLove = {};
     S.ties.forEach(function (t) { if (LOVE.test(t.type)) hasLove[rk(P[t.a], P[t.b])] = 1; });
@@ -51385,7 +54161,7 @@
   var at = -1; scen.env.forEach(function (e, i) { if (e.id === 'prize') at = i; });
   scen.env.splice(at >= 0 ? at : scen.env.length, 0, { id: 'lovemode', label: '好意モード', type: 'select', def: 'off', options: [{ v: 'off', label: 'オフ（推理で投票する）' }, { v: 'on', label: 'オン（好感度で投票することがある）' }], desc: 'オンにすると、半分くらいの投票が好き嫌いで決まり、好意を使って信頼を取りにいく人が出る' });
 
-  var TW = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.5, best: 0.8, buddy: 0.75, childhood: 0.7, sibling: 0.65, sibclose: 0.8, sibprot: 0.8, parent: 0.8, pparent: 0.75, friend: 0.5, mentor: 0.5, master: 0.55, teacher: 0.45, senpai: 0.35, colleague: 0.25, acq: 0.1, rival: -0.35, enemy: -0.85 , sibbad: -0.15, bad: -0.4 };
+  var TW = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.5, best: 0.8, buddy: 0.75, childhood: 0.7, sibling: 0.65, sibclose: 0.8, sibprot: 0.8, parent: 0.8, pparent: 0.75, friend: 0.5, mentor: 0.5, master: 0.55, teacher: 0.45, senpai: 0.35, colleague: 0.25, classmate: 0.35, boss: 0.4, benefactor: 0.6, relative: 0.55, worship: 0.85, acq: 0.1, rival: -0.35, enemy: -0.85 , sibbad: -0.15, bad: -0.4 };
   var LBL = function (t) { return HK.TIES && HK.TIES[t] ? HK.TIES[t].label : t; };
 
   /* ---------- 好意を使って信頼を取りにいく ---------- */
@@ -53119,10 +55895,10 @@
         '<select id="ta-' + k + '" data-f="tie" data-k="' + k + '" data-p="a" aria-label="関係の起点">' + charOpts(t.a) + '</select>' +
         '<select id="tt-' + k + '" data-f="tie" data-k="' + k + '" data-p="type" aria-label="関係の種類">' + HK.TIE_ORDER.map(function (id) { var d = HK.TIES[id]; return '<option value="' + id + '"' + (id === t.type ? ' selected' : '') + '>' + esc(d.label) + (d.dir ? '（' + d.roleA + '→' + d.roleB + '）' : '') + '</option>'; }).join('') + '</select>' +
         '<select id="tb-' + k + '" data-f="tie" data-k="' + k + '" data-p="b" aria-label="関係の相手">' + charOpts(t.b) + '</select>' +
-        (D.family && !D.loveOK ? '<select id="tl-' + k + '" data-f="tie" data-k="' + k + '" data-p="love" aria-label="恋愛"><option value=""' + (t.love === 'ok' ? '' : ' selected') + '>恋愛：なし</option><option value="ok"' + (t.love === 'ok' ? ' selected' : '') + '>恋愛：あり</option></select>' : '') +
+        ((D.family && !D.loveOK) || D.loveOpt ? '<select id="tl-' + k + '" data-f="tie" data-k="' + k + '" data-p="love" aria-label="恋愛"><option value=""' + (t.love === 'ok' ? '' : ' selected') + '>' + (D.loveOpt ? '恋愛に発展：しない' : '恋愛：なし') + '</option><option value="ok"' + (t.love === 'ok' ? ' selected' : '') + '>' + (D.loveOpt ? '恋愛に発展：する' : '恋愛：あり') + '</option></select>' : '') +
         (function () { var CO = HK.coldOpts ? HK.coldOpts(t.type) : null; return CO ? '<select id="tc-' + k + '" data-f="tie" data-k="' + k + '" data-p="cold" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return '<option value="' + id + '"' + ((t.cold || '') === id ? ' selected' : '') + '>' + esc(CO.map[id].label) + '</option>'; }).join('') + '</select>' : ''; })() +
         '<button class="btn ghost small" data-act="tiedel" data-k="' + k + '">削除</button>' +
-        '<span class="tiehint">' + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '') + '</span></div>';
+        '<span class="tiehint">' + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (D.loveOpt ? (t.love === 'ok' ? '。恋愛に発展：するにしているので、想いが恋に変わることもある' : '。恋愛に発展：しないにしているので、想いは恋にならない') : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '') + '</span></div>';
     }).join('');
     return '<h2 class="sec">住人どうしの既存の関係' + (HK.Tips ? HK.Tips.btn('ties') : '') + '</h2>' +
       '<p class="hint">箱庭に入る前からある関係です。初期の好意や信頼が変わり、行動の傾向にも補正がかかります。各住人の ⚙️ 設定からも編集できます。</p>' +
@@ -53288,7 +56064,7 @@
       S.ties = (S.ties || []).filter(function (x) { return !(x.type === t.type && ((x.a === a && x.b === b) || (x.a === b && x.b === a))); });
       var CO2 = HK.coldOpts ? HK.coldOpts(t.type) : null;
       var nt0 = t.cold && CO2 && CO2.map[t.cold] ? { a: a, b: b, type: t.type, cold: t.cold } : { a: a, b: b, type: t.type };
-      if (t.love === 'ok' && HK.TIES[t.type].family) nt0.love = 'ok';
+      if (t.love === 'ok' && (HK.TIES[t.type].family || HK.TIES[t.type].loveOpt)) nt0.love = 'ok';
       S.ties.push(nt0); tn++;
     });
     if (data.teacher != null && map[data.teacher]) S.teacher = map[data.teacher];
@@ -54039,10 +56815,10 @@
       '<select data-gf="ttype" data-k="' + k + '" aria-label="' + esc(o.name) + 'との関係の種類">' + typeOpts(t.type) + '</select>';
     if (D.dir) h += '<select data-gf="tdir" data-k="' + k + '" aria-label="関係の向き">' + opt('a', c.name + 'が' + D.roleA, t.a === c.id ? 'a' : 'b') + opt('b', c.name + 'が' + D.roleB, t.a === c.id ? 'a' : 'b') + '</select>';
     var CO = HK.coldOpts ? HK.coldOpts(t.type) : null;
-    if (D.family && !D.loveOK) h += '<select data-gf="tlove" data-k="' + k + '" aria-label="恋愛">' + opt('', '恋愛：なし', t.love || '') + opt('ok', '恋愛：あり', t.love || '') + '</select>';
+    if ((D.family && !D.loveOK) || D.loveOpt) h += '<select data-gf="tlove" data-k="' + k + '" aria-label="恋愛">' + opt('', D.loveOpt ? '恋愛に発展：しない' : '恋愛：なし', t.love || '') + opt('ok', D.loveOpt ? '恋愛に発展：する' : '恋愛：あり', t.love || '') + '</select>';
     if (CO) h += '<select data-gf="tcold" data-k="' + k + '" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return opt(id, CO.map[id].label, t.cold || ''); }).join('') + '</select>';
     h += '<button type="button" class="btn ghost small" data-gact="tdel" data-k="' + k + '">外す</button></div>';
-    return h + '<p class="gearhint">' + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + '</p>';
+    return h + '<p class="gearhint">' + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (D.loveOpt ? (t.love === 'ok' ? '。恋愛に発展：するにしているので、想いが恋に変わることもある' : '。恋愛に発展：しないにしているので、想いは恋にならない') : '') + '</p>';
   }
   /* 口調の見本：ふつうの言い回しの台詞を、この住人の口調・一人称・呼び方に直して見せる（数秒ごとに切り替わる） */
   /* 口調ごとの見本は tone-registry.js の sample（一人称は「私」、相手は{o}で書き、表示のときに本人の一人称・呼び方に直す） */
@@ -55351,6 +58127,8 @@
        NP 深く沈む／AC 自分を責める／CP 表に出さず抱え込む（あとで一人で崩れる）／FC 空元気／A 淡々として、あとから崩れる
    ・その後の区切りで、喪失の状態に応じた独り言・出来事（遺品・名前を呼ぶ・眠れない・口癖・無茶）が出る。区切りごとに少しずつ薄れ、
      慰める側の出来事（慰める人の性格で変わる）でも薄れる。引きずっている人のふだんの出来事にも、ときどき一言が混ざる
+   ・執着（ヤンデレ）・執着（信仰）する側が相手を失ったときは、性格の型はそのままに、専用の反応（信じたものを失う・壊れる・後追い）が重なる（l.dev）。
+     関係が深いほど（l.d）、引きずる期間が長く、思い出す出来事も多くなる
    ・engine.js には触らず、箱庭の phase／after を包み、出来事を足す（G.install）。組み込みはこのファイルの最後 */
 (function () {
   'use strict';
@@ -55372,7 +58150,8 @@
   /* ---------- 関係の深さ（o から見た v） ---------- */
   var TIE_W = {
     lover: 60, mate: 65, fated: 55, parent: 60, pparent: 55, sibprot: 60, sibclose: 55, sibling: 45, best: 50, buddy: 45,
-    childhood: 42, almost: 40, mentor: 35, teacher: 30, master: 30, friend: 22, senpai: 15, colleague: 12, ex: 18, fwb: 12, acq: 5, rival: 8
+    childhood: 42, almost: 40, mentor: 35, teacher: 30, master: 30, friend: 22, senpai: 15, colleague: 12, ex: 18, fwb: 12, acq: 5, rival: 8,
+    relative: 35, classmate: 16, boss: 20, benefactor: 22, worship: 22
   };
   function relWord(type, mine) {
     switch (type) {
@@ -55390,6 +58169,12 @@
       case 'teacher': return mine ? '教え子' : '先生';
       case 'master': return mine ? '従者' : '主';
       case 'friend': return '友だち';
+      case 'relative': return '親族';
+      case 'classmate': return '同級生';
+      case 'colleague': return '同僚';
+      case 'boss': return mine ? '部下' : '上司';
+      case 'benefactor': return mine ? '助けた相手' : '恩人';
+      case 'worship': return mine ? '崇めていた人' : '自分を慕っていた人';
       default: return '';
     }
   }
@@ -55397,11 +58182,18 @@
     var best = 0, rel = '';
     (HK.Ties ? HK.Ties.all(ctx, o, v) : []).forEach(function (t) {
       var w = TIE_W[t.type] || 0, mine = t.a === o.i;
-      if (t.type === 'crush' || t.type === 'yan') w = mine ? 40 : 12;
+      if (t.type === 'crush') w = mine ? 40 : 12;
+      /* 執着・信仰する側にとって、相手を失うことは世界を失うのに等しい（ショックが重い） */
+      if (t.type === 'yan') w = mine ? 72 : 12;
+      if (t.type === 'worship') w = mine ? 78 : t.cold === 'cherish' || t.cold === 'accept' ? 30 : 18;
+      /* 恩を受けた側が恩人を失う */
+      if (t.type === 'benefactor' && !mine) w = 42;
       if (w > best) { best = w; rel = relWord(t.type, mine) || rel; }
     });
     var pf = ctx.pair(o, v);
     if (pf.couple && best < 55) { best = 55; rel = '恋人'; }
+    /* 関係を設定していなくても、執着が深まっていれば（obsess-kit.js）重い喪失になる */
+    if (best < 60 && pf.ob && pf.ob[o.i] && HK.Obsess && HK.Obsess.level && HK.Obsess.level(ctx, o, v) >= 60) { best = 60; rel = rel || '執着していた相手'; }
     var key = o.i < v.i ? o.i + '-' + v.i : v.i + '-' + o.i;
     if ((pf.amagami || (ctx.om && ctx.om.bonded && ctx.om.bonded[key])) && best < 65) { best = 65; rel = '番'; }
     if (o.lock === v.i && best < 50) { best = 50; rel = rel || 'ただ一人と決めた人'; }
@@ -55489,6 +58281,65 @@
     bright: L('{a}「{b}がいたら、絶対に茶化してた」――{a}は笑ったが、声が少しだけかすれた。|{a}は{b}の口癖をつい口にして、それから黙った。|{a}は笑いながら、{b}のいない隣に話しかけそうになった。'),
     flat: L('{a}は手を止めて、{b}がいた頃のことを一瞬だけ思い返した。|{a}「{b}なら、もっと早く気づいていた」|{a}は{b}の分まで数えかけて、静かに数え直した。')
   };
+  /* ---------- 執着・信仰する側の喪失（l.dev：worship 信仰／yan 執着） ---------- */
+  var DEV_NAME = { worship: '信じていたものを失った', yan: '執着していた相手を失った' };
+  /* 知らせを受けたとき（NP・AC・FC の型。CP は抱え込み、A は淡々としてから、あとで専用の崩れ方をする） */
+  var DEV_REACT = {
+    worship: L('{a}は{b}の亡骸の前で、祈るように手を組んだまま動かなくなった。{a}「{b}がいない世界で、何を信じて生きていけばいいのか、分からない」――答える者はいなかった。{a}の目から、光がひとつ消えた。|{b}を失ったと知った瞬間、{a}は糸が切れたように座り込んだ。すべてを捧げると決めた相手は、もうどこにもいない。{a}は泣くことさえ忘れて、虚空を見つめていた。|{a}「嘘だ。{b}が、死ぬはずがない」――{a}は何度も首を振った。{a}にとって{b}は、生きる理由そのものだった。その理由が、いま目の前で失われていた。'),
+    yan: L('{a}は{b}の名前を叫び続けた。声が嗄れても、喉に血の味がしても、やめなかった。{a}「返して。{b}を、返して」――その声は、もう誰に向けたものでもなかった。|{a}は{b}を失ったと聞いても、笑っていた。{a}「{b}は、私を置いていったりしない」――その笑顔が、周りの者には何より恐ろしかった。|{a}は{b}の名前を呼びながら、自分の腕に爪を立てた。血がにじんでも、{a}は止まらなかった。{b}のいない自分の体など、どうでもいいようだった。')
+  };
+  var DEV_BEAT = {
+    worship: {
+      deep: L('{a}は今日も、{b}のための祈りを欠かさなかった。祈りの言葉は、途中で何度も途切れた。{a}「{b}、私はこれから、どうすればいいのか分からない」――返事のない問いだけが、毎日積み重なっていった。|{a}は{item}を、祭壇のように整えた場所に置いた。毎朝そこに頭を下げてから、{a}は一日を始めた。そうしなければ、立ち上がれなかった。|{a}は{b}の声を思い出そうとして、うまく思い出せないことに気づいた。{a}はその場にうずくまり、長いあいだ動かなかった。信じていたものが、少しずつ遠ざかっていく気がした。'),
+      mid: L('{a}は、{b}ならどう言うかを考えてから動くようになった。{b}がいなくても、{b}の望みに従っていたかった。それが、{a}に残された唯一の支えだった。|{a}は{b}の口癖を、教えのように繰り返した。誰かがそれを笑うと、{a}は静かに睨み返した。'),
+      late: L('{a}は、{b}がくれたものを数えるようになった。失ったものではなく、もらったものを。{a}「{b}に恥じない生き方をする」――それが、{a}の新しい祈りだった。|{a}は{item}を胸に当てて、短く目を閉じた。祈りは前より短くなったが、やめることはなかった。')
+    },
+    yan: {
+      deep: L('{a}は{b}がまだ生きているかのように、二人分の食事を用意した。{a}「{b}、冷めるよ」――誰も座っていない席に、{a}は話しかけ続けた。|{a}は夜中に起き出して、{b}を探しに行こうとした。{a}「{b}が呼んでる」――{a}の目は、どこも見ていなかった。|{a}は{item}に頬を寄せて、ひとりで笑っていた。{a}「ずっと一緒。もう誰にも取られない」'),
+      mid: L('{a}は{b}以外の誰にも、心を開こうとしなかった。誰かが近づくと、{a}は「{b}が嫌がる」とだけ言って背を向けた。|{a}は{item}を肌身離さず持ち歩き、誰にも触らせなかった。'),
+      late: L('{a}は{b}のいない日々を、ただ数えるように生きていた。{a}「{b}のところへ行く日まで、生きてやる」――それが、{a}なりの約束だった。|{a}は{item}を握りしめて、ようやく少しだけ眠れるようになった。')
+    }
+  };
+  var DEV_CRASH = {
+    worship: L('{a}は淡々と日々をこなしていた。ある朝、祈ろうとして、祈る相手がもういないことに気づいた。{a}「……{b}」――{a}はその場に崩れ、声を上げて泣いた。'),
+    yan: L('{a}は何事もなかったように振る舞っていた。ある夜、{item}を見つけた瞬間、{a}は叫び声を上げた。{a}「{b}、{b}、{b}」――名前を呼ぶ声は、朝まで止まなかった。')
+  };
+  var DEV_BREAK = {
+    worship: L('一人きりの{spot}で、{a}は{item}を胸に抱いて額を床につけた。{a}「{b}のいない世界に、私の残るものなんて何もない」――誰にも見せなかった祈りが、嗚咽に変わった。'),
+    yan: L('一人になった{spot}で、{a}は壁に頭を打ちつけた。{a}「なんで、私を置いていったの」――ずっと笑顔で隠してきたものが、一度に崩れた。')
+  };
+  /* 壊れる（一度だけ） */
+  var DEV_BROKEN = {
+    worship: L('{a}は、{b}がまだそばにいるかのように話しかけるようになった。{a}「{b}、今日はここで休む。……いいよね」――返事を待つ{a}の横顔は、穏やかでさえあった。それが、周りの者には何より痛々しかった。|{a}は{b}が最後に立っていた場所に、毎日欠かさず花を置いた。花がなければ、瓦礫の中の雑草を摘んだ。{a}「{b}は、ここにいる」――{a}はそう信じて疑わなかった。'),
+    yan: L('{a}は{item}を抱いたまま、{b}の名前で自分を呼ぶようになった。{a}「これで、ずっと一緒」――その笑顔に、誰も声をかけられなかった。|{a}は{b}の書いた字を、自分の腕に何度もなぞった。{a}「消えないように。忘れないように」――ペンの跡は、肌が赤くなるまで続いた。')
+  };
+  /* 後追い（opt.follow がある箱庭＝ゾンビの街では、本当に危ない目に遭う。ほかの箱庭では口にするだけ） */
+  var DEV_FOLLOW = {
+    worship: L('{a}は武器を置いて、群れのうろつく通りへ歩き出した。{a}「{b}のそばへ行く。それが、最後の務めだ」――その足取りに、迷いはなかった。|{a}は{item}を握りしめたまま、{b}が倒れた場所へ一人で向かった。外にはまだ、呻き声がいくつも響いていた。'),
+    yan: L('{a}は笑いながら、扉のバリケードを崩し始めた。{a}「{b}が待ってる。一人にしたら、かわいそう」|{a}は{b}を失った場所へ、裸足のまま走っていった。{a}「{b}、今行く」')
+  };
+  var DEV_FOLLOW_SOFT = {
+    worship: L('{a}「{b}のいないところで、生きている意味があるのかな」――{a}は遠くを見つめたまま、ぽつりとつぶやいた。その横顔に、聞いた者は背筋が冷たくなった。'),
+    yan: L('{a}「{b}のところへ行きたい。……行けば、また会える」――{a}は本気でそう信じているようだった。')
+  };
+  var DEV_STOP = L('{c}が{a}の前に立ちふさがった。{c}「{b}は、{a}にそんなことを望んでない」――{a}はしばらく抗っていたが、やがて{c}の腕の中で崩れ落ちた。|{c}は{a}の腕をつかんで、力ずくで引き戻した。{c}「行かせない。{a}まで失いたくない」――{a}は声を上げて泣いた。');
+  var DEV_ALONE = L('{a}は長いあいだ、そこに立ち尽くしていた。やがて、誰に止められたわけでもなく、ひとりで引き返した。{item}が、手の中でひどく重かった。');
+  var DEV_ASIDE = {
+    worship: L('{a}は、{b}に祈るように一瞬だけ目を閉じた。|{a}「{b}なら、こうしろと言った」――その声には、迷いがなかった。'),
+    yan: L('{a}は誰もいない隣に向かって、小さく笑いかけた。|{a}「{b}も、そう思うよね」――答える者はいなかった。')
+  };
+  function devOf(ctx, o, v) {
+    var H = HK.Ties;
+    if (H && H.from(ctx, o, v, 'worship')) return 'worship';
+    if (H && H.from(ctx, o, v, 'yan')) return 'yan';
+    var pf = ctx.pair(o, v);
+    if (pf.ob && pf.ob[o.i] && HK.Obsess && HK.Obsess.level && HK.Obsess.level(ctx, o, v) >= 60) return 'yan';
+    return '';
+  }
+  /* 深いほど長く引きずる（薄れ方の割り算）。執着・信仰する側はさらに長い */
+  function dur(l) { return clamp((l.d || l.lv0) / 95, 0.75, 1.6) * (l.dev ? 1.7 : 1); }
+  function heavy(l) { return !!l.dev || (l.d || 0) >= 115; }
+  G.devOf = devOf;
   var DEF_ITEMS = L('{b}の上着|{b}が使っていた物|{b}の靴');
   var DEF_SPOTS = L('部屋の隅|窓辺|いつもの場所');
 
@@ -55509,7 +58360,7 @@
     return m;
   }
   function why(a, l, what) {
-    return a.name + 'は、' + (l.rel ? l.rel + 'の' : '') + l.name + 'を失った（喪失：' + TYPE_NAME[l.type] + '・深さ ' + Math.round(l.lv) + '）' + (what ? '／' + what : '');
+    return a.name + 'は、' + (l.rel ? l.rel + 'の' : '') + l.name + 'を失った（喪失：' + TYPE_NAME[l.type] + (l.dev ? '・' + DEV_NAME[l.dev] : '') + '・深さ ' + Math.round(l.lv) + '）' + (what ? '／' + what : '');
   }
   function addStress(c, v) { c.stress = clamp((c.stress || 0) + v, 0, 100); }
 
@@ -55529,14 +58380,14 @@
         if (dp.d < (opt.min || 40)) return;
         var cur = lossOf(o), type = cur ? cur.type : typeOf(o);
         var lv = clamp(dp.d * MULT[type], 30, 100);
-        var l = { who: v.i, name: v.name, rel: dp.rel, at: s, lv: lv, lv0: lv, type: type, last: s, aside: -9, comfortAt: -9, others: [], reckless: 0 };
+        var l = { who: v.i, name: v.name, rel: dp.rel, at: s, lv: lv, lv0: lv, type: type, last: s, aside: -9, comfortAt: -9, others: [], reckless: 0, d: dp.d, dev: devOf(ctx, o, v) };
         if (type === 'flat') { l.calm = true; l.crashAt = s + (opt.crash || 2) + (ctx.rng() < 0.5 ? 1 : 0); }
         if (cur && cur.lv >= lv) { cur.others.push(v.name); cur.lv = Math.min(100, cur.lv + 10); cur.lv0 = Math.max(cur.lv0, cur.lv); l = cur; }
         else {
-          if (cur) { l.others = cur.others.concat([cur.name]); l.lv = l.lv0 = Math.min(100, lv + 8); l.calm = cur.calm; l.crashAt = cur.crashAt; l.broke = cur.broke; }
+          if (cur) { l.others = cur.others.concat([cur.name]); l.lv = l.lv0 = Math.min(100, lv + 8); l.calm = cur.calm; l.crashAt = cur.crashAt; l.broke = cur.broke; if (!l.dev && cur.dev) { l.dev = cur.dev; } }
           o.flags.loss = l;
         }
-        addStress(o, lv * (type === 'flat' ? 0.25 : type === 'hold' ? 0.4 : 0.5));
+        addStress(o, lv * (type === 'flat' ? 0.25 : type === 'hold' ? 0.4 : 0.5) + (l.dev ? 15 : 0));
         if (o.flags.grief == null) o.flags.grief = v.i;
         if (l.who === v.i) react.push({ o: o, l: l });
       });
@@ -55544,13 +58395,15 @@
     react.sort(function (x, y) { return y.l.lv - x.l.lv; });
     react.slice(0, opt.reactMax || 3).forEach(function (x) {
       var o = x.o, l = x.l;
-      ctx.act2({ actors: [o], cat: 'solo', text: fill(ctx.pick(REACT[l.type]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '知らせを受けて'), mag: 18 + l.lv / 5 });
+      var dr = l.dev && l.type !== 'flat' && l.type !== 'hold' ? DEV_REACT[l.dev] : null;
+      ctx.act2({ actors: [o], cat: 'solo', text: fill(ctx.pick(dr || REACT[l.type]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '知らせを受けて' + (dr ? '。' + (l.dev === 'worship' ? 'すべてを捧げていた相手だった' : '世界のすべてだった相手だった') : '')), mag: 18 + l.lv / 5 + (dr ? 8 : 0) });
     });
   }
   function beat(ctx, o, l, opt) {
     l.last = ctx.stepIndex;
     addStress(o, 3);
-    return { text: fill(ctx.pick(BEAT[l.type][stage(l)]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, stage(l) === 'late' ? '少しずつ薄れてきた' : 'まだ引きずっている'), mag: 8 + l.lv / 8 };
+    var st = stage(l), dv = l.dev && !(l.type === 'flat' && l.calm) && ctx.rng() < 0.6 ? DEV_BEAT[l.dev][st] : null;
+    return { text: fill(ctx.pick(dv || BEAT[l.type][st]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, st === 'late' ? '少しずつ薄れてきた' : 'まだ引きずっている'), mag: 8 + l.lv / 8 };
   }
   function comfort(ctx, a, b, opt) {
     var l = lossOf(b), al = lossOf(a), shared = al && al.who === l.who;
@@ -55580,24 +58433,24 @@
       var t = null;
       if (l.type === 'flat' && l.calm && s >= l.crashAt) {
         l.calm = false; l.lv = Math.min(100, l.lv + 15); l.lv0 = Math.max(l.lv0, l.lv); l.last = s; addStress(o, 25);
-        t = { text: fill(ctx.pick(CRASH), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '淡々としていた分、あとから崩れた'), mag: 25 };
+        t = { text: fill(ctx.pick(l.dev ? DEV_CRASH[l.dev] : CRASH), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '淡々としていた分、あとから崩れた'), mag: 25 };
       } else if (l.type === 'hold' && !l.broke && l.lv >= 40 && (o.stress >= 65 || s - l.at >= 4) && ctx.rng() < 0.5) {
         l.broke = true; l.last = s; addStress(o, -10);
-        t = { text: fill(ctx.pick(BREAK), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '人前では抱え込んでいたものが、一人のときに崩れた'), mag: 22 };
-      } else if (!l.accepted && !l.calm && l.lv < Math.max(24, l.lv0 * 0.5) && s - l.at >= Math.max(3, (n - l.at) * 0.5)) {
+        t = { text: fill(ctx.pick(l.dev ? DEV_BREAK[l.dev] : BREAK), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '人前では抱え込んでいたものが、一人のときに崩れた'), mag: 22 };
+      } else if (!l.accepted && !l.calm && l.lv < Math.max(24, l.lv0 * (l.dev ? 0.35 : 0.5)) && s - l.at >= Math.max(3, (n - l.at) * (l.dev ? 0.7 : 0.5))) {
         l.accepted = true; l.last = s;
         t = { text: fill(ctx.pick(ACCEPT[l.type]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '少しだけ前を向いた'), mag: 15 };
       } else if (comforts < 1 && l.lv >= 45 && s - l.comfortAt >= 3 && (l.comforts || 0) < 4 && ctx.rng() < 0.35) {
         var c = nearFriend(ctx, o, null);
         if (c && !(lossOf(c) && lossOf(c).who !== l.who && lossOf(c).lv > 60)) { comforts++; var r = comfort(ctx, c, o, opt); ctx.act2({ actors: [c, o], cat: 'help', text: r.text, why: r.why, mag: r.mag }); }
-      } else if (beats < 2 && l.lv >= 30 && s - l.last >= (l.lv >= 60 ? 2 : 3) && ctx.rng() < 0.55) {
+      } else if (beats < (heavy(l) ? 3 : 2) && l.lv >= 30 && s - l.last >= (l.lv >= 60 ? (heavy(l) ? 1 : 2) : 3) && ctx.rng() < (heavy(l) ? 0.65 : 0.55)) {
         beats++; t = beat(ctx, o, l, opt);
       }
       if (t) ctx.act2({ actors: [o], cat: 'solo', text: t.text, why: t.why, mag: t.mag });
       /* ストレスが抜けきらない */
       addStress(o, l.lv / 20);
       /* 薄れる（残りの区切り、または opt.span の区切りで、はじめの深さの6割ほど）。淡々としているあいだは薄れない */
-      if (!l.calm) l.lv = Math.max(0, l.lv - Math.max(1.5, l.lv0 * 0.6 / Math.max(2, Math.min(n - l.at, opt.span || 99))));
+      if (!l.calm) l.lv = Math.max(0, l.lv - Math.max(1.5, l.lv0 * 0.6 / Math.max(2, Math.min(n - l.at, opt.span || 99))) / dur(l));
       if (l.lv <= 6 && l.accepted) l.done = true;
     });
   }
@@ -55608,10 +58461,10 @@
     if (!r || typeof r.text !== 'string' || !r.text) return r;
     if (SKIP_CAT.test(r.cat || cat || '')) return r;
     var l = lossOf(a);
-    if (!l || l.lv < 25 || l.calm || ctx.stepIndex - l.at < 1 || ctx.stepIndex - l.aside < 3 || (l.asides || 0) >= 6 || r.text.indexOf(l.name) >= 0) return r;
-    if (ctx.rng() > 0.08 + l.lv / 500) return r;
+    if (!l || l.lv < 25 || l.calm || ctx.stepIndex - l.at < 1 || ctx.stepIndex - l.aside < (heavy(l) ? 2 : 3) || (l.asides || 0) >= (heavy(l) ? 10 : 6) || r.text.indexOf(l.name) >= 0) return r;
+    if (ctx.rng() > 0.08 + l.lv / 500 + (l.dev ? 0.08 : 0)) return r;
     l.aside = ctx.stepIndex; l.asides = (l.asides || 0) + 1;
-    r.text += fill(ctx.pick(ASIDE[l.type]), { a: a.name, b: l.name });
+    r.text += fill(ctx.pick(l.dev && ctx.rng() < 0.5 ? DEV_ASIDE[l.dev] : ASIDE[l.type]), { a: a.name, b: l.name });
     r.why = (r.why ? r.why + '／' : '') + a.name + 'は、まだ' + l.name + 'のことを引きずっている（喪失：' + TYPE_NAME[l.type] + '）';
     return r;
   }
@@ -55640,8 +58493,8 @@
     var n0 = scen.events.length;
     scen.events.push({
       id: 'gf_think', cat: 'solo', scope: 'solo', noOdd: true,
-      when: function (ctx, a) { var l = lossOf(a); return !!l && l.lv >= 15 && ctx.stepIndex - l.last >= 2; },
-      w: function (ctx, a) { return (0.4 + lossOf(a).lv / 30) * (opt.w || 1); },
+      when: function (ctx, a) { var l = lossOf(a); return !!l && l.lv >= 15 && ctx.stepIndex - l.last >= (heavy(l) ? 1 : 2); },
+      w: function (ctx, a) { var l = lossOf(a); return (0.4 + l.lv / 30) * (heavy(l) ? 1.4 : 1) * (opt.w || 1); },
       run: function (ctx, a) { return beat(ctx, a, lossOf(a), opt); }
     });
     scen.events.push({
@@ -55655,6 +58508,36 @@
         var t = fill(ctx.pick(list), vars(ctx, l, opt, { a: a.name }));
         if (c) { t += fill(ctx.pick(STOP), { a: a.name, b: l.name, c: c.name }); ctx.mod(a, c, { trust: 5 }); ctx.mod(c, a, { aff: 3 }); }
         return { text: t, why: why(a, l, '自分を大事にできなくなっている') + (c ? '／' + c.name + 'が止めた' : ''), mag: 16, with: c ? [c] : null };
+      }
+    });
+    /* 執着・信仰する側：壊れる（一度だけ） */
+    scen.events.push({
+      id: 'gf_broken', cat: 'solo', scope: 'solo', noOdd: true,
+      when: function (ctx, a) { var l = lossOf(a); return !!l && !!l.dev && !l.calm && !l.brokenDev && l.lv >= 50 && ctx.stepIndex - l.at >= 1; },
+      w: function (ctx, a) { return (0.8 + lossOf(a).lv / 60) * (opt.w || 1); },
+      run: function (ctx, a) {
+        var l = lossOf(a);
+        l.brokenDev = true; l.last = ctx.stepIndex; l.lv = Math.min(100, l.lv + 5); addStress(a, 10);
+        return { text: fill(ctx.pick(DEV_BROKEN[l.dev]), vars(ctx, l, opt, { a: a.name })), why: why(a, l, '心のどこかが壊れてしまった'), mag: 22 };
+      }
+    });
+    /* 執着・信仰する側：後追い（深さが深いほど何度も。止める人がいれば止まる） */
+    scen.events.push({
+      id: 'gf_follow', cat: 'solo', scope: 'solo', noOdd: true,
+      when: function (ctx, a) { var l = lossOf(a); return !!l && !!l.dev && !l.calm && l.lv >= 60 && (l.follow || 0) < (l.d >= 120 ? 2 : 1) && ctx.stepIndex - l.at >= 1 && ctx.stepIndex - (l.followAt || -9) >= 3; },
+      w: function (ctx, a) { var l = lossOf(a); return (0.5 + a.tr.impulse * 0.5 + a.tr.ac * 0.4 + (l.type === 'blame' || l.type === 'sink' ? 0.4 : 0)) * (opt.w || 1); },
+      run: function (ctx, a) {
+        var l = lossOf(a), c = nearFriend(ctx, a, null), hard = !!opt.follow, m = vars(ctx, l, opt, { a: a.name, c: c ? c.name : '' });
+        l.follow = (l.follow || 0) + 1; l.followAt = l.last = ctx.stepIndex; addStress(a, 8);
+        var t = fill(ctx.pick(hard ? DEV_FOLLOW[l.dev] : DEV_FOLLOW_SOFT[l.dev]), m), w = why(a, l, 'あとを追おうとした');
+        if (c && ctx.rng() < 0.8) {
+          t += fill(ctx.pick(DEV_STOP), m); ctx.mod(a, c, { trust: 6, aff: 4 }); ctx.mod(c, a, { aff: 4 }); addStress(c, 6);
+          l.lv = Math.max(0, l.lv - 4);
+          return { text: t, why: w + '／' + c.name + 'が止めた', mag: 24, with: [c] };
+        }
+        if (hard) { var r = opt.follow(ctx, a, l, m); if (r) { t += r.text; w += r.why ? '／' + r.why : ''; } else t += fill(ctx.pick(DEV_ALONE), m); }
+        else t += fill(ctx.pick(DEV_ALONE), m);
+        return { text: t, why: w + '／止める人はいなかった', mag: 26 };
       }
     });
     scen.events.push({
@@ -55676,6 +58559,13 @@
   /* ゾンビの街は一日が四つの区切り（朝・昼・夕方・夜）なので、A の人が崩れるのは一日あまりあと */
   G.install(SC.zombie, {
     crash: 5, span: 20,
+    /* 後追い：止める人がいなければ、群れに近づきすぎて咬まれることも、そのまま呑まれることもある */
+    follow: function (ctx, a, l, m) {
+      var Z = HK.ZB, r = ctx.rng(), A = ctx.zb && a.z ? ctx.zb.A[a.z.area] : null, dz = A ? A.z / 100 : 0.5;
+      if (r < 0.08 + dz * 0.1) { var t0 = fill('{a}の足は、最後まで止まらなかった。呻き声の中へ消えていく背中を、誰も見ていなかった。', m); ctx.kill(a, null, l.name + 'の後を追うように、群れの中へ歩いていった'); return { text: t0, why: '群れに呑まれた' }; }
+      if (Z && Z.infect && !a.z.bitten && r < 0.3 + dz * 0.15) { Z.infect(ctx, a, 'horde', true); return { text: fill('群れの手前で、{a}はようやく足を止めた。腕には、いつの間にか歯形が残っていた。{a}は、それを見ても眉ひとつ動かさなかった。', m), why: '群れに近づきすぎて咬まれた' }; }
+      return null;
+    },
     items: L('{b}が使っていた懐中電灯|{b}の上着|{b}の腕時計|{b}が最後まで持っていた鞄'),
     spots: L('バリケードの陰|見張り台|隠れ家の屋上|崩れた非常階段'),
     reckless: SURVIVE.concat(L('{a}は武器も持たずに、{b}を失った場所へ一人で向かおうとした。{a}「{b}を、置いてきたままにできない」――外にはまだ、呻き声がいくつも響いていた。{a}の足は、それでも止まらなかった。|{a}はわざと物音を立てて、ゾンビの群れのほうへ歩いていった。まるで、自分から見つかろうとしているようだった。寸前で引き返したのは、ほとんど偶然だった。|{a}は見張りの番を、何日も続けて誰にも譲らなかった。眠らずに暗がりを見つめる目は、どこか焦点が合っていなかった。{a}「来るなら来ればいい。私が全部、相手をする」'))

@@ -194,8 +194,8 @@
     if (HK.Ties && HK.Ties.from && HK.Ties.from(ctx, a, b, 'crush') && HK.Ties.from(ctx, b, a, 'crush')) return 'pining';
     if (tie(ctx, a, b, 'crush') || tie(ctx, a, b, 'almost')) return 'crush';
     if (tie(ctx, a, b, 'rival') || tie(ctx, a, b, 'enemy')) return 'rival';
-    if (tie(ctx, a, b, 'colleague') || tie(ctx, a, b, 'senpai')) return 'work';
-    if (tie(ctx, a, b, 'friend') || tie(ctx, a, b, 'best') || tie(ctx, a, b, 'childhood') || tie(ctx, a, b, 'buddy')) return 'friend';
+    if (tie(ctx, a, b, 'colleague') || tie(ctx, a, b, 'senpai') || tie(ctx, a, b, 'boss')) return 'work';
+    if (tie(ctx, a, b, 'friend') || tie(ctx, a, b, 'best') || tie(ctx, a, b, 'childhood') || tie(ctx, a, b, 'buddy') || tie(ctx, a, b, 'classmate')) return 'friend';
     if (pf.kgHot) return 'king';
     if (pf.couple) return 'newCouple';
     if (dr > 60) return 'tipsy';

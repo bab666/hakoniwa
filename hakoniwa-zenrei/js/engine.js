@@ -96,6 +96,9 @@
   HK.lockSexOnly = function (a, b) { return !!(a && b && a !== b && HK.lockConflict(a, b) && !HK.ngExplicit(a, b) && !coNG(a, b) && !HK.sexNG(a, b)); };
   HK.canLove = function (a, b) {
     if (HK.ngPair(a, b)) return false;
+    /* 執着（信仰）で「恋愛に発展：しない」組（信仰される側が支配していない）：恋愛にしない */
+    var c0 = HK._curCtx;
+    if (c0 && c0.ties && HK.Ties && HK.tieOptNoLove && a && b && c0.chars && c0.chars[a.i] === a && HK.Ties.all(c0, a, b).some(function (t) { return t.type === 'worship' && HK.tieOptNoLove(t) && t.cold !== 'dominate'; })) return false;
     /* 恋愛相手を決めた人は、その相手以外とは恋愛しない（相手が箱庭にいなければ誰とも） */
     if (a && b && a.lock != null && a.lock !== b.i) return false;
     if (a.role === 'teacher' || b.role === 'teacher') return false;
@@ -156,8 +159,12 @@
       /* 血のつながった家族：惹かれは育たず、信頼は減りにくく底がある */
       if (pf.kin && f === 'att' && d[f] > 0) m = 0;
       if (pf.kin && f === 'trust' && d[f] < 0) m *= 0.25;
+      /* 揺らぎにくい想い（信仰する側・恩を受けた側）：減りにくく、下限がある（ties.js の stiff・floor） */
+      if (d[f] < 0 && HK.Ties && HK.Ties.stiff && this.ties) m *= HK.Ties.stiff(this, a, b, f);
       r[f] = HK.clamp(r[f] + d[f] * k * m, LIM[f][0], LIM[f][1]);
       if (pf.trustFloor && f === 'trust' && r[f] < pf.trustFloor) r[f] = Math.max(r[f], Math.min(before, pf.trustFloor));
+      var fl = d[f] < 0 && HK.Ties && HK.Ties.floor && this.ties ? HK.Ties.floor(this, a, b, f) : null;
+      if (fl != null && r[f] < fl) r[f] = Math.min(before, fl);
       this._mag += Math.abs(r[f] - before);
     }
     this._touched[key(a, b)] = [a, b];
@@ -653,7 +660,12 @@
     allybreak: { name: '同盟決裂', cls: 'enemy', pol: -1 }
   };
 
+  /* 新しい関係（信仰・恩人・上司と部下・同級生・親族）の結末は tie-rel.js が上書きする（恋人・殺害などは上書きしない） */
   function classify(ctx, A, B, pf) {
+    var c = classify0(ctx, A, B, pf);
+    return (HK.TieRel && HK.TieRel.refine && HK.TieRel.refine(ctx, A, B, pf, c)) || c;
+  }
+  function classify0(ctx, A, B, pf) {
     var ab = ctx.R(A, B), ba = ctx.R(B, A);
     var love = function (r) { return r.aff > 38 && r.att > 42; };
     var dir = null;
@@ -711,6 +723,7 @@
     var n = function (i) { return ctx.chars[i].name; };
     var other = function (i) { return i === A.i ? B.name : A.name; };
     if (HK.Obsess && HK.Obsess.pairText) { var ot = HK.Obsess.pairText(ctx, A, B, cl); if (ot) return ot; }
+    if (HK.TieRel && HK.TieRel.pairText) { var tt = HK.TieRel.pairText(ctx, A, B, cl); if (tt) return tt; }
     switch (cl.id) {
       case 'kill': return n(cl.dir) + 'が' + other(cl.dir) + 'を殺した。';
       case 'mutualkill': return '互いに刃を向け合い、最後は' + n(cl.dir) + 'が' + other(cl.dir) + 'の命を奪った。';

@@ -6,6 +6,8 @@
        NP 深く沈む／AC 自分を責める／CP 表に出さず抱え込む（あとで一人で崩れる）／FC 空元気／A 淡々として、あとから崩れる
    ・その後の区切りで、喪失の状態に応じた独り言・出来事（遺品・名前を呼ぶ・眠れない・口癖・無茶）が出る。区切りごとに少しずつ薄れ、
      慰める側の出来事（慰める人の性格で変わる）でも薄れる。引きずっている人のふだんの出来事にも、ときどき一言が混ざる
+   ・執着（ヤンデレ）・執着（信仰）する側が相手を失ったときは、性格の型はそのままに、専用の反応（信じたものを失う・壊れる・後追い）が重なる（l.dev）。
+     関係が深いほど（l.d）、引きずる期間が長く、思い出す出来事も多くなる
    ・engine.js には触らず、箱庭の phase／after を包み、出来事を足す（G.install）。組み込みはこのファイルの最後 */
 (function () {
   'use strict';
@@ -27,7 +29,8 @@
   /* ---------- 関係の深さ（o から見た v） ---------- */
   var TIE_W = {
     lover: 60, mate: 65, fated: 55, parent: 60, pparent: 55, sibprot: 60, sibclose: 55, sibling: 45, best: 50, buddy: 45,
-    childhood: 42, almost: 40, mentor: 35, teacher: 30, master: 30, friend: 22, senpai: 15, colleague: 12, ex: 18, fwb: 12, acq: 5, rival: 8
+    childhood: 42, almost: 40, mentor: 35, teacher: 30, master: 30, friend: 22, senpai: 15, colleague: 12, ex: 18, fwb: 12, acq: 5, rival: 8,
+    relative: 35, classmate: 16, boss: 20, benefactor: 22, worship: 22
   };
   function relWord(type, mine) {
     switch (type) {
@@ -45,6 +48,12 @@
       case 'teacher': return mine ? '教え子' : '先生';
       case 'master': return mine ? '従者' : '主';
       case 'friend': return '友だち';
+      case 'relative': return '親族';
+      case 'classmate': return '同級生';
+      case 'colleague': return '同僚';
+      case 'boss': return mine ? '部下' : '上司';
+      case 'benefactor': return mine ? '助けた相手' : '恩人';
+      case 'worship': return mine ? '崇めていた人' : '自分を慕っていた人';
       default: return '';
     }
   }
@@ -52,11 +61,18 @@
     var best = 0, rel = '';
     (HK.Ties ? HK.Ties.all(ctx, o, v) : []).forEach(function (t) {
       var w = TIE_W[t.type] || 0, mine = t.a === o.i;
-      if (t.type === 'crush' || t.type === 'yan') w = mine ? 40 : 12;
+      if (t.type === 'crush') w = mine ? 40 : 12;
+      /* 執着・信仰する側にとって、相手を失うことは世界を失うのに等しい（ショックが重い） */
+      if (t.type === 'yan') w = mine ? 72 : 12;
+      if (t.type === 'worship') w = mine ? 78 : t.cold === 'cherish' || t.cold === 'accept' ? 30 : 18;
+      /* 恩を受けた側が恩人を失う */
+      if (t.type === 'benefactor' && !mine) w = 42;
       if (w > best) { best = w; rel = relWord(t.type, mine) || rel; }
     });
     var pf = ctx.pair(o, v);
     if (pf.couple && best < 55) { best = 55; rel = '恋人'; }
+    /* 関係を設定していなくても、執着が深まっていれば（obsess-kit.js）重い喪失になる */
+    if (best < 60 && pf.ob && pf.ob[o.i] && HK.Obsess && HK.Obsess.level && HK.Obsess.level(ctx, o, v) >= 60) { best = 60; rel = rel || '執着していた相手'; }
     var key = o.i < v.i ? o.i + '-' + v.i : v.i + '-' + o.i;
     if ((pf.amagami || (ctx.om && ctx.om.bonded && ctx.om.bonded[key])) && best < 65) { best = 65; rel = '番'; }
     if (o.lock === v.i && best < 50) { best = 50; rel = rel || 'ただ一人と決めた人'; }
@@ -144,6 +160,65 @@
     bright: L('{a}「{b}がいたら、絶対に茶化してた」――{a}は笑ったが、声が少しだけかすれた。|{a}は{b}の口癖をつい口にして、それから黙った。|{a}は笑いながら、{b}のいない隣に話しかけそうになった。'),
     flat: L('{a}は手を止めて、{b}がいた頃のことを一瞬だけ思い返した。|{a}「{b}なら、もっと早く気づいていた」|{a}は{b}の分まで数えかけて、静かに数え直した。')
   };
+  /* ---------- 執着・信仰する側の喪失（l.dev：worship 信仰／yan 執着） ---------- */
+  var DEV_NAME = { worship: '信じていたものを失った', yan: '執着していた相手を失った' };
+  /* 知らせを受けたとき（NP・AC・FC の型。CP は抱え込み、A は淡々としてから、あとで専用の崩れ方をする） */
+  var DEV_REACT = {
+    worship: L('{a}は{b}の亡骸の前で、祈るように手を組んだまま動かなくなった。{a}「{b}がいない世界で、何を信じて生きていけばいいのか、分からない」――答える者はいなかった。{a}の目から、光がひとつ消えた。|{b}を失ったと知った瞬間、{a}は糸が切れたように座り込んだ。すべてを捧げると決めた相手は、もうどこにもいない。{a}は泣くことさえ忘れて、虚空を見つめていた。|{a}「嘘だ。{b}が、死ぬはずがない」――{a}は何度も首を振った。{a}にとって{b}は、生きる理由そのものだった。その理由が、いま目の前で失われていた。'),
+    yan: L('{a}は{b}の名前を叫び続けた。声が嗄れても、喉に血の味がしても、やめなかった。{a}「返して。{b}を、返して」――その声は、もう誰に向けたものでもなかった。|{a}は{b}を失ったと聞いても、笑っていた。{a}「{b}は、私を置いていったりしない」――その笑顔が、周りの者には何より恐ろしかった。|{a}は{b}の名前を呼びながら、自分の腕に爪を立てた。血がにじんでも、{a}は止まらなかった。{b}のいない自分の体など、どうでもいいようだった。')
+  };
+  var DEV_BEAT = {
+    worship: {
+      deep: L('{a}は今日も、{b}のための祈りを欠かさなかった。祈りの言葉は、途中で何度も途切れた。{a}「{b}、私はこれから、どうすればいいのか分からない」――返事のない問いだけが、毎日積み重なっていった。|{a}は{item}を、祭壇のように整えた場所に置いた。毎朝そこに頭を下げてから、{a}は一日を始めた。そうしなければ、立ち上がれなかった。|{a}は{b}の声を思い出そうとして、うまく思い出せないことに気づいた。{a}はその場にうずくまり、長いあいだ動かなかった。信じていたものが、少しずつ遠ざかっていく気がした。'),
+      mid: L('{a}は、{b}ならどう言うかを考えてから動くようになった。{b}がいなくても、{b}の望みに従っていたかった。それが、{a}に残された唯一の支えだった。|{a}は{b}の口癖を、教えのように繰り返した。誰かがそれを笑うと、{a}は静かに睨み返した。'),
+      late: L('{a}は、{b}がくれたものを数えるようになった。失ったものではなく、もらったものを。{a}「{b}に恥じない生き方をする」――それが、{a}の新しい祈りだった。|{a}は{item}を胸に当てて、短く目を閉じた。祈りは前より短くなったが、やめることはなかった。')
+    },
+    yan: {
+      deep: L('{a}は{b}がまだ生きているかのように、二人分の食事を用意した。{a}「{b}、冷めるよ」――誰も座っていない席に、{a}は話しかけ続けた。|{a}は夜中に起き出して、{b}を探しに行こうとした。{a}「{b}が呼んでる」――{a}の目は、どこも見ていなかった。|{a}は{item}に頬を寄せて、ひとりで笑っていた。{a}「ずっと一緒。もう誰にも取られない」'),
+      mid: L('{a}は{b}以外の誰にも、心を開こうとしなかった。誰かが近づくと、{a}は「{b}が嫌がる」とだけ言って背を向けた。|{a}は{item}を肌身離さず持ち歩き、誰にも触らせなかった。'),
+      late: L('{a}は{b}のいない日々を、ただ数えるように生きていた。{a}「{b}のところへ行く日まで、生きてやる」――それが、{a}なりの約束だった。|{a}は{item}を握りしめて、ようやく少しだけ眠れるようになった。')
+    }
+  };
+  var DEV_CRASH = {
+    worship: L('{a}は淡々と日々をこなしていた。ある朝、祈ろうとして、祈る相手がもういないことに気づいた。{a}「……{b}」――{a}はその場に崩れ、声を上げて泣いた。'),
+    yan: L('{a}は何事もなかったように振る舞っていた。ある夜、{item}を見つけた瞬間、{a}は叫び声を上げた。{a}「{b}、{b}、{b}」――名前を呼ぶ声は、朝まで止まなかった。')
+  };
+  var DEV_BREAK = {
+    worship: L('一人きりの{spot}で、{a}は{item}を胸に抱いて額を床につけた。{a}「{b}のいない世界に、私の残るものなんて何もない」――誰にも見せなかった祈りが、嗚咽に変わった。'),
+    yan: L('一人になった{spot}で、{a}は壁に頭を打ちつけた。{a}「なんで、私を置いていったの」――ずっと笑顔で隠してきたものが、一度に崩れた。')
+  };
+  /* 壊れる（一度だけ） */
+  var DEV_BROKEN = {
+    worship: L('{a}は、{b}がまだそばにいるかのように話しかけるようになった。{a}「{b}、今日はここで休む。……いいよね」――返事を待つ{a}の横顔は、穏やかでさえあった。それが、周りの者には何より痛々しかった。|{a}は{b}が最後に立っていた場所に、毎日欠かさず花を置いた。花がなければ、瓦礫の中の雑草を摘んだ。{a}「{b}は、ここにいる」――{a}はそう信じて疑わなかった。'),
+    yan: L('{a}は{item}を抱いたまま、{b}の名前で自分を呼ぶようになった。{a}「これで、ずっと一緒」――その笑顔に、誰も声をかけられなかった。|{a}は{b}の書いた字を、自分の腕に何度もなぞった。{a}「消えないように。忘れないように」――ペンの跡は、肌が赤くなるまで続いた。')
+  };
+  /* 後追い（opt.follow がある箱庭＝ゾンビの街では、本当に危ない目に遭う。ほかの箱庭では口にするだけ） */
+  var DEV_FOLLOW = {
+    worship: L('{a}は武器を置いて、群れのうろつく通りへ歩き出した。{a}「{b}のそばへ行く。それが、最後の務めだ」――その足取りに、迷いはなかった。|{a}は{item}を握りしめたまま、{b}が倒れた場所へ一人で向かった。外にはまだ、呻き声がいくつも響いていた。'),
+    yan: L('{a}は笑いながら、扉のバリケードを崩し始めた。{a}「{b}が待ってる。一人にしたら、かわいそう」|{a}は{b}を失った場所へ、裸足のまま走っていった。{a}「{b}、今行く」')
+  };
+  var DEV_FOLLOW_SOFT = {
+    worship: L('{a}「{b}のいないところで、生きている意味があるのかな」――{a}は遠くを見つめたまま、ぽつりとつぶやいた。その横顔に、聞いた者は背筋が冷たくなった。'),
+    yan: L('{a}「{b}のところへ行きたい。……行けば、また会える」――{a}は本気でそう信じているようだった。')
+  };
+  var DEV_STOP = L('{c}が{a}の前に立ちふさがった。{c}「{b}は、{a}にそんなことを望んでない」――{a}はしばらく抗っていたが、やがて{c}の腕の中で崩れ落ちた。|{c}は{a}の腕をつかんで、力ずくで引き戻した。{c}「行かせない。{a}まで失いたくない」――{a}は声を上げて泣いた。');
+  var DEV_ALONE = L('{a}は長いあいだ、そこに立ち尽くしていた。やがて、誰に止められたわけでもなく、ひとりで引き返した。{item}が、手の中でひどく重かった。');
+  var DEV_ASIDE = {
+    worship: L('{a}は、{b}に祈るように一瞬だけ目を閉じた。|{a}「{b}なら、こうしろと言った」――その声には、迷いがなかった。'),
+    yan: L('{a}は誰もいない隣に向かって、小さく笑いかけた。|{a}「{b}も、そう思うよね」――答える者はいなかった。')
+  };
+  function devOf(ctx, o, v) {
+    var H = HK.Ties;
+    if (H && H.from(ctx, o, v, 'worship')) return 'worship';
+    if (H && H.from(ctx, o, v, 'yan')) return 'yan';
+    var pf = ctx.pair(o, v);
+    if (pf.ob && pf.ob[o.i] && HK.Obsess && HK.Obsess.level && HK.Obsess.level(ctx, o, v) >= 60) return 'yan';
+    return '';
+  }
+  /* 深いほど長く引きずる（薄れ方の割り算）。執着・信仰する側はさらに長い */
+  function dur(l) { return clamp((l.d || l.lv0) / 95, 0.75, 1.6) * (l.dev ? 1.7 : 1); }
+  function heavy(l) { return !!l.dev || (l.d || 0) >= 115; }
+  G.devOf = devOf;
   var DEF_ITEMS = L('{b}の上着|{b}が使っていた物|{b}の靴');
   var DEF_SPOTS = L('部屋の隅|窓辺|いつもの場所');
 
@@ -164,7 +239,7 @@
     return m;
   }
   function why(a, l, what) {
-    return a.name + 'は、' + (l.rel ? l.rel + 'の' : '') + l.name + 'を失った（喪失：' + TYPE_NAME[l.type] + '・深さ ' + Math.round(l.lv) + '）' + (what ? '／' + what : '');
+    return a.name + 'は、' + (l.rel ? l.rel + 'の' : '') + l.name + 'を失った（喪失：' + TYPE_NAME[l.type] + (l.dev ? '・' + DEV_NAME[l.dev] : '') + '・深さ ' + Math.round(l.lv) + '）' + (what ? '／' + what : '');
   }
   function addStress(c, v) { c.stress = clamp((c.stress || 0) + v, 0, 100); }
 
@@ -184,14 +259,14 @@
         if (dp.d < (opt.min || 40)) return;
         var cur = lossOf(o), type = cur ? cur.type : typeOf(o);
         var lv = clamp(dp.d * MULT[type], 30, 100);
-        var l = { who: v.i, name: v.name, rel: dp.rel, at: s, lv: lv, lv0: lv, type: type, last: s, aside: -9, comfortAt: -9, others: [], reckless: 0 };
+        var l = { who: v.i, name: v.name, rel: dp.rel, at: s, lv: lv, lv0: lv, type: type, last: s, aside: -9, comfortAt: -9, others: [], reckless: 0, d: dp.d, dev: devOf(ctx, o, v) };
         if (type === 'flat') { l.calm = true; l.crashAt = s + (opt.crash || 2) + (ctx.rng() < 0.5 ? 1 : 0); }
         if (cur && cur.lv >= lv) { cur.others.push(v.name); cur.lv = Math.min(100, cur.lv + 10); cur.lv0 = Math.max(cur.lv0, cur.lv); l = cur; }
         else {
-          if (cur) { l.others = cur.others.concat([cur.name]); l.lv = l.lv0 = Math.min(100, lv + 8); l.calm = cur.calm; l.crashAt = cur.crashAt; l.broke = cur.broke; }
+          if (cur) { l.others = cur.others.concat([cur.name]); l.lv = l.lv0 = Math.min(100, lv + 8); l.calm = cur.calm; l.crashAt = cur.crashAt; l.broke = cur.broke; if (!l.dev && cur.dev) { l.dev = cur.dev; } }
           o.flags.loss = l;
         }
-        addStress(o, lv * (type === 'flat' ? 0.25 : type === 'hold' ? 0.4 : 0.5));
+        addStress(o, lv * (type === 'flat' ? 0.25 : type === 'hold' ? 0.4 : 0.5) + (l.dev ? 15 : 0));
         if (o.flags.grief == null) o.flags.grief = v.i;
         if (l.who === v.i) react.push({ o: o, l: l });
       });
@@ -199,13 +274,15 @@
     react.sort(function (x, y) { return y.l.lv - x.l.lv; });
     react.slice(0, opt.reactMax || 3).forEach(function (x) {
       var o = x.o, l = x.l;
-      ctx.act2({ actors: [o], cat: 'solo', text: fill(ctx.pick(REACT[l.type]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '知らせを受けて'), mag: 18 + l.lv / 5 });
+      var dr = l.dev && l.type !== 'flat' && l.type !== 'hold' ? DEV_REACT[l.dev] : null;
+      ctx.act2({ actors: [o], cat: 'solo', text: fill(ctx.pick(dr || REACT[l.type]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '知らせを受けて' + (dr ? '。' + (l.dev === 'worship' ? 'すべてを捧げていた相手だった' : '世界のすべてだった相手だった') : '')), mag: 18 + l.lv / 5 + (dr ? 8 : 0) });
     });
   }
   function beat(ctx, o, l, opt) {
     l.last = ctx.stepIndex;
     addStress(o, 3);
-    return { text: fill(ctx.pick(BEAT[l.type][stage(l)]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, stage(l) === 'late' ? '少しずつ薄れてきた' : 'まだ引きずっている'), mag: 8 + l.lv / 8 };
+    var st = stage(l), dv = l.dev && !(l.type === 'flat' && l.calm) && ctx.rng() < 0.6 ? DEV_BEAT[l.dev][st] : null;
+    return { text: fill(ctx.pick(dv || BEAT[l.type][st]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, st === 'late' ? '少しずつ薄れてきた' : 'まだ引きずっている'), mag: 8 + l.lv / 8 };
   }
   function comfort(ctx, a, b, opt) {
     var l = lossOf(b), al = lossOf(a), shared = al && al.who === l.who;
@@ -235,24 +312,24 @@
       var t = null;
       if (l.type === 'flat' && l.calm && s >= l.crashAt) {
         l.calm = false; l.lv = Math.min(100, l.lv + 15); l.lv0 = Math.max(l.lv0, l.lv); l.last = s; addStress(o, 25);
-        t = { text: fill(ctx.pick(CRASH), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '淡々としていた分、あとから崩れた'), mag: 25 };
+        t = { text: fill(ctx.pick(l.dev ? DEV_CRASH[l.dev] : CRASH), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '淡々としていた分、あとから崩れた'), mag: 25 };
       } else if (l.type === 'hold' && !l.broke && l.lv >= 40 && (o.stress >= 65 || s - l.at >= 4) && ctx.rng() < 0.5) {
         l.broke = true; l.last = s; addStress(o, -10);
-        t = { text: fill(ctx.pick(BREAK), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '人前では抱え込んでいたものが、一人のときに崩れた'), mag: 22 };
-      } else if (!l.accepted && !l.calm && l.lv < Math.max(24, l.lv0 * 0.5) && s - l.at >= Math.max(3, (n - l.at) * 0.5)) {
+        t = { text: fill(ctx.pick(l.dev ? DEV_BREAK[l.dev] : BREAK), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '人前では抱え込んでいたものが、一人のときに崩れた'), mag: 22 };
+      } else if (!l.accepted && !l.calm && l.lv < Math.max(24, l.lv0 * (l.dev ? 0.35 : 0.5)) && s - l.at >= Math.max(3, (n - l.at) * (l.dev ? 0.7 : 0.5))) {
         l.accepted = true; l.last = s;
         t = { text: fill(ctx.pick(ACCEPT[l.type]), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '少しだけ前を向いた'), mag: 15 };
       } else if (comforts < 1 && l.lv >= 45 && s - l.comfortAt >= 3 && (l.comforts || 0) < 4 && ctx.rng() < 0.35) {
         var c = nearFriend(ctx, o, null);
         if (c && !(lossOf(c) && lossOf(c).who !== l.who && lossOf(c).lv > 60)) { comforts++; var r = comfort(ctx, c, o, opt); ctx.act2({ actors: [c, o], cat: 'help', text: r.text, why: r.why, mag: r.mag }); }
-      } else if (beats < 2 && l.lv >= 30 && s - l.last >= (l.lv >= 60 ? 2 : 3) && ctx.rng() < 0.55) {
+      } else if (beats < (heavy(l) ? 3 : 2) && l.lv >= 30 && s - l.last >= (l.lv >= 60 ? (heavy(l) ? 1 : 2) : 3) && ctx.rng() < (heavy(l) ? 0.65 : 0.55)) {
         beats++; t = beat(ctx, o, l, opt);
       }
       if (t) ctx.act2({ actors: [o], cat: 'solo', text: t.text, why: t.why, mag: t.mag });
       /* ストレスが抜けきらない */
       addStress(o, l.lv / 20);
       /* 薄れる（残りの区切り、または opt.span の区切りで、はじめの深さの6割ほど）。淡々としているあいだは薄れない */
-      if (!l.calm) l.lv = Math.max(0, l.lv - Math.max(1.5, l.lv0 * 0.6 / Math.max(2, Math.min(n - l.at, opt.span || 99))));
+      if (!l.calm) l.lv = Math.max(0, l.lv - Math.max(1.5, l.lv0 * 0.6 / Math.max(2, Math.min(n - l.at, opt.span || 99))) / dur(l));
       if (l.lv <= 6 && l.accepted) l.done = true;
     });
   }
@@ -263,10 +340,10 @@
     if (!r || typeof r.text !== 'string' || !r.text) return r;
     if (SKIP_CAT.test(r.cat || cat || '')) return r;
     var l = lossOf(a);
-    if (!l || l.lv < 25 || l.calm || ctx.stepIndex - l.at < 1 || ctx.stepIndex - l.aside < 3 || (l.asides || 0) >= 6 || r.text.indexOf(l.name) >= 0) return r;
-    if (ctx.rng() > 0.08 + l.lv / 500) return r;
+    if (!l || l.lv < 25 || l.calm || ctx.stepIndex - l.at < 1 || ctx.stepIndex - l.aside < (heavy(l) ? 2 : 3) || (l.asides || 0) >= (heavy(l) ? 10 : 6) || r.text.indexOf(l.name) >= 0) return r;
+    if (ctx.rng() > 0.08 + l.lv / 500 + (l.dev ? 0.08 : 0)) return r;
     l.aside = ctx.stepIndex; l.asides = (l.asides || 0) + 1;
-    r.text += fill(ctx.pick(ASIDE[l.type]), { a: a.name, b: l.name });
+    r.text += fill(ctx.pick(l.dev && ctx.rng() < 0.5 ? DEV_ASIDE[l.dev] : ASIDE[l.type]), { a: a.name, b: l.name });
     r.why = (r.why ? r.why + '／' : '') + a.name + 'は、まだ' + l.name + 'のことを引きずっている（喪失：' + TYPE_NAME[l.type] + '）';
     return r;
   }
@@ -295,8 +372,8 @@
     var n0 = scen.events.length;
     scen.events.push({
       id: 'gf_think', cat: 'solo', scope: 'solo', noOdd: true,
-      when: function (ctx, a) { var l = lossOf(a); return !!l && l.lv >= 15 && ctx.stepIndex - l.last >= 2; },
-      w: function (ctx, a) { return (0.4 + lossOf(a).lv / 30) * (opt.w || 1); },
+      when: function (ctx, a) { var l = lossOf(a); return !!l && l.lv >= 15 && ctx.stepIndex - l.last >= (heavy(l) ? 1 : 2); },
+      w: function (ctx, a) { var l = lossOf(a); return (0.4 + l.lv / 30) * (heavy(l) ? 1.4 : 1) * (opt.w || 1); },
       run: function (ctx, a) { return beat(ctx, a, lossOf(a), opt); }
     });
     scen.events.push({
@@ -310,6 +387,36 @@
         var t = fill(ctx.pick(list), vars(ctx, l, opt, { a: a.name }));
         if (c) { t += fill(ctx.pick(STOP), { a: a.name, b: l.name, c: c.name }); ctx.mod(a, c, { trust: 5 }); ctx.mod(c, a, { aff: 3 }); }
         return { text: t, why: why(a, l, '自分を大事にできなくなっている') + (c ? '／' + c.name + 'が止めた' : ''), mag: 16, with: c ? [c] : null };
+      }
+    });
+    /* 執着・信仰する側：壊れる（一度だけ） */
+    scen.events.push({
+      id: 'gf_broken', cat: 'solo', scope: 'solo', noOdd: true,
+      when: function (ctx, a) { var l = lossOf(a); return !!l && !!l.dev && !l.calm && !l.brokenDev && l.lv >= 50 && ctx.stepIndex - l.at >= 1; },
+      w: function (ctx, a) { return (0.8 + lossOf(a).lv / 60) * (opt.w || 1); },
+      run: function (ctx, a) {
+        var l = lossOf(a);
+        l.brokenDev = true; l.last = ctx.stepIndex; l.lv = Math.min(100, l.lv + 5); addStress(a, 10);
+        return { text: fill(ctx.pick(DEV_BROKEN[l.dev]), vars(ctx, l, opt, { a: a.name })), why: why(a, l, '心のどこかが壊れてしまった'), mag: 22 };
+      }
+    });
+    /* 執着・信仰する側：後追い（深さが深いほど何度も。止める人がいれば止まる） */
+    scen.events.push({
+      id: 'gf_follow', cat: 'solo', scope: 'solo', noOdd: true,
+      when: function (ctx, a) { var l = lossOf(a); return !!l && !!l.dev && !l.calm && l.lv >= 60 && (l.follow || 0) < (l.d >= 120 ? 2 : 1) && ctx.stepIndex - l.at >= 1 && ctx.stepIndex - (l.followAt || -9) >= 3; },
+      w: function (ctx, a) { var l = lossOf(a); return (0.5 + a.tr.impulse * 0.5 + a.tr.ac * 0.4 + (l.type === 'blame' || l.type === 'sink' ? 0.4 : 0)) * (opt.w || 1); },
+      run: function (ctx, a) {
+        var l = lossOf(a), c = nearFriend(ctx, a, null), hard = !!opt.follow, m = vars(ctx, l, opt, { a: a.name, c: c ? c.name : '' });
+        l.follow = (l.follow || 0) + 1; l.followAt = l.last = ctx.stepIndex; addStress(a, 8);
+        var t = fill(ctx.pick(hard ? DEV_FOLLOW[l.dev] : DEV_FOLLOW_SOFT[l.dev]), m), w = why(a, l, 'あとを追おうとした');
+        if (c && ctx.rng() < 0.8) {
+          t += fill(ctx.pick(DEV_STOP), m); ctx.mod(a, c, { trust: 6, aff: 4 }); ctx.mod(c, a, { aff: 4 }); addStress(c, 6);
+          l.lv = Math.max(0, l.lv - 4);
+          return { text: t, why: w + '／' + c.name + 'が止めた', mag: 24, with: [c] };
+        }
+        if (hard) { var r = opt.follow(ctx, a, l, m); if (r) { t += r.text; w += r.why ? '／' + r.why : ''; } else t += fill(ctx.pick(DEV_ALONE), m); }
+        else t += fill(ctx.pick(DEV_ALONE), m);
+        return { text: t, why: w + '／止める人はいなかった', mag: 26 };
       }
     });
     scen.events.push({
@@ -331,6 +438,13 @@
   /* ゾンビの街は一日が四つの区切り（朝・昼・夕方・夜）なので、A の人が崩れるのは一日あまりあと */
   G.install(SC.zombie, {
     crash: 5, span: 20,
+    /* 後追い：止める人がいなければ、群れに近づきすぎて咬まれることも、そのまま呑まれることもある */
+    follow: function (ctx, a, l, m) {
+      var Z = HK.ZB, r = ctx.rng(), A = ctx.zb && a.z ? ctx.zb.A[a.z.area] : null, dz = A ? A.z / 100 : 0.5;
+      if (r < 0.08 + dz * 0.1) { var t0 = fill('{a}の足は、最後まで止まらなかった。呻き声の中へ消えていく背中を、誰も見ていなかった。', m); ctx.kill(a, null, l.name + 'の後を追うように、群れの中へ歩いていった'); return { text: t0, why: '群れに呑まれた' }; }
+      if (Z && Z.infect && !a.z.bitten && r < 0.3 + dz * 0.15) { Z.infect(ctx, a, 'horde', true); return { text: fill('群れの手前で、{a}はようやく足を止めた。腕には、いつの間にか歯形が残っていた。{a}は、それを見ても眉ひとつ動かさなかった。', m), why: '群れに近づきすぎて咬まれた' }; }
+      return null;
+    },
     items: L('{b}が使っていた懐中電灯|{b}の上着|{b}の腕時計|{b}が最後まで持っていた鞄'),
     spots: L('バリケードの陰|見張り台|隠れ家の屋上|崩れた非常階段'),
     reckless: SURVIVE.concat(L('{a}は武器も持たずに、{b}を失った場所へ一人で向かおうとした。{a}「{b}を、置いてきたままにできない」――外にはまだ、呻き声がいくつも響いていた。{a}の足は、それでも止まらなかった。|{a}はわざと物音を立てて、ゾンビの群れのほうへ歩いていった。まるで、自分から見つかろうとしているようだった。寸前で引き返したのは、ほとんど偶然だった。|{a}は見張りの番を、何日も続けて誰にも譲らなかった。眠らずに暗がりを見つめる目は、どこか焦点が合っていなかった。{a}「来るなら来ればいい。私が全部、相手をする」'))

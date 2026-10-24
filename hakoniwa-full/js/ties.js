@@ -33,6 +33,16 @@
     bad: { mods: { aff: 0.75, trust: 0.8, ten: 1.15 }, effect: '気が合わず、何かと衝突する（敵対ほど強い嫌悪ではない）。いがみ合いながらも、きっかけがあれば打ち解けることもある。相手の気持ちを選ぶと一方的な敵視にもできる。嫌悪が強まれば敵対と同じ振る舞いに', label: '不仲', dir: true, roleA: '敵視する側', roleB: '相手', hate: 1, ab: { aff: -18, trust: -8, ten: 34 }, pol: -1, fric: 1.25, pull: 1.4, bias: { conflict: 1.6, help: 0.7, bond: 0.75, romance: 0.6, combat: 1.1, betray: 1.15 } },
     yan: { mods: { att: 1.25, ten: 1.1 }, effect: '執着する側は、相手が誰かと親しくするたびに嫉妬し、執着を深めていく。深まると監視・束縛・恋敵への敵意に変わり、R18版では監禁・恋敵への危害・心中まで暴走することがある（全年齢版ではほのめかす程度）', label: '執着（ヤンデレ）', dir: true, roleA: '執着する側', roleB: '執着される側', ab: { aff: 30, att: 55, trust: -5, ten: 10 }, ba: { aff: 5 }, pol: 0, chem: 1.3, pull: 2, biasA: { romance: 1.6, conflict: 1.2 }, obsess: true },
     noobs: { mods: {}, effect: 'この二人のあいだでは、嫉妬も執着も生まれない（ほかの関係に重ねて使う）', label: '執着なし', ab: {}, pol: 0, pull: 0, noObsess: true },
+    /* 同級生：同じ学年・クラスだった（いる）仲。職業や立場によらない */
+    classmate: { mods: { trust: 1.1 }, effect: '同じ学年・同じクラスだった（いる）仲。気安く話せて、昔話で打ち解けやすい。張り合うこともある', label: '同級生', ab: { aff: 15, trust: 15, ten: 3 }, pol: 1, pull: 1.3, bias: { bond: 1.4, help: 1.15, conflict: 1.05 } },
+    /* 上司と部下：職業によらない（医者と警察でも、同じ組織・現場で上下があればこれ） */
+    boss: { mods: { trust: 1.15 }, effect: '上司は部下に指示を出して守り、部下は上司を立てて従う。職場の外では立場が揺らぐことも、恋愛に発展することもある', label: '上司と部下', dir: true, roleA: '上司', roleB: '部下', ab: { aff: 12, trust: 25, ten: 6 }, ba: { aff: 15, trust: 30, ten: 8 }, pol: 1, chem: 0.85, pull: 1.6, biasA: { help: 1.4, conflict: 1.2, bond: 1.1 }, biasB: { help: 1.5, bond: 1.1, betray: 0.5 } },
+    /* 執着（信仰）：相手を崇め、すべてを捧げようとする。想いは揺らぎにくい（stiffA・floorA）。恋愛に発展するかは「恋愛」の選択（loveOpt）、相手の気持ちは WORSHIP_BACK */
+    worship: { mods: { trust: 1.3, aff: 1.2 }, effect: '信仰する側は相手を崇め、すべてを捧げようとする。その想いは揺らぎにくく、相手のためなら身を投げ出す。恋愛に発展するかは選べる。相手の気持ち（気づいていない・受け入れている・戸惑っている・支配している・大切に思っている）も選べる', label: '執着（信仰）', dir: true, roleA: '信仰する側', roleB: '信仰される側', ab: { aff: 55, trust: 70, att: 8 }, ba: { aff: 10, trust: 10 }, pol: 1, chem: 0.7, pull: 2.4, loveOpt: true, worship: true, stiffA: { aff: 0.12, trust: 0.12 }, floorA: { aff: 35, trust: 45 }, biasA: { help: 2.2, bond: 1.4, betray: 0.05, combat: 0.2, conflict: 0.4 }, biasB: { help: 1.1 } },
+    /* 恩人：恩を受けた側の感謝は消えにくい（stiffB） */
+    benefactor: { mods: { trust: 1.15 }, effect: '恩を受けた側は恩人に深く感謝し、恩を返そうとする。恩人は相手を気にかける。恩は簡単には消えない', label: '恩人', dir: true, roleA: '恩人', roleB: '恩を受けた側', ab: { aff: 22, trust: 25 }, ba: { aff: 40, trust: 55 }, pol: 2, pull: 1.8, stiffB: { aff: 0.35, trust: 0.3 }, floorB: { aff: 5, trust: 20 }, biasA: { help: 1.4, bond: 1.2 }, biasB: { help: 2, bond: 1.3, betray: 0.15, conflict: 0.7 } },
+    /* 親族（親子・きょうだいでない）：いとこ・おじおば・甥姪など */
+    relative: { mods: { att: 0.1, trust: 1.1 }, effect: 'いとこ・おじおば・甥姪など、親子やきょうだいでない親族。気安いが遠慮もあり、いざとなれば助け合う。恋愛にはならない（「恋愛：あり」も選べる）', label: '親族', ab: { aff: 25, trust: 30, ten: 5 }, pol: 1, chem: 0.05, pull: 1.5, family: true, bias: { help: 1.5, bond: 1.2, romance: 0.1, betray: 0.4, combat: 0.4 } },
     master: { mods: { trust: 1.25 }, effect: '従は主を助けに動く', label: '主従', dir: true, roleA: '主', roleB: '従', ab: { trust: 20, aff: 15, ten: 8 }, ba: { trust: 55, aff: 30 }, pol: 1, pull: 1.8, biasA: { conflict: 1.2, help: 1.1 }, biasB: { help: 2, bond: 1.2, betray: 0.3, combat: 0.4 } }
   };
   /* 片想いの「想われる側」の温度（相手にされていない片想い） */
@@ -66,21 +76,33 @@
     mutual: { label: '執着される側：共依存（同じくらい想っている）', short: '共依存', ba: { aff: 38, att: 50, trust: 10 } }
   };
   HK.OBS_BACK_ORDER = ['', 'afraid', 'hate', 'accept', 'mutual'];
+  /* 執着（信仰）の「信仰される側」の気持ち。ba=信仰される側から信仰する側への初期値。dominate は信仰を利用して相手を支配している */
+  HK.WORSHIP_BACK = {
+    '': { label: '信仰される側：気づいていない', short: '' },
+    accept: { label: '信仰される側：受け入れている', short: '受け入れている', ba: { aff: 28, trust: 30 } },
+    confused: { label: '信仰される側：戸惑っている（重荷に感じている）', short: '戸惑っている', ba: { aff: 5, ten: 16 } },
+    dominate: { label: '信仰される側：支配している（信仰を利用して従わせている）', short: '支配している', ba: { aff: 6, trust: 12, ten: 4 }, dominate: true },
+    cherish: { label: '信仰される側：大切に思っている', short: '大切に思っている', ba: { aff: 45, trust: 45, att: 6 } }
+  };
+  HK.WORSHIP_BACK_ORDER = ['', 'accept', 'confused', 'dominate', 'cherish'];
   /* 関係の種類ごとの「相手の気持ち」の選択肢（片想い・不仲・敵対）。なければ null */
   HK.coldOpts = function (type) {
     if (type === 'crush' && HK.CRUSH_COLD) return { map: HK.CRUSH_COLD, order: HK.CRUSH_COLD_ORDER, aria: '想われる側の気持ち' };
     if ((type === 'bad' || type === 'enemy') && HK.HATE_BACK) return { map: HK.HATE_BACK, order: HK.HATE_BACK_ORDER, aria: '相手の気持ち' };
     if (type === 'yan' && HK.OBS_BACK) return { map: HK.OBS_BACK, order: HK.OBS_BACK_ORDER, aria: '執着される側の気持ち' };
+    if (type === 'worship' && HK.WORSHIP_BACK) return { map: HK.WORSHIP_BACK, order: HK.WORSHIP_BACK_ORDER, aria: '信仰される側の気持ち' };
     return null;
   };
   var HATE_WORDS = [[/一方的|片思いならぬ|相手は気にして(?:い)?ない|相手は気づいて(?:い)?ない|なんとも思って(?:い)?ない/, 'none'], [/相手はふつう|相手は普通/, 'normal'], [/相手は友(?:達|人)だと|友達だと思って/, 'friend'], [/相手は(?:好き|愛して|惚れて)|片想いされ|好かれて/, 'love']];
   var COLD_WORDS = [[/両片想い|両片思い|実は相手も/, 'mutual'], [/脈なし|眼中に|相手にされ|興味がない|興味なし/, 'none'], [/友達としか|友達止まり|異性として見|恋愛対象外|対象外/, 'friend'], [/苦手|嫌われ|避けられ|避けて/, 'dislike'], [/他に好き|ほかに好き|別に好き|好きな人がいる/, 'other']];
-  HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'parent', 'pparent', 'teacher', 'mentor', 'crush', 'yan', 'bad', 'rival', 'enemy', 'lover', 'fwb', 'ex', 'fated', 'mate', 'master', 'noobs'];
+  HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'classmate', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'relative', 'parent', 'pparent', 'teacher', 'mentor', 'boss', 'benefactor', 'crush', 'yan', 'worship', 'bad', 'rival', 'enemy', 'lover', 'fwb', 'ex', 'fated', 'mate', 'master', 'noobs'];
 
   /* 文字から関係の種類を推定（長い語から順に照合） */
   var ALIAS = [
     ['きょうだい（不仲）', 'sibbad'], ['兄弟姉妹（不仲）', 'sibbad'], ['兄弟（不仲）', 'sibbad'], ['姉妹（不仲）', 'sibbad'], ['不仲なきょうだい', 'sibbad'], ['不仲な兄弟', 'sibbad'], ['仲の悪いきょうだい', 'sibbad'], ['仲の悪い兄弟', 'sibbad'], ['兄弟（仲が悪い）', 'sibbad'], ['姉妹（仲が悪い）', 'sibbad'],
-    ['執着なし', 'noobs'], ['嫉妬しない', 'noobs'], ['ヤンデレ', 'yan'], ['執着', 'yan'],
+    ['執着なし', 'noobs'], ['嫉妬しない', 'noobs'], ['執着（信仰）', 'worship'], ['信仰', 'worship'], ['崇拝', 'worship'], ['心酔', 'worship'], ['ヤンデレ', 'yan'], ['執着', 'yan'],
+    ['同級生', 'classmate'], ['クラスメイト', 'classmate'], ['同窓', 'classmate'], ['上司と部下', 'boss'], ['上司', 'boss'], ['部下', 'boss'], ['恩人', 'benefactor'], ['命の恩人', 'benefactor'],
+    ['親族', 'relative'], ['親戚', 'relative'], ['いとこ', 'relative'], ['従兄弟', 'relative'], ['従姉妹', 'relative'], ['叔父', 'relative'], ['叔母', 'relative'], ['伯父', 'relative'], ['伯母', 'relative'], ['おじ', 'relative'], ['おば', 'relative'], ['甥', 'relative'], ['姪', 'relative'],
     ['片想い', 'crush'], ['片思い', 'crush'],
     ['友達以上恋人未満', 'almost'], ['友達以上', 'almost'], ['恋人未満', 'almost'], ['いい感じ', 'almost'],
     ['幼なじみ', 'childhood'], ['幼馴染', 'childhood'], ['親友', 'best'], ['知り合い', 'acq'], ['知人', 'acq'],
@@ -94,7 +116,7 @@
     ['先輩後輩', 'senpai'], ['先輩', 'senpai'], ['後輩', 'senpai'], ['センパイ', 'senpai'],
     ['バディ', 'buddy'], ['相棒', 'buddy'], ['コンビ', 'buddy'], ['相方', 'buddy'],
     ['同僚', 'colleague'], ['同期', 'colleague'], ['仕事仲間', 'colleague'], ['職場', 'colleague'], ['バイト仲間', 'colleague'],
-    ['主従', 'master'], ['主人', 'master'], ['従者', 'master'], ['部下', 'master'], ['主', 'master'],
+    ['主従', 'master'], ['主人', 'master'], ['従者', 'master'], ['主', 'master'],
     ['の子', 'parent'], ['子ども', 'parent'], ['息子', 'parent'], ['娘', 'parent'], ['の親', 'parent'], ['父', 'parent'], ['母', 'parent'],
     ['兄', 'sibling'], ['弟', 'sibling'], ['姉', 'sibling'], ['妹', 'sibling'], ['友', 'friend']
   ];
@@ -158,7 +180,7 @@
   /* ---------- エンジンへの適用 ----------
      同じ二人に複数の関係（セフレ＋片想い など）を重ねられる。
      get() は代表の関係（PRIO の先頭に近いもの）を返し、has() で個々の関係を調べる */
-  var PRIO = ['mate', 'fated', 'lover', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'master', 'mentor', 'teacher', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'friend', 'acq', 'noobs'];
+  var PRIO = ['mate', 'fated', 'lover', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'relative', 'master', 'worship', 'mentor', 'teacher', 'benefactor', 'boss', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'classmate', 'friend', 'acq', 'noobs'];
   function keyOf(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   /* 関係を持っているか（どのファイルからでも安全に呼べる形）。古いファイルが混ざっても止まらないように */
   HK.tieHas = function (ctx, a, b, type) {
@@ -172,6 +194,9 @@
   /* 血縁（きょうだい・親子）で恋愛が起きない関係か。関係ごとに「恋愛：あり」（t.love === 'ok'）にもできる */
   HK.tieNoLove = function (t) { var D = t && T[t.type]; return !!(D && D.family && !D.loveOK && t.love !== 'ok'); };
   HK.tieFamLove = function (t) { var D = t && T[t.type]; return !!(D && D.family && !D.loveOK && t.love === 'ok'); };
+  /* 恋愛に発展するかを選べる関係（執着（信仰）など。loveOpt）：「発展しない」なら、この二人のあいだでは惹かれが育たず、恋愛の出来事も起きにくい */
+  HK.tieLoveOpt = function (t) { var D = t && T[t.type]; return !!(D && D.loveOpt); };
+  HK.tieOptNoLove = function (t) { return HK.tieLoveOpt(t) && t.love !== 'ok'; };
   HK.Ties = {
     /* 片想いの「両片想い」を、向きを逆にした片想い二本に開く（どちらも mutual: true）。箱庭に渡す前に一度だけ */
     expand: function (ties) {
@@ -224,7 +249,11 @@
         if (CD && CD.ba) add(ba, CD.ba);
         var OB = t.type === 'yan' && t.cold && HK.OBS_BACK ? HK.OBS_BACK[t.cold] : null;
         if (OB && OB.ba) add(ba, OB.ba);
+        var WB = t.type === 'worship' && t.cold && HK.WORSHIP_BACK ? HK.WORSHIP_BACK[t.cold] : null;
+        if (WB && WB.ba) add(ba, WB.ba);
         var p = ctx.pair(A, B);
+        /* 信仰される側が相手を支配している */
+        if (WB && WB.dominate) p.dominate = B.i;
         if (D.chem != null) p.chem = HK.clamp(p.chem * (HK.tieFamLove(t) ? 0.7 : D.chem) + (D.chem > 1 ? 0.2 : 0), 0.01, 2);
         if (D.fric != null && !HB) p.fric = HK.clamp(p.fric * D.fric, 0.2, 2);
         if (D.couple) p.couple = true;
@@ -232,7 +261,9 @@
         if (HK.tieNoLove(t)) p.kin = true;
         if (D.family && !D.loveOK) p.trustFloor = Math.max(p.trustFloor || 0, t.type === 'sibbad' ? 15 : 30);
         if (D.night && ctx.scen.id !== 'classroom') p.night = true;
-        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB ? t.cold : '', love: HK.tieFamLove(t) ? 'ok' : '', mutual: !!t.mutual };
+        /* 恋愛に発展しない信仰：最初の惹かれも低く抑える */
+        if (D.loveOpt && t.love !== 'ok') { ab.att = Math.min(ab.att, 8); ba.att = Math.min(ba.att, 8); }
+        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB || WB ? t.cold : '', love: HK.tieFamLove(t) || (D.loveOpt && t.love === 'ok') ? 'ok' : '', mutual: !!t.mutual };
         list.push(o);
         list.sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
         ctx.ties[k] = list[0];
@@ -273,6 +304,7 @@
         else if (D.dir) m = (t.a === a.i ? D.biasA : D.biasB) || {};
         else m = D.bias || {};
         if (m[cat] != null) r *= cat === 'romance' && HK.tieFamLove(t) ? Math.max(m[cat], 0.75) : m[cat];
+        if (cat === 'romance' && HK.tieOptNoLove(t)) r *= 0.1;
       });
       return r;
     },
@@ -290,9 +322,30 @@
           return;
         }
         if (m != null) r *= f === 'att' && HK.tieFamLove(t) ? Math.max(m, 0.8) : m;
+        if (f === 'att' && HK.tieOptNoLove(t)) r *= 0.05;
       });
       return r;
     },
+    /* 減る方向の倍率（揺らぎにくい想い：信仰する側・恩を受けた側の好意と信頼）。1 より小さいほど減りにくい */
+    stiff: function (ctx, a, b, f) {
+      var r = 1;
+      HK.Ties.all(ctx, a, b).forEach(function (t) {
+        var D = T[t.type], m = D.dir ? (t.a === a.i ? D.stiffA : D.stiffB) : D.stiff;
+        if (m && m[f] != null) r *= m[f];
+      });
+      return r;
+    },
+    /* 下限（信仰する側の好意・信頼は、ここより下がらない） */
+    floor: function (ctx, a, b, f) {
+      var v = null;
+      HK.Ties.all(ctx, a, b).forEach(function (t) {
+        var D = T[t.type], m = D.dir ? (t.a === a.i ? D.floorA : D.floorB) : D.floor;
+        if (m && m[f] != null) v = Math.max(v == null ? -100 : v, m[f]);
+      });
+      return v;
+    },
+    /* 執着（信仰）：a が b を信仰しているか（その関係を返す） */
+    worship: function (ctx, a, b) { var t = HK.Ties.from(ctx, a, b, 'worship'); return t || null; },
     pull: function (ctx, a, b) {
       var v = 0;
       HK.Ties.all(ctx, a, b).forEach(function (t) { v = Math.max(v, T[t.type].pull || 1); });

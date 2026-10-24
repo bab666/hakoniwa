@@ -3,6 +3,7 @@ js/core.js
 js/ties.js
 js/events-common.js
 js/persona.js
+js/tie-rel.js
 js/voice.js
 js/voice-tone.js
 js/tone-registry.js
@@ -74,6 +75,8 @@ js/room-trio-lines.js
 js/room-trio.js
 js/hate-sex-r18.js
 js/room-know.js
+js/room-tie.js
+js/room-tie-r18.js
 js/solo-room-jealous.js
 js/ego-image.js
 js/omega-data.js
@@ -92,7 +95,9 @@ js/omega-passion.js
 js/omega-mob.js
 js/omega-love.js
 js/omega-guard.js
+js/omega-ties.js
 js/omega-thick.js
+js/omega-ties-r18.js
 late js/incidents-social.js
 late js/incidents-survival.js
 late js/incidents-extra.js
@@ -150,7 +155,9 @@ js/zombie-love.js
 js/zombie-together.js
 js/zombie-solo.js
 js/zombie-letter.js
+js/zombie-seek.js
 js/rel-kit.js
+js/zombie-bonds.js
 late js/zombie-rel.js
 js/island-rel.js
 late js/rel-bad-engine.js
@@ -217,6 +224,8 @@ js/solo-locker-data.js
 js/solo-locker-more.js
 js/solo-locker-bed.js
 js/locker-thick.js
+js/locker-ties.js
+js/locker-ties-r18.js
 js/solo-locker.js
 js/rpg-data.js
 js/scenario-rpg.js

@@ -14,7 +14,7 @@
   var at = -1; scen.env.forEach(function (e, i) { if (e.id === 'prize') at = i; });
   scen.env.splice(at >= 0 ? at : scen.env.length, 0, { id: 'lovemode', label: '好意モード', type: 'select', def: 'off', options: [{ v: 'off', label: 'オフ（推理で投票する）' }, { v: 'on', label: 'オン（好感度で投票することがある）' }], desc: 'オンにすると、半分くらいの投票が好き嫌いで決まり、好意を使って信頼を取りにいく人が出る' });
 
-  var TW = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.5, best: 0.8, buddy: 0.75, childhood: 0.7, sibling: 0.65, sibclose: 0.8, sibprot: 0.8, parent: 0.8, pparent: 0.75, friend: 0.5, mentor: 0.5, master: 0.55, teacher: 0.45, senpai: 0.35, colleague: 0.25, acq: 0.1, rival: -0.35, enemy: -0.85 , sibbad: -0.15, bad: -0.4 };
+  var TW = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.5, best: 0.8, buddy: 0.75, childhood: 0.7, sibling: 0.65, sibclose: 0.8, sibprot: 0.8, parent: 0.8, pparent: 0.75, friend: 0.5, mentor: 0.5, master: 0.55, teacher: 0.45, senpai: 0.35, colleague: 0.25, classmate: 0.35, boss: 0.4, benefactor: 0.6, relative: 0.55, worship: 0.85, acq: 0.1, rival: -0.35, enemy: -0.85 , sibbad: -0.15, bad: -0.4 };
   var LBL = function (t) { return HK.TIES && HK.TIES[t] ? HK.TIES[t].label : t; };
 
   /* ---------- 好意を使って信頼を取りにいく ---------- */

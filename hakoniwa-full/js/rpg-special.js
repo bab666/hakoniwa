@@ -6,7 +6,7 @@
   'use strict';
   var HK = window.HK, SP = HK.Special;
   if (!SP) return;
-  var LOVE = /^(lover|mate|fated|almost|fwb)$/, FAM = /^(sibling|sibprot|sibclose|parent|pparent)$/, CLOSE = /^(best|buddy|childhood|friend|mentor|master|teacher|senpai|colleague)$/, BAD = /^(enemy|rival|bad|sibbad)$/;
+  var LOVE = /^(lover|mate|fated|almost|fwb)$/, FAM = /^(sibling|sibprot|sibclose|parent|pparent|relative)$/, CLOSE = /^(best|buddy|childhood|friend|mentor|master|teacher|senpai|colleague|classmate|boss|benefactor|worship)$/, BAD = /^(enemy|rival|bad|sibbad)$/;
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function tie(S, a, b) {
     var t = (S.ties || []).filter(function (x) { return (x.a === a.i && x.b === b.i) || (x.a === b.i && x.b === a.i); })[0];

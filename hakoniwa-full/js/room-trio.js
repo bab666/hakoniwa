@@ -65,7 +65,7 @@
   function pairsOf(g) { var o = []; for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) o.push([g[i], g[j]]); return o; }
   function done3(ctx, g) { return pairsOf(g).every(function (p) { return A.pairDone(ctx, p[0], p[1]); }); }
   function family(ctx, a, b) { return A.tieWall(ctx, a, b, 3) >= 999; }
-  function okSex(a, b) { return !HK.Pos || HK.Pos.okSex(a, b); }
+  function okSex(a, b) { return (!HK.Pos || HK.Pos.okSex(a, b)) && !(HK.roomWsNoSex && HK.roomWsNoSex(HK._curCtx, a, b)); }
   /* 円満な三人：三人のどの二人も恋人（番・運命の番を含む）どうし。三人の場面は成り行きではなく、恋人どうしの円満な場面（love）にする */
   function loveTie(ctx, a, b) { var T0 = HK.Ties; return ctx.pair(a, b).couple || !!(T0 && T0.has && (T0.has(ctx, a, b, 'lover') || T0.has(ctx, a, b, 'mate') || T0.has(ctx, a, b, 'fated'))); }
   /* 中心の人と恋人／友達以上恋人未満 */

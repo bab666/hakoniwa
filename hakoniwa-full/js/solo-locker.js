@@ -43,8 +43,8 @@
   HK.SCEN_ORDER.push('locker');
 
   var LV = ['touch', 'kiss', 'grope', 'oral', 'sex'];
-  var REL = { lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'fwb', master: 'master', crush: 'crush', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', senpai: 'friend', colleague: 'friend', acq: 'friend', almost: 'almost', rival: 'tension', bad: 'tension', enemy: 'tension', ex: 'ex', sibling: 'friend' };
-  var REL_LABEL = { lover: '恋人', fwb: 'セフレ', master: '主従', crush: '片想い', mutual: '両片想い', friend: '知り合い', almost: '友達以上恋人未満', tension: '険悪', ex: '元恋人', stranger: '初対面' };
+  var REL = { lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'fwb', master: 'master', crush: 'crush', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', senpai: 'friend', colleague: 'colleague', classmate: 'classmate', boss: 'boss', worship: 'worship', benefactor: 'benefactor', relative: 'relative', acq: 'friend', almost: 'almost', rival: 'tension', bad: 'tension', enemy: 'tension', ex: 'ex', sibling: 'friend' };
+  var REL_LABEL = { lover: '恋人', fwb: 'セフレ', master: '主従', crush: '片想い', mutual: '両片想い', friend: '知り合い', almost: '友達以上恋人未満', tension: '険悪', ex: '元恋人', stranger: '初対面', colleague: '同僚', classmate: '同級生', boss: '上司と部下', worship: '執着（信仰）', benefactor: '恩人', relative: '親族' };
 
   var LK_HATE_LEAD = ['狭いロッカーの中で、{b}は{a}の胸に、そっと額を預けた。', '{b}は、触れ合った{a}の手を、そのまま握ろうとした。', '{b}は、熱に浮かされた目で、{a}の顔を見上げた。'];
   function run(input) {
@@ -54,7 +54,7 @@
     if (!B) { B = A; }
     /* 関係 */
     /* 同じ二人に関係を重ねられる（セフレで片想い など）。代表の関係は強いものから */
-    var PRIO = ['mate', 'fated', 'lover', 'master', 'fwb', 'ex', 'crush', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'mentor', 'teacher', 'colleague', 'friend', 'acq', 'pparent', 'parent', 'sibprot', 'sibling', 'sibclose', 'sibbad'];
+    var PRIO = ['mate', 'fated', 'lover', 'master', 'worship', 'fwb', 'ex', 'crush', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'mentor', 'teacher', 'benefactor', 'boss', 'colleague', 'classmate', 'friend', 'acq', 'relative', 'pparent', 'parent', 'sibprot', 'sibling', 'sibclose', 'sibbad'];
     var tieL = (input.ties || []).filter(function (t) { return (t.a === A.i && t.b === B.i) || (t.a === B.i && t.b === A.i); }).sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
     var tie = tieL[0];
     var rel = tie ? REL[tie.type] || REL[(HK.TIES[tie.type] || {}).like] || 'friend' : 'stranger';
@@ -63,6 +63,10 @@
     if (mtie) { master = P[mtie.a]; servant = P[mtie.b]; }
     var crushL = tieL.filter(function (t) { return t.type === 'crush'; });
     if (crushL.length) crusher = P[crushL[0].a];
+    /* 新しい関係（同僚・同級生・上司と部下・執着（信仰）・恩人・親族）：locker-ties.js（LK.TIES）。
+       信仰する側は、崇める相手に自分から触れない（従者の耐え方に倣う。文と許しの出方は信仰される側の気持ちで変わる） */
+    var NT = LK.TIES, nt = NT ? NT.setup(S, A, B, tieL) : null, svW = false, SV = LK.SERVANT;
+    if (!mtie && nt && nt.type === 'worship') { servant = nt.u; master = nt.d; svW = true; SV = NT.sv(nt); }
     /* 両片想い：どちらからも片想いがある二人（ties.js が向きを逆にした片想い二本に開く）。片想いの枝より先に、両片想いの枝へ */
     var mutualCrush = crushL.length > 1 && crushL.some(function (t) { return t.a !== crushL[0].a; });
     if (rel === 'crush' && mutualCrush) rel = 'mutual';
@@ -77,6 +81,9 @@
     /* 恋愛・R18にしない二人：相手を落とすために自分から閉じ込められる人はいない（役割の指定があっても、巻き込まれた側として扱う） */
     /* 恋愛相手の固定が食い違うだけで、体の関係は許されている二人（engine.js の HK.lockSexOnly）は、恋愛・R18にしない組として扱わない */
     var ngP = !!(HK.ngPair && HK.ngPair(A, B)) && !(HK.lockSexOnly && HK.lockSexOnly(A, B));
+    /* 親族（恋愛：なし）・信仰（恋愛に発展：しない。支配しているとき以外）も、恋愛・R18にしない組として扱う */
+    var tieNL = !ngP && !!(nt && nt.noLove);
+    if (tieNL) ngP = true;
     /* 性行為の相手を別の人に固定している（または固定した相手がこの箱庭にいない）：体の関係にならない（pos.js の向きの判定で clash になる） */
     var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (A.sexLock != null && A.sexLock !== B.i ? A : B) : null;
     var sexWhy = sexP ? sexWho.name + 'は、性行為の相手を' + (input.chars[sexWho.sexLock] ? input.chars[sexWho.sexLock].name + 'に' : 'ほかの人に') + '決めている' : '';
@@ -91,13 +98,13 @@
       p.cnt = { make: 0, refuse: 0, accept: 0, climax: 0, solve: 0, hold: 0 };
       var pc = (input.perChar && input.perChar[p.i]) || {};
       p.action = pick(scen.actions, pc.action, p); p.goal = pick(scen.goals, pc.goal, p);
-      p.roleLabel = (plotter === p ? '自分から閉じ込められた人' : '閉じ込められた人') + '・' + REL_LABEL[rel] + (servant === p ? '（従者）' : master === p ? '（主）' : '');
+      p.roleLabel = (plotter === p ? '自分から閉じ込められた人' : '閉じ込められた人') + '・' + REL_LABEL[rel] + (svW || (nt && !mtie) ? NT.role(nt, p) : servant === p ? '（従者）' : master === p ? '（主）' : '');
       p.sens = (0.6 + (6 - (p.stats.gaman || 3)) * 0.1 - p.tr.cp * 0.15) * (0.7 + rng() * 0.7);
     });
     function pick(list, id, p) { if (id && id !== 'auto') for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return HK.weighted(rng, list, function (o) { return Math.pow(Math.max(0.02, o.fit(p.tr)), 3); }); }
     var boundOne = null;
     /* 受け攻め：向きの決まらない二人（攻め×攻めなど）は体の関係にならない。女性どうしは、いちもつの描写を使わない */
-    var Pos = HK.Pos, clash = !!(Pos && Pos.clash(A, B)), ff = !!(Pos && Pos.ff(A, B)), R18 = !HK.SAFE_ON;
+    var Pos = HK.Pos, clash = !!(Pos && Pos.clash(A, B)) || tieNL, ff = !!(Pos && Pos.ff(A, B)), R18 = !HK.SAFE_ON;
     /* 敵対している二人（関係がライバル・不仲・敵対）：攻めの側から強引に手を出し、受けは口では嫌がるが、まんざらではない応じ方をする（hate-sex-r18.js。R18版のみ） */
     if (!S.ties) S.ties = input.ties || [];
     var HSX = R18 && HK.HateSex, hateP = !!(HSX && rel === 'tension' && !ngP && !clash && HSX.hostile(S, A, B));
@@ -129,6 +136,7 @@
     ST.say(S, { kind: 'phase', text: pk(LK.SPEAKER) + '（仕掛け：' + gimmicks.map(function (g) { return g.name; }).join('→') + '）' });
     /* 体の関係にならない二人・相手が自分で攻めを選んだ人のときは、手を取って触れさせる文を使わない */
     var plotPush = plotter ? LK.PLOT.push.filter(function (l) { return !((clash || (hardTop(plotter.o) && !hardTop(plotter))) && /胸に押し当て|腰に回させ|任せて/.test(l)); }) : [];
+    if (nt) NT.wake(S, nt);
     if (plotter) { var o = ST.say(S, { actors: [plotter], tag: '思惑', text: ST.fmt(pk(plotPush.length ? plotPush : LK.PLOT.push), { a: plotter.name, b: plotter.o.name }), why: plotter.name + 'は、自分から望んでここにいる' + (rel === 'mutual' ? '（' + plotter.o.name + 'への片想い。実は向こうも同じ）' : crusher === plotter ? '（' + plotter.o.name + 'への片想い）' : ''), mag: 20 }); ST.key(S, o, plotter.name + 'の思惑'); }
     ST.snap(S, keys);
 
@@ -160,7 +168,7 @@
       a.cnt.hold++; a.m.reason = clamp(a.m.reason + 3, 0, 100); a.m.plea = clamp(a.m.plea + 8, 0, 90);
       if (a.cnt.hold > 3 && rng() < 0.5) return;
       var ty = clashType(a), C = LK.CLASH;
-      ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + 'は発情していた（' + Math.round(a.m.heat) + '）が、' + b.name + (ngP ? 'とは恋愛・R18にしない組なので、手は出さなかった（' : sexP ? 'とは体の関係にならない（' + sexWhy + '）ので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
+      ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + 'は発情していた（' + Math.round(a.m.heat) + '）が、' + b.name + (ngP ? 'とは' + (tieNL ? nt.nlWhy + 'の二人' : '恋愛・R18にしない組') + 'なので、手は出さなかった（' : sexP ? 'とは体の関係にならない（' + sexWhy + '）ので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
     }
     /* 女性の攻め（t）×男性の受け（u）か：女性が跨る書き方にする */
     function fmPair(t, u) { return !!(Pos && !ff && Pos.isF(t) && !Pos.isF(u)); }
@@ -200,7 +208,7 @@
       var po = plotter.o, caught = (plotter.sabotage || 0) >= 1 && rng() < 0.15 + po.tr.a * 0.3;
       if (!caught && rng() > 0.18) return;
       pair.plotShown = true;
-      var soft = !caught && ({ lover: 1, almost: 1, fwb: 1, mutual: 1 }[rel] || crusher === po || po.m.heat >= 65), v = { a: plotter.name, b: po.name };
+      var soft = (!caught && ({ lover: 1, almost: 1, fwb: 1, mutual: 1 }[rel] || crusher === po || po.m.heat >= 65)) || !!(nt && NT.plotSoft(nt, po)), v = { a: plotter.name, b: po.name };
       var rv = (caught ? LK.PLOT.caught : LK.PLOT.reveal).filter(function (l) { return !plotter.bound || !/手を|指を/.test(l); });
       if (soft) po.m.heat = clamp(po.m.heat + 8, 0, 100); else { po.m.reason = clamp(po.m.reason + 15, 0, 100); plotter.sabotage = 99; pair.plotMad = true; }
       ST.key(S, ST.sayB(S, { actors: [plotter, po], tag: caught ? '見抜かれた' : '打ち明けた', text: ST.fmt(pk(rv), v) + ST.fmt(pk(LK.PLOT.react[soft ? 'soft' : 'mad']), v), why: caught ? po.name + 'は、' + plotter.name + 'の細工に気づいた（A）' : plotter.name + 'は、自分から仕組んだことを打ち明けた', mag: 26 }, '', true), caught ? plotter.name + 'の細工がばれた' : plotter.name + 'が仕組んだと打ち明けた');
@@ -249,6 +257,8 @@
         var mf = rng() < 0.5 ? A : B;
         ST.sayB(S, { actors: [A, B], tag: '両片想い', text: ST.fmt(pk(LK.MUT.inside), { a: mf.name, b: mf.o.name }), why: '両片想い：二人とも相手を想っているのに、相手は自分を何とも思っていないと思い込んでいる', mag: 14 }, A.name + 'と' + B.name + 'がすれ違った');
       }
+      /* 新しい関係：閉じ込められたときの反応・関係を保つ・発展させる（locker-ties.js）。恩返しは仕掛けを進める */
+      if (nt) { var ntE = NT.turn(S, nt, { turn: turn, pair: pair, ngP: ngP }); if (ntE && ntE.prog && gimmicks[gi] && !gimmicks[gi].lewd) prog = clamp(prog + ntE.prog, 0, 99); }
       /* 手を出す（一コマに受け入れる出来事は一つまで。繋がっているあいだは、その続きだけ） */
       var lewdNow = false;
       var order = rng() < 0.5 ? [A, B] : [B, A];
@@ -259,16 +269,17 @@
         var urge = (a.goal && a.goal.id === 'want' ? 0.12 : a.goal && a.goal.id === 'out' ? -0.08 : 0) + (a.action && a.action.id === 'flow' ? 0.08 : a.action && a.action.id === 'solve' ? -0.06 : 0) + a.m.heat / 100 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.m.reason / 130 - a.tr.cp * 0.12 + (plotter === a ? 0.45 : 0) + ({ lover: 0.15, fwb: 0.2, almost: 0.1, crush: crusher === a ? 0.2 : 0, mutual: 0.2, tension: -0.1 }[rel] || 0) + (fwbAll && rel !== 'fwb' ? 0.2 : 0) + (crusher === a && rel !== 'crush' && rel !== 'mutual' ? 0.15 : 0);
         /* 敵対している二人：攻めの側は、苛立ちごとぶつけるように手を出しやすい */
         if (hateP && HSX.order(S, a, b)[0] === a) urge += 0.35;
+        if (nt) urge += NT.urge(nt, a);
         /* 従者は主に手を出さないよう耐える */
         if (servant === a && plotter !== a) {
-          var order2 = !clash && !a.ordered && master.m.heat > 70 && master.tr.cp + master.tr.fc > 0.8 && rng() < 0.5;
-          if (order2) { a.ordered = true; a.m.reason = 0; ST.sayB(S, { actors: [a, b], tag: '主の許し', text: ST.fmt(pk(LK.SERVANT.order), { a: a.name, b: b.name }), why: '主の' + b.name + 'も発情していた（' + Math.round(b.m.heat) + '）', mag: 26 }, b.name + 'が許しを与えた', true); urge += 0.6; }
+          var order2 = !clash && !a.ordered && master.m.heat > 70 && master.tr.cp + master.tr.fc > (svW ? NT.ordTh(nt) : 0.8) && rng() < 0.5;
+          if (order2) { a.ordered = true; a.m.reason = 0; ST.sayB(S, { actors: [a, b], tag: svW ? (nt.dom ? '命令' : '許し') : '主の許し', text: ST.fmt(pk(SV.order), { a: a.name, b: b.name }), why: (svW ? '信仰される側の' : '主の') + b.name + 'も発情していた（' + Math.round(b.m.heat) + '）', mag: 26 }, b.name + 'が' + (svW && nt.dom ? '命じた' : '許しを与えた'), true); urge += 0.6; }
           else if (urge > 0.4 && a.m.reason > 8 + a.tr.ac * 10) {
             a.cnt.hold++; a.m.reason = clamp(a.m.reason - 6, 0, 100);
-            if (a.cnt.hold <= 2) ST.sayB(S, { actors: [a, b], tag: '耐える従者', text: ST.fmt(pk(LK.SERVANT.hold), { a: a.name, b: b.name }), why: '主への忠誠（CP・理性 ' + Math.round(a.m.reason) + '）', mag: 20 }, a.name + 'は耐えた', a.cnt.hold === 1);
+            if (a.cnt.hold <= 2) ST.sayB(S, { actors: [a, b], tag: svW ? '崇める相手に触れない' : '耐える従者', text: ST.fmt(pk(SV.hold), { a: a.name, b: b.name }), why: (svW ? '信仰（崇める相手には、許されるまで触れない' : '主への忠誠（CP') + '・理性 ' + Math.round(a.m.reason) + '）', mag: 20 }, a.name + 'は耐えた', a.cnt.hold === 1);
             continue;
           } else if (urge > 0.4 && clash) { holdClash(a, b); continue; }
-          else if (urge > 0.4 && !a.broke) { a.broke = true; ST.key(S, ST.sayB(S, { actors: [a, b], tag: '理性が切れた', text: ST.fmt(pk(LK.SERVANT.break.filter(function (l) { return !hardTop(b) || !/押しつけ/.test(l); })), { a: a.name, b: b.name }), why: a.name + 'の理性が尽きた（耐えた回数 ' + a.cnt.hold + '）', mag: 34 }, '', true), a.name + 'が主に手を出した'); urge += 0.3; }
+          else if (urge > 0.4 && !a.broke) { a.broke = true; ST.key(S, ST.sayB(S, { actors: [a, b], tag: '理性が切れた', text: ST.fmt(pk(SV.break.filter(function (l) { return !hardTop(b) || !/押しつけ/.test(l); })), { a: a.name, b: b.name }), why: a.name + 'の理性が尽きた（耐えた回数 ' + a.cnt.hold + '）', mag: 34 }, '', true), a.name + (svW ? 'が崇める相手に手を伸ばした' : 'が主に手を出した')); urge += 0.3; }
         }
         /* 片方だけ発情 */
         if (a.m.heat >= 70 && b.m.heat < 40 && urge > 0.5 && rng() < 0.6) {
@@ -323,6 +334,7 @@
         a.cnt.make++;
         var w = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3, crush: crusher === b ? 0.45 : -0.05, mutual: 0.45, friend: 0, tension: -0.3, ex: 0.05, stranger: -0.1, master: servant === b ? 0.35 : 0.2 }[rel] || 0) + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (plotter === b ? 0.8 : 0) + (fwbAll && rel !== 'fwb' ? 0.35 : 0) + (fcKind === 'mutual' ? 0.2 : 0) + (crusher === b && rel !== 'crush' && rel !== 'mutual' ? 0.2 : 0) + (rng() - 0.5) * 0.3;
         if (b.lock != null && b.lock !== a.i) w -= 0.5;
+        if (nt) w += NT.accW(nt, a, b);
         var resp = w > 0.55 ? 'accept' : w > 0.32 ? 'passive' : 'refuse';
         /* 受け攻め：挿入では、仕掛けた側が攻めか受けかで書き分ける */
         var aTop = !Pos || Pos.order(a, b, LV[lv] === 'sex' ? Pos.fbFor(a, b) : [a, b])[0] === a;
@@ -348,6 +360,8 @@
           var lateR = b.rxLv >= 1 && !b.rxCool && LK.REFUSE_LATE;
           t += ST.fmt(pk(hands(lateR ? LK.REFUSE_LATE : LK.REFUSE, a, b)), { a: a.name, b: b.name }) + (rng() < 0.7 ? say2(b, lateR && LK.REFUSE_SAY_LATE ? LK.REFUSE_SAY_LATE : LK.REFUSE_SAY) : '');
           if (b.cnt.refuse >= 2 && lv >= 2) pair.refusedHard = true;
+          /* 信仰する側は、崇める相手に拒まれても想いを捨てない */
+          if (nt) t += NT.refused(S, nt, a, b);
           ST.sayB(S, { actors: [a, b], tag: '嗜めた', text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + (lateR ? 'は、そこから先だけ止めた（さっきは応じていた／理性 ' : 'は嗜めた（理性 ') + Math.round(b.m.reason) + '・CP）', mag: 18 }, b.name + 'が嗜めた', pair.acts === 0);
           continue;
         }
@@ -362,7 +376,7 @@
         else t += (giveIn ? ST.fmt(pk(hands(giveIn, a, b)), { a: a.name, b: b.name }) : '') + ST.fmt(pk(hands((rxText === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); }), a, b)), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
         /* 最初の一回は、二人の関係で受け止め方が変わる */
         var RF = LK.REL && LK.REL.first[rel];
-        if (pair.acts === 1 && RF && rng() < 0.75) t += ST.fmt(pk(RF), { a: a.name, b: b.name, c: (crusher || a).name, o: (crusher || a).o.name });
+        if (pair.acts === 1 && RF && rng() < 0.75) t += ST.fmt(pk(RF), { a: a.name, b: b.name, c: (crusher || a).name, o: (crusher || a).o.name, u: nt ? nt.u.name : '', d: nt ? nt.d.name : '' });
         var gain = [15, 20, 30, 40, 50][lv];
         ax.m.plea += gain * ax.sens * 0.8; bx.m.plea += gain * bx.sens;
         a.m.heat = clamp(a.m.heat + 4, 0, 100); b.m.heat = clamp(b.m.heat + 8, 0, 100);
@@ -378,6 +392,8 @@
           var eg = lv === 3 ? ax : tp, er = lv === 3 ? bx : tp.o;
           t += HK.ThickEro.fill(S, pk(ff && LK.ERO_ACT_FF && LK.ERO_ACT_FF[lv] ? LK.ERO_ACT_FF[lv] : LK.ERO_ACT[lv]), eg, er).replace(/\{a\}/g, eg.name).replace(/\{b\}/g, er.name);
         }
+        /* 新しい関係ならではの最中（R18版のみ。locker-ties-r18.js） */
+        if (nt && NT.r18Act && R18 && lew !== 'low' && lv === 4 && !nt.r18In) { nt.r18In = true; t += NT.r18Act(S, nt, tp, tp.o, { moan: moan }); }
         /* 自分で攻めを選んだ人は、相手に「イかされる」側にしない */
         /* 繋がった瞬間には果てさせない（そこからの数コマを、続きの出来事で書く） */
         if (lv === 4) { ax.m.plea = Math.min(ax.m.plea, 55); bx.m.plea = Math.min(bx.m.plea, 60); }
@@ -459,17 +475,17 @@
       /* 受け攻め：ベッドでは攻めを {a} に（ロッカーの中と同じ向き） */
       if (HK.Pos && HK.Pos.order(x, y, [x, y])[0] !== x) { y = x; x = x.o; }
       var vv = { a: x.name, b: y.name };
-      var tone = rel === 'tension' || rel === 'ex' ? 'rough' : rel === 'lover' || rel === 'almost' || rel === 'crush' || rel === 'mutual' ? 'sweet' : rng() < 0.5 ? 'rough' : 'sweet';
+      var tone = nt ? NT.tone(nt, rng) : rel === 'tension' || rel === 'ex' ? 'rough' : rel === 'lover' || rel === 'almost' || rel === 'crush' || rel === 'mutual' ? 'sweet' : rng() < 0.5 ? 'rough' : 'sweet';
       /* ベッドの展開は solo-locker-bed.js（誘い方・最中の展開・結び） */
       /* 扉が開いたあとの夜：描写の長さ（短く＝一段落版）と、男性向け（企みのある夜は除く） */
       eroNow = eroOn && !plotter;
-      bedLabels = LK.bed(S, { short: !!(lcf && LX.short(env, rng)), ero: eroNow, A: A, B: B, x: x, y: y, rel: rel, tone: tone, how: how, plotter: plotter, servant: servant, master: master, lew: lew, dose: env.dose, pair: pair, moan: moan, REL_LABEL: REL_LABEL, ff: ff });
+      bedLabels = LK.bed(S, { short: !!(lcf && LX.short(env, rng)), ero: eroNow, A: A, B: B, x: x, y: y, rel: rel, tone: tone, how: how, plotter: plotter, servant: svW ? null : servant, master: svW ? null : master, nt: nt, lew: lew, dose: env.dose, pair: pair, moan: moan, REL_LABEL: REL_LABEL, ff: ff });
       A.cnt.climax += 2 + rng.int(3); B.cnt.climax += 2 + rng.int(3);
     } else if (endure) {
       outcome = 'endure';
       /* 理性の残っていた方が、性格に合わせたやり方で二人を引き離す */
       var ke = A.m.reason >= B.m.reason ? A : B, tye = clashType(ke);
-      ST.key(S, ST.say(S, { actors: [A, B], tag: '耐え抜いた', text: (how === 'timeout' ? LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/, '') : '') + ST.fmt(pk(LK.CLASH.bed[tye]), { a: ke.name, b: ke.o.name }), why: '二人とも発情していた（' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）が、' + (sexP ? '体の関係にならない二人（' + sexWhy + '）なので' : '受け攻めの向きが合わない二人なので') + '、ベッドには行かなかった（' + ke.name + 'の理性 ' + Math.round(ke.m.reason) + '）', mag: 30 }), '結末');
+      ST.key(S, ST.say(S, { actors: [A, B], tag: '耐え抜いた', text: (how === 'timeout' ? LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/, '') : '') + ST.fmt(pk(LK.CLASH.bed[tye]), { a: ke.name, b: ke.o.name }), why: '二人とも発情していた（' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）が、' + (tieNL ? nt.nlWhy + 'の二人なので' : sexP ? '体の関係にならない二人（' + sexWhy + '）なので' : '受け攻めの向きが合わない二人なので') + '、ベッドには行かなかった（' + ke.name + 'の理性 ' + Math.round(ke.m.reason) + '）', mag: 30 }), '結末');
     } else {
       /* ロッカーの中で最後までした二人は「怒りの脱出」にしない（そのあと受け入れている） */
       outcome = how === 'timeout' ? 'rescue' : plotter && !plotOk ? 'plotfail' : pair.refusedHard && pair.acts >= 1 && !pair.sexIn ? 'angry' : pair.acts >= 1 ? 'awkward' : (A.cnt.make + B.cnt.make) > 0 || (clash && A.cnt.hold + B.cnt.hold > 0) ? 'near' : 'clean';
@@ -479,7 +495,8 @@
       var tA = ST.fmt(pk(aft.length ? aft : AF[outcome]), { a: who0.name, b: who0.o.name });
       /* 何かあった二人は、関係ごとの一文を添える。思惑どおりに行った人は、こっそり満足する */
       var RA = LK.REL && LK.REL.after[rel];
-      if (RA && pair.acts >= 1 && outcome !== 'angry' && outcome !== 'plotfail' && rng() < 0.7) tA += ST.fmt(pk(RA), { a: who0.name, b: who0.o.name, c: (crusher || A).name, o: (crusher || A).o.name });
+      if (RA && pair.acts >= 1 && outcome !== 'angry' && outcome !== 'plotfail' && rng() < 0.7) tA += ST.fmt(pk(RA), { a: who0.name, b: who0.o.name, c: (crusher || A).name, o: (crusher || A).o.name, u: nt ? nt.u.name : '', d: nt ? nt.d.name : '' });
+      if (nt) tA += NT.afterNote(S, nt, outcome, plotter);
       if (plotter && plotOk && pair.acts >= 1) tA += ST.fmt(pk(AF.plotwin.filter(function (l) { return !/ベッド|眠|寝顔/.test(l); })), { a: plotter.name, b: plotter.o.name });
       ST.key(S, ST.say(S, { actors: [A, B], tag: { clean: '無事に脱出', near: '踏みとどまった', awkward: '気まずい脱出', angry: '怒りの脱出', plotfail: '計画失敗', rescue: '時間切れ' }[outcome], text: tA, why: '手を出した回数 ' + pair.acts + '・嗜めた回数 ' + (A.cnt.refuse + B.cnt.refuse) + '・発情 ' + Math.round(A.m.heat) + '／' + Math.round(B.m.heat), mag: 30 }), '結末');
     }
@@ -488,6 +505,7 @@
     P.forEach(function (p) {
       var f;
       if (plotter === p) f = outcome === 'bed' ? '相手をモノにした' : pair.sexIn && outcome !== 'plotfail' ? 'ロッカーの中で相手をモノにした' : pair.acts >= 1 && outcome !== 'plotfail' ? '少しだけ思いを遂げた' : '計画が空回りした';
+      else if (svW && servant === p) f = NT.fate(nt, p);
       else if (servant === p) f = p.broke ? '主に手を出してしまった' : p.ordered ? '主の許しで身を委ねた' : p.cnt.hold ? '主に手を出さず耐えきった' : '主に身を委ねた';
       else if (clash && (p.cnt.hold || outcome === 'endure')) f = '触れずに耐え抜いた';
       else if (p.cnt.make >= 2 && p.cnt.make === p.o.cnt.make && p.o !== plotter && p.o !== servant) f = '一緒に堕ちた';
@@ -508,6 +526,7 @@
     if (bedLabels.length) lines.push('ベッドでは：' + bedLabels.join('→'));
     if (fcKind && LK.FC) lines.push(ST.fmt(pk(LK.FC.end[fcKind]), { c: crusher.name, o: crusher.o.name }));
     /* 両片想い：何かあった二人は「……こっちの台詞」と通じる。何もなかった二人は、すれ違ったまま */
+    if (nt) { var ntL = NT.endLine(S, nt); if (ntL) lines.push(ntL); }
     if (rel === 'mutual' && LK.MUT) lines.push(ST.fmt(pk(LK.MUT.end[outcome === 'bed' || (pair.acts >= 1 && outcome !== 'angry' && outcome !== 'plotfail') ? 'told' : 'miss']), v0));
     var rows = P.map(function (p) { return { i: p.i, rank: '', cells: [Math.round(p.m.heat) + '', Math.round(p.m.reason) + '', String(p.cnt.make), String(p.cnt.refuse), String(p.cnt.climax), String(p.cnt.solve), p.fate] }; });
     return ST.result(S, input, {

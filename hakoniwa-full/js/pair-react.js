@@ -26,8 +26,8 @@
     var T = HK.Ties, has = function (t) { return !!(T && T.has && T.has(ctx, a, b, t)); };
     var r = ctx.R(b, a), pf = ctx.pair(a, b), H = HK.HateKit, hl = H && H.level ? H.level(ctx, b, a) : 0;
     if (has('enemy') || has('bad') || has('rival') || hl >= 35 || (r.ten >= 45 && r.aff < 5)) return 'hostile';
-    if (pf.couple || ['lover', 'mate', 'fated', 'best', 'childhood', 'sibclose', 'sibprot', 'buddy'].some(has) || (r.aff >= 55 && r.trust >= 40)) return 'deep';
-    if (['friend', 'colleague', 'senpai', 'mentor', 'almost', 'sibling'].some(has) || r.aff >= 25 || r.trust >= 25) return 'warm';
+    if (pf.couple || ['lover', 'mate', 'fated', 'best', 'childhood', 'sibclose', 'sibprot', 'buddy', 'worship', 'benefactor'].some(has) || (r.aff >= 55 && r.trust >= 40)) return 'deep';
+    if (['friend', 'colleague', 'senpai', 'mentor', 'almost', 'sibling', 'classmate', 'boss', 'relative'].some(has) || r.aff >= 25 || r.trust >= 25) return 'warm';
     return 'plain';
   }
 

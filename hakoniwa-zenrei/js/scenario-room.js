@@ -342,7 +342,14 @@
   var LVL_ATT = [0, -8, 4, 26, 36, 42];
   var LVL_TRUST = [0, -10, -2, 6, 12, 16];
   /* 既存の関係による抵抗感（足される惹かれの壁）。家族は軽い行為以外ほぼ不可 */
+  /* 執着（信仰）で「恋愛に発展：しない」かつ支配（dominate）でない組は、キス以上・夜（体の関係）にしない */
+  function wsNoSex(ctx, a, b) {
+    if (!ctx || !ctx.tiesAll || !HK.Ties || !a || !b || a === b) return false;
+    return HK.Ties.all(ctx, a, b).some(function (t) { return t.type === 'worship' && HK.tieOptNoLove && HK.tieOptNoLove(t) && t.cold !== 'dominate'; });
+  }
+  HK.roomWsNoSex = wsNoSex;
   function tieWall(ctx, a, b, lvl) {
+    if (wsNoSex(ctx, a, b)) return lvl >= 3 ? 999 : 0;
     var t = HK.Ties ? HK.Ties.get(ctx, a, b) : null;
     if (!t) return 0;
     var D = HK.TIES[t.type];
@@ -352,7 +359,7 @@
   function posClash(a, b) { return !!(HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b)); }
   function clashH(ctx, a, b) { return posClash(a, b) && ctx.rules.some(function (r) { return r.k === 'h'; }); }
   /* 体の関係を持ってよい組か（受け攻めの指定と恋愛対象から。攻め×攻めなどは、恋人でも、焦りが限界でも、媚薬でも、しない） */
-  function okSex(a, b) { return !HK.Pos || HK.Pos.okSex(a, b); }
+  function okSex(a, b) { return (!HK.Pos || HK.Pos.okSex(a, b)) && !wsNoSex(HK._curCtx, a, b); }
   /* a が b に対して攻め（動く側）に回れる向きがあるか（向きの記憶は動かさずに確かめる） */
   function canLead(a, b) { return !HK.Pos || HK.Pos.orients(a, b).some(function (o) { return o[0] === a; }); }
   /* 自分で「受け」を選んだ二人（受けとリバも好む設定などで、組として成り立つとき）：どちらが動くか（{a}=覚悟を決めて動く側） */

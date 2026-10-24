@@ -470,7 +470,9 @@
     var rX = ctx.R(X, O), rO = ctx.R(O, X), heat = ctx.env.heat / 100, d = dest(ctx), isF = fated(ctx, a, b);
     /* 運命の抗えなさ：高いほど発情期の本能に流されやすい（発情期の重さに足し引きする） */
     heat = HK.clamp(heat + (d - 0.5) * 0.5, 0, 1.2);
-    var mutual = rX.att > 35 && rO.att > 35 && HK.canLove(X, O) && HK.canLove(O, X);
+    /* 執着（信仰）で「恋愛に発展：しない」組（支配しているときを除く）は、発情期の相手にしない（omega-ties.js の OM.worshipNoNight） */
+    var noW = !!(OM.worshipNoNight && OM.worshipNoNight(ctx, X, O));
+    var mutual = !noW && rX.att > 35 && rO.att > 35 && HK.canLove(X, O) && HK.canLove(O, X);
     var bound = pf.couple || isF;
     var mate = BD.mateOf(ctx, O);
     /* 番のいるΩは、番以外を体が拒む */
@@ -479,7 +481,7 @@
       return { cat: 'help', text: ctx.t(ctx.pick(['{a}が近づいた瞬間、{b}は口元を押さえてうずくまった。番以外のαの匂いを、体が受けつけない。', '{b}は熱に浮かされながらも、{a}の手を振り払った。「だめ……私／俺には、番がいる」']).replace(/私／俺/, O.tr.cp + O.tr.fc > 1 ? '俺' : '私'), X, O) + (mate ? ctx.t('{b}が呼んだのは、{c}の名前だった。', X, O, mate) : ''), why: O.name + 'には番（' + mate.name + '）がいる。番のいるΩは、ほかのαを拒む', mag: 12 };
     }
     var heatLine = OM.HEAT;
-    var casual = !pf.couple && rX.att > 25 && rO.att > 25 && HK.canLove(X, O) && (HK.FWB.lean(X) + HK.FWB.lean(O)) / 2 > 0.45 && ctx.rng() < 0.5;
+    var casual = !noW && !pf.couple && rX.att > 25 && rO.att > 25 && HK.canLove(X, O) && (HK.FWB.lean(X) + HK.FWB.lean(O)) / 2 > 0.45 && ctx.rng() < 0.5;
     if ((sx(X) === 'a' || sx(X) === 'b') && (bound && mutual || casual || (mutual && rX.trust > 20 && rO.trust > 20 && heat + X.tr.impulse * 0.4 > 0.75 && ctx.rng() < 0.55))) {
       pf.night = true; pf.nights = (pf.nights || 0) + 1;
       ctx.mod2(X, O, { att: 10, aff: 6 }, { att: 10, aff: 6 });

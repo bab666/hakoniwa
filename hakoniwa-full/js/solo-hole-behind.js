@@ -14,8 +14,8 @@
   function L(s) { return s.split('|'); }
   /* この回でまだ使っていない文から選ぶ（solo-hole.js の HK.HoleFresh） */
   function P(S, a) { return HK.HoleFresh ? HK.HoleFresh(S, a) : K.pick(S, a); }
-  var LOVE = /^(lover|mate|fated|almost|fwb)$/, W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7, sibbad: -0.15, bad: -0.4 };
-  var FAMILY = /^(sibling|sibprot|sibclose|sibbad|parent|pparent)$/;
+  var LOVE = /^(lover|mate|fated|almost|fwb)$/, W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, classmate: 0.4, boss: 0.45, benefactor: 0.6, relative: 0.6, worship: 0.85, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7, sibbad: -0.15, bad: -0.4 };
+  var FAMILY = /^(sibling|sibprot|sibclose|sibbad|parent|pparent|relative)$/;
 
   var T = {
     arrive1: L('{b}は、壁の向こう側の小部屋に足を踏み入れた。壁から、人の下半身が突き出ていた。|物音を辿って裏の通路に入った{b}は、壁の穴から生えた誰かの腰に出くわした。|{b}が扉を開けると、壁から腰から下だけがこちら側に突き出していた。'),

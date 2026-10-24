@@ -127,7 +127,7 @@
     if (t.cold > 0.55 && t.aggr < 0.5) return 'cool';
     return t.cp > 0.55 || t.aggr > 0.55 ? 'smug' : 'sorry';
   }
-  var TW = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.5, best: 0.8, buddy: 0.75, childhood: 0.7, sibling: 0.65, sibclose: 0.8, sibprot: 0.8, parent: 0.8, pparent: 0.75, friend: 0.5, mentor: 0.5, master: 0.55, teacher: 0.45, senpai: 0.35, colleague: 0.25, acq: 0.1, crush: 0.85, rival: -0.35, enemy: -0.85 , sibbad: -0.15, bad: -0.4 };
+  var TW = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.5, best: 0.8, buddy: 0.75, childhood: 0.7, sibling: 0.65, sibclose: 0.8, sibprot: 0.8, parent: 0.8, pparent: 0.75, friend: 0.5, mentor: 0.5, master: 0.55, teacher: 0.45, senpai: 0.35, colleague: 0.25, classmate: 0.35, boss: 0.4, benefactor: 0.6, relative: 0.55, worship: 0.85, acq: 0.1, crush: 0.85, rival: -0.35, enemy: -0.85 , sibbad: -0.15, bad: -0.4 };
   function closeness(input, a, b) {
     if (a.aff && a.aff[b.i] != null) return a.aff[b.i];
     var w = 0;
