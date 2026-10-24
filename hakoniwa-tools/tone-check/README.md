@@ -67,3 +67,13 @@ Playwright が見つからないときは `npm i -D playwright` するか、`PLA
   自動変換が外しきれないので、元の文にはなるべく入れない。
 - 一人称は「私」、二人称は名前か「あなた」で書く。
 - 長い台詞は、読点で区切った短い文の連なりにする（文末だけ変換されても読めるように）。
+
+## orient-audit.js（恋愛対象の点検）
+
+```
+node orient-audit.js ../../hakoniwa-full 40 r18 --why
+node orient-audit.js ../../hakoniwa-full 40 safe --why
+node orient-audit.js ../../hakoniwa-zenrei 40 '' --why
+```
+
+恋愛対象（男性／女性／なし）に合わない相手と、恋人・夜・片想いの結末（O1）、二人だけの性的な場面（O2）、告白（O3）になっていないかを全箱庭で数える。O2・O3 は文から拾うので、--why の例を目で確かめる。受け攻めは pos-audit.js で見る。

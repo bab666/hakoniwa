@@ -77,12 +77,22 @@
   /* 相手から見た c の指定（おまかせの人は、その場で回る役として見る） */
   function kindAs(c, r) { return explicit(c) ? P.of(c) : r; }
   /* 成り立つ向き（[攻め, 受け] の並び）の一覧 */
+  /* 恋愛対象（c.likes：''＝おまかせ／m／f／both／none）が相手の性別に合うか。両方向で見る。性別がおまかせ・その他の相手は制限しない */
+  function likesOne(a, b) {
+    if (!a.likes || a.likes === 'both') return true;
+    if (a.likes === 'none') return false;
+    if (!b.gender || b.gender === 'x') return true;
+    return a.likes === b.gender;
+  }
+  P.genderOK = function (a, b) { return !!(a && b) && likesOne(a, b) && likesOne(b, a); };
   P.orients = function (a, b) {
     if (!a || !b || a === b) return [];
     /* 恋愛・R18にしない組（engine.js の HK.ngPair）は、どちらの向きでも成り立たない */
     /* 体の関係にならない組（engine.js の HK.sexBlocked：恋愛・R18にしない相手・同じ人の恋人どうし・性行為の相手の固定）。
        恋愛相手の固定が食い違うだけの組は、性行為の相手の固定で「誰とでも可」などにしていれば体の関係になれる（恋愛には進まない） */
     if (HK.sexBlocked ? HK.sexBlocked(a, b) : (HK.ngPair && HK.ngPair(a, b))) return [];
+    /* 恋愛対象（キャラの設定の性別）が合わない組：どちらの向きでも成り立たない（恋愛にも体の関係にもしない） */
+    if (!P.genderOK(a, b)) return [];
     var out = [];
     [[a, b], [b, a]].forEach(function (o) {
       var t = o[0], u = o[1];

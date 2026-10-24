@@ -26179,12 +26179,22 @@
   /* 相手から見た c の指定（おまかせの人は、その場で回る役として見る） */
   function kindAs(c, r) { return explicit(c) ? P.of(c) : r; }
   /* 成り立つ向き（[攻め, 受け] の並び）の一覧 */
+  /* 恋愛対象（c.likes：''＝おまかせ／m／f／both／none）が相手の性別に合うか。両方向で見る。性別がおまかせ・その他の相手は制限しない */
+  function likesOne(a, b) {
+    if (!a.likes || a.likes === 'both') return true;
+    if (a.likes === 'none') return false;
+    if (!b.gender || b.gender === 'x') return true;
+    return a.likes === b.gender;
+  }
+  P.genderOK = function (a, b) { return !!(a && b) && likesOne(a, b) && likesOne(b, a); };
   P.orients = function (a, b) {
     if (!a || !b || a === b) return [];
     /* 恋愛・R18にしない組（engine.js の HK.ngPair）は、どちらの向きでも成り立たない */
     /* 体の関係にならない組（engine.js の HK.sexBlocked：恋愛・R18にしない相手・同じ人の恋人どうし・性行為の相手の固定）。
        恋愛相手の固定が食い違うだけの組は、性行為の相手の固定で「誰とでも可」などにしていれば体の関係になれる（恋愛には進まない） */
     if (HK.sexBlocked ? HK.sexBlocked(a, b) : (HK.ngPair && HK.ngPair(a, b))) return [];
+    /* 恋愛対象（キャラの設定の性別）が合わない組：どちらの向きでも成り立たない（恋愛にも体の関係にもしない） */
+    if (!P.genderOK(a, b)) return [];
     var out = [];
     [[a, b], [b, a]].forEach(function (o) {
       var t = o[0], u = o[1];
@@ -39239,6 +39249,8 @@
     return clamp((best > 0 ? best + neg * 0.3 : neg) + (S.relD[rk(a, b)] || 0), -1, 1.2);
   }
   /* 恋愛・R18にしない組（HK.ngPair）は、関係の設定があっても恋仲として扱わない */
+  /* 恋愛対象・恋愛の固定などが両方向で合うか（engine.js の HK.canLove） */
+  function loveOK(a, b) { return !HK.canLove || (HK.canLove(a, b) && HK.canLove(b, a)); }
   function lover(S, a, b) { return !HK.ngPair(a, b) && (ties(S, a, b).some(function (t) { return LOVE.test(t.type); }) || !!S.rom[rk(a, b)]); }
   function family(S, a, b) { return ties(S, a, b).some(function (t) { return HK.tieNoLove ? HK.tieNoLove(t) : FAMILY.test(t.type); }); }
   function setRel(S, a, b, d) { var k = rk(a, b); S.relD[k] = clamp((S.relD[k] || 0) + d, -1, 1); }
@@ -39765,7 +39777,8 @@
     var PR = pairs(L0), tense = (100 - sp.morale) / 100 + (sp.food < 20 ? 0.35 : 0) + (sp.o2 < 30 ? 0.2 : 0);
     var sick = L0.filter(function (p) { return p.m.hp < 60; });
     var neg = PR.filter(function (x) { return (S.relD[rk(x[0], x[1])] || 0) < -0.15 || bond(S, x[0], x[1]) < -0.15; });
-    var lv = PR.filter(function (x) { return lover(S, x[0], x[1]) || (bond(S, x[0], x[1]) > 0.55 && HK.Pos && HK.Pos.okSex(x[0], x[1]) && !family(S, x[0], x[1])); });
+    /* 想いが育つのは、恋仲か、恋愛対象が両方向で合う（HK.canLove）二人だけ */
+    var lv = PR.filter(function (x) { return lover(S, x[0], x[1]) || (bond(S, x[0], x[1]) > 0.55 && loveOK(x[0], x[1]) && HK.Pos && HK.Pos.okSex(x[0], x[1]) && !family(S, x[0], x[1])); });
     var opts = [
       ['drink', 1.0], ['team', 1.0], ['confide', 0.7], ['game', 0.7], ['nurse', sick.length ? 0.9 : 0], ['birthday', 0.25], ['drink_all', L0.length >= 3 ? 0.3 : 0],
       ['fight', 0.25 + tense * 0.9], ['drink_bad', 0.2 + tense * 0.4], ['ration', sp.food < 35 ? 0.3 + tense * 0.6 : 0.05], ['duty', 0.2 + tense * 0.4], ['game_bad', 0.15 + tense * 0.2],
@@ -39816,7 +39829,7 @@
     else if (kind === 'good') { setRel(S, a, b, 0.15); mark(S, a, b, 'team'); say(T.PAIR_GOOD, '絆', 0, '日々の暮らしの中で'); }
     else if (kind === 'makeup') { stress(a, -6); stress(b, -6); setRel(S, a, b, 0.3); mark(S, a, b, 'makeup'); say(T.MAKEUP, '仲直り', 0, 'こじれた関係を修復した'); }
     else if (kind === 'love') {
-      stress(a, -6); stress(b, -6); setRel(S, a, b, 0.18); mark(S, a, b, 'love'); if (bond(S, a, b) > 0.6) S.rom[rk(a, b)] = 1;
+      stress(a, -6); stress(b, -6); setRel(S, a, b, 0.18); mark(S, a, b, 'love'); if (bond(S, a, b) > 0.6 && loveOK(a, b)) S.rom[rk(a, b)] = 1;
       say(T.PAIR_LOVE, '想い', 0, '閉ざされた船で、想いが育った');
     }
     else if (kind === 'jealous') {

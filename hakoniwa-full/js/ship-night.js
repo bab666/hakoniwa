@@ -254,7 +254,7 @@
         if (rng() > 0.45 + tr(a, 'fc') * 0.2 - tr(a, 'ac') * 0.15 + (S.m - x.fell[i]) * 0.1) return;
         x.said[i] = 1;
         var w = A.bond(S, b, a), both = !!x.fell[b.i];
-        var ok = both || w >= 0.5 || rng() < 0.2 + tr(b, 'warmth') * 0.3 + Math.max(0, w) * 0.4 - (x.mis[b.i] ? 0.3 : 0);
+        var ok = (!HK.canLove || HK.canLove(b, a)) && (both || w >= 0.5 || rng() < 0.2 + tr(b, 'warmth') * 0.3 + Math.max(0, w) * 0.4 - (x.mis[b.i] ? 0.3 : 0));
         var m = { a: a.name, b: b.name };
         var text = A.F(A.pk(S, att(a, T.confess)), m) + ' ' + A.F(A.pk(S, att(b, ok ? T.yes : T.no)), m) + ' ' + A.F(A.pk(S, ok ? T.yesTail : T.noTail), m);
         if (ok) { S.rom[k] = 1; A.setRel(S, a, b, 0.25); A.mark(S, a, b, 'love'); x.res[i] = 'yes'; A.stress(a, -12); A.stress(b, -6); }
@@ -282,7 +282,7 @@
         return;
       }
       /* 恋に落ちる */
-      if (!x.fell[p.i] && !x.mis[p.i] && (!HK.canLove || HK.canLove(p, q)) && rng() < fallP(p, w, x.n)) {
+      if (!x.fell[p.i] && !x.mis[p.i] && (!HK.canLove || (HK.canLove(p, q) && HK.canLove(q, p))) && rng() < fallP(p, w, x.n)) {
         x.fell[p.i] = S.m || 1;
         A.setRel(S, p, q, 0.12);
         var o = ST.say(S, { actors: [p, q], tag: '恋に落ちる', text: A.F(A.pk(S, att(p, T.fall)), { a: p.name, b: q.name }), why: q.name + 'との夜をきっかけに、' + p.name + 'は恋に落ちた（' + (x.n >= 2 ? x.n + '度目の夜' : '初めての夜') + '）', mag: 26 });
