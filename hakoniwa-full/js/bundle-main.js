@@ -11779,11 +11779,13 @@
     var ribaOK = function (o) { var pr = { tm: [sp.t, sp.m], mu: [sp.m, sp.u], tu: [sp.t, sp.u] }[o.riba]; return o.riba === 'all' ? allRiba : !!pr && bothRiba(pr[0], pr[1]); };
     var swapOK = function (l) { return allRiba || !/入れ替わ|どちらの顔も/.test(l); };
     var toyOK = function (l) { return !/双頭/.test(l) || bothRiba(sp.t, sp.m); };
+    if (HK.SAFE_ON && HK.RoomFade3) return HK.RoomFade3(ctx);
     if (!X) return ctx.pick(SEX[sp.p]).replace(/\{t\}/g, sp.t.name).replace(/\{m\}/g, sp.m.name).replace(/\{u\}/g, sp.u.name) + ctx.pick(CLIMAX3);
     var out = [], used = [];
     /* R18の描写の設定（lewd-unify.js）：ほのめかす＝暗転の一文（safe-room.js）、短く＝本番と絶頂だけ、男性向け＝thick-sex-ero.js の三人の文、濃い＝もう一度 */
     var LV = HK.Lewd, r18 = !HK.SAFE_ON && LV;
-    if (r18 && LV.lv(ctx.env) === 'low' && HK.RoomFade3) return HK.RoomFade3(ctx);
+    /* 全年齢版・全年齢モード（HK.SAFE_ON）も、ほのめかすと同じ暗転の一文に（行為の文を組み立てない） */
+    if ((HK.SAFE_ON || (r18 && LV.lv(ctx.env) === 'low')) && HK.RoomFade3) return HK.RoomFade3(ctx);
     var tShort = r18 && LV.short(ctx.env, ctx.rng), TE = r18 && LV.ero(ctx.env) && HK.ThickEro && HK.ThickEro.TRIO ? HK.ThickEro : null, tHigh = r18 && LV.high(ctx.env);
     var efill = function (l) { return X.fill(TE.trioFill(ctx, l, r), r); };
     var pickTagged = function (pool, wfn) {
