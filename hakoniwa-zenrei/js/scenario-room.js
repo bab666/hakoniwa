@@ -565,7 +565,7 @@
   /* 言葉（好き／本音／いいところ） */
   EV.push({
     id: 'doword', cat: 'bond', scope: 'pair', pri: true,
-    when: function (ctx, a, b) { return ctx.rules.some(function (r) { return K[r.k].type === 'word' && !ruleDone(ctx, r, a, b) && (K[r.k].mode === 'sum' || (prog(ctx, a, b).said[r.k + a.i] || 0) < r.n); }); },
+    when: function (ctx, a, b) { return ctx.rules.some(function (r) { return K[r.k].type === 'word' && !(r.k === 'love' && HK.ngPair(a, b)) && !ruleDone(ctx, r, a, b) && (K[r.k].mode === 'sum' || (prog(ctx, a, b).said[r.k + a.i] || 0) < r.n); }); },
     w: function (ctx, a, b) {
       var w = 1.6 + a.tr.honesty * 0.8 + a.stress / 80 + Math.max(0, R(ctx, a, b).trust) / 60 - (a.tr.cp > 0.7 ? 0.3 : 0) + (ctx.present().length === 2 ? 1 : 0);
       /* 言い合う条件：先に言われた側は、言い返しやすい */
@@ -575,7 +575,8 @@
       return w;
     },
     run: function (ctx, a, b) {
-      var r = ctx.rules.filter(function (x) { return K[x.k].type === 'word' && !ruleDone(ctx, x, a, b) && (K[x.k].mode === 'sum' || (prog(ctx, a, b).said[x.k + a.i] || 0) < x.n); })[0];
+      /* 恋愛・R18にしない二人は、「好き」と言い合う条件には手をつけない（ほかの言葉の条件だけ） */
+      var r = ctx.rules.filter(function (x) { return K[x.k].type === 'word' && !(x.k === 'love' && HK.ngPair(a, b)) && !ruleDone(ctx, x, a, b) && (K[x.k].mode === 'sum' || (prog(ctx, a, b).said[x.k + a.i] || 0) < x.n); })[0];
       var p = prog(ctx, a, b), rr = R(ctx, a, b), text, whyT, cat = 'bond';
       var inc = r.k === 'praise' ? 1 + ctx.rng.int(Math.max(1, Math.ceil(r.n / 4))) : r.n > 3 ? Math.max(1, Math.round(r.n / Math.max(3, ctx.stepsTotal * 0.5) * (0.6 + ctx.rng() * 0.8))) : 1;
       p.said[r.k + a.i] = (p.said[r.k + a.i] || 0) + inc;
@@ -588,7 +589,7 @@
         whyT = sincere ? '本心（惹かれ ' + Math.round(rr.att) + '）' : a.name + 'の' + (a.tr.cold > 0.6 ? 'ドライさ' : '焦り') + '。言葉だけが先に出た';
       } else if (r.k === 'honne') {
         var what;
-        if (rr.att > 35) { what = ctx.pick(['{a}は、ずっと{b}に惹かれていたと打ち明けた。', '{a}は{b}に「本当は私、最初に会ったときから気になってた」と言った。']); ctx.mod(b, a, { att: 8, aff: 6 }); }
+        if (rr.att > 35 && !HK.ngPair(a, b)) { what = ctx.pick(['{a}は、ずっと{b}に惹かれていたと打ち明けた。', '{a}は{b}に「本当は私、最初に会ったときから気になってた」と言った。']); ctx.mod(b, a, { att: 8, aff: 6 }); }
         else if (rr.ten > 30) { what = ctx.pick(['{a}は、{b}のことが苦手だったと正直に言った。', '{a}は{b}に「あのときの一言、私、まだ根に持ってる」と打ち明けた。']); ctx.mod(b, a, { ten: 6, trust: 6 }); }
         else if (a.stress > 50) { what = ctx.pick(['{a}は{b}にだけ、本当はずっと怖かったと口にした。', '{a}は{b}に、ここに来る前から眠れていなかったと話した。']); ctx.mod(b, a, { aff: 6, trust: 8 }); }
         else { what = ctx.pick(['{a}は{b}に、誰にも話したことのない昔の話をした。', '{a}は{b}に、家族とずっと口をきいていないことを打ち明けた。', '{a}は{b}に、本当は今の仕事を辞めたいのだと言った。']); ctx.mod(b, a, { trust: 10 }); }
@@ -685,7 +686,7 @@
     run: function (ctx, a, b) {
       var r = R(ctx, a, b);
       if (a.tr.np > 0.55) { ctx.mod2(a, b, { att: 3 }, { trust: 12, aff: 8 }); ctx.stress(b, -6); return { text: ctx.t(ctx.pick(['{a}は水を汲んで{b}に渡し、手の届かない距離に座り直した。「辛かったら言って」', '{a}は自分の上着を脱いで、熱っぽい{b}の肩にかけた。', '{a}は{b}の額に濡らした布を当てた。「無理しないで」', '{a}は{b}の隣で、ただ黙って時間が過ぎるのを待った。']), a, b), why: a.name + 'のNP：相手の意思を待つ' }; }
-      if (r.att > 35) { ctx.mod2(a, b, { att: 9 }, { att: 6 }); return { cat: 'romance', text: ctx.t(ctx.pick(['{a}は、潤んだ目の{b}から視線を外せなくなっていた。', '{b}が袖を掴んできた。{a}はその手を振りほどけなかった。', '{a}は{b}の熱い指先が自分の手首に触れるのを、黙って許した。']), a, b), why: a.name + 'の元々の惹かれ（' + Math.round(r.att) + '）' }; }
+      if (r.att > 35 && !HK.ngPair(a, b)) { ctx.mod2(a, b, { att: 9 }, { att: 6 }); return { cat: 'romance', text: ctx.t(ctx.pick(['{a}は、潤んだ目の{b}から視線を外せなくなっていた。', '{b}が袖を掴んできた。{a}はその手を振りほどけなかった。', '{a}は{b}の熱い指先が自分の手首に触れるのを、黙って許した。']), a, b), why: a.name + 'の元々の惹かれ（' + Math.round(r.att) + '）' }; }
       if (a.tr.cp > 0.6) { ctx.mod(a, b, { ten: 6 }); return { cat: 'conflict', text: ctx.t(ctx.pick(['「考えなしに飲むからだ」{a}は壁際から動かなかった。', '{a}は{b}から一番遠い隅に移って、背中を向けた。']), a, b), why: a.name + 'のCP' }; }
       return { text: ctx.t(ctx.pick(['{a}はどうしていいか分からず、{b}の背中をぎこちなくさすった。', '{a}は{b}の様子を気にしながら、紙の文面を何度も読み返していた。']), a, b), why: '戸惑い' };
     }
@@ -694,7 +695,7 @@
   /* 複数人で閉じ込められたときの積極性の違い */
   EV.push({
     id: 'pick_one', cat: 'bond', scope: 'pair', pri: true,
-    when: function (ctx, a, b) { return crowd(ctx) && a.flags.partner == null && eager(ctx, a) < 0.42 && R(ctx, a, b).trust > -5 && ctx.stepIndex >= 1; },
+    when: function (ctx, a, b) { return crowd(ctx) && a.flags.partner == null && !HK.ngPair(a, b) && eager(ctx, a) < 0.42 && R(ctx, a, b).trust > -5 && ctx.stepIndex >= 1; },   /* 恋愛・R18にしない相手を「相手」に選ばない */
     w: function (ctx, a, b) { return 0.5 + (0.5 - eager(ctx, a)) + (R(ctx, a, b).trust + R(ctx, a, b).aff) / 80; },
     run: function (ctx, a, b) {
       a.flags.partner = b.i; a.flags.excl = true; a.flags.partnerAt = ctx.stepIndex;   /* 「相手は一人」と決めた（room-trio.js で三人を始める条件に使う） */
@@ -706,7 +707,7 @@
   });
   EV.push({
     id: 'decline_more', cat: 'conflict', scope: 'pair',
-    when: function (ctx, a, b) { return crowd(ctx) && b.flags.partner != null && b.flags.partner !== a.i && eager(ctx, a) > 0.55 && R(ctx, a, b).att > 15; },
+    when: function (ctx, a, b) { return crowd(ctx) && b.flags.partner != null && b.flags.partner !== a.i && !HK.ngPair(a, b) && eager(ctx, a) > 0.55 && R(ctx, a, b).att > 15; },
     w: function (ctx, a) { return 0.6 + eager(ctx, a); },
     run: function (ctx, a, b) {
       var p = ctx.chars[b.flags.partner];
@@ -948,7 +949,7 @@
   });
   EV.push({
     id: 'consent', cat: 'help', scope: 'pair',
-    when: function (ctx, a, b) { return ctx.flags.romantic && R(ctx, a, b).att > 20; },
+    when: function (ctx, a, b) { return ctx.flags.romantic && !HK.ngPair(a, b) && R(ctx, a, b).att > 20; },
     w: function (ctx, a) { return a.tr.np * 1.2 + (a.goal.id === 'respect' ? 0.8 : 0); },
     run: function (ctx, a, b) {
       ctx.mod2(a, b, { trust: 5 }, { trust: 14, aff: 8, att: 5 });
@@ -958,7 +959,7 @@
   });
   EV.push({
     id: 'push', cat: 'conflict', scope: 'pair',
-    when: function (ctx, a) { return hasPairRule(ctx) && a.stress > 35; },
+    when: function (ctx, a, b) { return hasPairRule(ctx) && a.stress > 35 && !(HK.ngPair(a, b) && ctx.rules.some(function (r) { return K[r.k].type === 'act' || r.k === 'love'; })); },   /* 恋愛・R18にしない相手に、触れ合う・「好き」の条件を満たそうと詰め寄らない */
     w: function (ctx, a) { return a.tr.lead * 0.6 + (a.goal.id === 'quick' ? 0.8 : 0); },
     run: function (ctx, a, b) {
       if (R(ctx, b, a).att > 35) {
