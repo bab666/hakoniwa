@@ -176,6 +176,7 @@ js/pos.js
 js/special.js
 js/special-r18.js
 js/zombie-special.js
+js/pair-react.js
 js/rpg-special.js
 js/pos-fm-tease.js
 js/pos-ff.js
