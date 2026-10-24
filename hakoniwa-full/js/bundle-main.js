@@ -6186,7 +6186,7 @@
         cats: {}, odd: [], diedAt: null, killedBy: null, fate: '', fateNote: ''
       };
     });
-    this.chars.forEach(function (c) { c.persona = HK.personaOf(c); });
+    this.chars.forEach(function (c, i) { c.persona = HK.personaOf(c); HK.charFlags(input.chars[i], c, input.scenId); });
     this.rel = this.chars.map(function () { return []; });
   }
 
@@ -6198,6 +6198,17 @@
      ・「恋愛相手の固定」で、どちらかが別の人に決めている（相手が箱庭にいなければ、その人は誰とも）
      どの箱庭でも、この組では恋愛・夜・R18の場面を起こさない */
   /* 設定で決めた「恋愛・R18にしない相手」と「恋愛相手の固定」だけで見る */
+  /* キャラの設定のうち、どの箱庭でも住人に写す縛り（engine・物語型・SoloKit・ダンジョン・穴で共通）
+     ・noR18：R18に参加しない（受けも攻めもしない）。住人どうしの夜（HK.sexBlocked）にも、モブ・魔物との場面（HK.State.mobSexOk）にもならない
+     ・sexLock 'loverOnly'：恋人だけ。住人では「恋人とモブだけ」（'lover'）と同じ相手に限り、加えてモブ・魔物にも襲われない（noMob） */
+  HK.charFlags = function (src, dst, scenId) {
+    if (!src || !dst) return dst;
+    /* R18が中心の箱庭（HK.State.R18_CORE）では、R18に参加しない・モブにも襲われないは効かせない（住人どうしの「恋人とモブだけ」は効く） */
+    var core = !!(scenId && HK.State && HK.State.R18_CORE[scenId]);
+    dst.noR18 = !!src.noR18 && !HK.SAFE_ON && !core;
+    if (src.sexLock === 'loverOnly') { dst.sexLock = 'lover'; dst.noMob = !core; } else dst.noMob = !!dst.noMob;
+    return dst;
+  };
   HK.ngPairHard = function (a, b) {
     if (!a || !b || a === b) return false;
     if ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0)) return true;
@@ -6231,9 +6242,24 @@
   }
   HK.sexNG = function (a, b) { if (!a || !b || a === b) return false; return sexOne(a, b) || sexOne(b, a); };
   /* 体の関係にならない組：恋愛・R18にしない相手・同じ人の恋人どうし・性行為の相手の固定 */
-  HK.sexBlocked = function (a, b) { if (!a || !b || a === b) return false; return HK.ngExplicit(a, b) || coNG(a, b) || HK.sexNG(a, b); };
+  HK.sexBlocked = function (a, b) { if (!a || !b || a === b) return false; return !!(a.noR18 || b.noR18) || HK.ngExplicit(a, b) || coNG(a, b) || HK.sexNG(a, b); };
   /* 恋愛はしない（恋愛相手の固定が食い違う）が、体の関係は許されている組。体の関係があっても、恋愛には進まないように補正する（Ctx.say） */
   HK.lockSexOnly = function (a, b) { return !!(a && b && a !== b && HK.lockConflict(a, b) && !HK.ngExplicit(a, b) && !coNG(a, b) && !HK.sexNG(a, b)); };
+  /* 住人の状態の共通チェック（箱庭ごとの人選びはこれを通す）
+     here：その場にいる（生きている・場を離れていない・監禁されていない。物語型は gone/taken/bound も見る）
+     r18ok：R18の場面に出してよい（全年齢モードでは常に不可）
+     mobSexOk：モブ・魔物・村人・略奪者など住人でない相手との性的な場面に出してよい
+     pairSex：住人どうしの体の関係（恋愛対象・受け攻め・縛りは HK.Pos.okSex）／pairLove：恋愛（HK.canLove を両方向） */
+  HK.State = {
+    here: function (c) { return !!c && c.alive !== false && !c.out && !c.gone && !c.taken && !(c.flags && c.flags.caged != null); },
+    canAct: function (c) { return HK.State.here(c) && !(c.flags && c.flags.down) && !c.bound; },
+    r18ok: function (c) { return !!c && !HK.SAFE_ON && !c.noR18; },
+    mobSexOk: function (c) { return HK.State.r18ok(c) && !c.noMob; },
+    pairLove: function (a, b) { return !!(a && b && a !== b) && HK.State.here(a) && HK.State.here(b) && HK.canLove(a, b) && HK.canLove(b, a); },
+    pairSex: function (a, b) { return !!(a && b && a !== b) && HK.State.here(a) && HK.State.here(b) && HK.State.r18ok(a) && HK.State.r18ok(b) && (!HK.Pos || HK.Pos.okSex(a, b)); },
+    /* R18 が箱庭の中心で、R18に参加しない設定を効かせない箱庭（全員が不参加だと遊べないため。設定画面にも書く） */
+    R18_CORE: { dungeon: 1, hole: 1, kaihen: 1, succubus: 1, variety: 1, massage: 1 }
+  };
   HK.canLove = function (a, b) {
     if (HK.ngPair(a, b)) return false;
     /* 執着（信仰）で「恋愛に発展：しない」組（信仰される側が支配していない）：恋愛にしない */
@@ -6255,7 +6281,7 @@
     return this.pf[k];
   };
   /* その場にいる人。監禁（執着の暴走）されている人は閉じ込められているので、監禁が終わるまで場に出てこない（obsess-kit.js の flags.caged） */
-  Ctx.prototype.present = function () { return this.chars.filter(function (c) { return c.alive && !c.out && c.flags.caged == null; }); };
+  Ctx.prototype.present = function () { return this.chars.filter(function (c) { return HK.State.here(c); }); };
   Ctx.prototype.alive = function () { return this.chars.filter(function (c) { return c.alive; }); };
   /* 同じ場にいる相手（箱庭が場所を持つときは、その箱庭が決める） */
   Ctx.prototype.others = function (a) {
@@ -21723,6 +21749,7 @@
       stats: {}, hp: 100, pleasure: 0, sens: 1, corrupt: 0, climax: 0, dev: {}, curses: [], items: [], outfit: env.outfit, cloth: OUTFIT[env.outfit] || 3,
       gender: src.gender || '', likes: src.likes || '', tone: src.tone || '', fp: src.fp || '', pos: src.pos || '', posLike: src.posLike || '', futa: !!src.futa
     };
+    if (HK.charFlags) HK.charFlags(src, h, 'dungeon');
     h.top = HK.egoType(src.eg).top;
     h.reason = clamp(55 + h.eg.A * 1.1 + h.eg.CP * 0.9, 40, 100);
     h.persona = HK.personaOf(h);
@@ -22721,6 +22748,7 @@
       stats: {}, hp: 100, pleasure: 0, sens: 1, corrupt: 0, climax: 0, dev: {}, curses: [], items: [], cloth: 4,
       gender: src.gender || '', likes: src.likes || '', tone: src.tone || '', fp: src.fp || '', pos: src.pos || ''
     };
+    if (HK.charFlags) HK.charFlags(src, h, scen && scen.id);
     /* いちばん強い因子（同点なら、この回の中で一つに決める。core.js の HK.egoType） */
     h.top = HK.egoType(src.eg).top;
     h.reason = clamp(55 + h.eg.A * 1.1 + h.eg.CP * 0.9, 40, 100);
@@ -23607,7 +23635,7 @@
     if (cast.si) { S.h = K.hero(S, input.chars[cast.si], (input.perChar && input.perChar[cast.si]) || {}); S.h.i = cast.si; S.party = [S.h]; }
     var h = S.h;
     /* 恋愛・R18にしない相手（HK.ngPair で見る）：SoloKit の住人には載らないので、ここで写す */
-    h.i = cast.si || 0; h.ng = ngOf(input.chars[h.i]); (function (c) { h.lock = c && c.loveLock !== '' && c.loveLock != null && !isNaN(+c.loveLock) ? +c.loveLock : null; })(input.chars[h.i]);
+    h.i = cast.si || 0; h.ng = ngOf(input.chars[h.i]); (function (c) { h.lock = c && c.loveLock !== '' && c.loveLock != null && !isNaN(+c.loveLock) ? +c.loveLock : null; if (HK.charFlags) HK.charFlags(c, h, 'hole'); })(input.chars[h.i]);
     if (BH) BH.setup(S, input, cast);
     h.sens = 0.85 + (h.stats.sense - 3) * 0.12;
     var H = env.hours, pl = PLACE[env.place] || PLACE.lab;
@@ -26680,7 +26708,7 @@
         return { with: actors, text: t, why: why + '：けがを負った（化膿すると危ない）', mag: 18 };
       }
       /* まれに、犯される展開になる（R18版のみ。襲われる人が「攻め」指定でないときだけ） */
-      if (Z.ZA_TEXT && Z.zombieAssault && Z.loveLv(ctx) !== 'off' && !(HK.Pos && !HK.Pos.canReceive(v)) && !v.z.zassault && rng() < 0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) {
+      if (Z.ZA_TEXT && Z.zombieAssault && Z.loveLv(ctx) !== 'off' && !(HK.Pos && !HK.Pos.canReceive(v)) && !(HK.State && !HK.State.mobSexOk(v)) && !v.z.zassault && rng() < 0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) {
         v.z.zassault = true;
         var ra = Z.zombieAssault(ctx, v, [a].concat(mates).filter(function (o, i, arr) { return o !== v && arr.indexOf(o) === i; }), A);
         ra.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
@@ -33944,6 +33972,7 @@
       var pc = (input.perChar && input.perChar[i]) || {};
       var p = { i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock, sexLock: c.sexLock === 'any' || c.sexLock === 'lover' ? c.sexLock : c.sexLock === '' || c.sexLock == null || isNaN(+c.sexLock) ? null : +c.sexLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder, name: c.name, eg: c.eg, tr: HK.traits(c.eg), topWhy: HK.voiceTopWhy(c), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, pick: pc.pick || {}, stats: {}, m: {}, cnt: {}, notes: [], fate: '' };
       /* 台詞の表を引く因子（口調に近い因子、なければいちばん強い因子。同点なら、この回の中で一つに決める） */
+      HK.charFlags && HK.charFlags(c, p, scenId);
       p.top = HK.voiceTop(c);
       p.persona = HK.personaOf(p);
       (scen.stats || []).forEach(function (s) { var v = pc.stats && pc.stats[s.id]; p.stats[s.id] = v == null || v === 'random' ? 1 + S.rng.int(5) : +v; });
@@ -38935,6 +38964,13 @@
     L('{a}の頭がぼうっとする。目の前の{b}の唇から、目が離せない。|{a}の体の奥が熱く脈打っていた。触れたい。触れられたい。それしか考えられなくなっていく。'),
     L('{a}は完全に発情していた。膝ががくがくと震え、下着がぐっしょりと濡れているのが分かった。|{a}の理性は、ほとんど溶け落ちていた。{b}の名前を呼ぶ声が、自分でも驚くほど甘かった。')
   ];
+  /* R18に参加しない人（noR18）のガスの効き：火照り・めまい・息苦しさだけで書く（性的な言い回しにしない） */
+  LK.GAS_SOFT = [
+    L('甘い香りが鼻の奥にまとわりつく。{a}の頬が、じわりと熱を帯びてきた。|{a}は額に汗が浮かぶのを感じた。ロッカーの中が、急に暑くなった気がする。|{a}は袖で額を拭った。狭い箱の中の空気が、少しずつ重くなっていく。'),
+    L('{a}の呼吸が浅くなった。甘ったるい匂いのせいで、頭の芯がぼんやりする。|{a}はこめかみを押さえた。熱っぽさが、首の後ろからじわじわ広がってくる。|{a}の指先が、汗で少し湿っていた。換気口のほうへ顔を向けて、浅く息を吸った。'),
+    L('{a}の視界がゆっくり揺れた。立っているのがやっとだった。|{a}は壁に額を押し当てた。ひんやりした金属だけが、意識をつなぎとめてくれる。|{a}は奥歯を噛みしめた。熱に浮かされたような頭で、それでも出口のことだけを考えた。'),
+    L('{a}は熱にうなされたように、ぐったりと壁にもたれかかった。返事をするのも億劫だった。|{a}の意識が、ときどき途切れそうになる。それでも{a}は、自分の頬を叩いて目を開けた。|{a}は額の汗を拭うこともできず、ただ荒い息を繰り返していた。早くここから出たい、とそれだけを思った。')
+  ];
   LK.SURGE = L('換気口から、ひときわ濃いガスが噴き出した。二人は同時にむせ、それから同時に体を震わせた。|ロッカーが大きく揺れた。二人の体がさらに強く押しつけられ、逃げ場がなくなった。|照明が消えた。真っ暗な中で、互いの吐息だけがやけに大きく聞こえる。|ロッカーが斜めに傾いた。{a}は{b}の上に覆いかぶさる格好になった。');
   LK.CALM = L('通気口から、少しだけ冷たい空気が流れ込んだ。二人は深呼吸をして、わずかに理性を取り戻した。|{a}は自分の唇を噛んで、痛みで正気を保とうとした。');
 
@@ -40508,6 +40544,8 @@
     var S = ST.state(input, 'locker'), rng = S.rng, env = S.env, P = S.P, lew = env.lewd || 'mid', V = HK.Voice;
     var A = P[0], B = P[1];
     var pk = function (arr) { return LK.pick(S, arr); };
+    /* R18に参加しない人（noR18）の文から、喘ぎ・発情など性的な言い回しの候補を外す（残らなければ元のまま） */
+    var soft = function (arr, p) { if (!p || !p.noR18 || !arr || !arr.filter) return arr; var f = arr.filter(function (l) { return !/喘ぎ|発情|濡れ|疼/.test(typeof l === 'string' ? l : l.t || ''); }); return f.length ? f : arr; };
     if (!B) { B = A; }
     /* 関係 */
     /* 同じ二人に関係を重ねられる（セフレで片想い など）。代表の関係は強いものから */
@@ -40550,6 +40588,9 @@
     var famT = tieL.some(function (t) { return /^(lover|mate|fated|fwb|crush|almost|ex|master)$/.test(t.type); }) ? null : tieL.filter(function (t) { return HK.tieNoLove && HK.tieNoLove(t); })[0];
     if (famT) { tieNL = true; nlWhy = ((HK.TIES[famT.type] || {}).label || '家族') + '（恋愛にしない関係）'; }
     if (tieNL) ngP = true;
+    /* R18に参加しない人（キャラの設定 noR18）がいる二人も、恋愛・R18にしない組として扱う（媚薬の熱も、性的な言い回しにしない：lockHeatSoft） */
+    var r18No = A.noR18 ? A : B.noR18 ? B : null;
+    if (r18No && !ngP) { ngP = true; tieNL = true; nlWhy = r18No.name + 'はR18に参加しない'; }
     /* 性行為の相手を別の人に固定している（または固定した相手がこの箱庭にいない）：体の関係にならない（pos.js の向きの判定で clash になる） */
     var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (A.sexLock != null && A.sexLock !== B.i ? A : B) : null;
     var sexWhy = sexP ? sexWho.name + 'は、性行為の相手を' + (input.chars[sexWho.sexLock] ? input.chars[sexWho.sexLock].name + 'に' : 'ほかの人に') + '決めている' : '';
@@ -40702,7 +40743,7 @@
         p.m.reason = clamp(p.m.reason - (3 + p.m.heat * 0.13 - (p.stats.gaman || 3) * 0.7 - p.tr.cp * 2), 0, 100);
         var after = stage(p);
         if (after > before) p.gasShown = after;
-        if (after > before) ST.sayB(S, { actors: [p], tag: ['', '火照り', '発情', '限界'][after], text: ST.fmt(pk(LK.GAS[after]), { a: p.name, b: p.o.name }), why: p.name + 'の発情 ' + Math.round(p.m.heat) + '・理性 ' + Math.round(p.m.reason) + '（我慢 ' + p.stats.gaman + '）', mag: after * 6 }, p.name + 'の発情が進んだ', after >= 3);
+        if (after > before) ST.sayB(S, { actors: [p], tag: ['', '火照り', '発情', '限界'][after], text: ST.fmt(pk((p.noR18 && LK.GAS_SOFT ? LK.GAS_SOFT : LK.GAS)[after]), { a: p.name, b: p.o.name }), why: p.name + 'の発情 ' + Math.round(p.m.heat) + '・理性 ' + Math.round(p.m.reason) + '（我慢 ' + p.stats.gaman + '）', mag: after * 6 }, p.name + 'の発情が進んだ', after >= 3);
       });
       /* 敵視（hate-kit.js）：狭いロッカーの中で、一方が近づき、一方が嫌悪する */
       if (HK.HateKit && rng() < 0.3) {
@@ -40898,7 +40939,7 @@
           var pw = 10 + (wk.stats.dex || 3) * 6 * G2.dex + wk.tr.a * 30 * G2.brain + rng() * 28 + workers.length * 6 - G2.diff * 0.25 - env.diff * 0.2 - (lewdNow ? 14 : 0) - wk.m.heat * 0.12;
           prog = clamp(prog + Math.max(4, pw), 0, 100);
           var ok = prog >= 100;
-          ST.sayB(S, { actors: [wk], tag: G2.name, text: ST.fmt(pk(GT.try), { a: wk.name, b: wk.o.name }) + ST.fmt(pk(ok ? GT.ok : GT.ng), { a: wk.name, b: wk.o.name }), why: '進み具合 ' + Math.round(prog) + '％（' + wk.name + 'の器用さ ' + wk.stats.dex + (G2.brain > 0.5 ? '・A' : '') + (lewdNow ? '・いちゃついていて集中できない' : '') + '）', mag: ok ? 22 : 10 }, wk.name + '：' + G2.name + ' ' + Math.round(prog) + '％', ok);
+          ST.sayB(S, { actors: [wk], tag: G2.name, text: ST.fmt(pk(soft(GT.try, wk)), { a: wk.name, b: wk.o.name }) + ST.fmt(pk(soft(ok ? GT.ok : GT.ng, wk)), { a: wk.name, b: wk.o.name }), why: '進み具合 ' + Math.round(prog) + '％（' + wk.name + 'の器用さ ' + wk.stats.dex + (G2.brain > 0.5 ? '・A' : '') + (lewdNow ? '・いちゃついていて集中できない' : '') + '）', mag: ok ? 22 : 10 }, wk.name + '：' + G2.name + ' ' + Math.round(prog) + '％', ok);
           if (ok) wk.cnt.solve++;
         } else if (G2.lewd && rng() < 0.05 + (A.m.heat + B.m.heat) / 450 + ({ lover: 0.3, fwb: 0.25, almost: 0.2, tension: -0.15 }[rel] || 0)) {
           prog = 100;
@@ -50677,7 +50718,7 @@
       },
       love: {
         mf: L('{t}は{u}の名前を何度も呼びながら、ゆっくりと深く繋がった。急ぐ必要はどこにもなかった。一つになったまま額を合わせ、二人は同じ速さで呼吸をした。|{t}は{u}を抱きしめたまま、穏やかに腰を揺らした。{u}の指が{t}の背中を優しくなぞるたびに、胸の奥まで温かくなった。{t}はもう一度、深く口づけた。|{t}は{u}の髪を撫で、頬に、首筋に、胸に口づけを落としていった。愛しい人の体は、どこに触れても柔らかく応えた。繋がったあとも、二人は長いあいだ見つめ合っていた。'),
-        ff: L('{t}は{u}の体のすべてに、一つずつ口づけを落としていった。指と唇で丁寧に愛されて、{u}は何度も{t}の名を呼んだ。果てたあとも、{t}は{u}を腕の中から離さなかった。|{t}は{u}と指を絡めたまま、もう片方の手で{u}のいちばん敏感なところを撫で続けた。{u}「そこ、好き」 {t}は微笑んで、{u}が満たされるまで手を止めなかった。|{t}は{u}を抱き寄せ、ゆっくりと胸から脚のあいだへ唇を這わせていった。恋人の甘い声が、狭い船室に柔らかく満ちた。{u}が果てると、{t}はその額にそっと口づけた。'),
+        ff: L('{t}は{u}の体のすべてに、一つずつ口づけを落としていった。指と唇で丁寧に愛されて、{u}は何度も{t}の名を呼んだ。息が落ち着くまで、{t}は{u}の額や瞼に、何度も唇を寄せ続けた。|{t}は{u}と指を絡めたまま、もう片方の手で{u}のいちばん敏感なところを撫で続けた。{u}「そこ、好き」 {t}は微笑んで、{u}が満たされるまで手を止めなかった。|{t}は{u}を抱き寄せ、ゆっくりと胸から脚のあいだへ唇を這わせていった。恋人の甘い声が、狭い船室に柔らかく満ちた。{u}が果てると、{t}はその額にそっと口づけた。'),
         fm: L('{t}は{u}に跨がり、見つめ合ったままゆっくりと腰を沈めた。{u}の手が{t}の頬に触れ、{t}はその手のひらに口づけた。二人は言葉もなく、同じ波に揺られていった。|{t}は{u}の胸に両手をついて、優しく腰を揺らした。{u}「綺麗だ」 照れ隠しに{t}が締めつけると、{u}は困ったように笑って{t}を抱き寄せた。|{t}は{u}の上で、何度も名前を呼びながら腰を揺らした。{u}が手を伸ばすと、{t}はその指を一本ずつ絡め取った。二人は同じ瞬間に、静かに昇りつめた。')
       }
     },
@@ -51579,6 +51620,8 @@
   function xeno(S, a, d, onlyMode, hidden) {
     var X2 = SH.X2, rng = S.rng;
     if (!X2 || !a || !d) return false;
+    /* R18に参加しない人・「恋人だけ（モブにも襲われない）」の人は、星の生命体との場面にしない */
+    if (HK.State && !HK.State.mobSexOk(a)) return false;
     var ms = X2.modes(d).filter(function (m) { return !onlyMode || m[0] === onlyMode; });
     if (!ms.length) return false;
     var m = HK.weighted(rng, ms, function (x) { return x[1]; })[0];
@@ -51606,12 +51649,14 @@
     var rng = S.rng, Pn = S.planet, X = SH.X, src = [];
     /* 調べた生命体がいれば、半分以上は生命体ごとの文で */
     var seen = Pn.life.filter(function (l) { return l.st >= 1; });
-    if (SH.X2 && seen.length && rng() < 0.7 && xeno(S, rng.pick(live(S)), rng.pick(seen).d)) return;
+    var xl = live(S).filter(function (q) { return !HK.State || HK.State.mobSexOk(q); });
+    if (SH.X2 && seen.length && xl.length && rng() < 0.7 && xeno(S, rng.pick(xl), rng.pick(seen).d)) return;
     /* 生命体は xeno に任せる（「巨体にのしかかられる」文が小さな生き物に付かないように）。ここでは文明の住人だけ */
     if (!SH.X2) Pn.life.forEach(function (l) { if (l.st >= 1 && /friendly|neutral/.test(l.d.kind)) src.push({ x: l.d.name, pool: X.lureLife }); });
     if (Pn.civ.st >= 1 && /primitive|living/.test(Pn.civ.d.state)) src.push({ x: Pn.civ.d.name, pool: X.lureCiv });
     if (!src.length) return;
-    var o = rng.pick(src), a = rng.pick(live(S)), b = closest(S, a) || { name: '仲間' };
+    if (!xl.length) return;
+    var o = rng.pick(src), a = rng.pick(xl), b = closest(S, a) || { name: '仲間' };
     var top = HK.Pos && HK.Pos.hardTop(a), m = { a: a.name, b: b.name, x: o.x };
     var t = F(pk(S, o.pool), m) + (top ? F(pk(S, X.lureTop), m) : F(pk(S, X.huge), m) + F(pk(S, X.hugeAct), m) + F(pk(S, X.lureAfter), m));
     t = xLewd(S, a, top, t, m, o.pool === X.lureCiv ? 'civ' : 'lure');
@@ -51675,7 +51720,7 @@
       var sk = skill(b, 'fight') * 0.45 + Math.max.apply(null, tm.map(function (q) { return skill(q, 'talk'); })) * 0.3 + Math.max(0, bond(S, b, a)) * 0.3 + tm.length * 0.05;
       var diff = 0.45 + Pn.civ.d.rare * 0.05 + (Pn.civ.d.state === 'advanced' ? 0.12 : 0) + S.env.danger / 100 * 0.1;
       /* 研究（R18）：自分で攻めを選んだ人は、受けにならない */
-      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTop(a)) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
+      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTop(a)) && !(HK.State && !HK.State.mobSexOk(a)) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
         a.labbed = true; a.cnt.r18 = (a.cnt.r18 || 0) + 1;
         ST.say(S, { actors: [a], tag: '研究', kind: 'climax', text: F(pk(S, SH.X.lab), { a: a.name, x: Pn.civ.d.name }), why: Pn.civ.d.name + 'は、' + a.name + 'を「標本」として調べた', mag: 30 });
       }
@@ -51995,6 +52040,7 @@
   }
   /* 異星の生き物：自分で攻めを選んだ人は、手懐けて主導権を握る */
   function alienR18(S, a, d) {
+    if (HK.State && !HK.State.mobSexOk(a)) return;
     if (SH.X2 && S.rng() < 0.75 && xeno(S, a, d)) return;
     var R = SH.R18, top = HK.Pos && HK.Pos.hardTop(a);
     var X = SH.X, sp = !top && X && X.play[d.kind] && S.rng() < 0.6 ? X.play[d.kind] : null;
@@ -53863,6 +53909,8 @@
     /* 夜の出来事（起きたら true） */
     night: function (S, p, live, h) {
       var rng = S.rng, lv = S.env.jlewd / 100;
+      /* R18に参加しない人（キャラの設定）は、夜の出来事に出ない */
+      if (HK.State && !HK.State.r18ok(p)) return false;
       /* 二日目以降の宵の口：まだ使っていない別の盛り方で、もう一度盛られることがある（一晩に一度） */
       var day = Math.floor((16 + h) / 24), hh = (16 + h) % 24;
       if (day >= 1 && hh === 20 && S.r18DoseDay !== day) {
@@ -53876,6 +53924,8 @@
       var mates = live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) && okPair(p, q); });
       var top = hardTop(p);
       var r0 = rng();
+      /* 「恋人だけ（モブにも襲われない）」の人：夢の神・清めの湯・村人の夜這いには進まず、住人どうしの夜だけ */
+      if (p.noMob) { if (!mates.length) return false; r0 = 0.5; }
       /* 夢の中で神に抱かれる */
       if (r0 < 0.16 + (S.G.myth ? 0.06 : 0)) {
         /* 自分で攻めを選んだ人は、夢の中でも神に抱かれない（抗い、逆に屈服させる） */
@@ -53906,7 +53956,7 @@
         return true;
       }
       /* 参加者どうし（媚薬が回っている二人ほど） */
-      if (mates.length && rng() < 0.4 + (p.aphro ? 0.15 : 0)) {
+      if (mates.length && (p.noMob || rng() < 0.4 + (p.aphro ? 0.15 : 0))) {
         var q = rng.pick(mates); q.lastNight = h; q.cnt.r18 = (q.cnt.r18 || 0) + 1;
         var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
         var rough = S.ygo && (X.viol > 30 || Y.viol > 30);
@@ -53940,6 +53990,7 @@
     /* 洞窟の中で（クライマックス） */
     cave: function (S, live) {
       var rng = S.rng, lv = S.env.jlewd / 100;
+      if (HK.State) live = live.filter(HK.State.mobSexOk);
       /* 眷属に襲われるのは、攻めを選んでいない人だけ */
       live = live.filter(function (q) { return !hardTop(q); });
       if (!live.length || rng() > lv * 0.6) return;
@@ -53952,6 +54003,7 @@
     /* 生贄の儀（R18）。巫女になったら miko: true */
     ritual: function (S, vic) {
       var rng = S.rng, lv = S.env.jlewd / 100;
+      if (HK.State && !HK.State.mobSexOk(vic)) return null;
       if (rng() > 0.35 + lv * 0.6) return null;
       var top = HK.Pos && HK.Pos.vsNpc(vic, '') === 'top';
       /* 自分で攻めを選んだ人は、祭壇の上でも抱かれない。神に抗い、逆にねじ伏せる */
@@ -54136,6 +54188,7 @@
   var cave0 = JS.R18.cave;
   JS.R18.cave = function (S, live) {
     var PL = S.place, rng = S.rng, lv = S.env.jlewd / 100, R = M();
+    if (HK.State) live = live.filter(HK.State.mobSexOk);
     if (!PL || PL.id === 'cave' || (!PLACE[PL.id] && PL.id !== 'bamboo')) return cave0(S, live);
     /* 眷属に襲われるのは、攻めを選んでいない人だけ */
     live = live.filter(function (q) { return !JS.R18.hardTop(q); });
@@ -56166,7 +56219,7 @@
     });
   }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
+  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -56203,6 +56256,7 @@
     c.keigoOlder = !!c.keigoOlder;
     c.futa = !!c.futa;
     c.daku = !!c.daku;
+    c.noR18 = !!c.noR18;
     c.you = str(c.you, 8).trim();
     c.marks = str(c.marks, 30).trim();
     c.loveLock = typeof c.loveLock === 'string' ? c.loveLock : '';
@@ -56218,7 +56272,7 @@
     S0.chars.forEach(function (c) { ids[c.id] = 1; });
     S0.chars.forEach(function (c) {
       if (!ids[c.loveLock] || c.loveLock === c.id) c.loveLock = '';
-      if (c.sexLock !== 'any' && c.sexLock !== 'lover' && (!ids[c.sexLock] || c.sexLock === c.id)) c.sexLock = '';
+      if (c.sexLock !== 'any' && c.sexLock !== 'lover' && c.sexLock !== 'loverOnly' && (!ids[c.sexLock] || c.sexLock === c.id)) c.sexLock = '';
       /* 恋愛・R18にしない相手：今いる住人だけ。片方に書かれていれば、もう片方にも書く */
       c.loveNG = (c.loveNG || []).filter(function (k, i, l) { return ids[k] && k !== c.id && l.indexOf(k) === i; });
       Object.keys(c.calls).forEach(function (k) { if (!ids[k] || k === c.id || typeof c.calls[k] !== 'string' || !c.calls[k].trim()) delete c.calls[k]; else c.calls[k] = c.calls[k].slice(0, 16); });
@@ -56467,10 +56521,11 @@
         if (c.keigoOlder) o.keigoOlder = true;
         if (c.futa) o.futa = true;
         if (c.daku) o.daku = true;
+        if (c.noR18) o.noR18 = true;
         if (c.you) o.you = c.you;
         if (c.marks) o.marks = c.marks;
         if (c.loveLock && ref(c.loveLock) != null) o.loveLock = ref(c.loveLock);
-        if (c.sexLock === 'any' || c.sexLock === 'lover') o.sexLock = c.sexLock;
+        if (c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly') o.sexLock = c.sexLock;
         else if (c.sexLock && ref(c.sexLock) != null) o.sexLock = ref(c.sexLock);
         if (c.loveNG && c.loveNG.length) { var ng = c.loveNG.map(ref).filter(function (x) { return x != null; }); if (ng.length) o.loveNG = ng; }
         if (c.calls) { var cl = {}; Object.keys(c.calls).forEach(function (id) { if (ref(id) != null && c.calls[id]) cl[ref(id)] = c.calls[id]; }); if (Object.keys(cl).length) o.calls = cl; }
@@ -56530,6 +56585,7 @@
       if (o.keigoOlder) c.keigoOlder = true;
       if (o.futa) c.futa = true;
       if (o.daku) c.daku = true;
+      if (o.noR18) c.noR18 = true;
       if (o.you != null) c.you = String(o.you).trim().slice(0, 8);
       if (o.marks != null) c.marks = String(o.marks).trim().slice(0, 30);
       c._lk = o.loveLock; c._sl = o.sexLock; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
@@ -56564,7 +56620,7 @@
       if (Array.isArray(c._ng)) c.loveNG = c._ng.map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; }).filter(Boolean);
       delete c._ng;
       if (c._lk != null) { c.loveLock = (typeof c._lk === 'number' || /^\d+$/.test(String(c._lk)) ? map[+c._lk] : (list.filter(function (x) { return x.name === c._lk; })[0] || {}).id) || ''; delete c._lk; }
-      if (c._sl === 'any' || c._sl === 'lover') { c.sexLock = c._sl; delete c._sl; }
+      if (c._sl === 'any' || c._sl === 'lover' || c._sl === 'loverOnly') { c.sexLock = c._sl; delete c._sl; }
       if (c._sl != null) { c.sexLock = (typeof c._sl === 'number' || /^\d+$/.test(String(c._sl)) ? map[+c._sl] : (list.filter(function (x) { return x.name === c._sl; })[0] || {}).id) || ''; delete c._sl; }
       if (c._cl && typeof c._cl === 'object') { c.calls = c.calls || {}; Object.keys(c._cl).forEach(function (k) { var id = /^\d+$/.test(k) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; if (id) c.calls[id] = String(c._cl[k]).slice(0, 16); }); }
       delete c._cl;
@@ -56787,7 +56843,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '', sexLock: c.sexLock === 'any' || c.sexLock === 'lover' ? c.sexLock : c.sexLock ? ids.indexOf(c.sexLock) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '', sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock ? ids.indexOf(c.sexLock) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
         });
       })(),
       perChar: castFor(S.scenId).map(function (c) {
@@ -57257,6 +57313,8 @@
     if (sl) bits.push('体の関係：' + sl.name + 'だけ');
     else if (!HK.SAFE_ON && c.sexLock === 'any' && c.loveLock) bits.push('体の関係：誰とでも');
     else if (!HK.SAFE_ON && c.sexLock === 'lover') bits.push('体の関係：恋人とモブだけ');
+    else if (!HK.SAFE_ON && c.sexLock === 'loverOnly') bits.push('体の関係：恋人だけ');
+    if (!HK.SAFE_ON && c.noR18) bits.push('R18に参加しない');
     var ngs = (c.loveNG || []).map(byId).filter(Boolean);
     if (ngs.length) bits.push('恋愛にしない：' + ngs.map(function (o) { return o.name; }).join('・'));
     var n = tiesOf(c).length;
@@ -57362,7 +57420,7 @@
     var ngRow = others.length ? '<div class="gearrow"><span class="gearhint" style="flex:1 1 100%;margin:0">' + (HK.SAFE_ON ? '恋愛にしない相手' : '恋愛・R18にしない相手') + '（この人との恋愛・夜の場面を起こさない。相手の設定にも同じ印が付きます）</span>' + others.map(function (o) { return '<label><input type="checkbox" data-gf="ng" data-o="' + esc(o.id) + '"' + ((c.loveNG || []).indexOf(o.id) >= 0 ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('') + '</div>' : '';
     var lockSel = '<select data-gf="lock" aria-label="恋愛相手の固定"><option value="">固定しない</option>' + others.map(function (o) { return opt(o.id, o.name + 'だけ', c.loveLock || ''); }).join('') + '</select>';
     /* 性行為の相手の固定（R18版のみ）：恋愛は縛らず、体の関係（夜・R18の場面）だけをこの相手に限る */
-    var sexSel = HK.SAFE_ON ? '' : '<label>性行為の相手を固定 <select data-gf="sexlock" aria-label="性行為の相手の固定"><option value="">恋愛相手の固定に合わせる</option>' + opt('any', '誰とでも可（恋愛は固定のまま）', c.sexLock || '') + opt('lover', '恋人とモブだけ', c.sexLock || '') + others.map(function (o) { return opt(o.id, o.name + 'だけ', c.sexLock || ''); }).join('') + '</select></label>';
+    var sexSel = HK.SAFE_ON ? '' : '<label>性行為の相手を固定 <select data-gf="sexlock" aria-label="性行為の相手の固定"><option value="">恋愛相手の固定に合わせる</option>' + opt('any', '誰とでも可（恋愛は固定のまま）', c.sexLock || '') + opt('lover', '恋人とモブだけ', c.sexLock || '') + opt('loverOnly', '恋人だけ（モブにも襲われない）', c.sexLock || '') + others.map(function (o) { return opt(o.id, o.name + 'だけ', c.sexLock || ''); }).join('') + '</select></label>';
     /* 関係（相手ごと） */
     var ties = s.ties || [], groups = {};
     ties.forEach(function (t, k) {
@@ -57395,6 +57453,7 @@
         '<label>年齢 <input type="number" data-gf="age" min="1" max="150" value="' + esc(c.age || '') + '" placeholder="決めない" style="width:5em"></label>' +
         '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
         (!HK.SAFE_ON && c.gender === 'f' && (c.pos === 'top' || c.pos === 'riba') ? '<label title="攻めに回る場面を、男性の体を前提にした描写で書きます。オメガバースでは使いません"><input type="checkbox" data-gf="futa"' + (c.futa ? ' checked' : '') + '> ふたなり（攻めのとき）</label>' : '') +
+        (!HK.SAFE_ON ? '<label title="受けも攻めもせず、住人どうしの夜・モブや魔物に襲われる場面・執着の監禁の夜に出ません。殺し合いなどほかの出来事にはふつうに出ます。R18が中心の箱庭（エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ・マッサージ）では効きません"><input type="checkbox" data-gf="noR18"' + (c.noR18 ? ' checked' : '') + '> R18に参加しない</label>' : '') +
         (!HK.SAFE_ON && c.pos !== 'top' ? '<label title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"' + (c.daku ? ' checked' : '') + '> 濁点喘ぎ（男性向け）</label>' : '') +
         '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label></div>' +
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
@@ -57480,6 +57539,7 @@
       case 'pos': if (isInput) return; c.pos = ['top', 'bottom', 'riba'].indexOf(t.value) >= 0 ? t.value : ''; changed(false); render(); break;
       case 'futa': if (isInput) return; c.futa = t.checked; changed(false); break;
       case 'daku': if (isInput) return; c.daku = t.checked; changed(false); break;
+      case 'noR18': if (isInput) return; c.noR18 = t.checked; changed(true); break;
       case 'posLike': if (isInput) return; c.posLike = HK.Pos && HK.Pos.likeValid(t.value) ? t.value : ''; changed(false); break;
       case 'colorauto': if (isInput) return; if (t.checked) c.color = ''; else c.color = (ov.querySelector('[data-gf="color"]') || {}).value || '#3d6f93'; changed(true); UI.applyColors(s.chars); break;
       case 'color': if (/^#[0-9a-fA-F]{6}$/.test(t.value)) { c.color = t.value; UI.applyColors(s.chars); changed(false); } break;

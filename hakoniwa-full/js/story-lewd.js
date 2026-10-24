@@ -95,7 +95,9 @@
   function who(S, a) { return typeof a === 'number' ? S.P[a] : a; }
   var sayEv = ST.say;
   ST.say = function (S, o) {
-    if (o && o.kind === 'climax' && typeof o.text === 'string' && on(S) && X.lv(S.env) !== 'low' && isSex(S, o) && !forced(S, o)) {
+    /* R18に参加しない人（キャラの設定）が出る山場には、文を足さない */
+    var noR = o && (o.actors || []).some(function (a) { var p = who(S, a); return p && HK.State && !HK.State.r18ok(p); });
+    if (o && !noR && o.kind === 'climax' && typeof o.text === 'string' && on(S) && X.lv(S.env) !== 'low' && isSex(S, o) && !forced(S, o)) {
       var acts = (o.actors || []).map(function (a) { return who(S, a); }).filter(Boolean), sep = /\n\n/.test(o.text) ? '\n\n' : '';
       var er = X.ero(S.env), hi = X.high(S.env), add = [];
       if (acts.length === 1) {

@@ -18181,7 +18181,7 @@
         }
         /* まれに、一人が犯される（R18版の solo-zombie-raid.js。襲われる人が「攻め」指定でないときだけ） */
         if (Z.raiderAssault && Z.loveLv(ctx) !== 'off' && rng() < 0.3) {
-          var vs = P.filter(function (c) { return !(HK.Pos && !HK.Pos.canReceive(c)) && !c.flags.raided; });
+          var vs = P.filter(function (c) { return !(HK.Pos && !HK.Pos.canReceive(c)) && !(HK.State && !HK.State.mobSexOk(c)) && !c.flags.raided; });
           if (vs.length) {
             var v = HK.weighted(rng, vs, function (c) { return 1 + (1 - c.tr.cp) * 0.6 + (c.hp < 50 ? 0.4 : 0); });
             P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 1); });

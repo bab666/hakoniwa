@@ -44,6 +44,7 @@
   var cave0 = JS.R18.cave;
   JS.R18.cave = function (S, live) {
     var PL = S.place, rng = S.rng, lv = S.env.jlewd / 100, R = M();
+    if (HK.State) live = live.filter(HK.State.mobSexOk);
     if (!PL || PL.id === 'cave' || (!PLACE[PL.id] && PL.id !== 'bamboo')) return cave0(S, live);
     /* 眷属に襲われるのは、攻めを選んでいない人だけ */
     live = live.filter(function (q) { return !JS.R18.hardTop(q); });

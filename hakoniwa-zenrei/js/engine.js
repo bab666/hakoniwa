@@ -46,7 +46,7 @@
         cats: {}, odd: [], diedAt: null, killedBy: null, fate: '', fateNote: ''
       };
     });
-    this.chars.forEach(function (c) { c.persona = HK.personaOf(c); });
+    this.chars.forEach(function (c, i) { c.persona = HK.personaOf(c); HK.charFlags(input.chars[i], c, input.scenId); });
     this.rel = this.chars.map(function () { return []; });
   }
 
@@ -58,6 +58,17 @@
      ・「恋愛相手の固定」で、どちらかが別の人に決めている（相手が箱庭にいなければ、その人は誰とも）
      どの箱庭でも、この組では恋愛・夜・R18の場面を起こさない */
   /* 設定で決めた「恋愛・R18にしない相手」と「恋愛相手の固定」だけで見る */
+  /* キャラの設定のうち、どの箱庭でも住人に写す縛り（engine・物語型・SoloKit・ダンジョン・穴で共通）
+     ・noR18：R18に参加しない（受けも攻めもしない）。住人どうしの夜（HK.sexBlocked）にも、モブ・魔物との場面（HK.State.mobSexOk）にもならない
+     ・sexLock 'loverOnly'：恋人だけ。住人では「恋人とモブだけ」（'lover'）と同じ相手に限り、加えてモブ・魔物にも襲われない（noMob） */
+  HK.charFlags = function (src, dst, scenId) {
+    if (!src || !dst) return dst;
+    /* R18が中心の箱庭（HK.State.R18_CORE）では、R18に参加しない・モブにも襲われないは効かせない（住人どうしの「恋人とモブだけ」は効く） */
+    var core = !!(scenId && HK.State && HK.State.R18_CORE[scenId]);
+    dst.noR18 = !!src.noR18 && !HK.SAFE_ON && !core;
+    if (src.sexLock === 'loverOnly') { dst.sexLock = 'lover'; dst.noMob = !core; } else dst.noMob = !!dst.noMob;
+    return dst;
+  };
   HK.ngPairHard = function (a, b) {
     if (!a || !b || a === b) return false;
     if ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0)) return true;
@@ -91,9 +102,24 @@
   }
   HK.sexNG = function (a, b) { if (!a || !b || a === b) return false; return sexOne(a, b) || sexOne(b, a); };
   /* 体の関係にならない組：恋愛・R18にしない相手・同じ人の恋人どうし・性行為の相手の固定 */
-  HK.sexBlocked = function (a, b) { if (!a || !b || a === b) return false; return HK.ngExplicit(a, b) || coNG(a, b) || HK.sexNG(a, b); };
+  HK.sexBlocked = function (a, b) { if (!a || !b || a === b) return false; return !!(a.noR18 || b.noR18) || HK.ngExplicit(a, b) || coNG(a, b) || HK.sexNG(a, b); };
   /* 恋愛はしない（恋愛相手の固定が食い違う）が、体の関係は許されている組。体の関係があっても、恋愛には進まないように補正する（Ctx.say） */
   HK.lockSexOnly = function (a, b) { return !!(a && b && a !== b && HK.lockConflict(a, b) && !HK.ngExplicit(a, b) && !coNG(a, b) && !HK.sexNG(a, b)); };
+  /* 住人の状態の共通チェック（箱庭ごとの人選びはこれを通す）
+     here：その場にいる（生きている・場を離れていない・監禁されていない。物語型は gone/taken/bound も見る）
+     r18ok：R18の場面に出してよい（全年齢モードでは常に不可）
+     mobSexOk：モブ・魔物・村人・略奪者など住人でない相手との性的な場面に出してよい
+     pairSex：住人どうしの体の関係（恋愛対象・受け攻め・縛りは HK.Pos.okSex）／pairLove：恋愛（HK.canLove を両方向） */
+  HK.State = {
+    here: function (c) { return !!c && c.alive !== false && !c.out && !c.gone && !c.taken && !(c.flags && c.flags.caged != null); },
+    canAct: function (c) { return HK.State.here(c) && !(c.flags && c.flags.down) && !c.bound; },
+    r18ok: function (c) { return !!c && !HK.SAFE_ON && !c.noR18; },
+    mobSexOk: function (c) { return HK.State.r18ok(c) && !c.noMob; },
+    pairLove: function (a, b) { return !!(a && b && a !== b) && HK.State.here(a) && HK.State.here(b) && HK.canLove(a, b) && HK.canLove(b, a); },
+    pairSex: function (a, b) { return !!(a && b && a !== b) && HK.State.here(a) && HK.State.here(b) && HK.State.r18ok(a) && HK.State.r18ok(b) && (!HK.Pos || HK.Pos.okSex(a, b)); },
+    /* R18 が箱庭の中心で、R18に参加しない設定を効かせない箱庭（全員が不参加だと遊べないため。設定画面にも書く） */
+    R18_CORE: { dungeon: 1, hole: 1, kaihen: 1, succubus: 1, variety: 1, massage: 1 }
+  };
   HK.canLove = function (a, b) {
     if (HK.ngPair(a, b)) return false;
     /* 執着（信仰）で「恋愛に発展：しない」組（信仰される側が支配していない）：恋愛にしない */
@@ -115,7 +141,7 @@
     return this.pf[k];
   };
   /* その場にいる人。監禁（執着の暴走）されている人は閉じ込められているので、監禁が終わるまで場に出てこない（obsess-kit.js の flags.caged） */
-  Ctx.prototype.present = function () { return this.chars.filter(function (c) { return c.alive && !c.out && c.flags.caged == null; }); };
+  Ctx.prototype.present = function () { return this.chars.filter(function (c) { return HK.State.here(c); }); };
   Ctx.prototype.alive = function () { return this.chars.filter(function (c) { return c.alive; }); };
   /* 同じ場にいる相手（箱庭が場所を持つときは、その箱庭が決める） */
   Ctx.prototype.others = function (a) {

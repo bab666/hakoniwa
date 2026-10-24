@@ -13,6 +13,7 @@
       stats: {}, hp: 100, pleasure: 0, sens: 1, corrupt: 0, climax: 0, dev: {}, curses: [], items: [], cloth: 4,
       gender: src.gender || '', likes: src.likes || '', tone: src.tone || '', fp: src.fp || '', pos: src.pos || ''
     };
+    if (HK.charFlags) HK.charFlags(src, h, scen && scen.id);
     /* いちばん強い因子（同点なら、この回の中で一つに決める。core.js の HK.egoType） */
     h.top = HK.egoType(src.eg).top;
     h.reason = clamp(55 + h.eg.A * 1.1 + h.eg.CP * 0.9, 40, 100);

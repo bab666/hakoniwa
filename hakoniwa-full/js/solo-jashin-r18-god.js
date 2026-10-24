@@ -13,7 +13,7 @@
   function fmt(t, o) { return ST.fmt(t, o); }
   function ok(p, h, cd) { return p.lastNight == null || h - p.lastNight >= cd; }
   function mark(p, h) { p.lastNight = h; p.cnt.r18 = (p.cnt.r18 || 0) + 1; }
-  function mates(S, p, live, h, cd) { return live.filter(function (q) { return q !== p && JS.alive(q) && !q.bound && ok(q, h, cd) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) && JS.R18.okPair(p, q); }); }
+  function mates(S, p, live, h, cd) { return live.filter(function (q) { return q !== p && (!HK.State || HK.State.mobSexOk(q)) && JS.alive(q) && !q.bound && ok(q, h, cd) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) && JS.R18.okPair(p, q); }); }
   /* 自分で攻めを選んだ人（村人・眷属・神に「される」場面に入れない） */
   function top(p) { return JS.R18.hardTop(p); }
 
@@ -213,6 +213,9 @@
   var GODR = { shub: shub, yig: yig, chaugnar: chaugnar };
   var base = JS.R18.night;
   JS.R18.night = function (S, p, live, h) {
+    /* R18に参加しない人は夜に出ない。「恋人だけ」の人は神の夜には進まず、住人どうしの夜（base）だけ */
+    if (HK.State && !HK.State.r18ok(p)) return false;
+    if (p.noMob) return base(S, p, live, h);
     var f = GODR[S.G.id] || godNight;
     if (f(S, p, live, h)) return true;
     return base(S, p, live, h);

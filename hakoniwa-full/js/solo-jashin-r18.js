@@ -295,6 +295,8 @@
     /* 夜の出来事（起きたら true） */
     night: function (S, p, live, h) {
       var rng = S.rng, lv = S.env.jlewd / 100;
+      /* R18に参加しない人（キャラの設定）は、夜の出来事に出ない */
+      if (HK.State && !HK.State.r18ok(p)) return false;
       /* 二日目以降の宵の口：まだ使っていない別の盛り方で、もう一度盛られることがある（一晩に一度） */
       var day = Math.floor((16 + h) / 24), hh = (16 + h) % 24;
       if (day >= 1 && hh === 20 && S.r18DoseDay !== day) {
@@ -308,6 +310,8 @@
       var mates = live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) && okPair(p, q); });
       var top = hardTop(p);
       var r0 = rng();
+      /* 「恋人だけ（モブにも襲われない）」の人：夢の神・清めの湯・村人の夜這いには進まず、住人どうしの夜だけ */
+      if (p.noMob) { if (!mates.length) return false; r0 = 0.5; }
       /* 夢の中で神に抱かれる */
       if (r0 < 0.16 + (S.G.myth ? 0.06 : 0)) {
         /* 自分で攻めを選んだ人は、夢の中でも神に抱かれない（抗い、逆に屈服させる） */
@@ -338,7 +342,7 @@
         return true;
       }
       /* 参加者どうし（媚薬が回っている二人ほど） */
-      if (mates.length && rng() < 0.4 + (p.aphro ? 0.15 : 0)) {
+      if (mates.length && (p.noMob || rng() < 0.4 + (p.aphro ? 0.15 : 0))) {
         var q = rng.pick(mates); q.lastNight = h; q.cnt.r18 = (q.cnt.r18 || 0) + 1;
         var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
         var rough = S.ygo && (X.viol > 30 || Y.viol > 30);
@@ -372,6 +376,7 @@
     /* 洞窟の中で（クライマックス） */
     cave: function (S, live) {
       var rng = S.rng, lv = S.env.jlewd / 100;
+      if (HK.State) live = live.filter(HK.State.mobSexOk);
       /* 眷属に襲われるのは、攻めを選んでいない人だけ */
       live = live.filter(function (q) { return !hardTop(q); });
       if (!live.length || rng() > lv * 0.6) return;
@@ -384,6 +389,7 @@
     /* 生贄の儀（R18）。巫女になったら miko: true */
     ritual: function (S, vic) {
       var rng = S.rng, lv = S.env.jlewd / 100;
+      if (HK.State && !HK.State.mobSexOk(vic)) return null;
       if (rng() > 0.35 + lv * 0.6) return null;
       var top = HK.Pos && HK.Pos.vsNpc(vic, '') === 'top';
       /* 自分で攻めを選んだ人は、祭壇の上でも抱かれない。神に抗い、逆にねじ伏せる */

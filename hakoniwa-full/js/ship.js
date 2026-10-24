@@ -442,6 +442,8 @@
   function xeno(S, a, d, onlyMode, hidden) {
     var X2 = SH.X2, rng = S.rng;
     if (!X2 || !a || !d) return false;
+    /* R18に参加しない人・「恋人だけ（モブにも襲われない）」の人は、星の生命体との場面にしない */
+    if (HK.State && !HK.State.mobSexOk(a)) return false;
     var ms = X2.modes(d).filter(function (m) { return !onlyMode || m[0] === onlyMode; });
     if (!ms.length) return false;
     var m = HK.weighted(rng, ms, function (x) { return x[1]; })[0];
@@ -469,12 +471,14 @@
     var rng = S.rng, Pn = S.planet, X = SH.X, src = [];
     /* 調べた生命体がいれば、半分以上は生命体ごとの文で */
     var seen = Pn.life.filter(function (l) { return l.st >= 1; });
-    if (SH.X2 && seen.length && rng() < 0.7 && xeno(S, rng.pick(live(S)), rng.pick(seen).d)) return;
+    var xl = live(S).filter(function (q) { return !HK.State || HK.State.mobSexOk(q); });
+    if (SH.X2 && seen.length && xl.length && rng() < 0.7 && xeno(S, rng.pick(xl), rng.pick(seen).d)) return;
     /* 生命体は xeno に任せる（「巨体にのしかかられる」文が小さな生き物に付かないように）。ここでは文明の住人だけ */
     if (!SH.X2) Pn.life.forEach(function (l) { if (l.st >= 1 && /friendly|neutral/.test(l.d.kind)) src.push({ x: l.d.name, pool: X.lureLife }); });
     if (Pn.civ.st >= 1 && /primitive|living/.test(Pn.civ.d.state)) src.push({ x: Pn.civ.d.name, pool: X.lureCiv });
     if (!src.length) return;
-    var o = rng.pick(src), a = rng.pick(live(S)), b = closest(S, a) || { name: '仲間' };
+    if (!xl.length) return;
+    var o = rng.pick(src), a = rng.pick(xl), b = closest(S, a) || { name: '仲間' };
     var top = HK.Pos && HK.Pos.hardTop(a), m = { a: a.name, b: b.name, x: o.x };
     var t = F(pk(S, o.pool), m) + (top ? F(pk(S, X.lureTop), m) : F(pk(S, X.huge), m) + F(pk(S, X.hugeAct), m) + F(pk(S, X.lureAfter), m));
     t = xLewd(S, a, top, t, m, o.pool === X.lureCiv ? 'civ' : 'lure');
@@ -538,7 +542,7 @@
       var sk = skill(b, 'fight') * 0.45 + Math.max.apply(null, tm.map(function (q) { return skill(q, 'talk'); })) * 0.3 + Math.max(0, bond(S, b, a)) * 0.3 + tm.length * 0.05;
       var diff = 0.45 + Pn.civ.d.rare * 0.05 + (Pn.civ.d.state === 'advanced' ? 0.12 : 0) + S.env.danger / 100 * 0.1;
       /* 研究（R18）：自分で攻めを選んだ人は、受けにならない */
-      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTop(a)) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
+      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTop(a)) && !(HK.State && !HK.State.mobSexOk(a)) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
         a.labbed = true; a.cnt.r18 = (a.cnt.r18 || 0) + 1;
         ST.say(S, { actors: [a], tag: '研究', kind: 'climax', text: F(pk(S, SH.X.lab), { a: a.name, x: Pn.civ.d.name }), why: Pn.civ.d.name + 'は、' + a.name + 'を「標本」として調べた', mag: 30 });
       }
@@ -858,6 +862,7 @@
   }
   /* 異星の生き物：自分で攻めを選んだ人は、手懐けて主導権を握る */
   function alienR18(S, a, d) {
+    if (HK.State && !HK.State.mobSexOk(a)) return;
     if (SH.X2 && S.rng() < 0.75 && xeno(S, a, d)) return;
     var R = SH.R18, top = HK.Pos && HK.Pos.hardTop(a);
     var X = SH.X, sp = !top && X && X.play[d.kind] && S.rng() < 0.6 ? X.play[d.kind] : null;

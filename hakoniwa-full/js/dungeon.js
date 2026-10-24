@@ -701,6 +701,7 @@
       stats: {}, hp: 100, pleasure: 0, sens: 1, corrupt: 0, climax: 0, dev: {}, curses: [], items: [], outfit: env.outfit, cloth: OUTFIT[env.outfit] || 3,
       gender: src.gender || '', likes: src.likes || '', tone: src.tone || '', fp: src.fp || '', pos: src.pos || '', posLike: src.posLike || '', futa: !!src.futa
     };
+    if (HK.charFlags) HK.charFlags(src, h, 'dungeon');
     h.top = HK.egoType(src.eg).top;
     h.reason = clamp(55 + h.eg.A * 1.1 + h.eg.CP * 0.9, 40, 100);
     h.persona = HK.personaOf(h);
