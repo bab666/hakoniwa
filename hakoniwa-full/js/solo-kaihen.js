@@ -3,12 +3,16 @@
    何をするのか、違和感に気づくのか、気づいたらどうするのかを、一日の営業を通して見る */
 (function () {
   'use strict';
-  /* 同じ結果の中で、同じ文・台詞をなるべく繰り返さない（候補が尽きたら元どおりに引く） */
+  /* 同じ結果の中で、同じ文・台詞を繰り返さない：まだ使っていない文から選び、使い切ったら、いちばん前に使った文から戻す */
   function pkF(S, arr) {
     if (!arr || !arr.length) return window.HK.Story.pick(S, arr);
-    var u = S._pkSeen = S._pkSeen || [], f = arr.filter(function (x) { return u.indexOf(x) < 0; });
-    var x = window.HK.Story.pick(S, f.length ? f : arr);
-    if (typeof x === 'string') { u.push(x); if (u.length > 400) u.shift(); }
+    var m = S._pkLru = S._pkLru || { n: 0, at: {} }, best = [], bv = Infinity;
+    for (var i = 0; i < arr.length; i++) {
+      var a = typeof arr[i] === 'string' ? (m.at['$' + arr[i]] || 0) : 0;
+      if (a < bv) { bv = a; best = [arr[i]]; } else if (a === bv) best.push(arr[i]);
+    }
+    var x = best[S.rng.int(best.length)];
+    if (typeof x === 'string') m.at['$' + x] = ++m.n;
     return x;
   }
   var HK = window.HK, KH = HK.KAIHEN, ST = HK.Story, clamp = HK.clamp;
@@ -165,6 +169,34 @@
   }
   /* 攻めの施す側には回さない施術（{p} の体に指を入れられる）／攻めの受ける側には回さない施術（{r} の中に指を入れる・機械に搾られる・押さえつけて責める） */
   var G_RECV = { '壺洗い': 1 };
+  /* 施す側の昂りの段階（0 業務の顔のまま／1 声と手つきが揺らぎはじめる／2 業務の顔が崩れた）。
+     快感の値から決め、いったん上がった段階はその日のうちは下げない（自分も達して快感の値が下がっても、崩れた顔は戻らない）。
+     上がった回は、変わり目の一文を施術の終わりに足す。事後の一文・攻めの喘ぎも、この段階に合わせる */
+  var HEAT_UP = {
+    1: L('{p}の声から、いつもの事務的な平板さが少しずつ抜けはじめていた。本人だけが、まだそれに気づいていない。|手順はいつもどおりのはずなのに、{p}の指先には妙な熱がこもっていた。カルテに向かう背中が、ほんの少しだけ丸まっている。|{p}は何度か、自分の脚をそっと閉じ直した。施すたびに、体の奥へ何かが溜まっていく。|業務用の笑顔の端が、ときどき甘くほどけた。{p}はそれを、疲れのせいだと思うことにした。'),
+    2: L('{p}の業務の顔は、とうとう崩れていた。手を洗っても、太腿の内側の震えが止まらない。|次の予約表を見る{p}の目は、もう潤んでいた。施す側でいるはずの体が、自分も触れられるのを待っている。|{p}は記録用紙にペンを走らせながら、自分の息が甘く乱れたままなのに気づいた。もう、平静な声には戻れそうになかった。|一度崩れた手つきは、元に戻らなかった。{p}は客の熱に触れるたび、自分の腰まで勝手に揺れるようになっていた。')
+  };
+  /* 厚い山場の締め（採取量の記録）：段階ごと */
+  var HEAT_AFTER = [
+    L('{p}は乱れた呼吸のまま、カルテに「{ml}ml」と書き込んだ。|{p}は容器の目盛りを確かめた。――{ml}ml。いつもどおりの、業務の一件だった。|「{ml}ml。……お疲れさまでした」{p}はそう言って、何事もなかったように手を洗った。|{p}は手袋を外して丸め、「{ml}mlです。記録しておきますね」と事務的に告げた。|{p}は数値を読み上げた。「{ml}ml、規定どおりです」――声には、もう乱れがなかった。'),
+    L('{p}は「{ml}ml」と書こうとして、一度ペンを取り落とした。拾い上げる指先が、まだ熱かった。|{p}は容器の目盛りを読んだ。{ml}ml。いつもの数字のはずなのに、読み上げる声が少しだけ掠れていた。|「{ml}ml、です」{p}はそう告げてから、額の汗を手の甲で拭った。業務の一件にしては、息が上がりすぎていた。|{p}は記録を書き終えると、しばらく流しの縁に手をついていた。{ml}ml。体のほうが、その数字を覚えていた。'),
+    L('{p}はカルテに{ml}mlと書き込んだが、文字が震えていた。脚の間が、まだ熱く疼いていた。|「{ml}ml……っ、です」{p}の声は、すっかり甘く崩れていた。手を洗う指が、なかなか止まらなかった。|{p}は容器を置くと、施術台の縁にもたれかかった。{ml}ml。数えたのは、客のぶんだけではなかった気がした。|記録用紙の{ml}mlの文字は、ひどく歪んでいた。{p}は書き直そうとして、やめた。もう、まともな字は書けそうになかった。')
+  ];
+  /* 気づいたうえで続けると決めた人の心の声（「仕事なのに」と迷う声は、もう使わない） */
+  var INNER_ACCEPT = L('（おかしいのは知ってる。知ってて、次の予約も入れた）|（これが普通じゃないことくらい、分かってる。……分かってるから、気持ちいい）|（もう、言い訳は探さない。仕事ってことにしておけば、いくらでもできる）|（止める理由なら、さっきまでいくつもあった。全部、どこかへ行った）');
+  function heat(S, g) {
+    var raw = g.m.plea < 35 ? 0 : g.m.plea < 70 ? 1 : 2, old = g.hs || 0;
+    if (g.accepted && raw < 1) raw = 1;
+    if (raw > old) g.hs = raw;
+    if (HK._rxT) HK._rxT.push({ sc: 'kaihen', k: 'heat', who: g.name, raw: g.m.plea < 35 ? 0 : g.m.plea < 70 ? 1 : 2, st: g.hs || 0 });
+    return raw > old ? raw : 0;
+  }
+  function heatUp(S, g) { var up = heat(S, g); return up ? ST.fmt(pkF(S, HEAT_UP[up]), { p: g.name }) : ''; }
+  /* 心の声：迷う声／気づいたうえで続ける声 */
+  function innerOf(S, g, top) {
+    if (HK._rxT) HK._rxT.push({ sc: 'kaihen', k: 'inner', who: g.name, acc: !!g.accepted });
+    return g.accepted ? INNER_ACCEPT : top ? E(S, 'innerTop', KH.INNER_TOP) : E(S, 'inner', KH.INNER);
+  }
   var R_RECV = { '前立腺マッサージ': 1, 'ストレッチ': 1, '触診（全身）': 1 };
   function serve(S, SIT, g, r, lew) {
     var actAt = -1, actLead = '';
@@ -218,6 +250,7 @@
       g.cnt.served += 3; g.m.sem += mlR; g.m.imm += 5; g.m.plea += (14 + rng() * 14) * g.sens;
       as.forEach(function (a) { g.cnt.acts[a[0]] = (g.cnt.acts[a[0]] || 0) + 1; });
       if (g.m.plea >= 100) { g.m.plea = 25; g.cnt.gclimax++; tr += pkF(S, gTop && !gFree ? E(S, 'gclimax', KH.GCLIMAX).filter(function (x) { return !/奥/.test(x); }) : E(S, 'gclimax', KH.GCLIMAX)).replace(/\{p\}/g, g.name); }
+      tr += heatUp(S, g);
       tr = ef(S, tr, g, npcWho(S));
       ST.sayB(S, { actors: [g], tag: '流れ作業', text: tr, why: g.name + 'の担当に予約が重なった（客の多さ ' + S.env.npc + '）', mag: 20 }, g.name + '→三人を連続対応（' + mlR + 'ml）', g.cnt.served === 3);
       return;
@@ -253,8 +286,8 @@
         g.m.plea += 6 * g.sens;
       }
       /* 施す側が攻めの施術：喘ぎは受け身でないものだけ */
-      if (KH.MOAN && kind0 === 'top' && rng() < (lew === 'high' ? 0.6 : 0.4)) { var mtk = 'moanTop.' + (g.m.plea < 35 ? 0 : g.m.plea < 70 ? 1 : 2); t += g.name + '「' + pkF(S, ero && !gF && HK.Ero.has('kaihen', mtk) && rng() < 0.6 ? E(S, mtk, []) : topL(g, KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN))) + '」'; g.m.plea += 4 * g.sens; }
-      if (KH.INNER && (kind0 === 'in' || kind0 === 'mouth' || kind0 === 'top') && rng() < (g.m.doubt > 15 ? 0.4 : 0.18)) { t += g.name + pkF(S, kind0 === 'top' || (gTop && !gFree) ? E(S, 'innerTop', KH.INNER_TOP) : E(S, 'inner', KH.INNER)); g.m.doubt += 2 * g.doubtRate; }
+      if (KH.MOAN && kind0 === 'top' && rng() < (lew === 'high' ? 0.6 : 0.4)) { var mtk = 'moanTop.' + (g.hs || 0); t += g.name + '「' + pkF(S, ero && !gF && HK.Ero.has('kaihen', mtk) && rng() < 0.6 ? E(S, mtk, []) : topL(g, KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN))) + '」'; g.m.plea += 4 * g.sens; }
+      if (KH.INNER && (kind0 === 'in' || kind0 === 'mouth' || kind0 === 'top') && rng() < (g.m.doubt > 15 ? 0.4 : 0.18)) { t += g.name + pkF(S, innerOf(S, g, kind0 === 'top' || (gTop && !gFree))); g.m.doubt += 2 * g.doubtRate; }
       /* 男性向けでは、受ける側の声は絶頂の文の中に入れる */
       if (!ero && r && rng() < 0.45 && HK.Voice.CLIMAX[r.persona]) t += r.name + '「' + pkF(S, topL(r, HK.Voice.CLIMAX[r.persona])) + '」';
     }
@@ -265,7 +298,7 @@
     if (tk0 && actAt >= 0 && actLead && HK.Thick4 && HK.Thick4.ok(S, lew) && (r || rng() < 0.35)) {
       var sub0 = r || { name: rname, gender: 'm' };
       t = t.slice(0, actAt) + HK.Thick4.scene(S, { dom: g, sub: sub0, kind: tk0, lead: actLead, sad: HK.Thick4.rollSad(S, g, sub0),
-        after: ST.fmt(pkF(S, ['{p}は乱れた呼吸のまま、カルテに「{ml}ml」と書き込んだ。', '{p}は容器の目盛りを確かめた。――{ml}ml。いつもどおりの、業務の一件だった。', '「{ml}ml。……お疲れさまでした」{p}はそう言って、何事もなかったように手を洗った。']), { p: g.name, ml: ml }) });
+        after: ST.fmt(pkF(S, HEAT_AFTER[g.hs || 0]), { p: g.name, ml: ml }) });
     }
     /* 掛け合い：終わりの締め／居合わせた正気の人の突っ込み */
     var te = KH.talk && rng() < 0.45 ? KH.talk(S, 'end', g, r, rname, kindT, false) : null;
@@ -280,6 +313,8 @@
     g.m.plea += gain;
     var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」' + (g.action.id === 'bold' ? '／大胆な方針' : g.action.id === 'care' ? '／丁寧な方針' : '');
     if (g.m.plea >= 100) { g.m.plea = 25; g.cnt.gclimax++; t += pkF(S, gTop && !gFree ? E(S, 'gclimax', KH.GCLIMAX).filter(function (x) { return !/奥/.test(x); }) : E(S, 'gclimax', KH.GCLIMAX)).replace(/\{p\}/g, g.name) + (!ero && lew !== 'low' && rng() < 0.6 ? g.name + '「' + pkF(S, topL(g, HK.Voice.CLIMAX[g.persona] || HK.Voice.CLIMAX.gentle)) + '」' : ''); g.m.doubt += 6 * g.doubtRate; why += '／' + g.name + '自身も達した（感じやすさ ' + g.stats.sens + '）'; }
+    var hu = heatUp(S, g);
+    if (hu) { t += hu; why += '／' + g.name + 'の昂りが一段上がった（快感 ' + Math.round(g.m.plea) + '）'; }
     if (r) {
       r.cnt.served++; r.cnt.climax++; r.m.sem += ml; r.m.plea = clamp(r.m.plea + 25 * r.sens, 0, 100);
       if (r.role === 'out') { r.m.imm += 14 + r.tr.ac * 10; r.m.doubt -= 6; why += '／正気の' + r.name + 'も、施術を受けてしまった'; }
@@ -334,7 +369,7 @@
       var tm = KH.talk && rng() < 0.5 ? KH.talk(S, 'mid', g, r, r.name, ffK, true) : null;
       if (tm) { t += tm.text; talkWhy = talkWhy || tm.why; }
       if (!gAct && KH.MOAN && rng() < 0.6) { t += g.name + '「' + pkF(S, ok(KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN)) || KH.MOAN) + '」'; g.m.plea += 6 * g.sens; }
-      if (KH.INNER && rng() < (g.m.doubt > 15 ? 0.35 : 0.15)) { t += g.name + pkF(S, (gAct ? KH.INNER_TOP : KH.INNER).filter(function (x) { return !/奥/.test(x); })); g.m.doubt += 2 * g.doubtRate; }
+      if (KH.INNER && rng() < (g.m.doubt > 15 ? 0.35 : 0.15)) { t += g.name + pkF(S, (g.accepted ? INNER_ACCEPT : gAct ? KH.INNER_TOP : KH.INNER).filter(function (x) { return !/奥/.test(x); })); if (HK._rxT) HK._rxT.push({ sc: 'kaihen', k: 'inner', who: g.name, acc: !!g.accepted }); g.m.doubt += 2 * g.doubtRate; }
       var who = gAct ? r : g;
       if (!eOn(S) && rng() < 0.45 && HK.Voice.CLIMAX[who.persona]) t += who.name + '「' + pkF(S, topL(who, HK.Voice.CLIMAX[who.persona])) + '」';
       t += ST.fmt(pkF(S, FMT ? E(S, 'fm.take', KH.FM_CLIMAX) : /手袋|ミトン|グローブ/.test(act[0]) && gAct && HK.Ero && HK.Ero.has('kaihen', 'ff.glove') && eOn(S) ? HK.Ero.T.kaihen['ff.glove'] : E(S, 'ff.' + dir, KH.FF_CLIMAX[dir])), v);
@@ -346,6 +381,7 @@
     var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」／' + (gF ? '女性どうしの施術' : FMT ? '女性の受け手が上になる施術' : '女性の受け手への施術') + '（' + (gAct ? g.name : r.name) + 'が動く側）';
     if (!gAct) g.cnt.gclimax++;
     if (g.m.plea >= 100) { g.m.plea = 25; if (gAct) { g.cnt.gclimax++; t += pkF(S, KH.GCLIMAX.filter(function (x) { return !/奥/.test(x); })).replace(/\{p\}/g, g.name); } g.m.doubt += 6 * g.doubtRate; }
+    t += heatUp(S, g);
     r.cnt.served++; if (gAct) r.cnt.climax++; r.m.plea = clamp(r.m.plea + 25 * r.sens, 0, 100);
     if (r.role === 'out') { r.m.imm += 14 + r.tr.ac * 10; r.m.doubt -= 6; why += '／正気の' + r.name + 'も、施術を受けてしまった'; }
     else {

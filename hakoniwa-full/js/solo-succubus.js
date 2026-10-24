@@ -4,12 +4,16 @@
    その性格に応じたアドバイスをくれる */
 (function () {
   'use strict';
-  /* 同じ結果の中で、同じ文・台詞をなるべく繰り返さない（候補が尽きたら元どおりに引く） */
+  /* 同じ結果の中で、同じ文・台詞を繰り返さない：まだ使っていない文から選び、使い切ったら、いちばん前に使った文から戻す */
   function pkF(S, arr) {
     if (!arr || !arr.length) return window.HK.Story.pick(S, arr);
-    var u = S._pkSeen = S._pkSeen || [], f = arr.filter(function (x) { return u.indexOf(x) < 0; });
-    var x = window.HK.Story.pick(S, f.length ? f : arr);
-    if (typeof x === 'string') { u.push(x); if (u.length > 400) u.shift(); }
+    var m = S._pkLru = S._pkLru || { n: 0, at: {} }, best = [], bv = Infinity;
+    for (var i = 0; i < arr.length; i++) {
+      var a = typeof arr[i] === 'string' ? (m.at['$' + arr[i]] || 0) : 0;
+      if (a < bv) { bv = a; best = [arr[i]]; } else if (a === bv) best.push(arr[i]);
+    }
+    var x = best[S.rng.int(best.length)];
+    if (typeof x === 'string') m.at['$' + x] = ++m.n;
     return x;
   }
   var HK = window.HK, SB = HK.SUCCUBUS, ST = HK.Story, clamp = HK.clamp;
@@ -53,6 +57,13 @@
     if (pick && pick !== 'auto') for (var i = 0; i < list.length; i++) if (list[i].id === pick) return list[i];
     return HK.weighted(S.rng, list, function (o) { return Math.pow(Math.max(0.02, o.fit(p.tr)), 3); });
   }
+  /* 魅力診断の「誘惑の型は…」：同じ型の人が続いたら、言い方を変えて説明を繰り返さない */
+  function styleLine(S, p) {
+    var said = S._styleSaid = S._styleSaid || {}, lb = p.style.label, prev = said[lb];
+    said[lb] = said[lb] || p.name;
+    if (prev) return ST.fmt(pkF(S, ['{a}の型も、{b}と同じ「{l}」だった。', '診断の結果は、{b}と同じ「{l}」。', '{a}も「{l}」――{b}とは、似た者どうしらしい。']), { a: p.name, b: prev, l: lb });
+    return ST.fmt(pkF(S, ['誘惑の型は「{l}」（{d}）。', '診断で出た誘惑の型は「{l}」――{d}のが得意らしい。', '{a}の誘惑の型は「{l}」。{d}やり方が、いちばん性に合っている。']), { a: p.name, l: lb, d: p.style.desc });
+  }
   function names(l) { return l.map(function (p) { return p.name; }).join('・'); }
   var GOOD = { S: 1, A: 1, B: 1 };
   /* 描写の作風「男性向け」（ero-kit.js・solo-succubus-ero.js）：選んだときだけ差し替える */
@@ -61,6 +72,35 @@
   function EL(S, key, base) { return EO(S) ? HK.Ero.L(S, 'succubus', key, base) : base; }
   var VO = SB && SB.VOICE;
   function senV(S, sen, k) { var sv = VO && sen && VO.SEN[sen.persona]; return sv && sv[k] && S.rng() < 0.8 ? sv[k] : null; }
+  /* サキュバス自身の昂りの段階（0 余裕／1 火照りはじめ／2 限界が近い）。昂りの値から決め、上がった段階は下げない。
+     下げるのは、時間がたって昂りがはっきり引いたとき（一段ずつ、ひと息つく一文を出す）と、感じすぎて果てたときだけ。
+     上がった回は、変わり目の一文を狩りの終わりに足す。厚い山場の締めの一文も、この段階に合わせる */
+  var HEAT_UP = {
+    1: L('吸った精が肌の下で温かく巡るたび、{a}自身の体まで火照りはじめていた。尻尾の先が、落ち着きなく揺れている。|{a}は唇を舐めた。獲物を酔わせているつもりが、自分の下腹まで甘く疼きはじめている。|狩りを重ねるうちに、{a}の淫紋は淡く灯ったまま消えなくなっていた。余裕の笑みの奥で、息が少しだけ浅い。|{a}の羽が、熱を逃がすように小さく震えた。吸うたびに満たされるはずが、体のほうはもっと欲しがりはじめていた。'),
+    2: L('{a}の淫紋は、もう疼きっぱなしだった。次に誰かと肌を重ねたら、吸うより先に自分が溶けてしまうかもしれない。|{a}は壁に背を預けて、熱い息を逃がした。脚の間がじんじんと疼いて、獲物を選ぶ目まで潤んでいる。|尻尾の先まで火照りきって、{a}はうまく羽をたためなくなっていた。サキュバスのくせに、自分のほうが限界に近い。|{a}の余裕の笑みは、とうに崩れていた。夜風に当たっても、体の芯の熱が引かない。')
+  };
+  var HEAT_COOL = L('夜風に当たって、{a}の火照りはようやく少し引いた。尻尾の揺れが、いつもの速さに戻っていく。|{a}は屋根の上でひと息ついた。淫紋の疼きが、静かに薄れていった。|冷たい水で頬を冷やすと、{a}の頭はようやく澄んできた。次の獲物を選ぶ目に、余裕が戻っていた。|{a}はしばらく羽を休めた。体の芯に残っていた熱が、少しずつ夜気に溶けていった。');
+  var HEAT_AFTER = [
+    L('{a}の肌に、{ml}ml分の精がゆっくりと溶けていった。|{a}は舌なめずりをして、満ちていく魔力を味わった。――{ml}ml。|{a}の淫紋が、{ml}ml分の精を吸って淡く光った。|{a}は満足げに羽を広げた。{ml}ml――まだまだ、夜はこれからだ。'),
+    L('{a}の肌に、{ml}ml分の精がゆっくりと溶けていった。吸うたびに、自分の体まで熱くなっていくのが分かる。|{a}は舌なめずりをしたが、その頬は自分でも分かるほど上気していた。――{ml}ml。|{a}の淫紋が{ml}ml分の精を吸って光り、そのまま疼くように脈打ちつづけた。'),
+    L('{ml}ml。満たされたはずなのに、{a}の下腹は疼いたまま、まるで熱が引かなかった。|{a}は獲物の上から降りると、自分の膝が震えているのに気づいた。――{ml}ml。吸ったのか、吸われたのか、もう分からない。|{a}の淫紋は{ml}ml分の精を呑み込んでも、まだ足りないと言うように明滅していた。息が、ひどく甘い。')
+  ];
+  function rawHeat(p) { return p.m.plea < 40 ? 0 : p.m.plea < 75 ? 1 : 2; }
+  function heatTr(p, ev) { if (HK._rxT) HK._rxT.push({ sc: 'succubus', k: 'heat', who: p.name, raw: rawHeat(p), st: p.hs || 0, ev: ev || '' }); }
+  /* 狩りのあと：上がったら変わり目の一文 */
+  function heatUp(S, p) {
+    var raw = rawHeat(p), old = p.hs || 0, t = '';
+    if (raw > old) { p.hs = raw; t = ST.fmt(pkF(S, HEAT_UP[raw]), { a: p.name }); }
+    heatTr(p);
+    return t;
+  }
+  /* 一時間ごと：昂りがはっきり引いたら一段下げる */
+  function heatCool(S, p) {
+    var old = p.hs || 0;
+    if (old && p.m.plea < (old === 2 ? 55 : 20)) { p.hs = old - 1; heatTr(p, 'cool'); return ST.fmt(pkF(S, HEAT_COOL), { a: p.name }); }
+    heatTr(p, 'hour');
+    return '';
+  }
   function grade(ml) { return ml >= 180 ? 'S' : ml >= 120 ? 'A' : ml >= 70 ? 'B' : ml >= 35 ? 'C' : 'D'; }
 
   function run(input) {
@@ -92,7 +132,7 @@
       var ck = charm >= 4 && tech <= 2 ? 'sexy' : charm <= 2 && tech >= 4 ? 'skill' : charm >= 4 && tech >= 4 ? 'ace' : charm <= 2 && tech <= 2 ? 'bad' : 'avg';
       var comment = pkF(S, (SB.COMMENT && SB.COMMENT[ck]) || [{ sexy: '見た目の色香は十分。ただ、誘い方はまだぎこちない', skill: '派手さはないが、近づけば落とせる腕がある', ace: '色香も腕も揃った、天性のサキュバス', bad: '正直、サキュバスに向いているかは怪しい', avg: '平均的なサキュバス。勝負は獲物の選び方しだい' }[ck]]);
       p.power = power;
-      var o = ST.say(S, { actors: [p], tag: '魅力診断', text: (SB.TRANSFORM ? ST.fmt(pkF(S, SB.TRANSFORM), { a: p.name }) : p.name + 'の背中に小さな羽が、腰に細い尻尾が生えた。') + '誘惑の型は「' + p.style.label + '」（' + p.style.desc + '）。魅力' + charm + '・技巧' + tech + '――' + comment + '。', why: '誘惑の型は' + p.name + 'の' + (p.style.why || p.topWhy) + 'から／誘惑力 ' + power, mag: 10 });
+      var o = ST.say(S, { actors: [p], tag: '魅力診断', text: (SB.TRANSFORM ? ST.fmt(pkF(S, SB.TRANSFORM), { a: p.name }) : p.name + 'の背中に小さな羽が、腰に細い尻尾が生えた。') + styleLine(S, p) + '魅力' + charm + '・技巧' + tech + '――' + comment + '。', why: '誘惑の型は' + p.name + 'の' + (p.style.why || p.topWhy) + 'から／誘惑力 ' + power, mag: 10 });
       ST.key(S, o, p.name + 'の誘惑の型');
     });
     if (sen) {
@@ -120,7 +160,12 @@
         hunt(S, T, p, sen, SE);
       });
       ST.flushShort(S, 'ほかの狩り：');
-      P.forEach(function (p) { p.m.mana = clamp(p.m.mana + 3, 0, 100); p.m.plea = clamp(p.m.plea - 10, 0, 100); });
+      P.forEach(function (p) {
+        p.m.mana = clamp(p.m.mana + 3, 0, 100); p.m.plea = clamp(p.m.plea - 10, 0, 100);
+        if (p.role !== 'hunt' || p.out) return;
+        var cl = heatCool(S, p);
+        if (cl) ST.sayB(S, { actors: [p], tag: 'ひと息', text: cl, why: '時間がたって昂りが引いた（昂り ' + Math.round(p.m.plea) + '）' }, p.name + 'の火照りが引いた');
+      });
       ST.snap(S, keys);
     }
     return finish(S, input, T, H, sen, SE);
@@ -198,7 +243,7 @@
       }
       t += ST.fmt(pkF(S, noRecv(EL(S, 'melt.after', SB.MELT_AFTER))), v) + (ml ? '（吸えたのは' + ml + 'mlだけ）' : '');
       if (sTop && HK.FM && HK.Pos.isF(p)) t = HK.FM.fixWith({ pick: function (a) { return pkF(S, a); } }, t, p, q.name);
-      p.m.plea = 35;
+      p.m.plea = 35; p.hs = 0; heatTr(p, 'melt');
       if (rng() < 0.4) { p.skip = true; why += '／腰が抜けて次の一時間は休み'; }
     } else {
       kind = score >= 45 ? 'big' : 'win';
@@ -216,7 +261,7 @@
       if (leadP && !rev && !q.incubus && HK.Thick4 && HK.Thick4.ok(S, lew)) {
         var prey = { name: q.name, gender: 'm' };
         t = t.replace('――' + leadP, '――' + HK.Thick4.scene(S, { dom: p, sub: prey, kind: sTop ? 'in' : 'ride', peak: (sTop && HK.FM && HK.Pos.isF(p) ? HK.FM.fixWith({ pick: function (a) { return pkF(S, a); } }, leadP, p, prey.name) : leadP).replace(/([。」])「/g, '$1' + p.name + '「'), sad: HK.Thick4.rollSad(S, p, prey),
-          after: ST.fmt(pkF(S, ['{a}の肌に、{ml}ml分の精がゆっくりと溶けていった。', '{a}は舌なめずりをして、満ちていく魔力を味わった。――{ml}ml。', '{a}の淫紋が、{ml}ml分の精を吸って淡く光った。']), { a: p.name, ml: ml }) }));
+          after: ST.fmt(pkF(S, HEAT_AFTER[p.hs || 0]), { a: p.name, ml: ml }) }));
       }
       else t += ST.fmt(pkF(S, EL(S, 'climax', SB.CLIMAX).concat(!sTop && EO(S) ? EL(S, 'climax.in', []) : [])), { a: p.name, t: q.name, ml: ml });
       /* 女性のサキュバスが攻めのときは、女性上位（跨って搾る）の書き方にそろえる */
@@ -229,6 +274,7 @@
     if (HK.Ero) t = HK.Ero.fill(S, t, kind === 'win' || kind === 'big' ? (rev ? p : Object.assign({}, p, { eroDom: true })) : p);
     p.m.ml += ml;
     if (ml && (!p.best || ml > p.best.ml)) p.best = { name: q.name, ml: ml };
+    if (kind !== 'melt') { var hu = heatUp(S, p); if (hu) { t += hu; why += '／昂りが一段上がった（昂り ' + Math.round(p.m.plea) + '）'; } }
     var tag = { fail: '失敗', half: 'あと一歩', win: '成功', big: '大成功', melt: '感じすぎ' }[kind];
     var o = ST.sayB(S, { actors: [p], tag: tag, text: t, why: why + '（誘惑の出来 ' + Math.round(score) + '）', mag: kind === 'big' ? 40 : kind === 'win' ? 26 : 12, kind: kind === 'big' || kind === 'win' || kind === 'melt' ? 'climax' : 'event' }, p.name + '×' + q.name + '＝' + tag + (ml ? ' ' + ml + 'ml' : ''), kind === 'big' || (p.cnt.win === 1 && kind === 'win') || (kind === 'melt' && p.cnt.melt === 1));
     if (o && kind === 'melt' && p.cnt.melt === 1) ST.key(S, o, p.name + 'は感じすぎて吸えなかった');
@@ -329,7 +375,7 @@
       why += '／感じすぎた（昂り ' + Math.round(p.m.plea) + '・技巧 ' + p.stats.tech + '）';
       t += lew === 'low' ? ST.fmt(pkF(S, SB.MELT_LOW.slice(0, 1).concat(SB.MELT_LOW.slice(2))), v) : '――' + ST.fmt(pkF(S, EL(S, 'melt.f', SB.MELT_F)), v);
       t += ST.fmt(pkF(S, SB.MELT_AFTER.filter(function (x) { return !SB.RECV_RE.test(x); })), v) + (ml ? '（吸えたのは' + ml + 'mlだけ）' : '');
-      p.m.plea = 35;
+      p.m.plea = 35; p.hs = 0; heatTr(p, 'melt');
       if (rng() < 0.4) { p.skip = true; why += '／腰が抜けて次の一時間は休み'; }
     } else {
       kind = score >= 45 ? 'big' : 'win';
@@ -349,6 +395,7 @@
     if (HK.Ero) t = HK.Ero.fill(S, t, kind === 'win' || kind === 'big' ? Object.assign({}, p, { eroDom: true }) : p);
     p.m.ml += ml;
     if (ml && (!p.best || ml > p.best.ml)) p.best = { name: q.name, ml: ml };
+    if (kind !== 'melt') { var hu = heatUp(S, p); if (hu) { t += hu; why += '／昂りが一段上がった（昂り ' + Math.round(p.m.plea) + '）'; } }
     var tag = { fail: '失敗', half: 'あと一歩', win: '成功', big: '大成功', melt: '感じすぎ' }[kind];
     var o = ST.sayB(S, { actors: [p], tag: tag, text: t, why: why + '（誘惑の出来 ' + Math.round(score) + '）', mag: kind === 'big' ? 40 : kind === 'win' ? 26 : 12, kind: kind === 'big' || kind === 'win' || kind === 'melt' ? 'climax' : 'event' }, p.name + '×' + q.name + '＝' + tag + (ml ? ' ' + ml + 'ml' : ''), kind === 'big' || (p.cnt.win === 1 && kind === 'win') || (kind === 'melt' && p.cnt.melt === 1));
     if (o && kind === 'big') ST.key(S, o, p.name + 'の大成功');
@@ -366,7 +413,7 @@
       var ml = Math.round(25 + rng() * 35);
       a.m.ml += Math.round(ml / 2); b.m.ml += Math.round(ml / 2);
       var hard2 = HK.Pos && (HK.Pos.hardTop(a) || HK.Pos.hardTop(b)), tt = !hard2 && EO(S) ? HK.Ero.fill(S, ST.fmt(pkF(S, EL(S, 'team', [])), { a: a.name, b: b.name }), a) : '「半分こね」――' + a.style.label + 'と' + b.style.label + 'に挟まれた獲物は、朝まで帰してもらえなかった。';
-      return ST.key(S, ST.say(S, { actors: [a, b], tag: '共闘', text: spot + 'で、' + a.name + 'と' + b.name + 'は同じ獲物に目をつけていた。顔を見合わせて、二人は笑った。' + tt + '（' + ml + 'mlを山分け）', why: '二人の人懐こさ（NP・FC）', mag: 30, kind: 'climax' }), a.name + 'と' + b.name + 'の共闘');
+      return ST.key(S, ST.say(S, { actors: [a, b], tag: '共闘', text: spot + 'で、' + a.name + 'と' + b.name + 'は同じ獲物に目をつけていた。' + pkF(S, ['顔を見合わせて、二人は笑った。', '目が合った瞬間、二人の尻尾が同じ向きに揺れた。', 'どちらからともなく、二人は小さく頷き合った。', '取り合うより、分け合うほうが早い。二人の考えは同じだった。']) + tt + '（' + ml + 'mlを山分け）', why: '二人の人懐こさ（NP・FC）', mag: 30, kind: 'climax' }), a.name + 'と' + b.name + 'の共闘');
     }
     var sa = a.stats.charm * 10 + a.stats.tech * 6 + rng() * 40, sb = b.stats.charm * 10 + b.stats.tech * 6 + rng() * 40;
     var w = sa >= sb ? a : b, l = w === a ? b : a, ml2 = Math.round(15 + rng() * 25);

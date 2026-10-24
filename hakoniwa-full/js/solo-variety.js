@@ -53,6 +53,35 @@
 
   function run(input) {
     var S = ST.state(input, 'variety'), rng = S.rng, env = S.env, P = S.P, lew = env.lewd || 'mid', V = HK.Voice;
+    /* 同じ結果の中で、同じ文・台詞を繰り返さない：まだ使っていない文から選び、使い切ったら、いちばん前に使った文から戻す */
+    var lru = { n: 0, at: {} };
+    function pkv(arr) {
+      if (!arr || !arr.length) return '';
+      var best = [], bv = Infinity;
+      for (var i = 0; i < arr.length; i++) { var a = lru.at['$' + arr[i]] || 0; if (a < bv) { bv = a; best = [arr[i]]; } else if (a === bv) best.push(arr[i]); }
+      var x = best[rng.int(best.length)];
+      lru.at['$' + x] = ++lru.n;
+      return x;
+    }
+    /* 昂りの段階（0 平常／1 一度イかされて敏感なまま／2 何度も果てて取り繕えない）。イった回数と昂りの値から決め、番組の中では下げない。
+       上がったら、その人が出る次の場面の終わりに、変わり目の一文を足す */
+    var V_UP = {
+      1: ['一度イかされてから、{a}の体はずっと敏感なままだった。カメラが寄るだけで、膝が小さく震える。', '{a}の頬の赤みは、もう引かなくなっていた。生放送のライトが、やけに熱く感じる。', '{a}は平静を装っていたが、さっきの余韻で、息がまだ少しだけ浅かった。', '{a}は次の企画の説明を聞きながら、そっと内腿を擦り合わせた。さっきの熱が、まだ体の奥に残っている。', 'さっきイかされたばかりの{a}は、衣装が肌に擦れるだけで小さく息を呑んだ。'],
+      2: ['何度も果てさせられた{a}は、もう取り繕う余裕もなかった。触れられる前から、腰がひくひくと疼いている。', '{a}の目は、すっかりとろんと潤んでいた。番組の残り時間より、自分の体のほうが持ちそうにない。', '{a}は立っているのもやっとだった。スタジオの熱気に、体の芯まで溶かされている。', '{a}の声は、普通に喋るだけで甘く掠れるようになっていた。何度も果てた体は、もう番組のペースについていけない。', 'カメラを向けられても、{a}はもう表情を作れなかった。火照りきった体が、次の刺激を待っている。']
+    };
+    function heatV(p) {
+      var raw = p.m.arouse < 40 ? 0 : p.m.arouse < 70 ? 1 : 2, st = Math.max(p.cnt.climax >= 3 ? 2 : p.cnt.climax >= 1 ? 1 : 0, raw), old = p.hs || 0;
+      if (st > old) { p.hs = st; if (lew !== 'low') p._hup = ST.fmt(pkv(V_UP[st]), { a: p.name }); }
+      if (HK._rxT) HK._rxT.push({ sc: 'variety', k: 'heat', who: p.name, raw: raw, st: p.hs || 0 });
+    }
+    function withHeat(o) {
+      (o.actors || []).forEach(function (p) { if (p && typeof p === 'object' && p._hup) { o.text = (o.text || '') + p._hup; p._hup = ''; } });
+      return o;
+    }
+    function sayV(o) { return ST.say(S, withHeat(o)); }
+    function sayBV(o, sh, f) { return ST.sayB(S, withHeat(o), sh, f); }
+    /* 一人ずつ挑戦で、企画の説明の文を使い切ったら、二人目からは短いつなぎにする */
+    var NEXT_UP = ['続いて{a}が、同じ課題に挑んだ。', '次は{a}の番だった。', '{a}も、前の挑戦者と同じ課題に臨んだ。', '{a}は深呼吸をひとつしてから、同じ課題に向かった。', 'スタジオの視線が、次の挑戦者の{a}に集まった。'];
     var show = rng.pick(VA.SHOWS), mc = rng.pick(VA.MCS);
     S.v = { mc: mc };
     var rating = 6 + rng() * 4;
@@ -68,7 +97,7 @@
     /* 企画中のひとこと（恥じらい・ノリノリ） */
     function att(p, pr) {
       if (!VA.ATT || !p.mood || rng() > pr) return '';
-      return fill(ST.pick(S, VA.ATT[p.mood]), p);
+      return fill(pkv(VA.ATT[p.mood]), p);
     }
     /* 同率の人をまとめて名前で */
     function nmList(L0) { var n = L0.map(function (p) { return p.name; }); return n.length > 2 ? n.join('・') : n.join('と'); }
@@ -76,7 +105,7 @@
     var KNUM = ['', '一人', '二人', '三人', '四人', '五人', '六人', '七人', '八人', '九人', '十人'];
     function poolN(name, n) { return n > 2 && VA[name + '_M'] ? VA[name + '_M'] : VA[name]; }
     function numFix(t, n) { if (n <= 2) return t; var k = KNUM[n] || n + '人'; return t.replace(/二人一組/g, '全員まとめて').replace(/二人分/g, k + '分').replace(/二人/g, k).replace(/両者/g, '全員').replace(/どちらが先/g, '誰が先').replace(/どちらだった/g, '誰だった'); }
-    function fmtN(name, L0, extra) { var v = { n: nmList(L0), mc: mc, k: KNUM[L0.length] || L0.length + '人' }; if (extra) Object.keys(extra).forEach(function (x) { v[x] = extra[x]; }); return numFix(ST.fmt(ST.pick(S, poolN(name, L0.length)), v), L0.length); }
+    function fmtN(name, L0, extra) { var v = { n: nmList(L0), mc: mc, k: KNUM[L0.length] || L0.length + '人' }; if (extra) Object.keys(extra).forEach(function (x) { v[x] = extra[x]; }); return numFix(ST.fmt(pkv(poolN(name, L0.length)), v), L0.length); }
     var keys = ['score', 'arouse', 'shame', 'pop'];
     /* みんなで性的な罰ゲームをしてよい顔ぶれか（攻めの指定の人がいない・全員の組が okSex） */
     var grpOk = function (L0) { if (L0.some(function (x) { return hTop(x); })) return false; for (var i = 0; i < L0.length; i++) for (var j = i + 1; j < L0.length; j++) if (!okS(L0[i], L0[j])) return false; return true; };
@@ -111,10 +140,10 @@
       v += p.action.id === 'win' ? 6 : p.action.id === 'safe' ? -4 : 0;
       return v + rng() * 45;
     }
-    function quote(p, T) { var l = T[p.persona] || T.gentle; return p.name + ST.pick(S, l); }
+    function quote(p, T) { var l = T[p.persona] || T.gentle; return p.name + pkv(l); }
     /* R18の描写の設定（lewd-unify.js）：男性向けなら ♡ の喘ぎ（ero-kit.js）・山場に段落を足す、濃いなら延長戦・もう一度。テンポを重視するので、描写の長さの設定はない */
     var LX = HK.Lewd, lcf = LX && LX.conf('variety'), ero = !!(lcf && HK.Ero && HK.Ero.on(S) && lew !== 'low'), high = !!(lcf && lew === 'high');
-    function moan(p) { if (ero) return p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; return lew !== 'low' && V && V.CLIMAX[p.persona] ? p.name + '「' + ST.pick(S, V.CLIMAX[p.persona]) + '」' : ''; }
+    function moan(p) { if (ero) return p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; return lew !== 'low' && V && V.CLIMAX[p.persona] ? p.name + '「' + pkv(V.CLIMAX[p.persona]) + '」' : ''; }
     /* 山場の厚い場面（R18版・描写が「ぼかす」以外。solo-variety-thick.js）。tb＝[攻める側, 受ける側] */
     function thick(kind, tb) {
       var TH = VA.THICK, TV = HK.ThickVM;
@@ -128,7 +157,7 @@
       }
       var l = TH[key];
       if (!l || !l.length) return '';
-      var out = (VA.thickVoice || TV.voice)(rng, ST.pick(S, l), b, t), pk = function (a) { return ST.pick(S, a); };
+      var out = (VA.thickVoice || TV.voice)(rng, pkv(l), b, t), pk = function (a) { return pkv(a); };
       if (ero && VA.THICK_ERO && VA.THICK_ERO[key]) out += '\n\n' + HK.Ero.fill(S, pk(VA.THICK_ERO[key]), b);
       if (high) {
         if ((kind === 'pair' || kind === 'gone') && HK.ThickEro) out += '\n\n' + HK.ThickEro.again(S, pk, t, b, ero, false).replace(/\{a\}/g, t.name).replace(/\{b\}/g, b.name);
@@ -142,18 +171,18 @@
       var t = tb[0], b = tb[1], key = kind;
       if (kind === 'pair' || kind === 'gone') { var tf = PO ? PO.isF(t) : t.gender === 'f', bf = PO ? PO.isFBody(b) : b.gender === 'f'; key = kind + (tf && bf ? 'FF' : tf ? 'FM' : 'M'); }
       var l = VA.THICK_ERO[key];
-      return l && l.length ? ST.fmt(HK.Ero.fill(S, ST.pick(S, l), b), { a: t.name, t: t.name, b: b.name, mc: mc }) : '';
+      return l && l.length ? ST.fmt(HK.Ero.fill(S, pkv(l), b), { a: t.name, t: t.name, b: b.name, mc: mc }) : '';
     }
     function fill(t, a, b) { return ST.fmt(t, { a: a ? a.name : '', b: b ? (b.name || b) : rng.pick(VA.ASSIST), mc: mc }); }
-    function sayIf(o) { if (S.room == null || S.room > 0) { if (S.room != null) S.room--; ST.say(S, o); } }
-    function mcr(tag, pr) { return VA.MCR && VA.MCR[tag] && rng() < (pr == null ? 0.5 : pr) ? '――' + mc + ST.pick(S, VA.MCR[tag]) + (VA.CATCH && VA.CATCH[mc] && rng() < 0.12 ? 'お決まりの' + VA.CATCH[mc] + 'も飛び出した。' : '') : ''; }
+    function sayIf(o) { if (S.room == null || S.room > 0) { if (S.room != null) S.room--; sayV(o); } }
+    function mcr(tag, pr) { return VA.MCR && VA.MCR[tag] && rng() < (pr == null ? 0.5 : pr) ? '――' + mc + pkv(VA.MCR[tag]) + (VA.CATCH && VA.CATCH[mc] && rng() < 0.12 ? 'お決まりの' + VA.CATCH[mc] + 'も飛び出した。' : '') : ''; }
     function giveTitle(p, K, i) { var T = VA.TITLES && VA.TITLES[K.name]; if (p && T && T[i] && p.titles.indexOf(T[i]) < 0) p.titles.push(T[i]); }
     function addPts(p, n, dbl) { p.m.score += n * (dbl ? 2 : 1); }
-    function climax(p, n) { p.cnt.climax += n || 1; p.m.arouse = 20; p.m.shame = clamp(p.m.shame + 6, 0, 100); p.m.pop = clamp(p.m.pop + 3, 0, 100); rating += 0.3; }
+    function climax(p, n) { p.cnt.climax += n || 1; p.m.arouse = 20; p.m.shame = clamp(p.m.shame + 6, 0, 100); p.m.pop = clamp(p.m.pop + 3, 0, 100); rating += 0.3;  heatV(p); }
 
     /* ---------- オープニング ---------- */
     ST.step(S, 'オープニング');
-    ST.say(S, { kind: 'phase', text: '深夜のお色気バラエティ「' + show + '」、生放送スタート！　' + mc + 'の呼び込みで、' + P.map(function (p) { return p.name; }).join('・') + 'がスタジオに登場した。' + (VA.MC_OPEN ? mc + ST.pick(S, VA.MC_OPEN) : '') });
+    sayV({ kind: 'phase', text: '深夜のお色気バラエティ「' + show + '」、生放送スタート！　' + mc + 'の呼び込みで、' + P.map(function (p) { return p.name; }).join('・') + 'がスタジオに登場した。' + (VA.MC_OPEN ? mc + pkv(VA.MC_OPEN) : '') });
     ST.budget(S, 2);
     var intro = shuffle(rng, P).slice(0, 2);
     /* 血縁で出演している組は、オープニングで紹介する */
@@ -166,15 +195,15 @@
         var D = HK.TIES[t.type], k = VA.INTRO_KIN[t.type] ? t.type : VA.INTRO_KIN[D.like] ? D.like : 'sibling';
         kinDone[a.i] = kinDone[b.i] = 1;
         var mk = VA.INTRO_KIN_MC ? (VA.INTRO_KIN_MC[k] || (/^sib/.test(t.type) ? VA.INTRO_KIN_MC.sibling : VA.INTRO_KIN_MC[D.like]) || VA.INTRO_KIN_MC.sibling) : null;
-        var tx = (mk ? ST.fmt(ST.pick(S, mk), { a: a.name, b: b.name, mc: mc }) : '') + ST.fmt(ST.pick(S, VA.INTRO_KIN[k]), { a: a.name, b: b.name, mc: mc });
+        var tx = (mk ? ST.fmt(pkv(mk), { a: a.name, b: b.name, mc: mc }) : '') + ST.fmt(pkv(VA.INTRO_KIN[k]), { a: a.name, b: b.name, mc: mc });
         var bt = b.eg && HK.egoType ? HK.egoType(b.eg).top : '';
-        if (VA.KIN_REACT && VA.KIN_REACT[bt] && rng() < 0.6) tx += ST.fmt(ST.pick(S, VA.KIN_REACT[bt]), { a: a.name, b: b.name, mc: mc });
-        if (kinBlock(a, b) && VA.INTRO_KIN_NOTE) tx += ST.fmt(ST.pick(S, VA.INTRO_KIN_NOTE), { a: a.name, b: b.name, mc: mc });
-        ST.say(S, { actors: [a, b], tag: D.label + 'で出演', text: tx, why: '関係「' + D.label + '」の二人が出演' + (kinBlock(a, b) ? '（血縁なので、二人を組ませる企画はない）' : ''), mag: 16 });
+        if (VA.KIN_REACT && VA.KIN_REACT[bt] && rng() < 0.6) tx += ST.fmt(pkv(VA.KIN_REACT[bt]), { a: a.name, b: b.name, mc: mc });
+        if (kinBlock(a, b) && VA.INTRO_KIN_NOTE) tx += ST.fmt(pkv(VA.INTRO_KIN_NOTE), { a: a.name, b: b.name, mc: mc });
+        sayV({ actors: [a, b], tag: D.label + 'で出演', text: tx, why: '関係「' + D.label + '」の二人が出演' + (kinBlock(a, b) ? '（血縁なので、二人を組ませる企画はない）' : ''), mag: 16 });
       }); });
     }
     intro.forEach(function (p) {
-      ST.say(S, { actors: [p], tag: '意気込み', text: VA.introLine ? VA.introLine(S, p, P, mc) : p.name + 'は' + ({ win: '「優勝しか見てない」と言い切った。', fun: '「楽しんだもん勝ちでしょ！」とカメラに手を振った。', safe: '緊張で顔がこわばっていた。' }[p.action.id]), why: '方針「' + p.action.label + '」・目標「' + p.goal.label + '」' });
+      sayV({ actors: [p], tag: '意気込み', text: VA.introLine ? VA.introLine(S, p, P, mc) : p.name + 'は' + ({ win: '「優勝しか見てない」と言い切った。', fun: '「楽しんだもん勝ちでしょ！」とカメラに手を振った。', safe: '緊張で顔がこわばっていた。' }[p.action.id]), why: '方針「' + p.action.label + '」・目標「' + p.goal.label + '」' });
     });
     ST.snap(S, keys);
 
@@ -224,7 +253,7 @@
           }
         }
       }
-      ST.say(S, { kind: 'phase', text: '【' + K.name + '】（' + (TYPE[K.type] || '当てっこ') + '・' + STAT[K.stat] + 'が効く）' + ST.fmt(K.rule, { mc: mc, h: hid ? hid.name : '' }) + (P.length > AP.length ? '（' + P.filter(function (p) { return p.away; }).map(function (p) { return p.name; }).join('・') + 'は楽屋から戻ってこないまま）' : '') });
+      sayV({ kind: 'phase', text: '【' + K.name + '】（' + (TYPE[K.type] || '当てっこ') + '・' + STAT[K.stat] + 'が効く）' + ST.fmt(K.rule, { mc: mc, h: hid ? hid.name : '' }) + (P.length > AP.length ? '（' + P.filter(function (p) { return p.away; }).map(function (p) { return p.name; }).join('・') + 'は楽屋から戻ってこないまま）' : '') });
       /* ハプニング（企画の前） */
       if (rng() < env.ev / 100 * 0.6) {
         var e = HK.weighted(rng, VA.EVENTS, function (x) { return (c === 0 && /retry|reverse|tears|guest/.test(x.id) ? 0 : 1) / (1 + (S.flags['ev_' + x.id] || 0) * 3); });
@@ -260,13 +289,13 @@
         if (fx.pop) a.m.pop = clamp(a.m.pop + fx.pop, 0, 100);
         if (fx.score) a.m.score += fx.score;
         if (fx.rating) rating += fx.rating;
-        if (fx.arouse) a.m.arouse = clamp(a.m.arouse + fx.arouse, 0, 100);
+        if (fx.arouse) { a.m.arouse = clamp(a.m.arouse + fx.arouse, 0, 100); heatV(a); }
         if (fx.crush) { a.att[b.i] = (a.att[b.i] || 0) + 2; b.att[a.i] = (b.att[a.i] || 0) + 1; }
         if (fx.fight) { a.att[b.i] = (a.att[b.i] || 0) - 1; }
         var low = null;
         if (fx.underdog) { low = P.slice().sort(function (x, y) { return x.m.score - y.m.score; })[0]; low.m.score += fx.underdog; }
-        var et = (fx.amaama && VA.AMA_FRAME ? ST.fmt(ST.pick(S, VA.AMA_FRAME), { a: a.name, q: a.name + ST.pick(S, VA.AMA[a.persona] || VA.AMA.gentle), s: VA.STIR ? ST.pick(S, VA.STIR) : '共演者たちがざわついた' }) : fill(ST.pick(S, e.t), a, b)) + (fx.dressing ? mcr('away', 1) : fx.amaama ? mcr('amaama', 0.8) : fx.shame ? mcr('accident', 0.6) : '');
-        ST.say(S, { actors: fx.double || fx.underdog ? (low ? [low] : []) : fx.crush || fx.fight || fx.dressing ? [a, b] : [a], tag: fx.dressing ? '楽屋から戻らない' : fx.amaama ? '甘々ボイス' : 'ハプニング', text: et + (low ? low.name + 'に二十点が入った。' : ''), why: e.pin ? '両片想いの二人（どちらも、相手は自分を何とも思っていないと思っている）' : fx.double ? 'この企画の得点は二倍' : fx.score ? '+' + fx.score + '点' : fx.underdog ? '最下位救済' : fx.dressing ? '企画で何度も絡んだ二人（この企画は欠場）' : fx.amaama ? '共演者全員の興奮 +22（我慢が効く企画で不利に）' : '', mag: fx.dressing ? 32 : 18 });
+        var et = (fx.amaama && VA.AMA_FRAME ? ST.fmt(pkv(VA.AMA_FRAME), { a: a.name, q: a.name + pkv(VA.AMA[a.persona] || VA.AMA.gentle), s: VA.STIR ? pkv(VA.STIR) : '共演者たちがざわついた' }) : fill(pkv(e.t), a, b)) + (fx.dressing ? mcr('away', 1) : fx.amaama ? mcr('amaama', 0.8) : fx.shame ? mcr('accident', 0.6) : '');
+        sayV({ actors: fx.double || fx.underdog ? (low ? [low] : []) : fx.crush || fx.fight || fx.dressing ? [a, b] : [a], tag: fx.dressing ? '楽屋から戻らない' : fx.amaama ? '甘々ボイス' : 'ハプニング', text: et + (low ? low.name + 'に二十点が入った。' : ''), why: e.pin ? '両片想いの二人（どちらも、相手は自分を何とも思っていないと思っている）' : fx.double ? 'この企画の得点は二倍' : fx.score ? '+' + fx.score + '点' : fx.underdog ? '最下位救済' : fx.dressing ? '企画で何度も絡んだ二人（この企画は欠場）' : fx.amaama ? '共演者全員の興奮 +22（我慢が効く企画で不利に）' : '', mag: fx.dressing ? 32 : 18 });
       }
       var res = playCorner(K, dbl, AP, hid);
       /* 性格が見える出来事 */
@@ -286,7 +315,7 @@
           if (cf.attB) { who.att[oth.i] = (who.att[oth.i] || 0) + cf.attB; if (cf.attB > 0) oth.att[who.i] = (oth.att[who.i] || 0) + 1; }
           if (cf.rivalArouse) oth.m.arouse = clamp(oth.m.arouse + cf.rivalArouse, 0, 100);
           if (ce.title && who.titles.indexOf(ce.title) < 0) who.titles.push(ce.title);
-          ST.sayB(S, { actors: oth !== who ? [who, oth] : [who], tag: ce.title, text: ST.fmt(ST.pick(S, ce.t), { a: who.name, b: oth.name, mc: mc }), why: '性格が出た：' + ce.why + (cf.score ? '／+' + cf.score + '点' : ''), mag: 16 }, who.name + '：' + ce.title, true);
+          sayBV({ actors: oth !== who ? [who, oth] : [who], tag: ce.title, text: ST.fmt(pkv(ce.t), { a: who.name, b: oth.name, mc: mc }), why: '性格が出た：' + ce.why + (cf.score ? '／+' + cf.score + '点' : ''), mag: 16 }, who.name + '：' + ce.title, true);
         }
       }
       /* 罰ゲーム */
@@ -301,13 +330,13 @@
         var l2 = lasts.slice(), safe2 = !grpOk(l2);
         l2.forEach(function (x) { x.cnt.penalty++; x.m.shame = clamp(x.m.shame + 18, 0, 100); x.m.pop = clamp(x.m.pop + 6, 0, 100); });
         rating += 0.8;
-        ST.sayB(S, { actors: l2, tag: '罰ゲーム', text: fmtN(safe2 ? 'PENALTY_SAFE' : 'PENALTY_PAIR', l2) + (rng() < 0.6 ? quote(l2[0], VA.LOSE) : '') + mcr('penalty', 0.45), why: 'この企画の同率最下位', mag: 24 }, nmList(l2) + 'は罰ゲーム', true);
+        sayBV({ actors: l2, tag: '罰ゲーム', text: fmtN(safe2 ? 'PENALTY_SAFE' : 'PENALTY_PAIR', l2) + (rng() < 0.6 ? quote(l2[0], VA.LOSE) : '') + mcr('penalty', 0.45), why: 'この企画の同率最下位', mag: 24 }, nmList(l2) + 'は罰ゲーム', true);
       } else if (res.last && res.last !== hid && penOn) {
         var lp = res.last;
         lp.cnt.penalty++; lp.m.shame = clamp(lp.m.shame + 18, 0, 100); lp.m.pop = clamp(lp.m.pop + 6, 0, 100); rating += 0.5;
-        ST.sayB(S, { actors: [lp], tag: '罰ゲーム', text: fill(ST.pick(S, hTop(lp) ? VA.PENALTY.filter(function (x) { return !VA.PENALTY_RECV_RE.test(x); }).concat(VA.PENALTY_TOP) : VA.PENALTY), lp) + (rng() < 0.5 ? quote(lp, VA.LOSE) : '') + mcr('penalty', 0.45), why: penWhy, mag: 22 }, lp.name + 'は罰ゲーム', true);
+        sayBV({ actors: [lp], tag: '罰ゲーム', text: fill(pkv(hTop(lp) ? VA.PENALTY.filter(function (x) { return !VA.PENALTY_RECV_RE.test(x); }).concat(VA.PENALTY_TOP) : VA.PENALTY), lp) + (rng() < 0.5 ? quote(lp, VA.LOSE) : '') + mcr('penalty', 0.45), why: penWhy, mag: 22 }, lp.name + 'は罰ゲーム', true);
       }
-      if (rng() < 0.25) sayIf({ kind: 'phase', text: fill(ST.pick(S, VA.MC_SAY)) });
+      if (rng() < 0.25) sayIf({ kind: 'phase', text: fill(pkv(VA.MC_SAY)) });
       ST.flushShort(S, 'ほかの結果：');
       /* 楽屋から戻ってくる */
       var pairDone = {};
@@ -316,15 +345,15 @@
         var q = P[p.wentAway]; pairDone[p.i] = 1; if (q) pairDone[q.i] = 1;
         if (!p.awayDone && rng() < 0.35 && c < env.corners - 1) { p.awayDone = true; if (q) q.awayDone = true; return; }
         p.away = 0; p.awayDone = false; if (q) { q.away = 0; q.awayDone = false; }
-        ST.say(S, { actors: q ? [p, q] : [p], tag: '楽屋から戻った', text: ST.fmt(ST.pick(S, VA.RETURN), { a: p.name, b: q ? q.name : '', mc: mc }) + (function () { var lv = P.filter(function (x) { return x !== p && x !== q && ((/lover|mate/.test(tie(x, p))) || (q && /lover|mate/.test(tie(x, q)))); })[0]; return lv ? lv.name + 'は、恋人が楽屋で何をしていたのか察した。顔は笑っていたが、目は笑っていなかった。' : ''; })(), why: '楽屋にいたあいだの企画は欠場（得点なし）', mag: 20 });
+        sayV({ actors: q ? [p, q] : [p], tag: '楽屋から戻った', text: ST.fmt(pkv(VA.RETURN), { a: p.name, b: q ? q.name : '', mc: mc }) + (function () { var lv = P.filter(function (x) { return x !== p && x !== q && ((/lover|mate/.test(tie(x, p))) || (q && /lover|mate/.test(tie(x, q)))); })[0]; return lv ? lv.name + 'は、恋人が楽屋で何をしていたのか察した。顔は笑っていたが、目は笑っていなかった。' : ''; })(), why: '楽屋にいたあいだの企画は欠場（得点なし）', mag: 20 });
       });
-      ST.say(S, { kind: 'phase', actors: P.map(function (p) { return p.i; }), text: '途中経過：' + P.slice().sort(function (x, y) { return y.m.score - x.m.score; }).map(function (p) { return p.name + ' ' + Math.round(p.m.score) + '点'; }).join('／') });
-      P.forEach(function (p) { p.m.arouse = clamp(p.m.arouse - 8, 0, 100); });
+      sayV({ kind: 'phase', actors: P.map(function (p) { return p.i; }), text: '途中経過：' + P.slice().sort(function (x, y) { return y.m.score - x.m.score; }).map(function (p) { return p.name + ' ' + Math.round(p.m.score) + '点'; }).join('／') });
+      P.forEach(function (p) { p.m.arouse = clamp(p.m.arouse - 8, 0, 100); heatV(p); });
       /* 恥じらい派が、途中で番組に順応する */
       P.forEach(function (p) {
         if (p.mood === 'shy' && c >= 1 && !p.away && VA.ATT && rng() < 0.12 + p.tr.fc * 0.35 + p.cnt.climax * 0.04) {
           p.mood = 'nori'; p.adapted = true; if (p.titles.indexOf('順応の早い人') < 0) p.titles.push('順応の早い人');
-          sayIf({ actors: [p], tag: '順応', text: fill(ST.pick(S, VA.ATT.adapt), p), why: '恥じらっていたが、FC（' + Math.round(p.eg.FC) + '）と場の熱に流された', mag: 16 });
+          sayIf({ actors: [p], tag: '順応', text: fill(pkv(VA.ATT.adapt), p), why: '恥じらっていたが、FC（' + Math.round(p.eg.FC) + '）と場の熱に流された', mag: 16 });
         }
       });
       ST.snap(S, keys);
@@ -340,6 +369,7 @@
         rows.forEach(function (r) { r.rv = Math.round(r.v); });
         rows.forEach(function (r) { r.rk = 1 + rows.filter(function (q) { return q.rv > r.rv; }).length; });
         var minRv = rows[rows.length - 1].rv, allTie = rows.every(function (r) { return r.rv === rows[0].rv; });
+        var usedPlay = {};
         var tops = rows.filter(function (r) { return r.rk === 1; }), bots = allTie ? [] : rows.filter(function (r) { return r.rv === minRv; });
         rows.forEach(function (r, i) {
           var top = r.rk === 1, bot = !allTie && r.rv === minRv, p = r.p, good = top ? r.v >= 40 : bot && rows.length > 2 ? false : r.v >= 58;
@@ -349,7 +379,8 @@
           var fl = hTop(p) && VA.TOP_SIDE && VA.TOP_SIDE[K.name];
           if (other) { p.att[other.i] = (p.att[other.i] || 0) + (good ? 2 : 1); if (good) other.att[p.i] = (other.att[p.i] || 0) + 1; }
           var bn = other ? other.name : assist(p, K);
-          var t = att(p, 0.3) + ST.fmt(ST.pick(S, (fl && fl.play) || K.play), { a: p.name, b: bn, mc: mc }) + ST.fmt(ST.pick(S, good ? (fl && fl.hit) || K.hit : (fl && fl.miss) || K.miss), { a: p.name, b: bn, mc: mc });
+          var pl0 = pkv((fl && fl.play) || K.play), t = att(p, 0.3) + ST.fmt(usedPlay[pl0] ? pkv(NEXT_UP) : pl0, { a: p.name, b: bn, mc: mc }) + ST.fmt(pkv(good ? (fl && fl.hit) || K.hit : (fl && fl.miss) || K.miss), { a: p.name, b: bn, mc: mc });
+          usedPlay[pl0] = 1;
           var climaxed = !fl && (K.stat === 'gaman' && !good && K.name !== '連続絶頂記録') || (K.name === '連続絶頂記録' && good) || (/イキ顔|実況|喘ぎ声|フェラ当て/.test(K.name) && rng() < 0.6);
           if (climaxed) { climax(p, K.name === '連続絶頂記録' ? 3 + rng.int(6) : 1); t += moan(p); }
           if (top) t += quote(p, climaxed && VA.WIN_HOT ? VA.WIN_HOT : VA.WIN) + mcr('win'); else if (bot && rng() < 0.6) t += quote(p, VA.LOSE) + mcr('lose', 0.4); else if (climaxed) t += mcr('climax', 0.35);
@@ -363,7 +394,7 @@
           if (good) p.m.pop = clamp(p.m.pop + 4, 0, 100);
           else p.m.shame = clamp(p.m.shame + 6, 0, 100);
           var rl = r.rk + '位' + (rows.filter(function (q) { return q.rk === r.rk; }).length > 1 ? '（同率）' : '');
-          ST.sayB(S, { actors: [p], tag: rl, text: t, why: K.name + '：' + STAT[K.stat] + 'の出来 ' + r.rv + '／+' + pt * (dbl ? 2 : 1) + '点', mag: top ? 28 : 14, kind: climaxed ? 'climax' : 'event' }, p.name + ' ' + rl + (climaxed ? '（イった）' : ''), top || (bot && rows.length > 2));
+          sayBV({ actors: [p], tag: rl, text: t, why: K.name + '：' + STAT[K.stat] + 'の出来 ' + r.rv + '／+' + pt * (dbl ? 2 : 1) + '点', mag: top ? 28 : 14, kind: climaxed ? 'climax' : 'event' }, p.name + ' ' + rl + (climaxed ? '（イった）' : ''), top || (bot && rows.length > 2));
         });
         out.last = rows[rows.length - 1].p;
         out.lasts = bots.length ? bots.map(function (x) { return x.p; }) : [out.last];
@@ -375,12 +406,12 @@
         var outs = ET && ET.out ? P.filter(hTop) : [];
         outs.forEach(function (p) {
           addPts(p, 10, dbl);
-          ST.sayB(S, { actors: [p], tag: '別枠で参加', text: fill(ST.pick(S, ET.out), p) + mcr('win', 0.3), why: '攻めの指定：責められる側の耐久には乗らない／+' + 10 * (dbl ? 2 : 1) + '点', mag: 18 }, p.name + 'は別枠', true);
+          sayBV({ actors: [p], tag: '別枠で参加', text: fill(pkv(ET.out), p) + mcr('win', 0.3), why: '攻めの指定：責められる側の耐久には乗らない／+' + 10 * (dbl ? 2 : 1) + '点', mag: 18 }, p.name + 'は別枠', true);
         });
         var P2 = P.filter(function (p) { return outs.indexOf(p) < 0; });
         if (!P2.length) return out;
         var order = P2.map(function (p) { return { p: p, v: skill(p, K.stat) }; }).sort(function (x, y) { return x.v - y.v; });
-        sayIf({ kind: 'phase', text: fill(ST.pick(S, K.play)) });
+        sayIf({ kind: 'phase', text: fill(pkv(K.play)) });
         /* 同率：粘り（四捨五入）が同じなら、同時に脱落／同時優勝 */
         order.forEach(function (r) { r.rv = Math.round(r.v); });
         var maxRv = order[order.length - 1].rv, minRv2 = order[0].rv;
@@ -388,7 +419,7 @@
         order.forEach(function (r, i) {
           var p = r.p, win = r.rv === maxRv, rank = 1 + order.filter(function (q) { return q.rv > r.rv; }).length;
           var tp = hTop(p) && ET ? (win ? ET.hit : ET.miss) : null;
-          var t = att(p, 0.22) + fill(ST.pick(S, tp || (win ? K.hit : K.miss)), p);
+          var t = att(p, 0.22) + fill(pkv(tp || (win ? K.hit : K.miss)), p);
           if (win && winners.length > 1) t = att(p, 0.22) + (r === winners[0] ? fmtN('ENDURE_TIE', winners.map(function (x) { return x.p; })) : '');
           if (!win && firstOut.length > 1 && r === firstOut[0] && VA.ENDURE_TIE_OUT) t += fmtN('ENDURE_TIE_OUT', firstOut.map(function (x) { return x.p; }));
           if (hTop(p) && ET) { /* 攻めの指定：責められて果てる文にしない */ }
@@ -399,7 +430,7 @@
           var pts = win ? 30 : rank === 2 ? 18 : rank === 3 ? 10 : 2;
           addPts(p, pts, dbl);
           if (isFirstOut) p.cnt.last++;
-          ST.sayB(S, { actors: [p], tag: win ? (winners.length > 1 ? '同時優勝' : '優勝') : rank + '位で脱落' + (order.filter(function (q) { return q.rv === r.rv; }).length > 1 ? '（同着）' : ''), text: t, why: K.name + '：' + STAT[K.stat] + 'の粘り ' + Math.round(r.v) + '／+' + pts * (dbl ? 2 : 1) + '点', mag: win ? 30 : 12, kind: 'climax' }, p.name + (win ? '優勝' : '脱落'), win || i === 0);
+          sayBV({ actors: [p], tag: win ? (winners.length > 1 ? '同時優勝' : '優勝') : rank + '位で脱落' + (order.filter(function (q) { return q.rv === r.rv; }).length > 1 ? '（同着）' : ''), text: t, why: K.name + '：' + STAT[K.stat] + 'の粘り ' + Math.round(r.v) + '／+' + pts * (dbl ? 2 : 1) + '点', mag: win ? 30 : 12, kind: 'climax' }, p.name + (win ? '優勝' : '脱落'), win || i === 0);
         });
         out.last = order[0].p;
         out.lasts = firstOut.length ? firstOut.map(function (x) { return x.p; }) : [out.last];
@@ -415,23 +446,23 @@
           sh.push(a0, rest.splice(j0, 1)[0]);
         }
         var bye = rest.length ? rest[0] : null;
-        if (bye) { addPts(bye, 5, dbl); ST.sayB(S, { actors: [bye], tag: 'シード', text: bye.name + 'はくじ引きでシードになり、高みの見物を決め込んだ。', why: '+5点' }, bye.name + 'はシード'); }
+        if (bye) { addPts(bye, 5, dbl); sayBV({ actors: [bye], tag: 'シード', text: bye.name + 'はくじ引きでシードになり、高みの見物を決め込んだ。', why: '+5点' }, bye.name + 'はシード'); }
         for (var i = 0; i < sh.length; i += 2) {
           var a = sh[i], b = sh[i + 1], va = skill(a, K.stat), vb = skill(b, K.stat);
           var w = va >= vb ? a : b, l = w === a ? b : a, draw = Math.abs(va - vb) < 5;
-          var t = fill(ST.pick(S, K.play), a, b);
+          var t = fill(pkv(K.play), a, b);
           var ty = tie(a, b);
           if (ty === 'lover' || ty === 'mate' || ty === 'fwb') t += 'まさかの恋人同士の対決に、スタジオが沸いた。';
           else if (ty === 'rival' || ty === 'enemy') t += '因縁の二人の対決に、スタジオの空気が張り詰めた。';
           /* 向きの決まらない組：アシスタントを相手に、別々に同じ勝負をする */
           if (!okS(a, b) && VA.DUEL_NG) {
-            t = fill(ST.pick(S, VA.DUEL_NG.play), a, b);
-            if (draw) { t += fill(ST.pick(S, VA.DUEL_NG.draw), a, b); addPts(a, 10, dbl); addPts(b, 10, dbl); ST.sayB(S, { actors: [a, b], tag: '引き分け', text: t, why: K.name + '（別々に対戦）：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／両者+10点', mag: 18 }, a.name + '×' + b.name + '＝引き分け', i === 0); continue; }
-            t += fill(ST.pick(S, VA.DUEL_NG.hit), w, l) + quote(w, VA.WIN) + (rng() < 0.5 ? quote(l, VA.LOSE) : '');
+            t = fill(pkv(VA.DUEL_NG.play), a, b);
+            if (draw) { t += fill(pkv(VA.DUEL_NG.draw), a, b); addPts(a, 10, dbl); addPts(b, 10, dbl); sayBV({ actors: [a, b], tag: '引き分け', text: t, why: K.name + '（別々に対戦）：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／両者+10点', mag: 18 }, a.name + '×' + b.name + '＝引き分け', i === 0); continue; }
+            t += fill(pkv(VA.DUEL_NG.hit), w, l) + quote(w, VA.WIN) + (rng() < 0.5 ? quote(l, VA.LOSE) : '');
             addPts(w, 25, dbl); addPts(l, 3, dbl); w.cnt.first++;
             if (Math.min(va, vb) < wv) { wv = Math.min(va, vb); worst = l; }
             if (!out.best || Math.max(va, vb) > out.bv) { out.best = w; out.bv = Math.max(va, vb); }
-            ST.sayB(S, { actors: [w, l], tag: w.name + 'の勝ち', text: t, why: K.name + '（別々に対戦）：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／勝者+25点', mag: 22 }, w.name + '○－●' + l.name, i === 0);
+            sayBV({ actors: [w, l], tag: w.name + 'の勝ち', text: t, why: K.name + '（別々に対戦）：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／勝者+25点', mag: 22 }, w.name + '○－●' + l.name, i === 0);
             continue;
           }
           a.att[b.i] = (a.att[b.i] || 0) + 1; b.att[a.i] = (b.att[a.i] || 0) + 1;
@@ -439,32 +470,32 @@
           var DP = PO && PO.fixed(a, b) && VA.DUEL_POS && VA.DUEL_POS[K.name];
           if (DP) {
             var oT = ord(a, b), T0 = oT[0], B0 = oT[1], vT = T0 === a ? va : vb, vB = T0 === a ? vb : va;
-            t = fill(ST.pick(S, DP.play), T0, B0) + (ty === 'lover' || ty === 'mate' || ty === 'fwb' ? 'まさかの恋人同士の対決に、スタジオが沸いた。' : ty === 'rival' || ty === 'enemy' ? '因縁の二人の対決に、スタジオの空気が張り詰めた。' : '');
+            t = fill(pkv(DP.play), T0, B0) + (ty === 'lover' || ty === 'mate' || ty === 'fwb' ? 'まさかの恋人同士の対決に、スタジオが沸いた。' : ty === 'rival' || ty === 'enemy' ? '因縁の二人の対決に、スタジオの空気が張り詰めた。' : '');
             if (draw) {
-              t += fill(ST.pick(S, VA.DUEL_POS_DRAW), T0, B0);
+              t += fill(pkv(VA.DUEL_POS_DRAW), T0, B0);
               addPts(a, 10, dbl); addPts(b, 10, dbl);
-              ST.sayB(S, { actors: [T0, B0], tag: '引き分け', text: t, why: K.name + '：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／両者+10点', mag: 22 }, a.name + '×' + b.name + '＝引き分け', i === 0);
+              sayBV({ actors: [T0, B0], tag: '引き分け', text: t, why: K.name + '：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／両者+10点', mag: 22 }, a.name + '×' + b.name + '＝引き分け', i === 0);
               continue;
             }
             var tw = vT >= vB;
             w = tw ? T0 : B0; l = tw ? B0 : T0;
-            t += fill(ST.pick(S, tw ? DP.win : DP.hold), T0, B0);
+            t += fill(pkv(tw ? DP.win : DP.hold), T0, B0);
             if (tw && K.stat !== 'brain' && K.stat !== 'luck') { climax(B0, 1); t += moan(B0); }
             t += quote(w, VA.WIN) + (rng() < 0.5 ? quote(l, VA.LOSE) : '');
             addPts(w, 25, dbl); addPts(l, 3, dbl); w.cnt.first++;
             if (i === 0) t += mcr(Math.abs(va - vb) > 30 ? 'win' : 'climax', 0.6);
             if (Math.min(va, vb) < wv) { wv = Math.min(va, vb); worst = l; }
             if (!out.best || Math.max(va, vb) > out.bv) { out.best = w; out.bv = Math.max(va, vb); }
-            ST.sayB(S, { actors: [w, l], tag: w.name + 'の勝ち', text: t, why: K.name + '：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／勝者+25点（責めるのは' + T0.name + '）', mag: 26, kind: tw ? 'climax' : 'event' }, w.name + '○－●' + l.name, i === 0);
+            sayBV({ actors: [w, l], tag: w.name + 'の勝ち', text: t, why: K.name + '：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／勝者+25点（責めるのは' + T0.name + '）', mag: 26, kind: tw ? 'climax' : 'event' }, w.name + '○－●' + l.name, i === 0);
             continue;
           }
           if (draw) {
-            t += fill(ST.pick(S, K.miss), a, b);
+            t += fill(pkv(K.miss), a, b);
             if (K.stat !== 'brain') { climax(a, 1); climax(b, 1); t += moan(a); }
             addPts(a, 10, dbl); addPts(b, 10, dbl); t += mcr('draw', 0.7);
-            ST.sayB(S, { actors: [a, b], tag: '引き分け', text: t, why: K.name + '：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／両者+10点', mag: 22, kind: 'climax' }, a.name + '×' + b.name + '＝引き分け', i === 0);
+            sayBV({ actors: [a, b], tag: '引き分け', text: t, why: K.name + '：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／両者+10点', mag: 22, kind: 'climax' }, a.name + '×' + b.name + '＝引き分け', i === 0);
           } else {
-            t += fill(ST.pick(S, K.hit), w, l);
+            t += fill(pkv(K.hit), w, l);
             if (K.stat !== 'brain' && K.stat !== 'luck') { climax(l, 1); t += moan(l); }
             t += quote(w, VA.WIN) + (rng() < 0.5 ? quote(l, VA.LOSE) : '');
             addPts(w, 25, dbl); addPts(l, 3, dbl); w.cnt.first++;
@@ -472,7 +503,7 @@
             var lv = Math.min(va, vb), hv = Math.max(va, vb);
             if (lv < wv) { wv = lv; worst = l; }
             if (!out.best || hv > out.bv) { out.best = w; out.bv = hv; }
-            ST.sayB(S, { actors: [w, l], tag: w.name + 'の勝ち', text: t, why: K.name + '：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／勝者+25点', mag: 26, kind: 'climax' }, w.name + '○－●' + l.name, i === 0);
+            sayBV({ actors: [w, l], tag: w.name + 'の勝ち', text: t, why: K.name + '：' + a.name + ' ' + Math.round(va) + ' 対 ' + b.name + ' ' + Math.round(vb) + '／勝者+25点', mag: 26, kind: 'climax' }, w.name + '○－●' + l.name, i === 0);
           }
         }
         if (worst) { worst.cnt.last++; giveTitle(worst, K, 1); }
@@ -491,11 +522,11 @@
       var nA = 'チーム' + A[0].name, nB = 'チーム' + B[0].name;
       var sA = A.reduce(function (s, p) { return s + skill(p, K.stat); }, 0) / A.length, sB = B.reduce(function (s, p) { return s + skill(p, K.stat); }, 0) / B.length;
       var W = sA >= sB ? A : B, Lo = W === A ? B : A, nW = W === A ? nA : nB, nL = W === A ? nB : nA;
-      var tt = ST.fmt(ST.pick(S, K.play), { A: nA, B: nB, mc: mc }) + ST.fmt(ST.pick(S, K.hit), { A: nW, B: nL, mc: mc }) + ST.fmt(ST.pick(S, K.miss), { A: nW, B: nL, mc: mc });
+      var tt = ST.fmt(pkv(K.play), { A: nA, B: nB, mc: mc }) + ST.fmt(pkv(K.hit), { A: nW, B: nL, mc: mc }) + ST.fmt(pkv(K.miss), { A: nW, B: nL, mc: mc });
       W.forEach(function (p) { addPts(p, 18, dbl); p.cnt.first++; });
       Lo.forEach(function (p) { addPts(p, 4, dbl); if (K.stat === 'tech' && rng() < 0.4) climax(p, 1); });
       giveTitle(W[0], K, 0); out.first = W[0];
-      ST.sayB(S, { actors: P, tag: nW + 'の勝ち', text: tt + quote(W[0], VA.WIN) + mcr('team', 0.7), why: K.name + '：' + nA + '（' + A.map(function (p) { return p.name; }).join('・') + '）' + Math.round(sA) + ' 対 ' + nB + '（' + B.map(function (p) { return p.name; }).join('・') + '）' + Math.round(sB) + '／勝ったチームは一人+18点', mag: 26 }, '', true);
+      sayBV({ actors: P, tag: nW + 'の勝ち', text: tt + quote(W[0], VA.WIN) + mcr('team', 0.7), why: K.name + '：' + nA + '（' + A.map(function (p) { return p.name; }).join('・') + '）' + Math.round(sA) + ' 対 ' + nB + '（' + B.map(function (p) { return p.name; }).join('・') + '）' + Math.round(sB) + '／勝ったチームは一人+18点', mag: 26 }, '', true);
       var lw = Lo.slice().sort(function (x, y) { return x.m.score - y.m.score; })[0];
       lw.cnt.last++; giveTitle(lw, K, 1);
       out.last = lw;
@@ -506,7 +537,7 @@
     function guessCorner(K, dbl, P, H) {
       var out = { last: null }, G = P.filter(function (p) { return p !== H; });
       var v0 = { h: H.name, mc: mc };
-      ST.sayB(S, { actors: [H], tag: '当てられる側', text: ST.fmt(ST.pick(S, K.setup), v0), why: H.name + 'がくじで「当てられる側」に選ばれた' }, '', true);
+      sayBV({ actors: [H], tag: '当てられる側', text: ST.fmt(pkv(K.setup), v0), why: H.name + 'がくじで「当てられる側」に選ばれた' }, '', true);
       var rows = G.map(function (p) {
         var ty = tie(p, H), bonus = (p.att[H.i] || 0) * 5 + (/lover|mate|fwb/.test(ty) ? 25 : /childhood|best|sibling/.test(ty) ? 10 : 0);
         return { p: p, v: skill(p, 'brain') * 0.6 + skill(p, 'tech') * 0.4 + bonus, ty: ty };
@@ -526,26 +557,26 @@
           p.m.score += 15; p.m.pop = clamp(p.m.pop - 3, 0, 100);
           if (p.titles.indexOf('プロデューサーのお気に入り') < 0) p.titles.push('プロデューサーのお気に入り');
           p.producer = true;
-          ST.sayB(S, { actors: [p], tag: 'プロデューサーに媚びた', text: ST.fmt(ST.pick(S, VA.PRODUCER), { a: p.name }) + '――' + mc + '「ちょっと！　当てるのは' + H.name + 'さんのです！　誰のを当ててるんですか！」', why: p.name + 'の野心（CP・A・ドライさ・目標「' + p.goal.label + '」）／正解はしなかったが、プロデューサー特別点+15', mag: 26 }, p.name + 'はプロデューサーに媚びた', true);
+          sayBV({ actors: [p], tag: 'プロデューサーに媚びた', text: ST.fmt(pkv(VA.PRODUCER), { a: p.name }) + '――' + mc + '「ちょっと！　当てるのは' + H.name + 'さんのです！　誰のを当ててるんですか！」', why: p.name + 'の野心（CP・A・ドライさ・目標「' + p.goal.label + '」）／正解はしなかったが、プロデューサー特別点+15', mag: 26 }, p.name + 'はプロデューサーに媚びた', true);
           return;
         }
         if (touch) touchN++;
-        var t = ST.fmt(ST.pick(S, touch ? K.play : VA.GUESS_LOOK), { a: p.name, h: H.name }) + ST.fmt(ST.pick(S, touch ? (ok ? K.hit : K.miss) : (ok ? VA.GUESS_LOOK_HIT : VA.GUESS_LOOK_MISS)), { a: p.name, h: H.name });
+        var t = ST.fmt(pkv(touch ? K.play : VA.GUESS_LOOK), { a: p.name, h: H.name }) + ST.fmt(pkv(touch ? (ok ? K.hit : K.miss) : (ok ? VA.GUESS_LOOK_HIT : VA.GUESS_LOOK_MISS)), { a: p.name, h: H.name });
         if (/lover|mate|fwb/.test(r.ty)) t += ok ? '恋人のものを外すわけにはいかなかった。' : '恋人のものを外した。' + H.name + 'の目が据わっていた。';
         var pts = ok ? (nCorrect === 0 ? 30 : 20) : 0;
         if (ok) { nCorrect++; p.att[H.i] = (p.att[H.i] || 0) + 1; } else wrong++;
         addPts(p, pts, dbl);
         if (ok && nCorrect === 1) { p.cnt.first++; giveTitle(p, K, 0); out.first = p; t += quote(p, VA.WIN) + mcr('guess', 0.6); }
         if (!ok && i === rows.length - 1) { p.cnt.last++; giveTitle(p, K, 1); t += mcr('lose', 0.5); out.last = p; }
-        ST.sayB(S, { actors: [p, H], tag: ok ? '正解' : '不正解', text: t, why: K.name + '：見抜く力 ' + Math.round(r.v) + (r.ty ? '（' + H.name + 'との関係で補正）' : '') + '／+' + pts * (dbl ? 2 : 1) + '点', mag: ok ? 24 : 14 }, p.name + (ok ? '正解' : '不正解'), (ok && nCorrect === 1) || (!ok && i === rows.length - 1));
+        sayBV({ actors: [p, H], tag: ok ? '正解' : '不正解', text: t, why: K.name + '：見抜く力 ' + Math.round(r.v) + (r.ty ? '（' + H.name + 'との関係で補正）' : '') + '／+' + pts * (dbl ? 2 : 1) + '点', mag: ok ? 24 : 14 }, p.name + (ok ? '正解' : '不正解'), (ok && nCorrect === 1) || (!ok && i === rows.length - 1));
       });
       /* 当てられる側 */
       addPts(H, wrong * 6, dbl);
       var cl = touchN ? Math.max(1, Math.floor(touchN / 2) + (rng() < 0.5 ? 1 : 0)) : 0;
-      var ht = ST.fmt(ST.pick(S, touchN ? K.tease : VA.GUESS_NOTOUCH.tease), v0);
+      var ht = ST.fmt(pkv(touchN ? K.tease : VA.GUESS_NOTOUCH.tease), v0);
       if (cl && K.stat) { climax(H, cl); ht += moan(H); if (VA.TITLE_HIDE && VA.TITLE_HIDE[K.name] && H.titles.indexOf(VA.TITLE_HIDE[K.name]) < 0) H.titles.push(VA.TITLE_HIDE[K.name]); }
-      ht += ST.fmt(ST.pick(S, touchN ? K.reveal : VA.GUESS_NOTOUCH.reveal), v0) + (cl ? mcr('climax', 0.5) : '');
-      ST.sayB(S, { actors: [H], tag: '壁の向こう', text: ht, why: '見抜かれなかった人数 ' + wrong + '人×6点／触られて' + cl + '回イった', mag: 26, kind: 'climax' }, '', true);
+      ht += ST.fmt(pkv(touchN ? K.reveal : VA.GUESS_NOTOUCH.reveal), v0) + (cl ? mcr('climax', 0.5) : '');
+      sayBV({ actors: [H], tag: '壁の向こう', text: ht, why: '見抜かれなかった人数 ' + wrong + '人×6点／触られて' + cl + '回イった', mag: 26, kind: 'climax' }, '', true);
       if (!out.last) out.last = H;
       return out;
     }
@@ -565,8 +596,8 @@
       var sc = coTop.map(function (p) { return { p: p, v: tv(p) }; }).sort(function (x, y) { return y.v - x.v; });
       champ = sc[0].p;
       var loser = sc[1].p;
-      tbText = numFix(ST.fmt(ST.pick(S, tb.t), { w: champ.name, l: nmList(coTop.filter(function (p) { return p !== champ; })), mc: mc }), coTop.length);
-      ST.key(S, ST.say(S, { actors: coTop, tag: '同点決勝', text: nmList(coTop) + 'が' + topS + '点で並んだ。' + mc + '「同点です！　優勝は同点決勝で決めます！　種目は「' + tb.name + '」！」' + tbText + quote(loser, VA.LOSE), why: '最終得点が同点（' + topS + '点）／決め手：' + STAT_TB[tb.stat], mag: 34 }), '同点決勝で' + champ.name + 'が勝った');
+      tbText = numFix(ST.fmt(pkv(tb.t), { w: champ.name, l: nmList(coTop.filter(function (p) { return p !== champ; })), mc: mc }), coTop.length);
+      ST.key(S, sayV({ actors: coTop, tag: '同点決勝', text: nmList(coTop) + 'が' + topS + '点で並んだ。' + mc + '「同点です！　優勝は同点決勝で決めます！　種目は「' + tb.name + '」！」' + tbText + quote(loser, VA.LOSE), why: '最終得点が同点（' + topS + '点）／決め手：' + STAT_TB[tb.stat], mag: 34 }), '同点決勝で' + champ.name + 'が勝った');
       champ.titles.push('同点決勝の勝者');
       champ.tbWin = true; coTop.forEach(function (p) { if (p !== champ) p.tbLose = true; });
     }
@@ -574,13 +605,13 @@
     var key0 = function (p) { return p.m.score + (p === champ ? 0.5 : 0); };
     rank.forEach(function (p) { p.rank = 1 + rank.filter(function (q) { return key0(q) > key0(p); }).length; p.rankTie = rank.filter(function (q) { return q !== p && key0(q) === key0(p); }).length > 0; });
     var minS = rank[rank.length - 1].m.score, lasts0 = rank.filter(function (p) { return p !== champ && p.m.score === minS; }), last = lasts0[lasts0.length - 1] || rank[rank.length - 1];
-    ST.key(S, ST.say(S, { actors: [champ], tag: '優勝', text: '優勝は' + champ.name + '（' + Math.round(champ.m.score) + '点）！　紙吹雪の中、' + champ.name + 'には「' + prize + '」が贈られた。' + quote(champ, VA.WIN_CHAMP || VA.WIN), why: '企画1位 ' + champ.cnt.first + '回・絶頂 ' + champ.cnt.climax + '回', mag: 40 }), champ.name + 'が優勝');
-    if (rank[1] && !champ.tbWin && rank[1].m.score >= champ.m.score - 8) ST.say(S, { actors: [rank[1]], tag: '準優勝', text: rank[1].name + 'はわずか' + Math.round(champ.m.score - rank[1].m.score) + '点差で優勝を逃した。' + quote(rank[1], VA.LOSE), why: '接戦' });
+    ST.key(S, sayV({ actors: [champ], tag: '優勝', text: '優勝は' + champ.name + '（' + Math.round(champ.m.score) + '点）！　紙吹雪の中、' + champ.name + 'には「' + prize + '」が贈られた。' + quote(champ, VA.WIN_CHAMP || VA.WIN), why: '企画1位 ' + champ.cnt.first + '回・絶頂 ' + champ.cnt.climax + '回', mag: 40 }), champ.name + 'が優勝');
+    if (rank[1] && !champ.tbWin && rank[1].m.score >= champ.m.score - 8) sayV({ actors: [rank[1]], tag: '準優勝', text: rank[1].name + 'はわずか' + Math.round(champ.m.score - rank[1].m.score) + '点差で優勝を逃した。' + quote(rank[1], VA.LOSE), why: '接戦' });
     if (P.length >= 3 && lasts0.length > 1 && VA.FINAL_PAIR) {
       var fs = !grpOk(lasts0);
       lasts0.forEach(function (x) { x.cnt.penalty++; x.m.shame = clamp(x.m.shame + 20, 0, 100); if (!fs) climax(x, lew === 'low' ? 1 : 3); x.finalPen = true; });
       var pairTx = !fs && lasts0.length === 2 && okS(lasts0[0], lasts0[1]) ? thick('pair', ord(lasts0[0], lasts0[1])) : '';
-      ST.say(S, { actors: lasts0, tag: '最終罰ゲーム', text: pairTx || (fmtN(fs ? 'FINAL_SAFE' : 'FINAL_PAIR', lasts0) + (fs ? '' : lasts0.slice(0, 3).map(moan).join('') + (lasts0.length === 2 && okS(lasts0[0], lasts0[1]) ? eroAdd('pair', ord(lasts0[0], lasts0[1])) : ''))), why: '同点最下位（' + minS + '点）', mag: 32, kind: fs ? 'event' : 'climax' });
+      sayV({ actors: lasts0, tag: '最終罰ゲーム', text: pairTx || (fmtN(fs ? 'FINAL_SAFE' : 'FINAL_PAIR', lasts0) + (fs ? '' : lasts0.slice(0, 3).map(moan).join('') + (lasts0.length === 2 && okS(lasts0[0], lasts0[1]) ? eroAdd('pair', ord(lasts0[0], lasts0[1])) : ''))), why: '同点最下位（' + minS + '点）', mag: 32, kind: fs ? 'event' : 'climax' });
     } else if (P.length >= 3) {
       last.cnt.penalty++; last.finalPen = true; last.m.shame = clamp(last.m.shame + 20, 0, 100);
       /* 共演者が責める罰ゲームは、全員が last と okSex で、責める側が攻めになるときだけ */
@@ -588,7 +619,7 @@
       var lt = hTop(last);
       var fpool = lt ? VA.FINAL_PENALTY_TOP : VA.FINAL_PENALTY.filter(function (x) { return costarOk || !/共演者/.test(x); });
       var finTx = thick(lt ? 'finalTop' : 'final', [last, last]);
-      ST.say(S, { actors: [last], tag: '最終罰ゲーム', text: finTx || (fill(ST.pick(S, fpool), last) + (lt ? '' : moan(last)) + eroAdd(lt ? 'finalTop' : 'final', [last, last])), why: '最下位（' + Math.round(last.m.score) + '点）' + (lt ? '／攻めの指定：罰ゲームでも責められる側には回らない' : ''), mag: 30, kind: lt ? 'event' : 'climax' });
+      sayV({ actors: [last], tag: '最終罰ゲーム', text: finTx || (fill(pkv(fpool), last) + (lt ? '' : moan(last)) + eroAdd(lt ? 'finalTop' : 'final', [last, last])), why: '最下位（' + Math.round(last.m.score) + '点）' + (lt ? '／攻めの指定：罰ゲームでも責められる側には回らない' : ''), mag: 30, kind: lt ? 'event' : 'climax' });
       if (!lt) climax(last, lew === 'low' ? 1 : 3);
     }
     /* 恋の芽生え */
@@ -599,16 +630,16 @@
       if (couples.length >= 2 || cd.v < 5 || usedC[cd.a.i] || usedC[cd.b.i] || HK.lockBlocks(cd.a, cd.b) || !okS(cd.a, cd.b)) return;
       usedC[cd.a.i] = usedC[cd.b.i] = 1; couples.push([cd.a, cd.b]);
       var a = cd.a, b = cd.b;
-      var tx = cd.gone ? ST.pick(S, ['楽屋に消えた' + a.name + 'と' + b.name + 'は、エンディングのあとも楽屋から出てこなかった。翌朝、清掃のスタッフが二人を起こした。', a.name + 'と' + b.name + 'は、番組の打ち上げにも来なかった。二人の楽屋には「起こさないでください」の札がかかっていた。'])
-        : kinTie(a, b) ? ST.pick(S, ['収録後、' + a.name + 'と' + b.name + 'は家族の顔に戻って、並んで家路についた。……繋いだ手だけは、最後まで離さなかった。', 'エンディングで' + mc + 'に「ご家族で出演、ありがとうございました！」と言われ、' + a.name + 'と' + b.name + 'は目を合わせずに頭を下げた。耳まで赤いのは、二人とも同じだった。', '打ち上げを抜けた' + a.name + 'と' + b.name + 'は、「家で続きね」と小声で言い合って、同じ家に帰っていった。'])
-        : cd.lov ? ST.pick(S, ['エンディングの最中、' + a.name + 'が' + b.name + 'の手を握った。恋人同士の公開いちゃつきに、' + mc + 'が「お幸せにー！」と叫んだ。', '収録後、' + a.name + 'と' + b.name + 'は「今日のは仕事だから」と言い合いながら、同じ家に帰っていった。'])
-        : ST.pick(S, ['収録後の楽屋で、' + a.name + 'は' + b.name + 'に連絡先を渡した。「……今日の企画、忘れられなくて」', 'エンディングのあと、' + a.name + 'と' + b.name + 'は二人で同じタクシーに乗り込んだ。スタッフは見て見ぬふりをした。', '翌週の週刊誌に、' + a.name + 'と' + b.name + 'の熱愛記事が載った。きっかけはあの番組だった。']);
+      var tx = cd.gone ? pkv(['楽屋に消えた' + a.name + 'と' + b.name + 'は、エンディングのあとも楽屋から出てこなかった。翌朝、清掃のスタッフが二人を起こした。', a.name + 'と' + b.name + 'は、番組の打ち上げにも来なかった。二人の楽屋には「起こさないでください」の札がかかっていた。'])
+        : kinTie(a, b) ? pkv(['収録後、' + a.name + 'と' + b.name + 'は家族の顔に戻って、並んで家路についた。……繋いだ手だけは、最後まで離さなかった。', 'エンディングで' + mc + 'に「ご家族で出演、ありがとうございました！」と言われ、' + a.name + 'と' + b.name + 'は目を合わせずに頭を下げた。耳まで赤いのは、二人とも同じだった。', '打ち上げを抜けた' + a.name + 'と' + b.name + 'は、「家で続きね」と小声で言い合って、同じ家に帰っていった。'])
+        : cd.lov ? pkv(['エンディングの最中、' + a.name + 'が' + b.name + 'の手を握った。恋人同士の公開いちゃつきに、' + mc + 'が「お幸せにー！」と叫んだ。', '収録後、' + a.name + 'と' + b.name + 'は「今日のは仕事だから」と言い合いながら、同じ家に帰っていった。'])
+        : pkv(['収録後の楽屋で、' + a.name + 'は' + b.name + 'に連絡先を渡した。「……今日の企画、忘れられなくて」', 'エンディングのあと、' + a.name + 'と' + b.name + 'は二人で同じタクシーに乗り込んだ。スタッフは見て見ぬふりをした。', '翌週の週刊誌に、' + a.name + 'と' + b.name + 'の熱愛記事が載った。きっかけはあの番組だった。']);
       if (cd.gone) { var gTx = thick('gone', ord(a, b)); if (gTx) tx = gTx; else tx += eroAdd('gone', ord(a, b)); }
-      ST.key(S, ST.say(S, { actors: [a, b], tag: 'カップル成立', text: tx, why: cd.gone ? '楽屋に消えた二人' : cd.lov ? '恋人同士' : '企画やハプニングで何度も絡んだ二人', mag: 30 }), a.name + 'と' + b.name + 'がカップルに');
+      ST.key(S, sayV({ actors: [a, b], tag: 'カップル成立', text: tx, why: cd.gone ? '楽屋に消えた二人' : cd.lov ? '恋人同士' : '企画やハプニングで何度も絡んだ二人', mag: 30 }), a.name + 'と' + b.name + 'がカップルに');
     });
-    P.forEach(function (p) { if (p.producer && VA.PRODUCER_AFTER) ST.say(S, { actors: [p], tag: '収録後', text: ST.fmt(ST.pick(S, VA.PRODUCER_AFTER), { a: p.name }), why: 'ちんちん当てでプロデューサーに媚びた' }); });
+    P.forEach(function (p) { if (p.producer && VA.PRODUCER_AFTER) sayV({ actors: [p], tag: '収録後', text: ST.fmt(pkv(VA.PRODUCER_AFTER), { a: p.name }), why: 'ちんちん当てでプロデューサーに媚びた' }); });
     rating = Math.round(rating * 10) / 10;
-    ST.say(S, { kind: 'phase', text: '番組の最高視聴率は' + rating + '％。' + (rating >= 15 ? '深夜帯としては異例の大ヒットだった。' : rating >= 11 ? '上々の数字に、プロデューサーは胸をなでおろした。' : '数字はいまひとつだったが、SNSでは一部が熱狂していた。') + (VA.MC_END ? mc + ST.pick(S, VA.MC_END) : '') });
+    sayV({ kind: 'phase', text: '番組の最高視聴率は' + rating + '％。' + (rating >= 15 ? '深夜帯としては異例の大ヒットだった。' : rating >= 11 ? '上々の数字に、プロデューサーは胸をなでおろした。' : '数字はいまひとつだったが、SNSでは一部が熱狂していた。') + (VA.MC_END ? mc + pkv(VA.MC_END) : '') });
 
     /* 称号 */
     function title(p) {
