@@ -369,8 +369,21 @@
       var ls = o.t.filter(penOK);
       return { o: o, text: X.fill(ctx.pick(ls.length ? ls : o.t), r) };
     };
+    /* 円満な三人で、攻め一人×受け二人（oneTwo）：受けの二人が攻めを取り合う（二人で口で・順番に。迫るのは受けの二人、攻めもまんざらではない合意の場面）。
+       攻めが男性なら口と挿入、女性なら口・胸・指・跨っての文（X.LT の topm／topf） */
+    var ltOn = isLove(kind) && sp.p === 'oneTwo' && !HK.SAFE_ON && X.LT;
+    var ltPick = function (k) {
+      var pool = (X.LT && X.LT[k] || []).filter(function (o) { return (!o.topm || !isF(sp.t)) && (!o.topf || isF(sp.t)) && recvOK(o) && o.t.some(penOK); });
+      if (!pool.length) return null;
+      var o = HK.weighted(ctx.rng, pool, function (z) { return 1 / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); });
+      ctx.flags.trioHL[o.id] = (ctx.flags.trioHL[o.id] || 0) + 1;
+      if (o.tag) used.push(o.tag);
+      return X.fill(ctx.pick(o.t.filter(penOK)), r);
+    };
     /* 前戯（初回だけ）：嫉妬・開放度・きっかけに合う文を優先 */
-    if (first && !tShort) {
+    var ltW = ltOn && first && !tShort && ctx.rng() < 0.85 ? ltPick('warm') : null;
+    if (ltW) out.push(ltW);
+    else if (first && !tShort) {
       var w = pickTagged(X.WARM.filter(function (o) { return o.t.some(noHub); }), function (z) { return (z.jeal ? 2.6 : 1) * (z.open ? 1.8 : 1) * (z.kinds ? 2 : 1); });
       if (w) { out.push(w.text); if (w.o.jeal || w.o.open) used.push(w.o.jeal ? '嫉妬の前戯' : OPEN_LABEL[op] + 'な受け'); }
     }
@@ -383,6 +396,8 @@
       var penM = !ffE && HK.Pos && pens.every(function (c) { return !HK.Pos.isF(c); }) && TE.TRIO.pen[sp.p];
       out.push(efill(ctx.pick(penM ? TE.TRIO.pen[sp.p] : TE.TRIO.soft)));
     }
+    /* 受けの二人が攻めを取り合う見所（一つは必ず、初回はもう一つのことも） */
+    if (ltOn) { var lh1 = ltPick('hl'); if (lh1) out.push(lh1); if (first && !tShort && ctx.rng() < 0.6) { var lh2 = ltPick('hl'); if (lh2 && lh2 !== lh1) out.push(lh2); } }
     /* リバ同士の二人がいれば、入れ替わりの一文を足すことがある */
     var rb = (ffE ? X.RIBA_FF : X.RIBA) || [];
     rb = rb.filter(function (o) { return (!o.shapes || o.shapes.split(' ').indexOf(sp.p) >= 0) && ribaOK(o); });
@@ -422,7 +437,9 @@
     }
     if (sp.p === 'sandwich' && V && !hardTop(sp.m) && ctx.rng() < 0.6) out.push(X.fill(V.line(pf, sp.m.persona, 'climax', 'b').replace(/\{b\}/g, '{m}').replace(/\{a\}/g, '{t}'), r));
     /* 絶頂：形・嫉妬・開放度に合う文があれば優先 */
-    if (TE) out.push(efill(ctx.pick(TE.TRIO.climax)));
+    var ltC = ltOn && !TE && !r.synced && ctx.rng() < 0.6 ? ltPick('climax') : null;
+    if (ltC) out.push(ltC);
+    else if (TE) out.push(efill(ctx.pick(TE.TRIO.climax)));
     else if (!r.synced) {
       var cx = (X.CLIMAX_X || []).filter(function (o) { return ok(o) && o.t.some(penOK) && (!o.after || o.after === after); });
       var c = cx.length && ctx.rng() < 0.7 ? HK.weighted(ctx.rng, cx, function (z) { return (z.jeal ? 2 : 1) * (z.open ? 1.5 : 1) * (z.kinds ? (isLoveAny(kind) ? 6 : 2) : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;

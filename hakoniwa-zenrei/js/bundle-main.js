@@ -9879,6 +9879,25 @@
     { id: 'a_join', kinds: 'join', t: L('途中から加わった{h}は、終わったあと少し気まずそうにしていた。{x}が{h}の肩を引き寄せた。{x}「最初からいたみたいだったよ」') }
   ];
 
+  /* ---------- 円満な三人の、受け二人が攻めを取り合う場面（攻め一人×受け二人＝oneTwo。{t}＝攻め、{m}{u}＝受けの二人） ----------
+     受けの二人が強引に迫り、攻めもまんざらではない合意の場面。topm＝攻めが男性のときだけ、topf＝攻めが女性のときだけ。
+     攻めを受ける側の言葉（押し倒される・貫かれる など）では書かない */
+  X.LT = {
+    warm: [
+      { id: 'lt_press_m', topm: true, t: L('{m}と{u}は、{t}が服を脱ぎ終わるのを待てなかった。左右から同時に{t}にすがりつき、ベルトに伸びた二本の手がぶつかった。{t}は「慌てなくても逃げない」と笑ったが、その声はもう熱を帯びていた。|{u}が{t}の膝の上に乗ると、{m}はすかさず{t}の首に腕を回して唇を奪った。{t}「……二人とも、今日は強引だ」――そう言いながら、{t}の手は二人の腰をしっかり抱き寄せていた。|{m}「今日は私が先」{u}「ずるい、私も」――二人は言い合いながら、{t}の服を左右から脱がせていった。{t}は抵抗するふりだけして、二人の好きにさせていた。その顔は、どう見ても嬉しそうだった。') },
+      { id: 'lt_press_f', topf: true, t: L('{m}と{u}は、{t}を左右から挟むようにして迫った。{m}が{t}の胸元に顔をうずめ、{u}が{t}の手を取って自分の体へ導く。{t}は「欲張りな二人」と笑いながら、二人の頭を順番に撫でた。|{u}が{t}の腰に抱きつくと、{m}は負けじと{t}の唇を奪った。{t}「……今日は二人とも、遠慮がない」――そう言う{t}の頬は、嬉しそうに緩んでいた。|{m}「今日は私が先」{u}「ずるい、私も」――二人は言い合いながら、{t}の服を左右から脱がせていった。{t}は抗うふりだけして、二人の好きにさせた。その目は、どう見ても楽しんでいた。') }
+    ],
+    hl: [
+      { id: 'lt_fella', topm: true, tag: '二人で咥え合う', t: L('{m}と{u}は{t}の脚の間に並んで膝をつき、熱く張りつめたものに左右から舌を這わせた。{m}が先端を口に含めば、{u}は根元から舐め上げて奪い返そうとする。{t}は二人の髪に指を差し入れたまま、こらえきれずに低い声を漏らした。|二人は{t}のものを取り合うように、交互に深く咥えた。{u}が離れた瞬間に{m}が飲み込み、{m}が息をつく隙に{u}が唇をかぶせる。{t}「……っ、そんなに、取り合わなくても」――言葉とは裏腹に、{t}の腰は二人の口に向かって押し出されていた。|{m}が{t}の先端に口づけると、{u}はその唇ごと舐めるように舌を重ねた。二人の舌が{t}の上で絡み合い、どちらのものとも分からない唾液が滴った。{t}は二人を見下ろしながら、「どっちも、上手」とかすれた声で褒めた。') },
+      { id: 'lt_turn', topm: true, recv: 'm u', tag: '順番に入れてもらう', t: L('{m}と{u}は並んで四つん這いになり、{t}に向かって腰を高く上げた。{m}「次は私の番」{u}「さっきもそう言った」――{t}は笑って、二人の中に交互に入っていった。抜かれるたびに、待っている方が切なげに腰を揺らした。|{t}が{m}の奥を突いているあいだ、{u}は{t}の背中に胸を押しつけ、耳元で「早く、こっちも」とねだり続けた。{t}が{m}から抜いて{u}の中に沈むと、今度は{m}が{t}の腕を引いて離さなかった。{t}は二人に引っ張りだこにされながら、まんざらでもない顔で腰を振り続けた。|二人は、{t}が自分の中で果ててくれるかどうかを競っていた。{u}が締めつければ{m}が甘い声で呼び、{m}が腰を揺らせば{u}が{t}の唇を奪った。{t}は最後まで、どちらか一人を選ぶつもりはなかった。') },
+      { id: 'lt_lick_f', topf: true, tag: '二人で奉仕を取り合う', t: L('{m}と{u}は{t}の脚の間に並んで顔を寄せ、熱く濡れたところに左右から舌を這わせた。{m}が花芯を吸えば、{u}は奥へ舌を伸ばして奪い返そうとする。{t}は二人の髪を撫でながら、こらえきれずに甘い声を漏らした。|二人は{t}の胸を片方ずつ口に含み、どちらが先に{t}を震わせられるか競い合った。{t}「……っ、そんなに、取り合わなくても」――言葉とは裏腹に、{t}は二人の頭を自分の胸に押しつけていた。|{u}が{t}の太腿に口づけを散らすと、{m}はその先へ一足早く唇を寄せた。二人の舌が{t}の上で触れ合い、{t}の腰が小さく跳ねた。{t}は二人を見下ろしながら、「どっちも、上手」とかすれた声で褒めた。') },
+      { id: 'lt_turn_f', topf: true, recv: 'm u', tag: '順番に愛してもらう', t: L('{m}と{u}は並んで横たわり、{t}の指を取り合った。{t}が{m}を指で蕩かしているあいだ、{u}は{t}の手首に頬をすり寄せて「次は私」とねだった。{t}は笑って、二人を交互に可愛がった。|{t}が{u}の上に跨って腰を揺らすと、{m}は{t}の背中にしがみついて「ずるい、私も」と耳元で訴えた。{t}は{u}を果てさせると、すぐに{m}の上へ移った。二人は{t}を順番に求めながら、待つあいだもずっと{t}の肌に触れていた。|二人は、{t}がどちらのそばで長く過ごすかを競っていた。{u}が甘い声で呼べば{m}が{t}の胸に口づけ、{m}が腰を寄せれば{u}が{t}の唇を奪った。{t}は最後まで、どちらか一人を選ぶつもりはなかった。') }
+    ],
+    climax: [
+      { id: 'lt_climax', t: L('{t}は二人を代わる代わる果てさせ、最後に二人の名前を続けて呼びながら自分も果てた。{m}と{u}は、{t}の両腕にしがみついたまま満足そうに目を細めた。{u}「次も、取り合い」|最後は、{m}と{u}が{t}を左右から抱きしめたまま、三人で果てた。二人とも、{t}のいちばん近くにいたのは自分だと言い張った。{t}は二人の額に、同じだけ口づけた。|{t}が果てる瞬間、{m}と{u}は同時に{t}の唇を求めた。{t}は二人の唇を、まとめて受け止めた。荒い息が三つ、一つに混ざった。') }
+    ]
+  };
+
   /* ---------- 円満な三人の小競り合い（嫉妬しやすい人がいるとき。すぐ収まる焼きもち） ---------- */
   X.SPAT = [
     { id: 's_turn', tag: '小さな焼きもち', t: L('{j}は{w}が{o}に口づけるのを見て、思わず{w}の手を引いた。{j}「……次、私の番」{o}は笑って場所を譲り、{w}は二人の頭をまとめて撫でた。小さな焼きもちは、それで終わりだった。|{j}「{o}ばっかり、ずるい」――{j}がそう言うと、{o}は「じゃあ交代」とあっさり身を引いた。{w}は{j}を抱き寄せて、「ちゃんと二人とも見てるよ」と囁いた。{j}の頬が、少しだけ緩んだ。') },
@@ -10273,8 +10292,21 @@
       var ls = o.t.filter(penOK);
       return { o: o, text: X.fill(ctx.pick(ls.length ? ls : o.t), r) };
     };
+    /* 円満な三人で、攻め一人×受け二人（oneTwo）：受けの二人が攻めを取り合う（二人で口で・順番に。迫るのは受けの二人、攻めもまんざらではない合意の場面）。
+       攻めが男性なら口と挿入、女性なら口・胸・指・跨っての文（X.LT の topm／topf） */
+    var ltOn = isLove(kind) && sp.p === 'oneTwo' && !HK.SAFE_ON && X.LT;
+    var ltPick = function (k) {
+      var pool = (X.LT && X.LT[k] || []).filter(function (o) { return (!o.topm || !isF(sp.t)) && (!o.topf || isF(sp.t)) && recvOK(o) && o.t.some(penOK); });
+      if (!pool.length) return null;
+      var o = HK.weighted(ctx.rng, pool, function (z) { return 1 / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); });
+      ctx.flags.trioHL[o.id] = (ctx.flags.trioHL[o.id] || 0) + 1;
+      if (o.tag) used.push(o.tag);
+      return X.fill(ctx.pick(o.t.filter(penOK)), r);
+    };
     /* 前戯（初回だけ）：嫉妬・開放度・きっかけに合う文を優先 */
-    if (first && !tShort) {
+    var ltW = ltOn && first && !tShort && ctx.rng() < 0.85 ? ltPick('warm') : null;
+    if (ltW) out.push(ltW);
+    else if (first && !tShort) {
       var w = pickTagged(X.WARM.filter(function (o) { return o.t.some(noHub); }), function (z) { return (z.jeal ? 2.6 : 1) * (z.open ? 1.8 : 1) * (z.kinds ? 2 : 1); });
       if (w) { out.push(w.text); if (w.o.jeal || w.o.open) used.push(w.o.jeal ? '嫉妬の前戯' : OPEN_LABEL[op] + 'な受け'); }
     }
@@ -10287,6 +10319,8 @@
       var penM = !ffE && HK.Pos && pens.every(function (c) { return !HK.Pos.isF(c); }) && TE.TRIO.pen[sp.p];
       out.push(efill(ctx.pick(penM ? TE.TRIO.pen[sp.p] : TE.TRIO.soft)));
     }
+    /* 受けの二人が攻めを取り合う見所（一つは必ず、初回はもう一つのことも） */
+    if (ltOn) { var lh1 = ltPick('hl'); if (lh1) out.push(lh1); if (first && !tShort && ctx.rng() < 0.6) { var lh2 = ltPick('hl'); if (lh2 && lh2 !== lh1) out.push(lh2); } }
     /* リバ同士の二人がいれば、入れ替わりの一文を足すことがある */
     var rb = (ffE ? X.RIBA_FF : X.RIBA) || [];
     rb = rb.filter(function (o) { return (!o.shapes || o.shapes.split(' ').indexOf(sp.p) >= 0) && ribaOK(o); });
@@ -10326,7 +10360,9 @@
     }
     if (sp.p === 'sandwich' && V && !hardTop(sp.m) && ctx.rng() < 0.6) out.push(X.fill(V.line(pf, sp.m.persona, 'climax', 'b').replace(/\{b\}/g, '{m}').replace(/\{a\}/g, '{t}'), r));
     /* 絶頂：形・嫉妬・開放度に合う文があれば優先 */
-    if (TE) out.push(efill(ctx.pick(TE.TRIO.climax)));
+    var ltC = ltOn && !TE && !r.synced && ctx.rng() < 0.6 ? ltPick('climax') : null;
+    if (ltC) out.push(ltC);
+    else if (TE) out.push(efill(ctx.pick(TE.TRIO.climax)));
     else if (!r.synced) {
       var cx = (X.CLIMAX_X || []).filter(function (o) { return ok(o) && o.t.some(penOK) && (!o.after || o.after === after); });
       var c = cx.length && ctx.rng() < 0.7 ? HK.weighted(ctx.rng, cx, function (z) { return (z.jeal ? 2 : 1) * (z.open ? 1.5 : 1) * (z.kinds ? (isLoveAny(kind) ? 6 : 2) : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
