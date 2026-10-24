@@ -16271,6 +16271,8 @@
       var O = omegaOf(x, y), A = alphaOf(x, y), pa = STX.NEST_SELF[O.persona] ? O.persona : 'gentle', pm = STX.NEST_FIND[A.persona] ? A.persona : 'gentle';
       ctx.say({ kind: 'event', cat: 'romance', actors: [O, A], text: '――後日。' + fill(ctx, ctx.pick(STX.NEST_MAKE), O, A) + fill(ctx, ctx.pick(STX.NEST_SELF[pa]), O, A) + '――' + fill(ctx, ctx.pick(STX.NEST_FIND[pm]), O, A), why: '番のいるΩの巣作り（後日談）' });
     });
+    /* 後日談：番になったあとの暮らし（omega-after.js） */
+    if (OM.afterLate) Object.keys(om.bonded).forEach(function (k) { var ij = k.split('-'); OM.afterLate(ctx, ctx.chars[+ij[0]], ctx.chars[+ij[1]]); });
     ctx.flags.outcome = E ? E.title : '';
     ctx.flags.omega = {
       months: Math.ceil((ctx.stepIndex + 1) / 2), ending: E, couples: couples.map(function (x) { return [x[0].i, x[1].i, !!om.bonded[key(x[0], x[1])]]; }),
@@ -17285,6 +17287,31 @@
     ctx.flush();
     closing(ctx);
     return r;
+  };
+})();
+;/* ==== js/omega-after.js ==== */
+/* 箱庭シミュレーター: オメガバース ― 番になったあとの後日談（全年齢版も同じ）
+   これまでの後日談（ネックガード omega-guard.js・巣作り scenario-omega.js）に、5種を足す。番になった恋人どうし一組につき一つ（7割ほど）
+   ・噛み跡の手入れ／番になって初めての発情期（行為の描写はしない）／まわりへの報告／一緒に暮らし始める／匂いで眠れるようになる
+   {a}＝α、{b}＝Ω。scenario-omega.js の結末の前から OM.afterLate を呼ぶ */
+(function () {
+  'use strict';
+  var HK = window.HK, OM = HK.OMEGA;
+  if (!OM) return;
+  function L(s) { return s.split('|'); }
+  var T = {
+    mark: L('{a}は毎晩、{b}のうなじの噛み跡に薬を塗るのが日課になった。{b}はくすぐったそうに肩をすくめながら、その時間をいちばん楽しみにしていた。跡はもう痛まないのに、どちらもやめようとは言わなかった。|噛み跡が薄い桃色に落ち着いたころ、{b}は鏡越しにそれを眺めて、小さく笑った。「消えないんだね、これ」――後ろから抱きしめた{a}は、「消させない」と答えた。|{b}は髪を短く切った。うなじの噛み跡が、誰からも見えるように。{a}は何も言わずに、その跡にそっと唇を寄せた。'),
+    heat: L('番になって初めての発情期は、前よりずっと穏やかだった。{b}は抑制剤の箱を開けずに、{a}の匂いのついた毛布にくるまっていた。{a}は仕事を休んで、一日じゅう{b}のそばにいた。|{b}の発情期が来ると、{a}は黙って部屋の灯りを落とし、水と食べ物を枕元に並べた。番の匂いに包まれた{b}は、もう怖がらなかった。熱が引くまで、二人はずっと一緒にいた。|「前は、発情期が来るたびに一人で震えてた」――熱の引いた朝、{b}はそう打ち明けた。{a}は{b}の額に額を当てて、「もう一人じゃない」と言った。{b}は、その言葉を何度も胸の中で繰り返した。'),
+    tell: L('{a}と{b}は、職場に番になったことを報告した。{b}の上司は少し驚いた顔をしてから、「おめでとう」と拍手をくれた。その夜、二人は祝いの花束を挟んで、遅くまで話し込んだ。|{b}は実家に電話をかけ、番ができたことを伝えた。受話器の向こうで、母親が泣いているのが分かった。隣で聞いていた{a}は、電話を代わって深く頭を下げた。|{a}は{b}を連れて、古い友人たちの集まりに顔を出した。「番の{b}です」――そう紹介された{b}は、耳まで赤くなりながらも、{a}の腕を離さなかった。'),
+    home: L('{a}と{b}は、二人で暮らす部屋を借りた。段ボールが積まれたままの床で、二人は最初の夜を並んで眠った。窓から見える景色は、どちらの前の部屋よりも広かった。|{b}の荷物が{a}の部屋に少しずつ増えていき、ある日、二人はそれを「引っ越し」と呼ぶことにした。歯ブラシが二本並んだ洗面台を、{b}はしばらく眺めていた。{a}は、合鍵に小さな飾りを付けて{b}に渡した。|新しい部屋の表札には、二人の名前が並んだ。{a}は「巣にするなら、いちばん日当たりのいい部屋を」と言った。{b}は笑って、その部屋のカーテンを自分で選んだ。'),
+    sleep: L('番になってから、{b}は夜中に目を覚まさなくなった。隣から漂う{a}の匂いが、どんな薬よりもよく効いた。朝、{a}の腕の中で目を覚ますたび、{b}は自分がどこにいるのかをゆっくり思い出した。|{a}が出張でいない夜、{b}は{a}のシャツを抱えて眠った。匂いが薄れるたびに、早く帰ってきてと思った。三日後に帰ってきた{a}は、玄関で{b}にしがみつかれて、荷物を落とした。|{a}は、{b}の寝息を聞きながらでないと眠れなくなっていた。番の絆は、αの側にも同じように効くらしい。{a}はそれを、少しも嫌だとは思わなかった。')
+  };
+  var WHY = { mark: '噛み跡の手入れ', heat: '番になって初めての発情期', tell: 'まわりへの報告', home: '一緒に暮らし始める', sleep: '番の匂いで眠れるようになる' };
+  OM.afterLate = function (ctx, x, y) {
+    if (!x || !y || !ctx.pair(x, y).couple || ctx.rng() > 0.7) return;
+    var A = x.om && x.om.sex === 'a' ? x : y, O = A === x ? y : x;
+    var ks = Object.keys(T), k = ks[Math.floor(ctx.rng() * ks.length)];
+    ctx.say({ kind: 'event', cat: 'romance', actors: [A, O], text: '――番になって、しばらく経ったころ。' + ctx.t(ctx.pick(T[k]), A, O), why: A.name + 'と' + O.name + 'の後日談：' + WHY[k] });
   };
 })();
 ;/* ==== js/omega-ties.js ==== */

@@ -980,6 +980,8 @@
       var O = omegaOf(x, y), A = alphaOf(x, y), pa = STX.NEST_SELF[O.persona] ? O.persona : 'gentle', pm = STX.NEST_FIND[A.persona] ? A.persona : 'gentle';
       ctx.say({ kind: 'event', cat: 'romance', actors: [O, A], text: '――後日。' + fill(ctx, ctx.pick(STX.NEST_MAKE), O, A) + fill(ctx, ctx.pick(STX.NEST_SELF[pa]), O, A) + '――' + fill(ctx, ctx.pick(STX.NEST_FIND[pm]), O, A), why: '番のいるΩの巣作り（後日談）' });
     });
+    /* 後日談：番になったあとの暮らし（omega-after.js） */
+    if (OM.afterLate) Object.keys(om.bonded).forEach(function (k) { var ij = k.split('-'); OM.afterLate(ctx, ctx.chars[+ij[0]], ctx.chars[+ij[1]]); });
     ctx.flags.outcome = E ? E.title : '';
     ctx.flags.omega = {
       months: Math.ceil((ctx.stepIndex + 1) / 2), ending: E, couples: couples.map(function (x) { return [x[0].i, x[1].i, !!om.bonded[key(x[0], x[1])]]; }),

@@ -83,6 +83,7 @@ js/omega-passion.js
 js/omega-mob.js
 js/omega-love.js
 js/omega-guard.js
+js/omega-after.js
 js/omega-ties.js
 js/omega-secret.js
 late js/incidents-social.js
