@@ -82,7 +82,9 @@
      三人の場面は成り行きではなく、円満な場面（love／lovehub）にする */
   function harmonyOf(ctx, g) {
     if (!g || g.length !== 3) return null;
-    if (pairsOf(g).some(function (p) { return HK.ngPair && HK.ngPair(p[0], p[1]); })) return null;
+    /* 恋人どうしの円満さは、設定の「恋愛・R18にしない相手」「恋愛相手の固定」だけで見る（同じ人の恋人どうし＝coNG は、中心のある三人の形そのもの） */
+    var ngH = HK.ngPairHard || HK.ngPair;
+    if (pairsOf(g).some(function (p) { return ngH && ngH(p[0], p[1]); })) return null;
     if (pairsOf(g).every(function (p) { return loveTie(ctx, p[0], p[1]); })) return { full: true };
     for (var i = 0; i < 3; i++) {
       var h = g[i], o = g.filter(function (c) { return c !== h; });
@@ -209,8 +211,11 @@
       if (pairsOf(g).some(function (p) { return family(ctx, p[0], p[1]); })) return;
       if (g.some(function (x) { return x.flags.trioNo; })) return;
       if (g.some(function (x) { return exclBlock(ctx, x, g); })) return;
-      /* 部屋に残る誰かの恋人を連れていく組み合わせは選ばない */
-      if (ctx.present().some(function (o) { return g.indexOf(o) < 0 && g.some(function (x) { var t = HK.Ties ? HK.Ties.get(ctx, x, o) : null; return (t && /lover|fwb/.test(t.type)) || ctx.pair(x, o).couple; }); })) return;
+      /* 部屋に残る誰かの恋人を連れていく組み合わせは選ばない。
+         ただし恋人が三人以上いる人（円満な三人の中心）は、二人の恋人と三人で過ごしたあと、残る恋人のために部屋に残る（T.exitGroup）。場面はいつも三人まで */
+      var leftLov = function (x, o) { var t = HK.Ties ? HK.Ties.get(ctx, x, o) : null; return (t && /lover|fwb/.test(t.type)) || ctx.pair(x, o).couple; };
+      var holders = g.filter(function (x) { return ctx.present().some(function (o) { return g.indexOf(o) < 0 && leftLov(x, o); }); });
+      if (holders.length && !(harmony(ctx, g) && holders.length === 1)) return;
       var cands = [];
       /* 円満な三人：三人とも互いに恋人どうしなら、成り行きではなく、恋人どうしとして三人で（ほかのきっかけより先に選ぶ） */
       var hm = harmonyOf(ctx, g);
@@ -508,7 +513,34 @@
   }
 
   /* 三人（以上）で出る */
+  /* 三人で出るとき、まだ部屋に残る恋人がいる人（恋人が三人以上いる人）は、その恋人のために残る */
+  function stayFor(ctx, g) {
+    var out = null;
+    g.some(function (x) {
+      var o = ctx.present().filter(function (y) { return g.indexOf(y) < 0 && !y.out && y.alive !== false && y.flags.cagePair == null && loveTie(ctx, x, y) && !A.pairDone(ctx, x, y); })[0];
+      if (o) out = { s: x, o: o };
+      return !!o;
+    });
+    return out;
+  }
   T.exitGroup = function (ctx, g, text, why, night, kind) {
+    var sf = stayFor(ctx, g);
+    if (sf) {
+      var go = g.filter(function (c) { return c !== sf.s; });
+      go.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = go.filter(function (o) { return o !== c; }).map(function (o) { return o.name; }).join('と') + 'と部屋を出た（' + sf.s.name + 'は、' + sf.o.name + 'のために残った）'; c.flags.trio = g.map(function (o) { return o.i; }); });
+      sf.s.flags.trio = g.map(function (o) { return o.i; }); sf.s.flags.stayed = (sf.s.flags.stayed || 0) + 1;
+      pairsOf(g).forEach(function (pr) { ctx.mod2(pr[0], pr[1], { trust: 8, aff: 4 }, { trust: 8, aff: 4 }); if (night && okSex(pr[0], pr[1])) ctx.pair(pr[0], pr[1]).night = true; });
+      ctx.mod2(sf.s, sf.o, { trust: 6, aff: 4 }, { trust: 6, aff: 4 });
+      var ex0 = { group: g.map(function (c) { return c.i; }), label: ctx.label, trio: true, night: !!night, kind: kind || 'warm' };
+      (ctx.flags.exits = ctx.flags.exits || []).push(ex0);
+      ctx.flags.trios.push(ex0);
+      var st = ctx.t(ctx.pick([
+        '扉の鍵が外れる音がした。{a}は二人の背中を押して先に行かせ、自分は部屋の中に向き直った。{a}「{b}を一人にはしない。すぐ行く」',
+        '扉が開いた。{a}は出ていく二人に手を振ってから、部屋の隅の{b}の隣に腰を下ろした。{a}「待たせた。次は、二人で」',
+        '鍵の外れる音に、{b}が顔を上げた。{a}は扉をくぐらず、{b}の手を取った。{a}「先に出てて。{b}と一緒に行くから」――二人は頷いて、先に扉をくぐった。'
+      ]), sf.s, sf.o);
+      return { cat: 'escape', mag: 40, text: text + st, why: why + '／' + sf.s.name + 'には、部屋に残る恋人（' + sf.o.name + '）がいる。場面は三人までにして、' + sf.s.name + 'が残った', with: g.concat([sf.o]) };
+    }
     g.forEach(function (c) {
       c.out = true; c.fate = '脱出';
       c.fateNote = g.filter(function (o) { return o !== c; }).map(function (o) { return o.name; }).join('と') + 'と、' + kn(g.length) + 'で部屋を出た';

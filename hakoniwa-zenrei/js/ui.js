@@ -28,7 +28,7 @@
     if (list.length > max && max === 1) list = list.slice(0, 1);
     return S.chars.filter(function (c) { return list.indexOf(c.id) >= 0; });
   }
-  /* 恋人が三人以上いる人が、その恋人たちと同じ箱庭に入るときの注意（恋人どうしの三人の場面・嫉妬の扱いは、三人までを想定している） */
+  /* 恋人が三人以上いる人が、その恋人たちと同じ箱庭に入るときの注意書き（場面は三人まで・恋人どうしは嫉妬せず互いを相手にしない：engine.js の coNG、room-trio.js の stayFor） */
   function loveCrowdNote(id) {
     var J = joined(id), ids = J.map(function (c) { return c.id; }), nm = function (cid) { var c = S.chars.filter(function (x) { return x.id === cid; })[0]; return c ? c.name : ''; };
     var lov = {};
@@ -39,7 +39,7 @@
     var who = Object.keys(lov).filter(function (k) { return lov[k].length >= 3; });
     if (!who.length) return '';
     return '<p class="hint" id="lovewarn" style="color:var(--warn)">※' + who.map(function (k) { return esc(nm(k)) + 'には、この箱庭に一緒に入る恋人が' + lov[k].length + '人（' + lov[k].map(function (x) { return esc(nm(x)); }).join('・') + '）います'; }).join('。') +
-      '。恋人が三人以上そろうと、嫉妬・浮気の扱いや恋人どうしの三人の場面がうまく噛み合わず、不自然な展開になることがあります（恋人どうしの円満な場面は、三人までを想定しています）。</p>';
+      '。恋人が三人以上そろうときは、夜や三人の場面は三人までにして、残る恋人とは順番に過ごします。同じ人を恋人にしている者どうしは、互いに嫉妬せず、互いを恋愛・R18の相手にもしません（二人のあいだに恋愛の関係を設定した場合は除く）。そろう人数が多いほど、一人ひとりの出番は少なくなります。</p>';
   }
   function updLoveWarn() {
     var el = document.getElementById('lovewarn'), html = loveCrowdNote(S.scenId), jc = document.getElementById('joincount');

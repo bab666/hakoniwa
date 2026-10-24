@@ -754,7 +754,8 @@
     },
     {
       id: 'jealous', cat: 'conflict', scope: 'pair',
-      when: function (ctx, a, b) { var c = ctx.crush(a, 50); return c && c !== b && c.alive && R(ctx, c, b).aff + R(ctx, c, b).att > 45 && (!HK.Obsess || HK.Obsess.jealOk(ctx, a, c)); },
+      /* 恋人が複数いるとき、同じ人の恋人どうし・自分の恋人どうしの近さには嫉妬しない（obsess-kit.js の coLove） */
+      when: function (ctx, a, b) { var c = ctx.crush(a, 50); return c && c !== b && c.alive && R(ctx, c, b).aff + R(ctx, c, b).att > 45 && (!HK.Obsess || (HK.Obsess.jealOk(ctx, a, c) && !(HK.Obsess.coLove && HK.Obsess.coLove(ctx, a, c, b)))); },
       w: function (ctx, a) { return a.tr.jealous * 1.6; },
       run: function (ctx, a, b) {
         var c = ctx.crush(a, 50);
@@ -5834,10 +5835,17 @@
      ・キャラの設定「恋愛・R18にしない相手」（どちらかに付いていれば）
      ・「恋愛相手の固定」で、どちらかが別の人に決めている（相手が箱庭にいなければ、その人は誰とも）
      どの箱庭でも、この組では恋愛・夜・R18の場面を起こさない */
-  HK.ngPair = function (a, b) {
+  /* 設定で決めた「恋愛・R18にしない相手」と「恋愛相手の固定」だけで見る */
+  HK.ngPairHard = function (a, b) {
     if (!a || !b || a === b) return false;
     if ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0)) return true;
     return (a.lock != null && a.lock !== b.i) || (b.lock != null && b.lock !== a.i);
+  };
+  /* それに加えて、同じ人を恋人にしている二人（恋人が複数いる人の恋人どうし。coNG）も恋愛・R18にしない */
+  HK.ngPair = function (a, b) {
+    if (!a || !b || a === b) return false;
+    if (HK.ngPairHard(a, b)) return true;
+    return !!((a.coNG && a.coNG.indexOf(b.i) >= 0) || (b.coNG && b.coNG.indexOf(a.i) >= 0));
   };
   HK.lockBlocks = function (a, b) { return HK.ngPair(a, b); };
   HK.canLove = function (a, b) {
@@ -6140,6 +6148,21 @@
     });
     /* 箱庭が自動で足す関係（学園全体の先輩後輩など）。ユーザーが決めた関係のある組には足さない */
     if (HK.Ties) HK.Ties.apply(ctx, (input.ties || []).concat(scen.extraTies ? scen.extraTies(ctx, input) || [] : []));
+    /* 恋人が複数いる人の恋人どうし（関係の設定で、同じ人を恋人・番にしている二人）は、互いを恋愛・R18の相手にしない（coNG）。
+       二人のあいだに恋愛の関係（恋人・セフレ・友達以上恋人未満・片想い・執着・元恋人など）を設定していれば除く */
+    (function () {
+      var LOV = /^(lover|mate|fated)$/, ROM = /^(lover|mate|fated|fwb|almost|crush|yan|ex)$/, ts = input.ties || [], lov = {};
+      ts.forEach(function (t) { if (LOV.test(t.type) && t.a !== t.b) { (lov[t.a] = lov[t.a] || []).push(t.b); (lov[t.b] = lov[t.b] || []).push(t.a); } });
+      var rom = function (p, q) { return ts.some(function (t) { return ROM.test(t.type) && ((t.a === p && t.b === q) || (t.a === q && t.b === p)); }); };
+      Object.keys(lov).forEach(function (k) {
+        var l = lov[k];
+        for (var x = 0; x < l.length; x++) for (var y = x + 1; y < l.length; y++) {
+          var P = ctx.chars[l[x]], Q = ctx.chars[l[y]];
+          if (!P || !Q || P === Q || rom(P.i, Q.i)) continue;
+          (P.coNG = P.coNG || []).push(Q.i); (Q.coNG = Q.coNG || []).push(P.i);
+        }
+      });
+    })();
     ctx.chars.forEach(function (a) { if (a.lock == null) return; ctx.chars.forEach(function (b) { if (b !== a && b.i !== a.lock) { var r = ctx.R(a, b); r.att = Math.min(r.att, 6); } }); });
     C.forEach(function (c) {
       if (c.goal && c.goal.needsFocus) {
@@ -10806,7 +10829,9 @@
      三人の場面は成り行きではなく、円満な場面（love／lovehub）にする */
   function harmonyOf(ctx, g) {
     if (!g || g.length !== 3) return null;
-    if (pairsOf(g).some(function (p) { return HK.ngPair && HK.ngPair(p[0], p[1]); })) return null;
+    /* 恋人どうしの円満さは、設定の「恋愛・R18にしない相手」「恋愛相手の固定」だけで見る（同じ人の恋人どうし＝coNG は、中心のある三人の形そのもの） */
+    var ngH = HK.ngPairHard || HK.ngPair;
+    if (pairsOf(g).some(function (p) { return ngH && ngH(p[0], p[1]); })) return null;
     if (pairsOf(g).every(function (p) { return loveTie(ctx, p[0], p[1]); })) return { full: true };
     for (var i = 0; i < 3; i++) {
       var h = g[i], o = g.filter(function (c) { return c !== h; });
@@ -10933,8 +10958,11 @@
       if (pairsOf(g).some(function (p) { return family(ctx, p[0], p[1]); })) return;
       if (g.some(function (x) { return x.flags.trioNo; })) return;
       if (g.some(function (x) { return exclBlock(ctx, x, g); })) return;
-      /* 部屋に残る誰かの恋人を連れていく組み合わせは選ばない */
-      if (ctx.present().some(function (o) { return g.indexOf(o) < 0 && g.some(function (x) { var t = HK.Ties ? HK.Ties.get(ctx, x, o) : null; return (t && /lover|fwb/.test(t.type)) || ctx.pair(x, o).couple; }); })) return;
+      /* 部屋に残る誰かの恋人を連れていく組み合わせは選ばない。
+         ただし恋人が三人以上いる人（円満な三人の中心）は、二人の恋人と三人で過ごしたあと、残る恋人のために部屋に残る（T.exitGroup）。場面はいつも三人まで */
+      var leftLov = function (x, o) { var t = HK.Ties ? HK.Ties.get(ctx, x, o) : null; return (t && /lover|fwb/.test(t.type)) || ctx.pair(x, o).couple; };
+      var holders = g.filter(function (x) { return ctx.present().some(function (o) { return g.indexOf(o) < 0 && leftLov(x, o); }); });
+      if (holders.length && !(harmony(ctx, g) && holders.length === 1)) return;
       var cands = [];
       /* 円満な三人：三人とも互いに恋人どうしなら、成り行きではなく、恋人どうしとして三人で（ほかのきっかけより先に選ぶ） */
       var hm = harmonyOf(ctx, g);
@@ -11232,7 +11260,34 @@
   }
 
   /* 三人（以上）で出る */
+  /* 三人で出るとき、まだ部屋に残る恋人がいる人（恋人が三人以上いる人）は、その恋人のために残る */
+  function stayFor(ctx, g) {
+    var out = null;
+    g.some(function (x) {
+      var o = ctx.present().filter(function (y) { return g.indexOf(y) < 0 && !y.out && y.alive !== false && y.flags.cagePair == null && loveTie(ctx, x, y) && !A.pairDone(ctx, x, y); })[0];
+      if (o) out = { s: x, o: o };
+      return !!o;
+    });
+    return out;
+  }
   T.exitGroup = function (ctx, g, text, why, night, kind) {
+    var sf = stayFor(ctx, g);
+    if (sf) {
+      var go = g.filter(function (c) { return c !== sf.s; });
+      go.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = go.filter(function (o) { return o !== c; }).map(function (o) { return o.name; }).join('と') + 'と部屋を出た（' + sf.s.name + 'は、' + sf.o.name + 'のために残った）'; c.flags.trio = g.map(function (o) { return o.i; }); });
+      sf.s.flags.trio = g.map(function (o) { return o.i; }); sf.s.flags.stayed = (sf.s.flags.stayed || 0) + 1;
+      pairsOf(g).forEach(function (pr) { ctx.mod2(pr[0], pr[1], { trust: 8, aff: 4 }, { trust: 8, aff: 4 }); if (night && okSex(pr[0], pr[1])) ctx.pair(pr[0], pr[1]).night = true; });
+      ctx.mod2(sf.s, sf.o, { trust: 6, aff: 4 }, { trust: 6, aff: 4 });
+      var ex0 = { group: g.map(function (c) { return c.i; }), label: ctx.label, trio: true, night: !!night, kind: kind || 'warm' };
+      (ctx.flags.exits = ctx.flags.exits || []).push(ex0);
+      ctx.flags.trios.push(ex0);
+      var st = ctx.t(ctx.pick([
+        '扉の鍵が外れる音がした。{a}は二人の背中を押して先に行かせ、自分は部屋の中に向き直った。{a}「{b}を一人にはしない。すぐ行く」',
+        '扉が開いた。{a}は出ていく二人に手を振ってから、部屋の隅の{b}の隣に腰を下ろした。{a}「待たせた。次は、二人で」',
+        '鍵の外れる音に、{b}が顔を上げた。{a}は扉をくぐらず、{b}の手を取った。{a}「先に出てて。{b}と一緒に行くから」――二人は頷いて、先に扉をくぐった。'
+      ]), sf.s, sf.o);
+      return { cat: 'escape', mag: 40, text: text + st, why: why + '／' + sf.s.name + 'には、部屋に残る恋人（' + sf.o.name + '）がいる。場面は三人までにして、' + sf.s.name + 'が残った', with: g.concat([sf.o]) };
+    }
     g.forEach(function (c) {
       c.out = true; c.fate = '脱出';
       c.fateNote = g.filter(function (o) { return o !== c; }).map(function (o) { return o.name; }).join('と') + 'と、' + kn(g.length) + 'で部屋を出た';
@@ -52128,7 +52183,7 @@
     if (list.length > max && max === 1) list = list.slice(0, 1);
     return S.chars.filter(function (c) { return list.indexOf(c.id) >= 0; });
   }
-  /* 恋人が三人以上いる人が、その恋人たちと同じ箱庭に入るときの注意（恋人どうしの三人の場面・嫉妬の扱いは、三人までを想定している） */
+  /* 恋人が三人以上いる人が、その恋人たちと同じ箱庭に入るときの注意書き（場面は三人まで・恋人どうしは嫉妬せず互いを相手にしない：engine.js の coNG、room-trio.js の stayFor） */
   function loveCrowdNote(id) {
     var J = joined(id), ids = J.map(function (c) { return c.id; }), nm = function (cid) { var c = S.chars.filter(function (x) { return x.id === cid; })[0]; return c ? c.name : ''; };
     var lov = {};
@@ -52139,7 +52194,7 @@
     var who = Object.keys(lov).filter(function (k) { return lov[k].length >= 3; });
     if (!who.length) return '';
     return '<p class="hint" id="lovewarn" style="color:var(--warn)">※' + who.map(function (k) { return esc(nm(k)) + 'には、この箱庭に一緒に入る恋人が' + lov[k].length + '人（' + lov[k].map(function (x) { return esc(nm(x)); }).join('・') + '）います'; }).join('。') +
-      '。恋人が三人以上そろうと、嫉妬・浮気の扱いや恋人どうしの三人の場面がうまく噛み合わず、不自然な展開になることがあります（恋人どうしの円満な場面は、三人までを想定しています）。</p>';
+      '。恋人が三人以上そろうときは、夜や三人の場面は三人までにして、残る恋人とは順番に過ごします。同じ人を恋人にしている者どうしは、互いに嫉妬せず、互いを恋愛・R18の相手にもしません（二人のあいだに恋愛の関係を設定した場合は除く）。そろう人数が多いほど、一人ひとりの出番は少なくなります。</p>';
   }
   function updLoveWarn() {
     var el = document.getElementById('lovewarn'), html = loveCrowdNote(S.scenId), jc = document.getElementById('joincount');
@@ -53779,12 +53834,14 @@
   /* b の近くにいる恋敵（b が惹かれている・付き合っている a 以外の人） */
   /* 関係の設定で恋人（番）にした二人か */
   function setLover(ctx, x, y) { var T0 = HK.Ties; return !!(T0 && (T0.has(ctx, x, y, 'lover') || T0.has(ctx, x, y, 'mate') || T0.has(ctx, x, y, 'fated'))); }
+  /* 恋人が複数いる（関係の設定で恋人・番）とき、a は b のことで c を恋敵と見ない：
+     a と b が恋人で、c も b の恋人（同じ人の恋人どうし）か、c も a の恋人（a の恋人どうしが親しい）とき */
+  O.coLove = function (ctx, a, b, c) { return !!(a && b && c && setLover(ctx, a, b) && (setLover(ctx, c, b) || setLover(ctx, a, c))); };
   O.rival = function (ctx, a, b) {
-    var best = null, bv = 40, aSet = setLover(ctx, a, b);
+    var best = null, bv = 40;
     ctx.chars.forEach(function (c) {
       if (c === a || c === b || !c.alive || !near(ctx, a, c)) return;
-      /* b に恋人が二人いる（関係の設定で、a も c も b の恋人）とき、もう一人の恋人は恋敵ではない */
-      if (aSet && setLover(ctx, c, b)) return;
+      if (O.coLove(ctx, a, b, c)) return;
       var r = R(ctx, b, c), v = r.att + r.aff * 0.5 + (ctx.pair(b, c).couple ? 60 : 0);
       if (v > bv) { bv = v; best = c; }
     });

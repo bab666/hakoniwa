@@ -114,12 +114,14 @@
   /* b の近くにいる恋敵（b が惹かれている・付き合っている a 以外の人） */
   /* 関係の設定で恋人（番）にした二人か */
   function setLover(ctx, x, y) { var T0 = HK.Ties; return !!(T0 && (T0.has(ctx, x, y, 'lover') || T0.has(ctx, x, y, 'mate') || T0.has(ctx, x, y, 'fated'))); }
+  /* 恋人が複数いる（関係の設定で恋人・番）とき、a は b のことで c を恋敵と見ない：
+     a と b が恋人で、c も b の恋人（同じ人の恋人どうし）か、c も a の恋人（a の恋人どうしが親しい）とき */
+  O.coLove = function (ctx, a, b, c) { return !!(a && b && c && setLover(ctx, a, b) && (setLover(ctx, c, b) || setLover(ctx, a, c))); };
   O.rival = function (ctx, a, b) {
-    var best = null, bv = 40, aSet = setLover(ctx, a, b);
+    var best = null, bv = 40;
     ctx.chars.forEach(function (c) {
       if (c === a || c === b || !c.alive || !near(ctx, a, c)) return;
-      /* b に恋人が二人いる（関係の設定で、a も c も b の恋人）とき、もう一人の恋人は恋敵ではない */
-      if (aSet && setLover(ctx, c, b)) return;
+      if (O.coLove(ctx, a, b, c)) return;
       var r = R(ctx, b, c), v = r.att + r.aff * 0.5 + (ctx.pair(b, c).couple ? 60 : 0);
       if (v > bv) { bv = v; best = c; }
     });

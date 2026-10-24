@@ -55,10 +55,17 @@
      ・キャラの設定「恋愛・R18にしない相手」（どちらかに付いていれば）
      ・「恋愛相手の固定」で、どちらかが別の人に決めている（相手が箱庭にいなければ、その人は誰とも）
      どの箱庭でも、この組では恋愛・夜・R18の場面を起こさない */
-  HK.ngPair = function (a, b) {
+  /* 設定で決めた「恋愛・R18にしない相手」と「恋愛相手の固定」だけで見る */
+  HK.ngPairHard = function (a, b) {
     if (!a || !b || a === b) return false;
     if ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0)) return true;
     return (a.lock != null && a.lock !== b.i) || (b.lock != null && b.lock !== a.i);
+  };
+  /* それに加えて、同じ人を恋人にしている二人（恋人が複数いる人の恋人どうし。coNG）も恋愛・R18にしない */
+  HK.ngPair = function (a, b) {
+    if (!a || !b || a === b) return false;
+    if (HK.ngPairHard(a, b)) return true;
+    return !!((a.coNG && a.coNG.indexOf(b.i) >= 0) || (b.coNG && b.coNG.indexOf(a.i) >= 0));
   };
   HK.lockBlocks = function (a, b) { return HK.ngPair(a, b); };
   HK.canLove = function (a, b) {
@@ -361,6 +368,21 @@
     });
     /* 箱庭が自動で足す関係（学園全体の先輩後輩など）。ユーザーが決めた関係のある組には足さない */
     if (HK.Ties) HK.Ties.apply(ctx, (input.ties || []).concat(scen.extraTies ? scen.extraTies(ctx, input) || [] : []));
+    /* 恋人が複数いる人の恋人どうし（関係の設定で、同じ人を恋人・番にしている二人）は、互いを恋愛・R18の相手にしない（coNG）。
+       二人のあいだに恋愛の関係（恋人・セフレ・友達以上恋人未満・片想い・執着・元恋人など）を設定していれば除く */
+    (function () {
+      var LOV = /^(lover|mate|fated)$/, ROM = /^(lover|mate|fated|fwb|almost|crush|yan|ex)$/, ts = input.ties || [], lov = {};
+      ts.forEach(function (t) { if (LOV.test(t.type) && t.a !== t.b) { (lov[t.a] = lov[t.a] || []).push(t.b); (lov[t.b] = lov[t.b] || []).push(t.a); } });
+      var rom = function (p, q) { return ts.some(function (t) { return ROM.test(t.type) && ((t.a === p && t.b === q) || (t.a === q && t.b === p)); }); };
+      Object.keys(lov).forEach(function (k) {
+        var l = lov[k];
+        for (var x = 0; x < l.length; x++) for (var y = x + 1; y < l.length; y++) {
+          var P = ctx.chars[l[x]], Q = ctx.chars[l[y]];
+          if (!P || !Q || P === Q || rom(P.i, Q.i)) continue;
+          (P.coNG = P.coNG || []).push(Q.i); (Q.coNG = Q.coNG || []).push(P.i);
+        }
+      });
+    })();
     ctx.chars.forEach(function (a) { if (a.lock == null) return; ctx.chars.forEach(function (b) { if (b !== a && b.i !== a.lock) { var r = ctx.R(a, b); r.att = Math.min(r.att, 6); } }); });
     C.forEach(function (c) {
       if (c.goal && c.goal.needsFocus) {
