@@ -200,7 +200,9 @@
         /* 恋愛・R18にしない組（HK.ngPair）には、恋愛の関係（恋人・セフレ・片想いなど）を当てない。
            ただし「恋愛相手の固定」だけが理由の組（相手が別の人に決めている）では、片想い・執着のような一方通行の想いは残す（叶わない恋として。heartbreak.js） */
         var mk0 = (A.ng && A.ng.indexOf(B.i) >= 0) || (B.ng && B.ng.indexOf(A.i) >= 0);
-        if (HK.ngPair && HK.ngPair(A, B) && (mk0 ? /^(lover|fwb|mate|fated|crush|almost|ex|yan)$/ : /^(lover|fwb|mate|fated|almost|ex)$/).test(t.type)) return;
+        /* 恋愛相手の固定だけが食い違い、体の関係は許されている組（engine.js の HK.lockSexOnly）は、セフレの関係を残す */
+        var sexOk0 = !mk0 && HK.lockSexOnly && HK.lockSexOnly(A, B);
+        if (HK.ngPair && HK.ngPair(A, B) && (mk0 ? /^(lover|fwb|mate|fated|crush|almost|ex|yan)$/ : sexOk0 ? /^(lover|mate|fated|almost|ex)$/ : /^(lover|fwb|mate|fated|almost|ex)$/).test(t.type)) return;
         if (HK.ngPair && HK.ngPair(A, B) && /^(crush|yan)$/.test(t.type)) {
           /* 想う側（A）が別の人に恋愛相手を固定しているなら、その想いは使わない（固定した人は、ほかの人を想わない） */
           if (A.lock != null && A.lock !== B.i) return;

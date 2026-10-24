@@ -31,6 +31,8 @@
     if (lk) bits.push('恋愛相手：' + lk.name + 'だけ');
     var sl = !HK.SAFE_ON && c.sexLock && byId(c.sexLock);
     if (sl) bits.push('体の関係：' + sl.name + 'だけ');
+    else if (!HK.SAFE_ON && c.sexLock === 'any' && c.loveLock) bits.push('体の関係：誰とでも');
+    else if (!HK.SAFE_ON && c.sexLock === 'lover') bits.push('体の関係：恋人とモブだけ');
     var ngs = (c.loveNG || []).map(byId).filter(Boolean);
     if (ngs.length) bits.push('恋愛にしない：' + ngs.map(function (o) { return o.name; }).join('・'));
     var n = tiesOf(c).length;
@@ -136,7 +138,7 @@
     var ngRow = others.length ? '<div class="gearrow"><span class="gearhint" style="flex:1 1 100%;margin:0">' + (HK.SAFE_ON ? '恋愛にしない相手' : '恋愛・R18にしない相手') + '（この人との恋愛・夜の場面を起こさない。相手の設定にも同じ印が付きます）</span>' + others.map(function (o) { return '<label><input type="checkbox" data-gf="ng" data-o="' + esc(o.id) + '"' + ((c.loveNG || []).indexOf(o.id) >= 0 ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('') + '</div>' : '';
     var lockSel = '<select data-gf="lock" aria-label="恋愛相手の固定"><option value="">固定しない</option>' + others.map(function (o) { return opt(o.id, o.name + 'だけ', c.loveLock || ''); }).join('') + '</select>';
     /* 性行為の相手の固定（R18版のみ）：恋愛は縛らず、体の関係（夜・R18の場面）だけをこの相手に限る */
-    var sexSel = HK.SAFE_ON ? '' : '<label>性行為の相手を固定 <select data-gf="sexlock" aria-label="性行為の相手の固定"><option value="">固定しない</option>' + others.map(function (o) { return opt(o.id, o.name + 'だけ', c.sexLock || ''); }).join('') + '</select></label>';
+    var sexSel = HK.SAFE_ON ? '' : '<label>性行為の相手を固定 <select data-gf="sexlock" aria-label="性行為の相手の固定"><option value="">恋愛相手の固定に合わせる</option>' + opt('any', '誰とでも可（恋愛は固定のまま）', c.sexLock || '') + opt('lover', '恋人とモブだけ', c.sexLock || '') + others.map(function (o) { return opt(o.id, o.name + 'だけ', c.sexLock || ''); }).join('') + '</select></label>';
     /* 関係（相手ごと） */
     var ties = s.ties || [], groups = {};
     ties.forEach(function (t, k) {
@@ -172,7 +174,7 @@
         (!HK.SAFE_ON && c.pos !== 'top' ? '<label title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"' + (c.daku ? ' checked' : '') + '> 濁点喘ぎ（男性向け）</label>' : '') +
         '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label></div>' +
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
-      '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label>' + sexSel + '</div>' + (sexSel ? '<p class="gearhint">性行為の相手の固定：恋愛はほかの人ともしますが、住人どうしの夜・R18の場面（三人の場面も）はこの相手とだけ起きます。固定した相手がその箱庭に参加していなければ、誰とも起きません（魔物・マッサージ師など、箱庭の仕掛けの相手の場面は除く）。</p>' : '') + ngRow + '</div>' +
+      '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label>' + sexSel + '</div>' + (sexSel ? '<p class="gearhint">性行為の相手の固定：「恋愛相手の固定に合わせる」は、恋愛相手を固定していればその相手とだけ（していなければ誰とでも）。「誰とでも可」は、恋愛は固定した相手とだけ・体の関係はほかの住人とも（体の関係があっても恋人にはならない）。「恋人とモブだけ」は、住人では恋人（固定した恋愛相手・関係の恋人・その場で恋人になった相手）とだけ。「〇〇だけ」は、恋愛はほかの人ともするが、住人どうしの夜・R18の場面（三人の場面も）はその相手とだけ（その相手が箱庭にいなければ誰とも）。魔物・マッサージ師など、箱庭の仕掛けの相手の場面は縛りません。</p>' : '') + ngRow + '</div>' +
       '<div class="gearsec"><h3>関係と呼び方' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + (rel || '<p class="gearhint">まだ関係はありません。</p>') + addable + '</div>';
   }
   function render() {

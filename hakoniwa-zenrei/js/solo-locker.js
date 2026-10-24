@@ -75,7 +75,8 @@
     P.forEach(function (p) { var pk = (input.perChar && input.perChar[p.i] && input.perChar[p.i].pick || {}).role; if (pk === 'plotter') plotter = p; });
     if (!plotter && rng() < 0.1) plotter = crusher || (rng() < 0.5 ? A : B);
     /* 恋愛・R18にしない二人：相手を落とすために自分から閉じ込められる人はいない（役割の指定があっても、巻き込まれた側として扱う） */
-    var ngP = !!(HK.ngPair && HK.ngPair(A, B));
+    /* 恋愛相手の固定が食い違うだけで、体の関係は許されている二人（engine.js の HK.lockSexOnly）は、恋愛・R18にしない組として扱わない */
+    var ngP = !!(HK.ngPair && HK.ngPair(A, B)) && !(HK.lockSexOnly && HK.lockSexOnly(A, B));
     /* 性行為の相手を別の人に固定している（または固定した相手がこの箱庭にいない）：体の関係にならない（pos.js の向きの判定で clash になる） */
     var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (A.sexLock != null && A.sexLock !== B.i ? A : B) : null;
     var sexWhy = sexP ? sexWho.name + 'は、性行為の相手を' + (input.chars[sexWho.sexLock] ? input.chars[sexWho.sexLock].name + 'に' : 'ほかの人に') + '決めている' : '';

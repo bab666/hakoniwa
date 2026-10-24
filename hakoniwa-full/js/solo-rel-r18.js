@@ -13,7 +13,11 @@
   if (!RK) return;
   var L = RK.L, fill = RK.fill;
   function order(a, b) { return HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b]; }
-  function okPair(ctx, a, b) { return HK.canLove(a, b) && HK.canLove(b, a) && !RK.noRomance(ctx, a, b) && !HK.lockBlocks(a, b); }
+  function okPair(ctx, a, b) {
+    /* 恋愛相手の固定が食い違うだけで、体の関係は許されている組（engine.js の HK.lockSexOnly）：恋愛相手の固定を外して、恋愛対象の向きだけを見る（恋愛には進まない） */
+    if (HK.lockSexOnly && HK.lockSexOnly(a, b)) { var a0 = Object.assign({}, a, { lock: null }), b0 = Object.assign({}, b, { lock: null }); return HK.canLove(a0, b0) && HK.canLove(b0, a0) && !RK.noRomance(ctx, a, b); }
+    return HK.canLove(a, b) && HK.canLove(b, a) && !RK.noRomance(ctx, a, b) && !HK.lockBlocks(a, b);
+  }
   function has(ctx, a, b, t) { return HK.Ties && HK.Ties.has(ctx, a, b, t); }
   /* どんな二人の夜か */
   function kindOf(ctx, a, b) {

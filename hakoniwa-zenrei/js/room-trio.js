@@ -126,7 +126,7 @@
   T.harmony = harmony; T.harmonyOf = harmonyOf;
   /* 体の関係の形：三人の全組が体の関係を持てるなら全員で、そうでなければ二人の両方と持てる一人を中心に（つながらない二人は直接は触れ合わない）。どれも無理なら null */
   /* 性行為の相手を固定している人（engine.js の sexLock）は、決めた相手以外の人がいる三人の場面に入らない（直接は触れ合わない形でも） */
-  function sexLockOut(g) { return g.some(function (x) { return x.sexLock != null && g.some(function (y) { return y !== x && y.i !== x.sexLock; }); }); }
+  function sexLockOut(g) { return !!HK.sexNG && g.some(function (x) { return g.some(function (y) { return y !== x && HK.sexNG(x, y); }); }); }
   function sexShape(g, hubOnly) {
     if (sexLockOut(g)) return null;
     /* 恋愛・R18にしない組（苦手な組み合わせ・恋愛相手を別の人に固定している人）が一組でも入っていれば、三人では交わらない */

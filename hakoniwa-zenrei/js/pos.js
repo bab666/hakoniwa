@@ -80,9 +80,9 @@
   P.orients = function (a, b) {
     if (!a || !b || a === b) return [];
     /* 恋愛・R18にしない組（engine.js の HK.ngPair）は、どちらの向きでも成り立たない */
-    if (HK.ngPair && HK.ngPair(a, b)) return [];
-    /* 性行為の相手を別の人に固定している人（engine.js の HK.sexNG）も、体の関係にならない */
-    if (HK.sexNG && HK.sexNG(a, b)) return [];
+    /* 体の関係にならない組（engine.js の HK.sexBlocked：恋愛・R18にしない相手・同じ人の恋人どうし・性行為の相手の固定）。
+       恋愛相手の固定が食い違うだけの組は、性行為の相手の固定で「誰とでも可」などにしていれば体の関係になれる（恋愛には進まない） */
+    if (HK.sexBlocked ? HK.sexBlocked(a, b) : (HK.ngPair && HK.ngPair(a, b))) return [];
     var out = [];
     [[a, b], [b, a]].forEach(function (o) {
       var t = o[0], u = o[1];

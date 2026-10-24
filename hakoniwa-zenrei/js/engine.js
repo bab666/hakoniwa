@@ -18,6 +18,8 @@
   function Ctx(input) {
     var self = this;
     this.input = input;
+    /* いま回している結果（性行為の相手の固定「恋人とモブだけ」で、その場で恋人になった相手を見るため。HK.sexNG） */
+    HK._curCtx = this;
     this.scen = HK.SCENARIOS[input.scenId];
     this.seed = input.seed;
     this.rng = HK.rng(input.seed);
@@ -36,7 +38,7 @@
     this.chars = input.chars.map(function (c, i) {
       var pc = (input.perChar && input.perChar[i]) || {};
       return {
-        i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], name: c.name, eg: c.eg, tr: HK.traits(c.eg), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, lock: c.loveLock == null || c.loveLock === '' || isNaN(+c.loveLock) ? null : +c.loveLock, sexLock: c.sexLock == null || c.sexLock === '' || isNaN(+c.sexLock) ? null : +c.sexLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder,
+        i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], name: c.name, eg: c.eg, tr: HK.traits(c.eg), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, lock: c.loveLock == null || c.loveLock === '' || isNaN(+c.loveLock) ? null : +c.loveLock, sexLock: c.sexLock === 'any' || c.sexLock === 'lover' ? c.sexLock : c.sexLock == null || c.sexLock === '' || isNaN(+c.sexLock) ? null : +c.sexLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder,
         hp: 100, alive: true, out: false, stress: 0,
         stats: {}, statsRaw: pc.stats || {}, weaponPick: pc.weapon || 'random',
         actionPick: pc.action || 'auto', goalPick: pc.goal || 'auto', role: pc.role || '', pick: pc.pick || {},
@@ -68,11 +70,30 @@
     return !!((a.coNG && a.coNG.indexOf(b.i) >= 0) || (b.coNG && b.coNG.indexOf(a.i) >= 0));
   };
   HK.lockBlocks = function (a, b) { return HK.ngPair(a, b); };
-  /* 性行為の相手の固定（キャラの設定 sexLock）：決めた相手以外とは体の関係にならない（恋愛は縛らない）。相手が箱庭にいなければ誰とも */
-  HK.sexNG = function (a, b) {
-    if (!a || !b || a === b) return false;
-    return (a.sexLock != null && a.sexLock !== b.i) || (b.sexLock != null && b.sexLock !== a.i);
-  };
+  /* 設定の「恋愛・R18にしない相手」だけ／「恋愛相手の固定」が食い違うか／同じ人の恋人どうし（coNG） */
+  HK.ngExplicit = function (a, b) { return !!(a && b && a !== b && ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0))); };
+  HK.lockConflict = function (a, b) { return !!(a && b && a !== b && ((a.lock != null && a.lock !== b.i) || (b.lock != null && b.lock !== a.i))); };
+  function coNG(a, b) { return !!((a.coNG && a.coNG.indexOf(b.i) >= 0) || (b.coNG && b.coNG.indexOf(a.i) >= 0)); }
+  /* 性行為の相手の固定（キャラの設定 sexLock）。恋愛とは別に、体の関係（夜・R18の場面）の相手を決める
+     ・null（恋愛相手の固定に合わせる）：恋愛相手を固定していれば、その相手とだけ。していなければ誰とでも
+     ・'any'（誰とでも可）：恋愛相手を固定していても、体の関係はほかの住人とも（恋愛には進まない：HK.lockSexOnly）
+     ・'lover'（恋人とモブだけ）：住人では、恋愛相手の固定の相手・関係の恋人（番・運命の番）・その場で恋人になった相手とだけ。モブ（住人でない相手）の場面は縛らない
+     ・番号：その住人とだけ（その人が箱庭にいなければ、住人の誰とも） */
+  function sexOne(x, y) {
+    var s = x.sexLock;
+    if (s === 'any') return false;
+    if (s === 'lover') {
+      var C = HK._curCtx;
+      return !((x.lock != null && x.lock === y.i) || (x.loveSet && x.loveSet.indexOf(y.i) >= 0) || (C && C.pf && C.chars && C.chars[x.i] === x && C.pair(x, y).couple));
+    }
+    if (s != null) return s !== y.i;
+    return x.lock != null && x.lock !== y.i;
+  }
+  HK.sexNG = function (a, b) { if (!a || !b || a === b) return false; return sexOne(a, b) || sexOne(b, a); };
+  /* 体の関係にならない組：恋愛・R18にしない相手・同じ人の恋人どうし・性行為の相手の固定 */
+  HK.sexBlocked = function (a, b) { if (!a || !b || a === b) return false; return HK.ngExplicit(a, b) || coNG(a, b) || HK.sexNG(a, b); };
+  /* 恋愛はしない（恋愛相手の固定が食い違う）が、体の関係は許されている組。体の関係があっても、恋愛には進まないように補正する（Ctx.say） */
+  HK.lockSexOnly = function (a, b) { return !!(a && b && a !== b && HK.lockConflict(a, b) && !HK.ngExplicit(a, b) && !coNG(a, b) && !HK.sexNG(a, b)); };
   HK.canLove = function (a, b) {
     if (HK.ngPair(a, b)) return false;
     /* 恋愛相手を決めた人は、その相手以外とは恋愛しない（相手が箱庭にいなければ誰とも） */
@@ -188,7 +209,20 @@
   Ctx.prototype.stat = function (a, id) { return a.stats[id] == null ? 3 : a.stats[id]; };
 
   HK.Ctx = Ctx;
+  /* 恋愛はしないが体の関係は許されている組（HK.lockSexOnly）：体の関係があっても恋人にはならず、惹かれも恋愛の手前で止める */
+  var SEXONLY_ATT = 45;
+  function sexOnlyFix(ctx, actors) {
+    var L = (actors || []).filter(function (c) { return c && c.i != null; });
+    for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) {
+      var x = L[i], y = L[j];
+      if (!HK.lockSexOnly(x, y)) continue;
+      var pf = ctx.pair(x, y);
+      if (pf.couple) { pf.couple = false; pf.since = null; }
+      [[x, y], [y, x]].forEach(function (p) { var r = ctx.R(p[0], p[1]); if (r.att > SEXONLY_ATT) r.att = SEXONLY_ATT; });
+    }
+  }
   Ctx.prototype.say = function (o) {
+    if (o.actors && o.actors.length >= 2 && this.chars && this.chars.some(function (c) { return c.lock != null; })) sexOnlyFix(this, o.actors);
     /* 恋愛が起きない組の恋愛の出来事は、記録に残さない（呼び出し側が e.n などを使えるよう、空の出来事を返す） */
     if (o.cat === 'romance' && o.kind !== 'phase' && !this.romanceOk(o.actors)) return { n: this.log.length, step: this.stepIndex, cat: 'romance', actors: [], text: '', mag: 0, kind: 'event', skipped: true };
     /* 監禁（執着の暴走）されている人は場に出てこない：執着の出来事（監禁の日々・逃走・救出・解放）と死のほかは、記録に残さない
@@ -215,11 +249,14 @@
   Ctx.prototype.romanceOk = function (actors) {
     var L = (actors || []).filter(Boolean), a = L[0], b = L[1];
     /* 恋愛・R18にしない組（キャラの設定）が一組でも入っていれば、どの箱庭でも起こさない */
-    for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j])) return false;
+    /* ただし「恋愛はしないが体の関係は許されている組」（HK.lockSexOnly）は通す。恋愛の出来事は HK.canLove（恋愛相手の固定を見る）で止まり、
+       体の関係の出来事だけが起きる。起きたあとは Ctx.say で恋愛に進まないように補正する */
+    for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j]) && !HK.lockSexOnly(L[i], L[j])) return false;
     if (this.scen && this.scen.romanceCore) return true;
     if (a && b && this.pair(a, b).kin) return false;
     if (a && b && this.pair(a, b).couple) return true;
     if (this.env && this.env.romance === 0) return false;
+    if (a && b && HK.lockSexOnly(a, b)) { var a0 = Object.assign({}, a, { lock: null }), b0 = Object.assign({}, b, { lock: null }); return HK.canLove(a0, b0) && HK.canLove(b0, a0); }
     if (a && b) return HK.canLove(a, b) && HK.canLove(b, a);
     return !(a && a.likes === 'none');
   };
@@ -372,6 +409,8 @@
       });
     });
     /* 箱庭が自動で足す関係（学園全体の先輩後輩など）。ユーザーが決めた関係のある組には足さない */
+    /* 性行為の相手の固定「恋人とモブだけ」で使う、関係の恋人（恋人・番・運命の番）の一覧 */
+    (input.ties || []).forEach(function (t) { if (/^(lover|mate|fated)$/.test(t.type) && ctx.chars[t.a] && ctx.chars[t.b]) { (ctx.chars[t.a].loveSet = ctx.chars[t.a].loveSet || []).push(t.b); (ctx.chars[t.b].loveSet = ctx.chars[t.b].loveSet || []).push(t.a); } });
     if (HK.Ties) HK.Ties.apply(ctx, (input.ties || []).concat(scen.extraTies ? scen.extraTies(ctx, input) || [] : []));
     /* 恋人が複数いる人の恋人どうし（関係の設定で、同じ人を恋人・番にしている二人）は、互いを恋愛・R18の相手にしない（coNG）。
        二人のあいだに恋愛の関係（恋人・セフレ・友達以上恋人未満・片想い・執着・元恋人など）を設定していれば除く */
@@ -388,7 +427,8 @@
         }
       });
     })();
-    ctx.chars.forEach(function (a) { if (a.lock == null) return; ctx.chars.forEach(function (b) { if (b !== a && b.i !== a.lock) { var r = ctx.R(a, b); r.att = Math.min(r.att, 6); } }); });
+    /* 恋愛相手を固定した人は、ほかの人への惹かれを小さく始める（体の関係は許されている組は除く：惹かれは Ctx.say の補正で恋愛の手前に止める） */
+    ctx.chars.forEach(function (a) { if (a.lock == null) return; ctx.chars.forEach(function (b) { if (b !== a && b.i !== a.lock && !HK.lockSexOnly(a, b)) { var r = ctx.R(a, b); r.att = Math.min(r.att, 6); } }); });
     C.forEach(function (c) {
       if (c.goal && c.goal.needsFocus) {
         var best = HK.Ties ? HK.Ties.focusFor(ctx, c) : null, bv = -999;
@@ -641,6 +681,11 @@
     if (pf.couple && (ab.aff < 0 || ba.aff < 0 || ab.ten > 70 || ba.ten > 70)) return { id: 'breakup' };
     if (pf.couple) return { id: 'lovers' };
     if (pf.fwb) return { id: 'fwbsettle' };
+    /* 恋愛はしないが体の関係は許されている組（HK.lockSexOnly）：夜があっても恋人にはしない（セフレ・一夜の関係として） */
+    if (HK.lockSexOnly && HK.lockSexOnly(A, B)) {
+      if (pf.night) return { id: HK.Ties && HK.Ties.has(ctx, A, B, 'fwb') ? 'fwbsettle' : 'night' };
+      if (love(ab) && love(ba)) return { id: 'friends' };
+    }
     if (love(ab) && love(ba)) return { id: pf.night ? 'lovers' : 'pining' };
     if (pf.night) return { id: (ab.aff + ba.aff) / 2 > 20 ? 'vague' : 'night' };
     if (love(ab) !== love(ba)) { dir = love(ab) ? A.i : B.i; return { id: 'oneway', dir: dir }; }
