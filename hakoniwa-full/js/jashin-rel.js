@@ -37,6 +37,9 @@
     });
     return c;
   }
+  /* 両片想い：どちらからも片想い（向きを逆にした crush が二本）。both は恋人になったあとも true、mutual は恋人になる前だけ */
+  function both(S, a, b) { var ts = tiesOf(S, a, b); return ts.some(function (t) { return t.type === 'crush' && t.a === a.i; }) && ts.some(function (t) { return t.type === 'crush' && t.a === b.i; }); }
+  function mutual(S, a, b) { return both(S, a, b) && !tiesOf(S, a, b).some(function (t) { return inList(t.type, 'lover,mate,fated'); }); }
   function ED(S, a, b, lab, cls, from) { if (JS.DRAMA) JS.DRAMA.edge(S, a, b, lab, cls, from); }
   function A(S) { return S.P.filter(function (p) { return JS.alive(p) && !p.bound; }); }
   function pickT(S, pool, v) { return ST.fmt(ST.pick(S, pool), v); }
@@ -73,6 +76,7 @@
         if (c === 'crush') { var t = tiesOf(S, a, b).filter(function (q) { return q.type === 'crush'; })[0]; if (t && t.a === b.i) { x = b; y = a; } }
         if (a.amn || b.amn) return;
         done[a.i + '-' + b.i] = 1; k++;
+        if (c === 'crush' && mutual(S, a, b)) return ST.sayB(S, { actors: [x, y], tag: '関係', text: pickT(S, T.INTRO.mutual, { a: x.name, b: y.name }), why: '関係：' + relLabel(S, a, b) + '（お互いに想っているのに、どちらも自分の片想いだと思っている）' }, x.name + 'と' + y.name);
         ST.sayB(S, { actors: [x, y], tag: '関係', text: pickT(S, T.INTRO[c], { a: x.name, b: y.name }), why: '関係：' + tiesOf(S, a, b).map(function (t) { return HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).join('・') }, x.name + 'と' + y.name);
       });
     });
@@ -96,11 +100,11 @@
     /* 夜に寄り添う */
     if (night && rng() < 0.18) {
       var pairs = [];
-      live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i) { var c = cat(S, a, b); if (c === 'love' || c === 'family' || c === 'close') pairs.push([a, b, c]); } }); });
+      live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i) { var c = cat(S, a, b); if (c === 'love' || c === 'family' || c === 'close') pairs.push([a, b, c]); else if (c === 'crush' && mutual(S, a, b)) pairs.push([a, b, 'mutual']); } }); });
       if (pairs.length) {
         var pr = rng.pick(pairs), x = rng() < 0.5 ? pr[0] : pr[1], y = x === pr[0] ? pr[1] : pr[0];
         x.m.fear = clamp(x.m.fear - 6, 0, 100); y.m.fear = clamp(y.m.fear - 10, 0, 100);
-        ST.sayB(S, { actors: [x, y], tag: '寄り添う', text: pickT(S, T.COMFORT[pr[2]], { a: x.name, b: y.name }), why: '関係のある二人は、寄り添うと恐怖が和らぐ' }, x.name + 'と' + y.name + 'が寄り添った');
+        ST.sayB(S, { actors: [x, y], tag: '寄り添う', text: pickT(S, T.COMFORT[pr[2]], { a: x.name, b: y.name }), why: pr[2] === 'mutual' ? '両片想いの二人は、寄り添うと恐怖が和らぐ（どちらも、相手は自分を何とも思っていないと思い込んでいる）' : '関係のある二人は、寄り添うと恐怖が和らぐ' }, x.name + 'と' + y.name + 'が寄り添った');
       }
     }
     /* 張り合う・ぶつかる */
@@ -133,7 +137,11 @@
     live.forEach(function (p) { if (p.rivalBoost) p.rivalBoost--; });
     if (JS.DRAMA) JS.DRAMA.tick(S, A(S), h);
   }
-  function relLabel(S, a, b) { return tiesOf(S, a, b).map(function (t) { return HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).join('・') || 'なし'; }
+  function relLabel(S, a, b) {
+    var bo = both(S, a, b), l = tiesOf(S, a, b).filter(function (t) { return !(bo && t.type === 'crush'); }).map(function (t) { return HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; });
+    if (bo) l.unshift('両片想い');
+    return l.join('・') || 'なし';
+  }
 
   /* ---------- 記憶喪失 ---------- */
   function amnTick(S, live, h) {
@@ -192,7 +200,7 @@
     rel.forEach(function (q) {
       var c = cat(S, q, p), bd = bond(S, q, p);
       q.m.fear = clamp(q.m.fear + (c === 'love' ? 25 : c === 'family' ? 20 : c === 'bad' ? 4 : 12), 0, 100);
-      var t = pickT(S, T.GRIEF[c] || T.GRIEF.close, { a: p.name, b: q.name }), why = q.name + 'と' + p.name + 'の関係：' + relLabel(S, q, p);
+      var t = pickT(S, (c === 'crush' && mutual(S, q, p) ? T.GRIEF.mutual : T.GRIEF[c]) || T.GRIEF.close, { a: p.name, b: q.name }), why = q.name + 'と' + p.name + 'の関係：' + relLabel(S, q, p);
       /* 後を追う（仇討ち・絶望） */
       if (bd >= 0.75 && !S.inCave && /村人|何者か/.test(p.how || '') && rng() < q.tr.aggr * 0.5 + q.tr.impulse * 0.3) {
         t += pickT(S, T.REVENGE, { b: q.name });
@@ -358,6 +366,11 @@
         var ok = ts.some(function (t) { return (t.type === 'crush' && t.a === a.i) || ((t.type === 'almost' || t.type === 'ex') && a.i < b.i); });
         if (!ok || rng() > 0.55) return;
         done = 1; a.m.fear = clamp(a.m.fear - 10, 0, 100); b.m.fear = clamp(b.m.fear - 6, 0, 100);
+        if (mutual(S, a, b)) {
+          b.m.fear = clamp(b.m.fear - 6, 0, 100);
+          S.ties.push({ a: a.i, b: b.i, type: 'lover', born: true }); if (JS.DRAMA) JS.DRAMA.setRel(S, a, b, 0.2, '恋人');
+          return ST.say(S, { actors: [a, b], tag: '告白', text: pickT(S, T.CONFESS_MUTUAL, { a: a.name, b: b.name }), why: '関係：両片想い。死を前にして想いを口にし、ようやく通じた（どちらも、自分の片想いだと思っていた）', mag: 32 });
+        }
         ST.say(S, { actors: [a, b], tag: '告白', text: pickT(S, T.CONFESS, { a: a.name, b: b.name }), why: '関係：' + relLabel(S, a, b) + '。死を前にして、想いを口にした', mag: 30 });
       });
     });
@@ -371,5 +384,5 @@
   /* 魔術師が生贄に選ばない相手（大事な人） */
   function spare(S, m, v) { return bond(S, m, v) >= 0.6; }
 
-  JS.REL = { setup: setup, arrive: arrive, amnArrive: amnArrive, tick: tick, onDeath: onDeath, near: near, shield: shield, stay: stay, substitute: substitute, goBack: goBack, confess: confess, cover: cover, spare: spare, bond: bond, cat: cat };
+  JS.REL = { setup: setup, arrive: arrive, amnArrive: amnArrive, tick: tick, onDeath: onDeath, near: near, shield: shield, stay: stay, substitute: substitute, goBack: goBack, confess: confess, cover: cover, spare: spare, bond: bond, cat: cat, mutual: mutual };
 })();
