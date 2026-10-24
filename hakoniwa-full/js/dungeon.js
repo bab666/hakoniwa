@@ -647,7 +647,7 @@
   function hitLines(B, x) {
     if (!isTop(x)) return B.hit;
     var l = B.hit.filter(function (t) { return !/抜け出|振り払|断ち切|引きちぎ|斬り落と|引き剥が|ほど|魅了/.test(t); });
-    return l.length ? l : ['{a}は{t}の懐に踏み込み、渾身の一撃を叩き込んだ。'];
+    return l.length ? l : ['{a}は{t}の懐に踏み込み、渾身の一撃を叩き込んだ。', '{a}は{t}の攻撃を紙一重でかわし、がら空きになった脇へ一撃を叩き込んだ。', '{a}は真正面から{t}に踏み込み、怯んだ隙を逃さず続けざまに打ち込んだ。'];
   }
   function pickBoss(S, th, tiers, used) {
     var list = DG.BOSSES.filter(function (b) { return b.th === th && tiers.indexOf(b.tier) >= 0 && used.indexOf(b.id) < 0; });
