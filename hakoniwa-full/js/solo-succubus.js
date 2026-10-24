@@ -412,7 +412,10 @@
     if (live.length < 2) return;
     var a = rng.pick(live), b = rng.pick(live.filter(function (x) { return x !== a; })), spot = rng.pick(T.spots);
     /* 獲物を二人で挟む共闘は、恋愛・R18にしない組（HK.ngPair）では起きない（取り合いになる） */
-    var team = a.tr.warmth + b.tr.warmth > 1.1 && rng() < 0.6 && !(HK.ngPair && HK.ngPair(a, b));
+    /* 共闘の獲物は男性なので、二人とも恋愛対象に男性を含み、モブとの場面に出られる人だけ。二人が一つの獲物を挟むので、二人の組も体の関係が成り立つときだけ（HK.Pos.okSex） */
+    function likesM(p) { return !p.likes || p.likes === 'm' || p.likes === 'both'; }
+    var team = a.tr.warmth + b.tr.warmth > 1.1 && rng() < 0.6 && !(HK.ngPair && HK.ngPair(a, b)) && likesM(a) && likesM(b) &&
+      !(HK.State && !(HK.State.mobSexOk(a) && HK.State.mobSexOk(b))) && !(HK.Pos && !HK.Pos.okSex(a, b));
     if (team) {
       var ml = Math.round(25 + rng() * 35);
       a.m.ml += Math.round(ml / 2); b.m.ml += Math.round(ml / 2);
