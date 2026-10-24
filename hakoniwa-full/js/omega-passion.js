@@ -178,13 +178,23 @@
       if (pf.couple || !HK.canLove(a, b) || !HK.canLove(b, a) || partnerOf(ctx, a) || partnerOf(ctx, b)) return false;
       var mb = BD.mateOf(ctx, b), ma = BD.mateOf(ctx, a);
       if ((mb && mb !== a) || (ma && ma !== b)) return false;
-      return hateLove(ctx, a, b) && (hateLove(ctx, b, a) || ctx.R(b, a).att > 40) && (pf.hateKiss || 0) >= 1 && ctx.stepIndex - (pf.lastHate == null ? -9 : pf.lastHate) >= 2;
+      if (ctx.stepIndex - (pf.lastHate == null ? -9 : pf.lastHate) < 2) return false;
+      /* R18版：関係で敵対している二人（ライバル・不仲・敵対／嫌悪レベル35以上）は、攻めの側から強引に（hate-sex-r18.js） */
+      var HS = !HK.SAFE_ON && HK.HateSex;
+      if (HS && HS.order(ctx, a, b)[0] === a && HS.hostile(ctx, a, b)) return true;
+      return hateLove(ctx, a, b) && (hateLove(ctx, b, a) || ctx.R(b, a).att > 40) && (pf.hateKiss || 0) >= 1;
     },
     w: function (ctx, a, b) { return (0.6 + (a.tr.impulse + b.tr.impulse) * 0.5 + ctx.env.heat / 200) * strifeK(ctx); },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b);
       pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.hateNight = (pf.hateNight || 0) + 1; pf.lastHate = ctx.stepIndex;
       ctx.mod2(a, b, { att: 8, aff: 3, ten: 2 }, { att: 8, aff: 3, ten: 2 });
+      /* R18版：攻めが強引に始め、受けは口では嫌がるがまんざらではない（hate-sex-r18.js。描写の設定もそちらで） */
+      var HS = !HK.SAFE_ON && HK.HateSex;
+      if (HS) {
+        var hs = HS.scene(ctx, a, b, {}), ob = HS.order(ctx, a, b);
+        return { text: fill(ctx, hs + ctx.pick(HN.end), ob[0], ob[1]), why: (HS.hostile(ctx, a, b) ? HS.why(ctx, a, b) : '愛憎（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性'), mag: 28 };
+      }
       var t = ctx.pick(HN.open) + ctx.pick(lewd(ctx) === 'low' ? HN.low : HN.mid) + ctx.pick(HN.end);
       /* 受け攻め：抱く側を {a} に */
       var ab = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b];

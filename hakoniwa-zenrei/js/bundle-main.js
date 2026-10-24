@@ -14887,13 +14887,23 @@
       if (pf.couple || !HK.canLove(a, b) || !HK.canLove(b, a) || partnerOf(ctx, a) || partnerOf(ctx, b)) return false;
       var mb = BD.mateOf(ctx, b), ma = BD.mateOf(ctx, a);
       if ((mb && mb !== a) || (ma && ma !== b)) return false;
-      return hateLove(ctx, a, b) && (hateLove(ctx, b, a) || ctx.R(b, a).att > 40) && (pf.hateKiss || 0) >= 1 && ctx.stepIndex - (pf.lastHate == null ? -9 : pf.lastHate) >= 2;
+      if (ctx.stepIndex - (pf.lastHate == null ? -9 : pf.lastHate) < 2) return false;
+      /* R18版：関係で敵対している二人（ライバル・不仲・敵対／嫌悪レベル35以上）は、攻めの側から強引に（hate-sex-r18.js） */
+      var HS = !HK.SAFE_ON && HK.HateSex;
+      if (HS && HS.order(ctx, a, b)[0] === a && HS.hostile(ctx, a, b)) return true;
+      return hateLove(ctx, a, b) && (hateLove(ctx, b, a) || ctx.R(b, a).att > 40) && (pf.hateKiss || 0) >= 1;
     },
     w: function (ctx, a, b) { return (0.6 + (a.tr.impulse + b.tr.impulse) * 0.5 + ctx.env.heat / 200) * strifeK(ctx); },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b);
       pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.hateNight = (pf.hateNight || 0) + 1; pf.lastHate = ctx.stepIndex;
       ctx.mod2(a, b, { att: 8, aff: 3, ten: 2 }, { att: 8, aff: 3, ten: 2 });
+      /* R18版：攻めが強引に始め、受けは口では嫌がるがまんざらではない（hate-sex-r18.js。描写の設定もそちらで） */
+      var HS = !HK.SAFE_ON && HK.HateSex;
+      if (HS) {
+        var hs = HS.scene(ctx, a, b, {}), ob = HS.order(ctx, a, b);
+        return { text: fill(ctx, hs + ctx.pick(HN.end), ob[0], ob[1]), why: (HS.hostile(ctx, a, b) ? HS.why(ctx, a, b) : '愛憎（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性'), mag: 28 };
+      }
       var t = ctx.pick(HN.open) + ctx.pick(lewd(ctx) === 'low' ? HN.low : HN.mid) + ctx.pick(HN.end);
       /* 受け攻め：抱く側を {a} に */
       var ab = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b];
@@ -27566,6 +27576,9 @@
     var boundOne = null;
     /* 受け攻め：向きの決まらない二人（攻め×攻めなど）は体の関係にならない。女性どうしは、いちもつの描写を使わない */
     var Pos = HK.Pos, clash = !!(Pos && Pos.clash(A, B)), ff = !!(Pos && Pos.ff(A, B)), R18 = !HK.SAFE_ON;
+    /* 敵対している二人（関係がライバル・不仲・敵対）：攻めの側から強引に手を出し、受けは口では嫌がるが、まんざらではない応じ方をする（hate-sex-r18.js。R18版のみ） */
+    if (!S.ties) S.ties = input.ties || [];
+    var HSX = R18 && HK.HateSex, hateP = !!(HSX && rel === 'tension' && !ngP && !clash && HSX.hostile(S, A, B));
     function hardTop(p) { return !!(Pos && Pos.hardTop(p)); }
     if (bind === 'one') {
       boundOne = plotter ? plotter.o : rng() < 0.5 ? A : B;
@@ -27722,6 +27735,8 @@
       for (var k = 0; k < order.length; k++) {
         var a = order[k], b = a.o;
         var urge = (a.goal && a.goal.id === 'want' ? 0.12 : a.goal && a.goal.id === 'out' ? -0.08 : 0) + (a.action && a.action.id === 'flow' ? 0.08 : a.action && a.action.id === 'solve' ? -0.06 : 0) + a.m.heat / 100 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.m.reason / 130 - a.tr.cp * 0.12 + (plotter === a ? 0.45 : 0) + ({ lover: 0.15, fwb: 0.2, almost: 0.1, crush: crusher === a ? 0.2 : 0, mutual: 0.2, tension: -0.1 }[rel] || 0) + (fwbAll && rel !== 'fwb' ? 0.2 : 0) + (crusher === a && rel !== 'crush' && rel !== 'mutual' ? 0.15 : 0);
+        /* 敵対している二人：攻めの側は、苛立ちごとぶつけるように手を出しやすい */
+        if (hateP && HSX.order(S, a, b)[0] === a) urge += 0.35;
         /* 従者は主に手を出さないよう耐える */
         if (servant === a && plotter !== a) {
           var order2 = !clash && !a.ordered && master.m.heat > 70 && master.tr.cp + master.tr.fc > 0.8 && rng() < 0.5;
@@ -27802,6 +27817,9 @@
         if (noriAct) actPool = noriAct;
         var vA = { a: ax.name, b: bx.name }, vT = { a: a.name, b: b.name };
         var t = swap ? ST.fmt(pk(LK.TEMPT), vT) : ST.fmt(pk(actPool), vA);
+        /* 敵対している二人で、攻めの側から仕掛けたとき：受けは口では嫌がるが、拒みきらない */
+        var hateNow = hateP && !swap && aTop && resp !== 'accept' && b.m.heat >= 15;
+        if (hateNow) resp = 'passive';
         if (resp === 'refuse') {
           b.cnt.refuse++; a.m.reason = clamp(a.m.reason + 6, 0, 100);
           /* 一度は応じた相手が、冷める出来事なしに拒むときは「ここから先だけ止める」文に（応じ方を行ったり来たりさせない） */
@@ -27818,6 +27836,7 @@
         b.rxLv = Math.max(rx0, rxNow); b.rxCool = false; if (giveIn) b.gaveIn = true;
         eroNow = resp === 'accept';
         if (swap) t += ST.fmt(pk(LK.TAKE[b.bound ? 'bound' : 'free']), vT) + ST.fmt(pk(actPool), vA);
+        else if (hateNow) t += HSX.react(S, a, b, lv);
         else t += (giveIn ? ST.fmt(pk(hands(giveIn, a, b)), { a: a.name, b: b.name }) : '') + ST.fmt(pk(hands((rxText === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); }), a, b)), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
         /* 最初の一回は、二人の関係で受け止め方が変わる */
         var RF = LK.REL && LK.REL.first[rel];
@@ -27849,7 +27868,7 @@
         var G = gimmicks[gi];
         if (G && G.lewd && lv >= 1) { prog = 100; t += ST.fmt(pk(lv >= 2 && LK.KISS_MID ? LK.KISS_MID : G.ok), { a: a.name, b: b.name }); }
         eroNow = false;
-        var o2 = ST.sayB(S, { actors: [a, b], tag: actLabel(lv), text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた（' + (hardTop(b) ? '攻め' : '動く側') + '）' : resp === 'accept' ? '乗った' : '流された') + '（関係：' + REL_LABEL[rel] + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(lv), lv >= 3 || pair.acts === 1);
+        var o2 = ST.sayB(S, { actors: [a, b], tag: actLabel(lv), text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた（' + (hardTop(b) ? '攻め' : '動く側') + '）' : resp === 'accept' ? '乗った' : hateNow ? '口では嫌がったが、拒みきらなかった' : '流された') + '（関係：' + REL_LABEL[rel] + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(lv), lv >= 3 || pair.acts === 1);
         if (o2 && pair.acts === 1) ST.key(S, o2, '最初に手を出したのは' + a.name);
         if (o2 && lv === 4 && !pair.keySex) { pair.keySex = true; ST.key(S, o2, ff ? 'ロッカーの中で肌を重ねた' : 'ロッカーの中で繋がった'); }
         break;

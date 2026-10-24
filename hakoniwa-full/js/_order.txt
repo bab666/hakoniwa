@@ -72,6 +72,7 @@ js/scenario-room.js
 js/room-reluct.js
 js/room-trio-lines.js
 js/room-trio.js
+js/hate-sex-r18.js
 js/room-know.js
 js/solo-room-jealous.js
 js/ego-image.js

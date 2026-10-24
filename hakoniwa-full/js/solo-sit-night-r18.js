@@ -587,6 +587,32 @@
     });
   }
 
+  /* ---------- ゾンビの街：敵対している二人の、強引な夜（hate-sex-r18.js） ----------
+     関係がライバル・不仲・敵対（または嫌悪レベル35以上）の二人が、隠れ家で言い争ったはずみに。攻めの側から強引に始まり、受けは口では嫌がるがまんざらではない。
+     「恋人たちの夜（R18）」の設定に従う（描かない＝起きない／ほのめかす＝暗転）。恋人のいる人・咬まれた人・はぐれた人には起きない */
+  var ZH_PLACE = L('バリケードの奥の部屋で、見張りの順番をめぐって二人は言い争っていた。外の呻き声が、互いの怒鳴り声にかき消される。どちらが先に手を出したのかは、もう分からなかった。|物資の分け方で、二人はまた揉めていた。「お前のせいで死にかけた」「こっちの台詞だ」――胸ぐらを掴み合った手が、いつの間にか別の意味を持ち始めた。|群れをやり過ごした直後の、息の上がった倉庫の中だった。助けられたことが、かえって腹立たしかった。言い返そうと振り向いた{b}の肩を、{a}が乱暴に掴んだ。');
+  if (Z && Z.scen && Z.loveLv) {
+    Z.scen.events.push({
+      /* 選ばれやすさは敵対の重み（conflict）で決め、記録には恋愛（romance）として残す（hate-sex-r18.js の出られない部屋と同じ） */
+      id: 'zr18_hate', cat: 'conflict', scope: 'pair', pri: true, r18: true,
+      when: function (ctx, a, b) {
+        var HS = HK.HateSex;
+        if (!HS || HK.SAFE_ON || Z.loveLv(ctx) === 'off' || !baseOk(ctx, a, b, 4)) return false;
+        if (a.z.bitten || b.z.bitten || a.z.alone || b.z.alone || couple(ctx, a, b)) return false;
+        return HS.order(ctx, a, b)[0] === a && HS.hostile(ctx, a, b) && !HS.taken(ctx, a, b);
+      },
+      w: function (ctx, a) { return 5 + (a.tr.aggr || 0) * 2 + a.stress / 40; },
+      run: function (ctx, a, b) {
+        var HS = HK.HateSex, pf = ctx.pair(a, b), o = HS.order(ctx, a, b);
+        pf.sitN = (pf.sitN || 0) + 1; pf.sitAt = ctx.stepIndex; pf.night = true; pf.hateSex = (pf.hateSex || 0) + 1;
+        ctx.mod2(a, b, { att: 10, aff: 4, ten: -4 }, { att: 12, aff: 5, ten: -6 });
+        a.stress = Math.max(0, a.stress - 10); b.stress = Math.max(0, b.stress - 10);
+        var place = fill(fp(ctx, ZH_PLACE), { a: o[0].name, b: o[1].name });
+        return { cat: 'romance', text: HS.scene(ctx, a, b, { place: place, low: Z.loveLv(ctx) === 'fade' }), why: HS.why(ctx, a, b) + '・' + Z.day(ctx) + '日目', mag: 26 };
+      }
+    });
+  }
+
   /* 点検用（数え直し・試し引き） */
   HK.SitNight = { REL: REL, NOW: NOW, REACT: REACT, S: S, SZ: SZ, SI: SI, GROUP: GROUP, relOf: relOf, detectZ: detectZ, detectI: detectI, compose: compose };
 })();
