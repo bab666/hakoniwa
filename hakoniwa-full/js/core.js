@@ -99,10 +99,14 @@
   };
 
   /* エゴグラムの型を短く言語化 */
+  /* いちばん強い因子が複数あるとき（BAABC の NP と A など）：箱庭を回しているあいだは、その中からランダムに選ぶ
+     （乱数は HK._topRng。engine.js が回すたびに種から作る。本筋の乱数とは別なので、ほかの展開は変わらない）。回していないとき（画面の表示）は先の因子。
+     文を選ぶたびに呼ぶ所（HK.voiceTop など）は毎回選び直す。人物に持たせる p.top は、作るときに一度だけ選ぶ（その回の中では、仕組みの判定が揺れないように） */
   HK.egoType = function (eg) {
     var f = HK.FACTORS.slice().sort(function (x, y) { return eg[y] - eg[x]; });
-    var top = f[0], low = f[4];
-    return { top: top, low: low, label: top + '優位・' + low + '低め', code: HK.toCode(eg) };
+    var tops = f.filter(function (k) { return eg[k] === eg[f[0]]; });
+    var top = tops.length > 1 && HK._topRng ? tops[HK._topRng(tops.length)] : f[0], low = f[4];
+    return { top: top, tops: tops, low: low, label: tops.join('・') + '優位・' + low + '低め', code: HK.toCode(eg) };
   };
   HK.lvl = function (v) { return v >= 14 ? '高' : v <= 6 ? '低' : '中'; };
   HK.fdesc = function (c, k) {

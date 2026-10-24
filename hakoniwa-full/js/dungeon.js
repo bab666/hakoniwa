@@ -666,10 +666,11 @@
   function mkHero(S, src, pc, i) {
     var rng = S.rng, env = S.env, scen = HK.SCENARIOS.dungeon;
     var h = {
-      i: i, ng: Array.isArray(src.loveNG) ? src.loveNG.filter(function (x) { return x >= 0; }) : [], lock: src.loveLock === '' || src.loveLock == null || isNaN(+src.loveLock) ? null : +src.loveLock, name: src.name, eg: src.eg, memo: src.memo || '', tr: HK.traits(src.eg), top: HK.egoType(src.eg).top,
+      i: i, ng: Array.isArray(src.loveNG) ? src.loveNG.filter(function (x) { return x >= 0; }) : [], lock: src.loveLock === '' || src.loveLock == null || isNaN(+src.loveLock) ? null : +src.loveLock, name: src.name, eg: src.eg, memo: src.memo || '', tr: HK.traits(src.eg),
       stats: {}, hp: 100, pleasure: 0, sens: 1, corrupt: 0, climax: 0, dev: {}, curses: [], items: [], outfit: env.outfit, cloth: OUTFIT[env.outfit] || 3,
       gender: src.gender || '', likes: src.likes || '', tone: src.tone || '', fp: src.fp || '', pos: src.pos || '', posLike: src.posLike || '', futa: !!src.futa
     };
+    h.top = HK.egoType(src.eg).top;
     h.reason = clamp(55 + h.eg.A * 1.1 + h.eg.CP * 0.9, 40, 100);
     h.persona = HK.personaOf(h);
     (scen.stats || []).forEach(function (s) { var v = pc.stats && pc.stats[s.id]; h.stats[s.id] = v == null || v === 'random' ? 1 + rng.int(5) : +v; });

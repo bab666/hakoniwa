@@ -100,10 +100,14 @@
   };
 
   /* エゴグラムの型を短く言語化 */
+  /* いちばん強い因子が複数あるとき（BAABC の NP と A など）：箱庭を回しているあいだは、その中からランダムに選ぶ
+     （乱数は HK._topRng。engine.js が回すたびに種から作る。本筋の乱数とは別なので、ほかの展開は変わらない）。回していないとき（画面の表示）は先の因子。
+     文を選ぶたびに呼ぶ所（HK.voiceTop など）は毎回選び直す。人物に持たせる p.top は、作るときに一度だけ選ぶ（その回の中では、仕組みの判定が揺れないように） */
   HK.egoType = function (eg) {
     var f = HK.FACTORS.slice().sort(function (x, y) { return eg[y] - eg[x]; });
-    var top = f[0], low = f[4];
-    return { top: top, low: low, label: top + '優位・' + low + '低め', code: HK.toCode(eg) };
+    var tops = f.filter(function (k) { return eg[k] === eg[f[0]]; });
+    var top = tops.length > 1 && HK._topRng ? tops[HK._topRng(tops.length)] : f[0], low = f[4];
+    return { top: top, tops: tops, low: low, label: tops.join('・') + '優位・' + low + '低め', code: HK.toCode(eg) };
   };
   HK.lvl = function (v) { return v >= 14 ? '高' : v <= 6 ? '低' : '中'; };
   HK.fdesc = function (c, k) {
@@ -6151,6 +6155,15 @@
     C.forEach(function (c) { if (!c.fate) c.fate = c.alive ? '生存' : '死亡'; });
     return finalize(ctx);
   };
+  /* いちばん強い因子が同点のときの選び方（core.js の HK.egoType）：回すたびに種から乱数を作る */
+  (function () {
+    var sim0 = HK.simulate;
+    HK.simulate = function (input) {
+      var x = (((input && input.seed) || 1) * 2654435761 + 97) >>> 0, prev = HK._topRng;
+      HK._topRng = function (n) { x = (Math.imul(x, 1664525) + 1013904223) >>> 0; return Math.floor(x / 4294967296 * n); };
+      try { return sim0.apply(this, arguments); } finally { HK._topRng = prev; }
+    };
+  })();
 
   /* 箱庭全体に起きる出来事（js/incidents-*.js） */
   function runIncident(ctx, s, n) {
@@ -16757,10 +16770,12 @@
   K.hero = function (S, src, pc) {
     var rng = S.rng, scen = S.scen;
     var h = {
-      i: 0, name: src.name, eg: src.eg, memo: src.memo || '', tr: HK.traits(src.eg), top: HK.egoType(src.eg).top,
+      i: 0, name: src.name, eg: src.eg, memo: src.memo || '', tr: HK.traits(src.eg),
       stats: {}, hp: 100, pleasure: 0, sens: 1, corrupt: 0, climax: 0, dev: {}, curses: [], items: [], cloth: 4,
       gender: src.gender || '', likes: src.likes || '', tone: src.tone || '', fp: src.fp || '', pos: src.pos || ''
     };
+    /* いちばん強い因子（同点なら、この回の中で一つに決める。core.js の HK.egoType） */
+    h.top = HK.egoType(src.eg).top;
     h.reason = clamp(55 + h.eg.A * 1.1 + h.eg.CP * 0.9, 40, 100);
     h.persona = HK.personaOf(h);
     (scen.stats || []).forEach(function (s) { var v = pc.stats && pc.stats[s.id]; h.stats[s.id] = v == null || v === 'random' ? 1 + rng.int(5) : +v; });
@@ -24388,7 +24403,9 @@
     var S = { scen: scen, rng: HK.rng(input.seed), env: env, log: [], hist: [], turns: [], recent: [], step: 0, label: '', flags: {} };
     S.P = input.chars.map(function (c, i) {
       var pc = (input.perChar && input.perChar[i]) || {};
-      var p = { i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder, name: c.name, eg: c.eg, tr: HK.traits(c.eg), top: HK.voiceTop(c), topWhy: HK.voiceTopWhy(c), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, pick: pc.pick || {}, stats: {}, m: {}, cnt: {}, notes: [], fate: '' };
+      var p = { i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder, name: c.name, eg: c.eg, tr: HK.traits(c.eg), topWhy: HK.voiceTopWhy(c), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, pick: pc.pick || {}, stats: {}, m: {}, cnt: {}, notes: [], fate: '' };
+      /* 台詞の表を引く因子（口調に近い因子、なければいちばん強い因子。同点なら、この回の中で一つに決める） */
+      p.top = HK.voiceTop(c);
       p.persona = HK.personaOf(p);
       (scen.stats || []).forEach(function (s) { var v = pc.stats && pc.stats[s.id]; p.stats[s.id] = v == null || v === 'random' ? 1 + S.rng.int(5) : +v; });
       return p;

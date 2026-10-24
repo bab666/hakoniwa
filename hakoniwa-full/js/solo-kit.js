@@ -9,10 +9,12 @@
   K.hero = function (S, src, pc) {
     var rng = S.rng, scen = S.scen;
     var h = {
-      i: 0, name: src.name, eg: src.eg, memo: src.memo || '', tr: HK.traits(src.eg), top: HK.egoType(src.eg).top,
+      i: 0, name: src.name, eg: src.eg, memo: src.memo || '', tr: HK.traits(src.eg),
       stats: {}, hp: 100, pleasure: 0, sens: 1, corrupt: 0, climax: 0, dev: {}, curses: [], items: [], cloth: 4,
       gender: src.gender || '', likes: src.likes || '', tone: src.tone || '', fp: src.fp || '', pos: src.pos || ''
     };
+    /* いちばん強い因子（同点なら、この回の中で一つに決める。core.js の HK.egoType） */
+    h.top = HK.egoType(src.eg).top;
     h.reason = clamp(55 + h.eg.A * 1.1 + h.eg.CP * 0.9, 40, 100);
     h.persona = HK.personaOf(h);
     (scen.stats || []).forEach(function (s) { var v = pc.stats && pc.stats[s.id]; h.stats[s.id] = v == null || v === 'random' ? 1 + rng.int(5) : +v; });

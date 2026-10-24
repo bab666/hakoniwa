@@ -400,6 +400,15 @@
     C.forEach(function (c) { if (!c.fate) c.fate = c.alive ? '生存' : '死亡'; });
     return finalize(ctx);
   };
+  /* いちばん強い因子が同点のときの選び方（core.js の HK.egoType）：回すたびに種から乱数を作る */
+  (function () {
+    var sim0 = HK.simulate;
+    HK.simulate = function (input) {
+      var x = (((input && input.seed) || 1) * 2654435761 + 97) >>> 0, prev = HK._topRng;
+      HK._topRng = function (n) { x = (Math.imul(x, 1664525) + 1013904223) >>> 0; return Math.floor(x / 4294967296 * n); };
+      try { return sim0.apply(this, arguments); } finally { HK._topRng = prev; }
+    };
+  })();
 
   /* 箱庭全体に起きる出来事（js/incidents-*.js） */
   function runIncident(ctx, s, n) {
