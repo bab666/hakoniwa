@@ -96,11 +96,11 @@
   /* かけられた側が攻めのとき・女性どうしのときは、その向きの文（SM.MID_TOP / MID_FF / MID_FF_TOP。下の差し替えで足す） */
   SM.midSnap = function (S, p, k) {
     var kd = KIND[k] || 'touch';
-    var T = p.ff ? (p.aTop ? SM.MID_FF_TOP : SM.MID_FF) : p.aTop ? SM.MID_TOP : null;
+    var T = p.ff ? (p.aTop ? SM.MID_FF_TOP : SM.MID_FF) : p.fm && SM.MID_FM ? SM.MID_FM : p.aTop ? SM.MID_TOP : null;
     var arr = (T && T[kd]) || (p.aTop && SM.MID_TOP && SM.MID_TOP[kd]) || (p.ff && kd !== 'touch' && kd !== 'kiss' ? SM.MID_FF.in : MID[kd]);
     /* 描写の作風（男性向け）の差し替え：S.alt があれば、選んだ表の名前で引き直す */
     if (S.alt) {
-      var key = T && T[kd] ? (p.ff ? (p.aTop ? 'MID_FF_TOP.' : 'MID_FF.') : 'MID_TOP.') + kd : p.aTop && SM.MID_TOP && SM.MID_TOP[kd] ? 'MID_TOP.' + kd : p.ff && kd !== 'touch' && kd !== 'kiss' ? 'MID_FF.in' : 'MID.' + kd;
+      var key = T && T[kd] ? (p.ff ? (p.aTop ? 'MID_FF_TOP.' : 'MID_FF.') : p.fm ? 'MID_FM.' : 'MID_TOP.') + kd : p.aTop && SM.MID_TOP && SM.MID_TOP[kd] ? 'MID_TOP.' + kd : p.ff && kd !== 'touch' && kd !== 'kiss' ? 'MID_FF.in' : 'MID.' + kd;
       arr = S.alt(key, arr);
     }
     return S.fmt(S.pick(arr), { a: p.name, h: p.h });
@@ -117,8 +117,8 @@
     var v = { a: p.name, h: p.h }, aTop = p.aTopLast;
     if (k === 'swept') {
       p.swept = true; p.m.fall = Math.min(100, p.m.fall + 25); p.cnt.climax += 1; p.cnt.lewd++;
-      var swk = p.ff ? (aTop ? 'SWEPT_FF_TOP' : 'SWEPT_FF') : mid ? (aTop ? 'SWEPT_MID_TOP' : 'SWEPT_MID') : aTop ? 'SWEPT_TOP' : 'SWEPT';
-      var sw = { SWEPT_FF_TOP: SM.SWEPT_FF_TOP, SWEPT_FF: SM.SWEPT_FF, SWEPT_MID_TOP: SWEPT_MID_TOP, SWEPT_MID: SWEPT_MID, SWEPT_TOP: SWEPT_TOP, SWEPT: SWEPT }[swk];
+      var swk = p.ff ? (aTop ? 'SWEPT_FF_TOP' : 'SWEPT_FF') : p.fm && SM.SWEPT_FM ? (mid ? 'SWEPT_MID_FM' : 'SWEPT_FM') : mid ? (aTop ? 'SWEPT_MID_TOP' : 'SWEPT_MID') : aTop ? 'SWEPT_TOP' : 'SWEPT';
+      var sw = { SWEPT_FF_TOP: SM.SWEPT_FF_TOP, SWEPT_FF: SM.SWEPT_FF, SWEPT_FM: SM.SWEPT_FM, SWEPT_MID_FM: SM.SWEPT_MID_FM, SWEPT_MID_TOP: SWEPT_MID_TOP, SWEPT_MID: SWEPT_MID, SWEPT_TOP: SWEPT_TOP, SWEPT: SWEPT }[swk];
       if (S.alt) sw = S.alt(swk, sw);
       var cv = HK.Voice && HK.Voice.CLIMAX[p.persona] ? (HK.R18M && HK.R18M.topLines ? HK.R18M.topLines(p, HK.Voice.CLIMAX[p.persona]) : HK.Voice.CLIMAX[p.persona]) : null;
       var cvE = S.cv ? S.cv(p, aTop) : null;
@@ -128,11 +128,11 @@
     }
     if (k === 'report') {
       p.reportedNow = true;
-      var rpk = mid || aTop || p.ff ? 'REPORT_MID' : 'REPORT', rp = rpk === 'REPORT_MID' ? REPORT_MID : REPORT;
+      var rpk = mid || aTop || p.ff || p.fm ? 'REPORT_MID' : 'REPORT', rp = rpk === 'REPORT_MID' ? REPORT_MID : REPORT;
       return { k: k, tag: '通報', text: S.fmt(S.pick(S.alt ? S.alt(rpk, rp) : rp), v) + (SM.AFTER_SAY && SM.AFTER_SAY.angry[p.persona] ? p.name + S.pick(SM.AFTER_SAY.angry[p.persona]) : ''), why: '怒りと冷静さ（CP ' + Math.round(p.eg.CP) + '・A ' + Math.round(p.eg.A) + '）が、快楽堕ち（' + Math.round(fall * 100) + '）に勝った' };
     }
     p.fled = true;
-    var flk = mid || aTop || p.ff ? 'FLEE_MID' : 'FLEE', fl = flk === 'FLEE_MID' ? FLEE_MID : FLEE;
+    var flk = mid || aTop || p.ff || p.fm ? 'FLEE_MID' : 'FLEE', fl = flk === 'FLEE_MID' ? FLEE_MID : FLEE;
     return { k: k, tag: '逃げ出した', text: S.fmt(S.pick(S.alt ? S.alt(flk, fl) : fl), v), why: '頭が真っ白になった（AC ' + Math.round(p.eg.AC) + '）' };
   };
 })();
@@ -232,4 +232,73 @@
   SM.SNAP_AFTER_TOP = { fall: L('あの夜から、{a}は自分から{h}に会いに行くようになった。「もう催眠なんていらない」――そう言って、自分から{h}を抱き寄せる。正気のまま、{h}を求めずにいられない体になっていた。|{a}は催眠が解けたあとも、{h}の名前を聞くだけで体が熱くなるようになった。三日後、{a}は自分から{h}に「また、会いたい」と連絡した。') };
   SM.SNAP_AFTER_FF = { fall: L('あの夜から、{a}は自分から{h}に会いに行くようになった。「もう催眠なんていらない」――そう言って、自分で服を脱ぐ。{h}の指に触れられると、正気のまま幸せそうに達する体になっていた。|{a}は催眠が解けたあとも、{h}の名前を聞くだけで下腹が疼くようになった。三日後、{a}は自分から{h}に「また、して」と連絡した。') };
   SM.AFTER_TOP = { fall: L('三日後、{a}は自分から{h}の部屋を訪ねた。「……あの、また、かけてくれない？」|{a}は{h}の前に、自分から振り子を差し出した。「お願い。もう一回、私を夢中にさせて」') };
+})();
+/* 女攻め×男：かける側 {h} が自分で攻めを選んだ女性で、かけられる側 {a} が男性のとき（solo-saimin.js の p.fm）
+   ・{h} が押し倒す・跨る・自分で導く・腰を沈める書き方。{h} を男性の体（{h}のもの・押し入る・中に出す）で書かない。{a} を「入れられる」側にしない
+   ・fm / fmPart / cmdFM は差し替えの文。fmOk は元の文（full / part）がそのまま読める暗示。どちらもない暗示（咥えずにいられない・中に出されるとイく）は、この組には選ばれない
+   ・{a}=かけられる人（男性・受け） {h}=かける人（女性・攻め）。登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK, SM = HK.SAIMIN;
+  if (!SM || !SM.SUG) return;
+  function L(s) { return s.split('|'); }
+  var V = {
+    sens: { fmOk: 1 }, lover: { fmOk: 1 }, climax: { fmOk: 1 }, trigger: { fmOk: 1 }, amae: { fmOk: 1 }, buzama: { fmOk: 1 },
+    seduce: { fmOk: 1 }, edge: { fmOk: 1 }, voice: { fmOk: 1 }, kiss: { fmOk: 1 }, countdown: { fmOk: 1 }, scent: { fmOk: 1 },
+    ukeire: {
+      cmdFM: L('「あなたの体は、私を受け入れるためにある。触れられたら、もう抗えない」|「私に跨られたら、体が勝手に応えてしまう。それが、あなたの本当の気持ち」'),
+      fm: L('{a}は自分からシャツのボタンを外し、{h}の前で仰向けになった。{h}がその腰に跨り、ゆっくりと腰を沈めていくと、{a}は待ちわびていたような声を漏らした。そこから先、{a}はずっと{h}の名前を呼び続けていた。|{h}が触れただけで、{a}の体は熱く張りつめた。{h}は{a}の胸に手をついて跨り、自分の手で導いて根元まで呑み込んだ。{a}は抗う言葉を一つも思い出せないまま、下から{h}を見上げていた。'),
+      fmPart: L('{a}は{h}に押し倒されかけて、震えながら{h}の肩を押し返した。「だめ……なんで、こんな……」――体だけが、正直に熱を持っていた。|{a}は{h}の手を自分の下腹へ導き、そこで止まった。{h}が跨ろうとすると、{a}は小さく首を振った。それ以上は、暗示が届かなかった。')
+    },
+    saigo: {
+      fm: L('{a}は{h}を抱き寄せ、肌という肌に口づけた。{h}が{a}の上に跨って腰を沈めると、{a}は下から何度も{h}を求め、{h}が「まだ」と囁いても離れなかった。最後に{h}の中で果てるまで、{a}は{h}の腰を掴んだままだった。|{a}は服を脱ぐのももどかしく、{h}にすがりついた。{h}は{a}を仰向けに押し倒して跨り、口で、手で、最後は自分の中で{a}を何度も追い上げた。{a}は三度果てるまで、{h}の下で「最後まで」とねだり続けた。'),
+      fmPart: L('{h}は{a}の上で腰を揺らしていたが、{a}がふっと目を瞬かせた。「……あれ。私、なんで……」――{a}の手は{h}の腰を掴んだまま止まり、続きを求めるかどうか、答えが出ないまま時間だけが過ぎた。')
+    },
+    obey: {
+      fm: L('{h}が「脱いで」と命じると、{a}は迷いなく服を脱いだ。{h}が「仰向けに」と言うと、{a}はうっとりと潤んだ目のまま横たわり、{h}が跨って腰を沈めるのを待った。命令されるたびに、{a}は嬉しそうに息を震わせた。|{h}が「舐めて」と言うと、{a}は跪いて、{h}の脚のあいだに舌を這わせた。{h}は「上手。ご褒美をあげる」と笑い、{a}を押し倒して上から呑み込んだ。{a}は「動いていい」と言われるまで、腰を浮かせるのを必死にこらえていた。')
+    },
+    heat: {
+      fm: L('{a}は熱に浮かされたように{h}にすがりついた。「お願い、もう我慢できない……っ」――{h}は{a}を仰向けに押し倒して跨り、張りつめたものを自分の中へ導いた。{a}は腰を震わせ、{h}の下で何度も「もっと」と繰り返した。|{a}は息を荒げ、熱くなった体を{h}に擦りつけた。{h}が膝の上に跨ってやると、{a}は{h}の腰を両手で掴んだまま、言葉にならない声を漏らした。発情した体は、{h}がゆっくり腰を沈めるだけで限界に近づいていった。')
+    },
+    free: {
+      fm: L('{h}は眠ったように動かない{a}の服を一枚ずつ脱がせ、隅々まで唇で味わった。それから{a}の腰に跨り、自分のいいところに当たるように、好きなだけ腰を揺らした。{a}は目を閉じたまま、{h}が沈むたびに甘い声を上げた。|{h}は{a}を仰向けに寝かせ、人形のように力の抜けた体の上に跨った。{h}がどんな角度で腰を使っても、{a}の体は正直に硬く応えた。{a}は眠りの底で、{h}に搾られるたびに小さく震えていた。')
+    },
+    normal: {
+      fm: L('{a}は「じゃあ、いつものね」と言って、当たり前のように服を脱いで仰向けになった。{h}が挨拶でも交わすみたいに跨ってくると、{a}は明日の予定を話しながら{h}の腰を支えた。それが普通だと、{a}は心から信じていた。|{a}は「今日の分、まだだったよね」と言って、ソファに座ったまま{h}を膝の上に招いた。{h}がゆっくり腰を沈めても、{a}は平然と今日の夕飯の話を続けた。声が上ずったのは、{h}が腰を回したときだけだった。')
+    },
+    pet: {
+      fm: L('{a}は四つん這いになり、{h}の足元にすり寄った。首輪をつけられても、嬉しそうに{h}の脚へ頬をすり寄せた。{h}が{a}を仰向けに転がして跨ると、{a}は犬のように鼻を鳴らして、されるがままになった。|{a}は首輪の鈴を鳴らしながら、{h}の膝に顎を乗せた。{h}は「いい子」と頭を撫で、そのまま{a}を床に寝かせて跨り、上から腰を落とした。{a}は鳴き声のような息を漏らしながら、{h}の下で身をよじり続けた。')
+    },
+    onedari: {
+      fm: L('{a}は何度も達しかけては止められ、とうとう涙目で{h}の袖を引いた。「お願い……イかせて、ください……っ」――言った瞬間、{h}が深く腰を沈め、{a}の体は待ちわびたように跳ねた。{h}は{a}の上で満足そうに笑い、もう一度ねだらせるために、また動きを止めた。|{a}は{h}を見上げて、自分の口から出る言葉に驚いた。「{h}の中で、イかせて……」――{h}が望み通りに深く腰を沈めると、{a}は甘い悲鳴を上げて果てた。{h}は{a}の頬を撫でて、次のおねだりを待った。')
+    },
+    serve: {
+      fm: L('{a}は「失礼します」と言って{h}の前に膝をつき、{h}の脚のあいだに丁寧に舌を這わせた。{h}が息を詰めるたびに、{a}は嬉しそうに目を細めた。{h}が達して脚を震わせても、{a}は「もう少しだけ」と顔を離さなかった。|{a}は{h}の全身を、時間をかけて舌と手で愛した。「気持ちいいですか？」と訊くたびに、{a}の方が蕩けていった。最後に{h}が{a}を仰向けにして跨ると、{a}は「まだ尽くしたい」と言いかけて、{h}に唇を塞がれた。')
+    },
+    mirror: {
+      fm: L('{h}は{a}を姿見の前に座らせ、その膝の上に背中を向けて跨った。鏡には、{h}が腰を沈めるたびに蕩けていく{a}の顔が映っていた。{a}は目を逸らせないまま、恥ずかしさに震えて何度も果てそうになった。|{h}は鏡の前で{a}を仰向けにさせ、その上に跨った。{a}は鏡の中の、{h}の下で乱れていく自分の顔から目を離せなかった。見れば見るほど、{a}の息は浅く、速くなっていった。')
+    },
+    freeze: {
+      fm: L('{a}は目を見開いたまま、指一本動かせなかった。{h}の手が肌を這い、熱くなったところを確かめるように撫で上げていくのを、{a}はただ感じることしかできなかった。{h}が上に跨って腰を沈めても、{a}の体は震えることすら許されなかった。|{a}の体は、{h}にどんな格好をさせられても、そのまま固まっていた。意識だけがはっきりしていて、そのぶん、{h}が跨って腰を揺らすたびの快感も恥ずかしさも鮮明だった。{a}は声を上げることもできないまま、{h}の下で果てた。')
+    }
+  };
+  Object.keys(V).forEach(function (k) { var g = SM.SUG[k]; if (!g) return; Object.keys(V[k]).forEach(function (f) { g[f] = V[k][f]; }); });
+
+  /* 我に返る場面（女攻め×男） */
+  SM.SNAP_FM = L('――{h}が深く腰を沈めて締めつけた瞬間、{a}は{h}の中で果て、その熱で瞳に光が戻った。自分の上に跨っている{h}と、繋がったままの場所を見上げて、{a}は息を呑んだ。「私、今……何を……」|――{a}が{h}の下で果てた拍子に、頭の靄がすっと晴れた。{h}はまだ{a}の上で、満足そうに息を整えていた。{a}は自分が何をされていたのか少しずつ理解して、声も出せずに{h}を見上げた。');
+  SM.SWEPT_FM = L('{a}は{h}を押しのけようとして、その手が止まった。正気に戻ったはずなのに、{h}が上で腰を揺らすたびに、体の奥がまだ{h}を欲しがっていた。「……っ、ずるい……」――二度目に{h}が深く腰を沈めたときも、{a}はもう拒まなかった。|「降りて」と言うつもりだった。けれど{h}がゆっくり締めつけると、{a}の言葉は甘い息に変わった。{a}は正気のまま{h}の腰を掴み、もう一度果てるまで離さなかった。');
+  SM.SWEPT_MID_FM = L('{a}は{h}を押しのけようとして、その手が止まった。分かっている。分かっているのに、{h}が上で動くたびに体が言うことを聞かなかった。「……っ、ずるい……」――{a}は正気のまま続きを受け止め、最後は{h}の中で果てた。|「やめて」と言うつもりだった。けれど{h}が動きを止めて{a}を見下ろすと、{a}は自分から{h}の腰を引き寄せていた。{h}は小さく笑って、もう一度深く腰を落とした。');
+  SM.MID_FM = {
+    in: L('――{h}が上で深く腰を沈めた瞬間、{a}の催眠がぷつりと切れた。自分の上に跨っている{h}。繋がったままの場所。{a}は息を止めた。|――{a}ははっと目を見開いた。揺れる天井と、自分を見下ろす{h}。「……な、に、これ……」――{h}の腰の動きが止まっても、{a}の体の熱は引かなかった。'),
+    oral: L('――{h}の脚のあいだに顔を埋めていた最中、{a}は我に返った。自分が何をしていたのか理解して、{a}はゆっくりと顔を上げた。{h}は濡れた唇の{a}を見下ろして、静かに笑った。')
+  };
+  /* 我に返ったあとの「その後」：通報は誰の組でも同じ文。流されたあとは、女攻め×男の文 */
+  var REP = SM.SNAP_AFTER && SM.SNAP_AFTER.report;
+  SM.SNAP_AFTER_FM = {
+    report: REP,
+    fall: L('あの夜から、{a}は自分から{h}に会いに行くようになった。「もう催眠なんていらない」――そう言って自分から服を脱ぎ、{h}の前に横たわる。{h}に跨られると、{a}は正気のまま幸せそうに果てる体になっていた。|{a}は催眠が解けたあとも、{h}の名前を聞くだけで下腹が疼くようになった。三日後、{a}は自分から{h}に「また、して」と連絡した。{h}は返事の代わりに、部屋の鍵を開けておいた。')
+  };
+  /* 女性どうし・かけられた側が攻めのときの通報も、元の（中に出された、と書かない）文にする */
+  if (REP && SM.SNAP_AFTER_FF && !SM.SNAP_AFTER_FF.report) SM.SNAP_AFTER_FF.report = REP;
+  if (REP && SM.SNAP_AFTER_TOP && !SM.SNAP_AFTER_TOP.report) SM.SNAP_AFTER_TOP.report = REP;
 })();

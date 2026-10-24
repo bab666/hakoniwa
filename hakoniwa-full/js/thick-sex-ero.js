@@ -102,6 +102,9 @@
     },
     /* 短い版の一文 */
     shortNovel: L('一度では終わらず、二人は夜が白むまで何度も求め合った。|果てたあとも、{a}は{b}を離さなかった。二度目は、一度目より長かった。|息が整うより先に、二人はまた唇を重ねていた。|二人は眠りかけては目を覚まし、そのたびにまた互いを求めた。|夜明けまでに、二人は何度も熱を分け合った。|落ち着いたと思ったのも束の間、二人はもう一度、互いの熱の中へ沈んでいった。'),
+    /* 短い版の一文（男性向け）：shortEro は男性が動く組（mf）。女性の攻め×男性（fm）・女性どうし（ff）は shortEroFm / shortEroFf */
+    shortEroFm: L('{a}「まだ終わりじゃないよ」――{a}は{b}の上から降りないまま、二回戦、三回戦と腰を揺らし続けた。{s:wet}。|{a}は抜かせないまま腰を回し、{b}がまた硬くなるのを待って、もう一度搾り取った。{s:cum}。|{b}「も、もう出ない……っ」――そう訴えても、{a}は{b}の上で朝まで腰を止めなかった。{s:wet}。|何度果てても熱は引かず、{a}は夜が明けるまで{b}の上から降りなかった。{s:wet}。|{a}「もう一回……♡」――{a}は{b}の胸に手をついて、また自分から腰を沈めた。{s:wet}。'),
+    shortEroFf: L('{a}「まだ終わりじゃないよ」――{a}は{b}のナカに指を沈め直し、朝までイかせ続けた。{s:wet}。|{b}「もっと……♡」――おねだりは朝まで止まらず、{a}の指も舌も休まなかった。{s:wet}。|何度達しても熱は引かず、二人は夜が明けるまで脚を絡めたまま擦り合わせた。{s:wet}。|{b}「もう、むり……♡」――そう言いながら、{b}は自分からもう一度脚を開いた。{s:wet}。|休む間もなく二回戦が始まり、{b}は{a}の舌に甘い声を朝まで止められなかった。{s:suck}。'),
     shortEro: L('{a}「まだ終わりじゃないよ」――二回戦、三回戦と、{b}は朝までイかされ続けた。{s:hit}。|抜かないまま二回目が始まり、{b}はイきっぱなしのまま何度も注がれた。{s:cum}。|{b}「もっと……♡」――おねだりは朝まで止まらなかった。{s:wet}。|休む間もなく二回戦が始まり、{b}は甘い声を朝まで止められなかった。{s:hit}。|何度果てても熱は引かず、二人は夜が明けるまで繋がったままだった。{s:wet}。|{b}「もう、むり……♡」――そう言いながら、{b}は自分からもう一度脚を開いた。{s:wet}。')
   };
 
@@ -144,22 +147,31 @@
     var pl = opt.place && TS && TS.PLACE && TS.PLACE[opt.place] ? pick(TS.PLACE[opt.place]) : '';
     out.push(pick(X.FEEL[mode]) + (pl ? pl : '') + pick(X.FEEL_A[mode]));
     out.push(pick(mode === 'ff' ? X.FF_CLIMAX[g] : mode === 'fm' ? X.FM_CLIMAX[g] : X.CLIMAX[g]));
-    if (opt.again) out.push(pick(X.AGAIN.ero[mode]));
+    if (opt.again) out.push(pick(X.noSwap(X.AGAIN.ero[mode], a, b)));
     if (opt.after) out.push(opt.after);
     return { text: X.fill(opt.S, out.join('\n\n'), a, b), mode: mode };
   };
+  /* 「もう一度」で受けの {b} が攻めの {a} を責め返す文（交代で・今度は {b} が）は、リバどうし（向きが決まっていない組）だけ */
+  var SWAP = /\{b\}が今度は|今度は\{b\}が|交代で/;
+  X.noSwap = function (arr, a, b) {
+    if (!HK.Pos || !HK.Pos.fixed || !HK.Pos.fixed(a, b)) return arr;
+    var o = arr.filter(function (l) { return !SWAP.test(l); });
+    return o.length ? o : arr;
+  };
+  /* 濃い・短い版の「もう一度」の一文を、組（mf / fm / ff）で選ぶ */
+  X.shortAgain = function (mode) { return mode === 'fm' ? X.AGAIN.shortEroFm : mode === 'ff' ? X.AGAIN.shortEroFf : X.AGAIN.shortEro; };
   /* 短い版。opt.open（場所・関係の一文）があれば頭に置く */
   X.short = function (opt) {
     var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = X.mode(a, b);
     E.pairNight(opt.S, a, b);
-    var t = (opt.open || '') + pick(X.SHORT[mode]) + (opt.again ? pick(X.AGAIN.shortEro) : '') + (opt.after || '');
+    var t = (opt.open || '') + pick(X.SHORT[mode]) + (opt.again ? pick(X.shortAgain(mode)) : '') + (opt.after || '');
     return { text: X.fill(opt.S, t, a, b), mode: mode };
   };
   /* 濃い：もう一度の段落（小説調・男性向け。短い版は一文） */
   X.again = function (S, pick, a, b, ero, short) {
     var mode = X.mode(a, b);
     pick = E.freshPick(S, pick);
-    var t = short ? pick(ero ? X.AGAIN.shortEro : X.AGAIN.shortNovel) : pick(X.AGAIN[ero ? 'ero' : 'novel'][mode]);
+    var t = short ? pick(ero ? X.shortAgain(mode) : X.AGAIN.shortNovel) : pick(X.noSwap(X.AGAIN[ero ? 'ero' : 'novel'][mode], a, b));
     return ero ? X.fill(S, t, a, b) : t;
   };
 })();

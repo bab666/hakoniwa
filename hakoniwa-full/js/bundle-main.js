@@ -595,7 +595,7 @@
         var p = ctx.pair(A, B);
         /* 信仰される側が相手を支配している */
         if (WB && WB.dominate) p.dominate = B.i;
-        if (D.chem != null) p.chem = HK.clamp(p.chem * (HK.tieFamLove(t) ? 0.7 : D.chem) + (D.chem > 1 ? 0.2 : 0), 0.01, 2);
+        if (D.chem != null) p.chem = HK.clamp(p.chem * (HK.tieFamLove(t) ? 1 : D.chem) + (D.chem > 1 ? 0.2 : 0), 0.01, 2);
         if (D.fric != null && !HB) p.fric = HK.clamp(p.fric * D.fric, 0.2, 2);
         if (D.couple) p.couple = true;
         /* 血のつながった家族（きょうだい・親子）：恋愛には絶対にならず、喧嘩しても信頼は崩れにくい */
@@ -644,7 +644,7 @@
         if (D.hate) m = t.a !== a.i && t.cold && HK.HATE_BACK[t.cold] ? HK.HATE_BACK[t.cold].bias : D.bias || {};
         else if (D.dir) m = (t.a === a.i ? D.biasA : D.biasB) || {};
         else m = D.bias || {};
-        if (m[cat] != null) r *= cat === 'romance' && HK.tieFamLove(t) ? Math.max(m[cat], 0.75) : m[cat];
+        if (m[cat] != null) r *= cat === 'romance' && HK.tieFamLove(t) ? Math.max(m[cat], 1) : m[cat];
         if (cat === 'romance' && HK.tieOptNoLove(t)) r *= 0.1;
       });
       return r;
@@ -662,7 +662,7 @@
           else if (f !== 'att' && m != null) r *= m;
           return;
         }
-        if (m != null) r *= f === 'att' && HK.tieFamLove(t) ? Math.max(m, 0.8) : m;
+        if (m != null) r *= f === 'att' && HK.tieFamLove(t) ? Math.max(m, 1) : m;
         if (f === 'att' && HK.tieOptNoLove(t)) r *= 0.05;
       });
       return r;
@@ -1213,6 +1213,8 @@
   var HK = window.HK;
   function L(s) { return s.split('|'); }
   var TR = (HK.TieRel = {});
+  /* 専用の関係の場面がある箱庭（ゾンビの街 zombie-bonds.js・出られない部屋 room-tie.js・オメガバース omega-ties.js）では、題材の近い場面が並ばないよう共通の場面を減らす */
+  function own(ctx) { return ctx && ctx.scen && /^(zombie|whiteroom|omega)$/.test(ctx.scen.id) ? 0.35 : 1; }
 
   function both(a, b) { return !!(HK.canLove && HK.canLove(a, b) && HK.canLove(b, a)); }
   function grow(ctx, a, b, k) { var pf = ctx.pair(a, b); pf.tieGrow = pf.tieGrow || {}; pf.tieGrow[k] = (pf.tieGrow[k] || 0) + 1; }
@@ -1232,7 +1234,7 @@
   push({
     id: 'tie_classmate', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'classmate'); },
-    w: function () { return 1; },
+    w: function (ctx) { return 1 * own(ctx); },
     run: function (ctx, a, b) {
       var ra = ctx.R(a, b), rb = ctx.R(b, a), k;
       var g = warmth(ctx, a, b);
@@ -1258,7 +1260,7 @@
   push({
     id: 'tie_colleague2', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'colleague'); },
-    w: function () { return 0.6; },
+    w: function (ctx) { return 0.6 * own(ctx); },
     run: function (ctx, a, b) {
       var ra = ctx.R(a, b), rb = ctx.R(b, a), g = warmth(ctx, a, b), k;
       if (both(a, b) && ra.att > 32 && rb.att > 24 && g > 30 && ctx.rng() < 0.45) k = 'love';
@@ -1283,7 +1285,7 @@
   push({
     id: 'tie_boss', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'boss'); },
-    w: function () { return 1; },
+    w: function (ctx) { return 1 * own(ctx); },
     run: function (ctx, a, b) {
       var t = has(ctx, a, b, 'boss'), S = ctx.chars[t.a], K = ctx.chars[t.b];
       var rs = ctx.R(S, K), rk = ctx.R(K, S), g = warmth(ctx, S, K), k;
@@ -1312,7 +1314,7 @@
   push({
     id: 'tie_benefactor', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'benefactor'); },
-    w: function () { return 1; },
+    w: function (ctx) { return 1 * own(ctx); },
     run: function (ctx, a, b) {
       var t = has(ctx, a, b, 'benefactor'), S = ctx.chars[t.a], K = ctx.chars[t.b];
       var rs = ctx.R(S, K), rk = ctx.R(K, S), g = warmth(ctx, S, K), k;
@@ -1339,7 +1341,7 @@
   push({
     id: 'tie_relative', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'relative'); },
-    w: function () { return 1; },
+    w: function (ctx) { return 1 * own(ctx); },
     run: function (ctx, a, b) {
       var t = has(ctx, a, b, 'relative'), ra = ctx.R(a, b), rb = ctx.R(b, a), g = warmth(ctx, a, b), k;
       if (t.love === 'ok' && both(a, b) && ra.att > 28 && rb.att > 22 && g > 32 && ctx.rng() < 0.4) k = 'love';
@@ -1384,7 +1386,7 @@
   push({
     id: 'tie_worship', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'worship'); },
-    w: function () { return 1.15; },
+    w: function (ctx) { return 1.15 * own(ctx); },
     run: function (ctx, a, b) {
       var t = has(ctx, a, b, 'worship'), S = ctx.chars[t.a], K = ctx.chars[t.b];
       var cold = HK.WORSHIP_BACK && HK.WORSHIP_BACK[t.cold] ? t.cold : '';
@@ -6397,8 +6399,9 @@
     /* ただし「恋愛はしないが体の関係は許されている組」（HK.lockSexOnly）は通す。恋愛の出来事は HK.canLove（恋愛相手の固定を見る）で止まり、
        体の関係の出来事だけが起きる。起きたあとは Ctx.say で恋愛に進まないように補正する */
     for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j]) && !HK.lockSexOnly(L[i], L[j])) return false;
-    if (this.scen && this.scen.romanceCore) return true;
+    /* 恋愛なしの家族は、恋愛が中心の箱庭（romanceCore）でも恋愛の出来事を起こさない */
     if (a && b && this.pair(a, b).kin) return false;
+    if (this.scen && this.scen.romanceCore) return true;
     if (a && b && this.pair(a, b).couple) return true;
     if (this.env && this.env.romance === 0) return false;
     if (a && b && HK.lockSexOnly(a, b)) { var a0 = Object.assign({}, a, { lock: null }), b0 = Object.assign({}, b, { lock: null }); return HK.canLove(a0, b0) && HK.canLove(b0, a0); }
@@ -6817,7 +6820,9 @@
     }
     if (ctx.scen.classify) { var sc = ctx.scen.classify(ctx, A, B, pf); if (sc) return sc; }
     var tie = HK.Ties ? HK.Ties.get(ctx, A, B) : null, TD = tie ? HK.TIES[tie.type] : null;
-    if (TD && TD.family && !(TD.loveOK && ab.att > 28 && ba.att > 28)) {
+    /* 家族の関係でも「恋愛：あり」（HK.tieFamLove）なら、惹かれ合っていれば恋人などの結末に進める */
+    var famLove = TD && TD.family && (TD.loveOK || HK.tieFamLove(tie));
+    if (TD && TD.family && !(famLove && ab.att > 28 && ba.att > 28)) {
       var tenF = (ab.ten + ba.ten) / 2;
       if ((tenF > 55 && (ab.aff + ba.aff) / 2 < 30) || ab.aff < -10 || ba.aff < -10) return { id: 'kinfeud' };
       if (ab.aff > 40 && ba.aff > 40) return { id: 'kinbond' };
@@ -7969,6 +7974,9 @@
     },
     /* 短い版の一文 */
     shortNovel: L('一度では終わらず、二人は夜が白むまで何度も求め合った。|果てたあとも、{a}は{b}を離さなかった。二度目は、一度目より長かった。|息が整うより先に、二人はまた唇を重ねていた。|二人は眠りかけては目を覚まし、そのたびにまた互いを求めた。|夜明けまでに、二人は何度も熱を分け合った。|落ち着いたと思ったのも束の間、二人はもう一度、互いの熱の中へ沈んでいった。'),
+    /* 短い版の一文（男性向け）：shortEro は男性が動く組（mf）。女性の攻め×男性（fm）・女性どうし（ff）は shortEroFm / shortEroFf */
+    shortEroFm: L('{a}「まだ終わりじゃないよ」――{a}は{b}の上から降りないまま、二回戦、三回戦と腰を揺らし続けた。{s:wet}。|{a}は抜かせないまま腰を回し、{b}がまた硬くなるのを待って、もう一度搾り取った。{s:cum}。|{b}「も、もう出ない……っ」――そう訴えても、{a}は{b}の上で朝まで腰を止めなかった。{s:wet}。|何度果てても熱は引かず、{a}は夜が明けるまで{b}の上から降りなかった。{s:wet}。|{a}「もう一回……♡」――{a}は{b}の胸に手をついて、また自分から腰を沈めた。{s:wet}。'),
+    shortEroFf: L('{a}「まだ終わりじゃないよ」――{a}は{b}のナカに指を沈め直し、朝までイかせ続けた。{s:wet}。|{b}「もっと……♡」――おねだりは朝まで止まらず、{a}の指も舌も休まなかった。{s:wet}。|何度達しても熱は引かず、二人は夜が明けるまで脚を絡めたまま擦り合わせた。{s:wet}。|{b}「もう、むり……♡」――そう言いながら、{b}は自分からもう一度脚を開いた。{s:wet}。|休む間もなく二回戦が始まり、{b}は{a}の舌に甘い声を朝まで止められなかった。{s:suck}。'),
     shortEro: L('{a}「まだ終わりじゃないよ」――二回戦、三回戦と、{b}は朝までイかされ続けた。{s:hit}。|抜かないまま二回目が始まり、{b}はイきっぱなしのまま何度も注がれた。{s:cum}。|{b}「もっと……♡」――おねだりは朝まで止まらなかった。{s:wet}。|休む間もなく二回戦が始まり、{b}は甘い声を朝まで止められなかった。{s:hit}。|何度果てても熱は引かず、二人は夜が明けるまで繋がったままだった。{s:wet}。|{b}「もう、むり……♡」――そう言いながら、{b}は自分からもう一度脚を開いた。{s:wet}。')
   };
 
@@ -8011,22 +8019,31 @@
     var pl = opt.place && TS && TS.PLACE && TS.PLACE[opt.place] ? pick(TS.PLACE[opt.place]) : '';
     out.push(pick(X.FEEL[mode]) + (pl ? pl : '') + pick(X.FEEL_A[mode]));
     out.push(pick(mode === 'ff' ? X.FF_CLIMAX[g] : mode === 'fm' ? X.FM_CLIMAX[g] : X.CLIMAX[g]));
-    if (opt.again) out.push(pick(X.AGAIN.ero[mode]));
+    if (opt.again) out.push(pick(X.noSwap(X.AGAIN.ero[mode], a, b)));
     if (opt.after) out.push(opt.after);
     return { text: X.fill(opt.S, out.join('\n\n'), a, b), mode: mode };
   };
+  /* 「もう一度」で受けの {b} が攻めの {a} を責め返す文（交代で・今度は {b} が）は、リバどうし（向きが決まっていない組）だけ */
+  var SWAP = /\{b\}が今度は|今度は\{b\}が|交代で/;
+  X.noSwap = function (arr, a, b) {
+    if (!HK.Pos || !HK.Pos.fixed || !HK.Pos.fixed(a, b)) return arr;
+    var o = arr.filter(function (l) { return !SWAP.test(l); });
+    return o.length ? o : arr;
+  };
+  /* 濃い・短い版の「もう一度」の一文を、組（mf / fm / ff）で選ぶ */
+  X.shortAgain = function (mode) { return mode === 'fm' ? X.AGAIN.shortEroFm : mode === 'ff' ? X.AGAIN.shortEroFf : X.AGAIN.shortEro; };
   /* 短い版。opt.open（場所・関係の一文）があれば頭に置く */
   X.short = function (opt) {
     var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = X.mode(a, b);
     E.pairNight(opt.S, a, b);
-    var t = (opt.open || '') + pick(X.SHORT[mode]) + (opt.again ? pick(X.AGAIN.shortEro) : '') + (opt.after || '');
+    var t = (opt.open || '') + pick(X.SHORT[mode]) + (opt.again ? pick(X.shortAgain(mode)) : '') + (opt.after || '');
     return { text: X.fill(opt.S, t, a, b), mode: mode };
   };
   /* 濃い：もう一度の段落（小説調・男性向け。短い版は一文） */
   X.again = function (S, pick, a, b, ero, short) {
     var mode = X.mode(a, b);
     pick = E.freshPick(S, pick);
-    var t = short ? pick(ero ? X.AGAIN.shortEro : X.AGAIN.shortNovel) : pick(X.AGAIN[ero ? 'ero' : 'novel'][mode]);
+    var t = short ? pick(ero ? X.shortAgain(mode) : X.AGAIN.shortNovel) : pick(X.noSwap(X.AGAIN[ero ? 'ero' : 'novel'][mode], a, b));
     return ero ? X.fill(S, t, a, b) : t;
   };
 })();
@@ -8561,6 +8578,8 @@
         /* 恋愛はしないが体の関係は許されている二人は、恋愛相手の固定を外して恋愛対象の向きだけを見る（帰るなら、お持ち帰りの夜だけ） */
         var so = HK.lockSexOnly && HK.lockSexOnly(c.a, c.b), ca = so ? Object.assign({}, c.a, { lock: null }) : c.a, cb = so ? Object.assign({}, c.b, { lock: null }) : c.b;
         if (used[c.a.i] || used[c.b.i] || c.v < 55 - rf * 20 || !HK.canLove(ca, cb) || !HK.canLove(cb, ca)) return;
+        /* 家族（きょうだい・親子・親族など）で「恋愛：なし」の二人は、一緒に帰る組・お持ち帰りにしない */
+        if (ctx.pair(c.a, c.b).kin) return;
         if (so && !(HK.Pos && HK.Pos.okSex(c.a, c.b))) return;
         used[c.a.i] = used[c.b.i] = 1;
         var imp = (c.a.tr.impulse + c.b.tr.impulse) / 2;
@@ -10296,7 +10315,8 @@
   /* 執着（信仰）で「恋愛に発展：しない」かつ支配（dominate）でない組は、キス以上・夜（体の関係）にしない */
   function wsNoSex(ctx, a, b) {
     if (!ctx || !ctx.tiesAll || !HK.Ties || !a || !b || a === b) return false;
-    return HK.Ties.all(ctx, a, b).some(function (t) { return t.type === 'worship' && HK.tieOptNoLove && HK.tieOptNoLove(t) && t.cold !== 'dominate'; });
+    /* 家族（きょうだい・親子・親族など）で「恋愛：なし」の組も、キス以上・夜（体の関係）・三人の場面にしない */
+    return HK.Ties.all(ctx, a, b).some(function (t) { return (t.type === 'worship' && HK.tieOptNoLove && HK.tieOptNoLove(t) && t.cold !== 'dominate') || (HK.tieNoLove && HK.tieNoLove(t)); });
   }
   HK.roomWsNoSex = wsNoSex;
   function tieWall(ctx, a, b, lvl) {
@@ -10304,7 +10324,8 @@
     var t = HK.Ties ? HK.Ties.get(ctx, a, b) : null;
     if (!t) return 0;
     var D = HK.TIES[t.type];
-    if (D.family) return !HK.tieNoLove(t) ? (lvl >= 3 ? 16 : 4) : lvl >= 3 ? 999 : 0;
+    /* 家族：「恋愛：なし」はキス以上は不可。「恋愛：あり」・擬似親子は、ほかの組と同じ（壁を足さない） */
+    if (D.family) return !HK.tieNoLove(t) ? 0 : lvl >= 3 ? 999 : 0;
     return { enemy: 20, rival: 12, ex: 6, lover: -30, fwb: -35, almost: -15, crush: -8, best: -4, childhood: -4 }[t.type] || 0;
   }
   function posClash(a, b) { return !!(HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b)); }
@@ -11738,7 +11759,7 @@
     /* 女性どうしで繋がる組があれば、挿入の描写を使わない（白い部屋の木箱の玩具はよい） */
     var E = { oneTwo: [[sp.t, sp.m], [sp.t, sp.u]], twoOne: [[sp.t, sp.u], [sp.m, sp.u]], sandwich: [[sp.t, sp.m], [sp.m, sp.u]], ring: [[sp.t, sp.m], [sp.m, sp.u], [sp.u, sp.t]] }[sp.p];
     var ffE = HK.Pos ? E.filter(function (e) { return HK.Pos.ff(e[0], e[1]); })[0] : null;
-    var PEN = /奥まで沈|深く沈|腰を沈|腰を落と|繋が|貫|突い|突き|突く|突か|中に入|入って|熱を吐き出|腰を打ちつけ|果てて.*中|最奥|迎え入れ|受け入れ|挿れ|挿入|抜き差し|根元|穿|口に含|のもの/;
+    var PEN = /奥まで沈|深く沈|腰を沈|腰を落と|繋が|貫|突い|突き|突く|突か|中に入|入って|熱を吐き出|腰を打ちつけ|果てて.*中|奥で果て|中で果て|最奥|迎え入れ|受け入れ|挿れ|挿入|抜き差し|根元|穿|口に含|のもの/;
     var penRaw = function (l) { return !ffE || !PEN.test(l); };
     /* 文の中の役（{j}{o}{s} など）が全部そろっている文だけ使う */
     var rolesOK = function (l) { var m = String(l).match(/\{[a-z]\}/g) || []; return m.every(function (k) { return !!r[k.charAt(1)]; }); };
@@ -11960,14 +11981,16 @@
       if (!allowed(ctx) || !ctx.flags.multiKnown || ctx.present().length < 3 || !free(a) || !free(b) || ctx.flags.trioCur) return false;
       if (!b.flags.excl || b.flags.exclOpen || (b.flags.persuadeAt === ctx.stepIndex) || (b.flags.persuadeN || 0) >= 3) return false;
       if (ctx.stepIndex - (b.flags.partnerAt || 0) < 1) return false;
-      var third = ctx.present().filter(function (c) { return c !== a && c !== b && free(c) && HK.canLove(b, c); })[0];
+      /* 家族（恋愛：なし）の二人が入る三人には誘わない */
+      if (family(ctx, a, b)) return false;
+      var third = ctx.present().filter(function (c) { return c !== a && c !== b && free(c) && HK.canLove(b, c) && !family(ctx, a, c) && !family(ctx, b, c); })[0];
       if (!third) return false;
       return a.i === b.flags.partner ? A.eager(ctx, a) > 0.45 || a.tr.np > 0.6 : A.eager(ctx, a) > 0.55 && R(ctx, a, b).att > 15;
     },
     w: function (ctx, a, b) { return 0.5 + A.eager(ctx, a) + (a.i === b.flags.partner ? 0.5 : 0); },
     run: function (ctx, a, b) {
       var isP = a.i === b.flags.partner;
-      var c = ctx.present().filter(function (x) { return x !== a && x !== b && free(x) && HK.canLove(b, x); }).sort(function (x, y) { return R(ctx, b, y).att - R(ctx, b, x).att; })[0];
+      var c = ctx.present().filter(function (x) { return x !== a && x !== b && free(x) && HK.canLove(b, x) && !family(ctx, a, x) && !family(ctx, b, x); }).sort(function (x, y) { return R(ctx, b, y).att - R(ctx, b, x).att; })[0];
       b.flags.persuadeAt = ctx.stepIndex; b.flags.persuadeN = (b.flags.persuadeN || 0) + 1;
       var ch = 0.2 + R(ctx, b, a).trust / 110 + R(ctx, b, a).att / 130 + A.eager(ctx, b) * 0.4 - b.tr.cp * 0.3 + (isP ? 0.15 : 0) + b.stress / 300 + (b.flags.persuadeN - 1) * 0.1 + Math.max(0, R(ctx, b, c).att) / 150;
       var ok = ctx.rng() < ch;
@@ -27188,6 +27211,8 @@
       if (T.pining && T.pining(ctx, a, b)) return 'crushM';
       if (T.from(ctx, a, b, 'crush')) return 'crushA';
       if (T.from(ctx, b, a, 'crush')) return 'crushB';
+      /* 家族で「恋愛：あり」（ties.js の HK.tieFamLove）の二人が惹かれ合っていれば、家族ではなく想い人への手紙にする（擬似親子と同じ） */
+      if (T.get && HK.tieFamLove && HK.tieFamLove(T.get(ctx, a, b)) && (ctx.pair(a, b).couple || (ctx.R(a, b).att > 40 && ctx.R(b, a).att > 30))) return 'crushA';
       if (T.from(ctx, a, b, 'sibprot') && T.has(ctx, a, b, 'sibprot').type === 'sibprot') return 'protA';
       if (T.from(ctx, b, a, 'sibprot') && T.has(ctx, a, b, 'sibprot').type === 'sibprot') return 'protB';
       if (T.has(ctx, a, b, 'sibclose')) return 'sibclose';
@@ -30456,7 +30481,8 @@
     /* 書き出し：外の気配（LEAD）に、短い版の脱がせ方（fore）を半分ほど続ける。最中のあとに、短い版の「声を殺す」一段 */
     var lead = pk(LEAD) + (LH && ctx.rng() < 0.5 ? xy(pk(LH.mf.fore)) : '');
     var extra = mids.length && ctx.rng() < 0.7 ? [xy(pk(mids))] : [];
-    var finish = pk(FIN);
+    /* 女性どうしの結びには「繋がったまま」の文を使わない */
+    var finish = pk(kd === 'ff' ? FIN.filter(function (l) { return !/繋が/.test(l); }) : FIN);
     var t = TK.body(T, U, { flav: 'zombie', pick: pk, rng: ctx.rng, bed: '毛布', depth: ctx.rng() < 0.4 ? 3 : 2, lead: lead, extra: extra, finish: finish, noAfter: true });
     return '\n\n' + TK.names(t, T, U) + '\n\n' + (high ? nm(TE.again(ctx, pk, T, U, false, false)) + '\n\n' : '');
   };
@@ -32749,7 +32775,7 @@
 
   /* 性的な場面か（推理や喧嘩の「押し倒す」などは直さない） */
   /* 性的な場面の文か（「腰を抱えて」「後ろから」「洞窟の奥まで」「中に入った」のような、ふつうの文には反応しないように絞る） */
-  var SEXCTX = /押し入|注ぎ込|貫[いかきく]|突き上げ|突き入|奥を突|奥まで突|奥まで沈|挿[れ入]|エッチ|繋が[っりる]|果て|喘|舐め|愛撫|達し|体を重ね|肌を重ね|腰を(?:振|打ち|沈|落と|揺ら|動か|使|くねら)|中に(?:出|注|吐)|犯し|犯さ|イ[かっカッ]|跨|交わ|貪/;
+  var SEXCTX = /押し入|穿[っちつ]|注ぎ込|貫[いかきく]|突き上げ|突き入|奥を突|奥まで突|奥まで沈|挿[れ入]|エッチ|繋が[っりる]|果て|喘|舐め|愛撫|達し|体を重ね|肌を重ね|腰を(?:振|打ち|沈|落と|揺ら|動か|使|くねら)|中に(?:出|注|吐)|犯し|犯さ|イ[かっカッ]|跨|交わ|貪/;
   /* 「」の中の句点で切らないように、文に分ける */
   function sentences(t) {
     var out = [], cur = '', d = 0;
@@ -33905,6 +33931,39 @@
   }
   ST.hook = hook;
   hook();
+})();
+;/* ==== js/fam-kin.js ==== */
+/* 箱庭シミュレーター: 家族の関係（きょうだい・親子・親族など）の恋愛の扱いを、物語型の箱庭（solo-story-kit.js の HK.Story.state を使う箱庭）にそろえる
+   ・「恋愛：なし」（ties.js の HK.tieNoLove）の二人は、恋愛・R18にしない相手（キャラの設定 loveNG と同じ ng）として扱う。
+     これで HK.ngPair・HK.canLove・HK.sexBlocked・HK.Pos.okSex を通る判定（告白・夜・R18の場面・恋人の結末）に、どの箱庭でも乗らない
+   ・「恋愛：あり」の家族・擬似親子（loveOK）は、ほかの組と同じ条件で恋愛・夜・R18・恋人の結末に進む
+   ・エンジン型の箱庭（engine.js）は ctx.pair(a, b).kin で見るので、ここでは触らない */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  /* P：住人（i と ng を持つ）、ties：入力の関係。恋愛：なしの家族の二人を、互いの ng に足す */
+  HK.kinNG = function (P, ties) {
+    if (!P || !HK.tieNoLove) return;
+    (ties || []).forEach(function (t) {
+      if (!t || t.a === t.b || !HK.tieNoLove(t)) return;
+      var a = P[t.a], b = P[t.b];
+      if (!a || !b || a === b) return;
+      if (!Array.isArray(a.ng)) a.ng = [];
+      if (!Array.isArray(b.ng)) b.ng = [];
+      if (a.ng.indexOf(b.i) < 0) a.ng.push(b.i);
+      if (b.ng.indexOf(a.i) < 0) b.ng.push(a.i);
+    });
+  };
+  var ST = HK.Story;
+  if (ST && ST.state && !ST.state._kin) {
+    var st0 = ST.state;
+    ST.state = function (input, scenId) {
+      var S = st0.apply(this, arguments);
+      HK.kinNG(S && S.P, input && input.ties);
+      return S;
+    };
+    ST.state._kin = true;
+  }
 })();
 ;/* ==== js/solo-kaihen-data.js ==== */
 /* 箱庭シミュレーター: 常識改変（R18）のデータ ― 5つの舞台・施術・客・違和感・ランダムイベント
@@ -36482,11 +36541,11 @@
   /* かけられた側が攻めのとき・女性どうしのときは、その向きの文（SM.MID_TOP / MID_FF / MID_FF_TOP。下の差し替えで足す） */
   SM.midSnap = function (S, p, k) {
     var kd = KIND[k] || 'touch';
-    var T = p.ff ? (p.aTop ? SM.MID_FF_TOP : SM.MID_FF) : p.aTop ? SM.MID_TOP : null;
+    var T = p.ff ? (p.aTop ? SM.MID_FF_TOP : SM.MID_FF) : p.fm && SM.MID_FM ? SM.MID_FM : p.aTop ? SM.MID_TOP : null;
     var arr = (T && T[kd]) || (p.aTop && SM.MID_TOP && SM.MID_TOP[kd]) || (p.ff && kd !== 'touch' && kd !== 'kiss' ? SM.MID_FF.in : MID[kd]);
     /* 描写の作風（男性向け）の差し替え：S.alt があれば、選んだ表の名前で引き直す */
     if (S.alt) {
-      var key = T && T[kd] ? (p.ff ? (p.aTop ? 'MID_FF_TOP.' : 'MID_FF.') : 'MID_TOP.') + kd : p.aTop && SM.MID_TOP && SM.MID_TOP[kd] ? 'MID_TOP.' + kd : p.ff && kd !== 'touch' && kd !== 'kiss' ? 'MID_FF.in' : 'MID.' + kd;
+      var key = T && T[kd] ? (p.ff ? (p.aTop ? 'MID_FF_TOP.' : 'MID_FF.') : p.fm ? 'MID_FM.' : 'MID_TOP.') + kd : p.aTop && SM.MID_TOP && SM.MID_TOP[kd] ? 'MID_TOP.' + kd : p.ff && kd !== 'touch' && kd !== 'kiss' ? 'MID_FF.in' : 'MID.' + kd;
       arr = S.alt(key, arr);
     }
     return S.fmt(S.pick(arr), { a: p.name, h: p.h });
@@ -36503,8 +36562,8 @@
     var v = { a: p.name, h: p.h }, aTop = p.aTopLast;
     if (k === 'swept') {
       p.swept = true; p.m.fall = Math.min(100, p.m.fall + 25); p.cnt.climax += 1; p.cnt.lewd++;
-      var swk = p.ff ? (aTop ? 'SWEPT_FF_TOP' : 'SWEPT_FF') : mid ? (aTop ? 'SWEPT_MID_TOP' : 'SWEPT_MID') : aTop ? 'SWEPT_TOP' : 'SWEPT';
-      var sw = { SWEPT_FF_TOP: SM.SWEPT_FF_TOP, SWEPT_FF: SM.SWEPT_FF, SWEPT_MID_TOP: SWEPT_MID_TOP, SWEPT_MID: SWEPT_MID, SWEPT_TOP: SWEPT_TOP, SWEPT: SWEPT }[swk];
+      var swk = p.ff ? (aTop ? 'SWEPT_FF_TOP' : 'SWEPT_FF') : p.fm && SM.SWEPT_FM ? (mid ? 'SWEPT_MID_FM' : 'SWEPT_FM') : mid ? (aTop ? 'SWEPT_MID_TOP' : 'SWEPT_MID') : aTop ? 'SWEPT_TOP' : 'SWEPT';
+      var sw = { SWEPT_FF_TOP: SM.SWEPT_FF_TOP, SWEPT_FF: SM.SWEPT_FF, SWEPT_FM: SM.SWEPT_FM, SWEPT_MID_FM: SM.SWEPT_MID_FM, SWEPT_MID_TOP: SWEPT_MID_TOP, SWEPT_MID: SWEPT_MID, SWEPT_TOP: SWEPT_TOP, SWEPT: SWEPT }[swk];
       if (S.alt) sw = S.alt(swk, sw);
       var cv = HK.Voice && HK.Voice.CLIMAX[p.persona] ? (HK.R18M && HK.R18M.topLines ? HK.R18M.topLines(p, HK.Voice.CLIMAX[p.persona]) : HK.Voice.CLIMAX[p.persona]) : null;
       var cvE = S.cv ? S.cv(p, aTop) : null;
@@ -36514,11 +36573,11 @@
     }
     if (k === 'report') {
       p.reportedNow = true;
-      var rpk = mid || aTop || p.ff ? 'REPORT_MID' : 'REPORT', rp = rpk === 'REPORT_MID' ? REPORT_MID : REPORT;
+      var rpk = mid || aTop || p.ff || p.fm ? 'REPORT_MID' : 'REPORT', rp = rpk === 'REPORT_MID' ? REPORT_MID : REPORT;
       return { k: k, tag: '通報', text: S.fmt(S.pick(S.alt ? S.alt(rpk, rp) : rp), v) + (SM.AFTER_SAY && SM.AFTER_SAY.angry[p.persona] ? p.name + S.pick(SM.AFTER_SAY.angry[p.persona]) : ''), why: '怒りと冷静さ（CP ' + Math.round(p.eg.CP) + '・A ' + Math.round(p.eg.A) + '）が、快楽堕ち（' + Math.round(fall * 100) + '）に勝った' };
     }
     p.fled = true;
-    var flk = mid || aTop || p.ff ? 'FLEE_MID' : 'FLEE', fl = flk === 'FLEE_MID' ? FLEE_MID : FLEE;
+    var flk = mid || aTop || p.ff || p.fm ? 'FLEE_MID' : 'FLEE', fl = flk === 'FLEE_MID' ? FLEE_MID : FLEE;
     return { k: k, tag: '逃げ出した', text: S.fmt(S.pick(S.alt ? S.alt(flk, fl) : fl), v), why: '頭が真っ白になった（AC ' + Math.round(p.eg.AC) + '）' };
   };
 })();
@@ -36619,6 +36678,75 @@
   SM.SNAP_AFTER_FF = { fall: L('あの夜から、{a}は自分から{h}に会いに行くようになった。「もう催眠なんていらない」――そう言って、自分で服を脱ぐ。{h}の指に触れられると、正気のまま幸せそうに達する体になっていた。|{a}は催眠が解けたあとも、{h}の名前を聞くだけで下腹が疼くようになった。三日後、{a}は自分から{h}に「また、して」と連絡した。') };
   SM.AFTER_TOP = { fall: L('三日後、{a}は自分から{h}の部屋を訪ねた。「……あの、また、かけてくれない？」|{a}は{h}の前に、自分から振り子を差し出した。「お願い。もう一回、私を夢中にさせて」') };
 })();
+/* 女攻め×男：かける側 {h} が自分で攻めを選んだ女性で、かけられる側 {a} が男性のとき（solo-saimin.js の p.fm）
+   ・{h} が押し倒す・跨る・自分で導く・腰を沈める書き方。{h} を男性の体（{h}のもの・押し入る・中に出す）で書かない。{a} を「入れられる」側にしない
+   ・fm / fmPart / cmdFM は差し替えの文。fmOk は元の文（full / part）がそのまま読める暗示。どちらもない暗示（咥えずにいられない・中に出されるとイく）は、この組には選ばれない
+   ・{a}=かけられる人（男性・受け） {h}=かける人（女性・攻め）。登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK, SM = HK.SAIMIN;
+  if (!SM || !SM.SUG) return;
+  function L(s) { return s.split('|'); }
+  var V = {
+    sens: { fmOk: 1 }, lover: { fmOk: 1 }, climax: { fmOk: 1 }, trigger: { fmOk: 1 }, amae: { fmOk: 1 }, buzama: { fmOk: 1 },
+    seduce: { fmOk: 1 }, edge: { fmOk: 1 }, voice: { fmOk: 1 }, kiss: { fmOk: 1 }, countdown: { fmOk: 1 }, scent: { fmOk: 1 },
+    ukeire: {
+      cmdFM: L('「あなたの体は、私を受け入れるためにある。触れられたら、もう抗えない」|「私に跨られたら、体が勝手に応えてしまう。それが、あなたの本当の気持ち」'),
+      fm: L('{a}は自分からシャツのボタンを外し、{h}の前で仰向けになった。{h}がその腰に跨り、ゆっくりと腰を沈めていくと、{a}は待ちわびていたような声を漏らした。そこから先、{a}はずっと{h}の名前を呼び続けていた。|{h}が触れただけで、{a}の体は熱く張りつめた。{h}は{a}の胸に手をついて跨り、自分の手で導いて根元まで呑み込んだ。{a}は抗う言葉を一つも思い出せないまま、下から{h}を見上げていた。'),
+      fmPart: L('{a}は{h}に押し倒されかけて、震えながら{h}の肩を押し返した。「だめ……なんで、こんな……」――体だけが、正直に熱を持っていた。|{a}は{h}の手を自分の下腹へ導き、そこで止まった。{h}が跨ろうとすると、{a}は小さく首を振った。それ以上は、暗示が届かなかった。')
+    },
+    saigo: {
+      fm: L('{a}は{h}を抱き寄せ、肌という肌に口づけた。{h}が{a}の上に跨って腰を沈めると、{a}は下から何度も{h}を求め、{h}が「まだ」と囁いても離れなかった。最後に{h}の中で果てるまで、{a}は{h}の腰を掴んだままだった。|{a}は服を脱ぐのももどかしく、{h}にすがりついた。{h}は{a}を仰向けに押し倒して跨り、口で、手で、最後は自分の中で{a}を何度も追い上げた。{a}は三度果てるまで、{h}の下で「最後まで」とねだり続けた。'),
+      fmPart: L('{h}は{a}の上で腰を揺らしていたが、{a}がふっと目を瞬かせた。「……あれ。私、なんで……」――{a}の手は{h}の腰を掴んだまま止まり、続きを求めるかどうか、答えが出ないまま時間だけが過ぎた。')
+    },
+    obey: {
+      fm: L('{h}が「脱いで」と命じると、{a}は迷いなく服を脱いだ。{h}が「仰向けに」と言うと、{a}はうっとりと潤んだ目のまま横たわり、{h}が跨って腰を沈めるのを待った。命令されるたびに、{a}は嬉しそうに息を震わせた。|{h}が「舐めて」と言うと、{a}は跪いて、{h}の脚のあいだに舌を這わせた。{h}は「上手。ご褒美をあげる」と笑い、{a}を押し倒して上から呑み込んだ。{a}は「動いていい」と言われるまで、腰を浮かせるのを必死にこらえていた。')
+    },
+    heat: {
+      fm: L('{a}は熱に浮かされたように{h}にすがりついた。「お願い、もう我慢できない……っ」――{h}は{a}を仰向けに押し倒して跨り、張りつめたものを自分の中へ導いた。{a}は腰を震わせ、{h}の下で何度も「もっと」と繰り返した。|{a}は息を荒げ、熱くなった体を{h}に擦りつけた。{h}が膝の上に跨ってやると、{a}は{h}の腰を両手で掴んだまま、言葉にならない声を漏らした。発情した体は、{h}がゆっくり腰を沈めるだけで限界に近づいていった。')
+    },
+    free: {
+      fm: L('{h}は眠ったように動かない{a}の服を一枚ずつ脱がせ、隅々まで唇で味わった。それから{a}の腰に跨り、自分のいいところに当たるように、好きなだけ腰を揺らした。{a}は目を閉じたまま、{h}が沈むたびに甘い声を上げた。|{h}は{a}を仰向けに寝かせ、人形のように力の抜けた体の上に跨った。{h}がどんな角度で腰を使っても、{a}の体は正直に硬く応えた。{a}は眠りの底で、{h}に搾られるたびに小さく震えていた。')
+    },
+    normal: {
+      fm: L('{a}は「じゃあ、いつものね」と言って、当たり前のように服を脱いで仰向けになった。{h}が挨拶でも交わすみたいに跨ってくると、{a}は明日の予定を話しながら{h}の腰を支えた。それが普通だと、{a}は心から信じていた。|{a}は「今日の分、まだだったよね」と言って、ソファに座ったまま{h}を膝の上に招いた。{h}がゆっくり腰を沈めても、{a}は平然と今日の夕飯の話を続けた。声が上ずったのは、{h}が腰を回したときだけだった。')
+    },
+    pet: {
+      fm: L('{a}は四つん這いになり、{h}の足元にすり寄った。首輪をつけられても、嬉しそうに{h}の脚へ頬をすり寄せた。{h}が{a}を仰向けに転がして跨ると、{a}は犬のように鼻を鳴らして、されるがままになった。|{a}は首輪の鈴を鳴らしながら、{h}の膝に顎を乗せた。{h}は「いい子」と頭を撫で、そのまま{a}を床に寝かせて跨り、上から腰を落とした。{a}は鳴き声のような息を漏らしながら、{h}の下で身をよじり続けた。')
+    },
+    onedari: {
+      fm: L('{a}は何度も達しかけては止められ、とうとう涙目で{h}の袖を引いた。「お願い……イかせて、ください……っ」――言った瞬間、{h}が深く腰を沈め、{a}の体は待ちわびたように跳ねた。{h}は{a}の上で満足そうに笑い、もう一度ねだらせるために、また動きを止めた。|{a}は{h}を見上げて、自分の口から出る言葉に驚いた。「{h}の中で、イかせて……」――{h}が望み通りに深く腰を沈めると、{a}は甘い悲鳴を上げて果てた。{h}は{a}の頬を撫でて、次のおねだりを待った。')
+    },
+    serve: {
+      fm: L('{a}は「失礼します」と言って{h}の前に膝をつき、{h}の脚のあいだに丁寧に舌を這わせた。{h}が息を詰めるたびに、{a}は嬉しそうに目を細めた。{h}が達して脚を震わせても、{a}は「もう少しだけ」と顔を離さなかった。|{a}は{h}の全身を、時間をかけて舌と手で愛した。「気持ちいいですか？」と訊くたびに、{a}の方が蕩けていった。最後に{h}が{a}を仰向けにして跨ると、{a}は「まだ尽くしたい」と言いかけて、{h}に唇を塞がれた。')
+    },
+    mirror: {
+      fm: L('{h}は{a}を姿見の前に座らせ、その膝の上に背中を向けて跨った。鏡には、{h}が腰を沈めるたびに蕩けていく{a}の顔が映っていた。{a}は目を逸らせないまま、恥ずかしさに震えて何度も果てそうになった。|{h}は鏡の前で{a}を仰向けにさせ、その上に跨った。{a}は鏡の中の、{h}の下で乱れていく自分の顔から目を離せなかった。見れば見るほど、{a}の息は浅く、速くなっていった。')
+    },
+    freeze: {
+      fm: L('{a}は目を見開いたまま、指一本動かせなかった。{h}の手が肌を這い、熱くなったところを確かめるように撫で上げていくのを、{a}はただ感じることしかできなかった。{h}が上に跨って腰を沈めても、{a}の体は震えることすら許されなかった。|{a}の体は、{h}にどんな格好をさせられても、そのまま固まっていた。意識だけがはっきりしていて、そのぶん、{h}が跨って腰を揺らすたびの快感も恥ずかしさも鮮明だった。{a}は声を上げることもできないまま、{h}の下で果てた。')
+    }
+  };
+  Object.keys(V).forEach(function (k) { var g = SM.SUG[k]; if (!g) return; Object.keys(V[k]).forEach(function (f) { g[f] = V[k][f]; }); });
+
+  /* 我に返る場面（女攻め×男） */
+  SM.SNAP_FM = L('――{h}が深く腰を沈めて締めつけた瞬間、{a}は{h}の中で果て、その熱で瞳に光が戻った。自分の上に跨っている{h}と、繋がったままの場所を見上げて、{a}は息を呑んだ。「私、今……何を……」|――{a}が{h}の下で果てた拍子に、頭の靄がすっと晴れた。{h}はまだ{a}の上で、満足そうに息を整えていた。{a}は自分が何をされていたのか少しずつ理解して、声も出せずに{h}を見上げた。');
+  SM.SWEPT_FM = L('{a}は{h}を押しのけようとして、その手が止まった。正気に戻ったはずなのに、{h}が上で腰を揺らすたびに、体の奥がまだ{h}を欲しがっていた。「……っ、ずるい……」――二度目に{h}が深く腰を沈めたときも、{a}はもう拒まなかった。|「降りて」と言うつもりだった。けれど{h}がゆっくり締めつけると、{a}の言葉は甘い息に変わった。{a}は正気のまま{h}の腰を掴み、もう一度果てるまで離さなかった。');
+  SM.SWEPT_MID_FM = L('{a}は{h}を押しのけようとして、その手が止まった。分かっている。分かっているのに、{h}が上で動くたびに体が言うことを聞かなかった。「……っ、ずるい……」――{a}は正気のまま続きを受け止め、最後は{h}の中で果てた。|「やめて」と言うつもりだった。けれど{h}が動きを止めて{a}を見下ろすと、{a}は自分から{h}の腰を引き寄せていた。{h}は小さく笑って、もう一度深く腰を落とした。');
+  SM.MID_FM = {
+    in: L('――{h}が上で深く腰を沈めた瞬間、{a}の催眠がぷつりと切れた。自分の上に跨っている{h}。繋がったままの場所。{a}は息を止めた。|――{a}ははっと目を見開いた。揺れる天井と、自分を見下ろす{h}。「……な、に、これ……」――{h}の腰の動きが止まっても、{a}の体の熱は引かなかった。'),
+    oral: L('――{h}の脚のあいだに顔を埋めていた最中、{a}は我に返った。自分が何をしていたのか理解して、{a}はゆっくりと顔を上げた。{h}は濡れた唇の{a}を見下ろして、静かに笑った。')
+  };
+  /* 我に返ったあとの「その後」：通報は誰の組でも同じ文。流されたあとは、女攻め×男の文 */
+  var REP = SM.SNAP_AFTER && SM.SNAP_AFTER.report;
+  SM.SNAP_AFTER_FM = {
+    report: REP,
+    fall: L('あの夜から、{a}は自分から{h}に会いに行くようになった。「もう催眠なんていらない」――そう言って自分から服を脱ぎ、{h}の前に横たわる。{h}に跨られると、{a}は正気のまま幸せそうに果てる体になっていた。|{a}は催眠が解けたあとも、{h}の名前を聞くだけで下腹が疼くようになった。三日後、{a}は自分から{h}に「また、して」と連絡した。{h}は返事の代わりに、部屋の鍵を開けておいた。')
+  };
+  /* 女性どうし・かけられた側が攻めのときの通報も、元の（中に出された、と書かない）文にする */
+  if (REP && SM.SNAP_AFTER_FF && !SM.SNAP_AFTER_FF.report) SM.SNAP_AFTER_FF.report = REP;
+  if (REP && SM.SNAP_AFTER_TOP && !SM.SNAP_AFTER_TOP.report) SM.SNAP_AFTER_TOP.report = REP;
+})();
 ;/* ==== js/solo-saimin.js ==== */
 /* 箱庭シミュレーター: 催眠（R18）
    仕事の同僚・恋人・友人・恨みを持った相手・ストーカーの誰かが、住人に催眠をかける。
@@ -36712,19 +36840,26 @@
       var pc = (input.perChar && input.perChar[p.i]) || {};
       p.action = resolve(S, p, scen.actions, pc.action); p.goal = resolve(S, p, scen.goals, pc.goal);
       /* かける相手 */
-      var ty = null;
+      var ty = null, famL = '', kinNo = false;
       if (HY) {
         var tt = (input.ties || []).filter(function (t) { return (t.a === HY.i && t.b === p.i) || (t.a === p.i && t.b === HY.i); })[0];
         /* 執着（ヤンデレ）：どちらが執着しているかと、執着される側の気持ち（怖がっている・嫌っている・受け入れている・共依存）で決める */
         if (tt && tt.type === 'yan') {
           var accepts = tt.cold === 'accept' || tt.cold === 'mutual', fears = tt.cold === 'afraid' || tt.cold === 'hate';
           ty = accepts ? 'lover' : tt.a === HY.i ? 'stalker' : fears ? 'grudge' : 'friend';
+        } else if (tt && HK.TIES[tt.type] && HK.TIES[tt.type].family) {
+          /* 家族（きょうだい・親子・親族・擬似親子）：家族向けの種類はないので、いちばん近い「友人」の種類にして、札だけ関係の名前にする。
+             「恋愛：なし」（ties.js の HK.tieNoLove）の二人は恋人の種類にせず、性的な暗示もかけない。「恋愛：あり」・擬似親子なら恋人の種類にもなる */
+          kinNo = !!(HK.tieNoLove && HK.tieNoLove(tt));
+          ty = !kinNo && rng() < 0.5 ? 'lover' : 'friend';
+          var FD = HK.TIES[tt.type];
+          famL = (FD.dir ? (tt.a === HY.i ? FD.roleA : FD.roleB) : FD.label) || FD.label || '';
         } else if (tt) ty = tt.type === 'crush' ? (tt.a === HY.i ? 'stalker' : 'friend') : TIEMAP[tt.type] || TIEMAP[(HK.TIES[tt.type] || {}).like];
       }
       if (!ty) ty = env.who !== 'random' && SM.TYPES[env.who] ? env.who : rng.pick(Object.keys(SM.TYPES));
       /* 恋愛・R18にしない組（HK.ngPair）では、住人のかけ手を恋人・ストーカーにしない */
       if (HY && HK.ngPair && HK.ngPair(HY, p) && (ty === 'lover' || ty === 'stalker')) ty = ty === 'lover' ? 'friend' : 'colleague';
-      p.ty = ty; p.T = SM.TYPES[ty];
+      p.ty = ty; p.T = famL && ty === 'friend' ? Object.assign({}, SM.TYPES[ty], { label: famL }) : SM.TYPES[ty];
       p.hc = HY || null; p.h = HY ? HY.name : ST.fmt(rng.pick(p.T.names), { a: p.name });
       p.mk = env.method !== 'random' && SM.METHODS[env.method] ? env.method : rng.pick(Object.keys(SM.METHODS));
       p.M = SM.METHODS[p.mk];
@@ -36732,9 +36867,11 @@
       /* 受け攻め：かけられた側が攻めか（住人どうしは HK.Pos.order、モブ相手は HK.Pos.vsNpc）。
          住人どうしで向きの決まらない組（HK.Pos.okSex が false）は、性的な暗示を一切かけない。女性どうしは専用の文 */
       var Pz = HK.Pos;
-      p.noSex = !!(Pz && HY && !Pz.okSex(HY, p));
+      p.noSex = !!(Pz && HY && !Pz.okSex(HY, p)) || kinNo;
       p.aTop = !!(Pz && !p.noSex && (HY ? Pz.order(HY, p, [HY, p])[0] === p : Pz.vsNpc(p, '') === 'top'));
       p.ff = !!(Pz && HY && Pz.ff(HY, p));
+      /* かける側が女性の攻めで、かけられる側が男性（女攻め×男）：{h} が跨る・導く専用の文（fm）を使う。男性の体で書いた {h} の文は使わない */
+      p.fm = !!(Pz && HY && !p.noSex && !p.ff && !p.aTop && HK.FM && HK.FM.on && HK.FM.on(HY, p));
       p.aTopLast = p.aTop;
       p.peaceOnly = env.mode === 'mix' && rng() < ({ friend: 0.3, colleague: 0.15, lover: 0.1 }[ty] || 0);
       p.sens = 0.6 + (p.stats.sens || 3) * 0.18;
@@ -36755,6 +36892,12 @@
       /* かける側の呼び名が「アキラの元患者」のようなとき、「アキラはアキラの元患者を」→「アキラは自分の元患者を」 */
       if (typeof o.text === 'string') o.text = o.text.replace(new RegExp(p.name + '(は|が|も)' + p.name + '(の|に)', 'g'), p.name + '$1自分$2');
       /* 女性の攻め指定が男性の相手（モブを含む）と：入れる側の書き方を、跨る書き方に直す（pos-fm.js） */
+      /* 女性のかける側が男性に跨る組（p.fm）も、残った男性の向きの文を同じように直す（女性の攻めは {h}） */
+      if (HK.FM && !HK.SAFE_ON && p.fm && HY && typeof o.text === 'string') {
+        var fps = o.text.split('\n\n');
+        fps[0] = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, fps[0], HY, p.name);
+        o.text = fps.join('\n\n');
+      }
       if (HK.FM && !HK.SAFE_ON && p.aTop && !p.ff && HK.Pos && HK.Pos.isF(p) && (!HY || !HK.Pos.isF(HY)) && typeof o.text === 'string')
         o.text = (function (ps) {
           /* 段落に分けた山場（solo-thick4.js）は性別に合わせて組んであるので、直すのは最初の段落（暗示の文）だけ */
@@ -36907,7 +37050,7 @@
           why += full ? '：受け入れた' : '：半分だけ受け入れた';
           /* 中に出された熱で、我に返る（快楽堕ちが進んでいるほど返りにくい） */
           if (full && g.snap && lew !== 'low' && SM.SNAP && rng() < g.snap * (1.2 - p.m.fall / 100)) {
-            var snk = p.ff ? (aTop ? 'SNAP_FF_TOP' : 'SNAP_FF') : aTop && SM.SNAP_TOP_F && HK.Pos && HK.Pos.isF(p) ? 'SNAP_TOP_F' : aTop && SM.SNAP_TOP ? 'SNAP_TOP' : 'SNAP';
+            var snk = p.ff ? (aTop ? 'SNAP_FF_TOP' : 'SNAP_FF') : p.fm && SM.SNAP_FM ? 'SNAP_FM' : aTop && SM.SNAP_TOP_F && HK.Pos && HK.Pos.isF(p) ? 'SNAP_TOP_F' : aTop && SM.SNAP_TOP ? 'SNAP_TOP' : 'SNAP';
             t += eF(S, p, ST.fmt(ST.pick(S, eL(S, snk, SM[snk])), v)) + (SM.RESIST_SAY[p.persona] && rng() < 0.5 ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : '');
             p.woke = true; p.wokeCum = true; p.m.depth = 0; p.aTopLast = aTop;
             why += '／' + snapWord(p) + '催眠が解けた（快楽堕ち ' + Math.round(p.m.fall) + '）';
@@ -36964,12 +37107,12 @@
       var route = after(S, p);
       p.route = route; p.fate = FATE[route];
       var v = { a: p.name, h: p.h };
-      var snapK = SM.SNAP_AFTER && ((route === 'report' && p.reportedNow) || (route === 'fall' && p.swept)) ? ((p.ff && SM.SNAP_AFTER_FF && SM.SNAP_AFTER_FF[route]) ? 'SNAP_AFTER_FF' : (p.aTop && SM.SNAP_AFTER_TOP && SM.SNAP_AFTER_TOP[route]) ? 'SNAP_AFTER_TOP' : 'SNAP_AFTER') : null;
+      var snapK = SM.SNAP_AFTER && ((route === 'report' && p.reportedNow) || (route === 'fall' && p.swept)) ? ((p.ff && SM.SNAP_AFTER_FF && SM.SNAP_AFTER_FF[route]) ? 'SNAP_AFTER_FF' : (p.fm && SM.SNAP_AFTER_FM && SM.SNAP_AFTER_FM[route]) ? 'SNAP_AFTER_FM' : (p.aTop && SM.SNAP_AFTER_TOP && SM.SNAP_AFTER_TOP[route]) ? 'SNAP_AFTER_TOP' : 'SNAP_AFTER') : null;
       /* 性的な暗示を一つも受けていないとき（向きの決まらない組など）は、いたずら向けの「その後」を使う */
       var soft = (lew === 'low' || (!p.failed && !p.cnt.lewd)) && SM.AFTER_SOFT && SM.AFTER_SOFT[route];
       var afK = snapK || (soft ? 'AFTER_SOFT' : (p.aTop && SM.AFTER_TOP && SM.AFTER_TOP[route]) ? 'AFTER_TOP' : 'AFTER');
       /* 男性向けの「その後」は、性的な暗示を受けたときだけ（かからなかった・いたずらだけのときは元の文） */
-      var afE = afK === 'AFTER' && p.ff ? 'AFTER_FF' : afK === 'AFTER' && p.aTop ? 'AFTER_TOP' : afK;
+      var afE = afK === 'AFTER' && p.ff ? 'AFTER_FF' : afK === 'AFTER' && p.fm ? 'AFTER_FM' : afK === 'AFTER' && p.aTop ? 'AFTER_TOP' : afK;
       var afL = !p.failed && p.cnt.lewd && !soft ? eL(S, afE + '.' + route, SM[afK][route]) : SM[afK][route];
       var t = eF(S, p, ST.fmt(ST.pick(S, afL), v));
       var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', body: null }[route];
@@ -37018,6 +37161,11 @@
     return sr;
   }
   function vkey(p, g, kind) {
+    /* 女攻め×男（かける側の女性が跨る）：fm / fmPart。元の文がそのまま読める暗示（fmOk）だけ full / part を使い、ほかは選ばない */
+    if (p.fm && g.lewd) {
+      if (kind === 'part') return g.fmPart ? 'fmPart' : (g.fm || g.fmOk) && g.part ? 'part' : null;
+      return g.fm ? 'fm' : g.fmOk && g.full ? 'full' : null;
+    }
     if (kind === 'part') {
       if (p.ff && p.aTop) return first(g, ['ffTopPart', 'partTop', 'ffPart', 'part']);
       if (p.ff) return first(g, ['ffPart', 'part']);
@@ -37033,6 +37181,7 @@
      元の文を流用した組（女性どうしで full を使う・攻めで full を使う）は、男性向けの文も向きに合わせた項目名で引く（なければ元の文） */
   function eroOn(S) { return !!(HK.Ero && HK.Ero.on(S)); }
   function ekey(p, k) {
+    if (p.fm && (k === 'full' || k === 'part')) return k === 'full' ? 'fm' : 'fmPart';
     if (k === 'full' && p.ff) return p.aTop ? 'ffTop' : 'ff';
     if (k === 'full' && p.aTop) return 'fullTop';
     if (k === 'part' && p.ff) return p.aTop ? 'ffTopPart' : 'ffPart';
@@ -37052,7 +37201,7 @@
       alt: function (key, arr) { return eL(S, key, arr); },
       cv: function (q, top) { return eroOn(S) && !top ? HK.Ero.moan(S, q, 2) : null; } };
   }
-  function cmdOf(p, g) { return (p.ff && g.cmdFF) || (p.aTop && g.cmdTop) || g.cmd; }
+  function cmdOf(p, g) { return (p.ff && g.cmdFF) || (p.fm && g.cmdFM) || (p.aTop && g.cmdTop) || g.cmd; }
   /* 自分で攻めを選んだ人の台詞から、受け身の台詞を外す（solo-r18-moan.js の HK.R18M.topLines） */
   function topL(p, list) { return HK.R18M && HK.R18M.topLines ? HK.R18M.topLines(p, list) : list; }
   /* かけられた側が攻め（p.aTop）のときの声：SM.TRANCE_TOP / SM.CLIMAX_TOP（女性どうしは CLIMAX_TOP_FF）。弱気・従順な台詞は使わない */
@@ -39084,6 +39233,10 @@
     rough: L('「……ロッカーの中で、散々煽ってくれたね」{a}は{b}の両手首を頭の上で押さえつけ、容赦なく腰を打ちつけた。|憎まれ口を叩き合いながら、二人は噛みつくように求め合った。喧嘩なのか愛撫なのか、もう区別がつかなかった。|{a}は{b}の肩に歯を立て、{b}は{a}の背中に爪を立てた。どちらも、手加減を忘れていた。'),
     sweet: L('{a}は動きを止めて、{b}の顔をじっと見下ろした。「……かわいい」|{a}は{b}の涙を指で拭い、額にキスを落とした。「ずっと、こうしたかった」|二人は指を絡め合ったまま、何度も「好き」と言い合った。'),
     shower: L('シャワーを浴びに行った二人は、そこでもう一回してしまった。|汗を流しに行ったはずのシャワールームで、{a}は{b}をバスタブの縁に座らせ、その上に跨った。湯気の中で、二人はまた肌を重ねた。'),
+    /* 一段落版（描写の長さ「短く」など、locker-thick.js の厚い段落に差し替えないとき）の、繋がる・体位を変える・果てる文 */
+    insert: L('もう焦らす必要はなかった。{a}は{b}を仰向けに押し倒して跨り、自分の手で導いて、一息に腰を沈めた。二人の口から同時に、長い溜息のような声が漏れた。|{a}は{b}の胸に両手をついて跨り、ロッカーでは届かなかった深さまで、ゆっくりと腰を落としていった。根元まで呑み込むと、{a}は{b}を見下ろして小さく笑った。|{a}は{b}をベッドの縁に座らせ、向かい合って膝の上に跨った。首に腕を回したまま腰を沈めると、{b}の喉から押し殺した声が漏れた。|{a}は{b}の両手首をシーツに縫いとめ、上から覆いかぶさるようにして、自分の中へ{b}を迎え入れた。{b}は逃げ場のないまま、{a}の動きに身を震わせた。'),
+    pos: L('狭いロッカーで溜めに溜めた欲が、一気にあふれ出した。{a}は向きを変え、角度を変えながら、何度も{b}の上で腰を沈め直した。|{b}が「もう無理」と言うたびに、{a}は上から「あと一回」と囁いて、また腰を揺らした。|{a}は{b}に背中を向けて跨り直し、ゆっくりと腰を上下させた。{b}の手が、たまらず{a}の腰を掴んだ。|二人はベッドの上を転がりながらも、{a}は最後には必ず{b}の上に戻った。シーツはぐしゃぐしゃになっていた。'),
+    end: L('{a}が深く腰を沈めて締めつけた瞬間、{b}はこらえきれずに果てた。それでも媚薬の熱は引かず、{a}はそのまま、また腰を揺らし始めた。|{b}が{a}の中で果て、その震えに引きずられるように{a}も達した。二人は荒い息のまま、しばらく繋がっていた。|何度目かも分からない絶頂のあと、{a}はようやく{b}の上から降りた。窓の外は、白み始めていた。'),
     /* 描写「ぼかす」の結びの一文 */
     climax: L('{a}が深く腰を沈めた瞬間、二人はほとんど同時に果てた。|{b}は{a}の下で、何度目かも分からない絶頂を迎えた。|何度目かも分からない絶頂のあと、二人はようやく動きを止めた。')
   };
@@ -39148,11 +39301,13 @@
     }
 
     /* 最中：前戯→挿入→展開ふたつ */
+    /* 女性の攻め×男性の受け：厚い段落（locker-thick.js が o.thick を付けて LK.BED を差し替える）でないときは、跨る書き方の一段落版を使う */
+    var fmOwn = fm && !o.thick;
     var ctx = { x: x, y: y, tone: o.tone, rel: o.rel, plotter: o.plotter, pair: o.pair, how: o.how, dose: o.dose, riba: riba, ff: ff, fm: fm };
     var mids = pickMid(S, ctx, 2);
     var naka = mids.filter(function (m) { return m.id === 'naka'; })[0];
     if (naka) { mids.splice(mids.indexOf(naka), 1); mids.push(naka); } /* 中出しは最後に */
-    var t2 = ST.fmt(pick(S, LK.BED.fore), vv(x, y)) + ST.fmt(pick(S, ff ? FF.insert : LK.BED.insert), vv(x, y)) + ST.fmt(pick(S, ff && o.tone === 'rough' ? FF.rough : fm && LK.BED[o.tone][0] !== '' ? FM[o.tone] : LK.BED[o.tone]), vv(x, y));
+    var t2 = ST.fmt(pick(S, LK.BED.fore), vv(x, y)) + ST.fmt(pick(S, ff ? FF.insert : fmOwn ? FM.insert : LK.BED.insert), vv(x, y)) + ST.fmt(pick(S, ff && o.tone === 'rough' ? FF.rough : fm && LK.BED[o.tone][0] !== '' ? FM[o.tone] : LK.BED[o.tone]), vv(x, y));
     var swapped = false, t3 = '';
     mids.forEach(function (m, i) {
       var ml = ff ? FF.mid[m.id] : fm ? FM.mid[m.id] : m.t.filter(function (l) { return !xHard || m.swap || noPush(l); });
@@ -39176,7 +39331,7 @@
     var endKey = naka ? 'naka' : null;
     var pool = ['morning', 'shower', 'faint'].concat(o.tone === 'sweet' || o.rel === 'crush' || o.rel === 'mutual' || o.rel === 'almost' || o.rel === 'lover' ? ['promise', 'promise'] : ['fight', 'fight']);
     if (!endKey) endKey = rng.pick(pool);
-    t3 += naka ? '' : ST.fmt(pick(S, ff ? FF.pos : LK.BED.pos), vv(x, y)) + o.moan(x, true) + o.moan(y) + ST.fmt(pick(S, ff ? FF.climax : LK.BED.climax), vv(x, y));
+    t3 += naka ? '' : ST.fmt(pick(S, ff ? FF.pos : fmOwn ? FM.pos : LK.BED.pos), vv(x, y)) + o.moan(x, true) + o.moan(y) + ST.fmt(pick(S, ff ? FF.climax : fm && !(o.thick && o.thick.climax) ? FM.end : LK.BED.climax), vv(x, y));
     function endOf(k) { return ff && k === 'shower' ? FF.shower : fm && k === 'shower' ? FM.shower : fm && k === 'naka' ? FM.endNaka : END[k]; }
     t3 += ST.fmt(pick(S, endOf(endKey)), vv(x, y));
     if (naka && rng() < 0.5) t3 += ST.fmt(pick(S, endOf(rng.pick(pool))), vv(x, y));
@@ -39228,6 +39383,18 @@
   LK.ERO_ACT = {
     3: L('狭いロッカーの中で、{a}は{b}の脚のあいだに顔を埋めた。{s:suck}。{b}「{mb1}」――逃げ場のない暗闇で、音だけがやけに大きく響いた。|{a}は{b}の下着の中に手を滑り込ませ、とろとろになったところを指でかき回した。{s:wet}。{b}「{mb1}」――媚薬のせいで、触れられたそばから腰が勝手に揺れた。|{s:suck}。{b}「{mb2}」――{b}は{a}の口の中で、びくびくと震えながら果てた。'),
     4: L('{a}は{b}をロッカーの壁に押しつけたまま、奥まで繋がった。{s:hit}。{b}「{mb1}」――狭くて動けないぶん、一突きごとが深く奥に響いた。|媚薬で敏感になった{b}のナカは、{a}を咥え込んで離さなかった。{s:wet}。{b}「{mb2}」――{b}は扉に額を押しつけたまま、びくびくとイった。|{s:hit}。{b}「{mb2}」――ロッカーががたがたと揺れるのも構わず、二人は腰をぶつけ合った。')
+  };
+  /* 女性の攻め×男性の受けの「繋がる」（4）：{a}＝女性の攻めが跨る・自分で導く（{a} を入れる側にしない）。{mb1}{mb2}＝男性の受けの声 */
+  LK.ERO_ACT_FM = {
+    4: L('{a}は{b}をロッカーの壁に押しつけたまま、膝の上で深く腰を沈め直した。狭くて大きくは動けないぶん、一度沈むごとに奥まで響く。{s:wet}。{b}「{mb1}」――逃げ場のない暗闇で、{b}は{a}にしがみつくことしかできなかった。|' +
+      '媚薬でとろとろになった{a}のナカが、{b}を根元まで咥え込んで離さなかった。{a}が小刻みに腰を揺らすたび、ロッカーががたがたと鳴る。{s:wet}。{b}「{mb2}」――{b}は扉に後頭部を押しつけたまま、{a}の中でびくびくと果てた。|' +
+      '{a}は{b}の首に腕を回し、片脚を{b}の腰に絡めたまま、小刻みに腰を揺らした。狭くて大きくは動けないぶん、{a}は締めつけだけで{b}を追い詰めていく。{s:wet}。{b}「{mb2}」――{b}が果てても、{a}は腰を上げなかった。')
+  };
+  /* 男性の受けへの「口」（3）：{a} が {b} のものを咥える（{a} はどちらの性別でもよい） */
+  LK.ERO_ACT_MB = {
+    3: L('狭いロッカーの中で、{a}は{b}の脚のあいだに膝をつき、張りつめたものを根元まで咥え込んだ。{s:suck}。{b}「{mb1}」――逃げ場のない暗闇で、濡れた音だけがやけに大きく響いた。|' +
+      '{a}は{b}の下着をずり下ろし、熱くなったものに舌を這わせた。先端を吸い上げるたびに、{b}の腰が壁から浮く。{s:suck}。{b}「{mb1}」――媚薬のせいで、触れられたそばから限界が近づいていった。|' +
+      '{a}は喉の奥まで深く咥え、ゆっくりと引いては、また呑み込んだ。{b}は声を殺そうとして、ロッカーの天井に頭をぶつけた。{s:suck}。{b}「{mb2}」――{b}は{a}の口の中で、びくびくと震えながら果てた。')
   };
   /* 女性どうしの「繋がる」（4）：指と肌で */
   LK.ERO_ACT_FF = {
@@ -39291,6 +39458,8 @@
       }
       return say0.apply(this, arguments);
     };
+    /* solo-locker-bed.js に、厚い段落へ差し替えたことを知らせる（女性の攻めの一段落版を使わない。絶頂はリバ同士なら差し替えていない） */
+    o.thick = { climax: !riba };
     try { return bed0.apply(this, arguments); }
     finally { B.fore = save.fore; B.insert = save.insert; B.pos = save.pos; B.climax = save.climax; if (tk) B[tk] = save.tone; ST.say = say0; }
   };
@@ -40073,7 +40242,11 @@
     /* 恋愛相手の固定が食い違うだけで、体の関係は許されている二人（engine.js の HK.lockSexOnly）は、恋愛・R18にしない組として扱わない */
     var ngP = !!(HK.ngPair && HK.ngPair(A, B)) && !(HK.lockSexOnly && HK.lockSexOnly(A, B));
     /* 親族（恋愛：なし）・信仰（恋愛に発展：しない。支配しているとき以外）も、恋愛・R18にしない組として扱う */
-    var tieNL = !ngP && !!(nt && nt.noLove);
+    var tieNL = !ngP && !!(nt && nt.noLove), nlWhy = tieNL ? nt.nlWhy : '';
+    /* きょうだい・親子など家族の関係で「恋愛：なし」の二人（ties.js の HK.tieNoLove。fam-kin.js で恋愛・R18にしない相手にも入る）も同じ。
+       恋愛の関係を重ねている二人・「恋愛：あり」の家族は今までどおり */
+    var famT = tieL.some(function (t) { return /^(lover|mate|fated|fwb|crush|almost|ex|master)$/.test(t.type); }) ? null : tieL.filter(function (t) { return HK.tieNoLove && HK.tieNoLove(t); })[0];
+    if (famT) { tieNL = true; nlWhy = ((HK.TIES[famT.type] || {}).label || '家族') + '（恋愛にしない関係）'; }
     if (tieNL) ngP = true;
     /* 性行為の相手を別の人に固定している（または固定した相手がこの箱庭にいない）：体の関係にならない（pos.js の向きの判定で clash になる） */
     var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (A.sexLock != null && A.sexLock !== B.i ? A : B) : null;
@@ -40159,7 +40332,7 @@
       a.cnt.hold++; a.m.reason = clamp(a.m.reason + 3, 0, 100); a.m.plea = clamp(a.m.plea + 8, 0, 90);
       if (a.cnt.hold > 3 && rng() < 0.5) return;
       var ty = clashType(a), C = LK.CLASH;
-      ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + 'は発情していた（' + Math.round(a.m.heat) + '）が、' + b.name + (ngP ? 'とは' + (tieNL ? nt.nlWhy + 'の二人' : '恋愛・R18にしない組') + 'なので、手は出さなかった（' : sexP ? 'とは体の関係にならない（' + sexWhy + '）ので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
+      ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + 'は発情していた（' + Math.round(a.m.heat) + '）が、' + b.name + (ngP ? 'とは' + (tieNL ? nlWhy + 'の二人' : '恋愛・R18にしない組') + 'なので、手は出さなかった（' : sexP ? 'とは体の関係にならない（' + sexWhy + '）ので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
     }
     /* 女性の攻め（t）×男性の受け（u）か：女性が跨る書き方にする */
     function fmPair(t, u) { return !!(Pos && !ff && Pos.isF(t) && !Pos.isF(u)); }
@@ -40381,7 +40554,9 @@
         else if (eroOn && eroNow && lv >= 3 && LK.ERO_ACT && LK.ERO_ACT[lv]) {
           /* 口（3）は元の文と同じ向き（ax が bx に）、繋がる（4）は攻め {a} が受けに */
           var eg = lv === 3 ? ax : tp, er = lv === 3 ? bx : tp.o;
-          t += HK.ThickEro.fill(S, pk(ff && LK.ERO_ACT_FF && LK.ERO_ACT_FF[lv] ? LK.ERO_ACT_FF[lv] : LK.ERO_ACT[lv]), eg, er).replace(/\{a\}/g, eg.name).replace(/\{b\}/g, er.name);
+          /* 女性の攻め×男性の受けの「繋がる」は跨る文（LK.ERO_ACT_FM）、男性が口で受けるときは男性の体の文（LK.ERO_ACT_MB） */
+          var eroL = ff && LK.ERO_ACT_FF && LK.ERO_ACT_FF[lv] ? LK.ERO_ACT_FF[lv] : lv === 4 && fmPair(eg, er) && LK.ERO_ACT_FM ? LK.ERO_ACT_FM[4] : lv === 3 && !ff && Pos && !Pos.isF(er) && LK.ERO_ACT_MB ? LK.ERO_ACT_MB[3] : LK.ERO_ACT[lv];
+          t += HK.ThickEro.fill(S, pk(eroL), eg, er).replace(/\{a\}/g, eg.name).replace(/\{b\}/g, er.name);
         }
         /* 新しい関係ならではの最中（R18版のみ。locker-ties-r18.js） */
         if (nt && NT.r18Act && R18 && lew !== 'low' && lv === 4 && !nt.r18In) { nt.r18In = true; t += NT.r18Act(S, nt, tp, tp.o, { moan: moan }); }
@@ -40476,7 +40651,7 @@
       outcome = 'endure';
       /* 理性の残っていた方が、性格に合わせたやり方で二人を引き離す */
       var ke = A.m.reason >= B.m.reason ? A : B, tye = clashType(ke);
-      ST.key(S, ST.say(S, { actors: [A, B], tag: '耐え抜いた', text: (how === 'timeout' ? LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/, '') : '') + ST.fmt(pk(LK.CLASH.bed[tye]), { a: ke.name, b: ke.o.name }), why: '二人とも発情していた（' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）が、' + (tieNL ? nt.nlWhy + 'の二人なので' : sexP ? '体の関係にならない二人（' + sexWhy + '）なので' : '受け攻めの向きが合わない二人なので') + '、ベッドには行かなかった（' + ke.name + 'の理性 ' + Math.round(ke.m.reason) + '）', mag: 30 }), '結末');
+      ST.key(S, ST.say(S, { actors: [A, B], tag: '耐え抜いた', text: (how === 'timeout' ? LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/, '') : '') + ST.fmt(pk(LK.CLASH.bed[tye]), { a: ke.name, b: ke.o.name }), why: '二人とも発情していた（' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）が、' + (tieNL ? nlWhy + 'の二人なので' : sexP ? '体の関係にならない二人（' + sexWhy + '）なので' : '受け攻めの向きが合わない二人なので') + '、ベッドには行かなかった（' + ke.name + 'の理性 ' + Math.round(ke.m.reason) + '）', mag: 30 }), '結末');
     } else {
       /* ロッカーの中で最後までした二人は「怒りの脱出」にしない（そのあと受け入れている） */
       outcome = how === 'timeout' ? 'rescue' : plotter && !plotOk ? 'plotfail' : pair.refusedHard && pair.acts >= 1 && !pair.sexIn ? 'angry' : pair.acts >= 1 ? 'awkward' : (A.cnt.make + B.cnt.make) > 0 || (clash && A.cnt.hold + B.cnt.hold > 0) ? 'near' : 'clean';
@@ -47157,6 +47332,8 @@
   function rk(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   function pq(S, key, p, m) { var t = Y.PQ[key]; return F(pk(S, t[p.persona] || t.gentle), m); }
   function hasTie(S, a, b, list) { return ties(S, a, b).some(function (t) { return list.split(',').indexOf(t.type) >= 0; }); }
+  /* 家族（きょうだい・親子・親族など）で「恋愛：なし」の二人（ties.js の HK.tieNoLove）。「恋愛：あり」の家族・擬似親子はほかの組と同じ */
+  function kinNo(S, a, b) { return ties(S, a, b).some(function (t) { return !!(HK.tieNoLove && HK.tieNoLove(t)); }); }
   function cat(S, a, b) { var w = bond(S, a, b); if (w <= -0.2) return 'bad'; if (hasTie(S, a, b, 'lover,mate,fated,almost,crush,fwb')) return 'love'; if (hasTie(S, a, b, 'sibling,sibprot,sibclose,sibbad,parent,pparent')) return 'family'; return w >= 0.3 ? 'close' : ''; }
   /* 両片想い：どちらからも片想いがある二人（恋人になったら外れる） */
   function crushTo(S, a, b) { return S.ties.some(function (t) { return t.type === 'crush' && t.a === a.i && t.b === b.i; }); }
@@ -47772,7 +47949,7 @@
           if (pining(S, a, b) && B.pine) opts.push([a, b, 'pine', 0.7]);
         }
         if (w >= -0.1 && b.m.fear > 45) opts.push([a, b, 'protect', 0.4 + a.tr.np * 0.5]);
-        if (w >= 0.3 && !lover && !hasTie(S, a, b, 'sibling,sibprot,sibclose,sibbad,parent,pparent') && (!HK.canLove || HK.canLove(a, b)) && !S.confessed) opts.push([a, b, 'confess', 0.3 + a.tr.fc * 0.4 + w * 0.5]);
+        if (w >= 0.3 && !lover && !kinNo(S, a, b) && (!HK.canLove || HK.canLove(a, b)) && !S.confessed) opts.push([a, b, 'confess', 0.3 + a.tr.fc * 0.4 + w * 0.5]);
         if (b === S.cul && a !== S.cul && skill(a, 'obs') > 0.5) opts.push([a, b, 'distrust', 0.4]);
       });
     });
@@ -47870,7 +48047,7 @@
       summary: '吹雪の館の殺人：' + title
     });
   }
-  Y.cat = cat; Y.showdown = showdown;
+  Y.cat = cat; Y.showdown = showdown; Y.kinNo = kinNo;
   Y.gain = gain; Y.inv = inv;
   Y.skill = skill; Y.bond = bond; Y.setRel = setRel; Y.relLabel = relLabel; Y.alive = alive; Y.pining = pining;
 })();
@@ -53149,6 +53326,14 @@
   var MUTUAL_FF = L('媚薬の熱に耐えきれず、{x}は{y}の部屋を訪ねた。言葉は要らなかった。{x}は{y}を布団に横たえ、浴衣の合わせを開いて、火照った胸に唇を這わせた。|「おかしいの、体が……」――{y}がそう言い終わる前に、{x}が唇を塞いだ。二人は布団の上で脚を絡め、夜明けまで互いの熱を擦り合わせた。|{x}と{y}は、怖さを紛らわせるように抱き合った。触れ合ううちに熱が止まらなくなり、{x}の指は{y}の浴衣の裾の奥へ滑り込んでいった。|障子越しに村人の気配がするのも構わず、{x}は{y}を後ろから抱きすくめ、浴衣の上から胸を揉みしだいた。{y}は声を殺そうとして、殺しきれなかった。|「怖いから、一緒に寝てもいい？」――{y}の言葉に頷いた{x}は、布団の中で{y}の震える体を抱き寄せた。震えは、やがて別のものに変わった。|{x}は、{y}の浴衣の合わせから手を差し入れた。{y}は拒まなかった。「……今だけ、何も考えさせないで」|二人は民宿の暗い廊下で鉢合わせた。媚薬の熱を持て余していたのは、どちらも同じだった。{x}は{y}を壁に押しつけ、帯を解いて、濡れたところへ指を這わせた。|{x}は{y}の脚を開かせ、行灯の明かりの中で、そこへ顔を埋めた。{y}は布団の端を噛んで、甘い悲鳴を押し殺し続けた。');
   var MUTUAL = L('媚薬の熱に耐えきれず、{x}は{y}の部屋を訪ねた。言葉は要らなかった。{x}は{y}を布団に押し倒し、何度も奥まで穿った。|「おかしいの、体が……」――{y}がそう言い終わる前に、{x}が唇を塞いだ。二人は夜明けまで、獣のように互いを貪った。|{x}と{y}は、怖さを紛らわせるように抱き合った。触れ合ううちに熱が止まらなくなり、{x}は{y}の中で何度も果てた。|障子越しに村人の気配がするのも構わず、{x}は{y}を後ろから抱いた。{y}は声を殺そうとして、殺しきれなかった。');
   MUTUAL = MUTUAL.concat(L('「怖いから、一緒に寝てもいい？」――{y}の言葉に頷いた{x}は、布団の中で{y}の震える体を抱き寄せた。震えは、やがて別のものに変わった。|{x}は、{y}の浴衣の合わせから手を差し入れた。{y}は拒まなかった。「……今だけ、何も考えさせないで」|二人は民宿の暗い廊下で鉢合わせた。媚薬の熱を持て余していたのは、どちらも同じだった。{x}は{y}を壁に押しつけ、その場で繋がった。|{x}は{y}を何度も果てさせた。それでも{x}の熱は引かず、{y}は朝まで、{x}の下で甘い悲鳴を上げ続けた。|翌朝、{x}と{y}は気まずそうに目を逸らした。けれど次の夜も、{y}の部屋の襖は、少しだけ開いていた。'));
+  /* 女性の攻め {x}×男性の受け {y}：{x} が押し倒して跨る・自分で導く書き方（{x} を入れる側・{y} を跨る側にしない） */
+  var MUTUAL_FM = L('媚薬の熱に耐えきれず、{x}は{y}の部屋を訪ねた。言葉は要らなかった。{x}は{y}を布団に押し倒して跨り、自分の手で導いて、何度も深く腰を沈めた。|' +
+    '「おかしいの、体が……」――{y}がそう言い終わる前に、{x}が唇を塞いだ。{x}は{y}を仰向けにして上に乗り、夜明けまで腰を止めなかった。{y}は{x}の下で、獣のような声を何度も噛み殺した。|' +
+    '{x}と{y}は、怖さを紛らわせるように抱き合った。触れ合ううちに熱が止まらなくなり、{x}は{y}に跨って、自分の中へ{y}を迎え入れた。{y}は{x}の中で、何度も果てた。|' +
+    '障子越しに村人の気配がするのも構わず、{x}は{y}を壁際に座らせ、その膝の上に跨った。{y}は声を殺そうとして、殺しきれなかった。{x}は{y}の口を手で塞いだまま、ゆっくりと腰を揺らし続けた。|' +
+    '「怖いから、一緒に寝てもいい？」――{x}の言葉に頷いた{y}は、布団の中で{x}に抱き寄せられた。震えは、やがて別のものに変わった。{x}は{y}の上に身を起こし、ためらいもなく腰を沈めた。|' +
+    '二人は民宿の暗い廊下で鉢合わせた。媚薬の熱を持て余していたのは、どちらも同じだった。{x}は{y}を壁に押しつけてその場に座り込ませ、膝の上に跨って繋がった。|' +
+    '{x}は{y}を何度も果てさせた。それでも{x}の熱は引かず、{y}は朝まで、{x}の下で甘い声を上げ続けた。{x}は{y}の胸に手をついたまま、最後の一滴まで搾り取った。');
   var PREG = L('翌朝、{y}の下腹が、わずかに膨らんでいた。女将がそれを見て、嬉しそうに手を合わせた。「まあ、おめでたい。神さまの器が、できなさった」|{y}は朝から、下腹の奥で何かが動く感覚に怯えていた。村の老婆が言った。「あんたの中に、もう宿っとる」|{y}の下腹に、昨夜まではなかった紋様が浮かんでいた。村の秘術で、{y}の体は「孕んだ」ことにされていた。');
   var RITUAL = L('{a}は白い薄衣一枚で祭壇に横たえられた。村人たちが周りを囲み、祝詞に合わせて{a}の肌に油を塗り込めていった。やがて祭壇の奥から、人ではないものの気配が這い寄り、{a}の脚を押し開いた。|{a}は祭壇の上で、村の男たちに「清め」と称して代わる代わる抱かれた。最後に{g}の御前へ差し出されたとき、{a}はもう自分の名前も思い出せなかった。|祭壇の上で、{a}の体に冷たい何かが何本も絡みついた。それは{a}の奥深くまで入り込み、何かを注ぎ込み続けた。{a}の悲鳴は、いつしか甘い声に変わっていた。');
   RITUAL = RITUAL.concat(L('祭壇の{a}の周りで、村人たちが輪になって踊った。一人が踊りの輪から外れるたびに、{a}の上に覆いかぶさった。祝詞は、夜が明けるまで途切れなかった。|{a}は御神酒を口移しで飲まされた。体が溶けるように熱くなり、{a}は自分から祭壇の上で脚を開いていた。{g}の御前で、{a}は何度も、何度も清められた。'));
@@ -53420,7 +53605,8 @@
         var q = rng.pick(mates); q.lastNight = h; q.cnt.r18 = (q.cnt.r18 || 0) + 1;
         var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
         var rough = S.ygo && (X.viol > 30 || Y.viol > 30);
-        var t0 = ST.fmt(ST.pick(S, rough ? YGO_SEX : isFF(X, Y) ? MUTUAL_FF : MUTUAL), { x: X.name, y: Y.name });
+        var fmXY = !rough && !isFF(X, Y) && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm';
+        var t0 = ST.fmt(ST.pick(S, rough ? YGO_SEX : isFF(X, Y) ? MUTUAL_FF : fmXY ? MUTUAL_FM : MUTUAL), { x: X.name, y: Y.name });
         /* 主導する側が女性・相手が男性なら、導入の文も跨る書き方に（合意の場面だけ） */
         if (!rough && HK.FM && HK.FM.fixWith && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm') t0 = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, t0, X, Y.name);
         var t = t0 + pairSex(S, X, Y, { mood: rough ? 'rough' : p.aphro || q.aphro ? 'drug' : 'love', fore: false });

@@ -145,6 +145,8 @@
     if (t) {
       var ty = t.type, first = t.a === a.i;
       if (ty === 'lover' || ty === 'mate' || ty === 'fated') return 'lover';
+      /* 家族で「恋愛：あり」（ties.js の HK.tieFamLove）の二人が恋人になっていれば（惹かれ合っていれば）、恋人どうしの再会にする */
+      if (HK.tieFamLove && HK.tieFamLove(t) && (ctx.pair(a, b).couple || (ra.att > 45 && rb.att > 40))) return 'lover';
       if (ty === 'sibprot') return first ? 'protA' : 'protB';
       if (ty === 'sibclose') return 'sibclose';
       if (ty === 'teacher') return first ? 'teacherA' : 'teacherB';

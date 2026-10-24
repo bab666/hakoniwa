@@ -193,6 +193,7 @@ js/icons.js
 js/view.js
 js/dungeon-view.js
 js/solo-story-kit.js
+js/fam-kin.js
 js/solo-kaihen-data.js
 js/solo-kaihen-more.js
 js/solo-kaihen-voice.js

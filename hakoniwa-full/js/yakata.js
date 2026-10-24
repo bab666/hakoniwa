@@ -47,6 +47,8 @@
   function rk(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   function pq(S, key, p, m) { var t = Y.PQ[key]; return F(pk(S, t[p.persona] || t.gentle), m); }
   function hasTie(S, a, b, list) { return ties(S, a, b).some(function (t) { return list.split(',').indexOf(t.type) >= 0; }); }
+  /* 家族（きょうだい・親子・親族など）で「恋愛：なし」の二人（ties.js の HK.tieNoLove）。「恋愛：あり」の家族・擬似親子はほかの組と同じ */
+  function kinNo(S, a, b) { return ties(S, a, b).some(function (t) { return !!(HK.tieNoLove && HK.tieNoLove(t)); }); }
   function cat(S, a, b) { var w = bond(S, a, b); if (w <= -0.2) return 'bad'; if (hasTie(S, a, b, 'lover,mate,fated,almost,crush,fwb')) return 'love'; if (hasTie(S, a, b, 'sibling,sibprot,sibclose,sibbad,parent,pparent')) return 'family'; return w >= 0.3 ? 'close' : ''; }
   /* 両片想い：どちらからも片想いがある二人（恋人になったら外れる） */
   function crushTo(S, a, b) { return S.ties.some(function (t) { return t.type === 'crush' && t.a === a.i && t.b === b.i; }); }
@@ -662,7 +664,7 @@
           if (pining(S, a, b) && B.pine) opts.push([a, b, 'pine', 0.7]);
         }
         if (w >= -0.1 && b.m.fear > 45) opts.push([a, b, 'protect', 0.4 + a.tr.np * 0.5]);
-        if (w >= 0.3 && !lover && !hasTie(S, a, b, 'sibling,sibprot,sibclose,sibbad,parent,pparent') && (!HK.canLove || HK.canLove(a, b)) && !S.confessed) opts.push([a, b, 'confess', 0.3 + a.tr.fc * 0.4 + w * 0.5]);
+        if (w >= 0.3 && !lover && !kinNo(S, a, b) && (!HK.canLove || HK.canLove(a, b)) && !S.confessed) opts.push([a, b, 'confess', 0.3 + a.tr.fc * 0.4 + w * 0.5]);
         if (b === S.cul && a !== S.cul && skill(a, 'obs') > 0.5) opts.push([a, b, 'distrust', 0.4]);
       });
     });
@@ -760,7 +762,7 @@
       summary: '吹雪の館の殺人：' + title
     });
   }
-  Y.cat = cat; Y.showdown = showdown;
+  Y.cat = cat; Y.showdown = showdown; Y.kinNo = kinNo;
   Y.gain = gain; Y.inv = inv;
   Y.skill = skill; Y.bond = bond; Y.setRel = setRel; Y.relLabel = relLabel; Y.alive = alive; Y.pining = pining;
 })();

@@ -341,7 +341,7 @@
     /* 女性どうしで繋がる組があれば、挿入の描写を使わない（白い部屋の木箱の玩具はよい） */
     var E = { oneTwo: [[sp.t, sp.m], [sp.t, sp.u]], twoOne: [[sp.t, sp.u], [sp.m, sp.u]], sandwich: [[sp.t, sp.m], [sp.m, sp.u]], ring: [[sp.t, sp.m], [sp.m, sp.u], [sp.u, sp.t]] }[sp.p];
     var ffE = HK.Pos ? E.filter(function (e) { return HK.Pos.ff(e[0], e[1]); })[0] : null;
-    var PEN = /奥まで沈|深く沈|腰を沈|腰を落と|繋が|貫|突い|突き|突く|突か|中に入|入って|熱を吐き出|腰を打ちつけ|果てて.*中|最奥|迎え入れ|受け入れ|挿れ|挿入|抜き差し|根元|穿|口に含|のもの/;
+    var PEN = /奥まで沈|深く沈|腰を沈|腰を落と|繋が|貫|突い|突き|突く|突か|中に入|入って|熱を吐き出|腰を打ちつけ|果てて.*中|奥で果て|中で果て|最奥|迎え入れ|受け入れ|挿れ|挿入|抜き差し|根元|穿|口に含|のもの/;
     var penRaw = function (l) { return !ffE || !PEN.test(l); };
     /* 文の中の役（{j}{o}{s} など）が全部そろっている文だけ使う */
     var rolesOK = function (l) { var m = String(l).match(/\{[a-z]\}/g) || []; return m.every(function (k) { return !!r[k.charAt(1)]; }); };
@@ -563,14 +563,16 @@
       if (!allowed(ctx) || !ctx.flags.multiKnown || ctx.present().length < 3 || !free(a) || !free(b) || ctx.flags.trioCur) return false;
       if (!b.flags.excl || b.flags.exclOpen || (b.flags.persuadeAt === ctx.stepIndex) || (b.flags.persuadeN || 0) >= 3) return false;
       if (ctx.stepIndex - (b.flags.partnerAt || 0) < 1) return false;
-      var third = ctx.present().filter(function (c) { return c !== a && c !== b && free(c) && HK.canLove(b, c); })[0];
+      /* 家族（恋愛：なし）の二人が入る三人には誘わない */
+      if (family(ctx, a, b)) return false;
+      var third = ctx.present().filter(function (c) { return c !== a && c !== b && free(c) && HK.canLove(b, c) && !family(ctx, a, c) && !family(ctx, b, c); })[0];
       if (!third) return false;
       return a.i === b.flags.partner ? A.eager(ctx, a) > 0.45 || a.tr.np > 0.6 : A.eager(ctx, a) > 0.55 && R(ctx, a, b).att > 15;
     },
     w: function (ctx, a, b) { return 0.5 + A.eager(ctx, a) + (a.i === b.flags.partner ? 0.5 : 0); },
     run: function (ctx, a, b) {
       var isP = a.i === b.flags.partner;
-      var c = ctx.present().filter(function (x) { return x !== a && x !== b && free(x) && HK.canLove(b, x); }).sort(function (x, y) { return R(ctx, b, y).att - R(ctx, b, x).att; })[0];
+      var c = ctx.present().filter(function (x) { return x !== a && x !== b && free(x) && HK.canLove(b, x) && !family(ctx, a, x) && !family(ctx, b, x); }).sort(function (x, y) { return R(ctx, b, y).att - R(ctx, b, x).att; })[0];
       b.flags.persuadeAt = ctx.stepIndex; b.flags.persuadeN = (b.flags.persuadeN || 0) + 1;
       var ch = 0.2 + R(ctx, b, a).trust / 110 + R(ctx, b, a).att / 130 + A.eager(ctx, b) * 0.4 - b.tr.cp * 0.3 + (isP ? 0.15 : 0) + b.stress / 300 + (b.flags.persuadeN - 1) * 0.1 + Math.max(0, R(ctx, b, c).att) / 150;
       var ok = ctx.rng() < ch;

@@ -36,7 +36,8 @@
     /* 書き出し：外の気配（LEAD）に、短い版の脱がせ方（fore）を半分ほど続ける。最中のあとに、短い版の「声を殺す」一段 */
     var lead = pk(LEAD) + (LH && ctx.rng() < 0.5 ? xy(pk(LH.mf.fore)) : '');
     var extra = mids.length && ctx.rng() < 0.7 ? [xy(pk(mids))] : [];
-    var finish = pk(FIN);
+    /* 女性どうしの結びには「繋がったまま」の文を使わない */
+    var finish = pk(kd === 'ff' ? FIN.filter(function (l) { return !/繋が/.test(l); }) : FIN);
     var t = TK.body(T, U, { flav: 'zombie', pick: pk, rng: ctx.rng, bed: '毛布', depth: ctx.rng() < 0.4 ? 3 : 2, lead: lead, extra: extra, finish: finish, noAfter: true });
     return '\n\n' + TK.names(t, T, U) + '\n\n' + (high ? nm(TE.again(ctx, pk, T, U, false, false)) + '\n\n' : '');
   };

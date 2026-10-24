@@ -259,8 +259,9 @@
     /* ただし「恋愛はしないが体の関係は許されている組」（HK.lockSexOnly）は通す。恋愛の出来事は HK.canLove（恋愛相手の固定を見る）で止まり、
        体の関係の出来事だけが起きる。起きたあとは Ctx.say で恋愛に進まないように補正する */
     for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j]) && !HK.lockSexOnly(L[i], L[j])) return false;
-    if (this.scen && this.scen.romanceCore) return true;
+    /* 恋愛なしの家族は、恋愛が中心の箱庭（romanceCore）でも恋愛の出来事を起こさない */
     if (a && b && this.pair(a, b).kin) return false;
+    if (this.scen && this.scen.romanceCore) return true;
     if (a && b && this.pair(a, b).couple) return true;
     if (this.env && this.env.romance === 0) return false;
     if (a && b && HK.lockSexOnly(a, b)) { var a0 = Object.assign({}, a, { lock: null }), b0 = Object.assign({}, b, { lock: null }); return HK.canLove(a0, b0) && HK.canLove(b0, a0); }
@@ -679,7 +680,9 @@
     }
     if (ctx.scen.classify) { var sc = ctx.scen.classify(ctx, A, B, pf); if (sc) return sc; }
     var tie = HK.Ties ? HK.Ties.get(ctx, A, B) : null, TD = tie ? HK.TIES[tie.type] : null;
-    if (TD && TD.family && !(TD.loveOK && ab.att > 28 && ba.att > 28)) {
+    /* 家族の関係でも「恋愛：あり」（HK.tieFamLove）なら、惹かれ合っていれば恋人などの結末に進める */
+    var famLove = TD && TD.family && (TD.loveOK || HK.tieFamLove(tie));
+    if (TD && TD.family && !(famLove && ab.att > 28 && ba.att > 28)) {
       var tenF = (ab.ten + ba.ten) / 2;
       if ((tenF > 55 && (ab.aff + ba.aff) / 2 < 30) || ab.aff < -10 || ba.aff < -10) return { id: 'kinfeud' };
       if (ab.aff > 40 && ba.aff > 40) return { id: 'kinbond' };

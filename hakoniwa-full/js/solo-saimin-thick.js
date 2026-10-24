@@ -168,7 +168,8 @@
     /* 暗示の言葉と声 */
     var cmd = ro.top ? pk(R, CMD_TOP) : pk(R, CMD);
     var voice = E ? (ro.top ? moan(R, p, 1, true) : moan(R, p, 1)) : T4 ? pk(R, ro.top ? T4.DOM[ps(p)] || T4.DOM.gentle : T4.SUB1[ps(p)] || T4.SUB1.gentle) : '……っ';
-    out.push('{h}は' + pk(R, ['吐息まじりに', '繋がったまま', '甘い声で', '静かに', 'もう一度']) + '「' + cmd + '」と囁いた。' + pk(R, CMD_LINK) + '{a}「' + voice + '」' + pk(R, CMD_LINK2));
+    /* 「繋がったまま」は挿入の組（in・ride）だけ。指・口・女性どうし（touch / ff など）では使わない */
+    out.push('{h}は' + pk(R, k === 'in' || k === 'ride' ? ['吐息まじりに', '繋がったまま', '甘い声で', '静かに', 'もう一度'] : ['吐息まじりに', '耳元で', '甘い声で', '静かに', 'もう一度']) + '「' + cmd + '」と囁いた。' + pk(R, CMD_LINK) + '{a}「' + voice + '」' + pk(R, CMD_LINK2));
     out.push(pk(R, E ? BEAT_E[k] || BEAT_E.in : BEAT[kb]));
     out.push(ro.top ? pk(R, PEAK_TOP) : pk(R, PEAK[ps(p)]));
     var pe = pk(R, E ? PEAK_E[k] || PEAK_E.in : PEAK_N[k] || PEAK_N.in);

@@ -9,6 +9,8 @@
   var HK = window.HK;
   function L(s) { return s.split('|'); }
   var TR = (HK.TieRel = {});
+  /* 専用の関係の場面がある箱庭（ゾンビの街 zombie-bonds.js・出られない部屋 room-tie.js・オメガバース omega-ties.js）では、題材の近い場面が並ばないよう共通の場面を減らす */
+  function own(ctx) { return ctx && ctx.scen && /^(zombie|whiteroom|omega)$/.test(ctx.scen.id) ? 0.35 : 1; }
 
   function both(a, b) { return !!(HK.canLove && HK.canLove(a, b) && HK.canLove(b, a)); }
   function grow(ctx, a, b, k) { var pf = ctx.pair(a, b); pf.tieGrow = pf.tieGrow || {}; pf.tieGrow[k] = (pf.tieGrow[k] || 0) + 1; }
@@ -28,7 +30,7 @@
   push({
     id: 'tie_classmate', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'classmate'); },
-    w: function () { return 1; },
+    w: function (ctx) { return 1 * own(ctx); },
     run: function (ctx, a, b) {
       var ra = ctx.R(a, b), rb = ctx.R(b, a), k;
       var g = warmth(ctx, a, b);
@@ -54,7 +56,7 @@
   push({
     id: 'tie_colleague2', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'colleague'); },
-    w: function () { return 0.6; },
+    w: function (ctx) { return 0.6 * own(ctx); },
     run: function (ctx, a, b) {
       var ra = ctx.R(a, b), rb = ctx.R(b, a), g = warmth(ctx, a, b), k;
       if (both(a, b) && ra.att > 32 && rb.att > 24 && g > 30 && ctx.rng() < 0.45) k = 'love';
@@ -79,7 +81,7 @@
   push({
     id: 'tie_boss', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'boss'); },
-    w: function () { return 1; },
+    w: function (ctx) { return 1 * own(ctx); },
     run: function (ctx, a, b) {
       var t = has(ctx, a, b, 'boss'), S = ctx.chars[t.a], K = ctx.chars[t.b];
       var rs = ctx.R(S, K), rk = ctx.R(K, S), g = warmth(ctx, S, K), k;
@@ -108,7 +110,7 @@
   push({
     id: 'tie_benefactor', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'benefactor'); },
-    w: function () { return 1; },
+    w: function (ctx) { return 1 * own(ctx); },
     run: function (ctx, a, b) {
       var t = has(ctx, a, b, 'benefactor'), S = ctx.chars[t.a], K = ctx.chars[t.b];
       var rs = ctx.R(S, K), rk = ctx.R(K, S), g = warmth(ctx, S, K), k;
@@ -135,7 +137,7 @@
   push({
     id: 'tie_relative', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'relative'); },
-    w: function () { return 1; },
+    w: function (ctx) { return 1 * own(ctx); },
     run: function (ctx, a, b) {
       var t = has(ctx, a, b, 'relative'), ra = ctx.R(a, b), rb = ctx.R(b, a), g = warmth(ctx, a, b), k;
       if (t.love === 'ok' && both(a, b) && ra.att > 28 && rb.att > 22 && g > 32 && ctx.rng() < 0.4) k = 'love';
@@ -180,7 +182,7 @@
   push({
     id: 'tie_worship', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'worship'); },
-    w: function () { return 1.15; },
+    w: function (ctx) { return 1.15 * own(ctx); },
     run: function (ctx, a, b) {
       var t = has(ctx, a, b, 'worship'), S = ctx.chars[t.a], K = ctx.chars[t.b];
       var cold = HK.WORSHIP_BACK && HK.WORSHIP_BACK[t.cold] ? t.cold : '';

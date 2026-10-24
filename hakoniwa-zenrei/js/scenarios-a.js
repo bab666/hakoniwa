@@ -449,6 +449,8 @@
         /* 恋愛はしないが体の関係は許されている二人は、恋愛相手の固定を外して恋愛対象の向きだけを見る（帰るなら、お持ち帰りの夜だけ） */
         var so = HK.lockSexOnly && HK.lockSexOnly(c.a, c.b), ca = so ? Object.assign({}, c.a, { lock: null }) : c.a, cb = so ? Object.assign({}, c.b, { lock: null }) : c.b;
         if (used[c.a.i] || used[c.b.i] || c.v < 55 - rf * 20 || !HK.canLove(ca, cb) || !HK.canLove(cb, ca)) return;
+        /* 家族（きょうだい・親子・親族など）で「恋愛：なし」の二人は、一緒に帰る組・お持ち帰りにしない */
+        if (ctx.pair(c.a, c.b).kin) return;
         if (so && !(HK.Pos && HK.Pos.okSex(c.a, c.b))) return;
         used[c.a.i] = used[c.b.i] = 1;
         var imp = (c.a.tr.impulse + c.b.tr.impulse) / 2;

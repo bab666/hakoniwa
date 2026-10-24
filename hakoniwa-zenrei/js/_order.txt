@@ -147,6 +147,7 @@ js/icons.js
 js/view.js
 js/dungeon-view.js
 js/solo-story-kit.js
+js/fam-kin.js
 js/solo-saimin-data.js
 js/solo-saimin.js
 js/solo-locker-data.js

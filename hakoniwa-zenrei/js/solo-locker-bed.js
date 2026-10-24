@@ -147,6 +147,10 @@
     rough: L('「……ロッカーの中で、散々煽ってくれたね」{a}は{b}の両手首を頭の上で押さえつけ、容赦なく腰を打ちつけた。|憎まれ口を叩き合いながら、二人は噛みつくように求め合った。喧嘩なのか愛撫なのか、もう区別がつかなかった。|{a}は{b}の肩に歯を立て、{b}は{a}の背中に爪を立てた。どちらも、手加減を忘れていた。'),
     sweet: L('{a}は動きを止めて、{b}の顔をじっと見下ろした。「……かわいい」|{a}は{b}の涙を指で拭い、額にキスを落とした。「ずっと、こうしたかった」|二人は指を絡め合ったまま、何度も「好き」と言い合った。'),
     shower: L('シャワーを浴びに行った二人は、そこでもう一回してしまった。|汗を流しに行ったはずのシャワールームで、{a}は{b}をバスタブの縁に座らせ、その上に跨った。湯気の中で、二人はまた肌を重ねた。'),
+    /* 一段落版（描写の長さ「短く」など、locker-thick.js の厚い段落に差し替えないとき）の、繋がる・体位を変える・果てる文 */
+    insert: L('もう焦らす必要はなかった。{a}は{b}を仰向けに押し倒して跨り、自分の手で導いて、一息に腰を沈めた。二人の口から同時に、長い溜息のような声が漏れた。|{a}は{b}の胸に両手をついて跨り、ロッカーでは届かなかった深さまで、ゆっくりと腰を落としていった。根元まで呑み込むと、{a}は{b}を見下ろして小さく笑った。|{a}は{b}をベッドの縁に座らせ、向かい合って膝の上に跨った。首に腕を回したまま腰を沈めると、{b}の喉から押し殺した声が漏れた。|{a}は{b}の両手首をシーツに縫いとめ、上から覆いかぶさるようにして、自分の中へ{b}を迎え入れた。{b}は逃げ場のないまま、{a}の動きに身を震わせた。'),
+    pos: L('狭いロッカーで溜めに溜めた欲が、一気にあふれ出した。{a}は向きを変え、角度を変えながら、何度も{b}の上で腰を沈め直した。|{b}が「もう無理」と言うたびに、{a}は上から「あと一回」と囁いて、また腰を揺らした。|{a}は{b}に背中を向けて跨り直し、ゆっくりと腰を上下させた。{b}の手が、たまらず{a}の腰を掴んだ。|二人はベッドの上を転がりながらも、{a}は最後には必ず{b}の上に戻った。シーツはぐしゃぐしゃになっていた。'),
+    end: L('{a}が深く腰を沈めて締めつけた瞬間、{b}はこらえきれずに果てた。それでも媚薬の熱は引かず、{a}はそのまま、また腰を揺らし始めた。|{b}が{a}の中で果て、その震えに引きずられるように{a}も達した。二人は荒い息のまま、しばらく繋がっていた。|何度目かも分からない絶頂のあと、{a}はようやく{b}の上から降りた。窓の外は、白み始めていた。'),
     /* 描写「ぼかす」の結びの一文 */
     climax: L('{a}が深く腰を沈めた瞬間、二人はほとんど同時に果てた。|{b}は{a}の下で、何度目かも分からない絶頂を迎えた。|何度目かも分からない絶頂のあと、二人はようやく動きを止めた。')
   };
@@ -211,11 +215,13 @@
     }
 
     /* 最中：前戯→挿入→展開ふたつ */
+    /* 女性の攻め×男性の受け：厚い段落（locker-thick.js が o.thick を付けて LK.BED を差し替える）でないときは、跨る書き方の一段落版を使う */
+    var fmOwn = fm && !o.thick;
     var ctx = { x: x, y: y, tone: o.tone, rel: o.rel, plotter: o.plotter, pair: o.pair, how: o.how, dose: o.dose, riba: riba, ff: ff, fm: fm };
     var mids = pickMid(S, ctx, 2);
     var naka = mids.filter(function (m) { return m.id === 'naka'; })[0];
     if (naka) { mids.splice(mids.indexOf(naka), 1); mids.push(naka); } /* 中出しは最後に */
-    var t2 = ST.fmt(pick(S, LK.BED.fore), vv(x, y)) + ST.fmt(pick(S, ff ? FF.insert : LK.BED.insert), vv(x, y)) + ST.fmt(pick(S, ff && o.tone === 'rough' ? FF.rough : fm && LK.BED[o.tone][0] !== '' ? FM[o.tone] : LK.BED[o.tone]), vv(x, y));
+    var t2 = ST.fmt(pick(S, LK.BED.fore), vv(x, y)) + ST.fmt(pick(S, ff ? FF.insert : fmOwn ? FM.insert : LK.BED.insert), vv(x, y)) + ST.fmt(pick(S, ff && o.tone === 'rough' ? FF.rough : fm && LK.BED[o.tone][0] !== '' ? FM[o.tone] : LK.BED[o.tone]), vv(x, y));
     var swapped = false, t3 = '';
     mids.forEach(function (m, i) {
       var ml = ff ? FF.mid[m.id] : fm ? FM.mid[m.id] : m.t.filter(function (l) { return !xHard || m.swap || noPush(l); });
@@ -239,7 +245,7 @@
     var endKey = naka ? 'naka' : null;
     var pool = ['morning', 'shower', 'faint'].concat(o.tone === 'sweet' || o.rel === 'crush' || o.rel === 'mutual' || o.rel === 'almost' || o.rel === 'lover' ? ['promise', 'promise'] : ['fight', 'fight']);
     if (!endKey) endKey = rng.pick(pool);
-    t3 += naka ? '' : ST.fmt(pick(S, ff ? FF.pos : LK.BED.pos), vv(x, y)) + o.moan(x, true) + o.moan(y) + ST.fmt(pick(S, ff ? FF.climax : LK.BED.climax), vv(x, y));
+    t3 += naka ? '' : ST.fmt(pick(S, ff ? FF.pos : fmOwn ? FM.pos : LK.BED.pos), vv(x, y)) + o.moan(x, true) + o.moan(y) + ST.fmt(pick(S, ff ? FF.climax : fm && !(o.thick && o.thick.climax) ? FM.end : LK.BED.climax), vv(x, y));
     function endOf(k) { return ff && k === 'shower' ? FF.shower : fm && k === 'shower' ? FM.shower : fm && k === 'naka' ? FM.endNaka : END[k]; }
     t3 += ST.fmt(pick(S, endOf(endKey)), vv(x, y));
     if (naka && rng() < 0.5) t3 += ST.fmt(pick(S, endOf(rng.pick(pool))), vv(x, y));

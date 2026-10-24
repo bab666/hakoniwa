@@ -84,6 +84,8 @@
       if (T.pining && T.pining(ctx, a, b)) return 'crushM';
       if (T.from(ctx, a, b, 'crush')) return 'crushA';
       if (T.from(ctx, b, a, 'crush')) return 'crushB';
+      /* 家族で「恋愛：あり」（ties.js の HK.tieFamLove）の二人が惹かれ合っていれば、家族ではなく想い人への手紙にする（擬似親子と同じ） */
+      if (T.get && HK.tieFamLove && HK.tieFamLove(T.get(ctx, a, b)) && (ctx.pair(a, b).couple || (ctx.R(a, b).att > 40 && ctx.R(b, a).att > 30))) return 'crushA';
       if (T.from(ctx, a, b, 'sibprot') && T.has(ctx, a, b, 'sibprot').type === 'sibprot') return 'protA';
       if (T.from(ctx, b, a, 'sibprot') && T.has(ctx, a, b, 'sibprot').type === 'sibprot') return 'protB';
       if (T.has(ctx, a, b, 'sibclose')) return 'sibclose';

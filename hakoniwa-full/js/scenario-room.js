@@ -345,7 +345,8 @@
   /* 執着（信仰）で「恋愛に発展：しない」かつ支配（dominate）でない組は、キス以上・夜（体の関係）にしない */
   function wsNoSex(ctx, a, b) {
     if (!ctx || !ctx.tiesAll || !HK.Ties || !a || !b || a === b) return false;
-    return HK.Ties.all(ctx, a, b).some(function (t) { return t.type === 'worship' && HK.tieOptNoLove && HK.tieOptNoLove(t) && t.cold !== 'dominate'; });
+    /* 家族（きょうだい・親子・親族など）で「恋愛：なし」の組も、キス以上・夜（体の関係）・三人の場面にしない */
+    return HK.Ties.all(ctx, a, b).some(function (t) { return (t.type === 'worship' && HK.tieOptNoLove && HK.tieOptNoLove(t) && t.cold !== 'dominate') || (HK.tieNoLove && HK.tieNoLove(t)); });
   }
   HK.roomWsNoSex = wsNoSex;
   function tieWall(ctx, a, b, lvl) {
@@ -353,7 +354,8 @@
     var t = HK.Ties ? HK.Ties.get(ctx, a, b) : null;
     if (!t) return 0;
     var D = HK.TIES[t.type];
-    if (D.family) return !HK.tieNoLove(t) ? (lvl >= 3 ? 16 : 4) : lvl >= 3 ? 999 : 0;
+    /* 家族：「恋愛：なし」はキス以上は不可。「恋愛：あり」・擬似親子は、ほかの組と同じ（壁を足さない） */
+    if (D.family) return !HK.tieNoLove(t) ? 0 : lvl >= 3 ? 999 : 0;
     return { enemy: 20, rival: 12, ex: 6, lover: -30, fwb: -35, almost: -15, crush: -8, best: -4, childhood: -4 }[t.type] || 0;
   }
   function posClash(a, b) { return !!(HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b)); }
