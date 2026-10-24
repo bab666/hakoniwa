@@ -202,7 +202,8 @@
       var pw = { pen: 34, finger: 26, tease: 20, ride: 28 }[b.kind] + (b.punish ? 8 : 0);
       if (st.live) {
         var r = K.stim(S, pw, { part: 'belly', defer: true });
-        tx += ' ' + F(P(S, EB(S, b.kind === 'pen' || b.kind === 'finger' ? 'feel' : 'feel.other', T.feel)));
+        /* 「奥を突かれる」感じ方は挿入のときだけ（指・舌・跨るは、熱が伝わる書き方） */
+        tx += ' ' + F(P(S, EB(S, b.kind === 'pen' ? 'feel' : 'feel.other', T.feel)));
         tx = EZ(S, tx);
         /* 描写の長さ「段落分けして厚く」（hole-thick.js）：感覚が戻ったあとの行為は段落に分けて厚く */
         var dtk = HK.HoleThick && HK.HoleThick.doer(S, b.kind, h, b, { topMe: st.topMe });

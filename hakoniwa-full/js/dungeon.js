@@ -436,6 +436,7 @@
     var h = S.h, rng = S.rng;
     /* 攻めの挑戦者は捕まえられない（本文で、もう振りほどいている） */
     if (isTop(h)) { S.defer = false; flushQ(S); return; }
+    h.holdN = (h.holdN || 0) + 1;
     for (var i = 0; i < n; i++) {
       if (S.over || S.h.fallen) return;
       var esc = 0.22 + st(h, 'fight') * 0.06 + h.tr.cp * 0.2 + h.tr.a * 0.08 + h.hp / 500 - h.corrupt / 260 - h.pleasure / 500;
@@ -469,7 +470,7 @@
       routine(S, { kind: 'ev', tag: '撃退', text: line(S, 'win', ev), why: '' });
       return;
     }
-    h.hp -= 12 + rng.int(12) + S.floor * 2;
+    h.hp -= 12 + rng.int(12) + S.floor * 2; h.lostN = (h.lostN || 0) + 1;
     S.cnt.traps++;
     var before = h.pleasure;
     stim(S, ev, 1);
@@ -483,7 +484,7 @@
   function capture(S, ev) {
     var h = S.h;
     h.hp = 0;
-    S.h.captor = ev; S.h.capRounds = 0; S.cnt.captured++;
+    S.h.captor = ev; S.h.capRounds = 0; S.h.capN = (S.h.capN || 0) + 1; S.cnt.captured++;
     var o = say(S, { kind: 'sys', tag: '捕縛', text: line(S, 'captured', ev), why: '体力が尽きた' });
     key(S, o, ev.name + 'に捕らえられた');
   }

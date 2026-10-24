@@ -321,7 +321,10 @@
 
     /* ---------- 助け出された：その場で終わり ---------- */
     if (rescue) {
+      var nR0 = h.climax, rC = !hardTop && !(live || stored < 20);
       var ER = BH.rescueEnd(S, input, { live: live, stored: stored, hardTop: hardTop, topMe: topMe }, rescue);
+      /* 結び（hole-end.js）：救出（達していない）／救出絶頂／攻めの人は攻め側の結び */
+      if (HK.HoleEnd) HK.HoleEnd.push(S, ER, hardTop ? 'top' : rC ? 'rescueC' : 'rescue', { b: rescue.rescued, doer: rescue.doers.indexOf(rescue.rescued) >= 0, live: live, topMe: topMe, nR: h.climax - nR0, stored: stored, sit: 'rescued' });
       return K.finish(S, input, ER, ['壁の向こうの住人が助けるか手を出すかは、はまっている人との関係・その人の性格（NP・CP・FC・衝動）・発情の見え方で決まる。', '助け出された瞬間に、溜まっていた感覚は一度に戻る。'], { meta: pl.n + '・' + H + '時間・救出', estats: [['経過', S.step + '時間'], ['助けた人', rescue.rescued.name], ['手を出した人', rescue.doers.length ? rescue.doers.map(function (d) { return d.name; }).join('・') : 'いない'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
     }
 
@@ -341,6 +344,7 @@
         visits ? '手を出そうとした相手は、全員追い払われた。' + h.name + 'の腰から下には、何も溜まらなかった。' : '壁の向こうには、結局誰も手を出してこなかった。',
         revenge ? '最後に締め上げられたのは、壁の向こう側の方だった。' : ''
       ].filter(Boolean) };
+      if (HK.HoleEnd) HK.HoleEnd.push(S, Et, 'top', { sit: revenge ? 'revenge' : 'held' });
       return K.finish(S, input, Et, ['自分で「攻め」を選んでいるので、壁の向こうで「される」側には回らなかった。', '抜け出せるかどうかは、攻撃性（' + Math.round(h.tr.aggr * 100) + '）とCP（' + Math.round(h.eg.CP) + '）しだい。'], { meta: pl.n + '・' + H + '時間', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['追い払った', visits + '回'], ['返り討ち', revenge ? 'あり' : 'なし']], gaugeS: '溜まった感覚' });
     }
     if (live) {
@@ -364,6 +368,8 @@
         '途中で遮断が壊れ、そこから先は、壁の向こうで起きることをすべて感じていた。' + (metaL.length ? metaL.join('、') + '。' : ''),
         K.fmt(S, LV.LINE[tierE]) + h.name + 'は' + h.climax + '回果てた。'
       ] };
+      /* 結び（hole-end.js）：受け入れた・堕ちた＝快楽堕ちの結び／耐えた・崩れた＝感覚が戻ったあとの結び */
+      if (HK.HoleEnd) HK.HoleEnd.push(S, EL, stL === 'fall' || stL === 'enjoy' ? 'fall' : 'ret', { live: true, topMe: topMe, broken: stL === 'broken' });
       var advL = ['最中に感覚が戻ると、溜まっていた分が一度に届き、そのあとは一つ一つを生で感じる。', '受け入れていく早さは、意志（CP・A・理性）で遅くなり、過激さ ' + env.wild + '・感じやすさ ' + h.stats.sense + 'で早くなる。'];
       return K.finish(S, input, EL, advL, { meta: pl.n + '・' + H + '時間・最中に戻る', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['感覚が戻ってから', liveN + '回'], [topMe ? '中で果てた回数' : '奥に注がれた回数', meta.cum + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
     }
@@ -425,6 +431,8 @@
       '戻ってきた感覚で、' + h.name + 'は' + h.climax + '回果てた。' + (leaks ? '遮断の揺らぎは' + leaks + '回。' : '') + (lostN ? '時間を数えられなくなったのは' + lostN + '回。' : ''),
       h.goal.id === 'nothing' ? h.name + 'は「何もなかった」と言い張った。' + (state === 'hold' ? '本当にそう見えた。' : '誰も信じなかった。') : h.goal.id === 'secret' ? '「ちょっと気になる」の答えは、' + (state === 'fall' ? '思っていた以上だった。' : '知らないほうがよかった。') : ''
     ].filter(Boolean) };
+    /* 結び（hole-end.js） */
+    if (HK.HoleEnd) HK.HoleEnd.push(S, E, state === 'fall' ? 'fall' : 'ret', { topMe: topMe, late: mode === 'late', broken: state === 'broken' });
     var adv = [];
     adv.push('待っている間に削れたのは、' + (h.tr.fc + h.tr.ac > h.tr.a + h.tr.cold ? '想像力（FC・AC）のせい。何も感じないのに、心だけが先に熱くなった。' : '時間そのもの。A・ドライさのおかげで、想像には呑まれにくかった。'));
     adv.push('戻ってきた感覚の量は、人通り ' + env.traffic + '・過激さ ' + env.wild + '・感じやすさ ' + h.stats.sense + 'で決まった。解放のしかたは「' + X.RELEASE_MODE[mode] + '」。');
