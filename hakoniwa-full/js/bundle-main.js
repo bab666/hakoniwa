@@ -6519,8 +6519,25 @@
     if (src.sexLock === 'loverOnly') { dst.sexLock = 'lover'; dst.noMob = !core; } else dst.noMob = !!dst.noMob;
     /* 攻めだが、モブには受け（攻め・リバのときだけ） */
     dst.posNpc = src.posNpc === 'bottom' && (src.pos === 'top' || src.pos === 'riba') ? 'bottom' : '';
+    /* 酒の強さ（1 弱い〜5 ザル。空ならおまかせ＝気質から） */
+    dst.alcohol = HK.ALC_OK(src.alcohol) ? +src.alcohol : 0;
     return dst;
   };
+  /* 酒の強さ：キャラの設定「お酒」。1 弱い・2 やや弱い・3 ふつう・4 強い・5 ザル。
+     HK.alcLevel(c)：設定があればそれ、なければ気質（CP・冷静さが高く、ACが低いほど強い）と名前から1〜5に決める（その人に固定）
+     HK.drunkRate(c)：同じだけ飲んだときの酔いの回り方の倍率（設定がない人は 1 のまま。箱庭ごとの元の計算を変えない） */
+  HK.ALC_OK = function (v) { return v != null && v !== '' && +v >= 1 && +v <= 5 && Math.floor(+v) === +v; };
+  HK.ALC_LABEL = { 1: '弱い', 2: 'やや弱い', 3: 'ふつう', 4: '強い', 5: 'ザル' };
+  HK.alcLevel = function (c) {
+    if (!c) return 3;
+    if (HK.ALC_OK(c.alcohol)) return +c.alcohol;
+    if (c._alc) return c._alc;
+    var t = c.tr || {}, s = (c.name || '') + 'sake', h = 7;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973;
+    var v = (t.cold || 0.5) * 0.3 + (t.cp || 0.5) * 0.2 + (1 - (t.ac == null ? 0.5 : t.ac)) * 0.2 + h / 9973 * 0.3;
+    return (c._alc = v > 0.72 ? 5 : v > 0.58 ? 4 : v > 0.45 ? 3 : v > 0.33 ? 2 : 1);
+  };
+  HK.drunkRate = function (c) { return c && HK.ALC_OK(c.alcohol) ? [0, 1.7, 1.3, 1, 0.7, 0.35][+c.alcohol] : 1; };
   /* 関係ごとの専用の場面の id（関係性イベントをオフにしたとき外す。tie-rel.js・room-tie.js・omega-ties.js・zombie-bonds.js など） */
   HK.TIE_EV_RE = /^(?:tie_|rt_|om_tie|zb_(?:boss|worship|benefactor|relative|spouse))/;
   /* 本命（関係 honmei）がいる人の、恋愛・夜の出来事の重み。本命となら上げ、ほかの人とは下げる。
@@ -6876,7 +6893,8 @@
     C.forEach(function (c) {
       (scen.stats || []).forEach(function (s) {
         var v = c.statsRaw[s.id];
-        c.stats[s.id] = v == null || v === 'random' ? 1 + rng.int(5) : +v;
+        /* 合コンの「酒の強さ」は、おまかせならキャラの設定「お酒」に合わせる */
+        c.stats[s.id] = (v == null || v === 'random') && s.id === 'drink' && c.alcohol ? c.alcohol : v == null || v === 'random' ? 1 + rng.int(5) : +v;
       });
     });
     /* 行動・目標（おまかせは気質から） */
@@ -10792,9 +10810,12 @@
         np: ['{a}は「つまみがないのが惜しいね」と笑って、{n}杯空けた。', '{a}は皆の分まで引き受けるように、{n}杯を飲み干した。'],
         fc: ['「一気！一気！」{a}は自分で囃し立てて{n}杯空けた。', '{a}は{n}杯目で歌い始めた。', '{a}は「これ、いい酒だ」と目を輝かせて{n}杯呷った。'],
         cold: ['{a}は水でも飲むように{n}杯空けた。顔色ひとつ変わらない。', '{a}は「分担しよう。俺はあと{n}杯」と事務的に言って、その通りにした。'],
-        ac: ['{a}は勧められるまま、断れずに{n}杯飲んだ。', '{a}は「私、強くないんだけど……」と言いながら{n}杯空けた。']
+        ac: ['{a}は勧められるまま、断れずに{n}杯飲んだ。', '{a}は「私、強くないんだけど……」と言いながら{n}杯空けた。'],
+        /* キャラの設定「お酒」が弱い（1・2）／強い（4・5）人 */
+        weak: ['{a}は「お酒、弱いんだけど」と前置きして、{n}杯を少しずつ流し込んだ。もう頬が赤い。', '{a}は鼻をつまむようにして{n}杯飲んだ。一杯目の途中で、もう目が潤んでいた。', '{a}は{n}杯空けると、壁に手をついて深く息を吐いた。「……回るの、早すぎ」'],
+        strong: ['{a}は「任せて。酒なら強い」と言って、{n}杯を涼しい顔で空けた。', '{a}は水でも飲むように{n}杯飲み干し、「次」と杯を差し出した。', '{a}は{n}杯空けても顔色ひとつ変えず、皆の残りの杯数を数え直した。']
       },
-      effect: function (ctx, c, n) { c.flags.drunk = (c.flags.drunk || 0) + n * 12 * (1.4 - ctx.stat(c, 'hp') * 0.12); if (c.flags.drunk > 70 + ctx.stat(c, 'hp') * 8 && ctx.rng() < 0.4) { c.flags.down = 2; c.flags.justDown = true; c.flags.drunk *= 0.5; } c.tr.honesty = HK.clamp(c.tr.honesty + 0.05 * n); c.tr.impulse = HK.clamp(c.tr.impulse + 0.04 * n); ctx.stress(c, -4 * n); },
+      effect: function (ctx, c, n) { c.flags.drunk = (c.flags.drunk || 0) + n * 12 * (1.4 - ctx.stat(c, 'hp') * 0.12) * HK.drunkRate(c); if (c.flags.drunk > 70 + ctx.stat(c, 'hp') * 8 && ctx.rng() < 0.4) { c.flags.down = 2; c.flags.justDown = true; c.flags.drunk *= 0.5; } c.tr.honesty = HK.clamp(c.tr.honesty + 0.05 * n); c.tr.impulse = HK.clamp(c.tr.impulse + 0.04 * n); ctx.stress(c, -4 * n); },
       state: function (c) { if (c.flags.justDown) { c.flags.justDown = false; return '{a}はそのまま床に突っ伏して、寝息を立て始めた。'; } var x = c.flags.drunk || 0; return x >= 60 ? '{a}の呂律が回らなくなってきた。' : x >= 30 ? '{a}の目元が赤い。' : ''; }
     },
     spicy: {
@@ -11172,7 +11193,8 @@
     when: function (ctx, a) { return !a.flags.down && ctx.rules.some(function (r) { return K[r.k].type === 'consume' && globLeft(ctx, r) > 0; }); },
     w: function (ctx, a) {
       var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && globLeft(ctx, x) > 0; })[0];
-      return 0.8 + ITEM[r.k].fit(a) * 1.5 + a.stress / 120 + ctx.stepIndex / Math.max(4, ctx.env.hours) * 1.5;
+      /* 酒は、お酒に強い人ほど進んで引き受ける（キャラの設定「お酒」） */
+      return 0.8 + ITEM[r.k].fit(a) * 1.5 + a.stress / 120 + ctx.stepIndex / Math.max(4, ctx.env.hours) * 1.5 + (r.k === 'sake' && a.alcohol ? (a.alcohol - 3) * 0.3 : 0);
     },
     run: function (ctx, a) {
       var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && globLeft(ctx, x) > 0; })[0];
@@ -11193,7 +11215,8 @@
       dk[r.k] = (dk[r.k] || 0) + n;
       I.effect(ctx, drinker, n);
       var tk = topKey(drinker);
-      var lines = I.lines[tk] || I.lines.np;
+      var al = r.k === 'sake' && drinker.alcohol ? (drinker.alcohol <= 2 ? I.lines.weak : drinker.alcohol >= 4 ? I.lines.strong : null) : null;
+      var lines = al || I.lines[tk] || I.lines.np;
       var text;
       if (forced === 'hate') {
         var resist = drinker.tr.cp * 0.4 + drinker.tr.aggr * 0.3 - drinker.tr.ac * 0.2 > 0.35 && ctx.rng() < 0.5;
@@ -20145,7 +20168,7 @@
         text += a.tr.fc > 0.6 ? a.name + 'はノリノリでやりきった。' : a.tr.ac > 0.6 ? a.name + 'は真っ赤になりながら、小さな声でやりきった。' : a.tr.cp > 0.6 ? a.name + 'は「くだらない」と言いながら、律儀にやった。' : a.name + 'は照れ笑いでごまかしながらやった。';
         why += '。' + a.name + 'の反応は気質（FC・AC・CP）で変わる';
       } else if (refuse) {
-        fx = function () { a.flags.drunk = HK.clamp((a.flags.drunk || 0) + 15, 0, 100); ctx.mod(b, a, { ten: 4 }); ctx.mod(king, a, { ten: 3 }); };
+        fx = function () { a.flags.drunk = HK.clamp((a.flags.drunk || 0) + 15 * (6 - ctx.stat(a, 'drink')) / 3, 0, 100); ctx.mod(b, a, { ten: 4 }); ctx.mod(king, a, { ten: 3 }); };
         text += a.name + 'は「無理」と首を振って、罰の一気を選んだ。' + ctx.pick(['場から「えー！」と声が上がった。', b.name + 'は少しだけほっとした顔をした。', b.name + 'は少しだけ残念そうだった。']);
         why += '。' + a.name + (a.tr.cp > 0.65 ? 'のCP（理不尽な命令は拒む）' : !HK.canLove(a, b) ? 'の恋愛対象外' : 'のAC（照れ）と惹かれの不足');
         cat = 'conflict';
@@ -20219,9 +20242,8 @@
   /* 酒の強さ（1〜5） */
   D.strong = function (ctx, c) {
     if (ctx.scen.id === 'goukon' && ctx.stat) return ctx.stat(c, 'drink');
-    if (c.flags.dkStr) return c.flags.dkStr;
-    var v = c.tr.cold * 0.3 + c.tr.cp * 0.2 + (1 - c.tr.ac) * 0.2 + hash((c.name || '') + 'sake') * 0.3;
-    return (c.flags.dkStr = v > 0.72 ? 5 : v > 0.58 ? 4 : v > 0.45 ? 3 : v > 0.33 ? 2 : 1);
+    /* キャラの設定「お酒」があればそれ、なければ気質から（HK.alcLevel） */
+    return HK.alcLevel(c);
   };
   D.label = function (ctx, c) { return D.strong(ctx, c) >= 5 ? 'ザル（顔に出ない）' : TYPES[D.type(c)].label; };
 
@@ -20277,7 +20299,7 @@
 
   function fill(ctx, t, a, b) { return ctx.t(t, a, b); }
   function react(ctx, a, b) { return fill(ctx, ctx.pick(RE[top(b)] || RE.NP), a, b); }
-  function why(ctx, a) { var k = D.label(ctx, a); return a.name + 'の酔い方「' + k + '」（' + (D.strong(ctx, a) >= 5 ? '酒の強さ ' + D.strong(ctx, a) : 'エゴグラムから') + '）'; }
+  function why(ctx, a) { var k = D.label(ctx, a); return a.name + 'の酔い方「' + k + '」（' + (D.strong(ctx, a) >= 5 || a.alcohol ? '酒の強さ ' + D.strong(ctx, a) + (a.alcohol ? '（設定）' : '') : 'エゴグラムから') + '）'; }
   function behave(ctx, a, b) {
     var k = D.strong(ctx, a) >= 5 ? 'zaru' : D.type(a);
     var att = { amae: { att: 4, aff: 3 }, warai: { aff: 3 }, naki: { aff: 4, trust: 3 }, sekkyo: { trust: 3, ten: 2 }, honne: { att: 6, trust: 3 }, nemu: { aff: 3 }, kiss: { att: 7 }, sunao: { att: 6, aff: 5 }, nugi: { att: 4 }, zaru: { trust: 5, aff: 3 } }[k];
@@ -20320,17 +20342,21 @@
     });
   }
 
+  /* 酒に弱い人（1）が、少しで酔いが回るときの前置き */
+  var WEAK = L('{a}は、グラス半分で頬が真っ赤になった。|{a}は一杯目の途中で、もう目がとろんとしていた。|{a}は「弱いの、知ってるでしょ」と言いながら、二口目で耳まで赤くなった。|{a}は、乾杯の一口でもう首まで赤かった。');
   /* ---------- オメガバース ---------- */
   var OMS = HK.SCENARIOS && HK.SCENARIOS.omega;
   if (OMS) {
     OMS.events.push({
       id: 'om_drink', cat: 'romance', scope: 'pair',
       when: function (ctx, a, b) { var pf = ctx.pair(a, b); var mk = a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; return ctx.om && ctx.om.met && (ctx.om.met[mk] || ctx.R(a, b).aff > 5 || pf.couple) && (pf.dkAt == null || ctx.stepIndex - pf.dkAt >= 4); },
-      w: function (ctx, a, b) { return 0.35 + a.tr.fc * 0.3 + ctx.R(a, b).aff / 150 + (ctx.pair(a, b).couple ? 0.2 : 0); },
+      w: function (ctx, a, b) { return (0.35 + a.tr.fc * 0.3 + ctx.R(a, b).aff / 150 + (ctx.pair(a, b).couple ? 0.2 : 0)) * [1, 1.3, 1.15, 1, 0.85, 0.7][D.strong(ctx, a)]; },
       run: function (ctx, a, b) {
         var pf = ctx.pair(a, b); pf.dkAt = ctx.stepIndex;
-        var k = behave(ctx, a, b), sx = a.om && a.om.sex;
-        var t = fill(ctx, ctx.pick(OCC), a, b) + fill(ctx, ctx.pick(SHOW[k]), a, b) + fill(ctx, ctx.pick(TO[k]), a, b);
+        var k = behave(ctx, a, b), sx = a.om && a.om.sex, st = D.strong(ctx, a);
+        /* 酒に強い人（4）は、半分くらいは顔に出ない */
+        if (st === 4 && k !== 'zaru' && ctx.rng() < 0.5) k = 'zaru';
+        var t = fill(ctx, ctx.pick(OCC), a, b) + (st <= 1 && k !== 'zaru' ? fill(ctx, ctx.pick(WEAK), a, b) : '') + fill(ctx, ctx.pick(SHOW[k]), a, b) + fill(ctx, ctx.pick(TO[k]), a, b);
         if (sx && OM_EX[sx] && (sx !== 'b' || k === 'zaru') && ctx.rng() < 0.5) {
           t += fill(ctx, ctx.pick(OM_EX[sx]), a, b);
           if (sx === 'o' && b.om && b.om.sex === 'a') { t += fill(ctx, ctx.pick(OM_AB), a, b); ctx.mod2(a, b, { trust: 4 }, { att: 5 }); }
@@ -43764,6 +43790,8 @@
       if (JS.GOALX) JS.GOALX.tick(S, P.filter(alive), h);
       if (JS.GODEV) JS.GODEV.tick(S, P.filter(alive), h);
       if (JS.LOOP) JS.LOOP.tick(S, P.filter(alive), h);
+      /* 村の歓迎の宴（一度だけ。酒の強さで過ごし方が変わる。jashin-feast.js） */
+      if (JS.FEAST) JS.FEAST.tick(S, P.filter(alive), h);
       /* 住人ごとの一時間 */
       live = P.filter(alive);
       live.forEach(function (p) {
@@ -44962,6 +44990,79 @@
     if (!S.alienEnd || S.alienEnd.none) return null;
     var a = S.P[S.alienEnd.by].name;
     return ST.fmt(ST.pick(S, L('一年後、{a}の名前で、消印のない絵葉書が届いた。写っていたのは、輪のある青い星だった。|それから毎年、{a}がいなくなった夜になると、決まって同じ流れ星が見える。|{a}のSNSが一度だけ更新された。「元気。こっちはごはんがおいしい」位置情報は、オリオン座の方角を指していた。')), { a: a });
+  };
+})();
+;/* ==== js/jashin-feast.js ==== */
+/* 箱庭シミュレーター: 邪神村RTA ― 村の歓迎の宴（全年齢版も同じ）
+   夕方、村長が一行を集会所の宴に招く（一度だけ）。酒の強さ（キャラの設定「お酒」。なければ気質から。HK.alcLevel）で、宴での過ごし方が変わる。
+   ・弱い（1・2）：すぐに酔いが回る。怖さは少し和らぐが、口を滑らせて村人に警戒されたり、酔いつぶれて仲間に介抱されたりする
+   ・ふつう（3）：ほどほどに付き合う。ときどき村人の様子の違和感に気づく
+   ・強い（4・5）：村人と盃を重ね、先に酔った村人の口から、村の秘密（手がかり）を聞き出すことがある
+   ・慎重な人は、盃に口をつけるふりをしてかわす。未成年の職業（全年齢版の高校生・令嬢・幼子）は酒を飲まない（甘酒・ジュース）
+   {a}=その人 {b}=介抱する仲間 */
+(function () {
+  'use strict';
+  var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, clamp = HK.clamp;
+  if (!ST || !JS) return;
+  function L(s) { return s.split('|'); }
+  function alc(p) { return HK.alcLevel ? HK.alcLevel(p) : 3; }
+  function F(S, pool, v) { return ST.fmt(ST.pick(S, pool), v); }
+  var T = {
+    intro: L('日が傾くころ、村長が民宿に顔を出した。「遠いところをようこそ。ささやかですが、集会所に席を用意しました」――断れる雰囲気ではなかった。|夕方、集会所に提灯が灯り、一行は「よそ者を歓迎する宴」に招かれた。膳には山菜と川魚、そして大きな酒樽が並んでいた。|村の年寄りたちが、一行を集会所へ手招きした。「祭りの前の、顔合わせの宴です。今夜は飲んでいってください」'),
+    minor: L('{a}の前には、甘酒の湯呑みが置かれた。「若い人には、こっちね」――村の女たちは、やけに優しく笑った。|{a}はジュースの瓶を渡され、子どもたちの座る端の席に案内された。'),
+    dodge: L('{a}は盃に口をつけるふりをして、こっそり膳の下の小鉢に酒を捨てた。|{a}は「明日も早いので」と一杯だけ受け、あとは手のひらで盃を覆い続けた。|{a}は盃を受けるたびに唇を湿らせるだけにして、村人たちの顔を一人ずつ見ていた。'),
+    weak: L('{a}は一杯目で耳まで真っ赤になった。「すみません、お酒、弱くて……」|{a}は二口で目が据わり、隣の村人の肩に寄りかかって笑い始めた。|{a}は湯呑み半分の酒で、もう呂律が怪しくなっていた。'),
+    weakSlip: L('酔った{a}は、うっかり「この村、なんか変ですよね」と口にした。座が一瞬、しんと静まった。|{a}は上機嫌で、昼間見た祠の話を村人に聞かせてしまった。村長の目が、すっと細くなった。'),
+    weakDown: L('{a}はそのまま座布団に突っ伏して、寝息を立て始めた。{b}が肩を貸して、民宿まで連れて帰った。|{a}は宴の途中で青い顔になり、{b}に背中をさすられながら外の空気を吸いに出た。'),
+    mid: L('{a}は勧められた分だけほどほどに付き合い、愛想よく相槌を打った。|{a}は二、三杯で切り上げ、あとは料理に箸を伸ばした。|{a}はほろ酔いのまま、村人たちの世間話に耳を傾けた。'),
+    midNote: L('{a}は、酒を注いで回る村人たちの手首に、そろって同じ形の痣があることに気づいた。|{a}は、村長だけが一滴も飲まず、一行の盃の減り方を数えるように見ているのに気づいた。|{a}は、上座の空いた席の前にだけ、手つかずの膳が供えられているのに気づいた。'),
+    strong: L('{a}は、勧められるそばから盃を空けた。顔色ひとつ変わらない{a}に、村の男たちが面白がって次々と酒を注いだ。|{a}は「いい酒ですね」と言いながら、村の酒豪と差しで飲み比べを始めた。|{a}は涼しい顔で何杯も盃を重ね、先に酔いの回った村人の隣へ、そっと席を移した。'),
+    strongLeak: L('すっかり酔った村の男が、{a}に肩を組んで声をひそめた。「よそ者のくせに飲めるな。……気に入ったから教えてやる」――|酔いつぶれかけた老人が、{a}の盃に酒を注ぎながら、ぽつりとこぼした。「昔はな、もっと大勢で祀ったもんだ」――|飲み比べに負けた村の若者が、赤い顔で{a}に打ち明けた。「本当は、祭りなんかやめたいんだ」――'),
+    strongNone: L('{a}が何杯付き合っても、村人たちは肝心な話になると口をつぐんだ。|{a}は最後まで素面のまま、酔ったふりをする村人たちの目が笑っていないのを見ていた。')
+  };
+  var F_ = JS.FEAST = {
+    tick: function (S, live, h) {
+      if (S.feastDone || !live.length || h >= S.deadline - 4) return;
+      var hh = (16 + h) % 24;
+      if (hh < 18 || hh > 22) return;
+      if (h > 30) { S.feastDone = true; return; }
+      if (S.rng() >= 0.4) return;
+      S.feastDone = true;
+      var rng = S.rng, parts = [], whys = [], actors = live.slice();
+      var strongest = live.filter(function (p) { return !p.minor; }).sort(function (x, y) { return alc(y) - alc(x); })[0];
+      live.forEach(function (p) {
+        var a = alc(p), v = { a: p.name };
+        if (p.minor) { parts.push(F(S, T.minor, v)); return; }
+        if (p.tr.caution > 0.7 && rng() < 0.6) { parts.push(F(S, T.dodge, v)); whys.push(p.name + '：飲むふり（慎重さ）'); return; }
+        if (a <= 2) {
+          parts.push(F(S, T.weak, v));
+          p.m.fear = clamp((p.m.fear || 0) - 8, 0, 100);
+          var r = rng();
+          if (r < 0.35) { parts.push(F(S, T.weakSlip, v)); S.hostile = clamp((S.hostile || 0) + 6, 0, 100); whys.push(p.name + '：酒に弱く、口を滑らせた（村人の敵意 +）'); }
+          else if (r < 0.75 && strongest && strongest !== p && alc(strongest) >= 3) {
+            parts.push(F(S, T.weakDown, { a: p.name, b: strongest.name }));
+            if (JS.DRAMA && JS.DRAMA.setRel) JS.DRAMA.setRel(S, p, strongest, 0.06);
+            whys.push(p.name + '：酔いつぶれ、' + strongest.name + 'に介抱された');
+          } else whys.push(p.name + '：酒に弱い（怖さが少し和らいだ）');
+          return;
+        }
+        if (a === 3) {
+          parts.push(F(S, T.mid, v));
+          p.m.fear = clamp((p.m.fear || 0) - 4, 0, 100);
+          if (rng() < 0.25 + p.tr.caution * 0.2) { parts.push(F(S, T.midNote, v)); p.wary = true; whys.push(p.name + '：ほどほどに付き合い、違和感に気づいた'); }
+          return;
+        }
+        parts.push(F(S, T.strong, v));
+        var left = S.G.clues.map(function (c, k) { return k; }).filter(function (k) { return S.found.indexOf(k) < 0; });
+        if (left.length && rng() < (a >= 5 ? 0.6 : 0.45)) {
+          var talk = left.filter(function (k) { return S.G.clues[k].type === 'talk'; }), k = (talk.length ? talk : left)[0];
+          S.found.push(k); p.cnt.clue++;
+          parts.push(F(S, T.strongLeak, v) + S.G.clues[k].t + '。');
+          whys.push(p.name + '：酒に強く、酔った村人から聞き出した（手がかり ' + S.found.length + '/' + S.G.clues.length + '）');
+        } else { parts.push(F(S, T.strongNone, v)); whys.push(p.name + '：酒に強いが、村人は口を割らなかった'); }
+      });
+      ST.say(S, { actors: actors, tag: '歓迎の宴', text: ST.pick(S, T.intro) + parts.join(''), why: '村の歓迎の宴。酒の強さ（キャラの設定「お酒」、なければ気質から）で過ごし方が変わる。' + (whys.join('／') || ''), mag: 16 });
+    }
   };
 })();
 ;/* ==== js/jashin-mage.js ==== */
@@ -54279,15 +54380,21 @@
   function notice(p) { return 0.15 + p.tr.caution * 0.45 + p.tr.a * 0.2 + (p.job === 'sleuth' || p.job === 'doctor' ? 0.2 : 0) + (p.wary ? 0.25 : 0); }
   /* 口にした人が効き始めの文より多いときの、名前の入った短い一文 */
   var ALSO = ['{a}も、同じものを口にしていた。頬が、いつの間にか赤い。', '{a}の息も、気づけば浅く、熱っぽくなっていた。', '{a}は落ち着かなげに、何度も襟元を直した。', '{a}の目も、とろりと潤み始めていた。'];
+  /* 御神酒は酒の強さ（キャラの設定「お酒」・なければ気質から。HK.alcLevel）で変わる：
+     弱い人（1・2）は「下戸なので」と断りやすいが、飲めば一杯で回る（効きが重い）。強い人（4・5）は勧められるまま飲み干しやすい */
+  var SAKE_WEAK = ['{a}は酒に弱い。一杯で首まで赤くなり、酔いと熱の区別がつかなくなった。', '酒に弱い{a}には、一杯でも多すぎた。視界が揺れ、体の芯だけがはっきりと熱かった。'];
+  var SAKE_STRONG = ['{a}は酒には強い。顔色こそ変わらなかったが、腹の底の熱だけは、酒のせいではなかった。', '{a}は二杯、三杯と涼しい顔で盃を空けた。――酔わないぶん、体の疼きだけがはっきりと分かった。'];
+  function alcOf(p) { return HK.alcLevel ? HK.alcLevel(p) : 3; }
   function dose(S, live, key) {
     var rng = S.rng, D = DOSE[key], take = [], left = [];
     live.forEach(function (p) {
-      if (rng() < notice(p)) { left.push(p); p.wary = true; p.m.fear = Math.min(100, (p.m.fear || 0) + 4); }
-      else { take.push(p); p.aphro = true; p.dosed = (p.dosed || 0) + 1; if (p.dosed >= 2) p.wary = true; }
+      var nt = notice(p) + (key === 'sake' ? [0, 0.15, 0.08, 0, -0.08, -0.12][alcOf(p)] : 0);
+      if (rng() < nt) { left.push(p); p.wary = true; p.m.fear = Math.min(100, (p.m.fear || 0) + 4); }
+      else { take.push(p); p.aphro = true; p.dosed = (p.dosed || 0) + 1 + (key === 'sake' && alcOf(p) <= 1 ? 1 : 0); if (p.dosed >= 2) p.wary = true; }
     });
     /* 一つの記録の中で、口にした人ごとに別の文を割り当てる（同じ文が二人分並ばないように） */
     var tk = rng.shuffle ? rng.shuffle(D.take.slice()) : D.take.slice(), lv0 = rng.shuffle ? rng.shuffle(D.leave.slice()) : D.leave.slice();
-    var t = ST.pick(S, D.intro) + take.map(function (p, i) { return ST.fmt(i < tk.length ? tk[i] : ALSO[i % ALSO.length], { a: p.name }) + (rng() < 0.5 ? pz(S, p, 'drug') : ''); }).join('') + left.map(function (p, i) { return ST.fmt(lv0[i % lv0.length], { a: p.name }); }).join('');
+    var t = ST.pick(S, D.intro) + take.map(function (p, i) { var al = key === 'sake' ? alcOf(p) : 3; return ST.fmt(i < tk.length ? tk[i] : ALSO[i % ALSO.length], { a: p.name }) + (al <= 2 && rng() < 0.7 ? ST.fmt(SAKE_WEAK[i % 2], { a: p.name }) : al >= 4 && rng() < 0.6 ? ST.fmt(SAKE_STRONG[i % 2], { a: p.name }) : '') + (rng() < 0.5 ? pz(S, p, 'drug') : ''); }).join('') + left.map(function (p, i) { return ST.fmt(lv0[i % lv0.length], { a: p.name }); }).join('');
     ST.say(S, { actors: live, tag: D.label, text: t, why: '媚薬が盛られていた（' + D.label + '）。口にした：' + (take.map(function (p) { return p.name; }).join('・') || 'なし') + '／気づいて席を外した：' + (left.map(function (p) { return p.name; }).join('・') || 'なし') + '。慎重さ・A・職業で気づく', mag: 16 });
     (S.r18Doses = S.r18Doses || []).push(key);
   }
@@ -56653,6 +56760,10 @@
         { h: '性別・恋愛対象', items: [
           '「おまかせ」なら制限なし。決めると、対象外の相手とは恋愛にほぼ発展しません。'
         ] },
+        { h: 'お酒', items: [
+          '酒の強さを「弱い・やや弱い・ふつう・強い・ザル」から選べます。「おまかせ」なら気質から決まります。',
+          '合コンの「酒の強さ」（おまかせのとき）・出られない部屋の酒の条件・オメガバースの飲みの場面・邪神村の歓迎の宴などで、酔いの回り方や振る舞いが変わります。弱い人はすぐ酔って口を滑らせたり介抱されたり、強い人は村人と飲み交わして話を聞き出したりします。'
+        ] },
         { h: '受け攻め', items: [
           '**「攻め」を選んだ人は、どの箱庭のどの場面でも、受ける側にはなりません。** 襲われる・責められる側に回る展開は攻めの人には起きず、場面によっては主導権を握る形に変わります。',
           '女性は攻めを選ばない限り受けとして扱います（女性どうしでは、動く側に回ることもあります）。',
@@ -56853,7 +56964,7 @@
     });
   }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
+  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -56892,6 +57003,8 @@
     c.daku = !!c.daku;
     c.noR18 = !!c.noR18;
     c.posNpc = c.posNpc === 'bottom' ? 'bottom' : '';
+    /* お酒の強さ（1 弱い〜5 ザル。空ならおまかせ） */
+    c.alcohol = HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '';
     c.you = str(c.you, 8).trim();
     c.marks = str(c.marks, 30).trim();
     c.loveLock = typeof c.loveLock === 'string' ? c.loveLock : '';
@@ -57158,6 +57271,7 @@
         if (c.daku) o.daku = true;
         if (c.noR18) o.noR18 = true;
         if (c.posNpc === 'bottom') o.posNpc = 'bottom';
+        if (c.alcohol) o.alcohol = +c.alcohol;
         if (c.you) o.you = c.you;
         if (c.marks) o.marks = c.marks;
         if (c.loveLock && ref(c.loveLock) != null) o.loveLock = ref(c.loveLock);
@@ -57223,6 +57337,7 @@
       if (o.daku) c.daku = true;
       if (o.noR18) c.noR18 = true;
       if (o.posNpc === 'bottom') c.posNpc = 'bottom';
+      if (HK.ALC_OK(o.alcohol)) c.alcohol = String(o.alcohol);
       if (o.you != null) c.you = String(o.you).trim().slice(0, 8);
       if (o.marks != null) c.marks = String(o.marks).trim().slice(0, 30);
       c._lk = o.loveLock; c._sl = o.sexLock; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
@@ -57491,7 +57606,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '', sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock ? ids.indexOf(c.sexLock) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '', sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock ? ids.indexOf(c.sexLock) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
         });
       })(),
       perChar: castFor(S.scenId).map(function (c) {
@@ -57967,6 +58082,7 @@
     else if (!HK.SAFE_ON && c.sexLock === 'lover') bits.push('体の関係：恋人とモブだけ');
     else if (!HK.SAFE_ON && c.sexLock === 'loverOnly') bits.push('体の関係：恋人だけ');
     if (!HK.SAFE_ON && c.noR18) bits.push('R18に参加しない');
+    if (c.alcohol && HK.ALC_LABEL) bits.push('お酒：' + HK.ALC_LABEL[c.alcohol]);
     if (!HK.SAFE_ON && c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba')) bits.push('モブには受け');
     var ngs = (c.loveNG || []).map(byId).filter(Boolean);
     if (ngs.length) bits.push('恋愛にしない：' + ngs.map(function (o) { return o.name; }).join('・'));
@@ -58104,6 +58220,7 @@
       '<div class="gearsec"><h3>プロフィール' + (HK.Tips ? HK.Tips.btn('gear-profile') : '') + '</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
         '<label>誕生月 ' + selOf('bmonth', [['', '決めない']].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (m) { return [String(m), m + '月']; })), c.bmonth || '') + '</label>' +
         '<label>年齢 <input type="number" data-gf="age" min="1" max="150" value="' + esc(c.age || '') + '" placeholder="決めない" style="width:5em"></label>' +
+        '<label title="酒の強さ。合コン・出られない部屋の酒・オメガバースの飲みの場面・邪神村の歓迎の宴や御神酒などで、酔いやすさや振る舞いが変わります。おまかせは気質から決まります">お酒 ' + selOf('alcohol', [['', 'おまかせ'], ['1', '弱い'], ['2', 'やや弱い'], ['3', 'ふつう'], ['4', '強い'], ['5', 'ザル']], c.alcohol || '') + '</label>' +
         '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
         (!HK.SAFE_ON && c.gender === 'f' && (c.pos === 'top' || c.pos === 'riba') ? '<label title="攻めに回る場面を、男性の体を前提にした描写で書きます。オメガバースでは使いません"><input type="checkbox" data-gf="futa"' + (c.futa ? ' checked' : '') + '> ふたなり（攻めのとき）</label>' : '') +
         (!HK.SAFE_ON && (c.pos === 'top' || c.pos === 'riba') ? '<label title="住人どうしでは受け攻めの指定どおりで、モブ・魔物・村人・略奪者・星の生命体などの相手には受ける側になります">モブには <select data-gf="posNpc" aria-label="モブ・魔物が相手のとき"><option value=""' + (c.posNpc !== 'bottom' ? ' selected' : '') + '>受け攻めの指定どおり</option><option value="bottom"' + (c.posNpc === 'bottom' ? ' selected' : '') + '>受け</option></select></label>' : '') +
@@ -58194,6 +58311,7 @@
       case 'futa': if (isInput) return; c.futa = t.checked; changed(false); break;
       case 'daku': if (isInput) return; c.daku = t.checked; changed(false); break;
       case 'noR18': if (isInput) return; c.noR18 = t.checked; changed(true); break;
+      case 'alcohol': if (isInput) return; c.alcohol = HK.ALC_OK(t.value) ? t.value : ''; changed(true); break;
       case 'posNpc': if (isInput) return; c.posNpc = t.value === 'bottom' ? 'bottom' : ''; changed(false); break;
       case 'posLike': if (isInput) return; c.posLike = HK.Pos && HK.Pos.likeValid(t.value) ? t.value : ''; changed(false); break;
       case 'colorauto': if (isInput) return; if (t.checked) c.color = ''; else c.color = (ov.querySelector('[data-gf="color"]') || {}).value || '#3d6f93'; changed(true); UI.applyColors(s.chars); break;

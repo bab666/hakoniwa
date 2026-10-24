@@ -251,6 +251,7 @@ js/jashin-duo-data.js
 js/jashin-duo.js
 js/jashin-cave.js
 js/jashin-loop.js
+js/jashin-feast.js
 js/jashin-mage.js
 js/jashin-goals-text.js
 js/jashin-goals.js

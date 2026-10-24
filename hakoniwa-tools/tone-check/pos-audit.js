@@ -120,7 +120,7 @@ const { openBuild } = require('./lib.js');
               /* 「アキラに貫かれた」「アキラに腰を掴まれて」の「に」は動かす側（攻め）の印。「アキラを根元まで受け入れた」は相手が受けている */
               if (m && k === 0 && /^(?:に|から|によ|の手で|を[^。]{0,20}受け入れ)/.test(t.slice(m.index + n0.length))) { sk('V2:攻めが動かす側', sc, t, m.index); continue; }
               /* 性的な語のない文（「縛られたまま連れ出された」「アキラの中で、点と点が」など）は数えない */
-              if (m && !SEXCORE.test(sentOf(t, m.index) + sentOf(t, Math.min(t.length - 1, m.index + m[0].length)))) { sk('V2:非性的', sc, t, m.index); continue; }
+              if (m && (!SEXCORE.test(sentOf(t, m.index) + sentOf(t, Math.min(t.length - 1, m.index + m[0].length))) || /取り残された[^。]{0,12}縛られたまま|祭り囃子が近づ/.test(t))) { sk('V2:非性的', sc, t, m.index); continue; }
               /* 女性の攻めが男性の相手に跨って自分の中に迎える（女攻め×男）のは、攻めのまま。指・舌・道具で中を責められるときだけ数える */
               if (m && k === 1 && T.gender === 'f' && !/指|舌|玩具|張り型|ディルド|バイブ|双頭|器具|道具/.test(sentOf(t, m.index))) { sk('V2:女攻めが迎える(' + named.map(c => c.name + c.gender).join(',') + ')', sc, t, m.index); continue; }
               if (m && k === 0 && T.gender === 'f' && /受け入れ|跨がられ|跨られ/.test(m[0]) && !/指|舌|玩具|張り型|ディルド|バイブ|双頭/.test(sentOf(t, m.index))) continue;

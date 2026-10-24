@@ -156,7 +156,7 @@
         text += a.tr.fc > 0.6 ? a.name + 'はノリノリでやりきった。' : a.tr.ac > 0.6 ? a.name + 'は真っ赤になりながら、小さな声でやりきった。' : a.tr.cp > 0.6 ? a.name + 'は「くだらない」と言いながら、律儀にやった。' : a.name + 'は照れ笑いでごまかしながらやった。';
         why += '。' + a.name + 'の反応は気質（FC・AC・CP）で変わる';
       } else if (refuse) {
-        fx = function () { a.flags.drunk = HK.clamp((a.flags.drunk || 0) + 15, 0, 100); ctx.mod(b, a, { ten: 4 }); ctx.mod(king, a, { ten: 3 }); };
+        fx = function () { a.flags.drunk = HK.clamp((a.flags.drunk || 0) + 15 * (6 - ctx.stat(a, 'drink')) / 3, 0, 100); ctx.mod(b, a, { ten: 4 }); ctx.mod(king, a, { ten: 3 }); };
         text += a.name + 'は「無理」と首を振って、罰の一気を選んだ。' + ctx.pick(['場から「えー！」と声が上がった。', b.name + 'は少しだけほっとした顔をした。', b.name + 'は少しだけ残念そうだった。']);
         why += '。' + a.name + (a.tr.cp > 0.65 ? 'のCP（理不尽な命令は拒む）' : !HK.canLove(a, b) ? 'の恋愛対象外' : 'のAC（照れ）と惹かれの不足');
         cat = 'conflict';

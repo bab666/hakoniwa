@@ -9,3 +9,4 @@
 - 変更後は `hakoniwa-tools/tone-check` の collect.js（R18版は `r18`）と pos-audit.js で全箱庭がエラーなく回ることを確かめる。
 - **恋愛対象・受け攻めの間違いは利用者がとても気にするので、毎回念入りに確かめる**：恋愛・夜・R18・関係に触れる変更をしたら、`orient-audit.js`（恋愛対象の性別に合わない相手と恋人・夜・体の関係になっていないか。R18版 `r18`・全年齢モード `safe`・全年齢版）と `pos-audit.js`（受け攻め。`--hot`・`--ff --hot` も）と、`state-audit.js`（死んだ人・監禁中・不在の人が出来事に出ないか、「R18に参加しない」「恋人だけ」が守られているか。r18・safe・全年齢版）を回し、0件であることを確かめる。体の関係の組は `HK.Pos.okSex`（恋愛対象と受け攻めの両方を見る）、恋愛は `HK.canLove` を両方向で通す。
 - 文の閲覧・試し読み・編集・点検の画面は `hakoniwa-tools/text-studio`（`node hakoniwa-tools/text-studio/server.js`）。画面からの依頼は `hakoniwa-tools/text-studio/ai-requests.md` に `- [ ]` でたまるので、「依頼を片付けて」と言われたら上から順に直して `[x]` にする。
+- **複数人が絡む恋愛の出来事は、嫉妬・失恋・三角関係（すれ違い系）と、応援・祝福・ダブルデート（仲良し系）を半々くらいにする**：場面を足したら `hakoniwa-tools/tone-check/group-audit.js` で比率を確かめ、どちらかが大きく足りなければ足す（仲良し系の共通の場面は `js/rel-group.js`）。

@@ -69,8 +69,25 @@
     if (src.sexLock === 'loverOnly') { dst.sexLock = 'lover'; dst.noMob = !core; } else dst.noMob = !!dst.noMob;
     /* 攻めだが、モブには受け（攻め・リバのときだけ） */
     dst.posNpc = src.posNpc === 'bottom' && (src.pos === 'top' || src.pos === 'riba') ? 'bottom' : '';
+    /* 酒の強さ（1 弱い〜5 ザル。空ならおまかせ＝気質から） */
+    dst.alcohol = HK.ALC_OK(src.alcohol) ? +src.alcohol : 0;
     return dst;
   };
+  /* 酒の強さ：キャラの設定「お酒」。1 弱い・2 やや弱い・3 ふつう・4 強い・5 ザル。
+     HK.alcLevel(c)：設定があればそれ、なければ気質（CP・冷静さが高く、ACが低いほど強い）と名前から1〜5に決める（その人に固定）
+     HK.drunkRate(c)：同じだけ飲んだときの酔いの回り方の倍率（設定がない人は 1 のまま。箱庭ごとの元の計算を変えない） */
+  HK.ALC_OK = function (v) { return v != null && v !== '' && +v >= 1 && +v <= 5 && Math.floor(+v) === +v; };
+  HK.ALC_LABEL = { 1: '弱い', 2: 'やや弱い', 3: 'ふつう', 4: '強い', 5: 'ザル' };
+  HK.alcLevel = function (c) {
+    if (!c) return 3;
+    if (HK.ALC_OK(c.alcohol)) return +c.alcohol;
+    if (c._alc) return c._alc;
+    var t = c.tr || {}, s = (c.name || '') + 'sake', h = 7;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973;
+    var v = (t.cold || 0.5) * 0.3 + (t.cp || 0.5) * 0.2 + (1 - (t.ac == null ? 0.5 : t.ac)) * 0.2 + h / 9973 * 0.3;
+    return (c._alc = v > 0.72 ? 5 : v > 0.58 ? 4 : v > 0.45 ? 3 : v > 0.33 ? 2 : 1);
+  };
+  HK.drunkRate = function (c) { return c && HK.ALC_OK(c.alcohol) ? [0, 1.7, 1.3, 1, 0.7, 0.35][+c.alcohol] : 1; };
   /* 関係ごとの専用の場面の id（関係性イベントをオフにしたとき外す。tie-rel.js・room-tie.js・omega-ties.js・zombie-bonds.js など） */
   HK.TIE_EV_RE = /^(?:tie_|rt_|om_tie|zb_(?:boss|worship|benefactor|relative|spouse))/;
   /* 本命（関係 honmei）がいる人の、恋愛・夜の出来事の重み。本命となら上げ、ほかの人とは下げる。
@@ -426,7 +443,8 @@
     C.forEach(function (c) {
       (scen.stats || []).forEach(function (s) {
         var v = c.statsRaw[s.id];
-        c.stats[s.id] = v == null || v === 'random' ? 1 + rng.int(5) : +v;
+        /* 合コンの「酒の強さ」は、おまかせならキャラの設定「お酒」に合わせる */
+        c.stats[s.id] = (v == null || v === 'random') && s.id === 'drink' && c.alcohol ? c.alcohol : v == null || v === 'random' ? 1 + rng.int(5) : +v;
       });
     });
     /* 行動・目標（おまかせは気質から） */

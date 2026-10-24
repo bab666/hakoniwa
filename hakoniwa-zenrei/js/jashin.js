@@ -153,6 +153,8 @@
       if (JS.GOALX) JS.GOALX.tick(S, P.filter(alive), h);
       if (JS.GODEV) JS.GODEV.tick(S, P.filter(alive), h);
       if (JS.LOOP) JS.LOOP.tick(S, P.filter(alive), h);
+      /* 村の歓迎の宴（一度だけ。酒の強さで過ごし方が変わる。jashin-feast.js） */
+      if (JS.FEAST) JS.FEAST.tick(S, P.filter(alive), h);
       /* 住人ごとの一時間 */
       live = P.filter(alive);
       live.forEach(function (p) {

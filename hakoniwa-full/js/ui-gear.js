@@ -35,6 +35,7 @@
     else if (!HK.SAFE_ON && c.sexLock === 'lover') bits.push('体の関係：恋人とモブだけ');
     else if (!HK.SAFE_ON && c.sexLock === 'loverOnly') bits.push('体の関係：恋人だけ');
     if (!HK.SAFE_ON && c.noR18) bits.push('R18に参加しない');
+    if (c.alcohol && HK.ALC_LABEL) bits.push('お酒：' + HK.ALC_LABEL[c.alcohol]);
     if (!HK.SAFE_ON && c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba')) bits.push('モブには受け');
     var ngs = (c.loveNG || []).map(byId).filter(Boolean);
     if (ngs.length) bits.push('恋愛にしない：' + ngs.map(function (o) { return o.name; }).join('・'));
@@ -172,6 +173,7 @@
       '<div class="gearsec"><h3>プロフィール' + (HK.Tips ? HK.Tips.btn('gear-profile') : '') + '</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
         '<label>誕生月 ' + selOf('bmonth', [['', '決めない']].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (m) { return [String(m), m + '月']; })), c.bmonth || '') + '</label>' +
         '<label>年齢 <input type="number" data-gf="age" min="1" max="150" value="' + esc(c.age || '') + '" placeholder="決めない" style="width:5em"></label>' +
+        '<label title="酒の強さ。合コン・出られない部屋の酒・オメガバースの飲みの場面・邪神村の歓迎の宴や御神酒などで、酔いやすさや振る舞いが変わります。おまかせは気質から決まります">お酒 ' + selOf('alcohol', [['', 'おまかせ'], ['1', '弱い'], ['2', 'やや弱い'], ['3', 'ふつう'], ['4', '強い'], ['5', 'ザル']], c.alcohol || '') + '</label>' +
         '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
         (!HK.SAFE_ON && c.gender === 'f' && (c.pos === 'top' || c.pos === 'riba') ? '<label title="攻めに回る場面を、男性の体を前提にした描写で書きます。オメガバースでは使いません"><input type="checkbox" data-gf="futa"' + (c.futa ? ' checked' : '') + '> ふたなり（攻めのとき）</label>' : '') +
         (!HK.SAFE_ON && (c.pos === 'top' || c.pos === 'riba') ? '<label title="住人どうしでは受け攻めの指定どおりで、モブ・魔物・村人・略奪者・星の生命体などの相手には受ける側になります">モブには <select data-gf="posNpc" aria-label="モブ・魔物が相手のとき"><option value=""' + (c.posNpc !== 'bottom' ? ' selected' : '') + '>受け攻めの指定どおり</option><option value="bottom"' + (c.posNpc === 'bottom' ? ' selected' : '') + '>受け</option></select></label>' : '') +
@@ -262,6 +264,7 @@
       case 'futa': if (isInput) return; c.futa = t.checked; changed(false); break;
       case 'daku': if (isInput) return; c.daku = t.checked; changed(false); break;
       case 'noR18': if (isInput) return; c.noR18 = t.checked; changed(true); break;
+      case 'alcohol': if (isInput) return; c.alcohol = HK.ALC_OK(t.value) ? t.value : ''; changed(true); break;
       case 'posNpc': if (isInput) return; c.posNpc = t.value === 'bottom' ? 'bottom' : ''; changed(false); break;
       case 'posLike': if (isInput) return; c.posLike = HK.Pos && HK.Pos.likeValid(t.value) ? t.value : ''; changed(false); break;
       case 'colorauto': if (isInput) return; if (t.checked) c.color = ''; else c.color = (ov.querySelector('[data-gf="color"]') || {}).value || '#3d6f93'; changed(true); UI.applyColors(s.chars); break;

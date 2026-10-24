@@ -379,9 +379,12 @@
         np: ['{a}は「つまみがないのが惜しいね」と笑って、{n}杯空けた。', '{a}は皆の分まで引き受けるように、{n}杯を飲み干した。'],
         fc: ['「一気！一気！」{a}は自分で囃し立てて{n}杯空けた。', '{a}は{n}杯目で歌い始めた。', '{a}は「これ、いい酒だ」と目を輝かせて{n}杯呷った。'],
         cold: ['{a}は水でも飲むように{n}杯空けた。顔色ひとつ変わらない。', '{a}は「分担しよう。俺はあと{n}杯」と事務的に言って、その通りにした。'],
-        ac: ['{a}は勧められるまま、断れずに{n}杯飲んだ。', '{a}は「私、強くないんだけど……」と言いながら{n}杯空けた。']
+        ac: ['{a}は勧められるまま、断れずに{n}杯飲んだ。', '{a}は「私、強くないんだけど……」と言いながら{n}杯空けた。'],
+        /* キャラの設定「お酒」が弱い（1・2）／強い（4・5）人 */
+        weak: ['{a}は「お酒、弱いんだけど」と前置きして、{n}杯を少しずつ流し込んだ。もう頬が赤い。', '{a}は鼻をつまむようにして{n}杯飲んだ。一杯目の途中で、もう目が潤んでいた。', '{a}は{n}杯空けると、壁に手をついて深く息を吐いた。「……回るの、早すぎ」'],
+        strong: ['{a}は「任せて。酒なら強い」と言って、{n}杯を涼しい顔で空けた。', '{a}は水でも飲むように{n}杯飲み干し、「次」と杯を差し出した。', '{a}は{n}杯空けても顔色ひとつ変えず、皆の残りの杯数を数え直した。']
       },
-      effect: function (ctx, c, n) { c.flags.drunk = (c.flags.drunk || 0) + n * 12 * (1.4 - ctx.stat(c, 'hp') * 0.12); if (c.flags.drunk > 70 + ctx.stat(c, 'hp') * 8 && ctx.rng() < 0.4) { c.flags.down = 2; c.flags.justDown = true; c.flags.drunk *= 0.5; } c.tr.honesty = HK.clamp(c.tr.honesty + 0.05 * n); c.tr.impulse = HK.clamp(c.tr.impulse + 0.04 * n); ctx.stress(c, -4 * n); },
+      effect: function (ctx, c, n) { c.flags.drunk = (c.flags.drunk || 0) + n * 12 * (1.4 - ctx.stat(c, 'hp') * 0.12) * HK.drunkRate(c); if (c.flags.drunk > 70 + ctx.stat(c, 'hp') * 8 && ctx.rng() < 0.4) { c.flags.down = 2; c.flags.justDown = true; c.flags.drunk *= 0.5; } c.tr.honesty = HK.clamp(c.tr.honesty + 0.05 * n); c.tr.impulse = HK.clamp(c.tr.impulse + 0.04 * n); ctx.stress(c, -4 * n); },
       state: function (c) { if (c.flags.justDown) { c.flags.justDown = false; return '{a}はそのまま床に突っ伏して、寝息を立て始めた。'; } var x = c.flags.drunk || 0; return x >= 60 ? '{a}の呂律が回らなくなってきた。' : x >= 30 ? '{a}の目元が赤い。' : ''; }
     },
     spicy: {
@@ -759,7 +762,8 @@
     when: function (ctx, a) { return !a.flags.down && ctx.rules.some(function (r) { return K[r.k].type === 'consume' && globLeft(ctx, r) > 0; }); },
     w: function (ctx, a) {
       var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && globLeft(ctx, x) > 0; })[0];
-      return 0.8 + ITEM[r.k].fit(a) * 1.5 + a.stress / 120 + ctx.stepIndex / Math.max(4, ctx.env.hours) * 1.5;
+      /* 酒は、お酒に強い人ほど進んで引き受ける（キャラの設定「お酒」） */
+      return 0.8 + ITEM[r.k].fit(a) * 1.5 + a.stress / 120 + ctx.stepIndex / Math.max(4, ctx.env.hours) * 1.5 + (r.k === 'sake' && a.alcohol ? (a.alcohol - 3) * 0.3 : 0);
     },
     run: function (ctx, a) {
       var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && globLeft(ctx, x) > 0; })[0];
@@ -780,7 +784,8 @@
       dk[r.k] = (dk[r.k] || 0) + n;
       I.effect(ctx, drinker, n);
       var tk = topKey(drinker);
-      var lines = I.lines[tk] || I.lines.np;
+      var al = r.k === 'sake' && drinker.alcohol ? (drinker.alcohol <= 2 ? I.lines.weak : drinker.alcohol >= 4 ? I.lines.strong : null) : null;
+      var lines = al || I.lines[tk] || I.lines.np;
       var text;
       if (forced === 'hate') {
         var resist = drinker.tr.cp * 0.4 + drinker.tr.aggr * 0.3 - drinker.tr.ac * 0.2 > 0.35 && ctx.rng() < 0.5;

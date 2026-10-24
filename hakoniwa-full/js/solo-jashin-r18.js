@@ -42,15 +42,21 @@
   function notice(p) { return 0.15 + p.tr.caution * 0.45 + p.tr.a * 0.2 + (p.job === 'sleuth' || p.job === 'doctor' ? 0.2 : 0) + (p.wary ? 0.25 : 0); }
   /* 口にした人が効き始めの文より多いときの、名前の入った短い一文 */
   var ALSO = ['{a}も、同じものを口にしていた。頬が、いつの間にか赤い。', '{a}の息も、気づけば浅く、熱っぽくなっていた。', '{a}は落ち着かなげに、何度も襟元を直した。', '{a}の目も、とろりと潤み始めていた。'];
+  /* 御神酒は酒の強さ（キャラの設定「お酒」・なければ気質から。HK.alcLevel）で変わる：
+     弱い人（1・2）は「下戸なので」と断りやすいが、飲めば一杯で回る（効きが重い）。強い人（4・5）は勧められるまま飲み干しやすい */
+  var SAKE_WEAK = ['{a}は酒に弱い。一杯で首まで赤くなり、酔いと熱の区別がつかなくなった。', '酒に弱い{a}には、一杯でも多すぎた。視界が揺れ、体の芯だけがはっきりと熱かった。'];
+  var SAKE_STRONG = ['{a}は酒には強い。顔色こそ変わらなかったが、腹の底の熱だけは、酒のせいではなかった。', '{a}は二杯、三杯と涼しい顔で盃を空けた。――酔わないぶん、体の疼きだけがはっきりと分かった。'];
+  function alcOf(p) { return HK.alcLevel ? HK.alcLevel(p) : 3; }
   function dose(S, live, key) {
     var rng = S.rng, D = DOSE[key], take = [], left = [];
     live.forEach(function (p) {
-      if (rng() < notice(p)) { left.push(p); p.wary = true; p.m.fear = Math.min(100, (p.m.fear || 0) + 4); }
-      else { take.push(p); p.aphro = true; p.dosed = (p.dosed || 0) + 1; if (p.dosed >= 2) p.wary = true; }
+      var nt = notice(p) + (key === 'sake' ? [0, 0.15, 0.08, 0, -0.08, -0.12][alcOf(p)] : 0);
+      if (rng() < nt) { left.push(p); p.wary = true; p.m.fear = Math.min(100, (p.m.fear || 0) + 4); }
+      else { take.push(p); p.aphro = true; p.dosed = (p.dosed || 0) + 1 + (key === 'sake' && alcOf(p) <= 1 ? 1 : 0); if (p.dosed >= 2) p.wary = true; }
     });
     /* 一つの記録の中で、口にした人ごとに別の文を割り当てる（同じ文が二人分並ばないように） */
     var tk = rng.shuffle ? rng.shuffle(D.take.slice()) : D.take.slice(), lv0 = rng.shuffle ? rng.shuffle(D.leave.slice()) : D.leave.slice();
-    var t = ST.pick(S, D.intro) + take.map(function (p, i) { return ST.fmt(i < tk.length ? tk[i] : ALSO[i % ALSO.length], { a: p.name }) + (rng() < 0.5 ? pz(S, p, 'drug') : ''); }).join('') + left.map(function (p, i) { return ST.fmt(lv0[i % lv0.length], { a: p.name }); }).join('');
+    var t = ST.pick(S, D.intro) + take.map(function (p, i) { var al = key === 'sake' ? alcOf(p) : 3; return ST.fmt(i < tk.length ? tk[i] : ALSO[i % ALSO.length], { a: p.name }) + (al <= 2 && rng() < 0.7 ? ST.fmt(SAKE_WEAK[i % 2], { a: p.name }) : al >= 4 && rng() < 0.6 ? ST.fmt(SAKE_STRONG[i % 2], { a: p.name }) : '') + (rng() < 0.5 ? pz(S, p, 'drug') : ''); }).join('') + left.map(function (p, i) { return ST.fmt(lv0[i % lv0.length], { a: p.name }); }).join('');
     ST.say(S, { actors: live, tag: D.label, text: t, why: '媚薬が盛られていた（' + D.label + '）。口にした：' + (take.map(function (p) { return p.name; }).join('・') || 'なし') + '／気づいて席を外した：' + (left.map(function (p) { return p.name; }).join('・') || 'なし') + '。慎重さ・A・職業で気づく', mag: 16 });
     (S.r18Doses = S.r18Doses || []).push(key);
   }

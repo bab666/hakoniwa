@@ -35,9 +35,8 @@
   /* 酒の強さ（1〜5） */
   D.strong = function (ctx, c) {
     if (ctx.scen.id === 'goukon' && ctx.stat) return ctx.stat(c, 'drink');
-    if (c.flags.dkStr) return c.flags.dkStr;
-    var v = c.tr.cold * 0.3 + c.tr.cp * 0.2 + (1 - c.tr.ac) * 0.2 + hash((c.name || '') + 'sake') * 0.3;
-    return (c.flags.dkStr = v > 0.72 ? 5 : v > 0.58 ? 4 : v > 0.45 ? 3 : v > 0.33 ? 2 : 1);
+    /* キャラの設定「お酒」があればそれ、なければ気質から（HK.alcLevel） */
+    return HK.alcLevel(c);
   };
   D.label = function (ctx, c) { return D.strong(ctx, c) >= 5 ? 'ザル（顔に出ない）' : TYPES[D.type(c)].label; };
 
@@ -93,7 +92,7 @@
 
   function fill(ctx, t, a, b) { return ctx.t(t, a, b); }
   function react(ctx, a, b) { return fill(ctx, ctx.pick(RE[top(b)] || RE.NP), a, b); }
-  function why(ctx, a) { var k = D.label(ctx, a); return a.name + 'の酔い方「' + k + '」（' + (D.strong(ctx, a) >= 5 ? '酒の強さ ' + D.strong(ctx, a) : 'エゴグラムから') + '）'; }
+  function why(ctx, a) { var k = D.label(ctx, a); return a.name + 'の酔い方「' + k + '」（' + (D.strong(ctx, a) >= 5 || a.alcohol ? '酒の強さ ' + D.strong(ctx, a) + (a.alcohol ? '（設定）' : '') : 'エゴグラムから') + '）'; }
   function behave(ctx, a, b) {
     var k = D.strong(ctx, a) >= 5 ? 'zaru' : D.type(a);
     var att = { amae: { att: 4, aff: 3 }, warai: { aff: 3 }, naki: { aff: 4, trust: 3 }, sekkyo: { trust: 3, ten: 2 }, honne: { att: 6, trust: 3 }, nemu: { aff: 3 }, kiss: { att: 7 }, sunao: { att: 6, aff: 5 }, nugi: { att: 4 }, zaru: { trust: 5, aff: 3 } }[k];
@@ -136,17 +135,21 @@
     });
   }
 
+  /* 酒に弱い人（1）が、少しで酔いが回るときの前置き */
+  var WEAK = L('{a}は、グラス半分で頬が真っ赤になった。|{a}は一杯目の途中で、もう目がとろんとしていた。|{a}は「弱いの、知ってるでしょ」と言いながら、二口目で耳まで赤くなった。|{a}は、乾杯の一口でもう首まで赤かった。');
   /* ---------- オメガバース ---------- */
   var OMS = HK.SCENARIOS && HK.SCENARIOS.omega;
   if (OMS) {
     OMS.events.push({
       id: 'om_drink', cat: 'romance', scope: 'pair',
       when: function (ctx, a, b) { var pf = ctx.pair(a, b); var mk = a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; return ctx.om && ctx.om.met && (ctx.om.met[mk] || ctx.R(a, b).aff > 5 || pf.couple) && (pf.dkAt == null || ctx.stepIndex - pf.dkAt >= 4); },
-      w: function (ctx, a, b) { return 0.35 + a.tr.fc * 0.3 + ctx.R(a, b).aff / 150 + (ctx.pair(a, b).couple ? 0.2 : 0); },
+      w: function (ctx, a, b) { return (0.35 + a.tr.fc * 0.3 + ctx.R(a, b).aff / 150 + (ctx.pair(a, b).couple ? 0.2 : 0)) * [1, 1.3, 1.15, 1, 0.85, 0.7][D.strong(ctx, a)]; },
       run: function (ctx, a, b) {
         var pf = ctx.pair(a, b); pf.dkAt = ctx.stepIndex;
-        var k = behave(ctx, a, b), sx = a.om && a.om.sex;
-        var t = fill(ctx, ctx.pick(OCC), a, b) + fill(ctx, ctx.pick(SHOW[k]), a, b) + fill(ctx, ctx.pick(TO[k]), a, b);
+        var k = behave(ctx, a, b), sx = a.om && a.om.sex, st = D.strong(ctx, a);
+        /* 酒に強い人（4）は、半分くらいは顔に出ない */
+        if (st === 4 && k !== 'zaru' && ctx.rng() < 0.5) k = 'zaru';
+        var t = fill(ctx, ctx.pick(OCC), a, b) + (st <= 1 && k !== 'zaru' ? fill(ctx, ctx.pick(WEAK), a, b) : '') + fill(ctx, ctx.pick(SHOW[k]), a, b) + fill(ctx, ctx.pick(TO[k]), a, b);
         if (sx && OM_EX[sx] && (sx !== 'b' || k === 'zaru') && ctx.rng() < 0.5) {
           t += fill(ctx, ctx.pick(OM_EX[sx]), a, b);
           if (sx === 'o' && b.om && b.om.sex === 'a') { t += fill(ctx, ctx.pick(OM_AB), a, b); ctx.mod2(a, b, { trust: 4 }, { att: 5 }); }
