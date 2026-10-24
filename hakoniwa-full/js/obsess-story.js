@@ -99,8 +99,8 @@
       var sn = stance(S, b, a, s);
       key = 'r_' + sn;
       text = fill(T(S, key, true, pack), a, b, null);
-      s.lv = clamp(s.lv + (sn === 'accept' ? -4 : sn === 'mutual' ? 4 : 6), 0, 100);
-      return { actors: [b, a], tag: '執着', text: (opt.place || '') + text, why: b.name + 'の気持ち（' + { unaware: '気づいていない', afraid: '怖がっている', hate: '嫌っている', accept: '受け入れている', mutual: '共依存' }[sn] + '）と' + a.name + 'の執着（' + Math.round(s.lv) + '）', mag: 12, cat: sn === 'accept' || sn === 'mutual' ? 'romance' : 'conflict' };
+      s.lv = clamp(s.lv + (sn === 'accept' ? -4 : sn === 'mutual' ? 4 : sn === 'confused' ? 3 : 6), 0, 100);
+      return { actors: [b, a], tag: '執着', text: (opt.place || '') + text, why: b.name + 'の気持ち（' + { unaware: '気づいていない', afraid: '怖がっている', hate: '嫌っている', confused: '困惑している', accept: '受け入れている', mutual: '共依存' }[sn] + '）と' + a.name + 'の執着（' + Math.round(s.lv) + '）', mag: 12, cat: sn === 'accept' || sn === 'mutual' ? 'romance' : 'conflict' };
     }
     /* 暴走（一度まで。死には至らない） */
     if (stg >= 3 && !s.climax) {

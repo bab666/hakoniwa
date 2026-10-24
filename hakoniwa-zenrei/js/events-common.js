@@ -7,7 +7,8 @@
     { id: 'chaos', label: '運命の揺らぎ', min: 0, max: 100, def: 40, lo: '気質どおり', hi: '番狂わせ', desc: '高いほど「らしくない行動」や勝負のまぐれが増える' },
     { id: 'romance', label: '恋愛の起こりやすさ', min: 0, max: 100, def: 50, lo: '起きにくい', hi: '起きやすい' },
     { id: 'strife', label: '争いの起こりやすさ', min: 0, max: 100, def: 50, lo: '穏やか', hi: '荒れる' },
-    { id: 'incident', label: 'ハプニングの頻度', min: 0, max: 100, def: 60, lo: 'たまに', hi: '毎回', desc: '天候・物資・追加ルールなど、全員に降りかかる出来事' }
+    { id: 'incident', label: 'ハプニングの頻度', min: 0, max: 100, def: 60, lo: 'たまに', hi: '毎回', desc: '天候・物資・追加ルールなど、全員に降りかかる出来事' },
+    { id: 'tieEv', label: '関係性イベント', type: 'select', def: 'on', options: [{ v: 'on', label: '出す' }, { v: 'off', label: '出さない（関係は初期値と恋人の扱いだけに使う）' }], desc: '上司と部下・恩人・夫婦など、関係ごとの専用の場面' }
   ];
 
   function R(ctx, a, b) { return ctx.R(a, b); }

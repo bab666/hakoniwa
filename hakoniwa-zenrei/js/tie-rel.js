@@ -99,6 +99,43 @@
     }
   });
 
+  /* ---------- 夫婦（恋人・元恋人に開いたあと、t.spouse・t.married で見る。向きなし） ---------- */
+  var SPOUSE = {
+    warm: L('{a}は何も言わずに、{b}の好きな濃さで飲み物を淹れた。何年も一緒にいれば、それくらいは分かる。|{b}は{a}の寝癖を指で直した。{a}「家みたいだな」{b}「家じゃなくても、二人なら家みたいなものでしょ」|{a}と{b}は、帰ったら何を食べるかで小さく言い合った。結局、いつもの店に決まった。'),
+    keep: L('{a}は{b}の手を取って、薬指の指輪を親指でなぞった。{b}は黙って、その手を握り返した。|{b}「無理しないって、約束したよね」{a}「……した」{b}「じゃあ守って」――{a}は小さく笑って頷いた。|{a}と{b}は、どちらが先に寝るかで押し問答をした。結局、肩を寄せたまま二人とも起きていた。'),
+    grow: L('{a}は{b}に、結婚したばかりのころの話をした。{b}は途中で笑い出し、それから少し泣いた。|{b}は{a}の背中に額を押しつけた。{b}「生きて帰ったら、もう一回、式を挙げたい」{a}「何回でも」|{a}「{b}と一緒になって、よかった」――改めて言われて、{b}は照れくさそうに目を逸らした。'),
+    cold: L('{a}と{b}は、同じ部屋にいても目を合わせなかった。話すのは、必要なことだけだった。|{b}は{a}の言葉に、短く「そう」とだけ返した。いつからこうなったのか、二人とも思い出せなかった。|{a}は{b}の隣に座りかけて、一つ空けた席に腰を下ろした。'),
+    thaw: L('{a}は、{b}が昔と同じ癖で髪を耳にかけるのを見た。それだけで、胸の奥の何かが少しほどけた。|{b}「……ごめん。ずっと、ちゃんと話してなかった」{a}は少し黙ってから、「こっちこそ」と言った。|危ない場面で、{a}は迷わず{b}の手を引いた。手を離したあと、二人はしばらく何も言わなかったが、その沈黙は前ほど冷たくなかった。'),
+    separated: L('{a}と{b}は、別々に暮らすようになってから、初めて同じ場所で夜を過ごした。気まずさのほうが勝っていた。|{b}は{a}の荷物に、まだ二人で買ったキーホルダーが付いているのに気づいた。何も言わなかった。|{a}「元気だった？」{b}「……まあね」――それ以上、どちらも続けられなかった。'),
+    ex: L('{a}と{b}は、元夫婦らしい距離で並んで座った。近すぎず、遠すぎず。|{b}は{a}の好みを覚えていた自分に気づいて、少しだけ苦笑いした。|{a}「相変わらずだな」{b}「そっちこそ」――言い慣れたやり取りに、二人とも少しだけ肩の力を抜いた。'),
+    back: L('{a}は{b}の名前を、離婚する前と同じ呼び方で呼んだ。{b}は振り返って、何かを言いかけてやめた。|{b}「もう一回、やり直せると思う？」{a}はすぐには答えず、{b}の手を取った。')
+  };
+  function spouseTie(ctx, a, b) {
+    var l = HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, a, b) : [];
+    for (var i = 0; i < l.length; i++) if (l[i].spouse) return l[i];
+    return null;
+  }
+  TR.spouse = spouseTie;
+  push({
+    id: 'tie_spouse', cat: 'bond', scope: 'pair',
+    when: function (ctx, a, b) { return !!spouseTie(ctx, a, b); },
+    w: function (ctx) { return 1.5 * own(ctx); },
+    run: function (ctx, a, b) {
+      var t = spouseTie(ctx, a, b), g = warmth(ctx, a, b), st = t.type === 'ex' ? 'ex' : t.married || 'warm', k;
+      if (st === 'warm') { var x = ctx.rng(); k = g > 38 && x < 0.3 ? 'grow' : x < 0.65 ? 'warm' : 'keep'; }
+      else if (st === 'cold' || st === 'separated') k = g > 30 && ctx.rng() < 0.35 ? 'thaw' : st === 'cold' ? 'cold' : 'separated';
+      else k = both(a, b) && g > 34 && !ctx.pair(a, b).couple && ctx.rng() < 0.25 ? 'back' : 'ex';
+      if (k === 'grow' || k === 'keep' || k === 'warm') ctx.mod2(a, b, { aff: 3, trust: 3 }, { aff: 3, trust: 3 });
+      else if (k === 'cold' || k === 'separated') ctx.mod2(a, b, { ten: 3 }, { ten: 3 });
+      else if (k === 'thaw') { ctx.mod2(a, b, { aff: 6, trust: 5, ten: -6 }, { aff: 6, trust: 5, ten: -6 }); grow(ctx, a, b, 'spouse'); if (g > 45) t.married = ''; }
+      else if (k === 'back') { ctx.mod2(a, b, { att: 6, aff: 5 }, { att: 6, aff: 5 }); grow(ctx, a, b, 'spouse'); }
+      else ctx.mod2(a, b, { aff: 1 }, { aff: 1 });
+      if (k === 'grow') grow(ctx, a, b, 'spouse');
+      var lab = HK.tieLabel ? HK.tieLabel(t) : '夫婦';
+      return { cat: k === 'back' ? 'romance' : k === 'cold' || k === 'separated' ? 'conflict' : 'bond', text: ctx.t(ctx.pick(SPOUSE[k]), a, b), why: a.name + 'と' + b.name + '（' + lab + '）' + { warm: '：いつもの二人', keep: '：夫婦の約束', grow: '：絆が深まる', cold: '：冷えたまま', thaw: '：わだかまりが少しほどける', separated: '：別居中の気まずさ', ex: '：元夫婦の距離', back: '：やり直しの気配' }[k] };
+    }
+  });
+
   /* ---------- 恩人（{a}=恩人 {b}=恩を受けた側） ---------- */
   var BENE = {
     a: L('{a}は{b}が無理をしていないか、何度も気にかけた。昔助けたときから、{b}のことはどうしても放っておけなかった。|{a}「{b}、昔のことなんて、もう気にしなくていいのに」{b}は首を振った。忘れられるはずがなかった。|{a}は{b}が笑っているのを見て、助けてよかったと、あらためて思った。'),

@@ -191,7 +191,7 @@
     (S.ties || []).forEach(function (t) {
       /* 両片想い（向きを逆にした片想い二本）は、一本の「両片想い」にまとめる */
       if (t.type === 'crush' && (S.ties || []).some(function (u) { return u.type === 'crush' && u.a === t.b && u.b === t.a; })) { if (t.a < t.b) edges.push({ a: t.a, b: t.b, label: (t.born ? '★' : '') + '両片想い', cls: 'pine', dir: null }); return; }
-      var lab = HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; edges.push({ a: t.a, b: t.b, label: (t.born ? '★' : '') + lab, cls: CLS[t.type] || 'friend', dir: t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null }); });
+      var lab = HK.tieLabel ? HK.tieLabel(t) : HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; edges.push({ a: t.a, b: t.b, label: (t.born ? '★' : '') + lab, cls: CLS[t.type] || 'friend', dir: t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null }); });
     Object.keys(S.relLab || {}).forEach(function (k) {
       var ab = k.split('-'), lab = S.relLab[k];
       if (lab === '恋人' || lab === '片想い') return;

@@ -156,6 +156,7 @@
     r_unaware: L('{b}は{a}の気遣いを、ただの優しさだと思っていた。|{b}「いつもありがとう、{a}」{b}の無邪気な笑顔に、{a}は満足そうに目を細めた。'),
     r_afraid: L('{b}は{a}の視線を感じるたび、肩をこわばらせるようになった。|{b}は{a}を避けて遠回りした。気づいた{a}の表情が、すっと消えた。|{b}「……{a}、少し、距離を置かせて」その言葉が、{a}をさらに追い詰めた。'),
     r_hate: L('{b}「いい加減にして。気持ち悪い」{a}は笑ったまま、その言葉を胸にしまい込んだ。|{b}は{a}の差し出した物を、受け取らずに通り過ぎた。'),
+    r_confused: L('{b}は{a}の差し出した手を、払いのけることも握り返すこともできずにいた。「……どうしたらいいのか、分からないんだ」|{b}は{a}の重さに気づいていた。それでも、昔からの情が邪魔をして、突き放す言葉が出てこなかった。|{b}「やめてほしい、とは思う。でも……{a}を一人にするのも、怖い」――{b}自身、どちらが本心か分からなかった。'),
     r_accept: L('{b}は{a}の重さを知っていて、それでも手を取った。「……私にしか、{a}は止められないから」|{b}「大丈夫。どこにも行かないよ」その一言で、{a}の目に光が戻った。'),
     r_mutual: L('{a}が{b}を縛り、{b}もまた{a}を手放せなかった。二人の世界は、二人だけで閉じていった。|{b}「私以外を見たら、許さないから」{a}は嬉しそうに頷いた。どちらがどちらを縛っているのか、もう分からなかった。'),
     r_calm: L('{b}は{a}を正面から見て、ゆっくり言った。「心配しなくていい。ちゃんと、ここにいる」{a}の肩から、少しだけ力が抜けた。|{b}は{a}の手を握り、話を最後まで聞いた。{a}の目に、ようやく涙がにじんだ。'),
@@ -267,11 +268,12 @@
     else if (stn === 'mutual') { key = 'r_mutual'; d = 6; ctx.mod2(a, b, { att: 6, aff: 4 }, { att: 6, aff: 4 }); }
     else if (stn === 'accept') { key = 'r_accept'; d = ty === 'devote' || ty === 'depend' ? -6 : 3; ctx.mod2(a, b, { aff: 5 }, { aff: 3, att: 4 }); ctx.stress(b, 5); }
     else if (stn === 'hate') { key = 'r_hate'; d = ty === 'devote' ? 4 : 12; ctx.mod2(a, b, { ten: 8 }, { ten: 10, aff: -6 }); ctx.stress(a, 10); }
+    else if (stn === 'confused') { key = 'r_confused'; d = ty === 'devote' ? 2 : 6; ctx.mod2(a, b, { att: 2 }, { ten: 4, aff: 2 }); ctx.stress(b, 8); }
     else if (stn === 'afraid') { key = 'r_afraid'; d = ty === 'devote' ? 3 : 9; ctx.mod2(a, b, { ten: 6 }, { ten: 8 }); ctx.stress(b, 10); }
     else { key = 'r_unaware'; d = 2; ctx.mod2(a, b, { att: 2 }, { aff: 3 }); }
     s.at = ctx.stepIndex;
     O.add(ctx, a, b, d);
-    return { with: [a], cat: key === 'r_hate' || key === 'r_afraid' ? 'conflict' : 'romance', text: F(ctx, T(ctx, key), a, b), why: b.name + 'の気持ち（' + { unaware: '気づいていない', afraid: '怖がっている', hate: '嫌っている', accept: '受け入れている', mutual: '共依存' }[stn] + '）と' + a.name + 'の執着（' + Math.round(s.lv) + '）', mag: 10 };
+    return { with: [a], cat: key === 'r_hate' || key === 'r_afraid' ? 'conflict' : 'romance', text: F(ctx, T(ctx, key), a, b), why: b.name + 'の気持ち（' + { unaware: '気づいていない', afraid: '怖がっている', hate: '嫌っている', confused: '困惑している', accept: '受け入れている', mutual: '共依存' }[stn] + '）と' + a.name + 'の執着（' + Math.round(s.lv) + '）', mag: 10 };
   };
 
   /* 暴走：監禁・恋敵への危害・心中のどれか（箱庭ごとに opt で止められる） */
@@ -307,7 +309,7 @@
       return { with: [b, c], cat: 'conflict', text: F(ctx, T(ctx, safe ? 'harm_s' : 'harm'), a, b, c), why: why(ctx, a, b, s) + '。恋敵の' + c.name + 'に矛先が向いた', mag: 45 };
     }
     /* 心中：共依存か、執着される側が抵抗できなければ。全年齢版・死なない箱庭では未遂 */
-    var resist = stn === 'mutual' ? 0.15 : stn === 'accept' ? 0.45 : 0.75;
+    var resist = stn === 'mutual' ? 0.15 : stn === 'accept' ? 0.45 : stn === 'confused' ? 0.6 : 0.75;
     resist += b.tr.np * 0.15 + b.tr.a * 0.1;
     if (safe || opt.lethal === false || ctx.rng() < resist) {
       ctx.mod2(a, b, { trust: 10, att: 6 }, { ten: 14, att: 4 }); ctx.stress(a, 20); ctx.stress(b, 25);

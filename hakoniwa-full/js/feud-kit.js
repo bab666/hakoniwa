@@ -62,7 +62,7 @@
       return { k: k, text: lead + HK.TL.line(sl, k, pk) };
     },
     /* 関係の名前（理由の欄に出す） */
-    label: function (S, a, b) { return ties(S, a, b).map(function (t) { return HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).join('・') || 'なし'; },
+    label: function (S, a, b) { return ties(S, a, b).map(function (t) { return HK.tieLabel ? HK.tieLabel(t) : HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).join('・') || 'なし'; },
     /* 愛憎の二人が揉めたときの描写（{text, r18}）。a=強引な側。R18版では solo-feud-r18.js が r18Clash を足す
        受け攻めの決まり（pos.js）：体を奪う場面は、向きの決まる組（HK.Pos.okSex）で、強引な側 a が攻め（HK.Pos.order の先頭）のときだけ。
        向きが逆（b が攻め）なら、唇だけの揉み合いで、b が逆に押さえ込む。女性どうしは指と舌の描写（FF_CLASH） */

@@ -71,6 +71,8 @@
     dst.posNpc = src.posNpc === 'bottom' && (src.pos === 'top' || src.pos === 'riba') ? 'bottom' : '';
     return dst;
   };
+  /* 関係ごとの専用の場面の id（関係性イベントをオフにしたとき外す。tie-rel.js・room-tie.js・omega-ties.js・zombie-bonds.js など） */
+  HK.TIE_EV_RE = /^(?:tie_|rt_|om_tie|zb_(?:boss|worship|benefactor|relative|spouse))/;
   HK.ngPairHard = function (a, b) {
     if (!a || !b || a === b) return false;
     if ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0)) return true;
@@ -611,8 +613,11 @@
       });
     }
     var cands = [], sum = 0, sumCore = 0, sumMini = 0;
+    /* 関係性イベントをオフ（全体の設定 tieEv）：関係ごとの専用の場面を出さない（関係の初期値・恋人の扱いはそのまま） */
+    var tieOff = ctx.env && ctx.env.tieEv === 'off';
     pool.forEach(function (e) {
       if (e.scope === 'pair' && !b) return;
+      if (tieOff && e.id && HK.TIE_EV_RE.test(e.id)) return;
       var bb = e.scope === 'pair' ? b : null;
       if (e.when && !e.when(ctx, a, bb)) return;
       if (e.cat === 'romance' && bb && a.lock != null && a.lock !== bb.i) return;
@@ -792,7 +797,7 @@
       var ab = ctx.R(A, B), ba = ctx.R(B, A);
       var finalScore = (ab.aff + ba.aff) / 2 + (ab.att + ba.att) / 4 - (ab.ten + ba.ten) / 2 * 0.8;
       var pred = POS[pf.base.kind];
-      var tie = pf.tie ? { type: pf.tie.type, label: HK.TIES[pf.tie.type].label, a: pf.tie.a, b: pf.tie.b, pol: HK.TIES[pf.tie.type].pol } : null;
+      var tie = pf.tie ? { type: pf.tie.type, label: HK.tieLabel ? HK.tieLabel(pf.tie) : HK.TIES[pf.tie.type].label, a: pf.tie.a, b: pf.tie.b, pol: HK.TIES[pf.tie.type].pol } : null;
       if (tie) pred = tie.pol > 0 ? 1 : tie.pol < 0 ? -1 : 0;
       var surprise = 0;
       if (tie) {

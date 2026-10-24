@@ -78,7 +78,8 @@
   function cageLong(ctx, a, b, top) {
     var rng = ctx.rng, O = HK.Obsess, ty = O.type(a), stn = O.stance(ctx, b, a), m = { a: a.name, b: b.name, v: b.name };
     var said = CAGE.say[ty] || CAGE.say.bind;
-    var react = stn === 'accept' || stn === 'mutual' ? pk(rng, YIELD) : resist(rng, b);
+    /* 困惑している人は、拒みきれずに流されることがある（半々） */
+    var react = stn === 'accept' || stn === 'mutual' || (stn === 'confused' && rng() < 0.5) ? pk(rng, YIELD) : resist(rng, b);
     return J([
       pk(rng, CAGE.open) + pk(rng, CAGE.feel),
       pk(rng, said),
