@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>箱庭テキスト工房</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%223%22 fill=%22%237a4fb5%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/studio/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">箱庭テキスト工房</div>
+  <label class="bsel">フォルダ <select id="build"></select></label>
+  <button class="btn small" id="add-dir" title="ほかのビルドのフォルダを開く">＋フォルダ</button>
+  <label class="bsel" id="mode-wrap">表示 <select id="mode"><option value="r18">R18</option><option value="safe">全年齢モード</option></select></label>
+  <span id="status" class="status">読み込み中…</span>
+  <span class="grow"></span>
+  <button class="btn small" id="btn-build" title="両方のビルドで build.js を実行（コミットの前に）">ビルド</button>
+  <span id="dirty" class="dirty" hidden>未ビルドの変更あり</span>
+</header>
+<nav class="tabs" id="tabs">
+  <button data-tab="home" class="on">概要</button>
+  <button data-tab="scen">箱庭の文</button>
+  <button data-tab="sim">試し実行</button>
+  <button data-tab="tone">口調・態度</button>
+  <button data-tab="table">口調別の表（喘ぎなど）</button>
+  <button data-tab="search">文をさがす</button>
+  <button data-tab="check">点検</button>
+  <button data-tab="log">依頼と更新履歴</button>
+</nav>
+<main id="main"></main>
+<aside id="editor" class="editor" hidden></aside>
+<div id="pop" class="pop" hidden></div>
+<div id="toast" class="toast" hidden></div>
+<iframe id="sandbox" title="試し実行用" class="sandbox"></iframe>
+<script src="/studio/app.js"></script>
+</body>
+</html>
