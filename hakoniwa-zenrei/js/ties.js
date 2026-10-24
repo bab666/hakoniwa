@@ -201,6 +201,12 @@
            ただし「恋愛相手の固定」だけが理由の組（相手が別の人に決めている）では、片想い・執着のような一方通行の想いは残す（叶わない恋として。heartbreak.js） */
         var mk0 = (A.ng && A.ng.indexOf(B.i) >= 0) || (B.ng && B.ng.indexOf(A.i) >= 0);
         if (HK.ngPair && HK.ngPair(A, B) && (mk0 ? /^(lover|fwb|mate|fated|crush|almost|ex|yan)$/ : /^(lover|fwb|mate|fated|almost|ex)$/).test(t.type)) return;
+        if (HK.ngPair && HK.ngPair(A, B) && /^(crush|yan)$/.test(t.type)) {
+          /* 想う側（A）が別の人に恋愛相手を固定しているなら、その想いは使わない（固定した人は、ほかの人を想わない） */
+          if (A.lock != null && A.lock !== B.i) return;
+          /* 想われる側（B）が別の人に固定しているなら、一方通行のまま（両片想い・共依存・受け入れている、にはしない） */
+          if (t.cold === 'mutual' || t.cold === 'accept') { var t2 = {}; for (var k0 in t) t2[k0] = t[k0]; delete t2.cold; t = t2; }
+        }
         /* クラスメイト（高校生）では、セフレの関係は設定しても使わない */
         if (t.type === 'fwb' && ctx.scen && ctx.scen.id === 'classroom') return;
         var k = keyOf(A, B), list = ctx.tiesAll[k] = ctx.tiesAll[k] || [];
