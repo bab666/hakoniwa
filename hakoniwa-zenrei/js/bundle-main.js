@@ -1293,6 +1293,8 @@
     if (/(関係|意味|興味|問題|時間|余裕|自信|用|元気|覚え|記憶|心当たり|文句|容赦|金|気|暇)ない$/.test(s) || /[一-鿿々]{2,}ない$/.test(s) && !/[出見寝着来居似煮得経]ない$/.test(s)) return s.replace(/ない$/, 'ありません');
     if (/じゃない$/.test(s)) return s + 'です';
     if (ADJ_NAI.test(s) || /(良く|よく|くて|しく|く)ない$/.test(s)) return s + 'です';
+    /* 「待てない」「捨てない」のように、て で終わる語幹の動詞は「待てません」（「待ていません」にしない） */
+    if (/(?:待|勝|持|保|捨|建|育|慌|当|立|企|隔|果|打|撃|討|絶|断|満|裁|充|宛)てない$/.test(s)) return s.replace(/ない$/, 'ません');
     if (/てない$/.test(s)) return s.replace(/てない$/, 'ていません');
     if (/しない$/.test(s)) return s.replace(/しない$/, 'しません');
     if (/こない$/.test(s)) return s.replace(/こない$/, 'きません');
@@ -9677,7 +9679,7 @@
              {t}{m}{u}＝受け攻めの形（oneTwo：{t}が{m}と{u}を抱く／twoOne：{t}と{m}が{u}を抱く／sandwich：{t}が{m}を、{m}が{u}を／ring：{t}→{m}→{u}→{t}）
              {s}＝見所の主役（性格・開放度で選ぶ）。{j}＝嫉妬している人、{o}＝その相手側のもう一人（twoOne なら攻め二人のうち・oneTwo なら受け二人のうち）
              recv：その役が受ける側になる文（自分で攻めを選んだ人がその役なら使わない）。挿入の向きは {t}{m}{u} の文（MAIN）だけに書き、ほかの文には書かない
-             kinds：きっかけの種類で絞る（hub invite free late warm auto join aphro love lovehub。love は三人とも互いに恋人どうしの円満な場面、lovehub は {h} が二人の恋人（または友達以上恋人未満）で {x}{y} が親友など仲のよい二人の円満な場面）
+             kinds：きっかけの種類で絞る（hub invite free late warm auto join aphro love lovehub loveclash。loveclash は二人の恋人（{j}{o}）が同じ一人（{w}＝{h}）にそろって執着していて取り合う場面。love は三人とも互いに恋人どうしの円満な場面、lovehub は {h} が二人の恋人（または友達以上恋人未満）で {x}{y} が親友など仲のよい二人の円満な場面）
              SPAT：円満な三人の小競り合い（{j}＝焼きもちを焼いた人、{o}＝もう一人、{w}＝二人に愛されている真ん中の人）。shapes：形で絞る。jeal：嫉妬の型（none one both）。open：受けの開放度（open mid shy）
              台詞は {役}「…」の形で地の文に入れる（口調ごとの言い換えが通る。元の台詞は標準的なため口、一人称は「私」） */
 (function () {
@@ -9707,6 +9709,9 @@
     /* 中心のある円満な三人（{h} が二人の恋人、{x}{y} は仲のよい二人） */
     { id: 'lh_pair', kinds: 'lovehub', t: L('{x}と{y}は目配せ一つで、{h}を両側から抱き寄せた。気心の知れた二人には、相手が次に何をしたいのかが手に取るように分かった。{h}は二人の腕の中で、くすぐったそうに笑った。|{x}が{h}の唇を、{y}が{h}の首筋を、同じ速さでたどった。二人とも、相手の邪魔をしないように気を配っていた。{h}は、その気遣いごと二人を愛おしく思った。|{y}「{x}、そっちお願い」{x}「任せて」――二人の軽口に、{h}は思わず吹き出した。笑っているうちに、服はすっかり脱がされていた。') },
     { id: 'lh_open', kinds: 'lovehub', t: L('{h}は二人を順番に見つめて、両手を広げた。{h}「二人とも、来て」{x}と{y}は顔を見合わせて笑い、迷わずその腕の中へ飛び込んだ。|{h}が{x}に口づけると、{y}は{h}の背中にそっと唇を落とした。{h}が振り向いて{y}に口づけると、今度は{x}が{h}の髪を撫でた。三人のあいだを、優しい順番がめぐった。|{x}と{y}は、{h}の両手を一本ずつ握った。{h}は二人の指を握り返して、「二人がいてくれてよかった」と囁いた。二人は同時に、{h}の頬に口づけた。') },
+    /* 取り合い（二人の恋人 {j}{o} が、同じ一人 {w} にそろって執着している） */
+    { id: 'lc_grab', kinds: 'loveclash', t: L('{j}と{o}は、{w}の服を左右から同時に引いた。ボタンが一つ弾け飛んだ。二人とも謝らなかったし、手も止めなかった。|{j}が{w}の首筋に唇を押しあてると、{o}は反対側の首筋に、もっと強く歯を立てた。{w}は二人の熱に挟まれて、息をするのもやっとだった。{j}「……真似するな」{o}「そっちこそ、真似するな」|{o}が{w}の手を取って自分の胸に当てさせると、{j}はその手首を掴んで自分の頬へ引き戻した。{w}の手は、二人のあいだを何度も行き来させられた。') },
+    { id: 'lc_claim', recv: 'w', kinds: 'loveclash', t: L('{j}は{w}の耳元で「私のことだけ見て」と囁いた。すぐに反対側から、{o}が同じ言葉を、もっと低い声で囁いた。{w}はどちらの声にも頷くしかなかった。|{j}と{o}は、{w}の肌にどちらが多く痕を残せるかを競うように唇を這わせた。白い肌に、二人分の赤い痕が増えていった。{w}「……二人とも、そんなに強く……」|{o}が{w}を抱き寄せると、{j}は{w}の腰を掴んで引き戻した。{w}は二人の腕の中で揺さぶられ、そのたびに小さく声を上げた。二人とも、その声が自分のせいであってほしかった。') },
     /* 攻め二人のうち片方が嫉妬深い：取り合う前戯 */
     { id: 'j_grab', recv: 'u', shapes: 'twoOne', jeal: 'one', t: L('{o}が{u}の肩に手を置いた瞬間、{j}がその手を払った。{j}「……先に触るのは、私」{o}は肩をすくめて、{u}の反対側に回った。|{j}は{u}を自分の方へ引き寄せ、{o}との間に体を割り込ませた。{u}は二人の間で、どちらを見ればいいのか分からなかった。|{j}は{u}の顎を取って自分の方を向かせ、{o}に見せつけるように深く口づけた。{o}は黙って、{u}の背中に唇を落とした。') },
     /* 攻め二人とも嫉妬深い：睨み合い */
@@ -9788,6 +9793,10 @@
     /* 中心のある円満な三人 */
     { id: 'lh_relay', recv: 'h', tag: '息の合った二人', kinds: 'lovehub', t: L('{x}が{h}を抱いている間、{y}は{h}の手を握って、ずっと耳元で名前を呼んでいた。交代するときには、{x}が同じことをした。二人の連携に、{h}は何度もほどけた。|{x}と{y}は、{h}がどこで声を上げるかを互いに教え合った。{y}「そこが好きみたい」{x}「前から知ってる」――{h}は顔を真っ赤にして、二人の口を手で塞ごうとした。|{y}が息を整えている間、{x}が{h}を抱きしめていた。{y}が戻ってくると、{x}は笑って{h}の背中をそっと押した。三人のあいだに、順番を争う気配はなかった。') },
     { id: 'lh_both', tag: '二人に同じだけ', kinds: 'lovehub', t: L('{h}は{x}と{y}を交互に抱き寄せ、どちらにも同じだけ口づけを落とした。片方だけを長く見つめることはしなかった。二人とも、それをよく分かっていた。|{h}は二人の名前を、同じ数だけ呼んだ。{x}を呼べば次は{y}を、{y}を呼べば次は{x}を。二人はそのたびに、嬉しそうに顔を見合わせた。|{x}と{y}は、{h}の左右からそれぞれの好きなところに触れた。{h}は二人分の愛情を一度に受け止めて、息をするのも忘れそうになった。それでも、どちらの手も離さなかった。') },
+    /* 取り合い */
+    { id: 'lc_tug', recv: 'w', tag: '激しい取り合い', kinds: 'loveclash', t: L('{j}が{w}を抱いているあいだ、{o}は一度も目を逸らさなかった。{j}が息をついた瞬間、{o}は{w}を奪うように引き寄せた。{j}「まだ終わってない」{o}「もう我慢できない」――{w}は二人の間で、休む暇もなく求められ続けた。|{j}と{o}は、{w}がどちらの名前を多く呼ぶかを数えていた。{w}が{o}の名を呼べば{j}が激しくなり、{j}の名を呼べば{o}がさらに深く求めた。{w}の声は、途中から言葉にならなくなった。|{o}が{w}を離そうとしないので、{j}は{o}の肩を押しのけるようにして{w}の上に覆いかぶさった。{o}はすぐに{w}の手を取り返して、指を絡めた。二人の取り合いのあいだで、{w}は何度も果てた。') },
+    { id: 'lc_mark', tag: '「私の」の言い合い', kinds: 'loveclash', t: L('{j}「{w}は私のだ」{o}「違う、私のだ」――言い合うたびに、二人の手つきは荒くなった。{w}は二人の言葉を聞きながら、どちらにも抗えなかった。どちらの言葉も、本当だった。|{j}は{w}に、自分の名前だけを呼ばせようとした。{o}も同じことをした。{w}は二人の名前を交互に呼び、最後には二つの名前をつなげて呼んだ。二人とも、それでは満足しなかった。|{o}は{w}の胸元に自分の痕を残し、{j}はそのすぐ隣に、もっと濃い痕を重ねた。{w}の肌は、二人が奪い合った跡でいっぱいになった。') },
+    { id: 'lc_eyes', tag: '目を離さない二人', kinds: 'loveclash', t: L('{j}も{o}も、{w}の顔から一瞬も目を離さなかった。相手が{w}をどんな顔にさせるのかを見届けて、それ以上の顔をさせなければ気が済まなかった。{w}は二人に見つめられたまま、何度も乱された。|{o}が{w}を抱き寄せている間、{j}は{w}の顎を掴んで、自分の方を向かせた。{j}「こっち」――{o}もすぐに{w}の頬に手を添えて、向きを戻させた。{w}の視線は、二人の間で取り合われ続けた。|{w}が{j}の腕の中で震えると、{o}は唇を噛んだ。次に{w}を震わせたのは、{o}だった。そのあと、{j}はもっと長く、{w}を離さなかった。') },
     /* 性格で選ぶ主役（追加） */
     { id: 'cool', tag: '冷静を装う', who: 'cold', t: L('{s}は最後まで冷静な顔を保とうとした。二人がかりでその顔を崩しにかかり、三分と持たなかった。|{s}「状況を整理すると……」――言い終わる前に、二人の手が{s}の言葉を奪った。') },
     { id: 'caring', tag: '気遣いの手', who: 'np', t: L('{s}は自分のことより、二人が辛くないかを気にしていた。{s}「痛くない？　大丈夫？」――二人は同時に「大丈夫だから、集中して」と答えた。|{s}は二人の額の汗を順番に拭ってやった。その手を、二人が同時に掴んで引き寄せた。') },
@@ -9846,6 +9855,7 @@
     { id: 'c_shy', recv: 's', open: 'shy', t: L('{s}は声を殺したまま達した。殺しきれなかった最後の一声だけが、白い部屋に小さく響いた。二人は、それを聞き逃さなかった。|{s}は顔を隠したまま果てた。腕の下から覗いた耳だけが、真っ赤だった。') },
     { id: 'c_love', kinds: 'love', t: L('三人は互いの名前を呼びながら、ほとんど同時に果てた。{h}は二人を抱きしめたまま、しばらく震えていた。{x}と{y}は、その震えが収まるまで両側から離れなかった。|最後は、三人で指を絡めたまま達した。誰が先だったのかは、三人とも気にしなかった。重なった手を、誰もほどこうとしなかった。|{x}が果て、{y}が果て、最後に{h}が二人の腕の中で果てた。三人は顔を見合わせて、同時に笑った。いつもの夜と同じ、満ち足りた笑いだった。') },
     { id: 'c_lovehub', kinds: 'lovehub', t: L('{h}は二人の名前を続けて呼びながら、深く果てた。{x}と{y}は両側から{h}を抱きとめ、震えが収まるまで離さなかった。それから二人は、{h}の頭越しに小さく笑い合った。|最後は、{x}と{y}が{h}の両手をそれぞれ握ったまま、三人で果てた。誰も、誰かを置いていかなかった。{h}は二人の手を、いつまでも握っていた。|{x}が果て、{y}が果てて、{h}は二人の腕の中で最後に長く震えた。二人は同時に、{h}の額に口づけた。{h}は涙ぐみながら笑っていた。') },
+    { id: 'c_clash', kinds: 'loveclash', t: L('{w}は二人の名前を同時に叫ぶようにして果てた。{j}と{o}は、{w}の震えが自分の腕の中で起きたと言い張るように、左右から{w}を強く抱きしめた。どちらも、最後まで力をゆるめなかった。|{j}と{o}は、{w}を先に果てさせたのが自分だと言い合った。{w}は答える代わりに、二人の首にまとめて腕を回した。そのまま三人は、もつれ合うように果てた。|最後の瞬間まで、{j}と{o}は{w}を奪い合っていた。{w}が果てると、二人はようやく動きを止め、荒い息のまま{w}の両側に崩れ落ちた。それでも、二人の手は{w}の手首を離さなかった。') },
     { id: 'c_aphro', recv: 'h', kinds: 'aphro', t: L('媚薬の熱は、一度果てても引かなかった。{h}は達した直後に、またねだった。三人は熱が引くまで、何度も互いを求め合った。|{h}は正気を失ったまま達し、達してもまだ二人の名前を呼び続けた。熱が引くまで、どれだけかかったのか、誰も覚えていない。') }
   ];
 
@@ -9864,6 +9874,7 @@
     { id: 'a_love', kinds: 'love', t: L('終わったあと、三人はいつものように川の字になった。{h}が真ん中で、{x}と{y}が両側から{h}を抱いていた。{y}が「部屋が変わっても、変わらないね」と言い、{x}が「変わらないよ」と答えた。|三人は汗の引いた肌を寄せ合って、とりとめのない話をした。ここを出たら何を食べるか、次の休みにどこへ行くか。この白い部屋のことは、もう誰も怖がっていなかった。|{x}は眠りかけた{h}の額に口づけ、{y}の頬にも口づけた。{y}はお返しに、二人の手をまとめて自分の胸に抱いた。三人の寝息がそろうまで、そう時間はかからなかった。') },
     { id: 'a_promise', kinds: 'love', t: L('{h}は二人の間で、「ずっと三人でいようね」と呟いた。{x}と{y}は顔を見合わせて、同時に{h}の手を握った。返事は、それで十分だった。|{y}が三人分の水を汲んできて、順番に口元へ運んだ。{x}は「至れり尽くせり」と笑い、{h}は「いつもどおりでしょ」と笑った。白い部屋の中で、そこだけが三人の家のようだった。|三人は、毛布の中で互いの指を一本ずつ確かめた。{x}の指、{y}の指、{h}の指。どれも、ちゃんとここにあった。') },
     { id: 'a_lovehub', kinds: 'lovehub', t: L('終わったあと、{h}は二人の間で、満ち足りた顔で目を閉じた。{x}と{y}は{h}の寝顔を挟んで、声をひそめて笑い合った。{x}「やっぱり、{h}がいちばん」{y}「それは同意」|{x}と{y}は、{h}を真ん中にして毛布を分け合った。眠る前に、二人は{h}の頭越しに拳を軽く合わせた。親友どうしの、いつもの合図だった。|{h}は二人の腕枕に挟まれて、「欲張りすぎかな」と呟いた。{x}が「それでいい」と言い、{y}が「三人で決めたことでしょ」と続けた。{h}は安心したように、二人の間で眠りに落ちた。') },
+    { id: 'a_clash', kinds: 'loveclash', t: L('終わったあと、{j}と{o}は{w}の両腕を一本ずつ抱えたまま、互いに背を向けていた。{w}は天井を見上げて、小さく笑った。{w}「……二人とも、もう少し仲良くして」返事は、両側から強くなった腕の力だった。|{w}が眠りかけると、{j}は{w}の髪に、{o}は{w}の指先に、それぞれ口づけた。二人の目が合うと、どちらも先に逸らさなかった。{w}は二人の真ん中で、そのにらみ合いが終わるのを待たずに眠ってしまった。|{j}「次は私が先」{o}「次も私が先」――二人は{w}を挟んで、小声で言い合いを続けた。{w}は二人の口を手で塞いで、{w}「……どっちも好きだから、黙って」と言った。二人はようやく静かになった。') },
     { id: 'a_aphro', kinds: 'aphro', t: L('媚薬が抜けたとき、三人は顔を上げられなかった。白い部屋には、まだ甘い匂いが残っていた。|熱が引いたあと、三人はしばらく誰も口をきかなかった。やがて{h}が「全部、媚薬のせい」と言い、{x}と{y}が同時に「そういうことにしよう」と答えた。|正気に戻った三人は、互いの体に残った痕を見て、同時に目を逸らした。それから、同時に吹き出した。') },
     { id: 'a_join', kinds: 'join', t: L('途中から加わった{h}は、終わったあと少し気まずそうにしていた。{x}が{h}の肩を引き寄せた。{x}「最初からいたみたいだったよ」') }
   ];
@@ -9984,13 +9995,33 @@
     return null;
   }
   function harmony(ctx, g) { return !!harmonyOf(ctx, g); }
-  function loveKind(ctx, g) { var hm = harmonyOf(ctx, g); return !hm ? null : hm.full ? 'love' : 'lovehub'; }
+  /* 執着：関係「執着（ヤンデレ）」を重ねているか、執着度が育っている（「執着なし」の組は除く） */
+  function obsessed(ctx, c, o) {
+    var O = HK.Obsess;
+    if (!O || (O.noTie && O.noTie(ctx, c, o))) return false;
+    return !!(O.yanTie && O.yanTie(ctx, c, o)) || (O.level ? O.level(ctx, c, o) : 0) >= 35;
+  }
+  /* 円満な三人のうち、二人の恋人が同じ一人（{w}）にそろって執着している：円満ではなく、激しい取り合いになる */
+  function clashOf(ctx, g) {
+    var hm = harmonyOf(ctx, g);
+    if (!hm) return null;
+    var cs = hm.full ? g : [hm.hub];
+    for (var i = 0; i < cs.length; i++) {
+      var w = cs[i], o = g.filter(function (c) { return c !== w; });
+      if (obsessed(ctx, o[0], w) && obsessed(ctx, o[1], w)) return { w: w, pr: o };
+    }
+    return null;
+  }
+  function loveKind(ctx, g) { var hm = harmonyOf(ctx, g); return !hm ? null : clashOf(ctx, g) ? 'loveclash' : hm.full ? 'love' : 'lovehub'; }
   function isLove(kind) { return kind === 'love' || kind === 'lovehub'; }
+  /* 恋人どうしの三人（円満・取り合い）：決め事の説得・拒みのきっかけを使わない */
+  function isLoveAny(kind) { return isLove(kind) || kind === 'loveclash'; }
   /* 中心のある円満な三人：中心の人が二人の両方と交われるなら、中心だけが二人と繋がる形 */
   function loveShape(ctx, g) {
-    var hm = harmonyOf(ctx, g);
-    if (!hm || hm.full) return null;
-    var h = hm.hub, o = g.filter(function (c) { return c !== h; });
+    var hm = harmonyOf(ctx, g), cl = hm && clashOf(ctx, g);
+    if (!hm || (hm.full && !cl)) return null;
+    /* 取り合いは、取り合われる人を中心に（執着している二人どうしは直接は交わらない） */
+    var h = cl ? cl.w : hm.hub, o = g.filter(function (c) { return c !== h; });
     if (HK.ngPair && (HK.ngPair(h, o[0]) || HK.ngPair(h, o[1]))) return null;
     return okSex(h, o[0]) && okSex(h, o[1]) ? { sg: [h].concat(o), hubOnly: true } : null;
   }
@@ -10008,7 +10039,7 @@
   }
   /* きっかけごとの形。取り合われた人・誘われた人が中心のきっかけでは、その人が中心になれなければ成り立たない */
   function shapeFor(ctx, g, kind) {
-    if (kind === 'lovehub') return loveShape(ctx, g);
+    if (kind === 'lovehub' || kind === 'loveclash') return loveShape(ctx, g);
     var x = g[1], y = g[2];
     var hub = kind === 'hub' || (kind === 'invite' && !(HK.canLove(x, y) && HK.canLove(y, x) && R(ctx, x, y).att > 10));
     var sp = sexShape(g, hub);
@@ -10087,7 +10118,8 @@
       var cands = [];
       /* 円満な三人：三人とも互いに恋人どうしなら、成り行きではなく、恋人どうしとして三人で（ほかのきっかけより先に選ぶ） */
       var hm = harmonyOf(ctx, g);
-      if (hm) cands.push({ kind: hm.full ? 'love' : 'lovehub', h: hm.full ? g.slice().sort(function (p, q) { return A.eager(ctx, q) - A.eager(ctx, p); })[0] : hm.hub, v: 10 });
+      var cl0 = hm && clashOf(ctx, g);
+      if (hm) cands.push({ kind: cl0 ? 'loveclash' : hm.full ? 'love' : 'lovehub', h: cl0 ? cl0.w : hm.full ? g.slice().sort(function (p, q) { return A.eager(ctx, q) - A.eager(ctx, p); })[0] : hm.hub, v: 10 });
       /* 選べない三角関係：b と c がどちらも a に惹かれている */
       var hub = function (h, x, y) {
         if (R(ctx, x, h).att > 22 && R(ctx, y, h).att > 22 && R(ctx, h, x).att > 10 && R(ctx, h, y).att > 10 && R(ctx, x, y).ten < 55 && R(ctx, y, x).ten < 55 && HK.canLove(h, x) && HK.canLove(h, y) && HK.canLove(x, h) && HK.canLove(y, h))
@@ -10159,6 +10191,8 @@
     praise: L('三人は順番に、残りの二人のいいところを言い合った。言われるたびに、誰かが顔を覆った。')
   };
   var OPEN = {
+    /* 二人の恋人が、同じ一人（{h}）にそろって執着している：取り合い */
+    loveclash: L('{x}と{y}は、但し書きを読み終える前に{h}の両腕を掴んでいた。どちらも、手を離す気はなかった。{x}「{h}は私のだ」{y}「最初から、私のだ」|{h}が但し書きを読み上げると、{x}と{y}は同時に{h}を引き寄せようとして、互いの手がぶつかった。二人は睨み合い、それから同じことを考えた。三人でなら、相手に{h}を独り占めさせずに済む。|「三人で」と{h}が言い終わる前に、{x}が{h}の唇を塞いだ。{y}はその肩を掴んで{h}を自分の方へ向かせ、奪い返すように口づけた。どちらも、相手に一秒でも長く{h}を渡したくなかった。'),
     /* 中心のある円満な三人：{h} が二人の恋人、{x}{y} は仲のよい二人 */
     lovehub: L('{x}と{y}は但し書きを読んで、顔を見合わせた。どちらも{h}と特別な仲で、どちらも互いをよく知っていた。{x}「……{h}となら、三人でも大丈夫」{y}も笑って頷いた。|{h}は{x}と{y}の手を、片方ずつ握った。「二人とも好き。それは、二人とももう知ってるよね」――{x}と{y}は、照れくさそうに目を合わせた。仲のいい二人のあいだに、迷いはなかった。|{y}が{x}の肩を軽く叩いた。「今日は、一緒に{h}を大事にしよう」{x}は「言われなくても」と笑い返した。{h}は二人のやりとりを聞いて、顔を赤くした。'),
     /* 円満な三人（全員が恋人どうし）：成り行きではなく、いつもの三人として */
@@ -10184,7 +10218,10 @@
     /* 円満な三人でも、嫉妬しやすい人がいれば、ちょっとした小競り合い（すぐ収まる焼きもち）を一つはさむことがある */
     var spat = null;
     if (isLove(kind)) { if (J.j && ctx.rng() < 0.7) spat = { j: J.j, o: J.o, w: jc }; J = { jeal: 'none' }; }
+    /* 取り合い：執着している二人（jp）が、真ん中の人（jc）を奪い合う。嫉妬は「両方」として扱う */
+    if (kind === 'loveclash' && jp) { var j1 = jealVal(ctx, jp[0], jc) >= jealVal(ctx, jp[1], jc) ? jp[0] : jp[1]; J = { jeal: 'both', j: j1, o: jp[0] === j1 ? jp[1] : jp[0] }; }
     if (J.j) { r.j = J.j; r.o = J.o; }
+    if (kind === 'loveclash') r.w = jc;
     /* 受けの開放度：受ける人（twoOne・sandwich は {u}、oneTwo は {m}{u} のうち開放度の極端な方）の性格から */
     var sCand = sp.p === 'oneTwo' ? [sp.m, sp.u] : sp.p === 'ring' ? [sp.t, sp.m, sp.u].filter(canBottom) : [sp.u];
     sCand = sCand.filter(canBottom);
@@ -10230,7 +10267,7 @@
     var pickTagged = function (pool, wfn) {
       var cands = pool.filter(ok).filter(function (o) { return o.t.some(penOK); });
       if (!cands.length) return null;
-      var o = HK.weighted(ctx.rng, cands, function (z) { return (wfn ? wfn(z) : 1) * (isLove(kind) && z.kinds ? 3 : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); });
+      var o = HK.weighted(ctx.rng, cands, function (z) { return (wfn ? wfn(z) : 1) * (isLoveAny(kind) && z.kinds ? 3 : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); });
       if (!o) return null;
       ctx.flags.trioHL[o.id] = (ctx.flags.trioHL[o.id] || 0) + 1;
       var ls = o.t.filter(penOK);
@@ -10261,7 +10298,7 @@
     var addHL = function (pool, wfn) {
       var cands = pool.filter(function (o) { return ok(o) && (!o.who || top(o.who, 0.55)) && o.t.some(penOK); });
       if (!cands.length) return false;
-      var o = HK.weighted(ctx.rng, cands, function (z) { return (wfn ? wfn(z) : 1) * (isLove(kind) && z.kinds ? 3 : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); });
+      var o = HK.weighted(ctx.rng, cands, function (z) { return (wfn ? wfn(z) : 1) * (isLoveAny(kind) && z.kinds ? 3 : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); });
       if (!o) return false;
       ctx.flags.trioHL[o.id] = (ctx.flags.trioHL[o.id] || 0) + 1;
       var rr = Object.assign({}, r); if (o.who) { rr.s = top(o.who, 0.55); setPQ(rr); }
@@ -10279,7 +10316,9 @@
       var so = X.SPAT[Math.floor(ctx.rng() * X.SPAT.length)], rs = Object.assign({}, r, spat), sl = so.t.filter(function (l) { return penRaw(l) && moodOK(l) && (String(l).match(/\{[a-z]\}/g) || []).every(function (k) { return !!rs[k.charAt(1)]; }); });
       if (sl.length) { out.push(X.fill(ctx.pick(sl), rs)); used.push(so.tag); }
     }
-    var nJ = J.jeal !== 'none' ? (ctx.rng() < 0.85 ? 1 : 0) : (ctx.rng() < 0.45 ? 1 : 0);
+    var nJ = kind === 'loveclash' ? 1 : J.jeal !== 'none' ? (ctx.rng() < 0.85 ? 1 : 0) : (ctx.rng() < 0.45 ? 1 : 0);
+    /* 取り合い：取り合いの見所を一つ必ず入れる（嫉妬の見所に加えて） */
+    if (kind === 'loveclash') addHL(X.HL.filter(function (o) { return o.kinds && o.kinds.split(' ').indexOf('loveclash') >= 0; }));
     if (nJ) addHL(hlJ);
     if (ctx.rng() < (first ? 0.6 : 0.35)) addHL(hlO);
     var nG = first ? (ctx.rng() < 0.6 ? 1 : 0) + (used.length < 2 ? 1 : 0) : (used.length ? 0 : 1);
@@ -10290,7 +10329,7 @@
     if (TE) out.push(efill(ctx.pick(TE.TRIO.climax)));
     else if (!r.synced) {
       var cx = (X.CLIMAX_X || []).filter(function (o) { return ok(o) && o.t.some(penOK) && (!o.after || o.after === after); });
-      var c = cx.length && ctx.rng() < 0.7 ? HK.weighted(ctx.rng, cx, function (z) { return (z.jeal ? 2 : 1) * (z.open ? 1.5 : 1) * (z.kinds ? (isLove(kind) ? 6 : 2) : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
+      var c = cx.length && ctx.rng() < 0.7 ? HK.weighted(ctx.rng, cx, function (z) { return (z.jeal ? 2 : 1) * (z.open ? 1.5 : 1) * (z.kinds ? (isLoveAny(kind) ? 6 : 2) : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
       if (c) { ctx.flags.trioHL[c.id] = (ctx.flags.trioHL[c.id] || 0) + 1; var cl = c.t.filter(penOK); out.push(X.fill(ctx.pick(cl.length ? cl : c.t), r)); }
       else out.push(X.fill(ctx.pick(X.CLIMAX.filter(penOK)), r));
     }
@@ -10299,7 +10338,7 @@
     if (!tShort && ctx.rng() < (first ? 0.75 : 0.4)) {
       var aOK = function (l) { return rolesOK(l) && moodOK(l); };
       var ax = (X.AFTER_X || []).filter(function (o) { return ok(o) && o.t.some(aOK) && (!o.after || o.after === after || (!after && o.after === 'bond' && J.jeal === 'none')); });
-      var a = ax.length && ctx.rng() < (after ? 0.9 : 0.6) ? HK.weighted(ctx.rng, ax, function (z) { return (z.after && z.after === after ? 3 : 1) * (z.jeal ? 1.6 : 1) * (z.kinds ? (isLove(kind) ? 6 : 2) : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
+      var a = ax.length && ctx.rng() < (after ? 0.9 : 0.6) ? HK.weighted(ctx.rng, ax, function (z) { return (z.after && z.after === after ? 3 : 1) * (z.jeal ? 1.6 : 1) * (z.kinds ? (isLoveAny(kind) ? 6 : 2) : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
       var al = a ? a.t.filter(aOK) : [];
       if (a && al.length) { ctx.flags.trioHL[a.id] = (ctx.flags.trioHL[a.id] || 0) + 1; out.push(X.fill(ctx.pick(al), r)); }
       else out.push(X.fill(ctx.pick(X.AFTER.filter(moodOK)), r));
@@ -10488,6 +10527,7 @@
     if (kind === 'join') { var dp = donePair(ctx, g); h = g.filter(function (c) { return dp.indexOf(c) < 0; })[0]; }
     else if (kind === 'hub') h = g.slice().sort(function (p, q) { var s = function (c) { return g.reduce(function (t, o) { return o === c ? t : t + R(ctx, o, c).att; }, 0); }; return s(q) - s(p); })[0];
     else if (kind === 'lovehub') h = harmonyOf(ctx, g).hub;
+    else if (kind === 'loveclash') h = clashOf(ctx, g).w;
     else if (kind === 'invite') h = g.filter(function (c) { return g.filter(function (o) { return o !== c; }).every(function (o) { return !partnered(ctx, c, o); }); })[0];
     if (!h) h = sh.hubOnly ? sh.sg[0] : sp.p === 'twoOne' ? sp.u : sp.p === 'oneTwo' ? sp.t : sp.p === 'sandwich' ? sp.m : sh.sg[0];
     return [h].concat(g.filter(function (c) { return c !== h; }));
@@ -10506,7 +10546,7 @@
       return ctx.t(ctx.pick(late ? TURN_LATE : TURN), c);
     }).join('');
   }
-  var KIND_WHY = { love: '三人とも互いに恋人どうしで、円満だった', lovehub: '一人が残りの二人の両方と恋人（または友達以上恋人未満）で、残りの二人も仲がよい。円満な三人', hub: '二人が同じ一人に惹かれていた', invite: '恋人同士が、残る一人を誘った', free: '三人とも積極的だった', late: '残り時間への焦り。三人なら一度で済む', warm: '三人とも、互いに打ち解けていた', auto: '三人ちょうどで、受けに回れる人がいた', join: '二人が先に始めていて、三人目が加わった', aphro: '媚薬が三人に回っていた' };
+  var KIND_WHY = { loveclash: '二人の恋人が、同じ一人にそろって執着していた。円満ではなく、激しい取り合いになった', love: '三人とも互いに恋人どうしで、円満だった', lovehub: '一人が残りの二人の両方と恋人（または友達以上恋人未満）で、残りの二人も仲がよい。円満な三人', hub: '二人が同じ一人に惹かれていた', invite: '恋人同士が、残る一人を誘った', free: '三人とも積極的だった', late: '残り時間への焦り。三人なら一度で済む', warm: '三人とも、互いに打ち解けていた', auto: '三人ちょうどで、受けに回れる人がいた', join: '二人が先に始めていて、三人目が加わった', aphro: '媚薬が三人に回っていた' };
   function infoWhy(ctx, sh) {
     var info = ctx.flags.lastTrioInfo;
     if (!info) return '';
@@ -10566,7 +10606,7 @@
       var sp = shape(ctx, sh.sg, sh.hubOnly), go = orderG(ctx, g, sh, sp, hk);
       pairsOf(g).forEach(function (pr) { var pf = ctx.pair(pr[0], pr[1]); pf.heatDone = true; if (okSex(pr[0], pr[1])) pf.night = true; ctx.mod2(pr[0], pr[1], { att: 10, aff: 4 }, { att: 10, aff: 4 }); });
       var text = scene(ctx, go, hk, true, 3, { sg: go, hubOnly: sh.hubOnly, sp: sp }, true);
-      var why = '三人の場面：' + (isLove(hk) ? KIND_WHY[hk] + '。' : '') + '媚薬が三人に回っていた（' + g.map(function (c) { return Math.round(c.flags.aphro || 0); }).join('・') + '）' + infoWhy(ctx, sh);
+      var why = '三人の場面：' + (isLoveAny(hk) ? KIND_WHY[hk] + '。' : '') + '媚薬が三人に回っていた（' + g.map(function (c) { return Math.round(c.flags.aphro || 0); }).join('・') + '）' + infoWhy(ctx, sh);
       if (ctx.flags.lastTrioTags && ctx.flags.lastTrioTags.length) { why += '／見所：' + ctx.flags.lastTrioTags.join('・'); ctx.flags.lastTrioTags = null; }
       return { text: text, why: why, mag: 30, with: g.filter(function (c) { return c !== a && c !== b; }) };
     }
@@ -10588,14 +10628,14 @@
       if (!pl) return { text: ctx.t('{a}と{b}は、紙の但し書きをもう一度読んだ。', a, b) };
       var g = pl.g;
       /* 三人のうち誰かが強く拒むことがある（CP・恋人への操） */
-      var refuser = g.filter(function (c) { return c.tr.cp > 0.72 && A.eager(ctx, c) < 0.35 && pl.kind !== 'late' && !isLove(pl.kind); })[0];
+      var refuser = g.filter(function (c) { return c.tr.cp > 0.72 && A.eager(ctx, c) < 0.35 && pl.kind !== 'late' && !isLoveAny(pl.kind); })[0];
       if (refuser) {
         refuser.flags.trioNo = true;
         g.forEach(function (c) { if (c !== refuser) ctx.mod(refuser, c, { ten: 6 }); });
         return { cat: 'conflict', text: ctx.t(ctx.pick(['{a}は「三人で、なんて絶対に無理」と首を振った。話は、そこで終わった。', '{a}は但し書きの紙を裏返して、「見なかったことにする」と言った。', '{a}「私は、するなら一人とだけ。それは譲れない」']), refuser), why: refuser.name + 'のCP（' + Math.round(refuser.eg.CP) + '）：三人でという形には頷けなかった', mag: 12, with: g.filter(function (c) { return c !== refuser; }) };
       }
       /* 「一人だけ」と決めていた人が加わるなら、気持ちが変わったことを一言はさむ（説得されていれば、その場面がすでにある） */
-      var turn = isLove(pl.kind) ? '' : g.filter(function (c) { return c.flags.excl && !c.flags.exclOpen; }).map(function (c) {
+      var turn = isLoveAny(pl.kind) ? '' : g.filter(function (c) { return c.flags.excl && !c.flags.exclOpen; }).map(function (c) {
         c.flags.exclOpen = true;
         var late = c.stress > 70 && ctx.stepIndex >= ctx.stepsTotal * 0.7;
         return ctx.t(ctx.pick(late ? ['{a}は、「他の人とは無理」と言った自分を思い出した。けれど、もう時間がなかった。', '{a}は唇を噛んだ。最初の決め事より、ここを出ることの方が大事になっていた。']
@@ -10607,7 +10647,7 @@
       pairsOf(g).forEach(function (pr) { ctx.mod2(pr[0], pr[1], { att: 8, aff: 5, trust: 4 }, { att: 8, aff: 5, trust: 4 }); });
       ctx.present().filter(function (o) { return g.indexOf(o) < 0; }).forEach(function (o) { g.forEach(function (c) { ctx.mod(o, c, { ten: 3 }); }); ctx.stress(o, 5); });
       var text = turn + scene(ctx, g, pl.kind, true, ctx.present().length);
-      var why = '三人の場面：' + { love: KIND_WHY.love, lovehub: g[0].name + 'は' + g[1].name + 'と' + g[2].name + 'の両方と恋人（または友達以上恋人未満）で、' + g[1].name + 'と' + g[2].name + 'も仲がよい。円満な三人', hub: g[1].name + 'と' + g[2].name + 'がどちらも' + g[0].name + 'に惹かれていた。' + g[0].name + 'は選ばなかった', invite: g[1].name + 'と' + g[2].name + 'は、' + g[0].name + 'を一人で残したくなかった', free: '三人とも積極的だった（' + g.map(function (c) { return Math.round(A.eager(ctx, c) * 100); }).join('・') + '）', late: '残り時間への焦り。三人なら一度で済む', warm: '三人とも、互いに打ち解けていた' }[pl.kind] + infoWhy(ctx, null) + '／但し書き：三人以上で同時なら全員分';
+      var why = '三人の場面：' + { loveclash: g[1].name + 'と' + g[2].name + 'はどちらも' + g[0].name + 'の恋人で、どちらも' + g[0].name + 'に執着していた。激しい取り合いになった', love: KIND_WHY.love, lovehub: g[0].name + 'は' + g[1].name + 'と' + g[2].name + 'の両方と恋人（または友達以上恋人未満）で、' + g[1].name + 'と' + g[2].name + 'も仲がよい。円満な三人', hub: g[1].name + 'と' + g[2].name + 'がどちらも' + g[0].name + 'に惹かれていた。' + g[0].name + 'は選ばなかった', invite: g[1].name + 'と' + g[2].name + 'は、' + g[0].name + 'を一人で残したくなかった', free: '三人とも積極的だった（' + g.map(function (c) { return Math.round(A.eager(ctx, c) * 100); }).join('・') + '）', late: '残り時間への焦り。三人なら一度で済む', warm: '三人とも、互いに打ち解けていた' }[pl.kind] + infoWhy(ctx, null) + '／但し書き：三人以上で同時なら全員分';
       if (ctx.flags.lastTrioTags && ctx.flags.lastTrioTags.length) { why += '／見所：' + ctx.flags.lastTrioTags.join('・'); ctx.flags.lastTrioTags = null; }
       if (done3(ctx, g)) { ctx.flags.trioCur = null; return T.exitGroup(ctx, g, text, why, hasH(ctx), pl.kind); }
       return { text: text + progText(ctx, g) + '扉はまだ開かない。', why: why, mag: 30, with: g.filter(function (c) { return c !== a && c !== b; }) };
@@ -10645,6 +10685,8 @@
   };
   /* 円満な三人（全員が恋人どうし）が部屋を出たあと */
   var LOVE_BOND = L('三人は部屋を出ると、自然に手を繋いだ。{a}が真ん中で、{b}と{c}が両側だった。帰り道、誰も「この先どうする」とは訊かなかった。答えは、もう三人とも知っていた。|部屋を出た夜、三人はいつもの部屋に帰って、同じ毛布にくるまった。{b}が「怖かった？」と訊くと、{a}は首を振った。{c}が「三人だったから」と代わりに答えた。|しばらくして、三人は揃いの指輪を作った。三人で恋人になったときから決めていたことを、あの白い部屋が少しだけ早めた。{a}は指輪を眺めながら、「次は、窓のある部屋がいい」と笑った。|三人の暮らしは、部屋を出たあとも何も変わらなかった。朝は{b}が珈琲を淹れ、{c}が寝坊し、{a}が二人を起こした。変わったのは、三人で笑う理由が一つ増えたことだけだった。');
+  /* 二人の恋人が同じ一人（{a}）を取り合う三人が部屋を出たあと（{b}{c}が執着している二人） */
+  var CLASH_BOND = L('部屋を出たあとも、{b}と{c}は{a}の両腕を一本ずつ離さなかった。どちらが{a}の隣を歩くかで、帰り道のあいだじゅう張り合っていた。{a}は困った顔で、それでも二人の手を握り返していた。|それからも三人は一緒にいた。{b}と{c}は相変わらず{a}を奪い合い、{a}はそのたびに二人の間に割って入った。誰も、三人をやめるとは言わなかった。|{a}の部屋には、歯ブラシが三本並ぶようになった。{b}と{c}は、どちらが{a}の隣で眠るかを毎晩のように争った。{a}は二人の真ん中で眠ることにして、争いを終わらせた。');
   /* 中心のある円満な三人（{a}以外の二人のどちらかが中心とは限らないので、三人の名で書く） */
   var HUB_BOND = L('部屋を出たあとも、三人の形は変わらなかった。{a}と{b}と{c}は、誰か一人が欠けることを、もう考えなかった。三人で過ごす夜は、それからも続いた。|三人は外に出ると、近くの店で朝ご飯を食べた。誰がどこに座るかで少しだけ揉めて、結局いつもの並びになった。あの部屋のことは、三人だけの思い出になった。|部屋を出た三人は、それからも同じように会い続けた。二人の恋人と、恋人を同じくする親友。名前のつけにくい関係だったが、三人ともそれを気に入っていた。');
   T.BOND_LABEL = { marry: '三人婚', secret: '三人だけの秘密の関係', jealous: '三人のうち一人が揺れている', forget: 'なかったことにした' };
@@ -10658,15 +10700,17 @@
     finish0(ctx);
     (ctx.flags.trios || []).forEach(function (ex) {
       var g = ex.group.map(function (i) { return ctx.chars[i]; });
-      var bd = T.bond(ctx, g), lv = ex.kind === 'love' && harmony(ctx, g), lh = ex.kind === 'lovehub' && harmony(ctx, g);
+      var bd = T.bond(ctx, g), lv = ex.kind === 'love' && harmony(ctx, g), lh = ex.kind === 'lovehub' && harmony(ctx, g), lc = ex.kind === 'loveclash' && harmony(ctx, g);
       /* 円満な三人は、張りつめた緊張がなければ三人婚に。中心のある三人は、なかったことにはしない */
       if (lv && bd !== 'jealous') bd = 'marry';
       if (lh && bd === 'forget') bd = 'secret';
       ex.bond = bd; ex.bondLabel = T.BOND_LABEL[bd];
       var lone = bd === 'jealous' ? g.slice().sort(function (p, q) { var s = function (c) { return g.reduce(function (t, o) { return o === c ? t : t + R(ctx, o, c).aff; }, 0); }; return s(p) - s(q); })[0] : g[0];
+      var cw = lc ? clashOf(ctx, g) : null;
+      if (cw) lone = cw.w;
       var order = [lone].concat(g.filter(function (c) { return c !== lone; }));
       g.forEach(function (c) { c.fateNote += '。その後は「' + ex.bondLabel + '」'; });
-      ctx.say({ kind: 'event', cat: 'romance', actors: g, text: ctx.t(ctx.pick(lv && bd === 'marry' ? LOVE_BOND : lh && bd !== 'jealous' ? HUB_BOND : BOND_TEXT[bd]), order[0], order[1], order[2] || order[1]), why: '部屋を出たあとの三人：' + (lv ? '三人とも恋人どうしで、円満だった。' : lh ? '中心のある円満な三人だった。' : '') + '三人のあいだの好意と緊張から', mag: 20 });
+      ctx.say({ kind: 'event', cat: 'romance', actors: g, text: ctx.t(ctx.pick(lc ? CLASH_BOND : lv && bd === 'marry' ? LOVE_BOND : lh && bd !== 'jealous' ? HUB_BOND : BOND_TEXT[bd]), order[0], order[1], order[2] || order[1]), why: '部屋を出たあとの三人：' + (lc ? '二人の恋人が同じ一人を取り合う三人だった。' : lv ? '三人とも恋人どうしで、円満だった。' : lh ? '中心のある円満な三人だった。' : '') + '三人のあいだの好意と緊張から', mag: 20 });
     });
   };
 })();
