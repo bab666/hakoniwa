@@ -36,6 +36,8 @@
   U.cold = function (ctx, a, b) {
     var t = HK.Ties && HK.Ties.from(ctx, a, b, 'crush');
     if (t && t.cold) return t.cold;
+    /* 両片想い（b からも片想い）は、相手にされていない片想いではない（pining.js） */
+    if (HK.Ties && HK.Ties.from(ctx, b, a, 'crush')) return '';
     if (ctx.R(b, a).att >= 20) return '';
     if (U.heartOf(ctx, b, a)) return 'other';
     if (ctx.R(b, a).ten > 30 || ctx.R(b, a).aff < -10) return 'dislike';

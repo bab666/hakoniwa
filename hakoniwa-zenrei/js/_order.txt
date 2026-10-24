@@ -126,6 +126,7 @@ js/island-sea.js
 js/island-love.js
 js/unreq.js
 js/fwbcrush.js
+js/pining.js
 js/zombie-cure.js
 js/zombie-assault.js
 js/zombie-map.js

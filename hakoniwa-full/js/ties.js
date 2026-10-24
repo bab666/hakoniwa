@@ -41,9 +41,12 @@
     none: { label: '想われる側：興味がない', short: '興味なし', att: 0.2, ba: { aff: -5 } },
     friend: { label: '想われる側：友達としか見ていない', short: '友達止まり', att: 0.1, ba: { aff: 20, trust: 20 } },
     dislike: { label: '想われる側：苦手・避けている', short: '苦手', att: 0.08, aff: 0.6, ba: { aff: -20, ten: 18 } },
-    other: { label: '想われる側：ほかに好きな人がいる', short: '他に好きな人', att: 0.15, ba: { aff: 5 } }
+    other: { label: '想われる側：ほかに好きな人がいる', short: '他に好きな人', att: 0.15, ba: { aff: 5 } },
+    /* 両片想い：お互いに想っているのに、相手は自分を何とも思っていないと思い込んでいる。
+       箱庭に渡すときは、向きを逆にした片想いと二本にする（HK.Ties.expand）。どちらも想う側として動き、両片想いの出来事（pining.js）が起きる */
+    mutual: { label: '想われる側：実は想っている（両片想い）', short: '両片想い', mutual: true }
   };
-  HK.CRUSH_COLD_ORDER = ['', 'none', 'friend', 'dislike', 'other'];
+  HK.CRUSH_COLD_ORDER = ['', 'none', 'friend', 'dislike', 'other', 'mutual'];
   /* 不仲・敵対の「相手」の気持ち（一方的な敵視・噛み合わない関係）。空欄は、お互いに敵視している（以前の不仲・敵対と同じ）
      ba=相手から敵視する側への初期値、mods=相手の側の関係値の伸び、bias=相手の側の行動の倍率 */
   HK.HATE_BACK = {
@@ -71,7 +74,7 @@
     return null;
   };
   var HATE_WORDS = [[/一方的|片思いならぬ|相手は気にして(?:い)?ない|相手は気づいて(?:い)?ない|なんとも思って(?:い)?ない/, 'none'], [/相手はふつう|相手は普通/, 'normal'], [/相手は友(?:達|人)だと|友達だと思って/, 'friend'], [/相手は(?:好き|愛して|惚れて)|片想いされ|好かれて/, 'love']];
-  var COLD_WORDS = [[/脈なし|眼中に|相手にされ|興味がない|興味なし/, 'none'], [/友達としか|友達止まり|異性として見|恋愛対象外|対象外/, 'friend'], [/苦手|嫌われ|避けられ|避けて/, 'dislike'], [/他に好き|ほかに好き|別に好き|好きな人がいる/, 'other']];
+  var COLD_WORDS = [[/両片想い|両片思い|実は相手も/, 'mutual'], [/脈なし|眼中に|相手にされ|興味がない|興味なし/, 'none'], [/友達としか|友達止まり|異性として見|恋愛対象外|対象外/, 'friend'], [/苦手|嫌われ|避けられ|避けて/, 'dislike'], [/他に好き|ほかに好き|別に好き|好きな人がいる/, 'other']];
   HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'parent', 'pparent', 'teacher', 'mentor', 'crush', 'yan', 'bad', 'rival', 'enemy', 'lover', 'fwb', 'ex', 'fated', 'mate', 'master', 'noobs'];
 
   /* 文字から関係の種類を推定（長い語から順に照合） */
@@ -124,6 +127,8 @@
         used = used.slice(0, p0) + Array(ALIAS[k][0].length + 1).join('\u0000') + used.slice(p0 + ALIAS[k][0].length);
         k--;
       }
+      /* 「両片想い」だけ書いたら、片想い（想われる側：実は想っている） */
+      if (cold === 'mutual' && types.indexOf('crush') < 0) types.unshift('crush');
       /* 「兄弟で不仲」のように二つ書いたら、きょうだい（不仲）にまとめる */
       if (types.indexOf('bad') >= 0 && types.indexOf('sibling') >= 0) types = types.filter(function (x) { return x !== 'bad'; }).map(function (x) { return x === 'sibling' ? 'sibbad' : x; });
       var type = types[0] || null;
@@ -168,6 +173,25 @@
   HK.tieNoLove = function (t) { var D = t && T[t.type]; return !!(D && D.family && !D.loveOK && t.love !== 'ok'); };
   HK.tieFamLove = function (t) { var D = t && T[t.type]; return !!(D && D.family && !D.loveOK && t.love === 'ok'); };
   HK.Ties = {
+    /* 片想いの「両片想い」を、向きを逆にした片想い二本に開く（どちらも mutual: true）。箱庭に渡す前に一度だけ */
+    expand: function (ties) {
+      var out = [];
+      (ties || []).forEach(function (t) {
+        if (!(t && t.type === 'crush' && t.cold === 'mutual')) { out.push(t); return; }
+        var x = {}; for (var k in t) if (k !== 'cold') x[k] = t[k];
+        x.mutual = true; out.push(x);
+        var y = {}; for (var k2 in x) y[k2] = x[k2];
+        y.a = x.b; y.b = x.a;
+        if (!(ties || []).some(function (u) { return u && u.type === 'crush' && u.a === y.a && u.b === y.b; })) out.push(y);
+      });
+      return out;
+    },
+    /* a と b が両片想いか（どちらからも片想い。恋人になったら外れる） */
+    pining: function (ctx, a, b) {
+      if (!a || !b || a === b || ctx.pair(a, b).couple) return false;
+      if (HK.Ties.has(ctx, a, b, 'lover') || HK.Ties.has(ctx, a, b, 'mate') || HK.Ties.has(ctx, a, b, 'fated')) return false;
+      return !!(HK.Ties.from(ctx, a, b, 'crush') && HK.Ties.from(ctx, b, a, 'crush'));
+    },
     apply: function (ctx, ties) {
       ctx.ties = {}; ctx.tiesAll = {};
       (ties || []).forEach(function (t) {
@@ -196,7 +220,7 @@
         if (HK.tieNoLove(t)) p.kin = true;
         if (D.family && !D.loveOK) p.trustFloor = Math.max(p.trustFloor || 0, t.type === 'sibbad' ? 15 : 30);
         if (D.night && ctx.scen.id !== 'classroom') p.night = true;
-        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB ? t.cold : '', love: HK.tieFamLove(t) ? 'ok' : '' };
+        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB ? t.cold : '', love: HK.tieFamLove(t) ? 'ok' : '', mutual: !!t.mutual };
         list.push(o);
         list.sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
         ctx.ties[k] = list[0];
