@@ -3,7 +3,8 @@
      各箱庭の solo-*-ero.js に書いた男性向けの文（擬音・♡喘ぎ・淫語・おねだり・堕ち）に差し替わる。小説調の文はそのまま残る
    ■ 使い方：HK.Ero.add('saimin', { 'sug.kuwaeru.full': [...], ... }) で登録し、
      本文では HK.Ero.L(S, 'saimin', 'sug.kuwaeru.full', 元の配列) で引く（作風が小説調、または未登録なら元の配列）
-   ■ 喘ぎ（HK.Ero.moan）：段階 0 こらえる／1 とろける／2 崩れる。言葉が崩れるのは絶頂（段階 2）だけ。
+   ■ 喘ぎ（HK.Ero.moan）：段階 0 こらえる（声を抑える）／1 とろける（懇願）／2 崩れる（快楽堕ち）。言葉が崩れるのは絶頂（段階 2）だけ。
+     口調ごとの喘ぎは ero-moan-tone.js。キャラの設定「濁点喘ぎ」がオンの人は、絶頂と奥を深く突かれた場面で濁点喘ぎ（あ゛・お゛）になる。
      態度（persona）ごとに崩れ方が違う（強気・厳格は最後まで噛み殺そうとする、内気は最初から甘い）
    ■ 全年齢版（HK.SAFE_ON）では常に小説調。登場人物はすべて成人として扱う */
 (function () {
@@ -87,17 +88,41 @@
     used.push(x);
     return x;
   }
-  E.moan = function (S, who, stage) {
+  /* 口調ごとの喘ぎ（ero-moan-tone.js の E.TONE_MOAN[口調] = { s0 声を抑える, s1 懇願, s2 快楽堕ち, daku 濁点喘ぎ }）。
+     9つの態度の口調は、上の態度の喘ぎに足して使う。それ以外の口調は、その口調の喘ぎだけを使う（なければ態度の喘ぎ） */
+  E.TONE_MOAN = E.TONE_MOAN || {};
+  /* 濁点喘ぎ：キャラの設定「濁点喘ぎ」（input.chars[i].daku）がオンの人だけ、絶頂（段階 2）と、奥を深く突かれた場面（段階 1 で deep）で使う。
+     箱庭ごとに人物の作り方が違うので、名前で引けるように、シミュレーションの入力から覚えておく */
+  var DAKU = {};
+  E.dakuOf = function (who) { return !!(who && (who.daku || DAKU[who.name])); };
+  if (HK.simulate && !HK.simulate._daku) {
+    var sim0 = HK.simulate;
+    HK.simulate = function (input) {
+      DAKU = {};
+      ((input && input.chars) || []).forEach(function (c) { if (c && c.daku && c.name) DAKU[c.name] = true; });
+      return sim0.apply(this, arguments);
+    };
+    HK.simulate._daku = true;
+  }
+  E.DEEP = /奥|深く|深い|突き上げ|突き入|最奥|根元まで|一番深|子宮|結腸/;
+  E.moan = function (S, who, stage, deep) {
     var ps = (who && (HK.personaOf ? HK.personaOf(who) : who.persona)) || 'gentle';
     var st = Math.max(0, Math.min(2, stage | 0));
     /* 主導権を握っている側（who.eroDom）：こらえる・とろける段階は、拒まない喘ぎ */
     if (who && who.eroDom && st < 2) { var dk = ROUGH[ps] ? 'rough' : 'soft'; return pickFresh(S, DOM[dk][st], 'dom.' + dk + st); }
+    var tone = who && HK.toneOf ? HK.toneOf(who) : ps, TM = E.TONE_MOAN[tone];
+    if (TM && TM.daku && TM.daku.length && !(who && who.eroDom) && E.dakuOf(who) && (st === 2 || (st === 1 && deep)) && S.rng() < (st === 2 ? 0.8 : 0.6))
+      return pickFresh(S, TM.daku, tone + '.daku');
+    var own = TM && TM['s' + st] && TM['s' + st].length ? TM['s' + st] : null;
+    if (own) return pickFresh(S, M[tone] ? M[tone][st].concat(own) : own, tone + '.t' + st);
     var tbl = M[ps] || M.gentle;
     return pickFresh(S, tbl[st], ps + st);
   };
-  /* 本文の {s:wet} {s:hit} {s:cum} {s:suck} {m0} {m1} {m2}（{a} の喘ぎ）を埋める。ほかの差し込み（{a} {h} など）は各箱庭の ST.fmt で */
+  /* 本文の {s:wet} {s:hit} {s:cum} {s:suck} {m0} {m1} {m2}（{a} の喘ぎ）を埋める。ほかの差し込み（{a} {h} など）は各箱庭の ST.fmt で。
+     本文が奥を深く突く場面なら、とろける段階でも濁点喘ぎを使う（設定がオンの人だけ） */
   E.fill = function (S, text, who) {
+    var deep = E.DEEP.test(String(text));
     return String(text).replace(/\{s:(\w+)\}/g, function (m, k) { return E.sfx(S, k); })
-      .replace(/\{m([012])\}/g, function (m, n) { return E.moan(S, who, +n); });
+      .replace(/\{m([012])\}/g, function (m, n) { return E.moan(S, who, +n, deep); });
   };
 })();

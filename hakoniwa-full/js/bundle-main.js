@@ -6464,7 +6464,8 @@
      各箱庭の solo-*-ero.js に書いた男性向けの文（擬音・♡喘ぎ・淫語・おねだり・堕ち）に差し替わる。小説調の文はそのまま残る
    ■ 使い方：HK.Ero.add('saimin', { 'sug.kuwaeru.full': [...], ... }) で登録し、
      本文では HK.Ero.L(S, 'saimin', 'sug.kuwaeru.full', 元の配列) で引く（作風が小説調、または未登録なら元の配列）
-   ■ 喘ぎ（HK.Ero.moan）：段階 0 こらえる／1 とろける／2 崩れる。言葉が崩れるのは絶頂（段階 2）だけ。
+   ■ 喘ぎ（HK.Ero.moan）：段階 0 こらえる（声を抑える）／1 とろける（懇願）／2 崩れる（快楽堕ち）。言葉が崩れるのは絶頂（段階 2）だけ。
+     口調ごとの喘ぎは ero-moan-tone.js。キャラの設定「濁点喘ぎ」がオンの人は、絶頂と奥を深く突かれた場面で濁点喘ぎ（あ゛・お゛）になる。
      態度（persona）ごとに崩れ方が違う（強気・厳格は最後まで噛み殺そうとする、内気は最初から甘い）
    ■ 全年齢版（HK.SAFE_ON）では常に小説調。登場人物はすべて成人として扱う */
 (function () {
@@ -6548,18 +6549,42 @@
     used.push(x);
     return x;
   }
-  E.moan = function (S, who, stage) {
+  /* 口調ごとの喘ぎ（ero-moan-tone.js の E.TONE_MOAN[口調] = { s0 声を抑える, s1 懇願, s2 快楽堕ち, daku 濁点喘ぎ }）。
+     9つの態度の口調は、上の態度の喘ぎに足して使う。それ以外の口調は、その口調の喘ぎだけを使う（なければ態度の喘ぎ） */
+  E.TONE_MOAN = E.TONE_MOAN || {};
+  /* 濁点喘ぎ：キャラの設定「濁点喘ぎ」（input.chars[i].daku）がオンの人だけ、絶頂（段階 2）と、奥を深く突かれた場面（段階 1 で deep）で使う。
+     箱庭ごとに人物の作り方が違うので、名前で引けるように、シミュレーションの入力から覚えておく */
+  var DAKU = {};
+  E.dakuOf = function (who) { return !!(who && (who.daku || DAKU[who.name])); };
+  if (HK.simulate && !HK.simulate._daku) {
+    var sim0 = HK.simulate;
+    HK.simulate = function (input) {
+      DAKU = {};
+      ((input && input.chars) || []).forEach(function (c) { if (c && c.daku && c.name) DAKU[c.name] = true; });
+      return sim0.apply(this, arguments);
+    };
+    HK.simulate._daku = true;
+  }
+  E.DEEP = /奥|深く|深い|突き上げ|突き入|最奥|根元まで|一番深|子宮|結腸/;
+  E.moan = function (S, who, stage, deep) {
     var ps = (who && (HK.personaOf ? HK.personaOf(who) : who.persona)) || 'gentle';
     var st = Math.max(0, Math.min(2, stage | 0));
     /* 主導権を握っている側（who.eroDom）：こらえる・とろける段階は、拒まない喘ぎ */
     if (who && who.eroDom && st < 2) { var dk = ROUGH[ps] ? 'rough' : 'soft'; return pickFresh(S, DOM[dk][st], 'dom.' + dk + st); }
+    var tone = who && HK.toneOf ? HK.toneOf(who) : ps, TM = E.TONE_MOAN[tone];
+    if (TM && TM.daku && TM.daku.length && !(who && who.eroDom) && E.dakuOf(who) && (st === 2 || (st === 1 && deep)) && S.rng() < (st === 2 ? 0.8 : 0.6))
+      return pickFresh(S, TM.daku, tone + '.daku');
+    var own = TM && TM['s' + st] && TM['s' + st].length ? TM['s' + st] : null;
+    if (own) return pickFresh(S, M[tone] ? M[tone][st].concat(own) : own, tone + '.t' + st);
     var tbl = M[ps] || M.gentle;
     return pickFresh(S, tbl[st], ps + st);
   };
-  /* 本文の {s:wet} {s:hit} {s:cum} {s:suck} {m0} {m1} {m2}（{a} の喘ぎ）を埋める。ほかの差し込み（{a} {h} など）は各箱庭の ST.fmt で */
+  /* 本文の {s:wet} {s:hit} {s:cum} {s:suck} {m0} {m1} {m2}（{a} の喘ぎ）を埋める。ほかの差し込み（{a} {h} など）は各箱庭の ST.fmt で。
+     本文が奥を深く突く場面なら、とろける段階でも濁点喘ぎを使う（設定がオンの人だけ） */
   E.fill = function (S, text, who) {
+    var deep = E.DEEP.test(String(text));
     return String(text).replace(/\{s:(\w+)\}/g, function (m, k) { return E.sfx(S, k); })
-      .replace(/\{m([012])\}/g, function (m, n) { return E.moan(S, who, +n); });
+      .replace(/\{m([012])\}/g, function (m, n) { return E.moan(S, who, +n, deep); });
   };
 })();
 ;/* ==== js/thick-sex.js ==== */
@@ -6897,13 +6922,15 @@
   };
   /* 三人の場面の喘ぎ（{mu1}{mm2} など：u・m・t の役の人）と擬音を埋める */
   X.trioFill = function (S, text, r) {
-    return String(text).replace(/\{m([tmu])([012])\}/g, function (m0, k, n) { var c = r[k]; return c ? E.moan(S, c, +n) : ''; })
+    var deep = E.DEEP && E.DEEP.test(String(text));
+    return String(text).replace(/\{m([tmu])([012])\}/g, function (m0, k, n) { var c = r[k]; return c ? E.moan(S, c, +n, deep) : ''; })
       .replace(/\{s:(\w+)\}/g, function (m0, k) { return E.sfx(S, k); });
   };
 
   /* 喘ぎと擬音を埋める（S は rng.int を持つもの：箱庭の ctx や物語型の S） */
   X.fill = function (S, text, a, b) {
-    var t = String(text).replace(/\{mb([012])\}/g, function (m, n) { return E.moan(S, b, +n); })
+    var deep = E.DEEP && E.DEEP.test(String(text));
+    var t = String(text).replace(/\{mb([012])\}/g, function (m, n) { return E.moan(S, b, +n, deep); })
       .replace(/\{ma([012])\}/g, function (m, n) { var d = a.eroDom; a.eroDom = true; var r = E.moan(S, a, +n); a.eroDom = d; return r; })
       .replace(/\{s:(\w+)\}/g, function (m, k) { return E.sfx(S, k); });
     return t;
@@ -49492,7 +49519,7 @@
     });
   }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
+  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -49528,6 +49555,7 @@
     c.age = +c.age >= 1 && +c.age <= 150 ? String(Math.floor(+c.age)) : '';
     c.keigoOlder = !!c.keigoOlder;
     c.futa = !!c.futa;
+    c.daku = !!c.daku;
     c.you = str(c.you, 8).trim();
     c.marks = str(c.marks, 30).trim();
     c.loveLock = typeof c.loveLock === 'string' ? c.loveLock : '';
@@ -49782,6 +49810,7 @@
         if (c.age) o.age = +c.age;
         if (c.keigoOlder) o.keigoOlder = true;
         if (c.futa) o.futa = true;
+        if (c.daku) o.daku = true;
         if (c.you) o.you = c.you;
         if (c.marks) o.marks = c.marks;
         if (c.loveLock && ref(c.loveLock) != null) o.loveLock = ref(c.loveLock);
@@ -49841,6 +49870,7 @@
       if (o.age != null) c.age = o.age;
       if (o.keigoOlder) c.keigoOlder = true;
       if (o.futa) c.futa = true;
+      if (o.daku) c.daku = true;
       if (o.you != null) c.you = String(o.you).trim().slice(0, 8);
       if (o.marks != null) c.marks = String(o.marks).trim().slice(0, 30);
       c._lk = o.loveLock; c._cl = o.calls; c._kg = o.keigo;
@@ -50094,7 +50124,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '' };
+          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '' };
         });
       })(),
       perChar: castFor(S.scenId).map(function (c) {
@@ -50689,6 +50719,7 @@
         '<label>年齢 <input type="number" data-gf="age" min="1" max="150" value="' + esc(c.age || '') + '" placeholder="決めない" style="width:5em"></label>' +
         '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
         (!HK.SAFE_ON && c.gender === 'f' && (c.pos === 'top' || c.pos === 'riba') ? '<label title="攻めに回る場面を、男性の体を前提にした描写で書きます。オメガバースでは使いません"><input type="checkbox" data-gf="futa"' + (c.futa ? ' checked' : '') + '> ふたなり（攻めのとき）</label>' : '') +
+        (!HK.SAFE_ON && c.pos !== 'top' ? '<label title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"' + (c.daku ? ' checked' : '') + '> 濁点喘ぎ（男性向け）</label>' : '') +
         '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label></div>' +
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
       '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label></div></div>' +
@@ -50772,6 +50803,7 @@
       case 'keigoOlder': if (isInput) return; c.keigoOlder = t.checked; changed(false); sampleRefresh(); break;
       case 'pos': if (isInput) return; c.pos = ['top', 'bottom', 'riba'].indexOf(t.value) >= 0 ? t.value : ''; changed(false); render(); break;
       case 'futa': if (isInput) return; c.futa = t.checked; changed(false); break;
+      case 'daku': if (isInput) return; c.daku = t.checked; changed(false); break;
       case 'posLike': if (isInput) return; c.posLike = HK.Pos && HK.Pos.likeValid(t.value) ? t.value : ''; changed(false); break;
       case 'colorauto': if (isInput) return; if (t.checked) c.color = ''; else c.color = (ov.querySelector('[data-gf="color"]') || {}).value || '#3d6f93'; changed(true); UI.applyColors(s.chars); break;
       case 'color': if (/^#[0-9a-fA-F]{6}$/.test(t.value)) { c.color = t.value; UI.applyColors(s.chars); changed(false); } break;

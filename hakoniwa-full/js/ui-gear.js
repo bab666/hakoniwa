@@ -161,6 +161,7 @@
         '<label>年齢 <input type="number" data-gf="age" min="1" max="150" value="' + esc(c.age || '') + '" placeholder="決めない" style="width:5em"></label>' +
         '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
         (!HK.SAFE_ON && c.gender === 'f' && (c.pos === 'top' || c.pos === 'riba') ? '<label title="攻めに回る場面を、男性の体を前提にした描写で書きます。オメガバースでは使いません"><input type="checkbox" data-gf="futa"' + (c.futa ? ' checked' : '') + '> ふたなり（攻めのとき）</label>' : '') +
+        (!HK.SAFE_ON && c.pos !== 'top' ? '<label title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"' + (c.daku ? ' checked' : '') + '> 濁点喘ぎ（男性向け）</label>' : '') +
         '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label></div>' +
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
       '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label></div></div>' +
@@ -244,6 +245,7 @@
       case 'keigoOlder': if (isInput) return; c.keigoOlder = t.checked; changed(false); sampleRefresh(); break;
       case 'pos': if (isInput) return; c.pos = ['top', 'bottom', 'riba'].indexOf(t.value) >= 0 ? t.value : ''; changed(false); render(); break;
       case 'futa': if (isInput) return; c.futa = t.checked; changed(false); break;
+      case 'daku': if (isInput) return; c.daku = t.checked; changed(false); break;
       case 'posLike': if (isInput) return; c.posLike = HK.Pos && HK.Pos.likeValid(t.value) ? t.value : ''; changed(false); break;
       case 'colorauto': if (isInput) return; if (t.checked) c.color = ''; else c.color = (ov.querySelector('[data-gf="color"]') || {}).value || '#3d6f93'; changed(true); UI.applyColors(s.chars); break;
       case 'color': if (/^#[0-9a-fA-F]{6}$/.test(t.value)) { c.color = t.value; UI.applyColors(s.chars); changed(false); } break;

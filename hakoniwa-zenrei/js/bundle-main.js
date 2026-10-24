@@ -38051,7 +38051,7 @@
     });
   }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
+  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -38087,6 +38087,7 @@
     c.age = +c.age >= 1 && +c.age <= 150 ? String(Math.floor(+c.age)) : '';
     c.keigoOlder = !!c.keigoOlder;
     c.futa = !!c.futa;
+    c.daku = !!c.daku;
     c.you = str(c.you, 8).trim();
     c.marks = str(c.marks, 30).trim();
     c.loveLock = typeof c.loveLock === 'string' ? c.loveLock : '';
@@ -38341,6 +38342,7 @@
         if (c.age) o.age = +c.age;
         if (c.keigoOlder) o.keigoOlder = true;
         if (c.futa) o.futa = true;
+        if (c.daku) o.daku = true;
         if (c.you) o.you = c.you;
         if (c.marks) o.marks = c.marks;
         if (c.loveLock && ref(c.loveLock) != null) o.loveLock = ref(c.loveLock);
@@ -38400,6 +38402,7 @@
       if (o.age != null) c.age = o.age;
       if (o.keigoOlder) c.keigoOlder = true;
       if (o.futa) c.futa = true;
+      if (o.daku) c.daku = true;
       if (o.you != null) c.you = String(o.you).trim().slice(0, 8);
       if (o.marks != null) c.marks = String(o.marks).trim().slice(0, 30);
       c._lk = o.loveLock; c._cl = o.calls; c._kg = o.keigo;
@@ -38653,7 +38656,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '' };
+          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '' };
         });
       })(),
       perChar: castFor(S.scenId).map(function (c) {
@@ -39248,6 +39251,7 @@
         '<label>年齢 <input type="number" data-gf="age" min="1" max="150" value="' + esc(c.age || '') + '" placeholder="決めない" style="width:5em"></label>' +
         '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
         (!HK.SAFE_ON && c.gender === 'f' && (c.pos === 'top' || c.pos === 'riba') ? '<label title="攻めに回る場面を、男性の体を前提にした描写で書きます。オメガバースでは使いません"><input type="checkbox" data-gf="futa"' + (c.futa ? ' checked' : '') + '> ふたなり（攻めのとき）</label>' : '') +
+        (!HK.SAFE_ON && c.pos !== 'top' ? '<label title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"' + (c.daku ? ' checked' : '') + '> 濁点喘ぎ（男性向け）</label>' : '') +
         '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label></div>' +
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
       '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label></div></div>' +
@@ -39331,6 +39335,7 @@
       case 'keigoOlder': if (isInput) return; c.keigoOlder = t.checked; changed(false); sampleRefresh(); break;
       case 'pos': if (isInput) return; c.pos = ['top', 'bottom', 'riba'].indexOf(t.value) >= 0 ? t.value : ''; changed(false); render(); break;
       case 'futa': if (isInput) return; c.futa = t.checked; changed(false); break;
+      case 'daku': if (isInput) return; c.daku = t.checked; changed(false); break;
       case 'posLike': if (isInput) return; c.posLike = HK.Pos && HK.Pos.likeValid(t.value) ? t.value : ''; changed(false); break;
       case 'colorauto': if (isInput) return; if (t.checked) c.color = ''; else c.color = (ov.querySelector('[data-gf="color"]') || {}).value || '#3d6f93'; changed(true); UI.applyColors(s.chars); break;
       case 'color': if (/^#[0-9a-fA-F]{6}$/.test(t.value)) { c.color = t.value; UI.applyColors(s.chars); changed(false); } break;

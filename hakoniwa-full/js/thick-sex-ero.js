@@ -122,13 +122,15 @@
   };
   /* 三人の場面の喘ぎ（{mu1}{mm2} など：u・m・t の役の人）と擬音を埋める */
   X.trioFill = function (S, text, r) {
-    return String(text).replace(/\{m([tmu])([012])\}/g, function (m0, k, n) { var c = r[k]; return c ? E.moan(S, c, +n) : ''; })
+    var deep = E.DEEP && E.DEEP.test(String(text));
+    return String(text).replace(/\{m([tmu])([012])\}/g, function (m0, k, n) { var c = r[k]; return c ? E.moan(S, c, +n, deep) : ''; })
       .replace(/\{s:(\w+)\}/g, function (m0, k) { return E.sfx(S, k); });
   };
 
   /* 喘ぎと擬音を埋める（S は rng.int を持つもの：箱庭の ctx や物語型の S） */
   X.fill = function (S, text, a, b) {
-    var t = String(text).replace(/\{mb([012])\}/g, function (m, n) { return E.moan(S, b, +n); })
+    var deep = E.DEEP && E.DEEP.test(String(text));
+    var t = String(text).replace(/\{mb([012])\}/g, function (m, n) { return E.moan(S, b, +n, deep); })
       .replace(/\{ma([012])\}/g, function (m, n) { var d = a.eroDom; a.eroDom = true; var r = E.moan(S, a, +n); a.eroDom = d; return r; })
       .replace(/\{s:(\w+)\}/g, function (m, k) { return E.sfx(S, k); });
     return t;
