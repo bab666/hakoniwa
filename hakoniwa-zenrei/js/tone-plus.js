@@ -218,6 +218,31 @@
     return q;
   };
 
+  /* 呼び方を決めてある相手（関係ごとの呼び方 calls、または敬称の設定 call）に向けた台詞では、二人称（あなた・お前・君…）を呼び方に置き換え、
+     名前も二人称も出てこない台詞には、ときどき（台詞ごとに決まった三つに一つ）呼びかけとして頭に呼び方を足す。
+     喘ぎ（♡・言葉にならない声）・短い台詞・すでに名前のある台詞には足さない。to＝台詞の相手（voice.js の addresseeOf） */
+  var YOU_W = /(?:あなた|あんた|お前|おまえ|てめえ|貴様|おぬし|そなた|お主)(?!さん|方|様|たち|達|ら)|(?:きみ|(?<![大姫主父母諸細若暴ァ-ヶー一-鿿A-Za-z])君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なら|だけ|自身|こそ))/;
+  function hashS(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+  V.callAddress = function (q, who, to, raw) {
+    if (!who || !to || to === who || !to.name || !(who.call || (who.calls && who.calls[to.name]))) return q;
+    var c = V.callFor(who, to);
+    if (!c || q.indexOf(to.name) >= 0 || q.indexOf(c) >= 0) return q;
+    /* 自分で決めた二人称（you）も、呼び方を決めた相手には名前で */
+    var yw = who.you ? new RegExp(who.you.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=[はがもをにとで、。！？…」のって]|$)') : null;
+    if (YOU_W.test(q) || (yw && yw.test(q))) {
+      var done = false;
+      q = q.replace(new RegExp(YOU_W.source, 'g'), function (m) { if (done) return m; done = true; return c; });
+      if (!done && yw) q = q.replace(yw, c);
+      return q;
+    }
+    var body = q.replace(/[…‥、。！？!?っッ〜ー♡\s]/g, '');
+    /* 息づかい（は、ぁ・っ、・小さい母音）の混じる台詞と、問いへの短い答え（「〜こと」「〜とか」で終わる）には足さない */
+    if (/[ぁぃぅぇぉ]|っ、|ッ、/.test(q) || /(?:こと|もの|とか|かな)[。…]*$/.test(q)) return q;
+    if (/♡/.test(q) || body.length < 7 || /^[ぁ-ゖァ-ヶ]{0,4}[ッっ]?$/.test(body) || hashS(String(raw || q) + who.name) % 3) return q;
+    var m = q.match(/^([…‥\s]*)/);
+    return m[1] + c + '、' + q.slice(m[1].length);
+  };
+
   /* voice.js の話し手判定のあとで、呼称と冷静（落ち着き）の地の文を整える */
   var pr0 = V.processResult;
   V.processResult = function (res, input) {

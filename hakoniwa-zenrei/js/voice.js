@@ -395,7 +395,8 @@
       while ((at = span.indexOf(p.name, at + 1)) >= 0) {
         var nx = span.charAt(at + p.name.length), endHere = !span.slice(at + p.name.length).trim();
         /* 「〇〇の声が」「〇〇の残したメモには」のような所有の形も、話し手として扱う */
-        var poss = nx === 'の' && /^の(?:声|口|唇|喉|残した|書き残した|書いた|メモ|手紙|字|書き置き|置き手紙)/.test(span.slice(at + p.name.length));
+        /* 「〇〇の静かな声が」「〇〇の甘い囁きが」のように、声の前に短い飾りがついていても話し手 */
+        var poss = nx === 'の' && (/^の(?:声|口|唇|喉|残した|書き残した|書いた|メモ|手紙|字|書き置き|置き手紙)/.test(span.slice(at + p.name.length)) || /^の[^、。「」\s]{1,8}?(?:声|囁き|ささやき)(?:が|で|は)/.test(span.slice(at + p.name.length)));
         if (/[はがも「、]/.test(nx) || endHere || poss) {
           /* 「AはBが果てそうになるたびに、「……」」の B は従属節の主語。前に「Aは」があれば A を話し手にする */
           if (best && nx === 'が' && span.charAt(bp + best.name.length) === 'は' && /^が[^、。「」]{0,20}(?:たびに|たび、|ときに|とき、|うちに|間に|あいだ)/.test(span.slice(at + p.name.length))) continue;
@@ -558,6 +559,8 @@
             if (youW && !kg && !nounQ) q = V.applyYou(q, youW);
             if (YOU_ST.test(q0)) q = fixYouStutter(q);
             if (V.applyCalls) q = V.applyCalls(q, who, people);
+            /* 呼び方を決めてある相手に向けた台詞は、二人称を呼び方にし、ときどき呼びかけを足す（tone-plus.js の callAddress） */
+            if (V.callAddress && !nounQ) q = V.callAddress(q, who, addresseeOf(text, start, i + 1, q, who, people, actors), q0);
             /* 語尾の記号（キャラごとの設定。複数あれば文ごとにランダム） */
             if (who.marks && !nounQ) q = V.applyMarks(q, who.marks);
           }

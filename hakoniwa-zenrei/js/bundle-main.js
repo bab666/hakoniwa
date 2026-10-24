@@ -1544,7 +1544,8 @@
       while ((at = span.indexOf(p.name, at + 1)) >= 0) {
         var nx = span.charAt(at + p.name.length), endHere = !span.slice(at + p.name.length).trim();
         /* 「〇〇の声が」「〇〇の残したメモには」のような所有の形も、話し手として扱う */
-        var poss = nx === 'の' && /^の(?:声|口|唇|喉|残した|書き残した|書いた|メモ|手紙|字|書き置き|置き手紙)/.test(span.slice(at + p.name.length));
+        /* 「〇〇の静かな声が」「〇〇の甘い囁きが」のように、声の前に短い飾りがついていても話し手 */
+        var poss = nx === 'の' && (/^の(?:声|口|唇|喉|残した|書き残した|書いた|メモ|手紙|字|書き置き|置き手紙)/.test(span.slice(at + p.name.length)) || /^の[^、。「」\s]{1,8}?(?:声|囁き|ささやき)(?:が|で|は)/.test(span.slice(at + p.name.length)));
         if (/[はがも「、]/.test(nx) || endHere || poss) {
           /* 「AはBが果てそうになるたびに、「……」」の B は従属節の主語。前に「Aは」があれば A を話し手にする */
           if (best && nx === 'が' && span.charAt(bp + best.name.length) === 'は' && /^が[^、。「」]{0,20}(?:たびに|たび、|ときに|とき、|うちに|間に|あいだ)/.test(span.slice(at + p.name.length))) continue;
@@ -1707,6 +1708,8 @@
             if (youW && !kg && !nounQ) q = V.applyYou(q, youW);
             if (YOU_ST.test(q0)) q = fixYouStutter(q);
             if (V.applyCalls) q = V.applyCalls(q, who, people);
+            /* 呼び方を決めてある相手に向けた台詞は、二人称を呼び方にし、ときどき呼びかけを足す（tone-plus.js の callAddress） */
+            if (V.callAddress && !nounQ) q = V.callAddress(q, who, addresseeOf(text, start, i + 1, q, who, people, actors), q0);
             /* 語尾の記号（キャラごとの設定。複数あれば文ごとにランダム） */
             if (who.marks && !nounQ) q = V.applyMarks(q, who.marks);
           }
@@ -2513,6 +2516,31 @@
       });
     });
     return q;
+  };
+
+  /* 呼び方を決めてある相手（関係ごとの呼び方 calls、または敬称の設定 call）に向けた台詞では、二人称（あなた・お前・君…）を呼び方に置き換え、
+     名前も二人称も出てこない台詞には、ときどき（台詞ごとに決まった三つに一つ）呼びかけとして頭に呼び方を足す。
+     喘ぎ（♡・言葉にならない声）・短い台詞・すでに名前のある台詞には足さない。to＝台詞の相手（voice.js の addresseeOf） */
+  var YOU_W = /(?:あなた|あんた|お前|おまえ|てめえ|貴様|おぬし|そなた|お主)(?!さん|方|様|たち|達|ら)|(?:きみ|(?<![大姫主父母諸細若暴ァ-ヶー一-鿿A-Za-z])君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なら|だけ|自身|こそ))/;
+  function hashS(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+  V.callAddress = function (q, who, to, raw) {
+    if (!who || !to || to === who || !to.name || !(who.call || (who.calls && who.calls[to.name]))) return q;
+    var c = V.callFor(who, to);
+    if (!c || q.indexOf(to.name) >= 0 || q.indexOf(c) >= 0) return q;
+    /* 自分で決めた二人称（you）も、呼び方を決めた相手には名前で */
+    var yw = who.you ? new RegExp(who.you.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=[はがもをにとで、。！？…」のって]|$)') : null;
+    if (YOU_W.test(q) || (yw && yw.test(q))) {
+      var done = false;
+      q = q.replace(new RegExp(YOU_W.source, 'g'), function (m) { if (done) return m; done = true; return c; });
+      if (!done && yw) q = q.replace(yw, c);
+      return q;
+    }
+    var body = q.replace(/[…‥、。！？!?っッ〜ー♡\s]/g, '');
+    /* 息づかい（は、ぁ・っ、・小さい母音）の混じる台詞と、問いへの短い答え（「〜こと」「〜とか」で終わる）には足さない */
+    if (/[ぁぃぅぇぉ]|っ、|ッ、/.test(q) || /(?:こと|もの|とか|かな)[。…]*$/.test(q)) return q;
+    if (/♡/.test(q) || body.length < 7 || /^[ぁ-ゖァ-ヶ]{0,4}[ッっ]?$/.test(body) || hashS(String(raw || q) + who.name) % 3) return q;
+    var m = q.match(/^([…‥\s]*)/);
+    return m[1] + c + '、' + q.slice(m[1].length);
   };
 
   /* voice.js の話し手判定のあとで、呼称と冷静（落ち着き）の地の文を整える */
