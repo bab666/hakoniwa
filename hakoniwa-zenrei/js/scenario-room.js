@@ -106,8 +106,47 @@
   function pairDone(ctx, a, b) { return ctx.rules.every(function (r) { return ruleDone(ctx, r, a, b); }); }
   function hasPairRule(ctx) { return ctx.rules.some(function (r) { var t = K[r.k].type; return t === 'act' || t === 'word'; }); }
 
+  /* 円満な三人（三人とも互いに恋人どうし：room-trio.js）の二人だけが先に条件を満たしたとき、もう一人の恋人を部屋に残して出ていかない。
+     三人で満たせる部屋なら二人とも残って三人で出るのを待ち、二人ずつの部屋なら一人が残ってもう一人の恋人に付き添う */
+  function loveThird(ctx, a, b) {
+    var H = HK.RoomTrio && HK.RoomTrio.harmony;
+    if (!H || ctx.flags.isOne) return null;
+    return ctx.present().filter(function (c) { return c !== a && c !== b && !c.out && c.alive !== false && c.flags.cagePair == null && H(ctx, [a, b, c]) && !(pairDone(ctx, a, c) && pairDone(ctx, b, c)); })[0] || null;
+  }
+  /* a と b が、部屋にいるもう一人と円満な三人になっているか */
+  function loveTrioOf(ctx, a, b) { var H = HK.RoomTrio && HK.RoomTrio.harmony; return !!H && ctx.present().some(function (c) { return c !== a && c !== b && H(ctx, [a, b, c]); }); }
+  function loveWaitKey(a, b) { return Math.min(a.i, b.i) + '-' + Math.max(a.i, b.i); }
+  /* 二人とも残って三人で出るのを待っている（一度知らせたら、区切りごとの見回りで出さない） */
+  function loveWaiting(ctx, a, b) { return !!(ctx.flags.loveWait && ctx.flags.loveWait[loveWaitKey(a, b)] && loveThird(ctx, a, b)); }
   function exitPair(ctx, a, b, text, why, night) {
-    var stay = null;
+    var stay = null, lt = loveThird(ctx, a, b);
+    if (lt) {
+      var multiOk = (ctx.env.multi || 'open') !== 'no' && ctx.flags.multiKnown;
+      if (multiOk) {
+        var W = ctx.flags.loveWait = ctx.flags.loveWait || {}, key = loveWaitKey(a, b);
+        if (W[key]) return { cat: 'romance', mag: 6, text: text + a.name + 'と' + b.name + 'は、' + lt.name + 'と三人で出るまで、扉の前を素通りした。', why: why + '／三人で出るのを待っている' };
+        W[key] = true;
+        ctx.mod(lt, a, { trust: 4, aff: 3 }); ctx.mod(lt, b, { trust: 4, aff: 3 });
+        return { cat: 'romance', mag: 24, text: text + ctx.t(ctx.pick([
+          '扉の鍵が外れる音がした。けれど{a}と{b}は、立ち上がらなかった。{b}が{c}に手を伸ばした。{b}「三人で来たんだから、三人で出よう」',
+          '扉の鍵が外れた。{a}は扉を一度だけ見て、それから{c}の隣に座り直した。{a}「{c}を置いていくわけないでしょ」――{b}も、黙って{c}の反対側に座った。',
+          '鍵の外れる音に、{c}が顔を上げた。{c}「……行っていいよ」{a}と{b}は同時に首を振った。三人は恋人どうしだった。誰か一人を置いて出る扉なら、くぐる理由がなかった。'
+        ]), a, b, lt), why: why + '／' + lt.name + 'も二人の恋人。円満な三人なので、二人だけで先に出ず、三人で出るのを待つ', with: [lt] };
+      }
+      /* 二人ずつしか認めない部屋：一人は先に出て、もう一人は残って三人目の恋人に付き添う */
+      stay = HK.RoomTrio && (pairDone(ctx, a, lt) ? b : pairDone(ctx, b, lt) ? a : (a.tr.np >= b.tr.np ? a : b));
+      var go0 = stay === a ? b : a;
+      go0.out = true; go0.fate = '脱出'; go0.fateNote = stay.name + 'と条件を満たして出た（' + stay.name + 'は、' + lt.name + 'のために残った）';
+      stay.flags.stayed = (stay.flags.stayed || 0) + 1;
+      (ctx.flags.exits = ctx.flags.exits || []).push({ a: go0.i, b: stay.i, label: ctx.label, night: !!night, stay: stay.i });
+      if (night && okSex(a, b)) ctx.pair(a, b).night = true;
+      ctx.mod2(stay, lt, { trust: 6, aff: 4 }, { trust: 6, aff: 4 });
+      return { cat: 'romance', mag: 30, text: text + ctx.t(ctx.pick([
+        '扉の鍵が外れた。{a}は{b}の背中を押した。{a}「先に出て、待ってて。{c}と一緒に行くから」――{b}は振り返りながら扉をくぐった。',
+        '扉の鍵が外れた。{b}だけが外に出て、{a}は{c}の隣に残った。{a}「一人にはしないよ」――扉の向こうで、{b}が「待ってる」と言った。',
+        '扉の鍵が外れた。{a}と{b}は短く口づけを交わし、{b}が先に出た。{a}は{c}の手を握った。{a}「次は、私たちの番」'
+      ]), stay, go0, lt), why: why + '／' + lt.name + 'も二人の恋人。二人ずつしか出られない部屋なので、' + stay.name + 'が残って付き添う' };
+    }
     /* 体の関係を持てない組（三人の場面で数えられただけの二人など）は、夜を過ごしたことにしない */
     if (night && !okSex(a, b)) night = false;
     if (night && ctx.present().length >= 3) {
@@ -147,7 +186,7 @@
     var P = ctx.present(), night = ctx.rules.some(function (r) { return r.k === 'h'; });
     for (var i = 0; i < P.length; i++) for (var j = i + 1; j < P.length; j++) {
       var a = P[i], b = P[j];
-      if (a.out || b.out || !pairDone(ctx, a, b)) continue;
+      if (a.out || b.out || !pairDone(ctx, a, b) || loveWaiting(ctx, a, b)) continue;
       var ex = exitPair(ctx, a, b, '扉の紙を見ると、' + a.name + 'と' + b.name + 'の分の数字が、いつの間にかそろっていた。', a.name + 'と' + b.name + 'の条件が、ほかの出来事の中でそろった', night);
       ctx.say({ kind: 'event', cat: 'escape', actors: [a, b], text: ex.text + (a.out && b.out ? a.name + 'と' + b.name + 'は、扉をくぐった。' : ''), why: ex.why, mag: ex.mag || 30 });
     }
@@ -164,7 +203,7 @@
       if (ctx.rules.every(function (r) { return (ctx.flags.consumed[r.k] || 0) >= r.n; })) exitAll(ctx);
       return null;
     }
-    if (a && b && !a.out && !b.out && pairDone(ctx, a, b)) return true;
+    if (a && b && !a.out && !b.out && pairDone(ctx, a, b) && !loveWaiting(ctx, a, b)) return true;
     return null;
   }
 
@@ -697,7 +736,7 @@
   /* 複数人で閉じ込められたときの積極性の違い */
   EV.push({
     id: 'pick_one', cat: 'bond', scope: 'pair', pri: true,
-    when: function (ctx, a, b) { return crowd(ctx) && a.flags.partner == null && !HK.ngPair(a, b) && eager(ctx, a) < 0.42 && R(ctx, a, b).trust > -5 && ctx.stepIndex >= 1; },   /* 恋愛・R18にしない相手を「相手」に選ばない */
+    when: function (ctx, a, b) { return crowd(ctx) && a.flags.partner == null && !HK.ngPair(a, b) && eager(ctx, a) < 0.42 && R(ctx, a, b).trust > -5 && ctx.stepIndex >= 1 && !loveTrioOf(ctx, a, b); },   /* 恋愛・R18にしない相手を「相手」に選ばない。円満な三人（room-trio.js）の中では、一人だけを選ばない */
     w: function (ctx, a, b) { return 0.5 + (0.5 - eager(ctx, a)) + (R(ctx, a, b).trust + R(ctx, a, b).aff) / 80; },
     run: function (ctx, a, b) {
       a.flags.partner = b.i; a.flags.excl = true; a.flags.partnerAt = ctx.stepIndex;   /* 「相手は一人」と決めた（room-trio.js で三人を始める条件に使う） */
