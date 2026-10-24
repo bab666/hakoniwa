@@ -155,11 +155,15 @@
       H.forEach(function (p) {
         if (p.out) return;
         if (p.skip) { p.skip = false; return; }
+        /* インキュバス派との獲物の取り合い・吸い合い勝負（solo-succubus-rival.js。設定「インキュバス派」） */
+        if (SB.rivalTurn && SB.rivalTurn(S, T, p, H, sen, h, last)) return;
         if (rng() < env.ev / 100 * 0.45 || (last && rng() < 0.4)) { if (happen(S, T, p, sen, SE, last)) return; }
         if (rng() > 0.35 + env.prey / 100 * 0.65) return ST.sayB(S, { actors: [p], text: ST.fmt(pkF(S, (SB.NOPREY || L('{a}は{spot}で一時間粘ったが、めぼしい獲物は通らなかった。|{a}は{spot}の屋根の上から街を見下ろした。今夜は人通りが少ない。|{a}は{spot}をうろついたが、目が合う人がいなかった。'))), { a: p.name, spot: rng.pick(T.spots) }), why: '獲物の少なさ（' + env.prey + '）' }, p.name + 'は空振り');
         hunt(S, T, p, sen, SE);
       });
       ST.flushShort(S, 'ほかの狩り：');
+      /* 精が尽きかけた住人に、仲間・先輩・ライバルが精を分け与える（solo-succubus-rival.js） */
+      if (SB.rivalGive) SB.rivalGive(S, T, H, sen, h);
       P.forEach(function (p) {
         p.m.mana = clamp(p.m.mana + 3, 0, 100); p.m.plea = clamp(p.m.plea - 10, 0, 100);
         if (p.role !== 'hunt' || p.out) return;
@@ -476,6 +480,7 @@
       if (p.cnt.melt) bits.push('感じすぎて吸えなかった ' + p.cnt.melt + '回');
       if (p.cnt.shame) bits.push('恥ずかしい失敗 ' + p.cnt.shame + '回');
       if (p.inLove) bits.push('獲物に恋をした');
+      if (SB.rivalNote) { var rn = SB.rivalNote(p); if (rn) bits.push(rn); }
       if (bits.length) p.notes.push(bits.join('・'));
       p.notes.push('誘惑の型「' + p.style.label + '」・方針「' + p.action.label + '」・目標「' + p.goal.label + '」');
       if (sen && SB.review) {
