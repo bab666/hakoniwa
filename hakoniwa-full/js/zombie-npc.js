@@ -238,6 +238,7 @@
           if (vs.length) {
             var v = HK.weighted(rng, vs, function (c) { return 1 + (1 - c.tr.cp) * 0.6 + (c.hp < 50 ? 0.4 : 0); });
             P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 1); });
+            v.flags.mobHit = { at: ctx.stepIndex, by: n.label || '略奪者' };
             var ra = Z.raiderAssault(ctx, v, P.filter(function (c) { return c !== v; }), n);
             return ctx.act2({ actors: ra.with, cat: 'betray', text: ra.text, why: ra.why, mag: ra.mag });
           }
