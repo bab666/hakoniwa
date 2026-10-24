@@ -71,8 +71,13 @@
       live.forEach(function (b) {
         if (a === b || !loveT(S, a, b) || blocked(S, a, b)) return;
         if (!rival(S, a, b, live) && !yanT(S, a, b)) return;
-        var s = st(S, a, b);
-        s.lv = clamp(s.lv + (0.6 + (a.tr.jealous || 0.4) * 3) * pace * (yanT(S, a, b) ? 0.6 : 1), 0, 100);
+        var s = st(S, a, b), nv = clamp(s.lv + (0.6 + (a.tr.jealous || 0.4) * 3) * pace * (yanT(S, a, b) ? 0.6 : 1), 0, 100);
+        /* 関係「執着」を設定していない組は嫉妬どまり（obsess-kit.js の NAT_CAP）。嫉妬深い人の気持ちが高まったまれな場合だけ、その上へ */
+        if (!yanT(S, a, b) && nv > (O.NAT_CAP || 34)) {
+          if (s.surge == null) s.surge = (a.tr.jealous || 0) >= 0.7 && rng() < (O.SURGE_P || 0.3);
+          if (!s.surge) nv = Math.max(s.lv, Math.min(nv, O.NAT_CAP || 34));
+        }
+        s.lv = nv;
       });
     });
     if (rng() > (opt.rate || 0.15)) return null;

@@ -54,11 +54,21 @@
   O.why = function (ctx, a, b) { return why(ctx, a, b, st(ctx, a, b)); };
   O.level = function (ctx, a, b) { return O.blocked(ctx, a, b) ? 0 : st(ctx, a, b).lv; };
   O.stage = function (lv) { return lv >= 80 ? 3 : lv >= 60 ? 2 : lv >= 35 ? 1 : 0; };
+  /* 関係「執着（ヤンデレ）」を設定していない組の想いは、嫉妬どまり（NAT_CAP まで。執着の出来事・結末は 35 から）。
+     その上へ行くのは、嫉妬深い人がとても強く惹かれていて、気持ちが高まったまれな場合だけ（組ごとに一度だけ決める） */
+  O.NAT_CAP = 34;
+  O.surgeOk = function (a, att) { return (a.tr.jealous || 0) >= 0.7 && att >= 70; };
+  O.SURGE_P = 0.2;
   O.add = function (ctx, a, b, d) {
     if (O.blocked(ctx, a, b) || !b.alive) return 0;
     /* pace：区切りの少ない箱庭（合コン・一年間のクラス）ほど速く積もる（O.install の opt.pace） */
     var kit = ctx.scen && ctx.scen.obsessKit, s = st(ctx, a, b), k = d > 0 ? (0.55 + a.tr.jealous * 0.9) * ((kit && kit.pace) || 1) : 1;
-    s.lv = clamp(s.lv + d * k, 0, 100);
+    var nv = clamp(s.lv + d * k, 0, 100);
+    if (d > 0 && !s.set && nv > O.NAT_CAP) {
+      if (s.surge == null) s.surge = O.surgeOk(a, R(ctx, a, b).att) && ctx.rng() < O.SURGE_P;
+      if (!s.surge) nv = Math.max(s.lv, Math.min(nv, O.NAT_CAP));
+    }
+    s.lv = nv;
     return s.lv;
   };
   /* 嫉妬の出来事から呼ぶ：a が c を想っていて、c が誰かと親しくした */
