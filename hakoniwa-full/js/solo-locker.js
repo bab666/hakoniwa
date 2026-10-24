@@ -184,7 +184,7 @@
         if (hl) t += tp.name + '「' + pk(hl) + '」';
       } else if (ph === 'edge' && lew !== 'low' && V && V.EDGE && V.EDGE[bt.persona] && rng() < 0.6) t += bt.name + '「' + pk(V.EDGE[bt.persona]) + '」';
       else if (ph === 'climax') { t = climax(tp, climax(bt, t), true); pair.done = true; }
-      else if (ph === 'after') { pair.conn = false; pair.done = false; pair.rest = 1 + rng.int(2); P.forEach(function (p) { p.m.reason = clamp(p.m.reason + 8, 0, 100); }); }
+      else if (ph === 'after') { pair.conn = false; pair.done = false; pair.rest = 1 + rng.int(2); P.forEach(function (p) { p.m.reason = clamp(p.m.reason + 8, 0, 100); p.rxCool = true; }); }
       var tag = ff && ph === 'move' ? '肌を重ねたまま' : C.tag[ph];
       ST.sayB(S, { actors: [tp, bt], tag: tag, text: t, why: { move: '繋がったまま、狭い箱の中で', hush: '外の物音に、二人とも動きを止めた', edge: bt.name + 'が限界に近い', climax: 'ロッカーの中で、二人とも果てた', after: '一度果てて、少しだけ正気が戻った（理性 +8）' }[ph] + '（快感 ' + tp.name + ' ' + Math.round(Math.min(100, tp.m.plea)) + '・' + bt.name + ' ' + Math.round(Math.min(100, bt.m.plea)) + '）', mag: ph === 'climax' ? 34 : 18, kind: 'climax' }, tp.name + 'と' + bt.name + '：' + tag, ph === 'climax');
     }
@@ -208,16 +208,19 @@
       /* ハプニング */
       if (rng() < env.ev / 100 * 0.5) {
         var calm = rng() < 0.3;
-        if (calm) P.forEach(function (p) { p.m.reason = clamp(p.m.reason + 12, 0, 100); p.m.heat = clamp(p.m.heat - 6, 0, 100); });
+        /* 冷める出来事：応じ方の段階を下げてよい（このあと拒んでも、はっきり拒む文でよい） */
+        if (calm) P.forEach(function (p) { p.m.reason = clamp(p.m.reason + 12, 0, 100); p.m.heat = clamp(p.m.heat - 6, 0, 100); p.rxCool = true; });
         else P.forEach(function (p) { p.m.heat = clamp(p.m.heat + 10, 0, 100); });
         ST.sayB(S, { actors: [A, B], tag: calm ? '一息' : 'ハプニング', text: ST.fmt(pk(calm ? LK.CALM : LK.SURGE), v0), why: calm ? '理性 +12' : '二人とも発情 +10' }, calm ? '少しだけ正気に戻った' : 'ガスが濃くなった');
       }
       /* ガスが回る */
       P.forEach(function (p) {
-        var before = stage(p);
+        /* 発情の段階の知らせは、これまでに知らせたいちばん上の段階を超えたときだけ（いったん冷めて、また上がっても繰り返さない） */
+        var before = Math.max(stage(p), p.gasShown || 0);
         p.m.heat = clamp(p.m.heat + (4 + env.dose * 0.1 + rng() * 4) * p.sens, 0, 100);
         p.m.reason = clamp(p.m.reason - (3 + p.m.heat * 0.13 - (p.stats.gaman || 3) * 0.7 - p.tr.cp * 2), 0, 100);
         var after = stage(p);
+        if (after > before) p.gasShown = after;
         if (after > before) ST.sayB(S, { actors: [p], tag: ['', '火照り', '発情', '限界'][after], text: ST.fmt(pk(LK.GAS[after]), { a: p.name, b: p.o.name }), why: p.name + 'の発情 ' + Math.round(p.m.heat) + '・理性 ' + Math.round(p.m.reason) + '（我慢 ' + p.stats.gaman + '）', mag: after * 6 }, p.name + 'の発情が進んだ', after >= 3);
       });
       /* 敵視（hate-kit.js）：狭いロッカーの中で、一方が近づき、一方が嫌悪する */
@@ -329,15 +332,21 @@
         var t = swap ? ST.fmt(pk(LK.TEMPT), vT) : ST.fmt(pk(actPool), vA);
         if (resp === 'refuse') {
           b.cnt.refuse++; a.m.reason = clamp(a.m.reason + 6, 0, 100);
-          t += ST.fmt(pk(hands(LK.REFUSE, a, b)), { a: a.name, b: b.name }) + (rng() < 0.7 ? say2(b, LK.REFUSE_SAY) : '');
+          /* 一度は応じた相手が、冷める出来事なしに拒むときは「ここから先だけ止める」文に（応じ方を行ったり来たりさせない） */
+          var lateR = b.rxLv >= 1 && !b.rxCool && LK.REFUSE_LATE;
+          t += ST.fmt(pk(hands(lateR ? LK.REFUSE_LATE : LK.REFUSE, a, b)), { a: a.name, b: b.name }) + (rng() < 0.7 ? say2(b, lateR && LK.REFUSE_SAY_LATE ? LK.REFUSE_SAY_LATE : LK.REFUSE_SAY) : '');
           if (b.cnt.refuse >= 2 && lv >= 2) pair.refusedHard = true;
-          ST.sayB(S, { actors: [a, b], tag: '嗜めた', text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は嗜めた（理性 ' + Math.round(b.m.reason) + '・CP）', mag: 18 }, b.name + 'が嗜めた', pair.acts === 0);
+          ST.sayB(S, { actors: [a, b], tag: '嗜めた', text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + (lateR ? 'は、そこから先だけ止めた（さっきは応じていた／理性 ' : 'は嗜めた（理性 ') + Math.round(b.m.reason) + '・CP）', mag: 18 }, b.name + 'が嗜めた', pair.acts === 0);
           continue;
         }
         b.cnt.accept++; pair.level = lv; pair.acts++; pair.lastAct = turn; lewdNow = true;
+        /* 応じ方の段階（1 流される・2 乗る）。一度乗った相手が流されるときは、拒みかける文ではなく応じる文で書く */
+        var rxNow = resp === 'accept' ? 2 : 1, rx0 = b.rxCool ? 0 : b.rxLv || 0, giveIn = !swap && b.cnt.refuse > 0 && !b.gaveIn && LK.GIVEIN;
+        var rxText = !swap && resp === 'passive' && rx0 >= 2 ? 'accept' : resp;
+        b.rxLv = Math.max(rx0, rxNow); b.rxCool = false; if (giveIn) b.gaveIn = true;
         eroNow = resp === 'accept';
         if (swap) t += ST.fmt(pk(LK.TAKE[b.bound ? 'bound' : 'free']), vT) + ST.fmt(pk(actPool), vA);
-        else t += ST.fmt(pk(hands((resp === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); }), a, b)), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
+        else t += (giveIn ? ST.fmt(pk(hands(giveIn, a, b)), { a: a.name, b: b.name }) : '') + ST.fmt(pk(hands((rxText === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); }), a, b)), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
         /* 最初の一回は、二人の関係で受け止め方が変わる */
         var RF = LK.REL && LK.REL.first[rel];
         if (pair.acts === 1 && RF && rng() < 0.75) t += ST.fmt(pk(RF), { a: a.name, b: b.name, c: (crusher || a).name, o: (crusher || a).o.name });

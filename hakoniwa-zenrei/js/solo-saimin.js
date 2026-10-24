@@ -8,11 +8,23 @@
   if (!SM || !ST) return;
   function L(s) { return s.split('|'); }
 
+  /* 一回の結果の中で同じ文を繰り返さない（まだ使っていない文から選び、使い切ったら、いちばん前に使ったものから戻す）。
+     run の間だけ HK.Story.pick をこれに差し替える */
+  function freshPick(S, arr) {
+    if (!arr || !arr.length) return '';
+    var u = S._fu || (S._fu = []), free = arr.filter(function (x) { return u.indexOf(x) < 0; }), t;
+    if (free.length) t = free[S.rng.int(free.length)];
+    else { var bi = Infinity; arr.forEach(function (x) { var j = u.indexOf(x); if (j < bi) { bi = j; t = x; } }); }
+    var k = u.indexOf(t); if (k >= 0) u.splice(k, 1);
+    u.push(t);
+    return t;
+  }
+  function withFresh(f) { var sp = ST.pick; ST.pick = freshPick; try { return f(); } finally { ST.pick = sp; } }
   var scen = {
     id: 'saimin', name: '催眠', kicker: '1〜2人・R18', solo: true, maxCast: 2, minCast: 1,
     desc: '同僚・恋人・友人・恨みを持った相手・ストーカーの誰かに催眠をかけられる。かかるのか、かかったらどこまでしてしまうのか、どんな暗示に弱いのか。終わったあと、怒るのか、通報するのか、やり返すのか、堕ちるのか。※成人キャラクター向け',
     note: '※登場人物はすべて成人として扱います。',
-    unit: 'コマ', simulate: function (input) { return run(input); },
+    unit: 'コマ', simulate: function (input) { return withFresh(function () { return run(input); }); },
     castHint: '1〜2人（かける側とかけられる側で合わせて二人まで）。1人のときは、かける側はモブ（「かける相手」の設定で決まる）になります。2人のときは片方が「かける側」になり、もう片方に催眠をかけます（関係は「既存の関係」から決まります）。役割を決めなければ、2人目がかける側になります。',
     env: [
       { id: 'who', label: 'かける相手', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ（人ごとにランダム）' }, { v: 'colleague', label: '仕事の同僚' }, { v: 'lover', label: '恋人' }, { v: 'friend', label: '友人' }, { v: 'grudge', label: '恨みを持った相手' }, { v: 'stalker', label: 'ストーカー' }] },
@@ -142,8 +154,23 @@
       var u = p._said = p._said || {}, f = list.filter(function (x) { return !u[x]; });
       var x = ST.pick(S, f.length ? f : list); u[x] = 1; return x;
     }
-    function tq(p) { return V && SM.TRANCE[p.persona] && rng() < 0.45 ? p.name + fresh(p, topVoice(p, 'TRANCE', SM.TRANCE[p.persona])) : ''; }
-    function cmdText(p, g) { var c = ST.fmt(ST.pick(S, cmdOf(p, g)), { h: p.h, a: p.name }).replace(/^「|」$/g, ''); return p.h + 'は' + (S.rng() < 0.5 ? '低い声で' : '耳元で') + '「' + c + '」と囁いた。'; }
+    function tq(p) { return V && SM.TRANCE[p.persona] && rng() < 0.45 ? p.name + fresh(p, topVoice(p, 'TRANCE', tranceL(p))) : ''; }
+    function cmdText(p, g) {
+      var c = ST.fmt(ST.pick(S, cmdOf(p, g)), { h: p.h, a: p.name }).replace(/^「|」$/g, '');
+      if (!SM.CMD_FRAME) return p.h + 'は' + (S.rng() < 0.5 ? '低い声で' : '耳元で') + '「' + c + '」と囁いた。';
+      return ST.fmt(ST.pick(S, SM.CMD_FRAME), { h: p.h, a: p.name }).replace('{c}', c);
+    }
+    /* 反応の段階（0 抗いながらかかる・1 とろける・2 堕ちる）：快楽堕ちと絶頂の回数で決め、我に返るまでは下げない。
+       上がったときは、変わり目が分かる一文（SM.SHIFT）を返す（かけられた側が攻めのときは、段階だけ上げる） */
+    function rsUp(p) {
+      var r0 = p.rs || 0, n = Math.max(r0, p.m.fall >= 55 || (p.cnt.climax >= 3 && p.m.fall >= 40) ? 2 : 0, p.m.fall >= 25 || p.cnt.climax >= 1 ? 1 : 0);
+      if (n <= r0) return '';
+      p.rs = n;
+      var T = SM.SHIFT && (SM.SHIFT[p.persona] || SM.SHIFT.gentle);
+      return T && !p.aTop ? ST.fmt(ST.pick(S, T[n - 1]), { a: p.name, h: p.h }) : '';
+    }
+    /* うわごと：今の段階の台詞だけ（段階の表がなければ元の表） */
+    function tranceL(p) { var TS = SM.TRANCE_ST && SM.TRANCE_ST[p.persona]; return TS ? TS[Math.min(TS.length - 1, p.rs || 0)] : SM.TRANCE[p.persona]; }
 
     /* ---------- 導入 ---------- */
     ST.step(S, '導入');
@@ -214,8 +241,10 @@
         var mag = 15;
         if (res === 'ng') {
           p.cnt.ng++; p.m.depth = clamp(p.m.depth - 14 - Math.max(0, -p.aff[k]) * 30, 0, 100); p.m.resist = clamp(p.m.resist + 6, 0, 100);
-          t += ST.fmt(ST.pick(S, SM.RESIST), v) + (SM.RESIST_SAY[p.persona] && rng() < 0.5 ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : '');
-          why += '：拒んだ';
+          /* とろけたあとで拒むときは、はっきり拒む文ではなく、最後の一線で引っかかる文（段階を行き来させない） */
+          var late = p.rs >= 1 && SM.RESIST_LATE, RSY = late && SM.RESIST_SAY_LATE ? SM.RESIST_SAY_LATE[p.persona] || SM.RESIST_SAY_LATE.gentle : SM.RESIST_SAY[p.persona];
+          t += ST.fmt(ST.pick(S, late ? SM.RESIST_LATE : SM.RESIST), v) + (RSY && rng() < 0.5 ? p.name + ST.pick(S, RSY) : '');
+          why += late ? '：その暗示だけは拒んだ' : '：拒んだ';
         } else {
           var full = res === 'full', f = g.fx;
           if (full) { p.cnt.ok++; p.got.push(k); } else p.cnt.part++;
@@ -264,6 +293,7 @@
             p.woke = true; p.wokeMid = true; p.m.depth = 0; p.aTopLast = aTop;
             why += '／行為の最中に我に返った（快楽堕ち ' + Math.round(p.m.fall) + '・抵抗 ' + Math.round(p.m.resist) + '）';
           }
+          if (!p.woke) t += rsUp(p);
           mag = p.wokeCum || p.wokeMid ? 40 : full ? (g.lewd ? 30 : 18) : 16;
         }
         p.maxDepth = Math.max(p.maxDepth, p.m.depth);

@@ -196,10 +196,13 @@
     if (!S.lwT) S.lwT = { rng: HK.rng(((S.lwSeed || 1) * 7907 + 211) >>> 0), _eroSeen: {}, recent: [] };
     return S.lwT;
   }
+  /* 一回の結果の中で同じ段落を繰り返さない（使い切ったら、いちばん前に使ったものから戻す） */
   function pick(S, a) {
-    var t = T(S), x = a[t.rng.int(a.length)];
-    for (var i = 0; i < 5 && t.recent.indexOf(x) >= 0; i++) x = a[t.rng.int(a.length)];
-    t.recent.push(x); if (t.recent.length > 40) t.recent.shift();
+    var t = T(S), u = t.recent, free = a.filter(function (x) { return u.indexOf(x) < 0; }), x;
+    if (free.length) x = free[t.rng.int(free.length)];
+    else { var bi = Infinity; a.forEach(function (y) { var j = u.indexOf(y); if (j < bi) { bi = j; x = y; } }); }
+    var k = u.indexOf(x); if (k >= 0) u.splice(k, 1);
+    u.push(x);
     return x;
   }
   /* c：{ S, h, fmt, ero, dom }。{vb}{vt}＝態度ごとの声、{m0}{m1}{m2}{s:…}＝男性向けの喘ぎと擬音 */

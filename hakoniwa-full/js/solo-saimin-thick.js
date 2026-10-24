@@ -127,10 +127,13 @@
     if (!S.lwT) S.lwT = { rng: HK.rng(((S.env && S.env.skill) || 0) * 7919 + (S.P ? S.P.length : 0) * 131 + 271828), _eroSeen: S._eroSeen || (S._eroSeen = {}), scen: S.scen, env: S.env };
     return S.lwT;
   }
+  /* 一回の結果の中で同じ文を繰り返さない（使い切ったら、いちばん前に使ったものから戻す） */
   function pk(R, a) {
-    var r = R.recent = R.recent || [], x = a[R.rng.int(a.length)];
-    for (var i = 0; i < 4 && r.indexOf(x) >= 0; i++) x = a[R.rng.int(a.length)];
-    r.push(x); if (r.length > 40) r.shift();
+    var r = R.recent = R.recent || [], free = a.filter(function (y) { return r.indexOf(y) < 0; }), x;
+    if (free.length) x = free[R.rng.int(free.length)];
+    else { var bi = Infinity; a.forEach(function (y) { var j = r.indexOf(y); if (j < bi) { bi = j; x = y; } }); }
+    var k = r.indexOf(x); if (k >= 0) r.splice(k, 1);
+    r.push(x);
     return x;
   }
   /* 厚くするか：ほのめかす・数行で短くでは使わない（混ぜるなら半分）。男性向けでも使う */
@@ -165,7 +168,7 @@
     /* 暗示の言葉と声 */
     var cmd = ro.top ? pk(R, CMD_TOP) : pk(R, CMD);
     var voice = E ? (ro.top ? moan(R, p, 1, true) : moan(R, p, 1)) : T4 ? pk(R, ro.top ? T4.DOM[ps(p)] || T4.DOM.gentle : T4.SUB1[ps(p)] || T4.SUB1.gentle) : '……っ';
-    out.push('{h}は' + pk(R, ['耳元で', '低い声で', '静かに']) + '「' + cmd + '」と囁いた。' + pk(R, CMD_LINK) + '{a}「' + voice + '」' + pk(R, CMD_LINK2));
+    out.push('{h}は' + pk(R, ['吐息まじりに', '繋がったまま', '甘い声で', '静かに', 'もう一度']) + '「' + cmd + '」と囁いた。' + pk(R, CMD_LINK) + '{a}「' + voice + '」' + pk(R, CMD_LINK2));
     out.push(pk(R, E ? BEAT_E[k] || BEAT_E.in : BEAT[kb]));
     out.push(ro.top ? pk(R, PEAK_TOP) : pk(R, PEAK[ps(p)]));
     var pe = pk(R, E ? PEAK_E[k] || PEAK_E.in : PEAK_N[k] || PEAK_N.in);

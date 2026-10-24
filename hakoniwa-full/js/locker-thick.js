@@ -30,7 +30,7 @@
   };
   /* 扉が開いたあとの夜（男性向け）：最中の段落に男性向けの最中を、絶頂の段落の頭に男性向けの果てる段を足す（thick-sex-ero.js の文） */
   function eroBed(S, o, run) {
-    var TE = HK.ThickEro, x = o.x, y = o.y, mode = TE.mode(x, y), g = TE.group(T.style(x), mode), pk = function (a) { return S.rng.pick(a); }, n = 0, say1 = ST.say;
+    var TE = HK.ThickEro, x = o.x, y = o.y, mode = TE.mode(x, y), g = TE.group(T.style(x), mode), pk = function (a) { return LK.pick(S, a); }, n = 0, say1 = ST.say;
     var nm = function (t) { return TE.fill(S, t, x, y).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name); };
     ST.say = function (S2, e) {
       if (e && typeof e.text === 'string' && e.tag !== 'ベッドへ') {
@@ -62,7 +62,8 @@
     /* 前戯・体位を変える段落には、厚い版の文に、一段落版（solo-locker-data／more.js の LK.BED）の文も候補として混ぜる */
     B.fore = para(FORE.concat(save.fore || []));
     /* 繋がる段落のあとに、感じていく段落（受けの快感・喘ぎ・ロッカーならではの一文）を添える */
-    var pk = function (arr) { return rng.pick(arr); }, mode = fm ? 'fm' : 'mf';
+    /* 一回の結果の中で同じ文を繰り返さない（LK.pick：使い切ったら、いちばん前に使ったものから） */
+    var pk = function (arr) { return LK.pick(S, arr); }, mode = fm ? 'fm' : 'mf';
     var feel = function () { return '\n\n' + pk(fm ? T.FEEL_FM : T.FEEL).replace('{mb}', T.moan(pk, y)) + '\n\n' + pk(T.PLACE.locker) + pk(T.FEEL_A[mode]) + T.react(pk, y); };
     /* 描写「ほどほど」では、一段落版の繋がる一文（男性が動く形）も候補に。「濃いめ」は厚い版だけ */
     var ins = (fm ? T.FM_BODY[g] : hard ? T.ROUGH_BODY : T.BODY[st] || T.BODY.gentle).concat(!fm && !hard && o.lew === 'mid' ? save.insert || [] : []);

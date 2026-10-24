@@ -45,28 +45,28 @@
 
   /* 気づいた瞬間 */
   var NOTICE = {
-    proud: L('{a}は跳ね起きた。「…おい。これ、マッサージじゃないだろ」|{a}は{m}の手首を掴んだ。「どこ触ってる」'),
-    stern: L('{a}は静かに目を開けた。「施術内容について、説明を求めます」|{a}は体を起こしてタオルを掴み直した。「これは、明らかに範囲を超えていますね」'),
-    tsun: L('{a}「ちょ、ちょっと！今のわざとでしょ！」顔が真っ赤だった。|{a}「べ、別に気持ちよくなんかないけど！今のは絶対おかしい！」'),
-    gentle: L('{a}は困ったように笑った。「あの…これって、本当にマッサージですか？」|{a}「ええと…ごめんなさい、ちょっと確認なんですけど…今のは？」'),
-    devoted: L('{a}は唇を噛んで、それでも勇気を出して言った。「あの…今の、普通じゃない…ですよね…？」|{a}は震える声で訊いた。「これも…施術の、一部なんですか…？」'),
-    cool: L('{a}は天井を見たまま言った。「リンパ節の位置、そこじゃないですよね」|{a}「この三分間、筋肉に関係のない部位しか触っていませんね」'),
-    free: L('{a}「えっ、待って待って、今のマッサージ？絶対違うよね！？」|{a}は吹き出した。「いやいやいや、さすがに無理あるでしょ、それ」'),
-    shy: L('{a}はタオルの端をぎゅっと握った。「あ、あの…そこは…」声が消え入りそうだった。|{a}は真っ赤になって固まった。「こ、これって…ふ、普通なんですか…？」')
+    proud: L('{a}は跳ね起きた。「…おい。これ、マッサージじゃないだろ」|{a}は{m}の手首を掴んだ。「どこ触ってる」|{a}は身を起こし、タオルを肩に引っかけた。「説明しろ。今の手は、どこのリンパだ」'),
+    stern: L('{a}は静かに目を開けた。「施術内容について、説明を求めます」|{a}は体を起こしてタオルを掴み直した。「これは、明らかに範囲を超えていますね」|{a}は静かに手を上げ、施術を止めさせた。「一度、確認させてください。今のは何の手技ですか」'),
+    tsun: L('{a}「ちょ、ちょっと！今のわざとでしょ！」顔が真っ赤だった。|{a}「べ、別に気持ちよくなんかないけど！今のは絶対おかしい！」|{a}「ねえ！　今の、絶対わざとだよね！？」――耳まで真っ赤だった。'),
+    gentle: L('{a}は少し困った顔で、首をかしげた。「あの…これって、本当にマッサージですか？」|{a}「ええと…ごめんなさい、ちょっと確認なんですけど…今のは？」|{a}は首をかしげて、{m}を見上げた。「ねえ、今のって……マッサージの続き、なのよね？」'),
+    devoted: L('{a}は唇を噛んで、それでも勇気を出して言った。「あの…今の、普通じゃない…ですよね…？」|{a}は震える声で訊いた。「これも…施術の、一部なんですか…？」|{a}は勇気を振り絞るように、小さく手を挙げた。「あ、あの……質問しても、いいですか……？」'),
+    cool: L('{a}は天井を見たまま言った。「リンパ節の位置、そこじゃないですよね」|{a}「この三分間、筋肉に関係のない部位しか触っていませんね」|{a}は目を開けて、淡々と言った。「今の手の位置、施術の説明と合っていませんね」'),
+    free: L('{a}「えっ、待って待って、今のマッサージ？絶対違うよね！？」|{a}は吹き出した。「いやいやいや、さすがに無理あるでしょ、それ」|{a}は顔だけ振り返った。「ちょっとちょっと、今のどこ触ったの？　さすがにバレるって」'),
+    shy: L('{a}はタオルの端をぎゅっと握った。「あ、あの…そこは…」声が消え入りそうだった。|{a}は真っ赤になって固まった。「こ、これって…ふ、普通なんですか…？」|{a}は体を縮めて、震える声で言った。「い、今の……ま、間違い、ですよね……？」')
   };
-  NOTICE.polite = L('{a}は体を起こし、丁寧に尋ねた。「恐れ入りますが、ただいまの施術について、ご説明いただけますか」|{a}「あの……大変申し上げにくいのですが、そちらは施術の範囲外ではないでしょうか」');
+  NOTICE.polite = L('{a}は体を起こし、丁寧に尋ねた。「恐れ入りますが、ただいまの施術について、ご説明いただけますか」|{a}「あの……大変申し上げにくいのですが、そちらは施術の範囲外ではないでしょうか」|{a}は姿勢を正して、丁寧に一礼した。「念のため伺います。ただいまの施術は、コースに含まれておりますか」');
   var EXCUSE = L('{m}「よくあるご質問です。ここのリンパは、全身の巡りの要なんですよ」|{m}「皆さん最初は驚かれるんです。でも、効果は保証しますから」|{m}「血行が良くなると、どうしてもそういう感覚になるんです。体が正常に反応している証拠ですよ」|{m}「くすぐったく感じるのは、凝りがほぐれ始めたサインです」|{m}「当店独自のメソッドでして。お客様の体は、ちゃんと応えていますよ」');
   var DECEIVED = {
-    proud: L('{a}は「…そういうもんか」と不機嫌そうに横になり直した。'),
-    stern: L('{a}は少し考えてから「専門家がそう言うなら」と姿勢を戻した。'),
-    tsun: L('{a}「…ほ、本当でしょうね？」そう言いながら、{a}は大人しく横になった。'),
-    gentle: L('{a}は「まあ、そうなんですね。失礼しました」と微笑んで、また目を閉じた。'),
-    devoted: L('{a}は「ご、ごめんなさい、疑って…」と謝って、体の力を抜いた。'),
-    cool: L('{a}は「…理屈は通っていますね」と呟いて、横になり直した。'),
-    free: L('{a}は「へえー、そうなんだ！」とあっさり納得した。'),
-    shy: L('{a}は「す、すみません…私が変なのかも…」と縮こまって、また横になった。')
+    proud: L('{a}は「…そういうもんか」と不機嫌そうに横になり直した。|{a}は鼻を鳴らした。「次に変なことしたら、本当に帰るからな」――そう言いながら、また枕に顔を戻した。|{a}は「……ちっ。紛らわしい手つきしやがって」と吐き捨てて、うつ伏せに戻った。'),
+    stern: L('{a}は少し考えてから「専門家がそう言うなら」と姿勢を戻した。|{a}は「……承知しました。続けてください」と短く答え、もう一度目を閉じた。|{a}は説明を頭の中で反芻し、矛盾がないことを確かめてから、黙って横になった。'),
+    tsun: L('{a}「…ほ、本当でしょうね？」そう言いながら、{a}は大人しく横になった。|{a}「べ、別に疑ってたわけじゃないし！」――言い訳しながら、{a}はタオルを引き上げて横になった。|{a}「……ふ、ふーん。なら、いいけど」{a}はぷいと顔を背けて、また施術台に伏せた。'),
+    gentle: L('{a}は「まあ、そうなんですね。失礼しました」と微笑んで、また目を閉じた。|{a}は「あら、ごめんなさいね。早とちりしちゃった」と頬に手を当て、ふたたび力を抜いた。|{a}は「プロの方が言うなら、そうなのね」とうなずいて、穏やかに横になり直した。'),
+    devoted: L('{a}は「ご、ごめんなさい、疑って…」と謝って、体の力を抜いた。|{a}は「そ、そうですよね、わたしが変に考えすぎで……」と真っ赤になって、また横になった。|{a}は何度も頭を下げた。「失礼なこと言って、本当にすみません。続けてください」'),
+    cool: L('{a}は「…理屈は通っていますね」と呟いて、横になり直した。|{a}は「……一応、筋は通っています」とだけ言って、また天井に目を戻した。|{a}は「反証する材料がありませんね」と淡々と言い、姿勢を戻した。'),
+    free: L('{a}は「へえー、そうなんだ！」とあっさり納得した。|{a}は「なーんだ、びっくりした！」と笑って、ごろんと横になり直した。|{a}は「マッサージって奥が深いんだねー」と感心して、また目を閉じた。'),
+    shy: L('{a}は「す、すみません…私が変なのかも…」と縮こまって、また横になった。|{a}は「そ、そういうもの、なんですね……」と消え入りそうな声で言って、枕に顔を埋めた。|{a}は耳まで赤くして、こくこくと頷いた。それ以上、何も訊けなかった。')
   };
-  DECEIVED.polite = L('{a}は「そうでしたか。不勉強で失礼いたしました」と頭を下げ、また横になった。');
+  DECEIVED.polite = L('{a}は「そうでしたか。不勉強で失礼いたしました」と頭を下げ、また横になった。|{a}は「大変失礼いたしました。どうぞ、お続けください」と、丁寧に詫びて目を閉じた。|{a}は「ご説明、ありがとうございます」と律儀に礼を言ってから、姿勢を戻した。');
   var LEAVE = L('{a}は施術台から降りて、黙って服を着た。「お代は、払いません」|{a}は「帰ります」とだけ言い、タオルを巻いたまま更衣室へ向かった。|{a}は会計で口コミサイトの名前を口にした。店長の顔色が変わった。');
   var STAY = L('{a}は少し黙ってから、また横になった。「…続けてください。ただし、余計なことはしないで」|{a}は分かっていて、目を閉じた。「…今日だけ、ですから」|{a}は{m}の顔を見上げて、何も言わなかった。それが答えだった。');
   var SECRET = L('{a}は気づかないふりをした。耳だけが真っ赤だった。|{a}は何か言いかけて、やめた。恥ずかしくて、言葉にできなかった。|{a}は枕に顔を埋めて、声を殺した。');
@@ -120,10 +120,44 @@
     { n: '口で', t: '{m}は{a}を施術台の端に座らせ、自分は床に膝をついた。「最後は、口で流しますね」――温かい舌が、{a}の脚のあいだをゆっくりと舐め上げた。' }
   ];
 
+  /* 一回の結果の中で同じ文を繰り返さない（まだ使っていない文から選び、使い切ったら、いちばん前に使ったものから戻す）。
+     run の間だけ K.pick をこれに差し替える（K.tail・K.climax の反応や喘ぎにも効く）。
+     借りてきた反応の表（迷宮の罠の反応など）のうち、店に合わない言葉の入った文は、ほかに候補があれば使わない */
+  var OFF = /迷宮|魔物|装備|武器|罠|先へ進|次の部屋|床を転げ|壁を殴|壁に背|壁に打ち|壁の方/;
+  function freshPick(S, arr) {
+    if (!arr || !arr.length) return '';
+    var a = arr.filter(function (x) { return typeof x !== 'string' || !OFF.test(x); });
+    if (!a.length) a = arr;
+    var u = S._fu || (S._fu = []), free = a.filter(function (x) { return u.indexOf(x) < 0; }), t;
+    if (free.length) t = free[S.rng.int(free.length)];
+    else { var bi = Infinity; a.forEach(function (x) { var j = u.indexOf(x); if (j < bi) { bi = j; t = x; } }); }
+    var k = u.indexOf(t); if (k >= 0) u.splice(k, 1);
+    u.push(t);
+    return t;
+  }
+  /* 絶頂の文：共通の表（DG.CLIMAX）は一段に三つしかなく、堕ちたあと何度も達すると同じ文が続くので、店の文（M.CLIMAX）を足した表を run の間だけ使う */
+  var CLX = null, CLX_SRC = null;
+  function climaxTable() {
+    var DG = HK.DG, MC = HK.MassageMore && HK.MassageMore.CLIMAX;
+    if (!DG || !DG.CLIMAX || !MC) return null;
+    if (CLX && CLX_SRC === DG.CLIMAX) return CLX;
+    var X = {};
+    Object.keys(DG.CLIMAX).forEach(function (p) {
+      X[p] = DG.CLIMAX[p].map(function (l, i) { var add = MC[p] && MC[p][i]; return add && add.length ? l.concat(add) : l; });
+    });
+    CLX_SRC = DG.CLIMAX;
+    return (CLX = X);
+  }
+  function withFresh(f) {
+    var kp = K.pick, DG = HK.DG, dc = DG && DG.CLIMAX, cx = climaxTable();
+    K.pick = freshPick; if (cx) DG.CLIMAX = cx;
+    try { return f(); } finally { K.pick = kp; if (cx) DG.CLIMAX = dc; }
+  }
+
   HK.SCENARIOS.massage = {
     id: 'massage', name: 'これって本当にマッサージですか？', kicker: 'ソロ・R18', solo: true, maxCast: 1, minCast: 1,
     desc: '評判のマッサージ店。施術は少しずつ際どくなる。いつ気づくか、言い訳に騙されるか、快楽に負けるか。※成人キャラクター向け',
-    unit: '施術', simulate: function (input) { return run(input); },
+    unit: '施術', simulate: function (input) { return withFresh(function () { return run(input); }); },
     derived: ['caution', 'cold', 'honesty', 'impulse'],
     env: [
       { id: 'course', label: 'コース', type: 'select', def: 'oil', options: [{ v: 'normal', label: '整体（60分）' }, { v: 'oil', label: 'アロマオイル（90分）' }, { v: 'lymph', label: '全身リンパ（120分）' }, { v: 'special', label: '「特別コース」（90分）' }] },
@@ -208,6 +242,23 @@
       for (var tries = 0; tries < 8; tries++) { var at = 1 + rng.int(Math.max(1, seq.length - 1)); if (!incAt[at]) { incAt[at] = x; break; } }
     });
     function band(l) { return l < 1.2 ? 0 : l < 2.8 ? 1 : 2; }
+    /* 反応の段階（0 こらえる・1 揺らぐ・2 とろける・3 堕ちる）。施術の際どさと堕ち度から決め、一度上がったら下げない。
+       上がった施術では、変わり目が分かる一文（M.SHIFT）を足す */
+    var ph = 0, DG0 = HK.DG;
+    function phUp(bdNow) {
+      var sg = K.stage(h), n = Math.max(ph, bdNow >= 1 || sg >= 2 ? 1 : 0, sg >= 3 ? 2 : 0, sg >= 4 ? 3 : 0);
+      if (n <= ph) return '';
+      ph = n;
+      var T = M.SHIFT && (M.SHIFT[h.persona] || M.SHIFT.gentle);
+      return T && T[n - 1] ? ' ' + K.fmt(S, K.pick(S, T[n - 1])) : '';
+    }
+    /* 反応の一文（K.tail と同じ表）。こらえる声（ENDURE）は、こらえる段階のうちだけ。表の段は、今の段階より下げない */
+    function tail(p) {
+      if (rng() > p) return '';
+      var sg = K.stage(h), TL = DG0.TAILS[h.persona] || DG0.TAILS.gentle;
+      if (ph === 0 && DG0.ENDURE && DG0.ENDURE[h.persona] && rng() < 0.4) return ' ' + K.fmt(S, K.pick(S, DG0.ENDURE[h.persona]));
+      return ' ' + K.fmt(S, K.pick(S, TL[Math.min(TL.length - 1, Math.max(sg, [0, 1, 3, 4][ph]))]));
+    }
     function fx(f) {
       if (!f) return;
       if (f.r) h.reason += f.r; if (f.s) sus += f.s; if (f.p) h.pleasure += f.p * h.sens; if (f.c) h.corrupt += f.c * S.k; if (f.sens) h.sens += f.sens;
@@ -294,13 +345,15 @@
           sus += 45;
         }
       } else {
-        var rx = hardTop ? ' ' + K.fmt(S, K.pick(S, bd ? M.TOP_REACT : M.REACT[h.persona][0])) : rng() < 0.65 || dark ? ' ' + K.fmt(S, K.pick(S, M.REACT[h.persona][bd])) : K.tail(S, lvl >= 1 ? 0.55 : 0.2);
+        /* とろけたあとは、際どさの低い施術でも「明らかにおかしい」段の反応か、堕ち度に合った反応だけ */
+        var shiftT = hardTop ? '' : phUp(bd), ri = Math.max(bd, ph >= 2 ? 2 : 0);
+        var rx = hardTop ? ' ' + K.fmt(S, K.pick(S, bd ? M.TOP_REACT : M.REACT[h.persona][0])) : dark || (ph < 2 && rng() < 0.65) ? ' ' + K.fmt(S, K.pick(S, M.REACT[h.persona][ri])) : tail(ph >= 2 ? 1 : lvl >= 1 ? 0.55 : 0.2);
         var wrongNow = wrong && lvl >= 2 && M.WRONG && (wrongShown === 0 || rng() < 0.55);
         if (wrongNow) {
           wrongShown++; h.reason += 1; sus += 3;
           rx = ' ' + fw(M.WRONG[h.persona] || M.WRONG.gentle) + (wrongShown > 1 && rng() < 0.5 ? ' ' + fw(M.WRONG_BODY) : '');
         }
-        K.say(S, { kind: 'ev', tag: wrongNow ? st[0] + '（拒否反応）' : st[0], text: text + rx, why: (lvl >= 2 ? '際どさ ' + Math.round(lvl) + '／快感 ＋' + Math.round(r.gain) : '') + (wrongNow ? '／' + wrongWhy + '：抵抗が強い' : '') });
+        K.say(S, { kind: 'ev', tag: wrongNow ? st[0] + '（拒否反応）' : st[0], text: text + rx + shiftT, why: (lvl >= 2 ? '際どさ ' + Math.round(lvl) + '／快感 ＋' + Math.round(r.gain) : '') + (wrongNow ? '／' + wrongWhy + '：抵抗が強い' : '') });
         logC(r.climaxes);
       }
       /* 施術者の一言 */
@@ -309,7 +362,7 @@
       var AB = M.ACT[h.action.id];
       if (!sleeping && AB && rng() < 0.45 && (!hardTop || !bd)) {
         fx(AB.fx[bd]);
-        K.say(S, { kind: 'ev', tag: h.action.label, text: K.fmt(S, K.pick(S, AB.t[bd])), why: '方針「' + h.action.label + '」' });
+        K.say(S, { kind: 'ev', tag: h.action.label, text: K.fmt(S, K.pick(S, AB.t[Math.max(bd, ph >= 2 ? 2 : 0)])), why: '方針「' + h.action.label + '」' });
       }
       /* 寝落ち（お任せでリラックスしている人ほど） */
       if (!hardTop && !sleeping && !slept && !noticed && bd >= 1 && rng() < (h.action.id === 'relax' ? 0.3 : 0.06) + h.tr.cold * 0.12 + h.tr.ac * 0.08) {
@@ -381,7 +434,7 @@
     if (extended && !hardTop && !left && !reversed && !fell) {
       S.step = seq.length; K.step(S, '延長');
       var rx2 = K.stim(S, 40, { part: 'all', mult: 1.2, defer: true });
-      K.say(S, { kind: 'ev', tag: '延長', text: K.fmt(S, K.pick(S, ['延長の三十分は、それまでの九十分よりずっと長かった。{m}の手はもう、遠慮をしなかった。', '{m}「延長分は、特に念入りに」――{a}は延長を頼んだことを、ほんの少しだけ後悔した。', '延長の間、{a}は時計を見なかった。見る余裕がなかった。'])) + K.tail(S, 0.7) + (lwOn() ? ML.ext(lwc(false)) : ''), why: '延長した' });
+      K.say(S, { kind: 'ev', tag: '延長', text: K.fmt(S, K.pick(S, ['延長の三十分は、それまでの九十分よりずっと長かった。{m}の手はもう、遠慮をしなかった。', '{m}「延長分は、特に念入りに」――{a}は延長を頼んだことを、ほんの少しだけ後悔した。', '延長の間、{a}は時計を見なかった。見る余裕がなかった。'])) + phUp(2) + tail(0.7) + (lwOn() ? ML.ext(lwc(false)) : ''), why: '延長した' });
       logC(rx2.climaxes);
       if (K.settle(S)) fell = true;
     }
@@ -394,6 +447,8 @@
       var pool = S.rng.shuffle(noMut(HK.Pos && HK.Pos.vsNpc(h, '') === 'top' ? posTop() : ff ? POS_FF : POS)).slice(0, nPos);
       var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])), why: '快楽に負けた（堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
       K.key(S, head, '快楽に負けた');
+      /* 陥落の文が変わり目を兼ねるので、ここからは段階を上げるだけ（一文は足さない） */
+      ph = Math.max(ph, fell ? 3 : 2);
       var custTop = HK.Pos && HK.Pos.vsNpc(h, '') === 'top';
       /* 厚く：堕ちた瞬間を段落で（客が主導する組は、体位の場面のほうで厚くする） */
       if (!dark && !custTop && lwOn()) head.text += ML.fall(lwc(false), kindR);
@@ -418,7 +473,7 @@
           var lw = '', lk = custTop ? kindT : kindR;
           if (j === pool.length - 1) { if (lwOn()) lw = ML.peak(lwc(custTop), lk, highOn); }
           else if (j >= 1 && lwOn()) lw = ML.mid(lwc(custTop), lk);
-          K.say(S, { kind: 'ev', tag: p.n, text: K.fmt(S, p.t) + ex + lw + (function (tl) { return lw ? '' : tl; })(rr.climaxes.length || p.thick ? '' : K.tail(S, 0.8)), why: '体位の指定：' + p.n });
+          K.say(S, { kind: 'ev', tag: p.n, text: K.fmt(S, p.t) + ex + lw + (function (tl) { return lw ? '' : tl; })(rr.climaxes.length || p.thick ? '' : tail(0.8)), why: '体位の指定：' + p.n });
           K.logClimax(S, rr.climaxes);
         }
         /* 落ちすぎた客は、行為の最中に新人の練習台に誘われる（断れない） */
