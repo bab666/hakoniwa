@@ -94,13 +94,15 @@
     var rng = S.rng;
     var a = HK.weighted(rng, P, function (x) { var v = x.corrupt / 100 + x.pleasure / 140 + x.tr.impulse * 0.3 - 0.75; return v > 0 ? v : 0; });
     if (!a) return false;
-    var cand = P.filter(function (x) { return x !== a && canLove(a, x); });
+    /* 体の関係になる組だけ（恋愛対象・受け攻め・恋愛やR18にしない組・性行為の相手の固定。HK.State.pairSex・HK.ngPair・HK.sexBlocked） */
+    var cand = P.filter(function (x) { return x !== a && canLove(a, x) && (!HK.State || HK.State.pairSex(a, x)) && !(HK.ngPair && HK.ngPair(a, x)) && !(HK.sexBlocked && HK.sexBlocked(a, x)); });
     if (!cand.length) return false;
     var b = HK.weighted(rng, cand, function (x) { return Math.max(0.05, 0.3 + rel(S, a, x).att / 50); });
     if (!b) return false;
     var r = rel(S, a, b);
     var want = (canLove(b, a) ? r.att / 60 : 0) + b.corrupt / 100 + b.pleasure / 150 + b.tr.fc * 0.2;
-    if (want > 0.85 || (r.tie && /lover|fwb|almost/.test(r.tie))) {
+    /* 慰め合いは合意の場面なので、恋愛対象が両方向で合うときだけ */
+    if (canLove(b, a) && (want > 0.85 || (r.tie && /lover|fwb|almost/.test(r.tie)))) {
       r.intimate++; r.att += 10; r.trust += 6;
       [a, b].forEach(function (x) { x.pleasure += 30 + x.sens * 8; x.corrupt += 2; x.reason += 3; });
       sayAs(S, a, { kind: 'ev', tag: '慰め合い', text: t2(S, pk(S, ['{a}「…ねえ、{b}も、熱いでしょ」{b}は答えずに、{a}の手を取った。――罠のせいにして、二人は互いの熱を逃がした。', '休める場所で、{a}と{b}は背中合わせに座っていた。どちらからともなく向き直った。――', '{b}が先に{a}の肩に額をつけた。「少しだけ」「…うん」――', '{a}と{b}は、誰にも言わないと約束して、互いを慰めた。']), a, b), why: a.name + 'と' + b.name + 'の昂り・惹かれ（' + Math.round(r.att) + '）' });
