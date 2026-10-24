@@ -481,8 +481,10 @@
       return { cat: 'help', text: ctx.t(ctx.pick(['{a}が近づいた瞬間、{b}は口元を押さえてうずくまった。番以外のαの匂いを、体が受けつけない。', '{b}は熱に浮かされながらも、{a}の手を振り払った。「だめ……私／俺には、番がいる」']).replace(/私／俺/, O.tr.cp + O.tr.fc > 1 ? '俺' : '私'), X, O) + (mate ? ctx.t('{b}が呼んだのは、{c}の名前だった。', X, O, mate) : ''), why: O.name + 'には番（' + mate.name + '）がいる。番のいるΩは、ほかのαを拒む', mag: 12 };
     }
     var heatLine = OM.HEAT;
-    var casual = !noW && !pf.couple && rX.att > 25 && rO.att > 25 && HK.canLove(X, O) && (HK.FWB.lean(X) + HK.FWB.lean(O)) / 2 > 0.45 && ctx.rng() < 0.5;
-    if ((sx(X) === 'a' || sx(X) === 'b') && (bound && mutual || casual || (mutual && rX.trust > 20 && rO.trust > 20 && heat + X.tr.impulse * 0.4 > 0.75 && ctx.rng() < 0.55))) {
+    var casual = !noW && !pf.couple && rX.att > 25 && rO.att > 25 && HK.canLove(X, O) && HK.canLove(O, X) && (HK.FWB.lean(X) + HK.FWB.lean(O)) / 2 > 0.45 && ctx.rng() < 0.5;
+    /* 夜になる組は、受け攻め・恋愛対象（HK.Pos.okSex）と、恋愛やR18にしない組・性行為の相手の固定・R18に参加しない（HK.ngPair・HK.sexBlocked）を通るときだけ */
+    var sexOk = !(HK.Pos && !HK.Pos.okSex(X, O)) && !(HK.ngPair && HK.ngPair(X, O)) && !(HK.sexBlocked && HK.sexBlocked(X, O));
+    if (sexOk && (sx(X) === 'a' || sx(X) === 'b') && (bound && mutual || casual || (mutual && rX.trust > 20 && rO.trust > 20 && heat + X.tr.impulse * 0.4 > 0.75 && ctx.rng() < 0.55))) {
       pf.night = true; pf.nights = (pf.nights || 0) + 1;
       ctx.mod2(X, O, { att: 10, aff: 6 }, { att: 10, aff: 6 });
       /* 噛む（番にする）：運命の抗えなさが高いほど、信頼が浅くても噛んでしまう・噛まれてしまう。低いほど信頼を待つ */
