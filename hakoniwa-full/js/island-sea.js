@@ -1,5 +1,5 @@
 /* 箱庭診断: 無人島の海と探索 ―― 大物釣り／海に引き込まれる・漂流と帰還／一人の探索／二人以上の探索（関係で展開が変わる）
-   関係の見方：恋人・惹かれ合い（love）／片想い（crush）／ライバル・険悪（rival）／仲良し（friend）／疑い（wary）／まだ他人（plain） */
+   関係の見方：恋人・惹かれ合い（love）／両片想い（pining：どちらも想っているのに、相手は自分を何とも思っていないと思い込んでいる）／片想い（crush）／ライバル・険悪（rival）／仲良し（friend）／疑い（wary）／まだ他人（plain） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -15,6 +15,7 @@
   /* 二人の関係（a から見た b） */
   function bondOf(ctx, a, b) {
     var ab = R(ctx, a, b), ba = R(ctx, b, a), pf = ctx.pair(a, b);
+    if (HK.Ties && HK.Ties.pining && HK.Ties.pining(ctx, a, b)) return 'pining';
     if (pf.couple || tie(ctx, a, b, 'lover') || tie(ctx, a, b, 'mate') || (ab.att > 45 && ba.att > 45)) return 'love';
     if (ab.att > 48 && HK.canLove(a, b)) return 'crush';
     if (tie(ctx, a, b, 'rival') || tie(ctx, a, b, 'enemy') || ab.ten > 38 || ab.aff < -15) return 'rival';
@@ -22,7 +23,10 @@
     if (ab.aff > 30 && ab.trust > 18) return 'friend';
     return 'plain';
   }
-  var BOND_WHY = { love: '惹かれ合う二人', crush: '片想いの相手と', rival: '張り合う二人', wary: '信用しきれない相手と', friend: '気心の知れた二人', plain: 'まだよく知らない相手と' };
+  var BOND_WHY = { love: '惹かれ合う二人', pining: '両片想いの二人', crush: '片想いの相手と', rival: '張り合う二人', wary: '信用しきれない相手と', friend: '気心の知れた二人', plain: 'まだよく知らない相手と' };
+
+  /* 恋の気配がある関係（恋人・両片想い・片想い） */
+  function warm(k) { return k === 'love' || k === 'pining' || k === 'crush'; }
 
   /* ======================= 大物釣り ======================= */
   var BIG = [
@@ -43,11 +47,14 @@
     var intro = a.name + 'の体が、竿ごと海へ引きずり込まれた。' + pk(ctx, [what + 'は止まらなかった。', '波が' + a.name + 'の頭を越えた。', '岸から伸ばされた手は、あと少しで届かなかった。']);
     if (res) {
       var r = R(ctx, res, a), love = bondOf(ctx, res, a);
-      var go = 0.18 + res.tr.np * 0.25 + Math.max(0, r.aff) / 250 + (love === 'love' || love === 'crush' ? 0.2 : 0) - (love === 'rival' ? 0.1 : 0) - res.tr.caution * 0.15 - (ctx.env.storm || 0) / 400;
+      var go = 0.18 + res.tr.np * 0.25 + Math.max(0, r.aff) / 250 + (warm(love) ? 0.2 : 0) - (love === 'rival' ? 0.1 : 0) - res.tr.caution * 0.15 - (ctx.env.storm || 0) / 400;
       if (rng() < go) {
         var lines = {
           love: [res.name + 'は迷わず海に飛び込んだ。' + a.name + 'の腕を掴み、離さなかった。浜に這い上がった二人は、しばらく抱き合ったまま動けなかった。' + res.name + '「…二度と、こんなことしないで」',
             res.name + 'は' + a.name + 'の名前を叫びながら泳いだ。浜に引き上げたあと、' + a.name + 'は咳き込みながら言った。' + a.name + '「…ねえ、今の、人工呼吸した？」' + res.name + '「してない！　…まだ」'],
+          pining: [res.name + 'は誰より先に海へ飛び込み、' + a.name + 'を浜まで引きずり上げた。' + a.name + '「なんで、そこまで…」' + res.name + '「…誰でも助ける」本当は誰でもよくなかった。' + a.name + 'は、その言葉を真に受けて少しだけ落ち込んだ。',
+            res.name + 'は' + a.name + 'を抱えて岸まで泳ぎ切った。二人は砂の上で、同時に「ごめん」と言った。何を謝ったのか、どちらもわからなかった。濡れた手は、しばらく離れなかった。',
+            '浜に引き上げられた' + a.name + 'は、咳き込みながら' + res.name + 'の手を握っていた。' + a.name + '「…嫌だったでしょ、こんなの」' + res.name + '「嫌なわけない」言ってから、' + res.name + 'は慌てて「仲間だし」と付け足した。' + a.name + 'は「だよね」と笑って、その夜は眠れなかった。'],
           crush: [res.name + 'は服のまま海に飛び込み、' + a.name + 'を浜まで引っ張ってきた。' + a.name + '「ありがと…」' + res.name + 'は濡れた前髪で、真っ赤な顔を隠した。',
             res.name + 'は' + a.name + 'を抱えて岸まで泳ぎ切った。' + a.name + '「重かったでしょ」' + res.name + '「…全然」本当は腕がちぎれそうだった。'],
           rival: [res.name + 'は舌打ちして海に飛び込んだ。' + a.name + 'を浜に放り出すと、' + res.name + '「借りにしとく。高くつくからな」' + a.name + '「…頼んでない」' + res.name + '「知ってる」',
@@ -59,10 +66,10 @@
           plain: [res.name + 'が海に飛び込んで、' + a.name + 'を引き上げた。' + a.name + 'はそれまで' + res.name + 'とろくに話したこともなかった。その夜、' + a.name + 'は焚き火で' + res.name + 'の服を一番いい場所に干した。',
             res.name + 'が浅瀬から手を伸ばし、' + a.name + 'を掴んだ。' + a.name + '「…助かった。本当に」']
         };
-        ctx.act2({ actors: [res, a], cat: love === 'love' || love === 'crush' ? 'romance' : 'help', mag: 22,
+        ctx.act2({ actors: [res, a], cat: warm(love) ? 'romance' : 'help', mag: 22,
           fx: function () {
             a.hp -= 10; res.hp -= 8; ctx.stress(a, 12);
-            ctx.mod2(res, a, { aff: 6, trust: 6, ten: love === 'rival' ? -6 : 0 }, { aff: 14, trust: 18, ten: love === 'rival' ? -10 : 0, att: love === 'love' || love === 'crush' ? 8 : 0 });
+            ctx.mod2(res, a, { aff: 6, trust: 6, ten: love === 'rival' ? -6 : 0 }, { aff: 14, trust: 18, ten: love === 'rival' ? -10 : 0, att: warm(love) ? 8 : 0 });
             ctx.others(res).forEach(function (o) { if (o !== a) ctx.mod(o, res, { trust: 5 }); });
           },
           text: intro + pk(ctx, lines[love]), why: res.name + 'が助けに飛び込んだ（NP・' + BOND_WHY[love] + '）' });
@@ -151,7 +158,11 @@
       if (!P.length) { ctx.act2({ actors: [c], cat: 'solo', text: how, why: c.name + 'の体力とサバイバル知識（漂流から帰還）', mag: 20 }); return; }
       var first = ctx.most(P, function (o) { return R(ctx, o, c).aff / 60 + R(ctx, o, c).att / 80 + o.tr.warmth; });
       var bd = bondOf(ctx, first, c);
-      var meet = {
+      var meet = bd === 'pining' ? pk(ctx, [
+        first.name + 'は' + c.name + 'の顔を見た瞬間、泣き出した。' + c.name + 'は、自分のために泣く人がいるとは思っていなかった。' + c.name + '「…心配、してくれたの」' + first.name + '「当たり前でしょ」――その「当たり前」の意味を、二人は別々に受け取った。',
+        first.name + 'は' + c.name + 'に駆け寄って、抱きつく寸前で止まった。' + first.name + '「…おかえり」' + c.name + 'も伸ばしかけた腕を、そっと下ろした。流されている間ずっと' + first.name + 'のことを考えていたとは、言えなかった。',
+        c.name + '「流されてる間、ずっと会いたい人がいた」' + first.name + 'は笑って「誰？」と聞いた。' + c.name + 'は「…内緒」と目をそらした。' + first.name + 'はその夜、焚き火を見ながら、それが自分ならいいのにと思った。'
+      ]) : {
         love: first.name + 'は駆け寄って、' + c.name + 'を抱きしめた。何も言えなかった。' + c.name + '「…ただいま」',
         crush: first.name + 'は' + c.name + 'の顔を見た瞬間、泣き出した。自分でも驚くほど、止まらなかった。',
         rival: first.name + '「…遅いんだよ」' + c.name + '「待ってたの？」' + first.name + '「待ってない」焚き火のそばには、' + c.name + 'の分の魚が三日分、取ってあった。',
@@ -159,8 +170,8 @@
         friend: first.name + '「生きてたー！」――' + first.name + 'は' + c.name + 'に飛びついて、二人そろって波打ち際に倒れた。',
         plain: first.name + 'は' + c.name + 'に水を渡した。' + c.name + 'は一気に飲み干して、「生き返った」と言った。'
       }[bd];
-      ctx.act2({ actors: [c, first], cat: bd === 'love' || bd === 'crush' ? 'romance' : 'bond', mag: 24,
-        fx: function () { c.hp = Math.max(c.hp, 15); P.forEach(function (o) { ctx.stress(o, -10); ctx.mod(o, c, { aff: 4 }); }); ctx.mod2(first, c, { aff: 8, trust: 6 }, { aff: 10, trust: 8, att: bd === 'love' || bd === 'crush' ? 6 : 0 }); },
+      ctx.act2({ actors: [c, first], cat: warm(bd) ? 'romance' : 'bond', mag: 24,
+        fx: function () { c.hp = Math.max(c.hp, 15); P.forEach(function (o) { ctx.stress(o, -10); ctx.mod(o, c, { aff: 4 }); }); ctx.mod2(first, c, { aff: 8, trust: 6 }, { aff: 10, trust: 8, att: warm(bd) ? 6 : 0 }); },
         text: how + meet, why: c.name + 'が漂流から帰還（' + days + '日）。' + first.name + 'の好意' });
     });
   }
@@ -210,12 +221,15 @@
     {
       /* 一人の探索の土産：関係で渡し方が変わる */
       id: 'i_solo_gift', cat: 'romance', scope: 'pair',
-      when: function (ctx, a, b) { var k = bondOf(ctx, a, b); return k === 'love' || k === 'crush' || k === 'rival' || k === 'friend'; },
+      when: function (ctx, a, b) { var k = bondOf(ctx, a, b); return warm(k) || k === 'rival' || k === 'friend'; },
       w: function (ctx, a, b) { return (aid(a) === 'explore' ? 0.5 : 0.08) + R(ctx, a, b).att / 120 + R(ctx, a, b).aff / 200; },
       run: function (ctx, a, b) {
         var k = bondOf(ctx, a, b), rb = R(ctx, b, a);
         var G = {
           love: ['{a}は探索の帰りに見つけた桜色の貝殻を、黙って{b}の手のひらに載せた。{b}はそれを、寝床の枕元に置いた。', '{a}は「誰にも教えてない場所」に{b}を連れていった。夕日がまっすぐ差し込む、小さな入り江だった。'],
+          pining: ['{a}は森で摘んだ白い花を、「余ったから」と言って{b}に渡した。同じ日の夕方、{b}も「たまたま見つけた」と言って、同じ白い花を{a}に差し出した。二人はしばらく、互いの手の花を見比べていた。',
+            '{a}は一番きれいな貝殻を拾って、{b}に渡そうとして、やめた。どうせ、ただの貝殻だと思われる。翌朝、{b}の枕元には、{b}が{a}に渡しそびれた貝殻がもう一つ並んでいた。',
+            '{a}は甘い木の実を「みんなに」と言って配り、いちばん熟れたのだけを{b}の分に回した。{b}は気づかなかったふりをした。{a}がそうするのは誰にでもだと、{b}は思い込んでいた。'],
           crush: ['{a}は森で摘んだ白い花を、渡すかどうか一時間迷った。結局「…落ちてた」と言って{b}に押しつけた。', '{a}は一番形のいい貝殻を拾って、{b}に渡すためだけに遠回りして帰った。'],
           rival: ['{a}は探索で見つけた巨大な果実を、わざわざ{b}の目の前で齧った。{a}「探せばあるのに」{b}「…明日はもっとでかいの見つけてくる」', '{a}は自作の島の地図を、{b}にだけ見せびらかした。'],
           friend: ['{a}は「{b}が好きそう」と言って、変な形の流木を持ち帰った。{b}は大喜びで、それを拠点の入り口に飾った。', '{a}は{b}のために、甘い木の実をポケットいっぱいに詰めて帰った。']
@@ -236,6 +250,12 @@
       ['{a}と{b}は、川を渡るとき自然に手を繋いだ。渡り終えても、どちらも手を離さなかった。', { att: 6, aff: 4 }, { att: 6, aff: 4 }, 'romance'],
       ['{a}と{b}は、森の奥に青く光るラグーンを見つけた。{b}「ここ、二人だけの秘密にしよう」', { att: 5, trust: 5 }, { att: 5, trust: 5 }, 'romance', 'sec'],
       ['{a}は滑りやすい岩場で{b}を支えようとして、二人そろって潮だまりに落ちた。ずぶ濡れのまま、しばらく笑いが止まらなかった。', { aff: 5, att: 3 }, { aff: 5, att: 3 }, 'romance']
+    ],
+    pining: [
+      ['{a}と{b}は二人きりで探索に出た。川を渡るとき、二人は同時に手を差し出し、同時に引っ込めた。結局、どちらも一人で渡った。', { att: 4 }, { att: 4 }, 'romance'],
+      ['崖の上で、{a}が「あのさ」と言った。{b}も「あのさ」と言った。{a}「…先どうぞ」{b}「いや、たいしたことじゃないから」二人とも、言いかけたことの続きを言わないまま拠点に戻った。', { att: 5 }, { att: 5 }, 'romance'],
+      ['探索の帰り道、{b}が「疲れた」と言った。{a}は黙ってしゃがみ、背中を差し出した。背負われながら、{b}は「{a}は誰にでも優しい」と思い、{a}は「{b}は誰にでも甘える」と思っていた。', { att: 6, trust: 3 }, { att: 6, trust: 4 }, 'romance'],
+      ['森の奥で、{a}と{b}は夕立に降られて、狭い岩陰に二人で押し込まれた。肩が触れていた。{a}「…狭くてごめん」{b}「…こっちの台詞」雨がやんでも、どちらもすぐには立ち上がらなかった。', { att: 6, aff: 3 }, { att: 6, aff: 3 }, 'romance']
     ],
     crush: [
       ['{a}は{b}と二人で探索に出られることになり、前の晩あまり眠れなかった。当日、{a}は緊張で三回転んだ。', { att: 5 }, { aff: 3 }, 'romance'],

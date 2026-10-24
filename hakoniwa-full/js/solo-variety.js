@@ -81,6 +81,13 @@
     /* みんなで性的な罰ゲームをしてよい顔ぶれか（攻めの指定の人がいない・全員の組が okSex） */
     var grpOk = function (L0) { if (L0.some(function (x) { return hTop(x); })) return false; for (var i = 0; i < L0.length; i++) for (var j = i + 1; j < L0.length; j++) if (!okS(L0[i], L0[j])) return false; return true; };
     var tie = function (a, b) { var t = (input.ties || []).filter(function (x) { return (x.a === a.i && x.b === b.i) || (x.a === b.i && x.b === a.i); })[0]; return t ? t.type : ''; };
+    /* 両片想い（どちらからも片想い。恋人・番になっていない二人） */
+    var pinTie = function (a, b) {
+      var L0 = (input.ties || []).filter(function (x) { return (x.a === a.i && x.b === b.i) || (x.a === b.i && x.b === a.i); });
+      if (L0.some(function (x) { return /^(lover|mate|fated)$/.test(x.type); })) return false;
+      var ab = L0.some(function (x) { return x.type === 'crush' && x.a === a.i; }), ba = L0.some(function (x) { return x.type === 'crush' && x.a === b.i; });
+      return (ab && ba) || L0.some(function (x) { return x.type === 'crush' && x.cold === 'mutual'; });
+    };
 
     /* 受け攻め：自分で攻めを選んだ人は、企画でも罰ゲームでも「される」側にしない。住人どうしの性的な企画は、向きの決まる組（okSex）だけ */
     var PO = HK.Pos;
@@ -226,7 +233,14 @@
         /* 楽屋に消える二人は、体の関係を持ってよい組（okSex）だけ。いなければ甘々ボイスに */
         if (fx.dressing && (AP.length < 4 || !AP.some(function (x) { return x !== hid && AP.some(function (y) { return y !== x && y !== hid && okS(x, y) && !HK.lockBlocks(x, y); }); }))) { e = VA.EVENTS.filter(function (x) { return x.id === 'amaama'; })[0] || e; fx = e.fx; }
         /* 気になる相手も、恋愛になりうる組から */
-        if (fx.crush && !okS(a, b)) {
+        /* 両片想いの二人がいれば、その二人に（片想いの「気になる」ではなく、すれ違いの文に） */
+        if (fx.crush && !pinTie(a, b)) {
+          var pp = [];
+          AP.forEach(function (x) { AP.forEach(function (y) { if (x !== y && x !== hid && y !== hid && pinTie(x, y)) pp.push([x, y]); }); });
+          if (pp.length && rng() < 0.75) { var pq = rng.pick(pp); a = pq[0]; b = pq[1]; }
+        }
+        if (fx.crush && pinTie(a, b) && VA.CRUSH_PINING) e = { id: e.id, t: VA.CRUSH_PINING, fx: fx, pin: 1 };
+        else if (fx.crush && !okS(a, b)) {
           var cb = AP.filter(function (x) { return x !== a && x !== hid && okS(a, x); });
           if (cb.length) b = rng.pick(cb); else { e = VA.EVENTS.filter(function (x) { return x.id === 'rating'; })[0] || e; fx = e.fx; }
         }
@@ -252,7 +266,7 @@
         var low = null;
         if (fx.underdog) { low = P.slice().sort(function (x, y) { return x.m.score - y.m.score; })[0]; low.m.score += fx.underdog; }
         var et = (fx.amaama && VA.AMA_FRAME ? ST.fmt(ST.pick(S, VA.AMA_FRAME), { a: a.name, q: a.name + ST.pick(S, VA.AMA[a.persona] || VA.AMA.gentle), s: VA.STIR ? ST.pick(S, VA.STIR) : '共演者たちがざわついた' }) : fill(ST.pick(S, e.t), a, b)) + (fx.dressing ? mcr('away', 1) : fx.amaama ? mcr('amaama', 0.8) : fx.shame ? mcr('accident', 0.6) : '');
-        ST.say(S, { actors: fx.double || fx.underdog ? (low ? [low] : []) : fx.crush || fx.fight || fx.dressing ? [a, b] : [a], tag: fx.dressing ? '楽屋から戻らない' : fx.amaama ? '甘々ボイス' : 'ハプニング', text: et + (low ? low.name + 'に二十点が入った。' : ''), why: fx.double ? 'この企画の得点は二倍' : fx.score ? '+' + fx.score + '点' : fx.underdog ? '最下位救済' : fx.dressing ? '企画で何度も絡んだ二人（この企画は欠場）' : fx.amaama ? '共演者全員の興奮 +22（我慢が効く企画で不利に）' : '', mag: fx.dressing ? 32 : 18 });
+        ST.say(S, { actors: fx.double || fx.underdog ? (low ? [low] : []) : fx.crush || fx.fight || fx.dressing ? [a, b] : [a], tag: fx.dressing ? '楽屋から戻らない' : fx.amaama ? '甘々ボイス' : 'ハプニング', text: et + (low ? low.name + 'に二十点が入った。' : ''), why: e.pin ? '両片想いの二人（どちらも、相手は自分を何とも思っていないと思っている）' : fx.double ? 'この企画の得点は二倍' : fx.score ? '+' + fx.score + '点' : fx.underdog ? '最下位救済' : fx.dressing ? '企画で何度も絡んだ二人（この企画は欠場）' : fx.amaama ? '共演者全員の興奮 +22（我慢が効く企画で不利に）' : '', mag: fx.dressing ? 32 : 18 });
       }
       var res = playCorner(K, dbl, AP, hid);
       /* 性格が見える出来事 */
