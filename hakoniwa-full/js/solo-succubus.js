@@ -240,7 +240,8 @@
       if (sen.top === 'NP') p.m.mood += 15;
       if (sen.top === 'CP') p.m.mood -= 5;
       if (sen.top === 'FC' && S.rng() < 0.5) {
-        var gain = Math.round(15 + S.rng() * 30), steal = S.rng() < 0.4;
+        /* 二人がかりで一人を落とすのは、恋愛・R18にしない組（HK.ngPair）では起きない（先輩が一人で見本を見せる） */
+        var gain = Math.round(15 + S.rng() * 30), steal = S.rng() < 0.4 || !!(HK.ngPair && HK.ngPair(sen, p));
         if (!steal) p.m.ml += gain;
         ST.say(S, { actors: [sen, p], tag: '先輩乱入', text: steal ? sen.name + 'は「見本見せたげる！」と言って、' + p.name + 'の目の前で通りすがりの男を落とし、自分だけ満腹になって帰っていった。' : sen.name + 'が現れて' + p.name + 'の手を引き、二人がかりで一人の男を骨抜きにした。' + p.name + 'の取り分は' + gain + 'ml。', why: '感覚派の先輩は、何をするか分からない' });
       }
@@ -359,7 +360,8 @@
     var rng = S.rng, live = H.filter(function (p) { return !p.out; });
     if (live.length < 2) return;
     var a = rng.pick(live), b = rng.pick(live.filter(function (x) { return x !== a; })), spot = rng.pick(T.spots);
-    var team = a.tr.warmth + b.tr.warmth > 1.1 && rng() < 0.6;
+    /* 獲物を二人で挟む共闘は、恋愛・R18にしない組（HK.ngPair）では起きない（取り合いになる） */
+    var team = a.tr.warmth + b.tr.warmth > 1.1 && rng() < 0.6 && !(HK.ngPair && HK.ngPair(a, b));
     if (team) {
       var ml = Math.round(25 + rng() * 35);
       a.m.ml += Math.round(ml / 2); b.m.ml += Math.round(ml / 2);

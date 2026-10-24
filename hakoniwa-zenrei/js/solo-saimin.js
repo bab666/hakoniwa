@@ -84,6 +84,8 @@
         if (tt) ty = tt.type === 'crush' ? (tt.a === HY.i ? 'stalker' : 'friend') : TIEMAP[tt.type] || TIEMAP[(HK.TIES[tt.type] || {}).like];
       }
       if (!ty) ty = env.who !== 'random' && SM.TYPES[env.who] ? env.who : rng.pick(Object.keys(SM.TYPES));
+      /* 恋愛・R18にしない組（HK.ngPair）では、住人のかけ手を恋人・ストーカーにしない */
+      if (HY && HK.ngPair && HK.ngPair(HY, p) && (ty === 'lover' || ty === 'stalker')) ty = ty === 'lover' ? 'friend' : 'colleague';
       p.ty = ty; p.T = SM.TYPES[ty];
       p.hc = HY || null; p.h = HY ? HY.name : ST.fmt(rng.pick(p.T.names), { a: p.name });
       p.mk = env.method !== 'random' && SM.METHODS[env.method] ? env.method : rng.pick(Object.keys(SM.METHODS));
