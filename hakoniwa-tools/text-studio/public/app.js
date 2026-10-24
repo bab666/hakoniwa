@@ -113,7 +113,7 @@
   function buildMatcher() {
     var M = new Map();
     S.groups.forEach(function (g) {
-      if (g.role === 'ui') return;
+      if (g.role === 'ui' || g.role === 'code') return;
       g.items.forEach(function (it, ii) {
         var texts = it.cols ? it.cols.slice(it.cols.length > 2 && S.toneKeys[it.cols[0]] ? 1 : 0) : [it.text];
         texts.forEach(function (t) {
@@ -159,7 +159,7 @@
     if (g.ev) h += '<span class="tag ev">イベント ' + esc(g.ev) + '</span>';
     if (g.tones.length > 6) h += '<span class="tag tone">口調 ' + g.tones.length + '種</span>';
     else g.tones.forEach(function (t) { h += '<span class="tag tone">' + esc(S.toneKeys[t] ? S.toneKeys[t].label : t) + '</span>'; });
-    if (g.role !== 'text') h += '<span class="tag">' + (g.role === 'why' ? '解説' : '画面') + '</span>';
+    if (g.role !== 'text') h += '<span class="tag">' + ({ why: '解説', ui: '画面', code: '言い換えの表' }[g.role] || g.role) + '</span>';
     return h;
   }
   var KIND = { array: '配列', pipe: '|区切り', tsv: '辞書', single: '一文' };
@@ -216,7 +216,7 @@
   function groupsOfScen(id) {
     var cov = S.cov[id];
     return S.groups.filter(function (g) {
-      if (g.role === 'ui') return false;
+      if (g.role === 'ui' || g.role === 'code') return false;
       if (g.scens.indexOf(id) >= 0) return true;
       return cov && cov.hits[g.gid];
     });
@@ -233,7 +233,7 @@
       return { sc: sc, gs: gs.length, items: items, r18: r18, evs: evs, defs: defs, cov: cov };
     });
     var max = Math.max.apply(null, rows.map(function (r) { return r.items; }));
-    var totalGroups = S.groups.filter(function (g) { return g.role !== 'ui'; });
+    var totalGroups = S.groups.filter(function (g) { return g.role !== 'ui' && g.role !== 'code'; });
     m.innerHTML = '<h2>概要：' + esc(curBuild().name) + '</h2>' +
       '<div class="row muted">文の群 ' + totalGroups.length.toLocaleString() + '（うち共通 ' + totalGroups.filter(function (g) { return !g.scens.length; }).length.toLocaleString() + '）・文 ' + S.nItems.toLocaleString() + '・口調 ' + S.info.tones.length + '種・箱庭 ' + S.info.scens.length + '</div>' +
       '<div class="row"><label>試しに回す回数 <input type="number" id="cov-n" value="20" min="1" max="300" style="width:70px"></label>' +
@@ -277,6 +277,8 @@
         if (!id) { status('使われ方を調べました'); ok(); return; }
         status('使われ方を調べています：' + (S.scenById[id] ? S.scenById[id].name : id) + '（残り ' + q.length + '）');
         setTimeout(function () {
+          /* 途中で試し実行のページが読み直されたら（ビルドの切り替え・保存のあと）、準備ができるのを待って続ける */
+          if (!S.sb) { q.unshift(id); S.sbPromise.then(next); return; }
           var res = S.sb.batch({ scenId: id, n: n, hot: hot });
           var hits = {}, used = 0;
           res.texts.forEach(function (t) {
@@ -291,10 +293,10 @@
             });
           });
           /* 箱庭に割り当てた群で、一度も出なかった候補を 0 にする */
-          S.groups.forEach(function (g) { if (g.scens.indexOf(id) >= 0 && g.role !== 'ui' && !hits[g.gid]) hits[g.gid] = {}; });
+          S.groups.forEach(function (g) { if (g.scens.indexOf(id) >= 0 && g.role !== 'ui' && g.role !== 'code' && !hits[g.gid]) hits[g.gid] = {}; });
           var usedItems = 0;
           Object.keys(hits).forEach(function (gid) { usedItems += Object.keys(hits[gid]).length; });
-          S.cov[id] = { hits: hits, usedItems: usedItems, runs: n, fails: res.fails.length, failMsg: res.fails[0] || '', eventCounts: res.eventCounts, hot: hot };
+          S.cov[id] = { hits: hits, usedItems: usedItems, runs: n, fails: res.fails.length, failMsg: res.fails[0] || '', bad: res.bad || [], eventCounts: res.eventCounts, hot: hot };
           next();
         }, 20);
       })();
@@ -319,7 +321,7 @@
     function draw() {
       var q = $('#q').value.trim(), role = $('#role').value, sort = $('#sort').value, cov = S.cov[id];
       var list = groupsOfScen(id);
-      if ($('#common').checked) list = list.concat(S.groups.filter(function (g) { return !g.scens.length && g.role !== 'ui' && list.indexOf(g) < 0; }));
+      if ($('#common').checked) list = list.concat(S.groups.filter(function (g) { return !g.scens.length && g.role !== 'ui' && g.role !== 'code' && list.indexOf(g) < 0; }));
       list = list.filter(function (g) { return role === 'all' || g.role === role; });
       if (q) list = list.filter(function (g) { return g.path.indexOf(q) >= 0 || g.items.some(function (it) { return itemText(it).indexOf(q) >= 0; }); });
       if (sort === 'r18') list = list.filter(function (g) { return g.r18; });
@@ -486,7 +488,7 @@
     if (S._tables && S._tablesFor === S.groups) return S._tables;
     var T = {};
     S.groups.forEach(function (g) {
-      if (g.role === 'ui' || g.kind === 'tsv') return;
+      if (g.role === 'ui' || g.role === 'code' || g.kind === 'tsv') return;
       var segs = g.path.split('.');
       for (var i = 0; i < segs.length; i++) {
         var k = segs[i].replace(/^#/, '');
@@ -552,7 +554,7 @@
   /* ===== 文をさがす ===== */
   VIEWS.search = function (m) {
     m.innerHTML = '<div class="row"><input id="q" placeholder="さがす文字（/…/ で正規表現）" style="flex:1;min-width:240px" value="' + esc(S.sel.q || '') + '">' +
-      '<select id="role"><option value="text">台詞・地の文</option><option value="why">解説</option><option value="ui">画面</option><option value="all">ぜんぶ</option></select>' +
+      '<select id="role"><option value="text">台詞・地の文</option><option value="why">解説</option><option value="ui">画面</option><option value="code">言い換えの表（コード）</option><option value="all">ぜんぶ</option></select>' +
       '<select id="sc"><option value="">すべての箱庭</option><option value="_">共通（箱庭の決まっていない群）</option>' + (S.info ? S.info.scens.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + '</option>'; }).join('') : '') + '</select>' +
       '<label class="muted"><input type="checkbox" id="r18"> R18専用だけ</label><button class="btn primary" id="go">さがす</button></div><div id="stat" class="muted"></div><div id="list"></div>';
     function go() {
@@ -580,8 +582,8 @@
   /* ===== 点検 ===== */
   VIEWS.check = function (m) {
     m.innerHTML = '<div class="row"><button class="btn primary" id="go">書かれた文を点検</button>' + (S.info ? '<button class="btn" id="rt">全箱庭を試しに回して点検</button>' : '') + '<span class="muted" id="st"></span></div>' +
-      '<div class="muted">書かれた文の点検：括弧「」『』（）の対応・空の候補（||）・同じ群の中の重複・{ } の崩れ・句読点の重なり・態度9種の表の抜け・R18専用ファイルの1文だけの段・全年齢版と同名ファイルの文の違い。<br>' +
-      '試しに回す点検：各箱庭を回して、止まる（エラーになる）組み合わせと、ページの読み込みエラー、一度も出なかった文の数を見ます。</div><div id="res"></div>';
+      '<div class="muted">書かれた文の点検：括弧「」『』（）の対応（つないで使う切れ端は除く）・空の候補（||）・同じ候補の重複・{ } の崩れ・句読点の重なり・態度9種の表の抜け（敬語は健気を借りるので除く）・R18専用ファイルで候補が1つだけの段・全年齢版と同名ファイルの台詞の違い。<br>' +
+      '試しに回す点検：各箱庭を回して、止まる（エラーになる）組み合わせ、ページの読み込みエラー、出来上がった文に残った {a}・undefined・NaN・空の「」、一度も出なかった文の数を見ます。</div><div id="res"></div>';
     $('#go').onclick = function () {
       $('#st').textContent = '点検中…';
       api('/api/check?b=' + S.b).then(function (d) {
@@ -596,10 +598,12 @@
           var c = S.cov[sc.id], gs = S.groups.filter(function (g) { return g.scens.indexOf(sc.id) >= 0 && g.role === 'text'; });
           var zero = gs.reduce(function (s, g) { var h = c.hits[g.gid] || {}; return s + g.items.filter(function (it, i) { return !h[i]; }).length; }, 0);
           var all = gs.reduce(function (s, g) { return s + g.items.length; }, 0);
-          return '<tr><td>' + esc(sc.name) + '</td><td class="num' + (c.fails ? ' lvl-error' : '') + '">' + c.fails + '</td><td class="mono">' + esc(c.failMsg.split('\n')[0].slice(0, 140)) + '</td><td class="num">' + zero + ' / ' + all + '</td></tr>';
+          var bad = c.bad || [];
+          return '<tr><td>' + esc(sc.name) + '</td><td class="num' + (c.fails ? ' lvl-error' : '') + '">' + c.fails + '</td><td class="mono">' + esc(c.failMsg.split('\n')[0].slice(0, 140)) + '</td>' +
+            '<td class="num' + (bad.length ? ' lvl-error' : '') + '">' + bad.length + '</td><td>' + bad.slice(0, 3).map(function (b) { return '<div class="mono">' + esc(b) + '</div>'; }).join('') + '</td><td class="num">' + zero + ' / ' + all + '</td></tr>';
         }).join('');
         $('#res').innerHTML = '<h3>試しに回した結果（各' + S.cov[S.info.scens[0].id].runs + '回）</h3>' + (S.info.errors.length ? '<pre class="out lvl-error">' + esc(S.info.errors.join('\n')) + '</pre>' : '<p class="muted">ページの読み込みエラーはありません</p>') +
-          '<table class="t"><thead><tr><th>箱庭</th><th class="num">失敗</th><th>最初の失敗</th><th class="num">出なかった文</th></tr></thead><tbody>' + rows + '</tbody></table><p class="muted">出なかった文は、回数が少ないと多めに出ます。条件が珍しい場面は、「試し実行」で設定を合わせて確かめてください。</p>';
+          '<table class="t"><thead><tr><th>箱庭</th><th class="num">失敗</th><th>最初の失敗</th><th class="num">置き換え残り</th><th>例</th><th class="num">出なかった文</th></tr></thead><tbody>' + rows + '</tbody></table><p class="muted">出なかった文は、回数が少ないと多めに出ます。条件が珍しい場面は、「試し実行」で設定を合わせて確かめてください。</p>';
       });
     };
     if (S.checkRes) drawCheck({ items: S.checkRes });

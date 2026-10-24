@@ -107,7 +107,7 @@ function scanSource(src, file) {
   let ast;
   try { ast = acorn.parse(src, { ecmaVersion: 2022, sourceType: 'script', locations: true, allowHashBang: true }); }
   catch (e) { return { error: '構文エラー: ' + e.message, groups: [] }; }
-  const groups = [], used = new Set();
+  const groups = [], used = new Set(), ptables = [];
 
   function pathOf(anc) {
     const segs = [];
@@ -142,6 +142,8 @@ function scanSource(src, file) {
     if (p.ev) g.ev = p.ev;
     const last = p.path.split('.').pop();
     g.role = UI_FILE.test(path.basename(file)) || UI_KEY[last] ? 'ui' : last === 'why' || /\.why$|why\(\)$/.test(p.path) ? 'why' : 'text';
+    /* frag … 「+」でつなぐ式の一部（文の切れ端。括弧が片方だけでも正常） */
+    if (anc.some(a => a.node.type === 'BinaryExpression' && a.node.operator === '+')) g.frag = 1;
     if (extra) Object.assign(g, extra);
     groups.push(g);
   }
@@ -183,7 +185,11 @@ function scanSource(src, file) {
           if (asTsv && strLit(x)) items.push(tsvItem(x));
           else items.push(itemOf(x, ts[i]));
         });
-        add(asTsv ? 'tsv' : 'array', anc, n, items, { n: n.elements.length });
+        /* 言い換えの表（正規表現の元の文字列を含む行や、[…][k] で口調ごとに引く表）は「コード」として分ける */
+        const par = anc.length ? anc[anc.length - 1] : null;
+        const code = els.some(x => strLit(x) && JA.test(x.value) && NOT_TEXT.test(x.value)) ||
+          (par && par.node.type === 'MemberExpression' && par.key === 'object' && par.node.computed);
+        add(asTsv ? 'tsv' : 'array', anc, n, items, code ? { n: n.elements.length, role: 'code' } : { n: n.elements.length });
         /* 「+」でつないだ式の中の配列（pk(ctx, [...]) など）も拾う */
         els.forEach((x, i) => { if (ts[i] && ts[i].enc === 'expr') visitChildren(x, anc.concat([{ node: n, key: 'elements' }]), true); });
         els.forEach((x, i) => { if (!ts[i]) visit(x, anc.concat([{ node: n, key: 'elements' }])); });
@@ -206,6 +212,15 @@ function scanSource(src, file) {
       }
       if (t.enc === 'expr') visitChildren(n, anc, true);
       return;
+    }
+    /* 態度の名前で分かれた表（キーが態度9種のうち5つ以上の { proud: …, stern: … }）。点検の「態度9種の表の抜け」に使う */
+    /* 値が文の候補（配列・L('…|…') などの呼び出し・「|」区切り）のものだけ。{ proud: 1 } のような分類の表や、
+       addP(表, { … }) のように既にある表へ足す分（関数の引数）は数えない */
+    const par = anc.length ? anc[anc.length - 1] : null;
+    if (n.type === 'ObjectExpression' && !(par && par.node.type === 'CallExpression' && par.key === 'arguments')) {
+      const pool = v => v && (v.type === 'ArrayExpression' || v.type === 'CallExpression' || v.type === 'ObjectExpression' || (strLit(v) && v.value.indexOf('|') >= 0));
+      const keys = n.properties.filter(p => p.type === 'Property' && PERSONA_KEYS.indexOf(keyName(p)) >= 0 && pool(p.value)).map(keyName);
+      if (keys.length >= 5) ptables.push({ path: pathOf(anc).path, line: n.loc.start.line, s: n.start, e: n.end, keys });
     }
     visitChildren(n, anc, false);
   }
@@ -254,7 +269,7 @@ function scanSource(src, file) {
   const base = path.basename(file, '.js');
   for (const id in SCEN_FILE_HINT) if (SCEN_FILE_HINT[id].test(base)) scen.add(id);
   const head = (src.match(/^\s*\/\*([\s\S]*?)\*\//) || [, ''])[1].split('\n')[0].trim();
-  return { groups, events, scen: Array.from(scen), head };
+  return { groups, events, ptables, scen: Array.from(scen), head };
 }
 
 /* ---------- ビルド全体 ---------- */
@@ -272,7 +287,7 @@ function scanBuild(dir, opt) {
     if (ck && ck.mtime === st.mtimeMs && ck.size === st.size) { files.push(Object.assign({}, ck.data, { late: o.late, order: i })); return; }
     const src = fs.readFileSync(full, 'utf8');
     const r = scanSource(src, o.f);
-    const data = { f: o.f, late: o.late, order: i, size: st.size, groups: r.groups, events: r.events, scen: r.scen, head: r.head, error: r.error };
+    const data = { f: o.f, late: o.late, order: i, size: st.size, groups: r.groups, events: r.events, ptables: r.ptables || [], scen: r.scen, head: r.head, error: r.error };
     cache[o.f] = { mtime: st.mtimeMs, size: st.size, data };
     files.push(data);
   });

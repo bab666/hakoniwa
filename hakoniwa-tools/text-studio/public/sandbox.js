@@ -80,12 +80,20 @@
     return { log: log, ending: ending, notes: notes, chars: input.chars.map(function (c) { return { name: c.name, gender: c.gender, tone: c.tone, pos: c.pos }; }), env: input.env };
   }
 
+  var BAD = /\{[a-z][a-z0-9_]*\}|undefined|NaN|\[object |「」/;
   var NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ', 'ツバサ', 'シオン'];
   /* 何回も回す。口調は順番に、性別は男・女・おまかせの順に割り振る */
   function batch(o) {
     var sc = HK.SCENARIOS[o.scenId], tones = HK.TONE_KEYS || [], ti = o.toneOffset || 0;
     var n = Math.max(sc.minCast || 2, Math.min(sc.maxCast || 6, o.cast || 6));
-    var texts = [], fails = [], before = Object.assign({}, COUNT);
+    var texts = [], fails = [], before = Object.assign({}, COUNT), bad = [], badSeen = {};
+    /* 出来上がった文（言い換えのあと）に残った置き換え記号・undefined・NaN・空の「」 */
+    function badOf(t) {
+      if (typeof t !== 'string') return;
+      var m = t.match(BAD); if (!m) return;
+      var at = t.indexOf(m[0]), ex = t.slice(Math.max(0, at - 30), at + m[0].length + 20);
+      if (!badSeen[ex]) { badSeen[ex] = 1; bad.push(ex); }
+    }
     for (var s = 0; s < o.n; s++) {
       var chars = [];
       for (var i = 0; i < n; i++) {
@@ -101,13 +109,15 @@
       });
       var r = run({ scenId: o.scenId, seed: 12345 + (o.seed0 || 0) + s * 101, env: env, chars: chars });
       if (r.error) { fails.push(r.error); continue; }
-      r.log.forEach(function (e) { if (typeof e.raw === 'string') texts.push(e.raw); if (e.why) texts.push(e.why); });
+      r.log.forEach(function (e) { if (typeof e.raw === 'string') texts.push(e.raw); if (e.why) texts.push(e.why); badOf(e.text); badOf(e.why); });
+      if (r.ending) r.ending.lines.forEach(badOf);
+      r.notes.forEach(badOf);
       if (r.ending) r.ending.raw.forEach(function (l) { if (typeof l === 'string') texts.push(l); });
       r.notes.forEach(function (l) { texts.push(l); });
     }
     var counts = {};
     Object.keys(COUNT).forEach(function (k) { var d = COUNT[k] - (before[k] || 0); if (d > 0 && k.indexOf(o.scenId + '\u0001') === 0) counts[k.split('\u0001')[1]] = d; });
-    return { texts: texts, fails: fails, eventCounts: counts, runs: o.n };
+    return { texts: texts, fails: fails, bad: bad, eventCounts: counts, runs: o.n };
   }
 
   function events(id) {
