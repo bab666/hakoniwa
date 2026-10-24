@@ -84,10 +84,9 @@
   /* 同じ場にいる相手（箱庭が場所を持つときは、その箱庭が決める） */
   Ctx.prototype.others = function (a) {
     var l = this.scen.othersFor ? this.scen.othersFor(this, a) : this.present().filter(function (c) { return c !== a; });
-    /* 監禁（執着の暴走）のさなかの二人は、互いのほかとは関わらない。ほかの人も、二人には関われない */
-    var cp = a && a.flags ? a.flags.cagePair : null;
-    if (cp != null) return l.filter(function (c) { return c.i === cp; });
-    return l.filter(function (c) { return !(c.flags && c.flags.cagePair != null); });
+    /* 監禁（執着の暴走）されている人は閉じ込められているので、誰とも関われない（監禁している人は、ほかの人とは関わる。
+       監禁している相手との出来事は、執着の出来事だけ：obsess-kit.js） */
+    return l.filter(function (c) { return !(c.flags && c.flags.caged != null); });
   };
   /* 二人きりのときは「皆」「誰か」など第三者を前提にした文を避ける */
   var GROUP_RE = /皆|全員|みんな|何人か|周り|周囲|誰か|一同|クラス中|教室中|ほかの誰|他の誰|誰も/;
@@ -479,7 +478,8 @@
       if ((!a.night && b.night) || b.nights > a.nights) {
         var pi = partnerPre(i, j), pj = partnerPre(j, i), ev = find(i, j);
         /* 恋人も一緒の場面（三人で）は浮気ではない。無理やりの場面（争い・裏切り）は「浮気」とは呼ばない */
-        if (ev && (pi >= 0 || pj >= 0) && !(pi >= 0 && ev.actors.indexOf(pi) >= 0) && !(pj >= 0 && ev.actors.indexOf(pj) >= 0))
+        /* 段階の始めから恋人どうしだった二人の夜は、どちらかにもう一人恋人がいても浮気ではない（恋人が二人いる人） */
+        if (ev && !a.couple && (pi >= 0 || pj >= 0) && !(pi >= 0 && ev.actors.indexOf(pi) >= 0) && !(pj >= 0 && ev.actors.indexOf(pj) >= 0))
           put(i, j, /^(?:conflict|betray|combat)$/.test(ev.cat) ? 'affair' : 'cheat', ev);
       }
     }

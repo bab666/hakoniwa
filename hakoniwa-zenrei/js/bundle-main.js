@@ -5857,10 +5857,9 @@
   /* 同じ場にいる相手（箱庭が場所を持つときは、その箱庭が決める） */
   Ctx.prototype.others = function (a) {
     var l = this.scen.othersFor ? this.scen.othersFor(this, a) : this.present().filter(function (c) { return c !== a; });
-    /* 監禁（執着の暴走）のさなかの二人は、互いのほかとは関わらない。ほかの人も、二人には関われない */
-    var cp = a && a.flags ? a.flags.cagePair : null;
-    if (cp != null) return l.filter(function (c) { return c.i === cp; });
-    return l.filter(function (c) { return !(c.flags && c.flags.cagePair != null); });
+    /* 監禁（執着の暴走）されている人は閉じ込められているので、誰とも関われない（監禁している人は、ほかの人とは関わる。
+       監禁している相手との出来事は、執着の出来事だけ：obsess-kit.js） */
+    return l.filter(function (c) { return !(c.flags && c.flags.caged != null); });
   };
   /* 二人きりのときは「皆」「誰か」など第三者を前提にした文を避ける */
   var GROUP_RE = /皆|全員|みんな|何人か|周り|周囲|誰か|一同|クラス中|教室中|ほかの誰|他の誰|誰も/;
@@ -6252,7 +6251,8 @@
       if ((!a.night && b.night) || b.nights > a.nights) {
         var pi = partnerPre(i, j), pj = partnerPre(j, i), ev = find(i, j);
         /* 恋人も一緒の場面（三人で）は浮気ではない。無理やりの場面（争い・裏切り）は「浮気」とは呼ばない */
-        if (ev && (pi >= 0 || pj >= 0) && !(pi >= 0 && ev.actors.indexOf(pi) >= 0) && !(pj >= 0 && ev.actors.indexOf(pj) >= 0))
+        /* 段階の始めから恋人どうしだった二人の夜は、どちらかにもう一人恋人がいても浮気ではない（恋人が二人いる人） */
+        if (ev && !a.couple && (pi >= 0 || pj >= 0) && !(pi >= 0 && ev.actors.indexOf(pi) >= 0) && !(pj >= 0 && ev.actors.indexOf(pj) >= 0))
           put(i, j, /^(?:conflict|betray|combat)$/.test(ev.cat) ? 'affair' : 'cheat', ev);
       }
     }
@@ -41260,10 +41260,14 @@
     return 'unaware';
   };
   /* b の近くにいる恋敵（b が惹かれている・付き合っている a 以外の人） */
+  /* 関係の設定で恋人（番）にした二人か */
+  function setLover(ctx, x, y) { var T0 = HK.Ties; return !!(T0 && (T0.has(ctx, x, y, 'lover') || T0.has(ctx, x, y, 'mate') || T0.has(ctx, x, y, 'fated'))); }
   O.rival = function (ctx, a, b) {
-    var best = null, bv = 40;
+    var best = null, bv = 40, aSet = setLover(ctx, a, b);
     ctx.chars.forEach(function (c) {
       if (c === a || c === b || !c.alive || !near(ctx, a, c)) return;
+      /* b に恋人が二人いる（関係の設定で、a も c も b の恋人）とき、もう一人の恋人は恋敵ではない */
+      if (aSet && setLover(ctx, c, b)) return;
       var r = R(ctx, b, c), v = r.att + r.aff * 0.5 + (ctx.pair(b, c).couple ? 60 : 0);
       if (v > bv) { bv = v; best = c; }
     });
