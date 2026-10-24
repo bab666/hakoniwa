@@ -39,13 +39,17 @@
   };
   /* 違和感に気づく見込み：慎重さ・A・職業（名探偵・医者）。一度気づいた・盛られた人は警戒している */
   function notice(p) { return 0.15 + p.tr.caution * 0.45 + p.tr.a * 0.2 + (p.job === 'sleuth' || p.job === 'doctor' ? 0.2 : 0) + (p.wary ? 0.25 : 0); }
+  /* 口にした人が効き始めの文より多いときの、名前の入った短い一文 */
+  var ALSO = ['{a}も、同じものを口にしていた。頬が、いつの間にか赤い。', '{a}の息も、気づけば浅く、熱っぽくなっていた。', '{a}は落ち着かなげに、何度も襟元を直した。', '{a}の目も、とろりと潤み始めていた。'];
   function dose(S, live, key) {
     var rng = S.rng, D = DOSE[key], take = [], left = [];
     live.forEach(function (p) {
       if (rng() < notice(p)) { left.push(p); p.wary = true; p.m.fear = Math.min(100, (p.m.fear || 0) + 4); }
       else { take.push(p); p.aphro = true; p.dosed = (p.dosed || 0) + 1; if (p.dosed >= 2) p.wary = true; }
     });
-    var t = ST.pick(S, D.intro) + take.map(function (p) { return ST.fmt(ST.pick(S, D.take), { a: p.name }) + (rng() < 0.5 ? pz(S, p, 'drug') : ''); }).join('') + left.map(function (p) { return ST.fmt(ST.pick(S, D.leave), { a: p.name }); }).join('');
+    /* 一つの記録の中で、口にした人ごとに別の文を割り当てる（同じ文が二人分並ばないように） */
+    var tk = rng.shuffle ? rng.shuffle(D.take.slice()) : D.take.slice(), lv0 = rng.shuffle ? rng.shuffle(D.leave.slice()) : D.leave.slice();
+    var t = ST.pick(S, D.intro) + take.map(function (p, i) { return ST.fmt(i < tk.length ? tk[i] : ALSO[i % ALSO.length], { a: p.name }) + (rng() < 0.5 ? pz(S, p, 'drug') : ''); }).join('') + left.map(function (p, i) { return ST.fmt(lv0[i % lv0.length], { a: p.name }); }).join('');
     ST.say(S, { actors: live, tag: D.label, text: t, why: '媚薬が盛られていた（' + D.label + '）。口にした：' + (take.map(function (p) { return p.name; }).join('・') || 'なし') + '／気づいて席を外した：' + (left.map(function (p) { return p.name; }).join('・') || 'なし') + '。慎重さ・A・職業で気づく', mag: 16 });
     (S.r18Doses = S.r18Doses || []).push(key);
   }

@@ -207,7 +207,11 @@
       (S.r18Pos || (S.r18Pos = [])).push(pos.id);
       var mid = midOf(S, x, mood);
       var out = [];
-      if (opt.fore !== false) out.push(F(pick(S, D.FORE[mood === 'plain' || rng() < 0.3 ? 'plain' : mood]), m));
+      if (opt.fore !== false) {
+        out.push(F(pick(S, D.FORE[mood === 'plain' || rng() < 0.3 ? 'plain' : mood]), m));
+        /* 前戯からいきなり繋がらないように、橋渡しの一文を挟む（口・指の場面は前戯の続きなので挟まない） */
+        if (D.BRIDGE && pos.id !== 'kuchi' && pos.id !== 'yubi') out.push(F(pick(S, D.BRIDGE[mood] || D.BRIDGE.plain), m));
+      }
       out.push(F(pick(S, pos.t), m));
       if (pos.id === 'kuchi') {
         /* 口での奉仕：喘ぐのは攻め */

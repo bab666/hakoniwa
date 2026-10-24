@@ -312,7 +312,9 @@
   /* ---------- 三人の場面 ---------- */
   /* 三人のエッチ：前戯→本番→見所→絶頂→余韻（文は room-trio-lines.js） */
   function sexScene(ctx, g, kind, sp, hubOnly, first) {
-    var X = HK.TrioLines, V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
+    /* 一つの回の中で同じ文を繰り返さない選び方（R18版は ero-kit.js の HK.Ero.freshPick。全年齢版は ctx.pick のまま） */
+    var fpk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(ctx, function (arr) { return ctx.pick(arr); }) : function (arr) { return ctx.pick(arr); };
+    var X = HK.TrioLines, V = HK.Voice, pf = function (arr) { return fpk(arr); };
     var r = { h: g[0], x: g[1], y: g[2], t: sp.t, m: sp.m, u: sp.u };
     /* 嫉妬の型：攻め二人（twoOne）は受けについて、受け二人（oneTwo）は攻めについて、サンドイッチは上下の二人が真ん中について */
     var jp = sp.p === 'twoOne' ? [sp.t, sp.m] : sp.p === 'oneTwo' ? [sp.m, sp.u] : sp.p === 'sandwich' ? [sp.t, sp.u] : null;
@@ -362,7 +364,7 @@
     var swapOK = function (l) { return allRiba || !/入れ替わ|どちらの顔も/.test(l); };
     var toyOK = function (l) { return !/双頭/.test(l) || bothRiba(sp.t, sp.m); };
     if (HK.SAFE_ON && HK.RoomFade3) return HK.RoomFade3(ctx);
-    if (!X) return ctx.pick(SEX[sp.p]).replace(/\{t\}/g, sp.t.name).replace(/\{m\}/g, sp.m.name).replace(/\{u\}/g, sp.u.name) + ctx.pick(CLIMAX3);
+    if (!X) return fpk(SEX[sp.p]).replace(/\{t\}/g, sp.t.name).replace(/\{m\}/g, sp.m.name).replace(/\{u\}/g, sp.u.name) + fpk(CLIMAX3);
     var out = [], used = [];
     /* R18の描写の設定（lewd-unify.js）：ほのめかす＝暗転の一文（safe-room.js）、短く＝本番と絶頂だけ、男性向け＝thick-sex-ero.js の三人の文、濃い＝もう一度 */
     var LV = HK.Lewd, r18 = !HK.SAFE_ON && LV;
@@ -377,7 +379,7 @@
       if (!o) return null;
       ctx.flags.trioHL[o.id] = (ctx.flags.trioHL[o.id] || 0) + 1;
       var ls = o.t.filter(penOK);
-      return { o: o, text: X.fill(ctx.pick(ls.length ? ls : o.t), r) };
+      return { o: o, text: X.fill(fpk(ls.length ? ls : o.t), r) };
     };
     /* 円満な三人で、攻め一人×受け二人（oneTwo）：受けの二人が攻めを取り合う（二人で口で・順番に。迫るのは受けの二人、攻めもまんざらではない合意の場面）。
        攻めが男性なら口と挿入、女性なら口・胸・指・跨っての文（X.LT の topm／topf） */
@@ -388,7 +390,7 @@
       var o = HK.weighted(ctx.rng, pool, function (z) { return 1 / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); });
       ctx.flags.trioHL[o.id] = (ctx.flags.trioHL[o.id] || 0) + 1;
       if (o.tag) used.push(o.tag);
-      return X.fill(ctx.pick(o.t.filter(penOK)), r);
+      return X.fill(fpk(o.t.filter(penOK)), r);
     };
     /* 前戯（初回だけ）：嫉妬・開放度・きっかけに合う文を優先 */
     var ltW = ltOn && first && !tShort && ctx.rng() < 0.85 ? ltPick('warm') : null;
@@ -399,19 +401,19 @@
     }
     /* 本番 */
     var ml = ffE && X.MAIN_FF ? X.MAIN_FF[sp.p].filter(swapOK).concat(ctx.flags.toolbox ? (X.TOY_FF[sp.p] || []).filter(toyOK).filter(swapOK) : []) : X.MAIN[sp.p].filter(noHub).filter(swapOK);
-    out.push(X.fill(ctx.pick(ml.length ? ml : X.MAIN[sp.p].filter(swapOK)), r));
+    out.push(X.fill(fpk(ml.length ? ml : X.MAIN[sp.p].filter(swapOK)), r));
     /* 男性向け：入れる側がみな男性なら挿入の文、そうでなければ指・舌・口の文を足す */
     if (TE) {
       var pens = { oneTwo: [sp.t], twoOne: [sp.t, sp.m], sandwich: [sp.t, sp.m], ring: [sp.t, sp.m, sp.u] }[sp.p] || [sp.t];
       var penM = !ffE && HK.Pos && pens.every(function (c) { return !HK.Pos.isF(c); }) && TE.TRIO.pen[sp.p];
-      out.push(efill(ctx.pick(penM ? TE.TRIO.pen[sp.p] : TE.TRIO.soft)));
+      out.push(efill(fpk(penM ? TE.TRIO.pen[sp.p] : TE.TRIO.soft)));
     }
     /* 受けの二人が攻めを取り合う見所（一つは必ず、初回はもう一つのことも） */
     if (ltOn) { var lh1 = ltPick('hl'); if (lh1) out.push(lh1); if (first && !tShort && ctx.rng() < 0.6) { var lh2 = ltPick('hl'); if (lh2 && lh2 !== lh1) out.push(lh2); } }
     /* リバ同士の二人がいれば、入れ替わりの一文を足すことがある */
     var rb = (ffE ? X.RIBA_FF : X.RIBA) || [];
     rb = rb.filter(function (o) { return (!o.shapes || o.shapes.split(' ').indexOf(sp.p) >= 0) && ribaOK(o); });
-    if (rb.length && ctx.rng() < 0.5) { out.push(X.fill(ctx.pick(ctx.pick(rb).t), r)); used.push('リバ同士の入れ替わり'); }
+    if (rb.length && ctx.rng() < 0.5) { out.push(X.fill(fpk(fpk(rb).t), r)); used.push('リバ同士の入れ替わり'); }
     if (V && sp.u && !hardTop(sp.u) && ctx.rng() < 0.75) out.push(X.fill(V.line(pf, sp.u.persona, ctx.rng() < 0.5 ? 'edge' : 'climax', 'b').replace(/\{b\}/g, '{u}').replace(/\{a\}/g, '{t}'), r));
     /* 見所：嫉妬の型があれば嫉妬の見所を一つ（高確率）、受けの開放度の見所を一つ（ときどき）、ほかに性格・きっかけの見所 */
     var top = function (k, th) { var c = g.slice().sort(function (p, q) { return q.tr[k] - p.tr[k]; })[0]; return c.tr[k] > th ? c : null; };
@@ -425,7 +427,7 @@
       var rr = Object.assign({}, r); if (o.who) { rr.s = top(o.who, 0.55); setPQ(rr); }
       if (!recvOK(o, rr)) return false;
       var ls = o.t.filter(penOK);
-      out.push(X.fill(ctx.pick(ls.length ? ls : o.t), rr));
+      out.push(X.fill(fpk(ls.length ? ls : o.t), rr));
       used.push(o.tag);
       if (o.id === 'sync') r.synced = true;
       if (o.after) after = o.after;
@@ -435,7 +437,7 @@
     var hlJ = X.HL.filter(function (o) { return o.jeal; }), hlO = X.HL.filter(function (o) { return o.open && !o.jeal; }), hlG = X.HL.filter(function (o) { return !o.jeal && !o.open && !o.spat; });
     if (spat && X.SPAT && X.SPAT.length) {
       var so = X.SPAT[Math.floor(ctx.rng() * X.SPAT.length)], rs = Object.assign({}, r, spat), sl = so.t.filter(function (l) { return penRaw(l) && moodOK(l) && (String(l).match(/\{[a-z]\}/g) || []).every(function (k) { return !!rs[k.charAt(1)]; }); });
-      if (sl.length) { out.push(X.fill(ctx.pick(sl), rs)); used.push(so.tag); }
+      if (sl.length) { out.push(X.fill(fpk(sl), rs)); used.push(so.tag); }
     }
     var nJ = kind === 'loveclash' ? 1 : J.jeal !== 'none' ? (ctx.rng() < 0.85 ? 1 : 0) : (ctx.rng() < 0.45 ? 1 : 0);
     /* 取り合い：取り合いの見所を一つ必ず入れる（嫉妬の見所に加えて） */
@@ -449,22 +451,22 @@
     /* 絶頂：形・嫉妬・開放度に合う文があれば優先 */
     var ltC = ltOn && !TE && !r.synced && ctx.rng() < 0.6 ? ltPick('climax') : null;
     if (ltC) out.push(ltC);
-    else if (TE) out.push(efill(ctx.pick(TE.TRIO.climax)));
+    else if (TE) out.push(efill(fpk(TE.TRIO.climax)));
     else if (!r.synced) {
       var cx = (X.CLIMAX_X || []).filter(function (o) { return ok(o) && o.t.some(penOK) && (!o.after || o.after === after); });
       var c = cx.length && ctx.rng() < 0.7 ? HK.weighted(ctx.rng, cx, function (z) { return (z.jeal ? 2 : 1) * (z.open ? 1.5 : 1) * (z.kinds ? (isLoveAny(kind) ? 6 : 2) : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
-      if (c) { ctx.flags.trioHL[c.id] = (ctx.flags.trioHL[c.id] || 0) + 1; var cl = c.t.filter(penOK); out.push(X.fill(ctx.pick(cl.length ? cl : c.t), r)); }
-      else out.push(X.fill(ctx.pick(X.CLIMAX.filter(penOK)), r));
+      if (c) { ctx.flags.trioHL[c.id] = (ctx.flags.trioHL[c.id] || 0) + 1; var cl = c.t.filter(penOK); out.push(X.fill(fpk(cl.length ? cl : c.t), r)); }
+      else out.push(X.fill(fpk(X.CLIMAX.filter(penOK)), r));
     }
-    if (tHigh && HK.ThickEro) out.push(TE ? efill(ctx.pick(TE.TRIO.again)) : X.fill(ctx.pick(HK.ThickEro.TRIO.againNovel), r));
+    if (tHigh && HK.ThickEro) out.push(TE ? efill(fpk(TE.TRIO.again)) : X.fill(fpk(HK.ThickEro.TRIO.againNovel), r));
     /* 余韻：見所の結末（折れた／険悪／連帯）と嫉妬・開放度に合わせる */
     if (!tShort && ctx.rng() < (first ? 0.75 : 0.4)) {
       var aOK = function (l) { return rolesOK(l) && moodOK(l); };
       var ax = (X.AFTER_X || []).filter(function (o) { return ok(o) && o.t.some(aOK) && (!o.after || o.after === after || (!after && o.after === 'bond' && J.jeal === 'none')); });
       var a = ax.length && ctx.rng() < (after ? 0.9 : 0.6) ? HK.weighted(ctx.rng, ax, function (z) { return (z.after && z.after === after ? 3 : 1) * (z.jeal ? 1.6 : 1) * (z.kinds ? (isLoveAny(kind) ? 6 : 2) : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
       var al = a ? a.t.filter(aOK) : [];
-      if (a && al.length) { ctx.flags.trioHL[a.id] = (ctx.flags.trioHL[a.id] || 0) + 1; out.push(X.fill(ctx.pick(al), r)); }
-      else out.push(X.fill(ctx.pick(X.AFTER.filter(moodOK)), r));
+      if (a && al.length) { ctx.flags.trioHL[a.id] = (ctx.flags.trioHL[a.id] || 0) + 1; out.push(X.fill(fpk(al), r)); }
+      else out.push(X.fill(fpk(X.AFTER.filter(moodOK)), r));
     }
     ctx.flags.lastTrioTags = used;
     ctx.flags.lastTrioInfo = { p: sp.p, jeal: J.jeal, open: op, j: J.j ? J.j.name : '', s: sB ? sB.name : '', after: after };

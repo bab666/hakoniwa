@@ -32003,23 +32003,25 @@
       return J([fore, F(pick(S, pos.t), m), sayOk(S, y, 'start', mood) + (opt.short ? '' : R.say(S, y, 'mid')), R.say(S, y, 'climax') + F(pick(S, D.CLIMAX.yubi), m)]);
     }
     if (opt.short) {
-      return J([F(pick(S, pos.t), m) + F(pick(S, ENTER[mid]), m), sayOk(S, y, 'start', mood), F(pick(S, byMid(PEAK, mid, mood)), m) + R.say(S, y, 'climax')]);
+      return J([F(pick(S, pos.t), m) + F(pick(S, ENTER[mid]), m), sayOk(S, y, 'start', mood), R.say(S, y, 'climax') + F(pick(S, byMid(PEAK, mid, mood)), m)]);
     }
     var soft2 = softened(S, x, y, mood);
     var hs = hardSet(S, x, y, mood, opt);
     if (hs) {
       var h = pick(S, hs);
-      return J([fore, F(h.open, m), F(h.say, m), sayOk(S, y, 'start', mood) + F(h.mid, m), F(h.say2, m), moan(S, y, 0), F(h.peak, m) + moan(S, y, 1), F(h.after, m)]);
+      /* 果てる声は、果てる文の前に（果てたあとに「イく」と言わせない） */
+      return J([fore, F(h.open, m), F(h.say, m), sayOk(S, y, 'start', mood) + F(h.mid, m), F(h.say2, m), moan(S, y, 0), moan(S, y, 1) + F(h.peak, m), F(h.after, m)]);
     }
     var strong = R.isStrong(y), turn = strong && soft2 ? F(pick(S, AGAIN_TURN), m) : '';
     if (soft2) strong = false;
+    var bridge = fore && D.BRIDGE ? F(pick(S, D.BRIDGE[mood] || D.BRIDGE.plain), m) : '';
     return J([
-      fore,
+      fore + (bridge ? bridge : ''),
       F(pick(S, pos.t), m) + F(pick(S, ENTER[mood]), m),
       R.say(S, x, 'top'),
       sayOk(S, y, 'start', mood) + turn + F(pick(S, byMid(strong ? MID_STRONG : MID_SOFT, mid, mood)), m),
       moan(S, y, 0) + F(pick(S, byMid(PLEASE, mid, mood)), m),
-      F(pick(S, byMid(PEAK, mid, mood)), m) + (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (rng() < 0.35 ? R.say(S, x, 'topc') : ''),
+      (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (rng() < 0.35 ? R.say(S, x, 'topc') : '') + F(pick(S, byMid(PEAK, mid, mood)), m),
       flav(S) + F(pick(S, AFTER[mood]), m) + (rng() < 0.5 ? R.say(S, rng() < 0.6 ? y : x, 'after') : '')
     ]);
   }
@@ -32171,7 +32173,7 @@
     /* 嗜虐的な攻め・嫉妬の場面（男女と同じ条件：恋人・その場の勢いの夜、受けが攻め指定でない、攻めが sadist でくじ2割5分） */
     if (hardSet(S, x, y, mood, opt)) {
       var h = pick(S, (opt.jealous ? JEALOUS_SOFT : ROUGH_SOFT)[kind]);
-      return J([open, F(h.open, m), F(h.say, m), sayOk(S, y, 'start', mood) + F(h.mid, m), F(h.say2, m), moan(S, y, 0), F(h.peak, m) + moan(S, y, 1), F(h.after, m)]);
+      return J([open, F(h.open, m), F(h.say, m), sayOk(S, y, 'start', mood) + F(h.mid, m), F(h.say2, m), moan(S, y, 0), moan(S, y, 1) + F(h.peak, m), F(h.after, m)]);
     }
     var midL = SOFT_MID[kind].concat(R.midPool ? R.midPool(kind, mid, st, body, riba) : ((kind === 'ff' ? D.FF_MID : D.FM_MID)[mid] || []));
     midL = midL.filter(function (t) { return !((/舌/.test(t) && /舌/.test(body)) || (/交差|擦り合わせ/.test(t) && /交差|擦り合わせ|擦り合う/.test(body))); });

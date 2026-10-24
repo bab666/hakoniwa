@@ -9,7 +9,8 @@
   var HK = window.HK;
   if (!HK || HK.SAFE_ON) return;
   function L(s) { return s.split('|'); }
-  function pk(rng, l) { return l[rng.int ? rng.int(l.length) : Math.floor(rng() * l.length)]; }
+  /* 一つの回の中で同じ文を繰り返さない選び方（ero-kit.js の HK.Ero.fresh。乱数に覚える） */
+  function pk(rng, l) { if (rng && rng.int && HK.Ero && HK.Ero.fresh && l && l.length > 1) return HK.Ero.fresh(rng, l); return l[rng.int ? rng.int(l.length) : Math.floor(rng() * l.length)]; }
   function J(a) { return a.filter(Boolean).join('\n\n'); }
   function fl(t, m) { return t.replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }).replace(/「＠/g, '「⁠'); }
   function psOf(c) {

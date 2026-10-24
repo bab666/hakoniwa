@@ -90,7 +90,8 @@
   function live(S) { return S.P.filter(alive); }
   function best(S, type, ex) { return live(S).filter(function (p) { return !ex || ex.indexOf(p) < 0; }).sort(function (a, b) { return skill(b, type) - skill(a, type); })[0]; }
   function names(l) { return l.map(function (p) { return p.name; }).join(l.length > 2 ? '・' : 'と'); }
-  function pk(S, a) { return ST.pick(S, a); }
+  /* R18版は、一回の遊びを通して使った文を避ける選び方（ero-kit.js の HK.Ero.fresh。12か月の長い回でも同じ夜の文が戻ってこないように） */
+  function pk(S, a) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(S, a, function (l) { return ST.pick(S, l); }) : ST.pick(S, a); }
   function F(t, m) { return ST.fmt(t, m || {}); }
 
   /* ---------- 星を作る ---------- */

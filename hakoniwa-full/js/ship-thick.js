@@ -24,7 +24,7 @@
      夜の出来事（slewd）が少ない設定ほど短く（35未満：短め／70未満：ふつう／70以上：長め）。ふつう以上では、ときどき二度目を足す */
   R.thick = function (S, t, u, kind) {
     if (HK.SAFE_ON || !HK.Voice || !TK.ok(t, u)) return null;
-    var pk = function (arr) { return S.rng.pick(arr); };
+    var pk = function (arr) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(S, arr, function (l) { return S.rng.pick(l); }) : S.rng.pick(arr); };
     var k = kind === 'nurse' ? 'nurse' : 'night', kd = TK.kind(t, u, 'ship'), Pz = HK.Pos;
     var lw = (S.env && S.env.slewd) || 40, dp = lw < 35 ? 1 : lw < 70 ? 2 : 3;
     /* 女性が攻め・女性どうしでは、受ける側の「内側」「繋がったまま」を言う結びを使わない */

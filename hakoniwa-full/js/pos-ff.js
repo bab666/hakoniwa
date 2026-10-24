@@ -50,7 +50,8 @@
   /* 二人が対等に繋がる描写（双頭の玩具・貝合わせ・上下の入れ替わり）は、二人ともリバのときだけ。それ以外の組では候補から外す */
   var MUTUAL_RE = HK.Pos && HK.Pos.MUTUAL_RE ? HK.Pos.MUTUAL_RE : /双頭の玩具|双頭ディルド|貝合わせ|擦り合わせ|擦りつけ合|擦り付け合|重ね合わせ|上になったり下になったり|入れ替わ/;
   function noMutual(arr, riba) { if (riba) return arr; var r = arr.filter(function (s) { return !MUTUAL_RE.test(s); }); return r.length ? r : arr; }
-  function pickArr(ctx, arr) { return ctx && ctx.pick ? ctx.pick(arr) : arr[Math.floor(Math.random() * arr.length)]; }
+  /* R18版は、同じ回の中で使った文を避ける（ero-kit.js の HK.Ero.fresh。元の選び方は ctx.pick） */
+  function pickArr(ctx, arr) { var base = function (a) { return ctx && ctx.pick ? ctx.pick(a) : a[Math.floor(Math.random() * a.length)]; }; return ctx && HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx.S || ctx, arr, base) : base(arr); }
   function fill(ctx, s, a, b) {
     if (ctx && ctx.t) return ctx.t(s, a, b);
     return s.replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name);
