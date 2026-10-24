@@ -122,8 +122,10 @@
       var F = cs.filter(function (c) { return P.isF(c) && P.isTop(c); }), M = cs.filter(isM);
       if (!F.length || !M.length || !res) return res;
       var pairs = [];
-      /* 恋愛・R18にしない組（キャラの設定 loveNG：相手の番号）は、そもそも性的な場面にならないので直さない */
-      var ng = function (x, y) { var ix = cs.indexOf(x), iy = cs.indexOf(y); return (Array.isArray(x.loveNG) && x.loveNG.indexOf(iy) >= 0) || (Array.isArray(y.loveNG) && y.loveNG.indexOf(ix) >= 0); };
+      /* 恋愛・R18にしない組（キャラの設定 loveNG：相手の番号）と、恋愛相手を別の人に固定している組は、そもそも性的な場面にならないので直さない */
+      var lk = function (c) { return c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock; };
+      /* 恋愛相手を別の人に固定している組も同じ */
+      var ng = function (x, y) { var ix = cs.indexOf(x), iy = cs.indexOf(y); return (Array.isArray(x.loveNG) && x.loveNG.indexOf(iy) >= 0) || (Array.isArray(y.loveNG) && y.loveNG.indexOf(ix) >= 0) || (lk(x) != null && lk(x) !== iy) || (lk(y) != null && lk(y) !== ix); };
       F.forEach(function (f) { M.forEach(function (m) { if (FM.on(f, m) && !ng(f, m)) pairs.push([f, m]); }); });
       if (!pairs.length) return res;
       var rng = HK.rng ? HK.rng(((input.seed || 1) * 7919 + 17) >>> 0) : null;

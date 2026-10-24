@@ -51,9 +51,16 @@
   Ctx.prototype.R = function (a, b) { return this.rel[a.i][b.i]; };
   /* 性別と恋愛対象（未設定なら制限なし） */
   /* どちらかが別の相手に恋愛を決めている組か */
-  /* 恋愛・R18にしない組（キャラの設定「恋愛・R18にしない相手」。どちらかに付いていれば） */
-  HK.ngPair = function (a, b) { return !!(a && b && a !== b && ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0))); };
-  HK.lockBlocks = function (a, b) { return !!(a && b && ((a.lock != null && a.lock !== b.i) || (b.lock != null && b.lock !== a.i) || HK.ngPair(a, b))); };
+  /* 恋愛・R18にしない組。次のどちらか：
+     ・キャラの設定「恋愛・R18にしない相手」（どちらかに付いていれば）
+     ・「恋愛相手の固定」で、どちらかが別の人に決めている（相手が箱庭にいなければ、その人は誰とも）
+     どの箱庭でも、この組では恋愛・夜・R18の場面を起こさない */
+  HK.ngPair = function (a, b) {
+    if (!a || !b || a === b) return false;
+    if ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0)) return true;
+    return (a.lock != null && a.lock !== b.i) || (b.lock != null && b.lock !== a.i);
+  };
+  HK.lockBlocks = function (a, b) { return HK.ngPair(a, b); };
   HK.canLove = function (a, b) {
     if (HK.ngPair(a, b)) return false;
     /* 恋愛相手を決めた人は、その相手以外とは恋愛しない（相手が箱庭にいなければ誰とも） */
@@ -74,7 +81,13 @@
   Ctx.prototype.present = function () { return this.chars.filter(function (c) { return c.alive && !c.out; }); };
   Ctx.prototype.alive = function () { return this.chars.filter(function (c) { return c.alive; }); };
   /* 同じ場にいる相手（箱庭が場所を持つときは、その箱庭が決める） */
-  Ctx.prototype.others = function (a) { if (this.scen.othersFor) return this.scen.othersFor(this, a); return this.present().filter(function (c) { return c !== a; }); };
+  Ctx.prototype.others = function (a) {
+    var l = this.scen.othersFor ? this.scen.othersFor(this, a) : this.present().filter(function (c) { return c !== a; });
+    /* 監禁（執着の暴走）のさなかの二人は、互いのほかとは関わらない。ほかの人も、二人には関われない */
+    var cp = a && a.flags ? a.flags.cagePair : null;
+    if (cp != null) return l.filter(function (c) { return c.i === cp; });
+    return l.filter(function (c) { return !(c.flags && c.flags.cagePair != null); });
+  };
   /* 二人きりのときは「皆」「誰か」など第三者を前提にした文を避ける */
   var GROUP_RE = /皆|全員|みんな|何人か|周り|周囲|誰か|一同|クラス中|教室中|ほかの誰|他の誰|誰も/;
   Ctx.prototype.pick = function (arr) {

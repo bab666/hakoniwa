@@ -72,6 +72,8 @@
     var best = null, bv = min == null ? 35 : min;
     ctx.chars.forEach(function (o) {
       if (o === a || !o.alive || !a.alive || !near(ctx, a, o)) return;
+      /* 監禁のさなかの人は、その相手どうしでしか執着の出来事を起こさない（別の人に二重に囲われない） */
+      if ((a.flags.cagePair != null && a.flags.cagePair !== o.i) || (o.flags.cagePair != null && o.flags.cagePair !== a.i)) return;
       var pf = ctx.pair(a, o);
       if (!pf.ob || !pf.ob[a.i]) { if (!O.yanTie(ctx, a, o)) return; }
       var v = O.level(ctx, a, o);
@@ -82,7 +84,7 @@
   /* b に執着している人（いちばん重い人） */
   O.obsessorOf = function (ctx, b) {
     var best = null, bv = 34;
-    ctx.chars.forEach(function (o) { if (o === b || !o.alive || !near(ctx, b, o)) return; var v = (ctx.pair(o, b).ob && ctx.pair(o, b).ob[o.i]) || O.yanTie(ctx, o, b) ? O.level(ctx, o, b) : 0; if (v > bv) { bv = v; best = o; } });
+    ctx.chars.forEach(function (o) { if (o === b || !o.alive || !near(ctx, b, o)) return; if ((b.flags.cagePair != null && b.flags.cagePair !== o.i) || (o.flags.cagePair != null && o.flags.cagePair !== b.i)) return; var v = (ctx.pair(o, b).ob && ctx.pair(o, b).ob[o.i]) || O.yanTie(ctx, o, b) ? O.level(ctx, o, b) : 0; if (v > bv) { bv = v; best = o; } });
     return best;
   };
 
@@ -262,7 +264,7 @@
     if (pick === 'cage') {
       /* 全年齢版は、その場で引き止めるだけ（閉じ込めたまま日が過ぎることはない） */
       if (safe) { s.climax = null; s.lv = clamp(s.lv - 12, 0, 100); }
-      else { s.cage = { from: ctx.stepIndex, n: 0 }; pf.captive = { by: a.i }; }
+      else { s.cage = { from: ctx.stepIndex, n: 0 }; pf.captive = { by: a.i }; a.flags.cagePair = b.i; b.flags.cagePair = a.i; }
       ctx.mod(b, a, { ten: 20, trust: -12 }); ctx.stress(b, 20);
       return { with: [b], cat: 'conflict', text: F(ctx, T(ctx, safe ? 'cage_s' : 'cage'), a, b), why: why(ctx, a, b, s) + '。執着が暴走した', mag: 45 };
     }
@@ -301,7 +303,7 @@
     else if (O.stance(ctx, b, a) !== 'mutual' && s.cage.n >= 2 && ctx.rng() < 0.18 + a.tr.np * 0.15) end = 'release';
     if (end) {
       var days = s.cage.n;
-      s.cage = null; ctx.pair(a, b).captiveEnded = end; ctx.pair(a, b).captive = null;
+      s.cage = null; ctx.pair(a, b).captiveEnded = end; ctx.pair(a, b).captive = null; delete a.flags.cagePair; delete b.flags.cagePair;
       if (end === 'rescue') { ctx.mod(c, a, { ten: 25, aff: -20, trust: -25 }); ctx.mod2(b, c, { trust: 20, aff: 15 }, { aff: 8 }); }
       ctx.mod(b, a, { ten: 15, trust: -15 }); s.lv = clamp(s.lv - (end === 'release' ? 25 : 10), 0, 100); s.climax = null;
       return { with: c ? [b, c] : [b], cat: end === 'rescue' ? 'help' : 'conflict', text: F(ctx, T(ctx, end, !c), a, b, c), why: a.name + (SAFE() ? 'の囲い込み（' : 'による監禁（') + days + '区切りで終わった）', mag: 30 };

@@ -439,6 +439,8 @@
       if (ac.length !== 2 || !e.text || /扉|\d+\/\d+）/.test(e.text)) continue;
       var a = typeof ac[0] === 'number' ? ctx.chars[ac[0]] : ac[0], b = typeof ac[1] === 'number' ? ctx.chars[ac[1]] : ac[1];
       if (!a || !b || a.out || b.out || a === b) continue;
+      /* 亡くなった人（心中など）・死の場面の文は数えない（「抱きしめたまま」の心中をハグと数えて、亡くなった二人が部屋を出ないように） */
+      if (a.alive === false || b.alive === false || e.cat === 'kill' || e.cat === 'death') continue;
       /* 会話の中で「好き」と言った（先に名前の出た方が言ったものとして数える） */
       ctx.rules.forEach(function (r) {
         if (r.k !== 'love' || a.out || ruleDone(ctx, r, a, b) || !/「[^」]*好き(?!な|に|じゃな)[^」]*」/.test(e.text)) return;

@@ -104,7 +104,7 @@
   BH.setup = function (S, input, cast) {
     var Pz = HK.Pos;
     S.behind = cast.others.map(function (i) {
-      var c = input.chars[i], b = { i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa };
+      var c = input.chars[i], b = { i: i, lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa };
       b.persona = HK.personaOf(b);
       b.r = rel(input, i, cast.si);
       return b;

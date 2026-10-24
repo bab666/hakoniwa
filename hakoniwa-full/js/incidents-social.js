@@ -44,7 +44,7 @@
       id: 'point', from: 2, min: 3,
       run: function (ctx) {
         ctx.incident('「じゃあ、せーので一番気になる人を指さそう」と誰かが言い出した。');
-        pointAll(ctx, ctx.present(), 'せーの。', '同時指さし');
+        pointAll(ctx, ctx.present().filter(function (c) { return c.flags.cagePair == null; }), 'せーの。', '同時指さし');
       }
     },
     {
@@ -176,7 +176,7 @@
       id: 'point', from: 1, min: 2,
       run: function (ctx) {
         ctx.incident('新しい紙が差し込まれた。「この部屋で一番好きな人を、同時に指させ」');
-        pointAll(ctx, ctx.present(), '', '追加ルール');
+        pointAll(ctx, ctx.present().filter(function (c) { return c.flags.cagePair == null; }), '', '追加ルール');
       }
     },
     {

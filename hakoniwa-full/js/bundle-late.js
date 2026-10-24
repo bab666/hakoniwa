@@ -23209,7 +23209,7 @@
       id: 'point', from: 2, min: 3,
       run: function (ctx) {
         ctx.incident('「じゃあ、せーので一番気になる人を指さそう」と誰かが言い出した。');
-        pointAll(ctx, ctx.present(), 'せーの。', '同時指さし');
+        pointAll(ctx, ctx.present().filter(function (c) { return c.flags.cagePair == null; }), 'せーの。', '同時指さし');
       }
     },
     {
@@ -23341,7 +23341,7 @@
       id: 'point', from: 1, min: 2,
       run: function (ctx) {
         ctx.incident('新しい紙が差し込まれた。「この部屋で一番好きな人を、同時に指させ」');
-        pointAll(ctx, ctx.present(), '', '追加ルール');
+        pointAll(ctx, ctx.present().filter(function (c) { return c.flags.cagePair == null; }), '', '追加ルール');
       }
     },
     {
@@ -26072,7 +26072,7 @@
   BH.setup = function (S, input, cast) {
     var Pz = HK.Pos;
     S.behind = cast.others.map(function (i) {
-      var c = input.chars[i], b = { i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa };
+      var c = input.chars[i], b = { i: i, lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa };
       b.persona = HK.personaOf(b);
       b.r = rel(input, i, cast.si);
       return b;

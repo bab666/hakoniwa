@@ -60,13 +60,16 @@
   function pairRules(ctx) { return ctx.rules.filter(function (r) { var t = K[r.k].type; return t === 'act' || t === 'word'; }); }
   function maxLvl(ctx) { return ctx.rules.reduce(function (m, r) { return K[r.k].type === 'act' ? Math.max(m, K[r.k].lvl) : m; }, 2); }
   function hasH(ctx) { return ctx.rules.some(function (r) { return r.k === 'h'; }); }
-  function free(c) { return !c.out && !c.flags.down; }
+  /* 三人の場面に加われるか：生きていて、部屋を出ておらず、倒れておらず、監禁（執着の暴走）のさなかでない */
+  function free(c) { return c && c.alive !== false && !c.out && !c.flags.down && c.flags.cagePair == null; }
   function pairsOf(g) { var o = []; for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) o.push([g[i], g[j]]); return o; }
   function done3(ctx, g) { return pairsOf(g).every(function (p) { return A.pairDone(ctx, p[0], p[1]); }); }
   function family(ctx, a, b) { return A.tieWall(ctx, a, b, 3) >= 999; }
   function okSex(a, b) { return !HK.Pos || HK.Pos.okSex(a, b); }
   /* 体の関係の形：三人の全組が体の関係を持てるなら全員で、そうでなければ二人の両方と持てる一人を中心に（つながらない二人は直接は触れ合わない）。どれも無理なら null */
   function sexShape(g, hubOnly) {
+    /* 恋愛・R18にしない組（苦手な組み合わせ・恋愛相手を別の人に固定している人）が一組でも入っていれば、三人では交わらない */
+    if (HK.ngPair && (HK.ngPair(g[0], g[1]) || HK.ngPair(g[0], g[2]) || HK.ngPair(g[1], g[2]))) return null;
     if (!hubOnly && okSex(g[0], g[1]) && okSex(g[0], g[2]) && okSex(g[1], g[2])) return { sg: g, hubOnly: false };
     for (var i = 0; i < 3; i++) {
       var h = g[i], r = g.filter(function (c) { return c !== h; });
@@ -658,7 +661,13 @@
   /* 二回目以降（回数が多い条件のとき） */
   EV.push({
     id: 'trio_more', cat: 'romance', scope: 'solo', pri: true,
-    when: function (ctx, a) { var c = ctx.flags.trioCur; return !!c && c.g.indexOf(a.i) >= 0 && c.g.every(function (i) { return free(ctx.chars[i]); }); },
+    when: function (ctx, a) {
+      var c = ctx.flags.trioCur;
+      if (!c) return false;
+      /* 三人のうち誰かが亡くなった・部屋を出た・監禁されたら、三人の続きは終わり */
+      if (!c.g.every(function (i) { return free(ctx.chars[i]); })) { ctx.flags.trioCur = null; return false; }
+      return c.g.indexOf(a.i) >= 0;
+    },
     w: function () { return 2.2; },
     run: function (ctx, a) {
       var c = ctx.flags.trioCur, g = c.g.map(function (i) { return ctx.chars[i]; });
