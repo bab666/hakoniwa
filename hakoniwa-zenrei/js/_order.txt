@@ -30,6 +30,7 @@ late js/tone-fix-g3.js
 late js/tone-fix-g4.js
 late js/tone-fix-g5.js
 late js/tone-fix-g6.js
+late js/tone-fix-gc.js
 js/tone-polite-kin.js
 js/tone-ane.js
 js/tone-usan.js

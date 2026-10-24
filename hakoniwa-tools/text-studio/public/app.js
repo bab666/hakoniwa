@@ -466,6 +466,8 @@
       g.items.forEach(function (it, ii) {
         var re = /「([^「」]+)」/g, m;
         while ((m = re.exec(it.text))) {
+          /* 「＠…」は村人など、住人ではない人の台詞（口調の言い換えを通らない）なので並べない */
+          if (/^[＠\u2060]/.test(m[1])) continue;
           var key = m[1].replace(/\{[a-z0-9_]+\}|〔[^〕]*〕/g, '〈〉');
           if (jaN(key) < 2) continue;
           var o = map[key];
