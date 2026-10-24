@@ -80,14 +80,54 @@
   var ROUGH = { proud: 1, stern: 1, cool: 1, tsun: 1 };
   E.MOAN = M; E.DOM = DOM;
   /* 一回の結果の中では、同じ喘ぎをなるべく繰り返さない */
+  /* 使い切ったら、いちばん前に使ったものから戻す（直前に使った文はすぐには戻らない） */
   function pickFresh(S, list, tag) {
     var seen = S._eroSeen = S._eroSeen || {}, used = seen[tag] = seen[tag] || [];
     var free = list.filter(function (x) { return used.indexOf(x) < 0; });
-    if (!free.length) { used.length = 0; free = list; }
+    if (!free.length) {
+      /* used は古い順。候補の中で使ったのがいちばん古い半分から選ぶ */
+      var old = list.slice().sort(function (a, b) { return used.indexOf(a) - used.indexOf(b); });
+      free = old.slice(0, Math.max(1, Math.ceil(old.length / 2)));
+    }
     var x = free[S.rng.int(free.length)];
+    var i = used.indexOf(x); if (i >= 0) used.splice(i, 1);
     used.push(x);
     return x;
   }
+  /* 一回の結果の中で同じ文を繰り返さない選び方（喘ぎ以外の地の文・反応・事後にも使う）。
+     S … その回のもの（箱庭の ctx・物語型の S・rng のどれでも。中の rng に覚える）、base … 元の選び方（ctx.pick など。候補を絞ってから渡す）。
+     まだ使っていない文から選び、使い切ったら、いちばん前に使ったものから戻す */
+  E.fresh = function (S, arr, base) {
+    if (!arr || !arr.length) return base ? base(arr) : undefined;
+    var own = (S && S.rng) || S, rng = own && own.int ? own : S && S.rng;
+    if (!own || arr.length < 2) return base ? base(arr) : arr[0];
+    var st = own._fresh || (own._fresh = { n: 0, m: {} }), m = st.m;
+    var key = function (x) { return typeof x === 'string' ? x : x && typeof x.t === 'string' ? x.t : null; };
+    var best = Infinity, sub = [];
+    arr.forEach(function (x) {
+      var k = key(x), v = k == null ? -1 : m[k] == null ? -1 : m[k];
+      if (v < best) { best = v; sub = [x]; } else if (v === best) sub.push(x);
+    });
+    var t = base ? base(sub) : sub[rng && rng.int ? rng.int(sub.length) : Math.floor(Math.random() * sub.length)];
+    var k = key(t); if (k != null) m[k] = ++st.n;
+    return t;
+  };
+  /* その回で、二人が体を重ねた回数（反応の段階を後戻りさせないため）。peek なら数えずに今の回数を返す。
+     一度身を委ねた人が、次の場面でまた最初の抵抗からやり直さないよう、二度目以降の反応を選ぶのに使う */
+  E.pairNight = function (S, a, b, peek) {
+    var own = (S && S.rng) || S;
+    if (!own || !a || !b) return 1;
+    var m = own._pairN || (own._pairN = {}), k = [a.name, b.name].sort().join('\u0001');
+    if (!peek) m[k] = (m[k] || 0) + 1;
+    return m[k] || 1;
+  };
+  /* 元の選び方 base（pick(arr) の形）を、繰り返さない選び方に包む */
+  E.freshPick = function (S, base) {
+    if (base && base._fresh) return base;
+    var f = function (arr) { return E.fresh(S, arr, base); };
+    f._fresh = true;
+    return f;
+  };
   /* 口調ごとの喘ぎ（ero-moan-tone.js の E.TONE_MOAN[口調] = { s0 声を抑える, s1 懇願, s2 快楽堕ち, daku 濁点喘ぎ }）。
      9つの態度の口調は、上の態度の喘ぎに足して使う。それ以外の口調は、その口調の喘ぎだけを使う（なければ態度の喘ぎ） */
   E.TONE_MOAN = E.TONE_MOAN || {};

@@ -177,8 +177,21 @@
     shy: L('{b}は腕で顔を隠したまま、震える声を漏らした。|{b}は真っ赤な顔でシーツを握りしめ、声を殺そうとして殺しきれなかった。|{b}は恥ずかしさに身をよじりながら、それでも{a}から離れなかった。'),
     polite: L('{b}は乱れた息の合間に、何度も小さく詫びた。|{b}は崩れまいと姿勢を保とうとしたが、揺さぶられるたびに背筋がほどけていった。|{b}の品のいい声が、少しずつ甘く濡れていった。')
   };
+  /* 二度目以降（この回で同じ二人がすでに体を重ねたあと）の崩れ方。前より早く・素直に崩れる（反応の段階を後戻りさせない） */
+  T.REACT_AGAIN = {
+    proud: L('{b}はもう、前のときほど意地を張らなかった。睨むふりをしたのは最初の一瞬だけで、すぐに{a}の首へ腕を回した。|一度知ってしまった熱を、{b}の体は覚えていた。悪態の代わりに漏れたのは、{a}の名前だった。|{b}は「……今回だけだ」と前と同じことを言った。けれどその声は、前よりずっと早く甘く崩れた。'),
+    stern: L('{b}はもう、呼吸を数えようとはしなかった。前のときに、それが無駄だと知ったからだ。|律していたはずの{b}の体は、{a}の手が触れた途端、前の続きのようにほどけていった。|{b}は唇を結ぶのを早々にやめ、聞かれてもかまわないというように、低く掠れた声をこぼした。'),
+    tsun: L('{b}はもう「感じてない」とは言わなかった。代わりに、真っ赤な顔で{a}の肩に額を押しつけた。|{b}は「前より、ちょっとは上手くなったじゃない」と強がってから、すぐに声を甘く崩した。|{b}は口では文句を言いながら、前に覚えたとおり、自分から{a}に体を寄せていった。'),
+    gentle: L('{b}は前のときよりずっと素直に、{a}の動きに体を委ねた。どこが好きかを、もう隠さなかった。|{b}は{a}の背中を撫でながら、「覚えててくれたんだ」と嬉しそうに笑った。|{b}は{a}を抱き寄せ、前と同じところで、前より甘い声を漏らした。'),
+    devoted: L('{b}はもう声を飲み込もうとはしなかった。{a}が喜ぶと知っているから、素直に聞かせた。|{b}は前に覚えた{a}の好きな動きを、恥ずかしそうに、けれど迷わず自分から返した。|{b}は{a}の手を握り、「今度も、全部あげます」と囁いた。'),
+    cool: L('{b}はもう、何かを考えようとはしなかった。前のときに、考えても無駄だと学んでいた。|{b}の冷静な顔は、前よりずっと早く崩れた。{b}自身、それを止めようとしなかった。|{b}は「前回より反応が早い」と自分で呟き、それきり何も分析しなくなった。'),
+    free: L('{b}は「この前のあれ、またやって」と笑ってねだり、{a}を引き寄せた。|{b}は前よりもさらに遠慮なく、気持ちいいところを自分から{a}に押しつけた。|{b}は楽しそうに声を上げ、{a}の名前を何度も呼んだ。もう照れる様子はなかった。'),
+    shy: L('{b}は顔を隠しかけた腕を、自分からそっと下ろした。前のときより、少しだけ素直だった。|{b}は真っ赤になりながらも、前に{a}に教わったとおり、小さな声で「そこ」と伝えた。|{b}はもう震えてはいなかった。恥ずかしそうに目を伏せたまま、{a}の背中に腕を回した。'),
+    polite: L('{b}はもう詫びなかった。乱れた息のまま、{a}の名前を丁寧に、何度も呼んだ。|{b}の品のいい声は、前のときよりずっと早く、甘く濡れていった。|{b}は「……また、お願いしても」と言いかけて、その先を{a}の口づけに塞がれた。')
+  };
   function psOf(c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || c.persona || 'gentle'; }
-  T.react = function (pick, b) { var ps = psOf(b); return pick(T.REACT[ps] || T.REACT.gentle); };
+  /* again … この回で同じ二人が二度目以降なら、前より早く崩れる文（REACT_AGAIN） */
+  T.react = function (pick, b, again) { var ps = psOf(b), R = again ? T.REACT_AGAIN : T.REACT; return pick(R[ps] || R.gentle); };
   /* 口調ごとの喘ぎ（novel-moan-tone.js：最中・果てる）を、態度の喘ぎに足して使う */
   T.moan = function (pick, b, climax) {
     var ps = psOf(b), M = climax ? T.CMOAN : T.MOAN, l = M[ps] || M.gentle, own = HK.NovelMoan ? HK.NovelMoan.list(b, climax ? 2 : 1) : [];
@@ -187,8 +200,11 @@
 
   /* 一場面ぶんの段落（始まりは呼ぶ側が渡す）。opt = { pick, rng, a, b, style, open, after, place, jealous } */
   T.scene = function (opt) {
-    var pick = opt.pick, a = opt.a, b = opt.b, st = opt.style || 'gentle';
+    /* 一回の結果の中で同じ文（反応・喘ぎ・場所の一文など）を繰り返さない（ero-kit.js の HK.Ero.freshPick） */
+    var pick = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(opt.rng, opt.pick) : opt.pick, a = opt.a, b = opt.b, st = opt.style || 'gentle';
     if (HK.NovelMoan) HK.NovelMoan.top = a;
+    /* この回で二人が体を重ねた回数（二度目以降は崩れ方を後戻りさせない） */
+    var nth = HK.Ero && HK.Ero.pairNight ? HK.Ero.pairNight(opt.rng, a, b) : 1;
     var P = HK.Pos, fem = P && P.isF, mode = fem && fem(a) && fem(b) ? 'ff' : fem && fem(a) && !fem(b) ? 'fm' : 'mf';
     /* 女性が {b} で男性が {a} のときは mf（男性が繋がる側）。女性 {a}×男性 {b} は必ず fm（跨る書き方） */
     var hard = mode === 'mf' && T.hard(opt.rng, a, b), jl = hard && !!opt.jealous, g = fmG(st), out = [];
@@ -205,7 +221,7 @@
     var feel = pick(mode === 'ff' ? T.FEEL_FF : mode === 'fm' ? T.FEEL_FM : T.FEEL).replace('{mb}', T.moan(pick, b));
     var fa = pick(T.FEEL_A[mode]), pl = opt.place && T.PLACE[opt.place] ? pick(T.PLACE[opt.place]) : '';
     out.push(feel);
-    out.push((pl ? pl : '') + fa + T.react(pick, b));
+    out.push((pl ? pl : '') + fa + T.react(pick, b, nth >= 2));
     var cl = mode === 'ff' ? pick(T.ffClimaxFor(g, ffBody)) : mode === 'fm' ? pick(T.FM_CLIMAX[g]) : pick(jl ? T.JEALOUS_CLIMAX : hard ? T.ROUGH_CLIMAX : T.CLIMAX[st] || T.CLIMAX.gentle);
     out.push('{b}「' + T.moan(pick, b, true) + '」' + cl);
     if (opt.after) out.push(opt.after);

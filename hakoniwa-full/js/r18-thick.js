@@ -15,7 +15,8 @@
   if (!R || !D || !ST) return;
   function L(s) { return s.split('|'); }
   function F(t, m) { return ST.fmt(t, m); }
-  function pick(S, a) { return ST.pick(S, a); }
+  /* 一回の結果の中で同じ文を繰り返さない（使い切ったら、いちばん前に使ったものから戻す。ero-kit.js の HK.Ero.fresh） */
+  function pick(S, a) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(S, a, function (l) { return ST.pick(S, l); }) : ST.pick(S, a); }
   var SCEN = { jashin: 1, yakata: 1 };
   /* 描写の長さが「数行で短く」（混ぜるなら半分）のときは、段落に分けない（story-lewd.js の HK.Lewd.storyShort） */
   function on(S) { return !HK.SAFE_ON && S && S.scen && SCEN[S.scen.id] && !(HK.Lewd && HK.Lewd.storyShort && HK.Lewd.storyShort(S)); }
@@ -99,6 +100,13 @@
   ];
 
   function moodOf(m) { return m === 'rough' || m === 'drug' || m === 'love' ? m : 'plain'; }
+  /* 反応を後戻りさせない：この回で同じ二人が二度目以降の、合意の夜（love・plain）は、気の強い人も最初から堪えようとはしない。
+     その変わり目を一文で示す（AGAIN_TURN）。媚薬・荒々しい夜は場面の気分に従う */
+  var AGAIN_TURN = L('{y}はもう、前のときのように声を殺そうとはしなかった。|一度知ってしまった熱を、{y}の体ははっきり覚えていた。堪えるより先に、腕が{x}を引き寄せていた。|前は最後まで張っていた意地が、今度は最初の口づけでほどけていた。|{y}が唇を噛んでいられたのは、ほんの短いあいだだけだった。前のときより、ずっと早かった。');
+  function softened(S, x, y, mood) {
+    var n = HK.Ero && HK.Ero.pairNight ? HK.Ero.pairNight(S, x, y, true) : 1;
+    return n >= 2 && (mood === 'love' || mood === 'plain');
+  }
   /* 体位を選ぶ（solo-r18-moan.js と同じ重みづけ） */
   function pickPos(S, x, y, mood, allow) {
     var list = allow ? D.POS.filter(function (p) { return allow.indexOf(p.id) >= 0; }) : D.POS;
@@ -152,17 +160,19 @@
     if (opt.short) {
       return J([F(pick(S, pos.t), m) + F(pick(S, ENTER[mid]), m), sayOk(S, y, 'start', mood), F(pick(S, byMid(PEAK, mid, mood)), m) + R.say(S, y, 'climax')]);
     }
+    var soft2 = softened(S, x, y, mood);
     var hs = hardSet(S, x, y, mood, opt);
     if (hs) {
       var h = pick(S, hs);
       return J([fore, F(h.open, m), F(h.say, m), sayOk(S, y, 'start', mood) + F(h.mid, m), F(h.say2, m), moan(S, y, 0), F(h.peak, m) + moan(S, y, 1), F(h.after, m)]);
     }
-    var strong = R.isStrong(y);
+    var strong = R.isStrong(y), turn = strong && soft2 ? F(pick(S, AGAIN_TURN), m) : '';
+    if (soft2) strong = false;
     return J([
       fore,
       F(pick(S, pos.t), m) + F(pick(S, ENTER[mood]), m),
       R.say(S, x, 'top'),
-      sayOk(S, y, 'start', mood) + F(pick(S, byMid(strong ? MID_STRONG : MID_SOFT, mid, mood)), m),
+      sayOk(S, y, 'start', mood) + turn + F(pick(S, byMid(strong ? MID_STRONG : MID_SOFT, mid, mood)), m),
       moan(S, y, 0) + F(pick(S, byMid(PLEASE, mid, mood)), m),
       F(pick(S, byMid(PEAK, mid, mood)), m) + (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (rng() < 0.35 ? R.say(S, x, 'topc') : ''),
       flav(S) + F(pick(S, AFTER[mood]), m) + (rng() < 0.5 ? R.say(S, rng() < 0.6 ? y : x, 'after') : '')
@@ -323,14 +333,15 @@
     if (kind === 'ff' && !riba && HK.Pos && HK.Pos.MUTUAL_RE) midL = midL.filter(function (t) { return !HK.Pos.MUTUAL_RE.test(t); });
     var enter = apart(SOFT_ENTER[kind][mood], body), seen2 = body + enter;
     var midC = midL.filter(function (t) { return !clash(t, seen2); }), midT = pick(S, midC.length ? midC : midL.length ? midL : SOFT_MID[kind]);
-    var react = (R.isStrong(y) ? SOFT_STRONG : SOFT_WEAK)[kind][mid];
+    var soft2 = softened(S, x, y, mood), strong = R.isStrong(y), turn = strong && soft2 ? F(pick(S, AGAIN_TURN), m) : '';
+    var react = (strong && !soft2 ? SOFT_STRONG : SOFT_WEAK)[kind][mid];
     var aftL = SOFT_AFTER[kind].concat(SOFT_AFTER_M[kind][mood] || []);
     var aft = kind === 'ff' && K.after && rng() < 0.35 ? fill(K.after(ctx, K.afterMode(mood))) : kind === 'fm' && K.POOLS.after && rng() < 0.35 ? fill(K.pick(ctx, 'after', st)) : F(pick(S, aftL), m);
     return J([
       open,
       fill(body) + F(enter, m),
       R.say(S, x, 'top'),
-      sayOk(S, y, 'start', mood) + fill(midT) + F(apart(react, seen2 + midT), m),
+      sayOk(S, y, 'start', mood) + turn + fill(midT) + F(apart(react, seen2 + midT), m),
       moan(S, y, 0) + (kind === 'fm' && rng() < 0.6 ? moan(S, x, 0, true) : '') + F(apart(SOFT_PLEASE[kind].concat(SOFT_PLEASE_M[kind][mid] || []), seen2 + midT), m),
       (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (R.topcF && rng() < 0.3 ? R.topcF(S, x) : '') + peak,
       flav(S) + aft + (rng() < 0.5 ? R.say(S, y, 'after') : '')
@@ -338,7 +349,9 @@
   }
 
   var sex0 = R.sex;
+  function count(S, x, y) { if (HK.Ero && HK.Ero.pairNight) HK.Ero.pairNight(S, x, y); }
   R.sex = function (S, x, y, opt) {
+    count(S, x, y);
     if (!on(S)) return sex0.apply(this, arguments);
     opt = opt || {};
     /* 向きは必ず HK.Pos.order に従う（自分で攻めを選んだ人を受けの位置に置かない） */
@@ -354,6 +367,6 @@
   /* 女性どうしを自前で組み立てる箱庭（邪神村 pairSex・吹雪の館 SX）用 */
   /* log：点検用（配列を入れると、組み立てた組 [攻め, 受け] を記録する） */
   /* POOLS：点検用（段ごとの文数を数えるときに読む） */
-  HK.R18Thick = { on: on, log: null, ff: function (S, x, y, opt) { if (HK.R18Thick.log) HK.R18Thick.log.push([x, y]); return soft(S, x, y, opt || {}, 'ff'); },
+  HK.R18Thick = { on: on, log: null, ff: function (S, x, y, opt) { count(S, x, y); if (HK.R18Thick.log) HK.R18Thick.log.push([x, y]); return soft(S, x, y, opt || {}, 'ff'); },
     POOLS: { ENTER: ENTER, MID_STRONG: MID_STRONG, MID_SOFT: MID_SOFT, PEAK: PEAK, AFTER: AFTER, PLEASE: PLEASE, SOFT_MID: SOFT_MID, SOFT_AFTER: SOFT_AFTER, SOFT_PLEASE: SOFT_PLEASE, SOFT_ENTER: SOFT_ENTER, SOFT_STRONG: SOFT_STRONG, SOFT_WEAK: SOFT_WEAK, SOFT_PLEASE_M: SOFT_PLEASE_M, SOFT_AFTER_M: SOFT_AFTER_M, ROUGH_SADIST: ROUGH_SADIST, JEALOUS_CHOKE: JEALOUS_CHOKE, ROUGH_SOFT: ROUGH_SOFT, JEALOUS_SOFT: JEALOUS_SOFT } };
 })();

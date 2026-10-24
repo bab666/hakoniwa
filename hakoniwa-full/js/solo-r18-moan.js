@@ -9,7 +9,8 @@
   var HK = window.HK, ST = HK.Story, D = HK.R18M_DATA;
   if (!D || !ST) return;
   function F(t, m) { return ST.fmt(t, m); }
-  function pick(S, a) { return ST.pick(S, a); }
+  /* 一回の結果の中で同じ文を繰り返さない（使い切ったら、いちばん前に使ったものから戻す。ero-kit.js の HK.Ero.fresh） */
+  function pick(S, a) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(S, a, function (l) { return ST.pick(S, l); }) : ST.pick(S, a); }
   function toneKey(p) {
     var t = HK.toneOf ? HK.toneOf(p) : p.tone;
     if (D.V[t]) return t;

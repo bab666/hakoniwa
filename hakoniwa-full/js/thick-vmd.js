@@ -34,6 +34,8 @@
   /* 一回の結果（同じ rng）の中では、同じ声をなるべく繰り返さない */
   var USED = typeof WeakMap === 'function' ? new WeakMap() : null;
   function pk(rng, l) {
+    /* 使い切ったら、いちばん前に使ったものから戻す（ero-kit.js の HK.Ero.fresh） */
+    if (HK.Ero && HK.Ero.fresh) return HK.Ero.fresh(rng, l);
     var u = USED && (USED.get(rng) || (USED.set(rng, []), USED.get(rng)));
     var free = u ? l.filter(function (x) { return u.indexOf(x) < 0; }) : l;
     if (!free.length) free = l;

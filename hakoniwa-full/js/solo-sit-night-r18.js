@@ -15,6 +15,8 @@
 (function () {
   'use strict';
   var HK = window.HK, RK = HK.RelKit, RN = HK.RelNight;
+  /* 一回の結果の中で同じ文を繰り返さない選び方（R18版は ero-kit.js の HK.Ero.fresh。使い切ったら、いちばん前に使ったものから戻す） */
+  function fp(ctx, arr) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx, arr, function (l) { return ctx.pick(l); }) : ctx.pick(arr); }
   if (!RK || !RN) return;
   var L = RK.L, fill = RK.fill;
 
@@ -463,7 +465,7 @@
   /* ======================= 文を組む ======================= */
   function pickF(ctx, arr, v, avoid) {
     var a2 = avoid ? arr.filter(function (s) { return !avoid.test(s); }) : arr;
-    return fill(ctx.pick(a2.length ? a2 : arr), v);
+    return fill(fp(ctx, a2.length ? a2 : arr), v);
   }
   /* sc：'zombie'|'island'、st：判定した状況、r：関係（誘う側 a）、lv：'fade'|'high' */
   function compose(ctx, sc, st, r, lv) {
@@ -482,7 +484,7 @@
     function stage(s) {
       var arr = RN.noMut(base[g][s] || base.mf[s], x, y), ok = av ? arr.filter(function (z) { return !av.test(z); }) : arr;
       if (!ok.length && sc === 'island') { var zb = RN.ZT.high; ok = RN.noMut(zb[g][s] || zb.mf[s], x, y).filter(function (z) { return !ZONLY.test(z) && !(av && av.test(z)); }); }
-      return fill(ctx.pick(ok.length ? ok : arr), v);
+      return fill(fp(ctx, ok.length ? ok : arr), v);
     }
     /* 本番：描写の長さ・作風・濃さ（solo-rel-r18.js の RN.body）。数行で短くなら、状況ごとの文で組む */
     t += RN.body(ctx, sc, x, y, function () {
@@ -492,11 +494,11 @@
       u += mid;
       u += pickF(ctx, REACT[GROUP[st.id]][RN.psOf(y)] || REACT[GROUP[st.id]].gentle, v);
       u += stage('end');
-      if (RK.tone(x) === 'aniki' && ctx.rng() < 0.5) u += x.name + fill(ctx.pick(RN.ANIKI), v);
+      if (RK.tone(x) === 'aniki' && ctx.rng() < 0.5) u += x.name + fill(fp(ctx, RN.ANIKI), v);
       return u;
     }, function () { return BG.fore ? pickF(ctx, RN.noMut(BG.fore, x, y), v) : stage('fore'); });
     t += pickF(ctx, T.after, v);
-    if (ctx.rng() < 0.6) t += fill(ctx.pick(RN.AFTER_PS[RN.psOf(y)] || RN.AFTER_PS.gentle), v);
+    if (ctx.rng() < 0.6) t += fill(fp(ctx, RN.AFTER_PS[RN.psOf(y)] || RN.AFTER_PS.gentle), v);
     return t + pickF(ctx, REL.after[r.k], v);
   }
   /* 夜のあとの関係の変化 */

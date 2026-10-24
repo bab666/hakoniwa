@@ -3,9 +3,11 @@
 (function () {
   'use strict';
   var HK = window.HK;
+  /* 一回の結果の中で同じ文を繰り返さない選び方（R18版は ero-kit.js の HK.Ero.fresh。使い切ったら、いちばん前に使ったものから戻す） */
+  function fp(ctx, arr) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx, arr, function (l) { return ctx.pick(l); }) : ctx.pick(arr); }
   var L = HK.RoomLewd = {};
 
-  function pick(ctx, arr) { return ctx.pick(arr); }
+  function pick(ctx, arr) { return fp(ctx, arr); }
   function t(ctx, s, a, b) { return ctx.t(s, a, b); }
 
   /* リード役の型 */
@@ -145,7 +147,7 @@
     out.push(tools && (opt.toolText || ctx.rng() < 0.35) ? pick(ctx, FF_TOY) : pick(ctx, FF_BODY[st] || FF_BODY.gentle));
     out.push(react(ctx, B));
     out.push(pick(ctx, FF_CLIMAX));
-    var V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
+    var V = HK.Voice, pf = function (arr) { return fp(ctx, arr); };
     if (V && ctx.rng() < 0.7) out.push(V.line(pf, B.persona, 'climax', 'b'));
     if (FF_AFTER[mode]) out.push(pick(ctx, FF_AFTER[mode]));
     var txt = out.map(function (s) { return t(ctx, s, A, B); }).join('');
@@ -177,7 +179,7 @@
     if (!special && !opt.toolText && L.NORI && HK.Pos && HK.Pos.nori(B) && ctx.rng() < 0.55) special = pick(ctx, L.NORI);
     lew.push(special || pick(ctx, BODY[st]));
     lew.push(react(ctx, B));
-    var V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
+    var V = HK.Voice, pf = function (arr) { return fp(ctx, arr); };
     /* 口調ごとの「寸前」の一言 */
     if (V && ctx.rng() < 0.4) lew.push(V.line(pf, B.persona, 'edge', 'b'));
     /* 逆転：受ける側の方が強気なら、途中で主導権が入れ替わる */
@@ -213,7 +215,7 @@
       honne: ['{a}と{b}は、隠していた本音を最後まで打ち明け合った。'],
       praise: ['{a}は、{b}のいいところを最後まで言い切った。']
     };
-    return t(ctx, ctx.pick(R[k] || ['{a}と{b}は、最後の条件を果たした。']), a, b) + (n > 1 ? '（' + n + '回目）' : '');
+    return t(ctx, fp(ctx, R[k] || ['{a}と{b}は、最後の条件を果たした。']), a, b) + (n > 1 ? '（' + n + '回目）' : '');
   };
 
   /* キス・ハグ・手・膝枕の「2回目以降」 */

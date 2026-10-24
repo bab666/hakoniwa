@@ -10,6 +10,8 @@
 (function () {
   'use strict';
   var HK = window.HK;
+  /* 一回の結果の中で同じ文を繰り返さない選び方（R18版は ero-kit.js の HK.Ero.fresh。使い切ったら、いちばん前に使ったものから戻す） */
+  function fp(ctx, arr) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx, arr, function (l) { return ctx.pick(l); }) : ctx.pick(arr); }
   if (!HK) return;
   function L(s) { return s.split('|'); }
 
@@ -361,12 +363,12 @@
   };
   /* 箱庭ごとの感覚の一文（{fl}＝最中、{fl2}＝頂の直前） */
   var FLAV = [
-    { fl: L('二人の匂いが混ざり合い、吸い込むたびに頭の芯が甘く痺れた。|発情の熱が、繋がったところからじわじわと全身へ溶け広がっていく。|うなじのあたりが疼いて、{U}は無意識に首筋を差し出していた。|匂いに酔ったように、{U}の腰がひとりでに揺れた。'),
-      fl2: L('互いの匂いが濃くなり、もう自分の熱なのか相手の熱なのか分からなかった。|本能が、もっと奥へ、もっと深くと二人を急かした。|甘い匂いの中で、理性の最後の一枚が溶け落ちた。|') },
-    { fl: L('固定帯の外れかけた寝台が、律動のたびに小さく軋んだ。|重力の弱い船室では、突き上げられるたびに体がふわりと浮きかけ、{T}の腕に引き戻された。|計器の青い光が、汗ばんだ肌を濡れたように照らしていた。|換気扇の低い唸りに、二人の荒い息が紛れた。'),
-      fl2: L('浮き上がりそうになる体を、二人は互いにしがみついて繋ぎとめた。|狭い船室の壁に、二人分の熱がこもっていく。|遠い機関の振動が、繋がったところまで伝わってくるようだった。|') },
-    { fl: L('外の物音に、二人は一瞬動きを止め、それからいっそう強く抱き合った。|埃っぽい毛布の匂いと、相手の汗の匂いが混ざっていた。|明日も生きているか分からない。だからこそ、今の熱だけを確かめるように求め合った。|声を殺そうとするほど、快感は体の内側に溜まっていった。'),
-      fl2: L('生きている。重なった鼓動が、それだけを伝えていた。|遠くで何かが崩れる音がした。二人はもう、それどころではなかった。|この瞬間だけは、外の世界のことを忘れていられた。|') }
+    { fl: L('二人の匂いが混ざり合い、吸い込むたびに頭の芯が甘く痺れた。|発情の熱が、繋がったところからじわじわと全身へ溶け広がっていく。|うなじのあたりが疼いて、{U}は無意識に首筋を差し出していた。|匂いに酔ったように、{U}の腰がひとりでに揺れた。|息を吸うたびに相手の匂いが胸の奥まで満ちて、{U}は目の前がかすむのを感じた。|発情期の体は、触れられたところから順に、言うことを聞かなくなっていった。|{T}の匂いがひときわ濃くなった瞬間、{U}の内側がきゅうっと縋りついた。|汗ばんだ首筋から立ちのぼる匂いに、二人とも何度も息を詰まらせた。|本能が囁くままに、{U}は{T}の肩口へ鼻先を擦りつけた。'),
+      fl2: L('互いの匂いが濃くなり、もう自分の熱なのか相手の熱なのか分からなかった。|本能が、もっと奥へ、もっと深くと二人を急かした。|甘い匂いの中で、理性の最後の一枚が溶け落ちた。|番になりたいという衝動が、体の奥から突き上げるように込み上げた。|部屋に満ちた匂いがひときわ甘くなり、二人の呼吸が同じ速さになった。|うなじの疼きが限界まで高まり、{U}は堪えきれずに喉を反らした。|') },
+    { fl: L('固定帯の外れかけた寝台が、律動のたびに小さく軋んだ。|重力の弱い船室では、突き上げられるたびに体がふわりと浮きかけ、{T}の腕に引き戻された。|計器の青い光が、汗ばんだ肌を濡れたように照らしていた。|換気扇の低い唸りに、二人の荒い息が紛れた。|観測窓の向こうで、知らない恒星がゆっくりと回っていた。誰にも見られていない、と思えた。|船体のどこかで金属が冷えて縮む音がして、二人は一瞬だけ動きを止めた。|再生された船内の空気は乾いていて、触れ合う肌の湿り気だけがやけに確かだった。|非常灯の赤い明かりが、重なった二人の輪郭を壁に滲ませていた。|狭い寝台から落ちないように、{U}は{T}の背中に腕を回して体を寄せた。'),
+      fl2: L('浮き上がりそうになる体を、二人は互いにしがみついて繋ぎとめた。|狭い船室の壁に、二人分の熱がこもっていく。|遠い機関の振動が、繋がったところまで伝わってくるようだった。|船の警報も通信の呼び出しも、今だけは遠い世界の出来事だった。|宇宙の果てで、確かなのは腕の中の体温だけだった。|寝台の手すりを掴んだ{U}の指が、白くなるほど強く握りしめられた。|') },
+    { fl: L('外の物音に、二人は一瞬動きを止め、それからいっそう強く抱き合った。|埃っぽい毛布の匂いと、相手の汗の匂いが混ざっていた。|明日も生きているか分からない。だからこそ、今の熱だけを確かめるように求め合った。|声を殺そうとするほど、快感は体の内側に溜まっていった。|割れた窓から入る夜風が、汗ばんだ背中を冷やしては通り過ぎた。|バリケードに使った棚が、二人の動きに合わせてかすかに鳴った。|懐中電灯を消した暗がりで、相手の輪郭だけを指先で確かめた。|遠くで鳴り続ける防犯ベルの音が、かえって二人の息遣いを際立たせた。|ここが最後の夜かもしれない、と思うほど、{U}は{T}を強く引き寄せた。'),
+      fl2: L('生きている。重なった鼓動が、それだけを伝えていた。|遠くで何かが崩れる音がした。二人はもう、それどころではなかった。|この瞬間だけは、外の世界のことを忘れていられた。|呻き声の聞こえる夜でも、腕の中の熱だけは確かに生きていた。|噛まれずに済んだ体を確かめ合うように、二人は最後まで離れなかった。|窓の外が白みはじめても、二人はまだ互いの名前を呼び合っていた。|') }
   ];
   /* 小説調の喘ぎ（♡なし）：受ける側の性格ごと。0＝高まる、1＝絶頂 */
   var NOV = {
@@ -403,6 +405,7 @@
   function topOf(c) { return HK.voiceTop ? HK.voiceTop(c) : 'NP'; }
   /* 山場の本文（{T}{U} のまま）。o: { pick, rng, bed, lead（書き出しの前に足す地の文）, finish（頂のあとの段落）, after（余韻を差し替えるとき） } */
   var TK = HK.TKC = {
+    BRK: BRK,
     on: function (lew) { return !HK.SAFE_ON && lew !== 'low' && lew !== 'off' && lew !== 'fade'; },
     ok: function (T, U) { return !(HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U)); },
     /* 体の組み合わせ：ff＝女性どうし、ride＝女性が攻め×男性、mf＝男性（ふたなりの攻めを含む）×女性、mm＝男性どうし。
@@ -416,7 +419,8 @@
     /* o.depth：1＝短め（書き出し・最中・頂）、2＝ふつう（最中に体の一文と崩れはじめを足す）、3＝長め（さらに体位を変える段落を足す）
        o.extra：最中のあとに差し込む段落（場面ごとの文。呼び出し側の差し込み記号のまま） */
     body: function (T, U, o) {
-      var pk = o.pick, Pz = HK.Pos, V = HK.Voice, rng = o.rng, dp = o.depth || 2;
+      /* 一回の結果の中で同じ文を繰り返さない（呼ぶ側の pick を包む。使い切ったら、いちばん前に使ったものから戻す） */
+      var pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(o.rng, o.pick) : o.pick, Pz = HK.Pos, V = HK.Voice, rng = o.rng, dp = o.depth || 2;
       var kd = TK.kind(T, U, o.flav), riba = kd === 'ff' && Pz && Pz.bothRiba && Pz.bothRiba(T, U);
       var rough = kd !== 'ff' && kd !== 'ride' && !!(o.rough || (HK.Ero && HK.Ero.sadist && HK.Ero.sadist(T, U) && rng() < 0.3));
       var set = kd === 'ff' ? FF : kd === 'ride' ? RIDE : rough ? ROUGH : (CORE[topOf(T)] || CORE.NP);
@@ -424,10 +428,13 @@
       var pool = function (k) { return riba && FF_RIBA[k] ? set[k].concat(FF_RIBA[k]) : set[k]; };
       var f = o.flav === 'omega' ? 0 : o.flav === 'ship' ? 1 : o.flav === 'zombie' ? 2 : -1;
       var used = RUN.get(rng) || {}; RUN.set(rng, used);
-      var fresh = function (arr) { var a = arr.filter(function (x) { return !used[x]; }); var x = pk(a.length ? a : arr); used[x] = 1; return x; };
+      var fresh = function (arr) { if (pk._fresh) return pk(arr); var a = arr.filter(function (x) { return !used[x]; }); var x = pk(a.length ? a : arr); used[x] = 1; return x; };
       var pf = function (a) { return pk(a); };
       var ps = function (c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || 'gentle'; };
       var nov = NOV[ps(U)] || NOV.gentle, brk = BRK[ps(U)] || BRK.gentle;
+      /* この回で同じ二人が二度目以降なら、崩れはじめ（brk.m）を「前より早く崩れる」文にする（反応の段階を後戻りさせない。thick-sex.js の REACT_AGAIN） */
+      var nth = HK.Ero && HK.Ero.pairNight ? HK.Ero.pairNight(rng, T, U) : 1, RA = HK.ThickSex && HK.ThickSex.REACT_AGAIN;
+      if (nth >= 2 && RA) brk = { m: (RA[ps(U)] || RA.gentle).map(function (x) { return x.replace(/\{a\}/g, '{T}').replace(/\{b\}/g, '{U}'); }), p: brk.p };
       var vl = function (k) { var t = ''; for (var i = 0; i < 5; i++) { t = V && V.line ? V.line(pf, U.persona || 'gentle', k, 'U') : ''; if (!used[t]) break; } used[t] = 1; return t; };
       var edge = vl('edge'), climax = vl('climax');
       /* 箱庭ごとの感覚の一文。女性どうしでは、突き上げ・繋がりの文を使わない */
@@ -541,7 +548,7 @@
   /* 結び（α×Ω）の男性向け：{a}＝α（攻め）、{b}＝受け */
   var KNOT_ERO = L('{a}の根元がぐぷりと膨らみ、{b}のナカに深く結びついた。抜けなくなったまま、熱いものがどくどくと注がれ続ける。{s:cum}。{b}「{mb2}」|結ばれたまま奥をぐりぐりと押し上げられて、{b}はイきっぱなしになった。{s:cum}。{b}「{mb2}」――注がれるたびに、うなじの奥が甘く疼いた。|{a}は{b}のうなじに歯を立てながら、結びついた根元で最後の一滴まで注ぎ込んだ。{s:cum}。{b}「{mb2}」');
   function eroScene(ctx, T, U, head, after, kd) {
-    var pk = function (arr) { return ctx.pick(arr); }, TE = HK.ThickEro, st = lw.last;
+    var pk = function (arr) { return fp(ctx, arr); }, TE = HK.ThickEro, st = lw.last;
     var r = st && st.short ? TE.short({ S: ctx, pick: pk, a: T, b: U }) : TE.scene({ S: ctx, pick: pk, rng: ctx.rng, a: T, b: U, style: HK.ThickSex ? HK.ThickSex.style(T) : 'gentle', place: 'omega', again: ctx.env.lewd === 'high' });
     var t = r.text;
     var aT = !!(T.om && T.om.sex === 'a');
@@ -563,10 +570,10 @@
     if (L1.short && !L1.ero) return h0.apply(this, arguments);
     if (L1.ero) {
       var sc0 = OM.sc || function (t) { return t; };
-      return eroScene(ctx, T, U, sc0(ctx.t(ctx.pick(H.COME[HK.voiceTop(a)]) + ctx.pick(H.STATE[HK.voiceTop(b)]), a, b), a, b), sc0(ctx.t(ctx.pick(H.AFTER[HK.voiceTop(b)]), a, b), a, b), TK.kind(T, U, 'omega'));
+      return eroScene(ctx, T, U, sc0(ctx.t(fp(ctx, H.COME[HK.voiceTop(a)]) + fp(ctx, H.STATE[HK.voiceTop(b)]), a, b), a, b), sc0(ctx.t(fp(ctx, H.AFTER[HK.voiceTop(b)]), a, b), a, b), TK.kind(T, U, 'omega'));
     }
     var ff = HK.Pos.ff(a, b), kT = rev ? 'b' : 'a', kU = rev ? 'a' : 'b', hi = lew === 'high', lk = hi ? 'high' : 'mid';
-    var pk = function (arr) { return ctx.pick(arr); };
+    var pk = function (arr) { return fp(ctx, arr); };
     var kd = TK.kind(T, U, 'omega'), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(T, U);
     var noRecv = function (arr, re) { if (!rev) return arr; var f = arr.filter(function (l) { return !re.test(l); }); return f.length ? f : arr; };
     var moe = H.MOE.filter(function (l) { return !(ff && /喉仏/.test(l)); });
@@ -581,7 +588,7 @@
     var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: hi ? 3 : 1, lead: kd === 'ff' ? '' : pk(rev ? LEAD_HEAT_R : LEAD_HEAT), extra: extra, finish: fin, noAfter: true });
     body = TK.map(body.replace(/\{sT\}/g, '{s' + kT + '}').replace(/\{sU\}/g, '{s' + kU + '}'), kT, kU);
     var sc = OM.sc || function (t) { return t; };
-    var V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
+    var V = HK.Voice, pf = function (arr) { return fp(ctx, arr); };
     var res = sc(ctx.t(head, a, b), a, b) + '\n\n' + sc(ctx.t(body, a, b), a, b) + (opt.insert ? '\n\n' + opt.insert : '') + '\n\n' + sc(ctx.t(pk(noRecv(H.AFTER[HK.voiceTop(b)], /腰が抜け/)), a, b), a, b) + (ctx.rng() < 0.35 ? ctx.t(V.line(pf, b.persona, 'after', 'b'), a, b) : '');
     if (ff && HK.FF) res = HK.FF.fix(ctx, res, T, U, { tools: true });
     return res;
@@ -598,7 +605,7 @@
     var L2 = lw.last = lw(ctx);
     if (L2.short && !L2.ero) return s;
     if (L2.ero) { s.text = (s.text.match(/^[^。]*。/) || [''])[0] + (L2.short ? '' : '\n\n') + eroScene(ctx, A, B, '', '', TK.kind(A, B, 'omega')); return s; }
-    var pk = function (arr) { return ctx.pick(arr); }, ff = HK.Pos.ff(A, B), hi = lew === 'high';
+    var pk = function (arr) { return fp(ctx, arr); }, ff = HK.Pos.ff(A, B), hi = lew === 'high';
     var kd = TK.kind(A, B, 'omega'), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(A, B);
     var cp = cbPlay(pk, A, B, kd, riba), extra = [cp.play];
     /* 濃いめ：組み合わせを問わないプレイをもう一つ（女性どうしは指・舌の文） */
@@ -636,7 +643,7 @@
       var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1];
       if (!TK.ok(T, U)) return res;
       if (L3.ero) { res.text = (res.text.match(/^[^。]*。/) || [''])[0] + (L3.short ? '' : '\n\n') + eroScene(ctx, T, U, '', '', TK.kind(T, U, 'omega')); return res; }
-      var pk = function (arr) { return ctx.pick(arr); }, ff = HK.Pos.ff(a, b);
+      var pk = function (arr) { return fp(ctx, arr); }, ff = HK.Pos.ff(a, b);
       var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: lew === 'high' ? 3 : 1, rough: hate, lead: hate ? pk(HATE_LEAD) : '', after: hate ? pk(HATE_END) : null });
       var sc = OM.sc || function (t) { return t; };
       var text = sc(ctx.t(TK.map(body, 'a', 'b'), T, U), T, U);

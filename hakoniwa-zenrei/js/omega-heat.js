@@ -4,6 +4,8 @@
 (function () {
   'use strict';
   var HK = window.HK, OM = HK.OMEGA;
+  /* 一回の結果の中で同じ文を繰り返さない選び方（R18版は ero-kit.js の HK.Ero.fresh。使い切ったら、いちばん前に使ったものから戻す） */
+  function fp(ctx, arr) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx, arr, function (l) { return ctx.pick(l); }) : ctx.pick(arr); }
   var H = OM.HEAT = {};
   function L(s) { return s.split('|'); }
 
@@ -84,7 +86,7 @@
   /* 発情期の場面を組み立てる。opt: { beta, lewd } */
   H.scene = function (ctx, a, b, opt) {
     opt = opt || {};
-    var pk = function (arr) { return ctx.pick(arr); }, ta = top(a), tb = top(b), lew = ctx.env.lewd || 'mid';
+    var pk = function (arr) { return fp(ctx, arr); }, ta = top(a), tb = top(b), lew = ctx.env.lewd || 'mid';
     /* 受け攻めの指定：発情期のΩ（{b}）の方が攻めなら、抱く側を入れ替える */
     var rev = HK.Pos && HK.Pos.order(a, b, [a, b])[0] === b, ff = HK.Pos && HK.Pos.ff(a, b);
     /* Ωの側が攻めのときは、Ωが触れられ・満たされる側に回る書き方を除く */
@@ -110,7 +112,7 @@
     /* 二人の第二性の組み合わせごとのプレイを足す（omega-love.js）。テンプレートは{a}=攻め{b}=受けなので、Ω攻めのときは入れ替えて埋める */
     var extraPlay = lew !== 'low' && !ff && OM.lovePlay && ctx.rng() < 0.55 ? (rev ? OM.lovePlay(ctx, b, a).replace(/\{a\}/g, '\u0001').replace(/\{b\}/g, '{a}').replace(/\u0001/g, '{b}') : OM.lovePlay(ctx, a, b)) : null;
     if (extraPlay) out.splice(out.length - (rev || !opt.beta ? 1 : 1), 0, extraPlay);
-    var V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
+    var V = HK.Voice, pf = function (arr) { return fp(ctx, arr); };
     if (V && lew !== 'low') {
       /* 声は受ける側のもの（Ωが攻めのときは、相手の声） */
       var rc = rev ? a : b, rk = rev ? 'a' : 'b', gv = rev ? b : a, gk = rev ? 'b' : 'a';

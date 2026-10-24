@@ -8,6 +8,8 @@
 (function () {
   'use strict';
   var HK = window.HK, RK = HK.RelKit;
+  /* 一回の結果の中で同じ文を繰り返さない選び方（R18版は ero-kit.js の HK.Ero.fresh。使い切ったら、いちばん前に使ったものから戻す） */
+  function fp(ctx, arr) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx, arr, function (l) { return ctx.pick(l); }) : ctx.pick(arr); }
   if (!RK) return;
   var L = RK.L, fill = RK.fill;
   function order(a, b) { return HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b]; }
@@ -71,9 +73,12 @@
   /* 描写する夜の本文：段ごとに、性別の組の表から引く（受けの崩れ方は mid と end のあいだ） */
   function highText(ctx, H, stages, o, v) {
     var g = combo(o[0], o[1]), T = H[g] || H.mf, ps = psOf(o[1]);
+    /* この回で二人が二度目以降なら、前より早く崩れる文（thick-sex.js の REACT_AGAIN） */
+    var RA = HK.ThickSex && HK.ThickSex.REACT_AGAIN, again = RA && HK.Ero && HK.Ero.pairNight && HK.Ero.pairNight(ctx, o[0], o[1], true) >= 2;
+    var RX = again ? RA : REACT;
     return stages.map(function (s) {
-      var t = fill(ctx.pick(noMut(T[s] || H.mf[s], o[0], o[1])), v);
-      if (s === 'mid') t += fill(ctx.pick(REACT[ps] || REACT.gentle), v);
+      var t = fill(fp(ctx, noMut(T[s] || H.mf[s], o[0], o[1])), v);
+      if (s === 'mid') t += fill(fp(ctx, RX[ps] || RX.gentle).replace(/\{a\}/g, '{x}').replace(/\{b\}/g, '{y}'), v);
       return t;
     }).join('');
   }
@@ -86,13 +91,13 @@
   RN.body = function (ctx, place, x, y, shortFn, openFn) {
     var X = HK.Lewd, TS = HK.ThickSex, TE = HK.ThickEro;
     if (!X || !X.conf(ctx.scen.id)) return shortFn();
-    var pick = function (a) { return ctx.pick(a); };
+    var pick = function (a) { return fp(ctx, a); };
     var ero = X.ero(ctx.env) && TE, short = X.short(ctx.env, ctx.rng), high = X.high(ctx.env) && TE, t;
     var op = (ero || !short) && openFn ? openFn() : null;
     if (op) op = op.split(x.name).join('{a}').split(y.name).join('{b}');
     if (ero) t = short ? TE.short({ S: ctx, pick: pick, a: x, b: y, open: op || '', again: high }).text : TE.scene({ S: ctx, pick: pick, rng: ctx.rng, a: x, b: y, style: TS ? TS.style(x) : 'gentle', place: place, open: op, again: high }).text;
     else if (!short && TS) t = TS.scene({ pick: pick, rng: ctx.rng, a: x, b: y, style: TS.style(x), place: place, open: op }).text + (high ? '\n\n' + TE.again(ctx, pick, x, y, false, false) : '');
-    else return shortFn() + (high ? fill(TE.again(ctx, pick, x, y, false, true), { a: x.name, b: y.name }) : '');
+    else { if (HK.Ero && HK.Ero.pairNight) HK.Ero.pairNight(ctx, x, y); return shortFn() + (high ? fill(TE.again(ctx, pick, x, y, false, true), { a: x.name, b: y.name }) : ''); }
     t = fill(t, { a: x.name, b: y.name });
     if (HK.Pos && HK.Pos.ff(x, y) && HK.FF && HK.FF.fix) t = HK.FF.fix(ctx, t, x, y);
     return short ? t : '\n\n' + t + '\n\n';
@@ -163,12 +168,12 @@
         ctx.mod2(a, b, { att: 8, aff: 6, trust: 4 }, { att: 8, aff: 6, trust: 4 });
         ctx.stress(a, -10); ctx.stress(b, -10);
         var v = { a: a.name, b: b.name, x: o[0].name, y: o[1].name };
-        var t = fill(ctx.pick(I.ask[k]), v);
+        var t = fill(fp(ctx, I.ask[k]), v);
         if (lv === 'high') t += RN.body(ctx, 'island', o[0], o[1], function () { return highText(ctx, I.high, ['fore', 'insert', 'mid', 'end'], o, v); }, function () { return highText(ctx, I.high, ['fore'], o, v); });
-        else t += ctx.pick(I.fade);
-        if (RK.tone(o[0]) === 'aniki' && ctx.rng() < 0.6) t += o[0].name + fill(ctx.pick(ANIKI), v);
-        t += fill(ctx.pick(I.after[k]), v);
-        if (lv === 'high' && ctx.rng() < 0.7) t += fill(ctx.pick(AFTER_PS[psOf(o[1])] || AFTER_PS.gentle), v);
+        else t += fp(ctx, I.fade);
+        if (RK.tone(o[0]) === 'aniki' && ctx.rng() < 0.6) t += o[0].name + fill(fp(ctx, ANIKI), v);
+        t += fill(fp(ctx, I.after[k]), v);
+        if (lv === 'high' && ctx.rng() < 0.7) t += fill(fp(ctx, AFTER_PS[psOf(o[1])] || AFTER_PS.gentle), v);
         return { text: t, why: '島の夜（' + ({ lock: a.name + 'が想い続けた相手', mentor: '師弟の一線', fwb: 'セフレ', lover: '恋人', new: '惹かれ合った二人' })[k] + '／惹かれ ' + Math.round(ctx.R(a, b).att) + '・' + Math.round(ctx.R(b, a).att) + '）', mag: 24 };
       }
     });
@@ -230,9 +235,9 @@
         ctx.mod2(a, b, { att: 8, aff: 8, trust: 6 }, { att: 8, aff: 8, trust: 6 });
         a.stress = Math.max(0, a.stress - 12); b.stress = Math.max(0, b.stress - 12);
         var v = { a: a.name, b: b.name, x: o[0].name, y: o[1].name };
-        var t = fill(ctx.pick(ZT.ask[k]), v) + (lv === 'high' ? RN.body(ctx, 'zombie', o[0], o[1], function () { return highText(ctx, ZT.high, ['fore', 'insert', 'mid', 'end'], o, v); }, function () { return highText(ctx, ZT.high, ['fore'], o, v); }) : ctx.pick(ZT.fade));
-        if (RK.tone(o[0]) === 'aniki' && ctx.rng() < 0.6) t += o[0].name + fill(ctx.pick(ANIKI), v);
-        return { text: t + fill(ctx.pick(ZT.after[k]), v), why: (k === 'lock' ? a.name + 'が想い続けた相手' : '師弟の一線') + '（' + Z.day(ctx) + '日目の夜）', mag: 26 };
+        var t = fill(fp(ctx, ZT.ask[k]), v) + (lv === 'high' ? RN.body(ctx, 'zombie', o[0], o[1], function () { return highText(ctx, ZT.high, ['fore', 'insert', 'mid', 'end'], o, v); }, function () { return highText(ctx, ZT.high, ['fore'], o, v); }) : fp(ctx, ZT.fade));
+        if (RK.tone(o[0]) === 'aniki' && ctx.rng() < 0.6) t += o[0].name + fill(fp(ctx, ANIKI), v);
+        return { text: t + fill(fp(ctx, ZT.after[k]), v), why: (k === 'lock' ? a.name + 'が想い続けた相手' : '師弟の一線') + '（' + Z.day(ctx) + '日目の夜）', mag: 26 };
       }
     });
     /* 恋人の夜：攻めが兄貴・姉貴分なら、一言足す */
@@ -240,7 +245,7 @@
       var nh = Z.LOVE.nightHigh;
       Z.LOVE.nightHigh = function (ctx, a, b) {
         var t = nh.apply(this, arguments), o = order(a, b);
-        if (RK.tone(o[0]) === 'aniki' && ctx.rng() < 0.5) t += o[0].name + fill(ctx.pick(ANIKI), { x: o[0].name, y: o[1].name });
+        if (RK.tone(o[0]) === 'aniki' && ctx.rng() < 0.5) t += o[0].name + fill(fp(ctx, ANIKI), { x: o[0].name, y: o[1].name });
         return t;
       };
     }
