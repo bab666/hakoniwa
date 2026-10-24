@@ -146,6 +146,33 @@
   function calmText(t) { CALM.forEach(function (r) { t = t.replace(r[0], r[1]); }); return t.replace(/^、+/, '').replace(/([。！？…])、+/g, '$1'); }
 
   var sq0 = V.styleQuote;
+  /* 性別の語尾の仕上げ（voice.js の processText で、辞書の書き下ろしにも最後に通す）
+     ・中性的な口調（neutral：穏やか（中性的）・意地っ張り（中性的））の、女性以外：女性的な語尾（あら・〜のね・名詞＋ね／よ・〜わ・かしら）を中性的に
+     ・はっきりした口調（強気・厳格・冷静・冷静（落ち着き）・意地っ張り）の女性：男性的な荒い語尾（じゃねえ・〜ねえ・だぜ・やがれ）を女性の言い方に
+       （ヤンキー・兄貴分・熱血など、荒い話し方そのものが口調の口調は直さない） */
+  var END = '(?=[…‥。！？!?、」♡〜]|$)';
+  var FEM_FIRM = { proud: 1, stern: 1, cool: 1, calm: 1, tsun: 1 };
+  V.genderEnd = function (q, who) {
+    if (!q || !who) return q;
+    var T = HK.TONES && HK.TONES[who.tone];
+    if (T && T.neutral && who.gender !== 'f') {
+      q = q.replace(/(^|[「、…‥\s])おや、あら(?:あら)?/g, '$1おや')
+        .replace(/(^|[「、…‥\s])あら(?:あら)?(?=[、…‥！!])/g, '$1おや')
+        .replace(new RegExp('([ぁ-ゖ])のね' + END, 'g'), '$1んだね')
+        .replace(new RegExp('([一-鿿ァ-ヶー])、?ね' + END, 'g'), '$1だね')
+        .replace(new RegExp('([一-鿿ァ-ヶー])、?よ' + END, 'g'), '$1だよ')
+        .replace(new RegExp('かしら' + END, 'g'), 'かな')
+        .replace(new RegExp('([るたいくすつぬむぶうだ])わ' + END, 'g'), '$1よ')
+        .replace(new RegExp('(?:のよ|わよ)' + END, 'g'), 'んだよ')
+        .replace(new RegExp('わね' + END, 'g'), 'ね');
+    } else if (who.gender === 'f' && FEM_FIRM[who.tone]) {
+      q = q.replace(/じゃねえか/g, 'じゃない').replace(/じゃねえ(?=[…‥。！？!?、」♡よ]|$)/g, 'じゃない')
+        .replace(/([ぁ-ゖ])ねえ(?=[よか…‥。！？!?、」]|$)/g, '$1ない')
+        .replace(new RegExp('だぜ' + END, 'g'), 'だよ').replace(new RegExp('([ぁ-ゖ])ぜ' + END, 'g'), '$1よ')
+        .replace(/やがれ/g, 'なさい').replace(/だろうが(?=[…‥。！？!?、」]|$)/g, 'でしょう');
+    }
+    return q;
+  };
   V.styleQuote = function (q, who) {
     var ex = who && EX[who.tone];
     if (!ex) return sq0(q, who);

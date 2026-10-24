@@ -1498,7 +1498,7 @@
     return t[g];
   };
   V.fpFor = function (c) { var fp = String((c && c.fp) || '').trim().slice(0, 8); return fp || V.fpDefault(c); };
-  var FP_RE = /(俺様|オレ様|俺|僕|ぼく|オレ|ボク|わたくし|ワタクシ|あたくし|あたし|アタシ|わたし|ワタシ|私|拙者|わらわ|わし|ウチ|うち)(?=(?:たち|達|ら|は|が|も|の|を|に|と|で|って|だ|、|。|！|？|…|―|」|）|\s|$|っ|、|ね|よ|さ|じゃ|から|まで|より|だけ|なんか|なんて|なら|かも|ばかり|ばっかり|しか|こそ|以外|自身|一番|いちばん|吊|な(?=の|ん)|か(?=[？?…!！」、]|$)|!|\?))/g;
+  var FP_RE = /(俺様|オレ様|俺|僕|ぼく|オレ|ボク|わたくし|ワタクシ|あたくし|あたし|アタシ|わたし|ワタシ|私|拙者|わらわ|わし|ウチ|うち)(?=(?:たち|達|ら|は|が|も|の|を|に|へ|一人|ひとり|と|で|って|だ|、|。|！|？|…|―|」|）|\s|$|っ|、|ね|よ|さ|じゃ|から|まで|より|だけ|なんか|なんて|なら|かも|ばかり|ばっかり|しか|こそ|以外|自身|一番|いちばん|吊|な(?=の|ん)|か(?=[？?…!！」、]|$)|!|\?))/g;
   /* 一人称の読みの頭（「わ、私」→「ぼ、僕」のように、どもりも一人称に合わせる）
      漢字の一人称は表から、ひらがな・カタカナで始まる一人称は最初の一音（「しょ」のような拗音も）から。
      読みが分からない一人称なら、どもりは省く（「わ、私」→「某」） */
@@ -1519,6 +1519,8 @@
       var w = m[0], rep = w === 'うち' && !(c && c.fp) ? w : fp, pre = q.slice(last, m.index);
       /* 「今のうち」「職務のうち」の「うち」は一人称ではない */
       if (/^(うち|ウチ)$/.test(w) && /(の|[一-鿿々])$/.test(pre)) rep = w;
+      /* 「うちへ帰る」「そのうち一人」の「うち」も一人称ではない（へ・一人の続きは、ほかの一人称だけで見る） */
+      if (/^(うち|ウチ)$/.test(w) && /^(へ|一人|ひとり)/.test(q.slice(m.index + w.length))) rep = w;
       /* どもり（「わ、」「わ、わ、」「わ……」）が、もとの一人称の頭の音なら、新しい一人称の頭の音にする */
       var sm = rep !== w ? pre.match(/(^|[…‥、。！？!?「っッ\s])(([ぁ-ゖァ-ヶ][ぁぃぅぇぉゃゅょァィゥェォャュョ]?)[、…‥]+(?:\3[、…‥]+)*)$/) : null;
       if (sm) {
@@ -2033,6 +2035,8 @@
             var fin = !own && !nounQ && HK.TONE_FINISH && HK.TONE_FINISH[who.tone];
             /* 仕上げには、敬語で話す相手への台詞か（kg）を渡す。派生の口調が敬語の文を崩すときの判断に使う */
             if (fin) q = fin(q, who, { kg: kg, raw: q0 });
+            /* 性別の語尾の仕上げ（辞書の書き下ろしにも通す。tone-plus.js の V.genderEnd） */
+            if (V.genderEnd && !nounQ && !kg) q = V.genderEnd(q, who);
             /* 二人称の設定（敬語の相手への台詞は除く）。設定が空なら、口調と性別の既定（tone-registry.js の HK.TONE_YOU）でそろえる */
             var youW = who.you || (HK.toneYou ? HK.toneYou(who.tone, who.gender) : '');
             if (youW && !kg && !nounQ) q = V.applyYou(q, youW);
@@ -2584,7 +2588,18 @@
     genki: { label: '明るい敬語（〜まーす！）', desc: '「よろしくお願いしまーす！」「助かっちゃいました！」「聞いてませんよ〜！」。元気いっぱいの丁寧な話し方。文面は敬語のものを使う', base: 'polite', top: 'FC', fp: { m: '僕', f: '私', x: '私' }, derive: 'polite', group: 'polite', reluct: -0.1,
       sample: ['{n}「{n}です！　よろしくお願いしまーす！」', '{n}「ええっ！？　聞いてませんよ〜！」', '{n}「{o}さん、こっちです！　早く早く！」', '{n}「ありがとうございます！　助かっちゃいました！」', '{n}「大丈夫です！　なんとかなりますって！」'] },
     darui: { label: 'けだるげ（ダウナー）', desc: '「……あ。……来たんだ」「……めんどい」。テンションは最低、省エネ。何が起きても「……別に」と受け流す。態度はエゴグラムから決まる', base: null, top: null, fp: { m: '俺', f: 'わたし', x: 'わたし' }, egoTable: true, lines: 'base',
-      sample: ['{n}「……{n}。……よろしく。……たぶん」', '{n}「……は？……聞いてないし」', '{n}「……{o}、こっち。……はやく。……いや、ゆっくりでいいけど」', '{n}「……どうも。……たすかった、かも」', '{n}「……べつに。……どうでもいいし」'] }
+      sample: ['{n}「……{n}。……よろしく。……たぶん」', '{n}「……は？……聞いてないし」', '{n}「……{o}、こっち。……はやく。……いや、ゆっくりでいいけど」', '{n}「……どうも。……たすかった、かも」', '{n}「……べつに。……どうでもいいし」'] },
+    /* 2026-10-25：アンケートで希望の多かった口調（仕上げは tone-new.js） */
+    keigo_sarc: { label: '無愛想な敬語（〜ですが、何か）', desc: '「……どうも」「それが何か？」。感嘆はほとんどなく、言い切りと皮肉の一言で突き放す敬語。文面は敬語のものを使う', base: 'polite', top: 'A', fp: { m: '私', f: '私', x: '私' }, derive: 'polite', group: 'polite', firm: 'plain', reluct: 0.1,
+      sample: ['{n}「{n}です。……以上ですが、何か」', '{n}「助かりました。……どうも」', '{n}「{o}さん、それ、本気で言ってます？」', '{n}「別に、怒ってはいません。呆れているだけです」', '{n}「お好きにどうぞ。私は止めませんので」'] },
+    keigo_bossy: { label: '偉そうな敬語（〜なさい）', desc: '「座りなさい」「聞こえませんでしたか？」。丁寧だが上から言い渡す、高圧的な敬語。文面は敬語のものを使う', base: 'polite', top: 'CP', fp: { m: '私', f: '私', x: '私' }, derive: 'polite', group: 'polite', firm: 'plain', reluct: 0.12,
+      sample: ['{n}「{n}です。覚えておきなさい」', '{n}「{o}さん、そこに座りなさい」', '{n}「言い訳は結構です。結果で示しなさい」', '{n}「次はありませんよ。いいですね？」', '{n}「……まあ、及第点としておきます」'] },
+    keigo_flat: { label: '無機質な敬語', desc: '「了解しました」「問題ありません」。感情を見せず、報告のように淡々と言い切る敬語。文面は敬語のものを使う', base: 'polite', top: 'A', fp: { m: '私', f: '私', x: '私' }, derive: 'polite', group: 'polite', firm: 'plain', reluct: 0.08,
+      sample: ['{n}「{n}です。よろしくお願いします」', '{n}「了解しました。すぐに対応します」', '{n}「{o}さん、その判断は誤りです」', '{n}「問題ありません。続けてください」', '{n}「感謝します。記録しておきます」'] },
+    tame: { label: 'ふつうのタメ口', desc: '「ねえ、それなんだけど」「いいよ、行こう」。癖のない、友達どうしのような話し方。態度はエゴグラムから決まる', base: null, top: null, plain: true, egoTable: true, noPolite: true, fp: { m: '俺', f: '私', x: '私' }, lines: 'base', reluct: 0,
+      sample: ['{n}「{n}だよ。よろしくね」', '{n}「ねえ{o}、それなんだけど」', '{n}「いいよ、一緒に行こう」', '{n}「え、まじで？　知らなかった」', '{n}「ありがと。助かった」'] },
+    chara_down: { label: 'ダウナー系チャラ男（〜ですよー）', desc: '「あれ、もしかして気があります？」「遊ぶのは大歓迎ですよー。責任は取りませんけど」。軽薄で気だるげ。敬語を交えてからかい、さりげなく距離を詰める。文面は敬語のものを使う', base: 'polite', top: 'FC', fp: { m: 'オレ', f: 'あたし', x: 'オレ' }, derive: 'polite', reluct: -0.25,
+      sample: ['{n}「{n}でーす。よろしくでーす」', '{n}「あれ？　もしかして、オレに気があります？」', '{n}「遊ぶのは大歓迎ですよー。責任は取りませんけど」', '{n}「{o}さん、真面目ですねー。そういうとこ、嫌いじゃないですけど」', '{n}「あざーす。じゃ、お先でーす」'] }
   };
   HK.TONES = TONES;
   /* 選択欄の並び（基本口調の名前は persona.js、追加の口調は TONE_EXTRA） */
@@ -2604,7 +2619,8 @@
     tsun: 'あんた', tsun_n: 'あんた', gyaru: MF('お前', 'あんた'), free: MF('お前', 'あんた'), usan: 'あんた', darui: 'あんた',
     gentle: 'きみ', gentle_n: 'きみ', ane: 'あなた', devoted: 'あなた', devoted_p: 'あなた', shy: 'あなた',
     polite: 'あなた', ojou: 'あなた', kohai: 'あなた', genki: 'あなた', mixed: 'あなた',
-    kansai: MF('お前', 'あんた'), noja: 'おぬし', mukuchi: MF('お前', 'あんた')
+    kansai: MF('お前', 'あんた'), noja: 'おぬし', mukuchi: MF('お前', 'あんた'),
+    keigo_sarc: 'あなた', keigo_bossy: 'あなた', keigo_flat: 'あなた', tame: MF('お前', 'あんた'), chara_down: 'キミ'
   };
   HK.toneYou = function (tone, gender) { var v = HK.TONE_YOU[tone]; if (!v) return ''; if (typeof v === 'string') return v; return v[gender === 'f' ? 'f' : gender === 'x' ? 'x' : 'm'] || ''; };
   HK.toneFinish = function (k, fn) { HK.TONE_FINISH[k] = fn; };   /* fn(台詞, 話し手, { kg: 敬語の相手か, raw: 元の台詞 }) */
@@ -2776,6 +2792,33 @@
   function calmText(t) { CALM.forEach(function (r) { t = t.replace(r[0], r[1]); }); return t.replace(/^、+/, '').replace(/([。！？…])、+/g, '$1'); }
 
   var sq0 = V.styleQuote;
+  /* 性別の語尾の仕上げ（voice.js の processText で、辞書の書き下ろしにも最後に通す）
+     ・中性的な口調（neutral：穏やか（中性的）・意地っ張り（中性的））の、女性以外：女性的な語尾（あら・〜のね・名詞＋ね／よ・〜わ・かしら）を中性的に
+     ・はっきりした口調（強気・厳格・冷静・冷静（落ち着き）・意地っ張り）の女性：男性的な荒い語尾（じゃねえ・〜ねえ・だぜ・やがれ）を女性の言い方に
+       （ヤンキー・兄貴分・熱血など、荒い話し方そのものが口調の口調は直さない） */
+  var END = '(?=[…‥。！？!?、」♡〜]|$)';
+  var FEM_FIRM = { proud: 1, stern: 1, cool: 1, calm: 1, tsun: 1 };
+  V.genderEnd = function (q, who) {
+    if (!q || !who) return q;
+    var T = HK.TONES && HK.TONES[who.tone];
+    if (T && T.neutral && who.gender !== 'f') {
+      q = q.replace(/(^|[「、…‥\s])おや、あら(?:あら)?/g, '$1おや')
+        .replace(/(^|[「、…‥\s])あら(?:あら)?(?=[、…‥！!])/g, '$1おや')
+        .replace(new RegExp('([ぁ-ゖ])のね' + END, 'g'), '$1んだね')
+        .replace(new RegExp('([一-鿿ァ-ヶー])、?ね' + END, 'g'), '$1だね')
+        .replace(new RegExp('([一-鿿ァ-ヶー])、?よ' + END, 'g'), '$1だよ')
+        .replace(new RegExp('かしら' + END, 'g'), 'かな')
+        .replace(new RegExp('([るたいくすつぬむぶうだ])わ' + END, 'g'), '$1よ')
+        .replace(new RegExp('(?:のよ|わよ)' + END, 'g'), 'んだよ')
+        .replace(new RegExp('わね' + END, 'g'), 'ね');
+    } else if (who.gender === 'f' && FEM_FIRM[who.tone]) {
+      q = q.replace(/じゃねえか/g, 'じゃない').replace(/じゃねえ(?=[…‥。！？!?、」♡よ]|$)/g, 'じゃない')
+        .replace(/([ぁ-ゖ])ねえ(?=[よか…‥。！？!?、」]|$)/g, '$1ない')
+        .replace(new RegExp('だぜ' + END, 'g'), 'だよ').replace(new RegExp('([ぁ-ゖ])ぜ' + END, 'g'), '$1よ')
+        .replace(/やがれ/g, 'なさい').replace(/だろうが(?=[…‥。！？!?、」]|$)/g, 'でしょう');
+    }
+    return q;
+  };
   V.styleQuote = function (q, who) {
     var ex = who && EX[who.tone];
     if (!ex) return sq0(q, who);
@@ -4889,6 +4932,105 @@
   HK.toneFinish('polite', iIre);
   HK.toneFinish('kohai', function (q, who) { return kohai(q, who).replace(/くださいる/g, 'くれる'); });
   HK.toneFinish('ojou', ojou);
+})();
+;/* ==== js/tone-new.js ==== */
+/* 箱庭シミュレーター: アンケートで希望の多かった口調（2026-10-25）
+   どれも既存の口調の文面と言い換えを借り、できあがった台詞の語尾だけを最後に付け替える（tone-registry.js の derive・HK.toneFinish）。
+   ・無愛想な敬語（〜ですが、何か） … 敬語から。感嘆を削り、言い切りと皮肉の一言で突き放す
+   ・偉そうな敬語（〜なさい） … 敬語から。頼みを「〜なさい」、誘いを「〜しますよ」に
+   ・無機質な敬語 … 敬語から。感嘆・間投詞・「ね」「よ」を削り、報告のような言い切りに
+   ・ふつうのタメ口 … 気質の文面から敬語を外す（tone-plus.js の plain）。語尾の付け替えはしない
+   ・ダウナー系チャラ男（〜ですよー） … 敬語から。語尾を伸ばし、「〜けど」で軽く逃げる
+   喘ぎ（っ・♡・ぁ などを含む台詞）は崩さない */
+(function () {
+  'use strict';
+  var HK = window.HK, V = HK && HK.Voice;
+  if (!V || !HK.toneFinish) return;
+  var MOAN = /[っッ♡ぁぃぅぇぉ゛]|……$/;
+  var E = '(?=[。！？!?…‥」]|$)';
+  function base(q, who, o) { return V.iIre ? V.iIre(q, who, o) : q; }
+  /* 文ごとに直す（句点・感嘆・疑問で区切る） */
+  function bySent(q, fn) {
+    return q.replace(/[^。！？!?]+[。！？!?]*/g, function (s) {
+      var m = s.match(/^(.*?)([。！？!?]*)$/);
+      return fn(m[1], m[2]) ;
+    });
+  }
+  /* 言いよどみ（……で始まる）・告白の台詞には、皮肉や念押しの一言を足さない */
+  function quiet(q) { return /^[…‥]/.test(q) || /好き|愛して|付き合って/.test(q); }
+  function lot(q, n) { return HK.lineLot ? HK.lineLot(q, n) : false; }
+  /* 「〜てください」→「〜なさい」（よく出る動詞だけ。分からなければそのまま） */
+  var TE = { 'して': 'し', '来て': '来', '見て': '見', '待って': '待ち', '言って': '言い', '行って': '行き', '座って': '座り', '黙って': '黙り', '帰って': '帰り', '休んで': '休み', '飲んで': '飲み', '読んで': '読み', '呼んで': '呼び', '書いて': '書き', '聞いて': '聞き', '急いで': '急ぎ', '離れて': '離れ', '落ち着いて': '落ち着き', '答えて': '答え', '教えて': '教え', '決めて': '決め', 'やめて': 'やめ', '止めて': 'やめ', '見せて': '見せ', '任せて': '任せ', '寝て': '寝', '出て': '出', '起きて': '起き', '下がって': '下がり', '気をつけて': '気をつけ', '信じて': '信じ', '入って': '入り', '戻って': '戻り', '頑張って': '頑張り', '笑って': '笑い', '泣いて': '泣き', '動いて': '動き', '隠れて': '隠れ', '逃げて': '逃げ', '考えて': '考え', '手伝って': '手伝い', '使って': '使い', '食べて': '食べ', '開けて': '開け', '閉めて': '閉め' };
+  var TE_RE = new RegExp('(' + Object.keys(TE).sort(function (a, b) { return b.length - a.length; }).join('|') + ')ください');
+
+  /* ---------- 無愛想な敬語 ---------- */
+  function sarc(q, who, o) {
+    q = base(q, who, o);
+    if (MOAN.test(q)) return q;
+    q = q.replace(/^(?:わあ|わぁ|えっと|あの|あのー|うわ|やった|よかった)[、！!]*/, '');
+    q = q.replace(/ありがとうございま(?:す|した)/g, 'どうも').replace(/よろしくお願いします/g, 'よろしく')
+      .replace(/すみません(?=[、。！!]|$)/g, 'すみませんね');
+    q = bySent(q, function (s, p) {
+      s = s.replace(/(です|ます|ました|ません)(?:よね|よ|ね)$/, '$1');
+      return s + (p ? p.replace(/[！!]+/g, '。') : '');
+    });
+    /* 言い切りの敬語で終わる台詞には、ときどき皮肉の一言を足す */
+    if (!quiet(q) && /(です|ます|ました|ません)。?$/.test(q) && lot(q, 4)) q = q.replace(/。?$/, '。') + (lot(q + 'x', 2) ? '……何か？' : '……で？');
+    return q;
+  }
+  /* ---------- 偉そうな敬語 ---------- */
+  function bossy(q, who, o) {
+    q = base(q, who, o);
+    if (MOAN.test(q)) return q;
+    q = q.replace(TE_RE, function (m, v) { return TE[v] + 'なさい'; });
+    q = q.replace(/ないでください/g, 'ないように').replace(/てほしいです/g, 'てもらいます').replace(/でほしいです/g, 'でもらいます').replace(/でしょうか(?=[。？?…」]|$)/g, 'ですか')
+      .replace(/(?:よろしい|いい)でしょうか/g, 'よろしいですね').replace(/お願いします(?=[。！!…]|$)/g, '頼みましたよ');
+    q = q.replace(/しましょう(?=か?[。！？!?…」]|$)/g, 'しますよ').replace(/ませんか(?=[？?]|$)/g, 'なさい');
+    q = q.replace(/すみません(?=[、。！!]|$)/g, '悪かったですね').replace(/ありがとうございま(?:す|した)/g, '礼を言います');
+    q = bySent(q, function (s, p) { return s + (p ? p.replace(/[！!]+/g, '。') : ''); });
+    if (quiet(q)) return q;
+    if (/なさい。?$/.test(q) && lot(q, 3)) q = q.replace(/。?$/, '。') + '……聞こえませんでしたか？';
+    else if (/(?:ですか|ますか)[？?]$/.test(q) && lot(q, 3)) q += '　答えなさい。';
+    else if (/(?:です|ます|ません)。?$/.test(q) && lot(q + 'b', 5)) q = q.replace(/。?$/, '。') + '当然でしょう。';
+    return q;
+  }
+  /* ---------- 無機質な敬語 ---------- */
+  function flat(q, who, o) {
+    q = base(q, who, o);
+    if (MOAN.test(q)) return q;
+    q = q.replace(/^(?:わあ|わぁ|えっと|あの|あのー|うわ|やった|よかった|ふふ|あはは|へえ|うん|ええと|はは)[、！!…]*/, '');
+    q = q.replace(/ありがとうございま(?:す|した)/g, '感謝します').replace(/すみません(?=[、。！!]|$)/g, '失礼しました');
+    q = q.replace(/でしょうか(?=[。？?…」]|$)/g, 'ですか').replace(/([るたいう])かもしれません/g, '$1可能性があります').replace(/分かりません(?=[。！？!?…」]|$)/g, '不明です')
+      .replace(/大丈夫です(?=[。！？!?…」、]|$)/g, '問題ありません').replace(/(?:みたい|よう)です(?=[。！!…」]|$)/g, 'と判断します').replace(/と思います(?=[。！!…」]|$)/g, 'と判断します')
+      .replace(/てほしいです/g, 'てください').replace(/でほしいです/g, 'でください').replace(/嬉しいです/g, '好ましい結果です');
+    q = bySent(q, function (s, p) {
+      s = s.replace(/(です|ます|ました|ません|でした)(?:よね|よ|ね|ねえ)$/, '$1').replace(/[〜ー♪]+$/, '');
+      return s + (p ? p.replace(/[！!]+/g, '。') : '');
+    });
+    return q.replace(/[♪]/g, '');
+  }
+  /* ---------- ダウナー系チャラ男 ---------- */
+  function downer(q, who, o) {
+    q = base(q, who, o);
+    if (MOAN.test(q)) return q;
+    q = q.replace(/ありがとうございま(?:す|した)/g, 'あざーす').replace(/すみません(?=[、。！!]|$)/g, 'さーせん').replace(/よろしくお願いします/g, 'よろしくでーす');
+    q = q.replace(/でしょうか(?=[。？?…」]|$)/g, 'ですかねー').replace(/ください(?=[。！!…」]|$)/g, 'くださいよー').replace(/てほしいです/g, 'てほしいなー、なんて').replace(/でほしいです/g, 'でほしいなー、なんて');
+    q = bySent(q, function (s, p) {
+      var P = p ? p.replace(/[！!]+/g, '。') : '';
+      /* 問いかけは「〜ですかー？」にすることがある（「〜けど」「〜よー」は付けない） */
+      if (/[？?]/.test(p)) return (/(ですか|ますか)$/.test(s) && lot(s, 2) ? s + 'ー' : s) + p;
+      if (/(です|ます)よ$/.test(s)) return s + 'ー' + P;
+      if (/(です|ます|ません)$/.test(s) && lot(s, 3)) return s + 'けど' + P;
+      if (/(です|ます)$/.test(s) && lot(s + 'y', 3)) return s + 'よー' + P;
+      return s + P;
+    });
+    return q;
+  }
+  HK.toneFinish('keigo_sarc', sarc);
+  HK.toneFinish('keigo_bossy', bossy);
+  HK.toneFinish('keigo_flat', flat);
+  HK.toneFinish('chara_down', downer);
+  V.newToneFinish = { keigo_sarc: sarc, keigo_bossy: bossy, keigo_flat: flat, chara_down: downer };
 })();
 ;/* ==== js/tone-ane.js ==== */
 /* 箱庭シミュレーター: 穏やかから派生する口調（お姉さん）

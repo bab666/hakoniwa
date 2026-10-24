@@ -43,6 +43,7 @@ late js/tone-fix-g6-r18.js
 late js/tone-fix-gc.js
 late js/tone-fix-gc-r18.js
 js/tone-polite-kin.js
+js/tone-new.js
 js/tone-ane.js
 js/tone-usan.js
 js/tone-yankee.js
