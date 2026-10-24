@@ -4,7 +4,7 @@
   var HK = window.HK, esc = HK.escape;
   var V = (HK.View = {});
   var CLS_VAR = { love: '--love', pine: '--pine', night: '--night', obsess: '--obsess', enemy: '--enemy', kill: '--kill', partner: '--partner', friend: '--friend', guard: '--guard', none: '--none' };
-  var tl = { who: [], keyOnly: false, cat: 'all' };
+  var tl = { who: [], keyOnly: false, cat: 'all', lewd: false };
   var lastRes = null, lastHost = null, lastOpts = null;
 
   function pc(i) { return 'var(--p' + (i % 30) + ')'; }
@@ -261,6 +261,7 @@
       }
       if (tl.keyOnly && !(ks[e.n] || e.kind === 'death' || e.odd || e.mag >= 25 || e.goal || e.goalExit || (e.mark && e.mark.length))) return;
       if (tl.cat !== 'all' && e.cat !== tl.cat && e.kind !== 'death') return;
+      if (tl.lewd && !HK.lewdEvent(e)) return;
       cur.items.push(e);
     });
     var html = groups.filter(function (g) { return g.items.length; }).map(function (g) {
@@ -289,11 +290,12 @@
       return '<option value="' + c + '"' + (tl.cat === c ? ' selected' : '') + '>' + (c === 'all' ? 'すべての種類' : HK.CAT_NAME[c]) + '</option>';
     }).join('') + '</select>';
     return '<div class="tlbar">' + who + (tl.who.length ? '<button class="btn small ghost" data-act="whoclear">絞り込みを解除</button>' : '') +
-      '<span class="spacer"></span>' + sel + '<button class="chip" data-act="keyonly" aria-pressed="' + tl.keyOnly + '">決め手と転機だけ</button></div>';
+      '<span class="spacer"></span>' + sel + '<button class="chip" data-act="keyonly" aria-pressed="' + tl.keyOnly + '">決め手と転機だけ</button>' +
+      (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="lewdonly" aria-pressed="' + !!tl.lewd + '">エロシーンだけ</button>' : '') + '</div>';
   }
 
   /* ---------- 全体 ---------- */
-  V.resetFilter = function () { tl = { who: [], keyOnly: false, cat: 'all' }; };
+  V.resetFilter = function () { tl = { who: [], keyOnly: false, cat: 'all', lewd: false }; };
 
   V.render = function (host, res, opts) {
     var fresh = res && res !== lastRes;
@@ -344,6 +346,7 @@
   };
   V.setWho = function (arr) { tl.who = arr.slice(); V.refreshTimeline(); };
   V.toggleKey = function () { tl.keyOnly = !tl.keyOnly; V.refreshTimeline(); };
+  V.toggleLewd = function () { tl.lewd = !tl.lewd; V.refreshTimeline(); };
   V.setCat = function (c) { tl.cat = c; V.refreshTimeline(); };
 
   /* ---------- 結末 ---------- */

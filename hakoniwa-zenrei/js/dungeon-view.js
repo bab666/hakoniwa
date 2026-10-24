@@ -3,7 +3,7 @@
   'use strict';
   var HK = window.HK, DG = HK.DG, esc = HK.escape;
   var DV = HK.DView = {};
-  var keyOnly = false, lastHost = null, lastRes = null;
+  var keyOnly = false, lewdOnly = false, lastHost = null, lastRes = null;
 
   function paint(text, res) {
     var t = esc(HK.fmtLong ? HK.fmtLong(text, (res.heroes || [res.hero]).map(function (h) { return h && h.name; })) : text).replace(/\n/g, '<br>');
@@ -120,6 +120,7 @@
       if (e.kind === 'step') { cur = { label: e.text, items: [] }; out.push(cur); return; }
       if (!cur) { cur = { label: '入口', items: [] }; out.push(cur); }
       if (keyOnly && !e.key && e.kind !== 'climax') return;
+      if (lewdOnly && !(e.kind === 'climax' || HK.lewdEvent(e))) return;
       cur.items.push(e);
     });
     return out.filter(function (b) { return b.items.length; }).map(function (b) {
@@ -133,6 +134,8 @@
   }
 
   DV.render = function (host, res, opts, histHtml) {
+    /* 新しい結果では「エロシーンだけ」を外す（前の結果の絞り込みを持ち越さない） */
+    if (res !== lastRes) lewdOnly = false;
     lastHost = host; lastRes = res;
     var S = HK.SCENARIOS[res.scenId] || HK.SCENARIOS.dungeon;
     var envChips = S.env.map(function (e) {
@@ -150,7 +153,7 @@
       '<div class="cards" style="margin-top:12px">' + heroCard(res, res.hero) +
       '<div class="ccard"><div class="hd"><span class="nm" style="font-size:16px">開発度</span><span class="nums">' + (res.hero.hardTop ? '攻めの挑戦者は罠や魔物に責められないので、開発度は伸びない' : '罠や魔物に責められた部位ほど伸び、次から感じやすくなる') + '</span></div>' + devBars(res.hero) + '</div></div>') +
       '<h2 class="sec">足りなかったもの・効いたもの</h2><ul class="dgadvice">' + res.advice.map(function (a) { return '<li>' + paint(a, res) + '</li>'; }).join('') + '</ul>' +
-      '<h2 class="sec" id="tlhead">探索の記録</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button></div><div class="tl" id="dgtl">' + timeline(res) + '</div>' +
+      '<h2 class="sec" id="tlhead">探索の記録</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button>' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="dglewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + '</div><div class="tl" id="dgtl">' + timeline(res) + '</div>' +
       (histHtml || '');
   };
   DV.toggleKey = function () {
@@ -159,6 +162,14 @@
     var t = lastHost.querySelector('#dgtl'), b = lastHost.querySelector('[data-act="dgkey"]');
     if (t) t.innerHTML = timeline(lastRes);
     if (b) b.setAttribute('aria-pressed', String(keyOnly));
+  };
+  /* エロシーンだけ（core.js の HK.lewdEvent。絶頂の出来事も含める） */
+  DV.toggleLewd = function () {
+    lewdOnly = !lewdOnly;
+    if (!lastHost || !lastRes) return;
+    var t = lastHost.querySelector('#dgtl'), b = lastHost.querySelector('[data-act="dglewd"]');
+    if (t) t.innerHTML = timeline(lastRes);
+    if (b) b.setAttribute('aria-pressed', String(lewdOnly));
   };
 
   DV.toText = function (res) {

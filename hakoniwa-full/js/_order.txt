@@ -161,6 +161,7 @@ js/island-love.js
 js/unreq.js
 js/fwbcrush.js
 js/pining.js
+js/heartbreak.js
 js/zombie-cure.js
 js/zombie-assault.js
 js/solo-zombie-love.js

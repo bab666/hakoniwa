@@ -4,6 +4,16 @@
   var HK = (window.HK = window.HK || {});
 
   HK.FACTORS = ['CP', 'NP', 'A', 'FC', 'AC'];
+  /* 記録の「エロシーンだけ」の絞り込み（view.js・dungeon-view.js・solo-story-kit.js）：性的な場面の出来事か。
+     出来事に e.lewd が付いていればそれ、なければ本文の言葉で見る（「罪を犯した」「到達した」「期待を抱いた」のような、ふつうの言い回しには反応しないように） */
+  var LEWD_RE = /繋が(?:っ|る|り)|挿[れ入]|果て(?:た|る|て|そう)|喘|腰を(?:振|打ちつけ|打ち付け|沈め|落と|揺ら|くねら|突き上げ|使)|舐め(?:上げ|回|取|られ)|しゃぶ|愛撫|絶頂|イ(?:っ|か|き|く)(?:ちゃ|そう|た|て|る|ま)|イッ|(?<![到伝調発通配上熟])達し|花芯|胸の先|ナカ|奥を(?:突|抉)|体を重ね|肌を重ね|ローター(?!音)|ディルド|射精|中に出|注ぎ込|潮を|犯され|(?<!罪を)犯し(?:た|て)|凌辱|乱交|一夜を(?:共に|ともに)|一線を越え|♡/;
+  HK.lewdEvent = function (e) {
+    if (!e || e.kind === 'step') return false;
+    if (e.lewd != null) return !!e.lewd;
+    return LEWD_RE.test(String(e.text || ''));
+  };
+  /* 絞り込みの札を出すか（R18版で、全年齢モードでないとき。記録にエロシーンがひとつでもあれば） */
+  HK.lewdFilterOn = function (log) { return !HK.SAFE_ON && (log || []).some(HK.lewdEvent); };
   HK.FACTOR_NAME = { CP: '厳しさ', NP: '優しさ', A: '冷静さ', FC: '奔放さ', AC: '遠慮・協調' };
   HK.FACTOR_FULL = {
     CP: '批判的な親（CP）', NP: '養育的な親（NP）', A: '大人（A）',

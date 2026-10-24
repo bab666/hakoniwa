@@ -124,7 +124,7 @@
   };
 
   /* ======================= 結果表示 ======================= */
-  var V = HK.StoryView = {}, keyOnly = false, who = null, lastHost = null, lastRes = null;
+  var V = HK.StoryView = {}, keyOnly = false, lewdOnly = false, who = null, lastHost = null, lastRes = null;
   function pc(i) { return 'var(--p' + (i % 30) + ')'; }
   function av(res, i, size) { var h = res.heroes[i]; return h && HK.Icons ? HK.Icons.html(h.name, i, size) : ''; }
   function paint(text, res) {
@@ -177,6 +177,7 @@
       if (!cur) { cur = { label: '', items: [] }; groups.push(cur); }
       if (who != null && e.actors.length && e.actors.indexOf(who) < 0) return;
       if (keyOnly && !e.key && e.kind !== 'climax' && !(e.mag >= 30)) return;
+      if (lewdOnly && !HK.lewdEvent(e)) return;
       cur.items.push(e);
     });
     var html = groups.filter(function (g) { return g.items.length; }).map(function (g) {
@@ -190,7 +191,8 @@
   }
   function bar(res) {
     return '<div class="tlbar">' + res.heroes.map(function (h) { return '<button class="chip whochip" data-st="who" data-i="' + h.i + '" aria-pressed="' + (who === h.i) + '">' + av(res, h.i, 20) + esc(h.name) + '</button>'; }).join('') +
-      '<span class="spacer"></span><button class="chip" data-st="key" aria-pressed="' + keyOnly + '">決め手と絶頂だけ</button></div>';
+      '<span class="spacer"></span><button class="chip" data-st="key" aria-pressed="' + keyOnly + '">決め手と絶頂だけ</button>' +
+      (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-st="lewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + '</div>';
   }
 
   /* ---------- 関係図（res.relmap があるとき） ---------- */
@@ -240,7 +242,7 @@
     return '<h2 class="sec">関係図</h2><figure class="trayfig" style="margin:0"><div class="tray"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="関係図" style="width:100%;height:auto;display:block"><style>.rlab{font-size:12px;font-weight:700;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}.rnm{font-size:13px;font-weight:700;paint-order:stroke;stroke:var(--surface);stroke-width:3px}.rsub{font-size:10.5px;fill:var(--muted);paint-order:stroke;stroke:var(--surface);stroke-width:3px}</style>' + defs + edges + nodes + labs + '</svg></div>' + (R.note ? '<figcaption><span>' + esc(R.note) + '</span></figcaption>' : '') + '</figure>';
   }
   V.render = function (host, res, opts, histHtml) {
-    if (res !== lastRes) { who = null; keyOnly = res.log.length > 260; }
+    if (res !== lastRes) { who = null; lewdOnly = false; keyOnly = res.log.length > 260; }
     lastHost = host; lastRes = res;
     var S = HK.SCENARIOS[res.scenId], E = res.ending;
     var envChips = S.env.map(function (e) {
@@ -263,6 +265,7 @@
         var b = ev.target.closest && ev.target.closest('[data-st]');
         if (!b || !lastRes || !lastRes.story) return;
         if (b.getAttribute('data-st') === 'key') keyOnly = !keyOnly;
+        else if (b.getAttribute('data-st') === 'lewd') lewdOnly = !lewdOnly;
         else { var i = +b.getAttribute('data-i'); who = who === i ? null : i; }
         var t = host.querySelector('#sttl'), br = host.querySelector('#stbar');
         if (t) t.innerHTML = timeline(lastRes);

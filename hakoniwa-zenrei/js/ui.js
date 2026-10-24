@@ -870,7 +870,9 @@
       case 'who': V.toggleWho(+t.dataset.i); break;
       case 'whoclear': V.setWho([]); break;
       case 'keyonly': V.toggleKey(); break;
+      case 'lewdonly': V.toggleLewd(); break;
       case 'dgkey': if (HK.DView) HK.DView.toggleKey(); break;
+      case 'dglewd': if (HK.DView && HK.DView.toggleLewd) HK.DView.toggleLewd(); break;
       case 'pairfilter':
         V.setWho([+t.dataset.a, +t.dataset.b]);
         var h = document.getElementById('tlhead');
