@@ -156,5 +156,177 @@
       t.fate = '担任'; t.fateNote = '一年間クラスを受け持った' + (fav ? '。一番慕っていたのは' + fav.name : '');
       note(ctx, '担任の' + t.name + '：最も慕っていたのは' + (fav ? fav.name : '—') + (foe && R(ctx, foe, t).ten > 25 ? '、最後まで反発していたのは' + foe.name : '') + '。');
     }
+    closeYear(ctx);
   };
+
+  /* ===== 結末：一年（一学期だけのときは一学期）の終わり。修了式・卒業式・終業式の段で、恋人・親友・いじめ・不登校・担任を締める ===== */
+  var CE_CER = {
+    grad: [
+      '卒業式の日。体育館に名前が一人ずつ呼ばれ、{n}人は卒業証書を受け取った。式のあと、教室の黒板には誰かが大きく「ありがとう」と書いていた。',
+      '三月、卒業式。校歌の最後の一節で、何人かの声が震えた。最後のホームルームが終わると、{n}人はそれぞれの春へ向かって校門を出た。',
+      '卒業式が終わり、校庭の桜はまだ三分咲きだった。胸に花をつけた{n}人は、最後にもう一度だけ教室を振り返った。高校生活は、そこで終わった。'
+    ],
+    mixed: [
+      '三月。卒業式で三年生を送り出し、数日後には修了式があった。{n}人それぞれの一年が、同じ体育館で区切りを迎えた。',
+      '卒業式の日、校門の前には花束を抱えた三年生が並んだ。在校生はその背中を見送り、自分たちの修了式を待った。学園の一年は、そこで一巡りした。',
+      '三月の終わり、卒業する者と進級する者が、最後に同じ廊下ですれ違った。卒業式と修了式が終わり、学園の一年は幕を閉じた。'
+    ],
+    year: [
+      '三月、修了式。通知表を受け取って、{n}人はこの教室で過ごす最後の日を迎えた。来月には、クラス替えが待っている。',
+      '修了式の日。最後のホームルームで、黒板の隅の日直の欄が消された。このクラスで過ごした一年は、その日で終わった。',
+      '三月の終わり、修了式が済むと、教室の机はがらんとして見えた。{n}人の一年は、春休みの手前で静かに区切りを迎えた。'
+    ],
+    term: [
+      '七月、終業式。体育館は蒸し暑く、校長の話はいつもより長く感じた。通知表を受け取って、{n}人の一学期は終わった。',
+      '終業式の日。最後のホームルームで、夏休みの課題の束が配られた。教室の窓から、蝉の声が入ってきた。一学期は、そこで区切りを迎えた。',
+      '七月の終わり、終業式が済むと、教室は一気に夏休みの空気になった。{n}人は、それぞれの夏へ散っていった。'
+    ]
+  };
+  var CE_COUPLE = {
+    grad: [
+      '{a}と{b}は、卒業式のあと校門の前で並んで写真を撮った。制服で会うのは今日が最後でも、二人の関係は続いていく。恋人どうしのまま、二人は卒業した。',
+      '{a}と{b}は、誰もいなくなった教室で最後に二人きりになった。「卒業しても、会おうね」と、どちらからともなく言った。二人は恋人として、次の春へ向かった。',
+      '{a}は{b}の制服の第二ボタンを、照れくさそうに受け取った。この一年で恋人になった二人は、手を繋いで校門を出た。'
+    ],
+    year: [
+      '{a}と{b}は、修了式の帰り道を並んで歩いた。春休みに会う日を、二人で何度も確かめ合った。恋人どうしのまま、二人は春休みを迎えた。',
+      '{a}と{b}は、この一年で恋人になった。最後のホームルームのあと、二人はいつもの屋上で少しだけ話した。春休みの予定は、もう二人で決めてあった。',
+      '{a}と{b}の机は、一年の終わりには自然と近くにあった。クラスの誰もが、二人が付き合っていることを知っていた。二人は恋人のまま、次の春を迎える。'
+    ],
+    term: [
+      '{a}と{b}は、終業式の帰り道に夏祭りの約束をした。一学期のうちに恋人になった二人の夏は、これから始まる。',
+      '{a}と{b}は、夏休みの課題を一緒にやる約束をして別れた。恋人どうしになった二人は、校門の前でなかなか手を離さなかった。',
+      '{a}と{b}は、終業式のあと誰もいない昇降口で少しだけ話した。恋人になって最初の夏休みが、二人を待っていた。'
+    ]
+  };
+  var CE_FRIEND = {
+    grad: [
+      '{a}と{b}は、卒業アルバムの寄せ書きのページを互いに埋め合った。この一年で、二人は親友になっていた。進む道は違っても、連絡は続くはずだ。',
+      '{a}と{b}は、卒業式のあと最後に二人で購買の前を通った。一年前は名前も知らなかった二人が、今は肩を並べて笑っていた。',
+      '{a}は{b}に「卒業しても、たまには会おう」と言った。{b}は「当たり前でしょ」と返した。二人の友情は、卒業では終わらなかった。'
+    ],
+    year: [
+      '{a}と{b}は、この一年でいちばんの友達になった。修了式のあと、二人は四月からも変わらずつるもうと、冗談半分に約束した。',
+      '{a}と{b}は、最後のホームルームのあとも、なかなか教室を出なかった。一年分の話をしても、まだ話し足りなかった。',
+      '{a}と{b}は、春休みに遊ぶ約束をして別れた。一年前に出会ったのは偶然でも、今の二人の仲は偶然ではなかった。'
+    ],
+    term: [
+      '{a}と{b}は、一学期のうちにすっかり仲良くなった。終業式の帰り道、二人は夏休みの予定を三つも立てた。',
+      '{a}と{b}は、終業式のあとも教室に残って話し込んだ。四月には他人だった二人が、今は一番の友達になっていた。',
+      '{a}は{b}に「夏休み、毎週どこか行こう」と言った。{b}は笑って頷いた。二人の一学期は、友情で締めくくられた。'
+    ]
+  };
+  var CE_RIVAL = [
+    '{a}と{b}は、最後まで張り合ったままだった。最後の日も、二人は目を合わせずに教室を出た。決着は、次の季節に持ち越された。',
+    '{a}と{b}の間の溝は、最後まで埋まらなかった。それでも、互いを意識し続けた{span}だったことは、二人とも分かっていた。',
+    '{a}は最後の日、{b}の席の前で一瞬だけ立ち止まった。何も言わずに通り過ぎた。二人の対立は、和解しないまま区切りを迎えた。'
+  ];
+  var CE_BULLY = {
+    on: [
+      '{b}へのいじめは、最後まで止まらなかった。{a}は最後の日まで態度を変えず、{b}は誰とも目を合わせずに教室を出た。その{span}は、{b}にとって長すぎた。',
+      '最後のホームルームの間も、{b}の机の周りだけ空気が冷たかった。{a}が始めたことを、誰も止められないまま{span}が終わった。',
+      '{b}は最後の日、誰よりも先に教室を出た。{a}たちの笑い声が、廊下まで追いかけてきた。この教室は、最後まで{b}の居場所にならなかった。'
+    ],
+    off: [
+      '{b}へのいじめは、{c}に止められて終わっていた。最後の日、{b}は少しだけ顔を上げて教室を出た。傷は残っても、{b}の{span}は最悪のままでは終わらなかった。',
+      '一度は{b}を苦しめたいじめも、年度の終わりにはもう影を潜めていた。{b}は最後のホームルームで、小さく「ありがとう」と言った。',
+      '{a}と{b}の間にあったことは、なかったことにはならない。それでも、いじめが止まってからの{b}は、少しずつ笑うようになっていた。'
+    ]
+  };
+  var CE_ABSENT = [
+    '{a}の席は、最後の日まで空いたままだった。机の中には、届けられなかったプリントが溜まっていた。{a}は{s}から、教室に戻らなかった。',
+    '{cer}の日も、{a}の名前が呼ばれたとき返事はなかった。担任は通知表を封筒に入れ、「届けておく」とだけ言った。{a}の{span}は、{s}で止まっていた。',
+    '{a}は{s}以来、学校に来ていない。{cer}のあとのホームルームで、誰かが{a}の机に寄せ書きの色紙をそっと置いた。届くかどうかは、分からない。'
+  ];
+  var CE_TIRED = [
+    '{a}は{span}の終わり、教室にいないことが増えていた。最後の日はかろうじて登校したが、誰とも話さずに帰った。',
+    '{a}の顔色は、{span}の終わりにはすっかり疲れて見えた。春休みが来ることだけが、今の{a}の救いだった。',
+    '{a}は最後のホームルームの途中で、保健室へ行った。この{span}で、{a}は少し無理をしすぎていた。'
+  ];
+  var CE_LONE = [
+    '{a}は最後まで、特定の誰かと深く関わることはなかった。それでも窓際の席から見たこの教室の{span}を、{a}は案外気に入っていた。',
+    '{a}は{cer}のあと、誰とも寄り道せずに一人で帰った。一人の時間が多い{span}だったが、{a}にとってはそれが楽だった。',
+    '{a}は最後の日、自分の机の落書きを消してから教室を出た。親しい友達はできなかったが、この教室を嫌いにはならなかった。'
+  ];
+  var CE_TEACHER = [
+    '担任の{a}は、最後のホームルームで「{span}間、ありがとう」と頭を下げた。いちばん名残惜しそうにしていたのは、{b}だった。',
+    '担任の{a}は、空になった教室で一人、出席簿を閉じた。この{span}でいちばん慕ってくれた{b}の字が、学級日誌に何度も出てきた。',
+    '担任の{a}は、生徒たちが帰ったあと黒板を消した。{b}が最後に「また先生のクラスがいい」と言っていったのを思い出していた。'
+  ];
+  var CE_LAST = {
+    grad: [
+      'こうして、このクラスの高校生活は終わった。教室には、もう誰も戻ってこない。',
+      '卒業した{n}人は、それぞれの道へ歩き出した。この教室で過ごした日々は、もう思い出の中にしかない。',
+      '校門の前の人影が一人ずつ減っていき、最後には誰もいなくなった。このクラスの物語は、卒業でひとつの終わりを迎えた。'
+    ],
+    year: [
+      'こうして、このクラスの一年は終わった。四月には、また新しい教室が始まる。',
+      '春休みが来て、この教室の名簿は役目を終えた。同じ顔ぶれで過ごす一年は、もう二度と来ない。',
+      '一年分の出来事を残して、教室の鍵が閉められた。このクラスは、そこで解散になった。'
+    ],
+    term: [
+      'こうして、このクラスの一学期は終わった。二学期には、また同じ教室に{n}人が戻ってくる。',
+      '夏休みが始まり、教室は九月まで静かになった。一学期の物語は、ここで一区切りだった。',
+      '一学期の出来事を残して、教室の窓が閉められた。このクラスの最初の季節は、そこで幕を閉じた。'
+    ]
+  };
+  function closeYear(ctx) {
+    var term = ctx.env.span === 'term', mixed = ctx.env.grade === 'all';
+    var S = ctx.chars.filter(function (c) { return c.alive && !c.flags.teacher && c.flags.caged == null; });
+    if (!S.length) return;
+    var allGrad = !term && S.every(function (c) { return c.grade === 3; });
+    var someGrad = !term && S.some(function (c) { return c.grade === 3; });
+    var ck = term ? 'term' : allGrad ? 'grad' : mixed && someGrad ? 'mixed' : 'year';
+    var lk = term ? 'term' : allGrad ? 'grad' : 'year';
+    var label = term ? '終業式' : allGrad ? '卒業式' : ck === 'mixed' ? '卒業式・修了式' : '修了式';
+    ctx.label = label;
+    ctx.say({ kind: 'step', cat: 'phase', text: label });
+    var span = term ? '一学期' : '一年', nIn = S.filter(function (c) { return !c.out; }).length;
+    function fill(s, a, b, c) { return ctx.t(s, a, b, c).replace(/\{n\}/g, nIn).replace(/\{span\}/g, span).replace(/\{cer\}/g, label); }
+    function say(s, actors, why) { return ctx.say({ text: s, actors: actors || [], mag: 25, why: why ? '結末：' + why : '' }); }
+    say(fill(ctx.pick(CE_CER[ck])), [], term ? '一学期の終わり（終業式）' : allGrad ? '三年生の卒業' : ck === 'mixed' ? '卒業と進級' : '一年の終わり（修了式）');
+    var used = {}, couples = [], friends = [], rivals = [];
+    S.forEach(function (a, i) { S.slice(i + 1).forEach(function (b) {
+      var pf = ctx.pair(a, b), ab = R(ctx, a, b), ba = R(ctx, b, a);
+      if (pf.couple) couples.push([a, b, Math.min(ab.aff, ba.aff)]);
+      else if (Math.min(ab.aff, ba.aff) >= 30) friends.push([a, b, Math.min(ab.aff, ba.aff) + Math.min(ab.trust, ba.trust) * 0.5]);
+      if (!pf.couple && Math.min(ab.ten, ba.ten) >= 40) rivals.push([a, b, Math.min(ab.ten, ba.ten)]);
+    }); });
+    [couples, friends, rivals].forEach(function (l) { l.sort(function (x, y) { return y[2] - x[2]; }); });
+    var gradOf = function (a, b) { return term ? 'term' : (a.grade === 3 && b.grade === 3) ? 'grad' : 'year'; };
+    /* 一人が複数の組に数えられているとき（古い恋人の印が残っているなど）は、いちばん好意の強い組だけにする */
+    var cu = {}; couples = couples.filter(function (p) { if (cu[p[0].i] || cu[p[1].i]) return false; cu[p[0].i] = cu[p[1].i] = 1; return true; });
+    couples.slice(0, 3).forEach(function (p) { used[p[0].i] = used[p[1].i] = 1; say(fill(ctx.pick(CE_COUPLE[gradOf(p[0], p[1])]), p[0], p[1]), [p[0], p[1]], '恋人になった二人'); });
+    if (couples.length > 3) say('ほかにも、' + couples.slice(3).map(function (p) { return p[0].name + 'と' + p[1].name; }).join('、') + 'が恋人どうしのまま' + (term ? '夏休みを迎えた。' : '一年を終えた。'), [], '恋人になった組');
+    var fc = 0;
+    friends.forEach(function (p) { if (fc >= 2 || used[p[0].i] || used[p[1].i]) return; fc++; used[p[0].i] = used[p[1].i] = 1; say(fill(ctx.pick(CE_FRIEND[gradOf(p[0], p[1])]), p[0], p[1]), [p[0], p[1]], '親しくなった二人（好意 ' + Math.round(p[2]) + '）'); });
+    if (rivals[0]) say(fill(ctx.pick(CE_RIVAL), rivals[0][0], rivals[0][1]), [rivals[0][0], rivals[0][1]], '最後まで続いた対立（緊張 ' + Math.round(rivals[0][2]) + '）');
+    var B = ctx.flags.bully;
+    if (B && ctx.chars[B.by] && ctx.chars[B.tg]) {
+      var ba = ctx.chars[B.by], bt = ctx.chars[B.tg], stopper = B.stopped && B.stopped.by != null ? ctx.chars[B.stopped.by] : null;
+      var pool = B.stopped ? CE_BULLY.off.filter(function (l) { return stopper || l.indexOf('{c}') < 0; }) : CE_BULLY.on;
+      if (!(bt.out && bt.flags.absent)) { used[bt.i] = 1; say(fill(ctx.pick(pool), ba, bt, stopper), [bt], B.stopped ? 'いじめは止まった' : 'いじめは年度末まで続いた'); }
+    }
+    S.filter(function (c) { return c.out && c.flags.absent; }).slice(0, 3).forEach(function (c) { used[c.i] = 1; say(fill(ctx.pick(CE_ABSENT), c).replace(/\{s\}/g, c.flags.absent.since), [], c.name + 'は不登校のまま'); });
+    S.filter(function (c) { return !used[c.i] && c.fate === '休みがちに'; }).slice(0, 2).forEach(function (c) { used[c.i] = 1; say(fill(ctx.pick(CE_TIRED), c), [c], '負担が大きいまま（' + Math.round(c.stress) + '）'); });
+    S.filter(function (c) { if (used[c.i] || c.out) return false; var o = ctx.closest(c); return !o || R(ctx, c, o).aff < 15; }).slice(0, 2).forEach(function (c) { used[c.i] = 1; say(fill(ctx.pick(CE_LONE), c), [c], '親しい相手がいないまま'); });
+    var t = ctx.teacher;
+    if (t && t.alive) {
+      var fav = ctx.most(S.filter(function (c) { return !c.out; }), function (c) { return R(ctx, c, t).trust + R(ctx, c, t).aff; });
+      if (fav) say(fill(ctx.pick(CE_TEACHER), t, fav), [t], '担任を一番慕っていた生徒');
+    }
+    say(fill(ctx.pick(CE_LAST[lk])), [], '');
+    /* 結末の題 */
+    if (!ctx.flags.outcome) {
+      var head = term ? '一学期が終わった' : allGrad ? '卒業' : ck === 'mixed' ? '卒業式と修了式' : '一年が終わった', tail;
+      var absent = S.filter(function (c) { return c.out && c.flags.absent; });
+      if (B && !B.stopped && ctx.chars[B.tg]) tail = ctx.chars[B.tg].name + 'へのいじめは最後まで止まらなかった';
+      else if (couples.length) tail = couples[0][0].name + 'と' + couples[0][1].name + (couples.length > 1 ? 'ほか、恋人が' + couples.length + '組できた' : 'が恋人になった');
+      else if (absent.length) tail = absent[0].name + 'は教室に戻らなかった';
+      else if (friends.length) tail = friends[0][0].name + 'と' + friends[0][1].name + 'が親友になった';
+      else if (rivals.length) tail = rivals[0][0].name + 'と' + rivals[0][1].name + 'は最後まで対立したまま';
+      else tail = '大きな事件もなく、それぞれの距離のまま';
+      ctx.flags.outcome = head + ' ― ' + tail;
+    }
+  }
 })();
