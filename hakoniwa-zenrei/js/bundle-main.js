@@ -368,9 +368,12 @@
     none: { label: '想われる側：興味がない', short: '興味なし', att: 0.2, ba: { aff: -5 } },
     friend: { label: '想われる側：友達としか見ていない', short: '友達止まり', att: 0.1, ba: { aff: 20, trust: 20 } },
     dislike: { label: '想われる側：苦手・避けている', short: '苦手', att: 0.08, aff: 0.6, ba: { aff: -20, ten: 18 } },
-    other: { label: '想われる側：ほかに好きな人がいる', short: '他に好きな人', att: 0.15, ba: { aff: 5 } }
+    other: { label: '想われる側：ほかに好きな人がいる', short: '他に好きな人', att: 0.15, ba: { aff: 5 } },
+    /* 両片想い：お互いに想っているのに、相手は自分を何とも思っていないと思い込んでいる。
+       箱庭に渡すときは、向きを逆にした片想いと二本にする（HK.Ties.expand）。どちらも想う側として動き、両片想いの出来事（pining.js）が起きる */
+    mutual: { label: '想われる側：実は想っている（両片想い）', short: '両片想い', mutual: true }
   };
-  HK.CRUSH_COLD_ORDER = ['', 'none', 'friend', 'dislike', 'other'];
+  HK.CRUSH_COLD_ORDER = ['', 'none', 'friend', 'dislike', 'other', 'mutual'];
   /* 不仲・敵対の「相手」の気持ち（一方的な敵視・噛み合わない関係）。空欄は、お互いに敵視している（以前の不仲・敵対と同じ）
      ba=相手から敵視する側への初期値、mods=相手の側の関係値の伸び、bias=相手の側の行動の倍率 */
   HK.HATE_BACK = {
@@ -398,7 +401,7 @@
     return null;
   };
   var HATE_WORDS = [[/一方的|片思いならぬ|相手は気にして(?:い)?ない|相手は気づいて(?:い)?ない|なんとも思って(?:い)?ない/, 'none'], [/相手はふつう|相手は普通/, 'normal'], [/相手は友(?:達|人)だと|友達だと思って/, 'friend'], [/相手は(?:好き|愛して|惚れて)|片想いされ|好かれて/, 'love']];
-  var COLD_WORDS = [[/脈なし|眼中に|相手にされ|興味がない|興味なし/, 'none'], [/友達としか|友達止まり|異性として見|恋愛対象外|対象外/, 'friend'], [/苦手|嫌われ|避けられ|避けて/, 'dislike'], [/他に好き|ほかに好き|別に好き|好きな人がいる/, 'other']];
+  var COLD_WORDS = [[/両片想い|両片思い|実は相手も/, 'mutual'], [/脈なし|眼中に|相手にされ|興味がない|興味なし/, 'none'], [/友達としか|友達止まり|異性として見|恋愛対象外|対象外/, 'friend'], [/苦手|嫌われ|避けられ|避けて/, 'dislike'], [/他に好き|ほかに好き|別に好き|好きな人がいる/, 'other']];
   HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'parent', 'pparent', 'teacher', 'mentor', 'crush', 'yan', 'bad', 'rival', 'enemy', 'lover', 'fwb', 'ex', 'fated', 'mate', 'master', 'noobs'];
 
   /* 文字から関係の種類を推定（長い語から順に照合） */
@@ -451,6 +454,8 @@
         used = used.slice(0, p0) + Array(ALIAS[k][0].length + 1).join('\u0000') + used.slice(p0 + ALIAS[k][0].length);
         k--;
       }
+      /* 「両片想い」だけ書いたら、片想い（想われる側：実は想っている） */
+      if (cold === 'mutual' && types.indexOf('crush') < 0) types.unshift('crush');
       /* 「兄弟で不仲」のように二つ書いたら、きょうだい（不仲）にまとめる */
       if (types.indexOf('bad') >= 0 && types.indexOf('sibling') >= 0) types = types.filter(function (x) { return x !== 'bad'; }).map(function (x) { return x === 'sibling' ? 'sibbad' : x; });
       var type = types[0] || null;
@@ -495,6 +500,25 @@
   HK.tieNoLove = function (t) { var D = t && T[t.type]; return !!(D && D.family && !D.loveOK && t.love !== 'ok'); };
   HK.tieFamLove = function (t) { var D = t && T[t.type]; return !!(D && D.family && !D.loveOK && t.love === 'ok'); };
   HK.Ties = {
+    /* 片想いの「両片想い」を、向きを逆にした片想い二本に開く（どちらも mutual: true）。箱庭に渡す前に一度だけ */
+    expand: function (ties) {
+      var out = [];
+      (ties || []).forEach(function (t) {
+        if (!(t && t.type === 'crush' && t.cold === 'mutual')) { out.push(t); return; }
+        var x = {}; for (var k in t) if (k !== 'cold') x[k] = t[k];
+        x.mutual = true; out.push(x);
+        var y = {}; for (var k2 in x) y[k2] = x[k2];
+        y.a = x.b; y.b = x.a;
+        if (!(ties || []).some(function (u) { return u && u.type === 'crush' && u.a === y.a && u.b === y.b; })) out.push(y);
+      });
+      return out;
+    },
+    /* a と b が両片想いか（どちらからも片想い。恋人になったら外れる） */
+    pining: function (ctx, a, b) {
+      if (!a || !b || a === b || ctx.pair(a, b).couple) return false;
+      if (HK.Ties.has(ctx, a, b, 'lover') || HK.Ties.has(ctx, a, b, 'mate') || HK.Ties.has(ctx, a, b, 'fated')) return false;
+      return !!(HK.Ties.from(ctx, a, b, 'crush') && HK.Ties.from(ctx, b, a, 'crush'));
+    },
     apply: function (ctx, ties) {
       ctx.ties = {}; ctx.tiesAll = {};
       (ties || []).forEach(function (t) {
@@ -523,7 +547,7 @@
         if (HK.tieNoLove(t)) p.kin = true;
         if (D.family && !D.loveOK) p.trustFloor = Math.max(p.trustFloor || 0, t.type === 'sibbad' ? 15 : 30);
         if (D.night && ctx.scen.id !== 'classroom') p.night = true;
-        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB ? t.cold : '', love: HK.tieFamLove(t) ? 'ok' : '' };
+        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB ? t.cold : '', love: HK.tieFamLove(t) ? 'ok' : '', mutual: !!t.mutual };
         list.push(o);
         list.sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
         ctx.ties[k] = list[0];
@@ -19868,6 +19892,8 @@
     if (HK.Ties && HK.Ties.has(ctx, a, b, 'crush')) return false;
     return HK.canLove(a, b) && ctx.R(a, b).att > 48 && ctx.R(b, a).att < 30;
   };
+  /* a と b が両片想いか（どちらからも片想いで、まだ恋人ではない） */
+  Z.isPining = function (ctx, a, b) { return !!(HK.Ties && HK.Ties.pining && HK.Ties.pining(ctx, a, b)); };
   /* 夜の描写の度合い：off（描かない）・fade（ほのめかす）・high（描写する／R18版のみ） */
   /* 夜の描き方：R18の描写の設定（lewd-unify.js）の「ほのめかす」なら fade、それ以外は high（設定をそろえる前の入力は zlewd を見る） */
   Z.loveLv = function (ctx) {
@@ -19931,7 +19957,15 @@
     /* 墓まで持っていくと決める */
     grave: L('{a}は、眠る{b}の横顔を見つめながら決めた。この気持ちは、言わない。言わずに、守る。|{a}は{b}が別の誰かと笑っているのを見て、そっと目を逸らした。「……それでいい。生きててくれれば」|{a}はノートの最後のページに{b}への想いを書いて、そのページを破って燃やした。灰になるまで、見届けた。|{a}は自分の胸に誓った。この想いは墓まで持っていく。その代わり、{b}だけは、必ずこの街から出す。'),
     /* 黙って守る（決意のあと） */
-    guard: L('{a}は自分の分の缶詰を、黙って{b}のリュックに入れた。{b}は気づかなかった。|{a}は{b}の見張りの番を、何も言わずに代わった。「眠れないから」と嘘をついた。|群れが近づいたとき、{a}は真っ先に{b}の前に立った。理由を訊かれても、「たまたま近かったから」としか言わなかった。|{a}は{b}の靴紐がほどけているのに気づいて、黙ってしゃがみ、結び直した。{b}が礼を言うと、{a}はそっぽを向いた。|{a}は{b}が眠るまで、ずっと扉の前に座っていた。')
+    guard: L('{a}は自分の分の缶詰を、黙って{b}のリュックに入れた。{b}は気づかなかった。|{a}は{b}の見張りの番を、何も言わずに代わった。「眠れないから」と嘘をついた。|群れが近づいたとき、{a}は真っ先に{b}の前に立った。理由を訊かれても、「たまたま近かったから」としか言わなかった。|{a}は{b}の靴紐がほどけているのに気づいて、黙ってしゃがみ、結び直した。{b}が礼を言うと、{a}はそっぽを向いた。|{a}は{b}が眠るまで、ずっと扉の前に座っていた。'),
+
+    /* ---------- 両片想い（どちらも想っているのに、相手は何とも思っていないと思い込んでいる。{a}{b}どちらが先でも成り立つ） ---------- */
+    rushM: L('「明日、どっちかが死ぬかもしれないだろ。だから今言う」――{a}がそう切り出したとき、{b}も同時に口を開いていた。「待って、私も今、言おうとしてた」|{a}は群れから逃げ込んだ物置の中で、息を切らしたまま言った。「……好き。どうせ{b}は、私のことなんか何とも思ってないだろうけど」|見張りの交代のとき、{a}は{b}を呼び止めた。{b}も、{a}を呼び止めようとしていた。二人の「あのさ」が、ぴったり重なった。{a}は、先に言った。「……ずっと、好きだった」|{a}は{b}の袖を掴んだ。「死ぬ前に、一個だけ。……ずっと、好きだった。迷惑なのは分かってる」'),
+    rushMYes: L('{b}はしばらく呆然として、それから笑い出した。「……それ、こっちの台詞」|{b}は顔を覆った。「ずっと、私の片想いだと思ってた」――{a}も、まったく同じことを思っていた。二人は顔を見合わせて、力が抜けたように座り込んだ。|{b}は{a}の手を握り返した。「何とも思ってないわけないでしょ。……こっちの台詞だよ、それ」|{b}は泣きながら笑った。「私も、ずっと好きだった。こんな街になるまで、二人して何やってたんだろうね」'),
+    pressM: L('{a}は{b}を壁際に追い詰めた。「どうせ世界は終わるんだ。……嫌なら、突き飛ばしてくれ。それで諦める」|{a}は{b}の手首を掴んで、唇を重ねた。嫌われる覚悟は、とっくにできていた。|{a}は{b}の寝床に潜り込んだ。「一人で寝るの、もう無理。……迷惑なのは分かってる」'),
+    pressMYes: L('{b}は突き飛ばさなかった。代わりに{a}の襟を掴んで、自分から引き寄せた。「……遅い。ずっとこうしたかったのは、私の方」|{b}は{a}の背中に腕を回して、震える声で言った。「ずっと、私だけだと思ってた」――{a}は、自分の耳を疑った。|{b}は「……今夜だけ、なんて言わないでよ」と言った。{a}がその意味に気づくまで、少し時間がかかった。それは、こっちの台詞だった。'),
+    graveM: L('{a}は、眠る{b}の横顔を見つめながら決めた。この気持ちは、言わない。――同じ夜、背中合わせの寝袋の中で、{b}も同じことを決めていた。|{a}はノートの最後のページに{b}への想いを書いて、破って燃やした。数日前、{b}も同じようにページを一枚燃やしていたことを、{a}は知らない。|{a}は自分の胸に誓った。この想いは墓まで持っていく。{b}はどうせ、私のことなんか見ていないのだから。――{b}もまた、まったく同じ理由で口を閉ざしていた。|{a}は{b}が別の誰かと笑っているのを見て、そっと目を逸らした。その一瞬あと、{b}がこちらを振り返ったことに、{a}は気づかなかった。'),
+    guardM: L('{a}は自分の分の缶詰を、黙って{b}のリュックに入れた。その晩、{a}は自分のリュックに、見覚えのない缶詰が入っているのを見つけた。|{a}は{b}の見張りの番を代わろうとして、扉の前で{b}と鉢合わせた。{b}も、{a}の番を代わりに来たところだった。「……眠れないから」「……私も」|群れが近づいたとき、{a}は{b}の前に立った。同時に{b}も{a}の前に出ようとして、二人は肩をぶつけた。「なんで前に出るの」「そっちこそ」|{a}は{b}が眠るまで、扉の前に座っていた。{b}は寝たふりをしたまま、どうして自分なんかのためにと思っていた。|{a}は{b}の靴紐を黙って結び直した。礼を言う{b}の顔が赤いことに、{a}は気づかなかった。そっぽを向いた自分の顔も、同じくらい赤かった。')
   };
 
   function say(ctx, c, T) { var l = T[c.persona] || T.gentle; return ctx.pick(l); }
@@ -20055,7 +20089,11 @@
     /* 最後に、やっと言う */
     say: L('{v}は{z}の前に立ち、初めて口にした。「ずっと、好きだった」――{z}は、うめき声で答えた。それでも{v}は、少しだけ救われた顔をした。|{v}は{z}に向かって言った。「生きてるうちに、言えばよかった」――{z}の濁った目に、{v}の泣き顔が映っていた。'),
     /* 自分の手で眠らせる */
-    self: L('{v}は仲間の武器を押しのけた。「……最後くらい、触れてもいいよね」――{v}は{z}を抱きしめるようにして、終わらせた。|{v}は{z}の目を見つめたまま、引き金を引いた。「一度も、こっちを見てくれなかったね」――その声は、ひどく優しかった。')
+    self: L('{v}は仲間の武器を押しのけた。「……最後くらい、触れてもいいよね」――{v}は{z}を抱きしめるようにして、終わらせた。|{v}は{z}の目を見つめたまま、引き金を引いた。「一度も、こっちを見てくれなかったね」――その声は、ひどく優しかった。'),
+    /* 両片想いだった相手（{z}も{v}を想っていたのに、{v}はそれを知らない） */
+    keepM: L('{v}は、ゾンビになった{z}を地下の倉庫に閉じ込めた。{z}の上着のポケットから、{v}の名前を何度も書いては消したメモが落ちた。{v}はそれを拾わずに、扉に鍵をかけた。「……今さら、そんなの」|{v}は{z}を空き部屋に閉じ込め、外から板を打ちつけた。「生きてるうちは、私なんか見てなかったくせに」――{z}が誰を見ていたのか、{v}だけが知らなかった。|{v}は{z}をシーツでくるみ、自分の寝床の隣に寝かせた。うめき声に相槌を打ちながら、{v}は言った。「やっと、こっちを見てくれるね」――ずっと見ていたのは、{z}も同じだった。'),
+    sayM: L('{v}は{z}の前に立ち、初めて口にした。「ずっと、好きだった」――{z}の喉から、うめき声とは違う短い音が漏れた。それが「私も」に聞こえたのは、きっと気のせいだった。|{v}は{z}に向かって言った。「生きてるうちに、言えばよかった」――あとで{z}の荷物から、{v}に宛てた渡せなかった手紙が見つかった。書き出しは「ずっと、好きでした」だった。|{v}は{z}の濁った目を見つめて言った。「どうせ、迷惑だったよね」――{v}がなくしたと思っていたお守りが、{z}の首から下がっていた。'),
+    selfM: L('{v}は仲間の武器を押しのけた。「……最後くらい、触れてもいいよね」――{v}は{z}を抱きしめるようにして、終わらせた。{z}の胸ポケットから、{v}と二人で写った写真がこぼれ落ちた。|{v}は{z}の目を見つめたまま、引き金を引いた。「一度も、こっちを見てくれなかったね」――{z}がずっと見ていたのは、{v}の背中だった。そのことを、{v}は最後まで知らなかった。|{v}は{z}を眠らせたあと、{z}の手に握られていた紙を開いた。「生きて帰れたら、{v}に言う」――{v}は、その場から動けなくなった。')
   };
   Z.crushZombie = function (ctx, zp, P) {
     var c = ctx.chars[zp.i];
@@ -20065,6 +20103,8 @@
     zp.crushDone = true;
     var rng = ctx.rng, m = { v: o.name, z: c.name };
     var unreq = HK.Unreq && HK.Unreq.cold(ctx, o, c);
+    /* 両片想いだった（{z}も{v}を想っていた）なら、すれ違ったまま終わる文にする */
+    var pin = Z.isPining(ctx, o, c), PK = function (k) { return LV.crushZ[pin ? k + 'M' : k]; };
     var opts = [
       ['keep', (HK.Obsess && !HK.Obsess.jealOk(ctx, o, c) ? -9 : 0) + o.tr.jealous * 0.55 + o.tr.ac * 0.25 + o.stress / 160 + (unreq ? 0.25 : 0) - o.tr.cp * 0.15 - o.tr.np * 0.1],
       ['say', 0.35 + o.tr.honesty * 0.3 + o.tr.np * 0.2],
@@ -20075,17 +20115,17 @@
     ctx.stress(o, k === 'keep' ? -20 : 25);
     if (k === 'keep') {
       zp.down = true; zp.kept = o.i; o.z.keep = c.i; o.z.keepArea = zp.area;
-      c.fateNote = (c.fateNote || '') + '。片想いしていた' + o.name + 'に、閉じ込められた';
-      ctx.act2({ actors: actors, cat: 'betray', text: fill(ctx.pick(LV.crushZ.keep), m), why: o.name + 'は、片想いの相手だった' + c.name + 'を手放さなかった（執着 ' + Math.round(o.tr.jealous * 100) + '・AC・焦り ' + Math.round(o.stress) + (unreq ? '・生きているうちは相手にされなかった' : '') + '）', mag: 52 });
+      c.fateNote = (c.fateNote || '') + (pin ? '。両片想いだった' : '。片想いしていた') + o.name + 'に、閉じ込められた';
+      ctx.act2({ actors: actors, cat: 'betray', text: fill(ctx.pick(PK('keep')), m), why: o.name + 'は、' + (pin ? '両片想いだった（' + o.name + 'はそれを知らない）' : '片想いの相手だった') + c.name + 'を手放さなかった（執着 ' + Math.round(o.tr.jealous * 100) + '・AC・焦り ' + Math.round(o.stress) + (unreq ? '・生きているうちは相手にされなかった' : '') + '）', mag: 52 });
       return true;
     }
     if (k === 'self') {
       zp.down = true; ctx.zb.stats.putdown++; ctx.pair(o, c).putdown = o.i;
-      c.fateNote = (c.fateNote || '') + '。最後は、片想いしていた' + o.name + 'の手で眠らされた';
-      ctx.act2({ actors: actors, cat: 'combat', text: fill(ctx.pick(LV.crushZ.self), m), why: o.name + 'は、片想いの相手を自分の手で眠らせた（CP・A・ドライさ）', mag: 46 });
+      c.fateNote = (c.fateNote || '') + (pin ? '。最後は、両片想いだった' : '。最後は、片想いしていた') + o.name + 'の手で眠らされた';
+      ctx.act2({ actors: actors, cat: 'combat', text: fill(ctx.pick(PK('self')), m), why: o.name + 'は、' + (pin ? '両片想いだった相手を、想いを知らないまま' : '片想いの相手を') + '自分の手で眠らせた（CP・A・ドライさ）', mag: 46 });
       return true;
     }
-    ctx.act2({ actors: actors, cat: 'romance', text: fill(ctx.pick(LV.crushZ.say), m), why: o.name + 'は、ゾンビになった' + c.name + 'に、やっと想いを告げた', mag: 38 });
+    ctx.act2({ actors: actors, cat: 'romance', text: fill(ctx.pick(PK('say')), m), why: o.name + 'は、ゾンビになった' + c.name + 'に、やっと想いを告げた' + (pin ? '（両片想いだった。' + c.name + 'も同じ気持ちだったことを、' + o.name + 'は知らない）' : ''), mag: 38 });
     return false;
   };
   /* 閉じ込めたゾンビのもとへ通う */
@@ -20119,6 +20159,25 @@
       var k = HK.weighted(rng, opts, function (o) { return Math.pow(Math.max(0.03, o[1]), 2); })[0];
       pf.zcr = k;
       var rb = ctx.R(b, a), loveOK = HK.canLove(b, a);
+      /* 両片想い：{b}も想っているので、言えば通じる。黙ると決めた場合は、二人とも同じことを決めている */
+      if (Z.isPining(ctx, a, b)) {
+        if (k === 'rush' || k === 'press') {
+          pf.zconf = true; pf.couple = true;
+          ctx.mod2(a, b, { att: 12, aff: 12, trust: 8 }, { att: 12, aff: 12, trust: 8 });
+          if (k === 'rush') return { text: fill(ctx.pick(LV.rushM), m) + fill(ctx.pick(LV.rushMYes), m), why: a.name + 'は、終わりかけた街で告白を急いだ（本音の出やすさ・衝動性・焦り ' + Math.round(a.stress) + '）／両片想いだった。' + b.name + 'も、ずっと同じ気持ちだった', mag: 34 };
+          pf.night = true;
+          var txm = fill(ctx.pick(LV.pressM), m) + fill(ctx.pick(LV.pressMYes), m);
+          if (Z.loveLv(ctx) === 'high' && LV.pressHigh) txm += LV.pressHigh(ctx, a, b);
+          return { cat: 'romance', text: txm, why: a.name + 'は、どうせ終わる世界ならと踏み込んだ（攻撃性・衝動性）／両片想いだった。' + b.name + 'は拒まなかった', mag: 34 };
+        }
+        [[a, b], [b, a]].forEach(function (p) {
+          var x = p[0], y = p[1];
+          x.focus = y; x.z.vow = y.i;
+          if (x.goal.id !== 'chaos' && x.goal.id !== 'family') x.goal = Z.scen.goals.filter(function (g) { return g.id === 'protect'; })[0] || x.goal;
+        });
+        ctx.mod2(a, b, { aff: 8 }, { aff: 8 });
+        return { text: fill(ctx.pick(LV.graveM), m), why: a.name + 'も' + b.name + 'も、相手への想いを墓まで持っていくと決めた（両片想い。どちらも、相手は自分を何とも思っていないと思い込んでいる）。目標「大切な人を守る」', mag: 28 };
+      }
       if (k === 'rush') {
         pf.zconf = true;
         var yes = loveOK && rb.att > 26 && rb.aff > 15;
@@ -20143,14 +20202,16 @@
   /* 想いを隠したまま、黙って守る */
   EV.push({
     id: 'z_cr_guard', cat: 'help', scope: 'pair',
-    when: function (ctx, a, b) { return a.z.vow === b.i && (ctx.pair(a, b).zgd || 0) < 3; },
+    /* 両片想いで黙っていた二人が恋人になったら、もう「想いを隠したまま」守る場面にはしない */
+    when: function (ctx, a, b) { return a.z.vow === b.i && (ctx.pair(a, b).zgd || 0) < 3 && !(ctx.pair(a, b).couple && HK.Ties && HK.Ties.from(ctx, a, b, 'crush') && HK.Ties.from(ctx, b, a, 'crush')); },
     w: function () { return 2.2; },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b); pf.zgd = (pf.zgd || 0) + 1;
       if (a.z.food > 0 && b.z.food <= 1) { a.z.food--; b.z.food++; }
       b.stress = Math.max(0, b.stress - 6);
       ctx.mod2(a, b, { aff: 3 }, { trust: 6, aff: 4 });
-      return { text: fill(ctx.pick(LV.guard), { a: a.name, b: b.name }), why: a.name + 'は想いを隠したまま、' + b.name + 'を守り続けている', mag: 18 };
+      var pin = Z.isPining(ctx, a, b);
+      return { text: fill(ctx.pick(pin ? LV.guardM : LV.guard), { a: a.name, b: b.name }), why: a.name + 'は想いを隠したまま、' + b.name + 'を守り続けている' + (pin ? '（両片想い。' + b.name + 'も同じことをしている）' : ''), mag: 18 };
     }
   });
 })();
@@ -20414,6 +20475,8 @@
   var BODY = {
     crushA: L('「ずっと好きでした。言えないまま行くのは、ずるいよね。ごめん。」|「最後だから書きます。{b}のことが好きでした。返事はいりません。生きて。」|「本当は、最後まで隣にいたかった。好きだったよ。……読んだら、捨てていいから。」'),
     crushB: L('「{b}の気持ちには、気づいてた。応えられなくて、ごめん。でも、嬉しかった。」|「いつも見ててくれて、ありがとう。最後まで、ちゃんと向き合えなくてごめん。」|「{b}に優しくしてもらった分、何も返せなかった。どうか、ほかの誰かと幸せに。」'),
+    /* 両片想い：{b}も{a}を想っているのに、{a}は自分だけの片想いだと思ったまま書いている */
+    crushM: L('「ずっと好きでした。{b}にとっては、ただの仲間だったと思うけど。最後だから、それだけ。」|「返事はいりません。分かってるから。{b}が私のことを何とも思ってないのは、ずっと前から。……それでも、好きだった。」|「迷惑だと思って、最後まで言えなかった。好きです。読んだら、忘れて。」|「もし、ほんの少しでも同じ気持ちだったら――なんて、考えるだけ無駄だよね。好きだったよ。生きて。」'),
     parentA: L('「ちゃんと食べること。夜は一人で出歩かないこと。……最後まで、口うるさくてごめんね。愛してる。」|「あなたが生まれた日のことを、今でも覚えています。生きて。それだけでいい。」|「守ってあげられなくて、ごめん。でも、もう一人で大丈夫。あなたは、自慢の子です。」'),
     child: L('「今まで育ててくれて、ありがとう。最後に親不孝をして、ごめんなさい。」|「追いかけてこないで。お願い。最後くらい、言うことを聞いて。」|「ちゃんと、ありがとうを言えばよかった。……ありがとう。」'),
     protA: L('「ずっと、我が子みたいに思ってた。最後まで守ってやれなくて、ごめん。あとは、自分の足で生きろ。」|「ちゃんと食べろ。夜はひとりで出歩くな。……最後まで口うるさくて、悪かったな。」|「お前が生まれた日のこと、今でも覚えてる。生きろ。それだけでいい。」'),
@@ -20457,11 +20520,14 @@
     aniki: L('追伸：みんなのこと、頼んだ。|追伸：残した缶詰は、全員で分けろ。|追伸：泣くのは一回だけにしとけ。')
   };
   /* 手紙を読んだ{b}の反応（ときどき） */
+  /* 両片想いの手紙を読んだ{b}（自分も想っていたのに、届けられなかった） */
+  var READ_M = L('{b}は手紙を読み終えて、声を上げずに泣いた。「……こっちの台詞だよ」――答える相手は、もういなかった。|{b}は、自分のポケットに入れたままの、渡せなかった手紙を取り出した。書き出しは、同じ言葉だった。|{b}は手紙を握りしめた。「何とも思ってないわけ、ないでしょ」――その声は、誰にも届かなかった。|{b}は手紙を何度も読み返した。迷惑だと思って言えなかったのは、{b}も同じだった。');
   var READ = L('{b}は、手紙を読み終えてもしばらく動けなかった。|{b}は手紙を握りしめて、外に飛び出しかけた。誰かに腕を掴まれて、止められた。|{b}は、手紙を丁寧に折りたたんで、胸ポケットにしまった。|{b}は手紙の字が、最後の方だけ震えていることに気づいた。');
 
   function kindOf(ctx, a, b) {
     var T = HK.Ties;
     if (T) {
+      if (T.pining && T.pining(ctx, a, b)) return 'crushM';
       if (T.from(ctx, a, b, 'crush')) return 'crushA';
       if (T.from(ctx, b, a, 'crush')) return 'crushB';
       if (T.from(ctx, a, b, 'sibprot') && T.has(ctx, a, b, 'sibprot').type === 'sibprot') return 'protA';
@@ -20495,7 +20561,8 @@
     var t = fill(ctx.pick(GO), m) + fill(ctx.pick(AT), m) + fill(ctx.pick(BODY[kind] || BODY.plain), m);
     if (SIGN[per] && rng() < 0.4 && kind !== 'curt') t += ctx.pick(SIGN[per]);
     if (mates && mates.length > 1 && rng() < 0.35) t += '――裏には、小さく「みんなにも、よろしく」と書き足してあった。';
-    if (rng() < 0.45) t += fill(ctx.pick(READ), m);
+    if (kind === 'crushM') t += fill(ctx.pick(READ_M), m);
+    else if (rng() < 0.45) t += fill(ctx.pick(READ), m);
     return t;
   };
   Z.letterKind = kindOf;
@@ -21081,7 +21148,7 @@
 ;/* ==== js/island-stay.js ==== */
 /* 箱庭シミュレーター: 無人島 ― 「島に残る」を選んだ理由
    船に乗らない人には、必ず理由をつける。理由は島で起きたことと数値から決まる
-   ・仲間外れ（村八分・皆からの信頼の低さ）　・失恋（片想い・想い人が別の誰かと結ばれた・断られた）
+   ・仲間外れ（村八分・皆からの信頼の低さ）　・失恋（片想い・想い人が別の誰かと結ばれた・断られた）　・両片想いのまま言えなかった（相手も想っているのに、届かないと思い込んでいる。片想いの「届かなかった」にはしない）
    ・大事な人の死　・自分が誰かを手にかけた罪悪感　・想う相手が島に残る　・まとめ役としての責任
    ・自分から（目標「本当は帰りたくない」）：FC・AC・A・NP のどれが強いかで、思ったことが変わる
    口調は関係しない */
@@ -21102,6 +21169,7 @@
     lonely: L('{a}は船に乗らなかった。島での日々、誰ともろくに打ち解けられなかった。帰っても、それは同じだと思った。|{a}は、皆が抱き合って喜ぶ輪の外にいた。その輪に入れないまま、黙って浜に残った。'),
     heart: L('{a}は、{b}が{c}の手を取って船に乗るのを見ていた。それを見届けてから、{a}は浜に背を向けた。|{a}は{b}の隣に乗る勇気がなかった。同じ船で、{b}と{c}の笑い声を聞き続けるのは無理だった。|{a}は笑って手を振った。「俺はもう少しここにいる」――{b}が{c}を選んだことは、ずっと前から分かっていた。'),
     unreq: L('{a}は、{b}の顔を最後まで見られなかった。届かない想いを抱えたまま、同じ船に揺られる気にはなれなかった。|{a}の想いは、{b}には一度も届かなかった。{a}は島に残ることで、それに区切りをつけた。'),
+    unsaid: L('{a}は最後まで、{b}に言えなかった。{b}が自分を何とも思っていないことくらい、分かっているつもりだった。{a}は笑って手を振り、浜に残った。|{a}は船に乗りかけて、{b}の背中を見た。隣に座れば、きっと言ってしまう。困らせるくらいなら、と{a}は桟橋を降りた。|{a}は{b}に「元気でね」とだけ言った。言いかけた本当の言葉は、喉の奥で止まったままだった。{b}も、同じ言葉を飲み込んでいたことを、{a}は知らなかった。'),
     refused: L('{a}は、焚き火の夜に{b}に断られた言葉を、まだ覚えていた。「ごめん。心に決めた人がいる」――{a}は、船に乗らなかった。|{b}に気持ちを伝えて、断られた。それから{a}は、帰りたいと口にしなくなった。'),
     grief: L('{a}は、{b}を埋めた丘を振り返った。「一人にはしておけない」|{a}は{b}の墓に花を供えてから、船に向かって首を振った。|{a}は「{b}を置いては帰れない」と言った。誰も、それ以上は言えなかった。'),
     guilt: L('{a}は自分の手を見つめた。{b}をあんな目に遭わせて、何事もなかったように帰れるはずがなかった。|{a}は船に乗る皆を見送った。{b}のことを、本土でどう説明すればいいのか分からなかった。'),
@@ -21128,6 +21196,7 @@
       live.forEach(function (x) { if (x === c || x === b) return; var v = Math.min(ctx.R(b, x).att, ctx.R(x, b).att); if (v > rv) { rv = v; rival = x; } });
       if (rival && rv > 32 && rv > ctx.R(b, c).att + 5) out.push({ k: 'heart', s: 0.2 + att / 250 + c.tr.ac * 0.1, b: b, c: rival, why: c.name + 'は' + b.name + 'に惹かれていた（' + Math.round(att) + '）が、' + b.name + 'は' + rival.name + 'と結ばれた' });
       else if (ctx.pair(b, c).lockRef) out.push({ k: 'refused', s: 0.2 + att / 250, b: b, why: b.name + 'に想いを断られた（' + b.name + 'は恋愛の相手を決めている）' });
+      else if (HK.Ties && HK.Ties.pining && HK.Ties.pining(ctx, c, b)) { if (att > 38) out.push({ k: 'unsaid', s: 0.08 + att / 320 + c.tr.ac * 0.12, b: b, why: b.name + 'とは両片想い（' + Math.round(att) + '／' + b.name + 'から ' + Math.round(ctx.R(b, c).att) + '）なのに、届かない想いだと思い込んだまま言えなかった' }); }
       else if (ctx.R(b, c).att < att * 0.45 && att > 38) out.push({ k: 'unreq', s: 0.1 + att / 300 + c.tr.ac * 0.1, b: b, why: b.name + 'への片想い（' + Math.round(att) + '）が届かなかった（' + b.name + 'から ' + Math.round(ctx.R(b, c).att) + '）' });
     });
     /* 大事な人の死・罪悪感 */
@@ -21371,7 +21440,7 @@
 })();
 ;/* ==== js/island-sea.js ==== */
 /* 箱庭診断: 無人島の海と探索 ―― 大物釣り／海に引き込まれる・漂流と帰還／一人の探索／二人以上の探索（関係で展開が変わる）
-   関係の見方：恋人・惹かれ合い（love）／片想い（crush）／ライバル・険悪（rival）／仲良し（friend）／疑い（wary）／まだ他人（plain） */
+   関係の見方：恋人・惹かれ合い（love）／両片想い（pining：どちらも想っているのに、相手は自分を何とも思っていないと思い込んでいる）／片想い（crush）／ライバル・険悪（rival）／仲良し（friend）／疑い（wary）／まだ他人（plain） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -21387,6 +21456,7 @@
   /* 二人の関係（a から見た b） */
   function bondOf(ctx, a, b) {
     var ab = R(ctx, a, b), ba = R(ctx, b, a), pf = ctx.pair(a, b);
+    if (HK.Ties && HK.Ties.pining && HK.Ties.pining(ctx, a, b)) return 'pining';
     if (pf.couple || tie(ctx, a, b, 'lover') || tie(ctx, a, b, 'mate') || (ab.att > 45 && ba.att > 45)) return 'love';
     if (ab.att > 48 && HK.canLove(a, b)) return 'crush';
     if (tie(ctx, a, b, 'rival') || tie(ctx, a, b, 'enemy') || ab.ten > 38 || ab.aff < -15) return 'rival';
@@ -21394,7 +21464,10 @@
     if (ab.aff > 30 && ab.trust > 18) return 'friend';
     return 'plain';
   }
-  var BOND_WHY = { love: '惹かれ合う二人', crush: '片想いの相手と', rival: '張り合う二人', wary: '信用しきれない相手と', friend: '気心の知れた二人', plain: 'まだよく知らない相手と' };
+  var BOND_WHY = { love: '惹かれ合う二人', pining: '両片想いの二人', crush: '片想いの相手と', rival: '張り合う二人', wary: '信用しきれない相手と', friend: '気心の知れた二人', plain: 'まだよく知らない相手と' };
+
+  /* 恋の気配がある関係（恋人・両片想い・片想い） */
+  function warm(k) { return k === 'love' || k === 'pining' || k === 'crush'; }
 
   /* ======================= 大物釣り ======================= */
   var BIG = [
@@ -21415,11 +21488,14 @@
     var intro = a.name + 'の体が、竿ごと海へ引きずり込まれた。' + pk(ctx, [what + 'は止まらなかった。', '波が' + a.name + 'の頭を越えた。', '岸から伸ばされた手は、あと少しで届かなかった。']);
     if (res) {
       var r = R(ctx, res, a), love = bondOf(ctx, res, a);
-      var go = 0.18 + res.tr.np * 0.25 + Math.max(0, r.aff) / 250 + (love === 'love' || love === 'crush' ? 0.2 : 0) - (love === 'rival' ? 0.1 : 0) - res.tr.caution * 0.15 - (ctx.env.storm || 0) / 400;
+      var go = 0.18 + res.tr.np * 0.25 + Math.max(0, r.aff) / 250 + (warm(love) ? 0.2 : 0) - (love === 'rival' ? 0.1 : 0) - res.tr.caution * 0.15 - (ctx.env.storm || 0) / 400;
       if (rng() < go) {
         var lines = {
           love: [res.name + 'は迷わず海に飛び込んだ。' + a.name + 'の腕を掴み、離さなかった。浜に這い上がった二人は、しばらく抱き合ったまま動けなかった。' + res.name + '「…二度と、こんなことしないで」',
             res.name + 'は' + a.name + 'の名前を叫びながら泳いだ。浜に引き上げたあと、' + a.name + 'は咳き込みながら言った。' + a.name + '「…ねえ、今の、人工呼吸した？」' + res.name + '「してない！　…まだ」'],
+          pining: [res.name + 'は誰より先に海へ飛び込み、' + a.name + 'を浜まで引きずり上げた。' + a.name + '「なんで、そこまで…」' + res.name + '「…誰でも助ける」本当は誰でもよくなかった。' + a.name + 'は、その言葉を真に受けて少しだけ落ち込んだ。',
+            res.name + 'は' + a.name + 'を抱えて岸まで泳ぎ切った。二人は砂の上で、同時に「ごめん」と言った。何を謝ったのか、どちらもわからなかった。濡れた手は、しばらく離れなかった。',
+            '浜に引き上げられた' + a.name + 'は、咳き込みながら' + res.name + 'の手を握っていた。' + a.name + '「…嫌だったでしょ、こんなの」' + res.name + '「嫌なわけない」言ってから、' + res.name + 'は慌てて「仲間だし」と付け足した。' + a.name + 'は「だよね」と笑って、その夜は眠れなかった。'],
           crush: [res.name + 'は服のまま海に飛び込み、' + a.name + 'を浜まで引っ張ってきた。' + a.name + '「ありがと…」' + res.name + 'は濡れた前髪で、真っ赤な顔を隠した。',
             res.name + 'は' + a.name + 'を抱えて岸まで泳ぎ切った。' + a.name + '「重かったでしょ」' + res.name + '「…全然」本当は腕がちぎれそうだった。'],
           rival: [res.name + 'は舌打ちして海に飛び込んだ。' + a.name + 'を浜に放り出すと、' + res.name + '「借りにしとく。高くつくからな」' + a.name + '「…頼んでない」' + res.name + '「知ってる」',
@@ -21431,10 +21507,10 @@
           plain: [res.name + 'が海に飛び込んで、' + a.name + 'を引き上げた。' + a.name + 'はそれまで' + res.name + 'とろくに話したこともなかった。その夜、' + a.name + 'は焚き火で' + res.name + 'の服を一番いい場所に干した。',
             res.name + 'が浅瀬から手を伸ばし、' + a.name + 'を掴んだ。' + a.name + '「…助かった。本当に」']
         };
-        ctx.act2({ actors: [res, a], cat: love === 'love' || love === 'crush' ? 'romance' : 'help', mag: 22,
+        ctx.act2({ actors: [res, a], cat: warm(love) ? 'romance' : 'help', mag: 22,
           fx: function () {
             a.hp -= 10; res.hp -= 8; ctx.stress(a, 12);
-            ctx.mod2(res, a, { aff: 6, trust: 6, ten: love === 'rival' ? -6 : 0 }, { aff: 14, trust: 18, ten: love === 'rival' ? -10 : 0, att: love === 'love' || love === 'crush' ? 8 : 0 });
+            ctx.mod2(res, a, { aff: 6, trust: 6, ten: love === 'rival' ? -6 : 0 }, { aff: 14, trust: 18, ten: love === 'rival' ? -10 : 0, att: warm(love) ? 8 : 0 });
             ctx.others(res).forEach(function (o) { if (o !== a) ctx.mod(o, res, { trust: 5 }); });
           },
           text: intro + pk(ctx, lines[love]), why: res.name + 'が助けに飛び込んだ（NP・' + BOND_WHY[love] + '）' });
@@ -21523,7 +21599,11 @@
       if (!P.length) { ctx.act2({ actors: [c], cat: 'solo', text: how, why: c.name + 'の体力とサバイバル知識（漂流から帰還）', mag: 20 }); return; }
       var first = ctx.most(P, function (o) { return R(ctx, o, c).aff / 60 + R(ctx, o, c).att / 80 + o.tr.warmth; });
       var bd = bondOf(ctx, first, c);
-      var meet = {
+      var meet = bd === 'pining' ? pk(ctx, [
+        first.name + 'は' + c.name + 'の顔を見た瞬間、泣き出した。' + c.name + 'は、自分のために泣く人がいるとは思っていなかった。' + c.name + '「…心配、してくれたの」' + first.name + '「当たり前でしょ」――その「当たり前」の意味を、二人は別々に受け取った。',
+        first.name + 'は' + c.name + 'に駆け寄って、抱きつく寸前で止まった。' + first.name + '「…おかえり」' + c.name + 'も伸ばしかけた腕を、そっと下ろした。流されている間ずっと' + first.name + 'のことを考えていたとは、言えなかった。',
+        c.name + '「流されてる間、ずっと会いたい人がいた」' + first.name + 'は笑って「誰？」と聞いた。' + c.name + 'は「…内緒」と目をそらした。' + first.name + 'はその夜、焚き火を見ながら、それが自分ならいいのにと思った。'
+      ]) : {
         love: first.name + 'は駆け寄って、' + c.name + 'を抱きしめた。何も言えなかった。' + c.name + '「…ただいま」',
         crush: first.name + 'は' + c.name + 'の顔を見た瞬間、泣き出した。自分でも驚くほど、止まらなかった。',
         rival: first.name + '「…遅いんだよ」' + c.name + '「待ってたの？」' + first.name + '「待ってない」焚き火のそばには、' + c.name + 'の分の魚が三日分、取ってあった。',
@@ -21531,8 +21611,8 @@
         friend: first.name + '「生きてたー！」――' + first.name + 'は' + c.name + 'に飛びついて、二人そろって波打ち際に倒れた。',
         plain: first.name + 'は' + c.name + 'に水を渡した。' + c.name + 'は一気に飲み干して、「生き返った」と言った。'
       }[bd];
-      ctx.act2({ actors: [c, first], cat: bd === 'love' || bd === 'crush' ? 'romance' : 'bond', mag: 24,
-        fx: function () { c.hp = Math.max(c.hp, 15); P.forEach(function (o) { ctx.stress(o, -10); ctx.mod(o, c, { aff: 4 }); }); ctx.mod2(first, c, { aff: 8, trust: 6 }, { aff: 10, trust: 8, att: bd === 'love' || bd === 'crush' ? 6 : 0 }); },
+      ctx.act2({ actors: [c, first], cat: warm(bd) ? 'romance' : 'bond', mag: 24,
+        fx: function () { c.hp = Math.max(c.hp, 15); P.forEach(function (o) { ctx.stress(o, -10); ctx.mod(o, c, { aff: 4 }); }); ctx.mod2(first, c, { aff: 8, trust: 6 }, { aff: 10, trust: 8, att: warm(bd) ? 6 : 0 }); },
         text: how + meet, why: c.name + 'が漂流から帰還（' + days + '日）。' + first.name + 'の好意' });
     });
   }
@@ -21582,12 +21662,15 @@
     {
       /* 一人の探索の土産：関係で渡し方が変わる */
       id: 'i_solo_gift', cat: 'romance', scope: 'pair',
-      when: function (ctx, a, b) { var k = bondOf(ctx, a, b); return k === 'love' || k === 'crush' || k === 'rival' || k === 'friend'; },
+      when: function (ctx, a, b) { var k = bondOf(ctx, a, b); return warm(k) || k === 'rival' || k === 'friend'; },
       w: function (ctx, a, b) { return (aid(a) === 'explore' ? 0.5 : 0.08) + R(ctx, a, b).att / 120 + R(ctx, a, b).aff / 200; },
       run: function (ctx, a, b) {
         var k = bondOf(ctx, a, b), rb = R(ctx, b, a);
         var G = {
           love: ['{a}は探索の帰りに見つけた桜色の貝殻を、黙って{b}の手のひらに載せた。{b}はそれを、寝床の枕元に置いた。', '{a}は「誰にも教えてない場所」に{b}を連れていった。夕日がまっすぐ差し込む、小さな入り江だった。'],
+          pining: ['{a}は森で摘んだ白い花を、「余ったから」と言って{b}に渡した。同じ日の夕方、{b}も「たまたま見つけた」と言って、同じ白い花を{a}に差し出した。二人はしばらく、互いの手の花を見比べていた。',
+            '{a}は一番きれいな貝殻を拾って、{b}に渡そうとして、やめた。どうせ、ただの貝殻だと思われる。翌朝、{b}の枕元には、{b}が{a}に渡しそびれた貝殻がもう一つ並んでいた。',
+            '{a}は甘い木の実を「みんなに」と言って配り、いちばん熟れたのだけを{b}の分に回した。{b}は気づかなかったふりをした。{a}がそうするのは誰にでもだと、{b}は思い込んでいた。'],
           crush: ['{a}は森で摘んだ白い花を、渡すかどうか一時間迷った。結局「…落ちてた」と言って{b}に押しつけた。', '{a}は一番形のいい貝殻を拾って、{b}に渡すためだけに遠回りして帰った。'],
           rival: ['{a}は探索で見つけた巨大な果実を、わざわざ{b}の目の前で齧った。{a}「探せばあるのに」{b}「…明日はもっとでかいの見つけてくる」', '{a}は自作の島の地図を、{b}にだけ見せびらかした。'],
           friend: ['{a}は「{b}が好きそう」と言って、変な形の流木を持ち帰った。{b}は大喜びで、それを拠点の入り口に飾った。', '{a}は{b}のために、甘い木の実をポケットいっぱいに詰めて帰った。']
@@ -21608,6 +21691,12 @@
       ['{a}と{b}は、川を渡るとき自然に手を繋いだ。渡り終えても、どちらも手を離さなかった。', { att: 6, aff: 4 }, { att: 6, aff: 4 }, 'romance'],
       ['{a}と{b}は、森の奥に青く光るラグーンを見つけた。{b}「ここ、二人だけの秘密にしよう」', { att: 5, trust: 5 }, { att: 5, trust: 5 }, 'romance', 'sec'],
       ['{a}は滑りやすい岩場で{b}を支えようとして、二人そろって潮だまりに落ちた。ずぶ濡れのまま、しばらく笑いが止まらなかった。', { aff: 5, att: 3 }, { aff: 5, att: 3 }, 'romance']
+    ],
+    pining: [
+      ['{a}と{b}は二人きりで探索に出た。川を渡るとき、二人は同時に手を差し出し、同時に引っ込めた。結局、どちらも一人で渡った。', { att: 4 }, { att: 4 }, 'romance'],
+      ['崖の上で、{a}が「あのさ」と言った。{b}も「あのさ」と言った。{a}「…先どうぞ」{b}「いや、たいしたことじゃないから」二人とも、言いかけたことの続きを言わないまま拠点に戻った。', { att: 5 }, { att: 5 }, 'romance'],
+      ['探索の帰り道、{b}が「疲れた」と言った。{a}は黙ってしゃがみ、背中を差し出した。背負われながら、{b}は「{a}は誰にでも優しい」と思い、{a}は「{b}は誰にでも甘える」と思っていた。', { att: 6, trust: 3 }, { att: 6, trust: 4 }, 'romance'],
+      ['森の奥で、{a}と{b}は夕立に降られて、狭い岩陰に二人で押し込まれた。肩が触れていた。{a}「…狭くてごめん」{b}「…こっちの台詞」雨がやんでも、どちらもすぐには立ち上がらなかった。', { att: 6, aff: 3 }, { att: 6, aff: 3 }, 'romance']
     ],
     crush: [
       ['{a}は{b}と二人で探索に出られることになり、前の晩あまり眠れなかった。当日、{a}は緊張で三回転んだ。', { att: 5 }, { aff: 3 }, 'romance'],
@@ -21905,6 +21994,8 @@
   U.cold = function (ctx, a, b) {
     var t = HK.Ties && HK.Ties.from(ctx, a, b, 'crush');
     if (t && t.cold) return t.cold;
+    /* 両片想い（b からも片想い）は、相手にされていない片想いではない（pining.js） */
+    if (HK.Ties && HK.Ties.from(ctx, b, a, 'crush')) return '';
     if (ctx.R(b, a).att >= 20) return '';
     if (U.heartOf(ctx, b, a)) return 'other';
     if (ctx.R(b, a).ten > 30 || ctx.R(b, a).aff < -10) return 'dislike';
@@ -22255,6 +22346,149 @@
   var Z = HK.ZB;
   if (Z && Z.scen) LIST.forEach(function (e) { var e2 = {}; for (var k in e) e2[k] = e[k]; e2.mini = false; Z.scen.events.push(e2); });
 })();
+;/* ==== js/pining.js ==== */
+/* 箱庭シミュレーター: 両片想い（お互いに想っているのに、相手は自分を何とも思っていないと思い込んでいる二人）
+   関係「片想い」の想われる側の気持ちを「実は想っている（両片想い）」にした二人や、どちらからも片想いを設定した二人に起きる出来事。
+   相手にされていない片想い（unreq.js）と同じく、合コン・教室・無人島・出られない部屋・ゾンビの街で起きる。
+   目が合ってそらす／言いかけてやめる／相手の優しさを別の誰かへの好意と勘違いする／同じ人に恋の相談をする／冗談めかして言って流される、
+   を重ねたあと、どちらかが告白して実る（重ねるほど起きやすい）。{a}{b}=両片想いの二人、{c}=巻き込まれる人
+   ・設定の「両片想い」は、箱庭に渡す前に向きを逆にした片想い二本に開く（HK.Ties.expand） */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK || !HK.Ties) return;
+  function L(s) { return s.split('|'); }
+  function fill(t, m) { return t.replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
+  function alive(c) { return c && c.alive !== false && !c.out; }
+
+  /* 設定の「両片想い」を開いてから箱庭に渡す */
+  if (HK.simulate && !HK.simulate._pining) {
+    var sim0 = HK.simulate;
+    HK.simulate = function (input) {
+      if (input && input.ties && input.ties.some(function (t) { return t && t.type === 'crush' && t.cold === 'mutual'; })) {
+        var o = {}; for (var k in input) o[k] = input[k];
+        o.ties = HK.Ties.expand(input.ties);
+        arguments[0] = o;
+      }
+      return sim0.apply(this, arguments);
+    };
+    HK.simulate._pining = true;
+  }
+
+  var P = HK.Pining = {};
+  P.is = function (ctx, a, b) { return alive(a) && alive(b) && HK.Ties.pining(ctx, a, b); };
+  /* 二人のどちらとも親しい第三者（相談相手） */
+  function confidant(ctx, a, b) {
+    var best = null, bv = 15;
+    ctx.chars.forEach(function (c) {
+      if (c === a || c === b || !alive(c)) return;
+      var v = Math.min(ctx.R(a, c).trust + ctx.R(a, c).aff, ctx.R(b, c).trust + ctx.R(b, c).aff) / 2;
+      if (v > bv) { bv = v; best = c; }
+    });
+    return best;
+  }
+  function anyOther(ctx, a, b) { var l = ctx.chars.filter(function (c) { return c !== a && c !== b && alive(c); }); return l.length ? l[ctx.rng.int ? ctx.rng.int(l.length) : Math.floor(ctx.rng() * l.length)] : null; }
+  var WHY = function (a, b) { return a.name + 'と' + b.name + 'は両片想い（お互いに想っているのに、相手は何とも思っていないと思い込んでいる）'; };
+
+  var D = P.TEXT = {
+    /* 目が合って、そらす */
+    glance: {
+      goukon: L('{a}と{b}は、乾杯のたびに目が合った。そのたびに、どちらも先にグラスへ視線を落とした。|{a}が{b}の方を見ると、{b}は慌てて隣の人との話に戻った。その少しあと、{b}が{a}を見ると、{a}はメニューを読むふりをしていた。|{a}は{b}の笑い声がするたびに、そちらを見ないように気をつけていた。{b}も、まったく同じことをしていた。'),
+      classroom: L('{a}は授業中、斜め前の{b}の背中ばかり見ていた。{b}が振り向いた瞬間、{a}は黒板を睨みつけた。{b}も、すぐに前を向いた。|廊下ですれ違うとき、{a}と{b}はどちらも目を逸らした。すれ違ってから、どちらも少しだけ振り返った。|{a}と{b}は、窓ガラスに映った相手と目が合った。二人とも、何事もなかったように教科書をめくった。'),
+      island: L('火の向こうで、{a}と{b}の目が合った。{a}は薪をくべるふりをして、{b}は海の方を向いた。|{a}は浜で魚を捌く{b}の横顔を見ていた。{b}が顔を上げると、{a}は急に空模様を気にしはじめた。|{a}と{b}は、同じ椰子の実に同時に手を伸ばした。指が触れて、どちらも慌てて手を引っ込めた。'),
+      whiteroom: L('白い部屋では、目を逸らす場所がなかった。{a}と{b}は何度も目が合っては、どちらも壁の継ぎ目を数えるふりをした。|{a}は{b}の寝顔を見ていた。{b}が目を開けたので、{a}は慌てて扉の紙を読み返した。|{a}と{b}は、壁を背に並んで座っていた。肩が触れそうで触れない距離を、どちらも動かなかった。'),
+      zombie: L('見張りの交代のとき、{a}と{b}の目が合った。「……異常なし」「……うん」――言いたいことは、それではなかった。|{a}は物資を分ける{b}の手元ばかり見ていた。{b}が顔を上げると、{a}は窓の外の通りを確かめるふりをした。|暗い部屋で、{a}と{b}は同じ毛布の端を掴んでいた。どちらも、手を離さなかった。どちらも、何も言わなかった。'),
+      any: L('{a}と{b}は目が合うたびに、どちらも先に逸らした。|{a}は{b}を見ていた。{b}も{a}を見ていた。ただ、二人とも、相手が見ていないときにだけ見ていた。')
+    },
+    /* 言いかけて、やめる */
+    almost: L('{a}「あのさ、{b}……」――{b}「なに？」――{a}「……いや、なんでもない」――{b}は「そっか」と笑った。少しだけ、期待していた自分に呆れながら。|{b}が「{a}って、好きな人いるの？」と訊いた。{a}は「……いるよ」とだけ答えた。{b}は「そっか」と言ったきり、その相手が自分だとは思いもしなかった。|{a}は{b}と二人きりになった。言うなら今だと思った。{b}も同じことを考えていた。結局、二人で天気の話をして終わった。|{a}「{b}はさ、私のこと――」――そこで邪魔が入った。{a}はほっとして、{b}はがっかりした。どちらも、相手の顔は見ていなかった。|{a}と{b}は同時に「あの」と言った。「先にどうぞ」「いや、そっちが」――譲り合っているうちに、言いたかったことは喉の奥に戻っていった。'),
+    /* 相手の優しさを、別の誰かへの好意と勘違いする（{c}） */
+    misread: L('{b}が{c}と楽しそうに話しているのを見て、{a}は「やっぱりそうか」と一人で納得した。{b}がそのとき話していたのは、{a}のことだった。|{a}は{c}の相談に乗っていた。それを遠くから見た{b}は、二人はお似合いだと思って、そっと胸の奥に蓋をした。|{b}は{c}に、{a}の好きなものをこっそり訊いていた。それを見た{a}は、{b}は{c}が好きなのだと思い込んだ。|{a}は{b}が{c}の隣に座るのを見て、自分の入る隙間はないと思った。{b}は{a}の隣に座る勇気がなくて、{c}の隣に逃げただけだった。'),
+    /* 同じ人に、恋の相談をする（{c}が気づく） */
+    consult: L('{a}は{c}に、{b}のことが好きだと打ち明けた。「でも、向こうは何とも思ってないから」――その日の夕方、{c}は{b}からまったく同じ相談をされた。{c}は天を仰いだ。|{c}は、{a}と{b}の両方から「内緒の相談」をされていた。中身は同じだった。{c}は二人の顔を交互に見て、深くため息をついた。|{b}は{c}に「{a}って、好きな人いると思う？」と訊いた。{c}はつい昨日、{a}から同じ質問をされたばかりだった。'),
+    consultHint: L('{c}は「……二人とも、もう少し周りを見たら？」とだけ言った。|{c}は何も言わなかった。ただ、次の席替えで{a}と{b}を隣にした。|{c}は「自分で確かめなよ」と、{a}の背中を押した。'),
+    /* 相手が誰かと親しくしているのを見て、胸がざわつく（どちらも） */
+    jealous: L('{b}が{c}に笑いかけるのを見て、{a}は胸の奥がちくりとした。その夜、{a}が{c}と話し込んでいるのを見た{b}も、同じ痛みを味わっていた。|{a}は{c}と肩を並べる{b}を見て、黙って席を外した。{b}はその背中を目で追いかけて、自分が何かしたのかと悩んだ。|{a}は{b}が{c}のことを褒めるたびに、少しずつ口数が減った。{b}は、{a}の機嫌が悪いのは自分のせいだと思い込んでいた。'),
+    /* 冗談めかして言って、冗談として流される */
+    joke: L('{a}は冗談めかして「{b}のこと、好きかもな」と言った。{b}は「はいはい」と笑って流した。笑った{b}の耳が赤かったことに、{a}は気づかなかった。|{b}が「{a}と付き合う人は幸せだろうな」と言った。{a}は「じゃあ{b}が付き合ってよ」と返して、二人とも笑った。笑いが途切れたあとの沈黙が、少し長かった。|{a}が「好きだよ」と言った。直前の話の流れで、それは{b}の作った料理のことになった。{a}は訂正しなかった。'),
+    /* 告白（実る） */
+    confessAt: {
+      goukon: '店を出たあと、駅までの道で、{a}は立ち止まった。',
+      classroom: '放課後の誰もいない教室で、{a}は{b}を呼び止めた。',
+      island: '夜の浜辺で、波の音にまぎれるように、{a}は口を開いた。',
+      whiteroom: '扉の紙を見つめたまま、{a}は小さな声で言った。',
+      zombie: '「明日、生きてるか分からないから」――{a}はそう前置きして、{b}の目を見た。',
+      any: '二人きりになったとき、{a}はとうとう口を開いた。'
+    },
+    confess: L('「ずっと好きだった。……迷惑なら、忘れて」――{b}は目を丸くして、それから、泣きそうな顔で笑った。「……こっちの台詞なんだけど」|「好きだ」――{a}がそう言うと、{b}は長いあいだ黙っていた。「……なんで先に言うの。ずっと言おうと思ってたのに」|「{b}のことが好き」――言い終わる前に、{b}も「好き」と言っていた。二人の声が重なって、どちらが先だったのか分からなかった。|{a}は「好きなんだ」と言った。{b}は「知らなかった」と言った。「……私も、ずっと、そうだったのに」|「振られるのは分かってる。でも、言わないと後悔するから」――{b}は首を振った。「振らないよ。……ずっと、待ってた」'),
+    after: L('お互いに「何とも思われていない」と思い込んでいた時間を数えて、二人は同時に吹き出した。|{c}は、ようやくくっついた二人を見て、「長かった……」と心の底から呟いた。|{a}と{b}は、それまでのすれ違いを一つずつ答え合わせした。どれも、全部、勘違いだった。')
+  };
+  function sc(ctx, tbl) { return tbl[ctx.scen.id] || tbl.any; }
+  function bump(ctx, a, b) { var pf = ctx.pair(a, b); pf.pn = (pf.pn || 0) + 1; return pf; }
+  function mk(id, cat, w, when, run) { return { id: id, cat: cat, scope: 'pair', mini: true, sig: true, when: when, w: w, run: run }; }
+
+  var LIST = P.EVENTS = [
+    mk('pn_glance', 'romance', function (ctx, a) { return 1.8 + a.tr.ac * 0.5; },
+      function (ctx, a, b) { return P.is(ctx, a, b) && (ctx.pair(a, b).pnGl || 0) < 3; },
+      function (ctx, a, b) {
+        var pf = bump(ctx, a, b); pf.pnGl = (pf.pnGl || 0) + 1;
+        ctx.mod2(a, b, { att: 3 }, { att: 3 });
+        return { text: fill(ctx.pick(sc(ctx, D.glance)), { a: a.name, b: b.name }), why: WHY(a, b) };
+      }),
+    mk('pn_almost', 'romance', function (ctx, a) { return 1.5 + a.tr.honesty * 0.4 + a.tr.ac * 0.4; },
+      function (ctx, a, b) { return P.is(ctx, a, b) && (ctx.pair(a, b).pnAl || 0) < 2; },
+      function (ctx, a, b) {
+        var pf = bump(ctx, a, b); pf.pnAl = (pf.pnAl || 0) + 1;
+        ctx.stress(a, 4); ctx.stress(b, 4); ctx.mod2(a, b, { att: 3 }, { att: 3 });
+        return { text: fill(ctx.pick(D.almost), { a: a.name, b: b.name }), why: WHY(a, b) + '／どちらも、あと一言が言えなかった', mag: 18 };
+      }),
+    mk('pn_misread', 'romance', function (ctx, a) { return 1.2 + a.tr.ac * 0.4 + a.tr.jealous * 0.4; },
+      function (ctx, a, b) { return P.is(ctx, a, b) && !ctx.pair(a, b).pnMr && !!anyOther(ctx, a, b); },
+      function (ctx, a, b) {
+        var c = confidant(ctx, a, b) || anyOther(ctx, a, b), pf = bump(ctx, a, b); pf.pnMr = true;
+        ctx.stress(a, 8);
+        return { text: fill(ctx.pick(D.misread), { a: a.name, b: b.name, c: c.name }), why: WHY(a, b) + '／' + a.name + 'は、' + b.name + 'の想う相手を' + c.name + 'だと勘違いした', mag: 20, with: [c] };
+      }),
+    mk('pn_jealous', 'romance', function (ctx, a) { return 1.0 + a.tr.jealous * 0.6; },
+      function (ctx, a, b) { return P.is(ctx, a, b) && !ctx.pair(a, b).pnJe && !!anyOther(ctx, a, b) && (!HK.Obsess || !HK.Obsess.jealOk || HK.Obsess.jealOk(ctx, a, b)); },
+      function (ctx, a, b) {
+        var c = anyOther(ctx, a, b), pf = bump(ctx, a, b); pf.pnJe = true;
+        ctx.stress(a, 6); ctx.stress(b, 6); ctx.mod2(a, b, { att: 2 }, { att: 2 });
+        return { text: fill(ctx.pick(D.jealous), { a: a.name, b: b.name, c: c.name }), why: WHY(a, b) + '／どちらも、相手が' + c.name + 'を想っていると思い込んだ', mag: 18, with: [c] };
+      }),
+    mk('pn_consult', 'bond', function () { return 1.4; },
+      function (ctx, a, b) { return P.is(ctx, a, b) && !ctx.pair(a, b).pnCo && !!confidant(ctx, a, b); },
+      function (ctx, a, b) {
+        var c = confidant(ctx, a, b), pf = bump(ctx, a, b), m = { a: a.name, b: b.name, c: c.name };
+        pf.pnCo = true; pf.pnHint = ctx.rng() < 0.6;
+        ctx.mod(a, c, { trust: 5 }); ctx.mod(b, c, { trust: 5 });
+        return { text: fill(ctx.pick(D.consult), m) + (pf.pnHint ? fill(ctx.pick(D.consultHint), m) : ''), why: WHY(a, b) + '／' + c.name + 'だけが、二人の気持ちを知ってしまった', mag: 24, with: [c] };
+      }),
+    mk('pn_joke', 'romance', function (ctx, a) { return 1.0 + a.tr.fc * 0.5; },
+      function (ctx, a, b) { return P.is(ctx, a, b) && !ctx.pair(a, b).pnJo; },
+      function (ctx, a, b) {
+        var pf = bump(ctx, a, b); pf.pnJo = true;
+        ctx.mod2(a, b, { att: 4 }, { att: 4 });
+        return { text: fill(ctx.pick(D.joke), { a: a.name, b: b.name }), why: WHY(a, b) + '／本気の言葉が、冗談として流れていった', mag: 18 };
+      }),
+    /* 告白：すれ違いを重ねるほど、背中を押されているほど起きやすい */
+    mk('pn_confess', 'romance', function (ctx, a, b) { var pf = ctx.pair(a, b); return 0.4 + (pf.pn || 0) * 0.6 + (pf.pnHint ? 1.2 : 0) + a.tr.honesty * 0.4 + a.tr.impulse * 0.3 + a.stress / 200; },
+      function (ctx, a, b) { var pf = ctx.pair(a, b); return P.is(ctx, a, b) && (pf.pn || 0) >= 2 && HK.canLove(a, b) && HK.canLove(b, a); },
+      function (ctx, a, b) {
+        var pf = ctx.pair(a, b), c = confidant(ctx, a, b), m = { a: a.name, b: b.name, c: c ? c.name : '' };
+        pf.couple = true; pf.pnDone = true;
+        ctx.mod2(a, b, { att: 14, aff: 12, trust: 10 }, { att: 14, aff: 12, trust: 10 });
+        ctx.stress(a, -10); ctx.stress(b, -10);
+        var aft = D.after.filter(function (t) { return c || t.indexOf('{c}') < 0; });
+        return { text: fill(sc(ctx, D.confessAt), m) + fill(ctx.pick(D.confess), m) + fill(ctx.pick(aft), m), why: WHY(a, b) + '／すれ違いを' + (pf.pn || 0) + '回重ねて、' + a.name + 'が先に言った。両片想いが、ようやく両想いになった', mag: 44, with: c && pf.pnCo ? [c] : null };
+      })
+  ];
+
+  ['goukon', 'classroom', 'island', 'whiteroom'].forEach(function (id) { if (HK.addMini) HK.addMini(id, LIST); });
+  /* ゾンビの街：同じエリアにいる者どうしの出来事として足す */
+  var Z = HK.ZB;
+  if (Z && Z.scen) LIST.forEach(function (e) { var e2 = {}; for (var k in e) e2[k] = e[k]; e2.mini = false; Z.scen.events.push(e2); });
+})();
 ;/* ==== js/zombie-cure.js ==== */
 /* 箱庭シミュレーター: ゾンビの街 ― 治療薬
    ・まれに「感染を治す薬がある」という噂が流れる（デマのこともある）
@@ -22276,6 +22510,8 @@
     rumor: L('ラジオの雑音の向こうで、誰かが言った。「{area}の地下に、感染を治す試薬が残っている」|SNSに、{area}の研究員を名乗る投稿が流れた。「治療薬の試作品が、まだ保管庫にある」――すぐに削除された。|壁に、乱れた字の落書きがあった。「{area}　薬　まだある　治る」'),
     rumorOff: L('拾った無線機から、途切れ途切れの声が聞こえた。「……{area}……試薬……治る……」|生存者が残したメモに、「{area}の保管庫に治療薬」と書かれていた。'),
     hear: L('{a}はその噂を聞いた瞬間、立ち上がっていた。{b}を、元に戻せるかもしれない。|{a}は噂を何度も頭の中で繰り返した。デマかもしれない。それでも、{b}のためなら。|{a}は武器を握り直した。「{area}に行く。{b}を、治す」'),
+    /* 両片想いの相手のため（{b}も{a}を想っているのに、{a}は知らない） */
+    hearM: L('{a}はその噂を聞いた瞬間、立ち上がっていた。{b}は、私のことなんか何とも思っていなかった。それでも、元に戻したかった。|{a}は噂を何度も頭の中で繰り返した。{b}が戻ってきても、言うつもりはない。ただ、もう一度笑ってほしかった。|{a}は武器を握り直した。「{area}に行く」――理由を訊かれて、{a}は「仲間だから」とだけ答えた。'),
     obstacle: [
       { n: '群れ', t: L('{area}の入口は、ゾンビの群れで埋まっていた。{a}は{w}を構え、隙間を縫うように走った。|保管庫へ続く廊下に、白衣のゾンビがひしめいていた。{a}は息を殺して、一体ずつ数えた。') },
       { n: '危険な薬品庫', t: L('薬品庫の扉の向こうは、割れた薬瓶から漏れた薬品の煙で満ちていた。{a}は袖で口を覆って踏み込んだ。|保管庫は電子ロックで閉ざされていた。非常電源を探して、{a}は真っ暗な地下を這い回った。') },
@@ -22290,6 +22526,9 @@
     giveZ: L('{a}は{b}に組みつき、もみ合いながら首筋に針を刺した。|{a}は{b}の正面に立ち、伸びてきた腕をかいくぐって、胸に針を突き立てた。'),
     giveChain: L('{a}は鎖で繋いだ{b}の腕に、全身の体重をかけて針を突き立てた。{b}が呻き声を上げた。|{a}は閉じ込めていた部屋の扉を開け、暴れる{b}を押さえつけて、首筋に針を刺した。'),
     cured: L('{b}の体が大きく痙攣した。やがて、濁っていた目に、ゆっくりと光が戻った。「……{a}？」――{a}は声を上げて泣いた。|長い沈黙のあと、{b}が咳き込んだ。人間の咳だった。「……なんで、泣いてるの」――{a}は答えられずに、{b}を抱きしめた。|{b}の肌から、灰色の斑点がすうっと引いていった。{b}は自分の手を見つめて、それから{a}を見た。「……ただいま」'),
+    /* 両片想い：戻ってきた{b}も、ずっと{a}を想っていた */
+    curedM: L('{b}の濁っていた目に、ゆっくりと光が戻った。「……{a}？」――{a}は泣きながら言った。「好きだった。ずっと。迷惑でも、言わずに死なせるのは嫌だった」――{b}は、かすれた声で笑った。「……それ、こっちの台詞」|長い沈黙のあと、{b}が咳き込んだ。人間の咳だった。「……なんで、そこまでしてくれたの」――{a}は答えに詰まって、結局、本当のことを言った。{b}は顔を覆った。「私だけだと、思ってた」|{b}の肌から、灰色の斑点がすうっと引いていった。{b}は{a}を見て、最初に言った。「ゾンビになる前に、言えばよかったって、ずっと思ってた」――{a}は、自分も同じことを考えていたと気づいた。'),
+    curedBitM: L('{b}の熱は、その夜のうちに引いた。目を覚ました{b}は、{a}の手を握ったまま言った。「咬まれたとき、いちばん後悔したのは、{a}に好きって言わなかったこと」――{a}は、しばらく返事ができなかった。「……こっちの台詞」|朝、{b}は「お腹すいた」と言った。それから、少し迷って付け足した。「あと、ずっと好きだった」――{a}は、持っていた缶詰を落とした。|{b}の咬み跡の黒ずみが薄れていくのを、{a}は一晩中見守った。夜明けに目を開けた{b}は、{a}を見るなり泣き出した。「何とも思われてないと思ってたのに。なんで、ここまで」'),
     curedBit: L('{b}の熱は、その夜のうちに引いた。咬み跡の黒ずみが、少しずつ薄れていった。|朝、{b}は「お腹すいた」と言った。それが、{a}がこの世で聞いたいちばん嬉しい言葉だった。'),
     melt: L('{b}の体が、内側から泡立ち始めた。皮膚が溶け、背中から何本もの触手が這い出した。{a}が悲鳴を上げる前に、それはもう{b}の形をしていなかった。|{b}が絶叫した。骨が軋み、肉が裂け、溶けた体の中から、ぬめった触手が四方へ伸びた。薬は、効きすぎた。'),
     grab: L('触手が{a}の手足に巻きつき、宙に吊り上げた。'),
@@ -22304,6 +22543,7 @@
     eaten: L('触手が{a}の体を絡め取った。{a}は最後まで、それが{b}だったことを忘れなかった。|{a}は逃げなかった。かつて{b}だったものに抱かれて、{a}は飲み込まれていった。'),
     flee: L('{a}は触手を振りほどき、血まみれになって逃げ出した。背後で、かつて{b}だったものが、聞いたことのない声で鳴いていた。'),
     gone: L('{a}が薬を握りしめて戻ったとき、{b}はもう、どこにもいなかった。――間に合わなかった。{a}は薬を握りつぶした。ガラスが手に食い込んでも、離さなかった。|{a}は、{b}の亡骸の前に膝をついた。手の中のアンプルが、ひどく軽かった。「……遅かった。全部、遅かった」|{a}はアンプルを地面に叩きつけようとして、できなかった。{b}を救うはずだったものを、壊すことさえできなかった。'),
+    goneM: L('{a}は、{b}の亡骸の前に膝をついた。{b}の手には、くしゃくしゃの紙が握られていた。「{a}に、ちゃんと言う」――{a}の名前だった。|{a}が薬を握りしめて戻ったとき、{b}はもういなかった。{b}の寝床に、{a}の古いハンカチが畳んで置いてあった。ずっと、持っていたのだ。|{a}は、{b}の亡骸の前に膝をついた。「何とも思われてなくても、よかったのに」――{b}の荷物の中の日記には、毎日のように{a}の名前があった。'),
     goneDespair: L('その夜、{a}は誰とも口をきかなかった。目から、何かが消えていた。|{a}は空のアンプルを首から下げた。もう、生き延びる理由が見つからなかった。')
   };
 
@@ -22347,8 +22587,8 @@
     c.z.cureQ = { target: o.i, stage: 'seek', tries: 0, prevGoal: c.goal };
     var from = c.goal.label;
     c.goal = GOAL;
-    var m = { a: c.name, b: o.name, area: Z.an(ctx, ctx.zb.cure.area) };
-    ctx.act2({ actors: [c, o], cat: 'solo', text: (heard ? fill(ctx.pick(T.hear), m) : '') + c.name + 'の目標が変わった：「' + from + '」→「' + GOAL.label + '」', why: c.name + 'は、' + (stateOf(ctx, o) === 'zombie' ? 'ゾンビになった' : '咬まれた') + o.name + 'を治したい', mag: 26 });
+    var m = { a: c.name, b: o.name, area: Z.an(ctx, ctx.zb.cure.area) }, pin = Z.isPining && Z.isPining(ctx, c, o);
+    ctx.act2({ actors: [c, o], cat: 'solo', text: (heard ? fill(ctx.pick(pin ? T.hearM : T.hear), m) : '') + c.name + 'の目標が変わった：「' + from + '」→「' + GOAL.label + '」', why: c.name + 'は、' + (stateOf(ctx, o) === 'zombie' ? 'ゾンビになった' : '咬まれた') + o.name + 'を治したい' + (pin ? '（両片想いの相手。想いは告げていない）' : ''), mag: 26 });
   }
   function endQuest(ctx, c, goalId) {
     var q = c.z.cureQ; q.done = true;
@@ -22394,11 +22634,13 @@
   /* 投与する */
   function dose(ctx, c, q) {
     var rng = ctx.rng, o = ctx.chars[q.target], st = stateOf(ctx, o), m = { a: c.name, b: o.name };
+    /* 両片想いの相手（ゾンビになった人は死んだ扱いなので、生きている頃の想いで見る） */
+    var pin = !!(HK.Ties && HK.Ties.from(ctx, c, o, 'crush') && HK.Ties.from(ctx, o, c, 'crush') && !ctx.pair(c, o).couple);
     if (st === 'ok') { endQuest(ctx, c, 'live'); return; }
     if (st === 'gone') {
       ctx.stress(c, 50);
       var deep = c.stress > 85 && c.tr.ac + c.tr.np > 1.1 && rng() < 0.3;
-      ctx.act2({ actors: [c, o], cat: 'death', text: fill(ctx.pick(T.gone), m) + fill(ctx.pick(T.goneDespair), m), why: c.name + 'は治療薬を手に入れた。だが、' + o.name + 'はもういなかった（焦り ' + Math.round(c.stress) + '）', mag: 44 });
+      ctx.act2({ actors: [c, o], cat: 'death', text: fill(ctx.pick(pin ? T.goneM : T.gone), m) + fill(ctx.pick(T.goneDespair), m), why: c.name + 'は治療薬を手に入れた。だが、' + o.name + 'はもういなかった（焦り ' + Math.round(c.stress) + '）' + (pin ? '。両片想いだった――' + o.name + 'も、同じ気持ちだった' : ''), mag: 44 });
       endQuest(ctx, c, c.tr.cold + c.tr.aggr > 1.2 ? 'chaos' : 'live');
       if (deep) ctx.kill(c, null, o.name + 'に間に合わなかった治療薬を握りしめたまま、自ら');
       return;
@@ -22415,7 +22657,8 @@
         o.stress = 60;
       } else { o.z.bitten = null; o.z.turnAt = -1; o.z.aware = false; o.z.cured = true; o.z.hiding = false; }
       ctx.mod2(c, o, { aff: 15, trust: 15 }, { aff: 25, trust: 25, att: 10 });
-      ctx.act2({ actors: [c, o], cat: 'help', text: fill(ctx.pick(giveT), m) + fill(ctx.pick(zombie ? T.cured : T.curedBit), m), why: c.name + 'は' + o.name + 'に治療薬を投与した――' + (zombie ? 'ゾンビから人間に戻った' : '感染が治った'), mag: 50 });
+      if (pin) { ctx.pair(c, o).couple = true; ctx.pair(c, o).zconf = true; ctx.mod2(c, o, { att: 10 }, { att: 10 }); }
+      ctx.act2({ actors: [c, o], cat: pin ? 'romance' : 'help', text: fill(ctx.pick(giveT), m) + fill(ctx.pick(zombie ? (pin ? T.curedM : T.cured) : (pin ? T.curedBitM : T.curedBit)), m), why: c.name + 'は' + o.name + 'に治療薬を投与した――' + (zombie ? 'ゾンビから人間に戻った' : '感染が治った') + (pin ? '。両片想いだった二人は、ようやく想いが通じた' : ''), mag: 50 });
       c.goal = q.prevGoal && q.prevGoal.id !== 'cure' ? q.prevGoal : Z.scen.goals[0];
       if (o.z.keep != null) o.z.keep = null;
       return;
@@ -25542,6 +25785,7 @@
     first: {
       lover: L('恋人どうしなのに、こんな場所で、こんなに切羽詰まって触れ合うのは初めてだった。|{b}は、{a}のことなら何でも知っているつもりだった。こんなに余裕のない顔は、知らなかった。'),
       crush: L('{c}は、ずっとこうしたかった。ガスのせいにできる今しか、手を伸ばせなかった。|{o}は気づいていなかった。触れ合った瞬間、{c}の心臓が、ガスとは関係なく跳ねたことに。'),
+      mutual: L('{a}は、ガスのせいにして手を伸ばした。{b}も、ガスのせいにしてそれに応えた。本当は二人とも、ずっと前からこうしたかった。|{a}は、これが最初で最後だと思っていた。{b}も、まったく同じことを考えていた。相手にとって自分は何でもない――二人とも、そう信じ込んでいた。|触れた瞬間、{b}の心臓が跳ねた。{a}の心臓も、同じように跳ねていた。密着した胸ごしでは、どちらの鼓動なのか、もう分からなかった。|「……ガスの、せいだから」と{a}が言った。「うん、ガスのせい」と{b}も返した。二人とも、相手にではなく、自分に言い聞かせていた。'),
       friend: L('いつもの友達の距離が、たった数分で溶けてなくなった。|昨日まで冗談を言い合っていた相手だった。冗談の続きのように、二人は触れ合った。'),
       almost: L('ずっと曖昧にしてきた一線を、ガスはあっさりと越えさせた。|どちらも、言わずにおいた言葉があった。言葉より先に、体が答えを出してしまった。'),
       tension: L('いつもなら、ここで喧嘩になる距離だった。今は、喧嘩の言葉がひとつも出てこなかった。|大嫌いなはずの相手の体温が、どうしてこんなに心地いいのか。{b}には分からなかった。'),
@@ -25553,6 +25797,7 @@
     after: {
       lover: L('帰り道、二人はいつもより強く手を繋いでいた。|次は、ガスなしで。そんな約束を、二人は目だけで交わした。'),
       crush: L('{c}は結局、気持ちを言えなかった。それでも、{o}の体温だけは、しばらく忘れられそうになかった。|別れ際、{o}は少しだけ長く{c}を見ていた。{c}は、それに気づかないふりをした。'),
+      mutual: L('外に出ると、二人は同時に「忘れて」と言った。それから、同時に黙り込んだ。忘れてほしくないのは、二人とも同じだった。|別れ際、{a}は「さっきのは……」と言いかけた。{b}は続きを聞くのが怖くて、「わかってる」と遮った。{a}は、何もわかっていない{b}の背中を、黙って見送った。|{b}は「今日のこと、気にしないで」と笑ってみせた。{a}は、気にしているのは自分だけなのだと思った。帰り道、{b}もまったく同じことを考えていた。|駅の前で、{a}は意を決して「好きな人、いる？」と聞いた。{b}は「……いるよ。片想いだけど」と答えた。{a}は笑って頷いた――それが自分のことだとは、思いもしないで。'),
       friend: L('翌日、二人はいつも通りに冗談を言い合った。ただ、目が合うと、どちらも一瞬だけ黙った。|友達に戻れるかどうかは、まだ分からなかった。戻りたいのかどうかも。'),
       almost: L('帰り道、二人の肩は、何度も触れては離れた。曖昧なままの関係に、今夜ひとつだけ答えが出た気がした。|{a}は何か言いかけて、やめた。{b}は、その続きをずっと待っていた。'),
       tension: L('外に出た途端、二人はいつもの調子で言い合いを始めた。ただ、どちらの声にも、いつもの棘がなかった。|次に会ったとき、どんな顔をすればいいのか、二人とも分からなかった。睨み合うには、少し近づきすぎた。'),
@@ -25560,6 +25805,16 @@
       stranger: L('連絡先を交換したのは、出口の前だった。どちらから言い出したのかは、覚えていなかった。|名前しか知らなかった相手のことを、{a}は帰り道ずっと考えていた。'),
       fwb: L('いつもの関係で片づけるには、今夜は少し熱すぎた。|次の約束は、いつもより早く決まった。'),
       master: L('主従の距離は、扉を出た瞬間に元に戻った。ただ、従者の頬の赤みだけが、しばらく消えなかった。|主は何も言わなかった。それが一番の許しだと、従者には分かっていた。')
+    }
+  };
+
+  /* ---------- 両片想い（どちらも相手に片想いをしている二人。{a}{b} はどちらでもよい） ----------
+     inside：ロッカーの中のすれ違い（一度だけ）。end：結末の一文（told＝何かあって通じる／miss＝すれ違ったまま）。全年齢版でも出るので、穏やかに */
+  LK.MUT = {
+    inside: L('{a}は「こんなことになって、ごめん」と言った。同じ瞬間に、{b}も「ごめん」と言っていた。二人とも、相手は迷惑がっているのだと思い込んでいた。|{a}は何か言いかけて、口を閉じた。{b}も、同じように口を閉じた。暗がりの中で、二人とも「今のは聞かれなかったことにしよう」と思っていた。|「……嫌だったら、言って」と{a}が囁いた。嫌なはずがなかった。{b}はただ、{a}の方こそ嫌なのだろうと思って、返事ができなかった。|{b}は、{a}の鼓動が速いことに気づいた。ガスのせいだ、と{b}は思った。{b}の鼓動がもっと速いことに、{a}もまた気づいていた――ガスのせいだと思いながら。|狭い箱の中で、二人の手が同時に動いて、同時に止まった。{a}は「ごめん」と手を引き、{b}も慌てて手を引いた。触れたかったのは、二人とも同じだった。|{a}は息を詰めて、{b}から顔を背けた。こんな顔を見られたら、気持ちが全部ばれてしまう。{b}もまた、同じ理由で、反対側の壁を見つめていた。'),
+    end: {
+      told: L('後日、{a}は「あの日のこと、本当はガスのせいじゃない」と打ち明けた。{b}は目を丸くして、「……それ、こっちの台詞」と笑った。お互いの片想いに気づくまで、二人はずいぶん遠回りをした。|「迷惑だったよね」と{a}が謝ると、{b}は首を振った。「ずっとこうなりたかったのは、私の方」――{a}が同じ言葉を返すまで、三秒もかからなかった。|{a}と{b}は、それぞれ同じ友人に「好きな人と閉じ込められた」と相談していた。友人が吹き出した理由を、二人は数日後に知った。その日、二人はやっと付き合い始めた。'),
+      miss: L('外に出た二人は、「大変だったね」とだけ言い合って別れた。相手は何とも思っていない――二人とも、そう信じたままだった。片想いは二本とも、まだ届いていない。|{a}は帰り道、「何もなくてよかった」と自分に言い聞かせた。{b}も同じ言葉を、別の道で呟いていた。本当は何かあってほしかったのも、二人とも同じだった。|{b}は、{a}が一度もこちらを見なかったのが、少しだけ寂しかった。{a}が目をそらしていたのは、見たら気持ちがあふれそうだったからだ。二人がそれを知るのは、もう少し先のことになる。')
     }
   };
 
@@ -25629,7 +25884,7 @@
       t: L('部屋の壁には大きな鏡があった。{a}は{b}をその前に立たせ、後ろから繋がった。「どんな顔してるか、わかる？」――{b}は鏡の中の蕩けた自分から、目を逸らせなかった。') },
     { id: 'words', tag: '言葉で責める', w: function (c) { return 0.7 + (c.x.tr.cp > 0.55 || c.tone === 'rough' ? 0.6 : 0); },
       t: L('{a}は{b}を突き上げながら、ロッカーの中で{b}がどんな声を出していたかを、一つずつ耳元で言葉にした。{b}は首まで真っ赤になって、それでも締めつけを強くした。|「ほら、さっきより正直」――{a}がそう囁くたびに、{b}の腰は勝手に{a}を追いかけた。') },
-    { id: 'name', tag: '名前を呼ぶ', w: function (c) { return 0.5 + (c.tone === 'sweet' ? 0.9 : 0) + (c.rel === 'crush' || c.rel === 'almost' ? 0.6 : 0); },
+    { id: 'name', tag: '名前を呼ぶ', w: function (c) { return 0.5 + (c.tone === 'sweet' ? 0.9 : 0) + (c.rel === 'crush' || c.rel === 'mutual' || c.rel === 'almost' ? 0.6 : 0); },
       t: L('{a}は動きを止めて、{b}の名前を呼んだ。{b}が目を開けると、{a}はそのまま、深く、ゆっくりと{b}の奥へ押し入った。名前を呼ばれるたびに、{b}の中がきゅっと締まった。|「{b}」と呼ばれた瞬間、{b}はそれだけで達しそうになった。{a}は何度も名前を呼びながら、{b}の奥を優しく突いた。') },
     { id: 'clothed', tag: '服を着たまま', w: function (c) { return 0.6 + (c.how === 'timeout' ? 0.3 : 0); },
       t: L('服を脱ぐ時間さえ惜しかった。{a}は{b}の服を半分はだけさせただけで、そのまま{b}の中に入っていった。|{a}と{b}は、ほとんど服を着たまま繋がった。ずれた布地が擦れるたびに、{b}の肌が粟立った。') },
@@ -25742,6 +25997,7 @@
   var END_REL = {
     lover: L('朝、{b}は{a}の腕の中で目を覚ました。「おはよう」の声が、いつもより少しだけ照れていた。|恋人になって何度目かの朝なのに、二人は初めての朝みたいに顔を赤くした。'),
     crush: L('朝になっても、{b}は{a}の腕から抜け出そうとしなかった。媚薬は、とっくに切れていたのに。|目を覚ました二人は、どちらが先に「好き」と言うか、目だけで探り合っていた。'),
+    mutual: L('朝、目を覚ました{b}は、「昨日のは、媚薬のせいだから」と先に言った。{a}も、まったく同じ言葉を用意していた。二人は顔を見合わせて、どちらからともなく目をそらした。|朝の光の中で、{a}はようやく「……ずっと、好きだった」と言った。{b}は枕に顔を埋めたまま、「……それ、こっちの台詞」と返した。媚薬は、とっくに切れていた。|目を覚ました二人は、同時に「あのさ」と言った。「先にどうぞ」「そっちこそ」と譲り合ううちに、二人とも吹き出した。続きの「好き」は、笑い声にまぎれて同時にこぼれた。|{b}は、{a}が帰り支度を始めるのを、寂しい気持ちで待っていた。{a}もまた、{b}に帰ってと言われるのを待っていた。昼になっても、二人ともベッドから出なかった。'),
     friend: L('朝、二人は背中合わせのまま、「友達、だよね」と言い合った。どちらも、返事をしなかった。|次に会うとき、どんな顔をすればいいのか。二人とも、少しだけ楽しみにしていた。'),
     almost: L('朝の光の中で、{a}は、付き合おうか、と小さく言った。{b}は枕に顔を埋めたまま、何度も頷いた。|曖昧だった二人の関係に、名前がついたのは、その朝だった。'),
     tension: L('朝、正気に戻った二人は、同時に「最悪」と言った。それから、同時に吹き出した。|目を覚ました{b}は、隣で眠る{a}の顔を見て、文句を言うのを、なぜか忘れた。'),
@@ -25774,7 +26030,7 @@
     /* 誘い方：おとなしかった方（仕掛けた回数が少ない・嗜めた・耐えた）が誘うことがある */
     var quiet = A.cnt.make < B.cnt.make ? A : B.cnt.make < A.cnt.make ? B : (A.m.reason >= B.m.reason ? A : B);
     var loud = quiet.o;
-    var quietScore = (quiet.cnt.refuse + quiet.cnt.hold) * 0.25 + quiet.tr.ac * 0.3 + (quiet.cnt.make === 0 ? 0.25 : 0) + (o.rel === 'crush' && quiet !== o.plotter ? 0.15 : 0);
+    var quietScore = (quiet.cnt.refuse + quiet.cnt.hold) * 0.25 + quiet.tr.ac * 0.3 + (quiet.cnt.make === 0 ? 0.25 : 0) + ((o.rel === 'crush' || o.rel === 'mutual') && quiet !== o.plotter ? 0.15 : 0);
     var q, oo, kind;
     if (o.master && o.servant && o.servant.cnt.hold >= 1 && rng() < 0.6) { q = o.master; oo = o.servant; kind = 'order'; }
     else if (HK.Pos && HK.Pos.nori(y) && y.cnt.make > 0 && rng() < 0.45) { q = y; oo = x; kind = 'nori'; }
@@ -25823,7 +26079,7 @@
 
     /* 絶頂と結び */
     var endKey = naka ? 'naka' : null;
-    var pool = ['morning', 'shower', 'faint'].concat(o.tone === 'sweet' || o.rel === 'crush' || o.rel === 'almost' || o.rel === 'lover' ? ['promise', 'promise'] : ['fight', 'fight']);
+    var pool = ['morning', 'shower', 'faint'].concat(o.tone === 'sweet' || o.rel === 'crush' || o.rel === 'mutual' || o.rel === 'almost' || o.rel === 'lover' ? ['promise', 'promise'] : ['fight', 'fight']);
     if (!endKey) endKey = rng.pick(pool);
     t3 += naka ? '' : ST.fmt(pick(S, ff ? FF.pos : LK.BED.pos), vv(x, y)) + o.moan(x, true) + o.moan(y) + ST.fmt(pick(S, ff ? FF.climax : LK.BED.climax), vv(x, y));
     function endOf(k) { return ff && k === 'shower' ? FF.shower : fm && k === 'shower' ? FM.shower : fm && k === 'naka' ? FM.endNaka : END[k]; }
@@ -25898,7 +26154,7 @@
 
   var LV = ['touch', 'kiss', 'grope', 'oral', 'sex'];
   var REL = { lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'fwb', master: 'master', crush: 'crush', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', senpai: 'friend', colleague: 'friend', acq: 'friend', almost: 'almost', rival: 'tension', bad: 'tension', enemy: 'tension', ex: 'ex', sibling: 'friend' };
-  var REL_LABEL = { lover: '恋人', fwb: 'セフレ', master: '主従', crush: '片想い', friend: '知り合い', almost: '友達以上恋人未満', tension: '険悪', ex: '元恋人', stranger: '初対面' };
+  var REL_LABEL = { lover: '恋人', fwb: 'セフレ', master: '主従', crush: '片想い', mutual: '両片想い', friend: '知り合い', almost: '友達以上恋人未満', tension: '険悪', ex: '元恋人', stranger: '初対面' };
 
   var LK_HATE_LEAD = ['狭いロッカーの中で、{b}は{a}の胸に、そっと額を預けた。', '{b}は、触れ合った{a}の手を、そのまま握ろうとした。', '{b}は、熱に浮かされた目で、{a}の顔を見上げた。'];
   function run(input) {
@@ -25917,6 +26173,9 @@
     if (mtie) { master = P[mtie.a]; servant = P[mtie.b]; }
     var crushL = tieL.filter(function (t) { return t.type === 'crush'; });
     if (crushL.length) crusher = P[crushL[0].a];
+    /* 両片想い：どちらからも片想いがある二人（ties.js が向きを逆にした片想い二本に開く）。片想いの枝より先に、両片想いの枝へ */
+    var mutualCrush = crushL.length > 1 && crushL.some(function (t) { return t.a !== crushL[0].a; });
+    if (rel === 'crush' && mutualCrush) rel = 'mutual';
     var fwbAll = tieL.some(function (t) { return t.type === 'fwb'; });
     var intimate = fwbAll || rel === 'lover';
     /* セフレで片想い：相手の気持ちで三つに分かれる */
@@ -25970,7 +26229,7 @@
     ST.say(S, { kind: 'phase', text: pk(LK.SPEAKER) + '（仕掛け：' + gimmicks.map(function (g) { return g.name; }).join('→') + '）' });
     /* 体の関係にならない二人・相手が自分で攻めを選んだ人のときは、手を取って触れさせる文を使わない */
     var plotPush = plotter ? LK.PLOT.push.filter(function (l) { return !((clash || (hardTop(plotter.o) && !hardTop(plotter))) && /胸に押し当て|腰に回させ|任せて/.test(l)); }) : [];
-    if (plotter) { var o = ST.say(S, { actors: [plotter], tag: '思惑', text: ST.fmt(pk(plotPush.length ? plotPush : LK.PLOT.push), { a: plotter.name, b: plotter.o.name }), why: plotter.name + 'は、自分から望んでここにいる' + (crusher === plotter ? '（' + plotter.o.name + 'への片想い）' : ''), mag: 20 }); ST.key(S, o, plotter.name + 'の思惑'); }
+    if (plotter) { var o = ST.say(S, { actors: [plotter], tag: '思惑', text: ST.fmt(pk(plotPush.length ? plotPush : LK.PLOT.push), { a: plotter.name, b: plotter.o.name }), why: plotter.name + 'は、自分から望んでここにいる' + (rel === 'mutual' ? '（' + plotter.o.name + 'への片想い。実は向こうも同じ）' : crusher === plotter ? '（' + plotter.o.name + 'への片想い）' : ''), mag: 20 }); ST.key(S, o, plotter.name + 'の思惑'); }
     ST.snap(S, keys);
 
     function stage(p) { return p.m.heat >= 85 ? 3 : p.m.heat >= 60 ? 2 : p.m.heat >= 35 ? 1 : 0; }
@@ -26041,7 +26300,7 @@
       var po = plotter.o, caught = (plotter.sabotage || 0) >= 1 && rng() < 0.15 + po.tr.a * 0.3;
       if (!caught && rng() > 0.18) return;
       pair.plotShown = true;
-      var soft = !caught && ({ lover: 1, almost: 1, fwb: 1 }[rel] || crusher === po || po.m.heat >= 65), v = { a: plotter.name, b: po.name };
+      var soft = !caught && ({ lover: 1, almost: 1, fwb: 1, mutual: 1 }[rel] || crusher === po || po.m.heat >= 65), v = { a: plotter.name, b: po.name };
       var rv = (caught ? LK.PLOT.caught : LK.PLOT.reveal).filter(function (l) { return !plotter.bound || !/手を|指を/.test(l); });
       if (soft) po.m.heat = clamp(po.m.heat + 8, 0, 100); else { po.m.reason = clamp(po.m.reason + 15, 0, 100); plotter.sabotage = 99; pair.plotMad = true; }
       ST.key(S, ST.sayB(S, { actors: [plotter, po], tag: caught ? '見抜かれた' : '打ち明けた', text: ST.fmt(pk(rv), v) + ST.fmt(pk(LK.PLOT.react[soft ? 'soft' : 'mad']), v), why: caught ? po.name + 'は、' + plotter.name + 'の細工に気づいた（A）' : plotter.name + 'は、自分から仕組んだことを打ち明けた', mag: 26 }, '', true), caught ? plotter.name + 'の細工がばれた' : plotter.name + 'が仕組んだと打ち明けた');
@@ -26081,6 +26340,12 @@
         }
       }
       if (plotter && !pair.plotShown && turn >= 2 && !pair.conn) plotEvent();
+      /* 両片想い：お互いに想っているのに、相手は何とも思っていないと思い込んで、すれ違う（一度だけ） */
+      if (rel === 'mutual' && LK.MUT && !pair.mutShown && turn >= 1 && !pair.conn && rng() < 0.4) {
+        pair.mutShown = true;
+        var mf = rng() < 0.5 ? A : B;
+        ST.sayB(S, { actors: [A, B], tag: '両片想い', text: ST.fmt(pk(LK.MUT.inside), { a: mf.name, b: mf.o.name }), why: '両片想い：二人とも相手を想っているのに、相手は自分を何とも思っていないと思い込んでいる', mag: 14 }, A.name + 'と' + B.name + 'がすれ違った');
+      }
       /* 手を出す（一コマに受け入れる出来事は一つまで。繋がっているあいだは、その続きだけ） */
       var lewdNow = false;
       var order = rng() < 0.5 ? [A, B] : [B, A];
@@ -26088,7 +26353,7 @@
       else if (pair.rest > 0) { pair.rest--; order = []; }
       for (var k = 0; k < order.length; k++) {
         var a = order[k], b = a.o;
-        var urge = (a.goal && a.goal.id === 'want' ? 0.12 : a.goal && a.goal.id === 'out' ? -0.08 : 0) + (a.action && a.action.id === 'flow' ? 0.08 : a.action && a.action.id === 'solve' ? -0.06 : 0) + a.m.heat / 100 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.m.reason / 130 - a.tr.cp * 0.12 + (plotter === a ? 0.45 : 0) + ({ lover: 0.15, fwb: 0.2, almost: 0.1, crush: crusher === a ? 0.2 : 0, tension: -0.1 }[rel] || 0) + (fwbAll && rel !== 'fwb' ? 0.2 : 0) + (crusher === a && rel !== 'crush' ? 0.15 : 0);
+        var urge = (a.goal && a.goal.id === 'want' ? 0.12 : a.goal && a.goal.id === 'out' ? -0.08 : 0) + (a.action && a.action.id === 'flow' ? 0.08 : a.action && a.action.id === 'solve' ? -0.06 : 0) + a.m.heat / 100 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.m.reason / 130 - a.tr.cp * 0.12 + (plotter === a ? 0.45 : 0) + ({ lover: 0.15, fwb: 0.2, almost: 0.1, crush: crusher === a ? 0.2 : 0, mutual: 0.2, tension: -0.1 }[rel] || 0) + (fwbAll && rel !== 'fwb' ? 0.2 : 0) + (crusher === a && rel !== 'crush' && rel !== 'mutual' ? 0.15 : 0);
         /* 従者は主に手を出さないよう耐える */
         if (servant === a && plotter !== a) {
           var order2 = !clash && !a.ordered && master.m.heat > 70 && master.tr.cp + master.tr.fc > 0.8 && rng() < 0.5;
@@ -26148,7 +26413,7 @@
         if (lv <= pair.level && pair.lastAct != null && turn - pair.lastAct < 2 && rng() < 0.7) continue;
         var act = LK.ACT[LV[lv]];
         a.cnt.make++;
-        var w = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3, crush: crusher === b ? 0.45 : -0.05, friend: 0, tension: -0.3, ex: 0.05, stranger: -0.1, master: servant === b ? 0.35 : 0.2 }[rel] || 0) + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (plotter === b ? 0.8 : 0) + (fwbAll && rel !== 'fwb' ? 0.35 : 0) + (fcKind === 'mutual' ? 0.2 : 0) + (crusher === b && rel !== 'crush' ? 0.2 : 0) + (rng() - 0.5) * 0.3;
+        var w = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3, crush: crusher === b ? 0.45 : -0.05, mutual: 0.45, friend: 0, tension: -0.3, ex: 0.05, stranger: -0.1, master: servant === b ? 0.35 : 0.2 }[rel] || 0) + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (plotter === b ? 0.8 : 0) + (fwbAll && rel !== 'fwb' ? 0.35 : 0) + (fcKind === 'mutual' ? 0.2 : 0) + (crusher === b && rel !== 'crush' && rel !== 'mutual' ? 0.2 : 0) + (rng() - 0.5) * 0.3;
         if (b.lock != null && b.lock !== a.i) w -= 0.5;
         var resp = w > 0.55 ? 'accept' : w > 0.32 ? 'passive' : 'refuse';
         /* 受け攻め：挿入では、仕掛けた側が攻めか受けかで書き分ける */
@@ -26276,7 +26541,7 @@
       /* 受け攻め：ベッドでは攻めを {a} に（ロッカーの中と同じ向き） */
       if (HK.Pos && HK.Pos.order(x, y, [x, y])[0] !== x) { y = x; x = x.o; }
       var vv = { a: x.name, b: y.name };
-      var tone = rel === 'tension' || rel === 'ex' ? 'rough' : rel === 'lover' || rel === 'almost' || rel === 'crush' ? 'sweet' : rng() < 0.5 ? 'rough' : 'sweet';
+      var tone = rel === 'tension' || rel === 'ex' ? 'rough' : rel === 'lover' || rel === 'almost' || rel === 'crush' || rel === 'mutual' ? 'sweet' : rng() < 0.5 ? 'rough' : 'sweet';
       /* ベッドの展開は solo-locker-bed.js（誘い方・最中の展開・結び） */
       /* 扉が開いたあとの夜：描写の長さ（短く＝一段落版）と、男性向け（企みのある夜は除く） */
       eroNow = eroOn && !plotter;
@@ -26324,6 +26589,8 @@
     if (pair.level >= 0) lines.push('ロッカーの中でいちばん進んだのは「' + actLabel(pair.level) + '」');
     if (bedLabels.length) lines.push('ベッドでは：' + bedLabels.join('→'));
     if (fcKind && LK.FC) lines.push(ST.fmt(pk(LK.FC.end[fcKind]), { c: crusher.name, o: crusher.o.name }));
+    /* 両片想い：何かあった二人は「……こっちの台詞」と通じる。何もなかった二人は、すれ違ったまま */
+    if (rel === 'mutual' && LK.MUT) lines.push(ST.fmt(pk(LK.MUT.end[outcome === 'bed' || (pair.acts >= 1 && outcome !== 'angry' && outcome !== 'plotfail') ? 'told' : 'miss']), v0));
     var rows = P.map(function (p) { return { i: p.i, rank: '', cells: [Math.round(p.m.heat) + '', Math.round(p.m.reason) + '', String(p.cnt.make), String(p.cnt.refuse), String(p.cnt.climax), String(p.cnt.solve), p.fate] }; });
     return ST.result(S, input, {
       ending: { title: title, kind: outcome === 'clean' ? 'ok' : 'over', lines: lines },
@@ -27616,13 +27883,16 @@
       close: L('{a}と{b}は、着くなり軽口を叩き合っていた。その声だけが、静まり返った村に場違いに響いた。|{a}は{b}に目配せした。長い付き合いの二人には、それだけで十分だった。'),
       bad: L('{a}と{b}は、目も合わせなかった。どうして同じ車に乗る羽目になったのか、二人とも同じことを考えていた。|{a}が何か言うたびに、{b}は鼻で笑った。村人たちは、その様子を面白そうに眺めていた。'),
       ex: L('{a}と{b}は、互いに気づかないふりをしていた。別れてから、まだそれほど経っていなかった。'),
-      crush: L('{a}の目は、村の景色よりも、{b}の横顔ばかり追っていた。|{a}は、{b}の隣の席を取るために、誰よりも早くバスに乗り込んでいた。')
+      crush: L('{a}の目は、村の景色よりも、{b}の横顔ばかり追っていた。|{a}は、{b}の隣の席を取るために、誰よりも早くバスに乗り込んでいた。'),
+      /* 両片想い（お互いに想っているのに、どちらも自分の片想いだと思っている） */
+      mutual: L('{a}の目は、村の景色よりも、{b}の横顔ばかり追っていた。{b}もまた、{a}が窓の外を見ている隙にだけ、{a}を見ていた。二人の目は、一度も合わなかった。|{a}と{b}は、どちらも相手の隣の席を取るために誰よりも早くバスに乗り込み、鉢合わせして、同時に「たまたまだよ」と言った。どちらも、相手は本当にたまたまなのだと思っていた。|{a}は、{b}に気づかれないように小さく溜息をついた。どうせ、自分の片想いだ。少し離れた席で、{b}もまったく同じことを考えていた。')
     },
     /* 夜に寄り添う */
     COMFORT: {
       love: L('夜、{a}は震える{b}を抱き寄せた。外の祭り囃子が遠くなるまで、二人はそうしていた。|{b}が眠れずにいると、{a}が布団の中で手を握ってくれた。それだけで、少しだけ怖さが和らいだ。|「もし、どっちかが……」言いかけた{b}の唇を、{a}が塞いだ。「言うな」'),
       family: L('{a}は{b}の背中をさすりながら、子どもの頃の話をした。{b}は、いつの間にか眠っていた。|「昔もこうやって、怖い夢を見たら布団に潜り込んできたよな」――{a}の言葉に、{b}は少し笑った。'),
-      close: L('{a}と{b}は、窓の外を見張りながら、くだらない話をして夜を明かした。|{a}は{b}に、とっておきの飴を半分割って渡した。「生きて帰ったら、もっといいもの奢れよ」')
+      close: L('{a}と{b}は、窓の外を見張りながら、くだらない話をして夜を明かした。|{a}は{b}に、とっておきの飴を半分割って渡した。「生きて帰ったら、もっといいもの奢れよ」'),
+      mutual: L('夜、{a}は眠れずに縁側へ出た。そこには先に{b}が座っていた。「……眠れなくて」二人は同時に言い、同時に黙った。肩が触れそうな距離のまま、どちらも朝まで動けなかった。|{b}が震えているのに気づいて、{a}は手を伸ばしかけ、やめた。好きでもない相手に触れられても困るだろう、と思った。{b}は引っ込められた手を見て、やっぱり嫌われている、と思った。それでも二人は、朝まで隣にいた。|「{b}って、好きな人とかいるの」――{a}は、怖さを紛らわすふりをして聞いた。「……いるよ。向こうは、私のことなんて何とも思ってないけど」{a}は黙って膝を抱えた。それが自分のことだとは、少しも思わなかった。')
     },
     /* 身を挺してかばう */
     SHIELD: L('{b}が{a}の前に飛び出した。「こいつに触るな！」|{b}は{a}を突き飛ばし、代わりに村人たちの前に立ちはだかった。|{b}は咄嗟に{a}を抱え込み、その背中で振り下ろされたものを受け止めた。'),
@@ -27637,7 +27907,8 @@
       close: L('{b}は壁を殴りつけた。「なんでお前なんだよ……！」|{b}は{a}のいた場所を見つめたまま、しばらく何も言えなかった。'),
       bad: L('{b}は、{a}の亡骸から目を逸らした。憎み合っていたはずなのに、胸の奥が妙に痛んだ。|「……勝ち逃げかよ」{b}は小さく呟いた。'),
       ex: L('{b}は、{a}の亡骸の前で立ち尽くした。言いたかったことが、まだたくさんあった。'),
-      crush: L('{b}は、とうとう{a}に想いを伝えられなかった。{b}は、{a}の手を握って、ようやく小さな声で言った。「……好きだったんだ」')
+      crush: L('{b}は、とうとう{a}に想いを伝えられなかった。{b}は、{a}の手を握って、ようやく小さな声で言った。「……好きだったんだ」'),
+      mutual: L('{b}は、{a}の亡骸の前で膝をついた。言えなかった。どうせ届かないと思っていた。――{a}の手帳から、{b}の名前を何度も書いては消した跡が出てきたのは、そのあとだった。|{b}は、{a}の冷たい手を握った。「……好きだったんだ。迷惑だと思って、言えなかった」――{a}が最期に呼んだのが自分の名前だったと、{b}はあとになって聞いた。|{b}は泣かなかった。片想いの相手が死んだだけだ、と自分に言い聞かせた。{a}のポケットから、{b}を写した一枚きりの写真が出てくるまでは。')
     },
     REVENGE: L('{b}は鉈を掴んで、民宿を飛び出した。「あいつらを、許さない」|{b}は誰の制止も聞かず、村長の家へ向かって走っていった。'),
     REVENGE_OK: L('――{b}は村の男を二人叩き伏せ、血まみれで戻ってきた。村人たちは、それ以来、{b}を遠巻きにした。'),
@@ -27661,6 +27932,8 @@
     MAKEUP: L('{a}と{b}は、殴り合い寸前の口論のあと、黙って並んで座った。「……生きて帰ったら、続きをやろう」|{a}が差し出した手を、{b}は少し迷ってから握った。今だけは、休戦だった。'),
     /* 洞窟の前の告白（片想い・友達以上恋人未満・元恋人） */
     CONFESS: L('洞窟の入口で、{a}は{b}の手を取った。「……戻ったら、ちゃんと言うつもりだった。でも、今言う。好きだ」|{a}は{b}の背中に向かって言った。「死ぬかもしれないから言っとく。ずっと、好きだった」――{b}は振り返らずに、「……知ってた」と答えた。|「もう一回、やり直せないかな」――洞窟の暗闇の前で、{a}は{b}にそう言った。'),
+    /* 洞窟の前の告白（両片想い：言ってみたら、相手も同じだった） */
+    CONFESS_MUTUAL: L('洞窟の入口で、{a}は{b}の手を取った。「死ぬかもしれないから言っとく。ずっと、好きだった」――{b}は目を見開いて、それから泣き笑いの顔になった。「……それ、こっちの台詞」|「{b}、あのさ」「{a}、あの」――洞窟の前で、二人の声が重なった。譲り合って、また重なった。最後に{b}が笑った。「……たぶん、同じこと言おうとしてる」|{a}は{b}に背を向けたまま言った。「どうせ迷惑だろうけど、好きだった」――返事の代わりに、背中に{b}の額が押し当てられた。「迷惑なわけない。……ずっと、私の片想いだと思ってた」'),
     /* 恋人・家族が魔術師をかばう */
     COVER: L('{b}は、{a}の袖の血に気づいた。そして、何も言わずに、自分の上着で隠した。|{b}は{a}の荷物の中の手帳を見つけた。少し迷ってから、それを囲炉裏の火にくべた。'),
 
@@ -27749,6 +28022,9 @@
     });
     return c;
   }
+  /* 両片想い：どちらからも片想い（向きを逆にした crush が二本）。both は恋人になったあとも true、mutual は恋人になる前だけ */
+  function both(S, a, b) { var ts = tiesOf(S, a, b); return ts.some(function (t) { return t.type === 'crush' && t.a === a.i; }) && ts.some(function (t) { return t.type === 'crush' && t.a === b.i; }); }
+  function mutual(S, a, b) { return both(S, a, b) && !tiesOf(S, a, b).some(function (t) { return inList(t.type, 'lover,mate,fated'); }); }
   function ED(S, a, b, lab, cls, from) { if (JS.DRAMA) JS.DRAMA.edge(S, a, b, lab, cls, from); }
   function A(S) { return S.P.filter(function (p) { return JS.alive(p) && !p.bound; }); }
   function pickT(S, pool, v) { return ST.fmt(ST.pick(S, pool), v); }
@@ -27785,6 +28061,7 @@
         if (c === 'crush') { var t = tiesOf(S, a, b).filter(function (q) { return q.type === 'crush'; })[0]; if (t && t.a === b.i) { x = b; y = a; } }
         if (a.amn || b.amn) return;
         done[a.i + '-' + b.i] = 1; k++;
+        if (c === 'crush' && mutual(S, a, b)) return ST.sayB(S, { actors: [x, y], tag: '関係', text: pickT(S, T.INTRO.mutual, { a: x.name, b: y.name }), why: '関係：' + relLabel(S, a, b) + '（お互いに想っているのに、どちらも自分の片想いだと思っている）' }, x.name + 'と' + y.name);
         ST.sayB(S, { actors: [x, y], tag: '関係', text: pickT(S, T.INTRO[c], { a: x.name, b: y.name }), why: '関係：' + tiesOf(S, a, b).map(function (t) { return HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).join('・') }, x.name + 'と' + y.name);
       });
     });
@@ -27808,11 +28085,11 @@
     /* 夜に寄り添う */
     if (night && rng() < 0.18) {
       var pairs = [];
-      live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i) { var c = cat(S, a, b); if (c === 'love' || c === 'family' || c === 'close') pairs.push([a, b, c]); } }); });
+      live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i) { var c = cat(S, a, b); if (c === 'love' || c === 'family' || c === 'close') pairs.push([a, b, c]); else if (c === 'crush' && mutual(S, a, b)) pairs.push([a, b, 'mutual']); } }); });
       if (pairs.length) {
         var pr = rng.pick(pairs), x = rng() < 0.5 ? pr[0] : pr[1], y = x === pr[0] ? pr[1] : pr[0];
         x.m.fear = clamp(x.m.fear - 6, 0, 100); y.m.fear = clamp(y.m.fear - 10, 0, 100);
-        ST.sayB(S, { actors: [x, y], tag: '寄り添う', text: pickT(S, T.COMFORT[pr[2]], { a: x.name, b: y.name }), why: '関係のある二人は、寄り添うと恐怖が和らぐ' }, x.name + 'と' + y.name + 'が寄り添った');
+        ST.sayB(S, { actors: [x, y], tag: '寄り添う', text: pickT(S, T.COMFORT[pr[2]], { a: x.name, b: y.name }), why: pr[2] === 'mutual' ? '両片想いの二人は、寄り添うと恐怖が和らぐ（どちらも、相手は自分を何とも思っていないと思い込んでいる）' : '関係のある二人は、寄り添うと恐怖が和らぐ' }, x.name + 'と' + y.name + 'が寄り添った');
       }
     }
     /* 張り合う・ぶつかる */
@@ -27845,7 +28122,11 @@
     live.forEach(function (p) { if (p.rivalBoost) p.rivalBoost--; });
     if (JS.DRAMA) JS.DRAMA.tick(S, A(S), h);
   }
-  function relLabel(S, a, b) { return tiesOf(S, a, b).map(function (t) { return HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).join('・') || 'なし'; }
+  function relLabel(S, a, b) {
+    var bo = both(S, a, b), l = tiesOf(S, a, b).filter(function (t) { return !(bo && t.type === 'crush'); }).map(function (t) { return HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; });
+    if (bo) l.unshift('両片想い');
+    return l.join('・') || 'なし';
+  }
 
   /* ---------- 記憶喪失 ---------- */
   function amnTick(S, live, h) {
@@ -27904,7 +28185,7 @@
     rel.forEach(function (q) {
       var c = cat(S, q, p), bd = bond(S, q, p);
       q.m.fear = clamp(q.m.fear + (c === 'love' ? 25 : c === 'family' ? 20 : c === 'bad' ? 4 : 12), 0, 100);
-      var t = pickT(S, T.GRIEF[c] || T.GRIEF.close, { a: p.name, b: q.name }), why = q.name + 'と' + p.name + 'の関係：' + relLabel(S, q, p);
+      var t = pickT(S, (c === 'crush' && mutual(S, q, p) ? T.GRIEF.mutual : T.GRIEF[c]) || T.GRIEF.close, { a: p.name, b: q.name }), why = q.name + 'と' + p.name + 'の関係：' + relLabel(S, q, p);
       /* 後を追う（仇討ち・絶望） */
       if (bd >= 0.75 && !S.inCave && /村人|何者か/.test(p.how || '') && rng() < q.tr.aggr * 0.5 + q.tr.impulse * 0.3) {
         t += pickT(S, T.REVENGE, { b: q.name });
@@ -28070,6 +28351,11 @@
         var ok = ts.some(function (t) { return (t.type === 'crush' && t.a === a.i) || ((t.type === 'almost' || t.type === 'ex') && a.i < b.i); });
         if (!ok || rng() > 0.55) return;
         done = 1; a.m.fear = clamp(a.m.fear - 10, 0, 100); b.m.fear = clamp(b.m.fear - 6, 0, 100);
+        if (mutual(S, a, b)) {
+          b.m.fear = clamp(b.m.fear - 6, 0, 100);
+          S.ties.push({ a: a.i, b: b.i, type: 'lover', born: true }); if (JS.DRAMA) JS.DRAMA.setRel(S, a, b, 0.2, '恋人');
+          return ST.say(S, { actors: [a, b], tag: '告白', text: pickT(S, T.CONFESS_MUTUAL, { a: a.name, b: b.name }), why: '関係：両片想い。死を前にして想いを口にし、ようやく通じた（どちらも、自分の片想いだと思っていた）', mag: 32 });
+        }
         ST.say(S, { actors: [a, b], tag: '告白', text: pickT(S, T.CONFESS, { a: a.name, b: b.name }), why: '関係：' + relLabel(S, a, b) + '。死を前にして、想いを口にした', mag: 30 });
       });
     });
@@ -28083,7 +28369,7 @@
   /* 魔術師が生贄に選ばない相手（大事な人） */
   function spare(S, m, v) { return bond(S, m, v) >= 0.6; }
 
-  JS.REL = { setup: setup, arrive: arrive, amnArrive: amnArrive, tick: tick, onDeath: onDeath, near: near, shield: shield, stay: stay, substitute: substitute, goBack: goBack, confess: confess, cover: cover, spare: spare, bond: bond, cat: cat };
+  JS.REL = { setup: setup, arrive: arrive, amnArrive: amnArrive, tick: tick, onDeath: onDeath, near: near, shield: shield, stay: stay, substitute: substitute, goBack: goBack, confess: confess, cover: cover, spare: spare, bond: bond, cat: cat, mutual: mutual };
 })();
 ;/* ==== js/jashin-drama.js ==== */
 /* 箱庭シミュレーター: 邪神村RTA ― 人間関係の変化と関係図
@@ -28108,7 +28394,11 @@
     confess: L('{a}は、{b}の手を取った。「こんなときに言うことじゃないけど……ずっと、好きだった」|祭り囃子にかき消されそうな声で、{a}は{b}に想いを告げた。「生きて帰れたら、一緒にいてほしい」'),
     yes: L('{b}は少し驚いて、それから{a}の手を握り返した。|{b}は泣きそうな顔で笑った。「……生きて帰ったら、ちゃんと聞かせて」'),
     no: L('{b}は、困ったように目を伏せた。「……ごめん」|{b}は、何も答えなかった。その沈黙が、答えだった。'),
-    jealous: L('{a}は、{b}と{c}が親しげに話しているのを見て、胸の奥がざらついた。|{a}は、{c}をかばう{b}の背中を見つめていた。どうして、自分じゃないのか。')
+    jealous: L('{a}は、{b}と{c}が親しげに話しているのを見て、胸の奥がざらついた。|{a}は、{c}をかばう{b}の背中を見つめていた。どうして、自分じゃないのか。'),
+    /* 両片想い：すれ違い・勘違い・告白が通じる */
+    mutual: L('{a}と{b}の目が合った。二人は同時にそらした。{a}は「見ていたのがばれた」と思い、{b}は「睨まれた」と思った。|{a}は、{b}に何か言いかけて、やめた。少しして、{b}も{a}に何か言いかけて、やめた。二人とも、言わなくてよかったのだ、と自分に言い聞かせた。|{a}と{b}は、同時に相手の湯呑みにお茶を注ごうとして、急須を取り合う形になった。「……どうぞ」「……いや、そっちが」――周りの誰もが気づいていることに、二人だけが気づいていなかった。|{a}は、思い切って{b}を見張りの当番に誘った。「一人だと怖いから。……誰でもいいんだけど」{b}は「誰でもいいなら、私でいいよ」と笑った。{a}は、その「誰でも」をひどく後悔した。'),
+    mjealous: L('{a}は、{b}と{c}が親しげに話しているのを見て、胸の奥がざらついた。やっぱり、{b}が好きなのは{c}なんだ。――{b}はその間ずっと、{a}がこっちを見ていないかばかり気にしていた。|{a}は、{c}をかばう{b}の背中を見つめていた。どうして、自分じゃないのか。――その夜、{b}は{c}に小声で相談していた。「{a}って、私のことどう思ってるのかな」|「{b}って、{c}と仲いいよね」――{a}は笑って言ったつもりだった。{b}は、{a}がそれを平気な顔で言えることの方に傷ついた。どうでもいいから、そんなふうに言えるんだ、と。'),
+    myes: L('{b}は目を丸くして、それから泣き笑いの顔になった。「……それ、こっちの台詞」|{b}はしばらく黙っていた。「……私、ずっと片想いだと思ってた」――二人は顔を見合わせて、同時に吹き出した。|{b}は{a}の手を握り返した。「先に言われた。……ずっと言おうとして、言えなかったのに」')
   };
   /* 疑似親子：実は村の出身だった */
   var PP = {
@@ -28132,6 +28422,7 @@
   function bond(S, a, b) { return JS.REL ? JS.REL.bond(S, a, b) : 0; }
   function ties(S, a, b) { return (S.ties || []).filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); }); }
   function has(S, a, b, list) { return ties(S, a, b).some(function (t) { return list.split(',').indexOf(t.type) >= 0; }); }
+  function mutual(S, a, b) { return !!(JS.REL && JS.REL.mutual && JS.REL.mutual(S, a, b)); }
   function live(S) { return S.P.filter(function (p) { return JS.alive(p) && !p.bound; }); }
   function setRel(S, a, b, d, lab, from) {
     S.relD = S.relD || {}; S.relLab = S.relLab || {}; S.relDir = S.relDir || {};
@@ -28162,11 +28453,12 @@
           if (w < -0.1) { opts.push([a, b, 'quarrel', 0.5]); opts.push([a, b, 'makeup', 0.2 + a.tr.np * 0.3 + (S.found.length >= 3 ? 0.3 : 0)]); }
           else { opts.push([a, b, 'talk', 0.4 + a.tr.np * 0.3 + b.tr.np * 0.3]); opts.push([a, b, 'team', 0.35]); }
           if (lastDead && bond(S, a, lastDead) >= 0.3 && bond(S, b, lastDead) >= 0.3) opts.push([a, b, 'shared', 1]);
+          if (mutual(S, a, b)) opts.push([a, b, 'mutual', 0.6]);
         }
         if (w >= -0.1 && b.m.fear > 55) opts.push([a, b, 'protect', 0.3 + a.tr.np * 0.5]);
-        if (w >= 0.3 && !has(S, a, b, 'lover,mate,fated') && !S.ties.some(function (t) { return ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)) && HK.tieNoLove(t); }) && (!HK.canLove || HK.canLove(a, b)) && !S.dConfess) opts.push([a, b, 'confess', 0.25 + a.tr.fc * 0.4 + w * 0.4]);
+        if (w >= 0.3 && !has(S, a, b, 'lover,mate,fated') && !S.ties.some(function (t) { return ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)) && HK.tieNoLove(t); }) && (!HK.canLove || HK.canLove(a, b)) && !S.dConfess) opts.push([a, b, 'confess', 0.25 + a.tr.fc * 0.4 + w * 0.4 + (mutual(S, a, b) ? 0.2 : 0)]);
         if (a.tr.a > 0.5 && (b.traitor || b.plot || b.sold)) opts.push([a, b, 'distrust', 0.6]);
-        if (S.ties.some(function (t) { return t.type === 'crush' && t.a === a.i && t.b === b.i; })) { var c = P.filter(function (q) { return q !== a && q !== b && bond(S, b, q) > 0.4; })[0]; if (c) opts.push([a, b, 'jealous', 0.5, c]); }
+        if (S.ties.some(function (t) { return t.type === 'crush' && t.a === a.i && t.b === b.i; }) && !(has(S, a, b, 'lover,mate,fated') && S.ties.some(function (t) { return t.type === 'crush' && t.a === b.i && t.b === a.i; }))) { var c = P.filter(function (q) { return q !== a && q !== b && bond(S, b, q) > 0.4; })[0]; if (c) opts.push([a, b, mutual(S, a, b) ? 'mjealous' : 'jealous', 0.5, c]); }
       });
     });
     if (!opts.length) return;
@@ -28179,12 +28471,15 @@
     if (k === 'quarrel') { setRel(S, a, b, -0.15, '険悪'); S.hostile = clamp(S.hostile + 3, 0, 100); why = '恐怖が、二人の仲をこじらせた（村人に隙を見せた）'; }
     if (k === 'makeup') { setRel(S, a, b, 0.3, '和解'); why = '命がかかって、意地を張るのをやめた'; }
     if (k === 'distrust') { setRel(S, a, b, -0.2, '不信', a); why = a.name + 'の観察眼が、' + b.name + 'の綻びを捉えた'; }
+    if (k === 'mutual') why = '両片想い：お互いに想っているのに、どちらも相手は自分を何とも思っていないと思い込んでいる';
+    if (k === 'mjealous') { setRel(S, a, o[4], -0.1, '嫉妬', a); why = '両片想い：' + a.name + 'は、' + b.name + 'が' + o[4].name + 'を好きなのだと勘違いした（本当は' + b.name + 'も' + a.name + 'を想っている）'; }
     if (k === 'jealous') { setRel(S, a, o[4], -0.15, '嫉妬', a); why = a.name + 'は' + b.name + 'に片想いしている'; }
     if (k === 'confess') {
       S.dConfess = true;
-      var yes = rng() < 0.25 + bond(S, b, a) * 0.5 + b.tr.warmth * 0.2;
-      t += F(ST.pick(S, yes ? T.yes : T.no), m);
-      if (yes) { S.ties.push({ a: a.i, b: b.i, type: 'lover', born: true }); setRel(S, a, b, 0.2, '恋人'); a.m.fear = clamp(a.m.fear - 15, 0, 100); b.m.fear = clamp(b.m.fear - 15, 0, 100); why = 'この村で、恋が実った（恐怖がやわらぐ）'; }
+      var mu = mutual(S, a, b), yes = mu || rng() < 0.25 + bond(S, b, a) * 0.5 + b.tr.warmth * 0.2;
+      t += F(ST.pick(S, mu ? T.myes : yes ? T.yes : T.no), m);
+      if (mu) { S.ties.push({ a: a.i, b: b.i, type: 'lover', born: true }); setRel(S, a, b, 0.2, '恋人'); a.m.fear = clamp(a.m.fear - 15, 0, 100); b.m.fear = clamp(b.m.fear - 15, 0, 100); why = 'この村で、両片想いがようやく通じた（どちらも、自分の片想いだと思っていた。恐怖がやわらぐ）'; }
+      else if (yes) { S.ties.push({ a: a.i, b: b.i, type: 'lover', born: true }); setRel(S, a, b, 0.2, '恋人'); a.m.fear = clamp(a.m.fear - 15, 0, 100); b.m.fear = clamp(b.m.fear - 15, 0, 100); why = 'この村で、恋が実った（恐怖がやわらぐ）'; }
       else { S.ties.push({ a: a.i, b: b.i, type: 'crush', born: true }); setRel(S, a, b, -0.05, '片想い', a); why = '想いは届かなかった'; }
       var o2 = ST.say(S, { actors: [a, b], tag: '想いを告げる', kind: 'climax', text: t, why: why, mag: 32 }); ST.key(S, o2, a.name + 'が' + b.name + 'に告白');
       return;
@@ -28267,7 +28562,10 @@
   function relmap(S) {
     var P = S.P, edges = [];
     var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', acq: 'none' };
-    (S.ties || []).forEach(function (t) { var lab = HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; edges.push({ a: t.a, b: t.b, label: (t.born ? '★' : '') + lab, cls: CLS[t.type] || 'friend', dir: t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null }); });
+    (S.ties || []).forEach(function (t) {
+      /* 両片想い（向きを逆にした片想い二本）は、一本の「両片想い」にまとめる */
+      if (t.type === 'crush' && (S.ties || []).some(function (u) { return u.type === 'crush' && u.a === t.b && u.b === t.a; })) { if (t.a < t.b) edges.push({ a: t.a, b: t.b, label: (t.born ? '★' : '') + '両片想い', cls: 'pine', dir: null }); return; }
+      var lab = HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; edges.push({ a: t.a, b: t.b, label: (t.born ? '★' : '') + lab, cls: CLS[t.type] || 'friend', dir: t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null }); });
     Object.keys(S.relLab || {}).forEach(function (k) {
       var ab = k.split('-'), lab = S.relLab[k];
       if (lab === '恋人' || lab === '片想い') return;
@@ -32491,6 +32789,8 @@
       bad: L('{n}は、なぜか同じ車に乗る羽目になっていた。吹雪の中、車内の空気は外より冷えきっていた。|{n}は、道中ずっと口論していた。館に着いたときも、まだ互いを睨みつけていた。'),
       ex: L('{n}は、別れてから初めて二人きりになった。よりによって、吹雪の山で。'),
       crush: L('{a}は、{b}に誘われて、二人きりのつもりでついてきた。{b}の方は、それほど深く考えていないようだった。|{a}は、吹雪の中でも{b}の背中ばかり見ていた。この旅行に来たのは、{b}がいたからだった。'),
+      /* 両片想い（どちらも相手を想っていて、どちらも片想いだと思い込んでいる） */
+      pining: L('{a}は、{b}に誘われて、二人きりのつもりでついてきた。{b}の方も、まったく同じつもりで誘っていた。どちらも、相手は深く考えていないと思い込んでいた。|{a}は、吹雪の中でも{b}の背中ばかり見ていた。{b}が振り返りそうになるたびに、慌てて目をそらした。{b}もまた、{a}が見ていないときだけ振り返っていた。|車の中で、{a}と{b}は同時に「あのさ」と言いかけて、同時に「なんでもない」と黙った。この旅行で言おうと決めていたことを、二人とも、まだ言えずにいた。'),
       many: L('{n}は、同じ旅行の一行だった。互いに声をかけ合いながら、吹雪の中を励まし合って歩いてきた。|{n}は、大学時代の仲間で集まったスキー旅行の途中だった。|{n}は、知り合いの紹介で集まった山歩きの一団だった。'),
       mixed: L('{n}は、同じ一行として山に来ていた。ただ、全員が仲良しというわけではなかった。|{n}は、ひとつの車に押し込められてここまで来た。誰かと誰かの間には、最初から険悪な空気が流れていた。')
     },
@@ -32524,6 +32824,8 @@
   Y.REVEAL = {
     love: L('{b}の顔から、血の気が引いた。「嘘……嘘だよね、{c}。ねえ、嘘だって言って」|{b}は{c}の腕を掴んだ。「どうして……どうして言ってくれなかったの」――{c}は、何も答えなかった。|{b}は、ただ{c}を見つめていた。昨夜、自分を抱きしめてくれた腕を。'),
     crush: L('{b}は、その場に立ち尽くした。ずっと見ていたはずなのに、何も見えていなかった。|{b}は唇を噛んだ。「……それでも、好きだったのに」'),
+    /* 両片想い：最後の最後で、想いが通じてしまう */
+    pining: L('{b}は唇を噛んだ。「……それでも、好きだったのに」――{c}が、初めて{b}の目をまっすぐに見た。「……こっちの台詞だよ」|{b}は、その場に立ち尽くした。{c}は{b}から目を逸らし、小さく笑った。「あなたにだけは、知られたくなかった。……ずっと、好きだったから」|{b}は{c}の袖を掴んだ。「ずっと、言えなかったことがあるの」――{c}は首を振った。「言わないで。……同じことを言いたくなるから」'),
     family: L('{b}は{c}の名前を呼んだ。子どもの頃と同じ呼び方で。「なんで……なんでだよ……」|{b}は膝から崩れ落ちた。「家に、帰ったら……なんて言えばいいの」'),
     close: L('{b}は拳を握りしめた。「……ずっと、一緒にいたのに。何も、気づかなかった」|{b}は{c}を睨みつけた。その目には、怒りよりも深い悲しみがあった。|{b}は小さく首を振った。「……信じてたんだ。お前のこと」'),
     buddy: L('{b}は、震える声で言った。「先生……どうして……」|{b}は手帳を取り落とした。そこには、{c}と一緒に書いた事件の記録が、びっしりと並んでいた。'),
@@ -32539,6 +32841,11 @@
     protect: L('{b}が震えていると、{a}が黙って隣に座った。「大丈夫。朝まで起きてるから」|{a}は怯える{b}の部屋の前で、一晩中見張りに立った。'),
     team: L('{a}と{b}は、二人で館の見取り図を描き直した。いつの間にか、息の合った相棒のようになっていた。|{a}と{b}は、互いのアリバイを証明し合うことにした。'),
     confess: L('{a}は、{b}の手を取った。「こんなときに言うことじゃないけど……ずっと、好きだった」|吹雪の音にかき消されそうな声で、{a}は{b}に想いを告げた。'),
+    /* 両片想いの二人のすれ違い（{a}{b}） */
+    pine: L('{a}は、暖炉の前で{b}に何か言いかけて、やめた。{b}も、同じところで何か言いかけて、やめた。二人とも、相手が言いかけたのは事件のことだと思い込んだ。|{a}は、{b}が誰かと笑っているのを見て、胸が痛んだ。その夜、{b}もまた、{a}が誰かと話しているのを見て、同じ痛みを抱えていた。|「{b}って、好きな人とかいるのかな」――{a}がこっそり相談した相手は、前の晩、{b}から「{a}って、好きな人いるのかな」と相談されたばかりだった。|{a}と{b}は、同時に同じ毛布に手を伸ばして、同時に引っ込めた。「どうぞ」「どうぞ」――結局、毛布は二人のあいだに置かれたまま、朝になった。'),
+    /* 両片想いの告白：同時に動き、最後に通じる */
+    pconfess: L('{a}は、{b}の手を取った。「こんなときに言うことじゃないけど……ずっと、好きだった」|吹雪の音にかき消されそうな声で、{a}は「好きだった」と言った。同じ瞬間、{b}も「好きだった」と言っていた。|{a}は、明日には言えなくなるかもしれないと思った。廊下の向こうから、同じ顔をした{b}が歩いてきた。'),
+    pyes: L('{b}は目を丸くして、それから泣き笑いになった。「……それ、こっちの台詞」――ずっと、自分だけの片想いだと思っていた。二人とも。|{a}と{b}は顔を見合わせ、しばらく黙り込んだ。{a}「……私だけだと思ってた」{b}「こっちの台詞」――吹雪の夜に、初めて二人で笑った。|{b}は{a}の手を握り返した。「先に言われた。……ずっと言おうとして、言えなかったのに」――遠回りしていたのは、二人とも同じだった。'),
     yes: L('{b}は少し驚いて、それから{a}の手を握り返した。|{b}は泣きそうな顔で笑った。「……生きて帰ったら、ちゃんと聞かせて」'),
     no: L('{b}は、困ったように目を伏せた。「……ごめん」|{b}は、何も答えなかった。その沈黙が、答えだった。'),
     quarrel: L('{a}と{b}は、食堂で怒鳴り合った。「お前が犯人なんじゃないのか！」|{a}は{b}の言葉に我慢できず、テーブルを叩いて席を立った。'),
@@ -32553,6 +32860,8 @@
     HOST_NPC: L('館の主・{h}は、一行を見ても驚かなかった。「よく来た。吹雪が止むまで、好きなだけ泊まっていくといい」――その目は、少しも笑っていなかった。|重い扉を開けたのは、館の主・{h}だった。「客人とは珍しい。……ちょうど、退屈していたところだ」'),
     HOST_PC: L('館の主・{h}が、一行を出迎えた。「ようこそ、{m}へ。吹雪が止むまで、どうぞごゆっくり」'),
     SEAL: L('電話線は切れていた。唯一の橋は、雪の重みで落ちていた。――吹雪が止むまで、誰もこの館から出られない。|館の主が言った。「吹雪はあと数日は続く。それまで、ここから出る手段はない」'),
+    /* 夜：両片想いの二人が同じ部屋で（{a}{b}） */
+    PINE_NIGHT: L('{a}と{b}は、同じ部屋で夜を明かした。背中合わせに横になったまま、どちらも眠ったふりをしていた。どちらも、相手の寝息が聞こえないことに気づいていた。|{a}と{b}は、同じ部屋で夜を明かした。「怖いから一緒にいるだけ」と、二人とも同じ言い訳をした。どちらも、相手の言い訳を本気にした。|{a}と{b}は、同じ部屋で夜を明かした。毛布が一枚しかなく、{a}は「どうぞ」と、{b}は「そっちが使って」と譲り合った。結局、一枚を二人で分けたまま、朝まで指一本動かせなかった。'),
     NIGHT: L('夜が更けた。館のどこかで、古い柱時計が鳴った。|吹雪が窓を叩き続けていた。誰かが廊下を歩く足音がして、すぐに止んだ。|暖炉の火が消えかけていた。館は、息を潜めたように静まり返っていた。'),
     FIND: L('朝、{a}の悲鳴が館じゅうに響いた。|最初に気づいたのは{a}だった。{a}はその場に座り込み、声も出せなかった。|{a}が{p}の扉を開けた瞬間、手にしていたカップが床に落ちて割れた。'),
     MORNING: L('吹雪は、まだ止まない。|窓の外は、一面の白だった。誰もが、互いの顔を盗み見ていた。|朝食の席には、空いた椅子がひとつ増えていた。'),
@@ -32584,7 +32893,7 @@
     END_ESCAPE: L('吹雪が止んだ。麓から警察が到着したとき、事件はまだ解かれていなかった。{c}は、何食わぬ顔で一行と一緒に館を出た。――真相を知っているのは、{c}だけだった。|警察の到着とともに、一行は館を後にした。帰りの車の中で、{c}だけが、窓の外の雪を見て小さく笑っていた。'),
     END_FREE: L('{c}は、誰にも疑われないまま、春を迎えた。{m}は、未解決事件のひとつとして、人々の記憶から薄れていった。'),
     /* 遺族・関係の反応 */
-    GRIEF: { love: L('{b}は{v}の亡骸にすがりついて、声を上げて泣いた。|{b}は、{v}の冷たい手を握ったまま動かなかった。'), family: L('{b}は{v}の名前を、何度も何度も呼んだ。'), close: L('{b}は壁を殴った。「誰だ……誰がやった……！」'), bad: L('{b}は、{v}の亡骸から目を逸らした。疑いの目が、真っ先に{b}に集まった。') },
+    GRIEF: { pining: L('{b}は、{v}の亡骸の前で動けなかった。{v}の手帳の最後のページに、{b}の名前が書いてあった。――「帰ったら、言う」|{b}は{v}の冷たい手を握った。「……私、まだ何も言ってない」――あの人も、自分を見ていたことを、{b}は最後まで知らなかった。|{v}の上着のポケットから、渡しそびれた小さな包みが出てきた。添えられたカードの宛名は、{b}だった。{b}は、声を上げて泣いた。'), love: L('{b}は{v}の亡骸にすがりついて、声を上げて泣いた。|{b}は、{v}の冷たい手を握ったまま動かなかった。'), family: L('{b}は{v}の名前を、何度も何度も呼んだ。'), close: L('{b}は壁を殴った。「誰だ……誰がやった……！」'), bad: L('{b}は、{v}の亡骸から目を逸らした。疑いの目が、真っ先に{b}に集まった。') },
     COVER: L('{b}は、{c}の袖についた染みに気づいた。そして、黙って目を逸らした。|{b}は{c}をかばうように言った。「{c}は、昨夜ずっと私と一緒にいました」――それは、嘘だった。'),
     BUDDY: L('{b}は{a}の隣に立ち、手帳を広げた。「先生、現場の見取り図です」|{b}は{a}の背中に向かって言った。「無茶はしないでください。……いつもみたいに」|{a}は{b}に目配せした。それだけで、{b}は何をすべきか分かっていた。'),
     BUDDY_SAVE: L('{b}が{a}の前に飛び出した。|{b}は{a}を突き飛ばし、代わりに一撃を受けた。'),
@@ -32796,7 +33105,13 @@
   function pq(S, key, p, m) { var t = Y.PQ[key]; return F(pk(S, t[p.persona] || t.gentle), m); }
   function hasTie(S, a, b, list) { return ties(S, a, b).some(function (t) { return list.split(',').indexOf(t.type) >= 0; }); }
   function cat(S, a, b) { var w = bond(S, a, b); if (w <= -0.2) return 'bad'; if (hasTie(S, a, b, 'lover,mate,fated,almost,crush,fwb')) return 'love'; if (hasTie(S, a, b, 'sibling,sibprot,sibclose,sibbad,parent,pparent')) return 'family'; return w >= 0.3 ? 'close' : ''; }
-  function relLabel(S, a, b) { return ties(S, a, b).map(function (t) { return HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).join('・'); }
+  /* 両片想い：どちらからも片想いがある二人（恋人になったら外れる） */
+  function crushTo(S, a, b) { return S.ties.some(function (t) { return t.type === 'crush' && t.a === a.i && t.b === b.i; }); }
+  function pining(S, a, b) { return !!(a && b && a !== b && a.i != null && b.i != null) && crushTo(S, a, b) && crushTo(S, b, a) && !hasTie(S, a, b, 'lover,mate,fated'); }
+  function relLabel(S, a, b) {
+    var both = a && b && crushTo(S, a, b) && crushTo(S, b, a), one = false;
+    return ties(S, a, b).map(function (t) { if (both && t.type === 'crush') { if (one) return null; one = true; return '両片想い'; } return HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).filter(function (x) { return x; }).join('・');
+  }
 
   /* ---------- 能力 ---------- */
   function role(p) { return Y.ROLE[p.role] || Y.ROLE.civ; }
@@ -32978,6 +33293,7 @@
       var c = cat(S, g[0], g[1]), first = ties(S, g[0], g[1])[0], kind = first && first.type === 'crush' ? 'crush' : c || 'close';
       if (g.length > 2) kind = g.some(function (a) { return g.some(function (b) { return a !== b && bond(S, a, b) < -0.2; }); }) ? 'mixed' : 'many';
       var x = g[0], y = g[1];
+      if (kind === 'crush' && pining(S, x, y)) kind = 'pining';
       if (kind === 'crush' && first.a === g[1].i) { x = g[1]; y = g[0]; }
       ST.say(S, { actors: g, tag: '一行', text: F(pk(S, A.GROUP[kind]), { n: join(g), a: x.name, b: y.name }), why: '関係のある人どうしで、一緒にやってきた：' + rel.join('／') });
       g.forEach(function (p) { done.push(p); });
@@ -33074,7 +33390,7 @@
     var pairs = [];
     live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i && cat(S, a, b) === 'love') pairs.push([a, b]); }); });
     /* 向きの決まらない組（HK.Pos.okSex でない二人）は、寄り添って夜を過ごさず、交代で見張って明かす */
-    if (pairs.length && rng() < 0.5) { var pr = rng.pick(pairs); pr.forEach(function (p) { p.m.fear = clamp(p.m.fear - 8, 0, 100); }); ST.sayB(S, { actors: pr, tag: '夜', text: pr[0].name + 'と' + pr[1].name + (HK.Pos && !HK.Pos.okSex(pr[0], pr[1]) ? 'は、同じ部屋で交代に見張りをしながら夜を明かした。扉の向こうの物音に、二人で耳を澄ませた。' : 'は、同じ部屋で夜を明かした。互いの体温だけが、確かなものだった。'), why: '関係：' + relLabel(S, pr[0], pr[1]) }, pr[0].name + 'と' + pr[1].name + 'が寄り添った'); }
+    if (pairs.length && rng() < 0.5) { var pr = rng.pick(pairs); pr.forEach(function (p) { p.m.fear = clamp(p.m.fear - 8, 0, 100); }); ST.sayB(S, { actors: pr, tag: '夜', text: pining(S, pr[0], pr[1]) && T.PINE_NIGHT && (!HK.Pos || HK.Pos.okSex(pr[0], pr[1])) ? F(pk(S, T.PINE_NIGHT), { a: pr[0].name, b: pr[1].name }) : pr[0].name + 'と' + pr[1].name + (HK.Pos && !HK.Pos.okSex(pr[0], pr[1]) ? 'は、同じ部屋で交代に見張りをしながら夜を明かした。扉の向こうの物音に、二人で耳を澄ませた。' : 'は、同じ部屋で夜を明かした。互いの体温だけが、確かなものだった。'), why: '関係：' + relLabel(S, pr[0], pr[1]) }, pr[0].name + 'と' + pr[1].name + 'が寄り添った'); }
     var sc = live.filter(function (p) { return p.m.fear > 60; })[0];
     if (sc && rng() < 0.5) { sc.locked = true; ST.sayB(S, { actors: [sc], tag: '恐怖', text: F(pk(S, T.PANIC), { a: sc.name }), why: '恐怖 ' + Math.round(sc.m.fear) }, sc.name + 'は閉じこもった'); }
   }
@@ -33097,7 +33413,7 @@
       var c = cat(S, q, k.v); if (!c || c === 'close' && rng() < 0.5) return;
       if (c === 'bad') q.m.sus = clamp(q.m.sus + 15, 0, 100);
       q.m.fear = clamp(q.m.fear + (c === 'love' ? 20 : 10), 0, 100);
-      ST.say(S, { actors: [q, k.v], tag: '喪失', text: F(pk(S, T.GRIEF[c] || T.GRIEF.close), { b: q.name, v: k.v.name }), why: '関係：' + relLabel(S, q, k.v) + (c === 'bad' ? '（仲が悪かったので、疑いが向いた）' : '') + (q.isCul ? '。……' + q.name + 'が犯人だ' : ''), mag: c === 'love' ? 30 : 18 });
+      ST.say(S, { actors: [q, k.v], tag: '喪失', text: F(pk(S, (c === 'love' && pining(S, q, k.v) && T.GRIEF.pining) || T.GRIEF[c] || T.GRIEF.close), { b: q.name, v: k.v.name }), why: '関係：' + relLabel(S, q, k.v) + (pining(S, q, k.v) ? '（どちらも想いを伝えられないままだった）' : '') + (c === 'bad' ? '（仲が悪かったので、疑いが向いた）' : '') + (q.isCul ? '。……' + q.name + 'が犯人だ' : ''), mag: c === 'love' ? 30 : 18 });
     });
     /* 探偵が死んだら引き継ぐ */
     if (k.v.isDet && !inv(S).length) successor(S, k.v, false);
@@ -33373,7 +33689,7 @@
       .filter(function (q) { return Math.abs(bond(S, q, c)) >= 0.3 || (c.buddies || []).indexOf(q) >= 0 || c.buddy === q; })
       .sort(function (a, b) { return Math.abs(bond(S, b, c)) - Math.abs(bond(S, a, c)); });
     qs.slice(0, 3).forEach(function (q) {
-      var k = (c.buddies || []).indexOf(q) >= 0 || c.buddy === q ? 'buddy' : S.ties.some(function (t) { return t.type === 'crush' && t.a === q.i && t.b === c.i; }) ? 'crush' : hasTie(S, q, c, 'lover,mate,fated,almost,fwb') ? 'love' : hasTie(S, q, c, 'sibling,sibprot,sibclose,sibbad,parent,pparent') ? 'family' : bond(S, q, c) < 0 ? 'bad' : !ties(S, q, c).length ? 'trust' : 'close';
+      var k = (c.buddies || []).indexOf(q) >= 0 || c.buddy === q ? 'buddy' : pining(S, q, c) && Y.REVEAL.pining ? 'pining' : S.ties.some(function (t) { return t.type === 'crush' && t.a === q.i && t.b === c.i; }) ? 'crush' : hasTie(S, q, c, 'lover,mate,fated,almost,fwb') ? 'love' : hasTie(S, q, c, 'sibling,sibprot,sibclose,sibbad,parent,pparent') ? 'family' : bond(S, q, c) < 0 ? 'bad' : !ties(S, q, c).length ? 'trust' : 'close';
       q.m.fear = clamp(q.m.fear + (k === 'bad' ? 0 : 20), 0, 100);
       ST.say(S, { actors: [q, c], tag: '動揺', text: F(pk(S, Y.REVEAL[k]), { b: q.name, c: c.name }), why: q.name + 'は真相を知らなかった（' + (relLabel(S, q, c) || (S.relLab && S.relLab[rk(q, c)]) || '館で深まった関係') + '）', mag: k === 'bad' ? 20 : 36 });
     });
@@ -33399,6 +33715,7 @@
           if (w < -0.1) { opts.push([a, b, 'quarrel', 0.6]); opts.push([a, b, 'makeup', 0.25 + a.tr.np * 0.3]); }
           else { opts.push([a, b, 'talk', 0.5 + a.tr.np * 0.3 + b.tr.np * 0.3]); opts.push([a, b, 'team', (a.isDet || b.isDet) ? 0.2 : 0.4]); }
           if (last && last.v.i != null && bond(S, a, last.v) >= 0.3 && bond(S, b, last.v) >= 0.3) opts.push([a, b, 'shared', 1.2]);
+          if (pining(S, a, b) && B.pine) opts.push([a, b, 'pine', 0.7]);
         }
         if (w >= -0.1 && b.m.fear > 45) opts.push([a, b, 'protect', 0.4 + a.tr.np * 0.5]);
         if (w >= 0.3 && !lover && !hasTie(S, a, b, 'sibling,sibprot,sibclose,sibbad,parent,pparent') && (!HK.canLove || HK.canLove(a, b)) && !S.confessed) opts.push([a, b, 'confess', 0.3 + a.tr.fc * 0.4 + w * 0.5]);
@@ -33407,7 +33724,9 @@
     });
     if (!opts.length) return;
     var o = HK.weighted(rng, opts, function (x) { return x[3]; }), a = o[0], b = o[1], k = o[2];
-    var m = { a: a.name, b: b.name, v: last ? last.v.name : '' }, t = F(pk(S, B[k]), m), why = '';
+    var pin = (k === 'confess' || k === 'pine') && pining(S, a, b) && B.pconfess;
+    var m = { a: a.name, b: b.name, v: last ? last.v.name : '' }, t = F(pk(S, k === 'confess' && pin ? B.pconfess : B[k]), m), why = '';
+    if (k === 'pine') { setRel(S, a, b, 0.05); why = '両片想い：どちらも、相手は自分を何とも思っていないと思い込んでいる'; }
     if (k === 'talk') { setRel(S, a, b, 0.15, '打ち解けた'); why = '夜の語らいで、距離が縮まった'; }
     if (k === 'protect') { setRel(S, a, b, 0.2, '信頼', a); b.m.fear = clamp(b.m.fear - 12, 0, 100); why = a.name + 'は怯える' + b.name + 'を放っておけなかった（NP）'; }
     if (k === 'team') { setRel(S, a, b, 0.15, '協力'); why = '二人で調べるうちに、息が合ってきた'; }
@@ -33417,9 +33736,9 @@
     if (k === 'distrust') { setRel(S, a, b, -0.2, '不信', a); b.m.sus = clamp(b.m.sus + 8, 0, 100); why = a.name + 'の観察眼が、' + b.name + 'の綻びを捉えた' + (b === S.cul ? '（……' + b.name + 'は犯人だ）' : ''); }
     if (k === 'confess') {
       S.confessed = true;
-      var yes = rng() < 0.25 + bond(S, b, a) * 0.5 + b.tr.warmth * 0.2;
-      t += F(pk(S, yes ? B.yes : B.no), m);
-      if (yes) { S.ties.push({ a: a.i, b: b.i, type: 'lover', born: true }); setRel(S, a, b, 0.2, '恋人'); why = '吹雪の館で、恋が実った'; }
+      var yes = pin || rng() < 0.25 + bond(S, b, a) * 0.5 + b.tr.warmth * 0.2;
+      t += F(pk(S, pin ? B.pyes : yes ? B.yes : B.no), m);
+      if (yes) { S.ties.push({ a: a.i, b: b.i, type: 'lover', born: true }); setRel(S, a, b, 0.2, '恋人'); why = pin ? '両片想いが、吹雪の館でやっと通じた（どちらも、自分だけの片想いだと思っていた）' : '吹雪の館で、恋が実った'; }
       else { S.ties.push({ a: a.i, b: b.i, type: 'crush', born: true }); setRel(S, a, b, -0.05, '片想い', a); why = '想いは届かなかった'; }
       if (a === S.cul || b === S.cul) why += '（……' + S.cul.name + 'は犯人だ）';
       var o2 = ST.say(S, { actors: [a, b], tag: '想いを告げる', kind: 'climax', text: t, why: why, mag: 32 }); ST.key(S, o2, a.name + 'が' + b.name + 'に告白'); return;
@@ -33432,7 +33751,10 @@
     var P = S.P, edges = [], seen = {};
     function add(a, b, label, cls, dir) { var k = rk(P[a], P[b]) + label; if (seen[k]) return; seen[k] = 1; edges.push({ a: a, b: b, label: label, cls: cls, dir: dir }); }
     var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', acq: 'none' };
-    S.ties.forEach(function (t) { var lab = HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; add(t.a, t.b, (t.born ? '★' : '') + lab, CLS[t.type] || 'friend', t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null); });
+    S.ties.forEach(function (t) {
+      /* 両片想い（逆向きの片想いもある）は、向きのない「両片想い」一本にまとめる */
+      if (t.type === 'crush' && crushTo(S, P[t.b], P[t.a])) return add(Math.min(t.a, t.b), Math.max(t.a, t.b), (t.born ? '★' : '') + '両片想い', 'pine', null);
+      var lab = HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; add(t.a, t.b, (t.born ? '★' : '') + lab, CLS[t.type] || 'friend', t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null); });
     Object.keys(S.relLab || {}).forEach(function (k) {
       var ab = k.split('-'), a = +ab[0], b = +ab[1], lab = S.relLab[k];
       if (lab === '恋人' || lab === '片想い') return;
@@ -33496,7 +33818,7 @@
   }
   Y.cat = cat; Y.showdown = showdown;
   Y.gain = gain; Y.inv = inv;
-  Y.skill = skill; Y.bond = bond; Y.setRel = setRel; Y.relLabel = relLabel; Y.alive = alive;
+  Y.skill = skill; Y.bond = bond; Y.setRel = setRel; Y.relLabel = relLabel; Y.alive = alive; Y.pining = pining;
 })();
 ;/* ==== js/yakata-special.js ==== */
 /* 箱庭シミュレーター: 吹雪の館の殺人 ― 特殊役職（不死・吸血鬼）（special.js の組み込み）
@@ -37788,7 +38110,7 @@
           '1行に「名前 名前 関係」。例：`朝霧→鷹野 片想い（脈なし）`、`鷹野-白石 親友`、`白石とミナトは恋人`',
           '「セフレで片想い」のように関係を重ねても、関係を1つずつ追加してもかまいません。',
           '向きのある関係（片想い・親子・主従）は、先に書いた方が想う側・親・主です。',
-          '片想いに「脈なし」「友達としか」「苦手」「他に好きな人」と添えると、想われる側の気持ちも決まります。',
+          '片想いに「脈なし」「友達としか」「苦手」「他に好きな人」と添えると、想われる側の気持ちも決まります。「両片想い」と書くと、お互いに想っているのに相手は何とも思っていないと思い込んでいる二人になります。',
           '執着は `朝霧→鷹野 執着（怖がって）` のように書けます。「受け入れ」「嫌って」「共依存」も使えます。重ねるときは `鷹野→白石 片想いで執着なし`。'
         ] },
         { h: '呼び方', items: [

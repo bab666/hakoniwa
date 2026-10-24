@@ -24,6 +24,8 @@
     if (HK.Ties && HK.Ties.has(ctx, a, b, 'crush')) return false;
     return HK.canLove(a, b) && ctx.R(a, b).att > 48 && ctx.R(b, a).att < 30;
   };
+  /* a と b が両片想いか（どちらからも片想いで、まだ恋人ではない） */
+  Z.isPining = function (ctx, a, b) { return !!(HK.Ties && HK.Ties.pining && HK.Ties.pining(ctx, a, b)); };
   /* 夜の描写の度合い：off（描かない）・fade（ほのめかす）・high（描写する／R18版のみ） */
   /* 夜の描き方：R18の描写の設定（lewd-unify.js）の「ほのめかす」なら fade、それ以外は high（設定をそろえる前の入力は zlewd を見る） */
   Z.loveLv = function (ctx) {
@@ -87,7 +89,15 @@
     /* 墓まで持っていくと決める */
     grave: L('{a}は、眠る{b}の横顔を見つめながら決めた。この気持ちは、言わない。言わずに、守る。|{a}は{b}が別の誰かと笑っているのを見て、そっと目を逸らした。「……それでいい。生きててくれれば」|{a}はノートの最後のページに{b}への想いを書いて、そのページを破って燃やした。灰になるまで、見届けた。|{a}は自分の胸に誓った。この想いは墓まで持っていく。その代わり、{b}だけは、必ずこの街から出す。'),
     /* 黙って守る（決意のあと） */
-    guard: L('{a}は自分の分の缶詰を、黙って{b}のリュックに入れた。{b}は気づかなかった。|{a}は{b}の見張りの番を、何も言わずに代わった。「眠れないから」と嘘をついた。|群れが近づいたとき、{a}は真っ先に{b}の前に立った。理由を訊かれても、「たまたま近かったから」としか言わなかった。|{a}は{b}の靴紐がほどけているのに気づいて、黙ってしゃがみ、結び直した。{b}が礼を言うと、{a}はそっぽを向いた。|{a}は{b}が眠るまで、ずっと扉の前に座っていた。')
+    guard: L('{a}は自分の分の缶詰を、黙って{b}のリュックに入れた。{b}は気づかなかった。|{a}は{b}の見張りの番を、何も言わずに代わった。「眠れないから」と嘘をついた。|群れが近づいたとき、{a}は真っ先に{b}の前に立った。理由を訊かれても、「たまたま近かったから」としか言わなかった。|{a}は{b}の靴紐がほどけているのに気づいて、黙ってしゃがみ、結び直した。{b}が礼を言うと、{a}はそっぽを向いた。|{a}は{b}が眠るまで、ずっと扉の前に座っていた。'),
+
+    /* ---------- 両片想い（どちらも想っているのに、相手は何とも思っていないと思い込んでいる。{a}{b}どちらが先でも成り立つ） ---------- */
+    rushM: L('「明日、どっちかが死ぬかもしれないだろ。だから今言う」――{a}がそう切り出したとき、{b}も同時に口を開いていた。「待って、私も今、言おうとしてた」|{a}は群れから逃げ込んだ物置の中で、息を切らしたまま言った。「……好き。どうせ{b}は、私のことなんか何とも思ってないだろうけど」|見張りの交代のとき、{a}は{b}を呼び止めた。{b}も、{a}を呼び止めようとしていた。二人の「あのさ」が、ぴったり重なった。{a}は、先に言った。「……ずっと、好きだった」|{a}は{b}の袖を掴んだ。「死ぬ前に、一個だけ。……ずっと、好きだった。迷惑なのは分かってる」'),
+    rushMYes: L('{b}はしばらく呆然として、それから笑い出した。「……それ、こっちの台詞」|{b}は顔を覆った。「ずっと、私の片想いだと思ってた」――{a}も、まったく同じことを思っていた。二人は顔を見合わせて、力が抜けたように座り込んだ。|{b}は{a}の手を握り返した。「何とも思ってないわけないでしょ。……こっちの台詞だよ、それ」|{b}は泣きながら笑った。「私も、ずっと好きだった。こんな街になるまで、二人して何やってたんだろうね」'),
+    pressM: L('{a}は{b}を壁際に追い詰めた。「どうせ世界は終わるんだ。……嫌なら、突き飛ばしてくれ。それで諦める」|{a}は{b}の手首を掴んで、唇を重ねた。嫌われる覚悟は、とっくにできていた。|{a}は{b}の寝床に潜り込んだ。「一人で寝るの、もう無理。……迷惑なのは分かってる」'),
+    pressMYes: L('{b}は突き飛ばさなかった。代わりに{a}の襟を掴んで、自分から引き寄せた。「……遅い。ずっとこうしたかったのは、私の方」|{b}は{a}の背中に腕を回して、震える声で言った。「ずっと、私だけだと思ってた」――{a}は、自分の耳を疑った。|{b}は「……今夜だけ、なんて言わないでよ」と言った。{a}がその意味に気づくまで、少し時間がかかった。それは、こっちの台詞だった。'),
+    graveM: L('{a}は、眠る{b}の横顔を見つめながら決めた。この気持ちは、言わない。――同じ夜、背中合わせの寝袋の中で、{b}も同じことを決めていた。|{a}はノートの最後のページに{b}への想いを書いて、破って燃やした。数日前、{b}も同じようにページを一枚燃やしていたことを、{a}は知らない。|{a}は自分の胸に誓った。この想いは墓まで持っていく。{b}はどうせ、私のことなんか見ていないのだから。――{b}もまた、まったく同じ理由で口を閉ざしていた。|{a}は{b}が別の誰かと笑っているのを見て、そっと目を逸らした。その一瞬あと、{b}がこちらを振り返ったことに、{a}は気づかなかった。'),
+    guardM: L('{a}は自分の分の缶詰を、黙って{b}のリュックに入れた。その晩、{a}は自分のリュックに、見覚えのない缶詰が入っているのを見つけた。|{a}は{b}の見張りの番を代わろうとして、扉の前で{b}と鉢合わせた。{b}も、{a}の番を代わりに来たところだった。「……眠れないから」「……私も」|群れが近づいたとき、{a}は{b}の前に立った。同時に{b}も{a}の前に出ようとして、二人は肩をぶつけた。「なんで前に出るの」「そっちこそ」|{a}は{b}が眠るまで、扉の前に座っていた。{b}は寝たふりをしたまま、どうして自分なんかのためにと思っていた。|{a}は{b}の靴紐を黙って結び直した。礼を言う{b}の顔が赤いことに、{a}は気づかなかった。そっぽを向いた自分の顔も、同じくらい赤かった。')
   };
 
   function say(ctx, c, T) { var l = T[c.persona] || T.gentle; return ctx.pick(l); }
@@ -211,7 +221,11 @@
     /* 最後に、やっと言う */
     say: L('{v}は{z}の前に立ち、初めて口にした。「ずっと、好きだった」――{z}は、うめき声で答えた。それでも{v}は、少しだけ救われた顔をした。|{v}は{z}に向かって言った。「生きてるうちに、言えばよかった」――{z}の濁った目に、{v}の泣き顔が映っていた。'),
     /* 自分の手で眠らせる */
-    self: L('{v}は仲間の武器を押しのけた。「……最後くらい、触れてもいいよね」――{v}は{z}を抱きしめるようにして、終わらせた。|{v}は{z}の目を見つめたまま、引き金を引いた。「一度も、こっちを見てくれなかったね」――その声は、ひどく優しかった。')
+    self: L('{v}は仲間の武器を押しのけた。「……最後くらい、触れてもいいよね」――{v}は{z}を抱きしめるようにして、終わらせた。|{v}は{z}の目を見つめたまま、引き金を引いた。「一度も、こっちを見てくれなかったね」――その声は、ひどく優しかった。'),
+    /* 両片想いだった相手（{z}も{v}を想っていたのに、{v}はそれを知らない） */
+    keepM: L('{v}は、ゾンビになった{z}を地下の倉庫に閉じ込めた。{z}の上着のポケットから、{v}の名前を何度も書いては消したメモが落ちた。{v}はそれを拾わずに、扉に鍵をかけた。「……今さら、そんなの」|{v}は{z}を空き部屋に閉じ込め、外から板を打ちつけた。「生きてるうちは、私なんか見てなかったくせに」――{z}が誰を見ていたのか、{v}だけが知らなかった。|{v}は{z}をシーツでくるみ、自分の寝床の隣に寝かせた。うめき声に相槌を打ちながら、{v}は言った。「やっと、こっちを見てくれるね」――ずっと見ていたのは、{z}も同じだった。'),
+    sayM: L('{v}は{z}の前に立ち、初めて口にした。「ずっと、好きだった」――{z}の喉から、うめき声とは違う短い音が漏れた。それが「私も」に聞こえたのは、きっと気のせいだった。|{v}は{z}に向かって言った。「生きてるうちに、言えばよかった」――あとで{z}の荷物から、{v}に宛てた渡せなかった手紙が見つかった。書き出しは「ずっと、好きでした」だった。|{v}は{z}の濁った目を見つめて言った。「どうせ、迷惑だったよね」――{v}がなくしたと思っていたお守りが、{z}の首から下がっていた。'),
+    selfM: L('{v}は仲間の武器を押しのけた。「……最後くらい、触れてもいいよね」――{v}は{z}を抱きしめるようにして、終わらせた。{z}の胸ポケットから、{v}と二人で写った写真がこぼれ落ちた。|{v}は{z}の目を見つめたまま、引き金を引いた。「一度も、こっちを見てくれなかったね」――{z}がずっと見ていたのは、{v}の背中だった。そのことを、{v}は最後まで知らなかった。|{v}は{z}を眠らせたあと、{z}の手に握られていた紙を開いた。「生きて帰れたら、{v}に言う」――{v}は、その場から動けなくなった。')
   };
   Z.crushZombie = function (ctx, zp, P) {
     var c = ctx.chars[zp.i];
@@ -221,6 +235,8 @@
     zp.crushDone = true;
     var rng = ctx.rng, m = { v: o.name, z: c.name };
     var unreq = HK.Unreq && HK.Unreq.cold(ctx, o, c);
+    /* 両片想いだった（{z}も{v}を想っていた）なら、すれ違ったまま終わる文にする */
+    var pin = Z.isPining(ctx, o, c), PK = function (k) { return LV.crushZ[pin ? k + 'M' : k]; };
     var opts = [
       ['keep', (HK.Obsess && !HK.Obsess.jealOk(ctx, o, c) ? -9 : 0) + o.tr.jealous * 0.55 + o.tr.ac * 0.25 + o.stress / 160 + (unreq ? 0.25 : 0) - o.tr.cp * 0.15 - o.tr.np * 0.1],
       ['say', 0.35 + o.tr.honesty * 0.3 + o.tr.np * 0.2],
@@ -231,17 +247,17 @@
     ctx.stress(o, k === 'keep' ? -20 : 25);
     if (k === 'keep') {
       zp.down = true; zp.kept = o.i; o.z.keep = c.i; o.z.keepArea = zp.area;
-      c.fateNote = (c.fateNote || '') + '。片想いしていた' + o.name + 'に、閉じ込められた';
-      ctx.act2({ actors: actors, cat: 'betray', text: fill(ctx.pick(LV.crushZ.keep), m), why: o.name + 'は、片想いの相手だった' + c.name + 'を手放さなかった（執着 ' + Math.round(o.tr.jealous * 100) + '・AC・焦り ' + Math.round(o.stress) + (unreq ? '・生きているうちは相手にされなかった' : '') + '）', mag: 52 });
+      c.fateNote = (c.fateNote || '') + (pin ? '。両片想いだった' : '。片想いしていた') + o.name + 'に、閉じ込められた';
+      ctx.act2({ actors: actors, cat: 'betray', text: fill(ctx.pick(PK('keep')), m), why: o.name + 'は、' + (pin ? '両片想いだった（' + o.name + 'はそれを知らない）' : '片想いの相手だった') + c.name + 'を手放さなかった（執着 ' + Math.round(o.tr.jealous * 100) + '・AC・焦り ' + Math.round(o.stress) + (unreq ? '・生きているうちは相手にされなかった' : '') + '）', mag: 52 });
       return true;
     }
     if (k === 'self') {
       zp.down = true; ctx.zb.stats.putdown++; ctx.pair(o, c).putdown = o.i;
-      c.fateNote = (c.fateNote || '') + '。最後は、片想いしていた' + o.name + 'の手で眠らされた';
-      ctx.act2({ actors: actors, cat: 'combat', text: fill(ctx.pick(LV.crushZ.self), m), why: o.name + 'は、片想いの相手を自分の手で眠らせた（CP・A・ドライさ）', mag: 46 });
+      c.fateNote = (c.fateNote || '') + (pin ? '。最後は、両片想いだった' : '。最後は、片想いしていた') + o.name + 'の手で眠らされた';
+      ctx.act2({ actors: actors, cat: 'combat', text: fill(ctx.pick(PK('self')), m), why: o.name + 'は、' + (pin ? '両片想いだった相手を、想いを知らないまま' : '片想いの相手を') + '自分の手で眠らせた（CP・A・ドライさ）', mag: 46 });
       return true;
     }
-    ctx.act2({ actors: actors, cat: 'romance', text: fill(ctx.pick(LV.crushZ.say), m), why: o.name + 'は、ゾンビになった' + c.name + 'に、やっと想いを告げた', mag: 38 });
+    ctx.act2({ actors: actors, cat: 'romance', text: fill(ctx.pick(PK('say')), m), why: o.name + 'は、ゾンビになった' + c.name + 'に、やっと想いを告げた' + (pin ? '（両片想いだった。' + c.name + 'も同じ気持ちだったことを、' + o.name + 'は知らない）' : ''), mag: 38 });
     return false;
   };
   /* 閉じ込めたゾンビのもとへ通う */
@@ -275,6 +291,25 @@
       var k = HK.weighted(rng, opts, function (o) { return Math.pow(Math.max(0.03, o[1]), 2); })[0];
       pf.zcr = k;
       var rb = ctx.R(b, a), loveOK = HK.canLove(b, a);
+      /* 両片想い：{b}も想っているので、言えば通じる。黙ると決めた場合は、二人とも同じことを決めている */
+      if (Z.isPining(ctx, a, b)) {
+        if (k === 'rush' || k === 'press') {
+          pf.zconf = true; pf.couple = true;
+          ctx.mod2(a, b, { att: 12, aff: 12, trust: 8 }, { att: 12, aff: 12, trust: 8 });
+          if (k === 'rush') return { text: fill(ctx.pick(LV.rushM), m) + fill(ctx.pick(LV.rushMYes), m), why: a.name + 'は、終わりかけた街で告白を急いだ（本音の出やすさ・衝動性・焦り ' + Math.round(a.stress) + '）／両片想いだった。' + b.name + 'も、ずっと同じ気持ちだった', mag: 34 };
+          pf.night = true;
+          var txm = fill(ctx.pick(LV.pressM), m) + fill(ctx.pick(LV.pressMYes), m);
+          if (Z.loveLv(ctx) === 'high' && LV.pressHigh) txm += LV.pressHigh(ctx, a, b);
+          return { cat: 'romance', text: txm, why: a.name + 'は、どうせ終わる世界ならと踏み込んだ（攻撃性・衝動性）／両片想いだった。' + b.name + 'は拒まなかった', mag: 34 };
+        }
+        [[a, b], [b, a]].forEach(function (p) {
+          var x = p[0], y = p[1];
+          x.focus = y; x.z.vow = y.i;
+          if (x.goal.id !== 'chaos' && x.goal.id !== 'family') x.goal = Z.scen.goals.filter(function (g) { return g.id === 'protect'; })[0] || x.goal;
+        });
+        ctx.mod2(a, b, { aff: 8 }, { aff: 8 });
+        return { text: fill(ctx.pick(LV.graveM), m), why: a.name + 'も' + b.name + 'も、相手への想いを墓まで持っていくと決めた（両片想い。どちらも、相手は自分を何とも思っていないと思い込んでいる）。目標「大切な人を守る」', mag: 28 };
+      }
       if (k === 'rush') {
         pf.zconf = true;
         var yes = loveOK && rb.att > 26 && rb.aff > 15;
@@ -299,14 +334,16 @@
   /* 想いを隠したまま、黙って守る */
   EV.push({
     id: 'z_cr_guard', cat: 'help', scope: 'pair',
-    when: function (ctx, a, b) { return a.z.vow === b.i && (ctx.pair(a, b).zgd || 0) < 3; },
+    /* 両片想いで黙っていた二人が恋人になったら、もう「想いを隠したまま」守る場面にはしない */
+    when: function (ctx, a, b) { return a.z.vow === b.i && (ctx.pair(a, b).zgd || 0) < 3 && !(ctx.pair(a, b).couple && HK.Ties && HK.Ties.from(ctx, a, b, 'crush') && HK.Ties.from(ctx, b, a, 'crush')); },
     w: function () { return 2.2; },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b); pf.zgd = (pf.zgd || 0) + 1;
       if (a.z.food > 0 && b.z.food <= 1) { a.z.food--; b.z.food++; }
       b.stress = Math.max(0, b.stress - 6);
       ctx.mod2(a, b, { aff: 3 }, { trust: 6, aff: 4 });
-      return { text: fill(ctx.pick(LV.guard), { a: a.name, b: b.name }), why: a.name + 'は想いを隠したまま、' + b.name + 'を守り続けている', mag: 18 };
+      var pin = Z.isPining(ctx, a, b);
+      return { text: fill(ctx.pick(pin ? LV.guardM : LV.guard), { a: a.name, b: b.name }), why: a.name + 'は想いを隠したまま、' + b.name + 'を守り続けている' + (pin ? '（両片想い。' + b.name + 'も同じことをしている）' : ''), mag: 18 };
     }
   });
 })();

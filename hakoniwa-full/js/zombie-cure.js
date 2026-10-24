@@ -18,6 +18,8 @@
     rumor: L('ラジオの雑音の向こうで、誰かが言った。「{area}の地下に、感染を治す試薬が残っている」|SNSに、{area}の研究員を名乗る投稿が流れた。「治療薬の試作品が、まだ保管庫にある」――すぐに削除された。|壁に、乱れた字の落書きがあった。「{area}　薬　まだある　治る」'),
     rumorOff: L('拾った無線機から、途切れ途切れの声が聞こえた。「……{area}……試薬……治る……」|生存者が残したメモに、「{area}の保管庫に治療薬」と書かれていた。'),
     hear: L('{a}はその噂を聞いた瞬間、立ち上がっていた。{b}を、元に戻せるかもしれない。|{a}は噂を何度も頭の中で繰り返した。デマかもしれない。それでも、{b}のためなら。|{a}は武器を握り直した。「{area}に行く。{b}を、治す」'),
+    /* 両片想いの相手のため（{b}も{a}を想っているのに、{a}は知らない） */
+    hearM: L('{a}はその噂を聞いた瞬間、立ち上がっていた。{b}は、私のことなんか何とも思っていなかった。それでも、元に戻したかった。|{a}は噂を何度も頭の中で繰り返した。{b}が戻ってきても、言うつもりはない。ただ、もう一度笑ってほしかった。|{a}は武器を握り直した。「{area}に行く」――理由を訊かれて、{a}は「仲間だから」とだけ答えた。'),
     obstacle: [
       { n: '群れ', t: L('{area}の入口は、ゾンビの群れで埋まっていた。{a}は{w}を構え、隙間を縫うように走った。|保管庫へ続く廊下に、白衣のゾンビがひしめいていた。{a}は息を殺して、一体ずつ数えた。') },
       { n: '危険な薬品庫', t: L('薬品庫の扉の向こうは、割れた薬瓶から漏れた薬品の煙で満ちていた。{a}は袖で口を覆って踏み込んだ。|保管庫は電子ロックで閉ざされていた。非常電源を探して、{a}は真っ暗な地下を這い回った。') },
@@ -32,6 +34,9 @@
     giveZ: L('{a}は{b}に組みつき、もみ合いながら首筋に針を刺した。|{a}は{b}の正面に立ち、伸びてきた腕をかいくぐって、胸に針を突き立てた。'),
     giveChain: L('{a}は鎖で繋いだ{b}の腕に、全身の体重をかけて針を突き立てた。{b}が呻き声を上げた。|{a}は閉じ込めていた部屋の扉を開け、暴れる{b}を押さえつけて、首筋に針を刺した。'),
     cured: L('{b}の体が大きく痙攣した。やがて、濁っていた目に、ゆっくりと光が戻った。「……{a}？」――{a}は声を上げて泣いた。|長い沈黙のあと、{b}が咳き込んだ。人間の咳だった。「……なんで、泣いてるの」――{a}は答えられずに、{b}を抱きしめた。|{b}の肌から、灰色の斑点がすうっと引いていった。{b}は自分の手を見つめて、それから{a}を見た。「……ただいま」'),
+    /* 両片想い：戻ってきた{b}も、ずっと{a}を想っていた */
+    curedM: L('{b}の濁っていた目に、ゆっくりと光が戻った。「……{a}？」――{a}は泣きながら言った。「好きだった。ずっと。迷惑でも、言わずに死なせるのは嫌だった」――{b}は、かすれた声で笑った。「……それ、こっちの台詞」|長い沈黙のあと、{b}が咳き込んだ。人間の咳だった。「……なんで、そこまでしてくれたの」――{a}は答えに詰まって、結局、本当のことを言った。{b}は顔を覆った。「私だけだと、思ってた」|{b}の肌から、灰色の斑点がすうっと引いていった。{b}は{a}を見て、最初に言った。「ゾンビになる前に、言えばよかったって、ずっと思ってた」――{a}は、自分も同じことを考えていたと気づいた。'),
+    curedBitM: L('{b}の熱は、その夜のうちに引いた。目を覚ました{b}は、{a}の手を握ったまま言った。「咬まれたとき、いちばん後悔したのは、{a}に好きって言わなかったこと」――{a}は、しばらく返事ができなかった。「……こっちの台詞」|朝、{b}は「お腹すいた」と言った。それから、少し迷って付け足した。「あと、ずっと好きだった」――{a}は、持っていた缶詰を落とした。|{b}の咬み跡の黒ずみが薄れていくのを、{a}は一晩中見守った。夜明けに目を開けた{b}は、{a}を見るなり泣き出した。「何とも思われてないと思ってたのに。なんで、ここまで」'),
     curedBit: L('{b}の熱は、その夜のうちに引いた。咬み跡の黒ずみが、少しずつ薄れていった。|朝、{b}は「お腹すいた」と言った。それが、{a}がこの世で聞いたいちばん嬉しい言葉だった。'),
     melt: L('{b}の体が、内側から泡立ち始めた。皮膚が溶け、背中から何本もの触手が這い出した。{a}が悲鳴を上げる前に、それはもう{b}の形をしていなかった。|{b}が絶叫した。骨が軋み、肉が裂け、溶けた体の中から、ぬめった触手が四方へ伸びた。薬は、効きすぎた。'),
     grab: L('触手が{a}の手足に巻きつき、宙に吊り上げた。'),
@@ -46,6 +51,7 @@
     eaten: L('触手が{a}の体を絡め取った。{a}は最後まで、それが{b}だったことを忘れなかった。|{a}は逃げなかった。かつて{b}だったものに抱かれて、{a}は飲み込まれていった。'),
     flee: L('{a}は触手を振りほどき、血まみれになって逃げ出した。背後で、かつて{b}だったものが、聞いたことのない声で鳴いていた。'),
     gone: L('{a}が薬を握りしめて戻ったとき、{b}はもう、どこにもいなかった。――間に合わなかった。{a}は薬を握りつぶした。ガラスが手に食い込んでも、離さなかった。|{a}は、{b}の亡骸の前に膝をついた。手の中のアンプルが、ひどく軽かった。「……遅かった。全部、遅かった」|{a}はアンプルを地面に叩きつけようとして、できなかった。{b}を救うはずだったものを、壊すことさえできなかった。'),
+    goneM: L('{a}は、{b}の亡骸の前に膝をついた。{b}の手には、くしゃくしゃの紙が握られていた。「{a}に、ちゃんと言う」――{a}の名前だった。|{a}が薬を握りしめて戻ったとき、{b}はもういなかった。{b}の寝床に、{a}の古いハンカチが畳んで置いてあった。ずっと、持っていたのだ。|{a}は、{b}の亡骸の前に膝をついた。「何とも思われてなくても、よかったのに」――{b}の荷物の中の日記には、毎日のように{a}の名前があった。'),
     goneDespair: L('その夜、{a}は誰とも口をきかなかった。目から、何かが消えていた。|{a}は空のアンプルを首から下げた。もう、生き延びる理由が見つからなかった。')
   };
 
@@ -89,8 +95,8 @@
     c.z.cureQ = { target: o.i, stage: 'seek', tries: 0, prevGoal: c.goal };
     var from = c.goal.label;
     c.goal = GOAL;
-    var m = { a: c.name, b: o.name, area: Z.an(ctx, ctx.zb.cure.area) };
-    ctx.act2({ actors: [c, o], cat: 'solo', text: (heard ? fill(ctx.pick(T.hear), m) : '') + c.name + 'の目標が変わった：「' + from + '」→「' + GOAL.label + '」', why: c.name + 'は、' + (stateOf(ctx, o) === 'zombie' ? 'ゾンビになった' : '咬まれた') + o.name + 'を治したい', mag: 26 });
+    var m = { a: c.name, b: o.name, area: Z.an(ctx, ctx.zb.cure.area) }, pin = Z.isPining && Z.isPining(ctx, c, o);
+    ctx.act2({ actors: [c, o], cat: 'solo', text: (heard ? fill(ctx.pick(pin ? T.hearM : T.hear), m) : '') + c.name + 'の目標が変わった：「' + from + '」→「' + GOAL.label + '」', why: c.name + 'は、' + (stateOf(ctx, o) === 'zombie' ? 'ゾンビになった' : '咬まれた') + o.name + 'を治したい' + (pin ? '（両片想いの相手。想いは告げていない）' : ''), mag: 26 });
   }
   function endQuest(ctx, c, goalId) {
     var q = c.z.cureQ; q.done = true;
@@ -136,11 +142,13 @@
   /* 投与する */
   function dose(ctx, c, q) {
     var rng = ctx.rng, o = ctx.chars[q.target], st = stateOf(ctx, o), m = { a: c.name, b: o.name };
+    /* 両片想いの相手（ゾンビになった人は死んだ扱いなので、生きている頃の想いで見る） */
+    var pin = !!(HK.Ties && HK.Ties.from(ctx, c, o, 'crush') && HK.Ties.from(ctx, o, c, 'crush') && !ctx.pair(c, o).couple);
     if (st === 'ok') { endQuest(ctx, c, 'live'); return; }
     if (st === 'gone') {
       ctx.stress(c, 50);
       var deep = c.stress > 85 && c.tr.ac + c.tr.np > 1.1 && rng() < 0.3;
-      ctx.act2({ actors: [c, o], cat: 'death', text: fill(ctx.pick(T.gone), m) + fill(ctx.pick(T.goneDespair), m), why: c.name + 'は治療薬を手に入れた。だが、' + o.name + 'はもういなかった（焦り ' + Math.round(c.stress) + '）', mag: 44 });
+      ctx.act2({ actors: [c, o], cat: 'death', text: fill(ctx.pick(pin ? T.goneM : T.gone), m) + fill(ctx.pick(T.goneDespair), m), why: c.name + 'は治療薬を手に入れた。だが、' + o.name + 'はもういなかった（焦り ' + Math.round(c.stress) + '）' + (pin ? '。両片想いだった――' + o.name + 'も、同じ気持ちだった' : ''), mag: 44 });
       endQuest(ctx, c, c.tr.cold + c.tr.aggr > 1.2 ? 'chaos' : 'live');
       if (deep) ctx.kill(c, null, o.name + 'に間に合わなかった治療薬を握りしめたまま、自ら');
       return;
@@ -157,7 +165,8 @@
         o.stress = 60;
       } else { o.z.bitten = null; o.z.turnAt = -1; o.z.aware = false; o.z.cured = true; o.z.hiding = false; }
       ctx.mod2(c, o, { aff: 15, trust: 15 }, { aff: 25, trust: 25, att: 10 });
-      ctx.act2({ actors: [c, o], cat: 'help', text: fill(ctx.pick(giveT), m) + fill(ctx.pick(zombie ? T.cured : T.curedBit), m), why: c.name + 'は' + o.name + 'に治療薬を投与した――' + (zombie ? 'ゾンビから人間に戻った' : '感染が治った'), mag: 50 });
+      if (pin) { ctx.pair(c, o).couple = true; ctx.pair(c, o).zconf = true; ctx.mod2(c, o, { att: 10 }, { att: 10 }); }
+      ctx.act2({ actors: [c, o], cat: pin ? 'romance' : 'help', text: fill(ctx.pick(giveT), m) + fill(ctx.pick(zombie ? (pin ? T.curedM : T.cured) : (pin ? T.curedBitM : T.curedBit)), m), why: c.name + 'は' + o.name + 'に治療薬を投与した――' + (zombie ? 'ゾンビから人間に戻った' : '感染が治った') + (pin ? '。両片想いだった二人は、ようやく想いが通じた' : ''), mag: 50 });
       c.goal = q.prevGoal && q.prevGoal.id !== 'cure' ? q.prevGoal : Z.scen.goals[0];
       if (o.z.keep != null) o.z.keep = null;
       return;
