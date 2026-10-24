@@ -97,7 +97,7 @@ const { openBuild } = require('./lib.js');
           const TOOLW = /指|舌|玩具|張り型|張形|ローター|双頭|ディルド|バイブ|器具|道具|触手/;
           const penFF = t.split(/[。！？]/).some(x => PEN.test(x) && !TOOLW.test(x) && SEXCORE.test(x));
           const allF = chars.every(c => c.gender === 'f');
-          if ((MALE.test(t) || penFF) && (named.length >= 2 || (allF && named.length >= 1 && SEX.test(t))) && named.every(c => c.gender === 'f') && !NPC_M.test(t0) && !hasMobM(t0)) {
+          if ((MALE.test(t) || /(?:の|な)モノ(?:が|を|で|に|は|の先)/.test(t) || penFF) && (named.length >= 2 || (allF && named.length >= 1 && SEX.test(t))) && named.every(c => c.gender === 'f') && !NPC_M.test(t0) && !hasMobM(t0)) {
             out.n.V1++; out.bySc[sc].V1++;
             const mm = t.match(MALE), ps = t.split(/[。！？]/).filter(x => PEN.test(x) && !TOOLW.test(x) && SEXCORE.test(x))[0];
             if (out.V1.length < 400) out.V1.push(sc + ' | 〔' + (mm ? mm[0] : '') + (ps ? '／' + ps.slice(0, 60) : '') + '〕 ' + t.slice(0, 400));

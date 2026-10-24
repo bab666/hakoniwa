@@ -49,6 +49,9 @@
     relative: { mods: { att: 0.1, trust: 1.1 }, effect: 'いとこ・おじおば・甥姪など、親子やきょうだいでない親族。気安いが遠慮もあり、いざとなれば助け合う。恋愛にはならない（「恋愛：あり」も選べる）', label: '親族', ab: { aff: 25, trust: 30, ten: 5 }, pol: 1, chem: 0.05, pull: 1.5, family: true, bias: { help: 1.5, bond: 1.2, romance: 0.1, betray: 0.4, combat: 0.4 } },
     /* 本命（{a}＝想う人、{b}＝本命）：本命との恋愛の出来事が起きやすく、ほかの人の誘いは一途に断りがち。耐えがたい状況（強い媚薬・焦りの限界・重い条件の部屋）では妥協する（HK.honmeiFactor） */
     honmei: { mods: { att: 1.25 }, effect: '想う人は本命との恋愛の出来事が起きやすく、ほかの人からの誘いは断りがち。強い媚薬や焦りの限界など耐えがたい状況では、ほかの人とも妥協する', label: '本命', dir: true, roleA: '想う人', roleB: '本命', ab: { att: 40, aff: 30 }, ba: {}, pol: 1, pull: 2.2, biasA: { romance: 1.9, bond: 1.2 }, biasB: {} },
+    /* 歪んだ関係（{a}＝支配する側、{b}＝支配される側）：恋人どうしだが、支配する側が束縛・暴言・暴力で相手を縛る。
+       重い場面（暴言・暴力・束縛）は「内容のスイッチ」の「DVなど歪んだ関係」（abuse）が入のときだけ。切なら、すれ違いの多い恋人として軽い場面だけ（tie-abuse.js） */
+    abuse: { mods: { ten: 1.3, trust: 0.75 }, effect: '恋人どうしだが、支配する側が束縛や暴言で相手を縛る。支配される側の気持ち（離れられない・怯えている・逃げ出したい）を選べる。重い場面は「内容のスイッチ」で「DVなど歪んだ関係」を入れたときだけ（切なら、すれ違いの多い恋人として軽い場面だけ）', label: '歪んだ関係', dir: true, roleA: '支配する側', roleB: '支配される側', ab: { att: 40, aff: 20, trust: 5, ten: 22 }, ba: { att: 35, aff: 30, trust: 10, ten: 28 }, pol: -1, chem: 1.1, pull: 2.2, fric: 1.4, couple: true, biasA: { conflict: 1.6, romance: 1.2 }, biasB: { romance: 1.1, help: 1.2 } },
     master: { mods: { trust: 1.25 }, effect: '従は主を助けに動く', label: '主従', dir: true, roleA: '主', roleB: '従', ab: { trust: 20, aff: 15, ten: 8 }, ba: { trust: 55, aff: 30 }, pol: 1, pull: 1.8, biasA: { conflict: 1.2, help: 1.1 }, biasB: { help: 2, bond: 1.2, betray: 0.3, combat: 0.4 } }
   };
   /* 片想いの「想われる側」の温度（相手にされていない片想い） */
@@ -101,18 +104,26 @@
     divorced: { label: '夫婦の様子：離婚した（元夫婦）', short: '元夫婦' }
   };
   HK.MARRIED_COLD_ORDER = ['', 'cold', 'separated', 'divorced'];
+  /* 歪んだ関係の、支配される側の気持ち（空欄は「離れられない」） */
+  HK.ABUSE_BACK = {
+    '': { label: '支配される側：離れられない（まだ好き）', short: '離れられない', ba: { att: 10, aff: 8 } },
+    fear: { label: '支配される側：怯えている', short: '怯えている', ba: { att: -12, aff: -6, trust: -6, ten: 10 } },
+    flee: { label: '支配される側：逃げ出したい', short: '逃げ出したい', ba: { att: -22, aff: -18, ten: 18 } }
+  };
+  HK.ABUSE_BACK_ORDER = ['', 'fear', 'flee'];
   /* 関係の種類ごとの「相手の気持ち」の選択肢（片想い・不仲・敵対）。なければ null */
   HK.coldOpts = function (type) {
     if (type === 'crush' && HK.CRUSH_COLD) return { map: HK.CRUSH_COLD, order: HK.CRUSH_COLD_ORDER, aria: '想われる側の気持ち' };
     if ((type === 'bad' || type === 'enemy') && HK.HATE_BACK) return { map: HK.HATE_BACK, order: HK.HATE_BACK_ORDER, aria: '相手の気持ち' };
     if (type === 'yan' && HK.OBS_BACK) return { map: HK.OBS_BACK, order: HK.OBS_BACK_ORDER, aria: '執着される側の気持ち' };
     if (type === 'worship' && HK.WORSHIP_BACK) return { map: HK.WORSHIP_BACK, order: HK.WORSHIP_BACK_ORDER, aria: '信仰される側の気持ち' };
+    if (type === 'abuse' && HK.ABUSE_BACK) return { map: HK.ABUSE_BACK, order: HK.ABUSE_BACK_ORDER, aria: '支配される側の気持ち' };
     if (type === 'spouse' && HK.MARRIED_COLD) return { map: HK.MARRIED_COLD, order: HK.MARRIED_COLD_ORDER, aria: '夫婦の様子' };
     return null;
   };
   var HATE_WORDS = [[/一方的|片思いならぬ|相手は気にして(?:い)?ない|相手は気づいて(?:い)?ない|なんとも思って(?:い)?ない/, 'none'], [/相手はふつう|相手は普通/, 'normal'], [/相手は友(?:達|人)だと|友達だと思って/, 'friend'], [/相手は(?:好き|愛して|惚れて)|片想いされ|好かれて/, 'love']];
   var COLD_WORDS = [[/両片想い|両片思い|実は相手も/, 'mutual'], [/脈なし|眼中に|相手にされ|興味がない|興味なし/, 'none'], [/友達としか|友達止まり|異性として見|恋愛対象外|対象外/, 'friend'], [/苦手|嫌われ|避けられ|避けて/, 'dislike'], [/他に好き|ほかに好き|別に好き|好きな人がいる/, 'other']];
-  HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'classmate', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'stepsib', 'relative', 'parent', 'pparent', 'teacher', 'mentor', 'boss', 'benefactor', 'crush', 'yan', 'worship', 'bad', 'rival', 'enemy', 'lover', 'spouse', 'honmei', 'fwb', 'ex', 'fated', 'mate', 'master', 'noobs'];
+  HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'classmate', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'stepsib', 'relative', 'parent', 'pparent', 'teacher', 'mentor', 'boss', 'benefactor', 'crush', 'yan', 'worship', 'bad', 'rival', 'enemy', 'lover', 'spouse', 'honmei', 'fwb', 'ex', 'abuse', 'fated', 'mate', 'master', 'noobs'];
 
   /* 文字から関係の種類を推定（長い語から順に照合） */
   var ALIAS = [
@@ -129,6 +140,7 @@
     ['教師と生徒', 'teacher'], ['教師', 'teacher'], ['先生と生徒', 'teacher'], ['担任', 'teacher'], ['生徒', 'teacher'], ['師弟', 'mentor'], ['師匠', 'mentor'], ['弟子', 'mentor'],
     ['擬似親子', 'pparent'], ['疑似親子', 'pparent'], ['親代わり', 'pparent'], ['育ての親', 'pparent'], ['保護者', 'pparent'], ['後見人', 'pparent'], ['親子', 'parent'], ['父親', 'parent'], ['母親', 'parent'], ['片想い', 'crush'], ['片思い', 'crush'],
     ['ライバル', 'rival'], ['敵対', 'enemy'], ['因縁', 'enemy'], ['宿敵', 'enemy'], ['犬猿', 'enemy'], ['敵', 'enemy'],
+    ['歪んだ関係', 'abuse'], ['DV', 'abuse'], ['モラハラ', 'abuse'], ['支配的な恋人', 'abuse'],
     ['元恋人', 'ex'], ['元カレ', 'ex'], ['元カノ', 'ex'], ['元彼', 'ex'], ['元カノ', 'ex'],
     ['運命の番', 'fated'], ['運命', 'fated'], ['番', 'mate'], ['セフレ', 'fwb'], ['本命', 'honmei'], ['恋人', 'lover'], ['夫婦', 'spouse'], ['配偶者', 'spouse'], ['旦那', 'spouse'], ['奥さん', 'spouse'], ['彼氏', 'lover'], ['彼女', 'lover'], ['付き合って', 'lover'],
     ['先輩後輩', 'senpai'], ['先輩', 'senpai'], ['後輩', 'senpai'], ['センパイ', 'senpai'],
@@ -198,7 +210,7 @@
   /* ---------- エンジンへの適用 ----------
      同じ二人に複数の関係（セフレ＋片想い など）を重ねられる。
      get() は代表の関係（PRIO の先頭に近いもの）を返し、has() で個々の関係を調べる */
-  var PRIO = ['mate', 'fated', 'lover', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'relative', 'master', 'worship', 'mentor', 'teacher', 'benefactor', 'boss', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'classmate', 'friend', 'acq', 'noobs'];
+  var PRIO = ['mate', 'fated', 'abuse', 'lover', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'relative', 'master', 'worship', 'mentor', 'teacher', 'benefactor', 'boss', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'classmate', 'friend', 'acq', 'noobs'];
   function keyOf(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   /* 関係を持っているか（どのファイルからでも安全に呼べる形）。古いファイルが混ざっても止まらないように */
   HK.tieHas = function (ctx, a, b, type) {
@@ -296,7 +308,9 @@
         if (t.type === 'honmei') A.honmei = B.i;
         var MC = t.spouse && t.married && HK.MARRIED_COLD[t.married] && HK.MARRIED_COLD[t.married].mod;
         if (MC) { add(ab, MC); add(ba, MC); p.fric = HK.clamp((p.fric || 1) * 1.4, 0.2, 2); }
-        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB || WB ? t.cold : '', love: HK.tieFamLove(t) || (D.loveOpt && t.love === 'ok') ? 'ok' : '', mutual: !!t.mutual, spouse: !!t.spouse, married: t.married || '', step: !!t.step };
+        var AB = t.type === 'abuse' && HK.ABUSE_BACK ? HK.ABUSE_BACK[t.cold || ''] : null;
+        if (AB && AB.ba) add(ba, AB.ba);
+        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB || WB || AB ? t.cold || '' : '', love: HK.tieFamLove(t) || (D.loveOpt && t.love === 'ok') ? 'ok' : '', mutual: !!t.mutual, spouse: !!t.spouse, married: t.married || '', step: !!t.step };
         list.push(o);
         list.sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
         ctx.ties[k] = list[0];

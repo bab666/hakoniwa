@@ -28,6 +28,8 @@
     defs.forEach(function (e) {
       self.env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def;
     });
+    /* 内容のスイッチ（content.js）は箱庭の環境値の一覧にないので、そのまま写す */
+    this.env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
     this.chaos = this.env.chaos / 100;
     this.log = [];
     this.history = [];

@@ -390,6 +390,9 @@
     relative: { mods: { att: 0.1, trust: 1.1 }, effect: 'いとこ・おじおば・甥姪など、親子やきょうだいでない親族。気安いが遠慮もあり、いざとなれば助け合う。恋愛にはならない（「恋愛：あり」も選べる）', label: '親族', ab: { aff: 25, trust: 30, ten: 5 }, pol: 1, chem: 0.05, pull: 1.5, family: true, bias: { help: 1.5, bond: 1.2, romance: 0.1, betray: 0.4, combat: 0.4 } },
     /* 本命（{a}＝想う人、{b}＝本命）：本命との恋愛の出来事が起きやすく、ほかの人の誘いは一途に断りがち。耐えがたい状況（強い媚薬・焦りの限界・重い条件の部屋）では妥協する（HK.honmeiFactor） */
     honmei: { mods: { att: 1.25 }, effect: '想う人は本命との恋愛の出来事が起きやすく、ほかの人からの誘いは断りがち。強い媚薬や焦りの限界など耐えがたい状況では、ほかの人とも妥協する', label: '本命', dir: true, roleA: '想う人', roleB: '本命', ab: { att: 40, aff: 30 }, ba: {}, pol: 1, pull: 2.2, biasA: { romance: 1.9, bond: 1.2 }, biasB: {} },
+    /* 歪んだ関係（{a}＝支配する側、{b}＝支配される側）：恋人どうしだが、支配する側が束縛・暴言・暴力で相手を縛る。
+       重い場面（暴言・暴力・束縛）は「内容のスイッチ」の「DVなど歪んだ関係」（abuse）が入のときだけ。切なら、すれ違いの多い恋人として軽い場面だけ（tie-abuse.js） */
+    abuse: { mods: { ten: 1.3, trust: 0.75 }, effect: '恋人どうしだが、支配する側が束縛や暴言で相手を縛る。支配される側の気持ち（離れられない・怯えている・逃げ出したい）を選べる。重い場面は「内容のスイッチ」で「DVなど歪んだ関係」を入れたときだけ（切なら、すれ違いの多い恋人として軽い場面だけ）', label: '歪んだ関係', dir: true, roleA: '支配する側', roleB: '支配される側', ab: { att: 40, aff: 20, trust: 5, ten: 22 }, ba: { att: 35, aff: 30, trust: 10, ten: 28 }, pol: -1, chem: 1.1, pull: 2.2, fric: 1.4, couple: true, biasA: { conflict: 1.6, romance: 1.2 }, biasB: { romance: 1.1, help: 1.2 } },
     master: { mods: { trust: 1.25 }, effect: '従は主を助けに動く', label: '主従', dir: true, roleA: '主', roleB: '従', ab: { trust: 20, aff: 15, ten: 8 }, ba: { trust: 55, aff: 30 }, pol: 1, pull: 1.8, biasA: { conflict: 1.2, help: 1.1 }, biasB: { help: 2, bond: 1.2, betray: 0.3, combat: 0.4 } }
   };
   /* 片想いの「想われる側」の温度（相手にされていない片想い） */
@@ -442,18 +445,26 @@
     divorced: { label: '夫婦の様子：離婚した（元夫婦）', short: '元夫婦' }
   };
   HK.MARRIED_COLD_ORDER = ['', 'cold', 'separated', 'divorced'];
+  /* 歪んだ関係の、支配される側の気持ち（空欄は「離れられない」） */
+  HK.ABUSE_BACK = {
+    '': { label: '支配される側：離れられない（まだ好き）', short: '離れられない', ba: { att: 10, aff: 8 } },
+    fear: { label: '支配される側：怯えている', short: '怯えている', ba: { att: -12, aff: -6, trust: -6, ten: 10 } },
+    flee: { label: '支配される側：逃げ出したい', short: '逃げ出したい', ba: { att: -22, aff: -18, ten: 18 } }
+  };
+  HK.ABUSE_BACK_ORDER = ['', 'fear', 'flee'];
   /* 関係の種類ごとの「相手の気持ち」の選択肢（片想い・不仲・敵対）。なければ null */
   HK.coldOpts = function (type) {
     if (type === 'crush' && HK.CRUSH_COLD) return { map: HK.CRUSH_COLD, order: HK.CRUSH_COLD_ORDER, aria: '想われる側の気持ち' };
     if ((type === 'bad' || type === 'enemy') && HK.HATE_BACK) return { map: HK.HATE_BACK, order: HK.HATE_BACK_ORDER, aria: '相手の気持ち' };
     if (type === 'yan' && HK.OBS_BACK) return { map: HK.OBS_BACK, order: HK.OBS_BACK_ORDER, aria: '執着される側の気持ち' };
     if (type === 'worship' && HK.WORSHIP_BACK) return { map: HK.WORSHIP_BACK, order: HK.WORSHIP_BACK_ORDER, aria: '信仰される側の気持ち' };
+    if (type === 'abuse' && HK.ABUSE_BACK) return { map: HK.ABUSE_BACK, order: HK.ABUSE_BACK_ORDER, aria: '支配される側の気持ち' };
     if (type === 'spouse' && HK.MARRIED_COLD) return { map: HK.MARRIED_COLD, order: HK.MARRIED_COLD_ORDER, aria: '夫婦の様子' };
     return null;
   };
   var HATE_WORDS = [[/一方的|片思いならぬ|相手は気にして(?:い)?ない|相手は気づいて(?:い)?ない|なんとも思って(?:い)?ない/, 'none'], [/相手はふつう|相手は普通/, 'normal'], [/相手は友(?:達|人)だと|友達だと思って/, 'friend'], [/相手は(?:好き|愛して|惚れて)|片想いされ|好かれて/, 'love']];
   var COLD_WORDS = [[/両片想い|両片思い|実は相手も/, 'mutual'], [/脈なし|眼中に|相手にされ|興味がない|興味なし/, 'none'], [/友達としか|友達止まり|異性として見|恋愛対象外|対象外/, 'friend'], [/苦手|嫌われ|避けられ|避けて/, 'dislike'], [/他に好き|ほかに好き|別に好き|好きな人がいる/, 'other']];
-  HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'classmate', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'stepsib', 'relative', 'parent', 'pparent', 'teacher', 'mentor', 'boss', 'benefactor', 'crush', 'yan', 'worship', 'bad', 'rival', 'enemy', 'lover', 'spouse', 'honmei', 'fwb', 'ex', 'fated', 'mate', 'master', 'noobs'];
+  HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'classmate', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'stepsib', 'relative', 'parent', 'pparent', 'teacher', 'mentor', 'boss', 'benefactor', 'crush', 'yan', 'worship', 'bad', 'rival', 'enemy', 'lover', 'spouse', 'honmei', 'fwb', 'ex', 'abuse', 'fated', 'mate', 'master', 'noobs'];
 
   /* 文字から関係の種類を推定（長い語から順に照合） */
   var ALIAS = [
@@ -470,6 +481,7 @@
     ['教師と生徒', 'teacher'], ['教師', 'teacher'], ['先生と生徒', 'teacher'], ['担任', 'teacher'], ['生徒', 'teacher'], ['師弟', 'mentor'], ['師匠', 'mentor'], ['弟子', 'mentor'],
     ['擬似親子', 'pparent'], ['疑似親子', 'pparent'], ['親代わり', 'pparent'], ['育ての親', 'pparent'], ['保護者', 'pparent'], ['後見人', 'pparent'], ['親子', 'parent'], ['父親', 'parent'], ['母親', 'parent'], ['片想い', 'crush'], ['片思い', 'crush'],
     ['ライバル', 'rival'], ['敵対', 'enemy'], ['因縁', 'enemy'], ['宿敵', 'enemy'], ['犬猿', 'enemy'], ['敵', 'enemy'],
+    ['歪んだ関係', 'abuse'], ['DV', 'abuse'], ['モラハラ', 'abuse'], ['支配的な恋人', 'abuse'],
     ['元恋人', 'ex'], ['元カレ', 'ex'], ['元カノ', 'ex'], ['元彼', 'ex'], ['元カノ', 'ex'],
     ['運命の番', 'fated'], ['運命', 'fated'], ['番', 'mate'], ['セフレ', 'fwb'], ['本命', 'honmei'], ['恋人', 'lover'], ['夫婦', 'spouse'], ['配偶者', 'spouse'], ['旦那', 'spouse'], ['奥さん', 'spouse'], ['彼氏', 'lover'], ['彼女', 'lover'], ['付き合って', 'lover'],
     ['先輩後輩', 'senpai'], ['先輩', 'senpai'], ['後輩', 'senpai'], ['センパイ', 'senpai'],
@@ -539,7 +551,7 @@
   /* ---------- エンジンへの適用 ----------
      同じ二人に複数の関係（セフレ＋片想い など）を重ねられる。
      get() は代表の関係（PRIO の先頭に近いもの）を返し、has() で個々の関係を調べる */
-  var PRIO = ['mate', 'fated', 'lover', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'relative', 'master', 'worship', 'mentor', 'teacher', 'benefactor', 'boss', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'classmate', 'friend', 'acq', 'noobs'];
+  var PRIO = ['mate', 'fated', 'abuse', 'lover', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'relative', 'master', 'worship', 'mentor', 'teacher', 'benefactor', 'boss', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'classmate', 'friend', 'acq', 'noobs'];
   function keyOf(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   /* 関係を持っているか（どのファイルからでも安全に呼べる形）。古いファイルが混ざっても止まらないように */
   HK.tieHas = function (ctx, a, b, type) {
@@ -637,7 +649,9 @@
         if (t.type === 'honmei') A.honmei = B.i;
         var MC = t.spouse && t.married && HK.MARRIED_COLD[t.married] && HK.MARRIED_COLD[t.married].mod;
         if (MC) { add(ab, MC); add(ba, MC); p.fric = HK.clamp((p.fric || 1) * 1.4, 0.2, 2); }
-        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB || WB ? t.cold : '', love: HK.tieFamLove(t) || (D.loveOpt && t.love === 'ok') ? 'ok' : '', mutual: !!t.mutual, spouse: !!t.spouse, married: t.married || '', step: !!t.step };
+        var AB = t.type === 'abuse' && HK.ABUSE_BACK ? HK.ABUSE_BACK[t.cold || ''] : null;
+        if (AB && AB.ba) add(ba, AB.ba);
+        var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB || WB || AB ? t.cold || '' : '', love: HK.tieFamLove(t) || (D.loveOpt && t.love === 'ok') ? 'ok' : '', mutual: !!t.mutual, spouse: !!t.spouse, married: t.married || '', step: !!t.step };
         list.push(o);
         list.sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
         ctx.ties[k] = list[0];
@@ -1641,6 +1655,81 @@
       a.flags.blessed = b.i;
       ctx.mod(a, b, { att: -15, aff: 4 }); ctx.mod2(a, c, { aff: 6, ten: -6 }, { aff: 6, trust: 5 }); ctx.mod(b, a, { trust: 6, aff: 4 });
       return { with: [c], text: ctx.t(ctx.pick(TX.bless), a, b, c), why: a.name + 'は' + b.name + 'への想いを胸にしまい、' + c.name + 'との仲を祝福した（祝福・仲良し）', mag: 14 };
+    }
+  });
+})();
+;/* ==== js/tie-abuse.js ==== */
+/* 箱庭シミュレーター: 関係「歪んだ関係」の場面（全エンジン箱庭で共通。全年齢版も同じ）
+   {a}＝支配する側、{b}＝支配される側、{c}＝気づいた周りの人
+   ・内容のスイッチ「DVなど歪んだ関係」（abuse）が入：束縛・暴言・物に当たる／手を上げる・謝って優しくなる（繰り返し）・支配される側の反応・周りが気づいて間に入る・離れる決心
+   ・切（全年齢版・全年齢モードも）：すれ違いの多い恋人として、軽い場面だけ（やきもち・口げんか・仲直り）
+   ・支配される側の気持ち（t.cold）：''＝離れられない（まだ好き）／fear＝怯えている／flee＝逃げ出したい
+   ・離れる決心をしたら、二人は恋人ではなくなる（pair.couple を外し、pair.abFree）。以後この場面は出ない
+   関係ごとの場面なので、id は tie_ で始める（全体の設定「関係性イベント：出さない」で外れる） */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK || !HK.COMMON) return;
+  function L(s) { return s.split('|'); }
+  function own(ctx) { return ctx && ctx.scen && /^(zombie|whiteroom|omega)$/.test(ctx.scen.id) ? 0.4 : 1; }
+  function tieOf(ctx, a, b) { return HK.Ties && HK.Ties.has ? HK.Ties.has(ctx, a, b, 'abuse') : null; }
+  function here(ctx) { return ctx.present ? ctx.present() : ctx.chars; }
+  var X = {
+    /* ---- 重い場面（スイッチが入のとき） ---- */
+    control: L('{a}は{b}のスマホを取り上げ、履歴を一件ずつ確かめた。「この名前、誰？」――{b}は、答える前に謝っていた。|{a}は{b}が誰かと話すたびに、あとで「何を話したの」と一言ずつ確かめた。{b}は、だんだん誰とも話さなくなった。|{a}「俺がいないところで、勝手に動くな」――{b}は頷いた。頷かないと、あとが長いことを知っていた。|{a}は{b}の着る服を選び、{b}が選んだ服は「似合わない」と言って脱がせた。{b}は、もう自分で選ばなくなっていた。'),
+    verbal: L('{a}「お前みたいなのと一緒にいてやれるの、俺くらいだよ」――{b}は笑おうとして、うまく笑えなかった。|{a}は皆の前で、{b}の失敗をわざと大きな声で話した。{b}は俯いたまま、何も言い返さなかった。|{a}「なんでそんなこともできないの？　何回言わせるの」――{b}の声は、だんだん小さくなっていった。|{a}は{b}が何か言いかけるたびに、ため息で遮った。{b}は、話すのをやめた。'),
+    violence: L('{a}は壁を拳で殴った。すぐそばにいた{b}は、肩をすくめたまま動けなかった。|{a}は{b}の腕を、跡が残るほど強く掴んだ。「どこ行くの」――{b}は「どこにも」と答えた。|{a}が手を振り上げた瞬間、{b}は目をつむった。手は、{b}の顔のすぐ横の扉を叩いた。|{a}は{b}の持っていたものを床に叩きつけた。{b}は黙って、散らばった破片を拾い集めた。'),
+    honey: L('{a}は{b}を抱きしめて、何度も謝った。「ごめん、本当にごめん。お前がいないと駄目なんだ」――{b}は、その腕の中で目を閉じた。|{a}はその夜、{b}の好きなものを買ってきて、別人のように優しく笑った。{b}は「やっぱり、本当は優しい人なんだ」と思った。|{a}「もう二度としない。約束する」――{b}はその約束を、前にも聞いたことがあった。それでも、頷いた。'),
+    stay: L('{b}は、{a}の機嫌が悪いのは自分のせいだと思っていた。「私がちゃんとしてれば」――そう言って、腕の痣を袖で隠した。|{b}は周りに「大丈夫、あの人、本当は優しいから」と笑ってみせた。その笑顔は、少しも笑っていなかった。|{b}は{a}の顔色をうかがいながら、言われる前にお茶を淹れた。そうしていれば、今日は穏やかに過ごせる。'),
+    fear: L('{b}は{a}の足音が近づくだけで、体を固くした。|{b}は{a}の前では、言葉を選び、笑う場所を選び、息をする間合いまで選んでいた。|{a}が名前を呼んだ。{b}はびくりと肩を震わせ、「なに？」と、できるだけ明るい声で返した。'),
+    flee: L('{b}は、{a}が眠ったのを確かめてから、こっそり荷物をまとめ始めた。手が震えて、うまく畳めなかった。|{b}は{a}の目を盗んで、出口までの道を何度も頭の中でなぞった。|{b}は小さな声で、自分に言い聞かせた。「次に手を上げたら、出ていく」――それを言うのは、もう三度目だった。'),
+    notice: L('{c}は、{b}の袖口からのぞく痣に気づいた。「……それ、どうしたの」――{b}は「ぶつけただけ」と笑った。{c}は笑わなかった。|{c}は、{a}がいるときだけ{b}が無口になることに気づいていた。{c}「{b}、何かあったら、ちゃんと言って」|{c}は{a}が席を外した隙に、{b}の手を握った。「一人で抱えなくていいから」――{b}の目に、初めて涙がにじんだ。'),
+    step: L('{c}は{a}と{b}のあいだに割って入った。「やめなよ。今のは、ただの喧嘩じゃない」――{a}は舌打ちして、その場を離れた。|{a}が{b}に詰め寄ったとき、{c}が{b}の前に立った。{c}「{b}に話があるなら、まず私を通して」|{c}は{b}の肩を抱いて、{a}から引き離した。{a}「関係ないだろ」{c}「関係ある。{b}は、私の大事な人だから」'),
+    free: L('{b}は{a}の前に立ち、震える声で言った。「もう、あなたとは一緒にいられない」――{a}は何か言いかけたが、{b}はもう目を逸らさなかった。|{b}は{c}に支えられながら、{a}に別れを告げた。{a}がどんなに謝っても、{b}はもう頷かなかった。|{b}「好きだった。でも、もう怖いほうが大きい」――{b}はそれだけ言って、{a}に背を向けた。'),
+    /* ---- 軽い場面（スイッチが切のとき。すれ違いの多い恋人） ---- */
+    lJeal: L('{a}は{b}が誰かと楽しそうに話しているのを見て、露骨に不機嫌になった。「……べつに。楽しそうだったね」|{a}「どこ行ってたの？　連絡くらいしてよ」――{b}は「ごめん」と言いながら、少しだけ息苦しさを覚えた。|{a}は{b}の予定を全部知りたがった。{b}は、それが愛情なのか心配性なのか、分からなくなっていた。'),
+    lFight: L('{a}と{b}は、些細なことで言い合いになった。{a}の言葉はいつも少しだけ強すぎて、{b}はいつも先に黙った。|{a}は{b}の言うことを最後まで聞かずに、「でもさ」と遮った。{b}は、言いたかったことを飲み込んだ。|{a}と{b}は、同じことでまた揉めた。結局、謝ったのは今回も{b}のほうだった。'),
+    lMake: L('{a}は気まずそうに{b}の隣に座り、「さっきは言いすぎた」と呟いた。{b}は少し迷ってから、{a}の手を握った。|{a}は{b}の好きな飲み物を黙って差し出した。仲直りの合図だと、{b}には分かった。|{b}「ちゃんと話そう。私の話も、最後まで聞いて」{a}は少し驚いて、それから小さく頷いた。')
+  };
+  HK.COMMON.push({
+    id: 'tie_abuse', cat: 'conflict', scope: 'pair',
+    when: function (ctx, a, b) { var t = tieOf(ctx, a, b); return !!t && !ctx.pair(a, b).abFree; },
+    w: function (ctx) { return 1.4 * own(ctx); },
+    run: function (ctx, a, b) {
+      var t = tieOf(ctx, a, b), A = ctx.chars[t.a], B = ctx.chars[t.b], pf = ctx.pair(A, B), st = t.cold || '';
+      var heavy = !!(HK.Content && HK.Content.ok(ctx, 'abuse')), rng = ctx.rng, k, C = null, lab = '歪んだ関係';
+      if (!heavy) {
+        var x0 = rng();
+        k = x0 < 0.4 ? 'lJeal' : x0 < 0.75 ? 'lFight' : 'lMake';
+        if (k === 'lMake') ctx.mod2(A, B, { aff: 3, ten: -4 }, { aff: 3, ten: -4 }); else ctx.mod2(A, B, { ten: 3 }, { ten: 4, trust: -2 });
+        return { cat: k === 'lMake' ? 'bond' : 'conflict', text: ctx.t(ctx.pick(X[k]), A, B), why: A.name + 'と' + B.name + '（すれ違いの多い恋人）' + { lJeal: '：やきもち・束縛気味', lFight: '：言い合い', lMake: '：仲直り' }[k] + '／重い場面は「内容のスイッチ」の「DVなど歪んだ関係」で入れられます', mag: 8 };
+      }
+      pf.abN = (pf.abN || 0) + 1;
+      var friends = here(ctx).filter(function (c) { return c !== A && c !== B && ctx.R(c, B).aff > 10; });
+      C = friends.sort(function (x, y) { return (y.tr.np + ctx.R(y, B).aff / 100) - (x.tr.np + ctx.R(x, B).aff / 100); })[0] || null;
+      /* 離れる決心：逃げ出したい・怯えている人が、何度も傷ついたあと、支えてくれる人がいれば */
+      var freeP = (st === 'flee' ? 0.3 : st === 'fear' ? 0.15 : 0.05) + (pf.abSeen ? 0.15 : 0) + Math.min(0.2, (pf.abN - 3) * 0.04);
+      if (pf.abN >= 3 && (C || st === 'flee') && rng() < freeP) k = 'free';
+      else if (C && rng() < 0.28) k = pf.abSeen && rng() < 0.55 ? 'step' : 'notice';
+      else {
+        var x = rng();
+        k = x < 0.26 ? 'control' : x < 0.48 ? 'verbal' : x < 0.62 ? 'violence' : x < 0.8 ? 'honey' : st === 'flee' ? 'flee' : st === 'fear' ? 'fear' : 'stay';
+      }
+      var text = ctx.t(ctx.pick(X[k]).replace(/\{c\}/g, C ? C.name : '仲間'), A, B);
+      if (k === 'control') { ctx.mod2(A, B, { att: 2 }, { ten: 5, trust: -3 }); ctx.stress(B, 6); }
+      else if (k === 'verbal') { ctx.mod2(A, B, { ten: 2 }, { aff: -4, ten: 6 }); ctx.stress(B, 8); }
+      else if (k === 'violence') { ctx.mod2(A, B, { ten: 4 }, { aff: -6, trust: -6, ten: 10 }); ctx.stress(B, 12); }
+      else if (k === 'honey') { ctx.mod2(A, B, { att: 3 }, { att: st ? 2 : 5, aff: st ? 2 : 5, ten: -3 }); ctx.stress(B, -4); }
+      else if (k === 'stay' || k === 'fear' || k === 'flee') ctx.stress(B, k === 'stay' ? 3 : 6);
+      else if (k === 'notice' || k === 'step') { pf.abSeen = true; ctx.mod2(B, C, { trust: 8, aff: 5 }, { aff: 4 }); if (k === 'step') ctx.mod2(A, C, { ten: 10 }, { ten: 8, trust: -6 }); ctx.stress(B, -5); }
+      else if (k === 'free') {
+        pf.abFree = true; pf.couple = false;
+        ctx.mod2(B, A, { att: -30, aff: -15, ten: 6 }, { ten: 8 }); ctx.stress(B, -10);
+        if (C) ctx.mod2(B, C, { trust: 10, aff: 6 }, { aff: 5, trust: 4 });
+      }
+      var whyK = { control: '：束縛', verbal: '：暴言', violence: '：物に当たる・手を上げる', honey: '：謝って優しくなる（繰り返し）', stay: '：離れられない', fear: '：怯えている', flee: '：逃げ出したい', notice: '：' + (C ? C.name : '周り') + 'が気づいた', step: '：' + (C ? C.name : '周り') + 'が間に入った', free: '：' + B.name + 'が離れる決心をした（恋人ではなくなった）' }[k];
+      var back = HK.ABUSE_BACK && HK.ABUSE_BACK[st] ? HK.ABUSE_BACK[st].short : '';
+      return { cat: k === 'honey' ? 'romance' : k === 'notice' || k === 'step' || k === 'free' ? 'help' : 'conflict', with: C && /notice|step|free/.test(k) ? [C] : null, text: text, why: A.name + '（支配する側）と' + B.name + '（支配される側・' + back + '）の' + lab + whyK, mag: k === 'free' ? 22 : k === 'violence' || k === 'step' ? 16 : 10 };
     }
   });
 })();
@@ -6478,6 +6567,8 @@
     defs.forEach(function (e) {
       self.env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def;
     });
+    /* 内容のスイッチ（content.js）は箱庭の環境値の一覧にないので、そのまま写す */
+    this.env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
     this.chaos = this.env.chaos / 100;
     this.log = [];
     this.history = [];
@@ -19380,6 +19471,7 @@
   K.state = function (input, scenId) {
     var scen = HK.SCENARIOS[scenId], env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
+    env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
     var S = { scen: scen, rng: HK.rng(input.seed), env: env, log: [], hist: [], turns: [], recent: [], flags: {}, cnt: {}, q: [], step: 0, label: '' };
     S.h = K.hero(S, input.chars[0], (input.perChar && input.perChar[0]) || {});
     S.party = [S.h];
@@ -28160,6 +28252,8 @@
   ST.state = function (input, scenId) {
     var scen = HK.SCENARIOS[scenId], env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
+    /* 内容のスイッチ（content.js）は環境値の一覧にないので、そのまま写す */
+    env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
     var S = { scen: scen, rng: HK.rng(input.seed), env: env, log: [], hist: [], turns: [], recent: [], step: 0, label: '', flags: {} };
     S.P = input.chars.map(function (c, i) {
       var pc = (input.perChar && input.perChar[i]) || {};
@@ -43135,7 +43229,7 @@
     });
   }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
+  function mk(c) { return { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -43176,6 +43270,10 @@
     c.posNpc = c.posNpc === 'bottom' ? 'bottom' : '';
     /* お酒の強さ（1 弱い〜5 ザル。空ならおまかせ） */
     c.alcohol = HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '';
+    /* 性器の呼び方（R18版。作風と自由記入） */
+    c.partWords = ['soft', 'direct', 'medical'].indexOf(c.partWords) >= 0 ? c.partWords : '';
+    c.partM = str(c.partM, 10).replace(/[「」『』{}]/g, '').trim();
+    c.partF = str(c.partF, 10).replace(/[「」『』{}]/g, '').trim();
     c.you = str(c.you, 8).trim();
     c.marks = str(c.marks, 30).trim();
     c.loveLock = typeof c.loveLock === 'string' ? c.loveLock : '';
@@ -43443,6 +43541,9 @@
         if (c.noR18) o.noR18 = true;
         if (c.posNpc === 'bottom') o.posNpc = 'bottom';
         if (c.alcohol) o.alcohol = +c.alcohol;
+        if (c.partWords) o.partWords = c.partWords;
+        if (c.partM) o.partM = c.partM;
+        if (c.partF) o.partF = c.partF;
         if (c.you) o.you = c.you;
         if (c.marks) o.marks = c.marks;
         if (c.loveLock && ref(c.loveLock) != null) o.loveLock = ref(c.loveLock);
@@ -43509,6 +43610,9 @@
       if (o.noR18) c.noR18 = true;
       if (o.posNpc === 'bottom') c.posNpc = 'bottom';
       if (HK.ALC_OK(o.alcohol)) c.alcohol = String(o.alcohol);
+      if (o.partWords) c.partWords = o.partWords;
+      if (o.partM != null) c.partM = String(o.partM);
+      if (o.partF != null) c.partF = String(o.partF);
       if (o.you != null) c.you = String(o.you).trim().slice(0, 8);
       if (o.marks != null) c.marks = String(o.marks).trim().slice(0, 30);
       c._lk = o.loveLock; c._sl = o.sexLock; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
@@ -43777,7 +43881,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '', sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock ? ids.indexOf(c.sexLock) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          return { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '', sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock ? ids.indexOf(c.sexLock) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
         });
       })(),
       perChar: castFor(S.scenId).map(function (c) {
@@ -44254,6 +44358,7 @@
     else if (!HK.SAFE_ON && c.sexLock === 'loverOnly') bits.push('体の関係：恋人だけ');
     if (!HK.SAFE_ON && c.noR18) bits.push('R18に参加しない');
     if (c.alcohol && HK.ALC_LABEL) bits.push('お酒：' + HK.ALC_LABEL[c.alcohol]);
+    if (!HK.SAFE_ON && (c.partWords || c.partM || c.partF)) bits.push('性器の呼び方：' + ([c.partM, c.partF].filter(Boolean).join('・') || { soft: 'ぼかす', direct: '直接的', medical: '医学的' }[c.partWords]));
     if (!HK.SAFE_ON && c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba')) bits.push('モブには受け');
     var ngs = (c.loveNG || []).map(byId).filter(Boolean);
     if (ngs.length) bits.push('恋愛にしない：' + ngs.map(function (o) { return o.name; }).join('・'));
@@ -44397,6 +44502,9 @@
         (!HK.SAFE_ON && (c.pos === 'top' || c.pos === 'riba') ? '<label title="住人どうしでは受け攻めの指定どおりで、モブ・魔物・村人・略奪者・星の生命体などの相手には受ける側になります">モブには <select data-gf="posNpc" aria-label="モブ・魔物が相手のとき"><option value=""' + (c.posNpc !== 'bottom' ? ' selected' : '') + '>受け攻めの指定どおり</option><option value="bottom"' + (c.posNpc === 'bottom' ? ' selected' : '') + '>受け</option></select></label>' : '') +
         (!HK.SAFE_ON ? '<label title="受けも攻めもせず、住人どうしの夜・モブや魔物に襲われる場面・執着の監禁の夜に出ません。殺し合いなどほかの出来事にはふつうに出ます。R18が中心の箱庭（エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ・マッサージ）では効きません"><input type="checkbox" data-gf="noR18"' + (c.noR18 ? ' checked' : '') + '> R18に参加しない</label>' : '') +
         (!HK.SAFE_ON && c.pos !== 'top' ? '<label title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"' + (c.daku ? ' checked' : '') + '> 濁点喘ぎ（男性向け）</label>' : '') +
+        (!HK.SAFE_ON ? '<label title="R18の場面で、性器をどう呼ぶか。台詞はその人の言葉づかい、地の文はその人の体の描写に使います（誰の体か分からない文は変えません）">性器の呼び方 ' + selOf('partWords', [['', 'おまかせ（文のまま）'], ['soft', 'ぼかす'], ['direct', '直接的'], ['medical', '医学的']], c.partWords || '') + '</label>' +
+          '<label title="空なら上の作風のまま。決めると、作風より優先します">男性器 <input type="text" data-gf="partM" value="' + esc(c.partM || '') + '" maxlength="10" placeholder="自由に" style="width:6em"></label>' +
+          '<label title="空なら上の作風のまま。決めると、作風より優先します">女性器 <input type="text" data-gf="partF" value="' + esc(c.partF || '') + '" maxlength="10" placeholder="自由に" style="width:6em"></label>' : '') +
         '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label></div>' +
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
       '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label>' + sexSel + '</div>' + (sexSel ? '<p class="gearhint">性行為の相手の固定：「恋愛相手の固定に合わせる」は、恋愛相手を固定していればその相手とだけ（していなければ誰とでも）。「誰とでも可」は、恋愛は固定した相手とだけ・体の関係はほかの住人とも（体の関係があっても恋人にはならない）。「恋人とモブだけ」は、住人では恋人（固定した恋愛相手・関係の恋人・その場で恋人になった相手）とだけ。「〇〇だけ」は、恋愛はほかの人ともするが、住人どうしの夜・R18の場面（三人の場面も）はその相手とだけ（その相手が箱庭にいなければ誰とも）。魔物・マッサージ師など、箱庭の仕掛けの相手の場面は縛りません。</p>' : '') + ngRow + '</div>' +
@@ -44482,6 +44590,9 @@
       case 'futa': if (isInput) return; c.futa = t.checked; changed(false); break;
       case 'daku': if (isInput) return; c.daku = t.checked; changed(false); break;
       case 'noR18': if (isInput) return; c.noR18 = t.checked; changed(true); break;
+      case 'partWords': if (isInput) return; c.partWords = ['soft', 'direct', 'medical'].indexOf(t.value) >= 0 ? t.value : ''; changed(true); break;
+      case 'partM': c.partM = t.value.replace(/[「」『』{}]/g, '').trim().slice(0, 10); changed(false); break;
+      case 'partF': c.partF = t.value.replace(/[「」『』{}]/g, '').trim().slice(0, 10); changed(false); break;
       case 'alcohol': if (isInput) return; c.alcohol = HK.ALC_OK(t.value) ? t.value : ''; changed(true); break;
       case 'posNpc': if (isInput) return; c.posNpc = t.value === 'bottom' ? 'bottom' : ''; changed(false); break;
       case 'posLike': if (isInput) return; c.posLike = HK.Pos && HK.Pos.likeValid(t.value) ? t.value : ''; changed(false); break;

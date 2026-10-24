@@ -32,6 +32,7 @@
   K.state = function (input, scenId) {
     var scen = HK.SCENARIOS[scenId], env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
+    env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
     var S = { scen: scen, rng: HK.rng(input.seed), env: env, log: [], hist: [], turns: [], recent: [], flags: {}, cnt: {}, q: [], step: 0, label: '' };
     S.h = K.hero(S, input.chars[0], (input.perChar && input.perChar[0]) || {});
     S.party = [S.h];

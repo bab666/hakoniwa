@@ -5,6 +5,7 @@ js/events-common.js
 js/persona.js
 js/tie-rel.js
 js/rel-group.js
+js/tie-abuse.js
 js/voice.js
 js/voice-tone.js
 js/tone-registry.js
@@ -59,6 +60,7 @@ js/tone-long.js
 js/engine.js
 js/content.js
 js/ero-kit.js
+js/part-words.js
 js/ero-moan-tone.js
 js/novel-moan-tone.js
 js/thick-sex.js

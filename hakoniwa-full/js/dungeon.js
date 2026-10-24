@@ -754,6 +754,7 @@
     var scen = HK.SCENARIOS.dungeon, rng = HK.rng(input.seed);
     var env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
+    env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
     var tk = env.theme === 'mix' ? 'mix' : env.theme;
     var S = {
       rng: rng, env: env, log: [], hist: [], turns: [], seen: {}, cause: {}, flags: {},
