@@ -560,6 +560,22 @@
     var out = P.filter(function (p) { return p.out; }), dead = P.filter(function (p) { return !p.alive; });
     var first = out.slice().sort(function (a, b) { return a.esc - b.esc; })[0], last = out.slice().sort(function (a, b) { return b.esc - a.esc; })[0];
     var miko = P.filter(function (p) { return /巫女/.test(p.fate); });
+    /* 結末の締め：誰も出られなかった回は、村が一行を呑み込んだ静けさで区切る（脱出した回は、逃げ出す場面がそのまま締めになる） */
+    if (!out.length && !S.engulf && !S.titleOverride) {
+      var gone = P.filter(function (p) { return p.taken; }), v0 = { v: S.V, g: G.call, n: P.length, l: names(P), t: names(gone), m: names(miko), k: Math.max(1, P.filter(function (p) { return !p.alive; }).length) };
+      var EP = miko.length ? [
+        '祭りの太鼓が鳴り止むと、村はいつもの静けさを取り戻した。社の奥では、{m}が{g}の巫女として迎えられていた。もう、村の外へ出たいと口にする者はいなかった。',
+        '{v}の新しい巫女は、{m}だった。村人たちは何事もなかったように田畑へ戻り、山道の入口には、新しいしめ縄が張られた。',
+        '数か月後、{v}を訪ねた行商人は、社の前で静かに微笑む{m}の姿を見かけた。声をかけても、{m}は外の世界のことを何ひとつ覚えていなかった。'
+      ] : [
+        '夜が明けると、村は何事もなかったように静まり返っていた。{v}の外れの墓地に、名前のない新しい塚が{k}つ増えていた。',
+        '一行が戻らないまま、刻限は過ぎた。麓の駐在所に届いた捜索願いは、数日後、「山で道に迷ったもの」として片づけられた。{v}の祭りは、今年も滞りなく終わった。',
+        '{v}の村人たちは、翌朝もいつも通り畑に出た。村の外から来た{n}人のことを、誰も口にしなかった。{g}は、また深い眠りについた。'
+      ];
+      var tx = ST.fmt(ST.pick(S, EP), v0) + (gone.length ? ST.fmt(ST.pick(S, ['{t}の行方は、今も分かっていない。', '{t}を最後に見た者は、誰もいなかった。', '山の奥から、ときどき{t}の名を呼ぶような声が聞こえるという。']), v0) : '');
+      ST.step(S, '村の朝');
+      ST.say(S, { actors: P, tag: '結末', kind: 'climax', text: tx, why: '誰も' + S.V + 'から出られなかった', mag: 40 });
+    }
     var title;
     if (!out.length && S.engulf) title = S.G.call + 'が顕現し、' + S.V + 'は消えた。誰も戻らなかった。――全滅';
     else if (!out.length) title = miko.length ? names(miko) + 'は神の子を産む巫女となった。誰も、' + S.V + 'から出られなかった。――GAME OVER' : '誰も' + S.V + 'から出られなかった。――全滅';

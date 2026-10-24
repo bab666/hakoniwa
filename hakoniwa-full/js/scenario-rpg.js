@@ -460,6 +460,38 @@
       p.notes.push('方針：' + p.action.label + '／目標：' + p.goal.label);
       if (SPX && SPX.note(p)) p.notes.push(SPX.note(p));
     });
+    /* 結末の締め：踏破なら迷宮の外へ凱旋、帰還なら地上に戻った夕暮れ、全滅なら迷宮に呑まれた静けさ。生き残り・失った仲間・囚われた仲間・持ち帰ったお金で書き分ける */
+    (function () {
+      var A4 = alive(), lostP = P.filter(function (p) { return !p.alive && !p.captive; }), capP = P.filter(function (p) { return p.captive; });
+      var nm = function (l) { return l.map(function (p) { return p.name; }).join(l.length > 2 ? '・' : 'と'); };
+      var v = { l: nm(A4), f: cleared, g: banked, m: mvp.name, d: nm(lostP), c: nm(capP) };
+      var EP = {
+        clear: [
+          '地下{f}階の主が崩れ落ちると、迷宮の奥から地鳴りのような音が響き、やがて静まり返った。{l}は長い階段を一段ずつ上り、ようやく地上の光の中へ出た。待っていた町の人々が、歓声を上げて駆け寄ってきた。',
+          '最深部の扉が開き、隠されていた地上への昇降路が姿を現した。{l}は傷だらけの体を寄せ合って乗り込んだ。地上に着いたとき、空は朝焼けに染まっていた。踏破の知らせは、その日のうちに町じゅうに広まった。',
+          '{l}が迷宮の入口に戻ると、見張りの兵士は、本当に一番下まで降りたのかと目を丸くした。{f}階を降りきった一行の名前は、ギルドの石板の一番上に刻まれた。'
+        ],
+        retreat: [
+          '{l}は来た道を引き返し、何日もかけて地上へ戻った。入口の石段に腰を下ろしたとき、夕日が迷宮の口を赤く染めていた。地下{f}階までの冒険は、ここで一区切りがついた。',
+          '地上の空気を吸った瞬間、{l}は誰からともなく座り込んだ。持ち帰った{g}Gは、酒場の卓にざらりと広げられた。次は、もっと深くへ――そう言い出す者がいても、今夜だけは誰も止めなかった。',
+          'ギルドの受付で、{l}は到達した階を報告した。受付嬢は帳面に地下{f}階と書き込み、小さく頷いた。宿の寝台に倒れ込むと、{l}は泥のように眠った。'
+        ],
+        wipe: [
+          '地下{f}階の闇に、落ちた松明の火が小さく揺れて、やがて消えた。迷宮は何事もなかったように静まり返り、拾い集めた宝も、冒険者たちの名前も、深い闇の底に沈んでいった。',
+          '最後の一人が倒れたあと、迷宮の通路には、誰の足音も響かなかった。数日後、入口の掲示板に、帰らなかったパーティの名前が一行だけ書き足された。',
+          '地下{f}階で、冒険は終わった。次にこの階まで降りてきた誰かが、錆びた武器と、ほとんど空になった財布を見つけることになる。持ち帰られたのは、わずか{g}Gだけだった。'
+        ]
+      };
+      var t = pickT(EP[ended]);
+      if (ended !== 'wipe') {
+        if (lostP.length) t += pickT(['帰り道、{d}の分の席を空けて、一行は黙って杯を掲げた。', '{d}の名前を口にすると、誰もが少しだけ黙り込んだ。', '{d}を迷宮に残してきたことを、誰も忘れなかった。']);
+        if (capP.length) t += pickT(['塔に囚われた{c}を取り戻す日を、一行は心に誓った。', '{c}はまだ、魔術師の塔に囚われたままだった。']);
+        if (ended === 'clear' && P.some(function (p) { return /解放/.test(p.fate); })) t += '囚われていた仲間も、主が倒れたことで解き放たれた。';
+        if (mvp.alive) t += pickT(['いちばんの働きは{m}だった。皆にそう言われて、{m}は照れくさそうに頭をかいた。', '持ち帰った{g}Gを前に、{m}「次は、どこへ行く？」', '{m}「みんな、お疲れさま。私、この仲間で良かった」']);
+      }
+      ST.step(S, ended === 'clear' ? '踏破 ― 地上へ' : ended === 'retreat' ? '帰還 ― 地上へ' : '全滅');
+      ST.say(S, { actors: (ended === 'wipe' ? P : A4).map(function (p) { return p.i; }), tag: ended === 'clear' ? '凱旋' : ended === 'retreat' ? '帰還' : '全滅', kind: 'climax', text: fillT(t.replace(/\{l\}/g, v.l).replace(/\{f\}/g, v.f).replace(/\{g\}/g, v.g).replace(/\{m\}/g, v.m).replace(/\{d\}/g, v.d).replace(/\{c\}/g, v.c), mvp), why: '冒険の締めくくり（持ち帰ったお金 ' + banked + 'G）' });
+    })();
     var A3 = alive();
     var title = ended === 'clear' ? '踏破（クリア） ― 地下' + maxF + '階の主を倒した' : ended === 'retreat' ? '帰還（地下' + cleared + '階で撤退）' : '全滅（地下' + cleared + '階）';
     var lines = [ended === 'wipe' ? 'パーティは地下' + cleared + '階で全滅した。拾ったお金のほとんどは、迷宮に残された。持ち帰れたのは ' + banked + 'G だけだった。' : ended === 'retreat' ? retreatBy.name + 'の判断で、パーティは地下' + cleared + '階から引き返した（' + retreatWhy + '）。' + banked + 'G を持ち帰った。' : '地下' + maxF + '階の主を倒し、ダンジョンを踏破した。パーティは ' + banked + 'G を持ち帰った。', 'いちばん活躍したのは' + mvp.name + '（撃破 ' + mvp.kills + '・' + mvp.found + 'G）。'];

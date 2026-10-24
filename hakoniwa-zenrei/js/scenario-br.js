@@ -4,6 +4,55 @@
   var HK = window.HK;
   function R(ctx, a, b) { return ctx.R(a, b); }
   function names(list) { return list.map(function (c) { return c.name; }).join('・'); }
+  /* ---------- 結末の締め：優勝・脱出・時間切れ（生還／首輪の作動）・全滅で、ゲームが終わった場面を記録の最後に入れる ---------- */
+  function closing(ctx, P) {
+    var rng = ctx.rng, all = ctx.chars, out = all.filter(function (c) { return c.out; }), dead = all.filter(function (c) { return !c.alive; });
+    var fill = function (t, m) { return t.replace(/\{(\w)\}/g, function (_, k) { return m[k] != null ? m[k] : ''; }); };
+    var text, head;
+    /* 生き残った人どうしでいちばん近い組（同盟・好意） */
+    var live = all.filter(function (c) { return c.alive; }), pr = null, best = 25;
+    live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i) { var v = (R(ctx, a, b).aff + R(ctx, b, a).aff) / 2 + (ctx.pair(a, b).allied ? 20 : 0); if (v > best) { best = v; pr = [a, b]; } } }); });
+    if (out.length) {
+      head = '脱出';
+      var left = all.filter(function (c) { return c.alive && !c.out; });
+      text = fill(rng.pick([
+        '夜明け前、ボートは島影を離れた。外した首輪は、波の底へ沈めた。{o}は振り返らなかった。島の灯りが見えなくなるまで、誰も口をきかなかった。',
+        '朝の光の中で、{o}はようやく顔を上げた。ゲームの会場だった島は、もう水平線の向こうの小さな影でしかなかった。生き延びたのではなく、自分の手で抜け出したのだと、{o}は何度も胸の中で繰り返した。',
+        'ボートが本土の浜に乗り上げたとき、{o}は膝から崩れ落ちた。首に残った輪の跡が、まだひりひりと痛んだ。それでも、ここから先は、誰にも決められない明日だった。'
+      ]), { o: names(out) }) + (left.length ? fill(rng.pick(['島には、{l}が残された。', '{l}は、ボートに乗らなかった。', '岸に立つ{l}の姿が、だんだん小さくなっていった。']), { l: names(left) }) : '');
+    } else if (P.length === 1 && P[0].alive) {
+      var w = P[0], k = w.flags.kills || 0;
+      head = '優勝';
+      text = fill(rng.pick(k ? [
+        '最後の放送が、{a}の名前を優勝者として読み上げた。迎えのヘリが降りてきたとき、{a}は手にしていた武器をようやく離した。指は、しばらく開かなかった。',
+        '首輪の電子音が止んだ。島に立っているのは、もう{a}一人だけだった。{a}が手にかけたのは{k}人。ヘリの窓から見下ろした島は、ひどく小さく見えた。',
+        '{a}は、優勝者の証として渡された紙切れを、黙って握りつぶした。帰りの船の上で、{a}は一度も眠れなかった。目を閉じるたびに、最後に向かい合った顔が浮かんだ。'
+      ] : [
+        '最後の放送が、{a}の名前を優勝者として読み上げた。{a}は一度も、自分の手で誰かを殺さなかった。それでも、生き残ったのは{a}一人だった。',
+        '{a}は、隠れていた場所から外へ出た。島はしんと静まり返っていた。誰とも戦わずに勝った{a}を、迎えのヘリが黙って乗せていった。',
+        '首輪の電子音が止んだとき、{a}は自分がまだ息をしていることに驚いた。手は汚れていなかった。それが救いなのかどうか、{a}にはまだ分からなかった。'
+      ]), { a: w.name, k: k });
+    } else if (P.length > 1 && P.every(function (c) { return c.alive; })) {
+      head = '時間切れ';
+      text = fill(rng.pick([
+        '試合の終わりを告げるサイレンが、島じゅうに鳴り響いた。{l}は、最後まで生き延びた。誰も勝たなかったゲームは、記録の上では「中止」として片づけられた。',
+        '時間切れの放送のあと、首輪のランプが一斉に消えた。{l}は呆然と空を見上げた。殺し合わずに迎えた朝が、ひどくまぶしかった。',
+        '迎えの船に乗せられた{l}は、互いの顔を見ないようにして座っていた。生き残ったという実感は、本土の港が見えるまで湧いてこなかった。'
+      ]), { l: names(P) });
+    } else {
+      head = '全滅';
+      text = fill(rng.pick([
+        '島に、動く者はいなくなった。管理室のモニターには、{n}人分の首輪の信号が、ひとつ残らず途絶えたことが表示されていた。今回のゲームに、優勝者はいなかった。',
+        '最後の首輪が鳴り止んだあと、島には波の音だけが残った。勝者のいない試合の記録は、誰にも読まれないまま綴じられた。',
+        '翌朝、島に上陸した回収班は、{n}人の名前を一人ずつ名簿から消していった。最後の欄には、「該当者なし」とだけ書き込まれた。'
+      ]), { n: all.length });
+    }
+    if (pr && head !== '全滅') text += fill(rng.pick(['{a}と{b}は、最後まで互いの名前を呼び合っていた。', '{a}は、{b}の手を離さなかった。', '{a}と{b}の背中合わせの約束は、最後まで守られた。']), { a: pr[0].name, b: pr[1].name });
+    else if (dead.length && head !== '全滅') text += fill(rng.pick(['{d}の名前は、もう放送で読み上げられることもない。', '島に残された{d}のことを、生き残った者は一生忘れないだろう。', head === '優勝' ? '{d}の顔を、夢の中で何度も見ることになる。' : '{d}の分まで生きる――そう思えるようになるには、まだ時間がかかりそうだった。']), { d: names(dead.slice(-3)) });
+    ctx.say({ kind: 'step', cat: 'phase', text: '試合終了 ― ' + head });
+    ctx.say({ kind: 'event', cat: head === '全滅' ? 'combat' : 'escape', actors: head === '全滅' ? [] : all.filter(function (c) { return c.alive; }), text: text, why: 'ゲームの結末（' + head + '）', mag: 40 });
+    if (!ctx.flags.outcome) ctx.flags.outcome = head === '脱出' ? names(out) + 'が島を脱出' : head === '時間切れ' ? '時間切れ ― ' + names(P) + 'が生き延びた' : head === '全滅' ? '全滅 ― 優勝者なし' : '';
+  }
   function add(s) { HK.SCENARIOS[s.id] = s; HK.SCEN_ORDER.push(s.id); }
 
   /* ======================= バトルロワイヤル ======================= */
@@ -154,6 +203,7 @@
           P.forEach(function (c) { c.alive = false; c.fate = '死亡'; c.fateNote = '時間切れで首輪が作動した'; });
         } else P.forEach(function (c) { c.fate = '生還'; c.fateNote = '時間切れまで生き延びた'; });
       }
+      closing(ctx, P);
     },
     events: [
       {

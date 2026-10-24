@@ -224,6 +224,7 @@
       ST.flushShort(S, 'ほかに：');
       ST.snap(S, keys);
     }
+    epilogue(S);
     return finish(S, input);
   }
 
@@ -861,6 +862,118 @@
     ST.say(S, { actors: [a], tag: '異星の生き物', kind: 'climax', text: xLewd(S, a, top, F(pk(S, sp || (top ? R.alienTop : R.alien)), { a: a.name, x: d.name }), { a: a.name, x: d.name, b: (closest(S, a) || { name: '仲間' }).name }, 'alien'), why: d.name + '（' + LIFE_JP[d.kind] + '）' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 28 });
   }
 
+  /* ---------- 結末の締め（一年が終わったところで、星に降り立つ／漂い続ける／船が力尽きる の区切りを記録の最後に入れる） ---------- */
+  var EPI = {
+    wiped: [
+      '最後の一人が倒れてから、船は誰の声も聞かないまま進み続けた。食堂の椅子は{n}人分のまま並び、壁の名札も外されることはなかった。救難信号だけが、決まった間隔で闇に向かって瞬いていた。',
+      '生命維持の装置は、乗る者がいなくなったことに気づかないまま空気を送り続けた。航海日誌の最後の行には、{v}の筆跡で日付だけが書かれていた。やがて動力が尽き、船内の灯りはひとつずつ消えていった。',
+      '観測窓の外を、名前も知らない星がゆっくりと流れていった。船はもう、どこへ向かうこともなかった。{v}が最後に整えた操縦席だけが、主を待つように前を向いていた。'
+    ],
+    wipedBy: '――{w}が、この船の旅を終わらせた。',
+    fresh: [
+      '十二か月目の終わり、船は{x}の大気を抜けて、平らな岩場に降りた。ハッチが開き、{l}は一人ずつ、見知らぬ大地に足を下ろした。調べることはまだ何も始まっていなかったが、足の裏に伝わる重みだけで、誰もが泣きそうになった。',
+      '着陸の衝撃が収まると、船内は嘘のように静かになった。外の空気は、計器の上では吸える数値を示していた。{l}は顔を見合わせ、ゆっくりとハッチを開けた。{x}の風が、一年ぶりに一同の頬を撫でた。',
+      '{x}の地表が近づくにつれ、警報はひとつ、またひとつと鳴り止んだ。船が止まったのは、草のようなものが揺れる丘の上だった。{l}は外に出て、空を見上げた。そこには、もう漂うだけの闇はなかった。'
+    ],
+    civ: [
+      '一年の終わり、{l}は船を降り、{x}の住人たちが用意した場所に居を移した。言葉はまだ半分も通じなかったが、差し出された食べ物を受け取ることはできた。船は丘の上に据えられ、新しい村の目印になった。',
+      '{x}の住人たちは、船を降りた{l}を遠巻きに見つめていた。やがて一人が歩み出て、手のひらを見せた。それが挨拶なのだと分かるまで、少し時間がかかった。漂流者たちは、この星の客として迎え入れられた。',
+      '船の扉を開け放ったまま、{l}は{x}の集落へ続く道を歩いた。迎えに来た住人たちの後ろに、灯りのともった家並みが見えた。漂流の一年は、知らない誰かの家の前で終わった。'
+    ],
+    danger: [
+      '{x}のすべてが分かったわけではなかった。それでも船の物資は限られていて、ここで暮らすほかに道はなかった。{l}は船を砦にして、地表に小さな囲いを作った。夜になると、遠くで何かが鳴く声がした。',
+      '{l}は、この星に残ると決めた。安全だと言い切れる場所は、まだ船の中にしかなかった。一同は交代で見張りに立ちながら、少しずつ畑を広げていった。{x}は優しい星ではなかったが、帰る場所はもうここしかなかった。',
+      '調べ尽くせなかった{x}の闇を前に、{l}は慎重に暮らしを始めた。船の外壁には、探索で分かったことが一行ずつ書き足されていった。分からないことの欄は、まだ長く空いたままだった。'
+    ],
+    settle: [
+      '一年の終わり、{l}は船の外に最初の家を建てた。屋根は船体の板で、窓は観測窓を外して使った。{x}の夕日がその窓に映ったとき、そこはもう漂流者の仮住まいではなかった。',
+      '{x}の地図は、船の壁いっぱいに書き込まれていた。水の出る場所、食べられる実、夜に冷える谷。{l}はその地図を頼りに、船から少し離れた平地に暮らしを移した。船は、最初の一年の記念碑として残された。',
+      '{l}は、調べ上げた{x}の大地に、手で杭を打った。そこが、新しい暮らしの始まりの場所になった。夜、焚き火を囲んで、一同は漂流の一年の話を何度も繰り返した。'
+    ],
+    broken: '船はそれきり、二度と空へ上がらなかった。',
+    driftOk: [
+      '十二か月目が終わっても、星図の空白は埋まらなかった。{l}は食堂に集まり、残った物資を数え直した。まだ一年は戦える。誰も口には出さなかったが、それだけで十分だった。船は、次の光を目指して針路を変えた。',
+      '一年の漂流を終えた夜、{l}は観測窓の前に並んだ。遠くに、まだ確かめていない星がいくつも瞬いていた。航海士席の画面に、新しい航路が描かれた。旅は終わらなかったが、一年目は、ここで区切りがついた。',
+      '{l}は、一年分の航海日誌を一冊に綴じた。表紙には「一年目」とだけ書かれた。次の一冊の最初のページは、まだ真っ白だった。船の灯りは消えず、闇の中を静かに進み続けた。'
+    ],
+    driftLow: [
+      '十二か月目の終わり、主機関が最後の唸りを上げて止まった。残った動力は、生命維持と救難信号にだけ回された。{l}は一つの部屋に集まり、毛布を分け合った。窓の外の星は、手の届かない場所で瞬いていた。',
+      '計器の針が、ひとつ、またひとつと下限を指した。船はもう、自分の力では進めなかった。{l}は救難信号の出力を最大にして、あとは祈るように待つことにした。漂流の一年は、凍えるような静けさの中で終わった。',
+      '船は力尽きかけていた。灯りは非常灯だけになり、吐く息が白く見えた。{l}は寄り添って座り、誰からともなく、故郷の話を始めた。信号は今も、闇の向こうへ届くことを信じて送られ続けていた。'
+    ],
+    lovers: [
+      '{a}と{b}は、最後まで寄り添っていた。どちらからともなく繋いだ手は、もう離れることはなかった。',
+      '{a}は{b}の肩に頭を預けた。{b}「これからも、私の隣にいて」――{a}は、黙ってうなずいた。',
+      '漂流の一年を、{a}と{b}は恋人として越えた。二人の名前は、航海日誌の同じ行に並んで書かれていた。'
+    ],
+    lone: [
+      '{a}は、一人で少し離れた場所に立ち、黙って空を見上げていた。',
+      '{a}は誰とも肩を寄せず、一年の記録を自分の端末に静かに書き残した。',
+      '{a}は仲間の輪の外で、それでも穏やかな顔をしていた。'
+    ],
+    mourn: [
+      '{v}の名は、船体の内側に刻まれた。誰かがそこを通るたび、指先でそっと触れていった。',
+      '{l}は、{v}のために小さな石を積んだ。この一年を一緒に越えられなかった仲間のことを、誰も忘れなかった。',
+      '食堂の一番奥の席は、{v}の席のまま空けておかれた。'
+    ],
+    away: [
+      '{v}の行方は、最後まで分からなかった。救難信号の周波数には、今も{v}の名前が添えられている。',
+      '{v}は、まだ帰ってこない。一同は、{v}の寝台をそのままにしておいた。',
+      '{v}を探しに行くことは、もうできなかった。それでも誰も、{v}をいなくなった人とは呼ばなかった。'
+    ],
+    endLow: [
+      '漂流の記録は、目的地の欄が空白のまま閉じられた。それでも船は、最後の力で信号を送り続けていた。',
+      '一年目の日誌は、ここで終わった。次のページを書けるかどうかは、誰にも分からなかった。',
+      '新しい星にはたどり着けなかった。弱々しい非常灯の下で、一同は救いが来る日を待ち続けた。'
+    ],
+    logSolo: [
+      '{a}は、ひとりきりになった船室で航海日誌を開いた。{a}「生き残ったのは、私だけになった。それでも、記録は続ける」',
+      '{a}は、仲間の名前を一人ずつ声に出して読み上げた。返事はなかったが、{a}は最後の名前まで読み終えた。',
+      '{a}は、誰もいない操縦席に向かって小さく頭を下げた。{a}「ここまで連れてきてくれて、ありがとう。私は、もう少し生きてみる」'
+    ],
+    log: [
+      '{a}は、航海日誌の最後のページを開いた。{a}「漂流一年目、記録を終える。私たちは、まだここにいる」',
+      '{a}は日誌の端末を閉じる前に、一行だけ書き足した。{a}「全員の名前を、ここに残しておく。私が忘れないように」',
+      '{a}は、仲間の顔を一人ずつ見回してから言った。{a}「一年、よく持ちこたえた。私の自慢の船員たちだ」'
+    ]
+  };
+  function epilogue(S) {
+    var Pn = S.planet, L0 = live(S), sp = S.ship, v = { x: Pn ? Pn.name : '', n: S.P.length, l: names(L0) };
+    var weak = S.weakEnd = sp.power < 30 || sp.o2 < 30 || sp.hull < 25 || sp.food < 15;
+    if (!L0.length) {
+      var last = S.deaths[S.deaths.length - 1] || S.P[S.P.length - 1];
+      ST.step(S, '船の最期');
+      ST.say(S, { kind: 'climax', tag: '結末', text: F(pk(S, EPI.wiped), { n: S.P.length, v: last.name }) + (S.wipeBy ? F(EPI.wipedBy, { w: S.wipeBy.name }) : ''), why: '船員が一人も残らなかった', mag: 40 });
+      return;
+    }
+    var out = [];
+    if (Pn) {
+      ST.step(S, Pn.name + 'に降り立つ');
+      var reveal = 0; [Pn.res, Pn.civ].concat(Pn.life).forEach(function (o) { reveal += o.st; });
+      var civOk = Pn.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(Pn.civ.d.state);
+      var hostile = Pn.life.some(function (l) { return l.st >= 1 && /hostile|parasite/.test(l.d.kind); });
+      var pool = !reveal ? EPI.fresh : civOk ? EPI.civ : hostile || reveal < 4 ? EPI.danger : EPI.settle;
+      var why = !reveal ? '辿り着いたばかりで、まだ何も調べていない' : civOk ? 'この星の文明と出会っていた' : hostile ? '危ない生命体がいると分かっていた' : reveal < 4 ? 'まだ分からないことが多い' : '星のことがよく分かっていた';
+      ST.say(S, { actors: L0, kind: 'climax', tag: '結末：着陸', text: F(pk(S, pool), v) + (weak || sp.hull < 40 ? EPI.broken : ''), why: why, mag: 40 });
+    } else {
+      ST.step(S, weak ? '力尽きかけた船' : '漂流の一年の終わり');
+      ST.say(S, { actors: L0, kind: 'climax', tag: weak ? '結末：船の灯り' : '結末：漂流', text: F(pk(S, weak ? EPI.driftLow : EPI.driftOk), v), why: weak ? '船の状態が悪い（動力 ' + Math.round(sp.power) + '・生命維持 ' + Math.round(sp.o2) + '・食料 ' + Math.round(sp.food) + '）' : '星は見つからなかったが、船はまだ動ける', mag: 36 });
+    }
+    /* 人ごとの結び：恋人になった組／ひとりの人／亡くなった人／戻らない人 */
+    var used = [];
+    L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i && used.indexOf(a) < 0 && used.indexOf(b) < 0 && lover(S, a, b)) { used.push(a, b); out.push({ act: [a, b], t: F(pk(S, EPI.lovers), { a: a.name, b: b.name }) }); } }); });
+    var lone = L0.filter(function (p) { return used.indexOf(p) < 0; });
+    if (lone.length && L0.length > 1 && used.length) { var ln = S.rng.pick(lone); out.push({ act: [ln], t: F(pk(S, EPI.lone), { a: ln.name }) }); }
+    if (S.deaths.length) { out.push({ act: L0, t: F(pk(S, EPI.mourn), { v: names(S.deaths), l: v.l }) }); }
+    var aw = S.P.filter(function (p) { return p.alive && p.away; });
+    if (aw.length) out.push({ act: L0, t: F(pk(S, EPI.away), { v: names(aw) }) });
+    var cap = L0.filter(function (p) { return p.role === 'captain'; })[0] || best(S, 'lead');
+    out.push({ act: [cap], t: F(pk(S, L0.length === 1 ? EPI.logSolo : EPI.log), { a: cap.name }) });
+    var END = SH.T.END || {};
+    var fin = S.endLine = F(pk(S, Pn ? END.found : S.weakEnd ? EPI.endLow : END.none), v);
+    ST.say(S, { actors: L0, tag: '結末', kind: 'phase', text: out.map(function (o) { return o.t; }).join('') + fin, why: '一年の漂流の締めくくり' });
+  }
+
   /* ---------- 結果 ---------- */
   function lineOf(lab, o, key, extra) {
     var d = o.d, st = o.st;
@@ -892,10 +1005,10 @@
     var reveal = 0, total = 0;
     if (Pn) { [Pn.res, Pn.civ].concat(Pn.life).forEach(function (o) { reveal += o.st; total += 3; }); }
     var pct = total ? Math.round(reveal / total * 100) : 0;
-    var title = !L0.length ? '全滅 ― ' + (S.wipeBy ? S.wipeBy.name + 'で、' : '') + '船は誰も乗せないまま漂い続けた' : Pn ? Pn.name + 'に辿り着いた ― 珍しさ' + stars(Pn.rare) + '・判明度 ' + pct + '%' : '星は見つからなかった ― 一年の漂流';
+    var title = !L0.length ? '全滅 ― ' + (S.wipeBy ? S.wipeBy.name + 'で、' : '') + '船は誰も乗せないまま漂い続けた' : Pn ? Pn.name + 'に辿り着いた ― 珍しさ' + stars(Pn.rare) + '・判明度 ' + pct + '%' : S.weakEnd ? '星は見つからなかった ― 力尽きかけた船で、救いの信号を送り続けた' : '星は見つからなかった ― 一年の漂流';
     var lines = P.map(function (p) { return p.name + '（' + p.roleLabel + '）：' + p.fate; });
     var END = SH.T.END || {};
-    lines.push(F(pk(S, !L0.length ? END.wiped : Pn ? END.found : END.none), { x: Pn ? Pn.name : '' }));
+    lines.push(L0.length && S.endLine ? S.endLine : F(pk(S, !L0.length ? END.wiped : Pn ? END.found : END.none), { x: Pn ? Pn.name : '' }));
     if (Pn) {
       lines.push('星：' + Pn.name + '（珍しさ' + stars(Pn.rare) + '）');
       lines.push(lineOf('資源', Pn.res, 'res', Pn.res.st >= 2 ? '（' + USE_JP[Pn.res.d.use] + '・珍しさ' + stars(Pn.res.d.rare) + '）' : ''));

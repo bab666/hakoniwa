@@ -4,6 +4,46 @@
   var HK = window.HK;
   function R(ctx, a, b) { return ctx.R(a, b); }
   function names(list) { return list.map(function (c) { return c.name; }).join('・'); }
+  /* ---------- 結末の締め：勝ち逃げ・脱出・ホテルに残る・黒幕への下克上で、ゲームが終わった場面を記録の最後に入れる ---------- */
+  function closing(ctx) {
+    var rng = ctx.rng, all = ctx.chars, F = ctx.flags, oc = F.outcome || '';
+    var live = all.filter(function (c) { return c.alive; }), dead = all.filter(function (c) { return !c.alive; });
+    var fill = function (t, m) { return t.replace(/\{(\w)\}/g, function (_, k) { return m[k] != null ? m[k] : ''; }); };
+    var m = { l: names(live), d: names(dead.slice(-3)), n: dead.length };
+    var head, text;
+    if (/勝ち逃げ/.test(oc)) {
+      head = '勝ち逃げ';
+      text = fill(rng.pick([
+        'ホテルの正面玄関の鉄板が、一枚だけ外れた。{l}は誰もいなくなったロビーを抜け、外の光の中へ歩き出した。背後で扉が閉まる音がしても、振り返らなかった。',
+        '裁判場の照明が落ち、{l}だけがエレベーターに乗せられた。地上に出ると、冷たい雨が降っていた。{l}は傘も差さずに、雑踏の中へ消えていった。',
+        '「おめでとうございます」――黒幕の声に見送られて、{l}はホテルを出た。ゲームに勝ったのは、嘘をつき通した者だった。その嘘の重さを、{l}はこれから一人で抱えて生きていく。'
+      ]), m);
+    } else if (/下克上/.test(oc)) {
+      head = '下克上';
+      text = fill(rng.pick([
+        '黒幕の部屋のモニターが、一つずつ消えていった。{l}は、自分たちを閉じ込めていたホテルを見上げた。もう、誰もここで裁かれることはない。',
+        '外の空気は、思っていたよりずっと冷たかった。{l}は、黒幕から奪ったゲームの鍵を、川へ投げ捨てた。',
+        '{l}が通報して、ホテルに警察が踏み込んだのは翌朝のことだった。黒幕の正体が報じられた日、{l}は小さな店で、黙って乾杯した。'
+      ]), m);
+    } else if (ctx.env.endrule === 'out') {
+      head = '脱出';
+      text = fill(rng.pick([
+        'ホテルの外は、ありふれた街の朝だった。{l}は、通りすがりの人たちの笑い声を、信じられないものを聞くように聞いていた。',
+        '{l}は、ホテルの前で一度だけ振り返った。窓の鉄板の向こうに、{n}人の仲間が残っている気がした。',
+        '駅へ向かう道すがら、{l}はほとんど口をきかなかった。改札を抜けたとき、ようやく、ゲームが終わったのだと思えた。'
+      ]), m);
+    } else {
+      head = 'ホテルに残る';
+      text = fill(rng.pick([
+        'モノクロのモニターは、それきり何も映さなくなった。{l}は食堂で、少ない食料を大事に分けて暮らした。もう誰も、誰かを疑わなくてよかった。',
+        '閉じたままのホテルで、{l}の暮らしが始まった。客室の一つは、亡くなった仲間たちの部屋として、そのまま残された。',
+        '{l}は、毎晩ロビーの灯りをともすことにした。扉は今も閉ざされているが、そこはもう処刑場ではなかった。'
+      ]), m);
+    }
+    if (dead.length && head !== '勝ち逃げ') text += fill(rng.pick(['{d}の名前が書かれた投票のパネルは、最後まで灯ったままだった。', '{d}のことを、{l}は何度も思い出すことになる。', '{d}の遺品は、生き残った者の手で、一つずつ大切にしまわれた。']), m);
+    ctx.say({ kind: 'step', cat: 'phase', text: '結末 ― ' + head });
+    ctx.say({ kind: 'event', cat: 'escape', actors: live, text: text, why: 'ゲームの結末（' + head + '）', mag: 40 });
+  }
   var CIRC = '①②③④⑤⑥⑦⑧⑨⑩';
 
   var MOTIVES = [
@@ -101,7 +141,7 @@
       var P = ctx.present(), notes = (ctx.flags.endNotes = ctx.flags.endNotes || []), RB = ctx.flags.rebel;
       if (HK.DGK) ctx.chars.forEach(function (c) { notes.push(c.name + '：' + HK.DGK.note(c)); });
       if (RB && RB.stage) notes.push('黒幕への反撃：進捗 ' + Math.round(RB.p) + '％・黒幕の警戒 ' + Math.round(RB.alert) + '％' + (RB.hits ? '・悟られた回数 ' + RB.hits : ''));
-      if (ctx.flags.over) return;
+      if (ctx.flags.over) { closing(ctx); return; }
       if (ctx.env.endrule === 'out') {
         ctx.say({ text: '最後の扉が開いた。' + names(P) + 'は、何日ぶりかの外の光の中へ出た。' });
         P.forEach(function (c) { c.fate = '生還'; c.fateNote = '最後まで生き残り、全員でホテルを出た'; });
@@ -111,6 +151,7 @@
         P.forEach(function (c) { c.fate = 'ホテルに残った'; c.fateNote = '殺し合いを拒んで、閉じたホテルで暮らすことを選んだ'; });
         ctx.flags.outcome = '生き残った' + P.length + '人がホテルに残った';
       }
+      closing(ctx);
     },
     events: [
       {
