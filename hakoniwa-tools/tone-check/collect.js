@@ -52,6 +52,8 @@ const { openBuild } = require('./lib');
         /* ENV=release=mid,lewd=80 で場面の設定を固定 */
         OPT.env.forEach(([k, v]) => { if (k in env) env[k] = isNaN(+v) ? v : +v; });
         const start = rec.length;
+        /* 内容のスイッチ（content.js）：指定がなければすべて入にして、いちばん広く回す */
+        if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
         try { HK.simulate({ scenId: id, seed: 12345 + s * 101, env, chars, perChar, ties: OPT.ties.filter(t => t.a < n && t.b < n) }); }
         catch (e) { fails.push({ id, s, err: String(e && e.stack || e) }); continue; }
         results.push({ id, s, chars: chars.map(c => ({ name: c.name, tone: c.tone, g: c.gender })), recs: rec.slice(start) });

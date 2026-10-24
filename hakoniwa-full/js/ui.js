@@ -521,6 +521,15 @@
     if (src !== S.glob && HK.Lewd) HK.Lewd.norm(scenId, src);
     return src[e.id] == null ? e.def : src[e.id];
   }
+  /* 内容のスイッチ：全箱庭で共通の入れ切り（S.glob.ct）。R18版だけ */
+  function ctOn() { var m = (S.glob && S.glob.ct) || {}; return (HK.Content ? HK.Content.TAGS : []).filter(function (t) { return m[t.id]; }).map(function (t) { return t.id; }); }
+  function contentBox() {
+    if (!HK.Content || HK.SAFE_ON) return '';
+    var m = (S.glob && S.glob.ct) || {};
+    return '<div class="envitem wide"><div class="lab"><span>内容のスイッチ（全箱庭で共通・初期はすべて切）</span></div><div class="ctbox">' +
+      HK.Content.TAGS.map(function (t) { return '<label title="' + esc(t.desc) + '"><input type="checkbox" data-f="ct" data-k="' + t.id + '"' + (m[t.id] ? ' checked' : '') + '> ' + esc(t.label) + '</label>'; }).join('') +
+      '</div><div class="desc">入れたものだけが起きます。切のときは、その場面を起こさないか、やわらかい分岐に替えます。エロトラップダンジョンなどR18が中心の箱庭では「合意のない展開」は常に入です。</div></div>';
+  }
   function envItem(e, scenId) {
     var v = envVal(e, scenId), g = HK.GLOBAL_ENV.indexOf(e) >= 0 ? '1' : '0';
     if (e.type === 'text') {
@@ -650,7 +659,7 @@
 
     var html =
       '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' +
-      '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + ' <span class="envbtns"><button type="button" class="mini" data-act="envreset" title="この箱庭の環境値を初期値に戻す">初期値に戻す</button><button type="button" class="mini" data-act="envrand" title="環境値をランダムに決める（文字の項目はそのまま）">ランダム</button></span></h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + '</div></div>' +
+      '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + ' <span class="envbtns"><button type="button" class="mini" data-act="envreset" title="この箱庭の環境値を初期値に戻す">初期値に戻す</button><button type="button" class="mini" data-act="envrand" title="環境値をランダムに決める（文字の項目はそのまま）">ランダム</button></span></h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + contentBox() + '</div></div>' +
       '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
       '<h2 class="sec">' + (scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
@@ -689,6 +698,8 @@
     var env = {};
     var scen = HK.SCENARIOS[S.scenId];
     genv(scen).forEach(function (e) { env[e.id] = envVal(e, S.scenId); });
+    /* 内容のスイッチ（content.js。全箱庭で共通）：入にしたものの id をカンマでつないで渡す */
+    if (HK.Content && !HK.SAFE_ON) env.ct = ctOn().join(',');
     return {
       scenId: S.scenId, seed: seed, env: env,
       chars: (function () {
@@ -967,6 +978,10 @@
       refreshRow(row, c, true);
     }
     else if (f === 'scen') { S.scenId = t.value; save(); renderBox(); return; }
+    else if (f === 'ct') {
+      S.glob.ct = S.glob.ct || {};
+      if (t.checked) S.glob.ct[t.dataset.k] = 1; else delete S.glob.ct[t.dataset.k];
+    }
     else if (f === 'env') {
       var src = t.dataset.g === '1' ? S.glob : (S.env[S.scenId] = S.env[S.scenId] || {});
       src[t.dataset.k] = t.type === 'range' ? +t.value : t.value;

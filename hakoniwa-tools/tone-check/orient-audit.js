@@ -45,6 +45,8 @@ const { openBuild } = require('./lib');
         });
         const ties = s % 4 === 3 && n >= 2 ? [{ a: 0, b: 1, type: ['friend', 'enemy', 'best', 'colleague'][s % 4] }] : [];
         let res;
+        /* 内容のスイッチ（content.js）：指定がなければすべて入にして、いちばん広く回す */
+        if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
         try { res = HK.simulate({ scenId: id, seed: 4000 + s * 17, env, chars, perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })), ties }); }
         catch (e) { o.err++; continue; }
         o.runs++;

@@ -338,7 +338,9 @@
       ctx.mod(b, a, { ten: 15, trust: -15 }); s.lv = clamp(s.lv - (end === 'release' ? 25 : 10), 0, 100); s.climax = null;
       return { with: c ? [b, c] : [b], cat: end === 'rescue' ? 'help' : 'conflict', text: F(ctx, T(ctx, end, !c), a, b, c), why: a.name + (SAFE() ? 'の囲い込み（' : 'による監禁（') + days + '区切りで終わった）', mag: 30 };
     }
-    var night = !safe && opt.night !== false && ctx.romanceOk([a, b]) && HK.Pos && HK.Pos.okSex && HK.Pos.okSex(a, b) && ctx.rng() < 0.55;
+    /* 監禁の夜：受け入れている・共依存でなければ「合意のない展開」（内容のスイッチ）が入のときだけ */
+    var stn0 = O.stance(ctx, b, a);
+    var night = !safe && opt.night !== false && (stn0 === 'mutual' || stn0 === 'accept' || (!HK.Content || HK.Content.ok(ctx, 'force'))) && ctx.romanceOk([a, b]) && HK.Pos && HK.Pos.okSex && HK.Pos.okSex(a, b) && ctx.rng() < 0.55;
     if (night) {
       var ord = HK.Pos.order(a, b), top = ord[0] === a;
       ctx.pair(a, b).night = true;

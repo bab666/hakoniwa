@@ -67,7 +67,7 @@
     if (isSafe) return [];
     var out = [], om = ctx.om, stn = O.stance(ctx, b, a);
     /* 奪う番：αが攻めに回る組だけ */
-    if (sx(a) === 'a' && sx(b) === 'o' && BD.canBite(ctx, a, b) && okSex(a, b) && order(a, b)[0] === a)
+    if (sx(a) === 'a' && sx(b) === 'o' && BD.canBite(ctx, a, b) && okSex(a, b) && order(a, b)[0] === a && (stn === 'mutual' || stn === 'accept' || (!HK.Content || HK.Content.ok(ctx, 'force'))))
       out.push(['forceBite', (ty === 'bind' || ty === 'purge' ? 3.2 : 2) * (OM.destiny ? 0.6 + OM.destiny(ctx) * 0.8 : 1), function () {
         var given = stn === 'mutual' || stn === 'accept';
         BD.bite(ctx, a, b, given ? 'yan' : 'force');

@@ -23,7 +23,7 @@
     if (kind === 'fertile') {
       var fpool = JS.R18.ff(X, Y) ? FERTILE_FF.filter(function (x) { return (HK.Pos && HK.Pos.bothRiba && HK.Pos.bothRiba(X, Y)) || !/擦り合わせ/.test(x); }) : FERTILE;
       var t = ST.fmt(ST.pick(S, fpool), m) + JS.R18.sex(S, X, Y, { mood: 'drug', fore: false });
-      if (S.rng() < 0.6) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(ST.pick(S, PREG), m); }
+      if ((!HK.Content || HK.Content.ok(S, 'preg')) && S.rng() < 0.6) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(ST.pick(S, PREG), m); }
       return t;
     }
     return ST.fmt(ST.pick(S, LUST), m) + JS.R18.sex(S, X, Y, { mood: 'rough', fore: false }) + (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + '仲間が二人を引き剥がしたとき、' + X.name + 'の掌の口は、まだ物欲しげに開いたり閉じたりしていた。';
@@ -45,6 +45,7 @@
   JS.R18.cave = function (S, live) {
     var PL = S.place, rng = S.rng, lv = S.env.jlewd / 100, R = M();
     if (HK.State) live = live.filter(HK.State.mobSexOk);
+    if (HK.Content && !HK.Content.ok(S, 'force')) return;
     if (!PL || PL.id === 'cave' || (!PLACE[PL.id] && PL.id !== 'bamboo')) return cave0(S, live);
     /* 眷属に襲われるのは、攻めを選んでいない人だけ */
     live = live.filter(function (q) { return !(HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(q) : JS.R18.hardTop(q)); });
@@ -61,7 +62,7 @@
       ST.say(S, { actors: [p], tag: PL.name, kind: 'climax', text: t + p.name + 'は、最後まで声を漏らさなかった。指が去ったあと、' + p.name + 'の唇には血が滲んでいた。', why: '無音堂の何かに弄ばれた。声を出さずに耐えた（CP）', mag: 28 });
       return;
     }
-    if (rng() < lv * 0.4) p.preg = true;
+    if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < lv * 0.4) p.preg = true;
     ST.say(S, { actors: [p], tag: PL.name, kind: 'climax', text: (R ? R.resist(S, 'god', p, { endure: false }) : '') + ST.fmt(ST.pick(S, PLACE[PL.id]), { a: p.name, g: S.G.call }) + (R ? R.moans(S, p, ['mid', 'climax']) + R.npc(S, 'god', p) : '') + (p.preg ? '下腹に、熱いものが宿った感覚があった。' : ''), why: PL.name + 'の眷属に襲われた' + (p.preg ? '（疑似妊娠）' : ''), mag: 26 });
   };
 })();

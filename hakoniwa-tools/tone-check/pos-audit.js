@@ -79,6 +79,8 @@ const { openBuild } = require('./lib.js');
         ENVSET.forEach(kv => { env[kv[0]] = isNaN(+kv[1]) ? kv[1] : +kv[1]; });
         const ties = (cast.ties || []).filter(t => t.a < n && t.b < n);
         let res;
+        /* 内容のスイッチ（content.js）：指定がなければすべて入にして、いちばん広く回す */
+        if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
         try { res = HK.simulate({ scenId: sc, seed: 2000 + s, env, chars, perChar, ties }); } catch (e) { out.err.push(sc + ': ' + String(e && e.stack || e).slice(0, 300)); continue; }
         out.runs++; out.bySc[sc].runs++;
         const tops = chars.filter(c => P.hardTop(c));

@@ -445,6 +445,8 @@
     if (!X2 || !a || !d) return false;
     /* R18に参加しない人・「恋人だけ（モブにも襲われない）」の人は、星の生命体との場面にしない */
     if (HK.State && !HK.State.mobSexOk(a)) return false;
+    /* 「合意のない展開」が切なら、攻めに回る人（生き物を組み伏せる側）だけ */
+    if (HK.Content && !HK.Content.ok(S, 'force') && !(HK.Pos && HK.Pos.hardTopNpc(a))) return false;
     var ms = X2.modes(d).filter(function (m) { return !onlyMode || m[0] === onlyMode; });
     if (!ms.length) return false;
     var m = HK.weighted(rng, ms, function (x) { return x[1]; })[0];
@@ -543,7 +545,7 @@
       var sk = skill(b, 'fight') * 0.45 + Math.max.apply(null, tm.map(function (q) { return skill(q, 'talk'); })) * 0.3 + Math.max(0, bond(S, b, a)) * 0.3 + tm.length * 0.05;
       var diff = 0.45 + Pn.civ.d.rare * 0.05 + (Pn.civ.d.state === 'advanced' ? 0.12 : 0) + S.env.danger / 100 * 0.1;
       /* 研究（R18）：自分で攻めを選んだ人は、受けにならない */
-      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTopNpc(a)) && !(HK.State && !HK.State.mobSexOk(a)) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
+      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTopNpc(a)) && !(HK.State && !HK.State.mobSexOk(a)) && (!HK.Content || HK.Content.ok(S, 'force')) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
         a.labbed = true; a.cnt.r18 = (a.cnt.r18 || 0) + 1;
         ST.say(S, { actors: [a], tag: '研究', kind: 'climax', text: F(pk(S, SH.X.lab), { a: a.name, x: Pn.civ.d.name }), why: Pn.civ.d.name + 'は、' + a.name + 'を「標本」として調べた', mag: 30 });
       }
@@ -575,7 +577,7 @@
       if (a.awayM >= 3) { a.gone = true; a.fate = '遭難して行方不明（' + S.m + 'か月目）'; ST.say(S, { actors: [a], tag: '行方不明', text: F(pk(S, C.LOST_GONE), { a: a.name }), why: '三か月探しても見つからなかった', mag: 30 }); }
     });
     /* 異種族の誘い（R18）：友好的だと思ってついていったら、言葉が通じず、誘われていたとは気づかなかった */
-    if (r18on(S) && SH.X && live(S).length >= 2 && rng() < S.env.slewd / 100 * 0.15) lure(S);
+    if (r18on(S) && SH.X && live(S).length >= 2 && (!HK.Content || HK.Content.ok(S, 'force')) && rng() < S.env.slewd / 100 * 0.15) lure(S);
     /* 研究のための誘拐（文明のある星） */
     if (Pn.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(Pn.civ.d.state) && live(S).length >= 2 && rng() < 0.05 + S.env.danger / 100 * 0.08) {
       var v = HK.weighted(rng, live(S), function (q) { return 0.5 + q.cnt.find * 0.3; });
@@ -864,6 +866,7 @@
   /* 異星の生き物：自分で攻めを選んだ人は、手懐けて主導権を握る */
   function alienR18(S, a, d) {
     if (HK.State && !HK.State.mobSexOk(a)) return;
+    if (HK.Content && !HK.Content.ok(S, 'force') && !(HK.Pos && HK.Pos.hardTopNpc(a))) return;
     if (SH.X2 && S.rng() < 0.75 && xeno(S, a, d)) return;
     var R = SH.R18, top = HK.Pos && HK.Pos.hardTopNpc(a);
     var X = SH.X, sp = !top && X && X.play[d.kind] && S.rng() < 0.6 ? X.play[d.kind] : null;

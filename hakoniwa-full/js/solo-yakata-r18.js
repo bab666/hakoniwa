@@ -114,6 +114,8 @@
   /* 快楽殺人の起きやすさ：冷酷さ・FCの高い犯人ほど少しなりやすい */
   function pleasure(S, env, cul) {
     if (HK.SAFE_ON) return null;
+    /* 快楽殺人は「暴力をともなう性描写」（内容のスイッチ）が入のときだけ */
+    if (HK.Content && !HK.Content.on(env, 'violence')) return 'no';
     var v = env.ypleasure; if (v == null) v = 15;
     if (v <= 0) return 'no';
     var t = cul && cul.tr ? cul.tr : {};
@@ -294,6 +296,7 @@
         if (q.noMob) return;
         if (rng() < 0.5) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, PL('solo', SC.solo)), { a: q.name }) + (lwEro(S) ? soloEro(S, q) : HK.R18M ? HK.R18M.solo(S, q) : '') + (!lwEro(S) && lwHi(S) ? F(ST.pick(S, Y_ERO.soloAgainN), { a: q.name }) : ''), why: '相手がいなかった' }, q.name + 'は一人で悶えた');
         else if (HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(q) : hardTop(q)) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(ST.pick(S, SERVANT_TOP), { a: q.name }) + (lwEro(S) ? topEro(S, q) : (HK.R18M ? HK.R18M.say(S, q, 'top') : '') + (lwHi(S) ? F(ST.pick(S, Y_ERO.topAgain), { a: q.name }) : '')), why: '館の使用人が慰めに来たが、' + q.name + 'のほうが組み伏せた（受け攻めの指定：攻め）' }, q.name + 'は使用人と');
+        else if (HK.Content && !HK.Content.ok(S, 'force')) return;
         else ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: HK.JDark && HK.JDark.roll(S, q) ? HK.JDark.text(S, 'servant', q) : F(ST.pick(S, PL('servant', SC.servant)), { a: q.name }) + (HK.R18M ? HK.R18M.npc(S, 'servant') + pz(S, q, 'react') + HK.R18M.moans(S, q, ['start', 'mid', 'climax']) : ''), why: '館の使用人に慰められた' }, q.name + 'は使用人と');
       });
       /* 正気の人が現場を守ると、手がかりは失われない */
@@ -327,7 +330,7 @@
     var others = live.filter(function (q) { return q !== c && q !== S.acc && !q.locked; });
     var EV = [];
     /* 凌辱：快楽殺人の犯人だけ */
-    if (cOk && S.mot.id === 'pleasure' && !c.lock) {
+    if (cOk && S.mot.id === 'pleasure' && !c.lock && (!HK.Content || (HK.Content.ok(S, 'violence') && HK.Content.ok(S, 'force')))) {
       var vs = others.filter(function (q) { return cTop(q); });
       if (vs.length) EV.push({ w: 3 + c.tr.cold * 2, f: function () {
         var v = HK.weighted ? HK.weighted(rng, vs, function (q) { return 1 + q.m.fear / 50 + (q.tr.caution < 0.4 ? 1 : 0); }) : rng.pick(vs);
@@ -342,8 +345,8 @@
         else { v.m.fear = Math.min(100, v.m.fear + 35); v.cnt.clue = Math.max(0, v.cnt.clue - 1); v.violated = true; }
       } });
     }
-    /* 犯人の脅し：手がかりを掴んだ人を体で黙らせる */
-    if (cOk) {
+    /* 犯人の脅し：手がかりを掴んだ人を体で黙らせる（「合意のない展開」が入のときだけ） */
+    if (cOk && (!HK.Content || HK.Content.ok(S, 'force'))) {
       var hs = others.filter(function (q) { return (q.cnt.clue > 0 || q.approached) && !q.isDet && cTop(q); });
       if (hs.length) EV.push({ w: 1 + c.tr.cold + (S.mot.id === 'pleasure' ? 1 : 0), f: function () {
         var v = hs.sort(function (a, b) { return b.cnt.clue - a.cnt.clue; })[0];

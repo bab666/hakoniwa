@@ -56,6 +56,7 @@ js/tone-sondai.js
 js/tone-stern.js
 js/tone-long.js
 js/engine.js
+js/content.js
 js/ero-kit.js
 js/ero-moan-tone.js
 js/novel-moan-tone.js

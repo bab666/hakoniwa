@@ -8,6 +8,7 @@
   var HK = window.HK, JS = HK.JASHIN, ST = HK.Story, scen = HK.SCENARIOS && HK.SCENARIOS.jashin;
   if (!JS || !scen || !ST) return;
   function L(s) { return s.split('|'); }
+  scen.env.push({ id: 'jyobai', label: '村人・神の夜の割合', min: 0, max: 100, def: 100, lo: '住人どうしだけ', hi: 'いつもどおり', desc: '夜の出来事のうち、夜這い・夢の神・清めの湯・神ごとの夜になる割合。0なら住人どうしの夜だけ（夜の出来事の起こりやすさ・内容のスイッチと合わせて効く）' });
   scen.env.push({ id: 'jlewd', label: '夜の出来事の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: '毎晩', desc: '媚薬の食事・夜這い・参加者どうしの夜・儀式での行為の起きやすさ' });
 
   var MEAL = L('歓迎の膳には、山菜と川魚と、甘い香りの濁り酒が並んだ。|女将が「村の名物です」と、とろりとした汁物をよそった。|夕餉の膳に、見たことのない赤い茸が添えられていた。');
@@ -315,7 +316,10 @@
       var top = HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(p) : hardTop(p);
       var r0 = rng();
       /* 「恋人だけ（モブにも襲われない）」の人：夢の神・清めの湯・村人の夜這いには進まず、住人どうしの夜だけ */
-      if (p.noMob) { if (!mates.length) return false; r0 = 0.5; }
+      /* 「合意のない展開」が切なら、夢の神・憑依・清めの湯・夜這いには進まず、住人どうしの夜だけ */
+      var frc = !HK.Content || HK.Content.ok(S, 'force');
+      var yob = S.env.jyobai == null ? 1 : S.env.jyobai / 100;
+      if (p.noMob || !frc || rng() > yob) { if (!mates.length) return false; r0 = 0.5; }
       /* 夢の中で神に抱かれる */
       if (r0 < 0.16 + (S.G.myth ? 0.06 : 0)) {
         /* 自分で攻めを選んだ人は、夢の中でも神に抱かれない（抗い、逆に屈服させる） */
@@ -323,7 +327,7 @@
           ST.say(S, { actors: [p], tag: '夢', text: ST.fmt(ST.pick(S, DREAM_TOP), { a: p.name, g: S.G.call }), why: S.G.call + 'が夢に現れたが、' + p.name + 'は抗った（受け攻めの指定：攻め）', mag: 22 });
           return true;
         }
-        if (rng() < 0.2 + lv * 0.2) p.preg = true;
+        if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < 0.2 + lv * 0.2) p.preg = true;
         var dt = ST.fmt(DREAM_GOD[S.G.id] && rng() < 0.75 ? ST.pick(S, DREAM_GOD[S.G.id]) : ST.pick(S, DREAM), { a: p.name, g: S.G.call });
         /* たまに長い版（jashin-dark-thick.js） */
         var dLong = HK.JDark && HK.JDark.roll(S, p) ? HK.JDark.text(S, 'dream', p) : '';
@@ -346,7 +350,7 @@
         return true;
       }
       /* 参加者どうし（媚薬が回っている二人ほど） */
-      if (mates.length && (p.noMob || rng() < 0.4 + (p.aphro ? 0.15 : 0))) {
+      if (mates.length && (r0 === 0.5 || rng() < 0.4 + (p.aphro ? 0.15 : 0))) {
         var q = rng.pick(mates); q.lastNight = h; q.cnt.r18 = (q.cnt.r18 || 0) + 1;
         var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
         var rough = S.ygo && (X.viol > 30 || Y.viol > 30);
@@ -355,7 +359,7 @@
         /* 主導する側が女性・相手が男性なら、導入の文も跨る書き方に（合意の場面だけ） */
         if (!rough && HK.FM && HK.FM.fixWith && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm') t0 = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, t0, X, Y.name);
         var t = t0 + pairSex(S, X, Y, { mood: rough ? 'rough' : p.aphro || q.aphro ? 'drug' : 'love', fore: false });
-        if (rng() < 0.5 + lv * 0.3) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(ST.pick(S, PREG), { y: Y.name }); }
+        if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < 0.5 + lv * 0.3) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(ST.pick(S, PREG), { y: Y.name }); }
         if (rng() < 0.5) t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + pz(S, Y, 'mutual');
         p.m.fear = Math.max(0, p.m.fear - 8); q.m.fear = Math.max(0, q.m.fear - 8);
         var strm = [X, Y].filter(function (c) { return c.job === 'streamer'; })[0];
@@ -372,7 +376,7 @@
         ST.say(S, { actors: [p], tag: '夜這い', kind: 'climax', text: ST.fmt(ST.pick(S, PRANK), { a: p.name }) + (HK.R18M ? HK.R18M.moans(S, p, ['start', 'mid', 'climax']) : ''), why: 'ドッキリだと思い込んでいたので、拒まなかった', mag: 26 });
         return true;
       }
-      if (!top && rng() < 0.3 + lv * 0.3) p.preg = true;
+      if ((!HK.Content || HK.Content.ok(S, 'preg')) && !top && rng() < 0.3 + lv * 0.3) p.preg = true;
       ST.say(S, { actors: [p], tag: '夜這い', kind: 'climax', text: (function () { var M = HK.R18M, ma = { a: p.name }; if (!top && HK.JDark && HK.JDark.roll(S, p)) return HK.JDark.text(S, 'yobai', p); if (!M) return ST.fmt(ST.pick(S, top ? YOBAI_TOP : YOBAI), ma); if (top) return ST.fmt(ST.pick(S, HK.Pos && HK.Pos.isF(p) ? YOBAI_TOP_F : YOBAI_TOP), ma) + M.say(S, p, 'top') + ST.fmt(ST.pick(S, YOBAI_TOP_NPC), ma) + (HK.Pos && HK.Pos.isF(p) ? '' : M.say(S, p, 'topc')); if (!p.aphro || M.isStrong(p)) return ST.fmt(ST.pick(S, YOBAI_FORCE), ma) + M.resist(S, { name: '村の男' }, p, { endure: false }) + ST.fmt(ST.pick(S, YOBAI_ACT), ma) + pz(S, p, 'react') + M.say(S, p, 'endure'); return ST.fmt(ST.pick(S, YOBAI), ma) + M.npc(S, 'villager') + pz(S, p, 'react') + M.moans(S, p, ['start', 'mid', 'climax']); })() + (p.preg && !top ? ST.fmt(ST.pick(S, PREG), { y: p.name }) : '') + (!top && rng() < 0.6 ? pz(S, p, 'after') : ''), why: '村人の夜這い' + (p.aphro ? '（媚薬で抗えなかった）' : ''), mag: 26 });
       if (p.job === 'streamer') streamAfter(S, p, '村人', !top);
       return true;
@@ -381,11 +385,12 @@
     cave: function (S, live) {
       var rng = S.rng, lv = S.env.jlewd / 100;
       if (HK.State) live = live.filter(HK.State.mobSexOk);
+      if (HK.Content && !HK.Content.ok(S, 'force')) return;
       /* 眷属に襲われるのは、攻めを選んでいない人だけ */
       live = live.filter(function (q) { return !(HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(q) : hardTop(q)); });
       if (!live.length || rng() > lv * 0.6) return;
       var p = rng.pick(live); p.cnt.r18 = (p.cnt.r18 || 0) + 1;
-      if (rng() < lv * 0.4) p.preg = true;
+      if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < lv * 0.4) p.preg = true;
       p.m.fear = Math.min(100, p.m.fear + 8);
       var cLong = HK.JDark && HK.JDark.roll(S, p) ? HK.JDark.text(S, 'cave', p) : '';
       ST.say(S, { actors: [p], tag: '洞窟', kind: 'climax', text: (cLong || (HK.R18M ? HK.R18M.resist(S, 'god', p, { endure: false }) : '') + ST.fmt(ST.pick(S, CAVE), { a: p.name, g: S.G.call }) + (HK.R18M ? HK.R18M.npc(S, 'god', p) : '')) + (p.preg ? (cLong ? '\n\n' : '') + '下腹に、熱いものが宿った感覚があった。' : ''), why: '洞窟の眷属に襲われた' + (p.preg ? '（疑似妊娠）' : ''), mag: 26 });
@@ -394,6 +399,7 @@
     ritual: function (S, vic) {
       var rng = S.rng, lv = S.env.jlewd / 100;
       if (HK.State && !HK.State.mobSexOk(vic)) return null;
+      if (HK.Content && !HK.Content.ok(S, 'force')) return null;
       if (rng() > 0.35 + lv * 0.6) return null;
       var top = HK.Pos && HK.Pos.vsNpc(vic, '') === 'top';
       /* 自分で攻めを選んだ人は、祭壇の上でも抱かれない。神に抗い、逆にねじ伏せる */
@@ -401,7 +407,7 @@
       var strong = HK.R18M && HK.R18M.isStrong(vic);
       var rLong = HK.JDark && HK.JDark.roll(S, vic);
       var t = rLong ? HK.JDark.text(S, 'ritual', vic) + '\n\n' : (strong ? HK.R18M.resist(S, 'crowd', vic, { endure: false }) : '') + ST.fmt(ST.pick(S, RITUAL), { a: vic.name, g: S.G.call }) + pz(S, vic, 'rite') + (HK.R18M ? (strong ? HK.R18M.say(S, vic, 'endure') : HK.R18M.moans(S, vic, ['start', 'mid', 'climax'])) + HK.R18M.npc(S, 'god', vic) : '');
-      var miko = !top && rng() < (vic.preg ? 0.75 : 0.25 + lv * 0.25);
+      var miko = !top && (!HK.Content || HK.Content.ok(S, 'preg')) && rng() < (vic.preg ? 0.75 : 0.25 + lv * 0.25);
       if (miko) t += ST.fmt(ST.pick(S, MIKO), { a: vic.name });
       else t += vic.name + 'の姿は、それきり誰の目にも映らなかった。';
       return { text: t, miko: miko };

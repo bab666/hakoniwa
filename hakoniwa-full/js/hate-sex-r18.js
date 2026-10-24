@@ -122,6 +122,8 @@
     /* 敵対しているか（関係のライバル・不仲・敵対、または嫌悪レベル35以上）。体の関係になれない組・恋愛の対象にならない組は除く */
     hostile: function (x, a, b) {
       if (!a || !b || a === b || HK.SAFE_ON) return false;
+      /* 敵対する二人の強引なエッチは「合意のない展開」（内容のスイッチ） */
+      if (HK.Content && !HK.Content.ok(x, 'force')) return false;
       if (HK.ngPair && HK.ngPair(a, b)) return false;
       if (x.pair && x.pair(a, b).kin) return false;
       if (HK.Pos && !HK.Pos.okSex(a, b)) return false;

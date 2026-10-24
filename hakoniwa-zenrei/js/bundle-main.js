@@ -7237,6 +7237,38 @@
     };
   }
 })();
+;/* ==== js/content.js ==== */
+/* 箱庭シミュレーター: 内容のスイッチ（R18版の設定。全箱庭で共通）
+   刺激の強い要素を、遊ぶ人が入れ切りできるようにする。既定はすべて切（見たい人だけ入れる）。
+   ・設定は画面の「内容のスイッチ」で選び、シミュレーションには env.ct（入れたものの id をカンマでつないだ文字列）で渡す
+   ・出来事の側は HK.Content.on(env, 'force') のように確かめ、切なら起こさない（またはやわらかい分岐に替える）
+   ・全年齢版・全年齢モードでは、どれも常に切
+   ・近親は、関係ごとの「恋愛：あり」がそのままスイッチ（ここでは扱わない）
+   ・R18が中心の箱庭（エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ・マッサージ）は、題材そのものが合意のない展開なので「合意のない展開」は効かせない */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK) return;
+  var C = HK.Content = {
+    TAGS: [
+      { id: 'force', label: '合意のない展開', desc: '夜這い・略奪者やゾンビに襲われる・神や眷属の夜・生贄の儀式・執着の監禁の夜・敵対する二人の強引なエッチ・星の生命体に攫われる など' },
+      { id: 'preg', label: '妊娠・孕む描写', desc: '邪神村の疑似妊娠・巫女、行為のあとに孕む描写' },
+      { id: 'violence', label: '暴力をともなう性描写', desc: '吹雪の館の快楽殺人・凌辱など、暴力と性が結びつく場面' },
+      { id: 'abuse', label: 'DVなど歪んだ関係', desc: '関係「歪んだ関係」の支配・暴言・暴力の場面' }
+    ],
+    CORE: { dungeon: 1, hole: 1, kaihen: 1, succubus: 1, variety: 1, massage: 1 },
+    /* env（箱庭の ctx.env・物語型の S.env）で、その内容が入になっているか */
+    on: function (env, tag, scenId) {
+      if (HK.SAFE_ON) return false;
+      if (tag === 'force' && scenId && C.CORE[scenId]) return true;
+      var c = env && env.ct;
+      if (c == null || c === '') return false;
+      return (',' + c + ',').indexOf(',' + tag + ',') >= 0;
+    },
+    /* ctx・S のどちらでも（env と scen を中から取る） */
+    ok: function (x, tag) { return C.on(x && x.env, tag, x && x.scen && x.scen.id); }
+  };
+})();
 ;/* ==== js/fwb.js ==== */
 /* 箱庭シミュレーター: 甘い恋だけでなく「セフレ」に落ち着く流れ（全箱庭共通。クラスメイトとバトルロワイヤルは除く）
    一線を越えたあと、恋人にならずに体の関係だけを続けるかどうかを、二人の気質で決める */
@@ -22423,7 +22455,7 @@
         return { with: actors, text: t, why: why + '：けがを負った（化膿すると危ない）', mag: 18 };
       }
       /* まれに、犯される展開になる（R18版のみ。襲われる人が「攻め」指定でないときだけ） */
-      if (Z.ZA_TEXT && Z.zombieAssault && Z.loveLv(ctx) !== 'off' && !(HK.Pos && !HK.Pos.canReceive(v)) && !(HK.State && !HK.State.mobSexOk(v)) && !v.z.zassault && rng() < 0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) {
+      if (Z.ZA_TEXT && Z.zombieAssault && Z.loveLv(ctx) !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) && !(HK.Pos && !HK.Pos.canReceive(v)) && !(HK.State && !HK.State.mobSexOk(v)) && !v.z.zassault && rng() < (0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) * (ctx.env.zlust == null ? 1 : ctx.env.zlust / 50)) {
         v.z.zassault = true;
         var ra = Z.zombieAssault(ctx, v, [a].concat(mates).filter(function (o, i, arr) { return o !== v && arr.indexOf(o) === i; }), A);
         ra.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
@@ -40056,6 +40088,8 @@
     if (!X2 || !a || !d) return false;
     /* R18に参加しない人・「恋人だけ（モブにも襲われない）」の人は、星の生命体との場面にしない */
     if (HK.State && !HK.State.mobSexOk(a)) return false;
+    /* 「合意のない展開」が切なら、攻めに回る人（生き物を組み伏せる側）だけ */
+    if (HK.Content && !HK.Content.ok(S, 'force') && !(HK.Pos && HK.Pos.hardTopNpc(a))) return false;
     var ms = X2.modes(d).filter(function (m) { return !onlyMode || m[0] === onlyMode; });
     if (!ms.length) return false;
     var m = HK.weighted(rng, ms, function (x) { return x[1]; })[0];
@@ -40154,7 +40188,7 @@
       var sk = skill(b, 'fight') * 0.45 + Math.max.apply(null, tm.map(function (q) { return skill(q, 'talk'); })) * 0.3 + Math.max(0, bond(S, b, a)) * 0.3 + tm.length * 0.05;
       var diff = 0.45 + Pn.civ.d.rare * 0.05 + (Pn.civ.d.state === 'advanced' ? 0.12 : 0) + S.env.danger / 100 * 0.1;
       /* 研究（R18）：自分で攻めを選んだ人は、受けにならない */
-      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTopNpc(a)) && !(HK.State && !HK.State.mobSexOk(a)) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
+      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTopNpc(a)) && !(HK.State && !HK.State.mobSexOk(a)) && (!HK.Content || HK.Content.ok(S, 'force')) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
         a.labbed = true; a.cnt.r18 = (a.cnt.r18 || 0) + 1;
         ST.say(S, { actors: [a], tag: '研究', kind: 'climax', text: F(pk(S, SH.X.lab), { a: a.name, x: Pn.civ.d.name }), why: Pn.civ.d.name + 'は、' + a.name + 'を「標本」として調べた', mag: 30 });
       }
@@ -40186,7 +40220,7 @@
       if (a.awayM >= 3) { a.gone = true; a.fate = '遭難して行方不明（' + S.m + 'か月目）'; ST.say(S, { actors: [a], tag: '行方不明', text: F(pk(S, C.LOST_GONE), { a: a.name }), why: '三か月探しても見つからなかった', mag: 30 }); }
     });
     /* 異種族の誘い（R18）：友好的だと思ってついていったら、言葉が通じず、誘われていたとは気づかなかった */
-    if (r18on(S) && SH.X && live(S).length >= 2 && rng() < S.env.slewd / 100 * 0.15) lure(S);
+    if (r18on(S) && SH.X && live(S).length >= 2 && (!HK.Content || HK.Content.ok(S, 'force')) && rng() < S.env.slewd / 100 * 0.15) lure(S);
     /* 研究のための誘拐（文明のある星） */
     if (Pn.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(Pn.civ.d.state) && live(S).length >= 2 && rng() < 0.05 + S.env.danger / 100 * 0.08) {
       var v = HK.weighted(rng, live(S), function (q) { return 0.5 + q.cnt.find * 0.3; });
@@ -40475,6 +40509,7 @@
   /* 異星の生き物：自分で攻めを選んだ人は、手懐けて主導権を握る */
   function alienR18(S, a, d) {
     if (HK.State && !HK.State.mobSexOk(a)) return;
+    if (HK.Content && !HK.Content.ok(S, 'force') && !(HK.Pos && HK.Pos.hardTopNpc(a))) return;
     if (SH.X2 && S.rng() < 0.75 && xeno(S, a, d)) return;
     var R = SH.R18, top = HK.Pos && HK.Pos.hardTopNpc(a);
     var X = SH.X, sp = !top && X && X.play[d.kind] && S.rng() < 0.6 ? X.play[d.kind] : null;
@@ -43322,6 +43357,15 @@
     if (src !== S.glob && HK.Lewd) HK.Lewd.norm(scenId, src);
     return src[e.id] == null ? e.def : src[e.id];
   }
+  /* 内容のスイッチ：全箱庭で共通の入れ切り（S.glob.ct）。R18版だけ */
+  function ctOn() { var m = (S.glob && S.glob.ct) || {}; return (HK.Content ? HK.Content.TAGS : []).filter(function (t) { return m[t.id]; }).map(function (t) { return t.id; }); }
+  function contentBox() {
+    if (!HK.Content || HK.SAFE_ON) return '';
+    var m = (S.glob && S.glob.ct) || {};
+    return '<div class="envitem wide"><div class="lab"><span>内容のスイッチ（全箱庭で共通・初期はすべて切）</span></div><div class="ctbox">' +
+      HK.Content.TAGS.map(function (t) { return '<label title="' + esc(t.desc) + '"><input type="checkbox" data-f="ct" data-k="' + t.id + '"' + (m[t.id] ? ' checked' : '') + '> ' + esc(t.label) + '</label>'; }).join('') +
+      '</div><div class="desc">入れたものだけが起きます。切のときは、その場面を起こさないか、やわらかい分岐に替えます。エロトラップダンジョンなどR18が中心の箱庭では「合意のない展開」は常に入です。</div></div>';
+  }
   function envItem(e, scenId) {
     var v = envVal(e, scenId), g = HK.GLOBAL_ENV.indexOf(e) >= 0 ? '1' : '0';
     if (e.type === 'text') {
@@ -43451,7 +43495,7 @@
 
     var html =
       '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' +
-      '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + ' <span class="envbtns"><button type="button" class="mini" data-act="envreset" title="この箱庭の環境値を初期値に戻す">初期値に戻す</button><button type="button" class="mini" data-act="envrand" title="環境値をランダムに決める（文字の項目はそのまま）">ランダム</button></span></h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + '</div></div>' +
+      '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + ' <span class="envbtns"><button type="button" class="mini" data-act="envreset" title="この箱庭の環境値を初期値に戻す">初期値に戻す</button><button type="button" class="mini" data-act="envrand" title="環境値をランダムに決める（文字の項目はそのまま）">ランダム</button></span></h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + contentBox() + '</div></div>' +
       '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
       '<h2 class="sec">' + (scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
@@ -43490,6 +43534,8 @@
     var env = {};
     var scen = HK.SCENARIOS[S.scenId];
     genv(scen).forEach(function (e) { env[e.id] = envVal(e, S.scenId); });
+    /* 内容のスイッチ（content.js。全箱庭で共通）：入にしたものの id をカンマでつないで渡す */
+    if (HK.Content && !HK.SAFE_ON) env.ct = ctOn().join(',');
     return {
       scenId: S.scenId, seed: seed, env: env,
       chars: (function () {
@@ -43768,6 +43814,10 @@
       refreshRow(row, c, true);
     }
     else if (f === 'scen') { S.scenId = t.value; save(); renderBox(); return; }
+    else if (f === 'ct') {
+      S.glob.ct = S.glob.ct || {};
+      if (t.checked) S.glob.ct[t.dataset.k] = 1; else delete S.glob.ct[t.dataset.k];
+    }
     else if (f === 'env') {
       var src = t.dataset.g === '1' ? S.glob : (S.env[S.scenId] = S.env[S.scenId] || {});
       src[t.dataset.k] = t.type === 'range' ? +t.value : t.value;
@@ -44731,7 +44781,9 @@
       ctx.mod(b, a, { ten: 15, trust: -15 }); s.lv = clamp(s.lv - (end === 'release' ? 25 : 10), 0, 100); s.climax = null;
       return { with: c ? [b, c] : [b], cat: end === 'rescue' ? 'help' : 'conflict', text: F(ctx, T(ctx, end, !c), a, b, c), why: a.name + (SAFE() ? 'の囲い込み（' : 'による監禁（') + days + '区切りで終わった）', mag: 30 };
     }
-    var night = !safe && opt.night !== false && ctx.romanceOk([a, b]) && HK.Pos && HK.Pos.okSex && HK.Pos.okSex(a, b) && ctx.rng() < 0.55;
+    /* 監禁の夜：受け入れている・共依存でなければ「合意のない展開」（内容のスイッチ）が入のときだけ */
+    var stn0 = O.stance(ctx, b, a);
+    var night = !safe && opt.night !== false && (stn0 === 'mutual' || stn0 === 'accept' || (!HK.Content || HK.Content.ok(ctx, 'force'))) && ctx.romanceOk([a, b]) && HK.Pos && HK.Pos.okSex && HK.Pos.okSex(a, b) && ctx.rng() < 0.55;
     if (night) {
       var ord = HK.Pos.order(a, b), top = ord[0] === a;
       ctx.pair(a, b).night = true;
@@ -45259,7 +45311,7 @@
     if (isSafe) return [];
     var out = [], om = ctx.om, stn = O.stance(ctx, b, a);
     /* 奪う番：αが攻めに回る組だけ */
-    if (sx(a) === 'a' && sx(b) === 'o' && BD.canBite(ctx, a, b) && okSex(a, b) && order(a, b)[0] === a)
+    if (sx(a) === 'a' && sx(b) === 'o' && BD.canBite(ctx, a, b) && okSex(a, b) && order(a, b)[0] === a && (stn === 'mutual' || stn === 'accept' || (!HK.Content || HK.Content.ok(ctx, 'force'))))
       out.push(['forceBite', (ty === 'bind' || ty === 'purge' ? 3.2 : 2) * (OM.destiny ? 0.6 + OM.destiny(ctx) * 0.8 : 1), function () {
         var given = stn === 'mutual' || stn === 'accept';
         BD.bite(ctx, a, b, given ? 'yan' : 'force');

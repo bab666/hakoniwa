@@ -11,6 +11,11 @@
   var HK = window.HK, Z = HK.ZB;
   if (!Z || !Z.scen || !HK.TL) return;
   var TL = HK.TL;
+  /* 略奪者に襲われる出来事・ゾンビの性欲（R18版だけの設定。どちらも内容のスイッチ「合意のない展開」が入のときだけ起きる） */
+  if (!HK.SAFE_ON && !Z.scen.env.some(function (e) { return e.id === 'zraid'; })) {
+    Z.scen.env.push({ id: 'zraid', label: '略奪者に襲われる出来事', type: 'select', def: 'on', options: [{ v: 'on', label: 'あり' }, { v: 'off', label: 'なし' }], desc: '略奪者に性的に襲われる展開（内容のスイッチの「合意のない展開」も入にしたときだけ）' });
+    Z.scen.env.push({ id: 'zlust', label: 'ゾンビの性欲', min: 0, max: 100, def: 50, lo: '襲うだけ', hi: '飢えている', desc: 'ゾンビに性的に襲われる展開の起きやすさ（内容のスイッチの「合意のない展開」も入にしたときだけ）' });
+  }
   function L(s) { return s.split('|'); }
   /* 「＠……」は住人以外（略奪者）の台詞。口調を変えないよう、見えない印（U+2060）に置き換える */
   function fill(t, m) { return t.replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }).replace(/「＠/g, '「⁠'); }
