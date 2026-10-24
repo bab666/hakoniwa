@@ -81,6 +81,8 @@
     if (!a || !b || a === b) return [];
     /* 恋愛・R18にしない組（engine.js の HK.ngPair）は、どちらの向きでも成り立たない */
     if (HK.ngPair && HK.ngPair(a, b)) return [];
+    /* 性行為の相手を別の人に固定している人（engine.js の HK.sexNG）も、体の関係にならない */
+    if (HK.sexNG && HK.sexNG(a, b)) return [];
     var out = [];
     [[a, b], [b, a]].forEach(function (o) {
       var t = o[0], u = o[1];

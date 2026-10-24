@@ -36,7 +36,7 @@
     this.chars = input.chars.map(function (c, i) {
       var pc = (input.perChar && input.perChar[i]) || {};
       return {
-        i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], name: c.name, eg: c.eg, tr: HK.traits(c.eg), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, lock: c.loveLock == null || c.loveLock === '' || isNaN(+c.loveLock) ? null : +c.loveLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder,
+        i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], name: c.name, eg: c.eg, tr: HK.traits(c.eg), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, lock: c.loveLock == null || c.loveLock === '' || isNaN(+c.loveLock) ? null : +c.loveLock, sexLock: c.sexLock == null || c.sexLock === '' || isNaN(+c.sexLock) ? null : +c.sexLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder,
         hp: 100, alive: true, out: false, stress: 0,
         stats: {}, statsRaw: pc.stats || {}, weaponPick: pc.weapon || 'random',
         actionPick: pc.action || 'auto', goalPick: pc.goal || 'auto', role: pc.role || '', pick: pc.pick || {},
@@ -68,6 +68,11 @@
     return !!((a.coNG && a.coNG.indexOf(b.i) >= 0) || (b.coNG && b.coNG.indexOf(a.i) >= 0));
   };
   HK.lockBlocks = function (a, b) { return HK.ngPair(a, b); };
+  /* 性行為の相手の固定（キャラの設定 sexLock）：決めた相手以外とは体の関係にならない（恋愛は縛らない）。相手が箱庭にいなければ誰とも */
+  HK.sexNG = function (a, b) {
+    if (!a || !b || a === b) return false;
+    return (a.sexLock != null && a.sexLock !== b.i) || (b.sexLock != null && b.sexLock !== a.i);
+  };
   HK.canLove = function (a, b) {
     if (HK.ngPair(a, b)) return false;
     /* 恋愛相手を決めた人は、その相手以外とは恋愛しない（相手が箱庭にいなければ誰とも） */

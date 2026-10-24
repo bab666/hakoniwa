@@ -12,7 +12,7 @@
     var S = { scen: scen, rng: HK.rng(input.seed), env: env, log: [], hist: [], turns: [], recent: [], step: 0, label: '', flags: {} };
     S.P = input.chars.map(function (c, i) {
       var pc = (input.perChar && input.perChar[i]) || {};
-      var p = { i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder, name: c.name, eg: c.eg, tr: HK.traits(c.eg), topWhy: HK.voiceTopWhy(c), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, pick: pc.pick || {}, stats: {}, m: {}, cnt: {}, notes: [], fate: '' };
+      var p = { i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock, sexLock: c.sexLock === '' || c.sexLock == null || isNaN(+c.sexLock) ? null : +c.sexLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder, name: c.name, eg: c.eg, tr: HK.traits(c.eg), topWhy: HK.voiceTopWhy(c), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, pick: pc.pick || {}, stats: {}, m: {}, cnt: {}, notes: [], fate: '' };
       /* 台詞の表を引く因子（口調に近い因子、なければいちばん強い因子。同点なら、この回の中で一つに決める） */
       p.top = HK.voiceTop(c);
       p.persona = HK.personaOf(p);

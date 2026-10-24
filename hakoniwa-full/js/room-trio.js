@@ -117,7 +117,7 @@
   /* 中心のある円満な三人：中心の人が二人の両方と交われるなら、中心だけが二人と繋がる形 */
   function loveShape(ctx, g) {
     var hm = harmonyOf(ctx, g), cl = hm && clashOf(ctx, g);
-    if (!hm || (hm.full && !cl)) return null;
+    if (!hm || (hm.full && !cl) || sexLockOut(g)) return null;
     /* 取り合いは、取り合われる人を中心に（執着している二人どうしは直接は交わらない） */
     var h = cl ? cl.w : hm.hub, o = g.filter(function (c) { return c !== h; });
     if (HK.ngPair && (HK.ngPair(h, o[0]) || HK.ngPair(h, o[1]))) return null;
@@ -125,7 +125,10 @@
   }
   T.harmony = harmony; T.harmonyOf = harmonyOf;
   /* 体の関係の形：三人の全組が体の関係を持てるなら全員で、そうでなければ二人の両方と持てる一人を中心に（つながらない二人は直接は触れ合わない）。どれも無理なら null */
+  /* 性行為の相手を固定している人（engine.js の sexLock）は、決めた相手以外の人がいる三人の場面に入らない（直接は触れ合わない形でも） */
+  function sexLockOut(g) { return g.some(function (x) { return x.sexLock != null && g.some(function (y) { return y !== x && y.i !== x.sexLock; }); }); }
   function sexShape(g, hubOnly) {
+    if (sexLockOut(g)) return null;
     /* 恋愛・R18にしない組（苦手な組み合わせ・恋愛相手を別の人に固定している人）が一組でも入っていれば、三人では交わらない */
     if (HK.ngPair && (HK.ngPair(g[0], g[1]) || HK.ngPair(g[0], g[2]) || HK.ngPair(g[1], g[2]))) return null;
     if (!hubOnly && okSex(g[0], g[1]) && okSex(g[0], g[2]) && okSex(g[1], g[2])) return { sg: g, hubOnly: false };

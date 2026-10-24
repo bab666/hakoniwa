@@ -76,6 +76,9 @@
     if (!plotter && rng() < 0.1) plotter = crusher || (rng() < 0.5 ? A : B);
     /* 恋愛・R18にしない二人：相手を落とすために自分から閉じ込められる人はいない（役割の指定があっても、巻き込まれた側として扱う） */
     var ngP = !!(HK.ngPair && HK.ngPair(A, B));
+    /* 性行為の相手を別の人に固定している（または固定した相手がこの箱庭にいない）：体の関係にならない（pos.js の向きの判定で clash になる） */
+    var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (A.sexLock != null && A.sexLock !== B.i ? A : B) : null;
+    var sexWhy = sexP ? sexWho.name + 'は、性行為の相手を' + (input.chars[sexWho.sexLock] ? input.chars[sexWho.sexLock].name + 'に' : 'ほかの人に') + '決めている' : '';
     if (ngP) plotter = null;
     /* 拘束 */
     var bind = env.bind === 'random' ? rng.pick(['both', 'one', 'none', 'both']) : env.bind;
@@ -156,7 +159,7 @@
       a.cnt.hold++; a.m.reason = clamp(a.m.reason + 3, 0, 100); a.m.plea = clamp(a.m.plea + 8, 0, 90);
       if (a.cnt.hold > 3 && rng() < 0.5) return;
       var ty = clashType(a), C = LK.CLASH;
-      ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + 'は発情していた（' + Math.round(a.m.heat) + '）が、' + b.name + (ngP ? 'とは恋愛・R18にしない組なので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
+      ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + 'は発情していた（' + Math.round(a.m.heat) + '）が、' + b.name + (ngP ? 'とは恋愛・R18にしない組なので、手は出さなかった（' : sexP ? 'とは体の関係にならない（' + sexWhy + '）ので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
     }
     /* 女性の攻め（t）×男性の受け（u）か：女性が跨る書き方にする */
     function fmPair(t, u) { return !!(Pos && !ff && Pos.isF(t) && !Pos.isF(u)); }
@@ -465,7 +468,7 @@
       outcome = 'endure';
       /* 理性の残っていた方が、性格に合わせたやり方で二人を引き離す */
       var ke = A.m.reason >= B.m.reason ? A : B, tye = clashType(ke);
-      ST.key(S, ST.say(S, { actors: [A, B], tag: '耐え抜いた', text: (how === 'timeout' ? LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/, '') : '') + ST.fmt(pk(LK.CLASH.bed[tye]), { a: ke.name, b: ke.o.name }), why: '二人とも発情していた（' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）が、受け攻めの向きが合わない二人なので、ベッドには行かなかった（' + ke.name + 'の理性 ' + Math.round(ke.m.reason) + '）', mag: 30 }), '結末');
+      ST.key(S, ST.say(S, { actors: [A, B], tag: '耐え抜いた', text: (how === 'timeout' ? LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/, '') : '') + ST.fmt(pk(LK.CLASH.bed[tye]), { a: ke.name, b: ke.o.name }), why: '二人とも発情していた（' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）が、' + (sexP ? '体の関係にならない二人（' + sexWhy + '）なので' : '受け攻めの向きが合わない二人なので') + '、ベッドには行かなかった（' + ke.name + 'の理性 ' + Math.round(ke.m.reason) + '）', mag: 30 }), '結末');
     } else {
       /* ロッカーの中で最後までした二人は「怒りの脱出」にしない（そのあと受け入れている） */
       outcome = how === 'timeout' ? 'rescue' : plotter && !plotOk ? 'plotfail' : pair.refusedHard && pair.acts >= 1 && !pair.sexIn ? 'angry' : pair.acts >= 1 ? 'awkward' : (A.cnt.make + B.cnt.make) > 0 || (clash && A.cnt.hold + B.cnt.hold > 0) ? 'near' : 'clean';
