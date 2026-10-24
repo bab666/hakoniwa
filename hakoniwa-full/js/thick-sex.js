@@ -179,11 +179,16 @@
   };
   function psOf(c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || c.persona || 'gentle'; }
   T.react = function (pick, b) { var ps = psOf(b); return pick(T.REACT[ps] || T.REACT.gentle); };
-  T.moan = function (pick, b, climax) { var ps = psOf(b), M = climax ? T.CMOAN : T.MOAN; return pick(M[ps] || M.gentle); };
+  /* 口調ごとの喘ぎ（novel-moan-tone.js：最中・果てる）を、態度の喘ぎに足して使う */
+  T.moan = function (pick, b, climax) {
+    var ps = psOf(b), M = climax ? T.CMOAN : T.MOAN, l = M[ps] || M.gentle, own = HK.NovelMoan ? HK.NovelMoan.list(b, climax ? 2 : 1) : [];
+    return pick(own.length ? l.concat(own) : l);
+  };
 
   /* 一場面ぶんの段落（始まりは呼ぶ側が渡す）。opt = { pick, rng, a, b, style, open, after, place, jealous } */
   T.scene = function (opt) {
     var pick = opt.pick, a = opt.a, b = opt.b, st = opt.style || 'gentle';
+    if (HK.NovelMoan) HK.NovelMoan.top = a;
     var P = HK.Pos, fem = P && P.isF, mode = fem && fem(a) && fem(b) ? 'ff' : fem && fem(a) && !fem(b) ? 'fm' : 'mf';
     /* 女性が {b} で男性が {a} のときは mf（男性が繋がる側）。女性 {a}×男性 {b} は必ず fm（跨る書き方） */
     var hard = mode === 'mf' && T.hard(opt.rng, a, b), jl = hard && !!opt.jealous, g = fmG(st), out = [];

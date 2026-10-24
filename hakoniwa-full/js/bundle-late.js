@@ -31343,8 +31343,11 @@
     var V = HK.ThickVM && HK.ThickVM.VB, ps = (who && (who.persona || (HK.personaOf ? HK.personaOf(who) : ''))) || 'gentle';
     var l = V && (V[ps] || V.gentle);
     if (!l) return '';
-    var re = dom ? M_DOM : M_REF, c = l[st].filter(function (x) { return !re.test(x); });
-    return who.name + '「' + pick(S, c.length ? c : l[st]) + '」';
+    /* 受ける側は、口調ごとの喘ぎ（novel-moan-tone.js：こらえる＝始まり、崩れる＝果てる）も混ぜる */
+    var base = l[st], own = !dom && HK.NovelMoan ? HK.NovelMoan.list(who, st ? 2 : 0) : [];
+    if (own.length) base = base.concat(own);
+    var re = dom ? M_DOM : M_REF, c = base.filter(function (x) { return !re.test(x); });
+    return who.name + '「' + pick(S, c.length ? c : base) + '」';
   }
   /* 嗜虐的な攻め（HK.Ero.sadist）のとき：少し乱暴に（髪を掴む・乱暴に押し倒す・強く腰を掴んで激しく打ちつける・両手首を押さえつける）。首・縛る拘束は使わない。{x}の台詞は口調の言い換えを通る */
   var ROUGH_SADIST = [
@@ -31608,6 +31611,7 @@
     /* 向きは必ず HK.Pos.order に従う（自分で攻めを選んだ人を受けの位置に置かない） */
     if (HK.Pos) { var od = HK.Pos.order(x, y, [x, y]); x = od[0]; y = od[1]; }
     if (HK.R18Thick.log) HK.R18Thick.log.push([x, y]);
+    if (HK.NovelMoan) HK.NovelMoan.top = x;
     if (HK.Pos && HK.FF && HK.Pos.ff(x, y)) return soft(S, x, y, opt, 'ff');
     if (HK.FM && HK.FM.on(x, y)) return soft(S, x, y, opt, 'fm');
     /* 攻めの指定がなくても、主導する側が女性で相手が男性なら、跨って迎え入れる書き方（男性の体の書き方を女性に当てない） */

@@ -56,6 +56,7 @@ js/tone-long.js
 js/engine.js
 js/ero-kit.js
 js/ero-moan-tone.js
+js/novel-moan-tone.js
 js/thick-sex.js
 js/thick-sex-ero.js
 js/fwb.js

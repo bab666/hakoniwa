@@ -4,7 +4,7 @@
    ■ 使い方：HK.Ero.add('saimin', { 'sug.kuwaeru.full': [...], ... }) で登録し、
      本文では HK.Ero.L(S, 'saimin', 'sug.kuwaeru.full', 元の配列) で引く（作風が小説調、または未登録なら元の配列）
    ■ 喘ぎ（HK.Ero.moan）：段階 0 こらえる（声を抑える）／1 とろける（懇願）／2 崩れる（快楽堕ち）。言葉が崩れるのは絶頂（段階 2）だけ。
-     口調ごとの喘ぎは ero-moan-tone.js。キャラの設定「濁点喘ぎ」がオンの人は、絶頂と奥を深く突かれた場面で濁点喘ぎ（あ゛・お゛）になる。
+     口調ごとの喘ぎは ero-moan-tone.js。キャラの設定「濁点喘ぎ」がオンの人は、絶頂・奥を深く突かれた場面・強引に抱かれる場面・場面の後半・快楽堕ち中に濁点喘ぎ（あ゛・お゛）になる。
      態度（persona）ごとに崩れ方が違う（強気・厳格は最後まで噛み殺そうとする、内気は最初から甘い）
    ■ 全年齢版（HK.SAFE_ON）では常に小説調。登場人物はすべて成人として扱う */
 (function () {
@@ -91,7 +91,9 @@
   /* 口調ごとの喘ぎ（ero-moan-tone.js の E.TONE_MOAN[口調] = { s0 声を抑える, s1 懇願, s2 快楽堕ち, daku 濁点喘ぎ }）。
      9つの態度の口調は、上の態度の喘ぎに足して使う。それ以外の口調は、その口調の喘ぎだけを使う（なければ態度の喘ぎ） */
   E.TONE_MOAN = E.TONE_MOAN || {};
-  /* 濁点喘ぎ：キャラの設定「濁点喘ぎ」（input.chars[i].daku）がオンの人だけ、絶頂（段階 2）と、奥を深く突かれた場面（段階 1 で deep）で使う。
+  /* 濁点喘ぎ：キャラの設定「濁点喘ぎ」（input.chars[i].daku）がオンの人だけ使う。
+     絶頂（段階 2）、奥を深く突かれた場面・強引に抱かれている場面・場面の後半（本文の後ろ半分、またはこの回で何度も喘いだあと）・快楽堕ち中（段階 1）、
+     快楽堕ち中と強引な場面はこらえる段階（段階 0）でもときどき。
      箱庭ごとに人物の作り方が違うので、名前で引けるように、シミュレーションの入力から覚えておく */
   var DAKU = {};
   E.dakuOf = function (who) { return !!(who && (who.daku || DAKU[who.name])); };
@@ -105,24 +107,38 @@
     HK.simulate._daku = true;
   }
   E.DEEP = /奥|深く|深い|突き上げ|突き入|最奥|根元まで|一番深|子宮|結腸/;
-  E.moan = function (S, who, stage, deep) {
+  E.FORCE = /無理やり|無理矢理|強引|乱暴|押さえつけ|押さえ込|組み敷|ねじ伏せ|髪を掴|手首を(?:掴|ひとまとめ|まとめて)|逃がさ|逃げ(?:られ|よう)|抵抗|容赦なく|休みなく|有無を言わさ|力ずく|拘束/;
+  /* 快楽堕ち中：堕ちた（fallen・fell）か、堕ち度が 75 以上 */
+  function fallenOf(who) { return !!(who && (who.fallen || who.fell || (who.corrupt || 0) >= 75)); }
+  /* この回でその人が喘いだ回数（後半かどうかの目安） */
+  function moanCount(S, who) { var m = S._eroCnt = S._eroCnt || {}, k = (who && who.name) || '?'; return (m[k] = (m[k] || 0) + 1); }
+  /* 本文 t の at 文字目に入る喘ぎの場面：奥を深く突く（deep）・強引（force）・本文の後ろ半分（late） */
+  E.ctxOf = function (t, at) { t = String(t); return { deep: E.DEEP.test(t), force: E.FORCE.test(t), late: at != null && t.length > 120 && at > t.length / 2 }; };
+  /* ctx … true（奥を深く突かれた場面）、または { deep, force, late } */
+  E.moan = function (S, who, stage, ctx) {
+    var cx = ctx && typeof ctx === 'object' ? ctx : { deep: !!ctx };
     var ps = (who && (HK.personaOf ? HK.personaOf(who) : who.persona)) || 'gentle';
     var st = Math.max(0, Math.min(2, stage | 0));
     /* 主導権を握っている側（who.eroDom）：こらえる・とろける段階は、拒まない喘ぎ */
     if (who && who.eroDom && st < 2) { var dk = ROUGH[ps] ? 'rough' : 'soft'; return pickFresh(S, DOM[dk][st], 'dom.' + dk + st); }
     var tone = who && HK.toneOf ? HK.toneOf(who) : ps, TM = E.TONE_MOAN[tone];
-    if (TM && TM.daku && TM.daku.length && !(who && who.eroDom) && E.dakuOf(who) && (st === 2 || (st === 1 && deep)) && S.rng() < (st === 2 ? 0.8 : 0.6))
-      return pickFresh(S, TM.daku, tone + '.daku');
+    if (TM && TM.daku && TM.daku.length && !(who && who.eroDom) && E.dakuOf(who)) {
+      var fal = fallenOf(who), late = cx.late || moanCount(S, who) > 6;
+      var p = st === 2 ? 0.8 : st === 1 ? (cx.deep || cx.force || late || fal ? 0.6 : 0) : (fal || cx.force ? 0.35 : 0);
+      if (p && S.rng() < p) return pickFresh(S, TM.daku, tone + '.daku');
+    }
+    /* 濁点喘ぎの設定がオフの人には、態度の喘ぎのうち濁点のもの（お゛ など）も使わない */
+    var dk = E.dakuOf(who), noDaku = function (l) { if (dk) return l; var f = l.filter(function (x) { return !/[゛ﾞ]/.test(x); }); return f.length ? f : l; };
     var own = TM && TM['s' + st] && TM['s' + st].length ? TM['s' + st] : null;
-    if (own) return pickFresh(S, M[tone] ? M[tone][st].concat(own) : own, tone + '.t' + st);
+    if (own) return pickFresh(S, noDaku(M[tone] ? M[tone][st].concat(own) : own), tone + '.t' + st);
     var tbl = M[ps] || M.gentle;
-    return pickFresh(S, tbl[st], ps + st);
+    return pickFresh(S, noDaku(tbl[st]), ps + st);
   };
   /* 本文の {s:wet} {s:hit} {s:cum} {s:suck} {m0} {m1} {m2}（{a} の喘ぎ）を埋める。ほかの差し込み（{a} {h} など）は各箱庭の ST.fmt で。
-     本文が奥を深く突く場面なら、とろける段階でも濁点喘ぎを使う（設定がオンの人だけ） */
+     本文が奥を深く突く場面・強引な場面、本文の後ろ半分なら、とろける段階でも濁点喘ぎを使う（設定がオンの人だけ） */
   E.fill = function (S, text, who) {
-    var deep = E.DEEP.test(String(text));
-    return String(text).replace(/\{s:(\w+)\}/g, function (m, k) { return E.sfx(S, k); })
-      .replace(/\{m([012])\}/g, function (m, n) { return E.moan(S, who, +n, deep); });
+    var t = String(text);
+    return t.replace(/\{s:(\w+)\}/g, function (m, k) { return E.sfx(S, k); })
+      .replace(/\{m([012])\}/g, function (m, n, at, all) { return E.moan(S, who, +n, E.ctxOf(all, at)); });
   };
 })();

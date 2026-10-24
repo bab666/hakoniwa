@@ -30,6 +30,9 @@
     var t = toneKey(p);
     if (kind === 'endure') return p.name + '「' + pick(S, D.ENDURE[t] || D.ENDURE.gentle) + '」';
     var v = D.V[t], list = v[kind] || v.mid;
+    /* 始まり・最中・果てる声は、口調ごとの喘ぎ（novel-moan-tone.js）も混ぜる */
+    var st = { start: 0, mid: 1, climax: 2 }[kind], own = st != null && HK.NovelMoan ? HK.NovelMoan.list(p, st) : [];
+    if (own.length) list = list.concat(own);
     if (kind !== 'top' && kind !== 'topc') list = topLines(p, list);
     return p.name + '「' + pick(S, list) + '」';
   }
@@ -194,6 +197,7 @@
       opt = opt || {};
       /* 向きは必ず HK.Pos.order に従う（自分で攻めを選んだ人を受けの位置に置かない） */
       if (HK.Pos) { var od = HK.Pos.order(x, y, [x, y]); x = od[0]; y = od[1]; }
+      if (HK.NovelMoan) HK.NovelMoan.top = x;
       if (HK.Pos && HK.FF && HK.Pos.ff(x, y)) return ffSex(S, x, y, opt);
       if (HK.FM && HK.FM.on(x, y)) return fmSex(S, x, y, opt);
       var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };
