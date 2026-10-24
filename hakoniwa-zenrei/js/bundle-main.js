@@ -39849,6 +39849,24 @@
     if (list.length > max && max === 1) list = list.slice(0, 1);
     return S.chars.filter(function (c) { return list.indexOf(c.id) >= 0; });
   }
+  /* 恋人が三人以上いる人が、その恋人たちと同じ箱庭に入るときの注意（恋人どうしの三人の場面・嫉妬の扱いは、三人までを想定している） */
+  function loveCrowdNote(id) {
+    var J = joined(id), ids = J.map(function (c) { return c.id; }), nm = function (cid) { var c = S.chars.filter(function (x) { return x.id === cid; })[0]; return c ? c.name : ''; };
+    var lov = {};
+    (S.ties || []).forEach(function (t) {
+      if (!/^(lover|mate|fated)$/.test(t.type) || ids.indexOf(t.a) < 0 || ids.indexOf(t.b) < 0 || t.a === t.b) return;
+      [[t.a, t.b], [t.b, t.a]].forEach(function (p) { var l = lov[p[0]] = lov[p[0]] || []; if (l.indexOf(p[1]) < 0) l.push(p[1]); });
+    });
+    var who = Object.keys(lov).filter(function (k) { return lov[k].length >= 3; });
+    if (!who.length) return '';
+    return '<p class="hint" id="lovewarn" style="color:var(--warn)">※' + who.map(function (k) { return esc(nm(k)) + 'には、この箱庭に一緒に入る恋人が' + lov[k].length + '人（' + lov[k].map(function (x) { return esc(nm(x)); }).join('・') + '）います'; }).join('。') +
+      '。恋人が三人以上そろうと、嫉妬・浮気の扱いや恋人どうしの三人の場面がうまく噛み合わず、不自然な展開になることがあります（恋人どうしの円満な場面は、三人までを想定しています）。</p>';
+  }
+  function updLoveWarn() {
+    var el = document.getElementById('lovewarn'), html = loveCrowdNote(S.scenId), jc = document.getElementById('joincount');
+    if (el) el.remove();
+    if (html && jc) jc.insertAdjacentHTML('afterend', html);
+  }
   var SAMPLE = [
     { name: '朝霧', code: 'BDACD', memo: '例：皮肉屋の元刑事' },
     { name: '鷹野', code: 'CABAB', memo: '例：誰にでも優しい医大生' },
@@ -40445,7 +40463,7 @@
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
       '<h2 class="sec">' + (scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
       (scen.castHint || scen.solo ? '<p class="hint">' + (scen.castHint ? esc(scen.castHint) : 'この箱庭は一人用です。チェックを入れた住人が挑みます。' + (HK.SAFE_ON ? '' : '登場人物はすべて成人として扱います。')) + '</p>' : '') +
-      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p><div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return c.group === g; }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button></span>'; }).join('') + '</div>' : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th><th>最初の行動</th><th>短期目標</th>' + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
+      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p>' + loveCrowdNote(S.scenId) + '<div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return c.group === g; }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button></span>'; }).join('') + '</div>' : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th><th>最初の行動</th><th>短期目標</th>' + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
       (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、カードの「この箱庭のTIPS」にあります。</p>' : '') +
       (sexCols && S.chars.length ? '<p class="hint" style="margin-top:8px">性別と恋愛対象は、住人タブの ⚙️ 設定と同じものです。</p>' : '') +
       (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') +
@@ -40789,6 +40807,7 @@
       var tr = t.closest('tr'); if (tr) tr.classList.toggle('off', !t.checked);
       var jc = document.getElementById('joincount');
       if (jc) { var mx = smax(S.scenId); jc.innerHTML = '参加 <b class="num">' + cur.length + '</b> / 上限 ' + mx + '人' + (cur.length > mx ? '　<span style="color:var(--warn)">上限を超えています</span>' : ''); }
+      updLoveWarn();
     }
     else if (f === 'tie') {
       var tt = S.ties[+t.dataset.k];
