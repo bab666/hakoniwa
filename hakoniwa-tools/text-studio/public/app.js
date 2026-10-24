@@ -15,6 +15,8 @@
   function toast(msg, ms) { var t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(function () { t.hidden = true; }, ms || 3200); }
   function status(msg) { $('#status').textContent = msg; }
 
+  /* 試しに回すときの住人の名前（public/sandbox.js の NAMES と同じ） */
+  var BATCH_NAME_RE = /アキラ|ミナト|ユキノ|カオル|ハルカ|レンジ|ツバサ|シオン/g;
   var PERSONA_KEYS = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite'];
   var JA = /[぀-ヿ㐀-鿿]/g;
   function jaN(s) { return (s.match(JA) || []).length; }
@@ -269,7 +271,7 @@
   /* 使われ方を調べる：何回か回して、出てきた文を数える（少しずつ回して画面を止めない） */
   function coverage(ids) {
     if (!S.sb) return S.sbPromise.then(function () { return coverage(ids); });
-    var n = +($('#cov-n') ? $('#cov-n').value : 20) || 20, hot = $('#cov-hot') ? $('#cov-hot').checked : false;
+    var n = S._covN || +($('#cov-n') ? $('#cov-n').value : 20) || 20, hot = $('#cov-hot') ? $('#cov-hot').checked : !curBuild().safe && S.mode === 'r18';
     var q = ids.slice();
     return new Promise(function (ok) {
       (function next() {
@@ -296,7 +298,13 @@
           S.groups.forEach(function (g) { if (g.scens.indexOf(id) >= 0 && g.role !== 'ui' && g.role !== 'code' && !hits[g.gid]) hits[g.gid] = {}; });
           var usedItems = 0;
           Object.keys(hits).forEach(function (gid) { usedItems += Object.keys(hits[gid]).length; });
-          S.cov[id] = { hits: hits, usedItems: usedItems, runs: n, fails: res.fails.length, failMsg: res.fails[0] || '', bad: res.bad || [], eventCounts: res.eventCounts, hot: hot };
+          /* 台詞（「」の中身）ごとの出た回数。試し実行の名前を〈〉に戻して、辞書と同じ形で数える */
+          var qf = {};
+          res.texts.forEach(function (t) {
+            var re = /「([^「」]+)」/g, mm;
+            while ((mm = re.exec(t))) { var key = mm[1].replace(BATCH_NAME_RE, '〈〉'); qf[key] = (qf[key] || 0) + 1; }
+          });
+          S.cov[id] = { hits: hits, usedItems: usedItems, runs: n, fails: res.fails.length, failMsg: res.fails[0] || '', bad: res.bad || [], eventCounts: res.eventCounts, hot: hot, qf: qf };
           next();
         }, 20);
       })();
@@ -461,7 +469,8 @@
           var key = m[1].replace(/\{[a-z0-9_]+\}|〔[^〕]*〕/g, '〈〉');
           if (jaN(key) < 2) continue;
           var o = map[key];
-          if (!o) { o = map[key] = { key: key, srcs: [], r18: false }; list.push(o); }
+          if (!o) { o = map[key] = { key: key, srcs: [], r18: false, n: 0, ord: list.length }; list.push(o); }
+          o.n++;
           if (o.srcs.length < 50) o.srcs.push({ g: g, i: ii });
           if (g.r18) o.r18 = true;
         }
@@ -477,7 +486,7 @@
     var n = 1; for (var i = src.indexOf('\n'); i >= 0 && i < pos; i = src.indexOf('\n', i + 1)) n++;
     return n;
   }
-  var TU = { scen: '', q: '', st: '', gender: 'm', page: 0, part: 'lines' };
+  var TU = { scen: '', q: '', st: '', so: 'freq', gender: 'm', page: 0, part: 'lines', runs: 30 };
   VIEWS.tone = function (m) {
     var keys = S.info.personas.map(function (p) { return { key: p.key, label: p.label + '（態度）' }; }).concat(S.info.tones.filter(function (t) { return PERSONA_KEYS.indexOf(t.key) < 0; }));
     var k = S.sel.tone || keys[0].key; S.sel.tone = k;
@@ -526,16 +535,28 @@
     var ST = { dict: '辞書の書き直し', ovr: 'ほかの書き下ろし辞書', auto: '自動の言い換え', same: '変わらない' };
     el.innerHTML = '<div class="row"><input id="q" placeholder="台詞で絞る" style="width:220px" value="' + esc(TU.q) + '">' +
       '<select id="st"><option value="">すべて</option><option value="dict">辞書の書き直しあり</option><option value="ovr">ほかの書き下ろし辞書</option><option value="auto">自動の言い換え</option><option value="same">変わらない（言い換えが効いていない）</option></select>' +
-      '<span class="muted" id="stat"></span></div>' +
+      '<select id="so"><option value="freq">よく出る順</option><option value="long">長い順</option><option value="score">優先度順（出る回数×長さ）</option><option value="order">ファイル順</option></select>' +
+      '<label class="muted">回す回数 <input type="number" id="cn" min="1" max="300" value="' + TU.runs + '" style="width:60px"></label><button class="btn small" id="cgo">回して出る回数を数える</button>' +
+      '<span class="muted" id="stat"></span></div><div class="muted" id="fstat"></div>' +
       '<div class="muted">「」の中の台詞を、この口調の人が話したときの出来上がりで並べます（見本の名前：話し手 ' + SP + '、ほかの名前は ' + OT.join('・') + '）。' +
       '右の欄に書いて「保存」すると、この口調の書き直しとして js/tone-fix.js（R18専用の箱庭の台詞は js/tone-fix-r18.js）に入り、次からその文がそのまま使われます。名前は〈〉、一人称は「私」で書いてください。</div>' +
-      '<table class="t" id="tl"><thead><tr><th style="width:34%">元の台詞</th><th>この口調で（直すなら書き換えて保存）</th><th style="width:120px">出どころ</th></tr></thead><tbody></tbody></table><div class="pager" id="pgr"></div>';
-    $('#st').value = TU.st;
+      '<table class="t" id="tl"><thead><tr><th style="width:34%">元の台詞</th><th>この口調で（直すなら書き換えて保存）</th><th style="width:120px">出どころ</th><th class="num" style="width:70px" id="fh">回数</th><th class="num" style="width:50px">字数</th></tr></thead><tbody></tbody></table><div class="pager" id="pgr"></div>';
+    $('#st').value = TU.st; $('#so').value = TU.so;
     var PER = 60;
+    /* 出る回数：この箱庭（「すべて」なら、回した箱庭の合計）を回して数えた回数。まだ回していなければ、書かれている箇所の数 */
+    var covs = (scen ? [S.cov[scen]] : S.info.scens.map(function (x) { return S.cov[x.id]; })).filter(function (c) { return c && c.qf; });
+    var runs = covs.reduce(function (a, c) { return a + c.runs; }, 0);
+    function freq(o) { return covs.length ? covs.reduce(function (a, c) { return a + (c.qf[o.key] || 0); }, 0) : o.n; }
+    function len(o) { return o.key.replace(/〈〉/g, '名').length; }
+    $('#fh').textContent = covs.length ? '出た回数' : '箇所';
+    $('#fh').title = covs.length ? runs + '回回して出た回数' : 'まだ回していないので、書かれている箇所の数';
+    $('#fstat').textContent = covs.length ? '出る回数は、' + (scen ? 'この箱庭' : '回した箱庭（' + covs.length + '）') + 'を ' + runs + ' 回回して数えた値です（口調・性別は順に割り振り）。' : 'まだ回していないので、「よく出る順」は書かれている箇所の数で並べています。「回して出る回数を数える」で、実際に出る回数で並べられます。';
     function filtered() {
       var L = all;
       if (TU.q) L = L.filter(function (o) { var d = dk[o.key]; return o.key.indexOf(TU.q) >= 0 || (d && d.g.items[d.i].cols[2].indexOf(TU.q) >= 0); });
       if (TU.st) L = L.filter(function (o) { return judge(o).st === TU.st; });
+      var key = TU.so === 'freq' ? function (o) { return freq(o); } : TU.so === 'long' ? len : TU.so === 'score' ? function (o) { return freq(o) * len(o); } : function (o) { return -o.ord; };
+      L = L.slice().sort(function (a, b) { return key(b) - key(a) || a.ord - b.ord; });
       return L;
     }
     function draw() {
@@ -549,7 +570,8 @@
           '<td>' + (cur !== o.out ? '<div class="prev0" title="出来上がり（一人称・名前を入れたもの）">' + esc(o.out) + '</div>' : '') +
           '<div class="trow"><textarea rows="' + Math.max(1, Math.ceil(cur.length / 40)) + '">' + esc(cur) + '</textarea><button class="btn small primary" data-save>保存</button>' +
           (o.dict ? '<button class="btn small danger" data-del title="この口調の書き直しを消して、自動の言い換えに戻す">消す</button>' : '') + '</div></td>' +
-          '<td class="lvl-' + (o.st === 'same' ? 'warn' : 'info') + '">' + ST[o.st] + (o.dict ? '<div class="muted">' + esc(o.dict.g.file.f) + ':' + lineAt(o.dict.g, o.dict.g.items[o.dict.i].s) + '</div>' : '') + '</td></tr>';
+          '<td class="lvl-' + (o.st === 'same' ? 'warn' : 'info') + '">' + ST[o.st] + (o.dict ? '<div class="muted">' + esc(o.dict.g.file.f) + ':' + lineAt(o.dict.g, o.dict.g.items[o.dict.i].s) + '</div>' : '') + '</td>' +
+          '<td class="num">' + freq(o) + '</td><td class="num">' + len(o) + '</td></tr>';
       }).join('');
       $('#pgr').innerHTML = L.length > part.length ? '<button class="btn" id="more">もっと見る（残り ' + (L.length - part.length) + '）</button>' : '';
       if ($('#more')) $('#more').onclick = function () { TU.page++; draw(); };
@@ -594,6 +616,14 @@
     }
     $('#q').oninput = function () { TU.q = this.value.trim(); TU.page = 0; draw(); };
     $('#st').onchange = function () { TU.st = this.value; TU.page = 0; if (TU.st) $('#stat').textContent = '判定中…'; setTimeout(draw, 20); };
+    $('#so').onchange = function () { TU.so = this.value; TU.page = 0; draw(); };
+    $('#cn').onchange = function () { TU.runs = Math.max(1, Math.min(300, +this.value || 30)); };
+    $('#cgo').onclick = function () {
+      var ids = scen ? [scen] : S.info.scens.map(function (x) { return x.id; });
+      S._covN = TU.runs;
+      $('#fstat').textContent = '回しています…';
+      coverage(ids).then(function () { S._covN = null; TU.so = 'freq'; TU.page = 0; if (S.tab === 'tone') show('tone'); });
+    };
     draw();
   }
   /* 書き分けの表・辞書：パスに口調・態度の名前がある群（借りる態度の表も）と、辞書のこの口調の行 */
