@@ -79,6 +79,8 @@
   /* 成り立つ向き（[攻め, 受け] の並び）の一覧 */
   P.orients = function (a, b) {
     if (!a || !b || a === b) return [];
+    /* 恋愛・R18にしない組（engine.js の HK.ngPair）は、どちらの向きでも成り立たない */
+    if (HK.ngPair && HK.ngPair(a, b)) return [];
     var out = [];
     [[a, b], [b, a]].forEach(function (o) {
       var t = o[0], u = o[1];

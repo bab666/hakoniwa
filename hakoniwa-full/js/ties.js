@@ -197,6 +197,8 @@
       (ties || []).forEach(function (t) {
         var A = ctx.chars[t.a], B = ctx.chars[t.b], D = T[t.type];
         if (!A || !B || A === B || !D) return;
+        /* 恋愛・R18にしない組（HK.ngPair）には、恋愛の関係（恋人・セフレ・片想いなど）を当てない */
+        if (HK.ngPair && HK.ngPair(A, B) && /^(lover|fwb|mate|fated|crush|almost|ex|yan)$/.test(t.type)) return;
         /* クラスメイト（高校生）では、セフレの関係は設定しても使わない */
         if (t.type === 'fwb' && ctx.scen && ctx.scen.id === 'classroom') return;
         var k = keyOf(A, B), list = ctx.tiesAll[k] = ctx.tiesAll[k] || [];

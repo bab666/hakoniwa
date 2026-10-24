@@ -36,7 +36,7 @@
     this.chars = input.chars.map(function (c, i) {
       var pc = (input.perChar && input.perChar[i]) || {};
       return {
-        i: i, name: c.name, eg: c.eg, tr: HK.traits(c.eg), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, lock: c.loveLock == null || c.loveLock === '' || isNaN(+c.loveLock) ? null : +c.loveLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder,
+        i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], name: c.name, eg: c.eg, tr: HK.traits(c.eg), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, lock: c.loveLock == null || c.loveLock === '' || isNaN(+c.loveLock) ? null : +c.loveLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder,
         hp: 100, alive: true, out: false, stress: 0,
         stats: {}, statsRaw: pc.stats || {}, weaponPick: pc.weapon || 'random',
         actionPick: pc.action || 'auto', goalPick: pc.goal || 'auto', role: pc.role || '', pick: pc.pick || {},
@@ -51,8 +51,11 @@
   Ctx.prototype.R = function (a, b) { return this.rel[a.i][b.i]; };
   /* 性別と恋愛対象（未設定なら制限なし） */
   /* どちらかが別の相手に恋愛を決めている組か */
-  HK.lockBlocks = function (a, b) { return !!(a && b && ((a.lock != null && a.lock !== b.i) || (b.lock != null && b.lock !== a.i))); };
+  /* 恋愛・R18にしない組（キャラの設定「恋愛・R18にしない相手」。どちらかに付いていれば） */
+  HK.ngPair = function (a, b) { return !!(a && b && a !== b && ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0))); };
+  HK.lockBlocks = function (a, b) { return !!(a && b && ((a.lock != null && a.lock !== b.i) || (b.lock != null && b.lock !== a.i) || HK.ngPair(a, b))); };
   HK.canLove = function (a, b) {
+    if (HK.ngPair(a, b)) return false;
     /* 恋愛相手を決めた人は、その相手以外とは恋愛しない（相手が箱庭にいなければ誰とも） */
     if (a && b && a.lock != null && a.lock !== b.i) return false;
     if (a.role === 'teacher' || b.role === 'teacher') return false;
@@ -181,6 +184,8 @@
   /* 恋愛の出来事を起こしてよいか：恋愛の起こりやすさが0、恋愛対象が「なし」・合わない人どうしでは起こさない（もう恋人どうしの二人は別） */
   Ctx.prototype.romanceOk = function (actors) {
     var L = (actors || []).filter(Boolean), a = L[0], b = L[1];
+    /* 恋愛・R18にしない組（キャラの設定）が一組でも入っていれば、どの箱庭でも起こさない */
+    for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j])) return false;
     if (this.scen && this.scen.romanceCore) return true;
     if (a && b && this.pair(a, b).kin) return false;
     if (a && b && this.pair(a, b).couple) return true;

@@ -29,6 +29,8 @@
     if (c.pos) bits.push(lab(POS, c.pos));
     var lk = c.loveLock && byId(c.loveLock);
     if (lk) bits.push('恋愛相手：' + lk.name + 'だけ');
+    var ngs = (c.loveNG || []).map(byId).filter(Boolean);
+    if (ngs.length) bits.push('恋愛にしない：' + ngs.map(function (o) { return o.name; }).join('・'));
     var n = tiesOf(c).length;
     if (n) bits.push('関係 ' + n + '件');
     return (c.color ? '<i class="csw" style="background:' + esc(c.color) + '" aria-hidden="true"></i>' : '') + esc(bits.join('・'));
@@ -128,6 +130,8 @@
     /* 相手の性別で分けるとき：男性・女性・その他ごとの敬称 */
     var SUF = (HK.CALL_STYLES || []).filter(function (o) { return o.v && o.v !== 'gender'; }), CGD = { m: 'kun', f: 'chan', x: 'san' };
     if (c.call === 'gender') callSel += [['m', '男性'], ['f', '女性'], ['x', 'その他']].map(function (g) { return '<label>' + g[1] + 'には <select data-gf="callG" data-g="' + g[0] + '" aria-label="' + g[1] + 'の呼び方">' + SUF.map(function (o) { return opt(o.v, o.label, (c.callG && c.callG[g[0]]) || CGD[g[0]]); }).join('') + '</select></label>'; }).join('');
+    /* 恋愛・R18にしない相手（苦手な組み合わせ）。どちらに付けても、二人のあいだでは恋愛・R18の場面が起きない */
+    var ngRow = others.length ? '<div class="gearrow"><span class="gearhint" style="flex:1 1 100%;margin:0">' + (HK.SAFE_ON ? '恋愛にしない相手' : '恋愛・R18にしない相手') + '（この人との恋愛・夜の場面を起こさない。相手の設定にも同じ印が付きます）</span>' + others.map(function (o) { return '<label><input type="checkbox" data-gf="ng" data-o="' + esc(o.id) + '"' + ((c.loveNG || []).indexOf(o.id) >= 0 ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('') + '</div>' : '';
     var lockSel = '<select data-gf="lock" aria-label="恋愛相手の固定"><option value="">固定しない</option>' + others.map(function (o) { return opt(o.id, o.name + 'だけ', c.loveLock || ''); }).join('') + '</select>';
     /* 関係（相手ごと） */
     var ties = s.ties || [], groups = {};
@@ -164,7 +168,7 @@
         (!HK.SAFE_ON && c.pos !== 'top' ? '<label title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"' + (c.daku ? ' checked' : '') + '> 濁点喘ぎ（男性向け）</label>' : '') +
         '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label></div>' +
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
-      '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label></div></div>' +
+      '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label></div>' + ngRow + '</div>' +
       '<div class="gearsec"><h3>関係と呼び方' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + (rel || '<p class="gearhint">まだ関係はありません。</p>') + addable + '</div>';
   }
   function render() {
@@ -250,6 +254,12 @@
       case 'colorauto': if (isInput) return; if (t.checked) c.color = ''; else c.color = (ov.querySelector('[data-gf="color"]') || {}).value || '#3d6f93'; changed(true); UI.applyColors(s.chars); break;
       case 'color': if (/^#[0-9a-fA-F]{6}$/.test(t.value)) { c.color = t.value; UI.applyColors(s.chars); changed(false); } break;
       case 'lock': if (isInput) return; c.loveLock = t.value; changed(false); break;
+      case 'ng': if (isInput) return; (function () {
+        var o = byId(t.dataset.o); if (!o) return;
+        c.loveNG = (c.loveNG || []).filter(function (k) { return k !== o.id; }); o.loveNG = (o.loveNG || []).filter(function (k) { return k !== c.id; });
+        if (t.checked) { c.loveNG.push(o.id); o.loveNG.push(c.id); if (c.loveLock === o.id) c.loveLock = ''; if (o.loveLock === c.id) o.loveLock = ''; }
+        changed(true);
+      })(); break;
       case 'keigo': if (isInput) return; c.keigo = c.keigo || {}; if (t.checked) c.keigo[t.dataset.o] = 1; else delete c.keigo[t.dataset.o]; changed(false); sampleRefresh(); (function () { var kn = ov && ov.querySelector('.gkn'), n = ov ? ov.querySelectorAll('[data-gf="keigo"]:checked').length : 0; if (kn) kn.textContent = n ? n + '人' : 'なし'; })(); break;
       case 'callone': c.calls = c.calls || {}; if (t.value.trim()) c.calls[t.dataset.o] = t.value.trim().slice(0, 16); else delete c.calls[t.dataset.o]; changed(false); sampleRefresh(); break;
       case 'ttype': if (isInput || !tie) return; tie.type = t.value; var CO = HK.coldOpts ? HK.coldOpts(t.value) : null; if (!CO || !CO.map[tie.cold || '']) delete tie.cold; changed(true); break;
