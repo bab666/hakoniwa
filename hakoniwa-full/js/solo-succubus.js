@@ -421,6 +421,46 @@
     ST.say(S, { actors: [a, b], tag: '取り合い', text: spot + 'で、' + ST.fmt(pkF(S, SB.RIVAL || ['{a}と{b}が同じ獲物の両腕をそれぞれ掴んでいた。「私が先に見つけたの！」――獲物が選んだのは{w}だった。{l}は尻尾をしならせて、悔しそうに見送った。']), { a: a.name, b: b.name, w: w.name, l: l.name }) + '（' + w.name + ' +' + ml2 + 'ml）', why: w.name + 'の魅力と技巧が上回った', mag: 22 });
   }
 
+  /* ---------- 夜明け：夜が明けたら狩りはおしまい（その夜の成績に合わせた締め） ---------- */
+  var DAWN = {
+    downtown: L('東の空が白み始め、ネオンが一つずつ消えていった。夜の繁華街に、始発を待つ人の足音だけが残った。|朝日がビルの隙間から差し込んだ。路地裏の看板の灯りが落ち、夜の繁華街の狩りの時間が終わった。|カラスが鳴き、ゴミ収集車が通りを抜けていった。夜の繁華街に、朝が来た。'),
+    office: L('東の空が白み、オフィスビルの窓が一枚ずつ朝の色に染まっていった。残業明けの街の夜が終わった。|始発の電車がホームに滑り込んだ。オフィス街に、何事もなかったような朝が来た。|ビルの警備灯が消え、早出の清掃員がエントランスの鍵を開けた。オフィス街の長い夜が明けた。'),
+    onsen: L('湯けむりの向こうで、山の端が明るくなった。温泉街の提灯が一つずつ消され、夜が明けた。|川面に朝靄が立ちこめた。旅館の朝風呂の札が掛け替えられ、温泉街の夜が終わった。|一番鶏が鳴いた。浴衣の人影の消えた温泉街に、朝の湯の音だけが響いていた。'),
+    masq: L('シャンデリアの灯が落とされ、窓の外が白み始めた。仮面舞踏会は、夜明けとともにお開きになった。|最後のワルツが終わり、客たちが仮面を外して帰っていった。舞踏会の夜が明けた。|庭園の噴水に朝日が差した。館の扉が閉ざされ、仮面の夜は終わった。')
+  };
+  var DAWN_P = {
+    out: L('{a}は巣の奥で羽を畳み、小さく丸まった。祓われかけた夜のことは、しばらく思い出したくない。|{a}は窓の外の朝日を恨めしそうに眺めた。今夜の狩りは途中で終わってしまった。次こそは、と{a}は尻尾を握りしめた。|{a}は巣に逃げ帰ったまま、朝まで震えていた。集めた精は{ml}ml。生きて帰れただけでもよしとするしかない。'),
+    love: L('{a}は朝日の中、一目惚れしたあの人の背中をもう一度だけ思い浮かべてから巣へ戻った。胸の奥が、精とは別のもので満たされていた。|{a}は巣に戻っても、すれ違ったあの人のことばかり考えていた。サキュバスが人間に恋をするなんて、と自分で自分に呆れながら。|{a}は羽を畳んで朝の空を見上げた。集めた精は{ml}ml。けれど、今夜いちばんの収穫は数字では測れなかった。'),
+    top: L('{a}は膨らんだ魔力を確かめるように、朝日の中で大きく羽を広げた。今夜いちばん多く集めたのは{a}だった（{ml}ml）。|{a}は誇らしげに尻尾を揺らして巣へ戻った。一晩で{ml}ml。仲間の誰よりも多い、文句なしの一位だった。|{a}は満腹の体でふわりと屋根に降り、夜明けの街を見下ろした。{ml}ml――この夜の主役は、間違いなく{a}だった。'),
+    good: L('{a}は満ち足りた顔で、朝焼けの空を巣へ向かって飛んだ。集めた精は{ml}ml。上出来の一夜だった。|{a}は巣に戻ると、{best}のことを思い出して小さく笑った。{ml}ml。サキュバスとして、十分に胸を張れる夜だった。|{a}は朝日を背に羽を畳んだ。{ml}ml――体の隅々まで、魔力が満ちていた。'),
+    mid: L('{a}は少し物足りなそうに、お腹をさすりながら巣へ戻った。集めた精は{ml}ml。悪くはないが、自慢できるほどでもない。|{a}は朝日に目を細めて、今夜の狩りを振り返った。{ml}ml。次はもう少しうまくやれるはずだ。|{a}は屋根の上で羽を休め、夜明けの街を見下ろした。{ml}ml。そこそこの夜だった。'),
+    bad: L('{a}はぺこぺこのお腹を抱えて、朝焼けの空をとぼとぼと飛んだ。集めた精は{ml}ml。今夜はうまくいかなかった。|{a}は巣に戻るなり、毛布をかぶってふて寝した。{ml}ml。サキュバスとしては、正直かなり恥ずかしい数字だ。|{a}は朝日を浴びて、しおしおと羽を垂らした。次の夜こそ、と{a}は小さくつぶやいて目を閉じた。')
+  };
+  var DAWN_SEN = L('{s}は最後の一人が巣に戻るのを見届けてから、ようやく自分の羽を畳んだ。先輩としての一夜も、これでおしまいだ。|{s}は{a}の背中を見送って、小さくあくびをした。面倒を見るのは疲れるが、悪い夜ではなかった。|{s}は朝日に目を細めながら、{a}の今夜の狩りを頭の中でもう一度なぞった。次の夜に教えることは、もう決まっている。');
+  var DAWN_END = {
+    many_ok: L('こうして{town}の一夜は明けた。{n}人で集めた精は合わせて{sum}ml。いちばんは{top}だった。|夜が明け、サキュバスたちはそれぞれの巣へ帰っていった。{town}の一夜、いちばん多く集めたのは{top}（{topml}ml）。|朝日が昇り、羽と尻尾は人の目から消えた。{town}の一夜は、{top}の勝ちで幕を下ろした。'),
+    many_ng: L('こうして{town}の一夜は明けた。いちばん多く集めた{top}でさえ{topml}ml。全員にとって、苦い夜になった。|夜が明け、サキュバスたちは肩を落として巣へ帰っていった。{town}の獲物は、今夜は手ごわかった。|朝日が昇り、羽と尻尾は人の目から消えた。{n}人で合わせて{sum}ml。次の夜への宿題が残った。'),
+    one_ok: L('こうして{top}の一夜は明けた。集めた精は{topml}ml、評価は{grade}。サキュバスとしての初めての夜は、上々の出来だった。|夜が明け、{top}の羽と尻尾は朝日に溶けるように消えた。{topml}ml――{town}での一夜は、十分な収穫で終わった。|朝が来た。{top}は{town}での一夜を胸にしまい、評価{grade}の成績で狩りを終えた。'),
+    one_ng: L('こうして{top}の一夜は明けた。集めた精は{topml}ml、評価は{grade}。初めての夜は、ほろ苦い結果に終わった。|夜が明け、{top}の羽と尻尾は朝日に溶けるように消えた。{topml}ml――{town}の夜は、思ったより厳しかった。|朝が来た。{top}は評価{grade}の成績で、{town}での一夜を終えた。次の夜こそは、と心に決めて。')
+  };
+  function dawnScene(S, T) {
+    var tk = Object.keys(SB.TOWNS).filter(function (k) { return SB.TOWNS[k] === T; })[0];
+    ST.say(S, { kind: 'phase', text: pkF(S, DAWN[tk] || DAWN.downtown) });
+  }
+  function closeNight(S, T, H, sen, rank, SE) {
+    if (!sen) { ST.step(S, '夜明け'); dawnScene(S, T); }
+    rank.forEach(function (p, k) {
+      var kind = p.out ? 'out' : p.inLove ? 'love' : k === 0 && rank.length > 1 && GOOD[p.grade] ? 'top' : GOOD[p.grade] ? 'good' : p.grade === 'C' ? 'mid' : 'bad';
+      var pool = DAWN_P[kind];
+      if (!p.best) pool = pool.filter(function (x) { return x.indexOf('{best}') < 0; });
+      ST.say(S, { actors: [p], tag: '夜明け', text: ST.fmt(pkF(S, pool), { a: p.name, ml: Math.round(p.m.ml), best: p.best ? p.best.name : '' }), why: p.name + 'の一夜：' + Math.round(p.m.ml) + 'ml・評価 ' + p.grade + (p.out ? '・' + p.outWhy : p.inLove ? '・獲物に恋をした' : '') });
+    });
+    if (sen) ST.say(S, { actors: [sen], tag: '夜明け', text: ST.fmt(pkF(S, DAWN_SEN), { s: sen.name, a: H.length > 1 ? '後輩たち' : H[0].name }), why: '先輩サキュバス（' + (SE ? SE.label : '') + '）' });
+    var top = rank[0], sum = Math.round(H.reduce(function (s, p) { return s + p.m.ml; }, 0));
+    var ek = (H.length > 1 ? 'many_' : 'one_') + (GOOD[top.grade] && !top.out ? 'ok' : 'ng');
+    var o = ST.say(S, { kind: 'phase', actors: [top], text: ST.fmt(pkF(S, DAWN_END[ek]), { town: T.name, n: H.length, sum: sum, top: top.name, topml: Math.round(top.m.ml), grade: top.grade }) });
+    ST.key(S, o, '夜明け：' + T.name + 'の一夜が終わった');
+  }
   /* ---------- 結果 ---------- */
   function finish(S, input, T, H, sen, SE) {
     var rank = H.slice().sort(function (a, b) { return b.m.ml - a.m.ml; });
@@ -448,9 +488,11 @@
     });
     if (sen) {
       ST.step(S, '夜明け');
+      dawnScene(S, T);
       rank.forEach(function (p) { if (p.rv) return ST.say(S, { actors: [sen, p], tag: '講評', text: p.name + 'への講評――' + sen.name + '「' + p.rv.text + '」', why: '評価 ' + p.grade + '（' + Math.round(p.m.ml) + 'ml）・' + p.rv.why }); ST.say(S, { actors: [sen, p], tag: '講評', text: sen.name + '→' + p.name + '：' + p.notes.filter(function (n) { return n.indexOf('講評') >= 0; })[0].replace(/^.*講評：/, ''), why: '評価 ' + p.grade + '（' + Math.round(p.m.ml) + 'ml）' }); });
       sen.fate = '後輩の面倒を見た'; sen.notes.push(SE.label + '：' + SE.eff);
     }
+    closeNight(S, T, H, sen, rank, SE);
     var top = rank[0];
     var title = H.length > 1 ? T.name + 'の一夜。いちばん多く集めたのは' + top.name + '（' + Math.round(top.m.ml) + 'ml）。' : top.name + 'の一夜：' + Math.round(top.m.ml) + 'ml（評価 ' + top.grade + '）。' + (top.out ? top.outWhy + '。' : top.inLove ? '最後は獲物に恋をしてしまった。' : '');
     var lines = rank.map(function (p, k) { return (k + 1) + '位 ' + p.name + '（' + p.style.label + '）' + Math.round(p.m.ml) + 'ml・成功' + p.cnt.win + '/' + p.cnt.tries + (p.best ? '・最高は' + p.best.name : '') + (p.out ? '・' + p.outWhy : ''); });
