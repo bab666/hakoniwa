@@ -75,7 +75,7 @@
   function L(s) { return s.split('|'); }
   var KIND = {
     bond: 'bond_heat bond_fated bond_vow bond_switch bond_buddy bond_rival bond_instinct fated_found',
-    lovers: 'lovers_beta lovers_aa lovers_oo lovers_resist lovers_scar lovers_nobond fated_switch stolen',
+    lovers: 'lovers_beta lovers_aa lovers_oo lovers_resist lovers_scar lovers_nobond fated_switch stolen mended',
     brk: 'break_drift break_bias break_switch break_cheat split_fated abandon second_mate',
     unreq: 'reject oneway_other pining rival_lost fated_late',
     apart: 'hesitate fated_free onenight strangers quit_alone',

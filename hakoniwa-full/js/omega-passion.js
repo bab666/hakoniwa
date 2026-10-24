@@ -218,6 +218,8 @@
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b), pb = partnerOf(ctx, b), pa = partnerOf(ctx, a);
       if (pf.couple || !HK.canLove(a, b) || !HK.canLove(b, a) || !(pb || pa) || pb === a) return false;
+      /* 浮気の二人：その場にいる・恋愛対象と受け攻め・恋愛・R18にしない相手・性行為の相手の固定（恋人だけ・決めた相手だけ）・R18に参加しない（omega-secret.js） */
+      if (OM.affairOk && !OM.affairOk(ctx, a, b)) return false;
       if (ctx.stepIndex - (pf.lastSteal == null ? -9 : pf.lastSteal) < 3) return false;
       /* 番のいるΩは、番以外を体が受けつけない */
       var mb = BD.mateOf(ctx, b), ma = BD.mateOf(ctx, a);
@@ -236,6 +238,8 @@
       var holder = pb ? b : a, part = pb || pa, rh = ctx.R(holder, part), other = holder === b ? a : b;
       var hold = rh.aff + rh.trust * 0.6 + (holder.tr.cp + holder.tr.ac) * 20 - ctx.R(holder, other).att * 1.15 - holder.tr.impulse * 28 - rh.ten * 0.5 - (heatOn(holder) || heatOn(other) ? 30 : 0) + (pf.night ? -10 : 0);
       if (holder === a) hold -= 25; /* 自分から浮気を仕掛ける側は、もう半分踏み外している */
+      /* 本命（関係）が恋人なら強く踏みとどまる。番の絆も少し効く（omega-secret.js） */
+      if (OM.loyalty) hold += OM.loyalty(ctx, holder, part, other);
       /* 相手が運命の番なら、運命の抗えなさが高いほど踏みとどまれない（低ければ逆に踏みとどまる） */
       var fd = OM.isFated && OM.isFated(ctx, a, b) ? ((OM.destiny ? OM.destiny(ctx) : 0.5) - 0.5) * 70 : 0;
       hold -= fd;
@@ -249,6 +253,8 @@
       var cheater = holder, victim = part;
       var cp = ctx.pair(cheater, victim);
       cp.cheat = { by: cheater.i, with: other.i, at: ctx.stepIndex, found: false };
+      /* 隠す → 発覚 → 言い訳か告白 → 修復か破局（omega-secret.js） */
+      if (OM.Secret) OM.Secret.start(ctx, cheater, victim, other, 'steal');
       ctx.mod2(a, b, { att: 8, aff: 3 }, { att: 8, aff: 3 });
       ctx.stress(cheater, 12);
       /* 受け攻めの指定：恋人を裏切る側（holder）が攻めなら、holder が抱かれ・痕をつけられる文は使わない */
@@ -256,11 +262,14 @@
       var motive = pb && ctx.R(a, pb).ten > 28 && a.tr.aggr > 0.45 && !hTop ? 'rival' : pb ? 'steal' : 'cheat';
       var nf = function (arr, re) { var f = arr.filter(function (l) { return !(hTop && re.test(l)); }); return f.length ? f : arr; };
       /* 寝取られる側（恋人を裏切る側）を、後半の文の主語にする */
-      var t2 = ctx.pick(lewd(ctx) === 'low' ? NT.low : nf(NT.scene, /快感/)) + ctx.pick(NT.after);
-      if (motive === 'cheat') t2 = t2.replace(/\{a\}/g, '{A}').replace(/\{b\}/g, '{a}').replace(/\{A\}/g, '{b}').replace(/\{sa\}/g, '{SA}').replace(/\{sb\}/g, '{sa}').replace(/\{SA\}/g, '{sb}');
-      var t = ctx.pick(motive === 'cheat' && HK.Pos && !hTop && HK.Pos.hardTop(b) ? NT.cheat.filter(function (l) { return !/上着を脱がせた/.test(l); }) : NT[motive]) + t2;
+      var sw = function (x) { return motive === 'cheat' ? x.replace(/\{a\}/g, '{A}').replace(/\{b\}/g, '{a}').replace(/\{A\}/g, '{b}').replace(/\{sa\}/g, '{SA}').replace(/\{sb\}/g, '{sa}').replace(/\{SA\}/g, '{sb}') : x; };
+      var s1 = sw(ctx.pick(lewd(ctx) === 'low' ? NT.low : nf(NT.scene, /快感/))), s2 = sw(ctx.pick(NT.after));
+      var head = ctx.pick(motive === 'cheat' && HK.Pos && !hTop && HK.Pos.hardTop(b) ? NT.cheat.filter(function (l) { return !/上着を脱がせた/.test(l); }) : NT[motive]);
+      /* R18版：夜そのものは、段落に分けた厚い版（omega-thick.js の OM.affairScene。受け攻め・女性どうし・女性攻め×男性・態度ごとの声はそちらで） */
+      var thick = !HK.SAFE_ON && lewd(ctx) !== 'low' && OM.affairScene ? OM.affairScene(ctx, a, b) : null;
+      var t = head + s1 + s2;
       var why = motive === 'rival' ? a.name + 'は恋敵の' + pb.name + 'から奪いたかった（緊張 ' + Math.round(ctx.R(a, pb).ten) + '）' : motive === 'steal' ? a.name + 'の惹かれ（' + Math.round(ctx.R(a, b).att) + '）と衝動性。恋人のいる' + b.name + 'が拒みきれなかった' : a.name + 'には恋人（' + pa.name + '）がいる。それでも' + b.name + 'への惹かれ（' + Math.round(ctx.R(a, b).att) + '）が勝った';
-      return { text: fill(ctx, t, a, b, part), why: why + (hateLove(ctx, a, b) ? '／愛憎' : '') + (fd ? '／運命の番' + fdw : ''), mag: 32 };
+      return { text: thick ? fill(ctx, head, a, b, part) + '\n\n' + thick + '\n\n' + fill(ctx, s2, a, b, part) : fill(ctx, t, a, b, part), why: why + (hateLove(ctx, a, b) ? '／愛憎' : '') + (fd ? '／運命の番' + fdw : ''), mag: 32 };
     }
   });
 

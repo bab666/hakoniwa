@@ -653,4 +653,28 @@
       return res;
     };
   });
+
+  /* 番・恋人のいる人の、ほかの人との夜（omega-passion.js の om_steal）：段落に分けた厚い版。このあと隠しごとの流れになる（omega-secret.js）。
+     {T}=攻め {U}=受け（HK.Pos.order。攻めを選んだ人は受けにしない）。描写の設定が「数行で短く」なら null を返し、元の一段落の版のまま */
+  var AFF_LEAD = L('「誰にも言わない」――それが、二人の最初の約束だった。|伏せたスマホが一度だけ震えて、すぐに静かになった。|知らない部屋の、知らないシーツの匂いがした。|');
+  var AFF_END = L('終わったあと、二人ともしばらく何も言わなかった。窓の外が白みはじめるまで、どちらもスマホに触れなかった。|' +
+    '{U}は天井を見上げたまま、帰る場所のことを考えないようにしていた。{T}の腕は、まだ{U}の腰に回ったままだった。|' +
+    'シャワーの音だけが、狭い部屋に長く響いていた。混ざり合った二人の匂いは、湯を浴びても簡単には落ちなかった。');
+  OM.affairScene = function (ctx, a, b) {
+    var lew = ctx.env.lewd || 'mid';
+    if (!TK.on(lew) || !HK.Pos || !HK.Voice) return null;
+    var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1];
+    if (!TK.ok(T, U)) return null;
+    var L4 = lw.last = lw(ctx);
+    if (L4.short && !L4.ero) return null;
+    var sc = OM.sc || function (t) { return t; }, pk = function (arr) { return fp(ctx, arr); };
+    if (L4.ero) return eroScene(ctx, T, U, '', sc(TK.names(pk(AFF_END), T, U), T, U), TK.kind(T, U, 'omega'));
+    var ff = HK.Pos.ff(T, U), kd = TK.kind(T, U, 'omega'), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(T, U);
+    var cp = cbPlay(pk, T, U, kd, riba);
+    var fin = lew === 'high' || ctx.rng() < 0.5 ? cbKnot(pk, T, U, kd, cp.cb) : '';
+    var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: lew === 'high' ? 3 : 1, lead: pk(AFF_LEAD), extra: [cp.play], finish: fin, after: pk(AFF_END) });
+    var text = sc(ctx.t(TK.map(body.replace(/\{sT\}/g, '{sa}').replace(/\{sU\}/g, '{sb}'), 'a', 'b'), T, U), T, U);
+    if (ff && HK.FF) text = HK.FF.fix(ctx, text, T, U, { tools: true });
+    return text;
+  };
 })();

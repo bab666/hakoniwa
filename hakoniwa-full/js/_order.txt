@@ -102,6 +102,7 @@ js/omega-mob.js
 js/omega-love.js
 js/omega-guard.js
 js/omega-ties.js
+js/omega-secret.js
 js/omega-thick.js
 js/omega-ties-r18.js
 late js/incidents-social.js
