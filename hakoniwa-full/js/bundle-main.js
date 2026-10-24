@@ -7698,6 +7698,142 @@
     '{b}は少し黙ってから、「ごめん」と小さく言った。'
   ];
 
+  /* 合コンの結末：お開き（一次会で解散）／終電で解散（二次会まで）。最後に「お開きのあと」（二次会まで行ったら「終電のあと」）の段で、誰が誰と帰ったか・一人で帰った人を締める */
+  var GC_OPEN = {
+    yes: [
+      '終電のアナウンスが流れ、カラオケの部屋の明かりが落ちた。{n}人の合コンは、駅前のロータリーで解散になった。最後に誰かが「楽しかった」と言い、何人かが頷いた。',
+      '二次会のカラオケは、最後の一曲を歌い切って終わった。終電間際の改札の前で、幹事が「今日はありがとう」と頭を下げた。それで、この夜の合コンはお開きになった。',
+      '終電の時刻が近づいて、誰からともなく上着を手に取った。カラオケ店の前で写真を一枚だけ撮った。{n}人の夜は、そこで解散になった。'
+    ],
+    no: [
+      '「じゃあ、そろそろ」という幹事の一言で、一次会がお開きになった。店の前の歩道で、{n}人は軽く手を振り合った。二次会の話は、誰も言い出さなかった。',
+      '会計を済ませて店の外に出ると、夜風が少し冷たかった。二次会には行かず、合コンはその場で解散になった。それぞれの帰り道が、店の前で分かれた。',
+      '店員がラストオーダーを告げに来て、宴はそこで締めになった。暖簾をくぐって外に出ると、通りはもう静かだった。{n}人の合コンは、そこで終わった。'
+    ]
+  };
+  var GC_PAIR = {
+    keep: [
+      '{a}と{b}は、最初から決まっていたように同じタクシーに乗った。恋人どうしの二人にとって、この合コンは少し長い寄り道だった。次の週末の約束は、もう決まっていた。',
+      '{a}と{b}は並んで店を出て、同じ部屋に帰っていった。周りに冷やかされても、二人は手を離さなかった。恋人のまま、二人の夜は終わった。',
+      '{b}の上着を{a}が持って、二人は一緒にタクシーを拾った。合コンの席では他人のふりをしていたが、帰り道はいつもの恋人どうしだった。二人の関係は、何も変わらなかった。'
+    ],
+    lover: [
+      '{a}と{b}は、同じタクシーで夜の街に消えた。次の朝には、二人は恋人どうしとして同じ駅に向かっていた。合コンで生まれた恋は、そのまま続いていくことになった。',
+      '{a}と{b}は二人で店を出て、それきり戻らなかった。朝が来るころ、二人は「付き合おう」と言い合っていた。この合コンは、二人にとって始まりの夜になった。',
+      '{a}と{b}を乗せたタクシーのテールランプが、角を曲がって見えなくなった。あの夜をきっかけに、二人は付き合い始めた。グループチャットには、あとで二人の写真が貼られた。'
+    ],
+    fwb: [
+      '{a}と{b}は同じタクシーに乗って帰った。恋人にはならなかったが、「またね」の約束だけが残った。二人は、名前のつかない関係に落ち着いた。',
+      '{a}と{b}は、店を出たあと同じ部屋で夜を明かした。朝になっても、二人は「好き」とは言わなかった。それでも連絡は、ときどき続くことになった。',
+      '{a}と{b}の夜は、恋人の夜ではなかった。次に会う約束は、決めないまま別れた。二人のあいだには、気楽で曖昧な関係だけが残った。'
+    ],
+    forget: [
+      '{a}と{b}は同じタクシーに乗った。けれど次の朝、二人はその夜のことを口にしなかった。合コンの記憶は、二人のあいだでだけ曖昧なまま閉じられた。',
+      '{a}と{b}の夜は、一度きりで終わった。翌朝のメッセージは、短い「おつかれ」だけだった。二人はそれきり、元の他人に戻った。',
+      '{a}と{b}は、店を出たあと同じ部屋に帰った。朝の光の中で、二人は目を合わせずに身支度をした。あの夜は、なかったことになった。'
+    ],
+    unsure: [
+      '{a}と{b}は同じタクシーで帰った。あの夜が何だったのか、二人ともまだ言葉にできていない。連絡先の一番上には、互いの名前が残った。',
+      '{a}と{b}の夜は明けた。「これって何なんだろうね」と言い合ったが、答えは出なかった。二人の関係は、まだ決まらないまま続いていく。',
+      '{a}と{b}は、朝の駅で別れた。次の約束をするかどうか、二人とも決めかねていた。合コンの夜の続きは、まだ書きかけのままだった。'
+    ],
+    walkLove: [
+      '駅まで一緒に歩いた{a}と{b}は、改札の前で恋人になっていた。それぞれの電車に乗ってからも、メッセージは途切れなかった。二人の恋は、合コンの帰り道から始まった。',
+      '{a}と{b}は、帰り道の途中で想いを確かめ合った。家に着くまで、二人は電話をつないだままだった。二人にとって、今夜は付き合い始めた日になった。',
+      '終電の窓越しに、{a}は{b}に手を振った。{b}も、ホームから大きく振り返した。恋人になったばかりの二人の夜は、そこで静かに終わった。'
+    ],
+    couple: [
+      '店の中で想いを伝え合った{a}と{b}は、手を繋いで駅に向かった。改札の前で、二人はなかなか手を離せなかった。恋人どうしになった二人は、次の約束をしてから別れた。',
+      '{a}と{b}は、皆に冷やかされながら二人で帰っていった。合コンの席で始まった恋は、駅までの道でもう当たり前の顔をしていた。二人の帰り道は、恋人の帰り道だった。',
+      '{a}と{b}は同じ方向の電車に乗った。並んで吊り革につかまり、降りる駅までずっと話していた。この夜の合コンは、二人が恋人になった夜として残った。'
+    ],
+    walk: [
+      '{a}と{b}は同じ方向の電車に乗った。恋人にはならなかったが、また会う理由はできた。降りる駅で、二人は少しだけ名残惜しそうに手を振った。',
+      '{a}と{b}は駅まで一緒に歩いた。その先の約束はまだないが、連絡先は交換した。二人にとって、悪くない夜の終わりだった。',
+      '{a}と{b}は改札の前で「またね」と言い合った。友達以上かどうかは、まだ分からない。二人の合コンは、静かな余韻を残して終わった。'
+    ]
+  };
+  var GC_SOLO = {
+    crash: [
+      '{a}は最後まで酔いが抜けず、誰かの肩を借りてタクシーに乗せられた。翌朝のことは、ほとんど覚えていなかった。グループチャットの写真で、{a}は自分の醜態を知った。',
+      '{a}は店の前でしゃがみ込んだまま、しばらく立てなかった。結局、幹事が家の前まで送り届けた。{a}の合コンは、酔いつぶれて終わった。',
+      '{a}はタクシーの中で眠ってしまった。運転手に起こされたとき、もう家の前だった。誰と何を話したのか、{a}の記憶は途中で途切れていた。'
+    ],
+    leave: [
+      '{a}は解散の声と同時に、まっすぐ駅へ向かった。目標どおり、誰とも寄り道しなかった。家に着くと、{a}はすぐに靴を脱いでソファに倒れ込んだ。',
+      '{a}は「おつかれ」とだけ言って、誰よりも早く改札を抜けた。電車の中で、{a}はやっと肩の力を抜いた。{a}にとって、合コンは無事に終わった仕事だった。',
+      '{a}は二次会の誘いをかわして、一人で帰った。帰り道のコンビニで、好きなアイスを買った。{a}の夜は、それでちょうどよかった。'
+    ],
+    jilt: [
+      '{a}は、{b}がほかの人と帰っていくのを、改札の向こうから見送った。声をかけるきっかけは、最後まで来なかった。{a}は一人で電車に乗った。',
+      '{a}は{b}の後ろ姿が見えなくなるまで、駅の前に立っていた。スマホを開いて、送りかけたメッセージを消した。{a}の合コンは、片想いのまま終わった。',
+      '{a}は、{b}と最後に交わした会話を思い返しながら帰った。{b}の隣にいたのは、自分ではなかった。{a}は終電の窓に額をつけて、目を閉じた。'
+    ],
+    alone: [
+      '{a}は一人で電車に乗った。窓に映る自分の顔が、少しだけ赤かった。誰とも帰らなかったが、悪い夜ではなかった。',
+      '{a}は駅で皆と別れて、一人で家路についた。今夜交換した連絡先を、ひとつずつ眺めた。次につながるかどうかは、まだ分からない。',
+      '{a}は帰り道、コンビニで水を一本買った。今夜の会話を思い出して、一人で小さく笑った。{a}の合コンは、そこで終わった。'
+    ]
+  };
+  var GC_LAST = {
+    love: [
+      'こうして、この夜の合コンは{k}組の恋人を残して終わった。',
+      'あの夜の合コンから、{k}組の恋人が生まれた。グループチャットはしばらく、その話題で持ちきりになった。',
+      'この合コンは、{k}組の恋が始まった夜として、皆の記憶に残った。'
+    ],
+    pair: [
+      '恋人は生まれなかったが、一緒に帰った組はあった。この夜の合コンは、それぞれに少しずつ何かを残して終わった。',
+      '誰が誰と帰ったのか、翌日のグループチャットで小さな噂になった。それも、この合コンの締めくくりだった。',
+      'この夜の合コンは、恋人こそ生まれなかったものの、次の約束をいくつか残して終わった。'
+    ],
+    none: [
+      '結局、誰も誰とも帰らなかった。グループチャットに残った集合写真だけが、この夜の名残になった。',
+      'この夜の合コンは、誰とも結ばれないまま幕を閉じた。翌日、幹事から「また飲もう」とだけメッセージが届いた。',
+      '全員がそれぞれの電車で帰り、合コンは何事もなく終わった。恋は始まらなかったが、それもまた一つの結末だった。'
+    ]
+  };
+  function gClose(ctx, P, used) {
+    var T = (ctx.flags.together || []).filter(function (t) { return ctx.chars[t.a] && ctx.chars[t.b]; });
+    var second = ctx.env.second === 'yes';
+    ctx.label = second ? '終電のあと' : 'お開きのあと';
+    ctx.say({ kind: 'step', cat: 'phase', text: ctx.label });
+    ctx.say({ text: ctx.pick(GC_OPEN[second ? 'yes' : 'no']).replace(/\{n\}/g, P.length), mag: 25, why: '結末：' + (second ? '二次会のあと、終電で解散' : '一次会でお開き') });
+    var loves = 0, kinds = [];
+    T.forEach(function (t) {
+      var a = ctx.chars[t.a], b = ctx.chars[t.b], pf = ctx.pair(a, b), k;
+      if (t.night) k = t.outc === 'keep' ? 'keep' : t.outc === 'fwb' ? 'fwb' : t.outc === 'forget' ? 'forget' : (t.outc === 'lover' || pf.couple) ? 'lover' : 'unsure';
+      else k = t.walk ? 'walkLove' : pf.couple ? 'couple' : 'walk';
+      if (k === 'lover' || k === 'walkLove' || k === 'couple') loves++;
+      kinds.push(k);
+      ctx.say({ text: ctx.t(ctx.pick(GC_PAIR[k]), a, b), actors: [a, b], mag: 25, why: '結末：一緒に帰った二人（' + { keep: 'もとから恋人', lover: '恋人になった', fwb: '恋人ではない関係', forget: 'なかったことに', unsure: 'まだ決まらない', walkLove: '帰り道で恋人に', couple: '店で恋人に', walk: '一緒に帰っただけ' }[k] + '）' });
+    });
+    var solos = P.filter(function (c) { return !used[c.i]; }), shown = solos.slice(0, 4), rest = solos.slice(4);
+    shown.forEach(function (c) {
+      var cr = ctx.crush(c, 45), k, b = null;
+      if (c.fate === '潰れた') k = 'crash';
+      else if (cr && used[cr.i]) { k = 'jilt'; b = cr; }
+      else if (c.goal && c.goal.id === 'leave') k = 'leave';
+      else k = 'alone';
+      ctx.say({ text: ctx.t(ctx.pick(GC_SOLO[k]), c, b), actors: [c], mag: 25, why: '結末：一人で帰った（' + { crash: '酔いつぶれた', jilt: (b ? b.name : '') + 'はほかの人と帰った', leave: '目標「早く帰りたい」', alone: '誰とも帰らなかった' }[k] + '）' });
+    });
+    if (rest.length) ctx.say({ text: names(rest) + 'も、それぞれの電車で帰っていった。誰の手にも、今夜交換した連絡先が少しずつ残っていた。', actors: rest, mag: 25 });
+    var lk = loves ? 'love' : T.length ? 'pair' : 'none';
+    ctx.say({ text: ctx.pick(GC_LAST[lk]).replace(/\{k\}/g, loves === 1 ? '一' : loves === 2 ? '二' : loves === 3 ? '三' : String(loves)), mag: 25, why: '結末：恋人になった組 ' + loves + '／一緒に帰った組 ' + T.length });
+    /* 結末の題 */
+    if (!ctx.flags.outcome) {
+      var head = second ? '合コンは終電で解散' : '合コンはお開き', tail;
+      if (!T.length) tail = '誰も誰とも帰らなかった';
+      else {
+        var LV = { lover: 1, walkLove: 1, couple: 1 }, lp = T.filter(function (t, i) { return LV[kinds[i]]; });
+        var nmOf = function (l) { return l.slice(0, 2).map(function (t) { return ctx.chars[t.a].name + 'と' + ctx.chars[t.b].name; }).join('、') + (l.length > 2 ? 'ほか' : ''); };
+        if (lp.length) tail = nmOf(lp) + 'が恋人になった';
+        else if (kinds.every(function (k) { return k === 'keep'; })) tail = nmOf(T) + '（恋人どうし）が一緒に帰った';
+        else tail = nmOf(T) + (kinds.every(function (k) { return k !== 'walk'; }) ? 'が同じタクシーで帰った' : 'が一緒に帰った');
+      }
+      ctx.flags.outcome = head + ' ― ' + tail;
+    }
+  }
+
   /* ======================= 合コン ======================= */
   add({
     id: 'goukon', name: '合コン', kicker: '恋愛・社交',
@@ -7818,7 +7954,8 @@
         var night = imp > 0.55 && rng() < imp * 0.9;
         if (night) ctx.pair(c.a, c.b).night = true;
         c.a.fate = c.b.fate = night ? 'お持ち帰り' : '一緒に帰った';
-        (ctx.flags.together = ctx.flags.together || []).push({ a: c.a.i, b: c.b.i, night: night });
+        var tg = { a: c.a.i, b: c.b.i, night: night };
+        (ctx.flags.together = ctx.flags.together || []).push(tg);
         c.a.fateNote = c.b.name + 'と' + (night ? '同じ部屋に帰った' : '同じ方向の電車に乗った');
         c.b.fateNote = c.a.name + 'と' + (night ? '同じ部屋に帰った' : '同じ方向の電車に乗った');
         ctx.k = 1; ctx._mag = 0; ctx._touched = {};
@@ -7832,6 +7969,7 @@
         if (outc === 'lover' || outc === 'keep') ctx.pair(c.a, c.b).couple = true;
         /* 一緒に帰っただけの二人も、想いが通じ合っていれば帰り道で付き合うことに */
         var walkLove = !night && !ctx.pair(c.a, c.b).couple && Math.min(R(ctx, c.a, c.b).aff, R(ctx, c.b, c.a).aff) >= 36 - rf * 6 && Math.min(R(ctx, c.a, c.b).att, R(ctx, c.b, c.a).att) >= 50 - rf * 6;
+        tg.outc = outc; tg.walk = walkLove;
         if (walkLove) { ctx.pair(c.a, c.b).couple = true; c.a.fateNote += '。帰り道で付き合うことになった'; c.b.fateNote += '。帰り道で付き合うことになった'; }
         if (outc === 'forget') ctx.pair(c.a, c.b).forgot = true;
         var e = ctx.say({ kind: 'event', cat: 'romance', actors: [c.a, c.b], text: night ? c.a.name + 'と' + c.b.name + 'は、店を出たあと同じタクシーに乗った。' + (gn ? gn.text : 'その先のことは、二人しか知らない。') + (gn ? '' : (function () {
@@ -7852,6 +7990,7 @@
         else { c.fate = '一人で帰った'; c.fateNote = c.goal.id === 'leave' ? '目標どおり、さっさと帰った' : '終電の窓に映る自分の顔を見ていた'; }
         out.push(c);
       });
+      gClose(ctx, P, used);
     },
     events: [
       {
@@ -11328,6 +11467,91 @@
       var a = C[i], b = C[j], kn = ctx.pair(a, b).known || {}, na = Object.keys(kn[a.i] || {}).length, nb = Object.keys(kn[b.i] || {}).length;
       if (na + nb >= 3) notes.push(a.name + 'と' + b.name + 'は、部屋の中でお互いのことを' + (na + nb) + 'つ知った。');
     }
+    return r;
+  };
+})();
+
+/* ---------- 結末の締め：部屋の外へ出た人・残った人を、記録の最後にまとめる ----------
+   結末の条件：全員が部屋を出る／一人しか出られない部屋で誰かが出る／残りが一人になる／限界の時刻が来る（scenario-room.js の end）。
+   どの終わり方でも、最後に「結末」の段と、その回の結果から組み立てた締めの文を一つ入れる */
+(function () {
+  'use strict';
+  var HK = window.HK, RA = HK.RoomAPI;
+  if (!RA || !RA.scen) return;
+  var scen = RA.scen;
+  function L(s) { return s.split('|'); }
+  function nm(list) { list = list.map(function (c) { return c.name; }); return list.length > 6 ? list.slice(0, 6).join('・') + 'ほか' + (list.length - 6) + '人' : list.join('・'); }
+  function fill(t, o) { return t.replace(/\{(\w+)\}/g, function (m, k) { return o[k] != null ? o[k] : m; }); }
+  var OPEN = {
+    all: L('{t}。最後の扉が閉まると、白い部屋の照明がひとりでに落ちた。振り返ったときには、扉のあった場所はただの壁になっていた。部屋には、もう誰も残っていない。|{t}。{W}外に出たところで、背後の扉は音もなく消えた。廊下の先には、見覚えのある街の夜景が広がっていた。白い部屋の話は、それで終わりになった。|{t}。外の空気は、思っていたよりずっと冷たかった。最後に出た人が振り返ると、白い部屋はもうどこにもなかった。白い部屋のことを胸にしまって、{W}元の日常へ帰っていった。'),
+    some: L('{t}。扉は、それきり開かなくなった。白い部屋には{L}だけが残された。照明がひとつずつ落ちていき、最後に扉の紙の文字だけが白く光っていた。|{t}。外へ出た人たちの足音が遠ざかると、部屋はまた静かになった。{L}は閉じた扉の前に座りこんだ。白い部屋は、{L}を閉じ込めたまま次の時間を待っている。|{t}。{L}がどれだけ扉を叩いても、返ってくる音はなかった。白い部屋に残ったのは{L}と、使い道のなくなった時間だけだった。'),
+    none: L('{t}。照明が最後の一段まで落ち、白い部屋は真っ暗になった。扉の紙の条件は、誰ひとり満たせなかった。{L}は暗闇の中で、互いの息づかいだけを数えていた。|{t}。扉は最後まで開かなかった。{L}は壁にもたれて、朝とも夜ともつかない白い光を黙って見上げていた。この部屋から出た人は、一人もいない。|{t}。時間切れを知らせるように、扉の紙の文字がすっと消えた。{L}は顔を見合わせたが、誰も何も言わなかった。白い部屋は、全員を閉じ込めたまま静まり返った。'),
+    sacrifice: L('{a}がくぐった扉は、二度と開かなかった。外の光の中で、{a}は何度も振り返った。背中を押してくれた{b}の顔を、{a}は一生忘れないだろう。|{a}は一人で外の世界に戻った。{b}に押された背中の感触が、いつまでも消えなかった。白い部屋には、{L}が残された。|外に出た{a}は、扉のあった場所の壁に額をつけた。向こう側で{b}が待っている気がした。けれど、扉は二度と現れなかった。'),
+    grab: L('一人で外に出た{a}は、振り返らずに歩き出した。白い部屋に置いてきた{L}のことを、{a}は誰にも話さなかった。|{a}が抜け出したあと、扉は二度と開かなかった。{L}は閉じた扉を見つめたまま、長いあいだ動かなかった。|外の空気を吸った{a}は、一度だけ立ち止まった。それから、白い部屋のことは忘れたふりをして歩き出した。部屋には、まだ{L}が残っている。')
+  };
+  var STAYED = L('{S}は、扉が開いても外へ出なかった。自分で選んで、白い部屋に残った。|{S}は開いた扉を見送って、自分から部屋に残ることを選んだ。|{S}にとっては、外より白い部屋の方が居心地がよかったらしい。{S}は自分の意思で残った。');
+  var PAIR = {
+    love: L('{a}と{b}は、部屋を出たその足で一緒に帰った。駅までの道で、どちらからともなく手を繋いだ。|一週間後、{a}と{b}は改めて待ち合わせをした。あの部屋のことは話さなかったが、帰り際に{b}の方から次の約束を口にした。|{a}と{b}は、それからも会うようになった。白い部屋で始まった関係は、外でも続いている。'),
+    fwb: L('{a}と{b}は、外では恋人のふりをしなかった。それでも月に何度か、どちらかから短い連絡が届いた。|部屋を出たあとも、{a}と{b}はときどき会った。名前のない関係のまま、夜だけが重なっていく。|{a}と{b}は、またね、とだけ言って別れた。その「また」は、案外すぐにやってきた。'),
+    awk: L('部屋を出た{a}と{b}は、外の明るさに目を細めたまま、ろくに挨拶もせず別々の方向へ歩き出した。|{a}と{b}は、あの部屋でのことを一度も口にしなかった。連絡先も、交換しないままだった。|{a}は{b}に何か言いかけて、やめた。二人のあいだのことは、白い部屋に置いてきたことになった。'),
+    friend: L('{a}と{b}は外に出ると、肩を叩き合って笑った。あの部屋の話は、いつのまにか二人だけの笑い話になった。|{a}と{b}は連絡先を交換した。たまに届くメッセージは、決まって「生きてる？」の一言から始まった。|部屋を出た{a}と{b}は、近くの店で遅い食事をとった。特別な何かにはならなかったが、いい友人になった。'),
+    far: L('{a}と{b}は扉を出たところで別れた。名前のほかは、互いのことをほとんど知らないままだった。|{a}と{b}は外に出るなり、目も合わせずに別々の道を選んだ。二人がまた会うことは、たぶんない。|外に出ると、{a}と{b}はそれぞれのスマホを確かめ、短く会釈して離れた。白い部屋で一緒だったことだけが、二人の接点だった。'),
+    go: L('{a}は先に外へ出た。部屋に残った{b}のことが、帰り道のあいだずっと頭から離れなかった。|{a}は一人で外の空気を吸った。残ると決めた{b}の顔を思い出して、少しだけ笑った。|{a}は振り返らずに外へ出た。{b}とは、それきりになった。'),
+    group: L('{G}は外に出ると、誰からともなく大きく息を吐いた。それから、近くの店でそろって朝食をとった。|{G}は扉の外で一度だけ振り返り、それぞれの帰り道へ散っていった。|外に出た{G}は、あの部屋のことは「なかったこと」にしようと決めた。けれど、全員の連絡先はちゃんと残っていた。')
+  };
+  function kindOf(ctx, a, b) {
+    var pf = ctx.pair(a, b), r1 = ctx.R(a, b), r2 = ctx.R(b, a);
+    var att = (r1.att + r2.att) / 2, aff = (r1.aff + r2.aff) / 2, ten = (r1.ten + r2.ten) / 2;
+    if (pf.couple || (att > 45 && aff > 35)) return 'love';
+    if (pf.fwb) return 'fwb';
+    if (pf.night) return 'awk';
+    if (aff > 20 && ten < 40) return 'friend';
+    return 'far';
+  }
+  function closing(ctx, late) {
+    var C = ctx.chars, P = ctx.present(), out = C.filter(function (c) { return c.out; });
+    var stayed = P.filter(function (c) { return c.flags.stayed; }), left = P.filter(function (c) { return !c.flags.stayed; });
+    var t = String(ctx.label || '').replace(/（.*$/, '');
+    t = !t || t === '目覚め' ? '目覚めてまもなく' : '目覚めてから' + t;
+    var ex = ctx.flags.exits || [], parts = [], title, who = P.length ? P : out;
+    var one = ex.filter(function (e) { return e.how === 'sacrifice' || e.how === 'grab'; })[0];
+    if (!out.length) {
+      parts.push(fill(ctx.pick(OPEN.none), { t: t, L: nm(P) }));
+      title = '誰も出られなかった';
+    } else if (one) {
+      var a = C[one.a], b = C[one.b];
+      parts.push(fill(ctx.pick(OPEN[one.how]), { a: a.name, b: b.name, L: nm(P) || b.name }));
+      title = a.name + 'だけが外へ出た';
+    } else {
+      var grp = ex.filter(function (e) { return e.group && !e.trio; })[0];
+      if (!P.length && grp && ex.length === 1) { title = '全員が部屋を出た'; parts.push(t + '、'); }
+      else if (!P.length) { parts.push(fill(ctx.pick(OPEN.all), { t: t, W: C.length === 2 ? '二人とも' : '全員が' })); title = C.length === 2 ? '二人とも部屋を出た' : '全員が部屋を出た'; }
+      else if (left.length) { parts.push(fill(ctx.pick(OPEN.some), { t: t, L: nm(left) })); title = nm(left) + 'が取り残された'; }
+      else { parts.push(fill(ctx.pick(OPEN.all), { t: t, W: '条件を満たした人は' }).replace('部屋には、もう誰も残っていない。', '')); title = nm(stayed) + 'が自分から残った'; }
+      if (stayed.length) parts.push(fill(ctx.pick(STAYED), { S: nm(stayed) }));
+      ex.forEach(function (e) {
+        if (e.trio) return; /* 三人で出た組は room-trio.js の後日談がある */
+        if (e.group) { var g = e.group.map(function (i) { return C[i]; }); parts.push(fill(ctx.pick(PAIR.group), { G: nm(g) })); return; }
+        var x = C[e.a], y = C[e.b];
+        if (e.stay != null) { parts.push(fill(ctx.pick(PAIR.go), { a: x.name, b: y.name })); return; }
+        parts.push(fill(ctx.pick(PAIR[kindOf(ctx, x, y)]), { a: x.name, b: y.name }));
+      });
+    }
+    (late || []).forEach(function (e) { parts.push(e.text); });
+    ctx.flags.outcome = (ctx.flags.outcome || ctx.flags.roomLabel || '') + ' ― ' + title;
+    ctx.say({ kind: 'step', cat: 'phase', text: '結末' });
+    ctx.say({ kind: 'event', cat: 'phase', cageOk: true, actors: who, text: parts.join(''), why: '結末：' + title, mag: 30 });
+  }
+  var fin0 = scen.finish;
+  scen.finish = function (ctx) {
+    var s0 = ctx.log.length;
+    var r = fin0 ? fin0.apply(this, arguments) : undefined;
+    ctx.flush();
+    /* 三人の後日談（room-trio.js）は、部屋の締めの文の後ろにまとめる */
+    var late = [];
+    for (var i = ctx.log.length - 1; i >= s0; i--) if (/^部屋を出たあとの三人/.test(ctx.log[i].why || '')) late.unshift(ctx.log.splice(i, 1)[0]);
+    for (var j = s0; j < ctx.log.length; j++) ctx.log[j].n = j;
+    closing(ctx, late);
     return r;
   };
 })();
@@ -15538,6 +15762,66 @@
       return { text: g.text, why: g.why, mag: 18 };
     }
   });
+})();
+
+/* ---------- 結末の締め：決まった結末（ctx.om.ending）を、記録の最後に一つの場面として置く ----------
+   結末の条件：誰か一組の関係が結末に届いた時点（omega-bond.js の B.check）。3年たっても届かなければ、いちばん濃い組で打ち切る。
+   後日談（ネックガード・巣作り）のあとに「結末」の段と、結末の種類ごとに書き分けた締めの文を入れる */
+(function () {
+  'use strict';
+  var HK = window.HK, scen = HK.SCENARIOS && HK.SCENARIOS.omega;
+  if (!scen) return;
+  function L(s) { return s.split('|'); }
+  var KIND = {
+    bond: 'bond_heat bond_fated bond_vow bond_switch bond_buddy bond_rival bond_instinct fated_found',
+    lovers: 'lovers_beta lovers_aa lovers_oo lovers_resist lovers_scar lovers_nobond fated_switch stolen',
+    brk: 'break_drift break_bias break_switch break_cheat split_fated abandon second_mate',
+    unreq: 'reject oneway_other pining rival_lost fated_late',
+    apart: 'hesitate fated_free onenight strangers quit_alone',
+    fwb: 'fwb affair',
+    hate: 'lovehate',
+    friend: 'friends rivals buddy',
+    shinju: 'ob_shinju',
+    dark: 'ob_forced ob_trapped ob_nest ob_codep ob_yandere'
+  };
+  var OF = {};
+  Object.keys(KIND).forEach(function (k) { KIND[k].split(' ').forEach(function (id) { OF[id] = k; }); });
+  var SCENE = {
+    bond: L('季節がひと回りしたころ、{a}と{b}は同じ鍵を持つようになった。玄関には、いつも二人分の靴が並んでいる。|{b}のうなじの噛み跡は、もう痛まない。{a}は今でもときどき、そこにそっと唇を寄せる。|二人の部屋には、互いの匂いが混ざり合って染みついた。{a}と{b}は、それを「うちの匂い」と呼んでいる。'),
+    lovers: L('{a}と{b}の毎日は、大きな事件もなく続いている。朝はどちらかが先に起きて、もう一人の分のコーヒーを淹れる。|休みの日、{a}と{b}は並んで街を歩いた。すれ違う誰の匂いにも、もう振り返らなかった。|{a}は{b}の隣で、来月の予定を話した。その先の予定も、当たり前のように二人分だった。'),
+    brk: L('{a}の部屋から、{b}の匂いが少しずつ消えていった。最後に残ったのは、返しそびれた一枚のシャツだけだった。|{a}と{b}は、駅のホームで最後の挨拶をした。電車が来るまで、どちらも目をそらさなかった。|{b}は引っ越しの段ボールに、二人で撮った写真を伏せてしまい込んだ。それで、一つの季節が終わった。'),
+    unreq: L('{a}は今も、{b}の匂いがする場所を通るたび、少しだけ足をゆるめる。|季節が変わっても、{a}と{b}の距離は変わらなかった。届かなかった言葉は、{a}の胸の中で静かに丸くなった。|{a}は{b}に宛てた言葉を、最後まで送らなかった。下書きのまま、それは今もスマホの中にある。'),
+    apart: L('{a}と{b}は、それぞれの道を歩いている。すれ違うことはあっても、もう立ち止まることはない。|{a}は新しい季節の中で、自分の暮らしを続けた。{b}もまた、どこかで同じようにしているのだろう。|{a}と{b}の話は、ここで一度幕を下ろした。続きがあるのかどうかは、まだ誰にも分からない。'),
+    fwb: L('{a}のスマホに、{b}から短いメッセージが届いた。用件は書いていない。書かなくても分かった。|{a}と{b}は、朝になるとそれぞれの顔に戻る。名前のない関係は、名前のないまま続いていく。|{a}は{b}の部屋の合鍵を持っていない。それでも次の発情期がいつ来るかは、二人とも知っている。'),
+    hate: L('{a}と{b}は、今日もどこかで言い合いをしている。その声が途切れた夜にだけ、二人の距離はなくなる。|{a}は{b}の悪口を言うたび、少しだけ声が甘くなる。{b}も、それに気づかないふりを続けている。|{a}と{b}の関係に、名前はまだない。憎まれ口と熱のあいだを、二人は行ったり来たりしている。'),
+    friend: L('{a}と{b}は、今日も変わらない調子で顔を合わせた。それ以上でも以下でもない距離が、二人にはちょうどよかった。|{a}が困ったとき、最初に連絡するのは{b}だった。恋ではなかったが、それに負けない縁だった。|{a}と{b}は、何年たってもこうして会うのだろう。恋の話にはならなかったが、それを惜しいと思うこともなかった。'),
+    shinju: L('二人の部屋は、しばらくして静かに片づけられた。残された匂いも、季節が変わるころには消えていった。|{a}と{b}の名前は、小さな記事の片隅に載っただけだった。街は何事もなかったように、次の季節へ進んだ。|誰もいなくなった部屋の窓辺に、二人がよく並んでいた場所の跡だけが残った。'),
+    dark: L('{a}と{b}の部屋のカーテンは、昼でも閉じたままになった。外の誰も、二人の本当の顔を知らない。|{b}の周りには、いつも{a}の匂いがまとわりついている。それを愛と呼ぶのか、檻と呼ぶのか、もう誰にも決められない。|街は何も変わらずに季節を進めた。ただ{a}と{b}だけが、その流れから少し外れたところで、二人きりで閉じている。')
+  };
+  var WHEN = L('{m}か月が過ぎた。|見守りはじめて{m}か月。|こうして、{m}か月がたった。');
+  var TIMEOUT = L('三年がたっても、二人の関係はそれ以上動かなかった。|三年という時間が、二人の答えになった。|気づけば、三年が過ぎていた。');
+  function closing(ctx) {
+    var E = ctx.om && ctx.om.ending;
+    if (!E) return;
+    var a = ctx.chars[E.a], b = E.b != null ? ctx.chars[E.b] : null;
+    var k = OF[E.id] || 'apart';
+    if (!b) k = 'apart';
+    var m = Math.ceil((ctx.stepIndex + 1) / 2);
+    /* 全年齢版では「果て」が言い換えの対象になるので、題を言い換えておく */
+    if (HK.SAFE_ON && E.title === '執着の果て') { E.title = '執着の行き着く先'; ctx.flags.outcome = E.title; }
+    var t = (E.timeout ? ctx.pick(TIMEOUT) : ctx.pick(WHEN).replace('{m}', m)) + (E.text || '');
+    t += ctx.t(ctx.pick(SCENE[k]), a, b || a);
+    (E.others || []).forEach(function (o) { t += String(o.text || '').replace(/^[^：。]{1,24}：/, ''); });
+    ctx.say({ kind: 'step', cat: 'phase', text: '結末「' + E.title + '」' });
+    ctx.say({ kind: 'event', cat: 'phase', cageOk: true, actors: b ? [a, b] : [a], text: t, why: '結末：' + E.title, mag: 30 });
+  }
+  var fin0 = scen.finish;
+  scen.finish = function (ctx) {
+    var r = fin0 ? fin0.apply(this, arguments) : undefined;
+    ctx.flush();
+    closing(ctx);
+    return r;
+  };
 })();
 ;/* ==== js/omega-thick.js ==== */
 /* 箱庭シミュレーター: R18版の山場（小説調）を段落に分けて厚くする ― 共通の組み立て（HK.TKC）とオメガバース（R18版のみ）
@@ -21663,7 +21947,179 @@
       t.fate = '担任'; t.fateNote = '一年間クラスを受け持った' + (fav ? '。一番慕っていたのは' + fav.name : '');
       note(ctx, '担任の' + t.name + '：最も慕っていたのは' + (fav ? fav.name : '—') + (foe && R(ctx, foe, t).ten > 25 ? '、最後まで反発していたのは' + foe.name : '') + '。');
     }
+    closeYear(ctx);
   };
+
+  /* ===== 結末：一年（一学期だけのときは一学期）の終わり。修了式・卒業式・終業式の段で、恋人・親友・いじめ・不登校・担任を締める ===== */
+  var CE_CER = {
+    grad: [
+      '卒業式の日。体育館に名前が一人ずつ呼ばれ、{n}人は卒業証書を受け取った。式のあと、教室の黒板には誰かが大きく「ありがとう」と書いていた。',
+      '三月、卒業式。校歌の最後の一節で、何人かの声が震えた。最後のホームルームが終わると、{n}人はそれぞれの春へ向かって校門を出た。',
+      '卒業式が終わり、校庭の桜はまだ三分咲きだった。胸に花をつけた{n}人は、最後にもう一度だけ教室を振り返った。高校生活は、そこで終わった。'
+    ],
+    mixed: [
+      '三月。卒業式で三年生を送り出し、数日後には修了式があった。{n}人それぞれの一年が、同じ体育館で区切りを迎えた。',
+      '卒業式の日、校門の前には花束を抱えた三年生が並んだ。在校生はその背中を見送り、自分たちの修了式を待った。学園の一年は、そこで一巡りした。',
+      '三月の終わり、卒業する者と進級する者が、最後に同じ廊下ですれ違った。卒業式と修了式が終わり、学園の一年は幕を閉じた。'
+    ],
+    year: [
+      '三月、修了式。通知表を受け取って、{n}人はこの教室で過ごす最後の日を迎えた。来月には、クラス替えが待っている。',
+      '修了式の日。最後のホームルームで、黒板の隅の日直の欄が消された。このクラスで過ごした一年は、その日で終わった。',
+      '三月の終わり、修了式が済むと、教室の机はがらんとして見えた。{n}人の一年は、春休みの手前で静かに区切りを迎えた。'
+    ],
+    term: [
+      '七月、終業式。体育館は蒸し暑く、校長の話はいつもより長く感じた。通知表を受け取って、{n}人の一学期は終わった。',
+      '終業式の日。最後のホームルームで、夏休みの課題の束が配られた。教室の窓から、蝉の声が入ってきた。一学期は、そこで区切りを迎えた。',
+      '七月の終わり、終業式が済むと、教室は一気に夏休みの空気になった。{n}人は、それぞれの夏へ散っていった。'
+    ]
+  };
+  var CE_COUPLE = {
+    grad: [
+      '{a}と{b}は、卒業式のあと校門の前で並んで写真を撮った。制服で会うのは今日が最後でも、二人の関係は続いていく。恋人どうしのまま、二人は卒業した。',
+      '{a}と{b}は、誰もいなくなった教室で最後に二人きりになった。「卒業しても、会おうね」と、どちらからともなく言った。二人は恋人として、次の春へ向かった。',
+      '{a}は{b}の制服の第二ボタンを、照れくさそうに受け取った。この一年で恋人になった二人は、手を繋いで校門を出た。'
+    ],
+    year: [
+      '{a}と{b}は、修了式の帰り道を並んで歩いた。春休みに会う日を、二人で何度も確かめ合った。恋人どうしのまま、二人は春休みを迎えた。',
+      '{a}と{b}は、この一年で恋人になった。最後のホームルームのあと、二人はいつもの屋上で少しだけ話した。春休みの予定は、もう二人で決めてあった。',
+      '{a}と{b}の机は、一年の終わりには自然と近くにあった。クラスの誰もが、二人が付き合っていることを知っていた。二人は恋人のまま、次の春を迎える。'
+    ],
+    term: [
+      '{a}と{b}は、終業式の帰り道に夏祭りの約束をした。一学期のうちに恋人になった二人の夏は、これから始まる。',
+      '{a}と{b}は、夏休みの課題を一緒にやる約束をして別れた。恋人どうしになった二人は、校門の前でなかなか手を離さなかった。',
+      '{a}と{b}は、終業式のあと誰もいない昇降口で少しだけ話した。恋人になって最初の夏休みが、二人を待っていた。'
+    ]
+  };
+  var CE_FRIEND = {
+    grad: [
+      '{a}と{b}は、卒業アルバムの寄せ書きのページを互いに埋め合った。この一年で、二人は親友になっていた。進む道は違っても、連絡は続くはずだ。',
+      '{a}と{b}は、卒業式のあと最後に二人で購買の前を通った。一年前は名前も知らなかった二人が、今は肩を並べて笑っていた。',
+      '{a}は{b}に「卒業しても、たまには会おう」と言った。{b}は「当たり前でしょ」と返した。二人の友情は、卒業では終わらなかった。'
+    ],
+    year: [
+      '{a}と{b}は、この一年でいちばんの友達になった。修了式のあと、二人は四月からも変わらずつるもうと、冗談半分に約束した。',
+      '{a}と{b}は、最後のホームルームのあとも、なかなか教室を出なかった。一年分の話をしても、まだ話し足りなかった。',
+      '{a}と{b}は、春休みに遊ぶ約束をして別れた。一年前に出会ったのは偶然でも、今の二人の仲は偶然ではなかった。'
+    ],
+    term: [
+      '{a}と{b}は、一学期のうちにすっかり仲良くなった。終業式の帰り道、二人は夏休みの予定を三つも立てた。',
+      '{a}と{b}は、終業式のあとも教室に残って話し込んだ。四月には他人だった二人が、今は一番の友達になっていた。',
+      '{a}は{b}に「夏休み、毎週どこか行こう」と言った。{b}は笑って頷いた。二人の一学期は、友情で締めくくられた。'
+    ]
+  };
+  var CE_RIVAL = [
+    '{a}と{b}は、最後まで張り合ったままだった。最後の日も、二人は目を合わせずに教室を出た。決着は、次の季節に持ち越された。',
+    '{a}と{b}の間の溝は、最後まで埋まらなかった。それでも、互いを意識し続けた{span}だったことは、二人とも分かっていた。',
+    '{a}は最後の日、{b}の席の前で一瞬だけ立ち止まった。何も言わずに通り過ぎた。二人の対立は、和解しないまま区切りを迎えた。'
+  ];
+  var CE_BULLY = {
+    on: [
+      '{b}へのいじめは、最後まで止まらなかった。{a}は最後の日まで態度を変えず、{b}は誰とも目を合わせずに教室を出た。その{span}は、{b}にとって長すぎた。',
+      '最後のホームルームの間も、{b}の机の周りだけ空気が冷たかった。{a}が始めたことを、誰も止められないまま{span}が終わった。',
+      '{b}は最後の日、誰よりも先に教室を出た。{a}たちの笑い声が、廊下まで追いかけてきた。この教室は、最後まで{b}の居場所にならなかった。'
+    ],
+    off: [
+      '{b}へのいじめは、{c}に止められて終わっていた。最後の日、{b}は少しだけ顔を上げて教室を出た。傷は残っても、{b}の{span}は最悪のままでは終わらなかった。',
+      '一度は{b}を苦しめたいじめも、年度の終わりにはもう影を潜めていた。{b}は最後のホームルームで、小さく「ありがとう」と言った。',
+      '{a}と{b}の間にあったことは、なかったことにはならない。それでも、いじめが止まってからの{b}は、少しずつ笑うようになっていた。'
+    ]
+  };
+  var CE_ABSENT = [
+    '{a}の席は、最後の日まで空いたままだった。机の中には、届けられなかったプリントが溜まっていた。{a}は{s}から、教室に戻らなかった。',
+    '{cer}の日も、{a}の名前が呼ばれたとき返事はなかった。担任は通知表を封筒に入れ、「届けておく」とだけ言った。{a}の{span}は、{s}で止まっていた。',
+    '{a}は{s}以来、学校に来ていない。{cer}のあとのホームルームで、誰かが{a}の机に寄せ書きの色紙をそっと置いた。届くかどうかは、分からない。'
+  ];
+  var CE_TIRED = [
+    '{a}は{span}の終わり、教室にいないことが増えていた。最後の日はかろうじて登校したが、誰とも話さずに帰った。',
+    '{a}の顔色は、{span}の終わりにはすっかり疲れて見えた。春休みが来ることだけが、今の{a}の救いだった。',
+    '{a}は最後のホームルームの途中で、保健室へ行った。この{span}で、{a}は少し無理をしすぎていた。'
+  ];
+  var CE_LONE = [
+    '{a}は最後まで、特定の誰かと深く関わることはなかった。それでも窓際の席から見たこの教室の{span}を、{a}は案外気に入っていた。',
+    '{a}は{cer}のあと、誰とも寄り道せずに一人で帰った。一人の時間が多い{span}だったが、{a}にとってはそれが楽だった。',
+    '{a}は最後の日、自分の机の落書きを消してから教室を出た。親しい友達はできなかったが、この教室を嫌いにはならなかった。'
+  ];
+  var CE_TEACHER = [
+    '担任の{a}は、最後のホームルームで「{span}間、ありがとう」と頭を下げた。いちばん名残惜しそうにしていたのは、{b}だった。',
+    '担任の{a}は、空になった教室で一人、出席簿を閉じた。この{span}でいちばん慕ってくれた{b}の字が、学級日誌に何度も出てきた。',
+    '担任の{a}は、生徒たちが帰ったあと黒板を消した。{b}が最後に「また先生のクラスがいい」と言っていったのを思い出していた。'
+  ];
+  var CE_LAST = {
+    grad: [
+      'こうして、このクラスの高校生活は終わった。教室には、もう誰も戻ってこない。',
+      '卒業した{n}人は、それぞれの道へ歩き出した。この教室で過ごした日々は、もう思い出の中にしかない。',
+      '校門の前の人影が一人ずつ減っていき、最後には誰もいなくなった。このクラスの物語は、卒業でひとつの終わりを迎えた。'
+    ],
+    year: [
+      'こうして、このクラスの一年は終わった。四月には、また新しい教室が始まる。',
+      '春休みが来て、この教室の名簿は役目を終えた。同じ顔ぶれで過ごす一年は、もう二度と来ない。',
+      '一年分の出来事を残して、教室の鍵が閉められた。このクラスは、そこで解散になった。'
+    ],
+    term: [
+      'こうして、このクラスの一学期は終わった。二学期には、また同じ教室に{n}人が戻ってくる。',
+      '夏休みが始まり、教室は九月まで静かになった。一学期の物語は、ここで一区切りだった。',
+      '一学期の出来事を残して、教室の窓が閉められた。このクラスの最初の季節は、そこで幕を閉じた。'
+    ]
+  };
+  function closeYear(ctx) {
+    var term = ctx.env.span === 'term', mixed = ctx.env.grade === 'all';
+    var S = ctx.chars.filter(function (c) { return c.alive && !c.flags.teacher && c.flags.caged == null; });
+    if (!S.length) return;
+    var allGrad = !term && S.every(function (c) { return c.grade === 3; });
+    var someGrad = !term && S.some(function (c) { return c.grade === 3; });
+    var ck = term ? 'term' : allGrad ? 'grad' : mixed && someGrad ? 'mixed' : 'year';
+    var lk = term ? 'term' : allGrad ? 'grad' : 'year';
+    var label = term ? '終業式' : allGrad ? '卒業式' : ck === 'mixed' ? '卒業式・修了式' : '修了式';
+    ctx.label = label;
+    ctx.say({ kind: 'step', cat: 'phase', text: label });
+    var span = term ? '一学期' : '一年', nIn = S.filter(function (c) { return !c.out; }).length;
+    function fill(s, a, b, c) { return ctx.t(s, a, b, c).replace(/\{n\}/g, nIn).replace(/\{span\}/g, span).replace(/\{cer\}/g, label); }
+    function say(s, actors, why) { return ctx.say({ text: s, actors: actors || [], mag: 25, why: why ? '結末：' + why : '' }); }
+    say(fill(ctx.pick(CE_CER[ck])), [], term ? '一学期の終わり（終業式）' : allGrad ? '三年生の卒業' : ck === 'mixed' ? '卒業と進級' : '一年の終わり（修了式）');
+    var used = {}, couples = [], friends = [], rivals = [];
+    S.forEach(function (a, i) { S.slice(i + 1).forEach(function (b) {
+      var pf = ctx.pair(a, b), ab = R(ctx, a, b), ba = R(ctx, b, a);
+      if (pf.couple) couples.push([a, b, Math.min(ab.aff, ba.aff)]);
+      else if (Math.min(ab.aff, ba.aff) >= 30) friends.push([a, b, Math.min(ab.aff, ba.aff) + Math.min(ab.trust, ba.trust) * 0.5]);
+      if (!pf.couple && Math.min(ab.ten, ba.ten) >= 40) rivals.push([a, b, Math.min(ab.ten, ba.ten)]);
+    }); });
+    [couples, friends, rivals].forEach(function (l) { l.sort(function (x, y) { return y[2] - x[2]; }); });
+    var gradOf = function (a, b) { return term ? 'term' : (a.grade === 3 && b.grade === 3) ? 'grad' : 'year'; };
+    /* 一人が複数の組に数えられているとき（古い恋人の印が残っているなど）は、いちばん好意の強い組だけにする */
+    var cu = {}; couples = couples.filter(function (p) { if (cu[p[0].i] || cu[p[1].i]) return false; cu[p[0].i] = cu[p[1].i] = 1; return true; });
+    couples.slice(0, 3).forEach(function (p) { used[p[0].i] = used[p[1].i] = 1; say(fill(ctx.pick(CE_COUPLE[gradOf(p[0], p[1])]), p[0], p[1]), [p[0], p[1]], '恋人になった二人'); });
+    if (couples.length > 3) say('ほかにも、' + couples.slice(3).map(function (p) { return p[0].name + 'と' + p[1].name; }).join('、') + 'が恋人どうしのまま' + (term ? '夏休みを迎えた。' : '一年を終えた。'), [], '恋人になった組');
+    var fc = 0;
+    friends.forEach(function (p) { if (fc >= 2 || used[p[0].i] || used[p[1].i]) return; fc++; used[p[0].i] = used[p[1].i] = 1; say(fill(ctx.pick(CE_FRIEND[gradOf(p[0], p[1])]), p[0], p[1]), [p[0], p[1]], '親しくなった二人（好意 ' + Math.round(p[2]) + '）'); });
+    if (rivals[0]) say(fill(ctx.pick(CE_RIVAL), rivals[0][0], rivals[0][1]), [rivals[0][0], rivals[0][1]], '最後まで続いた対立（緊張 ' + Math.round(rivals[0][2]) + '）');
+    var B = ctx.flags.bully;
+    if (B && ctx.chars[B.by] && ctx.chars[B.tg]) {
+      var ba = ctx.chars[B.by], bt = ctx.chars[B.tg], stopper = B.stopped && B.stopped.by != null ? ctx.chars[B.stopped.by] : null;
+      var pool = B.stopped ? CE_BULLY.off.filter(function (l) { return stopper || l.indexOf('{c}') < 0; }) : CE_BULLY.on;
+      if (!(bt.out && bt.flags.absent)) { used[bt.i] = 1; say(fill(ctx.pick(pool), ba, bt, stopper), [bt], B.stopped ? 'いじめは止まった' : 'いじめは年度末まで続いた'); }
+    }
+    S.filter(function (c) { return c.out && c.flags.absent; }).slice(0, 3).forEach(function (c) { used[c.i] = 1; say(fill(ctx.pick(CE_ABSENT), c).replace(/\{s\}/g, c.flags.absent.since), [], c.name + 'は不登校のまま'); });
+    S.filter(function (c) { return !used[c.i] && c.fate === '休みがちに'; }).slice(0, 2).forEach(function (c) { used[c.i] = 1; say(fill(ctx.pick(CE_TIRED), c), [c], '負担が大きいまま（' + Math.round(c.stress) + '）'); });
+    S.filter(function (c) { if (used[c.i] || c.out) return false; var o = ctx.closest(c); return !o || R(ctx, c, o).aff < 15; }).slice(0, 2).forEach(function (c) { used[c.i] = 1; say(fill(ctx.pick(CE_LONE), c), [c], '親しい相手がいないまま'); });
+    var t = ctx.teacher;
+    if (t && t.alive) {
+      var fav = ctx.most(S.filter(function (c) { return !c.out; }), function (c) { return R(ctx, c, t).trust + R(ctx, c, t).aff; });
+      if (fav) say(fill(ctx.pick(CE_TEACHER), t, fav), [t], '担任を一番慕っていた生徒');
+    }
+    say(fill(ctx.pick(CE_LAST[lk])), [], '');
+    /* 結末の題 */
+    if (!ctx.flags.outcome) {
+      var head = term ? '一学期が終わった' : allGrad ? '卒業' : ck === 'mixed' ? '卒業式と修了式' : '一年が終わった', tail;
+      var absent = S.filter(function (c) { return c.out && c.flags.absent; });
+      if (B && !B.stopped && ctx.chars[B.tg]) tail = ctx.chars[B.tg].name + 'へのいじめは最後まで止まらなかった';
+      else if (couples.length) tail = couples[0][0].name + 'と' + couples[0][1].name + (couples.length > 1 ? 'ほか、恋人が' + couples.length + '組できた' : 'が恋人になった');
+      else if (absent.length) tail = absent[0].name + 'は教室に戻らなかった';
+      else if (friends.length) tail = friends[0][0].name + 'と' + friends[0][1].name + 'が親友になった';
+      else if (rivals.length) tail = rivals[0][0].name + 'と' + rivals[0][1].name + 'は最後まで対立したまま';
+      else tail = '大きな事件もなく、それぞれの距離のまま';
+      ctx.flags.outcome = head + ' ― ' + tail;
+    }
+  }
 })();
 ;/* ==== js/endings.js ==== */
 /* 箱庭診断: 結末の要約（一目で分かる見出し・数字・箇条書き） */
@@ -28911,6 +29367,62 @@
     ctx.chars.forEach(function (c) { var t = SP.endNote(c); if (t) c.fateNote = (c.fateNote ? c.fateNote + '／' : '') + t; });
   };
 })();
+
+/* ---------- 結末の締め：生き延びた人・街を出た人・失われた人を、記録の最後にまとめる ----------
+   結末の条件：最終日が終わる（救助ヘリ／救助なし／街ごと焼き払われる）か、街に残る人がいなくなる（zombie-core.js の end）。
+   最後に「結末」の段と、その回の生死から組み立てた締めの文を入れる */
+(function () {
+  'use strict';
+  var HK = window.HK, Z = HK.ZB, sc = Z && Z.scen;
+  if (!sc) return;
+  function L(s) { return s.split('|'); }
+  function nm(list) { list = list.map(function (c) { return c.name; }); return list.length > 6 ? list.slice(0, 6).join('・') + 'ほか' + (list.length - 6) + '人' : list.join('・'); }
+  function fill(t, o) { return t.replace(/\{(\w+)\}/g, function (m, k) { return o[k] != null ? o[k] : m; }); }
+  var T = {
+    heli: L('{G}を乗せたヘリは、朝日の中を海の方へ飛んでいった。窓の外で、街の煙が小さくなっていく。しばらく誰も口をきかなかった。|{G}は、ヘリの床に座りこんだまま毛布を肩にかけられた。隣にいる人の体温だけが、生き延びた証だった。|避難キャンプに降り立った{G}は、配られた温かい汁物を、黙って最後の一滴まで飲んだ。悪夢は、ひとまずここで終わった。'),
+    out: L('{G}は、街の境を越えたところで一度だけ振り返った。煙の上がる街は、もう遠い景色になっていた。|{G}は、検問の灯りを目指して夜道を歩き続けた。街の外にも、ちゃんと朝は来るらしかった。|街を抜け出した{G}は、知らない町の避難所で、久しぶりに靴を脱いで眠った。'),
+    stay: L('{D}日目の夜が明けた。{G}は{P}で、残った食料を数え直した。この先どうなるかは分からない。それでも、今日を生き延びた。|{G}は{P}の窓から、昇ってくる朝日を眺めた。呻き声は遠い。生き残った人だけの、静かな朝だった。|{D}日が過ぎた。{G}は{P}で、交代で見張りに立つ順番を決めた。この街で生きていくための、最初の決まりごとだった。'),
+    missed: L('ヘリの音が消えた空を、{G}はしばらく見上げていた。|救助は、{G}のいる場所には降りてこなかった。|乗りそこねたヘリの影を、{G}は黙って見送った。'),
+    zomb: L('{Z}は、今も呻き声の群れの中にいる。|{Z}だったものが、まだ街のどこかをさまよっている。|{Z}の名前を呼んでも、もう返事はない。'),
+    dead: L('{X}は、この{D}日間を越えられなかった。|{X}の名前を、生き残った人は忘れない。|{X}は、帰ってこなかった。'),
+    burn: L('{D}日目の夜、街は白い炎に包まれた。{X}の足跡も叫び声も、すべて灰の下に消えた。生き残った人は、一人もいなかった。|空が白く光ったあと、街には何も残らなかった。{X}がここで生きていたことを知る人は、もういない。|炎は朝まで燃え続けた。{X}が身を寄せ合った場所も、守ろうとしたものも、すべて灰になった。'),
+    wipe: L('{D}日目、街に動くものはもう人の姿をしていなかった。{X}の話は、ここで途切れた。|誰もいなくなった避難所で、手回しラジオだけが救助の呼びかけを繰り返していた。応える声は、もうなかった。|{D}日目。街には呻き声だけが残った。{X}がここで生きていたことを、知る人はいない。'),
+    burnOut: L('その夜、背後の街は白い炎に包まれた。|街を出たあと、遠くの空が白く光った。|夜になって、街は丸ごと焼き払われた。')
+  };
+  function closing(ctx) {
+    var C = ctx.chars, env = ctx.env, D = parseInt(ctx.label, 10) || env.days;
+    var heli = C.filter(function (c) { return c.out && c.fate === '救助された'; });
+    var out = C.filter(function (c) { return c.out && c.fate !== '救助された'; });
+    var stay = C.filter(function (c) { return c.alive && !c.out; });
+    var zomb = C.filter(function (c) { return !c.alive && c.fate === 'ゾンビ化'; });
+    var dead = C.filter(function (c) { return !c.alive && c.fate !== 'ゾンビ化'; });
+    var gone = zomb.concat(dead), t = '', title;
+    var area = function (list) { return list.map(function (c) { return c.z && ctx.zb.A[c.z.area] ? ctx.zb.A[c.z.area].name : ''; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; }).join('や'); };
+    if (!heli.length && !out.length && !stay.length) {
+      t = fill(ctx.pick(env.end === 'burn' && D >= env.days ? T.burn : T.wipe), { D: D, X: nm(gone) });
+      title = env.end === 'burn' && D >= env.days ? '街は焼き払われた ― 全滅' : '全滅';
+    } else {
+      if (heli.length) t += fill(ctx.pick(T.heli), { G: nm(heli) });
+      if (out.length) t += fill(ctx.pick(T.out), { G: nm(out) });
+      if (env.end === 'burn' && (heli.length || out.length) && D >= env.days) t += ctx.pick(T.burnOut);
+      if (stay.length) t += (env.end === 'heli' && D >= env.days ? fill(ctx.pick(T.missed), { G: nm(stay) }) : '') + fill(ctx.pick(T.stay), { G: nm(stay), D: D, P: area(stay) || '街の片隅' });
+      if (zomb.length) t += fill(ctx.pick(T.zomb), { Z: nm(zomb) });
+      if (dead.length) t += fill(ctx.pick(T.dead), { X: nm(dead), D: D });
+      title = heli.length ? '救助ヘリで脱出' : out.length ? '街を脱出' : env.end === 'heli' && D >= env.days ? '救助を逃して生き延びた' : env.end === 'none' && D >= env.days ? '最後の日を生き延びた' : '生き延びた';
+      title += ' ― ' + (ctx.flags.outcome || '');
+    }
+    ctx.flags.outcome = title;
+    ctx.say({ kind: 'step', cat: 'phase', text: '結末' });
+    ctx.say({ kind: 'event', cat: 'phase', cageOk: true, actors: heli.concat(out, stay).length ? heli.concat(out, stay) : gone, text: t, why: '結末：' + title, mag: 30 });
+  }
+  var fin0 = sc.finish;
+  sc.finish = function (ctx) {
+    var r = fin0 ? fin0.apply(this, arguments) : undefined;
+    ctx.flush();
+    closing(ctx);
+    return r;
+  };
+})();
 ;/* ==== js/rpg-special.js ==== */
 /* 箱庭シミュレーター: ダンジョンRPG ― 特殊役職（不死・吸血鬼）（special.js の組み込み）
    ・倒れたまま助からなかった不死・吸血鬼は、次の階に下りる前に起き上がる（魔術師に攫われているあいだは戻らない）
@@ -31426,6 +31938,46 @@
     }
   }
 
+  /* ---------- 終業：営業時間が終わったら一日の区切り（その回の結末に合わせた締め） ---------- */
+  var CLOSE = {
+    clinic: { label: '診療終了', t: L('{end}時、待合室の照明が落ちた。受付の札が『本日の診療は終了しました』に裏返され、{place}の一日の診察が終わった。|最後のカルテが棚に戻され、{place}の自動ドアに鍵がかかった。消毒液のにおいだけが、静かな診察室に残った。|{end}時、閉院のアナウンスが流れた。採取済みの検体が保冷庫にずらりと並び、{place}の診療は今日も滞りなく終わった。') },
+    hotel: { label: 'おもてなしの終わり', t: L('{end}時、フロントの照明が夜間用に切り替わった。{place}の今日のおもてなしは、これでおしまいだ。|最後の客室の扉が閉まり、廊下に静けさが戻った。{place}のおもてなしの時間が、今日も終わった。|{end}時、館内放送が今日のおもてなしの終了を告げた。客室係の台車が一台ずつ、裏の通路へ戻っていった。') },
+    office: { label: '終業のチャイム', t: L('{end}時、終業のチャイムがフロアに鳴り響いた。{place}の一日の業務が、これで終わった。|終業のチャイムとともに、パソコンの画面が一台ずつ暗くなっていった。{place}の福利厚生室にも、鍵がかけられた。|{end}時、終業のチャイム。打刻機の前に短い列ができ、{place}のフロアから人が引いていった。') },
+    spa: { label: '暖簾を下ろす', t: L('{end}時、番台の前に『本日終了』の札が下がった。{place}の暖簾が下ろされ、湯気だけが天井に残った。|最後の客が湯から上がると、洗い場の桶がきれいに積み直された。{place}の一日が、今日も終わった。|{end}時、表の暖簾が下ろされた。{place}の湯船の湯が抜かれ、タイルを流す音だけが響いていた。') },
+    gym: { label: '閉館', t: L('{end}時、閉館の音楽が流れ始めた。{place}のマシンが一台ずつ拭き上げられ、照明が落とされた。|最後のセッションが終わり、{place}のシャッターが下ろされた。汗とタオルのにおいが、静かなフロアに残った。|{end}時、出退勤のボードが一斉に『退館』に変わった。{place}の一日の営業が終わった。') }
+  };
+  var FATE_END = {
+    '完全に改変された': L('{p}は{role}の制服をきちんと畳んでロッカーにしまった。今日の{unit}は{n}件。誇らしい一日だった、と{p}は本気で思っていた。|{p}は道具を一つずつ消毒して棚に戻した。{n}件の{unit}をこなした手は、もう次の営業日の段取りを考えている。|帰り支度をしながら、{p}は今日いちばん喜んでくれた相手の顔を思い出して、満足そうに頷いた。{p}にとって、これはただの立派な仕事だった。'),
+    '常連客になった': L('{p}は会計を済ませ、次の{unit}の予約を入れてから{place}を出た。帰り道の足取りは、来たときよりずっと軽かった。|{p}は受付でスタンプカードに判を押してもらった。あと少しで特典だ。{p}は当たり前のように、来週もここへ来るつもりでいる。|{p}は{place}の看板を振り返り、満ち足りた顔で帰っていった。今日だけで{ml}ml。それが普通のことだと、{p}は信じきっていた。'),
+    '違和感を抱えたまま': L('{p}は帰り際、{place}の入口で一度だけ立ち止まった。何かが引っかかっている。けれど、それが何なのかは最後まで言葉にならなかった。|{p}は鏡に映った自分の顔をしばらく見つめた。今日の自分は、本当に普通だったのだろうか。答えが出ないまま、{p}は灯りを消した。|{p}は胸の奥のもやもやを抱えたまま帰路についた。明日になれば忘れているかもしれないし、忘れていないかもしれない。'),
+    '違和感を打ち消した': L('{p}は一瞬よぎった疑いを、首を振って追い払った。おかしいのは自分のほうだ。そう決めてしまうと、{p}の心はすっと静かになった。|{p}は今日の違和感を、ただの疲れのせいにした。よく眠れば元どおりになる。{p}はそう言い聞かせて{place}をあとにした。|{p}はもう何も疑っていなかった。疑ったことさえ、帰る頃にはきれいに忘れていた。'),
+    '再改変された': L('{p}はぼんやりとした顔で更衣室を出た。昼間に何かに気づいた気がするが、思い出せない。{p}の中で、改変はまた深く根を張っていた。|{p}はすっかり元どおりの笑顔で挨拶をして帰っていった。一度ほどけかけた改変は、前よりも固く結び直されていた。|{p}は鼻歌まじりに{place}をあとにした。今日の途中で抱いた疑いは、跡形もなく消えている。'),
+    '気づかないふりを続けた': L('{p}は何も気づいていない顔のまま、最後まで{role}を演じきった。{place}を出て角を曲がった瞬間、{p}はようやく深く息を吐いた。|{p}は笑顔で挨拶をして頭を下げた。その笑顔の下で、{p}だけが今日の異常をはっきりと覚えている。|{p}は誰にも悟られないまま帰り支度を終えた。明日もまた、気づかないふりをしてここへ来るしかない。秘密を抱えた一日が、そうして終わった。'),
+    '気づいたうえで続けた': L('{p}はすべてわかったうえで、最後の{unit}まで続けた。おかしな世界だ。それでも、{p}はこの世界が嫌いではなかった。|{p}は帰り際、{place}の看板を見上げて小さく笑った。これが異常だと、もう知ってしまった。それでも明日も来る、と{p}は決めていた。|{p}は火照りの残る体を抱えて、満ち足りた顔で帰っていった。気づいてしまったことは、もう{p}にとって楽しみの一つになっていた。'),
+    '正気に戻った': L('{p}は{place}を出たところで振り返り、二度とここへは来ないと心に決めた。正気に戻った頭で見ると、灯りの消えた建物はひどく異様だった。|{p}は着替えもそこそこに外へ出て、夜の空気を深く吸い込んだ。自分は目を覚ましてしまった。その重さを抱えたまま、{p}は家路を急いだ。|{p}は帰りの電車で、今日起きたことを手帳に書き留めた。明日になれば、自分もまた忘れてしまうかもしれない。だから、せめて記録だけは残しておく。'),
+    '逃げ出した': L('{p}は{place}から遠く離れた公園のベンチで、ようやく息を整えた。あの建物の中で起きていたことを、誰に話せば信じてもらえるだろう。|{p}は逃げ帰った部屋で鍵を二重にかけた。窓の外の街は、何事もなかったように静かだった。|{p}は二度と{place}の前を通らない道を選んで帰った。逃げ切れたのは、たぶん運が良かっただけだ。'),
+    '改変に呑み込まれた': L('{p}は終わりの片づけを当たり前のように手伝っていた。朝、あれほど戸惑っていたことは、もう思い出せない。|{p}は次の予約を入れてから帰っていった。正気のまま紛れ込んだはずの人は、もうどこにもいなかった。|{p}はほかの人たちと笑い合いながら{place}を出た。その笑顔は、もうこの世界の住人のものだった。'),
+    '正気のまま居残った': L('{p}は最後まで正気のまま、{place}の片隅でその一日を見届けた。誰に訴えても、首をかしげられるだけだった。|{p}は閉店まで居残り、灯りが落ちるのを見届けてから外へ出た。おかしいのは世界のほうだ。{p}はそれだけは手放さなかった。|{p}は帰り道、すれ違う人たちの顔を一人ずつ確かめた。誰もが穏やかで、誰もが改変されていた。{p}は正気のまま、その中に取り残されていた。')
+  };
+  var DAY_END = {
+    woke: L('{place}の一日が終わった。{names}だけが目を覚ましたが、世界はまだ何も変わっていない。明日の朝もまた、同じ営業が始まる。|灯りの消えた{place}に、明日の予約表だけが残された。{names}が見つけたほころびは、まだ小さな一つにすぎない。|こうして{place}の一日は幕を下ろした。{unit}は合わせて{total}件。目を覚ましたのは{names}だけだった。'),
+    noticed: L('{place}の一日が終わった。{names}は違和感に触れたが、世界は少しも揺らがなかった。|こうして{place}の一日は幕を下ろした。{names}が覚えた引っかかりも、一晩眠れば薄れていくのだろう。|灯りが落ちた{place}は、明日の営業を静かに待っている。{names}の違和感だけを、誰にも知られないまま残して。'),
+    none: L('{place}の一日が終わった。{unit}は合わせて{total}件。誰ひとり、何もおかしいとは思わなかった。|こうして{place}の一日は、何事もなく幕を下ろした。改変された世界では、これが今日もいつもどおりの一日だった。|灯りが落ちた{place}の前を、帰りの人たちが穏やかな顔で通り過ぎていく。明日もまた、同じ一日が始まる。')
+  };
+  function closeDay(S, SIT, place, sid, woke, noticed, total) {
+    var P = S.P, end = (START[sid] + S.env.slots) % 24, C = CLOSE[sid] || CLOSE.office;
+    ST.step(S, C.label);
+    S.label = C.label;
+    ST.say(S, { kind: 'phase', text: ST.fmt(pkF(S, C.t), { end: end, place: place }) });
+    P.forEach(function (p) {
+      var pool = FATE_END[p.fate] || FATE_END[p.role === 'giver' ? '完全に改変された' : '常連客になった'];
+      if (!p.cnt.served) pool = pool.filter(function (x) { return x.indexOf('{n}') < 0 && x.indexOf('{ml}') < 0; });
+      ST.say(S, { actors: [p], tag: '一日の終わり', text: ST.fmt(pkF(S, pool), { p: p.name, role: p.roleLabel, unit: SIT.unit, n: p.cnt.served, ml: Math.round(p.m.sem), place: place }), why: p.name + 'の結末：' + p.fate });
+    });
+    var k = woke.length ? 'woke' : noticed.length ? 'noticed' : 'none';
+    var o = ST.say(S, { kind: 'phase', actors: (k === 'woke' ? woke : noticed), text: ST.fmt(pkF(S, DAY_END[k]), { place: place, names: names(k === 'woke' ? woke : noticed), unit: SIT.unit, total: total }) });
+    ST.key(S, o, '営業終了：' + place + 'の一日が終わった');
+  }
   /* ---------- 結末 ---------- */
   function fateOf(p) {
     if (p.role === 'out') return p.fled ? '逃げ出した' : p.sunk ? '改変に呑み込まれた' : '正気のまま居残った';
@@ -31455,6 +32007,7 @@
     var lines = P.map(function (p) { return p.name + '（' + p.roleLabel + '）：' + p.fate; });
     if (topG) lines.push('いちばん搾ったのは' + topG.name + '（' + Math.round(topG.m.sem) + 'ml）');
     var total = G.reduce(function (s, g) { return s + g.cnt.served; }, 0), sem = G.reduce(function (s, g) { return s + g.m.sem; }, 0);
+    closeDay(S, SIT, place, sid, woke, noticed, total);
     var rows = P.slice().sort(function (a, b) { return (b.role === 'giver') - (a.role === 'giver') || b.m.sem - a.m.sem; }).map(function (p, k) {
       return { i: p.i, rank: '', cells: [p.roleLabel, String(p.cnt.served), Math.round(p.m.sem) + 'ml', String(p.role === 'giver' ? p.cnt.gclimax : p.cnt.climax), String(Math.round(p.m.doubt)), p.fate] };
     });
@@ -32310,6 +32863,46 @@
     ST.say(S, { actors: [a, b], tag: '取り合い', text: spot + 'で、' + ST.fmt(pkF(S, SB.RIVAL || ['{a}と{b}が同じ獲物の両腕をそれぞれ掴んでいた。「私が先に見つけたの！」――獲物が選んだのは{w}だった。{l}は尻尾をしならせて、悔しそうに見送った。']), { a: a.name, b: b.name, w: w.name, l: l.name }) + '（' + w.name + ' +' + ml2 + 'ml）', why: w.name + 'の魅力と技巧が上回った', mag: 22 });
   }
 
+  /* ---------- 夜明け：夜が明けたら狩りはおしまい（その夜の成績に合わせた締め） ---------- */
+  var DAWN = {
+    downtown: L('東の空が白み始め、ネオンが一つずつ消えていった。夜の繁華街に、始発を待つ人の足音だけが残った。|朝日がビルの隙間から差し込んだ。路地裏の看板の灯りが落ち、夜の繁華街の狩りの時間が終わった。|カラスが鳴き、ゴミ収集車が通りを抜けていった。夜の繁華街に、朝が来た。'),
+    office: L('東の空が白み、オフィスビルの窓が一枚ずつ朝の色に染まっていった。残業明けの街の夜が終わった。|始発の電車がホームに滑り込んだ。オフィス街に、何事もなかったような朝が来た。|ビルの警備灯が消え、早出の清掃員がエントランスの鍵を開けた。オフィス街の長い夜が明けた。'),
+    onsen: L('湯けむりの向こうで、山の端が明るくなった。温泉街の提灯が一つずつ消され、夜が明けた。|川面に朝靄が立ちこめた。旅館の朝風呂の札が掛け替えられ、温泉街の夜が終わった。|一番鶏が鳴いた。浴衣の人影の消えた温泉街に、朝の湯の音だけが響いていた。'),
+    masq: L('シャンデリアの灯が落とされ、窓の外が白み始めた。仮面舞踏会は、夜明けとともにお開きになった。|最後のワルツが終わり、客たちが仮面を外して帰っていった。舞踏会の夜が明けた。|庭園の噴水に朝日が差した。館の扉が閉ざされ、仮面の夜は終わった。')
+  };
+  var DAWN_P = {
+    out: L('{a}は巣の奥で羽を畳み、小さく丸まった。祓われかけた夜のことは、しばらく思い出したくない。|{a}は窓の外の朝日を恨めしそうに眺めた。今夜の狩りは途中で終わってしまった。次こそは、と{a}は尻尾を握りしめた。|{a}は巣に逃げ帰ったまま、朝まで震えていた。集めた精は{ml}ml。生きて帰れただけでもよしとするしかない。'),
+    love: L('{a}は朝日の中、一目惚れしたあの人の背中をもう一度だけ思い浮かべてから巣へ戻った。胸の奥が、精とは別のもので満たされていた。|{a}は巣に戻っても、すれ違ったあの人のことばかり考えていた。サキュバスが人間に恋をするなんて、と自分で自分に呆れながら。|{a}は羽を畳んで朝の空を見上げた。集めた精は{ml}ml。けれど、今夜いちばんの収穫は数字では測れなかった。'),
+    top: L('{a}は膨らんだ魔力を確かめるように、朝日の中で大きく羽を広げた。今夜いちばん多く集めたのは{a}だった（{ml}ml）。|{a}は誇らしげに尻尾を揺らして巣へ戻った。一晩で{ml}ml。仲間の誰よりも多い、文句なしの一位だった。|{a}は満腹の体でふわりと屋根に降り、夜明けの街を見下ろした。{ml}ml――この夜の主役は、間違いなく{a}だった。'),
+    good: L('{a}は満ち足りた顔で、朝焼けの空を巣へ向かって飛んだ。集めた精は{ml}ml。上出来の一夜だった。|{a}は巣に戻ると、{best}のことを思い出して小さく笑った。{ml}ml。サキュバスとして、十分に胸を張れる夜だった。|{a}は朝日を背に羽を畳んだ。{ml}ml――体の隅々まで、魔力が満ちていた。'),
+    mid: L('{a}は少し物足りなそうに、お腹をさすりながら巣へ戻った。集めた精は{ml}ml。悪くはないが、自慢できるほどでもない。|{a}は朝日に目を細めて、今夜の狩りを振り返った。{ml}ml。次はもう少しうまくやれるはずだ。|{a}は屋根の上で羽を休め、夜明けの街を見下ろした。{ml}ml。そこそこの夜だった。'),
+    bad: L('{a}はぺこぺこのお腹を抱えて、朝焼けの空をとぼとぼと飛んだ。集めた精は{ml}ml。今夜はうまくいかなかった。|{a}は巣に戻るなり、毛布をかぶってふて寝した。{ml}ml。サキュバスとしては、正直かなり恥ずかしい数字だ。|{a}は朝日を浴びて、しおしおと羽を垂らした。次の夜こそ、と{a}は小さくつぶやいて目を閉じた。')
+  };
+  var DAWN_SEN = L('{s}は最後の一人が巣に戻るのを見届けてから、ようやく自分の羽を畳んだ。先輩としての一夜も、これでおしまいだ。|{s}は{a}の背中を見送って、小さくあくびをした。面倒を見るのは疲れるが、悪い夜ではなかった。|{s}は朝日に目を細めながら、{a}の今夜の狩りを頭の中でもう一度なぞった。次の夜に教えることは、もう決まっている。');
+  var DAWN_END = {
+    many_ok: L('こうして{town}の一夜は明けた。{n}人で集めた精は合わせて{sum}ml。いちばんは{top}だった。|夜が明け、サキュバスたちはそれぞれの巣へ帰っていった。{town}の一夜、いちばん多く集めたのは{top}（{topml}ml）。|朝日が昇り、羽と尻尾は人の目から消えた。{town}の一夜は、{top}の勝ちで幕を下ろした。'),
+    many_ng: L('こうして{town}の一夜は明けた。いちばん多く集めた{top}でさえ{topml}ml。全員にとって、苦い夜になった。|夜が明け、サキュバスたちは肩を落として巣へ帰っていった。{town}の獲物は、今夜は手ごわかった。|朝日が昇り、羽と尻尾は人の目から消えた。{n}人で合わせて{sum}ml。次の夜への宿題が残った。'),
+    one_ok: L('こうして{top}の一夜は明けた。集めた精は{topml}ml、評価は{grade}。サキュバスとしての初めての夜は、上々の出来だった。|夜が明け、{top}の羽と尻尾は朝日に溶けるように消えた。{topml}ml――{town}での一夜は、十分な収穫で終わった。|朝が来た。{top}は{town}での一夜を胸にしまい、評価{grade}の成績で狩りを終えた。'),
+    one_ng: L('こうして{top}の一夜は明けた。集めた精は{topml}ml、評価は{grade}。初めての夜は、ほろ苦い結果に終わった。|夜が明け、{top}の羽と尻尾は朝日に溶けるように消えた。{topml}ml――{town}の夜は、思ったより厳しかった。|朝が来た。{top}は評価{grade}の成績で、{town}での一夜を終えた。次の夜こそは、と心に決めて。')
+  };
+  function dawnScene(S, T) {
+    var tk = Object.keys(SB.TOWNS).filter(function (k) { return SB.TOWNS[k] === T; })[0];
+    ST.say(S, { kind: 'phase', text: pkF(S, DAWN[tk] || DAWN.downtown) });
+  }
+  function closeNight(S, T, H, sen, rank, SE) {
+    if (!sen) { ST.step(S, '夜明け'); dawnScene(S, T); }
+    rank.forEach(function (p, k) {
+      var kind = p.out ? 'out' : p.inLove ? 'love' : k === 0 && rank.length > 1 && GOOD[p.grade] ? 'top' : GOOD[p.grade] ? 'good' : p.grade === 'C' ? 'mid' : 'bad';
+      var pool = DAWN_P[kind];
+      if (!p.best) pool = pool.filter(function (x) { return x.indexOf('{best}') < 0; });
+      ST.say(S, { actors: [p], tag: '夜明け', text: ST.fmt(pkF(S, pool), { a: p.name, ml: Math.round(p.m.ml), best: p.best ? p.best.name : '' }), why: p.name + 'の一夜：' + Math.round(p.m.ml) + 'ml・評価 ' + p.grade + (p.out ? '・' + p.outWhy : p.inLove ? '・獲物に恋をした' : '') });
+    });
+    if (sen) ST.say(S, { actors: [sen], tag: '夜明け', text: ST.fmt(pkF(S, DAWN_SEN), { s: sen.name, a: H.length > 1 ? '後輩たち' : H[0].name }), why: '先輩サキュバス（' + (SE ? SE.label : '') + '）' });
+    var top = rank[0], sum = Math.round(H.reduce(function (s, p) { return s + p.m.ml; }, 0));
+    var ek = (H.length > 1 ? 'many_' : 'one_') + (GOOD[top.grade] && !top.out ? 'ok' : 'ng');
+    var o = ST.say(S, { kind: 'phase', actors: [top], text: ST.fmt(pkF(S, DAWN_END[ek]), { town: T.name, n: H.length, sum: sum, top: top.name, topml: Math.round(top.m.ml), grade: top.grade }) });
+    ST.key(S, o, '夜明け：' + T.name + 'の一夜が終わった');
+  }
   /* ---------- 結果 ---------- */
   function finish(S, input, T, H, sen, SE) {
     var rank = H.slice().sort(function (a, b) { return b.m.ml - a.m.ml; });
@@ -32337,9 +32930,11 @@
     });
     if (sen) {
       ST.step(S, '夜明け');
+      dawnScene(S, T);
       rank.forEach(function (p) { if (p.rv) return ST.say(S, { actors: [sen, p], tag: '講評', text: p.name + 'への講評――' + sen.name + '「' + p.rv.text + '」', why: '評価 ' + p.grade + '（' + Math.round(p.m.ml) + 'ml）・' + p.rv.why }); ST.say(S, { actors: [sen, p], tag: '講評', text: sen.name + '→' + p.name + '：' + p.notes.filter(function (n) { return n.indexOf('講評') >= 0; })[0].replace(/^.*講評：/, ''), why: '評価 ' + p.grade + '（' + Math.round(p.m.ml) + 'ml）' }); });
       sen.fate = '後輩の面倒を見た'; sen.notes.push(SE.label + '：' + SE.eff);
     }
+    closeNight(S, T, H, sen, rank, SE);
     var top = rank[0];
     var title = H.length > 1 ? T.name + 'の一夜。いちばん多く集めたのは' + top.name + '（' + Math.round(top.m.ml) + 'ml）。' : top.name + 'の一夜：' + Math.round(top.m.ml) + 'ml（評価 ' + top.grade + '）。' + (top.out ? top.outWhy + '。' : top.inLove ? '最後は獲物に恋をしてしまった。' : '');
     var lines = rank.map(function (p, k) { return (k + 1) + '位 ' + p.name + '（' + p.style.label + '）' + Math.round(p.m.ml) + 'ml・成功' + p.cnt.win + '/' + p.cnt.tries + (p.best ? '・最高は' + p.best.name : '') + (p.out ? '・' + p.outWhy : ''); });
@@ -33122,7 +33717,11 @@
       var ty = null;
       if (HY) {
         var tt = (input.ties || []).filter(function (t) { return (t.a === HY.i && t.b === p.i) || (t.a === p.i && t.b === HY.i); })[0];
-        if (tt) ty = tt.type === 'crush' ? (tt.a === HY.i ? 'stalker' : 'friend') : TIEMAP[tt.type] || TIEMAP[(HK.TIES[tt.type] || {}).like];
+        /* 執着（ヤンデレ）：どちらが執着しているかと、執着される側の気持ち（怖がっている・嫌っている・受け入れている・共依存）で決める */
+        if (tt && tt.type === 'yan') {
+          var accepts = tt.cold === 'accept' || tt.cold === 'mutual', fears = tt.cold === 'afraid' || tt.cold === 'hate';
+          ty = accepts ? 'lover' : tt.a === HY.i ? 'stalker' : fears ? 'grudge' : 'friend';
+        } else if (tt) ty = tt.type === 'crush' ? (tt.a === HY.i ? 'stalker' : 'friend') : TIEMAP[tt.type] || TIEMAP[(HK.TIES[tt.type] || {}).like];
       }
       if (!ty) ty = env.who !== 'random' && SM.TYPES[env.who] ? env.who : rng.pick(Object.keys(SM.TYPES));
       /* 恋愛・R18にしない組（HK.ngPair）では、住人のかけ手を恋人・ストーカーにしない */
@@ -36780,6 +37379,38 @@
       p.notes.push('方針：' + p.action.label + '／目標：' + p.goal.label);
       if (SPX && SPX.note(p)) p.notes.push(SPX.note(p));
     });
+    /* 結末の締め：踏破なら迷宮の外へ凱旋、帰還なら地上に戻った夕暮れ、全滅なら迷宮に呑まれた静けさ。生き残り・失った仲間・囚われた仲間・持ち帰ったお金で書き分ける */
+    (function () {
+      var A4 = alive(), lostP = P.filter(function (p) { return !p.alive && !p.captive; }), capP = P.filter(function (p) { return p.captive; });
+      var nm = function (l) { return l.map(function (p) { return p.name; }).join(l.length > 2 ? '・' : 'と'); };
+      var v = { l: nm(A4), f: cleared, g: banked, m: mvp.name, d: nm(lostP), c: nm(capP) };
+      var EP = {
+        clear: [
+          '地下{f}階の主が崩れ落ちると、迷宮の奥から地鳴りのような音が響き、やがて静まり返った。{l}は長い階段を一段ずつ上り、ようやく地上の光の中へ出た。待っていた町の人々が、歓声を上げて駆け寄ってきた。',
+          '最深部の扉が開き、隠されていた地上への昇降路が姿を現した。{l}は傷だらけの体を寄せ合って乗り込んだ。地上に着いたとき、空は朝焼けに染まっていた。踏破の知らせは、その日のうちに町じゅうに広まった。',
+          '{l}が迷宮の入口に戻ると、見張りの兵士は、本当に一番下まで降りたのかと目を丸くした。{f}階を降りきった一行の名前は、ギルドの石板の一番上に刻まれた。'
+        ],
+        retreat: [
+          '{l}は来た道を引き返し、何日もかけて地上へ戻った。入口の石段に腰を下ろしたとき、夕日が迷宮の口を赤く染めていた。地下{f}階までの冒険は、ここで一区切りがついた。',
+          '地上の空気を吸った瞬間、{l}は誰からともなく座り込んだ。持ち帰った{g}Gは、酒場の卓にざらりと広げられた。次は、もっと深くへ――そう言い出す者がいても、今夜だけは誰も止めなかった。',
+          'ギルドの受付で、{l}は到達した階を報告した。受付嬢は帳面に地下{f}階と書き込み、小さく頷いた。宿の寝台に倒れ込むと、{l}は泥のように眠った。'
+        ],
+        wipe: [
+          '地下{f}階の闇に、落ちた松明の火が小さく揺れて、やがて消えた。迷宮は何事もなかったように静まり返り、拾い集めた宝も、冒険者たちの名前も、深い闇の底に沈んでいった。',
+          '最後の一人が倒れたあと、迷宮の通路には、誰の足音も響かなかった。数日後、入口の掲示板に、帰らなかったパーティの名前が一行だけ書き足された。',
+          '地下{f}階で、冒険は終わった。次にこの階まで降りてきた誰かが、錆びた武器と、ほとんど空になった財布を見つけることになる。持ち帰られたのは、わずか{g}Gだけだった。'
+        ]
+      };
+      var t = pickT(EP[ended]);
+      if (ended !== 'wipe') {
+        if (lostP.length) t += pickT(['帰り道、{d}の分の席を空けて、一行は黙って杯を掲げた。', '{d}の名前を口にすると、誰もが少しだけ黙り込んだ。', '{d}を迷宮に残してきたことを、誰も忘れなかった。']);
+        if (capP.length) t += pickT(['塔に囚われた{c}を取り戻す日を、一行は心に誓った。', '{c}はまだ、魔術師の塔に囚われたままだった。']);
+        if (ended === 'clear' && P.some(function (p) { return /解放/.test(p.fate); })) t += '囚われていた仲間も、主が倒れたことで解き放たれた。';
+        if (mvp.alive) t += pickT(['いちばんの働きは{m}だった。皆にそう言われて、{m}は照れくさそうに頭をかいた。', '持ち帰った{g}Gを前に、{m}「次は、どこへ行く？」', '{m}「みんな、お疲れさま。私、この仲間で良かった」']);
+      }
+      ST.step(S, ended === 'clear' ? '踏破 ― 地上へ' : ended === 'retreat' ? '帰還 ― 地上へ' : '全滅');
+      ST.say(S, { actors: (ended === 'wipe' ? P : A4).map(function (p) { return p.i; }), tag: ended === 'clear' ? '凱旋' : ended === 'retreat' ? '帰還' : '全滅', kind: 'climax', text: fillT(t.replace(/\{l\}/g, v.l).replace(/\{f\}/g, v.f).replace(/\{g\}/g, v.g).replace(/\{m\}/g, v.m).replace(/\{d\}/g, v.d).replace(/\{c\}/g, v.c), mvp), why: '冒険の締めくくり（持ち帰ったお金 ' + banked + 'G）' });
+    })();
     var A3 = alive();
     var title = ended === 'clear' ? '踏破（クリア） ― 地下' + maxF + '階の主を倒した' : ended === 'retreat' ? '帰還（地下' + cleared + '階で撤退）' : '全滅（地下' + cleared + '階）';
     var lines = [ended === 'wipe' ? 'パーティは地下' + cleared + '階で全滅した。拾ったお金のほとんどは、迷宮に残された。持ち帰れたのは ' + banked + 'G だけだった。' : ended === 'retreat' ? retreatBy.name + 'の判断で、パーティは地下' + cleared + '階から引き返した（' + retreatWhy + '）。' + banked + 'G を持ち帰った。' : '地下' + maxF + '階の主を倒し、ダンジョンを踏破した。パーティは ' + banked + 'G を持ち帰った。', 'いちばん活躍したのは' + mvp.name + '（撃破 ' + mvp.kills + '・' + mvp.found + 'G）。'];
@@ -38751,6 +39382,22 @@
     var out = P.filter(function (p) { return p.out; }), dead = P.filter(function (p) { return !p.alive; });
     var first = out.slice().sort(function (a, b) { return a.esc - b.esc; })[0], last = out.slice().sort(function (a, b) { return b.esc - a.esc; })[0];
     var miko = P.filter(function (p) { return /巫女/.test(p.fate); });
+    /* 結末の締め：誰も出られなかった回は、村が一行を呑み込んだ静けさで区切る（脱出した回は、逃げ出す場面がそのまま締めになる） */
+    if (!out.length && !S.engulf && !S.titleOverride) {
+      var gone = P.filter(function (p) { return p.taken; }), v0 = { v: S.V, g: G.call, n: P.length, l: names(P), t: names(gone), m: names(miko), k: Math.max(1, P.filter(function (p) { return !p.alive; }).length) };
+      var EP = miko.length ? [
+        '祭りの太鼓が鳴り止むと、村はいつもの静けさを取り戻した。社の奥では、{m}が{g}の巫女として迎えられていた。もう、村の外へ出たいと口にする者はいなかった。',
+        '{v}の新しい巫女は、{m}だった。村人たちは何事もなかったように田畑へ戻り、山道の入口には、新しいしめ縄が張られた。',
+        '数か月後、{v}を訪ねた行商人は、社の前で静かに微笑む{m}の姿を見かけた。声をかけても、{m}は外の世界のことを何ひとつ覚えていなかった。'
+      ] : [
+        '夜が明けると、村は何事もなかったように静まり返っていた。{v}の外れの墓地に、名前のない新しい塚が{k}つ増えていた。',
+        '一行が戻らないまま、刻限は過ぎた。麓の駐在所に届いた捜索願いは、数日後、「山で道に迷ったもの」として片づけられた。{v}の祭りは、今年も滞りなく終わった。',
+        '{v}の村人たちは、翌朝もいつも通り畑に出た。村の外から来た{n}人のことを、誰も口にしなかった。{g}は、また深い眠りについた。'
+      ];
+      var tx = ST.fmt(ST.pick(S, EP), v0) + (gone.length ? ST.fmt(ST.pick(S, ['{t}の行方は、今も分かっていない。', '{t}を最後に見た者は、誰もいなかった。', '山の奥から、ときどき{t}の名を呼ぶような声が聞こえるという。']), v0) : '');
+      ST.step(S, '村の朝');
+      ST.say(S, { actors: P, tag: '結末', kind: 'climax', text: tx, why: '誰も' + S.V + 'から出られなかった', mag: 40 });
+    }
     var title;
     if (!out.length && S.engulf) title = S.G.call + 'が顕現し、' + S.V + 'は消えた。誰も戻らなかった。――全滅';
     else if (!out.length) title = miko.length ? names(miko) + 'は神の子を産む巫女となった。誰も、' + S.V + 'から出られなかった。――GAME OVER' : '誰も' + S.V + 'から出られなかった。――全滅';
@@ -46512,6 +47159,7 @@
       ST.flushShort(S, 'ほかに：');
       ST.snap(S, keys);
     }
+    epilogue(S);
     return finish(S, input);
   }
 
@@ -47149,6 +47797,118 @@
     ST.say(S, { actors: [a], tag: '異星の生き物', kind: 'climax', text: xLewd(S, a, top, F(pk(S, sp || (top ? R.alienTop : R.alien)), { a: a.name, x: d.name }), { a: a.name, x: d.name, b: (closest(S, a) || { name: '仲間' }).name }, 'alien'), why: d.name + '（' + LIFE_JP[d.kind] + '）' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 28 });
   }
 
+  /* ---------- 結末の締め（一年が終わったところで、星に降り立つ／漂い続ける／船が力尽きる の区切りを記録の最後に入れる） ---------- */
+  var EPI = {
+    wiped: [
+      '最後の一人が倒れてから、船は誰の声も聞かないまま進み続けた。食堂の椅子は{n}人分のまま並び、壁の名札も外されることはなかった。救難信号だけが、決まった間隔で闇に向かって瞬いていた。',
+      '生命維持の装置は、乗る者がいなくなったことに気づかないまま空気を送り続けた。航海日誌の最後の行には、{v}の筆跡で日付だけが書かれていた。やがて動力が尽き、船内の灯りはひとつずつ消えていった。',
+      '観測窓の外を、名前も知らない星がゆっくりと流れていった。船はもう、どこへ向かうこともなかった。{v}が最後に整えた操縦席だけが、主を待つように前を向いていた。'
+    ],
+    wipedBy: '――{w}が、この船の旅を終わらせた。',
+    fresh: [
+      '十二か月目の終わり、船は{x}の大気を抜けて、平らな岩場に降りた。ハッチが開き、{l}は一人ずつ、見知らぬ大地に足を下ろした。調べることはまだ何も始まっていなかったが、足の裏に伝わる重みだけで、誰もが泣きそうになった。',
+      '着陸の衝撃が収まると、船内は嘘のように静かになった。外の空気は、計器の上では吸える数値を示していた。{l}は顔を見合わせ、ゆっくりとハッチを開けた。{x}の風が、一年ぶりに一同の頬を撫でた。',
+      '{x}の地表が近づくにつれ、警報はひとつ、またひとつと鳴り止んだ。船が止まったのは、草のようなものが揺れる丘の上だった。{l}は外に出て、空を見上げた。そこには、もう漂うだけの闇はなかった。'
+    ],
+    civ: [
+      '一年の終わり、{l}は船を降り、{x}の住人たちが用意した場所に居を移した。言葉はまだ半分も通じなかったが、差し出された食べ物を受け取ることはできた。船は丘の上に据えられ、新しい村の目印になった。',
+      '{x}の住人たちは、船を降りた{l}を遠巻きに見つめていた。やがて一人が歩み出て、手のひらを見せた。それが挨拶なのだと分かるまで、少し時間がかかった。漂流者たちは、この星の客として迎え入れられた。',
+      '船の扉を開け放ったまま、{l}は{x}の集落へ続く道を歩いた。迎えに来た住人たちの後ろに、灯りのともった家並みが見えた。漂流の一年は、知らない誰かの家の前で終わった。'
+    ],
+    danger: [
+      '{x}のすべてが分かったわけではなかった。それでも船の物資は限られていて、ここで暮らすほかに道はなかった。{l}は船を砦にして、地表に小さな囲いを作った。夜になると、遠くで何かが鳴く声がした。',
+      '{l}は、この星に残ると決めた。安全だと言い切れる場所は、まだ船の中にしかなかった。一同は交代で見張りに立ちながら、少しずつ畑を広げていった。{x}は優しい星ではなかったが、帰る場所はもうここしかなかった。',
+      '調べ尽くせなかった{x}の闇を前に、{l}は慎重に暮らしを始めた。船の外壁には、探索で分かったことが一行ずつ書き足されていった。分からないことの欄は、まだ長く空いたままだった。'
+    ],
+    settle: [
+      '一年の終わり、{l}は船の外に最初の家を建てた。屋根は船体の板で、窓は観測窓を外して使った。{x}の夕日がその窓に映ったとき、そこはもう漂流者の仮住まいではなかった。',
+      '{x}の地図は、船の壁いっぱいに書き込まれていた。水の出る場所、食べられる実、夜に冷える谷。{l}はその地図を頼りに、船から少し離れた平地に暮らしを移した。船は、最初の一年の記念碑として残された。',
+      '{l}は、調べ上げた{x}の大地に、手で杭を打った。そこが、新しい暮らしの始まりの場所になった。夜、焚き火を囲んで、一同は漂流の一年の話を何度も繰り返した。'
+    ],
+    broken: '船はそれきり、二度と空へ上がらなかった。',
+    driftOk: [
+      '十二か月目が終わっても、星図の空白は埋まらなかった。{l}は食堂に集まり、残った物資を数え直した。まだ一年は戦える。誰も口には出さなかったが、それだけで十分だった。船は、次の光を目指して針路を変えた。',
+      '一年の漂流を終えた夜、{l}は観測窓の前に並んだ。遠くに、まだ確かめていない星がいくつも瞬いていた。航海士席の画面に、新しい航路が描かれた。旅は終わらなかったが、一年目は、ここで区切りがついた。',
+      '{l}は、一年分の航海日誌を一冊に綴じた。表紙には「一年目」とだけ書かれた。次の一冊の最初のページは、まだ真っ白だった。船の灯りは消えず、闇の中を静かに進み続けた。'
+    ],
+    driftLow: [
+      '十二か月目の終わり、主機関が最後の唸りを上げて止まった。残った動力は、生命維持と救難信号にだけ回された。{l}は一つの部屋に集まり、毛布を分け合った。窓の外の星は、手の届かない場所で瞬いていた。',
+      '計器の針が、ひとつ、またひとつと下限を指した。船はもう、自分の力では進めなかった。{l}は救難信号の出力を最大にして、あとは祈るように待つことにした。漂流の一年は、凍えるような静けさの中で終わった。',
+      '船は力尽きかけていた。灯りは非常灯だけになり、吐く息が白く見えた。{l}は寄り添って座り、誰からともなく、故郷の話を始めた。信号は今も、闇の向こうへ届くことを信じて送られ続けていた。'
+    ],
+    lovers: [
+      '{a}と{b}は、最後まで寄り添っていた。どちらからともなく繋いだ手は、もう離れることはなかった。',
+      '{a}は{b}の肩に頭を預けた。{b}「これからも、私の隣にいて」――{a}は、黙ってうなずいた。',
+      '漂流の一年を、{a}と{b}は恋人として越えた。二人の名前は、航海日誌の同じ行に並んで書かれていた。'
+    ],
+    lone: [
+      '{a}は、一人で少し離れた場所に立ち、黙って空を見上げていた。',
+      '{a}は誰とも肩を寄せず、一年の記録を自分の端末に静かに書き残した。',
+      '{a}は仲間の輪の外で、それでも穏やかな顔をしていた。'
+    ],
+    mourn: [
+      '{v}の名は、船体の内側に刻まれた。誰かがそこを通るたび、指先でそっと触れていった。',
+      '{l}は、{v}のために小さな石を積んだ。この一年を一緒に越えられなかった仲間のことを、誰も忘れなかった。',
+      '食堂の一番奥の席は、{v}の席のまま空けておかれた。'
+    ],
+    away: [
+      '{v}の行方は、最後まで分からなかった。救難信号の周波数には、今も{v}の名前が添えられている。',
+      '{v}は、まだ帰ってこない。一同は、{v}の寝台をそのままにしておいた。',
+      '{v}を探しに行くことは、もうできなかった。それでも誰も、{v}をいなくなった人とは呼ばなかった。'
+    ],
+    endLow: [
+      '漂流の記録は、目的地の欄が空白のまま閉じられた。それでも船は、最後の力で信号を送り続けていた。',
+      '一年目の日誌は、ここで終わった。次のページを書けるかどうかは、誰にも分からなかった。',
+      '新しい星にはたどり着けなかった。弱々しい非常灯の下で、一同は救いが来る日を待ち続けた。'
+    ],
+    logSolo: [
+      '{a}は、ひとりきりになった船室で航海日誌を開いた。{a}「生き残ったのは、私だけになった。それでも、記録は続ける」',
+      '{a}は、仲間の名前を一人ずつ声に出して読み上げた。返事はなかったが、{a}は最後の名前まで読み終えた。',
+      '{a}は、誰もいない操縦席に向かって小さく頭を下げた。{a}「ここまで連れてきてくれて、ありがとう。私は、もう少し生きてみる」'
+    ],
+    log: [
+      '{a}は、航海日誌の最後のページを開いた。{a}「漂流一年目、記録を終える。私たちは、まだここにいる」',
+      '{a}は日誌の端末を閉じる前に、一行だけ書き足した。{a}「全員の名前を、ここに残しておく。私が忘れないように」',
+      '{a}は、仲間の顔を一人ずつ見回してから言った。{a}「一年、よく持ちこたえた。私の自慢の船員たちだ」'
+    ]
+  };
+  function epilogue(S) {
+    var Pn = S.planet, L0 = live(S), sp = S.ship, v = { x: Pn ? Pn.name : '', n: S.P.length, l: names(L0) };
+    var weak = S.weakEnd = sp.power < 30 || sp.o2 < 30 || sp.hull < 25 || sp.food < 15;
+    if (!L0.length) {
+      var last = S.deaths[S.deaths.length - 1] || S.P[S.P.length - 1];
+      ST.step(S, '船の最期');
+      ST.say(S, { kind: 'climax', tag: '結末', text: F(pk(S, EPI.wiped), { n: S.P.length, v: last.name }) + (S.wipeBy ? F(EPI.wipedBy, { w: S.wipeBy.name }) : ''), why: '船員が一人も残らなかった', mag: 40 });
+      return;
+    }
+    var out = [];
+    if (Pn) {
+      ST.step(S, Pn.name + 'に降り立つ');
+      var reveal = 0; [Pn.res, Pn.civ].concat(Pn.life).forEach(function (o) { reveal += o.st; });
+      var civOk = Pn.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(Pn.civ.d.state);
+      var hostile = Pn.life.some(function (l) { return l.st >= 1 && /hostile|parasite/.test(l.d.kind); });
+      var pool = !reveal ? EPI.fresh : civOk ? EPI.civ : hostile || reveal < 4 ? EPI.danger : EPI.settle;
+      var why = !reveal ? '辿り着いたばかりで、まだ何も調べていない' : civOk ? 'この星の文明と出会っていた' : hostile ? '危ない生命体がいると分かっていた' : reveal < 4 ? 'まだ分からないことが多い' : '星のことがよく分かっていた';
+      ST.say(S, { actors: L0, kind: 'climax', tag: '結末：着陸', text: F(pk(S, pool), v) + (weak || sp.hull < 40 ? EPI.broken : ''), why: why, mag: 40 });
+    } else {
+      ST.step(S, weak ? '力尽きかけた船' : '漂流の一年の終わり');
+      ST.say(S, { actors: L0, kind: 'climax', tag: weak ? '結末：船の灯り' : '結末：漂流', text: F(pk(S, weak ? EPI.driftLow : EPI.driftOk), v), why: weak ? '船の状態が悪い（動力 ' + Math.round(sp.power) + '・生命維持 ' + Math.round(sp.o2) + '・食料 ' + Math.round(sp.food) + '）' : '星は見つからなかったが、船はまだ動ける', mag: 36 });
+    }
+    /* 人ごとの結び：恋人になった組／ひとりの人／亡くなった人／戻らない人 */
+    var used = [];
+    L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i && used.indexOf(a) < 0 && used.indexOf(b) < 0 && lover(S, a, b)) { used.push(a, b); out.push({ act: [a, b], t: F(pk(S, EPI.lovers), { a: a.name, b: b.name }) }); } }); });
+    var lone = L0.filter(function (p) { return used.indexOf(p) < 0; });
+    if (lone.length && L0.length > 1 && used.length) { var ln = S.rng.pick(lone); out.push({ act: [ln], t: F(pk(S, EPI.lone), { a: ln.name }) }); }
+    if (S.deaths.length) { out.push({ act: L0, t: F(pk(S, EPI.mourn), { v: names(S.deaths), l: v.l }) }); }
+    var aw = S.P.filter(function (p) { return p.alive && p.away; });
+    if (aw.length) out.push({ act: L0, t: F(pk(S, EPI.away), { v: names(aw) }) });
+    var cap = L0.filter(function (p) { return p.role === 'captain'; })[0] || best(S, 'lead');
+    out.push({ act: [cap], t: F(pk(S, L0.length === 1 ? EPI.logSolo : EPI.log), { a: cap.name }) });
+    var END = SH.T.END || {};
+    var fin = S.endLine = F(pk(S, Pn ? END.found : S.weakEnd ? EPI.endLow : END.none), v);
+    ST.say(S, { actors: L0, tag: '結末', kind: 'phase', text: out.map(function (o) { return o.t; }).join('') + fin, why: '一年の漂流の締めくくり' });
+  }
+
   /* ---------- 結果 ---------- */
   function lineOf(lab, o, key, extra) {
     var d = o.d, st = o.st;
@@ -47180,10 +47940,10 @@
     var reveal = 0, total = 0;
     if (Pn) { [Pn.res, Pn.civ].concat(Pn.life).forEach(function (o) { reveal += o.st; total += 3; }); }
     var pct = total ? Math.round(reveal / total * 100) : 0;
-    var title = !L0.length ? '全滅 ― ' + (S.wipeBy ? S.wipeBy.name + 'で、' : '') + '船は誰も乗せないまま漂い続けた' : Pn ? Pn.name + 'に辿り着いた ― 珍しさ' + stars(Pn.rare) + '・判明度 ' + pct + '%' : '星は見つからなかった ― 一年の漂流';
+    var title = !L0.length ? '全滅 ― ' + (S.wipeBy ? S.wipeBy.name + 'で、' : '') + '船は誰も乗せないまま漂い続けた' : Pn ? Pn.name + 'に辿り着いた ― 珍しさ' + stars(Pn.rare) + '・判明度 ' + pct + '%' : S.weakEnd ? '星は見つからなかった ― 力尽きかけた船で、救いの信号を送り続けた' : '星は見つからなかった ― 一年の漂流';
     var lines = P.map(function (p) { return p.name + '（' + p.roleLabel + '）：' + p.fate; });
     var END = SH.T.END || {};
-    lines.push(F(pk(S, !L0.length ? END.wiped : Pn ? END.found : END.none), { x: Pn ? Pn.name : '' }));
+    lines.push(L0.length && S.endLine ? S.endLine : F(pk(S, !L0.length ? END.wiped : Pn ? END.found : END.none), { x: Pn ? Pn.name : '' }));
     if (Pn) {
       lines.push('星：' + Pn.name + '（珍しさ' + stars(Pn.rare) + '）');
       lines.push(lineOf('資源', Pn.res, 'res', Pn.res.st >= 2 ? '（' + USE_JP[Pn.res.d.use] + '・珍しさ' + stars(Pn.res.d.rare) + '）' : ''));
