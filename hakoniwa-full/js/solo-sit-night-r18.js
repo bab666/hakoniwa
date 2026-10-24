@@ -5,8 +5,8 @@
        怪我の夜：手当ての流れから。怪我をしたのが受けなら攻めが気遣い、攻めなら主導権はそのまま（受けが傷を気にする）
        静かな夜：ゾンビの街は見張りの交代の合間・隠れ家で声を殺して・乗り捨てられた車・屋上・停電した部屋・廃墟、
                  無人島は火の番の交代の合間・水浴び・洞窟・焚き火
-   ・関係（11種）：恋人・セフレ・想い続けた相手（恋愛相手の固定）・執着（受け入れている／共依存の相手だけ）・元恋人との再燃・
-     片想いが報われた夜・両片想いが通じた夜・ライバル／不仲からの吊り橋・師弟（成人どうし）・幼馴染・惹かれ合った二人。始まりの一言と翌朝が変わる
+   ・関係（12種）：恋人・セフレ・想い続けた相手（恋愛相手の固定）・執着（受け入れている／共依存の相手だけ）・元恋人との再燃・
+     片想いが報われた夜・両片想いが通じた夜・吊り橋（特別な関係のない二人が、危機の夜に追い詰められて求め合う）・ライバル／不仲からの吊り橋・師弟（成人どうし）・幼馴染・惹かれ合った二人。始まりの一言と翌朝が変わる
    ・設定「島の夜（R18）」「恋人たちの夜（R18）」に従う：描かない＝起きない／ほのめかす＝状況・関係・ぼかした一文・翌朝だけ／描写する＝本文
    ・描写する夜は性別の組（mf＝攻めが男性の体（ふたなりの攻めを含む）／ff＝女性どうし（指・舌・肌）／fm＝女性の攻めが跨る）ごとの文。
      受けの反応は態度9種×状況の型（危機・手当て・声を殺す・ひらけた場所）で書き分ける
@@ -35,6 +35,8 @@
       rival: L('「……なんでお前なんだよ」{a}は吐き捨てるように言って、{b}の襟を掴んだ。睨み合ったまま、唇がぶつかった。|言い争いの続きのはずだった。気づけば{a}と{b}は、互いの息がかかる距離で黙り込んでいた。|「勘違いするなよ。……今夜だけだ」{b}がそう言うと、{a}も「こっちの台詞だ」と返した。どちらも、手を離さなかった。'),
       mentor: L('師と弟子として積み上げてきた距離を、{a}は自分から一歩だけ踏み越えた。{b}は、退かなかった。|「……今夜は、教えることも、教わることもない」{a}の声は、いつもの指導の声ではなかった。|{a}は{b}の手を取り、稽古のときと同じように指を一本ずつ確かめた。ただ、今夜はその手を離さなかった。'),
       osana: L('「……子どもの頃から、隣にいるのが当たり前だったのにね」{a}が笑うと、{b}も少しだけ笑った。それから、どちらも黙った。|{a}は{b}の髪に触れた。小さい頃、何度も寝癖を直してやった髪だった。今夜は、その指が離れなかった。|幼馴染の顔だと思っていた。間近で見た{b}の目は、知らない熱を帯びていた。{a}は、もう引き返せなかった。'),
+      /* 吊り橋：恐怖と興奮を取り違えたまま、恋人でも何でもない二人が求め合う（吹雪の館の「吊り橋」と同じ考え方） */
+      bridge: L('物音ひとつにも身をすくめながら、{a}と{b}は息を殺して抱き合っていた。静けさが戻っても、どちらも腕をほどかなかった。心臓がうるさいのは、さっきの恐怖のせいなのか、目の前の相手のせいなのか、もう分からなかった。|「……震えが、止まらない」――{b}がそう言うと、{a}は黙って{b}の手を取った。握り返された指の熱さに、{a}の方が先に息を呑んだ。生きている、と確かめたいだけのはずだった。|{a}と{b}は、ついさっきまでろくに話したこともなかった。それでも、{spot}で肩を寄せ合っているうちに、震えは別の熱に変わっていった。どちらから唇を寄せたのかは、覚えていない。|「……今夜だけ、そばにいて」{b}の声はかすれていた。{a}は答える代わりに、{b}を引き寄せた。怖さを紛らわせたいのか、触れたいのか、自分でももう区別がつかなかった。'),
       new: L('どちらから手を伸ばしたのか、あとになっても二人は思い出せなかった。|{a}と{b}の目が合った。昼間なら、すぐに逸らしていたはずの視線だった。|「……変だよね、こんなときに」{a}が呟くと、{b}は「こんなときだからだ」と答えて、そっと唇を重ねた。')
     },
     after: {
@@ -51,10 +53,11 @@
       rival: L('朝になると、二人はいつもどおり言い争いを始めた。ただ、その声には、昨日までの棘がなかった。|「勘違いするなよ」――{a}がそう言うより先に、{b}が同じことを言った。二人は顔を見合わせて、黙った。|翌日の{a}は、{b}が危ない場所へ行こうとするたびに、無言で前に出た。{b}も、それを止めなかった。'),
       mentor: L('翌朝、{a}は{b}にいつもどおりの指示を出した。ただ、その声は昨日までより、ずっと柔らかかった。|{b}は{a}の背中を見つめていた。守られるだけではなく、守りたいと思った。|朝、{a}は何も言わずに{b}の髪をくしゃりと撫でた。昨日までより、少しだけ長く。'),
       osana: L('朝、{a}と{b}はいつもの調子で軽口を叩き合った。ただ、目が合うたびに、二人とも少しだけ黙った。|「……今さら、どんな顔すればいいの」{b}がぼやくと、{a}は「いつもの顔でいい」と笑って、{b}の手を取った。|幼馴染という言葉では、もう足りなかった。{a}は朝の光の中で、{b}の横顔をしばらく見つめていた。'),
+      bridge: L('朝の光の中で、{a}と{b}は気まずそうに目を逸らした。あれは怖かったからだ、と二人とも自分に言い聞かせていた。それなのに、{a}が少し離れるたびに、{b}の目はその背中を追っていた。|翌朝、{b}は「……昨夜のは、吊り橋みたいなものだよね」と笑ってみせた。{a}も「だな」と頷いた。どちらの笑顔も、少しだけぎこちなかった。|{a}は、昨夜のことを恐怖のせいにしようとした。けれど、{b}が誰かと話しているのを見るたびに、胸の奥がざわついた。怖さはもう引いていたのに、熱だけが残っていた。|朝になっても、{a}と{b}は昨夜のことを口にしなかった。ただ、見張りも水汲みも、気づけばいつも二人で組んでいた。'),
       new: L('翌朝、{a}と{b}は互いの顔をまともに見られなかった。それでも、隣に座る距離は昨日より近かった。|朝、{b}は「……昨夜のこと、なかったことにはしないから」と言った。{a}は、黙って頷いた。|{a}は水を汲みながら、何度も{b}の方を振り返った。{b}が小さく手を振ると、{a}は慌てて目を逸らした。')
     }
   };
-  var REL_NAME = { lover: '恋人', fwb: 'セフレ', lock: '{a}が想い続けた相手', yan: '{a}の執着（相手も受け入れている）', ex: '元恋人との再燃', crush: '{a}の片想いが報われた', pining: '両片想いが通じた', rival: '張り合ってきた二人の吊り橋', mentor: '師弟の一線', osana: '幼馴染', new: '惹かれ合った二人' };
+  var REL_NAME = { lover: '恋人', fwb: 'セフレ', lock: '{a}が想い続けた相手', yan: '{a}の執着（相手も受け入れている）', ex: '元恋人との再燃', crush: '{a}の片想いが報われた', pining: '両片想いが通じた', bridge: '吊り橋（恐怖を、恋と取り違えた夜）', rival: '張り合ってきた二人の吊り橋', mentor: '師弟の一線', osana: '幼馴染', new: '惹かれ合った二人' };
 
   /* ======================= 「いつ死ぬか分からないから、今」：誘う側（{a}）の一言（態度9種） ======================= */
   var NOW = {
@@ -379,8 +382,13 @@
     if (has(ctx, a, b, 'childhood')) return { k: 'osana', a: a, b: b };
     return { k: 'new', a: a, b: b };
   }
+  /* 吊り橋の条件：二人とも追い詰められていて（焦りの合計が50以上。無人島は焦りがたまりにくく、嵐・飢え・仲間の死そのものが怖さになるので15以上）、少しは意識していて、嫌い合っていない */
+  function bridgeReady(ctx, a, b, sc) {
+    var ra = ctx.R(a, b), rb = ctx.R(b, a);
+    return a.stress + b.stress >= (sc === 'island' ? 15 : 50) && ra.att >= 5 && rb.att >= 5 && ra.aff > -10 && rb.aff > -10 && ra.ten < 45 && rb.ten < 45;
+  }
   /* 惹かれの閾値（危機の夜は10下がる＝吊り橋） */
-  var TH = { lover: 28, fwb: 28, lock: 36, yan: 30, ex: 32, crush: 34, pining: 32, rival: 36, mentor: 40, osana: 38, new: 52 };
+  var TH = { bridge: 0, lover: 28, fwb: 28, lock: 36, yan: 30, ex: 32, crush: 34, pining: 32, rival: 36, mentor: 40, osana: 38, new: 52 };
   function ready(ctx, r, crisis) {
     var a = r.a, b = r.b, ra = ctx.R(a, b), rb = ctx.R(b, a), th = TH[r.k] - (crisis ? 10 : 0);
     if (r.k === 'crush') return ra.att > th + 10 && rb.att > th;
@@ -500,6 +508,7 @@
     if (r.k === 'lock' || r.k === 'crush' || r.k === 'pining') pf.couple = true;
     else if (r.k === 'ex') pf.couple = pf.couple || ctx.rng() < 0.6;
     else if (r.k === 'new' || r.k === 'osana') pf.couple = pf.couple || ctx.rng() < 0.5;
+    else if (r.k === 'bridge') { pf.bridge = true; pf.couple = pf.couple || ctx.rng() < 0.35; }
     else if (r.k === 'rival') { var ra = ctx.R(a, b), rb = ctx.R(b, a); ra.ten = Math.max(0, ra.ten - 12); rb.ten = Math.max(0, rb.ten - 12); }
     else if (r.k === 'yan' && HK.Obsess && HK.Obsess.add) HK.Obsess.add(ctx, a, b, 6);
   }
@@ -518,7 +527,12 @@
   function cands(ctx, a, b, sc) {
     var pf = ctx.pair(a, b), key = ctx.stepIndex + ':' + sc;
     if (pf._sitK === key && pf._sitA === a.i) return pf._sitC;
-    var r = relOf(ctx, a, b), list = (sc === 'zombie' ? detectZ : detectI)(ctx, a, b).filter(function (st) { return ready(ctx, r, !!CRISIS[st.id]); });
+    var r = relOf(ctx, a, b), all = (sc === 'zombie' ? detectZ : detectI)(ctx, a, b), list = all.filter(function (st) { return ready(ctx, r, !!CRISIS[st.id]); });
+    /* 吊り橋：特別な関係のない二人（恋人・片想い・セフレ・執着などでない）でも、危機の夜に二人とも追い詰められていれば求め合う */
+    if (!list.length && (r.k === 'new' || r.k === 'osana' || r.k === 'mentor' || r.k === 'rival') && bridgeReady(ctx, a, b, sc)) {
+      var cr = all.filter(function (st) { return CRISIS[st.id]; });
+      if (cr.length) { r = { k: 'bridge', a: r.a, b: r.b }; list = cr; }
+    }
     pf._sitK = key; pf._sitA = a.i; pf._sitC = { r: r, list: list };
     return pf._sitC;
   }
@@ -539,12 +553,12 @@
       },
       w: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'island'), cr = C.list.some(function (s) { return CRISIS[s.id]; });
-        return (cr ? 1.1 : 0.3) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 200;
+        return (cr ? 1.1 : 0.3) + (C.r.k === 'bridge' ? 0.8 : 0) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 200;
       },
       run: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'island'), st = chooseSit(ctx, C.list), r = C.r, lv = RN.lv(ctx) === 'low' ? 'fade' : 'high';
         settle(ctx, st, r);
-        return { text: compose(ctx, 'island', st, r, lv), why: '島の夜：' + why(ctx, st, r, '', 'island'), mag: CRISIS[st.id] ? 28 : 22 };
+        return { text: compose(ctx, 'island', st, r, lv), why: (r.k === 'bridge' ? '吊り橋：' : '島の夜：') + why(ctx, st, r, '', 'island'), mag: CRISIS[st.id] ? 28 : 22 };
       }
     });
   }
@@ -566,7 +580,7 @@
       run: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'zombie'), st = chooseSit(ctx, C.list), r = C.r;
         settle(ctx, st, r);
-        return { text: compose(ctx, 'zombie', st, r, Z.loveLv(ctx)), why: why(ctx, st, r, '・' + Z.day(ctx) + '日目'), mag: CRISIS[st.id] ? 30 : 24 };
+        return { text: compose(ctx, 'zombie', st, r, Z.loveLv(ctx)), why: (r.k === 'bridge' ? '吊り橋：' : '') + why(ctx, st, r, '・' + Z.day(ctx) + '日目'), mag: CRISIS[st.id] ? 30 : 24 };
       }
     });
   }
