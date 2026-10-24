@@ -93,3 +93,9 @@ mark { background: var(--mark); color: inherit; }
 .kbd { font-family: ui-monospace, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; font-size: 12px; }
 pre.out { background: var(--bg); border: 1px solid var(--line); padding: 8px; border-radius: 6px; white-space: pre-wrap; font-size: 12px; max-height: 50vh; overflow: auto; }
 @media (max-width: 900px) { .editor { width: 100vw; } body.with-editor main { margin-right: 0; } }
+.tabs.sub { position: static; background: none; padding: 0; margin: 8px 0; }
+#tl textarea { font-size: 13px; }
+#tl .prev0 { font-size: 13px; margin-bottom: 3px; }
+#tl .trow { display: flex; gap: 6px; align-items: flex-start; }
+#tl .trow textarea { flex: 1; }
+#tl td { padding-top: 6px; padding-bottom: 6px; }

@@ -437,38 +437,197 @@
   document.addEventListener('mousedown', function (e) { if (!e.target.closest('#pop') && !e.target.closest('.ln')) $('#pop').hidden = true; });
 
   /* ===== 口調・態度 ===== */
+  /* 口調の辞書（tone-fix*.js の「口調\t元の台詞\t書き直し」）：dict[口調][元の台詞] = { g, i } */
+  function toneDict() {
+    if (S._dict && S._dictFor === S.groups) return S._dict;
+    var D = {};
+    S.groups.forEach(function (g) {
+      if (g.kind !== 'tsv') return;
+      g.items.forEach(function (it, i) { var c = it.cols; if (c.length >= 3 && S.toneKeys[c[0]]) (D[c[0]] = D[c[0]] || {})[c[1]] = { g: g, i: i }; });
+    });
+    S._dict = D; S._dictFor = S.groups;
+    return D;
+  }
+  /* 箱庭の台詞（「」の中身）を、同じ台詞をまとめて集める。key は辞書と同じ形（名前は〈〉） */
+  function quotesOf(scen) {
+    var ck = scen + '|' + S.groups.length + '|' + S.nItems;
+    if (S._quotes && S._quotes.ck === ck && S._quotesFor === S.groups) return S._quotes.list;
+    var gs = (scen ? groupsOfScen(scen) : S.groups).filter(function (g) { return g.kind !== 'tsv' && g.role === 'text'; });
+    var map = {}, list = [];
+    gs.forEach(function (g) {
+      g.items.forEach(function (it, ii) {
+        var re = /「([^「」]+)」/g, m;
+        while ((m = re.exec(it.text))) {
+          var key = m[1].replace(/\{[a-z0-9_]+\}|〔[^〕]*〕/g, '〈〉');
+          if (jaN(key) < 2) continue;
+          var o = map[key];
+          if (!o) { o = map[key] = { key: key, srcs: [], r18: false }; list.push(o); }
+          if (o.srcs.length < 50) o.srcs.push({ g: g, i: ii });
+          if (g.r18) o.r18 = true;
+        }
+      });
+    });
+    S._quotes = { ck: ck, list: list }; S._quotesFor = S.groups;
+    return list;
+  }
+  /* 群の中の位置の行番号（ファイルを読み込んであれば） */
+  function lineAt(g, pos) {
+    var src = S.src[g.file.f];
+    if (!src) { srcOf(g.file.f); return g.line; }
+    var n = 1; for (var i = src.indexOf('\n'); i >= 0 && i < pos; i = src.indexOf('\n', i + 1)) n++;
+    return n;
+  }
+  var TU = { scen: '', q: '', st: '', gender: 'm', page: 0, part: 'lines' };
   VIEWS.tone = function (m) {
     var keys = S.info.personas.map(function (p) { return { key: p.key, label: p.label + '（態度）' }; }).concat(S.info.tones.filter(function (t) { return PERSONA_KEYS.indexOf(t.key) < 0; }));
     var k = S.sel.tone || keys[0].key; S.sel.tone = k;
+    var base = S.sb.baseOf(k);
+    if (TU.scen === '' && S.sel.scen) TU.scen = S.sel.scen;
+    if (!TU.scen) TU.scen = S.info.scens[0].id;
     m.innerHTML = '<div class="row"><select id="tk">' + keys.map(function (t) { return '<option value="' + t.key + '"' + (t.key === k ? ' selected' : '') + '>' + esc(t.label) + '</option>'; }).join('') + '</select>' +
-      '<input id="q" placeholder="文で絞る" style="width:200px"><select id="sc"><option value="">すべての箱庭</option>' + S.info.scens.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + '</option>'; }).join('') + '</select></div>' +
-      '<details class="card" open><summary>言い換えの見本（一つの台詞を全口調で）</summary>' +
-      '<div class="row"><input id="vs" style="flex:1" value="{a}「私、ちょっと休みたい。……あなたも、無理しないで」"><button class="btn" id="vgo">全口調で見る</button></div><div id="vout"></div></details>' +
-      '<div id="stat" class="muted"></div><div id="list"></div>';
-    $('#tk').onchange = function () { S.sel.tone = this.value; show('tone'); };
-    $('#vgo').onclick = function () { if (!S.sb) return; $('#vout').innerHTML = voiceTable($('#vs').value); };
+      '<select id="sc"><option value="*">すべての箱庭</option>' + S.info.scens.map(function (s) { return '<option value="' + s.id + '"' + (s.id === TU.scen ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') + '</select>' +
+      '<select id="pg"><option value="m">男性が話す</option><option value="f">女性が話す</option><option value="x">性別なし</option></select>' +
+      '<span class="muted">文面の表は「' + esc((S.toneKeys[base] || {}).label || base) + '」を借りる・一人称「' + esc(S.sb.fpOf(k, TU.gender)) + '」</span></div>' +
+      '<nav class="tabs sub" id="tparts"><button data-p="lines">この箱庭の台詞をこの口調で</button><button data-p="tables">口調ごとの書き分け（表・辞書）</button><button data-p="sample">言い換えの見本</button></nav>' +
+      '<div id="tbody"></div>';
+    $('#pg').value = TU.gender;
+    $('#tk').onchange = function () { S.sel.tone = this.value; TU.page = 0; show('tone'); };
+    $('#sc').onchange = function () { TU.scen = this.value; TU.page = 0; show('tone'); };
+    $('#pg').onchange = function () { TU.gender = this.value; show('tone'); };
+    $('#tparts').onclick = function (e) { var b = e.target.closest('[data-p]'); if (b) { TU.part = b.dataset.p; show('tone'); } };
+    $$('#tparts button').forEach(function (b) { b.classList.toggle('on', b.dataset.p === TU.part); });
+    var scen = TU.scen === '*' ? '' : TU.scen;
+    if (TU.part === 'lines') toneLines($('#tbody'), k, scen);
+    else if (TU.part === 'tables') toneTables($('#tbody'), k, base, scen);
+    else {
+      $('#tbody').innerHTML = '<div class="row"><input id="vs" style="flex:1" value="{a}「私、ちょっと休みたい。……あなたも、無理しないで」"><button class="btn" id="vgo">全口調で見る</button></div><div id="vout"></div>';
+      $('#vgo').onclick = function () { if (!S.sb) return; $('#vout').innerHTML = voiceTable($('#vs').value); };
+    }
+  };
+  /* 台詞の一覧：元の台詞 → この口調での出来上がり。辞書の書き直しをその場で足す・直す */
+  function toneLines(el, k, scen) {
+    var D = toneDict(), dk = D[k] || {};
+    var all = quotesOf(scen), SP = 'アキラ', OT = ['ミナト', 'ユキノ', 'カオル', 'ハルカ'];
+    var fp = S.sb.fpOf(k, TU.gender);
+    function fill(key) { var i = 0; return key.replace(/〈〉/g, function () { return OT[Math.min(i++, OT.length - 1)]; }); }
+    function unfill(t) { OT.forEach(function (n) { t = t.split(n).join('〈〉'); }); return t; }
+    /* 出来上がり（言い換えのあと）と、どこから来た文か */
+    function judge(o) {
+      if (o.out != null && o.outFor === k + TU.gender) return o;
+      var line = SP + '「' + fill(o.key) + '」';
+      var out = S.sb.voice(line, [{ name: SP, tone: k, gender: TU.gender }].concat(OT.map(function (n) { return { name: n, tone: 'gentle', gender: 'f' }; })));
+      var a = out.indexOf('「'), b = out.lastIndexOf('」');
+      o.out = a >= 0 && b > a ? out.slice(a + 1, b) : out;
+      o.outFor = k + TU.gender;
+      o.dict = dk[o.key] || null;
+      o.st = o.dict ? 'dict' : S.sb.hasOverride(fill(o.key), k, TU.gender, OT) ? 'ovr' : o.out === fill(o.key) ? 'same' : 'auto';
+      return o;
+    }
+    var ST = { dict: '辞書の書き直し', ovr: 'ほかの書き下ろし辞書', auto: '自動の言い換え', same: '変わらない' };
+    el.innerHTML = '<div class="row"><input id="q" placeholder="台詞で絞る" style="width:220px" value="' + esc(TU.q) + '">' +
+      '<select id="st"><option value="">すべて</option><option value="dict">辞書の書き直しあり</option><option value="ovr">ほかの書き下ろし辞書</option><option value="auto">自動の言い換え</option><option value="same">変わらない（言い換えが効いていない）</option></select>' +
+      '<span class="muted" id="stat"></span></div>' +
+      '<div class="muted">「」の中の台詞を、この口調の人が話したときの出来上がりで並べます（見本の名前：話し手 ' + SP + '、ほかの名前は ' + OT.join('・') + '）。' +
+      '右の欄に書いて「保存」すると、この口調の書き直しとして js/tone-fix.js（R18専用の箱庭の台詞は js/tone-fix-r18.js）に入り、次からその文がそのまま使われます。名前は〈〉、一人称は「私」で書いてください。</div>' +
+      '<table class="t" id="tl"><thead><tr><th style="width:34%">元の台詞</th><th>この口調で（直すなら書き換えて保存）</th><th style="width:120px">出どころ</th></tr></thead><tbody></tbody></table><div class="pager" id="pgr"></div>';
+    $('#st').value = TU.st;
+    var PER = 60;
+    function filtered() {
+      var L = all;
+      if (TU.q) L = L.filter(function (o) { var d = dk[o.key]; return o.key.indexOf(TU.q) >= 0 || (d && d.g.items[d.i].cols[2].indexOf(TU.q) >= 0); });
+      if (TU.st) L = L.filter(function (o) { return judge(o).st === TU.st; });
+      return L;
+    }
     function draw() {
-      var q = $('#q').value.trim(), sc = $('#sc').value;
-      var list = S.groups.filter(function (g) { return g.tones.indexOf(k) >= 0 && (!sc || g.scens.indexOf(sc) >= 0); });
-      if (q) list = list.filter(function (g) { return g.items.some(function (it) { return itemText(it).indexOf(q) >= 0; }); });
-      /* 辞書は、この口調の行だけを見せる */
-      list = list.map(function (g) {
-        if (g.kind !== 'tsv' || !g.items.some(function (it) { return S.toneKeys[it.cols[0]]; })) return g;
-        var v = Object.create(g); v.items = g.items.filter(function (it) { return it.cols[0] === k; }); v._sub = g; return v;
-      }).filter(function (g) { return g.items.length; });
-      $('#stat').textContent = '「' + (S.toneKeys[k] || {}).label + '」の書き分けがある群 ' + list.length + '・文 ' + list.reduce(function (s, g) { return s + g.items.length; }, 0) + '（パスに口調・態度の名前がある群と、口調ごとの辞書の行）';
-      groupList($('#list'), list.map(function (g) { return g._sub ? Object.assign(Object.create(g._sub), { items: g.items }) : g; }), { q: q });
-      $('#list').onclick = function (e) {
-        var card = e.target.closest('.gcard'); if (!card) return;
-        var g = S.gmap[card.dataset.gid], li = e.target.closest('li');
-        var shown = list.find(function (x) { return x.gid === g.gid; });
-        var ii = li ? g.items.indexOf(shown.items[+li.dataset.i]) : -1;
-        openEditor(g, ii);
+      var L = filtered(), part = L.slice(0, (TU.page + 1) * PER);
+      $('#stat').textContent = '台詞 ' + L.length.toLocaleString() + (L.length !== all.length ? ' / ' + all.length.toLocaleString() : '') + '（同じ台詞はまとめて数える）';
+      $('#tl tbody').innerHTML = part.map(function (o, n) {
+        judge(o);
+        var cur = o.dict ? o.dict.g.items[o.dict.i].cols[2] : unfill(o.out).split(fp && fp !== '私' ? fp : '\u0000').join('私');
+        var src = o.srcs[0];
+        return '<tr data-n="' + n + '"><td>' + fmtText(o.key) + '<div class="muted"><a href="#" data-src>' + esc(src.g.file.f) + ':' + src.g.line + '</a>' + (o.srcs.length > 1 ? '　ほか ' + (o.srcs.length - 1) + ' か所' : '') + (o.r18 ? ' <span class="tag r18">R18</span>' : '') + '</div></td>' +
+          '<td>' + (cur !== o.out ? '<div class="prev0" title="出来上がり（一人称・名前を入れたもの）">' + esc(o.out) + '</div>' : '') +
+          '<div class="trow"><textarea rows="' + Math.max(1, Math.ceil(cur.length / 40)) + '">' + esc(cur) + '</textarea><button class="btn small primary" data-save>保存</button>' +
+          (o.dict ? '<button class="btn small danger" data-del title="この口調の書き直しを消して、自動の言い換えに戻す">消す</button>' : '') + '</div></td>' +
+          '<td class="lvl-' + (o.st === 'same' ? 'warn' : 'info') + '">' + ST[o.st] + (o.dict ? '<div class="muted">' + esc(o.dict.g.file.f) + ':' + lineAt(o.dict.g, o.dict.g.items[o.dict.i].s) + '</div>' : '') + '</td></tr>';
+      }).join('');
+      $('#pgr').innerHTML = L.length > part.length ? '<button class="btn" id="more">もっと見る（残り ' + (L.length - part.length) + '）</button>' : '';
+      if ($('#more')) $('#more').onclick = function () { TU.page++; draw(); };
+      $('#tl tbody').onclick = function (e) {
+        var tr = e.target.closest('tr[data-n]'); if (!tr) return;
+        var o = part[+tr.dataset.n];
+        if (e.target.closest('[data-src]')) { e.preventDefault(); var sx = o.srcs[0]; openEditor(sx.g, sx.i); return; }
+        if (e.target.closest('[data-save]')) saveRow(o, $('textarea', tr).value.trim());
+        if (e.target.closest('[data-del]') && confirm('この口調の書き直しを消して、自動の言い換えに戻しますか？')) delRow(o);
       };
     }
-    $('#q').oninput = draw; $('#sc').onchange = draw;
+    function after() { S._quotes = null; return S.sbPromise.then(function () { if (S.tab === 'tone') show('tone'); }); }
+    /* 辞書の行を足す・直す・消す */
+    function saveRow(o, val) {
+      if (!val) return;
+      if (/\t|\n/.test(val)) { toast('タブや改行は入れられません'); return; }
+      if (o.dict) {
+        var g = o.dict.g, it = g.items[o.dict.i];
+        if (it.cols[2] === val) return;
+        var cols = it.cols.slice(); cols[2] = val;
+        save({ s: it.s, e: it.e, op: 'lit', value: cols.join('\t') }, { g: g, gs: it.s, ge: it.e, noReopen: true }).then(after);
+        return;
+      }
+      var file = o.r18 && S.byFile['js/tone-fix-r18.js'] ? 'js/tone-fix-r18.js' : 'js/tone-fix.js';
+      var f = S.byFile[file];
+      if (!f) { toast(file + ' がありません'); return; }
+      var tg = f.groups.filter(function (g) { return g.kind === 'tsv'; }).sort(function (a, b) { return b.items.length - a.items.length; })[0];
+      if (!tg) { toast(file + ' に辞書の配列が見つかりません'); return; }
+      srcOf(file).then(function (src) {
+        var last = tg.items[tg.items.length - 1], prev = tg.items[tg.items.length - 2];
+        var between = prev ? src.slice(prev.e, last.s) : ',\n    ';
+        var sep = /\n/.test(between) ? ',' + between.slice(between.indexOf('\n')) : ', ';
+        var q = src[last.s] === '"' ? '"' : "'";
+        return save({ s: last.e, e: last.e, op: 'raw', value: sep + serialize(k + '\t' + o.key + '\t' + val, q) }, { g: tg, gs: last.s, ge: last.e, noReopen: true });
+      }).then(after);
+    }
+    function delRow(o) {
+      var g = o.dict.g, i = o.dict.i, it = g.items[i];
+      if (g.items.length < 2) return;
+      var r = i > 0 ? { s: g.items[i - 1].e, e: it.e } : { s: it.s, e: g.items[1].s };
+      save({ s: r.s, e: r.e, op: 'raw', value: '' }, { g: g, gs: r.s, ge: r.e, noReopen: true }).then(after);
+    }
+    $('#q').oninput = function () { TU.q = this.value.trim(); TU.page = 0; draw(); };
+    $('#st').onchange = function () { TU.st = this.value; TU.page = 0; if (TU.st) $('#stat').textContent = '判定中…'; setTimeout(draw, 20); };
     draw();
-  };
+  }
+  /* 書き分けの表・辞書：パスに口調・態度の名前がある群（借りる態度の表も）と、辞書のこの口調の行 */
+  function toneTables(el, k, base, scen) {
+    var qs = scen ? quotesOf(scen) : null, inScen = {};
+    if (qs) qs.forEach(function (o) { inScen[o.key] = 1; });
+    el.innerHTML = '<div class="row"><input id="q" placeholder="文で絞る" style="width:200px"><label class="muted"><input type="checkbox" id="wb" checked> 借りている態度「' + esc((S.toneKeys[base] || {}).label || base) + '」の表も入れる</label></div><div id="stat" class="muted"></div><div id="list"></div>';
+    function draw() {
+      var q = $('#q').value.trim(), wb = $('#wb').checked && base !== k;
+      var list = S.groups.filter(function (g) {
+        if (g.role === 'ui' || g.role === 'code') return false;
+        var hit = g.tones.indexOf(k) >= 0 || (wb && g.tones.indexOf(base) >= 0 && g.tones.length <= 9);
+        if (!hit) return false;
+        if (g.kind === 'tsv') return true;
+        return !scen || g.scens.indexOf(scen) >= 0 || !g.scens.length;
+      });
+      /* 辞書は、この口調の行だけ（箱庭を選んでいれば、その箱庭の台詞の行だけ） */
+      var shown = list.map(function (g) {
+        if (g.kind !== 'tsv' || !g.items.some(function (it) { return S.toneKeys[it.cols[0]]; })) return { g: g, idx: g.items.map(function (x, i) { return i; }) };
+        var idx = []; g.items.forEach(function (it, i) { if (it.cols[0] === k && (!qs || inScen[it.cols[1]])) idx.push(i); });
+        return { g: g, idx: idx };
+      }).filter(function (x) { return x.idx.length; });
+      if (q) shown = shown.map(function (x) { return { g: x.g, idx: x.idx.filter(function (i) { return itemText(x.g.items[i]).indexOf(q) >= 0; }) }; }).filter(function (x) { return x.idx.length; });
+      $('#stat').textContent = '群 ' + shown.length + '・文 ' + shown.reduce(function (s, x) { return s + x.idx.length; }, 0) + (scen ? '（この箱庭の群と、どの箱庭でも使う共通の群）' : '');
+      groupList($('#list'), shown.map(function (x) { var v = Object.create(x.g); v.items = x.idx.map(function (i) { return x.g.items[i]; }); return v; }), { q: q });
+      $('#list').onclick = function (e) {
+        var card = e.target.closest('.gcard'); if (!card) return;
+        var x = shown.find(function (y) { return y.g.gid === card.dataset.gid; }), li = e.target.closest('li');
+        openEditor(x.g, li ? x.idx[+li.dataset.i] : -1);
+      };
+    }
+    $('#q').oninput = draw; $('#wb').onchange = draw;
+    draw();
+  }
   function voiceTable(text, opt) {
     opt = opt || {};
     var A = { name: 'アキラ', gender: 'm' }, B = { name: 'ミナト', gender: 'f' };

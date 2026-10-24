@@ -145,6 +145,20 @@
     try { V.processResult(res, { chars: chars, env: {} }); return res.log[0].text; } catch (e) { return '（言い換えに失敗：' + e.message + '）'; }
   }
 
-  window.STUDIO = { info: info, events: events, run: run, batch: batch, voice: voice, errors: errors };
+  /* 口調の一人称（性別ごと） */
+  function fpOf(tone, gender) {
+    try { return V.fpFor ? V.fpFor({ name: 'アキラ', tone: tone, gender: gender || '', fp: '' }) : ''; } catch (e) { return ''; }
+  }
+  /* 書き下ろしの辞書（tone-fix・voice-override など）にこの台詞があるか。content は「」の中身（名前は people の名前で） */
+  function hasOverride(content, tone, gender, people) {
+    if (!V || !V.overrideFor) return false;
+    var who = { name: 'アキラ', tone: tone, gender: gender || '', fp: '', persona: HK.personaOf ? HK.personaOf({ tone: tone, eg: { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 } }) : 'gentle', call: '', calls: null };
+    var ppl = [who].concat((people || []).map(function (n) { return { name: n, tone: 'gentle', gender: 'f', fp: '', persona: 'gentle' }; }));
+    try { var r = V.overrideFor(content, who, ppl); return r != null && r !== false; } catch (e) { return false; }
+  }
+  /* 口調ごとの、文面の表を借りる態度（9種のどれか） */
+  function baseOf(tone) { try { return HK.personaOf ? HK.personaOf({ tone: tone, eg: { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 } }) : ''; } catch (e) { return ''; } }
+
+  window.STUDIO = { info: info, events: events, run: run, batch: batch, voice: voice, fpOf: fpOf, hasOverride: hasOverride, baseOf: baseOf, errors: errors };
   if (window.parent && window.parent !== window && window.parent.onSandboxReady) window.parent.onSandboxReady(window.STUDIO);
 })();
