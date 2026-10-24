@@ -9,13 +9,14 @@
 
   var scen = {
     id: 'variety', name: 'エロバラエティ番組', kicker: '2〜8人・R18', solo: true, maxCast: 8, minCast: 2,
-    desc: '深夜のお色気バラエティに出演して、手コキカラオケ・69早イキ対決・ローション騎乗位ロデオなど、ランダムに選ばれる約50の企画で得点を競う。ハプニングに罰ゲーム、恋の芽生えや下剋上も。※成人キャラクター向け',
+    desc: '深夜のお色気バラエティに出演して、手コキカラオケ・69早イキ対決・ローション騎乗位ロデオなど、ランダムに選ばれる約60の企画で得点を競う。脱衣早押しクイズ・二人羽織・王様くじなどの新企画は、企画の指定で必ず入れることもできる。ハプニングに罰ゲーム、恋の芽生えや下剋上も。※成人キャラクター向け',
     note: '※登場人物はすべて成人として扱います。',
     unit: 'コマ', simulate: function (input) { return run(input); },
     castHint: '2〜8人が出演して得点を競います。テク・我慢・色気は住人ごとに設定でき、企画によって効く能力が変わります（頭はA、運はランダム）。',
     env: [
       { id: 'corners', label: '企画の数', min: 2, max: 5, def: 3, lo: '2本', hi: '5本', unit: '本' },
-      { id: 'mix', label: '企画の傾向', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'each', label: '一人ずつ挑戦が多め' }, { v: 'duel', label: '対決が多め' }, { v: 'endure', label: '耐久が多め' }, { v: 'vote', label: '投票が多め' }] },
+      { id: 'mix', label: '企画の傾向', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'each', label: '一人ずつ挑戦が多め' }, { v: 'duel', label: '対決が多め' }, { v: 'endure', label: '耐久が多め' }, { v: 'vote', label: '投票が多め' }, { v: 'pair', label: 'ペアで挑戦が多め' }, { v: 'new', label: '新企画が多め' }] },
+      { id: 'pick', label: '必ず入れる企画', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ' }].concat((VA.PLUS || []).map(function (k) { return { v: k.name, label: k.name }; })) },
       { id: 'ev', label: 'ハプニングの頻度', min: 0, max: 100, def: 55, lo: 'たまに', hi: '毎企画' },
       { id: 'penalty', label: '罰ゲームの頻度', min: 0, max: 100, def: 50, lo: 'なし', hi: '毎回' },
       { id: 'lewd', label: '描写の濃さ', type: 'select', def: 'mid', options: [{ v: 'low', label: 'ぼかす' }, { v: 'mid', label: 'ほどほど' }, { v: 'high', label: '濃いめ' }] }
@@ -42,7 +43,7 @@
 
   var PTS = [30, 20, 15, 10, 8, 6, 4, 2];
   var STAT_TB = { gaman: '我慢', brain: '頭', pop: '人気', luck: '運' };
-  var TYPE = { guess: '当てっこ', each: '一人ずつ挑戦', vote: '観覧客の投票', endure: '全員で耐久', duel: '一対一の対決', team: 'チーム対抗' };
+  var TYPE = { guess: '当てっこ', each: '一人ずつ挑戦', vote: '観覧客の投票', endure: '全員で耐久', duel: '一対一の対決', team: 'チーム対抗', pair: 'ペアで挑戦' };
   var STAT = { tech: 'テク', gaman: '我慢', iro: '色気', brain: '頭', luck: '運' };
 
   function resolve(S, p, list, pick) {
@@ -121,6 +122,8 @@
     /* 受け攻め：自分で攻めを選んだ人は、企画でも罰ゲームでも「される」側にしない。住人どうしの性的な企画は、向きの決まる組（okSex）だけ */
     var PO = HK.Pos;
     function hTop(p) { return !!(PO && PO.hardTop(p)); }
+    /* モブ（アシスタント・スタッフ）が相手のときの攻め：攻めの指定でも「モブには受け」なら受ける */
+    function hTopN(p) { return !!(PO && (PO.hardTopNpc ? PO.hardTopNpc(p) : PO.hardTop(p))); }
     /* 血縁（恋愛：なし）の二人は、性的な企画で組まない（関係で「恋愛：あり」にした組と、擬似親子は別） */
     function kinTie(a, b) { var L0 = (input.ties || []).filter(function (x) { return (x.a === a.i && x.b === b.i) || (x.a === b.i && x.b === a.i); }); for (var i = 0; i < L0.length; i++) { var D = HK.TIES && HK.TIES[L0[i].type]; if (D && D.family) return L0[i]; } return null; }
     function kinBlock(a, b) { var t = kinTie(a, b), D = t && HK.TIES[t.type]; return !!(t && !D.loveOK && !(HK.tieFamLove && HK.tieFamLove(t))); }
@@ -131,7 +134,7 @@
     /* アシスタントを選ぶ：いちもつ前提の企画や、女性の挑戦者が受ける企画では男性のアシスタントにする（女性どうしにしない） */
     function assist(p, K) {
       var pool = VA.ASSIST;
-      if ((VA.ASSIST_NEED_M && VA.ASSIST_NEED_M.indexOf(K.name) >= 0) || (p.gender === 'f' && VA.ASSIST_FF_OK && VA.ASSIST_FF_OK.indexOf(K.name) < 0)) pool = pool.filter(function (x) { return !VA.ASSIST_F_RE.test(x); });
+      if ((VA.ASSIST_NEED_M && VA.ASSIST_NEED_M.indexOf(K.name) >= 0) || (p.gender === 'f' && VA.ASSIST_FF_OK && VA.ASSIST_FF_OK.indexOf(K.name) < 0 && !K.ffok)) pool = pool.filter(function (x) { return !VA.ASSIST_F_RE.test(x); });
       return rng.pick(pool.length ? pool : VA.ASSIST);
     }
     function skill(p, st) {
@@ -210,11 +213,17 @@
     /* 企画を選ぶ（重複なし） */
     var pool = VA.KIKAKU.slice(), used = [];
     function pickK(nAct) {
+      /* 企画の指定（新企画）：最初の企画で必ず出す */
+      if (env.pick && env.pick !== 'auto' && !used.length) {
+        var fk = pool.filter(function (x) { return x.name === env.pick; })[0];
+        if (fk) { pool.splice(pool.indexOf(fk), 1); used.push(fk); return fk; }
+      }
       var k = HK.weighted(rng, pool, function (x) {
         var w = 1;
         if (x.type === 'guess' && (nAct || P.length) < 3) return 0;
         if (x.type === 'guess') w *= 1.6;
         if (env.mix !== 'random' && x.type === env.mix) w *= 3.5;
+        if (env.mix === 'new' && x.plus) w *= 3.5;
         if (x.type === 'duel' && P.length < 2) w = 0;
         if (VA.NO_TOP && VA.NO_TOP.indexOf(x.name) >= 0 && P.some(function (p) { return !p.away && hTop(p); })) w = 0;
         if (VA.NEED_PENIS && VA.NEED_PENIS.indexOf(x.name) >= 0 && P.some(function (p) { return !hasP(p); })) w = 0;
@@ -253,7 +262,7 @@
           }
         }
       }
-      sayV({ kind: 'phase', text: '【' + K.name + '】（' + (TYPE[K.type] || '当てっこ') + '・' + STAT[K.stat] + 'が効く）' + ST.fmt(K.rule, { mc: mc, h: hid ? hid.name : '' }) + (P.length > AP.length ? '（' + P.filter(function (p) { return p.away; }).map(function (p) { return p.name; }).join('・') + 'は楽屋から戻ってこないまま）' : '') });
+      sayV({ kind: 'phase', text: '【' + K.name + '】（' + (TYPE[K.type] || '当てっこ') + '・' + STAT[K.stat] + 'が効く）' + ST.fmt(Array.isArray(K.rule) ? pkv(K.rule) : K.rule, { mc: mc, h: hid ? hid.name : '' }) + (P.length > AP.length ? '（' + P.filter(function (p) { return p.away; }).map(function (p) { return p.name; }).join('・') + 'は楽屋から戻ってこないまま）' : '') });
       /* ハプニング（企画の前） */
       if (rng() < env.ev / 100 * 0.6) {
         var e = HK.weighted(rng, VA.EVENTS, function (x) { return (c === 0 && /retry|reverse|tears|guest/.test(x.id) ? 0 : 1) / (1 + (S.flags['ev_' + x.id] || 0) * 3); });
@@ -334,7 +343,9 @@
       } else if (res.last && res.last !== hid && penOn) {
         var lp = res.last;
         lp.cnt.penalty++; lp.m.shame = clamp(lp.m.shame + 18, 0, 100); lp.m.pop = clamp(lp.m.pop + 6, 0, 100); rating += 0.5;
-        sayBV({ actors: [lp], tag: '罰ゲーム', text: fill(pkv(hTop(lp) ? VA.PENALTY.filter(function (x) { return !VA.PENALTY_RECV_RE.test(x); }).concat(VA.PENALTY_TOP) : VA.PENALTY), lp) + (rng() < 0.5 ? quote(lp, VA.LOSE) : '') + mcr('penalty', 0.45), why: penWhy, mag: 22 }, lp.name + 'は罰ゲーム', true);
+        /* 新企画は、その企画専用の罰ゲーム（攻めの指定の人には受けない罰。モブには受けの人は、スタッフの罰を受ける） */
+        var kpen = K.pen && rng() < 0.85 ? (hTopN(lp) ? K.penTop || null : K.pen) : null;
+        sayBV({ actors: [lp], tag: '罰ゲーム', text: fill(kpen ? pkv(kpen) : pkv(hTop(lp) ? VA.PENALTY.filter(function (x) { return !VA.PENALTY_RECV_RE.test(x); }).concat(VA.PENALTY_TOP) : VA.PENALTY), lp) + (rng() < 0.5 ? quote(lp, VA.LOSE) : '') + mcr('penalty', 0.45), why: penWhy, mag: 22 }, lp.name + 'は罰ゲーム', true);
       }
       if (rng() < 0.25) sayIf({ kind: 'phase', text: fill(pkv(VA.MC_SAY)) });
       ST.flushShort(S, 'ほかの結果：');
@@ -363,6 +374,8 @@
     function playCorner(K, dbl, P, hid) {
       var out = { last: null };
       if (K.type === 'guess') return guessCorner(K, dbl, P, hid);
+      if (K.mode === 'tally') return tallyCorner(K, dbl, P);
+      if (K.type === 'pair') return pairCorner(K, dbl, P);
       if (K.type === 'each' || K.type === 'vote') {
         var rows = P.map(function (p) { return { p: p, v: skill(p, K.stat) + (K.type === 'vote' ? p.m.pop * 0.25 : 0) }; }).sort(function (x, y) { return y.v - x.v; });
         /* 同率：表示する点（四捨五入）が同じなら同じ順位・同じ得点 */
@@ -394,7 +407,7 @@
           if (good) p.m.pop = clamp(p.m.pop + 4, 0, 100);
           else p.m.shame = clamp(p.m.shame + 6, 0, 100);
           var rl = r.rk + '位' + (rows.filter(function (q) { return q.rk === r.rk; }).length > 1 ? '（同率）' : '');
-          sayBV({ actors: [p], tag: rl, text: t, why: K.name + '：' + STAT[K.stat] + 'の出来 ' + r.rv + '／+' + pt * (dbl ? 2 : 1) + '点', mag: top ? 28 : 14, kind: climaxed ? 'climax' : 'event' }, p.name + ' ' + rl + (climaxed ? '（イった）' : ''), top || (bot && rows.length > 2));
+          sayBV({ actors: [p], tag: rl, text: t, why: K.name + '：' + STAT[K.stat] + 'の出来 ' + r.rv + '／+' + pt * (dbl ? 2 : 1) + '点', mag: top ? 28 : 14, kind: climaxed ? 'climax' : 'event' }, p.name + ' ' + rl + (climaxed ? '（撃沈）' : ''), top || (bot && rows.length > 2));
         });
         out.last = rows[rows.length - 1].p;
         out.lasts = bots.length ? bots.map(function (x) { return x.p; }) : [out.last];
@@ -402,8 +415,9 @@
       }
       if (K.type === 'endure') {
         /* 攻めの指定の人は、体を責められる耐久には乗らず、別の形で番組に参加する */
-        var ET = VA.ENDURE_TOP && VA.ENDURE_TOP[K.name];
-        var outs = ET && ET.out ? P.filter(hTop) : [];
+        /* 新企画（K.etop）は、モブには受けの人なら耐久に乗る（hardTopNpc） */
+        var ET = K.etop || (VA.ENDURE_TOP && VA.ENDURE_TOP[K.name]), eTop = K.etop ? hTopN : hTop;
+        var outs = ET && ET.out ? P.filter(eTop) : [];
         outs.forEach(function (p) {
           addPts(p, 10, dbl);
           sayBV({ actors: [p], tag: '別枠で参加', text: fill(pkv(ET.out), p) + mcr('win', 0.3), why: '攻めの指定：責められる側の耐久には乗らない／+' + 10 * (dbl ? 2 : 1) + '点', mag: 18 }, p.name + 'は別枠', true);
@@ -418,12 +432,13 @@
         var winners = order.filter(function (r) { return r.rv === maxRv; }), firstOut = maxRv === minRv2 ? [] : order.filter(function (r) { return r.rv === minRv2; });
         order.forEach(function (r, i) {
           var p = r.p, win = r.rv === maxRv, rank = 1 + order.filter(function (q) { return q.rv > r.rv; }).length;
-          var tp = hTop(p) && ET ? (win ? ET.hit : ET.miss) : null;
+          var tp = eTop(p) && ET ? (win ? ET.hit : ET.miss) : null;
           var t = att(p, 0.22) + fill(pkv(tp || (win ? K.hit : K.miss)), p);
           if (win && winners.length > 1) t = att(p, 0.22) + (r === winners[0] ? fmtN('ENDURE_TIE', winners.map(function (x) { return x.p; })) : '');
           if (!win && firstOut.length > 1 && r === firstOut[0] && VA.ENDURE_TIE_OUT) t += fmtN('ENDURE_TIE_OUT', firstOut.map(function (x) { return x.p; }));
-          if (hTop(p) && ET) { /* 攻めの指定：責められて果てる文にしない */ }
-          else if ((K.stat === 'gaman' && !/笑|吹き出|拒否/.test(t)) || (K.stat !== 'gaman' && rng() < 0.3 && /喘|声|果て|イっ|達/.test(t))) { climax(p, 1); if (!win) t += moan(p); }
+          if (eTop(p) && ET) { /* 攻めの指定：責められて果てる文にしない */ }
+          else if (K.plus && win) { /* 新企画の耐久：最後まで残った人はイっていない */ }
+          else if ((K.stat === 'gaman' && !/笑|吹き出|拒否/.test(t)) || (K.stat !== 'gaman' && rng() < 0.3 && /喘|声|果て|イっ|達/.test(t))) { climax(p, 1); if (!win) t += (K.plus ? plusCl(p) : '') + moan(p) + (K.plus ? plusEro(K.ero, p) : ''); }
           if (win) { t += numFix(quote(p, winners.length > 1 && VA.WIN_TIE ? VA.WIN_TIE : VA.WIN), winners.length) + mcr(winners.length === 2 ? 'draw' : 'win'); p.cnt.first++; giveTitle(p, K, 0); if (!out.first) out.first = p; }
           var isFirstOut = !win && r.rv === minRv2;
           if (isFirstOut) { giveTitle(p, K, 1); if (!tp) t += mcr('climax', 0.4); }
@@ -530,6 +545,101 @@
       var lw = Lo.slice().sort(function (x, y) { return x.m.score - y.m.score; })[0];
       lw.cnt.last++; giveTitle(lw, K, 1);
       out.last = lw;
+      return out;
+    }
+
+    /* ---------- 新企画（solo-variety-plus.js）の部品 ---------- */
+    function kan(n) { var KAN = ['ゼロ', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四', '十五']; return KAN[n] != null ? KAN[n] : String(n); }
+    /* イったときの反応（態度9種）。描写が「ぼかす」なら出さない */
+    function plusCl(p) { if (lew === 'low' || !VA.PLUS_CLIMAX) return ''; return fill(pkv(VA.PLUS_CLIMAX[p.persona] || VA.PLUS_CLIMAX.gentle), p); }
+    /* 男性向けの作風：イった場面に足す段（who＝受けてイった人。{a}{b} は vars で） */
+    function plusEro(l, who, vars) {
+      if (!ero || !l || !l.length) return '';
+      return ST.fmt(HK.Ero.fill(S, pkv(l), who), vars || { a: who.name, mc: mc });
+    }
+    /* 数で競う企画：数＝能力の出来から（最低 min・最高 max）。点＝数×per、一位にボーナス */
+    function tallyCorner(K, dbl, P) {
+      /* 「ほかの結果」のまとめ（一文に複数人が並ぶ）には、性的な語を入れない */
+      var out = { last: null }, T = K.tally, usedPlay = {};
+      var rows = P.map(function (p) {
+        var v = skill(p, K.stat) + (K.type === 'vote' ? p.m.pop * 0.25 : 0);
+        return { p: p, v: v, n: clamp(Math.round((v - 12) / 85 * T.max), T.min || 0, T.max) };
+      }).sort(function (x, y) { return y.n - x.n || y.v - x.v; });
+      rows.forEach(function (r) { r.rk = 1 + rows.filter(function (q) { return q.n > r.n; }).length; });
+      var minN = rows[rows.length - 1].n, allTie = rows.every(function (r) { return r.n === rows[0].n; });
+      var tops = rows.filter(function (r) { return r.rk === 1; }), bots = allTie ? [] : rows.filter(function (r) { return r.n === minN; });
+      rows.forEach(function (r) {
+        var p = r.p, top = r.rk === 1, bot = !allTie && r.n === minN;
+        var band = r.n >= T.hi ? 'hit' : r.n <= T.lo ? 'miss' : 'mid';
+        /* 攻めの指定の人（モブには受けの人を除く）：アシスタントを責める側でこなす。受ける文の段（mid）は使わない */
+        var fl = K.top && hTopN(p) ? K.top : null;
+        var bn = assist(p, K), v0 = { a: p.name, b: bn, mc: mc, n: kan(r.n), w: kan(T.max - r.n), n1: kan(r.n + 1) };
+        var pl0 = pkv(fl ? fl.play : K.play);
+        var res0 = fl ? (band === 'miss' ? fl.miss : fl.hit) : K[band];
+        var t = att(p, 0.3) + ST.fmt(usedPlay[pl0] ? pkv(NEXT_UP) : pl0, v0) + ST.fmt(pkv(res0), v0);
+        usedPlay[pl0] = 1;
+        var climaxed = !fl && !!K.cl && band === 'miss';
+        if (climaxed) { climax(p, 1); t += plusCl(p) + moan(p) + plusEro(K.ero, p); }
+        if (top) t += quote(p, climaxed && VA.WIN_HOT ? VA.WIN_HOT : VA.WIN) + mcr('win'); else if (bot && rng() < 0.6) t += quote(p, VA.LOSE) + mcr('lose', 0.4); else if (climaxed) t += mcr('climax', 0.35);
+        if (top) { giveTitle(p, K, 0); if (!out.first) out.first = p; } if (bot && rows.length > 1) giveTitle(p, K, 1);
+        var pt = r.n * T.per + (top ? T.bonus || 0 : 0);
+        addPts(p, pt, dbl);
+        if (top && tops.length > 1 && r === tops[0] && VA.TIE_TOP) t += fmtN('TIE_TOP', tops.map(function (x) { return x.p; }));
+        if (bot && bots.length > 1 && r === bots[bots.length - 1] && VA.TIE_BOTTOM) t += fmtN('TIE_BOTTOM', bots.map(function (x) { return x.p; }));
+        if (top) p.cnt.first++;
+        if (bot) p.cnt.last++;
+        if (band !== 'miss') p.m.pop = clamp(p.m.pop + 4, 0, 100); else p.m.shame = clamp(p.m.shame + 6, 0, 100);
+        var rl = r.rk + '位' + (rows.filter(function (q) { return q.rk === r.rk; }).length > 1 ? '（同率）' : '');
+        sayBV({ actors: [p], tag: rl, text: t, why: K.name + '：' + T.lab + ' ' + r.n + (T.ctr || T.unit) + '（' + STAT[K.stat] + 'の出来 ' + Math.round(r.v) + '）／' + r.n + '×' + T.per + '点' + (top && T.bonus ? '＋一位' + T.bonus + '点' : '') + '＝+' + pt * (dbl ? 2 : 1) + '点' + (fl ? '／攻めの指定：アシスタントを責める側' : ''), mag: top ? 28 : 14, kind: climaxed ? 'climax' : 'event' }, p.name + ' ' + rl + (climaxed ? '（撃沈）' : ''), top || (bot && rows.length > 2));
+      });
+      out.last = rows[rows.length - 1].p;
+      out.lasts = bots.length ? bots.map(function (x) { return x.p; }) : [out.last];
+      return out;
+    }
+    /* 二人一組の企画：住人どうしは okSex の組だけ（攻め＝手を動かす側）。組めない人はアシスタントと組む */
+    function pairCorner(K, dbl, P) {
+      var out = { last: null }, rest = shuffle(rng, P), units = [];
+      while (rest.length) {
+        var a0 = rest.shift(), j0 = -1;
+        for (var q = 0; q < rest.length; q++) if (okS(a0, rest[q])) { j0 = q; break; }
+        if (j0 < 0) { units.push({ s: a0, m: [a0] }); continue; }
+        var b0 = rest.splice(j0, 1)[0], o = ord(a0, b0);
+        units.push({ t: o[0], b: o[1], m: [o[0], o[1]] });
+      }
+      units.forEach(function (u) { u.v = u.s ? skill(u.s, K.stat) : (skill(u.t, K.stat) + skill(u.b, K.stat)) / 2; });
+      units.sort(function (x, y) { return y.v - x.v; });
+      var UP = [25, 15, 10, 6, 4, 3, 2, 2];
+      units.forEach(function (u, i) {
+        var good = u.v >= 55, king = ST.fmt(rng.pick(VA.PLUS_KING || ['王様役のゲスト']), { mc: mc }), pt = UP[i] || 2, t, actors, climaxed = false, why = '';
+        /* 同じ番号の play・hit・miss をつなげる */
+        var pick3 = function (G) { var pl = pkv(G.play), j = G.play.indexOf(pl), R = good ? G.hit : G.miss; return [pl, R[j % R.length]]; };
+        if (u.s) {
+          var p = u.s, tp = hTopN(p), G = tp ? (K.ngT || K.ng) : K.ng, bn = assist(p, K), v0 = { a: p.name, b: bn, mc: mc, k: king }, pr = pick3(G);
+          t = att(p, 0.25) + ST.fmt(pr[0], v0) + ST.fmt(pr[1], v0);
+          climaxed = !tp && !!G.cl && (K.clOn === 'hit' ? good : !good);
+          if (climaxed) { climax(p, 1); t += plusCl(p) + moan(p) + plusEro(K.ero && K.ero.S, p, v0); }
+          actors = [p]; why = tp ? '攻めの指定：アシスタントを相手に、手を動かす側' : '組める共演者がいないので、アシスタントと組む';
+        } else {
+          var T0 = u.t, B0 = u.b, key = PO ? (PO.isF(T0) ? (PO.isFBody(B0) ? 'FF' : 'FM') : 'M') : (T0.gender === 'f' ? (B0.gender === 'f' ? 'FF' : 'FM') : 'M');
+          var G2 = K[key] || K.M, v1 = { a: T0.name, b: B0.name, mc: mc, k: king }, pr2 = pick3(G2), ty = tie(T0, B0);
+          t = ST.fmt(pr2[0], v1) + (/lover|mate|fwb/.test(ty) ? 'まさかの恋人同士のペアに、スタジオが沸いた。' : '') + ST.fmt(pr2[1], v1);
+          climaxed = K.clOn === 'hit' ? good : !good;
+          if (climaxed) { climax(B0, 1); t += plusCl(B0) + moan(B0) + plusEro(K.ero && K.ero[key], B0, v1); }
+          T0.att[B0.i] = (T0.att[B0.i] || 0) + (good ? 2 : 1); B0.att[T0.i] = (B0.att[T0.i] || 0) + (good ? 2 : 1);
+          actors = [T0, B0]; why = '手を動かすのは' + T0.name;
+        }
+        /* 勝ったペアのひとこと：イった人がいれば、その人の息の上がった声 */
+        if (i === 0) t += (climaxed && VA.WIN_HOT ? quote(u.b || u.s, VA.WIN_HOT) : quote(u.m[0], VA.WIN)) + mcr('win', 0.6);
+        else if (i === units.length - 1 && units.length > 1 && rng() < 0.6) t += quote(u.m[u.m.length - 1], VA.LOSE) + mcr('lose', 0.4);
+        u.m.forEach(function (x) { addPts(x, pt, dbl); if (good) x.m.pop = clamp(x.m.pop + 4, 0, 100); else x.m.shame = clamp(x.m.shame + 6, 0, 100); });
+        if (i === 0) { u.m.forEach(function (x) { x.cnt.first++; giveTitle(x, K, 0); }); out.first = u.m[0]; }
+        if (i === units.length - 1 && units.length > 1) u.m.forEach(function (x) { x.cnt.last++; giveTitle(x, K, 1); });
+        var nm = u.m.map(function (x) { return x.name; }).join('×');
+        sayBV({ actors: actors, tag: (i + 1) + '位' + (good ? '（成功）' : '（失敗）'), text: t, why: K.name + '：' + STAT[K.stat] + 'の出来 ' + Math.round(u.v) + '／' + why + '／一人+' + pt * (dbl ? 2 : 1) + '点', mag: i === 0 ? 28 : 16, kind: climaxed ? 'climax' : 'event' }, nm + ' ' + (i + 1) + '位' + (climaxed ? '（撃沈）' : ''), i === 0 || i === units.length - 1);
+      });
+      var lu = units[units.length - 1];
+      out.last = lu.m[lu.m.length - 1];
+      out.lasts = lu.m.slice();
       return out;
     }
 

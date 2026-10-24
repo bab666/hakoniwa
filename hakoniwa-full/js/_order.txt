@@ -225,6 +225,7 @@ late js/solo-saimin-thick.js
 js/solo-saimin.js
 js/solo-variety-data.js
 js/solo-variety-more.js
+js/solo-variety-plus.js
 late js/solo-variety-extra.js
 late js/solo-erotic-more-a.js
 late js/solo-erotic-more-b.js
