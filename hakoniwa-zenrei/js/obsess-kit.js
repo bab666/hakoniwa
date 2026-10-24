@@ -65,7 +65,8 @@
   O.feed = function (ctx, a, c, d) { if (c && R(ctx, a, c).att >= 30) O.add(ctx, a, c, d || 6); };
 
   /* 同じ場にいるか（ゾンビの街のように、出来事が同じエリアの人どうしでしか起きない箱庭） */
-  function near(ctx, a, b) { return !ctx.scen.othersFor || ctx.others(a).indexOf(b) >= 0; }
+  /* 監禁している・されている二人は、いつも同じ場所にいる */
+  function near(ctx, a, b) { return (a.flags.cagePair != null && a.flags.cagePair === b.i) || !ctx.scen.othersFor || ctx.others(a).indexOf(b) >= 0; }
   O.near = near;
   /* a の執着先（いちばん執着度の高い相手。35 未満なら null） */
   O.target = function (ctx, a, min) {
@@ -189,6 +190,16 @@
   /* 嫉妬が積もる（関係を設定していなくても）：好きな相手が恋敵と親しいと、区切りごとに少しずつ。O.install が箱庭の after に足す */
   O.tick = function (ctx) {
     var kit = ctx.scen && ctx.scen.obsessKit, k = (kit && kit.tick) || 1;
+    /* 監禁していた人が亡くなった・いなくなったら、閉じ込められていた人は外に出る */
+    ctx.chars.forEach(function (b) {
+      if (b.flags.caged == null) return;
+      var a = ctx.chars[b.flags.caged];
+      if (a && a.alive && !a.out) return;
+      var pf = a ? ctx.pair(a, b) : null;
+      if (pf) { pf.captive = null; pf.captiveEnded = pf.captiveEnded || 'gone'; var s = pf.ob && pf.ob[a.i]; if (s) { s.cage = null; s.climax = null; } }
+      if (a) delete a.flags.cagePair;
+      delete b.flags.cagePair; delete b.flags.caged;
+    });
     ctx.chars.forEach(function (a) {
       if (!a.alive || a.out) return;
       var b = ctx.crush ? ctx.crush(a, 42) : null;
@@ -264,7 +275,7 @@
     if (pick === 'cage') {
       /* 全年齢版は、その場で引き止めるだけ（閉じ込めたまま日が過ぎることはない） */
       if (safe) { s.climax = null; s.lv = clamp(s.lv - 12, 0, 100); }
-      else { s.cage = { from: ctx.stepIndex, n: 0 }; pf.captive = { by: a.i }; a.flags.cagePair = b.i; b.flags.cagePair = a.i; }
+      else { s.cage = { from: ctx.stepIndex, n: 0 }; pf.captive = { by: a.i }; a.flags.cagePair = b.i; b.flags.cagePair = a.i; b.flags.caged = a.i; }
       ctx.mod(b, a, { ten: 20, trust: -12 }); ctx.stress(b, 20);
       return { with: [b], cat: 'conflict', text: F(ctx, T(ctx, safe ? 'cage_s' : 'cage'), a, b), why: why(ctx, a, b, s) + '。執着が暴走した', mag: 45 };
     }
@@ -303,7 +314,7 @@
     else if (O.stance(ctx, b, a) !== 'mutual' && s.cage.n >= 2 && ctx.rng() < 0.18 + a.tr.np * 0.15) end = 'release';
     if (end) {
       var days = s.cage.n;
-      s.cage = null; ctx.pair(a, b).captiveEnded = end; ctx.pair(a, b).captive = null; delete a.flags.cagePair; delete b.flags.cagePair;
+      s.cage = null; ctx.pair(a, b).captiveEnded = end; ctx.pair(a, b).captive = null; delete a.flags.cagePair; delete b.flags.cagePair; delete b.flags.caged;
       if (end === 'rescue') { ctx.mod(c, a, { ten: 25, aff: -20, trust: -25 }); ctx.mod2(b, c, { trust: 20, aff: 15 }, { aff: 8 }); }
       ctx.mod(b, a, { ten: 15, trust: -15 }); s.lv = clamp(s.lv - (end === 'release' ? 25 : 10), 0, 100); s.climax = null;
       return { with: c ? [b, c] : [b], cat: end === 'rescue' ? 'help' : 'conflict', text: F(ctx, T(ctx, end, !c), a, b, c), why: a.name + (SAFE() ? 'の囲い込み（' : 'による監禁（') + days + '区切りで終わった）', mag: 30 };
