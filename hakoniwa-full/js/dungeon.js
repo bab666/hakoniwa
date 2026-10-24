@@ -89,8 +89,18 @@
       return m;
     });
   }
-  /* 直近に出た文は避けて選ぶ */
+  /* この回でまだ使っていない文から選ぶ。候補を使い切ったら、いちばん前に使った文から戻す */
   function pick(S, arr) {
+    var U = S.useT = S.useT || {}, free = [], i;
+    for (i = 0; i < arr.length; i++) if (!U[arr[i]]) free.push(arr[i]);
+    var t;
+    if (free.length) t = free[S.rng.int(free.length)];
+    else { t = arr[0]; for (i = 1; i < arr.length; i++) if (U[arr[i]] < U[t]) t = arr[i]; }
+    S.useN = (S.useN || 0) + 1; U[t] = S.useN;
+    return t;
+  }
+  /* 部位のように、繰り返してかまわないものの選び方（直近だけ避ける） */
+  function pickAny(S, arr) {
     var r = S.recent, t = arr[S.rng.int(arr.length)];
     for (var i = 0; i < 5 && r.indexOf(t) >= 0; i++) t = arr[S.rng.int(arr.length)];
     r.push(t); if (r.length > 14) r.shift();
@@ -117,7 +127,20 @@
     var L = DG.LINES[key];
     return L ? fmt(S, pick(S, L), ev) : '';
   }
-  function stage(h) { return h.corrupt < 20 ? 0 : h.corrupt < 40 ? 1 : h.corrupt < 60 ? 2 : h.corrupt < 80 ? 3 : 4; }
+  function rawStage(h) { return h.corrupt < 20 ? 0 : h.corrupt < 40 ? 1 : h.corrupt < 60 ? 2 : h.corrupt < 80 ? 3 : 4; }
+  /* 反応の段階（0 抵抗〜4 陥落寸前）は堕ち度から決め、いったん上がったら下げない
+     （薬草や休憩で堕ち度がわずかに戻っても、本文の反応が「抵抗」と「受容」を行き来しないように） */
+  function stage(h) { var s = rawStage(h); if (h.rxSg == null || s > h.rxSg) h.rxSg = s; return h.rxSg; }
+  DG.stage = function (h) { return stage(h); };
+  /* 段階が上がったときの、変わり目の一文（一人につき一段階一回） */
+  function shiftLine(S, h, sg) {
+    var prev = h.rxSaid; h.rxSaid = sg;
+    if (prev == null || sg <= prev) return '';
+    var top = isTop(h), T = top ? DG.SHIFT_TOP : DG.SHIFT;
+    /* 堕ち度40の「心」の一文が直後に出るときは重ねない */
+    if (!T || !T[sg] || (sg === 2 && !S.flags.c40 && !top)) return '';
+    return fmt(S, pick(S, T[sg])) + ' ';
+  }
   function will(h) { return clamp(h.tr.cp * 0.35 + h.tr.a * 0.25 + h.reason / 100 * 0.4, 0, 1); }
   function hasCurse(h, id) { return h.curses.indexOf(id) >= 0; }
   function hasItem(h, id) { return h.items.indexOf(id) >= 0; }
@@ -151,10 +174,13 @@
   function react(S, force) {
     var h = S.h, T = isTop(h) && DG.TAILS_TOP ? DG.TAILS_TOP : DG.TAILS[h.persona], sg = stage(h);
     if (!T) return '';
-    if (!force && sg === S.lastStage && S.rng() > 0.2) return '';
-    S.lastStage = sg;
-    if (DG.ENDURE && sg <= 2 && T !== DG.TAILS_TOP && S.rng() < 0.4) return ' ' + fmt(S, pick(S, DG.ENDURE[h.persona]));
-    return ' ' + fmt(S, pick(S, T[sg]));
+    /* 段階は一人ずつ覚える（パーティーで別の人の段階と比べない） */
+    var sh = shiftLine(S, h, sg);
+    if (!force && !sh && sg === h.lastStage && S.rng() > 0.2) return '';
+    h.lastStage = sg;
+    /* こらえる体の反応は、まだ抵抗・動揺の段階（0〜1）だけ。揺らぎ始めたら、こらえる文には戻らない */
+    if (DG.ENDURE && sg <= 1 && T !== DG.TAILS_TOP && S.rng() < 0.4) return ' ' + sh + fmt(S, pick(S, DG.ENDURE[h.persona]));
+    return ' ' + sh + fmt(S, pick(S, T[sg]));
   }
   /* 直前の記録に短い補足を足す（行数を増やさない） */
   function note(S, text, keyWhy, target) {
@@ -186,7 +212,7 @@
   function stim(S, ev, mult, why) {
     var h = S.h, o = ev.o, rng = S.rng;
     S.defer = true;
-    var part = ev.part === 'any' ? pick(S, DG.PART_ORDER) : ev.part;
+    var part = ev.part === 'any' ? pickAny(S, DG.PART_ORDER) : ev.part;
     ev.partNow = part;
     var dev = part === 'all' ? avgDev(h) : h.dev[part] || 0;
     var clothMul = 1 + (4 - h.cloth) * 0.09;
@@ -237,9 +263,13 @@
       h.reason -= (4 + h.climax) * (1 - w * 0.4) * S.k;
       h.sens += 0.04 + (hasCurse(h, 'mark') ? 0.05 : 0);
       h.pleasure = 18 + rng.int(18) + (hasCurse(h, 'mark') ? 14 : 0) + (hasCurse(h, 'heat') ? 8 : 0);
-      var top = isTop(h) && DG.CLIMAX_TOP, CL = top ? DG.CLIMAX_TOP[stage(h)] : DG.CLIMAX[h.persona][stage(h)], cn = h.climax, ctext = fmt(S, pick(S, CL), ev);
-      if (DG.MOAN && !top && rng() < 0.45) ctext = '「' + pick(S, DG.MOAN[h.persona]) + '」' + ctext;
+      var top = isTop(h) && DG.CLIMAX_TOP, cn = h.climax, moanOn = DG.MOAN && !top && rng() < 0.45;
       later(S, function () {
+        /* 絶頂の言い回しは、書く時点の段階で選ぶ（原因の出来事の反応より前の段階に戻らないように） */
+        var hs = S.h; S.h = h;
+        var sg = stage(h), ctext = fmt(S, pick(S, top ? DG.CLIMAX_TOP[sg] : DG.CLIMAX[h.persona][sg]), ev);
+        if (moanOn) ctext = '「' + pick(S, DG.MOAN[h.persona]) + '」' + ctext;
+        S.h = hs;
         /* 絶頂した本人（パーティーでは書くときに別の人の番になっていることがある。dungeon-lewd.js が読む） */
         S.lwWho = h; S.lwEv = ev;
         var o = say(S, { kind: 'climax', tag: '絶頂', text: ctext, why: cn === 1 ? '初めての絶頂' : cn + '回目' });

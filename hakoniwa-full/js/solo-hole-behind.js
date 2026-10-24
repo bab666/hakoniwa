@@ -12,6 +12,8 @@
   var HK = window.HK, K = HK.SoloKit;
   if (!K) return;
   function L(s) { return s.split('|'); }
+  /* この回でまだ使っていない文から選ぶ（solo-hole.js の HK.HoleFresh） */
+  function P(S, a) { return HK.HoleFresh ? HK.HoleFresh(S, a) : K.pick(S, a); }
   var LOVE = /^(lover|mate|fated|almost|fwb)$/, W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7, sibbad: -0.15, bad: -0.4 };
   var FAMILY = /^(sibling|sibprot|sibclose|sibbad|parent|pparent)$/;
 
@@ -24,7 +26,8 @@
       L('腰から下は、すっかり熱に浮かされていた。誘うようにひくつき、触れる前から甘い匂いを立てていた。|突き出た腰は、物欲しげに揺れていた。汗に濡れた肌が灯りを照り返し、誰が見ても分かるほど発情していた。')
     ],
     know: L('{b}は、見覚えのある靴と脚に気づいた。――{a}だ。|{b}は、腰のほくろの位置で分かってしまった。これは{a}の体だ。|壁の向こうから、くぐもった声が聞こえた。{b}には、それが{a}の声だと分かった。'),
-    stranger: L('{b}には、それが誰の体なのか分からなかった。|{b}は、誰の体だろうと首をかしげた。'),
+    stranger: L('{b}には、それが誰の体なのか分からなかった。|{b}は、誰の体だろうと首をかしげた。|{b}は脚の形をしばらく眺めたが、見覚えはなかった。|{b}には、壁から生えた腰の持ち主に心当たりがなかった。'),
+    strangerN: L('{n}には、それが誰の体なのか分からなかった。|{n}は顔を見合わせたが、誰の体なのか、心当たりのある者はいなかった。|{n}は脚の形を確かめ合ったが、誰も見覚えがなかった。'),
     /* 一人：迷う／助ける */
     help1: L('{b}は迷わず壁に手をかけ、穴の縁をこじ開けて{a}の体を引き抜いた。|{b}は壁の継ぎ目を探し、留め具を外して、{a}の腰をそっと穴から抜き出した。|{b}は周りを見回して道具を探し、壁を削って{a}を助け出した。'),
     helpStranger: L('{b}は「放っておけない」と呟き、知らない誰かの腰を、壁から引き抜きにかかった。――壁の向こうから出てきたのは、{a}だった。|{b}は困っている人を見過ごせなかった。穴の縁を広げて引き抜くと、それは{a}だった。'),
@@ -60,7 +63,7 @@
     fingerFM: L('{b}は{a}のものを握り、根元から先まで、搾るようにゆっくりと扱き上げた。|{b}は{a}のものの先を指先で撫で回し、溢れてきたものを塗り広げながら、手首を返して扱いた。|{b}は片手で{a}のものを扱き、もう片方の手で、張りつめた付け根を柔らかく揉みしだいた。'),
     penFuta: L('{b}はスカートの奥から自分のものを取り出し、{a}の腰を両手で掴んで、ゆっくりと奥まで沈めていった。|{b}は女の体に似合わない硬さを{a}の入り口に押し当て、一息に貫いた。壁が、{b}のリズムで軋みはじめた。|{b}は息を荒げながら{a}の腰を引き寄せ、自分のもので深いところを何度も突き上げた。'),
     unaware: L('壁のこちら側の{a}は、何も感じないまま天井を見上げていた。|こちら側の{a}は、壁が揺れる理由を知らなかった。|{a}は、壁の向こうで誰が何をしているのか、まるで知らなかった。'),
-    feel: L('{a}は、壁の向こうから伝わる熱に、声を殺して身をよじった。|戻っていた感覚が、壁の向こうの動きを一つ残らず{a}に伝えた。{a}は壁に爪を立てた。'),
+    feel: L('{a}は、壁の向こうから伝わる熱に、声を殺して身をよじった。|戻っていた感覚が、壁の向こうの動きを一つ残らず{a}に伝えた。{a}は壁に爪を立てた。|壁の向こうの手つきが、そのまま{a}の腰に響いた。{a}は唇を噛んで、こぼれそうな声をこらえた。|{a}は、壁の向こうで自分の体に何が起きているのかを、もう嫌というほど分かっていた。|感覚が戻った腰は、壁の向こうの動きに合わせて勝手に跳ねた。{a}は額を壁に押し当てて震えた。'),
     after: {
       rescue: L('ひとしきり満足すると、{b}は壁をこじ開けて{a}を引き抜いた。|事が済むと、{b}は何事もなかったように{a}を穴から助け出した。'),
       leave: L('{b}は服を整え、何も言わずに部屋を出ていった。|{b}はそのまま、壁の向こうの{a}を残して去っていった。')
@@ -128,8 +131,8 @@
     var vis = Math.min(2, Math.floor((st.stored / 14 + h.corrupt * 0.6 + (st.live ? h.pleasure * 0.5 : 0) + env.wild * 0.15) / 25));
     if (st.hardTop) vis = Math.min(vis, 1);
     var F = function (t, v) { return K.fmt(S, t, v); };
-    var t0 = B.length === 1 ? F(K.pick(S, T.arrive1), { b: B[0].name }) : F(K.pick(S, T.arriveN), { n: names(B) });
-    t0 += F(K.pick(S, T.see[vis]));
+    var t0 = B.length === 1 ? F(P(S, T.arrive1), { b: B[0].name }) : F(P(S, T.arriveN), { n: names(B) });
+    t0 += F(P(S, T.see[vis]));
     /* 誰の体か気づくか */
     B.forEach(function (b) {
       b.know = rng() < 0.15 + Math.max(0, b.r.w) * 0.6 + (b.r.love ? 0.15 : 0) + (h.action.id === 'shout' ? 0.2 : 0);
@@ -147,8 +150,12 @@
       b.mission = t.np * 0.5 + t.cp * 0.5;
       var x = rng() * (Math.max(0.01, b.help) + Math.max(0, b.lewd) + b.leave);
       b.choice = x < b.help ? 'help' : x < b.help + Math.max(0, b.lewd) ? 'lewd' : 'leave';
-      t0 += ' ' + F(K.pick(S, b.know ? T.know : T.stranger), { b: b.name });
+      if (b.know) t0 += ' ' + F(P(S, T.know), { b: b.name });
     });
+    /* 気づかなかった人は、二人以上ならまとめて一文にする */
+    var unk = B.filter(function (b) { return !b.know; });
+    if (unk.length > 1) t0 += ' ' + F(P(S, T.strangerN), { n: names(unk) });
+    else if (unk.length) t0 += ' ' + F(P(S, T.stranger), { b: unk[0].name });
     var o0 = K.say(S, { kind: 'ev', tag: '壁の向こうの住人', text: t0, why: B.map(function (b) { return b.name + '：' + (b.know ? '誰の体か気づいた' : '誰の体か分からない') + (b.know && b.r.w ? '（関係の近さ ' + Math.round(b.r.w * 100) + '）' : ''); }).join('／') + '／発情の見え方 ' + ['落ち着いている', '上気している', 'すっかり発情している'][vis] });
     K.key(S, o0, (B.length === 1 ? B[0].name : names(B)) + 'が壁の向こうに来た');
 
@@ -157,7 +164,7 @@
       var b = B[0];
       if (b.choice === 'help') rescuer = b, how = b.know ? 'help1' : 'helpStranger';
       else if (b.choice === 'lewd') doers = [b];
-      else { K.say(S, { kind: 'ev', tag: '立ち去る', text: F(K.pick(S, T.leave), { b: b.name }), why: b.name + 'は関わらなかった（ドライさ・慎重さ）' }); return null; }
+      else { K.say(S, { kind: 'ev', tag: '立ち去る', text: F(P(S, T.leave), { b: b.name }), why: b.name + 'は関わらなかった（ドライさ・慎重さ）' }); return null; }
     } else {
       var lead = B.slice().sort(function (x, y) { return y.mission - x.mission; })[0];
       var hes = B.filter(function (x) { return x.hes && x.choice !== 'lewd'; })[0];
@@ -166,21 +173,21 @@
         rescuer = lead; how = 'lead';
       } else if (hes && agg && agg !== hes && agg.kind) {
         /* 臆病な人が迷っているうちに、積極的な人が始めてしまう */
-        K.say(S, { kind: 'ev', tag: '迷い', text: F(K.pick(S, T.hesitate), { c: hes.name }) + F(K.pick(S, T.beforeYou), { b: agg.name, c: hes.name }), why: hes.name + 'は臆病で迷い、' + agg.name + 'は積極的（攻撃性・衝動）' });
+        K.say(S, { kind: 'ev', tag: '迷い', text: F(P(S, T.hesitate), { c: hes.name }) + F(P(S, T.beforeYou), { b: agg.name, c: hes.name }), why: hes.name + 'は臆病で迷い、' + agg.name + 'は積極的（攻撃性・衝動）' });
         doers = [agg];
         if (hes.tr.cp > 0.55 && rng() < 0.5) {
           var okStop = rng() < 0.3 + hes.tr.cp * 0.4 - agg.tr.aggr * 0.3;
-          K.say(S, { kind: 'ev', tag: '制止', text: F(K.pick(S, T.stop), { b: agg.name, c: hes.name }) + (okStop ? '' : F(K.pick(S, T.stopFail), { b: agg.name, c: hes.name })), why: hes.name + 'のCP' });
+          K.say(S, { kind: 'ev', tag: '制止', text: F(P(S, T.stop), { b: agg.name, c: hes.name }) + (okStop ? '' : F(P(S, T.stopFail), { b: agg.name, c: hes.name })), why: hes.name + 'のCP' });
           if (okStop) { doers = []; rescuer = hes; how = 'help1'; }
         }
       } else {
         /* 話し合って決める */
-        var t1 = F(K.pick(S, T.discuss), { n: names(B) });
-        B.forEach(function (x) { t1 += F(K.pick(S, T.say[x.choice]), { b: x.name }); });
+        var t1 = F(P(S, T.discuss), { n: names(B) });
+        B.forEach(function (x) { t1 += F(P(S, T.say[x.choice]), { b: x.name }); });
         var sc = { help: 0, lewd: 0, leave: 0 };
         B.forEach(function (x) { sc[x.choice] += 1 + (x.choice === 'help' ? x.tr.cp * 0.5 : x.choice === 'lewd' ? x.tr.aggr * 0.5 : 0); });
         var win = sc.help >= sc.lewd && sc.help >= sc.leave ? 'help' : sc.lewd >= sc.leave ? 'lewd' : 'leave';
-        t1 += F(K.pick(S, win === 'help' ? T.decideHelp : win === 'lewd' ? T.decideLewd : T.decideLeave), { n: names(B) });
+        t1 += F(P(S, win === 'help' ? T.decideHelp : win === 'lewd' ? T.decideLewd : T.decideLeave), { n: names(B) });
         K.say(S, { kind: 'ev', tag: '話し合い', text: t1, why: '助ける ' + sc.help.toFixed(1) + '・手を出す ' + sc.lewd.toFixed(1) + '・立ち去る ' + sc.leave.toFixed(1) });
         if (win === 'help') { rescuer = B.slice().sort(function (x, y) { return y.help - x.help; })[0]; how = 'group'; }
         else if (win === 'lewd') doers = B.filter(function (x) { return x.choice === 'lewd' && x.kind; });
@@ -191,11 +198,11 @@
     /* 手を出す */
     doers.forEach(function (b, k) {
       var vk = variantOf(b, h), body = vk ? (HK.Ero && HK.Ero.has('hole', 'behind.' + vk) ? EB(S, vk, T[vk]) : vk === 'fingerFM' ? T[vk] : EB(S, b.kind, T[vk].concat(T[vk], T[b.kind]))) : EB(S, b.kind, T[b.kind]);
-      var tx = (k ? F(K.pick(S, T.join), { b: b.name }) : '') + (b.punish ? F(K.pick(S, EB(S, 'punish', T.punish)), { b: b.name }) : '') + F(K.pick(S, body), { b: b.name });
+      var tx = (k ? F(P(S, T.join), { b: b.name }) : '') + (b.punish ? F(P(S, EB(S, 'punish', T.punish)), { b: b.name }) : '') + F(P(S, body), { b: b.name });
       var pw = { pen: 34, finger: 26, tease: 20, ride: 28 }[b.kind] + (b.punish ? 8 : 0);
       if (st.live) {
         var r = K.stim(S, pw, { part: 'belly', defer: true });
-        tx += ' ' + F(K.pick(S, EB(S, b.kind === 'pen' || b.kind === 'finger' ? 'feel' : 'feel.other', T.feel)));
+        tx += ' ' + F(P(S, EB(S, b.kind === 'pen' || b.kind === 'finger' ? 'feel' : 'feel.other', T.feel)));
         tx = EZ(S, tx);
         /* 描写の長さ「段落分けして厚く」（hole-thick.js）：感覚が戻ったあとの行為は段落に分けて厚く */
         var dtk = HK.HoleThick && HK.HoleThick.doer(S, b.kind, h, b, { topMe: st.topMe });
@@ -206,7 +213,7 @@
         st.stored += (60 + env.wild * 0.5) * (b.kind === 'pen' ? 1.3 : b.kind === 'ride' ? 1.1 : 0.9) * (b.punish ? 1.25 : 1) * h.sens;
         if (b.kind === 'pen' || b.kind === 'ride') st.meta.cum++;
         h.corrupt += 3 * (S.k || 1);
-        tx += ' ' + F(K.pick(S, b.kind === 'pen' || b.kind === 'finger' ? EB(S, 'unaware', T.unaware) : T.unaware));
+        tx += ' ' + F(P(S, b.kind === 'pen' || b.kind === 'finger' ? EB(S, 'unaware', T.unaware) : T.unaware));
         tx = EZ(S, tx);
         K.say(S, { kind: 'ev', tag: b.punish ? 'お仕置き' : '壁の向こうの住人', text: tx, why: whyOf(b) + '／本人は感じていない（溜まった感覚 ' + Math.round(st.stored) + '）' });
       }
@@ -216,12 +223,12 @@
       /* 事が済んだあと：助け出すか、そのまま去るか */
       var best = doers.concat(B).sort(function (x, y) { return y.help - x.help; })[0];
       if (rng() < 0.15 + Math.max(0, best.help) * 0.35) { rescuer = best; how = 'after'; }
-      else { K.say(S, { kind: 'ev', tag: '去る', text: F(K.pick(S, T.after.leave), { b: doers[0].name }), why: '' }); return null; }
+      else { K.say(S, { kind: 'ev', tag: '去る', text: F(P(S, T.after.leave), { b: doers[0].name }), why: '' }); return null; }
     }
     if (!rescuer) return null;
     var others = B.filter(function (x) { return x !== rescuer; });
-    var ht = how === 'lead' ? F(K.pick(S, T.lead), { b: rescuer.name, m: names(others) || '皆' }) : how === 'after' ? F(K.pick(S, T.after.rescue), { b: rescuer.name }) : how === 'group' ? F(K.pick(S, T.help1), { b: rescuer.name }) : F(K.pick(S, T[how] || T.help1), { b: rescuer.name });
-    if (!rescuer.know && how !== 'helpStranger') ht += F(K.pick(S, T.knowAfter), { b: rescuer.name });
+    var ht = how === 'lead' ? F(P(S, T.lead), { b: rescuer.name, m: names(others) || '皆' }) : how === 'after' ? F(P(S, T.after.rescue), { b: rescuer.name }) : how === 'group' ? F(P(S, T.help1), { b: rescuer.name }) : F(P(S, T[how] || T.help1), { b: rescuer.name });
+    if (!rescuer.know && how !== 'helpStranger') ht += F(P(S, T.knowAfter), { b: rescuer.name });
     var o = K.say(S, { kind: 'sys', tag: '救出', text: ht, why: rescuer.name + 'が助け出した（' + (how === 'lead' ? '使命感' : how === 'after' ? '事のあとで' : how === 'group' ? '話し合いで' : '関係・NP') + '）' });
     K.key(S, o, rescuer.name + 'に助け出された');
     return { rescued: rescuer, doers: doers };
@@ -244,12 +251,12 @@
     var h = S.h, b = res.rescued, F = function (t) { return K.fmt(S, t, { b: b.name }); };
     /* 恋愛・R18にしない組（HK.ngPair）なら、助けた人に縋らない */
     var ng = !!(HK.ngPair && HK.ngPair(h, b));
-    if (st.hardTop) K.say(S, { kind: 'sys', tag: '解放', text: F(K.pick(S, T.rescuedTop)), why: '自分で攻めを選んでいるので、何も溜まっていなかった' });
-    else if (st.live || st.stored < 20) K.say(S, { kind: 'sys', tag: '解放', text: F(K.pick(S, ng ? T.rescuedLiveNG : T.rescuedLive)), why: ng ? '恋愛・R18にしない相手なので、縋らない' : '' });
+    if (st.hardTop) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, T.rescuedTop)), why: '自分で攻めを選んでいるので、何も溜まっていなかった' });
+    else if (st.live || st.stored < 20) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, ng ? T.rescuedLiveNG : T.rescuedLive)), why: ng ? '恋愛・R18にしない相手なので、縋らない' : '' });
     else {
       h.pleasure += st.stored * 0.8; h.reason -= st.stored * 0.07; h.corrupt += st.stored * 0.03 * (S.k || 1);
       var parts = []; while (h.pleasure >= 100 && parts.length < 4) parts.push(K.climax(S, { silent: true }));
-      var oc = K.say(S, { kind: 'climax', tag: parts.length > 1 ? '連続絶頂' : '絶頂', text: EZ(S, F(K.pick(S, ng ? T.rescuedNG : EB(S, st.topMe ? 'rescued.top' : HK.Pos && HK.Pos.isF(h) && HK.Pos.isF(b) ? 'rescued.ff' : 'rescued', T.rescued)))) + (parts.length ? ' ' + (parts[0].charAt(0) === '「' ? h.name : '') + parts.join('') : ''), why: '助け出された瞬間に、溜まっていた感覚（' + Math.round(st.stored) + '）が戻った' + (ng ? '／恋愛・R18にしない相手なので、ひとりで受け止めた' : '') });
+      var oc = K.say(S, { kind: 'climax', tag: parts.length > 1 ? '連続絶頂' : '絶頂', text: EZ(S, F(P(S, ng ? T.rescuedNG : EB(S, st.topMe ? 'rescued.top' : HK.Pos && HK.Pos.isF(h) && HK.Pos.isF(b) ? 'rescued.ff' : 'rescued', T.rescued)))) + (parts.length ? ' ' + (parts[0].charAt(0) === '「' ? h.name : '') + parts.join('') : ''), why: '助け出された瞬間に、溜まっていた感覚（' + Math.round(st.stored) + '）が戻った' + (ng ? '／恋愛・R18にしない相手なので、ひとりで受け止めた' : '') });
       var rtk = HK.HoleThick && HK.HoleThick.peak(S, ng ? 'rescuedNG' : 'rescued', h, { topMe: st.topMe, b: ng ? null : b });
       if (rtk) oc.text = rtk + '\n\n' + oc.text;
       K.key(S, oc, ng ? b.name + 'に助け出され、ひとりで達した' : b.name + 'に抱きついたまま達した');
