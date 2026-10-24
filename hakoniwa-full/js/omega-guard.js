@@ -64,3 +64,63 @@
     }
   });
 })();
+
+/* ---------- 結末の締め：決まった結末（ctx.om.ending）を、記録の最後に一つの場面として置く ----------
+   結末の条件：誰か一組の関係が結末に届いた時点（omega-bond.js の B.check）。3年たっても届かなければ、いちばん濃い組で打ち切る。
+   後日談（ネックガード・巣作り）のあとに「結末」の段と、結末の種類ごとに書き分けた締めの文を入れる */
+(function () {
+  'use strict';
+  var HK = window.HK, scen = HK.SCENARIOS && HK.SCENARIOS.omega;
+  if (!scen) return;
+  function L(s) { return s.split('|'); }
+  var KIND = {
+    bond: 'bond_heat bond_fated bond_vow bond_switch bond_buddy bond_rival bond_instinct fated_found',
+    lovers: 'lovers_beta lovers_aa lovers_oo lovers_resist lovers_scar lovers_nobond fated_switch stolen',
+    brk: 'break_drift break_bias break_switch break_cheat split_fated abandon second_mate',
+    unreq: 'reject oneway_other pining rival_lost fated_late',
+    apart: 'hesitate fated_free onenight strangers quit_alone',
+    fwb: 'fwb affair',
+    hate: 'lovehate',
+    friend: 'friends rivals buddy',
+    shinju: 'ob_shinju',
+    dark: 'ob_forced ob_trapped ob_nest ob_codep ob_yandere'
+  };
+  var OF = {};
+  Object.keys(KIND).forEach(function (k) { KIND[k].split(' ').forEach(function (id) { OF[id] = k; }); });
+  var SCENE = {
+    bond: L('季節がひと回りしたころ、{a}と{b}は同じ鍵を持つようになった。玄関には、いつも二人分の靴が並んでいる。|{b}のうなじの噛み跡は、もう痛まない。{a}は今でもときどき、そこにそっと唇を寄せる。|二人の部屋には、互いの匂いが混ざり合って染みついた。{a}と{b}は、それを「うちの匂い」と呼んでいる。'),
+    lovers: L('{a}と{b}の毎日は、大きな事件もなく続いている。朝はどちらかが先に起きて、もう一人の分のコーヒーを淹れる。|休みの日、{a}と{b}は並んで街を歩いた。すれ違う誰の匂いにも、もう振り返らなかった。|{a}は{b}の隣で、来月の予定を話した。その先の予定も、当たり前のように二人分だった。'),
+    brk: L('{a}の部屋から、{b}の匂いが少しずつ消えていった。最後に残ったのは、返しそびれた一枚のシャツだけだった。|{a}と{b}は、駅のホームで最後の挨拶をした。電車が来るまで、どちらも目をそらさなかった。|{b}は引っ越しの段ボールに、二人で撮った写真を伏せてしまい込んだ。それで、一つの季節が終わった。'),
+    unreq: L('{a}は今も、{b}の匂いがする場所を通るたび、少しだけ足をゆるめる。|季節が変わっても、{a}と{b}の距離は変わらなかった。届かなかった言葉は、{a}の胸の中で静かに丸くなった。|{a}は{b}に宛てた言葉を、最後まで送らなかった。下書きのまま、それは今もスマホの中にある。'),
+    apart: L('{a}と{b}は、それぞれの道を歩いている。すれ違うことはあっても、もう立ち止まることはない。|{a}は新しい季節の中で、自分の暮らしを続けた。{b}もまた、どこかで同じようにしているのだろう。|{a}と{b}の話は、ここで一度幕を下ろした。続きがあるのかどうかは、まだ誰にも分からない。'),
+    fwb: L('{a}のスマホに、{b}から短いメッセージが届いた。用件は書いていない。書かなくても分かった。|{a}と{b}は、朝になるとそれぞれの顔に戻る。名前のない関係は、名前のないまま続いていく。|{a}は{b}の部屋の合鍵を持っていない。それでも次の発情期がいつ来るかは、二人とも知っている。'),
+    hate: L('{a}と{b}は、今日もどこかで言い合いをしている。その声が途切れた夜にだけ、二人の距離はなくなる。|{a}は{b}の悪口を言うたび、少しだけ声が甘くなる。{b}も、それに気づかないふりを続けている。|{a}と{b}の関係に、名前はまだない。憎まれ口と熱のあいだを、二人は行ったり来たりしている。'),
+    friend: L('{a}と{b}は、今日も変わらない調子で顔を合わせた。それ以上でも以下でもない距離が、二人にはちょうどよかった。|{a}が困ったとき、最初に連絡するのは{b}だった。恋ではなかったが、それに負けない縁だった。|{a}と{b}は、何年たってもこうして会うのだろう。恋の話にはならなかったが、それを惜しいと思うこともなかった。'),
+    shinju: L('二人の部屋は、しばらくして静かに片づけられた。残された匂いも、季節が変わるころには消えていった。|{a}と{b}の名前は、小さな記事の片隅に載っただけだった。街は何事もなかったように、次の季節へ進んだ。|誰もいなくなった部屋の窓辺に、二人がよく並んでいた場所の跡だけが残った。'),
+    dark: L('{a}と{b}の部屋のカーテンは、昼でも閉じたままになった。外の誰も、二人の本当の顔を知らない。|{b}の周りには、いつも{a}の匂いがまとわりついている。それを愛と呼ぶのか、檻と呼ぶのか、もう誰にも決められない。|街は何も変わらずに季節を進めた。ただ{a}と{b}だけが、その流れから少し外れたところで、二人きりで閉じている。')
+  };
+  var WHEN = L('{m}か月が過ぎた。|見守りはじめて{m}か月。|こうして、{m}か月がたった。');
+  var TIMEOUT = L('三年がたっても、二人の関係はそれ以上動かなかった。|三年という時間が、二人の答えになった。|気づけば、三年が過ぎていた。');
+  function closing(ctx) {
+    var E = ctx.om && ctx.om.ending;
+    if (!E) return;
+    var a = ctx.chars[E.a], b = E.b != null ? ctx.chars[E.b] : null;
+    var k = OF[E.id] || 'apart';
+    if (!b) k = 'apart';
+    var m = Math.ceil((ctx.stepIndex + 1) / 2);
+    /* 全年齢版では「果て」が言い換えの対象になるので、題を言い換えておく */
+    if (HK.SAFE_ON && E.title === '執着の果て') { E.title = '執着の行き着く先'; ctx.flags.outcome = E.title; }
+    var t = (E.timeout ? ctx.pick(TIMEOUT) : ctx.pick(WHEN).replace('{m}', m)) + (E.text || '');
+    t += ctx.t(ctx.pick(SCENE[k]), a, b || a);
+    (E.others || []).forEach(function (o) { t += String(o.text || '').replace(/^[^：。]{1,24}：/, ''); });
+    ctx.say({ kind: 'step', cat: 'phase', text: '結末「' + E.title + '」' });
+    ctx.say({ kind: 'event', cat: 'phase', cageOk: true, actors: b ? [a, b] : [a], text: t, why: '結末：' + E.title, mag: 30 });
+  }
+  var fin0 = scen.finish;
+  scen.finish = function (ctx) {
+    var r = fin0 ? fin0.apply(this, arguments) : undefined;
+    ctx.flush();
+    closing(ctx);
+    return r;
+  };
+})();

@@ -135,3 +135,88 @@
     return r;
   };
 })();
+
+/* ---------- 結末の締め：部屋の外へ出た人・残った人を、記録の最後にまとめる ----------
+   結末の条件：全員が部屋を出る／一人しか出られない部屋で誰かが出る／残りが一人になる／限界の時刻が来る（scenario-room.js の end）。
+   どの終わり方でも、最後に「結末」の段と、その回の結果から組み立てた締めの文を一つ入れる */
+(function () {
+  'use strict';
+  var HK = window.HK, RA = HK.RoomAPI;
+  if (!RA || !RA.scen) return;
+  var scen = RA.scen;
+  function L(s) { return s.split('|'); }
+  function nm(list) { list = list.map(function (c) { return c.name; }); return list.length > 6 ? list.slice(0, 6).join('・') + 'ほか' + (list.length - 6) + '人' : list.join('・'); }
+  function fill(t, o) { return t.replace(/\{(\w+)\}/g, function (m, k) { return o[k] != null ? o[k] : m; }); }
+  var OPEN = {
+    all: L('{t}。最後の扉が閉まると、白い部屋の照明がひとりでに落ちた。振り返ったときには、扉のあった場所はただの壁になっていた。部屋には、もう誰も残っていない。|{t}。{W}外に出たところで、背後の扉は音もなく消えた。廊下の先には、見覚えのある街の夜景が広がっていた。白い部屋の話は、それで終わりになった。|{t}。外の空気は、思っていたよりずっと冷たかった。最後に出た人が振り返ると、白い部屋はもうどこにもなかった。白い部屋のことを胸にしまって、{W}元の日常へ帰っていった。'),
+    some: L('{t}。扉は、それきり開かなくなった。白い部屋には{L}だけが残された。照明がひとつずつ落ちていき、最後に扉の紙の文字だけが白く光っていた。|{t}。外へ出た人たちの足音が遠ざかると、部屋はまた静かになった。{L}は閉じた扉の前に座りこんだ。白い部屋は、{L}を閉じ込めたまま次の時間を待っている。|{t}。{L}がどれだけ扉を叩いても、返ってくる音はなかった。白い部屋に残ったのは{L}と、使い道のなくなった時間だけだった。'),
+    none: L('{t}。照明が最後の一段まで落ち、白い部屋は真っ暗になった。扉の紙の条件は、誰ひとり満たせなかった。{L}は暗闇の中で、互いの息づかいだけを数えていた。|{t}。扉は最後まで開かなかった。{L}は壁にもたれて、朝とも夜ともつかない白い光を黙って見上げていた。この部屋から出た人は、一人もいない。|{t}。時間切れを知らせるように、扉の紙の文字がすっと消えた。{L}は顔を見合わせたが、誰も何も言わなかった。白い部屋は、全員を閉じ込めたまま静まり返った。'),
+    sacrifice: L('{a}がくぐった扉は、二度と開かなかった。外の光の中で、{a}は何度も振り返った。背中を押してくれた{b}の顔を、{a}は一生忘れないだろう。|{a}は一人で外の世界に戻った。{b}に押された背中の感触が、いつまでも消えなかった。白い部屋には、{L}が残された。|外に出た{a}は、扉のあった場所の壁に額をつけた。向こう側で{b}が待っている気がした。けれど、扉は二度と現れなかった。'),
+    grab: L('一人で外に出た{a}は、振り返らずに歩き出した。白い部屋に置いてきた{L}のことを、{a}は誰にも話さなかった。|{a}が抜け出したあと、扉は二度と開かなかった。{L}は閉じた扉を見つめたまま、長いあいだ動かなかった。|外の空気を吸った{a}は、一度だけ立ち止まった。それから、白い部屋のことは忘れたふりをして歩き出した。部屋には、まだ{L}が残っている。')
+  };
+  var STAYED = L('{S}は、扉が開いても外へ出なかった。自分で選んで、白い部屋に残った。|{S}は開いた扉を見送って、自分から部屋に残ることを選んだ。|{S}にとっては、外より白い部屋の方が居心地がよかったらしい。{S}は自分の意思で残った。');
+  var PAIR = {
+    love: L('{a}と{b}は、部屋を出たその足で一緒に帰った。駅までの道で、どちらからともなく手を繋いだ。|一週間後、{a}と{b}は改めて待ち合わせをした。あの部屋のことは話さなかったが、帰り際に{b}の方から次の約束を口にした。|{a}と{b}は、それからも会うようになった。白い部屋で始まった関係は、外でも続いている。'),
+    fwb: L('{a}と{b}は、外では恋人のふりをしなかった。それでも月に何度か、どちらかから短い連絡が届いた。|部屋を出たあとも、{a}と{b}はときどき会った。名前のない関係のまま、夜だけが重なっていく。|{a}と{b}は、またね、とだけ言って別れた。その「また」は、案外すぐにやってきた。'),
+    awk: L('部屋を出た{a}と{b}は、外の明るさに目を細めたまま、ろくに挨拶もせず別々の方向へ歩き出した。|{a}と{b}は、あの部屋でのことを一度も口にしなかった。連絡先も、交換しないままだった。|{a}は{b}に何か言いかけて、やめた。二人のあいだのことは、白い部屋に置いてきたことになった。'),
+    friend: L('{a}と{b}は外に出ると、肩を叩き合って笑った。あの部屋の話は、いつのまにか二人だけの笑い話になった。|{a}と{b}は連絡先を交換した。たまに届くメッセージは、決まって「生きてる？」の一言から始まった。|部屋を出た{a}と{b}は、近くの店で遅い食事をとった。特別な何かにはならなかったが、いい友人になった。'),
+    far: L('{a}と{b}は扉を出たところで別れた。名前のほかは、互いのことをほとんど知らないままだった。|{a}と{b}は外に出るなり、目も合わせずに別々の道を選んだ。二人がまた会うことは、たぶんない。|外に出ると、{a}と{b}はそれぞれのスマホを確かめ、短く会釈して離れた。白い部屋で一緒だったことだけが、二人の接点だった。'),
+    go: L('{a}は先に外へ出た。部屋に残った{b}のことが、帰り道のあいだずっと頭から離れなかった。|{a}は一人で外の空気を吸った。残ると決めた{b}の顔を思い出して、少しだけ笑った。|{a}は振り返らずに外へ出た。{b}とは、それきりになった。'),
+    group: L('{G}は外に出ると、誰からともなく大きく息を吐いた。それから、近くの店でそろって朝食をとった。|{G}は扉の外で一度だけ振り返り、それぞれの帰り道へ散っていった。|外に出た{G}は、あの部屋のことは「なかったこと」にしようと決めた。けれど、全員の連絡先はちゃんと残っていた。')
+  };
+  function kindOf(ctx, a, b) {
+    var pf = ctx.pair(a, b), r1 = ctx.R(a, b), r2 = ctx.R(b, a);
+    var att = (r1.att + r2.att) / 2, aff = (r1.aff + r2.aff) / 2, ten = (r1.ten + r2.ten) / 2;
+    if (pf.couple || (att > 45 && aff > 35)) return 'love';
+    if (pf.fwb) return 'fwb';
+    if (pf.night) return 'awk';
+    if (aff > 20 && ten < 40) return 'friend';
+    return 'far';
+  }
+  function closing(ctx, late) {
+    var C = ctx.chars, P = ctx.present(), out = C.filter(function (c) { return c.out; });
+    var stayed = P.filter(function (c) { return c.flags.stayed; }), left = P.filter(function (c) { return !c.flags.stayed; });
+    var t = String(ctx.label || '').replace(/（.*$/, '');
+    t = !t || t === '目覚め' ? '目覚めてまもなく' : '目覚めてから' + t;
+    var ex = ctx.flags.exits || [], parts = [], title, who = P.length ? P : out;
+    var one = ex.filter(function (e) { return e.how === 'sacrifice' || e.how === 'grab'; })[0];
+    if (!out.length) {
+      parts.push(fill(ctx.pick(OPEN.none), { t: t, L: nm(P) }));
+      title = '誰も出られなかった';
+    } else if (one) {
+      var a = C[one.a], b = C[one.b];
+      parts.push(fill(ctx.pick(OPEN[one.how]), { a: a.name, b: b.name, L: nm(P) || b.name }));
+      title = a.name + 'だけが外へ出た';
+    } else {
+      var grp = ex.filter(function (e) { return e.group && !e.trio; })[0];
+      if (!P.length && grp && ex.length === 1) { title = '全員が部屋を出た'; parts.push(t + '、'); }
+      else if (!P.length) { parts.push(fill(ctx.pick(OPEN.all), { t: t, W: C.length === 2 ? '二人とも' : '全員が' })); title = C.length === 2 ? '二人とも部屋を出た' : '全員が部屋を出た'; }
+      else if (left.length) { parts.push(fill(ctx.pick(OPEN.some), { t: t, L: nm(left) })); title = nm(left) + 'が取り残された'; }
+      else { parts.push(fill(ctx.pick(OPEN.all), { t: t, W: '条件を満たした人は' }).replace('部屋には、もう誰も残っていない。', '')); title = nm(stayed) + 'が自分から残った'; }
+      if (stayed.length) parts.push(fill(ctx.pick(STAYED), { S: nm(stayed) }));
+      ex.forEach(function (e) {
+        if (e.trio) return; /* 三人で出た組は room-trio.js の後日談がある */
+        if (e.group) { var g = e.group.map(function (i) { return C[i]; }); parts.push(fill(ctx.pick(PAIR.group), { G: nm(g) })); return; }
+        var x = C[e.a], y = C[e.b];
+        if (e.stay != null) { parts.push(fill(ctx.pick(PAIR.go), { a: x.name, b: y.name })); return; }
+        parts.push(fill(ctx.pick(PAIR[kindOf(ctx, x, y)]), { a: x.name, b: y.name }));
+      });
+    }
+    (late || []).forEach(function (e) { parts.push(e.text); });
+    ctx.flags.outcome = (ctx.flags.outcome || ctx.flags.roomLabel || '') + ' ― ' + title;
+    ctx.say({ kind: 'step', cat: 'phase', text: '結末' });
+    ctx.say({ kind: 'event', cat: 'phase', cageOk: true, actors: who, text: parts.join(''), why: '結末：' + title, mag: 30 });
+  }
+  var fin0 = scen.finish;
+  scen.finish = function (ctx) {
+    var s0 = ctx.log.length;
+    var r = fin0 ? fin0.apply(this, arguments) : undefined;
+    ctx.flush();
+    /* 三人の後日談（room-trio.js）は、部屋の締めの文の後ろにまとめる */
+    var late = [];
+    for (var i = ctx.log.length - 1; i >= s0; i--) if (/^部屋を出たあとの三人/.test(ctx.log[i].why || '')) late.unshift(ctx.log.splice(i, 1)[0]);
+    for (var j = s0; j < ctx.log.length; j++) ctx.log[j].n = j;
+    closing(ctx, late);
+    return r;
+  };
+})();
