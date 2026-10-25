@@ -455,7 +455,7 @@
     derived: ['warmth', 'honesty', 'jealous', 'impulse'],
     exclude: ['confess', 'take_charge', 'brood', 'lighten'],
     env: [
-      { id: 'days', label: '日数', min: 7, max: 90, def: 30, lo: '7日', hi: '90日', unit: '日', desc: '見守る日数。1日は朝・昼・夕方・夜の4区切り。長いほど、同棲や結婚の約束まで進みやすい' },
+      { id: 'days', label: '日数', min: 3, max: 30, def: 7, lo: '3日', hi: '30日', unit: '日', desc: '見守る日数（既定は1週間）。1日は朝・昼・夕方・夜の4区切り。同棲や結婚の約束までの間は日数に合わせて縮みます' },
       { id: 'living', label: '暮らし方', type: 'select', def: 'apart', options: [{ v: 'apart', label: '別々に住んでデート' }, { v: 'cohab', label: '同居（はじめから同じ部屋）' }, { v: 'share', label: 'シェアハウス' }], desc: '別々に住む二人は、デートの日・夕方の待ち合わせ・お泊まりの日だけ一緒にいる。恋人になってしばらくすると、一緒に暮らし始める' },
       { id: 'season', label: '始まりの季節', type: 'select', def: 'spring', options: [{ v: 'spring', label: '春（4月1日から）' }, { v: 'summer', label: '夏（7月1日から）' }, { v: 'autumn', label: '秋（10月1日から）' }, { v: 'winter', label: '冬（12月1日から）' }], desc: '季節の場面（花見・夏祭り・紅葉・こたつなど）と、海・夏祭り・花火の旅先が変わる' },
       { id: 'pace', label: '恋愛の進み', type: 'select', def: 'normal', options: [{ v: 'slow', label: 'ゆっくり' }, { v: 'normal', label: 'ふつう' }, { v: 'fast', label: '早い' }], desc: '友人→両片想い→恋人→同棲→結婚の約束へ進む速さ' }
@@ -535,7 +535,7 @@
     ctx.place = '二人の暮らし';
     var days = daysOf(env), living = /^(apart|cohab|share)$/.test(env.living) ? env.living : 'apart';
     if (living === 'cohab' && n >= 3) living = 'share';
-    ctx.ft = { days: days, living: env.living === 'cohab' && n >= 3 ? 'cohab3' : living, liv: living, pace: PACE[env.pace] || 1, day: 0, t: 0, hol: false,
+    ctx.ft = { days: days, living: env.living === 'cohab' && n >= 3 ? 'cohab3' : living, liv: living, pace: PACE[env.pace] || 1, g: Math.max(1, 30 / Math.max(3, days)), day: 0, t: 0, hol: false,
       st: {}, home: {}, plan: {}, slept: {}, used: {}, trip: null, lastTrip: -99, gplan: false,
       dates: {}, fights: {}, makeups: {}, beds: {}, r18: {}, happy: {}, tags: {}, l0: 0, prevCouple: {}, cf: {} };
     /* 段階を進める速さ（区切りの数が多い長い回でも、同じくらいの日数で進むように） */
@@ -714,9 +714,10 @@
       var m = tg ? 1 : x.s >= 1 ? 0.3 : 0;
       if (!m) return;
       /* 惹かれ：一緒にいる時間（離れていても、知り合ってからは少しずつ）。相性（chem）は ctx.mod が掛ける */
-      var at = lv ? 1.25 * k0 * m : 0;
-      ctx.mod(a, b, { aff: 0.7 * k0 * m, trust: 0.55 * k0 * m, att: at });
-      ctx.mod(b, a, { aff: 0.7 * k0 * m, trust: 0.55 * k0 * m, att: at });
+      /* 日数が短いときは、同じ歩みを短い日数で見られるように育ちを速める（f.g＝30日を基準にした倍率） */
+      var g = f.g || 1, at = lv ? 1.25 * k0 * m * g : 0;
+      ctx.mod(a, b, { aff: 0.7 * k0 * m * g, trust: 0.55 * k0 * m * g, att: at });
+      ctx.mod(b, a, { aff: 0.7 * k0 * m * g, trust: 0.55 * k0 * m * g, att: at });
       if (couple(ctx, a, b)) [ctx.R(a, b), ctx.R(b, a)].forEach(function (r) { r.ten *= 0.95; });
     });
     milestones(ctx);
@@ -762,9 +763,9 @@
         }
       }
       /* 一緒に暮らし始める */
-      if (x.s === 3 && pf.couple && f.day - x.since >= Math.round(8 / k0) && ab.trust >= 28 && ba.trust >= 28 && t >= 1 && !onTrip(ctx, a) && rng() < 0.35) { cohab(ctx, a, b); return; }
+      if (x.s === 3 && pf.couple && f.day - x.since >= Math.max(1, Math.round(f.days * 0.27 / k0)) && ab.trust >= 28 && ba.trust >= 28 && t >= 1 && !onTrip(ctx, a) && rng() < 0.35) { cohab(ctx, a, b); return; }
       /* 結婚の約束（指輪の交換だけ） */
-      if (x.s === 4 && pf.couple && !x.married && f.day - x.since >= Math.round(9 / k0) && ab.aff >= 50 && ba.aff >= 50 && ab.trust >= 40 && t >= 2 && f.day >= (x.waitP || 0) && rng() < 0.3 * k0 + 0.05) {
+      if (x.s === 4 && pf.couple && !x.married && f.day - x.since >= Math.max(1, Math.round(f.days * 0.3 / k0)) && ab.aff >= 50 && ba.aff >= 50 && ab.trust >= 40 && t >= 2 && f.day >= (x.waitP || 0) && rng() < 0.3 * k0 + 0.05) {
         var bigamy = HK.Poly && (HK.Poly.lovers(ctx, a).length > 1 || HK.Poly.lovers(ctx, b).length > 1);
         if (!bigamy) { var pr = (a.goal && a.goal.id === 'marry') || ab.aff >= ba.aff ? [a, b] : [b, a]; propose(ctx, pr[0], pr[1]); return; }
       }
@@ -801,7 +802,7 @@
   function later(ctx, fn) { (ctx.ft.later = ctx.ft.later || []).push(fn); }
   function confess(ctx, a, b, rb) {
     var f = ctx.ft, x = stOf(ctx, a, b), pf = ctx.pair(a, b);
-    if (!ctx.romanceOk([a, b])) { x.cool = f.day + 2; return; }
+    if (!ctx.romanceOk([a, b])) { x.cool = f.day + Math.max(1, Math.round(2 / (f.g || 1))); return; }
     x.tried++;
     var ok = rb.att >= 30 && rb.aff >= 28 && (!HK.Poly || HK.Poly.canTry(ctx, b, a));
     var t = freshP(ctx, CONFESS, a);
@@ -809,12 +810,12 @@
       var y = freshP(ctx, YES, b);
       emit(ctx, { actors: [a, b], cat: 'romance', mag: 20, text: fill(ctx, t + y, a, b), why: W(ctx, spotHere(ctx, a, b)) + a.name + 'の告白。' + b.name + 'の側にも同じ気持ちがあった（惹かれ ' + Math.round(rb.att) + '）', tag: 'couple',
         fx: function () { pf.couple = true; ctx.mod2(a, b, { aff: 10, att: 8, trust: 8, ten: -8 }, { aff: 10, att: 8, trust: 8, ten: -8 }); } });
-      if (pf.couple) setSt(ctx, a, b, 3); else x.cool = f.day + 3;
+      if (pf.couple) setSt(ctx, a, b, 3); else x.cool = f.day + Math.max(1, Math.round(3 / (f.g || 1)));
     } else {
       var no = fresh(ctx, NO);
       emit(ctx, { actors: [a, b], cat: 'romance', mag: 12, text: fill(ctx, t + no, a, b), why: W(ctx, spotHere(ctx, a, b)) + a.name + 'の告白。' + b.name + 'はまだ答えを出せなかった（惹かれ ' + Math.round(rb.att) + '）',
         fx: function () { ctx.mod(a, b, { att: -6, ten: 6 }); ctx.stress(a, 18); bump(ctx, a, { shame: 20, grief: 15 }, '告白の返事'); } });
-      x.cool = f.day + Math.round(4 / f.pace);
+      x.cool = f.day + Math.max(1, Math.round(4 / f.pace / (f.g || 1)));
     }
   }
   function cohab(ctx, a, b) {
@@ -1019,7 +1020,7 @@
         '「複数の恋人：あり」で三人が円満な恋人になると、三人で並んで眠る夜や、三人の暮らしの場面が出ます。'
       ] },
       { h: '設定のコツ', items: [
-        '「日数」は7〜90日。結婚の約束まで見たいなら、30日以上か、「恋愛の進み」を「早い」に。',
+        '「日数」は3〜30日（既定は1週間）。同棲・結婚の約束までの間は日数に合わせて縮むので、1週間でも結ばれるまで見られます。じっくり見たいなら日数を増やすか、「恋愛の進み」を「ゆっくり」に。',
         '「恋愛の進み」が「ゆっくり」だと、両片想いの時間が長くなります。',
         '「始まりの季節」で、花見・夏祭り・紅葉・こたつなどの季節の場面が変わります。',
         '関係の設定で「恋人」にした二人は恋人から、「夫婦」なら一緒に暮らす夫婦として始まります。「友達以上恋人未満」は両片想いから始まります。',
