@@ -18113,7 +18113,8 @@
   OM.alphaTop = function (T, U) { return !!(T && U && T.om && U.om && T.om.sex === 'a' && U.om.sex !== 'a'); };
   OM.bodyKind = function (T, U) {
     var P = HK.Pos, fb = function (c) { return P && P.isFBody ? P.isFBody(c) : !!(c && c.gender === 'f'); };
-    var aT = OM.alphaTop(T, U), fT = fb(T) && !aT, fU = fb(U);
+    /* 性器を決めた人（attr.js の genital）は性器から：男性器のないαは挿れる側にしない */
+    var aT = OM.alphaTop(T, U) && !(P && P.genSet && P.genSet(T) && !P.hasM(T)), fT = fb(T) && !aT, fU = fb(U);
     /* 女性のαを挿れる側で書いた組を覚えておく（pos-ff.js・pos-fm.js の見直しで直さないように） */
     if (aT && fb(T) && P && P.maleTop && T.name && U.name) P.maleTop[T.name + '\u0001' + U.name] = 1;
     return fT && fU ? 'ff' : fT ? 'ride' : fU ? 'mf' : 'mm';
@@ -34099,7 +34100,11 @@
    向きを決められない組（攻め×攻めなど）は、恋愛にも体の関係にもならない（HK.canLove が false を返す）。
    リバ同士の組だけは、場面ごとに入れ替わってよい。それ以外の組は、一度決まった向きを最後まで変えない。
    ふたなり（futa、R18版のみ）：攻め・リバを選んだ女性に付けると、攻めに回る場面を男性の体（いちもつ）を前提にした描写で書く（P.isF が false）。
-     オメガバースでは使わない（P.isFBody を見る）。双頭の玩具・貝合わせのような対等な繋がりは、二人ともリバ（P.bothRiba）のときだけ。 */
+     オメガバースでは使わない（P.isFBody を見る）。双頭の玩具・貝合わせのような対等な繋がりは、二人ともリバ（P.bothRiba）のときだけ。
+   性器の有無（genital、R18版のみ。attr.js の欄）：''（おまかせ＝性別どおり：男性→男性器、女性→女性器、ふたなり→両方）／m 男性器／f 女性器／mf 両方／none なし。
+     体の描写の判定（P.hasM・P.hasF・P.noGen、それを読む P.isFBody・P.futa・P.isF）は性別ではなくこれを見る。胸・喉仏などは性別どおり。
+     none の人は、受けのとき口（口内）まで、攻めのとき指と玩具だけ（pos-nogen.js の HK.NoGen）。P.okSex は変えない（組み立て側が形を選ぶ）。
+     全年齢版・全年齢モード（HK.SAFE_ON）では使わない（保存だけ） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -34124,11 +34129,22 @@
   P.canBottom = function (c) { return !P.hardTop(c); };
   var LBL = { top: '攻め', bottom: '受け', riba: 'リバ' };
   P.label = function (c) { return LBL[P.of(c)] || 'おまかせ'; };
-  /* 体が女性か（性別の設定そのもの。オメガバースなど、ふたなりの設定を使わない箱庭はこちらを見る） */
-  P.isFBody = function (c) { return src(c, 'gender') === 'f'; };
+  /* 性器の有無（R18版のみ）：自分で決めた値（決めていなければ ''。全年齢では常に ''） */
+  P.GENITAL = { m: 1, f: 1, mf: 1, none: 1 };
+  P.genSet = function (c) { if (HK.SAFE_ON || !c) return ''; var v = src(c, 'genital'); return P.GENITAL[v] ? v : ''; };
+  /* ふたなり（性器の欄を決めていない人だけ。女性で、自分で「攻め」か「リバ」を選び、設定で「ふたなり」を付けた人） */
+  function futaOld(c) { return !HK.SAFE_ON && src(c, 'gender') === 'f' && !!src(c, 'futa') && explicit(c) && P.of(c) !== 'bottom'; }
+  /* 実際の性器：'m'／'f'／'mf'／'none'（おまかせは性別どおり。性別がおまかせ・その他の人は、これまでどおり男性の体） */
+  P.gen = function (c) { var g = P.genSet(c); if (g) return g; if (!c) return ''; return src(c, 'gender') === 'f' ? (futaOld(c) ? 'mf' : 'f') : 'm'; };
+  P.hasM = function (c) { var g = P.gen(c); return g === 'm' || g === 'mf'; };
+  P.hasF = function (c) { var g = P.gen(c); return g === 'f' || g === 'mf'; };
+  P.noGen = function (c) { return P.gen(c) === 'none'; };
+  /* 体が女性か（オメガバースなど、ふたなりの設定を使わない箱庭はこちらを見る）。性器を決めた人は性器から（女性器のある人＝女性の体。なしの人は性別どおり） */
+  P.isFBody = function (c) { var g = P.genSet(c); if (g) return g === 'f' || g === 'mf' || (g === 'none' && src(c, 'gender') === 'f'); return src(c, 'gender') === 'f'; };
   /* ふたなり（R18版のみ）：女性で、自分で「攻め」か「リバ」を選び、設定で「ふたなり」を付けた人。
-     攻めに回る場面では男性の体（いちもつ）を前提にした描写で書く。自分で「受け」を選んだ人・おまかせの女性には効かない */
-  P.futa = function (c) { return !HK.SAFE_ON && P.isFBody(c) && !!src(c, 'futa') && explicit(c) && P.of(c) !== 'bottom'; };
+     攻めに回る場面では男性の体（いちもつ）を前提にした描写で書く。自分で「受け」を選んだ人・おまかせの女性には効かない。
+     性器を「両方」にした人は、受けの指定でなければ同じ扱い（性別・ふたなりの欄に関係なく） */
+  P.futa = function (c) { var g = P.genSet(c); if (g) return g === 'mf' && P.of(c) !== 'bottom'; return futaOld(c); };
   /* 描写の上で「女性の体」として書く人（ふたなりの攻めは除く）。女性どうし（ff）・女性が攻め（fm）の判定はこれで行う */
   P.isF = function (c) { return P.isFBody(c) && !P.futa(c); };
   /* 女性どうしの組（いちもつの描写を使わない）。ふたなりの攻めが入る組は、男性の体を前提にした描写でよい */
@@ -34282,6 +34298,8 @@
    住人の設定（⚙️）の「体と設定」で決め、どの箱庭でも同じに効く。箱庭ごとの役（perFields）とは別の、住人そのものの見た目・性格。
    ・build 体格：''（おまかせ＝ふつう扱い）／small 小柄／avg ふつう／large 大柄。二人の差で文を差し替える（HK.Attr.sizeDiff）
    ・bust 胸（R18版・女性だけ）：''／s 控えめ／m ふつう／l 豊か。R18 の地の文の差し替え語（HK.Attr.bustWord）
+   ・genital 性器（R18版だけ。全年齢版では保存だけ）：''（おまかせ＝性別どおり）／m 男性器／f 女性器／mf 両方／none なし。
+     体の描写の判定は pos.js（HK.Pos.hasM・hasF・noGen）。none の人は受けのとき口まで、攻めのとき指と玩具だけ（pos-nogen.js）
    ・race 種族：''（人間）／human／vampire 吸血鬼／beast 獣人／demon 魔族／angel 天使／ghost 幽霊／other その他（raceNote に自由記入）。
      文の飾り（耳・尾・牙・翼）。死のある箱庭の「特殊役職：吸血鬼」と同じ扱いにする（special.js の SP.setup。両方が吸血鬼でも一人分）
    ・night 夜の性格（R18版だけ）：''（おまかせ＝気質から）／sadist サド／maso マゾ／mean 意地悪／sweet 甘々／shy 恥じらい／none 表と同じ。
@@ -34309,19 +34327,20 @@
   A.RACE = [['', 'おまかせ（人間）'], ['human', '人間'], ['vampire', '吸血鬼'], ['beast', '獣人'], ['demon', '魔族'], ['angel', '天使'], ['ghost', '幽霊'], ['other', 'その他']];
   A.NIGHT = [['', 'おまかせ（気質から）'], ['sadist', 'サド'], ['maso', 'マゾ'], ['mean', '意地悪'], ['sweet', '甘々'], ['shy', '恥じらい'], ['none', '表と同じ']];
   A.WILL = [['', 'おまかせ'], ['weak', '弱い'], ['avg', 'ふつう'], ['strong', '強い']];
+  A.GENITAL = [['', 'おまかせ（性別どおり）'], ['m', '男性器'], ['f', '女性器'], ['mf', '両方'], ['none', 'なし']];
   function has(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return true; return false; }
   function val(list, v) { v = v == null ? '' : String(v); return has(list, v) ? v : ''; }
   function lab(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return list[i][1]; return ''; }
   function note(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>]/g, '').trim().slice(0, 12) : ''; }
-  A.label = function (k, v) { return lab({ build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL }[k] || [], v); };
-  var SIMPLE = ['build', 'bust', 'race', 'night', 'will'];
+  A.label = function (k, v) { return lab({ build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL }[k] || [], v); };
+  var SIMPLE = ['build', 'bust', 'race', 'night', 'will', 'genital'];
   /* 相手ごとの二人称・一人称（VF：欄の名前） */
   var VF = ['youFor', 'fpFor'];
   A.YOU_OPTS = ['あなた', 'きみ', 'おまえ', 'あんた', 'そっち'];
   A.FP_OPTS = ['私', '俺', '僕', 'あたし'];
   function word(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>\s\u2060-\u2064]/g, '').slice(0, 8) : ''; }
   function wmap(m, keyOk) { var o = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { var w = word(m[k]); if (w && (!keyOk || keyOk(k))) o[k] = w; }); return o; }
-  function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL }[k]; }
+  function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL }[k]; }
   /* 好きな食べ物・嫌いな食べ物（自由記入）と好きな味（決まった7つから複数）。画面と書き出しは読点区切りの文字列、実行時は配列 */
   A.TASTES = ['甘い', 'しょっぱい', '辛い', '酸っぱい', '苦い', 'あっさり', 'こってり'];
   var FOODK = ['foodLike', 'foodHate'];
@@ -34418,6 +34437,7 @@
     if (!HK.SAFE_ON && c.bust && c.gender === 'f') bits.push('胸：' + lab(A.BUST, c.bust));
     if (c.race && c.race !== 'human') bits.push('種族：' + lab(A.RACE, c.race) + (c.raceNote ? '（' + c.raceNote + '）' : ''));
     if (!HK.SAFE_ON && c.night) bits.push('夜：' + lab(A.NIGHT, c.night));
+    if (!HK.SAFE_ON && c.genital) bits.push('性器：' + lab(A.GENITAL, c.genital));
     if (c.will) bits.push('心の強さ：' + lab(A.WILL, c.will));
     if (fstr(c.foodLike)) bits.push('好物：' + fstr(c.foodLike));
     if (fstr(c.foodHate)) bits.push('苦手な食べ物：' + fstr(c.foodHate));
@@ -34443,6 +34463,7 @@
       '<label title="耳・尾・牙・翼などの文の飾りが付きます。死のある箱庭では、吸血鬼は特殊役職の吸血鬼と同じ扱いになります">種族 ' + sel('race') + '</label>' +
       (c.race === 'other' ? '<label>種族の名前 <input type="text" data-gf="at_raceNote" value="' + esc(c.raceNote || '') + '" maxlength="12" placeholder="例：人魚" style="width:7em"></label>' : '') +
       (!HK.SAFE_ON ? '<label title="R18の場面での振る舞い。作風（山場の書き方）より優先します。マゾは受け攻めを変えません（攻めを選んだ人は攻めのまま）">夜の性格 ' + sel('night') + '</label>' : '') +
+      (!HK.SAFE_ON ? '<label title="R18の場面の体の書き方が、性別ではなくこちらに従います。「なし」にすると、受けのときは口まで、攻めのときは指と玩具だけになります">性器 ' + sel('genital') + '</label>' : '') +
       '<label title="快楽堕ち・催眠・常識改変・感覚遮断穴などで、堕ちやすさが変わります。強いと、体は流されても心は折れません">心の強さ ' + sel('will') + '</label>' + same + '</div>' + nf + food(c, esc) + '</details>';
   };
   /* 「体と設定」の食べ物の行：好きな食べ物・嫌いな食べ物（自由記入）と好きな味（いくつでも） */
@@ -34516,8 +34537,9 @@
     var tl = A.tasteList(src.taste);
     if (tl.length) dst.taste = tl;
     if (!HK.SAFE_ON) {
-      var bu = val(A.BUST, src.bust), nt = val(A.NIGHT, src.night);
+      var bu = val(A.BUST, src.bust), nt = val(A.NIGHT, src.night), gn = val(A.GENITAL, src.genital);
       if (bu) dst.bust = bu;
+      if (gn) dst.genital = gn;
       if (nt) dst.night = nt;
       if (src.nightFor && typeof src.nightFor === 'object') {
         var nf = null;
@@ -34561,7 +34583,7 @@
   /* 胸の差し替え語（R18版・女性だけ。決めていなければ ''） */
   A.BUST_WORD = { s: L('控えめな胸|小ぶりな胸|慎ましい胸'), m: L('形のいい胸|柔らかな胸|手に馴染む胸'), l: L('豊かな胸|たわわな胸|大きな胸') };
   A.bustWord = function (c, pick) {
-    if (HK.SAFE_ON || !c || !c.bust || !HK.Pos || !HK.Pos.isFBody(c)) return '';
+    if (HK.SAFE_ON || !c || !c.bust || (c.gender || (c.src && c.src.gender)) !== 'f') return '';
     var l = A.BUST_WORD[c.bust]; if (!l) return '';
     return pick ? pick(l) : l[0];
   };
@@ -38249,8 +38271,9 @@
   var A_MALE = /\{a\}の(?:根元|亀頭|竿|裏筋|鈴口|カリ|先走り|ちんぽ|肉棒|ペニス|陰茎|睾丸)|\{a\}(?:は|が)[^。「」{]{0,30}(?:射精|精を(?:吐き出|放))/;
   function bodyL(S, p, key, arr) {
     var L0 = eL(S, key, arr);
-    if (p.aTop || !HK.Pos || !HK.Pos.isF(p)) return L0;
-    var ok = (L0 || []).filter(function (t) { return !A_MALE.test(t); }).concat(eL(S, key + 'F', []) || []);
+    /* 体の判定は性別ではなく性器（HK.Pos.hasM・hasF。attr.js の genital） */
+    if (p.aTop || !HK.Pos || HK.Pos.hasM(p)) return L0;
+    var ok = (L0 || []).filter(function (t) { return !A_MALE.test(t); }).concat(HK.Pos.hasF(p) ? eL(S, key + 'F', []) || [] : []);
     return ok.length ? ok : L0;
   }
   /* {m0}〜{m2} は {a} の喘ぎ、{hm0}〜{hm2} は {h} の喘ぎ（かける側がモブなら穏やかの喘ぎ）、{s:wet} などは擬音。
@@ -39771,7 +39794,7 @@
     ST.snap(S, keys);
     /* 一人で慰められるか（R18版・描写あり・R18に参加する人）。手錠のあいだはできない */
     var selfOk = !!(R && S.R18 && HK.State.r18ok(A));
-    var body = Pos && !Pos.isF(A) && (A.gender === 'm' || (Pos.futa && Pos.futa(A))) ? 'm' : A.gender === 'f' ? 'f' : 'x';
+    var body = Pos && Pos.genSet && Pos.genSet(A) ? (Pos.hasM(A) ? 'm' : Pos.hasF(A) ? 'f' : 'x') : Pos && !Pos.isF(A) && (A.gender === 'm' || (Pos.futa && Pos.futa(A))) ? 'm' : A.gender === 'f' ? 'f' : 'x';
     var finder = env.finder || 'random';
     for (var turn = 0; turn < env.turns && !escaped; turn++) {
       ST.step(S, ((turn + 1) * 5) + '分');
@@ -40064,7 +40087,7 @@
     if (p.rest > 0) { p.rest--; return; }
     var urge = p.m.heat / 100 + p.tr.impulse * 0.3 + p.tr.fc * 0.15 - p.m.reason / 130 - p.tr.cp * 0.12;
     if (R && S.R18 && HK.State.r18ok(p) && !p.bound && p.m.heat >= 60 && urge > 0.4 + rng() * 0.3) {
-      var body = HK.Pos && !HK.Pos.isF(p) && (p.gender === 'm' || (HK.Pos.futa && HK.Pos.futa(p))) ? 'm' : p.gender === 'f' ? 'f' : 'x';
+      var body = HK.Pos && HK.Pos.genSet && HK.Pos.genSet(p) ? (HK.Pos.hasM(p) ? 'm' : HK.Pos.hasF(p) ? 'f' : 'x') : HK.Pos && !HK.Pos.isF(p) && (p.gender === 'm' || (HK.Pos.futa && HK.Pos.futa(p))) ? 'm' : p.gender === 'f' ? 'f' : 'x';
       var t = ST.fmt(pk(R.SELF[body][1]), v) + ST.fmt(pk(R.SELF[body][2]), v);
       if (S.eroOn) t += HK.Ero.fill(S, ST.fmt(pk(R.SELF_ERO[body]), v), p);
       t += moan(S, p, false) + ST.fmt(pk(R.SELF_CL[p.persona] || R.SELF_CL.gentle), v);

@@ -98,6 +98,11 @@ if (!/<!-- scripts:begin/.test(html)) throw new Error('index.html に <!-- scrip
 html = html.replace(/<!-- scripts:begin[\s\S]*?<!-- scripts:end -->/, block);
 /* あとで読む分は先読みしない（先に読む分と回線を取り合って、画面が出るのが遅くなるため）。以前の先読み指定は消す */
 html = html.replace(/<link rel="preload" as="script" href="js\/bundle-late\.js[^>]*>\n?/g, '');
+/* トップの「最終更新」の日付は docs/CHANGELOG.md のいちばん上の日付に合わせる（手で直し忘れないように） */
+try {
+  const cl = fs.readFileSync(path.join(__dirname, '../../docs/CHANGELOG.md'), 'utf8'), md = cl.match(/^## (\d{4})-(\d{2})-(\d{2})/m);
+  if (md) html = html.replace(/最終更新：<time datetime="\d{4}-\d{2}-\d{2}">\d{4}年\d{1,2}月\d{1,2}日<\/time>/, '最終更新：<time datetime="' + md[1] + '-' + md[2] + '-' + md[3] + '">' + +md[1] + '年' + +md[2] + '月' + +md[3] + '日</time>');
+} catch (e) { console.warn('※ 最終更新の日付を合わせられませんでした: ' + e.message); }
 fs.writeFileSync(ip, html);
 const kb = n => Math.round(Buffer.byteLength(n) / 1024) + 'KB';
 console.log(path.basename(dir) + '：先に読む ' + order.filter(o => !o.late).length + '本 ' + kb(main) + '／あとで読む ' + order.filter(o => o.late).length + '本 ' + kb(late));
