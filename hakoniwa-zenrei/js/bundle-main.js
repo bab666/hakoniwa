@@ -11377,6 +11377,27 @@
     aphro: L('媚薬の熱は、三人全員に回っていた。誰が最初に手を伸ばしたのかは、もう誰も覚えていない。|{h}の呼吸が浅く、肌は熱を帯びていた。{x}と{y}も同じだった。三人の視線が絡まった瞬間、理性の糸が同時に切れた。|{h}「もう、無理……」媚薬に浮かされた{h}の声に、{x}と{y}は同時に動いた。止める者は、この部屋にはいなかった。|媚薬の甘い匂いが、白い部屋を満たしていた。三人は言葉もなく、熱に押されるように身を寄せた。正気は、どこにも残っていなかった。')
   };
 
+  /* 2026-10-25：回をまたいで同じ文が続かないように、三人の本番・果てる・余韻の文を増やす（女性どうしの組にも使えるよう、挿入の言葉を使わない文を多めに） */
+  (function () {
+    var add = function (arr, s) { Array.prototype.push.apply(arr, L(s)); };
+    add(X.MAIN.sandwich, '{t}は{m}を後ろから抱きすくめ、{m}は{u}を胸の下に抱き込んだ。三人分の重みでベッドが沈み、{t}が動くたびに、その揺れが{m}を通って{u}まで届いた。|{m}は前の{u}と後ろの{t}に挟まれて、どちらに意識を向ければいいのか分からなくなった。{u}の甘い声と{t}の荒い息が、両方の耳を塞いでいた。');
+    add(X.MAIN.twoOne, '{t}と{m}は、{u}を挟んで向かい合った。前からは口づけが、後ろからは揺さぶりが、休む間もなく{u}に降ってきた。|{u}は{t}の腕にしがみつきながら、{m}の手に腰を支えられていた。二人がかりで愛されて、{u}の声はだんだん言葉にならなくなっていった。');
+    add(X.MAIN.oneTwo, '{t}は{m}を抱きながら、空いた手で{u}の髪を撫でていた。自分の番を待つ{u}の目が、熱っぽく{t}を追っていた。|{t}は二人を交互に抱き寄せ、どちらにも同じだけの時間をかけた。{m}と{u}は、順番が回ってくるたびに、前より早く蕩けた。');
+    add(X.MAIN_FF.sandwich, '{m}は{u}の胸の先を唇で含みながら、指で{u}の脚のあいだを撫でた。その{m}の内腿を、後ろから{t}の舌がゆっくりとなぞり上げた。|{t}の指が{m}の中を探り、{m}の指が{u}の中を探った。同じ速さで動く三組の指先に、三人の吐息が重なっていった。');
+    add(X.MAIN_FF.twoOne, '{t}は{u}の脚のあいだに顔を埋め、{m}は後ろから{u}を抱きしめて両胸を包んだ。上と下から同時にほどかれて、{u}は{m}の肩に頭を預けた。|{t}と{m}は、{u}の左右の内腿に同時に口づけた。それから二人は交互に、{u}のいちばん敏感なところへ舌を伸ばした。');
+    add(X.MAIN_FF.oneTwo, '{t}は{m}の脚のあいだに舌を這わせながら、指を伸ばして隣の{u}を撫でた。二人の甘い声が、交互に、それから同時に上がった。|{m}と{u}は並んで横たわり、{t}の指を一本ずつ握った。{t}はその手を握り返しながら、二人の熱いところを交互にほどいていった。');
+    add(X.CLIMAX, '誰の声が最後だったのか、三人とも分からなかった。気づいたときには、三人とも息を切らして天井を見上げていた。|三人は互いの体にしがみついたまま、波が引くのを待った。誰かの手が、誰かの背中をずっと撫でていた。|一人が達すると、その震えがすぐ隣に伝わって、残りの二人も続けざまに崩れた。白い部屋に、三人分の荒い息だけが残った。|三人は額を寄せ合ったまま、ほとんど同時に達した。互いの汗が混ざって、誰のものか分からなかった。');
+    var C = function (id) { return X.CLIMAX_X.filter(function (o) { return o.id === id; })[0]; };
+    var c2 = C('c_two'), cm = C('c_mid'), c1 = C('c_one'), co = C('c_open'), cs = C('c_shy'), cl = C('c_love'), ch = C('c_lovehub');
+    if (c2) add(c2.t, '{u}は{t}と{m}の腕の中で、何度も小さく達した。二人は顔を見合わせて、{u}の震えが収まるまで両側から抱きしめていた。|{u}が{t}の名前を、それから{m}の名前を呼んで達した。二人は同時に{u}の額に口づけ、それから自分たちも崩れた。');
+    if (cm) add(cm.t, '{m}は前と後ろから押し寄せる熱に耐えきれず、声を上げて達した。その震えが{u}にも{t}にも伝わり、三人は折り重なるように崩れた。|{u}が先に崩れ、その締めつけで{m}が、{m}の震えで{t}が、順番に達していった。三人の息が整うまで、誰も動かなかった。');
+    if (c1) add(c1.t, '{t}は{m}と{u}を交互に追い上げ、二人がほとんど同時に達したのを見届けてから、自分も二人の間に崩れ落ちた。|{m}と{u}は手を握り合ったまま、{t}の腕の中で続けて達した。{t}は二人の髪を撫でながら、最後に自分も果てた。');
+    if (co) add(co.t, '{s}は二人の名前を交互に呼びながら、遠慮なく声を上げて達した。{p}と{q}は顔を見合わせ、満足そうに笑った。|{s}は果てたあと、「もう一回」と息も整わないうちに笑った。二人は呆れながら、それでも{s}を抱き寄せた。');
+    if (cs) add(cs.t, '{s}は二人の腕に顔を隠したまま、震えるように達した。小さくこぼれた声を、{p}も{q}も聞き逃さなかった。|{s}は唇を噛んで声を殺し、それでも最後に一度だけ、二人の名前を呼んで果てた。');
+    if (cl) add(cl.t, '三人は指を絡め合ったまま、同じ波に呑まれていった。果てたあとも、誰も手を離そうとしなかった。|{h}が達したのを合図に、{x}と{y}も続いた。三人はいつものように、互いの名前を順番に呼び合った。');
+    if (ch) add(ch.t, '{h}は{x}と{y}の手を両方握ったまま、深く果てた。二人は{h}の両頬に同時に口づけて、顔を見合わせて笑った。');
+    add(X.AFTER, '終わったあと、三人は一枚の毛布を取り合いながら笑った。結局、真ん中の一人だけがちゃんと包まれていた。|三人は並んで寝転がり、誰からともなく天井の白さについて文句を言った。笑い声が、少しずつ寝息に変わっていった。|終わったあと、一人が水を汲みに立ち、三つの紙コップを持って戻ってきた。三人は黙って乾杯の真似をした。');
+  })();
   /* 文の置き換え（{h}{x}{y}{t}{m}{u}{s}{j}{o}{p}{q}。{p}{q} は {s} 以外の二人） */
   X.fill = function (s, r) {
     return String(s).replace(/\{([a-z])\}/g, function (m, k) { return r[k] ? r[k].name : m; });
@@ -17742,7 +17763,8 @@
   function sx(c) { return c.om && c.om.sex; }
   function bonded(ctx, a, b) { return !!(ctx.om && ctx.om.bonded && ctx.om.bonded[key(a, b)]); }
   function top(c) { return HK.voiceTop ? HK.voiceTop(c) : 'NP'; }
-  function pick(ctx, a) { return ctx.pick(a); }
+  /* 一回の結果の中で同じ文を繰り返さない選び方（R18版は ero-kit.js の HK.Ero.fresh。全年齢版は ctx.pick のまま） */
+  function pick(ctx, a) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx, a, function (l) { return ctx.pick(l); }) : ctx.pick(a); }
 
   /* ---------- 回数の目安 ---------- */
   function cap(ctx) { var n = (ctx.om && ctx.om.sexN) || 0; return n < 1 ? 1 : n < 2 ? 0.85 : n < 3 ? 0.3 : n < 4 ? 0.08 : 0.03; }
@@ -17808,6 +17830,12 @@
     low: L('――その夜、寝室の明かりは遅くまで消えなかった。|――翌朝、二人は同じ毛布にくるまって、昼過ぎまで起きてこなかった。|――そのあとのことは、二人だけが知っている。|――カーテンの隙間から朝日が差す頃、二人はようやく眠りについた。')
   };
 
+  /* 組み合わせ（cb）に合うプレイの文を、全部の型からまとめる。攻めを選んだ人が主導権を握られる文は除く */
+  function allPlay(cb, hardA) {
+    var o = [];
+    T.play.forEach(function (p) { var l = (p[cb] || p.base).filter(function (x) { return !(hardA && /主導権/.test(x)); }); o = o.concat(l.length ? l : p.base); });
+    return o;
+  }
   function scene(ctx, x, y, bond) {
     /* 受け攻めの指定がなければ、αが攻め（Ω攻めは、Ωを攻めに指定したとき） */
     var fb = sx(y) === 'a' && sx(x) !== 'a' ? [y, x] : [x, y];
@@ -17819,8 +17847,6 @@
     var bo = T.bondOpen.filter(function (l) { return Oq !== A || !/^\{x\}は\{o\}|\{o\}は小さく震えた|\{o\}の体から力が抜け/.test(l); });
     var op = pick(ctx, bond ? (bo.length ? bo : T.coupleOpen) : T.coupleOpen);
     var out = [(ctx.rng() < 0.25 ? '' : pick(ctx, T.when)) + op];
-    /* 受け攻めの指定：攻めを選んだ人が跨がられて主導権を握られる書き方・あとで上下が入れ替わる書き方は使わない */
-    var plays = function (pl) { var l = (pl[cb] || pl.base).filter(function (x) { return !(hardA && /主導権/.test(x)); }); return l.length ? l : pl.base; };
     if (lew === 'low') out.push(pick(ctx, T.low));
     else if (ff) {
       if (ctx.rng() < 0.6) out.push(pick(ctx, T.lead[top(A)]));
@@ -17831,9 +17857,10 @@
       if (Vf && ctx.rng() < 0.7) out.push(Vf.line(function (arr) { return ctx.pick(arr); }, B.persona, 'climax', 'b'));
     } else {
       if (ctx.rng() < 0.6) out.push(pick(ctx, T.lead[top(A)]));
-      var pl = pick(ctx, T.play);
-      out.push(pick(ctx, plays(pl)));
-      if (lew === 'high' && ctx.rng() < 0.5) { var p2 = pick(ctx, T.play); if (p2 !== pl) out.push('それから、' + pick(ctx, plays(p2))); }
+      /* プレイは全部の型の文をまとめて選ぶ（型を先に選ぶと、文の少ない型で同じ文が何度も出るため） */
+      var pa = allPlay(cb, hardA), l1 = pick(ctx, pa);
+      out.push(l1);
+      if (lew === 'high' && ctx.rng() < 0.5) { var rest = pa.filter(function (x) { return x !== l1; }); if (rest.length) out.push('それから、' + pick(ctx, rest)); }
       var kn = T.knot[cb].filter(function (x) { return !(fx && /次はこっちが上/.test(x)); });
       if (ctx.rng() < (cb === 'ao' ? (bond ? 0.8 : 0.5) : 0.6)) out.push(pick(ctx, kn.length ? kn : T.knot[cb]));
       var V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
@@ -17851,9 +17878,7 @@
   /* 発情期の場面にも、組み合わせごとのプレイを差し込む（A=攻め B=受け のテンプレートを返す） */
   OM.lovePlay = function (ctx, A, B) {
     if (HK.Pos && HK.Pos.ff(A, B)) return 'それから、' + pick(ctx, T.playFF);
-    var pl = pick(ctx, T.play), cb = combo(A, B), hardA = HK.Pos && HK.Pos.hardTop(A);
-    var l = (pl[cb] || pl.base).filter(function (x) { return !(hardA && /主導権/.test(x)); });
-    return 'それから、' + pick(ctx, l.length ? l : pl.base);
+    return 'それから、' + pick(ctx, allPlay(combo(A, B), HK.Pos && HK.Pos.hardTop(A)));
   };
 
   var CB_LABEL = { ao: 'α攻め×Ω受け', oa: 'Ω攻め×α受け', aa: 'α同士', oo: 'Ω同士', b: 'βがいる組' };
@@ -31933,7 +31958,7 @@
   if (G.riddle) {
     add(G.riddle.try, 'スピーカーが問いかけた。「パンはパンでも、食べられないパンはなーんだ」|液晶に、三つの数字と一つの空欄が表示された。「\u2060空欄に入る数を答えよ」|スピーカーが、やけに色っぽい声でなぞなぞを読み上げた。|「二人の好きなものの頭文字をつなげよ」――液晶の文字が、ガスでにじんで見えた。');
     add(G.riddle.ok, '「……フライパン」{a}が答えると、ロッカーのどこかで錠が外れた。|スピーカーが拍手の効果音を流した。「お見事」|{a}の答えに、液晶が緑色に光った。|「正解です」――機械的な声が、なぜか少し悔しそうに聞こえた。');
-    add(G.riddle.ng, '{a}が答える直前、{b}が太腿を擦り寄せてきた。答えは、甘い吐息になって消えた。|「不正解。ガス濃度を上げます」――スピーカーの声が、楽しそうだった。|{a}は答えを思いついたのに、口から出たのは{b}の名前だった。|二人で同時に別の答えを言ってしまい、どちらも無効になった。');
+    add(G.riddle.ng, '{a}が答える直前、{b}が太腿を擦り寄せてきた。答えは、甘い吐息になって消えた。|「不正解。ガス濃度を上げます」――スピーカーの声が、楽しそうだった。|{a}は答えを思いついたのに、口から出たのは{b}の名前だった。|二人で同時に別の答えを言ってしまい、どちらも無効になった。|{a}は答えを口にしかけて、{b}の吐息が首にかかった瞬間に言葉を失った。スピーカーが「時間切れ」と告げた。|{a}の声は甘い霧で掠れていて、機械には聞き取ってもらえなかった。|{a}は自信満々に答えたが、液晶は赤く光った。「……今の、絶対合ってたのに」');
   }
   if (G.kiss) {
     add(G.kiss.try, '扉のセンサーが点滅した。『キス、残り三十秒』|液晶にハートマークが表示された。『唇を重ねてください。照れは認識しません』|ロッカーの内側に、唇の形をしたセンサーが二つ並んでいた。|スピーカーが告げた。「キスで開きます。なお、ほっぺは不可」');

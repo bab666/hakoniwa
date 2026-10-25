@@ -268,7 +268,9 @@
     out.push(pk(R, BODY[k]));
     /* 暗示の言葉と声 */
     var cmd = ro.top ? pk(R, CMD_TOP) : pk(R, CMD);
-    var voice = E ? (ro.top ? moan(R, p, 1, true) : moan(R, p, 1)) : T4 ? pk(R, ro.top ? T4.DOM[ps(p)] || T4.DOM.gentle : T4.SUB1[ps(p)] || T4.SUB1.gentle) : '……っ';
+    /* 指と舌だけの場面（touch・lick）では、入れていることを言う台詞を使わない */
+    var noIn = function (a) { var f = (kb === 'touch' || kb === 'lick') && a ? a.filter(function (l) { return !/入って|入れ|奥まで|挿/.test(l); }) : a; return f && f.length ? f : a; };
+    var voice = E ? (ro.top ? moan(R, p, 1, true) : moan(R, p, 1)) : T4 ? pk(R, noIn(ro.top ? T4.DOM[ps(p)] || T4.DOM.gentle : T4.SUB1[ps(p)] || T4.SUB1.gentle)) : '……っ';
     /* 口で尽くしている側（kneel・lick）は、言葉にならないくぐもった声 */
     if (!ro.top && (kb === 'kneel' || kb === 'lick')) voice = pk(R, ['ん、む……っ', 'んぅ……♡', 'ん……ふ、ぁ……', 'む、ぅ……っ', 'ん、ん……']);
     /* 「繋がったまま」は挿入の組（in・ride）だけ。指・口・女性どうし（touch / ff など）では使わない */
@@ -279,7 +281,7 @@
     var pe = pk(R, E ? PEAK_E[k] || PEAK_E[kb] || PEAK_E.in : PEAK_N[k] || PEAK_N[kb] || PEAK_N.in);
     /* 小説調の絶頂：受け止める側の崩れた声を添える */
     /* 口で尽くしている側は声を出せないので、尽くされる側（{T}）の声を添える */
-    if (!E && T4 && T4.SUB2) pe = (kb === 'kneel' || kb === 'lick' ? '{T}「' + pk(R, (T4.DOM && T4.DOM[spT]) || T4.SUB2[spT] || T4.SUB2.gentle) + '」' : '{B}「' + pk(R, T4.SUB2[spB] || T4.SUB2.gentle) + '」') + pe;
+    if (!E && T4 && T4.SUB2) pe = (kb === 'kneel' || kb === 'lick' ? '{T}「' + pk(R, noIn((T4.DOM && T4.DOM[spT]) || T4.SUB2[spT] || T4.SUB2.gentle)) + '」' : '{B}「' + pk(R, noIn(T4.SUB2[spB] || T4.SUB2.gentle)) + '」') + pe;
     out.push(pe);
     var t = out.join('\n\n');
     if (E) {
