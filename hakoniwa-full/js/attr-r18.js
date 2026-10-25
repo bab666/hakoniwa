@@ -119,7 +119,7 @@
     var nt = A.nightOf(T, U), nb = A.nightOf(U, T);
     if (!TOP[nt] && !BOT[nb]) return '';
     /* 受けが攻め指定の組（向きの決まらない組）には足さない（自分で攻めを選んだ人を受けにしない） */
-    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U)) return '';
+    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U, T)) return '';
     var m = mode === 'ff' || mode === 'fm' ? mode : 'mf', out = '', labels = [];
     if (TOP[nt]) { out += pick(((ero ? TOP_E : TOP)[nt] || TOP[nt])[m]); labels.push(T.name + '＝' + NAME[nt] + (A.STYLE[nt] ? '（抱き方：' + (STYLE_JP[A.STYLE[nt]] || A.STYLE[nt]) + '）' : '')); if (A.log) A.log.push({ who: T.name, role: 'a', night: nt, a: T.name, b: U.name }); }
     if (BOT[nb]) { out += pick(((ero ? BOT_E : BOT)[nb] || BOT[nb])[m]); labels.push(U.name + '＝' + NAME[nb]); if (A.log) A.log.push({ who: U.name, role: 'b', night: nb, a: T.name, b: U.name }); }

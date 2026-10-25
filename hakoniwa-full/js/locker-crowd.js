@@ -434,7 +434,7 @@
     /* 拘束 */
     S.bind = env.bind === 'random' ? rng.pick(['both', 'one', 'none', 'both']) : env.bind;
     P.forEach(function (p) { p.bound = S.bind === 'both'; });
-    if (S.bind === 'one') lockers.forEach(function (Lk) { if (Lk.m.length < 2) return; var c = Lk.m.filter(function (p) { return !hardTop(p); }); if (c.length) rng.pick(c).bound = true; });
+    if (S.bind === 'one') lockers.forEach(function (Lk) { if (Lk.m.length < 2) return; var c = Lk.m.filter(function (p) { return !(HK.Pos && HK.Pos.hardTopIn(p, Lk.m)); }); if (c.length) rng.pick(c).bound = true; });
     var gim = gimmickChain(S), gi = 0, escaped = false, escTurn = -1, how = '';
     S.prog = 0;
     var vall = { all: names(P) };
@@ -686,7 +686,7 @@
         if (eroL) t += HK.ThickEro.fill(S, pk(eroL), eg, er).replace(/\{a\}/g, eg.name).replace(/\{b\}/g, er.name);
       }
       if (lv === 4) { tp.m.plea = Math.min(tp.m.plea, 55); bt.m.plea = Math.min(bt.m.plea, 60); }
-      if (bt.m.plea >= 100 && lv < 4) { if (hardTop(bt)) bt.m.plea = 95; else { t += moan(S, bt, false, md, eroNow) + climaxBy(S, bt, tp, false); bumpClimax(bt); } }
+      if (bt.m.plea >= 100 && lv < 4) { if (HK.Pos && HK.Pos.hardTop(bt, tp)) bt.m.plea = 95; else { t += moan(S, bt, false, md, eroNow) + climaxBy(S, bt, tp, false); bumpClimax(bt); } }
       /* 体だけの関係：最初に手を出したときに「恋ではない」一文（free-sex.js） */
       /* 札も恋愛の札（キス・口づけ）にしない（恋愛の出来事として数えない） */
       var ld = fr && !Lk.freeLed ? HK.FreeSex.lead(S, a, b) : '';
@@ -736,7 +736,7 @@
     if (T2 && B0) {
       var M = m.filter(function (c) { return c !== T2 && c !== B0; })[0], ks = ['oneTwo', 'twoOne', 'sandwich'];
       /* 真ん中の人が自分で攻めを選んでいれば、受けに回る形（oneTwo・sandwich）にしない */
-      if (hardTop(M)) ks = ['twoOne'];
+      if (HK.Pos && HK.Pos.hardTop(M, T2)) ks = ['twoOne'];
       /* 前を抱きながら後ろから抱かれる形（sandwich）は、後ろの人が跨る組（女性の攻め×男性）では起こらない */
       if (modeOf(T2, M) === 'fm') ks = ks.filter(function (x) { return x !== 'sandwich'; });
       if (!ks.length) ks = ['oneTwo'];

@@ -2,7 +2,8 @@
    結果の要約・結末・関係のカード・画像で、二人の組を「攻め×受け」の順に書く（受け攻めを決めている組が「受け×攻め」と出ないように）。
    向きは HK.Pos.order（pos.js）と同じ決まりで決める：自分で選んだ攻め・受け、恋愛対象（受け攻め）で一つに決まる組、
    指定が同じどうし（おまかせの女性どうし・受けどうし）は気質。場面の希望で変わる組（リバどうし・おまかせの男性どうしなど）は、住人の並び順のまま。
-   判定には結果の入力（res.input.chars の受け攻め・性別・恋愛対象）と結果の気質（res.chars[i].tr）だけを使うので、セーブから開いた結果でも同じ順になる */
+   相手ごとの受け攻め（入力の posFor { 相手の番号: 指定 }）があれば、その二人の向きはそちらで決める（pos.js の P.of(c, 相手)）。
+   判定には結果の入力（res.input.chars の受け攻め・相手ごとの受け攻め・性別・恋愛対象）と結果の気質（res.chars[i].tr）だけを使うので、セーブから開いた結果でも同じ順になる */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -10,7 +11,7 @@
   /* 結果の i 番目の住人を、受け攻めの判定に使える形に（設定は入力から、気質は結果から） */
   function who(res, i) {
     var c = (res.input && res.input.chars && res.input.chars[i]) || {}, r = (res.chars && res.chars[i]) || {};
-    return { i: i, name: r.name || c.name || String(i), gender: c.gender || '', pos: c.pos || '', posLike: c.posLike || '', likes: c.likes || '', futa: !!c.futa, tr: r.tr || {} };
+    return { i: i, name: r.name || c.name || String(i), gender: c.gender || '', pos: c.pos || '', posLike: c.posLike || '', likes: c.likes || '', futa: !!c.futa, posFor: c.posFor && typeof c.posFor === 'object' ? c.posFor : null, tr: r.tr || {} };
   }
   /* pos.js の lean と同じ（指定が同じどうしで、どちらが動く側に回りやすいか） */
   function lean(c) {
@@ -22,15 +23,15 @@
     var P = HK.Pos;
     if (!P || !P.orients) return null;
     var os = P.orients(A, B);
-    if (!os.length) return P.hardTop(B) && !P.hardTop(A) ? [B, A] : P.hardTop(A) ? [A, B] : null;
+    if (!os.length) return P.hardTop(B, A) && !P.hardTop(A, B) ? [B, A] : P.hardTop(A, B) ? [A, B] : null;
     if (os.length === 1) return os[0];
-    var pa = P.of(A), pb = P.of(B);
+    var pa = P.of(A, B), pb = P.of(B, A);
     if (pa === 'riba' && pb === 'riba') return null;
     if (pa === 'top' && pb !== 'top') return [A, B];
     if (pb === 'top' && pa !== 'top') return [B, A];
     if (pa === 'bottom' && pb !== 'bottom') return [B, A];
     if (pb === 'bottom' && pa !== 'bottom') return [A, B];
-    if (pa === 'bottom' && pb === 'bottom' && !!P.explicit(A) !== !!P.explicit(B)) return P.explicit(A) ? [B, A] : [A, B];
+    if (pa === 'bottom' && pb === 'bottom' && !!P.explicit(A, B) !== !!P.explicit(B, A)) return P.explicit(A, B) ? [B, A] : [A, B];
     if (pa === pb && (pa === 'top' || pa === 'bottom')) {
       var la = lean(A), lb = lean(B);
       return la > lb + 0.001 ? [A, B] : lb > la + 0.001 ? [B, A] : (A.name < B.name ? [A, B] : [B, A]);

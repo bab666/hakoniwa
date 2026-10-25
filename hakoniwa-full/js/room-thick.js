@@ -152,7 +152,7 @@
       if (ff) mp = cat(LF.BODY && LF.BODY[st], tools ? LF.TOY : null).filter(noMut);
       else if (fm) mp = MID_FM;
       else {
-        var sp = (LW.SPECIAL || []).filter(function (o) { return o.st.indexOf(st) >= 0 && !(fx && o.swap) && !(P && P.hardTop(A) && o.swap); }).map(function (o) { return o.t.replace(/私／俺/, B.tr && B.tr.cp + B.tr.fc > 1 ? '俺' : '私'); });
+        var sp = (LW.SPECIAL || []).filter(function (o) { return o.st.indexOf(st) >= 0 && !(fx && o.swap) && !(P && P.hardTop(A, B) && o.swap); }).map(function (o) { return o.t.replace(/私／俺/, B.tr && B.tr.cp + B.tr.fc > 1 ? '俺' : '私'); });
         mp = cat(cat(sp, LP.BODY && LP.BODY[st]), P && P.nori(B) ? LW.NORI : null);
       }
       mp = (mp || []).filter(function (l) { return !NO_MID.test(l); });

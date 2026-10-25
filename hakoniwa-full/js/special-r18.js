@@ -35,7 +35,7 @@
   SP.R18 = {
     text: function (A, v, w, how) {
       var Pz = HK.Pos, o = Pz.order(v, w, [v, w]), top = o[0], bot = o[1];
-      if (Pz.hardTop(bot)) return '';
+      if (Pz.hardTop(bot, top)) return '';
       var pool = top === v ? VT : WT, k = body(top, bot);
       var arr = pool[k] || pool.pen, h = HOW[how] || [''];
       /* 二人が対等に繋がる文（擦り合わせ等）は、二人ともリバのときだけ */

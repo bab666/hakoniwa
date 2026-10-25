@@ -99,7 +99,7 @@
     var lew = ctx.env.lewd || 'mid', sc = OM.sc || function (t) { return t; };
     /* 行為の文（R18）を抜いた全年齢版では、いつも暗転の一文（T.low）にする */
     if (!T.play) lew = 'low';
-    var ff = !!HK.Pos && (OM.ffTU ? OM.ffTU(A, B) : HK.Pos.ff(A, B)), hardA = HK.Pos && HK.Pos.hardTop(A), fx = HK.Pos && HK.Pos.fixed(A, B);
+    var ff = !!HK.Pos && (OM.ffTU ? OM.ffTU(A, B) : HK.Pos.ff(A, B)), hardA = HK.Pos && HK.Pos.hardTop(A, B), fx = HK.Pos && HK.Pos.fixed(A, B);
     var Oq = sx(B) === 'o' ? B : sx(A) === 'o' ? A : B;
     /* Ω（{o}）が攻めのときは、αがΩに触れて力を抜かせる書き出しを使わない */
     var bo = T.bondOpen.filter(function (l) { return Oq !== A || !/^\{x\}は\{o\}|\{o\}は小さく震えた|\{o\}の体から力が抜け/.test(l); });
@@ -137,7 +137,7 @@
   OM.lovePlay = function (ctx, A, B) {
     if (!T.play) return '';
     if (HK.Pos && (OM.ffTU ? OM.ffTU(A, B) : HK.Pos.ff(A, B))) return 'それから、' + pick(ctx, T.playFF);
-    return 'それから、' + pick(ctx, allPlay(combo(A, B), HK.Pos && HK.Pos.hardTop(A)));
+    return 'それから、' + pick(ctx, allPlay(combo(A, B), HK.Pos && HK.Pos.hardTop(A, B)));
   };
 
   var CB_LABEL = { ao: 'α攻め×Ω受け', oa: 'Ω攻め×α受け', aa: 'α同士', oo: 'Ω同士', b: 'βがいる組' };

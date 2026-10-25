@@ -126,7 +126,7 @@
   /* 嗜虐的な攻めの山場（2割5分ほど）。受けが攻め指定なら使わない。首は嫉妬（opt.jealous）のときだけ */
   function hardSet(S, x, y, mood, opt) {
     if (opt.short || !(mood === 'love' || mood === 'plain' || opt.jealous)) return null;
-    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(y)) return null;
+    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(y, x)) return null;
     if (!(HK.Ero && HK.Ero.sadist && HK.Ero.sadist(x, y)) || S.rng() >= 0.25) return null;
     return opt.jealous ? JEALOUS_CHOKE : ROUGH_SADIST;
   }

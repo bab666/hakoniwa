@@ -252,10 +252,10 @@
     if (p.ff) kind = kind === 'touch' ? 'touch' : 'ff';
     /* かけられた人が主導する側（top）で、自分から口で責めている文なら、{T}が口で{B}を責める型（give） */
     var give = !force && top && (kind === 'touch' || kind === 'ff') && aOral && !/咥え/.test(fb);
-    if (give) { if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub)) return null; return { top: top, dom: dom, sub: sub, kind: isF(sub) ? 'giveF' : 'giveM', hc: hc }; }
-    if (lick) { if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub)) return null; return { top: top, dom: dom, sub: sub, kind: isF(sub) ? 'lickFF' : 'lickFM', hc: hc }; }
+    if (give) { if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub, dom)) return null; return { top: top, dom: dom, sub: sub, kind: isF(sub) ? 'giveF' : 'giveM', hc: hc }; }
+    if (lick) { if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub, dom)) return null; return { top: top, dom: dom, sub: sub, kind: isF(sub) ? 'lickFF' : 'lickFM', hc: hc }; }
     /* 自分で攻めを選んだ人を受け止める側にしない */
-    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub)) return null;
+    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub, dom)) return null;
     if (kind !== 'touch') kind = HK.Thick4 ? HK.Thick4.kindFor(kind, dom, sub) : kind;
     if (kind === 'touch') kind = isF(sub) ? 'touchF' : 'touchM';
     if (kind === 'serve') kind = isF(sub) ? 'touchF' : 'touchM';

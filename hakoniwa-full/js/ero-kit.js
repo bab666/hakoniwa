@@ -33,7 +33,7 @@
      使う側は確率を絞る（山場の 2〜3 割程度） */
   E.sadist = function (top, bot) {
     if (!top) return false;
-    if (bot && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(bot)) return false;
+    if (bot && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(bot, top)) return false;
     var eg = top.eg || {}, tr = top.tr || {};
     var cp = eg.CP != null ? eg.CP / 20 : (tr.cp || 0), aggr = tr.aggr != null ? tr.aggr : (eg.FC != null ? eg.FC / 20 : 0), a = eg.A != null ? eg.A / 20 : (tr.a || 0.5);
     return cp >= 0.65 && (aggr >= 0.55 || a <= 0.35);

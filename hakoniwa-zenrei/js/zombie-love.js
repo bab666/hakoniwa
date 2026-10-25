@@ -288,7 +288,7 @@
         ['grave', a.tr.ac * 0.45 + a.tr.np * 0.3 + a.tr.caution * 0.2 - a.tr.honesty * 0.2 + (ctx.present().some(function (o) { return o !== a && o !== b && Z.isLover(ctx, b, o); }) ? 0.5 : 0)]
       ];
       /* 自分で攻めを選んだ相手には、関係を迫って壁際に追い詰める場面にしない */
-      if (HK.Pos && HK.Pos.hardTop(b)) opts = opts.filter(function (o) { return o[0] !== 'press'; });
+      if (HK.Pos && HK.Pos.hardTop(b, a)) opts = opts.filter(function (o) { return o[0] !== 'press'; });
       var k = HK.weighted(rng, opts, function (o) { return Math.pow(Math.max(0.03, o[1]), 2); })[0];
       pf.zcr = k;
       var rb = ctx.R(b, a), loveOK = HK.canLove(b, a);

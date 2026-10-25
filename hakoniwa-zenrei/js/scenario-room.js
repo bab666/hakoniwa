@@ -457,7 +457,7 @@
   /* a が b に対して攻め（動く側）に回れる向きがあるか（向きの記憶は動かさずに確かめる） */
   function canLead(a, b) { return !HK.Pos || HK.Pos.orients(a, b).some(function (o) { return o[0] === a; }); }
   /* 自分で「受け」を選んだ二人（受けとリバも好む設定などで、組として成り立つとき）：どちらが動くか（{a}=覚悟を決めて動く側） */
-  function bothBottom(a, b) { var P = HK.Pos; return !!(P && P.explicit(a) && P.explicit(b) && P.isBottom(a) && P.isBottom(b) && P.okSex(a, b)); }
+  function bothBottom(a, b) { var P = HK.Pos; return !!(P && P.explicit(a, b) && P.explicit(b, a) && P.isBottom(a, b) && P.isBottom(b, a) && P.okSex(a, b)); }
   var CLASH_BOTTOM = {
     cp: ['{a}と{b}は、どちらも相手がリードするものだと思っていた。気まずい沈黙のあと、{a}が仕方なさそうに、乱暴に袖をまくった。','{a}と{b}は、どちらも自分から動く気はなかった。見かねた{a}が、ため息をついて{b}の肩を押した。', '「普通、そっちがリードするところだろ」――{a}と{b}は同時に同じことを言った。睨み合いに負けたのは、{a}のほうだった。'],
     cold: ['{a}と{b}は、どちらも抱かれる側のつもりだった。このままでは埒が明かないと判断した{a}が、慣れない手つきで{b}に触れ始めた。', '{a}は時計を見上げ、「このまま待っても進まない」と淡々と言った。それから、自分が動くほうを引き受けた。', '{a}と{b}は、どちらが動くかを理屈で決めようとして、結論が出なかった。{a}は小さく息を吐き、黙って{b}の上着に手をかけた。'],
@@ -905,7 +905,7 @@
       G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i) { ctx.pair(x, y).night = true; ctx.mod2(x, y, { att: 8, aff: 4 }, { att: 8, aff: 4 }); var p = prog(ctx, x, y); p.act.h = (p.act.h || 0) + 1; } }); });
       others.forEach(function (o) { G.forEach(function (g) { ctx.mod(o, g, { ten: 6 }); }); ctx.stress(o, 8); });
       /* 輪の中心は、自分で攻めを選んだ人がいればその人（受ける側には回さない） */
-      var lead = (HK.Pos && G.filter(function (c) { return HK.Pos.hardTop(c); })[0]) || a, g2 = G.filter(function (c) { return c !== lead; });
+      var lead = (HK.Pos && G.filter(function (c) { return HK.Pos.hardTopIn(c, G); })[0]) || a, g2 = G.filter(function (c) { return c !== lead; });
       /* 輪の中の文は R18 の文（全年齢版では抜いて、照明を落とす一文にする） */
       var groupLine = null;
       /* r18:begin */
@@ -914,7 +914,7 @@
         var tb = HK.Pos ? HK.Pos.order(lead, g2[0], [lead, g2[0]]) : [lead, g2[0]];
         var both = !HK.Pos || (HK.Pos.order(lead, g2[0], [lead, g2[0]])[0] === lead && HK.Pos.order(lead, g2[1], [lead, g2[1]])[0] === lead);
         var gl = ['ride'];
-        if (!HK.Pos || !HK.Pos.hardTop(lead)) gl.push('{a}は{b}に口づけながら、背後から伸びてきた{c}の手を拒まなかった。');
+        if (!HK.Pos || !HK.Pos.hardTopIn(lead, G)) gl.push('{a}は{b}に口づけながら、背後から伸びてきた{c}の手を拒まなかった。');
         if (both) gl.push('{a}は{b}と{c}を交互に抱き寄せ、二人を順番にイカせた。');
         var pk = ctx.pick(gl);
         return pk === 'ride' ? ctx.t('{b}が{a}の上に跨がり、{c}がその背中を抱きすくめた。誰の声なのか、もう分からなかった。', tb[0], tb[1], g2[1]) : ctx.t(pk, lead, g2[0], g2[1]);
@@ -943,7 +943,7 @@
       if (b.flags.partner != null && b.flags.partner !== a.i) return false;
       if (clashH(ctx, a, b)) return false;
       /* 縛るのは、その組で攻めに回れる側だけ。自分で攻めを選んだ人を縛ることはない */
-      if (HK.Pos && (HK.Pos.hardTop(b) || !canLead(a, b))) return false;
+      if (HK.Pos && (HK.Pos.hardTop(b, a) || !canLead(a, b))) return false;
       return ctx.rules.some(function (r) { return K[r.k].type === 'act' && K[r.k].lvl >= 2 && !ruleDone(ctx, r, a, b); }) && tieWall(ctx, a, b, 3) < 999 && HK.canLove(a, b);
     },
     w: function (ctx, a) { return (speedy(a) - 0.25) * 3 + a.stress / 120 + (a.goal.id === 'quick' ? 0.8 : 0); },
@@ -1011,7 +1011,7 @@
         /* r18:end */
         if (stop > 0.7 || !mayForce || !FORCED) {
           ctx.mod2(a, b, { ten: 10 }, { ten: 30, trust: -30, aff: -15 });
-          text = ctx.t(HK.Pos && HK.Pos.hardTop(b) ? '媚薬に呑まれた{a}が、{b}に掴みかかった。{b}はその手首を掴み返して、壁際まで押し戻した。' : '媚薬に呑まれた{a}が、{b}を床に押し倒した。', a, b) + (third && third.tr.np + third.tr.cp > b.tr.cp ? ctx.t('{c}が{a}を引き剥がした。「しっかりしろ！」', a, b, third) : ctx.t(ctx.pick(['{b}は{a}の肩を突き返した。「目を覚まして」', '{b}は{a}の手首を掴んで止めた。「それは、違う」']), a, b));
+          text = ctx.t(HK.Pos && HK.Pos.hardTop(b, a) ? '媚薬に呑まれた{a}が、{b}に掴みかかった。{b}はその手首を掴み返して、壁際まで押し戻した。' : '媚薬に呑まれた{a}が、{b}を床に押し倒した。', a, b) + (third && third.tr.np + third.tr.cp > b.tr.cp ? ctx.t('{c}が{a}を引き剥がした。「しっかりしろ！」', a, b, third) : ctx.t(ctx.pick(['{b}は{a}の肩を突き返した。「目を覚まして」', '{b}は{a}の手首を掴んで止めた。「それは、違う」']), a, b));
           if (third) ctx.mod(b, third, { trust: 15, aff: 8 });
           why = a.name + 'の攻撃性・衝動と媚薬（' + Math.round(heat) + '）。' + (third ? third.name + 'が止めた' : b.name + 'が拒んだ');
           a.flags.shame = true;

@@ -124,9 +124,9 @@
     var Pz = HK.Pos;
     if (!Pz || !Pz.okSex(b, h)) return null;
     var o = Pz.order(b, h, [b, h]);
-    if (o[0] === b) return Pz.hardTop(h) ? null : Pz.isF(b) ? 'finger' : 'pen';
+    if (o[0] === b) return Pz.hardTop(h, b) ? null : Pz.isF(b) ? 'finger' : 'pen';
     /* 手を出す側が受け：挿入はしない。はまっている人が自分で攻めを選んでいれば、跨るだけ */
-    if (Pz.hardTop(h)) return 'ride';
+    if (Pz.hardTop(h, b)) return 'ride';
     return S.rng() < 0.5 ? 'ride' : 'tease';
   }
   /* 出くわす：st = { live, stored, hardTop, topMe, meta } を更新する。助け出されたら { rescued: 助けた人 } */
@@ -143,7 +143,7 @@
       var w = b.know ? b.r.w : 0, love = b.know && (b.r.love || b.r.crush), t = b.tr;
       b.kind = kindOf(S, b, h);
       /* 本人が攻め寄り（跨られる側）に回っている回は、自分で攻めを選んだ人を除いて、挿れる代わりに跨る */
-      if (st.topMe && (b.kind === 'pen' || b.kind === 'finger') && !(HK.Pos && HK.Pos.hardTop(b))) b.kind = 'ride';
+      if (st.topMe && (b.kind === 'pen' || b.kind === 'finger') && !(HK.Pos && HK.Pos.hardTop(b, h))) b.kind = 'ride';
       var v = vis / 2;
       b.help = 0.12 + Math.max(0, w) * 0.9 + t.np * 0.35 + t.cp * 0.15 + t.caution * 0.1 - v * (t.fc * 0.3 + t.impulse * 0.3) - (b.know && b.r.fam ? 0 : 0);
       b.lewd = b.kind ? 0.05 + v * (0.45 + t.fc * 0.5 + t.impulse * 0.5 + t.aggr * 0.25) + (love ? v * 0.45 : 0) + Math.max(0, -w) * 0.5 + env.wild / 250 - t.warmth * 0.15 - (love ? 0 : Math.max(0, w) * 0.35) - (b.know && b.r.fam ? 1 : 0) : 0;

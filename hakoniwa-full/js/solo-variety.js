@@ -109,7 +109,7 @@
     function fmtN(name, L0, extra) { var v = { n: nmList(L0), mc: mc, k: KNUM[L0.length] || L0.length + '人' }; if (extra) Object.keys(extra).forEach(function (x) { v[x] = extra[x]; }); return numFix(ST.fmt(pkv(poolN(name, L0.length)), v), L0.length); }
     var keys = ['score', 'arouse', 'shame', 'pop'];
     /* みんなで性的な罰ゲームをしてよい顔ぶれか（攻めの指定の人がいない・全員の組が okSex） */
-    var grpOk = function (L0) { if (L0.some(function (x) { return hTop(x); })) return false; for (var i = 0; i < L0.length; i++) for (var j = i + 1; j < L0.length; j++) if (!okS(L0[i], L0[j])) return false; return true; };
+    var grpOk = function (L0) { if (L0.some(function (x) { return PO ? PO.hardTopIn(x, L0) : hTop(x); })) return false; for (var i = 0; i < L0.length; i++) for (var j = i + 1; j < L0.length; j++) if (!okS(L0[i], L0[j])) return false; return true; };
     var tie = function (a, b) { var t = (input.ties || []).filter(function (x) { return (x.a === a.i && x.b === b.i) || (x.a === b.i && x.b === a.i); })[0]; return t ? t.type : ''; };
     /* 両片想い（どちらからも片想い。恋人・番になっていない二人） */
     var pinTie = function (a, b) {

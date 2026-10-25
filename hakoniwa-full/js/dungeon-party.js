@@ -113,7 +113,7 @@
       return true;
     }
     /* 襲う場面は、受け攻めの向きどおり（HK.Pos.order の先頭）が襲う側のときだけ。自分で攻めを選んだ人は襲われない */
-    if (HK.Pos && (HK.Pos.order(a, b, [a, b])[0] !== a || isTop(b))) return false;
+    if (HK.Pos && (HK.Pos.order(a, b, [a, b])[0] !== a || HK.Pos.hardTop(b, a))) return false;
     var third = P.filter(function (x) { return x !== a && x !== b; }).sort(function (x, y) { return (y.tr.np + y.tr.cp + rel(S, y, b).trust / 50) - (x.tr.np + x.tr.cp + rel(S, x, b).trust / 50); })[0];
     var stop = b.tr.cp * 0.4 + st(b, 'fight') * 0.06 + (third ? third.tr.np * 0.3 + third.tr.cp * 0.3 + st(third, 'fight') * 0.05 : 0) + rng() * 0.5;
     S.cnt.assault++; r.assault++; r.trust -= 20; r.ten += 25;

@@ -12,9 +12,12 @@
    ・will 心の強さ：''／weak 弱い／avg ふつう／strong 強い。快楽堕ち・催眠・常識改変・遮断穴の「堕ちる」判定に掛ける（HK.Attr.willK）。
      strong は体が堕ちても心は折れない文を添える（HK.Attr.hold）
    ・same 同一人物：相手の番号。二人は恋愛・R18にしない（HK.ngPair・住人の ng に足す）。「鏡を見るような」共通の場面 3 本と、結果の関係名「もう一人の自分」
+   ・posFor 相手ごとの受け攻め（全年齢版・R18版共通）：{ 相手: 'top'|'bottom'|'riba' }。空・不正な値は持たない。nightFor と同じ経路で保存・書き出し・入力に渡す。
+     実行時は pos.js の P.of(c, 相手)・P.explicit(c, 相手)・P.hardTop(c, 相手) が全体の受け攻め（pos）より優先して読む。
+     画面の欄は「相手ごとの設定」の行（A.forHtml。夜の性格の相手ごとの指定 nightFor も同じ行）
    ・youFor / fpFor 相手ごとの二人称・一人称：{ 相手: 'あなた'|'きみ'|… } / { 相手: '私'|'俺'|… }（自由記入も可・8文字まで）。
      相手が分かる台詞では、ふだんの二人称・一人称より優先する（voice.js の V.processText。名前で引けるように A.voiceFor で写す）。
-     画面の欄は「関係と呼び方」の相手ごとの行（呼び方の隣。A.voiceForHtml）
+     画面の欄は「相手ごとの設定」の行（呼び方の隣。A.voiceForHtml）
    ・foodLike 好きな食べ物／foodHate 嫌いな食べ物：自由記入（読点区切りで5つまで・1つ12文字まで）。taste 好きな味：甘い／しょっぱい／辛い／酸っぱい／苦い／あっさり／こってり
      （いくつでも。読点区切りで持つ）。実行時は配列で写す。使い方は food.js（HK.Food：料理の味・食べた人の反応・好物の一句）
    画面の欄（ui.js の mk・normChar・rosterJSON・import・buildInput、ui-gear.js の描画と入力）は、ここの関数を呼ぶだけにしてある。
@@ -48,6 +51,10 @@
   A.FP_OPTS = ['私', '俺', '僕', 'あたし'];
   function word(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>\s\u2060-\u2064]/g, '').slice(0, 8) : ''; }
   function wmap(m, keyOk) { var o = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { var w = word(m[k]); if (w && (!keyOk || keyOk(k))) o[k] = w; }); return o; }
+  /* 相手ごとの受け攻め（posFor）の値 */
+  A.POSFOR = [['', 'おまかせ（全体に従う）'], ['top', '攻め'], ['bottom', '受け'], ['riba', 'リバ']];
+  function posv(v) { return v === 'top' || v === 'bottom' || v === 'riba' ? v : ''; }
+  function pmap(m, keyOk) { var o = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { var v = posv(m[k]); if (v && (!keyOk || keyOk(k))) o[k] = v; }); return o; }
   function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL }[k]; }
   /* 好きな食べ物・嫌いな食べ物（自由記入）と好きな味（決まった7つから複数）。画面と書き出しは読点区切りの文字列、実行時は配列 */
   A.TASTES = ['甘い', 'しょっぱい', '辛い', '酸っぱい', '苦い', 'あっさり', 'こってり'];
@@ -71,6 +78,7 @@
     SIMPLE.forEach(function (k) { o[k] = val(listOf(k), c[k]); });
     o.raceNote = note(c.raceNote);
     o.nightFor = c.nightFor && typeof c.nightFor === 'object' ? JSON.parse(JSON.stringify(c.nightFor)) : {};
+    o.posFor = pmap(c.posFor);
     o.same = typeof c.same === 'string' ? c.same : '';
     VF.forEach(function (k) { o[k] = wmap(c[k]); });
     FOODK.forEach(function (k) { o[k] = fstr(c[k]); });
@@ -84,6 +92,7 @@
     var nf = {};
     if (c.nightFor && typeof c.nightFor === 'object') Object.keys(c.nightFor).forEach(function (k) { var v = val(A.NIGHT, c.nightFor[k]); if (v) nf[k] = v; });
     c.nightFor = nf;
+    c.posFor = pmap(c.posFor);
     c.same = typeof c.same === 'string' ? c.same : '';
     VF.forEach(function (k) { c[k] = wmap(c[k]); });
     FOODK.forEach(function (k) { c[k] = fstr(c[k]); });
@@ -94,6 +103,7 @@
   A.normRefs = function (c, ids, list) {
     if (!ids[c.same] || c.same === c.id) c.same = '';
     Object.keys(c.nightFor || {}).forEach(function (k) { if (!ids[k] || k === c.id) delete c.nightFor[k]; });
+    Object.keys(c.posFor || {}).forEach(function (k) { if (!ids[k] || k === c.id) delete c.posFor[k]; });
     VF.forEach(function (f) { Object.keys(c[f] || {}).forEach(function (k) { if (!ids[k] || k === c.id) delete c[f][k]; }); });
     if (c.same && list) list.forEach(function (o) { if (o.id === c.same && !o.same) o.same = c.id; });
   };
@@ -105,6 +115,7 @@
     if (tstr(c.taste)) o.taste = tstr(c.taste);
     if (c.same && ref(c.same) != null) o.same = ref(c.same);
     if (c.nightFor) { var nf = {}; Object.keys(c.nightFor).forEach(function (k) { if (ref(k) != null && c.nightFor[k]) nf[ref(k)] = c.nightFor[k]; }); if (Object.keys(nf).length) o.nightFor = nf; }
+    if (c.posFor) { var pf = {}; Object.keys(c.posFor).forEach(function (k) { if (ref(k) != null && posv(c.posFor[k])) pf[ref(k)] = c.posFor[k]; }); if (Object.keys(pf).length) o.posFor = pf; }
     VF.forEach(function (f) { if (!c[f]) return; var m = {}; Object.keys(c[f]).forEach(function (k) { if (ref(k) != null && word(c[f][k])) m[ref(k)] = word(c[f][k]); }); if (Object.keys(m).length) o[f] = m; });
     return o;
   };
@@ -114,11 +125,13 @@
     if (o.raceNote != null) c.raceNote = note(String(o.raceNote));
     FOODK.forEach(function (k) { if (o[k] != null) c[k] = fstr(o[k]); });
     if (o.taste != null) c.taste = tstr(o.taste);
-    c._atSame = o.same; c._atNf = o.nightFor; c._atYf = o.youFor; c._atFf = o.fpFor;
+    c._atSame = o.same; c._atNf = o.nightFor; c._atPf = o.posFor; c._atYf = o.youFor; c._atFf = o.fpFor;
   };
   A.importRefs = function (c, ref) {
     if (c._atSame != null && c._atSame !== '') { var s = ref(c._atSame); c.same = s && s !== c.id ? s : ''; }
     if (c._atNf && typeof c._atNf === 'object') { c.nightFor = c.nightFor || {}; Object.keys(c._atNf).forEach(function (k) { var id = ref(k), v = val(A.NIGHT, c._atNf[k]); if (id && id !== c.id && v) c.nightFor[id] = v; }); }
+    if (c._atPf && typeof c._atPf === 'object') { c.posFor = c.posFor || {}; Object.keys(c._atPf).forEach(function (k) { var id = ref(k), v = posv(c._atPf[k]); if (id && id !== c.id && v) c.posFor[id] = v; }); }
+    delete c._atPf;
     [['_atYf', 'youFor'], ['_atFf', 'fpFor']].forEach(function (x) {
       var m = c[x[0]];
       if (m && typeof m === 'object') { c[x[1]] = c[x[1]] || {}; Object.keys(m).forEach(function (k) { var id = ref(k), w = word(m[k]); if (id && id !== c.id && w) c[x[1]][id] = w; }); }
@@ -135,6 +148,7 @@
     var si = c.same ? ids.indexOf(c.same) : -1;
     if (si >= 0) o.same = si;
     if (c.nightFor) { var nf = {}, n = 0; Object.keys(c.nightFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && c.nightFor[k]) { nf[i] = c.nightFor[k]; n++; } }); if (n) o.nightFor = nf; }
+    if (c.posFor) { var pf = {}, n2 = 0; Object.keys(c.posFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && posv(c.posFor[k])) { pf[i] = c.posFor[k]; n2++; } }); if (n2) o.posFor = pf; }
     VF.forEach(function (f) { if (!c[f]) return; var m = {}, k2 = 0; Object.keys(c[f]).forEach(function (k) { var i = ids.indexOf(k), w = word(c[f][k]); if (i >= 0 && w) { m[i] = w; k2++; } }); if (k2) o[f] = m; });
     return o;
   };
@@ -154,34 +168,61 @@
     if (tstr(c.taste)) bits.push('好きな味：' + tstr(c.taste));
     var sm = c.same && byId(c.same);
     if (sm) bits.push('同一人物：' + sm.name);
+    var pfl = Object.keys(c.posFor || {}).map(function (id) { var o = byId(id); return o && posv(c.posFor[id]) ? o.name + 'に' + lab(A.POSFOR, c.posFor[id]) : ''; }).filter(Boolean);
+    if (pfl.length) bits.push('相手ごとの受け攻め：' + pfl.join('・'));
+    /* r18:begin */
+    var nfl = HK.SAFE_ON ? [] : Object.keys(c.nightFor || {}).map(function (id) { var o = byId(id); return o && val(A.NIGHT, c.nightFor[id]) ? o.name + 'に' + lab(A.NIGHT, c.nightFor[id]) : ''; }).filter(Boolean);
+    if (nfl.length) bits.push('相手ごとの夜の性格：' + nfl.join('・'));
+    /* r18:end */
     return bits;
   };
-  /* ui-gear.js：「体と設定」の折りたたみ節。h = { esc, opt, selOf }。R18版だけの欄（胸・夜の性格・相手ごとの夜の性格）は濁点喘ぎと同じく SAFE_ON で隠す */
-  var openNow = false;
-  if (typeof document !== 'undefined' && document.head) { var st = document.createElement('style'); st.textContent = 'details.gattr{margin:8px 0 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px}details.gattr summary{cursor:pointer;font-size:13px;color:var(--muted)}details.gattr .gakn{font-size:12px;margin-left:4px;color:var(--ink)}details.gattr[open] summary{margin-bottom:4px}'; document.head.appendChild(st); }
-  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('toggle', function (e) { if (e.target && e.target.classList && e.target.classList.contains('gattr')) openNow = e.target.open; }, true);
+  /* ui-gear.js：「体と設定」の節の中身（見出しと「どの箱庭に効くか」の注意書きは ui-gear.js）。h = { esc, opt, selOf }。
+     R18版だけの欄（胸・性器）は SAFE_ON で隠す。夜の性格は「恋愛と夜」の節（A.nightHtml）と、相手ごとの設定の行（A.forHtml）に置く */
   A.gearHtml = function (c, others, h) {
     var esc = h.esc, sel = function (k) { return h.selOf('at_' + k, listOf(k), c[k] || ''); };
-    var n = A.summary(c, function (id) { return others.filter(function (o) { return o.id === id; })[0]; }).length;
-    var nf = '';
-    /* r18:begin */
-    if (!HK.SAFE_ON && others.length) nf = '<div class="gearrow"><span class="gearhint" style="flex:1 1 100%;margin:0">相手ごとの夜の性格（決めた相手には、上の夜の性格よりこちらを優先します）</span>' + others.map(function (o) {
-      return '<label>' + esc(o.name) + 'には <select data-gf="at_nf" data-o="' + esc(o.id) + '" aria-label="' + esc(o.name) + 'への夜の性格">' + A.NIGHT.map(function (x) { return h.opt(x[0], x[0] ? x[1] : '上と同じ', (c.nightFor || {})[o.id] || ''); }).join('') + '</select></label>';
-    }).join('') + '</div>';
-    /* r18:end */
     var same = others.length ? '<label title="別の世界・別の時間の同じ人のように扱います。二人は恋愛・R18にならず、鏡を見るような場面が起きます">同一人物 <select data-gf="at_same" aria-label="同一人物"><option value="">なし</option>' + others.map(function (o) { return h.opt(o.id, o.name, c.same || ''); }).join('') + '</select></label>' : '';
-    return '<details class="gattr"' + (openNow ? ' open' : '') + '><summary>体と設定 <span class="gakn">' + (n ? n + '件' : 'なし') + '</span></summary>' +
-      '<div class="gearrow"><label title="二人の体格の差で、見上げる・抱き上げるといった文が変わります">体格 ' + sel('build') + '</label>' +
+    return '<div class="gearrow"><label title="二人の体格の差で、見上げる・抱き上げるといった文が変わります">体格 ' + sel('build') + '</label>' +
       /* r18:begin */
       (!HK.SAFE_ON && c.gender === 'f' ? '<label title="R18の場面の地の文で、胸の書き方が変わります">胸 ' + sel('bust') + '</label>' : '') +
       /* r18:end */
       '<label title="耳・尾・牙・翼などの文の飾りが付きます。死のある箱庭では、吸血鬼は特殊役職の吸血鬼と同じ扱いになります">種族 ' + sel('race') + '</label>' +
       (c.race === 'other' ? '<label>種族の名前 <input type="text" data-gf="at_raceNote" value="' + esc(c.raceNote || '') + '" maxlength="12" placeholder="例：人魚" style="width:7em"></label>' : '') +
       /* r18:begin */
-      (!HK.SAFE_ON ? '<label title="R18の場面での振る舞い。作風（山場の書き方）より優先します。マゾは受け攻めを変えません（攻めを選んだ人は攻めのまま）">夜の性格 ' + sel('night') + '</label>' : '') +
       (!HK.SAFE_ON ? '<label title="R18の場面の体の書き方が、性別ではなくこちらに従います。「なし」にすると、受けのときは口まで、攻めのときは指と玩具だけになります">性器 ' + sel('genital') + '</label>' : '') +
       /* r18:end */
-      '<label title="快楽堕ち・催眠・常識改変・感覚遮断穴などで、堕ちやすさが変わります。強いと、体は流されても心は折れません">心の強さ ' + sel('will') + '</label>' + same + '</div>' + nf + food(c, esc) + '</details>';
+      '<label title="快楽堕ち・催眠・常識改変・感覚遮断穴などで、堕ちやすさが変わります。強いと、体は流されても心は折れません">心の強さ ' + sel('will') + '</label>' + same + '</div>' + food(c, esc);
+  };
+  /* 「恋愛と夜」の節に置く、全体の夜の性格（R18版だけ。相手ごとに決めていない相手・モブが相手のとき） */
+  A.nightHtml = function (c, h) {
+    var out = '';
+    /* r18:begin */
+    if (!HK.SAFE_ON) out = '<label title="R18の場面での振る舞い。作風（山場の書き方）より優先します。相手ごとの設定で決めた相手には、そちらを優先します。マゾは受け攻めを変えません（攻めを選んだ人は攻めのまま）">夜の性格（全体） ' + h.selOf('at_night', A.NIGHT, c.night || '') + '</label>';
+    /* r18:end */
+    return out;
+  };
+  /* 「相手ごとの設定」の行に並べる欄（ui-gear.js）：この相手への受け攻め（posFor）と、R18版だけ夜の性格（nightFor） */
+  A.forHtml = function (c, o, h) {
+    var esc = h.esc, pv = (c.posFor || {})[o.id] || '';
+    var out = '<label title="この相手との恋愛・夜の場面での向きだけを変えます。おまかせなら、恋愛と夜の節の受け攻めに従います（ほかの相手・モブには全体の受け攻めのまま）">受け攻め <select data-gf="at_pf" data-o="' + esc(o.id) + '" aria-label="' + esc(o.name) + 'への受け攻め">' + A.POSFOR.map(function (x) { return h.opt(x[0], x[1], pv); }).join('') + '</select></label>';
+    /* r18:begin */
+    if (!HK.SAFE_ON) out += '<label title="この相手との夜の場面での振る舞い。「全体と同じ」なら、恋愛と夜の節の夜の性格のまま">夜の性格 <select data-gf="at_nf" data-o="' + esc(o.id) + '" aria-label="' + esc(o.name) + 'への夜の性格">' + A.NIGHT.map(function (x) { return h.opt(x[0], x[0] ? x[1] : '全体と同じ', (c.nightFor || {})[o.id] || ''); }).join('') + '</select></label>';
+    /* r18:end */
+    return out;
+  };
+  /* 相手ごとの受け攻めの注意（全体の指定と食い違うとき・二人の向きが決まらないとき）。何もなければ '' */
+  var PLAB = { top: '攻め', bottom: '受け', riba: 'リバ' };
+  A.forNote = function (c, o) {
+    var P = HK.Pos, pv = (c.posFor || {})[o.id] || '', rv = (o.posFor || {})[c.id] || '';
+    if (!pv && !rv) return '';
+    var bits = [];
+    if (pv && c.pos !== pv) bits.push(c.name + 'は全体では' + (PLAB[c.pos] || 'おまかせ') + 'ですが、' + o.name + 'には' + PLAB[pv] + 'になります（ほかの相手・モブには全体のまま）');
+    if (rv) bits.push(o.name + 'の設定では、' + c.name + 'に' + PLAB[rv] + 'を選んでいます');
+    try {
+      var a = { i: 0, name: c.name, gender: c.gender || '', likes: c.likes || '', pos: c.pos || '', posLike: c.posLike || '', posFor: pv ? { 1: pv } : null };
+      var b = { i: 1, name: o.name, gender: o.gender || '', likes: o.likes || '', pos: o.pos || '', posLike: o.posLike || '', posFor: rv ? { 0: rv } : null };
+      if (P && P.genderOK(a, b) && !P.orients(a, b).length) bits.push('この二人は受け攻めの向きが決まらないので、恋愛・夜の場面になりません（攻めどうしなど）');
+    } catch (e) { /* 注意が出せなくても欄はそのまま */ }
+    return bits.join('。');
   };
   /* 「体と設定」の食べ物の行：好きな食べ物・嫌いな食べ物（自由記入）と好きな味（いくつでも） */
   function food(c, esc) {
@@ -201,6 +242,7 @@
     if (k === 'yf' || k === 'ff') { var vk = k === 'yf' ? 'youFor' : 'fpFor', w = word(t.value); c[vk] = c[vk] || {}; if (w) c[vk][t.dataset.o] = w; else delete c[vk][t.dataset.o]; changed(false); return true; }
     if (isInput) return true;
     if (listOf(k)) { c[k] = val(listOf(k), t.value); changed(k === 'race' || k === 'night'); return true; }
+    if (k === 'pf') { c.posFor = c.posFor || {}; var pv = posv(t.value); if (pv) c.posFor[t.dataset.o] = pv; else delete c.posFor[t.dataset.o]; changed(true); return true; }
     if (k === 'nf') { c.nightFor = c.nightFor || {}; var v = val(A.NIGHT, t.value); if (v) c.nightFor[t.dataset.o] = v; else delete c.nightFor[t.dataset.o]; changed(false); return true; }
     if (k === 'same') {
       var old = c.same && byId(c.same), o = t.value && byId(t.value);
@@ -213,15 +255,15 @@
     return true;
   };
 
-  /* 「関係と呼び方」の相手ごとの行に並べる欄（ui-gear.js）：二人称・一人称（候補は datalist、自由記入も可） */
+  /* 「相手ごとの設定」の行に並べる欄（ui-gear.js）：二人称・一人称（候補は datalist、自由記入も可） */
   A.voiceForHtml = function (c, o, esc) {
     lists();
     var y = (c.youFor || {})[o.id] || '', f = (c.fpFor || {})[o.id] || '';
     return '<label title="この相手に話しかける台詞の二人称。空なら「話し方」の二人称のまま">二人称 <input type="text" data-gf="at_yf" data-o="' + esc(o.id) + '" value="' + esc(y) + '" maxlength="8" list="hk-you-opts" placeholder="' + esc(c.you || '口調から') + '" style="width:5em"></label>' +
       '<label title="この相手に話しかける台詞の一人称。空なら「話し方」の一人称のまま">一人称 <input type="text" data-gf="at_ff" data-o="' + esc(o.id) + '" value="' + esc(f) + '" maxlength="8" list="hk-fp-opts" placeholder="' + esc(c.fp || '口調から') + '" style="width:5em"></label>';
   };
-  /* 相手ごとの二人称・一人称を決めてある相手か（関係がなくても、相手の行を出す） */
-  A.hasVoiceFor = function (c, id) { return !!((c.youFor && c.youFor[id]) || (c.fpFor && c.fpFor[id])); };
+  /* 相手ごとの二人称・一人称・受け攻め・夜の性格を決めてある相手か（関係がなくても、相手の行を出す） */
+  A.hasVoiceFor = function (c, id) { return !!((c.youFor && c.youFor[id]) || (c.fpFor && c.fpFor[id]) || (c.posFor && c.posFor[id]) || (c.nightFor && c.nightFor[id])); };
   function lists() {
     if (typeof document === 'undefined' || !document.body) return;
     [['hk-you-opts', A.YOU_OPTS], ['hk-fp-opts', A.FP_OPTS]].forEach(function (x) {
@@ -265,6 +307,9 @@
       }
     }
     VF.forEach(function (f) { var m = wmap(src[f], function (k) { return /^\d+$/.test(k) && +k !== dst.i; }); if (Object.keys(m).length) dst[f] = m; });
+    /* 相手ごとの受け攻め（全年齢版でも効く。恋愛の向き） */
+    var pfm = pmap(src.posFor, function (k) { return /^\d+$/.test(k) && +k !== dst.i; });
+    if (Object.keys(pfm).length) dst.posFor = pfm;
     var sm = src.same;
     if (sm !== '' && sm != null && !isNaN(+sm) && +sm >= 0 && +sm !== dst.i) {
       dst.same = +sm;
@@ -413,7 +458,7 @@
     var sad0 = HK.Ero.sadist;
     HK.Ero.sadist = function (top, bot) {
       var n = A.nightOf(top, bot);
-      if (n === 'sadist') return !(bot && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(bot));
+      if (n === 'sadist') return !(bot && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(bot, top));
       if (n === 'sweet' || n === 'shy' || n === 'maso') return false;
       return sad0.apply(this, arguments);
     };

@@ -135,7 +135,7 @@
         var tf = takersFree.filter(function (x) { return x.cnt.served < 3 + (x.tr.fc > 0.6 ? 1 : 0) && okPair(g, x); });
         if (tf.length && rng() < 0.45) { r = rng.pick(tf); takersFree.splice(takersFree.indexOf(r), 1); }
         /* 正気のまま紛れ込んだ人を無理やり施術台に乗せる場面：自分で攻めを選んだ人は標的にしない */
-        var outs = P.filter(function (p) { return p.role === 'out' && !p.fled && !p.sunk && okPair(g, p) && !(HK.Pos && HK.Pos.hardTop(p)); });
+        var outs = P.filter(function (p) { return p.role === 'out' && !p.fled && !p.sunk && okPair(g, p) && !(HK.Pos && HK.Pos.hardTop(p, g)); });
         /* 衆人環視の舞台では、正気の人が「志願者」として壇上に上げられやすい */
         if (!r && outs.length && rng() < (sid === 'stage' ? 0.45 : 0.3)) r = rng.pick(outs);
         if (!r && S.noGuest) {

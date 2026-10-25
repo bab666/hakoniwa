@@ -11,7 +11,13 @@
    性器の有無（genital、R18版のみ。attr.js の欄）：''（おまかせ＝性別どおり：男性→男性器、女性→女性器、ふたなり→両方）／m 男性器／f 女性器／mf 両方／none なし。
      体の描写の判定（P.hasM・P.hasF・P.noGen、それを読む P.isFBody・P.futa・P.isF）は性別ではなくこれを見る。胸・喉仏などは性別どおり。
      none の人は、受けのとき口（口内）まで、攻めのとき指と玩具だけ（pos-nogen.js の HK.NoGen）。P.okSex は変えない（組み立て側が形を選ぶ）。
-     全年齢版・全年齢モード（HK.SAFE_ON）では使わない（保存だけ） */
+     全年齢版・全年齢モード（HK.SAFE_ON）では使わない（保存だけ）
+   相手ごとの受け攻め posFor（全年齢版・R18版共通）：{ 相手の番号: 'top'|'bottom'|'riba' }。P.of(c, other)・P.explicit(c, other)・P.hardTop(c, other) の
+     第2引数に相手を渡すと、その相手への指定（自分で選んだ指定として扱う）を全体の指定より優先する。相手を渡さない（モブ・一人の場面）ときは全体の指定のまま。
+     相手は実行時の住人なら .i、入力の住人なら .src.i で引く（attr.js の A.nightOf と同じ）。
+     全体で「攻め」の人が受けに回るのは、相手ごとに「受け」「リバ」と自分で決めた相手に対してだけ。モブ・指定の無い相手には今までどおり受けに回らない。
+     二人を扱う関数（likes・canRole・orients・order・okSex・fixed・bothRiba・fbFor・ff など）は、二人のそれぞれについて相手への指定を見る。
+     三人以上の場面は P.hardTopIn(c, 人の一覧)（その場の誰か一人にでも攻めなら攻め）を使う */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -19,28 +25,58 @@
   var lock = {};
 
   function src(c, k) { return c ? (c[k] != null && c[k] !== '' ? c[k] : (c.src && c.src[k]) || '') : ''; }
-  /* 実際に効く指定 */
-  P.of = function (c) {
+  var POSV = { top: 1, bottom: 1, riba: 1 };
+  /* 相手の番号（実行時の住人は .i、入力の住人は .src.i。分からなければ null） */
+  function idxOf(o) { return !o ? null : typeof o.i === 'number' ? o.i : o.src && typeof o.src.i === 'number' ? o.src.i : typeof o._pi === 'number' ? o._pi : null; }
+  /* c が相手 o に向けて自分で決めた受け攻め（相手ごとの指定。無ければ ''） */
+  function pf(c, o) {
+    if (!c || !o || c === o) return '';
+    var m = (c.posFor && typeof c.posFor === 'object' ? c.posFor : null) || (c.src && c.src.posFor && typeof c.src.posFor === 'object' ? c.src.posFor : null);
+    if (!m) return '';
+    var k = idxOf(o);
+    if (k == null || k === idxOf(c)) return '';
+    var v = m[k];
+    return POSV[v] ? v : '';
+  }
+  P.forOf = pf;
+  /* 実際に効く指定（o を渡すと、その相手への指定を優先する） */
+  P.of = function (c, o) {
     if (!c) return '';
+    var f = pf(c, o);
+    if (f) return f;
     var v = src(c, 'pos');
     if (v === 'top' || v === 'bottom' || v === 'riba') return v;
     return src(c, 'gender') === 'f' ? 'bottom' : '';
   };
-  function explicit(c) { var v = src(c, 'pos'); return v === 'top' || v === 'bottom' || v === 'riba'; }
+  function explicit(c, o) { if (pf(c, o)) return true; var v = src(c, 'pos'); return v === 'top' || v === 'bottom' || v === 'riba'; }
   P.explicit = explicit;
-  P.isTop = function (c) { return P.of(c) === 'top'; };
-  P.isBottom = function (c) { return P.of(c) === 'bottom'; };
-  /* 自分で「攻め」を選んだ人（どの相手・どの場面でも受けに回してはいけない） */
-  P.hardTop = function (c) { return explicit(c) && P.of(c) === 'top'; };
-  P.canTop = function (c) { return P.of(c) !== 'bottom' || !explicit(c); };
-  P.canBottom = function (c) { return !P.hardTop(c); };
+  P.isTop = function (c, o) { return P.of(c, o) === 'top'; };
+  P.isBottom = function (c, o) { return P.of(c, o) === 'bottom'; };
+  /* 自分で「攻め」を選んだ人（どの相手・どの場面でも受けに回してはいけない）。o を渡すと、その相手への指定で見る */
+  P.hardTop = function (c, o) { return explicit(c, o) && P.of(c, o) === 'top'; };
+  /* 三人以上の場面：その場の誰か一人にでも自分で攻めを選んでいれば攻め（一人もいなければ全体の指定） */
+  P.hardTopIn = function (c, list) {
+    var os = (list || []).filter(function (o) { return o && o !== c; });
+    if (!os.length) return P.hardTop(c);
+    for (var i = 0; i < os.length; i++) if (P.hardTop(c, os[i])) return true;
+    return false;
+  };
+  /* 相手ごとの指定を一つでも持つ人か */
+  P.hasFor = function (c) { var m = c && ((c.posFor && typeof c.posFor === 'object' ? c.posFor : null) || (c.src && c.src.posFor)); if (!m) return false; for (var k in m) if (POSV[m[k]]) return true; return false; };
+  /* 入力の住人（input.chars。番号を持たない）を、相手ごとの指定が引ける形に（誰も posFor を持たなければ、そのまま返す） */
+  P.withIdx = function (cs) {
+    if (!Array.isArray(cs) || !cs.some(P.hasFor)) return cs;
+    return cs.map(function (c, i) { if (!c || typeof c !== 'object') return c; var o = {}; for (var k in c) if (Object.prototype.hasOwnProperty.call(c, k)) o[k] = c[k]; o._pi = i; return o; });
+  };
+  P.canTop = function (c, o) { return P.of(c, o) !== 'bottom' || !explicit(c, o); };
+  P.canBottom = function (c, o) { return !P.hardTop(c, o); };
   var LBL = { top: '攻め', bottom: '受け', riba: 'リバ' };
   P.label = function (c) { return LBL[P.of(c)] || 'おまかせ'; };
   /* 性器の有無（R18版のみ）：自分で決めた値（決めていなければ ''。全年齢では常に ''） */
   P.GENITAL = { m: 1, f: 1, mf: 1, none: 1 };
   P.genSet = function (c) { if (HK.SAFE_ON || !c) return ''; var v = src(c, 'genital'); return P.GENITAL[v] ? v : ''; };
   /* ふたなり（性器の欄を決めていない人だけ。女性で、自分で「攻め」か「リバ」を選び、設定で「ふたなり」を付けた人） */
-  function futaOld(c) { return !HK.SAFE_ON && src(c, 'gender') === 'f' && !!src(c, 'futa') && explicit(c) && P.of(c) !== 'bottom'; }
+  function futaOld(c, o) { return !HK.SAFE_ON && src(c, 'gender') === 'f' && !!src(c, 'futa') && explicit(c, o) && P.of(c, o) !== 'bottom'; }
   /* 実際の性器：'m'／'f'／'mf'／'none'（おまかせは性別どおり。性別がおまかせ・その他の人は、これまでどおり男性の体） */
   P.gen = function (c) { var g = P.genSet(c); if (g) return g; if (!c) return ''; return src(c, 'gender') === 'f' ? (futaOld(c) ? 'mf' : 'f') : 'm'; };
   P.hasM = function (c) { var g = P.gen(c); return g === 'm' || g === 'mf'; };
@@ -51,13 +87,13 @@
   /* ふたなり（R18版のみ）：女性で、自分で「攻め」か「リバ」を選び、設定で「ふたなり」を付けた人。
      攻めに回る場面では男性の体（いちもつ）を前提にした描写で書く。自分で「受け」を選んだ人・おまかせの女性には効かない。
      性器を「両方」にした人は、受けの指定でなければ同じ扱い（性別・ふたなりの欄に関係なく） */
-  P.futa = function (c) { var g = P.genSet(c); if (g) return g === 'mf' && P.of(c) !== 'bottom'; return futaOld(c); };
+  P.futa = function (c, o) { var g = P.genSet(c); if (g) return g === 'mf' && P.of(c, o) !== 'bottom'; return futaOld(c, o); };
   /* 描写の上で「女性の体」として書く人（ふたなりの攻めは除く）。女性どうし（ff）・女性が攻め（fm）の判定はこれで行う */
-  P.isF = function (c) { return P.isFBody(c) && !P.futa(c); };
+  P.isF = function (c, o) { return P.isFBody(c) && !P.futa(c, o); };
   /* 女性どうしの組（いちもつの描写を使わない）。ふたなりの攻めが入る組は、男性の体を前提にした描写でよい */
-  P.ff = function (a, b) { return P.isF(a) && P.isF(b); };
+  P.ff = function (a, b) { return P.isF(a, b) && P.isF(b, a); };
   /* 二人ともリバ（双頭の玩具・貝合わせのように、二人が対等に繋がる描写は、この組だけ） */
-  P.bothRiba = function (a, b) { return P.of(a) === 'riba' && P.of(b) === 'riba'; };
+  P.bothRiba = function (a, b) { return P.of(a, b) === 'riba' && P.of(b, a) === 'riba'; };
   P.MUTUAL_RE = /双頭の玩具|双頭ディルド|貝合わせ|擦り合わせ|擦りつけ合|擦り付け合|重ね合わせ|上になったり下になったり|濡れたところ同士|熱いところ同士|熱いところを重ね|入れ替わ(?:り|って|った)/;
 
   /* ---------- 恋愛対象（受け攻め） ---------- */
@@ -69,28 +105,28 @@
     { v: 'any', label: '誰とでも（リバも含む）' }
   ];
   P.likeValid = function (v) { return v === '' || v === 'tb' || v === 'tr' || v === 'br' || v === 'any'; };
-  /* c が相手として受け入れる「相手の指定」 */
-  P.likes = function (c) {
+  /* c が相手として受け入れる「相手の指定」（o を渡すと、その相手への受け攻めで見る） */
+  P.likes = function (c, o) {
     var v = src(c, 'posLike');
     if (v === 'tb') return { top: 1, bottom: 1 };
     if (v === 'tr') return { top: 1, riba: 1 };
     if (v === 'br') return { bottom: 1, riba: 1 };
     if (v === 'any') return { top: 1, bottom: 1, riba: 1 };
-    if (explicit(c) && P.of(c) === 'top') return { bottom: 1 };
-    if (explicit(c) && P.of(c) === 'bottom') return { top: 1 };
+    if (explicit(c, o) && P.of(c, o) === 'top') return { bottom: 1 };
+    if (explicit(c, o) && P.of(c, o) === 'bottom') return { top: 1 };
     return { top: 1, bottom: 1, riba: 1 };
   };
   /* c がその役（'top'|'bottom'）に回れるか。partner は相手 */
   function canRole(c, r, partner) {
-    if (!explicit(c)) return true;
-    var p = P.of(c);
+    if (!explicit(c, partner)) return true;
+    var p = P.of(c, partner);
     if (p === 'riba') return true;
     if (p === 'top') return r === 'top';
     /* 受け×受け（どちらも自分で選んだ受け）だけは、どちらかが動く側に回る */
-    return r === 'bottom' || (P.of(partner) === 'bottom' && explicit(partner));
+    return r === 'bottom' || (P.of(partner, c) === 'bottom' && explicit(partner, c));
   }
-  /* 相手から見た c の指定（おまかせの人は、その場で回る役として見る） */
-  function kindAs(c, r) { return explicit(c) ? P.of(c) : r; }
+  /* 相手から見た c の指定（おまかせの人は、その場で回る役として見る）。partner は相手 */
+  function kindAs(c, r, partner) { return explicit(c, partner) ? P.of(c, partner) : r; }
   /* 成り立つ向き（[攻め, 受け] の並び）の一覧 */
   /* 恋愛対象（c.likes：''＝おまかせ／m／f／both／none）が相手の性別に合うか。両方向で見る。性別がおまかせ・その他の相手は制限しない */
   function likesOne(a, b) {
@@ -112,7 +148,7 @@
     [[a, b], [b, a]].forEach(function (o) {
       var t = o[0], u = o[1];
       if (!canRole(t, 'top', u) || !canRole(u, 'bottom', t)) return;
-      if (!P.likes(t)[kindAs(u, 'bottom')] || !P.likes(u)[kindAs(t, 'top')]) return;
+      if (!P.likes(t, u)[kindAs(u, 'bottom', t)] || !P.likes(u, t)[kindAs(t, 'top', u)]) return;
       out.push(o);
     });
     return out;
@@ -137,9 +173,9 @@
     if (!a || !b || a === b) return fb || [a, b];
     fb = fb && fb.length === 2 ? fb : [a, b];
     var os = P.orients(a, b), r;
-    if (!os.length) return P.hardTop(b) && !P.hardTop(a) ? [b, a] : P.hardTop(a) ? [a, b] : fb;
+    if (!os.length) return P.hardTop(b, a) && !P.hardTop(a, b) ? [b, a] : P.hardTop(a, b) ? [a, b] : fb;
     if (os.length === 1) return os[0];
-    var pa = P.of(a), pb = P.of(b);
+    var pa = P.of(a, b), pb = P.of(b, a);
     if (pa === 'riba' && pb === 'riba') return fb;
     var k = key(a, b);
     if (lock[k]) return lock[k] === nameOf(a) ? [a, b] : [b, a];
@@ -148,7 +184,7 @@
     else if (pa === 'bottom' && pb !== 'bottom') r = [b, a];
     else if (pb === 'bottom' && pa !== 'bottom') r = [a, b];
     /* 受け×受け：自分で「受け」を選んだ人を優先し、おまかせの側が攻めに回る */
-    else if (pa === 'bottom' && pb === 'bottom' && !!explicit(a) !== !!explicit(b)) r = explicit(a) ? [b, a] : [a, b];
+    else if (pa === 'bottom' && pb === 'bottom' && !!explicit(a, b) !== !!explicit(b, a)) r = explicit(a, b) ? [b, a] : [a, b];
     else if (pa === pb && (pa === 'top' || pa === 'bottom')) {
       var la = lean(a), lb = lean(b);
       r = la > lb + 0.001 ? [a, b] : lb > la + 0.001 ? [b, a] : (nameOf(a) < nameOf(b) ? [a, b] : [b, a]);
@@ -157,7 +193,7 @@
     return r;
   };
   /* 向きが決まっている組か（＝途中の逆転・入れ替わりを起こしてはいけない） */
-  P.fixed = function (a, b) { return !(P.of(a) === 'riba' && P.of(b) === 'riba'); };
+  P.fixed = function (a, b) { return !(P.of(a, b) === 'riba' && P.of(b, a) === 'riba'); };
   /* 二人の組で a が攻めか */
   P.topOf = function (a, b, fb) { return P.order(a, b, fb)[0]; };
   /* 名前のない相手（モブ・魔物・道具）との組：キャラが攻めなら 'top'、受けなら 'bottom'、どちらでもよければ def。
@@ -182,7 +218,7 @@
   /* ノリノリな性格（奔放・衝動的）：受けやおまかせでも、自分から跨ったり誘ったりする */
   P.nori = function (c) { var t = (c && c.tr) || {}; if ((t.ac || 0) > 0.62 && (t.fc || 0) < 0.5) return false; return (t.fc || 0) > 0.6 || (t.impulse || 0) > 0.66; };
   /* 仕掛けた側 a がノリノリで、攻めの指定でなければ、自分が受けに回る向きを希望する */
-  P.fbFor = function (a, b) { return P.nori(a) && P.of(a) !== 'top' && P.of(b) !== 'bottom' ? [b, a] : [a, b]; };
+  P.fbFor = function (a, b) { return P.nori(a) && P.of(a, b) !== 'top' && P.of(b, a) !== 'bottom' ? [b, a] : [a, b]; };
 
   /* 男性の体を前提にした言葉（女性どうしの場面で使ってはいけない）。点検にも使う */
   P.MALE_RE = /ちんぽ|ちんこ|ペニス|陰茎|肉棒|いちもつ|一物|男根|亀頭|勃起|射精|精液|白濁|種付け|孕ませ|中に出|中出し|子種|睾丸|カリ首|フェラ|裏筋|鈴口|先走り|怒張|剛直|屹立/;

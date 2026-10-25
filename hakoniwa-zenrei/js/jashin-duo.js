@@ -129,7 +129,7 @@
         break;
       case 'r18':
         var Pz = HK.Pos, o = Pz.order(a, b, [a, b]);
-        if (!Pz.okSex(a, b) || Pz.hardTop(o[1])) return;
+        if (!Pz.okSex(a, b) || Pz.hardTop(o[1], o[0])) return;
         /* 一回の中の性的な夜の上限（R18版の JS.R18.room）に届いていたら、この夜は起きない */
         if (JS.R18 && JS.R18.room && !JS.R18.room(S, [a, b])) { q.done = true; return; }
         var mm = { a: a.name, b: b.name, t: o[0].name, u: o[1].name };

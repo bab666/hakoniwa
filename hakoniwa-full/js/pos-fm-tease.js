@@ -19,7 +19,7 @@
   function src(c, k) { return c ? (c[k] != null && c[k] !== '' ? c[k] : (c.src && c.src[k]) || '') : ''; }
   function ok(ctx, a, b) {
     var P = HK.Pos;
-    if (!P || !b || !P.isF(a) || !P.isTop(a) || src(b, 'gender') !== 'm' || !P.okSex(a, b)) return false;
+    if (!P || !b || !P.isF(a, b) || !P.isTop(a, b) || src(b, 'gender') !== 'm' || !P.okSex(a, b)) return false;
     if (HK.canLove && (!HK.canLove(a, b) || !HK.canLove(b, a))) return false;
     var pr = ctx.pair ? ctx.pair(a, b) : {};
     return !!(pr.couple || pr.night || (ctx.R(a, b).att > 25 && ctx.R(b, a).att > 12));

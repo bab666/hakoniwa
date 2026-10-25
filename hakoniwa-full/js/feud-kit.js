@@ -76,7 +76,7 @@
         if (Pz && Pz.ff(a, b)) return { text: t + ffClash(S, a, b, pk) + HK.TL.line(a, 'LH_AFTER', b), r18: true };
         return { text: t + F.r18Clash(S, a, b) + HK.TL.line(a, 'LH_AFTER', b), r18: true };
       }
-      var l = Pz && Pz.hardTop(b) ? (Pz.hardTop(a) ? EVEN : REV) : ok && !aTop ? REV : KISS;
+      var l = Pz && Pz.hardTop(b, a) ? (Pz.hardTop(a, b) ? EVEN : REV) : ok && !aTop ? REV : KISS;
       return { text: t + (pick ? pick(l) : '').replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name) + HK.TL.line(a, 'LH_AFTER', b), r18: false };
     }
   };

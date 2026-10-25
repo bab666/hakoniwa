@@ -140,7 +140,7 @@
     /* 敵対している二人（関係がライバル・不仲・敵対）：攻めの側から強引に手を出し、受けは口では嫌がるが、まんざらではない応じ方をする（hate-sex-r18.js。R18版のみ） */
     if (!S.ties) S.ties = input.ties || [];
     var HSX = R18 && HK.HateSex, hateP = !!(HSX && rel === 'tension' && !ngP && !clash && HSX.hostile(S, A, B));
-    function hardTop(p) { return !!(Pos && Pos.hardTop(p)); }
+    function hardTop(p) { return !!(Pos && Pos.hardTop(p, p && p.o)); }
     if (bind === 'one') {
       boundOne = plotter ? plotter.o : rng() < 0.5 ? A : B;
       /* 自分で攻めを選んだ人は、片方だけの拘束の側にしない（拘束されて何かをされる側にしない）。二人とも攻めなら二人とも手錠に */

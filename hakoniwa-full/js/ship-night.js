@@ -347,7 +347,7 @@
     var mid = '';
     if (L.lv !== 'low') {
       var kd = pairKind(t, u), cs = L.ero ? fillEro(S, A.pk(S, T.coreEro[tier][kd]), t, u) : A.pk(S, T.core[tier][kd]);
-      mid = '\n\n' + A.F(cs, nm) + (Pz.hardTop(u) ? '' : ' ' + A.F(A.pk(S, att(u, T.att[tier])), nm));
+      mid = '\n\n' + A.F(cs, nm) + (Pz.hardTop(u, t) ? '' : ' ' + A.F(A.pk(S, att(u, T.att[tier])), nm));
       if (L.short) { body = ''; mid += '\n\n'; }
       else mid += '\n\n' + A.F(A.pk(S, T.bridge[tier]), nm);
     }

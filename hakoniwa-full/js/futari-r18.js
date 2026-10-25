@@ -146,7 +146,7 @@
       function fade() { var ft = upk(FADE); return ft ? { text: ctx.t(ft, A, B), why: why.replace(/）$/, '・ほのめかす）'), a: A, b: B } : null; }
       /* ほのめかす（と、厚い版・短い版を使い切った夜）：まだ使っていないぼかした一文。使い切ったら全年齢と同じ「同じ布団で眠った」に戻す */
       if (lv === 'low' || (R.thick >= capT && R.short >= capS)) return fade();
-      var ps = att(B), hardTopB = P && P.hardTop && P.hardTop(B);
+      var ps = att(B), hardTopB = P && P.hardTop && P.hardTop(B, A);
       var tail = '';
       if (TAIL_TOP[nt]) tail += upk(TAIL_TOP[nt]);
       if (TAIL_BOT[nb] && !hardTopB) tail += upk(TAIL_BOT[nb]);

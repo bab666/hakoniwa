@@ -144,7 +144,7 @@
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b);
       /* 自分で攻めを選んだ人を、壁に押しつけて唇を奪う側には回さない（受け攻めの指定に従う） */
-      if (HK.Pos && HK.Pos.hardTop(b)) return false;
+      if (HK.Pos && HK.Pos.hardTop(b, a)) return false;
       return OM.isFated && HK.canLove(a, b) && !pf.couple && hateLove(ctx, a, b) && ctx.stepIndex - (pf.lastForce == null ? -9 : pf.lastForce) >= 3 && (ctx.om.met[key(a, b)] || !OM.isFated(ctx, a, b));
     },
     w: function (ctx, a, b) { var r = ctx.R(a, b); return (0.35 + a.tr.impulse * 0.8 + a.tr.aggr * 0.6 + r.ten / 90 + r.att / 120) * strifeK(ctx); },
@@ -268,7 +268,7 @@
       /* 寝取られる側（恋人を裏切る側）を、後半の文の主語にする */
       var sw = function (x) { return motive === 'cheat' ? x.replace(/\{a\}/g, '{A}').replace(/\{b\}/g, '{a}').replace(/\{A\}/g, '{b}').replace(/\{sa\}/g, '{SA}').replace(/\{sb\}/g, '{sa}').replace(/\{SA\}/g, '{sb}') : x; };
       var s1 = sw(ctx.pick(lewd(ctx) === 'low' || !NT.scene ? NT.low : nf(NT.scene, /快感/))), s2 = sw(ctx.pick(NT.after));
-      var head = ctx.pick(motive === 'cheat' && HK.Pos && !hTop && HK.Pos.hardTop(b) ? NT.cheat.filter(function (l) { return !/上着を脱がせた/.test(l); }) : NT[motive]);
+      var head = ctx.pick(motive === 'cheat' && HK.Pos && !hTop && HK.Pos.hardTop(b, a) ? NT.cheat.filter(function (l) { return !/上着を脱がせた/.test(l); }) : NT[motive]);
       /* R18版：夜そのものは、段落に分けた厚い版（omega-thick.js の OM.affairScene。受け攻め・女性どうし・女性攻め×男性・態度ごとの声はそちらで） */
       var thick = !HK.SAFE_ON && lewd(ctx) !== 'low' && OM.affairScene ? OM.affairScene(ctx, a, b) : null;
       var t = head + s1 + s2;

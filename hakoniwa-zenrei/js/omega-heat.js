@@ -125,7 +125,7 @@
       if (ctx.rng() < (lew === 'high' ? 0.7 : 0.4)) out.push(pk(H.KNOT_R));
     } else {
       /* 受けが自分から跨る（NORI）：自分で攻めを選んだ相手を押し倒す書き方は除く */
-      var nori = H.NORI ? H.NORI.filter(function (l) { return !(HK.Pos && HK.Pos.hardTop(a) && /押し倒/.test(l)); }) : [];
+      var nori = H.NORI ? H.NORI.filter(function (l) { return !(HK.Pos && HK.Pos.hardTop(a, b) && /押し倒/.test(l)); }) : [];
       out.push(nori.length && HK.Pos && HK.Pos.nori(b) && ctx.rng() < 0.45 ? pk(nori) : pk(H.ACT[lew === 'high' ? 'high' : 'mid'][ta]));
       if (opt.beta) out.push(pk(H.BETA));
       else if (ctx.rng() < (lew === 'high' ? 0.8 : 0.5)) out.push(pk(H.KNOT));

@@ -324,7 +324,7 @@
     /* 一回の結果の中で同じ文を繰り返さない選び方（ero-kit.js の HK.Ero.freshPick） */
     var ps = psOf(B), pk0 = function (arr) { return rng.pick(arr); }, pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(ctx, pk0) : pk0;
     /* 受け攻めの指定：自分で攻めを選んだ人を押し倒す・仰向けにする・翻弄する書き方は使わない */
-    var noTop = function (l) { return !(HK.Pos && HK.Pos.hardTop(A) && /\{b\}は(自分から)?\{a\}を押し倒|\{a\}を仰向けにして|翻弄/.test(l)); };
+    var noTop = function (l) { return !(HK.Pos && HK.Pos.hardTop(A, B) && /\{b\}は(自分から)?\{a\}を押し倒|\{a\}を仰向けにして|翻弄/.test(l)); };
     var pool = ff ? FF[k] : N[k].filter(noTop);
     var short = LW ? LW.short(ctx.env, rng) : false, ero = LW && LW.ero(ctx.env) && HK.ThickEro, high = LW && LW.high(ctx.env);
     /* 余韻：受けの態度ごとの様子か、果てたあとの一文（行き先の文と同じ書き出しは重ねない）＋夜のあとの行き先 */

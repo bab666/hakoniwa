@@ -172,7 +172,7 @@
   /* 嗜虐的な攻めの書き方を使うか（攻め・受けの組と、くじ） */
   T.hard = function (rng, a, b) {
     if (!HK.Ero || !HK.Ero.sadist || !HK.Ero.sadist(a, b)) return false;
-    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(b)) return false;
+    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(b, a)) return false;
     return rng() < 0.25;
   };
 

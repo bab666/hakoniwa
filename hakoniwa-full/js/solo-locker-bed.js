@@ -216,7 +216,7 @@
     var riba = HK.Pos ? !HK.Pos.fixed(x, y) : false;
     var labels = [], ff = !!o.ff, fm = !ff && !!(HK.Pos && HK.Pos.isF(x) && !HK.Pos.isF(y));
     /* 自分で攻めを選んだ人（x）を、受けの側から押し倒したり運んだりする文は使わない */
-    var xHard = !!(HK.Pos && HK.Pos.hardTop(x));
+    var xHard = !!(HK.Pos && HK.Pos.hardTop(x, y));
     function noPush(l) { return !/押し倒し|仰向けにさせ|抱え上げ/.test(l); }
 
     /* 誘い方：おとなしかった方（仕掛けた回数が少ない・嗜めた・耐えた）が誘うことがある */

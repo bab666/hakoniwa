@@ -82,7 +82,7 @@
       if (!a || !b || a === b) return null;
       var o = P.order(a, b, [a, b]);
       /* 性器なしの人がいる組は、ここで跨る文に直さない（pos-nogen.js の口・指と玩具の文にする） */
-      return P.isF(o[0]) && P.isTop(o[0]) && isM(o[1]) && P.okSex(o[0], o[1]) && !(P.noGen && (P.noGen(o[0]) || P.noGen(o[1]))) ? o : null;
+      return P.isF(o[0], o[1]) && P.isTop(o[0], o[1]) && isM(o[1]) && P.okSex(o[0], o[1]) && !(P.noGen && (P.noGen(o[0]) || P.noGen(o[1]))) ? o : null;
     },
     on: function (a, b) { return !!FM.pair(a, b); },
     pick: function (ctx, kind, st) { var Pl = POOLS[kind] || BODY; return pickArr(ctx, Pl[st] || Pl.gentle); },
@@ -129,8 +129,8 @@
   HK.simulate = function (input) {
     var res = sim0.apply(this, arguments);
     try {
-      var cs = (input && input.chars) || [];
-      var F = cs.filter(function (c) { return P.isF(c) && P.isTop(c); }), M = cs.filter(isM);
+      var cs = P.withIdx((input && input.chars) || []);
+      var F = cs.filter(function (c) { return P.isF(c) && (P.isTop(c) || P.hasFor(c)); }), M = cs.filter(isM);
       if (!F.length || !M.length || !res) return res;
       var pairs = [];
       /* 恋愛・R18にしない組（キャラの設定 loveNG：相手の番号）と、恋愛相手を別の人に固定している組は、そもそも性的な場面にならないので直さない */

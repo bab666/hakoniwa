@@ -146,7 +146,7 @@
   HK.simulate = function (input) {
     var res = sim0.apply(this, arguments);
     try {
-      var P = HK.Pos, cs = (input && input.chars) || [];
+      var P = HK.Pos, cs = P.withIdx((input && input.chars) || []);
       var Fs = cs.filter(function (c) { return P.isFBody ? P.isFBody(c) : P.isF(c); });
       if (Fs.length < 2 || !res) return res;
       var pairs = [];

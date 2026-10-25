@@ -190,8 +190,8 @@
       var stoppers = others.filter(function (x) { return !(HK.ngPair && (HK.ngPair(x, a) || HK.ngPair(x, b))) && x.corrupt < 50 && x.tr.cp + x.tr.np * 0.5 + x.reason / 200 > 0.9; });
       var j = joiners.length && rng() < 0.4 ? joiners[rng.int(joiners.length)] : null;
       if (j && P()) {
-        if (P().order(j, u, [j, u])[0] === j && !hardTop(u)) mode = 'share';
-        else if (P().order(t, j, [t, j])[0] === t && !hardTop(j)) mode = 'serve';
+        if (P().order(j, u, [j, u])[0] === j && !P().hardTop(u, j)) mode = 'share';
+        else if (P().order(t, j, [t, j])[0] === t && !P().hardTop(j, t)) mode = 'serve';
         if (mode) c = j;
       }
       if (!c && stoppers.length && rng() < 0.25) { c = stoppers[rng.int(stoppers.length)]; mode = 'stop'; }

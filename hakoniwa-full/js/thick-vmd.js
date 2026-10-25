@@ -53,7 +53,7 @@
     /* 嗜虐的な攻め（受ける側が攻め指定なら使わない）：2〜3割 */
     sad: function (rng, top, bot) {
       if (!HK.Ero || !HK.Ero.sadist || !HK.Ero.sadist(top, bot)) return false;
-      if (bot && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(bot)) return false;
+      if (bot && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(bot, top)) return false;
       return rng() < 0.25;
     },
     on: function () { return !HK.SAFE_ON; }

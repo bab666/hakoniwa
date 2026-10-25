@@ -744,7 +744,7 @@
     if (rng() > S.env.slewd / 100 * (amour(S, a, b) ? 0.7 : bond(S, a, b) > 0.3 ? 0.45 : 0.15)) return;
     /* 受け攻め：自分で攻めを選んだ人は、熱があっても受けにならない */
     var o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
-    if (Pz.hardTop(u)) return;
+    if (Pz.hardTop(u, t)) return;
     var body = bodyOf(S, t, u, 'nurse');
     setRel(S, a, b, 0.15); mark(S, a, b, 'night'); sxNote(S, [a, b]);
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
@@ -903,7 +903,7 @@
   }
   function bodyFor(S, a, b) {
     var Pz = HK.Pos, o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
-    if (Pz.hardTop(u)) return '';
+    if (Pz.hardTop(u, t)) return '';
     return bodyOf(S, t, u, 'night');
   }
   /* 異星の生き物との場面：ほのめかす＝ぼかした一文、男性向け＝段落を足す、濃い＝もう一度 */

@@ -220,7 +220,7 @@
   function groupKind(ctx, a, b) {
     if (hate(ctx, a, b) >= 50 || hate(ctx, b, a) >= 50) return 'enemy';
     /* 攻め×攻め（エッチの条件で組めなかった二人。全年齢では書かない） */
-    if (!HK.SAFE_ON && (ctx.rules || []).some(function (r) { return r.k === 'h'; }) && HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b) && a.pos === 'top' && b.pos === 'top') return 'awk';
+    if (!HK.SAFE_ON && (ctx.rules || []).some(function (r) { return r.k === 'h'; }) && HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b) && HK.Pos.hardTop(a, b) && HK.Pos.hardTop(b, a)) return 'awk';
     var r1 = ctx.R(a, b), r2 = ctx.R(b, a);
     if ((r1.aff + r2.aff) / 2 >= 25) return 'friend';
     return 'plain';

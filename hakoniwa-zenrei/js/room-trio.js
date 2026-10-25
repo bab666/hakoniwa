@@ -275,7 +275,7 @@
     if (!Tn || !Bn) { var e0 = es[0], e1 = es.filter(function (e) { return e[1] === e0[0]; })[0] || es[1]; return { p: 'ring', t: e0[0], m: e0[1], u: e1[0] === e0[0] ? e1[1] : e1[0] }; }
     var M = g.filter(function (c) { return c !== Tn && c !== Bn; })[0];
     /* 真ん中の人が自分で「受け」を選んでいれば、攻め×受け・受け（oneTwo）に寄せる。受け×受けの組で動く側に回るのは、ときどきだけ */
-    var P = HK.Pos, pool = P && P.explicit(M) && P.isBottom(M) ? ['oneTwo', 'oneTwo', 'oneTwo', 'sandwich', 'twoOne'] : ['sandwich', 'sandwich', 'twoOne', 'oneTwo'];
+    var P = HK.Pos, pool = P && P.explicit(M, Tn) && P.isBottom(M, Tn) ? ['oneTwo', 'oneTwo', 'oneTwo', 'sandwich', 'twoOne'] : ['sandwich', 'sandwich', 'twoOne', 'oneTwo'];
     return { p: ctx.rng.pick(pool), t: Tn, m: M, u: Bn };
   }
   /* {t}=上 {m}=真ん中 {u}=下。oneTwo：{t}が{m}と{u}を抱く／twoOne：{t}と{m}が{u}を抱く／sandwich：{t}が{m}を、{m}が{u}を／ring：{t}→{m}→{u}→{t} */
@@ -343,7 +343,7 @@
     setPQ(r);
     /* 受ける側の役（recv）に、自分で攻めを選んだ人を置かない */
     var sTop = function (k) { var c = g.slice().sort(function (p, q) { return q.tr[k] - p.tr[k]; })[0]; return c.tr[k] > 0.55 ? c : null; };
-    var recvOK = function (o, rr) { rr = rr || r; return !o.recv || !o.recv.split(' ').some(function (k) { var c = k === 's' && o.who ? sTop(o.who) : rr[k]; return !c || hardTop(c); }); };
+    var recvOK = function (o, rr) { rr = rr || r; return !o.recv || !o.recv.split(' ').some(function (k) { var c = k === 's' && o.who ? sTop(o.who) : rr[k]; return !c || hardTop(c, g); }); };
     /* 女性どうしで繋がる組があれば、挿入の描写を使わない（白い部屋の木箱の玩具はよい） */
     var E = { oneTwo: [[sp.t, sp.m], [sp.t, sp.u]], twoOne: [[sp.t, sp.u], [sp.m, sp.u]], sandwich: [[sp.t, sp.m], [sp.m, sp.u]], ring: [[sp.t, sp.m], [sp.m, sp.u], [sp.u, sp.t]] }[sp.p];
     var ffE = HK.Pos ? E.filter(function (e) { return HK.Pos.ff(e[0], e[1]); })[0] : null;
@@ -420,7 +420,7 @@
     var rb = (ffE ? X.RIBA_FF : X.RIBA) || [];
     rb = rb.filter(function (o) { return (!o.shapes || o.shapes.split(' ').indexOf(sp.p) >= 0) && ribaOK(o); });
     if (rb.length && ctx.rng() < 0.5) { out.push(X.fill(fpk(fpk(rb).t), r)); used.push('リバ同士の入れ替わり'); }
-    if (V && sp.u && !hardTop(sp.u) && ctx.rng() < 0.75) out.push(X.fill(V.line(pf, sp.u.persona, ctx.rng() < 0.5 ? 'edge' : 'climax', 'b').replace(/\{b\}/g, '{u}').replace(/\{a\}/g, '{t}'), r));
+    if (V && sp.u && !hardTop(sp.u, g) && ctx.rng() < 0.75) out.push(X.fill(V.line(pf, sp.u.persona, ctx.rng() < 0.5 ? 'edge' : 'climax', 'b').replace(/\{b\}/g, '{u}').replace(/\{a\}/g, '{t}'), r));
     /* 見所：嫉妬の型があれば嫉妬の見所を一つ（高確率）、受けの開放度の見所を一つ（ときどき）、ほかに性格・きっかけの見所 */
     var top = function (k, th) { var c = g.slice().sort(function (p, q) { return q.tr[k] - p.tr[k]; })[0]; return c.tr[k] > th ? c : null; };
     var after = null;
@@ -453,7 +453,7 @@
     var nG = first ? (ctx.rng() < 0.6 ? 1 : 0) + (used.length < 2 ? 1 : 0) : (used.length ? 0 : 1);
     for (var k = 0; k < nG; k++) addHL(hlG, function (z) { return (z.kinds ? 2.2 : 1) * (z.shapes ? 1.6 : 1) * (z.who ? 1.3 : 1); });
     }
-    if (sp.p === 'sandwich' && V && !hardTop(sp.m) && ctx.rng() < 0.6) out.push(X.fill(V.line(pf, sp.m.persona, 'climax', 'b').replace(/\{b\}/g, '{m}').replace(/\{a\}/g, '{t}'), r));
+    if (sp.p === 'sandwich' && V && !hardTop(sp.m, g) && ctx.rng() < 0.6) out.push(X.fill(V.line(pf, sp.m.persona, 'climax', 'b').replace(/\{b\}/g, '{m}').replace(/\{a\}/g, '{t}'), r));
     /* 絶頂：形・嫉妬・開放度に合う文があれば優先 */
     var ltC = ltOn && !TE && !r.synced && ctx.rng() < 0.6 ? ltPick('climax') : null;
     if (ltC) out.push(ltC);
@@ -479,8 +479,8 @@
     var txt3 = out.join('');
     if (ffE && HK.FF) txt3 = HK.FF.fix(ctx, txt3, ffE[0], ffE[1], { tools: !!ctx.flags.toolbox });
     /* 女性の攻めが入れる側に書かれた文は、男性の相手ごとに女性上位の文へ（pos-fm.js） */
-    if (HK.FM && HK.Pos) g.filter(function (c) { return HK.Pos.isF(c) && HK.Pos.isTop(c); }).forEach(function (f) {
-      g.forEach(function (m) { if (m !== f && !HK.Pos.isF(m)) txt3 = HK.FM.fixWith(ctx, txt3, f, m.name); });
+    if (HK.FM && HK.Pos) g.filter(function (c) { return HK.Pos.isF(c) && (HK.Pos.isTop(c) || HK.Pos.hasFor(c)); }).forEach(function (f) {
+      g.forEach(function (m) { if (m !== f && !HK.Pos.isF(m) && HK.Pos.isTop(f, m)) txt3 = HK.FM.fixWith(ctx, txt3, f, m.name); });
     });
     return txt3;
   }

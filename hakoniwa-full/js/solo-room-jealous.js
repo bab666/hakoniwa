@@ -174,7 +174,7 @@
         ctx.mod2(a, b, { ten: 8, att: -6 }, { ten: 3 });
         t += m(ctx.pick(CHANGE[grp(a)]));
         var d = ctx.present().filter(function (q) { return q !== a && q !== b && free(q) && HK.canLove(a, q) && HK.canLove(q, a); }).sort(function (x, y) { return R(ctx, a, y).att - R(ctx, a, x).att; })[0];
-        if (d && ctx.rng() < 0.6) { t += m(ctx.pick(SHOW[grp(a)].filter(function (l) { return !(HK.Pos && HK.Pos.hardTop(d)) || !/押しつけ/.test(l); })), d); ctx.mod2(a, d, { att: 10 }, { att: A.eager(ctx, d) > 0.5 ? 8 : 3 }); }
+        if (d && ctx.rng() < 0.6) { t += m(ctx.pick(SHOW[grp(a)].filter(function (l) { return !(HK.Pos && HK.Pos.hardTop(d, a)) || !/押しつけ/.test(l); })), d); ctx.mod2(a, d, { att: 10 }, { att: A.eager(ctx, d) > 0.5 ? 8 : 3 }); }
         why = a.name + 'は、' + b.name + 'がほかの人と抱き合うのを見て、「一人だけ」の決め事を捨てた（積極性・FC）。三人やほかの相手との場面にも加わるようになる';
         return { text: t, why: why, mag: 24, with: d ? [d] : [] };
       }

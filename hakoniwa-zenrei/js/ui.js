@@ -1208,5 +1208,7 @@
   HK.UI.save = save; HK.UI.renderCast = renderCast; HK.UI.cleanTies = cleanTies; HK.UI.toast = toast;
   HK.UI.refresh = function () { setTab(tab); };
   HK.UI.autoTone = autoTone;
+  /* 書き出し・読み込み・入力の組み立て（点検・往復の試験から呼ぶ。画面の操作と同じ関数） */
+  HK.UI.rosterJSON = rosterJSON; HK.UI.importJSON = importJSON; HK.UI.buildInput = buildInput; HK.UI.normState = normState;
   setTab('cast');
 })();

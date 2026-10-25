@@ -33,7 +33,7 @@
   /* 女性が攻め・男性が受けの組：女性が押し倒して跨り、見下ろして焦らす（曖昧な書き方のまま） */
   var NEAR_FM = ['{a}は{b}をベッドに押し倒して、その上に跨った。「今日は、こっちが上」――見下ろす目が、楽しそうに細められた。', '{a}は{b}の両手首をシーツに押さえつけ、唇が触れる寸前で止めた。「欲しいなら、ちゃんと言って」', '{a}は{b}の胸を軽く突いて仰向けに倒し、腰の上に座り込んだ。「逃げないでね」'];
   var MID_FM = ['{a}は{b}の上に跨ったまま、わざとゆっくり照明を落とした。', '{a}は{b}のシャツのボタンを、焦らすように一つずつ外していった。{b}が身じろぎするたびに、{a}は「まだ」と笑った。', '{b}が手を伸ばすと、{a}はその手首をまた押さえつけた。「動いていいって、言ってない」'];
-  function fmLead(A, B) { var P = HK.Pos; return !!(P && P.isF(A) && P.isTop(A) && (B.gender || (B.src && B.src.gender)) === 'm'); }
+  function fmLead(A, B) { var P = HK.Pos; return !!(P && P.isF(A, B) && P.isTop(A, B) && (B.gender || (B.src && B.src.gender)) === 'm'); }
   var lead0 = L.lead;
   function fadeScene(ctx, a, b, mode, opt) {
     opt = opt || {};

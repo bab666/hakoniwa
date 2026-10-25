@@ -472,7 +472,7 @@
   var TK = HK.TKC = {
     BRK: BRK,
     on: function (lew) { return !HK.SAFE_ON && lew !== 'low' && lew !== 'off' && lew !== 'fade'; },
-    ok: function (T, U) { return !(HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U)); },
+    ok: function (T, U) { return !(HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U, T)); },
     /* 体の組み合わせ：ff＝女性どうし、ride＝女性が攻め×男性、mf＝男性（ふたなりの攻めを含む）×女性、mm＝男性どうし。
        オメガバース（flav:'omega'）は、ふたなりの設定を使わず、第二性を優先する（omega-heat.js の OM.bodyKind：αの攻めは女性でも挿れる側の体）。
        ほかの箱庭では、ふたなりの攻めは男性の体で書く */
@@ -680,7 +680,7 @@
   }
   /* 第二性の組（T=攻め U=受け）で引く段落と結び。kd：TK.kind の体の組み合わせ。riba：二人ともリバ */
   function cbPlay(pk, T, U, kd, riba) {
-    var LV = OM.LOVE, cb = LV ? LV.combo(T, U) : 'b', hardT = HK.Pos && HK.Pos.hardTop(T);
+    var LV = OM.LOVE, cb = LV ? LV.combo(T, U) : 'b', hardT = HK.Pos && HK.Pos.hardTop(T, U);
     if (kd === 'ride') return { cb: cb, play: pk(RIDE_CB[cb] || RIDE_CB.b) };
     if (kd === 'ff') return { cb: cb, play: pk(FF_CB[cb] || FF_CB.b) };
     var arr = [];

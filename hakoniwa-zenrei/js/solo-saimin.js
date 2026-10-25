@@ -448,7 +448,7 @@
     if (p.ff) kind = 'ff';
     var top = /Top/.test(vk) || p.aTop, dom = top ? me : hc, sub = top ? hc : me;
     /* 攻めの {a} が口で奉仕される側なら kneel のまま、{a} が奉仕する文は使わない */
-    if (!top && kind === 'kneel' && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(me)) return null;
+    if (!top && kind === 'kneel' && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(me, hc)) return null;
     return HK.Thick4.scene(S, { dom: dom, sub: sub, kind: kind, lead: fb, sad: HK.Thick4.rollSad(S, dom, sub),
       after: ST.pick(S, ['{a}の目には、まだ暗示の靄がかかっていた。', '自分が何をしたのか、{a}が知るのはもう少しあとのことだ。', '{h}は、まだとろんとしたままの{a}の目を覗き込み、満足げに息をついた。']).replace(/\{a\}/g, p.name).replace(/\{h\}/g, p.h) });
   }
