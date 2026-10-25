@@ -67127,9 +67127,13 @@
       mutual: L('翌朝、{a}は三つ指をついて「昨夜は、はしたないところを」と頭を下げた。相手は慌てて、その手を取った。|{a}は相手の帯を結び直しながら、「お慕いしております」と小さく言った。|{a}は「今後とも、どうぞよろしくお願いいたします」と微笑んだ。どこか、くすぐったそうだった。')
     }
   };
-  function pz(S, p, k) {
-    var t = JP[(HK.personaOf ? HK.personaOf(p) : p.persona) || 'gentle'] || JP.gentle;
-    return t[k] ? ST.fmt(fp(S, t[k]), { a: p.name, g: S.G ? S.G.call : '' }) : '';
+  /* 合意のない場面（force）では、笑い飛ばす・軽口を叩くような軽い反応を使わない */
+  var LIGHT_RE = /笑い飛ば|軽口|面白が|からか|冗談/;
+  var FORCE_REACT = L('{a}は声を殺して、ただ終わるのを待った。|{a}は天井の木目を数えながら、心だけを遠くへ逃がした。|{a}は唇を噛み、相手の顔を見ないようにした。');
+  function pz(S, p, k, force) {
+    var t = JP[(HK.personaOf ? HK.personaOf(p) : p.persona) || 'gentle'] || JP.gentle, arr = t[k];
+    if (force && arr) { arr = arr.filter(function (x) { return !LIGHT_RE.test(x); }); if (!arr.length) arr = FORCE_REACT; }
+    return arr ? ST.fmt(fp(S, arr), { a: p.name, g: S.G ? S.G.call : '' }) : '';
   }
 
   /* 受け攻めの決まり（pos.js）：自分で攻めを選んだ人は、村人・神・眷属に「される」側にしない。
@@ -67237,7 +67241,7 @@
       /* 清めの湯 */
       if (r0 > 0.88) {
         if (top) { ST.say(S, { actors: [p], tag: '清めの湯', text: ST.fmt(fp(S, BATH_NO), { a: p.name }), why: '祭りの前の「清め」に誘われたが、' + p.name + 'は応じなかった', mag: 12 }); return true; }
-        ST.say(S, { actors: [p], tag: '清めの湯', kind: 'climax', text: HK.JDark && HK.JDark.roll(S, p) ? HK.JDark.text(S, 'bath', p) : ST.fmt(fp(S, BATH), { a: p.name }) + (HK.R18M ? HK.R18M.npc(S, 'villager') + pz(S, p, 'react') + (HK.R18M.isStrong(p) ? HK.R18M.resist(S, 'crowd', p) : HK.R18M.moans(S, p, ['start', 'mid', 'climax'])) : ''), why: '祭りの前の「清め」と称して、村人に体を弄ばれた' + (p.aphro ? '（媚薬が回っていた）' : ''), mag: 24 });
+        ST.say(S, { actors: [p], tag: '清めの湯', kind: 'climax', text: HK.JDark && HK.JDark.roll(S, p) ? HK.JDark.text(S, 'bath', p) : ST.fmt(fp(S, BATH), { a: p.name }) + (HK.R18M ? HK.R18M.npc(S, 'villager') + pz(S, p, 'react', true) + (HK.R18M.isStrong(p) ? HK.R18M.resist(S, 'crowd', p) : HK.R18M.moans(S, p, ['start', 'mid', 'climax'])) : ''), why: '祭りの前の「清め」と称して、村人に体を弄ばれた' + (p.aphro ? '（媚薬が回っていた）' : ''), mag: 24 });
         return true;
       }
       /* 参加者どうし（媚薬が回っている二人ほど） */
@@ -67268,7 +67272,7 @@
         return true;
       }
       if ((!HK.Content || HK.Content.ok(S, 'preg')) && !top && rng() < 0.3 + lv * 0.3) p.preg = true;
-      ST.say(S, { actors: [p], tag: '夜這い', kind: 'climax', text: (function () { var M = HK.R18M, ma = { a: p.name }; if (!top && HK.JDark && HK.JDark.roll(S, p)) return HK.JDark.text(S, 'yobai', p); if (!M) return ST.fmt(fp(S, top ? YOBAI_TOP : YOBAI), ma); if (top) return ST.fmt(fp(S, HK.Pos && HK.Pos.isF(p) ? YOBAI_TOP_F : YOBAI_TOP), ma) + M.say(S, p, 'top') + ST.fmt(fp(S, YOBAI_TOP_NPC), ma) + (HK.Pos && HK.Pos.isF(p) ? '' : M.say(S, p, 'topc')); if (!p.aphro || M.isStrong(p)) return ST.fmt(fp(S, YOBAI_FORCE), ma) + M.resist(S, { name: '村の男' }, p, { endure: false }) + ST.fmt(fp(S, YOBAI_ACT), ma) + pz(S, p, 'react') + M.say(S, p, 'endure'); return ST.fmt(fp(S, YOBAI), ma) + M.npc(S, 'villager') + pz(S, p, 'react') + M.moans(S, p, ['start', 'mid', 'climax']); })() + (p.preg && !top ? ST.fmt(fp(S, PREG), { y: p.name }) : '') + (!top && rng() < 0.6 ? pz(S, p, 'after') : ''), why: '村人の夜這い' + (p.aphro ? '（媚薬で抗えなかった）' : ''), mag: 26 });
+      ST.say(S, { actors: [p], tag: '夜這い', kind: 'climax', text: (function () { var M = HK.R18M, ma = { a: p.name }; if (!top && HK.JDark && HK.JDark.roll(S, p)) return HK.JDark.text(S, 'yobai', p); if (!M) return ST.fmt(fp(S, top ? YOBAI_TOP : YOBAI), ma); if (top) return ST.fmt(fp(S, HK.Pos && HK.Pos.isF(p) ? YOBAI_TOP_F : YOBAI_TOP), ma) + M.say(S, p, 'top') + ST.fmt(fp(S, YOBAI_TOP_NPC), ma) + (HK.Pos && HK.Pos.isF(p) ? '' : M.say(S, p, 'topc')); if (!p.aphro || M.isStrong(p)) return ST.fmt(fp(S, YOBAI_FORCE), ma) + M.resist(S, { name: '村の男' }, p, { endure: false }) + ST.fmt(fp(S, YOBAI_ACT), ma) + pz(S, p, 'react', true) + M.say(S, p, 'endure'); return ST.fmt(fp(S, YOBAI), ma) + M.npc(S, 'villager') + pz(S, p, 'react', true) + M.moans(S, p, ['start', 'mid', 'climax']); })() + (p.preg && !top ? ST.fmt(fp(S, PREG), { y: p.name }) : '') + (!top && rng() < 0.6 ? pz(S, p, 'after') : ''), why: '村人の夜這い' + (p.aphro ? '（媚薬で抗えなかった）' : ''), mag: 26 });
       if (p.job === 'streamer') streamAfter(S, p, '村人', !top);
       return true;
     },
