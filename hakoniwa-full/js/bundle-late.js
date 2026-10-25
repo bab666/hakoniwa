@@ -25319,7 +25319,7 @@
         after: L('{T}は何事もなかったように服を整え、「お疲れさまでした」と頭を下げた。{B}だけが、まだ腰に力が入らなかった。|{T}は繋がったまましばらく息を整えてから、そっと腰を上げた。内腿を伝うものをタオルで拭い、「お疲れさまでした」と一礼した。|{T}は乱れた施術着を直し、記録用紙に数字を書き込んだ。{B}は施術台の上で、天井を見上げたまま動けなかった。|{T}が腰を上げると、{B}の下腹がまだ小さく痙攣していた。{T}はそこへ温かいタオルを当て、「本日の採取は以上です」と告げた。|{T}はゆっくりと腰を上げ、採取容器の代わりに自分の手のひらを当てた。「……少し、こぼれてしまいました」――その頬は、業務中とは思えないほど赤かった。|{T}は{B}の上から降りると、震える指でカルテに時刻を書き込んだ。字が、いつもより少しだけ乱れていた。|{T}は乱れた呼吸のまま「所要時間、規定内です」と告げ、{B}の胸にタオルを掛けた。自分の膝が笑っていることには、触れなかった。') },
       serve: { body: L('{T}は手袋を外し、温めたオイルを手のひらで馴染ませてから{B}のものを包んだ。「採取を始めます」――根元から先へ、規則正しく扱き上げる。|{T}は採取容器を脇に置き、ゼリーを絡めた指で{B}のものを根元から握り込んだ。「計測を続けます」――親指が、先端の窪みを丁寧になぞる。|{T}は{B}の脚の間に膝をつき、張りつめたものの角度と硬さを指先で確かめた。「続けます」――事務的な声のあと、扱き上げる手の動きが一段速くなった。|{T}は{B}のものを両手で包み、一定のリズムで扱きはじめた。時間を計る目つきは真剣なのに、手のひらはやけに熱い。|{T}は{B}の脚を施術台の上で開かせ、裏側の筋を親指でゆっくりと押し上げた。「感度を見ます」――押し上げるたびに、先端から透明なものが滲んだ。'),
         beat: L('{T}は手のひらの角度を変えずに、根元から先まで同じ速さで扱き続けた。速さが変わらないことが、かえって{B}を追い詰めていく。|{T}は親指で先端の窪みを円く撫で、滲んだものを塗り広げた。「分泌、確認」――その声だけが、ひどく落ち着いていた。|{T}は扱く手を止めて、根元をきゅっと握り込んだ。{B}の腰が浮いて落ちるのを見届けてから、また一定の速さで動きはじめる。'),
-        peak: L('{T}が「規定量まで、あと少しです」と告げて手を速めた瞬間、{B}は腰を突き上げて果てた。噴き上がったものを、{T}は採取容器で手際よく受け止めた。|{T}の親指が裏側の筋を強く押し上げたとき、{B}はこらえきれずに果てた。{T}は脈打つたびにあふれるものを、最後まで丁寧に搾り出した。|{T}が根元を握っていた指をふっと緩めると、{B}の腰が大きく跳ねた。熱いものが何度も噴き上がり、{T}の手のひらを白く濡らしていった。'),
+        peak: L('{T}が「規定量まで、あと少しです」と告げて手を速めた瞬間、{B}は腰を突き上げて果てた。噴き上がったものを、{T}は採取容器で手際よく受け止めた。|{T}の親指が裏側の筋を強く押し上げたとき、{B}はこらえきれずに果てた。{T}は脈打つたびにあふれるものを、最後まで丁寧に搾り出した。|{T}が根元を握っていた指をふっと緩めると、{B}の腰が大きく跳ねた。熱いものが何度も噴き上がり、{T}の手のひらを白く濡らしていった。|{T}は先端だけを指の腹でくるくると撫で回し、{B}の腰が逃げようとするのを片手で押さえた。限界はすぐに来て、{B}は短い声を上げて果て、{T}の指のあいだから白いものが溢れた。|{T}が「力を抜いてください」と言いながら根元から一気に扱き上げると、{B}の背が弓なりに反った。どくどくと吐き出されるものを、{T}は一滴もこぼさずに受け止めた。|{T}は手の動きをわざと緩め、{B}が腰を浮かせて求めたところで、もう一度強く握り込んだ。{B}は喉を鳴らして達し、震える太腿のあいだで{T}の手が最後まで動き続けた。'),
         after: L('{T}は採取容器の目盛りを確かめ、満足そうに頷いた。{B}は肩で息をしたまま、言葉が出なかった。|{T}は容器の蓋を閉め、ラベルに日付と数字を書き込んだ。{B}はぐったりと施術台に沈んだまま、まだ息を整えられずにいた。|{T}は濡れた手をタオルで拭い、「量、良好です」と告げた。{B}は返事の代わりに、震える息を吐いた。|{T}は口元を拭ってから、採取容器を光にかざした。{B}の腰は、まだ時おり思い出したように跳ねていた。|{T}は容器を傾けて量を確かめ、「前回より多いですね」と淡々と言った。{B}は顔を覆ったまま、返事ができなかった。') },
       ff: { body: L('{T}は手袋をはめ直し、潤滑剤をまとわせた指で{B}の入口をなぞった。「内診を始めます」――その声が、少しだけ上ずっていた。|{T}は手袋をはめた指先で{B}の内腿をなぞり、そのまま濡れた襞を割った。「反応を確かめます」――一本、二本と、ゆっくり沈めていく。|{T}は{B}の脚の間に顔を寄せ、「感度の検査です」と告げてから舌を這わせた。事務的な宣言のわりに、吐息がひどく熱かった。|{T}は{B}の膝を立てさせ、指を二本揃えて浅いところを押した。「ここが基準値です」――一点を押されるたびに、{B}の腰が施術台から浮いた。'),
         after: L('{T}は記録用紙に何かを書きかけて、ペンを止めた。{B}はまだ施術台の上で、甘い息を繰り返していた。|{T}は指を抜き、濡れた手袋を外して丸めた。「反応、良好です」――その頬が、うっすらと赤かった。|{B}はまだ太腿を震わせていた。{T}はその脚にそっとタオルを掛け、記録用紙に何か書き込もうとして、しばらく手を止めていた。|{T}は濡れた指先を拭いながら、「数値、大幅に基準を超えています」と告げた。声が、少しだけ上ずっていた。') }
@@ -26137,7 +26137,7 @@
   function L(s) { return s.split('|'); }
   /* この回でまだ使っていない文から選ぶ（solo-hole.js の HK.HoleFresh） */
   function P(S, a) { return HK.HoleFresh ? HK.HoleFresh(S, a) : K.pick(S, a); }
-  var LOVE = /^(lover|mate|fated|almost|fwb)$/, W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, classmate: 0.4, boss: 0.45, benefactor: 0.6, relative: 0.6, worship: 0.85, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7, sibbad: -0.15, bad: -0.4 };
+  var LOVE = /^(lover|mate|fated|almost|fwb)$/, W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, classmate: 0.4, boss: 0.45, benefactor: 0.6, relative: 0.6, worship: 0.85, fond: 0.55, blind: 0.75, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7, sibbad: -0.15, bad: -0.4 };
   var FAMILY = /^(sibling|sibprot|sibclose|sibbad|parent|pparent|relative)$/;
 
   var T = {
@@ -27359,7 +27359,7 @@
       var fire = false;
       P.forEach(function (a) {
         var c = crushOf(ctx, a, 55);
-        if (!c || c.out || rng() > 0.35 + a.tr.honesty * 0.5) return;
+        if (!c || c.out || rng() > 0.35 + a.tr.honesty * 0.5 || (HK.Poly && !HK.Poly.canTry(ctx, a, c))) return;
         if (!fire) { ctx.incident('後夜祭。グラウンドの真ん中でキャンプファイヤーが燃えている。'); fire = true; }
         var yes = R(ctx, c, a).att > 30;
         ctx.act2({ actors: [a, c], cat: 'romance', mag: 12, fx: function () { ctx.mod2(a, c, { att: yes ? 8 : 0 }, { att: yes ? 10 : 3, aff: yes ? 5 : 0 }); if (!yes) ctx.stress(a, 12); if (yes && R(ctx, a, c).aff > 30 && R(ctx, c, a).aff > 30) ctx.pair(a, c).couple = true; },
@@ -27414,7 +27414,7 @@
         if (G3.length < P.length) seeOff(ctx, G3, P.filter(function (c) { return gr(ctx, c) !== 3; }));
         G3.forEach(function (a) {
           var c = crushOf(ctx, a, 50);
-          if (!c || c.out || ctx.rng() > 0.3 + a.tr.honesty * 0.5) return;
+          if (!c || c.out || ctx.rng() > 0.3 + a.tr.honesty * 0.5 || (HK.Poly && !HK.Poly.canTry(ctx, a, c))) return;
           var yes = R(ctx, c, a).att > 28;
           ctx.act2({ actors: [a, c], cat: 'romance', mag: 15, fx: function () { ctx.mod2(a, c, { att: 6 }, { att: yes ? 10 : 2 }); if (yes) ctx.pair(a, c).couple = true; else ctx.stress(a, 15); },
             text: ctx.t(yes ? '式のあと、{a}は{b}に第二ボタンをねだった。{b}は黙って、ボタンごと学ランの前を外した。' : '{a}は{b}を呼び止めて、それから「元気でね」とだけ言った。', a, c), why: '最後の日。' + a.name + 'の惹かれ（' + Math.round(R(ctx, a, c).att) + '）' });
@@ -27468,7 +27468,7 @@
         }
         got[c.i] = (got[c.i] || 0) + 1;
         var rc = R(ctx, c, a);
-        var taken = P.some(function (o) { return o !== a && o !== c && ctx.pair(c, o).couple; });
+        var taken = P.some(function (o) { return o !== a && o !== c && ctx.pair(c, o).couple; }) || !!(HK.Poly && !HK.Poly.canTry(ctx, a, c));
         var res = taken ? 'no' : rc.att > 32 && rc.aff > 22 ? 'yes' : rc.att > 15 || c.tr.np > 0.55 ? 'hold' : 'no';
         var line = ctx.pick(V_GIVE) + ctx.pick(res === 'yes' ? V_YES : res === 'hold' ? V_HOLD : V_NO);
         ctx.act2({ actors: [a, c], cat: 'romance', mag: res === 'yes' ? 25 : 15, fx: function () {
@@ -27509,7 +27509,7 @@
     list.forEach(function (v) {
       var a = ctx.chars[v.a], b = ctx.chars[v.b];
       if (!a.alive || !b.alive || a.out || b.out) return;
-      var r = R(ctx, b, a), yes = r.att > 30 && r.aff > 22;
+      var r = R(ctx, b, a), yes = r.att > 30 && r.aff > 22 && (!HK.Poly || HK.Poly.canTry(ctx, a, b));
       if (yes) {
         ctx.act2({ actors: [b, a], cat: 'romance', mag: 25, fx: function () { ctx.pair(a, b).couple = true; ctx.mod2(a, b, { att: 10, aff: 8 }, { att: 10, aff: 8 }); },
           text: ctx.t(ctx.pick(['{a}は{b}に、手作りのマカロンを渡した。「一か月、ちゃんと考えた。……付き合おう」', '{a}は{b}を校門で待っていた。差し出した箱には、メッセージカードが一枚入っていた。', '{a}は「三倍返し」と言って、{b}に大きな箱を渡した。中身より、添えられた言葉の方が大事だった。']), b, a), why: b.name + 'の惹かれがこの一か月で育った（' + Math.round(r.att) + '）' });
@@ -33523,7 +33523,7 @@
     if (t.cold > 0.55 && t.aggr < 0.5) return 'cool';
     return t.cp > 0.55 || t.aggr > 0.55 ? 'smug' : 'sorry';
   }
-  var TW = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.5, best: 0.8, buddy: 0.75, childhood: 0.7, sibling: 0.65, sibclose: 0.8, sibprot: 0.8, parent: 0.8, pparent: 0.75, friend: 0.5, mentor: 0.5, master: 0.55, teacher: 0.45, senpai: 0.35, colleague: 0.25, classmate: 0.35, boss: 0.4, benefactor: 0.6, relative: 0.55, worship: 0.85, acq: 0.1, crush: 0.85, rival: -0.35, enemy: -0.85 , sibbad: -0.15, bad: -0.4 };
+  var TW = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.5, best: 0.8, buddy: 0.75, childhood: 0.7, sibling: 0.65, sibclose: 0.8, sibprot: 0.8, parent: 0.8, pparent: 0.75, friend: 0.5, mentor: 0.5, master: 0.55, teacher: 0.45, senpai: 0.35, colleague: 0.25, classmate: 0.35, boss: 0.4, benefactor: 0.6, relative: 0.55, worship: 0.85, fond: 0.5, blind: 0.75, acq: 0.1, crush: 0.85, rival: -0.35, enemy: -0.85 , sibbad: -0.15, bad: -0.4 };
   function closeness(input, a, b) {
     if (a.aff && a.aff[b.i] != null) return a.aff[b.i];
     var w = 0;
