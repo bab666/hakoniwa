@@ -239,7 +239,14 @@
       var oid = act === 'tadd' ? b.dataset.o : (ov.querySelector('[data-gf="newo"]') || {}).value;
       var ty = act === 'tadd' ? 'friend' : (ov.querySelector('[data-gf="newt"]') || {}).value || 'friend';
       if (!oid || !byId(oid)) return;
-      if (s.ties.some(function (t) { return t.type === ty && ((t.a === c.id && t.b === oid) || (t.a === oid && t.b === c.id)); })) { UI.toast('同じ関係がすでにあります'); return; }
+      var dup = function (x) { return s.ties.some(function (t) { return t.type === x && ((t.a === c.id && t.b === oid) || (t.a === oid && t.b === c.id)); }); };
+      if (dup(ty)) {
+        /* 同じ関係がすでにある：まだ付いていない関係に替えて足す（行の種類はあとから変えられる） */
+        var alt = HK.TIE_ORDER.filter(function (x) { return HK.TIES[x] && !dup(x); })[0];
+        if (!alt) { UI.toast('この二人に足せる関係がもうありません'); return; }
+        UI.toast('「' + HK.TIES[ty].label + '」はすでにあるので「' + HK.TIES[alt].label + '」で追加しました。種類は行で変えられます');
+        ty = alt;
+      }
       s.ties.push({ a: c.id, b: oid, type: ty });
       changed(true);
     }

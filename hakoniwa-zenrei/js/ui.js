@@ -290,6 +290,14 @@
     var ids = S.chars.map(function (c) { return c.id; });
     S.ties = (S.ties || []).filter(function (t) { return ids.indexOf(t.a) >= 0 && ids.indexOf(t.b) >= 0 && t.a !== t.b && HK.TIES[t.type]; });
   }
+  /* 二人の間にその関係がすでにあるか（向きは問わない） */
+  function hasTie(a, b, ty, skip) { return (S.ties || []).some(function (t, k) { return k !== skip && t.type === ty && ((t.a === a && t.b === b) || (t.a === b && t.b === a)); }); }
+  /* まだ付いていない「二人×関係」を一つ返す（友人を優先し、二人の組は名簿の順）。なければ null */
+  function freeTie() {
+    var ids = S.chars.map(function (c) { return c.id; }), types = ['friend'].concat(HK.TIE_ORDER.filter(function (x) { return x !== 'friend'; }));
+    for (var i = 0; i < ids.length; i++) for (var j = i + 1; j < ids.length; j++) for (var k = 0; k < types.length; k++) if (HK.TIES[types[k]] && !hasTie(ids[i], ids[j], types[k])) return { a: ids[i], b: ids[j], type: types[k] };
+    return null;
+  }
   function charOpts(sel) {
     return S.chars.map(function (c) { return '<option value="' + c.id + '"' + (c.id === sel ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('');
   }
@@ -854,7 +862,9 @@
       case 'tieadd':
         if (S.chars.length < 2) return;
         S.ties = S.ties || [];
-        S.ties.push({ a: S.chars[0].id, b: S.chars[1].id, type: 'friend' });
+        /* 同じ二人に同じ関係を二重に作らない：最初の二人から順に、まだ付いていない関係で足す */
+        var nt1 = freeTie(); if (!nt1) { toast('追加できる関係がありません'); return; }
+        S.ties.push(nt1);
         save(); renderCast(); break;
       case 'tiedel':
         S.ties.splice(+t.dataset.k, 1); save(); renderCast(); break;
@@ -1041,6 +1051,8 @@
     }
     else if (f === 'tie') {
       var tt = S.ties[+t.dataset.k];
+      /* 変更の結果、同じ二人に同じ関係が二つになるなら戻す */
+      if (tt && /^(?:a|b|type)$/.test(t.dataset.p)) { var na = t.dataset.p === 'a' ? t.value : tt.a, nb = t.dataset.p === 'b' ? t.value : tt.b, nty = t.dataset.p === 'type' ? t.value : tt.type; if (hasTie(na, nb, nty, +t.dataset.k)) { toast('その二人には「' + (HK.TIES[nty] ? HK.TIES[nty].label : nty) + '」がすでにあります'); t.value = tt[t.dataset.p]; return; } }
       if (tt) { tt[t.dataset.p] = t.value; if (t.dataset.p === 'love' && !t.value) delete tt.love; if (t.dataset.p === 'type' || t.dataset.p === 'cold' || t.dataset.p === 'love') { save(); renderCast(); return; } }
     }
     else if (f === 'seed') S.seed = t.value.replace(/[^\d]/g, '');
