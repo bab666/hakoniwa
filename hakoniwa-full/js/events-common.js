@@ -101,7 +101,7 @@
     {
       id: 'jealous', cat: 'conflict', scope: 'pair',
       /* 恋人が複数いるとき、同じ人の恋人どうし・自分の恋人どうしの近さには嫉妬しない（obsess-kit.js の coLove） */
-      when: function (ctx, a, b) { var c = ctx.crush(a, 50); return c && c !== b && c.alive && R(ctx, c, b).aff + R(ctx, c, b).att > 45 && (!HK.Obsess || (HK.Obsess.jealOk(ctx, a, c) && !(HK.Obsess.coLove && HK.Obsess.coLove(ctx, a, c, b)))); },
+      when: function (ctx, a, b) { var c = ctx.crush(a, 50); return c && c !== b && c.alive && (!HK.State || HK.State.here(c)) && R(ctx, c, b).aff + R(ctx, c, b).att > 45 && (!HK.Obsess || (HK.Obsess.jealOk(ctx, a, c) && !(HK.Obsess.coLove && HK.Obsess.coLove(ctx, a, c, b)))); },
       w: function (ctx, a) { return a.tr.jealous * 1.6; },
       run: function (ctx, a, b) {
         var c = ctx.crush(a, 50);
