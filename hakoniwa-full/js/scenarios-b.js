@@ -48,7 +48,7 @@
     },
     phase: function (ctx, s, n) {
       var P = ctx.present(), rng = ctx.rng;
-      if (s === 0) ctx.say({ text: names(P) + 'は、見知らぬ浜辺で目を覚ました。' });
+      if (s === 0) ctx.say({ text: names(P) + 'は、見知らぬ浜辺で目を覚ました。' + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(P, 'alert', ctx) : '') });
     },
     after: function (ctx) {
       var P = ctx.present(), need = P.length * 6;

@@ -208,6 +208,8 @@
         var r = K.stim(S, pw, { part: 'belly', defer: true });
         /* 「奥を突かれる」感じ方は挿入のときだけ（指・舌・跨るは、熱が伝わる書き方） */
         tx += ' ' + F(P(S, EB(S, b.kind === 'pen' ? 'feel' : 'feel.other', T.feel)));
+        /* 種族の一文（attr-race-r18.js。見えている下半身の尻尾・透ける体など。はまっている人に種族がなければ何もしない） */
+        if (HK.Attr && HK.Attr.raceHole && !st.topMe && (b.kind === 'pen' || b.kind === 'finger')) tx += HK.Attr.raceHole(b, h, b.kind, function (l) { return P(S, l); }, true);
         tx = EZ(S, tx);
         /* 描写の長さ「段落分けして厚く」（hole-thick.js）：感覚が戻ったあとの行為は段落に分けて厚く */
         var dtk = HK.HoleThick && HK.HoleThick.doer(S, b.kind, h, b, { topMe: st.topMe });
@@ -218,6 +220,8 @@
         st.stored += (60 + env.wild * 0.5) * (b.kind === 'pen' ? 1.3 : b.kind === 'ride' ? 1.1 : 0.9) * (b.punish ? 1.25 : 1) * h.sens;
         if (b.kind === 'pen' || b.kind === 'ride') st.meta.cum++;
         h.corrupt += 3 * (S.k || 1);
+        /* 種族の一文（感じていないので、見えるものだけ） */
+        if (HK.Attr && HK.Attr.raceHole && !st.topMe && (b.kind === 'pen' || b.kind === 'finger')) tx += HK.Attr.raceHole(b, h, b.kind, function (l) { return P(S, l); }, false);
         tx += ' ' + F(P(S, b.kind === 'pen' || b.kind === 'finger' ? EB(S, 'unaware', T.unaware) : T.unaware));
         tx = EZ(S, tx);
         K.say(S, { kind: 'ev', tag: b.punish ? 'お仕置き' : '壁の向こうの住人', text: tx, why: whyOf(b) + '／本人は感じていない（溜まった感覚 ' + Math.round(st.stored) + '）' });

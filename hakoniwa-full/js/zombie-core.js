@@ -139,7 +139,7 @@
     ctx.flush();
   }
 
-  function intro(ctx) { Z.intro(ctx); }
+  function intro(ctx) { Z.intro(ctx); var rl = (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(ctx.present(), 'alert', ctx) : ''); if (rl) ctx.say({ text: rl }); }
 
   /* 朝：ゾンビが増え、電波が途絶え、家族の消息が動く */
   function morning(ctx) {

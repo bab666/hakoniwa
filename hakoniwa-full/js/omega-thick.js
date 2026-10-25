@@ -542,8 +542,11 @@
         paras.push(gx && rng() < 0.5 ? dd.replace('{fl}', fresh(gx.mid) + '{fl}') : dd);
       }
       paras.push(peak);
+      var pki = paras.length - 1;
       if (o.finish) paras.push(o.finish);
       if (!o.noAfter) paras.push(o.after || fresh(set.after));
+      /* 種族のプレイの一文（attr-race-r18.js。二人とも種族がなければ何もしない） */
+      if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(paras, T, U, fresh, { fore: 0, mid: 1, climax: pki, after: o.noAfter ? -1 : paras.length - 1 }, { mode: kd === 'ff' ? 'ff' : kd === 'ride' ? 'fm' : 'mf' });
       return paras.join('\n\n')
         .replace(/\{fl\}/g, function () { return FL ? fresh(flp(FL.fl)) : ''; })
         .replace(/\{fl2\}/g, function () { return FL ? fresh(flp(FL.fl2)) : ''; })

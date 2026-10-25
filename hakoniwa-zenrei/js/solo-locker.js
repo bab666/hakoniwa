@@ -164,7 +164,7 @@
     /* ---------- 目覚め ---------- */
     ST.step(S, '閉じ込められた');
     ST.budget(S, 3);
-    ST.say(S, { actors: [A, B], tag: '目覚め', text: ST.fmt(pk(LK.INTRO), v0) + ST.fmt(pk(bindLines()), boundOne ? { a: boundOne.name, b: boundOne.o.name } : v0), why: '二人の関係：' + RL[rel] + '／拘束：' + { both: '二人とも', one: boundOne ? boundOne.name + 'だけ' : '', none: 'なし' }[bind] });
+    ST.say(S, { actors: [A, B], tag: '目覚め', text: ST.fmt(pk(LK.INTRO), v0) + ST.fmt(pk(bindLines()), boundOne ? { a: boundOne.name, b: boundOne.o.name } : v0) + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro([A, B], 'trapped', S) : ''), why: '二人の関係：' + RL[rel] + '／拘束：' + { both: '二人とも', one: boundOne ? boundOne.name + 'だけ' : '', none: 'なし' }[bind] });
     ST.say(S, { kind: 'phase', text: pk(LK.SPEAKER) + '（仕掛け：' + gimmicks.map(function (g) { return g.name; }).join('→') + '）' });
     /* 体の関係にならない二人・相手が自分で攻めを選んだ人のときは、手を取って触れさせる文を使わない */
     var plotPush = plotter ? LK.PLOT.push.filter(function (l) { return !((clash || (hardTop(plotter.o) && !hardTop(plotter))) && /胸に押し当て|腰に回させ|任せて/.test(l)); }) : [];

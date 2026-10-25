@@ -622,7 +622,7 @@
     charNote: function (ctx, c) { return roleNote(ctx, c); },
     phase: function (ctx, s, n) {
       var P = ctx.present(), part = s % 4;
-      if (s === 0) ctx.say({ text: names(P) + 'は、窓に鉄板の打ちつけられたホテルの客室で目を覚ました。館内放送が告げた。「ご宿泊の皆様。どなたかを殺し、裁判で見破られなければ、その方だけが生きてお帰りいただけます」' });
+      if (s === 0) ctx.say({ text: names(P) + 'は、窓に鉄板の打ちつけられたホテルの客室で目を覚ました。館内放送が告げた。「ご宿泊の皆様。どなたかを殺し、裁判で見破られなければ、その方だけが生きてお帰りいただけます」' + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(P, 'trapped', ctx) : '') });
       if (part === 0) {
         /* 良心に負けた裏切り者が、朝食の前に打ち明ける */
         if (ctx.flags.trConfess && trHid(ctx)) { ctx.flags.trConfess = false; trExpose(ctx, trOf(ctx), null, 'confess'); }

@@ -241,7 +241,7 @@
     var keys = ['hp', 'fear', 'find', 'st'];
 
     ST.step(S, '漂流のはじまり');
-    ST.say(S, { kind: 'phase', text: pk(S, L('警報が鳴り止んだとき、船はもう航路を外れていた。主機関は沈黙し、救難信号に応える声はない。|小惑星帯をかすめた衝撃で、船は航路を失った。窓の外には、見知らぬ星座だけが広がっていた。|ワープの失敗で、船は星図にない宙域に投げ出された。帰り道は、もう分からなかった。')) + names(P) + 'は、新しい星を探して漂い続けることに決めた。' });
+    ST.say(S, { kind: 'phase', text: pk(S, L('警報が鳴り止んだとき、船はもう航路を外れていた。主機関は沈黙し、救難信号に応える声はない。|小惑星帯をかすめた衝撃で、船は航路を失った。窓の外には、見知らぬ星座だけが広がっていた。|ワープの失敗で、船は星図にない宙域に投げ出された。帰り道は、もう分からなかった。')) + names(P) + 'は、新しい星を探して漂い続けることに決めた。' + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(P, 'alert', S) : '') });
     P.forEach(function (p) { ST.sayB(S, { actors: [p], tag: p.roleLabel, text: p.name + '（' + p.roleLabel + '）――' + ROLE[p.role].desc + '。', why: '役割：' + p.roleLabel + (p.picked ? '（指定）' : '（気質から）') }, p.name + 'は' + p.roleLabel); });
     ST.snap(S, keys);
 

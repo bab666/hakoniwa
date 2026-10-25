@@ -196,8 +196,11 @@
     var pl = opt.place && TS && TS.PLACE && TS.PLACE[opt.place] ? pick(TS.PLACE[opt.place]) : '';
     out.push(pick(X.FEEL[mode]) + (pl ? pl : '') + pick(X.FEEL_A[mode]));
     out.push(pick(mode === 'ff' ? X.FF_CLIMAX[g] : mode === 'fm' ? X.FM_CLIMAX[g] : X.CLIMAX[g]));
+    var ci = out.length - 1;
     if (opt.again) out.push(pick(X.noSwap(X.AGAIN.ero[mode], a, b)));
     if (opt.after) out.push(opt.after);
+    /* 種族のプレイの一文（attr-race-r18.js。男性向けの山場の文も混ぜる） */
+    if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(out, a, b, pick, { fore: 0, mid: 1, climax: ci, after: opt.after ? out.length - 1 : -1 }, { mode: mode, ero: true });
     return { text: X.fill(opt.S, out.join('\n\n'), a, b), mode: mode };
   };
   /* 「もう一度」で受けの {b} が攻めの {a} を責め返す文（交代で・今度は {b} が）は、リバどうし（向きが決まっていない組）だけ */

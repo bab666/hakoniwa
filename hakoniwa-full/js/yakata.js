@@ -175,7 +175,7 @@
 
     /* ---------- 到着 ---------- */
     ST.step(S, '1日目・夕方');
-    ST.say(S, { kind: 'phase', text: pk(S, T.ARRIVE) + '館の名は、' + S.M + '。' + (S.host.npc ? F(pk(S, T.HOST_NPC), { h: S.host.name }) : F(pk(S, T.HOST_PC), { h: S.host.name, m: S.M })) + pk(S, T.SEAL) });
+    ST.say(S, { kind: 'phase', text: pk(S, T.ARRIVE) + '館の名は、' + S.M + '。' + (S.host.npc ? F(pk(S, T.HOST_NPC), { h: S.host.name }) : F(pk(S, T.HOST_PC), { h: S.host.name, m: S.M })) + pk(S, T.SEAL) + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(P, 'trapped', S) : '') });
     arrive(S);
     if (Y.FEUD) Y.FEUD.arrive(S);
     ST.snap(S, ['fear', 'sus', 'clue']);

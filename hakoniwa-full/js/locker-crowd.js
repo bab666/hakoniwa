@@ -271,7 +271,7 @@
     var v = { a: A.name };
     ST.step(S, '閉じ込められた');
     ST.budget(S, 3);
-    ST.say(S, { actors: [A], tag: '目覚め', text: ST.fmt(pk(CW.INTRO1), v) + ST.fmt(pk(CW.BIND1[A.bound ? 'cuff' : 'none']), v), why: '一人きり／拘束：' + (A.bound ? 'あり' : 'なし') });
+    ST.say(S, { actors: [A], tag: '目覚め', text: ST.fmt(pk(CW.INTRO1), v) + ST.fmt(pk(CW.BIND1[A.bound ? 'cuff' : 'none']), v) + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro([A], 'trapped', S) : ''), why: '一人きり／拘束：' + (A.bound ? 'あり' : 'なし') });
     ST.say(S, { kind: 'phase', text: pk(CW.SPEAKER1) + '（仕掛け：' + gim.map(function (g) { return g.name; }).join('→') + '）' });
     ST.snap(S, keys);
     /* 一人で慰められるか（R18版・描写あり・R18に参加する人）。手錠のあいだはできない */
@@ -440,7 +440,7 @@
     var vall = { all: names(P) };
     ST.step(S, '閉じ込められた');
     ST.budget(S, 3 + lockers.length);
-    ST.say(S, { actors: P, tag: '目覚め', text: ST.fmt(pk(CW.INTRO_G), vall) + pk(CW.BIND_G[S.bind]), why: P.length + '人・ロッカー ' + lockers.length + '台（' + lockers.map(function (Lk) { return names(Lk.m); }).join('／') + '）・拘束：' + { both: '全員', one: 'ロッカーごとに一人', none: 'なし' }[S.bind] });
+    ST.say(S, { actors: P, tag: '目覚め', text: ST.fmt(pk(CW.INTRO_G), vall) + pk(CW.BIND_G[S.bind]) + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(P, 'trapped', S) : ''), why: P.length + '人・ロッカー ' + lockers.length + '台（' + lockers.map(function (Lk) { return names(Lk.m); }).join('／') + '）・拘束：' + { both: '全員', one: 'ロッカーごとに一人', none: 'なし' }[S.bind] });
     ST.say(S, { kind: 'phase', text: pk(CW.SPEAKER_G) + '（仕掛け：' + gim.map(function (g) { return g.name; }).join('→') + '）' });
     lockers.forEach(function (Lk) {
       var m = Lk.m, t = m.length === 1 ? ST.fmt(pk(CW.LAY.alone), { a: m[0].name }) : m.length === 2 ? ST.fmt(pk(CW.LAY.pair), { a: m[0].name, b: m[1].name }) : ST.fmt(pk(CW.LAY.trio), { a: m[0].name, b: m[1].name, c: m[2].name });

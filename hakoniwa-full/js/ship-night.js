@@ -352,6 +352,13 @@
       else mid += '\n\n' + A.F(A.pk(S, T.bridge[tier]), nm);
     }
     var aft = A.F(A.pk(S, T.after[tier] && !civ && !pol ? T.after[tier] : R.after), nm);
+    /* 種族のプレイの一文（attr-race-r18.js）：男性向けの本文（ship-lewd.js の R.ero）には、山場と事後の一文をここで足す（小説調の厚い本文は omega-thick.js の TK.body が足す） */
+    if (L.ero && L.lv !== 'low' && body && HK.Attr && HK.Attr.racePlay) {
+      var rpk = function (l) { return A.pk(S, l); }, rk0 = pairKind(t, u);
+      var rc0 = HK.Attr.racePlay(t, u, 'climax', rpk, { mode: rk0, ero: true });
+      if (rc0) body = body.replace(/\s+$/, '') + rc0;
+      aft = HK.Attr.racePlay(t, u, 'after', rpk, { mode: rk0 }) + aft;
+    }
     A.setRel(S, a, b, tier === 'casual' ? 0.12 : tier === 'again' ? 0.15 : 0.2); A.mark(S, a, b, 'night'); if (A.note) A.note(S, [a, b]);
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     var TAG = { casual: '勢いの夜', again: '二度目の夜', love: '恋人の夜' };

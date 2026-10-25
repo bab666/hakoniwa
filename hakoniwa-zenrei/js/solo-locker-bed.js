@@ -251,7 +251,10 @@
     var mids = pickMid(S, ctx, 2);
     var naka = mids.filter(function (m) { return m.id === 'naka'; })[0];
     if (naka) { mids.splice(mids.indexOf(naka), 1); mids.push(naka); } /* 中出しは最後に */
-    var t2 = ST.fmt(pick(S, LK.BED.fore), vv(x, y)) + ST.fmt(pick(S, ff ? FF.insert : fmOwn ? FM.insert : LK.BED.insert), vv(x, y)) + ST.fmt(pick(S, ff && o.tone === 'rough' ? FF.rough : fm && LK.BED[o.tone][0] !== '' ? FM[o.tone] : LK.BED[o.tone]), vv(x, y));
+    /* 種族のプレイの一文（attr-race-r18.js。いまの {a}{b} で。二人とも種族がなければ何もしない） */
+    var rp = function (k) { return HK.Attr && HK.Attr.racePlay ? HK.Attr.racePlay(x, y, k, function (l) { return pick(S, l); }, { mode: ff ? 'ff' : fm ? 'fm' : 'mf' }) : ''; };
+    var t2 = ST.fmt(pick(S, LK.BED.fore), vv(x, y)) + rp('fore') + ST.fmt(pick(S, ff ? FF.insert : fmOwn ? FM.insert : LK.BED.insert), vv(x, y)) + ST.fmt(pick(S, ff && o.tone === 'rough' ? FF.rough : fm && LK.BED[o.tone][0] !== '' ? FM[o.tone] : LK.BED[o.tone]), vv(x, y));
+    t2 += rp('mid');
     var swapped = false, t3 = '';
     mids.forEach(function (m, i) {
       var ml = ff ? FF.mid[m.id] : fm ? FM.mid[m.id] : m.t.filter(function (l) { return !xHard || m.swap || noPush(l); });
@@ -277,7 +280,7 @@
     if (!endKey) endKey = rng.pick(pool);
     t3 += naka ? '' : ST.fmt(pick(S, ff ? FF.pos : fmOwn ? FM.pos : LK.BED.pos), vv(x, y)) + o.moan(x, true) + o.moan(y) + ST.fmt(pick(S, ff ? FF.climax : fm && !(o.thick && o.thick.climax) ? FM.end : LK.BED.climax), vv(x, y));
     function endOf(k) { return ff && k === 'shower' ? FF.shower : fm && k === 'shower' ? FM.shower : fm && k === 'naka' ? FM.endNaka : END[k]; }
-    t3 += ST.fmt(pick(S, endOf(endKey)), vv(x, y));
+    t3 += rp('climax') + ST.fmt(pick(S, endOf(endKey)), vv(x, y)) + rp('after');
     if (naka && rng() < 0.5) t3 += ST.fmt(pick(S, endOf(rng.pick(pool))), vv(x, y));
     /* 朝・そのあと：二人の関係で変わる */
     else if (!o.plotter && END_REL[o.rel] && rng() < 0.55) t3 += ST.fmt(pick(S, END_REL[o.rel]), vv(x, y));

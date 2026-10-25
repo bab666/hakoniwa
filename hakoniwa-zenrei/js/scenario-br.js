@@ -138,7 +138,7 @@
     },
     phase: function (ctx, s, n) {
       var P = ctx.present();
-      if (s === 0) ctx.say({ text: '教室のスピーカーがゲームの開始を告げた。' + ctx.chars.map(function (c) { return c.name + '「\u2060' + c.weapon.name + '」'; })   /* 支給品の告知は台詞ではないので、口調を変えない（U+2060） */.join('、') + '。' });
+      if (s === 0) ctx.say({ text: '教室のスピーカーがゲームの開始を告げた。' + ctx.chars.map(function (c) { return c.name + '「\u2060' + c.weapon.name + '」'; })   /* 支給品の告知は台詞ではないので、口調を変えない（U+2060） */.join('、') + '。' + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(ctx.chars, 'alert', ctx) : '') });
       if (s > 0 && s % 4 === 0) {
         var dead = ctx.chars.filter(function (c) { return !c.alive; });
         var fresh = dead.slice(ctx.flags.deadSeen);

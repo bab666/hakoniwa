@@ -114,7 +114,7 @@
 
     /* ---------- 到着 ---------- */
     ST.step(S, '到着　' + label(0));
-    ST.say(S, { kind: 'phase', text: (tour ? '一行は、' + tourT + 'の参加者だった。マイクロバスが止まった先は――' : '') + '山道の先に、地図にない村があった。' + V + '。' + ST.fmt(ST.pick(S, JS.WELCOME), { v: V }) });
+    ST.say(S, { kind: 'phase', text: (tour ? '一行は、' + tourT + 'の参加者だった。マイクロバスが止まった先は――' : '') + '山道の先に、地図にない村があった。' + V + '。' + ST.fmt(ST.pick(S, JS.WELCOME), { v: V }) + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(P, 'alert', S) : '') });
     P.forEach(function (p) {
       if (p.amn) return JS.REL.amnArrive(S, p);
       ST.say(S, { actors: [p], tag: '来た理由', text: p.name + '（' + jobOf(p).label + (p.spec ? '・' + HK.Special.LABEL[p.spec] : '') + '）がこの村に来たのは――' + p.reason + '。最初は「' + p.action.label + '」' + (p.goal.secret ? '。目標は、誰にも話さなかった。' : '、目標は「' + p.goal.label + '」。'), why: (p.goal.secret ? '本当の目標「' + p.goal.label + '」（周りには隠している）。' : '') + (tour ? 'シークレットツアー（全員が同じ理由）' : '理由は気質と職業から抽選') + '／職業：' + jobOf(p).label + (p.jobAuto ? '（気質から）' : '') + '・' + jobOf(p).desc });

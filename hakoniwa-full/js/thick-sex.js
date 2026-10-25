@@ -378,6 +378,8 @@
     var cl = mode === 'ff' ? pick(T.ffClimaxFor(g, ffBody)) : mode === 'fm' ? pick(T.FM_CLIMAX[g]) : pick(jl ? T.JEALOUS_CLIMAX : hard ? T.ROUGH_CLIMAX : T.CLIMAX[st] || T.CLIMAX.gentle);
     out.push('{b}「' + T.moan(pick, b, true) + '」' + cl);
     if (opt.after) out.push(opt.after);
+    /* 種族のプレイの一文（attr-race-r18.js。二人とも種族がなければ何もしない）：前戯＝始まり・最中＝繋がって揺れる・山場＝果てる・事後＝余韻 */
+    if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(out, a, b, pick, { fore: 0, mid: 1, climax: opt.after ? out.length - 2 : out.length - 1, after: opt.after ? out.length - 1 : -1 }, { mode: mode });
     return { text: out.join('\n\n'), hard: hard, jealous: jl, mode: mode };
   };
 })();

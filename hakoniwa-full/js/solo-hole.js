@@ -270,7 +270,7 @@
       if (meta.mark) m.push('記録・落書き ' + meta.mark);
       return '本人は感じていない' + (m.length ? '／' + m.join('・') : '');
     }
-    say(S, { kind: 'sys', tag: '開始', text: K.fmt(S, pl.in.replace('◯', String(H))) + K.fmt(S, '腰から下の感覚は、きれいに消えていた。何をされても、分からない。'), why: '目標：' + h.goal.label + '／' + h.action.label });
+    say(S, { kind: 'sys', tag: '開始', text: K.fmt(S, pl.in.replace('◯', String(H))) + K.fmt(S, '腰から下の感覚は、きれいに消えていた。何をされても、分からない。') + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro([h], 'trapped', S) : ''), why: '目標：' + h.goal.label + '／' + h.action.label });
     if (hostOn) HH.start(S);
     K.snap(S, { s: 0 });
     var stepH = Math.max(1, Math.ceil(H / 8));

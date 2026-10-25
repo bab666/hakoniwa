@@ -134,6 +134,9 @@
   function byMid(T, mid, mood) { return mood === 'plain' && T.plain ? T[mid].concat(T.plain) : T[mid]; }
   /* 段落をつなぐ（空の段落は飛ばす） */
   function J(a) { return a.filter(function (x) { return x; }).join(P); }
+  /* 種族のプレイの一文（attr-race-r18.js。二人とも種族がなければ何もしない）。idx は段落の番号（空の段落には足さない） */
+  function RW(S, x, y, arr, idx, kind) { if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(arr, x, y, function (l) { return pick(S, l); }, idx, { mode: kind }); return arr; }
+  var RW_HARD = { fore: [0, 1], mid: 3, climax: 6, after: 7 }, RW_MAIN = { fore: [0, 1], mid: 3, climax: 5, after: 6 };
 
   /* x=攻め（男性器のある側）・y=受け */
   /* 合意の場面（love・plain・媚薬）では、受ける側の「触んな」「やめろ」のような拒む台詞を引き直す（乱暴な攻めの回でも、嫌がっているようには見せない） */
@@ -165,12 +168,12 @@
     if (hs) {
       var h = pick(S, hs);
       /* 果てる声は、果てる文の前に（果てたあとに「イく」と言わせない） */
-      return J([fore, F(h.open, m), F(h.say, m), sayOk(S, y, 'start', mood) + F(h.mid, m), F(h.say2, m), moan(S, y, 0), moan(S, y, 1) + F(h.peak, m), F(h.after, m)]);
+      return J(RW(S, x, y, [fore, F(h.open, m), F(h.say, m), sayOk(S, y, 'start', mood) + F(h.mid, m), F(h.say2, m), moan(S, y, 0), moan(S, y, 1) + F(h.peak, m), F(h.after, m)], RW_HARD, 'mf'));
     }
     var strong = R.isStrong(y), turn = strong && soft2 ? F(pick(S, AGAIN_TURN), m) : '';
     if (soft2) strong = false;
     var bridge = fore && D.BRIDGE ? F(pick(S, D.BRIDGE[mood] || D.BRIDGE.plain), m) : '';
-    return J([
+    return J(RW(S, x, y, [
       fore + (bridge ? bridge : ''),
       F(pick(S, pos.t), m) + F(pick(S, ENTER[mood]), m),
       R.say(S, x, 'top'),
@@ -178,7 +181,7 @@
       moan(S, y, 0) + F(pick(S, byMid(PLEASE, mid, mood)), m),
       (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (rng() < 0.35 ? R.say(S, x, 'topc') : '') + F(pick(S, byMid(PEAK, mid, mood)), m),
       flav(S) + F(pick(S, AFTER[mood]), m) + (rng() < 0.5 ? R.say(S, rng() < 0.6 ? y : x, 'after') : '')
-    ]);
+    ], RW_MAIN, 'mf'));
   }
 
   /* 女性どうし・女性が攻め：挿入を前提にしない言い方で、同じ流れ */
@@ -328,7 +331,7 @@
     /* 嗜虐的な攻め・嫉妬の場面（男女と同じ条件：恋人・その場の勢いの夜、受けが攻め指定でない、攻めが sadist でくじ2割5分） */
     if (hardSet(S, x, y, mood, opt)) {
       var h = pick(S, (opt.jealous ? JEALOUS_SOFT : ROUGH_SOFT)[kind]);
-      return J([open, F(h.open, m), F(h.say, m), sayOk(S, y, 'start', mood) + F(h.mid, m), F(h.say2, m), moan(S, y, 0), moan(S, y, 1) + F(h.peak, m), F(h.after, m)]);
+      return J(RW(S, x, y, [open, F(h.open, m), F(h.say, m), sayOk(S, y, 'start', mood) + F(h.mid, m), F(h.say2, m), moan(S, y, 0), moan(S, y, 1) + F(h.peak, m), F(h.after, m)], RW_HARD, kind));
     }
     var midL = SOFT_MID[kind].concat(R.midPool ? R.midPool(kind, mid, st, body, riba) : ((kind === 'ff' ? D.FF_MID : D.FM_MID)[mid] || []));
     midL = midL.filter(function (t) { return !((/舌/.test(t) && /舌/.test(body)) || (/交差|擦り合わせ/.test(t) && /交差|擦り合わせ|擦り合う/.test(body))); });
@@ -339,7 +342,7 @@
     var react = (strong && !soft2 ? SOFT_STRONG : SOFT_WEAK)[kind][mid];
     var aftL = SOFT_AFTER[kind].concat(SOFT_AFTER_M[kind][mood] || []);
     var aft = kind === 'ff' && K.after && rng() < 0.35 ? fill(K.after(ctx, K.afterMode(mood))) : kind === 'fm' && K.POOLS.after && rng() < 0.35 ? fill(K.pick(ctx, 'after', st)) : F(pick(S, aftL), m);
-    return J([
+    return J(RW(S, x, y, [
       open,
       fill(body) + F(enter, m),
       R.say(S, x, 'top'),
@@ -347,7 +350,7 @@
       moan(S, y, 0) + (kind === 'fm' && rng() < 0.6 ? moan(S, x, 0, true) : '') + F(apart(SOFT_PLEASE[kind].concat(SOFT_PLEASE_M[kind][mid] || []), seen2 + midT), m),
       (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (R.topcF && rng() < 0.3 ? R.topcF(S, x) : '') + peak,
       flav(S) + aft + (rng() < 0.5 ? R.say(S, y, 'after') : '')
-    ]);
+    ], RW_MAIN, kind));
   }
 
   var sex0 = R.sex;

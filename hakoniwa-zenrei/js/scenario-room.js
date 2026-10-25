@@ -535,7 +535,7 @@
     phase: function (ctx, s, n) {
       if (s === 0) {
         var cons = ctx.rules.filter(function (r) { return K[r.k].type === 'consume'; });
-        ctx.say({ text: names(ctx.present()) + 'は白い部屋で目を覚ました。扉には一枚の紙。「' + ctx.flags.roomLabel.replace(/部屋$/, '') + '」' + (cons.length ? '部屋の隅のテーブルには、' + cons.map(function (r) { return K[r.k].item + 'が' + r.n + K[r.k].unit; }).join('、') + '並んでいる。' : '') + (ctx.flags.toolbox ? 'ベッドの脇には、中身を想像したくない木箱が一つ置かれていた。' : '') });
+        ctx.say({ text: names(ctx.present()) + 'は白い部屋で目を覚ました。扉には一枚の紙。「' + ctx.flags.roomLabel.replace(/部屋$/, '') + '」' + (cons.length ? '部屋の隅のテーブルには、' + cons.map(function (r) { return K[r.k].item + 'が' + r.n + K[r.k].unit; }).join('、') + '並んでいる。' : '') + (ctx.flags.toolbox ? 'ベッドの脇には、中身を想像したくない木箱が一つ置かれていた。' : '') + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(ctx.present(), 'trapped', ctx) : '') });
       }
       if (s === n - 1 && ctx.present().length > 1) ctx.say({ text: '照明が一段暗くなった。残された時間は少ない。' });
     },

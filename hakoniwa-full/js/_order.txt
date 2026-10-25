@@ -235,6 +235,7 @@ js/view-map.js
 js/dungeon-view.js
 js/solo-story-kit.js
 js/attr-look.js
+js/attr-race.js
 js/fam-kin.js
 js/solo-kaihen-data.js
 js/solo-kaihen-more.js
@@ -384,3 +385,4 @@ js/lewd-unify.js
 js/futari-r18.js
 js/reset.js
 late js/attr-r18.js
+late js/attr-race-r18.js
