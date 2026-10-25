@@ -120,11 +120,41 @@
     if (!TOP[nt] && !BOT[nb]) return '';
     /* 受けが攻め指定の組（向きの決まらない組）には足さない（自分で攻めを選んだ人を受けにしない） */
     if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U)) return '';
-    var m = mode === 'ff' || mode === 'fm' ? mode : 'mf', out = '';
-    if (TOP[nt]) { out += pick(((ero ? TOP_E : TOP)[nt] || TOP[nt])[m]); if (A.log) A.log.push({ who: T.name, role: 'a', night: nt, a: T.name, b: U.name }); }
-    if (BOT[nb]) { out += pick(((ero ? BOT_E : BOT)[nb] || BOT[nb])[m]); if (A.log) A.log.push({ who: U.name, role: 'b', night: nb, a: T.name, b: U.name }); }
+    var m = mode === 'ff' || mode === 'fm' ? mode : 'mf', out = '', labels = [];
+    if (TOP[nt]) { out += pick(((ero ? TOP_E : TOP)[nt] || TOP[nt])[m]); labels.push(T.name + '＝' + NAME[nt] + (A.STYLE[nt] ? '（抱き方：' + (STYLE_JP[A.STYLE[nt]] || A.STYLE[nt]) + '）' : '')); if (A.log) A.log.push({ who: T.name, role: 'a', night: nt, a: T.name, b: U.name }); }
+    if (BOT[nb]) { out += pick(((ero ? BOT_E : BOT)[nb] || BOT[nb])[m]); labels.push(U.name + '＝' + NAME[nb]); if (A.log) A.log.push({ who: U.name, role: 'b', night: nb, a: T.name, b: U.name }); }
+    if (out) mark(out, labels);
     return out;
   };
+  /* 記録の理由書きに「夜の性格：〇〇＝サド（抱き方：荒い）」を足す（利用者が、夜の性格が効いたことを確かめられるように）。
+     差し込んだ文の、名前の印を含まない一片で記録を見つける */
+  var NAME = {}; A.NIGHT.forEach(function (x) { NAME[x[0]] = x[1]; });
+  var STYLE_JP = { rough: '荒い', tease: '焦らす', gentle: '優しい', clumsy: '不慣れ' };
+  var marks = [];
+  function mark(text, labels) {
+    var frag = text.split(/\{[a-zA-Z]+\}|\n/).filter(function (x) { return x.length >= 8; }).sort(function (x, y) { return y.length - x.length; })[0];
+    if (!frag) return;
+    marks.push({ frag: frag.slice(0, 24), label: labels.join('・'), n: 0 });
+    if (marks.length > 12) marks.shift();
+  }
+  function tag(o) {
+    if (!marks.length || !o || typeof o.text !== 'string') return;
+    for (var i = 0; i < marks.length; i++) {
+      if (o.text.indexOf(marks[i].frag) >= 0) { o.why = (o.why ? o.why + '／' : '') + '夜の性格：' + marks[i].label; marks.splice(i, 1); return; }
+    }
+    marks.forEach(function (x) { x.n++; });
+    marks = marks.filter(function (x) { return x.n < 6; });
+  }
+  if (HK.Ctx && HK.Ctx.prototype.say && !HK.Ctx.prototype.say._attrNight) {
+    var cs0 = HK.Ctx.prototype.say;
+    HK.Ctx.prototype.say = function (o) { tag(o); return cs0.apply(this, arguments); };
+    HK.Ctx.prototype.say._attrNight = true;
+  }
+  if (HK.Story && HK.Story.say && !HK.Story.say._attrNight) {
+    var ss0 = HK.Story.say;
+    HK.Story.say = function (S, o) { tag(o); return ss0.apply(this, arguments); };
+    HK.Story.say._attrNight = true;
+  }
   /* 段落の最初（始まり）のすぐあとに差し込む */
   function after1(text, ins) {
     if (!ins) return text;
