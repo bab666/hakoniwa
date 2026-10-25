@@ -30,6 +30,25 @@
     shy: L('{a}は「見ないで…見ないでください…」と、誰にともなく繰り返していた。|{a}は顔を両手で覆った。見えるのは自分の上半身だけなのに、恥ずかしくて仕方がなかった。')
   };
   MIND.polite = L('{a}は「どなたか、いらっしゃいませんか」と、丁寧に壁の向こうへ声をかけた。|{a}は姿勢を正し、「お時間まで、こちらでお待ちします」と誰にともなく言った。');
+  /* 受けの反抗（態度が強気・厳格・意地っ張りの人。自分で攻めを選んだ人は別の流れ）：壁の向こうに食ってかかる。
+     blind＝感覚が戻る前（聞こえる気配に向かって）／live＝最中に感覚が戻ったあと（体ごと抗う）。一回の遊びで三度まで */
+  var DEFY = {
+    proud: {
+      blind: L('{a}は壁に向かって吠えた。「おい、そこの誰か。私の体に触ったら、出たあと一人ずつ探し出して殴る」――壁の向こうの気配が、一瞬だけ止まった。|{a}は壁を拳で何度も殴りつけた。「聞こえてんだろ。好き勝手しやがって、覚えとけよ」|{a}は向こう側の物音に舌打ちした。「……触るなら、顔を見せてからにしろ。卑怯者が」'),
+      live: L('{a}は奥歯を噛みしめ、腰に力を込めて壁の向こうの手を締め出そうとした。「っ……誰が、てめえらなんかに……っ」|{a}は戻ってきた感覚を、怒りでねじ伏せた。「は……っ、こんなもんで、私が折れると思うなよ」――壁の向こうで、誰かが手を止めた。|{a}は後ろへ思いきり足を蹴り出した。壁の向こうで、誰かが呻く声がした。「……ざまあみろ」')
+    },
+    stern: {
+      blind: L('{a}は姿勢を正し、壁の向こうへ低い声で告げた。「今すぐやめろ。この狼藉は、必ず報いを受けることになる」|{a}は目を閉じたまま、静かに言い放った。「私に触れた者の数は、すべて数えている。逃げられると思うな」|{a}は壁に手を当て、向こう側の気配を見据えるように睨んだ。「恥を知れ。……顔も見せられぬ者に、屈するつもりはない」'),
+      live: L('{a}は戻ってきた感覚に、全身の力で抗った。「く……っ、己を、律せよ……この程度で、乱れるものか」|{a}は腰に力を込め、壁の向こうの動きを拒むように締めつけた。「……っ、離れろ。これ以上は、許さん」|{a}は唇を噛み切りそうなほど噛みしめ、声を一つも漏らさなかった。壁の向こうの動きが、戸惑うように鈍った。')
+    },
+    tsun: {
+      blind: L('{a}は壁をばんばん叩いた。「ちょっと！ 聞こえてるんでしょ！ 勝手に触ったら、許さないんだから！」|{a}は向こう側に向かって叫んだ。「べ、別に怖くなんかないし！ 出たら全員、顔覚えてやるから！」|{a}は真っ赤な顔で壁を睨んだ。「さ、最低……っ！ こんなことして、楽しいわけ!?」'),
+      live: L('{a}は戻ってきた感覚に、思いきり首を振った。「や、やめなさいよ……っ、感じてなんか、ないんだから……っ」|{a}は後ろへ足をばたつかせた。壁の向こうで、誰かが小さく悲鳴を上げた。「ふ、ふん……当然の報いよ……っ」|{a}は唇を噛んで、声を必死に飲み込んだ。「……っ、ぜったい、負けない……こんなのに……っ」')
+    }
+  };
+  /* 快楽堕ちのあと、壁の向こうから引き戻される（内容のスイッチ「合意のない展開」を入にしたときだけ） */
+  var PULL = L('解放されて、{a}はふらつく手で壁の縁をつかみ、体を引き抜こうとした。その足首を、壁の向こうから伸びた手が掴んだ。ずるり、と腰がまた穴の中へ引き戻された。{a}は抗わなかった。抗う力は、もう残っていなかった。|{a}が這い出しかけたとき、向こう側で誰かが笑った。「まだ終わってないよ」――太腿を掴まれ、{a}の体は穴の奥へ引きずり戻された。遮断の魔法陣が、もう一度、ゆっくりと光り始めた。|{a}の腰が壁から半分抜けたところで、向こう側の何本もの手がそれを押し戻した。{a}は壁に爪を立てたが、指先はすぐに力を失った。穴は、{a}の形にぴったりと締まり直した。|「次の時間、もう予約が入ってる」――壁の向こうの声と同時に、{a}の腰は穴の中へ引き戻された。{a}の口から漏れたのは、悲鳴なのか、別の声なのか、{a}自身にも分からなかった。');
+  function pullOn(env) { return !HK.SAFE_ON && (',' + ((env && env.ct) || '') + ',').indexOf(',force,') >= 0; }
   var IMAGINE = L('{a}は、壁の向こうで今自分がどうなっているのかを、つい想像してしまった。顔が熱くなった。|何も感じないはずなのに、{a}は向こう側の音に合わせて、無意識に息を詰めていた。|{a}は自分の腰が今どんな格好なのかを考えて、頭を振った。想像は、止まらなかった。');
   var LEAK = L('一瞬だけ、遮断が揺らいだ。腰の奥に、遅れて届いた熱がずん、と響いた。{a}「――っ！？」|ほんの一秒、感覚が戻った。何かが、深いところに触れていた。{a}は息を呑んだまま固まった。|遮断の魔法がちらついた。{a}の太腿が、勝手に跳ねた。「い、今の、何…」');
   var SHOUT = L('{a}は「誰か！ここから出して！」と声を張り上げた。返事の代わりに、壁の向こうで誰かがくすくす笑った。|{a}は喉が嗄れるまで叫び続けた。声が届いているのかどうかも、分からなかった。|{a}「聞こえてるんでしょ！？」――壁が、返事をするように一度だけ揺れた。');
@@ -175,6 +194,7 @@
     };
     var X = HK.HoleMore, plKey = PLACE[env.place] ? env.place : 'lab';
     var stored = 0, leaks = 0, visits = 0, people = 0, early = false, earlyBy = '', hot = 0, lostN = 0, meta = { cum: 0, tent: 0, mark: 0, ride: 0 }, thisN = 0;
+    var defyN = 0, defyT = DEFY[h.persona] && !hardTop ? DEFY[h.persona] : null;
     var mindList = MIND[h.persona].concat(X.MIND[h.persona] || []).filter(function (x) { return !hardTop || !/乱暴にしないで|お手柔らかに/.test(x); }), confList = EL('confuse.' + h.persona, CONFUSE[h.persona].concat(X.CONFUSE[h.persona] || []));
     /* 解放のしかた：おまかせなら場所と運で決まる */
     var mode = env.release && env.release !== 'auto' ? env.release : (function () { var x = rng(); return x < 0.4 ? 'burst' : x < 0.62 ? 'drip' : x < 0.82 ? 'mid' : 'late'; })();
@@ -278,6 +298,12 @@
         say(S, { kind: 'ev', tag: '壁の向こう', text: txt, why: hardTop ? '攻めの指定：手を出そうとした相手を追い払った' : metaWhy() + '（溜まった感覚 ' + Math.round(stored) + '）' });
         if (rng() > 0.5) break;
       }
+      /* 受けの反抗：壁の向こうに食ってかかる（感覚が戻る前は相手が少し怯み、戻ったあとは快感を怒りで押し返す） */
+      if (defyT && nEv && defyN < 3 && (!live || tierNow() < 2) && rng() < 0.3 + h.tr.cp * 0.25 + h.tr.aggr * 0.15) {
+        defyN++;
+        if (live) h.pleasure = Math.max(0, h.pleasure - (6 + h.tr.cp * 8)); else stored *= 0.9;
+        say(S, { kind: 'ev', tag: '反抗', text: K.fmt(S, pk(S, defyT[live ? 'live' : 'blind'])), why: '態度が強い（CP・攻撃性）：壁の向こうに食ってかかった' + (live ? '（快感を押し返した）' : '（手を出す相手が少し怯んだ）') });
+      }
       /* 壁の向こうの住人が、突き出た体に出くわす */
       if (BH && !S.behindDone && t >= S.behindAt) {
         S.behindDone = true;
@@ -377,18 +403,22 @@
       if (HT) { var ta2 = HT.after(S, stL === 'fall' || stL === 'enjoy' ? 'fall' : stL, h, { topMe: topMe }); if (ta2) oa2.text = ta2; }
       if (h.willHeld) oa2.text += '\n\n' + HK.Attr.hold(function (l) { return pk(S, l); }, h, 'hole');
       K.key(S, oa2, stL === 'fall' ? '快楽に堕ちた' : stL === 'enjoy' ? '壁の向こうを受け入れた' : stL === 'broken' ? '崩れ落ちた' : '耐えきった');
+      /* 堕ちたあと、向こう側から引き戻される（内容のスイッチ「合意のない展開」が入のときだけ） */
+      var pulledL = (stL === 'fall' || stL === 'enjoy') && pullOn(env) && rng() < 0.6;
+      if (pulledL) { oa2.tag = '引き戻される'; oa2.text = K.fmt(S, pk(S, PULL)); oa2.why = '内容のスイッチ「合意のない展開」：抜け出しかけたところを、壁の向こうから引き戻された'; }
       K.snap(S, { s: 0 });
       var metaL = [];
       if (meta.cum) metaL.push((topMe ? '向こう側の誰かの中で果てたのは' : '奥に注がれたのは') + meta.cum + '回');
       if (meta.ride) metaL.push('跨られたのは' + meta.ride + '回');
       if (meta.tent) metaL.push('触手や道具に責められたのは' + meta.tent + '回');
-      var EL = { type: stL === 'enjoy' ? 'fall' : stL, kind: stL === 'fall' || stL === 'enjoy' ? 'over' : stL === 'broken' ? 'mid' : 'ok', title: stL === 'fall' ? '快楽堕ち ― 最中に戻った感覚に呑まれた' : LV.TITLE[tierE], lines: [
+      var EL = { type: stL === 'enjoy' ? 'fall' : stL, kind: stL === 'fall' || stL === 'enjoy' ? 'over' : stL === 'broken' ? 'mid' : 'ok', title: pulledL ? '快楽堕ち ― 向こう側から引き戻された' : stL === 'fall' ? '快楽堕ち ― 最中に戻った感覚に呑まれた' : LV.TITLE[tierE], lines: [
         h.name + 'は' + pl.n + 'で' + ho + '時間を過ごした。壁の向こうには' + (people || visits) + '人が来ていた。',
         '途中で遮断が壊れ、そこから先は、壁の向こうで起きることをすべて感じていた。' + (metaL.length ? metaL.join('、') + '。' : ''),
         K.fmt(S, LV.LINE[tierE]) + h.name + 'は' + h.climax + '回果てた。'
       ] };
       /* 結び（hole-end.js）：受け入れた・堕ちた＝快楽堕ちの結び／耐えた・崩れた＝感覚が戻ったあとの結び */
-      if (HK.HoleEnd) HK.HoleEnd.push(S, EL, stL === 'fall' || stL === 'enjoy' ? 'fall' : 'ret', { live: true, topMe: topMe, broken: stL === 'broken' });
+      if (defyN) EL.lines.push(h.name + 'は壁の向こうに' + defyN + '回、食ってかかった。');
+      if (HK.HoleEnd) HK.HoleEnd.push(S, EL, stL === 'fall' || stL === 'enjoy' ? 'fall' : 'ret', { live: true, topMe: topMe, broken: stL === 'broken', pulled: pulledL });
       var advL = ['最中に感覚が戻ると、溜まっていた分が一度に届き、そのあとは一つ一つを生で感じる。', '受け入れていく早さは、意志（CP・A・理性）で遅くなり、過激さ ' + env.wild + '・感じやすさ ' + h.stats.sense + 'で早くなる。'];
       return fin(EL, advL, { meta: pl.n + '・' + H + '時間・最中に戻る', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['感覚が戻ってから', liveN + '回'], [topMe ? '中で果てた回数' : '奥に注がれた回数', meta.cum + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
     }
@@ -433,6 +463,9 @@
     if (HT && mode !== 'late') { var ta = HT.after(S, state, h, { topMe: topMe }); if (ta) oa.text = ta; }
     if (h.willHeld) oa.text += '\n\n' + HK.Attr.hold(function (l) { return pk(S, l); }, h, 'hole');
     K.key(S, oa, state === 'fall' ? '快楽に堕ちた' : state === 'broken' ? '崩れ落ちた' : '耐えきった');
+    /* 堕ちたあと、向こう側から引き戻される（内容のスイッチ「合意のない展開」が入のときだけ。自分から戻る文の代わりに） */
+    var pulled = state === 'fall' && mode !== 'late' && pullOn(env) && rng() < 0.6;
+    if (pulled) { oa.tag = '引き戻される'; oa.text = K.fmt(S, pk(S, PULL)); oa.why = '内容のスイッチ「合意のない展開」：抜け出しかけたところを、壁の向こうから引き戻された'; }
     /* 壁の向こうを見に行く */
     var peeked = false;
     if (state !== 'fall' && mode !== 'late' && rng() < 0.2 + h.tr.fc * 0.25 + h.tr.a * 0.15 + (h.goal.id === 'secret' ? 0.3 : 0)) {
@@ -441,7 +474,7 @@
     }
     K.snap(S, { s: 0 });
 
-    var title = state === 'fall' ? '快楽堕ち ― 自分から穴に戻った' : mode === 'late' ? '帰り道で ― 遅れて届いた' + ho + '時間' : state === 'broken' ? '崩れ落ちた ― ' + h.climax + '回の波に呑まれて' : early ? '自力脱出 ― 溜まった分だけで済んだ' : peeked ? '見てしまった ― 壁の裏側の記録' : '耐えきった ― 最後まで心は折れなかった';
+    var title = pulled ? '快楽堕ち ― 向こう側から引き戻された' : state === 'fall' ? '快楽堕ち ― 自分から穴に戻った' : mode === 'late' ? '帰り道で ― 遅れて届いた' + ho + '時間' : state === 'broken' ? '崩れ落ちた ― ' + h.climax + '回の波に呑まれて' : early ? '自力脱出 ― 溜まった分だけで済んだ' : peeked ? '見てしまった ― 壁の裏側の記録' : '耐えきった ― 最後まで心は折れなかった';
     var metaLine = [];
     if (meta.cum) metaLine.push((topMe ? '向こう側の誰かの中で果てたのは' : '奥に注がれたのは') + meta.cum + '回');
     if (meta.ride) metaLine.push('跨られたのは' + meta.ride + '回');
@@ -453,7 +486,8 @@
       h.goal.id === 'nothing' ? h.name + 'は「何もなかった」と言い張った。' + (state === 'hold' ? '本当にそう見えた。' : '誰も信じなかった。') : h.goal.id === 'secret' ? '「ちょっと気になる」の答えは、' + (state === 'fall' ? '思っていた以上だった。' : '知らないほうがよかった。') : ''
     ].filter(Boolean) };
     /* 結び（hole-end.js） */
-    if (HK.HoleEnd) HK.HoleEnd.push(S, E, state === 'fall' ? 'fall' : 'ret', { topMe: topMe, late: mode === 'late', broken: state === 'broken' });
+    if (defyN) E.lines.push(h.name + 'は壁の向こうに' + defyN + '回、食ってかかった。' + (state === 'hold' ? '最後まで、気持ちは折れなかった。' : ''));
+    if (HK.HoleEnd) HK.HoleEnd.push(S, E, state === 'fall' ? 'fall' : 'ret', { topMe: topMe, late: mode === 'late', broken: state === 'broken', pulled: pulled });
     var adv = [];
     adv.push('待っている間に削れたのは、' + (h.tr.fc + h.tr.ac > h.tr.a + h.tr.cold ? '想像力（FC・AC）のせい。何も感じないのに、心だけが先に熱くなった。' : '時間そのもの。A・ドライさのおかげで、想像には呑まれにくかった。'));
     adv.push('戻ってきた感覚の量は、人通り ' + env.traffic + '・過激さ ' + env.wild + '・感じやすさ ' + h.stats.sense + 'で決まった。解放のしかたは「' + X.RELEASE_MODE[mode] + '」。');
