@@ -601,7 +601,7 @@
             /* 性別の語尾の仕上げ（辞書の書き下ろしにも通す。tone-plus.js の V.genderEnd） */
             if (V.genderEnd && !nounQ && !kg) q = V.genderEnd(q, who);
             /* 住人ごとの語尾の付け替え（設定の toneCustom。tone-new2.js の V.applyToneCustom）：口調の仕上げのいちばん最後に */
-            if (who.toneCustom && V.applyToneCustom && !nounQ) q = V.applyToneCustom(q, who.toneCustom);
+            if (who.toneCustom && V.applyToneCustom && !HK.TONE_CUSTOM_OFF && !nounQ) q = V.applyToneCustom(q, who.toneCustom);
             /* 二人称の設定（敬語の相手への台詞は除く）。設定が空なら、口調と性別の既定（tone-registry.js の HK.TONE_YOU）でそろえる */
             var youW = who.you || (HK.toneYou ? HK.toneYou(who.tone, who.gender) : '');
             if (youW && (!kg || yf1) && !nounQ) q = V.applyYou(q, youW);

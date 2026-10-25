@@ -4842,7 +4842,7 @@
             /* 性別の語尾の仕上げ（辞書の書き下ろしにも通す。tone-plus.js の V.genderEnd） */
             if (V.genderEnd && !nounQ && !kg) q = V.genderEnd(q, who);
             /* 住人ごとの語尾の付け替え（設定の toneCustom。tone-new2.js の V.applyToneCustom）：口調の仕上げのいちばん最後に */
-            if (who.toneCustom && V.applyToneCustom && !nounQ) q = V.applyToneCustom(q, who.toneCustom);
+            if (who.toneCustom && V.applyToneCustom && !HK.TONE_CUSTOM_OFF && !nounQ) q = V.applyToneCustom(q, who.toneCustom);
             /* 二人称の設定（敬語の相手への台詞は除く）。設定が空なら、口調と性別の既定（tone-registry.js の HK.TONE_YOU）でそろえる */
             var youW = who.you || (HK.toneYou ? HK.toneYou(who.tone, who.gender) : '');
             if (youW && (!kg || yf1) && !nounQ) q = V.applyYou(q, youW);
@@ -9872,6 +9872,9 @@
      設定は「です→っす、だ→だぜ」のような文字列（区切りは読点・カンマ・改行。矢印は → > = のどれでも）。5つまで。
      文の終わり（。！？…、」の前か台詞の終わり）にある語尾だけを付け替える。喘ぎ（♡）の台詞はそのまま */
   var TC_MAX = 5;
+  /* 2026-10-25：細かい制御（っす→っすか？ など）が難しく、思ったとおりに動かないため、画面から外して効果も止めた（オミット）。
+     コードと保存の値（JSON の toneCustom）は残す。戻すときは false にして、ui-gear.js の欄を出す */
+  HK.TONE_CUSTOM_OFF = true;
   V.toneCustomRows = function (v) {
     var out = [];
     String(v || '').split(/[、,，\n]+/).forEach(function (row) {
@@ -13301,6 +13304,8 @@
     var cl = mode === 'ff' ? pick(T.ffClimaxFor(g, ffBody)) : mode === 'fm' ? pick(T.FM_CLIMAX[g]) : pick(jl ? T.JEALOUS_CLIMAX : hard ? T.ROUGH_CLIMAX : T.CLIMAX[st] || T.CLIMAX.gentle);
     out.push('{b}「' + T.moan(pick, b, true) + '」' + cl);
     if (opt.after) out.push(opt.after);
+    /* 種族のプレイの一文（attr-race-r18.js。二人とも種族がなければ何もしない）：前戯＝始まり・最中＝繋がって揺れる・山場＝果てる・事後＝余韻 */
+    if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(out, a, b, pick, { fore: 0, mid: 1, climax: opt.after ? out.length - 2 : out.length - 1, after: opt.after ? out.length - 1 : -1 }, { mode: mode });
     return { text: out.join('\n\n'), hard: hard, jealous: jl, mode: mode };
   };
 })();
@@ -13503,8 +13508,11 @@
     var pl = opt.place && TS && TS.PLACE && TS.PLACE[opt.place] ? pick(TS.PLACE[opt.place]) : '';
     out.push(pick(X.FEEL[mode]) + (pl ? pl : '') + pick(X.FEEL_A[mode]));
     out.push(pick(mode === 'ff' ? X.FF_CLIMAX[g] : mode === 'fm' ? X.FM_CLIMAX[g] : X.CLIMAX[g]));
+    var ci = out.length - 1;
     if (opt.again) out.push(pick(X.noSwap(X.AGAIN.ero[mode], a, b)));
     if (opt.after) out.push(opt.after);
+    /* 種族のプレイの一文（attr-race-r18.js。男性向けの山場の文も混ぜる） */
+    if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(out, a, b, pick, { fore: 0, mid: 1, climax: ci, after: opt.after ? out.length - 1 : -1 }, { mode: mode, ero: true });
     return { text: X.fill(opt.S, out.join('\n\n'), a, b), mode: mode };
   };
   /* 「もう一度」で受けの {b} が攻めの {a} を責め返す文（交代で・今度は {b} が）は、リバどうし（向きが決まっていない組）だけ */
@@ -14967,7 +14975,7 @@
     },
     phase: function (ctx, s, n) {
       var P = ctx.present(), rng = ctx.rng;
-      if (s === 0) ctx.say({ text: names(P) + 'は、見知らぬ浜辺で目を覚ました。' });
+      if (s === 0) ctx.say({ text: names(P) + 'は、見知らぬ浜辺で目を覚ました。' + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(P, 'alert', ctx) : '') });
     },
     after: function (ctx) {
       var P = ctx.present(), need = P.length * 6;
@@ -16158,7 +16166,7 @@
     phase: function (ctx, s, n) {
       if (s === 0) {
         var cons = ctx.rules.filter(function (r) { return K[r.k].type === 'consume'; });
-        ctx.say({ text: names(ctx.present()) + 'は白い部屋で目を覚ました。扉には一枚の紙。「' + ctx.flags.roomLabel.replace(/部屋$/, '') + '」' + (cons.length ? '部屋の隅のテーブルには、' + cons.map(function (r) { return K[r.k].item + 'が' + r.n + K[r.k].unit; }).join('、') + '並んでいる。' : '') + (ctx.flags.toolbox ? 'ベッドの脇には、中身を想像したくない木箱が一つ置かれていた。' : '') });
+        ctx.say({ text: names(ctx.present()) + 'は白い部屋で目を覚ました。扉には一枚の紙。「' + ctx.flags.roomLabel.replace(/部屋$/, '') + '」' + (cons.length ? '部屋の隅のテーブルには、' + cons.map(function (r) { return K[r.k].item + 'が' + r.n + K[r.k].unit; }).join('、') + '並んでいる。' : '') + (ctx.flags.toolbox ? 'ベッドの脇には、中身を想像したくない木箱が一つ置かれていた。' : '') + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(ctx.present(), 'trapped', ctx) : '') });
       }
       if (s === n - 1 && ctx.present().length > 1) ctx.say({ text: '照明が一段暗くなった。残された時間は少ない。' });
     },
@@ -25178,8 +25186,11 @@
         paras.push(gx && rng() < 0.5 ? dd.replace('{fl}', fresh(gx.mid) + '{fl}') : dd);
       }
       paras.push(peak);
+      var pki = paras.length - 1;
       if (o.finish) paras.push(o.finish);
       if (!o.noAfter) paras.push(o.after || fresh(set.after));
+      /* 種族のプレイの一文（attr-race-r18.js。二人とも種族がなければ何もしない） */
+      if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(paras, T, U, fresh, { fore: 0, mid: 1, climax: pki, after: o.noAfter ? -1 : paras.length - 1 }, { mode: kd === 'ff' ? 'ff' : kd === 'ride' ? 'fm' : 'mf' });
       return paras.join('\n\n')
         .replace(/\{fl\}/g, function () { return FL ? fresh(flp(FL.fl)) : ''; })
         .replace(/\{fl2\}/g, function () { return FL ? fresh(flp(FL.fl2)) : ''; })
@@ -32740,7 +32751,7 @@
       if (meta.mark) m.push('記録・落書き ' + meta.mark);
       return '本人は感じていない' + (m.length ? '／' + m.join('・') : '');
     }
-    say(S, { kind: 'sys', tag: '開始', text: K.fmt(S, pl.in.replace('◯', String(H))) + K.fmt(S, '腰から下の感覚は、きれいに消えていた。何をされても、分からない。'), why: '目標：' + h.goal.label + '／' + h.action.label });
+    say(S, { kind: 'sys', tag: '開始', text: K.fmt(S, pl.in.replace('◯', String(H))) + K.fmt(S, '腰から下の感覚は、きれいに消えていた。何をされても、分からない。') + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro([h], 'trapped', S) : ''), why: '目標：' + h.goal.label + '／' + h.action.label });
     if (hostOn) HH.start(S);
     K.snap(S, { s: 0 });
     var stepH = Math.max(1, Math.ceil(H / 8));
@@ -36129,7 +36140,7 @@
     ctx.flush();
   }
 
-  function intro(ctx) { Z.intro(ctx); }
+  function intro(ctx) { Z.intro(ctx); var rl = (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(ctx.present(), 'alert', ctx) : ''); if (rl) ctx.say({ text: rl }); }
 
   /* 朝：ゾンビが増え、電波が途絶え、家族の消息が動く */
   function morning(ctx) {
@@ -44146,6 +44157,8 @@
       A.revive(p);
       A.setHp(p, A.full(p));
       p.spRev++;
+      /* 死んだときに付いた最期の言葉（epilogue.js）は、蘇ったら消す */
+      delete p.lastWords; delete p.lastTo; delete p.lastKind;
       /* 傷は治っても、死んだ記憶は心をすり減らす */
       p.wear = (p.wear || 0) + 5; A.addStress(p, 15);
       var wit = A.all.filter(function (q) { return q !== p && A.alive(q) && A.here(q) && !q.spec && near(A, p, q); });
@@ -44373,7 +44386,7 @@
   };
   /* 吸われる側が攻め（吸血鬼が受ける側）：吸血鬼が誘い、跨り、血を吸いながら抱かれる */
   var WT = {
-    pen: L('{v}は{w}の首に腕を回し、引き寄せた。{w}は熱に浮かされたように{v}を押し倒し、そのまま貫いた。{v}は突き上げられながら{w}の首筋に牙を立て、血と快楽を同時に貪った。|{v}は{w}の膝に跨り、自分から{w}を受け入れた。腰を沈めるたびに、{v}は{w}の喉元から血を啜った。|{v}は{w}を寝台に引き倒し、自分から脚を開いた。{w}が奥まで沈むと、{v}は{w}の首に腕を絡め、喉元に牙を立てて血を啜った。'),
+    pen: L('{v}は{w}の首に腕を回し、引き寄せた。{w}は熱に浮かされたように{v}を押し倒し、そのまま貫いた。{v}は突き上げられながら{w}の首筋に牙を立て、血と快楽を同時に貪った。|{v}は{w}の膝に跨り、自分から受け入れた。腰を沈めるたびに、{v}は{w}の喉元から血を啜った。|{v}は{w}を寝台に引き倒し、自分から脚を開いた。{w}が奥まで沈むと、{v}は{w}の首に腕を絡め、喉元に牙を立てて血を啜った。'),
     ride: L('{v}は{w}を誘うように横たわった。{w}は{v}の上に跨り、腰を落とした。{v}は下から{w}を抱き寄せ、揺さぶられながら首筋に牙を沈めた。|{w}は{v}を押し倒して跨り、自分の手で導いて腰を沈めた。{v}は{w}の腰を掴み、揺さぶられながら、差し出された手首に牙を立てた。|{v}は{w}の首筋に唇を寄せたまま、{w}が跨るのを待った。{w}が腰を落とすたびに、{v}は細く血を啜り、喉の奥で甘く唸った。'),
     ff: L('{v}は{w}の手を取り、自分の脚の間へ導いた。{w}の指に掻き回されながら、{v}は{w}の首筋に牙を立てた。|{w}は{v}を寝台に押し倒し、脚のあいだに顔を埋めた。{v}は{w}の舌に震えながら、差し出された手首に牙を立てた。|{v}は{w}の膝に座らされ、後ろから回された指に何度も追い上げられた。そのたびに、{v}は{w}の肩口から血を啜った。')
   };
@@ -44393,11 +44406,17 @@
     text: function (A, v, w, how) {
       var Pz = HK.Pos, o = Pz.order(v, w, [v, w]), top = o[0], bot = o[1];
       if (Pz.hardTop(bot, top)) return '';
+      /* 性器なし（HK.NoGen）の人がいる組は、挿入の文を重ねない（吸血の文だけ） */
+      if (HK.NoGen && HK.NoGen.on && HK.NoGen.on(top, bot)) return '';
       var pool = top === v ? VT : WT, k = body(top, bot);
       var arr = pool[k] || pool.pen, h = HOW[how] || [''];
+      /* 同じ回で同じ文を繰り返さない（使い切ったら全部から） */
+      var used = A._vr18 || (A._vr18 = {}), fresh = arr.filter(function (t) { return !used[t]; });
+      if (fresh.length) arr = fresh;
       /* 二人が対等に繋がる文（擦り合わせ等）は、二人ともリバのときだけ */
       if (Pz.MUTUAL_RE && !(Pz.bothRiba && Pz.bothRiba(top, bot))) { var nm = arr.filter(function (t) { return !Pz.MUTUAL_RE.test(t); }); if (nm.length) arr = nm; }
-      return fmt(h[Math.floor(A.rng() * h.length)], { v: v.name, w: w.name }) + fmt(arr[Math.floor(A.rng() * arr.length)], { v: v.name, w: w.name });
+      var line = arr[Math.floor(A.rng() * arr.length)]; used[line] = 1;
+      return fmt(h[Math.floor(A.rng() * h.length)], { v: v.name, w: w.name }) + fmt(line, { v: v.name, w: w.name });
     }
   };
 })();
@@ -45293,7 +45312,7 @@
   /* 性的な場面か：はっきりした語が二つ以上か、それだけで性的と分かる語が一つ */
   var VSTRONG = /ちんぽ|ちんこ|ペニス|陰茎|肉棒|男根|亀頭|精液|中出し|フェラ|裏筋|鈴口|先走り|膣|まんこ|蜜壺|秘裂|割れ目に|花芯|愛液|前立腺|クリを|クリが|媚薬|射精|果てそう|果てる(?!こと|まで|とも|と思)|精液|挿れ|挿入|絶頂|♡|喘|イく|イっ|イか|ちんぽ|膣|秘所|おまんこ|ノット|種付け|中に出|果て(?:た|て)|咥え|しゃぶ|愛撫|舐め(?:回|上げ|られ|させ)|快感|快楽|犯され|貫かれ/;
   /* 一つでも挿入・性器の場面と分かる語 */
-  var EXPL = /の奥を(?:突|抉|擦|叩)|腰を落とし[^。]{0,16}(?:揺ら|沈|呑|咥|繋|動|擦)|(?:の|が)(?:中|奥|ナカ)で(?:果て|弾け|脈打)|熱が[^。]{0,10}(?:中|奥)で|(?:喉|奥|中)(?:の奥)?まで迎え入れ|扱かれ|搾られ|果て続け|\d+ml|採取|根元まで|での繋がり|(?:ゆっくりと|上から|深く|自分から|正確に|静かに|そのまま)腰を落と|打ちつけ(?:始め|た|て|る)|打ち付け|奥まで(?:沈|押し入|突|貫|届|埋|呑|入|暴|犯)|奥まで、?[^。]{0,12}(?:沈め|突き入|押し入)|器官を[^。]{0,16}沈め|体の奥まで(?:探|潜|入|届|這)|小刻みに奥を突|押し入っ|押し入れられ|腰を(?:沈め|打ちつけ|打ち付け|振)|深く(?:腰を|沈め|突|貫)|突き上げ|繋がった|繋がって|繋がり合|深く繋が|繋がると|先走り|竿|花芯|挿れ|貫い|貫か|中に出|注がれ|注ぎ込|ナカ|膣|秘所|射精|精液|ちんぽ|肉棒|ねじ込|搾り取|扱き(?:上げ|ながら|続け|立て)|扱いて|扱いた|しごい|しごか|抜き差し|ピストン|子宮|結腸/;
+  var EXPL = /の奥を(?:突|抉|擦|叩)|腰を落とし[^。]{0,16}(?:揺ら|沈|呑|咥|繋|動|擦)|(?:の|が)(?:中|奥|ナカ)で(?:果て|弾け|脈打)|熱が[^。]{0,10}(?:中|奥)で|(?:喉|奥|中)(?:の奥)?まで迎え入れ|扱かれ|搾られ|果て続け|\d+ml|採取|根元まで|での繋がり|(?:ゆっくりと|上から|深く|自分から|正確に|静かに|そのまま)腰を落と|打ちつけ(?:始め|た|て|る)|打ち付け|奥まで(?:沈|押し入|突|貫|届|埋|呑|入|暴|犯)|奥まで、?[^。]{0,12}(?:沈め|突き入|押し入)|器官を[^。]{0,16}沈め|体の奥まで(?:探|潜|入|届|這)|小刻みに奥を突|押し入っ|押し入れられ|腰を(?:沈め|打ちつけ|打ち付け|振)|深く(?:腰を|沈め|突|貫)|突き上げ|繋がった|繋がって|繋がり合|深く繋が|繋がると|繋がり直|先走り|竿|花芯|挿れ|貫い|貫か|中に出|注がれ|注ぎ込|ナカ|膣|秘所|射精|精液|ちんぽ|肉棒|ねじ込|搾り取|扱き(?:上げ|ながら|続け|立て)|扱いて|扱いた|しごい|しごか|抜き差し|ピストン|子宮|結腸/;
   NG.ownStrict = function (t, nm) {
     var e = nm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return new RegExp(e + '(?:の|自身の)(?:もの|モノ)(?:が|を|は|で|に)(?=[^。]{0,16}(?:包|握|扱|しご|咥|舐|擦|撫|吸|脈|硬|張|反り|跳|震|弾|放|濡|勃|根元|先|跨|呑|沈|迎え))').test(String(t).replace(NONSEX, '＿'));
@@ -47170,7 +47189,9 @@
    ・物語型（宇宙船・邪神村・吹雪の館・ダンジョンRPG・人狼・一人用の箱庭）：二人の穏やかな場面（看病・晩酌・休憩・協力・打ち明け話 など）のあとに、2.5割で足す。
        夜・媚薬・事件・推理・死などの札には足さない
    ・二人とも種族も体格も決めていなければ乱数を使わずに何もしない（決めていない人の結果は、これまでと変わらない）
-   ・tie-rel.js の関係の場面は、これまでどおり HK.Attr.daily が受け持つ（二重に足さない） */
+   ・tie-rel.js の関係の場面は、これまでどおり HK.Attr.daily が受け持つ（二重に足さない）
+   ・気分（HK.Emo）が強い人に種族があれば、look の一文の代わりに気分の種族文（attr-race.js の HK.Attr.raceMood）を足す
+   ・執着の出来事（tag／why に「執着」「監禁」「束縛」「暴走」「囲い込み」）で、執着する側に種族があれば、2割で執着の種族文（HK.Attr.raceObsess）を足す */
 (function () {
   'use strict';
   var HK = window.HK, A = HK && HK.Attr;
@@ -47179,14 +47200,37 @@
   var BLACK = /夜|媚薬|凌辱|襲|殺|死|挿入|愛撫|キス|口で|さわる|発情|儀式|結末|後日談|継承|証言|推理|逮捕|処刑|投票|事件|隠蔽|工作|真相|喪失|恋敵|失恋|別れ|浮気|監禁|暴走|R18|夜這い|寸止め|絶頂/;
   function has(a, b) { return !!(a && b && a !== b && (A.sizeDiff(a, b) || A.raceOf(a) || A.raceOf(b))); }
   function add(o, line) { if (!line) return; o.text = o.text.replace(/\s+$/, '') + line; o.look = true; }
+  /* 気分の種族文（種族と強い気分のある人だけ。いなければ乱数を使わずに ''） */
+  function moodLine(a, b, pk, owner) {
+    if (!A.raceMood || !A.moodKey) return '';
+    var c = [a, b].filter(function (x) { return A.raceOk(x) && A.moodKey(x); });
+    if (!c.length) return '';
+    var x = c.length > 1 ? pk(c) : c[0];
+    return A.raceMood(x, A.moodKey(x), A.raceFresh ? A.raceFresh(owner, pk) : pk);
+  }
+  /* 執着の出来事：執着する側（理由書きの「〇〇の執着」「〇〇による監禁」など）と相手。執着する側に種族がなければ null */
+  var OBS = /執着|監禁|束縛|暴走|囲い込み/;
+  function obsessOf(o, list) {
+    if (!A.raceObsess || o.sex || typeof o.text !== 'string' || !list || list.length < 2 || list.length > 3) return null;
+    var w = (o.tag || '') + '／' + (o.why || '');
+    if (!OBS.test(w)) return null;
+    var who = null;
+    list.forEach(function (x) { if (!who && x && x.name && new RegExp(x.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:の執着|の嫉妬・執着|による監禁|の囲い込み|の束縛|の[^。／（]{1,12}への執着)').test(w)) who = x; });
+    who = who || list[0];
+    var tg = who === list[0] ? list[1] : list[0];
+    if (!A.raceOk(who) || !tg || tg === who || tg.alive === false || who.alive === false) return null;
+    return { c: who, o: tg };
+  }
   /* エンジン型 */
   if (HK.Ctx && HK.Ctx.prototype.say && !HK.Ctx.prototype.say._attrLook) {
     var cs0 = HK.Ctx.prototype.say;
     HK.Ctx.prototype.say = function (o) {
       try {
-        if (o && !o.look && !o.sex && !o.story && typeof o.text === 'string' && o.text.length >= 20 && /^(?:bond|help|romance)$/.test(o.cat || '') && (o.kind || 'event') === 'event' && o.actors && o.actors.length === 2) {
-          var a = o.actors[0], b = o.actors[1], ctx = this;
-          if (has(a, b) && ctx.rng() < 0.2) add(o, A.pairLine(a, b, 'look', function (l) { return ctx.pick(l); }));
+        var ctx = this, pk = function (l) { return ctx.pick(l); }, ob = o && !o.look && o.actors ? obsessOf(o, o.actors) : null;
+        if (ob) { if (ctx.rng() < 0.2) add(o, A.raceObsess(ob.c, ob.o, A.raceFresh(ctx, pk))); }
+        else if (o && !o.look && !o.sex && !o.story && typeof o.text === 'string' && o.text.length >= 20 && /^(?:bond|help|romance)$/.test(o.cat || '') && (o.kind || 'event') === 'event' && o.actors && o.actors.length === 2) {
+          var a = o.actors[0], b = o.actors[1];
+          if (has(a, b) && ctx.rng() < 0.2) add(o, moodLine(a, b, pk, ctx) || A.pairLine(a, b, 'look', pk));
         }
       } catch (e) { /* 飾りが失敗しても出来事は出す */ }
       return cs0.apply(this, arguments);
@@ -47198,15 +47242,149 @@
     var ss0 = HK.Story.say;
     HK.Story.say = function (S, o) {
       try {
-        if (S && o && !o.look && typeof o.text === 'string' && o.text.length >= 20 && o.actors && o.actors.length === 2 && typeof o.tag === 'string' && WHITE.test(o.tag) && !BLACK.test(o.tag) && !BLACK.test(o.text.slice(0, 40))) {
-          var P = S.P || [], a = typeof o.actors[0] === 'number' ? P[o.actors[0]] : o.actors[0], b = typeof o.actors[1] === 'number' ? P[o.actors[1]] : o.actors[1];
-          if (has(a, b) && S.rng && S.rng() < 0.25) add(o, A.pairLine(a, b, 'look', function (l) { return l[Math.floor(S.rng() * l.length)]; }));
+        var P = (S && S.P) || [], pk = function (l) { return l[Math.floor(S.rng() * l.length)]; };
+        var acts = S && o && !o.look && o.actors ? o.actors.map(function (x) { return typeof x === 'number' ? P[x] : x; }) : null;
+        var ob = acts && S.rng ? obsessOf(o, acts) : null;
+        if (ob) { if (S.rng() < 0.2) add(o, A.raceObsess(ob.c, ob.o, A.raceFresh(S, pk))); }
+        else if (S && o && !o.look && typeof o.text === 'string' && o.text.length >= 20 && o.actors && o.actors.length === 2 && typeof o.tag === 'string' && WHITE.test(o.tag) && !BLACK.test(o.tag) && !BLACK.test(o.text.slice(0, 40))) {
+          var a = acts[0], b = acts[1];
+          if (has(a, b) && S.rng && S.rng() < 0.25) add(o, moodLine(a, b, pk, S) || A.pairLine(a, b, 'look', pk));
         }
       } catch (e) { /* 同上 */ }
       return ss0.apply(this, arguments);
     };
     HK.Story.say._attrLook = true;
   }
+})();
+;/* ==== js/attr-race.js ==== */
+/* 箱庭シミュレーター attr-race: 種族（attr.js の HK.Attr.raceOf）の「気分の一文」と「執着の一文」（全年齢版・R18版共通。attr-look.js の次に読む）
+   ■ HK.Attr.raceMood(c, mood, pick)：気分ごとの種族の一文。mood＝trapped（閉じ込められた・苛立ち）／fear（怯え）／calm（落ち着き）／joy（喜び）／alert（警戒）。
+       種族 6 種（vampire 吸血鬼／beast 獣人／demon 魔族／angel 天使／ghost 幽霊／other その他＝{note}）× 気分 5 種、各 3 文
+   ■ HK.Attr.raceIntro(list, mood, pk)：箱庭の導入（閉じ込められた・始まった）のあとに足す文。種族のある人を名簿の順に 2 人まで（残りは省く）。
+       pk は ctx（pick を持つ）・S（rng を持つ）・選ぶ関数のどれでもよい。種族のある人がいなければ乱数を使わずに ''
+   ■ HK.Attr.moodKey(c)：HK.Emo の気分が強い（50 以上）ときの種族文の気分（怒り→trapped・恐れ→fear・喜び→joy・気分が引いて落ち着いた→calm）。なければ ''
+       attr-look.js の look の一文を、これで気分の種族文に差し替える
+   ■ HK.Attr.raceObsess(c, o, pick)：執着（ヤンデレ）の出来事で、執着する側 c の種族に合わせた一文（{o}＝執着される相手）。各種族 3 文
+   ■ HK.Attr.raceLog：点検用（配列を入れると { kind: 'intro'|'mood'|'obsess'|'play', who, race, mood, text } を記録する）
+   種族を決めていない人には乱数を使わない（決めていない人の結果は、これまでと変わらない）。登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK, A = HK && HK.Attr;
+  if (!A || !A.raceOf) return;
+  function L(s) { return s.split('|'); }
+  A.raceLog = null;
+
+  var MOOD = {
+    vampire: {
+      trapped: L('{c}は窓のない壁を見回して、少しだけ安堵の息を吐いた。日の光の心配だけは、しなくてよさそうだった。|{c}は閉ざされた扉に指先を当て、赤い瞳を細めた。牙の先が、苛立たしげに唇をかすめた。|{c}は冷たい壁にもたれ、夜を待つのには慣れているとでも言うように、静かに目を閉じた。'),
+      fear: L('{c}の白い顔から、さらに血の気が引いた。もともと少ない体温が、指先から抜けていくようだった。|{c}は唇を引き結んだ。怯えを隠そうとするほど、小さな牙が震えてのぞいた。|{c}の赤い瞳が、落ち着きなくあたりを探った。影の濃いほうへ、無意識に身を寄せていた。'),
+      calm: L('{c}は影の落ちる隅に腰を下ろし、赤い瞳を静かに伏せた。|{c}のひんやりとした指先が、ゆっくりと組まれた。長い夜を何度も越えてきた者の落ち着きだった。|{c}は灯りから少し離れたところで、いつもの涼しい顔に戻っていた。'),
+      joy: L('{c}が笑うと、口元の小さな牙がのぞいた。本人は隠すのも忘れていた。|{c}の青白い頬に、珍しくうっすらと赤みが差していた。|{c}の赤い瞳が、灯りを映して楽しげにきらめいた。'),
+      alert: L('{c}の赤い瞳が、暗がりの奥の何かを捉えたように細くなった。|{c}は鼻先をわずかに上げた。誰より早く、知らない匂いを嗅ぎ取っていた。|{c}は音もなく身を起こし、牙を隠すように口元を引き締めた。')
+    },
+    beast: {
+      trapped: L('{c}の尻尾が、苛立ったように床を叩いていた。|{c}の耳がぺたりと後ろに倒れ、喉の奥で低い唸りが漏れた。|{c}は落ち着きなく壁際を行ったり来たりした。逆立った尻尾の毛が、なかなか元に戻らなかった。'),
+      fear: L('{c}の尻尾が、足のあいだに巻き込まれていた。|{c}の耳が伏せられ、小刻みに震えていた。|{c}は身を縮め、尻尾を抱えるようにして息をひそめた。'),
+      calm: L('{c}の尻尾が、ゆっくりと床の上で円を描いていた。|{c}の耳が、力を抜いたように少しだけ垂れた。|{c}は丸くなって座り込み、尻尾の先で自分の足を包んだ。'),
+      joy: L('{c}の尻尾が、ちぎれそうなほど左右に揺れていた。|{c}の耳がぴんと立ち、隠しきれない嬉しさに小さく震えた。|{c}は喉を鳴らすような声で笑い、尻尾をぱたぱたと振った。'),
+      alert: L('{c}の耳が、物音のしたほうへぴくりと向いた。|{c}は鼻をひくつかせ、知らない匂いを確かめていた。尻尾の毛が、ふわりと逆立った。|{c}の尻尾が、ぴたりと動きを止めた。耳だけが、あたりの気配を拾い続けていた。')
+    },
+    demon: {
+      trapped: L('{c}の尾が、苛立たしげに床を打った。|{c}は角の先で壁を小突き、忌々しそうに舌打ちした。|{c}の瞳孔が細く絞られた。閉じ込められるのは、どうにも性に合わないらしかった。'),
+      fear: L('{c}の尾が、自分の足首に巻きついて離れなかった。|{c}は強がるように笑ったが、瞳の奥の赤い光が揺れていた。|{c}の影が、怯えたように足元で小さく縮こまった。'),
+      calm: L('{c}の尾の先が、ゆるやかに揺れていた。|{c}は角に触れる癖のまま、静かに目を閉じた。|{c}の瞳が、いつもの穏やかな色に戻っていた。'),
+      joy: L('{c}の尾が、上機嫌に左右へ揺れた。|{c}は角を揺らして笑った。牙をのぞかせた笑みは、思いのほか無邪気だった。|{c}の瞳が、愉快そうに金色の光を帯びた。'),
+      alert: L('{c}の尾が、ぴんと張りつめていた。|{c}の瞳孔が、獣のように細く絞られた。|{c}は角をわずかに傾け、気配のするほうを睨んだ。')
+    },
+    angel: {
+      trapped: L('{c}は背の翼を広げかけて、天井の低さに気づき、ため息とともに畳んだ。|{c}の翼の先が、苛立ったように小さく震えていた。|{c}は閉ざされた扉を見上げ、祈るように胸の前で手を組んだ。翼の羽が、一枚ひらりと落ちた。'),
+      fear: L('{c}の翼が、身を守るように自分の体を包んだ。|{c}の白い羽が、怯えたように逆立っていた。|{c}のまわりの淡い光が、心細そうに揺らいだ。'),
+      calm: L('{c}は翼を静かに畳み、目を閉じて小さく祈った。|{c}のまわりの空気が、ふっと柔らかく明るくなった。|{c}の翼が、ゆったりと一度だけ羽ばたいた。'),
+      joy: L('{c}の翼が、嬉しさを隠しきれないようにふわりと広がった。|{c}が笑うと、まわりの光が少しだけ強くなった気がした。|{c}の羽が、舞うように何枚も宙に散った。'),
+      alert: L('{c}の翼が、音もなく半分ほど開かれた。|{c}は顔を上げ、何かを聞き取ろうとするように翼の先を震わせた。|{c}のまわりの光が、すっと冷たく澄んだ。')
+    },
+    ghost: {
+      trapped: L('{c}は扉に手を伸ばしたが、指先は冷たい板に当たって止まった。いつもならすり抜けられるはずだった。|{c}の輪郭が、苛立ったように揺らいで、また元に戻った。|{c}は何度も壁に体を押し当てた。どういうわけか、ここの壁だけは通り抜けられなかった。'),
+      fear: L('{c}の体が、怯えたように薄く透けていった。|{c}は思わず壁の中へ逃げ込みかけて、半分だけ埋もれたまま震えていた。|{c}の足元の輪郭が、不安げにちらちらと揺れた。'),
+      calm: L('{c}は壁を見つめて、通り抜けられないことを確かめるように指先を当てた。|{c}はふわりと宙に浮かび、膝を抱えて静かに漂っていた。|{c}の輪郭が、ようやくはっきりとした形を取り戻した。'),
+      joy: L('{c}の体が、嬉しさにほんのり明るく光った。|{c}はくるりと宙で回って、楽しそうに笑った。|{c}の透けた頬に、珍しく色が差して見えた。'),
+      alert: L('{c}の体が、ふっと薄くなった。気配を消すときの癖だった。|{c}は床から少しだけ浮かび上がり、物音のしたほうへ滑るように近づいた。|{c}の輪郭が、張りつめた空気に震えるように揺らいだ。')
+    },
+    other: {
+      trapped: L('{c}は{note}らしいしぐさで、閉ざされた扉を苛立たしげに睨んだ。|{c}の{note}らしい体が、狭さを嫌うように小さく身じろぎした。|{c}は{note}ならではの感覚で出口を探ったが、何も見つからなかった。'),
+      fear: L('{c}は{note}らしい体を縮こまらせて、息をひそめた。|{c}の{note}らしい仕草が、怯えでぎこちなくなっていた。|{c}は{note}の本能のまま、身を守るように背を丸めた。'),
+      calm: L('{c}は{note}らしい落ち着いた仕草で、ゆっくりと息をついた。|{c}の{note}らしい体から、ふっと力が抜けた。|{c}は{note}らしい癖で身なりを整え、静かに座り直した。'),
+      joy: L('{c}は{note}らしいしぐさで、嬉しさを全身で表した。|{c}の{note}らしい姿が、いつもより生き生きして見えた。|{c}は{note}ならではのやり方で、上機嫌を隠さなかった。'),
+      alert: L('{c}は{note}ならではの感覚を研ぎ澄まし、あたりの気配を探った。|{c}の{note}らしい体が、ぴりりと緊張した。|{c}は{note}らしい鋭さで、物音のしたほうへ顔を向けた。')
+    }
+  };
+  /* 執着（ヤンデレ）：{c}＝執着する側、{o}＝執着される相手 */
+  var OBSESS = {
+    angel: L('{c}は翼で{o}を包み込んだ。優しく見えて、それは檻のようだった。|{c}の白い翼が、{o}の視界から自分以外のすべてを覆い隠した。|{c}は微笑んだまま、翼の内側に{o}を囲い込んだ。羽の一枚一枚が、逃げ道を塞いでいた。'),
+    beast: L('{c}は{o}の首筋に鼻先を押しつけ、ほかの匂いがついていないか確かめた。|{c}の尻尾が{o}の腰に巻きつき、どこへも行かせまいとした。|{c}は{o}に自分の匂いを擦りつけるように、何度も頬を寄せた。低い唸りが、喉の奥で鳴っていた。'),
+    vampire: L('{c}の牙が、{o}の首筋のすぐそばで止まった。噛まない。まだ。|{c}は{o}の手首に唇を寄せ、脈の音を数えるように目を閉じた。その音を、誰にも渡すつもりはなかった。|{c}の赤い瞳が、{o}をじっと見つめていた。目を逸らせば何が起きるのか、{o}にも分かっていた。'),
+    demon: L('{c}の尾が{o}の足首に巻きついて、離さなかった。|{c}は{o}の背後に立ち、角の影を{o}の上に落とした。逃がすつもりがないことは、その影だけで分かった。|{c}の瞳が、{o}を見るときだけ妖しく光った。尾の先が、{o}の手首にそっと絡んで、ほどけなかった。'),
+    ghost: L('{c}は壁をすり抜けて、{o}のすぐ後ろに立っていた。|{o}がどこへ行っても、振り返れば{c}の姿がうっすらと浮かんでいた。|{c}の冷たい指先が、{o}の背中にそっと触れた。いつからそこにいたのか、{o}には分からなかった。'),
+    other: L('{c}は{note}らしいやり方で、{o}を自分のそばに引き留めた。|{c}の{note}らしい体が、{o}を囲い込むように寄り添った。|{c}は{note}ならではの執念で、{o}の居場所を片時も見失わなかった。')
+  };
+  A.RACE_MOOD = MOOD; A.RACE_OBSESS = OBSESS;
+
+  function noteOf(c) { return (c && (c.raceNote || (c.src && c.src.raceNote))) || ''; }
+  /* 文を出せる種族か（その他は種族の名前があるときだけ） */
+  A.raceOk = function (c) { var r = A.raceOf(c); return r && MOOD[r] && (r !== 'other' || noteOf(c)) ? r : ''; };
+  function fill(t, v) { return t.replace(/\{(\w+)\}/g, function (m, k) { return v[k] != null ? v[k] : m; }); }
+  /* ctx（pick を持つ）・S（rng を持つ）・選ぶ関数のどれからでも、配列から一つ選ぶ関数を作る */
+  A.racePick = function (p) {
+    if (typeof p === 'function') return p;
+    if (p && typeof p.pick === 'function') return function (l) { return p.pick(l); };
+    if (p && typeof p.rng === 'function') return function (l) { return l[Math.floor(p.rng() * l.length) % l.length]; };
+    return function (l) { return l[0]; };
+  };
+  /* 一回の結果の中で同じ文を続けて使わない（owner＝ctx や S ごとに、使った文を覚える。使い切ったら全部から選ぶ） */
+  A.raceFresh = function (owner, pick) {
+    var base = A.racePick(pick || owner);
+    if (!owner || typeof owner !== 'object') return base;
+    return function (l) {
+      var m = owner._raceUsed || (owner._raceUsed = {}), f = l.filter(function (x) { return !m[x]; });
+      var s = base(f.length ? f : l);
+      if (!f.length) l.forEach(function (x) { delete m[x]; });
+      m[s] = 1;
+      return s;
+    };
+  };
+  function log(kind, c, mood, text) { if (A.raceLog) A.raceLog.push({ kind: kind, who: c.name, race: A.raceOf(c), mood: mood || '', text: text }); }
+
+  A.raceMood = function (c, mood, pick) {
+    var r = A.raceOk(c), l = r && MOOD[r][mood];
+    if (!l) return '';
+    var s = fill(A.racePick(pick)(l), { c: c.name, note: noteOf(c) });
+    log('mood', c, mood, s);
+    return s;
+  };
+  /* 導入：種族のある人を名簿の順に max 人まで（既定 2） */
+  A.raceIntro = function (list, mood, pk, max) {
+    var who = (list || []).filter(function (c) { return c && c.alive !== false && A.raceOk(c); }).slice(0, max || 2);
+    if (!who.length) return '';
+    var pick = A.raceFresh(pk && typeof pk === 'object' ? pk : null, pk);
+    return who.map(function (c) { var s = A.raceMood(c, mood, pick); if (A.raceLog && s) A.raceLog[A.raceLog.length - 1].kind = 'intro'; return s; }).join('');
+  };
+  var MKEY = { anger: 'trapped', fear: 'fear', joy: 'joy' };
+  A.moodKey = function (c) {
+    var E = HK.Emo, e = c && c.emo;
+    if (!E || !E.mood || !e) return '';
+    var m = E.mood(c);
+    if (MKEY[m] && e[m] >= 50) return MKEY[m];
+    /* 強い気分が引いて、落ち着きを取り戻したところ */
+    if (m === 'calm' && c._emoPk && c._emoPk.v >= 50 && (e.calm || 0) >= 70) return 'calm';
+    return '';
+  };
+  A.raceObsess = function (c, o, pick) {
+    var r = A.raceOk(c), l = r && OBSESS[r];
+    if (!l || !o) return '';
+    var s = fill(A.racePick(pick)(l), { c: c.name, o: o.name, note: noteOf(c) });
+    log('obsess', c, '', s + '（→' + o.name + '）');
+    return s;
+  };
 })();
 ;/* ==== js/fam-kin.js ==== */
 /* 箱庭シミュレーター: 家族の関係（きょうだい・親子・親族など）の恋愛の扱いを、物語型の箱庭（solo-story-kit.js の HK.Story.state を使う箱庭）にそろえる
@@ -54669,7 +54847,10 @@
     var mids = pickMid(S, ctx, 2);
     var naka = mids.filter(function (m) { return m.id === 'naka'; })[0];
     if (naka) { mids.splice(mids.indexOf(naka), 1); mids.push(naka); } /* 中出しは最後に */
-    var t2 = ST.fmt(pick(S, LK.BED.fore), vv(x, y)) + ST.fmt(pick(S, ff ? FF.insert : fmOwn ? FM.insert : LK.BED.insert), vv(x, y)) + ST.fmt(pick(S, ff && o.tone === 'rough' ? FF.rough : fm && LK.BED[o.tone][0] !== '' ? FM[o.tone] : LK.BED[o.tone]), vv(x, y));
+    /* 種族のプレイの一文（attr-race-r18.js。いまの {a}{b} で。二人とも種族がなければ何もしない） */
+    var rp = function (k) { return HK.Attr && HK.Attr.racePlay ? HK.Attr.racePlay(x, y, k, function (l) { return pick(S, l); }, { mode: ff ? 'ff' : fm ? 'fm' : 'mf' }) : ''; };
+    var t2 = ST.fmt(pick(S, LK.BED.fore), vv(x, y)) + rp('fore') + ST.fmt(pick(S, ff ? FF.insert : fmOwn ? FM.insert : LK.BED.insert), vv(x, y)) + ST.fmt(pick(S, ff && o.tone === 'rough' ? FF.rough : fm && LK.BED[o.tone][0] !== '' ? FM[o.tone] : LK.BED[o.tone]), vv(x, y));
+    t2 += rp('mid');
     var swapped = false, t3 = '';
     mids.forEach(function (m, i) {
       var ml = ff ? FF.mid[m.id] : fm ? FM.mid[m.id] : m.t.filter(function (l) { return !xHard || m.swap || noPush(l); });
@@ -54695,7 +54876,7 @@
     if (!endKey) endKey = rng.pick(pool);
     t3 += naka ? '' : ST.fmt(pick(S, ff ? FF.pos : fmOwn ? FM.pos : LK.BED.pos), vv(x, y)) + o.moan(x, true) + o.moan(y) + ST.fmt(pick(S, ff ? FF.climax : fm && !(o.thick && o.thick.climax) ? FM.end : LK.BED.climax), vv(x, y));
     function endOf(k) { return ff && k === 'shower' ? FF.shower : fm && k === 'shower' ? FM.shower : fm && k === 'naka' ? FM.endNaka : END[k]; }
-    t3 += ST.fmt(pick(S, endOf(endKey)), vv(x, y));
+    t3 += rp('climax') + ST.fmt(pick(S, endOf(endKey)), vv(x, y)) + rp('after');
     if (naka && rng() < 0.5) t3 += ST.fmt(pick(S, endOf(rng.pick(pool))), vv(x, y));
     /* 朝・そのあと：二人の関係で変わる */
     else if (!o.plotter && END_REL[o.rel] && rng() < 0.55) t3 += ST.fmt(pick(S, END_REL[o.rel]), vv(x, y));
@@ -55794,7 +55975,7 @@
     var v = { a: A.name };
     ST.step(S, '閉じ込められた');
     ST.budget(S, 3);
-    ST.say(S, { actors: [A], tag: '目覚め', text: ST.fmt(pk(CW.INTRO1), v) + ST.fmt(pk(CW.BIND1[A.bound ? 'cuff' : 'none']), v), why: '一人きり／拘束：' + (A.bound ? 'あり' : 'なし') });
+    ST.say(S, { actors: [A], tag: '目覚め', text: ST.fmt(pk(CW.INTRO1), v) + ST.fmt(pk(CW.BIND1[A.bound ? 'cuff' : 'none']), v) + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro([A], 'trapped', S) : ''), why: '一人きり／拘束：' + (A.bound ? 'あり' : 'なし') });
     ST.say(S, { kind: 'phase', text: pk(CW.SPEAKER1) + '（仕掛け：' + gim.map(function (g) { return g.name; }).join('→') + '）' });
     ST.snap(S, keys);
     /* 一人で慰められるか（R18版・描写あり・R18に参加する人）。手錠のあいだはできない */
@@ -55963,7 +56144,7 @@
     var vall = { all: names(P) };
     ST.step(S, '閉じ込められた');
     ST.budget(S, 3 + lockers.length);
-    ST.say(S, { actors: P, tag: '目覚め', text: ST.fmt(pk(CW.INTRO_G), vall) + pk(CW.BIND_G[S.bind]), why: P.length + '人・ロッカー ' + lockers.length + '台（' + lockers.map(function (Lk) { return names(Lk.m); }).join('／') + '）・拘束：' + { both: '全員', one: 'ロッカーごとに一人', none: 'なし' }[S.bind] });
+    ST.say(S, { actors: P, tag: '目覚め', text: ST.fmt(pk(CW.INTRO_G), vall) + pk(CW.BIND_G[S.bind]) + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(P, 'trapped', S) : ''), why: P.length + '人・ロッカー ' + lockers.length + '台（' + lockers.map(function (Lk) { return names(Lk.m); }).join('／') + '）・拘束：' + { both: '全員', one: 'ロッカーごとに一人', none: 'なし' }[S.bind] });
     ST.say(S, { kind: 'phase', text: pk(CW.SPEAKER_G) + '（仕掛け：' + gim.map(function (g) { return g.name; }).join('→') + '）' });
     lockers.forEach(function (Lk) {
       var m = Lk.m, t = m.length === 1 ? ST.fmt(pk(CW.LAY.alone), { a: m[0].name }) : m.length === 2 ? ST.fmt(pk(CW.LAY.pair), { a: m[0].name, b: m[1].name }) : ST.fmt(pk(CW.LAY.trio), { a: m[0].name, b: m[1].name, c: m[2].name });
@@ -56802,7 +56983,7 @@
     /* ---------- 目覚め ---------- */
     ST.step(S, '閉じ込められた');
     ST.budget(S, 3);
-    ST.say(S, { actors: [A, B], tag: '目覚め', text: ST.fmt(pk(LK.INTRO), v0) + ST.fmt(pk(bindLines()), boundOne ? { a: boundOne.name, b: boundOne.o.name } : v0), why: '二人の関係：' + RL[rel] + '／拘束：' + { both: '二人とも', one: boundOne ? boundOne.name + 'だけ' : '', none: 'なし' }[bind] });
+    ST.say(S, { actors: [A, B], tag: '目覚め', text: ST.fmt(pk(LK.INTRO), v0) + ST.fmt(pk(bindLines()), boundOne ? { a: boundOne.name, b: boundOne.o.name } : v0) + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro([A, B], 'trapped', S) : ''), why: '二人の関係：' + RL[rel] + '／拘束：' + { both: '二人とも', one: boundOne ? boundOne.name + 'だけ' : '', none: 'なし' }[bind] });
     ST.say(S, { kind: 'phase', text: pk(LK.SPEAKER) + '（仕掛け：' + gimmicks.map(function (g) { return g.name; }).join('→') + '）' });
     /* 体の関係にならない二人・相手が自分で攻めを選んだ人のときは、手を取って触れさせる文を使わない */
     var plotPush = plotter ? LK.PLOT.push.filter(function (l) { return !((clash || (hardTop(plotter.o) && !hardTop(plotter))) && /胸に押し当て|腰に回させ|任せて/.test(l)); }) : [];
@@ -59345,7 +59526,7 @@
 
     /* ---------- 到着 ---------- */
     ST.step(S, '到着　' + label(0));
-    ST.say(S, { kind: 'phase', text: (tour ? '一行は、' + tourT + 'の参加者だった。マイクロバスが止まった先は――' : '') + '山道の先に、地図にない村があった。' + V + '。' + ST.fmt(ST.pick(S, JS.WELCOME), { v: V }) });
+    ST.say(S, { kind: 'phase', text: (tour ? '一行は、' + tourT + 'の参加者だった。マイクロバスが止まった先は――' : '') + '山道の先に、地図にない村があった。' + V + '。' + ST.fmt(ST.pick(S, JS.WELCOME), { v: V }) + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(P, 'alert', S) : '') });
     P.forEach(function (p) {
       if (p.amn) return JS.REL.amnArrive(S, p);
       ST.say(S, { actors: [p], tag: '来た理由', text: p.name + '（' + jobOf(p).label + (p.spec ? '・' + HK.Special.LABEL[p.spec] : '') + '）がこの村に来たのは――' + p.reason + '。最初は「' + p.action.label + '」' + (p.goal.secret ? '。目標は、誰にも話さなかった。' : '、目標は「' + p.goal.label + '」。'), why: (p.goal.secret ? '本当の目標「' + p.goal.label + '」（周りには隠している）。' : '') + (tour ? 'シークレットツアー（全員が同じ理由）' : '理由は気質と職業から抽選') + '／職業：' + jobOf(p).label + (p.jobAuto ? '（気質から）' : '') + '・' + jobOf(p).desc });
@@ -64119,7 +64300,7 @@
 
     /* ---------- 到着 ---------- */
     ST.step(S, '1日目・夕方');
-    ST.say(S, { kind: 'phase', text: pk(S, T.ARRIVE) + '館の名は、' + S.M + '。' + (S.host.npc ? F(pk(S, T.HOST_NPC), { h: S.host.name }) : F(pk(S, T.HOST_PC), { h: S.host.name, m: S.M })) + pk(S, T.SEAL) });
+    ST.say(S, { kind: 'phase', text: pk(S, T.ARRIVE) + '館の名は、' + S.M + '。' + (S.host.npc ? F(pk(S, T.HOST_NPC), { h: S.host.name }) : F(pk(S, T.HOST_PC), { h: S.host.name, m: S.M })) + pk(S, T.SEAL) + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(P, 'trapped', S) : '') });
     arrive(S);
     if (Y.FEUD) Y.FEUD.arrive(S);
     ST.snap(S, ['fear', 'sus', 'clue']);
@@ -66403,7 +66584,7 @@
       force: L('多頭竜の首が、四方から{a}を取り囲んだ。一つの首に腰を巻かれ、一つに手首を押さえられ、残りの首が{a}の体のあちこちを同時に探りはじめた。どこに意識を向けても、別の場所から快感が押し寄せてきた。')
     },
     keeper_crab: {
-      lure: L('甲殻の守り手は、{a}の前で鋏を高く掲げ、恭しく頭を下げた。守護の誓いだと聞いていた{a}は、その鋏にそっと触れた。誓いを受け入れた者は、守り手の伴侶になる――それを知らなかった{a}は、その夜、守り手の殻の中に迎え入れられた。'),
+      lure: L('甲殻の守り手は、{a}の前で鋏を高く掲げ、恭しく頭を下げた。守護の誓いだと聞いていた{a}は、その鋏にそっと触れた。誓いを受け入れた者は、守り手の伴侶になる――それを知らなかった{a}は、その夜、守り手の殻の内へ招かれた。'),
       probe: L('甲殻の守り手は、{a}が本当に守るべき者かを確かめるため、細い脚で全身を検めた。脚は{a}の体の柔らかいところ、弱いところを一つずつ探り当てていった。守り手は、{a}が震えるたびに、そこを守るべき場所として丹念に覚え込んだ。')
     },
     thought_fish: {
@@ -67411,6 +67592,13 @@
       else mid += '\n\n' + A.F(A.pk(S, T.bridge[tier]), nm);
     }
     var aft = A.F(A.pk(S, T.after[tier] && !civ && !pol ? T.after[tier] : R.after), nm);
+    /* 種族のプレイの一文（attr-race-r18.js）：男性向けの本文（ship-lewd.js の R.ero）には、山場と事後の一文をここで足す（小説調の厚い本文は omega-thick.js の TK.body が足す） */
+    if (L.ero && L.lv !== 'low' && body && HK.Attr && HK.Attr.racePlay) {
+      var rpk = function (l) { return A.pk(S, l); }, rk0 = pairKind(t, u);
+      var rc0 = HK.Attr.racePlay(t, u, 'climax', rpk, { mode: rk0, ero: true });
+      if (rc0) body = body.replace(/\s+$/, '') + rc0;
+      aft = HK.Attr.racePlay(t, u, 'after', rpk, { mode: rk0 }) + aft;
+    }
     A.setRel(S, a, b, tier === 'casual' ? 0.12 : tier === 'again' ? 0.15 : 0.2); A.mark(S, a, b, 'night'); if (A.note) A.note(S, [a, b]);
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     var TAG = { casual: '勢いの夜', again: '二度目の夜', love: '恋人の夜' };
@@ -68300,7 +68488,7 @@
     var keys = ['hp', 'fear', 'find', 'st'];
 
     ST.step(S, '漂流のはじまり');
-    ST.say(S, { kind: 'phase', text: pk(S, L('警報が鳴り止んだとき、船はもう航路を外れていた。主機関は沈黙し、救難信号に応える声はない。|小惑星帯をかすめた衝撃で、船は航路を失った。窓の外には、見知らぬ星座だけが広がっていた。|ワープの失敗で、船は星図にない宙域に投げ出された。帰り道は、もう分からなかった。')) + names(P) + 'は、新しい星を探して漂い続けることに決めた。' });
+    ST.say(S, { kind: 'phase', text: pk(S, L('警報が鳴り止んだとき、船はもう航路を外れていた。主機関は沈黙し、救難信号に応える声はない。|小惑星帯をかすめた衝撃で、船は航路を失った。窓の外には、見知らぬ星座だけが広がっていた。|ワープの失敗で、船は星図にない宙域に投げ出された。帰り道は、もう分からなかった。')) + names(P) + 'は、新しい星を探して漂い続けることに決めた。' + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(P, 'alert', S) : '') });
     P.forEach(function (p) { ST.sayB(S, { actors: [p], tag: p.roleLabel, text: p.name + '（' + p.roleLabel + '）――' + ROLE[p.role].desc + '。', why: '役割：' + p.roleLabel + (p.picked ? '（指定）' : '（気質から）') }, p.name + 'は' + p.roleLabel); });
     ST.snap(S, keys);
 
@@ -75306,7 +75494,7 @@
     bits.push('口調：' + (c.tone ? toneLabel(c.tone) : 'おまかせ（' + UI.autoTone(c) + '）'));
     if (c.fp) bits.push('一人称：' + c.fp);
     if (c.marks) bits.push('語尾：' + c.marks);
-    if (c.toneCustom) bits.push('付け替え：' + c.toneCustom);
+    if (c.toneCustom && !HK.TONE_CUSTOM_OFF) bits.push('付け替え：' + c.toneCustom);
     if (c.call) bits.push('呼び方：' + callLabel(c.call));
     if (c.gender) bits.push(lab(GENDERS, c.gender));
     if (c.likes) bits.push('恋愛対象：' + lab(LIKES, c.likes));
@@ -75518,8 +75706,8 @@
       '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3>' + scope(SCOPE.talk) + '<div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
       '<div class="gearrow"><label>語尾の記号 <input type="text" data-gf="marks" value="' + esc(c.marks || '') + '" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label></div>' +
       '<p class="gearhint">文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます。空なら付けません。</p>' +
-      '<div class="gearrow"><label>語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label></div>' +
-      '<p class="gearhint">口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで。文の終わりにある語尾だけが替わります（喘ぎはそのまま）。</p>' + /* r18:ok */
+      (HK.TONE_CUSTOM_OFF ? '' : '<div class="gearrow"><label>語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label></div>' +
+      '<p class="gearhint">口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで。文の終わりにある語尾だけが替わります（喘ぎはそのまま）。</p>') + /* r18:ok */
       '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
       '<div class="tonesample anim" id="tonesample" aria-live="polite">' + sampleLines(c) + '</div>' +
       '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label><label><input type="checkbox" data-gf="keigoOlder"' + (c.keigoOlder ? ' checked' : '') + '> 年上の相手には敬語（年齢を決めた人どうし）</label></div>' +

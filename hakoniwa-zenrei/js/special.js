@@ -75,6 +75,8 @@
       A.revive(p);
       A.setHp(p, A.full(p));
       p.spRev++;
+      /* 死んだときに付いた最期の言葉（epilogue.js）は、蘇ったら消す */
+      delete p.lastWords; delete p.lastTo; delete p.lastKind;
       /* 傷は治っても、死んだ記憶は心をすり減らす */
       p.wear = (p.wear || 0) + 5; A.addStress(p, 15);
       var wit = A.all.filter(function (q) { return q !== p && A.alive(q) && A.here(q) && !q.spec && near(A, p, q); });

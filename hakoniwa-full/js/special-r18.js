@@ -16,7 +16,7 @@
   };
   /* 吸われる側が攻め（吸血鬼が受ける側）：吸血鬼が誘い、跨り、血を吸いながら抱かれる */
   var WT = {
-    pen: L('{v}は{w}の首に腕を回し、引き寄せた。{w}は熱に浮かされたように{v}を押し倒し、そのまま貫いた。{v}は突き上げられながら{w}の首筋に牙を立て、血と快楽を同時に貪った。|{v}は{w}の膝に跨り、自分から{w}を受け入れた。腰を沈めるたびに、{v}は{w}の喉元から血を啜った。|{v}は{w}を寝台に引き倒し、自分から脚を開いた。{w}が奥まで沈むと、{v}は{w}の首に腕を絡め、喉元に牙を立てて血を啜った。'),
+    pen: L('{v}は{w}の首に腕を回し、引き寄せた。{w}は熱に浮かされたように{v}を押し倒し、そのまま貫いた。{v}は突き上げられながら{w}の首筋に牙を立て、血と快楽を同時に貪った。|{v}は{w}の膝に跨り、自分から受け入れた。腰を沈めるたびに、{v}は{w}の喉元から血を啜った。|{v}は{w}を寝台に引き倒し、自分から脚を開いた。{w}が奥まで沈むと、{v}は{w}の首に腕を絡め、喉元に牙を立てて血を啜った。'),
     ride: L('{v}は{w}を誘うように横たわった。{w}は{v}の上に跨り、腰を落とした。{v}は下から{w}を抱き寄せ、揺さぶられながら首筋に牙を沈めた。|{w}は{v}を押し倒して跨り、自分の手で導いて腰を沈めた。{v}は{w}の腰を掴み、揺さぶられながら、差し出された手首に牙を立てた。|{v}は{w}の首筋に唇を寄せたまま、{w}が跨るのを待った。{w}が腰を落とすたびに、{v}は細く血を啜り、喉の奥で甘く唸った。'),
     ff: L('{v}は{w}の手を取り、自分の脚の間へ導いた。{w}の指に掻き回されながら、{v}は{w}の首筋に牙を立てた。|{w}は{v}を寝台に押し倒し、脚のあいだに顔を埋めた。{v}は{w}の舌に震えながら、差し出された手首に牙を立てた。|{v}は{w}の膝に座らされ、後ろから回された指に何度も追い上げられた。そのたびに、{v}は{w}の肩口から血を啜った。')
   };
@@ -36,11 +36,17 @@
     text: function (A, v, w, how) {
       var Pz = HK.Pos, o = Pz.order(v, w, [v, w]), top = o[0], bot = o[1];
       if (Pz.hardTop(bot, top)) return '';
+      /* 性器なし（HK.NoGen）の人がいる組は、挿入の文を重ねない（吸血の文だけ） */
+      if (HK.NoGen && HK.NoGen.on && HK.NoGen.on(top, bot)) return '';
       var pool = top === v ? VT : WT, k = body(top, bot);
       var arr = pool[k] || pool.pen, h = HOW[how] || [''];
+      /* 同じ回で同じ文を繰り返さない（使い切ったら全部から） */
+      var used = A._vr18 || (A._vr18 = {}), fresh = arr.filter(function (t) { return !used[t]; });
+      if (fresh.length) arr = fresh;
       /* 二人が対等に繋がる文（擦り合わせ等）は、二人ともリバのときだけ */
       if (Pz.MUTUAL_RE && !(Pz.bothRiba && Pz.bothRiba(top, bot))) { var nm = arr.filter(function (t) { return !Pz.MUTUAL_RE.test(t); }); if (nm.length) arr = nm; }
-      return fmt(h[Math.floor(A.rng() * h.length)], { v: v.name, w: w.name }) + fmt(arr[Math.floor(A.rng() * arr.length)], { v: v.name, w: w.name });
+      var line = arr[Math.floor(A.rng() * arr.length)]; used[line] = 1;
+      return fmt(h[Math.floor(A.rng() * h.length)], { v: v.name, w: w.name }) + fmt(line, { v: v.name, w: w.name });
     }
   };
 })();

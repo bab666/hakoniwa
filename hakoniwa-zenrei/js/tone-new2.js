@@ -172,6 +172,9 @@
      設定は「です→っす、だ→だぜ」のような文字列（区切りは読点・カンマ・改行。矢印は → > = のどれでも）。5つまで。
      文の終わり（。！？…、」の前か台詞の終わり）にある語尾だけを付け替える。喘ぎ（♡）の台詞はそのまま */
   var TC_MAX = 5;
+  /* 2026-10-25：細かい制御（っす→っすか？ など）が難しく、思ったとおりに動かないため、画面から外して効果も止めた（オミット）。
+     コードと保存の値（JSON の toneCustom）は残す。戻すときは false にして、ui-gear.js の欄を出す */
+  HK.TONE_CUSTOM_OFF = true;
   V.toneCustomRows = function (v) {
     var out = [];
     String(v || '').split(/[、,，\n]+/).forEach(function (row) {

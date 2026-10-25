@@ -26,7 +26,7 @@
     bits.push('口調：' + (c.tone ? toneLabel(c.tone) : 'おまかせ（' + UI.autoTone(c) + '）'));
     if (c.fp) bits.push('一人称：' + c.fp);
     if (c.marks) bits.push('語尾：' + c.marks);
-    if (c.toneCustom) bits.push('付け替え：' + c.toneCustom);
+    if (c.toneCustom && !HK.TONE_CUSTOM_OFF) bits.push('付け替え：' + c.toneCustom);
     if (c.call) bits.push('呼び方：' + callLabel(c.call));
     if (c.gender) bits.push(lab(GENDERS, c.gender));
     if (c.likes) bits.push('恋愛対象：' + lab(LIKES, c.likes));
@@ -238,8 +238,8 @@
       '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3>' + scope(SCOPE.talk) + '<div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
       '<div class="gearrow"><label>語尾の記号 <input type="text" data-gf="marks" value="' + esc(c.marks || '') + '" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label></div>' +
       '<p class="gearhint">文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます。空なら付けません。</p>' +
-      '<div class="gearrow"><label>語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label></div>' +
-      '<p class="gearhint">口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで。文の終わりにある語尾だけが替わります（喘ぎはそのまま）。</p>' + /* r18:ok */
+      (HK.TONE_CUSTOM_OFF ? '' : '<div class="gearrow"><label>語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label></div>' +
+      '<p class="gearhint">口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで。文の終わりにある語尾だけが替わります（喘ぎはそのまま）。</p>') + /* r18:ok */
       '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
       '<div class="tonesample anim" id="tonesample" aria-live="polite">' + sampleLines(c) + '</div>' +
       '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label><label><input type="checkbox" data-gf="keigoOlder"' + (c.keigoOlder ? ' checked' : '') + '> 年上の相手には敬語（年齢を決めた人どうし）</label></div>' +
