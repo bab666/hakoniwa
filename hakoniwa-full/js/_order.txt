@@ -226,6 +226,7 @@ js/persona-final.js
 js/pair-name.js
 js/icons.js
 js/view.js
+js/view-map.js
 js/dungeon-view.js
 js/solo-story-kit.js
 js/fam-kin.js

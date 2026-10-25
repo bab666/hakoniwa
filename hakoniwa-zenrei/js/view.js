@@ -83,8 +83,10 @@
   }
   function mapSvg(res) {
     var n = res.chars.length, big = n > 12;
-    var LY = mapLayout(n, big), W = LY.W, H = LY.H, NR = LY.NR, pos = LY.pos;
     var focus = tl.who.length === 1 ? tl.who[0] : null;
+    /* 派閥の囲み・線の絞り込み・間引き（view-map.js）。なければ従来どおり楕円に並べる */
+    var MV = HK.MapView;
+    var LY = MV ? MV.layout(res, big, mapLayout) : mapLayout(n, big), W = LY.W, H = LY.H, NR = LY.NR, pos = LY.pos;
     var defs = '<defs>' + Object.keys(CLS_VAR).map(function (k) {
       return '<marker id="ar-' + k + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(' + CLS_VAR[k] + ')"/></marker>';
     }).join('') + '</defs>';
@@ -95,9 +97,11 @@
       var P = pos[i], w = Math.max(NR * 2 + 4, tw(shortName(c), nameFs), tw(c.fate || '', fateFs)) + 6;
       return { x1: P.x - w / 2, x2: P.x + w / 2, y1: P.y - NR - 3, y2: P.y + LY.below - 2 };
     });
-    var edges = '', labels = '', placed = [];
+    var edges = '', labels = '', placed = (LY.taken || []).slice();
     var pairs = res.pairs.filter(function (p) { return p.label !== 'strangers'; });
-    if (big) {
+    var faint = [];
+    if (MV) { var pk = MV.pick(res, pairs, focus, big, LY); pairs = pk.draw.concat(pk.faint); faint = pk.faint; }
+    else if (big) {
       /* 大人数では、強い関係と意外な関係だけを描く（選択中の人物の線は全部） */
       pairs = pairs.filter(function (p) { return p.cls !== 'friend' && p.cls !== 'none' && p.label !== 'awkward' || p.surprise || (focus != null && (p.a === focus || p.b === focus)); })
         .sort(function (a, b) { return (b.surprise - a.surprise) || (b.intensity - a.intensity); });
@@ -105,8 +109,9 @@
       if (focus != null) pairs.forEach(function (p) { if ((p.a === focus || p.b === focus) && keep.indexOf(p) < 0) keep.push(p); });
       pairs = keep;
     }
-    /* 強い関係から先にラベルの場所を取る */
-    pairs = pairs.slice().sort(function (a, b) { return (b.surprise - a.surprise) || (b.intensity - a.intensity); });
+    /* 強い関係から先にラベルの場所を取る（薄い点線は最後に） */
+    pairs = pairs.slice().sort(function (a, b) { return ((faint.indexOf(a) >= 0) - (faint.indexOf(b) >= 0)) || (b.surprise - a.surprise) || (b.intensity - a.intensity); });
+    var labSkip = 0;
     var labFs = big ? 11 : 12;
     var linePts = [];
     pairs.forEach(function (p, ei) {
@@ -128,6 +133,8 @@
       var s0 = edgePt(from, c, R, boxes[fromI]), s1 = edgePt(to, c, R + 3, boxes[toI]);
       for (var lk = 1; lk < 24; lk++) { var lp = qpt(s0, c, s1, lk / 24); lp.e = ei; linePts.push(lp); }
       var faded = focus != null && p.a !== focus && p.b !== focus;
+      /* 間引いた線は、細い点線だけ（ラベル・矢印なし） */
+      if (faint.indexOf(p) >= 0) { edges += '<path d="M' + s0.x.toFixed(1) + ',' + s0.y.toFixed(1) + ' Q' + c.x.toFixed(1) + ',' + c.y.toFixed(1) + ' ' + s1.x.toFixed(1) + ',' + s1.y.toFixed(1) + '" fill="none" class="efaint" style="stroke:var(' + CLS_VAR[p.cls] + ');stroke-width:1;opacity:' + (faded ? 0.08 : 0.32) + '" stroke-dasharray="2 4"/>'; return; }
       var wdt = 1.5 + Math.min(3, p.intensity / 160);
       var col = 'var(' + CLS_VAR[p.cls] + ')';
       var straight = Math.abs(c.x - (from.x + to.x) / 2) < 0.5 && Math.abs(c.y - (from.y + to.y) / 2) < 0.5;
@@ -154,6 +161,8 @@
         }
         return false;
       });
+      /* ほかのラベルとどうしても重なるときは、弱いほうのラベルを省く（線は残す） */
+      if (MV && placed.some(function (o) { return overlap(best, o) > 0; })) { labSkip++; return; }
       placed.push(best);
       labels += '<text x="' + best.cx.toFixed(1) + '" y="' + (best.cy + labFs * 0.36).toFixed(1) + '" text-anchor="middle" class="elab" style="fill:' + col + ';opacity:' + (faded ? 0.2 : 1) + '">' + esc(txt) + '</text>';
     });
@@ -167,8 +176,13 @@
         '<text x="' + P.x.toFixed(1) + '" y="' + (P.y + NR + (big ? 13 : 19)).toFixed(1) + '" text-anchor="middle" class="nlab" style="fill:var(--ink);font-size:' + nameFs + 'px;font-weight:600">' + esc(shortName(c)) + '</text>' +
         '<text x="' + P.x.toFixed(1) + '" y="' + (P.y + NR + (big ? 25 : 35)).toFixed(1) + '" text-anchor="middle" class="nlab" style="fill:var(--muted);font-size:' + fateFs + 'px">' + esc(c.fate) + '</text></g>';
     }).join('');
-    return '<svg viewBox="0 0 ' + W.toFixed(0) + ' ' + H.toFixed(0) + '" role="img" aria-label="関係図"><style>.nodebg{fill:var(--surface);fill:color-mix(in srgb,var(--c) 16%,var(--surface))}.elab{font-size:' + labFs + 'px;font-weight:700;paint-order:stroke;stroke:var(--sand);stroke-width:4px;stroke-linejoin:round}.nlab{paint-order:stroke;stroke:var(--sand);stroke-width:3.5px;stroke-linejoin:round}</style>' + defs + edges + nodes + labels + '</svg>';
+    var out = '<svg viewBox="0 0 ' + W.toFixed(0) + ' ' + H.toFixed(0) + '" role="img" aria-label="関係図"><style>.nodebg{fill:var(--surface);fill:color-mix(in srgb,var(--c) 16%,var(--surface))}.elab{font-size:' + labFs + 'px;font-weight:700;paint-order:stroke;stroke:var(--sand);stroke-width:4px;stroke-linejoin:round}.nlab{paint-order:stroke;stroke:var(--sand);stroke-width:3.5px;stroke-linejoin:round}</style>' + defs + (LY.under || '') + edges + nodes + labels + (LY.over || '') + '</svg>';
+    if (MV) MV.drawn(res, { lines: pairs.length - faint.length, faint: faint.length, labels: placed.length - (LY.taken || []).length, labSkip: labSkip });
+    return out;
   }
+
+  /* view-map.js が使う部品 */
+  V._map = { tw: tw, overlap: overlap, pc: pc, fateCls: fateCls, av: av };
 
   /* ---------- ペアの推移グラフ ---------- */
   function spark(p, res) {
@@ -325,7 +339,8 @@
       '<div class="row"><button class="btn primary" data-act="reroll">別の運命で動かす</button><button class="btn" data-act="copytext">結果をテキストでコピー</button><button class="btn" data-act="gobox">条件を変える</button></div></div>' +
       endingBlock(res) +
       '<div class="uses" style="margin-top:12px">' + envChips + '</div>' +
-      '<h2 class="sec">関係図</h2><figure class="trayfig"><div class="tray" id="map">' + mapSvg(res) + '</div><figcaption><span>住人の丸を押すと、その人の経過に絞り込めます。＊は意外な組み合わせ。矢印は気持ちや行為の向き。</span><span>砂箱 57×72×7cm</span></figcaption></figure>' +
+      (HK.MapView ? HK.MapView.classChart(res) : '') +
+      '<h2 class="sec">関係図</h2><figure class="trayfig">' + (function () { var sv = mapSvg(res); return (HK.MapView ? '<div id="mapbar">' + HK.MapView.bar(res) + '</div>' : '') + '<div class="tray" id="map">' + sv + '</div>'; })() + '<figcaption><span>住人の丸を押すと、その人の経過に絞り込めます。＊は意外な組み合わせ。矢印は気持ちや行為の向き。</span><span>砂箱 57×72×7cm</span></figcaption></figure>' +
       factionBlock(res) +
       (sur.length ? '<h2 class="sec">意外な組み合わせ</h2><p class="hint">エゴグラム上の相性予想と、箱庭での結末が食い違ったペアです。解釈の掘りどころ。</p><div class="cards">' + sur.map(function (p) { return pairCard(p, res); }).join('') + '</div>' : '') +
       '<h2 class="sec">関係の結末</h2><div class="cards">' + rest.slice(0, limit).map(function (p) { return pairCard(p, res); }).join('') + '</div>' +
@@ -341,6 +356,8 @@
     if (!lastRes || !lastHost) return;
     var m = lastHost.querySelector('#map'), b = lastHost.querySelector('#tlbar'), t = lastHost.querySelector('#tl');
     if (m) m.innerHTML = mapSvg(lastRes);
+    var mb = lastHost.querySelector('#mapbar');
+    if (mb && HK.MapView) mb.innerHTML = HK.MapView.bar(lastRes);
     if (b) b.innerHTML = tlBar(lastRes);
     if (t) t.innerHTML = timeline(lastRes);
   };
@@ -422,6 +439,8 @@
     L.push('');
     L.push('■ 住人の結末');
     res.chars.forEach(function (c) { L.push('・' + c.name + '：' + c.fate + (c.fateNote ? '（' + c.fateNote + '）' : '')); });
+    /* 派閥の一覧と、クラスメイトの学年・クラスの一覧（view-map.js） */
+    if (HK.MapView) HK.MapView.textLines(res).forEach(function (l) { L.push(l); });
     L.push('');
     L.push('■ 関係');
     res.pairs.forEach(function (p) {
