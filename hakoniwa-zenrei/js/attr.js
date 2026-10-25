@@ -10,6 +10,9 @@
    ・will 心の強さ：''／weak 弱い／avg ふつう／strong 強い。快楽堕ち・催眠・常識改変・遮断穴の「堕ちる」判定に掛ける（HK.Attr.willK）。
      strong は体が堕ちても心は折れない文を添える（HK.Attr.hold）
    ・same 同一人物：相手の番号。二人は恋愛・R18にしない（HK.ngPair・住人の ng に足す）。「鏡を見るような」共通の場面 3 本と、結果の関係名「もう一人の自分」
+   ・youFor / fpFor 相手ごとの二人称・一人称：{ 相手: 'あなた'|'きみ'|… } / { 相手: '私'|'俺'|… }（自由記入も可・8文字まで）。
+     相手が分かる台詞では、ふだんの二人称・一人称より優先する（voice.js の V.processText。名前で引けるように A.voiceFor で写す）。
+     画面の欄は「関係と呼び方」の相手ごとの行（呼び方の隣。A.voiceForHtml）
    画面の欄（ui.js の mk・normChar・rosterJSON・import・buildInput、ui-gear.js の描画と入力）は、ここの関数を呼ぶだけにしてある。
    実行時の住人への写しは HK.charFlags（engine.js）から HK.Attr.copy を一度だけ呼ぶ（エンジン・物語型・SoloKit・ダンジョン・穴で共通）。
    登場人物はすべて成人として扱う */
@@ -30,6 +33,12 @@
   function note(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>]/g, '').trim().slice(0, 12) : ''; }
   A.label = function (k, v) { return lab({ build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL }[k] || [], v); };
   var SIMPLE = ['build', 'bust', 'race', 'night', 'will'];
+  /* 相手ごとの二人称・一人称（VF：欄の名前） */
+  var VF = ['youFor', 'fpFor'];
+  A.YOU_OPTS = ['あなた', 'きみ', 'おまえ', 'あんた', 'そっち'];
+  A.FP_OPTS = ['私', '俺', '僕', 'あたし'];
+  function word(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>\s\u2060-\u2064]/g, '').slice(0, 8) : ''; }
+  function wmap(m, keyOk) { var o = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { var w = word(m[k]); if (w && (!keyOk || keyOk(k))) o[k] = w; }); return o; }
   function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL }[k]; }
 
   /* ---------- 画面の住人（S.chars。相手は id で持つ） ---------- */
@@ -40,6 +49,7 @@
     o.raceNote = note(c.raceNote);
     o.nightFor = c.nightFor && typeof c.nightFor === 'object' ? JSON.parse(JSON.stringify(c.nightFor)) : {};
     o.same = typeof c.same === 'string' ? c.same : '';
+    VF.forEach(function (k) { o[k] = wmap(c[k]); });
     return o;
   };
   /* ui.js normChar：値を確かめる */
@@ -50,12 +60,14 @@
     if (c.nightFor && typeof c.nightFor === 'object') Object.keys(c.nightFor).forEach(function (k) { var v = val(A.NIGHT, c.nightFor[k]); if (v) nf[k] = v; });
     c.nightFor = nf;
     c.same = typeof c.same === 'string' ? c.same : '';
+    VF.forEach(function (k) { c[k] = wmap(c[k]); });
     return c;
   };
   /* ui.js normRefs：今いる住人だけに絞る（同一人物は両方に書く） */
   A.normRefs = function (c, ids, list) {
     if (!ids[c.same] || c.same === c.id) c.same = '';
     Object.keys(c.nightFor || {}).forEach(function (k) { if (!ids[k] || k === c.id) delete c.nightFor[k]; });
+    VF.forEach(function (f) { Object.keys(c[f] || {}).forEach(function (k) { if (!ids[k] || k === c.id) delete c[f][k]; }); });
     if (c.same && list) list.forEach(function (o) { if (o.id === c.same && !o.same) o.same = c.id; });
   };
   /* ui.js rosterJSON：書き出し（相手は ref で番号に） */
@@ -64,17 +76,23 @@
     if (c.raceNote) o.raceNote = c.raceNote;
     if (c.same && ref(c.same) != null) o.same = ref(c.same);
     if (c.nightFor) { var nf = {}; Object.keys(c.nightFor).forEach(function (k) { if (ref(k) != null && c.nightFor[k]) nf[ref(k)] = c.nightFor[k]; }); if (Object.keys(nf).length) o.nightFor = nf; }
+    VF.forEach(function (f) { if (!c[f]) return; var m = {}; Object.keys(c[f]).forEach(function (k) { if (ref(k) != null && word(c[f][k])) m[ref(k)] = word(c[f][k]); }); if (Object.keys(m).length) o[f] = m; });
     return o;
   };
   /* ui.js importJSON：読み込み（相手は全員を読んだあとで A.importRefs） */
   A.importFrom = function (c, o) {
     SIMPLE.forEach(function (k) { if (o[k] != null) c[k] = val(listOf(k), o[k]); });
     if (o.raceNote != null) c.raceNote = note(String(o.raceNote));
-    c._atSame = o.same; c._atNf = o.nightFor;
+    c._atSame = o.same; c._atNf = o.nightFor; c._atYf = o.youFor; c._atFf = o.fpFor;
   };
   A.importRefs = function (c, ref) {
     if (c._atSame != null && c._atSame !== '') { var s = ref(c._atSame); c.same = s && s !== c.id ? s : ''; }
     if (c._atNf && typeof c._atNf === 'object') { c.nightFor = c.nightFor || {}; Object.keys(c._atNf).forEach(function (k) { var id = ref(k), v = val(A.NIGHT, c._atNf[k]); if (id && id !== c.id && v) c.nightFor[id] = v; }); }
+    [['_atYf', 'youFor'], ['_atFf', 'fpFor']].forEach(function (x) {
+      var m = c[x[0]];
+      if (m && typeof m === 'object') { c[x[1]] = c[x[1]] || {}; Object.keys(m).forEach(function (k) { var id = ref(k), w = word(m[k]); if (id && id !== c.id && w) c[x[1]][id] = w; }); }
+      delete c[x[0]];
+    });
     delete c._atSame; delete c._atNf;
   };
   /* ui.js buildInput：シミュレーションへ渡す（相手は箱庭に出る人の番号に） */
@@ -84,6 +102,7 @@
     var si = c.same ? ids.indexOf(c.same) : -1;
     if (si >= 0) o.same = si;
     if (c.nightFor) { var nf = {}, n = 0; Object.keys(c.nightFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && c.nightFor[k]) { nf[i] = c.nightFor[k]; n++; } }); if (n) o.nightFor = nf; }
+    VF.forEach(function (f) { if (!c[f]) return; var m = {}, k2 = 0; Object.keys(c[f]).forEach(function (k) { var i = ids.indexOf(k), w = word(c[f][k]); if (i >= 0 && w) { m[i] = w; k2++; } }); if (k2) o[f] = m; });
     return o;
   };
   /* ui-gear.js：住人の行の要約に足す */
@@ -122,6 +141,7 @@
     if (!/^at_/.test(f || '')) return false;
     var k = f.slice(3);
     if (k === 'raceNote') { c.raceNote = note(t.value); changed(false); return true; }
+    if (k === 'yf' || k === 'ff') { var vk = k === 'yf' ? 'youFor' : 'fpFor', w = word(t.value); c[vk] = c[vk] || {}; if (w) c[vk][t.dataset.o] = w; else delete c[vk][t.dataset.o]; changed(false); return true; }
     if (isInput) return true;
     if (listOf(k)) { c[k] = val(listOf(k), t.value); changed(k === 'race' || k === 'night'); return true; }
     if (k === 'nf') { c.nightFor = c.nightFor || {}; var v = val(A.NIGHT, t.value); if (v) c.nightFor[t.dataset.o] = v; else delete c.nightFor[t.dataset.o]; changed(false); return true; }
@@ -134,6 +154,35 @@
       changed(true); return true;
     }
     return true;
+  };
+
+  /* 「関係と呼び方」の相手ごとの行に並べる欄（ui-gear.js）：二人称・一人称（候補は datalist、自由記入も可） */
+  A.voiceForHtml = function (c, o, esc) {
+    lists();
+    var y = (c.youFor || {})[o.id] || '', f = (c.fpFor || {})[o.id] || '';
+    return '<label title="この相手に話しかける台詞の二人称。空なら「話し方」の二人称のまま">二人称 <input type="text" data-gf="at_yf" data-o="' + esc(o.id) + '" value="' + esc(y) + '" maxlength="8" list="hk-you-opts" placeholder="' + esc(c.you || '口調から') + '" style="width:5em"></label>' +
+      '<label title="この相手に話しかける台詞の一人称。空なら「話し方」の一人称のまま">一人称 <input type="text" data-gf="at_ff" data-o="' + esc(o.id) + '" value="' + esc(f) + '" maxlength="8" list="hk-fp-opts" placeholder="' + esc(c.fp || '口調から') + '" style="width:5em"></label>';
+  };
+  /* 相手ごとの二人称・一人称を決めてある相手か（関係がなくても、相手の行を出す） */
+  A.hasVoiceFor = function (c, id) { return !!((c.youFor && c.youFor[id]) || (c.fpFor && c.fpFor[id])); };
+  function lists() {
+    if (typeof document === 'undefined' || !document.body) return;
+    [['hk-you-opts', A.YOU_OPTS], ['hk-fp-opts', A.FP_OPTS]].forEach(function (x) {
+      if (document.getElementById(x[0])) return;
+      var dl = document.createElement('datalist'); dl.id = x[0];
+      x[1].forEach(function (v) { var op = document.createElement('option'); op.value = v; dl.appendChild(op); });
+      document.body.appendChild(dl);
+    });
+  }
+  /* voice.js の processResult：台詞の話し手 p（名前で相手を引く）に、相手ごとの二人称・一人称を名前で写す。c = input.chars[i]（相手は番号） */
+  A.voiceFor = function (p, c, chars) {
+    VF.forEach(function (f) {
+      if (!c || !c[f] || typeof c[f] !== 'object') return;
+      var m = null;
+      Object.keys(c[f]).forEach(function (k) { var o = /^\d+$/.test(k) ? chars[+k] : null, w = word(c[f][k]); if (o && o !== c && o.name && w) (m = m || {})[o.name] = w; });
+      if (m) p[f] = m;
+    });
+    return p;
   };
 
   /* ---------- 実行時の住人（相手は番号 i で持つ） ---------- */
@@ -154,6 +203,7 @@
         if (nf) dst.nightFor = nf;
       }
     }
+    VF.forEach(function (f) { var m = wmap(src[f], function (k) { return /^\d+$/.test(k) && +k !== dst.i; }); if (Object.keys(m).length) dst[f] = m; });
     var sm = src.same;
     if (sm !== '' && sm != null && !isNaN(+sm) && +sm >= 0 && +sm !== dst.i) {
       dst.same = +sm;

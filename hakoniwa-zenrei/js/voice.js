@@ -535,6 +535,10 @@
             /* 敬語で話す相手への台詞：書き下ろしの敬語の行はそのまま、それ以外は敬語に言い換える */
             var pre = q.charAt(0) === '\u2062';
             if (pre) q = q.slice(1);
+            /* 相手ごとの一人称・二人称（住人の設定の fpFor・youFor。attr.js）：相手が分かる台詞では、ふだんの一人称・二人称より優先する。モブへの台詞（印つき）は除く */
+            var to1 = !nounQ && (who.fpFor || who.youFor) && q.indexOf('\u2063') < 0 ? addresseeOf(text, start, i + 1, q, who, people, actors) : null;
+            var sv1 = null, yf1 = to1 && who.youFor && who.youFor[to1.name], ff1 = to1 && who.fpFor && who.fpFor[to1.name];
+            if (yf1 || ff1) { sv1 = { fp: who.fp, you: who.you }; if (ff1) who.fp = ff1; if (yf1) who.you = yf1; }
             var kg = !nounQ && (pre || keigoHere(text, start, i + 1, q, who, people, actors));
             var ov = pre ? null : !nounQ && V.overrideFor ? V.overrideFor(q, kg ? Object.assign({}, who, { tone: 'polite' }) : who, people) : null;
             /* 別の口調から派生する口調（tone-registry.js の derive。後輩・お嬢様など）：その口調名の書き下ろし・直しがあれば完成形としてそのまま使い、
@@ -562,13 +566,14 @@
             if (who.toneCustom && V.applyToneCustom && !nounQ) q = V.applyToneCustom(q, who.toneCustom);
             /* 二人称の設定（敬語の相手への台詞は除く）。設定が空なら、口調と性別の既定（tone-registry.js の HK.TONE_YOU）でそろえる */
             var youW = who.you || (HK.toneYou ? HK.toneYou(who.tone, who.gender) : '');
-            if (youW && !kg && !nounQ) q = V.applyYou(q, youW);
+            if (youW && (!kg || yf1) && !nounQ) q = V.applyYou(q, youW);
             if (YOU_ST.test(q0)) q = fixYouStutter(q);
             if (V.applyCalls) q = V.applyCalls(q, who, people);
             /* 呼び方を決めてある相手に向けた台詞は、二人称を呼び方にし、ときどき呼びかけを足す（tone-plus.js の callAddress） */
             if (V.callAddress && !nounQ) q = V.callAddress(q, who, addresseeOf(text, start, i + 1, q, who, people, actors), q0);
             /* 語尾の記号（キャラごとの設定。複数あれば文ごとにランダム） */
             if (who.marks && !nounQ) q = V.applyMarks(q, who.marks);
+            if (sv1) { who.fp = sv1.fp; who.you = sv1.you; }
           }
           q = q.replace(/([！？!?])。/g, '$1');   /* 「ごめんごめん！。」のような重なりを整える */
           out += text.slice(last, start + 1) + q + '」';
@@ -621,6 +626,8 @@
       var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '' };
       p.persona = r.persona || HK.personaOf({ tone: c.tone, eg: c.eg });
       if (c.toneCustom) p.toneCustom = c.toneCustom;
+      /* 相手ごとの二人称・一人称（番号 → 名前。attr.js の HK.Attr.voiceFor） */
+      if (HK.Attr && HK.Attr.voiceFor) HK.Attr.voiceFor(p, c, input.chars);
       return p;
     });
     var f = function (t, ac) { return V.processText(t, people, ac); };

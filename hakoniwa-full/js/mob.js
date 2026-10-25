@@ -33,12 +33,49 @@
       var name = o.name || (o.pool && POOLS[o.pool] && POOLS[o.pool].length ? pick(POOLS[o.pool]) : pick(POOLS.sur) + (o.given ? pick(POOLS[g] || POOLS.x) : ''));
       if (o.role && !o.name) name = o.role + 'の' + name;
       var eg = {}; ['CP', 'NP', 'A', 'FC', 'AC'].forEach(function (k) { eg[k] = Math.round(4 + r() * 14); });
-      return { name: name, gender: g, tone: o.tone || '', fp: o.fp || '', eg: eg, tr: HK.traits ? HK.traits(eg) : {}, likes: o.likes || '', pos: o.pos || '', role: o.role || '', mob: true, calls: {}, loveNG: [] };
+      var mob = { name: name, gender: g, tone: o.tone || '', fp: o.fp || '', eg: eg, tr: HK.traits ? HK.traits(eg) : {}, likes: o.likes || '', pos: o.pos || '', role: o.role || '', mob: true, calls: {}, loveNG: [] };
+      /* 呼びかけ用の短い名前（「警備員の佐伯」→「佐伯」）。住人の台詞の安全網（tone-plus.js の V.mobAddr）のために、この回で作った名前を覚える */
+      mob.short = o.role && !o.name ? name.slice(o.role.length + 1) : name;
+      M._made.push(name); if (mob.short !== name) M._made.push(mob.short); if (M._made.length > 200) M._made.splice(0, M._made.length - 200);
+      return mob;
     },
+    _made: [],
     /* 住人 c がモブとの体の場面に出られるか（R18に参加しない・恋人だけ・全年齢を見る） */
     sexOk: function (c) { return !!(HK.State ? HK.State.mobSexOk(c) : !HK.SAFE_ON); },
     /* モブを相手にしたときの住人の向き（'top'／'bottom'。自分で攻めを選んだ人は、モブには受けにしていない限り top） */
     side: function (c, def) { return HK.Pos && HK.Pos.vsNpc ? HK.Pos.vsNpc(c, def || 'bottom') : def || 'bottom'; }
+  };
+  /* ---------- モブへの呼びかけ ----------
+     住人がモブに話しかける台詞では、モブの名前を直接書かずに {you} と書き、M.you(文, モブ, 敬称) で印に替える。
+     印は「\u2063 名前 \u2063」（名前で呼べるモブ）か「\u2063 名前 \u2061」（「泥酔したサラリーマン」のような呼び名だけのモブ）。
+     住人の台詞では tone-plus.js の V.mobAddr が、話し手の二人称（設定の二人称、なければ口調の既定 HK.TONE_YOU）に置き換える。
+     全体の設定「モブへの呼びかけ」（events-common.js の mobYou）が「名前で」なら、名前で呼べるモブは短い名前＋敬称で呼ぶ。
+     話し手が分からなかった台詞に残った印は、二人称なら「あなた」、名前でなら名前にする（M.unmark。tone-plus.js・persona-final.js が結果を返す前に外す） */
+  var MK = '\u2063', NO = '\u2061', MK_RE = /\u2063([^\u2063\u2061]*)[\u2063\u2061]/g;
+  M.MARK = MK;
+  /* 呼び名から、名前として呼べる部分（「恋人の湊」→「湊」「店長」→「店長」）。説明だけの呼び名（「若いスタッフ」「名前も知らない誰か」）は '' */
+  M.short = function (full) {
+    full = String(full || '');
+    var t = full.lastIndexOf('の') >= 0 ? full.slice(full.lastIndexOf('の') + 1) : full;
+    /* 「元患者」「貴族」「漫画家」のような肩書き・身の上だけの語は名前にしない */
+    return /^[一-鿿々ァ-ヶー]{1,4}$/.test(t) && !/^元|[者男女人族手家]$/.test(t) ? t : '';
+  };
+  /* m：モブ（{ name, short }・{ name, label }）か呼び名の文字列。hon：名前で呼ぶときの敬称（「さん」など） */
+  M.addr = function (m, hon) {
+    var full = typeof m === 'string' ? m : (m && (m.full || m.label || m.name)) || '';
+    var sh = m && typeof m === 'object' ? (m.short != null ? m.short : m.label && m.name && m.label !== m.name ? m.name : M.short(full)) : M.short(full);
+    M._used = true;
+    return MK + (sh || full) + (sh ? hon || '' : '') + (sh ? MK : NO);
+  };
+  M.you = function (t, m, hon) { return typeof t === 'string' && t.indexOf('{you}') >= 0 ? t.replace(/\{you\}/g, M.addr(m, hon)) : t; };
+  M.unmark = function (o, byName, seen) {
+    if (typeof o === 'string') return o.indexOf(MK) < 0 ? o : o.replace(MK_RE, function (m, nm, end) { return byName && end === MK ? nm : 'あなた'; }).replace(/[\u2063\u2061]/g, '');
+    if (!o || typeof o !== 'object') return o;
+    seen = seen || new Set();
+    if (seen.has(o)) return o;
+    seen.add(o);
+    Object.keys(o).forEach(function (k) { var v = o[k]; if (typeof v === 'string' ? v.indexOf(MK) >= 0 : v && typeof v === 'object') { var r = M.unmark(v, byName, seen); if (r !== v) o[k] = r; } });
+    return o;
   };
   /* 住人の一覧と、住人ごとの欄（perChar.pick） */
   function people(S) { return (S && (S.P || S.chars)) || []; }

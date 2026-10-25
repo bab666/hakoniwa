@@ -164,6 +164,8 @@
 
     function say(p, o, short, force) {
       o.actors = HY ? [p, HY] : [p];
+      /* かける側への呼びかけ（{you}）：モブなら印（mob.js の HK.Mob.addr。台詞では話し手の二人称になる）、住人なら「あなた」（相手ごとの二人称が効く） */
+      if (typeof o.text === 'string' && o.text.indexOf('{you}') >= 0) o.text = !HY && p.hm && HK.Mob ? HK.Mob.you(o.text, p.hm, p.ty === 'lover' ? '' : 'さん') : o.text.replace(/\{you\}/g, 'あなた');
       /* かける側の呼び名が「アキラの元患者」のようなとき、「アキラはアキラの元患者を」→「アキラは自分の元患者を」 */
       if (typeof o.text === 'string') o.text = o.text.replace(new RegExp(p.name + '(は|が|も)' + p.name + '(の|に)', 'g'), p.name + '$1自分$2');
       /* 女性の攻め指定が男性の相手（モブを含む）と：入れる側の書き方を、跨る書き方に直す（pos-fm.js） */
@@ -183,7 +185,7 @@
     }
     function wake(p) {
       p.woke = true;
-      var o = say(p, { tag: '目覚め', text: ST.fmt(ST.pick(S, L('{a}がはっと目を見開いた。目の前に{h}の顔があった。自分の格好を見下ろして、{a}は息を呑んだ。|{a}の瞳に、急に光が戻った。「……え。何、してるの」|{a}は跳ね起きた。体はまだ火照っているのに、頭だけが冷えていた。')), { a: p.name, h: p.h }) + (SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: '催眠が浅くなって、途中で目を覚ました（深さ ' + Math.round(p.m.depth) + '）', mag: 35 }, '', true);
+      var o = say(p, { tag: '目覚め', text: ST.fmt(ST.pick(S, L('{a}がはっと目を見開いた。目の前に{h}の顔があった。自分の格好を見下ろして、{a}は息を呑んだ。|{a}の瞳に、急に光が戻った。{a}は「……え。{you}、何してるの」と後ずさった。|{a}は跳ね起きた。体はまだ火照っているのに、頭だけが冷えていた。')), { a: p.name, h: p.h }) + (SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: '催眠が浅くなって、途中で目を覚ました（深さ ' + Math.round(p.m.depth) + '）', mag: 35 }, '', true);
       ST.key(S, o, p.name + 'が途中で目を覚ました');
       /* エッチな暗示のあとで目を覚ましたなら、そこからも分かれる（流される／通報／逃げる） */
       if (p.cnt.lewd >= 1 && lew !== 'low' && SM.afterSnap && !p.snapDone) {
@@ -200,7 +202,9 @@
     }
     function tq(p) { return V && SM.TRANCE[p.persona] && rng() < 0.45 ? p.name + fresh(p, topVoice(p, 'TRANCE', tranceL(p))) : ''; }
     function cmdText(p, g) {
-      var c = ST.fmt(ST.pick(S, cmdOf(p, g)), { h: p.h, a: p.name }).replace(/^「|」$/g, '');
+      /* 暗示はかける側の台詞：{h}（かける側自身）は「私」。モブのかける側の台詞は、かけられる側の口調に言い換えない（\u2060。voice.js） */
+      var c0 = ST.fmt(ST.pick(S, cmdOf(p, g)), { h: '私', a: p.name }).replace(/^「|」$/g, '');
+      var c = (p.hc ? '' : '\u2060') + c0;
       if (!SM.CMD_FRAME) return p.h + 'は' + (S.rng() < 0.5 ? '低い声で' : '耳元で') + '「' + c + '」と囁いた。';
       return ST.fmt(ST.pick(S, SM.CMD_FRAME), { h: p.h, a: p.name }).replace('{c}', c);
     }

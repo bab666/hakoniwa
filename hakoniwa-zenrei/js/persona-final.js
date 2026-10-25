@@ -19,6 +19,8 @@
   var sim1 = function (input) {
     var res = sim(input);
     try { HK.Voice.processResult(res, input); } catch (e) { /* 台詞の整形に失敗しても結果は返す */ }
+    /* モブへの呼びかけの印（mob.js の HK.Mob.addr）が残っていれば、名前に戻す */
+    if (HK.Mob && HK.Mob._used) { HK.Mob._used = false; HK.Mob.unmark(res); }
     return res;
   };
   /* 普通の言葉と同じになりやすい名前（漢字一、二字・短いひらがな：「楽」「敬語」など）は、

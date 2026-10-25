@@ -106,7 +106,7 @@
     var V = HK.Voice;
     if (!V || !V.processText) return '';
     var s = S(), o = s.chars.filter(function (x) { return x !== c; })[0] || { name: '相手', id: '' };
-    var me = { name: c.name, fp: c.fp || '', you: c.you || '', marks: c.marks || '', toneCustom: c.toneCustom || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null };
+    var me = { name: c.name, fp: (c.fpFor && o.id && c.fpFor[o.id]) || c.fp || '', you: (c.youFor && o.id && c.youFor[o.id]) || c.you || '', marks: c.marks || '', toneCustom: c.toneCustom || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null };
     var kgo = c.keigo ? s.chars.filter(function (x) { return x !== c && c.keigo[x.id]; })[0] : null;
     me.persona = HK.personaOf ? HK.personaOf({ tone: c.tone, eg: c.eg }) : 'gentle';
     var ppl = [me, { name: o.name, fp: '', gender: o.gender || '', tone: '', persona: 'gentle' }];
@@ -156,11 +156,11 @@
       (groups[oid] = groups[oid] || []).push([t, k]);
     });
     var calls = c.calls || {};
-    var rel = others.filter(function (o) { return groups[o.id] || calls[o.id]; }).map(function (o) {
+    var rel = others.filter(function (o) { return groups[o.id] || calls[o.id] || (HK.Attr && HK.Attr.hasVoiceFor(c, o.id)); }).map(function (o) {
       var i = s.chars.indexOf(o);
       return '<div class="gtie"><div class="who">' + HK.Icons.html(o.name, i, 22) + esc(o.name) + '</div>' +
         (groups[o.id] || []).map(function (x) { return tieRow(c, o, x[0], x[1]); }).join('') +
-        '<div class="one"><label>' + esc(c.name) + 'からの呼び方 <input type="text" data-gf="callone" data-o="' + o.id + '" value="' + esc(calls[o.id] || '') + '" maxlength="16" placeholder="' + esc(o.name + ({ name: '', san: 'さん', kun: 'くん', chan: 'ちゃん', sama: '様', senpai: '先輩', sensei: '先生' }[c.call] || '')) + '"></label>' +
+        '<div class="one"><label>' + esc(c.name) + 'からの呼び方 <input type="text" data-gf="callone" data-o="' + o.id + '" value="' + esc(calls[o.id] || '') + '" maxlength="16" placeholder="' + esc(o.name + ({ name: '', san: 'さん', kun: 'くん', chan: 'ちゃん', sama: '様', senpai: '先輩', sensei: '先生' }[c.call] || '')) + '"></label>' + (HK.Attr && HK.Attr.voiceForHtml ? HK.Attr.voiceForHtml(c, o, esc) : '') +
         '<button type="button" class="btn ghost small" data-gact="tadd" data-o="' + o.id + '">関係を重ねる</button></div></div>';
     }).join('');
     var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手">' + others.map(function (o) { return opt(o.id, o.name, ''); }).join('') + '</select></label>' +

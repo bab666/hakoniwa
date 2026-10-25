@@ -227,7 +227,8 @@
     if (TR && sk === 'gentle' && HK.Pos && HK.Pos.isF(TR)) sk = 'lady';
     if (!STAFF[sk]) sk = 'gentle';
     var staff = TR ? { n: TR.name, g: HK.Pos ? (HK.Pos.isF(TR) ? 'f' : 'm') : TR.gender === 'f' ? 'f' : 'm', desc: '', dec: STAFF[sk].dec, res: true } : STAFF[sk];
-    S.vars = { m: staff.n };
+    /* {you}：客から施術者への呼びかけ。モブなら印（mob.js の HK.Mob.addr。台詞では客の二人称になる）、住人なら「あなた」（相手ごとの二人称が効く） */
+    S.vars = { m: staff.n, you: TR || !HK.Mob ? 'あなた' : HK.Mob.addr(staff.n, 'さん') };
     /* 住人どうし：体の関係になれる組（HK.Pos.okSex・両方 HK.State.r18ok・HK.ngPair でも HK.sexBlocked でもない）だけ際どい施術にする。
        向きは HK.Pos.order：施術者が攻めなら今までどおり、客が攻めなら際どい施術の手前で客が手を止めさせる（客を受ける側にしない）。
        なれない組は普通のマッサージのまま（plain） */

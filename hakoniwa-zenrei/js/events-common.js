@@ -12,6 +12,8 @@
   ];
   /* 複数の恋人（なし／あり／秘密。poly.js） */
   if (HK.Poly && HK.Poly.ENV) HK.GLOBAL_ENV.push(HK.Poly.ENV);
+  /* モブへの呼びかけ（台詞の中でモブを呼ぶとき。mob.js の HK.Mob.addr・tone-plus.js の V.mobAddr）。all：一人用・物語型の箱庭にも出す */
+  HK.GLOBAL_ENV.push({ id: 'mobYou', label: 'モブへの呼びかけ', type: 'select', def: 'you', all: 1, options: [{ v: 'you', label: '二人称で（あなた・きみ など、話し手の二人称）' }, { v: 'name', label: '名前で（名前のあるモブだけ。「佐伯さん」のように短く）' }], desc: '住人がモブ（客・施術者・略奪者・獲物など、住人でない人）に話しかける台詞の呼び方。地の文はモブの名前のまま' });
 
   function R(ctx, a, b) { return ctx.R(a, b); }
   /* 何をめぐって・何を、が分かるように、箱庭ごとの話題を添える */

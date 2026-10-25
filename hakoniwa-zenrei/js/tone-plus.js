@@ -227,7 +227,27 @@
     if (/^(?:[一-鿿々]{1,2}|[ぁ-ゖ]{1,3})$/.test(name) && /[がはもをでの]$/.test(prev || '') && /^(?:[。！？!?…‥」]|$|に|だ|です|じゃ|な(?!ら))/.test(next)) return false;
     return true;
   }
+  /* モブへの呼びかけ（mob.js の HK.Mob.addr の印）：住人の台詞では、呼び方を決めていない限り、話し手の二人称で呼ぶ。
+     全体の設定「モブへの呼びかけ」（mobYou）が「名前で」なら、名前で呼べるモブは短い名前＋敬称で。
+     印のない、この回で作ったモブの名前（HK.Mob.make）が台詞の頭・終わりの呼びかけ（「佐伯さん、」）にあれば、それも二人称に */
+  function youOf(who) { return (who && (who.you || (HK.toneYou ? HK.toneYou(who.tone, who.gender) : ''))) || 'あなた'; }
+  V.mobAddr = function (q, who, people) {
+    if (!who || typeof q !== 'string') return q;
+    var byName = V._mobYou === 'name';
+    if (q.indexOf('\u2063') >= 0) q = q.replace(/\u2063([^\u2063\u2061]*)([\u2063\u2061])/g, function (m, nm, end) {
+      var base = nm.replace(/(?:さん|くん|ちゃん|様|さま)$/, ''), own = who.calls && who.calls[base];
+      if (own) return String(own).trim().slice(0, 16);
+      return byName && end === '\u2063' ? nm : youOf(who);
+    });
+    var made = !byName && HK.Mob && HK.Mob._made;
+    if (made && made.length) made.forEach(function (nm) {
+      if (!nm || nm.length < 2 || q.indexOf(nm) < 0 || (who.calls && who.calls[nm]) || (people || []).some(function (p) { return p.name && (p.name.indexOf(nm) >= 0 || nm.indexOf(p.name) >= 0); })) return;
+      q = q.replace(new RegExp('(^|[、。！？!?…‥\\s])' + esc(nm) + '(?:さん|くん|ちゃん|様|さま)?(?=[、！？!?…‥]|$)', 'g'), function (m, p) { return p + youOf(who); });
+    });
+    return q;
+  };
   V.applyCalls = function (q, who, people) {
+    if (who && typeof q === 'string' && (q.indexOf('\u2063') >= 0 || (HK.Mob && HK.Mob._made && HK.Mob._made.length))) q = V.mobAddr(q, who, people);
     if (!who || (!who.call && !who.calls && !/^(?:polite|genki|ojou|devoted)$/.test(who.tone || ''))) return q;
     people.forEach(function (p) {
       if (p === who || !p.name) return;
@@ -252,6 +272,8 @@
   function hashS(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
   V.callAddress = function (q, who, to, raw) {
     if (!who || !to || to === who || !to.name || !(who.call || (who.calls && who.calls[to.name]))) return q;
+    /* 相手がモブなら、呼び方を決めていない限り二人称のまま（V.mobAddr） */
+    if ((to.mob && !(who.calls && who.calls[to.name])) || String(raw || '').indexOf('\u2063') >= 0) return q;
     var c = V.callFor(who, to);
     if (!c || q.indexOf(to.name) >= 0 || q.indexOf(c) >= 0) return q;
     /* 自分で決めた二人称（you）も、呼び方を決めた相手には名前で */
@@ -276,7 +298,14 @@
     if (!res || !input || !input.chars) return pr0(res, input);
     var calmNames = [];
     input.chars.forEach(function (c) { if (HK.toneOf(c) === 'calm') calmNames.push(c.name); });
-    var out = pr0(res, input);
+    /* 全体の設定「モブへの呼びかけ」（events-common.js の mobYou） */
+    V._mobYou = input.env && input.env.mobYou === 'name' ? 'name' : 'you';
+    var out;
+    try {
+      out = pr0(res, input);
+      /* 話し手が分からなかった台詞に残ったモブへの呼びかけの印（mob.js） */
+      if (HK.Mob && HK.Mob._used) { HK.Mob._used = false; HK.Mob.unmark(out, V._mobYou === 'name'); }
+    } finally { V._mobYou = ''; if (HK.Mob && HK.Mob._made) HK.Mob._made.length = 0; }
     if (calmNames.length) {
       var re = new RegExp(calmNames.map(esc).join('|'));
       var f = function (t) { return typeof t === 'string' ? t.replace(/[^。！？]*[。！？]?/g, function (sen) { return re.test(sen) ? calmText(sen) : sen; }) : t; };

@@ -196,7 +196,8 @@
       return w;
     });
     p.seen = p.seen || {}; p.seen[key] = (p.seen[key] || 0) + 1;
-    var q = SB.PREY[key], spot = rng.pick(T.spots), v = { a: p.name, t: q.name, spot: spot, s: sen ? sen.name : '' };
+    /* {you}：獲物への呼びかけ（mob.js の HK.Mob.addr。呼び名だけの獲物なので、台詞では話し手の二人称） */
+    var q = SB.PREY[key], spot = rng.pick(T.spots), v = { a: p.name, t: q.name, spot: spot, s: sen ? sen.name : '', you: HK.Mob ? HK.Mob.addr(q.name) : 'あなた' };
     p.cnt.tries++;
     var match = q.weak === p.top;
     var ty = p.style || {};
@@ -216,7 +217,7 @@
     if (flw) { S.flags['sf_' + flw.id] = (S.flags['sf_' + flw.id] || 0) + 1; score += flw.score || 0; if (flw.id !== 'eye') why += '／入り方：' + { tail: '尾行', bar: 'バーで', reverse: '向こうから', rain: '雨宿り', lost: '迷子のふり', dream: '夢に忍び込む' }[flw.id]; }
     var again = p.seen[key] > 1 && SB.AGAIN && rng() < 0.6;
     if (again) { score += 10; why += '／前に会った相手と再会'; }
-    var t = ST.fmt(again ? pkF(S, SB.AGAIN) : flw ? pkF(S, flw.t) : '{spot}で、{a}は{t}に目をつけた。', v) + (flw && flw.id === 'dream' ? '' : ST.fmt(apText(S, p, ty), v)) + (VO && rng() < (ty.ap ? 0.2 : 0.5) ? p.name + pkF(S, VO.OPEN[p.persona] || VO.OPEN.gentle) : '') + (q.re && rng() < 0.65 ? ST.fmt(q.re, v) : '');
+    var t = ST.fmt(again ? pkF(S, SB.AGAIN) : flw ? pkF(S, flw.t) : '{spot}で、{a}は{t}に目をつけた。', v) + (flw && flw.id === 'dream' ? '' : ST.fmt(apText(S, p, ty), v)) + (VO && rng() < (ty.ap ? 0.2 : 0.5) ? p.name + ST.fmt(pkF(S, VO.OPEN[p.persona] || VO.OPEN.gentle), v) : '') + (q.re && rng() < 0.65 ? ST.fmt(q.re, v) : '');
     var lew = env.lewd || 'mid', ml = 0, kind, rev = 0, leadP = '';
     /* 聖なる獲物で大失敗すると、祓われかける */
     if (q.hunter && score < 10) {
@@ -363,7 +364,7 @@
     var keys = Object.keys(SB.PREY_F).filter(function (k) { return SB.PREY_F[k].towns.indexOf(T.id) >= 0; });
     var key = HK.weighted(rng, keys, function (k) { var q0 = SB.PREY_F[k]; var w = 1; if ((p.action.id === 'pick' || p.intel) && q0.weak === p.top) w *= 2.4; return w / (1 + ((p.seenF || {})[k] || 0) * 0.8); });
     p.seenF = p.seenF || {}; p.seenF[key] = (p.seenF[key] || 0) + 1;
-    var q = SB.PREY_F[key], spot = rng.pick(T.spots), v = { a: p.name, t: q.name, spot: spot, s: sen ? sen.name : '' };
+    var q = SB.PREY_F[key], spot = rng.pick(T.spots), v = { a: p.name, t: q.name, spot: spot, s: sen ? sen.name : '', you: HK.Mob ? HK.Mob.addr(q.name) : 'あなた' };
     p.cnt.tries++;
     var ty = p.style || {}, match = q.weak === p.top;
     var score = (ty.score || 0) + p.stats.charm * 10 + p.stats.tech * 6 + (match ? 22 * (sen && sen.top === 'A' ? 1.5 : 1) : 0) + p.tr.warmth * 8 + rng() * 38 - q.resist - 20 + (p.m.mood - 60) / 4;
@@ -371,7 +372,7 @@
     if (p.m.mana >= 20 && (p.action.id === 'magic' ? rng() < 0.6 : rng() < 0.15 + (score < 0 ? 0.2 : 0))) { p.m.mana -= 18; score += 16; p.cnt.magic++; why += '／魅了の魔眼を使った'; }
     if (sen) { if (sen.top === 'CP') score += 6; if (sen.top === 'NP' && p.cnt.streak >= 1) score += 12; if (sen.top === 'FC') score += (rng() - 0.45) * 30; if (sen.top === 'AC') score -= 4; }
     if (p.m.mana < 15) { score -= 10; why += '／魔力切れで変身が不安定'; }
-    var t = ST.fmt('{spot}で、{a}は{t}に目をつけた。', v) + ST.fmt(apText(S, p, ty), v) + (VO && rng() < 0.2 ? p.name + pkF(S, VO.OPEN[p.persona] || VO.OPEN.gentle) : '') + (q.re ? ST.fmt(pkF(S, q.re), v) : '');
+    var t = ST.fmt('{spot}で、{a}は{t}に目をつけた。', v) + ST.fmt(apText(S, p, ty), v) + (VO && rng() < 0.2 ? p.name + ST.fmt(pkF(S, VO.OPEN[p.persona] || VO.OPEN.gentle), v) : '') + (q.re ? ST.fmt(pkF(S, q.re), v) : '');
     var ff = !P0 || P0.isF(p), ride = !ff && P0 && P0.of(p) === 'bottom' && P0.explicit(p);
     var lew = env.lewd || 'mid', ml = 0, kind;
     if (score < -5) {
