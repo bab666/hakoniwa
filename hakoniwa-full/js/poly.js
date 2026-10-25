@@ -77,6 +77,8 @@
   /* ---------- 物語型（邪神村・吹雪の館・宇宙船など）：S.poly と、関係の恋人（S.ties）・恋仲（S.rom） ---------- */
   function storyLovers(S, a) {
     var out = [];
+    /* 恋人の記録を一本で持つ箱庭（宇宙船の S.lovers：組の配列。別れた組は消える）は、それだけを読む */
+    if (Array.isArray(S.lovers)) { S.lovers.forEach(function (pr) { var j = pr[0] === a.i ? pr[1] : pr[1] === a.i ? pr[0] : -1, o = j >= 0 && S.P && S.P[j]; if (o && out.indexOf(o) < 0) out.push(o); }); return out.filter(alive); }
     (S.ties || []).forEach(function (t) { if (/^(lover|mate|fated)$/.test(t.type) && (t.a === a.i || t.b === a.i)) { var o = S.P && S.P[t.a === a.i ? t.b : t.a]; if (o && out.indexOf(o) < 0) out.push(o); } });
     if (S.rom) Object.keys(S.rom).forEach(function (k) { if (!S.rom[k]) return; var ij = k.split('-'); if (+ij[0] === a.i || +ij[1] === a.i) { var o = S.P && S.P[+ij[0] === a.i ? +ij[1] : +ij[0]]; if (o && out.indexOf(o) < 0) out.push(o); } });
     return out.filter(alive);
@@ -84,6 +86,8 @@
   P.storyLovers = storyLovers;
   P.storyCan = function (S, a, b) {
     if (!S || !a || !b || a === b) return false;
+    /* 恋愛相手の固定が食い違う二人は、恋人にしない（engine.js の HK.lockConflict） */
+    if (HK.lockConflict && HK.lockConflict(a, b)) return false;
     var la = storyLovers(S, a).filter(function (o) { return o !== b; }), lb = storyLovers(S, b).filter(function (o) { return o !== a; });
     if (storyLovers(S, a).indexOf(b) >= 0) return true;
     if ((a.faithful && la.length) || (b.faithful && lb.length)) return false;
@@ -189,6 +193,8 @@
       set: function (nv) {
         nv = !!nv;
         if (nv === v) return;
+        /* 恋愛相手の固定が食い違う二人は、どの出来事からでも恋人にしない（engine.js の HK.lockConflict） */
+        if (nv && HK.lockConflict && HK.lockConflict(a, b)) return;
         v = nv;
         if (pf._polyRestore) return;
         if (nv) { if (onCouple(ctx, pf, a, b) === false) v = false; }

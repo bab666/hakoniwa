@@ -33,7 +33,7 @@ const { openBuild } = require('./lib.js');
     try { const KH = HK.KAIHEN; if (KH && KH.SIT) Object.keys(KH.SIT).forEach(k => (KH.SIT[k].npc || []).forEach(nm => nm && MOBM.push(nm))); } catch (e) { }
     /* 宇宙船漂流記の星の生命体・異星の民、壁の向こうの誰か（壁尻）も、住人ではない相手として扱う */
     try { const SH = HK.SHIP; if (SH && SH.LIFE) SH.LIFE.forEach(x => x && x.name && MOBM.push(x.name)); } catch (e) { }
-    const hasMobM = t => MOBM.some(nm => t.indexOf(nm) >= 0) || /夢の中|(?:風|氷|闇|影|水|炎|光|霧)の(?:腕|手|指|舌)|の民の住人|民(?=[をはがのに])|巨体|異星の|壁の向こう|向こう側の誰か|向こうの誰か|正体の分からない何か|若いスタッフ|二人のスタッフ|無口な職人|精液検査センター/.test(t);
+    const hasMobM = t => MOBM.some(nm => t.indexOf(nm) >= 0) || /夢の中|(?:風|氷|闇|影|水|炎|光|霧)の(?:腕|手|指|舌)|の民の住人|の若者たち|民(?=[をはがのに])|巨体|異星の|壁の向こう|向こう側の誰か|向こうの誰か|正体の分からない何か|若いスタッフ|二人のスタッフ|無口な職人|精液検査センター/.test(t);
     const skip = []; const sk = (why, sc, t, i) => { if (WHY && skip.length < 300) skip.push(why + ' | ' + sc + ' | …' + t.slice(Math.max(0, i - 30), i + 60) + '…'); };
     const out = { skip, V1: [], V2: [], V3: [], V4: [], V5: [], n: { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0 }, err: [], runs: 0, bySc: {}, v5n: 0 };
     const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];

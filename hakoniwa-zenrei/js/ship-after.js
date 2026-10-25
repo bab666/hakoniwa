@@ -325,10 +325,10 @@
     im.forEach(function (p) { p.mad = null; });
     S.after = { at: m, by: by, n: 2 + S.rng.int(3), k: 0, who: im.map(function (p) { return p.i; }), dead: dead, mi: 0, end: false };
   };
-  /* 恋人どうしか：恋人・つがい・運命の相手・夫婦の関係か、漂流中に恋仲になった二人で、恋愛対象が両方向で合う（片想い・セフレは含めない） */
+  /* 恋人どうしか：恋人の記録（ship.js の S.lovers。関係の恋人・つがい・運命の相手と、漂流中に恋人になった二人。別れた二人・片想い・セフレは含めない） */
   function isLover(S, a, b) {
     var A = X();
-    return !HK.ngPair(a, b) && A.loveOK(a, b) && !A.family(S, a, b) && (A.ties(S, a, b).some(function (t) { return /^(lover|mate|fated|spouse)$/.test(t.type); }) || !!S.rom[A.rk(a, b)]);
+    return A.lover(S, a, b) && !A.family(S, a, b);
   }
   function relOf(S, a, b) { return isLover(S, a, b) ? 'lover' : X().family(S, a, b) ? 'family' : 'other'; }
   function mournChunk(S, AF, L0, input) {

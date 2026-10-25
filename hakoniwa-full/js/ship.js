@@ -65,9 +65,42 @@
   /* 恋愛・R18にしない組（HK.ngPair）は、関係の設定があっても恋仲として扱わない */
   /* 恋愛対象・恋愛の固定などが両方向で合うか（engine.js の HK.canLove） */
   function loveOK(a, b) { return !HK.canLove || (HK.canLove(a, b) && HK.canLove(b, a)); }
-  function lover(S, a, b) { return !HK.ngPair(a, b) && (ties(S, a, b).some(function (t) { return LOVE.test(t.type); }) || !!S.rom[rk(a, b)]); }
+  /* 恋人の記録（S.lovers：組 [i, j] の配列）：関係の恋人・つがい・運命の相手と、漂流中に恋人になった組だけを持つ。
+     恋に落ちる・告白・恋人の夜・関係図・結末は、すべてここを読む（片想い・セフレ・友達以上恋人未満の関係は恋人に数えない） */
+  function lover(S, a, b) { return !!(a && b && a !== b) && (S.lovers || []).some(function (x) { return (x[0] === a.i && x[1] === b.i) || (x[0] === b.i && x[1] === a.i); }); }
+  /* 恋仲に近い二人（恋人か、片想い・セフレなどの恋愛の関係がある）：心を寄せる重みや嫉妬に使う。恋人の記録には数えない */
+  function amour(S, a, b) { return lover(S, a, b) || (!HK.ngPair(a, b) && ties(S, a, b).some(function (t) { return LOVE.test(t.type); })); }
+  function loversOf(S, a) { return S.P.filter(function (o) { return o !== a && o.alive && lover(S, a, o); }); }
   function family(S, a, b) { return ties(S, a, b).some(function (t) { return HK.tieNoLove ? HK.tieNoLove(t) : FAMILY.test(t.type); }); }
   function setRel(S, a, b, d) { var k = rk(a, b); S.relD[k] = clamp((S.relD[k] || 0) + d, -1, 1); }
+  /* 恋人になれるか：恋愛対象と恋愛相手の固定（両方向の HK.canLove）、一途と複数の恋人の設定（HK.Poly.canCouple）を通す。
+     'ok'＝そのまま恋人に／'switch'＝複数の恋人「なし」で、どちらかに恋人がいるが、新しい相手への気持ちのほうが強い（乗り換え）／''＝なれない */
+  function canJoin(S, a, b) {
+    if (lover(S, a, b)) return 'ok';
+    if (!a || !b || a === b || !a.alive || !b.alive || HK.ngPair(a, b) || !loveOK(a, b) || family(S, a, b)) return '';
+    if (!HK.Poly || HK.Poly.canCouple(S, a, b)) return 'ok';
+    if (HK.Poly.mode(S) !== 'none' || (a.faithful && loversOf(S, a).length) || (b.faithful && loversOf(S, b).length)) return '';
+    var ok = true;
+    [[a, b], [b, a]].forEach(function (pr) { loversOf(S, pr[0]).forEach(function (l) { if (l !== pr[1] && bond(S, pr[0], pr[1]) < bond(S, pr[0], l) + 0.08) ok = false; }); });
+    return ok ? 'switch' : '';
+  }
+  /* 恋人になる：乗り換えのときは、前の恋人と別れた記録を先に残す（同じ人に、別れのないまま二人目の「恋人になった」を出さない）。結べたら真。
+     呼ぶ側は、このあとに「恋人になった」の記録を書く */
+  function join(S, a, b) {
+    var k = canJoin(S, a, b);
+    if (!k) return false;
+    if (lover(S, a, b)) return true;
+    if (k === 'switch') [[a, b], [b, a]].forEach(function (pr) { loversOf(S, pr[0]).forEach(function (l) { if (l !== pr[1]) part(S, pr[0], l, pr[1]); }); });
+    S.lovers.push([Math.min(a.i, b.i), Math.max(a.i, b.i)]);
+    return true;
+  }
+  /* 別れ（乗り換え）：{a}が{b}と別れて{c}を選ぶ */
+  function part(S, x, l, nw) {
+    S.lovers = S.lovers.filter(function (pr) { return !((pr[0] === x.i && pr[1] === l.i) || (pr[0] === l.i && pr[1] === x.i)); });
+    S.exes.push([x.i, l.i]);
+    setRel(S, x, l, -0.35); mark(S, x, l, 'part'); stress(l, 20); stress(x, 6);
+    ST.say(S, { actors: [x, l, nw], tag: '別れ', text: F(pk(S, SH.T.SWITCH), { a: x.name, b: l.name, c: nw.name }), why: x.name + 'は' + l.name + 'と別れて、' + nw.name + 'を選んだ（複数の恋人：なし。恋人は一人まで）', mag: 28 });
+  }
   /* 出来事の記録（関係図のラベルに使う） */
   /* 気質：船長は使命感でストレスを抱えにくく、揉めごとを収める側に回る。機嫌取りは人の気持ちを優先して、自分の疲れを溜め込む */
   function capt(p) { return p.role === 'captain'; }
@@ -180,7 +213,10 @@
     S.egoNotes = true; S.bondFn = bond;
     /* 恋愛・R18にしない組（HK.ngPair）には、恋愛の関係（恋人・セフレ・片想いなど）を当てない（ties.js と同じ） */
     S.ties = (input.ties || []).filter(function (t) { return t.a !== t.b && t.a < P.length && t.b < P.length && !(HK.ngPair(P[t.a], P[t.b]) && /^(lover|fwb|mate|fated|crush|almost|ex|yan)$/.test(t.type)); });
-    S.relD = {}; S.relEv = {}; S.rom = {}; S.jeal = []; S.left = []; S.saved = []; S.bday = {}; S.items = []; S.reports = []; S.planet = null; S.deaths = [];
+    S.relD = {}; S.relEv = {}; S.exes = []; S.jeal = []; S.left = []; S.saved = []; S.bday = {}; S.items = []; S.reports = []; S.planet = null; S.deaths = [];
+    /* 恋人の記録のはじまり：関係の恋人・つがい・運命の相手（恋愛対象が両方向で合う組だけ） */
+    S.lovers = [];
+    S.ties.forEach(function (t) { var a = P[t.a], b = P[t.b]; if (/^(lover|mate|fated)$/.test(t.type) && loveOK(a, b) && !lover(S, a, b)) S.lovers.push([Math.min(t.a, t.b), Math.max(t.a, t.b)]); });
     var sup = env.supply / 100;
     S.ship = { hull: 85, power: 75 + sup * 15, o2: 85, food: 45 + sup * 45, morale: 60 };
     /* ---------- 役割 ---------- */
@@ -520,8 +556,8 @@
       if (SH.AFTER) SH.AFTER.react(S, a, 'worse');
       /* うつる：近しい人ほど、そばにいるのでうつりやすい */
       var cand = live(S).filter(function (q) { return q !== a && !q.inf; });
-      var q = cand.length ? HK.weighted(rng, cand, function (z) { return 0.1 + Math.max(0, bond(S, z, a)) * 1.5 + (lover(S, z, a) ? 1 : 0); }) : null;
-      if (q && rng() < (0.12 + Math.max(0, bond(S, q, a)) * 0.25 + (lover(S, q, a) ? 0.15 : 0)) * HK.Dark.f(S, 'kill')) {
+      var q = cand.length ? HK.weighted(rng, cand, function (z) { return 0.1 + Math.max(0, bond(S, z, a)) * 1.5 + (amour(S, z, a) ? 1 : 0); }) : null;
+      if (q && rng() < (0.12 + Math.max(0, bond(S, q, a)) * 0.25 + (amour(S, q, a) ? 0.15 : 0)) * HK.Dark.f(S, 'kill')) {
         q.inf = 1; q.infSrc = a.infSrc; q.cnt.inf = (q.cnt.inf || 0) + 1; stress(q, 10);
         ST.say(S, { actors: [a, q], tag: '感染拡大', text: F(pk(S, lover(S, a, q) && !family(S, a, q) && C.INF_SPREAD_LOVE ? C.INF_SPREAD_LOVE : C.INF_SPREAD), { a: a.name, b: q.name }), why: q.name + 'は' + a.name + 'のそばにいた（関係 ' + Math.round(bond(S, q, a) * 100) + '）', mag: 26 });
         if (SH.AFTER) SH.AFTER.react(S, q, 'start', [a]);
@@ -614,8 +650,8 @@
     var PR = pairs(L0), tense = (100 - sp.morale) / 100 + (sp.food < 20 ? 0.35 : 0) + (sp.o2 < 30 ? 0.2 : 0);
     var sick = L0.filter(function (p) { return p.m.hp < 60; });
     var neg = PR.filter(function (x) { return (S.relD[rk(x[0], x[1])] || 0) < -0.15 || bond(S, x[0], x[1]) < -0.15; });
-    /* 想いが育つのは、恋仲か、恋愛対象が両方向で合う（HK.canLove）二人だけ */
-    var lv = PR.filter(function (x) { return lover(S, x[0], x[1]) || (bond(S, x[0], x[1]) > 0.55 && loveOK(x[0], x[1]) && HK.Pos && HK.Pos.okSex(x[0], x[1]) && !family(S, x[0], x[1])); });
+    /* 想いが育つのは、恋人どうしか、恋人になれる（canJoin：恋愛対象・固定が両方向で合い、複数の恋人の設定にも合う。乗り換えも含む）二人だけ */
+    var lv = PR.filter(function (x) { return lover(S, x[0], x[1]) || (bond(S, x[0], x[1]) > 0.55 && HK.Pos && HK.Pos.okSex(x[0], x[1]) && canJoin(S, x[0], x[1])); });
     var opts = [
       ['drink', 1.0], ['team', 1.0], ['confide', 0.7], ['game', 0.7], ['nurse', sick.length ? 0.9 : 0], ['birthday', 0.25], ['drink_all', L0.length >= 3 ? 0.3 : 0],
       ['fight', 0.25 + tense * 0.9], ['drink_bad', 0.2 + tense * 0.4], ['ration', sp.food < 35 ? 0.3 + tense * 0.6 : 0.05], ['duty', 0.2 + tense * 0.4], ['game_bad', 0.15 + tense * 0.2],
@@ -666,13 +702,16 @@
     else if (kind === 'good') { setRel(S, a, b, 0.15); mark(S, a, b, 'team'); say(T.PAIR_GOOD, '絆', 0, '日々の暮らしの中で'); }
     else if (kind === 'makeup') { stress(a, -6); stress(b, -6); setRel(S, a, b, 0.3); mark(S, a, b, 'makeup'); say(T.MAKEUP, '仲直り', 0, 'こじれた関係を修復した'); }
     else if (kind === 'love') {
-      stress(a, -6); stress(b, -6); setRel(S, a, b, 0.18); mark(S, a, b, 'love'); if (bond(S, a, b) > 0.6 && loveOK(a, b) && (!HK.Poly || HK.Poly.storyCan(S, a, b))) S.rom[rk(a, b)] = 1;
-      say(T.PAIR_LOVE, '想い', 0, '閉ざされた船で、想いが育った');
+      stress(a, -6); stress(b, -6); setRel(S, a, b, 0.18); mark(S, a, b, 'love');
+      /* 想いが育ちきった二人は、ここで恋人になる（恋人になったことを記録に書く。乗り換えなら、前の恋人との別れの記録が先に出る） */
+      var jk = !lover(S, a, b) && bond(S, a, b) > 0.6 ? canJoin(S, a, b) : '';
+      if (jk) join(S, a, b);
+      ST.sayB(S, { actors: [a, b], tag: jk ? '恋人に' : '想い', text: F(pk(S, T.PAIR_LOVE), { a: a.name, b: b.name }) + (jk ? F(pk(S, T.PAIR_JOIN), { a: a.name, b: b.name }) : ''), why: '閉ざされた船で、想いが育った' + (jk ? '：恋人になった' + (jk === 'switch' ? '（乗り換え）' : '') : '') + '（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'と' + b.name, !!jk);
     }
     else if (kind === 'jealous') {
       /* {c}：{a}に想いを寄せている人が、{a}と{b}の親しさを見てしまう */
       /* 関係「執着なし」の相手のことでは嫉妬しない */
-      var c = pickP(others.filter(function (q) { return (lover(S, q, a) || bond(S, q, a) > 0.4) && !HK.ngPair(q, a) && !ties(S, q, a).some(function (t) { return t.type === 'noobs'; }); }), function (q) { return 0.3 + (q.tr.jealous || 0.4) + Math.max(0, bond(S, q, a)); });
+      var c = pickP(others.filter(function (q) { return (amour(S, q, a) || bond(S, q, a) > 0.4) && !HK.ngPair(q, a) && !ties(S, q, a).some(function (t) { return t.type === 'noobs'; }); }), function (q) { return 0.3 + (q.tr.jealous || 0.4) + Math.max(0, bond(S, q, a)); });
       if (!c) return;
       stress(c, 8); setRel(S, a, b, 0.1); setRel(S, c, b, -0.25); setRel(S, c, a, -0.1); mark(S, c, b, 'jealous'); S.jeal.push([c.i, b.i]);
       ST.sayB(S, { actors: [c, a, b], tag: '嫉妬', text: F(pk(S, BP(S, 'JEALOUS')), { a: a.name, b: b.name, c: c.name }), why: c.name + 'は' + a.name + 'に想いを寄せている（嫉妬 ' + Math.round((c.tr.jealous || 0) * 100) + '）' }, c.name + 'の嫉妬');
@@ -700,7 +739,7 @@
     b.m.hp = clamp(b.m.hp + 8, 0, 100); stress(b, -5); setRel(S, a, b, 0.28); mark(S, a, b, 'nurse');
     ST.sayB(S, { actors: [a, b], tag: '看病', text: F(pk(S, BP(S, 'NURSE')), { a: a.name, b: b.name }), why: '弱っているところを支えた（体力 +8）（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'が' + b.name + 'を看病した');
     if (!r18on(S) || !R || !R.nurseTop || !Pz || !Pz.okSex(a, b) || family(S, a, b) || !sxRoom(S, [a, b])) return;
-    if (rng() > S.env.slewd / 100 * (lover(S, a, b) ? 0.7 : bond(S, a, b) > 0.3 ? 0.45 : 0.15)) return;
+    if (rng() > S.env.slewd / 100 * (amour(S, a, b) ? 0.7 : bond(S, a, b) > 0.3 ? 0.45 : 0.15)) return;
     /* 受け攻め：自分で攻めを選んだ人は、熱があっても受けにならない */
     var o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
     if (Pz.hardTop(u)) return;
@@ -748,14 +787,17 @@
     var P = S.P, edges = [], seen = {};
     function add(a, b, label, cls, dir) { var k = rk(P[a], P[b]) + label; if (seen[k]) return; seen[k] = 1; edges.push({ a: a, b: b, label: label, cls: cls, dir: dir }); }
     var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', classmate: 'friend', boss: 'partner', benefactor: 'guard', relative: 'guard', worship: 'guard', fond: 'friend', blind: 'guard', acq: 'none' };
-    S.ties.forEach(function (t) { var lab = HK.tieLabel ? HK.tieLabel(t) : HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; add(t.a, t.b, lab, CLS[t.type] || 'friend', t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null); });
+    /* 別れた二人（乗り換え）は、関係の恋人の線を「別れた」に替える */
+    var parted = {}; (S.exes || []).forEach(function (j) { if (!lover(S, P[j[0]], P[j[1]])) parted[rk(P[j[0]], P[j[1]])] = 1; });
+    S.ties.forEach(function (t) { if (parted[rk(P[t.a], P[t.b])] && /^(lover|mate|fated)$/.test(t.type)) return; var lab = HK.tieLabel ? HK.tieLabel(t) : HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; add(t.a, t.b, lab, CLS[t.type] || 'friend', t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null); });
+    /* 関係の恋人・つがい・運命の相手の線がある組には「恋仲」を重ねない（片想い・セフレ・友達以上の線の組が恋人になったら「恋仲」を足す） */
     var hasLove = {};
-    S.ties.forEach(function (t) { if (LOVE.test(t.type)) hasLove[rk(P[t.a], P[t.b])] = 1; });
+    S.ties.forEach(function (t) { if (/^(lover|mate|fated)$/.test(t.type) && !parted[rk(P[t.a], P[t.b])]) hasLove[rk(P[t.a], P[t.b])] = 1; });
     var keys = Object.keys(S.relD).concat(Object.keys(S.relEv)).filter(function (k, x, arr) { return arr.indexOf(k) === x; });
     keys.forEach(function (k) {
       var ab = k.split('-'), a = +ab[0], b = +ab[1], d = S.relD[k] || 0, e = S.relEv[k] || {};
       var bad = (e.fight || 0) + (e.quarrel || 0), good = (e.drink || 0) + (e.team || 0) + (e.confide || 0) + (e.nurse || 0) + (e.calm || 0) + (e.game || 0) + (e.makeup || 0) + (e.bday || 0);
-      if (S.rom[k] && !hasLove[k]) add(a, b, '★恋仲', 'love', null);
+      if (lover(S, P[a], P[b]) && !hasLove[k]) add(a, b, '★恋仲', 'love', null);
       if (e.night && !(S.nightNo && S.nightNo[k])) add(a, b, '★夜を共にした', 'night', null);
       if (d >= 0.55) add(a, b, bad >= 2 ? '★ケンカするほど仲がいい' : e.nurse || e.calm ? '★支え合う' : e.confide ? '★深い絆' : (e.drink || 0) >= 2 ? '★飲み仲間' : '★深い絆', 'guard', null);
       else if (d >= 0.25) add(a, b, (e.drink || 0) >= 2 ? '★飲み仲間' : e.team ? '★相棒' : e.makeup ? '★和解' : '★仲間', e.team ? 'partner' : 'friend', null);
@@ -765,6 +807,9 @@
     });
     /* 夜のあとの関係（一夜の過ち・体の関係・恋に落ちた・実らなかった想いなど。ship-night.js） */
     if (SH.NIGHT && SH.NIGHT.rel) SH.NIGHT.rel(S, add);
+    (S.exes || []).forEach(function (j) { if (parted[rk(P[j[0]], P[j[1]])]) add(j[0], j[1], '★別れた', 'obsess', j[0]); });
+    /* 恋人の記録にあって、まだ線のない組（出来事の記録がない組も、関係図と結末を S.lovers にそろえる） */
+    (S.lovers || []).forEach(function (pr) { if (!hasLove[rk(P[pr[0]], P[pr[1]])]) add(pr[0], pr[1], '★恋仲', 'love', null); });
     S.left.forEach(function (j) { add(j[0], j[1], '★置き去りにした', 'enemy', j[0]); });
     S.saved.forEach(function (j) { add(j[0], j[1], '★助け出した', 'guard', j[0]); });
     S.jeal.forEach(function (j) { if ((S.relD[rk(P[j[0]], P[j[1]])] || 0) < 0) add(j[0], j[1], '★嫉妬', 'obsess', j[0]); });
@@ -877,16 +922,16 @@
     return text;
   }
   /* 夜の出来事の仕組み（ship-night.js。R18版のみ）に渡す道具 */
-  var NAPI = { bond: bond, lover: lover, family: family, setRel: setRel, mark: mark, rk: rk, live: live, bodyFor: bodyFor, F: F, pk: pk, stress: stress, room: sxRoom, note: sxNote };
+  var NAPI = { bond: bond, lover: lover, amour: amour, canJoin: canJoin, join: join, loversOf: loversOf, family: family, setRel: setRel, mark: mark, rk: rk, live: live, bodyFor: bodyFor, F: F, pk: pk, stress: stress, room: sxRoom, note: sxNote };
   function nightR18(S) {
     /* 関係の深さで夜の種類が変わる（勢いの夜・二度目の夜・恋人の夜）、過ちだと渋る人、夜をきっかけに恋に落ちて告白する人 */
     if (SH.NIGHT) { SH.NIGHT.run(S, NAPI); return; }
     var rng = S.rng, L0 = live(S), R = SH.R18;
     if (L0.length < 2 || !sxRoom(S) || rng() > S.env.slewd / 100 * 0.3) return;
     var pairs = [];
-    L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i && HK.Pos.okSex(a, b) && !family(S, a, b) && sxRoom(S, [a, b]) && (lover(S, a, b) || bond(S, a, b) > 0.25 || rng() < 0.15)) pairs.push([a, b]); }); });
+    L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i && HK.Pos.okSex(a, b) && !family(S, a, b) && sxRoom(S, [a, b]) && (amour(S, a, b) || bond(S, a, b) > 0.25 || rng() < 0.15)) pairs.push([a, b]); }); });
     if (!pairs.length) return;
-    var pr = HK.weighted(rng, pairs, function (x) { return 0.3 + Math.max(0, bond(S, x[0], x[1])) + (lover(S, x[0], x[1]) ? 1 : 0); }), a = pr[0], b = pr[1];
+    var pr = HK.weighted(rng, pairs, function (x) { return 0.3 + Math.max(0, bond(S, x[0], x[1])) + (amour(S, x[0], x[1]) ? 1 : 0); }), a = pr[0], b = pr[1];
     var civ = S.planet && S.planet.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(S.planet.civ.d.state) && rng() < 0.25;
     var pol = S.planet && S.planet.life.some(function (l) { return l.st >= 1 && l.d.kind === 'plant'; }) && rng() < 0.35;
     var open = F(pk(S, civ ? R.civ : pol ? R.pollen : R.open), { a: a.name, b: b.name });
@@ -1009,9 +1054,10 @@
       ST.step(S, weak ? '力尽きかけた船' : '漂流の一年の終わり');
       ST.say(S, { actors: L0, kind: 'climax', tag: weak ? '結末：船の灯り' : '結末：漂流', text: F(pk(S, weak ? EPI.driftLow : EPI.driftOk), v), why: weak ? '船の状態が悪い（動力 ' + Math.round(sp.power) + '・生命維持 ' + Math.round(sp.o2) + '・食料 ' + Math.round(sp.food) + '）' : '星は見つからなかったが、船はまだ動ける', mag: 36 });
     }
-    /* 人ごとの結び：恋人になった組／ひとりの人／亡くなった人／戻らない人 */
+    /* 人ごとの結び：恋人の組（恋人の記録 S.lovers のうち、二人とも船にいる組。複数の恋人「あり」なら、同じ人が二組に出ることもある）／ひとりの人／亡くなった人／戻らない人 */
     var used = [];
-    L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i && used.indexOf(a) < 0 && used.indexOf(b) < 0 && lover(S, a, b)) { used.push(a, b); out.push({ act: [a, b], t: F(pk(S, EPI.lovers), { a: a.name, b: b.name }) }); } }); });
+    S.endLovers = [];
+    (S.lovers || []).forEach(function (pr) { var a = S.P[pr[0]], b = S.P[pr[1]]; if (L0.indexOf(a) < 0 || L0.indexOf(b) < 0) return; [a, b].forEach(function (x) { if (used.indexOf(x) < 0) used.push(x); }); S.endLovers.push([a.i, b.i]); out.push({ act: [a, b], t: F(pk(S, EPI.lovers), { a: a.name, b: b.name }) }); });
     var lone = L0.filter(function (p) { return used.indexOf(p) < 0; });
     if (lone.length && L0.length > 1 && used.length) { var ln = S.rng.pick(lone); out.push({ act: [ln], t: F(pk(S, EPI.lone), { a: ln.name }) }); }
     if (S.deaths.length) { out.push({ act: L0, t: F(pk(S, EPI.mourn), { v: names(S.deaths), l: v.l }) }); }
@@ -1085,5 +1131,5 @@
   }
   SH.skill = skill; SH.bond = bond;
   /* 全滅のあと・感染症の反応（ship-after.js）に渡す道具 */
-  SH.API = { live: live, bond: bond, lover: lover, family: family, ties: ties, rk: rk, loveOK: loveOK, setRel: setRel, stress: stress, pk: pk, names: names, closest: closest, makePlanet: makePlanet };
+  SH.API = { live: live, bond: bond, lover: lover, amour: amour, canJoin: canJoin, join: join, loversOf: loversOf, family: family, ties: ties, rk: rk, loveOK: loveOK, setRel: setRel, stress: stress, pk: pk, names: names, closest: closest, makePlanet: makePlanet };
 })();

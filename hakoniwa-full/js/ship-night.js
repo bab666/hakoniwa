@@ -251,15 +251,21 @@
         var a = P[i], b = P[i === x.a ? x.b : x.a];
         if (!x.fell[i] || x.said[i] || x.fell[i] >= S.m || !a.alive || !b.alive) return;
         if (A.lover(S, a, b)) { x.said[i] = 1; return; }
+        /* 恋人になれるか（ship.js の canJoin：恋愛対象・固定を両方向・一途・複数の恋人の設定。「なし」で恋人がいれば、乗り換えるほど気持ちが傾いているか）。
+           自分に恋人がいて乗り換えられないなら、想いは胸にしまって告白しない */
+        var jk = A.canJoin(S, a, b);
+        if (!jk && A.loversOf(S, a).length) { x.said[i] = 1; return; }
         if (rng() > 0.45 + tr(a, 'fc') * 0.2 - tr(a, 'ac') * 0.15 + (S.m - x.fell[i]) * 0.1) return;
         x.said[i] = 1;
         var w = A.bond(S, b, a), both = !!x.fell[b.i];
-        var ok = (!HK.canLove || HK.canLove(b, a)) && (!HK.Poly || HK.Poly.storyCan(S, a, b)) && (both || w >= 0.5 || rng() < 0.2 + tr(b, 'warmth') * 0.3 + Math.max(0, w) * 0.4 - (x.mis[b.i] ? 0.3 : 0));
+        var ok = !!jk && (both || w >= 0.5 || rng() < 0.2 + tr(b, 'warmth') * 0.3 + Math.max(0, w) * 0.4 - (x.mis[b.i] ? 0.3 : 0));
         var m = { a: a.name, b: b.name };
         var text = A.F(A.pk(S, att(a, T.confess)), m) + ' ' + A.F(A.pk(S, att(b, ok ? T.yes : T.no)), m) + ' ' + A.F(A.pk(S, ok ? T.yesTail : T.noTail), m);
-        if (ok) { S.rom[k] = 1; A.setRel(S, a, b, 0.25); A.mark(S, a, b, 'love'); x.res[i] = 'yes'; A.stress(a, -12); A.stress(b, -6); }
+        /* 恋人の記録（S.lovers）に入れる。乗り換えなら、前の恋人との別れの記録が告白の前に出る */
+        if (ok) A.join(S, a, b);
+        if (ok) { A.setRel(S, a, b, 0.25); A.mark(S, a, b, 'love'); x.res[i] = 'yes'; A.stress(a, -12); A.stress(b, -6); }
         else { A.setRel(S, a, b, -0.12); x.res[i] = 'no'; A.stress(a, 14); }
-        var o = HK.Story.say(S, { actors: [a, b], tag: '告白', kind: 'climax', text: text, why: a.name + 'は夜をきっかけに' + b.name + 'に恋をした／' + (ok ? (both ? '二人とも同じ気持ちだった' : b.name + 'の気持ち（関係の近さ ' + Math.round(w * 100) + '）') + '：恋人になった' : b.name + 'には届かなかった（関係の近さ ' + Math.round(w * 100) + '）'), mag: 32 });
+        var o = HK.Story.say(S, { actors: [a, b], tag: '告白', kind: 'climax', text: text, why: a.name + 'は夜をきっかけに' + b.name + 'に恋をした／' + (ok ? (both ? '二人とも同じ気持ちだった' : b.name + 'の気持ち（関係の近さ ' + Math.round(w * 100) + '）') + '：恋人になった' + (jk === 'switch' ? '（乗り換え）' : '') : b.name + 'には届かなかった（関係の近さ ' + Math.round(w * 100) + '）'), mag: 32 });
         HK.Story.key(S, o, a.name + 'が' + b.name + 'に告白した');
       });
     });
@@ -304,7 +310,9 @@
       L0.forEach(function (b) {
         if (a.i >= b.i || !HK.Pos.okSex(a, b) || A.family(S, a, b) || (A.room && !A.room(S, [a, b]))) return;
         var w = A.bond(S, a, b), lv = A.lover(S, a, b), x = (S.nt || {})[A.rk(a, b)];
-        var tier = lv || w >= 0.6 ? 'love' : x && x.n >= 1 ? 'again' : 'casual';
+        /* 恋人の夜は、恋人の記録（S.lovers）にある二人だけ。恋人でない深い仲の二人の初めての夜は、勢いの夜の文が合わないので起こさない */
+        var tier = lv ? 'love' : x && x.n >= 1 ? 'again' : 'casual';
+        if (tier === 'casual' && w >= 0.6) return;
         if (tier === 'again' && x.ref >= 2 && w < 0.55) return;
         if (tier === 'casual' && !(w > 0.25 || (w > -0.25 && rng() < lowP))) return;
         cand.push({ a: a, b: b, w: w, tier: tier, x: x });
@@ -357,7 +365,8 @@
     var N = S.nt || {};
     Object.keys(N).forEach(function (k) {
       var x = N[k], A0 = x.a, B0 = x.b;
-      if (!S.rom[k]) {
+      var lov = SH.API && SH.API.lover(S, S.P[A0], S.P[B0]);
+      if (!lov) {
         if (x.mis[A0] || x.mis[B0]) add(A0, B0, '★一夜の過ち', 'obsess', null);
         else if (x.awk) add(A0, B0, '★気まずい', 'obsess', null);
         else if (x.n >= 2) add(A0, B0, '★体の関係', 'night', null);
@@ -365,7 +374,7 @@
       [A0, B0].forEach(function (i) {
         var j = i === A0 ? B0 : A0;
         if (x.res[i] === 'no') add(i, j, '★実らなかった想い', 'pine', i);
-        else if (x.fell[i] && !S.rom[k]) add(i, j, '★恋に落ちた', 'pine', i);
+        else if (x.fell[i] && !lov) add(i, j, '★恋に落ちた', 'pine', i);
       });
     });
   }
