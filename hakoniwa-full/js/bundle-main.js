@@ -38018,7 +38018,7 @@
     desc: '住人がサキュバスになって一晩、街で精を集める。魅力は足りるか、どう誘惑するか、一晩で何ml集められるか。複数人なら同じ夜を別々に狩って比べられる。住人の一人を先輩サキュバスにすると、性格に応じたアドバイスをくれる。※成人キャラクター向け',
     note: '※登場人物はすべて成人として扱います。',
     unit: '時間', simulate: function (input) { return run(input); },
-    castHint: '1人でも複数人でも。複数人なら全員が同じ夜に別々に狩りをして、集めた精の量を比べます。「役割」で「先輩サキュバス」を選んだ住人は狩りに出ず、後輩にアドバイスをします（性格でアドバイスが変わります）。',
+    castHint: '1人でも複数人でも。複数人なら全員が同じ夜に別々に狩りをして、集めた精の量を比べます。「役割」で「先輩サキュバス」を選んだ住人は狩りに出ず、後輩にアドバイスをします（性格でアドバイスが変わります）。「標的」で「標的（人間）になる」を選んだ住人（または設定「標的」を住人から）は、サキュバスの存在を知らない人間として街にいて、サキュバスの住人に狙われます。',
     env: [
       { id: 'town', label: '狩り場', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'downtown', label: '夜の繁華街' }, { v: 'office', label: '残業明けのオフィス街' }, { v: 'onsen', label: '湯けむりの温泉街' }, { v: 'masq', label: '仮面舞踏会' }] },
       { id: 'hours', label: '夜の長さ', min: 3, max: 10, def: 7, lo: '3時間', hi: '10時間', unit: '時間' },
@@ -38106,15 +38106,18 @@
       p.action = resolve(S, p, scen.actions, pc.action); p.goal = resolve(S, p, scen.goals, pc.goal);
       p.style = SB.typeOf ? SB.typeOf(p) : SB.STYLE[p.top];
     });
-    if (!P.some(function (p) { return p.role === 'hunt'; })) P[0].role = 'hunt';
+    /* 標的（人間の側）の住人（solo-succubus-target.js）。設定「標的」がおまかせ（モブ）なら、いままでどおり街の獲物だけ */
+    var TG = S.TG = SB.targetsOf ? SB.targetsOf(S, input) : [];
+    if (!P.some(function (p) { return p.role === 'hunt'; })) (P.filter(function (p) { return p.role !== 'target'; })[0] || P[0]).role = 'hunt';
     var H = P.filter(function (p) { return p.role === 'hunt'; }), sen = P.filter(function (p) { return p.role === 'senpai'; })[0] || null;
     var SE = sen ? SB.SENPAI[sen.top] : null;
     P.forEach(function (p) {
-      p.roleLabel = p.role === 'senpai' ? '先輩サキュバス（' + SE.label + '）' : 'サキュバス・' + p.style.label;
+      p.roleLabel = p.role === 'senpai' ? '先輩サキュバス（' + SE.label + '）' : p.role === 'target' ? '標的（人間）' : 'サキュバス・' + p.style.label;
       p.m = { ml: 0, mana: 100, plea: 0, mood: 60 };
       p.cnt = { tries: 0, win: 0, big: 0, half: 0, fail: 0, melt: 0, streak: 0, shame: 0, magic: 0, reverse: 0, holy: 0 };
       p.best = null; p.out = false;
     });
+    if (TG.length) SB.targetSetup(S, T, TG);
     var keys = ['ml', 'mana', 'plea', 'mood'];
 
     /* ---------- 日没 ---------- */
@@ -38137,6 +38140,7 @@
         if (sen.top === 'A') p.intel = true;
       });
     }
+    if (TG.length) SB.targetDusk(S, T, TG, H);
     ST.snap(S, keys);
 
     /* ---------- 夜 ---------- */
@@ -38151,6 +38155,8 @@
         if (p.skip) { p.skip = false; return; }
         /* インキュバス派との獲物の取り合い・吸い合い勝負（solo-succubus-rival.js。設定「インキュバス派」） */
         if (SB.rivalTurn && SB.rivalTurn(S, T, p, H, sen, h, last)) return;
+        /* 住人の標的（人間）に近づく（solo-succubus-target.js。設定「標的」が住人から） */
+        if (TG.length && SB.targetTurn(S, T, p, TG, sen, h, last)) return;
         if (rng() < env.ev / 100 * 0.45 || (last && rng() < 0.4)) { if (happen(S, T, p, sen, SE, last)) return; }
         if (rng() > 0.35 + env.prey / 100 * 0.65) return ST.sayB(S, { actors: [p], text: ST.fmt(pkF(S, (SB.NOPREY || L('{a}は{spot}で一時間粘ったが、めぼしい獲物は通らなかった。|{a}は{spot}の屋根の上から街を見下ろした。今夜は人通りが少ない。|{a}は{spot}をうろついたが、目が合う人がいなかった。'))), { a: p.name, spot: rng.pick(T.spots) }), why: '獲物の少なさ（' + env.prey + '）' }, p.name + 'は空振り');
         hunt(S, T, p, sen, SE);
@@ -38159,6 +38165,7 @@
       /* 精が尽きかけた住人に、仲間・先輩・ライバルが精を分け与える（solo-succubus-rival.js） */
       if (SB.rivalGive) SB.rivalGive(S, T, H, sen, h);
       P.forEach(function (p) {
+        if (p.role === 'target') { p.m.plea = clamp(p.m.plea - 15, 0, 100); return; }
         p.m.mana = clamp(p.m.mana + 3, 0, 100); p.m.plea = clamp(p.m.plea - 10, 0, 100);
         if (p.role !== 'hunt' || p.out) return;
         var cl = heatCool(S, p);
@@ -38456,6 +38463,7 @@
       if (!p.best) pool = pool.filter(function (x) { return x.indexOf('{best}') < 0; });
       ST.say(S, { actors: [p], tag: '夜明け', text: ST.fmt(pkF(S, pool), { a: p.name, ml: Math.round(p.m.ml), best: p.best ? p.best.name : '' }), why: p.name + 'の一夜：' + Math.round(p.m.ml) + 'ml・評価 ' + p.grade + (p.out ? '・' + p.outWhy : p.inLove ? '・獲物に恋をした' : '') });
     });
+    if (S.TG && S.TG.length) SB.targetDawn(S, T, S.TG);
     if (sen) ST.say(S, { actors: [sen], tag: '夜明け', text: ST.fmt(pkF(S, DAWN_SEN), { s: sen.name, a: H.length > 1 ? '後輩たち' : H[0].name }), why: '先輩サキュバス（' + (SE ? SE.label : '') + '）' });
     var top = rank[0], sum = Math.round(H.reduce(function (s, p) { return s + p.m.ml; }, 0));
     var ek = (H.length > 1 ? 'many_' : 'one_') + (GOOD[top.grade] && !top.out ? 'ok' : 'ng');
@@ -38500,6 +38508,7 @@
     var lines = rank.map(function (p, k) { return (k + 1) + '位 ' + p.name + '（' + p.style.label + '）' + Math.round(p.m.ml) + 'ml・成功' + p.cnt.win + '/' + p.cnt.tries + (p.best ? '・最高は' + p.best.name : '') + (p.out ? '・' + p.outWhy : ''); });
     var rows = rank.map(function (p, k) { return { i: p.i, rank: (k + 1) + '位', cells: [p.style.label, '魅' + p.stats.charm + '・技' + p.stats.tech, Math.round(p.m.ml) + 'ml', p.cnt.win + '/' + p.cnt.tries, String(p.cnt.big), p.best ? p.best.name : '—', p.grade] }; });
     if (sen) rows.push({ i: sen.i, rank: '先輩', cells: [SE.label, '—', '—', '—', '—', '—', '—'] });
+    if (S.TG && S.TG.length) SB.targetFinish(S, T, S.TG, rows, lines);
     var sum = H.reduce(function (s, p) { return s + p.m.ml; }, 0);
     return ST.result(S, input, {
       ending: { title: title, kind: GOOD[top.grade] ? 'ok' : 'over', lines: lines },
@@ -38975,6 +38984,464 @@
     if (c.got) b.push('精を分けてもらった ' + c.got + '回');
     if (c.gave) b.push('仲間に精を分けた ' + c.gave + '回');
     return b.join('・');
+  };
+})();
+;/* ==== js/solo-succubus-target.js ==== */
+/* 箱庭シミュレーター: サキュバスの一夜（R18）― 住人を標的（人間の側）にする
+   ・役「標的」（HK.Roles.install）：おまかせ＝モブ（いままでどおり街の獲物だけ。結果も変わらない）／住人から／モブ
+     住人から：住人の欄で「標的（人間）になる」を選んだ人（いなければ、組める相手のいる住人から1〜2人）が、
+     サキュバスの存在を知らない人間として夜の街にいて、サキュバスの住人に狙われる。モブの獲物もいままでどおり出る
+   ・全員を標的にはしない：標的に選んだ人で住人が尽きるときは、一人（自分で選んでいない人、なければ色香と腕のいちばんある人）を
+     サキュバスに戻す。住人が一人だけなら標的はなしで、その人がサキュバスとして狩りに出る（注記に書く）
+   ・標的の反応は気質で決まる：気づく（A・慎重さ）／抗う（CP・慎重さ）／流される（AC・衝動性）／逆に惚れ込む（NP・FC。HK.canLove を両方向で通る組だけ）
+     気づく・抗うは、サキュバスの誘惑の出来しだいで、自分の意思で受け入れることもある（無理に落とす展開にはしない）
+   ・体の関係になるのは HK.State.pairSex（恋愛対象・受け攻め HK.Pos.okSex・R18に参加・その場にいる）・!HK.ngPair・!HK.sexBlocked を通った組だけ。
+     向きは HK.Pos.order（自分で攻めを選んだ人は受けにしない）。通らない組は、話すだけ・断られるだけの場面にする
+   ・標的の「精」のメーターは、残っている精（吸われるたびに減る）。結果の注記に、誰に誘われてどうなったかを残す
+   {a}=サキュバス {t}=標的 {x}=上 {y}=下 {spot}=場所 {ml}=吸った精 {town}=狩り場 {lv}=惚れた相手
+   喘ぎ {m1}=上の人／{n1}=下の人／{c2}=標的の絶頂。登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK, SB = HK.SUCCUBUS, ST = HK.Story;
+  if (!SB || !ST || !HK.SCENARIOS || !HK.SCENARIOS.succubus || !HK.Roles) return;
+  var scen = HK.SCENARIOS.succubus;
+  function L(s) { return s.split('|'); }
+  /* 同じ結果の中で同じ文を繰り返さない（solo-succubus.js と同じ記憶を使う） */
+  function pkF(S, arr) {
+    if (!arr || !arr.length) return '';
+    var m = S._pkLru = S._pkLru || { n: 0, at: {} }, best = [], bv = Infinity;
+    for (var i = 0; i < arr.length; i++) {
+      var a = typeof arr[i] === 'string' ? (m.at['$' + arr[i]] || 0) : 0;
+      if (a < bv) { bv = a; best = [arr[i]]; } else if (a === bv) best.push(arr[i]);
+    }
+    var x = best[S.rng.int(best.length)];
+    if (typeof x === 'string') m.at['$' + x] = ++m.n;
+    return x;
+  }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  var fmt = ST.fmt;
+
+  /* ---------- 設定・住人の欄 ---------- */
+  HK.Roles.install(scen, 'target', '標的', {
+    allowMob: true, auto: 'mob', yes: '標的（人間）になる',
+    desc: '狙われる人間の側を、いつもどおりの街の獲物（モブ）にするか、住人にするかを選びます。住人にすると、その人はサキュバスの存在を知らない人間として夜の街にいて、サキュバスの住人に狙われます（街の獲物もいままでどおり出ます）。住人の欄で「標的（人間）になる」を選んだ人が優先されます。全員は標的にできず、少なくとも一人はサキュバスとして夜に出ます'
+  });
+
+  var St = function () { return HK.State; };
+  function here(c) { return !St() || St().here(c); }
+  /* 住人どうしで体の関係になれる組（恋愛対象・受け攻め・R18に参加・恋愛やR18にしない相手・性行為の相手の固定） */
+  function okPair(a, b) {
+    return !!(a && b && a !== b) && !!(St() ? St().pairSex(a, b) : HK.Pos && HK.Pos.okSex(a, b)) && !!(!HK.Pos || HK.Pos.okSex(a, b)) &&
+      !(St() && !(St().r18ok(a) && St().r18ok(b))) && !(HK.ngPair && HK.ngPair(a, b)) && !(HK.sexBlocked && HK.sexBlocked(a, b));
+  }
+  function loveOK(a, b) { return !!(HK.canLove && HK.canLove(a, b) && HK.canLove(b, a)) && !(HK.ngPair && HK.ngPair(a, b)); }
+  /* 体の関係にしない理由（理由の欄に出す） */
+  function whyNot(a, b) {
+    if (St() && !St().r18ok(b)) return b.name + 'はR18に参加しない';
+    if (St() && !St().r18ok(a)) return a.name + 'はR18に参加しない';
+    if (HK.ngPair && HK.ngPair(a, b)) return '恋愛・R18にしない組';
+    if (HK.Pos && !HK.Pos.okSex(a, b)) return '恋愛対象・受け攻めの指定が合わない組';
+    return '体の関係にしない組';
+  }
+
+  /* ---------- 標的を決める（solo-succubus.js の run から） ----------
+     戻り値：標的の住人の配列（role を 'target' にする）。おまかせ（だれも選んでいない）・モブなら空で、乱数も使わない */
+  SB.targetsOf = function (S, input) {
+    var P = S.P, src = S.env.role_target || 'auto';
+    var picked = function (c) { return (c.pick || {}).target; };
+    var yes = P.filter(function (c) { return picked(c) === 'yes' && here(c); });
+    if (src === 'mob' || src === 'none' || (src === 'auto' && !yes.length)) return [];
+    /* 先輩サキュバスを選んだ人は、自分で標的を選んでいなければ標的にしない */
+    var cands = P.filter(function (c) { return here(c) && ((c.pick || {}).role !== 'senpai' || picked(c) === 'yes'); });
+    var fit = function (c) { return P.some(function (q) { return q !== c && okPair(q, c); }) ? 1 : 0.25; };
+    var opts = Object.assign({}, (scen.roles || {}).target || {}, { n: yes.length || (P.length >= 4 ? 2 : 1), fit: fit });
+    var r = HK.Roles.resolve({ P: cands, env: Object.assign({}, S.env, { role_target: 'res' }), rng: S.rng, scen: scen }, 'target', input, opts);
+    if (r.kind !== 'res') return [];
+    var who = r.who.slice();
+    /* 全員が標的になると、狩る側がいなくなる：一人だけサキュバスに戻す */
+    if (!P.some(function (c) { return who.indexOf(c) < 0; })) {
+      var pool = who.filter(function (c) { return picked(c) !== 'yes'; });
+      if (!pool.length) pool = who.slice();
+      var k = pool.slice().sort(function (a, b) { return (b.stats.charm + b.stats.tech + b.tr.fc) - (a.stats.charm + a.stats.tech + a.tr.fc) || a.i - b.i; })[0];
+      who.splice(who.indexOf(k), 1);
+      S._tgKept = k;
+      if (!who.length) k.notes.push('標的に選ばれていたが、ほかにサキュバスになる住人がいないので、サキュバスとして夜に出た');
+    }
+    who.forEach(function (c) { c.role = 'target'; });
+    return who;
+  };
+  SB.targetSetup = function (S, T, TG) {
+    TG.forEach(function (t) {
+      var vit = Math.round(55 + (t.tr.fc || 0) * 25 + (t.tr.np || 0) * 10 + S.rng() * 25);
+      t.m = { ml: vit, mana: 0, plea: 0, mood: 60 };
+      t.tg = { n: 0, by: {}, log: [], vit: vit, drained: 0, knows: false, love: '', refused: 0, soft: 0, lastH: -1 };
+    });
+  };
+
+  /* ---------- 日没：標的の住人の顔ぶれ ---------- */
+  var DUSK = L('{t}は今夜、{town}にいた。サキュバスなどというものが本当にいるとは、夢にも思っていない。{spot}のあたりで、{t}はいつもどおりの夜を過ごしていた。' +
+    '|{t}は仕事帰りに、ふらりと{town}へ足を向けた。この街のどこかで淫魔が獲物を探しているなど、知るよしもない。{t}は{spot}のあたりを、のんびりと歩いていた。' +
+    '|{town}の人混みの中に、{t}の姿もあった。角や尻尾の生えた人を見かけても、きっと仮装だと思って笑っただろう。今夜の{t}は、自分が狙われる側だとはまだ知らない。' +
+    '|{t}は{spot}で、ひとりでグラスを傾けていた。この{town}に人間でないものがまぎれているとは、考えたこともない。グラスの氷が、からんと小さく鳴った。');
+  var KEPT = L('{k}まで標的にすると、今夜の街にサキュバスがいなくなってしまう。{k}だけは羽と尻尾を生やして、狩る側として夜に出ることになった。顔なじみを狙う、少し気まずい夜の始まりだった。' +
+    '|全員が人間のままでは、今夜の狩りが始まらない。{k}はひとり、サキュバスとして夜の街に出ることになった。狙う相手の中には、よく知った顔もまじっている。');
+  SB.targetDusk = function (S, T, TG, H) {
+    if (S._tgKept && S._tgKept.role !== 'target') ST.say(S, { kind: 'phase', actors: [S._tgKept], text: fmt(pkF(S, KEPT), { k: S._tgKept.name }) });
+    TG.forEach(function (t) {
+      var self = (t.pick || {}).target === 'yes';
+      ST.say(S, { actors: [t], tag: '標的', text: fmt(pkF(S, DUSK), { t: t.name, town: T.name, spot: S.rng.pick(T.spots) }), why: '標的（人間）：' + (self ? t.name + 'の欄で「標的（人間）になる」' : '設定「標的」＝住人から') + '／はじめの精 ' + t.m.ml + 'ml' });
+    });
+  };
+
+  /* ---------- 近づく ---------- */
+  var LURE = L('{spot}で、{a}は足を止めた。人混みの向こうにいるのは、顔なじみの{t}だった。{t}はまだ、目の前の相手に羽と尻尾が生えていることに気づいていない。' +
+    '|{a}の鼻先を、濃い精の匂いがかすめた。たどっていくと、{spot}に{t}がいた。知った顔だ――{a}は尻尾を服の中にしまい込み、何食わぬ顔で{t}に近づいた。' +
+    '|{spot}で、{a}は{t}を見つけた。サキュバスのことなど何も知らない、ただの人間の顔をしている。{a}は唇の端を上げて、ゆっくりと{t}の隣に並んだ。' +
+    '|{a}は{spot}で、{t}の背中を見つけた。昼間の顔しか知らない相手だ。夜の{t}がどんな顔をするのか、{a}は急に知りたくなった。');
+  var LURE_K = L('{spot}で、{t}がこちらに気づいた。「……もしかして、あなたも」――{t}はもう、この街に人間でないものがまぎれていることを知っている。{a}は隠すのをやめて、尻尾をゆらりと揺らしてみせた。' +
+    '|{a}が近づくより先に、{t}が振り返った。今夜すでに一度、淫魔というものを知ってしまった顔だ。{a}は肩をすくめて、正面から{t}の前に立った。');
+  /* 反応（地の文） */
+  var REACT = {
+    notice: L('{t}の視線が、ふと{a}の腰のあたりで止まった。服の裾から、細い尻尾の先がのぞいている。{t}はまばたきをして、もう一度{a}の顔を見た。' +
+      '|{t}は{a}の髪に隠れた小さな角を、じっと見つめた。{a}はとっさに笑ってごまかそうとしたが、{t}の目はごまかされなかった。{t}は首をかしげて、{a}の足元の影まで確かめた。' +
+      '|{t}は{a}の瞳の奥で、何かが赤く光ったのを見逃さなかった。人間の目ではない。{t}は一歩下がって、{a}を頭のてっぺんから爪先まで眺めた。'),
+    known: L('{t}はもう、驚きはしなかった。角も尻尾も、今夜はすでに一度見ている。{t}は腕を組んで、{a}が何を言い出すのかを待った。' +
+      '|「隠さなくていいよ。知ってるから」――{t}はそう言って、{a}の尻尾にちらりと目をやった。{a}は苦笑いして、羽をふわりと広げてみせた。{t}は、少しだけ面白そうに目を細めた。'),
+    resist: L('{t}は{a}の手を、やんわりと、けれどはっきりと押し戻した。甘い誘いにも、{t}の足は一歩も動かない。{t}は{a}の目を正面から見返した。' +
+      '|{t}は腕を組んで、{a}の誘いを最後まで黙って聞いた。それから、静かに首を横に振った。簡単に流される人間ではないらしい。' +
+      '|{a}が距離を詰めるたびに、{t}は同じだけ距離を取った。笑顔は崩さないが、目は笑っていない。{t}は、{a}の言葉の裏を探るように黙っていた。'),
+    drift: L('{t}は気づけば、{a}の話にうなずいていた。断る理由を探しているうちに、断るきっかけを失っている。{a}に手を引かれると、{t}はそのままついていった。' +
+      '|{a}の声は、耳に心地よかった。{t}はぼんやりと相づちを打ち、勧められるままにグラスを空けていく。いつの間にか、{t}の肩は{a}の肩に触れていた。' +
+      '|{t}は「少しだけなら」と思った。そのつもりだった。{a}の隣は妙に居心地がよくて、{t}は帰る時間のことをすっかり忘れていた。'),
+    fall: L('{t}は{a}から目が離せなくなった。誘われているのは分かっている。それでも、{t}の胸は自分でも驚くほど高鳴っていた。' +
+      '|{a}が笑うたびに、{t}の頬が熱くなった。こんな気持ちになったのは、いつ以来だろう。{t}は誘われるより先に、自分から{a}の手を握っていた。' +
+      '|{t}はひと目で、{a}に心を奪われていた。言葉を交わすほどに、もっとこの人のことを知りたくなる。狩られているのが自分だとは、{t}は思いもしなかった。')
+  };
+  var PS = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite'];
+  /* 標的の一言（反応×態度9種） */
+  var TV = {
+    notice: {
+      proud: L('「ふん、妙な仮装だと思ったら……本物か」|「私の目はごまかせないぞ。人間じゃないな」'),
+      stern: L('「……正体を明かしてもらおうか」|「その尻尾は飾りではないな。何者だ」'),
+      tsun: L('「な、なによそれ！　コスプレ……じゃないの！？」|「べ、別に驚いてないし！　……本物なの？」'),
+      gentle: L('「あの……もしかして、人じゃない、のかな？」|「わあ……角、本物なんだね」'),
+      devoted: L('「え、えっと……そ、それは、本物の尻尾、ですか……？」|「ま、まさか……悪魔さん、なんですか……？」'),
+      cool: L('「……体温が人より高い。瞳の形も違う。人間じゃないね」|「なるほど。そういう生き物が、本当にいるんだ」'),
+      free: L('「え、すご！　尻尾動いてる！　本物！？」|「わー、なにそれ！　触ってもいい？」'),
+      shy: L('「あ、あの……し、尻尾、が……」|「ひっ……つ、角……？」'),
+      polite: L('「失礼ですが……あなた様は、人間ではいらっしゃらない？」|「お見受けしたところ、ただのお方ではございませんね」')
+    },
+    resist: {
+      proud: L('「安く見られたものだな。断る」|「その手の誘いに乗るほど、落ちぶれてはいない」'),
+      stern: L('「節度を持て。こういうことは軽々しくするものではない」|「断る。今夜はもう帰りなさい」'),
+      tsun: L('「は、はあ！？　誰があんたなんかに……！」|「ちょ、近いってば！　そういうの、間に合ってるから！」'),
+      gentle: L('「ごめんね、今夜はそういう気分じゃないんだ」|「気持ちはうれしいけど……ごめんなさい」'),
+      devoted: L('「す、すみません……私、そういうのはちゃんと好きな人と……」|「ご、ごめんなさい……お、お断りします……！」'),
+      cool: L('「悪いけど、興味ない」|「その誘い方、効率悪いよ。ほかを当たって」'),
+      free: L('「あはは、また今度ね！」|「んー、今日はパス！　ごめんね！」'),
+      shy: L('「む、むり、です……ご、ごめんなさい……！」|「あ、あの、わ、私、そういうの……っ」'),
+      polite: L('「せっかくですが、ご遠慮いたします」|「お誘いはありがたいのですが、本日は失礼いたします」')
+    },
+    drift: {
+      proud: L('「……少しだけなら、付き合ってやってもいい」|「ふん。退屈しのぎにはなりそうだ」'),
+      stern: L('「……今夜だけだぞ」|「まったく……仕方がないな」'),
+      tsun: L('「べ、別に、ついていきたいわけじゃないんだからね……！」|「……ちょっとだけ。ちょっとだけだから」'),
+      gentle: L('「うん……なんだか、一緒にいると落ち着くね」|「いいよ。もう少し、話そうか」'),
+      devoted: L('「わ、私でよければ……」|「はい……あなたが、そう言うなら……」'),
+      cool: L('「……まあ、いいか。今夜は予定もないし」|「流されてるのは分かってる。でも、悪くない」'),
+      free: L('「いいよいいよ、どこ行く？」|「楽しそう！　ついてく！」'),
+      shy: L('「は、はい……い、いっしょに……」|「……う、うん……」'),
+      polite: L('「では、少しだけご一緒させていただきます」|「わたくしでよろしければ、お供いたします」')
+    },
+    fall: {
+      proud: L('「……お前のような相手は、初めてだ」|「認めよう。お前に惹かれている」'),
+      stern: L('「……どうかしている。だが、お前のことが頭から離れない」|「こんな気持ちは、久しぶりだ」'),
+      tsun: L('「な、なんでこんなにドキドキするのよ……っ」|「か、勘違いしないでよね……！　……でも、もうちょっとだけ一緒にいて」'),
+      gentle: L('「不思議だな……ずっと前から知ってたみたい」|「ねえ、また会えるかな」'),
+      devoted: L('「あなたのためなら、なんでも……」|「わ、私……あなたのこと、もっと知りたいです……！」'),
+      cool: L('「……論理的じゃないね。でも、あなたのことが気になる」|「理由は分からない。けど、目が離せない」'),
+      free: L('「ねえねえ、一目惚れってほんとにあるんだね！」|「やば、なんか運命感じる！」'),
+      shy: L('「あ、あの……そ、そばに、いても……いいですか……」|「……っ、ど、どうしよう……胸が、どきどきして……」'),
+      polite: L('「お恥ずかしながら……すっかり、心を奪われてしまいました」|「このようなお方にお会いできるとは……」')
+    }
+  };
+  /* 体の関係へ進む（どれも標的が自分の意思で選ぶ） */
+  var GO = {
+    notice: L('{a}は観念して、羽を広げてみせた。「……ばれたか。人の精をもらって生きてるんだ」――{t}は長いあいだ黙っていたが、やがて小さく笑った。「それで、吸われるとどうなるの？」――{t}は自分から、{a}の手を取った。' +
+      '|正体を見抜かれた{a}は、隠すのをやめた。淫魔のこと、精のこと、今夜の狩りのこと――{a}が打ち明けるあいだ、{t}は逃げなかった。「知ったうえで、選ぶよ」と答えて、{t}は{a}を引き寄せた。' +
+      '|{t}は{a}の尻尾にそっと触れて、「本当に、いるんだね」とつぶやいた。驚きのあとに来たのは、恐れではなく好奇心だった。{t}は{a}の目をまっすぐ見て、うなずいた。'),
+    known: L('「それで、今夜は吸いに来たの？」――{t}に訊かれて、{a}は素直にうなずいた。{t}は少し考えてから、「いいよ。今度は、ちゃんと分かってて選ぶから」と言った。{t}は自分から、{a}の手を取った。' +
+      '|{t}は{a}の尻尾の先を指でつついて、くすりと笑った。「正体を知ってる相手を誘うなんて、度胸あるね」――それでも{t}は、差し出された手を払わなかった。二人は並んで、夜の奥へ歩いていった。'),
+    resist: L('それでも{a}は引かなかった。押すのをやめて、ただ{t}の話を聞いた。夜が少し深くなったころ、{t}はため息をついて言った。「……分かった。そこまで言うなら、今夜だけ」' +
+      '|{a}は誘うのをやめて、「じゃあ、一杯だけ」と笑った。一杯が二杯になり、{t}の頑なな顔が少しずつほどけていく。帰り際、引き留めたのは{t}のほうだった。' +
+      '|{t}の拒絶は本気だった。けれど、{a}が素直に引き下がろうとした瞬間、{t}は{a}の袖をつかんでいた。「……待って。もう少しだけ」――決めたのは、{t}自身だった。'),
+    drift: L('{t}は{a}に手を引かれるまま、人目のない部屋へ入った。扉が閉まる音がしても、{t}は振り返らなかった。嫌ではなかった――ただ、{a}の隣にいたかった。' +
+      '|気づけば、二人は近くの宿の一室にいた。{t}はどうしてここに来たのか、うまく思い出せない。それでも{a}に唇を寄せられると、{t}は目を閉じて応えた。' +
+      '|{a}が「もう少し、静かなところへ」と囁くと、{t}はこくりとうなずいた。自分で決めたような、流されたような、不思議な気分だった。{t}は{a}の背中を追って、夜の奥へ歩いていった。'),
+    fall: L('{t}は自分から{a}を部屋へ誘った。「今夜は、帰したくない」――頬を赤くしてそう言う{t}に、{a}のほうが一瞬言葉に詰まった。狩るつもりが、まっすぐな想いを向けられていた。' +
+      '|{a}が手を差し出すより先に、{t}が{a}を引き寄せた。腕の中で、{t}の鼓動が早鐘のように鳴っている。{a}は少しだけ戸惑ってから、{t}の背に腕を回した。' +
+      '|{t}は{a}の手を両手で包んで、「もっと一緒にいたい」と言った。その目に迷いはなかった。{a}は小さく笑って、{t}を人目のない部屋へ連れていった。')
+  };
+  /* 体の関係にならない（組める組だが、見抜かれた・断られた） */
+  var EXPOSE = L('{t}は{a}の正体に気づいたまま、静かに言った。「悪いけど、吸われるのはごめんだ」――{a}は肩をすくめて、尻尾をしまった。見抜かれてしまっては、今夜の狩りにはならない。' +
+    '|「人間じゃないなら、なおさら付いていけないよ」――{t}は笑顔のまま一歩下がった。{a}は「……ばれちゃったか」と苦笑いして、夜の街へ紛れた。{t}はしばらく、{a}の消えた方角を見つめていた。' +
+    '|{t}はスマホを取り出しかけて、やめた。誰に話しても、きっと信じてもらえないだろう。{a}がばつの悪そうな顔で羽を畳むと、{t}は「秘密にしといてあげる」とだけ言って去っていった。');
+  var REJECT = L('{t}は最後まで首を縦に振らなかった。{a}がどれだけ言葉を尽くしても、{t}の答えは変わらない。{a}は「手ごわいなあ」と苦笑して、{t}を見送るしかなかった。' +
+    '|「おやすみ。気をつけて帰りなよ」――{t}はそう言って、さっさと{spot}をあとにした。取り残された{a}は、行き場をなくした尻尾をしょんぼりと垂らした。今夜いちばん手ごわい相手だった。' +
+    '|{t}の意思は固かった。{a}は魅了の魔眼を使いかけて、やめた。無理に落とした相手からは、きっと何ももらえない。{a}は小さく手を振って、{t}から離れた。');
+  /* 体の関係にしない組（R18に参加しない・恋愛対象や受け攻めが合わない・恋愛やR18にしない相手）：話すだけ */
+  var SOFT = {
+    notice: L('{t}は{a}の正体に気づいたが、騒ぎはしなかった。「淫魔って、本当にいるんだ」――二人は{spot}の隅で、淫魔の暮らしについて小一時間話し込んだ。{a}は狩りのことをすっかり忘れていた。' +
+      '|{t}は{a}の角をまじまじと眺めて、「秘密は守るよ」と約束した。{a}は苦笑いして、尻尾を服の中に戻した。今夜の{t}は、獲物ではなく話し相手になった。' +
+      '|「人間じゃないのは分かった。でも、悪い人には見えないね」――{t}はそう言って、{a}に温かい缶コーヒーを差し出した。{a}は受け取って、ひと口飲んだ。狩りの夜に、妙に穏やかな時間が流れた。'),
+    resist: L('{t}ははっきりと断った。{a}も、それ以上は踏み込まなかった。二人は軽く会釈を交わして、別々の方向へ歩き出した。' +
+      '|{t}の声に迷いはなかった。{a}は「だよね」と笑って、すっと身を引いた。追いかけないのが、{a}なりの礼儀だった。' +
+      '|{t}は手のひらを見せて、{a}を制した。{a}はおとなしく両手を上げて、「失礼しました」と頭を下げる。{t}は少しだけ笑って、{spot}をあとにした。'),
+    drift: L('{t}は{a}の誘いに乗って、{spot}で一杯だけ付き合った。けれど、{a}はそれ以上を求めなかった。この相手とは、そういう夜にはならない――{a}にはなぜか、それが分かっていた。' +
+      '|二人は並んで夜の街を歩いた。{t}はすっかり打ち解けて、他愛ない話をいくつもした。別れ際、{a}は「楽しかった」とだけ言って手を振った。' +
+      '|{t}は{a}に連れられて、夜の街を何軒かはしごした。{a}は誘惑するのをやめて、ただ一緒に笑っていた。気づけば、狩りの時間がひとつ過ぎていた。'),
+    fall: L('{t}は{a}に見とれたまま、連絡先を交換した。{a}は少し迷ってから、今夜はここまでにした。この人とは、急がないほうがいい気がした。' +
+      '|{t}は{a}の手を握って、「また会いたい」と言った。{a}は頷いたが、それ以上は誘わなかった。{t}の頬の赤さだけが、夜の街に残った。' +
+      '|{t}はすっかり{a}に心を奪われていた。二人は夜明け前のベンチで、手をつないだまま話し続けた。{a}はその夜、{t}から何も吸わなかった。')
+  };
+
+  /* ---------- 山場（小説調）。MF＝男性が上・女性が下／FM＝女性が上（跨る）・男性が下／FF＝女性どうし（指・舌）／MM＝男性どうし ---------- */
+  var SEX = {
+    MF: L('{x}は{y}を寝台に横たえ、ゆっくりと脚の間に体を沈めた。{y}が小さく息をのむと、{x}は動きを止めて髪を撫でる。それから深く、静かに腰を揺らしはじめた。{a}の尻尾が、甘えるように{t}の脚へ絡みついた。' +
+      '|{x}は{y}を膝の上に抱き上げ、向かい合ったまま一つになった。{y}の指が{x}の背中にすがりつき、二人の吐息が重なる。{a}の淫紋が、肌の下で淡く光りはじめた。' +
+      '|{x}は{y}の手を握ったまま、奥まで届くように深く腰を進めた。{y}の喉から、甘くかすれた声がこぼれる。重なった肌のあいだで、{a}の淫紋が脈打つように明滅した。'),
+    FM: L('{x}は{y}を仰向けに押しやって跨り、{y}の熱を自分の中へゆっくりと呑み込んだ。胸に手をついて、{x}は自分の速さで腰を揺らす。{y}が腰を浮かせようとすると、{x}は笑って太腿で押さえ込んだ。' +
+      '|{x}は{y}を見下ろしたまま、焦らすように浅く腰を落とした。「じっとしてて。動くのは、こっち」――{y}の吐息が熱くなるたび、{x}は少しずつ深く沈んでいく。{a}の尻尾が、楽しげに揺れていた。' +
+      '|{x}は{y}の手首をそっと押さえて、上から唇を重ねた。それから腰をゆるやかに回し、{y}を根元まで迎え入れる。{y}の背中が反るのを、{x}は目を細めて眺めていた。'),
+    FF: L('{x}は{y}を寝台に横たえ、首筋から胸元へと唇を這わせていった。指先が{y}の脚の間に触れると、{y}の背中が小さく跳ねる。{x}は指をゆっくりと沈め、{y}がいちばん甘い声を上げるところを何度も撫で上げた。' +
+      '|{x}は{y}の脚の間に顔をうずめ、舌先でそっと芽を転がした。{y}の太ももが震え、指がシーツを握りしめる。{x}は舌を止めずに、指を一本、また一本と{y}の中へ沈めていった。' +
+      '|{x}は{y}を後ろから抱きすくめ、片手で胸を、もう片方の指で脚の間をやさしく探った。{y}は{x}の腕の中で身をよじり、熱い息をこぼす。{x}は{y}の耳たぶを甘く噛みながら、指の動きを少しずつ速めていった。'),
+    MM: L('{x}は{y}を寝台にうつ伏せにさせ、肩甲骨に唇を落としながら、時間をかけて奥まで沈めた。{y}は枕を抱えて、長く息を吐く。{x}は{y}の指に自分の指を絡めたまま、ゆっくりと腰を揺らした。' +
+      '|{x}は{y}を正面から抱き寄せ、脚を割って深く繋がった。{y}が{x}の首に腕を回すと、二人の額がこつんと触れ合う。重ねた肌のあいだで、{a}の淫紋が淡く光りはじめた。' +
+      '|{x}は{y}を壁際へ導いて、背後から静かに腰を進めた。張りつめた{y}自身を手のひらで包んでやると、{y}の喉から甘い声がこぼれる。{x}は{y}の耳元で、何度も名前を呼んだ。')
+  };
+  /* 男性向け（擬音・♡喘ぎ） */
+  var SEX_E = {
+    MF: L('{x}は{y}の脚を大きく開かせ、張りつめたちんぽをとろとろのナカへ根元まで沈めた。{s:wet}――奥をとん、とんと叩かれるたびに、{y}の腰が勝手に浮く。{a}の淫紋が、きゅんと疼くように光った。{y}「{n1}」' +
+      '|{x}は{y}を四つん這いにさせ、尻を掴んで後ろから深く突き入れた。{s:hit}――ぱちゅ、ぱちゅと濡れた音が部屋に響く。{y}はシーツに顔を押しつけて、甘い声を噛み殺せない。{y}「{n1}」' +
+      '|{x}は{y}を膝に抱き上げ、下からずん、と突き上げた。{s:hit}――{y}は{x}の首にしがみつき、自分からも腰を落とす。{x}「{m1}」――{y}「{n1}」'),
+    FM: L('{x}は{y}に跨り、反り返ったちんぽを自分で導いて、ずぶりと腰を落とした。{s:wet}――「ほら、まだ出しちゃだめ」――{x}がきゅうっと締めつけると、{y}の腰がびくんと跳ねた。{y}「{n1}」' +
+      '|{x}は{y}の胸に手をついて、ぱちゅ、ぱちゅと腰を上下させた。{s:hit}――{y}が下から腰を浮かせるたび、{x}は太腿で押さえ込んで笑う。先走りが、つながったところからとろりと溢れた。{x}「{m1}」' +
+      '|{x}は{y}の上で腰をくねらせ、根元まで呑み込んだまま奥でぐりぐりと擦りつけた。{s:wet}――{y}の玉がきゅっとせり上がり、{x}は「まだ、まだ」と意地悪く囁く。{y}「{n1}」'),
+    FF: L('{x}は{y}の脚を割り開き、濡れた割れ目に指を二本沈めた。{s:wet}――ざらついたところを指の腹で擦り上げるたび、{y}の腰が跳ねる。{a}の淫紋が、溢れ出す精気を吸ってきゅんと光った。{y}「{n1}」' +
+      '|{x}は{y}の芽に吸いつき、舌先で何度も弾いた。{s:suck}――{y}の太ももが{x}の頭を挟み込み、とろとろの蜜がシーツに垂れる。{y}「{n1}」' +
+      '|{x}は{y}を後ろから抱きすくめ、指で芽をこねながら、もう片方の指をナカでくちゅくちゅと動かした。{s:wet}――{y}は{x}の腕にしがみついて、がくがくと膝を震わせる。{x}「{m1}」――{y}「{n1}」'),
+    MM: L('{x}は{y}をうつ伏せにさせ、張りつめたちんぽを後ろからゆっくり根元まで沈めた。{s:wet}――奥の弱いところを叩くたびに、{y}のちんぽから先走りがシーツへ垂れる。{y}「{n1}」' +
+      '|{x}は{y}の脚を肩に担ぎ、真上から深く突き下ろした。{s:hit}――突きながら{y}のちんぽを扱いてやると、{y}は{x}の腕に爪を立てた。{y}「{n1}」' +
+      '|{x}は{y}を膝に乗せて、下から突き上げた。{s:hit}――二人のちんぽが腹のあいだで擦れ合い、先走りでぬるぬると濡れていく。{x}「{m1}」――{y}「{n1}」')
+  };
+  /* 描写をぼかす */
+  var FADE = L('――{a}と{t}は、人目のない部屋へ消えた。扉の向こうで何があったのかは、二人だけが知っている。しばらくして出てきた{t}は、少しだけぼんやりとした顔をしていた。' +
+    '|――二人は夜の奥へ消えた。そこから先は、灯りの消えた窓だけが知っている。一時間後に戻ってきた{a}は、満ち足りた顔で尻尾を揺らしていた。' +
+    '|――{a}は{t}の手を引いて、人目につかないほうへまわった。それきり、二人の姿は朝まで見えなかった。何があったのかは、{t}の上気した頬だけが物語っていた。');
+  var CL_LOW = L('{a}は、{t}からもらった{ml}ml分の精を、大事そうに胸の奥へしまった。|{a}の淫紋には、{t}の{ml}ml分の精が静かに灯っていた。|{t}の残していった{ml}mlの温かさに、{a}はそっと目を閉じた。');
+  /* 標的が果てて、精を吸われる（小説調。体の言葉を使わないので、どの組でも使える） */
+  var CL = L('やがて{t}は、{a}の名前を呼びながら果てた。その瞬間、{a}の淫紋がまばゆく光り、{t}の精が温かい流れになって吸い上げられていく。{t}はぐったりと力を抜いて、天井を見上げた――{ml}ml。' +
+    '|{t}の体が大きく震えて、甘い声とともに果てた。重なったところから、{t}の精が{a}の淫紋へ吸い上げられていく。何かが抜けていく感覚さえ、{t}には心地よかった――{ml}ml。' +
+    '|{t}が果てるたび、{a}の肌がつやを増していった。{t}は息を切らしながら、どれほど満たされ、どれほど吸われたのかも分からずにいる。{a}は舌なめずりをして、{ml}ml分の精を味わった。' +
+    '|最後の波が来て、{t}は{a}にしがみついたまま果てた。{a}の尻尾の先がほのかに光り、{t}の精を一滴残らず飲み干していく。{t}の瞼は、そのまま重く閉じていった――{ml}ml。');
+  /* 男性向け：標的の体ごと（tM＝男性の体／tF＝女性の体） */
+  var CL_E = {
+    tM: L('{t}「{c2}」――{t}の腰がびくびくと跳ね、{s:cum}――溜まっていた精が一気に溢れ出した。{a}の淫紋が真っ赤に光り、流れ出す精を一滴残らず吸い上げていく。――{ml}ml。' +
+      '|{s:cum}――{t}は情けない声を上げて、何度も何度も吐き出した。{a}は最後の一滴まで搾り取ると、ぺろりと唇を舐めた。{t}「{c2}」――{ml}ml。' +
+      '|{t}はがくがくと腰を震わせて、{s:cum}と白濁をぶちまけた。{a}の下腹の淫紋が、どくどくと脈打つように精を呑み込む。{t}「{c2}」――{ml}ml。'),
+    tF: L('{t}「{c2}」――{t}の背中が弓なりに反り、全身がびくびくと痙攣した。{s:wet}――溢れ出した精気が、{a}の淫紋へどくどくと流れ込んでいく。――{ml}ml。' +
+      '|{t}は{a}にしがみついたまま、がくがくと腰を震わせて達した。{s:wet}――とろとろの蜜と一緒に、甘い精気が{a}の淫紋へ吸い上げられていく。{t}「{c2}」――{ml}ml。' +
+      '|{s:wet}――{t}の太ももががくがくと震え、頭の中が白く弾けた。{a}の淫紋が、{t}の絶頂ごと精気を啜り上げる。{t}「{c2}」――{ml}ml。')
+  };
+  /* 標的の絶頂の声（小説調・態度9種） */
+  var CLV = {
+    proud: L('「くっ……こんな、ことで……っ」|「……っ、ばか、な……っ」'),
+    stern: L('「……っ、ぐ……ぅ……！」|「は、あ……っ、不覚……」'),
+    tsun: L('「や、やだ、もう……っ、だめぇ……！」|「ば、ばかぁ……っ、見ないで……！」'),
+    gentle: L('「あ……っ、すごい……あったかい……」|「ん、んん……っ、もう、だめ……」'),
+    devoted: L('「あ、あぁ……っ、全部、あげます……っ」|「も、もう……っ、あなたで、いっぱい……」'),
+    cool: L('「……っ、は……計算、外……」|「ん……っ、こんなの、知らない……」'),
+    free: L('「あはっ、すご、すごい……っ！」|「も、むり、むりぃ……っ、きもちい……！」'),
+    shy: L('「ひぁ……っ、あ、あ……っ！」|「や、やぁ……っ、こ、声、でちゃ……っ」'),
+    polite: L('「あ……っ、し、失礼……いたしま、す……っ」|「も、申し訳……ありま、せ……っ」')
+  };
+  /* サキュバスの一言（態度9種） */
+  var SV = {
+    proud: L('「ふん、悪くない味だ」|「上出来だ。……ごちそうさま」'),
+    stern: L('「……十分だ。ありがたくいただいた」|「無理はさせていない。少し休め」'),
+    tsun: L('「べ、別に、おいしかったなんて言ってないんだから……！」|「……ま、まあまあね」'),
+    gentle: L('「ありがとう。……すごく、おいしかったよ」|「ごめんね、ちょっともらいすぎちゃったかな」'),
+    devoted: L('「あ、ありがとうございます……！　大事に、いただきます……！」|「こんなにたくさん……ありがとうございます……」'),
+    cool: L('「……効率よく吸えた。ありがと」|「想定以上。悪くない」'),
+    free: L('「ごちそうさまっ！　えへへ、また遊ぼうね！」|「んーっ、満腹！」'),
+    shy: L('「あ、あの……ご、ごちそうさま、でした……っ」|「お、おいしかった、です……」'),
+    polite: L('「まことに、ごちそうさまでございました」|「ありがたく頂戴いたしました」')
+  };
+  /* そのあと（反応ごと。惚れ込んだ締めは HK.canLove を両方向で通る組だけ） */
+  var AFT = {
+    drift: L('{t}が目を覚ましたとき、{a}の姿はもうなかった。体は妙にだるいのに、気分はひどく晴れやかだ。{t}はさっきのことを、夢だったのだと思うことにした。' +
+      '|{a}はまどろむ{t}の髪をひと撫でして、窓から夜空へ飛び立った。残された{t}は、何が起きたのかを最後まで知らないままだった。枕元には、黒い羽根が一枚だけ落ちていた。' +
+      '|{t}はぼんやりとした頭で、天井を見上げた。隣にいたはずの相手の羽も尻尾も、{t}の目には映っていなかった。それでも、体の芯に残る温かさだけは本物だった。'),
+    notice: L('「本当に、吸われるんだね」――{t}は少しふらつきながら、それでも笑っていた。{a}は「秘密にしてね」と人差し指を唇に当てる。{t}はうなずいて、淫魔のいる夜の街を、少しだけ違う目で見渡した。' +
+      '|{t}は{a}の尻尾を指でつまんで、「また来てもいいよ」と言った。正体を知ったうえでそう言ってくれる人間は、珍しい。{a}は照れくさそうに羽を畳んだ。' +
+      '|{a}が身支度を整えるあいだ、{t}はその背中の羽をじっと見ていた。「……夢じゃないんだよね」――{a}は振り返って笑い、ひらりと窓から去っていった。'),
+    resist: L('{t}は乱れた髪をかき上げて、「……今夜だけだからね」と念を押した。{a}は「うん、今夜だけ」と笑ってうなずく。{t}の頑なさは、すっかりほどけていた。' +
+      '|{t}は天井を見上げて、深く息をついた。断るつもりだった。けれど、決めたのは自分だ――そう思うと、{t}は不思議と後悔していなかった。' +
+      '|「あんなに断ったのに」――{t}は自分に呆れたように笑った。{a}は{t}の肩に頬を寄せて、「ありがとう」とだけ言った。夜はまだ、少し残っていた。'),
+    fall: L('{t}は{a}の手を離そうとしなかった。「また会える？」――淫魔の狩りに「また」はない。それでも{a}は、気づけば「うん」と答えていた。' +
+      '|{t}は眠りに落ちる前に、{a}の名前を何度も呼んだ。{a}はその寝顔を、しばらく黙って見つめていた。吸ったのは精だけのはずなのに、胸の奥まで温かい。' +
+      '|{t}は{a}の胸に頬を寄せて、幸せそうに目を閉じた。{a}は{t}の髪を撫でながら、小さくため息をついた。獲物に本気で惚れられたのは、これが初めてだった。')
+  };
+  var RL = { notice: '気づく', resist: '抗う', drift: '流される', fall: '逆に惚れ込む' };
+  var RW = { notice: 'A・慎重さ', resist: 'CP・慎重さ', drift: 'AC・衝動性', fall: 'NP・FC' };
+  function EO(S) { return !!(HK.Ero && HK.Ero.on(S) && S.env.lewd !== 'low'); }
+  function dom(p) { return Object.assign({}, p, { eroDom: true }); }
+  function ps(p) { return PS.indexOf(p.persona) >= 0 ? p.persona : 'gentle'; }
+  /* 喘ぎを埋める：{m1}=上の人 {n1}=下の人 {c2}=標的 */
+  function moans(S, t, who) {
+    if (!HK.Ero) return t.replace(/\{[mnc][012]\}/g, '……っ').replace(/\{s:\w+\}/g, '');
+    t = t.replace(/\{([mnc])([012])\}/g, function (m0, k, n) { var w = who[k]; return w ? HK.Ero.moan(S, w, +n, HK.Ero.ctxOf(t, 0)) : '……っ'; });
+    return HK.Ero.fill(S, t, null);
+  }
+
+  /* ---------- 一時間ごと：サキュバス p が、標的の住人に近づくか（true ならその時間の狩りはこれで終わり） ---------- */
+  var CAP = 2;
+  SB.targetTurn = function (S, T, p, TG, sen, h, last) {
+    var rng = S.rng;
+    var live = TG.filter(function (t) { return here(t) && !t.tg.spent && t.tg.n < CAP && t.tg.lastH !== h; });
+    if (!live.length) return false;
+    var due = live.filter(function (t) { return !t.tg.n; }), rem = S.env.hours - h;
+    var ch = due.length ? (rem <= 3 ? 0.8 : 0.3) : 0.08;
+    if (live.some(function (t) { return okPair(p, t); })) ch += 0.06;
+    if (rng() >= ch) return false;
+    var t = HK.weighted(rng, live, function (x) { return (okPair(p, x) ? 3 : 1) * (x.tg.n ? 0.6 : 2) * (x.tg.by[p.name] ? 0.5 : 1); });
+    meetT(S, T, p, t, sen, h);
+    return true;
+  };
+
+  function meetT(S, T, p, t, sen, h) {
+    var rng = S.rng, lew = S.env.lewd || 'mid', eo = EO(S);
+    var spot = rng.pick(T.spots), v = { a: p.name, t: t.name, spot: spot };
+    var pair = okPair(p, t), love = loveOK(p, t), tr = t.tr;
+    var first = !t.tg.n;
+    p.cnt.tries++; t.tg.n++; t.tg.lastH = h; t.tg.by[p.name] = (t.tg.by[p.name] || 0) + 1;
+    /* 反応：気質で決める（惚れ込むのは恋愛になれる組だけ） */
+    var W = { notice: tr.a * 1.2 + tr.caution * 0.6 + (t.tg.knows ? 1.2 : 0), resist: tr.cp * 1.1 + tr.caution * 0.5 + (1 - tr.impulse) * 0.3 + (t.tg.refused ? 0.4 : 0), drift: tr.ac * 1.0 + tr.impulse * 0.7, fall: tr.np * 0.8 + tr.fc * 0.6 };
+    var kinds = ['notice', 'resist', 'drift'].concat(love ? ['fall'] : []);
+    var kind = HK.weighted(rng, kinds, function (k) { return Math.pow(Math.max(0.05, W[k]), 3); });
+    var ty = p.style || {};
+    var score = (ty.score || 0) + p.stats.charm * 10 + p.stats.tech * 6 + (p.tr.warmth || 0) * 8 + rng() * 40 + (p.m.mood - 60) / 4 - (20 + tr.caution * 30 + tr.cp * 15) + (sen && sen.top === 'CP' ? 6 : 0);
+    var known = t.tg.knows;
+    var txt = fmt(pkF(S, known ? LURE_K : LURE), v);
+    var ap = SB.STYLE[p.top] && SB.STYLE[p.top].approach;
+    if (!known && ap && ap.length) txt += fmt(pkF(S, ap), v);
+    txt += fmt(pkF(S, kind === 'notice' && known ? REACT.known : REACT[kind]), v);
+    if (!(kind === 'notice' && known)) txt += t.name + pkF(S, TV[kind][ps(t)]);
+    var sex = pair && (kind === 'drift' || kind === 'fall' || (kind === 'notice' && score >= 25) || (kind === 'resist' && score >= 45));
+    var why = '標的の' + t.name + 'の反応は「' + RL[kind] + '」（' + t.name + 'の' + RW[kind] + 'から）', tag, ml = 0, out;
+    if (sex) {
+      txt += fmt(pkF(S, kind === 'notice' && known ? GO.known : GO[kind]), v);
+      var P0 = HK.Pos, ord = P0 ? P0.order(p, t, P0.fbFor ? P0.fbFor(p, t) : [p, t]) : [p, t], x = ord[0], y = ord[1];
+      var cb = (P0 && P0.isFBody(x) ? 'F' : 'M') + (P0 && P0.isFBody(y) ? 'F' : 'M');
+      v.x = x.name; v.y = y.name;
+      var frac = { drift: 0.35 + rng() * 0.15, notice: 0.3 + rng() * 0.15, resist: 0.4 + rng() * 0.15, fall: 0.55 + rng() * 0.25 }[kind];
+      ml = Math.max(5, Math.min(Math.round(t.m.ml), Math.round(t.m.ml * frac * (1 + p.stats.tech * 0.04))));
+      v.ml = ml;
+      if (lew === 'low') txt += fmt(pkF(S, FADE), v) + fmt(pkF(S, CL_LOW), v);
+      else {
+        txt += '――' + fmt(pkF(S, eo ? SEX_E[cb] : SEX[cb]), v);
+        txt += eo ? fmt(pkF(S, CL_E[P0 && P0.isFBody(t) ? 'tF' : 'tM']), v) : t.name + pkF(S, CLV[ps(t)]) + fmt(pkF(S, CL), v);
+      }
+      txt += p.name + pkF(S, SV[ps(p)]) + fmt(pkF(S, AFT[kind]), v);
+      txt = moans(S, txt, { m: dom(x), n: y, c: t === x ? dom(t) : t });
+      p.m.ml += ml; p.cnt.win++; p.cnt.streak = 0; p.m.mood += 8; p.m.plea = clamp(p.m.plea + 30, 0, 100);
+      if (kind === 'fall') p.cnt.big++;
+      if (!p.best || ml > p.best.ml) p.best = { name: t.name, ml: ml };
+      t.m.ml = Math.max(0, t.m.ml - ml); t.m.plea = 95; t.m.mood = clamp(t.m.mood + (kind === 'fall' ? 25 : kind === 'resist' ? 0 : 10), 0, 100);
+      t.tg.drained += ml;
+      if (kind === 'notice') t.tg.knows = true;
+      if (kind === 'fall') t.tg.love = p.name;
+      if (t.m.ml < 12) t.tg.spent = true;
+      tag = { drift: '標的（流された）', notice: '標的（知ったうえで）', resist: '標的（自分で決めた）', fall: '標的（惚れ込んだ）' }[kind];
+      why += '／' + x.name + 'が上（受け攻めの指定と恋愛対象から）／+' + ml + 'ml（' + t.name + 'の残り ' + Math.round(t.m.ml) + 'ml）';
+      out = { drift: '流された', notice: '正体を知ったうえで受け入れた', resist: '断ったが、自分で決めて受け入れた', fall: '逆に惚れ込んだ' }[kind];
+    } else if (pair) {
+      txt += fmt(pkF(S, kind === 'notice' ? EXPOSE : REJECT), v);
+      p.cnt.fail++; p.cnt.streak++; p.m.mood -= 8;
+      if (kind === 'notice') t.tg.knows = true; else t.tg.refused++;
+      t.m.mood = clamp(t.m.mood + 5, 0, 100);
+      tag = kind === 'notice' ? '標的に見抜かれた' : '標的に断られた';
+      why += '（誘惑の出来 ' + Math.round(score) + '）';
+      out = kind === 'notice' ? '正体を見抜いて断った' : '誘いを断りきった';
+    } else {
+      txt += fmt(pkF(S, SOFT[kind]), v);
+      if (kind === 'notice') t.tg.knows = true;
+      if (kind === 'resist') t.tg.refused++; else t.tg.soft++;
+      if (kind === 'fall') t.tg.love = p.name;
+      t.m.mood = clamp(t.m.mood + 8, 0, 100); p.m.mood += 2;
+      tag = '標的と話しこんだ';
+      why += '／体の関係にはしない（' + whyNot(p, t) + '）';
+      out = { notice: '正体に気づいて、話し込んだ', resist: 'はっきり断った', drift: '一緒に過ごしたが、それだけだった', fall: '心を奪われたが、話すだけで別れた' }[kind];
+    }
+    t.tg.log.push({ a: p.name, kind: kind, out: out, ml: ml });
+    (p.tgLog = p.tgLog || []).push(t.name + '（' + out + (ml ? '・' + ml + 'ml' : '') + '）');
+    var o = ST.say(S, { actors: [p, t], tag: tag, text: txt, why: why, mag: sex ? (kind === 'fall' ? 40 : 30) : 18, kind: sex ? 'climax' : 'event' });
+    if (first) ST.key(S, o, p.name + 'が標的の' + t.name + 'に近づいた');
+    else if (sex && kind === 'fall') ST.key(S, o, t.name + 'が' + p.name + 'に惚れ込んだ');
+  }
+
+  /* ---------- 夜明け：標的のその後 ---------- */
+  var DAWN = {
+    love: L('{t}は朝日の中で、{lv}のことを思い浮かべた。昨夜の街で出会った、どこか人間離れした誰か。{t}の胸は、まだ高鳴ったままだった。' +
+      '|{t}は夜明けの街で、{lv}の姿を探していた。見つかるはずがないと分かっていても、足が止まらない。淫魔に恋をした人間の朝は、少しだけ切なかった。' +
+      '|{t}は朝のホームで、{lv}の名前をそっとつぶやいた。また会えるだろうか。{t}は、今夜もあの街へ行ってしまう気がしていた。'),
+    knows: L('{t}は夜明けの空を見上げた。この街のどこかに、淫魔がいる。それを知ってしまった{t}にとって、夜の街はもう昨日と同じ場所ではなかった。' +
+      '|{t}は朝のコーヒーを飲みながら、昨夜の角と尻尾のことを考えていた。誰に話しても、きっと信じてもらえない。{t}はその秘密を、胸の奥にしまっておくことにした。' +
+      '|{t}は始発を待つあいだ、昨夜の出来事を何度も思い返した。夢ではなかった。{t}は少しだけ笑って、いつもの一日へ戻っていった。'),
+    drained: L('{t}は朝日の中で目を覚ました。体は重いのに、昨夜のことはぼんやりとしか思い出せない。{t}は首をかしげて、いつもの一日へ戻っていった。' +
+      '|{t}は始発の電車の中で、何度もあくびをした。昨夜、誰かと過ごした気がする。それが淫魔だったとは、{t}は最後まで知らないままだった。' +
+      '|{t}は鏡に映った自分の顔を見て、首をかしげた。妙にすっきりした顔をしている。昨夜のことは、甘い夢のように輪郭を失っていた。'),
+    spent: L('{t}は朝日の中で、ふらふらと立ち上がった。体の芯まで空っぽで、今日は一日、使いものになりそうにない。それなのに、{t}の顔はどこか満ち足りていた。' +
+      '|{t}は昼過ぎまで、布団から出られなかった。一晩でこんなに疲れたのは初めてだ。{t}は理由が分からないまま、もう一度目を閉じた。'),
+    refused: L('{t}は何事もなかったように、朝の街を歩いて帰った。昨夜の甘い誘いは、きっぱり断った。{t}の一夜は、最後まで{t}自身のものだった。' +
+      '|{t}は夜明けとともに家へ帰った。誘いは何度かあったが、どれにも乗らなかった。{t}は、自分の夜を自分で守りきった。'),
+    soft: L('{t}は朝日の中で、昨夜話した不思議な相手のことを思い出した。どこか憎めない、夜の街の誰か。{t}は小さく笑って、いつもの一日へ戻っていった。' +
+      '|{t}は夜明けの道を歩きながら、昨夜のことを考えていた。誘われはしたが、ただ一緒に過ごしただけで終わった。それでも、悪くない夜だった。'),
+    none: L('{t}は夜通し街にいたが、誰にも声をかけられなかった。淫魔たちは、今夜は別の獲物で忙しかったらしい。{t}は何も知らないまま、平和な朝を迎えた。' +
+      '|{t}は朝日に目を細めて、大きく伸びをした。昨夜はなにごともない、静かな夜だった。すぐそばを淫魔が通り過ぎていたことなど、{t}は知るよしもない。')
+  };
+  function fateOf(t) {
+    var g = t.tg;
+    if (g.love) return 'love';
+    if (g.drained && g.drained >= g.vit * 0.7) return 'spent';
+    if (g.knows) return 'knows';
+    if (g.drained) return 'drained';
+    if (g.refused && !g.soft) return 'refused';
+    if (g.n) return 'soft';
+    return 'none';
+  }
+  SB.targetDawn = function (S, T, TG) {
+    TG.forEach(function (t) {
+      var f = fateOf(t), g = t.tg;
+      ST.say(S, { actors: [t], tag: '夜明け', text: fmt(pkF(S, DAWN[f]), { t: t.name, lv: g.love }), why: t.name + '（標的）：誘われた ' + g.n + '回・吸われた精 ' + g.drained + 'ml（はじめ ' + g.vit + 'ml → 残り ' + Math.round(t.m.ml) + 'ml）' });
+    });
+  };
+
+  /* ---------- 結果 ---------- */
+  var FATE = { love: function (g) { return 'サキュバスの' + g.love + 'に惚れ込んだ' + (g.drained ? '（精 ' + g.drained + 'ml）' : ''); }, spent: function (g) { return '精を搾り尽くされた（' + g.drained + 'ml）'; }, knows: function (g) { return 'サキュバスの正体を知った' + (g.drained ? '（精 ' + g.drained + 'ml）' : ''); }, drained: function (g) { return '知らないまま精を吸われた（' + g.drained + 'ml）'; }, refused: function () { return '誘いを断りきった'; }, soft: function () { return '誘われたが、話すだけで終わった'; }, none: function () { return '誰にも声をかけられなかった'; } };
+  SB.targetFinish = function (S, T, TG, rows, lines) {
+    TG.forEach(function (t) {
+      var g = t.tg, f = fateOf(t);
+      t.fate = '標的：' + FATE[f](g);
+      t.notes.push('標的（人間）。サキュバスの存在を知らない人間として、' + T.name + 'にいた');
+      t.notes.push('吸われた精 ' + g.drained + 'ml（はじめ ' + g.vit + 'ml → 残り ' + Math.round(t.m.ml) + 'ml）・誘われた ' + g.n + '回');
+      if (g.log.length) t.notes.push(g.log.map(function (e) { return e.a + 'に誘われ、' + e.out + (e.ml ? '（-' + e.ml + 'ml）' : ''); }).join('／'));
+      else t.notes.push('今夜は誰にも声をかけられなかった');
+      rows.push({ i: t.i, rank: '標的', cells: ['人間（標的）', '—', '-' + g.drained + 'ml', '誘われた' + g.n + '回', '—', g.log.length ? g.log[g.log.length - 1].a : '—', '—'] });
+      lines.push('標的 ' + t.name + '：' + FATE[f](g));
+    });
+    S.P.forEach(function (p) { if (p.tgLog && p.tgLog.length && p.role === 'hunt') p.notes.push('住人の標的：' + p.tgLog.join('、')); });
   };
 })();
 ;/* ==== js/solo-saimin-data.js ==== */
