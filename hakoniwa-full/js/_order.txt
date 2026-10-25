@@ -60,6 +60,7 @@ js/tone-stern.js
 js/tone-long.js
 js/engine.js
 js/content.js
+js/mob.js
 js/ero-kit.js
 js/part-words.js
 js/ero-moan-tone.js

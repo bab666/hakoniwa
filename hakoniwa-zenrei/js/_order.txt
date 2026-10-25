@@ -49,6 +49,7 @@ js/tone-stern.js
 js/tone-long.js
 js/engine.js
 js/content.js
+js/mob.js
 js/fwb.js
 js/scenarios-a.js
 js/mini.js

@@ -68,6 +68,8 @@
     jp: L('田所|井上|佐伯|大河内|宮下|小野寺|三好|今村|白石|川端|須藤|有馬|浅野|久保|仲村|藤枝|保科|榎本'),
     us: L('マイク|ジェシカ|ダニエル|サラ|トニー|エミリー|カルロス|ハンナ|レジー|モーガン|ウェイン|リサ|デイヴ|ノーラ|フランク|アイリス')
   };
+  /* 名前の表はモブの共通の場所（mob.js の HK.Mob）にも登録する */
+  if (HK.Mob) { HK.Mob.register('zombie.jp', Z.NPC_NAMES.jp); HK.Mob.register('zombie.us', Z.NPC_NAMES.us); }
   Z.NPC_TYPES = {
     soldier: { label: '軍人', jp: '自衛官の', us: '州兵の', w: 1 },
     priest: { label: '宗教家', jp: '白い法衣の', us: '牧師の', w: 1 },
