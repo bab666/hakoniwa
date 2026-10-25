@@ -45293,10 +45293,17 @@
     massage: ['施術者の手が、ゆっくりとこりをほぐしていった。', '温かいタオルの重みが、妙に心地よかった。', 'アロマの香りが、少しずつ濃くなっていった。', '施術室の照明が、いつの間にか一段暗くなっていた。'],
     saimin: ['部屋の時計の音だけが、やけに大きく聞こえた。', 'まぶたが、少しずつ重くなっていった。']
   }, MILD = MILDS.locker;
-  function fixEvent(e) {
-    if (!e || typeof e.text !== 'string' || !e.tag) return;
+  var NEUTRAL = ['{a}はしばらく、ひとりで考えごとをしていた。', '{a}は窓の外を眺めながら、小さく息をついた。', '{a}は手帳を開き、今日のことを短く書き留めた。'];
+  function fixEvent(e, r) {
+    if (!e || typeof e.text !== 'string') return;
     var t = e.text.trim(), MILD = MILDS[curId] || MILDS.locker;
-    if (!t || (FADE.indexOf(t) >= 0 && !/秘密|一線|ベッド|その先/.test(e.tag))) e.text = MILD[fi++ % MILD.length];
+    /* 仕上げで本文が全部消えた記録：恋愛の記録はやわらかい一文、それ以外は本人の短い一文にする（空の記録を残さない） */
+    if (!t) {
+      var nm = e.actors && e.actors.length && r && r.chars && r.chars[e.actors[0]] ? r.chars[e.actors[0]].name : '';
+      e.text = e.cat === 'romance' || e.tag || !nm ? MILD[fi++ % MILD.length] : NEUTRAL[fi++ % NEUTRAL.length].replace(/\{a\}/g, nm);
+      return;
+    }
+    if (e.tag && FADE.indexOf(t) >= 0 && !/秘密|一線|ベッド|その先/.test(e.tag)) e.text = MILD[fi++ % MILD.length];
   }
   function walk(o, key) {
     if (typeof o === 'string') return key === 'tag' || key === 'label' ? softTag(o) : softText(o);
@@ -45325,7 +45332,7 @@
       if (id === 'saimin' && input.env.mode === 'lewd') input.env.mode = 'mix';
     }
     var r = id === 'massage' ? withPools(function () { return sim0.apply(self, args); }) : sim0.apply(this, arguments);
-    if (soft && r) { fi = 0; curId = id; walk(r, ''); (r.log || []).forEach(fixEvent); }
+    if (soft && r) { fi = 0; curId = id; walk(r, ''); (r.log || []).forEach(function (e) { fixEvent(e, r); }); }
     return r;
   };
   for (var k in sim0) if (Object.prototype.hasOwnProperty.call(sim0, k)) HK.simulate[k] = sim0[k];
