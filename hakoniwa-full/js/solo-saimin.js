@@ -303,7 +303,7 @@
           /* 受け攻め・女性どうし：かけられた側が攻めなら攻めの文、女性どうしなら専用の文（variant） */
           var aTop = p.aTop;
           var vk = full ? (lew === 'low' && g.softFull ? 'softFull' : vkey(p, g, 'full')) : vkey(p, g, 'part');
-          var body = ST.pick(S, eL(S, 'sug.' + k + '.' + ekey(p, vk), g[vk]));
+          var body = ST.pick(S, bodyL(S, p, 'sug.' + k + '.' + ekey(p, vk), g[vk]));
           var fb = lew === 'low' && g.lewd && full ? ST.fmt(ST.pick(S, SM.SUG_LOW), v) : eF(S, p, ST.fmt(body, v));
           t += fb;
           t += tq(p);
@@ -485,6 +485,15 @@
     return k;
   }
   function eL(S, key, arr) { return HK.Ero ? HK.Ero.L(S, 'saimin', key, arr) : arr; }
+  /* 受ける{a}が女性の体（ふたなりでない）なら、{a}を男性の体で書いた文（{a}の根元・亀頭、{a}が射精する など）を外し、
+     女性の体の文（キーの後ろに F。solo-saimin-ero.js の 'sug.edge.fullF' など）を足す。残らなければ元の文のまま */
+  var A_MALE = /\{a\}の(?:根元|亀頭|竿|裏筋|鈴口|カリ|先走り|ちんぽ|肉棒|ペニス|陰茎|睾丸)|\{a\}(?:は|が)[^。「」{]{0,30}(?:射精|精を(?:吐き出|放))/;
+  function bodyL(S, p, key, arr) {
+    var L0 = eL(S, key, arr);
+    if (p.aTop || !HK.Pos || !HK.Pos.isF(p)) return L0;
+    var ok = (L0 || []).filter(function (t) { return !A_MALE.test(t); }).concat(eL(S, key + 'F', []) || []);
+    return ok.length ? ok : L0;
+  }
   /* {m0}〜{m2} は {a} の喘ぎ、{hm0}〜{hm2} は {h} の喘ぎ（かける側がモブなら穏やかの喘ぎ）、{s:wet} などは擬音。
      かけられた側が攻めでなければ、{h} は主導している側なので、こらえる・とろける段階は拒まない喘ぎ（HK.Ero.moan の eroDom） */
   function eF(S, p, t) {
