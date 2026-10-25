@@ -15,6 +15,14 @@
   };
   /* 絞り込みの札を出すか（R18版で、全年齢モードでないとき。記録にエロシーンがひとつでもあれば） */
   HK.lewdFilterOn = function (log) { return !HK.SAFE_ON && (log || []).some(HK.lewdEvent); };
+  /* 関係の結末（組のカード・テキスト書き出し）に載せる、エロシーンの概要。全文は段落つきで長いので、最初の一文だけに切り詰める */
+  HK.lewdBrief = function (e) {
+    var t = String(e && e.text || '').replace(/\n+/g, ' ').replace(/^[\s―]+/, '');
+    var m = t.match(/^[^。！？]*?(?:「[^」]*」[^。！？]*?)*[。！？]/);
+    var s = m ? m[0] : t.slice(0, 60);
+    if (s.length > 70) s = s.slice(0, 68) + '…';
+    return s + '――夜の場面（全文は経過で）';
+  };
   HK.FACTOR_NAME = { CP: '厳しさ', NP: '優しさ', A: '冷静さ', FC: '奔放さ', AC: '遠慮・協調' };
   HK.FACTOR_FULL = {
     CP: '批判的な親（CP）', NP: '養育的な親（NP）', A: '大人（A）',
@@ -34426,7 +34434,9 @@
     var notes = p.base.notes.length ? '<br>' + p.base.notes.map(esc).join('／') : '';
     var keys = p.key.map(function (n) {
       var e = L[n];
-      return '<li><span class="st">' + esc(e.label) + '</span>' + paint(e.text, res) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</li>';
+      /* エロシーンは概要だけ（全文は経過で読める） */
+      var body = HK.lewdEvent && HK.lewdBrief && HK.lewdEvent(e) ? '<span class="brief">' + esc(HK.lewdBrief(e)) + '</span>' : paint(e.text, res);
+      return '<li><span class="st">' + esc(e.label) + '</span>' + body + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</li>';
     }).join('');
     var r = p.rel;
     return '<article class="pcard' + (p.surprise ? ' sur' : '') + '">' +
@@ -34641,7 +34651,7 @@
     L.push('■ 関係');
     res.pairs.forEach(function (p) {
       L.push('・' + (HK.pairName ? HK.pairName(res, p) : res.chars[p.a].name + '×' + res.chars[p.b].name) + '：' + p.name + (p.surprise ? '［意外］' : '') + '　' + p.text);
-      p.key.forEach(function (n) { L.push('　　' + res.log[n].label + '　' + res.log[n].text); });
+      p.key.forEach(function (n) { var e = res.log[n]; L.push('　　' + e.label + '　' + (HK.lewdEvent && HK.lewdBrief && HK.lewdEvent(e) ? HK.lewdBrief(e) : e.text)); });
     });
     L.push('');
     L.push('■ 時系列');

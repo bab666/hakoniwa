@@ -209,7 +209,9 @@
     var notes = p.base.notes.length ? '<br>' + p.base.notes.map(esc).join('／') : '';
     var keys = p.key.map(function (n) {
       var e = L[n];
-      return '<li><span class="st">' + esc(e.label) + '</span>' + paint(e.text, res) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</li>';
+      /* エロシーンは概要だけ（全文は経過で読める） */
+      var body = HK.lewdEvent && HK.lewdBrief && HK.lewdEvent(e) ? '<span class="brief">' + esc(HK.lewdBrief(e)) + '</span>' : paint(e.text, res);
+      return '<li><span class="st">' + esc(e.label) + '</span>' + body + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</li>';
     }).join('');
     var r = p.rel;
     return '<article class="pcard' + (p.surprise ? ' sur' : '') + '">' +
@@ -424,7 +426,7 @@
     L.push('■ 関係');
     res.pairs.forEach(function (p) {
       L.push('・' + (HK.pairName ? HK.pairName(res, p) : res.chars[p.a].name + '×' + res.chars[p.b].name) + '：' + p.name + (p.surprise ? '［意外］' : '') + '　' + p.text);
-      p.key.forEach(function (n) { L.push('　　' + res.log[n].label + '　' + res.log[n].text); });
+      p.key.forEach(function (n) { var e = res.log[n]; L.push('　　' + e.label + '　' + (HK.lewdEvent && HK.lewdBrief && HK.lewdEvent(e) ? HK.lewdBrief(e) : e.text)); });
     });
     L.push('');
     L.push('■ 時系列');

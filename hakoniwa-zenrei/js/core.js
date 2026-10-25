@@ -14,6 +14,14 @@
   };
   /* 絞り込みの札を出すか（R18版で、全年齢モードでないとき。記録にエロシーンがひとつでもあれば） */
   HK.lewdFilterOn = function (log) { return !HK.SAFE_ON && (log || []).some(HK.lewdEvent); };
+  /* 関係の結末（組のカード・テキスト書き出し）に載せる、エロシーンの概要。全文は段落つきで長いので、最初の一文だけに切り詰める */
+  HK.lewdBrief = function (e) {
+    var t = String(e && e.text || '').replace(/\n+/g, ' ').replace(/^[\s―]+/, '');
+    var m = t.match(/^[^。！？]*?(?:「[^」]*」[^。！？]*?)*[。！？]/);
+    var s = m ? m[0] : t.slice(0, 60);
+    if (s.length > 70) s = s.slice(0, 68) + '…';
+    return s + '――夜の場面（全文は経過で）';
+  };
   HK.FACTOR_NAME = { CP: '厳しさ', NP: '優しさ', A: '冷静さ', FC: '奔放さ', AC: '遠慮・協調' };
   HK.FACTOR_FULL = {
     CP: '批判的な親（CP）', NP: '養育的な親（NP）', A: '大人（A）',
