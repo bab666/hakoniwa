@@ -893,6 +893,8 @@
   /* ---------- 物語型（邪神村・吹雪の館・宇宙船など）：S.poly と、関係の恋人（S.ties）・恋仲（S.rom） ---------- */
   function storyLovers(S, a) {
     var out = [];
+    /* 恋人の記録を一本で持つ箱庭（宇宙船の S.lovers：組の配列。別れた組は消える）は、それだけを読む */
+    if (Array.isArray(S.lovers)) { S.lovers.forEach(function (pr) { var j = pr[0] === a.i ? pr[1] : pr[1] === a.i ? pr[0] : -1, o = j >= 0 && S.P && S.P[j]; if (o && out.indexOf(o) < 0) out.push(o); }); return out.filter(alive); }
     (S.ties || []).forEach(function (t) { if (/^(lover|mate|fated)$/.test(t.type) && (t.a === a.i || t.b === a.i)) { var o = S.P && S.P[t.a === a.i ? t.b : t.a]; if (o && out.indexOf(o) < 0) out.push(o); } });
     if (S.rom) Object.keys(S.rom).forEach(function (k) { if (!S.rom[k]) return; var ij = k.split('-'); if (+ij[0] === a.i || +ij[1] === a.i) { var o = S.P && S.P[+ij[0] === a.i ? +ij[1] : +ij[0]]; if (o && out.indexOf(o) < 0) out.push(o); } });
     return out.filter(alive);
@@ -900,6 +902,8 @@
   P.storyLovers = storyLovers;
   P.storyCan = function (S, a, b) {
     if (!S || !a || !b || a === b) return false;
+    /* 恋愛相手の固定が食い違う二人は、恋人にしない（engine.js の HK.lockConflict） */
+    if (HK.lockConflict && HK.lockConflict(a, b)) return false;
     var la = storyLovers(S, a).filter(function (o) { return o !== b; }), lb = storyLovers(S, b).filter(function (o) { return o !== a; });
     if (storyLovers(S, a).indexOf(b) >= 0) return true;
     if ((a.faithful && la.length) || (b.faithful && lb.length)) return false;
@@ -1005,6 +1009,8 @@
       set: function (nv) {
         nv = !!nv;
         if (nv === v) return;
+        /* 恋愛相手の固定が食い違う二人は、どの出来事からでも恋人にしない（engine.js の HK.lockConflict） */
+        if (nv && HK.lockConflict && HK.lockConflict(a, b)) return;
         v = nv;
         if (pf._polyRestore) return;
         if (nv) { if (onCouple(ctx, pf, a, b) === false) v = false; }
@@ -3592,6 +3598,8 @@
       var TE = { 'い': 'って', 'ち': 'って', 'り': 'って', 'き': 'いて', 'ぎ': 'いで', 'し': 'して', 'に': 'んで', 'び': 'んで', 'み': 'んで' };
       var te = TE[nm[2]] || nm[2] + 'て';
       if (/^(?:見|寝|着|居|似|煮)$/.test(nm[1].slice(-1)) && nm[2] === 'い') te = 'いて';
+      /* 「話しかけてみなよ」の「〜てみ」は一段の「みる」（「話しかけてんで」にしない） */
+      if (nm[2] === 'み' && /[てで]$/.test(nm[1])) te = 'みて';
       return lead + nm[1] + te + 'ください' + tail;
     }
     var ph = prohibit(s);
@@ -3826,6 +3834,8 @@
             else if (ov != null && !kg && HK.TONE_FINISH && HK.TONE_FINISH[who.tone]) own = true;
             q = V.replaceFP(ov != null ? ov : q, who);
             if (ov == null && !pre) { if (who.persona === 'polite' || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(V.unHonor ? V.unHonor(q) : q, who); }
+            /* 敬語の口調で、敬語の文とため口の文が混ざる台詞の、ため口の文末を敬語に寄せる（tone-keigo-unify.js。仕上げの前に通し、仕上げが口調の味を付ける） */
+            if (V.keigoUnify && !nounQ && !own && !pre) q = V.keigoUnify(q, who);
             /* 口調ごとの仕上げ（後輩の「〜っす」、お嬢様の「〜ですわ」など。HK.toneFinish で登録したもの） */
             var fin = !own && !nounQ && HK.TONE_FINISH && HK.TONE_FINISH[who.tone];
             /* 仕上げには、敬語で話す相手への台詞か（kg）を渡す。派生の口調が敬語の文を崩すときの判断に使う */
@@ -4828,6 +4838,344 @@
     parts[lastI] = seg;
     return parts.join('');
   });
+})();
+;/* ==== js/tone-keigo-unify.js ==== */
+/* 箱庭シミュレーター: 敬語の口調で「一つの台詞の中で敬語とため口が混ざる」を減らす仕上げ（V.keigoUnify）
+   対象は敬語の口調（tone-registry.js の axis.polite === 2、または derive: 'polite' の口調）。
+   台詞（「」の中）を文（。！？で区切る）に分け、敬語の文とため口の文が両方あるときだけ、ため口の文末を敬語に寄せる。
+   voice.js の V.processText から、言い換え（styleQuote・V.polite）の直後、口調の仕上げ（HK.TONE_FINISH）の前に呼ぶ。
+   順番を仕上げの前にするのは、仕上げ（お嬢様の「〜ですわ」、偉そうな敬語の「〜なさい」、明るい敬語の「〜まーす」など）が
+   「です・ます」の文を見て味を付けるので、先にため口の文を「です・ます」にそろえておけば、寄せた文にも口調の味が付くから。
+   変換は、確かな形だけに限る（判断のつかない語は触らない。取りこぼしは許す）。
+   喘ぎ（♡・「……っ」・小さい母音）の台詞、変換を飛ばす印（先頭の U+2060）の台詞、置き換えの印（U+2060・{ }）が文末にある文は触らない */
+(function () {
+  'use strict';
+  var HK = window.HK, V = HK && HK.Voice;
+  if (!V) return;
+
+  /* ---------- 対象の口調 ---------- */
+  var tcache = {};
+  function isTarget(tone) {
+    if (!tone) return false;
+    if (tone in tcache) return tcache[tone];
+    var ax = HK.toneAxis ? HK.toneAxis(tone) : null;
+    var dv = HK.toneOpt ? HK.toneOpt(tone, 'derive') : null;
+    /* 後輩（〜っす）とダウナー系チャラ男（〜ですよー）は、ため口まじりが味の口調なので外す */
+    return (tcache[tone] = tone !== 'chara_down' && tone !== 'kohai' && (!!(ax && ax.polite === 2) || dv === 'polite'));
+  }
+
+  var NO_TSU = { keigo_sarc: 1, keigo_bossy: 1, keigo_flat: 1 };
+  /* ---------- 文の見分け ---------- */
+  /* 敬語の文末（後ろの「か・よ・ね・けど・から」なども含む） */
+  var KEIGO = /(?:です|ます|ません|でした|ました|ください|くださいませ|でしょう|でしょうか|ございます|ございました|ましょう|ませ|なさい)(?:か|よ|ね|よね|けど|けれど|から|ので|が|わ|の)*$/;
+  /* 喘ぎ・息の乱れ（台詞ごと触らない） */
+  var MOAN = /♡|[ぁぃぅぇぉ]|…っ|っ…|っ、|っ$|^[あんひふはぅ]+[…、]/;
+  var K = '[一-鿿々〆ヵヶ]';
+  var KR = new RegExp(K);
+  function isK(c) { return !!c && KR.test(c); }
+  /* 文末の一字前が漢字か */
+  function kBefore(s, n) { return isK(s.charAt(s.length - n - 1)); }
+
+  /* ---------- 動詞（終止形）→ ます形の語幹 ---------- */
+  /* 一段の一字の漢字（見る・着る・寝る…）。それ以外の「漢字＋る」は五段（帰る・知る・入る） */
+  var ICHI1 = '見着寝似煮居出得経干射';
+  /* 「漢字＋く」の五段（「早く」「近く」のような形容詞の連用形と見分けるため、確かな動詞だけ） */
+  var KU = '行書聞着付置開抱描引歩動働届続泣向吐驚輝浮叩弾効解招巻咲敷拭履頷囁呟焼突導退欠空傾嘆磨湧沸乾渇貫省除築抜覗剥';
+  /* 「い」で終わる五段の音便（〜いだ）の漢字 */
+  var GU = '泳急脱騒防繋注稼塞嗅';
+  var NUM = '一二三四五六七八九十百千幾何';
+  var A2I = { 'か': 'き', 'が': 'ぎ', 'さ': 'し', 'た': 'ち', 'な': 'に', 'ば': 'び', 'ま': 'み', 'ら': 'り', 'わ': 'い' };
+  /* かなだけで書く、よく出る動詞（終止形 → ます形の語幹） */
+  var KANA_V = { 'できる': 'でき', 'わかる': 'わかり', 'がんばる': 'がんばり', 'くれる': 'くれ', 'あげる': 'あげ', 'やる': 'やり', 'いける': 'いけ', 'かまう': 'かまい', 'もらう': 'もらい' };
+  /* 一段なのに五段に見える／五段なのに一段に見える語（触らない） */
+  var V_STOP = /(?:混じる|交じる|捻じる|しゃべる|すべる|かえる|へる|ける|ねる|いじる|まくる)$/;
+  /* 終止形の動詞で終わる文の、ます形の語幹（分からなければ null） */
+  function masuStem(s) {
+    var m;
+    if (V_STOP.test(s)) return null;
+    if (/する$/.test(s)) return s.slice(0, -2) + 'し';
+    if (/来る$/.test(s)) return s.slice(0, -1);
+    if (/[てで]くる$/.test(s)) return s.slice(0, -2) + 'き';
+    if (/行く$/.test(s)) return s.slice(0, -1) + 'き';
+    if (/(?:^|[てでがにもはへ、])いく$/.test(s)) return s.slice(0, -1) + 'き';
+    if (/(?:^|[がはもにてと、]|こと|わけ|はず)ある$/.test(s)) return s.slice(0, -1) + 'り';
+    if (/(?:^|[てでがにもは、])いる$/.test(s)) return s.slice(0, -1);
+    /* い抜きの「〜てる」「〜でる」（「〜てます」にしておけば、敬語の仕上げが「〜ています」に戻す） */
+    if (/(?:っ|[いんし]|[えけげせてねべめれきみり]|[見来着寝出])[てで]る$/.test(s)) return s.slice(0, -1);
+    if (/[ちじ]ゃう$/.test(s)) return s.slice(0, -1) + 'い';
+    if (/(?:^|[にくとがも、])なる$/.test(s)) return s.slice(0, -1) + 'り';
+    if (/[てで]しまう$/.test(s)) return s.slice(0, -1) + 'い';
+    if (/[てで]みる$/.test(s)) return s.slice(0, -1);
+    if (/[てで]おく$/.test(s)) return s.slice(0, -1) + 'き';
+    for (var kv in KANA_V) if (s.slice(-kv.length) === kv && (s.length === kv.length || !/[ぁ-ん]/.test(s.charAt(s.length - kv.length - 1)) || /[てでがにもはを、]/.test(s.charAt(s.length - kv.length - 1)))) return s.slice(0, -kv.length) + KANA_V[kv];
+    /* 漢字＋る */
+    if ((m = s.match(new RegExp('(' + K + ')る$')))) return ICHI1.indexOf(m[1]) >= 0 ? s.slice(0, -1) : s.slice(0, -1) + 'り';
+    /* 漢字＋え段・い段＋る（考える・生きる：一段） */
+    if (new RegExp(K + '[えけげせぜてでねべぺめれきぎじちにびみり]る$').test(s)) return s.slice(0, -1);
+    /* 漢字＋あ段・う段・お段のかな＋る（始まる・終わる・助かる：五段） */
+    if (new RegExp(K + '[ぁ-ん]?[あかがさざただなはばまやらわうくぐすずつぬふぶむゆおこごそぞとどのほぼもよろ]る$').test(s)) return s.slice(0, -1) + 'り';
+    /* 漢字＋く・ぐ・す・つ・ぬ・ぶ・む・う */
+    if ((m = s.match(new RegExp('(' + K + ')(?:ち|づ)?く$'))) && KU.indexOf(m[1]) >= 0) return s.slice(0, -1) + 'き';
+    if (/近づく$|気づく$/.test(s)) return s.slice(0, -1) + 'き';
+    if (new RegExp(K + 'ぐ$').test(s)) return s.slice(0, -1) + 'ぎ';
+    if (new RegExp(K + '[こらやわとかへ]?す$').test(s)) return s.slice(0, -1) + 'し';
+    if ((m = s.match(new RegExp('(' + K + ')つ$'))) && NUM.indexOf(m[1]) < 0) return s.slice(0, -1) + 'ち';
+    if (/死ぬ$/.test(s)) return s.slice(0, -1) + 'に';
+    if (new RegExp(K + 'か?ぶ$').test(s)) return s.slice(0, -1) + 'び';
+    if (new RegExp(K + 'し?む$').test(s)) return s.slice(0, -1) + 'み';
+    if (new RegExp(K + '[かあ]?う$').test(s)) return s.slice(0, -1) + 'い';
+    return null;
+  }
+
+  /* ---------- 否定（〜ない → 〜ません） ---------- */
+  var NAI_STOP = /(?:下らない|詰まらない|情けない|頼りない|物足りない|違いない|申し訳ない|仕方ない|しょうがない|しかたない|だらしない|つまらない|くだらない|もったいない|勿体ない|危ない|少ない|切ない|汚い|ぎこちない|あどけない|そっけない|素っ気ない|呆気ない|あっけない|味気ない|心もとない|心許ない|やるせない|おぼつかない|はかない|儚い|えげつない)$/;
+  function negPolite(s) {
+    var m;
+    if (NAI_STOP.test(s)) return null;
+    if (/(?:じゃ|では)ない$/.test(s)) return null;
+    if (/くない$/.test(s)) return s + 'です';
+    if (/しない$/.test(s)) return s.slice(0, -3) + 'しません';
+    if (/来ない$/.test(s)) return s.slice(0, -2) + 'ません';
+    if (/(?:^|[てで])こない$/.test(s)) return s.slice(0, -3) + 'きません';
+    if (/(?:できない|いけない|いない|足りない|たりない)$/.test(s)) return s.slice(0, -2) + 'ません';
+    if (/(?:わから|分から|知ら|しら|なら|かまわ|構わ|たまら|止まら|やら|いか)ない$/.test(s)) { var b = s.slice(0, -2); return b.slice(0, -1) + A2I[b.slice(-1)] + 'ません'; }
+    if (new RegExp('[' + GU + ']がない$').test(s)) return s.slice(0, -3) + 'ぎません';
+    if (/(?:^|[がはも、]|しか|まだ|もう)ない$/.test(s)) return s.slice(0, -2) + 'ありません';
+    if ((m = s.match(new RegExp(K + '[ぁ-ん]?([かがさたなばまらわ])ない$'))) && A2I[m[1]]) return s.slice(0, -3) + A2I[m[1]] + 'ません';
+    if (new RegExp(K + '[えけげせぜてでねべめれきぎじちにびみり]ない$').test(s)) return s.slice(0, -2) + 'ません';
+    if (new RegExp('[' + ICHI1 + ']ない$').test(s)) return s.slice(0, -2) + 'ません';
+    return null;
+  }
+
+  /* ---------- 過去（〜た → 〜ました） ---------- */
+  /* 「漢字＋った」の元の形（い：言う、ち：待つ、り：帰る） */
+  var TTA = {};
+  '言思会買使笑違払誘習歌拾失願疑狙誓伝合揃酔迷戦従扱叶貰問争救奪補追吸洗祝養'.split('').forEach(function (c) { TTA[c] = 'い'; });
+  '待持立勝打撃育保経'.split('').forEach(function (c) { TTA[c] = 'ち'; });
+  '帰知入取作困戻守怒眠乗祈送残走黙座断切触撮頼渡通踊光鳴売減余移張握割降登限当叱殴蹴刺治直泊止集終始決曲上下繋掴回謝祭居照'.split('').forEach(function (c) { TTA[c] = 'り'; });
+  var NDA = { b: '呼遊選喜叫学飛転結並運及滅浮', n: '死' };
+  function pastPolite(s) {
+    var m;
+    if (/だった$/.test(s)) return s.slice(0, -3) + 'でした';
+    if (/(?:分か|(?:^|[^ぁ-ん]|[がもはをにと])わか|助か|見つか|掛か|(?:^|[てでがに])かか|向か|ぶつか|受か)った$/.test(s)) return s.slice(0, -2) + 'りました';
+    if (/かった$/.test(s)) return s + 'です';
+    if (/[てで]しまった$/.test(s)) return s.slice(0, -2) + 'いました';
+    if (/[ちじ]ゃった$/.test(s)) return s.slice(0, -2) + 'いました';
+    if (/した$/.test(s)) return s.slice(0, -1) + 'ました';
+    if (/(?:っ|[いんし]|[えけげせてねべめれきみり]|[見来着寝出])[てで]た$/.test(s)) return s.slice(0, -1) + 'ました';
+    if (/[てで]いた$/.test(s) || /(?:^|[にがもはで、])いた$/.test(s)) return s.slice(0, -1) + 'ました';
+    if (/[てで]きた$/.test(s) || /来た$/.test(s)) return s.slice(0, -1) + 'ました';
+    if (/行った$/.test(s) || /(?:く|が|に|まく)いった$/.test(s)) return s.slice(0, -2) + 'きました';
+    if (/(?:^|[にくとがも、])なった$/.test(s)) return s.slice(0, -2) + 'りました';
+    if (/(?:^|[がはもにてと、])あった$/.test(s)) return s.slice(0, -2) + 'りました';
+    if (/(?:もら|かま)った$/.test(s)) return s.slice(0, -2) + 'いました';
+    if (/(?:がんば|頑張)った$/.test(s)) return s.slice(0, -2) + 'りました';
+    if ((m = s.match(new RegExp('(' + K + ')った$'))) && TTA[m[1]]) return s.slice(0, -2) + TTA[m[1]] + 'ました';
+    if (new RegExp(K + '[わまがら]った$').test(s)) return s.slice(0, -2) + 'りました';
+    if ((m = s.match(new RegExp('(' + K + ')(し)?んだ$')))) return s.slice(0, -2) + (m[2] ? 'み' : NDA.b.indexOf(m[1]) >= 0 ? 'び' : NDA.n.indexOf(m[1]) >= 0 ? 'に' : 'み') + 'ました';
+    if ((m = s.match(new RegExp('(' + K + ')いた$'))) && KU.indexOf(m[1]) >= 0) return s.slice(0, -2) + 'きました';
+    if ((m = s.match(new RegExp('(' + K + ')いだ$'))) && GU.indexOf(m[1]) >= 0) return s.slice(0, -2) + 'ぎました';
+    if (new RegExp(K + '[ぁ-ゖ]{0,2}[えけげせぜてでねべめれきぎじちにびみり]た$').test(s) && !/[っんい][えけげせぜてでねべめれきぎじちにびみり]た$/.test(s)) return s.slice(0, -1) + 'ました';
+    if (new RegExp('[' + ICHI1 + ']た$').test(s)) return s.slice(0, -1) + 'ました';
+    if (/(?:できた|くれた|あげた)$/.test(s)) return s.slice(0, -1) + 'ました';
+    return null;
+  }
+
+  /* ---------- 命令・禁止 ---------- */
+  /* 命令形 → [て形, ます形の語幹] */
+  var IMP = {
+    'しろ': ['して', 'し'], '見ろ': ['見て', '見'], '逃げろ': ['逃げて', '逃げ'], '起きろ': ['起きて', '起き'], 'やめろ': ['やめて', 'やめ'], '止めろ': ['止めて', 'やめ'],
+    '生きろ': ['生きて', '生き'], '信じろ': ['信じて', '信じ'], '答えろ': ['答えて', '答え'], '離れろ': ['離れて', '離れ'], '伏せろ': ['伏せて', '伏せ'], '寝ろ': ['寝て', '寝'],
+    '食べろ': ['食べて', '食べ'], '隠れろ': ['隠れて', '隠れ'], '開けろ': ['開けて', '開け'], '決めろ': ['決めて', '決め'], '見せろ': ['見せて', '見せ'], '教えろ': ['教えて', '教え'],
+    '出ろ': ['出て', '出'], '落ち着け': ['落ち着いて', '落ち着き'], '待て': ['待って', '待ち'], '行け': ['行って', '行き'], '走れ': ['走って', '走り'], '黙れ': ['黙って', '黙り'],
+    '座れ': ['座って', '座り'], '帰れ': ['帰って', '帰り'], '急げ': ['急いで', '急ぎ'], '下がれ': ['下がって', '下がり'], '止まれ': ['止まって', '止まり'], '戦え': ['戦って', '戦い'],
+    '言え': ['言って', '言い'], '聞け': ['聞いて', '聞き'], '飲め': ['飲んで', '飲み'], '休め': ['休んで', '休み'], '進め': ['進んで', '進み'], '来い': ['来て', '来'],
+    '頑張れ': ['頑張って', '頑張り'], 'がんばれ': ['がんばって', 'がんばり'], '戻れ': ['戻って', '戻り'], '掴まれ': ['掴まって', '掴まり'], '動け': ['動いて', '動き'], '立て': ['立って', '立ち']
+  };
+  /* 禁止（〜するな）→ [ない形, て形] */
+  var PROH = {
+    'する': ['しない', 'して'], '動く': ['動かない', '動いて'], '触る': ['触らない', '触って'], '来る': ['来ない', '来て'], '見る': ['見ない', '見て'], '逃げる': ['逃げない', '逃げて'],
+    '死ぬ': ['死なない', '死んで'], '行く': ['行かない', '行って'], '泣く': ['泣かない', '泣いて'], '喋る': ['喋らない', '喋って'], '近づく': ['近づかない', '近づいて'], '離れる': ['離れない', '離れて'],
+    '笑う': ['笑わない', '笑って'], '言う': ['言わない', '言って'], '諦める': ['諦めない', '諦めて'], '忘れる': ['忘れない', '忘れて'], '振り向く': ['振り向かない', '振り向いて'],
+    '開ける': ['開けない', '開けて'], '入る': ['入らない', '入って'], '出る': ['出ない', '出て'], '出す': ['出さない', '出して'], '騒ぐ': ['騒がない', '騒いで'], '負ける': ['負けない', '負けて'], '迷う': ['迷わない', '迷って']
+  };
+  /* 誘い（〜しよう → 〜しましょう） */
+  var VOL = {
+    'しよう': 'し', '行こう': '行き', '帰ろう': '帰り', '戻ろう': '戻り', '急ごう': '急ぎ', '休もう': '休み', '進もう': '進み', '待とう': '待ち', '遊ぼう': '遊び', '呼ぼう': '呼び',
+    '選ぼう': '選び', '頑張ろう': '頑張り', 'がんばろう': 'がんばり', 'やろう': 'やり', '始めよう': '始め', '逃げよう': '逃げ', '食べよう': '食べ', '寝よう': '寝', '決めよう': '決め',
+    '調べよう': '調べ', '探そう': '探し', '祈ろう': '祈り', '乗ろう': '乗り', '入ろう': '入り', '作ろう': '作り', '守ろう': '守り', '歩こう': '歩き', '聞こう': '聞き', '続けよう': '続け', '考えよう': '考え', '確かめよう': '確かめ', '出よう': '出'
+  };
+
+  /* ---------- 頼み（〜て → 〜てください） ---------- */
+  var TE_STOP = /(?:なんて|として|にとって|について|によって|に対して|に関して|に向けて|すべて|全て|初めて|はじめて|改めて|あらためて|せめて|あえて|敢えて|かつて|決して|極めて|きわめて|努めて|強いて|かえって|却って|至って|果たして|揃って|前もって|もって|そして|まして|どうして|こうして|そうして|ああして|なんで|それで|そこで|ここで|あとで|後で|ので|まで|くれて|って言って|と言って|併せて|合わせて|あわせて|喜んで|謹んで|進んで|好んで|思って|考えて|感じて|を通して|しばらくして|少しして|ほどなくして|程なくして|一瞬にして|一夜にして|幸いにして|往々にして|もしかして|ひょっとして|続いて|誓って|次いで|たりして|だりして|とかして|なんかして|やがって|甘えて|って聞いて|と聞いて|まで頑張って|まで頑張って|(?:緊張|感動|興奮|後悔|期待|満足|混乱|困惑|動揺|失敗|成功|感謝|びっくり|どきどき|ドキドキ|ほっと|イライラ|うっとり)して)$/;
+  function teForm(s) {
+    if (TE_STOP.test(s)) return false;
+    var m;
+    if (/(?:^|[をにがもは、])(?:やめ|あげ|かけ|つけ)て$/.test(s)) return true;
+    if (/[てで](?:みて|おいて)$/.test(s)) return true;
+    if (/(?:^|[にでへ、])いて$/.test(s)) return true;
+    if (/からって$/.test(s)) return false;
+    if ((m = s.match(/(.)って$/)) && (TTA[m[1]] || m[1] === '行' || /[やばまがらわ]/.test(m[1]))) return true;
+    if ((m = s.match(new RegExp('(' + K + ')(?:ち)?いて$'))) && KU.indexOf(m[1]) >= 0) return true;
+    if ((m = s.match(new RegExp('(' + K + ')いで$'))) && GU.indexOf(m[1]) >= 0) return true;
+    if (/して$/.test(s)) return true;
+    if (new RegExp(K + 'し?んで$').test(s)) return true;
+    if (/(?:[かがさたなばまらわえけげせてねべめれきぎじちにびみり]|し|来|こ|見|寝|出)ないで$/.test(s)) return true;
+    if (new RegExp(K + '[えけげせぜてでねべめれきぎじちにびみり]て$').test(s)) return true;
+    if (/[見来寝出着]て$/.test(s)) return true;
+    return false;
+  }
+  /* 「〜てください」を偉そうな敬語の「〜なさい」に（て形 → ます形の語幹が分かるものだけ） */
+  function teStem(s) {
+    for (var k in IMP) if (s.slice(-IMP[k][0].length) === IMP[k][0]) return s.slice(0, -IMP[k][0].length) + IMP[k][1];
+    if (/して$/.test(s)) return s.slice(0, -1);
+    return null;
+  }
+
+  /* ---------- 形容詞・名詞＋い（〜い → 〜いです） ---------- */
+  var I_STOP = /(?:なさい|ください|しゃい|ちょうだい|まい|[^暖温柔細]かい|^かい|だい|来い|こい|くらい|ぐらい|ほしい|欲しい|洗い|占い|願い)$|(?:^|[、…‥\s])(?:はい|おい|ほい|あい|うい|へい|ええい)$/;
+  function adjI(s) {
+    if (I_STOP.test(s)) return false;
+    return /[ぁ-ん一-鿿]い$/.test(s) && s.length >= 2;
+  }
+
+  /* ---------- 一つの文末を敬語に（できなければ null） ---------- */
+  var NOUNEND = new RegExp('(?:' + K + '|[ァ-ヶー]|[A-Za-zＡ-Ｚａ-ｚ0-9０-９]|の|よう|そう|はず|つもり|ところ|こと|もの|ため|まま|ばかり|だけ|ほど|きれい|ぎりぎり|ここ|そこ|あそこ|どこ|これ|それ|あれ|どれ|だれ|なに|いつ|ほんと|みんな|あなた|わたし|ダメ|だめ|みたい)$');
+  function convCore(c, ask, tone, bang) {
+    var m, r;
+    if (!c) return null;
+    /* 推し量り・念押し */
+    if ((m = c.match(/^(.+?)(?:だろう|だろ|でしょ)$/))) return m[1] + 'でしょう';
+    if (/じゃん$/.test(c)) return c.slice(0, -3) + 'じゃないですか';
+    if (/じゃないか$/.test(c)) return c.slice(0, -1) + 'ですか';
+    /* 「〜じゃない」：名詞の後ろは打ち消し（「学生じゃない」→「学生じゃないです」）、動詞の後ろは念押し（「いないじゃない」→「いないじゃないですか」）。
+       「〜んじゃない」「〜いじゃない」はどちらか決められないので触らない */
+    if (/じゃない$/.test(c)) {
+      var pj = c.charAt(c.length - 5);
+      if (isK(pj) || /[ァ-ヶーの]/.test(pj)) return c + 'です' + (ask ? 'か' : '');
+      if (/[るた]/.test(pj) || /ないじゃない$/.test(c)) return c + 'ですか';
+      return null;
+    }
+    if (/ではない$/.test(c)) return c.slice(0, -2) + 'ありません' + (ask ? 'か' : '');
+    /* 「〜かな」：問いかけは「〜でしょうか」。独り言は、名詞の後ろなら「〜ですかね」、「〜のかな」なら「〜のでしょうか」。
+       「話したくないかな」「したいかな」のような自分のことをぼかす言い方は触らない */
+    if (/(?:ない|たい)かな$/.test(c)) return null;
+    if (new RegExp('(?:[るうくぐすつぬぶむただのん]|' + K + '|[ァ-ヶー])かな$').test(c)) {
+      if (ask || /のかな$/.test(c)) return c.slice(0, -2) + 'でしょうか';
+      if (new RegExp('(?:' + K + '|[ァ-ヶー])かな$').test(c)) return c.slice(0, -2) + 'ですかね';
+      return null;
+    }
+    /* 問いかけの「〜なの？」「〜の？」 */
+    if (ask && /なの$/.test(c) && c.length >= 3) return c.slice(0, -2) + 'なんですか';
+    if (ask && /(?:[るうくぐすつぬぶむた]|い)の$/.test(c) && c.length >= 3) return c.slice(0, -1) + 'んですか';
+    /* 「〜なんだ」「〜んだ」（説明） */
+    if (/(?:な|の)んだ$/.test(c)) return c.slice(0, -1) + 'です';
+    if (/(?:[るうくぐすつぬぶむた]|たい|いい|ない)んだ$/.test(c)) return c.slice(0, -1) + 'です';
+    /* 名詞＋だ */
+    if (/だ$/.test(c) && c.length >= 2 && NOUNEND.test(c.slice(0, -1))) return c.slice(0, -1) + 'です' + (ask ? 'か' : '');
+    /* 過去 */
+    if (/た$|だ$/.test(c) && (r = pastPolite(c))) return r + (ask && /(?:ました|でした|です)$/.test(r) ? 'か' : '');
+    /* 命令・禁止・誘い */
+    var ik = Object.keys(IMP).filter(function (k) {
+      if (c.slice(-k.length) !== k) return false;
+      if (c.length === k.length) return true;
+      var pv = c.charAt(c.length - k.length - 1);
+      /* 「静かにしろ」「早くしろ」：「しろ」は前の語を問わない（「おもしろ」は除く） */
+      if (k === 'しろ') return !/[もお]/.test(pv);
+      return /[をにへでとがは、]/.test(pv);
+    }).sort(function (a, b) { return b.length - a.length; })[0];
+    if (ik) {
+      if (ask) return null;
+      var head = c.slice(0, c.length - ik.length);
+      return tone === 'keigo_bossy' ? head + IMP[ik][1] + 'なさい' : head + IMP[ik][0] + 'ください';
+    }
+    if ((m = c.match(/^(.*?)(する|動く|触る|来る|見る|逃げる|死ぬ|行く|泣く|喋る|近づく|離れる|笑う|言う|諦める|忘れる|振り向く|開ける|入る|出る|出す|騒ぐ|負ける|迷う)な$/)) && !ask) {
+      var p = PROH[m[2]];
+      return tone === 'keigo_bossy' ? m[1] + p[1] + 'はいけません' : m[1] + p[0] + 'でください';
+    }
+    for (var vk in VOL) if (c.slice(-vk.length) === vk && (c.length === vk.length || /[をにへでとがは、もう]/.test(c.charAt(c.length - vk.length - 1)) || (vk === 'しよう' && c.length > 3))) return c.slice(0, -vk.length) + VOL[vk] + 'ましょう' + (ask ? 'か' : '');
+    /* 否定 */
+    /* 「呼吸、止めない！」「慌てない、走らない」のような言いつけを「〜ません」（自分の打ち消し）にしない */
+    if (/ない$/.test(c) && !/くない$/.test(c) && (bang || /ない、/.test(c))) return null;
+    if (/ない$/.test(c) && (r = negPolite(c))) return r + (ask ? 'か' : '');
+    /* 頼み（〜て）。問いかけは除く */
+    if (!ask && /てて$/.test(c) && teForm(c.slice(0, -1))) return c.slice(0, -1) + 'いてください';
+    if (!ask && /[てで]$/.test(c) && teForm(c)) {
+      if (tone === 'keigo_bossy' && (r = teStem(c))) return r + 'なさい';
+      return c + 'ください';
+    }
+    /* 動詞の終止形 */
+    if (/[うくぐすつぬぶむる]$/.test(c) && (r = masuStem(c))) return r + 'ます' + (ask ? 'か' : '');
+    /* 形容詞 */
+    /* 「やらない？」のような誘いを「〜ないですか」にしない（「〜くない？」は形容詞なのでよい） */
+    if (ask && /ない$/.test(c) && !/くない$/.test(c)) return null;
+    if (adjI(c)) return c + 'です' + (ask ? 'か' : '');
+    return null;
+  }
+  /* 文の本体（記号を除いたもの）を変換。後ろの「よ・ね・よね・ぞ・ぜ・から・けど」は付け直す */
+  /* 一文まるごとのあいさつ */
+  var GREET = { 'おつかれ': 'お疲れさまです', 'お疲れ': 'お疲れさまです', 'おつかれさま': 'お疲れさまです', 'お疲れさま': 'お疲れさまです', 'ありがとう': 'ありがとうございます', 'ごめん': 'ごめんなさい', 'おはよう': 'おはようございます', 'おやすみ': 'おやすみなさい', 'よろしく': 'よろしくお願いします', 'すまない': 'すみません', 'すまん': 'すみません' };
+  function convBody(b, ask, tone, bang) {
+    if (GREET[b] && !ask) return GREET[b];
+    /* 「するする」「痛い痛い」「騙された騙された」のような繰り返しは、片方だけ変えると崩れるので触らない */
+    if (/^(.{1,8}?)、?\1(?:よ|ね)?$/.test(b)) return null;
+    /* 「お願い」「……お願い……」は「お願いします」 */
+    if (/(?:^|[、…‥\s])お願い$/.test(b) && !ask) return b + 'します';
+    /* 「また話そうって」（誘いを引いて言う） */
+    var mv = b.match(/^(.*?)(しよう|行こう|話そう|会おう|帰ろう|遊ぼう|頑張ろう|がんばろう)って$/);
+    if (mv) return mv[1] + ({ 'しよう': 'し', '行こう': '行き', '話そう': '話し', '会おう': '会い', '帰ろう': '帰り', '遊ぼう': '遊び', '頑張ろう': '頑張り', 'がんばろう': 'がんばり' })[mv[2]] + 'ましょうって';
+    var m = b.match(/^(.*?)(よね|よ|ね|ぞ|ぜ|から|けど|けれど|だな)?$/), c = m[1], p = m[2] || '';
+    if (p === 'だな') { c += 'だ'; p = 'ね'; }
+    if (p === 'ぞ' || p === 'ぜ') p = 'よ';
+    /* 「？」のない問い（「何が変わる」「何のポイントだよ」）は、言い切りの敬語にすると意味が変わるので触らない（頼みの「〜て」は除く） */
+    if (!ask && /何|なに|なんで|なんの|誰|だれ|どこ|なぜ|どうして|どう(?!ぞ|も)|どれ|どっち|いつ(?!も)/.test(c) && !/[てで]$/.test(c)) return null;
+    /* 「うわ、ミナトだ」（見つけて驚く）を「ミナトです」にしない */
+    if (/^(?:うわ|うげ|げっ|げ|わっ|おっ)[、っ]/.test(c) && /だ$/.test(c)) return null;
+    /* 問いの「か」を付けた形には、念押しの「よ・ね」を重ねない */
+    var r = convCore(c, ask && !p, tone, bang);
+    if (r == null) return null;
+    if (p && /か$/.test(r) && /^(?:よ|ね|よね)$/.test(p)) return null;
+    /* 頼み・禁止・命令の後ろには「から・けど」を付けない（「待ってくださいから」にしない） */
+    if (/(?:ください|なさい|いけません|ましょう)$/.test(r) && /^(?:から|けど|けれど)$/.test(p)) return null;
+    /* 無機質な敬語は言い切り（「よ・ね」を付けない） */
+    if (tone === 'keigo_flat' && /^(?:よ|ね|よね)$/.test(p)) p = '';
+    return r + p;
+  }
+
+  V.keigoUnify = function (q, who) {
+    if (!q || typeof q !== 'string' || !who || !isTarget(who.tone)) return q;
+    if (q.charAt(0) === '\u2060' || MOAN.test(q) || /[「」『』（）]/.test(q)) return q;
+    var segs = q.match(/[^。！？!?]+[。！？!?]*|[。！？!?]+/g);
+    if (!segs || segs.length < 2) return q;
+    var info = segs.map(function (s) {
+      var pm = s.match(/^(.*?)([。！？!?]*)$/), core = pm[1], punct = pm[2];
+      var lead = (core.match(/^[…‥、\s　]*/) || [''])[0];
+      var tail = (core.slice(lead.length).match(/[…‥ー〜～―、\s　]*$/) || [''])[0];
+      var body = core.slice(lead.length, core.length - tail.length);
+      return { lead: lead, body: body, tail: tail, punct: punct, ask: /[？?]/.test(punct) };
+    });
+    var hasK = info.some(function (x) { return x.body.length >= 2 && KEIGO.test(x.body); });
+    if (!hasK) return q;
+    var changed = false, hasTsu = /っ/.test(q);
+    var out = info.map(function (x) {
+      var s = x.lead + x.body + x.tail + x.punct;
+      if (x.body.length < 2 || KEIGO.test(x.body)) return s;
+      /* 置き換えの印が文末にある文は触らない */
+      if (!/[ぁ-ん一-鿿]$/.test(x.body) || /[\u2060-\u2064{}]/.test(x.body.slice(-3))) return s;
+      /* 「……教わって……」のように「……」で切れる「〜て」は言いさしなので、頼みにしない */
+      if (/[…‥]/.test(x.tail) && /[てで](?:よ|ね)?$/.test(x.body)) return s;
+      /* 「お宝だー！」「きもちいー」のように伸ばした言い切りは、はしゃいだ声なので触らない */
+      if (/[ー〜～]/.test(x.tail)) return s;
+      var r = convBody(x.body, x.ask, who.tone, /[！!]/.test(x.punct));
+      if (r == null || r === x.body) return s;
+      /* 無愛想・偉そう・無機質な敬語の仕上げ（tone-new.js）は「っ」のある台詞を喘ぎとみて触らないので、「っ」のない台詞に「っ」を持ち込まない */
+      if (NO_TSU[who.tone] && !hasTsu && /っ/.test(r)) return s;
+      changed = true;
+      return x.lead + r + x.tail + x.punct;
+    }).join('');
+    return changed ? out : q;
+  };
+  V.keigoUnifyTarget = isTarget;
 })();
 ;/* ==== js/tone-gentleman.js ==== */
 /* 箱庭シミュレーター: 口調「古風な紳士」
@@ -61668,6 +62016,20 @@
       '流れ星の群れが窓の外を横切ったとき、{a}と{b}は同じ願いを口にしかけて、顔を見合わせて笑った。',
       '{a}の肩にもたれて、{b}は穏やかに眠っていた。{a}「このまま、もう少し」'
     ],
+    /* 想いが育ちきって恋人になる（PAIR_LOVE のあとに続ける。ship.js の bondEv） */
+    PAIR_JOIN: [
+      ' {a}「私と、付き合ってほしい」{b}は少し驚いた顔をしてから、照れくさそうにうなずいた。その日から、二人は恋人になった。',
+      ' どちらからともなく、{a}と{b}は互いの気持ちを口にした。答えは、とっくに分かっていた。漂流の船の中で、二人は恋人として寄り添うことに決めた。',
+      ' {b}「ねえ、{a}。私たち、もう仲間ってだけじゃないよね」{a}は笑って、{b}の手を握り直した。二人が恋人になったことは、翌朝には船じゅうに知れ渡っていた。',
+      ' {a}は{b}の目をまっすぐに見て、ずっと言えなかった言葉を伝えた。{b}は黙って{a}を抱きしめ返した。その日から、二人は恋人どうしになった。'
+    ],
+    /* 乗り換え（複数の恋人「なし」）：{a}が恋人の{b}と別れて、{c}を選ぶ（ship.js の part） */
+    SWITCH: [
+      '{a}は、{b}を展望室に呼び出した。{a}「……ごめん。{c}のことを、好きになってしまった」{b}は何か言いかけて、黙って窓の外に目をやった。二人が恋人だった時間は、そこで終わった。',
+      '{a}が{b}に別れを告げたのは、当直の交代のすぐあとだった。{b}「{c}なんでしょう。……見ていれば分かる」{a}は否定しなかった。{b}は背を向けて、自分の船室の扉を閉めた。',
+      '{b}の船室の前で、{a}は長いこと立ち尽くしていた。やがて扉を叩き、{c}を選んだことを、言葉を選びながら打ち明けた。{b}は最後まで聞いてから、「分かった」とだけ言った。',
+      '{a}「{b}とは、もう恋人ではいられない」食堂でそう切り出した{a}の声は、少し震えていた。{b}は手元のカップを見つめたまま、{c}の名前を一度だけ口にした。それきり、二人は目を合わせなくなった。'
+    ],
     MAKEUP: [
       '{a}は勇気を出して{b}の船室を訪ねた。{a}「この前はごめん」',
       '故障の対応で並んで作業するうちに、{a}と{b}のわだかまりは自然と溶けていった。',
@@ -63162,15 +63524,21 @@
         var a = P[i], b = P[i === x.a ? x.b : x.a];
         if (!x.fell[i] || x.said[i] || x.fell[i] >= S.m || !a.alive || !b.alive) return;
         if (A.lover(S, a, b)) { x.said[i] = 1; return; }
+        /* 恋人になれるか（ship.js の canJoin：恋愛対象・固定を両方向・一途・複数の恋人の設定。「なし」で恋人がいれば、乗り換えるほど気持ちが傾いているか）。
+           自分に恋人がいて乗り換えられないなら、想いは胸にしまって告白しない */
+        var jk = A.canJoin(S, a, b);
+        if (!jk && A.loversOf(S, a).length) { x.said[i] = 1; return; }
         if (rng() > 0.45 + tr(a, 'fc') * 0.2 - tr(a, 'ac') * 0.15 + (S.m - x.fell[i]) * 0.1) return;
         x.said[i] = 1;
         var w = A.bond(S, b, a), both = !!x.fell[b.i];
-        var ok = (!HK.canLove || HK.canLove(b, a)) && (!HK.Poly || HK.Poly.storyCan(S, a, b)) && (both || w >= 0.5 || rng() < 0.2 + tr(b, 'warmth') * 0.3 + Math.max(0, w) * 0.4 - (x.mis[b.i] ? 0.3 : 0));
+        var ok = !!jk && (both || w >= 0.5 || rng() < 0.2 + tr(b, 'warmth') * 0.3 + Math.max(0, w) * 0.4 - (x.mis[b.i] ? 0.3 : 0));
         var m = { a: a.name, b: b.name };
         var text = A.F(A.pk(S, att(a, T.confess)), m) + ' ' + A.F(A.pk(S, att(b, ok ? T.yes : T.no)), m) + ' ' + A.F(A.pk(S, ok ? T.yesTail : T.noTail), m);
-        if (ok) { S.rom[k] = 1; A.setRel(S, a, b, 0.25); A.mark(S, a, b, 'love'); x.res[i] = 'yes'; A.stress(a, -12); A.stress(b, -6); }
+        /* 恋人の記録（S.lovers）に入れる。乗り換えなら、前の恋人との別れの記録が告白の前に出る */
+        if (ok) A.join(S, a, b);
+        if (ok) { A.setRel(S, a, b, 0.25); A.mark(S, a, b, 'love'); x.res[i] = 'yes'; A.stress(a, -12); A.stress(b, -6); }
         else { A.setRel(S, a, b, -0.12); x.res[i] = 'no'; A.stress(a, 14); }
-        var o = HK.Story.say(S, { actors: [a, b], tag: '告白', kind: 'climax', text: text, why: a.name + 'は夜をきっかけに' + b.name + 'に恋をした／' + (ok ? (both ? '二人とも同じ気持ちだった' : b.name + 'の気持ち（関係の近さ ' + Math.round(w * 100) + '）') + '：恋人になった' : b.name + 'には届かなかった（関係の近さ ' + Math.round(w * 100) + '）'), mag: 32 });
+        var o = HK.Story.say(S, { actors: [a, b], tag: '告白', kind: 'climax', text: text, why: a.name + 'は夜をきっかけに' + b.name + 'に恋をした／' + (ok ? (both ? '二人とも同じ気持ちだった' : b.name + 'の気持ち（関係の近さ ' + Math.round(w * 100) + '）') + '：恋人になった' + (jk === 'switch' ? '（乗り換え）' : '') : b.name + 'には届かなかった（関係の近さ ' + Math.round(w * 100) + '）'), mag: 32 });
         HK.Story.key(S, o, a.name + 'が' + b.name + 'に告白した');
       });
     });
@@ -63215,7 +63583,9 @@
       L0.forEach(function (b) {
         if (a.i >= b.i || !HK.Pos.okSex(a, b) || A.family(S, a, b) || (A.room && !A.room(S, [a, b]))) return;
         var w = A.bond(S, a, b), lv = A.lover(S, a, b), x = (S.nt || {})[A.rk(a, b)];
-        var tier = lv || w >= 0.6 ? 'love' : x && x.n >= 1 ? 'again' : 'casual';
+        /* 恋人の夜は、恋人の記録（S.lovers）にある二人だけ。恋人でない深い仲の二人の初めての夜は、勢いの夜の文が合わないので起こさない */
+        var tier = lv ? 'love' : x && x.n >= 1 ? 'again' : 'casual';
+        if (tier === 'casual' && w >= 0.6) return;
         if (tier === 'again' && x.ref >= 2 && w < 0.55) return;
         if (tier === 'casual' && !(w > 0.25 || (w > -0.25 && rng() < lowP))) return;
         cand.push({ a: a, b: b, w: w, tier: tier, x: x });
@@ -63268,7 +63638,8 @@
     var N = S.nt || {};
     Object.keys(N).forEach(function (k) {
       var x = N[k], A0 = x.a, B0 = x.b;
-      if (!S.rom[k]) {
+      var lov = SH.API && SH.API.lover(S, S.P[A0], S.P[B0]);
+      if (!lov) {
         if (x.mis[A0] || x.mis[B0]) add(A0, B0, '★一夜の過ち', 'obsess', null);
         else if (x.awk) add(A0, B0, '★気まずい', 'obsess', null);
         else if (x.n >= 2) add(A0, B0, '★体の関係', 'night', null);
@@ -63276,7 +63647,7 @@
       [A0, B0].forEach(function (i) {
         var j = i === A0 ? B0 : A0;
         if (x.res[i] === 'no') add(i, j, '★実らなかった想い', 'pine', i);
-        else if (x.fell[i] && !S.rom[k]) add(i, j, '★恋に落ちた', 'pine', i);
+        else if (x.fell[i] && !lov) add(i, j, '★恋に落ちた', 'pine', i);
       });
     });
   }
@@ -63963,9 +64334,42 @@
   /* 恋愛・R18にしない組（HK.ngPair）は、関係の設定があっても恋仲として扱わない */
   /* 恋愛対象・恋愛の固定などが両方向で合うか（engine.js の HK.canLove） */
   function loveOK(a, b) { return !HK.canLove || (HK.canLove(a, b) && HK.canLove(b, a)); }
-  function lover(S, a, b) { return !HK.ngPair(a, b) && (ties(S, a, b).some(function (t) { return LOVE.test(t.type); }) || !!S.rom[rk(a, b)]); }
+  /* 恋人の記録（S.lovers：組 [i, j] の配列）：関係の恋人・つがい・運命の相手と、漂流中に恋人になった組だけを持つ。
+     恋に落ちる・告白・恋人の夜・関係図・結末は、すべてここを読む（片想い・セフレ・友達以上恋人未満の関係は恋人に数えない） */
+  function lover(S, a, b) { return !!(a && b && a !== b) && (S.lovers || []).some(function (x) { return (x[0] === a.i && x[1] === b.i) || (x[0] === b.i && x[1] === a.i); }); }
+  /* 恋仲に近い二人（恋人か、片想い・セフレなどの恋愛の関係がある）：心を寄せる重みや嫉妬に使う。恋人の記録には数えない */
+  function amour(S, a, b) { return lover(S, a, b) || (!HK.ngPair(a, b) && ties(S, a, b).some(function (t) { return LOVE.test(t.type); })); }
+  function loversOf(S, a) { return S.P.filter(function (o) { return o !== a && o.alive && lover(S, a, o); }); }
   function family(S, a, b) { return ties(S, a, b).some(function (t) { return HK.tieNoLove ? HK.tieNoLove(t) : FAMILY.test(t.type); }); }
   function setRel(S, a, b, d) { var k = rk(a, b); S.relD[k] = clamp((S.relD[k] || 0) + d, -1, 1); }
+  /* 恋人になれるか：恋愛対象と恋愛相手の固定（両方向の HK.canLove）、一途と複数の恋人の設定（HK.Poly.canCouple）を通す。
+     'ok'＝そのまま恋人に／'switch'＝複数の恋人「なし」で、どちらかに恋人がいるが、新しい相手への気持ちのほうが強い（乗り換え）／''＝なれない */
+  function canJoin(S, a, b) {
+    if (lover(S, a, b)) return 'ok';
+    if (!a || !b || a === b || !a.alive || !b.alive || HK.ngPair(a, b) || !loveOK(a, b) || family(S, a, b)) return '';
+    if (!HK.Poly || HK.Poly.canCouple(S, a, b)) return 'ok';
+    if (HK.Poly.mode(S) !== 'none' || (a.faithful && loversOf(S, a).length) || (b.faithful && loversOf(S, b).length)) return '';
+    var ok = true;
+    [[a, b], [b, a]].forEach(function (pr) { loversOf(S, pr[0]).forEach(function (l) { if (l !== pr[1] && bond(S, pr[0], pr[1]) < bond(S, pr[0], l) + 0.08) ok = false; }); });
+    return ok ? 'switch' : '';
+  }
+  /* 恋人になる：乗り換えのときは、前の恋人と別れた記録を先に残す（同じ人に、別れのないまま二人目の「恋人になった」を出さない）。結べたら真。
+     呼ぶ側は、このあとに「恋人になった」の記録を書く */
+  function join(S, a, b) {
+    var k = canJoin(S, a, b);
+    if (!k) return false;
+    if (lover(S, a, b)) return true;
+    if (k === 'switch') [[a, b], [b, a]].forEach(function (pr) { loversOf(S, pr[0]).forEach(function (l) { if (l !== pr[1]) part(S, pr[0], l, pr[1]); }); });
+    S.lovers.push([Math.min(a.i, b.i), Math.max(a.i, b.i)]);
+    return true;
+  }
+  /* 別れ（乗り換え）：{a}が{b}と別れて{c}を選ぶ */
+  function part(S, x, l, nw) {
+    S.lovers = S.lovers.filter(function (pr) { return !((pr[0] === x.i && pr[1] === l.i) || (pr[0] === l.i && pr[1] === x.i)); });
+    S.exes.push([x.i, l.i]);
+    setRel(S, x, l, -0.35); mark(S, x, l, 'part'); stress(l, 20); stress(x, 6);
+    ST.say(S, { actors: [x, l, nw], tag: '別れ', text: F(pk(S, SH.T.SWITCH), { a: x.name, b: l.name, c: nw.name }), why: x.name + 'は' + l.name + 'と別れて、' + nw.name + 'を選んだ（複数の恋人：なし。恋人は一人まで）', mag: 28 });
+  }
   /* 出来事の記録（関係図のラベルに使う） */
   /* 気質：船長は使命感でストレスを抱えにくく、揉めごとを収める側に回る。機嫌取りは人の気持ちを優先して、自分の疲れを溜め込む */
   function capt(p) { return p.role === 'captain'; }
@@ -64078,7 +64482,10 @@
     S.egoNotes = true; S.bondFn = bond;
     /* 恋愛・R18にしない組（HK.ngPair）には、恋愛の関係（恋人・セフレ・片想いなど）を当てない（ties.js と同じ） */
     S.ties = (input.ties || []).filter(function (t) { return t.a !== t.b && t.a < P.length && t.b < P.length && !(HK.ngPair(P[t.a], P[t.b]) && /^(lover|fwb|mate|fated|crush|almost|ex|yan)$/.test(t.type)); });
-    S.relD = {}; S.relEv = {}; S.rom = {}; S.jeal = []; S.left = []; S.saved = []; S.bday = {}; S.items = []; S.reports = []; S.planet = null; S.deaths = [];
+    S.relD = {}; S.relEv = {}; S.exes = []; S.jeal = []; S.left = []; S.saved = []; S.bday = {}; S.items = []; S.reports = []; S.planet = null; S.deaths = [];
+    /* 恋人の記録のはじまり：関係の恋人・つがい・運命の相手（恋愛対象が両方向で合う組だけ） */
+    S.lovers = [];
+    S.ties.forEach(function (t) { var a = P[t.a], b = P[t.b]; if (/^(lover|mate|fated)$/.test(t.type) && loveOK(a, b) && !lover(S, a, b)) S.lovers.push([Math.min(t.a, t.b), Math.max(t.a, t.b)]); });
     var sup = env.supply / 100;
     S.ship = { hull: 85, power: 75 + sup * 15, o2: 85, food: 45 + sup * 45, morale: 60 };
     /* ---------- 役割 ---------- */
@@ -64418,8 +64825,8 @@
       if (SH.AFTER) SH.AFTER.react(S, a, 'worse');
       /* うつる：近しい人ほど、そばにいるのでうつりやすい */
       var cand = live(S).filter(function (q) { return q !== a && !q.inf; });
-      var q = cand.length ? HK.weighted(rng, cand, function (z) { return 0.1 + Math.max(0, bond(S, z, a)) * 1.5 + (lover(S, z, a) ? 1 : 0); }) : null;
-      if (q && rng() < (0.12 + Math.max(0, bond(S, q, a)) * 0.25 + (lover(S, q, a) ? 0.15 : 0)) * HK.Dark.f(S, 'kill')) {
+      var q = cand.length ? HK.weighted(rng, cand, function (z) { return 0.1 + Math.max(0, bond(S, z, a)) * 1.5 + (amour(S, z, a) ? 1 : 0); }) : null;
+      if (q && rng() < (0.12 + Math.max(0, bond(S, q, a)) * 0.25 + (amour(S, q, a) ? 0.15 : 0)) * HK.Dark.f(S, 'kill')) {
         q.inf = 1; q.infSrc = a.infSrc; q.cnt.inf = (q.cnt.inf || 0) + 1; stress(q, 10);
         ST.say(S, { actors: [a, q], tag: '感染拡大', text: F(pk(S, lover(S, a, q) && !family(S, a, q) && C.INF_SPREAD_LOVE ? C.INF_SPREAD_LOVE : C.INF_SPREAD), { a: a.name, b: q.name }), why: q.name + 'は' + a.name + 'のそばにいた（関係 ' + Math.round(bond(S, q, a) * 100) + '）', mag: 26 });
         if (SH.AFTER) SH.AFTER.react(S, q, 'start', [a]);
@@ -64512,8 +64919,8 @@
     var PR = pairs(L0), tense = (100 - sp.morale) / 100 + (sp.food < 20 ? 0.35 : 0) + (sp.o2 < 30 ? 0.2 : 0);
     var sick = L0.filter(function (p) { return p.m.hp < 60; });
     var neg = PR.filter(function (x) { return (S.relD[rk(x[0], x[1])] || 0) < -0.15 || bond(S, x[0], x[1]) < -0.15; });
-    /* 想いが育つのは、恋仲か、恋愛対象が両方向で合う（HK.canLove）二人だけ */
-    var lv = PR.filter(function (x) { return lover(S, x[0], x[1]) || (bond(S, x[0], x[1]) > 0.55 && loveOK(x[0], x[1]) && HK.Pos && HK.Pos.okSex(x[0], x[1]) && !family(S, x[0], x[1])); });
+    /* 想いが育つのは、恋人どうしか、恋人になれる（canJoin：恋愛対象・固定が両方向で合い、複数の恋人の設定にも合う。乗り換えも含む）二人だけ */
+    var lv = PR.filter(function (x) { return lover(S, x[0], x[1]) || (bond(S, x[0], x[1]) > 0.55 && HK.Pos && HK.Pos.okSex(x[0], x[1]) && canJoin(S, x[0], x[1])); });
     var opts = [
       ['drink', 1.0], ['team', 1.0], ['confide', 0.7], ['game', 0.7], ['nurse', sick.length ? 0.9 : 0], ['birthday', 0.25], ['drink_all', L0.length >= 3 ? 0.3 : 0],
       ['fight', 0.25 + tense * 0.9], ['drink_bad', 0.2 + tense * 0.4], ['ration', sp.food < 35 ? 0.3 + tense * 0.6 : 0.05], ['duty', 0.2 + tense * 0.4], ['game_bad', 0.15 + tense * 0.2],
@@ -64564,13 +64971,16 @@
     else if (kind === 'good') { setRel(S, a, b, 0.15); mark(S, a, b, 'team'); say(T.PAIR_GOOD, '絆', 0, '日々の暮らしの中で'); }
     else if (kind === 'makeup') { stress(a, -6); stress(b, -6); setRel(S, a, b, 0.3); mark(S, a, b, 'makeup'); say(T.MAKEUP, '仲直り', 0, 'こじれた関係を修復した'); }
     else if (kind === 'love') {
-      stress(a, -6); stress(b, -6); setRel(S, a, b, 0.18); mark(S, a, b, 'love'); if (bond(S, a, b) > 0.6 && loveOK(a, b) && (!HK.Poly || HK.Poly.storyCan(S, a, b))) S.rom[rk(a, b)] = 1;
-      say(T.PAIR_LOVE, '想い', 0, '閉ざされた船で、想いが育った');
+      stress(a, -6); stress(b, -6); setRel(S, a, b, 0.18); mark(S, a, b, 'love');
+      /* 想いが育ちきった二人は、ここで恋人になる（恋人になったことを記録に書く。乗り換えなら、前の恋人との別れの記録が先に出る） */
+      var jk = !lover(S, a, b) && bond(S, a, b) > 0.6 ? canJoin(S, a, b) : '';
+      if (jk) join(S, a, b);
+      ST.sayB(S, { actors: [a, b], tag: jk ? '恋人に' : '想い', text: F(pk(S, T.PAIR_LOVE), { a: a.name, b: b.name }) + (jk ? F(pk(S, T.PAIR_JOIN), { a: a.name, b: b.name }) : ''), why: '閉ざされた船で、想いが育った' + (jk ? '：恋人になった' + (jk === 'switch' ? '（乗り換え）' : '') : '') + '（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'と' + b.name, !!jk);
     }
     else if (kind === 'jealous') {
       /* {c}：{a}に想いを寄せている人が、{a}と{b}の親しさを見てしまう */
       /* 関係「執着なし」の相手のことでは嫉妬しない */
-      var c = pickP(others.filter(function (q) { return (lover(S, q, a) || bond(S, q, a) > 0.4) && !HK.ngPair(q, a) && !ties(S, q, a).some(function (t) { return t.type === 'noobs'; }); }), function (q) { return 0.3 + (q.tr.jealous || 0.4) + Math.max(0, bond(S, q, a)); });
+      var c = pickP(others.filter(function (q) { return (amour(S, q, a) || bond(S, q, a) > 0.4) && !HK.ngPair(q, a) && !ties(S, q, a).some(function (t) { return t.type === 'noobs'; }); }), function (q) { return 0.3 + (q.tr.jealous || 0.4) + Math.max(0, bond(S, q, a)); });
       if (!c) return;
       stress(c, 8); setRel(S, a, b, 0.1); setRel(S, c, b, -0.25); setRel(S, c, a, -0.1); mark(S, c, b, 'jealous'); S.jeal.push([c.i, b.i]);
       ST.sayB(S, { actors: [c, a, b], tag: '嫉妬', text: F(pk(S, BP(S, 'JEALOUS')), { a: a.name, b: b.name, c: c.name }), why: c.name + 'は' + a.name + 'に想いを寄せている（嫉妬 ' + Math.round((c.tr.jealous || 0) * 100) + '）' }, c.name + 'の嫉妬');
@@ -64598,7 +65008,7 @@
     b.m.hp = clamp(b.m.hp + 8, 0, 100); stress(b, -5); setRel(S, a, b, 0.28); mark(S, a, b, 'nurse');
     ST.sayB(S, { actors: [a, b], tag: '看病', text: F(pk(S, BP(S, 'NURSE')), { a: a.name, b: b.name }), why: '弱っているところを支えた（体力 +8）（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'が' + b.name + 'を看病した');
     if (!r18on(S) || !R || !R.nurseTop || !Pz || !Pz.okSex(a, b) || family(S, a, b) || !sxRoom(S, [a, b])) return;
-    if (rng() > S.env.slewd / 100 * (lover(S, a, b) ? 0.7 : bond(S, a, b) > 0.3 ? 0.45 : 0.15)) return;
+    if (rng() > S.env.slewd / 100 * (amour(S, a, b) ? 0.7 : bond(S, a, b) > 0.3 ? 0.45 : 0.15)) return;
     /* 受け攻め：自分で攻めを選んだ人は、熱があっても受けにならない */
     var o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
     if (Pz.hardTop(u)) return;
@@ -64646,14 +65056,17 @@
     var P = S.P, edges = [], seen = {};
     function add(a, b, label, cls, dir) { var k = rk(P[a], P[b]) + label; if (seen[k]) return; seen[k] = 1; edges.push({ a: a, b: b, label: label, cls: cls, dir: dir }); }
     var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', classmate: 'friend', boss: 'partner', benefactor: 'guard', relative: 'guard', worship: 'guard', fond: 'friend', blind: 'guard', acq: 'none' };
-    S.ties.forEach(function (t) { var lab = HK.tieLabel ? HK.tieLabel(t) : HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; add(t.a, t.b, lab, CLS[t.type] || 'friend', t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null); });
+    /* 別れた二人（乗り換え）は、関係の恋人の線を「別れた」に替える */
+    var parted = {}; (S.exes || []).forEach(function (j) { if (!lover(S, P[j[0]], P[j[1]])) parted[rk(P[j[0]], P[j[1]])] = 1; });
+    S.ties.forEach(function (t) { if (parted[rk(P[t.a], P[t.b])] && /^(lover|mate|fated)$/.test(t.type)) return; var lab = HK.tieLabel ? HK.tieLabel(t) : HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; add(t.a, t.b, lab, CLS[t.type] || 'friend', t.type === 'crush' || (HK.TIES && HK.TIES[t.type] && HK.TIES[t.type].dir) ? t.a : null); });
+    /* 関係の恋人・つがい・運命の相手の線がある組には「恋仲」を重ねない（片想い・セフレ・友達以上の線の組が恋人になったら「恋仲」を足す） */
     var hasLove = {};
-    S.ties.forEach(function (t) { if (LOVE.test(t.type)) hasLove[rk(P[t.a], P[t.b])] = 1; });
+    S.ties.forEach(function (t) { if (/^(lover|mate|fated)$/.test(t.type) && !parted[rk(P[t.a], P[t.b])]) hasLove[rk(P[t.a], P[t.b])] = 1; });
     var keys = Object.keys(S.relD).concat(Object.keys(S.relEv)).filter(function (k, x, arr) { return arr.indexOf(k) === x; });
     keys.forEach(function (k) {
       var ab = k.split('-'), a = +ab[0], b = +ab[1], d = S.relD[k] || 0, e = S.relEv[k] || {};
       var bad = (e.fight || 0) + (e.quarrel || 0), good = (e.drink || 0) + (e.team || 0) + (e.confide || 0) + (e.nurse || 0) + (e.calm || 0) + (e.game || 0) + (e.makeup || 0) + (e.bday || 0);
-      if (S.rom[k] && !hasLove[k]) add(a, b, '★恋仲', 'love', null);
+      if (lover(S, P[a], P[b]) && !hasLove[k]) add(a, b, '★恋仲', 'love', null);
       if (e.night && !(S.nightNo && S.nightNo[k])) add(a, b, '★夜を共にした', 'night', null);
       if (d >= 0.55) add(a, b, bad >= 2 ? '★ケンカするほど仲がいい' : e.nurse || e.calm ? '★支え合う' : e.confide ? '★深い絆' : (e.drink || 0) >= 2 ? '★飲み仲間' : '★深い絆', 'guard', null);
       else if (d >= 0.25) add(a, b, (e.drink || 0) >= 2 ? '★飲み仲間' : e.team ? '★相棒' : e.makeup ? '★和解' : '★仲間', e.team ? 'partner' : 'friend', null);
@@ -64663,6 +65076,9 @@
     });
     /* 夜のあとの関係（一夜の過ち・体の関係・恋に落ちた・実らなかった想いなど。ship-night.js） */
     if (SH.NIGHT && SH.NIGHT.rel) SH.NIGHT.rel(S, add);
+    (S.exes || []).forEach(function (j) { if (parted[rk(P[j[0]], P[j[1]])]) add(j[0], j[1], '★別れた', 'obsess', j[0]); });
+    /* 恋人の記録にあって、まだ線のない組（出来事の記録がない組も、関係図と結末を S.lovers にそろえる） */
+    (S.lovers || []).forEach(function (pr) { if (!hasLove[rk(P[pr[0]], P[pr[1]])]) add(pr[0], pr[1], '★恋仲', 'love', null); });
     S.left.forEach(function (j) { add(j[0], j[1], '★置き去りにした', 'enemy', j[0]); });
     S.saved.forEach(function (j) { add(j[0], j[1], '★助け出した', 'guard', j[0]); });
     S.jeal.forEach(function (j) { if ((S.relD[rk(P[j[0]], P[j[1]])] || 0) < 0) add(j[0], j[1], '★嫉妬', 'obsess', j[0]); });
@@ -64775,16 +65191,16 @@
     return text;
   }
   /* 夜の出来事の仕組み（ship-night.js。R18版のみ）に渡す道具 */
-  var NAPI = { bond: bond, lover: lover, family: family, setRel: setRel, mark: mark, rk: rk, live: live, bodyFor: bodyFor, F: F, pk: pk, stress: stress, room: sxRoom, note: sxNote };
+  var NAPI = { bond: bond, lover: lover, amour: amour, canJoin: canJoin, join: join, loversOf: loversOf, family: family, setRel: setRel, mark: mark, rk: rk, live: live, bodyFor: bodyFor, F: F, pk: pk, stress: stress, room: sxRoom, note: sxNote };
   function nightR18(S) {
     /* 関係の深さで夜の種類が変わる（勢いの夜・二度目の夜・恋人の夜）、過ちだと渋る人、夜をきっかけに恋に落ちて告白する人 */
     if (SH.NIGHT) { SH.NIGHT.run(S, NAPI); return; }
     var rng = S.rng, L0 = live(S), R = SH.R18;
     if (L0.length < 2 || !sxRoom(S) || rng() > S.env.slewd / 100 * 0.3) return;
     var pairs = [];
-    L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i && HK.Pos.okSex(a, b) && !family(S, a, b) && sxRoom(S, [a, b]) && (lover(S, a, b) || bond(S, a, b) > 0.25 || rng() < 0.15)) pairs.push([a, b]); }); });
+    L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i && HK.Pos.okSex(a, b) && !family(S, a, b) && sxRoom(S, [a, b]) && (amour(S, a, b) || bond(S, a, b) > 0.25 || rng() < 0.15)) pairs.push([a, b]); }); });
     if (!pairs.length) return;
-    var pr = HK.weighted(rng, pairs, function (x) { return 0.3 + Math.max(0, bond(S, x[0], x[1])) + (lover(S, x[0], x[1]) ? 1 : 0); }), a = pr[0], b = pr[1];
+    var pr = HK.weighted(rng, pairs, function (x) { return 0.3 + Math.max(0, bond(S, x[0], x[1])) + (amour(S, x[0], x[1]) ? 1 : 0); }), a = pr[0], b = pr[1];
     var civ = S.planet && S.planet.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(S.planet.civ.d.state) && rng() < 0.25;
     var pol = S.planet && S.planet.life.some(function (l) { return l.st >= 1 && l.d.kind === 'plant'; }) && rng() < 0.35;
     var open = F(pk(S, civ ? R.civ : pol ? R.pollen : R.open), { a: a.name, b: b.name });
@@ -64907,9 +65323,10 @@
       ST.step(S, weak ? '力尽きかけた船' : '漂流の一年の終わり');
       ST.say(S, { actors: L0, kind: 'climax', tag: weak ? '結末：船の灯り' : '結末：漂流', text: F(pk(S, weak ? EPI.driftLow : EPI.driftOk), v), why: weak ? '船の状態が悪い（動力 ' + Math.round(sp.power) + '・生命維持 ' + Math.round(sp.o2) + '・食料 ' + Math.round(sp.food) + '）' : '星は見つからなかったが、船はまだ動ける', mag: 36 });
     }
-    /* 人ごとの結び：恋人になった組／ひとりの人／亡くなった人／戻らない人 */
+    /* 人ごとの結び：恋人の組（恋人の記録 S.lovers のうち、二人とも船にいる組。複数の恋人「あり」なら、同じ人が二組に出ることもある）／ひとりの人／亡くなった人／戻らない人 */
     var used = [];
-    L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i && used.indexOf(a) < 0 && used.indexOf(b) < 0 && lover(S, a, b)) { used.push(a, b); out.push({ act: [a, b], t: F(pk(S, EPI.lovers), { a: a.name, b: b.name }) }); } }); });
+    S.endLovers = [];
+    (S.lovers || []).forEach(function (pr) { var a = S.P[pr[0]], b = S.P[pr[1]]; if (L0.indexOf(a) < 0 || L0.indexOf(b) < 0) return; [a, b].forEach(function (x) { if (used.indexOf(x) < 0) used.push(x); }); S.endLovers.push([a.i, b.i]); out.push({ act: [a, b], t: F(pk(S, EPI.lovers), { a: a.name, b: b.name }) }); });
     var lone = L0.filter(function (p) { return used.indexOf(p) < 0; });
     if (lone.length && L0.length > 1 && used.length) { var ln = S.rng.pick(lone); out.push({ act: [ln], t: F(pk(S, EPI.lone), { a: ln.name }) }); }
     if (S.deaths.length) { out.push({ act: L0, t: F(pk(S, EPI.mourn), { v: names(S.deaths), l: v.l }) }); }
@@ -64983,7 +65400,7 @@
   }
   SH.skill = skill; SH.bond = bond;
   /* 全滅のあと・感染症の反応（ship-after.js）に渡す道具 */
-  SH.API = { live: live, bond: bond, lover: lover, family: family, ties: ties, rk: rk, loveOK: loveOK, setRel: setRel, stress: stress, pk: pk, names: names, closest: closest, makePlanet: makePlanet };
+  SH.API = { live: live, bond: bond, lover: lover, amour: amour, canJoin: canJoin, join: join, loversOf: loversOf, family: family, ties: ties, rk: rk, loveOK: loveOK, setRel: setRel, stress: stress, pk: pk, names: names, closest: closest, makePlanet: makePlanet };
 })();
 ;/* ==== js/ship-special.js ==== */
 /* 箱庭シミュレーター: 宇宙船漂流記 ― 特殊役職（不死・吸血鬼）（special.js の組み込み。全年齢版も同じ）
@@ -65378,10 +65795,10 @@
     im.forEach(function (p) { p.mad = null; });
     S.after = { at: m, by: by, n: 2 + S.rng.int(3), k: 0, who: im.map(function (p) { return p.i; }), dead: dead, mi: 0, end: false };
   };
-  /* 恋人どうしか：恋人・つがい・運命の相手・夫婦の関係か、漂流中に恋仲になった二人で、恋愛対象が両方向で合う（片想い・セフレは含めない） */
+  /* 恋人どうしか：恋人の記録（ship.js の S.lovers。関係の恋人・つがい・運命の相手と、漂流中に恋人になった二人。別れた二人・片想い・セフレは含めない） */
   function isLover(S, a, b) {
     var A = X();
-    return !HK.ngPair(a, b) && A.loveOK(a, b) && !A.family(S, a, b) && (A.ties(S, a, b).some(function (t) { return /^(lover|mate|fated|spouse)$/.test(t.type); }) || !!S.rom[A.rk(a, b)]);
+    return A.lover(S, a, b) && !A.family(S, a, b);
   }
   function relOf(S, a, b) { return isLover(S, a, b) ? 'lover' : X().family(S, a, b) ? 'family' : 'other'; }
   function mournChunk(S, AF, L0, input) {
