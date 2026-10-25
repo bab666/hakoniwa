@@ -2351,6 +2351,7 @@
         ctx.mod2(B, A, { att: -30, aff: -15, ten: 6 }, { ten: 8 }); ctx.stress(B, -10);
         if (C) ctx.mod2(B, C, { trust: 10, aff: 6 }, { aff: 5, trust: 4 });
       }
+      if (HK.Emo && /^(?:control|verbal|violence|fear|flee)$/.test(k)) HK.Emo.bump(ctx, B, { fear: k === 'violence' ? 30 : 16, grief: 6 }, A.name + 'との歪んだ関係');   /* 気分（emotion.js） */
       var whyK = { control: '：束縛', verbal: '：暴言', violence: '：物に当たる・手を上げる', honey: '：謝って優しくなる（繰り返し）', stay: '：離れられない', fear: '：怯えている', flee: '：逃げ出したい', notice: '：' + (C ? C.name : '周り') + 'が気づいた', step: '：' + (C ? C.name : '周り') + 'が間に入った', free: '：' + B.name + 'が離れる決心をした（恋人ではなくなった）' }[k];
       var back = HK.ABUSE_BACK && HK.ABUSE_BACK[st] ? HK.ABUSE_BACK[st].short : '';
       return { cat: k === 'honey' ? 'romance' : k === 'notice' || k === 'step' || k === 'free' ? 'help' : 'conflict', with: C && /notice|step|free/.test(k) ? [C] : null, text: text, why: A.name + '（支配する側）と' + B.name + '（支配される側・' + back + '）の' + lab + whyK, mag: k === 'free' ? 22 : k === 'violence' || k === 'step' ? 16 : 10 };
@@ -7568,6 +7569,8 @@
     /* 歪んだ関係から離れる決心をした二人（tie-abuse.js の abFree）は、もう恋愛の出来事を起こさない。
        別れたばかりの二人（brokeAt）も、しばらく（8回）は恋愛の出来事を起こさない（すぐに元に戻らないように） */
     if (a && b) { var pfr = this.pair(a, b); if (pfr.abFree) return false; if (pfr.brokeAt != null && this.stepIndex - pfr.brokeAt < 8) return false; }
+    /* 悲しみの深い人（気分 grief 60 以上。emotion.js）は、恋愛の出来事を起こさない */
+    if (HK.Emo && HK.Emo.blockLove(this, L)) return false;
     if (this.scen && this.scen.romanceCore) return true;
     if (a && b && this.pair(a, b).couple) return true;
     if (this.env && this.env.romance === 0) return false;
@@ -7875,6 +7878,7 @@
       snap[i + '-' + j] = [ab.aff, ba.aff, (ab.ten + ba.ten) / 2, ab.att, ba.att];
     }
     ctx.history.push({ step: ctx.stepIndex, label: ctx.label, rel: snap, alive: C.map(function (c) { return c.alive && !c.out; }) });
+    if (HK.Emo) HK.Emo.step(ctx, ctx.history[ctx.history.length - 1]);   /* 気分の記録と減衰（emotion.js） */
   }
 
   function act(ctx, a, pool) {
@@ -7905,6 +7909,7 @@
       w *= ctx.bias(a, e.cat);
       if (bb && HK.Ties) w *= HK.Ties.bias(ctx, a, bb, e.cat);
       if (bb && e.cat === 'romance' && (a.honmei != null || bb.honmei != null)) w *= HK.honmeiFactor(ctx, a, bb);
+      if (HK.Emo) w *= HK.Emo.weight(ctx, a, e);   /* 気分（emotion.js）：悲しみ→恋愛を控える、怒り→対立など */
       if (w <= 0) return;
       if (e.pri) w *= (ctx.scen.priBoost || 2.4);
       cands.push({ e: e, w: w, b: bb });
@@ -8102,6 +8107,7 @@
     }
     pairs.sort(function (x, y) { return (y.surprise - x.surprise) || (y.intensity - x.intensity); });
     var chars = C.map(function (c) { return charSummary(ctx, c); });
+    if (HK.Emo) HK.Emo.summary(ctx, chars);   /* 気分の最終値・いちばん強かった気分・最期の言葉（emotion.js・epilogue.js） */
     return {
       seed: ctx.seed, scenId: ctx.input.scenId, scenName: ctx.scen.name, env: ctx.env,
       log: ctx.log, history: ctx.history, pairs: pairs, chars: chars,
@@ -8166,6 +8172,430 @@
       leader: !!c.flags.leader, aphro: !!c.flags.aphro, outLabel: c.outLabel || null
     };
   }
+})();
+;/* ==== js/emotion.js ==== */
+/* 箱庭シミュレーター: 住人の気分（持続する感情） HK.Emo
+   住人ごとに、出来事のあとも残る気分を一か所に持ち、次の出来事の起こりやすさと地の文に効かせ、結果に見せる。
+   c.emo = { joy 喜び, grief 悲しみ, fear 恐れ, anger 怒り, shame 恥じらい, lust 火照り（R18版だけ。全年齢では常に 0）, calm 平静 }   各 0〜100
+   ■ HK.Emo.bump(ctx, c, { grief: +40 }, why)：立てる。why があれば、次の記録の why に「気分」として足す
+   ■ HK.Emo.tick(ctx)：毎区切りの減衰（悲しみは遅く、怒りは速く引く。ストレスが高いと恐れ・怒りが残る）
+   ■ HK.Emo.mood(c)：いちばん高い気分（35 未満なら calm）／HK.Emo.face(c)：表情の id（neutral/smile/cry/fear/angry/blush/dark。画像は持たない）
+   ■ HK.Emo.word(c)：地の文に挿す短い一句（態度9種×気分7種×3文以上。火照りの句は R18 版の emotion-r18.js）
+   ■ HK.Emo.weight(ctx, a, ev)：出来事の重み（engine.js の act()）。悲しみ→恋愛×0.4・交流×1.3、怒り→対立×1.6、恐れ→単独行動×1.5 など
+   ■ HK.Emo.blockLove(ctx, actors)：悲しみの深い人（grief 60 以上）は恋愛の出来事を起こさない（engine.js の romanceOk）
+   エンジン型：Ctx.kill・Ctx.say をここで包んで気分を立て、区切りごとに snapshot() から HK.Emo.step、結果を作るときに HK.Emo.summary を呼ぶ。
+   物語型（邪神村・吹雪の館・宇宙船）：HK.Story.say から HK.Emo.story を呼ぶ。p.m（各箱庭のメーター）には触らず、p.emo を別に持つ */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK || !HK.Ctx) return;
+  var Ctx = HK.Ctx;
+  var KEYS = ['joy', 'grief', 'fear', 'anger', 'shame', 'lust'];
+  var BARS = ['joy', 'grief', 'fear', 'anger'];
+  var NAME = { calm: '平静', joy: '喜び', grief: '悲しみ', fear: '恐れ', anger: '怒り', shame: '恥じらい', lust: '火照り' };
+  var FACE = { calm: 'neutral', joy: 'smile', grief: 'cry', fear: 'fear', anger: 'angry', shame: 'blush', lust: 'blush' };
+  var FACE_SYM = { neutral: '（・_・）', smile: '（＾▽＾）', cry: '（；_；）', fear: '（゜□゜；）', angry: '（｀へ´）', blush: '（＊／／＊）', dark: '（－_－）' };
+  var BAR_COL = { joy: '--friend', grief: '--pine', fear: '--night', anger: '--enemy' };
+  var TH = 35, LOVE_BLOCK = 60;
+  var ATT = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite'];
+  /* 物語型で気分を持つ箱庭（死のある三つ） */
+  var STORY_EMO = { jashin: 1, yakata: 1, ship: 1 };
+  function safe() { return !!HK.SAFE_ON; }
+  function clamp(v) { return v < 0 ? 0 : v > 100 ? 100 : v; }
+  function L(s) { return s.split('|'); }
+  /* 文の選び方は種から決める（ctx.rng を使わないので、ほかの乱数の流れを変えない） */
+  function hash(s) { s = String(s); var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
+  function pickH(arr, key) { return arr && arr.length ? arr[Math.floor(hash(key) * arr.length) % arr.length] : ''; }
+
+  /* ---------- 地の文に挿す一句（{a}＝その人）。態度9種 × 気分（calm は落ち着きを取り戻したとき） ---------- */
+  var W = {
+    proud: {
+      calm: L('{a}は、もういつもの不敵な顔に戻っていた。|{a}はひとつ鼻を鳴らし、肩の力を抜いた。|{a}の声に、ようやく普段の張りが戻っていた。'),
+      joy: L('{a}は上機嫌を隠そうともしなかった。|{a}の口の端が、さっきから上がりっぱなしだった。|{a}は妙に機嫌がよく、声まで大きかった。'),
+      grief: L('{a}は平気な顔を作ろうとして、うまくいかなかった。|{a}の強がりには、もう力がなかった。|{a}は誰とも目を合わせず、乱暴に目元をこすった。'),
+      fear: L('{a}は虚勢を張っていたが、物音のたびに肩が跳ねた。|{a}の大きな声は、怯えを隠すためのものだった。|{a}は舌打ちをして、背後を何度も確かめた。'),
+      anger: L('{a}はまだ腹の虫がおさまらなかった。|{a}の目には、剣呑な光が残っていた。|{a}は苛立ちを隠そうともせず、足元の小石を蹴った。'),
+      shame: L('{a}はばつが悪そうに、そっぽを向いていた。|{a}は気まずさをごまかすように、乱暴に頭をかいた。|{a}は誰とも目を合わせようとしなかった。')
+    },
+    stern: {
+      calm: L('{a}は背筋を伸ばし、乱れた呼吸を整え終えていた。|{a}の表情は、もとの硬さを取り戻していた。|{a}は短く目を閉じ、気持ちを切り替えた。'),
+      joy: L('{a}の硬い表情が、今日はどこか緩んでいた。|{a}は口元が緩むのを、何度も引き締め直していた。|{a}の声には、珍しく弾みがあった。'),
+      grief: L('{a}は表情を崩さなかったが、拳は白くなるほど握られていた。|{a}は黙って、やるべきことだけを続けていた。そうしていないと、立っていられなかった。|{a}の背中は、いつもより小さく見えた。'),
+      fear: L('{a}は冷静を装っていたが、手の震えを止められなかった。|{a}は警戒を解かず、壁を背にして立っていた。|{a}の声が、わずかに上ずっていた。'),
+      anger: L('{a}は怒りを押し殺し、低い声で話していた。|{a}の眉間の皺は、深いままだった。|{a}は一言ずつ区切るように、硬い声を出した。'),
+      shame: L('{a}は自分を責めるように、きつく目を閉じた。|{a}はうなだれ、己の不甲斐なさを噛みしめていた。|{a}の声には、自分への苛立ちがにじんでいた。')
+    },
+    tsun: {
+      calm: L('{a}はそっぽを向いたまま、少しだけ肩の力を抜いた。|{a}は小さく咳払いをして、いつもの顔に戻った。|{a}は、どうにかいつもの澄ました顔を作り直していた。'),
+      joy: L('{a}は嬉しいのを隠しているつもりで、まるで隠せていなかった。|{a}はそっけない顔をしながら、足取りだけは軽かった。|{a}は、にやけそうになる口元を必死にこらえていた。'),
+      grief: L('{a}は泣いていないふりをして、何度も顔をそむけた。|{a}の憎まれ口は、途中で途切れた。|{a}は意地でも涙を見せまいと、唇を噛んでいた。'),
+      fear: L('{a}は怖くなんかないという顔で、誰かのそばを離れなかった。|{a}は強がりを言いながら、袖を握りしめていた。|{a}の声だけが、妙に威勢がよかった。'),
+      anger: L('{a}はむくれた顔のまま、口をきこうとしなかった。|{a}は怒っていないと言い張りながら、明らかに怒っていた。|{a}の返事は、いつも以上にとげとげしかった。'),
+      shame: L('{a}は耳まで赤くして、そっぽを向いていた。|{a}はうつむいて、何か言い訳を探していた。|{a}は目をそらしたまま、ぶっきらぼうに答えた。')
+    },
+    gentle: {
+      calm: L('{a}の表情に、穏やかさが戻ってきていた。|{a}はゆっくり息を吐いて、いつもの笑みを浮かべた。|{a}の声は、もう柔らかさを取り戻していた。'),
+      joy: L('{a}は、ふわりとした笑みを絶やさなかった。|{a}の声は、いつもよりいっそう柔らかかった。|{a}はずっと、何かを思い出しては微笑んでいた。'),
+      grief: L('{a}はまだ笑えなかった。|{a}の笑顔は、どこか遠くを見ていた。|{a}は時々、ふっと言葉を失った。'),
+      fear: L('{a}の笑みは、こわばっていた。|{a}は落ち着かない様子で、何度も辺りを見回した。|{a}は誰かの気配がするたびに、身をすくめていた。'),
+      anger: L('{a}の穏やかな顔に、珍しく険があった。|{a}は笑みを消したまま、静かに怒っていた。|{a}の声から、柔らかさが消えていた。'),
+      shame: L('{a}は申し訳なさそうに、何度も目を伏せた。|{a}は困ったように笑って、そっと視線を外した。|{a}は小さく肩をすぼめていた。')
+    },
+    devoted: {
+      calm: L('{a}は自分の頬を軽く叩き、いつもの調子を取り戻した。|{a}は、もう大丈夫だというように小さく頷いた。|{a}は気持ちを立て直し、また周りに目を配り始めた。'),
+      joy: L('{a}は嬉しさを抱きしめるように、両手を握りしめていた。|{a}の目は、さっきからずっと輝いていた。|{a}は張り切って、いつも以上によく動いた。'),
+      grief: L('{a}は自分のことは後回しにして、それでも目を赤くしていた。|{a}は気丈に振る舞っていたが、声が震えていた。|{a}は泣き腫らした目で、それでも周りを気遣っていた。'),
+      fear: L('{a}は怖さをこらえて、それでも前に立とうとしていた。|{a}は震える手を、もう片方の手で押さえていた。|{a}は自分に言い聞かせるように、小さく頷き続けていた。'),
+      anger: L('{a}は悔しさに、唇を噛みしめていた。|{a}は言い返したいのをこらえて、拳を震わせていた。|{a}の目には、悔し涙がにじんでいた。'),
+      shame: L('{a}は、ごめんなさいと口の中で何度も繰り返していた。|{a}は合わせる顔がないというように、うつむいていた。|{a}は自分を責めて、目を潤ませていた。')
+    },
+    cool: {
+      calm: L('{a}の目は、もう冷静さを取り戻していた。|{a}は一度深く息をして、思考を整理し直した。|{a}の声から、揺らぎが消えていた。'),
+      joy: L('{a}は平静を装っていたが、目元だけが柔らかかった。|{a}の口数が、珍しく多かった。|{a}は自分の機嫌のよさを、少し持て余していた。'),
+      grief: L('{a}は淡々としていたが、同じ説明を二度繰り返していた。|{a}の視線は、ときどき焦点を失っていた。|{a}は理屈で気持ちを片づけようとして、できずにいた。'),
+      fear: L('{a}は状況を何度も確かめ直していた。落ち着いているふりだった。|{a}は逃げ道の数を、無意識に数えていた。|{a}の分析は、いつもより早口だった。'),
+      anger: L('{a}は冷ややかな目で、相手を見据えていた。|{a}の言葉は、普段よりずっと辛辣だった。|{a}は静かだったが、その静けさが怖かった。'),
+      shame: L('{a}は咳払いをひとつして、表情を隠した。|{a}は自分の失態を、頭の中で何度も検証していた。|{a}は珍しく、言葉に詰まっていた。')
+    },
+    free: {
+      calm: L('{a}はもう、けろりとした顔をしていた。|{a}は大きく伸びをして、気分を切り替えた。|{a}の顔に、いつもの屈託のなさが戻っていた。'),
+      joy: L('{a}は鼻歌でも歌い出しそうなほど、上機嫌だった。|{a}は今にも跳ね出しそうなほど浮かれていた。|{a}は誰彼かまわず笑いかけていた。'),
+      grief: L('{a}から、いつもの明るさが消えていた。|{a}は笑おうとして、途中で泣き顔になった。|{a}は珍しく、ずっと黙り込んでいた。'),
+      fear: L('{a}は軽口を叩いていたが、目は笑っていなかった。|{a}は落ち着きなく、その場を行ったり来たりしていた。|{a}の顔から、血の気が引いていた。'),
+      anger: L('{a}は不機嫌を隠さず、ぷいと顔をそむけた。|{a}は怒りに任せて、言葉を荒らげた。|{a}は頬をふくらませたまま、ずかずかと歩いた。'),
+      shame: L('{a}は照れ隠しに、へらへらと笑っていた。|{a}は顔を赤くして、髪をくしゃくしゃにかき回した。|{a}はさすがに、ばつが悪そうだった。')
+    },
+    shy: {
+      calm: L('{a}はやっと、うつむいていた顔を上げられるようになっていた。|{a}の手の震えは、いつのまにか止まっていた。|{a}は小さく息をついて、少しだけ落ち着いた。'),
+      joy: L('{a}は頬を緩ませては、慌てて顔を伏せていた。|{a}の小さな笑みが、何度もこぼれていた。|{a}は嬉しさに、少しだけ声を弾ませた。'),
+      grief: L('{a}は膝を抱えたまま、なかなか顔を上げなかった。|{a}の目は、まだ赤く腫れていた。|{a}は声を殺して、何度も涙を拭っていた。'),
+      fear: L('{a}は青い顔で、誰かの背中に隠れるようにしていた。|{a}は声も出せずに、身を縮めていた。|{a}はびくびくと、周りの顔色をうかがっていた。'),
+      anger: L('{a}は珍しく、はっきりと顔をしかめていた。|{a}は小さな声で、それでも譲らずに言い返した。|{a}はうつむいたまま、拳を握りしめていた。'),
+      shame: L('{a}は真っ赤になって、顔を上げられなかった。|{a}は消え入りそうな声で、何度も謝った。|{a}は袖で顔を隠すようにしていた。')
+    },
+    polite: {
+      calm: L('{a}は居住まいを正し、いつもの落ち着いた物腰に戻っていた。|{a}の言葉遣いに、いつもの丁寧さが戻っていた。|{a}は静かに息を整え、背筋を伸ばした。'),
+      joy: L('{a}の物腰は、いつもより晴れやかだった。|{a}は穏やかな笑みを浮かべ、声も軽やかだった。|{a}の丁寧な言葉の端々に、嬉しさがにじんでいた。'),
+      grief: L('{a}は丁寧な言葉を崩さなかったが、その声は細かった。|{a}は気丈に頭を下げたが、目元は赤かった。|{a}は静かに目を伏せ、しばらく何も言わなかった。'),
+      fear: L('{a}は礼儀正しさを保とうとしていたが、声が震えていた。|{a}は努めて平静に振る舞っていたが、顔は青ざめていた。|{a}は言葉を選ぶ余裕もなく、短く息をしていた。'),
+      anger: L('{a}は丁寧な言葉のまま、ひどく冷たい声を出した。|{a}の笑顔は、目だけが笑っていなかった。|{a}は慇懃な口調を崩さず、静かに怒っていた。'),
+      shame: L('{a}は恐縮しきった様子で、深く頭を下げた。|{a}は頬を染め、言葉を探すように口ごもった。|{a}はいたたまれない様子で、視線を落としていた。')
+    }
+  };
+
+  var X = HK.Emo = {
+    KEYS: KEYS, BARS: BARS, NAME: NAME, FACE_SYM: FACE_SYM, ATT: ATT, WORDS: W, TH: TH, LOVE_BLOCK: LOVE_BLOCK, STORY_EMO: STORY_EMO,
+    hash: hash, pickH: pickH,
+    /* R18版の火照りの句（emotion-r18.js が {態度: [文]} を入れる） */
+    WORDS_LUST: null
+  };
+  function E(c) {
+    if (!c.emo) c.emo = { joy: 0, grief: 0, fear: 0, anger: 0, shame: 0, lust: 0, calm: 100 };
+    return c.emo;
+  }
+  X.get = E;
+  function top(e) {
+    var best = 'calm', bv = TH - 0.001;
+    for (var i = 0; i < KEYS.length; i++) { var k = KEYS[i]; if (k === 'lust' && safe()) continue; if (e[k] > bv) { bv = e[k]; best = k; } }
+    return best;
+  }
+  function recalm(e) { var m = 0; KEYS.forEach(function (k) { if (e[k] > m) m = e[k]; }); e.calm = Math.round(100 - m); }
+  /* 態度9種（口調の追加分は、もとにした態度へ） */
+  X.att = function (c) {
+    var p = c && c.persona;
+    if (ATT.indexOf(p) >= 0) return p;
+    var b = c && c.tone && HK.toneOpt ? HK.toneOpt(c.tone, 'base') : null;
+    return ATT.indexOf(b) >= 0 ? b : 'gentle';
+  };
+  function stepOf(ctx) { return ctx ? (ctx.stepIndex != null ? ctx.stepIndex : ctx._emoStep || 0) : 0; }
+  X.bump = function (ctx, c, d, why) {
+    if (!c || c.alive === false || !d) return;
+    if (c.flags && c.flags.mad) return;
+    var e = E(c), m0 = top(e);
+    for (var k in d) {
+      if (KEYS.indexOf(k) < 0 || !d[k]) continue;
+      if (k === 'lust' && (safe() || (HK.State && !HK.State.r18ok(c)))) continue;
+      e[k] = clamp(e[k] + d[k]);
+    }
+    recalm(e);
+    var m = top(e);
+    if (m !== 'calm' && (!c._emoPk || e[m] > c._emoPk.v)) c._emoPk = { mood: m, v: Math.round(e[m]), step: stepOf(ctx), label: (ctx && ctx.label) || '' };
+    if (ctx && ctx.log) c._emoT = ctx.log.length;
+    /* 気分が変わったときだけ、次の記録の why に足す */
+    if (why && ctx && m !== 'calm' && m !== m0) { var q = ctx._emoWhy = ctx._emoWhy || []; if (q.length < 2) q.push(c.name + 'は' + NAME[m] + '（' + why + '）'); }
+  };
+  X.mood = function (c) { return c && c.emo ? top(c.emo) : 'calm'; };
+  X.face = function (c) {
+    var e = c && c.emo;
+    if (!e) return 'neutral';
+    if ((e.grief >= 60 && e.anger >= 45) || (e.anger >= 60 && e.shame >= 40) || (e.grief >= 85 && e.fear >= 60)) return 'dark';
+    return FACE[top(e)] || 'neutral';
+  };
+  function fill(t, c) { return String(t).replace(/\{a\}/g, c.name); }
+  X.lines = function (att, m) {
+    if (m === 'lust') return safe() || !X.WORDS_LUST ? [] : X.WORDS_LUST[att] || X.WORDS_LUST.gentle || [];
+    var t = W[att] || W.gentle;
+    return t[m] || [];
+  };
+  /* used（{文: 1}）を渡すと、その回でまだ使っていない文から選ぶ */
+  X.word = function (c, key, m, used) {
+    if (!c) return '';
+    m = m || X.mood(c);
+    var arr = X.lines(X.att(c), m);
+    if (!arr.length) return '';
+    var k0 = Math.floor(hash((key || '') + '|' + c.name + '|' + m) * arr.length) % arr.length, t = arr[k0];
+    if (used) { for (var d = 0; d < arr.length; d++) { var t2 = arr[(k0 + d) % arr.length]; if (!used[c.name + t2]) { t = t2; break; } } used[c.name + t] = 1; }
+    return fill(t, c);
+  };
+  /* 一句を挿してよい出来事か：気分と出来事の種類が噛み合い、本文が気分と逆の調子でないこと */
+  var FIT = { joy: /^(?:romance|bond|help|escape)$/, grief: /^(?:bond|help|solo|escape|conflict)$/, fear: /^(?:solo|escape|conflict|combat|help|bond)$/, anger: /^(?:conflict|combat|betray|solo|bond)$/, shame: /^(?:solo|bond|romance|help)$/, lust: /^(?:romance|bond|solo)$/, calm: /./ };
+  var CLASH = { joy: /泣|涙|怖|震え|不安|痛|苦し|怯|大丈夫|発情|熱が|悲鳴|血/, grief: /笑い声|はしゃ|浮かれ|上機嫌|大笑い/, fear: /笑い声|はしゃ|浮かれ|上機嫌/, anger: /笑い合|微笑|照れ|はにか/, shame: /堂々|胸を張/, lust: /泣|涙|怖|悲鳴|血/, calm: /泣|涙|悲鳴/ };
+  X.fits = function (m, cat, text) { return !!(FIT[m] && FIT[m].test(cat || 'solo') && !(CLASH[m] && CLASH[m].test(String(text || '')))); };
+  /* 出来事の重み（engine.js の act() で、本命の補正の隣に掛ける） */
+  X.weight = function (ctx, a, ev) {
+    var e = a && a.emo;
+    if (!e || !ev) return 1;
+    var cat = ev.cat, f = 1;
+    if (e.grief >= TH) { if (cat === 'romance') f *= 0.4; else if (cat === 'bond') f *= 1.3; else if (cat === 'help') f *= 1.15; }
+    if (e.anger >= TH) { if (cat === 'conflict') f *= 1.6; else if (cat === 'combat') f *= 1.3; else if (cat === 'romance') f *= 0.8; }
+    if (e.fear >= TH) { if (cat === 'solo') f *= 1.5; else if (cat === 'escape') f *= 1.3; else if (cat === 'conflict') f *= 0.8; }
+    if (e.joy >= TH) { if (cat === 'romance') f *= 1.1; else if (cat === 'bond') f *= 1.1; else if (cat === 'conflict') f *= 0.85; }
+    if (e.shame >= TH) { if (cat === 'solo') f *= 1.3; else if (cat === 'romance') f *= 0.8; }
+    if (!safe() && e.lust >= TH && cat === 'romance') f *= 1.3;
+    return f;
+  };
+  /* 悲しみの深い人（主役か相手）は、恋愛の出来事を起こさない */
+  X.blockLove = function (ctx, actors) {
+    var L0 = (actors || []).filter(Boolean);
+    for (var i = 0; i < L0.length && i < 2; i++) if (L0[i].emo && L0[i].emo.grief >= LOVE_BLOCK) return true;
+    return false;
+  };
+  /* 毎区切りの減衰 */
+  function decay(c) {
+    var e = c.emo;
+    if (!e) return;
+    var st = c.stress || 0, ag = c.tr && c.tr.aggr != null ? c.tr.aggr : 0.5;
+    e.joy = clamp(e.joy * 0.86 - 1.5);
+    e.grief = clamp(e.grief * 0.95 - 0.8);
+    e.fear = clamp(e.fear * 0.82 - 2 + (st > 55 ? (st - 55) * 0.12 : 0));
+    e.anger = clamp(e.anger * 0.72 - 2 + (st > 70 && ag > 0.55 ? 2 : 0));
+    e.shame = clamp(e.shame * 0.85 - 1.5);
+    e.lust = safe() ? 0 : clamp(e.lust * 0.62 - 3);
+    recalm(e);
+  }
+  X.tick = function (ctx) { (ctx.chars || ctx.P || []).forEach(function (c) { if (c && c.alive !== false) decay(c); }); };
+
+  /* ---------- 死：周りの人に悲しみと恐れ、手を下した人に恥じらいと怒り ---------- */
+  function relOf(ctx, a, b) { return ctx.rel && ctx.rel[a.i] ? ctx.rel[a.i][b.i] : null; }
+  X.onDeath = function (ctx, v, killer) {
+    if (!v || v._emoDead) return;
+    v._emoDead = true;
+    var why = v.name + 'の死';
+    (ctx.chars || []).forEach(function (o) {
+      if (o === v || o.alive === false || o.out) return;
+      var r = relOf(ctx, o, v), aff = r ? r.aff : 0, pf = ctx.pair ? ctx.pair(o, v) : {};
+      var g = aff > 35 ? 20 + aff * 0.55 : aff > 10 ? 10 : 3;
+      if (pf.couple) g += 18;
+      if (o === killer) {
+        var np = o.tr ? o.tr.np : 0.5;
+        X.bump(ctx, o, { shame: 12 + np * 30, anger: 8 + (o.tr ? o.tr.aggr * 18 : 6), grief: aff > 30 ? g * 0.6 : 0 }, why);
+        return;
+      }
+      X.bump(ctx, o, { grief: g, fear: killer ? 18 : 10, anger: killer && aff > 35 ? 12 + aff * 0.25 : 0 }, why);
+    });
+  };
+  /* ---------- 記録ごと ---------- */
+  var EXPL = /果て|達し|イ[っッくかきキ]|挿|喘|貫|腰を[振沈打揺使]|繋が|奥まで|突き上げ|絶頂|♡|射精|精液|ナカ|抱き潰|体を重ね|肌を重ね/;
+  function evBump(ctx, cat, A, text) {
+    var a = A[0], b = A[1];
+    if (!a) return;
+    if (cat === 'romance') { X.bump(ctx, a, { joy: 12 }); if (b) X.bump(ctx, b, { joy: 10 }); }
+    else if (cat === 'bond') { X.bump(ctx, a, { joy: 6 }); if (b) X.bump(ctx, b, { joy: 6 }); }
+    else if (cat === 'help') { X.bump(ctx, a, { joy: 3 }); if (b) X.bump(ctx, b, { joy: 6, fear: -6 }); }
+    else if (cat === 'conflict') { X.bump(ctx, a, { anger: 10 }); if (b) X.bump(ctx, b, { anger: 8, fear: 3 }); }
+    else if (cat === 'combat') { X.bump(ctx, a, { anger: 8, fear: 4 }); if (b) X.bump(ctx, b, { fear: 12, anger: 4 }); }
+    else if (cat === 'betray') { X.bump(ctx, a, { shame: 8 }); if (b) X.bump(ctx, b, { anger: 18, grief: 6 }); }
+    if (!safe() && typeof text === 'string' && EXPL.test(text)) A.forEach(function (c) { X.bump(ctx, c, { lust: 22, joy: 4 }); });
+  }
+  var NOWORD = /^[「（『―…＠⁠⁢\s]/;
+  X.onSay = function (ctx, o, e) {
+    var kind = e.kind;
+    if (kind === 'step') return;
+    var A = (o.actors || []).filter(function (c) { return c && c.i != null && ctx.chars[c.i] === c; });
+    if (ctx._emoWhy && kind !== 'phase') { e.why = (e.why ? e.why + '／' : '') + '気分：' + ctx._emoWhy.join('、'); ctx._emoWhy = null; }
+    if (kind !== 'event' || /^(?:death|phase)$/.test(e.cat)) return;
+    var a = A[0];
+    /* 気分の一句：1区切りに1回まで・25% */
+    if (a && a.alive !== false && typeof e.text === 'string' && e.text && !NOWORD.test(e.text) && ctx._emoWS !== ctx.stepIndex && a._emoT !== e.n && hash(ctx.seed + '|w|' + e.n) < 0.25) {
+      var m = X.mood(a), w = '', U = ctx._emoUsed = ctx._emoUsed || {};
+      if (m === 'calm' && !(a._emoPrev && a._emoPrev !== 'calm' && !a._emoRec)) m = '';
+      if (m && X.fits(m, e.cat, e.text)) { w = X.word(a, ctx.seed + '|' + e.n, m, U); if (m === 'calm') a._emoRec = true; }
+      if (w) { e.text = w + e.text; e.emoWord = true; ctx._emoWS = ctx.stepIndex; }
+    }
+    evBump(ctx, e.cat, A, e.text);
+  };
+  /* 区切りの終わり（snapshot() から）：関係の節目（付き合い始めた・別れた・浮気）を拾い、気分を記録し、減衰させる */
+  X.step = function (ctx, h) {
+    var C = ctx.chars, done = ctx._emoMk = ctx._emoMk || {}, from = ctx._emoA || 0;
+    for (var n = from; n < ctx.log.length; n++) {
+      var x = ctx.log[n];
+      if (!x || !x.mark || done[n]) continue;
+      done[n] = 1;
+      var p = C[x.actors[0]], q = C[x.actors[1]];
+      if (!p || !q) continue;
+      x.mark.forEach(function (mk) {
+        if (mk === 'couple') { X.bump(ctx, p, { joy: 32 }, '付き合い始めた'); X.bump(ctx, q, { joy: 32 }, '付き合い始めた'); }
+        else if (mk === 'break') { X.bump(ctx, p, { grief: 22, anger: 12 }, '別れ'); X.bump(ctx, q, { grief: 22, anger: 12 }, '別れ'); }
+        else if (mk === 'cheat' || mk === 'affair') {
+          [p, q].forEach(function (y) {
+            C.forEach(function (z) { if (z !== p && z !== q && z.alive !== false && ctx.pair(y, z).couple) X.bump(ctx, z, { anger: 32, grief: 18 }, y.name + 'の浮気'); });
+          });
+          if (mk === 'cheat') { X.bump(ctx, p, { shame: 12 }); X.bump(ctx, q, { shame: 12 }); }
+          else X.bump(ctx, q, { fear: 25, anger: 10 });
+        }
+      });
+    }
+    ctx._emoA = ctx._emoB || 0; ctx._emoB = ctx.log.length;
+    /* Ctx.kill を通らない死（ゾンビ化など）も、周りの悲しみにする */
+    C.forEach(function (c) { if (c.alive === false && !c._emoDead) X.onDeath(ctx, c, c.killedBy != null ? C[c.killedBy] : null); });
+    if (h) {
+      var em = {};
+      C.forEach(function (c) { var e = E(c); em[c.i] = BARS.map(function (k) { return Math.round(e[k]); }); });
+      h.emo = em;
+    }
+    C.forEach(function (c) { var m = X.mood(c); if (m !== 'calm') c._emoRec = false; c._emoPrev = m; });
+    X.tick(ctx);
+  };
+  /* 結果のまとめ（engine.js の finalize から）：最終値と、いちばん強かった気分 */
+  function sumOf(c) {
+    var e = E(c), o = {};
+    KEYS.concat(['calm']).forEach(function (k) { if (k === 'lust' && safe()) return; o[k] = Math.round(e[k]); });
+    return o;
+  }
+  X.summary = function (ctx, chars) {
+    (ctx.chars || []).forEach(function (c, k) {
+      var s = chars[k];
+      if (!s) return;
+      s.emo = sumOf(c);
+      s.moodPeak = c._emoPk ? { mood: c._emoPk.mood, name: NAME[c._emoPk.mood], v: c._emoPk.v, step: c._emoPk.step, label: c._emoPk.label } : null;
+      s.face = X.face(c);
+      s.persona = s.persona || c.persona;
+      s.caged = !!(c.flags && c.flags.caged != null);
+      if (c.flags && c.flags.loss && c.flags.loss.who != null) s.lossOf = c.flags.loss.who;
+    });
+    if (HK.Epilogue && HK.Epilogue.summary) HK.Epilogue.summary(ctx, chars);
+  };
+
+  /* ---------- 物語型（HK.Story.say から。p.m には触らない） ---------- */
+  var T_LOVE = /夜|恋|キス|告白|デート|誘い|口説|ときめ|求愛|触れ合い|甘い/, T_CONF = /故障|危機|感染|誘拐|喧嘩|ケンカ|口論|嫉妬|対立|裏切|襲|戦い|戦闘|罠|処刑|告発|疑い|事故|発狂/, T_HELP = /治療|看病|救出|助け|手当|守|仲直り|慰め|食事|会話|絆|団らん|晩酌/, T_DANGER = /故障|危機|感染|誘拐|襲|罠|事故|遭難|発狂|漂流|嵐|吹雪|停電|侵入|暴走/, T_DEAD = /遺体|死体|亡骸|殺され|悲鳴|死因|息絶え|帰らぬ人/;
+  function storyCat(tag) { return T_LOVE.test(tag) ? 'romance' : T_CONF.test(tag) ? 'conflict' : T_HELP.test(tag) ? 'help' : 'solo'; }
+  X.story = function (S, o) {
+    if (!S || !S.P || !S.scen) return;
+    var id = S.scen.id, P = S.P, emo = !!STORY_EMO[id];
+    if (o.kind === 'step') {
+      S._emoStep = (S._emoStep || 0) + 1;
+      if (emo) { (S.emoHist = S.emoHist || []).push({ label: o.text, v: P.map(function (p) { var e = E(p); return BARS.map(function (k) { return Math.round(e[k]); }); }) }); P.forEach(function (p) { var m = X.mood(p); if (m !== 'calm') p._emoRec = false; p._emoPrev = m; }); X.tick(S); }
+      return;
+    }
+    /* 死を見つけたら：その記録を覚えておき（最期の言葉を足す場所）、周りに悲しみと恐れ */
+    P.forEach(function (p) {
+      if (!p || p.alive !== false || p._emoDead) return;
+      p._emoDead = true;
+      p._emoDeathN = o.actors.indexOf(p.i) >= 0 ? o.n : null;
+      if (emo) P.forEach(function (q) {
+        if (!q || q === p || q.alive === false) return;
+        var bd = S.bondFn ? S.bondFn(S, q, p) : 0;
+        X.bump(S, q, { grief: 30 + (bd > 0 ? bd * 45 : 0), fear: 22 });
+      });
+    });
+    if (!emo || typeof o.text !== 'string') return;
+    /* 住人でない人の死・遺体の発見・悲鳴：その場の皆に恐れ */
+    if (o.kind !== 'phase' && T_DEAD.test(o.text)) P.forEach(function (q) { if (q && q.alive !== false) X.bump(S, q, { fear: 24 }); });
+    var a = P[o.actors[0]];
+    if (!a || a.alive === false) return;
+    var kind = o.kind || 'event';
+    if (kind === 'event' && o.text && !NOWORD.test(o.text) && S._emoWS !== S._emoStep && a._emoT !== o.n) {
+      var key = P.map(function (p) { return p.name; }).join(',') + '|' + o.n;
+      if (hash(key + '|w') < 0.25) {
+        var m = X.mood(a), w = '', U = S._emoUsed = S._emoUsed || {}, cat = storyCat(o.tag || '');
+        if (m === 'calm' && !(a._emoPrev && a._emoPrev !== 'calm' && !a._emoRec)) m = '';
+        if (m && X.fits(m, cat, o.text)) { w = X.word(a, key, m, U); if (m === 'calm') a._emoRec = true; }
+        if (w) { o.text = w + o.text; o.emoWord = true; S._emoWS = S._emoStep; }
+      }
+    }
+    var tag = o.tag || '', B = o.actors.slice(1).map(function (i) { return P[i]; }).filter(Boolean);
+    if (T_LOVE.test(tag)) { [a].concat(B).forEach(function (p) { X.bump(S, p, kind === 'climax' && !safe() ? { lust: 22, joy: 6 } : { joy: 10 }); }); }
+    else if (T_DANGER.test(tag)) { [a].concat(B).forEach(function (p) { X.bump(S, p, { fear: 14 }); }); }
+    else if (T_CONF.test(tag)) { X.bump(S, a, { anger: 10 }); B.forEach(function (p) { X.bump(S, p, { anger: 6, fear: 6 }); }); }
+    else if (T_HELP.test(tag)) { [a].concat(B).forEach(function (p) { X.bump(S, p, { joy: 5 }); }); }
+  };
+  X.storySummary = function (S, res) {
+    if (!S || !S.P || !res || !res.heroes || !STORY_EMO[S.scen.id]) return;
+    S.P.forEach(function (p, k) {
+      var h = res.heroes[k];
+      if (!h) return;
+      h.emo = sumOf(p);
+      h.moodPeak = p._emoPk ? { mood: p._emoPk.mood, name: NAME[p._emoPk.mood], v: p._emoPk.v, step: p._emoPk.step, label: p._emoPk.label } : null;
+      h.face = X.face(p);
+      h.persona = p.persona;
+    });
+    res.emoHist = S.emoHist || [];
+  };
+
+  /* ---------- 表示（view.js の住人カード・物語型のカード） ---------- */
+  X.html = function (c) {
+    var e = c && c.emo;
+    if (!e) return '';
+    var esc = HK.escape || function (s) { return String(s); };
+    var fc = c.face || 'neutral', m = 'calm', bv = TH - 0.001;
+    KEYS.forEach(function (k) { if (k === 'lust' && safe()) return; if (e[k] != null && e[k] > bv) { bv = e[k]; m = k; } });
+    var bars = BARS.map(function (k) {
+      var v = Math.max(0, Math.min(100, e[k] || 0));
+      return '<span style="white-space:nowrap">' + NAME[k] + '</span><span style="display:block;height:6px;border-radius:3px;background:var(--line);overflow:hidden"><span style="display:block;height:100%;width:' + v + '%;background:var(' + BAR_COL[k] + ')"></span></span>';
+    }).join('');
+    var pk = c.moodPeak ? 'いちばん強かった気分：' + c.moodPeak.name + (c.moodPeak.label ? '（' + c.moodPeak.label + '）' : '') : '最後まで、大きく心が揺れることはなかった';
+    return '<div class="emo" data-face="' + fc + '" style="display:flex;align-items:center;gap:10px;margin:6px 0 2px">' +
+      '<span class="emoface" data-face="' + fc + '" title="' + esc('いまの気分：' + NAME[m]) + '" style="font-size:13px;white-space:nowrap;color:var(--muted)">' + FACE_SYM[fc] + '</span>' +
+      '<span style="flex:1;display:grid;grid-template-columns:auto 1fr;gap:3px 8px;align-items:center;font-size:11px;color:var(--muted);max-width:260px" aria-label="気分の終わりの値">' + bars + '</span></div>' +
+      '<div class="sub">' + esc('気分：' + NAME[m] + '　' + pk) + '</div>';
+  };
+
+  /* ---------- エンジン型の Ctx を包む（engine.js を書き換えない） ---------- */
+  var kill0 = Ctx.prototype.kill;
+  Ctx.prototype.kill = function (v, killer) {
+    var was = !!(v && v.alive);
+    var r = kill0.apply(this, arguments);
+    if (was && v.alive === false) X.onDeath(this, v, killer);
+    return r;
+  };
+  var say0 = Ctx.prototype.say;
+  Ctx.prototype.say = function (o) {
+    var e = say0.apply(this, arguments);
+    if (e && !e.skipped && o) { try { X.onSay(this, o, e); } catch (err) { /* 気分の処理に失敗しても記録は残す */ } }
+    return e;
+  };
+})();
+;/* ==== js/emotion-r18.js ==== */
+/* 箱庭シミュレーター（R18版だけ）: 気分「火照り」の句（HK.Emo.WORDS_LUST）と、「その後」の火照りの結び（HK.Emo.AFTER_LUST）
+   火照りは R18 の山場のあとに立ち、全年齢モードでは立たない（emotion.js が HK.SAFE_ON を見る）。
+   地の文に挿す一句なので、行為そのものは書かない。態度9種×3文以上 */
+(function () {
+  'use strict';
+  var HK = window.HK, X = HK && HK.Emo;
+  if (!X) return;
+  function L(s) { return s.split('|'); }
+  X.WORDS_LUST = {
+    proud: L('{a}は、まだ昨夜の熱を持て余していた。|{a}の視線は、ときどき誰かの首筋を追っていた。|{a}は乾いた唇を、ゆっくりと噛んだ。'),
+    stern: L('{a}は火照りを振り払うように、何度も首を振った。|{a}は乱れそうになる呼吸を、意志の力で整えていた。|{a}の頬には、まだ赤みが残っていた。'),
+    tsun: L('{a}は頬を赤くしたまま、何でもないふりをしていた。|{a}は誰かと目が合うたびに、慌ててそらした。|{a}は体の火照りを、暑さのせいにしていた。'),
+    gentle: L('{a}の目は、どこか潤んでいた。|{a}はふとした瞬間に、甘い吐息をこぼしていた。|{a}の頬は、ほんのりと上気していた。'),
+    devoted: L('{a}は熱っぽい目で、誰かの姿を追っていた。|{a}は火照った頬を、両手で冷ましていた。|{a}は落ち着かない様子で、何度も座り直していた。'),
+    cool: L('{a}は平静を装っていたが、耳が赤かった。|{a}は自分の体の変化を、努めて無視していた。|{a}の呼吸は、わずかに浅かった。'),
+    free: L('{a}は隠す気もなく、物欲しそうな目をしていた。|{a}は艶っぽく笑って、唇を湿らせた。|{a}は体の火照りを、むしろ楽しんでいるようだった。'),
+    shy: L('{a}は真っ赤になって、膝を固く閉じていた。|{a}は昨夜のことを思い出しては、両手で顔を覆っていた。|{a}の耳まで、熱く染まっていた。'),
+    polite: L('{a}は落ち着いた物腰の下で、熱を持て余していた。|{a}は頬を染め、視線を伏せがちにしていた。|{a}の声は、ほんの少しだけ艶を帯びていた。')
+  };
+  X.AFTER_LUST = L('あの夜の熱を、ときどき思い出しては持て余した。|誰かの肌のぬくもりを、ふと恋しく思う夜があった。|体が覚えてしまった熱は、なかなか冷めなかった。');
 })();
 ;/* ==== js/content.js ==== */
 /* 箱庭シミュレーター: 内容のスイッチ（R18版の設定。全箱庭で共通）
@@ -28832,6 +29262,7 @@
     (res.end.notes || []).forEach(function (l) { out.lines.push(l); });
     var mp = mainPairs(res, X);
     if (mp.length) out.lines.push('主な関係：' + mp.join('、'));
+    if (HK.Epilogue) HK.Epilogue.build(res, out);   /* その後・最期の言葉（epilogue.js） */
     return out;
   };
 
@@ -29054,6 +29485,489 @@
       stats: [['生還', (win ? 1 : 0) + esc.length + home.length + '/' + n + '人'], ['死亡', dead.length + '人'], ['殺害', killers.reduce(function (s, c) { return s + c.kills; }, 0) + '件'], ['経過', res.stepCount + '区切り']],
       lines: lines
     };
+  };
+})();
+;/* ==== js/epilogue.js ==== */
+/* 箱庭シミュレーター: 結末・後日談・最期の言葉の共通枠 HK.Epilogue
+   ■ HK.Epilogue.last(ctx, c, how, killer)：最期の言葉。態度9種 × 死に方（kill 殺された／accident 事故／sacrifice 身代わり／suicide 自ら／disease 病・衰弱）× 3文以上。
+     恋人・本命・執着の相手（いなければ、いちばん心を寄せた相手）がいれば、その人への呼びかけつき。手を下したのがその相手なら、その人への言葉
+   ■ HK.Epilogue.after(res, c)：一人ごとの「その後」。行く末（生存／脱出／死亡／監禁／堕ち）× 態度9種 × 3文以上に、関係（恋人がいる／失った／一人）か気分の最終値の結びを足す
+   ■ HK.Epilogue.pairAfter(res, p)：組ごとの「その後」。結末の関係（恋人・両片想い・名前のない関係・別れ・宿敵・友人・執着）× 二人の気分
+   ■ HK.Epilogue.build(res, E)：HK.Endings.build の最後に呼ばれる。E.lines に「その後」を最大 8 行、E.last に最期の言葉を足す。
+     箱庭専用の「その後」（無人島の island-after・部屋の三人 room-trio など）がすでに出した人は飛ばす（c.afterDone か、「〇〇のその後――」の行・「その後は「」の行く末）
+   ■ 物語型（邪神村・吹雪の館・宇宙船・人狼村）：HK.Story.result から HK.Epilogue.story を呼び、結末の箇条書きに最期の言葉と「その後」を足す
+   死の記録には、60% で「――〇〇が最期に遺した言葉：「……」」を足す（R18版の「ほのめかす」の和らげ lewd-unify.js より前に入る）。
+   台詞は「〇〇「……」」の形にして、口調の仕上げ（voice.js）を通す */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK || !HK.Ctx) return;
+  var Ctx = HK.Ctx, Emo = HK.Emo;
+  function L(s) { return s.split('|'); }
+  function safe() { return !!HK.SAFE_ON; }
+  function hash(s) { s = String(s); var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
+  function pickH(arr, key) { return arr && arr.length ? arr[Math.floor(hash(key) * arr.length) % arr.length] : ''; }
+  /* 同じ結末の中で、同じ文を二度使わない（used に覚える） */
+  function pickU(arr, key, used) {
+    if (!arr || !arr.length) return '';
+    var k0 = Math.floor(hash(key) * arr.length) % arr.length;
+    if (!used) return arr[k0];
+    for (var d = 0; d < arr.length; d++) { var t = arr[(k0 + d) % arr.length]; if (!used[t]) { used[t] = 1; return t; } }
+    return arr[k0];
+  }
+  var ATT = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite'];
+  function att(c) {
+    if (Emo && Emo.att) return Emo.att(c);
+    return c && ATT.indexOf(c.persona) >= 0 ? c.persona : 'gentle';
+  }
+
+  /* ---------- 最期の言葉（「」の中身。{to}＝相手への呼びかけ「〇〇、」か空） ---------- */
+  var LW = {
+    kill: {
+      proud: L('{to}……くそ、こんなところで、終わりかよ|{to}ざまあねえな……あとは、勝手にやれ|{to}覚えてろ……俺は、まだ……'),
+      stern: L('{to}……油断した。私の、落ち度だ|{to}あとを、頼む……振り返るな|{to}……悔いは、ない。そう、思わせてくれ'),
+      tsun: L('{to}……べつに、痛くなんか、ない|{to}泣くな……泣いたら、許さない|{to}……ばか。こんなときくらい、そばにいろ'),
+      gentle: L('{to}……大丈夫。怖くないよ|{to}ありがとう……楽しかった、ね|{to}誰も、恨まないで……お願い'),
+      devoted: L('{to}……ごめんなさい。最後まで、役に立てなくて|{to}どうか、生きて……それだけで、いいんです|{to}……みんなは、無事……？'),
+      cool: L('{to}……計算違い、か。まあ、いい|{to}……思ったより、静かだな|{to}あとの判断は、任せる……間違えるなよ'),
+      free: L('{to}……あはは、ドジったなあ|{to}……もっと、遊びたかった、な|{to}笑ってよ……ほら、いつもみたいに'),
+      shy: L('{to}……こわい、です……手、にぎって……|{to}ご、ごめんね……先に、いくね|{to}……ずっと、言えなかった、ことが……'),
+      polite: L('{to}……お見苦しいところを、お見せしました|{to}どうか、お元気で……|{to}……今まで、ありがとうございました')
+    },
+    accident: {
+      proud: L('{to}……は、こんな、間抜けな終わり方かよ|{to}来るな……俺のことは、いい|{to}……悪くねえ人生だった、ってことに、しとけ'),
+      stern: L('{to}……足を、取られた……すまない|{to}構うな……先へ、進め|{to}……ここまで、か。存外、あっけない'),
+      tsun: L('{to}……なによ、その顔……平気だって、言ってる|{to}……こんなの、ずるい……|{to}あんたのせいじゃ、ないから……絶対に'),
+      gentle: L('{to}……あれ、なんだか、眠いや|{to}大丈夫、だから……そんな顔、しないで|{to}……空、きれいだね'),
+      devoted: L('{to}……私のことは、置いていってください|{to}……みんなが、無事なら……よかった|{to}すみません……最後まで、お手伝い、できなくて'),
+      cool: L('{to}……運が、なかったな|{to}……確率の、問題だ。気に、するな|{to}……もう、いい。行け'),
+      free: L('{to}……うそ、でしょ……まだ、やりたいこと、いっぱい……|{to}……へへ、ちょっと、休むね|{to}またね……って、言わせてよ'),
+      shy: L('{to}……いたい、です……|{to}……ひとりに、しないで……|{to}……ごめんなさい……ありがとう……'),
+      polite: L('{to}……申し訳ありません。お先に、失礼いたします|{to}……どうか、私のことはお気になさらず|{to}……皆さんに、よろしくお伝えください')
+    },
+    sacrifice: {
+      proud: L('{to}行け！　ここは、俺が止める|{to}……借りは、返したぞ|{to}振り向くんじゃねえ……走れ'),
+      stern: L('{to}これが、私の務めだ|{to}……行け。立ち止まることは、許さん|{to}守れたなら……それでいい'),
+      tsun: L('{to}か、勘違いしないでよ……あんたのためじゃ、ないんだから|{to}早く、行きなさいよ……ばか|{to}……ちゃんと生き残らなかったら、許さないから'),
+      gentle: L('{to}いいんだ……こうしたかったんだよ|{to}……無事で、よかった|{to}……みんなのこと、頼んだよ'),
+      devoted: L('{to}……やっと、お役に立てました|{to}私は、いいんです……どうか、生きてください|{to}……守れて、よかった……'),
+      cool: L('{to}……合理的な判断だ。君が生きるほうが、いい|{to}……悪くない、交換だろう|{to}……振り返るな。時間の無駄だ'),
+      free: L('{to}へへ……かっこよかった、でしょ？|{to}……行って！　早く！|{to}……あたしの分まで、楽しんでよね'),
+      shy: L('{to}……やっと、勇気、出せた……|{to}……こわかった、けど……よかった……|{to}……にげて……おねがい……'),
+      polite: L('{to}……どうか、お先に。ここは私が|{to}……お役に立てて、光栄です|{to}……振り返らずに、お進みください')
+    },
+    suicide: {
+      proud: L('{to}……俺の終わりは、俺が決める|{to}止めるなよ……もう、決めたんだ|{to}……誰のせいでも、ねえ'),
+      stern: L('{to}……始末は、自分でつける|{to}……許せとは、言わない|{to}これで償いになるとは思わない。だが……'),
+      tsun: L('{to}……止めないで。お願いだから|{to}……ほんとは、もっと、ちゃんと……|{to}……ばいばい'),
+      gentle: L('{to}……疲れちゃった。ごめんね|{to}……あなたは、生きてね|{to}……ありがとう。もう、いいんだ'),
+      devoted: L('{to}……私がいないほうが、きっと……|{to}ごめんなさい……ごめんなさい……|{to}……どうか、忘れてください'),
+      cool: L('{to}……結論は、もう出ている|{to}……これが、最善だった|{to}……説明は、残してある'),
+      free: L('{to}……もう、いいや|{to}……最後くらい、自分で選ばせてよ|{to}……笑って、見送ってよ'),
+      shy: L('{to}……ごめんね……もう、がんばれない……|{to}……さよなら……|{to}……誰にも、言えなかった……'),
+      polite: L('{to}……身勝手を、お許しください|{to}……お世話に、なりました|{to}……どうか、お幸せに')
+    },
+    disease: {
+      proud: L('{to}……情けねえな、こんな、ことで|{to}……そんな顔、すんな。俺は、平気だ|{to}……あとは、頼んだぞ'),
+      stern: L('{to}……体が、言うことを、聞かん|{to}……看病、感謝する|{to}……私のことは、もう、いい'),
+      tsun: L('{to}……べつに、つらくなんか、ない……|{to}……もうちょっと、そこにいて|{to}……看病、下手くそ……でも、ありがと'),
+      gentle: L('{to}……あったかいね、その手|{to}……少し、眠るね|{to}……ありがとう。そばにいてくれて'),
+      devoted: L('{to}……ご迷惑を、おかけしました|{to}……最後まで、そばに、いてくれて……|{to}……私、ちゃんと、頑張れましたか……？'),
+      cool: L('{to}……症状からして、もう長くない|{to}……記録は、残してある。役立てろ|{to}……思ったより、怖くないものだな'),
+      free: L('{to}……ねえ、なにか、話してよ|{to}……元気になったら、また……|{to}……あーあ、つまんないの'),
+      shy: L('{to}……そばに、いて……|{to}……手、はなさないで……|{to}……ありがとう……うれしかった……'),
+      polite: L('{to}……お手を煩わせて、申し訳ありません|{to}……どうか、お体を大事に|{to}……ありがとうございました。本当に')
+    }
+  };
+  /* 相手がいるときだけの言葉（{t}＝「〇〇、」） */
+  var LW_TO = {
+    proud: L('{t}……お前に会えて、まあ、悪くなかった|{t}……先に行って、待っててやる|{t}……お前だけは、生きろよ'),
+    stern: L('{t}……お前と過ごした時間は、悪くなかった|{t}……すまない。約束を、守れなかった|{t}……生きろ。それが、最後の頼みだ'),
+    tsun: L('{t}……あんたのこと、ほんとは……|{t}……忘れたら、承知しないから|{t}……最後に、顔、見せて'),
+    gentle: L('{t}……会えて、よかった|{t}……笑っていてね。ずっと|{t}……ありがとう。大事に思ってたよ'),
+    devoted: L('{t}……あなたに会えて、幸せでした|{t}……どうか、私の分まで|{t}……ずっと、お慕いしていました'),
+    cool: L('{t}……君と出会ったのは、計算外だった。いい意味で|{t}……君が生きているなら、それでいい|{t}……最後に見るのが君で、よかった'),
+    free: L('{t}……ねえ、楽しかったね|{t}……あたしのこと、忘れないでよ|{t}……また、どこかで'),
+    shy: L('{t}……ずっと、そばにいたかった……|{t}……あのね……ありがとう……|{t}……泣かないで……'),
+    polite: L('{t}……あなたにお会いできて、本当によかった|{t}……どうか、お幸せに|{t}……ありがとうございました。……さようなら')
+  };
+  /* 手を下したのが、想う相手だったとき */
+  var LW_BETRAY = L('{t}……どうして……|{t}……お前に、なら……|{t}……それでも、恨めないんだ|{t}……そっか。お前だったんだ');
+  /* 全年齢では荒い言い回しを和らげる */
+  var SOFT = [[/くそ、/g, 'ああ、'], [/ざまあねえな/g, 'かっこ悪いな']];
+  function soften(q) { if (!safe()) return q; SOFT.forEach(function (r) { q = q.replace(r[0], r[1]); }); return q; }
+
+  var KIND_SUI = /自ら|命を絶|身を投げ|自害|自分で終わら/, KIND_SAC = /身代わり|かば|庇|盾に|囮|犠牲|生贄|守って|守ろう|足止め/, KIND_DIS = /病|感染|衰弱|飢え|凍え|熱が|発作|寒さ|渇き|脱水|老い|酸素|咳/, KIND_KILL = /刺|撃|殴|斬|噛|襲|殺|銃|刃|致命傷|首を|処刑|手で|絞め|突き落|毒を盛/;
+  P_kind.KINDS = ['kill', 'accident', 'sacrifice', 'suicide', 'disease'];
+  function P_kind(how, killer) {
+    var s = String(how || '');
+    if (KIND_SUI.test(s)) return 'suicide';
+    if (KIND_SAC.test(s)) return 'sacrifice';
+    if (killer || KIND_KILL.test(s)) return 'kill';
+    if (KIND_DIS.test(s)) return 'disease';
+    return 'accident';
+  }
+  /* 言葉の宛先：恋人 → 本命 → 執着の相手 → いちばん心を寄せた相手（生きている人だけ） */
+  function tieHas(ctx, a, b, re) {
+    if (!HK.Ties || !ctx.ties) return false;
+    try { return HK.Ties.all(ctx, a, b).some(function (t) { return re.test(t.type); }); } catch (e) { return false; }
+  }
+  function addressee(ctx, v) {
+    var C = (ctx.chars || []).filter(function (o) { return o !== v && o.alive !== false && !o.out; });
+    if (!C.length) return null;
+    var lov = C.filter(function (o) { return ctx.pair(v, o).couple || tieHas(ctx, v, o, /^(?:lover|spouse|mate|fated)$/); })[0];
+    if (lov) return { c: lov, why: 'lover' };
+    if (v.honmei != null && ctx.chars[v.honmei] && C.indexOf(ctx.chars[v.honmei]) >= 0) return { c: ctx.chars[v.honmei], why: 'honmei' };
+    var ob = C.filter(function (o) { return (v.flags && v.flags.cagePair === o.i) || tieHas(ctx, v, o, /^yan$/); })[0];
+    if (ob) return { c: ob, why: 'obsess' };
+    var best = null, bv = 55;
+    C.forEach(function (o) { var r = ctx.R(v, o); if (r && r.aff > bv) { bv = r.aff; best = o; } });
+    return best ? { c: best, why: 'close' } : null;
+  }
+  function compose(v, kind, to, killer, key) {
+    var a = att(v), q;
+    if (to && killer && to === killer) q = pickH(LW_BETRAY, key + '|b');
+    else if (to && hash(key + '|to') < 0.5) q = pickH(LW_TO[a], key + '|t');
+    else q = pickH((LW[kind] || LW.accident)[a], key + '|k');
+    q = q.replace(/\{to\}/g, to ? to.name + '、' : '').replace(/\{t\}/g, to ? to.name + '、' : '');
+    return soften(q);
+  }
+  var X = HK.Epilogue = { LW: LW, LW_TO: LW_TO, LW_BETRAY: LW_BETRAY, kind: P_kind, hash: hash };
+  X.last = function (ctx, c, how, killer) {
+    if (!ctx || !c) return null;
+    var kind = P_kind(how, killer), ad = addressee(ctx, c), to = ad ? ad.c : null;
+    var q = compose(c, kind, to, killer, (ctx.seed || 0) + '|' + c.name + '|' + (ctx.stepIndex || 0));
+    return { q: q, kind: kind, to: to ? to.i : null, line: c.name + '「' + q + '」' };
+  };
+  /* Ctx.kill を包む：最期の言葉を立て、死の記録に 60% で足す */
+  var kill1 = Ctx.prototype.kill;
+  Ctx.prototype.kill = function (v, killer, how) {
+    var was = !!(v && v.alive);
+    var r = kill1.apply(this, arguments);
+    if (was && v.alive === false && !v.lastWords) {
+      var lw = null;
+      try { lw = X.last(this, v, how, killer); } catch (e) { lw = null; }
+      if (lw) {
+        v.lastWords = lw.line; v.lastTo = lw.to; v.lastKind = lw.kind;
+        var pd = this.pending && this.pending[this.pending.length - 1];
+        if (pd && pd.kind === 'death' && pd.actors && pd.actors[0] === v && hash((this.seed || 0) + '|lw|' + v.i) < 0.6) {
+          pd.text += '　――' + v.name + 'が最期に遺した言葉：「' + lw.q + '」';
+          v.lastLogged = true;
+        }
+      }
+    }
+    return r;
+  };
+  /* 結果のまとめ（HK.Emo.summary から）：最期の言葉は住人の覚え書きにも載せる（口調の仕上げを通すため） */
+  X.summary = function (ctx, chars) {
+    (ctx.chars || []).forEach(function (c, k) {
+      var s = chars[k];
+      if (!s || !c.lastWords) return;
+      s.lastWords = c.lastWords; s.lastTo = c.lastTo; s.lastKind = c.lastKind;
+      if (Array.isArray(s.notes)) s.notes.push('最期の言葉：' + c.lastWords);
+    });
+  };
+
+  /* ---------- 「その後」 ---------- */
+  var PLACE = { island: 'あの島', zombie: 'あの街', classroom: 'あの教室', goukon: 'あの店', whiteroom: 'あの部屋', omega: 'あの街', br: 'あの島', trial: 'あの施設', jashin: 'あの村', yakata: 'あの館', ship: 'あの船', jinro: 'あの村' };
+  var AF = {
+    live: {
+      proud: L('{a}は相変わらず偉そうな口をきいていたが、{p}の話になると少しだけ黙った。|{a}は「あんなの大したことなかった」と言い張り続けた。|{a}は前よりほんの少しだけ、人の話を聞くようになった。'),
+      stern: L('{a}は{p}でのことを教訓として胸に刻み、以前にも増して自分を律した。|{a}は毎朝同じ時間に起き、同じように一日を始めた。それが{a}なりの区切りだった。|{a}は多くを語らなかったが、{p}で学んだことを忘れなかった。'),
+      tsun: L('{a}は「別に、いい思い出なんかじゃない」と言いながら、{p}の話を何度も持ち出した。|{a}はそっけない態度のまま、それでも皆との連絡を絶やさなかった。|{a}は素直じゃないまま、少しだけ素直になった。'),
+      gentle: L('{a}はいつもの穏やかさで、{p}でのことを笑い話に変えていった。|{a}は、{p}で出会った人たちのことを、今も大切に思っている。|{a}の周りには、変わらず人が集まった。'),
+      devoted: L('{a}は誰かの役に立てたことを、前よりも少しだけ誇らしく思えるようになった。|{a}は{p}で世話になった人たちに、一人ずつ手紙を書いた。|{a}は相変わらず人のために走り回っていたが、自分を休ませることも覚えた。'),
+      cool: L('{a}は{p}での出来事を、自分なりに整理して書き残した。|{a}は以前と同じ顔で日常に戻った。ただ、人を見る目は少し変わった。|{a}は「合理的ではなかったが、悪くなかった」と振り返った。'),
+      free: L('{a}は{p}でのことを、会う人ごとに面白おかしく話して回った。|{a}は次の楽しいことを探して、もう走り出していた。|{a}は変わらず自由気ままだったが、{p}でのことだけは大事にしまっていた。'),
+      shy: L('{a}は{p}でのことを思い出すたび、少しだけ勇気が出るようになった。|{a}は小さな声のままだったが、言いたいことは言えるようになった。|{a}は{p}でのことを、そっと日記に書き留めた。'),
+      polite: L('{a}は以前と変わらぬ丁寧さで、{p}で関わった人たちに礼を尽くした。|{a}は「良い経験をさせていただきました」と、穏やかに微笑んだ。|{a}の物腰は変わらなかったが、その目には前にはなかった強さがあった。')
+    },
+    escape: {
+      proud: L('{a}は{p}を出たあと、二度と振り返らなかった。少なくとも、そう見せていた。|{a}は生き延びたことを、自分の腕のおかげだと言い張った。|{a}は外の世界に戻っても、しばらくは壁を背にして眠った。'),
+      stern: L('{a}は{p}を出たその日から、元の暮らしを淡々と取り戻していった。|{a}は生き延びた者の務めとして、{p}で起きたことを正確に書き残した。|{a}は{p}を出たあとも、出口の位置を確かめる癖が抜けなかった。'),
+      tsun: L('{a}は「もう二度とごめんだから」と言いながら、{p}のあった方角をときどき見ていた。|{a}は出てこられたことを、誰にも感謝しなかった。心の中では、何度もしていた。|{a}は外に出てすぐ、強がりを言う相手がそばにいないことに気づいた。'),
+      gentle: L('{a}は{p}を出たあと、ゆっくり時間をかけて日常に戻っていった。|{a}は外の光の中で、「帰ってこられたね」と小さく笑った。|{a}は{p}から持ち帰った小さなものを、ずっと手元に置いている。'),
+      devoted: L('{a}は{p}を出たあとも、残してきた人たちのことを考え続けた。|{a}は助けてくれた人たちに恩を返す方法を、ずっと探している。|{a}は帰り着いた夜、ようやく自分のために泣いた。'),
+      cool: L('{a}は{p}を出たあと、起きたことを一つずつ記録にまとめた。|{a}は生還の理由を「運と判断」だと短く答えた。|{a}は外に出ても、しばらく人の多い場所を避けていた。'),
+      free: L('{a}は{p}を出た瞬間、大声で笑った。泣いているようにも見えた。|{a}は外に出たその足で、食べたかったものを片っ端から食べに行った。|{a}は「次はもっと楽しいところがいい」と言って、空を見上げた。'),
+      shy: L('{a}は{p}を出たあと、しばらく誰とも話せなかった。それでも、生きていた。|{a}は外の世界の音に、少しずつ慣れていった。|{a}は帰り道、何度も後ろを振り返った。'),
+      polite: L('{a}は{p}を出たあと、関わった人たちに一人ずつ礼を伝えて回った。|{a}は「おかげさまで」と頭を下げ、元の暮らしに戻っていった。|{a}は外に出てからも、{p}で出会った人たちのことを折に触れて思い出した。')
+    },
+    dead: {
+      proud: L('{a}の強気な笑い方を、残された者たちは何度も思い出した。|{a}がいたら何と言ったか――皆、ときどきそれを口にした。|{a}の名前が出るたび、誰かが「あいつらしい」と苦笑した。'),
+      stern: L('{a}の残した言葉を、残された者たちは指針のように大切にした。|{a}が最後まで守ろうとしたものは、確かに誰かに受け継がれた。|{a}の几帳面な字の書き置きは、今も誰かの手元にある。'),
+      tsun: L('{a}が素直に言えなかった気持ちは、残された者たちのほうがよく分かっていた。|{a}の憎まれ口が聞こえない静けさに、皆はなかなか慣れなかった。|{a}が隠していた優しさを、皆はあとになって一つずつ知った。'),
+      gentle: L('{a}の穏やかな笑顔は、残された者たちの心に長く残った。|{a}のことを思い出すと、なぜか皆、少しだけ優しくなれた。|{a}がいた場所には、いつも誰かが花を置いた。'),
+      devoted: L('{a}が尽くしてくれたことを、残された者たちは決して忘れなかった。|{a}の「大丈夫ですか」という声を、皆は何度も思い出した。|{a}が守ろうとした人たちは、{a}の分まで生きようと決めた。'),
+      cool: L('{a}の冷静な言葉は、残された者たちが迷ったときの道しるべになった。|{a}が最後に何を考えていたのか、誰にも分からなかった。|{a}の不在は、皆が思っていたよりずっと大きかった。'),
+      free: L('{a}の笑い声が聞こえない日々は、ひどく静かだった。|{a}がやりたがっていたことを、残された者たちは代わりに一つずつ叶えた。|{a}のことを話すとき、皆は泣きながら笑った。'),
+      shy: L('{a}が小さな声で言っていたことを、皆はあとになって大切に思い出した。|{a}がそっと残したものを、誰かが今も大事に持っている。|{a}のことを、残された者たちはもっと知りたかったと思った。'),
+      polite: L('{a}の丁寧な言葉遣いを、残された者たちは懐かしく思い出した。|{a}の礼儀正しいお辞儀を、皆はいつまでも覚えていた。|{a}に返しきれなかった礼を、皆はそれぞれの形で返そうとした。')
+    },
+    caged: {
+      proud: L('{a}は閉じ込められたまま、それでも屈したふりだけはしなかった。|{a}の強がりは、扉の向こうで少しずつ削られていった。|{a}は、いつか必ず出てやると、毎晩自分に言い聞かせた。'),
+      stern: L('{a}は閉ざされた部屋で、日付を数えることだけはやめなかった。|{a}は屈せず、ただ静かに機会を待ち続けた。|{a}は自分を保つために、決まった時間に決まったことを繰り返した。'),
+      tsun: L('{a}は閉じ込められた部屋で、「平気だから」と誰にともなく言い続けた。|{a}は差し出される食事を、意地で半分だけ残した。|{a}は泣き言を言わなかった。言えば、負けだと思った。'),
+      gentle: L('{a}は閉じ込められたまま、それでも相手に穏やかに話しかけ続けた。|{a}は窓の外の空を見ることを、一日の楽しみにしていた。|{a}の笑顔は、少しずつ薄くなっていった。'),
+      devoted: L('{a}は閉じ込められたまま、外の皆が無事でいることだけを願った。|{a}は相手の機嫌をうかがうことに、すっかり慣れてしまった。|{a}は、いつか誰かが迎えに来てくれると信じていた。'),
+      cool: L('{a}は閉じ込められた部屋で、逃げ道を探し続けた。|{a}は相手の行動の癖を、ひとつ残らず覚えていった。|{a}は感情を殺し、時を待った。'),
+      free: L('{a}は閉じ込められた部屋で、壁に落書きをして日々をやり過ごした。|{a}の明るさは、閉ざされた日々の中で少しずつ失われた。|{a}は外の風の匂いを、何度も夢に見た。'),
+      shy: L('{a}は閉じ込められた部屋の隅で、小さくなって過ごした。|{a}は声を上げることもできず、ただ扉の音に怯えていた。|{a}は、外にいる誰かの名前を、毎晩そっと呼んだ。'),
+      polite: L('{a}は閉じ込められたまま、礼儀正しさだけは決して手放さなかった。|{a}は丁寧な言葉で、毎日同じお願いを繰り返した。|{a}は静かに、自分が誰であったかを忘れないようにしていた。')
+    },
+    fallen: {
+      proud: L('{a}はすっかり牙を抜かれ、かつての強気は見る影もなかった。|{a}は、あの日々を忘れられなくなったことを、誰にも言えなかった。|{a}は強がりを言いかけては、途中でやめるようになった。'),
+      stern: L('{a}が守ってきた規律は、あの日を境に崩れたままだった。|{a}は自分を律する言葉を、もう思い出せなかった。|{a}はかつての自分を恥じながら、それでも元には戻れなかった。'),
+      tsun: L('{a}はもう、意地を張ることさえしなくなった。|{a}は「違う」と言いかけては、黙ってうつむいた。|{a}の素直さは、望んだのとは違う形で手に入ってしまった。'),
+      gentle: L('{a}は穏やかに微笑んだまま、どこか遠くを見るようになった。|{a}は、あの日々のことを、懐かしむような目で語った。|{a}の柔らかさは、前とは違う色を帯びていた。'),
+      devoted: L('{a}は尽くす相手を、すっかり取り違えてしまっていた。|{a}は今も、あの声に呼ばれるのを待っている。|{a}は、自分が何を望んでいるのか分からなくなっていた。'),
+      cool: L('{a}は自分に何が起きたのかを分析しようとして、そのたびに考えるのをやめた。|{a}の冷静さは、ある一点でだけ、もう働かなくなっていた。|{a}は理屈では割り切れないものを、抱えたまま生きることにした。'),
+      free: L('{a}はあの日々を、むしろ楽しかったと笑って話した。|{a}は前よりずっと奔放になり、周りを戸惑わせた。|{a}は、もう一度あの場所に行きたいと、こっそり口にした。'),
+      shy: L('{a}は、あの日々のことを思い出しては、ひとりで顔を赤くしていた。|{a}は前よりもっと無口になり、何かを隠すように過ごした。|{a}は、誰にも言えない秘密をひとつ抱えて生きることになった。'),
+      polite: L('{a}は変わらず丁寧な言葉を使ったが、その目は前とは違っていた。|{a}は「もう、元には戻れません」と、静かに微笑んだ。|{a}は品のよさを保ったまま、あの日々の名残りを抱えていた。')
+    }
+  };
+  /* 関係の結び（{b}＝相手） */
+  var REL = {
+    with: L('隣には、いつも{b}がいた。|{b}と並んで歩く姿が、よく見かけられた。|{b}とは、今も変わらず一緒にいる。'),
+    lost: L('{b}のいない日々に、まだ慣れることはできなかった。|ふとした瞬間に、{b}の名前を呼びそうになった。|{b}の分まで生きる――それだけを支えにしていた。'),
+    deadWith: L('{b}は、今も{a}のことを想い続けている。|{b}は{a}の残したものを、何ひとつ捨てられなかった。|{b}は毎年、{a}を想う日を一日だけ作った。')
+  };
+  /* 気分の結び（一人のとき。気分の最終値から） */
+  var MOOD = {
+    calm: L('日々は静かに、元の形を取り戻した。|何もかもが、穏やかに過ぎていった。|それで十分だと、{a}は思った。'),
+    joy: L('思い出すたびに、自然と笑みがこぼれた。|その顔は、いつも晴れやかだった。|楽しかった――それが、いちばん素直な感想だった。'),
+    grief: L('ただ、ときどき遠くを見る目をした。|心の傷が癒えるには、まだ時間がかかりそうだった。|笑えるようになるまで、長い時間がかかった。'),
+    fear: L('夜中にふと目を覚ます癖だけは、抜けなかった。|物音に振り返る癖が、しばらく残った。|安心して眠れるようになるまで、少し時間がかかった。'),
+    anger: L('許せないことが、ひとつだけ残っていた。|あのときの悔しさは、まだ消えていなかった。|胸の中の怒りを、うまく手放せずにいた。'),
+    shame: L('あのときの自分を、まだ少し恥じていた。|思い出すと、今でも顔が熱くなった。|自分のしたことを、誰にも打ち明けられずにいた。')
+  };
+  /* 組ごと（{a}{b}。片想いは {x}→{y}） */
+  var PAIR = {
+    love: L('{a}と{b}は、その後も並んで歩いていた。|{a}と{b}は、あの日のことを二人だけの思い出にした。|{a}と{b}は、今も変わらず互いの隣にいる。'),
+    pining: L('{a}と{b}は、その後も互いの言葉を待ち続けた。|{a}と{b}は、何度目かに会ったとき、ようやく同じことを言いかけた。|{a}と{b}の距離は、近いまま、まだ縮まりきらなかった。'),
+    oneway: L('{x}は、{y}への想いをそっと抱えたまま過ごした。|{x}は今も、{y}の姿を目で追ってしまう。|{x}の想いが{y}に届く日が来るのかは、まだ分からない。'),
+    night: L('{a}と{b}は、名前のない関係のまま、ときどき会った。|{a}と{b}は、あの夜のことに触れないまま、それでも連絡を絶たなかった。|{a}と{b}の関係に名前がつくのは、もう少し先のことになりそうだった。'),
+    apart: L('{a}と{b}は、別々の道を歩き始めた。|{a}と{b}は、すれ違っても会釈だけで済ませるようになった。|{a}と{b}が元に戻ることは、なかった。'),
+    rival: L('{a}と{b}は、顔を合わせるたびに火花を散らした。|{a}と{b}は、互いを意識しながら、決して歩み寄らなかった。|{a}と{b}の因縁は、まだ終わっていなかった。'),
+    friend: L('{a}と{b}は、その後も気の置けない仲だった。|{a}と{b}は、困ったときに真っ先に連絡し合う仲になった。|{a}と{b}は、ときどき集まっては、あの日々の話をした。'),
+    obsess: L('{a}と{b}の関係は、どこか歪んだまま続いた。|{a}と{b}は、離れようとしても、結局また引き寄せられた。|{a}と{b}のあいだにあるものを、周りの誰も言い当てられなかった。')
+  };
+  var PAIR_TINT = {
+    joy: L('二人とも、よく笑うようになった。|二人の笑い声が、よく聞こえた。'),
+    grief: L('二人のあいだには、まだ消えない悲しみがあった。|二人とも、失ったもののことは口にしなかった。'),
+    anger: L('二人のあいだのわだかまりは、すぐには消えなかった。|ときどき、言葉がとげを帯びた。'),
+    fear: L('二人とも、あの日の怖さをまだ忘れられずにいた。|二人は、互いが無事であることを何度も確かめ合った。'),
+    shame: L('二人とも、あのときのことになると目をそらした。|二人は、あの日のことを笑い話にはできずにいた。')
+  };
+  var LABEL_G = { lovers: 'love', bonded: 'love', fatedmate: 'love', mated: 'love', pining: 'pining', oneway: 'oneway', night: 'night', vague: 'night', fwbsettle: 'night', breakup: 'apart', fwbend: 'apart', allybreak: 'apart', rivals: 'rival', dislike: 'rival', kinfeud: 'rival', lovehate: 'rival', awkward: 'apart', friends: 'friend', partners: 'friend', kinbond: 'friend', accomplice: 'friend', guard: 'friend', obsess: 'obsess' };
+  var CLS_G = { love: 'love', pine: 'pining', night: 'night', enemy: 'rival', partner: 'friend', friend: 'friend', guard: 'friend', obsess: 'obsess' };
+  X.AF = AF; X.REL = REL; X.MOOD = MOOD; X.PAIR = PAIR;
+  var GONE = /連れ去|行方不明|神隠し|消えた|取り残|流され|姿をくらま|逃亡|逮捕|取り押さえ|濡れ衣/, CAGED = /監禁|囚われ|閉じ込め|幽閉/, FALLEN = /堕ち|陥落|虜|巫女になった|従者|眷属|堕とされ/, ESC = /脱出|救助|生還|帰還|逃げ延び|街を出|島を出|抜け出|助けを呼びに|イカダ|生き延び/;
+  function fateCat(c) {
+    var f = String(c.fate || '');
+    if (c.alive === false) return 'dead';
+    if (c.caged || CAGED.test(f)) return 'caged';
+    if (FALLEN.test(f)) return 'fallen';
+    if (GONE.test(f)) return '';
+    if (ESC.test(f)) return 'escape';
+    return 'live';
+  }
+  X.fateCat = fateCat;
+  function topMood(e, th) {
+    if (!e) return 'calm';
+    var best = 'calm', bv = th;
+    ['joy', 'grief', 'fear', 'anger', 'shame', 'lust'].forEach(function (k) { if (k === 'lust' && safe()) return; if (e[k] != null && e[k] >= bv) { bv = e[k]; best = k; } });
+    return best;
+  }
+  function fill(t, m) { return String(t).replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
+  /* 関係：恋人がいる（with）／失った（lost）／一人（alone） */
+  function relOf(res, c) {
+    var C = res.chars || [];
+    if (c.lossOf != null && C[c.lossOf] && C[c.lossOf].alive === false) return { k: 'lost', b: C[c.lossOf] };
+    var lov = null, lost = null;
+    (res.pairs || []).forEach(function (p) {
+      if (p.a !== c.i && p.b !== c.i) return;
+      var o = C[p.a === c.i ? p.b : p.a], g = LABEL_G[p.label] || CLS_G[p.cls];
+      if (!o) return;
+      if (g === 'love' || (p.tie && /^(?:lover|spouse|mate|fated)$/.test(p.tie.type) && g !== 'apart' && g !== 'rival')) { if (o.alive === false) lost = lost || o; else if (/^(?:live|escape)$/.test(fateCat(o))) lov = lov || o; }
+      else if (o.alive === false && (g === 'pining' || (g === 'oneway' && p.dir === c.i))) lost = lost || o;
+    });
+    if (lov) return { k: 'with', b: lov };
+    if (lost) return { k: 'lost', b: lost };
+    return { k: 'alone', b: null };
+  }
+  X.after = function (res, c, used) {
+    if (!res || !c) return '';
+    var fc = fateCat(c);
+    if (!fc) return '';
+    var a = att(c), seed = String(res.seed != null ? res.seed : ''), p = PLACE[res.scenId] || 'あの場所';
+    var base = pickU(AF[fc][a], seed + '|' + c.name + '|' + fc, used), rel = relOf(res, c), tail = '';
+    var m = { a: c.name, p: p, b: rel.b ? rel.b.name : '' };
+    if (fc === 'dead') { if (rel.k === 'with') tail = pickU(REL.deadWith, seed + c.name + 'dw', used); }
+    else if (fc === 'live' || fc === 'escape') {
+      if (rel.k === 'lost') tail = pickU(REL.lost, seed + c.name + 'l', used);
+      else if (rel.k === 'with') tail = pickU(REL.with, seed + c.name + 'w', used);
+      else {
+        var md = topMood(c.emo, 20);
+        if (md === 'lust') tail = HK.Emo && HK.Emo.AFTER_LUST ? pickU(HK.Emo.AFTER_LUST, seed + c.name + 'm', used) : '';
+        else if (md !== 'calm' || !(res.chars || []).some(function (o) { return o.alive === false; })) tail = pickU(MOOD[md] || MOOD.calm, seed + c.name + 'm', used);
+      }
+    }
+    return fill(base + tail, m);
+  };
+  X.pairAfter = function (res, p, used) {
+    var C = res.chars || [], A = C[p.a], B = C[p.b];
+    if (!A || !B) return '';
+    var g = LABEL_G[p.label] || CLS_G[p.cls];
+    if (!g || !PAIR[g]) return '';
+    var seed = String(res.seed != null ? res.seed : ''), x = p.dir === p.b ? B : A, y = x === A ? B : A;
+    var t = pickU(PAIR[g], seed + '|' + A.name + B.name + g, used);
+    var ma = topMood(A.emo, 25), mb = topMood(B.emo, 25), tint = '';
+    var tk = ma === 'grief' || mb === 'grief' ? 'grief' : ma === 'anger' || mb === 'anger' ? 'anger' : ma === 'fear' || mb === 'fear' ? 'fear' : ma === 'shame' && mb === 'shame' ? 'shame' : ma === 'joy' && mb === 'joy' ? 'joy' : '';
+    if (tk && PAIR_TINT[tk]) tint = pickU(PAIR_TINT[tk], seed + A.name + B.name + tk, used);
+    return fill(t + tint, { a: A.name, b: B.name, x: x.name, y: y.name });
+  };
+  var MAXL = 8;
+  /* E.lines にすでにある「〇〇のその後――」「〇〇と〇〇のその後――」の人 */
+  function covered(res, E) {
+    var C = res.chars || [], done = {};
+    var byName = {};
+    C.forEach(function (c) { byName[c.name] = c.i; if (c.afterDone || /その後は「/.test(c.fateNote || '')) done[c.i] = 1; });
+    (E.lines || []).forEach(function (l) {
+      if (typeof l !== 'string') return;
+      var m = l.match(/^(.+?)のその後――/);
+      if (!m) return;
+      var who = m[1];
+      if (byName[who] != null) { done[byName[who]] = 1; return; }
+      C.forEach(function (c) { if (who.indexOf(c.name) >= 0) done[c.i] = 1; });
+    });
+    return done;
+  }
+  X.build = function (res, E) {
+    if (!res || !E || !Array.isArray(E.lines) || !Array.isArray(res.chars) || res.solo) return E;
+    try {
+      var C = res.chars, done = covered(res, E), out = [], used = {};
+      /* 組ごと：両方が生きている恋人・強い関係（強さの順に、恋人は優先） */
+      var pairs = (res.pairs || []).filter(function (p) {
+        var A = C[p.a], B = C[p.b];
+        return A && B && A.alive !== false && B.alive !== false && !done[p.a] && !done[p.b] && (LABEL_G[p.label] || CLS_G[p.cls]);
+      }).sort(function (x, y) { var lx = (LABEL_G[x.label] || CLS_G[x.cls]) === 'love' ? 1 : 0, ly = (LABEL_G[y.label] || CLS_G[y.cls]) === 'love' ? 1 : 0; return (ly - lx) || (y.intensity - x.intensity); });
+      var np = 0;
+      pairs.forEach(function (p) {
+        if (done[p.a] || done[p.b] || out.length >= MAXL) return;
+        var g = LABEL_G[p.label] || CLS_G[p.cls];
+        if (g !== 'love' && np >= 2) return;
+        var t = X.pairAfter(res, p, used);
+        if (!t) return;
+        done[p.a] = done[p.b] = 1; np++;
+        out.push(C[p.a].name + 'と' + C[p.b].name + 'のその後――' + t);
+      });
+      /* 一人ずつ：亡くなった人を先に */
+      var rest = C.filter(function (c) { return !done[c.i]; });
+      rest.sort(function (x, y) { return (x.alive === false ? 0 : 1) - (y.alive === false ? 0 : 1) || x.i - y.i; });
+      rest.forEach(function (c) {
+        if (out.length >= MAXL) return;
+        var t = X.after(res, c, used);
+        if (t) { out.push(c.name + 'のその後――' + t); c.afterDone = true; }
+      });
+      out.forEach(function (l) { E.lines.push(l); });
+      /* 最期の言葉（口調の仕上げを通った、住人の覚え書きの行から） */
+      var last = [];
+      C.forEach(function (c) {
+        if (!c.lastWords) return;
+        var nt = (c.notes || []).filter(function (n) { return typeof n === 'string' && n.indexOf('最期の言葉：') === 0; })[0];
+        last.push({ i: c.i, name: c.name, text: nt ? nt.slice(6) : c.lastWords, at: c.deathLabel || '' });
+      });
+      if (last.length) {
+        var order = {};
+        (res.log || []).forEach(function (e, n) { if (e && e.kind === 'death' && e.actors && order[e.actors[0]] == null) order[e.actors[0]] = n; });
+        last.sort(function (x, y) { return (order[x.i] == null ? 1e9 : order[x.i]) - (order[y.i] == null ? 1e9 : order[y.i]); });
+        E.last = last;
+      }
+    } catch (e) { /* 後日談の組み立てに失敗しても、結末は出す */ }
+    return E;
+  };
+  X.html = function (E, res, paint) {
+    if (!E || !E.last || !E.last.length) return '';
+    var esc = HK.escape || function (s) { return String(s); }, P = paint || function (t) { return esc(t); };
+    return '<div class="elast"><div class="eyebrow" style="margin-top:12px">最期の言葉</div><ul class="elines">' +
+      E.last.map(function (x) { return '<li>' + (x.at ? '<span class="nums" style="color:var(--muted)">' + esc(x.at) + '</span>　' : '') + P(x.text, res) + '</li>'; }).join('') + '</ul></div>';
+  };
+
+  /* ---------- 物語型（HK.Story.result から） ---------- */
+  var STORY_LW = { jashin: 1, yakata: 1, ship: 1, jinro: 1 };
+  function storyAddressee(S, p, input) {
+    var P = S.P, live = function (q) { return q && q !== p && q.alive !== false && !q.out && !q.gone && !q.taken; };
+    var ts = (input && input.ties) || [];
+    for (var k = 0; k < ts.length; k++) {
+      var t = ts[k];
+      if (!/^(?:lover|spouse|mate|fated)$/.test(t.type)) continue;
+      var o = t.a === p.i ? P[t.b] : t.b === p.i ? P[t.a] : null;
+      if (live(o)) return o;
+    }
+    if (p.honmei != null && live(P[p.honmei])) return P[p.honmei];
+    for (k = 0; k < ts.length; k++) { var t2 = ts[k]; if (t2.type === 'yan' && t2.a === p.i && live(P[t2.b])) return P[t2.b]; }
+    if (S.bondFn) {
+      var best = null, bv = 0.55;
+      P.forEach(function (q) { if (!live(q)) return; var v = 0; try { v = S.bondFn(S, p, q); } catch (e) { v = 0; } if (v > bv) { bv = v; best = q; } });
+      return best;
+    }
+    return null;
+  }
+  function storyRel(S, p, input) {
+    var P = S.P, ts = (input && input.ties) || [], lov = null, lost = null;
+    ts.forEach(function (t) {
+      if (!/^(?:lover|spouse|mate|fated)$/.test(t.type)) return;
+      var o = t.a === p.i ? P[t.b] : t.b === p.i ? P[t.a] : null;
+      if (!o || o === p) return;
+      if (o.alive === false) lost = lost || o; else if (/^(?:live|escape)$/.test(fateCat({ alive: true, fate: o.fate || '', caged: !!o.bound }))) lov = lov || o;
+    });
+    return lov ? { k: 'with', b: lov } : lost ? { k: 'lost', b: lost } : { k: 'alone', b: null };
+  }
+  X.story = function (S, res, input) {
+    if (!S || !res || !S.scen) return;
+    if (HK.Emo && HK.Emo.storySummary) HK.Emo.storySummary(S, res);
+    if (res.heroes && S.P) S.P.forEach(function (p, k) { if (p && p.alive === false && res.heroes[k]) res.heroes[k].dead = true; });
+    if (!STORY_LW[S.scen.id] || !res.ending || !Array.isArray(res.ending.lines)) return;
+    try {
+      var P = S.P, key0 = P.map(function (p) { return p.name; }).join(',') + '|' + (input && input.seed);
+      var dead = P.filter(function (p) { return p && p.alive === false; });
+      dead.sort(function (x, y) { return (x._emoDeathN == null ? 1e9 : x._emoDeathN) - (y._emoDeathN == null ? 1e9 : y._emoDeathN); });
+      var lastL = [];
+      dead.forEach(function (p) {
+        var how = (p.how || '') + ' ' + (p.fate || ''), kind = P_kind(how, null), to = storyAddressee(S, p, input);
+        var q = compose(p, kind, to, null, key0 + '|' + p.name);
+        p.lastWords = p.name + '「' + q + '」';
+        var line = p.name + 'が最期に遺した言葉：「' + q + '」';
+        if (p._emoDeathN != null && S.log[p._emoDeathN] && typeof S.log[p._emoDeathN].text === 'string' && hash(key0 + '|lw|' + p.i) < 0.6) S.log[p._emoDeathN].text += '　――' + line;
+        if (lastL.length < 3) lastL.push(line);
+        var h = res.heroes && res.heroes[p.i];
+        if (h) h.lastWords = p.lastWords;
+      });
+      lastL.forEach(function (l) { res.ending.lines.push(l); });
+      /* 一人ずつの「その後」（結末の行にもう「〇〇のその後」がある人は飛ばす） */
+      var done = {};
+      res.ending.lines.forEach(function (l) { if (typeof l !== 'string') return; var m = l.match(/^(.+?)のその後――/); if (m) P.forEach(function (p) { if (m[1].indexOf(p.name) >= 0) done[p.i] = 1; }); });
+      var fake = { scenId: S.scen.id, seed: input && input.seed, chars: [], pairs: [] };
+      var used = {}, n = 0, order = P.slice().sort(function (x, y) { return (x.alive === false ? 0 : 1) - (y.alive === false ? 0 : 1) || x.i - y.i; });
+      order.forEach(function (p) {
+        if (!p || done[p.i] || n >= MAXL) return;
+        var c = { i: p.i, name: p.name, persona: p.persona, tone: p.tone, fate: p.fate || '', alive: p.alive !== false && !p.dead, emo: p.emo || null, caged: !!p.bound };
+        var fc = fateCat(c);
+        if (!fc) return;
+        var a = att(c), seed = String(fake.seed != null ? fake.seed : ''), pl = PLACE[fake.scenId] || 'あの場所', rel = storyRel(S, p, input);
+        var base = pickU(AF[fc][a], seed + '|' + c.name + '|' + fc, used), tail = '';
+        if (fc === 'dead') { if (rel.k === 'with') tail = pickU(REL.deadWith, seed + c.name + 'dw', used); }
+        else if (fc === 'live' || fc === 'escape') {
+          if (rel.k === 'lost') tail = pickU(REL.lost, seed + c.name + 'l', used);
+          else if (rel.k === 'with') tail = pickU(REL.with, seed + c.name + 'w', used);
+          else { var md = topMood(c.emo, 20); tail = md === 'lust' ? (HK.Emo && HK.Emo.AFTER_LUST ? pickU(HK.Emo.AFTER_LUST, seed + c.name + 'm', used) : '') : md !== 'calm' || !dead.length ? pickU(MOOD[md] || MOOD.calm, seed + c.name + 'm', used) : ''; }
+        }
+        res.ending.lines.push(c.name + 'のその後――' + fill(base + tail, { a: c.name, p: pl, b: rel.b ? rel.b.name : '' }));
+        n++;
+      });
+    } catch (e) { /* 後日談の組み立てに失敗しても、結末は出す */ }
   };
 })();
 ;/* ==== js/island-after.js ==== */
@@ -34349,6 +35263,7 @@
       function (ctx, a, b) {
         var pf = ctx.pair(a, b), c = rivalOf(ctx, a, b), lock = !couple(ctx, b, c) && b.lock === c.i, m = { a: a.name, b: b.name, c: c.name };
         pf.hbNews = ctx.stepIndex; pf.hbBy = c.i;
+        if (HK.Emo) HK.Emo.bump(ctx, a, { grief: 30, shame: 12 }, '失恋');   /* 気分（emotion.js） */
         ctx.stress(a, 18); ctx.mod2(a, b, { att: -8 }, {}); ctx.mod(a, c, { ten: 8 });
         return { text: fill(ctx.pick(lock ? D.lockNews : sc(ctx, D.news)), m), why: a.name + 'は' + b.name + 'を想っていた（惹かれ ' + Math.round(ctx.R(a, b).att + 8) + '）。' + (lock ? b.name + 'の心は、' + c.name + 'にしか向いていない（恋愛相手の固定）' : b.name + 'は' + c.name + 'と恋人になった') + '――失恋', mag: 30, with: [b, c] };
       }),
@@ -38077,6 +38992,7 @@
     }).join('');
     return '<article class="ccard"><div class="hd">' + av(res, c.i, 40, c.alive === false ? 'gone' : '') + '<span class="nm">' + esc(c.name) + '</span><span class="fate ' + fateCls(c.fate) + '">' + esc(c.fate) + '</span></div>' +
       (c.fateNote ? '<div class="sub">' + paint(c.fateNote, res) + '</div>' : '') +
+      (HK.Emo && HK.Emo.html ? HK.Emo.html(c) : '') +
       '<div class="sub">' + esc(c.type) + '　初動「' + esc(c.action) + '」　目標「' + esc(c.goal) + '」' + (stats ? '　' + esc(stats) : '') + (c.weapon ? '　武器「' + esc(c.weapon) + '」' : '') + '</div>' +
       '<ul>' + tieNotes(c, res).concat(c.notes).map(function (t) { return '<li>' + paint(t, res) + '</li>'; }).join('') + '</ul>' + odd + '</article>';
   }
@@ -38192,7 +39108,8 @@
     var E = HK.Endings.build(res);
     return '<section class="ending" aria-label="結末"><div class="eyebrow">結末</div><p class="ehead">' + paint(E.headline, res) + '</p>' +
       (E.stats.length ? '<dl class="estats">' + E.stats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(s[1]) + '</dd></div>'; }).join('') + '</dl>' : '') +
-      (E.lines.length ? '<ul class="elines">' + E.lines.map(function (l) { return '<li>' + paint(l, res) + '</li>'; }).join('') + '</ul>' : '') + (E.after || '') + '</section>';
+      (E.lines.length ? '<ul class="elines">' + E.lines.map(function (l) { return '<li>' + paint(l, res) + '</li>'; }).join('') + '</ul>' : '') +
+      (HK.Epilogue && HK.Epilogue.html ? HK.Epilogue.html(E, res, paint) : '') + (E.after || '') + '</section>';
   }
 
   /* ---------- 派閥 ---------- */
@@ -38248,6 +39165,7 @@
       L.push(E.headline);
       if (E.stats.length) L.push(E.stats.map(function (s) { return s[0] + ' ' + s[1]; }).join('／'));
       E.lines.forEach(function (l) { L.push('・' + l); });
+      (E.last || []).forEach(function (x) { L.push('・最期の言葉　' + x.text); });
     }
     L.push('');
     L.push('■ 住人の結末');
@@ -38517,6 +39435,7 @@
     if (o.text && o.text.indexOf('「＠') >= 0) o.text = o.text.replace(/「＠/g, '「\u2060');
     o.n = S.log.length; o.label = S.label; o.kind = o.kind || 'event';
     o.actors = (o.actors || []).map(function (p) { return typeof p === 'number' ? p : p.i; });
+    if (HK.Emo && HK.Emo.story) HK.Emo.story(S, o);   /* 気分（emotion.js） */
     S.log.push(o);
     return o;
   };
@@ -38600,6 +39519,7 @@
     res.chars = S.P.map(function (p) { return { name: p.name, i: p.i, alive: true }; });
     res.outcome = o.ending.title;
     res.summary = o.summary || o.ending.title;
+    if (HK.Epilogue && HK.Epilogue.story) HK.Epilogue.story(S, res, input);   /* 最期の言葉・その後（epilogue.js） */
     return res;
   };
 
@@ -38626,7 +39546,7 @@
   function card(res, h) {
     var last = res.hist.length ? res.hist[res.hist.length - 1].v[h.i] || [] : [];
     return '<article class="ccard"><div class="hd">' + av(res, h.i, 40) + '<span class="nm">' + esc(h.name) + '</span>' + (h.role ? '<span class="chip">' + esc(h.role) + '</span>' : '') + (h.fate ? '<span class="fate mid">' + esc(h.fate) + '</span>' : '') + '</div>' +
-      chart(res, h) + '<div class="sparkleg">' + res.meters.map(function (m, k) { return '<span style="color:var(' + m.color + ')">― ' + esc(m.label) + ' ' + (last[k] != null ? last[k] + (m.unit || '') : '') + '</span>'; }).join('') + '</div>' +
+      chart(res, h) + (HK.Emo && HK.Emo.html ? HK.Emo.html(h) : '') + '<div class="sparkleg">' + res.meters.map(function (m, k) { return '<span style="color:var(' + m.color + ')">― ' + esc(m.label) + ' ' + (last[k] != null ? last[k] + (m.unit || '') : '') + '</span>'; }).join('') + '</div>' +
       (h.notes && h.notes.length ? '<ul>' + h.notes.map(function (t) { return '<li>' + paint(t, res) + '</li>'; }).join('') + '</ul>' : '') + '</article>';
   }
   function table(res) {
@@ -63797,6 +64717,7 @@
       d.headline = plain(B.headline);
       d.stats = (B.stats || []).map(function (s) { return [plain(s[0]), plain(s[1])]; });
       d.lines = (B.lines || []).map(plain).filter(function (l) { return l.indexOf('主な関係：') !== 0; });
+      if (B.last && B.last.length) d.lines = d.lines.concat(B.last.slice(0, 2).map(function (x) { return plain('最期の言葉　' + x.text); }));
       d.pairs = (res.pairs || []).filter(function (p) { return p.label !== 'strangers'; }).slice(0, 8).map(function (p) { return { who: [p.a, p.b], text: names[p.a] + ' × ' + names[p.b] + '　' + plain(p.name) }; });
     }
     return d;
@@ -66522,6 +67443,7 @@
       /* 全年齢版は、その場で引き止めるだけ（閉じ込めたまま日が過ぎることはない） */
       if (safe) { s.climax = null; s.lv = clamp(s.lv - 12, 0, 100); }
       else { s.cage = { from: ctx.stepIndex, n: 0 }; pf.captive = { by: a.i }; a.flags.cagePair = b.i; b.flags.cagePair = a.i; b.flags.caged = a.i; }
+      if (HK.Emo) { HK.Emo.bump(ctx, b, { fear: safe ? 25 : 45 }, a.name + 'の執着'); HK.Emo.bump(ctx, a, safe ? { anger: 15 } : { lust: 25, anger: 10 }); }   /* 気分（emotion.js）：閉じ込められた側は恐れ、執着する側は火照り（R18版だけ） */
       ctx.mod(b, a, { ten: 20, trust: -12 }); ctx.stress(b, 20);
       return { with: [b], cat: 'conflict', text: F(ctx, T(ctx, safe ? 'cage_s' : 'cage'), a, b), why: why(ctx, a, b, s) + '。執着が暴走した', mag: 45 };
     }
@@ -67436,6 +68358,7 @@
         else {
           if (cur) { l.others = cur.others.concat([cur.name]); l.lv = l.lv0 = Math.min(100, lv + 8); l.calm = cur.calm; l.crashAt = cur.crashAt; l.broke = cur.broke; if (!l.dev && cur.dev) { l.dev = cur.dev; } }
           o.flags.loss = l;
+          if (HK.Emo) HK.Emo.bump(ctx, o, { grief: Math.min(30, lv * 0.3) }, v.name + 'を失った');   /* 気分（emotion.js） */
         }
         addStress(o, lv * (type === 'flat' ? 0.25 : type === 'hold' ? 0.4 : 0.5) + (l.dev ? 15 : 0));
         if (o.flags.grief == null) o.flags.grief = v.i;
