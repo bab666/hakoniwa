@@ -158,12 +158,14 @@
   function canAct(S, a, b) {
     if (!a || !b || a === b) return false;
     if (HK.Pos && !HK.Pos.okSex(a, b)) return false;
-    if (HK.ngPair && HK.ngPair(a, b)) return false;
+    if (HK.ngPair && HK.ngPair(a, b) && !freeOk(S, a, b)) return false;
     if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
-    if (!okLove(a, b) || noLoveTie(S, a, b)) return false;
+    /* 恋愛相手を固定し、性行為の相手を「誰とでも可」にした人と、固定外の相手（HK.State.freeSex。free-sex.js）は、恋愛（HK.canLove）を見ずに体の関係だけ */
+    if (!(okLove(a, b) || freeOk(S, a, b)) || noLoveTie(S, a, b)) return false;
     if (!HK.SAFE_ON && !(HK.State.r18ok(a) && HK.State.r18ok(b))) return false;
     return true;
   }
+  function freeOk(S, a, b) { return !!(HK.State.freeSex && HK.State.freeSex(S, a, b)); }
   LK.crowdOk = canAct;
   /* a が b を想っている（関係の恋人・片想いなど、またはこの回だけの「気になる相手」）。恋愛は両方向で通る組だけ */
   function interest(S, a, b) {
@@ -622,6 +624,9 @@
       if (loyal(S, a, b)) urge -= desperate(a) ? 0.05 : 0.25;
       if (urge < 0.36 + rng() * 0.3) continue;
       if (!canAct(S, a, b)) { holdPair(S, a, b, whyNot(S, a, b)); return; }
+      /* 体だけの関係の組：固定した恋人が同じロッカーにいれば手を出しにくい（×0.3） */
+      var fr = freeOk(S, a, b);
+      if (fr && Lk.m.some(function (q) { return q !== a && q !== b && (q.i === a.lock || q.i === b.lock); }) && rng() > 0.3) continue;
       var lvMax = Math.min(LK.MAXLV || 4, 4);
       if (a.bound && b.bound) lvMax = Math.min(lvMax, 1);
       var lv = Math.min(Lk.lv + (relW(S, a, b, 'acc') >= 0.45 && Lk.lv >= 0 && rng() < 0.5 ? 2 : 1), lvMax);
@@ -675,8 +680,13 @@
       }
       if (lv === 4) { tp.m.plea = Math.min(tp.m.plea, 55); bt.m.plea = Math.min(bt.m.plea, 60); }
       if (bt.m.plea >= 100 && lv < 4) { if (hardTop(bt)) bt.m.plea = 95; else { t += moan(S, bt, false, md, eroNow) + climaxBy(S, bt, tp, false); bumpClimax(bt); } }
-      ST.sayB(S, { actors: [a, b], tag: actLabel(Lk, lv), text: t, why: a.name + 'が「' + actLabel(Lk, lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた' : resp === 'accept' ? '乗った' : '流された') + '（ロッカー' + Lk.n + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(Lk, lv), lv >= 3);
+      /* 体だけの関係：最初に手を出したときに「恋ではない」一文（free-sex.js） */
+      /* 札も恋愛の札（キス・口づけ）にしない（恋愛の出来事として数えない） */
+      var ld = fr && !Lk.freeLed ? HK.FreeSex.lead(S, a, b) : '';
+      var said = ST.sayB(S, { actors: [a, b], tag: fr ? '体だけ・' + actLabel(Lk, lv).replace(/キス|口づけ/g, '唇') : actLabel(Lk, lv), text: ld + t, why: (fr ? HK.FreeSex.why(a, b) + '／' : '') + a.name + 'が「' + actLabel(Lk, lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた' : resp === 'accept' ? '乗った' : '流された') + '（ロッカー' + Lk.n + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(Lk, lv), lv >= 3);
+      if (ld && said) Lk.freeLed = true;
       if (lv === 4 && !Lk.keySex) { Lk.keySex = true; var o2 = S.log[S.log.length - 1]; if (o2) ST.key(S, o2, 'ロッカー' + Lk.n + 'で' + (ff ? '肌を重ねた' : '繋がった')); }
+      if (fr && lv === 4 && !Lk.freeMark) { Lk.freeMark = true; HK.FreeSex.mark(S, a, b); HK.FreeSex.jealous(S, a, b); }
       return;
     }
   }

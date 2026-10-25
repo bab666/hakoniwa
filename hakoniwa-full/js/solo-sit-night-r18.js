@@ -39,6 +39,8 @@
       osana: L('「……子どもの頃から、隣にいるのが当たり前だったのにね」{a}が笑うと、{b}も少しだけ笑った。それから、どちらも黙った。|{a}は{b}の髪に触れた。小さい頃、何度も寝癖を直してやった髪だった。今夜は、その指が離れなかった。|幼馴染の顔だと思っていた。間近で見た{b}の目は、知らない熱を帯びていた。{a}は、もう引き返せなかった。'),
       /* 吊り橋：恐怖と興奮を取り違えたまま、恋人でも何でもない二人が求め合う（吹雪の館の「吊り橋」と同じ考え方） */
       bridge: L('物音ひとつにも身をすくめながら、{a}と{b}は息を殺して抱き合っていた。静けさが戻っても、どちらも腕をほどかなかった。心臓がうるさいのは、さっきの恐怖のせいなのか、目の前の相手のせいなのか、もう分からなかった。|「……震えが、止まらない」――{b}がそう言うと、{a}は黙って{b}の手を取った。握り返された指の熱さに、{a}の方が先に息を呑んだ。生きている、と確かめたいだけのはずだった。|{a}と{b}は、ついさっきまでろくに話したこともなかった。それでも、{spot}で肩を寄せ合っているうちに、震えは別の熱に変わっていった。どちらから唇を寄せたのかは、覚えていない。|「……今夜だけ、そばにいて」{b}の声はかすれていた。{a}は答える代わりに、{b}を引き寄せた。怖さを紛らわせたいのか、触れたいのか、自分でももう区別がつかなかった。'),
+      /* 体だけの関係：恋愛相手を固定し、性行為の相手を「誰とでも可」にした人と、固定外の相手（HK.State.freeSex。free-sex.js） */
+      free: L('{a}は{b}の手首を掴んだ。「……今夜だけ。気持ちの話はしない」{b}は黙って頷いた。|互いに求めているのが体温だけだと、二人とも分かっていた。{a}は何も言わずに、{b}の肩を引き寄せた。|{a}は「恋人の真似はしない」と短く言って、{b}の服に手をかけた。{b}は笑いもせず、その手を受け入れた。'),
       new: L('どちらから手を伸ばしたのか、あとになっても二人は思い出せなかった。|{a}と{b}の目が合った。昼間なら、すぐに逸らしていたはずの視線だった。|「……変だよね、こんなときに」{a}が呟くと、{b}は「こんなときだからだ」と答えて、そっと唇を重ねた。')
     },
     after: {
@@ -56,10 +58,11 @@
       mentor: L('翌朝、{a}は{b}にいつもどおりの指示を出した。ただ、その声は昨日までより、ずっと柔らかかった。|{b}は{a}の背中を見つめていた。守られるだけではなく、守りたいと思った。|朝、{a}は何も言わずに{b}の髪をくしゃりと撫でた。昨日までより、少しだけ長く。'),
       osana: L('朝、{a}と{b}はいつもの調子で軽口を叩き合った。ただ、目が合うたびに、二人とも少しだけ黙った。|「……今さら、どんな顔すればいいの」{b}がぼやくと、{a}は「いつもの顔でいい」と笑って、{b}の手を取った。|幼馴染という言葉では、もう足りなかった。{a}は朝の光の中で、{b}の横顔をしばらく見つめていた。'),
       bridge: L('朝の光の中で、{a}と{b}は気まずそうに目を逸らした。あれは怖かったからだ、と二人とも自分に言い聞かせていた。それなのに、{a}が少し離れるたびに、{b}の目はその背中を追っていた。|翌朝、{b}は「……昨夜のは、吊り橋みたいなものだよね」と笑ってみせた。{a}も「だな」と頷いた。どちらの笑顔も、少しだけぎこちなかった。|{a}は、昨夜のことを恐怖のせいにしようとした。けれど、{b}が誰かと話しているのを見るたびに、胸の奥がざわついた。怖さはもう引いていたのに、熱だけが残っていた。|朝になっても、{a}と{b}は昨夜のことを口にしなかった。ただ、見張りも水汲みも、気づけばいつも二人で組んでいた。'),
+      free: L('朝、{a}は先に起きて身支度を整えた。{b}も、昨夜のことは口にしなかった。それで十分だった。|夜が明けると、二人は何事もなかったように持ち場へ戻った。目が合っても、どちらも何も言わなかった。|{a}は{b}に「助かった」とだけ言った。それ以上の言葉は、二人のあいだには要らなかった。'),
       new: L('翌朝、{a}と{b}は互いの顔をまともに見られなかった。それでも、隣に座る距離は昨日より近かった。|朝、{b}は「……昨夜のこと、なかったことにはしないから」と言った。{a}は、黙って頷いた。|{a}は水を汲みながら、何度も{b}の方を振り返った。{b}が小さく手を振ると、{a}は慌てて目を逸らした。')
     }
   };
-  var REL_NAME = { lover: '恋人', fwb: 'セフレ', lock: '{a}が想い続けた相手', yan: '{a}の執着（相手も受け入れている）', ex: '元恋人との再燃', crush: '{a}の片想いが報われた', pining: '両片想いが通じた', bridge: '吊り橋（恐怖を、恋と取り違えた夜）', rival: '張り合ってきた二人の吊り橋', mentor: '師弟の一線', osana: '幼馴染', new: '惹かれ合った二人' };
+  var REL_NAME = { free: '体だけの関係（恋愛相手は別の人に固定・性行為の相手は「誰とでも可」）', lover: '恋人', fwb: 'セフレ', lock: '{a}が想い続けた相手', yan: '{a}の執着（相手も受け入れている）', ex: '元恋人との再燃', crush: '{a}の片想いが報われた', pining: '両片想いが通じた', bridge: '吊り橋（恐怖を、恋と取り違えた夜）', rival: '張り合ってきた二人の吊り橋', mentor: '師弟の一線', osana: '幼馴染', new: '惹かれ合った二人' };
 
   /* ======================= 「いつ死ぬか分からないから、今」：誘う側（{a}）の一言（態度9種） ======================= */
   var NOW = {
@@ -367,6 +370,8 @@
   function relOf(ctx, a, b) {
     if (RK.lockedTo(b, a) && !RK.lockedTo(a, b)) { var s0 = a; a = b; b = s0; }
     if (RK.lockedTo(a, b)) return { k: 'lock', a: a, b: b };
+    /* 体だけの関係（HK.State.freeSex）：恋愛の条件は見ない（恋人にはならない） */
+    if (HK.State.freeSex && HK.State.freeSex(ctx, a, b)) return { k: 'free', a: a, b: b };
     var la = obLv(ctx, a, b), lb = obLv(ctx, b, a);
     if (Math.max(la, lb) >= 35 && HK.Obsess.stance) {
       var o = la >= lb ? a : b, t = o === a ? b : a, st = HK.Obsess.stance(ctx, t, o);
@@ -390,9 +395,11 @@
     return a.stress + b.stress >= (sc === 'island' ? 15 : 50) && ra.att >= 5 && rb.att >= 5 && ra.aff > -10 && rb.aff > -10 && ra.ten < 45 && rb.ten < 45;
   }
   /* 惹かれの閾値（危機の夜は10下がる＝吊り橋） */
-  var TH = { bridge: 0, lover: 28, fwb: 28, lock: 36, yan: 30, ex: 32, crush: 34, pining: 32, rival: 36, mentor: 40, osana: 38, new: 52 };
+  var TH = { free: 0, bridge: 0, lover: 28, fwb: 28, lock: 36, yan: 30, ex: 32, crush: 34, pining: 32, rival: 36, mentor: 40, osana: 38, new: 52 };
   function ready(ctx, r, crisis) {
     var a = r.a, b = r.b, ra = ctx.R(a, b), rb = ctx.R(b, a), th = TH[r.k] - (crisis ? 10 : 0);
+    /* 体だけの関係：惹かれ（恋愛の手前で止めてある）ではなく、嫌い合っていないこと・張り詰めていないことと、焦り（危機の夜は焦りがなくても） */
+    if (r.k === 'free') return ra.aff > -10 && rb.aff > -10 && ra.ten < 50 && rb.ten < 50 && (crisis || a.stress + b.stress >= 20);
     if (r.k === 'crush') return ra.att > th + 10 && rb.att > th;
     if (r.k === 'yan') return rb.att > th;
     if (!(ra.att > th && rb.att > th)) return false;
@@ -474,7 +481,8 @@
     var h = st.h || null, c = h ? (h === a ? b : a) : null;
     var v = { a: a.name, b: b.name, x: x.name, y: y.name, d: st.d ? st.d.name : '', h: h ? h.name : '', c: c ? c.name : '',
       spot: sc === 'zombie' ? 'バリケードの奥の部屋' : '岩陰の寝床', noise: sc === 'zombie' ? '外の呻き声' : '波の音' };
-    var t = pickF(ctx, T.intro, v) + pickF(ctx, REL.start[r.k], v);
+    /* 体だけの関係：導入に「恋ではない」一文（free-sex.js） */
+    var t = (r.k === 'free' ? HK.FreeSex.lead(ctx, a, b) : '') + pickF(ctx, T.intro, v) + pickF(ctx, REL.start[r.k], v);
     if (NOW_SIT[st.id] && ctx.rng() < (lv === 'high' ? 0.75 : 0.5)) {
       var nw = pickF(ctx, NOW[RN.psOf(a)] || NOW.gentle, v);
       t += nw;
@@ -513,6 +521,7 @@
     else if (r.k === 'bridge') { pf.bridge = true; pf.couple = pf.couple || ctx.rng() < 0.35; }
     else if (r.k === 'rival') { var ra = ctx.R(a, b), rb = ctx.R(b, a); ra.ten = Math.max(0, ra.ten - 12); rb.ten = Math.max(0, rb.ten - 12); }
     else if (r.k === 'yan' && HK.Obsess && HK.Obsess.add) HK.Obsess.add(ctx, a, b, 6);
+    else if (r.k === 'free') { HK.FreeSex.mark(ctx, a, b); HK.FreeSex.jealous(ctx, a, b); }
   }
   function chooseSit(ctx, list) { return HK.weighted(ctx.rng, list, function (s) { return s.w; }); }
 
@@ -556,7 +565,7 @@
       },
       w: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'island'), cr = C.list.some(function (s) { return CRISIS[s.id]; });
-        return (cr ? 1.1 : 0.3) + (C.r.k === 'bridge' ? 0.8 : 0) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 200;
+        return ((cr ? 1.1 : 0.3) + (C.r.k === 'bridge' ? 0.8 : 0) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 200) * (C.r.k === 'free' ? 2.5 * HK.FreeSex.factor(ctx, a, b) : 1);
       },
       run: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'island'), st = chooseSit(ctx, C.list), r = C.r, lv = RN.lv(ctx) === 'low' ? 'fade' : 'high';
@@ -578,7 +587,7 @@
       },
       w: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'zombie'), cr = C.list.some(function (s) { return CRISIS[s.id]; });
-        return (cr ? 1.2 : 0.3) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 160;
+        return ((cr ? 1.2 : 0.3) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 160) * (C.r.k === 'free' ? 2.5 * HK.FreeSex.factor(ctx, a, b) : 1);
       },
       run: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'zombie'), st = chooseSit(ctx, C.list), r = C.r;

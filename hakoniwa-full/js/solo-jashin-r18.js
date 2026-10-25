@@ -348,7 +348,8 @@
       if (p.lastNight != null && h - p.lastNight < 10) return false;
       if (rng() > lv * (p.aphro ? 0.32 : 0.12)) return false;
       p.lastNight = h; p.cnt.r18 = (p.cnt.r18 || 0) + 1;
-      var mates = live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) && okPair(p, q); });
+      /* 体だけの関係の組（「誰とでも可」の人と固定外の相手。HK.State.freeSex。free-sex.js）も、参加者どうしの夜の相手になる（恋愛の条件 HK.canLove は見ない） */
+      var mates = live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && ((HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) || !!(HK.State.freeSex && HK.State.freeSex(S, p, q))) && okPair(p, q); });
       var top = HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(p) : hardTop(p);
       var r0 = rng();
       /* 「恋人だけ（モブにも襲われない）」の人：夢の神・清めの湯・村人の夜這いには進まず、住人どうしの夜だけ */
@@ -387,19 +388,23 @@
       }
       /* 参加者どうし（媚薬が回っている二人ほど） */
       if (mates.length && (r0 === 0.5 || rng() < 0.4 + (p.aphro ? 0.15 : 0))) {
-        var q = rng.pick(mates); q.lastNight = h; q.cnt.r18 = (q.cnt.r18 || 0) + 1;
+        /* 体だけの関係の相手は、固定した恋人がその場にいれば選ばれにくい（×0.3） */
+        var fm0 = mates.some(function (m) { return HK.State.freeSex && HK.State.freeSex(S, p, m); });
+        var q = fm0 ? HK.weighted(rng, mates, function (m) { return HK.State.freeSex(S, p, m) ? HK.FreeSex.factor(S, p, m) : 1; }) : rng.pick(mates); q.lastNight = h; q.cnt.r18 = (q.cnt.r18 || 0) + 1;
+        var free = !!(HK.State.freeSex && HK.State.freeSex(S, p, q));
         var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
         var rough = S.ygo && (X.viol > 30 || Y.viol > 30);
         var fmXY = !rough && !isFF(X, Y) && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm';
         var t0 = ST.fmt(fp(S, rough ? YGO_SEX : isFF(X, Y) ? MUTUAL_FF : fmXY ? MUTUAL_FM : MUTUAL), { x: X.name, y: Y.name });
         /* 主導する側が女性・相手が男性なら、導入の文も跨る書き方に（合意の場面だけ） */
         if (!rough && HK.FM && HK.FM.fixWith && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm') t0 = HK.FM.fixWith({ pick: function (a) { return fp(S, a); } }, t0, X, Y.name);
-        var t = t0 + pairSex(S, X, Y, { mood: rough ? 'rough' : p.aphro || q.aphro ? 'drug' : 'love', fore: false });
+        var t = (free ? HK.FreeSex.lead(S, p, q) : '') + t0 + pairSex(S, X, Y, { mood: rough ? 'rough' : p.aphro || q.aphro ? 'drug' : free ? 'drug' : 'love', fore: false });
         if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < 0.5 + lv * 0.3) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(fp(S, PREG), { y: Y.name }); }
         if (rng() < 0.5) t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + pz(S, Y, 'mutual');
         p.m.fear = Math.max(0, p.m.fear - 8); q.m.fear = Math.max(0, q.m.fear - 8);
         var strm = [X, Y].filter(function (c) { return c.job === 'streamer'; })[0];
-        ST.say(S, { actors: [X, Y], tag: '夜', kind: 'climax', text: t, why: '媚薬の熱と恐怖で、参加者どうしで交わった' + (HK.R18M && HK.R18M.lastPos(S) ? '（' + HK.R18M.lastPos(S) + '）' : '') + (Y.preg ? '（' + Y.name + 'が疑似妊娠した：生贄にされると巫女になりやすい）' : ''), mag: 30 });
+        if (free) { HK.FreeSex.mark(S, X, Y); HK.FreeSex.jealous(S, X, Y); }
+        ST.say(S, { actors: [X, Y], tag: '夜', kind: 'climax', text: t, why: (free ? HK.FreeSex.why(X, Y) + '／' : '') + '媚薬の熱と恐怖で、参加者どうしで交わった' + (HK.R18M && HK.R18M.lastPos(S) ? '（' + HK.R18M.lastPos(S) + '）' : '') + (Y.preg ? '（' + Y.name + 'が疑似妊娠した：生贄にされると巫女になりやすい）' : ''), mag: 30 });
         if (strm) streamAfter(S, strm, strm === X ? Y.name : X.name, false);
         return true;
       }

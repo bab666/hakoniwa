@@ -678,6 +678,9 @@
     }
     PS.forEach(function (p) {
       var a = p[0], b = p[1], k = K(a, b), x = stOf(ctx, a, b);
+      /* 体だけの夜：恋愛相手を固定し、性行為の相手を「誰とでも可」にした人と、固定外の相手（HK.State.freeSex。free-sex.js）。
+         恋人でなくても（三人のときの三人目と）。一緒にいない夜は呼び出して。固定した恋人がその場にいれば ×0.3。恋人にはならない */
+      if (!couple(ctx, a, b) && HK.State.freeSex && HK.State.freeSex(ctx, a, b) && onTrip(ctx, a) === onTrip(ctx, b) && rng() < (together(ctx, a, b) ? 0.2 : 0.1) * HK.FreeSex.factor(ctx, a, b) && freeNight(ctx, a, b)) return;
       if (!together(ctx, a, b)) { if (x.s >= 2 && rng() < 0.28) msg(ctx, a, b, 'n'); return; }
       if (!couple(ctx, a, b) || !loveOk(ctx, a, b)) return;
       var pl = f.plan[k] || {}, trip = onTrip(ctx, a), first = !f.beds[k];
@@ -685,6 +688,17 @@
       if (rng() > ch) { f.slept[k] = f.day; return; }
       night(ctx, a, b, trip ? 'trip' : 'home', first);
     });
+  }
+  /* 体だけの夜（R18版の futari-r18.js があるときだけ。全年齢版・全年齢モードでは HK.State.freeSex が偽なので起きない） */
+  function freeNight(ctx, a, b) {
+    var f = ctx.ft, k = K(a, b), x = stOf(ctx, a, b), pf = ctx.pair(a, b);
+    var r = HK.FutariR18 && !HK.SAFE_ON ? HK.FutariR18.night(ctx, a, b, { stage: x.s, where: 'home', free: true }) : null;
+    if (!r || !r.text) return false;
+    var e = emit(ctx, { actors: [r.a || a, r.b || b], cat: 'romance', sex: true, text: HK.FreeSex.lead(ctx, a, b) + r.text, why: W(ctx, '') + HK.FreeSex.why(a, b) + '／' + r.why, mag: 10, tag: 'free', fx: relFx(ctx, a, b, { aff: 2 }, { aff: 2 }) });
+    if (!e) return false;
+    pf.nights = (pf.nights || 0) + 1; f.r18[k] = (f.r18[k] || 0) + 1;
+    HK.FreeSex.mark(ctx, a, b); HK.FreeSex.jealous(ctx, a, b); ctx.flush();
+    return true;
   }
   function night(ctx, a, b, where, first) {
     var f = ctx.ft, k = K(a, b), x = stOf(ctx, a, b), pf = ctx.pair(a, b);

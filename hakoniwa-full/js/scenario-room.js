@@ -667,6 +667,9 @@
       }
       var cl = r.k === 'h' && first && bothBottom(a, b) ? clashText(ctx, a, b) : null;
       if (cl) text = cl.text + text;
+      /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：はじめてのエッチに「恋ではない」一文。体だけの関係の印（恋人にはしない） */
+      var fsx = r.k === 'h' && HK.State.freeSex && HK.State.freeSex(ctx, a, b);
+      if (fsx) { if (first) text = HK.FreeSex.lead(ctx, a, b) + text; HK.FreeSex.mark(ctx, a, b); if (first) HK.FreeSex.jealous(ctx, a, b); }
       if (r.n > 1) text += '（' + T.noun + ' ' + p.act[r.k] + '/' + r.n + '）';
       var whyT = (cl ? cl.why + '／' : '') + (rough ? rough.name + 'は' + (rough === a ? b : a).name + 'を敵視している（嫌悪 ' + Math.round(HKr.level(ctx, rough, rough === a ? b : a)) + '）・強引な性格。条件のために、乱暴に' : wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった');
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, r.k === 'h');

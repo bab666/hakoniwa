@@ -807,14 +807,16 @@
       if (cf ? (L3.short && !L3.ero) : ctx.rng() > 0.5) return res;
       var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1];
       if (!TK.ok(T, U)) return res;
-      if (L3.ero) { res.text = (res.text.match(/^[^。]*。/) || [''])[0] + (L3.short ? '' : '\n\n') + eroScene(ctx, T, U, '', '', TK.kind(T, U, 'omega')); return res; }
+      /* 「誰とでも可」の人の体だけの夜（free-sex.js）は、導入の一文（res.lead）を頭に残す */
+      var ld = res.lead && res.text.indexOf(res.lead) === 0 ? res.lead : '', rest = res.text.slice(ld.length);
+      if (L3.ero) { res.text = ld + (rest.match(/^[^。]*。/) || [''])[0] + (L3.short ? '' : '\n\n') + eroScene(ctx, T, U, '', '', TK.kind(T, U, 'omega')); return res; }
       var pk = function (arr) { return fp(ctx, arr); }, ff = TK.kind(T, U, 'omega') === 'ff';
       var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: lew === 'high' ? 3 : 1, rough: hate, lead: hate ? pk(HATE_LEAD) : '', after: hate ? pk(HATE_END) : null });
       var sc = OM.sc || function (t) { return t; };
       var text = sc(ctx.t(TK.map(body, 'a', 'b'), T, U), T, U);
       if (ff && HK.FF) text = HK.FF.fix(ctx, text, T, U, { tools: true });
-      var first = (res.text.match(/^[^。]*。/) || [''])[0];
-      res.text = first + '\n\n' + text;
+      var first = (rest.match(/^[^。]*。/) || [''])[0];
+      res.text = ld + first + '\n\n' + text;
       return res;
     };
   });

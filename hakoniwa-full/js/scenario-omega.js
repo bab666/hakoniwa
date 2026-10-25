@@ -487,10 +487,17 @@
     }
     var heatLine = OM.HEAT;
     var casual = !noW && !pf.couple && rX.att > 25 && rO.att > 25 && HK.canLove(X, O) && HK.canLove(O, X) && (HK.FWB.lean(X) + HK.FWB.lean(O)) / 2 > 0.45 && ctx.rng() < 0.5;
+    /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：恋愛の条件（惹かれ・HK.canLove・HK.ngPair の恋愛側）を外し、発情期の熱と衝動で（固定した恋人がいれば ×0.3）。番にはならない */
+    var fs = !noW && !!(HK.State.freeSex && HK.State.freeSex(ctx, X, O)) && ctx.rng() < HK.clamp(0.25 + heat * 0.35 + X.tr.impulse * 0.3, 0, 0.9) * HK.FreeSex.factor(ctx, X, O);
     /* 夜になる組は、受け攻め・恋愛対象（HK.Pos.okSex）と、恋愛やR18にしない組・性行為の相手の固定・R18に参加しない（HK.ngPair・HK.sexBlocked）を通るときだけ */
-    var sexOk = !(HK.Pos && !HK.Pos.okSex(X, O)) && !(HK.ngPair && HK.ngPair(X, O)) && !(HK.sexBlocked && HK.sexBlocked(X, O));
-    if (sexOk && (sx(X) === 'a' || sx(X) === 'b') && (bound && mutual || casual || (mutual && rX.trust > 20 && rO.trust > 20 && heat + X.tr.impulse * 0.4 > 0.75 && ctx.rng() < 0.55))) {
+    var sexOk = fs || (!(HK.Pos && !HK.Pos.okSex(X, O)) && !(HK.ngPair && HK.ngPair(X, O)) && !(HK.sexBlocked && HK.sexBlocked(X, O)));
+    if (sexOk && (sx(X) === 'a' || sx(X) === 'b') && (fs || bound && mutual || casual || (mutual && rX.trust > 20 && rO.trust > 20 && heat + X.tr.impulse * 0.4 > 0.75 && ctx.rng() < 0.55))) {
       pf.night = true; pf.nights = (pf.nights || 0) + 1;
+      if (fs) {
+        ctx.mod2(X, O, { aff: 3 }, { aff: 3 });
+        HK.FreeSex.mark(ctx, X, O); HK.FreeSex.jealous(ctx, X, O);
+        return { text: HK.FreeSex.lead(ctx, X, O) + heatLine.scene(ctx, X, O, { beta: sx(X) === 'b', insert: '' }), why: '発情期（' + O.name + '）の熱／' + HK.FreeSex.why(X, O) + '。番にはならない', mag: 22 };
+      }
       ctx.mod2(X, O, { att: 10, aff: 6 }, { att: 10, aff: 6 });
       /* 噛む（番にする）：運命の抗えなさが高いほど、信頼が浅くても噛んでしまう・噛まれてしまう。低いほど信頼を待つ */
       var need = 30 - (d - 0.5) * 30;
@@ -545,16 +552,20 @@
   /* 発情期でなくても、勢いで一線を越える夜（恋人にならないまま続くこともある） */
   EV.push({
     id: 'om_night', cat: 'romance', sex: true, scope: 'pair',
-    when: function (ctx, a, b) { var pf = ctx.pair(a, b); return !pf.couple && !pf.night && met(ctx, a, b) && HK.canLove(a, b) && HK.canLove(b, a) && ctx.R(a, b).att > 28 && ctx.R(b, a).att > 24 && !partnerOf(ctx, a) && !partnerOf(ctx, b) && !(BD.mateOf(ctx, a) || BD.mateOf(ctx, b)); },
-    w: function (ctx, a, b) { var h = ctx.om.hesitate[key(a, b)] ? 1 : 0; return (HK.FWB.lean(a) + HK.FWB.lean(b)) * 1.4 + h * 0.8 + (a.goal.id === 'free' ? 0.6 : 0); },
+    /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex）は、恋愛の条件（HK.canLove・惹かれ・恋人のいない人どうし）を外す（番のいる人は除く） */
+    when: function (ctx, a, b) { var pf = ctx.pair(a, b); if (pf.couple || pf.night || !met(ctx, a, b) || BD.mateOf(ctx, a) || BD.mateOf(ctx, b)) return false; return HK.State.freeSex(ctx, a, b) || (HK.canLove(a, b) && HK.canLove(b, a) && ctx.R(a, b).att > 28 && ctx.R(b, a).att > 24 && !partnerOf(ctx, a) && !partnerOf(ctx, b)); },
+    w: function (ctx, a, b) { var h = ctx.om.hesitate[key(a, b)] ? 1 : 0, fs = HK.State.freeSex(ctx, a, b); return ((HK.FWB.lean(a) + HK.FWB.lean(b)) * 1.4 + h * 0.8 + (a.goal.id === 'free' ? 0.6 : 0) + (fs ? 0.5 : 0)) * (fs ? HK.FreeSex.factor(ctx, a, b) : 1); },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b); pf.night = true; pf.nights = (pf.nights || 0) + 1;
+      var fs = HK.State.freeSex(ctx, a, b);
       var same = sx(a) === sx(b) && sx(a) !== 'b';
       ctx.mod2(a, b, { att: same ? 3 : 8 }, { att: same ? 3 : 8 });
       var t = ctx.pick(same ? ['付き合えないのは分かっていた。それでも{a}と{b}は、飲んだ帰りに同じ部屋へ入った。', '「恋人にはなれないけど、これくらいなら」――{a}の言い訳に、{b}は黙って頷いた。'] : ['二軒目の帰り、{a}は{b}の手を引いて、自分の部屋の鍵を開けた。', '終電を逃した{a}と{b}は、駅前のホテルに入った。部屋は一つだった。', '{b}の家で飲み直しているうちに、{a}との距離がなくなった。']);
       /* 押し倒すのは、受け攻めの指定で攻めに回る側 */
       var ob = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b];
       t = ctx.t(t, a, b) + sc(ctx.t(ctx.pick(['{sa}と{sb}の匂いが混ざって、どちらからともなく唇を重ねた。――', '服を脱がせ合う手が、酔いのせいか少し乱暴だった。――', '{a}は{b}をベッドに押し倒し、{b}は{a}のシャツを引き寄せた。――']), ob[0], ob[1]), ob[0], ob[1]) + ctx.t(ctx.pick(['朝、二人は気まずそうに、でもどこか慣れたように「おはよう」と言った。', '目が覚めると、{a}はもう服を着ていた。', '{b}は{a}の寝顔を見ながら、これが何の始まりなのか考えていた。']), a, b);
+      /* lead：導入の一文（恋ではない）。厚い版（omega-thick.js）に差し替えても、頭に残す */
+      if (fs) { HK.FreeSex.mark(ctx, a, b); HK.FreeSex.jealous(ctx, a, b); var ld = HK.FreeSex.lead(ctx, a, b); return { text: ld + t, lead: ld, why: HK.FreeSex.why(a, b) + '／恋人より気楽な関係に寄りやすい気質', mag: 20 }; }
       return { text: t, why: '惹かれ（' + Math.round(ctx.R(a, b).att) + '）と、恋人より気楽な関係に寄りやすい気質' + (same ? '／同じ第二性で付き合えない二人' : ''), mag: 20 };
     }
   });

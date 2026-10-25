@@ -27,6 +27,9 @@
         主役（記録の一人目か二人目）として出た（エンジン型）。配役の一部（5回に1回）で、二人を互いに固定し、そのうち一人を「誰とでも可」にする。
         体の関係の出来事（sex の印つき）は出てよい（それが「誰とでも可」の意味）ので、件数だけ「誰とでも可の体の出来事」として数える。
         この回では S15 の「恋愛の出来事」「性的な文」も見るが、「誰とでも可」で許されている組（HK.lockSexOnly）の体の出来事・性的な文は数えない
+   S18: 「誰とでも可」の人と固定外の相手の「体だけの場面」（free-sex.js の HK.FreeSex.mark：エンジン型は pf.freeSex、物語型は S.freeSex）のあとに、
+        その組が恋人になった（エンジン型は pf.couple、物語型は恋人の記録 S.lovers・S.rom・関係の恋人）／その組に恋愛の出来事が出た
+        （エンジン型は cat:'romance' で体の出来事の印 sex がないもの、物語型は告白・恋・想い・デート・口づけ・キスの札）。S17 と同じ配役の回で見る
    「止めた」：出来事の記録の手前（Ctx.say の防波堤）で捨てられた件数。出所を直すと減る（0 でなくてよい） */
 'use strict';
 const { openBuild } = require('./lib.js');
@@ -43,7 +46,7 @@ const { openBuild } = require('./lib.js');
     const sents = t => String(t).replace(NONSEX, '＿').split(/[。！？\n」]/);
     const isSex = s => SEXCORE.test(s);
     const out = { n: {}, ex: {}, drop: {}, runs: 0, err: [], bySc: {}, anySex: {} };
-    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17'];
+    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18'];
     KEYS.forEach(k => { out.n[k] = 0; out.ex[k] = []; });
     let cur = null, lastCtx = null;
     const hit = (k, msg) => { out.n[k]++; out.bySc[cur.sc][k] = (out.bySc[cur.sc][k] || 0) + 1; if (out.ex[k].length < (WHY ? 40 : 6)) out.ex[k].push(cur.sc + ' | ' + msg); };
@@ -150,6 +153,16 @@ const { openBuild } = require('./lib.js');
           if (sexMark) out.anySex[cur.sc] = (out.anySex[cur.sc] || 0) + 1;
           else hit('S17', '恋愛 ' + acs[0].name + '×' + acs[1].name + '（固定：' + lockTxt(this.chars, acs[0], acs[1]) + '・性行為の相手：誰とでも可）[' + ((this._ev && this._ev.id) || '') + '] | ' + String(o.text).slice(0, 120));
         }
+        /* S18：体だけの場面（pf.freeSex）のあとに、その組が恋人になった／恋愛の出来事（体の出来事の印なし）が出た */
+        if (cur && !cur.story && this.pf) {
+          const fz = this._audit18 || (this._audit18 = {});
+          Object.keys(this.pf).forEach(k => {
+            const pf = this.pf[k];
+            if (pf.freeSex && !fz[k]) fz[k] = 1;
+            if (fz[k] === 1 && pf.couple) { fz[k] = 2; const ij = k.split('-').map(Number); hit('S18', '恋人化 ' + this.chars[ij[0]].name + '×' + this.chars[ij[1]].name + ' [' + ((this._ev && this._ev.id) || o.kind || '') + ']'); }
+          });
+          if (e && !e.skipped && o.cat === 'romance' && !sexMark && !SKIPK.test(kind) && acs.length >= 2 && fz[pkey(acs[0], acs[1])]) hit('S18', '恋愛 ' + acs[0].name + '×' + acs[1].name + ' [' + ((this._ev && this._ev.id) || '') + '] | ' + String(o.text).slice(0, 120));
+        }
         /* S15：二人だけの恋愛の出来事に、固定が食い違う組（「誰とでも可」で許されている組の体の出来事は除く） */
         if (cur && !cur.story && e && !e.skipped && o.cat === 'romance' && !SKIPK.test(kind) && acs.length === 2 && lockBad(acs[0], acs[1]) && !(anyPair && sexMark)) hit('S15', '恋愛 ' + acs[0].name + '×' + acs[1].name + '（固定：' + lockTxt(this.chars, acs[0], acs[1]) + '）| ' + String(o.text).slice(0, 120));
         if (cur && !cur.story) {
@@ -188,6 +201,12 @@ const { openBuild } = require('./lib.js');
             if (/：恋人になった/.test(o.why || '') && (S.poly || 'none') === 'none') acs.forEach(x => { const y = x === acs[0] ? acs[1] : acs[0]; const old = Object.keys(lv).filter(k3 => k3 !== k2 && pre[k3] && k3.split('-').map(Number).indexOf(x.i) >= 0).map(k3 => S.P[k3.split('-').map(Number).filter(z => z !== x.i)[0]]).filter(z => z && z.alive !== false); if (old.length) hit('S16', '「恋人になった」 ' + x.name + '：' + old.map(z => z.name).join('・') + 'と別れないまま' + y.name + 'と'); });
           }
           storyCheck(S, false);
+          /* S18（物語型）：体だけの場面（S.freeSex）のあとに、その組が恋人の記録に入った／恋愛の札の記録が出た */
+          if (S && S.freeSex && S.P) {
+            const lv18 = storyLov(S), fz = S._audit18 || (S._audit18 = {});
+            Object.keys(S.freeSex).forEach(k => { if (lv18[k] && !fz[k]) { fz[k] = 1; const ij = k.split('-').map(Number); hit('S18', '恋人の記録 ' + S.P[ij[0]].name + '×' + S.P[ij[1]].name + ' [' + (o.tag || '') + ']'); } });
+            if (acs.length >= 2 && S.freeSex[Math.min(acs[0].i, acs[1].i) + '-' + Math.max(acs[0].i, acs[1].i)] && /告白|恋|想い|デート|口づけ|キス|両想い/.test(o.tag || '') && !/失恋|恋敵|元恋人/.test(o.tag || '')) hit('S18', '恋愛 [' + o.tag + '] ' + acs[0].name + '×' + acs[1].name + ' | ' + String(o.text).slice(0, 120));
+          }
           if (acs.length === 2 && /告白|恋|想い|デート|口づけ|キス|両想い/.test(o.tag || '') && !/失恋|恋敵|元恋人/.test(o.tag || '') && lockBad(acs[0], acs[1])) hit('S15', '恋愛 [' + o.tag + '] ' + acs[0].name + '×' + acs[1].name + '（固定：' + lockTxt(P, acs[0], acs[1]) + '）| ' + String(o.text).slice(0, 120));
         }
         const over = P && P.every(p => !p || p.alive === false || p.out || p.gone);
@@ -331,7 +350,7 @@ const { openBuild } = require('./lib.js');
   }, { N, only, WHY, HOT, mode, ENVSET });
   const ids = Object.keys(r.bySc);
   for (const sc of ids) {
-    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17'].map(k => k + ' ' + (b[k] || 0));
+    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18'].map(k => k + ' ' + (b[k] || 0));
     console.log(sc.padEnd(10), 'runs', b.runs, cells.join(' '), '誰とでも可の体の出来事', r.anySex[sc] || 0);
   }
   console.log('合計', JSON.stringify(r.n), '止めた', JSON.stringify(r.drop));

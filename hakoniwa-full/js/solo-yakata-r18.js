@@ -235,14 +235,20 @@
         var od = HK.Pos ? HK.Pos.order(x, y, [x, y]) : [x, y];
         var m = { x: od[0].name, y: od[1].name, p: P, d: (extra && extra.d) || '', b: (extra && extra.b) || '' };
         var pool = PLF(kind, SC[kind], od[0], od[1]);
+        /* 体だけの夜（「誰とでも可」の人と固定外の相手。HK.State.freeSex。free-sex.js）：導入に「恋ではない」一文。恋人にはならない */
+        var free = kind === 'casual' && !!(HK.State.freeSex && HK.State.freeSex(S, x, y));
         /* 探偵と助手：向きの決まった文は、探偵が攻めか受けかで選ぶ */
         if (kind === 'buddy' && !isFF(od[0], od[1]) && Y.R18T) pool = pool.concat(Y.R18T[od[0] === x ? 'buddyDT' : 'buddyDB'] || []);
-        ST.say(S, { actors: [od[0], od[1]], tag: '媚薬の夜', kind: 'climax', text: fmFix(S, F(fp(S, pool), m), od[0], od[1]) + (S.rng() < 0.6 ? pz(S, od[1], 'react') : '') + SX(S, od[0], od[1], kind === 'enemies' ? 'rough' : kind === 'lovers' || kind === 'crush' || kind === 'pining' || kind === 'buddy' ? 'love' : 'drug') + aft(S, od[1]), why: why + PW(S), mag: 32 });
-        Y.setRel(S, x, y, kind === 'enemies' ? 0.35 : 0.2, kind === 'enemies' ? '憎しみの一夜' : kind === 'buddy' ? '一線を越えた' : kind === 'crush' ? '想いが溢れた' : kind === 'pining' ? '想いが通じた' : '一夜', kind === 'crush' ? x : null);
+        ST.say(S, { actors: [od[0], od[1]], tag: '媚薬の夜', kind: 'climax', text: (free ? HK.FreeSex.lead(S, x, y) : '') + fmFix(S, F(fp(S, pool), m), od[0], od[1]) + (S.rng() < 0.6 ? pz(S, od[1], 'react') : '') + SX(S, od[0], od[1], kind === 'enemies' ? 'rough' : kind === 'lovers' || kind === 'crush' || kind === 'pining' || kind === 'buddy' ? 'love' : 'drug') + aft(S, od[1]), why: (free ? HK.FreeSex.why(x, y) + '／' : '') + why + PW(S), mag: 32 });
+        Y.setRel(S, x, y, kind === 'enemies' ? 0.35 : 0.2, free ? '体だけの関係' : kind === 'enemies' ? '憎しみの一夜' : kind === 'buddy' ? '一線を越えた' : kind === 'crush' ? '想いが溢れた' : kind === 'pining' ? '想いが通じた' : '一夜', kind === 'crush' ? x : null);
+        if (free) { HK.FreeSex.mark(S, x, y); HK.FreeSex.jealous(S, x, y); }
         drunk.splice(drunk.indexOf(x), 1); if (drunk.indexOf(y) >= 0) drunk.splice(drunk.indexOf(y), 1);
         scenes++;
       }
       function can(a, b) { return (!HK.canLove || HK.canLove(a, b)) && okP(a, b); }
+      /* 残った人どうしの夜には、体だけの関係の組（HK.State.freeSex）も入る。固定した恋人がその場にいれば ×0.3（組ごとに一度だけ決める） */
+      var fz = {};
+      function canFree(a, b) { var k = Math.min(a.i, b.i) + '-' + Math.max(a.i, b.i); if (fz[k] == null) fz[k] = !!(HK.State.freeSex && HK.State.freeSex(S, a, b)) && rng() < HK.FreeSex.factor(S, a, b) * 1.5; return fz[k]; }
       function tie(a, b, list) { return (S.ties || []).some(function (t) { return ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)) && list.split(',').indexOf(t.type) >= 0; }); }
       /* 探偵への誘惑 */
       var det = drunk.filter(function (q) { return q.isDet; })[0];
@@ -282,7 +288,7 @@
       });
       /* 残った人どうし */
       while (drunk.length >= 2 && scenes < 4) {
-        var x = drunk[0], y = drunk.slice(1).filter(function (q) { return can(x, q); }).sort(function (a, b) { return Y.bond(S, x, b) - Y.bond(S, x, a); })[0];
+        var x = drunk[0], y = drunk.slice(1).filter(function (q) { return can(x, q) || canFree(x, q); }).sort(function (a, b) { return Y.bond(S, x, b) - Y.bond(S, x, a); })[0];
         if (!y) { drunk.shift(); continue; }
         /* 乱交には、自分で攻めを選んだ人を入れない（誰に何をされるか分からない場面のため） */
         var gp = drunk.filter(function (q) { return !hardTop(q); });
@@ -318,6 +324,8 @@
   /* ---------- 媚薬以外の夜の出来事（媚薬の夜でない夜に、1つ起きることがある） ----------
      凌辱（快楽殺人の犯人が無理やり）・吊り橋効果・犯人の脅し・大浴場・凍えた体を温め合う・取り調べでの誘惑
      起きても殺人は止まらない（false を返す）。凌辱のあと、そのまま殺されることもある */
+  /* 体だけの夜の書き出し（{x}＝攻め、{y}＝受け。本番は SX） */
+  var FREE_IN = ['吹雪の音が窓を叩いていた。廊下の暗がりで、{x}と{y}はすれ違いざまに目を合わせた。それだけで、行き先は決まった。', '眠れない夜だった。{x}が客室の扉を叩くと、{y}は何も訊かずに鍵を開けた。互いに欲しいものは、言わなくても分かっていた。', '暖炉の火が落ちた談話室に、二人だけが残っていた。{x}が立ち上がって{y}の手を引くと、{y}は黙ってついてきた。客室の扉が、静かに閉まった。'];
   Y.R18.extra = function (S, day) {
     var rng = S.rng, lv = S.env.ylewd / 100, c = S.cul, T = Y.R18T;
     if (!T || rng() > lv * 0.7) return false;
@@ -372,6 +380,12 @@
     if (wp.length) EV.push({ w: 1, f: function () { var pr = rng.pick(wp), o = od(pr[0], pr[1]);
       ST.say(S, { actors: o, tag: '凍える夜', kind: 'climax', text: F(fp(S, PLF('warmth', T.warmth, o[0], o[1])), { x: o[0].name, y: o[1].name }) + SX(S, o[0], o[1], 'love', false, ['soku', 'taimen', 'seijo', 'haimen']) + aft(S, o[1]), why: PW(S) + '吹雪の中を捜索した' + o[0].name + 'と' + o[1].name + 'が、肌で温め合った', mag: 30 });
       Y.setRel(S, o[0], o[1], 0.3, '温め合った'); } });
+    /* 体だけの夜：恋愛相手を固定し、性行為の相手を「誰とでも可」にした人と、固定外の相手（HK.State.freeSex。free-sex.js）。
+       恋愛の条件（HK.canLove）は見ない。導入に「恋ではない」一文。固定した恋人が館にいれば ×0.3。恋人にはならない */
+    var fp2 = []; live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i && HK.State.freeSex && HK.State.freeSex(S, a, b) && Y.bond(S, a, b) > -0.3) fp2.push([a, b]); }); });
+    if (fp2.length) EV.push({ w: 2 * HK.FreeSex.factor(S, fp2[0][0], fp2[0][1]), f: function () { var pr = rng.pick(fp2), o = od(pr[0], pr[1]);
+      ST.say(S, { actors: o, tag: '体だけの夜', kind: 'climax', text: HK.FreeSex.lead(S, pr[0], pr[1]) + F(fp(S, FREE_IN), { x: o[0].name, y: o[1].name }) + SX(S, o[0], o[1], 'plain') + aft(S, o[1]), why: PW(S) + HK.FreeSex.why(pr[0], pr[1]) + '／吹雪に閉ざされた夜', mag: 30 });
+      Y.setRel(S, o[0], o[1], 0.15, '体だけの関係'); HK.FreeSex.mark(S, o[0], o[1]); HK.FreeSex.jealous(S, o[0], o[1]); } });
     /* 取り調べでの誘惑：疑われている人が、取り調べ役を落とす */
     var sus = live.filter(function (q) { return q.m.sus > 40 && q.tr.fc + (q.tr.lie || q.tr.a * 0.5 || 0) > 0.8; }).sort(function (a, b) { return b.m.sus - a.m.sus; })[0];
     if (sus) { var iv = live.filter(function (q) { return q !== sus && (q.isDet || q.tr.cp > 0.5) && can(sus, q); })[0];

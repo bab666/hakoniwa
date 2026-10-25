@@ -319,8 +319,10 @@
       });
     });
     if (!cand.length) return;
-    var c = HK.weighted(rng, cand, function (o) { return o.tier === 'love' ? 1.3 + o.w : o.tier === 'again' ? 1.5 + Math.max(0, o.w) * 0.5 : 0.3 + Math.max(0, o.w) * 0.6; });
+    /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：体だけの夜。固定した恋人が船にいれば ×0.3 */
+    var c = HK.weighted(rng, cand, function (o) { return (o.tier === 'love' ? 1.3 + o.w : o.tier === 'again' ? 1.5 + Math.max(0, o.w) * 0.5 : 0.3 + Math.max(0, o.w) * 0.6) * (HK.State.freeSex && HK.State.freeSex(S, o.a, o.b) ? HK.FreeSex.factor(S, o.a, o.b) : 1); });
     var a = c.a, b = c.b, tier = c.tier, x = c.x;
+    var free = tier !== 'love' && !!(HK.State.freeSex && HK.State.freeSex(S, a, b));
     /* 誘う側：過ちだと考えていない人、FC の高い人 */
     if (x && (x.mis[a.i] && !x.mis[b.i] || (!x.mis[b.i] && tr(b, 'fc') > tr(a, 'fc')))) { var tmp = a; a = b; b = tmp; }
     var pre = '';
@@ -354,9 +356,11 @@
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     var TAG = { casual: '勢いの夜', again: '二度目の夜', love: '恋人の夜' };
     var y = (S.nt || {})[A.rk(a, b)], nth = y ? y.n + 1 : 1;
-    var o = ST.say(S, { actors: [a, b], tag: civ ? '儀式の夜' : pol ? '花粉の夜' : TAG[tier], kind: 'climax', text: open + (pre ? ' ' + pre : '') + mid + body + aft,
-      why: (civ ? '文明の歓迎の儀式' : pol ? '星の花粉にあてられた' : tier === 'love' ? '恋人どうし・深い仲の夜' : tier === 'again' ? nth + '度目の夜' : '関係の浅い二人の、勢いの夜') + '／関係の近さ ' + Math.round(c.w * 100), mag: 30 });
+    /* 体だけの夜：導入に「恋ではない」一文（free-sex.js） */
+    var o = ST.say(S, { actors: [a, b], tag: civ ? '儀式の夜' : pol ? '花粉の夜' : free ? '体だけの夜' : TAG[tier], kind: 'climax', text: (free ? HK.FreeSex.lead(S, a, b) : '') + open + (pre ? ' ' + pre : '') + mid + body + aft,
+      why: (free ? HK.FreeSex.why(a, b) + '／' : '') + (civ ? '文明の歓迎の儀式' : pol ? '星の花粉にあてられた' : tier === 'love' ? '恋人どうし・深い仲の夜' : tier === 'again' ? nth + '度目の夜' : '関係の浅い二人の、勢いの夜') + '／関係の近さ ' + Math.round(c.w * 100), mag: 30 });
     if (!S.r18Key) { S.r18Key = true; ST.key(S, o, a.name + 'と' + b.name + 'の夜'); }
+    if (free) { HK.FreeSex.mark(S, a, b); HK.FreeSex.jealous(S, a, b); }
     after(S, A, a, b, tier);
   }
 

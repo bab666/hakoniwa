@@ -60,6 +60,7 @@ js/content.js
 js/mood-dial.js
 js/mob.js
 js/fwb.js
+js/free-sex.js
 js/scenarios-a.js
 js/mini.js
 js/mini-tails.js

@@ -80,6 +80,7 @@ js/novel-moan-tone.js
 js/thick-sex.js
 js/thick-sex-ero.js
 js/fwb.js
+js/free-sex.js
 js/scenarios-a.js
 js/mini.js
 js/mini-tails.js
