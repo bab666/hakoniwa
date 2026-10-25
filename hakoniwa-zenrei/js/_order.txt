@@ -175,6 +175,7 @@ js/view.js
 js/view-map.js
 js/dungeon-view.js
 js/solo-story-kit.js
+js/attr-look.js
 js/fam-kin.js
 js/solo-saimin-data.js
 js/solo-saimin.js
