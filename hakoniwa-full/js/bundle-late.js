@@ -26297,9 +26297,9 @@
     var Pz = HK.Pos;
     if (!Pz || !Pz.okSex(b, h)) return null;
     var o = Pz.order(b, h, [b, h]);
-    if (o[0] === b) return Pz.hardTop(h) ? null : Pz.isF(b) ? 'finger' : 'pen';
+    if (o[0] === b) return Pz.hardTop(h, b) ? null : Pz.isF(b) ? 'finger' : 'pen';
     /* 手を出す側が受け：挿入はしない。はまっている人が自分で攻めを選んでいれば、跨るだけ */
-    if (Pz.hardTop(h)) return 'ride';
+    if (Pz.hardTop(h, b)) return 'ride';
     return S.rng() < 0.5 ? 'ride' : 'tease';
   }
   /* 出くわす：st = { live, stored, hardTop, topMe, meta } を更新する。助け出されたら { rescued: 助けた人 } */
@@ -26316,7 +26316,7 @@
       var w = b.know ? b.r.w : 0, love = b.know && (b.r.love || b.r.crush), t = b.tr;
       b.kind = kindOf(S, b, h);
       /* 本人が攻め寄り（跨られる側）に回っている回は、自分で攻めを選んだ人を除いて、挿れる代わりに跨る */
-      if (st.topMe && (b.kind === 'pen' || b.kind === 'finger') && !(HK.Pos && HK.Pos.hardTop(b))) b.kind = 'ride';
+      if (st.topMe && (b.kind === 'pen' || b.kind === 'finger') && !(HK.Pos && HK.Pos.hardTop(b, h))) b.kind = 'ride';
       var v = vis / 2;
       b.help = 0.12 + Math.max(0, w) * 0.9 + t.np * 0.35 + t.cp * 0.15 + t.caution * 0.1 - v * (t.fc * 0.3 + t.impulse * 0.3) - (b.know && b.r.fam ? 0 : 0);
       b.lewd = b.kind ? 0.05 + v * (0.45 + t.fc * 0.5 + t.impulse * 0.5 + t.aggr * 0.25) + (love ? v * 0.45 : 0) + Math.max(0, -w) * 0.5 + env.wild / 250 - t.warmth * 0.15 - (love ? 0 : Math.max(0, w) * 0.35) - (b.know && b.r.fam ? 1 : 0) : 0;
@@ -30988,10 +30988,10 @@
     if (p.ff) kind = kind === 'touch' ? 'touch' : 'ff';
     /* かけられた人が主導する側（top）で、自分から口で責めている文なら、{T}が口で{B}を責める型（give） */
     var give = !force && top && (kind === 'touch' || kind === 'ff') && aOral && !/咥え/.test(fb);
-    if (give) { if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub)) return null; return { top: top, dom: dom, sub: sub, kind: isF(sub) ? 'giveF' : 'giveM', hc: hc }; }
-    if (lick) { if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub)) return null; return { top: top, dom: dom, sub: sub, kind: isF(sub) ? 'lickFF' : 'lickFM', hc: hc }; }
+    if (give) { if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub, dom)) return null; return { top: top, dom: dom, sub: sub, kind: isF(sub) ? 'giveF' : 'giveM', hc: hc }; }
+    if (lick) { if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub, dom)) return null; return { top: top, dom: dom, sub: sub, kind: isF(sub) ? 'lickFF' : 'lickFM', hc: hc }; }
     /* 自分で攻めを選んだ人を受け止める側にしない */
-    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub)) return null;
+    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub, dom)) return null;
     if (kind !== 'touch') kind = HK.Thick4 ? HK.Thick4.kindFor(kind, dom, sub) : kind;
     if (kind === 'touch') kind = isF(sub) ? 'touchF' : 'touchM';
     if (kind === 'serve') kind = isF(sub) ? 'touchF' : 'touchM';
@@ -32758,7 +32758,7 @@
   /* 嗜虐的な攻めの山場（2割5分ほど）。受けが攻め指定なら使わない。首は嫉妬（opt.jealous）のときだけ */
   function hardSet(S, x, y, mood, opt) {
     if (opt.short || !(mood === 'love' || mood === 'plain' || opt.jealous)) return null;
-    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(y)) return null;
+    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(y, x)) return null;
     if (!(HK.Ero && HK.Ero.sadist && HK.Ero.sadist(x, y)) || S.rng() >= 0.25) return null;
     return opt.jealous ? JEALOUS_CHOKE : ROUGH_SADIST;
   }
@@ -35407,7 +35407,7 @@
     var nt = A.nightOf(T, U), nb = A.nightOf(U, T);
     if (!TOP[nt] && !BOT[nb]) return '';
     /* 受けが攻め指定の組（向きの決まらない組）には足さない（自分で攻めを選んだ人を受けにしない） */
-    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U)) return '';
+    if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U, T)) return '';
     var m = mode === 'ff' || mode === 'fm' ? mode : 'mf', out = '', labels = [];
     if (TOP[nt]) { out += pick(((ero ? TOP_E : TOP)[nt] || TOP[nt])[m]); labels.push(T.name + '＝' + NAME[nt] + (A.STYLE[nt] ? '（抱き方：' + (STYLE_JP[A.STYLE[nt]] || A.STYLE[nt]) + '）' : '')); if (A.log) A.log.push({ who: T.name, role: 'a', night: nt, a: T.name, b: U.name }); }
     if (BOT[nb]) { out += pick(((ero ? BOT_E : BOT)[nb] || BOT[nb])[m]); labels.push(U.name + '＝' + NAME[nb]); if (A.log) A.log.push({ who: U.name, role: 'b', night: nb, a: T.name, b: U.name }); }

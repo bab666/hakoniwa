@@ -6763,7 +6763,7 @@
         if (Pz && Pz.ff(a, b)) return { text: t + ffClash(S, a, b, pk) + HK.TL.line(a, 'LH_AFTER', b), r18: true };
         return { text: t + F.r18Clash(S, a, b) + HK.TL.line(a, 'LH_AFTER', b), r18: true };
       }
-      var l = Pz && Pz.hardTop(b) ? (Pz.hardTop(a) ? EVEN : REV) : ok && !aTop ? REV : KISS;
+      var l = Pz && Pz.hardTop(b, a) ? (Pz.hardTop(a, b) ? EVEN : REV) : ok && !aTop ? REV : KISS;
       return { text: t + (pick ? pick(l) : '').replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name) + HK.TL.line(a, 'LH_AFTER', b), r18: false };
     }
   };
@@ -13184,7 +13184,7 @@
   /* a が b に対して攻め（動く側）に回れる向きがあるか（向きの記憶は動かさずに確かめる） */
   function canLead(a, b) { return !HK.Pos || HK.Pos.orients(a, b).some(function (o) { return o[0] === a; }); }
   /* 自分で「受け」を選んだ二人（受けとリバも好む設定などで、組として成り立つとき）：どちらが動くか（{a}=覚悟を決めて動く側） */
-  function bothBottom(a, b) { var P = HK.Pos; return !!(P && P.explicit(a) && P.explicit(b) && P.isBottom(a) && P.isBottom(b) && P.okSex(a, b)); }
+  function bothBottom(a, b) { var P = HK.Pos; return !!(P && P.explicit(a, b) && P.explicit(b, a) && P.isBottom(a, b) && P.isBottom(b, a) && P.okSex(a, b)); }
   var CLASH_BOTTOM = {
     cp: ['{a}と{b}は、どちらも相手がリードするものだと思っていた。気まずい沈黙のあと、{a}が仕方なさそうに、乱暴に袖をまくった。','{a}と{b}は、どちらも自分から動く気はなかった。見かねた{a}が、ため息をついて{b}の肩を押した。', '「普通、そっちがリードするところだろ」――{a}と{b}は同時に同じことを言った。睨み合いに負けたのは、{a}のほうだった。'],
     cold: ['{a}と{b}は、どちらも抱かれる側のつもりだった。このままでは埒が明かないと判断した{a}が、慣れない手つきで{b}に触れ始めた。', '{a}は時計を見上げ、「このまま待っても進まない」と淡々と言った。それから、自分が動くほうを引き受けた。', '{a}と{b}は、どちらが動くかを理屈で決めようとして、結論が出なかった。{a}は小さく息を吐き、黙って{b}の上着に手をかけた。'],
@@ -13632,7 +13632,7 @@
       G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i) { ctx.pair(x, y).night = true; ctx.mod2(x, y, { att: 8, aff: 4 }, { att: 8, aff: 4 }); var p = prog(ctx, x, y); p.act.h = (p.act.h || 0) + 1; } }); });
       others.forEach(function (o) { G.forEach(function (g) { ctx.mod(o, g, { ten: 6 }); }); ctx.stress(o, 8); });
       /* 輪の中心は、自分で攻めを選んだ人がいればその人（受ける側には回さない） */
-      var lead = (HK.Pos && G.filter(function (c) { return HK.Pos.hardTop(c); })[0]) || a, g2 = G.filter(function (c) { return c !== lead; });
+      var lead = (HK.Pos && G.filter(function (c) { return HK.Pos.hardTopIn(c, G); })[0]) || a, g2 = G.filter(function (c) { return c !== lead; });
       /* 輪の中の文は R18 の文（全年齢版では抜いて、照明を落とす一文にする） */
       var groupLine = null;
 /* r18: 全年齢版では省略 */
@@ -13659,7 +13659,7 @@
       if (b.flags.partner != null && b.flags.partner !== a.i) return false;
       if (clashH(ctx, a, b)) return false;
       /* 縛るのは、その組で攻めに回れる側だけ。自分で攻めを選んだ人を縛ることはない */
-      if (HK.Pos && (HK.Pos.hardTop(b) || !canLead(a, b))) return false;
+      if (HK.Pos && (HK.Pos.hardTop(b, a) || !canLead(a, b))) return false;
       return ctx.rules.some(function (r) { return K[r.k].type === 'act' && K[r.k].lvl >= 2 && !ruleDone(ctx, r, a, b); }) && tieWall(ctx, a, b, 3) < 999 && HK.canLove(a, b);
     },
     w: function (ctx, a) { return (speedy(a) - 0.25) * 3 + a.stress / 120 + (a.goal.id === 'quick' ? 0.8 : 0); },
@@ -13725,7 +13725,7 @@
 /* r18: 全年齢版では省略 */
         if (stop > 0.7 || !mayForce || !FORCED) {
           ctx.mod2(a, b, { ten: 10 }, { ten: 30, trust: -30, aff: -15 });
-          text = ctx.t(HK.Pos && HK.Pos.hardTop(b) ? '媚薬に呑まれた{a}が、{b}に掴みかかった。{b}はその手首を掴み返して、壁際まで押し戻した。' : '媚薬に呑まれた{a}が、{b}を床に押し倒した。', a, b) + (third && third.tr.np + third.tr.cp > b.tr.cp ? ctx.t('{c}が{a}を引き剥がした。「しっかりしろ！」', a, b, third) : ctx.t(ctx.pick(['{b}は{a}の肩を突き返した。「目を覚まして」', '{b}は{a}の手首を掴んで止めた。「それは、違う」']), a, b));
+          text = ctx.t(HK.Pos && HK.Pos.hardTop(b, a) ? '媚薬に呑まれた{a}が、{b}に掴みかかった。{b}はその手首を掴み返して、壁際まで押し戻した。' : '媚薬に呑まれた{a}が、{b}を床に押し倒した。', a, b) + (third && third.tr.np + third.tr.cp > b.tr.cp ? ctx.t('{c}が{a}を引き剥がした。「しっかりしろ！」', a, b, third) : ctx.t(ctx.pick(['{b}は{a}の肩を突き返した。「目を覚まして」', '{b}は{a}の手首を掴んで止めた。「それは、違う」']), a, b));
           if (third) ctx.mod(b, third, { trust: 15, aff: 8 });
           why = a.name + 'の攻撃性・衝動と媚薬（' + Math.round(heat) + '）。' + (third ? third.name + 'が止めた' : b.name + 'が拒んだ');
           a.flags.shame = true;
@@ -14378,7 +14378,7 @@
     if (!Tn || !Bn) { var e0 = es[0], e1 = es.filter(function (e) { return e[1] === e0[0]; })[0] || es[1]; return { p: 'ring', t: e0[0], m: e0[1], u: e1[0] === e0[0] ? e1[1] : e1[0] }; }
     var M = g.filter(function (c) { return c !== Tn && c !== Bn; })[0];
     /* 真ん中の人が自分で「受け」を選んでいれば、攻め×受け・受け（oneTwo）に寄せる。受け×受けの組で動く側に回るのは、ときどきだけ */
-    var P = HK.Pos, pool = P && P.explicit(M) && P.isBottom(M) ? ['oneTwo', 'oneTwo', 'oneTwo', 'sandwich', 'twoOne'] : ['sandwich', 'sandwich', 'twoOne', 'oneTwo'];
+    var P = HK.Pos, pool = P && P.explicit(M, Tn) && P.isBottom(M, Tn) ? ['oneTwo', 'oneTwo', 'oneTwo', 'sandwich', 'twoOne'] : ['sandwich', 'sandwich', 'twoOne', 'oneTwo'];
     return { p: ctx.rng.pick(pool), t: Tn, m: M, u: Bn };
   }
   /* {t}=上 {m}=真ん中 {u}=下。oneTwo：{t}が{m}と{u}を抱く／twoOne：{t}と{m}が{u}を抱く／sandwich：{t}が{m}を、{m}が{u}を／ring：{t}→{m}→{u}→{t} */
@@ -14437,7 +14437,7 @@
     setPQ(r);
     /* 受ける側の役（recv）に、自分で攻めを選んだ人を置かない */
     var sTop = function (k) { var c = g.slice().sort(function (p, q) { return q.tr[k] - p.tr[k]; })[0]; return c.tr[k] > 0.55 ? c : null; };
-    var recvOK = function (o, rr) { rr = rr || r; return !o.recv || !o.recv.split(' ').some(function (k) { var c = k === 's' && o.who ? sTop(o.who) : rr[k]; return !c || hardTop(c); }); };
+    var recvOK = function (o, rr) { rr = rr || r; return !o.recv || !o.recv.split(' ').some(function (k) { var c = k === 's' && o.who ? sTop(o.who) : rr[k]; return !c || hardTop(c, g); }); };
     /* 女性どうしで繋がる組があれば、挿入の描写を使わない（白い部屋の木箱の玩具はよい） */
     var E = { oneTwo: [[sp.t, sp.m], [sp.t, sp.u]], twoOne: [[sp.t, sp.u], [sp.m, sp.u]], sandwich: [[sp.t, sp.m], [sp.m, sp.u]], ring: [[sp.t, sp.m], [sp.m, sp.u], [sp.u, sp.t]] }[sp.p];
     var ffE = HK.Pos ? E.filter(function (e) { return HK.Pos.ff(e[0], e[1]); })[0] : null;
@@ -14512,7 +14512,7 @@
     var rb = (ffE ? X.RIBA_FF : X.RIBA) || [];
     rb = rb.filter(function (o) { return (!o.shapes || o.shapes.split(' ').indexOf(sp.p) >= 0) && ribaOK(o); });
     if (rb.length && ctx.rng() < 0.5) { out.push(X.fill(fpk(fpk(rb).t), r)); used.push('リバ同士の入れ替わり'); }
-    if (V && sp.u && !hardTop(sp.u) && ctx.rng() < 0.75) out.push(X.fill(V.line(pf, sp.u.persona, ctx.rng() < 0.5 ? 'edge' : 'climax', 'b').replace(/\{b\}/g, '{u}').replace(/\{a\}/g, '{t}'), r));
+    if (V && sp.u && !hardTop(sp.u, g) && ctx.rng() < 0.75) out.push(X.fill(V.line(pf, sp.u.persona, ctx.rng() < 0.5 ? 'edge' : 'climax', 'b').replace(/\{b\}/g, '{u}').replace(/\{a\}/g, '{t}'), r));
     /* 見所：嫉妬の型があれば嫉妬の見所を一つ（高確率）、受けの開放度の見所を一つ（ときどき）、ほかに性格・きっかけの見所 */
     var top = function (k, th) { var c = g.slice().sort(function (p, q) { return q.tr[k] - p.tr[k]; })[0]; return c.tr[k] > th ? c : null; };
     var after = null;
@@ -14545,7 +14545,7 @@
     var nG = first ? (ctx.rng() < 0.6 ? 1 : 0) + (used.length < 2 ? 1 : 0) : (used.length ? 0 : 1);
     for (var k = 0; k < nG; k++) addHL(hlG, function (z) { return (z.kinds ? 2.2 : 1) * (z.shapes ? 1.6 : 1) * (z.who ? 1.3 : 1); });
     }
-    if (sp.p === 'sandwich' && V && !hardTop(sp.m) && ctx.rng() < 0.6) out.push(X.fill(V.line(pf, sp.m.persona, 'climax', 'b').replace(/\{b\}/g, '{m}').replace(/\{a\}/g, '{t}'), r));
+    if (sp.p === 'sandwich' && V && !hardTop(sp.m, g) && ctx.rng() < 0.6) out.push(X.fill(V.line(pf, sp.m.persona, 'climax', 'b').replace(/\{b\}/g, '{m}').replace(/\{a\}/g, '{t}'), r));
     /* 絶頂：形・嫉妬・開放度に合う文があれば優先 */
     var ltC = ltOn && !TE && !r.synced && ctx.rng() < 0.6 ? ltPick('climax') : null;
     if (ltC) out.push(ltC);
@@ -14571,8 +14571,8 @@
     var txt3 = out.join('');
     if (ffE && HK.FF) txt3 = HK.FF.fix(ctx, txt3, ffE[0], ffE[1], { tools: !!ctx.flags.toolbox });
     /* 女性の攻めが入れる側に書かれた文は、男性の相手ごとに女性上位の文へ（pos-fm.js） */
-    if (HK.FM && HK.Pos) g.filter(function (c) { return HK.Pos.isF(c) && HK.Pos.isTop(c); }).forEach(function (f) {
-      g.forEach(function (m) { if (m !== f && !HK.Pos.isF(m)) txt3 = HK.FM.fixWith(ctx, txt3, f, m.name); });
+    if (HK.FM && HK.Pos) g.filter(function (c) { return HK.Pos.isF(c) && (HK.Pos.isTop(c) || HK.Pos.hasFor(c)); }).forEach(function (f) {
+      g.forEach(function (m) { if (m !== f && !HK.Pos.isF(m) && HK.Pos.isTop(f, m)) txt3 = HK.FM.fixWith(ctx, txt3, f, m.name); });
     });
     return txt3;
   }
@@ -15191,7 +15191,7 @@
   function groupKind(ctx, a, b) {
     if (hate(ctx, a, b) >= 50 || hate(ctx, b, a) >= 50) return 'enemy';
     /* 攻め×攻め（エッチの条件で組めなかった二人。全年齢では書かない） */
-    if (!HK.SAFE_ON && (ctx.rules || []).some(function (r) { return r.k === 'h'; }) && HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b) && a.pos === 'top' && b.pos === 'top') return 'awk';
+    if (!HK.SAFE_ON && (ctx.rules || []).some(function (r) { return r.k === 'h'; }) && HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b) && HK.Pos.hardTop(a, b) && HK.Pos.hardTop(b, a)) return 'awk';
     var r1 = ctx.R(a, b), r2 = ctx.R(b, a);
     if ((r1.aff + r2.aff) / 2 >= 25) return 'friend';
     return 'plain';
@@ -17552,7 +17552,7 @@
       if (ctx.rng() < (lew === 'high' ? 0.7 : 0.4)) out.push(pk(H.KNOT_R));
     } else {
       /* 受けが自分から跨る（NORI）：自分で攻めを選んだ相手を押し倒す書き方は除く */
-      var nori = H.NORI ? H.NORI.filter(function (l) { return !(HK.Pos && HK.Pos.hardTop(a) && /押し倒/.test(l)); }) : [];
+      var nori = H.NORI ? H.NORI.filter(function (l) { return !(HK.Pos && HK.Pos.hardTop(a, b) && /押し倒/.test(l)); }) : [];
       out.push(nori.length && HK.Pos && HK.Pos.nori(b) && ctx.rng() < 0.45 ? pk(nori) : pk(H.ACT[lew === 'high' ? 'high' : 'mid'][ta]));
       if (opt.beta) out.push(pk(H.BETA));
       else if (ctx.rng() < (lew === 'high' ? 0.8 : 0.5)) out.push(pk(H.KNOT));
@@ -20220,7 +20220,7 @@
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b);
       /* 自分で攻めを選んだ人を、壁に押しつけて唇を奪う側には回さない（受け攻めの指定に従う） */
-      if (HK.Pos && HK.Pos.hardTop(b)) return false;
+      if (HK.Pos && HK.Pos.hardTop(b, a)) return false;
       return OM.isFated && HK.canLove(a, b) && !pf.couple && hateLove(ctx, a, b) && ctx.stepIndex - (pf.lastForce == null ? -9 : pf.lastForce) >= 3 && (ctx.om.met[key(a, b)] || !OM.isFated(ctx, a, b));
     },
     w: function (ctx, a, b) { var r = ctx.R(a, b); return (0.35 + a.tr.impulse * 0.8 + a.tr.aggr * 0.6 + r.ten / 90 + r.att / 120) * strifeK(ctx); },
@@ -20340,7 +20340,7 @@
       /* 寝取られる側（恋人を裏切る側）を、後半の文の主語にする */
       var sw = function (x) { return motive === 'cheat' ? x.replace(/\{a\}/g, '{A}').replace(/\{b\}/g, '{a}').replace(/\{A\}/g, '{b}').replace(/\{sa\}/g, '{SA}').replace(/\{sb\}/g, '{sa}').replace(/\{SA\}/g, '{sb}') : x; };
       var s1 = sw(ctx.pick(lewd(ctx) === 'low' || !NT.scene ? NT.low : nf(NT.scene, /快感/))), s2 = sw(ctx.pick(NT.after));
-      var head = ctx.pick(motive === 'cheat' && HK.Pos && !hTop && HK.Pos.hardTop(b) ? NT.cheat.filter(function (l) { return !/上着を脱がせた/.test(l); }) : NT[motive]);
+      var head = ctx.pick(motive === 'cheat' && HK.Pos && !hTop && HK.Pos.hardTop(b, a) ? NT.cheat.filter(function (l) { return !/上着を脱がせた/.test(l); }) : NT[motive]);
       /* R18版：夜そのものは、段落に分けた厚い版（omega-thick.js の OM.affairScene。受け攻め・女性どうし・女性攻め×男性・態度ごとの声はそちらで） */
       var thick = !HK.SAFE_ON && lewd(ctx) !== 'low' && OM.affairScene ? OM.affairScene(ctx, a, b) : null;
       var t = head + s1 + s2;
@@ -20835,7 +20835,7 @@
     var lew = ctx.env.lewd || 'mid', sc = OM.sc || function (t) { return t; };
     /* 行為の文（R18）を抜いた全年齢版では、いつも暗転の一文（T.low）にする */
     if (!T.play) lew = 'low';
-    var ff = !!HK.Pos && (OM.ffTU ? OM.ffTU(A, B) : HK.Pos.ff(A, B)), hardA = HK.Pos && HK.Pos.hardTop(A), fx = HK.Pos && HK.Pos.fixed(A, B);
+    var ff = !!HK.Pos && (OM.ffTU ? OM.ffTU(A, B) : HK.Pos.ff(A, B)), hardA = HK.Pos && HK.Pos.hardTop(A, B), fx = HK.Pos && HK.Pos.fixed(A, B);
     var Oq = sx(B) === 'o' ? B : sx(A) === 'o' ? A : B;
     /* Ω（{o}）が攻めのときは、αがΩに触れて力を抜かせる書き出しを使わない */
     var bo = T.bondOpen.filter(function (l) { return Oq !== A || !/^\{x\}は\{o\}|\{o\}は小さく震えた|\{o\}の体から力が抜け/.test(l); });
@@ -20873,7 +20873,7 @@
   OM.lovePlay = function (ctx, A, B) {
     if (!T.play) return '';
     if (HK.Pos && (OM.ffTU ? OM.ffTU(A, B) : HK.Pos.ff(A, B))) return 'それから、' + pick(ctx, T.playFF);
-    return 'それから、' + pick(ctx, allPlay(combo(A, B), HK.Pos && HK.Pos.hardTop(A)));
+    return 'それから、' + pick(ctx, allPlay(combo(A, B), HK.Pos && HK.Pos.hardTop(A, B)));
   };
 
   var CB_LABEL = { ao: 'α攻め×Ω受け', oa: 'Ω攻め×α受け', aa: 'α同士', oo: 'Ω同士', b: 'βがいる組' };
@@ -22745,7 +22745,7 @@
       if (O.lv >= 2 && O.who === 'two' && HK.ngPair(a, b)) { var pr = okTwo[rng.int(okTwo.length)]; a = pr[0]; b = pr[1]; }
       if (O.lv >= 2 && O.who === 'king' && HK.ngPair(a, b)) a = okKing[rng.int(okKing.length)];
       /* 二人への命令（壁ドン・顎クイなど {a} が仕掛けるもの）は、自分で攻めを選んだ人を仕掛けられる側にしない */
-      if (O.who === 'two' && HK.Pos && HK.Pos.hardTop(b) && !HK.Pos.hardTop(a)) { var sw = a; a = b; b = sw; }
+      if (O.who === 'two' && HK.Pos && HK.Pos.hardTop(b, a) && !HK.Pos.hardTop(a, b)) { var sw = a; a = b; b = sw; }
       /* 命令はゲームの決まり文句なので、口調で「〜します！」に変えない（\u2060 は口調の整形を外す印） */
       var text = '王様は' + king.name + '。「\u2060' + (O.who === 'two' ? a.name + 'と' + b.name + 'で' : O.who === 'king' ? a.name + 'が' : O.who === 'one' ? a.name + 'が' : '全員で') + O.t + '！」';
       var cat = O.lv >= 2 ? 'romance' : 'bond', why = '王様ゲーム（強さ' + O.lv + '）';
@@ -29740,7 +29740,7 @@
         ['grave', a.tr.ac * 0.45 + a.tr.np * 0.3 + a.tr.caution * 0.2 - a.tr.honesty * 0.2 + (ctx.present().some(function (o) { return o !== a && o !== b && Z.isLover(ctx, b, o); }) ? 0.5 : 0)]
       ];
       /* 自分で攻めを選んだ相手には、関係を迫って壁際に追い詰める場面にしない */
-      if (HK.Pos && HK.Pos.hardTop(b)) opts = opts.filter(function (o) { return o[0] !== 'press'; });
+      if (HK.Pos && HK.Pos.hardTop(b, a)) opts = opts.filter(function (o) { return o[0] !== 'press'; });
       var k = HK.weighted(rng, opts, function (o) { return Math.pow(Math.max(0.03, o[1]), 2); })[0];
       pf.zcr = k;
       var rb = ctx.R(b, a), loveOK = HK.canLove(b, a);
@@ -33348,7 +33348,8 @@
    結果の要約・結末・関係のカード・画像で、二人の組を「攻め×受け」の順に書く（受け攻めを決めている組が「受け×攻め」と出ないように）。
    向きは HK.Pos.order（pos.js）と同じ決まりで決める：自分で選んだ攻め・受け、恋愛対象（受け攻め）で一つに決まる組、
    指定が同じどうし（おまかせの女性どうし・受けどうし）は気質。場面の希望で変わる組（リバどうし・おまかせの男性どうしなど）は、住人の並び順のまま。
-   判定には結果の入力（res.input.chars の受け攻め・性別・恋愛対象）と結果の気質（res.chars[i].tr）だけを使うので、セーブから開いた結果でも同じ順になる */
+   相手ごとの受け攻め（入力の posFor { 相手の番号: 指定 }）があれば、その二人の向きはそちらで決める（pos.js の P.of(c, 相手)）。
+   判定には結果の入力（res.input.chars の受け攻め・相手ごとの受け攻め・性別・恋愛対象）と結果の気質（res.chars[i].tr）だけを使うので、セーブから開いた結果でも同じ順になる */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -33356,7 +33357,7 @@
   /* 結果の i 番目の住人を、受け攻めの判定に使える形に（設定は入力から、気質は結果から） */
   function who(res, i) {
     var c = (res.input && res.input.chars && res.input.chars[i]) || {}, r = (res.chars && res.chars[i]) || {};
-    return { i: i, name: r.name || c.name || String(i), gender: c.gender || '', pos: c.pos || '', posLike: c.posLike || '', likes: c.likes || '', futa: !!c.futa, tr: r.tr || {} };
+    return { i: i, name: r.name || c.name || String(i), gender: c.gender || '', pos: c.pos || '', posLike: c.posLike || '', likes: c.likes || '', futa: !!c.futa, posFor: c.posFor && typeof c.posFor === 'object' ? c.posFor : null, tr: r.tr || {} };
   }
   /* pos.js の lean と同じ（指定が同じどうしで、どちらが動く側に回りやすいか） */
   function lean(c) {
@@ -33368,15 +33369,15 @@
     var P = HK.Pos;
     if (!P || !P.orients) return null;
     var os = P.orients(A, B);
-    if (!os.length) return P.hardTop(B) && !P.hardTop(A) ? [B, A] : P.hardTop(A) ? [A, B] : null;
+    if (!os.length) return P.hardTop(B, A) && !P.hardTop(A, B) ? [B, A] : P.hardTop(A, B) ? [A, B] : null;
     if (os.length === 1) return os[0];
-    var pa = P.of(A), pb = P.of(B);
+    var pa = P.of(A, B), pb = P.of(B, A);
     if (pa === 'riba' && pb === 'riba') return null;
     if (pa === 'top' && pb !== 'top') return [A, B];
     if (pb === 'top' && pa !== 'top') return [B, A];
     if (pa === 'bottom' && pb !== 'bottom') return [B, A];
     if (pb === 'bottom' && pa !== 'bottom') return [A, B];
-    if (pa === 'bottom' && pb === 'bottom' && !!P.explicit(A) !== !!P.explicit(B)) return P.explicit(A) ? [B, A] : [A, B];
+    if (pa === 'bottom' && pb === 'bottom' && !!P.explicit(A, B) !== !!P.explicit(B, A)) return P.explicit(A, B) ? [B, A] : [A, B];
     if (pa === pb && (pa === 'top' || pa === 'bottom')) {
       var la = lean(A), lb = lean(B);
       return la > lb + 0.001 ? [A, B] : lb > la + 0.001 ? [B, A] : (A.name < B.name ? [A, B] : [B, A]);
@@ -33413,7 +33414,13 @@
    性器の有無（genital、R18版のみ。attr.js の欄）：''（おまかせ＝性別どおり：男性→男性器、女性→女性器、ふたなり→両方）／m 男性器／f 女性器／mf 両方／none なし。
      体の描写の判定（P.hasM・P.hasF・P.noGen、それを読む P.isFBody・P.futa・P.isF）は性別ではなくこれを見る。胸・喉仏などは性別どおり。
      none の人は、受けのとき口（口内）まで、攻めのとき指と玩具だけ（pos-nogen.js の HK.NoGen）。P.okSex は変えない（組み立て側が形を選ぶ）。
-     全年齢版・全年齢モード（HK.SAFE_ON）では使わない（保存だけ） */
+     全年齢版・全年齢モード（HK.SAFE_ON）では使わない（保存だけ）
+   相手ごとの受け攻め posFor（全年齢版・R18版共通）：{ 相手の番号: 'top'|'bottom'|'riba' }。P.of(c, other)・P.explicit(c, other)・P.hardTop(c, other) の
+     第2引数に相手を渡すと、その相手への指定（自分で選んだ指定として扱う）を全体の指定より優先する。相手を渡さない（モブ・一人の場面）ときは全体の指定のまま。
+     相手は実行時の住人なら .i、入力の住人なら .src.i で引く（attr.js の A.nightOf と同じ）。
+     全体で「攻め」の人が受けに回るのは、相手ごとに「受け」「リバ」と自分で決めた相手に対してだけ。モブ・指定の無い相手には今までどおり受けに回らない。
+     二人を扱う関数（likes・canRole・orients・order・okSex・fixed・bothRiba・fbFor・ff など）は、二人のそれぞれについて相手への指定を見る。
+     三人以上の場面は P.hardTopIn(c, 人の一覧)（その場の誰か一人にでも攻めなら攻め）を使う */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -33421,28 +33428,58 @@
   var lock = {};
 
   function src(c, k) { return c ? (c[k] != null && c[k] !== '' ? c[k] : (c.src && c.src[k]) || '') : ''; }
-  /* 実際に効く指定 */
-  P.of = function (c) {
+  var POSV = { top: 1, bottom: 1, riba: 1 };
+  /* 相手の番号（実行時の住人は .i、入力の住人は .src.i。分からなければ null） */
+  function idxOf(o) { return !o ? null : typeof o.i === 'number' ? o.i : o.src && typeof o.src.i === 'number' ? o.src.i : typeof o._pi === 'number' ? o._pi : null; }
+  /* c が相手 o に向けて自分で決めた受け攻め（相手ごとの指定。無ければ ''） */
+  function pf(c, o) {
+    if (!c || !o || c === o) return '';
+    var m = (c.posFor && typeof c.posFor === 'object' ? c.posFor : null) || (c.src && c.src.posFor && typeof c.src.posFor === 'object' ? c.src.posFor : null);
+    if (!m) return '';
+    var k = idxOf(o);
+    if (k == null || k === idxOf(c)) return '';
+    var v = m[k];
+    return POSV[v] ? v : '';
+  }
+  P.forOf = pf;
+  /* 実際に効く指定（o を渡すと、その相手への指定を優先する） */
+  P.of = function (c, o) {
     if (!c) return '';
+    var f = pf(c, o);
+    if (f) return f;
     var v = src(c, 'pos');
     if (v === 'top' || v === 'bottom' || v === 'riba') return v;
     return src(c, 'gender') === 'f' ? 'bottom' : '';
   };
-  function explicit(c) { var v = src(c, 'pos'); return v === 'top' || v === 'bottom' || v === 'riba'; }
+  function explicit(c, o) { if (pf(c, o)) return true; var v = src(c, 'pos'); return v === 'top' || v === 'bottom' || v === 'riba'; }
   P.explicit = explicit;
-  P.isTop = function (c) { return P.of(c) === 'top'; };
-  P.isBottom = function (c) { return P.of(c) === 'bottom'; };
-  /* 自分で「攻め」を選んだ人（どの相手・どの場面でも受けに回してはいけない） */
-  P.hardTop = function (c) { return explicit(c) && P.of(c) === 'top'; };
-  P.canTop = function (c) { return P.of(c) !== 'bottom' || !explicit(c); };
-  P.canBottom = function (c) { return !P.hardTop(c); };
+  P.isTop = function (c, o) { return P.of(c, o) === 'top'; };
+  P.isBottom = function (c, o) { return P.of(c, o) === 'bottom'; };
+  /* 自分で「攻め」を選んだ人（どの相手・どの場面でも受けに回してはいけない）。o を渡すと、その相手への指定で見る */
+  P.hardTop = function (c, o) { return explicit(c, o) && P.of(c, o) === 'top'; };
+  /* 三人以上の場面：その場の誰か一人にでも自分で攻めを選んでいれば攻め（一人もいなければ全体の指定） */
+  P.hardTopIn = function (c, list) {
+    var os = (list || []).filter(function (o) { return o && o !== c; });
+    if (!os.length) return P.hardTop(c);
+    for (var i = 0; i < os.length; i++) if (P.hardTop(c, os[i])) return true;
+    return false;
+  };
+  /* 相手ごとの指定を一つでも持つ人か */
+  P.hasFor = function (c) { var m = c && ((c.posFor && typeof c.posFor === 'object' ? c.posFor : null) || (c.src && c.src.posFor)); if (!m) return false; for (var k in m) if (POSV[m[k]]) return true; return false; };
+  /* 入力の住人（input.chars。番号を持たない）を、相手ごとの指定が引ける形に（誰も posFor を持たなければ、そのまま返す） */
+  P.withIdx = function (cs) {
+    if (!Array.isArray(cs) || !cs.some(P.hasFor)) return cs;
+    return cs.map(function (c, i) { if (!c || typeof c !== 'object') return c; var o = {}; for (var k in c) if (Object.prototype.hasOwnProperty.call(c, k)) o[k] = c[k]; o._pi = i; return o; });
+  };
+  P.canTop = function (c, o) { return P.of(c, o) !== 'bottom' || !explicit(c, o); };
+  P.canBottom = function (c, o) { return !P.hardTop(c, o); };
   var LBL = { top: '攻め', bottom: '受け', riba: 'リバ' };
   P.label = function (c) { return LBL[P.of(c)] || 'おまかせ'; };
   /* 性器の有無（R18版のみ）：自分で決めた値（決めていなければ ''。全年齢では常に ''） */
   P.GENITAL = { m: 1, f: 1, mf: 1, none: 1 };
   P.genSet = function (c) { if (HK.SAFE_ON || !c) return ''; var v = src(c, 'genital'); return P.GENITAL[v] ? v : ''; };
   /* ふたなり（性器の欄を決めていない人だけ。女性で、自分で「攻め」か「リバ」を選び、設定で「ふたなり」を付けた人） */
-  function futaOld(c) { return !HK.SAFE_ON && src(c, 'gender') === 'f' && !!src(c, 'futa') && explicit(c) && P.of(c) !== 'bottom'; }
+  function futaOld(c, o) { return !HK.SAFE_ON && src(c, 'gender') === 'f' && !!src(c, 'futa') && explicit(c, o) && P.of(c, o) !== 'bottom'; }
   /* 実際の性器：'m'／'f'／'mf'／'none'（おまかせは性別どおり。性別がおまかせ・その他の人は、これまでどおり男性の体） */
   P.gen = function (c) { var g = P.genSet(c); if (g) return g; if (!c) return ''; return src(c, 'gender') === 'f' ? (futaOld(c) ? 'mf' : 'f') : 'm'; };
   P.hasM = function (c) { var g = P.gen(c); return g === 'm' || g === 'mf'; };
@@ -33453,13 +33490,13 @@
   /* ふたなり（R18版のみ）：女性で、自分で「攻め」か「リバ」を選び、設定で「ふたなり」を付けた人。
      攻めに回る場面では男性の体（いちもつ）を前提にした描写で書く。自分で「受け」を選んだ人・おまかせの女性には効かない。
      性器を「両方」にした人は、受けの指定でなければ同じ扱い（性別・ふたなりの欄に関係なく） */
-  P.futa = function (c) { var g = P.genSet(c); if (g) return g === 'mf' && P.of(c) !== 'bottom'; return futaOld(c); };
+  P.futa = function (c, o) { var g = P.genSet(c); if (g) return g === 'mf' && P.of(c, o) !== 'bottom'; return futaOld(c, o); };
   /* 描写の上で「女性の体」として書く人（ふたなりの攻めは除く）。女性どうし（ff）・女性が攻め（fm）の判定はこれで行う */
-  P.isF = function (c) { return P.isFBody(c) && !P.futa(c); };
+  P.isF = function (c, o) { return P.isFBody(c) && !P.futa(c, o); };
   /* 女性どうしの組（いちもつの描写を使わない）。ふたなりの攻めが入る組は、男性の体を前提にした描写でよい */
-  P.ff = function (a, b) { return P.isF(a) && P.isF(b); };
+  P.ff = function (a, b) { return P.isF(a, b) && P.isF(b, a); };
   /* 二人ともリバ（双頭の玩具・貝合わせのように、二人が対等に繋がる描写は、この組だけ） */
-  P.bothRiba = function (a, b) { return P.of(a) === 'riba' && P.of(b) === 'riba'; };
+  P.bothRiba = function (a, b) { return P.of(a, b) === 'riba' && P.of(b, a) === 'riba'; };
   P.MUTUAL_RE = /双頭の玩具|双頭ディルド|貝合わせ|擦り合わせ|擦りつけ合|擦り付け合|重ね合わせ|上になったり下になったり|濡れたところ同士|熱いところ同士|熱いところを重ね|入れ替わ(?:り|って|った)/;
 
   /* ---------- 恋愛対象（受け攻め） ---------- */
@@ -33471,28 +33508,28 @@
     { v: 'any', label: '誰とでも（リバも含む）' }
   ];
   P.likeValid = function (v) { return v === '' || v === 'tb' || v === 'tr' || v === 'br' || v === 'any'; };
-  /* c が相手として受け入れる「相手の指定」 */
-  P.likes = function (c) {
+  /* c が相手として受け入れる「相手の指定」（o を渡すと、その相手への受け攻めで見る） */
+  P.likes = function (c, o) {
     var v = src(c, 'posLike');
     if (v === 'tb') return { top: 1, bottom: 1 };
     if (v === 'tr') return { top: 1, riba: 1 };
     if (v === 'br') return { bottom: 1, riba: 1 };
     if (v === 'any') return { top: 1, bottom: 1, riba: 1 };
-    if (explicit(c) && P.of(c) === 'top') return { bottom: 1 };
-    if (explicit(c) && P.of(c) === 'bottom') return { top: 1 };
+    if (explicit(c, o) && P.of(c, o) === 'top') return { bottom: 1 };
+    if (explicit(c, o) && P.of(c, o) === 'bottom') return { top: 1 };
     return { top: 1, bottom: 1, riba: 1 };
   };
   /* c がその役（'top'|'bottom'）に回れるか。partner は相手 */
   function canRole(c, r, partner) {
-    if (!explicit(c)) return true;
-    var p = P.of(c);
+    if (!explicit(c, partner)) return true;
+    var p = P.of(c, partner);
     if (p === 'riba') return true;
     if (p === 'top') return r === 'top';
     /* 受け×受け（どちらも自分で選んだ受け）だけは、どちらかが動く側に回る */
-    return r === 'bottom' || (P.of(partner) === 'bottom' && explicit(partner));
+    return r === 'bottom' || (P.of(partner, c) === 'bottom' && explicit(partner, c));
   }
-  /* 相手から見た c の指定（おまかせの人は、その場で回る役として見る） */
-  function kindAs(c, r) { return explicit(c) ? P.of(c) : r; }
+  /* 相手から見た c の指定（おまかせの人は、その場で回る役として見る）。partner は相手 */
+  function kindAs(c, r, partner) { return explicit(c, partner) ? P.of(c, partner) : r; }
   /* 成り立つ向き（[攻め, 受け] の並び）の一覧 */
   /* 恋愛対象（c.likes：''＝おまかせ／m／f／both／none）が相手の性別に合うか。両方向で見る。性別がおまかせ・その他の相手は制限しない */
   function likesOne(a, b) {
@@ -33514,7 +33551,7 @@
     [[a, b], [b, a]].forEach(function (o) {
       var t = o[0], u = o[1];
       if (!canRole(t, 'top', u) || !canRole(u, 'bottom', t)) return;
-      if (!P.likes(t)[kindAs(u, 'bottom')] || !P.likes(u)[kindAs(t, 'top')]) return;
+      if (!P.likes(t, u)[kindAs(u, 'bottom', t)] || !P.likes(u, t)[kindAs(t, 'top', u)]) return;
       out.push(o);
     });
     return out;
@@ -33539,9 +33576,9 @@
     if (!a || !b || a === b) return fb || [a, b];
     fb = fb && fb.length === 2 ? fb : [a, b];
     var os = P.orients(a, b), r;
-    if (!os.length) return P.hardTop(b) && !P.hardTop(a) ? [b, a] : P.hardTop(a) ? [a, b] : fb;
+    if (!os.length) return P.hardTop(b, a) && !P.hardTop(a, b) ? [b, a] : P.hardTop(a, b) ? [a, b] : fb;
     if (os.length === 1) return os[0];
-    var pa = P.of(a), pb = P.of(b);
+    var pa = P.of(a, b), pb = P.of(b, a);
     if (pa === 'riba' && pb === 'riba') return fb;
     var k = key(a, b);
     if (lock[k]) return lock[k] === nameOf(a) ? [a, b] : [b, a];
@@ -33550,7 +33587,7 @@
     else if (pa === 'bottom' && pb !== 'bottom') r = [b, a];
     else if (pb === 'bottom' && pa !== 'bottom') r = [a, b];
     /* 受け×受け：自分で「受け」を選んだ人を優先し、おまかせの側が攻めに回る */
-    else if (pa === 'bottom' && pb === 'bottom' && !!explicit(a) !== !!explicit(b)) r = explicit(a) ? [b, a] : [a, b];
+    else if (pa === 'bottom' && pb === 'bottom' && !!explicit(a, b) !== !!explicit(b, a)) r = explicit(a, b) ? [b, a] : [a, b];
     else if (pa === pb && (pa === 'top' || pa === 'bottom')) {
       var la = lean(a), lb = lean(b);
       r = la > lb + 0.001 ? [a, b] : lb > la + 0.001 ? [b, a] : (nameOf(a) < nameOf(b) ? [a, b] : [b, a]);
@@ -33559,7 +33596,7 @@
     return r;
   };
   /* 向きが決まっている組か（＝途中の逆転・入れ替わりを起こしてはいけない） */
-  P.fixed = function (a, b) { return !(P.of(a) === 'riba' && P.of(b) === 'riba'); };
+  P.fixed = function (a, b) { return !(P.of(a, b) === 'riba' && P.of(b, a) === 'riba'); };
   /* 二人の組で a が攻めか */
   P.topOf = function (a, b, fb) { return P.order(a, b, fb)[0]; };
   /* 名前のない相手（モブ・魔物・道具）との組：キャラが攻めなら 'top'、受けなら 'bottom'、どちらでもよければ def。
@@ -33584,7 +33621,7 @@
   /* ノリノリな性格（奔放・衝動的）：受けやおまかせでも、自分から跨ったり誘ったりする */
   P.nori = function (c) { var t = (c && c.tr) || {}; if ((t.ac || 0) > 0.62 && (t.fc || 0) < 0.5) return false; return (t.fc || 0) > 0.6 || (t.impulse || 0) > 0.66; };
   /* 仕掛けた側 a がノリノリで、攻めの指定でなければ、自分が受けに回る向きを希望する */
-  P.fbFor = function (a, b) { return P.nori(a) && P.of(a) !== 'top' && P.of(b) !== 'bottom' ? [b, a] : [a, b]; };
+  P.fbFor = function (a, b) { return P.nori(a) && P.of(a, b) !== 'top' && P.of(b, a) !== 'bottom' ? [b, a] : [a, b]; };
 
   /* 男性の体を前提にした言葉（女性どうしの場面で使ってはいけない）。点検にも使う */
   P.MALE_RE = /ちんぽ|ちんこ|ペニス|陰茎|肉棒|いちもつ|一物|男根|亀頭|勃起|射精|精液|白濁|種付け|孕ませ|中に出|中出し|子種|睾丸|カリ首|フェラ|裏筋|鈴口|先走り|怒張|剛直|屹立/;
@@ -33617,9 +33654,12 @@
    ・will 心の強さ：''／weak 弱い／avg ふつう／strong 強い。快楽堕ち・催眠・常識改変・遮断穴の「堕ちる」判定に掛ける（HK.Attr.willK）。
      strong は体が堕ちても心は折れない文を添える（HK.Attr.hold）
    ・same 同一人物：相手の番号。二人は恋愛・R18にしない（HK.ngPair・住人の ng に足す）。「鏡を見るような」共通の場面 3 本と、結果の関係名「もう一人の自分」
+   ・posFor 相手ごとの受け攻め（全年齢版・R18版共通）：{ 相手: 'top'|'bottom'|'riba' }。空・不正な値は持たない。nightFor と同じ経路で保存・書き出し・入力に渡す。
+     実行時は pos.js の P.of(c, 相手)・P.explicit(c, 相手)・P.hardTop(c, 相手) が全体の受け攻め（pos）より優先して読む。
+     画面の欄は「相手ごとの設定」の行（A.forHtml。夜の性格の相手ごとの指定 nightFor も同じ行）
    ・youFor / fpFor 相手ごとの二人称・一人称：{ 相手: 'あなた'|'きみ'|… } / { 相手: '私'|'俺'|… }（自由記入も可・8文字まで）。
      相手が分かる台詞では、ふだんの二人称・一人称より優先する（voice.js の V.processText。名前で引けるように A.voiceFor で写す）。
-     画面の欄は「関係と呼び方」の相手ごとの行（呼び方の隣。A.voiceForHtml）
+     画面の欄は「相手ごとの設定」の行（呼び方の隣。A.voiceForHtml）
    ・foodLike 好きな食べ物／foodHate 嫌いな食べ物：自由記入（読点区切りで5つまで・1つ12文字まで）。taste 好きな味：甘い／しょっぱい／辛い／酸っぱい／苦い／あっさり／こってり
      （いくつでも。読点区切りで持つ）。実行時は配列で写す。使い方は food.js（HK.Food：料理の味・食べた人の反応・好物の一句）
    画面の欄（ui.js の mk・normChar・rosterJSON・import・buildInput、ui-gear.js の描画と入力）は、ここの関数を呼ぶだけにしてある。
@@ -33651,6 +33691,10 @@
   A.FP_OPTS = ['私', '俺', '僕', 'あたし'];
   function word(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>\s\u2060-\u2064]/g, '').slice(0, 8) : ''; }
   function wmap(m, keyOk) { var o = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { var w = word(m[k]); if (w && (!keyOk || keyOk(k))) o[k] = w; }); return o; }
+  /* 相手ごとの受け攻め（posFor）の値 */
+  A.POSFOR = [['', 'おまかせ（全体に従う）'], ['top', '攻め'], ['bottom', '受け'], ['riba', 'リバ']];
+  function posv(v) { return v === 'top' || v === 'bottom' || v === 'riba' ? v : ''; }
+  function pmap(m, keyOk) { var o = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { var v = posv(m[k]); if (v && (!keyOk || keyOk(k))) o[k] = v; }); return o; }
   function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL }[k]; }
   /* 好きな食べ物・嫌いな食べ物（自由記入）と好きな味（決まった7つから複数）。画面と書き出しは読点区切りの文字列、実行時は配列 */
   A.TASTES = ['甘い', 'しょっぱい', '辛い', '酸っぱい', '苦い', 'あっさり', 'こってり'];
@@ -33674,6 +33718,7 @@
     SIMPLE.forEach(function (k) { o[k] = val(listOf(k), c[k]); });
     o.raceNote = note(c.raceNote);
     o.nightFor = c.nightFor && typeof c.nightFor === 'object' ? JSON.parse(JSON.stringify(c.nightFor)) : {};
+    o.posFor = pmap(c.posFor);
     o.same = typeof c.same === 'string' ? c.same : '';
     VF.forEach(function (k) { o[k] = wmap(c[k]); });
     FOODK.forEach(function (k) { o[k] = fstr(c[k]); });
@@ -33687,6 +33732,7 @@
     var nf = {};
     if (c.nightFor && typeof c.nightFor === 'object') Object.keys(c.nightFor).forEach(function (k) { var v = val(A.NIGHT, c.nightFor[k]); if (v) nf[k] = v; });
     c.nightFor = nf;
+    c.posFor = pmap(c.posFor);
     c.same = typeof c.same === 'string' ? c.same : '';
     VF.forEach(function (k) { c[k] = wmap(c[k]); });
     FOODK.forEach(function (k) { c[k] = fstr(c[k]); });
@@ -33697,6 +33743,7 @@
   A.normRefs = function (c, ids, list) {
     if (!ids[c.same] || c.same === c.id) c.same = '';
     Object.keys(c.nightFor || {}).forEach(function (k) { if (!ids[k] || k === c.id) delete c.nightFor[k]; });
+    Object.keys(c.posFor || {}).forEach(function (k) { if (!ids[k] || k === c.id) delete c.posFor[k]; });
     VF.forEach(function (f) { Object.keys(c[f] || {}).forEach(function (k) { if (!ids[k] || k === c.id) delete c[f][k]; }); });
     if (c.same && list) list.forEach(function (o) { if (o.id === c.same && !o.same) o.same = c.id; });
   };
@@ -33708,6 +33755,7 @@
     if (tstr(c.taste)) o.taste = tstr(c.taste);
     if (c.same && ref(c.same) != null) o.same = ref(c.same);
     if (c.nightFor) { var nf = {}; Object.keys(c.nightFor).forEach(function (k) { if (ref(k) != null && c.nightFor[k]) nf[ref(k)] = c.nightFor[k]; }); if (Object.keys(nf).length) o.nightFor = nf; }
+    if (c.posFor) { var pf = {}; Object.keys(c.posFor).forEach(function (k) { if (ref(k) != null && posv(c.posFor[k])) pf[ref(k)] = c.posFor[k]; }); if (Object.keys(pf).length) o.posFor = pf; }
     VF.forEach(function (f) { if (!c[f]) return; var m = {}; Object.keys(c[f]).forEach(function (k) { if (ref(k) != null && word(c[f][k])) m[ref(k)] = word(c[f][k]); }); if (Object.keys(m).length) o[f] = m; });
     return o;
   };
@@ -33717,11 +33765,13 @@
     if (o.raceNote != null) c.raceNote = note(String(o.raceNote));
     FOODK.forEach(function (k) { if (o[k] != null) c[k] = fstr(o[k]); });
     if (o.taste != null) c.taste = tstr(o.taste);
-    c._atSame = o.same; c._atNf = o.nightFor; c._atYf = o.youFor; c._atFf = o.fpFor;
+    c._atSame = o.same; c._atNf = o.nightFor; c._atPf = o.posFor; c._atYf = o.youFor; c._atFf = o.fpFor;
   };
   A.importRefs = function (c, ref) {
     if (c._atSame != null && c._atSame !== '') { var s = ref(c._atSame); c.same = s && s !== c.id ? s : ''; }
     if (c._atNf && typeof c._atNf === 'object') { c.nightFor = c.nightFor || {}; Object.keys(c._atNf).forEach(function (k) { var id = ref(k), v = val(A.NIGHT, c._atNf[k]); if (id && id !== c.id && v) c.nightFor[id] = v; }); }
+    if (c._atPf && typeof c._atPf === 'object') { c.posFor = c.posFor || {}; Object.keys(c._atPf).forEach(function (k) { var id = ref(k), v = posv(c._atPf[k]); if (id && id !== c.id && v) c.posFor[id] = v; }); }
+    delete c._atPf;
     [['_atYf', 'youFor'], ['_atFf', 'fpFor']].forEach(function (x) {
       var m = c[x[0]];
       if (m && typeof m === 'object') { c[x[1]] = c[x[1]] || {}; Object.keys(m).forEach(function (k) { var id = ref(k), w = word(m[k]); if (id && id !== c.id && w) c[x[1]][id] = w; }); }
@@ -33738,6 +33788,7 @@
     var si = c.same ? ids.indexOf(c.same) : -1;
     if (si >= 0) o.same = si;
     if (c.nightFor) { var nf = {}, n = 0; Object.keys(c.nightFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && c.nightFor[k]) { nf[i] = c.nightFor[k]; n++; } }); if (n) o.nightFor = nf; }
+    if (c.posFor) { var pf = {}, n2 = 0; Object.keys(c.posFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && posv(c.posFor[k])) { pf[i] = c.posFor[k]; n2++; } }); if (n2) o.posFor = pf; }
     VF.forEach(function (f) { if (!c[f]) return; var m = {}, k2 = 0; Object.keys(c[f]).forEach(function (k) { var i = ids.indexOf(k), w = word(c[f][k]); if (i >= 0 && w) { m[i] = w; k2++; } }); if (k2) o[f] = m; });
     return o;
   };
@@ -33755,25 +33806,50 @@
     if (tstr(c.taste)) bits.push('好きな味：' + tstr(c.taste));
     var sm = c.same && byId(c.same);
     if (sm) bits.push('同一人物：' + sm.name);
+    var pfl = Object.keys(c.posFor || {}).map(function (id) { var o = byId(id); return o && posv(c.posFor[id]) ? o.name + 'に' + lab(A.POSFOR, c.posFor[id]) : ''; }).filter(Boolean);
+    if (pfl.length) bits.push('相手ごとの受け攻め：' + pfl.join('・'));
+/* r18: 全年齢版では省略 */
     return bits;
   };
-  /* ui-gear.js：「体と設定」の折りたたみ節。h = { esc, opt, selOf }。R18版だけの欄（胸・夜の性格・相手ごとの夜の性格）は濁点喘ぎと同じく SAFE_ON で隠す */
-  var openNow = false;
-  if (typeof document !== 'undefined' && document.head) { var st = document.createElement('style'); st.textContent = 'details.gattr{margin:8px 0 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px}details.gattr summary{cursor:pointer;font-size:13px;color:var(--muted)}details.gattr .gakn{font-size:12px;margin-left:4px;color:var(--ink)}details.gattr[open] summary{margin-bottom:4px}'; document.head.appendChild(st); }
-  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('toggle', function (e) { if (e.target && e.target.classList && e.target.classList.contains('gattr')) openNow = e.target.open; }, true);
+  /* ui-gear.js：「体と設定」の節の中身（見出しと「どの箱庭に効くか」の注意書きは ui-gear.js）。h = { esc, opt, selOf }。
+     R18版だけの欄（胸・性器）は SAFE_ON で隠す。夜の性格は「恋愛と夜」の節（A.nightHtml）と、相手ごとの設定の行（A.forHtml）に置く */
   A.gearHtml = function (c, others, h) {
     var esc = h.esc, sel = function (k) { return h.selOf('at_' + k, listOf(k), c[k] || ''); };
-    var n = A.summary(c, function (id) { return others.filter(function (o) { return o.id === id; })[0]; }).length;
-    var nf = '';
-/* r18: 全年齢版では省略 */
     var same = others.length ? '<label title="別の世界・別の時間の同じ人のように扱います。二人は恋愛・R18にならず、鏡を見るような場面が起きます">同一人物 <select data-gf="at_same" aria-label="同一人物"><option value="">なし</option>' + others.map(function (o) { return h.opt(o.id, o.name, c.same || ''); }).join('') + '</select></label>' : '';
-    return '<details class="gattr"' + (openNow ? ' open' : '') + '><summary>体と設定 <span class="gakn">' + (n ? n + '件' : 'なし') + '</span></summary>' +
-      '<div class="gearrow"><label title="二人の体格の差で、見上げる・抱き上げるといった文が変わります">体格 ' + sel('build') + '</label>' +
+    return '<div class="gearrow"><label title="二人の体格の差で、見上げる・抱き上げるといった文が変わります">体格 ' + sel('build') + '</label>' +
 /* r18: 全年齢版では省略 */
       '<label title="耳・尾・牙・翼などの文の飾りが付きます。死のある箱庭では、吸血鬼は特殊役職の吸血鬼と同じ扱いになります">種族 ' + sel('race') + '</label>' +
       (c.race === 'other' ? '<label>種族の名前 <input type="text" data-gf="at_raceNote" value="' + esc(c.raceNote || '') + '" maxlength="12" placeholder="例：人魚" style="width:7em"></label>' : '') +
 /* r18: 全年齢版では省略 */
-      '<label title="快楽堕ち・催眠・常識改変・感覚遮断穴などで、堕ちやすさが変わります。強いと、体は流されても心は折れません">心の強さ ' + sel('will') + '</label>' + same + '</div>' + nf + food(c, esc) + '</details>';
+      '<label title="快楽堕ち・催眠・常識改変・感覚遮断穴などで、堕ちやすさが変わります。強いと、体は流されても心は折れません">心の強さ ' + sel('will') + '</label>' + same + '</div>' + food(c, esc);
+  };
+  /* 「恋愛と夜」の節に置く、全体の夜の性格（R18版だけ。相手ごとに決めていない相手・モブが相手のとき） */
+  A.nightHtml = function (c, h) {
+    var out = '';
+/* r18: 全年齢版では省略 */
+    return out;
+  };
+  /* 「相手ごとの設定」の行に並べる欄（ui-gear.js）：この相手への受け攻め（posFor）と、R18版だけ夜の性格（nightFor） */
+  A.forHtml = function (c, o, h) {
+    var esc = h.esc, pv = (c.posFor || {})[o.id] || '';
+    var out = '<label title="この相手との恋愛・夜の場面での向きだけを変えます。おまかせなら、恋愛と夜の節の受け攻めに従います（ほかの相手・モブには全体の受け攻めのまま）">受け攻め <select data-gf="at_pf" data-o="' + esc(o.id) + '" aria-label="' + esc(o.name) + 'への受け攻め">' + A.POSFOR.map(function (x) { return h.opt(x[0], x[1], pv); }).join('') + '</select></label>';
+/* r18: 全年齢版では省略 */
+    return out;
+  };
+  /* 相手ごとの受け攻めの注意（全体の指定と食い違うとき・二人の向きが決まらないとき）。何もなければ '' */
+  var PLAB = { top: '攻め', bottom: '受け', riba: 'リバ' };
+  A.forNote = function (c, o) {
+    var P = HK.Pos, pv = (c.posFor || {})[o.id] || '', rv = (o.posFor || {})[c.id] || '';
+    if (!pv && !rv) return '';
+    var bits = [];
+    if (pv && c.pos !== pv) bits.push(c.name + 'は全体では' + (PLAB[c.pos] || 'おまかせ') + 'ですが、' + o.name + 'には' + PLAB[pv] + 'になります（ほかの相手・モブには全体のまま）');
+    if (rv) bits.push(o.name + 'の設定では、' + c.name + 'に' + PLAB[rv] + 'を選んでいます');
+    try {
+      var a = { i: 0, name: c.name, gender: c.gender || '', likes: c.likes || '', pos: c.pos || '', posLike: c.posLike || '', posFor: pv ? { 1: pv } : null };
+      var b = { i: 1, name: o.name, gender: o.gender || '', likes: o.likes || '', pos: o.pos || '', posLike: o.posLike || '', posFor: rv ? { 0: rv } : null };
+      if (P && P.genderOK(a, b) && !P.orients(a, b).length) bits.push('この二人は受け攻めの向きが決まらないので、恋愛・夜の場面になりません（攻めどうしなど）');
+    } catch (e) { /* 注意が出せなくても欄はそのまま */ }
+    return bits.join('。');
   };
   /* 「体と設定」の食べ物の行：好きな食べ物・嫌いな食べ物（自由記入）と好きな味（いくつでも） */
   function food(c, esc) {
@@ -33793,6 +33869,7 @@
     if (k === 'yf' || k === 'ff') { var vk = k === 'yf' ? 'youFor' : 'fpFor', w = word(t.value); c[vk] = c[vk] || {}; if (w) c[vk][t.dataset.o] = w; else delete c[vk][t.dataset.o]; changed(false); return true; }
     if (isInput) return true;
     if (listOf(k)) { c[k] = val(listOf(k), t.value); changed(k === 'race' || k === 'night'); return true; }
+    if (k === 'pf') { c.posFor = c.posFor || {}; var pv = posv(t.value); if (pv) c.posFor[t.dataset.o] = pv; else delete c.posFor[t.dataset.o]; changed(true); return true; }
     if (k === 'nf') { c.nightFor = c.nightFor || {}; var v = val(A.NIGHT, t.value); if (v) c.nightFor[t.dataset.o] = v; else delete c.nightFor[t.dataset.o]; changed(false); return true; }
     if (k === 'same') {
       var old = c.same && byId(c.same), o = t.value && byId(t.value);
@@ -33805,15 +33882,15 @@
     return true;
   };
 
-  /* 「関係と呼び方」の相手ごとの行に並べる欄（ui-gear.js）：二人称・一人称（候補は datalist、自由記入も可） */
+  /* 「相手ごとの設定」の行に並べる欄（ui-gear.js）：二人称・一人称（候補は datalist、自由記入も可） */
   A.voiceForHtml = function (c, o, esc) {
     lists();
     var y = (c.youFor || {})[o.id] || '', f = (c.fpFor || {})[o.id] || '';
     return '<label title="この相手に話しかける台詞の二人称。空なら「話し方」の二人称のまま">二人称 <input type="text" data-gf="at_yf" data-o="' + esc(o.id) + '" value="' + esc(y) + '" maxlength="8" list="hk-you-opts" placeholder="' + esc(c.you || '口調から') + '" style="width:5em"></label>' +
       '<label title="この相手に話しかける台詞の一人称。空なら「話し方」の一人称のまま">一人称 <input type="text" data-gf="at_ff" data-o="' + esc(o.id) + '" value="' + esc(f) + '" maxlength="8" list="hk-fp-opts" placeholder="' + esc(c.fp || '口調から') + '" style="width:5em"></label>';
   };
-  /* 相手ごとの二人称・一人称を決めてある相手か（関係がなくても、相手の行を出す） */
-  A.hasVoiceFor = function (c, id) { return !!((c.youFor && c.youFor[id]) || (c.fpFor && c.fpFor[id])); };
+  /* 相手ごとの二人称・一人称・受け攻め・夜の性格を決めてある相手か（関係がなくても、相手の行を出す） */
+  A.hasVoiceFor = function (c, id) { return !!((c.youFor && c.youFor[id]) || (c.fpFor && c.fpFor[id]) || (c.posFor && c.posFor[id]) || (c.nightFor && c.nightFor[id])); };
   function lists() {
     if (typeof document === 'undefined' || !document.body) return;
     [['hk-you-opts', A.YOU_OPTS], ['hk-fp-opts', A.FP_OPTS]].forEach(function (x) {
@@ -33857,6 +33934,9 @@
       }
     }
     VF.forEach(function (f) { var m = wmap(src[f], function (k) { return /^\d+$/.test(k) && +k !== dst.i; }); if (Object.keys(m).length) dst[f] = m; });
+    /* 相手ごとの受け攻め（全年齢版でも効く。恋愛の向き） */
+    var pfm = pmap(src.posFor, function (k) { return /^\d+$/.test(k) && +k !== dst.i; });
+    if (Object.keys(pfm).length) dst.posFor = pfm;
     var sm = src.same;
     if (sm !== '' && sm != null && !isNaN(+sm) && +sm >= 0 && +sm !== dst.i) {
       dst.same = +sm;
@@ -34002,7 +34082,7 @@
     var sad0 = HK.Ero.sadist;
     HK.Ero.sadist = function (top, bot) {
       var n = A.nightOf(top, bot);
-      if (n === 'sadist') return !(bot && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(bot));
+      if (n === 'sadist') return !(bot && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(bot, top));
       if (n === 'sweet' || n === 'shy' || n === 'maso') return false;
       return sad0.apply(this, arguments);
     };
@@ -35043,7 +35123,7 @@
   function src(c, k) { return c ? (c[k] != null && c[k] !== '' ? c[k] : (c.src && c.src[k]) || '') : ''; }
   function ok(ctx, a, b) {
     var P = HK.Pos;
-    if (!P || !b || !P.isF(a) || !P.isTop(a) || src(b, 'gender') !== 'm' || !P.okSex(a, b)) return false;
+    if (!P || !b || !P.isF(a, b) || !P.isTop(a, b) || src(b, 'gender') !== 'm' || !P.okSex(a, b)) return false;
     if (HK.canLove && (!HK.canLove(a, b) || !HK.canLove(b, a))) return false;
     var pr = ctx.pair ? ctx.pair(a, b) : {};
     return !!(pr.couple || pr.night || (ctx.R(a, b).att > 25 && ctx.R(b, a).att > 12));
@@ -37528,7 +37608,7 @@
     if (p.ff) kind = 'ff';
     var top = /Top/.test(vk) || p.aTop, dom = top ? me : hc, sub = top ? hc : me;
     /* 攻めの {a} が口で奉仕される側なら kneel のまま、{a} が奉仕する文は使わない */
-    if (!top && kind === 'kneel' && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(me)) return null;
+    if (!top && kind === 'kneel' && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(me, hc)) return null;
     return HK.Thick4.scene(S, { dom: dom, sub: sub, kind: kind, lead: fb, sad: HK.Thick4.rollSad(S, dom, sub),
       after: ST.pick(S, ['{a}の目には、まだ暗示の靄がかかっていた。', '自分が何をしたのか、{a}が知るのはもう少しあとのことだ。', '{h}は、まだとろんとしたままの{a}の目を覗き込み、満足げに息をついた。']).replace(/\{a\}/g, p.name).replace(/\{h\}/g, p.h) });
   }
@@ -38896,7 +38976,7 @@
     /* 拘束 */
     S.bind = env.bind === 'random' ? rng.pick(['both', 'one', 'none', 'both']) : env.bind;
     P.forEach(function (p) { p.bound = S.bind === 'both'; });
-    if (S.bind === 'one') lockers.forEach(function (Lk) { if (Lk.m.length < 2) return; var c = Lk.m.filter(function (p) { return !hardTop(p); }); if (c.length) rng.pick(c).bound = true; });
+    if (S.bind === 'one') lockers.forEach(function (Lk) { if (Lk.m.length < 2) return; var c = Lk.m.filter(function (p) { return !(HK.Pos && HK.Pos.hardTopIn(p, Lk.m)); }); if (c.length) rng.pick(c).bound = true; });
     var gim = gimmickChain(S), gi = 0, escaped = false, escTurn = -1, how = '';
     S.prog = 0;
     var vall = { all: names(P) };
@@ -39148,7 +39228,7 @@
         if (eroL) t += HK.ThickEro.fill(S, pk(eroL), eg, er).replace(/\{a\}/g, eg.name).replace(/\{b\}/g, er.name);
       }
       if (lv === 4) { tp.m.plea = Math.min(tp.m.plea, 55); bt.m.plea = Math.min(bt.m.plea, 60); }
-      if (bt.m.plea >= 100 && lv < 4) { if (hardTop(bt)) bt.m.plea = 95; else { t += moan(S, bt, false, md, eroNow) + climaxBy(S, bt, tp, false); bumpClimax(bt); } }
+      if (bt.m.plea >= 100 && lv < 4) { if (HK.Pos && HK.Pos.hardTop(bt, tp)) bt.m.plea = 95; else { t += moan(S, bt, false, md, eroNow) + climaxBy(S, bt, tp, false); bumpClimax(bt); } }
       /* 体だけの関係：最初に手を出したときに「恋ではない」一文（free-sex.js） */
       /* 札も恋愛の札（キス・口づけ）にしない（恋愛の出来事として数えない） */
       var ld = fr && !Lk.freeLed ? HK.FreeSex.lead(S, a, b) : '';
@@ -39198,7 +39278,7 @@
     if (T2 && B0) {
       var M = m.filter(function (c) { return c !== T2 && c !== B0; })[0], ks = ['oneTwo', 'twoOne', 'sandwich'];
       /* 真ん中の人が自分で攻めを選んでいれば、受けに回る形（oneTwo・sandwich）にしない */
-      if (hardTop(M)) ks = ['twoOne'];
+      if (HK.Pos && HK.Pos.hardTop(M, T2)) ks = ['twoOne'];
       /* 前を抱きながら後ろから抱かれる形（sandwich）は、後ろの人が跨る組（女性の攻め×男性）では起こらない */
       if (modeOf(T2, M) === 'fm') ks = ks.filter(function (x) { return x !== 'sandwich'; });
       if (!ks.length) ks = ['oneTwo'];
@@ -39498,7 +39578,7 @@
     /* 敵対している二人（関係がライバル・不仲・敵対）：攻めの側から強引に手を出し、受けは口では嫌がるが、まんざらではない応じ方をする（hate-sex-r18.js。R18版のみ） */
     if (!S.ties) S.ties = input.ties || [];
     var HSX = R18 && HK.HateSex, hateP = !!(HSX && rel === 'tension' && !ngP && !clash && HSX.hostile(S, A, B));
-    function hardTop(p) { return !!(Pos && Pos.hardTop(p)); }
+    function hardTop(p) { return !!(Pos && Pos.hardTop(p, p && p.o)); }
     if (bind === 'one') {
       boundOne = plotter ? plotter.o : rng() < 0.5 ? A : B;
       /* 自分で攻めを選んだ人は、片方だけの拘束の側にしない（拘束されて何かをされる側にしない）。二人とも攻めなら二人とも手錠に */
@@ -43013,7 +43093,7 @@
         break;
       case 'r18':
         var Pz = HK.Pos, o = Pz.order(a, b, [a, b]);
-        if (!Pz.okSex(a, b) || Pz.hardTop(o[1])) return;
+        if (!Pz.okSex(a, b) || Pz.hardTop(o[1], o[0])) return;
         /* 一回の中の性的な夜の上限（R18版の JS.R18.room）に届いていたら、この夜は起きない */
         if (JS.R18 && JS.R18.room && !JS.R18.room(S, [a, b])) { q.done = true; return; }
         var mm = { a: a.name, b: b.name, t: o[0].name, u: o[1].name };
@@ -49564,7 +49644,7 @@
     if (rng() > S.env.slewd / 100 * (amour(S, a, b) ? 0.7 : bond(S, a, b) > 0.3 ? 0.45 : 0.15)) return;
     /* 受け攻め：自分で攻めを選んだ人は、熱があっても受けにならない */
     var o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
-    if (Pz.hardTop(u)) return;
+    if (Pz.hardTop(u, t)) return;
     var body = bodyOf(S, t, u, 'nurse');
     setRel(S, a, b, 0.15); mark(S, a, b, 'night'); sxNote(S, [a, b]);
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
@@ -49723,7 +49803,7 @@
   }
   function bodyFor(S, a, b) {
     var Pz = HK.Pos, o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
-    if (Pz.hardTop(u)) return '';
+    if (Pz.hardTop(u, t)) return '';
     return bodyOf(S, t, u, 'night');
   }
   /* 異星の生き物との場面：ほのめかす＝ぼかした一文、男性向け＝段落を足す、濃い＝もう一度 */
@@ -51707,7 +51787,7 @@
   /* 女性が攻め・男性が受けの組：女性が押し倒して跨り、見下ろして焦らす（曖昧な書き方のまま） */
   var NEAR_FM = ['{a}は{b}をベッドに押し倒して、その上に跨った。「今日は、こっちが上」――見下ろす目が、楽しそうに細められた。', '{a}は{b}の両手首をシーツに押さえつけ、唇が触れる寸前で止めた。「欲しいなら、ちゃんと言って」', '{a}は{b}の胸を軽く突いて仰向けに倒し、腰の上に座り込んだ。「逃げないでね」'];
   var MID_FM = ['{a}は{b}の上に跨ったまま、わざとゆっくり照明を落とした。', '{a}は{b}のシャツのボタンを、焦らすように一つずつ外していった。{b}が身じろぎするたびに、{a}は「まだ」と笑った。', '{b}が手を伸ばすと、{a}はその手首をまた押さえつけた。「動いていいって、言ってない」'];
-  function fmLead(A, B) { var P = HK.Pos; return !!(P && P.isF(A) && P.isTop(A) && (B.gender || (B.src && B.src.gender)) === 'm'); }
+  function fmLead(A, B) { var P = HK.Pos; return !!(P && P.isF(A, B) && P.isTop(A, B) && (B.gender || (B.src && B.src.gender)) === 'm'); }
   var lead0 = L.lead;
   function fadeScene(ctx, a, b, mode, opt) {
     opt = opt || {};
@@ -52506,7 +52586,7 @@
     },
     'gear-talk': {
       title: '話し方',
-      lead: '行動や判断は、エゴグラムの数値だけで決まります。ここで決めるのは、その行動をとったときの話し方・呼び方です（口調で行動が制限されることはありません）。',
+      lead: '全箱庭の台詞に効きます。行動や判断は、エゴグラムの数値だけで決まります。ここで決めるのは、その行動をとったときの話し方・呼び方です（口調で行動が制限されることはありません）。',
       sections: [
         { h: '口調', items: [
           '「おまかせ」はエゴグラムから口調を選びます。',
@@ -52515,7 +52595,7 @@
         ] },
         { h: '一人称・二人称', items: [
           '空欄なら口調と性別から決まります。二人称は「あなた」「お前」などを置き換えます。',
-          '相手によって変えたいときは、「関係と呼び方」の相手の行で、その相手への二人称・一人称を決められます（決めた相手に話しかける台詞では、こちらより優先します）。',
+          '相手によって変えたいときは、「相手ごとの設定」の相手の行で、その相手への二人称・一人称を決められます（決めた相手に話しかける台詞では、こちらより優先します）。',
           'モブ（住人でない人）に話しかけるときは、ここの二人称で呼びます（環境値の「モブへの呼びかけ」で名前にもできます）。'
         ] },
         { h: '語尾の記号', items: [
@@ -52524,7 +52604,7 @@
           '問いかけ（？）、「……」で終わる文、伸ばし（ー・〜）や喘ぎで終わる文には付けません。' /* r18:ok */
         ] },
         { h: '呼び方と敬語', items: [
-          '基本の呼び方は、台詞の中でほかの住人の名前をどう呼ぶかです。相手ごとの呼び方は「関係と呼び方」で決められます。',
+          '基本の呼び方は、台詞の中でほかの住人の名前をどう呼ぶかです。相手ごとの呼び方は「相手ごとの設定」で決められます。',
           '基本の呼び方で「性別ごと」を選ぶと、男性・女性・その他の相手ごとに敬称（くん・さん・ちゃんなど）を選べます。',
           '「敬語で話す相手」（押すと開きます）でチェックした相手に話しかけるときだけ、敬語になります。ほかの相手には、いつもの口調のままです。口調が敬語なら、誰にでも敬語で話します。',
           '「年上の相手には敬語」は、両方が年齢を決めているときだけ働きます。',
@@ -52534,24 +52614,14 @@
     },
     'gear-profile': {
       title: 'プロフィール',
-      lead: '恋愛や体の関係の相手選びと、一部の箱庭の進み方に使います。',
+      lead: '恋愛の相手選びと、一部の箱庭の進み方に使います。見出しの下に、どの箱庭に効くかを書いています。グループは住人の行（メモの左）、特殊役職は死のある箱庭の住人の欄で決めます。',
       sections: [
         { h: '性別・恋愛対象', items: [
-          '「おまかせ」なら制限なし。決めると、対象外の相手とは恋愛にほぼ発展しません。'
+          '「おまかせ」なら制限なし。決めると、対象外の相手とは恋愛にほぼ発展しません（全箱庭）。'
         ] },
         { h: 'お酒', items: [
           '酒の強さを「弱い・やや弱い・ふつう・強い・ザル」から選べます。「おまかせ」なら気質から決まります。',
           '合コンの「酒の強さ」（おまかせのとき）・出られない部屋の酒の条件・オメガバースの飲みの場面・邪神村の歓迎の宴などで、酔いの回り方や振る舞いが変わります。弱い人はすぐ酔って口を滑らせたり介抱されたり、強い人は村人と飲み交わして話を聞き出したりします。'
-        ] },
-        { h: '受け攻め', items: [
-          '**「攻め」を選んだ人は、どの箱庭のどの場面でも、受ける側にはなりません。** 襲われる・責められる側に回る展開は攻めの人には起きず、場面によっては主導権を握る形に変わります。',
-          '女性は攻めを選ばない限り受けとして扱います（女性どうしでは、動く側に回ることもあります）。',
-          'R18版では、攻め・リバを選んだ女性に「ふたなり（攻めのとき）」を付けると、攻めに回る場面を男性の体を前提にした描写で書きます（オメガバースでは使いません）。双頭の玩具や貝合わせのように二人が対等に繋がる描写は、二人ともリバのときだけです。'
-        ] },
-        { h: '恋愛対象（受け攻め）', items: [
-          '恋愛や体の関係を持つ相手の受け攻めを絞ります。',
-          '「おまかせ」なら、攻めは受けとだけ、受けは攻めとだけ結ばれます。',
-          '向きの決まらない組（攻めどうしなど）は、恋愛にも体の関係にもなりません。'
         ] },
         { h: '誕生月・年齢', items: [
           '誕生月を決めると、学園などで誕生日のイベントが起きることがあります。',
@@ -52561,14 +52631,44 @@
           '自動のときは、住人の並び順で色が決まります（エゴグラムとは関係ありません）。',
           '色は関係図・経過・結果画像で使われます。'
         ] }
-      ],
-      r18: ['受け攻めは、R18の箱庭で場面の向き（誰が動く側か）を決めるのにも使います。'],
-      safe: ['全年齢版では、受け攻めは恋愛の相手選びにだけ使います。']
+      ]
+    },
+    'gear-body': {
+      title: '体と設定',
+      lead: '住人そのものの見た目・性格です。どの箱庭でも同じに効きます（決めていない欄は、これまでどおり）。',
+      sections: [
+        { h: '体格・種族', items: [
+          '二人の体格の差で、見上げる・抱き上げるといった文が変わります。種族は耳・尾・牙・翼などの文の飾りになります。',
+          '全箱庭の二人の穏やかな場面（絆・助け合い・看病・晩酌・休憩など）に、見た目の一文が付きます。夜・事件・推理・死などの場面には付きません。',
+          '死のある箱庭では、種族の吸血鬼は特殊役職の吸血鬼と同じ扱いです。'
+        ] },
+        { h: '心の強さ', items: [
+          '催眠の箱庭で、暗示のかかりやすさが変わります（弱いとかかりやすく、強いとかかりにくい）。',
+          '強いと、体は流されても心は折れない一文が付きます。'
+        ] },
+        { h: '好きな食べ物・嫌いな食べ物・好きな味', items: [
+          '食事・差し入れ・デートのある箱庭（無人島・合コン・クラスメイト・オメガバース・宇宙船・邪神村・ふたりの日常）で、好物として名前が出たり、苦手な物を隠して食べたりします。'
+        ] },
+        { h: '同一人物', items: [
+          '全箱庭：二人は恋愛にならず、鏡を見るような場面が起きます。結果の関係名は「もう一人の自分」です。'
+        ] }
+      ]
     },
     'gear-love': {
       title: '恋愛',
-      lead: '恋愛相手を固定すると、その相手以外とは恋愛に発展しません。苦手な組み合わせは「恋愛・R18にしない相手」で止められます。',
+      lead: '受け攻め・恋愛相手の固定・一途・恋愛にしない相手は全箱庭に効きます。恋愛相手を固定すると、その相手以外とは恋愛に発展しません。苦手な組み合わせは「恋愛にしない相手」で止められます。',
       sections: [
+        { h: '受け攻め', items: [
+          '**「攻め」を選んだ人は、どの箱庭のどの場面でも、受ける側にはなりません。** 襲われる・責められる側に回る展開は攻めの人には起きず、場面によっては主導権を握る形に変わります。',
+          '女性は攻めを選ばない限り受けとして扱います（女性どうしでは、動く側に回ることもあります）。',
+        ,
+          '「相手ごとの設定」の行で、相手ごとに受け攻めを決められます。決めた相手との恋愛の場面では、こちらが優先です（ほかの相手・モブには全体の受け攻めのまま）。全体で攻めの人が受けに回るのは、相手ごとに「受け」「リバ」と自分で決めた相手に対してだけです。'
+        ] },
+        { h: '恋愛対象（受け攻め）', items: [
+          '恋愛や体の関係を持つ相手の受け攻めを絞ります。',
+          '「おまかせ」なら、攻めは受けとだけ、受けは攻めとだけ結ばれます。',
+          '向きの決まらない組（攻めどうしなど）は、恋愛にも体の関係にもなりません。'
+        ] },
         { h: '固定のしくみ', items: [
           '固定すると、その相手以外とは恋愛に発展しません。夜の出来事や三人の場面でも、その相手以外とは関係を持ちません。片想いのままでも使えます。',
           '相手が箱庭にいないときは、誰とも恋愛しません。',
@@ -52579,7 +52679,7 @@
           '恋愛相手の固定で、ほかの人との恋愛・告白が起きなくなります。本命にすると、本命との恋愛の出来事が起きやすく、ほかの人の誘いを断るようになります。',
           '片方だけ一途にしたいときは、その人だけに設定します（相手の側は自由なままです）。'
         ] },
-        { h: '恋愛・R18にしない相手', items: [
+        { h: '恋愛にしない相手', items: [
           '苦手な組み合わせの相手に印を付けると、その二人のあいだでは、どの箱庭でも恋愛・告白・夜の場面が起きません。',
           '印はどちらに付けても同じで、相手の設定にも自動で付きます。',
           '二人に恋人・片想いなどの関係を付けていても、恋愛の関係としては使われません（友人・同僚などの関係はそのまま）。',
@@ -52588,16 +52688,17 @@
       ]
     },
     'gear-ties': {
-      title: '関係と呼び方',
-      lead: 'この住人から見た関係と、相手ごとの呼び方です。住人タブの「既存の関係」と同じものを編集します。',
+      title: '相手ごとの設定',
+      lead: 'この住人から見た関係と、相手ごとの呼び方・二人称・一人称・受け攻めです。関係は住人タブの「既存の関係」と同じものを編集します。',
       sections: [
         { h: 'ポイント', items: [
           '「関係を重ねる」で、同じ相手に複数の関係をつけられます。',
-          'グループ（住人の行のメモの左の欄）を付けた住人には「グループの全員と」が出ます。印を付けて「関係を追加」を押すと、同じグループの全員に選んだ関係を付けます（すでに同じ関係がある相手は飛ばします。向きのある関係は、この住人が左です）。',
+          'グループ（住人の行のメモの左の欄）を付けた住人には「グループの全員と」が出ます。印を付けて「追加」を押すと、同じグループの全員に選んだ関係を付けます（すでに同じ関係がある相手は飛ばします。向きのある関係は、この住人が左です）。',
           '呼び方の欄に書いた呼び名は、台詞の中で相手の名前の代わりに使われます。',
           '二人称・一人称の欄は、その相手に話しかける台詞だけで使われます（例：ふだんは「あなた」「私」でも、幼なじみには「お前」「俺」）。候補から選ぶか、自由に書けます。空なら「話し方」の二人称・一人称のままです。',
           '誰に話しかけているか分からない台詞や、ほかの人に向けた台詞では、いつもの二人称・一人称のままです。呼び方も決めた相手には、二人称の代わりに呼び方を使います。',
-          '関係のない相手の行は、「関係を追加」で関係をつけると出ます（呼び方・二人称・一人称を決めた相手は、関係を外しても行が残ります）。',
+          '関係のない相手の行は、「相手」と「関係」を選んで「追加」を押すと出ます。関係を「（関係は付けずに相手ごとの設定だけ）」にすると、関係を付けずに行だけを出せます（呼び方・二人称・一人称・受け攻めを決めた相手は、関係を外しても行が残ります）。',
+          '受け攻め（この人には）は、全箱庭の恋愛の場面で、この相手との向きだけを変えます。「おまかせ（全体に従う）」なら「恋愛」の受け攻めのままです。全体の指定と食い違うときや、二人の向きが決まらないとき（二人とも相手に攻めを選んだなど）は、行の下に注意が出ます。',
           '血縁の関係には「恋愛：なし／あり」を選べます（なしなら恋愛・体の関係に発展しません）。'
         ] }
       ]
@@ -53881,12 +53982,14 @@
   HK.UI.save = save; HK.UI.renderCast = renderCast; HK.UI.cleanTies = cleanTies; HK.UI.toast = toast;
   HK.UI.refresh = function () { setTab(tab); };
   HK.UI.autoTone = autoTone;
+  /* 書き出し・読み込み・入力の組み立て（点検・往復の試験から呼ぶ。画面の操作と同じ関数） */
+  HK.UI.rosterJSON = rosterJSON; HK.UI.importJSON = importJSON; HK.UI.buildInput = buildInput; HK.UI.normState = normState;
   setTab('cast');
 })();
 ;/* ==== js/ui-gear.js ==== */
 /* 箱庭シミュレーター ui: 住人ごとの設定（⚙️）
-   口調・一人称・基本の呼び方・性別・恋愛対象・受け攻め・イメージカラー・恋愛相手の固定と、
-   その住人が関わる既存の関係・相手ごとの呼び方を、住人ごとにまとめて設定する。
+   節は ①話し方 ②プロフィール ③体と設定 ④恋愛（R18版は恋愛と夜） ⑤相手ごとの設定（関係・呼び方・二人称/一人称・受け攻め・夜の性格）。
+   各節の見出しの下に「どの箱庭に効くか」の注意書き（SCOPE）を出す。欄の data-gf は保存との互換のため変えない。
    ※口調や関係は台詞・文面と関係の初期値に効く。行動の判断はエゴグラムの数値で決まる */
 (function () {
   'use strict';
@@ -53958,6 +54061,7 @@
     '.gearhint{font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.6}.tonesample{margin:8px 0 2px;padding:8px 12px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent);border-radius:0 8px 8px 0;font-size:13px;line-height:1.7;min-height:1.7em}.tonesample .tsl{display:block}.tonesample.anim .tsl{display:none}.tonesample.anim .tsl.on{display:block;animation:tsfade .5s ease}.tonesample .tsh{font-size:11px;color:var(--muted);display:block;margin-bottom:2px}@keyframes tsfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.tonesample.anim .tsl{display:block}.tonesample.anim .tsl.on{animation:none}}.gtie{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:8px 0}.gtie .who{font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:4px}' +
     '.gtie .one{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.gtie input[type=text]{width:12em}' +
     'details.gkeigo{margin:8px 0 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px}details.gkeigo summary{cursor:pointer;font-size:13px;color:var(--muted)}details.gkeigo .gkn{font-size:12px;margin-left:4px;color:var(--ink)}details.gkeigo[open] summary{margin-bottom:4px}' +
+    '.gscope{margin:-2px 0 8px;padding:4px 8px;border-left:3px solid var(--line);background:color-mix(in srgb,var(--ink) 3%,transparent);border-radius:0 6px 6px 0}.gforh{font-size:12px;color:var(--muted);margin-left:4px}.gfnote{color:var(--accent)}' +
     '@media (max-width:520px){.gearbox{padding:12px}.gtie input[type=text]{width:100%}}';
   /* この住人の傾向（エゴグラムの説明）と、住人一覧の態度の一語 */
   css += 'details.gego{margin:10px 0 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:color-mix(in srgb,var(--accent) 5%,transparent)}details.gego summary{cursor:pointer;font-size:14px;font-weight:600}details.gego .gegc{font-size:12px;font-weight:400;color:var(--muted);margin-left:6px}details.gego ul{margin:6px 0 2px;padding-left:1.2em;font-size:13px;line-height:1.7}details.gego li{margin:2px 0}' +
@@ -54019,8 +54123,24 @@
     }, 2600);
   }
   function sampleRefresh() { var c = byId(cur), box = document.getElementById('tonesample'); if (c && box) box.innerHTML = sampleLines(c); }
+  /* 節ごとの「どの箱庭に効くか」の注意書き（見出しのすぐ下に出す）。R18版だけの記述は r18 の印の中で差し替える */
+  function scopes() {
+  var SCOPE = {
+    talk: '効く箱庭：全箱庭の台詞（口調・一人称・二人称・語尾・呼び方・敬語）。行動の判断は変わりません。',
+    profile: '効く箱庭：性別・恋愛対象は全箱庭の恋愛の相手選び。誕生月は学園などの誕生日の出来事、年齢は「年上の相手には敬語」、お酒は合コン・出られない部屋・オメガバース・邪神村、色は関係図・経過・結果画像。グループは住人の行（メモの左）、特殊役職は死のある箱庭の住人の欄で決めます。',
+    body: '効く箱庭：体格・種族は、全箱庭の二人の穏やかな場面に一文が付きます。心の強さは、催眠のかかりやすさ。好物は、食事・差し入れ・デートのある箱庭（無人島・合コン・クラスメイト・オメガバース・宇宙船・邪神村・ふたりの日常）。同一人物は全箱庭（二人は恋愛にならず、鏡を見るような場面が起きます）。',
+    love: '効く箱庭：受け攻め・恋愛対象（受け攻め）・恋愛相手の固定・一途・恋愛にしない相手は、全箱庭の恋愛の場面（相手選びと、どちらが動く側か）。受け攻めは「相手ごとの設定」で、相手ごとにも変えられます。',
+    ties: '効く箱庭：関係は全箱庭の関係の初期値と出来事。呼び方・二人称・一人称は、その相手に話しかける台詞。受け攻めは、全箱庭の恋愛の場面で、この相手との向きだけを変えます（ほかの相手・モブには全体の受け攻めのまま）。'
+  };
+/* r18: 全年齢版では省略 */
+  return SCOPE;
+  }
+  function scope(s) { return '<p class="gearhint gscope">' + esc(s) + '</p>'; }
+  /* 関係を付けずに出した相手ごとの行（窓を開いているあいだだけ。何か決めれば、関係がなくても行は残る） */
+  var extra = {};
+  function extraOf(c) { return extra[c.id] || {}; }
   function body(c) {
-    var s = S(), others = s.chars.filter(function (x) { return x !== c; });
+    var s = S(), others = s.chars.filter(function (x) { return x !== c; }), SCOPE = scopes();
     var autoK = HK.toneAuto ? HK.toneAuto(HK.traits(c.eg)) : HK.personaAuto(HK.traits(c.eg));
     var keys = HK.TONE_KEYS || HK.PERSONA_KEYS;
     var toneSel = '<select data-gf="tone" aria-label="口調">' + opt('', 'おまかせ（' + toneLabel(autoK) + '）', c.tone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.tone || '', t.desc); }).join('') + '</select>';
@@ -54034,7 +54154,11 @@
     var lockSel = '<select data-gf="lock" aria-label="恋愛相手の固定"><option value="">固定しない</option>' + others.map(function (o) { return opt(o.id, o.name + 'だけ', c.loveLock || ''); }).join('') + '</select>';
     var sexSel = '';
 /* r18: 全年齢版では省略 */
-    /* 関係（相手ごと） */
+    /* R18版だけの欄：体と設定の「性器の呼び方」、恋愛と夜の「ふたなり・モブには・R18に参加しない・濁点喘ぎ」 */
+    var partRow = '', r18Row = '';
+/* r18: 全年齢版では省略 */
+    var nightRow = HK.Attr && HK.Attr.nightHtml ? HK.Attr.nightHtml(c, { esc: esc, opt: opt, selOf: selOf }) : '';
+    /* 相手ごとの設定（関係・呼び方・二人称/一人称・受け攻め・夜の性格） */
     var ties = s.ties || [], groups = {};
     ties.forEach(function (t, k) {
       var oid = t.a === c.id ? t.b : t.b === c.id ? t.a : null;
@@ -54042,19 +54166,22 @@
       (groups[oid] = groups[oid] || []).push([t, k]);
     });
     var calls = c.calls || {};
-    var rel = others.filter(function (o) { return groups[o.id] || calls[o.id] || (HK.Attr && HK.Attr.hasVoiceFor(c, o.id)); }).map(function (o) {
+    var ex = extraOf(c);
+    var rel = others.filter(function (o) { return groups[o.id] || calls[o.id] || ex[o.id] || (HK.Attr && HK.Attr.hasVoiceFor(c, o.id)); }).map(function (o) {
+      var note = HK.Attr && HK.Attr.forNote ? HK.Attr.forNote(c, o) : '';
       var i = s.chars.indexOf(o);
       return '<div class="gtie"><div class="who">' + HK.Icons.html(o.name, i, 22) + esc(o.name) + '</div>' +
         (groups[o.id] || []).map(function (x) { return tieRow(c, o, x[0], x[1]); }).join('') +
         '<div class="one"><label>' + esc(c.name) + 'からの呼び方 <input type="text" data-gf="callone" data-o="' + o.id + '" value="' + esc(calls[o.id] || '') + '" maxlength="16" placeholder="' + esc(o.name + ({ name: '', san: 'さん', kun: 'くん', chan: 'ちゃん', sama: '様', senpai: '先輩', sensei: '先生' }[c.call] || '')) + '"></label>' + (HK.Attr && HK.Attr.voiceForHtml ? HK.Attr.voiceForHtml(c, o, esc) : '') +
-        '<button type="button" class="btn ghost small" data-gact="tadd" data-o="' + o.id + '">関係を重ねる</button></div></div>';
+        (HK.Attr && HK.Attr.forHtml ? '<span class="gforh">この人には：</span>' + HK.Attr.forHtml(c, o, { esc: esc, opt: opt }) : '') +
+        '<button type="button" class="btn ghost small" data-gact="tadd" data-o="' + o.id + '">関係を重ねる</button></div>' + (note ? '<p class="gearhint gfnote">' + esc(note) + '</p>' : '') + '</div>';
     }).join('');
     var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手">' + others.map(function (o) { return opt(o.id, o.name, ''); }).join('') + '</select></label>' +
-      '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + '</select></label>' + (function () { var gm = groupMates(c); return gm.length ? '<label title="' + esc('同じグループ（' + grpsOf(c).join('・') + '）の全員に、選んだ関係を付けます：' + gm.map(function (o) { return o.name; }).join('・') + '。向きのある関係は、' + c.name + 'が左（上司・先輩・師匠など）になります') + '"><input type="checkbox" data-gf="newgrp"> グループの全員と（' + gm.length + '人）</label>' : ''; })() + '<button type="button" class="btn small" data-gact="tnew">関係を追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
+      '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + opt('', '（関係は付けずに相手ごとの設定だけ）', 'friend') + '</select></label>' + (function () { var gm = groupMates(c); return gm.length ? '<label title="' + esc('同じグループ（' + grpsOf(c).join('・') + '）の全員に、選んだ関係を付けます：' + gm.map(function (o) { return o.name; }).join('・') + '。向きのある関係は、' + c.name + 'が左（上司・先輩・師匠など）になります') + '"><input type="checkbox" data-gf="newgrp"> グループの全員と（' + gm.length + '人）</label>' : ''; })() + '<button type="button" class="btn small" data-gact="tnew">追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
       '<p class="gearhint">行動はエゴグラムだけで決まります。ここで決めるのは台詞の見た目と関係の初期値です。見出しの ？ に詳しい説明があります。</p>' +
       (HK.egoDesc ? '<details class="gego"' + (egoOpen ? ' open' : '') + '><summary>この住人の傾向<span class="gegc">' + esc(HK.toCode(c.eg)) + '・' + esc(HK.egoAttWord(c)) + '</span></summary><ul id="egodesc">' + HK.egoDesc(c).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul><p class="gearhint">エゴグラムの5文字コード（住人の行で変えられます）から読んだ目安です。態度は台詞の表の種類で、口調を決めるとその口調に合わせます。</p></details>' : '') +
-      '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3><div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
+      '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3>' + scope(SCOPE.talk) + '<div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
       '<div class="gearrow"><label>語尾の記号 <input type="text" data-gf="marks" value="' + esc(c.marks || '') + '" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label></div>' +
       '<p class="gearhint">文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます。空なら付けません。</p>' +
       '<div class="gearrow"><label>語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label></div>' +
@@ -54064,22 +54191,28 @@
       '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label><label><input type="checkbox" data-gf="keigoOlder"' + (c.keigoOlder ? ' checked' : '') + '> 年上の相手には敬語（年齢を決めた人どうし）</label></div>' +
       (others.length ? '<details class="gkeigo"' + (keigoOpen ? ' open' : '') + '><summary>敬語で話す相手 <span class="gkn">' + (function () { var n = others.filter(function (o) { return c.keigo && c.keigo[o.id]; }).length; return n ? n + '人' : 'なし'; })() + '</span></summary><div class="gearrow">' + others.map(function (o) { return '<label><input type="checkbox" data-gf="keigo" data-o="' + o.id + '"' + (c.keigo && c.keigo[o.id] ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('') + '</div>' +
         ((c.tone || autoK) === 'polite' ? '<p class="gearhint">いまの口調は敬語なので、誰にでも敬語で話します。</p>' : '') + '</details>' : '') + '</div>' +
-      '<div class="gearsec"><h3>プロフィール' + (HK.Tips ? HK.Tips.btn('gear-profile') : '') + '</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
+      /* ②プロフィール：性別・誕生月・年齢・お酒・恋愛対象・色 */
+      '<div class="gearsec"><h3>プロフィール' + (HK.Tips ? HK.Tips.btn('gear-profile') : '') + '</h3>' + scope(SCOPE.profile) + '<div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
+        '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label>' +
         '<label>誕生月 ' + selOf('bmonth', [['', '決めない']].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (m) { return [String(m), m + '月']; })), c.bmonth || '') + '</label>' +
         '<label>年齢 <input type="number" data-gf="age" min="1" max="150" value="' + esc(c.age || '') + '" placeholder="決めない" style="width:5em"></label>' +
-        '<label title="酒の強さ。合コン・出られない部屋の酒・オメガバースの飲みの場面・邪神村の歓迎の宴や御神酒などで、酔いやすさや振る舞いが変わります。おまかせは気質から決まります">お酒 ' + selOf('alcohol', [['', 'おまかせ'], ['1', '弱い'], ['2', 'やや弱い'], ['3', 'ふつう'], ['4', '強い'], ['5', 'ザル']], c.alcohol || '') + '</label>' +
-        '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
-/* r18: 全年齢版では省略 */
-        '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label></div>' +
-      '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div>' + (HK.Attr ? HK.Attr.gearHtml(c, others, { esc: esc, opt: opt, selOf: selOf }) : '') + '</div>' +
-      '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label>' + sexSel + '<label title="恋人ができたら、その恋人がいる間は、ほかの人と恋愛・夜の場面になりません（浮気しない）。恋人がいないうちは、ふつうに恋をします"><input type="checkbox" data-gf="faithful"' + (c.faithful ? ' checked' : '') + '> 一途（恋人ができたら、ほかの人に惹かれない・浮気しない）</label></div>' + '<p class="gearhint">一途にしたい人は：恋愛相手を固定＋関係「本命」' +
+        '<label title="酒の強さ。合コン・出られない部屋の酒・オメガバースの飲みの場面・邪神村の歓迎の宴や御神酒などで、酔いやすさや振る舞いが変わります。おまかせは気質から決まります">お酒 ' + selOf('alcohol', [['', 'おまかせ'], ['1', '弱い'], ['2', 'やや弱い'], ['3', 'ふつう'], ['4', '強い'], ['5', 'ザル']], c.alcohol || '') + '</label></div>' +
+      '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
+      /* ③体と設定：体格・種族・心の強さ・同一人物・好物（R18版：胸・性器・性器の呼び方） */
+      '<div class="gearsec"><h3>体と設定' + (HK.Tips ? HK.Tips.btn('gear-body') : '') + '</h3>' + scope(SCOPE.body) + (HK.Attr ? HK.Attr.gearHtml(c, others, { esc: esc, opt: opt, selOf: selOf }) : '') + partRow + '</div>' +
+      /* ④恋愛（R18版は恋愛と夜）：受け攻め・恋愛対象（受け攻め）・恋愛相手の固定・一途・恋愛にしない相手（R18：性行為の相手の固定・R18に参加しない・夜の性格・ふたなり など） */
+      '<div class="gearsec"><h3>' + (HK.SAFE_ON ? '恋愛' : '恋愛と夜') + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3>' + scope(SCOPE.love) +
+      '<div class="gearrow"><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
+        '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label>' + nightRow + '</div>' +
+      '<div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label>' + sexSel + '<label title="恋人ができたら、その恋人がいる間は、ほかの人と恋愛・夜の場面になりません（浮気しない）。恋人がいないうちは、ふつうに恋をします"><input type="checkbox" data-gf="faithful"' + (c.faithful ? ' checked' : '') + '> 一途（恋人ができたら、ほかの人に惹かれない・浮気しない）</label></div>' + r18Row + '<p class="gearhint">一途にしたい人は：恋愛相手を固定＋関係「本命」' +
 /* r18: 全年齢版では省略 */
       '。ほかの人との恋愛・告白が起きず、' + (sexSel ? '' : '誘いも断るようになります。') +
 /* r18: 全年齢版では省略 */
       '</p>' +
 /* r18: 全年齢版では省略 */
       ngRow + '</div>' +
-      '<div class="gearsec"><h3>関係と呼び方' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + (rel || '<p class="gearhint">まだ関係はありません。</p>') + addable + '</div>';
+      /* ⑤相手ごとの設定：関係・呼び方・二人称/一人称・受け攻め・夜の性格 */
+      '<div class="gearsec"><h3>相手ごとの設定' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + scope(SCOPE.ties) + (rel || '<p class="gearhint">まだ相手ごとの設定はありません。下の「相手」と「関係」を選んで追加してください（関係を付けずに、受け攻めや呼び方だけを決めることもできます）。</p>') + addable + '</div>';
   }
   function render() {
     var c = byId(cur);
@@ -54090,7 +54223,7 @@
     sampleTick();
   }
   function open(id, from) {
-    if (cur !== id) { keigoOpen = false; egoOpen = true; }
+    if (cur !== id) { keigoOpen = false; egoOpen = true; extra = {}; }
     cur = id; opener = from || null;
     if (!ov) {
       ov = document.createElement('div');
@@ -54130,7 +54263,14 @@
     else if (act === 'tdel') { s.ties.splice(+b.dataset.k, 1); changed(true); }
     else if (act === 'tadd' || act === 'tnew') {
       var oid = act === 'tadd' ? b.dataset.o : (ov.querySelector('[data-gf="newo"]') || {}).value;
-      var ty = act === 'tadd' ? 'friend' : (ov.querySelector('[data-gf="newt"]') || {}).value || 'friend';
+      var ty = act === 'tadd' ? 'friend' : (ov.querySelector('[data-gf="newt"]') || {}).value;
+      if (ty == null) ty = 'friend';
+      /* 「関係は付けずに相手ごとの設定だけ」：行だけ出す（グループの全員にも） */
+      if (act === 'tnew' && ty === '') {
+        var ids = (ov.querySelector('[data-gf="newgrp"]') || {}).checked ? groupMates(c).map(function (o) { return o.id; }) : [oid];
+        ids.forEach(function (id) { if (byId(id)) (extra[c.id] = extra[c.id] || {})[id] = 1; });
+        render(); return;
+      }
       var dupOf = function (x, o2) { return s.ties.some(function (t) { return t.type === x && ((t.a === c.id && t.b === o2) || (t.a === o2 && t.b === c.id)); }); };
       /* 「グループの全員と」：同じグループの全員に、選んだ関係を付ける（すでに同じ関係がある相手は飛ばす） */
       var allG = act === 'tnew' && (ov.querySelector('[data-gf="newgrp"]') || {}).checked;
