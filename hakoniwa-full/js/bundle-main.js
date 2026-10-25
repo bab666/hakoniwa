@@ -12537,6 +12537,120 @@
   /* 判定ラベル */
   HK.LABELS.fwbsettle = { name: 'セフレ', cls: 'night', pol: 1 };
 })();
+;/* ==== js/free-sex.js ==== */
+/* 箱庭シミュレーター: 恋愛相手を固定し、性行為の相手を「誰とでも可（恋愛は固定のまま）」にした人（engine.js の HK.lockSexOnly）の、
+   固定外の相手との「体だけの場面」の共通部品（全箱庭。エンジン型 ctx と物語型 S のどちらでも使える）
+   ・HK.State.freeSex(ctx, a, b)：体だけの場面にしてよい組か。a か b が「誰とでも可」で固定外の相手（HK.lockSexOnly）で、
+       受け攻めと恋愛対象の性別（HK.Pos.okSex）・両方 R18 に参加（全年齢版・全年齢モードでは常に偽）・その場にいる（HK.State.pairSex）、
+       体の関係の縛り（HK.sexBlocked：恋愛・R18にしない相手・同一人物・恋人だけ・〇〇だけ・一途）を通る組。
+       恋愛相手の固定（HK.canLove）は見ない（体だけの関係なので）。家族の「恋愛：なし」（エンジン型は ctx.pair().kin、物語型は ng）・先生・未成年は止める
+   ・HK.FreeSex.factor(ctx, a, b)：固定した恋人がその場にいれば 0.3（起きにくくする）
+   ・HK.FreeSex.lead(ctx, a, b)：導入の一文。「恋ではない」ことが分かる文（「誰とでも可」の人の態度9種 × 3文以上）
+   ・HK.FreeSex.mark(ctx, a, b)：体の場面のあと。エンジン型は夜（pf.night）と体だけの関係（pf.fwb：記録の札「体だけの関係に」）の印を付け、恋人にはしない
+       （惹かれを恋愛の手前で止めるのは engine.js の sexOnlyFix）。物語型は S.freeSex に回数を残す
+   ・HK.FreeSex.jealous(ctx, a, b)：固定した恋人が気づいたら、嫉妬の出来事（cat 'conflict'。恋愛の出来事ではない）
+   登場人物はすべて成人として扱う。攻めを選んだ人を受けにしないのは、各箱庭の夜の文（HK.Pos.order）に任せる */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK || !HK.State) return;
+  function L(s) { return s.split('|'); }
+  function eng(ctx) { return !!(ctx && HK.Ctx && ctx instanceof HK.Ctx); }
+  function people(ctx) { return (ctx && (ctx.chars || ctx.P)) || []; }
+  function rnd(ctx) { return ctx && ctx.rng ? ctx.rng() : Math.random(); }
+  function pick(ctx, arr) {
+    if (eng(ctx)) return ctx.pick(arr);
+    if (HK.Story && HK.Story.pick && ctx && ctx.recent) return HK.Story.pick(ctx, arr);
+    return arr[Math.floor(rnd(ctx) * arr.length)];
+  }
+  function fill(t, a, b) { return String(t).replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name); }
+  /* 固定外の相手と体の関係を持つ側（相手以外に恋愛相手を固定している人） */
+  function freeOne(a, b) { return a.lock != null && a.lock !== b.i ? a : b; }
+
+  HK.State.freeSex = function (ctx, a, b) {
+    if (!a || !b || a === b || HK.SAFE_ON) return false;
+    if (!(HK.lockSexOnly && HK.lockSexOnly(a, b))) return false;
+    if (!HK.State.pairSex(a, b)) return false;
+    if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
+    if (a.role === 'teacher' || b.role === 'teacher' || a.minor || b.minor) return false;
+    if (eng(ctx) && ctx.pair(a, b).kin) return false;
+    return true;
+  };
+  HK.sexFree = HK.State.freeSex;
+
+  var F = HK.FreeSex = {};
+  /* 固定した恋人（その場にいる人）。いなければ null */
+  F.loverOf = function (ctx, x, notI) {
+    if (!x || x.lock == null || x.lock === notI) return null;
+    var y = people(ctx)[x.lock];
+    return y && y !== x && HK.State.here(y) ? y : null;
+  };
+  F.factor = function (ctx, a, b) {
+    return F.loverOf(ctx, a, b.i) || F.loverOf(ctx, b, a.i) ? 0.3 : 1;
+  };
+
+  /* 導入：恋ではないと分かる一文（{a}＝固定外の相手と体の関係を持つ人、{b}＝相手）。態度9種 */
+  F.LEAD = {
+    proud: L('{a}は「勘違いしないで。気持ちは別のところにある」と先に言い切った。{b}は肩をすくめて、それで構わないと答えた。|{a}にとって、心を預ける相手はひとりだけだった。体のほうは、また別の話だと割り切っていた。|「惚れたわけじゃない。今夜はそういう気分なだけ」――{a}の言葉に、{b}は笑って頷いた。|{a}は本気の相手の顔を一瞬だけ思い浮かべて、すぐに追い払った。これは、そういうことではない。'),
+    stern: L('{a}は自分の中で線を引いた。想う相手はひとり。これはこれ、と割り切った。|「心までは渡せない。それでいいなら」――{a}は{b}の目を見て、静かにそう告げた。|恋ではない。{a}はそれを確かめるように一度目を閉じてから、{b}に向き直った。'),
+    tsun: L('「べ、別に好きとかじゃないから。そこは勘違いしないで」――{a}は早口でそう言って、{b}から目を逸らした。|{a}の本命は、とっくに決まっている。それとこれとは別だと、{a}は自分に言い聞かせた。|「今夜だけ。気持ちは別のとこにあるんだからね」――{b}は「はいはい」と笑った。'),
+    gentle: L('{a}の心は、もう決まった人のところにある。{b}もそれを知っていて、ただ今夜の熱だけを分け合うことにした。|「好きな人はね、別にいるの。それでもいい？」――{a}が穏やかに訊くと、{b}は迷わず頷いた。|恋とは違う、と{a}は思った。それでも、誰かの体温がほしい夜はある。'),
+    devoted: L('{a}が心を捧げている相手は、ひとりだけだった。今夜のことは、それとは別の場所に置いておくことにした。|「気持ちは、あの人のものです。……それでも、よければ」――{a}の言葉に、{b}は黙って頷いた。|{a}は胸の中で、想う人の名前をそっとしまった。今夜は、体だけのことだった。'),
+    cool: L('{a}は冷静だった。気持ちは別のところにある。これは欲の処理で、恋ではない。|「恋愛感情は持ち込まない。それが条件」――{a}の淡々とした声に、{b}は「了解」とだけ返した。|{a}の中で、心と体ははっきり別の棚に分けてあった。今夜使うのは、体のほうだけだった。'),
+    free: L('「好きな人は別にいるけど、それはそれ！」――{a}はあっけらかんと笑って、{b}の腕を引いた。|{a}にとって、恋と体は別の遊びだった。{b}も、そういう軽さが嫌いではなかった。|「付き合うとかじゃないよ？　今夜楽しいだけ」――{a}の言葉に、{b}は吹き出した。'),
+    shy: L('{a}の好きな人は、ひとりだけだった。恋ではないことだけは、{a}にもはっきり分かっていた。それでも今夜は、{b}の熱から離れられなかった。|「あの、気持ちは……別のところに、あって……」――消え入りそうな{a}の声に、{b}は「分かってる」と答えた。|{a}は真っ赤になりながら、これは恋じゃない、と心の中で何度も繰り返した。'),
+    polite: L('「心に決めた方がおりますので、今夜のことはどうかお気になさらず」――{a}の丁寧な前置きに、{b}は小さく笑った。|{a}は礼儀正しく線を引いた。お慕いしている方はひとり。これは、それとは別のことだった。|「恋ではございません。それでもよろしければ」――{a}はそう言って、{b}の手に指を重ねた。')
+  };
+  F.persona = function (c) {
+    var k = (c && c.persona) || (HK.personaOf && HK.personaOf(c)) || 'gentle';
+    return F.LEAD[k] ? k : 'gentle';
+  };
+  F.lead = function (ctx, a, b) {
+    var x = freeOne(a, b), y = x === a ? b : a;
+    return fill(pick(ctx, F.LEAD[F.persona(x)]), x, y);
+  };
+  F.why = function (a, b) {
+    var x = freeOne(a, b);
+    return x.name + 'は性行為の相手を「誰とでも可」にしている（恋愛は固定のまま。体だけの関係）';
+  };
+
+  F.mark = function (ctx, a, b) {
+    if (eng(ctx)) {
+      var pf = ctx.pair(a, b);
+      pf.night = true; pf.fwb = true; pf.couple = false; pf.since = null;
+      pf.freeSex = (pf.freeSex || 0) + 1;
+      return pf;
+    }
+    var k = Math.min(a.i, b.i) + '-' + Math.max(a.i, b.i);
+    ctx.freeSex = ctx.freeSex || {};
+    ctx.freeSex[k] = (ctx.freeSex[k] || 0) + 1;
+    return null;
+  };
+
+  /* 固定した恋人が気づく（{a}＝恋人、{b}＝固定外の相手と夜を過ごした人、{c}＝その相手） */
+  F.JEAL = L('{a}は、{b}が{c}と夜を過ごしたことに気づいた。体だけのことだと分かっていても、胸の奥がざらついた。|{b}の首筋に残った痕を、{a}は見逃さなかった。{a}は何も言わずに、{c}のほうを一度だけ見た。|「……{c}と、だよね」――{a}の問いに、{b}は隠さずに頷いた。決まりの上では許していても、{a}の顔は笑っていなかった。|{a}は、{c}の隣に座る{b}を見ないようにした。それでも、目が勝手にそちらへ行った。|{b}の言い分は分かっていた。気持ちは自分のところにある、と。{a}はそれでも、{c}への苛立ちを飲み込めなかった。');
+  F.jealous = function (ctx, a, b) {
+    var x = freeOne(a, b), z = x === a ? b : a, y = F.loverOf(ctx, x, z.i);
+    if (!y || y === z) return null;
+    var jl = y.tr && y.tr.jealous != null ? y.tr.jealous : 0.4;
+    if (rnd(ctx) > 0.15 + jl * 0.5) return null;
+    var text = pick(ctx, F.JEAL).replace(/\{a\}/g, y.name).replace(/\{b\}/g, x.name).replace(/\{c\}/g, z.name);
+    var why = y.name + 'は、恋愛相手に決めた' + x.name + 'が' + z.name + 'と体の関係を持ったことに気づいた（嫉妬 ' + Math.round(jl * 100) + '）';
+    if (eng(ctx)) {
+      var k0 = ctx.k; ctx.k = 1;
+      ctx.mod(y, z, { ten: 12, aff: -6 }); ctx.mod(y, x, { ten: 5 });
+      ctx.pair(y, z).jealous++;
+      ctx.stress(y, 8);
+      ctx.k = k0;
+      /* 出来事の途中で呼ばれるので、いまの出来事のあとに出す（engine.js の pending・flush） */
+      var o = { kind: 'event', cat: 'conflict', actors: [y, x, z], text: text, why: why, mag: 14 };
+      (ctx.pending = ctx.pending || []).push(o);
+      return o;
+    }
+    if (HK.Story && HK.Story.say) return HK.Story.say(ctx, { actors: [y.i, x.i, z.i], tag: '嫉妬', text: text, why: why });
+    return null;
+  };
+})();
 ;/* ==== js/scenarios-a.js ==== */
 /* 箱庭診断: 合コン／〇〇しないと出られない部屋／クラスメイト */
 (function () {
@@ -12994,13 +13108,19 @@
       cand.forEach(function (c) {
         /* 恋愛はしないが体の関係は許されている二人は、恋愛相手の固定を外して恋愛対象の向きだけを見る（帰るなら、お持ち帰りの夜だけ） */
         var so = HK.lockSexOnly && HK.lockSexOnly(c.a, c.b), ca = so ? Object.assign({}, c.a, { lock: null }) : c.a, cb = so ? Object.assign({}, c.b, { lock: null }) : c.b;
-        if (used[c.a.i] || used[c.b.i] || c.v < 55 - rf * 20 || !HK.canLove(ca, cb) || !HK.canLove(cb, ca)) return;
+        /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：惹かれの閾値の代わりに、酔いと勢いで（恋人の組の半分ほど。固定した恋人がいれば ×0.3） */
+        var fs = !!(HK.State.freeSex && HK.State.freeSex(ctx, c.a, c.b));
+        if (used[c.a.i] || used[c.b.i]) return;
+        if (fs) {
+          var dr = ((c.a.flags.drunk || 0) + (c.b.flags.drunk || 0)) / 200, im0 = (c.a.tr.impulse + c.b.tr.impulse) / 2;
+          if (rng() >= HK.clamp(0.25 + dr * 0.5 + im0 * 0.35, 0, 0.9) * 0.5 * HK.FreeSex.factor(ctx, c.a, c.b)) return;
+        } else if (c.v < 55 - rf * 20 || !HK.canLove(ca, cb) || !HK.canLove(cb, ca)) return;
         /* 家族（きょうだい・親子・親族など）で「恋愛：なし」の二人は、一緒に帰る組・お持ち帰りにしない */
         if (ctx.pair(c.a, c.b).kin) return;
         if (so && !(HK.Pos && HK.Pos.okSex(c.a, c.b))) return;
         used[c.a.i] = used[c.b.i] = 1;
         var imp = (c.a.tr.impulse + c.b.tr.impulse) / 2;
-        var night = so || (imp > 0.55 && rng() < imp * 0.9);
+        var night = so || fs || (imp > 0.55 && rng() < imp * 0.9);
         if (night) ctx.pair(c.a, c.b).night = true;
         c.a.fate = c.b.fate = night ? 'お持ち帰り' : '一緒に帰った';
         var tg = { a: c.a.i, b: c.b.i, night: night };
@@ -13011,8 +13131,8 @@
         ctx.mod2(c.a, c.b, { att: 10, aff: 6 }, { att: 10, aff: 6 });
         /* R18版：お持ち帰りのあとの夜（solo-goukon-night.js。全年齢版・全年齢モードでは null） */
         /* その夜のあと、二人はどうなるか（恋人／セフレ／なかったことに／まだ答えが出ない）。数値で決まり、関係にも反映する */
-        var fwbNow = night && !ctx.pair(c.a, c.b).couple && !tieHas(c.a, c.b, 'lover') && !tieHas(c.a, c.b, 'mate') && HK.FWB && HK.FWB.decide(ctx, c.a, c.b);
-        var outc = night ? nightOutcome(ctx, c.a, c.b, fwbNow) : null;
+        var fwbNow = night && !fs && !ctx.pair(c.a, c.b).couple && !tieHas(c.a, c.b, 'lover') && !tieHas(c.a, c.b, 'mate') && HK.FWB && HK.FWB.decide(ctx, c.a, c.b);
+        var outc = fs ? 'fwb' : night ? nightOutcome(ctx, c.a, c.b, fwbNow) : null;
         if (outc) { var on = { keep: '恋人どうしの夜を過ごした', lover: 'そのまま付き合うことになった', fwb: '恋人ではない関係に落ち着いた', forget: '翌朝、なかったことにした', unsure: '関係はまだ決まっていない' }[outc]; c.a.fateNote += '。' + on; c.b.fateNote += '。' + on; }
         var gn = night && HK.GoukonNight ? HK.GoukonNight(ctx, c.a, c.b, outc) : null;
         var wasCouple = !!ctx.pair(c.a, c.b).couple;
@@ -13024,14 +13144,16 @@
         tg.outc = outc; tg.walk = walkLove; tg.newLove = !wasCouple && (outc === 'lover' || walkLove);
         if (walkLove) { ctx.pair(c.a, c.b).couple = true; c.a.fateNote += '。帰り道で付き合うことになった'; c.b.fateNote += '。帰り道で付き合うことになった'; }
         if (outc === 'forget') ctx.pair(c.a, c.b).forgot = true;
-        var e = ctx.say({ kind: 'event', cat: 'romance', sex: !!night, actors: [c.a, c.b], text: night ? c.a.name + 'と' + c.b.name + 'は、店を出たあと同じタクシーに乗った。' + (gn ? gn.text : 'その先のことは、二人しか知らない。') + (gn ? '' : (function () {
+        var e = ctx.say({ kind: 'event', cat: 'romance', sex: !!night, actors: [c.a, c.b], text: night ? c.a.name + 'と' + c.b.name + 'は、店を出たあと同じタクシーに乗った。' + (fs ? HK.FreeSex.lead(ctx, c.a, c.b) : '') + (gn ? gn.text : 'その先のことは、二人しか知らない。') + (gn ? '' : (function () {
           /* 受け攻めの指定どおりの「翌朝」 */
           var tb = HK.Pos ? HK.Pos.order(c.a, c.b, [c.a, c.b]) : [c.a, c.b];
           /* 全年齢版・全年齢モードは、体の名残を書かない翌朝 */
           if (HK.SAFE_ON) return ctx.t(rng.pick(['――翌朝、{a}は二人分のコーヒーを淹れた。{b}は寝ぐせのまま、照れくさそうにそれを受け取った。', '――翌朝、{b}は{a}の部屋の窓から、知らない街の景色を眺めていた。{a}は後ろから「おはよう」とだけ言った。', '――翌朝、二人は駅まで並んで歩いた。昨夜より、少しだけ距離が近かった。']), tb[0], tb[1]);
           return ctx.t(rng.pick(['――翌朝、{b}は少しだけ腰をかばうように歩いていた。{a}はそれに気づいて、黙って{b}の荷物を持った。', '――翌朝、{a}の背中には{b}の爪の痕が残っていた。{b}は目を合わせずに「……強すぎ」とだけ言った。', '――翌朝、{b}は{a}のシャツを着たまま、ベッドから起き上がれずにいた。', '――翌朝、{a}は先に起きて、まだ眠っている{b}の髪をそっと撫でた。']), tb[0], tb[1]);
-        })()) + (!gn && outc ? rng.pick(SOFT_END[outc]) : '') : c.a.name + 'と' + c.b.name + 'は駅まで一緒に歩いた。' + (walkLove ? ctx.t(rng.pick(WALK_LOVE), c.a, c.b) : (ctx.pair(c.a, c.b).couple ? '繋いだ手を、改札の前でなかなか離せなかった。' : '改札で別れるのに少し時間がかかった。')), why: '互いの惹かれ（' + Math.round(Math.min(R(ctx, c.a, c.b).att, R(ctx, c.b, c.a).att)) + '）' + (night ? 'と酔いによる衝動性' : '') + (gn ? '／夜：' + gn.label : outc ? '／その後：' + { keep: '恋人のまま', lover: '恋人になる', fwb: 'セフレに落ち着く', forget: 'なかったことにする', unsure: 'まだ答えが出ない' }[outc] : ''), mag: 25 });
+        })()) + (!gn && outc ? rng.pick(SOFT_END[outc]) : '') : c.a.name + 'と' + c.b.name + 'は駅まで一緒に歩いた。' + (walkLove ? ctx.t(rng.pick(WALK_LOVE), c.a, c.b) : (ctx.pair(c.a, c.b).couple ? '繋いだ手を、改札の前でなかなか離せなかった。' : '改札で別れるのに少し時間がかかった。')), why: (fs ? HK.FreeSex.why(c.a, c.b) + '／酔い' : '互いの惹かれ（' + Math.round(Math.min(R(ctx, c.a, c.b).att, R(ctx, c.b, c.a).att)) + '）') + (night ? 'と酔いによる衝動性' : '') + (gn ? '／夜：' + gn.label : outc ? '／その後：' + { keep: '恋人のまま', lover: '恋人になる', fwb: 'セフレに落ち着く', forget: 'なかったことにする', unsure: 'まだ答えが出ない' }[outc] : ''), mag: 25 });
         ctx.pair(c.a, c.b).moments.push({ n: e.n, mag: 25 });
+        /* 体だけの関係の印（恋人にはしない）と、固定した恋人が気づいたときの嫉妬 */
+        if (fs) { HK.FreeSex.mark(ctx, c.a, c.b); HK.FreeSex.jealous(ctx, c.a, c.b); }
         if (fwbNow) {
           HK.FWB.mark(ctx, c.a, c.b);
           var e2 = ctx.say({ kind: 'event', cat: 'romance', sex: true, actors: [c.a, c.b], text: '翌朝。' + HK.FWB.after(ctx, c.a, c.b), why: '二人とも「恋人より気楽な関係」寄り（ドライさ・衝動性）', mag: 15 });
@@ -15078,6 +15200,9 @@
       }
       var cl = r.k === 'h' && first && bothBottom(a, b) ? clashText(ctx, a, b) : null;
       if (cl) text = cl.text + text;
+      /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：はじめてのエッチに「恋ではない」一文。体だけの関係の印（恋人にはしない） */
+      var fsx = r.k === 'h' && HK.State.freeSex && HK.State.freeSex(ctx, a, b);
+      if (fsx) { if (first) text = HK.FreeSex.lead(ctx, a, b) + text; HK.FreeSex.mark(ctx, a, b); if (first) HK.FreeSex.jealous(ctx, a, b); }
       if (r.n > 1) text += '（' + T.noun + ' ' + p.act[r.k] + '/' + r.n + '）';
       var whyT = (cl ? cl.why + '／' : '') + (rough ? rough.name + 'は' + (rough === a ? b : a).name + 'を敵視している（嫌悪 ' + Math.round(HKr.level(ctx, rough, rough === a ? b : a)) + '）・強引な性格。条件のために、乱暴に' : wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった');
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, r.k === 'h');
@@ -20970,10 +21095,17 @@
     }
     var heatLine = OM.HEAT;
     var casual = !noW && !pf.couple && rX.att > 25 && rO.att > 25 && HK.canLove(X, O) && HK.canLove(O, X) && (HK.FWB.lean(X) + HK.FWB.lean(O)) / 2 > 0.45 && ctx.rng() < 0.5;
+    /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：恋愛の条件（惹かれ・HK.canLove・HK.ngPair の恋愛側）を外し、発情期の熱と衝動で（固定した恋人がいれば ×0.3）。番にはならない */
+    var fs = !noW && !!(HK.State.freeSex && HK.State.freeSex(ctx, X, O)) && ctx.rng() < HK.clamp(0.25 + heat * 0.35 + X.tr.impulse * 0.3, 0, 0.9) * HK.FreeSex.factor(ctx, X, O);
     /* 夜になる組は、受け攻め・恋愛対象（HK.Pos.okSex）と、恋愛やR18にしない組・性行為の相手の固定・R18に参加しない（HK.ngPair・HK.sexBlocked）を通るときだけ */
-    var sexOk = !(HK.Pos && !HK.Pos.okSex(X, O)) && !(HK.ngPair && HK.ngPair(X, O)) && !(HK.sexBlocked && HK.sexBlocked(X, O));
-    if (sexOk && (sx(X) === 'a' || sx(X) === 'b') && (bound && mutual || casual || (mutual && rX.trust > 20 && rO.trust > 20 && heat + X.tr.impulse * 0.4 > 0.75 && ctx.rng() < 0.55))) {
+    var sexOk = fs || (!(HK.Pos && !HK.Pos.okSex(X, O)) && !(HK.ngPair && HK.ngPair(X, O)) && !(HK.sexBlocked && HK.sexBlocked(X, O)));
+    if (sexOk && (sx(X) === 'a' || sx(X) === 'b') && (fs || bound && mutual || casual || (mutual && rX.trust > 20 && rO.trust > 20 && heat + X.tr.impulse * 0.4 > 0.75 && ctx.rng() < 0.55))) {
       pf.night = true; pf.nights = (pf.nights || 0) + 1;
+      if (fs) {
+        ctx.mod2(X, O, { aff: 3 }, { aff: 3 });
+        HK.FreeSex.mark(ctx, X, O); HK.FreeSex.jealous(ctx, X, O);
+        return { text: HK.FreeSex.lead(ctx, X, O) + heatLine.scene(ctx, X, O, { beta: sx(X) === 'b', insert: '' }), why: '発情期（' + O.name + '）の熱／' + HK.FreeSex.why(X, O) + '。番にはならない', mag: 22 };
+      }
       ctx.mod2(X, O, { att: 10, aff: 6 }, { att: 10, aff: 6 });
       /* 噛む（番にする）：運命の抗えなさが高いほど、信頼が浅くても噛んでしまう・噛まれてしまう。低いほど信頼を待つ */
       var need = 30 - (d - 0.5) * 30;
@@ -21028,16 +21160,20 @@
   /* 発情期でなくても、勢いで一線を越える夜（恋人にならないまま続くこともある） */
   EV.push({
     id: 'om_night', cat: 'romance', sex: true, scope: 'pair',
-    when: function (ctx, a, b) { var pf = ctx.pair(a, b); return !pf.couple && !pf.night && met(ctx, a, b) && HK.canLove(a, b) && HK.canLove(b, a) && ctx.R(a, b).att > 28 && ctx.R(b, a).att > 24 && !partnerOf(ctx, a) && !partnerOf(ctx, b) && !(BD.mateOf(ctx, a) || BD.mateOf(ctx, b)); },
-    w: function (ctx, a, b) { var h = ctx.om.hesitate[key(a, b)] ? 1 : 0; return (HK.FWB.lean(a) + HK.FWB.lean(b)) * 1.4 + h * 0.8 + (a.goal.id === 'free' ? 0.6 : 0); },
+    /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex）は、恋愛の条件（HK.canLove・惹かれ・恋人のいない人どうし）を外す（番のいる人は除く） */
+    when: function (ctx, a, b) { var pf = ctx.pair(a, b); if (pf.couple || pf.night || !met(ctx, a, b) || BD.mateOf(ctx, a) || BD.mateOf(ctx, b)) return false; return HK.State.freeSex(ctx, a, b) || (HK.canLove(a, b) && HK.canLove(b, a) && ctx.R(a, b).att > 28 && ctx.R(b, a).att > 24 && !partnerOf(ctx, a) && !partnerOf(ctx, b)); },
+    w: function (ctx, a, b) { var h = ctx.om.hesitate[key(a, b)] ? 1 : 0, fs = HK.State.freeSex(ctx, a, b); return ((HK.FWB.lean(a) + HK.FWB.lean(b)) * 1.4 + h * 0.8 + (a.goal.id === 'free' ? 0.6 : 0) + (fs ? 0.5 : 0)) * (fs ? HK.FreeSex.factor(ctx, a, b) : 1); },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b); pf.night = true; pf.nights = (pf.nights || 0) + 1;
+      var fs = HK.State.freeSex(ctx, a, b);
       var same = sx(a) === sx(b) && sx(a) !== 'b';
       ctx.mod2(a, b, { att: same ? 3 : 8 }, { att: same ? 3 : 8 });
       var t = ctx.pick(same ? ['付き合えないのは分かっていた。それでも{a}と{b}は、飲んだ帰りに同じ部屋へ入った。', '「恋人にはなれないけど、これくらいなら」――{a}の言い訳に、{b}は黙って頷いた。'] : ['二軒目の帰り、{a}は{b}の手を引いて、自分の部屋の鍵を開けた。', '終電を逃した{a}と{b}は、駅前のホテルに入った。部屋は一つだった。', '{b}の家で飲み直しているうちに、{a}との距離がなくなった。']);
       /* 押し倒すのは、受け攻めの指定で攻めに回る側 */
       var ob = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b];
       t = ctx.t(t, a, b) + sc(ctx.t(ctx.pick(['{sa}と{sb}の匂いが混ざって、どちらからともなく唇を重ねた。――', '服を脱がせ合う手が、酔いのせいか少し乱暴だった。――', '{a}は{b}をベッドに押し倒し、{b}は{a}のシャツを引き寄せた。――']), ob[0], ob[1]), ob[0], ob[1]) + ctx.t(ctx.pick(['朝、二人は気まずそうに、でもどこか慣れたように「おはよう」と言った。', '目が覚めると、{a}はもう服を着ていた。', '{b}は{a}の寝顔を見ながら、これが何の始まりなのか考えていた。']), a, b);
+      /* lead：導入の一文（恋ではない）。厚い版（omega-thick.js）に差し替えても、頭に残す */
+      if (fs) { HK.FreeSex.mark(ctx, a, b); HK.FreeSex.jealous(ctx, a, b); var ld = HK.FreeSex.lead(ctx, a, b); return { text: ld + t, lead: ld, why: HK.FreeSex.why(a, b) + '／恋人より気楽な関係に寄りやすい気質', mag: 20 }; }
       return { text: t, why: '惹かれ（' + Math.round(ctx.R(a, b).att) + '）と、恋人より気楽な関係に寄りやすい気質' + (same ? '／同じ第二性で付き合えない二人' : ''), mag: 20 };
     }
   });
@@ -24173,14 +24309,16 @@
       if (cf ? (L3.short && !L3.ero) : ctx.rng() > 0.5) return res;
       var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1];
       if (!TK.ok(T, U)) return res;
-      if (L3.ero) { res.text = (res.text.match(/^[^。]*。/) || [''])[0] + (L3.short ? '' : '\n\n') + eroScene(ctx, T, U, '', '', TK.kind(T, U, 'omega')); return res; }
+      /* 「誰とでも可」の人の体だけの夜（free-sex.js）は、導入の一文（res.lead）を頭に残す */
+      var ld = res.lead && res.text.indexOf(res.lead) === 0 ? res.lead : '', rest = res.text.slice(ld.length);
+      if (L3.ero) { res.text = ld + (rest.match(/^[^。]*。/) || [''])[0] + (L3.short ? '' : '\n\n') + eroScene(ctx, T, U, '', '', TK.kind(T, U, 'omega')); return res; }
       var pk = function (arr) { return fp(ctx, arr); }, ff = TK.kind(T, U, 'omega') === 'ff';
       var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: lew === 'high' ? 3 : 1, rough: hate, lead: hate ? pk(HATE_LEAD) : '', after: hate ? pk(HATE_END) : null });
       var sc = OM.sc || function (t) { return t; };
       var text = sc(ctx.t(TK.map(body, 'a', 'b'), T, U), T, U);
       if (ff && HK.FF) text = HK.FF.fix(ctx, text, T, U, { tools: true });
-      var first = (res.text.match(/^[^。]*。/) || [''])[0];
-      res.text = first + '\n\n' + text;
+      var first = (rest.match(/^[^。]*。/) || [''])[0];
+      res.text = ld + first + '\n\n' + text;
       return res;
     };
   });
@@ -33570,6 +33708,9 @@
     }
     PS.forEach(function (p) {
       var a = p[0], b = p[1], k = K(a, b), x = stOf(ctx, a, b);
+      /* 体だけの夜：恋愛相手を固定し、性行為の相手を「誰とでも可」にした人と、固定外の相手（HK.State.freeSex。free-sex.js）。
+         恋人でなくても（三人のときの三人目と）。一緒にいない夜は呼び出して。固定した恋人がその場にいれば ×0.3。恋人にはならない */
+      if (!couple(ctx, a, b) && HK.State.freeSex && HK.State.freeSex(ctx, a, b) && onTrip(ctx, a) === onTrip(ctx, b) && rng() < (together(ctx, a, b) ? 0.2 : 0.1) * HK.FreeSex.factor(ctx, a, b) && freeNight(ctx, a, b)) return;
       if (!together(ctx, a, b)) { if (x.s >= 2 && rng() < 0.28) msg(ctx, a, b, 'n'); return; }
       if (!couple(ctx, a, b) || !loveOk(ctx, a, b)) return;
       var pl = f.plan[k] || {}, trip = onTrip(ctx, a), first = !f.beds[k];
@@ -33577,6 +33718,17 @@
       if (rng() > ch) { f.slept[k] = f.day; return; }
       night(ctx, a, b, trip ? 'trip' : 'home', first);
     });
+  }
+  /* 体だけの夜（R18版の futari-r18.js があるときだけ。全年齢版・全年齢モードでは HK.State.freeSex が偽なので起きない） */
+  function freeNight(ctx, a, b) {
+    var f = ctx.ft, k = K(a, b), x = stOf(ctx, a, b), pf = ctx.pair(a, b);
+    var r = HK.FutariR18 && !HK.SAFE_ON ? HK.FutariR18.night(ctx, a, b, { stage: x.s, where: 'home', free: true }) : null;
+    if (!r || !r.text) return false;
+    var e = emit(ctx, { actors: [r.a || a, r.b || b], cat: 'romance', sex: true, text: HK.FreeSex.lead(ctx, a, b) + r.text, why: W(ctx, '') + HK.FreeSex.why(a, b) + '／' + r.why, mag: 10, tag: 'free', fx: relFx(ctx, a, b, { aff: 2 }, { aff: 2 }) });
+    if (!e) return false;
+    pf.nights = (pf.nights || 0) + 1; f.r18[k] = (f.r18[k] || 0) + 1;
+    HK.FreeSex.mark(ctx, a, b); HK.FreeSex.jealous(ctx, a, b); ctx.flush();
+    return true;
   }
   function night(ctx, a, b, where, first) {
     var f = ctx.ft, k = K(a, b), x = stOf(ctx, a, b), pf = ctx.pair(a, b);
@@ -40236,6 +40388,8 @@
       osana: L('「……子どもの頃から、隣にいるのが当たり前だったのにね」{a}が笑うと、{b}も少しだけ笑った。それから、どちらも黙った。|{a}は{b}の髪に触れた。小さい頃、何度も寝癖を直してやった髪だった。今夜は、その指が離れなかった。|幼馴染の顔だと思っていた。間近で見た{b}の目は、知らない熱を帯びていた。{a}は、もう引き返せなかった。'),
       /* 吊り橋：恐怖と興奮を取り違えたまま、恋人でも何でもない二人が求め合う（吹雪の館の「吊り橋」と同じ考え方） */
       bridge: L('物音ひとつにも身をすくめながら、{a}と{b}は息を殺して抱き合っていた。静けさが戻っても、どちらも腕をほどかなかった。心臓がうるさいのは、さっきの恐怖のせいなのか、目の前の相手のせいなのか、もう分からなかった。|「……震えが、止まらない」――{b}がそう言うと、{a}は黙って{b}の手を取った。握り返された指の熱さに、{a}の方が先に息を呑んだ。生きている、と確かめたいだけのはずだった。|{a}と{b}は、ついさっきまでろくに話したこともなかった。それでも、{spot}で肩を寄せ合っているうちに、震えは別の熱に変わっていった。どちらから唇を寄せたのかは、覚えていない。|「……今夜だけ、そばにいて」{b}の声はかすれていた。{a}は答える代わりに、{b}を引き寄せた。怖さを紛らわせたいのか、触れたいのか、自分でももう区別がつかなかった。'),
+      /* 体だけの関係：恋愛相手を固定し、性行為の相手を「誰とでも可」にした人と、固定外の相手（HK.State.freeSex。free-sex.js） */
+      free: L('{a}は{b}の手首を掴んだ。「……今夜だけ。気持ちの話はしない」{b}は黙って頷いた。|互いに求めているのが体温だけだと、二人とも分かっていた。{a}は何も言わずに、{b}の肩を引き寄せた。|{a}は「恋人の真似はしない」と短く言って、{b}の服に手をかけた。{b}は笑いもせず、その手を受け入れた。'),
       new: L('どちらから手を伸ばしたのか、あとになっても二人は思い出せなかった。|{a}と{b}の目が合った。昼間なら、すぐに逸らしていたはずの視線だった。|「……変だよね、こんなときに」{a}が呟くと、{b}は「こんなときだからだ」と答えて、そっと唇を重ねた。')
     },
     after: {
@@ -40253,10 +40407,11 @@
       mentor: L('翌朝、{a}は{b}にいつもどおりの指示を出した。ただ、その声は昨日までより、ずっと柔らかかった。|{b}は{a}の背中を見つめていた。守られるだけではなく、守りたいと思った。|朝、{a}は何も言わずに{b}の髪をくしゃりと撫でた。昨日までより、少しだけ長く。'),
       osana: L('朝、{a}と{b}はいつもの調子で軽口を叩き合った。ただ、目が合うたびに、二人とも少しだけ黙った。|「……今さら、どんな顔すればいいの」{b}がぼやくと、{a}は「いつもの顔でいい」と笑って、{b}の手を取った。|幼馴染という言葉では、もう足りなかった。{a}は朝の光の中で、{b}の横顔をしばらく見つめていた。'),
       bridge: L('朝の光の中で、{a}と{b}は気まずそうに目を逸らした。あれは怖かったからだ、と二人とも自分に言い聞かせていた。それなのに、{a}が少し離れるたびに、{b}の目はその背中を追っていた。|翌朝、{b}は「……昨夜のは、吊り橋みたいなものだよね」と笑ってみせた。{a}も「だな」と頷いた。どちらの笑顔も、少しだけぎこちなかった。|{a}は、昨夜のことを恐怖のせいにしようとした。けれど、{b}が誰かと話しているのを見るたびに、胸の奥がざわついた。怖さはもう引いていたのに、熱だけが残っていた。|朝になっても、{a}と{b}は昨夜のことを口にしなかった。ただ、見張りも水汲みも、気づけばいつも二人で組んでいた。'),
+      free: L('朝、{a}は先に起きて身支度を整えた。{b}も、昨夜のことは口にしなかった。それで十分だった。|夜が明けると、二人は何事もなかったように持ち場へ戻った。目が合っても、どちらも何も言わなかった。|{a}は{b}に「助かった」とだけ言った。それ以上の言葉は、二人のあいだには要らなかった。'),
       new: L('翌朝、{a}と{b}は互いの顔をまともに見られなかった。それでも、隣に座る距離は昨日より近かった。|朝、{b}は「……昨夜のこと、なかったことにはしないから」と言った。{a}は、黙って頷いた。|{a}は水を汲みながら、何度も{b}の方を振り返った。{b}が小さく手を振ると、{a}は慌てて目を逸らした。')
     }
   };
-  var REL_NAME = { lover: '恋人', fwb: 'セフレ', lock: '{a}が想い続けた相手', yan: '{a}の執着（相手も受け入れている）', ex: '元恋人との再燃', crush: '{a}の片想いが報われた', pining: '両片想いが通じた', bridge: '吊り橋（恐怖を、恋と取り違えた夜）', rival: '張り合ってきた二人の吊り橋', mentor: '師弟の一線', osana: '幼馴染', new: '惹かれ合った二人' };
+  var REL_NAME = { free: '体だけの関係（恋愛相手は別の人に固定・性行為の相手は「誰とでも可」）', lover: '恋人', fwb: 'セフレ', lock: '{a}が想い続けた相手', yan: '{a}の執着（相手も受け入れている）', ex: '元恋人との再燃', crush: '{a}の片想いが報われた', pining: '両片想いが通じた', bridge: '吊り橋（恐怖を、恋と取り違えた夜）', rival: '張り合ってきた二人の吊り橋', mentor: '師弟の一線', osana: '幼馴染', new: '惹かれ合った二人' };
 
   /* ======================= 「いつ死ぬか分からないから、今」：誘う側（{a}）の一言（態度9種） ======================= */
   var NOW = {
@@ -40564,6 +40719,8 @@
   function relOf(ctx, a, b) {
     if (RK.lockedTo(b, a) && !RK.lockedTo(a, b)) { var s0 = a; a = b; b = s0; }
     if (RK.lockedTo(a, b)) return { k: 'lock', a: a, b: b };
+    /* 体だけの関係（HK.State.freeSex）：恋愛の条件は見ない（恋人にはならない） */
+    if (HK.State.freeSex && HK.State.freeSex(ctx, a, b)) return { k: 'free', a: a, b: b };
     var la = obLv(ctx, a, b), lb = obLv(ctx, b, a);
     if (Math.max(la, lb) >= 35 && HK.Obsess.stance) {
       var o = la >= lb ? a : b, t = o === a ? b : a, st = HK.Obsess.stance(ctx, t, o);
@@ -40587,9 +40744,11 @@
     return a.stress + b.stress >= (sc === 'island' ? 15 : 50) && ra.att >= 5 && rb.att >= 5 && ra.aff > -10 && rb.aff > -10 && ra.ten < 45 && rb.ten < 45;
   }
   /* 惹かれの閾値（危機の夜は10下がる＝吊り橋） */
-  var TH = { bridge: 0, lover: 28, fwb: 28, lock: 36, yan: 30, ex: 32, crush: 34, pining: 32, rival: 36, mentor: 40, osana: 38, new: 52 };
+  var TH = { free: 0, bridge: 0, lover: 28, fwb: 28, lock: 36, yan: 30, ex: 32, crush: 34, pining: 32, rival: 36, mentor: 40, osana: 38, new: 52 };
   function ready(ctx, r, crisis) {
     var a = r.a, b = r.b, ra = ctx.R(a, b), rb = ctx.R(b, a), th = TH[r.k] - (crisis ? 10 : 0);
+    /* 体だけの関係：惹かれ（恋愛の手前で止めてある）ではなく、嫌い合っていないこと・張り詰めていないことと、焦り（危機の夜は焦りがなくても） */
+    if (r.k === 'free') return ra.aff > -10 && rb.aff > -10 && ra.ten < 50 && rb.ten < 50 && (crisis || a.stress + b.stress >= 20);
     if (r.k === 'crush') return ra.att > th + 10 && rb.att > th;
     if (r.k === 'yan') return rb.att > th;
     if (!(ra.att > th && rb.att > th)) return false;
@@ -40671,7 +40830,8 @@
     var h = st.h || null, c = h ? (h === a ? b : a) : null;
     var v = { a: a.name, b: b.name, x: x.name, y: y.name, d: st.d ? st.d.name : '', h: h ? h.name : '', c: c ? c.name : '',
       spot: sc === 'zombie' ? 'バリケードの奥の部屋' : '岩陰の寝床', noise: sc === 'zombie' ? '外の呻き声' : '波の音' };
-    var t = pickF(ctx, T.intro, v) + pickF(ctx, REL.start[r.k], v);
+    /* 体だけの関係：導入に「恋ではない」一文（free-sex.js） */
+    var t = (r.k === 'free' ? HK.FreeSex.lead(ctx, a, b) : '') + pickF(ctx, T.intro, v) + pickF(ctx, REL.start[r.k], v);
     if (NOW_SIT[st.id] && ctx.rng() < (lv === 'high' ? 0.75 : 0.5)) {
       var nw = pickF(ctx, NOW[RN.psOf(a)] || NOW.gentle, v);
       t += nw;
@@ -40710,6 +40870,7 @@
     else if (r.k === 'bridge') { pf.bridge = true; pf.couple = pf.couple || ctx.rng() < 0.35; }
     else if (r.k === 'rival') { var ra = ctx.R(a, b), rb = ctx.R(b, a); ra.ten = Math.max(0, ra.ten - 12); rb.ten = Math.max(0, rb.ten - 12); }
     else if (r.k === 'yan' && HK.Obsess && HK.Obsess.add) HK.Obsess.add(ctx, a, b, 6);
+    else if (r.k === 'free') { HK.FreeSex.mark(ctx, a, b); HK.FreeSex.jealous(ctx, a, b); }
   }
   function chooseSit(ctx, list) { return HK.weighted(ctx.rng, list, function (s) { return s.w; }); }
 
@@ -40753,7 +40914,7 @@
       },
       w: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'island'), cr = C.list.some(function (s) { return CRISIS[s.id]; });
-        return (cr ? 1.1 : 0.3) + (C.r.k === 'bridge' ? 0.8 : 0) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 200;
+        return ((cr ? 1.1 : 0.3) + (C.r.k === 'bridge' ? 0.8 : 0) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 200) * (C.r.k === 'free' ? 2.5 * HK.FreeSex.factor(ctx, a, b) : 1);
       },
       run: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'island'), st = chooseSit(ctx, C.list), r = C.r, lv = RN.lv(ctx) === 'low' ? 'fade' : 'high';
@@ -40775,7 +40936,7 @@
       },
       w: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'zombie'), cr = C.list.some(function (s) { return CRISIS[s.id]; });
-        return (cr ? 1.2 : 0.3) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 160;
+        return ((cr ? 1.2 : 0.3) + (ctx.R(a, b).att + ctx.R(b, a).att) / 160 + (a.stress + b.stress) / 160) * (C.r.k === 'free' ? 2.5 * HK.FreeSex.factor(ctx, a, b) : 1);
       },
       run: function (ctx, a, b) {
         var C = cands(ctx, a, b, 'zombie'), st = chooseSit(ctx, C.list), r = C.r;
@@ -52966,12 +53127,14 @@
   function canAct(S, a, b) {
     if (!a || !b || a === b) return false;
     if (HK.Pos && !HK.Pos.okSex(a, b)) return false;
-    if (HK.ngPair && HK.ngPair(a, b)) return false;
+    if (HK.ngPair && HK.ngPair(a, b) && !freeOk(S, a, b)) return false;
     if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
-    if (!okLove(a, b) || noLoveTie(S, a, b)) return false;
+    /* 恋愛相手を固定し、性行為の相手を「誰とでも可」にした人と、固定外の相手（HK.State.freeSex。free-sex.js）は、恋愛（HK.canLove）を見ずに体の関係だけ */
+    if (!(okLove(a, b) || freeOk(S, a, b)) || noLoveTie(S, a, b)) return false;
     if (!HK.SAFE_ON && !(HK.State.r18ok(a) && HK.State.r18ok(b))) return false;
     return true;
   }
+  function freeOk(S, a, b) { return !!(HK.State.freeSex && HK.State.freeSex(S, a, b)); }
   LK.crowdOk = canAct;
   /* a が b を想っている（関係の恋人・片想いなど、またはこの回だけの「気になる相手」）。恋愛は両方向で通る組だけ */
   function interest(S, a, b) {
@@ -53430,6 +53593,9 @@
       if (loyal(S, a, b)) urge -= desperate(a) ? 0.05 : 0.25;
       if (urge < 0.36 + rng() * 0.3) continue;
       if (!canAct(S, a, b)) { holdPair(S, a, b, whyNot(S, a, b)); return; }
+      /* 体だけの関係の組：固定した恋人が同じロッカーにいれば手を出しにくい（×0.3） */
+      var fr = freeOk(S, a, b);
+      if (fr && Lk.m.some(function (q) { return q !== a && q !== b && (q.i === a.lock || q.i === b.lock); }) && rng() > 0.3) continue;
       var lvMax = Math.min(LK.MAXLV || 4, 4);
       if (a.bound && b.bound) lvMax = Math.min(lvMax, 1);
       var lv = Math.min(Lk.lv + (relW(S, a, b, 'acc') >= 0.45 && Lk.lv >= 0 && rng() < 0.5 ? 2 : 1), lvMax);
@@ -53483,8 +53649,13 @@
       }
       if (lv === 4) { tp.m.plea = Math.min(tp.m.plea, 55); bt.m.plea = Math.min(bt.m.plea, 60); }
       if (bt.m.plea >= 100 && lv < 4) { if (hardTop(bt)) bt.m.plea = 95; else { t += moan(S, bt, false, md, eroNow) + climaxBy(S, bt, tp, false); bumpClimax(bt); } }
-      ST.sayB(S, { actors: [a, b], tag: actLabel(Lk, lv), text: t, why: a.name + 'が「' + actLabel(Lk, lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた' : resp === 'accept' ? '乗った' : '流された') + '（ロッカー' + Lk.n + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(Lk, lv), lv >= 3);
+      /* 体だけの関係：最初に手を出したときに「恋ではない」一文（free-sex.js） */
+      /* 札も恋愛の札（キス・口づけ）にしない（恋愛の出来事として数えない） */
+      var ld = fr && !Lk.freeLed ? HK.FreeSex.lead(S, a, b) : '';
+      var said = ST.sayB(S, { actors: [a, b], tag: fr ? '体だけ・' + actLabel(Lk, lv).replace(/キス|口づけ/g, '唇') : actLabel(Lk, lv), text: ld + t, why: (fr ? HK.FreeSex.why(a, b) + '／' : '') + a.name + 'が「' + actLabel(Lk, lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた' : resp === 'accept' ? '乗った' : '流された') + '（ロッカー' + Lk.n + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(Lk, lv), lv >= 3);
+      if (ld && said) Lk.freeLed = true;
       if (lv === 4 && !Lk.keySex) { Lk.keySex = true; var o2 = S.log[S.log.length - 1]; if (o2) ST.key(S, o2, 'ロッカー' + Lk.n + 'で' + (ff ? '肌を重ねた' : '繋がった')); }
+      if (fr && lv === 4 && !Lk.freeMark) { Lk.freeMark = true; HK.FreeSex.mark(S, a, b); HK.FreeSex.jealous(S, a, b); }
       return;
     }
   }
@@ -57547,6 +57718,8 @@
         /* 一回の中の性的な夜の上限（R18版の JS.R18.room）に届いていたら、この夜は起きない */
         if (JS.R18 && JS.R18.room && !JS.R18.room(S, [a, b])) { q.done = true; return; }
         var mm = { a: a.name, b: b.name, t: o[0].name, u: o[1].name };
+        /* 体だけの関係（「誰とでも可」の人と固定外の相手。HK.State.freeSex。free-sex.js）：導入に「恋ではない」一文。恋の線にはしない */
+        var free = !!(HK.State && HK.State.freeSex && HK.State.freeSex(S, a, b));
         /* 組ごとの文のあとに、協力／因縁ごとの空気・明け方・断られたあとを足して、一本道にしない（R18版の jashin-duo-r18.js） */
         var X = JS.DUO_R18X && JS.DUO_R18X[foe ? 'foe' : 'ally'];
         /* 組ごとの文は3通り（introL・okL・ngL）。同じ番目どうしで場面がそろうので、番目を一つ選ぶ */
@@ -57558,9 +57731,10 @@
         /* 組ごとの文の最後の一文が「果てた」なら、性別の組ごとの一文と喘ぎはその前に挟む */
         if (body && cut >= 0 && /果て/.test(main.slice(cut + 1))) main = main.slice(0, cut + 1) + body + main.slice(cut + 1);
         else main += body;
-        t = ST.fmt(at(e.introL, e.intro), mm) + (X && S.rng() < 0.5 ? ST.fmt(ST.pick(S, X.intro), mm) : '') + main + (X ? ST.fmt(ST.pick(S, ok ? X.after : X.ng), mm) : '');
+        t = (free && ok ? HK.FreeSex.lead(S, a, b) : '') + ST.fmt(at(e.introL, e.intro), mm) + (X && S.rng() < 0.5 ? ST.fmt(ST.pick(S, X.intro), mm) : '') + main + (X ? ST.fmt(ST.pick(S, ok ? X.after : X.ng), mm) : '');
         if (ok && JS.R18 && JS.R18.spend) JS.R18.spend(S, [a, b]);
-        if (ok) { a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1; rel(S, a, b, foe ? 0.35 : 0.6, foe ? '歪んだ関係' : '一夜'); if (!foe) edge(S, a, b, '一夜', 'love'); }
+        if (ok && free) { a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1; rel(S, a, b, 0.2, '体だけの関係'); edge(S, a, b, '体だけの関係', 'night'); HK.FreeSex.mark(S, a, b); HK.FreeSex.jealous(S, a, b); why = HK.FreeSex.why(a, b) + '／' + why; }
+        else if (ok) { a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1; rel(S, a, b, foe ? 0.35 : 0.6, foe ? '歪んだ関係' : '一夜'); if (!foe) edge(S, a, b, '一夜', 'love'); }
         else rel(S, a, b, -0.5, '決裂');
         mag = 30; key = ok ? a.name + 'と' + b.name + 'の夜' : '';
         break;
@@ -64627,8 +64801,10 @@
       });
     });
     if (!cand.length) return;
-    var c = HK.weighted(rng, cand, function (o) { return o.tier === 'love' ? 1.3 + o.w : o.tier === 'again' ? 1.5 + Math.max(0, o.w) * 0.5 : 0.3 + Math.max(0, o.w) * 0.6; });
+    /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：体だけの夜。固定した恋人が船にいれば ×0.3 */
+    var c = HK.weighted(rng, cand, function (o) { return (o.tier === 'love' ? 1.3 + o.w : o.tier === 'again' ? 1.5 + Math.max(0, o.w) * 0.5 : 0.3 + Math.max(0, o.w) * 0.6) * (HK.State.freeSex && HK.State.freeSex(S, o.a, o.b) ? HK.FreeSex.factor(S, o.a, o.b) : 1); });
     var a = c.a, b = c.b, tier = c.tier, x = c.x;
+    var free = tier !== 'love' && !!(HK.State.freeSex && HK.State.freeSex(S, a, b));
     /* 誘う側：過ちだと考えていない人、FC の高い人 */
     if (x && (x.mis[a.i] && !x.mis[b.i] || (!x.mis[b.i] && tr(b, 'fc') > tr(a, 'fc')))) { var tmp = a; a = b; b = tmp; }
     var pre = '';
@@ -64662,9 +64838,11 @@
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     var TAG = { casual: '勢いの夜', again: '二度目の夜', love: '恋人の夜' };
     var y = (S.nt || {})[A.rk(a, b)], nth = y ? y.n + 1 : 1;
-    var o = ST.say(S, { actors: [a, b], tag: civ ? '儀式の夜' : pol ? '花粉の夜' : TAG[tier], kind: 'climax', text: open + (pre ? ' ' + pre : '') + mid + body + aft,
-      why: (civ ? '文明の歓迎の儀式' : pol ? '星の花粉にあてられた' : tier === 'love' ? '恋人どうし・深い仲の夜' : tier === 'again' ? nth + '度目の夜' : '関係の浅い二人の、勢いの夜') + '／関係の近さ ' + Math.round(c.w * 100), mag: 30 });
+    /* 体だけの夜：導入に「恋ではない」一文（free-sex.js） */
+    var o = ST.say(S, { actors: [a, b], tag: civ ? '儀式の夜' : pol ? '花粉の夜' : free ? '体だけの夜' : TAG[tier], kind: 'climax', text: (free ? HK.FreeSex.lead(S, a, b) : '') + open + (pre ? ' ' + pre : '') + mid + body + aft,
+      why: (free ? HK.FreeSex.why(a, b) + '／' : '') + (civ ? '文明の歓迎の儀式' : pol ? '星の花粉にあてられた' : tier === 'love' ? '恋人どうし・深い仲の夜' : tier === 'again' ? nth + '度目の夜' : '関係の浅い二人の、勢いの夜') + '／関係の近さ ' + Math.round(c.w * 100), mag: 30 });
     if (!S.r18Key) { S.r18Key = true; ST.key(S, o, a.name + 'と' + b.name + 'の夜'); }
+    if (free) { HK.FreeSex.mark(S, a, b); HK.FreeSex.jealous(S, a, b); }
     after(S, A, a, b, tier);
   }
 
@@ -68293,14 +68471,20 @@
         var od = HK.Pos ? HK.Pos.order(x, y, [x, y]) : [x, y];
         var m = { x: od[0].name, y: od[1].name, p: P, d: (extra && extra.d) || '', b: (extra && extra.b) || '' };
         var pool = PLF(kind, SC[kind], od[0], od[1]);
+        /* 体だけの夜（「誰とでも可」の人と固定外の相手。HK.State.freeSex。free-sex.js）：導入に「恋ではない」一文。恋人にはならない */
+        var free = kind === 'casual' && !!(HK.State.freeSex && HK.State.freeSex(S, x, y));
         /* 探偵と助手：向きの決まった文は、探偵が攻めか受けかで選ぶ */
         if (kind === 'buddy' && !isFF(od[0], od[1]) && Y.R18T) pool = pool.concat(Y.R18T[od[0] === x ? 'buddyDT' : 'buddyDB'] || []);
-        ST.say(S, { actors: [od[0], od[1]], tag: '媚薬の夜', kind: 'climax', text: fmFix(S, F(fp(S, pool), m), od[0], od[1]) + (S.rng() < 0.6 ? pz(S, od[1], 'react') : '') + SX(S, od[0], od[1], kind === 'enemies' ? 'rough' : kind === 'lovers' || kind === 'crush' || kind === 'pining' || kind === 'buddy' ? 'love' : 'drug') + aft(S, od[1]), why: why + PW(S), mag: 32 });
-        Y.setRel(S, x, y, kind === 'enemies' ? 0.35 : 0.2, kind === 'enemies' ? '憎しみの一夜' : kind === 'buddy' ? '一線を越えた' : kind === 'crush' ? '想いが溢れた' : kind === 'pining' ? '想いが通じた' : '一夜', kind === 'crush' ? x : null);
+        ST.say(S, { actors: [od[0], od[1]], tag: '媚薬の夜', kind: 'climax', text: (free ? HK.FreeSex.lead(S, x, y) : '') + fmFix(S, F(fp(S, pool), m), od[0], od[1]) + (S.rng() < 0.6 ? pz(S, od[1], 'react') : '') + SX(S, od[0], od[1], kind === 'enemies' ? 'rough' : kind === 'lovers' || kind === 'crush' || kind === 'pining' || kind === 'buddy' ? 'love' : 'drug') + aft(S, od[1]), why: (free ? HK.FreeSex.why(x, y) + '／' : '') + why + PW(S), mag: 32 });
+        Y.setRel(S, x, y, kind === 'enemies' ? 0.35 : 0.2, free ? '体だけの関係' : kind === 'enemies' ? '憎しみの一夜' : kind === 'buddy' ? '一線を越えた' : kind === 'crush' ? '想いが溢れた' : kind === 'pining' ? '想いが通じた' : '一夜', kind === 'crush' ? x : null);
+        if (free) { HK.FreeSex.mark(S, x, y); HK.FreeSex.jealous(S, x, y); }
         drunk.splice(drunk.indexOf(x), 1); if (drunk.indexOf(y) >= 0) drunk.splice(drunk.indexOf(y), 1);
         scenes++;
       }
       function can(a, b) { return (!HK.canLove || HK.canLove(a, b)) && okP(a, b); }
+      /* 残った人どうしの夜には、体だけの関係の組（HK.State.freeSex）も入る。固定した恋人がその場にいれば ×0.3（組ごとに一度だけ決める） */
+      var fz = {};
+      function canFree(a, b) { var k = Math.min(a.i, b.i) + '-' + Math.max(a.i, b.i); if (fz[k] == null) fz[k] = !!(HK.State.freeSex && HK.State.freeSex(S, a, b)) && rng() < HK.FreeSex.factor(S, a, b) * 1.5; return fz[k]; }
       function tie(a, b, list) { return (S.ties || []).some(function (t) { return ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)) && list.split(',').indexOf(t.type) >= 0; }); }
       /* 探偵への誘惑 */
       var det = drunk.filter(function (q) { return q.isDet; })[0];
@@ -68340,7 +68524,7 @@
       });
       /* 残った人どうし */
       while (drunk.length >= 2 && scenes < 4) {
-        var x = drunk[0], y = drunk.slice(1).filter(function (q) { return can(x, q); }).sort(function (a, b) { return Y.bond(S, x, b) - Y.bond(S, x, a); })[0];
+        var x = drunk[0], y = drunk.slice(1).filter(function (q) { return can(x, q) || canFree(x, q); }).sort(function (a, b) { return Y.bond(S, x, b) - Y.bond(S, x, a); })[0];
         if (!y) { drunk.shift(); continue; }
         /* 乱交には、自分で攻めを選んだ人を入れない（誰に何をされるか分からない場面のため） */
         var gp = drunk.filter(function (q) { return !hardTop(q); });
@@ -68376,6 +68560,8 @@
   /* ---------- 媚薬以外の夜の出来事（媚薬の夜でない夜に、1つ起きることがある） ----------
      凌辱（快楽殺人の犯人が無理やり）・吊り橋効果・犯人の脅し・大浴場・凍えた体を温め合う・取り調べでの誘惑
      起きても殺人は止まらない（false を返す）。凌辱のあと、そのまま殺されることもある */
+  /* 体だけの夜の書き出し（{x}＝攻め、{y}＝受け。本番は SX） */
+  var FREE_IN = ['吹雪の音が窓を叩いていた。廊下の暗がりで、{x}と{y}はすれ違いざまに目を合わせた。それだけで、行き先は決まった。', '眠れない夜だった。{x}が客室の扉を叩くと、{y}は何も訊かずに鍵を開けた。互いに欲しいものは、言わなくても分かっていた。', '暖炉の火が落ちた談話室に、二人だけが残っていた。{x}が立ち上がって{y}の手を引くと、{y}は黙ってついてきた。客室の扉が、静かに閉まった。'];
   Y.R18.extra = function (S, day) {
     var rng = S.rng, lv = S.env.ylewd / 100, c = S.cul, T = Y.R18T;
     if (!T || rng() > lv * 0.7) return false;
@@ -68430,6 +68616,12 @@
     if (wp.length) EV.push({ w: 1, f: function () { var pr = rng.pick(wp), o = od(pr[0], pr[1]);
       ST.say(S, { actors: o, tag: '凍える夜', kind: 'climax', text: F(fp(S, PLF('warmth', T.warmth, o[0], o[1])), { x: o[0].name, y: o[1].name }) + SX(S, o[0], o[1], 'love', false, ['soku', 'taimen', 'seijo', 'haimen']) + aft(S, o[1]), why: PW(S) + '吹雪の中を捜索した' + o[0].name + 'と' + o[1].name + 'が、肌で温め合った', mag: 30 });
       Y.setRel(S, o[0], o[1], 0.3, '温め合った'); } });
+    /* 体だけの夜：恋愛相手を固定し、性行為の相手を「誰とでも可」にした人と、固定外の相手（HK.State.freeSex。free-sex.js）。
+       恋愛の条件（HK.canLove）は見ない。導入に「恋ではない」一文。固定した恋人が館にいれば ×0.3。恋人にはならない */
+    var fp2 = []; live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i && HK.State.freeSex && HK.State.freeSex(S, a, b) && Y.bond(S, a, b) > -0.3) fp2.push([a, b]); }); });
+    if (fp2.length) EV.push({ w: 2 * HK.FreeSex.factor(S, fp2[0][0], fp2[0][1]), f: function () { var pr = rng.pick(fp2), o = od(pr[0], pr[1]);
+      ST.say(S, { actors: o, tag: '体だけの夜', kind: 'climax', text: HK.FreeSex.lead(S, pr[0], pr[1]) + F(fp(S, FREE_IN), { x: o[0].name, y: o[1].name }) + SX(S, o[0], o[1], 'plain') + aft(S, o[1]), why: PW(S) + HK.FreeSex.why(pr[0], pr[1]) + '／吹雪に閉ざされた夜', mag: 30 });
+      Y.setRel(S, o[0], o[1], 0.15, '体だけの関係'); HK.FreeSex.mark(S, o[0], o[1]); HK.FreeSex.jealous(S, o[0], o[1]); } });
     /* 取り調べでの誘惑：疑われている人が、取り調べ役を落とす */
     var sus = live.filter(function (q) { return q.m.sus > 40 && q.tr.fc + (q.tr.lie || q.tr.a * 0.5 || 0) > 0.8; }).sort(function (a, b) { return b.m.sus - a.m.sus; })[0];
     if (sus) { var iv = live.filter(function (q) { return q !== sus && (q.isDet || q.tr.cp > 0.5) && can(sus, q); })[0];
@@ -68797,7 +68989,8 @@
       if (p.lastNight != null && h - p.lastNight < 10) return false;
       if (rng() > lv * (p.aphro ? 0.32 : 0.12)) return false;
       p.lastNight = h; p.cnt.r18 = (p.cnt.r18 || 0) + 1;
-      var mates = live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) && okPair(p, q); });
+      /* 体だけの関係の組（「誰とでも可」の人と固定外の相手。HK.State.freeSex。free-sex.js）も、参加者どうしの夜の相手になる（恋愛の条件 HK.canLove は見ない） */
+      var mates = live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && ((HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) || !!(HK.State.freeSex && HK.State.freeSex(S, p, q))) && okPair(p, q); });
       var top = HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(p) : hardTop(p);
       var r0 = rng();
       /* 「恋人だけ（モブにも襲われない）」の人：夢の神・清めの湯・村人の夜這いには進まず、住人どうしの夜だけ */
@@ -68836,19 +69029,23 @@
       }
       /* 参加者どうし（媚薬が回っている二人ほど） */
       if (mates.length && (r0 === 0.5 || rng() < 0.4 + (p.aphro ? 0.15 : 0))) {
-        var q = rng.pick(mates); q.lastNight = h; q.cnt.r18 = (q.cnt.r18 || 0) + 1;
+        /* 体だけの関係の相手は、固定した恋人がその場にいれば選ばれにくい（×0.3） */
+        var fm0 = mates.some(function (m) { return HK.State.freeSex && HK.State.freeSex(S, p, m); });
+        var q = fm0 ? HK.weighted(rng, mates, function (m) { return HK.State.freeSex(S, p, m) ? HK.FreeSex.factor(S, p, m) : 1; }) : rng.pick(mates); q.lastNight = h; q.cnt.r18 = (q.cnt.r18 || 0) + 1;
+        var free = !!(HK.State.freeSex && HK.State.freeSex(S, p, q));
         var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
         var rough = S.ygo && (X.viol > 30 || Y.viol > 30);
         var fmXY = !rough && !isFF(X, Y) && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm';
         var t0 = ST.fmt(fp(S, rough ? YGO_SEX : isFF(X, Y) ? MUTUAL_FF : fmXY ? MUTUAL_FM : MUTUAL), { x: X.name, y: Y.name });
         /* 主導する側が女性・相手が男性なら、導入の文も跨る書き方に（合意の場面だけ） */
         if (!rough && HK.FM && HK.FM.fixWith && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm') t0 = HK.FM.fixWith({ pick: function (a) { return fp(S, a); } }, t0, X, Y.name);
-        var t = t0 + pairSex(S, X, Y, { mood: rough ? 'rough' : p.aphro || q.aphro ? 'drug' : 'love', fore: false });
+        var t = (free ? HK.FreeSex.lead(S, p, q) : '') + t0 + pairSex(S, X, Y, { mood: rough ? 'rough' : p.aphro || q.aphro ? 'drug' : free ? 'drug' : 'love', fore: false });
         if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < 0.5 + lv * 0.3) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(fp(S, PREG), { y: Y.name }); }
         if (rng() < 0.5) t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + pz(S, Y, 'mutual');
         p.m.fear = Math.max(0, p.m.fear - 8); q.m.fear = Math.max(0, q.m.fear - 8);
         var strm = [X, Y].filter(function (c) { return c.job === 'streamer'; })[0];
-        ST.say(S, { actors: [X, Y], tag: '夜', kind: 'climax', text: t, why: '媚薬の熱と恐怖で、参加者どうしで交わった' + (HK.R18M && HK.R18M.lastPos(S) ? '（' + HK.R18M.lastPos(S) + '）' : '') + (Y.preg ? '（' + Y.name + 'が疑似妊娠した：生贄にされると巫女になりやすい）' : ''), mag: 30 });
+        if (free) { HK.FreeSex.mark(S, X, Y); HK.FreeSex.jealous(S, X, Y); }
+        ST.say(S, { actors: [X, Y], tag: '夜', kind: 'climax', text: t, why: (free ? HK.FreeSex.why(X, Y) + '／' : '') + '媚薬の熱と恐怖で、参加者どうしで交わった' + (HK.R18M && HK.R18M.lastPos(S) ? '（' + HK.R18M.lastPos(S) + '）' : '') + (Y.preg ? '（' + Y.name + 'が疑似妊娠した：生贄にされると巫女になりやすい）' : ''), mag: 30 });
         if (strm) streamAfter(S, strm, strm === X ? Y.name : X.name, false);
         return true;
       }
@@ -74594,7 +74791,13 @@
       fm: L('宿の布団の上で、{a}は浴衣のまま{b}に跨った。乱れた裾から、白い太ももがのぞいた。|{a}は{b}の浴衣の帯をほどきながら、上から悪戯っぽく笑った。{a}「旅の夜は、特別」|湯上がりの{a}は、{b}を布団に押し倒して、その胸に頬をすり寄せた。浴衣の衿が、片方だけはだけていた。')
     }
   };
-  var KIND_N = { first: '初めての夜', lover: '恋人の夜', home: '一緒に暮らす部屋の夜', engaged: '結婚の約束のあとの夜', trip: '旅先の宿の夜' };
+  /* 体だけの夜（恋愛相手を固定し、性行為の相手を「誰とでも可」にした人と、固定外の相手。HK.State.freeSex。free-sex.js）：恋人ではない二人の始まり */
+  OPEN.free = {
+    mf: L('{b}の部屋の灯りは、もう半分落ちていた。{a}は上着を椅子に放り、{b}をベッドの縁に座らせた。言葉はいらなかった。今夜がどういう夜なのかを、二人とも分かっていた。|玄関の扉が閉まるより先に、{a}は{b}の腰を引き寄せていた。甘い言葉は一つもなかった。{a}は{b}の服の裾をたくし上げ、そのまま寝室へ押し込んだ。|{a}は{b}をベッドに仰向けに倒し、手首を軽く押さえて見下ろした。{b}は目を逸らさなかった。約束も、名前のつく関係も、ここには何もなかった。'),
+    ff: L('{a}は{b}の髪をかき上げ、首筋に唇を落とした。{b}は小さく息を詰めて、{a}の肩に手を置いた。それ以上の言葉は、二人とも探さなかった。|灯りを消した部屋で、{a}は{b}のブラウスのボタンを上から一つずつ外していった。指先は落ち着いていた。恋人にするような迷いは、そこにはなかった。|{a}は{b}をシーツの上に横たえ、脚のあいだに膝を割り込ませた。{b}は笑って、{a}の首に腕を回した。今夜だけの熱を、二人とも面白がっていた。'),
+    fm: L('{a}は{b}の胸を押してベッドに倒し、そのまま腰の上に跨った。見下ろす目に、甘さはなかった。{a}「今夜だけね」|{b}が何か言いかけたのを、{a}は唇でふさいだ。シャツのボタンを外す手つきは、ためらいがなかった。{a}は{b}の上に乗ったまま、ゆっくりとベルトを抜いた。|{a}は{b}の手を取って、自分の腰に添えさせた。どこにも恋の色はなかった。ただ、{a}のほしい熱を{b}が持っているだけだった。')
+  };
+  var KIND_N = { first: '初めての夜', lover: '恋人の夜', home: '一緒に暮らす部屋の夜', engaged: '結婚の約束のあとの夜', trip: '旅先の宿の夜', free: '体だけの夜' };
 
   /* ---------- 受けの態度9種：始まり・果てたあと・余韻 ---------- */
   var OPEN_PS = P9({
@@ -74651,9 +74854,11 @@
   var AGAIN_FF = L('息が落ち着く前に、{b}のほうから{a}の指を引き寄せた。二度目は、一度目よりずっと早く{b}を崩した。|{a}は果てたばかりの{b}の内腿に、もう一度唇を這わせた。{b}は首を振りながら、それでも{a}の髪を離さなかった。|{b}が「もう少しだけ」とねだると、{a}は笑って、今度は{b}の胸元からゆっくりと指を下ろしていった。');
   var FADE = L('その夜、灯りが消えたあとも、{a}と{b}はしばらく眠らなかった。その先のことは、二人だけが知っている。|{a}は{b}を抱き寄せて、寝室の扉を閉めた。翌朝、二人はそろって少し寝坊した。|布団の中で、{a}の手が{b}の手を探した。夜は、いつもより長かった。|{a}と{b}は、灯りを消した部屋で、互いの名前を何度も呼び合った。翌朝の二人は、やけに照れくさそうだった。|{a}は{b}の耳元で何かを囁いて、枕元の灯りを消した。{b}の小さな笑い声が、すぐに甘いため息に変わった。|寝室の扉が閉まったあと、二人の部屋からは、しばらく話し声も聞こえなくなった。翌朝の{b}は、首元の詰まった服を選んだ。|{a}と{b}は、その夜ずいぶん遅くまで起きていた。何をしていたのかは、二人とも言わなかった。|{b}が{a}の袖を引いて、灯りを消した。翌朝、{a}は鼻歌まじりに二人分のコーヒーを淹れた。');
 
-  function ok(ctx, a, b) {
+  function ok(ctx, a, b, info) {
     if (HK.SAFE_ON || !a || !b || a === b) return false;
     var S = HK.State;
+    /* 体だけの夜（info.free）：HK.State.freeSex を通る組だけ（恋人でなくてよい。恋愛相手の固定 HK.canLove は見ない） */
+    if (info && info.free) return !!(S && S.freeSex && S.freeSex(ctx, a, b)) && !(HK.Attr && HK.Attr.samePair && HK.Attr.samePair(a, b));
     if (S && !S.pairSex(a, b)) return false;
     if (HK.sexBlocked(a, b) || HK.ngPair(a, b)) return false;
     if (!HK.canLove(a, b) || !HK.canLove(b, a)) return false;
@@ -74665,12 +74870,12 @@
   HK.FutariR18 = {
     POOLS: { OPEN: OPEN, OPEN_PS: OPEN_PS, PEAK_PS: PEAK_PS, AFTER_PS: AFTER_PS, TAIL_TOP: TAIL_TOP, TAIL_BOT: TAIL_BOT, SHORT: SHORT, FADE: FADE },
     night: function (ctx, a, b, info) {
-      if (!ok(ctx, a, b)) return null;
+      if (!ok(ctx, a, b, info)) return null;
       info = info || {};
       var rng = ctx.rng, LW = HK.Lewd, env = ctx.env, lv = LW ? LW.lv(env) : 'mid';
       var od = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b], A = od[0], B = od[1];
       var P = HK.Pos, ff = P && P.ff(A, B), fm = !ff && P && P.isF(A) && !P.isF(B), mode = ff ? 'ff' : fm ? 'fm' : 'mf';
-      var kind = info.where === 'trip' ? 'trip' : info.first ? 'first' : info.engaged ? 'engaged' : info.stage >= 4 ? 'home' : 'lover';
+      var kind = info.free ? 'free' : info.where === 'trip' ? 'trip' : info.first ? 'first' : info.engaged ? 'engaged' : info.stage >= 4 ? 'home' : 'lover';
       var pk0 = function (arr) { return rng.pick(arr); }, pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(ctx, pk0) : pk0;
       /* この箱庭の文は、同じ回の中で一度だけ（使い切ったら、その段は書かない） */
       var U = ctx.ft.used;
@@ -74681,7 +74886,7 @@
       var pk2 = a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i, day = ctx.ft.day || 0;
       if (!info.first && R.last[pk2] != null && day - R.last[pk2] < 3) return null;
       var nt = HK.Attr ? HK.Attr.nightOf(A, B) : '', nb = HK.Attr ? HK.Attr.nightOf(B, A) : '';
-      var why = '恋人どうしの夜（' + KIND_N[kind] + (nt ? '・' + A.name + 'の夜の性格：' + (NIGHT_N[nt] || nt) : '') + (nb ? '・' + B.name + 'の夜の性格：' + (NIGHT_N[nb] || nb) : '') + '）';
+      var why = (info.free ? '体だけの夜（' : '恋人どうしの夜（') + KIND_N[kind] + (nt ? '・' + A.name + 'の夜の性格：' + (NIGHT_N[nt] || nt) : '') + (nb ? '・' + B.name + 'の夜の性格：' + (NIGHT_N[nb] || nb) : '') + '）';
       function done(t) { var tx = ctx.t(t, A, B); if (ff && HK.FF && HK.FF.fix) tx = HK.FF.fix(ctx, tx, A, B); return { text: tx, why: why, a: A, b: B }; }
       function fade() { var ft = upk(FADE); return ft ? { text: ctx.t(ft, A, B), why: why.replace(/）$/, '・ほのめかす）'), a: A, b: B } : null; }
       /* ほのめかす（と、厚い版・短い版を使い切った夜）：まだ使っていないぼかした一文。使い切ったら全年齢と同じ「同じ布団で眠った」に戻す */
@@ -74693,7 +74898,7 @@
       var glow = upk(AFTER_PS[ps] || AFTER_PS.gentle) + tail;
       var short = (LW ? LW.short(env, rng) : false) || R.thick >= capT, ero = LW && LW.ero(env) && HK.ThickEro, high = LW && LW.high(env), TS = HK.ThickSex;
       if (short && R.short >= capS) return fade();
-      var op0 = upk(OPEN[kind][mode]) || upk(OPEN.lover[mode]) || upk(OPEN.home[mode]);
+      var op0 = upk(OPEN[kind][mode]) || (info.free ? '' : upk(OPEN.lover[mode]) || upk(OPEN.home[mode]));
       var open = op0 ? op0 + (rng() < 0.75 ? upk(OPEN_PS[ps] || OPEN_PS.gentle) : '') : '';
       if (!short && TS) {
         R.thick++; R.last[pk2] = day;
