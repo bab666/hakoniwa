@@ -3621,8 +3621,23 @@
   function fixYouStutter(q) {
     return q.replace(/(^|[^ぁ-ゖ])[あおきて]、(あなた|あんた|お前|おまえ|おぬし|君|きみ|貴様|てめえ)/g, function (m, a, w) { return a + YOU_RD[w] + '、' + w; });
   }
+  /* 住人以外の人物（村の子ども・他校の生徒・店員…）が言った文か：直前の文の最後の節の主語が住人の名前でなく、話す動詞で終わる */
+  var MOB_SAY = /^[^、。「」\s]{1,14}[はが][^「」]*(?:言|囁|告げ|訊|尋ね|答え|呟|続け|促|声をかけ|教え|叫|笑|返|怒鳴|呼びかけ|話しかけ)(?:った|いた|げた|ねた|えた|けた|た|んだ|てくれた|てきた|てくる|る)$/;
+  function mobSpoke(sentence, people) {
+    var cl = sentence.split('、').pop().trim();
+    if (!MOB_SAY.test(cl)) return false;
+    var subj = cl.replace(/[はが][^]*$/, '');
+    return !people.some(function (p) { return p.name && subj.indexOf(p.name) >= 0; });
+  }
+  /* 「〇〇は△△に「……」と言われて」の受け身：話し手は「に」「から」の人 */
+  var PASSIVE = /^(?:と|って)(?:言われ|頼まれ|告げられ|聞かれ|訊かれ|尋ねられ|返され|囁かれ|呼ばれ|叱られ|笑われ|促され|詰め寄られ|泣きつかれ|せがまれ|ねだられ|怒鳴られ|注意され|誘われ|誤魔化され|ごまかされ)/;
   function speakerOf(text, s, e, people) {
     var seg = text.slice(0, s), cut = lastBound(seg), span = seg.slice(cut);
+    if (PASSIVE.test(text.slice(e, e + 16))) {
+      var pas = null, pp = -1, where = span.trim() ? span : seg.slice(lastBound(seg.slice(0, Math.max(0, cut - 1))), cut);
+      people.forEach(function (p) { if (!p.name) return; var m, re = new RegExp(p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:に|から)(?!は)', 'g'); while ((m = re.exec(where))) if (m.index > pp) { pp = m.index; pas = p; } });
+      return pas;
+    }
     var w = subjectIn(span, people);
     if (w) return w;
     if (!span.trim()) {
@@ -3632,9 +3647,21 @@
         var re = new RegExp('^(?:――|と|って)?' + p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:は|が|の|も|、|。)');
         if (re.test(after) && (!hit || p.name.length > hit.name.length)) hit = p;
       });
+      /* 「……」と言いかけた〇〇の袖を／「……」と呟いた〇〇は：話す動詞のすぐあとの住人が話し手 */
+      if (!hit) {
+        var vm = text.slice(e, e + 40);
+        people.forEach(function (p) {
+          if (!p.name) return;
+          var re = new RegExp('^(?:と|って)(?:言|呟|囁|叫|笑|漏ら|こぼ|返|答え|口にし|続け|告げ|促|呼び)[^。「」、]{0,10}?' + p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=の|は|が|を|も|、|。)');
+          if (re.test(vm) && (!hit || p.name.length > hit.name.length)) hit = p;
+        });
+        if (hit) return hit;
+      }
       /* 「……」――〇〇は… の〇〇は次の文の主語のことが多い。直前の文に主語があれば、そちらを話し手にする */
       if (hit && !quoted && cut > 0 && /。$/.test(seg.slice(0, cut))) {
         var pv = seg.slice(0, cut - 1), pvl = pv.slice(lastBound(pv)), pvs = subjectIn(pvl, people);
+        /* 「〇〇が話しかけると、村の子どもがこっそり教えてくれた。「……」」は住人以外の台詞 */
+        if (mobSpoke(pvl, people)) return null;
         if (pvs) return pvs;
         /* 直前の文の主語が住人以外（「ゴブリンが賭場を開いていた。「……」」）なら、その人物の台詞。住人の口調にはしない */
         /* 「店長はタオルを畳み直して、静かに言った。「……」――〇〇は」も、住人以外の人物の台詞 */
@@ -3651,10 +3678,11 @@
         });
         if (hit) return hit;
       }
-      /* 直前の文の主語（「〇〇は震える声で訊いた。「……」」） */
+      /* 直前の文の主語（「〇〇は震える声で訊いた。「……」」）。最後の節の主語が住人以外（「村の子どもが教えてくれた」）なら住人の台詞にしない */
       if (cut > 0 && /。$/.test(seg.slice(0, cut))) {
-        var prev = seg.slice(0, cut - 1), pc = lastBound(prev);
-        return subjectIn(prev.slice(pc), people);
+        var prev = seg.slice(0, cut - 1), pc = lastBound(prev), pl = prev.slice(pc);
+        if (mobSpoke(pl, people)) return null;
+        return subjectIn(pl, people);
       }
     }
     return null;
@@ -3663,29 +3691,35 @@
   var HON = '(?:さん|くん|君|ちゃん|様|さま|先輩|先生|殿)?';
   function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   /* 台詞 q（text の s〜e）が誰に向けたものか。actors はその出来事の登場人物（番号か住人） */
+  /* 住人以外の人物に向けて話している文脈か（「他校の生徒に」「村人を」）。この文脈では、呼びかけの名前を足さない（tone-plus.js の callAddress） */
+  var MOB_TO = /(?:生徒|村人|村の\S{1,4}|子ども|子供|客|店員|店長|警備員|看護師|医師|教師|係員|兵士|観客|司会|スタッフ|男|女|誰か|連中|奴ら|やつら|相手)(?:に|へ|を|と|の前)/;
   function addresseeOf(text, s, e, q, who, people, actors) {
+    V._addrHow = 0; V._addrMob = false;
     var others = people.filter(function (p) { return p !== who && p.name; }).sort(function (a, b) { return b.name.length - a.name.length; });
     if (!others.length) return null;
     var i, p;
+    var seg = text.slice(0, s), span = seg.slice(Math.max(lastBound(seg), seg.length - 60));
+    V._addrMob = MOB_TO.test(span.replace(new RegExp(others.concat(who || []).map(function (x) { return x && x.name ? escRe(x.name) : ''; }).filter(Boolean).join('|'), 'g'), '〇'));
     /* 1. 呼びかけ（「ミナト、……」「ミナトさん！」） */
-    for (i = 0; i < others.length; i++) { p = others[i]; if (new RegExp('^[…‥、\\s]*' + escRe(p.name) + HON + '(?:[、。！？!?…‥っ]|$)').test(q)) return p; }
-    /* 2. 直前の地の文（「アキラはミナトに言った。」「ミナトの耳元で」「ミナトを見て」） */
-    var seg = text.slice(0, s), span = seg.slice(Math.max(lastBound(seg), seg.length - 60)), best = null, bp = -1;
+    for (i = 0; i < others.length; i++) { p = others[i]; if (new RegExp('^[…‥、\\s]*' + escRe(p.name) + HON + '(?:[、。！？!?…‥っ]|$)').test(q)) { V._addrHow = 1; return p; } }
+    /* 2. 直前の地の文（「アキラはミナトに言った。」「ミナトの耳元で」「ミナトを見て」）。話しかける向きのはっきりした形（strong）と、そばにいるだけの形（weak）を分ける */
+    var best = null, bp = -1, strong = false;
     others.forEach(function (o) {
-      var re = new RegExp(escRe(o.name) + '(?:に|へ|の耳元|の目|の顔|の方|の肩|の手|の背中|の前|と目|を見|を振り返|を呼|を睨|に向)', 'g'), m;
-      while ((m = re.exec(span))) if (m.index > bp) { bp = m.index; best = o; }
+      var re = new RegExp(escRe(o.name) + '(に|へ|の耳元|の目|の顔|の方|の肩|の手|の背中|の前|と目|を見|を振り返|を呼|を睨|に向)', 'g'), m;
+      while ((m = re.exec(span))) if (m.index > bp) { bp = m.index; best = o; strong = /^(?:に|へ|の耳元|を見|を振り返|を呼|を睨|に向)$/.test(m[1]); }
     });
-    if (best) return best;
+    if (best) { V._addrHow = strong ? 2 : 20; return best; }
     /* 3. 直後の地の文（「……」とミナトに言った） */
     var after = text.slice(e, e + 24);
-    for (i = 0; i < others.length; i++) { p = others[i]; if (new RegExp('^(?:と|って)、?' + escRe(p.name) + '(?:に|へ)').test(after)) return p; }
+    for (i = 0; i < others.length; i++) { p = others[i]; if (new RegExp('^(?:と|って)、?' + escRe(p.name) + '(?:に|へ)').test(after)) { V._addrHow = 3; return p; } }
     /* 4. 二人だけの出来事なら、もう一人 */
     if (actors && actors.length === 2) {
       var A = actors.map(function (x) { return typeof x === 'number' ? people[x] : x && (x.i != null && people[x.i] && people[x.i].name === x.name ? people[x.i] : people.filter(function (pp) { return pp.name === x.name; })[0]); });
-      if (A[0] === who && A[1] && A[1] !== who) return A[1];
-      if (A[1] === who && A[0] && A[0] !== who) return A[0];
+      if (A[0] === who && A[1] && A[1] !== who) { V._addrHow = 4; return A[1]; }
+      if (A[1] === who && A[0] && A[0] !== who) { V._addrHow = 4; return A[0]; }
     }
-    /* 5. 住人が二人きり */
+    /* 5. 住人が二人きり（その場にいるとは限らないので、呼びかけの名前を足す根拠にはしない） */
+    V._addrHow = 5;
     return others.length === 1 ? others[0] : null;
   }
   V.addresseeOf = addresseeOf;
@@ -4731,6 +4765,12 @@
       return q;
     }
     var body = q.replace(/[…‥、。！？!?っッ〜ー♡\s]/g, '');
+    /* 名前を足すのは、相手がはっきりしているときだけ：直前の地の文で話しかける向きが決まる（2）・直後に「と〇〇に」がある（3）・二人だけの出来事（4）。
+       「住人が二人きり」で決めた相手（5）はその場にいないこともあるので足さない。住人以外の人物（他校の生徒・村人…）に向けた文脈でも足さない */
+    var how = V._addrHow || 0;
+    if (!(how === 2 || how === 3 || how === 4) || V._addrMob) return q;
+    /* 「先生、」「師匠、」のように、役割で呼びかけている台詞には足さない */
+    if (/^[…‥\s]*(?:先生|師匠|先輩|兄さん|姉さん|兄ちゃん|姉ちゃん|母さん|父さん|お母さん|お父さん|隊長|団長|社長|部長|課長|店長|博士|教授|閣下|殿下|陛下|お嬢様|坊ちゃん|旦那|親方|隊員|諸君|みんな|皆|お前ら|お前たち|君たち|あなたたち)[、。！？!?…]/.test(q)) return q;
     /* 息づかい（は、ぁ・っ、・小さい母音）の混じる台詞と、問いへの短い答え（「〜こと」「〜とか」で終わる）には足さない */
     if (/[ぁぃぅぇぉ]|っ、|ッ、/.test(q) || /(?:こと|もの|とか|かな)[。…]*$/.test(q)) return q;
     if (/♡/.test(q) || body.length < 7 || /^[ぁ-ゖァ-ヶ]{0,4}[ッっ]?$/.test(body) || hashS(String(raw || q) + who.name) % 3) return q;
@@ -8014,12 +8054,18 @@
     if (/かもしれない$/.test(s) || /かもね$/.test(s)) return last ? s.replace(/かもね$/, 'かもしれないね').replace(/かもしれない$/, 'かもしれないね') : s;
     if (/んだもん$/.test(s)) return s.replace(/もん$/, 'からさ');
     if (!last || grave) return s;
+    /* 頼みの「〜てよ」「〜でよ」は「〜ておくれよ」（「話してよ」→「話しておくれよ」）。「だってよ」「〜ってよ」の伝聞はそのまま */
+    if (/[てで]よ$/.test(s) && !/(?:だ|です|ます|っ)てよ$/.test(s) && !/(?:なく|もしなく)てよ$/.test(s) && s.length >= 4) return s.replace(/よ$/, 'おくれよ');
     /* 女性的な言い切りの「〜の」（「空いてるの」「言ってるの」）は「〜のさ」 */
     if (/(?:てる|でる|ている|でいる)の$/.test(s)) return s + 'さ';
     /* ここから最後の文だけ */
     if (KEEP.test(s)) return s;
-    /* 三回に一回は付けずに残す（毎回「さ」だとくどい） */
-    if (HK.lineLot(s, 3)) return s;
+    /* 二回に一回は付けずに残す（「〜さ」「〜のさ」ばかりだとくどい。持って回った言い回しは「〜だね」「〜かい」「〜ておくれ」で出す） */
+    if (HK.lineLot(s, 2)) return s;
+    /* 過去の「〜たんだ」「〜てたのだ」は「〜たんだね」（「生きてたのさ」にしない） */
+    if (/(?:た|かった)(?:の|ん)だ$/.test(s)) return s.replace(/(?:の|ん)だ$/, 'んだね');
+    /* 「〜ものだ」「〜ことだ」は「〜ものだね」「〜ことだね」（「いかないものさ」にしない） */
+    if (/(?:もの|こと)だ$/.test(s)) return s + 'ね';
     /* 「〜んだ」「〜のだ」→「〜のさ」（「なんだ」→「なのさ」）。「飲んだ」「選んだ」の過去形は除く */
     if (/^(?:そう|そっか|そうか)なんだ$/.test(s)) return s;
     /* 見つけた驚き（「そんな顔、するんだ」）は「〜んだね」 */
