@@ -137,3 +137,14 @@ node dict-regress.js ../../hakoniwa-full kohai,ojou,noja,kansai,gyaru --show=5
 （`js/tone-engine.js`。「＝」は左と同じ）。1本の台詞はこれまでの言い換えのまま。
 決まり：一人称は「私」、二人称は「あなた」、名前は `{b}`。文末は K が 〜だよ／〜だね／〜かな／〜の／〜て、F が 〜だ／〜か／〜な／〜だろう／命令形／〜てくれ、P が 〜です／〜ます／〜ください。
 いまは `js/mini-serifu.js`・events-common・daily-kit・drunk・epilogue・scenario-rpg・scenario-omega・rpg-data・zombie-events・incidents-social・incidents-extra・goukon-talk の台詞が3本。`collect.js` の「元の文」は、選ばれたあとのベースが入る。
+
+## base-lint.js（3本の台詞の約束の番人）
+
+```
+node base-lint.js ../../hakoniwa-full          # 問題のある行だけ
+node base-lint.js ../../hakoniwa-full --all    # 全部の行
+```
+
+「K｜F｜P」で書いた台詞を全部集め、3本そろっているか、印（{a} {b} 〈〉 など）が一致しているか、P の最後の文に敬語の形があるか、
+K・F の文末に敬語が残っていないか、F の文末がくだけていないか（だよ・だね・じゃん・でしょ・かな・の？）、一人称が「私」・二人称が「あなた」か、を確かめる。
+わざと敬語の決まり文句（K と P が同じ）と、「〜て」「〜けど」の言いさしは許す。3本の台詞を足したら、コミットの前に回して問題 0 にする。

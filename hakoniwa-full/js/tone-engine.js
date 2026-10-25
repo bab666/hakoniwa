@@ -24,7 +24,7 @@
      強調語=マジ／めっちゃ  ← 形容詞の前に差し込む（台詞に一度まで。文に勢い（！や強い語）があるときだけ）
      強調語の割合=0.4       ← 差し込む割合（既定 0.5）
      [効果]                 ← 組み込みの小さな変形
-     感嘆符を落とす=はい ／ 伸ばす=はい ／ 言い切りに！=はい ／ 短くする=はい ／ 言いよどみ=はい
+     感嘆符を落とす=はい ／ 伸ばす=はい ／ 言い切りに！=はい ／ 短くする=はい ／ 言いよどみ=はい ／ 前に……=はい ／ 間を置く=はい
    ■ 使い方
      HK.Tone.pick(台詞, 話し手, 敬語の相手か) → { q: 選んだベース, dict: 辞書か null }（voice.js の processText から）
      HK.Tone.apply(台詞, 辞書, 話し手) → 言い換えた台詞。同じ台詞は同じ結果（くじは台詞の文字から）
@@ -249,14 +249,19 @@
     if (fx.bangOn) ss = fxBangOn(ss, seed);
     if (fx.short) ss = fxShort(ss);
     q = join(ss);
+    /* 言い換えで重なった記号を整える（「！。」「！、」「？？」） */
+    q = q.replace(/([！？!?])。/g, '$1').replace(/([！？!?])、/g, '$1　').replace(/？(?=？)/g, '').replace(/！(?=！(?!！))/g, '').replace(/([！？])(?=[ぁ-ゖァ-ヶ一-鿿々「（])/g, '$1　');
     if (fx.bangOff) q = fxBang(q);
     if (fx.stammer) q = fxStammer(q, seed);
+    /* 前に……：文頭に「……」（けだるげ）。間を置く：文の切れ目の「。」を「。……」に（半分くらい） */
+    if (fx.dots && !/^[…‥]/.test(q)) q = '……' + q;
+    if (fx.pause) { var pk = 0; q = q.replace(/。(?=.)/g, function (m) { pk++; return hash(seed + '#pz' + pk) % 100 < 50 ? '。……' : m; }); }
     return q;
   };
 
   /* ---------- 辞書の文字列を読む ---------- */
   var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '強調語の割合': 'emphRate', '存在': 'exist' };
-  var FX_KEYS = { '感嘆符を落とす': 'bangOff', '伸ばす': 'stretch', '言い切りに！': 'bangOn', '言い切りに!': 'bangOn', '短くする': 'short', '言いよどみ': 'stammer' };
+  var FX_KEYS = { '感嘆符を落とす': 'bangOff', '伸ばす': 'stretch', '言い切りに！': 'bangOn', '言い切りに!': 'bangOn', '短くする': 'short', '言いよどみ': 'stammer', '前に……': 'dots', '間を置く': 'pause' };
   function alts(v) { return String(v).split(/[／/]/).map(function (x) { return x.replace(/^\s+|\s+$/g, ''); }).filter(function (x, i, a) { return x !== '' || a.length === 1; }); }
   /* 文字列 → { dicts: { 鍵: 辞書 }, errors } */
   T.parse = function (text, userMode) {

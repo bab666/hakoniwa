@@ -147,7 +147,7 @@
         if (boss.tr.cp > 0.65 && boss.tr.np < 0.45 && meek && meek.tr.ac > 0.6) {
           drinker = meek; how = 'forced';
           ctx.act2({ actors: [boss, meek], cat: 'conflict', mag: 15, fx: function () { ctx.mod(meek, boss, { ten: 18, trust: -12, att: 4 }); },
-            text: ctx.t('「あなたが飲んで｜お前が飲め｜あなたが飲んでください」{a}は{b}に小瓶を握らせた。{b}は数秒黙ってから、蓋を開けた。', boss, meek), why: boss.name + 'のCP高・NP低／' + meek.name + 'のAC（' + Math.round(meek.eg.AC) + '）：断れない' });
+            text: ctx.t('「あなたが飲んで｜あなたが飲め｜あなたが飲んでください」{a}は{b}に小瓶を握らせた。{b}は数秒黙ってから、蓋を開けた。', boss, meek), why: boss.name + 'のCP高・NP低／' + meek.name + 'のAC（' + Math.round(meek.eg.AC) + '）：断れない' });
         } else {
           drinker = ctx.most(P, function (c) { return c.tr.np * 0.45 + c.tr.impulse * 0.45 + c.tr.cold * 0.3 + (c.goal.id === 'quick' ? 0.4 : 0) + (c.goal.id === 'respect' ? 0.3 : 0); });
           how = drinker.tr.np >= Math.max(drinker.tr.impulse, drinker.tr.cold) ? 'np' : drinker.tr.impulse >= drinker.tr.cold ? 'fc' : 'cold';
