@@ -327,8 +327,8 @@
       '<p class="hint">箱庭に入る前からある関係です。初期の好意や信頼が変わり、行動の傾向にも補正がかかります。各住人の ⚙️ 設定からも編集できます。</p>' +
       '<div class="tiebox"><div class="ties">' + (rows || '<p class="hint" style="margin:0">まだ関係は登録されていません。</p>') + '</div>' +
       '<div class="row" style="margin-top:8px"><button class="btn" data-act="tieadd"' + (S.chars.length < 2 ? ' disabled' : '') + '>関係を1つ追加</button></div>' +
-      '<div style="margin-top:12px"><textarea id="tiebulk" rows="3" placeholder="朝霧→鷹野 片想い（脈なし）\n鷹野-白石 親友\n白石とミナトは恋人"></textarea>' +
-      '<div class="row" style="margin-top:6px"><button class="btn" data-act="tieimport">まとめて読み込む</button><span class="fmt">1行に「名前 名前 関係」。書き方は見出しの ？ にあります。</span></div>' +
+      '<div style="margin-top:12px"><textarea id="tiebulk" rows="3" placeholder="朝霧→鷹野 片想い（脈なし）\n鷹野-白石 親友\n白石とミナトは恋人\n朝霧 鷹野 白石 同僚\n3年A組 同級生"></textarea>' +
+      '<div class="row" style="margin-top:6px"><button class="btn" data-act="tieimport">まとめて読み込む</button><span class="fmt">1行に「名前 名前 関係」。3人以上の名前（「名前 名前 名前 チーム」）や、グループ名（「3年A組 同級生」）を書くと、全員の組にまとめて付けます（上司と部下などの向きのある関係は、最初の人→残りの全員）。書き方は見出しの ？ にあります。</span></div>' +
       '<ul class="warn" id="tiewarns" hidden></ul></div></div>';
   }
 

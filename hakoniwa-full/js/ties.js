@@ -186,7 +186,7 @@
     ['運命の番', 'fated'], ['運命', 'fated'], ['番', 'mate'], ['セフレ', 'fwb'], ['本命', 'honmei'], ['恋人', 'lover'], ['夫婦', 'spouse'], ['配偶者', 'spouse'], ['旦那', 'spouse'], ['奥さん', 'spouse'], ['彼氏', 'lover'], ['彼女', 'lover'], ['付き合って', 'lover'],
     ['先輩後輩', 'senpai'], ['先輩', 'senpai'], ['後輩', 'senpai'], ['センパイ', 'senpai'],
     ['バディ', 'buddy'], ['相棒', 'buddy'], ['コンビ', 'buddy'], ['相方', 'buddy'],
-    ['同僚', 'colleague'], ['同期', 'colleague'], ['仕事仲間', 'colleague'], ['職場', 'colleague'], ['バイト仲間', 'colleague'],
+    ['同僚', 'colleague'], ['同期', 'colleague'], ['チームメイト', 'colleague'], ['チーム仲間', 'colleague'], ['チーム', 'colleague'], ['仕事仲間', 'colleague'], ['職場', 'colleague'], ['バイト仲間', 'colleague'],
     ['主従', 'master'], ['主人', 'master'], ['従者', 'master'], ['主', 'master'],
     ['の子', 'parent'], ['子ども', 'parent'], ['息子', 'parent'], ['娘', 'parent'], ['の親', 'parent'], ['父', 'parent'], ['母', 'parent'],
     ['兄', 'sibling'], ['弟', 'sibling'], ['姉', 'sibling'], ['妹', 'sibling'], ['友', 'friend']
@@ -195,10 +195,17 @@
   HK.parseTies = function (text, chars) {
     var out = [], warn = [];
     var names = chars.map(function (c) { return { n: c.name, id: c.id }; }).sort(function (a, b) { return b.n.length - a.n.length; });
+    /* グループ名（住人の group。カンマ区切りで複数）。「3年A組 同級生」のように書くと、そのグループの全員の組に付ける。
+       住人の名前・関係の言葉と同じグループ名は使わない（名前・関係として読む） */
+    var gmap = {};
+    chars.forEach(function (c) { String(c.group || '').split(/[,，、]/).forEach(function (g) { g = g.trim(); if (g && (gmap[g] = gmap[g] || []).indexOf(c.id) < 0) gmap[g].push(c.id); }); });
+    var gnames = Object.keys(gmap).filter(function (g) { return !names.some(function (x) { return x.n === g; }) && !ALIAS.some(function (w) { return w[0] === g; }); }).sort(function (a, b) { return b.length - a.length; });
+    var mask = function (s, p, n) { return s.slice(0, p) + Array(n + 1).join('\u0000') + s.slice(p + n); };
     String(text || '').split(/\r?\n/).forEach(function (raw, i) {
       var line = raw.replace(/^\s*(?:[-*・●○]|\d+[.)])\s*/, '').trim();
       if (!line) return;
-      var found = [], used = line;
+      var found = [], used = line, gfound = [];
+      gnames.forEach(function (g) { var p = used.indexOf(g); if (p >= 0) { gfound.push({ g: g, pos: p }); used = mask(used, p, g.length); } });
       names.forEach(function (x) {
         var p = used.indexOf(x.n);
         if (p >= 0 && found.every(function (f) { return f.id !== x.id; })) {
@@ -206,6 +213,8 @@
           used = used.slice(0, p) + Array(x.n.length + 1).join('\u0000') + used.slice(p + x.n.length);
         }
       });
+      /* グループの人は、グループ名を書いた位置に並べる（名前でも書いた人は、名前の位置のまま） */
+      gfound.forEach(function (g) { gmap[g.g].forEach(function (id, j) { if (found.every(function (f) { return f.id !== id; })) found.push({ id: id, pos: g.pos + j / 1000, grp: g.g }); }); });
       found.sort(function (a, b) { return a.pos - b.pos; });
       /* 「セフレで片想い」のように、一行に複数の関係を書いてもよい */
       var cold = '', back = '', obc = '';
@@ -225,16 +234,32 @@
       /* 「兄弟で不仲」のように二つ書いたら、きょうだい（不仲）にまとめる */
       if (types.indexOf('bad') >= 0 && types.indexOf('sibling') >= 0) types = types.filter(function (x) { return x !== 'bad'; }).map(function (x) { return x === 'sibling' ? 'sibbad' : x; });
       var type = types[0] || null;
-      if (found.length < 2 || !type) { warn.push((i + 1) + '行目「' + raw.trim().slice(0, 24) + '」は' + (found.length < 2 ? '登録済みの名前が二つ見つかりませんでした' : '関係の種類が分かりませんでした')); return; }
+      /* 空白で区切った語のうち、名前・グループ・関係のどれにも当たらなかったもの（知らない名前・書き間違いなど） */
+      var unk = [], uw = used.split(/[\s\u3000,，、・\/]+/), ow = line.split(/[\s\u3000,，、・\/]+/);
+      if (uw.length === ow.length) uw.forEach(function (w, j) { var r = w.replace(/[→←⇔↔\-－ー―~〜×&＆+＋:：（）()「」。！!？?とはのがでをにもや]/g, ''); if (r && w.indexOf('\u0000') < 0 && ow[j].length === w.length) unk.push(ow[j]); });
+      var unkTxt = unk.length ? '「' + unk.slice(0, 3).join('」「') + '」' + (unk.length > 3 ? 'など' : '') : '';
+      if (found.length < 2 || !type) {
+        warn.push((i + 1) + '行目「' + raw.trim().slice(0, 24) + '」は' + (found.length < 2 ? (gfound.length ? 'グループ「' + gfound[0].g + '」の住人が二人そろいませんでした' : '登録済みの名前が二つ見つかりませんでした') + (unkTxt ? '（' + unkTxt + 'は登録済みの名前・グループにありません）' : '') : '関係の種類が分かりませんでした' + (unkTxt ? '（' + unkTxt + 'を関係の名前として読めませんでした）' : '')));
+        return;
+      }
+      if (unkTxt) warn.push((i + 1) + '行目の' + unkTxt + 'は登録済みの名前・グループにないので、ほかの人どうしにだけ付けました');
+      /* 3人以上（グループを含む）：向きのない関係は全員の組、向きのある関係（上司と部下・師弟・片想いなど）は「最初の人→残りの全員」 */
+      var ids = found.map(function (f) { return f.id; });
       types.forEach(function (ty) {
-        var a = found[0].id, b = found[1].id;
-        /* 「BはAの親」「子」などの言い回しで向きを反転 */
-        if (T[ty].dir && /の(子|子ども|息子|娘|従者|部下|後輩|生徒|弟子|弟|妹)|←/.test(line)) { var t = a; a = b; b = t; }
-        var nt = { a: a, b: b, type: ty };
-        if (ty === 'crush' && cold) nt.cold = cold;
-        if ((ty === 'bad' || ty === 'enemy') && back) nt.cold = back;
-        if (ty === 'yan' && obc) nt.cold = obc;
-        out.push(nt);
+        if (T[ty].dir && found[0].grp) { warn.push((i + 1) + '行目の「' + T[ty].label + '」は向きのある関係なので、最初に' + T[ty].roleA + 'の名前を書いてください（例：「名前 ' + found[0].grp + ' ' + T[ty].label + '」）'); return; }
+        var prs = [];
+        if (T[ty].dir) for (var j = 1; j < ids.length; j++) prs.push([ids[0], ids[j]]);
+        else for (var p = 0; p < ids.length; p++) for (var q = p + 1; q < ids.length; q++) prs.push([ids[p], ids[q]]);
+        prs.forEach(function (pr) {
+          var a = pr[0], b = pr[1];
+          /* 「BはAの親」「子」などの言い回しで向きを反転 */
+          if (T[ty].dir && /の(子|子ども|息子|娘|従者|部下|後輩|生徒|弟子|弟|妹)|←/.test(line)) { var t = a; a = b; b = t; }
+          var nt = { a: a, b: b, type: ty };
+          if (ty === 'crush' && cold) nt.cold = cold;
+          if ((ty === 'bad' || ty === 'enemy') && back) nt.cold = back;
+          if (ty === 'yan' && obc) nt.cold = obc;
+          out.push(nt);
+        });
       });
     });
     return { ties: out, warnings: warn };

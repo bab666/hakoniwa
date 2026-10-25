@@ -15,6 +15,9 @@
   function lab(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === (v || '')) return list[i][1]; return ''; }
   function toneLabel(k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return t ? t.label : ''; }
   function callLabel(v) { var l = (HK.CALL_STYLES || []).filter(function (o) { return o.v === (v || ''); })[0]; return l ? l.label : ''; }
+  /* 住人のグループ（カンマ区切りで複数）と、同じグループの住人（関係を「グループの全員と」付けるとき） */
+  function grpsOf(c) { var g = []; String((c && c.group) || '').split(/[,，、]/).forEach(function (x) { x = x.trim(); if (x && g.indexOf(x) < 0) g.push(x); }); return g; }
+  function groupMates(c) { var g = grpsOf(c); return g.length ? S().chars.filter(function (o) { return o !== c && grpsOf(o).some(function (x) { return g.indexOf(x) >= 0; }); }) : []; }
   function tiesOf(c) { UI.cleanTies(); return (S().ties || []).filter(function (t) { return t.a === c.id || t.b === c.id; }); }
 
   /* ---------- 住人の行に出す要約 ---------- */
@@ -164,7 +167,7 @@
         '<button type="button" class="btn ghost small" data-gact="tadd" data-o="' + o.id + '">関係を重ねる</button></div></div>';
     }).join('');
     var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手">' + others.map(function (o) { return opt(o.id, o.name, ''); }).join('') + '</select></label>' +
-      '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + '</select></label><button type="button" class="btn small" data-gact="tnew">関係を追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
+      '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + '</select></label>' + (function () { var gm = groupMates(c); return gm.length ? '<label title="' + esc('同じグループ（' + grpsOf(c).join('・') + '）の全員に、選んだ関係を付けます：' + gm.map(function (o) { return o.name; }).join('・') + '。向きのある関係は、' + c.name + 'が左（上司・先輩・師匠など）になります') + '"><input type="checkbox" data-gf="newgrp"> グループの全員と（' + gm.length + '人）</label>' : ''; })() + '<button type="button" class="btn small" data-gact="tnew">関係を追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
       '<p class="gearhint">行動はエゴグラムだけで決まります。ここで決めるのは台詞の見た目と関係の初期値です。見出しの ？ に詳しい説明があります。</p>' +
       '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3><div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
@@ -243,8 +246,18 @@
     else if (act === 'tadd' || act === 'tnew') {
       var oid = act === 'tadd' ? b.dataset.o : (ov.querySelector('[data-gf="newo"]') || {}).value;
       var ty = act === 'tadd' ? 'friend' : (ov.querySelector('[data-gf="newt"]') || {}).value || 'friend';
+      var dupOf = function (x, o2) { return s.ties.some(function (t) { return t.type === x && ((t.a === c.id && t.b === o2) || (t.a === o2 && t.b === c.id)); }); };
+      /* 「グループの全員と」：同じグループの全員に、選んだ関係を付ける（すでに同じ関係がある相手は飛ばす） */
+      var allG = act === 'tnew' && (ov.querySelector('[data-gf="newgrp"]') || {}).checked;
+      if (allG) {
+        var gm = groupMates(c), nadd = 0;
+        gm.forEach(function (o) { if (!dupOf(ty, o.id)) { s.ties.push({ a: c.id, b: o.id, type: ty }); nadd++; } });
+        UI.toast(nadd ? 'グループの' + nadd + '人に「' + HK.TIES[ty].label + '」を付けました' + (gm.length > nadd ? '（' + (gm.length - nadd) + '人はすでに付いていました）' : '') : 'グループの全員に、すでに「' + HK.TIES[ty].label + '」が付いています');
+        if (nadd) changed(true);
+        return;
+      }
       if (!oid || !byId(oid)) return;
-      var dup = function (x) { return s.ties.some(function (t) { return t.type === x && ((t.a === c.id && t.b === oid) || (t.a === oid && t.b === c.id)); }); };
+      var dup = function (x) { return dupOf(x, oid); };
       if (dup(ty)) {
         /* 同じ関係がすでにある：まだ付いていない関係に替えて足す（行の種類はあとから変えられる） */
         var alt = HK.TIE_ORDER.filter(function (x) { return HK.TIES[x] && !dup(x); })[0];
