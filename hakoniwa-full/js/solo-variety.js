@@ -127,7 +127,8 @@
     /* 血縁（恋愛：なし）の二人は、性的な企画で組まない（関係で「恋愛：あり」にした組と、擬似親子は別） */
     function kinTie(a, b) { var L0 = (input.ties || []).filter(function (x) { return (x.a === a.i && x.b === b.i) || (x.a === b.i && x.b === a.i); }); for (var i = 0; i < L0.length; i++) { var D = HK.TIES && HK.TIES[L0[i].type]; if (D && D.family) return L0[i]; } return null; }
     function kinBlock(a, b) { var t = kinTie(a, b), D = t && HK.TIES[t.type]; return !!(t && !D.loveOK && !(HK.tieFamLove && HK.tieFamLove(t))); }
-    function okS(a, b) { return !kinBlock(a, b) && (!PO || PO.okSex(a, b)); }
+    /* 住人どうしの組：受け攻め・恋愛対象（okSex）、恋愛やR18にしない組、性行為の相手の固定（恋人だけ・〇〇だけ。HK.sexBlocked） */
+    function okS(a, b) { return !kinBlock(a, b) && (!PO || PO.okSex(a, b)) && !(HK.ngPair && HK.ngPair(a, b)) && !(HK.sexBlocked && HK.sexBlocked(a, b)); }
     function ord(a, b) { return PO ? PO.order(a, b, [a, b]) : [a, b]; }
     /* いちもつのある人（男性と、ふたなりの女性）。男性器前提の企画・当てっこは、ふたなりがいても外さない */
     function hasP(p) { return PO ? !PO.isF(p) : p.gender === 'm'; }

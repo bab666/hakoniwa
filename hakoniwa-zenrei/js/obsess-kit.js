@@ -368,7 +368,7 @@
       case 'shinju': return x.name + 'は' + y.name + 'を誰にも渡さないまま、二人で逝くことを選んだ。';
       case 'captive': return safe ? x.name + 'は' + y.name + 'をそばから離さず、外の世界から遠ざけたまま終わった。' : x.name + 'は' + y.name + 'を閉じ込めたまま、外の世界から隠し続けている。';
       case 'codep': return '互いが互いを縛り、二人だけで閉じた関係になった。';
-      case 'yandere': return x.name + 'から' + y.name + 'への想いは、執着になった' + (ctx.pair(A, B).captiveEnded ? (safe ? '（囲い込みは' : '（監禁は') + { rescue: '救い出されて', escape: y.name + 'が逃げ出して', release: x.name + 'が手を離して' }[ctx.pair(A, B).captiveEnded] + '終わった）' : '') + '。' + (s.lv >= 80 ? 'もう、誰にも止められない。' : '');
+      case 'yandere': return x.name + 'から' + y.name + 'への想いは、執着になった' + (ctx.pair(A, B).captiveEnded ? (safe ? '（囲い込みは' : '（監禁は') + { rescue: '救い出されて', escape: y.name + 'が逃げ出して', release: x.name + 'が手を離して', gone: '二人が離ればなれになって' }[ctx.pair(A, B).captiveEnded] + '終わった）' : '') + '。' + (s.lv >= 80 ? 'もう、誰にも止められない。' : '');
     }
     return null;
   };

@@ -143,7 +143,7 @@
     /* 戦闘：パーティの攻撃と敵の反撃を数回くり返す。hp0 は再戦のとき、前回削った残り */
     function battle(mon, boss, hp0) {
       /* 敵の体力は人数に合わせる（3人で0.73倍、5人で1.2倍）。少人数でも戦えるように。主は体力が多く、一撃は普通の魔物の九割。深い階ほど一撃が重い（目標の階で1.5倍）。一撃の重さも人数で少し変わる（3人で0.94倍、5人で1.2倍） */
-      var hp = hp0 != null ? hp0 : mon[1] * dmul * (boss ? 6 : 3) * (0.04 + Math.min(5, P.length) * 0.23) * (1 + floor / Math.max(5, maxF) * 0.4) * (boss && floor === maxF ? 1.3 : 1), pow = mon[1] * dmul * (boss ? 0.9 : 1) * (1 + floor / Math.max(5, maxF) * 0.5) * (0.55 + Math.min(5, P.length) * 0.13), t = (boss ? '階層の主《' + mon[0] + '》が立ちはだかった！' : HK.RPGData.ENC[Math.floor(rng() * HK.RPGData.ENC.length)].replace(/\{m\}/g, mon[0])), rounds = 0, hit = [];
+      var hp = hp0 != null && isFinite(hp0) ? hp0 : mon[1] * dmul * (boss ? 6 : 3) * (0.04 + Math.min(5, P.length) * 0.23) * (1 + floor / Math.max(5, maxF) * 0.4) * (boss && floor === maxF ? 1.3 : 1), pow = mon[1] * dmul * (boss ? 0.9 : 1) * (1 + floor / Math.max(5, maxF) * 0.5) * (0.55 + Math.min(5, P.length) * 0.13), t = (boss ? '階層の主《' + mon[0] + '》が立ちはだかった！' : HK.RPGData.ENC[Math.floor(rng() * HK.RPGData.ENC.length)].replace(/\{m\}/g, mon[0])), rounds = 0, hit = [];
       /* 先に気づくか（慎重さ・狩人） */
       var scout = alive().reduce(function (m, p) { return Math.max(m, p.tr.caution + (p.job === 'hunter' ? 0.3 : 0)); }, 0);
       if (!boss && rng() < scout * 0.35) { t += '――先に気づいたので、奇襲をかけた。'; hp *= 0.7; }
@@ -407,7 +407,7 @@
           bo = bossFight(bo && !bo.res.win ? { b: bo.b, hpLeft: bo.res.hpLeft } : null);
           var br = bo.res, final = floor === maxF;
           tries++;
-          ST.say(S, { actors: alive().map(function (p) { return p.i; }).concat(bo.actors), tag: br.win ? (final ? '最深部の主' : '階層の主') : alive().length ? '退却' : '全滅の危機', kind: 'climax', text: bo.pre + br.text + (br.win || !alive().length ? '' : pick2(['――倒しきれず、パーティは一度、上の階の通路まで退いた。', '――決着はつかず、パーティは息を切らして距離を取った。'])), why: '地下' + floor + '階の主《' + bo.b.n + '》' + (bo.note ? '／' + bo.note : '') + (br.win ? '' : '／主の残り体力 ' + Math.round(br.hpLeft / Math.max(1, br.hpMax) * 100) + '%') });
+          ST.say(S, { actors: alive().map(function (p) { return p.i; }).concat(bo.actors), tag: br.win ? (final ? '最深部の主' : '階層の主') : alive().length ? '退却' : '全滅の危機', kind: 'climax', text: bo.pre + br.text + (br.win || !alive().length ? '' : pick2(['――倒しきれず、パーティは一度、上の階の通路まで退いた。', '――決着はつかず、パーティは息を切らして距離を取った。'])), why: '地下' + floor + '階の主《' + bo.b.n + '》' + (bo.note ? '／' + bo.note : '') + (br.win ? '' : '／主の残り体力 ' + (isFinite(br.hpLeft) && isFinite(br.hpMax) ? Math.round(br.hpLeft / Math.max(1, br.hpMax) * 100) : '?') + '%') });
           if (br.win) { bossDown++; P.forEach(function (p) { if (p.alive || p.captive) { p.lv++; p.mhp += 6; p.def += 0.4; p.hp = Math.min(p.mhp, p.hp + Math.round(p.mhp * 0.3)); } }); break; }
           if (!goOn()) break;
           /* 再戦の前に息を整える（何度も退いていると、休む余裕もなくなる）。それから、引き返すか（主の前では、慎重な人ほど退く） */

@@ -552,7 +552,8 @@
     end: function (ctx) { return ctx.flags.oneOut || ctx.present().filter(function (c) { return !c.flags.knocked; }).length <= (hasPairRule(ctx) ? 1 : 0); },
     finish: function (ctx) {
       sweepExits(ctx);
-      ctx.present().forEach(function (c) {
+      /* 気絶した人は present() に入らないので、部屋に残った人として別に足す */
+      ctx.present().concat(ctx.chars.filter(function (c) { return c.alive !== false && !c.out && c.flags && c.flags.knocked; })).forEach(function (c) {
         /* 条件を満たしたのに、自分の意思で残った人（exitPair の stay）は「取り残された」ではない */
         if (c.flags.stayed) { c.fate = '自分から残った'; c.fateNote = '条件を満たしたが、自分の意思で部屋に残った'; return; }
         c.fate = '取り残された';

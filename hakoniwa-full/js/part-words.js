@@ -47,7 +47,7 @@
         var before = sent.slice(Math.max(0, off - 14), off).replace(new RegExp(MARK, 'g'), '');
         /* 「名前の」がいちばん近くにある人（「アキラの手がミナトの肉棒を」ならミナト）。その人がその体を持っていなければ言い換えない */
         var best = null, bi = -1;
-        here.forEach(function (c) { var m = before.match(new RegExp(esc(c.name) + '(?:の|が持つ)(?=[^。、「」]{0,6}$)')); if (m && m.index > bi) { bi = m.index; best = c; } });
+        here.forEach(function (c) { var m = before.match(new RegExp(esc(c.name) + '(?:の|が持つ)(?=[^。、「」のにをがはでとへ]{0,6}$)')); if (m && m.index > bi) { bi = m.index; best = c; } });
         /* 「名前の」がない文は、モブ・客・魔物の体のこともあるので変えない */
         var own = best ? [best].filter(kind === 'm' ? hasM : hasF) : [];
         if (own.length !== 1) return w;

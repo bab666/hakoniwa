@@ -6939,6 +6939,9 @@
     for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j]) && !HK.lockSexOnly(L[i], L[j])) return false;
     /* 恋愛なしの家族は、恋愛が中心の箱庭（romanceCore）でも恋愛の出来事を起こさない */
     if (a && b && this.pair(a, b).kin) return false;
+    /* 歪んだ関係から離れる決心をした二人（tie-abuse.js の abFree）は、もう恋愛の出来事を起こさない。
+       別れたばかりの二人（brokeAt）も、しばらく（8回）は恋愛の出来事を起こさない（すぐに元に戻らないように） */
+    if (a && b) { var pfr = this.pair(a, b); if (pfr.abFree) return false; if (pfr.brokeAt != null && this.stepIndex - pfr.brokeAt < 8) return false; }
     if (this.scen && this.scen.romanceCore) return true;
     if (a && b && this.pair(a, b).couple) return true;
     if (this.env && this.env.romance === 0) return false;
@@ -7895,7 +7898,7 @@
         var before = sent.slice(Math.max(0, off - 14), off).replace(new RegExp(MARK, 'g'), '');
         /* 「名前の」がいちばん近くにある人（「アキラの手がミナトの肉棒を」ならミナト）。その人がその体を持っていなければ言い換えない */
         var best = null, bi = -1;
-        here.forEach(function (c) { var m = before.match(new RegExp(esc(c.name) + '(?:の|が持つ)(?=[^。、「」]{0,6}$)')); if (m && m.index > bi) { bi = m.index; best = c; } });
+        here.forEach(function (c) { var m = before.match(new RegExp(esc(c.name) + '(?:の|が持つ)(?=[^。、「」のにをがはでとへ]{0,6}$)')); if (m && m.index > bi) { bi = m.index; best = c; } });
         /* 「名前の」がない文は、モブ・客・魔物の体のこともあるので変えない */
         var own = best ? [best].filter(kind === 'm' ? hasM : hasF) : [];
         if (own.length !== 1) return w;
@@ -9615,6 +9618,8 @@
       if (s === 0) ctx.say({ text: ctx.env.grade === 'all' ? '始業式。' + [1, 2, 3].map(function (g) { var l = P.filter(function (c) { return c.grade === g; }); return l.length ? g + '年生の' + names(l) : ''; }).filter(Boolean).join('、') + '。同じ学園での一年が始まった。' : '始業式。' + names(P) + 'は同じクラスになった。' });
       if (m === '5月' || m === '12月') {
         var rank = P.map(function (c) { return { c: c, v: ctx.stat(c, 'study') * 10 + rng() * 25 + c.tr.a * 10 }; }).sort(function (x, y) { return y.v - x.v; });
+        /* 全員が休んでいる（不登校など）ときは、テストの結果の場面を出さない */
+        if (!rank.length) return;
         var top = rank[0].c, bot = rank[rank.length - 1].c;
         ctx.say({ text: (m === '5月' ? '中間' : '期末') + 'テストの結果が出た。トップは' + top.name + '、最下位は' + bot.name + '。' });
         P.forEach(function (c) { if (c !== top && c.tr.cp > 0.6) { ctx.k = 1; ctx.R(c, top).ten += 8; } });
@@ -11349,7 +11354,8 @@
     end: function (ctx) { return ctx.flags.oneOut || ctx.present().filter(function (c) { return !c.flags.knocked; }).length <= (hasPairRule(ctx) ? 1 : 0); },
     finish: function (ctx) {
       sweepExits(ctx);
-      ctx.present().forEach(function (c) {
+      /* 気絶した人は present() に入らないので、部屋に残った人として別に足す */
+      ctx.present().concat(ctx.chars.filter(function (c) { return c.alive !== false && !c.out && c.flags && c.flags.knocked; })).forEach(function (c) {
         /* 条件を満たしたのに、自分の意思で残った人（exitPair の stay）は「取り残された」ではない */
         if (c.flags.stayed) { c.fate = '自分から残った'; c.fateNote = '条件を満たしたが、自分の意思で部屋に残った'; return; }
         c.fate = '取り残された';
@@ -17063,7 +17069,7 @@
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b), om = ctx.om;
       var reason = pf.switchStrain ? 'switch' : (ctx.env.society > 55 && (sx(a) === sx(b) || sx(a) === 'o' || sx(b) === 'o') && ctx.rng() < 0.5 ? 'bias' : 'drift');
-      pf.couple = false; pf.broke = reason;
+      pf.couple = false; pf.broke = reason; pf.brokeAt = ctx.stepIndex;
       ctx.mod2(a, b, { aff: -10, ten: 10 }, { aff: -10, ten: 10 });
       ctx.stress(a, 20); ctx.stress(b, 20);
       var t = reason === 'switch' ? '{a}と{b}は、スイッチのあと一度も前と同じように笑えなかった。「ごめん、もう無理だ」――別れ話は、驚くほど静かに終わった。'
@@ -43312,7 +43318,8 @@
     /* 血縁（恋愛：なし）の二人は、性的な企画で組まない（関係で「恋愛：あり」にした組と、擬似親子は別） */
     function kinTie(a, b) { var L0 = (input.ties || []).filter(function (x) { return (x.a === a.i && x.b === b.i) || (x.a === b.i && x.b === a.i); }); for (var i = 0; i < L0.length; i++) { var D = HK.TIES && HK.TIES[L0[i].type]; if (D && D.family) return L0[i]; } return null; }
     function kinBlock(a, b) { var t = kinTie(a, b), D = t && HK.TIES[t.type]; return !!(t && !D.loveOK && !(HK.tieFamLove && HK.tieFamLove(t))); }
-    function okS(a, b) { return !kinBlock(a, b) && (!PO || PO.okSex(a, b)); }
+    /* 住人どうしの組：受け攻め・恋愛対象（okSex）、恋愛やR18にしない組、性行為の相手の固定（恋人だけ・〇〇だけ。HK.sexBlocked） */
+    function okS(a, b) { return !kinBlock(a, b) && (!PO || PO.okSex(a, b)) && !(HK.ngPair && HK.ngPair(a, b)) && !(HK.sexBlocked && HK.sexBlocked(a, b)); }
     function ord(a, b) { return PO ? PO.order(a, b, [a, b]) : [a, b]; }
     /* いちもつのある人（男性と、ふたなりの女性）。男性器前提の企画・当てっこは、ふたなりがいても外さない */
     function hasP(p) { return PO ? !PO.isF(p) : p.gender === 'm'; }
@@ -47409,7 +47416,7 @@
     /* 戦闘：パーティの攻撃と敵の反撃を数回くり返す。hp0 は再戦のとき、前回削った残り */
     function battle(mon, boss, hp0) {
       /* 敵の体力は人数に合わせる（3人で0.73倍、5人で1.2倍）。少人数でも戦えるように。主は体力が多く、一撃は普通の魔物の九割。深い階ほど一撃が重い（目標の階で1.5倍）。一撃の重さも人数で少し変わる（3人で0.94倍、5人で1.2倍） */
-      var hp = hp0 != null ? hp0 : mon[1] * dmul * (boss ? 6 : 3) * (0.04 + Math.min(5, P.length) * 0.23) * (1 + floor / Math.max(5, maxF) * 0.4) * (boss && floor === maxF ? 1.3 : 1), pow = mon[1] * dmul * (boss ? 0.9 : 1) * (1 + floor / Math.max(5, maxF) * 0.5) * (0.55 + Math.min(5, P.length) * 0.13), t = (boss ? '階層の主《' + mon[0] + '》が立ちはだかった！' : HK.RPGData.ENC[Math.floor(rng() * HK.RPGData.ENC.length)].replace(/\{m\}/g, mon[0])), rounds = 0, hit = [];
+      var hp = hp0 != null && isFinite(hp0) ? hp0 : mon[1] * dmul * (boss ? 6 : 3) * (0.04 + Math.min(5, P.length) * 0.23) * (1 + floor / Math.max(5, maxF) * 0.4) * (boss && floor === maxF ? 1.3 : 1), pow = mon[1] * dmul * (boss ? 0.9 : 1) * (1 + floor / Math.max(5, maxF) * 0.5) * (0.55 + Math.min(5, P.length) * 0.13), t = (boss ? '階層の主《' + mon[0] + '》が立ちはだかった！' : HK.RPGData.ENC[Math.floor(rng() * HK.RPGData.ENC.length)].replace(/\{m\}/g, mon[0])), rounds = 0, hit = [];
       /* 先に気づくか（慎重さ・狩人） */
       var scout = alive().reduce(function (m, p) { return Math.max(m, p.tr.caution + (p.job === 'hunter' ? 0.3 : 0)); }, 0);
       if (!boss && rng() < scout * 0.35) { t += '――先に気づいたので、奇襲をかけた。'; hp *= 0.7; }
@@ -47673,7 +47680,7 @@
           bo = bossFight(bo && !bo.res.win ? { b: bo.b, hpLeft: bo.res.hpLeft } : null);
           var br = bo.res, final = floor === maxF;
           tries++;
-          ST.say(S, { actors: alive().map(function (p) { return p.i; }).concat(bo.actors), tag: br.win ? (final ? '最深部の主' : '階層の主') : alive().length ? '退却' : '全滅の危機', kind: 'climax', text: bo.pre + br.text + (br.win || !alive().length ? '' : pick2(['――倒しきれず、パーティは一度、上の階の通路まで退いた。', '――決着はつかず、パーティは息を切らして距離を取った。'])), why: '地下' + floor + '階の主《' + bo.b.n + '》' + (bo.note ? '／' + bo.note : '') + (br.win ? '' : '／主の残り体力 ' + Math.round(br.hpLeft / Math.max(1, br.hpMax) * 100) + '%') });
+          ST.say(S, { actors: alive().map(function (p) { return p.i; }).concat(bo.actors), tag: br.win ? (final ? '最深部の主' : '階層の主') : alive().length ? '退却' : '全滅の危機', kind: 'climax', text: bo.pre + br.text + (br.win || !alive().length ? '' : pick2(['――倒しきれず、パーティは一度、上の階の通路まで退いた。', '――決着はつかず、パーティは息を切らして距離を取った。'])), why: '地下' + floor + '階の主《' + bo.b.n + '》' + (bo.note ? '／' + bo.note : '') + (br.win ? '' : '／主の残り体力 ' + (isFinite(br.hpLeft) && isFinite(br.hpMax) ? Math.round(br.hpLeft / Math.max(1, br.hpMax) * 100) : '?') + '%') });
           if (br.win) { bossDown++; P.forEach(function (p) { if (p.alive || p.captive) { p.lv++; p.mhp += 6; p.def += 0.4; p.hp = Math.min(p.mhp, p.hp + Math.round(p.mhp * 0.3)); } }); break; }
           if (!goOn()) break;
           /* 再戦の前に息を整える（何度も退いていると、休む余裕もなくなる）。それから、引き返すか（主の前では、慎重な人ほど退く） */
@@ -50551,6 +50558,16 @@
     strong: L('{a}は、勧められるそばから盃を空けた。顔色ひとつ変わらない{a}に、村の男たちが面白がって次々と酒を注いだ。|{a}は「いい酒ですね」と言いながら、村の酒豪と差しで飲み比べを始めた。|{a}は涼しい顔で何杯も盃を重ね、先に酔いの回った村人の隣へ、そっと席を移した。'),
     strongLeak: L('すっかり酔った村の男が、{a}に肩を組んで声をひそめた。「よそ者のくせに飲めるな。……気に入ったから教えてやる」――|酔いつぶれかけた老人が、{a}の盃に酒を注ぎながら、ぽつりとこぼした。「昔はな、もっと大勢で祀ったもんだ」――|飲み比べに負けた村の若者が、赤い顔で{a}に打ち明けた。「本当は、祭りなんかやめたいんだ」――'),
     strongNone: L('{a}が何杯付き合っても、村人たちは肝心な話になると口をつぐんだ。|{a}は最後まで素面のまま、酔ったふりをする村人たちの目が笑っていないのを見ていた。')
+  };
+  /* 未成年の職業（全年齢版の高校生・令嬢・幼子）が出る邪神村の記録では、酒を飲む言い回しを果汁・ジュースに言い換える（収穫祭の宴・死の場面など） */
+  var MINOR_SUB = [[/新酒の葡萄酒/g, '搾りたての葡萄のジュース'], [/葡萄酒/g, '葡萄のジュース'], [/御神酒/g, '甘酒'], [/杯を重ねた/g, '杯を何度もおかわりした'], [/酔わせた/g, '眠らせた'], [/酔わされ/g, '眠らされ'], [/酔った/g, 'ぼんやりした'], [/酔いが回/g, '眠気が回']];
+  var say0 = ST.say;
+  ST.say = function (S, o) {
+    if (S && S.scen && S.scen.id === 'jashin' && o && typeof o.text === 'string' && /酒|酔/.test(o.text)) {
+      var minor = (o.actors || []).some(function (a) { var p = typeof a === 'number' ? S.P[a] : a; return p && p.minor; });
+      if (minor) MINOR_SUB.forEach(function (w) { o.text = o.text.replace(w[0], w[1]); });
+    }
+    return say0.apply(this, arguments);
   };
   var F_ = JS.FEAST = {
     tick: function (S, live, h) {
@@ -61445,7 +61462,7 @@
   Object.keys(HK.SCENARIOS).forEach(function (id) {
     var sc = HK.SCENARIOS[id];
     if (Array.isArray(sc.events)) sc.events = sc.events.filter(function (e) { return !e.r18; });
-    if (Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== 'ilewd' && e.id !== 'jlewd' && e.id !== 'ylewd' && e.id !== 'slewd' && e.id !== 'ypleasure'; });
+    if (Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== 'ilewd' && e.id !== 'jlewd' && e.id !== 'jyobai' && e.id !== 'zlust' && e.id !== 'wolfnight' && e.id !== 'ylewd' && e.id !== 'slewd' && e.id !== 'ypleasure'; });
   });
   if (HK.ZB && HK.ZB.scen && HK.ZB.scen.events && HK.ZB.scen !== HK.SCENARIOS.zombie) HK.ZB.scen.events = HK.ZB.scen.events.filter(function (e) { return !e.r18; });
   function only(scen, id, opt) { (scen && scen.env || []).forEach(function (e) { if (e.id === id) { e.def = opt.v; e.options = [opt]; } }); }
@@ -64565,7 +64582,7 @@
       case 'shinju': return x.name + 'は' + y.name + 'を誰にも渡さないまま、二人で逝くことを選んだ。';
       case 'captive': return safe ? x.name + 'は' + y.name + 'をそばから離さず、外の世界から遠ざけたまま終わった。' : x.name + 'は' + y.name + 'を閉じ込めたまま、外の世界から隠し続けている。';
       case 'codep': return '互いが互いを縛り、二人だけで閉じた関係になった。';
-      case 'yandere': return x.name + 'から' + y.name + 'への想いは、執着になった' + (ctx.pair(A, B).captiveEnded ? (safe ? '（囲い込みは' : '（監禁は') + { rescue: '救い出されて', escape: y.name + 'が逃げ出して', release: x.name + 'が手を離して' }[ctx.pair(A, B).captiveEnded] + '終わった）' : '') + '。' + (s.lv >= 80 ? 'もう、誰にも止められない。' : '');
+      case 'yandere': return x.name + 'から' + y.name + 'への想いは、執着になった' + (ctx.pair(A, B).captiveEnded ? (safe ? '（囲い込みは' : '（監禁は') + { rescue: '救い出されて', escape: y.name + 'が逃げ出して', release: x.name + 'が手を離して', gone: '二人が離ればなれになって' }[ctx.pair(A, B).captiveEnded] + '終わった）' : '') + '。' + (s.lv >= 80 ? 'もう、誰にも止められない。' : '');
     }
     return null;
   };

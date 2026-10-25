@@ -104,8 +104,10 @@
         var a = acts[0], top = !!(HK.Pos && HK.Pos.hardTopNpc && HK.Pos.hardTopNpc(a)), d = a.eroDom;
         a.eroDom = top;
         /* 一人が受ける場面は合意のない場面なので、男性向けの文は足さない（濃いは、ぼかした一文だけ） */
+        /* 受ける側の一人の場面（村人・神・生贄の儀式など）は、内容のスイッチ「合意のない展開」が入で、モブとの場面に出てよい人のときだけ「濃い」の一文を足す */
+        var recvOk = top || ((!HK.Content || HK.Content.ok(S, 'force')) && !(HK.State && !HK.State.mobSexOk(a)));
         if (er && top) add.push(E.fill(S, pick(S, SOLO_TOP), a));
-        if (hi) add.push(top ? pick(S, AGAIN_TOP) : pick(S, AGAIN_SOLO));
+        if (hi && recvOk) add.push(top ? pick(S, AGAIN_TOP) : pick(S, AGAIN_SOLO));
         a.eroDom = d;
         add = add.map(function (t) { return ST.fmt(t, { a: a.name }); });
       } else if (acts.length >= 2) {

@@ -594,7 +594,7 @@
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b), om = ctx.om;
       var reason = pf.switchStrain ? 'switch' : (ctx.env.society > 55 && (sx(a) === sx(b) || sx(a) === 'o' || sx(b) === 'o') && ctx.rng() < 0.5 ? 'bias' : 'drift');
-      pf.couple = false; pf.broke = reason;
+      pf.couple = false; pf.broke = reason; pf.brokeAt = ctx.stepIndex;
       ctx.mod2(a, b, { aff: -10, ten: 10 }, { aff: -10, ten: 10 });
       ctx.stress(a, 20); ctx.stress(b, 20);
       var t = reason === 'switch' ? '{a}と{b}は、スイッチのあと一度も前と同じように笑えなかった。「ごめん、もう無理だ」――別れ話は、驚くほど静かに終わった。'
