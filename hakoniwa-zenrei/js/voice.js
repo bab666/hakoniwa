@@ -558,6 +558,7 @@
         depth--;
         if (depth === 0 && start >= 0) {
           var q = text.slice(start + 1, i), who = q.charAt(0) === '\u2060' ? null : speakerOf(text, start, i + 1, people);
+          if (!who && q.indexOf('｜') >= 0 && HK.Tone && HK.Tone.split) q = (HK.Tone.split(q) || { K: q }).K;
           if (who) {
             var q0 = q;
             var nounQ = /^(?:を|の|に|が|へ|や|という|って書|と書|とある|と記|と刻|と彫|と印|と読め)/.test(text.slice(i + 1, i + 4)) ||
@@ -576,6 +577,9 @@
             var sv1 = null, yf1 = to1 && who.youFor && who.youFor[to1.name], ff1 = to1 && who.fpFor && who.fpFor[to1.name];
             if (yf1 || ff1) { sv1 = { fp: who.fp, you: who.you }; if (ff1) who.fp = ff1; if (yf1) who.you = yf1; }
             var kg = !nounQ && (pre || keigoHere(text, start, i + 1, q, who, people, actors));
+            /* 3本のベース「K｜F｜P」で書かれた台詞（tone-engine.js）：口調に合うベースを選び、口調の辞書があればそれで言い換える（辞書がなければ、選んだベースをこれまでの言い換えに流す） */
+            var nb = q.indexOf('｜') >= 0 && HK.Tone && HK.Tone.pick ? HK.Tone.pick(q, who, kg) : null;
+            if (nb) { q = nb.q; q0 = q; if (nounQ) nb = null; }
             var ov = pre ? null : !nounQ && V.overrideFor ? V.overrideFor(q, kg ? Object.assign({}, who, { tone: 'polite' }) : who, people) : null;
             /* 別の口調から派生する口調（tone-registry.js の derive。後輩・お嬢様など）：その口調名の書き下ろし・直しがあれば完成形としてそのまま使い、
                なければ元の口調の書き下ろしを引いて、最後に語尾を付け替える */
@@ -591,7 +595,9 @@
             /* 派生元のない仕上げつきの口調（ヤンキーなど）も、その口調名の書き下ろし・直しは完成形として使う */
             else if (ov != null && !kg && HK.TONE_FINISH && HK.TONE_FINISH[who.tone]) own = true;
             q = V.replaceFP(ov != null ? ov : q, who);
-            if (ov == null && !pre) { if (who.persona === 'polite' || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(V.unHonor ? V.unHonor(q) : q, who); }
+            var byDict = ov == null && !pre && nb && nb.dict;
+            if (byDict) { q = HK.Tone.apply(q, nb.dict, who); own = true; }
+            else if (ov == null && !pre) { if (who.persona === 'polite' || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(V.unHonor ? V.unHonor(q) : q, who); }
             /* 敬語の口調で、敬語の文とため口の文が混ざる台詞の、ため口の文末を敬語に寄せる（tone-keigo-unify.js。仕上げの前に通し、仕上げが口調の味を付ける） */
             if (V.keigoUnify && !nounQ && !own && !pre) q = V.keigoUnify(q, who);
             /* 口調ごとの仕上げ（後輩の「〜っす」、お嬢様の「〜ですわ」など。HK.toneFinish で登録したもの） */
@@ -599,7 +605,7 @@
             /* 仕上げには、敬語で話す相手への台詞か（kg）を渡す。派生の口調が敬語の文を崩すときの判断に使う */
             if (fin) q = fin(q, who, { kg: kg, raw: q0 });
             /* 性別の語尾の仕上げ（辞書の書き下ろしにも通す。tone-plus.js の V.genderEnd） */
-            if (V.genderEnd && !nounQ && !kg) q = V.genderEnd(q, who);
+            if (V.genderEnd && !nounQ && !kg && !byDict) q = V.genderEnd(q, who);
             /* 住人ごとの語尾の付け替え（設定の toneCustom。tone-new2.js の V.applyToneCustom）：口調の仕上げのいちばん最後に */
             if (who.toneCustom && V.applyToneCustom && !HK.TONE_CUSTOM_OFF && !nounQ) q = V.applyToneCustom(q, who.toneCustom);
             /* 二人称の設定（敬語の相手への台詞は除く）。設定が空なら、口調と性別の既定（tone-registry.js の HK.TONE_YOU）でそろえる */

@@ -407,7 +407,7 @@
     list.forEach(function (c, i) { idx[c.id] = i; });
     S.chars.forEach(function (c) { name[c.id] = c.name; });
     var ref = function (id) { return idx[id] != null ? idx[id] : only && name[id] ? name[id] : null; };
-    return {
+    var out = {
       format: 'hakoniwa-residents', version: 1, exported: new Date().toISOString(),
       partial: only ? true : undefined,
       chars: list.map(function (c) {
@@ -449,6 +449,8 @@
       /* 内容のスイッチ（R18版）も一緒に書き出す（全員を書き出すときだけ） */
       ct: !only && !HK.SAFE_ON && S.glob && S.glob.ct && Object.keys(S.glob.ct).length ? S.glob.ct : undefined
     };
+    if (!only && HK.Adv) HK.Adv.exportTo(out);
+    return out;
   }
   function exportJSON(only) {
     var data = rosterJSON(only), text = JSON.stringify(data, null, 1);
@@ -543,6 +545,7 @@
     if (replace) S.grpComrade = {};
     if (data.grpComrade && typeof data.grpComrade === 'object' && !Array.isArray(data.grpComrade)) { S.grpComrade = S.grpComrade || {}; Object.keys(data.grpComrade).forEach(function (g) { if (data.grpComrade[g] && String(g).trim()) S.grpComrade[String(g).trim().slice(0, 40)] = 1; }); }
     if (data.teacher != null && map[data.teacher]) S.teacher = map[data.teacher];
+    if (HK.Adv) HK.Adv.importFrom(data);
     if (data.ct && typeof data.ct === 'object' && !HK.SAFE_ON && HK.Content) { S.glob = S.glob || {}; S.glob.ct = {}; HK.Content.TAGS.forEach(function (t) { if (data.ct[t.id]) S.glob.ct[t.id] = 1; }); }
     /* 恋愛相手の固定と呼び方は、全員を読み込んでから番号を住人に戻す */
     list.forEach(function (c) {
@@ -744,6 +747,7 @@
     var html =
       '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' +
       '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + ' <span class="envbtns"><button type="button" class="mini" data-act="envreset" title="この箱庭の環境値を初期値に戻す">初期値に戻す</button><button type="button" class="mini" data-act="envrand" title="環境値をランダムに決める（文字の項目はそのまま）">ランダム</button></span></h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + contentBox() + '</div></div>' +
+      (HK.Adv ? HK.Adv.html() : '') +
       '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
       '<h2 class="sec">' + (scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
@@ -754,6 +758,7 @@
       (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') +
       '<div class="runbar"><label for="seed">シード</label><input type="text" id="seed" inputmode="numeric" data-f="seed" value="' + esc(S.seed) + '" placeholder="空欄でランダム"><span class="hint" style="margin:0">同じシードと条件なら同じ結末になります。</span><span class="spacer"></span><button class="btn primary" data-act="run">箱庭を動かす</button></div>';
     $('#view-box').innerHTML = html;
+    if (HK.Adv) HK.Adv.afterRender();
   }
 
   /* 人数を決めてランダムに参加者を選ぶ（対象は全員か、グループ一つ） */
@@ -898,6 +903,7 @@
     if (!t) return;
     if (t.dataset.tab) { setTab(t.dataset.tab); return; }
     var act = t.dataset.act, row = t.closest('.res');
+    if (act && act.indexOf('adv:') === 0) { if (HK.Adv) HK.Adv.onAct(act, t); return; }
     switch (act) {
       /* 環境値：初期値に戻す／ランダムに決める（文字の項目はそのまま） */
       case 'envreset': case 'envrand': (function () {
@@ -1105,6 +1111,7 @@
       refreshRow(row, c, true);
     }
     else if (f === 'scen') { S.scenId = t.value; save(); renderBox(); return; }
+    else if (f === 'adv') { if (HK.Adv) HK.Adv.onInput(t); return; }
     else if (f === 'ct') {
       S.glob.ct = S.glob.ct || {};
       if (t.checked) S.glob.ct[t.dataset.k] = 1; else delete S.glob.ct[t.dataset.k];

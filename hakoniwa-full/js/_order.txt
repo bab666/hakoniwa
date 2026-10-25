@@ -17,6 +17,8 @@ js/voice.js
 js/voice-tone.js
 js/tone-registry.js
 js/tone-plus.js
+js/tone-engine.js
+js/tone-dict-builtin.js
 js/tone-keigo-unify.js
 js/tone-gentleman.js
 js/tone-extra2.js
@@ -78,6 +80,9 @@ js/ero-kit.js
 js/part-words.js
 js/ero-moan-tone.js
 js/novel-moan-tone.js
+js/moan-dict.js
+js/moan-said.js
+js/moan-engine.js
 js/thick-sex.js
 js/thick-sex-ero.js
 js/fwb.js
@@ -370,6 +375,8 @@ late js/tips-scen-d.js
 js/scen-tags.js
 js/ui.js
 js/ui-gear.js
+js/ui-adv.js
+js/ui-adv-moan.js
 js/notice.js
 js/ui-fold.js
 js/ui-mobile.js
