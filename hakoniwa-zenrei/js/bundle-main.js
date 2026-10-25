@@ -551,7 +551,7 @@
   /* ---------- エンジンへの適用 ----------
      同じ二人に複数の関係（セフレ＋片想い など）を重ねられる。
      get() は代表の関係（PRIO の先頭に近いもの）を返し、has() で個々の関係を調べる */
-  var PRIO = ['mate', 'fated', 'abuse', 'lover', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'relative', 'master', 'worship', 'mentor', 'teacher', 'benefactor', 'boss', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'classmate', 'friend', 'acq', 'noobs'];
+  var PRIO = ['mate', 'fated', 'abuse', 'lover', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'relative', 'master', 'worship', 'mentor', 'teacher', 'benefactor', 'boss', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'classmate', 'friend', 'acq', 'honmei', 'noobs'];
   function keyOf(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   /* 関係を持っているか（どのファイルからでも安全に呼べる形）。古いファイルが混ざっても止まらないように */
   HK.tieHas = function (ctx, a, b, type) {
@@ -608,7 +608,7 @@
         var mk0 = (A.ng && A.ng.indexOf(B.i) >= 0) || (B.ng && B.ng.indexOf(A.i) >= 0);
         /* 恋愛相手の固定だけが食い違い、体の関係は許されている組（engine.js の HK.lockSexOnly）は、セフレの関係を残す */
         var sexOk0 = !mk0 && HK.lockSexOnly && HK.lockSexOnly(A, B);
-        if (HK.ngPair && HK.ngPair(A, B) && (mk0 ? /^(lover|fwb|mate|fated|crush|almost|ex|yan)$/ : sexOk0 ? /^(lover|mate|fated|almost|ex)$/ : /^(lover|fwb|mate|fated|almost|ex)$/).test(t.type)) return;
+        if (HK.ngPair && HK.ngPair(A, B) && (mk0 ? /^(lover|fwb|mate|fated|crush|almost|ex|yan|abuse|honmei)$/ : sexOk0 ? /^(lover|mate|fated|almost|ex|abuse|honmei)$/ : /^(lover|fwb|mate|fated|almost|ex|abuse|honmei)$/).test(t.type)) return;
         if (HK.ngPair && HK.ngPair(A, B) && /^(crush|yan)$/.test(t.type)) {
           /* 想う側（A）が別の人に恋愛相手を固定しているなら、その想いは使わない（固定した人は、ほかの人を想わない） */
           if (A.lock != null && A.lock !== B.i) return;
@@ -6704,7 +6704,7 @@
      mobSexOk：モブ・魔物・村人・略奪者など住人でない相手との性的な場面に出してよい
      pairSex：住人どうしの体の関係（恋愛対象・受け攻め・縛りは HK.Pos.okSex）／pairLove：恋愛（HK.canLove を両方向） */
   HK.State = {
-    here: function (c) { return !!c && c.alive !== false && !c.out && !c.gone && !c.taken && !(c.flags && c.flags.caged != null); },
+    here: function (c) { return !!c && c.alive !== false && !c.out && !c.gone && !c.taken && !(c.flags && (c.flags.caged != null || c.flags.knocked)); },
     canAct: function (c) { return HK.State.here(c) && !(c.flags && c.flags.down) && !c.bound; },
     r18ok: function (c) { return !!c && !HK.SAFE_ON && !c.noR18; },
     mobSexOk: function (c) { return HK.State.r18ok(c) && !c.noMob; },
@@ -10866,7 +10866,7 @@
       }
       ctx.kill(b, a, '部屋の条件のために');
       ctx.others(a).forEach(function (o) { ctx.mod(o, a, { aff: -40, ten: 45, trust: -60 }); });
-      return { mag: 60, text: ctx.t(ctx.pick(['{a}は{b}の背後に回り、迷いを振り切るように腕に力を込めた。{b}がもがくのをやめたとき、扉の鍵が外れる音がした。', '{a}は割れた照明の破片を、{b}の胸に突き立てた。{b}は信じられないものを見る目で、{a}を見上げた。', '「ごめん」――それが、{a}が{b}にかけた最後の言葉だった。']), a, b), why: a.name + 'は条件のために、' + b.name + 'を手にかけた（ドライさ・攻撃性・焦り）' };
+      return { mag: 60, text: ctx.t(ctx.pick(['{a}は{b}の背後に回り、迷いを振り切るように腕に力を込めた。{b}がもがくのをやめたとき、扉の紙の文字が一つ消えた。', '{a}は割れた照明の破片を、{b}の胸に突き立てた。{b}は信じられないものを見る目で、{a}を見上げた。', '「ごめん」――それが、{a}が{b}にかけた最後の言葉だった。']), a, b), why: a.name + 'は条件のために、' + b.name + 'を手にかけた（ドライさ・攻撃性・焦り）' };
     }
   });
 
@@ -21391,7 +21391,7 @@
       if (canA && canB) { if (rng() < 0.5) canA = false; else canB = false; }
       if (canA) hear(hB, hA, evA, x.room);
       if (canB) hear(hA, hB, evB, x.room);
-      if (!chatDone && j === 2 && x.a && x.b && !evA && !evB) { chatDone = true; hear(rng() < 0.5 ? hA : hB, rng() < 0.5 ? hB : hA, 'chat', x.room); }
+      if (!chatDone && j === 2 && x.a && x.b && !evA && !evB) { chatDone = true; var Lh = rng() < 0.5 ? hA : hB; hear(Lh, Lh === hA ? hB : hA, 'chat', x.room); }
       if (evA === 'left') goneA = true;
       if (evB === 'left') goneB = true;
     });
@@ -22001,7 +22001,7 @@
     else adv.push('気づいたのは「' + S.flags.noticedAt + '」の段階。');
     if (fell) adv.push('快楽に負けたのは、感じやすさ ' + h.stats.sense + '・CP ' + Math.round(h.eg.CP) + 'で、昂りに理性が追いつかなかったから。');
     if (left) adv.push('帰る決断ができたのは、CP（' + Math.round(h.eg.CP) + '）と理性の残り（' + Math.round(h.reason) + '）のおかげ。');
-    return done(K.finish(S, input, E, adv, { meta: staff.n + (TR ? '（住人）' : '') + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['気づいた', S.flags.noticedAt || '気づかず'], ['騙された', deceived + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)], ['理性', Math.max(0, Math.round(h.reason))]].concat(positions.length ? [dark ? (HK.SAFE_ON ? ['暗闇の中で姿勢を変えた', positions.length + '回'] : ['暗闇の中の体位', positions.length + 'つ']) : ['指定された体位', positions.join('→')]] : []), label3: '施術' }));
+    return done(K.finish(S, input, E, adv, { meta: staff.n + (TR ? '（住人）' : '') + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['気づいた', S.flags.noticedAt || '気づかず'], ['騙された', deceived + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.min(100, Math.round(h.corrupt))], ['理性', Math.max(0, Math.round(h.reason))]].concat(positions.length ? [dark ? (HK.SAFE_ON ? ['暗闇の中で姿勢を変えた', positions.length + '回'] : ['暗闇の中の体位', positions.length + 'つ']) : ['指定された体位', positions.join('→')]] : []), label3: '施術' }));
   }
 
   function ending(S, x) {
@@ -30261,7 +30261,7 @@
       return p;
     });
     /* 関係「本命」：想う人に本命の印（engine.js の HK.honmeiFactor・HK.honmeiDesperate） */
-    (input.ties || []).forEach(function (t) { if (t && t.type === 'honmei' && S.P[t.a] && S.P[t.b] && t.a !== t.b) S.P[t.a].honmei = t.b; });
+    (input.ties || []).forEach(function (t) { if (t && t.type === 'honmei' && S.P[t.a] && S.P[t.b] && t.a !== t.b && !(HK.ngPair && HK.ngPair(S.P[t.a], S.P[t.b]))) S.P[t.a].honmei = t.b; });
     return S;
   };
   /* 最近使った文を避けて選ぶ */

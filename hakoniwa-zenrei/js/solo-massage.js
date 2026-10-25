@@ -568,7 +568,7 @@
     else adv.push('気づいたのは「' + S.flags.noticedAt + '」の段階。');
     if (fell) adv.push('快楽に負けたのは、感じやすさ ' + h.stats.sense + '・CP ' + Math.round(h.eg.CP) + 'で、昂りに理性が追いつかなかったから。');
     if (left) adv.push('帰る決断ができたのは、CP（' + Math.round(h.eg.CP) + '）と理性の残り（' + Math.round(h.reason) + '）のおかげ。');
-    return done(K.finish(S, input, E, adv, { meta: staff.n + (TR ? '（住人）' : '') + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['気づいた', S.flags.noticedAt || '気づかず'], ['騙された', deceived + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)], ['理性', Math.max(0, Math.round(h.reason))]].concat(positions.length ? [dark ? (HK.SAFE_ON ? ['暗闇の中で姿勢を変えた', positions.length + '回'] : ['暗闇の中の体位', positions.length + 'つ']) : ['指定された体位', positions.join('→')]] : []), label3: '施術' }));
+    return done(K.finish(S, input, E, adv, { meta: staff.n + (TR ? '（住人）' : '') + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['気づいた', S.flags.noticedAt || '気づかず'], ['騙された', deceived + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.min(100, Math.round(h.corrupt))], ['理性', Math.max(0, Math.round(h.reason))]].concat(positions.length ? [dark ? (HK.SAFE_ON ? ['暗闇の中で姿勢を変えた', positions.length + '回'] : ['暗闇の中の体位', positions.length + 'つ']) : ['指定された体位', positions.join('→')]] : []), label3: '施術' }));
   }
 
   function ending(S, x) {

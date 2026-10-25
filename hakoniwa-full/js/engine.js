@@ -148,7 +148,7 @@
      mobSexOk：モブ・魔物・村人・略奪者など住人でない相手との性的な場面に出してよい
      pairSex：住人どうしの体の関係（恋愛対象・受け攻め・縛りは HK.Pos.okSex）／pairLove：恋愛（HK.canLove を両方向） */
   HK.State = {
-    here: function (c) { return !!c && c.alive !== false && !c.out && !c.gone && !c.taken && !(c.flags && c.flags.caged != null); },
+    here: function (c) { return !!c && c.alive !== false && !c.out && !c.gone && !c.taken && !(c.flags && (c.flags.caged != null || c.flags.knocked)); },
     canAct: function (c) { return HK.State.here(c) && !(c.flags && c.flags.down) && !c.bound; },
     r18ok: function (c) { return !!c && !HK.SAFE_ON && !c.noR18; },
     mobSexOk: function (c) { return HK.State.r18ok(c) && !c.noMob; },

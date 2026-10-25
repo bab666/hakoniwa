@@ -192,7 +192,7 @@
       if (canA && canB) { if (rng() < 0.5) canA = false; else canB = false; }
       if (canA) hear(hB, hA, evA, x.room);
       if (canB) hear(hA, hB, evB, x.room);
-      if (!chatDone && j === 2 && x.a && x.b && !evA && !evB) { chatDone = true; hear(rng() < 0.5 ? hA : hB, rng() < 0.5 ? hB : hA, 'chat', x.room); }
+      if (!chatDone && j === 2 && x.a && x.b && !evA && !evB) { chatDone = true; var Lh = rng() < 0.5 ? hA : hB; hear(Lh, Lh === hA ? hB : hA, 'chat', x.room); }
       if (evA === 'left') goneA = true;
       if (evB === 'left') goneB = true;
     });
