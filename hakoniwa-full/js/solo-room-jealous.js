@@ -137,6 +137,8 @@
     when: function (ctx, a, b) {
       if (HK.SAFE_ON || !hasH(ctx) || !free(a) || !free(b)) return false;
       if (!a.flags.excl || a.flags.partner !== b.i) return false;
+      /* 「R18に参加しない」人・体の関係にならない組（恋愛対象・受け攻め）では起こさない（見た場面も詰め寄ったあとも性的な文になるため） */
+      if ((HK.sexBlocked && HK.sexBlocked(a, b)) || (HK.Pos && HK.Pos.okSex && !HK.Pos.okSex(a, b))) return false;
       return seenOf(ctx, a, b) > (a.flags.jSeen || 0);
     },
     w: function () { return 5; },

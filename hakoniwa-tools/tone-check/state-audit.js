@@ -3,7 +3,7 @@
    使い方: node state-audit.js <ビルドのディレクトリ> [1シナリオあたりの回数=24] [r18|safe|''] [シナリオid,…] [--why] [--hot]
    S1: 死んだ人（死の記録が出たあと）が、死・場面転換以外の出来事に出た
    S2: 監禁中の人が、執着の出来事（cageOk）以外の出来事に出た（記録に残ったもの。手前で止めた分は「止めた」に数える）
-   S3: 場を離れた人（脱出・行方不明・連れ去り）が、出来事に出た
+   S3: 場を離れた人（脱出・行方不明・連れ去り）が、出来事に出た（主役でも相手でも）
    S4: 「R18に参加しない」人が、性的な文に名前つきで出た
    S5: 「恋愛・R18にしない相手」の二人が、同じ性的な文に出た
    S6: 「恋人だけ（モブにも襲われない）」の人が、住人でない相手との性的な文に出た
@@ -32,7 +32,7 @@ const { openBuild } = require('./lib.js');
     let cur = null;
     const hit = (k, msg) => { out.n[k]++; out.bySc[cur.sc][k] = (out.bySc[cur.sc][k] || 0) + 1; if (out.ex[k].length < (WHY ? 40 : 6)) out.ex[k].push(cur.sc + ' | ' + msg); };
     /* 不在・遺体・後日談を描く文（その人がいないこと自体を書いている）は数えない */
-    const EXEMPT = /席が[^。]{0,6}空いて|見つかった|遺体|亡骸|死んでいた|それからも|その後|あれから|外では|一週間後|数日後|後日|夜明け|半年後|か月後|年後|外から見れば|部屋を出たあと/;
+    const EXEMPT = /席が[^。]{0,6}空いて|見つかった|遺体|亡骸|死んでいた|それからも|その後|あれから|外では|一週間後|数日後|後日|夜明け|半年後|か月後|年後|外から見れば|部屋を出たあと|プリントを届け/;
     const SKIPK = /^(?:step|phase|death|end|ending|summary)$/;
     /* 出来事の記録を包む：エンジン型（Ctx.say）と物語型（HK.Story.say） */
     const Ctx = HK.Ctx;
@@ -53,7 +53,7 @@ const { openBuild } = require('./lib.js');
               /* ゾンビになった住人（fate＝ゾンビ化）は、死んだあとも襲ってくる側として出てよい */
               if (s.dead && s.lead && s.c.fate !== 'ゾンビ化' && !EXEMPT.test(String(o.text))) hit('S1', s.c.name + ' [' + (o.cat || '') + '/' + kind + '] ' + String(o.text).slice(0, 160));
               if (s.caged && !o.cageOk) hit('S2', s.c.name + ' [' + (o.cat || '') + '] ' + String(o.text).slice(0, 160));
-              if (s.out && s.lead && !EXEMPT.test(String(o.text))) hit('S3', s.c.name + ' [' + (o.cat || '') + '/' + kind + '] ' + String(o.text).slice(0, 160));
+              if (s.out && !EXEMPT.test(String(o.text))) hit('S3', s.c.name + ' [' + (o.cat || '') + '/' + kind + '] ' + String(o.text).slice(0, 160));
             });
           }
           if (kind === 'death' && acs[0]) acs[0]._auditDeathLogged = true;
@@ -76,7 +76,7 @@ const { openBuild } = require('./lib.js');
         if (cur && cur.story && !SKIPK.test(kind) && !over && kind !== 'climax' && !/結末|全滅|死|最期|蘇生|復活|発見|遺体|喪失|追悼|弔い|回想|その後|脱出|救出|帰還|生還|行方不明|処刑|襲撃|生贄|事件|継承|霊媒|勝利|敗北|騙され|人質|囚われ|形見|遺言|真相|推理|後日|夜明け|雪の中/.test(o.tag || '')) {
           snap.forEach(s => {
             if (s.dead && s.lead && !EXEMPT.test(String(o.text))) hit('S1', s.p.name + ' [' + (o.tag || '') + '/' + kind + '] ' + String(o.text).slice(0, 160));
-            if (s.out && s.lead && !EXEMPT.test(String(o.text))) hit('S3', s.p.name + ' [' + (o.tag || '') + '/' + kind + '] ' + String(o.text).slice(0, 160));
+            if (s.out && !EXEMPT.test(String(o.text))) hit('S3', s.p.name + ' [' + (o.tag || '') + '/' + kind + '] ' + String(o.text).slice(0, 160));
           });
           if (o.tags && cur.offTags) o.tags.forEach(t => { if (cur.offTags[t]) hit('S8', t + ' | ' + String(o.text).slice(0, 160)); });
         }
@@ -137,7 +137,7 @@ const { openBuild } = require('./lib.js');
           const lab = (e.tag || '') + ' ' + (e.why || '');
           if (!/恋人|攻めを選んで|自分から/.test(lab) && /夜這い|憑依|清めの湯|洞窟|脅迫|蛇の夜|蛇の夢|チョー・チョー人|収穫祭の夜|略奪者|ゾンビに襲|監禁の夜|奪われたうなじ|攫われ|強引|無理やり|凌辱|夢の中で神/.test(lab) && sents(e.text).some(isSex)) hit('S8', 'force | ' + lab.slice(0, 50) + ' | ' + e.text.slice(0, 100));
         });
-        if (offTags.preg) (res.log || []).forEach(e => { if (e && /孕|疑似妊娠|身籠|神の子を産む/.test((e.text || '') + (e.why || ''))) hit('S8', 'preg | ' + (e.why || '').slice(0, 40) + ' | ' + String(e.text).slice(0, 100)); });
+        if (offTags.preg) (res.log || []).forEach(e => { if (e && /(?<!酸素を)孕|疑似妊娠|身籠|神の子を産む/.test((e.text || '') + (e.why || ''))) hit('S8', 'preg | ' + (e.why || '').slice(0, 40) + ' | ' + String(e.text).slice(0, 100)); });
         /* S10：一回の遊びの中で、同じ性的な文（15文字以上）が3つ以上の記録に出た */
         const runSeen = {};
         (res.log || []).forEach(e => { if (!e || typeof e.text !== 'string') return; const once = {}; sents(e.text).forEach(x => { const k = x.replace(/[「」『』\s]/g, ''); if (k.length >= 15 && isSex(x) && !once[k]) { once[k] = 1; runSeen[k] = (runSeen[k] || 0) + 1; } }); });

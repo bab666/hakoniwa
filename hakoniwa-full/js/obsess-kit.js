@@ -78,11 +78,14 @@
   /* 監禁している・されている二人は、いつも同じ場所にいる */
   function near(ctx, a, b) { return (a.flags.cagePair != null && a.flags.cagePair === b.i) || !ctx.scen.othersFor || ctx.others(a).indexOf(b) >= 0; }
   O.near = near;
+  /* その場にいない人（死んだ・部屋を出た・行方不明・連れ去られた・気絶）は、執着の出来事に出さない。監禁中の二人は、その場にいる扱い */
+  function away(c) { return !c || c.alive === false || c.out || c.gone || c.taken || !!(c.flags && c.flags.knocked); }
+  O.away = away;
   /* a の執着先（いちばん執着度の高い相手。35 未満なら null） */
   O.target = function (ctx, a, min) {
     var best = null, bv = min == null ? 35 : min;
     ctx.chars.forEach(function (o) {
-      if (o === a || !o.alive || !a.alive || !near(ctx, a, o)) return;
+      if (o === a || away(o) || away(a) || !near(ctx, a, o)) return;
       /* 監禁のさなかの人は、その相手どうしでしか執着の出来事を起こさない（別の人に二重に囲われない） */
       if ((a.flags.cagePair != null && a.flags.cagePair !== o.i) || (o.flags.cagePair != null && o.flags.cagePair !== a.i)) return;
       var pf = ctx.pair(a, o);
@@ -95,7 +98,7 @@
   /* b に執着している人（いちばん重い人） */
   O.obsessorOf = function (ctx, b) {
     var best = null, bv = 34;
-    ctx.chars.forEach(function (o) { if (o === b || !o.alive || !near(ctx, b, o)) return; if ((b.flags.cagePair != null && b.flags.cagePair !== o.i) || (o.flags.cagePair != null && o.flags.cagePair !== b.i)) return; var v = (ctx.pair(o, b).ob && ctx.pair(o, b).ob[o.i]) || O.yanTie(ctx, o, b) ? O.level(ctx, o, b) : 0; if (v > bv) { bv = v; best = o; } });
+    ctx.chars.forEach(function (o) { if (o === b || away(o) || away(b) || !near(ctx, b, o)) return; if ((b.flags.cagePair != null && b.flags.cagePair !== o.i) || (o.flags.cagePair != null && o.flags.cagePair !== b.i)) return; var v = (ctx.pair(o, b).ob && ctx.pair(o, b).ob[o.i]) || O.yanTie(ctx, o, b) ? O.level(ctx, o, b) : 0; if (v > bv) { bv = v; best = o; } });
     return best;
   };
 
@@ -130,7 +133,7 @@
   O.rival = function (ctx, a, b) {
     var best = null, bv = 40;
     ctx.chars.forEach(function (c) {
-      if (c === a || c === b || !c.alive || !near(ctx, a, c)) return;
+      if (c === a || c === b || away(c) || !near(ctx, a, c)) return;
       if (O.coLove(ctx, a, b, c)) return;
       var r = R(ctx, b, c), v = r.att + r.aff * 0.5 + (ctx.pair(b, c).couple ? 60 : 0);
       if (v > bv) { bv = v; best = c; }
@@ -326,7 +329,7 @@
     s.cage.n++;
     var safe = SAFE(), c = null;
     /* 救出：b を大事に思う人が気づく */
-    ctx.chars.forEach(function (o) { if (!c && o !== a && o !== b && o.alive && near(ctx, a, o) && R(ctx, o, b).aff + R(ctx, o, b).trust > 55 && ctx.rng() < 0.25 + s.cage.n * 0.08) c = o; });
+    ctx.chars.forEach(function (o) { if (!c && o !== a && o !== b && !away(o) && near(ctx, a, o) && R(ctx, o, b).aff + R(ctx, o, b).trust > 55 && ctx.rng() < 0.25 + s.cage.n * 0.08) c = o; });
     var end = null;
     if (c) end = 'rescue';
     else if (ctx.rng() < 0.12 + b.tr.caution * 0.15 + b.tr.aggr * 0.1 + s.cage.n * 0.05) end = 'escape';
