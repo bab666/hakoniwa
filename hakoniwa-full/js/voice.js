@@ -580,14 +580,16 @@
             /* 3本のベース「K｜F｜P」で書かれた台詞（tone-engine.js）：口調に合うベースを選び、口調の辞書があればそれで言い換える（辞書がなければ、選んだベースをこれまでの言い換えに流す） */
             var nb = q.indexOf('｜') >= 0 && HK.Tone && HK.Tone.pick ? HK.Tone.pick(q, who, kg) : null;
             if (nb) { q = nb.q; q0 = q; if (nounQ) nb = null; }
-            var ov = pre ? null : !nounQ && V.overrideFor ? V.overrideFor(q, kg ? Object.assign({}, who, { tone: 'polite' }) : who, people) : null;
+            /* 書き下ろし辞書は元の文（1本）で引いてあるので、3本の台詞では選んだベースで引けなければ残りのベースでも引く（既存の書き下ろしをそのまま生かす） */
+            var ovFor = function (w) { var r = V.overrideFor(q, w, people); if (r == null && nb && nb.alts) for (var ai = 0; ai < nb.alts.length && r == null; ai++) r = V.overrideFor(nb.alts[ai], w, people); return r; };
+            var ov = pre ? null : !nounQ && V.overrideFor ? ovFor(kg ? Object.assign({}, who, { tone: 'polite' }) : who) : null;
             /* 別の口調から派生する口調（tone-registry.js の derive。後輩・お嬢様など）：その口調名の書き下ろし・直しがあれば完成形としてそのまま使い、
                なければ元の口調の書き下ろしを引いて、最後に語尾を付け替える */
             var dv = !kg && !pre && !nounQ && HK.toneOpt ? HK.toneOpt(who.tone, 'derive') : null, own = false;
             if (dv && V.overrideFor) {
               if (ov != null) own = true;
               else {
-                ov = V.overrideFor(q, Object.assign({}, who, { tone: dv, _from: who.tone }), people);
+                ov = ovFor(Object.assign({}, who, { tone: dv, _from: who.tone }));
                 /* 派生元の書き下ろしが足した「！」を使わない口調（熱血：言い切りは言い切りのまま） */
                 if (ov != null && HK.toneOpt(who.tone, 'noBang') && !/[！!]$/.test(q)) ov = ov.replace(/！$/, '');
               }

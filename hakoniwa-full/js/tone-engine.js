@@ -21,7 +21,8 @@
      助詞落とし=0.3         ← が・は・を を落とす割合
      存在=おる              ← いる／いた／いない／います → おる／おった／おらぬ（が・は・も・に などの直後だけ。〜ている は進行の規則）
      縮約=はい              ← 分からない→分かんない、ちょうだい→ちょーだい など
-     強調語=マジ／めっちゃ  ← 形容詞の前に差し込む（台詞に一度まで）
+     強調語=マジ／めっちゃ  ← 形容詞の前に差し込む（台詞に一度まで。文に勢い（！や強い語）があるときだけ）
+     強調語の割合=0.4       ← 差し込む割合（既定 0.5）
      [効果]                 ← 組み込みの小さな変形
      感嘆符を落とす=はい ／ 伸ばす=はい ／ 言い切りに！=はい ／ 短くする=はい ／ 言いよどみ=はい
    ■ 使い方
@@ -66,8 +67,10 @@
   T.pick = function (q, who, kg) {
     var s = T.split(q);
     if (!s) return { q: q, dict: null };
-    var tone = who && (HK.toneOf ? HK.toneOf(who) : who.tone), b = T.baseOf(tone, kg);
-    return { q: s[b] || s.K, dict: kg ? null : T.dictOf(tone), base: b };
+    var tone = who && (HK.toneOf ? HK.toneOf(who) : who.tone), b = T.baseOf(tone, kg), q1 = s[b] || s.K;
+    /* alts：選ばなかったベース（既存の書き下ろし辞書は元の文で引いてあるので、3本のどれかに一致すれば使う） */
+    var alts = [s.K, s.F, s.P].filter(function (x, i, a) { return x && x !== q1 && a.indexOf(x) === i; });
+    return { q: q1, dict: kg ? null : T.dictOf(tone), base: b, alts: alts };
   };
 
   /* ---------- 文を切る（文末の処理のため）。tail は …‥っ〜ー♡ など、文末記号の手前の飾り ---------- */
@@ -157,11 +160,13 @@
     var k = 0;
     return body.replace(/([一-鿿々ァ-ヶー]{1,6})(が|は|を)(?=[一-鿿々ぁ-ゖァ-ヶ])/g, function (m, n, p) { k++; return (hash(seed + '#drop' + k) % 100) < rate * 100 ? n : m; });
   }
-  var CONTRACT = [[/([ぁ-ゖ一-鿿々])らない/g, '$1んない'], [/ている/g, 'てる'], [/ちょうだい/g, 'ちょーだい'], [/どれだけ/g, 'どんだけ'], [/こんなの/g, 'こんなん'], [/やっぱり/g, 'やっぱ'], [/大丈夫/g, 'だいじょぶ'], [/するの(?=[？?]|$)/g, 'すんの'], [/てるの(?=[？?]|$)/g, 'てんの'], [/なければ/g, 'なきゃ'], [/てしまう/g, 'ちゃう'], [/でしまう/g, 'じゃう'], [/てしまった/g, 'ちゃった'], [/でしまった/g, 'じゃった'], [/ところ(?![一-鿿])/g, 'とこ'], [/という/g, 'って'], [/しなければ/g, 'しなきゃ'], [/わからない/g, 'わかんない'], [/分からない/g, '分かんない'], [/つまらない/g, 'つまんない']];
+  var CONTRACT = [[/([ぁ-ゖ一-鿿々])(?<![いしか])らない/g, '$1んない'], [/ている/g, 'てる'], [/ちょうだい/g, 'ちょーだい'], [/どれだけ/g, 'どんだけ'], [/こんなの/g, 'こんなん'], [/やっぱり/g, 'やっぱ'], [/大丈夫/g, 'だいじょぶ'], [/するの(?=[？?]|$)/g, 'すんの'], [/てるの(?=[？?]|$)/g, 'てんの'], [/なければ/g, 'なきゃ'], [/てしまう/g, 'ちゃう'], [/でしまう/g, 'じゃう'], [/てしまった/g, 'ちゃった'], [/でしまった/g, 'じゃった'], [/ところ(?![一-鿿])/g, 'とこ'], [/という/g, 'って'], [/しなければ/g, 'しなきゃ'], [/わからない/g, 'わかんない'], [/分からない/g, '分かんない'], [/つまらない/g, 'つまんない']];
   function ruleContract(q) { CONTRACT.forEach(function (c) { q = q.replace(c[0], c[1]); }); return q; }
   var EMPH_AT = /(?<![ぁ-ゖァ-ヶ一-鿿])(すごい|すご|かわいい|可愛い|いい|やばい|ヤバい|うまい|楽しい|嬉しい|うれしい|きれい|面白い|おもしろい|おいしい|つらい|こわい|怖い|痛い|眠い|疲れた|好き|嫌い|無理|ムリ|だめ|ダメ|最高|最悪|きつい|寒い|暑い|重い|遠い|近い|早い|遅い|高い|安い|大変|うざい|ずるい|わかる|分かる|助かる|困る)/;
-  function ruleEmph(q, words, seed) {
-    if (hash(seed + '#emph') % 100 >= 50) return q;
+  var EMPH_HOT = /[！!]|すご|ヤバ|やば|最高|最悪|無理|ムリ|かわいい|可愛い|うれし|嬉し|楽し|たのし|ウケる|面白|おもしろ|びっくり|やった|うそ|ほんと|本当/;
+  function ruleEmph(q, words, seed, rate) {
+    /* 文に勢い（！や強い語）がないときは差し込まない。割合（既定 0.5）は辞書の「強調語の割合」で変えられる */
+    if (!EMPH_HOT.test(q) || hash(seed + '#emph') % 100 >= Math.round((rate == null ? 0.5 : rate) * 100)) return q;
     return q.replace(EMPH_AT, function (m) { return choose(words, seed + '#ew') + m; });
   }
 
@@ -205,7 +210,7 @@
       /* 置き換えた語は印で包み、文末の処理（ます→っす など）が重ねて当たらないようにする */
       q = q.replace(re, function (m) { k++; return MARK + choose(map[m], seed + '#w' + k) + MARK; });
     }
-    if (r.emph && r.emph.length) q = ruleEmph(q, r.emph, seed);
+    if (r.emph && r.emph.length) q = ruleEmph(q, r.emph, seed, r.emphRate);
     /* 文ごと */
     var ss = segs(q);
     ss = ss.map(function (s, i) {
@@ -250,7 +255,7 @@
   };
 
   /* ---------- 辞書の文字列を読む ---------- */
-  var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '存在': 'exist' };
+  var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '強調語の割合': 'emphRate', '存在': 'exist' };
   var FX_KEYS = { '感嘆符を落とす': 'bangOff', '伸ばす': 'stretch', '言い切りに！': 'bangOn', '言い切りに!': 'bangOn', '短くする': 'short', '言いよどみ': 'stammer' };
   function alts(v) { return String(v).split(/[／/]/).map(function (x) { return x.replace(/^\s+|\s+$/g, ''); }).filter(function (x, i, a) { return x !== '' || a.length === 1; }); }
   /* 文字列 → { dicts: { 鍵: 辞書 }, errors } */
@@ -294,6 +299,7 @@
       if (sec === 'rules') {
         var rk = RULE_KEYS[k]; if (!rk) { out.errors.push((i + 1) + '行目：規則「' + k + '」は使えません（否定／進行／断定／助詞落とし／縮約／強調語）'); return; }
         if (rk === 'drop') { var rate = parseFloat(v); cur.rules.drop = rate > 0 ? Math.min(1, rate) : 0; }
+        else if (rk === 'emphRate') { var er = parseFloat(v); cur.rules.emphRate = er >= 0 ? Math.min(1, er) : 0.5; }
         else if (rk === 'contract') cur.rules.contract = yes(v);
         else if (rk === 'emph') cur.rules.emph = alts(v);
         else if (rk === 'neg') { if (/^(ぬ|へん|ん)$/.test(v)) cur.rules.neg = v; else out.errors.push((i + 1) + '行目：否定は ぬ／へん／ん'); }
