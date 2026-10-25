@@ -595,6 +595,23 @@
     if (!/[。！!？?…‥ー〜～っッ♡♪」』）)\]]$/.test(out) && L.indexOf(out.slice(-1)) < 0 && !L.some(function (x) { return out.slice(-x.length) === x; })) out += pick();
     return out;
   };
+  /* 「」の中の「」を『』に（「演劇「ロミオとジュリエット」」→「演劇『ロミオとジュリエット』」）。
+     二人が声を揃える「「いらっしゃい」」（「 が二つ続き、閉じも 」」）はそのまま */
+  V.nestQuote = function (t) {
+    if (typeof t !== 'string' || t.indexOf('「') < 0) return t;
+    var out = '', st = [];
+    for (var i = 0; i < t.length; i++) {
+      var ch = t[i];
+      if (ch === '「') {
+        var uni = t[i - 1] === '「' && st[st.length - 1] === 'o' && (function () { var j = t.indexOf('」', i); return j > 0 && t[j + 1] === '」'; })();
+        if (st.length && !uni) { st.push('n'); out += '『'; continue; }
+        st.push('o'); out += ch; continue;
+      }
+      if (ch === '」' && st.length) { var k = st.pop(); out += k === 'n' ? '』' : '」'; continue; }
+      out += ch;
+    }
+    return st.length ? t : out;
+  };
   V.processResult = function (res, input) {
     if (!res || !input || !input.chars) return res;
     var people = input.chars.map(function (c, i) {
@@ -606,7 +623,7 @@
     var f = function (t, ac) { return V.processText(t, people, ac); };
     /* 描写の作風「男性向け」（ero-kit.js）の結果では、はっきりした口調でも♡を残す（tone-firm.js） */
     V._keepHeart = !HK.SAFE_ON && !!(input.env && input.env.style === 'ero');
-    (res.log || []).forEach(function (e) { if (e && typeof e.text === 'string') e.text = f(e.text, e.actors); });
+    (res.log || []).forEach(function (e) { if (e && typeof e.text === 'string') e.text = V.nestQuote(f(e.text, e.actors)); });
     var E = res.ending || res.end;
     if (E) {
       if (Array.isArray(E.lines)) E.lines = E.lines.map(function (l) { return typeof l === 'string' ? f(l) : l; });
