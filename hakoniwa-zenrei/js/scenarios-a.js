@@ -484,6 +484,8 @@
         var e = ctx.say({ kind: 'event', cat: 'romance', actors: [c.a, c.b], text: night ? c.a.name + 'と' + c.b.name + 'は、店を出たあと同じタクシーに乗った。' + (gn ? gn.text : 'その先のことは、二人しか知らない。') + (gn ? '' : (function () {
           /* 受け攻めの指定どおりの「翌朝」 */
           var tb = HK.Pos ? HK.Pos.order(c.a, c.b, [c.a, c.b]) : [c.a, c.b];
+          /* 全年齢版・全年齢モードは、体の名残を書かない翌朝 */
+          if (HK.SAFE_ON) return ctx.t(rng.pick(['――翌朝、{a}は二人分のコーヒーを淹れた。{b}は寝ぐせのまま、照れくさそうにそれを受け取った。', '――翌朝、{b}は{a}の部屋の窓から、知らない街の景色を眺めていた。{a}は後ろから「おはよう」とだけ言った。', '――翌朝、二人は駅まで並んで歩いた。昨夜より、少しだけ距離が近かった。']), tb[0], tb[1]);
           return ctx.t(rng.pick(['――翌朝、{b}は少しだけ腰をかばうように歩いていた。{a}はそれに気づいて、黙って{b}の荷物を持った。', '――翌朝、{a}の背中には{b}の爪の痕が残っていた。{b}は目を合わせずに「……強すぎ」とだけ言った。', '――翌朝、{b}は{a}のシャツを着たまま、ベッドから起き上がれずにいた。', '――翌朝、{a}は先に起きて、まだ眠っている{b}の髪をそっと撫でた。']), tb[0], tb[1]);
         })()) + (!gn && outc ? rng.pick(SOFT_END[outc]) : '') : c.a.name + 'と' + c.b.name + 'は駅まで一緒に歩いた。' + (walkLove ? ctx.t(rng.pick(WALK_LOVE), c.a, c.b) : (ctx.pair(c.a, c.b).couple ? '繋いだ手を、改札の前でなかなか離せなかった。' : '改札で別れるのに少し時間がかかった。')), why: '互いの惹かれ（' + Math.round(Math.min(R(ctx, c.a, c.b).att, R(ctx, c.b, c.a).att)) + '）' + (night ? 'と酔いによる衝動性' : '') + (gn ? '／夜：' + gn.label : outc ? '／その後：' + { keep: '恋人のまま', lover: '恋人になる', fwb: 'セフレに落ち着く', forget: 'なかったことにする', unsure: 'まだ答えが出ない' }[outc] : ''), mag: 25 });
         ctx.pair(c.a, c.b).moments.push({ n: e.n, mag: 25 });
