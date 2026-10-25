@@ -82,25 +82,28 @@
     return best;
   }
   function mapSvg(res) {
-    var n = res.chars.length, big = n > 12;
-    var focus = tl.who.length === 1 ? tl.who[0] : null;
     /* 派閥の囲み・線の絞り込み・間引き（view-map.js）。なければ従来どおり楕円に並べる */
     var MV = HK.MapView;
-    var LY = MV ? MV.layout(res, big, mapLayout) : mapLayout(n, big), W = LY.W, H = LY.H, NR = LY.NR, pos = LY.pos;
+    /* 絞り込み（全員／派閥ごと／個人ごと）：絞った人だけの結果 R で描き、丸の番号・色は元の番号（orig）に戻す */
+    var sub = MV && MV.subset ? MV.subset(res) : null, R = sub ? MV.subRes(res, sub) : res;
+    var orig = function (k) { return sub ? sub[k] : k; };
+    var n = R.chars.length, big = n > 12;
+    var focus = tl.who.length === 1 ? (sub ? (sub.indexOf(tl.who[0]) < 0 ? null : sub.indexOf(tl.who[0])) : tl.who[0]) : null;
+    var LY = MV ? MV.layout(R, big, mapLayout) : mapLayout(n, big), W = LY.W, H = LY.H, NR = LY.NR, pos = LY.pos;
     var defs = '<defs>' + Object.keys(CLS_VAR).map(function (k) {
       return '<marker id="ar-' + k + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(' + CLS_VAR[k] + ')"/></marker>';
     }).join('') + '</defs>';
     /* 住人の丸と、その下の名前・結末の文字が占める範囲 */
     var nameFs = big ? 11 : 13, fateFs = big ? 9 : 11;
     var shortName = function (c) { return c.name.length > (big ? 6 : 8) ? c.name.slice(0, big ? 6 : 8) + '…' : c.name; };
-    var boxes = res.chars.map(function (c, i) {
+    var boxes = R.chars.map(function (c, i) {
       var P = pos[i], w = Math.max(NR * 2 + 4, tw(shortName(c), nameFs), tw(c.fate || '', fateFs)) + 6;
       return { x1: P.x - w / 2, x2: P.x + w / 2, y1: P.y - NR - 3, y2: P.y + LY.below - 2 };
     });
     var edges = '', labels = '', placed = (LY.taken || []).slice();
-    var pairs = res.pairs.filter(function (p) { return p.label !== 'strangers'; });
+    var pairs = R.pairs.filter(function (p) { return p.label !== 'strangers'; });
     var faint = [];
-    if (MV) { var pk = MV.pick(res, pairs, focus, big, LY); pairs = pk.draw.concat(pk.faint); faint = pk.faint; }
+    if (MV) { var pk = MV.pick(R, pairs, focus, big, LY); pairs = pk.draw.concat(pk.faint); faint = pk.faint; }
     else if (big) {
       /* 大人数では、強い関係と意外な関係だけを描く（選択中の人物の線は全部） */
       pairs = pairs.filter(function (p) { return p.cls !== 'friend' && p.cls !== 'none' && p.label !== 'awkward' || p.surprise || (focus != null && (p.a === focus || p.b === focus)); })
@@ -166,8 +169,8 @@
       placed.push(best);
       labels += '<text x="' + best.cx.toFixed(1) + '" y="' + (best.cy + labFs * 0.36).toFixed(1) + '" text-anchor="middle" class="elab" style="fill:' + col + ';opacity:' + (faded ? 0.2 : 1) + '">' + esc(txt) + '</text>';
     });
-    var nodes = res.chars.map(function (c, i) {
-      var P = pos[i], dead = !c.alive;
+    var nodes = R.chars.map(function (c, k) {
+      var P = pos[k], dead = !c.alive, i = orig(k);
       var sel = tl.who.indexOf(i) >= 0;
       return '<g class="node" data-act="node" data-i="' + i + '" tabindex="0" role="button" aria-label="' + esc(c.name) + 'の経過を絞り込む" style="cursor:pointer">' +
         '<circle cx="' + P.x.toFixed(1) + '" cy="' + P.y.toFixed(1) + '" r="' + NR + '" class="nodebg" style="--c:' + pc(i) + ';stroke:' + pc(i) + ';stroke-width:' + (sel ? 5 : big ? 2 : 3) + ';opacity:' + (dead ? 0.6 : 1) + '"' + (dead ? ' stroke-dasharray="4 3"' : '') + '/>' +

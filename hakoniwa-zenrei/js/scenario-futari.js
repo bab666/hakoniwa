@@ -32,7 +32,7 @@
     return { m: dt.getMonth() + 1, d: dt.getDate(), w: dt.getDay() };
   }
   function dayLabel(env, d) { var x = dateOf(env, d); return x.m + '月' + x.d + '日（' + WD[x.w] + '）'; }
-  function daysOf(env) { var n = +(env && env.days); return isNaN(n) ? 30 : Math.max(7, Math.min(90, Math.round(n))); }
+  function daysOf(env) { var n = +(env && env.days); return isNaN(n) ? 7 : Math.max(7, Math.min(30, Math.round(n))); }
 
   /* ---------- 文の選び方：同じ回の中で同じ文を使わない。[m][d][e][n] を頭に付けた文は、その時間帯だけ ---------- */
   function tOk(x, tag) { var m = /^\[([mden]+)\]/.exec(x); return !m || m[1].indexOf(tag) >= 0; }
@@ -455,7 +455,7 @@
     derived: ['warmth', 'honesty', 'jealous', 'impulse'],
     exclude: ['confess', 'take_charge', 'brood', 'lighten'],
     env: [
-      { id: 'days', label: '日数', min: 3, max: 30, def: 7, lo: '3日', hi: '30日', unit: '日', desc: '見守る日数（既定は1週間）。1日は朝・昼・夕方・夜の4区切り。同棲や結婚の約束までの間は日数に合わせて縮みます' },
+      { id: 'days', label: '日数', min: 7, max: 30, def: 7, lo: '1週間', hi: '30日', unit: '日', desc: '見守る日数（既定は1週間）。1日は朝・昼・夕方・夜の4区切り。同棲や結婚の約束までの間は日数に合わせて縮みます' },
       { id: 'living', label: '暮らし方', type: 'select', def: 'apart', options: [{ v: 'apart', label: '別々に住んでデート' }, { v: 'cohab', label: '同居（はじめから同じ部屋）' }, { v: 'share', label: 'シェアハウス' }], desc: '別々に住む二人は、デートの日・夕方の待ち合わせ・お泊まりの日だけ一緒にいる。恋人になってしばらくすると、一緒に暮らし始める' },
       { id: 'season', label: '始まりの季節', type: 'select', def: 'spring', options: [{ v: 'spring', label: '春（4月1日から）' }, { v: 'summer', label: '夏（7月1日から）' }, { v: 'autumn', label: '秋（10月1日から）' }, { v: 'winter', label: '冬（12月1日から）' }], desc: '季節の場面（花見・夏祭り・紅葉・こたつなど）と、海・夏祭り・花火の旅先が変わる' },
       { id: 'pace', label: '恋愛の進み', type: 'select', def: 'normal', options: [{ v: 'slow', label: 'ゆっくり' }, { v: 'normal', label: 'ふつう' }, { v: 'fast', label: '早い' }], desc: '友人→両片想い→恋人→同棲→結婚の約束へ進む速さ' }
@@ -535,7 +535,7 @@
     ctx.place = '二人の暮らし';
     var days = daysOf(env), living = /^(apart|cohab|share)$/.test(env.living) ? env.living : 'apart';
     if (living === 'cohab' && n >= 3) living = 'share';
-    ctx.ft = { days: days, living: env.living === 'cohab' && n >= 3 ? 'cohab3' : living, liv: living, pace: PACE[env.pace] || 1, g: Math.max(1, 30 / Math.max(3, days)), day: 0, t: 0, hol: false,
+    ctx.ft = { days: days, living: env.living === 'cohab' && n >= 3 ? 'cohab3' : living, liv: living, pace: PACE[env.pace] || 1, g: Math.max(1, 30 / Math.max(7, days)), day: 0, t: 0, hol: false,
       st: {}, home: {}, plan: {}, slept: {}, used: {}, trip: null, lastTrip: -99, gplan: false,
       dates: {}, fights: {}, makeups: {}, beds: {}, r18: {}, happy: {}, tags: {}, l0: 0, prevCouple: {}, cf: {} };
     /* 段階を進める速さ（区切りの数が多い長い回でも、同じくらいの日数で進むように） */
@@ -1034,7 +1034,7 @@
         '「複数の恋人：あり」で三人が円満な恋人になると、三人で並んで眠る夜や、三人の暮らしの場面が出ます。'
       ] },
       { h: '設定のコツ', items: [
-        '「日数」は3〜30日（既定は1週間）。同棲・結婚の約束までの間は日数に合わせて縮むので、1週間でも結ばれるまで見られます。じっくり見たいなら日数を増やすか、「恋愛の進み」を「ゆっくり」に。',
+        '「日数」は1週間〜30日のスライダー（既定は1週間）。同棲・結婚の約束までの間は日数に合わせて縮むので、1週間でも結ばれるまで見られます。じっくり見たいなら日数を増やすか、「恋愛の進み」を「ゆっくり」に。',
         '「恋愛の進み」が「ゆっくり」だと、両片想いの時間が長くなります。',
         '「始まりの季節」で、花見・夏祭り・紅葉・こたつなどの季節の場面が変わります。',
         '関係の設定で「恋人」にした二人は恋人から、「夫婦」なら一緒に暮らす夫婦として始まります。「友達以上恋人未満」は両片想いから始まります。',

@@ -1,5 +1,6 @@
 /* 箱庭シミュレーター view-map: 関係図の派閥の囲み・線の絞り込みと間引き、クラスメイトの「学年・クラス」の図
-   view.js の mapSvg から呼ばれる（HK.MapView.layout / pick / drawn）。結果画面の図の上のチップ（data-act="mapf"）もここで受ける */
+   view.js の mapSvg から呼ばれる（HK.MapView.layout / pick / drawn / subset / subRes）。結果画面の図の上のチップ（data-act="mapf"）と
+   絞り込みのプルダウン（data-act="mapsub"：全員／派閥ごと／個人ごと＝その人と直接の関係がある人。スマホで大人数の図が見づらいときに）もここで受ける */
 (function () {
   'use strict';
   var HK = window.HK, esc = HK.escape, V = HK.View;
@@ -9,9 +10,10 @@
 
   /* ---------- 状態（結果ごとに初期化） ---------- */
   /* 既定（auto）：12人以上は「派閥の中は描かない＋恋愛・対立・家族と立場」。11人以下は線が少ないので、これまでどおり全部描く */
-  var st = { res: null, mode: 'auto', inner: false, stat: null };
+  var st = { res: null, mode: 'auto', inner: false, stat: null, sub: 'all' };
   function few(res) { return res.chars.length < 12; }
-  function S(res) { if (st.res !== res) st = { res: res, mode: 'auto', inner: few(res), stat: null }; return st; }
+  /* 絞り込み中は、元の結果（res._base）を鍵にする（絞った結果は描くたびに作り直すので） */
+  function S(res) { var b = res._base || res; if (st.res !== b) st = { res: b, mode: 'auto', inner: few(b), stat: null, sub: 'all' }; return st; }
   /* 派閥の色（住人の色と別にして、派閥どうしを見分けやすく） */
   var FCOL = ['#e8590c', '#1c7ed6', '#2b8a3e', '#ae3ec9', '#c92a2a', '#0c8599'];
   function fcol(res, g) { var k = M.groups(res).indexOf(g); return FCOL[(k < 0 ? 0 : k) % FCOL.length]; }
@@ -79,6 +81,80 @@
 
   /* ---------- 線の種類 ---------- */
   var ROLE = { teacher: 1, boss: 1, master: 1, mentor: 1, benefactor: 1, parent: 1, pparent: 1, senpai: 1 };
+  /* ---------- 絞り込み（プルダウン）：全員／派閥ごと／個人ごと ---------- */
+  /* 個人：その人と、直接の関係がある人（強い順に11人まで。恋愛・家族は優先） */
+  var SUB_MAX = 12;
+  function around(res, i) {
+    var cand = [];
+    res.pairs.forEach(function (p) {
+      if (p.label === 'strangers' || (p.a !== i && p.b !== i)) return;
+      var o = p.a === i ? p.b : p.a;
+      if (!res.chars[o]) return;
+      var D = p.tie && HK.TIES && HK.TIES[p.tie.type], fam = !!(D && D.family);
+      var w = (p.cls === 'love' ? 1000 : 0) + (fam ? 800 : 0) + (p.cls === 'enemy' || p.cls === 'kill' || p.cls === 'obsess' ? 400 : 0) + (p.surprise ? 200 : 0) + (p.intensity || 0);
+      var had = cand.filter(function (c) { return c.o === o; })[0];
+      if (had) had.w = Math.max(had.w, w); else cand.push({ o: o, w: w });
+    });
+    cand.sort(function (x, y) { return y.w - x.w || x.o - y.o; });
+    return [i].concat(cand.slice(0, SUB_MAX - 1).map(function (c) { return c.o; })).sort(function (a, b) { return a - b; });
+  }
+  /* いま選ばれている絞り込みの住人（元の番号の配列）。全員なら null */
+  M.subset = function (res) {
+    var s = S(res), v = s.sub || 'all', G = M.groups(res);
+    if (v === 'all' || res.chars.length < 3) return null;
+    var m = /^g:(\d+)$/.exec(v);
+    if (m) { var g = G[+m[1]]; return g && g.members.length >= 2 ? g.members.slice().sort(function (a, b) { return a - b; }) : null; }
+    m = /^p:(\d+)$/.exec(v);
+    if (m && res.chars[+m[1]]) { var out = around(res, +m[1]); return out.length >= 2 ? out : null; }
+    return null;
+  };
+  /* 絞った人だけの結果（番号を詰め直す。res._base に元の結果、res._orig[k] に元の番号） */
+  M.subRes = function (res, sub) {
+    var map = {}; sub.forEach(function (i, k) { map[i] = k; });
+    var chars = sub.map(function (i) { return res.chars[i]; });
+    var pairs = [];
+    res.pairs.forEach(function (p) {
+      if (map[p.a] == null || map[p.b] == null) return;
+      var q = Object.create(p); q.a = map[p.a]; q.b = map[p.b]; q.dir = p.dir != null && map[p.dir] != null ? map[p.dir] : (p.dir == null ? p.dir : null);
+      pairs.push(q);
+    });
+    var F = null, G = M.groups(res);
+    if (G.length && G[0].kind === 'faction') {
+      var gs = [];
+      G.forEach(function (g) {
+        if (map[g.leader] == null) return;
+        var mem = g.members.filter(function (m) { return map[m] != null; }).map(function (m) { return map[m]; });
+        if (mem.length >= 2) gs.push({ leader: map[g.leader], members: mem, regime: g.dict ? 'dictator' : undefined });
+      });
+      F = { final: { groups: gs.map(function (g) { return { leader: g.leader, members: g.members }; }), regime: gs.some(function (g) { return g.regime; }) ? 'dictator' : undefined } };
+    }
+    var r2 = Object.create(res);
+    r2.chars = chars; r2.pairs = pairs; r2.factions = F; r2._base = res; r2._orig = sub;
+    return r2;
+  };
+  /* 絞り込みの選択肢 */
+  function subSelect(res) {
+    var s = S(res), G = M.groups(res), ring = G.length && G[0].kind === 'ring';
+    var o = '<option value="all"' + (s.sub === 'all' ? ' selected' : '') + '>全員（' + res.chars.length + '人）</option>';
+    if (G.length) {
+      o += '<optgroup label="' + (ring ? 'まとまりごと' : '派閥ごと') + '">' + G.map(function (g, k) {
+        return '<option value="g:' + k + '"' + (s.sub === 'g:' + k ? ' selected' : '') + '>' + esc(g.name) + '（' + g.members.length + '人）</option>';
+      }).join('') + '</optgroup>';
+    }
+    o += '<optgroup label="個人ごと（その人と、直接の関係がある人）">' + res.chars.map(function (c, i) {
+      return '<option value="p:' + i + '"' + (s.sub === 'p:' + i ? ' selected' : '') + '>' + esc(c.name) + '</option>';
+    }).join('') + '</optgroup>';
+    return '<label class="mapsub"><span class="hint" style="margin:0">絞り込み：</span><select data-act="mapsub" aria-label="関係図の絞り込み">' + o + '</select></label>';
+  }
+  function subNote(res) {
+    var sub = M.subset(res), s = S(res);
+    if (!sub) return '';
+    var m = /^p:(\d+)$/.exec(s.sub || '');
+    if (m) return res.chars[+m[1]].name + 'と、直接の関係がある' + (sub.length - 1) + '人だけを表示' + (sub.length >= SUB_MAX ? '（強い関係から' + (SUB_MAX - 1) + '人まで）' : '') + '。';
+    var g = M.groups(res)[+(/^g:(\d+)$/.exec(s.sub) || [])[1]];
+    return (g ? g.name : '選んだまとまり') + 'の' + sub.length + '人だけを表示。';
+  }
+
   function tags(p) {
     var t = {};
     if (p.cls === 'love' || p.cls === 'pine' || p.cls === 'night') t.love = 1;
@@ -107,6 +183,8 @@
   /* 図に描く線を選ぶ：派閥の中は省く・種類で絞る・大人数では一人あたり強い順に4本まで（残りは薄い点線） */
   M.pick = function (res, pairs, focus, big) {
     var hasG = hullOn(res), s = S(res), gof = hasG ? groupOf(res) : {}, small = few(res);
+    /* 一つの派閥だけに絞っているときは、派閥の中の線を省くと何も残らないので描く */
+    var gOnly = !!(res._base && /^g:/.test(s.sub || ''));
     var draw = [], faint = [], hidden = { inner: 0, kind: 0, thin: 0 };
     var cand = [];
     pairs.forEach(function (p) {
@@ -114,7 +192,7 @@
       var mine = focus != null && (p.a === focus || p.b === focus);
       if (mine) { if (s.mode === 'auto' || inMode(p, s.mode, cross, small)) cand.push({ p: p, must: true }); else hidden.kind++; return; }
       /* 派閥の中は描かない（恋人・両片想いなど、はっきりした恋愛の線だけは残す） */
-      if (same && !s.inner && !(p.cls === 'love' && s.mode !== 'enemy' && s.mode !== 'kin')) { hidden.inner++; return; }
+      if (same && !s.inner && !gOnly && !(p.cls === 'love' && s.mode !== 'enemy' && s.mode !== 'kin')) { hidden.inner++; return; }
       if (!inMode(p, s.mode, cross, small)) { hidden.kind++; return; }
       cand.push({ p: p });
     });
@@ -265,20 +343,27 @@
     var hasG = hullOn(res);
     var chips = MODES.map(function (m) {
       return '<button class="chip" data-act="mapf" data-m="' + m.id + '" aria-pressed="' + (s.mode === m.id) + '">' + esc(m.label) + '</button>';
-    }).join('') + (hasG ? '<button class="chip" data-act="mapf" data-m="inner" aria-pressed="' + !!s.inner + '">派閥の中も見る</button>' : '');
+    }).join('') + (hasG && !/^g:/.test(s.sub || '') ? '<button class="chip" data-act="mapf" data-m="inner" aria-pressed="' + !!s.inner + '">派閥の中も見る</button>' : '');
     var h = s.stat ? s.stat.hidden : null, d = s.drawn || {};
-    var now = s.mode === 'auto' ? (few(res) ? '全部の線' : '恋愛・対立・家族と立場の線' + (hasG ? '（派閥どうしの線も。派閥の中は恋人などだけ）' : '')) : (MODES.filter(function (m) { return m.id === s.mode; })[0] || {}).label + 'の線';
+    var now = s.mode === 'auto' ? (few(res) ? '全部の線' : '恋愛・対立・家族と立場の線' + (hasG && !/^g:/.test(s.sub || '') ? '（派閥どうしの線も。派閥の中は恋人などだけ）' : '')) : (MODES.filter(function (m) { return m.id === s.mode; })[0] || {}).label + 'の線';
     var parts = [];
     if (d.lines != null) parts.push('線' + d.lines + '本');
     if (d.faint) parts.push('薄い点線' + d.faint + '本（一人あたり強い順に4本まで）');
-    if (h && h.inner && hasG && !s.inner) parts.push('派閥の中の' + h.inner + '本は省略');
+    if (h && h.inner && hasG && !s.inner && !/^g:/.test(s.sub || '')) parts.push('派閥の中の' + h.inner + '本は省略');
     if (h && h.kind) parts.push('ほかの種類' + h.kind + '本は非表示');
     if (h && h.thin) parts.push('弱い' + h.thin + '本は省略');
     if (d.labSkip) parts.push('重なるラベル' + d.labSkip + '個は省略');
-    return '<div class="mapbar"><span class="hint" style="margin:0">線：</span>' + chips +
+    var sn = subNote(res);
+    return '<div class="mapbar">' + subSelect(res) + '</div><div class="mapbar"><span class="hint" style="margin:0">線：</span>' + chips +
       (s.mode !== 'auto' || s.inner !== few(res) ? '<button class="btn small ghost" data-act="mapf" data-m="auto">既定に戻す</button>' : '') + '</div>' +
-      '<p class="hint mapnote">いまは' + esc(now) + 'を表示。' + esc(parts.join('・')) + (parts.length ? '。' : '') + (hasG ? '丸の囲みは派閥（★がリーダー）。' : '') + '</p>';
+      '<p class="hint mapnote">' + esc(sn) + 'いまは' + esc(now) + 'を表示。' + esc(parts.join('・')) + (parts.length ? '。' : '') + (hasG ? '丸の囲みは派閥（★がリーダー）。' : '') + '</p>';
   };
+  document.addEventListener('change', function (ev) {
+    var t = ev.target.closest && ev.target.closest('select[data-act="mapsub"]');
+    if (!t || !st.res) return;
+    st.sub = t.value || 'all';
+    V.refreshTimeline();
+  });
   document.addEventListener('click', function (ev) {
     var t = ev.target.closest && ev.target.closest('[data-act="mapf"]');
     if (!t || !st.res) return;
@@ -379,6 +464,7 @@
   var css = '.fhull{fill:var(--surface);fill:color-mix(in srgb,var(--c) 9%,transparent);stroke-width:1.6;stroke-opacity:.55}' +
     '.fhlab{font-size:12px;font-weight:700;paint-order:stroke;stroke:var(--sand);stroke-width:4px;stroke-linejoin:round}' +
     '.mapbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px}.mapnote{margin:0 0 6px;font-size:11px}' +
+    '.mapsub{display:inline-flex;align-items:center;gap:6px;max-width:100%}.mapsub select{max-width:min(100%,320px);font-size:13px;padding:4px 6px}' +
     '.kpanel{padding:12px}.kframes{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}' +
     '.kgrade{border:1px solid var(--line);border-radius:var(--r,6px);background:var(--bg);padding:8px 10px;min-width:0}.kgrade h3{margin:0 0 6px;font-size:14px}' +
     '.kroom+.kroom{margin-top:8px}.khd{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap}.khd .kn{margin-left:auto}.khd .kt{color:var(--ink);font-weight:600}' +
