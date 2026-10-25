@@ -299,10 +299,13 @@
       [[x, y], [y, x]].forEach(function (p) { var r = ctx.R(p[0], p[1]); if (r.att > SEXONLY_ATT) r.att = SEXONLY_ATT; });
     }
   }
+  /* 体の関係の出来事か（出来事の定義の印 sex:true）。say・act2 に渡された印がなければ、いま act() が起こしている出来事（ctx._ev）の印を見る */
+  function sexEv(ctx, o) { return { sex: o && o.sex != null ? !!o.sex : !!(ctx._ev && ctx._ev.sex) }; }
+  HK.sexEv = sexEv;
   Ctx.prototype.say = function (o) {
     if (o.actors && o.actors.length >= 2 && this.chars && this.chars.some(function (c) { return c.lock != null; })) sexOnlyFix(this, o.actors);
     /* 恋愛が起きない組の恋愛の出来事は、記録に残さない（呼び出し側が e.n などを使えるよう、空の出来事を返す） */
-    if (o.cat === 'romance' && o.kind !== 'phase' && !this.romanceOk(o.actors)) return { n: this.log.length, step: this.stepIndex, cat: 'romance', actors: [], text: '', mag: 0, kind: 'event', skipped: true };
+    if (o.cat === 'romance' && o.kind !== 'phase' && !this.romanceOk(o.actors, sexEv(this, o))) return { n: this.log.length, step: this.stepIndex, cat: 'romance', actors: [], text: '', mag: 0, kind: 'event', skipped: true };
     /* 監禁（執着の暴走）されている人は場に出てこない：執着の出来事（監禁の日々・逃走・救出・解放）と死のほかは、記録に残さない
        （present() から外れているが、名簿を直接たどる箱庭の出来事もあるので、ここで最後に止める） */
     if (!o.cageOk && o.kind !== 'step' && o.kind !== 'phase' && o.kind !== 'death' && (o.actors || []).some(function (c) { return c && c.flags && c.flags.caged != null; }))
@@ -324,14 +327,14 @@
 
   /* 出来事の中で一人ずつの反応を記録する。o: {actors, cat, text|fn→text, why, fx, mag, k} */
   /* 恋愛の出来事を起こしてよいか：恋愛の起こりやすさが0、恋愛対象が「なし」・合わない人どうしでは起こさない（もう恋人どうしの二人は別） */
-  Ctx.prototype.romanceOk = function (actors) {
+  Ctx.prototype.romanceOk = function (actors, ev) {
     var L = (actors || []).filter(Boolean), a = L[0], b = L[1];
     /* 一途（住人の設定 faithful）：恋人がいる間は、恋人でない人と恋愛の出来事を起こさない（poly.js） */
     if (HK.Poly && !HK.Poly.faithOk(this, L)) return false;
     /* 恋愛・R18にしない組（キャラの設定）が一組でも入っていれば、どの箱庭でも起こさない */
-    /* ただし「恋愛はしないが体の関係は許されている組」（HK.lockSexOnly）は通す。恋愛の出来事は HK.canLove（恋愛相手の固定を見る）で止まり、
-       体の関係の出来事だけが起きる。起きたあとは Ctx.say で恋愛に進まないように補正する */
-    for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j]) && !HK.lockSexOnly(L[i], L[j])) return false;
+    /* ただし「恋愛はしないが体の関係は許されている組」（HK.lockSexOnly）は、体の関係の出来事（ev.sex）だけ通す。
+       出来事（ev）を渡されたのに体の出来事でなければ、恋愛の出来事として止める（渡されないときは通す。起きたあとは Ctx.say で恋愛に進まないように補正する） */
+    for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j]) && (!HK.lockSexOnly(L[i], L[j]) || (ev && !ev.sex))) return false;
     /* 恋愛なしの家族は、恋愛が中心の箱庭（romanceCore）でも恋愛の出来事を起こさない */
     if (a && b && this.pair(a, b).kin) return false;
     /* 歪んだ関係から離れる決心をした二人（tie-abuse.js の abFree）は、もう恋愛の出来事を起こさない。
@@ -347,7 +350,7 @@
     return !(a && a.likes === 'none');
   };
   Ctx.prototype.act2 = function (o) {
-    if (o.cat === 'romance' && !this.romanceOk(o.actors)) return null;
+    if (o.cat === 'romance' && !this.romanceOk(o.actors, sexEv(this, o))) return null;
     this.k = o.k || (0.8 + this.rng() * 0.4);
     this._mag = 0; this._touched = {};
     var r = o.fx ? o.fx() : null;
@@ -355,7 +358,7 @@
     var why = typeof o.why === 'function' ? o.why(r) : o.why;
     if (!text) { this.flush(); return null; }
     var actors = (o.actors || []).filter(Boolean);
-    var e = this.say({ kind: 'event', cat: o.cat || 'bond', actors: actors, text: text, why: why || '', mag: this._mag + (o.mag || 0), odd: !!o.odd });
+    var e = this.say({ kind: 'event', cat: o.cat || 'bond', actors: actors, text: text, why: why || '', mag: this._mag + (o.mag || 0), odd: !!o.odd, sex: sexEv(this, o).sex });
     if (actors[0]) actors[0].cats[e.cat] = (actors[0].cats[e.cat] || 0) + 1;
     if (o.odd && actors[0]) actors[0].odd.push(e.n);
     for (var kk in this._touched) { var pr = this._touched[kk]; this.pair(pr[0], pr[1]).moments.push({ n: e.n, mag: e.mag }); }
@@ -676,8 +679,8 @@
       if (tieOff && e.id && HK.TIE_EV_RE.test(e.id)) return;
       var bb = e.scope === 'pair' ? b : null;
       if (e.when && !e.when(ctx, a, bb)) return;
-      if (e.cat === 'romance' && bb && a.lock != null && a.lock !== bb.i) return;
-      if (e.cat === 'romance' && !ctx.romanceOk(bb ? [a, bb] : [a])) return;
+      if (e.cat === 'romance' && bb && a.lock != null && a.lock !== bb.i && !(e.sex && HK.lockSexOnly(a, bb))) return;
+      if (e.cat === 'romance' && !ctx.romanceOk(bb ? [a, bb] : [a], e)) return;
       var w = e.w(ctx, a, bb);
       if (!(w > 0)) return;
       w *= ctx.bias(a, e.cat);
@@ -708,16 +711,22 @@
     var odd = cands.length > 3 && !pick.e.pri && !pick.e.noOdd && pick.w < maxW * (pick.e.mini ? 0.055 : 0.16) && pick.w < mean * (pick.e.mini ? 0.3 : 0.45);
     ctx.k = HK.clamp(1 + (rng() - 0.5) * (0.5 + ctx.chaos), 0.3, 2);
     ctx._mag = 0; ctx._touched = {};
+    /* いま起こしている出来事（体の関係の印 sex を、出来事の中の say・act2 にも効かせる。sexEv） */
+    var ev0 = ctx._ev; ctx._ev = pick.e;
+    try { actRun(ctx, a, pick, odd); } finally { ctx._ev = ev0; }
+  }
+  function actRun(ctx, a, pick, odd) {
     var res = pick.e.run(ctx, a, pick.b);
     if (!res) return;
     var cat = res.cat || pick.e.cat;
+    var sex = res.sex != null ? !!res.sex : !!pick.e.sex;
     /* 出来事の側で恋愛に変わったときも、恋愛が起きない組なら書かない */
-    if (cat === 'romance' && !ctx.romanceOk(pick.b ? [a, pick.b] : [a])) return;
+    if (cat === 'romance' && !ctx.romanceOk(pick.b ? [a, pick.b] : [a], { sex: sex })) return;
     var actors = [a];
     if (pick.b) actors.push(pick.b);
     if (res.with) res.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
     if (res.odd) odd = true;
-    var e = ctx.say({ kind: 'event', cat: cat, actors: actors, text: res.text, why: res.why, odd: odd, mag: ctx._mag + (res.mag || 0), cageOk: /^ob_/.test(pick.e.id || '') });
+    var e = ctx.say({ kind: 'event', cat: cat, actors: actors, text: res.text, why: res.why, odd: odd, mag: ctx._mag + (res.mag || 0), cageOk: /^ob_/.test(pick.e.id || ''), sex: sex });
     if (e.skipped) return;
     a.cats[cat] = (a.cats[cat] || 0) + 1;
     if (odd) a.odd.push(e.n);

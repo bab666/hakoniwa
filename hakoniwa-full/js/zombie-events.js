@@ -467,7 +467,7 @@
     }
   });
   EV.push({
-    id: 'z_close', cat: 'romance', scope: 'pair',
+    id: 'z_close', cat: 'romance', sex: true, scope: 'pair',
     when: function (ctx, a, b) { var pf = ctx.pair(a, b); return HK.canLove(a, b) && HK.canLove(b, a) && (pf.couple || (ctx.R(a, b).att > 40 && ctx.R(b, a).att > 36)) && !pf.zclose; },
     w: function (ctx, a, b) { return 0.5 + ctx.R(a, b).att / 80 + (Z.part(ctx) === 3 ? 0.6 : 0); },
     run: function (ctx, a, b) {

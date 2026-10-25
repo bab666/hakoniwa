@@ -104,7 +104,7 @@
 
   /* ======================= 恋人：最後かもしれない夜 ======================= */
   EV.push({
-    id: 'z_lv_night', cat: 'romance', scope: 'pair',
+    id: 'z_lv_night', cat: 'romance', sex: true, scope: 'pair',
     when: function (ctx, a, b) {
       if (Z.loveLv(ctx) === 'off' || !Z.isLover(ctx, a, b)) return false;
       /* 受け攻めの向きが決まらない組（攻め×攻めなど）は、恋人でも夜を過ごさない */
@@ -301,7 +301,7 @@
           pf.night = true;
           var txm = fill(ctx.pick(LV.pressM), m) + fill(ctx.pick(LV.pressMYes), m);
           if (Z.loveLv(ctx) === 'high' && LV.pressHigh) txm += LV.pressHigh(ctx, a, b);
-          return { cat: 'romance', text: txm, why: a.name + 'は、どうせ終わる世界ならと踏み込んだ（攻撃性・衝動性）／両片想いだった。' + b.name + 'は拒まなかった', mag: 34 };
+          return { cat: 'romance', sex: true, text: txm, why: a.name + 'は、どうせ終わる世界ならと踏み込んだ（攻撃性・衝動性）／両片想いだった。' + b.name + 'は拒まなかった', mag: 34 };
         }
         [[a, b], [b, a]].forEach(function (p) {
           var x = p[0], y = p[1];
@@ -324,7 +324,7 @@
         else ctx.mod2(a, b, { ten: 6 }, { ten: 18, trust: -18, aff: -10 });
         var tx = fill(ctx.pick(LV.press), m) + fill(ctx.pick(ok ? LV.pressYes : LV.pressNo), m);
         if (ok && Z.loveLv(ctx) === 'high' && LV.pressHigh) tx += LV.pressHigh(ctx, a, b);
-        return { cat: ok ? 'romance' : 'conflict', text: tx, why: a.name + 'は、どうせ終わる世界ならと関係を迫った（攻撃性・衝動性）' + (ok ? '' : '／' + b.name + 'は拒んだ'), mag: 32 };
+        return { cat: ok ? 'romance' : 'conflict', sex: ok, text: tx, why: a.name + 'は、どうせ終わる世界ならと関係を迫った（攻撃性・衝動性）' + (ok ? '' : '／' + b.name + 'は拒んだ'), mag: 32 };
       }
       a.focus = b; a.z.vow = b.i;
       if (a.goal.id !== 'chaos' && a.goal.id !== 'family') a.goal = Z.scen.goals.filter(function (g) { return g.id === 'protect'; })[0] || a.goal;

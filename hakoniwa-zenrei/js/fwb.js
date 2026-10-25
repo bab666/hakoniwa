@@ -45,7 +45,7 @@
 
   F.events = [
     {
-      id: 'fwb_offer', cat: 'romance', scope: 'pair', pri: true,
+      id: 'fwb_offer', cat: 'romance', sex: true, scope: 'pair', pri: true,
       when: function (ctx, a, b) { var pf = ctx.pair(a, b); return F.allowed(ctx) && pf.night && !pf.couple && !pf.fwb && !pf.fwbAsked && !pf.forced && (!HK.Pos || HK.Pos.okSex(a, b)); },
       w: function (ctx, a) { return 0.8 + F.lean(a) * 1.5; },
       run: function (ctx, a, b) {
@@ -60,7 +60,7 @@
       }
     },
     {
-      id: 'fwb_again', cat: 'romance', scope: 'pair',
+      id: 'fwb_again', cat: 'romance', sex: true, scope: 'pair',
       when: function (ctx, a, b) { var pf = ctx.pair(a, b); return F.allowed(ctx) && pf.fwb && !pf.couple && pf.night && (!HK.Pos || HK.Pos.okSex(a, b)); },
       w: function (ctx, a, b) { return 0.9 + ctx.R(a, b).att / 60; },
       run: function (ctx, a, b) {

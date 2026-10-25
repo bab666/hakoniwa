@@ -305,7 +305,7 @@
 
   /* ---------- 出来事の窓口：phase・after から出す（ctx.act2） ---------- */
   function emit(ctx, o) {
-    var e = ctx.act2({ actors: o.actors, cat: o.cat || 'bond', text: o.text, why: o.why, mag: o.mag || 0, fx: o.fx });
+    var e = ctx.act2({ actors: o.actors, cat: o.cat || 'bond', text: o.text, why: o.why, mag: o.mag || 0, fx: o.fx, sex: o.sex });
     if (e && o.tag) e.ftTag = o.tag;
     return e;
   }
@@ -687,7 +687,7 @@
     if (HK.FutariR18 && !HK.SAFE_ON) r = HK.FutariR18.night(ctx, a, b, { stage: x.s, where: where, first: !f.r18[k] && !x.preset, engaged: x.s >= 5 });
     var sp = where === 'trip' ? '温泉宿' : '自宅の寝室';
     if (r && r.text) {
-      var e = emit(ctx, { actors: [r.a || a, r.b || b], cat: 'romance', text: r.text, why: W(ctx, sp) + r.why, mag: 12, tag: 'night', fx: relFx(ctx, a, b, { aff: 3, att: 3, trust: 2 }, { aff: 3, att: 3, trust: 2 }) });
+      var e = emit(ctx, { actors: [r.a || a, r.b || b], cat: 'romance', sex: true, text: r.text, why: W(ctx, sp) + r.why, mag: 12, tag: 'night', fx: relFx(ctx, a, b, { aff: 3, att: 3, trust: 2 }, { aff: 3, att: 3, trust: 2 }) });
       if (e) { pf.night = true; pf.nights = (pf.nights || 0) + 1; f.r18[k] = (f.r18[k] || 0) + 1; f.beds[k] = (f.beds[k] || 0) + 1; }
     } else {
       var o = ctx.rng() < 0.5 ? [a, b] : [b, a], t = where === 'trip' && has(ctx, NIGHT_TRIP) ? fresh(ctx, NIGHT_TRIP) : freshP(ctx, NIGHT, o[0]);

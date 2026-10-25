@@ -549,7 +549,7 @@
   var isl = HK.SCENARIOS.island;
   if (isl && RN.I) {
     isl.events.push({
-      id: 'ir18_sit', cat: 'romance', scope: 'pair', r18: true,
+      id: 'ir18_sit', cat: 'romance', sex: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (!baseOk(ctx, a, b, 2)) return false;
         return cands(ctx, a, b, 'island').list.length > 0;
@@ -570,7 +570,7 @@
   var Z = HK.ZB;
   if (Z && Z.scen && Z.loveLv && RN.ZT) {
     Z.scen.events.push({
-      id: 'zr18_sit', cat: 'romance', scope: 'pair', r18: true,
+      id: 'zr18_sit', cat: 'romance', sex: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (Z.loveLv(ctx) === 'off' || !baseOk(ctx, a, b, 4)) return false;
         if (a.z.bitten || b.z.bitten || a.z.alone || b.z.alone) return false;
@@ -595,7 +595,7 @@
   if (Z && Z.scen && Z.loveLv) {
     Z.scen.events.push({
       /* 選ばれやすさは敵対の重み（conflict）で決め、記録には恋愛（romance）として残す（hate-sex-r18.js の出られない部屋と同じ） */
-      id: 'zr18_hate', cat: 'conflict', scope: 'pair', pri: true, r18: true,
+      id: 'zr18_hate', cat: 'conflict', sex: true, scope: 'pair', pri: true, r18: true,
       when: function (ctx, a, b) {
         var HS = HK.HateSex;
         if (!HS || HK.SAFE_ON || Z.loveLv(ctx) === 'off' || !baseOk(ctx, a, b, 4)) return false;

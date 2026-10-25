@@ -708,7 +708,7 @@
     return '／形：' + (SHAPE_LABEL[info.p] || info.p) + hubNote + '／嫉妬：' + JEAL_LABEL[info.jeal] + (info.j ? '（' + info.j + '）' : '') + '／受けの開放度：' + OPEN_LABEL[info.open] + (info.s ? '（' + info.s + '）' : '') + (info.after ? '／結末：' + { sour: '険悪', bond: '連帯', yield: '折れた' }[info.after] : '');
   }
   EV.push({
-    id: 'trio_auto', cat: 'romance', scope: 'pair', pri: true,
+    id: 'trio_auto', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (!allowed(ctx) || !ctx.flags.multiKnown || ctx.flags.trioCur) return false;
       var g = ctx.present();
@@ -742,7 +742,7 @@
   });
   /* 媚薬だけの部屋（二人の条件がない）：媚薬が三人に回れば、熱に呑まれて三人で（一度だけ。条件の数には関わらない） */
   EV.push({
-    id: 'trio_heat', cat: 'romance', scope: 'pair', pri: true,
+    id: 'trio_heat', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (multiOf(ctx) === 'no' || ctx.flags.isOne || ctx.flags.oneCond || A.hasPairRule(ctx) || !ctx.flags.hasAphroRule || ctx.flags.trioHeat) return false;
       var g = ctx.present();
@@ -766,7 +766,7 @@
     }
   });
   EV.push({
-    id: 'trio', cat: 'romance', scope: 'pair', pri: true,
+    id: 'trio', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (!allowed(ctx) || !ctx.flags.multiKnown || ctx.present().length < 3 || !free(a) || !free(b)) return false;
       if (ctx.flags.trioCur) return false;
@@ -809,7 +809,7 @@
   });
   /* 二回目以降（回数が多い条件のとき） */
   EV.push({
-    id: 'trio_more', cat: 'romance', scope: 'solo', pri: true,
+    id: 'trio_more', cat: 'romance', sex: true, scope: 'solo', pri: true,
     when: function (ctx, a) {
       var c = ctx.flags.trioCur;
       if (!c) return false;

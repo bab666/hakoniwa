@@ -220,8 +220,10 @@
     if (jea) { var c0 = conds; conds = (c0 || []).concat([{ jea: 1 }]); }
     /* 恋人になる出来事（couple）：複数の恋人の設定（poly.js）で、恋人にしてよい組か、乗り換えの気持ちが育った組だけ */
     if (effects.some(function (f) { return f.k === 'couple'; })) conds = (conds || []).concat([{ cpl: 1 }]);
+    /* 体の関係の出来事（nite：夜を過ごす）。恋愛相手の固定と別に、性行為の相手の固定「誰とでも可」で通す（engine.js の romanceOk） */
+    var sexEv = effects.some(function (f) { return f.k === 'nite'; });
     return {
-      id: id, cat: cat, scope: sc, mini: true,
+      id: id, cat: cat, scope: sc, mini: true, sex: sexEv || undefined,
       when: conds ? function (ctx, a, b) {
         for (var i = 0; i < conds.length; i++) {
           if (conds[i].jea) { if (b && HK.Obsess && !HK.Obsess.jealOk(ctx, a, b)) return false; continue; }

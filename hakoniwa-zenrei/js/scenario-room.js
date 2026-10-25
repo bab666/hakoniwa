@@ -613,7 +613,7 @@
 
   /* 行為（手を繋ぐ〜エッチ） */
   EV.push({
-    id: 'doact', cat: 'romance', scope: 'pair', pri: true,
+    id: 'doact', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (a.flags.down || b.flags.down) return false;
       return ctx.rules.some(function (r) {
@@ -884,7 +884,7 @@
     return G.length >= 3 ? G : null;
   }
   EV.push({
-    id: 'group_h', cat: 'romance', scope: 'solo', pri: true,
+    id: 'group_h', cat: 'romance', sex: true, scope: 'solo', pri: true,
     when: function (ctx, a) {
       if (!ctx.rules.some(function (r) { return r.k === 'h'; }) || ctx.flags.groupDone) return false;
       return ctx.present().length >= 3 && eager(ctx, a) > 0.7 && !!groupOf(ctx, a);
@@ -925,7 +925,7 @@
   /* スピード型：相手の隙をついて拘束し、さっさと条件を満たして出る */
   function speedy(c) { return c.tr.cold * 0.45 + c.tr.aggr * 0.3 + c.tr.impulse * 0.25 - c.tr.np * 0.35; }
   EV.push({
-    id: 'speedrun', cat: 'romance', scope: 'pair', pri: true,
+    id: 'speedrun', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (a.flags.down || b.flags.down || ctx.pair(a, b).speedTried || speedy(a) < 0.38 || ctx.stepIndex < 1) return false;
       if (b.flags.partner != null && b.flags.partner !== a.i) return false;
@@ -965,7 +965,7 @@
 
   /* 媚薬が回りきった人：迫る・襲う・一線を越える */
   EV.push({
-    id: 'aphro_heat', cat: 'romance', scope: 'pair', pri: true,
+    id: 'aphro_heat', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) { return !a.flags.down && (a.flags.aphro || 0) >= 2.5 + ctx.stat(a, 'hp') * 0.5 && !ctx.pair(a, b).heatDone; },
     w: function (ctx, a, b) { return 0.4 + (a.flags.aphro || 0) / 4 + R(ctx, a, b).att / 60 + (b.flags.aphro ? 0.4 : 0); },
     run: function (ctx, a, b) {
@@ -1007,7 +1007,7 @@
         return { cat: cat, text: text, why: why, mag: 30 };
       }
       ctx.mod2(a, b, { att: 6 }, { att: ba.att > 15 ? 5 : 0, ten: ba.att > 15 ? 0 : 6 });
-      return { text: ctx.t(ctx.pick(['{a}は熱に浮かされた目で{b}を見つめて、「ねえ」と呼んだ。', '{a}は{b}の袖を掴んだまま離さなかった。指先が熱い。', '{a}は{b}の肩に額を押しつけて、荒い息を整えようとしていた。', '{a}は自分の手を太腿に押しつけて、{b}に触れまいと耐えていた。']), a, b), why: '媚薬が回っている（' + Math.round(heat) + '）' };
+      return { sex: false, text: ctx.t(ctx.pick(['{a}は熱に浮かされた目で{b}を見つめて、「ねえ」と呼んだ。', '{a}は{b}の袖を掴んだまま離さなかった。指先が熱い。', '{a}は{b}の肩に額を押しつけて、荒い息を整えようとしていた。', '{a}は自分の手を太腿に押しつけて、{b}に触れまいと耐えていた。']), a, b), why: '媚薬が回っている（' + Math.round(heat) + '）' };
     }
   });
   /* 倒れた人の介抱 */

@@ -484,7 +484,7 @@
         tg.outc = outc; tg.walk = walkLove; tg.newLove = !wasCouple && (outc === 'lover' || walkLove);
         if (walkLove) { ctx.pair(c.a, c.b).couple = true; c.a.fateNote += '。帰り道で付き合うことになった'; c.b.fateNote += '。帰り道で付き合うことになった'; }
         if (outc === 'forget') ctx.pair(c.a, c.b).forgot = true;
-        var e = ctx.say({ kind: 'event', cat: 'romance', actors: [c.a, c.b], text: night ? c.a.name + 'と' + c.b.name + 'は、店を出たあと同じタクシーに乗った。' + (gn ? gn.text : 'その先のことは、二人しか知らない。') + (gn ? '' : (function () {
+        var e = ctx.say({ kind: 'event', cat: 'romance', sex: !!night, actors: [c.a, c.b], text: night ? c.a.name + 'と' + c.b.name + 'は、店を出たあと同じタクシーに乗った。' + (gn ? gn.text : 'その先のことは、二人しか知らない。') + (gn ? '' : (function () {
           /* 受け攻めの指定どおりの「翌朝」 */
           var tb = HK.Pos ? HK.Pos.order(c.a, c.b, [c.a, c.b]) : [c.a, c.b];
           /* 全年齢版・全年齢モードは、体の名残を書かない翌朝 */
@@ -494,7 +494,7 @@
         ctx.pair(c.a, c.b).moments.push({ n: e.n, mag: 25 });
         if (fwbNow) {
           HK.FWB.mark(ctx, c.a, c.b);
-          var e2 = ctx.say({ kind: 'event', cat: 'romance', actors: [c.a, c.b], text: '翌朝。' + HK.FWB.after(ctx, c.a, c.b), why: '二人とも「恋人より気楽な関係」寄り（ドライさ・衝動性）', mag: 15 });
+          var e2 = ctx.say({ kind: 'event', cat: 'romance', sex: true, actors: [c.a, c.b], text: '翌朝。' + HK.FWB.after(ctx, c.a, c.b), why: '二人とも「恋人より気楽な関係」寄り（ドライさ・衝動性）', mag: 15 });
           ctx.pair(c.a, c.b).moments.push({ n: e2.n, mag: 15 });
         }
       });

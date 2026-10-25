@@ -135,7 +135,7 @@
 
   var CB_LABEL = { ao: 'α攻め×Ω受け', oa: 'Ω攻め×α受け', aa: 'α同士', oo: 'Ω同士', b: 'βがいる組' };
   scen.events.push({
-    id: 'om_lovers', cat: 'romance', scope: 'pair', pri: true,
+    id: 'om_lovers', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b);
       if (!(pf.couple || bonded(ctx, a, b)) || !HK.canLove(a, b) || !HK.canLove(b, a)) return false;

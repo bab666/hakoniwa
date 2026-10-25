@@ -87,7 +87,7 @@
 
   function scnPool(ctx, T) { return T[ctx.scen.id] || T.any; }
   function other(ctx, a, b) { var o = ctx.others(a).filter(function (x) { return x !== b; }); return o.length ? ctx.pick(o) : null; }
-  function mk(id, cat, w, when, run, only) { return { id: id, cat: cat, scope: 'pair', mini: true, sig: true, w: w, when: when, run: run, only: only }; }
+  function mk(id, cat, w, when, run, only) { return { id: id, cat: cat, scope: 'pair', mini: true, sig: true, w: w, when: when, run: run, only: only, sex: id === 'fc_night' || undefined }; }
 
   var LIST = [
     /* いつもの夜と、そのあと */

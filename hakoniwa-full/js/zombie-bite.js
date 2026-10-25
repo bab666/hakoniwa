@@ -239,7 +239,7 @@
     }
     if (pick === 'lastnight' && lover && lover.alive) {
       ctx.pair(c, lover).night = true;
-      ctx.act2({ actors: [c, lover], cat: 'romance', fx: function () { ctx.mod2(c, lover, { att: 12, aff: 12 }, { att: 12, aff: 12 }); ctx.stress(lover, 20); }, text: fill(ctx.pick(L('{a}は{b}に咬み跡を見せた。{b}は何も言わず、{a}の手を引いて奥の部屋へ行った。最後の夜だった。二人は、朝まで互いの名前を呼び合った。|「最後くらい、普通の恋人でいたい」――{a}と{b}は、拾ったろうそくを灯して、壊れたソファで抱き合った。')), { a: c.name, b: lover.name }), why: why + '／恋人の' + lover.name, mag: 40 });
+      ctx.act2({ actors: [c, lover], cat: 'romance', sex: true, fx: function () { ctx.mod2(c, lover, { att: 12, aff: 12 }, { att: 12, aff: 12 }); ctx.stress(lover, 20); }, text: fill(ctx.pick(L('{a}は{b}に咬み跡を見せた。{b}は何も言わず、{a}の手を引いて奥の部屋へ行った。最後の夜だった。二人は、朝まで互いの名前を呼び合った。|「最後くらい、普通の恋人でいたい」――{a}と{b}は、拾ったろうそくを灯して、壊れたソファで抱き合った。')), { a: c.name, b: lover.name }), why: why + '／恋人の' + lover.name, mag: 40 });
       ctx.pair(c, lover).promise = c.i;
       return true;
     }

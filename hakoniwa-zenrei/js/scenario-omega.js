@@ -459,7 +459,7 @@
 
   /* 発情期・ラットのそばで */
   EV.push({
-    id: 'om_heat', cat: 'romance', scope: 'pair', pri: true,
+    id: 'om_heat', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) { return (a.om.heat > 0 && sx(a) === 'o') || (b.om.heat > 0 && sx(b) === 'o') || (a.om.rut > 0 && sx(a) === 'a' && sx(b) === 'o'); },
     w: function (ctx, a, b) { return 1.5 + ctx.env.heat / 50 + Math.max(ctx.R(a, b).att, ctx.R(b, a).att) / 50; },
     run: function (ctx, a, b) { return heatScene(ctx, a, b); }
@@ -539,7 +539,7 @@
 
   /* 発情期でなくても、勢いで一線を越える夜（恋人にならないまま続くこともある） */
   EV.push({
-    id: 'om_night', cat: 'romance', scope: 'pair',
+    id: 'om_night', cat: 'romance', sex: true, scope: 'pair',
     when: function (ctx, a, b) { var pf = ctx.pair(a, b); return !pf.couple && !pf.night && met(ctx, a, b) && HK.canLove(a, b) && HK.canLove(b, a) && ctx.R(a, b).att > 28 && ctx.R(b, a).att > 24 && !partnerOf(ctx, a) && !partnerOf(ctx, b) && !(BD.mateOf(ctx, a) || BD.mateOf(ctx, b)); },
     w: function (ctx, a, b) { var h = ctx.om.hesitate[key(a, b)] ? 1 : 0; return (HK.FWB.lean(a) + HK.FWB.lean(b)) * 1.4 + h * 0.8 + (a.goal.id === 'free' ? 0.6 : 0); },
     run: function (ctx, a, b) {

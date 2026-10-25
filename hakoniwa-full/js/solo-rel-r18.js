@@ -154,7 +154,7 @@
     };
     RN.I = I;
     isl.events.push({
-      id: 'ir18_night', cat: 'romance', scope: 'pair', r18: true,
+      id: 'ir18_night', cat: 'romance', sex: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (!okPair(ctx, a, b)) return false;
         var pf = ctx.pair(a, b);
@@ -220,7 +220,7 @@
     };
     RN.ZT = ZT;
     Z.scen.events.push({
-      id: 'zr18_night', cat: 'romance', scope: 'pair', r18: true,
+      id: 'zr18_night', cat: 'romance', sex: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (Z.loveLv(ctx) === 'off' || !okPair(ctx, a, b) || (Z.isLover && Z.isLover(ctx, a, b))) return false;
         var k = kindOf(ctx, a, b);

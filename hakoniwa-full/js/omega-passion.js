@@ -172,7 +172,7 @@
     end: L('朝、二人は目を合わせずに服を着た。「今のは、なかったことにしろ」「言われなくても」|{a}は眠る{b}の顔を、憎らしそうに、それでいて名残惜しそうに見つめていた。|{b}が先に部屋を出た。ドアが閉まる直前、「次はない」と言った。次は、たぶんある。')
   };
   EV.push({
-    id: 'om_hatenight', cat: 'romance', scope: 'pair',
+    id: 'om_hatenight', cat: 'romance', sex: true, scope: 'pair',
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b);
       if (pf.couple || !HK.canLove(a, b) || !HK.canLove(b, a) || partnerOf(ctx, a) || partnerOf(ctx, b)) return false;
@@ -214,7 +214,7 @@
     refuse: L('{a}は恋人のいる{b}に迫った。{b}は{a}の手を払いのけた。「私／俺には{c}がいる」|{b}は{a}の誘いをきっぱり断り、その足で{c}に会いに行った。|{a}が{b}を抱き寄せようとした瞬間、{b}のスマホが鳴った。画面には{c}の名前があった。{b}はそれを理由に、{a}から離れた。')
   };
   EV.push({
-    id: 'om_steal', cat: 'romance', scope: 'pair',
+    id: 'om_steal', cat: 'romance', sex: true, scope: 'pair',
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b), pb = partnerOf(ctx, b), pa = partnerOf(ctx, a);
       if (pf.couple || !HK.canLove(a, b) || !HK.canLove(b, a) || !(pb || pa) || pb === a) return false;

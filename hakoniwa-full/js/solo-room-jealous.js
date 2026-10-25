@@ -166,8 +166,8 @@
         a.flags.jSeen = seenOf(ctx, a, b);
         if (c && !c.out) ctx.mod(c, a, { ten: 6 });
         why = b.name + 'が' + (c ? c.name : 'ほかの人') + (sk === 'h' ? 'と抱き合う' : 'とキスする') + 'のを見た' + a.name + 'は、「一人だけ」の相手を取り戻しに行った（CP・攻撃性・嫉妬・' + b.name + 'への惹かれ ' + Math.round(att) + '）。' + b.name + 'は' + { sorry: '素直に謝った', defy: '突っぱねたが、拒まなかった', tease: 'からかって受け入れた' }[rk];
-        if (A.pairDone(ctx, a, b) && A.exitPair) return A.exitPair(ctx, a, b, t, why, true);
-        return { text: t, why: why, mag: 34 };
+        if (A.pairDone(ctx, a, b) && A.exitPair) { var exJ = A.exitPair(ctx, a, b, t, why, true); exJ.sex = true; return exJ; }
+        return { sex: true, text: t, why: why, mag: 34 };
       }
       if (k === 'change') {
         a.flags.exclOpen = true; a.flags.excl = false; a.flags.partner = null;

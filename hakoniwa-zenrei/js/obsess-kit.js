@@ -360,7 +360,7 @@
       var ord = HK.Pos.order(a, b), top = ord[0] === a;
       ctx.pair(a, b).night = true;
       ctx.mod2(a, b, { att: 6 }, { att: 4, ten: 6 });
-      return { with: [b], cat: 'romance', text: F(ctx, T(ctx, top ? 'top' : 'bottom'), a, b), why: a.name + 'による監禁の夜（執着 ' + Math.round(s.lv) + (stn0 === 'mutual' ? '・共依存' : stn0 === 'accept' ? '・受け入れている' : '') + '）', mag: 30 };
+      return { with: [b], cat: 'romance', sex: true, text: F(ctx, T(ctx, top ? 'top' : 'bottom'), a, b), why: a.name + 'による監禁の夜（執着 ' + Math.round(s.lv) + (stn0 === 'mutual' ? '・共依存' : stn0 === 'accept' ? '・受け入れている' : '') + '）', mag: 30 };
     }
     ctx.mod(b, a, { ten: 4 }); ctx.stress(b, 6);
     return { with: [b], cat: 'conflict', text: F(ctx, T(ctx, 'cageDay'), a, b), why: a.name + (SAFE() ? 'の囲い込み（' : 'による監禁（') + s.cage.n + '区切り目）', mag: 15 };

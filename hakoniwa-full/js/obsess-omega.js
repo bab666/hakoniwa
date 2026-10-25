@@ -78,7 +78,7 @@
         else { ctx.mod(b, a, { ten: 35, trust: -35, aff: -15 }); ctx.stress(b, 40); }
         ctx.mod(a, b, { att: 8 });
         s.lv = Math.min(100, s.lv + 5);
-        return { with: [b], cat: given ? 'romance' : 'conflict', text: fill(ctx, ctx.pick(given ? GIVEN : FORCE), a, b), why: O.why(ctx, a, b) + (given ? '。' + b.name + 'はそれを受け入れ、自分から噛ませた' : '。執着が暴走し、' + b.name + 'の意思を待たずに番にした') + (OM.destinyWhy ? OM.destinyWhy(ctx) : ''), mag: 55 };
+        return { with: [b], cat: given ? 'romance' : 'conflict', sex: true, text: fill(ctx, ctx.pick(given ? GIVEN : FORCE), a, b), why: O.why(ctx, a, b) + (given ? '。' + b.name + 'はそれを受け入れ、自分から噛ませた' : '。執着が暴走し、' + b.name + 'の意思を待たずに番にした') + (OM.destinyWhy ? OM.destinyWhy(ctx) : ''), mag: 55 };
       }]);
     /* 仕組まれた発情：Ωがαを絡め取る */
     if (sx(a) === 'o' && sx(b) === 'a' && okSex(a, b) && ctx.romanceOk([a, b]))
@@ -90,7 +90,7 @@
         om.obTrap = om.obTrap || {}; om.obTrap[key(a, b)] = { by: a.i, bit: bit, at: ctx.stepIndex };
         ctx.pair(a, b).night = true; ctx.pair(a, b).nights = (ctx.pair(a, b).nights || 0) + 1;
         ctx.mod2(a, b, { att: 10 }, { att: 8, ten: 18, trust: -15 }); ctx.stress(b, 25);
-        return { with: [b], cat: 'romance', text: t, why: O.why(ctx, a, b) + '。抑制剤を断ち、発情期で' + b.name + 'を絡め取った' + (bit ? '（' + b.name + 'はうなじを噛んでしまった）' : ''), mag: 55 };
+        return { with: [b], cat: 'romance', sex: true, text: t, why: O.why(ctx, a, b) + '。抑制剤を断ち、発情期で' + b.name + 'を絡め取った' + (bit ? '（' + b.name + 'はうなじを噛んでしまった）' : ''), mag: 55 };
       }]);
     return out;
   }
