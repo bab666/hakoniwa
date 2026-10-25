@@ -36818,6 +36818,7 @@
       { id: 'sit', label: '舞台', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'clinic', label: '搾精クリニック（医師と患者）' }, { v: 'hotel', label: '特別おもてなしホテル（客室係と宿泊客）' }, { v: 'office', label: '福利厚生の手厚い会社（処理当番と社員）' }, { v: 'spa', label: '洗い屋のいる銭湯（洗い屋と入浴客）' }, { v: 'gym', label: '搾精トレーニングジム（トレーナーと会員）' }, { v: 'stage', label: '公開施術の舞台（演者と志願者・満員の客席の前で）' }] },
       { id: 'sane', label: '正気の人', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ' }, { v: 'none', label: '全員改変されている' }, { v: 'one', label: '片方だけ正気（ひとりだけ）' }, { v: 'multi', label: '複数人が正気（3人以上のとき）' }], desc: '正気の人だけが、まわり（客・観客・ほかの住人）の当たり前をおかしいと分かっている。態度ごとに、気づく・止めようとする・流されていく。おまかせは、公開施術の舞台で2人以上のときだけ半々でひとりを正気にする。役割で選んだ人はその役割のまま（「正気のまま紛れ込む」を選んだ人は、どの設定でも正気）。複数人は3人以上のとき（2人以下ならひとり）' },
       { id: 'depth', label: '改変の強さ', min: 0, max: 100, def: 60, lo: 'ほころびだらけ', hi: '完璧', desc: '強いほど違和感に気づきにくい。弱いと、理性的な人ほどすぐに気づく' },
+      { id: 'wear', label: '改変が解ける', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ（改変が弱いほど解けやすい）' }, { v: 'off', label: '解けない' }, { v: 'on', label: '営業のあとに解ける' }], desc: '営業のあとに改変が解けると、住人それぞれが我に返る。怒って背を向けるだけでなく、困惑する・放心する・受け入れる人もいる（態度・改変度・どれだけ気持ちよかったか・最後まで正気だったかで決まる）。解けない回でも、途中で正気に戻った人と正気の人は、その夜に今日を振り返る' },
       { id: 'slots', label: '営業時間', min: 4, max: 16, def: 9, lo: '4時間', hi: '16時間', unit: '時間' },
       { id: 'mob', label: 'モブ（ほかの客・上司など）', type: 'select', def: 'on', options: [{ v: 'on', label: 'あり' }, { v: 'off', label: 'なし（登場キャラだけ）' }], desc: '「なし」にすると、登場キャラどうしだけで施術が進む（ほかの客・上司・同僚・新人などは出てこない）。2人以上で使うのがおすすめ' },
       { id: 'npc', label: '客の多さ', min: 0, max: 100, def: 60, lo: '閑散', hi: '大繁盛', desc: 'モブの客がどれくらい来るか。0にするとモブの客は来ず、登場キャラどうしで施術する（上司・同僚などのモブは出る）。モブなしのときは使わない' },
@@ -36940,6 +36941,8 @@
         if (p.role === 'out' && !p.fled && !p.sunk) outsider(S, SIT, p);
         if (!p.quit && p.role !== 'out') check(S, SIT, p);
         p.m.doubt = clamp(p.m.doubt, 0, 100); p.m.imm = clamp(p.m.imm, 0, 100); p.m.plea = clamp(p.m.plea, 0, 100);
+        /* 結末（我に返ったあと）のために、いちばん深かった改変度・いちばん昂ったところを覚えておく */
+        p.immPk = Math.max(p.immPk || 0, p.m.imm); p.pleaPk = Math.max(p.pleaPk || 0, p.m.plea);
       });
       ST.flushShort(S, 'ほかに：');
       ST.snap(S, keys);
@@ -37445,13 +37448,65 @@
     S.label = C.label;
     ST.say(S, { kind: 'phase', text: ST.fmt(pkF(S, C.t), { end: end, place: place }) });
     P.forEach(function (p) {
+      if (p.after) return;   /* 我に返ったあとの結末がある人は、あとの場面で締める */
       var pool = FATE_END[p.fate] || FATE_END[p.role === 'giver' ? '完全に改変された' : '常連客になった'];
       if (!p.cnt.served || !Math.round(p.m.sem)) pool = pool.filter(function (x) { return (p.cnt.served || x.indexOf('{n}') < 0) && x.indexOf('{ml}') < 0; });
       ST.say(S, { actors: [p], tag: '一日の終わり', text: ST.fmt(pkF(S, pool), { p: p.name, role: p.roleLabel, unit: SIT.unit, n: p.cnt.served, ml: Math.round(p.m.sem), place: place }), why: p.name + 'の結末：' + p.fate });
     });
-    var k = woke.length ? 'woke' : noticed.length ? 'noticed' : 'none';
-    var o = ST.say(S, { kind: 'phase', actors: (k === 'woke' ? woke : noticed), text: ST.fmt(pkF(S, DAY_END[k]), { place: place, names: names(k === 'woke' ? woke : noticed), unit: SIT.unit, total: total }) });
-    ST.key(S, o, '営業終了：' + place + 'の一日が終わった');
+    afterDay(S, SIT, place, sid, end);
+    var k = S.wear && KH.AFTER ? 'wear' : woke.length ? 'woke' : noticed.length ? 'noticed' : 'none', who = k === 'wear' ? [] : k === 'woke' ? woke : noticed;
+    var o = ST.say(S, { kind: 'phase', actors: who, text: ST.fmt(pkF(S, k === 'wear' ? KH.AFTER.DAY_END_WEAR : DAY_END[k]), { place: place, names: names(who), unit: SIT.unit, total: total }) });
+    ST.key(S, o, '営業終了：' + place + 'の一日が終わった' + (k === 'wear' ? '（改変が解けた）' : ''));
+  }
+  /* ---------- 我に返ったあと：改変が解けた回は全員（逃げ出した人を除く）、解けない回は途中で正気に戻った人と最後まで正気だった人 ----------
+     困惑する（con）・放心する（daze）・受け入れる（acc）・背を向ける（rej）。文は solo-kaihen-after.js（KH.AFTER） */
+  var AFTER_JA = { con: '困惑', daze: '放心', acc: '受け入れ', rej: '背を向ける' };
+  function sane0(p) { return p.role === 'out' && !p.sunk; }
+  /* どれだけ気持ちよかったか（0〜1）：いちばん昂ったところと、達した回数 */
+  function enjoyOf(p) { return clamp((p.pleaPk || 0) / 100 * 0.5 + Math.min(1, (p.cnt.climax + p.cnt.gclimax) / 3) * 0.5, 0, 1); }
+  function afterKind(S, p) {
+    var t = p.tr, e = enjoyOf(p), im = (p.immPk || p.m.imm) / 100, sn = sane0(p), tl = (KH.AFTER.TILT || {})[p.persona] || {};
+    var mid = 1 - Math.abs(im - 0.5) * 2;
+    var w = {
+      con: 0.15 + t.a * 0.35 + t.caution * 0.25 + mid * 0.25 + (sn ? 0.15 : 0) + (tl.con || 0),
+      daze: 0.08 + im * 0.55 + e * 0.35 + t.ac * 0.2 + (1 - t.a) * 0.15 + (S.v.sid === 'stage' && p.cnt.served ? 0.15 : 0) + (tl.daze || 0),
+      acc: 0.05 + t.fc * 0.45 + e * 0.6 + t.np * 0.15 + (p.accepted ? 0.5 : 0) + (p.role === 'out' && p.sunk ? 0.25 : 0) - (sn && !p.cnt.served ? 0.15 : 0) + (tl.acc || 0),
+      rej: 0.12 + t.cp * 0.45 + t.a * 0.15 + (1 - e) * 0.35 + (p.awakeKind === 'snap' ? 0.25 : 0) + (tl.rej || 0)
+    };
+    var k = HK.weighted(S.rng, ['con', 'daze', 'acc', 'rej'], function (x) { return Math.pow(Math.max(0.03, w[x]), 2); });
+    return { k: k, e: e, im: Math.round(im * 100), sane: sn };
+  }
+  /* 場面：施した／受けた／何もしなかった／正気のまま施された／正気のまま見ていた（公開施術の舞台は、客席の前だった人を別に） */
+  function afterCtx(S, p) {
+    var st = S.v.sid === 'stage', did = p.cnt.served > 0;
+    if (sane0(p)) return did ? (st ? 'ssaneT' : 'saneT') : 'saneW';
+    if (!did) return 'idle';
+    if (p.role === 'giver') return st ? 'sgiver' : 'giver';
+    return st ? 'staker' : 'taker';
+  }
+  function afterFate(p) {
+    var a = p.after;
+    if (a.k === 'rej') return a.sane ? '正気のまま居残った' : '正気に戻った';
+    return (a.sane ? '正気のまま' : '我に返って') + { con: '困惑した', daze: '放心した', acc: '受け入れた' }[a.k];
+  }
+  function afterDay(S, SIT, place, sid, end) {
+    var A = KH.AFTER, L2 = S.P.filter(function (p) { return p.after; });
+    if (!A || !L2.length) return;
+    ST.step(S, S.wear ? '改変が解けたあと' : 'その夜');
+    var ph = S.wear ? pkF(S, A.WEAR_SITE[sid] || A.WEAR_SITE.office) + pkF(S, A.WEAR_BODY) : pkF(S, A.NIGHT);
+    ST.say(S, { kind: 'phase', actors: L2, text: ST.fmt(ph, { place: place, end: end, names: names(L2) }), why: S.wear ? '設定「改変が解ける」（' + ({ auto: 'おまかせ・改変の強さ ' + S.env.depth, on: '営業のあとに解ける' }[S.env.wear] || '') + '）' : '' });
+    L2.forEach(function (p) {
+      var a = p.after, v = { p: p.name, place: place, role: p.roleLabel, unit: SIT.unit, n: p.cnt.served }, t;
+      if (a.k === 'rej') t = ST.fmt(pkF(S, a.sane ? (S.wear ? A.REJ_WEAR : FATE_END['正気のまま居残った']) : S.wear && p.awakeKind !== 'snap' && A.REJ_ALT ? A.REJ_ALT : FATE_END['正気に戻った']), v);
+      else {
+        t = ST.fmt(pkF(S, A.BODY[a.k][a.ctx]), v);
+        if (p.cnt.served && A.ENJ[a.k]) t += ST.fmt(pkF(S, A.ENJ[a.k][a.e >= 0.5 ? 'hi' : 'lo']), v);
+        var VA = VO && VO.AFTER && VO.AFTER[p.persona];
+        if (VA && VA[a.k]) t += p.name + pkF(S, VA[a.k]);
+      }
+      var o = ST.say(S, { actors: [p], tag: a.k === 'rej' ? '一日の終わり' : '我に返って', text: t, why: p.name + 'の結末：' + p.fate + '（' + a.why + '）', mag: a.k === 'rej' ? 0 : 30 });
+      if (a.k !== 'rej') ST.key(S, o, p.name + 'は' + { con: '困惑した', daze: '放心した', acc: '受け入れた' }[a.k]);
+    });
   }
   /* ---------- 結末 ---------- */
   function fateOf(p) {
@@ -37465,9 +37520,19 @@
     return p.role === 'giver' ? '完全に改変された' : '常連客になった';
   }
   function finish(S, input, SIT, place, sid) {
-    var P = S.P;
+    var P = S.P, wm = S.env.wear || 'auto';
+    /* 営業のあとに改変が解けるか（おまかせなら、改変が弱いほど解けやすい） */
+    S.wear = !!KH.AFTER && (wm === 'on' || (wm === 'auto' && S.rng() < 0.12 + (1 - S.env.depth / 100) * 0.45));
     P.forEach(function (p) {
       p.fate = fateOf(p);
+      p.after = null;
+      if (KH.AFTER && !p.fled && (S.wear ? true : p.awakeKind === 'snap' || sane0(p))) {
+        var a = p.after = afterKind(S, p);
+        a.ctx = afterCtx(S, p);
+        a.why = toneJa(p) + '・改変度の最深 ' + a.im + '・気持ちよさ ' + Math.round(a.e * 100) + (p.cnt.climax + p.cnt.gclimax ? '・達した ' + (p.cnt.climax + p.cnt.gclimax) + '回' : '') + (a.sane ? '・最後まで正気だった' : p.awakeKind === 'snap' ? '・途中で正気に戻っていた' : S.wear ? '・改変が解けて我に返った' : '');
+        p.fate = afterFate(p);
+        if (a.k !== 'rej' || S.wear) p.notes.push('我に返ったあと：' + AFTER_JA[a.k] + '（' + a.why + '）');
+      }
       var top = Object.keys(p.cnt.acts).sort(function (a, b) { return p.cnt.acts[b] - p.cnt.acts[a]; })[0];
       if (p.role === 'giver') p.notes.push(SIT.unit + ' ' + p.cnt.served + '件・採取量 ' + Math.round(p.m.sem) + 'ml' + (top ? '・いちばん多かったのは「' + top + '」' : '') + (p.cnt.gclimax ? '・施しながら自分も' + p.cnt.gclimax + '回達した' : ''));
       else p.notes.push((p.role === 'out' ? '受けてしまった施術' : '受けた' + SIT.unit) + ' ' + p.cnt.served + '回・出した量 ' + Math.round(p.m.sem) + 'ml');
@@ -37477,9 +37542,10 @@
     });
     var G = P.filter(function (p) { return p.role === 'giver'; });
     var woke = P.filter(function (p) { return p.awakeKind === 'snap' || p.fled; });
+    var aft = P.filter(function (p) { return p.after; });
     var noticed = P.filter(function (p) { return p.cnt.awake || p.role === 'out'; });
     var topG = G.slice().sort(function (a, b) { return b.m.sem - a.m.sem; })[0];
-    var title = (sid === 'stage' ? '「' + place + '」の公演は、今日も満員だった。' : '「' + place + '」は今日も平常運転。') + (woke.length ? names(woke) + 'だけが、おかしさに気づいて正気に戻った。' : noticed.length ? names(noticed) + 'は違和感に触れたが、世界は何も変わらなかった。' : '誰ひとり、違和感に気づかなかった。');
+    var title = (sid === 'stage' ? '「' + place + '」の公演は、今日も満員だった。' : '「' + place + '」は今日も平常運転。') + (S.wear ? '――けれど営業のあと、改変は解けた。' : woke.length ? names(woke) + 'だけが、おかしさに気づいて正気に戻った。' : noticed.length ? names(noticed) + 'は違和感に触れたが、世界は何も変わらなかった。' : '誰ひとり、違和感に気づかなかった。') + afterTitle(S, aft);
     var lines = P.map(function (p) { return p.name + '（' + p.roleLabel + '）：' + p.fate; });
     if (topG) lines.push('いちばん搾ったのは' + topG.name + '（' + Math.round(topG.m.sem) + 'ml）');
     var total = G.reduce(function (s, g) { return s + g.cnt.served; }, 0), sem = G.reduce(function (s, g) { return s + g.m.sem; }, 0);
@@ -37488,8 +37554,8 @@
       return { i: p.i, rank: '', cells: [p.roleLabel, String(p.cnt.served), Math.round(p.m.sem) + 'ml', String(p.role === 'giver' ? p.cnt.gclimax : p.cnt.climax), String(Math.round(p.m.doubt)), p.fate] };
     });
     return ST.result(S, input, {
-      ending: { title: title, kind: woke.length ? 'ok' : 'over', lines: lines },
-      estats: [['施術', total + '件'], ['総採取量', Math.round(sem) + 'ml'], ['気づいた人', noticed.length + '人'], ['正気に戻った', woke.length + '人']],
+      ending: { title: title, kind: woke.length || S.wear ? 'ok' : 'over', lines: lines },
+      estats: [['施術', total + '件'], ['総採取量', Math.round(sem) + 'ml'], ['気づいた人', noticed.length + '人'], ['正気に戻った', woke.length + '人']].concat(aft.length ? [['改変', S.wear ? '営業のあとに解けた' : '解けなかった'], ['我に返ったあと', afterCount(aft)]] : []),
       table: { title: '住人ごとの比較', hint: '採取量は施す側なら搾った量、受ける側なら出した量。絶頂は施す側なら「自分も達した回数」。', cols: ['役割', '件数', '精', '絶頂', '違和感', '結末'], rows: rows },
       meters: [{ label: '改変度', color: '--accent' }, { label: '違和感', color: '--warn' }, { label: '快感', color: '--pine', dash: true }, { label: '精', color: '--love', max: 150, unit: 'ml' }],
       meta: SIT.name + '「' + place + '」・' + S.env.slots + '時間',
@@ -37497,6 +37563,16 @@
     });
   }
   function names(l) { return l.map(function (p) { return p.name; }).join('・'); }
+  /* 結末の見出しに足す一文：「Aは戸惑い、Bは放心し、Cは受け入れた。」 */
+  var AFT_V = { con: ['戸惑い', '戸惑った'], daze: ['放心し', '放心した'], acc: ['起きたことを受け入れ', '起きたことを受け入れた'], rej: ['背を向け', '背を向けた'] };
+  function afterTitle(S, aft) {
+    var g = ['con', 'daze', 'acc', 'rej'].map(function (k) { return [k, aft.filter(function (p) { return p.after.k === k; })]; }).filter(function (x) { return x[1].length; });
+    if (!g.length || (!S.wear && g.length === 1 && g[0][0] === 'rej')) return '';
+    return (S.wear ? '我に返った' : 'その夜、') + g.map(function (x, i) { return names(x[1]) + 'は' + AFT_V[x[0]][i === g.length - 1 ? 1 : 0]; }).join('、') + '。';
+  }
+  function afterCount(aft) {
+    return ['con', 'daze', 'acc', 'rej'].map(function (k) { var n = aft.filter(function (p) { return p.after.k === k; }).length; return n ? AFTER_JA[k] + n : ''; }).filter(Boolean).join('・');
+  }
 })();
 ;/* ==== js/solo-succubus-data.js ==== */
 /* 箱庭シミュレーター: サキュバスの一夜（R18）のデータ ― 街・獲物・誘惑の型・先輩のアドバイス・ランダムイベント
