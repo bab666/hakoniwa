@@ -56,20 +56,21 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-block: 22px 12px; }
 .brand h1 { font-family: var(--f-display); font-weight: 700; font-size: 30px; letter-spacing: 0.12em; margin: 0; line-height: 1.2; }
 .brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
-.notice-btn { display: inline-block; margin: 8px 8px 0 0; padding: 3px 12px; border-radius: 14px; border: 1px solid var(--enemy); background: transparent; color: var(--enemy); font: inherit; font-size: 12px; font-weight: 700; line-height: 1.6; cursor: pointer; }
-.notice-btn:hover { background: var(--enemy); color: #fff; }
-.oldver { display: inline-block; margin: 8px 0 0; padding: 3px 12px; border-radius: 14px; border: 1px solid var(--line); color: var(--muted); font-size: 12px; text-decoration: none; line-height: 1.6; }
-.oldver:hover { color: var(--ink); border-color: var(--ink); }
+.brandlinks { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.chip-link { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 12.5px; font-weight: 600; line-height: 1; text-decoration: none; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+.chip-link:hover { border-color: var(--ink); }
+.chip-link.warn { border-color: var(--enemy); color: var(--enemy); background: color-mix(in srgb, var(--enemy) 8%, var(--surface)); }
+.chip-link.warn:hover { background: var(--enemy); color: #fff; }
+/* 全年齢／R18 の切り替え（safe.js が足す行）も同じ並びに */
+.brand .agemode { margin-top: 8px; gap: 8px; }
+.brand .agemode .now { min-height: 26px; display: inline-flex; align-items: center; padding: 0 12px; border-radius: 999px; font-size: 12px; }
+.brand .agemode .btn.small, .brand .agemode a.btn { min-height: 26px; border-radius: 999px; padding: 0 12px; font-size: 12px; }
 .notice .modal-box { max-width: 640px; }
 .notice-title { margin: 0 0 6px; color: var(--enemy); font-size: 18px; }
 .notice-lead { margin: 0 0 10px; color: var(--enemy); font-size: 13px; font-weight: 600; }
 .notice-list { margin: 0; padding-left: 1.3em; color: var(--enemy); font-size: 13px; line-height: 1.75; }
 .notice-list li + li { margin-top: 6px; }
 .notice-list a { color: inherit; text-decoration: underline; }
-.survey { display: inline-block; margin-top: 8px; padding: 3px 12px; border-radius: 14px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); font-size: 12px; text-decoration: none; line-height: 1.6; }
-.survey:hover { background: var(--accent); color: var(--accent-ink); }
-.survey b { color: var(--accent); font-weight: 700; white-space: nowrap; margin-right: 6px; }
-.survey:hover b { color: inherit; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
 .tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 20px; overflow-x: auto; }
 .tab { appearance: none; -webkit-appearance: none; background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px 9px; cursor: pointer; color: var(--muted); white-space: nowrap; font-size: 14px; }
@@ -441,9 +442,11 @@ details.zmap > summary:hover { background: var(--accent-soft); }
     <div class="brand">
       <h1>箱庭シミュレーター</h1>
       <p>エゴグラムの住人を様々な箱庭に放ち、誰と誰がどんな関係に落ち着くか見届けることができます。</p>
-      <button type="button" class="notice-btn" data-act="notice-open" aria-haspopup="dialog" aria-controls="notice">⚠ 仕様上のご注意（必ずお読みください）</button>
-      <a class="oldver" href="https://kaimin.sakura.ne.jp/archive/tools/hako_R18_old/" target="_blank" rel="noopener">旧版はこちら</a>
-      <a class="survey" href="https://forms.gle/c2sujawbdxJy62FP8" target="_blank" rel="noopener"><b>▼アンケートのお願い</b>アップデート内容を決める指針にします。お暇なときにお答えいただけますと幸いです</a>
+      <nav class="brandlinks" aria-label="ご案内">
+        <button type="button" class="chip-link warn" data-act="notice-open" aria-haspopup="dialog" aria-controls="notice"><span aria-hidden="true">⚠</span>仕様上のご注意</button>
+        <a class="chip-link" href="https://forms.gle/c2sujawbdxJy62FP8" target="_blank" rel="noopener">アンケート</a>
+        <a class="chip-link" href="https://kaimin.sakura.ne.jp/archive/tools/hako_R18_old/" target="_blank" rel="noopener">旧版はこちら</a>
+      </nav>
     </div>
     <div class="row" id="topmeta"></div>
   </header>
