@@ -221,6 +221,7 @@ js/solo-succubus-kohyo.js
 late js/solo-succubus-ero.js
 js/solo-succubus.js
 js/solo-succubus-rival.js
+js/solo-succubus-target.js
 js/solo-saimin-data.js
 js/solo-saimin-more.js
 js/solo-saimin-sex.js

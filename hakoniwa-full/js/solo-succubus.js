@@ -24,7 +24,7 @@
     desc: '住人がサキュバスになって一晩、街で精を集める。魅力は足りるか、どう誘惑するか、一晩で何ml集められるか。複数人なら同じ夜を別々に狩って比べられる。住人の一人を先輩サキュバスにすると、性格に応じたアドバイスをくれる。※成人キャラクター向け',
     note: '※登場人物はすべて成人として扱います。',
     unit: '時間', simulate: function (input) { return run(input); },
-    castHint: '1人でも複数人でも。複数人なら全員が同じ夜に別々に狩りをして、集めた精の量を比べます。「役割」で「先輩サキュバス」を選んだ住人は狩りに出ず、後輩にアドバイスをします（性格でアドバイスが変わります）。',
+    castHint: '1人でも複数人でも。複数人なら全員が同じ夜に別々に狩りをして、集めた精の量を比べます。「役割」で「先輩サキュバス」を選んだ住人は狩りに出ず、後輩にアドバイスをします（性格でアドバイスが変わります）。「標的」で「標的（人間）になる」を選んだ住人（または設定「標的」を住人から）は、サキュバスの存在を知らない人間として街にいて、サキュバスの住人に狙われます。',
     env: [
       { id: 'town', label: '狩り場', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'downtown', label: '夜の繁華街' }, { v: 'office', label: '残業明けのオフィス街' }, { v: 'onsen', label: '湯けむりの温泉街' }, { v: 'masq', label: '仮面舞踏会' }] },
       { id: 'hours', label: '夜の長さ', min: 3, max: 10, def: 7, lo: '3時間', hi: '10時間', unit: '時間' },
@@ -112,15 +112,18 @@
       p.action = resolve(S, p, scen.actions, pc.action); p.goal = resolve(S, p, scen.goals, pc.goal);
       p.style = SB.typeOf ? SB.typeOf(p) : SB.STYLE[p.top];
     });
-    if (!P.some(function (p) { return p.role === 'hunt'; })) P[0].role = 'hunt';
+    /* 標的（人間の側）の住人（solo-succubus-target.js）。設定「標的」がおまかせ（モブ）なら、いままでどおり街の獲物だけ */
+    var TG = S.TG = SB.targetsOf ? SB.targetsOf(S, input) : [];
+    if (!P.some(function (p) { return p.role === 'hunt'; })) (P.filter(function (p) { return p.role !== 'target'; })[0] || P[0]).role = 'hunt';
     var H = P.filter(function (p) { return p.role === 'hunt'; }), sen = P.filter(function (p) { return p.role === 'senpai'; })[0] || null;
     var SE = sen ? SB.SENPAI[sen.top] : null;
     P.forEach(function (p) {
-      p.roleLabel = p.role === 'senpai' ? '先輩サキュバス（' + SE.label + '）' : 'サキュバス・' + p.style.label;
+      p.roleLabel = p.role === 'senpai' ? '先輩サキュバス（' + SE.label + '）' : p.role === 'target' ? '標的（人間）' : 'サキュバス・' + p.style.label;
       p.m = { ml: 0, mana: 100, plea: 0, mood: 60 };
       p.cnt = { tries: 0, win: 0, big: 0, half: 0, fail: 0, melt: 0, streak: 0, shame: 0, magic: 0, reverse: 0, holy: 0 };
       p.best = null; p.out = false;
     });
+    if (TG.length) SB.targetSetup(S, T, TG);
     var keys = ['ml', 'mana', 'plea', 'mood'];
 
     /* ---------- 日没 ---------- */
@@ -143,6 +146,7 @@
         if (sen.top === 'A') p.intel = true;
       });
     }
+    if (TG.length) SB.targetDusk(S, T, TG, H);
     ST.snap(S, keys);
 
     /* ---------- 夜 ---------- */
@@ -157,6 +161,8 @@
         if (p.skip) { p.skip = false; return; }
         /* インキュバス派との獲物の取り合い・吸い合い勝負（solo-succubus-rival.js。設定「インキュバス派」） */
         if (SB.rivalTurn && SB.rivalTurn(S, T, p, H, sen, h, last)) return;
+        /* 住人の標的（人間）に近づく（solo-succubus-target.js。設定「標的」が住人から） */
+        if (TG.length && SB.targetTurn(S, T, p, TG, sen, h, last)) return;
         if (rng() < env.ev / 100 * 0.45 || (last && rng() < 0.4)) { if (happen(S, T, p, sen, SE, last)) return; }
         if (rng() > 0.35 + env.prey / 100 * 0.65) return ST.sayB(S, { actors: [p], text: ST.fmt(pkF(S, (SB.NOPREY || L('{a}は{spot}で一時間粘ったが、めぼしい獲物は通らなかった。|{a}は{spot}の屋根の上から街を見下ろした。今夜は人通りが少ない。|{a}は{spot}をうろついたが、目が合う人がいなかった。'))), { a: p.name, spot: rng.pick(T.spots) }), why: '獲物の少なさ（' + env.prey + '）' }, p.name + 'は空振り');
         hunt(S, T, p, sen, SE);
@@ -165,6 +171,7 @@
       /* 精が尽きかけた住人に、仲間・先輩・ライバルが精を分け与える（solo-succubus-rival.js） */
       if (SB.rivalGive) SB.rivalGive(S, T, H, sen, h);
       P.forEach(function (p) {
+        if (p.role === 'target') { p.m.plea = clamp(p.m.plea - 15, 0, 100); return; }
         p.m.mana = clamp(p.m.mana + 3, 0, 100); p.m.plea = clamp(p.m.plea - 10, 0, 100);
         if (p.role !== 'hunt' || p.out) return;
         var cl = heatCool(S, p);
@@ -462,6 +469,7 @@
       if (!p.best) pool = pool.filter(function (x) { return x.indexOf('{best}') < 0; });
       ST.say(S, { actors: [p], tag: '夜明け', text: ST.fmt(pkF(S, pool), { a: p.name, ml: Math.round(p.m.ml), best: p.best ? p.best.name : '' }), why: p.name + 'の一夜：' + Math.round(p.m.ml) + 'ml・評価 ' + p.grade + (p.out ? '・' + p.outWhy : p.inLove ? '・獲物に恋をした' : '') });
     });
+    if (S.TG && S.TG.length) SB.targetDawn(S, T, S.TG);
     if (sen) ST.say(S, { actors: [sen], tag: '夜明け', text: ST.fmt(pkF(S, DAWN_SEN), { s: sen.name, a: H.length > 1 ? '後輩たち' : H[0].name }), why: '先輩サキュバス（' + (SE ? SE.label : '') + '）' });
     var top = rank[0], sum = Math.round(H.reduce(function (s, p) { return s + p.m.ml; }, 0));
     var ek = (H.length > 1 ? 'many_' : 'one_') + (GOOD[top.grade] && !top.out ? 'ok' : 'ng');
@@ -506,6 +514,7 @@
     var lines = rank.map(function (p, k) { return (k + 1) + '位 ' + p.name + '（' + p.style.label + '）' + Math.round(p.m.ml) + 'ml・成功' + p.cnt.win + '/' + p.cnt.tries + (p.best ? '・最高は' + p.best.name : '') + (p.out ? '・' + p.outWhy : ''); });
     var rows = rank.map(function (p, k) { return { i: p.i, rank: (k + 1) + '位', cells: [p.style.label, '魅' + p.stats.charm + '・技' + p.stats.tech, Math.round(p.m.ml) + 'ml', p.cnt.win + '/' + p.cnt.tries, String(p.cnt.big), p.best ? p.best.name : '—', p.grade] }; });
     if (sen) rows.push({ i: sen.i, rank: '先輩', cells: [SE.label, '—', '—', '—', '—', '—', '—'] });
+    if (S.TG && S.TG.length) SB.targetFinish(S, T, S.TG, rows, lines);
     var sum = H.reduce(function (s, p) { return s + p.m.ml; }, 0);
     return ST.result(S, input, {
       ending: { title: title, kind: GOOD[top.grade] ? 'ok' : 'over', lines: lines },
