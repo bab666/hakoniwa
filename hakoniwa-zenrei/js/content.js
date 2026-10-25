@@ -11,10 +11,12 @@
   if (!HK) return;
   var C = HK.Content = {
     TAGS: [
+      /* r18:begin */
       { id: 'force', label: '合意のない展開', desc: '夜這い・略奪者やゾンビに襲われる・神や眷属の夜・生贄の儀式・執着の監禁の夜・敵対する二人の強引なエッチ・星の生命体に攫われる・同意のない催眠（切なら、催眠は同意の上の催眠プレイに） など' },
       { id: 'preg', label: '妊娠・孕む描写', desc: '邪神村の疑似妊娠・巫女、行為のあとに孕む描写' },
       { id: 'violence', label: '暴力をともなう性描写', desc: '吹雪の館の快楽殺人・凌辱など、暴力と性が結びつく場面' },
       { id: 'abuse', label: 'DVなど歪んだ関係', desc: '関係「歪んだ関係」の支配・暴言・暴力の場面' }
+      /* r18:end */
     ],
     CORE: { dungeon: 1, hole: 1, kaihen: 1, succubus: 1, variety: 1, massage: 1 },
     /* env（箱庭の ctx.env・物語型の S.env）で、その内容が入になっているか */

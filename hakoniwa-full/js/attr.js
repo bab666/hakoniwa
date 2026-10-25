@@ -157,17 +157,24 @@
   A.gearHtml = function (c, others, h) {
     var esc = h.esc, sel = function (k) { return h.selOf('at_' + k, listOf(k), c[k] || ''); };
     var n = A.summary(c, function (id) { return others.filter(function (o) { return o.id === id; })[0]; }).length;
-    var nf = !HK.SAFE_ON && others.length ? '<div class="gearrow"><span class="gearhint" style="flex:1 1 100%;margin:0">相手ごとの夜の性格（決めた相手には、上の夜の性格よりこちらを優先します）</span>' + others.map(function (o) {
+    var nf = '';
+    /* r18:begin */
+    if (!HK.SAFE_ON && others.length) nf = '<div class="gearrow"><span class="gearhint" style="flex:1 1 100%;margin:0">相手ごとの夜の性格（決めた相手には、上の夜の性格よりこちらを優先します）</span>' + others.map(function (o) {
       return '<label>' + esc(o.name) + 'には <select data-gf="at_nf" data-o="' + esc(o.id) + '" aria-label="' + esc(o.name) + 'への夜の性格">' + A.NIGHT.map(function (x) { return h.opt(x[0], x[0] ? x[1] : '上と同じ', (c.nightFor || {})[o.id] || ''); }).join('') + '</select></label>';
-    }).join('') + '</div>' : '';
+    }).join('') + '</div>';
+    /* r18:end */
     var same = others.length ? '<label title="別の世界・別の時間の同じ人のように扱います。二人は恋愛・R18にならず、鏡を見るような場面が起きます">同一人物 <select data-gf="at_same" aria-label="同一人物"><option value="">なし</option>' + others.map(function (o) { return h.opt(o.id, o.name, c.same || ''); }).join('') + '</select></label>' : '';
     return '<details class="gattr"' + (openNow ? ' open' : '') + '><summary>体と設定 <span class="gakn">' + (n ? n + '件' : 'なし') + '</span></summary>' +
       '<div class="gearrow"><label title="二人の体格の差で、見上げる・抱き上げるといった文が変わります">体格 ' + sel('build') + '</label>' +
+      /* r18:begin */
       (!HK.SAFE_ON && c.gender === 'f' ? '<label title="R18の場面の地の文で、胸の書き方が変わります">胸 ' + sel('bust') + '</label>' : '') +
+      /* r18:end */
       '<label title="耳・尾・牙・翼などの文の飾りが付きます。死のある箱庭では、吸血鬼は特殊役職の吸血鬼と同じ扱いになります">種族 ' + sel('race') + '</label>' +
       (c.race === 'other' ? '<label>種族の名前 <input type="text" data-gf="at_raceNote" value="' + esc(c.raceNote || '') + '" maxlength="12" placeholder="例：人魚" style="width:7em"></label>' : '') +
+      /* r18:begin */
       (!HK.SAFE_ON ? '<label title="R18の場面での振る舞い。作風（山場の書き方）より優先します。マゾは受け攻めを変えません（攻めを選んだ人は攻めのまま）">夜の性格 ' + sel('night') + '</label>' : '') +
       (!HK.SAFE_ON ? '<label title="R18の場面の体の書き方が、性別ではなくこちらに従います。「なし」にすると、受けのときは口まで、攻めのときは指と玩具だけになります">性器 ' + sel('genital') + '</label>' : '') +
+      /* r18:end */
       '<label title="快楽堕ち・催眠・常識改変・感覚遮断穴などで、堕ちやすさが変わります。強いと、体は流されても心は折れません">心の強さ ' + sel('will') + '</label>' + same + '</div>' + nf + food(c, esc) + '</details>';
   };
   /* 「体と設定」の食べ物の行：好きな食べ物・嫌いな食べ物（自由記入）と好きな味（いくつでも） */
@@ -284,8 +291,10 @@
     var x = RANK[a.build] != null ? RANK[a.build] : 1, y = RANK[b.build] != null ? RANK[b.build] : 1;
     return x > y ? 'a>b' : y > x ? 'b>a' : '';
   };
+  /* r18:begin */
   /* 胸の差し替え語（R18版・女性だけ。決めていなければ ''） */
   A.BUST_WORD = { s: L('控えめな胸|小ぶりな胸|慎ましい胸'), m: L('形のいい胸|柔らかな胸|手に馴染む胸'), l: L('豊かな胸|たわわな胸|大きな胸') };
+  /* r18:end */
   A.bustWord = function (c, pick) {
     if (HK.SAFE_ON || !c || !c.bust || (c.gender || (c.src && c.src.gender)) !== 'f') return '';
     var l = A.BUST_WORD[c.bust]; if (!l) return '';

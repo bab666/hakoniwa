@@ -181,6 +181,7 @@
     shinjuFail: L('{a}は{b}の手を引き、高い場所の縁に立った。だが{b}は、{a}の腕を強く引き戻した。「……生きて。私と一緒に」{a}は崩れ落ちて泣いた。|{a}が用意した薬を、{b}は床に叩きつけた。「そんなことのために、一緒にいたいんじゃない」'),
     shinju_s: L('{a}は{b}の手を引いて、屋上の柵の前に立った。「……ねえ、このまま二人で消えちゃおうか」{b}が強く手を握り返すと、{a}はようやく我に返った。|{a}は{b}の肩にもたれて、「二人だけの世界に行けたらいいのに」と呟いた。{b}は答えられず、ただ手を握っていた。')
   };
+  /* r18:begin */
   /* 監禁中の夜（R18）：向きは受け攻めの指定どおり。T＝攻めになる人、U＝受けになる人 */
   O.CAGE_NIGHT = {
     /* 執着する側が攻め */
@@ -188,10 +189,11 @@
     /* 執着する側が受け（攻めに設定した人を受けの位置にはしない） */
     bottom: L('{a}は動けない{b}の上に跨り、自分から腰を落とした。「……ね、気持ちいいでしょ？　私じゃなきゃ、だめになって」|{a}は毎晩、{b}の体に自分を刻み込むように身を委ねた。{b}が果てるたび、{a}は満たされた顔で{b}の胸に頬を寄せた。|{a}は{b}をベッドに縛ったまま、自分から{b}を受け入れた。「逃げられないのは、私のほうなのかもね」')
   };
+  /* r18:end */
   /* 箱庭ごとの文（PACK）があれば 65% でそちらを使う。PACK の key が only なら共通の文は使わない */
   /* noC：恋敵がいないとき（{c} を含む文を使わない） */
   function T(ctx, key, noC) {
-    var p = O.PACK[ctx.scen && ctx.scen.id], own = p && p[key], base = O.TEXT[key] || O.CAGE_NIGHT[key];
+    var p = O.PACK[ctx.scen && ctx.scen.id], own = p && p[key], base = O.TEXT[key] || (O.CAGE_NIGHT || {})[key];
     var ok = function (l) { return (l || []).filter(function (x) { return !noC || x.indexOf('{c}') < 0; }); };
     own = ok(own); base = ok(base);
     var arr = own.length ? (base.length && !(p.only && p.only.indexOf(key) >= 0) && ctx.rng() < 0.35 ? base : own) : base;

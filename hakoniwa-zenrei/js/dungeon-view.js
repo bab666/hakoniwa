@@ -45,7 +45,7 @@
       '<path d="' + path('p') + '" fill="none" stroke="var(--pine)" stroke-width="1.2" opacity=".7"/>' +
       '<path d="' + path('r') + '" fill="none" stroke="var(--accent)" stroke-width="2.2"/>' +
       '<path d="' + path('c') + '" fill="none" stroke="var(--love)" stroke-width="2.2"/>' + (H[0].s != null ? '<path d="' + path('s') + '" fill="none" stroke="var(--guard)" stroke-width="1.6" stroke-dasharray="5 3"/>' : '') + '</svg>' +
-      '<figcaption class="legend"><span><i style="background:var(--accent)"></i>理性</span><span><i style="background:var(--love)"></i>堕ち度（100で陥落）</span><span><i style="background:var(--pine)"></i>快感（100で絶頂）</span>' + (H[0].s != null ? '<span><i style="background:var(--guard)"></i>' + esc(res.gaugeS || '疑い（55で気づく）') + '</span>' : '<span>B＝地下の階</span>') + '</figcaption></figure>';
+      '<figcaption class="legend"><span><i style="background:var(--accent)"></i>理性</span><span><i style="background:var(--love)"></i>堕ち度（100で陥落）</span><span><i style="background:var(--pine)"></i>快感（100で絶頂）</span>' + (H[0].s != null ? '<span><i style="background:var(--guard)"></i>' + esc(res.gaugeS || '疑い（55で気づく）') + '</span>' : '<span>B＝地下の階</span>') + '</figcaption></figure>'; /* r18:ok */
   }
 
   function devBars(h) {
@@ -63,7 +63,7 @@
     var curses = h.curses.length ? h.curses.map(function (c) { return chip(DG.CURSES[c].label, 'curse', DG.CURSES[c].desc); }).join('') : '<span class="nums">なし</span>';
     var items = h.items.length ? h.items.map(function (c) { return chip(DG.ITEMS[c].label, '', DG.ITEMS[c].desc); }).join('') : '<span class="nums">なし</span>';
     return '<div class="ccard"><div class="hd">' + HK.Icons.html(h.name, i, 40, h.fate === '陥落' ? 'gone' : '') + '<span class="nm">' + esc(h.name) + '</span>' + (res.party ? '<span class="fate ' + fateCls + '">' + esc(h.fate) + '</span>' : '') + '<span class="nums">' + esc(HK.toCode(h.eg)) + '・' + esc(HK.egoType(h.eg).label) + '</span></div>' +
-      (res.party ? '<div class="sub">堕ち度 ' + h.corrupt + '・理性 ' + h.reason + '・絶頂 ' + h.climax + '回' + (h.fallTitle ? '・' + esc(h.fallTitle) : '') + '</div>' : '') +
+      (res.party ? '<div class="sub">堕ち度 ' + h.corrupt + '・理性 ' + h.reason + '・絶頂 ' + h.climax + '回' + (h.fallTitle ? '・' + esc(h.fallTitle) : '') + '</div>' : '') + /* r18:ok */
       (h.memo ? '<div class="sub">' + esc(h.memo) + '</div>' : '') +
       '<div class="sub">態度：<b>' + esc(HK.toneLabel ? HK.toneLabel(h) : DG.PERSONA[h.persona].label) + '</b>（' + esc((HK.toneInfo && HK.toneInfo(HK.toneOf(h)) || DG.PERSONA[h.persona]).desc) + '）</div>' +
       '<div class="sub">最初の方針：' + esc(h.action) + (h.autoAction ? '（気質から）' : '') + '　目標：' + esc(h.goal) + (h.autoGoal ? '（気質から）' : '') + '</div>' +
@@ -78,12 +78,12 @@
     var stats = res.estats ? res.estats : res.party ? [
       ['到達', '地下' + Math.min(res.reached, res.floors) + '階／' + res.floors],
       ['帰還', HS.filter(function (x) { return x.fate !== '陥落'; }).length + '／' + HS.length + '人'],
-      ['絶頂（合計）', HS.reduce(function (a, x) { return a + x.climax; }, 0) + '回'],
+      ['絶頂（合計）', HS.reduce(function (a, x) { return a + x.climax; }, 0) + '回'], /* r18:ok */
       ['助けに入った', (c.saved || 0) + '回'],
       ['仲間に襲われた', (c.assault || 0) + '回'],
     ] : [
       ['到達', '地下' + res.reached + '階／' + res.floors],
-      ['絶頂', h.climax + '回'],
+      ['絶頂', h.climax + '回'], /* r18:ok */
       ['堕ち度', h.corrupt],
       ['理性', h.reason],
       ['発動した罠', c.traps + '回'],
@@ -91,7 +91,7 @@
       ['撃退', c.won + '／' + c.fights],
       ['番人撃破', c.mids + '／' + res.mids.length]
     ];
-    if (!res.estats && c.edge) stats.push(['寸止め', c.edge + '回']);
+    if (!res.estats && c.edge) stats.push(['寸止め', c.edge + '回']); /* r18:ok */
     if (!res.estats && c.seek) stats.push(['自分から', c.seek + '回']);
     return '<section class="ending dgend ' + E.kind + '" aria-label="結末"><div class="eyebrow">' + (E.kind === 'over' ? 'GAME OVER' : '結末') + '</div><p class="ehead">' + esc(E.title) + '</p>' +
       '<dl class="estats">' + stats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(String(s[1])) + '</dd></div>'; }).join('') + '</dl>' +
@@ -153,7 +153,7 @@
       '<div class="cards" style="margin-top:12px">' + heroCard(res, res.hero) +
       '<div class="ccard"><div class="hd"><span class="nm" style="font-size:16px">開発度</span><span class="nums">' + (res.hero.hardTop ? '攻めの挑戦者は罠や魔物に責められないので、開発度は伸びない' : '罠や魔物に責められた部位ほど伸び、次から感じやすくなる') + '</span></div>' + devBars(res.hero) + '</div></div>') +
       '<h2 class="sec">足りなかったもの・効いたもの</h2><ul class="dgadvice">' + res.advice.map(function (a) { return '<li>' + paint(a, res) + '</li>'; }).join('') + '</ul>' +
-      '<h2 class="sec" id="tlhead">探索の記録</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button>' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="dglewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + '</div><div class="tl" id="dgtl">' + timeline(res) + '</div>' +
+      '<h2 class="sec" id="tlhead">探索の記録</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button>' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="dglewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + '</div><div class="tl" id="dgtl">' + timeline(res) + '</div>' + /* r18:ok */
       (histHtml || '');
   };
   DV.toggleKey = function () {
@@ -181,7 +181,7 @@
     L.push('■ 結末');
     L.push(E.title);
     if (res.estats) L.push(res.estats.map(function (x) { return x[0] + ' ' + x[1]; }).join('　'));
-    else L.push('到達 地下' + res.reached + '階／' + res.floors + '　絶頂 ' + h.climax + '回　堕ち度 ' + h.corrupt + '　理性 ' + h.reason + '　発動した罠 ' + res.cnt.traps + '　避けた ' + res.cnt.avoided);
+    else L.push('到達 地下' + res.reached + '階／' + res.floors + '　絶頂 ' + h.climax + '回　堕ち度 ' + h.corrupt + '　理性 ' + h.reason + '　発動した罠 ' + res.cnt.traps + '　避けた ' + res.cnt.avoided); /* r18:ok */
     E.lines.forEach(function (l) { L.push('・' + l); });
     if (h.curses.length) L.push('呪い：' + h.curses.map(function (c) { return DG.CURSES[c].label; }).join('・'));
     L.push('開発度：' + DG.PART_ORDER.map(function (k) { return DG.PARTS[k] + (Math.round((h.dev[k] || 0) * 10) / 10); }).join(' '));
