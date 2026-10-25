@@ -1,6 +1,6 @@
 /* 複数人（三人以上）が出る恋愛・夜の出来事の、嫉妬系と仲良し系の比率を数える（設計指針：半々くらい）
    使い方: node group-audit.js <ビルドのディレクトリ> [回数=30] [r18|safe|''] [--why]
-   嫉妬系（すれ違い）：理由か本文に 嫉妬・取り合い・恋敵・失恋・三角関係・執着 などがあるもの。それ以外（恋愛の分類か三人の場面）を仲良し系として数える
+   日常の三人の場面（daily-kit.js。理由に「日常の三人」）も数える。嫉妬系（すれ違い）：理由か本文に 嫉妬・取り合い・恋敵・失恋・三角関係・執着 などがあるもの。それ以外（恋愛の分類か三人の場面）を仲良し系として数える
    配役は三人以上。回ごとに「恋人どうし＋片想い」「同じ人に恋人が二人」を交互に置く */
 'use strict';
 const { openBuild } = require('./lib.js');
@@ -26,7 +26,7 @@ const { openBuild } = require('./lib.js');
           if (!e || !e.text || (e.kind && /step|phase|death/.test(e.kind))) return;
           const ac = [...new Set((e.actors || []).map(x => typeof x === 'number' ? x : x && x.i).filter(x => x != null))];
           if (ac.length < 3) return;
-          const rom = e.cat === 'romance' || /三人の場面|三人で|三人の夜|恋人たち|仲良し）/.test((e.tag || '') + (e.why || ''));
+          const rom = e.cat === 'romance' || /三人の場面|三人で|三人の夜|恋人たち|仲良し）|日常の三人/.test((e.tag || '') + (e.why || ''));
           if (!rom) return;
           const j = JEAL.test(((e.why || '') + (e.tag || '') + e.text).replace(/嫉妬：なし/g, ''));
           if (j) { o.jeal++; if (WHY && o.exJ.length < 3) o.exJ.push((e.why || e.tag || '').slice(0, 70)); } else { o.warm++; if (WHY && o.exW.length < 3) o.exW.push((e.why || e.tag || '').slice(0, 70)); }

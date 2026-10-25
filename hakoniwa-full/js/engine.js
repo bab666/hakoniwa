@@ -244,7 +244,7 @@
       if (p === 'wa') return a && a.weapon ? a.weapon.name : '素手';
       if (p === 'wb') return b && b.weapon ? b.weapon.name : '素手';
       if (p === 'step') return self.label;
-      if (p === 'place') return self.place || '';
+      if (p === 'place') return (HK.Daily && HK.Daily.label && HK.Daily.label(self, a)) || self.place || '';
       return m;
     });
   };

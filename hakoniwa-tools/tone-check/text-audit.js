@@ -1,6 +1,6 @@
 /* 横断の点検：文の崩れ・同じシードで同じ結果・全年齢への漏れ・重さ・結末の組み立て
    使い方: node text-audit.js <ビルドのディレクトリ> [1箱庭あたりの回数=12] [r18|safe|''] [箱庭id,…] [--why]
-   T1 置き換え漏れ（{a} {b} {x} {sensei} など）・undefined・NaN・null・[object
+   T1 置き換え漏れ（{a} {b} {x} {sensei} {place} など）・undefined・NaN・null・[object
    T2 空の記録（本文が空・空白だけ）
    T3 句読点の重なり（。。 、、 」」の誤り など）・名前の直後の「はは」「がが」
    T4 同じ入力を続けて二回回して、記録が一致しない
@@ -16,7 +16,7 @@ const { openBuild } = require('./lib.js');
   const { browser, page, errors } = await openBuild(dir, mode);
   const r = await page.evaluate(({ N, only, WHY }) => {
     const KEYS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-    const PH = /\{(?:a|b|c|d|x|y|t|m|n|p|v|w|sensei|name|o|h|s|sa|sb|T|U)\}|undefined|NaN|\bnull\b|\[object /;
+    const PH = /\{(?:a|b|c|d|x|y|t|m|n|p|v|w|sensei|name|o|h|s|sa|sb|T|U|place|kind|ue|shita|yobi|oya|ko|oyayobi|shin)\}|undefined|NaN|\bnull\b|\[object /;
     const PUNCT = /。。|、、|」」(?!」)|「「|！！！！|？？？/;
     const SEX = /挿入|挿れ|射精|精液|愛液|ちんぽ|喘ぎ|腰を振|フェラ|絶頂|イっ|イく|中に出|犯さ|犯し|セックス|性交|乳首|秘部|膣|陰茎|肉棒|勃起|♡|淫ら|快楽堕ち|種付け|孕ま/;
     const SAFE = !!HK.SAFE_ON;
