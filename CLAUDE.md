@@ -11,3 +11,4 @@
 - 文の閲覧・試し読み・編集・点検の画面は `hakoniwa-tools/text-studio`（`node hakoniwa-tools/text-studio/server.js`）。画面からの依頼は `hakoniwa-tools/text-studio/ai-requests.md` に `- [ ]` でたまるので、「依頼を片付けて」と言われたら上から順に直して `[x]` にする。
 - **複数人が絡む恋愛の出来事は、嫉妬・失恋・三角関係（すれ違い系）と、応援・祝福・ダブルデート（仲良し系）を半々くらいにする**：場面を足したら `hakoniwa-tools/tone-check/group-audit.js` で比率を確かめ、どちらかが大きく足りなければ足す（仲良し系の共通の場面は `js/rel-group.js`）。
 - **返信は必ず日本語で書く**（報告・質問・確認・コミットメッセージ・更新履歴のすべて）。
+- **関係性と口調はこれ以上増やさない**（実装しなかった要望は `docs/reports/2026-10-25/not-implemented.md` に記録する）。全体仕様（二人称・一人称の使い分け、モブへの呼びかけ、状態の整合など）の要望は実装する。

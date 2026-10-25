@@ -16,7 +16,8 @@ const { openBuild } = require('./lib.js');
   const { browser, page, errors } = await openBuild(dir, mode);
   const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
   const r = await page.evaluate(({ N, only, WHY, ENVSET }) => {
-    const KEYS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    const KEYS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8'];
+    const DUNGEON_RE = /迷宮|魔物|冒険者|次の部屋|罠の部屋/;
     const PH = /\{(?:a|b|c|d|x|y|t|m|n|p|v|w|sensei|name|o|h|s|sa|sb|T|U|place|kind|ue|shita|yobi|oya|ko|oyayobi|shin|note|bw|L|S|race)\}|undefined|NaN|\bnull\b|\[object /;
     const PUNCT = /。。|、、|」」(?!」)|「「|！！！！|？？？/;
     const SEX = /挿入|挿れ|射精|精液|愛液|ちんぽ|喘ぎ|腰を振|フェラ|絶頂|イっ|イく|中に出|犯さ|犯し|セックス|性交|乳首|秘部|膣|陰茎|肉棒|勃起|♡|淫ら|快楽堕ち|種付け|孕ま/;
@@ -54,6 +55,7 @@ const { openBuild } = require('./lib.js');
           const tp = t.replace(/「「[^「」]*」」/g, '「』');
           if (PUNCT.test(tp)) hit('T3', sc, s, tp.match(PUNCT)[0] + ' ← ' + t);
           if (SAFE && SEX.test(t)) hit('T5', sc, s, t.match(SEX)[0] + ' ← ' + t);
+          if (sc !== 'dungeon' && sc !== 'rpg' && DUNGEON_RE.test(t + ' ' + (e.why || ''))) hit('T8', sc, s, (t + ' ' + (e.why || '')).match(DUNGEON_RE)[0] + ' ← ' + t);
           if (res2 && res2.log && res2.log[k] && res2.log[k].text !== t && out.ex.T4.length < 99) { hit('T4', sc, s, t + ' ### ' + res2.log[k].text); }
         });
         if (res2 && res2.log && res2.log.length !== L.length) hit('T4', sc, s, 'length ' + L.length + ' vs ' + res2.log.length);
