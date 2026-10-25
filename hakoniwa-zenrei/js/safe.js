@@ -145,7 +145,7 @@
     only(OMs, 'lewd', { v: 'low', label: '朝チュン（全年齢版）' });
   }
   if (MSs) {
-    MSs.kicker = 'ソロ・あやしい施術';
+    MSs.kicker = '1〜2人・あやしい施術';
     MSs.desc = '評判のマッサージ店。施術は少しずつあやしくなる。いつ気づくか、言い訳に騙されるか、流されてしまうか。流されたあとのことは、暗転の向こう。';
     only(MSs, 'desc', { v: 'dark', label: '軽め（暗転して回数だけ・全年齢版）' });
     (MSs.env || []).forEach(function (e) { if (e.id === 'desc') e.desc = '流されてしまったあとのことは暗転して、何回だったかだけが分かる'; });

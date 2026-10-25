@@ -110,6 +110,7 @@ js/mini-serifu.js
 js/dungeon-lite.js
 js/solo-kit.js
 late js/solo-massage-data.js
+js/solo-massage-cast.js
 js/solo-massage.js
 js/factions.js
 late js/classroom-life.js
