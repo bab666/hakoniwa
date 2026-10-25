@@ -7476,7 +7476,7 @@
   if (!HK) return;
   var C = HK.Content = {
     TAGS: [
-      { id: 'force', label: '合意のない展開', desc: '夜這い・略奪者やゾンビに襲われる・神や眷属の夜・生贄の儀式・執着の監禁の夜・敵対する二人の強引なエッチ・星の生命体に攫われる など' },
+      { id: 'force', label: '合意のない展開', desc: '夜這い・略奪者やゾンビに襲われる・神や眷属の夜・生贄の儀式・執着の監禁の夜・敵対する二人の強引なエッチ・星の生命体に攫われる・同意のない催眠（切なら、催眠は同意の上の催眠プレイに） など' },
       { id: 'preg', label: '妊娠・孕む描写', desc: '邪神村の疑似妊娠・巫女、行為のあとに孕む描写' },
       { id: 'violence', label: '暴力をともなう性描写', desc: '吹雪の館の快楽殺人・凌辱など、暴力と性が結びつく場面' },
       { id: 'abuse', label: 'DVなど歪んだ関係', desc: '関係「歪んだ関係」の支配・暴言・暴力の場面' }
@@ -30591,6 +30591,20 @@
       motive: '{a}は運命の人だと、本気で信じていた', trust: 0.2, erase: 0.85,
       pick: { sens: 1, lover: 2, obey: 1.6, free: 1.4, smart: 0.2, truth: 1, heat: 1.2, freeze: 1.2, trigger: 1.6, normal: 1, amae: 1, climax: 1, pet: 0.8, buzama: 0.4 } }
   };
+  /* 女性のかける側（モブ）の名前（solo-saimin.js の「かける人の性別」）。恨み・ストーカーは「女」と分かる呼び名にする */
+  var NAMES_F = {
+    colleague: L('隣の席の佐伯玲奈|経理の真壁志保|後輩の倉田美羽|営業の東条かおり|総務の雨宮遥|同期の久住紗季'),
+    lover: L('恋人の灯|恋人の澪|恋人の紗良|恋人の美月|恋人の詩織|恋人の柚葉'),
+    friend: L('大学からの友人の夏目葵|幼馴染の小春|飲み友達の芹沢美緒|ゲーム仲間の烏丸ひより|親友の日向ゆかり|サークル仲間の二階堂杏'),
+    grudge: L('かつて{a}に振られた女|昔{a}に恥をかかされた元同級生の女|{a}に昇進を奪われた女の先輩|{a}のせいで失脚した元上司の女|{a}を逆恨みする元取引先の女|{a}にいじめられたと思い込んでいる女'),
+    stalker: L('{a}の家の向かいに住む女|{a}の行きつけの店の常連の女|{a}のSNSを毎日見ている女|配達員を装った女|{a}の元患者の女|名前も知らない女')
+  };
+  Object.keys(NAMES_F).forEach(function (k) { SM.TYPES[k].namesF = NAMES_F[k]; });
+  /* 後日談で使う、二人が顔を合わせる場所（{place}）と、相手の言い方（{who}） */
+  SM.PLACE = { colleague: '職場', lover: '二人の部屋', friend: 'いつもの店', grudge: '街', stalker: '帰り道' };
+  SM.WHO = { grudge: '自分を恨んでいた相手', stalker: '自分をつけ回していた相手' };
+  /* 内容のスイッチ「合意のない展開」が切のとき：始める前に、二人で同意を取る（合意の上の催眠プレイ） */
+  SM.CONSENT = L('{a}は少し考えてから、「……嫌になったら、すぐやめてね」と頷いた。二人は、止めるときの合図の言葉を決めてから始めた。|始める前に、{h}は「どこまでならいい？」と{a}に確かめた。{a}は照れながら、「……エッチなのも、ちょっとなら」と答えた。|{a}は「催眠って、ちょっと興味あったんだ」と笑って、自分から目を閉じた。合図の言葉を一つ言えば、いつでも終わる約束だった。');
 
   /* ---------- かけ方 ---------- */
   /* aff：かかりやすさへの補正（因子ごと） */
@@ -30710,7 +30724,7 @@
     polite: L('「……かしこまりました……」|「どうぞ……お好きなように……」|「はしたない声を……申し訳、ございません……」|「……お、恥ずかしい……ほど、心地よく……」|「……もっと、お声を……くださいませ……」')
   };
   SM.RESIST_SAY = {
-    proud: L('「……ふざけるな。俺に何をした」|「舐めるなよ。こんなもんで俺が落ちるか」'),
+    proud: L('「……ふざけるな。俺に何をした」|「見くびるなよ。こんなもんで俺が落ちるか」'),
     stern: L('「……不愉快だ。今すぐやめろ」|「私の意志は、私のものだ」'),
     tsun: L('「ちょっ……何してんのよ、変態！」|「か、かからないんだから！　絶対！」'),
     gentle: L('「……ごめんね。それは、できない」|「やめて。お願い」'),
@@ -30832,6 +30846,12 @@
     laugh: L('{a}は腹を抱えて笑った。「催眠とか、本気で信じてたの？　かわいいとこあるじゃん」|{a}は「次はもっと練習してきなよ」と、{h}の肩を叩いた。'),
     noticed: L('{a}は途中で、すべてに気づいた。「……何をしようとしてたの？」――{h}は答えられなかった。|{a}はかからなかった。かかったふりをして、{h}が何をするのか、最後まで見届けた。')
   };
+  /* 困惑・放心・受け入れて終わる結末（怒る・通報するだけでなく）。どの組でも読めるよう、体の向きには触れない */
+  SM.AFTER.confused = L('{a}は全部覚えていた。けれど、怒ればいいのか、泣けばいいのか、自分でも分からなかった。{h}の顔を見るたびに言葉を探して、結局何も言えないまま目を逸らした。|{a}は自分の手のひらを、しばらくじっと見つめていた。「……あれ、本当に私だったの？」――{h}は答えなかった。{a}も、答えが欲しいのかどうか分からなかった。|{a}は家に帰ってから、ベッドの端に座ったまま朝を迎えた。嫌だったのか、嫌じゃなかったのか。どちらと言い切っても、嘘になる気がした。');
+  SM.AFTER.dazed = L('{a}は目を覚ましてからも、しばらく天井を見つめたまま動かなかった。{h}が名前を呼んでも、返事は一拍遅れて返ってきた。心だけが、まだあの場所に置き去りになっていた。|翌日、{a}は一日じゅう上の空だった。お茶を淹れたまま飲み忘れ、話しかけられても「……え？」と聞き返してばかりいた。耳の奥に、まだ{h}の声が残っていた。|{a}はぼんやりしたまま服を着て、ぼんやりしたまま家に帰った。玄関で靴を脱いだところで、急に膝の力が抜けて、そのまま座り込んだ。何を考えればいいのかも、分からなかった。');
+  SM.AFTER.accept = L('{a}は全部覚えていた。長い沈黙のあとで、{a}は小さく息を吐いた。「……びっくりした。でも、{h}だったから、いい」――{h}は、ほっとしたように肩を落とした。|{a}は戸惑った顔のまま、{h}の袖をそっと掴んだ。「次は、ちゃんと最初から言って。……そしたら、たぶん、断らないから」――{h}は何度も頷いた。{a}は赤い顔のまま、掴んだ袖を離さなかった。|{a}はしばらく黙って{h}を見ていた。それから、困ったように笑った。「怒るタイミング、逃しちゃった。……もういいよ。そのかわり、ちゃんと責任とってね」――{h}は、神妙な顔で頷いた。');
+  /* 結末の名前（結果の見出しに出す） */
+  SM.END_TITLE = { peace: '冴えた朝', forget: '白紙の朝', body: '体だけの記憶', angry: '平手の音', report: '届けられた夜', revenge: '振り子は返る', counter: '逆催眠', sweet: '照れた許し', shy: '合わせられない目', fall: '自分から鳴らす指', couple: '順番違いの恋', depend: '離れられない声', laugh: '笑い飛ばし', noticed: '見破られた催眠', confused: '答えの出ない朝', dazed: '戻らない心', accept: 'それでもいい' };
   /* かけられた側が攻めのとき（solo-saimin.js の topVoice）：ぼんやりしても、弱気・従順にはならない */
   SM.TRANCE_TOP = {
     proud: L('「……何だ、これは……妙に、頭が……軽い……」|「……ふん……悪く、ない……」|「……お前の声……やけに、頭に響く……」|「……体が、熱い……お前のせいか……」|「……は……今なら、何でもできそうだ……」|「……ぼんやりする……が、嫌いじゃねえ……」'),
@@ -30853,6 +30873,80 @@
     sweet: { proud: L('「……次やったら、俺がかけ返すからな」'), stern: L('「……事前に、許可を取れ」'), tsun: L('「べ、別に嫌じゃなかったけど！　勘違いしないでよね！」'), gentle: L('「……ちょっと、恥ずかしかったな」'), devoted: L('「あなたなら……何をされても、いいです」'), cool: L('「……興味深い体験だった。再現性を確かめたい」'), free: L('「めっちゃよかった！　またやろ！」'), shy: L('「う、うう……は、はずかしい……でも……」'), polite: L('「……次は、私にもかけさせてくださいね」') },
     fall: { proud: L('「……悪いかよ。もう、お前の声なしじゃ駄目なんだ」'), stern: L('「……私は、壊れてしまったらしい」'), tsun: L('「ち、違うから！　ただ、ちょっと、またしてほしいだけで……！」'), gentle: L('「……ねえ、もう一回、だめ？」'), devoted: L('「私を、あなたのものにしてください」'), cool: L('「……依存の兆候を自覚している。止められない」'), free: L('「あれ忘れられないんだけど！　もっかい！」'), shy: L('「お、おねがい、します……もう一回……」'), polite: L('「どうか、もう一度……お願いいたします」') }
   };
+  /* 困惑・放心・受け入れる結末の台詞（態度9種） */
+  SM.AFTER_SAY.confused = { proud: L('「……怒りゃいいのか、何なのか。分かんねえんだよ」|「……くそ。どんな顔すりゃいいんだ」'), stern: L('「……整理がつかない。少し、時間をくれ」|「……どう判断すべきか、分からない」'), tsun: L('「べ、別に……怒ってるとか、そういうのじゃ……ない、けど……」|「な、なんて言えばいいのよ、こういうとき……」'), gentle: L('「……ごめんね。まだ、うまく考えられないの」|「……どうしたらいいのかしら、私」'), devoted: L('「わ、私……どう思えばいいのか、分からなくて……」|「……嫌、だったのかな。分からない、です……」'), cool: L('「……感情の分類ができない。こんなことは初めてだ」|「……結論が出ない。保留にさせてくれ」'), free: L('「え、待って、これって怒るとこ？　笑うとこ？」|「……なんか、よく分かんないや。ほんとに」'), shy: L('「……あ、あの……わ、わかんない、です……」|「……ど、どうしたら、いいの……」'), polite: L('「……申し訳ございません。まだ、気持ちの整理が……」|「……どのようにお返事すればよいのか、分かりかねます」') };
+  SM.AFTER_SAY.dazed = { proud: L('「……あ？　……ああ、聞いてる……」|「……頭が、まだ、戻ってこねえ……」'), stern: L('「……すまない。何の話だった」|「……集中、できない……」'), tsun: L('「……ん……なに……？　ぼーっとしてないし……」|「……う、うるさい……まだ、ふわふわしてるの……」'), gentle: L('「……ふふ……なんだか、夢みたい……」|「……ごめんなさい、少し……ぼんやりしてて……」'), devoted: L('「……はい……あれ、私、何を……」|「……まだ、あの声が……耳の奥に……」'), cool: L('「……思考が、まとまらない……戻るのに、時間がかかる……」|「……おかしいな……何も、考えられない……」'), free: L('「……あはは……まだ、あたま、とろとろ……」|「……ねえ、今日って、何曜日だっけ……」'), shy: L('「……ぁ……は、はい……？」|「……ふわふわ、して……」'), polite: L('「……失礼いたしました……少々、ぼんやりと……」|「……まだ、夢の中にいるようでございます……」') };
+  SM.AFTER_SAY.accept = { proud: L('「……チッ。お前ならいい。ほかのやつだったら、ぶっ飛ばしてた」|「……もういい。そのかわり、次は俺が決める」'), stern: L('「……今回だけは、不問にする」|「……受け入れよう。ただし、二度目は事前に言え」'), tsun: L('「べ、別に許したわけじゃないんだから！　……ちょっとだけ、だから」|「……し、しょうがないから、なかったことにはしないであげる」'), gentle: L('「……いいのよ。あなたなら」|「……びっくりしたけど、嫌じゃなかったわ」'), devoted: L('「……ちゃんと、受け止めます。あなたのことだから」|「……驚きましたけど、もう、いいんです」'), cool: L('「……合理的ではないが、受け入れることにした」|「……悪くなかった、と認めておく」'), free: L('「まあ、いっか！　面白かったし！」|「……うん、いいよ。そういうのも、ありかも」'), shy: L('「……は、はずかしかった、けど……い、いやじゃ、なかった、です……」|「……こ、今度は……ちゃんと、言ってください……」'), polite: L('「……承知いたしました。今回は、受け入れさせていただきます」|「……次からは、先にお声がけくださいませ」') };
+
+  /* ---------- 後日談（数日後の二人） ----------
+     solo-saimin.js の epilogue：［結末ごとの場面］＋［二人の関係ごとの一文］＋（記憶が欠けていれば一文）＋［気質ごとの一文］＋［態度ごとの台詞］。
+     {place} は二人が顔を合わせる場所、{who} は恨み・ストーカーの言い方。どの文も、体の向き（どちらが攻めか）には触れない */
+  SM.EPI = {
+    erased: L('一週間後、{a}は{h}と{place}で顔を合わせた。{a}はいつもどおりに挨拶をして、いつもどおりに笑った。{h}だけが、その笑顔を正面から見られなかった。|数日後、{a}は「最近よく眠れるんだ」と{h}に話した。あの夜のことは、何ひとつ覚えていない。{h}は相づちを打ちながら、胸の奥の重さを飲み込んだ。'),
+    body: L('数日後、{a}は{place}で{h}とすれ違った。それだけで、理由の分からない熱が首筋まで上ってきた。{a}は首を傾げながら、その場を足早に離れた。|それから{a}は、夜になると決まって同じ夢を見るようになった。誰かの声が、耳元で数を数えている。目が覚めると、{a}はいつも{h}の名前を思い出しかけていた。'),
+    neg: L('あれから、{a}は{h}と目を合わせなくなった。{place}で顔を合わせても、用件だけを短く告げて背を向ける。{h}が何か言いかけるたびに、{a}の肩はわずかにこわばった。|一週間たっても、{a}の中の怒りは冷めなかった。{h}から届いた謝罪の連絡は、開かれないまま溜まっていった。{a}はそのたびに、通知を一つずつ消した。'),
+    report: L('数日後、{a}のもとに一本の連絡が入った。{h}が、もう{a}に近づかないと約束させられたという。{a}は電話を切ってから、長いあいだ窓の外を見ていた。|事情を話し終えたあと、{a}は帰り道で一度だけ立ち止まった。終わったはずなのに、足元がまだ少し揺れている気がした。{a}は深呼吸をして、また歩き出した。'),
+    turn: L('一週間後、立場はすっかり入れ替わっていた。今度は{h}のほうが、{a}の顔色をうかがって暮らしている。{a}はそれを、少しも気の毒だとは思わなかった。|あれ以来、{h}は{a}の前で振り子の話をしなくなった。{a}が指を鳴らすだけで、{h}はびくりと肩を跳ねさせる。{a}は、その反応を見るのが嫌いではなかった。'),
+    mid: L('数日たっても、{a}はあの夜のことを誰にも話せなかった。思い出すたびに、嫌だったのか、そうでなかったのか、答えが入れ替わる。{a}は答えの出ないまま、{h}からの連絡を開いては閉じた。|あれから{a}は、ふとした拍子に手を止めるようになった。カップを持ったまま、信号を待ちながら、{h}の声を思い出してしまう。{a}はそのたびに首を振って、また日常に戻った。'),
+    warm: L('数日後、{a}のほうから{h}に連絡した。「……このあいだのこと、ちゃんと話そう」――待ち合わせた{place}で、二人は少しぎこちなく、それでも前よりずっと近い距離で座った。どちらからともなく、あの夜の話を始めた。|あれから二人のあいだには、小さな秘密が一つ増えた。{place}で目が合うと、{a}は少しだけ頬を赤くして、それから小さく笑う。{h}も、照れくさそうに笑い返した。'),
+    couple: L('一か月後、二人は並んで歩いていた。始まり方を訊かれると、二人は決まって顔を見合わせて、「……成り行きで」とだけ答える。本当のことは、二人だけが知っていた。|付き合い始めてから、{a}は一度だけ{h}に振り子を返した。「もう要らないでしょ」――{h}は笑って、それを引き出しの奥にしまった。二人のあいだに、もう暗示は必要なかった。'),
+    peace: L('それから{a}は、困ったことがあるたびに{h}を頼るようになった。「また、頭が冴えるやつお願い」――{h}は苦笑いしながら、振り子を取り出す。{a}の成績は、目に見えて上がり続けた。|数日後、{a}は{h}にお礼の菓子折りを持ってきた。「あれから、本当に調子いいんだ」――{h}は、ほかの暗示をかけなくてよかったと、心の底から思った。振り子は、それきり机の引き出しにしまわれた。'),
+    fall: L('数日後、{a}はまた{h}の部屋の前に立っていた。呼ばれたわけではない。気がつくと、足がここへ向いていた。{a}は震える指で、呼び鈴を押した。|あれから、{a}の夜はいつも{h}の声で終わる。眠る前に、録音した{h}の声を聞かないと落ち着かない。{a}はそれを、もう恥ずかしいとも思わなかった。'),
+    depend: L('{a}は今でも{h}を許していない。それなのに、眠れない夜は決まって{h}の番号を探してしまう。画面の上で指が止まり、{a}は自分を嫌いになりながら、それでも発信を押した。|一週間後、{a}はまた{h}の前に座っていた。睨みつける目と、とろけそうな体が、まるで別の人のもののようだった。{h}は何も言わずに、振り子を揺らし始めた。'),
+    fail: L('数日後、{h}は{place}で{a}と顔を合わせた。{a}は何事もなかったように「あのときの、また練習しなよ」と笑った。{h}は曖昧に頷くことしかできなかった。|あの日以来、{a}は{h}が何か取り出すたびに、ちらりと手元を確かめるようになった。{h}はそれに気づいて、振り子を引き出しの奥にしまい込んだ。二人の距離は、少しだけ遠くなった。')
+  };
+  /* いたずらだけだったとき・ぼかすとき（全年齢版）の後日談 */
+  SM.EPI_SOFT = {
+    erased: L('一週間後、{a}は{h}と{place}で顔を合わせた。{a}は何も覚えていなくて、いつもどおりに笑った。{h}は、あの日の{a}の姿を思い出して、こっそり笑いをこらえた。|数日後、{a}は「なんか最近、肩が軽いんだよね」と言った。あの日のことは、何ひとつ覚えていない。{h}は「よかったね」とだけ言って、目を逸らした。'),
+    body: L('数日後、{h}が何気なく手を叩くと、{a}はなぜか背筋を伸ばした。本人は理由が分からず、首を傾げている。{h}は、暗示がまだ少し残っていることを黙っておいた。|それから{a}は、{h}に「おやすみ」と言われるたびに、大きなあくびをするようになった。理由は分からない。{a}は「なんでだろうね」と笑っていた。'),
+    neg: L('あれから一週間、{a}は{h}と口をきかなかった。{place}で顔を合わせても、ぷいと横を向く。{h}は、あの暗示はやりすぎだったと、ようやく反省した。|{a}はしばらく、{h}が手を叩くたびに「やめて」と睨むようになった。{h}がお詫びのお菓子を差し出しても、{a}は受け取らなかった。仲直りには、もう少し時間がかかりそうだった。'),
+    report: L('数日後、{h}は{place}で、みんなから妙に優しい目で見られた。{a}が一部始終を話したらしい。{h}はしばらく、変なあだ名で呼ばれることになった。|{a}が話したおかげで、{h}の催眠はすっかり笑い話になった。{h}は顔を赤くして、もう二度と人前で振り子を出さないと誓った。{a}は、少しだけ気が晴れた。'),
+    turn: L('一週間後、今度は{a}が振り子を手にしていた。「はい、目を閉じて」――{h}は観念して目を閉じた。その日、{h}は一時間、語尾に「ござる」をつけて過ごした。|あれ以来、{h}は{a}の前で振り子の話をしなくなった。{a}が指を鳴らすふりをするだけで、{h}はびくりとする。{a}は、それを見るのがちょっと楽しかった。'),
+    mid: L('数日たっても、{a}はあの日のことをどう思えばいいのか分からなかった。恥ずかしいのに、思い出すと少し笑ってしまう。{a}はその気持ちに名前をつけられないまま、{h}の顔を見ていた。|あれから{a}は、ふとした瞬間にぼんやりするようになった。誰かが手を叩く音に、思わず振り向いてしまう。{a}は自分でも、それが可笑しかった。'),
+    warm: L('数日後、{a}のほうから{h}に声をかけた。「ねえ、今度は私がかけてみてもいい？」――二人は{place}で、交代で振り子を揺らして笑い転げた。どちらも、少しもかからなかった。|あれから、催眠は二人だけの遊びになった。{place}で目が合うと、{a}は小さく指を鳴らす真似をする。{h}は、わざとらしく眠ったふりをしてみせた。'),
+    couple: L('一か月後、二人は付き合っていた。きっかけを訊かれると、二人は顔を見合わせて吹き出す。「……振り子、かな」――誰にも意味は通じなかった。|付き合い始めてからも、二人はときどき催眠ごっこをした。どちらもかからなくなっていたけれど、それでよかった。二人には、もう暗示は要らなかった。'),
+    fall: L('数日後、{a}はまた{h}のところへやってきた。「ねえ、また変な暗示かけて。あれ、癖になる」――{h}は呆れながらも、振り子を取り出した。二人の小さな遊びは、まだしばらく続きそうだった。|あれから{a}は、週に一度は{h}に催眠をせがむようになった。今週は「王様」、先週は「ニワトリ」。{a}は毎回、心から楽しそうだった。'),
+    depend: L('{a}は今でも、あの日のことを少し根に持っている。それなのに、{h}に褒められないと、なんだか一日が終わらない。{a}は不本意そうな顔で、今日も{h}のところへ顔を出した。|一週間後も、{a}は{h}に文句を言い続けていた。そのくせ、{h}が「えらいね」と言うと、口元が勝手にゆるむ。{a}はそれが、いちばん悔しかった。')
+  };
+  SM.EPI_SOFT.peace = SM.EPI.peace;
+  /* 記憶を消し損ねた（一部だけ欠けている）とき */
+  SM.EPI_PART = L('ただ、{a}の記憶はところどころ抜け落ちていた。思い出そうとすると、肝心なところだけが白く霞む。|{a}が覚えているのは、途切れ途切れの場面だけだった。どこまでが本当で、どこからが夢なのか、{a}にはもう確かめようがなかった。');
+  /* 二人の関係（恋人・友人や同僚・恨みやストーカー）× 気分（忘れた・冷えた・揺れている・温かい） */
+  SM.EPI_REL = {
+    close: {
+      forgot: L('恋人としての毎日は、何も変わらずに続いていた。変わったのは、{h}が{a}の寝顔を見つめる時間が、少し長くなったことだけだった。|二人の部屋には、いつもと同じ朝が来た。{a}の淹れたコーヒーを、{h}は黙って飲んだ。'),
+      cold: L('恋人同士のはずの二人のあいだに、見えない線が一本引かれていた。同じ部屋にいても、{a}は{h}に背を向けたままだった。|{a}は、合鍵を返すかどうかで三日迷った。結局、鍵は机の上に置かれたままになっている。'),
+      wobble: L('恋人なのだから、許してもいいはずだった。それでも{a}は、{h}に触れられるたびに、ほんの一瞬だけ身を固くした。|{h}の隣にいると、{a}は安心と落ち着かなさを同時に感じた。どちらが本当の気持ちなのか、まだ決められなかった。'),
+      warm: L('恋人としての距離は、前よりも少しだけ縮まっていた。{a}は{h}の肩にもたれながら、「次は何をかけるつもり？」と囁いた。|{a}は{h}の手を取って、指を絡めた。知らなかった顔を見せ合ったぶんだけ、二人はもっと近くなっていた。')
+    },
+    near: {
+      forgot: L('{place}での二人は、表向きは今までどおりの関係だった。{h}だけが、ときどき{a}の横顔から目を逸らした。|周りの誰も、二人のあいだに何があったのかを知らない。{a}自身も、知らないままだった。'),
+      cold: L('{place}での二人は、必要なことしか話さなくなった。周りが首を傾げても、{a}は理由を言わなかった。|{a}は、{h}と二人きりにならないように気をつけた。{place}でも、いつも誰かの隣を選んで座った。'),
+      wobble: L('{place}で顔を合わせるたびに、二人の会話は途中でぎこちなく途切れた。前の関係に戻れるのか、戻りたいのか、{a}にはまだ分からなかった。|周りの前では、{a}はいつもどおりに振る舞った。ただ、{h}と目が合ったときだけ、少し長く黙り込んでしまう。'),
+      warm: L('{place}での二人は、前より少しだけ近くに座るようになった。周りに冷やかされても、{a}はもう否定しなかった。|{a}は{place}で{h}の隣に座り、ほかの人に聞こえない声で話しかけた。二人のあいだには、もう前のような遠慮はなかった。')
+    },
+    bad: {
+      forgot: L('{h}は、{a}が何も覚えていないことを確かめるように、遠くからその姿を眺めていた。{a}は、背中に刺さる視線にまだ気づいていない。|{a}は何も知らないまま、いつもの{place}を歩いていた。{h}の手の中で、振り子が静かに揺れていた。'),
+      cold: L('{a}は、帰り道を変え、鍵を付け替えた。{h}の影を見かけるたびに、心臓が嫌な音を立てた。|{a}は{h}の連絡先をすべて消した。それでもしばらくは、知らない番号からの着信に身構えずにはいられなかった。'),
+      wobble: L('相手は{who}だ。分かっているのに、{a}は{h}のことを考える時間が増えていた。|{a}は{h}を避けたいのか、確かめたいのか、自分でも分からなかった。{h}の姿を探してしまう目だけが、正直だった。'),
+      warm: L('{h}が{who}だということは、{a}にも分かっていた。それでも{a}は、{h}が差し出した手を振り払えなかった。|周りに話せば、きっと止められる。だから{a}は、{h}とのことを誰にも話さなかった。')
+    }
+  };
+  /* かけられた人の気質（強気・やわらか・冷静・奔放）× 気分 */
+  SM.EPI_TEMPER = {
+    bold: { forgot: L('{a}は今日も、いつもどおり堂々としていた。|{a}は相変わらず、誰にも弱みを見せずに過ごしていた。'), cold: L('{a}は弱みを見せまいと、いつも以上に背筋を伸ばしていた。|{a}は一度決めたことを、簡単には曲げなかった。'), wobble: L('強がる言葉とは裏腹に、{a}の目はときどき迷うように揺れた。|{a}は平気なふりをしていたが、声だけがわずかに上ずっていた。'), warm: L('素直になるのは苦手でも、{a}の態度はもう隠しようがなかった。|{a}はぶっきらぼうに、それでもはっきりと、{h}の隣を選んだ。') },
+    soft: { forgot: L('{a}はいつもどおり、周りに気を配って穏やかに過ごしていた。|{a}は誰に対しても、変わらずやさしかった。'), cold: L('{a}はやさしいぶんだけ、深く傷ついていた。|{a}は誰にも当たらず、一人で静かに泣いた。'), wobble: L('{a}は自分の気持ちより先に、{h}がどう思っているかを考えてしまった。|{a}は困ったように笑うばかりで、本音を口にできなかった。'), warm: L('{a}は少しはにかみながら、{h}の気持ちを受け止めた。|{a}のやわらかな笑顔が、{h}への答えだった。') },
+    cool: { forgot: L('{a}は今日も、淡々と自分の予定をこなしていた。|{a}の冷静な横顔からは、何も読み取れなかった。'), cold: L('{a}は感情を切り離して、起きたことを一つずつ整理していった。|{a}は二度と同じ手を食わないよう、冷静に対策を立てた。'), wobble: L('いつも冷静な{a}が、珍しく考えをまとめられずにいた。|{a}は理屈で片づけようとして、何度も失敗した。'), warm: L('{a}は淡々とした口調のまま、それでも{h}を拒まなかった。|{a}は自分の気持ちを、驚くほど冷静に認めた。') },
+    free: { forgot: L('{a}は相変わらず、楽しそうに毎日を過ごしていた。|{a}はいつもどおり、思いつくままに笑っていた。'), cold: L('いつも陽気な{a}が、笑わなくなった。|{a}は気分を変えようと出かけたが、心から楽しめなかった。'), wobble: L('{a}は笑ってごまかそうとしたが、うまく笑えなかった。|{a}は「まあいっか」と言いかけて、その言葉を飲み込んだ。'), warm: L('{a}はもう、細かいことを気にするのをやめていた。|{a}は楽しそうに、{h}の腕に自分の腕を絡めた。') }
+  };
+  /* 後日談の台詞（気分 × 態度9種） */
+  SM.EPI_SAY = {
+    forgot: { proud: L('「……なんだよ。人の顔、じろじろ見んな」|「……最近、妙によく眠れるんだよな」'), stern: L('「……顔色が悪いぞ。休んだらどうだ」|「……私の顔に、何かついているか」'), tsun: L('「な、なによ。言いたいことあるなら言いなさいよ」|「……べつに、あんたの顔なんか見てないし」'), gentle: L('「どうしたの？　なんだか元気ないわね」|「……ふふ、最近いい夢を見るの」'), devoted: L('「……あの、私、何か失礼なことしましたか？」|「お疲れですか？　お茶、淹れましょうか」'), cool: L('「……妙だな。あの日の記憶が、少し曖昧だ」|「……何か隠しているなら、言ってくれ」'), free: L('「ねえねえ、なんか最近元気ないじゃん？」|「なんかさー、最近すっごいよく寝れるんだよね！」'), shy: L('「……え、えっと……な、なにか、ついてますか……？」|「……あ、あの……お、おはよう、ございます……」'), polite: L('「……お顔の色が優れませんね。大丈夫ですか」|「……先日は、途中で眠ってしまったようで。失礼いたしました」') },
+    cold: { proud: L('「……二度とその面見せんな」|「……忘れたわけじゃねえからな」'), stern: L('「……用件だけ言え」|「……私は、まだ許していない」'), tsun: L('「話しかけないで。……本気で言ってるの」|「……謝ったって、許さないんだから」'), gentle: L('「……ごめんね。今は、話したくないの」|「……少し、距離を置かせて」'), devoted: L('「……もう、前みたいには……できません」|「……ごめんなさい。今は、顔を見るのが……」'), cool: L('「……必要以上に関わるつもりはない」|「……次はない。覚えておけ」'), free: L('「……ごめん、今そういう気分じゃない」|「……もう、前みたいには笑えないかも」'), shy: L('「……こ、来ないで、ください……」|「……ご、ごめんなさい……まだ、こわくて……」'), polite: L('「……失礼いたします。急ぎますので」|「……これ以上のお話は、ご遠慮願います」') },
+    wobble: { proud: L('「……チッ。お前のせいで、調子が狂う」|「……わけ分かんねえ。お前のこと、考えちまう」'), stern: L('「……私は、どうかしているのかもしれない」|「……答えは、まだ出せない」'), tsun: L('「……べ、別に、あんたのことなんか考えてないし……」|「……な、なんでこんなに気になるのよ……」'), gentle: L('「……私、どうしちゃったのかしら」|「……嫌いになれたら、楽なのにね」'), devoted: L('「……忘れなきゃって、思うのに……」|「……私、おかしいのかな……」'), cool: L('「……論理的に説明がつかない。困ったな」|「……感情というのは、厄介なものだ」'), free: L('「……あはは、なんか変なの。笑えないや」|「……ねえ、これってどういう気持ちなんだろ」'), shy: L('「……な、なんで……思い出しちゃうの……」|「……わ、わからない……のに……」'), polite: L('「……どうにも、心が落ち着きません」|「……お恥ずかしい話ですが、まだ混乱しております」') },
+    warm: { proud: L('「……今度は、ちゃんと正面から来い」|「……お前じゃなきゃ、許してねえよ」'), stern: L('「……次は、事前に話を通せ。それなら、構わない」|「……悪くはなかった。それだけだ」'), tsun: L('「か、勘違いしないでよね！　……でも、嫌じゃなかった」|「……つ、次は、もっとちゃんとしなさいよ」'), gentle: L('「……ふふ。また、会いに来てくれる？」|「……あなたなら、いいのよ」'), devoted: L('「……また、そばにいてもいいですか」|「……あなたの声、また聞かせてください」'), cool: L('「……認めよう。君のことが、気になっている」|「……合理的ではないが、悪い気はしない」'), free: L('「ねえ、次はいつ会う？　明日？」|「楽しかったよ。またやろうね！」'), shy: L('「……ま、また……会って、くれますか……」|「……う、うれしかった、です……」'), polite: L('「……また、お会いできるのを楽しみにしております」|「……次は、私からもお誘いしてよろしいですか」') }
+  };
+
   /* ---------- いたずらの暗示（描写を「ぼかす」にしたとき、全年齢版でも使う） ---------- */
   var PR = {
     nya: { label: '語尾が「にゃん」になる', req: 25, aff: { fc: 0.3, ac: 0.1 }, res: { cp: 0.25 },
@@ -30901,6 +30995,9 @@
   if (SM.SUG.truth) SM.SUG.truth.softFull = L('{a}はとろんとした目で話し始めた。「本当は、ずっと誰かに甘えたかった」――{h}は息を呑んだ。|{a}は{h}について、誰にも言ったことのない本音を口にした。「……実は、ずっと気になってた」');
   /* ぼかすときの、そのあと */
   SM.AFTER_SOFT = {
+    confused: L('{a}は自分が何をしていたのか、ぼんやり覚えていた。笑えばいいのか怒ればいいのか分からなくて、「……私、本当にあんなことしてた？」と{h}に三回訊いた。{h}は三回とも、気まずそうに頷いた。|{a}はスマホに残っていた自分の動画を見て、首を傾げた。恥ずかしいのに、なぜか少しだけ面白い。{a}はその気持ちの置き場所が分からないまま、画面を消した。'),
+    dazed: L('暗示が解けたあとも、{a}はしばらくぽかんと座っていた。「……今、何時？」――時計を見て、二時間たっていたことに驚いた。そのあとも一日じゅう、どこか夢の続きにいるようだった。|{a}は帰り道、何度も同じ角を曲がり損ねた。頭のどこかが、まだふわふわしたままだった。{a}は家に着くなり、着替えもせずに眠ってしまった。'),
+    accept: L('{a}は真っ赤になりながらも、最後には吹き出した。「……もう、いいよ。面白かったし」――そう言って、{h}の肩を軽く叩いた。{h}は、ほっとして笑った。|{a}は自分の動画を見せられて、しばらく固まった。それから小さく笑って言った。「……消さなくていいよ。でも、誰にも見せないでね」――{h}は神妙な顔で頷いた。'),
     body: L('{a}は何も覚えていなかった。ただ、ときどき無意識に語尾が「にゃん」になりかけて、そのたびに首を傾げた。|{a}は何も覚えていなかった。ただ、{h}に「おやすみ」と言われると、なぜか猛烈に眠くなった。'),
     fall: L('三日後、{a}は自分から{h}の部屋を訪ねた。「……あの、また、かけてくれない？　ちょっと、楽しかったから」|{a}は{h}の前で手を合わせた。「お願い、また変な暗示かけて。あれ、癖になる」'),
     report: L('{a}は翌朝、共通の友人に一部始終を話した。{h}はそれからしばらく、みんなに「にゃん」と呼ばれた。|{a}は{h}のスマホから、自分が犬になりきっている動画を見つけて、無言で消した。それから一週間、口をきかなかった。'),
@@ -30912,7 +31009,10 @@
 /* 箱庭シミュレーター: 催眠（R18）
    仕事の同僚・恋人・友人・恨みを持った相手・ストーカーの誰かが、住人に催眠をかける。
    かかるかどうか、かかったらどこまで暗示を受け入れるか、どんな暗示に弱いかは人それぞれ。
-   最後に、覚えているか・怒るか・通報するか・やり返すか・堕ちるかが、性格と快楽堕ちの度合いで決まる */
+   最後に、覚えているか・怒るか・通報するか・やり返すか・堕ちるか・困惑するか・放心するか・受け入れるかが、性格と快楽堕ちの度合いで決まる。
+   そのあと、数日後の二人（後日談）を、記憶が消えたか・二人の関係・かけられた人の気質で書き分ける。
+   かける側がモブなら、性別（「かける人の性別」）も選べる。女性のかける側は、男性が相手なら自分から跨って導き（女攻め×男）、女性が相手なら女性どうしの文になる。
+   内容のスイッチ「合意のない展開」が切のときは、恨み・ストーカーは性的な暗示をかけず、同僚・友人・恋人は合意の上の催眠プレイになる */
 (function () {
   'use strict';
   var HK = window.HK, SM = HK.SAIMIN, ST = HK.Story, clamp = HK.clamp;
@@ -30933,12 +31033,13 @@
   function withFresh(f) { var sp = ST.pick; ST.pick = freshPick; try { return f(); } finally { ST.pick = sp; } }
   var scen = {
     id: 'saimin', name: '催眠', kicker: '1〜2人・R18', solo: true, maxCast: 2, minCast: 1,
-    desc: '同僚・恋人・友人・恨みを持った相手・ストーカーの誰かに催眠をかけられる。かかるのか、かかったらどこまでしてしまうのか、どんな暗示に弱いのか。終わったあと、怒るのか、通報するのか、やり返すのか、堕ちるのか。※成人キャラクター向け',
+    desc: '同僚・恋人・友人・恨みを持った相手・ストーカーの誰かに催眠をかけられる。かかるのか、かかったらどこまでしてしまうのか、どんな暗示に弱いのか。終わったあと、怒るのか、通報するのか、やり返すのか、堕ちるのか、困惑するのか、受け入れるのか。数日後の二人も描く。※成人キャラクター向け',
     note: '※登場人物はすべて成人として扱います。',
     unit: 'コマ', simulate: function (input) { return withFresh(function () { return run(input); }); },
-    castHint: '1〜2人（かける側とかけられる側で合わせて二人まで）。1人のときは、かける側はモブ（「かける相手」の設定で決まる）になります。2人のときは片方が「かける側」になり、もう片方に催眠をかけます（関係は「既存の関係」から決まります）。役割を決めなければ、2人目がかける側になります。',
+    castHint: '1〜2人（かける側とかけられる側で合わせて二人まで）。1人のときは、かける側はモブ（「かける相手」「かける人の性別」の設定で決まる）になります。2人のときは片方が「かける側」になり、もう片方に催眠をかけます（関係は「既存の関係」から決まります）。役割を決めなければ、2人目がかける側になります。',
     env: [
       { id: 'who', label: 'かける相手', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ（人ごとにランダム）' }, { v: 'colleague', label: '仕事の同僚' }, { v: 'lover', label: '恋人' }, { v: 'friend', label: '友人' }, { v: 'grudge', label: '恨みを持った相手' }, { v: 'stalker', label: 'ストーカー' }] },
+      { id: 'hsex', label: 'かける人の性別', type: 'select', def: 'random', desc: '1人のとき（かける側がモブ）だけ。おまかせなら、かけられる人の恋愛対象に合わせる', options: [{ v: 'random', label: 'おまかせ' }, { v: 'm', label: '男性' }, { v: 'f', label: '女性' }] },
       { id: 'method', label: 'かけ方', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'pendulum', label: '振り子' }, { v: 'app', label: '催眠アプリ' }, { v: 'voice', label: '囁き声' }, { v: 'aroma', label: '甘い香り' }, { v: 'snap', label: '指パッチン' }, { v: 'audio', label: '催眠音声' }, { v: 'book', label: '古い本の呪文' }] },
       { id: 'skill', label: '催眠の腕', min: 0, max: 100, def: 55, lo: '素人', hi: '達人', desc: '高いほど深くかけられ、相手の弱い暗示を見抜いて選ぶ' },
       { id: 'rounds', label: '暗示の数', min: 2, max: 8, def: 5, lo: '2回', hi: '8回', unit: '回' },
@@ -30970,7 +31071,7 @@
   HK.SCEN_ORDER.push('saimin');
 
   var TIEMAP = { teacher: 'colleague', mentor: 'colleague', lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'lover', colleague: 'colleague', senpai: 'colleague', master: 'colleague', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', acq: 'friend', almost: 'friend', enemy: 'grudge', rival: 'grudge', ex: 'grudge', crush: 'stalker', classmate: 'friend', boss: 'colleague', benefactor: 'friend', worship: 'friend' };
-  var FATE = { peace: '頭が良くなって喜んだ', forget: '何も覚えていない', body: '体だけが覚えている', angry: '激怒した', report: '通報した', revenge: 'やり返した', counter: '逆催眠をかけた', sweet: '照れながら許した', shy: '恥ずかしくて避けた', fall: '快楽に堕ちた（自分からねだる）', couple: '恋人になった', depend: '憎みながら離れられない', laugh: 'かからずに笑い飛ばした', noticed: '見破った' };
+  var FATE = { confused: '困惑したまま、答えを出せなかった', dazed: '放心して、しばらく何も手につかなかった', accept: '戸惑いながらも受け入れた', peace: '頭が良くなって喜んだ', forget: '何も覚えていない', body: '体だけが覚えている', angry: '激怒した', report: '通報した', revenge: 'やり返した', counter: '逆催眠をかけた', sweet: '照れながら許した', shy: '恥ずかしくて避けた', fall: '快楽に堕ちた（自分からねだる）', couple: '恋人になった', depend: '憎みながら離れられない', laugh: 'かからずに笑い飛ばした', noticed: '見破った' };
 
   function resolve(S, p, list, pick) {
     if (pick && pick !== 'auto') for (var i = 0; i < list.length; i++) if (list[i].id === pick) return list[i];
@@ -30982,6 +31083,8 @@
   function run(input) {
     var S = ST.state(input, 'saimin'), rng = S.rng, env = S.env, P = S.P, lew = env.lewd || 'mid', skill = env.skill / 100;
     var V = HK.Voice;
+    /* 内容のスイッチ「合意のない展開」（content.js）：性的な暗示がありうるときだけ見る。切なら、恨み・ストーカーは性的な暗示をかけず、ほかは合意の上の催眠プレイにする */
+    S.gate = !HK.SAFE_ON && lew !== 'low' && !!HK.Content && !HK.Content.ok(S, 'force');
     P.forEach(function (p) { var pk = (input.perChar && input.perChar[p.i] && input.perChar[p.i].pick || {}).role; p.role = pk === 'hypno' ? 'hypno' : 'target'; });
     /* かける側とかけられる側で、合わせて二人まで。かける側を決めなければモブ（2人のときは、役割を決めていない人がかける側） */
     if (P.length > 2) P = S.P = P.slice(0, 2);
@@ -31018,21 +31121,40 @@
         } else if (tt) ty = tt.type === 'crush' ? (tt.a === HY.i ? 'stalker' : 'friend') : TIEMAP[tt.type] || TIEMAP[(HK.TIES[tt.type] || {}).like];
       }
       if (!ty) ty = env.who !== 'random' && SM.TYPES[env.who] ? env.who : rng.pick(Object.keys(SM.TYPES));
+      /* 合意のない展開が切：おまかせで選んだモブの恨み・ストーカーは、同僚・友人・恋人に替える */
+      if (S.gate && !HY && env.who === 'random' && (ty === 'grudge' || ty === 'stalker')) ty = rng.pick(['colleague', 'friend', 'lover']);
+      /* モブのかける側の性別：設定がなければ、かけられる人の恋愛対象に合わせる（どちらでもよければ、男性・女性の人にはときどき女性） */
+      if (!HY) {
+        var hs = env.hsex === 'm' || env.hsex === 'f' ? env.hsex : null;
+        if (!hs) hs = p.likes === 'f' ? 'f' : p.likes === 'm' ? 'm' : (p.gender === 'm' || p.gender === 'f') && rng() < 0.4 ? 'f' : 'm';
+        p.hf = hs === 'f';
+      }
       /* 恋愛・R18にしない組（HK.ngPair）では、住人のかけ手を恋人・ストーカーにしない */
       if (HY && HK.ngPair && HK.ngPair(HY, p) && (ty === 'lover' || ty === 'stalker')) ty = ty === 'lover' ? 'friend' : 'colleague';
       p.ty = ty; p.T = famL && ty === 'friend' ? Object.assign({}, SM.TYPES[ty], { label: famL }) : SM.TYPES[ty];
-      p.hc = HY || null; p.h = HY ? HY.name : ST.fmt(rng.pick(p.T.names), { a: p.name });
+      p.hc = HY || null; p.h = HY ? HY.name : ST.fmt(rng.pick(p.hf && p.T.namesF ? p.T.namesF : p.T.names), { a: p.name });
+      /* モブのかける側の体（受け攻め・女攻めの文・喘ぎを選ぶための仮の人物） */
+      p.hm = HY ? null : { name: p.h, gender: p.hf ? 'f' : 'm', persona: 'gentle', mob: true };
+      /* 女性のモブの喘ぎ・跨る文の書き方は、穏やかの態度で（男性向けの荒い喘ぎにしない） */
+      if (p.hm && p.hf) p.hm.tone = 'gentle';
       p.mk = env.method !== 'random' && SM.METHODS[env.method] ? env.method : rng.pick(Object.keys(SM.METHODS));
       p.M = SM.METHODS[p.mk];
       p.bad = ty === 'grudge' || ty === 'stalker';
       /* 受け攻め：かけられた側が攻めか（住人どうしは HK.Pos.order、モブ相手は HK.Pos.vsNpc）。
          住人どうしで向きの決まらない組（HK.Pos.okSex が false）は、性的な暗示を一切かけない。女性どうしは専用の文 */
       var Pz = HK.Pos;
-      p.noSex = !!(Pz && HY && !Pz.okSex(HY, p)) || kinNo;
+      /* モブが相手：モブとの場面に出してよい人（HK.State.mobSexOk。恋人のモブなら「恋人だけ」の人も）で、恋愛対象がかける側の性別に合うときだけ */
+      var mobNo = !HY && !HK.SAFE_ON && (!!(HK.State && !(HK.State.r18ok(p) && (!p.noMob || ty === 'lover'))) || !!(Pz && !Pz.genderOK(p, p.hm)));
+      /* 合意のない展開が切：恨み・ストーカーは性的な暗示をかけない（いたずらだけ）。ほかは、始める前に同意を取った催眠プレイ */
+      p.noForce = S.gate && (ty === 'grudge' || ty === 'stalker');
+      p.consent = S.gate && !p.noForce;
+      p.noSex = !!(Pz && HY && !Pz.okSex(HY, p)) || kinNo || mobNo || p.noForce;
       p.aTop = !!(Pz && !p.noSex && (HY ? Pz.order(HY, p, [HY, p])[0] === p : Pz.vsNpc(p, '') === 'top'));
-      p.ff = !!(Pz && HY && Pz.ff(HY, p));
-      /* かける側が女性の攻めで、かけられる側が男性（女攻め×男）：{h} が跨る・導く専用の文（fm）を使う。男性の体で書いた {h} の文は使わない */
-      p.fm = !!(Pz && HY && !p.noSex && !p.ff && !p.aTop && HK.FM && HK.FM.on && HK.FM.on(HY, p));
+      p.ff = !!(Pz && (HY ? Pz.ff(HY, p) : p.hf && Pz.isF(p)));
+      /* かける側が女性で、男性（女性でない人）を導く組（女攻め×男）：{h} が跨る・導く専用の文（fm）を使う。男性の体で書いた {h} の文は使わない。
+         住人のかける側は、自分で攻めを選んだ女性（HK.FM.on）か、向き（HK.Pos.order）で先に立った女性 */
+      var hFem = HY ? !!(Pz && Pz.isF(HY)) : !!p.hf;
+      p.fm = !!(Pz && !p.noSex && !p.ff && !p.aTop && hFem && (!HY || (HK.FM && HK.FM.on && HK.FM.on(HY, p)) || Pz.order(HY, p, [HY, p])[0] === HY));
       p.aTopLast = p.aTop;
       p.peaceOnly = env.mode === 'mix' && rng() < ({ friend: 0.3, colleague: 0.15, lover: 0.1 }[ty] || 0);
       p.sens = 0.6 + (p.stats.sens || 3) * 0.18;
@@ -31045,7 +31167,7 @@
       p.m = { depth: 0, plea: 0, fall: 0, resist: Math.round(clamp((p.tr.cp * 0.5 + p.tr.a * 0.4 + (p.goal.id === 'safe' ? 0.15 : 0)) * 100, 5, 95)) };
       p.cnt = { ok: 0, part: 0, ng: 0, climax: 0, lewd: 0, shame: 0, smart: 0, ev: 0 };
       p.used = {}; p.got = []; p.maxDepth = 0;
-      p.roleLabel = 'かけられる側（' + p.T.label + '・' + p.M.name + '）';
+      p.roleLabel = 'かけられる側（' + p.T.label + (p.hf ? '・女性' : '') + '・' + p.M.name + '）';
     });
 
     function say(p, o, short, force) {
@@ -31054,12 +31176,12 @@
       if (typeof o.text === 'string') o.text = o.text.replace(new RegExp(p.name + '(は|が|も)' + p.name + '(の|に)', 'g'), p.name + '$1自分$2');
       /* 女性の攻め指定が男性の相手（モブを含む）と：入れる側の書き方を、跨る書き方に直す（pos-fm.js） */
       /* 女性のかける側が男性に跨る組（p.fm）も、残った男性の向きの文を同じように直す（女性の攻めは {h}） */
-      if (HK.FM && !HK.SAFE_ON && p.fm && HY && typeof o.text === 'string') {
+      if (HK.FM && !HK.SAFE_ON && p.fm && (HY || p.hm) && typeof o.text === 'string') {
         var fps = o.text.split('\n\n');
-        fps[0] = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, fps[0], HY, p.name);
+        fps[0] = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, fps[0], HY || p.hm, p.name);
         o.text = fps.join('\n\n');
       }
-      if (HK.FM && !HK.SAFE_ON && p.aTop && !p.ff && HK.Pos && HK.Pos.isF(p) && (!HY || !HK.Pos.isF(HY)) && typeof o.text === 'string')
+      if (HK.FM && !HK.SAFE_ON && p.aTop && !p.ff && HK.Pos && HK.Pos.isF(p) && (HY ? !HK.Pos.isF(HY) : !p.hf) && typeof o.text === 'string')
         o.text = (function (ps) {
           /* 段落に分けた山場（solo-thick4.js）は性別に合わせて組んであるので、直すのは最初の段落（暗示の文）だけ */
           ps[0] = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, ps[0], p, p.h);
@@ -31107,8 +31229,8 @@
     ST.budget(S, 2 * T.length);
     T.forEach(function (p) {
       var v = { a: p.name, h: p.h };
-      var t = ST.fmt(ST.pick(S, p.T.intro), v) + ST.fmt(ST.pick(S, p.M.intro), v);
-      say(p, { tag: p.T.label, text: t, why: '催眠をかけるのは' + p.h + '（' + p.T.label + '）。' + ST.fmt(p.T.motive, v) });
+      var t = ST.fmt(ST.pick(S, p.T.intro), v) + (p.consent && SM.CONSENT ? ST.fmt(ST.pick(S, SM.CONSENT), v) : '') + ST.fmt(ST.pick(S, p.M.intro), v);
+      say(p, { tag: p.T.label, text: t, why: '催眠をかけるのは' + p.h + '（' + p.T.label + (p.hf ? '・女性' : '') + '）。' + ST.fmt(p.T.motive, v) + (p.consent ? '／始める前に、二人で同意していた（内容のスイッチ「合意のない展開」が切）' : p.noForce ? '／内容のスイッチ「合意のない展開」が切なので、いたずらの暗示だけ' : '') });
       var o = say(p, { tag: '診断', text: p.name + 'のかかりやすさは' + Math.round(p.sus * 100) + '％。弱い暗示は「' + p.weak.map(function (k) { return SM.SUG[k].label; }).join('」「') + '」。', why: 'AC・FCが高いほど、A・CPが低いほどかかりやすい／' + p.M.name + 'との相性・' + p.h + 'への警戒の薄さ・方針「' + p.action.label + '」' }, '', true);
       ST.key(S, o, p.name + 'のかかりやすさ');
     });
@@ -31276,14 +31398,27 @@
       var afE = afK === 'AFTER' && p.ff ? 'AFTER_FF' : afK === 'AFTER' && p.fm ? 'AFTER_FM' : afK === 'AFTER' && p.aTop ? 'AFTER_TOP' : afK;
       var afL = !p.failed && p.cnt.lewd && !soft ? eL(S, afE + '.' + route, SM[afK][route]) : SM[afK][route];
       var t = eF(S, p, ST.fmt(ST.pick(S, afL), v));
-      var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', body: null }[route];
-      if (mood && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, p.aTop && SM.AFTER_SAY_TOP && SM.AFTER_SAY_TOP[mood] ? (SM.AFTER_SAY_TOP[mood][p.persona] || SM.AFTER_SAY_TOP[mood].gentle) : topL(p, SM.AFTER_SAY[mood][p.persona]));
+      var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', confused: 'confused', dazed: 'dazed', accept: 'accept', body: null }[route];
+      if (mood && SM.AFTER_SAY[mood] && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, p.aTop && SM.AFTER_SAY_TOP && SM.AFTER_SAY_TOP[mood] ? (SM.AFTER_SAY_TOP[mood][p.persona] || SM.AFTER_SAY_TOP[mood].gentle) : topL(p, SM.AFTER_SAY[mood][p.persona]));
       /* 完堕ち：描写の長さ「厚く」なら、自分から戻ってきて堕ちきるまでを段落で（solo-saimin-thick.js。R18版だけ） */
-      if ((route === 'fall' || route === 'depend') && SM.bigFall) t += SM.bigFall(S, p, route);
+      if ((route === 'fall' || route === 'depend') && SM.bigFall) { var bf = SM.bigFall(S, p, route); if (bf) { t += bf; p.bigFell = true; } }
       if (p.trigger && (route === 'forget' || route === 'body') && rng() < 0.6) t += ST.fmt('――数日後、会議中に誰かが何気なく「おやすみ」と言った。{a}は理由も分からないまま、机の下で膝を震わせた。', v);
       var o = say(p, { tag: '結末', text: t, why: whyAfter(p, route), mag: 40 }, '', true);
       ST.key(S, o, p.name + '：' + p.fate);
     });
+
+    /* ---------- 後日談 ---------- */
+    /* 数日後の二人：記憶が消えたか（消えた・体だけ覚えている・覚えている・一部だけ欠けている）、二人の関係（恋人・友人や同僚・恨みやストーカー）、
+       かけられた人の気質（強気・やわらか・冷静・奔放）と結末で書き分ける。R18版で体の関係に進む組は、solo-saimin-sex.js の SM.epiSex で続きを書く */
+    if (SM.EPI) {
+      ST.step(S, '後日談');
+      ST.budget(S, T.length);
+      T.forEach(function (p) {
+        var e = epilogue(S, p);
+        if (!e) return;
+        say(p, { tag: '後日談', text: e.text, why: e.why, mag: e.sex ? 35 : 25, kind: e.sex ? 'climax' : 'event' }, '', true);
+      });
+    }
 
     var res = finish(S, input, T, HY);
     return lew === 'low' ? softWords(res) : res;
@@ -31304,7 +31439,7 @@
   function thickSug(S, p, fb, vk) {
     var kind = /咥え|口いっぱい|喉の奥/.test(fb) ? 'kneel' : /押し入|貫|沈め|呑み込|跨|奥まで|注ぎ|繋が/.test(fb) ? 'in' : null;
     if (!kind) return null;
-    var me = p, hc = p.hc || { name: p.h, gender: p.ff ? 'f' : 'm' };
+    var me = p, hc = p.hc || p.hm || { name: p.h, gender: p.ff || p.hf ? 'f' : 'm' };
     if (p.ff) kind = 'ff';
     var top = /Top/.test(vk) || p.aTop, dom = top ? me : hc, sub = top ? hc : me;
     /* 攻めの {a} が口で奉仕される側なら kneel のまま、{a} が奉仕する文は使わない */
@@ -31315,7 +31450,7 @@
   /* 我に返っても流された場面（afterSnap の swept）も、小説調ならときどき厚く */
   function snapThick(S, p, sr) {
     if (!sr || sr.k !== 'swept' || !HK.Thick4 || !HK.Thick4.ok(S, S.env.lewd || 'mid') || S.rng() > 0.5) return sr;
-    var hc = p.hc || { name: p.h, gender: p.ff ? 'f' : 'm' }, top = p.aTopLast, dom = top ? p : hc, sub = top ? hc : p;
+    var hc = p.hc || p.hm || { name: p.h, gender: p.ff || p.hf ? 'f' : 'm' }, top = p.aTopLast, dom = top ? p : hc, sub = top ? hc : p;
     var sc = HK.Thick4.scene(S, { dom: dom, sub: sub, kind: p.ff ? 'ff' : 'in', lead: sr.text.replace(/[^。」]*「[^」]*」$/, ''), sad: HK.Thick4.rollSad(S, dom, sub),
       after: ST.fmt(ST.pick(S, ['正気のまま流されたことを、{a}はもう言い訳できなかった。', '{a}は天井を見上げたまま、自分の選んだことの重さを噛みしめていた。']), { a: p.name }) });
     if (sc) sr.text = sc;
@@ -31350,10 +31485,15 @@
     return k;
   }
   function eL(S, key, arr) { return HK.Ero ? HK.Ero.L(S, 'saimin', key, arr) : arr; }
-  /* {m0}〜{m2} は {a} の喘ぎ、{hm0}〜{hm2} は {h} の喘ぎ（かける側がモブなら穏やかの喘ぎ）、{s:wet} などは擬音 */
+  /* {m0}〜{m2} は {a} の喘ぎ、{hm0}〜{hm2} は {h} の喘ぎ（かける側がモブなら穏やかの喘ぎ）、{s:wet} などは擬音。
+     かけられた側が攻めでなければ、{h} は主導している側なので、こらえる・とろける段階は拒まない喘ぎ（HK.Ero.moan の eroDom） */
   function eF(S, p, t) {
     if (!eroOn(S)) return t;
-    t = String(t).replace(/\{hm([012])\}/g, function (m, n) { return HK.Ero.moan(S, p.hc || { persona: 'gentle' }, +n); });
+    t = String(t).replace(/\{hm([012])\}/g, function (m, n) {
+      var q = p.hc || p.hm || { persona: 'gentle' }, d = q.eroDom;
+      q.eroDom = !p.aTop && +n < 2;
+      var s = HK.Ero.moan(S, q, +n); q.eroDom = d; return s;
+    });
     return HK.Ero.fill(S, t, p);
   }
   /* solo-saimin-sex.js の afterSnap / midSnap に渡す道具（男性向けの文に差し替える alt・喘ぎを埋める fmt・絶頂の声 cv） */
@@ -31396,6 +31536,49 @@
     return true;
   }
 
+  /* ---------- 後日談 ---------- */
+  /* 結末の大きな分け方（後日談の文の表の名前） */
+  var EPI_GROUP = { forget: 'erased', body: 'body', angry: 'neg', report: 'report', revenge: 'turn', counter: 'turn', shy: 'neg', confused: 'mid', dazed: 'mid', accept: 'warm', sweet: 'warm', couple: 'couple', peace: 'peace', fall: 'fall', depend: 'depend' };
+  /* 気質の見出し（台詞の態度9種とは別に、地の文の振る舞いを分ける） */
+  function temperOf(p) {
+    var ps = p.persona;
+    if (ps === 'proud' || ps === 'stern' || ps === 'tsun') return 'bold';
+    if (ps === 'cool') return 'cool';
+    if (ps === 'free') return 'free';
+    return 'soft';
+  }
+  /* 地の文の気分（関係・気質の一文と台詞の表）：忘れた・冷えた・揺れている・温かい（頭が良くなっただけのときは、結末の場面だけ） */
+  var EPI_MOOD = { erased: 'forgot', body: 'forgot', neg: 'cold', report: 'cold', turn: 'cold', fail: 'cold', mid: 'wobble', warm: 'warm', couple: 'warm', peace: 'peace', fall: 'warm', depend: 'wobble' };
+  function epilogue(S, p) {
+    var route = p.route, grp = p.failed ? 'fail' : EPI_GROUP[route] || 'neg';
+    var rel = p.ty === 'lover' ? 'close' : p.bad ? 'bad' : 'near', tmp = temperOf(p);
+    /* かからなかった人：笑い飛ばしたなら「何も変わらない」、怒った・見破った・通報したなら「冷えた」 */
+    var mood = p.failed ? (route === 'laugh' ? 'forgot' : 'cold') : EPI_MOOD[grp] || 'cold';
+    var v = { a: p.name, h: p.h, place: p.T !== SM.TYPES[p.ty] ? '家' : (SM.PLACE && SM.PLACE[p.ty]) || 'いつもの場所', who: (SM.WHO && SM.WHO[p.ty]) || p.h };
+    /* いたずらだけ（性的な暗示を受けていない）・ぼかすときは、いたずら向けの表があればそちら */
+    var soft = (S.env.lewd === 'low' || (!p.failed && !p.cnt.lewd)) && SM.EPI_SOFT && SM.EPI_SOFT[grp];
+    var lst = soft ? SM.EPI_SOFT[grp] : SM.EPI[grp] || SM.EPI.neg;
+    var t = ST.fmt(ST.pick(S, lst), v);
+    /* 二人の関係ごとの一文 */
+    var RL = SM.EPI_REL && SM.EPI_REL[rel] && SM.EPI_REL[rel][mood];
+    if (RL) t += ST.fmt(ST.pick(S, RL), v);
+    /* 記憶が一部だけ欠けている（消し損ねた）とき */
+    if (p.erased === 'part' && grp !== 'erased' && grp !== 'body' && SM.EPI_PART) t += ST.fmt(ST.pick(S, SM.EPI_PART), v);
+    var TT = SM.EPI_TEMPER && SM.EPI_TEMPER[tmp] && SM.EPI_TEMPER[tmp][mood];
+    if (TT) t += ST.fmt(ST.pick(S, TT), v);
+    var SY = SM.EPI_SAY && SM.EPI_SAY[mood];
+    if (SY && SY[p.persona]) t += p.name + ST.pick(S, topL(p, SY[p.persona]));
+    var why = (p.failed ? '催眠にかからなかった' : grp === 'erased' || grp === 'body' ? (p.erased === 'full' ? '記憶は消された' : '記憶は消えかけていた') : p.erased === 'part' ? '記憶はところどころ欠けていた' : '記憶は残っていた') +
+      '／関係：' + p.T.label + '／気質：' + { bold: '強気', soft: 'やわらか', cool: '冷静', free: '奔放' }[tmp] + '／結末：' + p.fate;
+    var sex = false;
+    /* R18版：結末が温かい・堕ちた組は、数日後にもう一度（solo-saimin-sex.js） */
+    if (SM.epiSex && !soft && !p.failed && !p.noSex && p.cnt.lewd && S.env.lewd !== 'low' && !HK.SAFE_ON) {
+      var ex = SM.epiSex(wrapS(S, p), p, route);
+      if (ex) { t += '\n\n' + ex.text; why += '／' + ex.why; sex = true; p.cnt.climax += ex.climax || 0; }
+    }
+    return { text: t, why: why, sex: sex };
+  }
+
   /* ---------- その後の分かれ道 ---------- */
   function after(S, p) {
     var rng = S.rng, t = p.tr, fall = p.m.fall / 100;
@@ -31415,15 +31598,25 @@
       shy: t.ac * 0.7 * (1 - fall * 0.4),
       fall: Math.pow(fall, 2) * 2.2,
       couple: (p.ty === 'friend' || p.ty === 'colleague') && fall > 0.25 && fall < 0.75 ? (t.np + t.fc) * 0.5 : 0,
-      depend: p.bad && fall > 0.55 ? fall * 1.3 : 0
+      depend: p.bad && fall > 0.55 ? fall * 1.3 : 0,
+      /* 困惑：怒るでも求めるでもなく、どう受け止めればいいか分からない（AC・NP・慎重さ、ほどほどの堕ち。半分気づいていた・涙が出たときに強まる） */
+      confused: (t.ac * 0.35 + t.np * 0.25 + t.caution * 0.2 + Math.max(0, 0.45 - Math.abs(fall - 0.4))) * ({ lover: 0.7, friend: 1.25, colleague: 1.15, grudge: 0.7, stalker: 0.6 }[p.ty] || 1) * (p.halfAware || p.guilt ? 1.3 : 1) * (1 - t.cp * 0.4),
+      /* 放心：深くかかって何度も達したあと、心がまだ戻ってこない（絶頂の回数・最大の深さ・堕ち。CPが高いと起きにくい） */
+      dazed: ((p.cnt.climax >= 3 ? 0.55 : p.cnt.climax >= 1 ? 0.35 : 0.12) + p.maxDepth / 260 + fall * 0.3) * (1 - t.cp * 0.5) * (p.wokeCum || p.swept ? 1.25 : 1) * (lewdN ? 1 : 0.6),
+      /* 受け入れる：戸惑いながらも、相手とされたことを受け止める（NP・FC、相手が恋人・友人、ほどほどの堕ち。恨み・ストーカーには起きにくい） */
+      accept: (t.np * 0.45 + t.fc * 0.2 + fall * 0.3 + ({ lover: 0.45, friend: 0.3, colleague: 0.2 }[p.ty] || 0)) * (p.bad ? (fall > 0.5 ? 0.45 : 0) : 1) * (1 - t.cp * 0.4)
     };
+    /* 合意の上の催眠プレイ（内容のスイッチ「合意のない展開」が切）：通報・やり返しには寄らず、受け入れる・困惑するに寄る */
+    if (p.consent) { w.report *= 0.15; w.angry *= 0.6; w.revenge *= 0.4; w.counter *= 0.5; w.accept *= 1.4; w.confused *= 1.15; }
     if (p.cnt.smart && lewdN <= 1) w.peace = 0.6;
     /* 向きの決まらない組：恋人になる・快楽に堕ちる結末にしない */
     if (p.noSex) { w.couple = 0; w.fall = 0; w.depend = 0; }
     /* 中に出されて我に返ったあと：その場で通報した人は通報、流された人は快楽堕ちへ寄る */
     if (p.reportedNow) return 'report';
-    if (p.swept) { w.angry *= 0.15; w.report = 0; w.revenge *= 0.2; w.counter = 0; w.shy *= 0.4; w.fall = w.fall * 2 + 1; if (p.bad) w.depend = (w.depend || 0) + 0.8; }
-    if (p.fled) { w.shy += 0.4; w.angry += 0.2; w.fall *= 0.5; w.sweet *= 0.5; }
+    if (p.swept) { w.angry *= 0.15; w.report = 0; w.revenge *= 0.2; w.counter = 0; w.shy *= 0.4; w.fall = w.fall * 2 + 1; if (p.bad) w.depend = (w.depend || 0) + 0.8; w.accept *= 1.3; w.dazed *= 1.2; w.confused *= 0.7; }
+    if (p.fled) { w.shy += 0.4; w.angry += 0.2; w.fall *= 0.5; w.sweet *= 0.5; w.confused += 0.3; w.accept *= 0.5; }
+    /* 向きの決まらない組・いたずらだけ：体の関係を受け入れる結末にはしない（いたずらとして受け流すのは残す） */
+    if (p.noSex && !p.cnt.lewd) w.accept *= 0.6;
     return pickW(rng, w);
   }
   function pickW(rng, w) {
@@ -31437,8 +31630,9 @@
     else if (p.failed) bits.push('催眠にかからなかった');
     else bits.push(p.woke ? (p.wokeCum || p.wokeMid ? (p.wokeMid ? '行為の最中に我に返った' : snapWord(p) + '我に返った') + (p.swept ? '。それでも流された' : p.reportedNow ? '。その場で通報した' : p.fled ? '。逃げ出した' : '') : '途中で目を覚ました') : p.erased ? '記憶は消えきらなかった' : '記憶は消されなかった');
     bits.push('快楽堕ち ' + Math.round(p.m.fall));
-    bits.push({ angry: 'CP ' + Math.round(p.eg.CP), report: 'CP・A（正義感と冷静さ）', revenge: '攻撃性とCP', counter: 'A・CP（冷静さと意志の強さ）', sweet: '相手が恋人・NP', shy: 'AC ' + Math.round(p.eg.AC), fall: '快楽に呑まれた', couple: 'NP・FCと、ほどよい堕ち', depend: '憎しみと快楽', laugh: 'FC・NP', noticed: 'A・慎重さ', peace: '平和な暗示だけだった', forget: '', body: '体に暗示が残った' }[route] || '');
+    bits.push({ confused: 'AC・NP・慎重さと、ほどほどの堕ち', dazed: '深さ ' + Math.round(p.maxDepth) + '・絶頂 ' + p.cnt.climax + '回', accept: 'NP・FCと、' + p.T.label + 'への情', angry: 'CP ' + Math.round(p.eg.CP), report: 'CP・A（正義感と冷静さ）', revenge: '攻撃性とCP', counter: 'A・CP（冷静さと意志の強さ）', sweet: '相手が恋人・NP', shy: 'AC ' + Math.round(p.eg.AC), fall: '快楽に呑まれた', couple: 'NP・FCと、ほどよい堕ち', depend: '憎しみと快楽', laugh: 'FC・NP', noticed: 'A・慎重さ', peace: '平和な暗示だけだった', forget: '', body: '体に暗示が残った' }[route] || '');
     if (p.recorded) bits.push('録画されていた');
+    if (p.consent) bits.push('合意の上の催眠プレイ');
     return bits.filter(Boolean).join('／');
   }
 
@@ -31452,7 +31646,8 @@
     if (HY) { HY.fate = T.length + '人中' + HY.cnt.ok + '人にかけた'; HY.notes.push('催眠をかけた相手：' + T.map(function (p) { return p.name + '（' + (p.failed ? 'かからず' : p.fate) + '）'; }).join('、')); }
     var one = T.length === 1 ? T[0] : null;
     var hit = T.filter(function (p) { return !p.failed; });
-    var title = one ? (one.failed ? one.name + 'は' + one.h + 'の催眠にかからなかった。' : one.name + 'は' + one.h + '（' + one.T.label + '）の催眠にかかった。') + '結末：' + one.fate + '。'
+    var ET = SM.END_TITLE || {};
+    var title = one ? (one.failed ? one.name + 'は' + one.h + 'の催眠にかからなかった。' : one.name + 'は' + one.h + '（' + one.T.label + '）の催眠にかかった。') + '結末' + (ET[one.route] ? '「' + ET[one.route] + '」' : '') + '：' + one.fate + '。'
       : '催眠にかかったのは' + T.length + '人中' + hit.length + '人。' + T.map(function (p) { return p.name + '＝' + p.fate; }).join('、') + '。';
     var lines = T.map(function (p) { return p.name + '：' + p.h + '（' + p.T.label + '）に' + p.M.name + 'で――' + (p.failed ? 'かからなかった' : '最大の深さ ' + Math.round(p.maxDepth) + '・暗示 ' + p.cnt.ok + '/' + (p.cnt.ok + p.cnt.part + p.cnt.ng)) + '→' + p.fate; });
     var top = hit.slice().sort(function (a, b) { return b.m.fall - a.m.fall; })[0];
