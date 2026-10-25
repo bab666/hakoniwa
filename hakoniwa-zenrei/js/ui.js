@@ -181,6 +181,9 @@
   /* 旧データの特殊役職「吸血鬼」を種族の吸血鬼に移す（special.js。箱庭ごとの欄からは外した） */
   function migVamp(c, per) {
     if (!c || !per || typeof per !== 'object') return;
+    /* サキュバスの一夜：旧データの「標的」の欄（pick.target）を、役割の「標的（人間）になる」に移す */
+    var sb = per.succubus && per.succubus.pick;
+    if (sb && sb.target) { if (sb.target === 'yes') sb.role = 'target'; else if (sb.target === 'no' && !sb.role) sb.role = 'hunt'; delete sb.target; }
     Object.keys(per).forEach(function (sid) {
       var p = per[sid]; if (!p || !p.pick || p.pick.special !== 'vampire') return;
       /* 種族がほかに決まっている人（獣人の吸血鬼 など）は、旧データの値を残して吸血鬼のまま動かす（special.js が読む） */
@@ -623,7 +626,11 @@
   }
   function per(c, scenId) {
     S.per[c.id] = S.per[c.id] || {};
-    return (S.per[c.id][scenId] = S.per[c.id][scenId] || { action: 'auto', goal: 'auto', stats: {}, weapon: 'random' });
+    var pp = (S.per[c.id][scenId] = S.per[c.id][scenId] || { action: 'auto', goal: 'auto', stats: {}, weapon: 'random' });
+    /* 手で直したJSONなどで欠けた欄を補う */
+    if (!pp.stats || typeof pp.stats !== 'object') pp.stats = {};
+    if (!pp.action) pp.action = 'auto'; if (!pp.goal) pp.goal = 'auto'; if (!pp.weapon) pp.weapon = 'random';
+    return pp;
   }
 
   /* R18版で、設定や展開しだいで R18 の描写が入る箱庭の説明（常に R18 の箱庭はキャッチコピーの R18 で示す） */

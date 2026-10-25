@@ -49401,7 +49401,7 @@
       { id: 'charm', label: '魅力', desc: '見た目と色香。誘惑の成功率に効く' },
       { id: 'tech', label: '技巧', desc: '誘い方と、ベッドでの腕。大成功と搾れる量に効く' }
     ],
-    perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（狩りに出る）', offWhen: function (pk) { return pk.target === 'yes' ? '標的（人間）なので狩りには出ない' : ''; }, options: [{ id: 'hunt', label: '狩りに出る' }, { id: 'senpai', label: '先輩サキュバス（アドバイス係）' }] }],
+    perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（狩りに出る）', options: [{ id: 'hunt', label: '狩りに出る' }, { id: 'senpai', label: '先輩サキュバス（アドバイス係）' }, { id: 'target', label: '標的（人間）になる' }] }],
     actions: [
       { id: 'pick', label: '獲物を選ぶ', fit: function (t) { return t.a * 0.6 + t.caution * 0.4; } },
       { id: 'many', label: '数を打つ', fit: function (t) { return t.fc * 0.6 + t.impulse * 0.4; } },
@@ -49468,6 +49468,13 @@
   function grade(ml) { return ml >= 180 ? 'S' : ml >= 120 ? 'A' : ml >= 70 ? 'B' : ml >= 35 ? 'C' : 'D'; }
 
   function run(input) {
+    /* 役割「標的（人間）になる」は、標的の判定（solo-succubus-target.js・HK.Roles）が読む pick.target に移す。
+       「狩りに出る」を自分で選んだ人は、標的に選ばれない。以前の保存の pick.target もそのまま効く */
+    (input.perChar || []).forEach(function (pc, i) {
+      var k = pc && pc.pick; if (!k) return;
+      if (k.role === 'target') input.perChar[i] = Object.assign({}, pc, { pick: Object.assign({}, k, { role: 'hunt', target: 'yes' }) });
+      else if (k.role === 'hunt' && !k.target) input.perChar[i] = Object.assign({}, pc, { pick: Object.assign({}, k, { target: 'no' }) });
+    });
     var S = ST.state(input, 'succubus'), rng = S.rng, env = S.env, P = S.P;
     var tk = env.town === 'random' || !SB.TOWNS[env.town] ? rng.pick(Object.keys(SB.TOWNS)) : env.town, T = SB.TOWNS[tk];
     P.forEach(function (p) {
@@ -50395,8 +50402,10 @@
   /* ---------- 設定・住人の欄 ---------- */
   HK.Roles.install(scen, 'target', '標的', {
     allowMob: true, auto: 'mob', yes: '標的（人間）になる',
-    desc: '狙われる人間の側を、いつもどおりの街の獲物（モブ）にするか、住人にするかを選びます。住人にすると、その人はサキュバスの存在を知らない人間として夜の街にいて、サキュバスの住人に狙われます（街の獲物もいままでどおり出ます）。住人の欄で「標的（人間）になる」を選んだ人が優先されます。全員は標的にできず、少なくとも一人はサキュバスとして夜に出ます'
+    desc: '狙われる人間の側を、いつもどおりの街の獲物（モブ）にするか、住人にするかを選びます。住人にすると、その人はサキュバスの存在を知らない人間として夜の街にいて、サキュバスの住人に狙われます（街の獲物もいままでどおり出ます）。住人の「役割」で「標的（人間）になる」を選んだ人が優先されます。全員は標的にできず、少なくとも一人はサキュバスとして夜に出ます'
   });
+  /* 住人ごとの欄は「役割」（狩りに出る／先輩サキュバス／標的（人間）になる）にまとめたので、別の「標的」の欄は出さない（環境値の「標的」は残す） */
+  scen.perFields = (scen.perFields || []).filter(function (f) { return f.id !== 'target'; });
 
   var St = function () { return HK.State; };
   function here(c) { return !St() || St().here(c); }
@@ -74367,6 +74376,9 @@
   /* 旧データの特殊役職「吸血鬼」を種族の吸血鬼に移す（special.js。箱庭ごとの欄からは外した） */
   function migVamp(c, per) {
     if (!c || !per || typeof per !== 'object') return;
+    /* サキュバスの一夜：旧データの「標的」の欄（pick.target）を、役割の「標的（人間）になる」に移す */
+    var sb = per.succubus && per.succubus.pick;
+    if (sb && sb.target) { if (sb.target === 'yes') sb.role = 'target'; else if (sb.target === 'no' && !sb.role) sb.role = 'hunt'; delete sb.target; }
     Object.keys(per).forEach(function (sid) {
       var p = per[sid]; if (!p || !p.pick || p.pick.special !== 'vampire') return;
       /* 種族がほかに決まっている人（獣人の吸血鬼 など）は、旧データの値を残して吸血鬼のまま動かす（special.js が読む） */
@@ -74809,7 +74821,11 @@
   }
   function per(c, scenId) {
     S.per[c.id] = S.per[c.id] || {};
-    return (S.per[c.id][scenId] = S.per[c.id][scenId] || { action: 'auto', goal: 'auto', stats: {}, weapon: 'random' });
+    var pp = (S.per[c.id][scenId] = S.per[c.id][scenId] || { action: 'auto', goal: 'auto', stats: {}, weapon: 'random' });
+    /* 手で直したJSONなどで欠けた欄を補う */
+    if (!pp.stats || typeof pp.stats !== 'object') pp.stats = {};
+    if (!pp.action) pp.action = 'auto'; if (!pp.goal) pp.goal = 'auto'; if (!pp.weapon) pp.weapon = 'random';
+    return pp;
   }
 
   /* R18版で、設定や展開しだいで R18 の描写が入る箱庭の説明（常に R18 の箱庭はキャッチコピーの R18 で示す） */

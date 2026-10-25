@@ -37,7 +37,7 @@
       { id: 'charm', label: '魅力', desc: '見た目と色香。誘惑の成功率に効く' },
       { id: 'tech', label: '技巧', desc: '誘い方と、ベッドでの腕。大成功と搾れる量に効く' }
     ],
-    perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（狩りに出る）', offWhen: function (pk) { return pk.target === 'yes' ? '標的（人間）なので狩りには出ない' : ''; }, options: [{ id: 'hunt', label: '狩りに出る' }, { id: 'senpai', label: '先輩サキュバス（アドバイス係）' }] }],
+    perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（狩りに出る）', options: [{ id: 'hunt', label: '狩りに出る' }, { id: 'senpai', label: '先輩サキュバス（アドバイス係）' }, { id: 'target', label: '標的（人間）になる' }] }],
     actions: [
       { id: 'pick', label: '獲物を選ぶ', fit: function (t) { return t.a * 0.6 + t.caution * 0.4; } },
       { id: 'many', label: '数を打つ', fit: function (t) { return t.fc * 0.6 + t.impulse * 0.4; } },
@@ -104,6 +104,13 @@
   function grade(ml) { return ml >= 180 ? 'S' : ml >= 120 ? 'A' : ml >= 70 ? 'B' : ml >= 35 ? 'C' : 'D'; }
 
   function run(input) {
+    /* 役割「標的（人間）になる」は、標的の判定（solo-succubus-target.js・HK.Roles）が読む pick.target に移す。
+       「狩りに出る」を自分で選んだ人は、標的に選ばれない。以前の保存の pick.target もそのまま効く */
+    (input.perChar || []).forEach(function (pc, i) {
+      var k = pc && pc.pick; if (!k) return;
+      if (k.role === 'target') input.perChar[i] = Object.assign({}, pc, { pick: Object.assign({}, k, { role: 'hunt', target: 'yes' }) });
+      else if (k.role === 'hunt' && !k.target) input.perChar[i] = Object.assign({}, pc, { pick: Object.assign({}, k, { target: 'no' }) });
+    });
     var S = ST.state(input, 'succubus'), rng = S.rng, env = S.env, P = S.P;
     var tk = env.town === 'random' || !SB.TOWNS[env.town] ? rng.pick(Object.keys(SB.TOWNS)) : env.town, T = SB.TOWNS[tk];
     P.forEach(function (p) {
