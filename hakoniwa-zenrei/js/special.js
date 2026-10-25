@@ -48,7 +48,8 @@
   SP.setup = function (A, P, pcOf) {
     P.forEach(function (p) {
       var v = ((pcOf(p) || {}).pick || {}).special;
-      p.spec = v === 'immortal' || v === 'vampire' ? v : '';
+      /* 住人の種族が吸血鬼（attr.js）なら、特殊役職の吸血鬼と同じ扱い（不死を選んでいれば不死のまま。両方吸血鬼でも一人分） */
+      p.spec = v === 'immortal' || v === 'vampire' ? v : HK.Attr && HK.Attr.isVampire(p) ? 'vampire' : '';
       p.spRev = 0; p.mad = null; p.wear = 0;
       if (p.spec === 'vampire') p.vamp = { due: 6 + A.rng() * 42, fed: 0, warn: false };
     });

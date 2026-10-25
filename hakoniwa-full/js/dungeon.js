@@ -141,7 +141,8 @@
     if (!T || !T[sg] || (sg === 2 && !S.flags.c40 && !top)) return '';
     return fmt(S, pick(S, T[sg])) + ' ';
   }
-  function will(h) { return clamp(h.tr.cp * 0.35 + h.tr.a * 0.25 + h.reason / 100 * 0.4, 0, 1); }
+  /* 心の強さ（attr.js の HK.Attr.willAdd）も足す */
+  function will(h) { return clamp(h.tr.cp * 0.35 + h.tr.a * 0.25 + h.reason / 100 * 0.4 + (HK.Attr ? HK.Attr.willAdd(h) : 0), 0, 1); }
   function hasCurse(h, id) { return h.curses.indexOf(id) >= 0; }
   function hasItem(h, id) { return h.items.indexOf(id) >= 0; }
   function useItem(h, id) { var i = h.items.indexOf(id); if (i >= 0) h.items.splice(i, 1); }
@@ -748,6 +749,8 @@
     h.fallTitle = f.title; h.fallText = fmt(S, f.text, h.captor || S.lastEv);
     var thk = thickFall(S, h);
     var of = say(S, { kind: 'sys', tag: '陥落', text: (thk || line(S, 'fall', h.captor || S.lastEv)) + (S.party.length > 1 && thk ? '\n\n' : '') + (S.party.length > 1 ? fmt(S, pick(S, DG.LINES.fallParty || ['{a}は仲間の呼ぶ声に、もう振り返らなかった。'])) : ''), why: h.name + '：堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) });
+    /* 心の強さが強い人：体は堕ちても心は折れない一文を添える（attr.js） */
+    if (HK.Attr && HK.Attr.strong(h)) of.text += '\n\n' + HK.Attr.hold(function (l) { return pick(S, l); }, h, 'dungeon');
     key(S, of, h.name + 'が快楽に堕ちた');
     if (S.party.every(function (x) { return x.fallen; })) S.over = 'fall';
   };

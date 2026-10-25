@@ -156,7 +156,7 @@
       p.aff = {};
       Object.keys(SM.SUG).forEach(function (k) { var g = SM.SUG[k]; p.aff[k] = dot(g.aff, p.tr) - dot(g.res, p.tr) + (rng() - 0.5) * 0.25; });
       p.weak = Object.keys(p.aff).filter(function (k) { return okSug(p, k, env); }).sort(function (a, b) { return p.aff[b] - p.aff[a]; }).slice(0, 2);
-      p.m = { depth: 0, plea: 0, fall: 0, resist: Math.round(clamp((p.tr.cp * 0.5 + p.tr.a * 0.4 + (p.goal.id === 'safe' ? 0.15 : 0)) * 100, 5, 95)) };
+      p.m = { depth: 0, plea: 0, fall: 0, resist: Math.round(clamp((p.tr.cp * 0.5 + p.tr.a * 0.4 + (p.goal.id === 'safe' ? 0.15 : 0)) * 100 * (HK.Attr ? 2 - HK.Attr.willK(p) : 1), 5, 95)) };
       p.cnt = { ok: 0, part: 0, ng: 0, climax: 0, lewd: 0, shame: 0, smart: 0, ev: 0 };
       p.used = {}; p.got = []; p.maxDepth = 0;
       p.roleLabel = 'かけられる側（' + p.T.label + (p.hf ? '・女性' : '') + '・' + p.M.name + '）';
@@ -396,6 +396,8 @@
       if (mood && SM.AFTER_SAY[mood] && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, p.aTop && SM.AFTER_SAY_TOP && SM.AFTER_SAY_TOP[mood] ? (SM.AFTER_SAY_TOP[mood][p.persona] || SM.AFTER_SAY_TOP[mood].gentle) : topL(p, SM.AFTER_SAY[mood][p.persona]));
       /* 完堕ち：描写の長さ「厚く」なら、自分から戻ってきて堕ちきるまでを段落で（solo-saimin-thick.js。R18版だけ） */
       if ((route === 'fall' || route === 'depend') && SM.bigFall) { var bf = SM.bigFall(S, p, route); if (bf) { t += bf; p.bigFell = true; } }
+      /* 心の強さが強い人：体が暗示を覚えてしまっても、心は折れない一文を添える */
+      if (HK.Attr && p.m.fall >= 40 && route !== 'laugh' && route !== 'noticed') t += HK.Attr.hold(function (l) { return ST.pick(S, l); }, p, 'saimin');
       if (p.trigger && (route === 'forget' || route === 'body') && rng() < 0.6) t += ST.fmt('――数日後、会議中に誰かが何気なく「おやすみ」と言った。{a}は理由も分からないまま、机の下で膝を震わせた。', v);
       var o = say(p, { tag: '結末', text: t, why: whyAfter(p, route), mag: 40 }, '', true);
       ST.key(S, o, p.name + '：' + p.fate);
@@ -611,6 +613,8 @@
     if (p.fled) { w.shy += 0.4; w.angry += 0.2; w.fall *= 0.5; w.sweet *= 0.5; w.confused += 0.3; w.accept *= 0.5; }
     /* 向きの決まらない組・いたずらだけ：体の関係を受け入れる結末にはしない（いたずらとして受け流すのは残す） */
     if (p.noSex && !p.cnt.lewd) w.accept *= 0.6;
+    /* 心の強さ（attr.js）：弱い人は堕ちやすく、強い人は体が覚えても心は堕ちない（自分からねだる・離れられない結末にしない） */
+    if (HK.Attr && p.will) { var wk = HK.Attr.willK(p); if (wk < 1) { w.fall = 0; w.depend = 0; w.counter *= 1.3; } else if (wk > 1) { w.fall *= wk * wk; if (w.depend) w.depend *= wk; } }
     return pickW(rng, w);
   }
   function pickW(rng, w) {

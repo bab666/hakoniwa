@@ -492,7 +492,8 @@
       /* 最中：体の一文・崩れはじめ（ふつう以上）。頂：体の一文（短めは半分）・崩れ切り */
       if (dp >= 2) mid = mid.replace('{fl}', (gx && rng() < 0.75 ? fresh(gx.mid) : '') + '{fl}' + (rng() < 0.8 ? fresh(brk.m) : ''));
       peak = peak.replace('{fl2}', (gx && rng() < (dp >= 2 ? 0.75 : 0.4) ? fresh(gx.peak) : '') + '{fl2}' + fresh(brk.p));
-      var paras = [(o.lead || '') + fresh(pool('open')), mid];
+      /* 体の組み合わせの一文：住人の体格・種族（attr.js。何も決めていなければ空） */
+      var paras = [(o.lead || '') + fresh(pool('open')), mid + (HK.Attr ? HK.Attr.pairLine(T, U, 'hold', pk) : '')];
       (o.extra || []).forEach(function (x) { if (x) paras.push(x); });
       if (dp >= 3) {
         var dk = kd === 'ff' ? 'ff' : kd === 'ride' ? 'ride' : rough ? 'rough' : 'core';

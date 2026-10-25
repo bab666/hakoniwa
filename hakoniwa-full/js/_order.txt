@@ -198,6 +198,7 @@ js/solo-sit-night-r18.js
 js/island-love-r18.js
 js/zombie-map.js
 js/pos.js
+js/attr.js
 js/special.js
 js/special-r18.js
 js/zombie-special.js
@@ -354,3 +355,4 @@ js/grief-kit.js
 js/dark-thick.js
 js/lewd-unify.js
 js/reset.js
+late js/attr-r18.js

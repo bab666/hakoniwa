@@ -73,6 +73,8 @@
     dst.posNpc = src.posNpc === 'bottom' && (src.pos === 'top' || src.pos === 'riba') ? 'bottom' : '';
     /* 酒の強さ（1 弱い〜5 ザル。空ならおまかせ＝気質から） */
     dst.alcohol = HK.ALC_OK(src.alcohol) ? +src.alcohol : 0;
+    /* 住人の共通の属性（体格・種族・夜の性格・心の強さ・同一人物。attr.js） */
+    if (HK.Attr) HK.Attr.copy(dst, src);
     return dst;
   };
   /* 酒の強さ：キャラの設定「お酒」。1 弱い・2 やや弱い・3 ふつう・4 強い・5 ザル。

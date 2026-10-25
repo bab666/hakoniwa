@@ -17,7 +17,8 @@
   function has(ctx, a, b, ty) { return HK.Ties && HK.Ties.has ? HK.Ties.has(ctx, a, b, ty) : null; }
   /* 発展の分岐に入る見込み（二人の好意と信頼の平均が高いほど） */
   function warmth(ctx, a, b) { var x = ctx.R(a, b), y = ctx.R(b, a); return (x.aff + y.aff + x.trust + y.trust) / 4; }
-  function push(ev) { if (HK.COMMON) HK.COMMON.push(ev); }
+  /* ふだんの場面には、住人の種族・体格の一文を添えることがある（attr.js の HK.Attr.daily。何も決めていない二人には何もしない） */
+  function push(ev) { var r0 = ev.run; ev.run = function (ctx, a, b) { var r = r0.apply(this, arguments); return HK.Attr && HK.Attr.daily ? HK.Attr.daily(ctx, a, b, r, ev.cat) : r; }; if (HK.COMMON) HK.COMMON.push(ev); }
 
   /* ---------- 同級生（向きなし） ---------- */
   var CLASSMATE = {

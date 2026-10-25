@@ -370,9 +370,12 @@
       K.key(S, oe, '解放の時間');
       K.settle(S);
       var stL = h.fallen || h.corrupt >= 100 ? 'fall' : tierE === 2 ? 'enjoy' : tierE === 1 ? 'broken' : 'hold';
+      /* 心の強さ（attr.js）：強い人は体が堕ちても心は折れない（崩れ落ちた＋その一文）。弱い人は早く堕ちる */
+      if (HK.Attr) stL = HK.Attr.fallState(h, stL, { fall: ['fall', 'enjoy'], down: 'broken' });
       var oa2 = say(S, { kind: 'sys', tag: stL === 'fall' || stL === 'enjoy' ? '陥落' : '余韻', text: K.fmt(S, pk(S, stL === 'hold' ? EL('after.hold.' + h.persona, AFTER.hold[h.persona]) : stL === 'enjoy' ? EL('after.fall', AFTER.fall) : EL('after.' + stL, AFTER[stL]))), why: '絶頂 ' + h.climax + '回・堕ち度 ' + Math.round(h.corrupt) });
       /* 厚く：陥落・崩れ落ちた余韻は、段落に分けた版に差し替える */
       if (HT) { var ta2 = HT.after(S, stL === 'fall' || stL === 'enjoy' ? 'fall' : stL, h, { topMe: topMe }); if (ta2) oa2.text = ta2; }
+      if (h.willHeld) oa2.text += '\n\n' + HK.Attr.hold(function (l) { return pk(S, l); }, h, 'hole');
       K.key(S, oa2, stL === 'fall' ? '快楽に堕ちた' : stL === 'enjoy' ? '壁の向こうを受け入れた' : stL === 'broken' ? '崩れ落ちた' : '耐えきった');
       K.snap(S, { s: 0 });
       var metaL = [];
@@ -425,8 +428,10 @@
     /* 厚く：戻ってきた波のうち、最後のいちばん大きな絶頂を段落に分ける（小説調の最初の波は solo-thick4.js が厚くしている） */
     if (HT && lastWave && lastWave !== thick4O) thickAdd(lastWave, HT.peak(S, 'flood', h, { topMe: topMe }), true);
     var state = h.fallen || h.corrupt >= 100 ? 'fall' : h.corrupt >= 70 || h.climax >= 6 ? 'broken' : 'hold';
+    if (HK.Attr) state = HK.Attr.fallState(h, state, { fall: ['fall'], down: 'broken' });
     var oa = say(S, { kind: 'sys', tag: state === 'fall' ? '陥落' : '余韻', text: K.fmt(S, pk(S, mode === 'late' ? X.LATE_AFTER[state] : state === 'hold' ? EL('after.hold.' + h.persona, AFTER.hold[h.persona]) : EL('after.' + state, AFTER[state]))), why: '絶頂 ' + h.climax + '回・堕ち度 ' + Math.round(h.corrupt) });
     if (HT && mode !== 'late') { var ta = HT.after(S, state, h, { topMe: topMe }); if (ta) oa.text = ta; }
+    if (h.willHeld) oa.text += '\n\n' + HK.Attr.hold(function (l) { return pk(S, l); }, h, 'hole');
     K.key(S, oa, state === 'fall' ? '快楽に堕ちた' : state === 'broken' ? '崩れ落ちた' : '耐えきった');
     /* 壁の向こうを見に行く */
     var peeked = false;

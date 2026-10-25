@@ -360,7 +360,8 @@
     var feel = pick(mode === 'ff' ? T.FEEL_FF : mode === 'fm' ? T.FEEL_FM : T.FEEL).replace('{mb}', T.moan(pick, b));
     var fa = pick(T.FEEL_A[mode]), pl = opt.place && T.PLACE[opt.place] ? pick(T.PLACE[opt.place]) : '';
     out.push(feel);
-    out.push((pl ? pl : '') + fa + T.react(pick, b, nth >= 2));
+    /* 体の感触の段：住人の体格・種族・胸の一文（attr.js。何も決めていなければ空） */
+    out.push((pl ? pl : '') + fa + T.react(pick, b, nth >= 2) + (HK.Attr ? HK.Attr.pairLine(a, b, 'touch', pick) : ''));
     var cl = mode === 'ff' ? pick(T.ffClimaxFor(g, ffBody)) : mode === 'fm' ? pick(T.FM_CLIMAX[g]) : pick(jl ? T.JEALOUS_CLIMAX : hard ? T.ROUGH_CLIMAX : T.CLIMAX[st] || T.CLIMAX.gentle);
     out.push('{b}「' + T.moan(pick, b, true) + '」' + cl);
     if (opt.after) out.push(opt.after);

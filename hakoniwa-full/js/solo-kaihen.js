@@ -100,6 +100,8 @@
       p.m = { imm: p.role === 'out' ? 0 : clamp(depth * 70 + p.tr.ac * 15 + (1 - p.tr.a) * 10, 5, 95), doubt: p.role === 'out' ? 75 : clamp(p.tr.a * 12 + (1 - depth) * 25 + (p.goal.id === 'odd' ? 15 : 0), 0, 60), plea: 0, sem: 0 };
       /* 違和感の伸びやすさ：理性的（A・CP）ほど、改変が弱いほど、気づきやすい */
       p.doubtRate = (0.35 + p.tr.a * 0.9 + p.tr.cp * 0.35 - p.tr.ac * 0.2) * (1.35 - depth);
+      /* 心の強さ（attr.js）：弱い人は違和感が育ちにくく、強い人は育ちやすい */
+      if (HK.Attr) p.doubtRate *= 2 - HK.Attr.willK(p);
       p.cnt = { served: 0, climax: 0, gclimax: 0, glitch: 0, body: 0, awake: 0, reset: 0, acts: {}, notice: 0, stop: 0, swept: 0 };
       p.usedActs = [];
     });
@@ -513,7 +515,12 @@
   /* ---------- 正気のまま紛れ込んだ人 ---------- */
   function outsider(S, SIT, p) {
     var rng = S.rng, v = { o: p.name };
-    if (p.m.imm > 72) { p.sunk = true; return ST.key(S, ST.say(S, { actors: [p], tag: '呑み込まれる', text: ST.fmt(pkF(S, nm(S, outPool(SIT, 'sink'))), v), why: p.name + 'の改変度が' + Math.round(p.m.imm) + 'に達した', mag: 40 }), p.name + 'も改変された'); }
+    /* 心の強さ（attr.js）：強い人は改変度が上がりきっても心は呑み込まれない（一度だけ、その一文を出す）。弱い人は早く呑み込まれる */
+    if (HK.Attr && HK.Attr.strong(p) && p.m.imm > 72) {
+      p.m.imm = 64;
+      if (!p.willHeld) { p.willHeld = true; return ST.key(S, ST.say(S, { actors: [p], tag: '心は折れない', text: HK.Attr.hold(function (l) { return pkF(S, l); }, p, 'kaihen'), why: p.name + 'の心の強さ：強い（改変度が上がりきっても、心までは呑み込まれなかった）', mag: 30 }), p.name + 'は心を手放さなかった'); }
+    }
+    if (p.m.imm > 72 / (HK.Attr ? HK.Attr.willK(p) : 1)) { p.sunk = true; return ST.key(S, ST.say(S, { actors: [p], tag: '呑み込まれる', text: ST.fmt(pkF(S, nm(S, outPool(SIT, 'sink'))), v), why: p.name + 'の改変度が' + Math.round(p.m.imm) + 'に達した', mag: 40 }), p.name + 'も改変された'); }
     /* 止めようとしても誰も取り合わないと、逃げ出したくなる */
     var flee = (p.tr.cp * 0.4 + p.tr.a * 0.3 + p.tr.caution * 0.3) * (p.m.doubt / 100) - p.m.imm / 150 + (p.cnt.stop || 0) * 0.04;
     if (S.step >= 1 && rng() < flee * 0.35) { p.fled = true; return ST.key(S, ST.say(S, { actors: [p], tag: '脱出', text: ST.fmt(pkF(S, nm(S, outPool(SIT, 'flee'))), v), why: p.name + 'の慎重さとCP・A' + (p.cnt.stop ? '（止めようとして、誰にも取り合ってもらえなかった）' : ''), mag: 35 }), p.name + 'が逃げ出した'); }

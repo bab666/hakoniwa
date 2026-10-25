@@ -4,6 +4,8 @@
    V2: 自分で「攻め」を選んだ住人が、受ける側の文（貫かれる・中に出される・押し倒される・縛られる など）になった
    V3: 向きの決まらない組（攻め×攻め・恋愛対象の合わない組）の二人だけの性的な場面が起きた
    V4: 女性の住人が、男性の体で描かれた（「自分のもの」で突く・射精する・相手の中に入る など）
+   V5: 夜の性格（attr.js）が受け攻めを変えた：マゾの人が攻め（{a}）の夜の性格の文を受け持った、自分で攻めを選んだ人が受け（{b}）の夜の性格の文を受け持った。
+       奇数回は住人に夜の性格（マゾ・サド・意地悪・甘々・恥じらい、攻め指定の人にもマゾ）を付けて回す（攻め指定のマゾが受ける文は V2 でも数える）
    --why：数えずに除いた候補とその理由も出す（性的でない文・女性の攻めが男性に跨って迎える文・「攻めに〜された」の書き方 など）
    誤判定を減らすための除外：性的でない言い回し（NONSEX：「上達」「一貫」「旅路の果て」「注がれたお茶」など）は判定の前に消す。
    V2 は文に性的な語（SEXCORE）があるときだけ数え、女性の攻めが男性の相手に跨って自分の中に迎える文（女攻め×男）は数えない。
@@ -32,7 +34,7 @@ const { openBuild } = require('./lib.js');
     try { const SH = HK.SHIP; if (SH && SH.LIFE) SH.LIFE.forEach(x => x && x.name && MOBM.push(x.name)); } catch (e) { }
     const hasMobM = t => MOBM.some(nm => t.indexOf(nm) >= 0) || /夢の中|(?:風|氷|闇|影|水|炎|光|霧)の(?:腕|手|指|舌)|の民の住人|民(?=[をはがのに])|巨体|異星の|壁の向こう|向こう側の誰か|向こうの誰か|正体の分からない何か|若いスタッフ|二人のスタッフ|無口な職人|精液検査センター/.test(t);
     const skip = []; const sk = (why, sc, t, i) => { if (WHY && skip.length < 300) skip.push(why + ' | ' + sc + ' | …' + t.slice(Math.max(0, i - 30), i + 60) + '…'); };
-    const out = { skip, V1: [], V2: [], V3: [], V4: [], n: { V1: 0, V2: 0, V3: 0, V4: 0 }, err: [], runs: 0, bySc: {} };
+    const out = { skip, V1: [], V2: [], V3: [], V4: [], V5: [], n: { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0 }, err: [], runs: 0, bySc: {}, v5n: 0 };
     const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];
     /* 配役の型：女性だけ（指定いろいろ）／攻めの指定が多い／攻めどうしを恋人に結ぶ／受け攻めそろい */
     const CASTS = [
@@ -58,7 +60,7 @@ const { openBuild } = require('./lib.js');
     const ids = (only || Object.keys(HK.SCENARIOS));
     for (const sc of ids) {
       const scen = HK.SCENARIOS[sc]; if (!scen) continue;
-      out.bySc[sc] = { V1: 0, V2: 0, V3: 0, V4: 0, runs: 0 };
+      out.bySc[sc] = { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, runs: 0 };
       for (let s = 0; s < N; s++) {
         const cast = CASTS[s % CASTS.length];
         const n = Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 2 + (s % 5)));
@@ -67,6 +69,8 @@ const { openBuild } = require('./lib.js');
           chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: cast.g[i], likes: '', tone: '', fp: '', pos: cast.p[i], posLike: cast.l[i] || '', color: '', call: '', calls: {}, loveLock: '', posNpc: NPCBOT && (cast.p[i] === 'top' || cast.p[i] === 'riba') ? 'bottom' : '' });
           perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
         }
+        /* V5：奇数回は夜の性格を付ける（0 番はたいてい攻め指定。攻め指定のマゾも混ぜる）。1 番から 0 番へは相手ごとの指定でサド */
+        if (s % 2 && HK.Attr) { const NIGHT = ['maso', 'sadist', 'maso', 'mean', 'sweet', 'shy']; chars.forEach((c, i) => { c.night = NIGHT[(i + (s >> 1)) % NIGHT.length]; }); if (n >= 2) chars[1].nightFor = { 0: 'sadist' }; }
         const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
         /* 選択肢のある設定は回ごとにずらして、いろいろな条件を通す */
         (scen.env || []).forEach((e, k) => { if (e.options && e.options.length > 1 && (s + k) % 3 === 0) env[e.id] = e.options[(s + k) % e.options.length].v; });
@@ -82,8 +86,17 @@ const { openBuild } = require('./lib.js');
         let res;
         /* 内容のスイッチ（content.js）：指定がなければすべて入にして、いちばん広く回す */
         if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
+        if (HK.Attr) HK.Attr.log = [];
         try { res = HK.simulate({ scenId: sc, seed: 2000 + s, env, chars, perChar, ties }); } catch (e) { out.err.push(sc + ': ' + String(e && e.stack || e).slice(0, 300)); continue; }
         out.runs++; out.bySc[sc].runs++;
+        /* V5：夜の性格の文の受け持ち（attr-r18.js の HK.Attr.log） */
+        ((HK.Attr && HK.Attr.log) || []).forEach(g => {
+          out.v5n++;
+          const who = chars.filter(c => c.name === g.who)[0];
+          const bad = (g.role === 'a' && g.night === 'maso') || (g.role === 'b' && who && P.hardTop(who)) || g.a === g.b;
+          if (bad) { out.n.V5++; out.bySc[sc].V5++; if (out.V5.length < 200) out.V5.push(sc + ' | ' + JSON.stringify(g)); }
+        });
+        if (HK.Attr) HK.Attr.log = null;
         const tops = chars.filter(c => P.hardTop(c));
         const texts = [];
         (res.log || []).forEach(e => { if (e && typeof e.text === 'string') texts.push({ t: e.text, ac: (e.actors || []).map(x => typeof x === 'number' ? x : x && x.i) }); });
@@ -166,10 +179,10 @@ const { openBuild } = require('./lib.js');
     }
     return out;
   }, { N, only, FF, HOT, ENVSET, WHY, NPCBOT });
-  console.log('runs', r.runs, 'counts', JSON.stringify(r.n));
-  console.log('by scenario', JSON.stringify(Object.fromEntries(Object.entries(r.bySc).filter(([k, v]) => v.V1 || v.V2 || v.V3 || v.V4))));
+  console.log('runs', r.runs, 'counts', JSON.stringify(r.n), 'V5で見た夜の性格の文', r.v5n);
+  console.log('by scenario', JSON.stringify(Object.fromEntries(Object.entries(r.bySc).filter(([k, v]) => v.V1 || v.V2 || v.V3 || v.V4 || v.V5))));
   if (r.err.length) console.log('ERRORS', r.err.slice(0, 8));
-  if (SAMPLES) for (const k of ['V1', 'V2', 'V3', 'V4']) { console.log('##### ' + k); r[k].forEach(x => console.log(x)); }
+  if (SAMPLES) for (const k of ['V1', 'V2', 'V3', 'V4', 'V5']) { console.log('##### ' + k); r[k].forEach(x => console.log(x)); }
   if (WHY) { console.log('##### 除外したもの'); r.skip.forEach(x => console.log(x.replace(/\n/g, ' '))); }
   console.log('pageerr', errors.slice(0, 5));
   await browser.close();

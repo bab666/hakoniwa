@@ -149,6 +149,7 @@ js/zombie-assault.js
 js/zombie-map.js
 js/persona-final.js
 js/pos.js
+js/attr.js
 js/special.js
 js/zombie-special.js
 js/pair-react.js
