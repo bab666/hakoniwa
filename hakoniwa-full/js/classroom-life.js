@@ -61,7 +61,7 @@
         for (var i = 0; i + 1 < sh.length; i += 2) (function (a, b) {
           var scared = a.tr.ac + (1 - a.tr.a) * 0.3 > b.tr.ac + (1 - b.tr.a) * 0.3 ? a : b, brave = scared === a ? b : a;
           ctx.act2({ actors: [scared, brave], cat: 'romance', fx: function () { ctx.mod2(scared, brave, { att: 8, trust: 6 }, { att: 5, aff: 4 }); },
-            text: ctx.t('墓地の道で、{a}は{b}の袖を握ったまま離さなかった。{b}は気づかないふりをして、歩く速さを少し落とした。', scared, brave), why: scared.name + 'のAC（怖がり）／' + brave.name + 'の落ち着き' });
+            text: ctx.t(ctx.pick(['墓地の道で、{a}は{b}の袖を握ったまま離さなかった。{b}は気づかないふりをして、歩く速さを少し落とした。', '茂みががさりと鳴った瞬間、{a}は{b}の腕にしがみついた。{b}は「大丈夫」と言って、そのまま腕を貸した。', '{a}は懐中電灯を持つ手が震えて、何度も{b}に持ち替えてもらった。最後には、二人で一本を握っていた。', 'ゴールが見えたとき、{a}はようやく{b}の手を握っていたことに気づいて、慌てて離した。']), scared, brave), why: scared.name + 'のAC（怖がり）／' + brave.name + 'の落ち着き' });
         })(sh[i], sh[i + 1]);
       }
       var Pr = P.filter(function (c) { return !(P1.length >= 2 && gr(ctx, c) === 1); });
@@ -72,7 +72,7 @@
           if (!c || c.out || ctx.rng() > a.tr.honesty) return;
           var ok = R(ctx, c, a).att > 25 || c.tr.fc > 0.6;
           ctx.act2({ actors: [a, c], cat: 'romance', fx: function () { if (ok) { ctx.mod2(a, c, { att: 6 }, { att: 6 }); a.flags.summer = c.i; } else ctx.stress(a, 8); },
-            text: ctx.t(ok ? '{a}は{b}を夏祭りに誘った。「いいよ」と{b}は言った。' : '{a}は{b}を夏祭りに誘いかけて、結局「みんなで」と言い直した。', a, c), why: a.name + 'の惹かれと本音の出やすさ' });
+            text: ctx.t(ctx.pick(ok ? ['{a}は{b}を夏祭りに誘った。「いいよ」と{b}は言った。', '{a}は帰り際、{b}に「夏祭り、一緒に行かない？」と聞いた。{b}は少し考えてから頷いた。', '{a}は{b}に夏祭りのチラシを見せた。「これ、行こうよ」――{b}は「浴衣、着ていこうかな」と笑った。'] : ['{a}は{b}を夏祭りに誘いかけて、結局「みんなで」と言い直した。', '{a}は{b}に夏祭りの話を振ったが、誘う一言は最後まで出てこなかった。', '{a}は{b}を誘おうとして、{b}がほかの友達と行く約束をしているのを聞いてしまった。']), a, c), why: a.name + 'の惹かれと本音の出やすさ' });
         });
       }
     },
@@ -84,12 +84,12 @@
         if (!b || b.out) return;
         if (!shown) { ctx.incident('夏祭りの夜。'); shown = true; }
         ctx.act2({ actors: [a, b], cat: 'romance', mag: 12, fx: function () { ctx.mod2(a, b, { att: 10, aff: 6, trust: 5 }, { att: 10, aff: 6, trust: 5 }); },
-          text: ctx.t('花火が上がるあいだ、{a}と{b}は人混みの中ではぐれないように手を繋いでいた。', a, b), why: '一学期の終わりに交わした約束' });
+          text: ctx.t(ctx.pick(['花火が上がるあいだ、{a}と{b}は人混みの中ではぐれないように手を繋いでいた。', '{a}と{b}は屋台のりんご飴を一つずつ買って、河原の端で花火を見上げた。', '最後の大きな花火が開いたとき、{a}は{b}の横顔を見ていた。{b}も、同じように{a}を見ていた。', '{a}と{b}は、人混みを抜けた神社の石段に並んで座って、遠くの花火の音を聞いていた。']), a, b), why: '一学期の終わりに交わした約束' });
         P.forEach(function (o) {
           if (o === a || o === b) return;
           var c = crushOf(ctx, o, 55);
           if ((c === a || c === b) && (!HK.Obsess || HK.Obsess.jealOk(ctx, o, c))) ctx.act2({ actors: [o, c], cat: 'conflict', fx: function () { ctx.mod(o, c === a ? b : a, { ten: 12 }); ctx.stress(o, 15); if (HK.Obsess) HK.Obsess.feed(ctx, o, c, 6); ctx.pair(o, c === a ? b : a).jealous++; },
-            text: ctx.t('{a}は、屋台の灯りの向こうに二人の後ろ姿を見つけてしまった。', o), why: o.name + 'は' + c.name + 'に惹かれていた' });
+            text: ctx.t(ctx.pick(['{a}は、屋台の灯りの向こうに二人の後ろ姿を見つけてしまった。', '{a}は、人混みの中で並んで歩く二人を見かけて、思わず足を止めた。', '{a}は花火を見上げるふりをして、少し離れたところにいる二人から目をそらした。']), o), why: o.name + 'は' + c.name + 'に惹かれていた' });
         });
       });
     },
@@ -124,7 +124,7 @@
       }
       slack.forEach(function (s) {
         var angry = ctx.most(hard.length ? hard : ctx.others(s), function (o) { return o.tr.cp; });
-        if (angry && angry !== s && angry.tr.cp > 0.5) ctx.act2({ actors: [angry, s], cat: 'conflict', fx: function () { ctx.mod2(angry, s, { ten: 12 }, { ten: 8 }); }, text: ctx.t('{b}は準備を抜けて帰った。翌朝、{a}は{b}と目を合わせなかった。', angry, s), why: s.name + 'のFC高・AC低／' + angry.name + 'のCP' });
+        if (angry && angry !== s && angry.tr.cp > 0.5) ctx.act2({ actors: [angry, s], cat: 'conflict', fx: function () { ctx.mod2(angry, s, { ten: 12 }, { ten: 8 }); }, text: ctx.t(ctx.pick(['{b}は準備を抜けて帰った。翌朝、{a}は{b}と目を合わせなかった。', '{b}がいつの間にかいなくなっていることに、{a}は気づいていた。翌日、{a}は{b}の分の仕事を、わざと机の上に積んでおいた。', '{a}は、準備をさぼって帰る{b}の背中に「また？」と聞こえるように言った。']), angry, s), why: s.name + 'のFC高・AC低／' + angry.name + 'のCP' });
       });
       var score = hard.length / P.length * 0.6 + (1 - slack.length / P.length) * 0.2 + lead.tr.lead * 0.2 + (rng() - 0.5) * 0.4;
       var ok = score > 0.45;
@@ -145,7 +145,7 @@
         if (!fire) { ctx.incident('後夜祭。グラウンドの真ん中でキャンプファイヤーが燃えている。'); fire = true; }
         var yes = R(ctx, c, a).att > 30;
         ctx.act2({ actors: [a, c], cat: 'romance', mag: 12, fx: function () { ctx.mod2(a, c, { att: yes ? 8 : 0 }, { att: yes ? 10 : 3, aff: yes ? 5 : 0 }); if (!yes) ctx.stress(a, 12); if (yes && R(ctx, a, c).aff > 30 && R(ctx, c, a).aff > 30) ctx.pair(a, c).couple = true; },
-          text: ctx.t(yes ? '{a}は{b}をフォークダンスの輪に誘った。曲が終わっても、手はしばらく離れなかった。' : '{a}は{b}をダンスに誘った。{b}は「ごめん、片付けがあるから」と校舎に戻っていった。', a, c), why: a.name + 'の惹かれと本音の出やすさ／' + c.name + 'の側の惹かれ（' + Math.round(R(ctx, c, a).att) + '）' });
+          text: ctx.t(ctx.pick(yes ? ['{a}は{b}をフォークダンスの輪に誘った。曲が終わっても、手はしばらく離れなかった。', '{a}は{b}の前に手を差し出した。{b}は笑ってその手を取り、火の粉の舞う輪の中に入っていった。', '{a}と{b}は輪から少し離れて、キャンプファイヤーの火が小さくなるまで並んで見ていた。'] : ['{a}は{b}をダンスに誘った。{b}は「ごめん、片付けがあるから」と校舎に戻っていった。', '{a}は{b}を誘おうと近づいたが、{b}はもう別の人と輪の中にいた。', '{a}は{b}に声をかけた。{b}は「また今度ね」と笑って、友達のところへ戻っていった。']), a, c), why: a.name + 'の惹かれと本音の出やすさ／' + c.name + 'の側の惹かれ（' + Math.round(R(ctx, c, a).att) + '）' });
       });
     },
     '12月': function (ctx) {
@@ -155,7 +155,7 @@
       if (!couples.length && P.length < 2) return;
       ctx.incident('二学期の終業式。明日はクリスマス・イブ。');
       couples.forEach(function (c) {
-        ctx.act2({ actors: c, cat: 'romance', fx: function () { ctx.mod2(c[0], c[1], { aff: 6, att: 6 }, { aff: 6, att: 6 }); }, text: ctx.t('{a}と{b}は、駅前のイルミネーションの下で待ち合わせをした。', c[0], c[1]), why: '恋人同士' });
+        ctx.act2({ actors: c, cat: 'romance', fx: function () { ctx.mod2(c[0], c[1], { aff: 6, att: 6 }, { aff: 6, att: 6 }); }, text: ctx.t(ctx.pick(['{a}と{b}は、駅前のイルミネーションの下で待ち合わせをした。', '{a}と{b}は、終業式の帰りにそのまま二人でケーキ屋に寄った。', '{a}は{b}に、イブの夜に渡すプレゼントの中身を、最後まで内緒にしていた。', '{a}と{b}は、教室に最後まで残って、明日の待ち合わせの時間を三回確かめた。']), c[0], c[1]), why: '恋人同士' });
       });
       var lonely = ctx.most(P, function (c) { return c.stress / 100 + (couples.some(function (x) { return x.indexOf(c) >= 0; }) ? -9 : 0) + (crushOf(ctx, c, 55) ? 0.3 : 0); });
       if (lonely && !couples.some(function (x) { return x.indexOf(lonely) >= 0; })) {
@@ -173,12 +173,16 @@
         P3.forEach(function (c) {
           var good = ctx.rng() < 0.2 + ctx.stat(c, 'study') * 0.13 - c.stress / 300;
           c.flags.exam = good;
-          if (!good) ctx.act2({ actors: [c], cat: 'solo', fx: function () { ctx.stress(c, 20); }, text: ctx.t('{a}は自己採点の途中で鉛筆を置いた。', c), why: '学力 ' + ctx.stat(c, 'study') + '・焦り ' + Math.round(c.stress) });
         });
         var bad = P3.filter(function (c) { return c.flags.exam === false; });
+        /* 振るわなかった人は一つの記録にまとめる（同じ一文が人数ぶん並ばないように） */
+        if (bad.length) ctx.act2({ actors: bad, cat: 'solo', fx: function () { bad.forEach(function (c) { ctx.stress(c, 20); }); },
+          text: bad.length === 1 ? ctx.t(ctx.pick(['{a}は自己採点の途中で鉛筆を置いた。', '{a}は答え合わせの赤ペンを握ったまま、しばらく動けなくなった。', '{a}は自己採点の結果を、誰にも見せずに鞄の奥にしまった。']), bad[0])
+            : ctx.pick(['{n}は、自己採点の途中で鉛筆を置いた。', '{n}は、答え合わせの途中で黙りこんだ。教室の一角だけ、空気が重かった。', '自己採点のあと、{n}は誰とも目を合わせずに帰っていった。']).replace('{n}', HK.Birthday ? HK.Birthday.grp(bad) : names(bad)),
+          why: bad.map(function (c) { return c.name + '（学力 ' + ctx.stat(c, 'study') + '・焦り ' + Math.round(c.stress) + '）'; }).join('・') });
         bad.forEach(function (b) {
           var h = ctx.most(ctx.others(b), function (o) { return o.tr.np + Math.max(0, R(ctx, o, b).aff) / 60; });
-          if (h && h.tr.np > 0.5) ctx.act2({ actors: [h, b], cat: 'help', fx: function () { ctx.mod(b, h, { aff: 8, trust: 10 }); ctx.stress(b, -10); }, text: ctx.t('{a}は、自分の受験勉強の手を止めて、{b}と二次試験の過去問を解いた。', h, b), why: h.name + 'のNP' });
+          if (h && h.tr.np > 0.5) ctx.act2({ actors: [h, b], cat: 'help', fx: function () { ctx.mod(b, h, { aff: 8, trust: 10 }); ctx.stress(b, -10); }, text: ctx.t(ctx.pick(['{a}は、自分の受験勉強の手を止めて、{b}と二次試験の過去問を解いた。', '{a}は{b}を図書室に誘って、閉館まで一緒に苦手な分野をやり直した。', '{a}は{b}に、自分のまとめノートを丸ごと貸した。「まだ二次がある。ここからでしょ」']), h, b), why: h.name + 'のNP' });
         });
         if (P3.length === P.length) return;
         P = P.filter(function (c) { return gr(ctx, c) !== 3; });
@@ -201,7 +205,7 @@
           if (!c || c.out || ctx.rng() > 0.3 + a.tr.honesty * 0.5 || (HK.Poly && !HK.Poly.canTry(ctx, a, c))) return;
           var yes = R(ctx, c, a).att > 28;
           ctx.act2({ actors: [a, c], cat: 'romance', mag: 15, fx: function () { ctx.mod2(a, c, { att: 6 }, { att: yes ? 10 : 2 }); if (yes) ctx.pair(a, c).couple = true; else ctx.stress(a, 15); },
-            text: ctx.t(yes ? '式のあと、{a}は{b}に第二ボタンをねだった。{b}は黙って、ボタンごと学ランの前を外した。' : '{a}は{b}を呼び止めて、それから「元気でね」とだけ言った。', a, c), why: '最後の日。' + a.name + 'の惹かれ（' + Math.round(R(ctx, a, c).att) + '）' });
+            text: ctx.t(ctx.pick(yes ? ['式のあと、{a}は{b}に第二ボタンをねだった。{b}は黙って、ボタンごと学ランの前を外した。', '式のあと、{a}は{b}を桜の木の下に呼び出した。「ずっと言えなかったことがある」――{b}は、最後まで聞いてから頷いた。', '{a}は{b}の卒業アルバムの寄せ書きの欄に、一行だけ書いた。{b}はそれを読んで、{a}を追いかけた。'] : ['{a}は{b}を呼び止めて、それから「元気でね」とだけ言った。', '{a}は{b}に花束を渡した。言いたかったことは、花束の中のカードにも書けなかった。', '{a}は校門のところで{b}を待っていたが、{b}は友達に囲まれていて、結局手を振っただけだった。']), a, c), why: '最後の日。' + a.name + 'の惹かれ（' + Math.round(R(ctx, a, c).att) + '）' });
         });
         if (G3.length === P.length) return;
         P = P.filter(function (c) { return gr(ctx, c) !== 3; });
@@ -312,6 +316,11 @@
     if (ctx.env.grade === 'all') senpaiMonth(ctx);
   };
   L.gr = gr;
+  /* 箱庭全体の出来事のうち、同じ一文が人数ぶん並ぶもの（誕生日・転校の噂）は、birthday.js のまとめ方で出す */
+  if (HK.Birthday && HK.INCIDENTS && HK.INCIDENTS.classroom) HK.INCIDENTS.classroom.forEach(function (x) {
+    if (x.id === 'birthday') x.run = HK.Birthday.incident;
+    if (x.id === 'transfer') x.run = HK.Birthday.transfer;
+  });
 
   /* ======================= 先輩と後輩（学園全体） ======================= */
   /* {a}＝先輩 {b}＝後輩 */
@@ -356,6 +365,8 @@
     ctx.flags.bday = ctx.flags.bday || {};
     ctx.present().forEach(function (a) {
       if (+a.bmonth !== m || ctx.flags.bday[a.i]) return;
+      /* 祝い方（個別・まとめ・笑い話・好物・空回り）は birthday.js */
+      if (HK.Birthday) { HK.Birthday.celebrate(ctx, a, { m: m }); return; }
       ctx.flags.bday[a.i] = 1;
       var fr = ctx.others(a).filter(function (o) { return R(ctx, o, a).aff > 20 && o.role !== 'teacher'; }).sort(function (x, y) { return R(ctx, y, a).aff - R(ctx, x, a).aff; });
       var lv = fr.filter(function (o) { return ctx.romanceOk([o, a]) && (ctx.pair(o, a).couple || R(ctx, o, a).att > 40); })[0];

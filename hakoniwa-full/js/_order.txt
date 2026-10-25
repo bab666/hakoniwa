@@ -170,6 +170,7 @@ js/dungeon-events-a.js
 js/dungeon-events-b.js
 js/dungeon-events-c.js
 js/factions.js
+late js/birthday.js
 late js/classroom-life.js
 js/classroom-teacher.js
 js/endings.js
