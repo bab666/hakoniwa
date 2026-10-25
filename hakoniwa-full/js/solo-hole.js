@@ -220,7 +220,7 @@
     function tierNow() { var x = LV.tier(h); if (x > tierMax) tierMax = x; return tierMax; }
     function shiftTxt(t2) { if (tierShown < 0 || t2 <= tierShown) { tierShown = Math.max(tierShown, t2); return ''; } tierShown = t2; return LV.SHIFT && LV.SHIFT[t2] ? K.fmt(S, fresh(S, LV.SHIFT[t2])) + ' ' : ''; }
     /* 体の反応（態度ごと）。こらえる体の文は使わず、段階は上がったら下げない（K.stage は堕ち度だけで決まり、この箱庭では堕ち度は下がらない） */
-    function tail(p) { if (S.rng() > p) return ''; var T = DG.TAILS[h.persona] || DG.TAILS.gentle; return ' ' + K.fmt(S, fresh(S, T[K.stage(h)])); }
+    function tail(p) { if (S.rng() > p) return ''; var T = DG.TAILS[h.persona] || DG.TAILS.gentle, tl = K.noDg(S, T[K.stage(h)]); return tl.length ? ' ' + K.fmt(S, fresh(S, tl)) : ''; }
     function liveFx(be) {
       var tr = tierNow(), f = be.fx || {};
       var r = K.stim(S, 16 + be.lv * 9 + env.wild / 9, { part: 'belly', defer: true, mind: tr < 2 });

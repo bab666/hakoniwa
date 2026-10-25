@@ -58,7 +58,13 @@
     return t;
   };
   /* 迷宮の言い回し（罠・魔物・迷宮）を含む文は、迷宮の外の一人用箱庭（マッサージ・感覚遮断穴）では使わない */
-  var DUNGEON_RE = /迷宮|罠|魔物|次の部屋/;
+  var DUNGEON_RE = /迷宮|罠|魔物|次の部屋|冒険者|宝箱|階層|最深部|ダンジョン|魔導|呪い/;
+  K.DUNGEON_RE = DUNGEON_RE;
+  /* 迷宮の外の箱庭では、迷宮の言い回しを含む文を表から除く（全部消えるときは空の配列＝使わない） */
+  K.noDg = function (S, arr) {
+    if (!arr || (S.scen && S.scen.id === 'dungeon')) return arr || [];
+    return arr.filter(function (x) { return !DUNGEON_RE.test(String(x)); });
+  };
   K.climaxPool = function (S, h) {
     var sg = K.stage(h), base = DG.CLIMAX[h.persona][sg], id = S.scen && S.scen.id;
     if (id === 'dungeon') return base;
@@ -87,8 +93,10 @@
   K.tail = function (S, p, noBody) {
     var h = S.h, sg = K.stage(h);
     if (S.rng() > (p == null ? 0.45 : p)) return '';
-    if (!noBody && DG.ENDURE && sg <= 2 && S.rng() < 0.4) return ' ' + K.fmt(S, K.pick(S, DG.ENDURE[h.persona]));
-    return ' ' + K.fmt(S, K.pick(S, DG.TAILS[h.persona][sg]));
+    if (!noBody && DG.ENDURE && sg <= 2 && S.rng() < 0.4) { var en = K.noDg(S, DG.ENDURE[h.persona]); return en.length ? ' ' + K.fmt(S, K.pick(S, en)) : ''; }
+    /* 迷宮の外の箱庭では、罠・迷宮の文を除いた残りから選ぶ（エロトラップダンジョン以外に「迷宮」の語を出さない） */
+    var tl = K.noDg(S, DG.TAILS[h.persona][sg]);
+    return tl.length ? ' ' + K.fmt(S, K.pick(S, tl)) : '';
   };
   K.moan = function (S) { return '「' + K.pick(S, DG.MOAN[S.h.persona]) + '」'; };
 
