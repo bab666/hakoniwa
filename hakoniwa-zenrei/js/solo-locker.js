@@ -171,7 +171,7 @@
     /* R18の描写の設定（lewd-unify.js）：男性向けは、相手が応じた行為（accept）と、扉が開いたあとの夜だけ（eroNow の間）。♡の喘ぎ（ero-kit.js） */
     var LX = HK.Lewd, lcf = LX && LX.conf('locker'), eroOn = !!(lcf && HK.Ero && HK.Ero.on(S) && HK.ThickEro && lew !== 'low'), eroNow = false;
     function moan(p, top) {
-      if (eroOn && eroNow) { var d0 = p.eroDom; p.eroDom = !!top; var m = HK.Ero.moan(S, p, 2); p.eroDom = d0; return p.name + '「' + m + '」'; }
+      if (eroOn && eroNow) { var d0 = p.eroDom; p.eroDom = !!top; var m = HK.Ero.moan(S, p, top ? 1 : 2); p.eroDom = d0; return p.name + '「' + m + '」'; }
       var l = lew === 'low' || !V ? null : top ? topV(p, 'moan') : V.CLIMAX[p.persona]; return l && l.length ? p.name + '「' + pk(l) + '」' : '';
     }
     function say2(p, T) { var l = T[p.persona] || T.gentle; return p.name + pk(l); }
