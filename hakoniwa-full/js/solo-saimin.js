@@ -389,6 +389,8 @@
       /* 男性向けの「その後」は、性的な暗示を受けたときだけ（かからなかった・いたずらだけのときは元の文） */
       var afE = afK === 'AFTER' && p.ff ? 'AFTER_FF' : afK === 'AFTER' && p.fm ? 'AFTER_FM' : afK === 'AFTER' && p.aTop ? 'AFTER_TOP' : afK;
       var afL = !p.failed && p.cnt.lewd && !soft ? eL(S, afE + '.' + route, SM[afK][route]) : SM[afK][route];
+      /* 知らない相手・恨みのある相手（ストーカー・恨み）を訴えたときは、共通の友人のいる文を使わない */
+      if (soft && route === 'report' && (p.ty === 'stalker' || p.ty === 'grudge') && SM.AFTER_SOFT.reportX) afL = SM.AFTER_SOFT.reportX;
       var t = eF(S, p, ST.fmt(ST.pick(S, afL), v));
       var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', confused: 'confused', dazed: 'dazed', accept: 'accept', body: null }[route];
       if (mood && SM.AFTER_SAY[mood] && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, p.aTop && SM.AFTER_SAY_TOP && SM.AFTER_SAY_TOP[mood] ? (SM.AFTER_SAY_TOP[mood][p.persona] || SM.AFTER_SAY_TOP[mood].gentle) : topL(p, SM.AFTER_SAY[mood][p.persona]));

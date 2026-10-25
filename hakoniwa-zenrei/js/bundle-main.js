@@ -31000,6 +31000,7 @@
     accept: L('{a}は真っ赤になりながらも、最後には吹き出した。「……もう、いいよ。面白かったし」――そう言って、{h}の肩を軽く叩いた。{h}は、ほっとして笑った。|{a}は自分の動画を見せられて、しばらく固まった。それから小さく笑って言った。「……消さなくていいよ。でも、誰にも見せないでね」――{h}は神妙な顔で頷いた。'),
     body: L('{a}は何も覚えていなかった。ただ、ときどき無意識に語尾が「にゃん」になりかけて、そのたびに首を傾げた。|{a}は何も覚えていなかった。ただ、{h}に「おやすみ」と言われると、なぜか猛烈に眠くなった。'),
     fall: L('三日後、{a}は自分から{h}の部屋を訪ねた。「……あの、また、かけてくれない？　ちょっと、楽しかったから」|{a}は{h}の前で手を合わせた。「お願い、また変な暗示かけて。あれ、癖になる」'),
+    reportX: L('{a}は翌朝、交番に足を運び、ゆうべ起きたことを順を追って話した。{h}の顔も、声も、はっきり覚えていた。数日後、{h}が近所で姿を見せることはなくなった。|{a}はその日のうちに部屋の鍵を替え、{h}からの連絡をすべて着信拒否にした。それから、信頼できる友人にだけ事情を打ち明けた。もう一人で抱え込むつもりはなかった。|{a}は{h}に向かって、二度と近づかないでと静かに告げた。{h}は何か言いかけたが、{a}の目を見て口をつぐんだ。{a}は振り返らずにその場を去った。'),
     report: L('{a}は翌朝、共通の友人に一部始終を話した。{h}はそれからしばらく、みんなに「にゃん」と呼ばれた。|{a}は{h}のスマホから、自分が犬になりきっている動画を見つけて、無言で消した。それから一週間、口をきかなかった。'),
     sweet: L('{a}は顔を真っ赤にして、{h}の肩を叩いた。「ばか。……でも、ちょっと楽しかった」|{a}は{h}に背を向けたまま、「次は、もっとかっこいい暗示にして」と小さな声で言った。'),
     depend: L('{a}は{h}に腹を立てていた。それなのに、{h}の「えらいね」を聞かないと、なんだか一日が終わらない気がした。')
@@ -31397,6 +31398,8 @@
       /* 男性向けの「その後」は、性的な暗示を受けたときだけ（かからなかった・いたずらだけのときは元の文） */
       var afE = afK === 'AFTER' && p.ff ? 'AFTER_FF' : afK === 'AFTER' && p.fm ? 'AFTER_FM' : afK === 'AFTER' && p.aTop ? 'AFTER_TOP' : afK;
       var afL = !p.failed && p.cnt.lewd && !soft ? eL(S, afE + '.' + route, SM[afK][route]) : SM[afK][route];
+      /* 知らない相手・恨みのある相手（ストーカー・恨み）を訴えたときは、共通の友人のいる文を使わない */
+      if (soft && route === 'report' && (p.ty === 'stalker' || p.ty === 'grudge') && SM.AFTER_SOFT.reportX) afL = SM.AFTER_SOFT.reportX;
       var t = eF(S, p, ST.fmt(ST.pick(S, afL), v));
       var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', confused: 'confused', dazed: 'dazed', accept: 'accept', body: null }[route];
       if (mood && SM.AFTER_SAY[mood] && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, p.aTop && SM.AFTER_SAY_TOP && SM.AFTER_SAY_TOP[mood] ? (SM.AFTER_SAY_TOP[mood][p.persona] || SM.AFTER_SAY_TOP[mood].gentle) : topL(p, SM.AFTER_SAY[mood][p.persona]));
@@ -45114,9 +45117,16 @@
   var PRE = [[/太腿と脚の付け根/g, '脚のむくみ'], [/気持ちよさに身を委ねる/g, '心地よさに身を委ねる'], [/お尻まわり/g, '腰まわり'], [/臀部/g, '腰まわり'], [/を押し倒した/g, 'と立場が逆転した'], [/仰向けでデコルテ/g, '仰向けで首まわり']];
   function word(t) { WORD.forEach(function (w) { t = t.replace(w[0], w[1]); }); return t; }
   /* 喘ぎ声だけの台詞（短く、「ぁ」「♡」「っ」が多いもの） */
+  /* っ・……の多いふつうの台詞（「ちょっと、待って……っ」など）は喘ぎにしない。喘ぎらしい音（ぁ・あっ・んっ・はぁ・♡）が中心で、ほかの言葉がほとんどないものだけ */
+  var MOAN_T = /[ぁぃぅぇぉ]|あっ|んっ|はぁ|ひぁ|ふぁ|んぁ|あぁ|んん|ひっ|やぁ/g;
   function moanQ(q) {
-    var n = (q.match(/[ぁぃぅぇぉ♡ッ]|っ|ん、|ん…|んあ|あっ|あ、|ひ、|ふ、|は、/g) || []).length;
-    return (q.length < 30 && n >= 2) || (q.length < 50 && n >= 3) || (q.length < 25 && /[っッ]/.test(q) && /……/.test(q)) || (/そこ|もっと|奥|中/.test(q) && /っ|……/.test(q) && q.length < 40);
+    if (/♡/.test(q)) return true;
+    var strong = (q.match(MOAN_T) || []).length;
+    if (!strong) return false;
+    var rest = q.replace(MOAN_T, '').replace(/[っッ…‥、。！？!?～〜ー\s「」ん]/g, ''), kanji = (rest.match(/[\u4e00-\u9fff]/g) || []).length;
+    if (strong >= 2 && rest.length <= 6) return true;
+    if (strong >= 3 && kanji <= 2 && rest.length <= 14) return true;
+    return /そこ|もっと|奥|中/.test(q) && strong >= 1 && q.length < 40 && kanji <= 2;
   }
   /* 文に分ける：「」の中の。では切らない */
   function sentences(t) {
@@ -45149,7 +45159,8 @@
         if (HARD.test(p)) { hard++; if (at < 0) at = out.length; }
         else if (!SOFT.test(p)) out.push(p);
       });
-      if (hard && (hard >= 2 || !out.join('').trim())) out.splice(at, 0, FADE[fi++ % FADE.length]);
+      /* 秘密の一文は、もとの文から決める（呼ばれた順番に左右されない） */
+      if (hard && (hard >= 2 || !out.join('').trim())) { var hh = 0; for (var q = 0; q < t.length; q++) hh = (hh * 31 + t.charCodeAt(q)) % 99991; out.splice(at, 0, FADE[hh % FADE.length]); }
       t = out.join('');
     }
     WORD.forEach(function (w) { t = t.replace(w[0], w[1]); });
@@ -45288,6 +45299,8 @@
   var sim0 = HK.simulate;
   HK.simulate = function (input) {
     var id = input && input.scenId, soft = SOFT_IDS[id], self = this, args = arguments;
+    /* 秘密の一文の順番は回ごとに最初から（続けて回しても、同じシードなら同じ結果に） */
+    fi = 0;
     if (input && input.scenId === 'zombie') { input.env = input.env || {}; input.env.zlewd = 'fade'; }
     if (soft) {
       input.env = input.env || {};
@@ -45363,6 +45376,7 @@
   /* 念のため：出られない部屋の結果に残ったはっきりした文は、ほかの箱庭と同じ方法でまろやかにする */
   var sim0 = HK.simulate;
   HK.simulate = function (input) {
+    fi = 0;
     var r = sim0.apply(this, arguments);
     if (r && input && input.scenId === 'whiteroom' && HK.SafeText) {
       (r.log || []).forEach(function (e) { if (e && typeof e.text === 'string' && EXPL.test(e.text)) e.text = HK.SafeText(e.text) || ctxFade(); });
@@ -49426,7 +49440,13 @@
       if (id && input.env && CONF[id]) X.fill(id, input.env);
       var r = sim0.apply(this, arguments);
       if (r && id && CONF[id] && CONF[id].soften !== false && !safe() && X.lv(input.env) === 'low' && HK.SafeText) {
-        (r.log || []).forEach(function (e) { if (e && typeof e.text === 'string' && EXPL.test(e.text)) e.text = HK.SafeText(e.text); });
+        (r.log || []).forEach(function (e) {
+          if (!e || typeof e.text !== 'string' || !EXPL.test(e.text)) return;
+          var t0 = HK.SafeText(e.text);
+          /* 死の記録が「二人だけの秘密」のような一文だけになってしまうときは、最期の一文にする */
+          if (e.kind === 'death' && (!t0 || /^――(?:その先|そこから先|夜は|照明)/.test(t0.trim()))) t0 = (e.actors && e.actors.length ? '' : '') + '――その最期のことは、ここには書かない。';
+          e.text = t0;
+        });
         if (r.ending && Array.isArray(r.ending.lines)) r.ending.lines = r.ending.lines.map(function (l) { return typeof l === 'string' && EXPL.test(l) ? HK.SafeText(l) : l; });
       }
       return r;

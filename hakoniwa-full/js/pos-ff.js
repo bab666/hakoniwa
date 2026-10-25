@@ -49,6 +49,7 @@
   var POOLS = { open: OPEN, body: BODY, climax: CLIMAX, after: AFTER, toy: { all: TOY }, repeat: { all: REPEAT }, speed: { all: SPEED } };
   /* 二人が対等に繋がる描写（双頭の玩具・貝合わせ・上下の入れ替わり）は、二人ともリバのときだけ。それ以外の組では候補から外す */
   var MUTUAL_RE = HK.Pos && HK.Pos.MUTUAL_RE ? HK.Pos.MUTUAL_RE : /双頭の玩具|双頭ディルド|貝合わせ|擦り合わせ|擦りつけ合|擦り付け合|重ね合わせ|上になったり下になったり|入れ替わ/;
+  var MUT_SEX = /上に|下に|腰|跨|喘|果て|♡|肌を|繋が|舐|指|奥|胸|脚|熱|濡れ|攻め|受け|組み敷|押し倒/;
   function noMutual(arr, riba) { if (riba) return arr; var r = arr.filter(function (s) { return !MUTUAL_RE.test(s); }); return r.length ? r : arr; }
   /* R18版は、同じ回の中で使った文を避ける（ero-kit.js の HK.Ero.fresh。元の選び方は ctx.pick） */
   function pickArr(ctx, arr) { var base = function (a) { return ctx && ctx.pick ? ctx.pick(a) : a[Math.floor(Math.random() * a.length)]; }; return ctx && HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx.S || ctx, arr, base) : base(arr); }
@@ -130,6 +131,8 @@
       var o = HK.Pos.order(a, b, [a, b]), A = o[0], B = o[1], st = (opt && opt.st) || styleOf(A);
       return text.replace(/[^。！？」\n]*(?:「[^」]*」[^。！？」\n]*)*[。！？]?/g, function (sen) {
         if (!sen || !MUTUAL_RE.test(sen)) return sen;
+        /* 「入れ替わ」は、ふつうの文（見張りの番を入れ替わる など）にも出るので、体の描写の文のときだけ直す */
+        if (/入れ替わ/.test(sen) && !MUT_SEX.test(sen) && !/双頭|貝合わせ|擦り|重ね合わせ|上になったり|ところ同士|ところを重ね/.test(sen)) return sen;
         return fill(ctx, pickArr(ctx, noMutual(/果て|達し|イ[っか]|絶頂/.test(sen) ? (CLIMAX[st] || CLIMAX.gentle) : (BODY[st] || BODY.gentle), false)), A, B);
       });
     }

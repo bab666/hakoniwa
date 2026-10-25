@@ -23606,6 +23606,9 @@
   };
 
   DG.simulate = function (input) {
+    /* 出来事の表は回をまたいで共有しているので、前の回で決めた部位（partNow）を消してから始める（続けて回しても同じシードなら同じ結果に） */
+    (DG.pool || []).forEach(function (e) { if (e) delete e.partNow; });
+    if (DG.BOSSES) Object.keys(DG.BOSSES).forEach(function (k) { var B = DG.BOSSES[k]; ((B && B.moves) || []).forEach(function (m) { if (m) delete m.partNow; }); });
     var scen = HK.SCENARIOS.dungeon, rng = HK.rng(input.seed);
     var env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
@@ -26350,6 +26353,9 @@
 
   /* 解放の瞬間 */
   var RELEASE = L('カチリ、と小さな音がした。遮断が、解けた。|壁の魔法陣が、ふっと光を失った。|「時間です」と、どこかで声がした。');
+  /* 時間より早く出たとき：主催者が出した／自分で抜け出した */
+  var RELEASE_HOST = L('壁の裏の留め具が外され、遮断の魔法陣がゆっくりと光を失った。|予定より早く、壁の向こうの気配がすっと遠のいた。遮断を解いたのは、主催者の手だった。|「今日はここまで」――帳場の声と同時に、壁の魔法陣が消えた。');
+  var RELEASE_SELF = L('壁から体を引き抜いた瞬間、遮断の魔法陣がぱちんと弾けて消えた。|無理やり抜け出した拍子に、壁の術式がひび割れ、遮断が解けた。|{a}が壁の縁を押し広げて転がり出ると、遮断は途中で途切れた。');
   var FLOOD = L('次の瞬間、{h}時間分の感覚が、一度に{a}の体へ雪崩れ込んだ。|遅れていたすべてが、まとめて{a}の腰の奥へ叩きつけられた。|{a}の体が、{h}時間ぶん溜め込んでいた熱を、一気に思い出した。');
   /* 解放中の混乱（態度ごと） */
   var CONFUSE = {
@@ -26460,7 +26466,7 @@
       return fresh(S0, f);
     };
     var X = HK.HoleMore, plKey = PLACE[env.place] ? env.place : 'lab';
-    var stored = 0, leaks = 0, visits = 0, people = 0, early = false, hot = 0, lostN = 0, meta = { cum: 0, tent: 0, mark: 0, ride: 0 }, thisN = 0;
+    var stored = 0, leaks = 0, visits = 0, people = 0, early = false, earlyBy = '', hot = 0, lostN = 0, meta = { cum: 0, tent: 0, mark: 0, ride: 0 }, thisN = 0;
     var mindList = MIND[h.persona].concat(X.MIND[h.persona] || []).filter(function (x) { return !hardTop || !/乱暴にしないで|お手柔らかに/.test(x); }), confList = EL('confuse.' + h.persona, CONFUSE[h.persona].concat(X.CONFUSE[h.persona] || []));
     /* 解放のしかた：おまかせなら場所と運で決まる */
     var mode = env.release && env.release !== 'auto' ? env.release : (function () { var x = rng(); return x < 0.4 ? 'burst' : x < 0.62 ? 'drip' : x < 0.82 ? 'mid' : 'late'; })();
@@ -26575,7 +26581,7 @@
         h.reason -= 3; h.corrupt += 2;
       }
       /* 主催者が見ている・ときどき手を出す（hole-host.js） */
-      if (hostOn) { var hr = HH.tick(S, { stored: stored, live: live, hardTop: hardTop }); stored = hr.stored; if (hr.release) { early = true; K.settle(S); K.snap(S, { s: 0 }); break; } }
+      if (hostOn) { var hr = HH.tick(S, { stored: stored, live: live, hardTop: hardTop }); stored = hr.stored; if (hr.release) { early = true; earlyBy = 'host'; K.settle(S); K.snap(S, { s: 0 }); break; } }
       /* こちら側の心 */
       if (live) { if (hot > 0) hot--; K.settle(S); K.snap(S, { s: 0 }); continue; }
       var imag = h.tr.fc * 0.35 + h.tr.ac * 0.25 + h.tr.impulse * 0.2 + (h.action.id === 'imagine' ? 0.35 : 0) + (h.goal.id === 'secret' ? 0.25 : 0);
@@ -26607,7 +26613,7 @@
       if (h.action.id === 'shout' && rng() < 0.5) say(S, { kind: 'ev', tag: '叫ぶ', text: K.fmt(S, pk(S, SHOUT)), why: '' });
       /* もがく */
       if ((h.action.id === 'struggle' || h.goal.id === 'escape' || hardTop) && rng() < 0.5) {
-        if (rng() < 0.05 + h.tr.aggr * 0.08 + h.tr.cp * 0.05 + (hardTop ? 0.12 : 0)) { early = true; say(S, { kind: 'sys', tag: '脱出', text: K.fmt(S, '{a}は皮膚が擦りむけるのも構わず体をねじり、ついに壁から腰を引き抜いた。――遮断が、その場で解けた。'), why: '攻撃性・CP（自力脱出）' }); }
+        if (rng() < 0.05 + h.tr.aggr * 0.08 + h.tr.cp * 0.05 + (hardTop ? 0.12 : 0)) { early = true; earlyBy = 'self'; say(S, { kind: 'sys', tag: '脱出', text: K.fmt(S, '{a}は皮膚が擦りむけるのも構わず体をねじり、ついに壁から腰を引き抜いた。――遮断が、その場で解けた。'), why: '攻撃性・CP（自力脱出）' }); }
         else say(S, { kind: 'ev', tag: 'もがく', text: K.fmt(S, pk(S, STRUGGLE)), why: '' });
       }
       if (!hardTop) h.corrupt += vis * 0.8 * S.k;
@@ -26677,7 +26683,7 @@
       o0 = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, RELEASE)) + ' ' + K.fmt(S, pk(S, X.LATE_IN)), why: '感覚は、まだ戻っていない' });
       S.step = H + 2; K.step(S, '帰り道');
     } else {
-      o0 = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, RELEASE)) + ' ' + (mode === 'drip' ? K.fmt(S, topMe ? X.DRIP_TOP[0] : pk(S, EL('drip', [X.DRIP[0]]))) : K.fmt(S, pk(S, EL('flood', FLOOD)), { h: ho })), why: '溜まっていた感覚 ' + Math.round(stored) + '（訪問 ' + visits + '回）／解放：' + X.RELEASE_MODE[mode] });
+      o0 = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, early ? (earlyBy === 'host' ? RELEASE_HOST : RELEASE_SELF) : RELEASE)) + ' ' + (mode === 'drip' ? K.fmt(S, topMe ? X.DRIP_TOP[0] : pk(S, EL('drip', [X.DRIP[0]]))) : K.fmt(S, pk(S, EL('flood', FLOOD)), { h: ho })), why: '溜まっていた感覚 ' + Math.round(stored) + '（訪問 ' + visits + '回）／解放：' + X.RELEASE_MODE[mode] });
     }
     K.key(S, o0, '感覚が戻った');
     /* 描写の有無「濃い」（lewd-unify.js）：戻ってくる感覚が多くなる（波が増える） */
@@ -36020,6 +36026,7 @@
   var POOLS = { open: OPEN, body: BODY, climax: CLIMAX, after: AFTER, toy: { all: TOY }, repeat: { all: REPEAT }, speed: { all: SPEED } };
   /* 二人が対等に繋がる描写（双頭の玩具・貝合わせ・上下の入れ替わり）は、二人ともリバのときだけ。それ以外の組では候補から外す */
   var MUTUAL_RE = HK.Pos && HK.Pos.MUTUAL_RE ? HK.Pos.MUTUAL_RE : /双頭の玩具|双頭ディルド|貝合わせ|擦り合わせ|擦りつけ合|擦り付け合|重ね合わせ|上になったり下になったり|入れ替わ/;
+  var MUT_SEX = /上に|下に|腰|跨|喘|果て|♡|肌を|繋が|舐|指|奥|胸|脚|熱|濡れ|攻め|受け|組み敷|押し倒/;
   function noMutual(arr, riba) { if (riba) return arr; var r = arr.filter(function (s) { return !MUTUAL_RE.test(s); }); return r.length ? r : arr; }
   /* R18版は、同じ回の中で使った文を避ける（ero-kit.js の HK.Ero.fresh。元の選び方は ctx.pick） */
   function pickArr(ctx, arr) { var base = function (a) { return ctx && ctx.pick ? ctx.pick(a) : a[Math.floor(Math.random() * a.length)]; }; return ctx && HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx.S || ctx, arr, base) : base(arr); }
@@ -36101,6 +36108,8 @@
       var o = HK.Pos.order(a, b, [a, b]), A = o[0], B = o[1], st = (opt && opt.st) || styleOf(A);
       return text.replace(/[^。！？」\n]*(?:「[^」]*」[^。！？」\n]*)*[。！？]?/g, function (sen) {
         if (!sen || !MUTUAL_RE.test(sen)) return sen;
+        /* 「入れ替わ」は、ふつうの文（見張りの番を入れ替わる など）にも出るので、体の描写の文のときだけ直す */
+        if (/入れ替わ/.test(sen) && !MUT_SEX.test(sen) && !/双頭|貝合わせ|擦り|重ね合わせ|上になったり|ところ同士|ところを重ね/.test(sen)) return sen;
         return fill(ctx, pickArr(ctx, noMutual(/果て|達し|イ[っか]|絶頂/.test(sen) ? (CLIMAX[st] || CLIMAX.gentle) : (BODY[st] || BODY.gentle), false)), A, B);
       });
     }
@@ -36863,13 +36872,15 @@
   var DV = HK.DView = {};
   var keyOnly = false, lewdOnly = false, lastHost = null, lastRes = null;
 
+  /* 名前に色を付ける人：挑戦者と、住人の主催者（dungeon-host.js・hole-host.js の res.host） */
+  function who(res) { var L = (res.heroes || [res.hero]).filter(Boolean); if (res.host && res.host.kind === 'res' && res.host.name && !L.some(function (h) { return h.name === res.host.name; })) L = L.concat([res.host]); return L; }
   function paint(text, res) {
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, (res.heroes || [res.hero]).map(function (h) { return h && h.name; })) : text).replace(/\n/g, '<br>');
-    (res.heroes || [res.hero]).slice().sort(function (a, b) { return b.name.length - a.name.length; }).forEach(function (h) {
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, who(res).map(function (h) { return h && h.name; })) : text).replace(/\n/g, '<br>');
+    who(res).slice().sort(function (a, b) { return b.name.length - a.name.length; }).forEach(function (h) {
       var n = esc(h.name);
       if (n) t = t.split(n).join('\u0001' + (h.i || 0) + '\u0002');
     });
-    return t.replace(/\u0001(\d+)\u0002/g, function (m, i) { var h = (res.heroes || [res.hero]).filter(function (x) { return String(x.i || 0) === i; })[0]; return '<span class="name" style="color:var(--p' + i + ')">' + esc(h.name) + '</span>'; });
+    return t.replace(/\u0001(\d+)\u0002/g, function (m, i) { var h = who(res).filter(function (x) { return String(x.i || 0) === i; })[0]; return '<span class="name" style="color:var(--p' + i + ')">' + esc(h.name) + '</span>'; });
   }
   function chip(t, cls, title) { return '<span class="chip' + (cls ? ' ' + cls : '') + '"' + (title ? ' title="' + esc(title) + '"' : '') + '>' + esc(t) + '</span>'; }
 
@@ -38760,7 +38771,7 @@
     '再改変された': L('{p}はぼんやりとした顔で更衣室を出た。昼間に何かに気づいた気がするが、思い出せない。{p}の中で、改変はまた深く根を張っていた。|{p}はすっかり元どおりの笑顔で挨拶をして帰っていった。一度ほどけかけた改変は、前よりも固く結び直されていた。|{p}は鼻歌まじりに{place}をあとにした。今日の途中で抱いた疑いは、跡形もなく消えている。'),
     '気づかないふりを続けた': L('{p}は何も気づいていない顔のまま、最後まで{role}を演じきった。{place}を出て角を曲がった瞬間、{p}はようやく深く息を吐いた。|{p}は笑顔で挨拶をして頭を下げた。その笑顔の下で、{p}だけが今日の異常をはっきりと覚えている。|{p}は誰にも悟られないまま帰り支度を終えた。明日もまた、気づかないふりをしてここへ来るしかない。秘密を抱えた一日が、そうして終わった。'),
     '気づいたうえで続けた': L('{p}はすべてわかったうえで、最後の{unit}まで続けた。おかしな世界だ。それでも、{p}はこの世界が嫌いではなかった。|{p}は帰り際、{place}の看板を見上げて小さく笑った。これが異常だと、もう知ってしまった。それでも明日も来る、と{p}は決めていた。|{p}は火照りの残る体を抱えて、満ち足りた顔で帰っていった。気づいてしまったことは、もう{p}にとって楽しみの一つになっていた。'),
-    '正気に戻った': L('{p}は{place}を出たところで振り返り、二度とここへは来ないと心に決めた。正気に戻った頭で見ると、灯りの消えた建物はひどく異様だった。|{p}は着替えもそこそこに外へ出て、夜の空気を深く吸い込んだ。自分は目を覚ましてしまった。その重さを抱えたまま、{p}は家路を急いだ。|{p}は帰りの電車で、今日起きたことを手帳に書き留めた。明日になれば、自分もまた忘れてしまうかもしれない。だから、せめて記録だけは残しておく。'),
+    '正気に戻った': L('{p}は{place}を出たところで振り返り、二度とここへは来ないと心に決めた。正気に戻った頭で見ると、灯りの消えた建物はひどく異様だった。胸の奥に残った熱だけが、今日が夢ではなかったことを告げていた。|{p}は着替えもそこそこに外へ出て、夜の空気を深く吸い込んだ。自分は目を覚ましてしまった。その重さを抱えたまま、{p}は家路を急いだ。|{p}は帰りの電車で、今日起きたことを手帳に書き留めた。明日になれば、自分もまた忘れてしまうかもしれない。だから、せめて記録だけは残しておく。'),
     '逃げ出した': L('{p}は{place}から遠く離れた公園のベンチで、ようやく息を整えた。あの建物の中で起きていたことを、誰に話せば信じてもらえるだろう。|{p}は逃げ帰った部屋で鍵を二重にかけた。窓の外の街は、何事もなかったように静かだった。|{p}は二度と{place}の前を通らない道を選んで帰った。逃げ切れたのは、たぶん運が良かっただけだ。'),
     '改変に呑み込まれた': L('{p}は終わりの片づけを当たり前のように手伝っていた。朝、あれほど戸惑っていたことは、もう思い出せない。|{p}は次の予約を入れてから帰っていった。正気のまま紛れ込んだはずの人は、もうどこにもいなかった。|{p}はほかの人たちと笑い合いながら{place}を出た。その笑顔は、もうこの世界の住人のものだった。'),
     '正気のまま居残った': L('{p}は最後まで正気のまま、{place}の片隅でその一日を見届けた。誰に訴えても、首をかしげられるだけだった。|{p}は閉店まで居残り、灯りが落ちるのを見届けてから外へ出た。おかしいのは世界のほうだ。{p}はそれだけは手放さなかった。|{p}は帰り道、すれ違う人たちの顔を一人ずつ確かめた。誰もが穏やかで、誰もが改変されていた。{p}は正気のまま、その中に取り残されていた。')
@@ -40640,7 +40651,8 @@
     var live = TG.filter(function (t) { return here(t) && !t.tg.spent && t.tg.n < CAP && t.tg.lastH !== h; });
     if (!live.length) return false;
     var due = live.filter(function (t) { return !t.tg.n; }), rem = S.env.hours - h;
-    var ch = due.length ? (rem <= 3 ? 0.8 : 0.3) : 0.08;
+    /* まだ誰にも声をかけられていない標的がいれば、最後の一時間は必ず、その前も高めに近づく */
+    var ch = due.length ? (rem <= 1 ? 1 : rem <= 3 ? 0.85 : 0.4) : 0.08;
     if (live.some(function (t) { return okPair(p, t); })) ch += 0.06;
     if (rng() >= ch) return false;
     var t = HK.weighted(rng, live, function (x) { return (okPair(p, x) ? 3 : 1) * (x.tg.n ? 0.6 : 2) * (x.tg.by[p.name] ? 0.5 : 1); });
@@ -41214,6 +41226,7 @@
     accept: L('{a}は真っ赤になりながらも、最後には吹き出した。「……もう、いいよ。面白かったし」――そう言って、{h}の肩を軽く叩いた。{h}は、ほっとして笑った。|{a}は自分の動画を見せられて、しばらく固まった。それから小さく笑って言った。「……消さなくていいよ。でも、誰にも見せないでね」――{h}は神妙な顔で頷いた。'),
     body: L('{a}は何も覚えていなかった。ただ、ときどき無意識に語尾が「にゃん」になりかけて、そのたびに首を傾げた。|{a}は何も覚えていなかった。ただ、{h}に「おやすみ」と言われると、なぜか猛烈に眠くなった。'),
     fall: L('三日後、{a}は自分から{h}の部屋を訪ねた。「……あの、また、かけてくれない？　ちょっと、楽しかったから」|{a}は{h}の前で手を合わせた。「お願い、また変な暗示かけて。あれ、癖になる」'),
+    reportX: L('{a}は翌朝、交番に足を運び、ゆうべ起きたことを順を追って話した。{h}の顔も、声も、はっきり覚えていた。数日後、{h}が近所で姿を見せることはなくなった。|{a}はその日のうちに部屋の鍵を替え、{h}からの連絡をすべて着信拒否にした。それから、信頼できる友人にだけ事情を打ち明けた。もう一人で抱え込むつもりはなかった。|{a}は{h}に向かって、二度と近づかないでと静かに告げた。{h}は何か言いかけたが、{a}の目を見て口をつぐんだ。{a}は振り返らずにその場を去った。'),
     report: L('{a}は翌朝、共通の友人に一部始終を話した。{h}はそれからしばらく、みんなに「にゃん」と呼ばれた。|{a}は{h}のスマホから、自分が犬になりきっている動画を見つけて、無言で消した。それから一週間、口をきかなかった。'),
     sweet: L('{a}は顔を真っ赤にして、{h}の肩を叩いた。「ばか。……でも、ちょっと楽しかった」|{a}は{h}に背を向けたまま、「次は、もっとかっこいい暗示にして」と小さな声で言った。'),
     depend: L('{a}は{h}に腹を立てていた。それなのに、{h}の「えらいね」を聞かないと、なんだか一日が終わらない気がした。')
@@ -42065,6 +42078,8 @@
       /* 男性向けの「その後」は、性的な暗示を受けたときだけ（かからなかった・いたずらだけのときは元の文） */
       var afE = afK === 'AFTER' && p.ff ? 'AFTER_FF' : afK === 'AFTER' && p.fm ? 'AFTER_FM' : afK === 'AFTER' && p.aTop ? 'AFTER_TOP' : afK;
       var afL = !p.failed && p.cnt.lewd && !soft ? eL(S, afE + '.' + route, SM[afK][route]) : SM[afK][route];
+      /* 知らない相手・恨みのある相手（ストーカー・恨み）を訴えたときは、共通の友人のいる文を使わない */
+      if (soft && route === 'report' && (p.ty === 'stalker' || p.ty === 'grudge') && SM.AFTER_SOFT.reportX) afL = SM.AFTER_SOFT.reportX;
       var t = eF(S, p, ST.fmt(ST.pick(S, afL), v));
       var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', confused: 'confused', dazed: 'dazed', accept: 'accept', body: null }[route];
       if (mood && SM.AFTER_SAY[mood] && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, p.aTop && SM.AFTER_SAY_TOP && SM.AFTER_SAY_TOP[mood] ? (SM.AFTER_SAY_TOP[mood][p.persona] || SM.AFTER_SAY_TOP[mood].gentle) : topL(p, SM.AFTER_SAY[mood][p.persona]));
@@ -61332,9 +61347,16 @@
   var PRE = [[/太腿と脚の付け根/g, '脚のむくみ'], [/気持ちよさに身を委ねる/g, '心地よさに身を委ねる'], [/お尻まわり/g, '腰まわり'], [/臀部/g, '腰まわり'], [/を押し倒した/g, 'と立場が逆転した'], [/仰向けでデコルテ/g, '仰向けで首まわり']];
   function word(t) { WORD.forEach(function (w) { t = t.replace(w[0], w[1]); }); return t; }
   /* 喘ぎ声だけの台詞（短く、「ぁ」「♡」「っ」が多いもの） */
+  /* っ・……の多いふつうの台詞（「ちょっと、待って……っ」など）は喘ぎにしない。喘ぎらしい音（ぁ・あっ・んっ・はぁ・♡）が中心で、ほかの言葉がほとんどないものだけ */
+  var MOAN_T = /[ぁぃぅぇぉ]|あっ|んっ|はぁ|ひぁ|ふぁ|んぁ|あぁ|んん|ひっ|やぁ/g;
   function moanQ(q) {
-    var n = (q.match(/[ぁぃぅぇぉ♡ッ]|っ|ん、|ん…|んあ|あっ|あ、|ひ、|ふ、|は、/g) || []).length;
-    return (q.length < 30 && n >= 2) || (q.length < 50 && n >= 3) || (q.length < 25 && /[っッ]/.test(q) && /……/.test(q)) || (/そこ|もっと|奥|中/.test(q) && /っ|……/.test(q) && q.length < 40);
+    if (/♡/.test(q)) return true;
+    var strong = (q.match(MOAN_T) || []).length;
+    if (!strong) return false;
+    var rest = q.replace(MOAN_T, '').replace(/[っッ…‥、。！？!?～〜ー\s「」ん]/g, ''), kanji = (rest.match(/[\u4e00-\u9fff]/g) || []).length;
+    if (strong >= 2 && rest.length <= 6) return true;
+    if (strong >= 3 && kanji <= 2 && rest.length <= 14) return true;
+    return /そこ|もっと|奥|中/.test(q) && strong >= 1 && q.length < 40 && kanji <= 2;
   }
   /* 文に分ける：「」の中の。では切らない */
   function sentences(t) {
@@ -61367,7 +61389,8 @@
         if (HARD.test(p)) { hard++; if (at < 0) at = out.length; }
         else if (!SOFT.test(p)) out.push(p);
       });
-      if (hard && (hard >= 2 || !out.join('').trim())) out.splice(at, 0, FADE[fi++ % FADE.length]);
+      /* 秘密の一文は、もとの文から決める（呼ばれた順番に左右されない） */
+      if (hard && (hard >= 2 || !out.join('').trim())) { var hh = 0; for (var q = 0; q < t.length; q++) hh = (hh * 31 + t.charCodeAt(q)) % 99991; out.splice(at, 0, FADE[hh % FADE.length]); }
       t = out.join('');
     }
     WORD.forEach(function (w) { t = t.replace(w[0], w[1]); });
@@ -61506,6 +61529,8 @@
   var sim0 = HK.simulate;
   HK.simulate = function (input) {
     var id = input && input.scenId, soft = SOFT_IDS[id], self = this, args = arguments;
+    /* 秘密の一文の順番は回ごとに最初から（続けて回しても、同じシードなら同じ結果に） */
+    fi = 0;
     if (input && input.scenId === 'zombie') { input.env = input.env || {}; input.env.zlewd = 'fade'; }
     if (soft) {
       input.env = input.env || {};
@@ -61581,6 +61606,7 @@
   /* 念のため：出られない部屋の結果に残ったはっきりした文は、ほかの箱庭と同じ方法でまろやかにする */
   var sim0 = HK.simulate;
   HK.simulate = function (input) {
+    fi = 0;
     var r = sim0.apply(this, arguments);
     if (r && input && input.scenId === 'whiteroom' && HK.SafeText) {
       (r.log || []).forEach(function (e) { if (e && typeof e.text === 'string' && EXPL.test(e.text)) e.text = HK.SafeText(e.text) || ctxFade(); });
@@ -65789,7 +65815,13 @@
       if (id && input.env && CONF[id]) X.fill(id, input.env);
       var r = sim0.apply(this, arguments);
       if (r && id && CONF[id] && CONF[id].soften !== false && !safe() && X.lv(input.env) === 'low' && HK.SafeText) {
-        (r.log || []).forEach(function (e) { if (e && typeof e.text === 'string' && EXPL.test(e.text)) e.text = HK.SafeText(e.text); });
+        (r.log || []).forEach(function (e) {
+          if (!e || typeof e.text !== 'string' || !EXPL.test(e.text)) return;
+          var t0 = HK.SafeText(e.text);
+          /* 死の記録が「二人だけの秘密」のような一文だけになってしまうときは、最期の一文にする */
+          if (e.kind === 'death' && (!t0 || /^――(?:その先|そこから先|夜は|照明)/.test(t0.trim()))) t0 = (e.actors && e.actors.length ? '' : '') + '――その最期のことは、ここには書かない。';
+          e.text = t0;
+        });
         if (r.ending && Array.isArray(r.ending.lines)) r.ending.lines = r.ending.lines.map(function (l) { return typeof l === 'string' && EXPL.test(l) ? HK.SafeText(l) : l; });
       }
       return r;

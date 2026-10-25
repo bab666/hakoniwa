@@ -323,7 +323,8 @@
     var live = TG.filter(function (t) { return here(t) && !t.tg.spent && t.tg.n < CAP && t.tg.lastH !== h; });
     if (!live.length) return false;
     var due = live.filter(function (t) { return !t.tg.n; }), rem = S.env.hours - h;
-    var ch = due.length ? (rem <= 3 ? 0.8 : 0.3) : 0.08;
+    /* まだ誰にも声をかけられていない標的がいれば、最後の一時間は必ず、その前も高めに近づく */
+    var ch = due.length ? (rem <= 1 ? 1 : rem <= 3 ? 0.85 : 0.4) : 0.08;
     if (live.some(function (t) { return okPair(p, t); })) ch += 0.06;
     if (rng() >= ch) return false;
     var t = HK.weighted(rng, live, function (x) { return (okPair(p, x) ? 3 : 1) * (x.tg.n ? 0.6 : 2) * (x.tg.by[p.name] ? 0.5 : 1); });

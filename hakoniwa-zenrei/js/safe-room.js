@@ -60,6 +60,7 @@
   /* 念のため：出られない部屋の結果に残ったはっきりした文は、ほかの箱庭と同じ方法でまろやかにする */
   var sim0 = HK.simulate;
   HK.simulate = function (input) {
+    fi = 0;
     var r = sim0.apply(this, arguments);
     if (r && input && input.scenId === 'whiteroom' && HK.SafeText) {
       (r.log || []).forEach(function (e) { if (e && typeof e.text === 'string' && EXPL.test(e.text)) e.text = HK.SafeText(e.text) || ctxFade(); });

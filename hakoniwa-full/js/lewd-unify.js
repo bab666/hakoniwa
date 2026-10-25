@@ -80,7 +80,13 @@
       if (id && input.env && CONF[id]) X.fill(id, input.env);
       var r = sim0.apply(this, arguments);
       if (r && id && CONF[id] && CONF[id].soften !== false && !safe() && X.lv(input.env) === 'low' && HK.SafeText) {
-        (r.log || []).forEach(function (e) { if (e && typeof e.text === 'string' && EXPL.test(e.text)) e.text = HK.SafeText(e.text); });
+        (r.log || []).forEach(function (e) {
+          if (!e || typeof e.text !== 'string' || !EXPL.test(e.text)) return;
+          var t0 = HK.SafeText(e.text);
+          /* 死の記録が「二人だけの秘密」のような一文だけになってしまうときは、最期の一文にする */
+          if (e.kind === 'death' && (!t0 || /^――(?:その先|そこから先|夜は|照明)/.test(t0.trim()))) t0 = (e.actors && e.actors.length ? '' : '') + '――その最期のことは、ここには書かない。';
+          e.text = t0;
+        });
         if (r.ending && Array.isArray(r.ending.lines)) r.ending.lines = r.ending.lines.map(function (l) { return typeof l === 'string' && EXPL.test(l) ? HK.SafeText(l) : l; });
       }
       return r;

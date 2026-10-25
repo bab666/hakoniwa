@@ -5,13 +5,15 @@
   var DV = HK.DView = {};
   var keyOnly = false, lewdOnly = false, lastHost = null, lastRes = null;
 
+  /* 名前に色を付ける人：挑戦者と、住人の主催者（dungeon-host.js・hole-host.js の res.host） */
+  function who(res) { var L = (res.heroes || [res.hero]).filter(Boolean); if (res.host && res.host.kind === 'res' && res.host.name && !L.some(function (h) { return h.name === res.host.name; })) L = L.concat([res.host]); return L; }
   function paint(text, res) {
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, (res.heroes || [res.hero]).map(function (h) { return h && h.name; })) : text).replace(/\n/g, '<br>');
-    (res.heroes || [res.hero]).slice().sort(function (a, b) { return b.name.length - a.name.length; }).forEach(function (h) {
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, who(res).map(function (h) { return h && h.name; })) : text).replace(/\n/g, '<br>');
+    who(res).slice().sort(function (a, b) { return b.name.length - a.name.length; }).forEach(function (h) {
       var n = esc(h.name);
       if (n) t = t.split(n).join('\u0001' + (h.i || 0) + '\u0002');
     });
-    return t.replace(/\u0001(\d+)\u0002/g, function (m, i) { var h = (res.heroes || [res.hero]).filter(function (x) { return String(x.i || 0) === i; })[0]; return '<span class="name" style="color:var(--p' + i + ')">' + esc(h.name) + '</span>'; });
+    return t.replace(/\u0001(\d+)\u0002/g, function (m, i) { var h = who(res).filter(function (x) { return String(x.i || 0) === i; })[0]; return '<span class="name" style="color:var(--p' + i + ')">' + esc(h.name) + '</span>'; });
   }
   function chip(t, cls, title) { return '<span class="chip' + (cls ? ' ' + cls : '') + '"' + (title ? ' title="' + esc(title) + '"' : '') + '>' + esc(t) + '</span>'; }
 

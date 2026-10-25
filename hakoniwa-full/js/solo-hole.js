@@ -61,6 +61,9 @@
 
   /* 解放の瞬間 */
   var RELEASE = L('カチリ、と小さな音がした。遮断が、解けた。|壁の魔法陣が、ふっと光を失った。|「時間です」と、どこかで声がした。');
+  /* 時間より早く出たとき：主催者が出した／自分で抜け出した */
+  var RELEASE_HOST = L('壁の裏の留め具が外され、遮断の魔法陣がゆっくりと光を失った。|予定より早く、壁の向こうの気配がすっと遠のいた。遮断を解いたのは、主催者の手だった。|「今日はここまで」――帳場の声と同時に、壁の魔法陣が消えた。');
+  var RELEASE_SELF = L('壁から体を引き抜いた瞬間、遮断の魔法陣がぱちんと弾けて消えた。|無理やり抜け出した拍子に、壁の術式がひび割れ、遮断が解けた。|{a}が壁の縁を押し広げて転がり出ると、遮断は途中で途切れた。');
   var FLOOD = L('次の瞬間、{h}時間分の感覚が、一度に{a}の体へ雪崩れ込んだ。|遅れていたすべてが、まとめて{a}の腰の奥へ叩きつけられた。|{a}の体が、{h}時間ぶん溜め込んでいた熱を、一気に思い出した。');
   /* 解放中の混乱（態度ごと） */
   var CONFUSE = {
@@ -171,7 +174,7 @@
       return fresh(S0, f);
     };
     var X = HK.HoleMore, plKey = PLACE[env.place] ? env.place : 'lab';
-    var stored = 0, leaks = 0, visits = 0, people = 0, early = false, hot = 0, lostN = 0, meta = { cum: 0, tent: 0, mark: 0, ride: 0 }, thisN = 0;
+    var stored = 0, leaks = 0, visits = 0, people = 0, early = false, earlyBy = '', hot = 0, lostN = 0, meta = { cum: 0, tent: 0, mark: 0, ride: 0 }, thisN = 0;
     var mindList = MIND[h.persona].concat(X.MIND[h.persona] || []).filter(function (x) { return !hardTop || !/乱暴にしないで|お手柔らかに/.test(x); }), confList = EL('confuse.' + h.persona, CONFUSE[h.persona].concat(X.CONFUSE[h.persona] || []));
     /* 解放のしかた：おまかせなら場所と運で決まる */
     var mode = env.release && env.release !== 'auto' ? env.release : (function () { var x = rng(); return x < 0.4 ? 'burst' : x < 0.62 ? 'drip' : x < 0.82 ? 'mid' : 'late'; })();
@@ -286,7 +289,7 @@
         h.reason -= 3; h.corrupt += 2;
       }
       /* 主催者が見ている・ときどき手を出す（hole-host.js） */
-      if (hostOn) { var hr = HH.tick(S, { stored: stored, live: live, hardTop: hardTop }); stored = hr.stored; if (hr.release) { early = true; K.settle(S); K.snap(S, { s: 0 }); break; } }
+      if (hostOn) { var hr = HH.tick(S, { stored: stored, live: live, hardTop: hardTop }); stored = hr.stored; if (hr.release) { early = true; earlyBy = 'host'; K.settle(S); K.snap(S, { s: 0 }); break; } }
       /* こちら側の心 */
       if (live) { if (hot > 0) hot--; K.settle(S); K.snap(S, { s: 0 }); continue; }
       var imag = h.tr.fc * 0.35 + h.tr.ac * 0.25 + h.tr.impulse * 0.2 + (h.action.id === 'imagine' ? 0.35 : 0) + (h.goal.id === 'secret' ? 0.25 : 0);
@@ -318,7 +321,7 @@
       if (h.action.id === 'shout' && rng() < 0.5) say(S, { kind: 'ev', tag: '叫ぶ', text: K.fmt(S, pk(S, SHOUT)), why: '' });
       /* もがく */
       if ((h.action.id === 'struggle' || h.goal.id === 'escape' || hardTop) && rng() < 0.5) {
-        if (rng() < 0.05 + h.tr.aggr * 0.08 + h.tr.cp * 0.05 + (hardTop ? 0.12 : 0)) { early = true; say(S, { kind: 'sys', tag: '脱出', text: K.fmt(S, '{a}は皮膚が擦りむけるのも構わず体をねじり、ついに壁から腰を引き抜いた。――遮断が、その場で解けた。'), why: '攻撃性・CP（自力脱出）' }); }
+        if (rng() < 0.05 + h.tr.aggr * 0.08 + h.tr.cp * 0.05 + (hardTop ? 0.12 : 0)) { early = true; earlyBy = 'self'; say(S, { kind: 'sys', tag: '脱出', text: K.fmt(S, '{a}は皮膚が擦りむけるのも構わず体をねじり、ついに壁から腰を引き抜いた。――遮断が、その場で解けた。'), why: '攻撃性・CP（自力脱出）' }); }
         else say(S, { kind: 'ev', tag: 'もがく', text: K.fmt(S, pk(S, STRUGGLE)), why: '' });
       }
       if (!hardTop) h.corrupt += vis * 0.8 * S.k;
@@ -388,7 +391,7 @@
       o0 = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, RELEASE)) + ' ' + K.fmt(S, pk(S, X.LATE_IN)), why: '感覚は、まだ戻っていない' });
       S.step = H + 2; K.step(S, '帰り道');
     } else {
-      o0 = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, RELEASE)) + ' ' + (mode === 'drip' ? K.fmt(S, topMe ? X.DRIP_TOP[0] : pk(S, EL('drip', [X.DRIP[0]]))) : K.fmt(S, pk(S, EL('flood', FLOOD)), { h: ho })), why: '溜まっていた感覚 ' + Math.round(stored) + '（訪問 ' + visits + '回）／解放：' + X.RELEASE_MODE[mode] });
+      o0 = say(S, { kind: 'sys', tag: '解放', text: K.fmt(S, pk(S, early ? (earlyBy === 'host' ? RELEASE_HOST : RELEASE_SELF) : RELEASE)) + ' ' + (mode === 'drip' ? K.fmt(S, topMe ? X.DRIP_TOP[0] : pk(S, EL('drip', [X.DRIP[0]]))) : K.fmt(S, pk(S, EL('flood', FLOOD)), { h: ho })), why: '溜まっていた感覚 ' + Math.round(stored) + '（訪問 ' + visits + '回）／解放：' + X.RELEASE_MODE[mode] });
     }
     K.key(S, o0, '感覚が戻った');
     /* 描写の有無「濃い」（lewd-unify.js）：戻ってくる感覚が多くなる（波が増える） */

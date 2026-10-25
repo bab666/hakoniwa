@@ -59,9 +59,16 @@
   var PRE = [[/太腿と脚の付け根/g, '脚のむくみ'], [/気持ちよさに身を委ねる/g, '心地よさに身を委ねる'], [/お尻まわり/g, '腰まわり'], [/臀部/g, '腰まわり'], [/を押し倒した/g, 'と立場が逆転した'], [/仰向けでデコルテ/g, '仰向けで首まわり']];
   function word(t) { WORD.forEach(function (w) { t = t.replace(w[0], w[1]); }); return t; }
   /* 喘ぎ声だけの台詞（短く、「ぁ」「♡」「っ」が多いもの） */
+  /* っ・……の多いふつうの台詞（「ちょっと、待って……っ」など）は喘ぎにしない。喘ぎらしい音（ぁ・あっ・んっ・はぁ・♡）が中心で、ほかの言葉がほとんどないものだけ */
+  var MOAN_T = /[ぁぃぅぇぉ]|あっ|んっ|はぁ|ひぁ|ふぁ|んぁ|あぁ|んん|ひっ|やぁ/g;
   function moanQ(q) {
-    var n = (q.match(/[ぁぃぅぇぉ♡ッ]|っ|ん、|ん…|んあ|あっ|あ、|ひ、|ふ、|は、/g) || []).length;
-    return (q.length < 30 && n >= 2) || (q.length < 50 && n >= 3) || (q.length < 25 && /[っッ]/.test(q) && /……/.test(q)) || (/そこ|もっと|奥|中/.test(q) && /っ|……/.test(q) && q.length < 40);
+    if (/♡/.test(q)) return true;
+    var strong = (q.match(MOAN_T) || []).length;
+    if (!strong) return false;
+    var rest = q.replace(MOAN_T, '').replace(/[っッ…‥、。！？!?～〜ー\s「」ん]/g, ''), kanji = (rest.match(/[\u4e00-\u9fff]/g) || []).length;
+    if (strong >= 2 && rest.length <= 6) return true;
+    if (strong >= 3 && kanji <= 2 && rest.length <= 14) return true;
+    return /そこ|もっと|奥|中/.test(q) && strong >= 1 && q.length < 40 && kanji <= 2;
   }
   /* 文に分ける：「」の中の。では切らない */
   function sentences(t) {
@@ -94,7 +101,8 @@
         if (HARD.test(p)) { hard++; if (at < 0) at = out.length; }
         else if (!SOFT.test(p)) out.push(p);
       });
-      if (hard && (hard >= 2 || !out.join('').trim())) out.splice(at, 0, FADE[fi++ % FADE.length]);
+      /* 秘密の一文は、もとの文から決める（呼ばれた順番に左右されない） */
+      if (hard && (hard >= 2 || !out.join('').trim())) { var hh = 0; for (var q = 0; q < t.length; q++) hh = (hh * 31 + t.charCodeAt(q)) % 99991; out.splice(at, 0, FADE[hh % FADE.length]); }
       t = out.join('');
     }
     WORD.forEach(function (w) { t = t.replace(w[0], w[1]); });
@@ -233,6 +241,8 @@
   var sim0 = HK.simulate;
   HK.simulate = function (input) {
     var id = input && input.scenId, soft = SOFT_IDS[id], self = this, args = arguments;
+    /* 秘密の一文の順番は回ごとに最初から（続けて回しても、同じシードなら同じ結果に） */
+    fi = 0;
     if (input && input.scenId === 'zombie') { input.env = input.env || {}; input.env.zlewd = 'fade'; }
     if (soft) {
       input.env = input.env || {};

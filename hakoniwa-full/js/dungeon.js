@@ -751,6 +751,9 @@
   };
 
   DG.simulate = function (input) {
+    /* 出来事の表は回をまたいで共有しているので、前の回で決めた部位（partNow）を消してから始める（続けて回しても同じシードなら同じ結果に） */
+    (DG.pool || []).forEach(function (e) { if (e) delete e.partNow; });
+    if (DG.BOSSES) Object.keys(DG.BOSSES).forEach(function (k) { var B = DG.BOSSES[k]; ((B && B.moves) || []).forEach(function (m) { if (m) delete m.partNow; }); });
     var scen = HK.SCENARIOS.dungeon, rng = HK.rng(input.seed);
     var env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
