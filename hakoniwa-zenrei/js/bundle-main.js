@@ -9445,10 +9445,13 @@
       [[x, y], [y, x]].forEach(function (p) { var r = ctx.R(p[0], p[1]); if (r.att > SEXONLY_ATT) r.att = SEXONLY_ATT; });
     }
   }
+  /* 体の関係の出来事か（出来事の定義の印 sex:true）。say・act2 に渡された印がなければ、いま act() が起こしている出来事（ctx._ev）の印を見る */
+  function sexEv(ctx, o) { return { sex: o && o.sex != null ? !!o.sex : !!(ctx._ev && ctx._ev.sex) }; }
+  HK.sexEv = sexEv;
   Ctx.prototype.say = function (o) {
     if (o.actors && o.actors.length >= 2 && this.chars && this.chars.some(function (c) { return c.lock != null; })) sexOnlyFix(this, o.actors);
     /* 恋愛が起きない組の恋愛の出来事は、記録に残さない（呼び出し側が e.n などを使えるよう、空の出来事を返す） */
-    if (o.cat === 'romance' && o.kind !== 'phase' && !this.romanceOk(o.actors)) return { n: this.log.length, step: this.stepIndex, cat: 'romance', actors: [], text: '', mag: 0, kind: 'event', skipped: true };
+    if (o.cat === 'romance' && o.kind !== 'phase' && !this.romanceOk(o.actors, sexEv(this, o))) return { n: this.log.length, step: this.stepIndex, cat: 'romance', actors: [], text: '', mag: 0, kind: 'event', skipped: true };
     /* 監禁（執着の暴走）されている人は場に出てこない：執着の出来事（監禁の日々・逃走・救出・解放）と死のほかは、記録に残さない
        （present() から外れているが、名簿を直接たどる箱庭の出来事もあるので、ここで最後に止める） */
     if (!o.cageOk && o.kind !== 'step' && o.kind !== 'phase' && o.kind !== 'death' && (o.actors || []).some(function (c) { return c && c.flags && c.flags.caged != null; }))
@@ -9470,14 +9473,14 @@
 
   /* 出来事の中で一人ずつの反応を記録する。o: {actors, cat, text|fn→text, why, fx, mag, k} */
   /* 恋愛の出来事を起こしてよいか：恋愛の起こりやすさが0、恋愛対象が「なし」・合わない人どうしでは起こさない（もう恋人どうしの二人は別） */
-  Ctx.prototype.romanceOk = function (actors) {
+  Ctx.prototype.romanceOk = function (actors, ev) {
     var L = (actors || []).filter(Boolean), a = L[0], b = L[1];
     /* 一途（住人の設定 faithful）：恋人がいる間は、恋人でない人と恋愛の出来事を起こさない（poly.js） */
     if (HK.Poly && !HK.Poly.faithOk(this, L)) return false;
     /* 恋愛・R18にしない組（キャラの設定）が一組でも入っていれば、どの箱庭でも起こさない */
-    /* ただし「恋愛はしないが体の関係は許されている組」（HK.lockSexOnly）は通す。恋愛の出来事は HK.canLove（恋愛相手の固定を見る）で止まり、
-       体の関係の出来事だけが起きる。起きたあとは Ctx.say で恋愛に進まないように補正する */
-    for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j]) && !HK.lockSexOnly(L[i], L[j])) return false;
+    /* ただし「恋愛はしないが体の関係は許されている組」（HK.lockSexOnly）は、体の関係の出来事（ev.sex）だけ通す。
+       出来事（ev）を渡されたのに体の出来事でなければ、恋愛の出来事として止める（渡されないときは通す。起きたあとは Ctx.say で恋愛に進まないように補正する） */
+    for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j]) && (!HK.lockSexOnly(L[i], L[j]) || (ev && !ev.sex))) return false;
     /* 恋愛なしの家族は、恋愛が中心の箱庭（romanceCore）でも恋愛の出来事を起こさない */
     if (a && b && this.pair(a, b).kin) return false;
     /* 歪んだ関係から離れる決心をした二人（tie-abuse.js の abFree）は、もう恋愛の出来事を起こさない。
@@ -9493,7 +9496,7 @@
     return !(a && a.likes === 'none');
   };
   Ctx.prototype.act2 = function (o) {
-    if (o.cat === 'romance' && !this.romanceOk(o.actors)) return null;
+    if (o.cat === 'romance' && !this.romanceOk(o.actors, sexEv(this, o))) return null;
     this.k = o.k || (0.8 + this.rng() * 0.4);
     this._mag = 0; this._touched = {};
     var r = o.fx ? o.fx() : null;
@@ -9501,7 +9504,7 @@
     var why = typeof o.why === 'function' ? o.why(r) : o.why;
     if (!text) { this.flush(); return null; }
     var actors = (o.actors || []).filter(Boolean);
-    var e = this.say({ kind: 'event', cat: o.cat || 'bond', actors: actors, text: text, why: why || '', mag: this._mag + (o.mag || 0), odd: !!o.odd });
+    var e = this.say({ kind: 'event', cat: o.cat || 'bond', actors: actors, text: text, why: why || '', mag: this._mag + (o.mag || 0), odd: !!o.odd, sex: sexEv(this, o).sex });
     if (actors[0]) actors[0].cats[e.cat] = (actors[0].cats[e.cat] || 0) + 1;
     if (o.odd && actors[0]) actors[0].odd.push(e.n);
     for (var kk in this._touched) { var pr = this._touched[kk]; this.pair(pr[0], pr[1]).moments.push({ n: e.n, mag: e.mag }); }
@@ -9822,8 +9825,8 @@
       if (tieOff && e.id && HK.TIE_EV_RE.test(e.id)) return;
       var bb = e.scope === 'pair' ? b : null;
       if (e.when && !e.when(ctx, a, bb)) return;
-      if (e.cat === 'romance' && bb && a.lock != null && a.lock !== bb.i) return;
-      if (e.cat === 'romance' && !ctx.romanceOk(bb ? [a, bb] : [a])) return;
+      if (e.cat === 'romance' && bb && a.lock != null && a.lock !== bb.i && !(e.sex && HK.lockSexOnly(a, bb))) return;
+      if (e.cat === 'romance' && !ctx.romanceOk(bb ? [a, bb] : [a], e)) return;
       var w = e.w(ctx, a, bb);
       if (!(w > 0)) return;
       w *= ctx.bias(a, e.cat);
@@ -9854,16 +9857,22 @@
     var odd = cands.length > 3 && !pick.e.pri && !pick.e.noOdd && pick.w < maxW * (pick.e.mini ? 0.055 : 0.16) && pick.w < mean * (pick.e.mini ? 0.3 : 0.45);
     ctx.k = HK.clamp(1 + (rng() - 0.5) * (0.5 + ctx.chaos), 0.3, 2);
     ctx._mag = 0; ctx._touched = {};
+    /* いま起こしている出来事（体の関係の印 sex を、出来事の中の say・act2 にも効かせる。sexEv） */
+    var ev0 = ctx._ev; ctx._ev = pick.e;
+    try { actRun(ctx, a, pick, odd); } finally { ctx._ev = ev0; }
+  }
+  function actRun(ctx, a, pick, odd) {
     var res = pick.e.run(ctx, a, pick.b);
     if (!res) return;
     var cat = res.cat || pick.e.cat;
+    var sex = res.sex != null ? !!res.sex : !!pick.e.sex;
     /* 出来事の側で恋愛に変わったときも、恋愛が起きない組なら書かない */
-    if (cat === 'romance' && !ctx.romanceOk(pick.b ? [a, pick.b] : [a])) return;
+    if (cat === 'romance' && !ctx.romanceOk(pick.b ? [a, pick.b] : [a], { sex: sex })) return;
     var actors = [a];
     if (pick.b) actors.push(pick.b);
     if (res.with) res.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
     if (res.odd) odd = true;
-    var e = ctx.say({ kind: 'event', cat: cat, actors: actors, text: res.text, why: res.why, odd: odd, mag: ctx._mag + (res.mag || 0), cageOk: /^ob_/.test(pick.e.id || '') });
+    var e = ctx.say({ kind: 'event', cat: cat, actors: actors, text: res.text, why: res.why, odd: odd, mag: ctx._mag + (res.mag || 0), cageOk: /^ob_/.test(pick.e.id || ''), sex: sex });
     if (e.skipped) return;
     a.cats[cat] = (a.cats[cat] || 0) + 1;
     if (odd) a.odd.push(e.n);
@@ -10776,7 +10785,7 @@
 
   F.events = [
     {
-      id: 'fwb_offer', cat: 'romance', scope: 'pair', pri: true,
+      id: 'fwb_offer', cat: 'romance', sex: true, scope: 'pair', pri: true,
       when: function (ctx, a, b) { var pf = ctx.pair(a, b); return F.allowed(ctx) && pf.night && !pf.couple && !pf.fwb && !pf.fwbAsked && !pf.forced && (!HK.Pos || HK.Pos.okSex(a, b)); },
       w: function (ctx, a) { return 0.8 + F.lean(a) * 1.5; },
       run: function (ctx, a, b) {
@@ -10791,7 +10800,7 @@
       }
     },
     {
-      id: 'fwb_again', cat: 'romance', scope: 'pair',
+      id: 'fwb_again', cat: 'romance', sex: true, scope: 'pair',
       when: function (ctx, a, b) { var pf = ctx.pair(a, b); return F.allowed(ctx) && pf.fwb && !pf.couple && pf.night && (!HK.Pos || HK.Pos.okSex(a, b)); },
       w: function (ctx, a, b) { return 0.9 + ctx.R(a, b).att / 60; },
       run: function (ctx, a, b) {
@@ -11294,7 +11303,7 @@
         tg.outc = outc; tg.walk = walkLove; tg.newLove = !wasCouple && (outc === 'lover' || walkLove);
         if (walkLove) { ctx.pair(c.a, c.b).couple = true; c.a.fateNote += '。帰り道で付き合うことになった'; c.b.fateNote += '。帰り道で付き合うことになった'; }
         if (outc === 'forget') ctx.pair(c.a, c.b).forgot = true;
-        var e = ctx.say({ kind: 'event', cat: 'romance', actors: [c.a, c.b], text: night ? c.a.name + 'と' + c.b.name + 'は、店を出たあと同じタクシーに乗った。' + (gn ? gn.text : 'その先のことは、二人しか知らない。') + (gn ? '' : (function () {
+        var e = ctx.say({ kind: 'event', cat: 'romance', sex: !!night, actors: [c.a, c.b], text: night ? c.a.name + 'と' + c.b.name + 'は、店を出たあと同じタクシーに乗った。' + (gn ? gn.text : 'その先のことは、二人しか知らない。') + (gn ? '' : (function () {
           /* 受け攻めの指定どおりの「翌朝」 */
           var tb = HK.Pos ? HK.Pos.order(c.a, c.b, [c.a, c.b]) : [c.a, c.b];
           /* 全年齢版・全年齢モードは、体の名残を書かない翌朝 */
@@ -11304,7 +11313,7 @@
         ctx.pair(c.a, c.b).moments.push({ n: e.n, mag: 25 });
         if (fwbNow) {
           HK.FWB.mark(ctx, c.a, c.b);
-          var e2 = ctx.say({ kind: 'event', cat: 'romance', actors: [c.a, c.b], text: '翌朝。' + HK.FWB.after(ctx, c.a, c.b), why: '二人とも「恋人より気楽な関係」寄り（ドライさ・衝動性）', mag: 15 });
+          var e2 = ctx.say({ kind: 'event', cat: 'romance', sex: true, actors: [c.a, c.b], text: '翌朝。' + HK.FWB.after(ctx, c.a, c.b), why: '二人とも「恋人より気楽な関係」寄り（ドライさ・衝動性）', mag: 15 });
           ctx.pair(c.a, c.b).moments.push({ n: e2.n, mag: 15 });
         }
       });
@@ -11836,8 +11845,10 @@
     if (jea) { var c0 = conds; conds = (c0 || []).concat([{ jea: 1 }]); }
     /* 恋人になる出来事（couple）：複数の恋人の設定（poly.js）で、恋人にしてよい組か、乗り換えの気持ちが育った組だけ */
     if (effects.some(function (f) { return f.k === 'couple'; })) conds = (conds || []).concat([{ cpl: 1 }]);
+    /* 体の関係の出来事（nite：夜を過ごす）。恋愛相手の固定と別に、性行為の相手の固定「誰とでも可」で通す（engine.js の romanceOk） */
+    var sexEv = effects.some(function (f) { return f.k === 'nite'; });
     return {
-      id: id, cat: cat, scope: sc, mini: true,
+      id: id, cat: cat, scope: sc, mini: true, sex: sexEv || undefined,
       when: conds ? function (ctx, a, b) {
         for (var i = 0; i < conds.length; i++) {
           if (conds[i].jea) { if (b && HK.Obsess && !HK.Obsess.jealOk(ctx, a, b)) return false; continue; }
@@ -13561,7 +13572,7 @@
 
   /* 行為（手を繋ぐ〜エッチ） */
   EV.push({
-    id: 'doact', cat: 'romance', scope: 'pair', pri: true,
+    id: 'doact', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (a.flags.down || b.flags.down) return false;
       return ctx.rules.some(function (r) {
@@ -13832,7 +13843,7 @@
     return G.length >= 3 ? G : null;
   }
   EV.push({
-    id: 'group_h', cat: 'romance', scope: 'solo', pri: true,
+    id: 'group_h', cat: 'romance', sex: true, scope: 'solo', pri: true,
     when: function (ctx, a) {
       if (!ctx.rules.some(function (r) { return r.k === 'h'; }) || ctx.flags.groupDone) return false;
       return ctx.present().length >= 3 && eager(ctx, a) > 0.7 && !!groupOf(ctx, a);
@@ -13873,7 +13884,7 @@
   /* スピード型：相手の隙をついて拘束し、さっさと条件を満たして出る */
   function speedy(c) { return c.tr.cold * 0.45 + c.tr.aggr * 0.3 + c.tr.impulse * 0.25 - c.tr.np * 0.35; }
   EV.push({
-    id: 'speedrun', cat: 'romance', scope: 'pair', pri: true,
+    id: 'speedrun', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (a.flags.down || b.flags.down || ctx.pair(a, b).speedTried || speedy(a) < 0.38 || ctx.stepIndex < 1) return false;
       if (b.flags.partner != null && b.flags.partner !== a.i) return false;
@@ -13913,7 +13924,7 @@
 
   /* 媚薬が回りきった人：迫る・襲う・一線を越える */
   EV.push({
-    id: 'aphro_heat', cat: 'romance', scope: 'pair', pri: true,
+    id: 'aphro_heat', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) { return !a.flags.down && (a.flags.aphro || 0) >= 2.5 + ctx.stat(a, 'hp') * 0.5 && !ctx.pair(a, b).heatDone; },
     w: function (ctx, a, b) { return 0.4 + (a.flags.aphro || 0) / 4 + R(ctx, a, b).att / 60 + (b.flags.aphro ? 0.4 : 0); },
     run: function (ctx, a, b) {
@@ -13955,7 +13966,7 @@
         return { cat: cat, text: text, why: why, mag: 30 };
       }
       ctx.mod2(a, b, { att: 6 }, { att: ba.att > 15 ? 5 : 0, ten: ba.att > 15 ? 0 : 6 });
-      return { text: ctx.t(ctx.pick(['{a}は熱に浮かされた目で{b}を見つめて、「ねえ」と呼んだ。', '{a}は{b}の袖を掴んだまま離さなかった。指先が熱い。', '{a}は{b}の肩に額を押しつけて、荒い息を整えようとしていた。', '{a}は自分の手を太腿に押しつけて、{b}に触れまいと耐えていた。']), a, b), why: '媚薬が回っている（' + Math.round(heat) + '）' };
+      return { sex: false, text: ctx.t(ctx.pick(['{a}は熱に浮かされた目で{b}を見つめて、「ねえ」と呼んだ。', '{a}は{b}の袖を掴んだまま離さなかった。指先が熱い。', '{a}は{b}の肩に額を押しつけて、荒い息を整えようとしていた。', '{a}は自分の手を太腿に押しつけて、{b}に触れまいと耐えていた。']), a, b), why: '媚薬が回っている（' + Math.round(heat) + '）' };
     }
   });
   /* 倒れた人の介抱 */
@@ -15263,7 +15274,7 @@
     return '／形：' + (SHAPE_LABEL[info.p] || info.p) + hubNote + '／嫉妬：' + JEAL_LABEL[info.jeal] + (info.j ? '（' + info.j + '）' : '') + '／受けの開放度：' + OPEN_LABEL[info.open] + (info.s ? '（' + info.s + '）' : '') + (info.after ? '／結末：' + { sour: '険悪', bond: '連帯', yield: '折れた' }[info.after] : '');
   }
   EV.push({
-    id: 'trio_auto', cat: 'romance', scope: 'pair', pri: true,
+    id: 'trio_auto', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (!allowed(ctx) || !ctx.flags.multiKnown || ctx.flags.trioCur) return false;
       var g = ctx.present();
@@ -15297,7 +15308,7 @@
   });
   /* 媚薬だけの部屋（二人の条件がない）：媚薬が三人に回れば、熱に呑まれて三人で（一度だけ。条件の数には関わらない） */
   EV.push({
-    id: 'trio_heat', cat: 'romance', scope: 'pair', pri: true,
+    id: 'trio_heat', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (multiOf(ctx) === 'no' || ctx.flags.isOne || ctx.flags.oneCond || A.hasPairRule(ctx) || !ctx.flags.hasAphroRule || ctx.flags.trioHeat) return false;
       var g = ctx.present();
@@ -15321,7 +15332,7 @@
     }
   });
   EV.push({
-    id: 'trio', cat: 'romance', scope: 'pair', pri: true,
+    id: 'trio', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (!allowed(ctx) || !ctx.flags.multiKnown || ctx.present().length < 3 || !free(a) || !free(b)) return false;
       if (ctx.flags.trioCur) return false;
@@ -15364,7 +15375,7 @@
   });
   /* 二回目以降（回数が多い条件のとき） */
   EV.push({
-    id: 'trio_more', cat: 'romance', scope: 'solo', pri: true,
+    id: 'trio_more', cat: 'romance', sex: true, scope: 'solo', pri: true,
     when: function (ctx, a) {
       var c = ctx.flags.trioCur;
       if (!c) return false;
@@ -20017,7 +20028,7 @@
 
   /* 発情期・ラットのそばで */
   EV.push({
-    id: 'om_heat', cat: 'romance', scope: 'pair', pri: true,
+    id: 'om_heat', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) { return (a.om.heat > 0 && sx(a) === 'o') || (b.om.heat > 0 && sx(b) === 'o') || (a.om.rut > 0 && sx(a) === 'a' && sx(b) === 'o'); },
     w: function (ctx, a, b) { return 1.5 + ctx.env.heat / 50 + Math.max(ctx.R(a, b).att, ctx.R(b, a).att) / 50; },
     run: function (ctx, a, b) { return heatScene(ctx, a, b); }
@@ -20097,7 +20108,7 @@
 
   /* 発情期でなくても、勢いで一線を越える夜（恋人にならないまま続くこともある） */
   EV.push({
-    id: 'om_night', cat: 'romance', scope: 'pair',
+    id: 'om_night', cat: 'romance', sex: true, scope: 'pair',
     when: function (ctx, a, b) { var pf = ctx.pair(a, b); return !pf.couple && !pf.night && met(ctx, a, b) && HK.canLove(a, b) && HK.canLove(b, a) && ctx.R(a, b).att > 28 && ctx.R(b, a).att > 24 && !partnerOf(ctx, a) && !partnerOf(ctx, b) && !(BD.mateOf(ctx, a) || BD.mateOf(ctx, b)); },
     w: function (ctx, a, b) { var h = ctx.om.hesitate[key(a, b)] ? 1 : 0; return (HK.FWB.lean(a) + HK.FWB.lean(b)) * 1.4 + h * 0.8 + (a.goal.id === 'free' ? 0.6 : 0); },
     run: function (ctx, a, b) {
@@ -20729,7 +20740,7 @@
     end: L('朝、二人は目を合わせずに服を着た。「今のは、なかったことにしろ」「言われなくても」|{a}は眠る{b}の顔を、憎らしそうに、それでいて名残惜しそうに見つめていた。|{b}が先に部屋を出た。ドアが閉まる直前、「次はない」と言った。次は、たぶんある。')
   };
   EV.push({
-    id: 'om_hatenight', cat: 'romance', scope: 'pair',
+    id: 'om_hatenight', cat: 'romance', sex: true, scope: 'pair',
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b);
       if (pf.couple || !HK.canLove(a, b) || !HK.canLove(b, a) || partnerOf(ctx, a) || partnerOf(ctx, b)) return false;
@@ -20771,7 +20782,7 @@
     refuse: L('{a}は恋人のいる{b}に迫った。{b}は{a}の手を払いのけた。「私／俺には{c}がいる」|{b}は{a}の誘いをきっぱり断り、その足で{c}に会いに行った。|{a}が{b}を抱き寄せようとした瞬間、{b}のスマホが鳴った。画面には{c}の名前があった。{b}はそれを理由に、{a}から離れた。')
   };
   EV.push({
-    id: 'om_steal', cat: 'romance', scope: 'pair',
+    id: 'om_steal', cat: 'romance', sex: true, scope: 'pair',
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b), pb = partnerOf(ctx, b), pa = partnerOf(ctx, a);
       if (pf.couple || !HK.canLove(a, b) || !HK.canLove(b, a) || !(pb || pa) || pb === a) return false;
@@ -21392,7 +21403,7 @@
 
   var CB_LABEL = { ao: 'α攻め×Ω受け', oa: 'Ω攻め×α受け', aa: 'α同士', oo: 'Ω同士', b: 'βがいる組' };
   scen.events.push({
-    id: 'om_lovers', cat: 'romance', scope: 'pair', pri: true,
+    id: 'om_lovers', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b);
       if (!(pf.couple || bonded(ctx, a, b)) || !HK.canLove(a, b) || !HK.canLove(b, a)) return false;
@@ -27265,7 +27276,7 @@
 
   /* ---------- 出来事の窓口：phase・after から出す（ctx.act2） ---------- */
   function emit(ctx, o) {
-    var e = ctx.act2({ actors: o.actors, cat: o.cat || 'bond', text: o.text, why: o.why, mag: o.mag || 0, fx: o.fx });
+    var e = ctx.act2({ actors: o.actors, cat: o.cat || 'bond', text: o.text, why: o.why, mag: o.mag || 0, fx: o.fx, sex: o.sex });
     if (e && o.tag) e.ftTag = o.tag;
     return e;
   }
@@ -27647,7 +27658,7 @@
     if (HK.FutariR18 && !HK.SAFE_ON) r = HK.FutariR18.night(ctx, a, b, { stage: x.s, where: where, first: !f.r18[k] && !x.preset, engaged: x.s >= 5 });
     var sp = where === 'trip' ? '温泉宿' : '自宅の寝室';
     if (r && r.text) {
-      var e = emit(ctx, { actors: [r.a || a, r.b || b], cat: 'romance', text: r.text, why: W(ctx, sp) + r.why, mag: 12, tag: 'night', fx: relFx(ctx, a, b, { aff: 3, att: 3, trust: 2 }, { aff: 3, att: 3, trust: 2 }) });
+      var e = emit(ctx, { actors: [r.a || a, r.b || b], cat: 'romance', sex: true, text: r.text, why: W(ctx, sp) + r.why, mag: 12, tag: 'night', fx: relFx(ctx, a, b, { aff: 3, att: 3, trust: 2 }, { aff: 3, att: 3, trust: 2 }) });
       if (e) { pf.night = true; pf.nights = (pf.nights || 0) + 1; f.r18[k] = (f.r18[k] || 0) + 1; f.beds[k] = (f.beds[k] || 0) + 1; }
     } else {
       var o = ctx.rng() < 0.5 ? [a, b] : [b, a], t = where === 'trip' && has(ctx, NIGHT_TRIP) ? fresh(ctx, NIGHT_TRIP) : freshP(ctx, NIGHT, o[0]);
@@ -29530,7 +29541,7 @@
     }
   });
   EV.push({
-    id: 'z_close', cat: 'romance', scope: 'pair',
+    id: 'z_close', cat: 'romance', sex: true, scope: 'pair',
     when: function (ctx, a, b) { var pf = ctx.pair(a, b); return HK.canLove(a, b) && HK.canLove(b, a) && (pf.couple || (ctx.R(a, b).att > 40 && ctx.R(b, a).att > 36)) && !pf.zclose; },
     w: function (ctx, a, b) { return 0.5 + ctx.R(a, b).att / 80 + (Z.part(ctx) === 3 ? 0.6 : 0); },
     run: function (ctx, a, b) {
@@ -29910,7 +29921,7 @@
     }
     if (pick === 'lastnight' && lover && lover.alive) {
       ctx.pair(c, lover).night = true;
-      ctx.act2({ actors: [c, lover], cat: 'romance', fx: function () { ctx.mod2(c, lover, { att: 12, aff: 12 }, { att: 12, aff: 12 }); ctx.stress(lover, 20); }, text: fill(ctx.pick(L('{a}は{b}に咬み跡を見せた。{b}は何も言わず、{a}の手を引いて奥の部屋へ行った。最後の夜だった。二人は、朝まで互いの名前を呼び合った。|「最後くらい、普通の恋人でいたい」――{a}と{b}は、拾ったろうそくを灯して、壊れたソファで抱き合った。')), { a: c.name, b: lover.name }), why: why + '／恋人の' + lover.name, mag: 40 });
+      ctx.act2({ actors: [c, lover], cat: 'romance', sex: true, fx: function () { ctx.mod2(c, lover, { att: 12, aff: 12 }, { att: 12, aff: 12 }); ctx.stress(lover, 20); }, text: fill(ctx.pick(L('{a}は{b}に咬み跡を見せた。{b}は何も言わず、{a}の手を引いて奥の部屋へ行った。最後の夜だった。二人は、朝まで互いの名前を呼び合った。|「最後くらい、普通の恋人でいたい」――{a}と{b}は、拾ったろうそくを灯して、壊れたソファで抱き合った。')), { a: c.name, b: lover.name }), why: why + '／恋人の' + lover.name, mag: 40 });
       ctx.pair(c, lover).promise = c.i;
       return true;
     }
@@ -30024,7 +30035,7 @@
 
   /* ======================= 恋人：最後かもしれない夜 ======================= */
   EV.push({
-    id: 'z_lv_night', cat: 'romance', scope: 'pair',
+    id: 'z_lv_night', cat: 'romance', sex: true, scope: 'pair',
     when: function (ctx, a, b) {
       if (Z.loveLv(ctx) === 'off' || !Z.isLover(ctx, a, b)) return false;
       /* 受け攻めの向きが決まらない組（攻め×攻めなど）は、恋人でも夜を過ごさない */
@@ -30221,7 +30232,7 @@
           pf.night = true;
           var txm = fill(ctx.pick(LV.pressM), m) + fill(ctx.pick(LV.pressMYes), m);
           if (Z.loveLv(ctx) === 'high' && LV.pressHigh) txm += LV.pressHigh(ctx, a, b);
-          return { cat: 'romance', text: txm, why: a.name + 'は、どうせ終わる世界ならと踏み込んだ（攻撃性・衝動性）／両片想いだった。' + b.name + 'は拒まなかった', mag: 34 };
+          return { cat: 'romance', sex: true, text: txm, why: a.name + 'は、どうせ終わる世界ならと踏み込んだ（攻撃性・衝動性）／両片想いだった。' + b.name + 'は拒まなかった', mag: 34 };
         }
         [[a, b], [b, a]].forEach(function (p) {
           var x = p[0], y = p[1];
@@ -30244,7 +30255,7 @@
         else ctx.mod2(a, b, { ten: 6 }, { ten: 18, trust: -18, aff: -10 });
         var tx = fill(ctx.pick(LV.press), m) + fill(ctx.pick(ok ? LV.pressYes : LV.pressNo), m);
         if (ok && Z.loveLv(ctx) === 'high' && LV.pressHigh) tx += LV.pressHigh(ctx, a, b);
-        return { cat: ok ? 'romance' : 'conflict', text: tx, why: a.name + 'は、どうせ終わる世界ならと関係を迫った（攻撃性・衝動性）' + (ok ? '' : '／' + b.name + 'は拒んだ'), mag: 32 };
+        return { cat: ok ? 'romance' : 'conflict', sex: ok, text: tx, why: a.name + 'は、どうせ終わる世界ならと関係を迫った（攻撃性・衝動性）' + (ok ? '' : '／' + b.name + 'は拒んだ'), mag: 32 };
       }
       a.focus = b; a.z.vow = b.i;
       if (a.goal.id !== 'chaos' && a.goal.id !== 'family') a.goal = Z.scen.goals.filter(function (g) { return g.id === 'protect'; })[0] || a.goal;
@@ -32926,7 +32937,7 @@
 
   function scnPool(ctx, T) { return T[ctx.scen.id] || T.any; }
   function other(ctx, a, b) { var o = ctx.others(a).filter(function (x) { return x !== b; }); return o.length ? ctx.pick(o) : null; }
-  function mk(id, cat, w, when, run, only) { return { id: id, cat: cat, scope: 'pair', mini: true, sig: true, w: w, when: when, run: run, only: only }; }
+  function mk(id, cat, w, when, run, only) { return { id: id, cat: cat, scope: 'pair', mini: true, sig: true, w: w, when: when, run: run, only: only, sex: id === 'fc_night' || undefined }; }
 
   var LIST = [
     /* いつもの夜と、そのあと */
@@ -54602,7 +54613,7 @@
       var ord = HK.Pos.order(a, b), top = ord[0] === a;
       ctx.pair(a, b).night = true;
       ctx.mod2(a, b, { att: 6 }, { att: 4, ten: 6 });
-      return { with: [b], cat: 'romance', text: F(ctx, T(ctx, top ? 'top' : 'bottom'), a, b), why: a.name + 'による監禁の夜（執着 ' + Math.round(s.lv) + (stn0 === 'mutual' ? '・共依存' : stn0 === 'accept' ? '・受け入れている' : '') + '）', mag: 30 };
+      return { with: [b], cat: 'romance', sex: true, text: F(ctx, T(ctx, top ? 'top' : 'bottom'), a, b), why: a.name + 'による監禁の夜（執着 ' + Math.round(s.lv) + (stn0 === 'mutual' ? '・共依存' : stn0 === 'accept' ? '・受け入れている' : '') + '）', mag: 30 };
     }
     ctx.mod(b, a, { ten: 4 }); ctx.stress(b, 6);
     return { with: [b], cat: 'conflict', text: F(ctx, T(ctx, 'cageDay'), a, b), why: a.name + (SAFE() ? 'の囲い込み（' : 'による監禁（') + s.cage.n + '区切り目）', mag: 15 };
@@ -55143,7 +55154,7 @@
         else { ctx.mod(b, a, { ten: 35, trust: -35, aff: -15 }); ctx.stress(b, 40); }
         ctx.mod(a, b, { att: 8 });
         s.lv = Math.min(100, s.lv + 5);
-        return { with: [b], cat: given ? 'romance' : 'conflict', text: fill(ctx, ctx.pick(given ? GIVEN : FORCE), a, b), why: O.why(ctx, a, b) + (given ? '。' + b.name + 'はそれを受け入れ、自分から噛ませた' : '。執着が暴走し、' + b.name + 'の意思を待たずに番にした') + (OM.destinyWhy ? OM.destinyWhy(ctx) : ''), mag: 55 };
+        return { with: [b], cat: given ? 'romance' : 'conflict', sex: true, text: fill(ctx, ctx.pick(given ? GIVEN : FORCE), a, b), why: O.why(ctx, a, b) + (given ? '。' + b.name + 'はそれを受け入れ、自分から噛ませた' : '。執着が暴走し、' + b.name + 'の意思を待たずに番にした') + (OM.destinyWhy ? OM.destinyWhy(ctx) : ''), mag: 55 };
       }]);
     /* 仕組まれた発情：Ωがαを絡め取る */
     if (sx(a) === 'o' && sx(b) === 'a' && okSex(a, b) && ctx.romanceOk([a, b]))
@@ -55155,7 +55166,7 @@
         om.obTrap = om.obTrap || {}; om.obTrap[key(a, b)] = { by: a.i, bit: bit, at: ctx.stepIndex };
         ctx.pair(a, b).night = true; ctx.pair(a, b).nights = (ctx.pair(a, b).nights || 0) + 1;
         ctx.mod2(a, b, { att: 10 }, { att: 8, ten: 18, trust: -15 }); ctx.stress(b, 25);
-        return { with: [b], cat: 'romance', text: t, why: O.why(ctx, a, b) + '。抑制剤を断ち、発情期で' + b.name + 'を絡め取った' + (bit ? '（' + b.name + 'はうなじを噛んでしまった）' : ''), mag: 55 };
+        return { with: [b], cat: 'romance', sex: true, text: t, why: O.why(ctx, a, b) + '。抑制剤を断ち、発情期で' + b.name + 'を絡め取った' + (bit ? '（' + b.name + 'はうなじを噛んでしまった）' : ''), mag: 55 };
       }]);
     return out;
   }
