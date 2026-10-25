@@ -208,10 +208,12 @@
     P.forEach(function (p) { ST.sayB(S, { actors: [p], tag: p.roleLabel, text: p.name + '（' + p.roleLabel + '）――' + ROLE[p.role].desc + '。', why: '役割：' + p.roleLabel + (p.picked ? '（指定）' : '（気質から）') }, p.name + 'は' + p.roleLabel); });
     ST.snap(S, keys);
 
-    for (var m = 1; m <= 12; m++) {
+    for (var m = 1; m <= 12 || (S.after && !S.after.end); m++) {
       S.m = m;
       /* 不死・吸血鬼の蘇り・発狂・吸血（ship-special.js） */
       if (SH.SPEC) SH.SPEC.month(S);
+      /* 全滅のあと、蘇った不死・吸血鬼だけの「ひとりの船」（ship-after.js。2〜4か月。十二か月目を越えることもある） */
+      if (S.after && SH.AFTER) { if (!SH.AFTER.month(S, m, input)) break; ST.snap(S, keys); continue; }
       if (!live(S).length) break;
       ST.step(S, m + 'か月目');
       ST.budget(S, 4 + Math.ceil(live(S).length / 2));
@@ -391,6 +393,7 @@
     ST.key(S, o2, D.d.name + 'で全滅');
     all.forEach(function (q) { q.alive = false; q.fate = '死亡（' + m + 'か月目・' + D.d.name + '）'; S.deaths.push(q); });
     S.doom = null; S.doomDone = true; S.wipeBy = D.d;
+    if (SH.AFTER) SH.AFTER.wipe(S, m);
   }
 
   /* ---------- 宇宙での遭遇 ---------- */
@@ -436,6 +439,7 @@
     if (!SH.C || !a || a.inf || !alive(a)) return;
     a.inf = 1; a.infSrc = src; stress(a, 10); a.cnt.inf = (a.cnt.inf || 0) + 1;
     ST.say(S, { actors: [a], tag: '感染症', text: F(pk(S, SH.C.INF_START), { a: a.name, x: src }), why: src + 'の調査で、未知の病原体に感染した', mag: 26 });
+    if (SH.AFTER) SH.AFTER.react(S, a, 'start');
   }
   function lose(S, a) {
     if (!SH.C || !alive(a) || live(S).length < 2) return;
@@ -505,19 +509,22 @@
       if (dr && rng() < HK.Dark.live(S, 0.1 + skill(dr, 'med') * 0.4, 'kill')) {
         a.inf = 0; setRel(S, a, dr, 0.2); mark(S, a, dr, 'nurse'); stress(a, -10);
         ST.say(S, { actors: [dr, a], tag: '感染症', text: F(pk(S, C.INF_CURE), { a: a.name, b: dr.name, x: a.infSrc || '星の生き物' }), why: dr.name + 'の医療の腕 ' + Math.round(skill(dr, 'med') * 100), mag: 22 });
+        if (SH.AFTER) SH.AFTER.react(S, a, 'cure', [dr]);
         return;
       }
-      if (rng() < HK.Dark.live(S, 0.08 + a.m.hp / 100 * 0.1, 'kill')) { a.inf = 0; ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_SELF), { a: a.name }), why: '自分の体の力で持ち直した' }, a.name + 'は病に打ち勝った'); return; }
+      if (rng() < HK.Dark.live(S, 0.08 + a.m.hp / 100 * 0.1, 'kill')) { a.inf = 0; ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_SELF), { a: a.name }), why: '自分の体の力で持ち直した' }, a.name + 'は病に打ち勝った'); if (SH.AFTER) SH.AFTER.react(S, a, 'cure'); return; }
       a.inf++; a.m.hp = clamp(a.m.hp - 8 * a.inf, 1, 100); stress(a, 8);
       live(S).forEach(function (q) { if (q !== a) stress(q, 3); });
       if (a.inf >= 3 && rng() < (0.35 + S.env.danger / 100 * 0.2) * HK.Dark.f(S, 'kill')) { var w = closest(S, a) || { name: '仲間' }; die(S, a, '感染症で', F(pk(S, C.INF_DEATH), { v: a.name, w: w.name })); return; }
       ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_WORSE), { a: a.name }), why: '病状が悪化した（段階 ' + a.inf + '・体力 ' + Math.round(a.m.hp) + '）' }, a.name + 'の病状が悪化した');
+      if (SH.AFTER) SH.AFTER.react(S, a, 'worse');
       /* うつる：近しい人ほど、そばにいるのでうつりやすい */
       var cand = live(S).filter(function (q) { return q !== a && !q.inf; });
       var q = cand.length ? HK.weighted(rng, cand, function (z) { return 0.1 + Math.max(0, bond(S, z, a)) * 1.5 + (lover(S, z, a) ? 1 : 0); }) : null;
       if (q && rng() < (0.12 + Math.max(0, bond(S, q, a)) * 0.25 + (lover(S, q, a) ? 0.15 : 0)) * HK.Dark.f(S, 'kill')) {
         q.inf = 1; q.infSrc = a.infSrc; q.cnt.inf = (q.cnt.inf || 0) + 1; stress(q, 10);
         ST.say(S, { actors: [a, q], tag: '感染拡大', text: F(pk(S, lover(S, a, q) && !family(S, a, q) && C.INF_SPREAD_LOVE ? C.INF_SPREAD_LOVE : C.INF_SPREAD), { a: a.name, b: q.name }), why: q.name + 'は' + a.name + 'のそばにいた（関係 ' + Math.round(bond(S, q, a) * 100) + '）', mag: 26 });
+        if (SH.AFTER) SH.AFTER.react(S, q, 'start', [a]);
       }
       /* 置き去りの相談：星にいて、病が重いとき */
       var oth = live(S).filter(function (z) { return z !== a; });
@@ -539,6 +546,7 @@
       S.left.push([c.i, a.i]); S.ship.morale = clamp(S.ship.morale - 10, 0, 100);
       var o2 = ST.say(S, { actors: [c, a], tag: '置き去り', kind: 'climax', text: t + F(pk(S, C.ABANDON), { a: a.name }), why: '感染の広がりを恐れた（皆の不安とストレス ' + Math.round(fear * 100) + '）', mag: 44 });
       ST.key(S, o2, a.name + 'を星に置き去りにした');
+      if (SH.AFTER) SH.AFTER.react(S, a, 'left', [c]);
     });
     if (!onPlanet(S)) return;
     /* 連れ去られた人の救出 */
@@ -805,7 +813,10 @@
     S.ship.morale = clamp(S.ship.morale - 12, 0, 100);
     var g = live(S).filter(function (q) { return bond(S, q, v) >= 0.4; }).sort(function (a, b) { return bond(S, b, v) - bond(S, a, v); })[0];
     live(S).forEach(function (q) { q.m.fear = clamp(q.m.fear + 10 + Math.max(0, bond(S, q, v)) * 15, 0, 100); stress(q, 10 + Math.max(0, bond(S, q, v)) * 20); });
-    if (g) ST.say(S, { actors: [g, v], tag: '弔い', text: F(pk(S, SH.T.GRIEF), { a: g.name, v: v.name }), why: g.name + 'と' + v.name + 'の関係' });
+    /* 感染症で亡くなった人には、関係ごとの反応（ship-after.js）が弔いの代わりになる */
+    var infR = SH.AFTER && how === '感染症で';
+    if (g && !infR) ST.say(S, { actors: [g, v], tag: '弔い', text: F(pk(S, SH.T.GRIEF), { a: g.name, v: v.name }), why: g.name + 'と' + v.name + 'の関係' });
+    if (infR) SH.AFTER.react(S, v, 'death');
   }
 
   /* ---------- R18 ---------- */
@@ -975,6 +986,8 @@
     ]
   };
   function epilogue(S) {
+    /* 全滅のあとの「ひとりの船」は、ship-after.js の結末で */
+    if (S.after && SH.AFTER && SH.AFTER.epilogue(S)) return;
     var Pn = S.planet, L0 = live(S), sp = S.ship, v = { x: Pn ? Pn.name : '', n: S.P.length, l: names(L0) };
     var weak = S.weakEnd = sp.power < 30 || sp.o2 < 30 || sp.hull < 25 || sp.food < 15;
     if (!L0.length) {
@@ -1044,6 +1057,7 @@
     if (Pn) { [Pn.res, Pn.civ].concat(Pn.life).forEach(function (o) { reveal += o.st; total += 3; }); }
     var pct = total ? Math.round(reveal / total * 100) : 0;
     var title = !L0.length ? '全滅 ― ' + (S.wipeBy ? S.wipeBy.name + 'で、' : '') + '船は誰も乗せないまま漂い続けた' : Pn ? Pn.name + 'に辿り着いた ― 珍しさ' + stars(Pn.rare) + '・判明度 ' + pct + '%' : S.weakEnd ? '星は見つからなかった ― 力尽きかけた船で、救いの信号を送り続けた' : '星は見つからなかった ― 一年の漂流';
+    if (S.after && S.after.title) title = S.after.title;
     var lines = P.map(function (p) { return p.name + '（' + p.roleLabel + '）：' + p.fate; });
     var END = SH.T.END || {};
     lines.push(L0.length && S.endLine ? S.endLine : F(pk(S, !L0.length ? END.wiped : Pn ? END.found : END.none), { x: Pn ? Pn.name : '' }));
@@ -1070,4 +1084,6 @@
     });
   }
   SH.skill = skill; SH.bond = bond;
+  /* 全滅のあと・感染症の反応（ship-after.js）に渡す道具 */
+  SH.API = { live: live, bond: bond, lover: lover, family: family, ties: ties, rk: rk, loveOK: loveOK, setRel: setRel, stress: stress, pk: pk, names: names, closest: closest, makePlanet: makePlanet };
 })();

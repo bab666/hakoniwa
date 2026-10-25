@@ -1,5 +1,6 @@
 /* 箱庭シミュレーター: 宇宙船漂流記 ― 特殊役職（不死・吸血鬼）（special.js の組み込み。全年齢版も同じ）
-   ・死んだ不死・吸血鬼は、次の月のはじめに蘇る（船の外で行方不明になった・連れ去られた人は戻らない。全滅したあとは蘇らない）
+   ・死んだ不死・吸血鬼は、次の月のはじめに蘇る（船の外で行方不明になった・連れ去られた人は戻らない。
+     全滅したときは、船の中にいた不死・吸血鬼だけが次の月に蘇り、「ひとりの船」が続く（ship-after.js）
    ・特殊役職の人は、ストレスの高い月が続くと発狂して動けなくなる（仲の良い人が落ち着かせるまで）
    ・吸血鬼は月に一度、人の血を吸う（船の上は時間の流れが単調なので、ひと月を三日分として数える）
    ship.js の月の流れから SH.SPEC.setup・SH.SPEC.month を呼ぶ */
@@ -46,6 +47,8 @@
     /* 月のはじめ：蘇り → 発狂中の人の番 → 渇いた吸血鬼 → 精神の摩耗 */
     month: function (S) {
       if (!S.P.some(function (p) { return p.spec; })) return;
+      /* 全滅のあとの「ひとりの船」では、蘇り・渇きは ship-after.js が受け持つ（血の通う者がいなくても、吸血鬼は眠るだけで死なない） */
+      if (S.after) return;
       var A = adapter(S);
       if (!S.wipeBy) SP.revive(A);
       S.P.forEach(function (p) {
@@ -55,6 +58,7 @@
         SP.wear(A, p, { base: 65 });
       });
     },
-    note: function (p) { return SP.endNote(p); }
+    note: function (p) { return SP.endNote(p); },
+    adapter: adapter
   };
 })();

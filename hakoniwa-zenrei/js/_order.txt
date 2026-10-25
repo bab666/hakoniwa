@@ -223,6 +223,7 @@ js/ship-bond.js
 js/ship-crisis.js
 js/ship.js
 js/ship-special.js
+js/ship-after.js
 js/yakata-frame.js
 js/yakata-feud.js
 late js/jinro-data.js

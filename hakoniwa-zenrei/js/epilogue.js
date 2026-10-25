@@ -479,4 +479,10 @@
       });
     } catch (e) { /* 後日談の組み立てに失敗しても、結末は出す */ }
   };
+  /* 物語型の最期の言葉だけを、結末より前に引く（X.story と同じ選び方なので、結末の箇条書きと同じ言葉になる。宇宙船の ship-after.js の弔い） */
+  X.storyWords = function (S, p, input) {
+    if (!S || !S.P || !p) return '';
+    var key0 = S.P.map(function (q) { return q.name; }).join(',') + '|' + (input && input.seed);
+    return compose(p, P_kind((p.how || '') + ' ' + (p.fate || ''), null), storyAddressee(S, p, input), null, key0 + '|' + p.name);
+  };
 })();
