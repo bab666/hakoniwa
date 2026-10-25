@@ -13,6 +13,8 @@
    ・youFor / fpFor 相手ごとの二人称・一人称：{ 相手: 'あなた'|'きみ'|… } / { 相手: '私'|'俺'|… }（自由記入も可・8文字まで）。
      相手が分かる台詞では、ふだんの二人称・一人称より優先する（voice.js の V.processText。名前で引けるように A.voiceFor で写す）。
      画面の欄は「関係と呼び方」の相手ごとの行（呼び方の隣。A.voiceForHtml）
+   ・foodLike 好きな食べ物／foodHate 嫌いな食べ物：自由記入（読点区切りで5つまで・1つ12文字まで）。taste 好きな味：甘い／しょっぱい／辛い／酸っぱい／苦い／あっさり／こってり
+     （いくつでも。読点区切りで持つ）。実行時は配列で写す。使い方は food.js（HK.Food：料理の味・食べた人の反応・好物の一句）
    画面の欄（ui.js の mk・normChar・rosterJSON・import・buildInput、ui-gear.js の描画と入力）は、ここの関数を呼ぶだけにしてある。
    実行時の住人への写しは HK.charFlags（engine.js）から HK.Attr.copy を一度だけ呼ぶ（エンジン・物語型・SoloKit・ダンジョン・穴で共通）。
    登場人物はすべて成人として扱う */
@@ -40,6 +42,20 @@
   function word(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>\s\u2060-\u2064]/g, '').slice(0, 8) : ''; }
   function wmap(m, keyOk) { var o = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { var w = word(m[k]); if (w && (!keyOk || keyOk(k))) o[k] = w; }); return o; }
   function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL }[k]; }
+  /* 好きな食べ物・嫌いな食べ物（自由記入）と好きな味（決まった7つから複数）。画面と書き出しは読点区切りの文字列、実行時は配列 */
+  A.TASTES = ['甘い', 'しょっぱい', '辛い', '酸っぱい', '苦い', 'あっさり', 'こってり'];
+  var FOODK = ['foodLike', 'foodHate'];
+  A.foodWords = function (v) {
+    var src = Array.isArray(v) ? v : typeof v === 'string' ? v.split(/[、,，・\/／\n]+/) : [], out = [];
+    src.forEach(function (w) { w = typeof w === 'string' ? w.replace(/[「」『』{}<>\u2060-\u2064]/g, '').trim().slice(0, 12) : ''; if (w && out.indexOf(w) < 0 && out.length < 5) out.push(w); });
+    return out;
+  };
+  A.tasteList = function (v) {
+    var src = Array.isArray(v) ? v : typeof v === 'string' ? v.split(/[、,，・\/／\s]+/) : [];
+    return A.TASTES.filter(function (t) { return src.indexOf(t) >= 0; });
+  };
+  function fstr(v) { return A.foodWords(v).join('、'); }
+  function tstr(v) { return A.tasteList(v).join('、'); }
 
   /* ---------- 画面の住人（S.chars。相手は id で持つ） ---------- */
   /* ui.js mk：写すときにこの欄も写す */
@@ -50,6 +66,8 @@
     o.nightFor = c.nightFor && typeof c.nightFor === 'object' ? JSON.parse(JSON.stringify(c.nightFor)) : {};
     o.same = typeof c.same === 'string' ? c.same : '';
     VF.forEach(function (k) { o[k] = wmap(c[k]); });
+    FOODK.forEach(function (k) { o[k] = fstr(c[k]); });
+    o.taste = tstr(c.taste);
     return o;
   };
   /* ui.js normChar：値を確かめる */
@@ -61,6 +79,8 @@
     c.nightFor = nf;
     c.same = typeof c.same === 'string' ? c.same : '';
     VF.forEach(function (k) { c[k] = wmap(c[k]); });
+    FOODK.forEach(function (k) { c[k] = fstr(c[k]); });
+    c.taste = tstr(c.taste);
     return c;
   };
   /* ui.js normRefs：今いる住人だけに絞る（同一人物は両方に書く） */
@@ -74,6 +94,8 @@
   A.exportTo = function (o, c, ref) {
     SIMPLE.forEach(function (k) { if (c[k]) o[k] = c[k]; });
     if (c.raceNote) o.raceNote = c.raceNote;
+    FOODK.forEach(function (k) { if (fstr(c[k])) o[k] = fstr(c[k]); });
+    if (tstr(c.taste)) o.taste = tstr(c.taste);
     if (c.same && ref(c.same) != null) o.same = ref(c.same);
     if (c.nightFor) { var nf = {}; Object.keys(c.nightFor).forEach(function (k) { if (ref(k) != null && c.nightFor[k]) nf[ref(k)] = c.nightFor[k]; }); if (Object.keys(nf).length) o.nightFor = nf; }
     VF.forEach(function (f) { if (!c[f]) return; var m = {}; Object.keys(c[f]).forEach(function (k) { if (ref(k) != null && word(c[f][k])) m[ref(k)] = word(c[f][k]); }); if (Object.keys(m).length) o[f] = m; });
@@ -83,6 +105,8 @@
   A.importFrom = function (c, o) {
     SIMPLE.forEach(function (k) { if (o[k] != null) c[k] = val(listOf(k), o[k]); });
     if (o.raceNote != null) c.raceNote = note(String(o.raceNote));
+    FOODK.forEach(function (k) { if (o[k] != null) c[k] = fstr(o[k]); });
+    if (o.taste != null) c.taste = tstr(o.taste);
     c._atSame = o.same; c._atNf = o.nightFor; c._atYf = o.youFor; c._atFf = o.fpFor;
   };
   A.importRefs = function (c, ref) {
@@ -99,6 +123,8 @@
   A.toInput = function (o, c, ids) {
     SIMPLE.forEach(function (k) { if (c[k]) o[k] = c[k]; });
     if (c.raceNote) o.raceNote = c.raceNote;
+    FOODK.forEach(function (k) { if (fstr(c[k])) o[k] = fstr(c[k]); });
+    if (tstr(c.taste)) o.taste = tstr(c.taste);
     var si = c.same ? ids.indexOf(c.same) : -1;
     if (si >= 0) o.same = si;
     if (c.nightFor) { var nf = {}, n = 0; Object.keys(c.nightFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && c.nightFor[k]) { nf[i] = c.nightFor[k]; n++; } }); if (n) o.nightFor = nf; }
@@ -113,6 +139,9 @@
     if (c.race && c.race !== 'human') bits.push('種族：' + lab(A.RACE, c.race) + (c.raceNote ? '（' + c.raceNote + '）' : ''));
     if (!HK.SAFE_ON && c.night) bits.push('夜：' + lab(A.NIGHT, c.night));
     if (c.will) bits.push('心の強さ：' + lab(A.WILL, c.will));
+    if (fstr(c.foodLike)) bits.push('好物：' + fstr(c.foodLike));
+    if (fstr(c.foodHate)) bits.push('苦手な食べ物：' + fstr(c.foodHate));
+    if (tstr(c.taste)) bits.push('好きな味：' + tstr(c.taste));
     var sm = c.same && byId(c.same);
     if (sm) bits.push('同一人物：' + sm.name);
     return bits;
@@ -134,13 +163,23 @@
       '<label title="耳・尾・牙・翼などの文の飾りが付きます。死のある箱庭では、吸血鬼は特殊役職の吸血鬼と同じ扱いになります">種族 ' + sel('race') + '</label>' +
       (c.race === 'other' ? '<label>種族の名前 <input type="text" data-gf="at_raceNote" value="' + esc(c.raceNote || '') + '" maxlength="12" placeholder="例：人魚" style="width:7em"></label>' : '') +
       (!HK.SAFE_ON ? '<label title="R18の場面での振る舞い。作風（山場の書き方）より優先します。マゾは受け攻めを変えません（攻めを選んだ人は攻めのまま）">夜の性格 ' + sel('night') + '</label>' : '') +
-      '<label title="快楽堕ち・催眠・常識改変・感覚遮断穴などで、堕ちやすさが変わります。強いと、体は流されても心は折れません">心の強さ ' + sel('will') + '</label>' + same + '</div>' + nf + '</details>';
+      '<label title="快楽堕ち・催眠・常識改変・感覚遮断穴などで、堕ちやすさが変わります。強いと、体は流されても心は折れません">心の強さ ' + sel('will') + '</label>' + same + '</div>' + nf + food(c, esc) + '</details>';
   };
+  /* 「体と設定」の食べ物の行：好きな食べ物・嫌いな食べ物（自由記入）と好きな味（いくつでも） */
+  function food(c, esc) {
+    var tl = A.tasteList(c.taste);
+    return '<div class="gearrow"><label title="食事・差し入れ・デートなどの場面で、好物として名前が出ます。読点（、）で区切って5つまで">好きな食べ物 <input type="text" data-gf="at_foodLike" value="' + esc(fstr(c.foodLike)) + '" maxlength="64" placeholder="例：唐揚げ、プリン" aria-label="好きな食べ物" style="width:10em"></label>' +
+      '<label title="出されると、態度によって隠して食べたり、正直に苦手だと言ったりします。読点（、）で区切って5つまで">嫌いな食べ物 <input type="text" data-gf="at_foodHate" value="' + esc(fstr(c.foodHate)) + '" maxlength="64" placeholder="例：ピーマン" aria-label="嫌いな食べ物" style="width:8em"></label></div>' +
+      '<div class="gearrow"><span class="gearhint" style="flex:1 1 100%;margin:0">好きな味（料理の味付けがこの味だと喜び、反対の味だと顔をしかめます。いくつでも）</span>' +
+      A.TASTES.map(function (t) { return '<label><input type="checkbox" data-gf="at_taste" data-v="' + esc(t) + '"' + (tl.indexOf(t) >= 0 ? ' checked' : '') + '> ' + esc(t) + '</label>'; }).join('') + '</div>';
+  }
   /* ui-gear.js の入力：この欄なら処理して true を返す。changed(rerender) は ui-gear.js の保存 */
   A.gearField = function (c, f, t, isInput, changed, byId) {
     if (!/^at_/.test(f || '')) return false;
     var k = f.slice(3);
     if (k === 'raceNote') { c.raceNote = note(t.value); changed(false); return true; }
+    if (k === 'foodLike' || k === 'foodHate') { c[k] = fstr(t.value); changed(false); return true; }
+    if (k === 'taste') { var tl = A.tasteList(c.taste), tv = t.dataset.v; if (A.TASTES.indexOf(tv) >= 0) { tl = tl.filter(function (x) { return x !== tv; }); if (t.checked) tl.push(tv); c.taste = tstr(tl); changed(false); } return true; }
     if (k === 'yf' || k === 'ff') { var vk = k === 'yf' ? 'youFor' : 'fpFor', w = word(t.value); c[vk] = c[vk] || {}; if (w) c[vk][t.dataset.o] = w; else delete c[vk][t.dataset.o]; changed(false); return true; }
     if (isInput) return true;
     if (listOf(k)) { c[k] = val(listOf(k), t.value); changed(k === 'race' || k === 'night'); return true; }
@@ -193,6 +232,9 @@
     if (b) dst.build = b;
     if (r) { dst.race = r; if (r === 'other' && note(src.raceNote)) dst.raceNote = note(src.raceNote); }
     if (w) dst.will = w;
+    FOODK.forEach(function (k) { var l = A.foodWords(src[k]); if (l.length) dst[k] = l; });
+    var tl = A.tasteList(src.taste);
+    if (tl.length) dst.taste = tl;
     if (!HK.SAFE_ON) {
       var bu = val(A.BUST, src.bust), nt = val(A.NIGHT, src.night);
       if (bu) dst.bust = bu;

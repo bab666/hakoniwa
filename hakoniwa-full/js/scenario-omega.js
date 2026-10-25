@@ -412,6 +412,11 @@
     var t = ctx.t(ctx.pick(scenes), lead, other);
     t += ctx.t(ctx.pick(dateBeat(lead, other)), lead, other);
     var why = d.why.length ? '二人のエゴグラム：' + d.why.join('、') + '二人だから' : '二人のエゴグラムに合うデート先';
+    /* 食べ物の好み（food.js）：好みを決めた人がいるときだけ、ときどき好物の一句を足す */
+    if (HK.Food && HK.Food.any([a, b]) && ctx.rng() < 0.35) {
+      var ft = HK.Food.talk(ctx, lead, other, ['remember', 'share', 'gift', 'hate']) || HK.Food.talk(ctx, other, lead, ['remember', 'share', 'gift', 'hate']);
+      if (ft) { t += ft.text; why += '／' + ft.why; }
+    }
     if (ctx.rng() < 0.45) {
       var giver = ctx.rng() < 0.5 ? a : b, recv = giver === a ? b : a;
       var g = OM.pickGift(ctx.rng, giver, recv, sx(giver), sx(recv));

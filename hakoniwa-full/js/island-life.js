@@ -116,6 +116,17 @@
     }
     if (help) ctx.act2({ actors: [help.who, cook], cat: help.cat, fx: help.fx, text: help.text, why: help.why + (help.dq > 0 ? '（料理の出来が上がった）' : help.dq < 0 ? '（料理の出来が下がった）' : ''), mag: 6 });
     ctx.act2({ actors: [cook], cat: q >= 2 ? 'bond' : 'help', fx: fx, text: line, why: cook.name + 'の料理 ' + sk(ctx, cook, 'cook') + '・食材「' + best.name + '」', mag: q * 3 });
+    /* 食べ物の好み（food.js）：好みを決めた人がいるときだけ、料理に味を付けて、食べた人の「うまい／まずい」を足す（作った人との関係に少し効く） */
+    if (HK.Food && P.length > 1 && HK.Food.any(P)) {
+      var fe = ctx.others(cook).filter(function (c) { return P.indexOf(c) >= 0; }), fp = fe.filter(HK.Food.has), eater = (fp.length ? fp : fe)[ctx.rng.int((fp.length ? fp : fe).length || 1)];
+      if (eater) ctx.act2({ actors: [eater, cook], cat: 'bond', fx: function () {
+        var r = HK.Food.meal(ctx, cook, eater, dish, { q: q });
+        /* 好物は島では食べられないので、ときどき恋しがる */
+        var lg = r && HK.Food.like(eater).length && ctx.rng() < 0.35 ? HK.Food.longing(ctx, eater) : null;
+        if (lg) { r.text += lg.text; r.why += '／' + lg.why; }
+        return r;
+      }, text: function (r) { return r && r.text; }, why: function (r) { return r ? '料理の味：' + r.why : ''; }, mag: 3 });
+    }
     if (poison) {
       var vic = pk(ctx, P.length > 1 ? ctx.others(cook) : P);
       vic.hp -= 25;

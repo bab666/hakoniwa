@@ -76,6 +76,9 @@
           whys.push(p.name + '：酒に強く、酔った村人から聞き出した（手がかり ' + S.found.length + '/' + S.G.clues.length + '）');
         } else { parts.push(F(S, T.strongNone, v)); whys.push(p.name + '：酒に強いが、村人は口を割らなかった'); }
       });
+      /* 食べ物の好み（food.js）：好みを決めた人がいるときだけ、宴の料理の好物・苦手・味の一句を足す */
+      var fz = HK.Food && HK.Food.feast(S, live, 'feast');
+      if (fz) { parts.push(fz.text); whys.push(fz.why); }
       ST.say(S, { actors: actors, tag: '歓迎の宴', text: ST.pick(S, T.intro) + parts.join(''), why: '村の歓迎の宴。酒の強さ（キャラの設定「お酒」、なければ気質から）で過ごし方が変わる。' + (whys.join('／') || ''), mag: 16 });
     }
   };

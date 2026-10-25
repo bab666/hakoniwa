@@ -162,6 +162,7 @@ js/persona-final.js
 js/pair-name.js
 js/pos.js
 js/attr.js
+js/food.js
 js/special.js
 js/zombie-special.js
 js/pair-react.js

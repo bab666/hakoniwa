@@ -8,7 +8,8 @@
      家族の場面：きょうだいは性別の組み合わせ（兄弟・姉妹・姉弟・兄妹）で呼び方と一文を変える。親子・親族も。惹かれ（att）は動かさない
    ・HK.Daily.install(scen, {places, weight, when, homeLovers, noNight})：箱庭に日常の部品を混ぜる（出来事一つぶんの窓口を HK.MINI[箱庭] に足す）
    ・HK.Daily.at(ctx, c)：今いる場所の id（日常の場面の最中か、箱庭が scen.places を持つときだけ）。Ctx.t の {place} はこれを優先する（HK.Daily.label）
-   ・同じ回の中で、同じ日常の文・小道具の一句はできるだけ繰り返さない（ctx._dailyUsed）。点検は hakoniwa-tools/tone-check/daily-audit.js */
+   ・同じ回の中で、同じ日常の文・小道具の一句はできるだけ繰り返さない（ctx._dailyUsed）。点検は hakoniwa-tools/tone-check/daily-audit.js
+   ・食事・買い出し・鍋・差し入れの出来事（D.FOOD）には、住人の食べ物の好み（food.js の HK.Food.daily：好物・苦手・味の反応）を混ぜる。好みを決めた人がいなければ今までどおり */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -539,6 +540,10 @@
     var p = ctx.rng.pick(ok); U[p] = 1;
     return p.replace(/^\[[mden]+\]/, '');
   }
+  /* 食べ物の好み（food.js の HK.Food.daily）を混ぜる出来事：meal 作って食べる／out 外食／share 取り分け／gift 差し入れ・買い出し／picky 好き嫌い。
+     好みを決めた人がいないときは何もしない（乱数も使わない） */
+  D.FOOD = { d_breakfast: 'meal', d_cook: 'meal', d_g_nabe: 'meal', d_dineout: 'out', d_famires: 'out', d_date_cafe: 'out', d_picky: 'picky',
+    d_shop: 'gift', d_k_gift: 'gift', d_p_gift: 'gift', d_school_lunch: 'share', d_g_lunch: 'share' };
   function runDaily(ctx, a, b, conf) {
     var list = eligible(ctx, a, b, conf);
     if (!list.length) return null;
@@ -549,7 +554,7 @@
     if (ev.dm.kin) { ft = famTie(ctx, a, b); var o = orient(ctx, a, b, ft); A = o[0]; B = o[1]; tk = kinTokens(ft, A, B); }
     var C = it.cs ? ctx.pick(it.cs) : null;
     var texts = ev.dm.texts, had = { pick: Object.prototype.hasOwnProperty.call(ctx, 'pick'), others: Object.prototype.hasOwnProperty.call(ctx, 'others') };
-    var pick0 = ctx.pick, others0 = ctx.others, res;
+    var pick0 = ctx.pick, others0 = ctx.others, res, food = null;
     ctx._dailyCur = { spot: where.spot, time: where.time };
     ctx.pick = function (arr) {
       if (Array.isArray(arr) && typeof arr[0] === 'string' && arr.some(function (t) { return texts.indexOf(t) >= 0; })) {
@@ -561,7 +566,10 @@
       return pick0.call(this, arr);
     };
     if (C) ctx.others = function (x) { return x === A ? [C] : others0.call(this, x); };
-    try { res = ev.run(ctx, A, B); }
+    try {
+      res = ev.run(ctx, A, B);
+      if (res && res.text && HK.Food && D.FOOD[ev.id]) food = HK.Food.daily(ctx, D.FOOD[ev.id], A, B, C);
+    }
     finally {
       if (had.pick) ctx.pick = pick0; else delete ctx.pick;
       if (had.others) ctx.others = others0; else delete ctx.others;
@@ -573,6 +581,7 @@
       var SL = D.SIB_LINE[sibCombo(A, B)] || D.SIB_LINE['きょうだい'], sl = SL.filter(function (x) { return !U[x]; });
       if (sl.length) { var line = ctx.rng.pick(sl); U[line] = 1; text += ctx.t(line, A, B); }
     }
+    if (food && food.text) { text += food.text; res.why = (res.why || 'その場の流れ') + '／' + food.why; }
     if (ctx.rng() < 0.4) { var pr = pickProp(ctx, where.spot, where.time); if (pr) text = pr + text; }
     var S = D.spot(where.spot), tag = '';
     if (ev.dm.love === 'warm') tag = '（日常の三人・仲良し）';

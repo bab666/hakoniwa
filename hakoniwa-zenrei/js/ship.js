@@ -683,7 +683,9 @@
       ST.sayB(S, { actors: [cp, ot], tag: '船長', text: F(pk(S, BP(S, 'CAPTAIN')), { a: cp.name, b: ot.name }), why: '船長の使命感で、揉めごとを自分の中で収めた' }, cp.name + 'が揉めごとを収めた');
       return;
     }
-    function say(pool, tag, d, why, mp) { ST.sayB(S, { actors: [a, b].concat(mp && mp.c ? [mp.c] : []), tag: tag, text: F(pk(S, pool), { a: a.name, b: b.name, c: mp && mp.c ? mp.c.name : '' }), why: why + '（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'と' + b.name); }
+    /* 食べ物の好み（food.js）：好みを決めた人がいるときだけ、配給の場面に好物・苦手の一句を足す */
+    function food(bad) { var r = HK.Food && HK.Food.ration(S, a, b, bad); return r ? { tail: r.text, tailWhy: '／' + r.why } : null; }
+    function say(pool, tag, d, why, mp) { ST.sayB(S, { actors: [a, b].concat(mp && mp.c ? [mp.c] : []), tag: tag, text: F(pk(S, pool), { a: a.name, b: b.name, c: mp && mp.c ? mp.c.name : '' }) + (mp && mp.tail ? mp.tail : ''), why: why + (mp && mp.tailWhy ? mp.tailWhy : '') + '（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'と' + b.name); }
     if (kind === 'drink') { stress(a, -8); stress(b, -8); setRel(S, a, b, 0.22); mark(S, a, b, 'drink'); sp.morale = clamp(sp.morale + 3, 0, 100); say(BP(S, 'DRINK'), '晩酌', 0, '二人きりの晩酌'); }
     else if (kind === 'drink_all') {
       var g = others.length > 2 ? rng.shuffle(others.slice()).slice(0, 1 + rng.int(others.length - 1)).concat([a, b]) : L0.slice();
@@ -699,7 +701,7 @@
       if (S.bday[a.i]) return; S.bday[a.i] = 1; stress(a, -10);
       setRel(S, a, b, 0.25); mark(S, a, b, 'bday'); others.forEach(function (q) { setRel(S, a, q, 0.06); }); sp.morale = clamp(sp.morale + 6, 0, 100); say(BP(S, 'BIRTHDAY'), '誕生日', 0, a.name + 'の誕生日を祝った');
     }
-    else if (kind === 'good') { setRel(S, a, b, 0.15); mark(S, a, b, 'team'); say(T.PAIR_GOOD, '絆', 0, '日々の暮らしの中で'); }
+    else if (kind === 'good') { setRel(S, a, b, 0.15); mark(S, a, b, 'team'); say(T.PAIR_GOOD, '絆', 0, '日々の暮らしの中で', food(false)); }
     else if (kind === 'makeup') { stress(a, -6); stress(b, -6); setRel(S, a, b, 0.3); mark(S, a, b, 'makeup'); say(T.MAKEUP, '仲直り', 0, 'こじれた関係を修復した'); }
     else if (kind === 'love') {
       stress(a, -6); stress(b, -6); setRel(S, a, b, 0.18); mark(S, a, b, 'love');
@@ -727,7 +729,7 @@
     else {
       var D = { drink_bad: [BP(S, 'DRINK_BAD'), '酒の席', -0.25, '酒が入って本音が出た'], ration: [BP(S, 'RATION'), '食料の取り合い', -0.22, '乏しい食料（食料 ' + Math.round(sp.food) + '）'], duty: [BP(S, 'DUTY'), '当番', -0.2, '当番の押し付け'], game_bad: [BP(S, 'GAME_BAD'), '娯楽', -0.18, '勝負がこじれた'], bad: [T.PAIR_BAD, '衝突', -0.18, '閉ざされた船の息苦しさ'] }[kind];
       stress(a, 6); stress(b, 6); setRel(S, a, b, D[2]); mark(S, a, b, 'quarrel'); sp.morale = clamp(sp.morale - 3, 0, 100);
-      say(D[0], D[1], 0, D[3]);
+      say(D[0], D[1], 0, D[3], kind === 'ration' ? food(true) : null);
     }
   }
   /* 看病：弱った船員のそばに、いちばん近しい人がつく（R18版では、そのまま肌を重ねることもある） */

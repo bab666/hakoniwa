@@ -213,6 +213,7 @@ js/island-love-r18.js
 js/zombie-map.js
 js/pos.js
 js/attr.js
+js/food.js
 js/special.js
 js/special-r18.js
 js/zombie-special.js

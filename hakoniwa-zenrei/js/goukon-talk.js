@@ -78,7 +78,12 @@
     var lvl = mine ? 'mine' : avg > 0.6 ? 'hit' : avg > 0.48 ? 'good' : avg > 0.38 ? 'meh' : 'flop';
     var text = ctx.pick(OUT[lvl]).replace(/\{t\}/g, T.t);
     text = a.name + T.q + ' ' + ctx.t(text, a).replace(/\{f\}/g, fan.name).replace(/\{x\}/g, cold.name);
+    /* 食べ物の好み（food.js）：好みを決めた人がいるときだけ。食べ物の話題では好物・苦手・好きな味の話に、ほかの話題でもときどき好物の一句に */
+    var FT = { '好きな食べ物': 'like', 'ラーメンの好み': 'like', '料理の腕前': 'like', '一人暮らし事情': 'like', '甘いもの': 'taste', 'コーヒーの好み': 'taste', '苦手な食べ物': 'hate' };
+    var food = HK.Food && lvl !== 'mine' && HK.Food.any(P) ? [a, fan].concat(P.filter(function (c) { return c !== a && c !== fan; })) : null;
     var fx = function () {
+      var fr = food ? HK.Food.intro(ctx, FT[T.t] ? food : [a, fan], FT[T.t] || '') : null;
+      if (fr) { text += fr.text; whyF = '／' + fr.why; }
       if (lvl === 'hit' || lvl === 'good') {
         var g = lvl === 'hit' ? 1.6 : 1;
         scores.forEach(function (x) { if (x.v > 0.4 && x.c !== a) { ctx.mod(x.c, a, { aff: 4 * g, att: 3 * g }); ctx.mod(a, x.c, { aff: 3 * g }); } });
@@ -92,8 +97,9 @@
         if (cold !== a) ctx.mod(cold, a, { aff: lvl === 'flop' ? -4 : -1 });
       }
     };
-    ctx.act2({ actors: [a, fan], cat: lvl === 'mine' ? 'conflict' : 'bond', fx: fx, text: text,
-      why: '話題「' + T.t + '」×参加者の気質' + (lvl === 'hit' ? '（全体的に刺さった）' : lvl === 'mine' ? '（' + cold.name + 'のCP・こだわりに触れた）' : lvl === 'flop' ? '（誰の気質にも刺さらなかった）' : ''), mag: lvl === 'hit' ? 10 : lvl === 'mine' ? 12 : 3 });
+    var whyF = '';
+    ctx.act2({ actors: [a, fan], cat: lvl === 'mine' ? 'conflict' : 'bond', fx: fx, text: function () { return text; },
+      why: function () { return '話題「' + T.t + '」×参加者の気質' + (lvl === 'hit' ? '（全体的に刺さった）' : lvl === 'mine' ? '（' + cold.name + 'のCP・こだわりに触れた）' : lvl === 'flop' ? '（誰の気質にも刺さらなかった）' : '') + whyF; }, mag: lvl === 'hit' ? 10 : lvl === 'mine' ? 12 : 3 });
   }
 
   /* 王様ゲーム：'強さ|対象|命令' 対象 two=番号の二人 king=王様と誰か one=一人 all=全員 */

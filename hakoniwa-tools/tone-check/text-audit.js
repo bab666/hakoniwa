@@ -1,6 +1,6 @@
 /* 横断の点検：文の崩れ・同じシードで同じ結果・全年齢への漏れ・重さ・結末の組み立て
    使い方: node text-audit.js <ビルドのディレクトリ> [1箱庭あたりの回数=12] [r18|safe|''] [箱庭id,…] [--why] [--env=heavy:mild,lewd:high]（設定を固定して回す）
-   T1 置き換え漏れ（{a} {b} {x} {sensei} {place} など。住人の属性の文の {note} {bw} {L} {S} も）・undefined・NaN・null・[object
+   T1 置き換え漏れ（{a} {b} {x} {sensei} {place} など。住人の属性の文の {note} {bw} {L} {S}、食べ物の好みの文の {like} {hate} {taste} {dish} も）・undefined・NaN・null・[object
    T2 空の記録（本文が空・空白だけ）
    T3 句読点の重なり（。。 、、 」」の誤り など）・名前の直後の「はは」「がが」
    T4 同じ入力を続けて二回回して、記録が一致しない
@@ -18,7 +18,7 @@ const { openBuild } = require('./lib.js');
   const r = await page.evaluate(({ N, only, WHY, ENVSET }) => {
     const KEYS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8'];
     const DUNGEON_RE = /迷宮|魔物|冒険者|次の部屋|罠の部屋/;
-    const PH = /\{(?:a|b|c|d|x|y|t|m|n|p|v|w|sensei|name|o|h|s|sa|sb|T|U|place|kind|ue|shita|yobi|oya|ko|oyayobi|shin|note|bw|L|S|race)\}|undefined|NaN|\bnull\b|\[object /;
+    const PH = /\{(?:a|b|c|d|x|y|t|m|n|p|v|w|sensei|name|o|h|s|sa|sb|T|U|place|kind|ue|shita|yobi|oya|ko|oyayobi|shin|note|bw|L|S|race|like|hate|taste|dish)\}|undefined|NaN|\bnull\b|\[object /;
     const PUNCT = /。。|、、|」」(?!」)|「「|！！！！|？？？/;
     const SEX = /挿入|挿れ|射精|精液|愛液|ちんぽ|喘ぎ|腰を振|フェラ|絶頂|イっ|イく|中に出|犯さ|犯し|セックス|性交|乳首|秘部|膣|陰茎|肉棒|勃起|♡|淫ら|快楽堕ち|種付け|孕ま/;
     const SAFE = !!HK.SAFE_ON;
@@ -33,7 +33,7 @@ const { openBuild } = require('./lib.js');
         const n = Math.max(lo, Math.min(hi, lo + (s % (hi - lo + 1))));
         const chars = []; for (let i = 0; i < n; i++) chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, gender: ['m', 'f', 'f', 'm', 'f', 'm', 'm', 'f'][(i + s) % 8], pos: ['top', 'bottom', '', 'riba', 'bottom', 'top', '', ''][(i + s) % 8], calls: {}, loveNG: [], alcohol: (s + i) % 6 ? String((s + i) % 6) : '' });
         /* 住人の属性（attr.js）：奇数回は体格・種族・心の強さ・夜の性格・胸を付け、2番と3番を同一人物にする */
-        if (s % 2) chars.forEach((c, i) => { c.build = ['small', 'large', '', 'avg'][(i + s) % 4]; c.race = ['vampire', 'beast', 'demon', 'angel', 'ghost', 'other', '', 'human'][(i + s) % 8]; if (c.race === 'other') c.raceNote = '人魚'; c.will = ['strong', 'weak', ''][(i + s) % 3]; c.night = ['sadist', 'maso', 'mean', 'sweet', 'shy', 'none', ''][(i + s) % 7]; c.bust = ['l', 's', 'm'][i % 3]; if (n >= 4 && (i === 2 || i === 3)) c.same = 5 - i; });
+        if (s % 2) chars.forEach((c, i) => { c.build = ['small', 'large', '', 'avg'][(i + s) % 4]; c.race = ['vampire', 'beast', 'demon', 'angel', 'ghost', 'other', '', 'human'][(i + s) % 8]; if (c.race === 'other') c.raceNote = '人魚'; c.will = ['strong', 'weak', ''][(i + s) % 3]; c.night = ['sadist', 'maso', 'mean', 'sweet', 'shy', 'none', ''][(i + s) % 7]; c.bust = ['l', 's', 'm'][i % 3]; if (n >= 4 && (i === 2 || i === 3)) c.same = 5 - i; c.foodLike = ['唐揚げ、プリン', '', 'カレー', 'ラーメン、寿司'][(i + s) % 4]; c.foodHate = ['', 'ピーマン', '納豆', ''][(i + s) % 4]; c.taste = ['甘い', '辛い、こってり', '', 'あっさり'][(i + s) % 4]; });
         const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
         (scen.env || []).forEach((e, k) => { if (e.options && e.options.length > 1 && (s + k) % 3 === 0) env[e.id] = e.options[(s + k) % e.options.length].v; if (/^role_/.test(e.id)) env[e.id] = s % 2 ? 'res' : 'auto'; });
         if (HK.Content) env.ct = s % 2 ? HK.Content.TAGS.map(t => t.id).join(',') : '';

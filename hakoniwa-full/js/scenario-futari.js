@@ -335,6 +335,8 @@
         if (o.fx) o.fx(ctx, a, b, c);
         var sp = o.spot ? o.spot(ctx, a, b) : spotHere(ctx, a, b);
         var r = { text: fill(ctx, t, a, b, c, ex), why: W(ctx, sp) + (typeof o.why === 'function' ? o.why(ctx, a, b, c) : o.why) };
+        /* 食べ物の好み（food.js）：好みを決めた人がいるときだけ、作った料理の味と食べた人の反応を足す */
+        if (o.food && HK.Food && HK.Food.any([a, b])) { var fm = HK.Food.daily(ctx, o.food, a, b, null); if (fm) { r.text += fm.text; r.why += '／' + fm.why; } }
         if (c) r.with = [c];
         if (o.cat2) r.cat = o.cat2(ctx, a, b, c);
         return r;
@@ -354,7 +356,7 @@
   ev({ id: 'ft_fchat', cat: 'bond', tm: 'den', w: 0.9, pool: function () { return FCHAT; },
     need: function (ctx, a, b) { var s = st(ctx, a, b); return s >= 0 && s <= 2 && !couple(ctx, a, b); },
     fx: function (ctx, a, b) { ctx.mod2(a, b, { aff: 4, trust: 4 }, { aff: 4, trust: 3 }); }, why: function (ctx, a) { return a.name + 'の人懐こさ。友人としての時間'; } });
-  ev({ id: 'ft_cook', cat: 'help', tm: 'mde', w: 0.9, pool: function () { return COOK; },
+  ev({ id: 'ft_cook', cat: 'help', tm: 'mde', w: 0.9, food: 'meal', pool: function () { return COOK; },
     need: function (ctx, a, b) { return sameHome(ctx, a, b) && st(ctx, a, b) >= 1 && !onTrip(ctx, a); },
     spot: function () { return '自宅の台所'; },
     fx: function (ctx, a, b) { ctx.mod2(a, b, { aff: 3 }, { aff: 4, trust: 3 }); }, why: function (ctx, a) { return a.name + 'の世話焼き（NP ' + Math.round(a.eg.NP) + '）'; } });
@@ -615,7 +617,11 @@
     var ks = Object.keys(DATE).filter(function (k) { return has(ctx, DATE[k]); });
     if (!ks.length) return;
     var kd = ctx.rng.pick(ks), t = fresh(ctx, DATE[kd]), o = ctx.rng() < 0.5 ? [a, b] : [b, a], x = stOf(ctx, a, b);
-    emit(ctx, { actors: o, cat: 'romance', text: fill(ctx, t, o[0], o[1]), why: W(ctx, '街') + (x.s >= 3 ? '休日のデート（' : '休日のお出かけ・両片想い（') + DATE_NAME[kd] + '）', tag: 'date:' + DATE_NAME[kd], mag: 8, fx: relFx(ctx, o[0], o[1], { aff: 4, att: 4, trust: 2 }, { aff: 4, att: 4, trust: 2 }) });
+    var rf = relFx(ctx, o[0], o[1], { aff: 4, att: 4, trust: 2 }, { aff: 4, att: 4, trust: 2 }), why0 = W(ctx, '街') + (x.s >= 3 ? '休日のデート（' : '休日のお出かけ・両片想い（') + DATE_NAME[kd] + '）', t0 = fill(ctx, t, o[0], o[1]);
+    /* 食べ物の好み（food.js）：好みを決めた人がいるときだけ、ときどき好物の一句を足す */
+    var food = !!(HK.Food && HK.Food.any(o));
+    emit(ctx, { actors: o, cat: 'romance', text: food ? function (r) { return t0 + (r ? r.text : ''); } : t0, why: food ? function (r) { return why0 + (r ? '／' + r.why : ''); } : why0, tag: 'date:' + DATE_NAME[kd], mag: 8,
+      fx: food ? function () { rf(); return ctx.rng() < 0.35 ? HK.Food.talk(ctx, o[0], o[1], ['remember', 'share', 'hate']) || HK.Food.talk(ctx, o[1], o[0], ['remember', 'share', 'hate']) : null; } : rf });
   }
   /* 朝：その日の予定（別々に住む二人のデート・夕方の待ち合わせ・お泊まり、三人の集まり、旅） */
   function dayPlan(ctx) {
