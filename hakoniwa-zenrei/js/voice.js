@@ -558,6 +558,8 @@
             if (fin) q = fin(q, who, { kg: kg, raw: q0 });
             /* 性別の語尾の仕上げ（辞書の書き下ろしにも通す。tone-plus.js の V.genderEnd） */
             if (V.genderEnd && !nounQ && !kg) q = V.genderEnd(q, who);
+            /* 住人ごとの語尾の付け替え（設定の toneCustom。tone-new2.js の V.applyToneCustom）：口調の仕上げのいちばん最後に */
+            if (who.toneCustom && V.applyToneCustom && !nounQ) q = V.applyToneCustom(q, who.toneCustom);
             /* 二人称の設定（敬語の相手への台詞は除く）。設定が空なら、口調と性別の既定（tone-registry.js の HK.TONE_YOU）でそろえる */
             var youW = who.you || (HK.toneYou ? HK.toneYou(who.tone, who.gender) : '');
             if (youW && !kg && !nounQ) q = V.applyYou(q, youW);
@@ -618,6 +620,7 @@
       var r = (res.chars && res.chars[i]) || (res.heroes && res.heroes[i]) || {};
       var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '' };
       p.persona = r.persona || HK.personaOf({ tone: c.tone, eg: c.eg });
+      if (c.toneCustom) p.toneCustom = c.toneCustom;
       return p;
     });
     var f = function (t, ac) { return V.processText(t, people, ac); };

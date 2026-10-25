@@ -100,7 +100,20 @@
     tame: { label: 'ふつうのタメ口', desc: '「ねえ、それなんだけど」「いいよ、行こう」。癖のない、友達どうしのような話し方。態度はエゴグラムから決まる', base: null, top: null, plain: true, egoTable: true, noPolite: true, fp: { m: '俺', f: '私', x: '私' }, lines: 'base', reluct: 0,
       sample: ['{n}「{n}だよ。よろしくね」', '{n}「ねえ{o}、それなんだけど」', '{n}「いいよ、一緒に行こう」', '{n}「え、まじで？　知らなかった」', '{n}「ありがと。助かった」'] },
     chara_down: { label: 'ダウナー系チャラ男（〜ですよー）', desc: '「あれ、もしかして気があります？」「遊ぶのは大歓迎ですよー。責任は取りませんけど」。軽薄で気だるげ。敬語を交えてからかい、さりげなく距離を詰める。文面は敬語のものを使う', base: 'polite', top: 'FC', fp: { m: 'オレ', f: 'あたし', x: 'オレ' }, derive: 'polite', reluct: -0.25,
-      sample: ['{n}「{n}でーす。よろしくでーす」', '{n}「あれ？　もしかして、オレに気があります？」', '{n}「遊ぶのは大歓迎ですよー。責任は取りませんけど」', '{n}「{o}さん、真面目ですねー。そういうとこ、嫌いじゃないですけど」', '{n}「あざーす。じゃ、お先でーす」'] }
+      sample: ['{n}「{n}でーす。よろしくでーす」', '{n}「あれ？　もしかして、オレに気があります？」', '{n}「遊ぶのは大歓迎ですよー。責任は取りませんけど」', '{n}「{o}さん、真面目ですねー。そういうとこ、嫌いじゃないですけど」', '{n}「あざーす。じゃ、お先でーす」'] },
+    /* 2026-10-25（二回目）：アンケートの口調の要望（仕上げは tone-new2.js）。axis = { polite: 0 タメ口・1 混ざる・2 敬語, attitude: 態度, ending: 'm'|'f'|'n'|'auto' } */
+    cool_soft: { label: '冷静（丸い）', desc: '「そう、聞いてなかった」「……まあ、いいけど」。冷静の言い切りを丸くした、落ち着いた話し方。「……」は控えめ。文面は冷静のものを使う', base: 'cool', top: 'A', fp: { m: '俺', f: '私', x: '私' }, derive: 'cool', reluct: 0.05,
+      axis: { polite: 0, attitude: 'calm', ending: 'n' },
+      sample: ['{n}「私は{n}。よろしくね」', '{n}「そう、聞いてなかった」', '{n}「{o}、こっち。こっちのほうが早いよ」', '{n}「助かった。覚えておくね」', '{n}「感情論はいいよ。何があったか、教えて」'] },
+    darui_lite: { label: 'けだるげ（軽）', desc: '「……あ、来たんだ」「めんどいし」。けだるげの「……」を一つまでにした、軽めのダウナー。態度はエゴグラムから決まる', base: null, top: null, fp: { m: '俺', f: 'わたし', x: 'わたし' }, egoTable: true, lines: 'base', derive: 'darui',
+      axis: { polite: 0, attitude: 'flat', ending: 'n' },
+      sample: ['{n}「……{n}。よろしく。たぶん」', '{n}「……は？　聞いてないし」', '{n}「……{o}、こっち。はやく。いや、ゆっくりでいいけど」', '{n}「……どうも。たすかった、かも」', '{n}「……べつに。どうでもいいし」'] },
+    boku_n: { label: '中性的（僕）', desc: '「僕は〜だよ」「〜かな」「〜だね」。一人称は「僕」の、やわらかく中性的な話し方。文面は穏やかのものを使う', base: 'gentle', top: 'NP', neutral: true, fp: { m: '僕', f: '僕', x: '僕' }, derive: 'gentle_n', group: 'soft', reluct: 0.02,
+      axis: { polite: 0, attitude: 'calm', ending: 'n' },
+      sample: ['{n}「私は{n}だよ。よろしくね」', '{n}「うーん……それは、困ったかな」', '{n}「{o}、こっちにおいでよ。お茶、淹れたんだ」', '{n}「ありがとう。すごく助かったよ」', '{n}「大丈夫だよ。ゆっくりでいいからね」'] },
+    god: { label: '神の命令口調（〜せよ）', desc: '「面を上げよ」「我に従え」「〜であろう」。人ならざるものの、尊大で古めかしい命令口調。邪神村の神や、崇められる役に。文面は厳格のものを使う', base: 'stern', top: 'CP', fp: { m: '我', f: '我', x: '我' }, lines: 'base', derive: 'gentleman', firm: 'gentleman', reluct: 0.2,
+      axis: { polite: 0, attitude: 'proud', ending: 'n' },
+      sample: ['{n}「私は{n}。その名、胸に刻むがよい」', '{n}「ほう……そのような話、聞いておらぬぞ」', '{n}「{o}、こちらへ来い。私の傍を離れるでない」', '{n}「大儀であった。褒めてつかわす」', '{n}「面を上げよ。恐れることはない」'] }
   };
   HK.TONES = TONES;
   /* 選択欄の並び（基本口調の名前は persona.js、追加の口調は TONE_EXTRA） */
@@ -109,6 +122,13 @@
   HK.TONE_KEYS.forEach(function (k) { if (!HK.PERSONA[k]) HK.TONE_EXTRA[k] = TONES[k]; });
   /* 口調の項目を引く（なければ undefined） */
   HK.toneOpt = function (k, name) { var d = k && TONES[k]; return d ? d[name] : undefined; };
+  /* 口調の軸（axis）。書いていない口調は、ほかの項目から大まかに決める */
+  HK.toneAxis = function (k) {
+    var d = k && TONES[k];
+    if (!d) return null;
+    if (d.axis) return d.axis;
+    return { polite: d.group === 'polite' ? 2 : k === 'mixed' ? 1 : 0, attitude: d.firm ? 'firm' : d.group === 'soft' ? 'soft' : 'plain', ending: d.neutral ? 'n' : 'auto' };
+  };
   /* 語尾の付け替え（derive の口調）：tone-polite-kin.js などで登録し、voice.js の V.toneFinish から呼ばれる */
   HK.TONE_FINISH = HK.TONE_FINISH || {};
   /* 口調ごとの既定の二人称（キャラの二人称の設定が空のとき）。文面の表から来た「あなた」「お前」「きみ」の混ざりを、口調と性別でそろえる。
@@ -121,7 +141,8 @@
     gentle: 'きみ', gentle_n: 'きみ', ane: 'あなた', devoted: 'あなた', devoted_p: 'あなた', shy: 'あなた',
     polite: 'あなた', ojou: 'あなた', kohai: 'あなた', genki: 'あなた', mixed: 'あなた',
     kansai: MF('お前', 'あんた'), noja: 'おぬし', mukuchi: MF('お前', 'あんた'),
-    keigo_sarc: 'あなた', keigo_bossy: 'あなた', keigo_flat: 'あなた', tame: MF('お前', 'あんた'), chara_down: 'キミ'
+    keigo_sarc: 'あなた', keigo_bossy: 'あなた', keigo_flat: 'あなた', tame: MF('お前', 'あんた'), chara_down: 'キミ',
+    cool_soft: MF('君', 'あなた'), darui_lite: 'あんた', boku_n: 'きみ', god: '汝'
   };
   HK.toneYou = function (tone, gender) { var v = HK.TONE_YOU[tone]; if (!v) return ''; if (typeof v === 'string') return v; return v[gender === 'f' ? 'f' : gender === 'x' ? 'x' : 'm'] || ''; };
   HK.toneFinish = function (k, fn) { HK.TONE_FINISH[k] = fn; };   /* fn(台詞, 話し手, { kg: 敬語の相手か, raw: 元の台詞 }) */

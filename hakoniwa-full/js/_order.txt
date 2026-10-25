@@ -62,6 +62,9 @@ late js/tone-genki.js
 js/tone-sondai.js
 js/tone-stern.js
 js/tone-long.js
+js/tone-new2.js
+js/tone-new2-rows.js
+js/tone-new2-r18.js
 js/engine.js
 js/emotion.js
 js/emotion-r18.js

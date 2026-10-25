@@ -23,6 +23,7 @@
     bits.push('口調：' + (c.tone ? toneLabel(c.tone) : 'おまかせ（' + UI.autoTone(c) + '）'));
     if (c.fp) bits.push('一人称：' + c.fp);
     if (c.marks) bits.push('語尾：' + c.marks);
+    if (c.toneCustom) bits.push('付け替え：' + c.toneCustom);
     if (c.call) bits.push('呼び方：' + callLabel(c.call));
     if (c.gender) bits.push(lab(GENDERS, c.gender));
     if (c.likes) bits.push('恋愛対象：' + lab(LIKES, c.likes));
@@ -104,7 +105,7 @@
     var V = HK.Voice;
     if (!V || !V.processText) return '';
     var s = S(), o = s.chars.filter(function (x) { return x !== c; })[0] || { name: '相手', id: '' };
-    var me = { name: c.name, fp: c.fp || '', you: c.you || '', marks: c.marks || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null };
+    var me = { name: c.name, fp: c.fp || '', you: c.you || '', marks: c.marks || '', toneCustom: c.toneCustom || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null };
     var kgo = c.keigo ? s.chars.filter(function (x) { return x !== c && c.keigo[x.id]; })[0] : null;
     me.persona = HK.personaOf ? HK.personaOf({ tone: c.tone, eg: c.eg }) : 'gentle';
     var ppl = [me, { name: o.name, fp: '', gender: o.gender || '', tone: '', persona: 'gentle' }];
@@ -168,6 +169,8 @@
       '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3><div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
       '<div class="gearrow"><label>語尾の記号 <input type="text" data-gf="marks" value="' + esc(c.marks || '') + '" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label></div>' +
       '<p class="gearhint">文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます。空なら付けません。</p>' +
+      '<div class="gearrow"><label>語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label></div>' +
+      '<p class="gearhint">口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで。文の終わりにある語尾だけが替わります（喘ぎはそのまま）。</p>' +
       '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
       '<div class="tonesample anim" id="tonesample" aria-live="polite">' + sampleLines(c) + '</div>' +
       '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label><label><input type="checkbox" data-gf="keigoOlder"' + (c.keigoOlder ? ' checked' : '') + '> 年上の相手には敬語（年齢を決めた人どうし）</label></div>' +
@@ -268,6 +271,7 @@
       case 'fp': c.fp = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;
       case 'you': c.you = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;
       case 'marks': c.marks = t.value.trim().slice(0, 30); changed(false); sampleRefresh(); break;
+      case 'toneCustom': c.toneCustom = String(t.value).slice(0, 120); if (!isInput) c.toneCustom = HK.normToneCustom ? HK.normToneCustom(c.toneCustom) : ''; changed(false); sampleRefresh(); break;
       case 'call': if (isInput) return; c.call = t.value; changed(true); break;
       case 'callG': if (isInput) return; c.callG = c.callG || {}; c.callG[t.dataset.g] = t.value; changed(false); sampleRefresh(); break;
       case 'gender': case 'likes': if (isInput) return; c[f] = t.value; changed(false); if (f === 'gender') { sampleRefresh(); render(); } break;

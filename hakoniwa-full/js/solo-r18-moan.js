@@ -31,6 +31,8 @@
     var t = toneKey(p);
     if (kind === 'endure') return p.name + '「' + pick(S, D.ENDURE[t] || D.ENDURE.gentle) + '」';
     var v = D.V[t], list = v[kind] || v.mid;
+    /* 攻めの台詞：女性の攻めには、その口調の女性の攻め向けの台詞（topF）があればそちらを */
+    if (kind === 'top' && v.topF && HK.Pos && HK.Pos.isF && HK.Pos.isF(p)) list = v.topF;
     /* 始まり・最中・果てる声は、口調ごとの喘ぎ（novel-moan-tone.js）も混ぜる */
     var st = { start: 0, mid: 1, climax: 2 }[kind], own = st != null && HK.NovelMoan ? HK.NovelMoan.list(p, st) : [];
     if (own.length) list = list.concat(own);

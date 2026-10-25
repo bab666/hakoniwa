@@ -120,6 +120,8 @@
     c.partF = str(c.partF, 10).replace(/[「」『』{}]/g, '').trim();
     c.you = str(c.you, 8).trim();
     c.marks = str(c.marks, 30).trim();
+    /* 語尾の付け替え（「です→っす、だ→だぜ」を5つまで。tone-new2.js） */
+    c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(str(c.toneCustom, 120)) : '');
     c.loveLock = typeof c.loveLock === 'string' ? c.loveLock : '';
     /* 性行為の相手の固定（R18）：この人とだけ体の関係になる。恋愛は縛らない */
     c.sexLock = typeof c.sexLock === 'string' ? c.sexLock : '';
@@ -401,6 +403,7 @@
         if (c.you) o.you = c.you;
         if (c.marks) o.marks = c.marks;
         if (HK.Attr) HK.Attr.exportTo(o, c, ref);
+        if (c.toneCustom) o.toneCustom = c.toneCustom;
         if (c.loveLock && ref(c.loveLock) != null) o.loveLock = ref(c.loveLock);
         if (c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly') o.sexLock = c.sexLock;
         else if (c.sexLock && ref(c.sexLock) != null) o.sexLock = ref(c.sexLock);
@@ -474,6 +477,7 @@
       if (o.you != null) c.you = String(o.you).trim().slice(0, 8);
       if (o.marks != null) c.marks = String(o.marks).trim().slice(0, 30);
       if (HK.Attr) HK.Attr.importFrom(c, o);
+      if (o.toneCustom != null) c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(String(o.toneCustom).slice(0, 120)) : '');
       c._lk = o.loveLock; c._sl = o.sexLock; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
       if (o.fp != null) c.fp = String(o.fp).trim().slice(0, 8);
       if (typeof o.icon === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(o.icon) && o.icon.length < 400000) c.icon = o.icon;
@@ -742,7 +746,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '', sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock ? ids.indexOf(c.sexLock) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '', sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock ? ids.indexOf(c.sexLock) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
           return HK.Attr ? HK.Attr.toInput(o, c, ids) : o;
         });
       })(),
