@@ -1180,6 +1180,8 @@
   ];
   /* 複数の恋人（なし／あり／秘密。poly.js） */
   if (HK.Poly && HK.Poly.ENV) HK.GLOBAL_ENV.push(HK.Poly.ENV);
+  /* モブへの呼びかけ（台詞の中でモブを呼ぶとき。mob.js の HK.Mob.addr・tone-plus.js の V.mobAddr）。all：一人用・物語型の箱庭にも出す */
+  HK.GLOBAL_ENV.push({ id: 'mobYou', label: 'モブへの呼びかけ', type: 'select', def: 'you', all: 1, options: [{ v: 'you', label: '二人称で（あなた・きみ など、話し手の二人称）' }, { v: 'name', label: '名前で（名前のあるモブだけ。「佐伯さん」のように短く）' }], desc: '住人がモブ（客・施術者・略奪者・獲物など、住人でない人）に話しかける台詞の呼び方。地の文はモブの名前のまま' });
 
   function R(ctx, a, b) { return ctx.R(a, b); }
   /* 何をめぐって・何を、が分かるように、箱庭ごとの話題を添える */
@@ -3803,6 +3805,10 @@
             /* 敬語で話す相手への台詞：書き下ろしの敬語の行はそのまま、それ以外は敬語に言い換える */
             var pre = q.charAt(0) === '\u2062';
             if (pre) q = q.slice(1);
+            /* 相手ごとの一人称・二人称（住人の設定の fpFor・youFor。attr.js）：相手が分かる台詞では、ふだんの一人称・二人称より優先する。モブへの台詞（印つき）は除く */
+            var to1 = !nounQ && (who.fpFor || who.youFor) && q.indexOf('\u2063') < 0 ? addresseeOf(text, start, i + 1, q, who, people, actors) : null;
+            var sv1 = null, yf1 = to1 && who.youFor && who.youFor[to1.name], ff1 = to1 && who.fpFor && who.fpFor[to1.name];
+            if (yf1 || ff1) { sv1 = { fp: who.fp, you: who.you }; if (ff1) who.fp = ff1; if (yf1) who.you = yf1; }
             var kg = !nounQ && (pre || keigoHere(text, start, i + 1, q, who, people, actors));
             var ov = pre ? null : !nounQ && V.overrideFor ? V.overrideFor(q, kg ? Object.assign({}, who, { tone: 'polite' }) : who, people) : null;
             /* 別の口調から派生する口調（tone-registry.js の derive。後輩・お嬢様など）：その口調名の書き下ろし・直しがあれば完成形としてそのまま使い、
@@ -3830,13 +3836,14 @@
             if (who.toneCustom && V.applyToneCustom && !nounQ) q = V.applyToneCustom(q, who.toneCustom);
             /* 二人称の設定（敬語の相手への台詞は除く）。設定が空なら、口調と性別の既定（tone-registry.js の HK.TONE_YOU）でそろえる */
             var youW = who.you || (HK.toneYou ? HK.toneYou(who.tone, who.gender) : '');
-            if (youW && !kg && !nounQ) q = V.applyYou(q, youW);
+            if (youW && (!kg || yf1) && !nounQ) q = V.applyYou(q, youW);
             if (YOU_ST.test(q0)) q = fixYouStutter(q);
             if (V.applyCalls) q = V.applyCalls(q, who, people);
             /* 呼び方を決めてある相手に向けた台詞は、二人称を呼び方にし、ときどき呼びかけを足す（tone-plus.js の callAddress） */
             if (V.callAddress && !nounQ) q = V.callAddress(q, who, addresseeOf(text, start, i + 1, q, who, people, actors), q0);
             /* 語尾の記号（キャラごとの設定。複数あれば文ごとにランダム） */
             if (who.marks && !nounQ) q = V.applyMarks(q, who.marks);
+            if (sv1) { who.fp = sv1.fp; who.you = sv1.you; }
           }
           q = q.replace(/([！？!?])。/g, '$1');   /* 「ごめんごめん！。」のような重なりを整える */
           out += text.slice(last, start + 1) + q + '」';
@@ -3889,6 +3896,8 @@
       var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '' };
       p.persona = r.persona || HK.personaOf({ tone: c.tone, eg: c.eg });
       if (c.toneCustom) p.toneCustom = c.toneCustom;
+      /* 相手ごとの二人称・一人称（番号 → 名前。attr.js の HK.Attr.voiceFor） */
+      if (HK.Attr && HK.Attr.voiceFor) HK.Attr.voiceFor(p, c, input.chars);
       return p;
     });
     var f = function (t, ac) { return V.processText(t, people, ac); };
@@ -4703,7 +4712,27 @@
     if (/^(?:[一-鿿々]{1,2}|[ぁ-ゖ]{1,3})$/.test(name) && /[がはもをでの]$/.test(prev || '') && /^(?:[。！？!?…‥」]|$|に|だ|です|じゃ|な(?!ら))/.test(next)) return false;
     return true;
   }
+  /* モブへの呼びかけ（mob.js の HK.Mob.addr の印）：住人の台詞では、呼び方を決めていない限り、話し手の二人称で呼ぶ。
+     全体の設定「モブへの呼びかけ」（mobYou）が「名前で」なら、名前で呼べるモブは短い名前＋敬称で。
+     印のない、この回で作ったモブの名前（HK.Mob.make）が台詞の頭・終わりの呼びかけ（「佐伯さん、」）にあれば、それも二人称に */
+  function youOf(who) { return (who && (who.you || (HK.toneYou ? HK.toneYou(who.tone, who.gender) : ''))) || 'あなた'; }
+  V.mobAddr = function (q, who, people) {
+    if (!who || typeof q !== 'string') return q;
+    var byName = V._mobYou === 'name';
+    if (q.indexOf('\u2063') >= 0) q = q.replace(/\u2063([^\u2063\u2061]*)([\u2063\u2061])/g, function (m, nm, end) {
+      var base = nm.replace(/(?:さん|くん|ちゃん|様|さま)$/, ''), own = who.calls && who.calls[base];
+      if (own) return String(own).trim().slice(0, 16);
+      return byName && end === '\u2063' ? nm : youOf(who);
+    });
+    var made = !byName && HK.Mob && HK.Mob._made;
+    if (made && made.length) made.forEach(function (nm) {
+      if (!nm || nm.length < 2 || q.indexOf(nm) < 0 || (who.calls && who.calls[nm]) || (people || []).some(function (p) { return p.name && (p.name.indexOf(nm) >= 0 || nm.indexOf(p.name) >= 0); })) return;
+      q = q.replace(new RegExp('(^|[、。！？!?…‥\\s])' + esc(nm) + '(?:さん|くん|ちゃん|様|さま)?(?=[、！？!?…‥]|$)', 'g'), function (m, p) { return p + youOf(who); });
+    });
+    return q;
+  };
   V.applyCalls = function (q, who, people) {
+    if (who && typeof q === 'string' && (q.indexOf('\u2063') >= 0 || (HK.Mob && HK.Mob._made && HK.Mob._made.length))) q = V.mobAddr(q, who, people);
     if (!who || (!who.call && !who.calls && !/^(?:polite|genki|ojou|devoted)$/.test(who.tone || ''))) return q;
     people.forEach(function (p) {
       if (p === who || !p.name) return;
@@ -4728,6 +4757,8 @@
   function hashS(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
   V.callAddress = function (q, who, to, raw) {
     if (!who || !to || to === who || !to.name || !(who.call || (who.calls && who.calls[to.name]))) return q;
+    /* 相手がモブなら、呼び方を決めていない限り二人称のまま（V.mobAddr） */
+    if ((to.mob && !(who.calls && who.calls[to.name])) || String(raw || '').indexOf('\u2063') >= 0) return q;
     var c = V.callFor(who, to);
     if (!c || q.indexOf(to.name) >= 0 || q.indexOf(c) >= 0) return q;
     /* 自分で決めた二人称（you）も、呼び方を決めた相手には名前で */
@@ -4752,7 +4783,14 @@
     if (!res || !input || !input.chars) return pr0(res, input);
     var calmNames = [];
     input.chars.forEach(function (c) { if (HK.toneOf(c) === 'calm') calmNames.push(c.name); });
-    var out = pr0(res, input);
+    /* 全体の設定「モブへの呼びかけ」（events-common.js の mobYou） */
+    V._mobYou = input.env && input.env.mobYou === 'name' ? 'name' : 'you';
+    var out;
+    try {
+      out = pr0(res, input);
+      /* 話し手が分からなかった台詞に残ったモブへの呼びかけの印（mob.js） */
+      if (HK.Mob && HK.Mob._used) { HK.Mob._used = false; HK.Mob.unmark(out, V._mobYou === 'name'); }
+    } finally { V._mobYou = ''; if (HK.Mob && HK.Mob._made) HK.Mob._made.length = 0; }
     if (calmNames.length) {
       var re = new RegExp(calmNames.map(esc).join('|'));
       var f = function (t) { return typeof t === 'string' ? t.replace(/[^。！？]*[。！？]?/g, function (sen) { return re.test(sen) ? calmText(sen) : sen; }) : t; };
@@ -10403,12 +10441,49 @@
       var name = o.name || (o.pool && POOLS[o.pool] && POOLS[o.pool].length ? pick(POOLS[o.pool]) : pick(POOLS.sur) + (o.given ? pick(POOLS[g] || POOLS.x) : ''));
       if (o.role && !o.name) name = o.role + 'の' + name;
       var eg = {}; ['CP', 'NP', 'A', 'FC', 'AC'].forEach(function (k) { eg[k] = Math.round(4 + r() * 14); });
-      return { name: name, gender: g, tone: o.tone || '', fp: o.fp || '', eg: eg, tr: HK.traits ? HK.traits(eg) : {}, likes: o.likes || '', pos: o.pos || '', role: o.role || '', mob: true, calls: {}, loveNG: [] };
+      var mob = { name: name, gender: g, tone: o.tone || '', fp: o.fp || '', eg: eg, tr: HK.traits ? HK.traits(eg) : {}, likes: o.likes || '', pos: o.pos || '', role: o.role || '', mob: true, calls: {}, loveNG: [] };
+      /* 呼びかけ用の短い名前（「警備員の佐伯」→「佐伯」）。住人の台詞の安全網（tone-plus.js の V.mobAddr）のために、この回で作った名前を覚える */
+      mob.short = o.role && !o.name ? name.slice(o.role.length + 1) : name;
+      M._made.push(name); if (mob.short !== name) M._made.push(mob.short); if (M._made.length > 200) M._made.splice(0, M._made.length - 200);
+      return mob;
     },
+    _made: [],
     /* 住人 c がモブとの体の場面に出られるか（R18に参加しない・恋人だけ・全年齢を見る） */
     sexOk: function (c) { return !!(HK.State ? HK.State.mobSexOk(c) : !HK.SAFE_ON); },
     /* モブを相手にしたときの住人の向き（'top'／'bottom'。自分で攻めを選んだ人は、モブには受けにしていない限り top） */
     side: function (c, def) { return HK.Pos && HK.Pos.vsNpc ? HK.Pos.vsNpc(c, def || 'bottom') : def || 'bottom'; }
+  };
+  /* ---------- モブへの呼びかけ ----------
+     住人がモブに話しかける台詞では、モブの名前を直接書かずに {you} と書き、M.you(文, モブ, 敬称) で印に替える。
+     印は「\u2063 名前 \u2063」（名前で呼べるモブ）か「\u2063 名前 \u2061」（「泥酔したサラリーマン」のような呼び名だけのモブ）。
+     住人の台詞では tone-plus.js の V.mobAddr が、話し手の二人称（設定の二人称、なければ口調の既定 HK.TONE_YOU）に置き換える。
+     全体の設定「モブへの呼びかけ」（events-common.js の mobYou）が「名前で」なら、名前で呼べるモブは短い名前＋敬称で呼ぶ。
+     話し手が分からなかった台詞に残った印は、二人称なら「あなた」、名前でなら名前にする（M.unmark。tone-plus.js・persona-final.js が結果を返す前に外す） */
+  var MK = '\u2063', NO = '\u2061', MK_RE = /\u2063([^\u2063\u2061]*)[\u2063\u2061]/g;
+  M.MARK = MK;
+  /* 呼び名から、名前として呼べる部分（「恋人の湊」→「湊」「店長」→「店長」）。説明だけの呼び名（「若いスタッフ」「名前も知らない誰か」）は '' */
+  M.short = function (full) {
+    full = String(full || '');
+    var t = full.lastIndexOf('の') >= 0 ? full.slice(full.lastIndexOf('の') + 1) : full;
+    /* 「元患者」「貴族」「漫画家」のような肩書き・身の上だけの語は名前にしない */
+    return /^[一-鿿々ァ-ヶー]{1,4}$/.test(t) && !/^元|[者男女人族手家]$/.test(t) ? t : '';
+  };
+  /* m：モブ（{ name, short }・{ name, label }）か呼び名の文字列。hon：名前で呼ぶときの敬称（「さん」など） */
+  M.addr = function (m, hon) {
+    var full = typeof m === 'string' ? m : (m && (m.full || m.label || m.name)) || '';
+    var sh = m && typeof m === 'object' ? (m.short != null ? m.short : m.label && m.name && m.label !== m.name ? m.name : M.short(full)) : M.short(full);
+    M._used = true;
+    return MK + (sh || full) + (sh ? hon || '' : '') + (sh ? MK : NO);
+  };
+  M.you = function (t, m, hon) { return typeof t === 'string' && t.indexOf('{you}') >= 0 ? t.replace(/\{you\}/g, M.addr(m, hon)) : t; };
+  M.unmark = function (o, byName, seen) {
+    if (typeof o === 'string') return o.indexOf(MK) < 0 ? o : o.replace(MK_RE, function (m, nm, end) { return byName && end === MK ? nm : 'あなた'; }).replace(/[\u2063\u2061]/g, '');
+    if (!o || typeof o !== 'object') return o;
+    seen = seen || new Set();
+    if (seen.has(o)) return o;
+    seen.add(o);
+    Object.keys(o).forEach(function (k) { var v = o[k]; if (typeof v === 'string' ? v.indexOf(MK) >= 0 : v && typeof v === 'object') { var r = M.unmark(v, byName, seen); if (r !== v) o[k] = r; } });
+    return o;
   };
   /* 住人の一覧と、住人ごとの欄（perChar.pick） */
   function people(S) { return (S && (S.P || S.chars)) || []; }
@@ -21327,6 +21402,8 @@
   function tag(m) { return m.name + '（' + SX[m.sex] + '）'; }
   /* {m}=モブの名前 {M}=モブ名（第二性） {S}=モブの第二性 {sm}=モブの匂い {sa}=住人の匂い、あとは ctx.t（{a}{b}{c}） */
   function fill(ctx, t, m, a, b, c) {
+    /* {you}：住人から運命の番（モブ）への呼びかけ（mob.js の HK.Mob.addr） */
+    if (HK.Mob) t = HK.Mob.you(t, m, 'さん');
     t = t.replace(/\{M\}/g, tag(m)).replace(/\{m\}/g, m.name).replace(/\{S\}/g, SX[m.sex]).replace(/\{sm\}/g, m.scent).replace(/\{sa\}/g, function () { return OM.shortScent(a); });
     return ctx.t(t, a, b, c);
   }
@@ -21410,7 +21487,7 @@
     go: L('{a}は{b}に言った。「ごめん。{m}のところに行く」――運命の番の匂いは、積み重ねた日々より強かった。|{a}は夜中に荷物をまとめた。{b}は止めなかった。止めても無駄だと、匂いで分かっていた。――{a}は街の外から来た{m}のもとへ走った。|{b}は{a}の目を見て分かった。そこにいるのはもう、自分を見ている{a}ではなかった。{m}の匂いが、{a}の理性を連れていってしまった。'),
     goBond: L('{a}と{b}は番だった。それでも{a}の本能は、街の外から来た{m}の方を向いてしまった。{a}は{b}を置いて去った。――Ωの番は一生に一人。{b}のうなじの噛み跡は、その日から疼き続けている。'),
     drive: L('{m}は番のいるΩだと知っても、{a}につきまとうのをやめなかった。{b}が{a}の前に立ちはだかった。αの威圧がぶつかり、店の看板が揺れた。「二度と近づくな」――{m}は街を去った。|{b}は{a}の首筋に鼻を埋め、知らない{S}の匂いを嗅ぎ取った。次の日、{b}は{m}を探し出し、殴りかかる寸前まで行った。{m}は荷物をまとめ、街を出た。|番のいるΩの体は、運命の番さえ拒む。それでも{m}は{a}の家の前に通い続けた。{b}が三度目に現れたとき、{m}は何も言わずに引き下がり、街からいなくなった。'),
-    resist: L('{a}は{m}に会いに行き、はっきり言った。「運命でも、私が選んできたのは{b}だ」{m}はしばらく黙って、それから笑った。「……分かった」――{m}は街を去った。|{a}は{m}からの連絡を全部消した。{b}には何も言わなかったが、{b}は{a}の手がもう震えていないのを見て、少しだけ安心した。{m}は、いつの間にか街からいなくなっていた。|{a}は{b}に打ち明けた。「運命の番に、会った。でも帰る場所は変わらない」{b}は泣きながら笑った。{m}はその夜のうちに街を出た。'),
+    resist: L('{a}は{m}に会いに行き、はっきり言った。「{you}が運命の番でも、私が選んできたのは{b}だ」{m}はしばらく黙って、それから笑った。「……分かった」――{m}は街を去った。|{a}は{m}からの連絡を全部消した。{b}には何も言わなかったが、{b}は{a}の手がもう震えていないのを見て、少しだけ安心した。{m}は、いつの間にか街からいなくなっていた。|{a}は{b}に打ち明けた。「運命の番に、会った。でも帰る場所は変わらない」{b}は泣きながら笑った。{m}はその夜のうちに街を出た。'),
     tired: L('{m}は待ちくたびれたように街を去った。{a}は最後まで、答えを出さなかった。')
   };
   EV.push({
@@ -21468,9 +21545,9 @@
   /* ======================= かき回す：恋人がいない人 ======================= */
   var CT = {
     court: L('{M}は{a}を食事に誘った。断る理由を探しているうちに、{sm}の匂いが喉の奥まで入ってきた。気づけば{a}は頷いていた。|「運命の番って、信じる？」{m}は{a}にそう訊いて、返事を待たずに手を取った。{a}は振りほどけなかった。|{m}は{a}の職場に、三日続けて顔を出した。同僚が「誰？」と訊くたびに、{a}は答えに詰まった。|{m}は{a}の帰り道に、当たり前のように並んで歩いた。「街の外に、いい場所があるんだ」――{sm}の匂いが、{a}の判断を鈍らせた。|{a}のポストに、{m}からの手紙が入っていた。差出人の名前だけで、{sm}の匂いがした気がした。'),
-    harass: L('{m}は人気のない通路で{a}の腕を掴み、首筋に顔を寄せた。{a}は振り払った。「触るな」――運命の番でも、これは違う。{a}の指は怒りで震えていた。|{m}は{a}の匂いが欲しいと言って、拒んでも帰らなかった。{a}はドアチェーンをかけたまま、朝まで眠れなかった。|{m}は{a}の肩を抱き寄せ、耳元で「運命なんだから」と囁いた。{a}はその手を払いのけ、店を出た。吐き気がするほど、匂いだけは甘かった。'),
-    bond: L('{a}は{m}の手を取った。「分かった。運命に乗る」――街の外から来た{S}と、{a}は付き合い始めた。|{m}の部屋で、{a}は{sm}の匂いに包まれて眠った。抗う気は、もう残っていなかった。{a}と{m}は恋人になった。|{a}は{m}を街に泊めた。朝、{a}のシャツには{sm}の匂いが染みていた。――{a}は運命の番を、受け入れた。'),
-    refuse: L('{a}は{m}に言った。「匂いだけで決める気はない」{m}はもう一度だけ食い下がり、それから引いた。数日後、{m}は街を去った。|{a}は{m}からの連絡に、一度だけ返した。「ごめん。あなたとは、ここまで」――{m}は街を出た。{a}は{sm}の匂いを、しばらく忘れられなかった。'),
+    harass: L('{m}は人気のない通路で{a}の腕を掴み、首筋に顔を寄せた。{a}は振り払った。「{you}、触るな」――運命の番でも、これは違う。{a}の指は怒りで震えていた。|{m}は{a}の匂いが欲しいと言って、拒んでも帰らなかった。{a}はドアチェーンをかけたまま、朝まで眠れなかった。|{m}は{a}の肩を抱き寄せ、耳元で「運命なんだから」と囁いた。{a}はその手を払いのけ、店を出た。吐き気がするほど、匂いだけは甘かった。'),
+    bond: L('{a}は{m}の手を取った。「分かった。{you}と、運命に乗る」――街の外から来た{S}と、{a}は付き合い始めた。|{m}の部屋で、{a}は{sm}の匂いに包まれて眠った。抗う気は、もう残っていなかった。{a}と{m}は恋人になった。|{a}は{m}を街に泊めた。朝、{a}のシャツには{sm}の匂いが染みていた。――{a}は運命の番を、受け入れた。'),
+    refuse: L('{a}は{m}に言った。「悪いけど、匂いだけで{you}を選ぶ気はない」{m}はもう一度だけ食い下がり、それから引いた。数日後、{m}は街を去った。|{a}は{m}からの連絡に、一度だけ返した。「ごめん。{you}とは、ここまで」――{m}は街を出た。{a}は{sm}の匂いを、しばらく忘れられなかった。'),
     expel: L('{a}は{m}に、二度と来るなと告げた。{m}はしばらく{a}の家の前に立っていたが、やがて街を去った。|{a}は{m}の顔を見るたびに体が強張るようになった。周りに相談して、{m}は街を出ていくことになった。')
   };
   EV.push({
@@ -24906,7 +24983,7 @@
     zaru: L('{m}が「{a}さん、いける口でしょ」と日本酒を注いだ。{a}は断りきれずに、お猪口を空けた。|{m}は{a}に飲み比べを持ちかけた。三杯目で{a}の顔が赤くなり、{m}の顔色は最後まで変わらなかった。|{m}は{a}のグラスが空くたびに「おかわり、いっときます？」と店員を呼んだ。')
   };
   /* 空気を読まないモブのあとで、別の住人がかばう */
-  var COVER = L('{b}がすかさず「そういえばこの店の唐揚げ、すごくないですか」と話を変えた。{a}は助かったという顔で{b}を見た。|{b}が「はいはい、その話はまた今度！」と笑って流した。{a}は{b}に、目だけで礼を言った。|{b}が{a}のグラスに飲み物を注ぎ足して、さりげなく話題を引き取った。');
+  var COVER = L('{b}がすかさず「そういえばこの店の唐揚げ、すごくないですか」と話を変えた。{a}は助かったという顔で{b}を見た。|{b}が「はいはい、{you}、その話はまた今度！」と笑って流した。{a}は{b}に、目だけで礼を言った。|{b}が{a}のグラスに飲み物を注ぎ足して、さりげなく話題を引き取った。');
   /* 橋渡し（{a} が {b} に惹かれている） */
   var WING = {
     moriage: L('{m}が「ねえ、{a}と{b}って、さっきから話が合いすぎじゃない？」と大声で言った。{a}と{b}は同時に「そんなことない」と言い、その揃い方にまた冷やかされた。|{m}は「{a}、{b}の隣空いてるよ」と言って、{a}の背中を押した。{a}は文句を言いながらも、その席に座った。|{m}は{a}と{b}の共通点を勝手に三つ数え上げ、「もう運命でしょ」と締めくくった。二人とも笑ったが、目が合うと少し黙った。'),
@@ -24915,10 +24992,10 @@
   /* 当て馬（{m} が {b} に話しかけ、{b} に惹かれている {a} が妬く）。{b} の返し方は気質で */
   var ATE = L('{m}が{b}に「よかったら、あとで連絡先聞いてもいいですか」と言った。|{m}は{b}の隣に移って、{b}の話にばかり笑っていた。|{m}が{b}のグラスに自分のグラスを当てて、「{b}さんと飲むの、楽しいな」と言った。|{m}が{b}に「今度、二人でその店行きましょうよ」と誘った。');
   var ATE_RE = {
-    CP: L('{b}は「今日はそういうのはなしで」とあっさり断った。|{b}は「そういうのは間に合ってます」と、きっぱり線を引いた。'),
-    NP: L('{b}は「ありがとう、でもまたみんなでね」とやわらかくかわした。|{b}は笑って受け流し、そのまま{a}のほうにも話を振った。'),
+    CP: L('{b}は「ごめん、{you}とは今日はそういうのはなしで」とあっさり断った。|{b}は「そういうのは間に合ってます」と、きっぱり線を引いた。'),
+    NP: L('{b}は「ありがとう。でも{you}とも、またみんなでね」とやわらかくかわした。|{b}は笑って受け流し、そのまま{a}のほうにも話を振った。'),
     A: L('{b}は「考えておきます」とだけ言って、話題を変えた。|{b}は丁寧に礼を言い、それ以上は何も言わなかった。'),
-    FC: L('{b}は「えー、どうしようかな」とノリで返し、笑ってごまかした。|{b}は「じゃあ三十年後にね」と冗談にして流した。'),
+    FC: L('{b}は「えー、{you}と？　どうしようかな」とノリで返し、笑ってごまかした。|{b}は「じゃあ三十年後にね」と冗談にして流した。'),
     AC: L('{b}は困ったように笑い、ちらりと{a}のほうを見た。|{b}は返事に詰まって、助けを求めるように{a}を見た。')
   };
   var ATE_JEAL = L('{a}は、そのやりとりから目を離せなかった。手元のグラスの氷が、すっかり溶けていた。|{a}の箸が止まった。自分でも驚くほど、胸の奥がざわついていた。|{a}は聞こえないふりをして、聞き耳を立てていた。|{a}は、なぜか急に飲むペースが上がった。');
@@ -24945,7 +25022,7 @@
   var KG_MOB = {
     moriage: L('王様は{a}。命令が当たったのは{m}で、一発ギャグを三連発して場を最高潮にした。|王様は{a}。{m}は「ものまね」の命令に、頼まれてもいない二人目まで披露した。'),
     sewa: L('王様は{a}。{m}は「全員の飲み物を当てる」という命令を、一つも外さずにこなした。|王様は{a}。命令を受けた{m}は、なぜか全員の空いた皿を片づけてから席に戻った。'),
-    kuuki: L('王様は{a}。命令を受けた{m}は、一発ギャグを頼まれたのに五分の漫談をした。誰も止めなかった。|王様は{a}。「黒歴史を一つ」と言われた{m}は、三つ話した。三つ目で{a}が「もういい」と止めた。'),
+    kuuki: L('王様は{a}。命令を受けた{m}は、一発ギャグを頼まれたのに五分の漫談をした。誰も止めなかった。|王様は{a}。「黒歴史を一つ」と言われた{m}は、三つ話した。三つ目で{a}が「{you}、もういい」と止めた。'),
     aiso: L('王様は{a}。「王様を全力で褒める」という命令に、{m}は一分間{a}を褒め続けた。{a}は途中から耐えられずに笑い出した。|王様は{a}。{m}は命令どおりに歌い、最後に「{a}さんに捧げます」と付け足した。'),
     mokumoku: L('王様は{a}。命令を受けた{m}は、無表情のまま完璧なものまねをした。一拍おいて、全員が崩れ落ちた。|王様は{a}。「一発ギャグ」と言われた{m}は、長い沈黙のあと「……以上です」と言った。それがいちばんウケた。'),
     zaru: L('王様は{a}。罰ゲームの一気を、{m}は三回連続で引き受けた。顔色は変わらなかった。|王様は{a}。{m}は「次の一杯、私が全員分おごります」と勝手に命令を上書きした。')
@@ -24959,7 +25036,7 @@
     mokumoku: L('{m}は静かに飲み続け、気づけばテーブルに突っ伏して寝ていた。|{m}は一言も喋らないまま顔だけが真っ赤になり、立ち上がろうとして壁に手をついた。'),
     zaru: L('さすがの{m}も、八杯目を過ぎたあたりで目が据わり、箸を二回落とした。|{m}は日本酒の一升瓶を抱いたまま「まだいける」と言い張り、そのまま寝息を立て始めた。')
   };
-  var CARE1 = L('{a}が{m}の前に水を置き、背中をさすった。「今日はもう帰りましょう」|{a}が{m}の鞄と上着をまとめて、店の外まで肩を貸した。|{a}が{m}の代わりに、タクシーを呼んだ。');
+  var CARE1 = L('{a}が{m}の前に水を置き、背中をさすった。「{you}、今日はもう帰りましょう」|{a}が{m}の鞄と上着をまとめて、店の外まで肩を貸した。「{you}、歩ける？　ほら、つかまって」|{a}が{m}の代わりに、タクシーを呼んだ。「{you}の家の住所、言える？」');
   var CARE2 = L('{a}と{b}が両側から{m}を支えて、店の外まで連れ出した。「せーの」の掛け声が、妙に揃っていた。|{a}が{m}の肩を支え、{b}が水と荷物を持った。言葉を交わさなくても、役割が自然に決まっていた。|{a}と{b}は二人がかりで{m}をタクシーに乗せ、走り去るのを見送ってから、顔を見合わせて笑った。');
   /* 酔った住人を、モブが気にかける */
   var WATER = L('{m}が{a}の前に、黙って水のグラスを置いた。{a}は少し顔を上げた。|{m}は{a}のグラスを、こっそりウーロン茶にすり替えた。|{m}が「{a}さん、一回お手洗い行きましょ」と声をかけて、{a}を連れ出した。');
@@ -24986,7 +25063,8 @@
   function list(ctx) { return (ctx && ctx.gkMob) || []; }
   /* まだ席にいるモブ（酔いつぶれて先に帰ったモブは除く） */
   function here(ctx) { return list(ctx).filter(function (m) { return !m.gone; }); }
-  function fill(ctx, t, m, a, b) { return ctx.t(t.replace(/\{M\}/g, m.full).replace(/\{m\}/g, m.name), a, b); }
+  /* {you}：住人からモブへの呼びかけ（mob.js の HK.Mob.addr。台詞では話し手の二人称、全体の設定で「名前で」なら「〇〇さん」） */
+  function fill(ctx, t, m, a, b) { return ctx.t(HK.Mob.you(t, m, 'さん').replace(/\{M\}/g, m.full).replace(/\{m\}/g, m.name), a, b); }
   function top(c) { return HK.voiceTop ? HK.voiceTop(c) : HK.egoType(c.eg).top; }
   function why(m, s) { return 'モブ（' + m.full + '・' + KINDS[m.kind].label + '）' + (s ? '：' + s : '') + '。モブは住人ではなく、恋愛・夜の相手にならない'; }
   /* 恋愛の出来事にしてよい住人の組（両方向で恋愛対象・その場にいる・恋愛にしない組でない・家族でない） */
@@ -29614,7 +29692,8 @@
     if (TR && sk === 'gentle' && HK.Pos && HK.Pos.isF(TR)) sk = 'lady';
     if (!STAFF[sk]) sk = 'gentle';
     var staff = TR ? { n: TR.name, g: HK.Pos ? (HK.Pos.isF(TR) ? 'f' : 'm') : TR.gender === 'f' ? 'f' : 'm', desc: '', dec: STAFF[sk].dec, res: true } : STAFF[sk];
-    S.vars = { m: staff.n };
+    /* {you}：客から施術者への呼びかけ。モブなら印（mob.js の HK.Mob.addr。台詞では客の二人称になる）、住人なら「あなた」（相手ごとの二人称が効く） */
+    S.vars = { m: staff.n, you: TR || !HK.Mob ? 'あなた' : HK.Mob.addr(staff.n, 'さん') };
     /* 住人どうし：体の関係になれる組（HK.Pos.okSex・両方 HK.State.r18ok・HK.ngPair でも HK.sexBlocked でもない）だけ際どい施術にする。
        向きは HK.Pos.order：施術者が攻めなら今までどおり、客が攻めなら際どい施術の手前で客が手を止めさせる（客を受ける側にしない）。
        なれない組は普通のマッサージのまま（plain） */
@@ -40624,6 +40703,9 @@
    ・will 心の強さ：''／weak 弱い／avg ふつう／strong 強い。快楽堕ち・催眠・常識改変・遮断穴の「堕ちる」判定に掛ける（HK.Attr.willK）。
      strong は体が堕ちても心は折れない文を添える（HK.Attr.hold）
    ・same 同一人物：相手の番号。二人は恋愛・R18にしない（HK.ngPair・住人の ng に足す）。「鏡を見るような」共通の場面 3 本と、結果の関係名「もう一人の自分」
+   ・youFor / fpFor 相手ごとの二人称・一人称：{ 相手: 'あなた'|'きみ'|… } / { 相手: '私'|'俺'|… }（自由記入も可・8文字まで）。
+     相手が分かる台詞では、ふだんの二人称・一人称より優先する（voice.js の V.processText。名前で引けるように A.voiceFor で写す）。
+     画面の欄は「関係と呼び方」の相手ごとの行（呼び方の隣。A.voiceForHtml）
    画面の欄（ui.js の mk・normChar・rosterJSON・import・buildInput、ui-gear.js の描画と入力）は、ここの関数を呼ぶだけにしてある。
    実行時の住人への写しは HK.charFlags（engine.js）から HK.Attr.copy を一度だけ呼ぶ（エンジン・物語型・SoloKit・ダンジョン・穴で共通）。
    登場人物はすべて成人として扱う */
@@ -40644,6 +40726,12 @@
   function note(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>]/g, '').trim().slice(0, 12) : ''; }
   A.label = function (k, v) { return lab({ build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL }[k] || [], v); };
   var SIMPLE = ['build', 'bust', 'race', 'night', 'will'];
+  /* 相手ごとの二人称・一人称（VF：欄の名前） */
+  var VF = ['youFor', 'fpFor'];
+  A.YOU_OPTS = ['あなた', 'きみ', 'おまえ', 'あんた', 'そっち'];
+  A.FP_OPTS = ['私', '俺', '僕', 'あたし'];
+  function word(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>\s\u2060-\u2064]/g, '').slice(0, 8) : ''; }
+  function wmap(m, keyOk) { var o = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { var w = word(m[k]); if (w && (!keyOk || keyOk(k))) o[k] = w; }); return o; }
   function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL }[k]; }
 
   /* ---------- 画面の住人（S.chars。相手は id で持つ） ---------- */
@@ -40654,6 +40742,7 @@
     o.raceNote = note(c.raceNote);
     o.nightFor = c.nightFor && typeof c.nightFor === 'object' ? JSON.parse(JSON.stringify(c.nightFor)) : {};
     o.same = typeof c.same === 'string' ? c.same : '';
+    VF.forEach(function (k) { o[k] = wmap(c[k]); });
     return o;
   };
   /* ui.js normChar：値を確かめる */
@@ -40664,12 +40753,14 @@
     if (c.nightFor && typeof c.nightFor === 'object') Object.keys(c.nightFor).forEach(function (k) { var v = val(A.NIGHT, c.nightFor[k]); if (v) nf[k] = v; });
     c.nightFor = nf;
     c.same = typeof c.same === 'string' ? c.same : '';
+    VF.forEach(function (k) { c[k] = wmap(c[k]); });
     return c;
   };
   /* ui.js normRefs：今いる住人だけに絞る（同一人物は両方に書く） */
   A.normRefs = function (c, ids, list) {
     if (!ids[c.same] || c.same === c.id) c.same = '';
     Object.keys(c.nightFor || {}).forEach(function (k) { if (!ids[k] || k === c.id) delete c.nightFor[k]; });
+    VF.forEach(function (f) { Object.keys(c[f] || {}).forEach(function (k) { if (!ids[k] || k === c.id) delete c[f][k]; }); });
     if (c.same && list) list.forEach(function (o) { if (o.id === c.same && !o.same) o.same = c.id; });
   };
   /* ui.js rosterJSON：書き出し（相手は ref で番号に） */
@@ -40678,17 +40769,23 @@
     if (c.raceNote) o.raceNote = c.raceNote;
     if (c.same && ref(c.same) != null) o.same = ref(c.same);
     if (c.nightFor) { var nf = {}; Object.keys(c.nightFor).forEach(function (k) { if (ref(k) != null && c.nightFor[k]) nf[ref(k)] = c.nightFor[k]; }); if (Object.keys(nf).length) o.nightFor = nf; }
+    VF.forEach(function (f) { if (!c[f]) return; var m = {}; Object.keys(c[f]).forEach(function (k) { if (ref(k) != null && word(c[f][k])) m[ref(k)] = word(c[f][k]); }); if (Object.keys(m).length) o[f] = m; });
     return o;
   };
   /* ui.js importJSON：読み込み（相手は全員を読んだあとで A.importRefs） */
   A.importFrom = function (c, o) {
     SIMPLE.forEach(function (k) { if (o[k] != null) c[k] = val(listOf(k), o[k]); });
     if (o.raceNote != null) c.raceNote = note(String(o.raceNote));
-    c._atSame = o.same; c._atNf = o.nightFor;
+    c._atSame = o.same; c._atNf = o.nightFor; c._atYf = o.youFor; c._atFf = o.fpFor;
   };
   A.importRefs = function (c, ref) {
     if (c._atSame != null && c._atSame !== '') { var s = ref(c._atSame); c.same = s && s !== c.id ? s : ''; }
     if (c._atNf && typeof c._atNf === 'object') { c.nightFor = c.nightFor || {}; Object.keys(c._atNf).forEach(function (k) { var id = ref(k), v = val(A.NIGHT, c._atNf[k]); if (id && id !== c.id && v) c.nightFor[id] = v; }); }
+    [['_atYf', 'youFor'], ['_atFf', 'fpFor']].forEach(function (x) {
+      var m = c[x[0]];
+      if (m && typeof m === 'object') { c[x[1]] = c[x[1]] || {}; Object.keys(m).forEach(function (k) { var id = ref(k), w = word(m[k]); if (id && id !== c.id && w) c[x[1]][id] = w; }); }
+      delete c[x[0]];
+    });
     delete c._atSame; delete c._atNf;
   };
   /* ui.js buildInput：シミュレーションへ渡す（相手は箱庭に出る人の番号に） */
@@ -40698,6 +40795,7 @@
     var si = c.same ? ids.indexOf(c.same) : -1;
     if (si >= 0) o.same = si;
     if (c.nightFor) { var nf = {}, n = 0; Object.keys(c.nightFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && c.nightFor[k]) { nf[i] = c.nightFor[k]; n++; } }); if (n) o.nightFor = nf; }
+    VF.forEach(function (f) { if (!c[f]) return; var m = {}, k2 = 0; Object.keys(c[f]).forEach(function (k) { var i = ids.indexOf(k), w = word(c[f][k]); if (i >= 0 && w) { m[i] = w; k2++; } }); if (k2) o[f] = m; });
     return o;
   };
   /* ui-gear.js：住人の行の要約に足す */
@@ -40736,6 +40834,7 @@
     if (!/^at_/.test(f || '')) return false;
     var k = f.slice(3);
     if (k === 'raceNote') { c.raceNote = note(t.value); changed(false); return true; }
+    if (k === 'yf' || k === 'ff') { var vk = k === 'yf' ? 'youFor' : 'fpFor', w = word(t.value); c[vk] = c[vk] || {}; if (w) c[vk][t.dataset.o] = w; else delete c[vk][t.dataset.o]; changed(false); return true; }
     if (isInput) return true;
     if (listOf(k)) { c[k] = val(listOf(k), t.value); changed(k === 'race' || k === 'night'); return true; }
     if (k === 'nf') { c.nightFor = c.nightFor || {}; var v = val(A.NIGHT, t.value); if (v) c.nightFor[t.dataset.o] = v; else delete c.nightFor[t.dataset.o]; changed(false); return true; }
@@ -40748,6 +40847,35 @@
       changed(true); return true;
     }
     return true;
+  };
+
+  /* 「関係と呼び方」の相手ごとの行に並べる欄（ui-gear.js）：二人称・一人称（候補は datalist、自由記入も可） */
+  A.voiceForHtml = function (c, o, esc) {
+    lists();
+    var y = (c.youFor || {})[o.id] || '', f = (c.fpFor || {})[o.id] || '';
+    return '<label title="この相手に話しかける台詞の二人称。空なら「話し方」の二人称のまま">二人称 <input type="text" data-gf="at_yf" data-o="' + esc(o.id) + '" value="' + esc(y) + '" maxlength="8" list="hk-you-opts" placeholder="' + esc(c.you || '口調から') + '" style="width:5em"></label>' +
+      '<label title="この相手に話しかける台詞の一人称。空なら「話し方」の一人称のまま">一人称 <input type="text" data-gf="at_ff" data-o="' + esc(o.id) + '" value="' + esc(f) + '" maxlength="8" list="hk-fp-opts" placeholder="' + esc(c.fp || '口調から') + '" style="width:5em"></label>';
+  };
+  /* 相手ごとの二人称・一人称を決めてある相手か（関係がなくても、相手の行を出す） */
+  A.hasVoiceFor = function (c, id) { return !!((c.youFor && c.youFor[id]) || (c.fpFor && c.fpFor[id])); };
+  function lists() {
+    if (typeof document === 'undefined' || !document.body) return;
+    [['hk-you-opts', A.YOU_OPTS], ['hk-fp-opts', A.FP_OPTS]].forEach(function (x) {
+      if (document.getElementById(x[0])) return;
+      var dl = document.createElement('datalist'); dl.id = x[0];
+      x[1].forEach(function (v) { var op = document.createElement('option'); op.value = v; dl.appendChild(op); });
+      document.body.appendChild(dl);
+    });
+  }
+  /* voice.js の processResult：台詞の話し手 p（名前で相手を引く）に、相手ごとの二人称・一人称を名前で写す。c = input.chars[i]（相手は番号） */
+  A.voiceFor = function (p, c, chars) {
+    VF.forEach(function (f) {
+      if (!c || !c[f] || typeof c[f] !== 'object') return;
+      var m = null;
+      Object.keys(c[f]).forEach(function (k) { var o = /^\d+$/.test(k) ? chars[+k] : null, w = word(c[f][k]); if (o && o !== c && o.name && w) (m = m || {})[o.name] = w; });
+      if (m) p[f] = m;
+    });
+    return p;
   };
 
   /* ---------- 実行時の住人（相手は番号 i で持つ） ---------- */
@@ -40768,6 +40896,7 @@
         if (nf) dst.nightFor = nf;
       }
     }
+    VF.forEach(function (f) { var m = wmap(src[f], function (k) { return /^\d+$/.test(k) && +k !== dst.i; }); if (Object.keys(m).length) dst[f] = m; });
     var sm = src.same;
     if (sm !== '' && sm != null && !isNaN(+sm) && +sm >= 0 && +sm !== dst.i) {
       dst.same = +sm;
@@ -41996,6 +42125,8 @@
   var sim1 = function (input) {
     var res = sim(input);
     try { HK.Voice.processResult(res, input); } catch (e) { /* 台詞の整形に失敗しても結果は返す */ }
+    /* モブへの呼びかけの印（mob.js の HK.Mob.addr）が残っていれば、名前に戻す */
+    if (HK.Mob && HK.Mob._used) { HK.Mob._used = false; HK.Mob.unmark(res); }
     return res;
   };
   /* 普通の言葉と同じになりやすい名前（漢字一、二字・短いひらがな：「楽」「敬語」など）は、
@@ -44899,14 +45030,14 @@
   /* ---------- 口調ごとの台詞 ---------- */
   SB.VOICE = {
     OPEN: {
-      proud: L('「おい、そこのお前。今夜は俺に付き合え」|「顔を上げろ。……悪くない。来い」|「断る理由があるなら言ってみろ」'),
+      proud: L('「おい、そこの{you}。今夜は俺に付き合え」|「顔を上げろ。……悪くない。来い」|「断る理由があるなら言ってみろ」'),
       stern: L('「少し時間をもらう。拒否は受け付けない」|「……今夜の糧になってもらう。悪く思うな」|「黙ってついてこい。悪いようにはしない」'),
-      tsun: L('「べ、別にあんたじゃなくてもいいんだけど……今夜だけ、付き合いなさいよ」|「か、勘違いしないでよね。お腹すいてるだけなんだから」|「……ちょっと。こっち来なさいよ」'),
+      tsun: L('「べ、別に{you}じゃなくてもいいんだけど……今夜だけ、付き合いなさいよ」|「か、勘違いしないでよね。お腹すいてるだけなんだから」|「……ちょっと。こっち来なさいよ」'),
       gentle: L('「こんばんは。少しだけ、一緒にいてもいいかな」|「疲れた顔してるね。休んでいかない？」|「大丈夫、怖いことはしないよ」'),
-      devoted: L('「あの……あなたのために、何でもします」|「今夜だけ、私にあなたを満たさせてください」|「わ、私、精一杯がんばりますから……！」'),
-      cool: L('「あなたが今夜の最適解だ」|「時間は取らせない。効率よく済ませる」|「拒否する確率は十二パーセント。来るでしょう？」'),
-      free: L('「ねえねえ、暇？　暇だよね！　遊ぼ！」|「きみ、いい匂いする！　ちょっとちょうだい！」|「今夜はきみに決めた！」'),
-      shy: L('「あ、あの……す、少しだけ……お時間、いいですか……」|「ご、ごめんなさい、急に……で、でも、あなたがいいんです……」|「わ、わたし、サキュバスで……その……」'),
+      devoted: L('「あの……{you}のために、何でもします」|「今夜だけ、私にあなたを満たさせてください」|「わ、私、精一杯がんばりますから……！」'),
+      cool: L('「{you}が今夜の最適解だ」|「時間は取らせない。効率よく済ませる」|「拒否する確率は十二パーセント。来るでしょう？」'),
+      free: L('「ねえねえ、暇？　暇だよね！　遊ぼ！」|「{you}、いい匂いする！　ちょっとちょうだい！」|「今夜は{you}に決めた！」'),
+      shy: L('「あ、あの……す、少しだけ……お時間、いいですか……」|「ご、ごめんなさい、急に……で、でも、{you}がいいんです……」|「わ、わたし、サキュバスで……その……」'),
       polite: L('「失礼いたします。今宵、少しお時間をいただけますか」|「突然申し訳ございません。お相手をお願いできませんか」|「よろしければ、私に夜をお預けください」')
     },
     WIN: {
@@ -45280,7 +45411,8 @@
       return w;
     });
     p.seen = p.seen || {}; p.seen[key] = (p.seen[key] || 0) + 1;
-    var q = SB.PREY[key], spot = rng.pick(T.spots), v = { a: p.name, t: q.name, spot: spot, s: sen ? sen.name : '' };
+    /* {you}：獲物への呼びかけ（mob.js の HK.Mob.addr。呼び名だけの獲物なので、台詞では話し手の二人称） */
+    var q = SB.PREY[key], spot = rng.pick(T.spots), v = { a: p.name, t: q.name, spot: spot, s: sen ? sen.name : '', you: HK.Mob ? HK.Mob.addr(q.name) : 'あなた' };
     p.cnt.tries++;
     var match = q.weak === p.top;
     var ty = p.style || {};
@@ -45300,7 +45432,7 @@
     if (flw) { S.flags['sf_' + flw.id] = (S.flags['sf_' + flw.id] || 0) + 1; score += flw.score || 0; if (flw.id !== 'eye') why += '／入り方：' + { tail: '尾行', bar: 'バーで', reverse: '向こうから', rain: '雨宿り', lost: '迷子のふり', dream: '夢に忍び込む' }[flw.id]; }
     var again = p.seen[key] > 1 && SB.AGAIN && rng() < 0.6;
     if (again) { score += 10; why += '／前に会った相手と再会'; }
-    var t = ST.fmt(again ? pkF(S, SB.AGAIN) : flw ? pkF(S, flw.t) : '{spot}で、{a}は{t}に目をつけた。', v) + (flw && flw.id === 'dream' ? '' : ST.fmt(apText(S, p, ty), v)) + (VO && rng() < (ty.ap ? 0.2 : 0.5) ? p.name + pkF(S, VO.OPEN[p.persona] || VO.OPEN.gentle) : '') + (q.re && rng() < 0.65 ? ST.fmt(q.re, v) : '');
+    var t = ST.fmt(again ? pkF(S, SB.AGAIN) : flw ? pkF(S, flw.t) : '{spot}で、{a}は{t}に目をつけた。', v) + (flw && flw.id === 'dream' ? '' : ST.fmt(apText(S, p, ty), v)) + (VO && rng() < (ty.ap ? 0.2 : 0.5) ? p.name + ST.fmt(pkF(S, VO.OPEN[p.persona] || VO.OPEN.gentle), v) : '') + (q.re && rng() < 0.65 ? ST.fmt(q.re, v) : '');
     var lew = env.lewd || 'mid', ml = 0, kind, rev = 0, leadP = '';
     /* 聖なる獲物で大失敗すると、祓われかける */
     if (q.hunter && score < 10) {
@@ -45447,7 +45579,7 @@
     var keys = Object.keys(SB.PREY_F).filter(function (k) { return SB.PREY_F[k].towns.indexOf(T.id) >= 0; });
     var key = HK.weighted(rng, keys, function (k) { var q0 = SB.PREY_F[k]; var w = 1; if ((p.action.id === 'pick' || p.intel) && q0.weak === p.top) w *= 2.4; return w / (1 + ((p.seenF || {})[k] || 0) * 0.8); });
     p.seenF = p.seenF || {}; p.seenF[key] = (p.seenF[key] || 0) + 1;
-    var q = SB.PREY_F[key], spot = rng.pick(T.spots), v = { a: p.name, t: q.name, spot: spot, s: sen ? sen.name : '' };
+    var q = SB.PREY_F[key], spot = rng.pick(T.spots), v = { a: p.name, t: q.name, spot: spot, s: sen ? sen.name : '', you: HK.Mob ? HK.Mob.addr(q.name) : 'あなた' };
     p.cnt.tries++;
     var ty = p.style || {}, match = q.weak === p.top;
     var score = (ty.score || 0) + p.stats.charm * 10 + p.stats.tech * 6 + (match ? 22 * (sen && sen.top === 'A' ? 1.5 : 1) : 0) + p.tr.warmth * 8 + rng() * 38 - q.resist - 20 + (p.m.mood - 60) / 4;
@@ -45455,7 +45587,7 @@
     if (p.m.mana >= 20 && (p.action.id === 'magic' ? rng() < 0.6 : rng() < 0.15 + (score < 0 ? 0.2 : 0))) { p.m.mana -= 18; score += 16; p.cnt.magic++; why += '／魅了の魔眼を使った'; }
     if (sen) { if (sen.top === 'CP') score += 6; if (sen.top === 'NP' && p.cnt.streak >= 1) score += 12; if (sen.top === 'FC') score += (rng() - 0.45) * 30; if (sen.top === 'AC') score -= 4; }
     if (p.m.mana < 15) { score -= 10; why += '／魔力切れで変身が不安定'; }
-    var t = ST.fmt('{spot}で、{a}は{t}に目をつけた。', v) + ST.fmt(apText(S, p, ty), v) + (VO && rng() < 0.2 ? p.name + pkF(S, VO.OPEN[p.persona] || VO.OPEN.gentle) : '') + (q.re ? ST.fmt(pkF(S, q.re), v) : '');
+    var t = ST.fmt('{spot}で、{a}は{t}に目をつけた。', v) + ST.fmt(apText(S, p, ty), v) + (VO && rng() < 0.2 ? p.name + ST.fmt(pkF(S, VO.OPEN[p.persona] || VO.OPEN.gentle), v) : '') + (q.re ? ST.fmt(pkF(S, q.re), v) : '');
     var ff = !P0 || P0.isF(p), ride = !ff && P0 && P0.of(p) === 'bottom' && P0.explicit(p);
     var lew = env.lewd || 'mid', ml = 0, kind;
     if (score < -5) {
@@ -46701,10 +46833,10 @@
     polite: L('「……かしこまりました……」|「どうぞ……お好きなように……」|「はしたない声を……申し訳、ございません……」|「……お、恥ずかしい……ほど、心地よく……」|「……もっと、お声を……くださいませ……」')
   };
   SM.RESIST_SAY = {
-    proud: L('「……ふざけるな。俺に何をした」|「見くびるなよ。こんなもんで俺が落ちるか」'),
-    stern: L('「……不愉快だ。今すぐやめろ」|「私の意志は、私のものだ」'),
-    tsun: L('「ちょっ……何してんのよ、変態！」|「か、かからないんだから！　絶対！」'),
-    gentle: L('「……ごめんね。それは、できない」|「やめて。お願い」'),
+    proud: L('「……ふざけるな。{you}、俺に何をした」|「見くびるなよ。こんなもんで俺が落ちるか」'),
+    stern: L('「……不愉快だ。{you}、今すぐやめろ」|「私の意志は、私のものだ」'),
+    tsun: L('「ちょっ……{you}、何してんのよ、変態！」|「か、かからないんだから！　絶対！」'),
+    gentle: L('「……ごめんね。それは、できない」|「{you}、やめて。お願い」'),
     devoted: L('「そ、それだけは……だめです……」|「いや……です……」'),
     cool: L('「暗示の構造が見えた。もう効かない」|「……なるほど。そういう手口か」'),
     free: L('「え、なになに？　くすぐったいんだけど！」|「あはは、ごめん、無理無理！」'),
@@ -46801,14 +46933,14 @@
     { id: 'record', t: L('{h}は三脚にスマホを立て、録画を始めた。「後で見返すために」|{h}は{a}の蕩けた顔を、何枚も写真に収めた。'), fx: { record: 1 } },
     { id: 'tears', t: L('{a}の目から、すっと涙が一筋流れた。催眠の奥で、{a}の何かが泣いていた。{h}の手が止まった。|{a}は「……たすけて」と小さく呟いた。{h}は聞こえなかったふりをした。'), fx: { guilt: 1, depth: -5 } },
     { id: 'body', t: L('{a}の下腹に、うっすらと紋様のような赤みが浮かんでいた。暗示が、体に染み込んでいるようだった。|{a}は暗示がなくても、{h}の声を聞くだけで体が反応するようになっていた。'), fx: { fall: 8, depth: 6 } },
-    { id: 'half', t: L('{a}が半分だけ目を開けた。「……{h}……？」――{h}は慌てて指を鳴らし、{a}をまた眠りに戻した。|{a}は一瞬、今の状況を理解しかけた。その目に、恐怖と、それ以外の何かが浮かんだ。'), fx: { depth: -14, aware: 1 } },
+    { id: 'half', t: L('{a}が半分だけ目を開けた。「……{you}……？」――{h}は慌てて指を鳴らし、{a}をまた眠りに戻した。|{a}は一瞬、今の状況を理解しかけた。その目に、恐怖と、それ以外の何かが浮かんだ。'), fx: { depth: -14, aware: 1 } },
     { id: 'clock', t: L('壁の時計が、ちょうど零時を打った。その音で、{a}は深い眠りの底へ沈んだ。'), fx: { depth: 10 } },
     { id: 'knock', t: L('誰かがドアをノックした。「{a}？　いるの？」――友人の声だった。{h}は息を潜めた。'), fx: { depth: -15, risk: 1 } }
   ];
 
   /* ---------- その後 ---------- */
   SM.AFTER = {
-    peace: L('翌日、{a}はテストで満点を取った。「{h}のおかげだよ！」――{a}は満面の笑みでお礼を言った。|{a}は仕事の資料を半日で仕上げ、上司に褒められた。「また、あの催眠お願いしてもいい？」'),
+    peace: L('翌日、{a}はテストで満点を取った。「{you}のおかげだよ！」――{a}は満面の笑みでお礼を言った。|{a}は仕事の資料を半日で仕上げ、上司に褒められた。「また、あの催眠お願いしてもいい？」'),
     forget: L('目を覚ました{a}は、何も覚えていなかった。「あれ、寝ちゃってた？　ごめん」――{h}は「疲れてたんだよ」と笑った。|{a}は「なんか、いい夢見た気がする」と伸びをした。{h}は何も言わなかった。'),
     body: L('{a}は何も覚えていなかった。ただ、{h}の声を聞くたびに、なぜか体の奥が疼いた。|{a}は数日後、気づけば{h}の家の前に立っていた。なぜ来たのか、自分でも分からなかった。'),
     angry: L('{a}は全部覚えていた。目を覚ました瞬間、{h}の頬を思い切り張り飛ばした。「二度と近寄るな」|{a}は震える声で言った。「……最低。本当に、最低」――ドアが乱暴に閉まった。'),
@@ -46826,7 +46958,7 @@
   /* 困惑・放心・受け入れて終わる結末（怒る・通報するだけでなく）。どの組でも読めるよう、体の向きには触れない */
   SM.AFTER.confused = L('{a}は全部覚えていた。けれど、怒ればいいのか、泣けばいいのか、自分でも分からなかった。{h}の顔を見るたびに言葉を探して、結局何も言えないまま目を逸らした。|{a}は自分の手のひらを、しばらくじっと見つめていた。「……あれ、本当に私だったの？」――{h}は答えなかった。{a}も、答えが欲しいのかどうか分からなかった。|{a}は家に帰ってから、ベッドの端に座ったまま朝を迎えた。嫌だったのか、嫌じゃなかったのか。どちらと言い切っても、嘘になる気がした。');
   SM.AFTER.dazed = L('{a}は目を覚ましてからも、しばらく天井を見つめたまま動かなかった。{h}が名前を呼んでも、返事は一拍遅れて返ってきた。心だけが、まだあの場所に置き去りになっていた。|翌日、{a}は一日じゅう上の空だった。お茶を淹れたまま飲み忘れ、話しかけられても「……え？」と聞き返してばかりいた。耳の奥に、まだ{h}の声が残っていた。|{a}はぼんやりしたまま服を着て、ぼんやりしたまま家に帰った。玄関で靴を脱いだところで、急に膝の力が抜けて、そのまま座り込んだ。何を考えればいいのかも、分からなかった。');
-  SM.AFTER.accept = L('{a}は全部覚えていた。長い沈黙のあとで、{a}は小さく息を吐いた。「……びっくりした。でも、{h}だったから、いい」――{h}は、ほっとしたように肩を落とした。|{a}は戸惑った顔のまま、{h}の袖をそっと掴んだ。「次は、ちゃんと最初から言って。……そしたら、たぶん、断らないから」――{h}は何度も頷いた。{a}は赤い顔のまま、掴んだ袖を離さなかった。|{a}はしばらく黙って{h}を見ていた。それから、困ったように笑った。「怒るタイミング、逃しちゃった。……もういいよ。そのかわり、ちゃんと責任とってね」――{h}は、神妙な顔で頷いた。');
+  SM.AFTER.accept = L('{a}は全部覚えていた。長い沈黙のあとで、{a}は小さく息を吐いた。「……びっくりした。でも、{you}だったから、いい」――{h}は、ほっとしたように肩を落とした。|{a}は戸惑った顔のまま、{h}の袖をそっと掴んだ。「次は、ちゃんと最初から言って。……そしたら、たぶん、断らないから」――{h}は何度も頷いた。{a}は赤い顔のまま、掴んだ袖を離さなかった。|{a}はしばらく黙って{h}を見ていた。それから、困ったように笑った。「怒るタイミング、逃しちゃった。……もういいよ。そのかわり、ちゃんと責任とってね」――{h}は、神妙な顔で頷いた。');
   /* 結末の名前（結果の見出しに出す） */
   SM.END_TITLE = { peace: '冴えた朝', forget: '白紙の朝', body: '体だけの記憶', angry: '平手の音', report: '届けられた夜', revenge: '振り子は返る', counter: '逆催眠', sweet: '照れた許し', shy: '合わせられない目', fall: '自分から鳴らす指', couple: '順番違いの恋', depend: '離れられない声', laugh: '笑い飛ばし', noticed: '見破られた催眠', confused: '答えの出ない朝', dazed: '戻らない心', accept: 'それでもいい' };
   /* かけられた側が攻めのとき（solo-saimin.js の topVoice）：ぼんやりしても、弱気・従順にはならない */
@@ -46846,14 +46978,14 @@
     fall: { proud: L('「……またかけろ。今度は、もっと好きにしてやる」'), stern: L('「……あの感覚が、忘れられない」'), tsun: L('「……ま、またかけてくれても、いいけど……」'), gentle: L('「……ねえ、もう一回、かけて？」'), devoted: L('「……また、あの声を聞かせて」'), cool: L('「……再現性を確かめたい。もう一度だ」'), free: L('「またやって！　次はもっと激しいやつ！」'), shy: L('「……ま、また……してほしい、かも……」'), polite: L('「……また、お願いしてもよろしいでしょうか」') }
   };
   SM.AFTER_SAY = {
-    angry: { proud: L('「次に顔を見せたら、ただじゃおかねえ」'), stern: L('「……法の裁きを受けてもらう」'), tsun: L('「絶対許さないから！　ばか！　変態！」'), gentle: L('「……信じてたのに」'), devoted: L('「どうして……どうしてこんなこと……」'), cool: L('「録画データは全部消してもらう。今ここで」'), free: L('「マジでありえない。友達やめる」'), shy: L('「こ、こわかった……っ、もう、来ないで……」'), polite: L('「金輪際、私に関わらないでください」') },
-    sweet: { proud: L('「……次やったら、俺がかけ返すからな」'), stern: L('「……事前に、許可を取れ」'), tsun: L('「べ、別に嫌じゃなかったけど！　勘違いしないでよね！」'), gentle: L('「……ちょっと、恥ずかしかったな」'), devoted: L('「あなたなら……何をされても、いいです」'), cool: L('「……興味深い体験だった。再現性を確かめたい」'), free: L('「めっちゃよかった！　またやろ！」'), shy: L('「う、うう……は、はずかしい……でも……」'), polite: L('「……次は、私にもかけさせてくださいね」') },
-    fall: { proud: L('「……悪いかよ。もう、お前の声なしじゃ駄目なんだ」'), stern: L('「……私は、壊れてしまったらしい」'), tsun: L('「ち、違うから！　ただ、ちょっと、またしてほしいだけで……！」'), gentle: L('「……ねえ、もう一回、だめ？」'), devoted: L('「私を、あなたのものにしてください」'), cool: L('「……依存の兆候を自覚している。止められない」'), free: L('「あれ忘れられないんだけど！　もっかい！」'), shy: L('「お、おねがい、します……もう一回……」'), polite: L('「どうか、もう一度……お願いいたします」') }
+    angry: { proud: L('「次に顔を見せたら、ただじゃおかねえ」'), stern: L('「……法の裁きを受けてもらう」'), tsun: L('「絶対許さないから！　ばか！　変態！」'), gentle: L('「……{you}のこと、信じてたのに」'), devoted: L('「どうして……どうしてこんなこと……」'), cool: L('「録画データは全部消してもらう。今ここで」'), free: L('「マジでありえない。友達やめる」'), shy: L('「こ、こわかった……っ、もう、来ないで……」'), polite: L('「金輪際、私に関わらないでください」') },
+    sweet: { proud: L('「……次やったら、俺がかけ返すからな」'), stern: L('「……事前に、許可を取れ」'), tsun: L('「べ、別に嫌じゃなかったけど！　勘違いしないでよね！」'), gentle: L('「……ちょっと、恥ずかしかったな」'), devoted: L('「{you}なら……何をされても、いいです」'), cool: L('「……興味深い体験だった。再現性を確かめたい」'), free: L('「めっちゃよかった！　またやろ！」'), shy: L('「う、うう……は、はずかしい……でも……」'), polite: L('「……次は、私にもかけさせてくださいね」') },
+    fall: { proud: L('「……悪いかよ。もう、お前の声なしじゃ駄目なんだ」'), stern: L('「……私は、壊れてしまったらしい」'), tsun: L('「ち、違うから！　ただ、ちょっと、またしてほしいだけで……！」'), gentle: L('「……ねえ、もう一回、だめ？」'), devoted: L('「私を、{you}のものにしてください」'), cool: L('「……依存の兆候を自覚している。止められない」'), free: L('「あれ忘れられないんだけど！　もっかい！」'), shy: L('「お、おねがい、します……もう一回……」'), polite: L('「どうか、もう一度……お願いいたします」') }
   };
   /* 困惑・放心・受け入れる結末の台詞（態度9種） */
   SM.AFTER_SAY.confused = { proud: L('「……怒りゃいいのか、何なのか。分かんねえんだよ」|「……くそ。どんな顔すりゃいいんだ」'), stern: L('「……整理がつかない。少し、時間をくれ」|「……どう判断すべきか、分からない」'), tsun: L('「べ、別に……怒ってるとか、そういうのじゃ……ない、けど……」|「な、なんて言えばいいのよ、こういうとき……」'), gentle: L('「……ごめんね。まだ、うまく考えられないの」|「……どうしたらいいのかしら、私」'), devoted: L('「わ、私……どう思えばいいのか、分からなくて……」|「……嫌、だったのかな。分からない、です……」'), cool: L('「……感情の分類ができない。こんなことは初めてだ」|「……結論が出ない。保留にさせてくれ」'), free: L('「え、待って、これって怒るとこ？　笑うとこ？」|「……なんか、よく分かんないや。ほんとに」'), shy: L('「……あ、あの……わ、わかんない、です……」|「……ど、どうしたら、いいの……」'), polite: L('「……申し訳ございません。まだ、気持ちの整理が……」|「……どのようにお返事すればよいのか、分かりかねます」') };
   SM.AFTER_SAY.dazed = { proud: L('「……あ？　……ああ、聞いてる……」|「……頭が、まだ、戻ってこねえ……」'), stern: L('「……すまない。何の話だった」|「……集中、できない……」'), tsun: L('「……ん……なに……？　ぼーっとしてないし……」|「……う、うるさい……まだ、ふわふわしてるの……」'), gentle: L('「……ふふ……なんだか、夢みたい……」|「……ごめんなさい、少し……ぼんやりしてて……」'), devoted: L('「……はい……あれ、私、何を……」|「……まだ、あの声が……耳の奥に……」'), cool: L('「……思考が、まとまらない……戻るのに、時間がかかる……」|「……おかしいな……何も、考えられない……」'), free: L('「……あはは……まだ、あたま、とろとろ……」|「……ねえ、今日って、何曜日だっけ……」'), shy: L('「……ぁ……は、はい……？」|「……ふわふわ、して……」'), polite: L('「……失礼いたしました……少々、ぼんやりと……」|「……まだ、夢の中にいるようでございます……」') };
-  SM.AFTER_SAY.accept = { proud: L('「……チッ。お前ならいい。ほかのやつだったら、ぶっ飛ばしてた」|「……もういい。そのかわり、次は俺が決める」'), stern: L('「……今回だけは、不問にする」|「……受け入れよう。ただし、二度目は事前に言え」'), tsun: L('「べ、別に許したわけじゃないんだから！　……ちょっとだけ、だから」|「……し、しょうがないから、なかったことにはしないであげる」'), gentle: L('「……いいのよ。あなたなら」|「……びっくりしたけど、嫌じゃなかったわ」'), devoted: L('「……ちゃんと、受け止めます。あなたのことだから」|「……驚きましたけど、もう、いいんです」'), cool: L('「……合理的ではないが、受け入れることにした」|「……悪くなかった、と認めておく」'), free: L('「まあ、いっか！　面白かったし！」|「……うん、いいよ。そういうのも、ありかも」'), shy: L('「……は、はずかしかった、けど……い、いやじゃ、なかった、です……」|「……こ、今度は……ちゃんと、言ってください……」'), polite: L('「……承知いたしました。今回は、受け入れさせていただきます」|「……次からは、先にお声がけくださいませ」') };
+  SM.AFTER_SAY.accept = { proud: L('「……チッ。{you}ならいい。ほかのやつだったら、ぶっ飛ばしてた」|「……もういい。そのかわり、次は俺が決める」'), stern: L('「……今回だけは、不問にする」|「……受け入れよう。ただし、二度目は事前に言え」'), tsun: L('「べ、別に許したわけじゃないんだから！　……ちょっとだけ、だから」|「……し、しょうがないから、なかったことにはしないであげる」'), gentle: L('「……いいのよ。あなたなら」|「……びっくりしたけど、嫌じゃなかったわ」'), devoted: L('「……ちゃんと、受け止めます。あなたのことだから」|「……驚きましたけど、もう、いいんです」'), cool: L('「……合理的ではないが、受け入れることにした」|「……悪くなかった、と認めておく」'), free: L('「まあ、いっか！　面白かったし！」|「……うん、いいよ。そういうのも、ありかも」'), shy: L('「……は、はずかしかった、けど……い、いやじゃ、なかった、です……」|「……こ、今度は……ちゃんと、言ってください……」'), polite: L('「……承知いたしました。今回は、受け入れさせていただきます」|「……次からは、先にお声がけくださいませ」') };
 
   /* ---------- 後日談（数日後の二人） ----------
      solo-saimin.js の epilogue：［結末ごとの場面］＋［二人の関係ごとの一文］＋（記憶が欠けていれば一文）＋［気質ごとの一文］＋［態度ごとの台詞］。
@@ -46998,7 +47130,7 @@
   var ADD = {
     onedari: { label: 'おねだりしないとイけない', req: 45, aff: { fc: 0.25, ac: 0.2 }, res: { cp: 0.3, a: 0.1 }, lewd: true,
       cmd: L('「あなたは、ちゃんと言葉でおねだりしないと、絶対にイけない」|「欲しいものは、自分の口で言いなさい。言えたら、ご褒美をあげる」'),
-      full: L('{a}は何度も達しかけては止まり、とうとう涙目で{h}の袖を引いた。「お願い……イかせて、ください……っ」――言った瞬間、{a}の体は待ちわびたように跳ねた。|{a}は自分の口から出る言葉に驚きながら、止められなかった。「もっと、奥まで……{h}ので、いっぱいにして」――{h}が望み通りにすると、{a}は甘い悲鳴を上げて果てた。|{a}は脚を開いて{h}を見上げた。「ここ、触って……ちゃんと言えたから、ご褒美……ちょうだい？」|{a}は「お願い」を十回言わされた。十回目には、自分から{h}の手を取り、欲しいところへ導いていた。'),
+      full: L('{a}は何度も達しかけては止まり、とうとう涙目で{h}の袖を引いた。「お願い……イかせて、ください……っ」――言った瞬間、{a}の体は待ちわびたように跳ねた。|{a}は自分の口から出る言葉に驚きながら、止められなかった。「もっと、奥まで……{you}ので、いっぱいにして」――{h}が望み通りにすると、{a}は甘い悲鳴を上げて果てた。|{a}は脚を開いて{h}を見上げた。「ここ、触って……ちゃんと言えたから、ご褒美……ちょうだい？」|{a}は「お願い」を十回言わされた。十回目には、自分から{h}の手を取り、欲しいところへ導いていた。'),
       part: L('{a}は唇を噛んで、おねだりの言葉を飲み込み続けた。「言わない……絶対、言わないから……っ」――そのせいで、体は熱を持て余したまま震え続けた。|{a}は小さな声で「……お、ねが……」と言いかけ、真っ赤になって顔を背けた。'),
       fx: { plea: 40, fall: 16, climax: 1 } },
     seduce: { label: '自分から誘惑する', req: 50, aff: { fc: 0.3, np: 0.1 }, res: { ac: 0.2, cp: 0.15 }, lewd: true,
@@ -47250,7 +47382,7 @@
       ffTop: L('{a}は四つん這いになり、{h}の足元にすり寄った。じゃれつくように{h}を押し倒すと、犬のように{h}の首筋から胸元まで舐め回した。|{a}は皿に注がれたミルクを舌で舐め、{h}に頭を撫でられると嬉しそうに鳴いた。その姿を、{h}はスマホで撮り続けた。') },
     onedari: {
       cmdTop: L('「欲しいものは、自分の口で言いなさい。言えたら、ご褒美をあげる」'),
-      ff: L('{a}は何度も達しかけては止まり、とうとう涙目で{h}の袖を引いた。「お願い……イかせて、ください……っ」――言った瞬間、{a}の体は待ちわびたように跳ねた。|{a}は自分の口から出る言葉に驚きながら、止められなかった。「もっと、奥まで……{h}の指で、いっぱいにして」――{h}が望み通りにすると、{a}は甘い悲鳴を上げて果てた。|{a}は脚を開いて{h}を見上げた。「ここ、触って……ちゃんと言えたから、ご褒美……ちょうだい？」') },
+      ff: L('{a}は何度も達しかけては止まり、とうとう涙目で{h}の袖を引いた。「お願い……イかせて、ください……っ」――言った瞬間、{a}の体は待ちわびたように跳ねた。|{a}は自分の口から出る言葉に驚きながら、止められなかった。「もっと、奥まで……{you}の指で、いっぱいにして」――{h}が望み通りにすると、{a}は甘い悲鳴を上げて果てた。|{a}は脚を開いて{h}を見上げた。「ここ、触って……ちゃんと言えたから、ご褒美……ちょうだい？」') },
     serve: {
       ffTop: L('{a}は「失礼します」と言って{h}の前に膝をつき、丁寧に、心を込めて{h}の脚のあいだに舌を這わせた。{h}が息を詰めるたびに、{a}は嬉しそうに目を細めた。|{a}は{h}の全身を、時間をかけて舌と手で愛した。「気持ちいいですか？」と訊くたびに、自分の方が蕩けていった。|{a}は{h}の上に重なって脚を絡め、「動くのは、私の仕事だから」と微笑んで、{h}が達するまで、熱いところを擦り合わせ続けた。') },
     mirror: {
@@ -47340,7 +47472,7 @@
       fm: L('{a}は四つん這いになり、{h}の足元にすり寄った。首輪をつけられても、嬉しそうに{h}の脚へ頬をすり寄せた。{h}が{a}を仰向けに転がして跨ると、{a}は犬のように鼻を鳴らして、されるがままになった。|{a}は首輪の鈴を鳴らしながら、{h}の膝に顎を乗せた。{h}は「いい子」と頭を撫で、そのまま{a}を床に寝かせて跨り、上から腰を落とした。{a}は鳴き声のような息を漏らしながら、{h}の下で身をよじり続けた。')
     },
     onedari: {
-      fm: L('{a}は何度も達しかけては止められ、とうとう涙目で{h}の袖を引いた。「お願い……イかせて、ください……っ」――言った瞬間、{h}が深く腰を沈め、{a}の体は待ちわびたように跳ねた。{h}は{a}の上で満足そうに笑い、もう一度ねだらせるために、また動きを止めた。|{a}は{h}を見上げて、自分の口から出る言葉に驚いた。「{h}の中で、イかせて……」――{h}が望み通りに深く腰を沈めると、{a}は甘い悲鳴を上げて果てた。{h}は{a}の頬を撫でて、次のおねだりを待った。')
+      fm: L('{a}は何度も達しかけては止められ、とうとう涙目で{h}の袖を引いた。「お願い……イかせて、ください……っ」――言った瞬間、{h}が深く腰を沈め、{a}の体は待ちわびたように跳ねた。{h}は{a}の上で満足そうに笑い、もう一度ねだらせるために、また動きを止めた。|{a}は{h}を見上げて、自分の口から出る言葉に驚いた。「{you}の中で、イかせて……」――{h}が望み通りに深く腰を沈めると、{a}は甘い悲鳴を上げて果てた。{h}は{a}の頬を撫でて、次のおねだりを待った。')
     },
     serve: {
       fm: L('{a}は「失礼します」と言って{h}の前に膝をつき、{h}の脚のあいだに丁寧に舌を這わせた。{h}が息を詰めるたびに、{a}は嬉しそうに目を細めた。{h}が達して脚を震わせても、{a}は「もう少しだけ」と顔を離さなかった。|{a}は{h}の全身を、時間をかけて舌と手で愛した。「気持ちいいですか？」と訊くたびに、{a}の方が蕩けていった。最後に{h}が{a}を仰向けにして跨ると、{a}は「まだ尽くしたい」と言いかけて、{h}に唇を塞がれた。')
@@ -47604,6 +47736,8 @@
 
     function say(p, o, short, force) {
       o.actors = HY ? [p, HY] : [p];
+      /* かける側への呼びかけ（{you}）：モブなら印（mob.js の HK.Mob.addr。台詞では話し手の二人称になる）、住人なら「あなた」（相手ごとの二人称が効く） */
+      if (typeof o.text === 'string' && o.text.indexOf('{you}') >= 0) o.text = !HY && p.hm && HK.Mob ? HK.Mob.you(o.text, p.hm, p.ty === 'lover' ? '' : 'さん') : o.text.replace(/\{you\}/g, 'あなた');
       /* かける側の呼び名が「アキラの元患者」のようなとき、「アキラはアキラの元患者を」→「アキラは自分の元患者を」 */
       if (typeof o.text === 'string') o.text = o.text.replace(new RegExp(p.name + '(は|が|も)' + p.name + '(の|に)', 'g'), p.name + '$1自分$2');
       /* 女性の攻め指定が男性の相手（モブを含む）と：入れる側の書き方を、跨る書き方に直す（pos-fm.js） */
@@ -47623,7 +47757,7 @@
     }
     function wake(p) {
       p.woke = true;
-      var o = say(p, { tag: '目覚め', text: ST.fmt(ST.pick(S, L('{a}がはっと目を見開いた。目の前に{h}の顔があった。自分の格好を見下ろして、{a}は息を呑んだ。|{a}の瞳に、急に光が戻った。「……え。何、してるの」|{a}は跳ね起きた。体はまだ火照っているのに、頭だけが冷えていた。')), { a: p.name, h: p.h }) + (SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: '催眠が浅くなって、途中で目を覚ました（深さ ' + Math.round(p.m.depth) + '）', mag: 35 }, '', true);
+      var o = say(p, { tag: '目覚め', text: ST.fmt(ST.pick(S, L('{a}がはっと目を見開いた。目の前に{h}の顔があった。自分の格好を見下ろして、{a}は息を呑んだ。|{a}の瞳に、急に光が戻った。{a}は「……え。{you}、何してるの」と後ずさった。|{a}は跳ね起きた。体はまだ火照っているのに、頭だけが冷えていた。')), { a: p.name, h: p.h }) + (SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: '催眠が浅くなって、途中で目を覚ました（深さ ' + Math.round(p.m.depth) + '）', mag: 35 }, '', true);
       ST.key(S, o, p.name + 'が途中で目を覚ました');
       /* エッチな暗示のあとで目を覚ましたなら、そこからも分かれる（流される／通報／逃げる） */
       if (p.cnt.lewd >= 1 && lew !== 'low' && SM.afterSnap && !p.snapDone) {
@@ -47640,7 +47774,9 @@
     }
     function tq(p) { return V && SM.TRANCE[p.persona] && rng() < 0.45 ? p.name + fresh(p, topVoice(p, 'TRANCE', tranceL(p))) : ''; }
     function cmdText(p, g) {
-      var c = ST.fmt(ST.pick(S, cmdOf(p, g)), { h: p.h, a: p.name }).replace(/^「|」$/g, '');
+      /* 暗示はかける側の台詞：{h}（かける側自身）は「私」。モブのかける側の台詞は、かけられる側の口調に言い換えない（\u2060。voice.js） */
+      var c0 = ST.fmt(ST.pick(S, cmdOf(p, g)), { h: '私', a: p.name }).replace(/^「|」$/g, '');
+      var c = (p.hc ? '' : '\u2060') + c0;
       if (!SM.CMD_FRAME) return p.h + 'は' + (S.rng() < 0.5 ? '低い声で' : '耳元で') + '「' + c + '」と囁いた。';
       return ST.fmt(ST.pick(S, SM.CMD_FRAME), { h: p.h, a: p.name }).replace('{c}', c);
     }
@@ -69286,6 +69422,12 @@
           '**展開の重さ**（全箱庭で共通） … 死・心中・監禁・危害・別れ・浮気・失恋・発狂・堕ち・全滅・襲撃といった重い展開の起こりやすさをまとめて変えます。「穏やか」でも起きないわけではなく、起こりにくくなるだけです。「重い」は起こりやすくなります。ふつう以外のときは、結末に「展開：穏やか」のように一行出ます。',
           '「穏やか」にすると、内容のスイッチの「合意のない展開」「暴力をともなう性描写」「DVなど歪んだ関係」も切として扱います（R18が中心の箱庭では題材なので効かせず、堕ちが遅くなるだけです）。'
         ] },
+        { h: 'モブへの呼びかけ（全箱庭で共通）', items: [
+          '住人がモブ（合コンの同席者・マッサージの施術者・催眠をかける人・ゾンビの街の生存者や略奪者・運命の番・サキュバスの獲物など、住人でない人）に話しかける台詞で、相手をどう呼ぶかを選びます。',
+          '**二人称で**（既定） … 「隣の席の佐伯さん」のような長い呼び名ではなく、話し手の二人称（設定の二人称、空なら口調の既定の「あなた」「お前」「きみ」など）で呼びます。',
+          '**名前で** … 名前のあるモブは「佐伯さん」のように短い名前で呼びます。「泥酔したサラリーマン」のように名前のないモブは、二人称のままです。',
+          '地の文（「〇〇は佐伯に水を渡した」など）は、どちらでもモブの名前のままです。'
+        ] },
         { h: 'シード', items: [
           '同じシード・同じ住人・同じ条件なら、同じ結末になります。気に入った結果はシードを控えておくと再現できます。',
           '空欄ならランダムです。結果画面にシードが表示されます。'
@@ -69329,7 +69471,9 @@
           '見本の台詞は、性別の設定に合わせて切り替わります。'
         ] },
         { h: '一人称・二人称', items: [
-          '空欄なら口調と性別から決まります。二人称は「あなた」「お前」などを置き換えます。'
+          '空欄なら口調と性別から決まります。二人称は「あなた」「お前」などを置き換えます。',
+          '相手によって変えたいときは、「関係と呼び方」の相手の行で、その相手への二人称・一人称を決められます（決めた相手に話しかける台詞では、こちらより優先します）。',
+          'モブ（住人でない人）に話しかけるときは、ここの二人称で呼びます（環境値の「モブへの呼びかけ」で名前にもできます）。'
         ] },
         { h: '語尾の記号', items: [
           '文末の「。」「！」を好きな記号に置き換えます。例：`！！！` →「分かった！！！引き受けよう！！！」',
@@ -69412,6 +69556,9 @@
         { h: 'ポイント', items: [
           '「関係を重ねる」で、同じ相手に複数の関係をつけられます。',
           '呼び方の欄に書いた呼び名は、台詞の中で相手の名前の代わりに使われます。',
+          '二人称・一人称の欄は、その相手に話しかける台詞だけで使われます（例：ふだんは「あなた」「私」でも、幼なじみには「お前」「俺」）。候補から選ぶか、自由に書けます。空なら「話し方」の二人称・一人称のままです。',
+          '誰に話しかけているか分からない台詞や、ほかの人に向けた台詞では、いつもの二人称・一人称のままです。呼び方も決めた相手には、二人称の代わりに呼び方を使います。',
+          '関係のない相手の行は、「関係を追加」で関係をつけると出ます（呼び方・二人称・一人称を決めた相手は、関係を外しても行が残ります）。',
           '血縁の関係には「恋愛：なし／あり」を選べます（なしなら恋愛・体の関係に発展しません）。'
         ] }
       ]
@@ -70807,7 +70954,7 @@
     var V = HK.Voice;
     if (!V || !V.processText) return '';
     var s = S(), o = s.chars.filter(function (x) { return x !== c; })[0] || { name: '相手', id: '' };
-    var me = { name: c.name, fp: c.fp || '', you: c.you || '', marks: c.marks || '', toneCustom: c.toneCustom || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null };
+    var me = { name: c.name, fp: (c.fpFor && o.id && c.fpFor[o.id]) || c.fp || '', you: (c.youFor && o.id && c.youFor[o.id]) || c.you || '', marks: c.marks || '', toneCustom: c.toneCustom || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null };
     var kgo = c.keigo ? s.chars.filter(function (x) { return x !== c && c.keigo[x.id]; })[0] : null;
     me.persona = HK.personaOf ? HK.personaOf({ tone: c.tone, eg: c.eg }) : 'gentle';
     var ppl = [me, { name: o.name, fp: '', gender: o.gender || '', tone: '', persona: 'gentle' }];
@@ -70857,11 +71004,11 @@
       (groups[oid] = groups[oid] || []).push([t, k]);
     });
     var calls = c.calls || {};
-    var rel = others.filter(function (o) { return groups[o.id] || calls[o.id]; }).map(function (o) {
+    var rel = others.filter(function (o) { return groups[o.id] || calls[o.id] || (HK.Attr && HK.Attr.hasVoiceFor(c, o.id)); }).map(function (o) {
       var i = s.chars.indexOf(o);
       return '<div class="gtie"><div class="who">' + HK.Icons.html(o.name, i, 22) + esc(o.name) + '</div>' +
         (groups[o.id] || []).map(function (x) { return tieRow(c, o, x[0], x[1]); }).join('') +
-        '<div class="one"><label>' + esc(c.name) + 'からの呼び方 <input type="text" data-gf="callone" data-o="' + o.id + '" value="' + esc(calls[o.id] || '') + '" maxlength="16" placeholder="' + esc(o.name + ({ name: '', san: 'さん', kun: 'くん', chan: 'ちゃん', sama: '様', senpai: '先輩', sensei: '先生' }[c.call] || '')) + '"></label>' +
+        '<div class="one"><label>' + esc(c.name) + 'からの呼び方 <input type="text" data-gf="callone" data-o="' + o.id + '" value="' + esc(calls[o.id] || '') + '" maxlength="16" placeholder="' + esc(o.name + ({ name: '', san: 'さん', kun: 'くん', chan: 'ちゃん', sama: '様', senpai: '先輩', sensei: '先生' }[c.call] || '')) + '"></label>' + (HK.Attr && HK.Attr.voiceForHtml ? HK.Attr.voiceForHtml(c, o, esc) : '') +
         '<button type="button" class="btn ghost small" data-gact="tadd" data-o="' + o.id + '">関係を重ねる</button></div></div>';
     }).join('');
     var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手">' + others.map(function (o) { return opt(o.id, o.name, ''); }).join('') + '</select></label>' +

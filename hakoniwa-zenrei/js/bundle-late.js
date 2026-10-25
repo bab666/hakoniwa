@@ -17311,7 +17311,7 @@
   ];
 
   /* 立場逆転：客が施術者を押し倒す */
-  M.REVERSE = L('{a}は不意に起き上がり、{m}の手首を掴んで施術台に引き倒した。「さっきから好き勝手やってくれたな。今度はこっちの番だ」|{a}は{m}の耳元で囁いた。「ねえ、交代しよっか」――そう言って、{m}を施術台に押し倒した。|{a}は{m}の腕を引いて、自分の上に倒れ込ませ、そのまま体勢を入れ替えた。「マッサージ、教えてあげる」');
+  M.REVERSE = L('{a}は不意に起き上がり、{m}の手首を掴んで施術台に引き倒した。「{you}、さっきから好き勝手やってくれたな。今度はこっちの番だ」|{a}は{m}の耳元で囁いた。「ねえ、交代しよっか」――そう言って、{m}を施術台に押し倒した。|{a}は{m}の腕を引いて、自分の上に倒れ込ませ、そのまま体勢を入れ替えた。「マッサージ、教えてあげる」');
   M.REVERSE_ACT = L('{a}は{m}がしていたのと同じ手順で、{m}の弱いところを探し当てた。{m}の口から、さっきまでの余裕が消えた。|{a}はオイルの瓶を逆さにして、{m}の背中にたっぷり垂らした。「リンパ、流してあげるね」|{m}は「お客様、それは」と言いかけて、{a}の指に言葉を奪われた。|{a}は{m}が音を上げるまで、決して手を止めなかった。');
   /* 証拠集め（噂の店を確かめに来た客） */
   M.EVIDENCE = L('{a}はタオルの陰で、ポケットの録音ボタンをそっと押した。|{a}は施術室の間取りと、壁の時計の位置を頭に刻み込んだ。|{a}は{m}の言い訳を、一語一句覚えておくことにした。');
@@ -17347,7 +17347,7 @@
   /* 抵抗しながら、それでも体が反応してしまう */
   M.WRONG_BODY = L('嫌悪と戸惑いの奥で、{a}の体は正直に熱を帯びていった。|{a}は「{sx}の私が、こんなことで感じるはずがない」と頭の中で何度も繰り返した。それでも、腰が勝手に跳ねた。|「違う、これは違う」――{a}の否定とは裏腹に、肌は粟立っていた。|{a}は目を固く閉じた。相手の顔を見なければ、まだ言い訳ができる気がした。');
   /* 言い訳に騙されにくい */
-  M.WRONG_NOTDECEIVED = L('{a}は首を振った。「リンパだろうと何だろうと、そこは無理です」|{a}は言い訳を最後まで聞かなかった。「そういう問題じゃない」');
+  M.WRONG_NOTDECEIVED = L('{a}は首を振った。「リンパだろうと何だろうと、そこは無理です」|{a}は言い訳を最後まで聞かなかった。「{you}、そういう問題じゃない」');
   /* 分かっていて続けたとき */
   M.WRONG_STAY = L('{a}は長い沈黙のあと、目を閉じた。「……{sx}の私に、変な意味でするはずがない。だから、これは、ただのマッサージ」――自分に言い聞かせる声だった。|{a}は「……今日だけ。誰にも言わない」と呟いて、横になり直した。相手のことは、考えないことにした。');
   /* 快楽に負けたとき */
@@ -17419,9 +17419,9 @@
   /* 際どくなる手前の反応 */
   M.TOP_REACT = L('{a}は{m}の手の位置を、横目で確かめた。まだ、ぎりぎり施術の範囲だった。|{a}は「そこまでなら」と小さく釘を刺した。{m}の手が、わずかに止まった。|{a}は眉ひとつ動かさず、ずれかけたタオルの位置だけを直した。|{a}は「次に手が下がったら起きる」と、心の中で決めていた。');
   /* 際どい施術に入る瞬間に止める */
-  M.TOP_STOP = L('{m}の指が、内腿を這い上がりかけた。その手首を、{a}はうつ伏せのまま後ろ手に掴んだ。「――そこから先は、頼んでない」|際どいところへ滑り込もうとした手を、{a}は迷わず払いのけた。「触られて喜ぶ趣味はない」|{a}は{m}の手が「リンパ」の範囲を外れた瞬間に、身を起こした。「施術はここまで。……触られる側は、性に合わない」|{m}の手つきが変わったのを、{a}は見逃さなかった。指が届く前に、{a}は膝を立てて体を返していた。「で、今のは何の施術？」');
+  M.TOP_STOP = L('{m}の指が、内腿を這い上がりかけた。その手首を、{a}はうつ伏せのまま後ろ手に掴んだ。「――そこから先は、{you}に頼んでない」|際どいところへ滑り込もうとした手を、{a}は迷わず払いのけた。「触られて喜ぶ趣味はない」|{a}は{m}の手が「リンパ」の範囲を外れた瞬間に、身を起こした。「施術はここまで。……触られる側は、性に合わない」|{m}の手つきが変わったのを、{a}は見逃さなかった。指が届く前に、{a}は膝を立てて体を返していた。「で、{you}、今のは何の施術？」');
   /* 止めたあと、立場を入れ替える */
-  M.TOP_REVERSE = L('{a}は掴んだ手首を引き、体勢を入れ替えて{m}を施術台に押さえつけた。「そんなに触りたいなら、触られる側の気持ちも知っておくといい」|{a}は施術台から降り、代わりに{m}をそこへ寝かせた。「交代。今度は、そっちが力を抜く番」|{a}はオイルの瓶を取り上げ、{m}の手首ごと施術台に縫いとめた。「ここからは、こっちが施術する」');
+  M.TOP_REVERSE = L('{a}は掴んだ手首を引き、体勢を入れ替えて{m}を施術台に押さえつけた。「そんなに触りたいなら、触られる側の気持ちも知っておくといい」|{a}は施術台から降り、代わりに{m}をそこへ寝かせた。「交代。今度は、{you}が力を抜く番」|{a}はオイルの瓶を取り上げ、{m}の手首ごと施術台に縫いとめた。「ここからは、こっちが施術する」');
   /* 止めたあと、帰る */
   M.TOP_LEAVE = L('{a}は{m}の手を施術台の縁に戻させ、タオルを巻き直した。|{a}は{m}の手首を離すと、何事もなかったように起き上がった。|{a}は「延長はいらない」と言い捨てて、施術台を降りた。');
 
@@ -17964,7 +17964,8 @@
   function L(s) { return s.split('|'); }
   var CHILD = { jp: L('ミウ|ソウタ|ハルト|ユイ|リク|コハル|メイ|タイチ'), us: L('リリー|ノア|エマ|ルーカス|ミア|オリバー|ゾーイ|ベン') };
   function nm(n) { return n.label; }
-  function fillN(ctx, t, n, a, b) { return ctx.t(t, a, b).replace(/\{n\}/g, n.label).replace(/\{area\}/g, Z.an(ctx, n.area)); }
+  /* {you}：住人から生存者（NPC）への呼びかけ（mob.js の HK.Mob.addr。台詞では話し手の二人称、全体の設定で「名前で」なら名前で） */
+  function fillN(ctx, t, n, a, b) { if (HK.Mob) t = HK.Mob.you(t, n, n.type === 'child' ? 'ちゃん' : 'さん'); return ctx.t(t, a, b).replace(/\{n\}/g, n.label).replace(/\{area\}/g, Z.an(ctx, n.area)); }
   function luck(ctx, c) { return ctx.stat(c, 'luck'); }
   function power(c) { return (c.weapon ? c.weapon.pow : 0) * 5 + c.hp * 0.25 + c.tr.aggr * 12 + c.tr.a * 6; }
 
@@ -18137,7 +18138,7 @@
           return ctx.act2({ actors: P, cat: 'solo', fx: function () { P.forEach(function (c) { if (c.tr.np > 0.5) ctx.stress(c, 12); }); }, text: fillN(ctx, '物陰で、{n}が膝を抱えて泣いていた。{a}は足を止めかけて、それから首を振った。「連れていけない。足手まといになる」', n, a), why: a.name + 'のドライさ（' + Math.round(a.tr.cold * 100) + '）', mag: 18 });
         }
         n.with = a.i; a.z.child = n.id;
-        ctx.act2({ actors: P, cat: 'help', fx: function () { ctx.stress(a, -8); }, text: fillN(ctx, rng.pick(['{area}の車の陰で、{n}が泣きじゃくっていた。{a}はしゃがんで目線を合わせ、「一緒に行こう」と手を差し出した。', '{n}は「ママを待ってる」と言って動こうとしなかった。{a}は{n}を背負い、「ママには、生きてたら会えるから」と言った。', '{n}は{a}の服の裾を掴んで離さなかった。{a}は諦めて、{n}の手を握り直した。']), n, a), why: a.name + 'のNP（' + Math.round(a.eg.NP) + '）', mag: 20 });
+        ctx.act2({ actors: P, cat: 'help', fx: function () { ctx.stress(a, -8); }, text: fillN(ctx, rng.pick(['{area}の車の陰で、{n}が泣きじゃくっていた。{a}はしゃがんで目線を合わせ、「{you}も、一緒に行こう」と手を差し出した。', '{n}は「ママを待ってる」と言って動こうとしなかった。{a}は{n}を背負い、「ママには、生きてたら会えるから」と言った。', '{n}は{a}の服の裾を掴んで離さなかった。{a}は諦めて、{n}の手を握り直した。']), n, a), why: a.name + 'のNP（' + Math.round(a.eg.NP) + '）', mag: 20 });
       },
       again: function (ctx, n, P) {
         var rng = ctx.rng, zb = ctx.zb, a = n.with != null ? ctx.chars[n.with] : null;
@@ -18183,12 +18184,12 @@
         var f = ctx.most(P, function (c) { return c.tr.aggr + c.tr.cp * 0.5 + (c.weapon ? c.weapon.pow * 0.05 : 0); });
         if (f.tr.aggr + f.tr.cp * 0.5 > 0.75 && rng() < 0.6) {
           var lp = 45 + rng() * 35 + (n.gun ? 25 : 0), fp = power(f) + rng() * 35;
-          if (fp > lp) { n.alive = false; n.note = f.name + 'たちに追い払われた'; return ctx.act2({ actors: P, cat: 'combat', text: fillN(ctx, '{n}たちが「食い物を出せ」と押し入ってきた。{a}は' + (f.weapon ? f.weapon.name : '拳') + 'で先頭の男を殴り倒し、残りは悲鳴を上げて逃げていった。', n, f), why: f.name + 'の攻撃性・CP（' + Math.round(fp) + '）', mag: 26 }); }
+          if (fp > lp) { n.alive = false; n.note = f.name + 'たちに追い払われた'; return ctx.act2({ actors: P, cat: 'combat', text: fillN(ctx, '{n}たちが「食い物を出せ」と押し入ってきた。{a}は「{you}たちに渡す分はない」と言い捨て、' + (f.weapon ? f.weapon.name : '拳') + 'で先頭の男を殴り倒した。残りは悲鳴を上げて逃げていった。', n, f), why: f.name + 'の攻撃性・CP（' + Math.round(fp) + '）', mag: 26 }); }
           if (rng() < (n.gun ? 0.45 : 0.2) * HK.Dark.f(ctx, 'raid')) { ctx.act2({ actors: P, cat: 'death', text: fillN(ctx, '{n}たちに歯向かった{a}は、' + (n.gun ? '至近距離から撃たれた' : '数人がかりで殴り倒された') + '。', n, f), why: n.label + 'たちは容赦がなかった', mag: 42 }); ctx.kill(f, null, n.label + 'たちに襲われて'); P.forEach(function (c) { c.z.food = 0; }); return; }
           f.hp -= 20; if (f.z.wound < 0) f.z.wound = ctx.stepIndex;
           if (f.hp <= 0) { ctx.act2({ actors: P, cat: 'death', text: fillN(ctx, '{n}たちに殴りかかった{a}は、袋叩きにされて動かなくなった。', n, f), why: '略奪者のほうが多かった', mag: 40 }); ctx.kill(f, null, n.label + 'たちに襲われて'); return; }
           P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 2); });
-          return ctx.act2({ actors: P, cat: 'combat', text: fillN(ctx, '{a}は{n}たちに殴りかかったが、多勢に無勢だった。食料をほとんど奪われ、{a}は肋骨を押さえてうずくまった。', n, f), why: '略奪者のほうが多かった', mag: 26 });
+          return ctx.act2({ actors: P, cat: 'combat', text: fillN(ctx, '{a}は「{you}たちに渡すものはない」と{n}たちに殴りかかったが、多勢に無勢だった。食料をほとんど奪われ、{a}は肋骨を押さえてうずくまった。', n, f), why: '略奪者のほうが多かった', mag: 26 });
         }
         /* まれに、一人が犯される（R18版の solo-zombie-raid.js。襲われる人が「攻め」指定でないときだけ） */
         if (Z.raiderAssault && Z.loveLv(ctx) !== 'off' && ctx.env.zraid !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) && rng() < 0.3 * HK.Dark.f(ctx, 'raid')) {
@@ -18239,7 +18240,7 @@
         var rng = ctx.rng, a = ctx.most(P, function (c) { return c.tr.np - c.tr.cold * 0.5; });
         var sees = P.filter(function (c) { return c.tr.a + c.tr.caution > 1.1; })[0];
         if (sees && rng() < 0.55) {
-          return ctx.act2({ actors: P, cat: 'conflict', text: fillN(ctx, '{n}は「仲間に入れてほしい」と頭を下げた。{a}は{n}の腕の包帯を見て、首を横に振った。「その傷を見せてくれ」――{n}は黙って、来た道を引き返していった。', n, sees), why: sees.name + 'の冷静さと慎重さ（A・AC）', mag: 16 });
+          return ctx.act2({ actors: P, cat: 'conflict', text: fillN(ctx, '{n}は「仲間に入れてほしい」と頭を下げた。{a}は{n}の腕の包帯を見て、首を横に振った。「{you}、その傷を見せてくれ」――{n}は黙って、来た道を引き返していった。', n, sees), why: sees.name + 'の冷静さと慎重さ（A・AC）', mag: 16 });
         }
         if (a.tr.np > 0.5 || rng() < 0.4) {
           n.with = a.i;
