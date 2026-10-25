@@ -49,6 +49,7 @@ js/tone-sondai.js
 js/tone-stern.js
 js/tone-long.js
 js/engine.js
+js/emotion.js
 js/content.js
 js/mob.js
 js/fwb.js
@@ -117,6 +118,7 @@ js/factions.js
 late js/classroom-life.js
 js/classroom-teacher.js
 js/endings.js
+js/epilogue.js
 js/island-after.js
 js/zombie-data.js
 js/zombie-core.js

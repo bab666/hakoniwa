@@ -240,6 +240,7 @@
     }).join('');
     return '<article class="ccard"><div class="hd">' + av(res, c.i, 40, c.alive === false ? 'gone' : '') + '<span class="nm">' + esc(c.name) + '</span><span class="fate ' + fateCls(c.fate) + '">' + esc(c.fate) + '</span></div>' +
       (c.fateNote ? '<div class="sub">' + paint(c.fateNote, res) + '</div>' : '') +
+      (HK.Emo && HK.Emo.html ? HK.Emo.html(c) : '') +
       '<div class="sub">' + esc(c.type) + '　初動「' + esc(c.action) + '」　目標「' + esc(c.goal) + '」' + (stats ? '　' + esc(stats) : '') + (c.weapon ? '　武器「' + esc(c.weapon) + '」' : '') + '</div>' +
       '<ul>' + tieNotes(c, res).concat(c.notes).map(function (t) { return '<li>' + paint(t, res) + '</li>'; }).join('') + '</ul>' + odd + '</article>';
   }
@@ -355,7 +356,8 @@
     var E = HK.Endings.build(res);
     return '<section class="ending" aria-label="結末"><div class="eyebrow">結末</div><p class="ehead">' + paint(E.headline, res) + '</p>' +
       (E.stats.length ? '<dl class="estats">' + E.stats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(s[1]) + '</dd></div>'; }).join('') + '</dl>' : '') +
-      (E.lines.length ? '<ul class="elines">' + E.lines.map(function (l) { return '<li>' + paint(l, res) + '</li>'; }).join('') + '</ul>' : '') + (E.after || '') + '</section>';
+      (E.lines.length ? '<ul class="elines">' + E.lines.map(function (l) { return '<li>' + paint(l, res) + '</li>'; }).join('') + '</ul>' : '') +
+      (HK.Epilogue && HK.Epilogue.html ? HK.Epilogue.html(E, res, paint) : '') + (E.after || '') + '</section>';
   }
 
   /* ---------- 派閥 ---------- */
@@ -411,6 +413,7 @@
       L.push(E.headline);
       if (E.stats.length) L.push(E.stats.map(function (s) { return s[0] + ' ' + s[1]; }).join('／'));
       E.lines.forEach(function (l) { L.push('・' + l); });
+      (E.last || []).forEach(function (x) { L.push('・最期の言葉　' + x.text); });
     }
     L.push('');
     L.push('■ 住人の結末');

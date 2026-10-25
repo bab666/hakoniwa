@@ -53,6 +53,7 @@
     (res.end.notes || []).forEach(function (l) { out.lines.push(l); });
     var mp = mainPairs(res, X);
     if (mp.length) out.lines.push('主な関係：' + mp.join('、'));
+    if (HK.Epilogue) HK.Epilogue.build(res, out);   /* その後・最期の言葉（epilogue.js） */
     return out;
   };
 

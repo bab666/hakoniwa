@@ -265,6 +265,7 @@
         else {
           if (cur) { l.others = cur.others.concat([cur.name]); l.lv = l.lv0 = Math.min(100, lv + 8); l.calm = cur.calm; l.crashAt = cur.crashAt; l.broke = cur.broke; if (!l.dev && cur.dev) { l.dev = cur.dev; } }
           o.flags.loss = l;
+          if (HK.Emo) HK.Emo.bump(ctx, o, { grief: Math.min(30, lv * 0.3) }, v.name + 'を失った');   /* 気分（emotion.js） */
         }
         addStress(o, lv * (type === 'flat' ? 0.25 : type === 'hold' ? 0.4 : 0.5) + (l.dev ? 15 : 0));
         if (o.flags.grief == null) o.flags.grief = v.i;

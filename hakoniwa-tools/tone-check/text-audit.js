@@ -6,7 +6,7 @@
    T4 同じ入力を続けて二回回して、記録が一致しない
    T5 全年齢（全年齢版・全年齢モード）で性的な語が出た
    T6 一回が 3 秒を超えた（固まりの目安）
-   T7 結末の組み立て（HK.Endings.build）で例外
+   T7 結末の組み立て（HK.Endings.build）で例外（T1・T5 は結末の行・見出し・最期の言葉 E.last も見る）
    人数は箱庭の最少〜最多を回ごとにずらし、役割（role_*）は「おまかせ」と「住人から」を交互に、内容のスイッチは回ごとに切／全部入 */
 'use strict';
 const { openBuild } = require('./lib.js');
@@ -55,7 +55,7 @@ const { openBuild } = require('./lib.js');
           if (res2 && res2.log && res2.log[k] && res2.log[k].text !== t && out.ex.T4.length < 99) { hit('T4', sc, s, t + ' ### ' + res2.log[k].text); }
         });
         if (res2 && res2.log && res2.log.length !== L.length) hit('T4', sc, s, 'length ' + L.length + ' vs ' + res2.log.length);
-        try { if (HK.Endings && HK.Endings.build && !scen.solo && res.pairs) { const E = HK.Endings.build(res); (E.lines || []).concat([E.headline || '']).forEach(l => { if (typeof l === 'string' && PH.test(l)) hit('T1', sc, s, 'ending: ' + l); if (SAFE && typeof l === 'string' && SEX.test(l)) hit('T5', sc, s, 'ending: ' + l); }); } } catch (e) { hit('T7', sc, s, 'Endings.build: ' + e.message); }
+        try { if (HK.Endings && HK.Endings.build && !scen.solo && res.pairs) { const E = HK.Endings.build(res); (E.lines || []).concat([E.headline || ''], (E.last || []).map(x => x && x.text)).forEach(l => { if (typeof l === 'string' && PH.test(l)) hit('T1', sc, s, 'ending: ' + l); if (SAFE && typeof l === 'string' && SEX.test(l)) hit('T5', sc, s, 'ending: ' + l); }); } } catch (e) { hit('T7', sc, s, 'Endings.build: ' + e.message); }
         const end = res.ending || res.end; if (end && Array.isArray(end.lines)) end.lines.forEach(l => { if (typeof l === 'string' && PH.test(l)) hit('T1', sc, s, 'ending: ' + l); if (SAFE && typeof l === 'string' && SEX.test(l)) hit('T5', sc, s, 'ending: ' + l); });
       }
     });

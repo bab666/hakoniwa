@@ -66,6 +66,7 @@
         ctx.mod2(B, A, { att: -30, aff: -15, ten: 6 }, { ten: 8 }); ctx.stress(B, -10);
         if (C) ctx.mod2(B, C, { trust: 10, aff: 6 }, { aff: 5, trust: 4 });
       }
+      if (HK.Emo && /^(?:control|verbal|violence|fear|flee)$/.test(k)) HK.Emo.bump(ctx, B, { fear: k === 'violence' ? 30 : 16, grief: 6 }, A.name + 'との歪んだ関係');   /* 気分（emotion.js） */
       var whyK = { control: '：束縛', verbal: '：暴言', violence: '：物に当たる・手を上げる', honey: '：謝って優しくなる（繰り返し）', stay: '：離れられない', fear: '：怯えている', flee: '：逃げ出したい', notice: '：' + (C ? C.name : '周り') + 'が気づいた', step: '：' + (C ? C.name : '周り') + 'が間に入った', free: '：' + B.name + 'が離れる決心をした（恋人ではなくなった）' }[k];
       var back = HK.ABUSE_BACK && HK.ABUSE_BACK[st] ? HK.ABUSE_BACK[st].short : '';
       return { cat: k === 'honey' ? 'romance' : k === 'notice' || k === 'step' || k === 'free' ? 'help' : 'conflict', with: C && /notice|step|free/.test(k) ? [C] : null, text: text, why: A.name + '（支配する側）と' + B.name + '（支配される側・' + back + '）の' + lab + whyK, mag: k === 'free' ? 22 : k === 'violence' || k === 'step' ? 16 : 10 };

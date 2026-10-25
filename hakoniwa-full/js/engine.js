@@ -329,6 +329,8 @@
     /* 歪んだ関係から離れる決心をした二人（tie-abuse.js の abFree）は、もう恋愛の出来事を起こさない。
        別れたばかりの二人（brokeAt）も、しばらく（8回）は恋愛の出来事を起こさない（すぐに元に戻らないように） */
     if (a && b) { var pfr = this.pair(a, b); if (pfr.abFree) return false; if (pfr.brokeAt != null && this.stepIndex - pfr.brokeAt < 8) return false; }
+    /* 悲しみの深い人（気分 grief 60 以上。emotion.js）は、恋愛の出来事を起こさない */
+    if (HK.Emo && HK.Emo.blockLove(this, L)) return false;
     if (this.scen && this.scen.romanceCore) return true;
     if (a && b && this.pair(a, b).couple) return true;
     if (this.env && this.env.romance === 0) return false;
@@ -636,6 +638,7 @@
       snap[i + '-' + j] = [ab.aff, ba.aff, (ab.ten + ba.ten) / 2, ab.att, ba.att];
     }
     ctx.history.push({ step: ctx.stepIndex, label: ctx.label, rel: snap, alive: C.map(function (c) { return c.alive && !c.out; }) });
+    if (HK.Emo) HK.Emo.step(ctx, ctx.history[ctx.history.length - 1]);   /* 気分の記録と減衰（emotion.js） */
   }
 
   function act(ctx, a, pool) {
@@ -666,6 +669,7 @@
       w *= ctx.bias(a, e.cat);
       if (bb && HK.Ties) w *= HK.Ties.bias(ctx, a, bb, e.cat);
       if (bb && e.cat === 'romance' && (a.honmei != null || bb.honmei != null)) w *= HK.honmeiFactor(ctx, a, bb);
+      if (HK.Emo) w *= HK.Emo.weight(ctx, a, e);   /* 気分（emotion.js）：悲しみ→恋愛を控える、怒り→対立など */
       if (w <= 0) return;
       if (e.pri) w *= (ctx.scen.priBoost || 2.4);
       cands.push({ e: e, w: w, b: bb });
@@ -863,6 +867,7 @@
     }
     pairs.sort(function (x, y) { return (y.surprise - x.surprise) || (y.intensity - x.intensity); });
     var chars = C.map(function (c) { return charSummary(ctx, c); });
+    if (HK.Emo) HK.Emo.summary(ctx, chars);   /* 気分の最終値・いちばん強かった気分・最期の言葉（emotion.js・epilogue.js） */
     return {
       seed: ctx.seed, scenId: ctx.input.scenId, scenName: ctx.scen.name, env: ctx.env,
       log: ctx.log, history: ctx.history, pairs: pairs, chars: chars,

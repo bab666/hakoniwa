@@ -298,6 +298,7 @@
       /* 全年齢版は、その場で引き止めるだけ（閉じ込めたまま日が過ぎることはない） */
       if (safe) { s.climax = null; s.lv = clamp(s.lv - 12, 0, 100); }
       else { s.cage = { from: ctx.stepIndex, n: 0 }; pf.captive = { by: a.i }; a.flags.cagePair = b.i; b.flags.cagePair = a.i; b.flags.caged = a.i; }
+      if (HK.Emo) { HK.Emo.bump(ctx, b, { fear: safe ? 25 : 45 }, a.name + 'の執着'); HK.Emo.bump(ctx, a, safe ? { anger: 15 } : { lust: 25, anger: 10 }); }   /* 気分（emotion.js）：閉じ込められた側は恐れ、執着する側は火照り（R18版だけ） */
       ctx.mod(b, a, { ten: 20, trust: -12 }); ctx.stress(b, 20);
       return { with: [b], cat: 'conflict', text: F(ctx, T(ctx, safe ? 'cage_s' : 'cage'), a, b), why: why(ctx, a, b, s) + '。執着が暴走した', mag: 45 };
     }

@@ -44,6 +44,7 @@
     if (o.text && o.text.indexOf('「＠') >= 0) o.text = o.text.replace(/「＠/g, '「\u2060');
     o.n = S.log.length; o.label = S.label; o.kind = o.kind || 'event';
     o.actors = (o.actors || []).map(function (p) { return typeof p === 'number' ? p : p.i; });
+    if (HK.Emo && HK.Emo.story) HK.Emo.story(S, o);   /* 気分（emotion.js） */
     S.log.push(o);
     return o;
   };
@@ -127,6 +128,7 @@
     res.chars = S.P.map(function (p) { return { name: p.name, i: p.i, alive: true }; });
     res.outcome = o.ending.title;
     res.summary = o.summary || o.ending.title;
+    if (HK.Epilogue && HK.Epilogue.story) HK.Epilogue.story(S, res, input);   /* 最期の言葉・その後（epilogue.js） */
     return res;
   };
 
@@ -153,7 +155,7 @@
   function card(res, h) {
     var last = res.hist.length ? res.hist[res.hist.length - 1].v[h.i] || [] : [];
     return '<article class="ccard"><div class="hd">' + av(res, h.i, 40) + '<span class="nm">' + esc(h.name) + '</span>' + (h.role ? '<span class="chip">' + esc(h.role) + '</span>' : '') + (h.fate ? '<span class="fate mid">' + esc(h.fate) + '</span>' : '') + '</div>' +
-      chart(res, h) + '<div class="sparkleg">' + res.meters.map(function (m, k) { return '<span style="color:var(' + m.color + ')">― ' + esc(m.label) + ' ' + (last[k] != null ? last[k] + (m.unit || '') : '') + '</span>'; }).join('') + '</div>' +
+      chart(res, h) + (HK.Emo && HK.Emo.html ? HK.Emo.html(h) : '') + '<div class="sparkleg">' + res.meters.map(function (m, k) { return '<span style="color:var(' + m.color + ')">― ' + esc(m.label) + ' ' + (last[k] != null ? last[k] + (m.unit || '') : '') + '</span>'; }).join('') + '</div>' +
       (h.notes && h.notes.length ? '<ul>' + h.notes.map(function (t) { return '<li>' + paint(t, res) + '</li>'; }).join('') + '</ul>' : '') + '</article>';
   }
   function table(res) {

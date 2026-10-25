@@ -12,6 +12,8 @@
    S9: 吹雪の館で、助手が自分の探偵ではない探偵を「先生」と呼んだ（探偵2人以上の回）
    S10: 一回の遊びの中で、同じ性的な文が3つ以上の記録に出た（R18の文の被り。目安として見る）
    S12: 同一人物（attr.js の same）の二人が、恋愛の記録・性的な文に二人だけで出た（奇数回は配役に同一人物の組を足す）
+   S11: 最期の言葉（epilogue.js）の名前の取り違え：「〇〇が最期に遺した言葉」の〇〇が、その記録で亡くなった人（死の記録の主役・物語型は記録の登場人物で、亡くなった人）でない／
+        言葉の中で自分の名前に呼びかけている／住人の最期の言葉（lastWords）・結末の最期の言葉（E.last）が、本人の名前で始まらない
    「止めた」：出来事の記録の手前（Ctx.say の防波堤）で捨てられた件数。出所を直すと減る（0 でなくてよい） */
 'use strict';
 const { openBuild } = require('./lib.js');
@@ -28,7 +30,7 @@ const { openBuild } = require('./lib.js');
     const sents = t => String(t).replace(NONSEX, '＿').split(/[。！？\n」]/);
     const isSex = s => SEXCORE.test(s);
     const out = { n: {}, ex: {}, drop: {}, runs: 0, err: [], bySc: {} };
-    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S12'];
+    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12'];
     KEYS.forEach(k => { out.n[k] = 0; out.ex[k] = []; });
     let cur = null;
     const hit = (k, msg) => { out.n[k]++; out.bySc[cur.sc][k] = (out.bySc[cur.sc][k] || 0) + 1; if (out.ex[k].length < (WHY ? 40 : 6)) out.ex[k].push(cur.sc + ' | ' + msg); };
@@ -146,6 +148,25 @@ const { openBuild } = require('./lib.js');
         const runSeen = {};
         (res.log || []).forEach(e => { if (!e || typeof e.text !== 'string') return; const once = {}; sents(e.text).forEach(x => { const k = x.replace(/[「」『』\s]/g, ''); if (k.length >= 15 && isSex(x) && !once[k]) { once[k] = 1; runSeen[k] = (runSeen[k] || 0) + 1; } }); });
         Object.keys(runSeen).forEach(k => { if (runSeen[k] >= 3) hit('S10', runSeen[k] + '回 | ' + k.slice(0, 80)); });
+        /* S11：最期の言葉の名前の取り違え */
+        const LWR = /([^「」：\s　―]+?)が最期に遺した言葉：「([^」]*)」/g;
+        const deadOf = i => (res.heroes && res.heroes[i]) ? !!res.heroes[i].dead : !!(res.chars && res.chars[i] && res.chars[i].alive === false);
+        const selfCall = (sp, q) => new RegExp('^[…‥、\\s]*' + sp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '、').test(q);
+        (res.log || []).forEach(e => {
+          if (!e || typeof e.text !== 'string' || e.text.indexOf('最期に遺した言葉') < 0) return;
+          let m; LWR.lastIndex = 0;
+          while ((m = LWR.exec(e.text))) {
+            const sp = m[1].replace(/^.*?(?=(?:アキラ|ミナト|ユキノ|カオル|ハルカ|レンジ|ソウタ|リコ)$)/, ''), i = nm.indexOf(sp);
+            if (i < 0) { hit('S11', '話し手が住人でない「' + sp + '」 | ' + e.text.slice(-120)); continue; }
+            if (e.kind === 'death' && e.actors && e.actors[0] !== i) hit('S11', '死の記録の主役は' + nm[e.actors[0]] + 'なのに' + sp + 'の最期の言葉 | ' + e.text.slice(-120));
+            else if (e.kind !== 'death' && (!e.actors || e.actors.indexOf(i) < 0)) hit('S11', sp + 'の出ない記録に最期の言葉 | ' + e.text.slice(-120));
+            if (!deadOf(i)) hit('S11', '生きている' + sp + 'の最期の言葉 | ' + e.text.slice(-120));
+            if (selfCall(sp, m[2])) hit('S11', sp + 'が自分に呼びかけた | ' + m[2]);
+          }
+        });
+        (res.chars || []).forEach((c, i) => { if (c && c.lastWords && (c.lastWords.indexOf(c.name + '「') !== 0 || selfCall(c.name, c.lastWords.slice(c.name.length + 1)))) hit('S11', 'lastWords ' + c.name + ' | ' + c.lastWords); if (c && c.lastWords && c.alive !== false) hit('S11', '生きている' + c.name + 'に lastWords | ' + c.lastWords); });
+        if (!scen.solo && HK.Endings) { try { const E = HK.Endings.build(res); (E.last || []).forEach(x => { const c = res.chars[x.i]; if (!c || c.name !== x.name || String(x.text).indexOf(c.name + '「') !== 0) hit('S11', 'E.last ' + x.name + ' | ' + x.text); }); } catch (err) { out.err.push(sc + ' Endings: ' + err.message); } }
+        if (res.ending && Array.isArray(res.ending.lines)) res.ending.lines.forEach(l => { if (typeof l !== 'string') return; let m; LWR.lastIndex = 0; while ((m = LWR.exec(l))) { const i = nm.indexOf(m[1]); if (i < 0 || !deadOf(i) || selfCall(m[1], m[2])) hit('S11', '結末 | ' + l.slice(0, 120)); } });
         (res.log || []).forEach(e => {
           if (!e || typeof e.text !== 'string' || !e.text) return;
           const ss = sents(e.text);
@@ -177,7 +198,7 @@ const { openBuild } = require('./lib.js');
   }, { N, only, WHY, HOT, mode, ENVSET });
   const ids = Object.keys(r.bySc);
   for (const sc of ids) {
-    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S12'].map(k => k + ' ' + (b[k] || 0));
+    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12'].map(k => k + ' ' + (b[k] || 0));
     console.log(sc.padEnd(10), 'runs', b.runs, cells.join(' '));
   }
   console.log('合計', JSON.stringify(r.n), '止めた', JSON.stringify(r.drop));

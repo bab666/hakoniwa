@@ -89,6 +89,7 @@
       function (ctx, a, b) {
         var pf = ctx.pair(a, b), c = rivalOf(ctx, a, b), lock = !couple(ctx, b, c) && b.lock === c.i, m = { a: a.name, b: b.name, c: c.name };
         pf.hbNews = ctx.stepIndex; pf.hbBy = c.i;
+        if (HK.Emo) HK.Emo.bump(ctx, a, { grief: 30, shame: 12 }, '失恋');   /* 気分（emotion.js） */
         ctx.stress(a, 18); ctx.mod2(a, b, { att: -8 }, {}); ctx.mod(a, c, { ten: 8 });
         return { text: fill(ctx.pick(lock ? D.lockNews : sc(ctx, D.news)), m), why: a.name + 'は' + b.name + 'を想っていた（惹かれ ' + Math.round(ctx.R(a, b).att + 8) + '）。' + (lock ? b.name + 'の心は、' + c.name + 'にしか向いていない（恋愛相手の固定）' : b.name + 'は' + c.name + 'と恋人になった') + '――失恋', mag: 30, with: [b, c] };
       }),
