@@ -119,7 +119,8 @@
 
   function kingGame(ctx) {
     var P = ctx.present(), rng = ctx.rng;
-    if (P.length < 3) { if (P.length === 2) ctx.say({ text: '二人しかいないので、王様ゲームは「じゃんけんで負けたほうが本音を一つ言う。私からね」に変更された。' }); return; }
+    /* モブの参加者がいれば、二人でも王様ゲームはできる（モブの回は goukon-mob.js） */
+    if (P.length < 3) { if (P.length === 2 && !(HK.GoukonMob && HK.GoukonMob.count(ctx))) ctx.say({ text: '二人しかいないので、王様ゲームは「じゃんけんで負けたほうが本音を一つ言う。私からね」に変更された。' }); return; }
     var drunk = P.reduce(function (s, c) { return s + (c.flags.drunk || 0); }, 0) / P.length;
     var cap = 1 + ctx.env.alcohol / 45 + ctx.env.mood / 70 + drunk / 40;
     var rounds = 3 + (drunk > 50 ? 1 : 0);

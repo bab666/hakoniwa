@@ -291,7 +291,8 @@
     var second = ctx.env.second === 'yes';
     ctx.label = second ? '終電のあと' : 'お開きのあと';
     ctx.say({ kind: 'step', cat: 'phase', text: ctx.label });
-    ctx.say({ text: ctx.pick(GC_OPEN[second ? 'yes' : 'no']).replace(/\{n\}/g, P.length), mag: 25, why: '結末：' + (second ? '二次会のあと、終電で解散' : '一次会でお開き') });
+    /* 人数には、同じ席にいたモブ（goukon-mob.js）も数える */
+    ctx.say({ text: ctx.pick(GC_OPEN[second ? 'yes' : 'no']).replace(/\{n\}/g, P.length + (ctx.gkMob ? ctx.gkMob.length : 0)), mag: 25, why: '結末：' + (second ? '二次会のあと、終電で解散' : '一次会でお開き') });
     var loves = 0, kinds = [];
     T.forEach(function (t) {
       var a = ctx.chars[t.a], b = ctx.chars[t.b], pf = ctx.pair(a, b), k;
@@ -341,7 +342,9 @@
       { id: 'alcohol', label: '酒の進み', min: 0, max: 100, def: 55, lo: 'ソフドリ', hi: '飲み放題の暴走' },
       { id: 'mood', label: '場の空気', min: 0, max: 100, def: 55, lo: 'しらけ', hi: '盛り上がり' },
       { id: 'second', label: '二次会', type: 'select', def: 'yes', options: [{ v: 'yes', label: 'カラオケまで行く' }, { v: 'no', label: '一次会で解散' }] },
-      { id: 'kingsgame', label: '王様ゲーム', type: 'select', def: 'yes', options: [{ v: 'yes', label: 'やる' }, { v: 'no', label: 'やらない' }] }
+      { id: 'kingsgame', label: '王様ゲーム', type: 'select', def: 'yes', options: [{ v: 'yes', label: 'やる' }, { v: 'no', label: 'やらない' }] },
+      /* 住人ではない参加者（goukon-mob.js）。0人なら今までと同じ */
+      { id: 'mobs', label: 'モブの参加者', min: 0, max: 4, def: 0, lo: 'なし', hi: '4人', unit: '人', desc: '幹事の友達・数合わせなど、住人ではない参加者。席を埋めて会話や王様ゲームに加わり、二人の仲を取り持ったり、当て馬になったり、割って入ったりするが、誰の恋人にも夜の相手にもならない' }
     ],
     stats: [
       { id: 'drink', label: '酒の強さ', desc: '低いほど早く酔い、衝動性が上がる' },

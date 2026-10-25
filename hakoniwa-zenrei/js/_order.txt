@@ -96,6 +96,7 @@ js/island-hazard.js
 js/mini-goukon.js
 js/goukon-talk.js
 js/drunk.js
+js/goukon-mob.js
 js/mini-room.js
 js/mini-room-cute.js
 js/mini-classroom.js
