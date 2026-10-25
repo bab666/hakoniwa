@@ -124,6 +124,7 @@ late js/classroom-life.js
 js/classroom-teacher.js
 js/endings.js
 js/epilogue.js
+js/scenario-futari.js
 js/island-after.js
 js/zombie-data.js
 js/zombie-core.js

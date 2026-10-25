@@ -471,10 +471,14 @@
     var M = monthOf(ctx), out = [];
     ev.dm.at.forEach(function (id) {
       if (conf.spots.indexOf(id) < 0) return;
+      /* 箱庭が今いる場所を決める（ふたりの日常：別々に住む二人の自宅・旅先の日だけの旅先） */
+      if (conf.allow && !conf.allow(ctx, id, ev, a, b)) return;
       if (conf.homeLovers === false && id.indexOf('home.') === 0 && ev.dm.rel.indexOf('lovers') >= 0) return;
       var S = D.spot(id);
       if (S.months && M != null && S.months.indexOf(M) < 0) return;
       ev.dm.tm.forEach(function (t) {
+        /* 箱庭が今の時間帯を決める（ふたりの日常：朝・昼・夕方・夜の区切り） */
+        if (conf.timeOf && conf.timeOf(ctx) && conf.timeOf(ctx) !== t) return;
         var w = S.time[t] || 0;
         if (conf.noNight && t === 'night' && conf.noNight.indexOf(id.split('.')[0]) >= 0) w = 0;
         if (w > 0) out.push({ spot: id, time: t, w: w });

@@ -597,11 +597,14 @@
      段階の前後で恋人（pf.couple）・夜（pf.night）・セフレ（pf.fwb）の状態を比べ、変わった組の二人が出る、その段階の最後の出来事に付ける。
      浮気：恋人がいる人が、恋人以外と夜を過ごしたとき（夜の記録が初めて付いたときに一度だけ） */
   HK.MARK_NAME = { couple: '付き合い始めた', break: '別れた', fwb: '体だけの関係に', cheat: '浮気', affair: '恋人以外と（無理やり）' };
+  /* 結婚の約束（指輪の交換だけ。pf.propose。ふたりの日常） */
+  HK.MARK_NAME.propose = '結婚の約束';
   function relState(ctx) {
     var st = {}, C = ctx.chars;
     for (var i = 0; i < C.length; i++) for (var j = i + 1; j < C.length; j++) {
       var pf = ctx.pair(C[i], C[j]);
       st[i + '-' + j] = { couple: !!pf.couple, night: !!pf.night, fwb: !!pf.fwb, nights: pf.nights || 0 };
+      st[i + '-' + j].propose = !!pf.propose;
     }
     return st;
   }
@@ -628,6 +631,7 @@
       if (!a.couple && b.couple) put(i, j, 'couple');
       else if (a.couple && !b.couple) put(i, j, b.fwb && !a.fwb ? 'fwb' : 'break');
       else if (!a.fwb && b.fwb && !b.couple) put(i, j, 'fwb');
+      if (!a.propose && b.propose) put(i, j, 'propose');
       /* 浮気：この段階で初めて夜を過ごした二人のどちらかに、段階の始めに別の恋人がいた */
       if ((!a.night && b.night) || b.nights > a.nights) {
         var pi = partnerPre(i, j), pj = partnerPre(j, i), ev = find(i, j);

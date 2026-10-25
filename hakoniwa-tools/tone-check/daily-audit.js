@@ -5,7 +5,7 @@
    D3 日常の行の置き換え漏れ（{a} {place} {yobi} など）0 件
    D4 家族（きょうだい・親子・親族）の日常の場面が恋愛になった・惹かれを動かした 0 件
    D5 日常の三人以上の場面に、その場にいない人（死んだ・監禁中・不在）が出た 0 件
-   対象：クラスメイト・オメガバース・無人島（平穏な日）・出られない部屋（長い閉じ込め）。配役は 2〜6 人、関係は恋人・きょうだい（性別の組み合わせ）・親子・親族・同僚・友人を回ごとに */
+   対象：クラスメイト・オメガバース・無人島（平穏な日）・出られない部屋（長い閉じ込め）・ふたりの日常。配役は 2〜6 人、関係は恋人・きょうだい（性別の組み合わせ）・親子・親族・同僚・友人を回ごとに */
 'use strict';
 const { openBuild } = require('./lib.js');
 (async () => {
@@ -28,7 +28,7 @@ const { openBuild } = require('./lib.js');
     const KIN = /^(sibling|sibprot|sibclose|sibbad|parent|pparent|relative|stepsib)$/;
     const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];
     function hit(k, sc, s, t) { out.n[k]++; if (out.ex[k].length < (WHY ? 20 : 5)) out.ex[k].push(sc + '#' + s + ' | ' + String(t).slice(0, 240)); }
-    const SC = { classroom: {}, omega: {}, island: { days: 15, res: 100, storm: 0 }, whiteroom: { hours: 120 } };
+    const SC = { classroom: {}, omega: {}, island: { days: 15, res: 100, storm: 0 }, whiteroom: { hours: 120 }, futari: {} };
     Object.keys(SC).forEach(sc => {
       const scen = HK.SCENARIOS[sc]; if (!scen) return;
       for (let s = 0; s < N; s++) {
