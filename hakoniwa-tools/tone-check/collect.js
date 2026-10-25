@@ -1,7 +1,7 @@
 /* 全箱庭をシミュレーションして、住人の台詞（元の文・変換後・口調・文脈）を集める
    node collect.js <ビルドのフォルダ> <出力.json> [seeds=12] [r18]
    例：node collect.js ../../hakoniwa-full out-full.json 40 r18
-   環境変数 HOT=1 で過激さ・媚薬などの設定を最大に（R18の場面の台詞を集める）、TONE=gentleman で全員の口調を固定、FPS=俺,あたし で一人称を順に設定、SCEN=variety,saimin で箱庭を絞る、ENV=release=mid,lewd=80 で場面の設定を固定（全体の設定 heavy なども可：ENV=heavy=mild） */
+   環境変数 HOT=1 で過激さ・媚薬などの設定を最大に（R18の場面の台詞を集める）、TONE=gentleman で全員の口調を固定、FPS=俺,あたし で一人称を順に設定、SCEN=variety,saimin で箱庭を絞る、GENDERS=f,f,m で住人の性別を順に設定（x は性別なし）、ENV=release=mid,lewd=80 で場面の設定を固定（全体の設定 heavy なども可：ENV=heavy=mild） */
 'use strict';
 const fs = require('fs');
 const { openBuild } = require('./lib');
@@ -13,7 +13,7 @@ const { openBuild } = require('./lib');
   const TIES = (process.env.TIES || '').split(',').filter(Boolean).map(s => { const m = s.match(/^(\d+)-(\d+):(\w+)$/); return m ? { a: +m[1], b: +m[2], type: m[3] } : null; }).filter(Boolean);
   const PICK = {};
   (process.env.PICK || '').split(',').filter(Boolean).forEach(s => { const m = s.match(/^(\d+):(\w+)=(\w+)$/); if (m) (PICK[m[1]] = PICK[m[1]] || {})[m[2]] = m[3]; });
-  const OPT = { n: +(seeds || 12), tone: process.env.TONE || '', fps: (process.env.FPS || '').split(',').filter(Boolean), only: (process.env.SCEN || '').split(',').filter(Boolean), ties: TIES, pick: PICK, hot: !!process.env.HOT, s0: +(process.env.SEED0 || 0), env: (process.env.ENV || '').split(',').filter(Boolean).map(x => x.split('=')) };
+  const OPT = { n: +(seeds || 12), tone: process.env.TONE || '', fps: (process.env.FPS || '').split(',').filter(Boolean), only: (process.env.SCEN || '').split(',').filter(Boolean), ties: TIES, pick: PICK, hot: !!process.env.HOT, s0: +(process.env.SEED0 || 0), env: (process.env.ENV || '').split(',').filter(Boolean).map(x => x.split('=')), gens: (process.env.GENDERS || '').split(',').map(x => x.trim()).filter(x => /^[mfx]$/.test(x)).map(x => x === 'x' ? '' : x) };
   const data = await page.evaluate((OPT) => {
     const HK = window.HK, V = HK.Voice;
     let cur = null, curText = '', ovs = null; const rec = [];
@@ -38,7 +38,7 @@ const { openBuild } = require('./lib');
         const r = rnd(1000 + s * 77 + id.length), chars = [], perChar = [];
         for (let i = 0; i < n; i++) {
           const tone = OPT.tone || tones[(ti++) % tones.length];
-          chars.push({ name: NAMES[i], eg: { CP: Math.round(r() * 20), NP: Math.round(r() * 20), A: Math.round(r() * 20), FC: Math.round(r() * 20), AC: Math.round(r() * 20) }, memo: '', gender: i % 3 === 0 ? 'm' : i % 3 === 1 ? 'f' : '', likes: '', tone, fp: OPT.fps.length ? OPT.fps[(i + s) % OPT.fps.length] : '', pos: '', color: '', call: '', calls: {}, loveLock: '' });
+          chars.push({ name: NAMES[i], eg: { CP: Math.round(r() * 20), NP: Math.round(r() * 20), A: Math.round(r() * 20), FC: Math.round(r() * 20), AC: Math.round(r() * 20) }, memo: '', gender: OPT.gens.length ? OPT.gens[i % OPT.gens.length] : i % 3 === 0 ? 'm' : i % 3 === 1 ? 'f' : '', likes: '', tone, fp: OPT.fps.length ? OPT.fps[(i + s) % OPT.fps.length] : '', pos: '', color: '', call: '', calls: {}, loveLock: '' });
           perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: OPT.pick[i] || {}, role: '' });
         }
         const env = {}; (sc.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : ''); });

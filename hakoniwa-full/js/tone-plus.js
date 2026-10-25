@@ -171,8 +171,28 @@
         .replace(new RegExp('だぜ' + END, 'g'), 'だよ').replace(new RegExp('([ぁ-ゖ])ぜ' + END, 'g'), '$1よ')
         .replace(/やがれ/g, 'なさい').replace(/だろうが(?=[…‥。！？!?、」]|$)/g, 'でしょう');
     }
+    if (who.gender === 'f' && (!HK.toneAxis || (HK.toneAxis(who.tone) || {}).ending !== 'm')) q = femSoft(q, who);
     return q;
   };
+  /* 女性の話し手（男性的な口調を選んでいない人。HK.toneAxis の ending が 'm' の口調＝ヤンキー・兄貴分・熱血などは除く）：
+     掛け合いの元の文や言い換えに残った男性的な語尾・語を、女性の言い方にする（男性の台詞から女性的な語尾を外す規則の逆向き）。
+     「〜ぞ」「〜ぜ」は「〜よ」に（厳格・冷静の「〜だぞ」「〜だぜ」は「〜だ」の言い切りに）。断定の「〜だろ」は「〜でしょ」（問いの「〜だろ？」・「なんでだろ」は残す） */
+  var FEM_DROP = { stern: 1, cool: 1, calm: 1 };
+  var FEM_HARSH = /殺|潰|殴|呪|ぶっ|ぶち|思い知|後悔|地獄|八つ裂|覚え|吊|晒/, FEM_WILL = /証明|暴|ネタ|笑い話|見返|終わらせ|勝っ/;
+  function femSoft(q, who) {
+    var drop = FEM_DROP[who.tone], ks = who.tone === 'kansai';
+    var sent = function (str, off) { var a = str.slice(0, off); return a.slice(Math.max(a.lastIndexOf('。'), a.lastIndexOf('！'), a.lastIndexOf('？')) + 1); };
+    return q.replace(/じゃねえか?/g, 'じゃない')
+      .replace(who.tone === 'usan' ? /^$/ : /((?:(?<![たかな])ら|(?<=に)なら|[まわがばさ]|でき|見え|言え|聞こえ|られ|れ|め|せ|け))(?<!ねえ)ねえ(?!ね)(?=[よかぞぜ…‥。！？!?、」♡〜]|$)/g, '$1ない')
+      .replace(/(?:し|([えけげせてねべめれ]))やがって/g, function (m, e) { return (e || 'し') + 'てくれちゃって'; }).replace(/てやが(?:る|った)/g, function (m) { return /った$/.test(m) ? 'てた' : 'てる'; }).replace(/しやがる/g, 'する').replace(/やがれ/g, 'なさい')
+      .replace(/くれてやる(?=[よぞぜ…‥。！？!?、」♡〜]|$|から)/g, 'あげる')
+      .replace(/(て|(?<=ん)で)やる(?=[よぞぜ…‥。！？!?、」♡〜]|$|から)/g, function (m, te, off, str) { var s0 = sent(str, off); if (FEM_HARSH.test(s0)) return m; if (ks) return (te === 'て' ? 'た' : 'だ') + 'る'; return te + (FEM_WILL.test(s0) ? 'みせる' : 'あげる'); })
+      .replace(new RegExp('だぜ' + END, 'g'), drop ? 'だ' : 'だよ').replace(new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![いな])ぜ' + END, 'g'), 'よ')
+      .replace(new RegExp('だぞ' + END, 'g'), drop ? 'だ' : 'だよ').replace(new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![どなうーよ])ぞ' + END, 'g'), ks ? '' : 'よ')
+      .replace(/だろうが(?=[…‥。！？!?、」]|$)/g, 'でしょう')
+      .replace(/だろ(?=[…‥。！!、」♡〜]|$)/g, function (m, off, str) { return /(?:何|なに|なん|どう|なぜ|どこ|いつ|誰(?!か)|どれ|どんな)/.test(sent(str, off)) ? m : 'でしょ'; })
+      .replace(/(^|[「、…‥\s])おい(?=[、！!…‥。っ]|$)/g, '$1ねえ').replace(new RegExp('(?<=[一-鿿ァ-ヶー])しろ' + END, 'g'), 'しなさい');
+  }
   V.styleQuote = function (q, who) {
     var ex = who && EX[who.tone];
     if (!ex) return sq0(q, who);

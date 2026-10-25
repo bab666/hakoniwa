@@ -29,11 +29,35 @@ const WEAK = [['弱い拒み（お願い形）', /(離して|やめて|見ない
 /* 尊大：紳士の言い換えを借りるので、紳士の決まり＋紳士のやわらかい語尾が残っていないか */
 RULES.sondai = (RULES.gentleman || []).concat([['紳士のやわらかい語尾', R('(かい|だい|かな|じゃないか|けど|けどね|頼むよ|だよね)')], ['紳士の感嘆', /(?:^|[「])(?:おや|やれやれ)/]]);
 ['proud', 'aniki', 'stern', 'cool', 'calm', 'tsun_n', 'gentleman', 'noja', 'sondai'].forEach(t => { RULES[t] = (RULES[t] || []).concat(WEAK); });
+/* 女性の話し手の台詞に、男性的な語尾・語が出た（口調を問わない。男性的な口調を選んだ女性＝ヤンキー・兄貴分・熱血・チャラい・のじゃ・紳士・尊大・神は除く。
+   tone-registry.js の HK.toneAxis の ending:'m' と同じ並び）。「〜だろ？」「〜だろう？」の問いかけは拾わない */
+const MASC_TONES = { yankee: 1, aniki: 1, hero: 1, chara: 1, noja: 1, gentleman: 1, sondai: 1, god: 1 };
+const FEM_M = [['だぜ・ぜ', /(?<=[ぁ-ゖ一-鿿])(?<![いな])ぜ(?=[…‥。！？!?、」♡〜]|$)/], ['断定の「だろ」', { test: s => /だろ(?=[…‥。！!、」♡〜]|$)/.test(s) && !/(?:何|なに|なん|どう|なぜ|どこ|いつ|誰(?!か)|どれ|どんな)[^。！？!?]*だろ(?=[…‥。！!、」♡〜]|$)/.test(s) }], ['ぞ', /(?<=[ぁ-ゖ一-鿿])(?<![どなうー])ぞ(?=[…‥。！？!?、」♡〜っ]|$)/],
+  ['じゃねえ', /じゃねえ/], ['〜ねえ（打ち消し）', /(?<=[らまわがばきみりえけせてめれげべ])(?<!ねえ)(?<!から|たら)ねえ(?!ね)(?=[よか…‥。！？!?、」♡〜]|$)/], ['やがる', /やが(?:る|れ|った|って)/],
+  ['てやる', /[てで]やる(?=[よぞぜ…‥。！？!?、」♡〜]|$|から)/], ['おい', /(?:^|[「、…‥\s])おい(?=[、！!…‥。っ]|$)/]];
+const FEM_FP = /(?:^|[^ぁ-ゖ])(俺|僕|オレ|ボク)(?=[はがもをにのとで、。！？…」っ]|$)/;
+const femHits = {}, femN = {};
+function femCheck(r, x) {
+  if (x.g !== 'f' || MASC_TONES[x.tone] || x.nq) return;
+  femN[x.tone] = (femN[x.tone] || 0) + 1;
+  const ks = FEM_M.filter(([, re]) => re.test(x.out)).map(([nm]) => nm);
+  const fm = x.out.match(FEM_FP);
+  if (fm && !/^(?:俺|僕|オレ|ボク)$/.test(x.fp)) ks.push('一人称「' + fm[1] + '」');
+  if (!ks.length) return;
+  (femHits[x.tone] = femHits[x.tone] || []).push(r.id + '：' + ks.join('・') + '｜' + (x.raw || '') + '　→　' + x.out);
+}
 const FP = /(俺様|オレ様|俺|僕|ぼく|オレ|ボク|わたくし|ワタクシ|あたくし|あたし|アタシ|わたし|ワタシ|私|拙者|わし|わらわ)(?=[はがもをにのとで、。！？…」っ])/g;
 const hits = {};
 for (const r of d.results) for (const x of r.recs) {
   if ((only && x.tone !== only) || x.nq) continue;
+  femCheck(r, x);
   (RULES[x.tone] || []).forEach(([nm, re]) => { if (re.test(x.out)) (hits[x.tone + '／' + nm] = hits[x.tone + '／' + nm] || new Set()).add(r.id + '：' + (x.raw || '') + '　→　' + x.out); });
   (x.out.match(FP) || []).forEach(f => { if (f !== x.fp && !x.out.includes(x.fp + f)) (hits[x.tone + '／一人称（' + x.fp + 'のはず）'] = hits[x.tone + '／一人称（' + x.fp + 'のはず）'] || new Set()).add(r.id + '：' + x.out); });
 }
 Object.keys(hits).sort().forEach(k => { const u = [...hits[k]]; console.log('### ' + k + '　' + u.length + '件'); u.slice(0, +show || 8).forEach(s => console.log('  ' + s.slice(0, 160))); });
+/* 女性の話し手の男性的な語尾・一人称（口調別。件数／その口調の女性の台詞の数） */
+{
+  const ks = Object.keys(femHits).sort((a, b) => femHits[b].length - femHits[a].length), tot = ks.reduce((n, k) => n + femHits[k].length, 0);
+  console.log('### 女性の話し手の男性的な語尾・一人称　' + tot + '件（' + ks.map(k => k + ' ' + femHits[k].length + '/' + femN[k]).join('、') + '）');
+  ks.forEach(k => { if (only && k !== only) return; femHits[k].slice(0, +show || 8).forEach(s => console.log('  [' + k + '] ' + s.slice(0, 200))); });
+}

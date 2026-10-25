@@ -101,7 +101,7 @@
       sample: ['{n}「{n}だよ。よろしくね」', '{n}「ねえ{o}、それなんだけど」', '{n}「いいよ、一緒に行こう」', '{n}「え、まじで？　知らなかった」', '{n}「ありがと。助かった」'] },
     chara_down: { label: 'ダウナー系チャラ男（〜ですよー）', desc: '「あれ、もしかして気があります？」「遊ぶのは大歓迎ですよー。責任は取りませんけど」。軽薄で気だるげ。敬語を交えてからかい、さりげなく距離を詰める。文面は敬語のものを使う', base: 'polite', top: 'FC', fp: { m: 'オレ', f: 'あたし', x: 'オレ' }, derive: 'polite', reluct: -0.25,
       sample: ['{n}「{n}でーす。よろしくでーす」', '{n}「あれ？　もしかして、オレに気があります？」', '{n}「遊ぶのは大歓迎ですよー。責任は取りませんけど」', '{n}「{o}さん、真面目ですねー。そういうとこ、嫌いじゃないですけど」', '{n}「あざーす。じゃ、お先でーす」'] },
-    /* 2026-10-25（二回目）：アンケートの口調の要望（仕上げは tone-new2.js）。axis = { polite: 0 タメ口・1 混ざる・2 敬語, attitude: 態度, ending: 'm'|'f'|'n'|'auto' } */
+    /* 2026-10-25（二回目）：アンケートの口調の要望（仕上げは tone-new2.js）。axis = { polite: 0 タメ口・1 混ざる・2 敬語, attitude: 態度, ending: 'm'（男性的な語尾が個性。女性でも直さない）|'f'|'n'|'auto' } */
     cool_soft: { label: '冷静（丸い）', desc: '「そう、聞いてなかった」「……まあ、いいけど」。冷静の言い切りを丸くした、落ち着いた話し方。「……」は控えめ。文面は冷静のものを使う', base: 'cool', top: 'A', fp: { m: '俺', f: '私', x: '私' }, derive: 'cool', reluct: 0.05,
       axis: { polite: 0, attitude: 'calm', ending: 'n' },
       sample: ['{n}「私は{n}。よろしくね」', '{n}「そう、聞いてなかった」', '{n}「{o}、こっち。こっちのほうが早いよ」', '{n}「助かった。覚えておくね」', '{n}「感情論はいいよ。何があったか、教えて」'] },
@@ -112,7 +112,7 @@
       axis: { polite: 0, attitude: 'calm', ending: 'n' },
       sample: ['{n}「私は{n}だよ。よろしくね」', '{n}「うーん……それは、困ったかな」', '{n}「{o}、こっちにおいでよ。お茶、淹れたんだ」', '{n}「ありがとう。すごく助かったよ」', '{n}「大丈夫だよ。ゆっくりでいいからね」'] },
     god: { label: '神の命令口調（〜せよ）', desc: '「面を上げよ」「我に従え」「〜であろう」。人ならざるものの、尊大で古めかしい命令口調。邪神村の神や、崇められる役に。文面は厳格のものを使う', base: 'stern', top: 'CP', fp: { m: '我', f: '我', x: '我' }, lines: 'base', derive: 'gentleman', firm: 'gentleman', reluct: 0.2,
-      axis: { polite: 0, attitude: 'proud', ending: 'n' },
+      axis: { polite: 0, attitude: 'proud', ending: 'm' },
       sample: ['{n}「私は{n}。その名、胸に刻むがよい」', '{n}「ほう……そのような話、聞いておらぬぞ」', '{n}「{o}、こちらへ来い。私の傍を離れるでない」', '{n}「大儀であった。褒めてつかわす」', '{n}「面を上げよ。恐れることはない」'] }
   };
   HK.TONES = TONES;
@@ -122,12 +122,14 @@
   HK.TONE_KEYS.forEach(function (k) { if (!HK.PERSONA[k]) HK.TONE_EXTRA[k] = TONES[k]; });
   /* 口調の項目を引く（なければ undefined） */
   HK.toneOpt = function (k, name) { var d = k && TONES[k]; return d ? d[name] : undefined; };
+  /* 男性的な語尾そのものが口調の個性の口調（女性が選んでも「〜ぞ」「〜ねえ」などを女性の言い方に直さない。tone-plus.js の V.genderEnd） */
+  var MASC_END = { yankee: 1, aniki: 1, hero: 1, chara: 1, noja: 1, gentleman: 1, sondai: 1 };
   /* 口調の軸（axis）。書いていない口調は、ほかの項目から大まかに決める */
   HK.toneAxis = function (k) {
     var d = k && TONES[k];
     if (!d) return null;
     if (d.axis) return d.axis;
-    return { polite: d.group === 'polite' ? 2 : k === 'mixed' ? 1 : 0, attitude: d.firm ? 'firm' : d.group === 'soft' ? 'soft' : 'plain', ending: d.neutral ? 'n' : 'auto' };
+    return { polite: d.group === 'polite' ? 2 : k === 'mixed' ? 1 : 0, attitude: d.firm ? 'firm' : d.group === 'soft' ? 'soft' : 'plain', ending: d.neutral ? 'n' : MASC_END[k] ? 'm' : 'auto' };
   };
   /* 語尾の付け替え（derive の口調）：tone-polite-kin.js などで登録し、voice.js の V.toneFinish から呼ばれる */
   HK.TONE_FINISH = HK.TONE_FINISH || {};
