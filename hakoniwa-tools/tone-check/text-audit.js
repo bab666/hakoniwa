@@ -34,7 +34,7 @@ const { openBuild } = require('./lib.js');
       [/合コン/, ['goukon']],
       [/常識改変/, ['kaihen']],
       [/サキュバス/, ['succubus']],
-      [/人狼ゲーム|処刑の投票/, ['jinro']],
+      [/人狼ゲーム|処刑の投票/, ['jinro', 'trial']],
       [/被告人|裁判長/, ['trial']],
       [/支給品/, ['br']],
       [/担任|学年/, ['classroom']],
