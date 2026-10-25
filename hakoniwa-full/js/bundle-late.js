@@ -27394,6 +27394,8 @@
       var lonely = ctx.most(P, function (c) { return c.stress / 100 + (couples.some(function (x) { return x.indexOf(c) >= 0; }) ? -9 : 0) + (crushOf(ctx, c, 55) ? 0.3 : 0); });
       if (lonely && !couples.some(function (x) { return x.indexOf(lonely) >= 0; })) {
         var cr = crushOf(ctx, lonely, 55);
+        /* 想い人が転校・卒業などでいなくなっていたら、名前は出さない（ケーキの文に） */
+        if (cr && !(HK.State ? HK.State.here(cr) : (cr.alive !== false && !cr.out))) cr = null;
         ctx.act2({ actors: [lonely, cr], cat: 'solo', fx: function () { ctx.stress(lonely, 8); }, text: cr ? ctx.t('{a}はイブの夜、{b}に送るメッセージを書いては消した。結局、送らなかった。', lonely, cr) : ctx.t('{a}はイブの夜、コンビニでケーキを一つだけ買った。', lonely), why: cr ? lonely.name + 'の' + cr.name + 'への想い' : lonely.name + 'の孤独' });
       }
     },
@@ -27974,14 +27976,14 @@
         if (f.tr.aggr + f.tr.cp * 0.5 > 0.75 && rng() < 0.6) {
           var lp = 45 + rng() * 35 + (n.gun ? 25 : 0), fp = power(f) + rng() * 35;
           if (fp > lp) { n.alive = false; n.note = f.name + 'たちに追い払われた'; return ctx.act2({ actors: P, cat: 'combat', text: fillN(ctx, '{n}たちが「食い物を出せ」と押し入ってきた。{a}は' + (f.weapon ? f.weapon.name : '拳') + 'で先頭の男を殴り倒し、残りは悲鳴を上げて逃げていった。', n, f), why: f.name + 'の攻撃性・CP（' + Math.round(fp) + '）', mag: 26 }); }
-          if (rng() < (n.gun ? 0.45 : 0.2)) { ctx.act2({ actors: P, cat: 'death', text: fillN(ctx, '{n}たちに歯向かった{a}は、' + (n.gun ? '至近距離から撃たれた' : '数人がかりで殴り倒された') + '。', n, f), why: n.label + 'たちは容赦がなかった', mag: 42 }); ctx.kill(f, null, n.label + 'たちに襲われて'); P.forEach(function (c) { c.z.food = 0; }); return; }
+          if (rng() < (n.gun ? 0.45 : 0.2) * HK.Dark.f(ctx, 'raid')) { ctx.act2({ actors: P, cat: 'death', text: fillN(ctx, '{n}たちに歯向かった{a}は、' + (n.gun ? '至近距離から撃たれた' : '数人がかりで殴り倒された') + '。', n, f), why: n.label + 'たちは容赦がなかった', mag: 42 }); ctx.kill(f, null, n.label + 'たちに襲われて'); P.forEach(function (c) { c.z.food = 0; }); return; }
           f.hp -= 20; if (f.z.wound < 0) f.z.wound = ctx.stepIndex;
           if (f.hp <= 0) { ctx.act2({ actors: P, cat: 'death', text: fillN(ctx, '{n}たちに殴りかかった{a}は、袋叩きにされて動かなくなった。', n, f), why: '略奪者のほうが多かった', mag: 40 }); ctx.kill(f, null, n.label + 'たちに襲われて'); return; }
           P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 2); });
           return ctx.act2({ actors: P, cat: 'combat', text: fillN(ctx, '{a}は{n}たちに殴りかかったが、多勢に無勢だった。食料をほとんど奪われ、{a}は肋骨を押さえてうずくまった。', n, f), why: '略奪者のほうが多かった', mag: 26 });
         }
         /* まれに、一人が犯される（R18版の solo-zombie-raid.js。襲われる人が「攻め」指定でないときだけ） */
-        if (Z.raiderAssault && Z.loveLv(ctx) !== 'off' && ctx.env.zraid !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) && rng() < 0.3) {
+        if (Z.raiderAssault && Z.loveLv(ctx) !== 'off' && ctx.env.zraid !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) && rng() < 0.3 * HK.Dark.f(ctx, 'raid')) {
           var vs = P.filter(function (c) { return !(HK.Pos && !HK.Pos.canReceive(c)) && !(HK.State && !HK.State.mobSexOk(c)) && !c.flags.raided; });
           if (vs.length) {
             var v = HK.weighted(rng, vs, function (c) { return 1 + (1 - c.tr.cp) * 0.6 + (c.hp < 50 ? 0.4 : 0); });
@@ -28604,7 +28606,7 @@
           if (D.need3 && !third(ctx, a, b)) return false;
           return true;
         },
-        w: function (ctx, a, b) { return D.w(ctx, a, b) * (MUL[id] || 1); },
+        w: function (ctx, a, b) { return D.w(ctx, a, b) * (MUL[id] || 1) * (D.cat === 'conflict' ? HK.Dark.f(ctx, 'grudge') : 1); },
         run: function (ctx, a, b) {
           RK.mark(ctx, a, b, k);
           var c = third(ctx, a, b);
@@ -31689,7 +31691,7 @@
     live.forEach(function (p) {
       if (n >= 2 || !JS.alive(p) || p.out || p.bound || rng() > 0.13) return;
       var dodge = 0.3 + JS.skill(p, 'obs') * 0.25 + p.tr.caution * 0.2 + p.stats.luck * 0.03 - p.m.fear / 500;
-      if (rng() < dodge) {
+      if (rng() < HK.Dark.live(S, dodge, 'kill')) {
         var dt = ST.fmt(ST.pick(S, PL.die), { a: p.name }).split('。');
         ST.sayB(S, { actors: [p], tag: '罠', text: (dt.length > 2 ? dt[0] + '。――だが' : p.name + 'の足元で、何かが動いた。――') + p.name + 'は、寸前でそれに気づき、身を翻していた。', why: p.name + 'は寸前で気づいた（観察・慎重さ・運）' }, p.name + 'が' + PL.name + 'の罠を避けた');
         return;

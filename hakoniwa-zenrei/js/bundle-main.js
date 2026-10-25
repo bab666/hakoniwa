@@ -9043,7 +9043,7 @@
       var r = this.R(win, lose);
       var mercy = win.tr.np * 0.7 + Math.max(0, r.aff) / 100 + (win.goal && win.goal.id === 'nokill' ? 0.8 : 0) - (win.goal && win.goal.id === 'last' ? 0.5 : 0)
         + (win.tol != null ? (0.45 - win.tol) * 0.6 : 0);   /* 生い立ち（deathgame-kit.js）：人の死に慣れていないほど、とどめをためらう */
-      if (opt.canSpare !== false && mercy > rng() * 1.4) {
+      if (opt.canSpare !== false && mercy > rng() * 1.4 * HK.Dark.f(this, 'kill')) {
         lose.hp = 6;
         this.mod2(lose, win, { aff: 30, ten: -15, trust: 15 }, { aff: 10 });
         res.spared = true;
@@ -9271,7 +9271,7 @@
         var r = ctx.R(a, o);
         var w = 1 + (Math.abs(r.aff) + r.ten + r.att) / 55;
         if (a.focus === o) w += 2.5;
-        if (a.flags.revenge === o.i) w += 3;
+        if (a.flags.revenge === o.i) w += 3 * HK.Dark.f(ctx, 'grudge');
         if (ctx.fac && ctx.fac.of[a.i] != null && ctx.fac.of[a.i] === ctx.fac.of[o.i]) w += 1;
         if (HK.Ties) w += HK.Ties.pull(ctx, a, o);
         return w;
@@ -9290,9 +9290,11 @@
       var w = e.w(ctx, a, bb);
       if (!(w > 0)) return;
       w *= ctx.bias(a, e.cat);
+      if (e.cat === 'combat' || e.cat === 'kill' || e.cat === 'betray') w *= HK.Dark.f(ctx, e.cat === 'betray' ? 'grudge' : 'kill');   /* 展開の重さ（mood-dial.js） */
       if (bb && HK.Ties) w *= HK.Ties.bias(ctx, a, bb, e.cat);
       if (bb && e.cat === 'romance' && (a.honmei != null || bb.honmei != null)) w *= HK.honmeiFactor(ctx, a, bb);
       if (HK.Emo) w *= HK.Emo.weight(ctx, a, e);   /* 気分（emotion.js）：悲しみ→恋愛を控える、怒り→対立など */
+      if (bb && e.cat === 'romance' && HK.Dark.on(ctx) !== 'normal' && HK.Dark.cheat(ctx, a, bb)) w *= HK.Dark.f(ctx, 'cheat');   /* 展開の重さ：恋人のいる人の、ほかの人との恋愛・夜 */
       if (w <= 0) return;
       if (e.pri) w *= (ctx.scen.priBoost || 2.4);
       cands.push({ e: e, w: w, b: bb });
@@ -9990,6 +9992,77 @@
     ok: function (x, tag) { return C.on(x && x.env, tag, x && x.scen && x.scen.id); }
   };
 })();
+;/* ==== js/mood-dial.js ==== */
+/* 箱庭シミュレーター: 展開の重さ（全箱庭で共通の設定。両ビルド共通）
+   死・心中・監禁・危害・破局・浮気・失恋・発狂・堕ち・全滅・襲撃・恨みの殺しといった「重い展開」の起こりやすさを、一つの設定でまとめて上げ下げする。
+   ・設定は全体の環境値 heavy（mild 穏やか／normal ふつう／dark 重い）。箱庭の ctx.env・物語型の S.env に入る
+     （島の「飢えの果て」が env.dark を使っているので、id は heavy にしている）
+   ・出来事の側は、確率や重みに HK.Dark.f(ctx, 'kill') を掛けるだけ（ふつうのときは 1 で、乱数も引かない。結果は前と同じ）
+       f：悪いことが起きる確率・重みに掛ける倍率　live：生き延びる確率 p を「失敗する側 ×f」に直す　pace：執着などが積もる速さ
+       skip：穏やかのとき、まれに重い展開を見送る（ふつう・重いでは乱数を引かずに false）　endings：結末を選ぶとき、悪い結末の重みに掛ける倍率
+   ・穏やかでは、内容のスイッチの「合意のない展開」「暴力をともなう性描写」「DVなど歪んだ関係」も切として扱う
+     （R18が中心の箱庭 HK.Content.CORE は題材そのものなので効かせない。そこでは堕ちが遅くなるだけ）
+   ・穏やかでも「起きないわけではない」：倍率を下げるだけで、死や別れは残る */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK) return;
+  var MUL = {
+    mild: { kill: 0.35, shinju: 0.35, cage: 0.35, harm: 0.35, breakup: 0.35, cheat: 0.35, heartbreak: 0.35, madness: 0.35, fall: 0.5, raid: 0.35, wipe: 0.5, grudge: 0.35, night: 0.7 },
+    dark: { kill: 1.8, shinju: 1.8, cage: 1.8, harm: 1.8, breakup: 1.8, cheat: 1.8, heartbreak: 1.8, madness: 1.8, fall: 1.8, raid: 1.8, wipe: 1.8, grudge: 1.8 }
+  };
+  var PACE = { mild: 0.6, dark: 1.4 }, END = { mild: 0.4, dark: 1.6 }, NOTE = { mild: '展開：穏やか', dark: '展開：重い' };
+  function envOf(x) { return x && x.env && typeof x.env === 'object' ? x.env : x; }
+  var D = HK.Dark = {
+    MUL: MUL,
+    /* いまの重さ（mild／normal／dark） */
+    on: function (x) { var e = envOf(x), v = e && e.heavy; return v === 'mild' || v === 'dark' ? v : 'normal'; },
+    f: function (x, kind) { var m = MUL[D.on(x)]; return m ? (m[kind] != null ? m[kind] : 1) : 1; },
+    /* 生き延びる・助かる確率 p を、重さに合わせて直す（失敗する側に f を掛ける） */
+    live: function (x, p, kind) { var k = D.f(x, kind || 'kill'); return k === 1 ? p : 1 - (1 - p) * k; },
+    pace: function (x) { return PACE[D.on(x)] || 1; },
+    skip: function (x, kind) { var k = D.f(x, kind); if (!(k < 1)) return false; var r = x && x.rng; return typeof r === 'function' ? r() > k : false; },
+    endings: function (x) { return END[D.on(x)] || 1; },
+    note: function (x) { return NOTE[D.on(x)] || ''; },
+    /* 段階ごとの値（しきい値など）：穏やか・ふつう・重い */
+    pick: function (x, mild, normal, dark) { var l = D.on(x); return l === 'mild' ? mild : l === 'dark' ? dark : normal; },
+    /* a と b の恋愛・夜が浮気になるか（どちらかに、相手以外の恋人がいる。エンジン型の ctx） */
+    cheat: function (ctx, a, b) {
+      if (!ctx || !ctx.chars || !ctx.pair || !a || !b || ctx.pair(a, b).couple) return false;
+      return ctx.chars.some(function (c) { return c !== a && c !== b && c.alive !== false && (ctx.pair(a, c).couple || ctx.pair(b, c).couple); });
+    },
+    OFF_MILD: { force: 1, violence: 1, abuse: 1 }
+  };
+  /* 全体の環境値（events-common.js の HK.GLOBAL_ENV）に足す。all：物語型の箱庭にも出す */
+  if (HK.GLOBAL_ENV && !HK.GLOBAL_ENV.some(function (e) { return e.id === 'heavy'; })) {
+    var item = {
+      id: 'heavy', label: '展開の重さ', type: 'select', def: 'normal', all: 1,
+      options: [
+        { v: 'mild', label: '穏やか：死・心中・監禁・破局が起こりにくい（起きないわけではない）' },
+        { v: 'normal', label: 'ふつう' },
+        { v: 'dark', label: '重い：起こりやすい' }
+      ]
+    };
+    Object.defineProperty(item, 'desc', {
+      enumerable: true,
+      get: function () {
+        return '死・心中・監禁・危害・別れ・浮気・失恋・発狂・堕ち・全滅・襲撃の起こりやすさをまとめて変える（全箱庭で共通）' +
+          (HK.Content && !HK.SAFE_ON ? '。穏やかにすると、内容のスイッチの「合意のない展開」「暴力をともなう性描写」「DVなど歪んだ関係」も切として扱う（R18が中心の箱庭では堕ちが遅くなるだけ）' : '');
+      }
+    });
+    HK.GLOBAL_ENV.push(item);
+  }
+  /* 穏やかでは、合意のない展開・暴力・歪んだ関係のスイッチを切として扱う（R18が中心の箱庭は除く） */
+  var C = HK.Content;
+  if (C && C.on && !C.on._dark) {
+    var on0 = C.on;
+    C.on = function (env, tag, scenId) {
+      if (D.OFF_MILD[tag] && D.on(env) === 'mild' && !(scenId && C.CORE && C.CORE[scenId])) return false;
+      return on0.apply(this, arguments);
+    };
+    C.on._dark = true;
+  }
+})();
 ;/* ==== js/mob.js ==== */
 /* 箱庭シミュレーター: モブと役割の枠（全箱庭で共通。全年齢版も同じ）
    ・HK.Mob：箱庭が用意する住人でない人（客・スタッフ・獲物・NPC など）を作る一か所
@@ -10433,6 +10506,7 @@
         a = rest[0];
         var h = gHeat(a);
         k = h > 0.58 ? 'rage' : !gTie(ctx, a, b) && (a.tr.cold > 0.55 || (h > 0.42 && a.tr.np < 0.4)) ? 'cold' : 'ache';
+        if (k === 'cold' && HK.Dark.skip(ctx, 'breakup')) k = 'ache';   /* 展開の重さ（mood-dial.js）：穏やかでは、別れを選ばないこともある */
       } else {
         /* 合コンの中でできた恋人を {c} に、もう一人を {a} に（二人とも設定の恋人という組は出さない） */
         c = ps.filter(function (o) { return !gTie(ctx, b, o); })[0];
@@ -10754,7 +10828,7 @@
           var t = ctx.pick(G_TWO[k]) + ctx.pick(G_TWO_C[ck]);
           /* 問い詰めた側が、その場で別れを選ぶことがある（合コンの中でできた恋人どうしのときだけ）。好意・信頼・NP で踏みとどまり、嫉妬・CP で切る */
           var keep = rc.aff * 0.8 + rc.trust * 0.4 + a.tr.np * 35 + a.tr.ac * 10 - a.tr.cp * 25 - a.tr.jealous * 35 - (ck === 'dodge' ? 15 : 0) + 15;
-          var end = k === 'press' && !gTie(ctx, a, c) && keep < ctx.rng() * 100;
+          var end = k === 'press' && !gTie(ctx, a, c) && keep < ctx.rng() * 100 * HK.Dark.f(ctx, 'breakup');
           if (end) { pc.couple = false; pc.gTwoBroke = true; ctx.mod2(a, c, { aff: -14, ten: 10 }, { aff: -4, ten: 6 }); t += ctx.pick(G_TWO_END); }
           var KN = { spar: '笑顔のさや当て', grab: c.name + 'の取り合い', press: c.name + 'を問い詰めた', sulk: '何も言えずに見ていた' }, CN = { soothe: 'なだめようとした（NP）', shrink: '縮こまった', dodge: 'はぐらかした（ドライさ）' };
           return { text: ctx.t(t, a, b, c), with: [b, c], mag: end ? 32 : 24,
@@ -19142,7 +19216,7 @@
   EV.push({
     id: 'om_breakup', cat: 'conflict', scope: 'pair', pri: true,
     when: function (ctx, a, b) { var pf = ctx.pair(a, b), r = ctx.R(a, b), q = ctx.R(b, a); return pf.couple && !pf.preset && (r.ten > 50 || r.aff < 5 || pf.switchStrain) && (q.ten > 40 || q.aff < 15 || pf.switchStrain) && ctx.stepIndex - (pf.since || 0) >= 3; },
-    w: function (ctx, a, b) { return 0.8 + ctx.R(a, b).ten / 50; },
+    w: function (ctx, a, b) { return (0.8 + ctx.R(a, b).ten / 50) * HK.Dark.f(ctx, 'breakup'); },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b), om = ctx.om;
       var reason = pf.switchStrain ? 'switch' : (ctx.env.society > 55 && (sx(a) === sx(b) || sx(a) === 'o' || sx(b) === 'o') && ctx.rng() < 0.5 ? 'bias' : 'drift');
@@ -19846,7 +19920,7 @@
       var keep = r.aff * 0.8 + r.trust * 0.4 + a.tr.np * 35 + a.tr.ac * 10 - a.tr.cp * 25 - a.tr.jealous * 35 - 25 - (how === 'flaunt' ? 15 : 0) + (how === 'confess' ? 15 : 0) + (BD.bonded(ctx, a, b) ? 25 : 0);
       ctx.mod(a, d, { ten: 30, aff: -25, trust: -30 });
       ctx.stress(a, 30);
-      if (keep > ctx.rng() * 130) {
+      if (keep > ctx.rng() * 130 * HK.Dark.f(ctx, 'breakup')) {
         pf.forgiven = (pf.forgiven || 0) + 1;
         ctx.mod2(a, b, { trust: -22, ten: 14 }, { trust: 6, ten: 6 });
         t += ctx.pick(FOUND.forgive);
@@ -21266,7 +21340,7 @@
         + (a.honmei === b.i ? 30 : 0) + (a.goal && a.goal.id === 'mate' ? 10 : 0) - (a.goal && a.goal.id === 'free' ? 15 : 0)
         + (h.confessed ? 15 : 0) - (h.caught ? 15 : 0) - (h.lied ? 20 : 0) - (h.times - 1) * 12 + (h.via === 'heat' ? 12 : 0) + (ctx.R(b, a).att > 50 ? 8 : 0) - 30;
       var parts = [];
-      if (keep > ctx.rng() * 80) {
+      if (keep > ctx.rng() * 80 * HK.Dark.f(ctx, 'breakup')) {
         h.st = 'mend'; pf.forgiven = (pf.forgiven || 0) + 1;
         parts.push(ctx.pick(MEND[top(a)] || MEND.NP));
         if (bond && nose(a)) parts.push(ctx.pick(MEND_BOND));
@@ -23611,6 +23685,7 @@
     var scen = HK.SCENARIOS[scenId], env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
     env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
+    env.heavy = HK.Dark ? HK.Dark.on(input.env) : 'normal';   /* 展開の重さ（mood-dial.js。全体の設定） */
     var S = { scen: scen, rng: HK.rng(input.seed), env: env, log: [], hist: [], turns: [], recent: [], flags: {}, cnt: {}, q: [], step: 0, label: '' };
     S.h = K.hero(S, input.chars[0], (input.perChar && input.perChar[0]) || {});
     S.party = [S.h];
@@ -23716,6 +23791,7 @@
   };
   K.finish = function (S, input, E, advice, extra) {
     var h = S.h;
+    if (E && Array.isArray(E.lines) && HK.Dark && HK.Dark.note(S)) E.lines.push(HK.Dark.note(S));   /* 展開の重さ（mood-dial.js）：ふつう以外なら結末に一行 */
     var hero = {
       i: 0, name: h.name, eg: h.eg, memo: h.memo, top: h.top, persona: h.persona, tone: h.tone, stats: h.stats, tr: h.tr,
       action: h.action.label, goal: h.goal.label, goalId: h.goal.id, autoAction: h.autoAction, autoGoal: h.autoGoal,
@@ -24225,6 +24301,7 @@
     var noSx = h.gender === 'x';
     function fw(arr) { var a2 = noSx ? arr.filter(function (t) { return t.indexOf('{sx}') < 0; }) : arr; return K.fmt(S, K.pick(S, a2.length ? a2 : arr)).replace(/\{sx\}/g, sx); }
     if (wrong) S.k = 1.25 * 0.85;
+    S.k *= HK.Dark.f(S, 'fall');   /* 展開の重さ（mood-dial.js）：穏やかほど堕ちが遅い */
     var sus = 0, noticed = false, deceived = 0, stayed = false, left = false, fell = false, asked = false;
     /* 描写を軽めに：快楽に負けたあとは暗転して回数だけ。最中の絶頂は短い一文に */
     /* 描写の有無（lewd-unify.js）：ほのめかす＝軽め（暗転）。設定をそろえる前の入力は「行為の描写」を見る */
@@ -25215,6 +25292,7 @@
     var X = ctxOf(res);
     var out = f ? f(res, X) : { headline: res.outcome || '', stats: [], lines: [] };
     (res.end.notes || []).forEach(function (l) { out.lines.push(l); });
+    if (HK.Dark && HK.Dark.note(res)) out.lines.push(HK.Dark.note(res));   /* 展開の重さ（mood-dial.js）：ふつう以外なら一行 */
     var mp = mainPairs(res, X);
     if (mp.length) out.lines.push('主な関係：' + mp.join('、'));
     if (HK.Epilogue) HK.Epilogue.build(res, out);   /* その後・最期の言葉（epilogue.js） */
@@ -26495,7 +26573,7 @@
     }
     /* 見捨てる・囮にする */
     var cold = others.filter(function (o) { return o.tr.cold + o.tr.aggr * 0.5 > 0.95 && ctx.R(o, v).aff < 25; })[0];
-    if (cold && rng() < 0.22 + (cold.goal.id === 'chaos' ? 0.25 : 0) + ctx.R(cold, v).ten / 200) {
+    if (cold && rng() < (0.22 + (cold.goal.id === 'chaos' ? 0.25 : 0) + ctx.R(cold, v).ten / 200) * HK.Dark.f(ctx, 'grudge')) {
       var bait = cold.tr.aggr > 0.55 && (ctx.R(cold, v).ten > 30 || cold.goal.id === 'chaos') && rng() < 0.55;
       out.text = ctx.pick(bait ? VIC.bait : VIC.shut).replace(/\{x\}/g, cold.name).replace(/\{v\}/g, v.name);
       out.why = cold.name + 'のドライさ（' + Math.round(cold.tr.cold * 100) + '）' + (bait ? 'と攻撃性。' + v.name + 'への緊張 ' + Math.round(ctx.R(cold, v).ten) : '');
@@ -26507,7 +26585,7 @@
       ctx.mod(v, cold, { aff: -40, trust: -60, ten: 40 });
       out.mag = 45; return out;
     }
-    if (v.hp < 40 && rng() < 0.35 || rng() < 0.06) {
+    if (v.hp < 40 && rng() < 0.35 * HK.Dark.f(ctx, 'kill') || rng() < 0.06 * HK.Dark.f(ctx, 'kill')) {
       out.text = ctx.pick(VIC.eaten).replace(/\{v\}/g, v.name);
       out.why = v.name + 'の体力の消耗（' + Math.max(0, Math.round(v.hp)) + '）と運';
       ctx.kill(v, null, A.name + 'でゾンビの群れに呑まれた');
@@ -26548,6 +26626,7 @@
     ctx.present().forEach(function (c) {
       var z = c.z;
       if (!z.bitten || !c.alive || c.out) return;
+      if (z.dkAt !== z.bitten.at) { z.dkAt = z.bitten.at; if (HK.Dark.on(ctx) === 'mild' && ctx.rng() < 0.75) { z.bitten = null; z.turnAt = -1; if (z.aware) ctx.act2({ actors: [c], cat: 'solo', text: ctx.t('{a}の咬み跡は赤く腫れたが、熱は出なかった。……どうやら、感染はしなかったらしい。', c), why: '傷が浅かった（展開の重さ：穏やか）', mag: 18 }); return; } }   /* 展開の重さ（mood-dial.js） */
       if (!z.aware && s >= z.turnAt - 1) { z.aware = true; ctx.act2({ actors: [c], cat: 'solo', text: ctx.t(ctx.pick(BITE.fever), c), why: '気づかないうちに感染していた（引っかき傷）', mag: 20 }); }
       if (z.aware && !z.decided && s > z.bitten.at - 1) { z.decided = true; decide(ctx, c); }
       if (Z.shinjuCheck && c.alive && !c.out && Z.shinjuCheck(ctx, c)) return;
@@ -26622,7 +26701,7 @@
         ctx.kill(c, null, 'ゾンビになる前に、自ら命を絶った');
         break;
       case 'cut':
-        var ok = ctx.rng() < 0.3 + luck(ctx, c) * 0.04 && ctx.stepIndex - z.bitten.at <= 2;
+        var ok = ctx.rng() < HK.Dark.live(ctx, 0.3 + luck(ctx, c) * 0.04, 'kill') && ctx.stepIndex - z.bitten.at <= 2;
         c.hp -= 30; z.wound = ctx.stepIndex;
         var tc = ctx.t(ctx.pick(BITE.cut), c).replace(/\{w\}/g, wname(c));
         if (c.hp <= 0) { ctx.act2({ actors: [c], cat: 'solo', text: tc + '出血が止まらなかった。', why: why, mag: 40 }); ctx.kill(c, null, '咬まれた腕を自分で切り落とし、失血で'); break; }
@@ -26759,7 +26838,7 @@
       if (z.wound < 0 || z.bitten) return;
       var age = ctx.stepIndex - z.wound;
       if (age >= 2 && !z.fever && ctx.rng() < 0.1 + ctx.stat(c, 'hp') * 0.03) { z.wound = -1; return; }
-      if (age >= 4 && ctx.rng() < 0.3) {
+      if (age >= 4 && ctx.rng() < 0.3 * HK.Dark.f(ctx, 'kill')) {
         c.hp -= 4 + ctx.rng.int(6); ctx.stress(c, 5);
         if (!z.fever) { z.fever = true; ctx.act2({ actors: [c], cat: 'solo', text: ctx.t(ctx.pick(Z.FESTER || ['{a}の傷口が赤く腫れ、熱を持ち始めた。']), c), why: '負傷から ' + age + ' 区切り、手当てができていない', mag: 15 }); }
         if (c.hp <= 0) ctx.kill(c, null, '傷口からの感染症で、高熱にうなされたまま');
@@ -26772,7 +26851,7 @@
       var z = c.z;
       if (z.food > 0) { z.food--; z.hunger = Math.max(0, z.hunger - 1); return; }
       z.hunger++;
-      c.hp -= 5 + z.hunger * 5 - ctx.stat(c, 'hp');
+      c.hp -= (5 + z.hunger * 5 - ctx.stat(c, 'hp')) * HK.Dark.f(ctx, 'wipe');
       ctx.stress(c, 6 + z.hunger * 3);
       if (z.hunger === 2 || (z.hunger >= 3 && rng() < 0.4)) ctx.act2({ actors: [c], cat: 'solo', text: ctx.t(rng.pick(Z.HUNGER || ['{a}の手持ちの食料は、もう何もない。水だけで、また一日が終わった。']), c), why: '食料が尽きて ' + z.hunger + ' 日目', mag: 10 });
       if (c.hp <= 0) ctx.kill(c, null, '飢えと渇きで倒れた');
@@ -26792,7 +26871,7 @@
       var mates = here(ctx, c), grief = c.flags.grief != null;
       var risk = (c.stress - 76) / 100 + (c.z.bitten && c.z.aware ? 0.06 : 0) + (grief ? 0.05 : 0) + (c.z.family && c.z.family.heard ? 0.04 : 0) - c.tr.fc * 0.06 - c.tr.np * 0.03 - c.tr.cp * 0.03;
       if (!mates.length) risk *= 1.4;
-      if (risk <= 0 || rng() > risk * 0.35) return;
+      if (risk <= 0 || rng() > risk * 0.35 * HK.Dark.f(ctx, 'kill')) return;
       /* 一人では置いていけない */
       var dep = mates.filter(function (o) { return ctx.R(c, o).aff > 45 && (o.stress > 40 || (o.z.bitten && o.z.aware) || tieT(ctx, c, o) === 'parent' || tieT(ctx, c, o) === 'lover'); })[0];
       if (dep && c.tr.ac + c.tr.np + c.tr.jealous > 1.2 && rng() < 0.7) {
@@ -26811,7 +26890,7 @@
       }
       /* 誰かが止める */
       var st = mates.filter(function (o) { return ctx.R(o, c).aff > 30; }).sort(function (x, y) { return ctx.R(y, c).aff - ctx.R(x, c).aff; })[0];
-      if (st && rng() < st.tr.np * 0.6 + ctx.R(st, c).aff / 150) {
+      if (st && rng() < HK.Dark.live(ctx, st.tr.np * 0.6 + ctx.R(st, c).aff / 150, 'kill')) {
         c.stress = Math.max(0, c.stress - 35);
         ctx.act2({ actors: [c, st], cat: 'help', fx: function () { ctx.mod2(c, st, { aff: 12, trust: 15 }, { aff: 8, trust: 6 }); }, text: ctx.t(ctx.pick(DESP.stop), c, st), why: c.name + 'の追い詰められ方（焦り ' + Math.round(c.stress + 35) + '）／' + st.name + 'が止めた（好意 ' + Math.round(ctx.R(st, c).aff) + '・NP）', mag: 35 });
         return;
@@ -27689,7 +27768,7 @@
       var actors = [v].concat(mates.filter(function (o) { return o !== v; })).concat(v !== a ? [a] : []);
       actors = actors.filter(function (c, i) { return actors.indexOf(c) === i; });
       ctx.stress(v, 10);
-      var gap = skill - danger;
+      var gap = skill - danger * HK.Dark.pick(ctx, 0.8, 1, 1.6);   /* 展開の重さ（mood-dial.js） */
       if (gap > 0.12) {
         var fight = v.tr.aggr + (v.weapon ? v.weapon.pow * 0.06 : 0) > 0.55 && rng() < 0.7;
         t += fill(ctx.pick(fight ? OUT.fight : OUT.escape), m);
@@ -27698,7 +27777,7 @@
       }
       /* 仲間が助けに入る */
       var helper = mates.filter(function (o) { return o !== v && ctx.R(o, v).aff > 10 && o.tr.aggr + o.tr.np > 0.7; }).sort(function (x, y) { return ctx.R(y, v).aff - ctx.R(x, v).aff; })[0];
-      if (helper && rng() < 0.45 + ctx.R(helper, v).aff / 250) {
+      if (helper && rng() < HK.Dark.live(ctx, 0.45 + ctx.R(helper, v).aff / 250, 'kill')) {
         t += fill(ctx.pick(OUT.save), { a: v.name, b: helper.name, bw: wname(helper) });
         ctx.mod(v, helper, { aff: 10, trust: 14 });
         return { with: actors, text: t, why: why + '／' + helper.name + 'がとっさに助けた（' + v.name + 'への好意 ' + Math.round(ctx.R(helper, v).aff) + '）', mag: 22 };
@@ -27709,7 +27788,7 @@
         return { with: actors, text: t, why: why + '：けがを負った（化膿すると危ない）', mag: 18 };
       }
       /* まれに、犯される展開になる（R18版のみ。襲われる人が「攻め」指定でないときだけ） */
-      if (Z.ZA_TEXT && Z.zombieAssault && Z.loveLv(ctx) !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) && !(HK.Pos && !HK.Pos.canReceive(v)) && !(HK.State && !HK.State.mobSexOk(v)) && !v.z.zassault && rng() < (0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) * (ctx.env.zlust == null ? 1 : ctx.env.zlust / 50)) {
+      if (Z.ZA_TEXT && Z.zombieAssault && Z.loveLv(ctx) !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) && !(HK.Pos && !HK.Pos.canReceive(v)) && !(HK.State && !HK.State.mobSexOk(v)) && !v.z.zassault && rng() < (0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) * (ctx.env.zlust == null ? 1 : ctx.env.zlust / 50) * HK.Dark.f(ctx, 'raid')) {
         v.z.zassault = true; v.flags.mobHit = { at: ctx.stepIndex, by: 'ゾンビ' };
         var ra = Z.zombieAssault(ctx, v, [a].concat(mates).filter(function (o, i, arr) { return o !== v && arr.indexOf(o) === i; }), A);
         ra.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
@@ -31212,7 +31291,7 @@
     letgo: L('{b}と{c}が並んで笑っているのを見ても、{a}の胸はもう、前ほどは痛まなかった。「お幸せに」と小さく呟いて、{a}は自分の場所へ戻った。|{a}は{b}への想いを、心のいちばん奥の引き出しにしまった。捨てることはできなかった。でも、しまうことはできた。|ある朝、{a}は{b}のことを考えずに目を覚ましている自分に気づいた。少しだけ寂しくて、少しだけほっとした。')
   };
 
-  function mk(id, cat, w, when, run) { return { id: id, cat: cat, scope: 'pair', mini: true, sig: true, when: when, w: w, run: run }; }
+  function mk(id, cat, w, when, run) { return { id: id, cat: cat, scope: 'pair', mini: true, sig: true, when: when, w: /^hb_(?:comfort|letgo)$/.test(id) ? w : function (ctx, a, b) { return w(ctx, a, b) * HK.Dark.f(ctx, 'heartbreak'); }, run: run }; }
   var LIST = HK.Heartbreak = [
     /* 知る：想う相手が、ほかの誰かと恋人になった（または心を決めていた） */
     mk('hb_news', 'solo', function () { return 4; },
@@ -32493,7 +32572,7 @@
     opt = opt || {};
     if (p.mad || (!p.spec && !opt.all) || !A.alive(p)) return false;
     var s = A.stress(p), tr = p.tr || {};
-    p.wear = (p.wear || 0) + Math.max(0, s - (opt.base || 72)) / 8 + (opt.add || 0);
+    p.wear = (p.wear || 0) + Math.max(0, s - (opt.base || 72)) / 8 * HK.Dark.f(A, 'madness') + (opt.add || 0);
     var lim = (opt.lim || 26) * (1 + (tr.cp || 0) * 0.35 + (tr.a || 0) * 0.2 - (tr.ac || 0) * 0.2);
     if (p.wear < lim) return false;
     return SP.goMad(A, p, opt);
@@ -33702,6 +33781,7 @@
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
     /* 内容のスイッチ（content.js）は環境値の一覧にないので、そのまま写す */
     env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
+    env.heavy = HK.Dark ? HK.Dark.on(input.env) : 'normal';   /* 展開の重さ（mood-dial.js。全体の設定） */
     var S = { scen: scen, rng: HK.rng(input.seed), env: env, log: [], hist: [], turns: [], recent: [], step: 0, label: '', flags: {} };
     S.P = input.chars.map(function (c, i) {
       var pc = (input.perChar && input.perChar[i]) || {};
@@ -33811,6 +33891,7 @@
     });
   };
   ST.result = function (S, input, o) {
+    if (o && o.ending && Array.isArray(o.ending.lines) && HK.Dark && HK.Dark.note(S)) o.ending.lines.push(HK.Dark.note(S));   /* 展開の重さ（mood-dial.js）：ふつう以外なら結末に一行 */
     if (S.egoNotes && !S.egoDone) { S.egoDone = true; ST.egoNotes(S); }
     var res = {
       solo: true, story: true, scenId: S.scen.id, seed: input.seed, env: S.env, input: input,
@@ -34707,7 +34788,7 @@
     ST.budget(S, 2 * T.length);
     T.forEach(function (p) {
       var v = { a: p.name, h: p.h };
-      var t = ST.fmt(ST.pick(S, p.T.intro), v) + (p.consent && SM.CONSENT ? ST.fmt(ST.pick(S, SM.CONSENT), v) : '') + ST.fmt(ST.pick(S, p.M.intro), v);
+      var t = ST.fmt(ST.pick(S, p.T.intro), v) + (p.consent && SM.CONSENT ? ST.fmt(ST.pick(S, SM.CONSENT.filter(function (x) { return !(p.noR18 || p.noSex) || !/エッチ/.test(x); })), v) : '') + ST.fmt(ST.pick(S, p.M.intro), v);
       say(p, { tag: p.T.label, text: t, why: '催眠をかけるのは' + p.h + '（' + p.T.label + (p.hf ? '・女性' : '') + '）。' + ST.fmt(p.T.motive, v) + (p.consent ? '／始める前に、二人で同意していた（内容のスイッチ「合意のない展開」が切）' : p.noForce ? '／内容のスイッチ「合意のない展開」が切なので、いたずらの暗示だけ' : '') });
       var o = say(p, { tag: '診断', text: p.name + 'のかかりやすさは' + Math.round(p.sus * 100) + '％。弱い暗示は「' + p.weak.map(function (k) { return SM.SUG[k].label; }).join('」「') + '」。', why: 'AC・FCが高いほど、A・CPが低いほどかかりやすい／' + p.M.name + 'との相性・' + p.h + 'への警戒の薄さ・方針「' + p.action.label + '」' }, '', true);
       ST.key(S, o, p.name + 'のかかりやすさ');
@@ -34749,7 +34830,7 @@
           p.used['ev_' + e.id] = (p.used['ev_' + e.id] || 0) + 1; p.cnt.ev++;
           var fx = e.fx;
           if (fx.depth) p.m.depth = clamp(p.m.depth + fx.depth, 0, 100);
-          if (fx.fall) p.m.fall = clamp(p.m.fall + fx.fall, 0, 100);
+          if (fx.fall) p.m.fall = clamp(p.m.fall + fx.fall * HK.Dark.f(S, 'fall'), 0, 100);
           if (fx.record) p.recorded = true;
           if (fx.aware) p.halfAware = true;
           if (fx.guilt) p.guilt = true;
@@ -34790,7 +34871,7 @@
           t += fb;
           t += tq(p);
           p.m.plea = clamp(p.m.plea + (f.plea || 0) * p.sens * (full ? 1 : 0.5), 0, 120);
-          p.m.fall = clamp(p.m.fall + (f.fall || 0) * (full ? 1 : 0.45), 0, 100);
+          p.m.fall = clamp(p.m.fall + (f.fall || 0) * (full ? 1 : 0.45) * HK.Dark.f(S, 'fall'), 0, 100);
           var cl = full ? (f.climax || 0) : 0;
           if (p.m.plea >= 100) { cl++; p.m.plea = 30; }
           /* 小説調の山場：本番の暗示を受け入れて達したときは、段落に分けて厚く（solo-thick4.js） */
@@ -34801,7 +34882,7 @@
           var thick = !big && full && g.lewd && (cl ? rng() < 0.85 : rng() < 0.3) && HK.Thick4 && HK.Thick4.ok(S, lew) ? thickSug(S, p, fb, vk) : null;
           if (thick) { t = t.replace(fb, thick); if (!cl) cl = 1; }
           if (cl) {
-            p.cnt.climax += cl; p.m.fall = clamp(p.m.fall + cl * 3, 0, 100);
+            p.cnt.climax += cl; p.m.fall = clamp(p.m.fall + cl * 3 * HK.Dark.f(S, 'fall'), 0, 100);
             /* 男性向けの文：本文に絶頂の喘ぎ（{m2}）がなければ、態度ごとの崩れた声を足す */
             if (lew !== 'low' && eroOn(S) && !aTop) { if (!big && !/\{m2\}/.test(body)) t += p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; }
             else if (!thick && !big && lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + (aTop && SM.CLIMAX_TOP ? fresh(p, topVoice(p, 'CLIMAX', [])) : '「' + fresh(p, topL(p, V.CLIMAX[p.persona])) + '」');
@@ -35096,6 +35177,7 @@
     /* 中に出されて我に返ったあと：その場で通報した人は通報、流された人は快楽堕ちへ寄る */
     if (p.reportedNow) return 'report';
     if (p.swept) { w.angry *= 0.15; w.report = 0; w.revenge *= 0.2; w.counter = 0; w.shy *= 0.4; w.fall = w.fall * 2 + 1; if (p.bad) w.depend = (w.depend || 0) + 0.8; w.accept *= 1.3; w.dazed *= 1.2; w.confused *= 0.7; }
+    w.fall *= HK.Dark.f(S, 'fall'); if (w.depend) w.depend *= HK.Dark.f(S, 'fall');   /* 展開の重さ（mood-dial.js） */
     if (p.fled) { w.shy += 0.4; w.angry += 0.2; w.fall *= 0.5; w.sweet *= 0.5; w.confused += 0.3; w.accept *= 0.5; }
     /* 向きの決まらない組・いたずらだけ：体の関係を受け入れる結末にはしない（いたずらとして受け流すのは残す） */
     if (p.noSex && !p.cnt.lewd) w.accept *= 0.6;
@@ -36593,7 +36675,7 @@
       /* 本命・恋愛相手・体の相手を決めている人は踏みとどまりやすい（耐えがたいほどの熱なら妥協する） */
       if (A.honmei != null || A.lock != null || typeof A.sexLock === 'number') want -= desperate(A) && A.m.heat > 85 ? 0.1 : 0.45;
       var force = HK.Content && HK.Content.on(S.env, 'force', 'locker');
-      if (want > 0.55 && rng() < 0.7) {
+      if (want > 0.55 && rng() < 0.7 * HK.Dark.f(S, 'fall')) {
         var top = side === 'top' ? A : m, bot = side === 'top' ? m : A, md = modeOf(top, bot), vv = { a: top.name, b: bot.name };
         t += ST.fmt(pk(R.ASK), v) + ST.fmt(pk(R.MOB_SEX[md]), vv);
         if (S.eroOn) t += HK.ThickEro.fill(S, ST.fmt(pk(R.MOB_ERO[md]), vv), top, bot);
@@ -36601,7 +36683,7 @@
         t += ST.fmt(pk(R.MOB_AFTER), v);
         bumpClimax(A); outcome = 'mob'; tag = '求めた'; kind = 'climax'; mag = 34;
         why = A.name + 'は熱に耐えきれず、自分から' + m.name + 'に頼んだ（合意・' + (side === 'top' ? A.name + 'が攻め' : m.name + 'が攻め') + '）';
-      } else if (want <= 0.55 && force && side === 'bottom' && !(Pos && Pos.hardTopNpc(A)) && rng() < 0.45) {
+      } else if (want <= 0.55 && force && side === 'bottom' && !(Pos && Pos.hardTopNpc(A)) && rng() < 0.45 * HK.Dark.f(S, 'raid')) {
         var mdF = modeOf(m, A), vF = { a: m.name, b: A.name };
         t += ST.fmt(pk(R.FORCE[mdF]), vF) + ST.fmt(pk(R.FREACT[A.persona] || R.FREACT.gentle), { a: A.name, m: m.name });
         if (S.eroOn) t += HK.ThickEro.fill(S, ST.fmt(pk(R.FORCE_ERO[mdF]), vF), m, A);
@@ -37903,14 +37985,15 @@
     var leader = P.slice().sort(function (a, b) { return (b.tr.lead + b.tr.cp * 0.5) - (a.tr.lead + a.tr.cp * 0.5); })[0];
     function snap() { P.forEach(function (p) { p.m.hp = Math.round(p.hp / p.mhp * 100); p.m.gold = p.found; }); ST.snap(S, ['hp', 'gold']); }
     function hurt(p, d) {
-      d = Math.max(1, Math.round(d - p.def * 0.5));
+      d = Math.max(1, Math.round((d - p.def * 0.5) * HK.Dark.pick(S, 0.85, 1, 1.15)));
       p.hp -= d;
       if (SPX) SPX.hurt(p, d);
       if (p.hp <= 0) {
         p.hp = 0; p.alive = false; p.down++;
         var pr = alive().filter(function (x) { return JOBS[x.job].heal; })[0];
-        if (pr && rng() < 0.55 + pr.tr.np * 0.3) { p.alive = true; p.hp = Math.round(p.mhp * 0.35); pr.cnt.heal++; return p.name + 'が倒れた！――' + pr.name + 'の祈りで、' + p.name + 'は立ち上がった。'; }
-        if (pot > 0 && rng() < 0.68) { pot--; p.alive = true; p.hp = Math.round(p.mhp * 0.4); return p.name + 'が倒れた！――仲間が回復薬を飲ませ、' + p.name + 'は息を吹き返した。'; }
+        if (pr && rng() < HK.Dark.live(S, 0.55 + pr.tr.np * 0.3, 'kill')) { p.alive = true; p.hp = Math.round(p.mhp * 0.35); pr.cnt.heal++; return p.name + 'が倒れた！――' + pr.name + 'の祈りで、' + p.name + 'は立ち上がった。'; }
+        if (pot > 0 && rng() < HK.Dark.live(S, 0.68, 'kill')) { pot--; p.alive = true; p.hp = Math.round(p.mhp * 0.4); return p.name + 'が倒れた！――仲間が回復薬を飲ませ、' + p.name + 'は息を吹き返した。'; }
+        if (HK.Dark.on(S) === 'mild' && rng() < 0.8) { p.alive = true; p.hp = 1; return p.name + 'が倒れた！――それでも' + p.name + 'は、かろうじて意識をつなぎとめた。'; }   /* 展開の重さ：穏やか */
         return p.name + 'は倒れた。';
       }
       return '';
@@ -39424,6 +39507,8 @@
     if (!q || rng() > 0.2 + q.tr.warmth * 0.35 + (q.goal.id === 'protect' ? 0.15 : 0)) return vic;
     var o = ST.say(S, { actors: [q, vic], tag: '身代わり', kind: 'climax', text: pickT(S, T.SUBST, { a: vic.name, b: q.name }), why: q.name + 'が' + vic.name + '（' + relLabel(S, q, vic) + '）の身代わりになった（温かさ）', mag: 44 });
     ST.key(S, o, q.name + 'が身代わりに'); ED(S, q, vic, '身代わり', 'guard', q);
+    /* 身代わりで解き放たれた人は、そのまま逃がす（連れ去られていた人が、あとの「逃走」の場面に出ないように） */
+    if (vic.taken) { vic.out = true; vic.esc = S.h; vic.fate = '身代わりのおかげで逃げ延びた（' + JS.hm(S.h) + '）'; }
     vic.taken = false;
     return q;
   }
@@ -39846,8 +39931,8 @@
         /* 発狂中は動けない。そのぶん死の罠や村人の襲撃を引きやすい（jashin-special.js） */
         if (JS.SPEC && JS.SPEC.mad(p)) {
           var dg = JS.SPEC.danger(p);
-          if (rng() < trapRate(S, p, h) * dg) return trap(S, p, P.filter(alive), false);
-          if (rng() < (S.hostile / 100) * (night(h) ? 0.16 : 0.05) * dg * (S.shrineRage ? 1.8 : 1)) return attack(S, p, live);
+          if (rng() < trapRate(S, p, h) * dg * HK.Dark.f(S, 'kill')) return trap(S, p, P.filter(alive), false);
+          if (rng() < (S.hostile / 100) * (night(h) ? 0.16 : 0.05) * dg * (S.shrineRage ? 1.8 : 1) * HK.Dark.f(S, 'raid')) return attack(S, p, live);
           return JS.SPEC.act(S, p);
         }
         /* 渇いた吸血鬼は、ほかのことより先に血を求める */
@@ -39856,10 +39941,10 @@
         if (JS.MUNO && JS.MUNO.act(S, p, h, P.filter(alive))) return;
         var evp = env.ev / 100;
         var r = rng();
-        if (rng() < trapRate(S, p, h)) return trap(S, p, P.filter(alive), false);
+        if (rng() < trapRate(S, p, h) * HK.Dark.f(S, 'kill')) return trap(S, p, P.filter(alive), false);
         if (r < evp * 0.25) return S.FX && rng() < 0.5 ? godHorror(S, p) : scare(S, p);
         if (r < evp * 0.25 + 0.05 && !S.shrine && (p.goal.id === 'deny' || p.prank || p.tr.impulse > 0.6 || p.goal.id === 'content' || rng() < 0.15)) return shrine(S, p);
-        if (night(h) && rng() < (S.hostile / 100) * 0.16 * (p.action.id === 'alone' || p.goal.id === 'content' ? 1.8 : 1) * (S.shrineRage ? 1.8 : 1)) return attack(S, p, live);
+        if (night(h) && rng() < (S.hostile / 100) * 0.16 * (p.action.id === 'alone' || p.goal.id === 'content' ? 1.8 : 1) * (S.shrineRage ? 1.8 : 1) * HK.Dark.f(S, 'raid')) return attack(S, p, live);
         if ((p.goal.id === 'escape' || p.m.fear > 80) && rng() < 0.12) return escape(S, p, h);
         if (JS.GOALX && JS.GOALX.act(S, p, h, P.filter(alive))) return;
         if (JS.MAGE && JS.MAGE.act(S, p, h, P.filter(alive))) return;
@@ -39932,7 +40017,7 @@
     p.m.fear = clamp(p.m.fear + (p.prank ? 4 : 10) + (p.job === 'psychic' ? 6 : 0) - p.tr.cp * 4, 0, 100);
     var t = ST.fmt(ST.pick(S, JS.SCARE), { a: p.name }) + (p.prank ? ST.fmt(ST.pick(S, M.PRANK_ACT), { a: p.name }) : ST.fmt(ST.pick(S, JS.SCARE_REACT[p.top] || JS.SCARE_REACT.NP), { a: p.name }));
     ST.sayB(S, { actors: [p], tag: '怪異', text: t, why: '恐怖 ' + Math.round(p.m.fear), mag: 10 }, p.name + 'は怪異に遭った');
-    if (p.m.fear >= 90 && S.rng() < 0.4) {
+    if (p.m.fear >= 90 && S.rng() < 0.4 * HK.Dark.f(S, 'madness')) {
       p.panic = true;
       ST.say(S, { actors: [p], tag: '錯乱', text: p.name + 'は悲鳴を上げて民宿を飛び出し、闇の中へ走っていった。', why: '恐怖が限界を超えた（' + Math.round(p.m.fear) + '）', mag: 24 });
       p.action = JS.ACTIONS.filter(function (a) { return a.id === 'alone'; })[0];
@@ -39955,7 +40040,7 @@
     ST.key(S, o, p.name + 'が祠を壊した');
   }
   function tickCurse(S, p, h) {
-    if (p.curse != null && h - p.curse >= 8 && S.rng() < 0.18) {
+    if (p.curse != null && h - p.curse >= 8 && S.rng() < 0.18 * HK.Dark.f(S, 'kill')) {
       var save = P0(S).filter(function (q) { return alive(q) && q !== p && (q.job === 'priest' || q.job === 'psychic' || q.magic); })[0];
       if (save && S.rng() < 0.6) { p.curse = null; ST.say(S, { actors: [save, p], tag: 'お祓い', text: save.name + 'は' + p.name + 'の首の痣に手を当て、長い祝詞を唱えた。痣は、少しずつ薄れていった。', why: save.name + '（' + jobOf(save).label + '）が呪いを祓った', mag: 18 }); return; }
       die(S, p, '祠の呪いで', L('{a}の首の痣が、ついに喉元まで這い上がった。{a}は声も出せずに崩れ落ちた。|朝、{a}は布団の中で冷たくなっていた。首には、くっきりと手の形の痣が残っていた。'));
@@ -39974,6 +40059,7 @@
     var helper = near.sort(function (a, b) { return skill(b, 'fight') - skill(a, 'fight'); })[0];
     var def = skill(p, 'fight') + p.stats.luck * 0.05 + (helper ? skill(helper, 'fight') * 0.6 + 0.15 : 0) + (p.goal.id === 'protect' ? 0.05 : 0);
     var t = ST.fmt(ST.pick(S, JS.ATTACK), { a: p.name });
+    def = HK.Dark.live(S, def, 'raid');   /* 展開の重さ（mood-dial.js）：抵抗できる見込み */
     if (JS.MAGE && JS.MAGE.defend(S, p, live, t)) return;
     var roll = rng() * 1.1;
     if (p.foresee && roll > def) { p.foresee = false; return ST.say(S, { actors: [p], tag: '予見', text: t + '――しかし{a}は、昼間の占いで見た光景を思い出していた。{a}は一歩早く身をかわし、闇に紛れて逃げ延びた。'.replace(/\{a\}/g, p.name), why: '占い師の予見が、一度だけ危険を避けさせた', mag: 24 }); }
@@ -40058,12 +40144,13 @@
     }
     if (vic && !vic.alive) vic = null;
     /* 連れ去られていなければ、隠れてやり過ごせることもある（運・慎重さ） */
-    if (vic && !vic.taken && rng() < vic.stats.luck * 0.07 + vic.tr.caution * 0.25) {
+    if (vic && !vic.taken && rng() < HK.Dark.live(S, vic.stats.luck * 0.07 + vic.tr.caution * 0.25, 'kill')) {
       ST.say(S, { actors: [vic], tag: '隠れる', text: vic.name + 'は床下に潜り込み、息を殺した。松明の明かりが、すぐそばを何度も通り過ぎていった。――生贄の座は、空いたままになった。', why: '運と慎重さで、生贄に選ばれるのを逃れた', mag: 30 });
       vic = null;
     }
     /* 儀式を乗っ取る人（jashin-goals.js）：生贄を止める／自分の手で選び直す */
     if (JS.GOALX) { var hj = JS.GOALX.hijackRitual(S, h, vic); if (hj) { if (hj.skip) { S.fleeBonus = (S.fleeBonus || 0) + (hj.bonus || 0); flee(S, h + 1); return; } if (hj.vic !== undefined) vic = hj.vic; } }
+    if (vic && vic.taken && HK.Dark.skip(S, 'kill')) { vic.taken = false; vic.out = true; vic.esc = h; vic.fate = '逃げ延びた（' + hm(h) + '）'; ST.say(S, { actors: [vic], tag: '救出', text: '祭壇へ引き出される直前、' + vic.name + 'の縄がゆるんだ。' + vic.name + 'は松明の列の隙間をすり抜け、闇の中へ転がり出た。そのまま、山道を駆け下りた。', why: '見張りの隙を突いて逃れた（展開の重さ：穏やか）', mag: 30 }); vic = null; }   /* 展開の重さ（mood-dial.js） */
     if (vic) sacrifice(S, vic, h);
     if (JS.CAVE.manifest(S, h, (vic ? 0.32 : 0.15) + S.P.length * 0.03)) return;
     flee(S, h + 1);
@@ -40081,7 +40168,7 @@
     var rng = S.rng, ok = [], ng = [];
     S.P.filter(alive).forEach(function (p) {
       if (p.bound) return die(S, p, '縛られたまま', [(p.boundAt || '民宿') + 'に取り残された{a}は、縛られたまま身をよじった。祭り囃子が近づいてきても、もう、どうすることもできなかった。']);
-      (rng() < (S.inCave ? 0.24 : 0.33) + (S.fleeBonus || 0) + (S.fog ? 0.06 : 0) + p.stats.luck * 0.07 + p.stats.stamina * 0.04 - p.m.fear / 400 ? ok : ng).push(p);
+      (rng() < HK.Dark.pick(S, 0.6, 0, -0.2) + HK.Dark.live(S, (S.inCave ? 0.24 : 0.33) + (S.fleeBonus || 0) + (S.fog ? 0.06 : 0) + p.stats.luck * 0.07 + p.stats.stamina * 0.04 - p.m.fear / 400, 'kill') ? ok : ng).push(p);
     });
     /* 逃げ遅れた大事な人のために、引き返す */
     var saved = JS.REL.goBack(S, ng, ok);
@@ -40152,7 +40239,7 @@
       var tg = live.filter(function (q) { return q !== p && alive(q); });
       if (!tg.length || rng() > 0.13) return;
       var b = rng.pick(tg);
-      if (p.viol > th + 25 && rng() < 0.35) {
+      if (p.viol > th + 25 && rng() < 0.35 * HK.Dark.f(S, 'kill')) {
         p.viol = th;
         if (JS.DRAMA) JS.DRAMA.edge(S, p, b, '殺害', 'kill', p);
         return die(S, b, p.name + 'に襲われて', [ST.fmt(ST.pick(S, M.YGO_KILL), { a: p.name, b: '{a}' })]);
@@ -40171,7 +40258,7 @@
     if (!by && JS.REL.cover(S, m, b)) return false;
     var angry = others.reduce(function (s0, q) { return s0 + q.tr.aggr + q.tr.cold * 0.5; }, 0) / others.length;
     var t = by ? '' : ST.fmt(ST.pick(S, openly ? M.MAGE_DETECT_OPEN : M.MAGE_DETECT), { a: m.name, b: b.name });
-    if (rng() < 0.2 + angry * 0.5 || S.ygo) {
+    if (rng() < (0.2 + angry * 0.5) * HK.Dark.f(S, 'grudge') || S.ygo) {
       var o = ST.say(S, { actors: [b, m], tag: '露見', kind: 'climax', text: t + ST.fmt(ST.pick(S, M.MAGE_KILLED), { a: m.name, b: b.name }), why: m.name + 'のたくらみが' + b.name + 'にばれた（観察' + (b.job === 'detective' ? '・探偵' : '') + '）。一行の怒り（攻撃性・冷たさ）で、殺されてしまった', mag: 44 });
       m.alive = false; m.fate = '仲間に殺された（' + hm(S.h) + '）'; if (JS.DRAMA) JS.DRAMA.edge(S, b, m, '制裁', 'kill', b); ST.key(S, o, m.name + 'の正体が露見');
     } else {
@@ -40201,7 +40288,7 @@
       ST.say(S, { actors: helper && roll > av - (helper ? skill(helper, 'obs') * 0.25 : 0) ? [p, helper] : [p], tag: '死の罠', text: set + (helper && roll > av - skill(helper, 'obs') * 0.25 ? ST.fmt(ST.pick(S, M.TRAP_HELP), { a: p.name, b: helper.name }) : ST.fmt(ST.pick(S, M.TRAP_AVOID), { a: p.name })), why: (cave ? '洞窟' : S.G.name) + 'の死の罠を避けた（観察・慎重さ・運' + (helper ? '・' + helper.name + 'の助け' : '') + '）', mag: 24 });
       return true;
     }
-    if (rng() < 0.4 && p.m.hp > 35) {
+    if (rng() < HK.Dark.live(S, 0.4, 'kill') && p.m.hp > 35) {
       p.m.hp = clamp(p.m.hp - 30, 0, 100); p.m.fear = clamp(p.m.fear + 15, 0, 100);
       ST.say(S, { actors: [p], tag: '死の罠', text: set + ST.fmt(ST.pick(S, M.TRAP_HURT), { a: p.name }), why: (cave ? '洞窟' : S.G.name) + 'の死の罠。体力があったので命は拾った', mag: 28 });
       return true;
@@ -40851,6 +40938,7 @@
     var avgA = live.reduce(function (s0, p) { return s0 + p.tr.a; }, 0) / live.length;
     var poss = live.filter(function (p) { return p.possessed; }).length;
     var chance = clamp(0.3 + skill(rite, 'rite') * 0.33 + live.length * 0.02 + avgA * 0.1 - S.fake * 0.14 - (S.partial ? 0.15 : 0) - poss * 0.1 + (S.sealBonus || 0) + bonus, 0.05, 0.92);
+    chance = clamp(chance * HK.Dark.pick(S, 1, 1, 0.8), 0.05, 0.92);   /* 展開の重さ（mood-dial.js）：重いでは封印がしくじりやすい */
     var t = gx.t ? ST.fmt(gx.t, { a: rite.name }) : rite.name + 'が祠の前に進み出た。' + S.G.sol + '――';
     if (S.fake && rng() < 0.5) t += '途中で、誰かが記者の言葉を思い出して手を止めかけた。';
     var why = '成功率 ' + Math.round(chance * 100) + '％（' + rite.name + 'の儀式の力・人数' + live.length + (bonus - (gx.bonus || 0) > 0 ? '・呼び出した神の助け' : bonus - (gx.bonus || 0) < 0 ? '・術者のすり替え' : '') + (S.fake ? '・信じた偽情報 ' + S.fake : '') + (S.partial ? '・手がかり不足' : '') + (poss ? '・取り憑かれた仲間' : '') + (gx.why ? '・' + gx.why : '') + '）';
@@ -40858,7 +40946,7 @@
       S.result = 'sealed';
       var o2 = ST.say(S, { actors: live.concat(taken), tag: '封印', kind: 'climax', text: t + (gx.okT || '地の底から響いていた唸り声が、ふっと途絶えた。') + pl(S, PL, 'out', M.COLLAPSE), why: why + '――成功', mag: 50 });
       ST.key(S, o2, '封印に成功');
-      live.forEach(function (p) { if (alive(p) && rng() < 0.06 - p.stats.luck * 0.005) C.die(S, p, '崩れる' + (PL ? PL.noun : '洞窟') + 'で', PL && PL.id !== 'cave' ? PL.die : M.COLLAPSE_DIE); });
+      live.forEach(function (p) { if (alive(p) && rng() < (0.06 - p.stats.luck * 0.005) * HK.Dark.f(S, 'kill')) C.die(S, p, '崩れる' + (PL ? PL.noun : '洞窟') + 'で', PL && PL.id !== 'cave' ? PL.die : M.COLLAPSE_DIE); });
       var minute = h + 1 + rng() * 1.5, outs = S.P.filter(function (p) { return p.alive && !p.out; });
       outs.forEach(function (p) { p.taken = false; p.out = true; p.esc = minute; p.fate = p.bound ? '縛られたまま連れ出された（' + JS.hm(minute) + '）' : '生還（' + JS.hm(minute) + '）'; });
       ST.say(S, { actors: outs, tag: '脱出', kind: 'climax', text: (taken.length ? '座敷牢から、' + C.names(taken) + 'が助け出された。' : '') + (bound.length ? '縛られた' + C.names(bound) + 'も、引きずるようにして連れ出した。' : '') + '霧が晴れ、山道の先に国道の明かりが見えた。一行は振り返らずに走った。', why: '生還 ' + outs.length + '人', mag: 40 });
@@ -40867,7 +40955,7 @@
     ST.say(S, { actors: live, tag: '失敗', text: t + (gx.ngT || 'しかし、何かが足りなかった。'), why: why + '――失敗', mag: 40 });
     if (manifest(S, h + 1, 0.42 + S.P.length * 0.04)) return;
     var vic = taken[0] || live.slice().sort(function (a, b) { return a.stats.luck - b.stats.luck; })[0];
-    C.sacrifice(S, vic, h + 1);
+    if (vic && !HK.Dark.skip(S, 'kill')) C.sacrifice(S, vic, h + 1); else if (vic && vic.taken) { vic.taken = false; vic.out = true; vic.esc = h + 1; vic.fate = '逃げ延びた（' + JS.hm(h + 1) + '）'; ST.say(S, { actors: [vic], tag: '救出', text: '祭壇へ引き出される直前、' + vic.name + 'の縄がゆるんだ。' + vic.name + 'は松明の列の隙間をすり抜け、闇の中へ転がり出た。そのまま、山道を駆け下りた。', why: '見張りの隙を突いて逃れた（展開の重さ：穏やか）', mag: 30 }); }   /* 展開の重さ（mood-dial.js）：穏やかでは、生贄の座が空くこともある */
     C.flee(S, h + 2);
   }
 
@@ -40885,7 +40973,7 @@
     if (S.counter) pm *= 0.35;
     var left = S.P.filter(function (p) { return p.alive && !p.out; });
     if (!left.length) return true;
-    if (rng() < pm) {
+    if (rng() < pm * HK.Dark.pick(S, 0.05, 1, 2)) {   /* 展開の重さ（mood-dial.js）：顕現した神が村ごと呑み込む */
       S.engulf = true;
       left.forEach(function (p) { p.alive = false; p.taken = false; p.fate = S.G.call + 'に呑み込まれた（' + JS.hm(h) + '）'; });
       var o2 = ST.say(S, { actors: left, tag: '全滅', kind: 'climax', text: fmtG(S, ST.pick(S, M.ENGULF)), why: '顕現した神が、村ごと呑み込んだ（' + Math.round(pm * 100) + '％）', mag: 56 });
@@ -42429,7 +42517,7 @@
     if (E0.bonus) S.gBonus = (S.gBonus || 0) + E0.bonus;
     if (E0.flag) S.gf[E0.flag] = (S.gf[E0.flag] || 0) + 1;
     if (E0.clue) { var ct = giveClue(S, a); if (ct) { text += ct; why += '（手がかり ' + S.found.length + '/' + S.G.clues.length + '）'; } }
-    if (E0.die && rng() < E0.die) {
+    if (E0.die && rng() < E0.die * HK.Dark.f(S, 'kill')) {
       C.die(S, a, S.G.call + 'の' + tag + 'で', E0.dt || ['{a}は、それきり動かなくなった。'], text);
       return true;
     }
@@ -44557,7 +44645,7 @@
     var found = S.pool.filter(function (x) { return x.found && !x.fake; }).length;
     var live = S.P.filter(function (q) { return alive(q) && q !== c && q !== S.acc; });
     if (!live.length) return;
-    if (S.forceTgt) { var ft = S.forceTgt; S.forceTgt = null; if (alive(ft)) { S.nextWhy = S.forceWhy; murder(S, ft, day, false); S.kills[S.kills.length - 1].why = S.nextWhy; S.newKill = true; return; } }
+    if (S.forceTgt) { var ft = S.forceTgt; S.forceTgt = null; if (alive(ft) && !HK.Dark.skip(S, 'kill')) { S.nextWhy = S.forceWhy; murder(S, ft, day, false); S.kills[S.kills.length - 1].why = S.nextWhy; S.newKill = true; return; } }
     /* 危ない相手：証拠を多く掴んでいる人・探りを入れてきた人・探偵 */
     var danger = function (q) { return q.cnt.clue * 2 + (q.approached ? 3 : 0) + (q.isDet ? 1.5 : 0) + (S.mot.triangle && q === S.x ? -5 : 0); };
     var top = live.slice().sort(function (a, b) { return danger(b) - danger(a); })[0];
@@ -44565,6 +44653,7 @@
     var plan = S.kills.length - 1 < S.planned;
     var ch = plan ? 0.45 + sv * 0.4 : threat ? (0.08 + sv * 0.72) * (0.6 + c.tr.aggr * 0.3 + c.tr.cold * 0.3) : sv * 0.25;
     if (live.length === 1) ch *= 0.5;
+    ch *= HK.Dark.pick(S, 0.2, 1, 1.8);   /* 展開の重さ（mood-dial.js） */
     if (S.kills.length >= 5 || rng() > ch) return;
     /* 狙い：追い詰められていれば口封じ。計画どおりなら次の獲物。口封じに共犯も */
     var tgt, why;
@@ -44877,11 +44966,12 @@
     var t2 = c.tr, n = c.stats.nerve || 3;
     var ws = { arrest: 0.4 + t2.cp * 0.3 + t2.ac * 0.3, suicide: 0.1 + t2.ac * 0.3 + (/mercy|despair|framesuicide/.test(S.mot.id) ? 0.5 : 0) + (S.mot.id === 'loyal' ? 0.3 : 0), flee: t2.impulse * 0.5 + t2.fc * 0.2 + n * 0.04, attack: t2.aggr * 0.5 + t2.cold * 0.3 + (/fame|experiment|despair/.test(S.mot.id) ? 0.4 : 0) };
     if (S.mot.id === 'split') ws.attack += 0.3;
+    ws.suicide *= HK.Dark.endings(S); ws.attack *= HK.Dark.endings(S);   /* 展開の重さ：悪い結末（自害・探偵を襲う） */
     var e = HK.weighted(rng, Object.keys(ws), function (k) { return Math.pow(Math.max(0.03, ws[k]), 2); });
     if (e === 'attack') {
       var stop = live.filter(function (q) { return q !== c && q !== d && !q.bound; }).sort(function (a, b) { return skill(b, 'fight') + (d.buddies.indexOf(b) >= 0 ? 0.3 : 0) - skill(a, 'fight') - (d.buddies.indexOf(a) >= 0 ? 0.3 : 0); })[0];
       var ta = F(pk(S, T.END_ATTACK), { c: c.name, d: d.name });
-      if (stop && rng() < skill(stop, 'fight') + 0.35 + (d.buddies.indexOf(stop) >= 0 ? 0.15 : 0)) {
+      if (stop && rng() < HK.Dark.live(S, skill(stop, 'fight') + 0.35 + (d.buddies.indexOf(stop) >= 0 ? 0.15 : 0), 'kill')) {
         c.bound = true; c.fate = '探偵を襲い、取り押さえられた';
         S.over = 'arrest';
         return ST.say(S, { actors: [c, d, stop], tag: '結末', kind: 'climax', text: ta + F(pk(S, T.END_ATTACK_STOP), { b: stop.name, c: c.name, d: d.name }) + '翌朝、吹雪が止み、' + c.name + 'は警察に引き渡された。', why: c.name + 'は探偵を襲った（攻撃性・ドライさ）。' + stop.name + 'が止めた' + (d.buddies.indexOf(stop) >= 0 ? '（バディ）' : ''), mag: 50 });
@@ -46822,17 +46912,17 @@
           ST.key(S, o, d.name + 'の正体が明らかになった');
         } else if (stg === 1 && x.kind === 'life') ST.key(S, o, '生命体「' + d.name + '」を見つけた');
         if (R18ON && r18on(S) && x.kind === 'life' && rng() < S.env.slewd / 100 * 0.35) alienR18(S, a, d);
-        if (x.kind === 'life' && /parasite|symbiotic/.test(d.kind) && rng() < 0.2) infect(S, a, d.name);
+        if (x.kind === 'life' && /parasite|symbiotic/.test(d.kind) && rng() < 0.2 * HK.Dark.f(S, 'kill')) infect(S, a, d.name);
       } else {
         var hurt = 12 + rng.int(18) + (x.kind === 'life' && d.kind === 'hostile' ? 8 : 0);
-        var dead = rng() < 0.03 + S.env.danger / 100 * 0.2 + d.rare * 0.02 + (x.kind === 'life' && d.kind === 'hostile' ? 0.08 : 0);
+        var dead = rng() < (0.03 + S.env.danger / 100 * 0.2 + d.rare * 0.02 + (x.kind === 'life' && d.kind === 'hostile' ? 0.08 : 0)) * HK.Dark.f(S, 'kill');
         var v = tm.length > 1 && rng() < 0.4 ? tm[1] : a;
         if (dead) { die(S, v, Pn.name + 'の' + KIND_JP[x.kind] + 'の調査中に', t + F(d.death, { v: v.name, w: (tm.filter(function (q) { return q !== v; })[0] || { name: '仲間' }).name, x: Pn.name })); continue; }
         a.m.hp = clamp(a.m.hp - hurt, 1, 100); a.m.fear = clamp(a.m.fear + 10, 0, 100);
         t += F(x.kind === 'res' ? d.trouble : d.bad, { a: a.name, x: Pn.name });
         ST.say(S, { actors: tm, tag: '探索失敗', text: t, why: lab + 'の調査に失敗（' + a.name + 'の体力 -' + hurt + '）', mag: 20 });
         heal(S, a);
-        if (x.kind === 'life' && rng() < 0.35) infect(S, a, d.name);
+        if (x.kind === 'life' && rng() < 0.35 * HK.Dark.f(S, 'kill')) infect(S, a, d.name);
         else if (rng() < 0.12 + S.env.danger / 100 * 0.1) { lose(S, a); continue; }
       }
       if (rng() < 0.4) ST.sayB(S, { actors: tm, text: F(pk(S, SH.T.BACK), { a: a.name, x: Pn.name }), why: '' }, names(tm) + 'が帰船');
@@ -46863,7 +46953,7 @@
     else if (sp[tr.stat] != null) sp[tr.stat] = clamp(sp[tr.stat] - dmg, 0, 100);
     S.ship.morale = clamp(S.ship.morale - 6, 0, 100);
     /* 残りが二人以下なら、死に至るほどの事故は起きにくい（全滅は大きなトラブルの doom で） */
-    if (rng() < (0.06 + S.env.danger / 100 * 0.32) * (live(S).length <= 2 ? 0.35 : live(S).length === 3 ? 0.7 : 1)) {
+    if (rng() < (0.06 + S.env.danger / 100 * 0.32) * (live(S).length <= 2 ? 0.35 : live(S).length === 3 ? 0.7 : 1) * HK.Dark.f(S, 'kill')) {
       var v = rng.pick(live(S)), w = live(S).filter(function (q) { return q !== v; })[0];
       return die(S, v, tr.name + 'で', t + F(tr.ng, { a: fx.name }) + F(tr.death, { v: v.name, w: w ? w.name : '仲間' }));
     }
@@ -46879,7 +46969,7 @@
     if (!D) {
       if (m < 2 || S.doomDone) return;
       var n = S.P.length, k = n >= 5 ? 1.5 : n === 4 ? 0.8 : n === 3 ? 0.3 : 0;
-      if (rng() >= (0.012 + S.env.danger / 100 * 0.02) * k) return;
+      if (rng() >= (0.012 + S.env.danger / 100 * 0.02) * k * HK.Dark.f(S, 'wipe')) return;
       var d = rng.pick(DM.filter(function (y) { return !y.planet || S.planet; }));
       S.doom = { d: d, tries: 0, at: m };
       S.ship.morale = clamp(S.ship.morale - 10, 0, 100);
@@ -46892,6 +46982,7 @@
     var a = best(S, D.d.skill) || L0[0], help = L0.filter(function (q) { return q !== a && skill(q, D.d.skill) >= 0.45; }).length;
     var ch = 0.38 + skill(a, D.d.skill) * 0.3 + Math.min(help, 2) * 0.05 - S.env.danger / 100 * 0.1 - D.tries * 0.05;
     D.tries++;
+    ch = HK.Dark.live(S, ch, 'wipe');   /* 展開の重さ（mood-dial.js）：全滅を食い止める見込み */
     var SKJ = { repair: '修理', med: '医療', sci: '科学', fight: '戦い' }[D.d.skill] || '';
     if (rng() < ch) {
       S.doom = null; S.doomDone = true; a.cnt.fix++;
@@ -46925,7 +47016,7 @@
       var o = ST.say(S, { actors: [a], tag: '未知との遭遇：' + en.name, text: t, why: a.name + 'の判断（科学・航法）', mag: 26 });
       return ST.key(S, o, en.name + 'に出会った');
     }
-    if (en.death && rng() < 0.15 + S.env.danger / 100 * 0.15) { var v = rng.pick(live(S)); return die(S, v, en.name + 'に遭遇して', t + F(en.ng, { a: a.name }) + F(en.death, { v: v.name, w: a === v ? '仲間' : a.name })); }
+    if (en.death && rng() < (0.15 + S.env.danger / 100 * 0.15) * HK.Dark.f(S, 'kill')) { var v = rng.pick(live(S)); return die(S, v, en.name + 'に遭遇して', t + F(en.ng, { a: a.name }) + F(en.death, { v: v.name, w: a === v ? '仲間' : a.name })); }
     S.ship.hull = clamp(S.ship.hull - 10, 0, 100); a.m.hp = clamp(a.m.hp - 10, 1, 100);
     ST.say(S, { actors: [a], tag: '未知との遭遇：' + en.name, text: t + F(en.ng, { a: a.name }), why: '対応を誤った（船体 -10）', mag: 22 });
   }
@@ -47023,20 +47114,20 @@
     live(S).filter(function (p) { return p.inf; }).forEach(function (a) {
       if (!alive(a)) return;
       var dr = live(S).filter(function (q) { return q !== a && !q.inf; }).sort(function (x, y) { return skill(y, 'med') - skill(x, 'med'); })[0];
-      if (dr && rng() < 0.1 + skill(dr, 'med') * 0.4) {
+      if (dr && rng() < HK.Dark.live(S, 0.1 + skill(dr, 'med') * 0.4, 'kill')) {
         a.inf = 0; setRel(S, a, dr, 0.2); mark(S, a, dr, 'nurse'); stress(a, -10);
         ST.say(S, { actors: [dr, a], tag: '感染症', text: F(pk(S, C.INF_CURE), { a: a.name, b: dr.name, x: a.infSrc || '星の生き物' }), why: dr.name + 'の医療の腕 ' + Math.round(skill(dr, 'med') * 100), mag: 22 });
         return;
       }
-      if (rng() < 0.08 + a.m.hp / 100 * 0.1) { a.inf = 0; ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_SELF), { a: a.name }), why: '自分の体の力で持ち直した' }, a.name + 'は病に打ち勝った'); return; }
+      if (rng() < HK.Dark.live(S, 0.08 + a.m.hp / 100 * 0.1, 'kill')) { a.inf = 0; ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_SELF), { a: a.name }), why: '自分の体の力で持ち直した' }, a.name + 'は病に打ち勝った'); return; }
       a.inf++; a.m.hp = clamp(a.m.hp - 8 * a.inf, 1, 100); stress(a, 8);
       live(S).forEach(function (q) { if (q !== a) stress(q, 3); });
-      if (a.inf >= 3 && rng() < 0.35 + S.env.danger / 100 * 0.2) { var w = closest(S, a) || { name: '仲間' }; die(S, a, '感染症で', F(pk(S, C.INF_DEATH), { v: a.name, w: w.name })); return; }
+      if (a.inf >= 3 && rng() < (0.35 + S.env.danger / 100 * 0.2) * HK.Dark.f(S, 'kill')) { var w = closest(S, a) || { name: '仲間' }; die(S, a, '感染症で', F(pk(S, C.INF_DEATH), { v: a.name, w: w.name })); return; }
       ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_WORSE), { a: a.name }), why: '病状が悪化した（段階 ' + a.inf + '・体力 ' + Math.round(a.m.hp) + '）' }, a.name + 'の病状が悪化した');
       /* うつる：近しい人ほど、そばにいるのでうつりやすい */
       var cand = live(S).filter(function (q) { return q !== a && !q.inf; });
       var q = cand.length ? HK.weighted(rng, cand, function (z) { return 0.1 + Math.max(0, bond(S, z, a)) * 1.5 + (lover(S, z, a) ? 1 : 0); }) : null;
-      if (q && rng() < 0.12 + Math.max(0, bond(S, q, a)) * 0.25 + (lover(S, q, a) ? 0.15 : 0)) {
+      if (q && rng() < (0.12 + Math.max(0, bond(S, q, a)) * 0.25 + (lover(S, q, a) ? 0.15 : 0)) * HK.Dark.f(S, 'kill')) {
         q.inf = 1; q.infSrc = a.infSrc; q.cnt.inf = (q.cnt.inf || 0) + 1; stress(q, 10);
         ST.say(S, { actors: [a, q], tag: '感染拡大', text: F(pk(S, lover(S, a, q) && !family(S, a, q) && C.INF_SPREAD_LOVE ? C.INF_SPREAD_LOVE : C.INF_SPREAD), { a: a.name, b: q.name }), why: q.name + 'は' + a.name + 'のそばにいた（関係 ' + Math.round(bond(S, q, a) * 100) + '）', mag: 26 });
       }
@@ -47108,14 +47199,14 @@
     /* 異種族の誘い（R18）：友好的だと思ってついていったら、言葉が通じず、誘われていたとは気づかなかった */
     if (r18on(S) && SH.X && live(S).length >= 2 && (!HK.Content || HK.Content.ok(S, 'force')) && rng() < S.env.slewd / 100 * 0.15) lure(S);
     /* 研究のための誘拐（文明のある星） */
-    if (Pn.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(Pn.civ.d.state) && live(S).length >= 2 && rng() < 0.05 + S.env.danger / 100 * 0.08) {
+    if (Pn.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(Pn.civ.d.state) && live(S).length >= 2 && rng() < (0.05 + S.env.danger / 100 * 0.08) * HK.Dark.f(S, 'raid')) {
       var v = HK.weighted(rng, live(S), function (q) { return 0.5 + q.cnt.find * 0.3; });
       v.away = 'taken'; v.awayM = 0; v.cnt.taken = (v.cnt.taken || 0) + 1; stress(v, 20);
       var o3 = ST.say(S, { actors: [v], tag: '誘拐', kind: 'climax', text: F(pk(S, C.TAKEN), { a: v.name, x: Pn.civ.d.name }), why: Pn.civ.d.name + '（' + CIV_JP[Pn.civ.d.state] + '）が、研究のために連れ去った', mag: 38 });
       ST.key(S, o3, v.name + 'が連れ去られた');
     }
     /* 星の生命体からの感染（調査とは別に） */
-    if (Pn.life.length && live(S).length && rng() < 0.03 + S.env.danger / 100 * 0.04) { var lf = rng.pick(Pn.life); if (lf.st >= 1) infect(S, rng.pick(live(S)), lf.d.name); }
+    if (Pn.life.length && live(S).length && rng() < (0.03 + S.env.danger / 100 * 0.04) * HK.Dark.f(S, 'kill')) { var lf = rng.pick(Pn.life); if (lf.st >= 1) infect(S, rng.pick(live(S)), lf.d.name); }
   }
   /* ---------- 絆が動く出来事 ---------- */
   function pairs(L0) { var o = []; L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i) o.push([a, b]); }); }); return o; }
@@ -47861,7 +47952,7 @@
       var t = '深夜、' + tgt.name + 'の部屋に何者かが忍び込んだ。――廊下で張っていた' + g.name + 'が、その影に飛びかかった。' + TL.line(g, 'LH_GUARD', tgt);
       rel(S, g, tgt, '守った', 'obsess');
       c.m.sus = clamp(c.m.sus + 20, 0, 100);
-      if (rng() < 0.6 + Y.skill(g, 'fight') * 0.3) {
+      if (rng() < HK.Dark.live(S, 0.6 + Y.skill(g, 'fight') * 0.3, 'kill')) {
         var hint = Y.gain(S, g, 'obs');
         ST.key(S, ST.say(S, { actors: [g, tgt], tag: '愛憎', kind: 'climax', text: t + '揉み合いの末、影は窓から吹雪の中へ逃げていった。' + g.name + 'は、' + tgt.name + 'の無事を確かめると、何も言わずに部屋を出ていった。' + (hint ? '――' + hint + '。' : ''), why: '愛憎（' + FD.label(S, g, tgt) + '）。憎んでいても、誰かに奪われるのは許せない――犯行を防いだ（犯人への疑い +20）', mag: 36 }), g.name + 'が' + tgt.name + 'を守った');
         return true;
@@ -47935,7 +48026,7 @@
     var rng = S.rng, ps = pairs(live, function (a, b) { return FD.hateStrong(S, a, b) && !a.hateDone; });
     if (!ps.length || !S.kills.length) return false;
     var pr = rng.pick(ps), a = pr[0], b = pr[1];
-    if (rng() > 0.05 + a.tr.aggr * 0.06 + a.tr.cold * 0.05 + a.m.fear / 1500) return false;
+    if (rng() > (0.05 + a.tr.aggr * 0.06 + a.tr.cold * 0.05 + a.m.fear / 1500) * HK.Dark.f(S, 'grudge')) return false;
     a.hateDone = true;
     rel(S, a, b, '憎んでいる', 'enemy');
     var lock = rng() < 0.5;
@@ -48395,6 +48486,7 @@
       if (rogue && rng() < 0.2 && vill.length > 1) { var rp = vill.filter(function (q) { return q !== prey; }).sort(function (a, b) { return rogue.sus[a.i] - rogue.sus[b.i]; })[0] || prey; if (rp !== prey) { prey = rp; rogueNote = '（' + rogue.name + 'が独断で噛み先を変えた）'; moments.push(rogue.name + 'が独断で噛んだ'); } }
       ST.step(S, (day + 1) + '日目・朝');
       if (prey && prey === guard) { guardOK++; moments.push(hunter.name + 'が' + prey.name + 'を守り抜いた'); say({ actors: [], tag: '平和な朝', text: pk(J.peace), why: '狩人の' + hunter.name + 'が' + prey.name + 'を守った' + rogueNote }); }
+      else if (prey && HK.Dark.skip(S, 'night')) say({ actors: [], tag: '平和な朝', text: pk(J.peace), why: '人狼は、この夜は誰も襲わなかった（展開の重さ：穏やか）' });
       else if (prey) { prey.alive = false; killed.push(prey); prey.fate = '襲撃（' + (day + 1) + '日目の朝）'; if (prey.ally) { prey.ally.ally = null; prey.ally = null; } say({ actors: [prey.i], tag: '襲撃', text: F(pk(J.killed), { x: prey.name }), why: '人狼の戦法「' + PLAN_LABEL[plan.kill] + '」' + rogueNote }); }
       snap();
       winner = check();
@@ -49628,7 +49720,8 @@
           '**運命の揺らぎ** … 高いほど「らしくない行動」や勝負のまぐれが増えます。0に近いほど気質どおりに動きます。',
           '**恋愛の起こりやすさ** … **0にすると恋愛は起きません**（告白・交際・体の関係のイベントがすべて止まります）。',
           '**争いの起こりやすさ** … ケンカ・対立・裏切りの起こりやすさ。',
-          '**ハプニングの頻度** … 天候・物資・追加ルールなど、全員に降りかかる出来事の多さ。'
+          '**ハプニングの頻度** … 天候・物資・追加ルールなど、全員に降りかかる出来事の多さ。',
+          '**展開の重さ**（全箱庭で共通） … 死・心中・監禁・危害・別れ・浮気・失恋・発狂・全滅・襲撃といった重い展開の起こりやすさをまとめて変えます。「穏やか」でも起きないわけではなく、起こりにくくなるだけです。「重い」は起こりやすくなります。ふつう以外のときは、結末に「展開：穏やか」のように一行出ます。'
         ] },
         { h: 'シード', items: [
           '同じシード・同じ住人・同じ条件なら、同じ結末になります。気に入った結果はシードを控えておくと再現できます。',
@@ -49851,7 +49944,7 @@
     var css = ':root{' + L.join(';') + '}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){' + D.join(';') + '}}:root[data-theme="dark"]{' + D.join(';') + '}';
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   })();
-  function genv(scen) { return scen.solo ? scen.env : scen.env.concat(HK.GLOBAL_ENV); }
+  function genv(scen) { return scen.solo ? scen.env.concat(HK.GLOBAL_ENV.filter(function (e) { return e.all; })) : scen.env.concat(HK.GLOBAL_ENV); }
   function smin(id) { return (HK.SCENARIOS[id] && HK.SCENARIOS[id].minCast) || 2; }
   function smax(id) { return Math.min(JOIN_MAX, (HK.SCENARIOS[id] && HK.SCENARIOS[id].maxCast) || 12); }
   /* この箱庭に参加する住人（未設定なら先頭から上限まで） */
@@ -51582,9 +51675,10 @@
     if (O.blocked(ctx, a, b) || !b.alive) return 0;
     /* pace：区切りの少ない箱庭（合コン・一年間のクラス）ほど速く積もる（O.install の opt.pace） */
     var kit = ctx.scen && ctx.scen.obsessKit, s = st(ctx, a, b), k = d > 0 ? (0.55 + a.tr.jealous * 0.9) * ((kit && kit.pace) || 1) : 1;
+    if (d > 0) k *= HK.Dark.pace(ctx);   /* 展開の重さ（mood-dial.js）：穏やかほど執着がゆっくり積もる */
     var nv = clamp(s.lv + d * k, 0, 100);
     if (d > 0 && !s.set && nv > O.NAT_CAP) {
-      if (s.surge == null) s.surge = O.surgeOk(a, R(ctx, a, b).att) && ctx.rng() < O.SURGE_P;
+      if (s.surge == null) s.surge = (O.surgeOk(a, R(ctx, a, b).att) || (HK.Dark.on(ctx) === 'dark' && (a.tr.jealous || 0) >= 0.5 && R(ctx, a, b).att >= 60)) && ctx.rng() < O.SURGE_P * HK.Dark.f(ctx, 'cage');
       if (!s.surge) nv = Math.max(s.lv, Math.min(nv, O.NAT_CAP));
     }
     s.lv = nv;
@@ -51772,7 +51866,7 @@
     s.at = ctx.stepIndex;
     if (!s.seen) return seed(ctx, a, b, s);
     if (s.cage) return O.cageTick(ctx, a, b, s, opt);
-    if (stg >= 3 && !s.climax) { var cl = O.climax(ctx, a, b, s, ty, c, opt); if (cl) return cl; }
+    if ((stg >= 3 || (stg >= 2 && s.lv >= 70 && HK.Dark.on(ctx) === 'dark')) && !s.climax) { var cl = O.climax(ctx, a, b, s, ty, c, opt); if (cl) return cl; }
     var key = stg >= 2 ? ty + '2' : ty;
     if (key === 'purge2' && !c) key = 'bind2';
     var txt = T(ctx, key, !c);
@@ -51809,10 +51903,11 @@
   /* 暴走：監禁・恋敵への危害・心中のどれか（箱庭ごとに opt で止められる） */
   O.climax = function (ctx, a, b, s, ty, c, opt) {
     var safe = SAFE(), stn = O.stance(ctx, b, a), opts = [];
-    if (opt.cage !== false) opts.push(['cage', ty === 'bind' ? 3 : ty === 'devote' ? 2 : 1.4]);
-    if (opt.harm !== false && c) opts.push(['harm', ty === 'purge' ? 3.5 : ty === 'bind' ? 1.4 : 0.6]);
+    if (HK.Dark.skip(ctx, 'cage')) return null;   /* 展開の重さ：穏やかでは、暴走をまれに見送る */
+    if (opt.cage !== false) opts.push(['cage', (ty === 'bind' ? 3 : ty === 'devote' ? 2 : 1.4) * HK.Dark.f(ctx, 'cage')]);
+    if (opt.harm !== false && c) opts.push(['harm', (ty === 'purge' ? 3.5 : ty === 'bind' ? 1.4 : 0.6) * HK.Dark.f(ctx, 'harm') * HK.Dark.pick(ctx, 0.6, 1, 1.6)]);
     /* 心中の起こりやすさは箱庭ごとに opt.shinjuW で下げられる（出られない部屋は 0.35） */
-    if (opt.shinju !== false) opts.push(['shinju', (ty === 'depend' ? 3 : stn === 'mutual' ? 2.2 : 0.7) * (opt.shinjuW == null ? 1 : opt.shinjuW)]);
+    if (opt.shinju !== false) opts.push(['shinju', (ty === 'depend' ? 3 : stn === 'mutual' ? 2.2 : 0.7) * (opt.shinjuW == null ? 1 : opt.shinjuW) * HK.Dark.f(ctx, 'shinju') * HK.Dark.pick(ctx, 0.6, 1, 1.6)]);
     /* 箱庭ごとの暴走（opt.more → [[id, 重み, run(ctx, a, b, s, ty, c)], ...]） */
     var more = opt.more ? opt.more(ctx, a, b, s, ty, c, safe) || [] : [];
     more.forEach(function (m) { if (m[1] > 0) opts.push(m); });
@@ -51830,7 +51925,7 @@
       return { with: [b], cat: 'conflict', text: F(ctx, T(ctx, safe ? 'cage_s' : 'cage'), a, b), why: why(ctx, a, b, s) + '。執着が暴走した', mag: 45 };
     }
     if (pick === 'harm') {
-      var lethal = !safe && opt.lethal !== false && ty === 'purge' && s.lv >= 90 && ctx.rng() < 0.35;
+      var lethal = !safe && opt.lethal !== false && ty === 'purge' && s.lv >= 90 && ctx.rng() < 0.35 * HK.Dark.f(ctx, 'kill');
       /* 恋敵に向いたあとも、執着そのものは続く（次の暴走もありうる） */
       s.climax = null; s.lv = clamp(s.lv - 10, 0, 100);
       ctx.mod(c, a, { ten: 35, aff: -30, trust: -30 }); ctx.mod(b, a, { ten: 12, trust: -10 });
@@ -51842,6 +51937,7 @@
     /* 心中：共依存か、執着される側が抵抗できなければ。全年齢版・死なない箱庭では未遂 */
     var resist = stn === 'mutual' ? 0.15 : stn === 'accept' ? 0.45 : stn === 'confused' ? 0.6 : 0.75;
     resist += b.tr.np * 0.15 + b.tr.a * 0.1;
+    resist = HK.Dark.live(ctx, resist, 'shinju');
     if (safe || opt.lethal === false || ctx.rng() < resist) {
       ctx.mod2(a, b, { trust: 10, att: 6 }, { ten: 14, att: 4 }); ctx.stress(a, 20); ctx.stress(b, 25);
       s.lv = clamp(s.lv - 25, 0, 100); s.climax = null;
@@ -52000,7 +52096,7 @@
   /* 一回ぶん。起きなければ null */
   O.storyTick = function (S, live, opt) {
     opt = opt || {};
-    var rng = S.rng, pack = opt.pack || null, pace = opt.pace || 1, safe = !!HK.SAFE_ON;
+    var rng = S.rng, pack = opt.pack || null, pace = (opt.pace || 1) * HK.Dark.pace(S), safe = !!HK.SAFE_ON;
     curId = (S.scen && S.scen.id) || opt.id || '';
     live = (live || []).filter(alive);
     if (live.length < 2) return null;
@@ -52013,7 +52109,7 @@
         var s = st(S, a, b), nv = clamp(s.lv + (0.6 + (a.tr.jealous || 0.4) * 3) * pace * (yanT(S, a, b) ? 0.6 : 1), 0, 100);
         /* 関係「執着」を設定していない組は嫉妬どまり（obsess-kit.js の NAT_CAP）。嫉妬深い人の気持ちが高まったまれな場合だけ、その上へ */
         if (!yanT(S, a, b) && nv > (O.NAT_CAP || 34)) {
-          if (s.surge == null) s.surge = (a.tr.jealous || 0) >= 0.7 && rng() < (O.SURGE_P || 0.3);
+          if (s.surge == null) s.surge = (a.tr.jealous || 0) >= 0.7 && rng() < (O.SURGE_P || 0.3) * HK.Dark.f(S, 'cage');
           if (!s.surge) nv = Math.max(s.lv, Math.min(nv, O.NAT_CAP || 34));
         }
         s.lv = nv;
@@ -52042,7 +52138,7 @@
       return { actors: [b, a], tag: '執着', text: (opt.place || '') + text, why: b.name + 'の気持ち（' + { unaware: '気づいていない', afraid: '怖がっている', hate: '嫌っている', confused: '困惑している', accept: '受け入れている', mutual: '共依存' }[sn] + '）と' + a.name + 'の執着（' + Math.round(s.lv) + '）', mag: 12, cat: sn === 'accept' || sn === 'mutual' ? 'romance' : 'conflict' };
     }
     /* 暴走（一度まで。死には至らない） */
-    if (stg >= 3 && !s.climax) {
+    if ((stg >= 3 || (stg >= 2 && s.lv >= 70 && HK.Dark.on(S) === 'dark')) && !s.climax && !HK.Dark.skip(S, 'cage')) {
       s.climax = 1;
       var opts = [['cage', 2], ['harm', c ? 1.5 : 0], ['shinju', ty === 'depend' ? 2 : 0.8]].filter(function (o) { return o[1] > 0; });
       var k = HK.weighted(rng, opts, function (o) { return o[1]; })[0];
@@ -52802,7 +52898,7 @@
       if (l.type === 'flat' && l.calm && s >= l.crashAt) {
         l.calm = false; l.lv = Math.min(100, l.lv + 15); l.lv0 = Math.max(l.lv0, l.lv); l.last = s; addStress(o, 25);
         t = { text: fill(ctx.pick(l.dev ? DEV_CRASH[l.dev] : CRASH), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '淡々としていた分、あとから崩れた'), mag: 25 };
-      } else if (l.type === 'hold' && !l.broke && l.lv >= 40 && (o.stress >= 65 || s - l.at >= 4) && ctx.rng() < 0.5) {
+      } else if (l.type === 'hold' && !l.broke && l.lv >= 40 && (o.stress >= 65 || s - l.at >= 4) && ctx.rng() < 0.5 * HK.Dark.f(ctx, 'madness')) {
         l.broke = true; l.last = s; addStress(o, -10);
         t = { text: fill(ctx.pick(l.dev ? DEV_BREAK[l.dev] : BREAK), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '人前では抱え込んでいたものが、一人のときに崩れた'), mag: 22 };
       } else if (!l.accepted && !l.calm && l.lv < Math.max(24, l.lv0 * (l.dev ? 0.35 : 0.5)) && s - l.at >= Math.max(3, (n - l.at) * (l.dev ? 0.7 : 0.5))) {
@@ -52868,7 +52964,7 @@
     scen.events.push({
       id: 'gf_reckless', cat: 'solo', scope: 'solo', noOdd: true,
       when: function (ctx, a) { var l = lossOf(a); return !!l && l.lv >= 50 && !l.calm && l.reckless < 2 && l.type !== 'flat' && ctx.stepIndex - l.at >= 1; },
-      w: function (ctx, a) { var l = lossOf(a); return (0.2 + a.tr.impulse * 0.8 + (l.type === 'blame' || l.type === 'bright' ? 0.4 : 0)) * (opt.w || 1); },
+      w: function (ctx, a) { var l = lossOf(a); return (0.2 + a.tr.impulse * 0.8 + (l.type === 'blame' || l.type === 'bright' ? 0.4 : 0)) * (opt.w || 1) * HK.Dark.f(ctx, 'harm'); },
       run: function (ctx, a) {
         var l = lossOf(a), c = nearFriend(ctx, a, null);
         l.reckless++; l.last = ctx.stepIndex; addStress(a, 5);

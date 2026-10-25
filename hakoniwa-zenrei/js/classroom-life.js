@@ -160,6 +160,8 @@
       var lonely = ctx.most(P, function (c) { return c.stress / 100 + (couples.some(function (x) { return x.indexOf(c) >= 0; }) ? -9 : 0) + (crushOf(ctx, c, 55) ? 0.3 : 0); });
       if (lonely && !couples.some(function (x) { return x.indexOf(lonely) >= 0; })) {
         var cr = crushOf(ctx, lonely, 55);
+        /* 想い人が転校・卒業などでいなくなっていたら、名前は出さない（ケーキの文に） */
+        if (cr && !(HK.State ? HK.State.here(cr) : (cr.alive !== false && !cr.out))) cr = null;
         ctx.act2({ actors: [lonely, cr], cat: 'solo', fx: function () { ctx.stress(lonely, 8); }, text: cr ? ctx.t('{a}はイブの夜、{b}に送るメッセージを書いては消した。結局、送らなかった。', lonely, cr) : ctx.t('{a}はイブの夜、コンビニでケーキを一つだけ買った。', lonely), why: cr ? lonely.name + 'の' + cr.name + 'への想い' : lonely.name + 'の孤独' });
       }
     },

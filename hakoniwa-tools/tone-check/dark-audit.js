@@ -8,7 +8,7 @@
      悪結末：物語型は ending.kind が over、エンジン型は全滅か、死ぬ箱庭で半分以上が死んだ回の割合
    合否：
      ・死＋暴走の合計（その箱庭にあるとき）：穏やか ≤ 0.5×ふつう、重い ≥ 1.3×ふつう
-     ・死ぬ箱庭（ふつうで死が N 回に 1 回以上ある箱庭）は、穏やかでも死が 1 件以上（止める設定ではない）
+     ・死ぬ箱庭（ふつうで死が N 回に 3 件以上ある箱庭）は、穏やかでも死が 1 件以上（止める設定ではない）
    ふつうの回数が少なすぎる箱庭（死＋暴走が N 回で 3 件未満）は、比を出さずに「少」と書く。30 件未満の箱庭は、ぶれを減らすため 3N 回まで足して判定する
    人狼・バトルロワイヤル・裁判デスゲーム（全年齢版）の脱落はゲームの決まり（最後の一人まで・毎回の処刑）なので比を見ない（数は出す） */
 'use strict';
@@ -125,7 +125,8 @@ const { openBuild } = require('./lib.js');
         if (base >= 3 && lv === 'mild' && h > base * 0.5) { mark = ' ×（穏やか ≤0.5）'; fail++; }
         if (base >= 3 && lv === 'dark' && h < base * 1.3) { mark = ' ×（重い ≥1.3）'; fail++; }
         const lethal = row.lethal || (row.solo && nm.dead / Math.max(1, nm.runs) >= 0.25);
-        if (lv === 'mild' && lethal && nm.dead >= 1 && !(t.deadN >= 1)) { mark += ' ×（穏やかでも死が要る）'; fail++; }
+        /* ふつうで死が 3 件以上ある箱庭だけ見る（無人島のように死がまれな箱庭は、穏やかで 0 でもぶれの範囲） */
+        if (lv === 'mild' && lethal && nm.dead >= 3 && !(t.deadN >= 1)) { mark += ' ×（穏やかでも死が要る）'; fail++; }
       }
       console.log(sc.padEnd(9), lv.padEnd(6), pad(per(t.dead, t.runs), 5), pad(t.shinju, 5), pad(t.cage, 5), pad(t.harm, 5), pad(t.obsStory, 6), pad(t.brk, 5), pad(t.fall, 5), pad(t.runs ? Math.round(t.bad / t.runs * 100) + '%' : '-', 6), pad(h, 9), ratio + mark + (row.ext && lv === 'normal' ? '（件数が少ないので ' + (3 * N) + ' 回）' : ''));
     }
