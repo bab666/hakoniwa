@@ -7,6 +7,7 @@
 
   function k(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   function rel(S, a, b) { return S.rel[k(a, b)]; }
+  function byI(P, i) { for (var j = 0; j < P.length; j++) if (P[j].i === i) return P[j]; return null; }
   function t2(S, s, a, b) { return s.replace(/\{a\}/g, a.name).replace(/\{b\}/g, b ? b.name : '').replace(/\{t\}/g, S.lastEv ? S.lastEv.name : '罠'); }
   function pk(S, arr) { return DG.pick(S, arr); }
   function st(h, id) { return h.stats[id] || 3; }
@@ -31,7 +32,8 @@
       });
     });
     (input.ties || []).forEach(function (t) {
-      var a = P[t.a], b = P[t.b];
+      /* 住人の番号（h.i）で引く（主催者を挑戦者から外したとき、並びと番号がずれるので） */
+      var a = byI(P, t.a), b = byI(P, t.b);
       if (!a || !b || !HK.TIES[t.type]) return;
       var r = rel(S, a, b), D = HK.TIES[t.type];
       r.tie = t.type;

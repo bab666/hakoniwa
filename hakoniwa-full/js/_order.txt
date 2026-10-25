@@ -136,6 +136,7 @@ js/dungeon-bosses.js
 js/dungeon-party.js
 js/dungeon-tempt.js
 js/dungeon-end.js
+js/dungeon-host.js
 js/solo-kit.js
 late js/solo-massage-data.js
 js/solo-massage-thick.js
@@ -149,6 +150,7 @@ late js/solo-hole-ero.js
 late js/hole-thick.js
 late js/hole-end.js
 js/solo-hole.js
+js/hole-host.js
 js/dungeon-events-a.js
 js/dungeon-events-b.js
 js/dungeon-events-c.js

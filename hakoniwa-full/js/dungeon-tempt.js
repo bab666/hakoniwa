@@ -265,7 +265,7 @@
     S._tmSeed = (+(input && input.seed) || 0) >>> 0;
     var src = (input && input.chars) || [];
     S.party.forEach(function (h, i) {
-      var c = src[i] || {};
+      var c = src[h.i != null ? h.i : i] || {};
       if (h.sexLock == null || h.sexLock === '') {
         var s = c.sexLock;
         h.sexLock = s === 'any' || s === 'lover' ? s : s == null || s === '' || isNaN(+s) ? null : +s;
@@ -273,7 +273,7 @@
     });
     ((input && input.ties) || []).forEach(function (t) {
       if (!/^(lover|mate|fated|spouse)$/.test(t.type)) return;
-      var x = S.party[t.a], y = S.party[t.b];
+      var x = S.party.filter(function (p) { return p.i === t.a; })[0], y = S.party.filter(function (p) { return p.i === t.b; })[0];
       if (!x || !y) return;
       (x.loveSet = x.loveSet || []).push(y.i); (y.loveSet = y.loveSet || []).push(x.i);
     });

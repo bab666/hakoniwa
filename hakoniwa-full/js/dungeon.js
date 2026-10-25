@@ -763,7 +763,9 @@
     };
     S.mixOrder = rng.shuffle(DG.THEME_KEYS);
     S.recent = []; S.q = [];
-    S.party = input.chars.slice(0, 4).map(function (c, i) { return mkHero(S, c, (input.perChar && input.perChar[i]) || {}, i); });
+    /* 主催者の役（dungeon-host.js）：住人が主催者なら挑戦者から外す（h.i は入力の並びのまま）。なし・モブなら今までどおり */
+    var hostI = DG.hostSetup ? DG.hostSetup(S, input) : -1;
+    S.party = input.chars.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.i !== hostI; }).slice(0, 4).map(function (x) { return mkHero(S, x.c, (input.perChar && input.perChar[x.i]) || {}, x.i); });
     S.h = S.party[0];
     S.k = clamp(Math.pow(20 / (S.floors * S.rooms), 0.85), 0.4, 1.3);
     if (tk === 'mix') S.theme = { label: '混成迷宮' };
@@ -778,6 +780,7 @@
     S.floorName = floorName(S, 0);
     var P0 = S.party;
     say(S, { kind: 'sys', tag: '開始', text: P0.length > 1 ? P0.map(function (x) { return x.name; }).join('・') + 'は互いの装備を確かめ合い、' + S.floorName + 'へ踏み込んだ。' : fmt(S, pick(S, DG.LINES.start)) + (S.h.goal.id === 'curse' ? '下腹には淫紋が刻まれている。' : ''), why: P0.map(function (x) { return (P0.length > 1 ? x.name + '：' : '') + '方針「' + x.action.label + '」目標「' + x.goal.label + '」'; }).join('／') });
+    if (DG.hostStart) DG.hostStart(S);
     snap(S);
 
     var budget = S.floors * S.rooms + 16, steps = 0;
@@ -840,6 +843,8 @@
         }
         S.defer = false; flushQ(S);
         if (!S.over && DG.partyAfter && S.party.filter(function (x) { return !x.fallen; }).length > 1) { DG.partyAfter(S, h, S.roomHit); S.defer = false; flushQ(S); }
+        /* 主催者が見ている・ときどき手を出す（dungeon-host.js。主催者がいなければ何もしない） */
+        if (!S.over && S.host && DG.hostRoom) { DG.hostRoom(S, S.roomHit); S.h = h; S.defer = false; flushQ(S); }
       }
       S.party.forEach(function (x) {
         if (x.fallen || S.over) return;
