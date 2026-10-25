@@ -27421,6 +27421,9 @@
     };
   };
 
+  /* 仕様を検討中のため、いったん一覧には出さない（コードは残す）。試すときは URL の #futari か、localStorage の hakoniwa-futari=1 */
+  var FUTARI_ON = (function () { try { return /(^|[#&])futari(&|$)/.test(location.hash || '') || window.localStorage.getItem('hakoniwa-futari') === '1'; } catch (e) { return /futari/.test(location.hash || ''); } })();
+  if (!FUTARI_ON) { HK.SCENARIOS_HIDDEN = HK.SCENARIOS_HIDDEN || {}; HK.SCENARIOS_HIDDEN.futari = scen; return; }
   HK.SCENARIOS.futari = scen;
   if (HK.SCEN_ORDER.indexOf('futari') < 0) { var wi = HK.SCEN_ORDER.indexOf('whiteroom'); if (wi >= 0) HK.SCEN_ORDER.splice(wi + 1, 0, 'futari'); else HK.SCEN_ORDER.push('futari'); }
 
