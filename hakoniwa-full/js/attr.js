@@ -185,7 +185,7 @@
       /* r18:begin */
       (!HK.SAFE_ON && c.gender === 'f' ? '<label title="R18の場面の地の文で、胸の書き方が変わります">胸 ' + sel('bust') + '</label>' : '') +
       /* r18:end */
-      '<label title="耳・尾・牙・翼などの文の飾りが付きます。死のある箱庭では、吸血鬼は特殊役職の吸血鬼と同じ扱いになります">種族 ' + sel('race') + '</label>' +
+      '<label title="耳・尾・牙・翼などの文の飾りが付きます。死のある箱庭（ゾンビの街・邪神村RTA・吹雪の館・宇宙船漂流記・ダンジョンRPG）では、吸血鬼は死んでも蘇り、三日に一度人の血を吸います">種族 ' + sel('race') + '</label>' +
       (c.race === 'other' ? '<label>種族の名前 <input type="text" data-gf="at_raceNote" value="' + esc(c.raceNote || '') + '" maxlength="12" placeholder="例：人魚" style="width:7em"></label>' : '') +
       /* r18:begin */
       (!HK.SAFE_ON ? '<label title="R18の場面の体の書き方が、性別ではなくこちらに従います。「なし」にすると、受けのときは口まで、攻めのときは指と玩具だけになります">性器 ' + sel('genital') + '</label>' : '') +

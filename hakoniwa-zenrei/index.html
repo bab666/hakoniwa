@@ -5,7 +5,7 @@
 /* 砂箱の内側は水を表す青で塗る――箱庭療法の砂箱（57×72×7cm）を下敷きにした配色。
    レイアウト：上部に工程タブ（住人→箱庭→経過と結末）、各タブは1カラム、結果は関係図＋カード＋時系列 */
 :root {
-  --bg: #edf0f2; --surface: #fbfcfc; --ink: #1b232b; --muted: #5b6672; --line: #d3d9df;
+  --bg: #edf0f2; --surface: #fbfcfc; --ink: #1b232b; --muted: #5b6672; --line: #d3d9df; --warn-line: #d9b25a; --warn-ink: #7a5d12;
   --accent: #2b5b7c; --accent-ink: #ffffff; --accent-soft: #dce8f1;
   --sand: #e8e0cc; --sand-line: #cfc3a6; --tray: #3d6f93;
   --love: #b83f66; --pine: #c5698b; --night: #9550ad; --obsess: #6f48a8; --enemy: #b0442f;
@@ -21,7 +21,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #11161b; --surface: #182027; --ink: #e3e8ed; --muted: #95a1ad; --line: #2b3640;
+    --bg: #11161b; --surface: #182027; --ink: #e3e8ed; --muted: #95a1ad; --line: #2b3640; --warn-line: #8a6d2a; --warn-ink: #e0c070;
     --accent: #7fb2d9; --accent-ink: #0d1820; --accent-soft: #1f3243;
     --sand: #29271f; --sand-line: #4a4535; --tray: #5f93b8;
     --love: #ec7a9c; --pine: #e39ab5; --night: #c597de; --obsess: #a98be0; --enemy: #e57a62;
@@ -34,7 +34,7 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #11161b; --surface: #182027; --ink: #e3e8ed; --muted: #95a1ad; --line: #2b3640;
+  --bg: #11161b; --surface: #182027; --ink: #e3e8ed; --muted: #95a1ad; --line: #2b3640; --warn-line: #8a6d2a; --warn-ink: #e0c070;
   --accent: #7fb2d9; --accent-ink: #0d1820; --accent-soft: #1f3243;
   --sand: #29271f; --sand-line: #4a4535; --tray: #5f93b8;
   --love: #ec7a9c; --pine: #e39ab5; --night: #c597de; --obsess: #a98be0; --enemy: #e57a62;
@@ -376,6 +376,10 @@ table.per td:nth-child(2) b { white-space: nowrap; overflow: hidden; text-overfl
 .envbtns { font-size: 12px; font-weight: 400; margin-left: 8px; }
 .envbtns .mini { font-size: 11px; padding: 1px 8px; margin-left: 4px; }
 .scen .note { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.scen .tags { display: flex; flex-wrap: wrap; gap: 3px 4px; margin: 0 0 6px; }
+.scen .ftag { display: inline-block; font-size: 10px; line-height: 1.5; padding: 0 6px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--surface); cursor: help; }
+.scen .ftag.warn { border-color: var(--warn-line); color: var(--warn-ink); }
+.scen .ftag:hover, .scen .ftag:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
 .scen .m { font-size: 11px; color: var(--muted); margin: 2px 0 4px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
 .scen .m .r18part { display: inline-flex; align-items: center; gap: 4px; }
 .scen.adult { background: var(--adult-bg); border-color: var(--adult-line); }
@@ -486,8 +490,8 @@ details.zmap > summary:hover { background: var(--accent-soft); }
 
 <script>window.HK_SAFE_BUILD = 1;</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script src="js/bundle-main.js?v=effebe1685"></script>
-<script>(function () { var HK = window.HK; HK.LATE_READY = false; var s = document.createElement('script'); s.src = 'js/bundle-late.js?v=c86959ed41';
+<script src="js/bundle-main.js?v=ee3e7c5c1e"></script>
+<script>(function () { var HK = window.HK; HK.LATE_READY = false; var s = document.createElement('script'); s.src = 'js/bundle-late.js?v=a9406a976f';
   s.onload = function () { HK.LATE_READY = true; if (HK.onLate) HK.onLate(); };
   s.onerror = function () { HK.LATE_READY = true; HK.LATE_FAILED = true; if (HK.onLate) HK.onLate(); };
   document.body.appendChild(s); })();</script>

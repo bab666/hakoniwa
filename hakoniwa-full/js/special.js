@@ -35,7 +35,8 @@
   var SP = HK.Special = {};
   SP.SCENES = ['rpg', 'zombie', 'jashin', 'yakata', 'ship'];
   SP.LABEL = { immortal: '不死', vampire: '吸血鬼' };
-  SP.FIELD = { id: 'special', label: '特殊役職', auto: 'なし', options: [{ id: 'immortal', label: '不死（死んでも蘇る）' }, { id: 'vampire', label: '吸血鬼（死んでも蘇る・三日に一度血を吸う）' }] };
+  /* 吸血鬼は特殊役職としては選ばず、住人の種族（attr.js の race = 'vampire'）で決める（2026-10-25）。古い保存の special = 'vampire' は ui.js が種族に移す */
+  SP.FIELD = { id: 'special', label: '特殊役職', auto: 'なし', options: [{ id: 'immortal', label: '不死（死んでも蘇る）' }], note: '吸血鬼は住人の設定の「種族」で選びます（死んでも蘇り、三日に一度血を吸います）' };
   /* 箱庭の欄に足す（箱庭がそろったあと、ui.js から一度） */
   SP.install = function () {
     SP.SCENES.forEach(function (id) {
@@ -48,8 +49,8 @@
   SP.setup = function (A, P, pcOf) {
     P.forEach(function (p) {
       var v = ((pcOf(p) || {}).pick || {}).special;
-      /* 住人の種族が吸血鬼（attr.js）なら、特殊役職の吸血鬼と同じ扱い（不死を選んでいれば不死のまま。両方吸血鬼でも一人分） */
-      p.spec = v === 'immortal' || v === 'vampire' ? v : HK.Attr && HK.Attr.isVampire(p) ? 'vampire' : '';
+      /* 吸血鬼は住人の種族（attr.js）で決める。不死を選んでいれば不死のまま。古い入力の special = 'vampire' も吸血鬼として扱う */
+      p.spec = v === 'immortal' ? v : (v === 'vampire' || (HK.Attr && HK.Attr.isVampire(p))) ? 'vampire' : '';
       p.spRev = 0; p.mad = null; p.wear = 0;
       if (p.spec === 'vampire') p.vamp = { due: 6 + A.rng() * 42, fed: 0, warn: false };
     });

@@ -174,8 +174,18 @@
     /* グループごとの「このグループを仲間とみなす」（グループ名 → 1） */
     S0.grpComrade = obj(S0.grpComrade);
     Object.keys(S0.grpComrade).forEach(function (g) { if (!S0.grpComrade[g] || !String(g).trim()) delete S0.grpComrade[g]; else S0.grpComrade[g] = 1; });
+    S0.chars.forEach(function (c) { migVamp(c, S0.per[c.id]); });
     normRefs(S0);
     return S0;
+  }
+  /* 旧データの特殊役職「吸血鬼」を種族の吸血鬼に移す（special.js。箱庭ごとの欄からは外した） */
+  function migVamp(c, per) {
+    if (!c || !per || typeof per !== 'object') return;
+    Object.keys(per).forEach(function (sid) {
+      var p = per[sid]; if (!p || !p.pick || p.pick.special !== 'vampire') return;
+      /* 種族がほかに決まっている人（獣人の吸血鬼 など）は、旧データの値を残して吸血鬼のまま動かす（special.js が読む） */
+      if (!c.race || c.race === 'human') { c.race = 'vampire'; delete p.pick.special; }
+    });
   }
   var S;
   try { S = normState(HK.store.get('state', null)); } catch (e) { S = normState({}); }
@@ -502,7 +512,7 @@
       c._lk = o.loveLock; c._sl = o.sexLock; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
       if (o.fp != null) c.fp = String(o.fp).trim().slice(0, 8);
       if (typeof o.icon === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(o.icon) && o.icon.length < 400000) c.icon = o.icon;
-      if (o.per && typeof o.per === 'object') { S.per = S.per || {}; S.per[c.id] = JSON.parse(JSON.stringify(o.per)); }
+      if (o.per && typeof o.per === 'object') { S.per = S.per || {}; S.per[c.id] = JSON.parse(JSON.stringify(o.per)); migVamp(c, S.per[c.id]); }
       normChar(c);
       map[i] = c.id;
       } catch (err) { map[i] = null; skipped++; if (window.console) console.warn("JSON import skip", i, err); }
@@ -691,7 +701,7 @@
       var cd = CARD_DESC[id], snote = HK.SAFE_ON ? String(s.note || '').replace(/[^。]*成人として扱[^。]*。?/g, '').replace(/^※\s*$/, '').trim() : s.note, full = s.desc + (snote ? '\n' + snote : '') + (HK.SAFE_ON || /成人として扱/.test(s.note || '') ? '' : '\n※登場人物はすべて成人として扱います。');
       cd = Array.isArray(cd) ? cd[HK.SAFE_ON ? 0 : 1] : cd || s.desc;
       return '<label class="scen' + (adult ? ' adult' : '') + (id === S.scenId ? ' on' : '') + '" title="' + esc(full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (id === S.scenId ? ' checked' : '') + '>' +
-        '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div><div class="d">' + esc(cd) + '</div><div class="note">' + esc(cardNote(s.note)) + '</div>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</label>';
+        '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div>' + (HK.ScenTags ? HK.ScenTags.html(id, esc) : '') + '<div class="d">' + esc(cd) + '</div><div class="note">' + esc(cardNote(s.note)) + '</div>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</label>';
     }).join('');
     /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url） */
     if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<a class="scen r18link" href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">' +
@@ -789,7 +799,7 @@
       })(),
       perChar: castFor(S.scenId).map(function (c) {
         var p = per(c, S.scenId);
-        return { action: p.action, goal: p.goal, stats: JSON.parse(JSON.stringify(p.stats)), weapon: p.weapon, pick: JSON.parse(JSON.stringify(p.pick || {})), role: S.scenId === 'classroom' && c.id === S.teacher ? 'teacher' : '' };
+        return { action: p.action, goal: p.goal, stats: JSON.parse(JSON.stringify(p.stats || {})), weapon: p.weapon, pick: JSON.parse(JSON.stringify(p.pick || {})), role: S.scenId === 'classroom' && c.id === S.teacher ? 'teacher' : '' };
       }),
       ties: (function () {
         cleanTies();
@@ -958,6 +968,8 @@
         else toast('「' + t.dataset.g + '」' + (act === 'joingrpadd' ? 'を参加に加えました' : 'だけを参加にしました'));
         S.join[S.scenId] = S.chars.filter(function (c) { return gcur.indexOf(c.id) >= 0; }).map(function (c) { return c.id; });
         save(); renderBox(); break;
+      /* 箱庭のカードの対応機能のタグ：押すと説明（scen-tags.js） */
+      case 'ftag': ev.preventDefault(); toast((HK.ScenTags && HK.ScenTags.DEF[t.dataset.k] ? HK.ScenTags.DEF[t.dataset.k].label + '：' + HK.ScenTags.DEF[t.dataset.k].desc : t.title)); break;
       case 'joingrpdel':
         S.join = S.join || {};
         var dmem = S.chars.filter(function (c) { return inGrp(c, t.dataset.g); }).map(function (c) { return c.id; });
