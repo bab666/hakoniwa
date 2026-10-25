@@ -26349,9 +26349,10 @@
   BH.rescueEnd = function (S, input, st, res) {
     var h = S.h, b = res.rescued, F = function (t) { return K.fmt(S, t, { b: b.name }); };
     /* 恋愛・R18にしない組（HK.ngPair）なら、助けた人に縋らない */
-    var ng = !!(HK.ngPair && HK.ngPair(h, b));
+    /* 恋愛・R18にしない組・性行為の相手を固定した人（恋人だけ・〇〇だけ。HK.sexBlocked）・受け攻めの合わない組なら、助けた人に縋らない（ひとりで受け止める文） */
+    var ng = !!(HK.ngPair && HK.ngPair(h, b)) || !!(HK.sexBlocked && HK.sexBlocked(h, b)) || !!(HK.Pos && !HK.Pos.okSex(h, b));
     if (st.hardTop) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, T.rescuedTop)), why: '自分で攻めを選んでいるので、何も溜まっていなかった' });
-    else if (st.live || st.stored < 20) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, ng ? T.rescuedLiveNG : T.rescuedLive)), why: ng ? '恋愛・R18にしない相手なので、縋らない' : '' });
+    else if (st.live || st.stored < 20) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, ng ? T.rescuedLiveNG : T.rescuedLive)), why: ng ? '恋愛・R18にしない相手（または体の関係にならない相手）なので、縋らない' : '' });
     else {
       h.pleasure += st.stored * 0.8; h.reason -= st.stored * 0.07; h.corrupt += st.stored * 0.03 * (S.k || 1);
       var parts = []; while (h.pleasure >= 100 && parts.length < 4) parts.push(K.climax(S, { silent: true }));
@@ -33151,8 +33152,9 @@
         a.eroDom = top;
         /* 一人が受ける場面は合意のない場面なので、男性向けの文は足さない（濃いは、ぼかした一文だけ） */
         /* 受ける側の一人の場面（村人・神・生贄の儀式など）は、内容のスイッチ「合意のない展開」が入で、モブとの場面に出てよい人のときだけ「濃い」の一文を足す */
-        var recvOk = top || ((!HK.Content || HK.Content.ok(S, 'force')) && !(HK.State && !HK.State.mobSexOk(a)));
-        if (er && top) add.push(E.fill(S, pick(S, SOLO_TOP), a));
+        /* 一人の場面の相手は村人・神・眷属（モブ）。内容のスイッチ「合意のない展開」が入で、モブとの場面に出てよい人のときだけ文を足す（攻めが主導する場面も同じ） */
+        var recvOk = (!HK.Content || HK.Content.ok(S, 'force')) && !(HK.State && !HK.State.mobSexOk(a));
+        if (er && top && recvOk) add.push(E.fill(S, pick(S, SOLO_TOP), a));
         if (hi && recvOk) add.push(top ? pick(S, AGAIN_TOP) : pick(S, AGAIN_SOLO));
         a.eroDom = d;
         add = add.map(function (t) { return ST.fmt(t, { a: a.name }); });

@@ -255,9 +255,10 @@
   BH.rescueEnd = function (S, input, st, res) {
     var h = S.h, b = res.rescued, F = function (t) { return K.fmt(S, t, { b: b.name }); };
     /* 恋愛・R18にしない組（HK.ngPair）なら、助けた人に縋らない */
-    var ng = !!(HK.ngPair && HK.ngPair(h, b));
+    /* 恋愛・R18にしない組・性行為の相手を固定した人（恋人だけ・〇〇だけ。HK.sexBlocked）・受け攻めの合わない組なら、助けた人に縋らない（ひとりで受け止める文） */
+    var ng = !!(HK.ngPair && HK.ngPair(h, b)) || !!(HK.sexBlocked && HK.sexBlocked(h, b)) || !!(HK.Pos && !HK.Pos.okSex(h, b));
     if (st.hardTop) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, T.rescuedTop)), why: '自分で攻めを選んでいるので、何も溜まっていなかった' });
-    else if (st.live || st.stored < 20) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, ng ? T.rescuedLiveNG : T.rescuedLive)), why: ng ? '恋愛・R18にしない相手なので、縋らない' : '' });
+    else if (st.live || st.stored < 20) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, ng ? T.rescuedLiveNG : T.rescuedLive)), why: ng ? '恋愛・R18にしない相手（または体の関係にならない相手）なので、縋らない' : '' });
     else {
       h.pleasure += st.stored * 0.8; h.reason -= st.stored * 0.07; h.corrupt += st.stored * 0.03 * (S.k || 1);
       var parts = []; while (h.pleasure >= 100 && parts.length < 4) parts.push(K.climax(S, { silent: true }));

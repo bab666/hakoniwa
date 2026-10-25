@@ -30280,6 +30280,8 @@
   };
   ST.fmt = function (t, v) { return String(t).replace(/\{(\w+)\}/g, function (m, k) { return v[k] != null ? v[k] : m; }); };
   ST.say = function (S, o) {
+    /* 札（tag）が組み立てに失敗して undefined になった記録は、札なしにする */
+    if (o && (o.tag === undefined || o.tag === 'undefined' || (typeof o.tag === 'string' && /undefined/.test(o.tag)))) delete o.tag;
     if (S.textFilter && o.text) o.text = S.textFilter(o.text);
     if (S.whyFilter && o.why) o.why = S.whyFilter(o.why);
     /* 「＠……」は村人など住人以外の台詞（口調を変えない）。見えない印（U+2060）に置き換えておく */
