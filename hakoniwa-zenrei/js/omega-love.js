@@ -14,7 +14,8 @@
   function sx(c) { return c.om && c.om.sex; }
   function bonded(ctx, a, b) { return !!(ctx.om && ctx.om.bonded && ctx.om.bonded[key(a, b)]); }
   function top(c) { return HK.voiceTop ? HK.voiceTop(c) : 'NP'; }
-  function pick(ctx, a) { return ctx.pick(a); }
+  /* 一回の結果の中で同じ文を繰り返さない選び方（R18版は ero-kit.js の HK.Ero.fresh。全年齢版は ctx.pick のまま） */
+  function pick(ctx, a) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx, a, function (l) { return ctx.pick(l); }) : ctx.pick(a); }
 
   /* ---------- 回数の目安 ---------- */
   function cap(ctx) { var n = (ctx.om && ctx.om.sexN) || 0; return n < 1 ? 1 : n < 2 ? 0.85 : n < 3 ? 0.3 : n < 4 ? 0.08 : 0.03; }
@@ -80,6 +81,12 @@
     low: L('――その夜、寝室の明かりは遅くまで消えなかった。|――翌朝、二人は同じ毛布にくるまって、昼過ぎまで起きてこなかった。|――そのあとのことは、二人だけが知っている。|――カーテンの隙間から朝日が差す頃、二人はようやく眠りについた。')
   };
 
+  /* 組み合わせ（cb）に合うプレイの文を、全部の型からまとめる。攻めを選んだ人が主導権を握られる文は除く */
+  function allPlay(cb, hardA) {
+    var o = [];
+    T.play.forEach(function (p) { var l = (p[cb] || p.base).filter(function (x) { return !(hardA && /主導権/.test(x)); }); o = o.concat(l.length ? l : p.base); });
+    return o;
+  }
   function scene(ctx, x, y, bond) {
     /* 受け攻めの指定がなければ、αが攻め（Ω攻めは、Ωを攻めに指定したとき） */
     var fb = sx(y) === 'a' && sx(x) !== 'a' ? [y, x] : [x, y];
@@ -91,8 +98,6 @@
     var bo = T.bondOpen.filter(function (l) { return Oq !== A || !/^\{x\}は\{o\}|\{o\}は小さく震えた|\{o\}の体から力が抜け/.test(l); });
     var op = pick(ctx, bond ? (bo.length ? bo : T.coupleOpen) : T.coupleOpen);
     var out = [(ctx.rng() < 0.25 ? '' : pick(ctx, T.when)) + op];
-    /* 受け攻めの指定：攻めを選んだ人が跨がられて主導権を握られる書き方・あとで上下が入れ替わる書き方は使わない */
-    var plays = function (pl) { var l = (pl[cb] || pl.base).filter(function (x) { return !(hardA && /主導権/.test(x)); }); return l.length ? l : pl.base; };
     if (lew === 'low') out.push(pick(ctx, T.low));
     else if (ff) {
       if (ctx.rng() < 0.6) out.push(pick(ctx, T.lead[top(A)]));
@@ -103,9 +108,10 @@
       if (Vf && ctx.rng() < 0.7) out.push(Vf.line(function (arr) { return ctx.pick(arr); }, B.persona, 'climax', 'b'));
     } else {
       if (ctx.rng() < 0.6) out.push(pick(ctx, T.lead[top(A)]));
-      var pl = pick(ctx, T.play);
-      out.push(pick(ctx, plays(pl)));
-      if (lew === 'high' && ctx.rng() < 0.5) { var p2 = pick(ctx, T.play); if (p2 !== pl) out.push('それから、' + pick(ctx, plays(p2))); }
+      /* プレイは全部の型の文をまとめて選ぶ（型を先に選ぶと、文の少ない型で同じ文が何度も出るため） */
+      var pa = allPlay(cb, hardA), l1 = pick(ctx, pa);
+      out.push(l1);
+      if (lew === 'high' && ctx.rng() < 0.5) { var rest = pa.filter(function (x) { return x !== l1; }); if (rest.length) out.push('それから、' + pick(ctx, rest)); }
       var kn = T.knot[cb].filter(function (x) { return !(fx && /次はこっちが上/.test(x)); });
       if (ctx.rng() < (cb === 'ao' ? (bond ? 0.8 : 0.5) : 0.6)) out.push(pick(ctx, kn.length ? kn : T.knot[cb]));
       var V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
@@ -123,9 +129,7 @@
   /* 発情期の場面にも、組み合わせごとのプレイを差し込む（A=攻め B=受け のテンプレートを返す） */
   OM.lovePlay = function (ctx, A, B) {
     if (HK.Pos && HK.Pos.ff(A, B)) return 'それから、' + pick(ctx, T.playFF);
-    var pl = pick(ctx, T.play), cb = combo(A, B), hardA = HK.Pos && HK.Pos.hardTop(A);
-    var l = (pl[cb] || pl.base).filter(function (x) { return !(hardA && /主導権/.test(x)); });
-    return 'それから、' + pick(ctx, l.length ? l : pl.base);
+    return 'それから、' + pick(ctx, allPlay(combo(A, B), HK.Pos && HK.Pos.hardTop(A)));
   };
 
   var CB_LABEL = { ao: 'α攻め×Ω受け', oa: 'Ω攻め×α受け', aa: 'α同士', oo: 'Ω同士', b: 'βがいる組' };

@@ -177,7 +177,7 @@
   };
   var END_LABEL = { keep: '恋人のまま', lover: '恋人になる', fwb: 'セフレに落ち着く', forget: 'なかったことにする', unsure: 'まだ答えが出ない' };
 
-  var AFTER = L('果てたあと、{b}は{a}の胸に頬を乗せて、規則正しい心臓の音を聞いていた。|{a}は眠ってしまった{b}の髪を、しばらく撫でていた。|二人はシャワーを浴びたあと、またベッドに戻った。|{b}は{a}の腕の中で、「また会える？」と訊いた。|明け方、{a}は{b}の寝顔を見ながら、帰るタイミングを失っていた。');
+  var AFTER = L('果てたあと、{b}は{a}の胸に頬を乗せて、規則正しい心臓の音を聞いていた。|{a}は眠ってしまった{b}の髪を、しばらく撫でていた。|二人はシャワーを浴びたあと、またベッドに戻った。|{b}は{a}の腕の中で、「また会える？」と訊いた。|明け方、{a}は{b}の寝顔を見ながら、帰るタイミングを失っていた。|果てたあと、{b}は{a}の肩に額を乗せたまま、しばらく息を整えていた。|{a}は冷蔵庫の水を一口飲んでから、残りを{b}に口移しで渡した。|果てたあと、二人は顔を見合わせて、店での会話を思い出して吹き出した。|{b}は乱れたシーツにくるまって、「酔いが醒めちゃった」と笑った。|{a}は{b}の背中に浮いた汗を、指先でなぞって乾かしていた。|果てたあとも、{a}は{b}を後ろから抱いたまま、うなじに何度も唇を落とした。');
 
   function tie(ctx, a, b, t) {
     if (HK.Ties && HK.Ties.has) return HK.Ties.has(ctx, a, b, t);
@@ -321,7 +321,8 @@
     var ff = HK.Pos && HK.Pos.ff(A, B);
     /* 女性が攻め・男性が受けの組（thick-sex.js の fm と同じ判定） */
     var fm = !ff && HK.Pos && HK.Pos.isF(A) && !HK.Pos.isF(B);
-    var ps = psOf(B), pk = function (arr) { return rng.pick(arr); };
+    /* 一回の結果の中で同じ文を繰り返さない選び方（ero-kit.js の HK.Ero.freshPick） */
+    var ps = psOf(B), pk0 = function (arr) { return rng.pick(arr); }, pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(ctx, pk0) : pk0;
     /* 受け攻めの指定：自分で攻めを選んだ人を押し倒す・仰向けにする・翻弄する書き方は使わない */
     var noTop = function (l) { return !(HK.Pos && HK.Pos.hardTop(A) && /\{b\}は(自分から)?\{a\}を押し倒|\{a\}を仰向けにして|翻弄/.test(l)); };
     var pool = ff ? FF[k] : N[k].filter(noTop);
