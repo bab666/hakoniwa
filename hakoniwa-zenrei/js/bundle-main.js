@@ -17049,6 +17049,20 @@
   function fp(ctx, arr) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx, arr, function (l) { return ctx.pick(l); }) : ctx.pick(arr); }
   var H = OM.HEAT = {};
   function L(s) { return s.split('|'); }
+  /* 体の組み合わせ（第二性を優先）。T=攻め U=受け（HK.Pos.order のあと）。
+     αが攻めで相手がαでないときは、αを挿れる側の体（挿入・ノット・根元が膨らむ）で書く。女性のαでも同じ（胸の描写は残る）。
+     受ける側は自分の体の性別のまま：男性のΩ・β→男性どうしの書き方（mm）、女性のΩ・β→男女の書き方（mf）。
+     攻めがΩ・β、α×α のときは体の性別のまま：ff＝女性どうし／ride＝女性の攻め×男性（跨る）／mf／mm */
+  OM.alphaTop = function (T, U) { return !!(T && U && T.om && U.om && T.om.sex === 'a' && U.om.sex !== 'a'); };
+  OM.bodyKind = function (T, U) {
+    var P = HK.Pos, fb = function (c) { return P && P.isFBody ? P.isFBody(c) : !!(c && c.gender === 'f'); };
+    var aT = OM.alphaTop(T, U), fT = fb(T) && !aT, fU = fb(U);
+    /* 女性のαを挿れる側で書いた組を覚えておく（pos-ff.js・pos-fm.js の見直しで直さないように） */
+    if (aT && fb(T) && P && P.maleTop && T.name && U.name) P.maleTop[T.name + '\u0001' + U.name] = 1;
+    return fT && fU ? 'ff' : fT ? 'ride' : fU ? 'mf' : 'mm';
+  };
+  /* 女性どうしの書き方（指・舌・玩具）にする組か。T・U は攻め・受けの順 */
+  OM.ffTU = function (T, U) { return OM.bodyKind(T, U) === 'ff'; };
 
   /* 来訪：相手のいちばん強い因子で */
   H.COME = {
@@ -17129,10 +17143,10 @@
     opt = opt || {};
     var pk = function (arr) { return fp(ctx, arr); }, ta = top(a), tb = top(b), lew = ctx.env.lewd || 'mid';
     /* 受け攻めの指定：発情期のΩ（{b}）の方が攻めなら、抱く側を入れ替える */
-    var rev = HK.Pos && HK.Pos.order(a, b, [a, b])[0] === b, ff = HK.Pos && HK.Pos.ff(a, b);
+    var o0 = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b], rev = !!HK.Pos && o0[0] === b, ff = !!HK.Pos && OM.ffTU(o0[0], o0[1]);
     /* Ωの側が攻めのときは、Ωが触れられ・満たされる側に回る書き方を除く */
     var noRecv = function (arr, re) { if (!rev) return arr; var f = arr.filter(function (l) { return !re.test(l); }); return f.length ? f : arr; };
-    var moe = H.MOE.filter(function (l) { return !(ff && /喉仏/.test(l)); });
+    var moe = H.MOE.filter(function (l) { return !((ff || (HK.Pos && HK.Pos.isFBody(a))) && /喉仏/.test(l)); });
     var out = [pk(H.COME[ta]), pk(noRecv(H.STATE[tb], /触れた瞬間|さわって|ほどくと/)), pk(noRecv(moe, /いっぱいにして|噛まない|肩がびくりと/))];
     if (lew === 'low') out.push(pk(H.LOW));
     else if (ff) {
@@ -20426,7 +20440,8 @@
       AC: L('{b}は{a}の胸に顔を埋めたまま、「好き」と小さく言った。二度目は言ってくれなかった。|{b}は{a}の匂いの残るシャツを、こっそり抱きしめて眠った。')
     },
     bondAfter: L('番の二人は、互いの匂いに包まれたまま眠った。{o}のうなじの噛み跡に、{x}は眠る前にもう一度だけキスをした。|{x}は{o}の噛み跡を指でなぞりながら、「一生、離さない」と言った。{o}は「知ってる」と笑った。|翌朝、{b}の首筋には新しい印がいくつも増えていた。{b}はタートルネックを探しながら、まんざらでもない顔をしていた。'),
-    /* 女性どうし（女性のα×女性のΩなど）：この世界観に女性αの体の設定はないので、いちもつ・ノットは使わず、指・舌・肌・玩具で。{a}=動く側 */
+    /* 女性どうし（攻めが女性のΩ・β、女性のα×女性のα）：いちもつ・ノットは使わず、指・舌・肌・玩具で。{a}=動く側。
+       女性のαが攻めで相手がΩ・βのときは、第二性を優先してαを挿れる側の体で書く（OM.bodyKind。ここは使わない） */
     playFF: L('{a}は{b}の首筋から胸へ、{sb}の匂いを確かめるように唇を這わせ、そのまま指をゆっくりと沈めていった。|{a}は{b}と脚を絡め、互いの熱いところを擦り合わせた。{sa}と{sb}の匂いが混ざって、二人だけの匂いになった。|{a}は{b}の脚のあいだに顔を埋め、{b}が「もう、だめ」と言うまで舌を止めなかった。|{a}は引き出しから玩具を取り出し、震える先端を{b}の一番敏感なところに押し当てた。{b}は{a}の腕にしがみついた。|{a}は双頭の玩具で{b}とつながり、額を合わせたまま、ゆっくりと腰を揺らした。|{a}は{b}の胸の先を唇で含みながら、指先で花芯をそっと転がした。{b}の指が、{a}の髪に絡んだ。'),
     knotFF: L('二人はほとんど同時に達した。重なった鼓動と、混ざり合った匂いが、なかなか静まらなかった。|{b}は{a}の指をきつく締めつけながら、声にならない声を上げて達した。|{b}が達したあとも、{a}は{b}を抱きしめたまま、{b}の首筋の匂いを吸い込んでいた。'),
     low: L('――その夜、寝室の明かりは遅くまで消えなかった。|――翌朝、二人は同じ毛布にくるまって、昼過ぎまで起きてこなかった。|――そのあとのことは、二人だけが知っている。|――カーテンの隙間から朝日が差す頃、二人はようやく眠りについた。')
@@ -20443,7 +20458,7 @@
     var fb = sx(y) === 'a' && sx(x) !== 'a' ? [y, x] : [x, y];
     var lr = HK.Pos ? HK.Pos.order(x, y, fb) : fb, A = lr[0], B = lr[1], cb = combo(A, B);
     var lew = ctx.env.lewd || 'mid', sc = OM.sc || function (t) { return t; };
-    var ff = HK.Pos && HK.Pos.ff(A, B), hardA = HK.Pos && HK.Pos.hardTop(A), fx = HK.Pos && HK.Pos.fixed(A, B);
+    var ff = !!HK.Pos && (OM.ffTU ? OM.ffTU(A, B) : HK.Pos.ff(A, B)), hardA = HK.Pos && HK.Pos.hardTop(A), fx = HK.Pos && HK.Pos.fixed(A, B);
     var Oq = sx(B) === 'o' ? B : sx(A) === 'o' ? A : B;
     /* Ω（{o}）が攻めのときは、αがΩに触れて力を抜かせる書き出しを使わない */
     var bo = T.bondOpen.filter(function (l) { return Oq !== A || !/^\{x\}は\{o\}|\{o\}は小さく震えた|\{o\}の体から力が抜け/.test(l); });
@@ -20479,7 +20494,7 @@
   OM.LOVE = { T: T, combo: combo };
   /* 発情期の場面にも、組み合わせごとのプレイを差し込む（A=攻め B=受け のテンプレートを返す） */
   OM.lovePlay = function (ctx, A, B) {
-    if (HK.Pos && HK.Pos.ff(A, B)) return 'それから、' + pick(ctx, T.playFF);
+    if (HK.Pos && (OM.ffTU ? OM.ffTU(A, B) : HK.Pos.ff(A, B))) return 'それから、' + pick(ctx, T.playFF);
     return 'それから、' + pick(ctx, allPlay(combo(A, B), HK.Pos && HK.Pos.hardTop(A)));
   };
 
@@ -33108,7 +33123,11 @@
   P.canReceive = function (c) { return !P.hardTop(c) || !!(c && c.posNpc === 'bottom'); };
   /* モブ・魔物との場面で、攻めに回る人か（攻め指定でも「モブには受け」なら受ける） */
   P.hardTopNpc = function (c) { return P.hardTop(c) && !(c && c.posNpc === 'bottom'); };
-  P.reset = function () { lock = {}; };
+  /* 攻めを挿れる側の体で書いた女性の組（オメガバースの女性のα×Ω・β。omega-heat.js の OM.bodyKind が記録する）。
+     女性どうし・女性上位の見直し（pos-ff.js・pos-fm.js）は、この組を直さない。名前の組 攻め\u0001受け */
+  P.maleTop = {};
+  P.isMaleTop = function (a, b) { return !!(a && b && P.maleTop[a.name + '\u0001' + b.name]); };
+  P.reset = function () { lock = {}; P.maleTop = {}; };
   /* ノリノリな性格（奔放・衝動的）：受けやおまかせでも、自分から跨ったり誘ったりする */
   P.nori = function (c) { var t = (c && c.tr) || {}; if ((t.ac || 0) > 0.62 && (t.fc || 0) < 0.5) return false; return (t.fc || 0) > 0.6 || (t.impulse || 0) > 0.66; };
   /* 仕掛けた側 a がノリノリで、攻めの指定でなければ、自分が受けに回る向きを希望する */
