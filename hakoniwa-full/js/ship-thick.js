@@ -14,12 +14,13 @@
     night: L('寝台の固定帯が、二人分の重みでかすかに軋んでいた。|重力の弱い夜で、果てたあとの二人の体は、抱き合ったままふわりと浮いた。|しばらくのあいだ、狭い船室には二人の荒い息だけが残っていた。|照明が朝の色に切り替わるまで、二人は狭い寝台で肩を寄せ合っていた。|{T}は漂いかけた毛布を引き寄せ、{U}の汗ばんだ肩にかけた。換気扇の音だけが、静かな船室に戻ってきた。'),
     nurse: L('熱のこもった{U}の体の内側は、驚くほど熱かった。{T}は{U}が眠りに落ちるまで、繋がったまま背中を撫でていた。|果てたあと、{U}は{T}の胸にもたれて、熱とは違う理由で頬を染めていた。|{U}の額の汗を拭いながら、{T}は「熱、上がったかもね」と苦笑した。{U}は答えず、{T}の手を握ったまま目を閉じた。|点滴の雫が落ちる音を数えるうちに、{U}は穏やかな寝息を立てはじめた。{T}はその寝顔から、しばらく目を離せなかった。')
   };
-  R.LEAD = LEAD;
+  R.LEAD = LEAD; R.FIN = FIN;
   /* 二度目（短い版の本文 pen・ride・ff と、看病の nursePen・nurseRide・nurseFf を、場所を変えた二度目として使う）。{t}{u} は {T}{U} に */
   var ROUND2 = {
     night: L('一度では、熱は引かなかった。|しばらく抱き合ったまま息を整えてから、二人はもう一度求め合った。|夜間照明に切り替わっても、二人は眠らなかった。|'),
     nurse: L('熱のせいにして、二人はもう一度だけ肌を重ねた。|{U}が手を離してくれず、{T}はもう一度、狭い寝台に横たわった。|')
   };
+  R.ROUND2 = ROUND2;
   /* ship.js の bodyFor・看病の夜から呼ばれる。返り値は段落つきの本文（前後に改行）
      夜の出来事（slewd）が少ない設定ほど短く（35未満：短め／70未満：ふつう／70以上：長め）。ふつう以上では、ときどき二度目を足す */
   R.thick = function (S, t, u, kind) {
@@ -36,7 +37,8 @@
       sp = (sp || []).filter(function (x) { return kd !== 'ff' || (Pz && Pz.bothRiba && Pz.bothRiba(t, u)) || !/秘所を重ね/.test(x); });
       if (sp.length) finish += '\n\n' + pk(ROUND2[k]) + pk(sp).replace(/\{t\}/g, '{T}').replace(/\{u\}/g, '{U}');
     }
-    var body = TK.body(t, u, { flav: 'ship', pick: pk, rng: S.rng, bed: '敷布', depth: dp, lead: pk(LEAD[k]), finish: finish, noAfter: true });
+    /* 船の上らしい書き足し（ship-r18-more.js の R.TADD。最中・山場・体の一文・感覚の一文・態度9種の崩れ方と喘ぎ） */
+    var body = TK.body(t, u, { flav: 'ship', pick: pk, rng: S.rng, bed: '敷布', depth: dp, lead: pk(LEAD[k]), finish: finish, noAfter: true, add: R.TADD });
     return '\n\n' + TK.names(body, t, u) + '\n\n';
   };
   /* 異星の生き物（{a}=船員、{x}=生き物の名前）：段落に分けて厚い版を、ship-r18.js の短い版（alien 8・alienTop 4）に足す */

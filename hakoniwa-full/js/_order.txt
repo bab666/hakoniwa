@@ -302,6 +302,7 @@ late js/ship-xeno-thick.js
 js/ship-thick.js
 js/ship-lewd.js
 js/ship-night.js
+js/ship-r18-more.js
 js/ship-bond.js
 js/ship-crisis.js
 js/ship.js

@@ -446,7 +446,7 @@
   /* 星の生命体との夜（ship-r18-xeno2.js）：生命体ごと・型（誘い／強引／攫われる／実験）ごとの文。攻めを選んだ人は主導権を握る */
   function xeno(S, a, d, onlyMode, hidden) {
     var X2 = SH.X2, rng = S.rng;
-    if (!X2 || !a || !d) return false;
+    if (!X2 || !a || !d || !sxRoom(S, [a])) return false;
     /* R18に参加しない人・「恋人だけ（モブにも襲われない）」の人は、星の生命体との場面にしない */
     if (HK.State && !HK.State.mobSexOk(a)) return false;
     /* 「合意のない展開」が切なら、攻めに回る人（生き物を組み伏せる側）だけ */
@@ -467,7 +467,7 @@
     var tk = xl !== 'short' && lw0.lv !== 'low' && X2.thick && X2.thick(S, d, m, a, top, body, ft, xl === 'thick');
     if (tk) t = F(tk, v);
     t = xLewd(S, a, top, t, v, m);
-    a.cnt.r18 = (a.cnt.r18 || 0) + 1;
+    a.cnt.r18 = (a.cnt.r18 || 0) + 1; sxNote(S, [a]);
     if (!top) { stress(a, m === 'lure' ? 6 : m === 'probe' ? 8 : 14); a.m.fear = clamp(a.m.fear + (m === 'force' || m === 'take' ? 8 : 2), 0, 100); }
     else stress(a, -5);
     var o = ST.say(S, { actors: [a], tag: X2.TAG[m], kind: 'climax', text: t, why: (hidden ? 'まだ正体に気づいていない生命体（のちに分かる名は「' + d.name + '」）' : d.name + '（' + LIFE_JP[d.kind] + '）') + '／' + X2.MODE_NAME[m] + (top ? '／自分で攻めを選んでいるので、受けにはならず主導権を握った' : ''), mag: 30 });
@@ -476,6 +476,7 @@
   }
   function lure(S) {
     var rng = S.rng, Pn = S.planet, X = SH.X, src = [];
+    if (!sxRoom(S)) return;
     /* 調べた生命体がいれば、半分以上は生命体ごとの文で */
     var seen = Pn.life.filter(function (l) { return l.st >= 1; });
     var xl = live(S).filter(function (q) { return !HK.State || HK.State.mobSexOk(q); });
@@ -489,7 +490,7 @@
     var top = HK.Pos && HK.Pos.hardTopNpc(a), m = { a: a.name, b: b.name, x: o.x };
     var t = F(pk(S, o.pool), m) + (top ? F(pk(S, X.lureTop), m) : F(pk(S, X.huge), m) + F(pk(S, X.hugeAct), m) + F(pk(S, X.lureAfter), m));
     t = xLewd(S, a, top, t, m, o.pool === X.lureCiv ? 'civ' : 'lure');
-    a.cnt.r18 = (a.cnt.r18 || 0) + 1; stress(a, top ? -5 : 8);
+    a.cnt.r18 = (a.cnt.r18 || 0) + 1; stress(a, top ? -5 : 8); sxNote(S, [a]);
     var r = ST.say(S, { actors: [a], tag: '異種族の誘い', kind: 'climax', text: t, why: o.x + 'の誘い。言葉が通じず、誘われているとは分からなかった' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 32 });
     if (!S.lureKey) { S.lureKey = true; ST.key(S, r, a.name + 'と' + o.x); }
   }
@@ -549,15 +550,17 @@
       var sk = skill(b, 'fight') * 0.45 + Math.max.apply(null, tm.map(function (q) { return skill(q, 'talk'); })) * 0.3 + Math.max(0, bond(S, b, a)) * 0.3 + tm.length * 0.05;
       var diff = 0.45 + Pn.civ.d.rare * 0.05 + (Pn.civ.d.state === 'advanced' ? 0.12 : 0) + S.env.danger / 100 * 0.1;
       /* 研究（R18）：自分で攻めを選んだ人は、受けにならない */
-      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTopNpc(a)) && !(HK.State && !HK.State.mobSexOk(a)) && (!HK.Content || HK.Content.ok(S, 'force')) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
-        a.labbed = true; a.cnt.r18 = (a.cnt.r18 || 0) + 1;
+      if (r18on(S) && SH.X && !(HK.Pos && HK.Pos.hardTopNpc(a)) && !(HK.State && !HK.State.mobSexOk(a)) && (!HK.Content || HK.Content.ok(S, 'force')) && sxRoom(S, [a]) && rng() < 0.35 + S.env.slewd / 100 * 0.4) {
+        a.labbed = true; a.cnt.r18 = (a.cnt.r18 || 0) + 1; sxNote(S, [a]);
         ST.say(S, { actors: [a], tag: '研究', kind: 'climax', text: F(pk(S, SH.X.lab), { a: a.name, x: Pn.civ.d.name }), why: Pn.civ.d.name + 'は、' + a.name + 'を「標本」として調べた', mag: 30 });
       }
       var t = F(pk(S, C.RESCUE_GO), { n: names(tm), a: a.name });
       if (sk + rng() * 0.5 >= diff) {
         a.away = null; stress(a, 12); setRel(S, a, b, 0.3); mark(S, a, b, 'calm'); tm.forEach(function (q) { if (q !== b) setRel(S, a, q, 0.1); }); S.saved.push([b.i, a.i]);
-        var o = ST.say(S, { actors: [b, a], tag: '救出', kind: 'climax', text: t + F(pk(S, C.RESCUE_OK), { a: a.name, b: b.name }) + (a.labbed && SH.X ? F(pk(S, SH.X.labAfter), { a: a.name }) : ''), why: b.name + 'の救出（腕 ' + Math.round(sk * 100) + '・難しさ ' + Math.round(diff * 100) + '）', mag: 36 });
+        var o = ST.say(S, { actors: [b, a], tag: '救出', kind: 'climax', text: t + F(pk(S, C.RESCUE_OK), { a: a.name, b: b.name }), why: b.name + 'の救出（腕 ' + Math.round(sk * 100) + '・難しさ ' + Math.round(diff * 100) + '）', mag: 36 });
         ST.key(S, o, b.name + 'が' + a.name + 'を救い出した');
+        /* 研究のあと（R18）：救い出した人との場面と混ざらないよう、救われた人だけの記録にする */
+        if (a.labbed && SH.X) ST.say(S, { actors: [a], tag: '研究のあと', text: F(pk(S, SH.X.labAfter), { a: a.name }), why: Pn.civ.d.name + 'の研究から救い出されたあと', mag: 18 });
       } else {
         b.m.hp = clamp(b.m.hp - 10, 1, 100); stress(b, 6);
         ST.say(S, { actors: tm, tag: '救出失敗', text: t + F(pk(S, C.RESCUE_NG), { a: a.name, b: b.name }), why: '救出に失敗（' + a.awayM + '回目）', mag: 22 });
@@ -687,13 +690,13 @@
     var w0 = bond(S, a, b);
     b.m.hp = clamp(b.m.hp + 8, 0, 100); stress(b, -5); setRel(S, a, b, 0.28); mark(S, a, b, 'nurse');
     ST.sayB(S, { actors: [a, b], tag: '看病', text: F(pk(S, BP(S, 'NURSE')), { a: a.name, b: b.name }), why: '弱っているところを支えた（体力 +8）（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'が' + b.name + 'を看病した');
-    if (!r18on(S) || !R || !R.nurseTop || !Pz || !Pz.okSex(a, b) || family(S, a, b)) return;
-    if (rng() > S.env.slewd / 100 * (lover(S, a, b) ? 1.2 : bond(S, a, b) > 0.3 ? 0.8 : 0.3)) return;
+    if (!r18on(S) || !R || !R.nurseTop || !Pz || !Pz.okSex(a, b) || family(S, a, b) || !sxRoom(S, [a, b])) return;
+    if (rng() > S.env.slewd / 100 * (lover(S, a, b) ? 0.7 : bond(S, a, b) > 0.3 ? 0.45 : 0.15)) return;
     /* 受け攻め：自分で攻めを選んだ人は、熱があっても受けにならない */
     var o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
     if (Pz.hardTop(u)) return;
     var body = bodyOf(S, t, u, 'nurse');
-    setRel(S, a, b, 0.15); mark(S, a, b, 'night');
+    setRel(S, a, b, 0.15); mark(S, a, b, 'night'); sxNote(S, [a, b]);
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     var open = F(pk(S, t === a ? R.nurseTop : R.nurseSick), { t: t.name, u: u.name });
     ST.say(S, { actors: [a, b], tag: '看病の夜', kind: 'climax', text: open + body + F(pk(S, R.nurseAfter), { a: a.name, b: b.name }), why: '熱に浮かされた' + b.name + 'と、看病していた' + a.name + '／関係の近さ ' + Math.round(bond(S, a, b) * 100), mag: 30 });
@@ -806,6 +809,21 @@
 
   /* ---------- R18 ---------- */
   function r18on(S) { return R18ON && !HK.SAFE_ON && (S.env.slewd || 0) > 0; }
+  /* 性的な場面の回数：漂流記は色事が主題の箱庭ではないので、一回の遊びで起きる数に上限を置く。
+     上限は「夜の出来事の起こりやすさ」しだい（20未満 1・40で 2・70で 3・100で 4）。性的な場面は、ひと月に一つまで。
+     同じ二人は一回の遊びで二度まで、二度目は三か月以上あける（船員どうしの夜・看病の夜・星の生命体・異種族の誘い・研究のすべてで数える） */
+  function sxCap(S) { var sl = (S.env.slewd || 0) / 100; return sl <= 0 ? 0 : sl < 0.2 ? 1 : 1 + Math.floor(sl * 3 + 1e-9); }
+  function sxRoom(S, ps) {
+    var X = S.sx || (S.sx = { n: 0, m: -9, pr: {} });
+    if (X.n >= sxCap(S) || X.m === S.m) return false;
+    if (ps && ps.length >= 2) { var y = X.pr[rk(ps[0], ps[1])]; if (y && (y.n >= 2 || S.m - y.m < 3)) return false; }
+    return true;
+  }
+  function sxNote(S, ps) {
+    sxRoom(S);
+    var X = S.sx; X.n++; X.m = S.m;
+    if (ps && ps.length >= 2) { var k = rk(ps[0], ps[1]), y = X.pr[k] || (X.pr[k] = { n: 0, m: -9 }); y.n++; y.m = S.m; }
+  }
   /* R18の描写の設定（lewd-unify.js）：描写の有無・長さ・作風・濃さ */
   function lewdOf(S) {
     var X = HK.Lewd;
@@ -847,14 +865,14 @@
     return text;
   }
   /* 夜の出来事の仕組み（ship-night.js。R18版のみ）に渡す道具 */
-  var NAPI = { bond: bond, lover: lover, family: family, setRel: setRel, mark: mark, rk: rk, live: live, bodyFor: bodyFor, F: F, pk: pk, stress: stress };
+  var NAPI = { bond: bond, lover: lover, family: family, setRel: setRel, mark: mark, rk: rk, live: live, bodyFor: bodyFor, F: F, pk: pk, stress: stress, room: sxRoom, note: sxNote };
   function nightR18(S) {
     /* 関係の深さで夜の種類が変わる（勢いの夜・二度目の夜・恋人の夜）、過ちだと渋る人、夜をきっかけに恋に落ちて告白する人 */
     if (SH.NIGHT) { SH.NIGHT.run(S, NAPI); return; }
     var rng = S.rng, L0 = live(S), R = SH.R18;
-    if (L0.length < 2 || rng() > S.env.slewd / 100 * 0.45) return;
+    if (L0.length < 2 || !sxRoom(S) || rng() > S.env.slewd / 100 * 0.3) return;
     var pairs = [];
-    L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i && HK.Pos.okSex(a, b) && !family(S, a, b) && (lover(S, a, b) || bond(S, a, b) > 0.25 || rng() < 0.15)) pairs.push([a, b]); }); });
+    L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i && HK.Pos.okSex(a, b) && !family(S, a, b) && sxRoom(S, [a, b]) && (lover(S, a, b) || bond(S, a, b) > 0.25 || rng() < 0.15)) pairs.push([a, b]); }); });
     if (!pairs.length) return;
     var pr = HK.weighted(rng, pairs, function (x) { return 0.3 + Math.max(0, bond(S, x[0], x[1])) + (lover(S, x[0], x[1]) ? 1 : 0); }), a = pr[0], b = pr[1];
     var civ = S.planet && S.planet.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(S.planet.civ.d.state) && rng() < 0.25;
@@ -862,7 +880,7 @@
     var open = F(pk(S, civ ? R.civ : pol ? R.pollen : R.open), { a: a.name, b: b.name });
     var body = bodyFor(S, a, b);
     if (!body) return;
-    setRel(S, a, b, 0.2); mark(S, a, b, 'night');
+    setRel(S, a, b, 0.2); mark(S, a, b, 'night'); sxNote(S, [a, b]);
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     var o = ST.say(S, { actors: [a, b], tag: civ ? '儀式の夜' : pol ? '花粉の夜' : '夜', kind: 'climax', text: open + body + F(pk(S, R.after), { a: a.name, b: b.name }), why: (civ ? '文明の歓迎の儀式' : pol ? '星の花粉にあてられた' : '閉ざされた船の夜') + '／関係の近さ ' + Math.round(bond(S, a, b) * 100), mag: 30 });
     if (!S.r18Key) { S.r18Key = true; ST.key(S, o, a.name + 'と' + b.name + 'の夜'); }
@@ -870,11 +888,13 @@
   /* 異星の生き物：自分で攻めを選んだ人は、手懐けて主導権を握る */
   function alienR18(S, a, d) {
     if (HK.State && !HK.State.mobSexOk(a)) return;
+    if (!sxRoom(S, [a])) return;
     if (HK.Content && !HK.Content.ok(S, 'force') && !(HK.Pos && HK.Pos.hardTopNpc(a))) return;
     if (SH.X2 && S.rng() < 0.75 && xeno(S, a, d)) return;
     var R = SH.R18, top = HK.Pos && HK.Pos.hardTopNpc(a);
     var X = SH.X, sp = !top && X && X.play[d.kind] && S.rng() < 0.6 ? X.play[d.kind] : null;
     if (!sp && !/friendly|symbiotic|parasite|plant/.test(d.kind)) return;
+    sxNote(S, [a]);
     ST.say(S, { actors: [a], tag: '異星の生き物', kind: 'climax', text: xLewd(S, a, top, F(pk(S, sp || (top ? R.alienTop : R.alien)), { a: a.name, x: d.name }), { a: a.name, x: d.name, b: (closest(S, a) || { name: '仲間' }).name }, 'alien'), why: d.name + '（' + LIFE_JP[d.kind] + '）' + (top ? '／自分で攻めを選んでいるので、主導権を握った' : ''), mag: 28 });
   }
 

@@ -417,7 +417,10 @@
       return fT && fU ? 'ff' : fT ? 'ride' : fU ? 'mf' : 'mm';
     },
     /* o.depth：1＝短め（書き出し・最中・頂）、2＝ふつう（最中に体の一文と崩れはじめを足す）、3＝長め（さらに体位を変える段落を足す）
-       o.extra：最中のあとに差し込む段落（場面ごとの文。呼び出し側の差し込み記号のまま） */
+       o.extra：最中のあとに差し込む段落（場面ごとの文。呼び出し側の差し込み記号のまま）
+       o.add：箱庭ごとに足す文。元の表に足して引く（同じ回で同じ文が戻ってこないように表を厚くする）。
+         { open/mid/peak: {mf,mm,ff,ride}（乱暴な抱き方のときは足さない）, deep: {core,ride,ff,rough}, gx: {mf,mm,ff,ride: {mid,peak}},
+           fl, fl2（箱庭の感覚の一文）, brk: {態度: {m,p}}, nov: {態度: [高まる, 絶頂]} } */
     body: function (T, U, o) {
       /* 一回の結果の中で同じ文を繰り返さない（呼ぶ側の pick を包む。使い切ったら、いちばん前に使ったものから戻す） */
       var pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(o.rng, o.pick) : o.pick, Pz = HK.Pos, V = HK.Voice, rng = o.rng, dp = o.depth || 2;
@@ -425,21 +428,28 @@
       var rough = kd !== 'ff' && kd !== 'ride' && !!(o.rough || (HK.Ero && HK.Ero.sadist && HK.Ero.sadist(T, U) && rng() < 0.3));
       var set = kd === 'ff' ? FF : kd === 'ride' ? RIDE : rough ? ROUGH : (CORE[topOf(T)] || CORE.NP);
       /* 二人ともリバの女性どうしだけ、脚を重ねる・上下の入れ替わりを混ぜる */
-      var pool = function (k) { return riba && FF_RIBA[k] ? set[k].concat(FF_RIBA[k]) : set[k]; };
+      var AD = o.add || {}, adk = function (k) { return !rough && AD[k] && AD[k][kd] ? AD[k][kd] : []; };
+      var pool = function (k) { var b = riba && FF_RIBA[k] ? set[k].concat(FF_RIBA[k]) : set[k]; return b.concat(adk(k)); };
       var f = o.flav === 'omega' ? 0 : o.flav === 'ship' ? 1 : o.flav === 'zombie' ? 2 : -1;
       var used = RUN.get(rng) || {}; RUN.set(rng, used);
       var fresh = function (arr) { if (pk._fresh) return pk(arr); var a = arr.filter(function (x) { return !used[x]; }); var x = pk(a.length ? a : arr); used[x] = 1; return x; };
       var pf = function (a) { return pk(a); };
       var ps = function (c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || 'gentle'; };
       var nov = NOV[ps(U)] || NOV.gentle, brk = BRK[ps(U)] || BRK.gentle;
+      if (AD.nov && AD.nov[ps(U)]) nov = [nov[0].concat(AD.nov[ps(U)][0] || []), nov[1].concat(AD.nov[ps(U)][1] || [])];
+      if (AD.brk && AD.brk[ps(U)]) brk = { m: brk.m.concat(AD.brk[ps(U)].m || []), p: brk.p.concat(AD.brk[ps(U)].p || []) };
       /* この回で同じ二人が二度目以降なら、崩れはじめ（brk.m）を「前より早く崩れる」文にする（反応の段階を後戻りさせない。thick-sex.js の REACT_AGAIN） */
       var nth = HK.Ero && HK.Ero.pairNight ? HK.Ero.pairNight(rng, T, U) : 1, RA = HK.ThickSex && HK.ThickSex.REACT_AGAIN;
       if (nth >= 2 && RA) brk = { m: (RA[ps(U)] || RA.gentle).map(function (x) { return x.replace(/\{a\}/g, '{T}').replace(/\{b\}/g, '{U}'); }), p: brk.p };
       var vl = function (k) { var t = ''; for (var i = 0; i < 5; i++) { t = V && V.line ? V.line(pf, U.persona || 'gentle', k, 'U') : ''; if (!used[t]) break; } used[t] = 1; return t; };
       var edge = vl('edge'), climax = vl('climax');
       /* 箱庭ごとの感覚の一文。女性どうしでは、突き上げ・繋がりの文を使わない */
-      var FL = f >= 0 ? FLAV[f] : null, flp = function (arr) { if (kd !== 'ff') return arr; var a = arr.filter(function (x) { return !/突き上げ|繋がっ/.test(x); }); return a.length ? a : ['']; };
-      var gx = GX[kd], mid = fresh(pool('mid')), peak = fresh(pool('peak'));
+      var FL = f >= 0 ? FLAV[f] : null;
+      if (FL && (AD.fl || AD.fl2)) FL = { fl: FL.fl.concat(AD.fl || []), fl2: FL.fl2.concat(AD.fl2 || []) };
+      var flp = function (arr) { if (kd !== 'ff') return arr; var a = arr.filter(function (x) { return !/突き上げ|繋がっ/.test(x); }); return a.length ? a : ['']; };
+      var gx = GX[kd], agx = AD.gx && AD.gx[kd];
+      if (agx) gx = { mid: (gx ? gx.mid : []).concat(agx.mid || []), peak: (gx ? gx.peak : []).concat(agx.peak || []) };
+      var mid = fresh(pool('mid')), peak = fresh(pool('peak'));
       /* 最中：体の一文・崩れはじめ（ふつう以上）。頂：体の一文（短めは半分）・崩れ切り */
       if (dp >= 2) mid = mid.replace('{fl}', (gx && rng() < 0.75 ? fresh(gx.mid) : '') + '{fl}' + (rng() < 0.8 ? fresh(brk.m) : ''));
       peak = peak.replace('{fl2}', (gx && rng() < (dp >= 2 ? 0.75 : 0.4) ? fresh(gx.peak) : '') + '{fl2}' + fresh(brk.p));
@@ -447,7 +457,7 @@
       (o.extra || []).forEach(function (x) { if (x) paras.push(x); });
       if (dp >= 3) {
         var dk = kd === 'ff' ? 'ff' : kd === 'ride' ? 'ride' : rough ? 'rough' : 'core';
-        var dd = fresh(riba ? DEEP.ff.concat(FF_RIBA.deep) : DEEP[dk]);
+        var dd = fresh((riba ? DEEP.ff.concat(FF_RIBA.deep) : DEEP[dk]).concat((AD.deep && AD.deep[dk]) || []));
         paras.push(gx && rng() < 0.5 ? dd.replace('{fl}', fresh(gx.mid) + '{fl}') : dd);
       }
       paras.push(peak);

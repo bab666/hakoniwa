@@ -35,14 +35,16 @@
   };
   R.eroxPool = function (t, u, kind) {
     var P = HK.Pos, tf = P.isF(t), uf = P.isF(u);
-    return (R.EROX[kind === 'nurse' ? 'nurse' : 'night'] || []).filter(function (o) { return o.k === 'any' || (o.k === 'uf' && uf) || (o.k === 'mf' && !tf && uf); });
+    /* ff＝女性どうし、fm＝{t}が女性の体で{u}が男性の体（跨る）、mm＝男性どうし */
+    return (R.EROX[kind === 'nurse' ? 'nurse' : 'night'] || []).filter(function (o) { return o.k === 'any' || (o.k === 'uf' && uf) || (o.k === 'mf' && !tf && uf) || (o.k === 'ff' && tf && uf) || (o.k === 'fm' && tf && !uf) || (o.k === 'mm' && !tf && !uf); });
   };
   R.xAgain = L('一度では終わらなかった。{x}は日が沈むまで、何度も{a}を求め続けた。|しばらくして、{x}はまた{a}の体に絡みついてきた。二度目は、一度目よりずっと長かった。|{a}が野営地に戻れたのは、夜が明けてからだった。');
   /* 船員どうしの夜（男性向け）：始まりは ship-thick.js の LEAD を使う */
   R.ero = function (S, t, u, kind, short, high) {
     var TE = HK.ThickEro;
     if (!TE) return null;
-    var pick = function (arr) { return S.rng.pick(arr); };
+    /* 一回の遊びの中で同じ文を繰り返さない（HK.Ero.fresh） */
+    var pick = function (arr) { return E && E.fresh ? E.fresh(S, arr, function (l) { return S.rng.pick(l); }) : S.rng.pick(arr); };
     var lead = R.LEAD && R.LEAD[kind === 'nurse' ? 'nurse' : 'night'];
     var op = lead ? pick(lead).replace(/\{T\}/g, '{a}').replace(/\{U\}/g, '{b}') : '';
     /* 山場の候補（R.EROX）を半々で使う。厚い版は始まり（LEAD）のあとの段落にする */
@@ -60,10 +62,15 @@
     return short ? tx : '\n\n' + tx + '\n\n';
   };
   /* 濃い：船員どうしの夜のもう一度（小説調） */
+  /* 船の上らしいもう一度の段落（ship-r18-more.js の R.AGAIN_S：mf＝{t}が男性の体、fm＝{t}が女性の体で{u}が男性の体、ff＝女性どうし、short＝短い版の一文）を半分ほど混ぜる */
   R.again = function (S, t, u, short) {
-    var TE = HK.ThickEro;
-    if (!TE) return '';
-    var x = TE.again(S, function (arr) { return S.rng.pick(arr); }, t, u, false, short).replace(/\{a\}/g, t.name).replace(/\{b\}/g, u.name);
+    var TE = HK.ThickEro, P = HK.Pos;
+    var pick = function (arr) { return E && E.fresh ? E.fresh(S, arr, function (l) { return S.rng.pick(l); }) : S.rng.pick(arr); };
+    var kd = P && P.isF(t) ? (P.isF(u) ? 'ff' : 'fm') : 'mf', AS = R.AGAIN_S, own = AS && (short ? AS.short : AS[kd]);
+    var x;
+    if (own && own.length && (!TE || S.rng() < 0.6)) x = pick(own).replace(/\{t\}/g, t.name).replace(/\{u\}/g, u.name);
+    else if (TE) x = TE.again(S, pick, t, u, false, short).replace(/\{a\}/g, t.name).replace(/\{b\}/g, u.name);
+    else return '';
     return short ? x : x + '\n\n';
   };
   /* ---------- 書き足し用の型（作者が書く欄。空のあいだは何も出ない） ----------
