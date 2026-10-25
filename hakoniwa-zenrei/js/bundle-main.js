@@ -56446,7 +56446,7 @@
 })();
 ;/* ==== js/ui-mobile.js ==== */
 /* 箱庭シミュレーター: スマホ幅（600px以下）向けの調整
-   ・住人ごとの初動と目標の表を、住人ごとのカードに組み替える（列の見出しを各欄の上に出す）
+   ・住人ごとの初動と目標の表と、結果の表（二人の状態・みんなの状態 など）を、住人ごとのカードに組み替える（列の見出しを各欄の上に出す）
    ・タブ・設定の窓・シード欄・結果の札などが画面からはみ出さないようにする */
 (function () {
   'use strict';
@@ -56464,7 +56464,11 @@
     'html body table.per td:nth-child(1){flex:0 0 auto;align-self:center}html body table.per td:nth-child(2){flex:1 1 60%;align-self:center;font-size:14px}' +
     'html body table.per td:nth-child(2) b{max-width:none}' +
     'html body table.per td[data-label]:nth-child(n+3)::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted);margin-bottom:2px}' +
-    'html body table.per td:nth-child(3),html body table.per td:nth-child(4){flex-basis:100%}' +
+    /* 住人ごとの初動と目標の表（箱庭タブ）だけ、3・4列目（初動・目標の選択）を全幅に。結果の表（数字）は2列ずつ */
+    'html body #view-box table.per td:nth-child(3),html body #view-box table.per td:nth-child(4){flex-basis:100%}' +
+    'html body #view-result table.per td:nth-child(2){flex:1 1 100%}' +
+    'html body #view-result table.per td:nth-child(n+3){flex:1 1 calc(33% - 10px);font-size:15px}' +
+    'html body #view-result table.per td:last-child{flex-basis:100%;font-size:13px}' +
     'html body table.per td select,html body table.per td input[type=text]{width:100%;max-width:none!important;min-width:0!important}' +
     'html body table.per tr.off td{opacity:1}html body table.per tr.off{opacity:.5}' +
     /* シード */
@@ -56486,11 +56490,14 @@
       });
     });
   }
+  /* 箱庭タブ（初動と目標の表）と結果タブ（二人の状態などの表）の両方を見張る */
   function init() {
-    var host = document.getElementById('view-box');
-    if (!host) return;
-    label(host);
-    if (typeof MutationObserver !== 'undefined') new MutationObserver(function () { label(host); }).observe(host, { childList: true, subtree: true });
+    ['view-box', 'view-result'].forEach(function (id) {
+      var host = document.getElementById(id);
+      if (!host) return;
+      label(host);
+      if (typeof MutationObserver !== 'undefined') new MutationObserver(function () { label(host); }).observe(host, { childList: true, subtree: true });
+    });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
