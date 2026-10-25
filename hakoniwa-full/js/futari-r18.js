@@ -127,7 +127,11 @@
       /* この箱庭の文は、同じ回の中で一度だけ（使い切ったら、その段は書かない） */
       var U = ctx.ft.used;
       function upk(arr) { var l = (arr || []).filter(function (t) { return !U[t]; }); if (!l.length) return ''; var t = rng.pick(l); U[t] = 1; return t; }
-      var days = ctx.ft.days || 30, R = ctx.ft.r18x = ctx.ft.r18x || { thick: 0, short: 0 }, capT = 2 + Math.floor(days / 10), capS = 3 + Math.floor(days / 15);
+      /* 夜の場面の数：日数に比例し、描写の濃さで増減（ほどほど×0.75・濃い×1）。同じ二人の夜は3日以上あける（初めての夜は別） */
+      var days = ctx.ft.days || 30, R = ctx.ft.r18x = ctx.ft.r18x || { thick: 0, short: 0, last: {} }, sc = lv === 'high' ? 1 : lv === 'low' ? 0.5 : 0.75;
+      var capT = Math.max(1, Math.floor((1 + days / 30) * sc)), capS = Math.max(1, Math.floor((1 + days / 30) * sc));
+      var pk2 = a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i, day = ctx.ft.day || 0;
+      if (!info.first && R.last[pk2] != null && day - R.last[pk2] < 3) return null;
       var nt = HK.Attr ? HK.Attr.nightOf(A, B) : '', nb = HK.Attr ? HK.Attr.nightOf(B, A) : '';
       var why = '恋人どうしの夜（' + KIND_N[kind] + (nt ? '・' + A.name + 'の夜の性格：' + (NIGHT_N[nt] || nt) : '') + (nb ? '・' + B.name + 'の夜の性格：' + (NIGHT_N[nb] || nb) : '') + '）';
       function done(t) { var tx = ctx.t(t, A, B); if (ff && HK.FF && HK.FF.fix) tx = HK.FF.fix(ctx, tx, A, B); return { text: tx, why: why, a: A, b: B }; }
@@ -144,7 +148,7 @@
       var op0 = upk(OPEN[kind][mode]) || upk(OPEN.lover[mode]) || upk(OPEN.home[mode]);
       var open = op0 ? op0 + (rng() < 0.75 ? upk(OPEN_PS[ps] || OPEN_PS.gentle) : '') : '';
       if (!short && TS) {
-        R.thick++;
+        R.thick++; R.last[pk2] = day;
         var after = upk(PEAK_PS[ps] || PEAK_PS.gentle) + '\n\n' + (high && HK.ThickEro ? HK.ThickEro.again(ctx, pk, A, B, !!ero, false) + '\n\n' : '') + glow;
         var o = { S: ctx, pick: pk, rng: rng, a: A, b: B, style: TS.style(A), after: after, again: false };
         if (open) o.open = open;
@@ -152,11 +156,11 @@
         return done('\n\n' + r.text);
       }
       if (!open) return fade();
-      if (ero) { R.short++; var sh = HK.ThickEro.short({ S: ctx, pick: pk, a: A, b: B, open: open, again: high, after: glow }); return done(sh.text); }
+      if (ero) { R.short++; R.last[pk2] = day; var sh = HK.ThickEro.short({ S: ctx, pick: pk, a: A, b: B, open: open, again: high, after: glow }); return done(sh.text); }
       var body;
       if (fm && HK.FM && HK.FM.pick) { var st = HK.FF && HK.FF.styleOf ? HK.FF.styleOf(A) : 'gentle', fp = { pick: pk }; body = HK.FM.pick(fp, 'body', st) + '{b}「' + (TS ? TS.moan(pk, B, true) : '……っ') + '」' + HK.FM.pick(fp, 'climax', st); }
       else { var sb = upk(SHORT[mode === 'ff' ? 'ff' : 'mf']); if (!sb) return fade(); body = (TS ? '{b}「' + TS.moan(pk, B, false) + '」' : '') + sb; }
-      R.short++;
+      R.short++; R.last[pk2] = day;
       if (high) body += ff ? upk(AGAIN_FF) : HK.ThickEro ? HK.ThickEro.again(ctx, pk, A, B, false, true) : '';
       return done(open + body + glow);
     }
