@@ -29,11 +29,13 @@
       if (at < 0 || at > sc.env.length) at = sc.env.length;
       var add = [];
       if (safe()) add.push({ id: 'lewd', label: '描写の有無', type: 'select', def: 'low', options: [{ v: 'low', label: 'ほのめかす（全年齢版）' }] });
+      /* r18:begin */
       else {
         add.push({ id: 'lewd', label: '描写の有無', type: 'select', def: o.def || 'mid', options: LV, desc: o.desc || 'ほのめかす＝行為は書かずに雰囲気と翌朝だけ／ほどほど＝行為を描写する／濃い＝さらにもう一度求め合うところまで描く' });
         if (o.len !== false) add.push({ id: 'lewdLen', label: '描写の長さ', type: 'select', def: o.lenDef || 'thick', options: LEN });
         if (o.style !== false) add.push({ id: 'style', label: '描写の作風', type: 'select', def: 'novel', options: STY, desc: '男性向け＝擬音・♡のついた喘ぎ・おねだりの多い書き方' });
       }
+      /* r18:end */
       sc.env.splice.apply(sc.env, [at, 0].concat(add));
     },
     conf: function (id) { return CONF[id] || null; },
@@ -100,38 +102,58 @@
   'use strict';
   var HK = window.HK, X = HK && HK.Lewd;
   if (!X) return;
+  /* 箱庭ごとの描写の設定の説明（R18版だけで出す。全年齢版では設定が「ほのめかす」だけなので使わない） */
+  var D = {};
+  /* r18:begin */
+  D.whiteroom = '条件「エッチ」の場面の描き方。ほのめかす＝触れ合いまでで暗転／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで（三人の場面も同じ）';
+  D.island = '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで';
+  D.ship = '夜の出来事（船員どうし・看病・異星の生き物）の描き方。ほのめかす＝ぼかした一文／ほどほど＝描写する／濃い＝もう一度求め合うところまで';
+  D.zombie = '恋人たちの夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで';
+  D.jashin = '夜の出来事の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで';
+  D.yakata = '夜の出来事が起きたときの描き方（起きる回数は「夜の出来事の起こりやすさ」で決まる）。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで';
+  D.omega = '夜の描き方。ほのめかす＝朝チュン／ほどほど＝描写する／濃い＝プレイや結びを重ねて深く描く';
+  D.dungeon = '陥落の場面の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝堕ちたあとも続くところまで、絶頂のあとも罠が止まらない。厚く＝絶頂の前に体の様子の段落を足す。男性向け＝絶頂や罠に擬音と♡の喘ぎ';
+  D.massage = '施術のあとの描き方。ほのめかす＝暗転して回数だけ／ほどほど＝描写する／濃い＝体位をひとつ多く。男性向けは、客が自分から求めたときと客が主導するときだけ';
+  D.hole = '戻ってくる感覚の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝戻ってくる感覚が多くなる';
+  D.kaihen = '施術の描き方。ほのめかす＝内容は数字だけ／ほどほど＝描写する／濃い＝施術の続きや声を多く';
+  D.succubus = '搾精の場面の描き方。ほのめかす＝短くぼかす／ほどほど＝描写する／濃い＝より多く深く';
+  D.saimin = '暗示の場面の描き方。ほのめかす＝性的な暗示は選ばれず、いたずらだけ／ほどほど＝描写する／濃い＝より多く深く';
+  D.variety = '罰ゲームや楽屋の場面の描き方。ほのめかす＝ぼかす／ほどほど＝描写する／濃い＝延長戦・もう一度まで';
+  D.locker = 'ロッカーの中と、扉が開いたあとの描き方。ほのめかす＝ぼかす／ほどほど＝描写する／濃い＝より深く';
+  D.goukon = 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで';
+  /* r18:end */
   /* 合コン：お持ち帰りの夜（solo-goukon-night.js）。古い設定「お持ち帰りの夜（R18）」は描写の長さへ */
   /* 出られない部屋：条件「エッチ」の場面（room-thick.js）と三人の場面（room-trio.js）。古い設定「エッチの描写（R18）」は描写の長さへ */
-  X.install('whiteroom', { old: ['rmlewd'], from: { lewdLen: function (e) { return e.rmlewd; } }, desc: '条件「エッチ」の場面の描き方。ほのめかす＝触れ合いまでで暗転／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで（三人の場面も同じ）' });
+  X.install('whiteroom', { old: ['rmlewd'], from: { lewdLen: function (e) { return e.rmlewd; } }, desc: D.whiteroom });
   /* 無人島：島の夜（solo-rel-r18.js）と状況の夜（solo-sit-night-r18.js）。古い「島の夜（R18）」：描かない・ほのめかす＝ほのめかす、描写する＝ほどほど・数行で短く */
-  X.install('island', { old: ['ilewd'], def: 'low', from: { lewd: function (e) { return e.ilewd ? (e.ilewd === 'high' ? 'mid' : 'low') : null; }, lewdLen: function (e) { return e.ilewd === 'high' ? 'short' : null; } }, desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
+  X.install('island', { old: ['ilewd'], def: 'low', from: { lewd: function (e) { return e.ilewd ? (e.ilewd === 'high' ? 'mid' : 'low') : null; }, lewdLen: function (e) { return e.ilewd === 'high' ? 'short' : null; } }, desc: D.island });
   /* 宇宙船漂流記：船員どうしの夜・看病の夜・異星の生き物（ship.js・ship-lewd.js）。「夜の出来事の起こりやすさ」は起きる頻度として残す */
-  X.install('ship', { desc: '夜の出来事（船員どうし・看病・異星の生き物）の描き方。ほのめかす＝ぼかした一文／ほどほど＝描写する／濃い＝もう一度求め合うところまで' });
+  X.install('ship', { desc: D.ship });
   /* ゾンビの街：恋人たちの夜（zombie-love.js・zombie-thick.js）・想い続けた相手の夜・状況の夜（solo-rel-r18.js・solo-sit-night-r18.js）。
      襲われる場面も描写の有無に従う（男性向けの文は足さない）。古い「恋人たちの夜（R18）」：描かない・ほのめかす＝ほのめかす、描写する＝ほどほど */
-  X.install('zombie', { old: ['zlewd'], def: 'low', from: { lewd: function (e) { return e.zlewd ? (e.zlewd === 'high' ? 'mid' : 'low') : null; } }, desc: '恋人たちの夜の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
+  X.install('zombie', { old: ['zlewd'], def: 'low', from: { lewd: function (e) { return e.zlewd ? (e.zlewd === 'high' ? 'mid' : 'low') : null; } }, desc: D.zombie });
   /* 邪神村RTA：参加者どうしの夜・媚薬・夜這い・清めの湯・洞窟・儀式・神ごとの夜（solo-jashin-r18*.js・r18-thick.js・story-lewd.js）。「夜の出来事の起こりやすさ」は起きる頻度として残す */
-  X.install('jashin', { desc: '夜の出来事の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで' });
+  X.install('jashin', { desc: D.jashin });
   /* 吹雪の館の殺人：媚薬の夜・誘惑・吊り橋・大浴場・凍える夜など（solo-yakata-r18.js・r18-thick.js・story-lewd.js）。「夜の出来事の起こりやすさ」「快楽殺人の起きやすさ」はそのまま残す */
-  X.install('yakata', { desc: '夜の出来事が起きたときの描き方（起きる回数は「夜の出来事の起こりやすさ」で決まる）。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝果てたあと、もう一度のところまで' });
+  X.install('yakata', { desc: D.yakata });
   /* オメガバース：もとの「描写の濃さ」（朝チュン・ほどほど・濃いめ）を描写の有無にそのまま読み替える（値は同じ low/mid/high）。
      発情期の夜・恋人と番の夜・勢いの夜・愛憎の夜（omega-heat.js・omega-love.js・omega-thick.js）。濃い＝プレイと結びを重ねて深く */
-  X.install('omega', { desc: '夜の描き方。ほのめかす＝朝チュン／ほどほど＝描写する／濃い＝プレイや結びを重ねて深く描く' });
+  X.install('omega', { desc: D.omega });
   /* エロトラップダンジョン：もとの「罠の淫らさ」（id lewd・数値）は罠の強さとして trap に移す。陥落の山場（dungeon-thick.js） */
-  X.install('dungeon', { from: { trap: function (e) { return typeof e.lewd === 'number' ? e.lewd : null; } }, fix: function (e) { if (typeof e.lewd === 'number') delete e.lewd; }, desc: '陥落の場面の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝堕ちたあとも続くところまで、絶頂のあとも罠が止まらない。厚く＝絶頂の前に体の様子の段落を足す。男性向け＝絶頂や罠に擬音と♡の喘ぎ' });
+  X.install('dungeon', { from: { trap: function (e) { return typeof e.lewd === 'number' ? e.lewd : null; } }, fix: function (e) { if (typeof e.lewd === 'number') delete e.lewd; }, desc: D.dungeon });
   /* マッサージ：もとの「施術の過激さ」（id lewd・数値）は harsh に、「行為の描写」（描写する・軽め）は描写の有無（ほどほど・ほのめかす）に読み替える */
-  X.install('massage', { old: ['desc'], fix: function (e) { if (typeof e.lewd === 'number') { if (e.harsh == null) e.harsh = e.lewd; e.lewd = e.desc === 'dark' ? 'low' : 'mid'; } }, from: {}, desc: '施術のあとの描き方。ほのめかす＝暗転して回数だけ／ほどほど＝描写する／濃い＝体位をひとつ多く。男性向けは、客が自分から求めたときと客が主導するときだけ' });
+  X.install('massage', { old: ['desc'], fix: function (e) { if (typeof e.lewd === 'number') { if (e.harsh == null) e.harsh = e.lewd; e.lewd = e.desc === 'dark' ? 'low' : 'mid'; } }, from: {}, desc: D.massage });
   /* 感覚遮断穴：もとの「向こう側の過激さ」（id lewd・数値）は wild に。描写の作風は元からある男性向け（solo-hole-ero.js）。濃い＝戻ってくる感覚が多い */
-  X.install('hole', { from: {}, fix: function (e) { if (typeof e.lewd === 'number') { if (e.wild == null) e.wild = e.lewd; delete e.lewd; } }, desc: '戻ってくる感覚の描き方。ほのめかす＝ぼかした書き方／ほどほど＝描写する／濃い＝戻ってくる感覚が多くなる' });
+  X.install('hole', { from: {}, fix: function (e) { if (typeof e.lewd === 'number') { if (e.wild == null) e.wild = e.lewd; delete e.lewd; } }, desc: D.hole });
   /* 常識改変：もとの「描写の濃さ」（ぼかす・ほどほど・濃いめ）と「描写の作風」をそのまま読み替える（値は同じ）。段落に分けた山場は solo-thick4.js */
-  X.install('kaihen', { desc: '施術の描き方。ほのめかす＝内容は数字だけ／ほどほど＝描写する／濃い＝施術の続きや声を多く' });
+  X.install('kaihen', { desc: D.kaihen });
   /* サキュバスの一夜：もとの「描写の濃さ」と「描写の作風」をそのまま読み替える（値は同じ）。段落に分けた山場は solo-thick4.js */
-  X.install('succubus', { desc: '搾精の場面の描き方。ほのめかす＝短くぼかす／ほどほど＝描写する／濃い＝より多く深く' });
+  X.install('succubus', { desc: D.succubus });
   /* 催眠：もとの「描写の濃さ」と「描写の作風」をそのまま読み替える（値は同じ）。全年齢では「ほのめかす」だけ（作風は出さない） */
-  X.install('saimin', { desc: '暗示の場面の描き方。ほのめかす＝性的な暗示は選ばれず、いたずらだけ／ほどほど＝描写する／濃い＝より多く深く' });
+  X.install('saimin', { desc: D.saimin });
   /* エロバラエティ番組：もとの「描写の濃さ」をそのまま読み替え、長さ・作風を追加（solo-variety.js・solo-variety-thick.js） */
-  X.install('variety', { len: false, desc: '罰ゲームや楽屋の場面の描き方。ほのめかす＝ぼかす／ほどほど＝描写する／濃い＝延長戦・もう一度まで' });
+  X.install('variety', { len: false, desc: D.variety });
   /* 媚薬ロッカー：もとの「描写の濃さ」をそのまま読み替え、長さ・作風を追加（solo-locker.js・locker-thick.js）。男性向けは、相手が応じた行為と扉が開いたあとの夜だけ */
-  X.install('locker', { desc: 'ロッカーの中と、扉が開いたあとの描き方。ほのめかす＝ぼかす／ほどほど＝描写する／濃い＝より深く' });
-  X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: 'お持ち帰りの夜の描き方。ほのめかす＝翌朝の一文だけ／ほどほど＝夜を描写する／濃い＝果てたあと、もう一度求め合うところまで' });
+  X.install('locker', { desc: D.locker });
+  X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: D.goukon });
 })();

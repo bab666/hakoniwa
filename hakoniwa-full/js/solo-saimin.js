@@ -22,6 +22,11 @@
     u.push(t);
     return t;
   }
+  /* 表・数の見出しの言葉と、感じやすさの説明（全年齢版は「放心」） */
+  var W_CL = '放心', W_SENS = '高いほど暗示が体に効きやすく、放心しやすい';
+  /* r18:begin */
+  W_CL = '絶頂'; W_SENS = '高いほど快感が溜まりやすく、絶頂しやすい';
+  /* r18:end */
   function withFresh(f) { var sp = ST.pick; ST.pick = freshPick; try { return f(); } finally { ST.pick = sp; } }
   var scen = {
     id: 'saimin', name: '催眠', kicker: '1〜2人・R18', solo: true, maxCast: 2, minCast: 1,
@@ -42,7 +47,7 @@
     ],
     stats: [
       { id: 'sugg', label: 'かかりやすさ', desc: '高いほど深くかかる。エゴグラムのAC・FCが高い、A・CPが低い人もかかりやすい' },
-      { id: 'sens', label: '感じやすさ', desc: '高いほど快感が溜まりやすく、絶頂しやすい' }
+      { id: 'sens', label: '感じやすさ', desc: W_SENS }
     ],
     perFields: [{ id: 'role', label: '役割', auto: 'かけられる側', options: [{ id: 'target', label: 'かけられる側' }, { id: 'hypno', label: 'かける側' }] }],
     actions: [
@@ -323,7 +328,7 @@
             /* 男性向けの文：本文に絶頂の喘ぎ（{m2}）がなければ、態度ごとの崩れた声を足す */
             if (lew !== 'low' && eroOn(S) && !aTop) { if (!big && !/\{m2\}/.test(body)) t += p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; }
             else if (!thick && !big && lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + (aTop && SM.CLIMAX_TOP ? fresh(p, topVoice(p, 'CLIMAX', [])) : '「' + fresh(p, topL(p, V.CLIMAX[p.persona])) + '」');
-            why += '／絶頂 ' + cl + '回';
+            why += '／' + W_CL + ' ' + cl + '回';
           }
           p.m.depth = clamp(p.m.depth + (full ? 5 : -5), 0, 100);
           why += full ? '：受け入れた' : '：半分だけ受け入れた';
@@ -643,7 +648,7 @@
     else if (p.failed) bits.push('催眠にかからなかった');
     else bits.push(p.woke ? (p.wokeCum || p.wokeMid ? (p.wokeMid ? '行為の最中に我に返った' : snapWord(p) + '我に返った') + (p.swept ? '。それでも流された' : p.reportedNow ? '。その場で通報した' : p.fled ? '。逃げ出した' : '') : '途中で目を覚ました') : p.erased ? '記憶は消えきらなかった' : '記憶は消されなかった');
     bits.push('快楽堕ち ' + Math.round(p.m.fall));
-    bits.push({ confused: 'AC・NP・慎重さと、ほどほどの堕ち', dazed: '深さ ' + Math.round(p.maxDepth) + '・絶頂 ' + p.cnt.climax + '回', accept: 'NP・FCと、' + p.T.label + 'への情', angry: 'CP ' + Math.round(p.eg.CP), report: 'CP・A（正義感と冷静さ）', revenge: '攻撃性とCP', counter: 'A・CP（冷静さと意志の強さ）', sweet: '相手が恋人・NP', shy: 'AC ' + Math.round(p.eg.AC), fall: '快楽に呑まれた', couple: 'NP・FCと、ほどよい堕ち', depend: '憎しみと快楽', laugh: 'FC・NP', noticed: 'A・慎重さ', peace: '平和な暗示だけだった', forget: '', body: '体に暗示が残った' }[route] || '');
+    bits.push({ confused: 'AC・NP・慎重さと、ほどほどの堕ち', dazed: '深さ ' + Math.round(p.maxDepth) + '・' + W_CL + ' ' + p.cnt.climax + '回', accept: 'NP・FCと、' + p.T.label + 'への情', angry: 'CP ' + Math.round(p.eg.CP), report: 'CP・A（正義感と冷静さ）', revenge: '攻撃性とCP', counter: 'A・CP（冷静さと意志の強さ）', sweet: '相手が恋人・NP', shy: 'AC ' + Math.round(p.eg.AC), fall: '快楽に呑まれた', couple: 'NP・FCと、ほどよい堕ち', depend: '憎しみと快楽', laugh: 'FC・NP', noticed: 'A・慎重さ', peace: '平和な暗示だけだった', forget: '', body: '体に暗示が残った' }[route] || '');
     if (p.recorded) bits.push('録画されていた');
     if (p.consent) bits.push('合意の上の催眠プレイ');
     return bits.filter(Boolean).join('／');
@@ -653,7 +658,7 @@
   function finish(S, input, T, HY) {
     T.forEach(function (p) {
       p.notes.push('かけた人：' + p.h + '（' + p.T.label + '・' + p.M.name + '）・かかりやすさ ' + Math.round(p.sus * 100) + '％・最大の深さ ' + Math.round(p.maxDepth));
-      if (!p.failed) p.notes.push('受け入れた暗示：' + (p.got.length ? p.got.map(function (k) { return SM.SUG[k].label; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join('・') : 'なし') + '（半分 ' + p.cnt.part + '・拒んだ ' + p.cnt.ng + '）' + (p.cnt.climax ? '・絶頂 ' + p.cnt.climax + '回' : ''));
+      if (!p.failed) p.notes.push('受け入れた暗示：' + (p.got.length ? p.got.map(function (k) { return SM.SUG[k].label; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join('・') : 'なし') + '（半分 ' + p.cnt.part + '・拒んだ ' + p.cnt.ng + '）' + (p.cnt.climax ? '・' + W_CL + ' ' + p.cnt.climax + '回' : ''));
       p.notes.push('弱い暗示：' + p.weak.map(function (k) { return SM.SUG[k].label; }).join('・') + '・快楽堕ち ' + Math.round(p.m.fall) + (p.trigger ? '・合図の言葉が残った' : '') + (p.recorded ? '・録画された' : ''));
     });
     if (HY) { HY.fate = T.length + '人中' + HY.cnt.ok + '人にかけた'; HY.notes.push('催眠をかけた相手：' + T.map(function (p) { return p.name + '（' + (p.failed ? 'かからず' : p.fate) + '）'; }).join('、')); }
@@ -671,8 +676,8 @@
     var sumOk = T.reduce(function (s, p) { return s + p.cnt.ok; }, 0), sumCl = T.reduce(function (s, p) { return s + p.cnt.climax; }, 0);
     return ST.result(S, input, {
       ending: { title: title, kind: hit.length ? 'over' : 'ok', lines: lines },
-      estats: one ? [['かかりやすさ', Math.round(one.sus * 100) + '％'], ['最大の深さ', String(Math.round(one.maxDepth))], ['受け入れた暗示', one.cnt.ok + '個'], ['絶頂', one.cnt.climax + '回']] : [['かかった人', hit.length + '/' + T.length + '人'], ['受け入れた暗示', sumOk + '個'], ['絶頂', sumCl + '回'], ['いちばん堕ちた', top ? top.name : '—']],
-      table: { title: '催眠の結果', hint: '深さ40でかかり、70で深くかかる。暗示は「受け入れた／全部」。快楽堕ちが高いほど、終わったあとに怒るより求めてしまう。', cols: ['かけた人', 'かけ方', 'かかりやすさ', '最大の深さ', '暗示', '絶頂', '堕ち', '結末'], rows: rows },
+      estats: one ? [['かかりやすさ', Math.round(one.sus * 100) + '％'], ['最大の深さ', String(Math.round(one.maxDepth))], ['受け入れた暗示', one.cnt.ok + '個'], [W_CL, one.cnt.climax + '回']] : [['かかった人', hit.length + '/' + T.length + '人'], ['受け入れた暗示', sumOk + '個'], [W_CL, sumCl + '回'], ['いちばん堕ちた', top ? top.name : '—']],
+      table: { title: '催眠の結果', hint: '深さ40でかかり、70で深くかかる。暗示は「受け入れた／全部」。快楽堕ちが高いほど、終わったあとに怒るより求めてしまう。', cols: ['かけた人', 'かけ方', 'かかりやすさ', '最大の深さ', '暗示', W_CL, '堕ち', '結末'], rows: rows },
       meters: [{ label: '深さ', color: '--accent' }, { label: '快感', color: '--pine', dash: true }, { label: '快楽堕ち', color: '--love' }, { label: '警戒心', color: '--warn', dash: true }],
       meta: T.map(function (p) { return p.T.label; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join('・') + '・暗示' + S.env.rounds + '回',
       summary: '催眠：' + T.map(function (p) { return p.name + '=' + p.fate; }).join('、')

@@ -5,6 +5,11 @@
   var HK = window.HK, DG = HK.DG;
   var clamp = HK.clamp;
   var K = HK.SoloKit = {};
+  /* 見出し・数の言葉（全年齢版は「高鳴り」。一人用の箱庭で共通に使う） */
+  K.W_CL = '高鳴り';
+  /* r18:begin */
+  K.W_CL = '絶頂';
+  /* r18:end */
 
   K.hero = function (S, src, pc) {
     var rng = S.rng, scen = S.scen;
@@ -119,15 +124,15 @@
     h.pleasure = 15 + rng.int(20);
     var text = (rng() < 0.5 ? K.moan(S) : '') + K.fmt(S, K.pick(S, K.climaxPool(S, h)));
     if (opt && opt.silent) return text;
-    var o = K.say(S, { kind: 'climax', tag: '絶頂', text: text, why: h.climax === 1 ? '初めての絶頂' : h.climax + '回目' });
-    if (h.climax === 1) K.key(S, o, '最初の絶頂');
+    var o = K.say(S, { kind: 'climax', tag: K.W_CL, text: text, why: h.climax === 1 ? '初めての' + K.W_CL : h.climax + '回目' });
+    if (h.climax === 1) K.key(S, o, '最初の' + K.W_CL);
     return text;
   };
   /* 後回しにした絶頂を、原因の文のあとに並べる */
   K.logClimax = function (S, list) {
     list.forEach(function (text) {
-      var o = K.say(S, { kind: 'climax', tag: '絶頂', text: text, why: S.h.climax === 1 ? '初めての絶頂' : '' });
-      if (S.h.climax === 1 && !S.flags.firstKey) { S.flags.firstKey = true; K.key(S, o, '最初の絶頂'); }
+      var o = K.say(S, { kind: 'climax', tag: K.W_CL, text: text, why: S.h.climax === 1 ? '初めての' + K.W_CL : '' });
+      if (S.h.climax === 1 && !S.flags.firstKey) { S.flags.firstKey = true; K.key(S, o, '最初の' + K.W_CL); }
     });
   };
   K.settle = function (S) {
@@ -164,6 +169,7 @@
     res.chars = [{ name: h.name, i: 0 }];
     return res;
   };
+  /* r18:begin */
   /* 一人用箱庭（マッサージ・感覚遮断穴）の絶頂の言い回しを足す（DG.CLIMAX と混ぜて使う）。態度9種×堕ち度5段階 */
   function L(s) { return s.split('|'); }
   K.CLIMAX_SOLO = {
@@ -213,4 +219,5 @@
       L('{a}は「ありがとうございます」と言いながら、深く果てた。|{a}は果てたあと、品よく微笑んだ。|{a}は上品に、しかし長く達した。'),
       L('{a}は品も礼儀も忘れて、何度目かの波に沈んで果てた。|{a}は果てて、「どうか、もう一度」と丁寧にねだった。|{a}の上品な言葉は、もう甘い喘ぎにしかならなかった。')]
   };
+  /* r18:end */
 })();

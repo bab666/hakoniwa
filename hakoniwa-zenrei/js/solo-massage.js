@@ -35,13 +35,22 @@
     '肩': L('{m}の指が{a}の肩甲骨の縁に沈んだ。「かなり凝ってますね」――ここまでは、普通のマッサージだった。|首筋をなぞる指が、思いのほか優しかった。{a}は思わず深い息を吐いた。|{m}は温めたタオルを{a}の首に当て、耳の後ろのつぼをゆっくり押した。'),
     '背中': L('{m}「服、少し失礼しますね」背中の留め具が外された。「オイルが付くといけないので」|背骨に沿って、温かいオイルが一筋垂らされた。{m}の手のひらが、それを脇腹まで塗り広げた。|{m}の指が背中を下から上へ、何度も往復した。往復するたびに、脇腹に触れる範囲が少しずつ広がっていく。'),
     '腰': L('{m}「腰、だいぶ張ってますね」と言いながら、親指がタオルの縁の下へ潜り込んだ。|{m}は{a}の腰に体重をかけ、ゆっくりと円を描いた。手のひらの位置が、少しずつ下がっていく。|腰骨の内側を押されて、{a}の体がびくりと跳ねた。{m}「ここ、効きますよね」'),
-    '脚': L('{m}「脚の付け根にリンパ節があるんです。ここを流さないと、むくみが取れなくて」指が内腿を、際どいところまで滑り上がった。|内腿を揉みほぐす手が、膝から付け根まで何度も往復した。往復のたびに、ほんの少しずつ奥へ。|{m}「鼠径部、しっかり流しておきますね」――{a}はそれが医学用語なのか、言い訳なのか判断がつかなかった。'),
-    '臀部': L('{m}「大臀筋が凝り固まってます。座り仕事、多いでしょう」手のひらがお尻を大きく掴んで、揉みしだいた。|お尻の丸みに沿ってオイルが塗られ、親指がその谷間すれすれを押し上げた。|{m}「ここは骨盤の歪みに直結するので」――そう言われると、拒む理由が見つからなかった。'),
-    '胸元': L('{m}「では仰向けに。デコルテのリンパを流します」鎖骨から下へ滑った手が、胸の膨らみの縁を何度もなぞった。|{m}「胸の周りの筋肉も、呼吸に関わるので」手のひらが、胸全体を包み込むように回った。|タオルが胸元までずらされた。{m}「ここ、硬くなってますね。…血行の問題です」'),
-    '下腹': L('{m}「下腹は冷えが溜まりやすいんです」温かい手のひらが、へその下でゆっくりと円を描いた。|指先が下腹の奥を探るように押し込まれた。そこを押されると、なぜか体の芯がきゅっと縮んだ。|{m}「ここをほぐすと、全身の巡りがよくなります」――手は、どんどん下へ降りていった。'),
-    '特別': L('{m}は声を落とした。「ここからは、特別な施術になります。…力を抜いてください」タオルが、完全に取り払われた。|{m}「体の内側の凝りをほぐします」――もう、それはどう考えてもマッサージではなかった。|{m}の指が、誰にも触れさせたことのない場所に、当たり前のように触れた。「力を抜いて。深呼吸」'),
-    '仕上げ': L('{m}「仕上げです」――指の動きが、明らかに目的を持ったものに変わった。|{m}は{a}の耳元で囁いた。「最後まで、全部ほぐしておきますね」|施術台がきしんだ。{m}の手は、{a}がどこで一番声を上げるか、もう全部知っていた。')
+    '脚': L('{m}「脚のむくみ、かなり溜まってますね」足首から膝の裏へ、手のひらがゆっくり滑っていった。思っていたより、上のほうまで。|{m}の手が、足首から膝の上まで何度も往復した。往復するたびに、手の止まる位置が少しずつ上がっていく。|{m}「この辺りのリンパ、しっかり流しておきますね」――{a}はそれが医学用語なのか、言い訳なのか判断がつかなかった。'),
+    '臀部': L('{m}「骨盤まわりが凝り固まってます。座り仕事、多いでしょう」腰の下のほうを、手のひらが大きく押し回した。|{m}「ここは骨盤の歪みに直結するので」――そう言われると、拒む理由が見つからなかった。|オイルを足した{m}の手が、腰骨の下をゆっくりなぞった。タオルが少しずつずれていくのを、{a}は気にしないふりをした。'),
+    '胸元': L('{m}「では仰向けに。首まわりのリンパを流します」鎖骨をなぞった指が、そこで止まらずに少しだけ下へ滑った。|{m}「呼吸が浅いですね。胸まわりの筋肉も、呼吸に関わるので」――タオル越しに置かれた手のひらが、やけに温かかった。|{m}は{a}の鎖骨の下に親指を当て、ゆっくりと円を描いた。「ここ、かなり張ってますね」――{a}は天井の一点を見つめた。'),
+    '下腹': L('{m}「下腹は冷えが溜まりやすいんです」温かい手のひらが、へその下でゆっくりと円を描いた。|{m}「ここをほぐすと、全身の巡りがよくなります」――{m}の手は、タオルの縁ぎりぎりのところで止まっていた。|おなかの上で、{m}の手がゆっくり往復した。{a}は、自分の鼓動がやけに大きく聞こえる気がした。'),
+    '特別': L('{m}は声を落とした。「ここからは、特別な施術になります。……力を抜いてください」――照明が、ふっと一段暗くなった。|{m}はタオルを畳み直して、静かに言った。「目を閉じていてくださいね」――{a}は、言われた通りにした。'),
+    '仕上げ': L('{m}「仕上げです」――そこから先、{m}の手がどこにあったのか、{a}はよく覚えていない。|{m}は{a}の耳元で囁いた。「最後まで、全部ほぐしておきますね」――{a}は、頷くことしかできなかった。')
   };
+  /* 際どい段の施術の文（R18版）。全年齢版は上の穏やかな文のまま */
+  /* r18:begin */
+  ACT['脚'] = L('{m}「脚の付け根にリンパ節があるんです。ここを流さないと、むくみが取れなくて」指が内腿を、際どいところまで滑り上がった。|内腿を揉みほぐす手が、膝から付け根まで何度も往復した。往復のたびに、ほんの少しずつ奥へ。|{m}「鼠径部、しっかり流しておきますね」――{a}はそれが医学用語なのか、言い訳なのか判断がつかなかった。');
+  ACT['臀部'] = L('{m}「大臀筋が凝り固まってます。座り仕事、多いでしょう」手のひらがお尻を大きく掴んで、揉みしだいた。|お尻の丸みに沿ってオイルが塗られ、親指がその谷間すれすれを押し上げた。|{m}「ここは骨盤の歪みに直結するので」――そう言われると、拒む理由が見つからなかった。');
+  ACT['胸元'] = L('{m}「では仰向けに。デコルテのリンパを流します」鎖骨から下へ滑った手が、胸の膨らみの縁を何度もなぞった。|{m}「胸の周りの筋肉も、呼吸に関わるので」手のひらが、胸全体を包み込むように回った。|タオルが胸元までずらされた。{m}「ここ、硬くなってますね。…血行の問題です」');
+  ACT['下腹'] = L('{m}「下腹は冷えが溜まりやすいんです」温かい手のひらが、へその下でゆっくりと円を描いた。|指先が下腹の奥を探るように押し込まれた。そこを押されると、なぜか体の芯がきゅっと縮んだ。|{m}「ここをほぐすと、全身の巡りがよくなります」――手は、どんどん下へ降りていった。');
+  ACT['特別'] = L('{m}は声を落とした。「ここからは、特別な施術になります。…力を抜いてください」タオルが、完全に取り払われた。|{m}「体の内側の凝りをほぐします」――もう、それはどう考えてもマッサージではなかった。|{m}の指が、誰にも触れさせたことのない場所に、当たり前のように触れた。「力を抜いて。深呼吸」');
+  ACT['仕上げ'] = L('{m}「仕上げです」――指の動きが、明らかに目的を持ったものに変わった。|{m}は{a}の耳元で囁いた。「最後まで、全部ほぐしておきますね」|施術台がきしんだ。{m}の手は、{a}がどこで一番声を上げるか、もう全部知っていた。');
+  /* r18:end */
 
   /* 気づいた瞬間 */
   var NOTICE = {
@@ -71,8 +80,13 @@
   var STAY = L('{a}は少し黙ってから、また横になった。「…続けてください。ただし、余計なことはしないで」|{a}は分かっていて、目を閉じた。「…今日だけ、ですから」|{a}は{m}の顔を見上げて、何も言わなかった。それが答えだった。');
   var SECRET = L('{a}は気づかないふりをした。耳だけが真っ赤だった。|{a}は何か言いかけて、やめた。恥ずかしくて、言葉にできなかった。|{a}は枕に顔を埋めて、声を殺した。');
 
+  /* 快楽に負けたあとの体位（{ n: 名前, t: 文 }）。全年齢版は暗転して何回姿勢を変えたかだけを数えるので、文のない枠だけ（数はR18版と同じ）。
+     R18版は下の r18 のかたまりで差し替える */
+  function posSlots(k) { var a = []; for (var i = 0; i < k; i++) a.push({ n: '姿勢' + (i + 1), t: '' }); return a; }
+  var POS = posSlots(8), POS_TOP = posSlots(6), POS_TOP_F = posSlots(5), POS_TOP_FF = posSlots(5), POS_FF = posSlots(9);
+  /* r18:begin */
   /* 快楽に負けたあと：体位を指定される */
-  var POS = [
+  POS = [
     { n: '正常位', t: '{m}「では、仰向けのまま、脚を開いてください」――{a}は言われるままに、施術台の上で脚を開いた。' },
     { n: '後背位', t: '{m}「四つん這いになって、腰を上げて」――{a}は施術台に手をつき、言われた通りに腰を突き出した。' },
     { n: '騎乗位', t: '{m}が施術台に横になった。「今度は、{a}さんが上に」――{a}はためらいながら、その上に跨った。' },
@@ -84,7 +98,7 @@
   ];
 
   /* 受け攻めの指定で、客（{a}）が攻めのとき */
-  var POS_TOP = [
+  POS_TOP = [
     { n: '正常位', t: '{a}は{m}を施術台に仰向けにさせ、脚を開かせた。「今度は、こっちの番だ」――{a}は{m}の中へ、ゆっくりと入っていった。' },
     { n: '後背位', t: '{m}は施術台に手をつき、腰を上げた。「後ろから、どうぞ」――{a}は{m}の腰を掴み、奥まで沈めた。' },
     { n: '騎乗位', t: '{a}は施術台に横になり、{m}の腰を掴んで自分の上に跨がらせた。「動いていいのは、言われたときだけ」――{a}は下から{m}を突き上げ、{m}の腰が逃げるたびに引き戻した。' },
@@ -93,7 +107,7 @@
     { n: '側位', t: '{m}は施術台に横向きになり、片脚を上げた。「この角度だと、楽ですよ」――{a}は{m}を後ろから抱きすくめ、そのまま繋がった。' }
   ];
   /* 客（{a}）が攻めの女性で、施術者が男性のとき（立場逆転のあと） */
-  var POS_TOP_F = [
+  POS_TOP_F = [
     { n: '騎乗位', t: '{a}は{m}を施術台に仰向けにさせ、その腰に跨った。「動かないで。ペースは、こっちが決める」――{a}は見下ろしたまま、自分の好きな深さと速さで腰を揺らした。' },
     { n: '手で', t: '{a}は{m}を施術台に座らせ、オイルを手に取った。「さっきのお返し」――{a}の手が、{m}のものをゆっくりと扱き上げた。{m}は何度も施術台の縁を掴み直した。' },
     { n: '対面座位', t: '{a}は施術台に腰かけた{m}の膝に跨り、両肩を押さえつけた。「手は後ろ。触っていいとは言ってない」――{a}は自分のペースで動き、{m}の息が上がっていくのを見下ろしていた。' },
@@ -101,14 +115,14 @@
     { n: '焦らし', t: '{a}は{m}の上に跨ったまま、腰を浮かせては止めた。「さっき、何回『もう少し』って言われたっけ」――{m}は答えられずに、施術台の縁を握りしめた。' }
   ];
   /* 女性どうし（女性セラピストと女性の客）。マッサージの器具は使ってよい */
-  var POS_TOP_FF = [
+  POS_TOP_FF = [
     { n: '指で', t: '{a}は{m}を施術台に仰向けにさせ、オイルで濡れた指を二本、{m}の脚のあいだにゆっくりと沈めた。「さっきの『特別な施術』、こうでしょう？」――{m}の囁き声が、上ずった。' },
     { n: '器具で', t: '{a}は棚から施術用のハンディマッサージャーを取り、スイッチを入れた。「本来は肩用、だっけ」――振動する先端を押し当てられて、{m}は施術台の上で背中を反らせた。' },
     { n: '脚を絡めて', t: '{a}は{m}の脚を開かせて自分の脚と交差させ、オイルで濡れた熱いところ同士を押しつけた。腰を揺らすのは{a}だけだった。{m}は施術台の縁を握りしめていた。' },
     { n: '口で', t: '{a}は{m}を施術台の端に座らせ、その脚のあいだに顔を寄せた。「力を抜いて。深呼吸」――さっき言われた台詞を返しながら、{a}は舌でゆっくりと{m}を追い詰めた。' },
     { n: '胸と指で', t: '{a}は{m}を後ろから抱きすくめ、オイルで濡れた手で胸を包んだ。「さっきのお返し、全部ね」――もう片方の手が脚のあいだに滑り込むと、{m}の背中が{a}にもたれかかった。' }
   ];
-  var POS_FF = [
+  POS_FF = [
     { n: '仰向け', t: '{m}「仰向けのまま、脚を開いてください」――{m}は{a}の脚のあいだに膝をつき、オイルで濡れた指を、ゆっくりと二本沈めた。' },
     { n: '四つん這い', t: '{m}「四つん這いになって、腰を上げて」――{m}は後ろから{a}の腰を抱え、指先で中のざらついたところを探り当てた。' },
     { n: '脚を絡めて', t: '{m}は施術台に上がり、{a}と脚を交差させた。「今度は、わたしも一緒に」――オイルで濡れた肌と肌が、一番熱いところで擦れ合った。' },
@@ -119,6 +133,7 @@
     { n: '背面座位', t: '{m}は{a}を後ろ向きに膝の上へ座らせた。「鏡、見てください」――鏡の中で、{m}の指が{a}の脚のあいだに沈んでいくのが見えた。' },
     { n: '口で', t: '{m}は{a}を施術台の端に座らせ、自分は床に膝をついた。「最後は、口で流しますね」――温かい舌が、{a}の脚のあいだをゆっくりと舐め上げた。' }
   ];
+  /* r18:end */
 
   /* 一回の結果の中で同じ文を繰り返さない（まだ使っていない文から選び、使い切ったら、いちばん前に使ったものから戻す）。
      run の間だけ K.pick をこれに差し替える（K.tail・K.climax の反応や喘ぎにも効く）。
@@ -201,8 +216,10 @@
     if (c.mode === 'curtain') {
       var st0 = (input.env && input.env.staff) || 'gentle', rng = HK.rng((((input.seed || 1) * 977) + 3) >>> 0);
       var ks = Object.keys(STAFF).filter(function (k) { return k !== 'duo' && k !== st0; });
-      var a = run(input, { ci: 0, other: input.chars[1].name });
-      var b = run(input, { ci: 1, seedAdd: 7919, staff: ks[rng.int(ks.length)], other: input.chars[0].name });
+      /* カーテン越しの二人は、使った文の覚えを分け合う（並んだ二つの施術で同じ文が続かないように） */
+      var share = {};
+      var a = run(input, { ci: 0, other: input.chars[1].name, share: share });
+      var b = run(input, { ci: 1, seedAdd: 7919, staff: ks[rng.int(ks.length)], other: input.chars[0].name, share: share });
       return MC.merge(input, a, b, rng);
     }
     return run(input);
@@ -216,6 +233,7 @@
       if (o.seedAdd) S.rng = HK.rng((((input.seed || 1) + o.seedAdd) >>> 0) || 1);
       S.h = K.hero(S, input.chars[o.ci || 0], (input.perChar && input.perChar[o.ci || 0]) || {}); S.party = [S.h];
     }
+    if (o.share) { S._fu = o.share.fu = o.share.fu || []; S._lwShare = o.share.lw = o.share.lw || []; }
     var h = S.h, rng = S.rng, env = S.env;
     h.i = o.ci || 0;
     /* 施術者：住人（TR）なら、気質から店の施術者の型（sk）に当てる（一言・言い訳の通りやすさ）。モブなら設定の型 */
@@ -264,11 +282,17 @@
     var dark = lcf ? LWX.lv(env) === 'low' : env.desc === 'dark', MD = HK.MassageMore.DARK;
     S.dark = dark;
     var eroOn = !!(lcf && !dark && LWX.ero(env) && HK.Ero && HK.MassageThick && HK.MassageThick.ERO), highOn = !!(lcf && LWX.high(env));
+    /* 後半の山場を厚くする段落（solo-massage-lewd.js）。物語とは別の乱数で選ぶ。kindR＝客が受ける組、kindT＝客が主導する組 */
+    var ML = !dark && HK.MassageLewd;
+    S.lwSeed = input.seed || 1;
+    var kindR = ff ? 'ff' : staff.g === 'f' && h.gender !== 'f' ? 'lady' : 'recv', kindT = custF ? (staff.g === 'm' ? 'topF' : 'topFF') : 'top';
+    function lwc(dom) { return { S: S, h: h, ero: eroOn, dom: dom, fmt: function (t) { return K.fmt(S, t); } }; }
+    function lwOn() { return !!(ML && ML.on(S, env)); }
     function logC(list) {
       if (!dark) return K.logClimax(S, list);
       if (!list.length) return;
-      var o = K.say(S, { kind: 'climax', tag: '絶頂', text: K.fmt(S, K.pick(S, MD.climax)) + (list.length > 1 ? '（' + list.length + '回）' : ''), why: h.climax === list.length ? '初めての絶頂' : '' });
-      if (!S.flags.firstKey) { S.flags.firstKey = true; K.key(S, o, '最初の絶頂'); }
+      var o = K.say(S, { kind: 'climax', tag: K.W_CL, text: K.fmt(S, K.pick(S, MD.climax)) + (list.length > 1 ? '（' + list.length + '回）' : ''), why: h.climax === list.length ? '初めての' + K.W_CL : '' });
+      if (!S.flags.firstKey) { S.flags.firstKey = true; K.key(S, o, '最初の' + K.W_CL); }
     }
     var shift = env.shady / 100 * 0.8 + (course === 'special' ? 0.8 : 0);
     var M = HK.MassageMore, sleeping = 0, slept = false, reversed = false, extended = false, hands = 1;
@@ -366,6 +390,8 @@
       K.key(S, orv, '施術者を押し倒した');
       var rv = dark ? [K.pick(S, MD.reverse)] : S.rng.shuffle(M.REVERSE_ACT).slice(0, 2);
       rv.forEach(function (t2) { K.say(S, { kind: 'ev', tag: '逆転', text: K.fmt(S, t2), why: '' }); });
+      /* 厚く：客が施術者を責めはじめるところを段落で */
+      if (!dark && lwOn()) K.say(S, { kind: 'ev', tag: '逆転', text: ML.rev(lwc(true), kindT).replace(/^\n\n/, ''), why: '主導権は客の側' });
       if (top && !dark) {
         var tp = thick(true) || K.pick(S, posTop());
         K.say(S, { kind: 'ev', tag: tp.n, text: K.fmt(S, tp.t), why: '主導権は最後まで客の側' });
@@ -506,7 +532,7 @@
     if (extended && !hardTop && !left && !reversed && !fell) {
       S.step = seq.length; K.step(S, '延長');
       var rx2 = K.stim(S, 40, { part: 'all', mult: 1.2, defer: true });
-      K.say(S, { kind: 'ev', tag: '延長', text: K.fmt(S, K.pick(S, ['延長の三十分は、それまでの九十分よりずっと長かった。{m}の手はもう、遠慮をしなかった。', '{m}「延長分は、特に念入りに」――{a}は延長を頼んだことを、ほんの少しだけ後悔した。', '延長の間、{a}は時計を見なかった。見る余裕がなかった。'])) + phUp(2) + tail(0.7), why: '延長した' });
+      K.say(S, { kind: 'ev', tag: '延長', text: K.fmt(S, K.pick(S, ['延長の三十分は、それまでの九十分よりずっと長かった。{m}の手はもう、遠慮をしなかった。', '{m}「延長分は、特に念入りに」――{a}は延長を頼んだことを、ほんの少しだけ後悔した。', '延長の間、{a}は時計を見なかった。見る余裕がなかった。'])) + phUp(2) + tail(0.7) + (lwOn() ? ML.ext(lwc(false)) : ''), why: '延長した' });
       logC(rx2.climaxes);
       if (K.settle(S)) fell = true;
     }
@@ -518,12 +544,18 @@
       /* 客が攻めなら客が主導する体位（女性どうし・女性の客×男性の施術者・男性の体で攻める客）、受けなら施術者が主導する体位 */
       /* 住人の女性の施術者が男性の客を導く（女攻め×男）ときは、跨る・手で・口での体位（solo-massage-thick.js の POS_LADY） */
       var ladyR = !!TR && staff.g === 'f' && !ff, PL = (HK.MassageThick && HK.MassageThick.POS_LADY) || POS;
-      var pool = S.rng.shuffle(noMut(cTop() ? posTop() : ff ? POS_FF : ladyR ? PL : POS)).slice(0, nPos);
+      var pool = S.rng.shuffle(noMut(cTop() ? posTop() : ff ? POS_FF : ladyR ? PL : POS));
+      /* この回（カーテン越しの相手を含む）でまだ使っていない体位の文を先に */
+      var uP = S._fu = S._fu || [];
+      pool = pool.filter(function (p) { return uP.indexOf(p.t) < 0; }).concat(pool.filter(function (p) { return uP.indexOf(p.t) >= 0; })).slice(0, nPos);
+      pool.forEach(function (p) { uP.push(p.t); });
       var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])), why: '快楽に負けた（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
       K.key(S, head, '快楽に負けた');
       /* 陥落の文が変わり目を兼ねるので、ここからは段階を上げるだけ（一文は足さない） */
       ph = Math.max(ph, fell ? 3 : 2);
       var custTop = cTop();
+      /* 厚く：堕ちた瞬間を段落で（客が主導する組は、体位の場面のほうで厚くする） */
+      if (!dark && !custTop && lwOn()) head.text += ML.fall(lwc(false), kindR);
       var darkN = 0, c0 = h.climax;
       if (dark) K.say(S, { kind: 'sys', tag: '暗転', text: K.fmt(S, K.pick(S, MD.blackout)), why: '描写：軽め（暗転）' });
       pool.forEach(function (p, j) {
@@ -541,24 +573,28 @@
             ex = (p.thick ? '\n\n' : '') + K.fmt(S, HK.Ero.fill(S, K.pick(S, EK[ek]), h));
             h.eroDom = d0;
           }
-          K.say(S, { kind: 'ev', tag: p.n, text: K.fmt(S, p.t) + ex + (rr.climaxes.length || p.thick ? '' : tail(0.8)), why: '体位の指定：' + p.n });
+          /* 厚く：二つめ以降の体位は盛り上がっていく段落、最後の体位は果てるまでの段落（濃いなら、もう一度）を足す */
+          var lw = '', lk = custTop ? kindT : kindR;
+          if (j === pool.length - 1) { if (lwOn()) lw = ML.peak(lwc(custTop), lk, highOn); }
+          else if (j >= 1 && lwOn()) lw = ML.mid(lwc(custTop), lk);
+          K.say(S, { kind: 'ev', tag: p.n, text: K.fmt(S, p.t) + ex + lw + (function (tl) { return lw ? '' : tl; })(rr.climaxes.length || p.thick ? '' : tail(0.8)), why: '体位の指定：' + p.n });
           K.logClimax(S, rr.climaxes);
         }
         /* 落ちすぎた客は、行為の最中に新人の練習台に誘われる（断れない） */
-        if (M.TRAINEE_ASK && !TR && !S.flags.trainee && j >= 1 && h.corrupt >= 100 && h.climax >= 6 && rng() < 0.55) {
+        if ((M.TRAINEE_ASK || (dark && MD.traineeAsk)) && !TR && !S.flags.trainee && j >= 1 && h.corrupt >= 100 && h.climax >= 6 && rng() < 0.55) {
           S.flags.trainee = true;
           var hesi = ['proud', 'stern', 'tsun', 'cool', 'shy', 'polite'].indexOf(h.persona) >= 0 ? rng() < 0.8 : rng() < 0.3;
           var tt = K.fmt(S, K.pick(S, dark ? MD.traineeAsk : ff ? M.TRAINEE_ASK_FF : M.TRAINEE_ASK)) + ' ';
           if (hesi) tt += K.fmt(S, K.pick(S, M.TRAINEE_HESITATE[h.persona] || M.TRAINEE_HESITATE.gentle)) + ' ' + K.fmt(S, K.pick(S, dark ? MD.traineePress : custTop ? M.TRAINEE_PRESS_TOP : ff ? M.TRAINEE_PRESS_FF : M.TRAINEE_PRESS));
           else tt += K.fmt(S, K.pick(S, M.TRAINEE_YES[h.persona] || M.TRAINEE_YES.gentle));
           h.pleasure += 40; while (h.pleasure >= 100) K.climax(S);
-          var otr = K.say(S, { kind: 'sys', tag: '練習台の約束', text: tt, why: '快楽に落ちきった（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・絶頂 ' + h.climax + '回）／もう断れなかった' + (hesi ? '（性格上、返事を渋った）' : '') });
+          var otr = K.say(S, { kind: 'sys', tag: '練習台の約束', text: tt, why: '快楽に落ちきった（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・' + K.W_CL + ' ' + h.climax + '回）／もう断れなかった' + (hesi ? '（性格上、返事を渋った）' : '') });
           K.key(S, otr, '新人の練習台になると約束した');
         }
       });
       if (dark) {
         var nC = h.climax - c0;
-        K.say(S, { kind: 'climax', tag: '明かりが点いた', text: K.fmt(S, K.pick(S, MD.lightsOn)) + (HK.SAFE_ON ? '――暗闇の中で「次は、こちらの姿勢で」と言われたのは' + positions.length + '回。' + h.name + 'が声を殺しきれなかったのは、' + nC + '回だった。' : '――暗闇の中で指定された体位は' + positions.length + 'つ。' + h.name + 'が達したのは、' + nC + '回だった。'), why: HK.SAFE_ON ? '姿勢を変えた ' + positions.length + '回／声 ' + nC + '回' : '体位 ' + positions.length + 'つ／絶頂 ' + nC + '回' });
+        K.say(S, { kind: 'climax', tag: '明かりが点いた', text: K.fmt(S, K.pick(S, MD.lightsOn)) + (HK.SAFE_ON ? '――暗闇の中で「次は、こちらの姿勢で」と言われたのは' + positions.length + '回。' + h.name + 'が声を殺しきれなかったのは、' + nC + '回だった。' : '――暗闇の中で指定された体位は' + positions.length + 'つ。' + h.name + 'が達したのは、' + nC + '回だった。'), why: HK.SAFE_ON ? '姿勢を変えた ' + positions.length + '回／声 ' + nC + '回' : '体位 ' + positions.length + 'つ／' + K.W_CL + ' ' + nC + '回' });
       }
     }
 
@@ -570,7 +606,7 @@
     else adv.push('気づいたのは「' + S.flags.noticedAt + '」の段階。');
     if (fell) adv.push('快楽に負けたのは、感じやすさ ' + h.stats.sense + '・CP ' + Math.round(h.eg.CP) + 'で、昂りに理性が追いつかなかったから。');
     if (left) adv.push('帰る決断ができたのは、CP（' + Math.round(h.eg.CP) + '）と理性の残り（' + Math.round(h.reason) + '）のおかげ。');
-    return done(K.finish(S, input, E, adv, { meta: staff.n + (TR ? '（住人）' : '') + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['気づいた', S.flags.noticedAt || '気づかず'], ['騙された', deceived + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.min(100, Math.round(h.corrupt))], ['理性', Math.max(0, Math.round(h.reason))]].concat(positions.length ? [dark ? (HK.SAFE_ON ? ['暗闇の中で姿勢を変えた', positions.length + '回'] : ['暗闇の中の体位', positions.length + 'つ']) : ['指定された体位', positions.join('→')]] : []), label3: '施術' }));
+    return done(K.finish(S, input, E, adv, { meta: staff.n + (TR ? '（住人）' : '') + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['気づいた', S.flags.noticedAt || '気づかず'], ['騙された', deceived + '回'], [K.W_CL, h.climax + '回'], ['堕ち度', Math.min(100, Math.round(h.corrupt))], ['理性', Math.max(0, Math.round(h.reason))]].concat(positions.length ? [dark ? (HK.SAFE_ON ? ['暗闇の中で姿勢を変えた', positions.length + '回'] : ['暗闇の中の体位', positions.length + 'つ']) : ['指定された体位', positions.join('→')]] : []), label3: '施術' }));
   }
 
   function ending(S, x) {
@@ -593,7 +629,7 @@
     if (h.goal.id === 'heal') L0.push(h.name + 'の肩こりは、本当にきれいに治っていた。それが一番、腹立たしかった。');
     if (h.goal.id === 'free') L0.push('タダ券の裏には、小さく「二回目以降は通常料金」と書いてあった。');
     L0.push(HK.SoloKit.fmt(S, S.rng.pick(M.AFTERSHOP[h.persona])));
-    L0.push(h.name + '：絶頂 ' + h.climax + '回・堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・理性 ' + Math.max(0, Math.round(h.reason)));
+    L0.push(h.name + '：' + K.W_CL + ' ' + h.climax + '回・堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・理性 ' + Math.max(0, Math.round(h.reason)));
     return { type: kind, kind: kind, title: title, lines: L0 };
   }
   HK.SCEN_ORDER.push('massage');

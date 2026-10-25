@@ -12,6 +12,36 @@
   function pick(S, arr) { return LK.pick ? LK.pick(S, arr) : ST.pick(S, arr); }
   function L(s) { return s.split('|'); }
 
+  /* ---------- 全年齢版：扉が開いたあと（誘うところまで書いて、その先は暗転する） ----------
+     R18版は、下の r18 のかたまりの LK.bed（誘い方・最中の展開・結び）で差し替える。{q}=誘う人 {o}=相手、{a}=攻め {b}=受け */
+  var SOFT = {
+    invite: {
+      quiet: L('ロッカーの中では、ずっと理性を保っていた{q}だった。その{q}が、外に出たとたん{o}の手をそっと握った。「……もう少しだけ、一緒にいて」|「お先にどうぞ」と出口を譲ったのは{q}の方だった。けれど{o}が一歩踏み出す前に、{q}は{o}の袖を指先でつまんでいた。「……やっぱり、まだ帰らないで」|一番おとなしかった{q}が、部屋の奥のベッドに腰かけて、{o}に向かって小さく手招きした。耳まで赤かった。'),
+      eager: L('{q}は外に出るなり、{o}を正面から抱きしめた。「……ずっと、こうしたかった」――二人は、出口に背を向けた。|{q}は「もう無理」とだけ言って、{o}の手を引いた。出口の方には、一度も目を向けなかった。|{q}は{o}の手を握ったまま、部屋の奥のベッドへ歩いていった。{o}は、その手を振りほどかなかった。'),
+      stop: L('{o}は「……帰ろう。今なら、まだ戻れる」と出口へ向かいかけた。その手を、{q}が後ろから掴んだ。「戻らなくて、いい」――{o}の足は、それきり出口に向かなかった。|「ガスのせいだから、もう出よう」と言ったのは{o}だった。{q}は何も言わずに、{o}を抱き寄せた。{o}は、もう出口を見なかった。|{o}が出口のドアノブに手をかけたところで、{q}が小さく名前を呼んだ。振り返った{o}は、そのまま動けなくなった。'),
+      order: L('{q}はベッドに腰かけ、従者である{o}を見上げた。「来い。……今度は、我慢しなくていい」|{q}は{o}の手を取った。「よく耐えた。……今夜は、そばにいろ」――{o}は、深く頭を下げてから従った。|{q}は、ずっと耐えていた{o}の頬に手を添えた。「もういい。……命令だ、隣にいろ」')
+    },
+    label: { quiet: 'おとなしかった方から誘う', eager: '待ちきれずに', stop: '帰ろうとして引き戻される', order: '主の命令' },
+    fade: L('――そこから先は、二人だけの秘密になった。|――部屋の明かりが消えたあとのことは、二人だけが知っている。|――その夜のことを、二人は誰にも話していない。'),
+    morning: L('翌朝、二人は少しだけ照れくさそうに目を逸らした。ガスの甘い匂いは、もうどこにも残っていなかった。|朝の光の中で、{b}は{a}の肩にもたれたまま、しばらく黙っていた。「……昨日のこと、覚えてる？」「全部」|朝、目を覚ました{a}は、隣で眠る{b}の寝顔を見て、そっと笑った。|部屋を出たのは、すっかり明るくなってからだった。二人は並んで歩きながら、一度も手を離さなかった。')
+  };
+  LK.bed = function (S, o) {
+    var rng = S.rng, x = o.x, y = o.y, A = o.A, B = o.B;
+    var quiet = A.cnt.make < B.cnt.make ? A : B.cnt.make < A.cnt.make ? B : (A.m.reason >= B.m.reason ? A : B), loud = quiet.o;
+    var q, oo, kind;
+    if (o.master && o.servant && o.servant.cnt.hold >= 1 && rng() < 0.6) { q = o.master; oo = o.servant; kind = 'order'; }
+    else if (!o.plotter && rng() < 0.08 + ((quiet.cnt.refuse + quiet.cnt.hold) * 0.25 + quiet.tr.ac * 0.3) * 0.7) { q = quiet; oo = loud; kind = 'quiet'; }
+    else if (!o.plotter && rng() < 0.25) { q = loud; oo = quiet; kind = 'stop'; }
+    else { q = o.plotter || loud; oo = q.o; kind = 'eager'; }
+    var t1 = (o.how === 'timeout' ? LK.BED.timeout[0] : '') + ST.fmt(pick(S, SOFT.invite[kind]), { q: q.name, o: oo.name });
+    var o3 = ST.say(S, { actors: [A, B], tag: 'ベッドへ', text: t1, why: { quiet: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った', eager: q.name + 'が待ちきれなかった' + (o.plotter === q ? '（思惑どおり）' : ''), stop: oo.name + 'は帰ろうとしたが、' + q.name + 'が引き止めた', order: '主の' + q.name + 'が、耐えた従者に許しを与えた' }[kind], mag: 40 });
+    ST.key(S, o3, kind === 'quiet' ? 'おとなしかった' + q.name + 'から誘った' : '部屋から出ずに二人きりに');
+    ST.say(S, { actors: [A, B], tag: '二人きりの夜', text: pick(S, SOFT.fade), why: '関係：' + o.REL_LABEL[o.rel], mag: 45, kind: 'climax' });
+    ST.say(S, { actors: [A, B], tag: '翌朝', text: ST.fmt(pick(S, SOFT.morning), { a: x.name, b: y.name }), why: '媚薬が切れるまで、二人は部屋を出なかった', mag: 30 });
+    return [SOFT.label[kind]];
+  };
+
+  /* r18:begin */
   /* ---------- 誘い方 ---------- */
   var INVITE = {
     /* おとなしかった方から誘う：誘う人が攻めのとき／受けのとき */
@@ -270,4 +300,5 @@
     Object.keys(FM.mid).forEach(function (k) { n += FM.mid[k].length; });
     return n;
   };
+  /* r18:end */
 })();

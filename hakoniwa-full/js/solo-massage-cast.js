@@ -218,7 +218,7 @@
     var E = { type: kind, kind: kind, title: 'カーテン越し ― ' + nA + '：' + short(EA.title) + '／' + nB + '：' + short(EB.title), lines: lines };
     var st = function (R, key) { var f = (R.estats || []).filter(function (s) { return s[0] === key; })[0]; return f ? f[1] : ''; };
     var estats = [[nA, short(EA.title)], [nB, short(EB.title)]];
-    ['気づいた', '騙された', '絶頂'].forEach(function (key) { estats.push([key, nA + ' ' + st(A, key) + '・' + nB + ' ' + st(B, key)]); });
+    ['気づいた', '騙された', (HK.SoloKit && HK.SoloKit.W_CL) || '高鳴り'].forEach(function (key) { estats.push([key, nA + ' ' + st(A, key) + '・' + nB + ' ' + st(B, key)]); });
     var res = {};
     for (var p in A) res[p] = A[p];
     res.log = log; res.hist = hist; res.turns = turns; res.ending = E; res.outcome = E.title;

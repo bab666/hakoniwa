@@ -6,11 +6,23 @@
 (function () {
   'use strict';
   var HK = window.HK, LK = HK.LOCKER, ST = HK.Story, clamp = HK.clamp;
+  /* 表・数の見出しの言葉（全年齢版は「高鳴り」） */
+  var W_CL = '高鳴り';
+  /* r18:begin */
+  W_CL = '絶頂';
+  /* r18:end */
   if (!LK || !ST) return;
 
+  /* 体の関係の相手を固定している人の説明（全年齢版の言い方） */
+  var W_SEXL = '心に決めた相手を';
+  /* r18:begin */
+  W_SEXL = '性行為の相手を';
+  /* r18:end */
   var scen = {
     id: 'locker', name: '媚薬ロッカー', kicker: '1〜6人・R18', solo: true, maxCast: 6, minCast: 1,
+    /* r18:begin */
     desc: '媚薬の充満する狭いロッカーに閉じ込められた二人。仕掛けを解いて無事に脱出できるか。手を出すのは誰か、乗るのか嗜めるのか、拘束されたまま生殺しか、狭い中で焦らしセックスか。出たあと、目の前のベッドで続きをするかも。一人なら、ひとりきりで耐えるか慰めるか、見回りの人に見つかるか。三人以上なら、倉庫に並ぶロッカーに分かれて押し込まれ、誰と誰がくっつくかは運しだい。※成人キャラクター向け',
+    /* r18:end */
     note: '※登場人物はすべて成人として扱います。',
     unit: 'コマ', simulate: function (input) { return run(input); },
     castHint: '1〜6人。2人のときが本筋で、二人の関係（恋人・主従・ライバルなど）は「既存の関係」から決まります。まれに、自分から望んで閉じ込められている人がいます（役割で指定もできます。2人のときだけ）。1人なら一人きりのロッカー、3人以上なら倉庫のロッカーに二人ずつ・三人ずつ分かれて閉じ込められます。',
@@ -106,7 +118,7 @@
     if (r18No && !ngP) { ngP = true; tieNL = true; nlWhy = r18No.name + 'はR18に参加しない'; }
     /* 性行為の相手を別の人に固定している（または固定した相手がこの箱庭にいない）：体の関係にならない（pos.js の向きの判定で clash になる） */
     var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (A.sexLock != null && A.sexLock !== B.i ? A : B) : null;
-    var sexWhy = sexP ? sexWho.name + 'は、性行為の相手を' + (input.chars[sexWho.sexLock] ? input.chars[sexWho.sexLock].name + 'に' : 'ほかの人に') + '決めている' : '';
+    var sexWhy = sexP ? sexWho.name + 'は、' + W_SEXL + (input.chars[sexWho.sexLock] ? input.chars[sexWho.sexLock].name + 'に' : 'ほかの人に') + '決めている' : '';
     if (ngP) plotter = null;
     /* 拘束 */
     var bind = env.bind === 'random' ? rng.pick(['both', 'one', 'none', 'both']) : env.bind;
@@ -256,7 +268,7 @@
         p.m.reason = clamp(p.m.reason - (3 + p.m.heat * 0.13 - (p.stats.gaman || 3) * 0.7 - p.tr.cp * 2), 0, 100);
         var after = stage(p);
         if (after > before) p.gasShown = after;
-        if (after > before) ST.sayB(S, { actors: [p], tag: ['', '火照り', '発情', '限界'][after], text: ST.fmt(pk((p.noR18 && LK.GAS_SOFT ? LK.GAS_SOFT : LK.GAS)[after]), { a: p.name, b: p.o.name }), why: p.name + 'の発情 ' + Math.round(p.m.heat) + '・理性 ' + Math.round(p.m.reason) + '（我慢 ' + p.stats.gaman + '）', mag: after * 6 }, p.name + 'の発情が進んだ', after >= 3);
+        if (after > before) ST.sayB(S, { actors: [p], tag: ['', '火照り', '発情', '限界'][after], text: ST.fmt(pk(((p.noR18 || !LK.GAS) && LK.GAS_SOFT ? LK.GAS_SOFT : LK.GAS)[after]), { a: p.name, b: p.o.name }), why: p.name + 'の発情 ' + Math.round(p.m.heat) + '・理性 ' + Math.round(p.m.reason) + '（我慢 ' + p.stats.gaman + '）', mag: after * 6 }, p.name + 'の発情が進んだ', after >= 3);
       });
       /* 敵視（hate-kit.js）：狭いロッカーの中で、一方が近づき、一方が嫌悪する */
       if (HK.HateKit && rng() < 0.3) {
@@ -539,7 +551,7 @@
       else if (p.cnt.accept >= 1) f = '流された';
       else f = p.m.reason > 30 ? '理性を保ちきった' : 'ぎりぎりで踏みとどまった';
       p.fate = f + (outcome === 'bed' ? '・ベッドで激しく' : '');
-      p.notes.push('発情 ' + Math.round(p.m.heat) + '・理性 ' + Math.round(p.m.reason) + '・絶頂 ' + p.cnt.climax + '回');
+      p.notes.push('発情 ' + Math.round(p.m.heat) + '・理性 ' + Math.round(p.m.reason) + '・' + W_CL + ' ' + p.cnt.climax + '回');
       p.notes.push('仕掛けた ' + p.cnt.make + '回・応じた ' + p.cnt.accept + '回・嗜めた ' + p.cnt.refuse + '回' + (p.cnt.hold ? '・耐えた ' + p.cnt.hold + '回' : '') + (p.cnt.solve ? '・仕掛けを解いた ' + p.cnt.solve + '回' : ''));
     });
     var mins = (escTurn + 1) * 5;
@@ -555,8 +567,8 @@
     var rows = P.map(function (p) { return { i: p.i, rank: '', cells: [Math.round(p.m.heat) + '', Math.round(p.m.reason) + '', String(p.cnt.make), String(p.cnt.refuse), String(p.cnt.climax), String(p.cnt.solve), p.fate] }; });
     return ST.result(S, input, {
       ending: { title: title, kind: outcome === 'clean' ? 'ok' : 'over', lines: lines },
-      estats: [['脱出まで', how === 'timeout' ? '時間切れ' : mins + '分'], ['関係', RL[rel]], ['受け入れた', pair.acts + '回'], ['絶頂', (A.cnt.climax + B.cnt.climax) + '回']],
-      table: { title: '二人の状態', hint: '発情が高く理性が低いほど手を出しやすい。乗るか嗜めるかは関係と性格しだい。', cols: ['発情', '理性', '仕掛けた', '嗜めた', '絶頂', '解いた', '結末'], rows: rows },
+      estats: [['脱出まで', how === 'timeout' ? '時間切れ' : mins + '分'], ['関係', RL[rel]], ['受け入れた', pair.acts + '回'], [W_CL, (A.cnt.climax + B.cnt.climax) + '回']],
+      table: { title: '二人の状態', hint: '発情が高く理性が低いほど手を出しやすい。乗るか嗜めるかは関係と性格しだい。', cols: ['発情', '理性', '仕掛けた', '嗜めた', W_CL, '解いた', '結末'], rows: rows },
       meters: [{ label: '発情', color: '--love' }, { label: '理性', color: '--accent' }, { label: '快感', color: '--pine', dash: true }, { label: '脱出', color: '--partner', dash: true }],
       meta: RL[rel] + '・拘束' + { both: 'あり', one: '片方', none: 'なし' }[bind] + '・媚薬' + env.dose,
       summary: '媚薬ロッカー：' + title

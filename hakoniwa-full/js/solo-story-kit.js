@@ -139,6 +139,11 @@
 
   /* ======================= 結果表示 ======================= */
   var V = HK.StoryView = {}, keyOnly = false, lewdOnly = false, who = null, lastHost = null, lastRes = null;
+  /* 「決め手だけ」の札の名前（R18版は絶頂の記録も一緒に出す） */
+  var KEY_LB = '決め手だけ';
+  /* r18:begin */
+  KEY_LB = '決め手と絶頂だけ';
+  /* r18:end */
   function pc(i) { return 'var(--p' + (i % 30) + ')'; }
   function av(res, i, size) { var h = res.heroes[i]; return h && HK.Icons ? HK.Icons.html(h.name, i, size) : ''; }
   function paint(text, res) {
@@ -205,7 +210,7 @@
   }
   function bar(res) {
     return '<div class="tlbar">' + res.heroes.map(function (h) { return '<button class="chip whochip" data-st="who" data-i="' + h.i + '" aria-pressed="' + (who === h.i) + '">' + av(res, h.i, 20) + esc(h.name) + '</button>'; }).join('') +
-      '<span class="spacer"></span><button class="chip" data-st="key" aria-pressed="' + keyOnly + '">決め手と絶頂だけ</button>' +
+      '<span class="spacer"></span><button class="chip" data-st="key" aria-pressed="' + keyOnly + '">' + KEY_LB + '</button>' +
       (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-st="lewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + '</div>';
   }
 

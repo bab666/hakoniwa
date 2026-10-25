@@ -10,6 +10,11 @@
 (function () {
   'use strict';
   var HK = window.HK, LK = HK.LOCKER, ST = HK.Story;
+  /* 表・数の見出しの言葉（全年齢版は「高鳴り」） */
+  var W_CL = '高鳴り';
+  /* r18:begin */
+  W_CL = '絶頂';
+  /* r18:end */
   if (!LK || !ST) return;
   var clamp = HK.clamp;
   function L(s) { return s.split('|'); }
@@ -22,6 +27,7 @@
     none: L('手足は自由だった。けれど、肘を曲げるだけで壁に当たるほど狭い。|拘束はされていなかった。ただ、しゃがむことさえできない狭さだった。|{a}の手は自由だった。扉を押してみたが、外から鍵がかかっているのか、びくともしない。')
   };
   CW.SPEAKER1 = L('どこかのスピーカーから、加工された声が響いた。「ようこそ、媚薬ロッカーへ。今回のお客様はお一人。誰にも頼れないぶん、どうぞ存分に楽しんで」|スピーカーがざらりと鳴った。「仕掛けを解けば扉は開く。ガスは五分ごとに濃くなる。一人きりで、どこまで耐えられるかな」|天井のスピーカーが、くすくすと笑った。「お相手はいない。だから、何をしても誰にも見られない。……運が悪ければ、見回りの人には見られるけど」');
+  /* r18:begin */
   /* ガスの効き（一人）。{b} を使わない */
   CW.GAS1 = [
     L('甘い香りが鼻の奥にまとわりつく。{a}の頬が、じわりと熱を帯びてきた。|{a}は額に浮いた汗を、肩でぬぐった。狭い箱の中が、急に暑くなった気がする。|{a}は息を浅く吸った。吸うたびに、甘ったるい霧が喉の奥に溜まっていく。'),
@@ -29,6 +35,7 @@
     L('{a}の頭がぼうっとしてきた。体の奥が熱く脈打ち、一人なのが、かえってつらかった。|{a}は唇を噛んだ。誰もいないのに、誰かに触れてほしくてたまらない。|{a}の膝が小さく震えた。壁に押しつけた背中から、熱が逃げていかない。'),
     L('{a}の理性は、ほとんど溶けかけていた。漏れる息が、自分でも驚くほど甘い。|{a}はロッカーの壁に額を押し当てた。熱に浮かされて、もう何も考えられない。|{a}の体は、隅々まで火照りきっていた。指先がひとりでに、服の裾を探っていた。')
   ];
+  /* r18:end */
   /* R18に参加しない人・全年齢：火照り・めまい・息苦しさだけで書く */
   CW.GAS1_SOFT = [
     L('甘い香りが鼻の奥にまとわりつく。{a}の頬が、じわりと熱を帯びてきた。|{a}は額に浮いた汗を、肩でぬぐった。狭い箱の中が、急に暑くなった気がする。|{a}は袖で額を拭った。狭い箱の中の空気が、少しずつ重くなっていく。'),
@@ -347,14 +354,14 @@
     }
     var mobN = mob && mob.m ? mob.m.full : '';
     A.fate = { clean: '一人で耐えきって脱出', relief: '一人で慰めて、どうにか脱出', luck: '幸運に助けられた', timeout: relief ? '一人で何度も果てながら、時間切れまで耐えた' : '時間切れまで耐えた', found: '見回りの人に助けられた', mob: '見つけてくれた人と一線を越えた', forced: '見つけた人に強引に抱かれた' }[outcome];
-    A.notes.push('発情 ' + Math.round(A.m.heat) + '・理性 ' + Math.round(A.m.reason) + '・絶頂 ' + A.cnt.climax + '回');
+    A.notes.push('発情 ' + Math.round(A.m.heat) + '・理性 ' + Math.round(A.m.reason) + '・' + W_CL + ' ' + A.cnt.climax + '回');
     A.notes.push('耐えた ' + A.cnt.hold + '回' + (A.cnt.self ? '・一人で ' + A.cnt.self + '回' : '') + (A.cnt.solve ? '・仕掛けを解いた ' + A.cnt.solve + '回' : ''));
     var title = { clean: mins + '分で、一人で脱出した。誰にも何も起きなかった。', relief: mins + '分で脱出。ロッカーの中で何があったかは、誰も知らない。', luck: mins + '分で、思いがけず扉が開いた。', timeout: '制限時間内に脱出できず、扉は時間切れで開いた。', found: mins + '分、' + mobN + 'に見つけてもらって外へ出た。', mob: mins + '分、見つけてくれた' + mobN + 'と、そのまま一線を越えた。', forced: mins + '分、見つけた' + mobN + 'に、熱に浮かされたまま抱かれた。' }[outcome];
     var lines = [A.name + '：' + A.fate, '仕掛け：' + gim.map(function (g, i) { return g.name + (i < gi ? '（解除）' : ''); }).join('→')];
     return ST.result(S, input, {
       ending: { title: title, kind: outcome === 'clean' || outcome === 'found' ? 'ok' : 'over', lines: lines },
-      estats: [['脱出まで', how === 'timeout' ? '時間切れ' : mins + '分'], ['人数', '1人'], ['耐えた', A.cnt.hold + '回'], ['絶頂', A.cnt.climax + '回']],
-      table: { title: '一人の状態', hint: '発情が高く理性が低いほど、耐えきれなくなる。', cols: ['発情', '理性', '耐えた', '絶頂', '解いた', '結末'], rows: [{ i: A.i, rank: '', cells: [Math.round(A.m.heat) + '', Math.round(A.m.reason) + '', String(A.cnt.hold), String(A.cnt.climax), String(A.cnt.solve), A.fate] }] },
+      estats: [['脱出まで', how === 'timeout' ? '時間切れ' : mins + '分'], ['人数', '1人'], ['耐えた', A.cnt.hold + '回'], [W_CL, A.cnt.climax + '回']],
+      table: { title: '一人の状態', hint: '発情が高く理性が低いほど、耐えきれなくなる。', cols: ['発情', '理性', '耐えた', W_CL, '解いた', '結末'], rows: [{ i: A.i, rank: '', cells: [Math.round(A.m.heat) + '', Math.round(A.m.reason) + '', String(A.cnt.hold), String(A.cnt.climax), String(A.cnt.solve), A.fate] }] },
       meters: [{ label: '発情', color: '--love' }, { label: '理性', color: '--accent' }, { label: '快感', color: '--pine', dash: true }, { label: '脱出', color: '--partner', dash: true }],
       meta: '1人・拘束' + (S.bind === 'none' ? 'なし' : 'あり') + '・媚薬' + env.dose,
       summary: '媚薬ロッカー：' + title
@@ -534,7 +541,7 @@
       if (p.cnt.warm >= 2) f += '・みんなを励ました';
       p.fate = f;
       p.roleLabel = 'ロッカー' + Lk.n + (Lk.m.length === 1 ? '（一人）' : '（' + names(Lk.m) + '）');
-      p.notes.push('発情 ' + Math.round(p.m.heat) + '・理性 ' + Math.round(p.m.reason) + '・絶頂 ' + p.cnt.climax + '回');
+      p.notes.push('発情 ' + Math.round(p.m.heat) + '・理性 ' + Math.round(p.m.reason) + '・' + W_CL + ' ' + p.cnt.climax + '回');
       p.notes.push('仕掛けた ' + p.cnt.make + '回・応じた ' + p.cnt.accept + '回・嗜めた ' + p.cnt.refuse + '回' + (p.cnt.hold ? '・耐えた ' + p.cnt.hold + '回' : '') + (p.cnt.solve ? '・仕掛けを解いた ' + p.cnt.solve + '回' : '') + (p.cnt.jeal ? '・嫉妬 ' + p.cnt.jeal + '回' : ''));
     });
     var far = lockers.filter(function (Lk) { return Lk.sexIn || Lk.trioSex; });
@@ -546,8 +553,8 @@
     var rows = P.map(function (p) { return { i: p.i, rank: '', cells: ['ロッカー' + p.L.n, Math.round(p.m.heat) + '', Math.round(p.m.reason) + '', String(p.cnt.make), String(p.cnt.refuse), String(p.cnt.climax), String(p.cnt.solve), p.fate] }; });
     return ST.result(S, input, {
       ending: { title: title, kind: far.length ? 'over' : 'ok', lines: lines },
-      estats: [['脱出まで', how === 'timeout' ? '時間切れ' : mins + '分'], ['人数', P.length + '人'], ['ロッカー', lockers.length + '台'], ['絶頂', P.reduce(function (s, p) { return s + p.cnt.climax; }, 0) + '回']],
-      table: { title: 'みんなの状態', hint: '同じロッカーの人とくっつく。発情が高く理性が低いほど手を出しやすい。', cols: ['場所', '発情', '理性', '仕掛けた', '嗜めた', '絶頂', '解いた', '結末'], rows: rows },
+      estats: [['脱出まで', how === 'timeout' ? '時間切れ' : mins + '分'], ['人数', P.length + '人'], ['ロッカー', lockers.length + '台'], [W_CL, P.reduce(function (s, p) { return s + p.cnt.climax; }, 0) + '回']],
+      table: { title: 'みんなの状態', hint: '同じロッカーの人とくっつく。発情が高く理性が低いほど手を出しやすい。', cols: ['場所', '発情', '理性', '仕掛けた', '嗜めた', W_CL, '解いた', '結末'], rows: rows },
       meters: [{ label: '発情', color: '--love' }, { label: '理性', color: '--accent' }, { label: '快感', color: '--pine', dash: true }, { label: '脱出', color: '--partner', dash: true }],
       meta: P.length + '人・ロッカー' + lockers.length + '台・拘束' + { both: 'あり', one: '一人ずつ', none: 'なし' }[S.bind] + '・媚薬' + env.dose,
       summary: '媚薬ロッカー：' + title
