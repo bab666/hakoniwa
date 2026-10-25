@@ -391,7 +391,9 @@
     var orig = vic; vic = JS.REL.substitute(S, vic);
     vic.alive = false; vic.taken = false; vic.fate = '生贄（' + hm(h) + '）' + (vic !== orig ? '・' + orig.name + 'の身代わり' : '');
     var r18 = JS.R18 && JS.R18.on(S) ? JS.R18.ritual(S, vic) : null;
+    /* r18:begin */
     if (r18 && r18.miko) vic.fate = '神の子を産む巫女になった（' + hm(h) + '）';
+    /* r18:end */
     var o = ST.say(S, { actors: [vic], tag: '生贄', kind: 'climax', text: (r18 ? r18.text : vic.name + 'は白い着物を着せられ、祭壇の前に引き出された。' + S.G.rite + '。――' + vic.name + 'の姿は、それきり誰の目にも映らなかった。'), why: vic.name + 'が生贄に選ばれた' + (vic !== orig ? '（' + orig.name + 'の身代わりになった）' : vic.villager ? '（村の出身だった）' : vic.takenAt != null ? '（連れ去られていた）' : '（運と体力が最も低かった）'), mag: 52 });
     ST.key(S, o, vic.name + 'が生贄になった');
   }

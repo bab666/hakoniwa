@@ -507,7 +507,9 @@
       /* 本能が先に噛む：抗えなさが高く、αが攻めで、まだ合意と呼べる信頼がないのに歯を立ててしまう（執着の「奪う番」とは別。相手も拒みはしない） */
       var instinct = !willBite && !oLead && BD.canBite(ctx, X, O) && isF && d > 0.6 && !(HK.Obsess && ctx.pair(X, O).ob && ctx.pair(X, O).ob[X.i] && ctx.pair(X, O).ob[X.i].lv >= 40) && ctx.rng() < (d - 0.6) * 1.2;
       var biteL = ['{b}は自分から髪をかき上げて、うなじを差し出した。「噛んで」――{a}の歯が沈んだ瞬間、二人は番になった。', '「いいの？一生だよ」{a}の問いに、{b}は頷いた。{a}はうなじに深く歯を立てた。'];
+      /* r18:begin */
       if (!oLead) biteL.push('果てる寸前、{a}は{b}のうなじに深く歯を立てた。{b}は痛みと熱の中で、自分が{a}のものになったのを感じた。');
+      /* r18:end */
       var instL = ['「待って、まだ――」{b}の声が終わる前に、{a}の歯はうなじに沈んでいた。運命の匂いの前では、約束も順番も意味をなさなかった。', '噛まないつもりだった。{a}はそう思っていた。気づいたときには口の中に血の味があり、{b}のうなじに自分の歯形があった。{b}は泣きながら、{a}の背中に腕を回した。'];
       var biteT = willBite ? ctx.t(ctx.pick(biteL), X, O) : instinct ? ctx.t(ctx.pick(instL), X, O) : '';
       var t = heatLine.scene(ctx, X, O, { beta: sx(X) === 'b', insert: biteT });

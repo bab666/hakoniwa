@@ -167,7 +167,9 @@
   /* --- 憎みながら、夜を重ねる --- */
   var HN = {
     open: L('「お前なんか嫌いだ」と{a}が言った。「知ってる」と{b}が言った。それが合図だった。|言い争いは、いつの間にか服の掴み合いになり、ベッドの上で終わった。|{a}と{b}は、互いの悪口を言い合いながら、ホテルの部屋の鍵を開けた。|殴り合いの寸前で、{a}は{b}の手首を掴み、そのまま壁に縫いとめた。'),
+    /* r18:begin */
     mid: L('優しさはひとつもなかった。爪と歯の痕だけが、互いの肌に残った。――|{b}は{a}の肩に噛みつき、{a}は{b}の名前を罵るように呼んだ。どちらも、相手を離さなかった。――|「嫌い」と言うたびに、{a}は{b}を深く抱いた。{b}は泣きながら、それでも{a}の背中にしがみついた。――'),
+    /* r18:end */
     low: L('――その夜、二人が何をしたかは、乱れたシーツだけが知っている。――|――翌朝、{b}の首筋には、隠しきれない痕が残っていた。――'),
     end: L('朝、二人は目を合わせずに服を着た。「今のは、なかったことにしろ」「言われなくても」|{a}は眠る{b}の顔を、憎らしそうに、それでいて名残惜しそうに見つめていた。|{b}が先に部屋を出た。ドアが閉まる直前、「次はない」と言った。次は、たぶんある。')
   };
@@ -195,7 +197,7 @@
         var hs = HS.scene(ctx, a, b, {}), ob = HS.order(ctx, a, b);
         return { text: fill(ctx, hs + ctx.pick(HN.end), ob[0], ob[1]), why: (HS.hostile(ctx, a, b) ? HS.why(ctx, a, b) : '愛憎（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性'), mag: 28 };
       }
-      var t = ctx.pick(HN.open) + ctx.pick(lewd(ctx) === 'low' ? HN.low : HN.mid) + ctx.pick(HN.end);
+      var t = ctx.pick(HN.open) + ctx.pick(lewd(ctx) === 'low' || !HN.mid ? HN.low : HN.mid) + ctx.pick(HN.end);
       /* 受け攻め：抱く側を {a} に */
       var ab = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b];
       return { text: fill(ctx, t, ab[0], ab[1]), why: '愛憎（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性', mag: 26 };
@@ -207,7 +209,9 @@
     steal: L('{a}は、{b}に恋人がいるのを知っていた。知っていて、{b}を自分の部屋に誘った。{b}は断らなかった。|「{c}には黙っておけばいい」――{a}の囁きに、{b}は小さく頷いた。|{a}は{c}と{b}が待ち合わせていた店に先回りし、{b}だけを連れ出した。その夜、{b}は帰らなかった。|{b}の恋人が出張でいない夜だった。{a}からの「今から会える？」に、{b}は五分で返事をした。'),
     rival: L('{a}は{c}が憎かった。だから{c}のいちばん大事なものを奪うことにした。――{b}は、{a}の腕の中で{c}の名前を一度も呼ばなかった。|{a}は{b}の首筋に、わざと見える位置に痕をつけた。「{c}に見せてやれよ」'),
     cheat: L('恋人の{c}の顔が浮かんだ。それでも{a}は、{b}の手を離さなかった。|{a}は{c}からの着信を無視して、{b}の上着を脱がせた。|{a}は{c}に「残業」と送ってから、{b}の待つホテルに向かった。'),
+    /* r18:begin */
     scene: L('――言い訳を探すより先に、体が動いた。|――{sa}と{sb}の匂いが混ざり合い、もう引き返せなかった。|――シーツの上で、{b}は罪悪感と快感の区別がつかなくなっていた。'),
+    /* r18:end */
     low: L('――その先は、二人だけの秘密になった。|――朝まで、二人の部屋の明かりは消えなかった。'),
     after: L('帰り道、{b}はシャワーを二回浴びたのに、まだ{a}の匂いが消えない気がしていた。|翌朝、{b}は{c}に「おはよう」と送った。指が少し震えていた。|{a}は満足げに煙草に火をつけ、{b}は黙って背を向けた。'),
     refuseSelf: L('{a}は{b}に手を伸ばしかけて、やめた。恋人の{c}の顔が浮かんだ。|{a}は{b}からの「今夜会える？」に、長いこと返信を打っては消して、結局「ごめん」とだけ送った。|{b}の部屋の前まで来て、{a}は引き返した。ポケットの中で、{c}からもらった鍵が冷たかった。'),
@@ -263,7 +267,7 @@
       var nf = function (arr, re) { var f = arr.filter(function (l) { return !(hTop && re.test(l)); }); return f.length ? f : arr; };
       /* 寝取られる側（恋人を裏切る側）を、後半の文の主語にする */
       var sw = function (x) { return motive === 'cheat' ? x.replace(/\{a\}/g, '{A}').replace(/\{b\}/g, '{a}').replace(/\{A\}/g, '{b}').replace(/\{sa\}/g, '{SA}').replace(/\{sb\}/g, '{sa}').replace(/\{SA\}/g, '{sb}') : x; };
-      var s1 = sw(ctx.pick(lewd(ctx) === 'low' ? NT.low : nf(NT.scene, /快感/))), s2 = sw(ctx.pick(NT.after));
+      var s1 = sw(ctx.pick(lewd(ctx) === 'low' || !NT.scene ? NT.low : nf(NT.scene, /快感/))), s2 = sw(ctx.pick(NT.after));
       var head = ctx.pick(motive === 'cheat' && HK.Pos && !hTop && HK.Pos.hardTop(b) ? NT.cheat.filter(function (l) { return !/上着を脱がせた/.test(l); }) : NT[motive]);
       /* R18版：夜そのものは、段落に分けた厚い版（omega-thick.js の OM.affairScene。受け攻め・女性どうし・女性攻め×男性・態度ごとの声はそちらで） */
       var thick = !HK.SAFE_ON && lewd(ctx) !== 'low' && OM.affairScene ? OM.affairScene(ctx, a, b) : null;
