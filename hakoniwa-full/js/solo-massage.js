@@ -201,8 +201,10 @@
     if (c.mode === 'curtain') {
       var st0 = (input.env && input.env.staff) || 'gentle', rng = HK.rng((((input.seed || 1) * 977) + 3) >>> 0);
       var ks = Object.keys(STAFF).filter(function (k) { return k !== 'duo' && k !== st0; });
-      var a = run(input, { ci: 0, other: input.chars[1].name });
-      var b = run(input, { ci: 1, seedAdd: 7919, staff: ks[rng.int(ks.length)], other: input.chars[0].name });
+      /* カーテン越しの二人は、使った文の覚えを分け合う（並んだ二つの施術で同じ文が続かないように） */
+      var share = {};
+      var a = run(input, { ci: 0, other: input.chars[1].name, share: share });
+      var b = run(input, { ci: 1, seedAdd: 7919, staff: ks[rng.int(ks.length)], other: input.chars[0].name, share: share });
       return MC.merge(input, a, b, rng);
     }
     return run(input);
@@ -216,6 +218,7 @@
       if (o.seedAdd) S.rng = HK.rng((((input.seed || 1) + o.seedAdd) >>> 0) || 1);
       S.h = K.hero(S, input.chars[o.ci || 0], (input.perChar && input.perChar[o.ci || 0]) || {}); S.party = [S.h];
     }
+    if (o.share) { S._fu = o.share.fu = o.share.fu || []; S._lwShare = o.share.lw = o.share.lw || []; }
     var h = S.h, rng = S.rng, env = S.env;
     h.i = o.ci || 0;
     /* 施術者：住人（TR）なら、気質から店の施術者の型（sk）に当てる（一言・言い訳の通りやすさ）。モブなら設定の型 */
@@ -524,7 +527,11 @@
       /* 客が攻めなら客が主導する体位（女性どうし・女性の客×男性の施術者・男性の体で攻める客）、受けなら施術者が主導する体位 */
       /* 住人の女性の施術者が男性の客を導く（女攻め×男）ときは、跨る・手で・口での体位（solo-massage-thick.js の POS_LADY） */
       var ladyR = !!TR && staff.g === 'f' && !ff, PL = (HK.MassageThick && HK.MassageThick.POS_LADY) || POS;
-      var pool = S.rng.shuffle(noMut(cTop() ? posTop() : ff ? POS_FF : ladyR ? PL : POS)).slice(0, nPos);
+      var pool = S.rng.shuffle(noMut(cTop() ? posTop() : ff ? POS_FF : ladyR ? PL : POS));
+      /* この回（カーテン越しの相手を含む）でまだ使っていない体位の文を先に */
+      var uP = S._fu = S._fu || [];
+      pool = pool.filter(function (p) { return uP.indexOf(p.t) < 0; }).concat(pool.filter(function (p) { return uP.indexOf(p.t) >= 0; })).slice(0, nPos);
+      pool.forEach(function (p) { uP.push(p.t); });
       var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])), why: '快楽に負けた（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
       K.key(S, head, '快楽に負けた');
       /* 陥落の文が変わり目を兼ねるので、ここからは段階を上げるだけ（一文は足さない） */

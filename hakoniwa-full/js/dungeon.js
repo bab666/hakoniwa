@@ -267,7 +267,9 @@
       later(S, function () {
         /* 絶頂の言い回しは、書く時点の段階で選ぶ（原因の出来事の反応より前の段階に戻らないように） */
         var hs = S.h; S.h = h;
-        var sg = stage(h), ctext = fmt(S, pick(S, top ? DG.CLIMAX_TOP[sg] : DG.CLIMAX[h.persona][sg]), ev);
+        var sg = stage(h), XS = !top && HK.SoloKit && HK.SoloKit.CLIMAX_SOLO && HK.SoloKit.CLIMAX_SOLO[h.persona];
+        /* 一人用箱庭と共通の絶頂の言い回し（solo-kit.js の CLIMAX_SOLO）も混ぜて、同じ文が続かないように */
+        var ctext = fmt(S, pick(S, top ? DG.CLIMAX_TOP[sg] : XS ? DG.CLIMAX[h.persona][sg].concat(XS[sg]) : DG.CLIMAX[h.persona][sg]), ev);
         if (moanOn) ctext = '「' + pick(S, DG.MOAN[h.persona]) + '」' + ctext;
         S.h = hs;
         /* 絶頂した本人（パーティーでは書くときに別の人の番になっていることがある。dungeon-lewd.js が読む） */
@@ -301,7 +303,7 @@
     var h = S.h;
     if (hasItem(h, 'herb') && (h.pleasure > 78 || h.reason < 35)) {
       useItem(h, 'herb'); h.pleasure -= 45; h.reason += 15; h.corrupt -= 2;
-      note(S, '〔鎮静の薬草で昂りを鎮めた〕');
+      note(S, pick(S, ['〔鎮静の薬草で昂りを鎮めた〕', '〔鎮静の薬草を噛んで、火照りを少し冷ました〕', '〔鎮静の薬草の苦みで、どうにか正気を保った〕', '〔鎮静の薬草を煎じて飲み、昂りを抑えた〕']));
     }
     if (hasItem(h, 'holy') && h.curses.length) {
       var order = ['edge', 'obey', 'dbl', 'heat', 'mark', 'dream', 'voice', 'melt'];

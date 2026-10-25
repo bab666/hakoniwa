@@ -224,7 +224,11 @@
       if (topMe && X.BEYOND_TOP) list = list.filter(function (e) { return e.fx.ride || (!X.PEN_RE.test(e.t) && !(e.fx.cum > 0)); }).concat(X.BEYOND_TOP);
       /* 男性向け：書き下ろしの出来事を多めに混ぜる */
       if (eon) { var ex = topMe ? EK.L(S, 'hole', 'beyondTop', []) : EK.L(S, 'hole', 'beyond.' + plKey, []); list = list.concat(ex, ex); }
-      return HK.weighted(rng, list, function (e) { return Math.max(0.03, wts[e.lv]); });
+      /* この回ですでに出た出来事は、ほとんど選ばない（同じ文が繰り返されないように） */
+      var BU = S._beyUsed = S._beyUsed || new Map();
+      var ev = HK.weighted(rng, list, function (e) { return Math.max(0.03, wts[e.lv]) * (BU.has(e.t) ? 0.02 : 1); });
+      if (ev && ev.t) BU.set(ev.t, 1);
+      return ev;
     }
     function metaWhy() {
       var m = [];
