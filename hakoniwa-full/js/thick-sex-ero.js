@@ -144,7 +144,7 @@
     add(X.BODY, 'play', '{a}は{b}を抱えたまま転がって、上になったり下になったりしながら突き上げた。{s:hit}。{b}「{mb1}」\n\n{a}「今のどっちが気持ちよかった？　もう一回確かめよ」|{a}は{b}の脚を抱えて「いち、に、さん」と数えながら、さんで奥まで突き入れた。{s:hit}。{b}「{mb1}」\n\n{a}「タイミング覚えた？　じゃあ次は数えないね」');
     add(X.CLIMAX, 'hard', '{a}は{b}の腰を骨が鳴るほど引き寄せ、一番奥に押しつけたまま吐き出した。{s:cum}。\n\n{b}「{mb2}」\n\nどくどくと注がれる熱に、{b}のナカは何度も痙攣して{a}を搾り取った。|{a}は{b}の髪を掴んで顔を上げさせ、イき顔を見下ろしながら奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\n抜かれたあと、{b}の太ももを白いものがとろりと伝った。');
     add(X.CLIMAX, 'soft', '{a}は{b}をぎゅっと抱きしめて、「出すよ」と囁いてから奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\nお腹の奥があったかくなって、{b}は{a}にしがみついたまま何度も小さくイった。|二人は指を絡めたまま、同じ瞬間に果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{a}は繋がったまま、{b}のとろけた顔に何度もキスをした。');
-    add(X.CLIMAX, 'tease', '{a}は{b}が泣きそうな声でねだるまで寸止めを繰り返し、最後に一番奥へ一気に突き入れた。{s:hit}。\n\n{b}「{mb2}」\n\n{b}がイきながら締めつけると、{a}も奥にたっぷりと吐き出した。{s:cum}。|{a}「まだイっちゃだめ。……はい、いいよ」――許された瞬間、{b}は腰を跳ねさせてイった。{s:cum}。\n\n{b}「{mb2}」');
+    add(X.CLIMAX, 'tease', '{b}が泣きそうな声でねだるまで寸止めを繰り返してから、{a}は一番奥へ一気に突き入れた。{s:hit}。\n\n{b}「{mb2}」\n\n{b}がイきながら締めつけると、{a}も奥にたっぷりと吐き出した。{s:cum}。|{a}「まだイっちゃだめ。……はい、いいよ」――許された瞬間、{b}は腰を跳ねさせてイった。{s:cum}。\n\n{b}「{mb2}」');
     add(X.CLIMAX, 'play', '{a}「せーの、で一緒にね」――{a}が奥まで突いた瞬間、二人は本当に同時にイった。{s:cum}。\n\n{b}「{mb2}」\n\n息を切らしたまま、二人は顔を見合わせて吹き出した。|{b}が先にイって{a}の首にしがみつくと、{a}は「ずるい」と笑って、そのナカで果てた。{s:cum}。\n\n{b}「{mb2}」');
     add(X.FM_BODY, 'dom', '{a}は{b}に背中を向けて跨り、根元まで呑み込んでから腰を上下させた。{s:hit}。\n\n{a}「出したら、お仕置きね」\n\n{b}「{mb1}」――目の前で揺れるお尻と締めつけに、{b}は必死に耐えた。|{a}は{b}の両手を頭の上で押さえ、上から見下ろしたまま腰をくねらせた。{s:wet}。\n\n{a}「ほら、ナカでびくびくしてる。……我慢して」\n\n{b}「{mb1}」');
     add(X.FM_BODY, 'soft', '{a}は{b}の首に腕を回して抱きつき、膝の上で小さく腰を揺らした。{s:wet}。\n\n{a}「{b}の、奥まで当たってる……♡」\n\n{b}「{mb1}」|{a}は{b}の手を自分の胸に導き、揉まれながらゆっくりと腰を沈めた。{s:wet}。\n\n{a}「ん……♡　そのまま、触ってて」\n\n{b}「{mb1}」');
@@ -183,9 +183,10 @@
     return t;
   };
 
-  /* 一場面ぶん（段落）。opt = { S, pick, rng, a, b, style, open, after, place } → { text, mode }（{a}{b} は呼ぶ側で埋める） */
+  /* 一場面ぶん（段落）。opt = { S, pick, rng, a, b, style, open, after, place, mode } → { text, mode }（{a}{b} は呼ぶ側で埋める）。
+     opt.mode：体の組（mf／fm／ff）を呼ぶ側で決めるとき（オメガバースは第二性を優先：女性のαの攻めは mf）。short も同じ */
   X.scene = function (opt) {
-    var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = X.mode(a, b), g = X.group(opt.style || 'gentle', mode), out = [];
+    var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = opt.mode || X.mode(a, b), g = X.group(opt.style || 'gentle', mode), out = [];
     var TS = HK.ThickSex;
     E.pairNight(opt.S, a, b);
     out.push(opt.open || pick(X.OPEN[mode]));
@@ -208,7 +209,7 @@
   X.shortAgain = function (mode) { return mode === 'fm' ? X.AGAIN.shortEroFm : mode === 'ff' ? X.AGAIN.shortEroFf : X.AGAIN.shortEro; };
   /* 短い版。opt.open（場所・関係の一文）があれば頭に置く */
   X.short = function (opt) {
-    var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = X.mode(a, b);
+    var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = opt.mode || X.mode(a, b);
     E.pairNight(opt.S, a, b);
     var t = (opt.open || '') + pick(X.SHORT[mode]) + (opt.again ? pick(X.shortAgain(mode)) : '') + (opt.after || '');
     return { text: X.fill(opt.S, t, a, b), mode: mode };

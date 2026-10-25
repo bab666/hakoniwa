@@ -4,6 +4,7 @@
    V2: 自分で「攻め」を選んだ住人が、受ける側の文（貫かれる・中に出される・押し倒される・縛られる など）になった
    V3: 向きの決まらない組（攻め×攻め・恋愛対象の合わない組）の二人だけの性的な場面が起きた
    V4: 女性の住人が、男性の体で描かれた（「自分のもの」で突く・射精する・相手の中に入る など）
+   V1・V4 の例外：オメガバースで、第二性を優先して女性のαの攻めを挿れる側の体で書いた組（HK.Pos.maleTop）の二人が出る文
    V5: 夜の性格（attr.js）が受け攻めを変えた：マゾの人が攻め（{a}）の夜の性格の文を受け持った、自分で攻めを選んだ人が受け（{b}）の夜の性格の文を受け持った。
        奇数回は住人に夜の性格（マゾ・サド・意地悪・甘々・恥じらい、攻め指定の人にもマゾ）を付けて回す（攻め指定のマゾが受ける文は V2 でも数える）
    --why：数えずに除いた候補とその理由も出す（性的でない文・女性の攻めが男性に跨って迎える文・「攻めに〜された」の書き方 など）
@@ -98,6 +99,10 @@ const { openBuild } = require('./lib.js');
         });
         if (HK.Attr) HK.Attr.log = null;
         const tops = chars.filter(c => P.hardTop(c));
+        /* オメガバースだけ：第二性を優先して、女性のαの攻めを挿れる側の体で書いた組（omega-heat.js の OM.bodyKind が HK.Pos.maleTop に記録）。
+           その二人が出る文は、V1（女性どうしに男性の体の言葉）・V4（女性の攻めが男性の体）で数えない。ほかの箱庭では空 */
+        const MT = sc === 'omega' && P.maleTop ? Object.keys(P.maleTop).map(k => k.split('\u0001')) : [];
+        const mtIn = (t, who) => MT.some(([x, y]) => (!who || x === who) && t.indexOf(x) >= 0 && t.indexOf(y) >= 0);
         const texts = [];
         (res.log || []).forEach(e => { if (e && typeof e.text === 'string') texts.push({ t: e.text, ac: (e.actors || []).map(x => typeof x === 'number' ? x : x && x.i) }); });
         if (res.ending && Array.isArray(res.ending.lines)) res.ending.lines.forEach(l => typeof l === 'string' && texts.push({ t: l, ac: [] }));
@@ -111,7 +116,7 @@ const { openBuild } = require('./lib.js');
           const TOOLW = /指|舌|玩具|張り型|張形|ローター|双頭|ディルド|バイブ|器具|道具|触手/;
           const penFF = t.split(/[。！？]/).some(x => PEN.test(x) && !TOOLW.test(x) && SEXCORE.test(x));
           const allF = chars.every(c => c.gender === 'f');
-          if ((MALE.test(t) || /(?:の|な)モノ(?:が|を|で|に|は|の先)/.test(t) || penFF) && (named.length >= 2 || (allF && named.length >= 1 && SEX.test(t))) && named.every(c => c.gender === 'f') && !NPC_M.test(t0) && !hasMobM(t0)) {
+          if ((MALE.test(t) || /(?:の|な)モノ(?:が|を|で|に|は|の先)/.test(t) || penFF) && (named.length >= 2 || (allF && named.length >= 1 && SEX.test(t))) && named.every(c => c.gender === 'f') && !NPC_M.test(t0) && !hasMobM(t0) && !mtIn(t0)) {
             out.n.V1++; out.bySc[sc].V1++;
             const mm = t.match(MALE), ps = t.split(/[。！？]/).filter(x => PEN.test(x) && !TOOLW.test(x) && SEXCORE.test(x))[0];
             if (out.V1.length < 400) out.V1.push(sc + ' | 〔' + (mm ? mm[0] : '') + (ps ? '／' + ps.slice(0, 60) : '') + '〕 ' + t.slice(0, 400));
@@ -149,6 +154,7 @@ const { openBuild } = require('./lib.js');
           /* V4：女性の攻めが、男性の体で描かれた */
           for (const T of chars.filter(c => c.gender === 'f')) {
             const n0 = T.name;
+            if (mtIn(t0, n0)) continue;
             const RX4 = [
               new RegExp(n0 + '(?:は|が|も)[^。「」]{0,40}?(?:突き入れ(?!られ)|ねじ込ん|腰を打ちつけ(?!られ)|奥を突(?!か)|突き上げ(?!られ)|貫い|中に出し|中に吐き出|射精|精を放|種付け|自分のものを|昂りを(?:押し当|宛て|沈め|ねじ込|突き入)|熱を押し当て|穿(?!た[れせ]))'),
               new RegExp(n0 + 'の(?:もの|モノ|ちんぽ|ちんこ|肉棒|ペニス|陰茎|男根|いちもつ|一物|先端|根元|竿)(?:が|を|は|で|に)(?!な[っりる]|して|する|では)'),

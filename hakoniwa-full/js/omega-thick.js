@@ -39,7 +39,7 @@
         '奥の一点を正確に抉られるたび、{U}の爪先が{bed}を掻く。快感が背骨を駆け上がり、頭の中が白く瞬いた。{fl2}\n\n{mT}\n\n最奥に押しつけられたまま熱が弾け、{U}は背を反らせて達した。{mU1}|' +
         '{T}は律動を速め、{U}の弱いところだけを容赦なく打ち続けた。{U}の中が痙攣するように締まり、{T}の息も荒くなる。{fl2}\n\n{mU1}\n\n{U}が達した締めつけに引きずられて、{T}も奥深くで果てた。|' +
         '突かれるたびに、{U}の口から抑えきれない声が溢れた。{T}はその声ごと唇で塞ぎ、いちばん深いところに腰を沈めた。{fl2}\n\n{climax}\n\n{T}「……っ、締めすぎだ」――熱い迸りが、{U}の奥を満たしていった。|' +
-        '{T}は{U}の腰を引き寄せ、逃げられない角度で奥を叩いた。快感が限界を越えて溢れ、{U}の体ががくがくと震える。{fl2}\n\n{mU1}\n\n{T}は{U}が崩れ落ちるまで動きを止めず、最後に深く突き入れて果てた。|' +
+        '{T}は{U}の腰を引き寄せ、逃げられない角度で奥を叩いた。快感が限界を越えて溢れ、{U}の体ががくがくと震える。{fl2}\n\n{mU1}\n\n{T}は動きを止めなかった。{U}が崩れ落ちたのを見届けて、{T}は最後に深く突き入れて果てた。|' +
         '{T}「イけ」\n\n短い命令と同時に最奥を抉られ、{U}は声にならない声を上げて達した。{fl2}\n\n{mU1}\n\n痙攣する中に搾られ、{T}も低く呻いて熱を吐き出した。|' +
         '何度目かの波が、{U}を高みへ押し上げた。{T}は{U}の顔をじっと見下ろしたまま、その瞬間に合わせて一番奥へ沈んだ。{fl2}\n\n{climax}\n\n{mT}――二人の熱が、同時に弾けた。'),
       after: L(
@@ -316,6 +316,32 @@
     }
   };
   /* 濃いめのとき（depth 3）に足す段落（体位を変える・焦らす・二度目へ）。体の組み合わせごと */
+  /* オメガバースでαが挿れる側（女性のαを含む）のときに混ぜる、αの体の一文。{T}=α {U}=受ける側（Ω・β）。
+     mm＝受ける側が男性の体、mf＝受ける側が女性の体。第二性で書き、攻めの性別（男・彼女など）には触れない */
+  var AGX = {
+    mm: {
+      mid: L('αの{T}の根元が、律動のたびに少しずつ熱を帯びて膨らみはじめた。{U}はその変化を内側で感じ取り、前を張りつめさせたまま息を詰めた。|' +
+        '{T}は{U}の前を握り込んだまま、膨らみかけた根元が入口に触れるところまで深く沈めた。押し広げられて、{U}の昂りがびくりと跳ねた。|' +
+        'αの本能のまま、{T}は{U}の腰を引き寄せて根元まで埋めた。後ろの奥を満たされるたびに、{U}の前から雫が零れた。|' +
+        '{U}のうなじに鼻先を埋めたまま、αの{T}は後ろから深く繋がった。前に回された{T}の手が、張りつめたものを律動と同じ速さで扱いた。'),
+      peak: L('αの{T}の根元が膨らみきり、{U}の奥をきつく塞いだ。逃げ場を失った快感に押し出されて、{U}の前から熱が弾けた。|' +
+        '膨らんだ根元に内側のしこりを押し潰され、{U}は触れられてもいない前から、とろとろと零し続けた。|' +
+        '{T}が根元まで沈めたまま奥で脈打つと、{U}は{T}の手の中で張りつめたものを震わせて果てた。|' +
+        '結ばれる寸前の膨らみに奥を押し広げられ、{U}の腰ががくがくと揺れた。{T}の手は、{U}の前をきつく握ったまま離れなかった。')
+    },
+    mf: {
+      mid: L('αの{T}の根元が、律動のたびに少しずつ膨らみはじめた。入口を押し広げられる感覚に、{U}の内腿が震えた。|' +
+        '{T}は{U}の胸の先を指で摘まみながら、αの本能のまま根元まで深く沈めた。{U}の中が、待ちわびていたように吸いついた。|' +
+        '{T}は{U}の膝を抱え上げ、膨らみかけた根元が入口に触れるところまで押し入った。{U}は思わず{T}の腕に爪を立てた。|' +
+        '{T}の髪が{U}の胸元にこぼれ、律動に合わせて肌をくすぐった。奥を満たしているのは、αの{T}の熱だった。'),
+      peak: L('αの{T}の根元が膨らみきり、{U}の入口をきつく塞いだ。奥で脈打つ熱に、{U}の中が何度も波打った。|' +
+        '膨らんだ根元に内側を押し広げられ、{U}は芽を震わせながら長く達した。|' +
+        '{T}が根元まで沈めて動きを止めると、{U}の奥がきゅうっと縮み、{T}を離すまいと締めつけた。|' +
+        '結ばれる寸前の膨らみに奥を擦られ、{U}の腰が{T}の下で跳ねた。{T}は{U}の胸に唇を落としたまま、最奥で熱を放った。')
+    }
+  };
+  /* 女性のαが挿れる側のときに使わない文（攻めを男性と決めつける言葉） */
+  var FA_NG = /男の|男らし|胸板|腹筋どうし|俺|彼[のはがをに]|喉仏/;
   var DEEP = {
     core: L(
       '{T}は一度抜け出ると、{U}を裏返して腰を高く引き上げた。後ろから一息に貫かれ、{U}は{bed}に顔を埋めてくぐもった声を上げた。{fl}\n\n{mU0}|' +
@@ -448,13 +474,17 @@
     on: function (lew) { return !HK.SAFE_ON && lew !== 'low' && lew !== 'off' && lew !== 'fade'; },
     ok: function (T, U) { return !(HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U)); },
     /* 体の組み合わせ：ff＝女性どうし、ride＝女性が攻め×男性、mf＝男性（ふたなりの攻めを含む）×女性、mm＝男性どうし。
-       オメガバース（flav:'omega'）は、ふたなりの設定を使わない（体の性別で見る）。ほかの箱庭では、ふたなりの攻めは男性の体で書く */
+       オメガバース（flav:'omega'）は、ふたなりの設定を使わず、第二性を優先する（omega-heat.js の OM.bodyKind：αの攻めは女性でも挿れる側の体）。
+       ほかの箱庭では、ふたなりの攻めは男性の体で書く */
     kind: function (T, U, flav) {
       var Pz = HK.Pos;
+      if (flav === 'omega' && HK.OMEGA && HK.OMEGA.bodyKind) return HK.OMEGA.bodyKind(T, U);
       if (!Pz || !Pz.isFBody) return 'mf';
       var fT = flav === 'omega' || !Pz.isF ? Pz.isFBody(T) : Pz.isF(T), fU = Pz.isFBody(U);
       return fT && fU ? 'ff' : fT ? 'ride' : fU ? 'mf' : 'mm';
     },
+    /* オメガバースの体の組み合わせ（第二性を優先） */
+    omegaKind: function (T, U) { return TK.kind(T, U, 'omega'); },
     /* o.depth：1＝短め（書き出し・最中・頂）、2＝ふつう（最中に体の一文と崩れはじめを足す）、3＝長め（さらに体位を変える段落を足す）
        o.extra：最中のあとに差し込む段落（場面ごとの文。呼び出し側の差し込み記号のまま）
        o.add：箱庭ごとに足す文。元の表に足して引く（同じ回で同じ文が戻ってこないように表を厚くする）。
@@ -471,7 +501,10 @@
       var pool = function (k) { var b = riba && FF_RIBA[k] ? set[k].concat(FF_RIBA[k]) : set[k]; return b.concat(adk(k)); };
       var f = o.flav === 'omega' ? 0 : o.flav === 'ship' ? 1 : o.flav === 'zombie' ? 2 : -1;
       var used = RUN.get(rng) || {}; RUN.set(rng, used);
-      var fresh = function (arr) { if (pk._fresh) return pk(arr); var a = arr.filter(function (x) { return !used[x]; }); var x = pk(a.length ? a : arr); used[x] = 1; return x; };
+      /* オメガバースで女性のαが挿れる側のとき：攻めを男性と決めつける文（男の体・胸板・俺 など）は使わない */
+      var fa = o.flav === 'omega' && (kd === 'mf' || kd === 'mm') && Pz && Pz.isFBody && Pz.isFBody(T);
+      var nf = function (arr) { if (!fa) return arr; var a = arr.filter(function (x) { return !FA_NG.test(x); }); return a.length ? a : arr; };
+      var fresh = function (arr) { arr = nf(arr); if (pk._fresh) return pk(arr); var a = arr.filter(function (x) { return !used[x]; }); var x = pk(a.length ? a : arr); used[x] = 1; return x; };
       var pf = function (a) { return pk(a); };
       var ps = function (c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || 'gentle'; };
       var nov = NOV[ps(U)] || NOV.gentle, brk = BRK[ps(U)] || BRK.gentle;
@@ -488,6 +521,9 @@
       var flp = function (arr) { if (kd !== 'ff') return arr; var a = arr.filter(function (x) { return !/突き上げ|繋がっ/.test(x); }); return a.length ? a : ['']; };
       var gx = GX[kd], agx = AD.gx && AD.gx[kd];
       if (agx) gx = { mid: (gx ? gx.mid : []).concat(agx.mid || []), peak: (gx ? gx.peak : []).concat(agx.peak || []) };
+      /* オメガバースでαが挿れる側：αの体（根元が膨らむ・ノット）の一文を混ぜる */
+      var xg = o.flav === 'omega' && HK.OMEGA && HK.OMEGA.alphaTop && HK.OMEGA.alphaTop(T, U) && AGX[kd];
+      if (xg) gx = { mid: (gx ? gx.mid : []).concat(xg.mid), peak: (gx ? gx.peak : []).concat(xg.peak) };
       var mid = fresh(pool('mid')), peak = fresh(pool('peak'));
       /* 最中：体の一文・崩れはじめ（ふつう以上）。頂：体の一文（短めは半分）・崩れ切り */
       if (dp >= 2) mid = mid.replace('{fl}', (gx && rng() < 0.75 ? fresh(gx.mid) : '') + '{fl}' + (rng() < 0.8 ? fresh(brk.m) : ''));
@@ -550,7 +586,7 @@
   (function () {
     var add = function (arr, s) { Array.prototype.push.apply(arr, L(s)); };
     add(GX.mf.mid, '{T}が腰を引くたびに、{U}の中がとろりと絡みついて引き留めた。|{U}の胸が律動に合わせて揺れ、{T}の胸板に柔らかく擦れた。|{T}は繋がったまま{U}の片膝を胸に引き寄せ、奥の当たる角度を探った。|{U}の脚のあいだはとろとろに濡れて、動くたびにいやらしい音を立てた。|{T}は親指で{U}の芽を円く撫でながら、ゆっくりと奥まで沈めた。|{U}の爪先が{bed}の上で丸まり、{T}の腰に回した脚に力がこもった。|{T}は{U}の腰を少し浮かせ、腹の内側のざらついたところを擦り上げた。|繋がったところから溢れた蜜が、{U}の内腿を伝って{bed}に落ちた。|{T}は{U}の胸の先を唇で挟んだまま、腰だけを深く打ちつけた。|{U}の柔らかな腹が、奥を突かれるたびにひくりと震えた。|{T}は{U}の太腿を大きく開かせ、繋がったところが擦れ合うたびに芽まで刺激した。|{U}は自分から腰を浮かせ、{T}をもっと奥へ迎え入れようとした。|{T}の指が{U}の腰のくびれを掴み、逃げないように引き寄せた。|奥の行き止まりを優しく押し上げられて、{U}の膝が震えた。|{T}は{U}の背中を抱き起こし、胸と胸を重ねたまま揺さぶった。|{U}の中はもう{T}の形を覚えたように、ぴったりと吸いついていた。');
-    add(GX.mf.peak, '{U}の内側が細かく痙攣しはじめ、{T}を奥へ奥へと呑み込もうとした。|芽を押し潰されたまま奥を叩かれ、{U}の腰がシーツから浮いた。|{U}の胸の先は硬く尖り、{T}の舌が触れるたびに中がきゅっと締まった。|溢れた蜜で、繋がったところがぐちゅりと音を立てた。|{U}の腿が{T}の腰を挟み込んで震え、もう離れられないと訴えていた。|{T}の律動に合わせて、{U}の中が波のように締まっては緩んだ。|{U}は{T}の背中に爪を立て、奥を突かれるたびに声を跳ね上げた。|奥のいちばん敏感なところを擦られ続けて、{U}の目尻から涙が零れた。|{U}の下腹がぎゅっと縮み、{T}を搾るように締めつけた。|{T}が芽を指で弾いた瞬間、{U}の中が大きく波打った。|{U}は{T}の首にしがみつき、腰を擦りつけるように揺らした。|{U}の内側が熱く脈打ち、{T}のものを根元まで締め上げた。');
+    add(GX.mf.peak, '{U}の内側が細かく痙攣しはじめ、{T}を奥へ奥へと呑み込もうとした。|芽を押し潰されたまま奥を叩かれ、{U}の腰がシーツから浮いた。|{U}の胸の先は硬く尖り、{T}の舌が触れるたびに中がきゅっと締まった。|溢れた蜜で、繋がったところがぐちゅりと音を立てた。|{U}の腿が{T}の腰を挟み込んで震え、もう離れられないと訴えていた。|{T}の律動に合わせて、{U}の中が波のように締まっては緩んだ。|奥を突かれるたびに、{U}は声を跳ね上げて{T}の背中に爪を立てた。|奥のいちばん敏感なところを擦られ続けて、{U}の目尻から涙が零れた。|{U}の下腹がぎゅっと縮み、{T}を搾るように締めつけた。|{T}が芽を指で弾いた瞬間、{U}の中が大きく波打った。|{U}は{T}の首にしがみつき、腰を擦りつけるように揺らした。|{U}の内側が熱く脈打ち、{T}のものを根元まで締め上げた。');
     add(GX.mm.mid, '{T}は{U}の昂りを握り込み、後ろを突く速さとわざとずらして扱いた。|{U}の背中が{T}の胸にぴったりと貼りつき、汗で滑った。|{T}が奥を押し上げるたびに、{U}の前がびくりと跳ねて腹を叩いた。|{T}は{U}の太腿を抱え上げ、男の体の重みごと深く沈めた。|{U}は{T}の肩に額を押しつけ、後ろを押し広げられる感覚に耐えた。|{T}の指が{U}の先端を撫でるたびに、透明な雫が糸を引いた。');
     add(GX.mm.peak, '{U}のものが{T}の手の中で限界まで張りつめ、脈打ちはじめた。|後ろの奥と前を同時に責められて、{U}の腰ががくがくと揺れた。|{T}の手が根元をきつく握ったまま、後ろの一点だけを突き続けた。|{U}は{T}の腕を掴み、前と後ろから同時に押し寄せる熱に喉を反らした。|内側のしこりを擦られるたびに、{U}の前から雫が溢れて止まらなかった。|{U}の腹筋がびくびくと引きつり、{T}の手を濡らした。');
     add(FLAV[0].fl, 'うなじの奥が、鼓動と同じ速さでどくどくと脈打った。|発情した体は、触れられるたびにもっと深く繋がっていたいと疼いた。|{T}の匂いが濃くなるたびに、{U}の奥がきゅうっと疼いて{T}を締めつけた。|甘い匂いに頭の芯が溶けて、{U}は{T}のこと以外を考えられなくなった。|二人分のフェロモンが混ざり合い、奥を擦られるたびに視界が揺れた。|{U}の首筋から立ちのぼる匂いが、{T}の律動を少しずつ荒くした。|本能が、もっと奥で繋がっていたいと二人を急き立てた。|発情の熱が下腹に溜まり、体の芯から溶けていくようだった。|匂いが濃くなるたびに、{U}の喉から甘い喘ぎがこぼれた。|{T}がうなじに鼻先を寄せた瞬間、{U}の中がびくりと震えた。|フェロモンの甘さに酔って、{U}は自分から腰を揺らしていた。|吸い込むたびに相手の匂いが体の奥まで満ちて、肌の内側まで甘く痺れた。');
@@ -631,6 +667,12 @@
       .replace(/\{a\}/g, aIsT ? '{T}' : '{U}').replace(/\{b\}/g, aIsT ? '{U}' : '{T}')
       .replace(/\{o\}/g, oT ? '{T}' : '{U}').replace(/\{x\}/g, oT ? '{U}' : '{T}');
   }
+  /* 女性のαが挿れる側（kd が mf・mm）のとき、攻めを男性と決めつける文を除く */
+  function faF(T, kd, arr) {
+    if (!arr || !(HK.Pos && HK.Pos.isFBody && HK.Pos.isFBody(T) && (kd === 'mf' || kd === 'mm'))) return arr;
+    var a = arr.filter(function (x) { return !FA_NG.test(x); });
+    return a.length ? a : arr;
+  }
   /* 第二性の組（T=攻め U=受け）で引く段落と結び。kd：TK.kind の体の組み合わせ。riba：二人ともリバ */
   function cbPlay(pk, T, U, kd, riba) {
     var LV = OM.LOVE, cb = LV ? LV.combo(T, U) : 'b', hardT = HK.Pos && HK.Pos.hardTop(T);
@@ -638,7 +680,7 @@
     if (kd === 'ff') return { cb: cb, play: pk(FF_CB[cb] || FF_CB.b) };
     var arr = [];
     if (LV) LV.T.play.forEach(function (p) { if (p[cb]) arr = arr.concat(p[cb]); });
-    arr = arr.filter(function (x) { return !(hardT && /主導権/.test(x)); });
+    arr = faF(T, kd, arr.filter(function (x) { return !(hardT && /主導権/.test(x)); }));
     if (!arr.length && LV) arr = pk(LV.T.play).base;
     return { cb: cb, play: arr.length ? toTU(pk(arr), true, T, U) : '' };
   }
@@ -656,6 +698,7 @@
       else if (o.rev) kn = kn.concat(KNOT_R, (H.KNOT_R || []).map(function (x) { return toTU(x, false, T, U); }));
       else if (cb === 'ao') kn = kn.concat(KNOT, (H.KNOT || []).map(function (x) { return toTU(x, true, T, U); }));
     }
+    kn = faF(T, kd, kn);
     return kn.length ? pk(kn) : '';
   }
   /* 女性どうしで、二人ともリバでないときは、脚を重ねる・双頭の玩具の文を除く */
@@ -669,12 +712,14 @@
   var KNOT_ERO = L('{a}の根元がぐぷりと膨らみ、{b}のナカに深く結びついた。抜けなくなったまま、熱いものがどくどくと注がれ続ける。{s:cum}。{b}「{mb2}」|結ばれたまま奥をぐりぐりと押し上げられて、{b}はイきっぱなしになった。{s:cum}。{b}「{mb2}」――注がれるたびに、うなじの奥が甘く疼いた。|{a}は{b}のうなじに歯を立てながら、結びついた根元で最後の一滴まで注ぎ込んだ。{s:cum}。{b}「{mb2}」');
   function eroScene(ctx, T, U, head, after, kd) {
     var pk = function (arr) { return fp(ctx, arr); }, TE = HK.ThickEro, st = lw.last;
-    var r = st && st.short ? TE.short({ S: ctx, pick: pk, a: T, b: U }) : TE.scene({ S: ctx, pick: pk, rng: ctx.rng, a: T, b: U, style: HK.ThickSex ? HK.ThickSex.style(T) : 'gentle', place: 'omega', again: ctx.env.lewd === 'high' });
+    /* 男性向けの体の組（thick-sex-ero.js の mf／fm／ff）も、第二性を優先した組（kd）に合わせる */
+    var md = kd === 'ff' ? 'ff' : kd === 'ride' ? 'fm' : 'mf';
+    var r = st && st.short ? TE.short({ S: ctx, pick: pk, a: T, b: U, mode: md }) : TE.scene({ S: ctx, pick: pk, rng: ctx.rng, a: T, b: U, mode: md, style: HK.ThickSex ? HK.ThickSex.style(T) : 'gentle', place: 'omega', again: ctx.env.lewd === 'high' });
     var t = r.text;
     var aT = !!(T.om && T.om.sex === 'a');
     if (kd !== 'ff' && kd !== 'ride' && aT && !(st && st.short)) t += '\n\n' + TE.fill(ctx, pk(KNOT_ERO), T, U);
     t = t.replace(/\{a\}/g, T.name).replace(/\{b\}/g, U.name);
-    if (HK.Pos.ff(T, U) && HK.FF) t = HK.FF.fix(ctx, t, T, U, { tools: true });
+    if (kd === 'ff' && HK.FF) t = HK.FF.fix(ctx, t, T, U, { tools: true });
     var sc = OM.sc || function (x) { return x; };
     return (head ? head + (st && st.short ? '' : '\n\n') : '') + sc(t, T, U) + (after ? (st && st.short ? '' : '\n\n') + after : '');
   }
@@ -692,16 +737,16 @@
       var sc0 = OM.sc || function (t) { return t; };
       return eroScene(ctx, T, U, sc0(ctx.t(fp(ctx, H.COME[HK.voiceTop(a)]) + fp(ctx, H.STATE[HK.voiceTop(b)]), a, b), a, b), sc0(ctx.t(fp(ctx, H.AFTER[HK.voiceTop(b)]), a, b), a, b), TK.kind(T, U, 'omega'));
     }
-    var ff = HK.Pos.ff(a, b), kT = rev ? 'b' : 'a', kU = rev ? 'a' : 'b', hi = lew === 'high', lk = hi ? 'high' : 'mid';
+    var kd = TK.kind(T, U, 'omega'), ff = kd === 'ff', kT = rev ? 'b' : 'a', kU = rev ? 'a' : 'b', hi = lew === 'high', lk = hi ? 'high' : 'mid';
     var pk = function (arr) { return fp(ctx, arr); };
-    var kd = TK.kind(T, U, 'omega'), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(T, U);
+    var riba = HK.Pos.bothRiba && HK.Pos.bothRiba(T, U);
     var noRecv = function (arr, re) { if (!rev) return arr; var f = arr.filter(function (l) { return !re.test(l); }); return f.length ? f : arr; };
-    var moe = H.MOE.filter(function (l) { return !(ff && /喉仏/.test(l)); });
+    var moe = H.MOE.filter(function (l) { return !((ff || (HK.Pos && HK.Pos.isFBody(a))) && /喉仏/.test(l)); });
     var head = pk(H.COME[HK.voiceTop(a)]) + pk(noRecv(H.STATE[HK.voiceTop(b)], /触れた瞬間|さわって|ほどくと/)) + pk(noRecv(moe, /いっぱいにして|噛まない|肩がびくりと/));
     /* 気質の段落（相手の因子。Ωが攻めならΩの因子）と、第二性の組の段落 */
     var cp = cbPlay(pk, T, U, kd, riba), act = '';
     if (kd === 'ff') { var af = (H.ACT_FF[lk] || []).filter(ffOk(riba)); if (af.length) act = toTU(pk(af), true, T, U); }
-    else if (kd !== 'ride') act = rev ? toTU(pk(H.ACT_R[lk][HK.voiceTop(b)]), false, T, U) : toTU(pk(H.ACT[lk][HK.voiceTop(a)]), true, T, U);
+    else if (kd !== 'ride') act = rev ? toTU(pk(H.ACT_R[lk][HK.voiceTop(b)]), false, T, U) : toTU(pk(faF(T, kd, H.ACT[lk][HK.voiceTop(a)])), true, T, U);
     var extra = hi ? [act, cp.play] : [act + cp.play];
     /* 結び：濃いめは必ず、ほどほどは6割 */
     var fin = hi || ctx.rng() < 0.6 ? cbKnot(pk, T, U, kd, cp.cb, { heat: true, rev: rev, beta: opt.beta }) : '';
@@ -725,15 +770,15 @@
     var L2 = lw.last = lw(ctx);
     if (L2.short && !L2.ero) return s;
     if (L2.ero) { s.text = (s.text.match(/^[^。]*。/) || [''])[0] + (L2.short ? '' : '\n\n') + eroScene(ctx, A, B, '', '', TK.kind(A, B, 'omega')); return s; }
-    var pk = function (arr) { return fp(ctx, arr); }, ff = HK.Pos.ff(A, B), hi = lew === 'high';
-    var kd = TK.kind(A, B, 'omega'), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(A, B);
+    var kd = TK.kind(A, B, 'omega'), pk = function (arr) { return fp(ctx, arr); }, ff = kd === 'ff', hi = lew === 'high';
+    var riba = HK.Pos.bothRiba && HK.Pos.bothRiba(A, B);
     var cp = cbPlay(pk, A, B, kd, riba), extra = [cp.play];
     /* 濃いめ：組み合わせを問わないプレイをもう一つ（女性どうしは指・舌の文） */
     if (hi && LV) {
       if (kd === 'ff') { var pf2 = LV.T.playFF.filter(ffOk(riba)); if (pf2.length) extra.push('それから、' + toTU(pk(pf2), true, A, B)); }
-      else if (kd !== 'ride') { var ab = []; LV.T.play.forEach(function (p) { ab = ab.concat(p.base); }); extra.push('それから、' + toTU(pk(ab), true, A, B)); }
+      else if (kd !== 'ride') { var ab = []; LV.T.play.forEach(function (p) { ab = ab.concat(p.base); }); extra.push('それから、' + toTU(pk(faF(A, kd, ab)), true, A, B)); }
     }
-    var lead = (bond && !ff ? pk(BOND_LEAD) : '') + (LV && kd !== 'ride' && ctx.rng() < 0.6 ? toTU(pk(LV.T.lead[HK.voiceTop(A)] || LV.T.lead.NP), true, A, B) : '');
+    var lead = (bond && !ff ? pk(BOND_LEAD) : '') + (LV && kd !== 'ride' && ctx.rng() < 0.6 ? toTU(pk(faF(A, kd, LV.T.lead[HK.voiceTop(A)] || LV.T.lead.NP)), true, A, B) : '');
     var fin = hi || ctx.rng() < 0.7 ? cbKnot(pk, A, B, kd, cp.cb) : '';
     var aft = LV && ctx.rng() < 0.7 ? toTU(pk(bond && ctx.rng() < 0.5 ? LV.T.bondAfter : LV.T.after[HK.voiceTop(B)] || LV.T.after.NP), true, A, B) : null;
     var body = TK.body(A, B, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: hi ? 3 : 1, lead: lead, extra: extra, finish: fin, after: aft });
@@ -763,7 +808,7 @@
       var o = HK.Pos.order(a, b, [a, b]), T = o[0], U = o[1];
       if (!TK.ok(T, U)) return res;
       if (L3.ero) { res.text = (res.text.match(/^[^。]*。/) || [''])[0] + (L3.short ? '' : '\n\n') + eroScene(ctx, T, U, '', '', TK.kind(T, U, 'omega')); return res; }
-      var pk = function (arr) { return fp(ctx, arr); }, ff = HK.Pos.ff(a, b);
+      var pk = function (arr) { return fp(ctx, arr); }, ff = TK.kind(T, U, 'omega') === 'ff';
       var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: lew === 'high' ? 3 : 1, rough: hate, lead: hate ? pk(HATE_LEAD) : '', after: hate ? pk(HATE_END) : null });
       var sc = OM.sc || function (t) { return t; };
       var text = sc(ctx.t(TK.map(body, 'a', 'b'), T, U), T, U);
@@ -789,7 +834,7 @@
     if (L4.short && !L4.ero) return null;
     var sc = OM.sc || function (t) { return t; }, pk = function (arr) { return fp(ctx, arr); };
     if (L4.ero) return eroScene(ctx, T, U, '', sc(TK.names(pk(AFF_END), T, U), T, U), TK.kind(T, U, 'omega'));
-    var ff = HK.Pos.ff(T, U), kd = TK.kind(T, U, 'omega'), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(T, U);
+    var kd = TK.kind(T, U, 'omega'), ff = kd === 'ff', riba = HK.Pos.bothRiba && HK.Pos.bothRiba(T, U);
     var cp = cbPlay(pk, T, U, kd, riba);
     var fin = lew === 'high' || ctx.rng() < 0.5 ? cbKnot(pk, T, U, kd, cp.cb) : '';
     var body = TK.body(T, U, { flav: 'omega', pick: pk, rng: ctx.rng, bed: 'シーツ', depth: lew === 'high' ? 3 : 1, lead: pk(AFF_LEAD), extra: [cp.play], finish: fin, after: pk(AFF_END) });

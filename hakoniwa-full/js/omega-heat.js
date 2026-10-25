@@ -8,6 +8,20 @@
   function fp(ctx, arr) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx, arr, function (l) { return ctx.pick(l); }) : ctx.pick(arr); }
   var H = OM.HEAT = {};
   function L(s) { return s.split('|'); }
+  /* 体の組み合わせ（第二性を優先）。T=攻め U=受け（HK.Pos.order のあと）。
+     αが攻めで相手がαでないときは、αを挿れる側の体（挿入・ノット・根元が膨らむ）で書く。女性のαでも同じ（胸の描写は残る）。
+     受ける側は自分の体の性別のまま：男性のΩ・β→男性どうしの書き方（mm）、女性のΩ・β→男女の書き方（mf）。
+     攻めがΩ・β、α×α のときは体の性別のまま：ff＝女性どうし／ride＝女性の攻め×男性（跨る）／mf／mm */
+  OM.alphaTop = function (T, U) { return !!(T && U && T.om && U.om && T.om.sex === 'a' && U.om.sex !== 'a'); };
+  OM.bodyKind = function (T, U) {
+    var P = HK.Pos, fb = function (c) { return P && P.isFBody ? P.isFBody(c) : !!(c && c.gender === 'f'); };
+    var aT = OM.alphaTop(T, U), fT = fb(T) && !aT, fU = fb(U);
+    /* 女性のαを挿れる側で書いた組を覚えておく（pos-ff.js・pos-fm.js の見直しで直さないように） */
+    if (aT && fb(T) && P && P.maleTop && T.name && U.name) P.maleTop[T.name + '\u0001' + U.name] = 1;
+    return fT && fU ? 'ff' : fT ? 'ride' : fU ? 'mf' : 'mm';
+  };
+  /* 女性どうしの書き方（指・舌・玩具）にする組か。T・U は攻め・受けの順 */
+  OM.ffTU = function (T, U) { return OM.bodyKind(T, U) === 'ff'; };
 
   /* 来訪：相手のいちばん強い因子で */
   H.COME = {
@@ -88,10 +102,10 @@
     opt = opt || {};
     var pk = function (arr) { return fp(ctx, arr); }, ta = top(a), tb = top(b), lew = ctx.env.lewd || 'mid';
     /* 受け攻めの指定：発情期のΩ（{b}）の方が攻めなら、抱く側を入れ替える */
-    var rev = HK.Pos && HK.Pos.order(a, b, [a, b])[0] === b, ff = HK.Pos && HK.Pos.ff(a, b);
+    var o0 = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b], rev = !!HK.Pos && o0[0] === b, ff = !!HK.Pos && OM.ffTU(o0[0], o0[1]);
     /* Ωの側が攻めのときは、Ωが触れられ・満たされる側に回る書き方を除く */
     var noRecv = function (arr, re) { if (!rev) return arr; var f = arr.filter(function (l) { return !re.test(l); }); return f.length ? f : arr; };
-    var moe = H.MOE.filter(function (l) { return !(ff && /喉仏/.test(l)); });
+    var moe = H.MOE.filter(function (l) { return !((ff || (HK.Pos && HK.Pos.isFBody(a))) && /喉仏/.test(l)); });
     var out = [pk(H.COME[ta]), pk(noRecv(H.STATE[tb], /触れた瞬間|さわって|ほどくと/)), pk(noRecv(moe, /いっぱいにして|噛まない|肩がびくりと/))];
     if (lew === 'low') out.push(pk(H.LOW));
     else if (ff) {

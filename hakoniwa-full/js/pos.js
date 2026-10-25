@@ -159,7 +159,11 @@
   P.canReceive = function (c) { return !P.hardTop(c) || !!(c && c.posNpc === 'bottom'); };
   /* モブ・魔物との場面で、攻めに回る人か（攻め指定でも「モブには受け」なら受ける） */
   P.hardTopNpc = function (c) { return P.hardTop(c) && !(c && c.posNpc === 'bottom'); };
-  P.reset = function () { lock = {}; };
+  /* 攻めを挿れる側の体で書いた女性の組（オメガバースの女性のα×Ω・β。omega-heat.js の OM.bodyKind が記録する）。
+     女性どうし・女性上位の見直し（pos-ff.js・pos-fm.js）は、この組を直さない。名前の組 攻め\u0001受け */
+  P.maleTop = {};
+  P.isMaleTop = function (a, b) { return !!(a && b && P.maleTop[a.name + '\u0001' + b.name]); };
+  P.reset = function () { lock = {}; P.maleTop = {}; };
   /* ノリノリな性格（奔放・衝動的）：受けやおまかせでも、自分から跨ったり誘ったりする */
   P.nori = function (c) { var t = (c && c.tr) || {}; if ((t.ac || 0) > 0.62 && (t.fc || 0) < 0.5) return false; return (t.fc || 0) > 0.6 || (t.impulse || 0) > 0.66; };
   /* 仕掛けた側 a がノリノリで、攻めの指定でなければ、自分が受けに回る向きを希望する */

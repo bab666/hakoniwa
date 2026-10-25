@@ -136,7 +136,7 @@
       var lk = function (c) { return c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock; };
       /* 恋愛相手を別の人に固定している組も同じ */
       var ng = function (x, y) { var ix = cs.indexOf(x), iy = cs.indexOf(y); return (Array.isArray(x.loveNG) && x.loveNG.indexOf(iy) >= 0) || (Array.isArray(y.loveNG) && y.loveNG.indexOf(ix) >= 0) || (lk(x) != null && lk(x) !== iy) || (lk(y) != null && lk(y) !== ix); };
-      F.forEach(function (f) { M.forEach(function (m) { if (FM.on(f, m) && !ng(f, m)) pairs.push([f, m]); }); });
+      F.forEach(function (f) { M.forEach(function (m) { if (FM.on(f, m) && !ng(f, m) && !(P.isMaleTop && P.isMaleTop(f, m))) pairs.push([f, m]); }); });
       if (!pairs.length) return res;
       var rng = HK.rng ? HK.rng(((input.seed || 1) * 7919 + 17) >>> 0) : null;
       var ctx = { pick: function (a) { return a[rng ? rng.int(a.length) : Math.floor(Math.random() * a.length)]; } };

@@ -1,6 +1,6 @@
 /* 箱庭シミュレーター（R18版のみ）: オメガバース ― 発情期の夜に、新しい関係（同僚・同級生・上司と部下・執着（信仰）・恩人・親族）ならではの導入と反応を足す
    発情期の場面（omega-heat.js・omega-thick.js の OM.HEAT.scene）を包む。夜になるかどうか・攻め受け・番になるかは既存の判定のまま（ここでは文を足すだけ）。
-   ・導入（関係×発情期の人の側×体の組）：場面の前に一段。体の組は m＝攻めが男性の体／ff＝女性どうし（指・舌・肌）／fm＝女性の攻めが男性に跨る
+   ・導入（関係×発情期の人の側×体の組）：場面の前に一段。体の組は m＝攻めが挿れる側の体（男性、またはαの攻め）／ff＝女性どうし（指・舌・肌）／fm＝女性の攻めが男性に跨る
    ・山場の反応（受ける側の態度9種）：頂のすぐあと（opt.insert の位置）に一段。喘ぎは ero-kit.js の態度別（{mb1}{mb2}）
    ・男性向けの作風：山場の反応のかわりに、擬音と♡の段落（体の組ごと）
    ・事後（関係ごと）：場面の最後に一段
@@ -15,7 +15,11 @@
   var PS = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite'];
   function ps(c) { var p = HK.personaOf ? HK.personaOf(c) : c.persona; return PS.indexOf(p) >= 0 ? p : 'gentle'; }
   function isF(c) { return !!(HK.Pos && HK.Pos.isF(c)); }
-  function kindOf(T, U) { return isF(T) ? (isF(U) ? 'ff' : 'fm') : 'm'; }
+  /* 体の組は第二性を優先（omega-heat.js の OM.bodyKind）：αの攻めは女性でも m（挿れる側の体）。それ以外は体の性別のまま */
+  function kindOf(T, U) {
+    if (OM.bodyKind) { var k = OM.bodyKind(T, U); return k === 'ff' ? 'ff' : k === 'ride' ? 'fm' : 'm'; }
+    return isF(T) ? (isF(U) ? 'ff' : 'fm') : 'm';
+  }
 
   /* ================= 導入 ================= */
   /* sym の関係は x、向きのある関係は a（発情期の人が t.a の側）／b（t.b の側） */
