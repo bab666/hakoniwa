@@ -83,6 +83,7 @@
   function opt(v, label, sel, title) { return '<option value="' + esc(v) + '"' + (v === sel ? ' selected' : '') + (title ? ' title="' + esc(title) + '"' : '') + '>' + esc(label) + '</option>'; }
   function selOf(f, list, v, extra) { return '<select data-gf="' + f + '"' + (extra || '') + '>' + list.map(function (o) { return opt(o[0], o[1], v || ''); }).join('') + '</select>'; }
   function typeOpts(sel) {
+    if (HK.tieOptions) return HK.tieOptions(sel);
     return HK.TIE_ORDER.map(function (id) { var d = HK.TIES[id]; return opt(id, d.label, sel); }).join('');
   }
   function tieRow(c, o, t, k) {

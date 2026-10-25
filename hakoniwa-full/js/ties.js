@@ -144,6 +144,26 @@
   var COLD_WORDS = [[/両片想い|両片思い|実は相手も/, 'mutual'], [/脈なし|眼中に|相手にされ|興味がない|興味なし/, 'none'], [/友達としか|友達止まり|異性として見|恋愛対象外|対象外/, 'friend'], [/苦手|嫌われ|避けられ|避けて/, 'dislike'], [/他に好き|ほかに好き|別に好き|好きな人がいる/, 'other']];
   HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'classmate', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'stepsib', 'relative', 'parent', 'pparent', 'teacher', 'mentor', 'boss', 'benefactor', 'crush', 'yan', 'worship', 'bad', 'rival', 'enemy', 'lover', 'spouse', 'honmei', 'fwb', 'ex', 'abuse', 'fated', 'mate', 'master', 'noobs'];
   HK.TIE_ORDER.splice(HK.TIE_ORDER.indexOf('worship') + 1, 0, 'fond', 'blind');
+  /* 設定画面の関係の選択肢のまとまり（選びやすさのため。表に載っていない関係は「そのほか」）。並びは TIE_ORDER のまま */
+  HK.TIE_GROUPS = [
+    { id: 'stance', label: '立場・つながり', ids: ['acq', 'friend', 'best', 'buddy', 'childhood', 'classmate', 'colleague', 'senpai', 'boss', 'teacher', 'mentor', 'master', 'rival'] },
+    { id: 'family', label: '家族・血縁', ids: ['sibling', 'sibprot', 'sibclose', 'sibbad', 'stepsib', 'parent', 'pparent', 'relative'] },
+    { id: 'feeling', label: '気持ち（執着・恩・片想いなど）', ids: ['crush', 'honmei', 'yan', 'worship', 'fond', 'blind', 'benefactor', 'bad', 'enemy', 'abuse', 'noobs'] },
+    { id: 'love', label: '恋愛・夫婦の状態', ids: ['almost', 'lover', 'spouse', 'fwb', 'ex', 'mate', 'fated'] }
+  ];
+  /* <select> の中身（<optgroup> で分ける）。sel＝選んでおく id */
+  HK.tieOptions = function (sel, o) {
+    var esc = function (x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var done = {}, out = '';
+    var grp = function (label, ids) {
+      var l = HK.TIE_ORDER.filter(function (id) { return ids.indexOf(id) >= 0 && HK.TIES[id] && !done[id]; });
+      if (!l.length) return;
+      out += '<optgroup label="' + esc(label) + '">' + l.map(function (id) { done[id] = 1; return '<option value="' + id + '"' + (id === sel ? ' selected' : '') + '>' + esc(HK.TIES[id].label) + (o && o.dir && HK.TIES[id].dir ? '（' + esc(HK.TIES[id].roleA) + '→' + esc(HK.TIES[id].roleB) + '）' : '') + '</option>'; }).join('') + '</optgroup>';
+    };
+    HK.TIE_GROUPS.forEach(function (g) { grp(g.label, g.ids); });
+    grp('そのほか', HK.TIE_ORDER.filter(function (id) { return !done[id]; }));
+    return out;
+  };
 
   /* 文字から関係の種類を推定（長い語から順に照合） */
   var ALIAS = [
