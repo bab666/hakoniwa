@@ -897,6 +897,7 @@
     var K = HK.ROOM_KINDS;
     return {
       label: ctx.flags.roomLabel,
+      left: ctx.flags.roomLeft || null,   /* 最後に取り残された人の結末（room-left.js） */
       consumed: (ctx.rules || []).filter(function (r) { return K[r.k].type === 'consume'; }).map(function (r) {
         var by = [];
         Object.keys(ctx.flags.drank || {}).forEach(function (i) { var n = ctx.flags.drank[i][r.k]; if (n) by.push({ i: +i, n: n }); });

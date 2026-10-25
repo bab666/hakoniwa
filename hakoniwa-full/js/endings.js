@@ -86,7 +86,12 @@
   /* ---------- 出られない部屋 ---------- */
   E.whiteroom = function (res, X) {
     var ex = res.end.exits, room = res.end.room || {};
-    var out = X.byFate(/脱出/), stayed = X.byFate(/自分から残った/), left = X.C.filter(function (c) { return !/脱出|自分から残った/.test(c.fate); });
+    /* 最後に取り残された人の結末（room-left.js）。あとから助け出された人は、最初に出た人と分けて数える */
+    var LF = room.left && HK.RoomLeft ? room.left : null, later = LF && LF.rescued ? LF.who : [];
+    var isLater = function (c) { return later.indexOf(c.i) >= 0; };
+    var out = X.byFate(/脱出/).filter(function (c) { return !isLater(c); });
+    var stayed = X.C.filter(function (c) { return /自分から残った/.test(c.fate) || (isLater(c) && LF.stayed.indexOf(c.i) >= 0); });
+    var left = X.C.filter(function (c) { return stayed.indexOf(c) < 0 && (!/脱出/.test(c.fate) || isLater(c)); });
     var isOne = HK.roomOnlyOne ? HK.roomOnlyOne(res.env) : HK.roomRules(res.env)[0].k === 'one';
     var headline, lines = ['部屋：「' + (room.label || HK.roomLabel(res.env)) + '」'];
     if (isOne) {
@@ -111,17 +116,23 @@
       });
       if (group) lines.push(group.label + '　全員で脱出');
     }
+    if (LF) {
+      headline += (out.length ? '脱出は' + out.length + '人。' : '') + HK.RoomLeft.note(res, X);
+      lines.push('取り残された人の結末：' + LF.title + (LF.id === 'friend' ? '（' + X.nm(LF.by[0]) + 'が外から扉を開けた）' : LF.id === 'again' ? '（' + LF.mobs.join('・') + 'が入ってきた）' : ''));
+      (LF.vows || []).forEach(function (v) { lines.push(X.nm(v.a) + '：' + X.nm(v.b) + 'に' + { hate: '借りを返すと誓った', obsess: '必ず会いに行くと決めた', lovehate: 'もう一度会うと誓った（愛憎）', abandon: '置いていかれた恨みを忘れないと誓った' }[v.k]); });
+    }
     (room.consumed || []).forEach(function (c) {
       lines.push(c.item + '：' + c.total + '/' + c.n + c.unit + (c.by.length ? '（' + c.by.map(function (x) { return X.nm(x.i) + ' ' + x.n + c.unit; }).join('・') + '）' : ''));
     });
     left.forEach(function (c) {
       var best = res.pairs.filter(function (p) { return (p.a === c.i || p.b === c.i) && p.label !== 'strangers'; }).sort(function (a, b) { return b.intensity - a.intensity; })[0];
-      lines.push(c.name + '：' + c.fate + (best ? '。最後に残った感情は' + X.nm(best.a === c.i ? best.b : best.a) + 'への「' + best.name + '」' : ''));
+      lines.push(c.name + '：' + (isLater(c) ? c.fateNote : c.fate) + (best ? '。最後に残った感情は' + X.nm(best.a === c.i ? best.b : best.a) + 'への「' + best.name + '」' : ''));
     });
+    if (LF) HK.RoomLeft.afterLines(res).forEach(function (l) { lines.push(l); });
     var con = (room.consumed || [])[0];
     return {
       headline: headline,
-      stats: [['脱出', out.length + '人'], ['成立したペア', (function () { var pn = ex.filter(function (e) { return e.group == null && !e.how; }).length, tn = ex.filter(function (e) { return e.trio; }).length; return tn ? (pn ? pn + '組＋' : '') + '三人で' + tn + '組' : pn + '組'; })()], ['取り残し', left.length + '人']].concat(con ? [[con.item, con.total + '/' + con.n + con.unit]] : [['経過', res.stepCount + '時間']]),
+      stats: [['脱出', out.length + '人' + (later.length ? '＋あとから' + later.length + '人' : '')], ['成立したペア', (function () { var pn = ex.filter(function (e) { return e.group == null && !e.how; }).length, tn = ex.filter(function (e) { return e.trio; }).length; return tn ? (pn ? pn + '組＋' : '') + '三人で' + tn + '組' : pn + '組'; })()], ['取り残し', left.length + '人']].concat(con ? [[con.item, con.total + '/' + con.n + con.unit]] : [['経過', res.stepCount + '時間']]),
       lines: lines
     };
   };

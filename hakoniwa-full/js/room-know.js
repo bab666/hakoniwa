@@ -217,6 +217,8 @@
     for (var i = ctx.log.length - 1; i >= s0; i--) if (/^部屋を出たあとの三人/.test(ctx.log[i].why || '')) late.unshift(ctx.log.splice(i, 1)[0]);
     for (var j = s0; j < ctx.log.length; j++) ctx.log[j].n = j;
     closing(ctx, late);
+    /* 最後に取り残された人の結末（room-left.js） */
+    if (HK.RoomLeft) HK.RoomLeft.write(ctx);
     return r;
   };
 })();

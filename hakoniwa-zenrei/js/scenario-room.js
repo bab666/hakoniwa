@@ -560,6 +560,8 @@
         c.fateNote = c.flags.knocked ? (c.flags.knockedBy != null ? ctx.chars[c.flags.knockedBy].name + 'に' : '') + '気絶させられ、部屋に残された' : (ctx.flags.isOne || ctx.flags.oneCond) && ctx.flags.oneOut ? '扉はもう開かなかった' : '最後まで条件を満たせなかった';
       });
       ctx.flags.outcome = ctx.flags.roomLabel;
+      /* まだ部屋の中にいる人の結末を選ぶ（room-left.js。記録に書くのは、room-know.js の結末の締めのあと） */
+      if (HK.RoomLeft) HK.RoomLeft.decide(ctx);
     },
     events: []
   };

@@ -90,6 +90,7 @@ js/scenario-room.js
 js/room-reluct.js
 js/room-trio-lines.js
 js/room-trio.js
+js/room-left.js
 js/hate-sex-r18.js
 js/room-know.js
 js/room-tie.js
