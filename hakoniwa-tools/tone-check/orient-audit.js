@@ -16,7 +16,7 @@ const { openBuild } = require('./lib');
   const r = await page.evaluate(({ N, WHY, ENVSET }) => {
     const SEX = /挿入|挿れ|射精|精液|愛液|ちんぽ|喘ぎ|喘い|腰を振|腰を打ち|奥まで(?:突|沈|貫)|深く沈|フェラ|咥え込|秘所|貫か|貫い|絶頂|イっ|イく|中に出|舐め上げ|乳首|性器|ひだ|襞|潮を|搾り取|犯し|犯さ|セックス|抱き潰|跨って腰|騎乗|ノット|夜を共に|体を重ね|肌を重ね|一夜を共に|抱かれ|抱いた|求め合/;
     const CONF = /(?:付き合って|恋人になって)(?:ください|ほしい|くれ(?!た))|付き合おう|恋人になった|両想いに|告白した|想いを告げ|好きだ。|好きです。/;
-    const NOTSEX = /精液検査|ほかの結果：[^\n]*|ほかに：[^\n]*|アシスタントに[^。]*|抱いた(?:まま|肩|膝)|肩を抱|膝を抱|頭を抱|抱いた(?:子|赤)|日照りに喘|息を喘|旅路の果て/;
+    const NOTSEX = /(?:殺人|罪|過ち|犯罪)を犯[しさすせ]?|精液検査|ほかの結果：[^\n]*|ほかに：[^\n]*|アシスタントに[^。]*|抱いた(?:まま|肩|膝)|肩を抱|膝を抱|頭を抱|抱いた(?:子|赤)|日照りに喘|息を喘|旅路の果て/;
     const LOVE_T = /^(lover|fwb|mate|fated|crush|almost|ex|yan|worship)$/;
     function one(a, b) { if (!a.likes || a.likes === 'both') return true; if (a.likes === 'none') return false; if (!b.gender || b.gender === 'x') return true; return a.likes === b.gender; }
     function ok(a, b) { return one(a, b) && one(b, a); }
