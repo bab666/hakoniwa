@@ -363,6 +363,7 @@ late js/tips-scen-c.js
 late js/tips-scen-d.js
 js/ui.js
 js/ui-gear.js
+js/notice.js
 js/ui-fold.js
 js/ui-mobile.js
 js/ui-log.js
