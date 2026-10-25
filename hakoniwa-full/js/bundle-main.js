@@ -32591,7 +32591,7 @@
   HK.SCENARIOS.hole = {
     id: 'hole', name: '感覚遮断穴', kicker: '1〜4人・R18', solo: true, maxCast: 4, minCast: 1,
     castHint: '1〜4人。役割「穴にはまる」の人が壁にはまり（決めなければ一人目）、ほかの人（3人まで）は壁の向こう、下半身の側にいる。途中で壁から突き出た体に出くわし、関係・性格・はまっている人の発情の見え方しだいで、助けるか、手を出すかが変わる。助け出されたら、その場で終わる。',
-    perFields: [{ id: 'side', label: '役割', auto: 'おまかせ（一人目が穴にはまる）', options: [{ id: 'stuck', label: '穴にはまる' }, { id: 'behind', label: '壁の向こう（下半身側）' }] }],
+    perFields: [{ id: 'side', label: '役割', auto: 'おまかせ（一人目が穴にはまる）', offWhen: function (pk) { return pk.host === 'yes' ? '主催者なので穴にも壁の向こうにも入らない' : ''; }, options: [{ id: 'stuck', label: '穴にはまる' }, { id: 'behind', label: '壁の向こう（下半身側）' }] }],
     desc: '壁の穴に下半身がはまり、向こう側の感覚は遮断されている。そこで何をされても分からない――解放されるまでは。※成人キャラクター向け',
     unit: '時間', simulate: function (input) {
       var r = run(input), n = (input.chars || []).length;
@@ -49401,7 +49401,7 @@
       { id: 'charm', label: '魅力', desc: '見た目と色香。誘惑の成功率に効く' },
       { id: 'tech', label: '技巧', desc: '誘い方と、ベッドでの腕。大成功と搾れる量に効く' }
     ],
-    perFields: [{ id: 'role', label: '役割', auto: '狩りに出る', options: [{ id: 'hunt', label: '狩りに出る' }, { id: 'senpai', label: '先輩サキュバス（アドバイス係）' }] }],
+    perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（狩りに出る）', offWhen: function (pk) { return pk.target === 'yes' ? '標的（人間）なので狩りには出ない' : ''; }, options: [{ id: 'hunt', label: '狩りに出る' }, { id: 'senpai', label: '先輩サキュバス（アドバイス係）' }] }],
     actions: [
       { id: 'pick', label: '獲物を選ぶ', fit: function (t) { return t.a * 0.6 + t.caution * 0.4; } },
       { id: 'many', label: '数を打つ', fit: function (t) { return t.fc * 0.6 + t.impulse * 0.4; } },
@@ -74913,6 +74913,9 @@
       var wp = scen.weapons ? '<td><select id="pw-' + c.id + '" data-f="weapon" data-id="' + c.id + '" aria-label="' + esc(c.name) + 'の武器"><option value="random">ランダム支給</option>' +
         HK.WEAPONS.map(function (w) { return '<option value="' + w.id + '"' + (p.weapon === w.id ? ' selected' : '') + '>' + esc(w.name) + '</option>'; }).join('') + '</select></td>' : '';
       return '<tr' + (on ? '' : ' class="off"') + '><td><input type="checkbox" id="jn-' + c.id + '" data-f="join" data-id="' + c.id + '"' + (on ? ' checked' : '') + ' aria-label="' + esc(c.name) + 'を参加させる"></td><td><span class="row" style="flex-wrap:nowrap"><span class="dot" style="background:var(--p' + i + ')"></span><b>' + esc(c.name) + '</b>' + (c.group ? '<span class="grptag">' + esc(grpList(c).join('・')) + '</span>' : '') + '</span></td><td>' + sel('action', scen.actions) + '</td><td>' + sel('goal', scen.goals) + '</td>' + st + wp + pfs.map(function (f) {
+        /* ほかの欄の選び方でこの欄が意味を持たないとき（サキュバスの標的・遮断穴の主催者など）は、理由を出して選べなくする（perField.offWhen） */
+        var offTx = f.offWhen ? f.offWhen(p.pick || {}) : '';
+        if (offTx) return '<td><select id="pf-' + c.id + '-' + f.id + '" disabled title="' + esc(offTx) + '" aria-label="' + esc(c.name) + 'の' + esc(f.label) + '"><option>' + esc(offTx) + '</option></select></td>';
         if (f.type === 'text') {
           var tv = (p.pick || {})[f.id] || '', ph = f.placeholder ? f.placeholder(c) : '';
           return '<td><input type="text" id="pf-' + c.id + '-' + f.id + '" data-f="pf" data-id="' + c.id + '" data-k="' + f.id + '" value="' + esc(tv) + '" placeholder="' + esc(ph) + '" maxlength="40" style="min-width:14em" aria-label="' + esc(c.name) + 'の' + esc(f.label) + '"></td>';
@@ -75308,6 +75311,8 @@
       if (!cp) return;
       var pp = per(cp, S.scenId); pp.pick = pp.pick || {};
       if (t.value === 'auto' || !String(t.value).trim()) delete pp.pick[t.dataset.k]; else pp.pick[t.dataset.k] = String(t.value).trim();
+      /* ほかの欄を選べなくする欄（offWhen）がある箱庭は、行を描き直す */
+      if (((HK.SCENARIOS[S.scenId] || {}).perFields || []).some(function (x) { return x.offWhen; })) { save(); renderBox(); return; }
     }
     else if (f === 'per' || f === 'stat' || f === 'weapon') {
       var cc = S.chars.filter(function (x) { return x.id === t.dataset.id; })[0];

@@ -110,7 +110,7 @@
   HK.SCENARIOS.hole = {
     id: 'hole', name: '感覚遮断穴', kicker: '1〜4人・R18', solo: true, maxCast: 4, minCast: 1,
     castHint: '1〜4人。役割「穴にはまる」の人が壁にはまり（決めなければ一人目）、ほかの人（3人まで）は壁の向こう、下半身の側にいる。途中で壁から突き出た体に出くわし、関係・性格・はまっている人の発情の見え方しだいで、助けるか、手を出すかが変わる。助け出されたら、その場で終わる。',
-    perFields: [{ id: 'side', label: '役割', auto: 'おまかせ（一人目が穴にはまる）', options: [{ id: 'stuck', label: '穴にはまる' }, { id: 'behind', label: '壁の向こう（下半身側）' }] }],
+    perFields: [{ id: 'side', label: '役割', auto: 'おまかせ（一人目が穴にはまる）', offWhen: function (pk) { return pk.host === 'yes' ? '主催者なので穴にも壁の向こうにも入らない' : ''; }, options: [{ id: 'stuck', label: '穴にはまる' }, { id: 'behind', label: '壁の向こう（下半身側）' }] }],
     desc: '壁の穴に下半身がはまり、向こう側の感覚は遮断されている。そこで何をされても分からない――解放されるまでは。※成人キャラクター向け',
     unit: '時間', simulate: function (input) {
       var r = run(input), n = (input.chars || []).length;

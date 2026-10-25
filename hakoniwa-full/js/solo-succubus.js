@@ -37,7 +37,7 @@
       { id: 'charm', label: '魅力', desc: '見た目と色香。誘惑の成功率に効く' },
       { id: 'tech', label: '技巧', desc: '誘い方と、ベッドでの腕。大成功と搾れる量に効く' }
     ],
-    perFields: [{ id: 'role', label: '役割', auto: '狩りに出る', options: [{ id: 'hunt', label: '狩りに出る' }, { id: 'senpai', label: '先輩サキュバス（アドバイス係）' }] }],
+    perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（狩りに出る）', offWhen: function (pk) { return pk.target === 'yes' ? '標的（人間）なので狩りには出ない' : ''; }, options: [{ id: 'hunt', label: '狩りに出る' }, { id: 'senpai', label: '先輩サキュバス（アドバイス係）' }] }],
     actions: [
       { id: 'pick', label: '獲物を選ぶ', fit: function (t) { return t.a * 0.6 + t.caution * 0.4; } },
       { id: 'many', label: '数を打つ', fit: function (t) { return t.fc * 0.6 + t.impulse * 0.4; } },
