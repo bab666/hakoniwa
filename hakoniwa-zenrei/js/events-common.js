@@ -10,6 +10,8 @@
     { id: 'incident', label: 'ハプニングの頻度', min: 0, max: 100, def: 60, lo: 'たまに', hi: '毎回', desc: '天候・物資・追加ルールなど、全員に降りかかる出来事' },
     { id: 'tieEv', label: '関係性イベント', type: 'select', def: 'on', options: [{ v: 'on', label: '出す' }, { v: 'off', label: '出さない（関係は初期値と恋人の扱いだけに使う）' }], desc: '上司と部下・恩人・夫婦など、関係ごとの専用の場面' }
   ];
+  /* 複数の恋人（なし／あり／秘密。poly.js） */
+  if (HK.Poly && HK.Poly.ENV) HK.GLOBAL_ENV.push(HK.Poly.ENV);
 
   function R(ctx, a, b) { return ctx.R(a, b); }
   /* 何をめぐって・何を、が分かるように、箱庭ごとの話題を添える */
@@ -142,7 +144,7 @@
     },
     {
       id: 'confess', cat: 'romance', scope: 'pair',
-      when: function (ctx, a, b) { var r = R(ctx, a, b); return r.aff > 45 && r.att > 45 && !ctx.pair(a, b).confessed[a.i] && !ctx.pair(a, b).couple; },
+      when: function (ctx, a, b) { var r = R(ctx, a, b); return r.aff > 45 && r.att > 45 && !ctx.pair(a, b).confessed[a.i] && !ctx.pair(a, b).couple && (!HK.Poly || HK.Poly.canTry(ctx, a, b)); },
       w: function (ctx, a) { return 0.4 + a.tr.honesty * 1.4 + a.stress / 120; },
       run: function (ctx, a, b) {
         var p = ctx.pair(a, b), rb = R(ctx, b, a);

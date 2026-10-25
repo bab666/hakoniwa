@@ -148,6 +148,8 @@
     when: function (ctx, a, b) {
       var r = R(ctx, a, b), p = ctx.pair(a, b), fell = p.fellBy === a.i;
       if (p.couple || p.confessed[a.i]) return false;
+      /* 複数の恋人の設定（poly.js）：恋人がいる人は「なし」なら乗り換えの気持ちが育ったときだけ */
+      if (HK.Poly && !HK.Poly.canTry(ctx, a, b)) return false;
       return fell ? r.att > 30 : r.att > 42 && r.aff > 26;
     },
     w: function (ctx, a, b) { var p = ctx.pair(a, b); return 0.9 + a.tr.honesty * 1.2 + a.tr.fc * 0.4 + a.stress / 200 + (p.fellBy === a.i ? 2.5 : 0) + R(ctx, a, b).att / 80; },

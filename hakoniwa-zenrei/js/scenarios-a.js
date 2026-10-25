@@ -256,6 +256,8 @@
   };
   /* 結末：合コンのあとで恋人が二人になっていた人（二股）。二人とも関係の設定で恋人にしてある場合は出さない */
   function gCloseTwo(ctx, P, T) {
+    /* 複数の恋人「秘密」（poly.js）：恋人どうしは互いを知らないので、二股の結末は出さない */
+    if (HK.Poly && HK.Poly.mode(ctx) === 'secret') return;
     P.forEach(function (b) {
       var ps = P.filter(function (o) { return o !== b && ctx.pair(b, o).couple; });
       if (ps.length < 2 || ps.every(function (o) { return gTie(ctx, b, o); })) return;
@@ -560,11 +562,11 @@
       {
         /* 告白：通じれば、その場で恋人に */
         id: 'g_confess', cat: 'romance', scope: 'pair',
-        when: function (ctx, a, b) { var pf = ctx.pair(a, b); return ctx.stepIndex >= 2 && HK.canLove(a, b) && !pf.couple && !pf.gconf && !pf.kin && !gTaken(ctx, a) && R(ctx, a, b).att > 44 - gRom(ctx) * 12; },
+        when: function (ctx, a, b) { var pf = ctx.pair(a, b); return ctx.stepIndex >= 2 && HK.canLove(a, b) && !pf.couple && !pf.gconf && !pf.kin && (!gTaken(ctx, a) || (HK.Poly && HK.Poly.mode(ctx) !== 'none')) && R(ctx, a, b).att > 44 - gRom(ctx) * 12; },
         w: function (ctx, a, b) { return (0.4 + a.tr.honesty * 0.7 + a.tr.impulse * 0.4 + R(ctx, a, b).att / 100) * (a.goal.id === 'lover' ? 1.8 : 1); },
         run: function (ctx, a, b) {
           var d = gRom(ctx), rb = R(ctx, b, a), pf = ctx.pair(a, b);
-          var yes = HK.canLove(b, a) && !gTaken(ctx, b) && (b.lock == null || b.lock === a.i) && rb.att > 36 - d * 10 && rb.aff > 8 - d * 6;
+          var yes = HK.canLove(b, a) && (!gTaken(ctx, b) || (HK.Poly && HK.Poly.mode(ctx) !== 'none')) && (!HK.Poly || HK.Poly.canCouple(ctx, a, b)) && (b.lock == null || b.lock === a.i) && rb.att > 36 - d * 10 && rb.aff > 8 - d * 6;
           pf.gconf = true;
           if (yes) { pf.couple = true; ctx.mod2(a, b, { att: 8, aff: 10, trust: 6 }, { att: 8, aff: 10, trust: 6 }); }
           else { ctx.mod2(a, b, { att: -3 }, { aff: 2 }); ctx.stress(a, 10); }
@@ -576,7 +578,7 @@
            二人とも関係の設定で c の恋人にしてある場合（恋人を複数にした円満な関係）は起きない */
         /* 相手（b）は場の誰でもよいわけではないので、一人で起こす出来事にして中で選ぶ */
         id: 'g_two', cat: 'conflict', scope: 'solo', pri: true,
-        when: function (ctx, a) { return !!gRivalOf(ctx, a); },
+        when: function (ctx, a) { return !!gRivalOf(ctx, a) && !(HK.Poly && HK.Poly.mode(ctx) === 'secret'); },
         w: function (ctx, a) { return 0.8 + a.tr.jealous * 1.8 + a.tr.cp * 0.6 + a.tr.impulse * 0.3; },
         run: function (ctx, a) {
           var rv = gRivalOf(ctx, a), b = rv.b, c = rv.c, pf = ctx.pair(a, b), pc = ctx.pair(a, c), rc = R(ctx, a, c);

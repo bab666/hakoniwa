@@ -141,7 +141,7 @@
       var fire = false;
       P.forEach(function (a) {
         var c = crushOf(ctx, a, 55);
-        if (!c || c.out || rng() > 0.35 + a.tr.honesty * 0.5) return;
+        if (!c || c.out || rng() > 0.35 + a.tr.honesty * 0.5 || (HK.Poly && !HK.Poly.canTry(ctx, a, c))) return;
         if (!fire) { ctx.incident('後夜祭。グラウンドの真ん中でキャンプファイヤーが燃えている。'); fire = true; }
         var yes = R(ctx, c, a).att > 30;
         ctx.act2({ actors: [a, c], cat: 'romance', mag: 12, fx: function () { ctx.mod2(a, c, { att: yes ? 8 : 0 }, { att: yes ? 10 : 3, aff: yes ? 5 : 0 }); if (!yes) ctx.stress(a, 12); if (yes && R(ctx, a, c).aff > 30 && R(ctx, c, a).aff > 30) ctx.pair(a, c).couple = true; },
@@ -196,7 +196,7 @@
         if (G3.length < P.length) seeOff(ctx, G3, P.filter(function (c) { return gr(ctx, c) !== 3; }));
         G3.forEach(function (a) {
           var c = crushOf(ctx, a, 50);
-          if (!c || c.out || ctx.rng() > 0.3 + a.tr.honesty * 0.5) return;
+          if (!c || c.out || ctx.rng() > 0.3 + a.tr.honesty * 0.5 || (HK.Poly && !HK.Poly.canTry(ctx, a, c))) return;
           var yes = R(ctx, c, a).att > 28;
           ctx.act2({ actors: [a, c], cat: 'romance', mag: 15, fx: function () { ctx.mod2(a, c, { att: 6 }, { att: yes ? 10 : 2 }); if (yes) ctx.pair(a, c).couple = true; else ctx.stress(a, 15); },
             text: ctx.t(yes ? '式のあと、{a}は{b}に第二ボタンをねだった。{b}は黙って、ボタンごと学ランの前を外した。' : '{a}は{b}を呼び止めて、それから「元気でね」とだけ言った。', a, c), why: '最後の日。' + a.name + 'の惹かれ（' + Math.round(R(ctx, a, c).att) + '）' });
@@ -250,7 +250,7 @@
         }
         got[c.i] = (got[c.i] || 0) + 1;
         var rc = R(ctx, c, a);
-        var taken = P.some(function (o) { return o !== a && o !== c && ctx.pair(c, o).couple; });
+        var taken = P.some(function (o) { return o !== a && o !== c && ctx.pair(c, o).couple; }) || !!(HK.Poly && !HK.Poly.canTry(ctx, a, c));
         var res = taken ? 'no' : rc.att > 32 && rc.aff > 22 ? 'yes' : rc.att > 15 || c.tr.np > 0.55 ? 'hold' : 'no';
         var line = ctx.pick(V_GIVE) + ctx.pick(res === 'yes' ? V_YES : res === 'hold' ? V_HOLD : V_NO);
         ctx.act2({ actors: [a, c], cat: 'romance', mag: res === 'yes' ? 25 : 15, fx: function () {
@@ -291,7 +291,7 @@
     list.forEach(function (v) {
       var a = ctx.chars[v.a], b = ctx.chars[v.b];
       if (!a.alive || !b.alive || a.out || b.out) return;
-      var r = R(ctx, b, a), yes = r.att > 30 && r.aff > 22;
+      var r = R(ctx, b, a), yes = r.att > 30 && r.aff > 22 && (!HK.Poly || HK.Poly.canTry(ctx, a, b));
       if (yes) {
         ctx.act2({ actors: [b, a], cat: 'romance', mag: 25, fx: function () { ctx.pair(a, b).couple = true; ctx.mod2(a, b, { att: 10, aff: 8 }, { att: 10, aff: 8 }); },
           text: ctx.t(ctx.pick(['{a}は{b}に、手作りのマカロンを渡した。「一か月、ちゃんと考えた。……付き合おう」', '{a}は{b}を校門で待っていた。差し出した箱には、メッセージカードが一枚入っていた。', '{a}は「三倍返し」と言って、{b}に大きな箱を渡した。中身より、添えられた言葉の方が大事だった。']), b, a), why: b.name + 'の惹かれがこの一か月で育った（' + Math.round(r.att) + '）' });

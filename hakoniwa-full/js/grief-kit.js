@@ -30,7 +30,7 @@
   var TIE_W = {
     lover: 60, mate: 65, fated: 55, parent: 60, pparent: 55, sibprot: 60, sibclose: 55, sibling: 45, best: 50, buddy: 45,
     childhood: 42, almost: 40, mentor: 35, teacher: 30, master: 30, friend: 22, senpai: 15, colleague: 12, ex: 18, fwb: 12, acq: 5, rival: 8,
-    relative: 35, classmate: 16, boss: 20, benefactor: 22, worship: 22
+    relative: 35, classmate: 16, boss: 20, benefactor: 22, worship: 22, fond: 26, blind: 34
   };
   function relWord(type, mine) {
     switch (type) {
@@ -54,6 +54,8 @@
       case 'boss': return mine ? '部下' : '上司';
       case 'benefactor': return mine ? '助けた相手' : '恩人';
       case 'worship': return mine ? '崇めていた人' : '自分を慕っていた人';
+      case 'fond': return mine ? '陰ながら慕っていた人' : '自分を慕ってくれていた人';
+      case 'blind': return mine ? '信じきっていた人' : '自分を信じきっていた人';
       default: return '';
     }
   }
@@ -65,6 +67,9 @@
       /* 執着・信仰する側にとって、相手を失うことは世界を失うのに等しい（ショックが重い） */
       if (t.type === 'yan') w = mine ? 72 : 12;
       if (t.type === 'worship') w = mine ? 78 : t.cold === 'cherish' || t.cold === 'accept' ? 30 : 18;
+      /* 盲信する側・陰ながら慕う側が、相手を失う */
+      if (t.type === 'blind') w = mine ? 66 : 14;
+      if (t.type === 'fond') w = mine ? 38 : 12;
       /* 恩を受けた側が恩人を失う */
       if (t.type === 'benefactor' && !mine) w = 42;
       if (w > best) { best = w; rel = relWord(t.type, mine) || rel; }

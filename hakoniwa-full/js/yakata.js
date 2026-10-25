@@ -35,7 +35,7 @@
   HK.SCEN_ORDER.splice(at >= 0 ? at + 1 : HK.SCEN_ORDER.length, 0, 'yakata');
 
   /* ---------- 関係 ---------- */
-  var W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, classmate: 0.4, boss: 0.45, benefactor: 0.6, relative: 0.6, worship: 0.85, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7 , sibbad: -0.15, bad: -0.4 };
+  var W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, classmate: 0.4, boss: 0.45, benefactor: 0.6, relative: 0.6, worship: 0.85, fond: 0.55, blind: 0.75, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7 , sibbad: -0.15, bad: -0.4 };
   function ties(S, a, b) { return a && b && a.i != null && b.i != null ? S.ties.filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); }) : []; }
   function bond(S, a, b) {
     var best = 0, neg = 0;
@@ -688,7 +688,7 @@
           if (pining(S, a, b) && B.pine) opts.push([a, b, 'pine', 0.7]);
         }
         if (w >= -0.1 && b.m.fear > 45) opts.push([a, b, 'protect', 0.4 + a.tr.np * 0.5]);
-        if (w >= 0.3 && !lover && !kinNo(S, a, b) && (!HK.canLove || HK.canLove(a, b)) && !S.confessed) opts.push([a, b, 'confess', 0.3 + a.tr.fc * 0.4 + w * 0.5]);
+        if (w >= 0.3 && !lover && !kinNo(S, a, b) && (!HK.canLove || HK.canLove(a, b)) && (!HK.Poly || HK.Poly.storyCan(S, a, b)) && !S.confessed) opts.push([a, b, 'confess', 0.3 + a.tr.fc * 0.4 + w * 0.5]);
         if (b === S.cul && a !== S.cul && skill(a, 'obs') > 0.5) opts.push([a, b, 'distrust', 0.4]);
       });
     });
@@ -720,7 +720,7 @@
   function relmap(S) {
     var P = S.P, edges = [], seen = {};
     function add(a, b, label, cls, dir) { var k = rk(P[a], P[b]) + label; if (seen[k]) return; seen[k] = 1; edges.push({ a: a, b: b, label: label, cls: cls, dir: dir }); }
-    var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', classmate: 'friend', boss: 'partner', benefactor: 'guard', relative: 'guard', worship: 'guard', acq: 'none' };
+    var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', classmate: 'friend', boss: 'partner', benefactor: 'guard', relative: 'guard', worship: 'guard', fond: 'friend', blind: 'guard', acq: 'none' };
     S.ties.forEach(function (t) {
       /* 両片想い（逆向きの片想いもある）は、向きのない「両片想い」一本にまとめる */
       if (t.type === 'crush' && crushTo(S, P[t.b], P[t.a])) return add(Math.min(t.a, t.b), Math.max(t.a, t.b), (t.born ? '★' : '') + '両片想い', 'pine', null);

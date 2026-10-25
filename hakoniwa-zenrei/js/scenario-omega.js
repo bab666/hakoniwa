@@ -351,7 +351,7 @@
   /* α同士・Ω同士のためらい／それでも */
   EV.push({
     id: 'om_same', cat: 'romance', scope: 'pair',
-    when: function (ctx, a, b) { var s = sx(a) + sx(b); return (s === 'aa' || s === 'oo') && !ctx.pair(a, b).couple && love(ctx.R(a, b)) && ctx.R(b, a).att > 30; },
+    when: function (ctx, a, b) { var s = sx(a) + sx(b); return (s === 'aa' || s === 'oo') && !ctx.pair(a, b).couple && love(ctx.R(a, b)) && ctx.R(b, a).att > 30 && (!HK.Poly || HK.Poly.canCouple(ctx, a, b)); },
     w: function (ctx, a, b) { return 1.6 + ctx.R(a, b).att / 50; },
     run: function (ctx, a, b) {
       var om = ctx.om, k = key(a, b), pf = ctx.pair(a, b), both = sx(a) === 'a', ra = ctx.R(a, b), rb = ctx.R(b, a);
@@ -374,7 +374,7 @@
     when: function (ctx, a, b) {
       var s = sx(a) + sx(b);
       if (s === 'aa' || s === 'oo') return false;
-      return met(ctx, a, b) && !ctx.pair(a, b).couple && HK.canLove(a, b) && love(ctx.R(a, b)) && !partnerOf(ctx, a) && !(ctx.pair(a, b).rejected != null && ctx.stepIndex - ctx.pair(a, b).rejected < 4) && !ctx.om.fatedSplit[key(a, b)] && !(ctx.pair(a, b).night && !ctx.pair(a, b).fwbAsked && HK.FWB.lean(a) > 0.5) && !(ctx.pair(a, b).fwb && HK.FWB.lean(a) > 0.55 && ctx.rng() < 0.7);
+      return met(ctx, a, b) && !ctx.pair(a, b).couple && HK.canLove(a, b) && love(ctx.R(a, b)) && !partnerOf(ctx, a) && (!HK.Poly || HK.Poly.canCouple(ctx, a, b)) && !(ctx.pair(a, b).rejected != null && ctx.stepIndex - ctx.pair(a, b).rejected < 4) && !ctx.om.fatedSplit[key(a, b)] && !(ctx.pair(a, b).night && !ctx.pair(a, b).fwbAsked && HK.FWB.lean(a) > 0.5) && !(ctx.pair(a, b).fwb && HK.FWB.lean(a) > 0.55 && ctx.rng() < 0.7);
     },
     w: function (ctx, a, b) { return 0.8 + a.tr.honesty + ctx.R(a, b).att / 60 + (a.goal.id === 'mate' ? 0.8 : 0) + (fated(ctx, a, b) ? Math.max(0, dest(ctx) - 0.5) * 3 : 0); },
     run: function (ctx, a, b) {

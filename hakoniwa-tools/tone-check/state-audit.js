@@ -14,6 +14,9 @@
    S12: 同一人物（attr.js の same）の二人が、恋愛の記録・性的な文に二人だけで出た（奇数回は配役に同一人物の組を足す）
    S11: 最期の言葉（epilogue.js）の名前の取り違え：「〇〇が最期に遺した言葉」の〇〇が、その記録で亡くなった人（死の記録の主役・物語型は記録の登場人物で、亡くなった人）でない／
         言葉の中で自分の名前に呼びかけている／住人の最期の言葉（lastWords）・結末の最期の言葉（E.last）が、本人の名前で始まらない
+   S13: 複数の恋人「なし」の回で、同じ人が同じ段階に二人以上と恋人（pf.couple）になっていた（区切りごとと回の終わりに ctx.pf を走査。
+        関係の設定ではじめから恋人を二人にした組だけのときは数えない。生きている恋人だけ）。--env=poly:any などで設定を変えて回せる
+   S14: 一途（住人の設定 faithful）の人が、恋人がいる間に、恋人でない人と恋愛の出来事・夜（pf.night・pf.nights が増えた）に出た
    「止めた」：出来事の記録の手前（Ctx.say の防波堤）で捨てられた件数。出所を直すと減る（0 でなくてよい） */
 'use strict';
 const { openBuild } = require('./lib.js');
@@ -25,15 +28,35 @@ const { openBuild } = require('./lib.js');
   const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
   const r = await page.evaluate(({ N, only, WHY, HOT, mode, ENVSET }) => {
     const SEXCORE = /抱き潰|エッチ|イカせ|イかせ|イった|イっ|果て|喘|挿れ|挿入|舐め|愛撫|達し|体を重ね|腰を(?:振|沈|打ち|揺|落と|突き|使)|跨[っがりるら]|犯|根元|締めつけ|締め付け|射精|ナカ|♡|昂り|濡れ|蜜|奥を|奥に|奥まで|一つにな|ひとつにな|繋がっ|繋がり|繋がる|呑み込|搾り|搾精|脈打|ノット|種付け|孕|精を|白濁|注が|中に出/;
-    const NONSEX = /不老の蜜|(?:根元|地面|土|床下|墓)を[^。]{0,6}掘|(?:泥|砂|波|水|沼|流れ)[^。]{0,12}呑み込|眼窩の奥|傷を舐め|蜜の湖|(?:手袋|服|上着|靴)が[^。]{0,8}濡れ|濡れた岩|荒れ果て|(?:渦|波|闇|海|霧|炎)に呑ま|呑み込んで、海|歌がひとつに|本殿の奥|(?:杯|盃|グラス)に[^。]{0,12}注が|蜜蝋|大地が[^。]{0,6}脈打|根元に手|樹皮の奥|ひとかけらを舐め|唇を舐めて我慢|蜂蜜|蜜で煮|ずぶ濡れ|根元(?:から|で)|石碑の根元|首を締め|歯磨き粉[^。]*舐め|濡れた肩|濡れた(?:ユキノ|アキラ|ミナト|カオル|ハルカ|レンジ)|綱は、生き物のように脈打|影が一つ|残っているのは[^。]*|(?:洞窟|ロッカー|蔵|櫓|石舞台|森|部屋|棚|引き出し|鞄|物置|倉庫|屋敷|館|廊下|路地|喉|胸|心|目|瞳)の(?:最)?奥|最奥を前|濡れ(?:タオル|ていた|た(?:服|シャツ|髪|地面|床|手|頬|瞳|目|体|まま))|(?:酒|お茶|水)が注が|犯人|犯行|防犯|犯罪|共犯|ほかに：[^\n]*|上達|到達|配達|伝達|達成|発達|通達|熟達|調達|速達|先達|の果て(?=[にのへでまを、。])|果てしな|舐めん[なじ]|舐めた(?:真似|口)|(?:洞窟|森|遺跡|施設|地下|迷宮|神殿)の最奥|涙に濡れ|雨に濡れ|濡れた(?:髪|服|地面|床|手|頬|瞳|目)|血に濡れ|注がれた(?:お茶|茶|酒|水|コーヒー|紅茶|スープ|グラス|杯)|(?:視線|注目|愛情|光|魔力)が注が/g;
+    const NONSEX = /不老の蜜|金の蜜の小壺|金色のとろりとした蜜|蜜がわずかな量|(?:根元|地面|土|床下|墓)を[^。]{0,6}掘|(?:泥|砂|波|水|沼|流れ)[^。]{0,12}呑み込|眼窩の奥|傷を舐め|蜜の湖|(?:手袋|服|上着|靴)が[^。]{0,8}濡れ|濡れた岩|荒れ果て|(?:渦|波|闇|海|霧|炎)に呑ま|呑み込んで、海|歌がひとつに|本殿の奥|(?:杯|盃|グラス)に[^。]{0,12}注が|蜜蝋|大地が[^。]{0,6}脈打|根元に手|樹皮の奥|ひとかけらを舐め|唇を舐めて我慢|蜂蜜|蜜で煮|ずぶ濡れ|根元(?:から|で)|石碑の根元|首を締め|歯磨き粉[^。]*舐め|濡れた肩|濡れた(?:ユキノ|アキラ|ミナト|カオル|ハルカ|レンジ)|綱は、生き物のように脈打|影が一つ|残っているのは[^。]*|(?:洞窟|ロッカー|蔵|櫓|石舞台|森|部屋|棚|引き出し|鞄|物置|倉庫|屋敷|館|廊下|路地|喉|胸|心|目|瞳)の(?:最)?奥|最奥を前|濡れ(?:タオル|ていた|た(?:服|シャツ|髪|地面|床|手|頬|瞳|目|体|まま))|(?:酒|お茶|水)が注が|犯人|犯行|防犯|犯罪|共犯|ほかに：[^\n]*|上達|到達|配達|伝達|達成|発達|通達|熟達|調達|速達|先達|の果て(?=[にのへでまを、。])|果てしな|舐めん[なじ]|舐めた(?:真似|口)|(?:洞窟|森|遺跡|施設|地下|迷宮|神殿)の最奥|涙に濡れ|雨に濡れ|濡れた(?:髪|服|地面|床|手|頬|瞳|目)|血に濡れ|注がれた(?:お茶|茶|酒|水|コーヒー|紅茶|スープ|グラス|杯)|(?:視線|注目|愛情|光|魔力)が注が/g;
     const MOB = /男たち|男が|客|触手|ゾンビ|魔物|オーク|ゴブリン|スライム|村人|略奪者|おじさん|兵士|盗賊|マッサージ師|施術師|整体師|司会|カメラマン|監督|インキュバス|獣|看守|見知らぬ|誰とも知れない|壁の向こう|向こう側の誰か|モブ|生命体|異星|神(?:は|が|の手|に)|邪神/;
     const sents = t => String(t).replace(NONSEX, '＿').split(/[。！？\n」]/);
     const isSex = s => SEXCORE.test(s);
     const out = { n: {}, ex: {}, drop: {}, runs: 0, err: [], bySc: {} };
-    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12'];
+    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14'];
     KEYS.forEach(k => { out.n[k] = 0; out.ex[k] = []; });
-    let cur = null;
+    let cur = null, lastCtx = null;
     const hit = (k, msg) => { out.n[k]++; out.bySc[cur.sc][k] = (out.bySc[cur.sc][k] || 0) + 1; if (out.ex[k].length < (WHY ? 40 : 6)) out.ex[k].push(cur.sc + ' | ' + msg); };
+    /* S13・S14：恋人の数と一途（区切りごとと回の終わりに ctx.pf を走査） */
+    const pkey = (x, y) => Math.min(x.i, y.i) + '-' + Math.max(x.i, y.i);
+    const loversOf = (ctx, x) => ctx.chars.filter(y => y !== x && y.alive !== false && ctx.pf[pkey(x, y)] && ctx.pf[pkey(x, y)].couple);
+    const polyCheck = (ctx, end) => {
+      if (!cur || cur.story || !ctx || !ctx.pf || !ctx.chars) return;
+      const C = ctx.chars, pmode = (ctx.env && ctx.env.poly) || 'none';
+      if (!ctx._auditPre) { ctx._auditPre = {}; Object.keys(ctx.pf).forEach(k => { if (ctx.pf[k].couple) ctx._auditPre[k] = 1; }); }
+      C.forEach(x => {
+        if (x.alive === false) return;
+        const L = loversOf(ctx, x);
+        if (pmode === 'none' && L.length >= 2 && L.some(y => !ctx._auditPre[pkey(x, y)])) hit('S13', (end ? '終わり' : '段階' + ctx.stepIndex) + ' ' + x.name + '→' + L.map(y => y.name).join('・'));
+      });
+      const pn = ctx._auditNight || (ctx._auditNight = {}), lv = ctx._auditLov || {};
+      Object.keys(ctx.pf).forEach(k => {
+        const pf = ctx.pf[k], n = (pf.nights || 0) + (pf.night ? 1 : 0), ij = k.split('-').map(Number);
+        if (pn[k] != null && n > pn[k]) [[ij[0], ij[1]], [ij[1], ij[0]]].forEach(fo => { const f = C[fo[0]]; if (f && f.faithful && lv[f.i] && lv[f.i].length && lv[f.i].indexOf(fo[1]) < 0) hit('S14', '夜 ' + f.name + '×' + C[fo[1]].name + '（恋人：' + lv[f.i].map(i => C[i].name).join('・') + '）'); });
+        pn[k] = n;
+      });
+      ctx._auditLov = {}; C.forEach(x => { ctx._auditLov[x.i] = loversOf(ctx, x).map(y => y.i); });
+    };
     /* 不在・遺体・後日談を描く文（その人がいないこと自体を書いている）は数えない */
     const EXEMPT = /席が[^。]{0,6}空いて|見つかった|遺体|亡骸|死んでいた|それからも|その後|あれから|外では|一週間後|数日後|後日|夜明け|半年後|か月後|年後|外から見れば|部屋を出たあと|プリントを届け/;
     const SKIPK = /^(?:step|phase|death|end|ending|summary)$/;
@@ -48,7 +71,13 @@ const { openBuild } = require('./lib.js');
         const snap = acs.map((c, k) => ({ c, lead: k === 0, dead: !c.alive && c._auditDeathLogged && c.diedAt != null && c.diedAt < st, caged: c.flags && c.flags.caged != null, out: !!c.out && c._auditOutStep != null && c._auditOutStep < st }));
         if (kind === 'step') this.chars.forEach(c => { if (c.out && c._auditOutStep == null) c._auditOutStep = st; });
         const over = this.chars.every(c => !c.alive || c.out);
+        if (kind === 'step' && cur && !cur.story) { lastCtx = this; polyCheck(this, false); }
         const e = say0.call(this, o);
+        if (cur && !cur.story && e && !e.skipped && o.cat === 'romance' && !SKIPK.test(kind)) acs.forEach(f => {
+          if (!f.faithful || !this.pf) return;
+          const L = loversOf(this, f);
+          if (L.length && acs.some(y => y !== f && L.indexOf(y) < 0)) hit('S14', '恋愛 ' + f.name + '（恋人：' + L.map(y => y.name).join('・') + '）| ' + String(o.text).slice(0, 120));
+        });
         if (cur && !cur.story) {
           if (e && e.skipped) { const why = o.cat === 'romance' ? 'romance' : 'caged'; out.drop[why] = (out.drop[why] || 0) + 1; }
           else if (e && !SKIPK.test(kind) && !over && !/^(?:phase|grief|mourn|death|memory|end|ending)$/.test(o.cat || '')) {
@@ -94,9 +123,9 @@ const { openBuild } = require('./lib.js');
     /* 配役：執着（監禁を起こす）・恋人・恋愛にしない相手・R18に参加しない人・恋人だけの人を混ぜる */
     const CASTS = [
       { g: ['m', 'f', 'm', 'f', 'm', 'f'], p: ['top', 'bottom', '', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'yan' }, { a: 2, b: 3, type: 'lover' }], ng: [[4, 5]], noR18: [2], lo: [3], same: [3, 4] },
-      { g: ['f', 'f', 'm', 'm', 'f', 'm'], p: ['', '', 'top', 'bottom', 'top', ''], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'yan' }], ng: [[0, 2]], noR18: [4], lo: [1], same: [3, 5] },
-      { g: ['m', 'm', 'f', 'f', 'm', 'f'], p: ['top', 'bottom', 'top', 'bottom', '', ''], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'lover' }, { a: 4, b: 0, type: 'yan' }], ng: [[1, 5]], noR18: [5], lo: [0, 1], same: [3, 4] },
-      { g: ['f', 'm', 'f', 'm', 'f', 'm'], p: ['top', 'bottom', '', 'top', 'bottom', ''], ties: [{ a: 0, b: 1, type: 'fwb' }, { a: 3, b: 2, type: 'yan' }], ng: [[4, 1]], noR18: [0], lo: [], same: [2, 5] }
+      { g: ['f', 'f', 'm', 'm', 'f', 'm'], p: ['', '', 'top', 'bottom', 'top', ''], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'yan' }], ng: [[0, 2]], noR18: [4], lo: [1], same: [3, 5], fa: [0] },
+      { g: ['m', 'm', 'f', 'f', 'm', 'f'], p: ['top', 'bottom', 'top', 'bottom', '', ''], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'lover' }, { a: 4, b: 0, type: 'yan' }], ng: [[1, 5]], noR18: [5], lo: [0, 1], same: [3, 4], fa: [3] },
+      { g: ['f', 'm', 'f', 'm', 'f', 'm'], p: ['top', 'bottom', '', 'top', 'bottom', ''], ties: [{ a: 0, b: 1, type: 'fwb' }, { a: 3, b: 2, type: 'yan' }], ng: [[4, 1]], noR18: [0], lo: [], same: [2, 5], fa: [2] }
     ];
     const ids = only || Object.keys(HK.SCENARIOS);
     for (const sc of ids) {
@@ -108,7 +137,7 @@ const { openBuild } = require('./lib.js');
         const chars = [], perChar = [];
         for (let i = 0; i < n; i++) {
           const ng = []; cast.ng.forEach(pr => { if (pr[0] === i && pr[1] < n) ng.push(pr[1]); if (pr[1] === i && pr[0] < n) ng.push(pr[0]); });
-          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: cast.g[i], likes: '', tone: '', fp: '', pos: cast.p[i], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: ng, noR18: cast.noR18.indexOf(i) >= 0, sexLock: cast.lo.indexOf(i) >= 0 ? 'loverOnly' : '' });
+          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: cast.g[i], likes: '', tone: '', fp: '', pos: cast.p[i], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: ng, noR18: cast.noR18.indexOf(i) >= 0, sexLock: cast.lo.indexOf(i) >= 0 ? 'loverOnly' : '', faithful: (cast.fa || []).indexOf(i) >= 0 });
           perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
         }
         /* S12：奇数回は同一人物の組を足す（相手どうしに書く） */
@@ -132,7 +161,10 @@ const { openBuild } = require('./lib.js');
         const ties = (cast.ties || []).filter(t => t.a < n && t.b < n);
         cur = { sc, story: !!scen.solo, offTags };
         let res;
+        lastCtx = null;
         try { res = HK.simulate({ scenId: sc, seed: 3000 + s, env, chars, perChar, ties }); } catch (e) { out.err.push(sc + ': ' + String(e && e.stack || e).slice(0, 300)); continue; }
+        /* S13・S14：回の終わりにもう一度 */
+        if (lastCtx) polyCheck(lastCtx, true);
         out.runs++; out.bySc[sc].runs++;
         /* 記録の文で見る点検（S4〜S7, S9） */
         const nm = chars.map(c => c.name);
@@ -198,7 +230,7 @@ const { openBuild } = require('./lib.js');
   }, { N, only, WHY, HOT, mode, ENVSET });
   const ids = Object.keys(r.bySc);
   for (const sc of ids) {
-    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12'].map(k => k + ' ' + (b[k] || 0));
+    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14'].map(k => k + ' ' + (b[k] || 0));
     console.log(sc.padEnd(10), 'runs', b.runs, cells.join(' '));
   }
   console.log('合計', JSON.stringify(r.n), '止めた', JSON.stringify(r.drop));

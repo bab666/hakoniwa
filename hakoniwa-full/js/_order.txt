@@ -1,12 +1,15 @@
 # 読み込み順（上から順に実行）。「late 」を付けた行は画面が出たあとで読む。変えたら node hakoniwa-tools/build/build.js <このビルド> を実行
 js/core.js
 js/ties.js
+js/poly.js
 js/events-common.js
 js/persona.js
 js/tie-rel.js
 js/daily-kit.js
 js/rel-group.js
+js/tie-stage.js
 js/tie-abuse.js
+js/tie-master-r18.js
 js/mob-after.js
 js/voice.js
 js/voice-tone.js

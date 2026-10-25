@@ -499,6 +499,8 @@
       if (Lk.m.length < 2 || Lk.lv < 0) return;
       if (Lk.m.length === 3 && Lk.trioIn) {
         var tq = Lk.trioNames;
+        /* 恋人どうしがそろった三人は、恋人たちの組として記録する（poly.js） */
+        if (HK.Poly) HK.Poly.storyReg(S, Lk.m);
         ST.say(S, { actors: Lk.m, tag: '三人の秘密', text: ST.fmt(pk(R && S.R18 && Lk.trioSex ? R.AFTER3_END : CW.T3_END), { a: tq[0], b: tq[1], c: tq[2] }), why: '三人の場面：同じロッカーの三人は、ロッカーの中のことを三人だけの秘密にした（仲良し）' });
         return;
       }

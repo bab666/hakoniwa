@@ -438,7 +438,7 @@
   });
   EV.push({
     id: 'z_last', cat: 'romance', scope: 'pair',
-    when: function (ctx, a, b) { var r = ctx.R(a, b); return HK.canLove(a, b) && r.att > 34 && r.aff > 15 && !ctx.pair(a, b).couple && !ctx.pair(a, b).zconf && (a.stress > 45 || a.z.bitten); },
+    when: function (ctx, a, b) { var r = ctx.R(a, b); return HK.canLove(a, b) && r.att > 34 && r.aff > 15 && !ctx.pair(a, b).couple && !ctx.pair(a, b).zconf && (!HK.Poly || HK.Poly.canTry(ctx, a, b)) && (a.stress > 45 || a.z.bitten); },
     w: function (ctx, a) { return 0.6 + a.tr.honesty + (a.z.bitten ? 1 : 0); },
     run: function (ctx, a, b) {
       var rb = ctx.R(b, a), yes = rb.att > 28 && rb.aff > 15, pf = ctx.pair(a, b);
@@ -455,7 +455,7 @@
   function romShift(ctx) { return ctx.env.romance == null ? 0 : (ctx.env.romance - 50) / 50; }
   EV.push({
     id: 'z_confess', cat: 'romance', scope: 'pair',
-    when: function (ctx, a, b) { var r = ctx.R(a, b), pf = ctx.pair(a, b), d = romShift(ctx); return HK.canLove(a, b) && r.att > 38 - d * 12 && r.aff > 20 - d * 10 && !pf.couple && !pf.zconf && !pf.kin && (a.lock == null || a.lock === b.i); },
+    when: function (ctx, a, b) { var r = ctx.R(a, b), pf = ctx.pair(a, b), d = romShift(ctx); return HK.canLove(a, b) && r.att > 38 - d * 12 && r.aff > 20 - d * 10 && !pf.couple && !pf.zconf && (!HK.Poly || HK.Poly.canTry(ctx, a, b)) && !pf.kin && (a.lock == null || a.lock === b.i); },
     w: function (ctx, a, b) { return 0.35 + a.tr.honesty * 0.8 + ctx.R(a, b).att / 120; },
     run: function (ctx, a, b) {
       var d = romShift(ctx), rb = ctx.R(b, a), yes = rb.att > 30 - d * 10 && rb.aff > 15 - d * 8 && (b.lock == null || b.lock === a.i), pf = ctx.pair(a, b);

@@ -24,6 +24,9 @@
     });
     /* 関係「本命」：想う人に本命の印（engine.js の HK.honmeiFactor・HK.honmeiDesperate） */
     (input.ties || []).forEach(function (t) { if (t && t.type === 'honmei' && S.P[t.a] && S.P[t.b] && t.a !== t.b && !(HK.ngPair && HK.ngPair(S.P[t.a], S.P[t.b]))) S.P[t.a].honmei = t.b; });
+    /* 複数の恋人の設定（poly.js の HK.Poly.mode が S.poly を読む）と、関係の恋人の一覧（性行為の相手の固定「恋人だけ」・一途で使う。engine.js と同じ作り方） */
+    S.poly = HK.Poly ? HK.Poly.modeOf(input.env) : 'none';
+    (input.ties || []).forEach(function (t) { if (t && /^(lover|mate|fated)$/.test(t.type) && S.P[t.a] && S.P[t.b] && t.a !== t.b) { (S.P[t.a].loveSet = S.P[t.a].loveSet || []).push(t.b); (S.P[t.b].loveSet = S.P[t.b].loveSet || []).push(t.a); } });
     return S;
   };
   /* 最近使った文を避けて選ぶ */

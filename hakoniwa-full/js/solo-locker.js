@@ -47,7 +47,7 @@
   HK.SCEN_ORDER.push('locker');
 
   var LV = ['touch', 'kiss', 'grope', 'oral', 'sex'];
-  var REL = { lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'fwb', master: 'master', crush: 'crush', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', senpai: 'friend', colleague: 'colleague', classmate: 'classmate', boss: 'boss', worship: 'worship', benefactor: 'benefactor', relative: 'relative', acq: 'friend', almost: 'almost', rival: 'tension', bad: 'tension', enemy: 'tension', ex: 'ex', sibling: 'friend' };
+  var REL = { lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'fwb', master: 'master', crush: 'crush', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', senpai: 'friend', colleague: 'colleague', classmate: 'classmate', boss: 'boss', worship: 'worship', fond: 'friend', blind: 'worship', benefactor: 'benefactor', relative: 'relative', acq: 'friend', almost: 'almost', rival: 'tension', bad: 'tension', enemy: 'tension', ex: 'ex', sibling: 'friend' };
   var REL_LABEL = { lover: '恋人', fwb: 'セフレ', master: '主従', crush: '片想い', mutual: '両片想い', friend: '知り合い', almost: '友達以上恋人未満', tension: '険悪', ex: '元恋人', stranger: '初対面', colleague: '同僚', classmate: '同級生', boss: '上司と部下', worship: '執着（信仰）', benefactor: '恩人', relative: '親族' };
 
   var LK_HATE_LEAD = ['狭いロッカーの中で、{b}は{a}の胸に、そっと額を預けた。', '{b}は、触れ合った{a}の手を、そのまま握ろうとした。', '{b}は、熱に浮かされた目で、{a}の顔を見上げた。'];
@@ -62,7 +62,7 @@
     if (!B) { B = A; }
     /* 関係 */
     /* 同じ二人に関係を重ねられる（セフレで片想い など）。代表の関係は強いものから */
-    var PRIO = ['mate', 'fated', 'lover', 'master', 'worship', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'mentor', 'teacher', 'benefactor', 'boss', 'colleague', 'classmate', 'friend', 'acq', 'relative', 'pparent', 'parent', 'sibprot', 'sibling', 'sibclose', 'sibbad'];
+    var PRIO = ['mate', 'fated', 'lover', 'master', 'worship', 'blind', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'mentor', 'teacher', 'benefactor', 'boss', 'fond', 'colleague', 'classmate', 'friend', 'acq', 'relative', 'pparent', 'parent', 'sibprot', 'sibling', 'sibclose', 'sibbad'];
     /* 並びの表にない関係（執着など）は後ろに（先頭に来て、恋人の二人が「知り合い」になっていた） */
     var pr = function (t) { var k = PRIO.indexOf(t.type); return k < 0 ? 999 : k; };
     var tieL = (input.ties || []).filter(function (t) { return (t.a === A.i && t.b === B.i) || (t.a === B.i && t.b === A.i); }).sort(function (x, y) { return pr(x) - pr(y); });

@@ -9,7 +9,7 @@
   'use strict';
   var HK = window.HK;
   if (!HK || !HK.TL) return;
-  var LOVE = 'lover,mate,fated,almost,crush,fwb,ex', HATE = 'enemy,bad,sibbad', RIVAL = 'rival', CLOSE = 'friend,colleague,buddy,childhood,best,sibling,sibprot,sibclose,parent,pparent,mentor,master,teacher,classmate,boss,benefactor,relative,worship';
+  var LOVE = 'lover,mate,fated,almost,crush,fwb,ex', HATE = 'enemy,bad,sibbad', RIVAL = 'rival', CLOSE = 'friend,colleague,buddy,childhood,best,sibling,sibprot,sibclose,parent,pparent,mentor,master,teacher,classmate,boss,benefactor,relative,worship,fond,blind';
   function inL(t, l) { return l.split(',').indexOf(t) >= 0; }
   function ties(S, a, b) { return (S.ties || []).filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); }); }
   function has(S, a, b, l) { return ties(S, a, b).some(function (t) { return inL(t.type, l); }); }

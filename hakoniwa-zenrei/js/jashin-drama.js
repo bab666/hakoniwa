@@ -187,7 +187,7 @@
   /* ---------- 関係図 ---------- */
   function relmap(S) {
     var P = S.P, edges = [];
-    var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', classmate: 'friend', boss: 'partner', benefactor: 'guard', relative: 'guard', worship: 'guard', acq: 'none' };
+    var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', classmate: 'friend', boss: 'partner', benefactor: 'guard', relative: 'guard', worship: 'guard', fond: 'friend', blind: 'guard', acq: 'none' };
     (S.ties || []).forEach(function (t) {
       /* 両片想い（向きを逆にした片想い二本）は、一本の「両片想い」にまとめる */
       if (t.type === 'crush' && (S.ties || []).some(function (u) { return u.type === 'crush' && u.a === t.b && u.b === t.a; })) { if (t.a < t.b) edges.push({ a: t.a, b: t.b, label: (t.born ? '★' : '') + '両片想い', cls: 'pine', dir: null }); return; }

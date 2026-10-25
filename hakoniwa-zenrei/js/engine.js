@@ -75,6 +75,8 @@
     dst.alcohol = HK.ALC_OK(src.alcohol) ? +src.alcohol : 0;
     /* 住人の共通の属性（体格・種族・夜の性格・心の強さ・同一人物。attr.js） */
     if (HK.Attr) HK.Attr.copy(dst, src);
+    /* 一途（恋人ができたら、その恋人がいる間はほかの人に惹かれない・浮気しない。poly.js） */
+    dst.faithful = !!src.faithful;
     return dst;
   };
   /* 酒の強さ：キャラの設定「お酒」。1 弱い・2 やや弱い・3 ふつう・4 強い・5 ザル。
@@ -130,6 +132,8 @@
      ・'lover'（恋人とモブだけ）：住人では、恋愛相手の固定の相手・関係の恋人（番・運命の番）・その場で恋人になった相手とだけ。モブ（住人でない相手）の場面は縛らない
      ・番号：その住人とだけ（その人が箱庭にいなければ、住人の誰とも） */
   function sexOne(x, y) {
+    /* 一途（住人の設定 faithful）：恋人がいる間は、恋人でない人と体の関係にならない（poly.js） */
+    if (HK.Poly && HK.Poly.faithNG(x, y)) return true;
     var s = x.sexLock;
     if (s === 'any') return false;
     if (s === 'lover') {
@@ -177,6 +181,8 @@
   Ctx.prototype.pair = function (a, b) {
     var k = key(a, b);
     if (!this.pf[k]) this.pf[k] = { moments: [], attacks: {}, confessed: {}, jealous: 0, kill: null, couple: false, night: false, secret: false, base: null };
+    /* 複数の恋人の設定（poly.js）：恋人になった瞬間に、乗り換え・恋人たちの組を見る */
+    if (HK.Poly && !this.pf[k]._polyW) HK.Poly.watch(this, this.pf[k], a, b);
     return this.pf[k];
   };
   /* その場にいる人。監禁（執着の暴走）されている人は閉じ込められているので、監禁が終わるまで場に出てこない（obsess-kit.js の flags.caged） */
@@ -320,6 +326,8 @@
   /* 恋愛の出来事を起こしてよいか：恋愛の起こりやすさが0、恋愛対象が「なし」・合わない人どうしでは起こさない（もう恋人どうしの二人は別） */
   Ctx.prototype.romanceOk = function (actors) {
     var L = (actors || []).filter(Boolean), a = L[0], b = L[1];
+    /* 一途（住人の設定 faithful）：恋人がいる間は、恋人でない人と恋愛の出来事を起こさない（poly.js） */
+    if (HK.Poly && !HK.Poly.faithOk(this, L)) return false;
     /* 恋愛・R18にしない組（キャラの設定）が一組でも入っていれば、どの箱庭でも起こさない */
     /* ただし「恋愛はしないが体の関係は許されている組」（HK.lockSexOnly）は通す。恋愛の出来事は HK.canLove（恋愛相手の固定を見る）で止まり、
        体の関係の出来事だけが起きる。起きたあとは Ctx.say で恋愛に進まないように補正する */
@@ -627,6 +635,8 @@
         /* 段階の始めから恋人どうしだった二人の夜は、どちらかにもう一人恋人がいても浮気ではない（恋人が二人いる人） */
         if (ev && !a.couple && (pi >= 0 || pj >= 0) && !(pi >= 0 && ev.actors.indexOf(pi) >= 0) && !(pj >= 0 && ev.actors.indexOf(pj) >= 0))
           put(i, j, /^(?:conflict|betray|combat)$/.test(ev.cat) ? 'affair' : 'cheat', ev);
+        /* 複数の恋人「秘密」：恋人どうしの夜でも、知らされていないもう一人の恋人から見れば浮気（poly.js） */
+        if (ev && a.couple && HK.Poly && HK.Poly.secretCheat(ctx, i, j, pi, pj, ev)) put(i, j, 'cheat', ev);
       }
     }
   }
@@ -848,7 +858,7 @@
         if (pred > 0 && L.pol <= -1) surprise = 2;
         else if (pred < 0 && L.pol >= 1) surprise = 2;
         else if (pred === 0 && Math.abs(L.pol) === 2 && cl.id !== 'lovers') surprise = 1;
-        if (tie.type === 'lover' && ['lovers', 'bonded', 'fatedmate'].indexOf(cl.id) < 0) surprise = Math.max(surprise, 1);
+        if (tie.type === 'lover' && ['lovers', 'bonded', 'fatedmate', 'polyamory', 'hub'].indexOf(cl.id) < 0) surprise = Math.max(surprise, 1);
       }
       else if (pred > 0 && L.pol <= -1 && pf.base.score > 12) surprise = 2;
       else if (pred < 0 && L.pol >= 1 && pf.base.score < -8) surprise = 2;

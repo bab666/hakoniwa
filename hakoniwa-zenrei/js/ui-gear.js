@@ -10,7 +10,7 @@
   function S() { return UI.state(); }
   function byId(id) { return S().chars.filter(function (c) { return c.id === id; })[0] || null; }
   var GENDERS = [['', 'おまかせ'], ['m', '男性'], ['f', '女性'], ['x', 'その他']];
-  var LIKES = [['', 'おまかせ（制限なし）'], ['m', '男性'], ['f', '女性'], ['both', '男女両方'], ['none', 'なし']];
+  var LIKES = [['', 'おまかせ（制限なし）'], ['m', '男性'], ['f', '女性'], ['both', '男女両方'], ['none', 'なし（興味なし）']];
   var POS = [['', 'おまかせ'], ['top', '攻め'], ['bottom', '受け'], ['riba', 'リバ']];
   function lab(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === (v || '')) return list[i][1]; return ''; }
   function toneLabel(k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return t ? t.label : ''; }
@@ -26,6 +26,7 @@
     if (c.call) bits.push('呼び方：' + callLabel(c.call));
     if (c.gender) bits.push(lab(GENDERS, c.gender));
     if (c.likes) bits.push('恋愛対象：' + lab(LIKES, c.likes));
+    if (c.faithful) bits.push('一途');
     if (c.pos) bits.push(lab(POS, c.pos));
     var lk = c.loveLock && byId(c.loveLock);
     if (lk) bits.push('恋愛相手：' + lk.name + 'だけ');
@@ -186,7 +187,7 @@
           '<label title="空なら上の作風のまま。決めると、作風より優先します">女性器 <input type="text" data-gf="partF" value="' + esc(c.partF || '') + '" maxlength="10" placeholder="自由に" style="width:6em"></label>' : '') +
         '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label></div>' +
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div>' + (HK.Attr ? HK.Attr.gearHtml(c, others, { esc: esc, opt: opt, selOf: selOf }) : '') + '</div>' +
-      '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label>' + sexSel + '</div>' + (sexSel ? '<p class="gearhint">性行為の相手の固定：「恋愛相手の固定に合わせる」は、恋愛相手を固定していればその相手とだけ（していなければ誰とでも）。「誰とでも可」は、恋愛は固定した相手とだけ・体の関係はほかの住人とも（体の関係があっても恋人にはならない）。「恋人とモブだけ」は、住人では恋人（固定した恋愛相手・関係の恋人・その場で恋人になった相手）とだけ。「〇〇だけ」は、恋愛はほかの人ともするが、住人どうしの夜・R18の場面（三人の場面も）はその相手とだけ（その相手が箱庭にいなければ誰とも）。魔物・マッサージ師など、箱庭の仕掛けの相手の場面は縛りません。</p>' : '') + ngRow + '</div>' +
+      '<div class="gearsec"><h3>恋愛' + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3><div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label>' + sexSel + '<label title="恋人ができたら、その恋人がいる間は、ほかの人と恋愛・夜の場面になりません（浮気しない）。恋人がいないうちは、ふつうに恋をします"><input type="checkbox" data-gf="faithful"' + (c.faithful ? ' checked' : '') + '> 一途（恋人ができたら、ほかの人に惹かれない・浮気しない）</label></div>' + (sexSel ? '<p class="gearhint">性行為の相手の固定：「恋愛相手の固定に合わせる」は、恋愛相手を固定していればその相手とだけ（していなければ誰とでも）。「誰とでも可」は、恋愛は固定した相手とだけ・体の関係はほかの住人とも（体の関係があっても恋人にはならない）。「恋人とモブだけ」は、住人では恋人（固定した恋愛相手・関係の恋人・その場で恋人になった相手）とだけ。「〇〇だけ」は、恋愛はほかの人ともするが、住人どうしの夜・R18の場面（三人の場面も）はその相手とだけ（その相手が箱庭にいなければ誰とも）。魔物・マッサージ師など、箱庭の仕掛けの相手の場面は縛りません。</p>' : '') + ngRow + '</div>' +
       '<div class="gearsec"><h3>関係と呼び方' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + (rel || '<p class="gearhint">まだ関係はありません。</p>') + addable + '</div>';
   }
   function render() {
@@ -276,6 +277,7 @@
       case 'pos': if (isInput) return; c.pos = ['top', 'bottom', 'riba'].indexOf(t.value) >= 0 ? t.value : ''; changed(false); render(); break;
       case 'futa': if (isInput) return; c.futa = t.checked; changed(false); break;
       case 'daku': if (isInput) return; c.daku = t.checked; changed(false); break;
+      case 'faithful': if (isInput) return; c.faithful = t.checked; changed(false); break;
       case 'noR18': if (isInput) return; c.noR18 = t.checked; changed(true); break;
       case 'partWords': if (isInput) return; c.partWords = ['soft', 'direct', 'medical'].indexOf(t.value) >= 0 ? t.value : ''; changed(true); break;
       case 'partM': c.partM = t.value.replace(/[「」『』{}]/g, '').trim().slice(0, 10); changed(false); break;

@@ -155,7 +155,7 @@
         var shy = function (x) { return x.tr.ac > 0.6 && x.tr.fc < 0.45; };
         var p = shy(a) && shy(b) ? 0.22 : shy(a) ? 0.33 : 0.46;
         var open = fill(ctx.pick(sc(ctx, D.approach)), m);
-        if (ctx.rng() < p && HK.canLove(a, b) && HK.canLove(b, a)) {
+        if (ctx.rng() < p && HK.canLove(a, b) && HK.canLove(b, a) && (!HK.Poly || HK.Poly.canTry(ctx, a, b))) {
           pf.couple = true; pf.pnDone = true;
           ctx.mod2(a, b, { att: 14, aff: 12, trust: 10 }, { att: 14, aff: 12, trust: 10 });
           ctx.stress(a, -14); ctx.stress(b, -10);
@@ -166,7 +166,7 @@
       }),
     /* 告白：すれ違いを重ねるほど、背中を押されているほど起きやすい */
     mk('pn_confess', 'romance', function (ctx, a, b) { var pf = ctx.pair(a, b); return 0.4 + (pf.pn || 0) * 0.6 + (pf.pnHint ? 1.2 : 0) + a.tr.honesty * 0.4 + a.tr.impulse * 0.3 + a.stress / 200; },
-      function (ctx, a, b) { var pf = ctx.pair(a, b); return P.is(ctx, a, b) && (pf.pn || 0) >= 2 && HK.canLove(a, b) && HK.canLove(b, a); },
+      function (ctx, a, b) { var pf = ctx.pair(a, b); return P.is(ctx, a, b) && (pf.pn || 0) >= 2 && HK.canLove(a, b) && HK.canLove(b, a) && (!HK.Poly || HK.Poly.canTry(ctx, a, b)); },
       function (ctx, a, b) {
         var pf = ctx.pair(a, b), c = confidant(ctx, a, b), m = { a: a.name, b: b.name, c: c ? c.name : '' };
         pf.couple = true; pf.pnDone = true;

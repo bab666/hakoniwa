@@ -218,11 +218,14 @@
     /* 嫉妬の出来事（jea）：関係「執着なし」の相手には嫉妬しない。嫉妬は執着度に積もる（obsess-kit.js） */
     var jea = effects.some(function (f) { return f.k === 'jea'; });
     if (jea) { var c0 = conds; conds = (c0 || []).concat([{ jea: 1 }]); }
+    /* 恋人になる出来事（couple）：複数の恋人の設定（poly.js）で、恋人にしてよい組か、乗り換えの気持ちが育った組だけ */
+    if (effects.some(function (f) { return f.k === 'couple'; })) conds = (conds || []).concat([{ cpl: 1 }]);
     return {
       id: id, cat: cat, scope: sc, mini: true,
       when: conds ? function (ctx, a, b) {
         for (var i = 0; i < conds.length; i++) {
           if (conds[i].jea) { if (b && HK.Obsess && !HK.Obsess.jealOk(ctx, a, b)) return false; continue; }
+          if (conds[i].cpl) { if (b && HK.Poly && !HK.Poly.canTry(ctx, a, b)) return false; continue; }
           var v = val(ctx, a, b, conds[i].tok), c = conds[i];
           if (c.op === '>' && !(v > c.v)) return false;
           if (c.op === '<' && !(v < c.v)) return false;

@@ -8,6 +8,7 @@
    ■ 性格で動き方が変わる
      敵視する側：active（正面から絡む）／cold（冷たく無視する）／passive（避ける・陰で嫌う）
      相手　　　：np（歩み寄る）／cp（言い返す）／fc（からかってつきまとう）／cold（気にしない）／ac（傷ついて引く）／mild
+     相手の気持ちが avoid（苦手・避けている）なら、相手は無視する・第三者を頼る・身代わりに対応させる（H.avoid）
    ■ 出来事：出会ったとき／嫌がらせ／無視／友人だと思っている相手の誘い・かばう／愛している相手の歩み寄りと嫌悪／お互いの衝突
    台詞は tone-lines.js・tone-lines-hate.js（口調ごとの書き下ろし） */
 (function () {
@@ -33,7 +34,7 @@
     for (var i = 0; i < l.length; i++) { var D = HK.TIES[l[i].type]; if (D && D.hate && l[i].a === a.i && l[i].cold) return l[i].cold; }
     return '';
   }
-  var LOVE_T = 'lover,mate,fated,almost,crush,fwb', FRIEND_T = 'friend,best,buddy,childhood,colleague,sibclose,sibling,senpai,mentor,classmate,boss,benefactor,relative,worship';
+  var LOVE_T = 'lover,mate,fated,almost,crush,fwb', FRIEND_T = 'friend,best,buddy,childhood,colleague,sibclose,sibling,senpai,mentor,classmate,boss,benefactor,relative,worship,fond,blind';
   function hasT(x, a, b, list) { return tieList(x, a, b).some(function (t) { return list.split(',').indexOf(t.type) >= 0 && (t.type !== 'crush' || t.a === a.i); }); }
 
   /* 物語型：嫌悪レベルの表（設定した関係から始める） */
@@ -124,7 +125,7 @@
     /* 関係の説明（理由の欄） */
     why: function (x, a, b) {
       var lv = Math.round(H.level(x, a, b)), st = H.stance(x, b, a), bd = H.band(lv);
-      var SL = { hate: 'お互いに敵視', none: b.name + 'はなんとも思っていない', normal: b.name + 'はふつうに接している', friend: b.name + 'は友人だと思っている', love: b.name + 'は' + a.name + 'を愛している' };
+      var SL = { avoid: b.name + 'は' + a.name + 'を苦手に思い、避けている', hate: 'お互いに敵視', none: b.name + 'はなんとも思っていない', normal: b.name + 'はふつうに接している', friend: b.name + 'は友人だと思っている', love: b.name + 'は' + a.name + 'を愛している' };
       return a.name + '→' + b.name + '：' + (bd === 'enemy' ? '敵対' : '不仲') + '（嫌悪 ' + lv + '）／' + SL[st];
     }
   };
@@ -159,9 +160,31 @@
   function F(t, a, b) { return t.replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name); }
   function P(x, l) { return x.pickArr ? x.pickArr(l) : l[(x.rng() * l.length) | 0]; }
 
+  /* 苦手・避けている相手（b）が、敵視する側（a）をかわす。{c}＝頼られる第三者（その場にいる、b と険悪でない人） */
+  var AV = {
+    lead: L('{a}が{b}のほうへ歩いてきた。|{a}は{b}を見つけると、わざとらしく声をかけてきた。|{a}が何か言いたげに、{b}の前に立った。'),
+    ignore: L('{b}は気づかないふりをして、手元から目を上げなかった。{a}の声は、宙に浮いたまま消えた。|{b}は小さく会釈だけして、すっとその場を離れた。苦手な相手とは、関わらないのがいちばんだった。|{b}は{a}と目を合わせないまま、「……今、忙しいから」とだけ言った。'),
+    third: L('{b}は返事をせずに、近くにいた{c}の袖を引いた。{c}は事情を察して、{b}と{a}のあいだにさりげなく立った。|{b}は{c}に目で助けを求めた。{c}「{a}、その話なら私が聞く」――{b}はほっと息をついた。|{b}は{a}から逃げるように{c}の隣へ移り、{c}にばかり話しかけた。{a}の言葉は、行き場をなくした。'),
+    proxy: L('{b}「……{c}、代わりに聞いておいて」――そう言い残して、{b}は席を外した。{c}は苦笑して、{a}に向き直った。|{b}は{a}への用件を、全部{c}に頼んだ。{a}が何を言っても、返ってくるのは{c}の声だった。|{b}は{a}の前に{c}を押し出した。「この件は{c}に任せてあるから」――{c}は肩をすくめて、{a}の相手を引き受けた。')
+  };
+  function thirdOf(x, a, b) {
+    var L0 = isCtx(x) ? x.present() : (x.P || []).filter(function (p) { return p && p.alive !== false && !p.gone && !p.out; });
+    L0 = L0.filter(function (c) { return c !== a && c !== b && (!isCtx(x) || x.R(c, b).aff > 0); });
+    return L0.length ? L0[(x.rng() * L0.length) | 0] : null;
+  }
+  H.avoid = function (x, a, b, place) {
+    var c = thirdOf(x, a, b), r = x.rng(), k = !c || r < 0.4 ? 'ignore' : r < 0.7 ? 'third' : 'proxy';
+    var t = (place || '') + F(P(x, AV.lead), a, b) + F(P(x, AV[k]), a, b).replace(/\{c\}/g, c ? c.name : '');
+    if (isCtx(x)) { if (x.stress) x.stress(b, 4); if (c) x.mod2(b, c, { trust: 4 }, { aff: 2 }); }
+    var why = { ignore: '無視した', third: (c ? c.name : '') + 'を頼った', proxy: (c ? c.name : '') + 'に代わりに対応させた' }[k];
+    var o = { text: t + H.shift(x, a, b, 3), why: H.why(x, a, b) + '／' + b.name + 'は' + a.name + 'を避け、' + why, mag: 14, cat: k === 'ignore' ? 'solo' : 'bond' };
+    if (c) o.with = [c];
+    return o;
+  };
   /* 出会ったとき。{text, why, mag, cat} */
   H.meet = function (x, a, b, place) {
     var lv = H.level(x, a, b), band = H.band(lv) || 'bad', st = H.stance(x, b, a), sty = H.style(a), rs = H.rstyle(b);
+    if (st === 'avoid') return H.avoid(x, a, b, place);
     var t = (place || '') + F(P(x, N.meet[band][sty]), a, b), d = 0;
     if (sty === 'active') t += TL.line(a, band === 'enemy' ? 'H_MEET_ENEMY' : 'H_MEET_BAD', b);
     if (st === 'hate') { t += rs === 'ac' || rs === 'cold' ? F(P(x, N.mutualSilent), a, b) : TL.line(b, 'R_HATE_BACK', a); d = 3; H.shift(x, b, a, 3); }
@@ -178,6 +201,7 @@
   /* 嫌がらせ（敵視する側が正面から絡む） */
   H.harass = function (x, a, b) {
     var st = H.stance(x, b, a), rs = H.rstyle(b), lv = H.level(x, a, b);
+    if (st === 'avoid') return H.avoid(x, a, b);
     var t = F(P(x, N.harass), a, b) + TL.line(a, 'H_JAB', b), d = 0, why = '';
     if (st === 'hate') { t += TL.line(b, 'R_HATE_BACK', a); H.shift(x, b, a, 4); d = 4; why = 'お互いに敵視'; }
     else if (rs === 'np' || (st === 'friend' && rs !== 'cold') || (st === 'love' && rs !== 'ac')) {
@@ -194,6 +218,7 @@
   /* 無視（冷たい・避ける側に、相手が話しかける） */
   H.snub = function (x, a, b) {
     var st = H.stance(x, b, a), rs = H.rstyle(b), sty = H.style(a);
+    if (st === 'avoid') return H.avoid(x, a, b);
     var line = st === 'friend' ? 'R_INVITE' : st === 'love' ? 'R_MEET_LOVE' : 'R_MEET_NORMAL';
     var t = TL.line(b, line, a) + F(P(x, sty === 'cold' ? N.snubCold : N.snubPassive), a, b), d = 2;
     if (rs === 'fc' || (st === 'love' && rs === 'np')) { t += TL.line(b, 'R_TEASE', a); d = 3; }
@@ -237,6 +262,7 @@
   H.pick = function (x, a, b) {
     var st = H.stance(x, b, a), sty = H.style(a), r = x.rng();
     if (st === 'hate') return H.quarrel(x, a, b);
+    if (st === 'avoid') return H.avoid(x, a, b);
     if (st === 'love' && r < 0.55) return H.loveGap(x, a, b);
     if (st === 'friend' && r < 0.5) return H.friendGap(x, a, b);
     return sty === 'active' ? H.harass(x, a, b) : H.snub(x, a, b);
@@ -257,7 +283,7 @@
       id: 'hk_meet', cat: 'conflict', scope: 'pair',
       when: function (ctx, a, b) { var pf = ctx.pair(a, b); return !(pf.hkMet && pf.hkMet[a.i]) && H.level(ctx, a, b) >= 35 && okKinds(ctx, a, b); },
       w: function (ctx, a, b) { return 6 * W * H.drive(a, 'hater'); },
-      run: function (ctx, a, b) { var pf = ctx.pair(a, b); (pf.hkMet = pf.hkMet || {})[a.i] = 1; var r = H.meet(ctx, a, b, opt.place ? opt.place(ctx, a) : ''); return { text: r.text, why: r.why, mag: r.mag, cat: r.cat }; }
+      run: function (ctx, a, b) { var pf = ctx.pair(a, b); (pf.hkMet = pf.hkMet || {})[a.i] = 1; var r = H.meet(ctx, a, b, opt.place ? opt.place(ctx, a) : ''); return { text: r.text, why: r.why, mag: r.mag, cat: r.cat, with: r.with }; }
     });
     /* 敵視する側から */
     scen.events.push({
@@ -267,13 +293,13 @@
       run: function (ctx, a, b) {
         ctx.pair(a, b).hkAt = ctx.stepIndex;
         var st = H.stance(ctx, b, a), r = st === 'hate' ? H.quarrel(ctx, a, b) : H.style(a) === 'active' ? H.harass(ctx, a, b) : H.snub(ctx, a, b);
-        return { text: r.text, why: r.why, mag: r.mag, cat: r.cat };
+        return { text: r.text, why: r.why, mag: r.mag, cat: r.cat, with: r.with };
       }
     });
     /* 敵視されている相手から（友人だと思っている・愛している・気づかずに話しかける） */
     scen.events.push({
       id: 'hk_receiver', cat: 'bond', scope: 'pair',
-      when: function (ctx, b, a) { var st = H.stance(ctx, b, a); return H.level(ctx, a, b) >= 35 && st !== 'hate' && okKinds(ctx, a, b) && (ctx.pair(a, b).hkAt == null || ctx.stepIndex - ctx.pair(a, b).hkAt >= 2); },
+      when: function (ctx, b, a) { var st = H.stance(ctx, b, a); return H.level(ctx, a, b) >= 35 && st !== 'hate' && st !== 'avoid' && okKinds(ctx, a, b) && (ctx.pair(a, b).hkAt == null || ctx.stepIndex - ctx.pair(a, b).hkAt >= 2); },
       w: function (ctx, b, a) { var st = H.stance(ctx, b, a); return 1.4 * W * H.drive(b, 'receiver') * (st === 'love' ? 1.6 : st === 'friend' ? 1.3 : 0.6); },
       run: function (ctx, b, a) {
         ctx.pair(a, b).hkAt = ctx.stepIndex;

@@ -109,6 +109,8 @@
     thaw: L('{a}は、{b}が昔と同じ癖で髪を耳にかけるのを見た。それだけで、胸の奥の何かが少しほどけた。|{b}「……ごめん。ずっと、ちゃんと話してなかった」{a}は少し黙ってから、「こっちこそ」と言った。|危ない場面で、{a}は迷わず{b}の手を引いた。手を離したあと、二人はしばらく何も言わなかったが、その沈黙は前ほど冷たくなかった。'),
     separated: L('{a}と{b}は、別々に暮らすようになってから、初めて同じ場所で夜を過ごした。気まずさのほうが勝っていた。|{b}は{a}の荷物に、まだ二人で買ったキーホルダーが付いているのに気づいた。何も言わなかった。|{a}「元気だった？」{b}「……まあね」――それ以上、どちらも続けられなかった。'),
     ex: L('{a}と{b}は、元夫婦らしい距離で並んで座った。近すぎず、遠すぎず。|{b}は{a}の好みを覚えていた自分に気づいて、少しだけ苦笑いした。|{a}「相変わらずだな」{b}「そっちこそ」――言い慣れたやり取りに、二人とも少しだけ肩の力を抜いた。'),
+    /* 熟年夫婦（t.married === 'mature'）：穏やかな場面、口数の少ない労い */
+    mature: L('{a}が空になった器を置くと、{b}は何も言わずに水を足した。長年連れ添った二人には、それで十分だった。|{b}「……疲れたろう」{a}「少しね」――それきり会話は途切れたが、{a}は{b}の肩に、そっと手を置いた。|{a}と{b}は並んで座り、同じものを眺めていた。言葉はほとんどなかった。若いころなら気まずかった沈黙が、今はいちばん落ち着いた。|{b}は{a}の上着のほつれに気づいて、黙って繕い始めた。{a}は小さく「ありがとう」とだけ言い、{b}は「うん」とだけ返した。'),
     back: L('{a}は{b}の名前を、離婚する前と同じ呼び方で呼んだ。{b}は振り返って、何かを言いかけてやめた。|{b}「もう一回、やり直せると思う？」{a}はすぐには答えず、{b}の手を取った。')
   };
   function spouseTie(ctx, a, b) {
@@ -124,16 +126,17 @@
     run: function (ctx, a, b) {
       var t = spouseTie(ctx, a, b), g = warmth(ctx, a, b), st = t.type === 'ex' ? 'ex' : t.married || 'warm', k;
       if (st === 'warm') { var x = ctx.rng(); k = g > 38 && x < 0.3 ? 'grow' : x < 0.65 ? 'warm' : 'keep'; }
+      else if (st === 'mature') { var x2 = ctx.rng(); k = x2 < 0.5 ? 'mature' : x2 < 0.8 ? 'warm' : 'keep'; }
       else if (st === 'cold' || st === 'separated') k = g > 30 && ctx.rng() < 0.35 ? 'thaw' : st === 'cold' ? 'cold' : 'separated';
       else k = both(a, b) && g > 34 && !ctx.pair(a, b).couple && ctx.rng() < 0.25 ? 'back' : 'ex';
-      if (k === 'grow' || k === 'keep' || k === 'warm') ctx.mod2(a, b, { aff: 3, trust: 3 }, { aff: 3, trust: 3 });
+      if (k === 'grow' || k === 'keep' || k === 'warm' || k === 'mature') ctx.mod2(a, b, { aff: 3, trust: 3 }, { aff: 3, trust: 3 });
       else if (k === 'cold' || k === 'separated') ctx.mod2(a, b, { ten: 3 }, { ten: 3 });
       else if (k === 'thaw') { ctx.mod2(a, b, { aff: 6, trust: 5, ten: -6 }, { aff: 6, trust: 5, ten: -6 }); grow(ctx, a, b, 'spouse'); if (g > 45) t.married = ''; }
       else if (k === 'back') { ctx.mod2(a, b, { att: 6, aff: 5 }, { att: 6, aff: 5 }); grow(ctx, a, b, 'spouse'); }
       else ctx.mod2(a, b, { aff: 1 }, { aff: 1 });
       if (k === 'grow') grow(ctx, a, b, 'spouse');
       var lab = HK.tieLabel ? HK.tieLabel(t) : '夫婦';
-      return { cat: k === 'back' ? 'romance' : k === 'cold' || k === 'separated' ? 'conflict' : 'bond', text: ctx.t(ctx.pick(SPOUSE[k]), a, b), why: a.name + 'と' + b.name + '（' + lab + '）' + { warm: '：いつもの二人', keep: '：夫婦の約束', grow: '：絆が深まる', cold: '：冷えたまま', thaw: '：わだかまりが少しほどける', separated: '：別居中の気まずさ', ex: '：元夫婦の距離', back: '：やり直しの気配' }[k] };
+      return { cat: k === 'back' ? 'romance' : k === 'cold' || k === 'separated' ? 'conflict' : 'bond', text: ctx.t(ctx.pick(SPOUSE[k]), a, b), why: a.name + 'と' + b.name + '（' + lab + '）' + { warm: '：いつもの二人', mature: '：長年連れ添った二人の労い', keep: '：夫婦の約束', grow: '：絆が深まる', cold: '：冷えたまま', thaw: '：わだかまりが少しほどける', separated: '：別居中の気まずさ', ex: '：元夫婦の距離', back: '：やり直しの気配' }[k] };
     }
   });
 

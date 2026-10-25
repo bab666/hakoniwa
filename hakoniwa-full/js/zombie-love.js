@@ -278,7 +278,7 @@
   /* ======================= 片想い ======================= */
   EV.push({
     id: 'z_cr_feel', cat: 'romance', scope: 'pair',
-    when: function (ctx, a, b) { var pf = ctx.pair(a, b); return Z.isCrush(ctx, a, b) && !pf.zcr && !pf.zconf && (Z.day(ctx) >= 2 || a.stress > 40); },
+    when: function (ctx, a, b) { var pf = ctx.pair(a, b); return Z.isCrush(ctx, a, b) && !pf.zcr && !pf.zconf && (Z.day(ctx) >= 2 || a.stress > 40) && (!HK.Poly || HK.Poly.canTry(ctx, a, b)); },
     w: function (ctx, a, b) { return 0.8 + ctx.R(a, b).att / 70 + a.stress / 120; },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b), rng = ctx.rng, m = { a: a.name, b: b.name };

@@ -859,6 +859,8 @@
       if (lv && bd !== 'jealous') bd = 'marry';
       if (lh && bd === 'forget') bd = 'secret';
       ex.bond = bd; ex.bondLabel = T.BOND_LABEL[bd];
+      /* 円満な三人は、恋人たちの組として記録する（poly.js の ctx.flags.polyGroups。結果のラベル「三人で円満」「一人を二人が愛している」） */
+      if (HK.Poly && (lv || lh) && bd !== 'jealous') HK.Poly.register(ctx, g, lh ? (harmonyOf(ctx, g) || {}).hub : null);
       var lone = bd === 'jealous' ? g.slice().sort(function (p, q) { var s = function (c) { return g.reduce(function (t, o) { return o === c ? t : t + R(ctx, o, c).aff; }, 0); }; return s(p) - s(q); })[0] : g[0];
       var cw = lc ? clashOf(ctx, g) : null;
       if (cw) lone = cw.w;

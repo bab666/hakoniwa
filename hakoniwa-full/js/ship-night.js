@@ -254,7 +254,7 @@
         if (rng() > 0.45 + tr(a, 'fc') * 0.2 - tr(a, 'ac') * 0.15 + (S.m - x.fell[i]) * 0.1) return;
         x.said[i] = 1;
         var w = A.bond(S, b, a), both = !!x.fell[b.i];
-        var ok = (!HK.canLove || HK.canLove(b, a)) && (both || w >= 0.5 || rng() < 0.2 + tr(b, 'warmth') * 0.3 + Math.max(0, w) * 0.4 - (x.mis[b.i] ? 0.3 : 0));
+        var ok = (!HK.canLove || HK.canLove(b, a)) && (!HK.Poly || HK.Poly.storyCan(S, a, b)) && (both || w >= 0.5 || rng() < 0.2 + tr(b, 'warmth') * 0.3 + Math.max(0, w) * 0.4 - (x.mis[b.i] ? 0.3 : 0));
         var m = { a: a.name, b: b.name };
         var text = A.F(A.pk(S, att(a, T.confess)), m) + ' ' + A.F(A.pk(S, att(b, ok ? T.yes : T.no)), m) + ' ' + A.F(A.pk(S, ok ? T.yesTail : T.noTail), m);
         if (ok) { S.rom[k] = 1; A.setRel(S, a, b, 0.25); A.mark(S, a, b, 'love'); x.res[i] = 'yes'; A.stress(a, -12); A.stress(b, -6); }

@@ -162,7 +162,7 @@
       }),
     /* 告白して、ふられる（まれに実る） */
     mk('u_confess', 'romance', function (ctx, a) { return 0.5 + a.tr.honesty * 0.6 + a.tr.impulse * 0.4 + a.stress / 150; },
-      function (ctx, a, b) { var pf = ctx.pair(a, b); return U.unreq(ctx, a, b) && !pf.uconf && ((pf.userve || 0) + (pf.uprot || 0) >= 1 || ctx.R(a, b).att > 65); },
+      function (ctx, a, b) { var pf = ctx.pair(a, b); return U.unreq(ctx, a, b) && !pf.uconf && ((pf.userve || 0) + (pf.uprot || 0) >= 1 || ctx.R(a, b).att > 65) && (!HK.Poly || HK.Poly.canTry(ctx, a, b)); },
       function (ctx, a, b) {
         var pf = ctx.pair(a, b), k = U.cold(ctx, a, b), c = heart(ctx, a, b);
         if (k === 'other' && !c) k = 'none';

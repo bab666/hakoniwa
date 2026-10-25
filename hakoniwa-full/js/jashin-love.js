@@ -105,7 +105,7 @@
 
   /* 気になる相手を決める（jashin-goals.js の love と同じ選び方） */
   function pickTarget(S, p, live) {
-    var L0 = p.love, cs = live.filter(function (q) { return q !== p && !q.bound && al(q) && HK.canLove(p, q) && HK.canLove(q, p) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && HK.tieNoLove(t); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
+    var L0 = p.love, cs = live.filter(function (q) { return q !== p && !q.bound && al(q) && HK.canLove(p, q) && HK.canLove(q, p) && (!HK.Poly || HK.Poly.storyCan(S, p, q)) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && HK.tieNoLove(t); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
     if (!cs.length) return null;
     var b = HK.weighted(S.rng, cs, function (q) { return 1 + Math.max(0, bond(S, p, q)) * 2 + q.tr.warmth; });
     L0.pt = 0;
