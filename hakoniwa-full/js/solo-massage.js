@@ -503,7 +503,7 @@
       }
       if (!hardTop && !left && !sleeping && stayed && !asked && h.corrupt > (wrong ? 75 : 55) && rng() < (wrong ? 0.2 : 0.4) + h.tr.fc * 0.3) {
         asked = true;
-        K.say(S, { kind: 'ev', tag: 'おねだり', text: K.fmt(S, K.pick(S, ['{a}は自分から{m}の手を掴んで、そこへ導いた。「…もっと、ちゃんと」', '{a}は消え入りそうな声で言った。「…最後まで、してください」', '{a}「延長って、できますか」――声が震えていた。'])), why: '堕ち度 ' + Math.round(h.corrupt) });
+        K.say(S, { kind: 'ev', tag: 'おねだり', text: K.fmt(S, K.pick(S, ['{a}は自分から{m}の手を掴んで、そこへ導いた。「…もっと、ちゃんと」', '{a}は消え入りそうな声で言った。「…最後まで、してください」', '{a}「延長って、できますか」――声が震えていた。'])), why: '堕ち度 ' + Math.min(100, Math.round(h.corrupt)) });
       }
       if (K.settle(S) && !hardTop) fell = true;
       K.snap(S, { s: sus });
@@ -525,7 +525,7 @@
       /* 住人の女性の施術者が男性の客を導く（女攻め×男）ときは、跨る・手で・口での体位（solo-massage-thick.js の POS_LADY） */
       var ladyR = !!TR && staff.g === 'f' && !ff, PL = (HK.MassageThick && HK.MassageThick.POS_LADY) || POS;
       var pool = S.rng.shuffle(noMut(cTop() ? posTop() : ff ? POS_FF : ladyR ? PL : POS)).slice(0, nPos);
-      var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])), why: '快楽に負けた（堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
+      var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])), why: '快楽に負けた（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
       K.key(S, head, '快楽に負けた');
       /* 陥落の文が変わり目を兼ねるので、ここからは段階を上げるだけ（一文は足さない） */
       ph = Math.max(ph, fell ? 3 : 2);
@@ -564,7 +564,7 @@
           if (hesi) tt += K.fmt(S, K.pick(S, M.TRAINEE_HESITATE[h.persona] || M.TRAINEE_HESITATE.gentle)) + ' ' + K.fmt(S, K.pick(S, dark ? MD.traineePress : custTop ? M.TRAINEE_PRESS_TOP : ff ? M.TRAINEE_PRESS_FF : M.TRAINEE_PRESS));
           else tt += K.fmt(S, K.pick(S, M.TRAINEE_YES[h.persona] || M.TRAINEE_YES.gentle));
           h.pleasure += 40; while (h.pleasure >= 100) K.climax(S);
-          var otr = K.say(S, { kind: 'sys', tag: '練習台の約束', text: tt, why: '快楽に落ちきった（堕ち度 ' + Math.round(h.corrupt) + '・絶頂 ' + h.climax + '回）／もう断れなかった' + (hesi ? '（性格上、返事を渋った）' : '') });
+          var otr = K.say(S, { kind: 'sys', tag: '練習台の約束', text: tt, why: '快楽に落ちきった（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・絶頂 ' + h.climax + '回）／もう断れなかった' + (hesi ? '（性格上、返事を渋った）' : '') });
           K.key(S, otr, '新人の練習台になると約束した');
         }
       });
@@ -605,7 +605,7 @@
     if (h.goal.id === 'heal') L0.push(h.name + 'の肩こりは、本当にきれいに治っていた。それが一番、腹立たしかった。');
     if (h.goal.id === 'free') L0.push('タダ券の裏には、小さく「二回目以降は通常料金」と書いてあった。');
     L0.push(HK.SoloKit.fmt(S, S.rng.pick(M.AFTERSHOP[h.persona])));
-    L0.push(h.name + '：絶頂 ' + h.climax + '回・堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.max(0, Math.round(h.reason)));
+    L0.push(h.name + '：絶頂 ' + h.climax + '回・堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・理性 ' + Math.max(0, Math.round(h.reason)));
     return { type: kind, kind: kind, title: title, lines: L0 };
   }
   HK.SCEN_ORDER.push('massage');

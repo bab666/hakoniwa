@@ -25426,9 +25426,252 @@
   MT.fallLady.push(
     { n: '側位', t: '{m}は{a}の隣に横たわり、背中を向けて体をぴたりと寄せた。「⁠そのまま、楽にしていてください」\n\n{m}は後ろ手に{a}を導き、腰をゆっくりと押しつけて呑み込んでいった。オイルで温まった肌どうしが、隙間なく重なる。\n\n{a}「{vb1}」\n\n{m}は{a}の手を取って自分のお腹に添えさせ、そのまま小さく腰を揺らした。動いているのは{m}だけなのに、{a}の息のほうが先に上がっていく。\n\n{a}「{vb2}」\n\n{a}が{m}の背中に額を押しつけて果てると、{m}は振り返って微笑んだ。「⁠最後まで、力が抜けていましたね」――その声は、施術中と同じ囁きだった。' }
   );
+  /* 住人の女性の施術者が、男性の客を導く（女攻め×男）ときの体位。施術者は跨る・手で・口で・胸で責める側で、客を受ける側にしない */
+  MT.POS_LADY = [
+    { n: '騎乗位', t: '{m}は施術台に横たわる{a}の腰に、ゆっくりと跨った。「動かないでくださいね。ここからも、施術の一部ですから」――オイルで濡れた手で{a}のものを導くと、{m}は自分のペースで腰を沈めていった。{a}は施術台の縁を掴んだまま、見上げることしかできなかった。' },
+    { n: '手で', t: '{m}はオイルを両手にたっぷりと取り、{a}の脚のあいだに膝をついた。「最後は、ここを流しておきますね」――ぬるりとした手のひらが、根元から先までをゆっくりと扱き上げた。{a}が腰を浮かせるたびに、{m}は手を止めて、意地悪く微笑んだ。' },
+    { n: '口で', t: '{m}は施術台の端に座らせた{a}の前に、静かに膝をついた。「力を抜いて。深呼吸」――施術のときと同じ声でそう言うと、{m}は{a}のものに唇を寄せた。温かい舌がゆっくりと絡みつき、{a}は思わず{m}の髪に指を差し入れた。' },
+    { n: '背面騎乗', t: '{m}は{a}に背を向けて跨り、オイルで光る腰をゆっくりと落とした。「見えないほうが、感じやすいんですよ」――根元まで呑み込んだまま、{m}は前後に腰を滑らせ始めた。{a}の目の前で、オイルに濡れた背中がしなやかに波打った。' },
+    { n: '対面座位', t: '{m}は{a}を抱き起こし、向かい合って膝の上に座った。「首に腕を回してもいいですよ」――そう囁きながら、{m}は自分から腰を落として{a}を迎え入れた。動くのは{m}だけで、{a}はしがみつくことしかできなかった。' },
+    { n: '胸で', t: '{m}は{a}を仰向けに寝かせたまま、オイルで濡れた胸を{a}の脚のあいだに寄せた。「特別な施術です。誰にも言わないでくださいね」――柔らかな膨らみに挟まれ、ゆっくりと上下に扱かれて、{a}は施術台の上で背中を反らせた。{m}はその反応を、楽しそうに見下ろしていた。' }
+  ];
   MT.fallFF.push(
     { n: '後ろから', t: '{m}は{a}をうつ伏せにさせ、背中に胸を重ねた。「⁠最後は、ここを内側から」\n\n後ろから回された指が、オイルで濡れた脚のあいだを撫で、ゆっくりと一本、それから二本沈んでいく。耳元にかかる{m}の吐息に、{a}の背中が震えた。\n\n{a}「{vb1}」\n\n{m}は中の弱いところを指の腹で押し上げながら、もう片方の手で{a}の胸の先を転がした。逃げようとした腰を、重ねた体がやんわりと押さえる。\n\n{a}「{vb2}」\n\n{a}がシーツを握りしめて達すると、{m}は指を沈めたまま、震えが引くのを待った。「⁠よく、ほぐれました」――背中に落とされた口づけが、施術の締めくくりの合図だった。' }
   );
+})();
+;/* ==== js/solo-massage-cast.js ==== */
+/* 箱庭シミュレーター: マッサージの配役（施術者を住人かモブで・2人で受ける「カーテン越し」）。全年齢版と同じ内容
+   ・役割「施術者」（HK.Roles。env role_therapist：おまかせ＝モブ／住人から／モブ）。1人のときは、施術者はいつもモブ
+   ・住人が施術者：もう一人の住人が客。施術者の言い訳と一言は気質から（STAFF_OF で店の施術者の型に当てる・RES_EXCUSE）。
+     体に触れる際どい施術は、二人が体の関係になれる組（HK.Pos.okSex・HK.State.r18ok の両方・HK.ngPair でも HK.sexBlocked でもない）だけ。
+     なれない組は、普通のマッサージのまま（PLAIN_*。全年齢と同じ書き方）
+   ・モブが施術者で住人が2人：二人とも客になり、薄いカーテン一枚を隔てた隣の施術台で受ける（CUR_*・merge）。
+     二人の施術はそれぞれ別に進み、カーテン越しに聞こえる音だけが行き来する（数値には効かない）
+   {a}＝客 {m}＝施術者。カーテン越しの文は {a}＝聞いている人 {b}＝カーテンの向こうの人。登場人物はすべて成人 */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK) return;
+  function L(s) { return s.split('|'); }
+  var C = HK.MassageCast = {};
+
+  /* 住人の施術者の気質 → 店の施術者の型（施術中の一言・言い訳の通りやすさ）。女性のやわらかい型は「女性セラピスト」の一言 */
+  C.STAFF_OF = { gentle: 'gentle', polite: 'gentle', devoted: 'gentle', free: 'chara', tsun: 'chara', proud: 'silent', stern: 'silent', cool: 'silent', shy: 'silent' };
+
+  /* ---------- 住人が施術者のとき ---------- */
+  C.RES_INTRO = L('{a}は予約した店の施術室に通された。カーテンが開いて現れたのは、施術着姿の{m}だった。{a}「……え、{m}？　ここで働いてたの？」|{a}が受付で名前を書くと、奥から聞き覚えのある声がした。顔を上げると、施術着の{m}が立っていた。知り合いに体を任せることになるとは、思っていなかった。|{a}は口コミで評判のいい施術者を指名した。現れたのは、よく知っている顔だった。{m}は一瞬だけ目を丸くして、それから仕事の顔に戻った。');
+  C.RES_GREET = {
+    proud: L('{m}「客として来たなら、文句は言わせない。うつ伏せになれ」|{m}「腕は確かだ。黙って横になっていればいい」'),
+    stern: L('{m}「知り合いでも、手順は同じです。まず問診から」|{m}「本日の担当です。私情は挟みませんので、ご安心を」'),
+    tsun: L('{m}「な、なんでここに来るわけ……。べ、別に嫌じゃないけど。ちゃんとやるから、横になって」|{m}「……来ちゃったものは仕方ないでしょ。ほら、さっさと着替えて」'),
+    gentle: L('{m}「来てくれて嬉しいな。今日は、ゆっくりほぐしていって」|{m}「ふふ、びっくりした？　大丈夫、ちゃんと上手いから」'),
+    devoted: L('{m}「あ、あの……精一杯、やらせてもらいます。痛かったら、すぐ言ってください」|{m}「指名、ありがとうございます……！　がんばります」'),
+    cool: L('{m}「知り合いだからといって、料金は変わりません。どうぞ、横に」|{m}「担当します。施術中の私語は、少なめでお願いします」'),
+    free: L('{m}「えっ、うそ、{a}じゃん！　いいよいいよ、サービスしちゃう」|{m}「やっほー。せっかくだし、フルコースでほぐしてあげる」'),
+    shy: L('{m}は{a}の顔を見て固まり、それから小さな声で言った。「……た、担当、です。よろしく、お願いします……」|{m}は目を逸らしたまま、タオルを差し出した。「き、着替えたら、呼んでください……」'),
+    polite: L('{m}「ようこそお越しくださいました。本日は、誠心誠意務めさせていただきます」|{m}「本日担当いたします。どうぞ、お楽になさってください」')
+  };
+  /* 言い訳（気づかれたとき）：施術者の気質ごと */
+  C.RES_EXCUSE = {
+    proud: L('{m}「黙って寝てろ。素人が施術に口を出すな」――{m}は手を止めなかった。言い訳をする気すら、ないようだった。|{m}「ここも筋肉だ。疑うなら、ほかの店に行けばいい」{m}はそう言い捨てて、同じ場所をもう一度押した。|{m}は鼻で笑った。「気のせいだ。凝りがほぐれると、皆そう言う」'),
+    stern: L('{m}「骨盤まわりの調整です。教本の手順どおりに行っています」――{m}の口調は、どこまでも事務的だった。|{m}「ご不安なら、施術計画書をお見せします」{m}は手を止めずに言った。計画書が出てくることはなかった。|{m}「反応が出るのは、効いている証拠です。続けます」'),
+    tsun: L('{m}「へ、変な意味じゃないから！　ここ、本当にリンパがあるの！」――{m}の耳まで、真っ赤だった。|{m}「か、勘違いしないでよね。仕事なんだから、仕事！」そう言いながら、{m}の手は一度も離れなかった。|{m}「そ、そんな顔で見ないで。……ちゃんとした施術なんだから」'),
+    gentle: L('{m}「大丈夫、心配しないで。ここをほぐすと、体がすごく楽になるの」――{m}はいつもと同じ、柔らかい声で言った。|{m}「びっくりさせちゃった？　ごめんね。でも、みんなここで一番ほぐれるんだよ」|{m}「力を抜いて。……信じて、任せてほしいな」{m}の手のひらは、温かかった。'),
+    devoted: L('{m}「ご、ごめんなさい！　でも、本当にここが効くって、教わって……」――{m}は真っ赤になりながら、それでも手を止めなかった。|{m}「い、嫌だったら、すぐやめます。……でも、もう少しだけ、続けさせてください」|{m}「ちゃんと勉強したんです。だから……信じてもらえませんか」'),
+    cool: L('{m}「この部位にはリンパ節が集まっています。ここを避けると、施術の効果が三割落ちます」――数字まで添えられると、反論しにくかった。|{m}「感覚が過敏になっているのは、血流が改善したからです。想定の範囲内です」|{m}は淡々と答えた。「施術の範囲です。気になるなら、終わってから質問を受けます」'),
+    free: L('{m}「えー、大丈夫だって！　ここ、みんな最初びっくりするけど、終わったらすっごい楽になるから！」|{m}「あはは、くすぐったかった？　ごめんごめん。でもこれ、ちゃんとしたやつだよ。たぶん！」|{m}「知り合い割ってことで、特別に念入りにしてるだけだって。ね？」'),
+    shy: L('{m}「あ、あの……こ、ここも、施術の……範囲、なので……」――消え入りそうな声だった。|{m}は真っ赤になって俯いた。「ま、マニュアルに、書いてあるので……」|{m}「す、すみません……でも、ここを、流さないと……」{m}の指は、震えていた。'),
+    polite: L('{m}「ご不快でしたら申し訳ございません。こちらは、全身の巡りを整えるための手技でございます」|{m}「大変失礼いたしました。ですが、ここを避けますと、施術の効果が十分に得られないのです」|{m}「お客様のお体のためでございます。どうか、今しばらくお任せください」')
+  };
+  /* 客が主導する組（HK.Pos.order で客が攻め）：際どい施術の手前で、客が手を止めさせる（客は受ける側に回らない） */
+  C.RES_TOP_STOP = L('{m}の指が内腿を這い上がりかけたところで、{a}はその手首を掴んだ。「――そこから先は、そっちがされる番」{a}はうつ伏せのまま、ゆっくりと体を返した。|際どいところへ滑り込もうとした手を、{a}は迷わず押し戻した。「知り合いに好き勝手される趣味はない」{m}の手が、宙で止まった。|{a}は{m}の手つきが変わった瞬間に、身を起こした。「施術はここまで」――そう言って、{a}は{m}の顔をまっすぐに見た。');
+  /* 結末に足す一文（施術のあと、二人がまた顔を合わせる） */
+  C.RES_AFTER = L('翌日、{a}は{m}と顔を合わせても、目を合わせられなかった。{m}のほうも、同じだった。|{a}のスマホには、{m}から「次の予約、いつにする？」とだけ届いていた。|{a}はそれからしばらく、{m}の手を見るたびに、施術台の上のことを思い出した。');
+
+  /* ---------- 住人どうしで、体の関係にならない組：普通のマッサージのまま（全年齢と同じ書き方） ---------- */
+  C.PLAIN_SEQ = ['問診', '肩', '背中', '腰', '脚', '仕上げ'];
+  C.PLAIN_LABEL = { '問診': '受付と問診', '肩': 'うつ伏せで肩と首', '背中': '背中', '腰': '腰', '脚': 'ふくらはぎと足裏', '仕上げ': '仕上げ' };
+  C.PLAIN_ACT = {
+    '問診': L('{m}は問診票を手に、{a}の向かいに座った。「……知り合いに問診するの、変な感じ」二人とも、少しだけ笑った。|{m}は{a}の肩に手を当てて、凝り具合を確かめた。「ああ、これはひどい。いつもこんな姿勢で仕事してるんでしょう」|{m}「痛いところ、ある？」――{a}が答えるたびに、{m}は真面目な顔で問診票に書き込んだ。'),
+    '肩': L('{m}の親指が、{a}の肩甲骨の縁にぐっと沈んだ。「うわ、硬い」――思わず素の声が出ていた。|首筋から肩へ、{m}の手のひらがゆっくりと往復した。{a}は、思っていたよりずっと本格的な手つきに驚いた。|{m}は温めたタオルを{a}の首に当てて、その上から耳の後ろのつぼを押した。'),
+    '背中': L('{m}は背骨の両脇を、下から上へ丁寧に押し上げていった。押されるたびに、{a}の口から長い息が漏れた。|「ここ、ずっと張ってたでしょ」――{m}の手が、{a}自身も気づいていなかった凝りを正確に探り当てた。|{m}は{a}の背中に体重をかけ、ゆっくりと伸ばした。骨が、小さく鳴った。'),
+    '腰': L('{m}は{a}の腰に両手を置いて、ゆっくりと円を描いた。「座りっぱなしでしょう。腰が泣いてる」|腰骨の上を押されて、{a}は思わず「そこ」と声を上げた。{m}は「でしょ」と得意げに笑った。|{m}はタオルを掛け直してから、腰のまわりを念入りにほぐした。手つきは、最後まで仕事のものだった。'),
+    '脚': L('ふくらはぎを絞るように揉まれて、{a}は痛いのか気持ちいいのか分からない声を上げた。|{m}は{a}の足裏を親指で押した。「ここ、胃のつぼ。……最近、食べすぎてない？」|{m}は膝の裏から足首まで、むくみを流すように手のひらを滑らせた。'),
+    '仕上げ': L('{m}は最後に、{a}の肩を両手でぽんと叩いた。「はい、おしまい。起き上がるとき、ゆっくりね」|{m}は温かいおしぼりを差し出した。「お疲れさま。……知り合いの体って、思ったより緊張するね」|仕上げのストレッチで、{a}の背中がぐっと伸びた。{m}は満足そうにうなずいた。')
+  };
+  /* 「ほとんど」マッサージ：手が際どいところへ行きかけて、止まる */
+  C.PLAIN_ALMOST = L('{m}の手が太腿のほうへ上がりかけて、ぴたりと止まった。「……ここは、やめておこうか」{m}はそう言って、ふくらはぎに手を戻した。|オイルを手に取った{m}は、タオルの縁を見て少し迷った。それから、タオルをきっちり掛け直した。「脚はタオルの上から。知り合いだしね」|{m}の指が膝の上へ滑りかけて、慌てたように引っ込んだ。「ご、ごめん。今のは手が滑っただけ」――{a}は、聞かなかったことにした。');
+  C.PLAIN_TALK = L('{m}「最近どう？　ちゃんと寝てる？」――施術中の世間話は、いつもの二人の会話と変わらなかった。|{a}は施術台に顔を埋めたまま、「{m}がこんなに上手いとは思わなかった」と言った。{m}は照れたように笑った。|{m}「ここで働いてること、ほかの人には内緒にしておいて」――{a}は枕に顔を埋めたまま、うなずいた。|{m}は{a}の凝りを見つけるたびに、「ほら、ここも」と得意げに言った。');
+  C.PLAIN_END = L('{a}は店を出てから、肩をぐるりと回した。嘘みたいに軽かった。|{a}は次の予約を入れて帰った。指名の欄には、迷わず{m}の名前を書いた。|後日、{a}は「普通にすごく上手かった」と、{m}に直接言った。{m}は「普通に、って何」と笑った。|{a}はその夜、久しぶりに朝まで一度も目を覚まさずに眠った。');
+
+  /* ---------- カーテン越し（モブの施術者・住人が2人とも客） ---------- */
+  C.CUR_INTRO = L('{a}と{b}は、二人一緒に予約を入れていた。案内されたのは、薄いカーテン一枚で仕切られた二つの施術台だった。|「ペアコースでご予約のお二人ですね」――受付の声に、{a}と{b}は顔を見合わせた。施術室は一つで、真ん中をカーテンが仕切っているだけだった。|{b}が見つけてきたのは、ペア割のある評判の店だった。「せっかくだから一緒に」と誘われて、{a}も隣の施術台に横になった。間のカーテンは、思っていたよりずっと薄かった。');
+  /* カーテンの向こうの様子（{a}＝聞いている人 {b}＝向こうの人） */
+  C.CUR_HEAR = {
+    chat: L('カーテン越しに、{b}の声がした。「そっち、どう？」「……普通に、気持ちいい」――{a}はそう答えて、また枕に顔を戻した。|カーテンの向こうから、{b}が施術者と世間話をしている声が聞こえてきた。いつもの{b}の、のんきな声だった。|{a}はカーテンの隙間から、隣の施術台の足元だけを見た。{b}のつま先が、気持ちよさそうに揺れていた。'),
+    notice: L('カーテンの向こうで、{b}の声が急に尖った。「……ちょっと待って。今の、何ですか」――{a}は思わず、息を止めて耳を澄ませた。|隣の施術台がきしんで、{b}が身を起こす気配がした。施術者の言い訳する声が、カーテン越しにぼそぼそと聞こえた。'),
+    left: L('カーテンの向こうで、{b}が施術台を降りる音がした。「……先に出てる」――短い言葉だけを残して、足音が遠ざかっていった。|{b}の「帰ります」という声がして、隣のブースが急に静かになった。{a}の側の施術は、何事もなかったように続いた。'),
+    hot: L('カーテンの向こうから、{b}の押し殺した声が漏れてきた。聞いてはいけないものを聞いた気がして、{a}は枕に顔を押しつけた。|隣の施術台が、規則正しくきしみ始めた。カーテン一枚向こうで何が起きているのか、{a}は考えないようにするのが精一杯だった。|{b}の声が、途中から聞いたことのない高さに変わった。{a}は思わず、カーテンのほうを振り向きかけた。'),
+    reverse: L('カーテンの向こうで、何かが倒れる音がした。続いて聞こえたのは、施術者の慌てた声と、楽しげな{b}の声だった。|隣の施術台が大きくきしんだ。「交代」という{b}の声と、施術者の情けない声が、カーテン越しに聞こえた。'),
+    sleep: L('カーテンの向こうから、{b}の穏やかな寝息が聞こえてきた。|隣が急に静かになった。耳を澄ませると、{b}の規則正しい寝息だけが聞こえた。')
+  };
+  /* ハプニング「隣のブース」：隣はカーテンの向こうのもう一人（{b}） */
+  C.CUR_NEIGHBOR = L('カーテンの向こう、{b}の施術台のほうから、押し殺した声が聞こえてきた。|カーテン一枚向こうで、{b}の施術台がきしむ音と、乱れた息遣いが聞こえた。');
+  /* 聞いた人の反応（態度ごと。向こうの声に気づいたときだけ） */
+  C.CUR_REACT = {
+    proud: L('{a}は「……うるさい店だ」と小さく吐き捨てた。|{a}は聞こえないふりをして、眉間に皺を寄せた。'),
+    stern: L('{a}は聞かなかったことにした。聞かなかったことにするには、相当な集中が必要だった。|{a}は目を閉じて、自分の呼吸だけを数え直した。'),
+    tsun: L('{a}「な、何やってんのよ、あっちは……」――自分の頬が熱いのには、気づかないふりをした。|{a}は「べ、別に気にしてないし」と、誰に向けるでもなく呟いた。'),
+    gentle: L('{a}は「あらあら」と小さく笑った。笑いながら、少しだけ心配になった。|{a}はカーテンのほうに「大丈夫？」と声をかけようとして、やめた。'),
+    devoted: L('{a}は「{b}、大丈夫かな……」と、自分のことより先に心配した。|{a}はカーテンの向こうが気になって、施術に集中できなかった。'),
+    cool: L('{a}は隣の音から、向こうの施術がどこまで進んだのかを推測した。推測して、少し後悔した。|{a}は「隣も同じ手順か」と、冷静に分析しようとした。'),
+    free: L('{a}は思わず吹き出しかけた。「ちょっと、隣、すごいことになってない？」|{a}はカーテンに向かって「おーい」と小声で呼びかけた。返事はなかった。'),
+    shy: L('{a}は耳まで真っ赤になって、タオルを頭までかぶった。|{a}は聞こえてくる音に、身を縮めた。自分の声も、向こうに聞こえているのかもしれなかった。'),
+    polite: L('{a}は「……失礼いたしました」と、なぜか自分が謝ってしまった。|{a}は聞いてはいけないものを聞いた気がして、そっと両手で耳を塞いだ。')
+  };
+  C.CUR_END = {
+    both: L('その日から、{a}と{b}のペア予約は毎週の決まりごとになった。帰り道、二人は一度も今日の話をしなかった。|店を出た{a}と{b}は、駅まで一言も喋らなかった。改札の前で、どちらからともなく「また来る？」と訊いた。'),
+    one: L('店の前で待っていた{a}は、遅れて出てきた{b}の顔を見て、何も訊かなかった。訊かなくても、カーテン越しに大体は聞こえていた。|{a}は帰り道、隣を歩く{b}の顔を何度も盗み見た。{b}は、ずっと前だけを見ていた。'),
+    none: L('帰り道、{a}と{b}は「普通にいい店だったね」と言い合った。どちらも、カーテンの向こうのことには触れなかった。|{a}と{b}は、駅前の喫茶店で反省会を開いた。話は、最後まで噛み合わなかった。')
+  };
+
+  /* ---------- 住人の写し（受け攻め・恋愛対象・縛りを HK.Pos・HK.State で見るため） ---------- */
+  C.resident = function (input, i) {
+    var c = input.chars[i], pc = (input.perChar && input.perChar[i]) || {};
+    var p = { i: i, name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, memo: c.memo || '',
+      ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock,
+      sexLock: c.sexLock === 'any' || c.sexLock === 'lover' ? c.sexLock : c.sexLock === '' || c.sexLock == null || isNaN(+c.sexLock) ? null : +c.sexLock, pick: pc.pick || {}, rawNoR18: !!c.noR18 };
+    if (HK.charFlags) HK.charFlags(c, p, 'massage');
+    p.persona = HK.personaOf(p);
+    (input.ties || []).forEach(function (t) { if (t && /^(lover|mate|fated)$/.test(t.type) && (t.a === i || t.b === i)) (p.loveSet = p.loveSet || []).push(t.a === i ? t.b : t.a); });
+    return p;
+  };
+  /* 住人どうしの施術で、際どい施術（体の関係）にしてよいか。だめなら理由 */
+  C.pairWhy = function (T, Cc) {
+    var P = HK.Pos, ST = HK.State;
+    if (HK.SAFE_ON || !P || !ST) return '全年齢';
+    if (T.rawNoR18 || Cc.rawNoR18 || !ST.r18ok(T) || !ST.r18ok(Cc)) return 'R18に参加しない人がいる';
+    if ((HK.ngPair && HK.ngPair(T, Cc)) || (HK.sexBlocked && HK.sexBlocked(T, Cc))) return '恋愛・R18にしない組';
+    if (!P.genderOK(T, Cc)) return '恋愛対象が合わない';
+    if (!P.okSex(T, Cc)) return '受け攻めの指定が合わない';
+    return '';
+  };
+  /* 配役：{ mode: 'mob'（住人1人）|'res'（住人が施術者）|'curtain'（2人とも客）, ci: 客の番号, ti: 施術者の番号, P: 住人の写し } */
+  C.cast = function (input) {
+    var n = Math.min(2, (input.chars || []).length);
+    if (n < 2 || !HK.Roles) return { mode: 'mob', ci: [0] };
+    var P = [C.resident(input, 0), C.resident(input, 1)];
+    var S0 = { P: P, env: input.env || {}, rng: HK.rng((((input.seed || 1) * 131) + 7) >>> 0), scen: HK.SCENARIOS.massage };
+    var r = HK.Roles.resolve(S0, 'therapist', input);
+    if (r.kind === 'res' && r.who && r.who[0]) {
+      var t = r.who[0], cl = P[0] === t ? P[1] : P[0];
+      return { mode: 'res', ti: t.i, ci: [cl.i], P: P, T: t, CR: cl, picked: (P.filter(function (x) { return (x.pick || {}).therapist === 'yes'; }).length > 0) };
+    }
+    return { mode: 'curtain', ci: [0, 1], P: P };
+  };
+
+  /* ---------- カーテン越し：二人の結果を一つにまとめる ---------- */
+  function fmt(t, v) { return String(t).replace(/\{([a-z0-9]+)\}/g, function (m, k) { return v[k] != null ? v[k] : m; }); }
+  function blocks(log) {
+    var pre = [], out = [], cur = null;
+    log.forEach(function (e) {
+      if (e.kind === 'step') { cur = { label: e.text, room: e.room, step: e, items: [] }; out.push(cur); return; }
+      (cur ? cur.items : pre).push(e);
+    });
+    return { pre: pre, list: out };
+  }
+  /* その区切りで起きたこと（カーテンの向こうに聞こえる音） */
+  function eventOf(items) {
+    var has = function (re) { return items.some(function (e) { return re.test(e.tag || ''); }); };
+    if (has(/^(?:立場逆転|逆転)$/)) return 'reverse';
+    if (has(/^退店$/)) return 'left';
+    if (has(/^(?:陥落|おねだり|延長|暗転)$/) || items.some(function (e) { return e.kind === 'climax'; })) return 'hot';
+    if (has(/^気づき$|（拒否/)) return 'notice';
+    if (has(/^寝落ち$/)) return 'sleep';
+    return '';
+  }
+  var RANK = { ok: 0, mid: 1, over: 2 };
+  C.merge = function (input, A, B, rng) {
+    var hA = A.hero, hB = B.hero, nA = hA.name, nB = hB.name;
+    /* 同じ文を二度使わない（使い切ったら、また全部から） */
+    var used = [];
+    var pick = function (a) { var f = a.filter(function (x) { return used.indexOf(x) < 0; }); var x = (f.length ? f : a)[rng.int((f.length ? f : a).length)]; used.push(x); return x; };
+    var log = [];
+    var push = function (e) { log.push(e); return e; };
+    var bA = blocks(A.log), bB = blocks(B.log);
+    /* 来店：二人まとめて一つに */
+    var whyA = (bA.pre[0] && bA.pre[0].why) || '', whyB = (bB.pre[0] && bB.pre[0].why) || '';
+    var intro = push({ kind: 'sys', tag: '来店', text: fmt(pick(C.CUR_INTRO), { a: nA, b: nB }) + ' ' + nA + 'の担当は' + A.staffName + '、' + nB + 'の担当は' + B.staffName + 'だった。', why: nA + '…' + whyA + '／' + nB + '…' + whyB, actors: [hA.i, hB.i], room: 0, floor: 0 });
+    intro.v = (bA.pre[0] && bA.pre[0].v) || { r: 0, p: 0, c: 0 };
+    bA.pre.slice(1).forEach(function (e) { e.actors = [hA.i]; push(e); });
+    bB.pre.slice(1).forEach(function (e) { e.actors = [hB.i]; push(e); });
+    /* 区切りを、施術の順（room）でそろえる。延長は施術のあとより前 */
+    var keys = [], byKey = {};
+    [[bA, 'a'], [bB, 'b']].forEach(function (x) {
+      x[0].list.forEach(function (b) {
+        if (!byKey[b.label]) { byKey[b.label] = { label: b.label, room: b.room, step: b.step, a: null, b: null }; keys.push(b.label); }
+        byKey[b.label][x[1]] = b;
+      });
+    });
+    keys.sort(function (p, q) { var x = byKey[p], y = byKey[q]; return x.room - y.room || (x.label === '施術のあと' ? 1 : 0) - (y.label === '施術のあと' ? 1 : 0); });
+    var heard = 0, chatDone = false, goneA = false, goneB = false;
+    function hear(listener, other, ev, room) {
+      if (!ev || heard >= 4) return;
+      var t = fmt(pick(C.CUR_HEAR[ev]), { a: listener.name, b: other.name });
+      if (/^(?:hot|notice|reverse)$/.test(ev) && C.CUR_REACT[listener.persona] && rng() < 0.75) t += fmt(pick(C.CUR_REACT[listener.persona]), { a: listener.name, b: other.name });
+      push({ kind: 'ev', tag: 'カーテン越し', text: t, why: 'カーテンの向こうの' + other.name + 'の様子が聞こえた', actors: [listener.i], room: room, floor: 0, v: { r: 0, p: 0, c: 0 } });
+      heard++;
+    }
+    keys.forEach(function (k, j) {
+      var x = byKey[k];
+      push(x.step);
+      if (x.a) x.a.items.forEach(function (e) { e.actors = [hA.i]; push(e); });
+      if (x.b) x.b.items.forEach(function (e) { e.actors = [hB.i]; push(e); });
+      var evA = x.a ? eventOf(x.a.items) : '', evB = x.b ? eventOf(x.b.items) : '';
+      /* 向こうがまだ施術台にいるときだけ、こちらの音が聞こえる */
+      /* 同じ区切りで二人とも何か起きたら、どちらか一方の音だけ */
+      var canA = evA && x.b && !goneB, canB = evB && x.a && !goneA;
+      if (canA && canB) { if (rng() < 0.5) canA = false; else canB = false; }
+      if (canA) hear(hB, hA, evA, x.room);
+      if (canB) hear(hA, hB, evB, x.room);
+      if (!chatDone && j === 2 && x.a && x.b && !evA && !evB) { chatDone = true; hear(rng() < 0.5 ? hA : hB, rng() < 0.5 ? hB : hA, 'chat', x.room); }
+      if (evA === 'left') goneA = true;
+      if (evB === 'left') goneB = true;
+    });
+    log.forEach(function (e, n) { e.n = n; });
+    var turns = [];
+    [[A, nA], [B, nB]].forEach(function (x) { (x[0].turns || []).forEach(function (t) { var e = x[0].log[t.n], n = log.indexOf(e); if (n >= 0) turns.push({ n: n, why: x[1] + '：' + t.why }); }); });
+    turns.sort(function (p, q) { return p.n - q.n; });
+    /* 二人の推移 */
+    var hist = [], len = Math.max(A.hist.length, B.hist.length);
+    for (var k = 0; k < len; k++) {
+      var a = A.hist[Math.min(k, A.hist.length - 1)], b = B.hist[Math.min(k, B.hist.length - 1)];
+      hist.push({ n: k, f: 0, r: a.r, p: a.p, c: a.c, hs: [{ r: a.r, p: a.p, c: a.c }, { r: b.r, p: b.p, c: b.c }] });
+    }
+    /* 結末 */
+    var EA = A.ending, EB = B.ending, hot = function (E) { return E.kind === 'over'; };
+    var kind = RANK[EA.kind] >= RANK[EB.kind] ? EA.kind : EB.kind;
+    var endK = hot(EA) && hot(EB) ? 'both' : hot(EA) || hot(EB) ? 'one' : 'none';
+    var ev = endK === 'one' ? (hot(EA) ? { a: nB, b: nA } : { a: nA, b: nB }) : { a: nA, b: nB };
+    var lines = [fmt(pick(C.CUR_END[endK]), ev)].concat(EA.lines, EB.lines);
+    var short = function (t) { return String(t).split(' ― ')[0]; };
+    hA.fate = short(EA.title); hB.fate = short(EB.title);
+    hA.fallTitle = ''; hB.fallTitle = '';
+    var E = { type: kind, kind: kind, title: 'カーテン越し ― ' + nA + '：' + short(EA.title) + '／' + nB + '：' + short(EB.title), lines: lines };
+    var st = function (R, key) { var f = (R.estats || []).filter(function (s) { return s[0] === key; })[0]; return f ? f[1] : ''; };
+    var estats = [[nA, short(EA.title)], [nB, short(EB.title)]];
+    ['気づいた', '騙された', '絶頂'].forEach(function (key) { estats.push([key, nA + ' ' + st(A, key) + '・' + nB + ' ' + st(B, key)]); });
+    var res = {};
+    for (var p in A) res[p] = A[p];
+    res.log = log; res.hist = hist; res.turns = turns; res.ending = E; res.outcome = E.title;
+    res.hero = hA; res.heroes = [hA, hB]; res.party = true; res.estats = estats;
+    res.advice = A.advice.map(function (s) { return nA + '：' + s; }).concat(B.advice.map(function (s) { return nB + '：' + s; }));
+    res.meta = 'カーテン越し・' + A.meta + '／' + B.staffName;
+    res.summary = nA + '・' + nB + '：' + E.title;
+    res.stepCount = hist.length - 1;
+    res.chars = [{ name: nA, i: hA.i }, { name: nB, i: hB.i }];
+    return res;
+  };
 })();
 ;/* ==== js/solo-massage.js ==== */
 /* 箱庭診断: ソロR18「これって本当にマッサージですか？」
@@ -25588,13 +25831,14 @@
   }
 
   HK.SCENARIOS.massage = {
-    id: 'massage', name: 'これって本当にマッサージですか？', kicker: 'ソロ・R18', solo: true, maxCast: 1, minCast: 1,
+    id: 'massage', name: 'これって本当にマッサージですか？', kicker: '1〜2人・R18', solo: true, maxCast: 2, minCast: 1,
     desc: '評判のマッサージ店。施術は少しずつ際どくなる。いつ気づくか、言い訳に騙されるか、快楽に負けるか。※成人キャラクター向け',
-    unit: '施術', simulate: function (input) { return withFresh(function () { return run(input); }); },
+    castHint: '1〜2人。1人のときは、施術者は店のスタッフ（モブ）です。2人のときは「施術者」の設定で、住人の一人が施術者になる（もう一人が客）か、二人とも客になってカーテン越しの隣の施術台で受けるかが決まります（おまかせはモブ＝カーテン越し）。住人どうしの施術は、体の関係になれる組だけ際どくなり、なれない組は普通のマッサージのままです。',
+    unit: '施術', simulate: function (input) { return withFresh(function () { return play(input); }); },
     derived: ['caution', 'cold', 'honesty', 'impulse'],
     env: [
       { id: 'course', label: 'コース', type: 'select', def: 'oil', options: [{ v: 'normal', label: '整体（60分）' }, { v: 'oil', label: 'アロマオイル（90分）' }, { v: 'lymph', label: '全身リンパ（120分）' }, { v: 'special', label: '「特別コース」（90分）' }] },
-      { id: 'staff', label: '施術者', type: 'select', def: 'gentle', options: Object.keys(STAFF).map(function (k) { return { v: k, label: STAFF[k].n + '（' + STAFF[k].desc + '）' }; }) },
+      { id: 'staff', label: '店のスタッフ（モブの施術者）', type: 'select', def: 'gentle', options: Object.keys(STAFF).map(function (k) { return { v: k, label: STAFF[k].n + '（' + STAFF[k].desc + '）' }; }) },
       { id: 'shady', label: '店の怪しさ', min: 0, max: 100, def: 60, lo: '健全そう', hi: '看板からして怪しい', desc: '高いほど施術が早く際どくなり、気づかれやすくもなる' },
       { id: 'harsh', label: '施術の過激さ', min: 0, max: 100, def: 55, lo: 'ぎりぎり整体', hi: '隠す気がない' }
       ,{ id: 'desc', label: '行為の描写', type: 'select', def: 'full', options: [{ v: 'full', label: '描写する' }, { v: 'dark', label: '軽め（暗転して回数だけ）' }], desc: '軽めにすると、快楽に負けたあとの行為は暗転し、体位の数と回数だけが分かる' }
@@ -25619,17 +25863,56 @@
     ],
     steps: function () { return []; }
   };
+  /* 役割「施術者」（mob.js の HK.Roles）：おまかせ＝モブ（店のスタッフ）。住人の欄で「施術者になる」を選んだ人がいれば、その人 */
+  if (HK.Roles) HK.Roles.install(HK.SCENARIOS.massage, 'therapist', '施術者', {
+    auto: 'mob', yes: '施術者になる', envBefore: 'staff',
+    fit: function (c) { var t = c.tr || {}; return 0.3 + (t.cp || 0) * 0.3 + (t.fc || 0) * 0.3 + (t.aggr || 0) * 0.3; },
+    desc: '施術者を住人がやるか、店のスタッフ（モブ）がやるかを選びます。住人が施術者なら、もう一人の住人が客になります。モブなら、2人とも客になってカーテン越しの隣の施術台で受けます。住人の欄で「施術者になる」を選んだ人が優先されます（住人が1人のときは、いつもモブ）'
+  });
 
-  function run(input) {
-    var S = K.state(input, 'massage'), h = S.h, rng = S.rng, env = S.env;
-    var staff = STAFF[env.staff] || STAFF.gentle;
+  /* 配役（solo-massage-cast.js）：住人1人＝モブの施術者／住人が施術者／2人とも客（カーテン越し） */
+  function play(input) {
+    var MC = HK.MassageCast, c = MC ? MC.cast(input) : { mode: 'mob' };
+    if (c.mode === 'res') return run(input, { ci: c.ci[0], T: c.T, CR: c.CR, picked: c.picked });
+    if (c.mode === 'curtain') {
+      var st0 = (input.env && input.env.staff) || 'gentle', rng = HK.rng((((input.seed || 1) * 977) + 3) >>> 0);
+      var ks = Object.keys(STAFF).filter(function (k) { return k !== 'duo' && k !== st0; });
+      var a = run(input, { ci: 0, other: input.chars[1].name });
+      var b = run(input, { ci: 1, seedAdd: 7919, staff: ks[rng.int(ks.length)], other: input.chars[0].name });
+      return MC.merge(input, a, b, rng);
+    }
+    return run(input);
+  }
+
+  /* o：{ ci: 客の番号, T: 住人の施術者（solo-massage-cast.js の写し）, CR: 客の写し, staff: モブの型, seedAdd, other: カーテンの向こうの人 } */
+  function run(input, o) {
+    o = o || {};
+    var S = K.state(input, 'massage');
+    if (o.ci || o.seedAdd) {
+      if (o.seedAdd) S.rng = HK.rng((((input.seed || 1) + o.seedAdd) >>> 0) || 1);
+      S.h = K.hero(S, input.chars[o.ci || 0], (input.perChar && input.perChar[o.ci || 0]) || {}); S.party = [S.h];
+    }
+    var h = S.h, rng = S.rng, env = S.env;
+    h.i = o.ci || 0;
+    /* 施術者：住人（TR）なら、気質から店の施術者の型（sk）に当てる（一言・言い訳の通りやすさ）。モブなら設定の型 */
+    var MC = HK.MassageCast, TR = o.T || null, CR = o.CR || null;
+    var sk = TR ? MC.STAFF_OF[TR.persona] || 'gentle' : STAFF[o.staff] ? o.staff : env.staff;
+    if (TR && sk === 'gentle' && HK.Pos && HK.Pos.isF(TR)) sk = 'lady';
+    if (!STAFF[sk]) sk = 'gentle';
+    var staff = TR ? { n: TR.name, g: HK.Pos ? (HK.Pos.isF(TR) ? 'f' : 'm') : TR.gender === 'f' ? 'f' : 'm', desc: '', dec: STAFF[sk].dec, res: true } : STAFF[sk];
     S.vars = { m: staff.n };
+    /* 住人どうし：体の関係になれる組（HK.Pos.okSex・両方 HK.State.r18ok・HK.ngPair でも HK.sexBlocked でもない）だけ際どい施術にする。
+       向きは HK.Pos.order：施術者が攻めなら今までどおり、客が攻めなら際どい施術の手前で客が手を止めさせる（客を受ける側にしない）。
+       なれない組は普通のマッサージのまま（plain） */
+    var pairWhy = TR ? MC.pairWhy(TR, CR) : '', pairOK = !!TR && !pairWhy;
+    var tTop = !pairOK || HK.Pos.order(TR, CR, [TR, CR])[0] === TR, plain = !!TR && !pairOK;
     /* 受け攻め：自分で攻めを選んだ客は、施術者に「される」側に回らない。際どくなった時点で手を止めさせ、帰るか、立場を入れ替える */
-    var hardTop = !!(HK.Pos && HK.Pos.hardTopNpc(h));
+    var hardTop = TR ? pairOK && !tTop : !!(HK.Pos && HK.Pos.hardTopNpc(h));
+    function cTop() { return TR ? !tTop : !!(HK.Pos && HK.Pos.vsNpc(h, '') === 'top'); }
     /* 女性どうし（女性セラピストと女性の客）：いちもつを前提にした描写を使わない */
     var ff = h.gender === 'f' && staff.g === 'f';
     /* ふたなり（HK.Pos.futa。攻め・リバの女性）：施術は女性の客として受け、客が攻めに回る場面だけ男性の体で書く */
-    h.futa = !!(input.chars[0] && input.chars[0].futa);
+    h.futa = !!(input.chars[h.i] && input.chars[h.i].futa);
     var custF = HK.Pos ? HK.Pos.isF(h) : h.gender === 'f', ffTop = ff && custF;
     h.sens = 0.85 + (h.stats.sense - 3) * 0.1;
     var course = env.course;
@@ -25639,7 +25922,7 @@
     if (course === 'lymph') seq = STAGES.slice(0, 8).concat([STAGES[7], STAGES[8], STAGES[9]]);
     S.k = 1.25;
     /* 恋愛対象と違う性別の施術者：際どい施術への抵抗が強い（気づきやすく、騙されにくく、堕ちにくい） */
-    var wrong = (h.likes === 'm' || h.likes === 'f') && staff.g && h.likes !== staff.g;
+    var wrong = !TR && (h.likes === 'm' || h.likes === 'f') && staff.g && h.likes !== staff.g;
     var LIKE_L = { m: '男性', f: '女性' }, wrongWhy = wrong ? '恋愛対象は' + LIKE_L[h.likes] + '・施術者は' + (staff.g === 'm' ? '男性' : '女性') : '';
     var wrongShown = 0;
     /* 本人の性別（未指定なら、施術者と同じとみなす） */
@@ -25671,7 +25954,9 @@
     var M = HK.MassageMore, sleeping = 0, slept = false, reversed = false, extended = false, hands = 1;
     /* この回に起きるハプニング（2〜3個）を、どの段階で起こすか決めておく */
     var incAt = {};
-    S.rng.shuffle(M.INCIDENTS.filter(function (x) { return (!x.when || x.when(env, h)) && (!hardTop || M.TOP_INC.indexOf(x.id) >= 0); })).slice(0, 2 + rng.int(2)).forEach(function (x) {
+    var envX = Object.assign({}, env, { staff: sk });
+    /* 住人が施術者の回は、研修生（三人目の手）は入らない */
+    S.rng.shuffle(M.INCIDENTS.filter(function (x) { return (!x.when || x.when(envX, h)) && (!hardTop || M.TOP_INC.indexOf(x.id) >= 0) && !(TR && x.id === 'trainee'); })).slice(0, 2 + rng.int(2)).forEach(function (x) {
       for (var tries = 0; tries < 8; tries++) { var at = 1 + rng.int(Math.max(1, seq.length - 1)); if (!incAt[at]) { incAt[at] = x; break; } }
     });
     function band(l) { return l < 1.2 ? 0 : l < 2.8 ? 1 : 2; }
@@ -25698,14 +25983,48 @@
       if (f.extra) extended = true;
     }
 
-    K.say(S, { kind: 'sys', tag: '来店', text: K.fmt(S, K.pick(S, ['{a}は雑居ビルの三階、「癒しの手」と書かれた扉を押した。受付には{m}が一人。「お待ちしておりました」', '{a}はポイントカードを握りしめて、駅裏のマッサージ店に入った。迎えたのは{m}だった。', '{a}は口コミサイトで星4.8の店を予約した。レビューの八割が「また来ます」だったのが、少しだけ気になった。'])), why: '目標：' + h.goal.label + '／' + h.action.label });
+    var introT = TR ? K.fmt(S, K.pick(S, MC.RES_INTRO)) + ' ' + K.fmt(S, K.pick(S, MC.RES_GREET[TR.persona] || MC.RES_GREET.gentle))
+      : K.fmt(S, K.pick(S, ['{a}は雑居ビルの三階、「癒しの手」と書かれた扉を押した。受付には{m}が一人。「お待ちしておりました」', '{a}はポイントカードを握りしめて、駅裏のマッサージ店に入った。迎えたのは{m}だった。', '{a}は口コミサイトで星4.8の店を予約した。レビューの八割が「また来ます」だったのが、少しだけ気になった。']));
+    var whyP = plain ? '住人どうしの施術（' + pairWhy + '）：際どい施術にはならず、普通のマッサージのまま' : '';
+    K.say(S, { kind: 'sys', tag: '来店', text: introT, why: '目標：' + h.goal.label + '／' + h.action.label + (TR ? '／施術者は住人の' + TR.name + (o.picked ? '（住人の欄で選んだ）' : '（住人から）') + (plain ? '。' + whyP : hardTop ? '。受け攻めでは客の' + h.name + 'が主導する側' : '') : '') });
     K.snap(S, { s: 0 });
+    if (plain) return plainRun();
+
+    /* 住人どうしで体の関係にならない組：普通のマッサージのまま（施術者の手は、際どいところの手前で止まる） */
+    function plainRun() {
+      MC.PLAIN_SEQ.forEach(function (key, i) {
+        S.step = i;
+        K.step(S, (i + 1) + '. ' + MC.PLAIN_LABEL[key]);
+        K.say(S, { kind: 'ev', tag: key, text: K.fmt(S, K.pick(S, MC.PLAIN_ACT[key])) + (rng() < 0.5 ? ' ' + K.fmt(S, K.pick(S, M.REACT[h.persona][0])) : ''), why: '' });
+        if (key === '脚' && rng() < 0.65) { var oa = K.say(S, { kind: 'ev', tag: 'ぎりぎり', text: K.fmt(S, K.pick(S, MC.PLAIN_ALMOST)), why: whyP }); K.key(S, oa, '施術者の手が手前で止まった'); }
+        if (rng() < 0.4) K.say(S, { kind: 'ev', tag: '施術者', text: K.fmt(S, K.pick(S, rng() < 0.6 ? MC.PLAIN_TALK : M.STAFF_TALK[sk][0])), why: '' });
+        var AB = M.ACT[h.action.id];
+        if (AB && rng() < 0.35) K.say(S, { kind: 'ev', tag: h.action.label, text: K.fmt(S, K.pick(S, AB.t[0])), why: '方針「' + h.action.label + '」' });
+        h.reason = clamp(h.reason + 1, 0, 100);
+        K.snap(S, { s: 0 });
+      });
+      var E = { type: 'ok', kind: 'ok', title: 'ただのマッサージだった ― ' + staff.n + 'の腕は本物', lines: [] };
+      E.lines.push(K.fmt(S, K.pick(S, MC.PLAIN_END)), K.fmt(S, K.pick(S, MC.PLAIN_END)));
+      if (h.goal.id === 'heal') E.lines.push(h.name + 'の肩こりは、本当にきれいに治っていた。');
+      if (h.goal.id === 'suspect') E.lines.push('噂の店は、少なくとも' + staff.n + 'の施術に限っては、まっとうな店だった。');
+      return done(K.finish(S, input, E, ['住人どうしの施術で、体の関係にならない組（' + pairWhy + '）なので、最後まで普通のマッサージだった。'], { meta: staff.n + '（住人）・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['施術者', staff.n], ['施術', '普通のマッサージ'], ['理由', pairWhy]], label3: '施術' }));
+    }
+    /* 結果の仕上げ：客の番号、住人の施術者（記録の登場人物・名前の色） */
+    function done(res) {
+      res.hero.i = h.i; res.staffName = staff.n;
+      if (TR) {
+        res.heroes = [res.hero, { i: TR.i, name: TR.name, eg: TR.eg, memo: TR.memo, persona: TR.persona, tone: TR.tone, top: HK.egoType(TR.eg).top, action: '（施術者）', goal: '—', stats: {}, dev: {}, curses: [], items: [], climax: 0 }];
+        res.chars = input.chars.slice(0, 2).map(function (c, i) { return { name: c.name, i: i }; });
+        res.log.forEach(function (e) { if (e.kind !== 'step') e.actors = [h.i, TR.i]; });
+      }
+      return res;
+    }
 
     function posTop() { return noMut(ffTop ? POS_TOP_FF : custF && staff.g === 'm' ? POS_TOP_F : POS_TOP); }
     /* 女性どうしで脚を絡めて熱いところを重ねる（対等に繋がる）書き方は、客がリバのときだけ */
     function noMut(arr) {
       var P = HK.Pos, MU = P && P.MUTUAL_RE;
-      if (!ff || !MU || (P.of && P.of(h) === 'riba')) return arr;
+      if (!ff || !MU || (TR ? P.bothRiba(TR, CR) : P.of && P.of(h) === 'riba')) return arr;
       var o = arr.filter(function (x) { return !MU.test(x.t) && !/擦れ合|脚を交差/.test(x.t); });
       return o.length ? o : arr;
     }
@@ -25723,7 +26042,7 @@
     /* 立場逆転：客が施術者を押し倒す（top＝自分で攻めを選んだ客が、際どい施術を止めたあと） */
     function doReverse(top) {
       reversed = true;
-      var orv = K.say(S, { kind: 'sys', tag: '立場逆転', text: K.fmt(S, K.pick(S, top ? M.TOP_REVERSE : M.REVERSE)), why: top ? '攻めの指定：触られる側には回らない／FC・攻撃性 ' + Math.round(h.tr.aggr * 100) + '・経験 ' + h.stats.exp : '強気・攻撃性 ' + Math.round(h.tr.aggr * 100) + '・経験 ' + h.stats.exp });
+      var orv = K.say(S, { kind: 'sys', tag: '立場逆転', text: K.fmt(S, K.pick(S, top ? M.TOP_REVERSE : M.REVERSE)), why: top ? (TR ? '受け攻め：' + TR.name + 'との組では客が主導する側' : '攻めの指定：触られる側には回らない') + '／FC・攻撃性 ' + Math.round(h.tr.aggr * 100) + '・経験 ' + h.stats.exp : '強気・攻撃性 ' + Math.round(h.tr.aggr * 100) + '・経験 ' + h.stats.exp });
       K.key(S, orv, '施術者を押し倒した');
       var rv = dark ? [K.pick(S, MD.reverse)] : S.rng.shuffle(M.REVERSE_ACT).slice(0, 2);
       rv.forEach(function (t2) { K.say(S, { kind: 'ev', tag: '逆転', text: K.fmt(S, t2), why: '' }); });
@@ -25745,9 +26064,9 @@
     /* 攻めの客：施術が際どくなった時点で手を止めさせ、帰るか、立場を入れ替える */
     function topStop(st) {
       S.flags.noticedAt = S.flags.noticedAt || st[1];
-      var o1 = K.say(S, { kind: 'ev', tag: st[0] + '（拒否）', text: K.fmt(S, K.pick(S, M.TOP_STOP)), why: '自分で「攻め」を選んでいる：施術者に触られる側には回らない' });
+      var o1 = K.say(S, { kind: 'ev', tag: st[0] + '（拒否）', text: K.fmt(S, K.pick(S, TR ? MC.RES_TOP_STOP : M.TOP_STOP)), why: TR ? '受け攻め：' + TR.name + 'との組では、客の' + h.name + 'が主導する側。施術者に触られる側には回らない' : '自分で「攻め」を選んでいる：施術者に触られる側には回らない' });
       K.key(S, o1, st[1] + 'で手を止めさせた');
-      var rev = 0.25 + h.tr.fc * 0.3 + h.tr.aggr * 0.3 + (h.stats.exp - 3) * 0.08 + (h.goal.id === 'secret' ? 0.3 : 0) + (h.action.id === 'enjoy' ? 0.2 : 0) - (h.goal.id === 'suspect' || h.goal.id === 'heal' ? 0.15 : 0) - h.tr.caution * 0.2;
+      var rev = 0.25 + h.tr.fc * 0.3 + h.tr.aggr * 0.3 + (h.stats.exp - 3) * 0.08 + (h.goal.id === 'secret' ? 0.3 : 0) + (h.action.id === 'enjoy' ? 0.2 : 0) - (h.goal.id === 'suspect' || h.goal.id === 'heal' ? 0.15 : 0) - h.tr.caution * 0.2 + (TR ? 0.3 : 0);
       if (rng() < rev) { doReverse(true); return; }
       left = true;
       if (h.goal.id === 'suspect' && !S.flags.evidence && rng() < 0.6) {
@@ -25763,7 +26082,7 @@
       S.step = i;
       K.step(S, (i + 1) + '. ' + st[1]);
       if (hardTop && lvl >= 2) { topStop(st); break; }
-      var power = st[3] * (0.6 + lvl * 0.12) * (env.harsh / 55) * (h.action.id === 'enjoy' ? 1.2 : h.action.id === 'endure' ? 0.85 : 1) * (env.staff === 'duo' ? 1.2 : 1) * hands * (sleeping ? 1.15 : 1);
+      var power = st[3] * (0.6 + lvl * 0.12) * (env.harsh / 55) * (h.action.id === 'enjoy' ? 1.2 : h.action.id === 'endure' ? 0.85 : 1) * (sk === 'duo' ? 1.2 : 1) * hands * (sleeping ? 1.15 : 1);
       /* 攻めの客は、際どくなる前の普通の施術だけ（絶頂させられる展開にしない） */
       var r = hardTop ? { gain: 0, climaxes: [] } : K.stim(S, power * 1.7, { part: st[2], shame: lvl >= 2, defer: true });
       var text = K.fmt(S, K.pick(S, dark && MD.act[st[0]] ? MD.act[st[0]] : ACT[st[0]])), bd = band(lvl);
@@ -25790,15 +26109,15 @@
         logC(r.climaxes);
       }
       /* 施術者の一言 */
-      if (rng() < 0.5) K.say(S, { kind: 'ev', tag: '施術者', text: K.fmt(S, K.pick(S, M.STAFF_TALK[env.staff] ? M.STAFF_TALK[env.staff][hardTop ? 0 : bd] : M.STAFF_TALK.gentle[hardTop ? 0 : bd])), why: '' });
+      if (rng() < 0.5) K.say(S, { kind: 'ev', tag: '施術者', text: K.fmt(S, K.pick(S, M.STAFF_TALK[sk] ? M.STAFF_TALK[sk][hardTop ? 0 : bd] : M.STAFF_TALK.gentle[hardTop ? 0 : bd])), why: '' });
       /* 方針ごとの小場面 */
       var AB = M.ACT[h.action.id];
       if (!sleeping && AB && rng() < 0.45 && (!hardTop || !bd)) {
         fx(AB.fx[bd]);
         K.say(S, { kind: 'ev', tag: h.action.label, text: K.fmt(S, K.pick(S, AB.t[Math.max(bd, ph >= 2 ? 2 : 0)])), why: '方針「' + h.action.label + '」' });
       }
-      /* 寝落ち（お任せでリラックスしている人ほど） */
-      if (!hardTop && !sleeping && !slept && !noticed && bd >= 1 && rng() < (h.action.id === 'relax' ? 0.3 : 0.06) + h.tr.cold * 0.12 + h.tr.ac * 0.08) {
+      /* 寝落ち（お任せでリラックスしている人ほど）。住人の施術者の回は、眠っている人に際どい施術をしないので起きない */
+      if (!hardTop && !TR && !sleeping && !slept && !noticed && bd >= 1 && rng() < (h.action.id === 'relax' ? 0.3 : 0.06) + h.tr.cold * 0.12 + h.tr.ac * 0.08) {
         slept = true; sleeping = 1 + rng.int(h.action.id === 'relax' ? 4 : 2);
         var osl = K.say(S, { kind: 'ev', tag: '寝落ち', text: K.fmt(S, K.pick(S, M.SLEEP_IN)), why: 'リラックスしすぎた（ドライさ・AC）' });
         K.key(S, osl, '施術中に眠ってしまった');
@@ -25807,13 +26126,15 @@
       var inc = incAt[i];
       if (inc && !sleeping) {
         fx(inc.fx);
-        var itext = K.fmt(S, K.pick(S, inc.t)) + ' ' + K.fmt(S, K.pick(S, inc.r[h.persona]));
+        /* カーテン越し：隣のブースは、カーテンの向こうのもう一人 */
+        var itext = (inc.id === 'neighbor' && o.other ? K.fmt(S, K.pick(S, MC.CUR_NEIGHBOR), { b: o.other }) : K.fmt(S, K.pick(S, inc.t))) + ' ' + K.fmt(S, K.pick(S, inc.r[h.persona]));
         if (inc.also && rng() < 0.6) { itext += ' ' + K.fmt(S, inc.also); hands = 1.25; }
         K.say(S, { kind: 'ev', tag: inc.n, text: itext, why: 'ハプニング「' + inc.n + '」' });
         (S.flags.inc = S.flags.inc || []).push(inc.n);
       }
       /* 立場逆転：強気・奔放で経験のある客が、施術者を押し倒す */
-      if (!reversed && !sleeping && (noticed || stayed) && h.corrupt > 25 && ((h.tr.cp > 0.6 && h.tr.np < 0.45) || h.tr.fc > 0.62 || h.tr.aggr > 0.6) && h.stats.exp >= 3 && rng() < 0.22 + h.tr.aggr * 0.3 + (h.stats.exp - 3) * 0.08) {
+      /* 住人の施術者とは、二人ともリバの組だけ向きを入れ替えてよい */
+      if (!reversed && !sleeping && (!TR || HK.Pos.bothRiba(TR, CR)) && (noticed || stayed) && h.corrupt > 25 && ((h.tr.cp > 0.6 && h.tr.np < 0.45) || h.tr.fc > 0.62 || h.tr.aggr > 0.6) && h.stats.exp >= 3 && rng() < 0.22 + h.tr.aggr * 0.3 + (h.stats.exp - 3) * 0.08) {
         doReverse(false);
         break;
       }
@@ -25821,7 +26142,7 @@
       if (!noticed && !sleeping && lvl >= 1) {
         var eye = h.tr.caution * 0.45 + h.tr.a * 0.35 + h.tr.cold * 0.25 + (h.stats.exp - 3) * 0.08 + (h.action.id === 'watch' ? 0.25 : 0) + (h.goal.id === 'suspect' ? 0.3 : 0);
         if (wrong && lvl >= 2) eye += 0.1;
-        var blind = h.tr.ac * 0.3 + h.tr.np * 0.25 + (h.action.id === 'relax' ? 0.2 : 0) + (env.staff === 'silent' ? 0.15 : 0) + (env.staff === 'duo' ? 0.1 : 0);
+        var blind = h.tr.ac * 0.3 + h.tr.np * 0.25 + (h.action.id === 'relax' ? 0.2 : 0) + (sk === 'silent' ? 0.15 : 0) + (sk === 'duo' ? 0.1 : 0);
         sus += lvl * 9 * (0.6 + eye - blind * 0.6) + (env.shady - 50) / 12 + h.pleasure / 18;
         if (sus >= 55) {
           noticed = true; S.flags.noticedAt = st[1];
@@ -25835,7 +26156,7 @@
               S.flags.evidence = true;
               K.say(S, { kind: 'ev', tag: '証拠集め', text: K.fmt(S, K.pick(S, M.EVIDENCE)), why: '噂を確かめに来た（A・ドライさ・慎重さ）' });
             }
-            var ex = K.fmt(S, K.pick(S, EXCUSE));
+            var ex = K.fmt(S, K.pick(S, TR ? MC.RES_EXCUSE[TR.persona] || MC.RES_EXCUSE.gentle : EXCUSE));
             var believe = h.tr.ac * 0.45 + h.tr.np * 0.3 + h.tr.honesty * 0.1 - h.tr.a * 0.35 - h.tr.cp * 0.3 - h.tr.cold * 0.2 + staff.dec + h.pleasure / 250 - deceived * 0.25 + rng() * 0.6 - (wrong ? 0.12 : 0);
             if (believe > 0.35) {
               deceived++; noticed = false; sus = 20;
@@ -25858,7 +26179,7 @@
       }
       if (!hardTop && !left && !sleeping && stayed && !asked && h.corrupt > (wrong ? 75 : 55) && rng() < (wrong ? 0.2 : 0.4) + h.tr.fc * 0.3) {
         asked = true;
-        K.say(S, { kind: 'ev', tag: 'おねだり', text: K.fmt(S, K.pick(S, ['{a}は自分から{m}の手を掴んで、そこへ導いた。「…もっと、ちゃんと」', '{a}は消え入りそうな声で言った。「…最後まで、してください」', '{a}「延長って、できますか」――声が震えていた。'])), why: '堕ち度 ' + Math.round(h.corrupt) });
+        K.say(S, { kind: 'ev', tag: 'おねだり', text: K.fmt(S, K.pick(S, ['{a}は自分から{m}の手を掴んで、そこへ導いた。「…もっと、ちゃんと」', '{a}は消え入りそうな声で言った。「…最後まで、してください」', '{a}「延長って、できますか」――声が震えていた。'])), why: '堕ち度 ' + Math.min(100, Math.round(h.corrupt)) });
       }
       if (K.settle(S) && !hardTop) fell = true;
       K.snap(S, { s: sus });
@@ -25877,12 +26198,14 @@
       K.step(S, '施術のあと');
       var nPos = 2 + rng.int(2) + (h.corrupt >= 100 ? 1 : 0) + (highOn ? 1 : 0);
       /* 客が攻めなら客が主導する体位（女性どうし・女性の客×男性の施術者・男性の体で攻める客）、受けなら施術者が主導する体位 */
-      var pool = S.rng.shuffle(noMut(HK.Pos && HK.Pos.vsNpc(h, '') === 'top' ? posTop() : ff ? POS_FF : POS)).slice(0, nPos);
-      var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])), why: '快楽に負けた（堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
+      /* 住人の女性の施術者が男性の客を導く（女攻め×男）ときは、跨る・手で・口での体位（solo-massage-thick.js の POS_LADY） */
+      var ladyR = !!TR && staff.g === 'f' && !ff, PL = (HK.MassageThick && HK.MassageThick.POS_LADY) || POS;
+      var pool = S.rng.shuffle(noMut(cTop() ? posTop() : ff ? POS_FF : ladyR ? PL : POS)).slice(0, nPos);
+      var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])), why: '快楽に負けた（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
       K.key(S, head, '快楽に負けた');
       /* 陥落の文が変わり目を兼ねるので、ここからは段階を上げるだけ（一文は足さない） */
       ph = Math.max(ph, fell ? 3 : 2);
-      var custTop = HK.Pos && HK.Pos.vsNpc(h, '') === 'top';
+      var custTop = cTop();
       /* 厚く：堕ちた瞬間を段落で（客が主導する組は、体位の場面のほうで厚くする） */
       if (!dark && !custTop && lwOn()) head.text += ML.fall(lwc(false), kindR);
       var darkN = 0, c0 = h.climax;
@@ -25910,14 +26233,14 @@
           K.logClimax(S, rr.climaxes);
         }
         /* 落ちすぎた客は、行為の最中に新人の練習台に誘われる（断れない） */
-        if (M.TRAINEE_ASK && !S.flags.trainee && j >= 1 && h.corrupt >= 100 && h.climax >= 6 && rng() < 0.55) {
+        if (M.TRAINEE_ASK && !TR && !S.flags.trainee && j >= 1 && h.corrupt >= 100 && h.climax >= 6 && rng() < 0.55) {
           S.flags.trainee = true;
           var hesi = ['proud', 'stern', 'tsun', 'cool', 'shy', 'polite'].indexOf(h.persona) >= 0 ? rng() < 0.8 : rng() < 0.3;
           var tt = K.fmt(S, K.pick(S, dark ? MD.traineeAsk : ff ? M.TRAINEE_ASK_FF : M.TRAINEE_ASK)) + ' ';
           if (hesi) tt += K.fmt(S, K.pick(S, M.TRAINEE_HESITATE[h.persona] || M.TRAINEE_HESITATE.gentle)) + ' ' + K.fmt(S, K.pick(S, dark ? MD.traineePress : custTop ? M.TRAINEE_PRESS_TOP : ff ? M.TRAINEE_PRESS_FF : M.TRAINEE_PRESS));
           else tt += K.fmt(S, K.pick(S, M.TRAINEE_YES[h.persona] || M.TRAINEE_YES.gentle));
           h.pleasure += 40; while (h.pleasure >= 100) K.climax(S);
-          var otr = K.say(S, { kind: 'sys', tag: '練習台の約束', text: tt, why: '快楽に落ちきった（堕ち度 ' + Math.round(h.corrupt) + '・絶頂 ' + h.climax + '回）／もう断れなかった' + (hesi ? '（性格上、返事を渋った）' : '') });
+          var otr = K.say(S, { kind: 'sys', tag: '練習台の約束', text: tt, why: '快楽に落ちきった（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・絶頂 ' + h.climax + '回）／もう断れなかった' + (hesi ? '（性格上、返事を渋った）' : '') });
           K.key(S, otr, '新人の練習台になると約束した');
         }
       });
@@ -25928,14 +26251,14 @@
     }
 
     S.flags.wrong = wrong;
-    var E = ending(S, { reversed: reversed, slept: slept, evidence: !!S.flags.evidence, left: left, fell: fell, asked: asked, stayed: stayed, noticed: !!S.flags.noticedAt, deceived: deceived, positions: positions, staff: staff });
+    var E = ending(S, { reversed: reversed, slept: slept, evidence: !!S.flags.evidence, left: left, fell: fell, asked: asked, stayed: stayed, noticed: !!S.flags.noticedAt, deceived: deceived, positions: positions, staff: staff, res: !!TR });
     var adv = [];
     if (deceived) adv.push('言い訳に' + deceived + '回騙された。AC（' + Math.round(h.eg.AC) + '）とNP（' + Math.round(h.eg.NP) + '）の素直さが、疑う気持ちに勝った。');
     if (!S.flags.noticedAt) adv.push('最後まで「普通じゃない」と気づかなかった。慎重さ（' + Math.round(h.tr.caution * 100) + '）とA（' + Math.round(h.eg.A) + '）がもう少し高ければ。');
     else adv.push('気づいたのは「' + S.flags.noticedAt + '」の段階。');
     if (fell) adv.push('快楽に負けたのは、感じやすさ ' + h.stats.sense + '・CP ' + Math.round(h.eg.CP) + 'で、昂りに理性が追いつかなかったから。');
     if (left) adv.push('帰る決断ができたのは、CP（' + Math.round(h.eg.CP) + '）と理性の残り（' + Math.round(h.reason) + '）のおかげ。');
-    return K.finish(S, input, E, adv, { meta: staff.n + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['気づいた', S.flags.noticedAt || '気づかず'], ['騙された', deceived + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)], ['理性', Math.max(0, Math.round(h.reason))]].concat(positions.length ? [dark ? (HK.SAFE_ON ? ['暗闇の中で姿勢を変えた', positions.length + '回'] : ['暗闇の中の体位', positions.length + 'つ']) : ['指定された体位', positions.join('→')]] : []), label3: '施術' });
+    return done(K.finish(S, input, E, adv, { meta: staff.n + (TR ? '（住人）' : '') + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['気づいた', S.flags.noticedAt || '気づかず'], ['騙された', deceived + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)], ['理性', Math.max(0, Math.round(h.reason))]].concat(positions.length ? [dark ? (HK.SAFE_ON ? ['暗闇の中で姿勢を変えた', positions.length + '回'] : ['暗闇の中の体位', positions.length + 'つ']) : ['指定された体位', positions.join('→')]] : []), label3: '施術' }));
   }
 
   function ending(S, x) {
@@ -25953,12 +26276,12 @@
     else if (!x.noticed) { kind = 'mid'; title = '最後まで気づかなかった ― 星5のレビューを書いた'; L0.push(h.name + '「すごく丁寧な施術でした。特にリンパのところが効きました」――レビューには「参考になった」が千件ついた。'); }
     else if (x.stayed) { kind = 'mid'; title = '分かっていて、最後まで ― 誰にも言えない90分'; L0.push(h.name + 'は気づいていた。それでも最後まで、施術台から降りなかった。'); }
     else { kind = 'mid'; title = '耐えきった ― 何事もなかった顔で会計した'; L0.push(h.name + 'は最後まで声を出さなかった。会計を済ませて外に出た瞬間、壁に手をついて座り込んだ。'); }
-    if ((x.fell || x.asked) && (h.tr.ac > 0.55 || h.tr.np > 0.6) && S.rng() < 0.6) L0.push(S.h.name ? HK.SoloKit.fmt(S, S.rng.pick(M.CRUSH)) : '');
+    if ((x.fell || x.asked) && (h.tr.ac > 0.55 || h.tr.np > 0.6) && S.rng() < 0.6) L0.push(S.h.name ? HK.SoloKit.fmt(S, S.rng.pick(x.res ? HK.MassageCast.RES_AFTER : M.CRUSH)) : '');
     if (S.flags.wrong && M.WRONG_END && (x.fell || x.asked || x.stayed)) L0.push(HK.SoloKit.fmt(S, S.rng.pick(M.WRONG_END.filter(function (t) { return t.indexOf('{sx}') < 0; }))));
     if (h.goal.id === 'heal') L0.push(h.name + 'の肩こりは、本当にきれいに治っていた。それが一番、腹立たしかった。');
     if (h.goal.id === 'free') L0.push('タダ券の裏には、小さく「二回目以降は通常料金」と書いてあった。');
     L0.push(HK.SoloKit.fmt(S, S.rng.pick(M.AFTERSHOP[h.persona])));
-    L0.push(h.name + '：絶頂 ' + h.climax + '回・堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.max(0, Math.round(h.reason)));
+    L0.push(h.name + '：絶頂 ' + h.climax + '回・堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・理性 ' + Math.max(0, Math.round(h.reason)));
     return { type: kind, kind: kind, title: title, lines: L0 };
   }
   HK.SCEN_ORDER.push('massage');
@@ -59740,7 +60063,7 @@
     only(OMs, 'lewd', { v: 'low', label: '朝チュン（全年齢版）' });
   }
   if (MSs) {
-    MSs.kicker = 'ソロ・あやしい施術';
+    MSs.kicker = '1〜2人・あやしい施術';
     MSs.desc = '評判のマッサージ店。施術は少しずつあやしくなる。いつ気づくか、言い訳に騙されるか、流されてしまうか。流されたあとのことは、暗転の向こう。';
     only(MSs, 'desc', { v: 'dark', label: '軽め（暗転して回数だけ・全年齢版）' });
     (MSs.env || []).forEach(function (e) { if (e.id === 'desc') e.desc = '流されてしまったあとのことは暗転して、何回だったかだけが分かる'; });
