@@ -445,12 +445,12 @@
   SB.targetFinish = function (S, T, TG, rows, lines) {
     TG.forEach(function (t) {
       var g = t.tg, f = fateOf(t);
-      t.fate = '標的：' + FATE[f](g);
+      t.fate = FATE[f](g);
       t.notes.push('標的（人間）。サキュバスの存在を知らない人間として、' + T.name + 'にいた');
       t.notes.push('吸われた精 ' + g.drained + 'ml（はじめ ' + g.vit + 'ml → 残り ' + Math.round(t.m.ml) + 'ml）・誘われた ' + g.n + '回');
       if (g.log.length) t.notes.push(g.log.map(function (e) { return e.a + 'に誘われ、' + e.out + (e.ml ? '（-' + e.ml + 'ml）' : ''); }).join('／'));
       else t.notes.push('今夜は誰にも声をかけられなかった');
-      rows.push({ i: t.i, rank: '標的', cells: ['人間（標的）', '—', '-' + g.drained + 'ml', '誘われた' + g.n + '回', '—', g.log.length ? g.log[g.log.length - 1].a : '—', '—'] });
+      rows.push({ i: t.i, rank: '標的', cells: ['人間（標的）', '—', '吸われた ' + g.drained + 'ml', '誘われた' + g.n + '回', '—', g.log.length ? g.log[g.log.length - 1].a : '—', '—'] });
       lines.push('標的 ' + t.name + '：' + FATE[f](g));
     });
     S.P.forEach(function (p) { if (p.tgLog && p.tgLog.length && p.role === 'hunt') p.notes.push('住人の標的：' + p.tgLog.join('、')); });

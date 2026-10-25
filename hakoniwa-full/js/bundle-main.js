@@ -26290,7 +26290,7 @@
     else if (x.left) { kind = 'ok'; title = '途中で帰った ― 「' + S.flags.noticedAt + '」で見抜いた'; L0.push(h.name + 'はその日のうちに口コミサイトに長文を書いた。星は一つだった。'); }
     else if (x.fell && S.flags.trainee) { kind = 'over'; title = '新人の練習台になった ― 研修日は毎週水曜'; L0.push(HK.SoloKit.fmt(S, S.rng.pick(M.TRAINEE_END))); }
     else if (x.fell && h.goal.id === 'secret') { kind = 'over'; title = '常連になった ― 毎週水曜、同じ時間に'; L0.push(h.name + 'の予約は、もう三ヶ月先まで埋まっている。指名はいつも' + x.staff.n + 'だった。'); }
-    else if (x.fell) { kind = 'over'; title = '快楽に負けた ― ' + (x.positions.length ? (S.dark ? (HK.SAFE_ON ? '暗闇の中で、' + x.positions.length + '回姿勢を変えて' : '暗闇の中で、' + x.positions.length + 'つの体位を') : x.positions.join('、') + 'で') : '延長の三十分で'); L0.push(h.name + 'は帰り道、駅のホームで何度も膝が笑った。財布には、次回割引券が入っていた。'); }
+    else if (x.fell) { kind = 'over'; title = '快楽に負けた ― ' + (x.positions.length ? (S.dark ? (HK.SAFE_ON ? '暗闇の中で、' + x.positions.length + '回姿勢を変えて' : '暗闇の中で、' + x.positions.length + 'つの体位を') : x.positions.filter(function (v, i, A) { return A.indexOf(v) === i; }).join('、') + 'で') : '延長の三十分で'); L0.push(h.name + 'は帰り道、駅のホームで何度も膝が笑った。財布には、次回割引券が入っていた。'); }
     else if (x.asked) { kind = 'over'; title = '自分からねだった ― 延長料金は払った'; L0.push(h.name + 'は会計のとき、' + x.staff.n + 'と目を合わせられなかった。'); }
     else if (!x.noticed && x.deceived) { kind = 'mid'; title = '騙されたまま ― 「また来ます」'; L0.push(h.name + 'は' + x.deceived + '回疑って、' + x.deceived + '回納得した。体は軽くなった気がした。'); }
     else if (!x.noticed) { kind = 'mid'; title = '最後まで気づかなかった ― 星5のレビューを書いた'; L0.push(h.name + '「すごく丁寧な施術でした。特にリンパのところが効きました」――レビューには「参考になった」が千件ついた。'); }
@@ -37062,7 +37062,7 @@
     var h = res.hero, E = res.ending, L = [];
     var SC = HK.SCENARIOS[res.scenId] || HK.SCENARIOS.dungeon;
     L.push('【箱庭シミュレーター】' + SC.name + '（' + (res.meta || res.themeLabel) + '・シード ' + res.seed + '）');
-    (res.heroes || [h]).forEach(function (x) { L.push('挑戦者：' + x.name + '（' + HK.toCode(x.eg) + '・' + (HK.toneLabel ? HK.toneLabel(x) : DG.PERSONA[x.persona].label) + '）　方針：' + x.action + '　目標：' + x.goal + (res.party ? '　→ ' + x.fate + (x.fallTitle ? '（' + x.fallTitle + '）' : '') : '')); });
+    (res.heroes || [h]).forEach(function (x) { var rl = x.action === '（施術者）' ? '施術者' : ''; L.push((rl || '挑戦者') + '：' + x.name + '（' + HK.toCode(x.eg) + '・' + (HK.toneLabel ? HK.toneLabel(x) : DG.PERSONA[x.persona].label) + '）' + (rl ? '' : '　方針：' + x.action + '　目標：' + x.goal) + (res.party ? '　→ ' + x.fate + (x.fallTitle ? '（' + x.fallTitle + '）' : '') : '')); });
     L.push('');
     L.push('■ 結末');
     L.push(E.title);
@@ -40790,12 +40790,12 @@
   SB.targetFinish = function (S, T, TG, rows, lines) {
     TG.forEach(function (t) {
       var g = t.tg, f = fateOf(t);
-      t.fate = '標的：' + FATE[f](g);
+      t.fate = FATE[f](g);
       t.notes.push('標的（人間）。サキュバスの存在を知らない人間として、' + T.name + 'にいた');
       t.notes.push('吸われた精 ' + g.drained + 'ml（はじめ ' + g.vit + 'ml → 残り ' + Math.round(t.m.ml) + 'ml）・誘われた ' + g.n + '回');
       if (g.log.length) t.notes.push(g.log.map(function (e) { return e.a + 'に誘われ、' + e.out + (e.ml ? '（-' + e.ml + 'ml）' : ''); }).join('／'));
       else t.notes.push('今夜は誰にも声をかけられなかった');
-      rows.push({ i: t.i, rank: '標的', cells: ['人間（標的）', '—', '-' + g.drained + 'ml', '誘われた' + g.n + '回', '—', g.log.length ? g.log[g.log.length - 1].a : '—', '—'] });
+      rows.push({ i: t.i, rank: '標的', cells: ['人間（標的）', '—', '吸われた ' + g.drained + 'ml', '誘われた' + g.n + '回', '—', g.log.length ? g.log[g.log.length - 1].a : '—', '—'] });
       lines.push('標的 ' + t.name + '：' + FATE[f](g));
     });
     S.P.forEach(function (p) { if (p.tgLog && p.tgLog.length && p.role === 'hunt') p.notes.push('住人の標的：' + p.tgLog.join('、')); });
@@ -61323,6 +61323,11 @@
   var hash = (location.hash || '').replace('#', '');
   var ON = BUILD || hash === 'safe' || (hash !== 'r18' && load() === '1');
   HK.SAFE_BUILD = BUILD; HK.SAFE_ON = ON;
+  /* 全年齢では、関係の説明から R18 の言い回し（内容のスイッチ・媚薬）を外す */
+  if (ON && HK.TIES) {
+    if (HK.TIES.honmei) HK.TIES.honmei.effect = '想う人は本命との恋愛の出来事が起きやすく、ほかの人からの誘いは断りがち。出られない部屋の重い条件や焦りの限界など、耐えがたい状況では、ほかの人とも妥協することがある';
+    if (HK.TIES.abuse) HK.TIES.abuse.effect = '恋人どうしだが、すれ違いが多く、やきもちや言い合いが絶えない二人。支配される側の気持ち（離れられない・怯えている・逃げ出したい）を選べる';
+  }
 
   /* ---------- 切り替えボタン（R18版だけ） ---------- */
   var SAFE_URL = 'https://kaimin.sakura.ne.jp/archive/tools/hakoniwa/';
@@ -62956,7 +62961,9 @@
         return o;
       }),
       ties: (S.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; return o; }),
-      teacher: S.teacher && idx[S.teacher] != null ? idx[S.teacher] : null
+      teacher: S.teacher && idx[S.teacher] != null ? idx[S.teacher] : null,
+      /* 内容のスイッチ（R18版）も一緒に書き出す（全員を書き出すときだけ） */
+      ct: !only && !HK.SAFE_ON && S.glob && S.glob.ct && Object.keys(S.glob.ct).length ? S.glob.ct : undefined
     };
   }
   function exportJSON(only) {
@@ -63042,6 +63049,7 @@
       S.ties.push(nt0); tn++;
     });
     if (data.teacher != null && map[data.teacher]) S.teacher = map[data.teacher];
+    if (data.ct && typeof data.ct === 'object' && !HK.SAFE_ON && HK.Content) { S.glob = S.glob || {}; S.glob.ct = {}; HK.Content.TAGS.forEach(function (t) { if (data.ct[t.id]) S.glob.ct[t.id] = 1; }); }
     /* 恋愛相手の固定と呼び方は、全員を読み込んでから番号を住人に戻す */
     list.forEach(function (c) {
       if (Array.isArray(c._ng)) c.loveNG = c._ng.map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; }).filter(Boolean);

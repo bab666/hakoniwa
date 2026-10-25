@@ -594,7 +594,7 @@
     else if (x.left) { kind = 'ok'; title = '途中で帰った ― 「' + S.flags.noticedAt + '」で見抜いた'; L0.push(h.name + 'はその日のうちに口コミサイトに長文を書いた。星は一つだった。'); }
     else if (x.fell && S.flags.trainee) { kind = 'over'; title = '新人の練習台になった ― 研修日は毎週水曜'; L0.push(HK.SoloKit.fmt(S, S.rng.pick(M.TRAINEE_END))); }
     else if (x.fell && h.goal.id === 'secret') { kind = 'over'; title = '常連になった ― 毎週水曜、同じ時間に'; L0.push(h.name + 'の予約は、もう三ヶ月先まで埋まっている。指名はいつも' + x.staff.n + 'だった。'); }
-    else if (x.fell) { kind = 'over'; title = '快楽に負けた ― ' + (x.positions.length ? (S.dark ? (HK.SAFE_ON ? '暗闇の中で、' + x.positions.length + '回姿勢を変えて' : '暗闇の中で、' + x.positions.length + 'つの体位を') : x.positions.join('、') + 'で') : '延長の三十分で'); L0.push(h.name + 'は帰り道、駅のホームで何度も膝が笑った。財布には、次回割引券が入っていた。'); }
+    else if (x.fell) { kind = 'over'; title = '快楽に負けた ― ' + (x.positions.length ? (S.dark ? (HK.SAFE_ON ? '暗闇の中で、' + x.positions.length + '回姿勢を変えて' : '暗闇の中で、' + x.positions.length + 'つの体位を') : x.positions.filter(function (v, i, A) { return A.indexOf(v) === i; }).join('、') + 'で') : '延長の三十分で'); L0.push(h.name + 'は帰り道、駅のホームで何度も膝が笑った。財布には、次回割引券が入っていた。'); }
     else if (x.asked) { kind = 'over'; title = '自分からねだった ― 延長料金は払った'; L0.push(h.name + 'は会計のとき、' + x.staff.n + 'と目を合わせられなかった。'); }
     else if (!x.noticed && x.deceived) { kind = 'mid'; title = '騙されたまま ― 「また来ます」'; L0.push(h.name + 'は' + x.deceived + '回疑って、' + x.deceived + '回納得した。体は軽くなった気がした。'); }
     else if (!x.noticed) { kind = 'mid'; title = '最後まで気づかなかった ― 星5のレビューを書いた'; L0.push(h.name + '「すごく丁寧な施術でした。特にリンパのところが効きました」――レビューには「参考になった」が千件ついた。'); }

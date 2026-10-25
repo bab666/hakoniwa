@@ -398,7 +398,9 @@
         return o;
       }),
       ties: (S.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; return o; }),
-      teacher: S.teacher && idx[S.teacher] != null ? idx[S.teacher] : null
+      teacher: S.teacher && idx[S.teacher] != null ? idx[S.teacher] : null,
+      /* 内容のスイッチ（R18版）も一緒に書き出す（全員を書き出すときだけ） */
+      ct: !only && !HK.SAFE_ON && S.glob && S.glob.ct && Object.keys(S.glob.ct).length ? S.glob.ct : undefined
     };
   }
   function exportJSON(only) {
@@ -484,6 +486,7 @@
       S.ties.push(nt0); tn++;
     });
     if (data.teacher != null && map[data.teacher]) S.teacher = map[data.teacher];
+    if (data.ct && typeof data.ct === 'object' && !HK.SAFE_ON && HK.Content) { S.glob = S.glob || {}; S.glob.ct = {}; HK.Content.TAGS.forEach(function (t) { if (data.ct[t.id]) S.glob.ct[t.id] = 1; }); }
     /* 恋愛相手の固定と呼び方は、全員を読み込んでから番号を住人に戻す */
     list.forEach(function (c) {
       if (Array.isArray(c._ng)) c.loveNG = c._ng.map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; }).filter(Boolean);

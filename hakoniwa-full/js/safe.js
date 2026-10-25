@@ -18,6 +18,11 @@
   var hash = (location.hash || '').replace('#', '');
   var ON = BUILD || hash === 'safe' || (hash !== 'r18' && load() === '1');
   HK.SAFE_BUILD = BUILD; HK.SAFE_ON = ON;
+  /* 全年齢では、関係の説明から R18 の言い回し（内容のスイッチ・媚薬）を外す */
+  if (ON && HK.TIES) {
+    if (HK.TIES.honmei) HK.TIES.honmei.effect = '想う人は本命との恋愛の出来事が起きやすく、ほかの人からの誘いは断りがち。出られない部屋の重い条件や焦りの限界など、耐えがたい状況では、ほかの人とも妥協することがある';
+    if (HK.TIES.abuse) HK.TIES.abuse.effect = '恋人どうしだが、すれ違いが多く、やきもちや言い合いが絶えない二人。支配される側の気持ち（離れられない・怯えている・逃げ出したい）を選べる';
+  }
 
   /* ---------- 切り替えボタン（R18版だけ） ---------- */
   var SAFE_URL = 'https://kaimin.sakura.ne.jp/archive/tools/hakoniwa/';

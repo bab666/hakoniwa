@@ -178,7 +178,7 @@
     var h = res.hero, E = res.ending, L = [];
     var SC = HK.SCENARIOS[res.scenId] || HK.SCENARIOS.dungeon;
     L.push('【箱庭シミュレーター】' + SC.name + '（' + (res.meta || res.themeLabel) + '・シード ' + res.seed + '）');
-    (res.heroes || [h]).forEach(function (x) { L.push('挑戦者：' + x.name + '（' + HK.toCode(x.eg) + '・' + (HK.toneLabel ? HK.toneLabel(x) : DG.PERSONA[x.persona].label) + '）　方針：' + x.action + '　目標：' + x.goal + (res.party ? '　→ ' + x.fate + (x.fallTitle ? '（' + x.fallTitle + '）' : '') : '')); });
+    (res.heroes || [h]).forEach(function (x) { var rl = x.action === '（施術者）' ? '施術者' : ''; L.push((rl || '挑戦者') + '：' + x.name + '（' + HK.toCode(x.eg) + '・' + (HK.toneLabel ? HK.toneLabel(x) : DG.PERSONA[x.persona].label) + '）' + (rl ? '' : '　方針：' + x.action + '　目標：' + x.goal) + (res.party ? '　→ ' + x.fate + (x.fallTitle ? '（' + x.fallTitle + '）' : '') : '')); });
     L.push('');
     L.push('■ 結末');
     L.push(E.title);
