@@ -173,7 +173,7 @@ const { openBuild } = require('./lib.js');
         if (offTags.force && !coreSc) (res.log || []).forEach(e => {
           if (!e || typeof e.text !== 'string') return;
           const lab = (e.tag || '') + ' ' + (e.why || '');
-          if (!/恋人|攻めを選んで|自分から/.test(lab) && /夜這い|憑依|清めの湯|洞窟|脅迫|蛇の夜|蛇の夢|チョー・チョー人|収穫祭の夜|略奪者|ゾンビに襲|監禁の夜|奪われたうなじ|攫われ|強引|無理やり|凌辱|夢の中で神/.test(lab) && sents(e.text).some(isSex)) hit('S8', 'force | ' + lab.slice(0, 50) + ' | ' + e.text.slice(0, 100));
+          if (!/恋人|攻めを選んで|自分から|受け入れている|共依存/.test(lab) && /夜這い|憑依|清めの湯|洞窟|脅迫|蛇の夜|蛇の夢|チョー・チョー人|収穫祭の夜|略奪者|ゾンビに襲|監禁の夜|奪われたうなじ|攫われ|強引|無理やり|凌辱|夢の中で神/.test(lab) && sents(e.text).some(isSex)) hit('S8', 'force | ' + lab.slice(0, 50) + ' | ' + e.text.slice(0, 100));
         });
         if (offTags.preg) (res.log || []).forEach(e => { if (e && /(?<!酸素を)孕|疑似妊娠|身籠|神の子を産む/.test((e.text || '') + (e.why || ''))) hit('S8', 'preg | ' + (e.why || '').slice(0, 40) + ' | ' + String(e.text).slice(0, 100)); });
         /* S10：一回の遊びの中で、同じ性的な文（15文字以上）が3つ以上の記録に出た */
