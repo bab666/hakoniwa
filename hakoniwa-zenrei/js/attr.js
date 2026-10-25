@@ -31,7 +31,11 @@
   A.RACE = [['', 'おまかせ（人間）'], ['human', '人間'], ['vampire', '吸血鬼'], ['beast', '獣人'], ['demon', '魔族'], ['angel', '天使'], ['ghost', '幽霊'], ['other', 'その他']];
   A.NIGHT = [['', 'おまかせ（気質から）'], ['sadist', 'サド'], ['maso', 'マゾ'], ['mean', '意地悪'], ['sweet', '甘々'], ['shy', '恥じらい'], ['none', '表と同じ']];
   A.WILL = [['', 'おまかせ'], ['weak', '弱い'], ['avg', 'ふつう'], ['strong', '強い']];
-  A.GENITAL = [['', 'おまかせ（性別どおり）'], ['m', '男性器'], ['f', '女性器'], ['mf', '両方'], ['none', 'なし']];
+  /* 性器（値は全年齢版でも保存・読み込みのために残す。見出しの語は R18版だけ） */
+  A.GENITAL = [['', 'おまかせ（性別どおり）'], ['m', ''], ['f', ''], ['mf', '両方'], ['none', 'なし']];
+  /* r18:begin */
+  A.GENITAL[1][1] = '男性器'; A.GENITAL[2][1] = '女性器';
+  /* r18:end */
   function has(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return true; return false; }
   function val(list, v) { v = v == null ? '' : String(v); return has(list, v) ? v : ''; }
   function lab(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return list[i][1]; return ''; }
@@ -141,7 +145,9 @@
     if (!HK.SAFE_ON && c.bust && c.gender === 'f') bits.push('胸：' + lab(A.BUST, c.bust));
     if (c.race && c.race !== 'human') bits.push('種族：' + lab(A.RACE, c.race) + (c.raceNote ? '（' + c.raceNote + '）' : ''));
     if (!HK.SAFE_ON && c.night) bits.push('夜：' + lab(A.NIGHT, c.night));
+    /* r18:begin */
     if (!HK.SAFE_ON && c.genital) bits.push('性器：' + lab(A.GENITAL, c.genital));
+    /* r18:end */
     if (c.will) bits.push('心の強さ：' + lab(A.WILL, c.will));
     if (fstr(c.foodLike)) bits.push('好物：' + fstr(c.foodLike));
     if (fstr(c.foodHate)) bits.push('苦手な食べ物：' + fstr(c.foodHate));
