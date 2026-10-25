@@ -212,6 +212,7 @@ js/solo-kaihen-more.js
 js/solo-kaihen-voice.js
 late js/solo-kaihen-ero.js
 late js/solo-kaihen-talk.js
+late js/solo-kaihen-after.js
 js/solo-kaihen.js
 js/solo-succubus-data.js
 js/solo-succubus-more.js
