@@ -214,16 +214,21 @@
   E.trial = function (res, X) {
     var cases = res.end.cases, n = X.C.length;
     var wrong = cases.filter(function (c) { return !c.solved; })[0];
-    var alive = X.C.filter(function (c) { return c.alive; });
+    /* 黒幕が宿泊客（住人）だったときは、生き残りに数えず、見出しで正体を書く */
+    var mm = X.byFate(/^黒幕（/)[0], bust = X.byFate(/黒幕を暴いて/);
+    var alive = X.C.filter(function (c) { return c.alive && c !== mm; });
     var days = Math.ceil(res.stepCount / 4);
     var rebels = X.byFate(/黒幕を倒して脱出/);
     var headline;
-    if (rebels.length) headline = (cases.length ? cases.length + '件の事件のあと、' : '') + '黒幕への反撃に成功した。' + X.names(rebels) + 'が、黒幕からゲームの鍵を奪ってホテルを脱出した。';
+    if (bust.length) headline = (cases.length ? cases.length + '件の事件のあと、' : '') + '黒幕の正体を暴いた。黒幕は宿泊客の' + mm.name + 'だった。' + X.names(bust) + 'がホテルを出た。';
+    else if (rebels.length) headline = (cases.length ? cases.length + '件の事件のあと、' : '') + '黒幕への反撃に成功した。' + X.names(rebels) + 'が、黒幕からゲームの鍵を奪ってホテルを脱出した。';
     else if (wrong) {
       var grads = X.byFate(/生還|卒業/);
       headline = cases.length + '件目の裁判で投票を外した。犯人の' + X.nm(wrong.killer) + (grads.length > 1 ? 'と共犯の' + X.nm(wrong.acc) : '') + 'だけが生きて帰り、ほかの全員が処刑された。';
     } else if (!cases.length) headline = days + '日間、一度も殺人は起きなかった。' + X.names(alive) + 'は' + (res.env.endrule === 'out' ? '全員でホテルを出た。' : 'ホテルに残った。');
+    else if (!alive.length) headline = cases.length + '件の事件の末、宿泊客は一人も残らなかった。';
     else headline = cases.length + '件の事件をすべて解き明かし、生き残った' + X.names(alive) + 'が' + (res.env.endrule === 'out' ? 'ホテルを出た。' : 'ホテルに残った。');
+    if (mm && !bust.length) headline += /最後に/.test(mm.fate) ? '最後に、黒幕が宿泊客の' + mm.name + 'だったと明かされた。' : '黒幕は宿泊客の' + mm.name + 'だった。';
     var lines = cases.map(function (c, k) {
       /* 被害者が複数いる事件（口封じ・共犯者の始末・返り討ち）は全員を並べる */
       var vs = c.victims && c.victims.length ? c.victims : [c.victim];
