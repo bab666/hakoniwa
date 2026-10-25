@@ -153,8 +153,11 @@
     S0.chars.forEach(function (c) { (c.loveNG || []).forEach(function (k) { var o = byId[k]; if (o) { o.loveNG = o.loveNG || []; if (o.loveNG.indexOf(c.id) < 0) o.loveNG.push(c.id); } }); });
     S0.ties = (Array.isArray(S0.ties) ? S0.ties : []).filter(function (t) {
       if (!t || !HK.TIES[t.type] || !ids[t.a] || !ids[t.b] || t.a === t.b) return false;
+      /* 仲間（comrade）はグループの「仲間」から自動で付けるので、関係としては持たない */
+      if (HK.tieHidden && HK.tieHidden(t.type)) return false;
       var CO = HK.coldOpts ? HK.coldOpts(t.type) : null;
       if (t.cold && !(CO && CO.map[t.cold])) delete t.cold;
+      if (HK.tieExtraNorm) HK.tieExtraNorm(t);
       return true;
     });
   }
@@ -168,6 +171,9 @@
     if (typeof S0.teacher !== 'string') S0.teacher = '';
     if (typeof S0.randFrom !== 'string') S0.randFrom = '';
     S0.randN = Math.max(0, Math.min(100, parseInt(S0.randN, 10) || 0)) || '';
+    /* グループごとの「このグループを仲間とみなす」（グループ名 → 1） */
+    S0.grpComrade = obj(S0.grpComrade);
+    Object.keys(S0.grpComrade).forEach(function (g) { if (!S0.grpComrade[g] || !String(g).trim()) delete S0.grpComrade[g]; else S0.grpComrade[g] = 1; });
     normRefs(S0);
     return S0;
   }
@@ -286,6 +292,8 @@
       '<input type="file" id="iconfile" accept="image/*" hidden>' +
       '<p class="hint" style="margin-top:-4px">≡ をドラッグで並び替え、左の丸でアイコンを設定できます。グループをつけると、箱庭でまとめて選べます。</p>' +
       (groupsOf().length ? '<div class="row" style="margin:-2px 0 8px"><button class="btn small" data-act="sortgrp">グループ順に並べる</button><span class="hint" style="margin:0">グループ（押すと一覧での表示・非表示）：</span>' + groupsOf().map(function (g) { var on = !(S.grpHide && S.grpHide[g]); return '<button class="chip" data-act="grphide" data-g="' + esc(g) + '" aria-pressed="' + on + '" title="' + esc(g) + 'の住人を一覧で' + (on ? '隠す' : '表示する') + '">' + (on ? '' : '<s>') + esc(g) + '（' + S.chars.filter(function (c) { return inGrp(c, g); }).length + '）' + (on ? '' : '</s>') + '</button>'; }).join('') + (S.chars.some(grpHidden) ? '<span class="hint" style="margin:0">' + S.chars.filter(grpHidden).length + '人を隠しています</span>' : '') + '</div>' : '') +
+      /* グループごとの「仲間」：オンのグループの住人どうしは、箱庭に入るときに関係「仲間」が付く（ほかの関係があれば、それに重ねる） */
+      (groupsOf().length ? '<div class="row" style="margin:-2px 0 8px"><span class="hint" style="margin:0" title="オンにしたグループの住人どうしは、信頼が育ちやすく、助け合い・庇い合い・弔い・一緒に動く出来事が起きます。恋愛や嫉妬には関わりません。関係図には薄い線で出ます（線の絞り込みで「全部」のとき）">仲間とみなすグループ：</span>' + groupsOf().map(function (g) { var on = !!(S.grpComrade && S.grpComrade[g]); return '<button class="chip" data-act="grpcomrade" data-g="' + esc(g) + '" aria-pressed="' + on + '" title="' + esc(g) + 'の住人どうしを仲間と' + (on ? 'みなさない' : 'みなす') + '">' + (on ? '仲間：' : '') + esc(g) + '</button>'; }).join('') + '</div>' : '') +
       '<datalist id="grplist">' + groupsOf().map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>' +
       '<div class="cast" id="castlist">' + S.chars.map(function (c, i) { var h = resRow(c, i); return grpHidden(c) ? h.replace('<div class="res"', '<div class="res" hidden style="display:none"') : h; }).join('') + '</div>' +
       '<div class="row" style="margin-top:12px"><button class="btn" data-act="add"' + (S.chars.length >= MAX ? ' disabled' : '') + '>1人追加</button><button class="btn" data-act="quiz"' + (S.chars.length >= MAX ? ' disabled' : '') + '>質問に答えて診断して追加</button><span class="hint" style="margin:0">「<a href="https://kaimin.sakura.ne.jp/archive/tools/ego/" target="_blank" rel="noopener">ふたりのエゴグラム</a>」と同じ25問で、エゴグラムを出して住人にできます。</span></div>' +
@@ -320,6 +328,11 @@
         '<select id="tb-' + k + '" data-f="tie" data-k="' + k + '" data-p="b" aria-label="関係の相手">' + charOpts(t.b) + '</select>' +
         ((D.family && !D.loveOK) || D.loveOpt ? '<select id="tl-' + k + '" data-f="tie" data-k="' + k + '" data-p="love" aria-label="恋愛"><option value=""' + (t.love === 'ok' ? '' : ' selected') + '>' + (D.loveOpt ? '恋愛に発展：しない' : '恋愛：なし') + '</option><option value="ok"' + (t.love === 'ok' ? ' selected' : '') + '>' + (D.loveOpt ? '恋愛に発展：する' : '恋愛：あり') + '</option></select>' : '') +
         (function () { var CO = HK.coldOpts ? HK.coldOpts(t.type) : null; return CO ? '<select id="tc-' + k + '" data-f="tie" data-k="' + k + '" data-p="cold" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return '<option value="' + id + '"' + ((t.cold || '') === id ? ' selected' : '') + '>' + esc(CO.map[id].label) + '</option>'; }).join('') + '</select>' : ''; })() +
+        /* 追加の欄（型・度合い・気持ち・様子。許嫁は二人それぞれの気持ち） */
+        (HK.tieExtra ? HK.tieExtra(t.type) : []).map(function (x) {
+          var who = x.who ? S.chars.filter(function (c) { return c.id === (x.who === 'a' ? t.a : t.b); })[0] : null, v = t[x.f] || (t.type === 'fiance' ? 'eager' : '');
+          return '<select id="tx' + x.f + '-' + k + '" data-f="tie" data-k="' + k + '" data-p="' + x.f + '" aria-label="' + esc(who ? who.name + 'の気持ち' : x.aria) + '">' + x.order.map(function (id) { return '<option value="' + id + '"' + (v === id ? ' selected' : '') + '>' + esc((who ? who.name + 'の気持ち：' : '') + x.map[id].label) + '</option>'; }).join('') + '</select>';
+        }).join('') +
         '<button class="btn ghost small" data-act="tiedel" data-k="' + k + '">削除</button>' +
         '<span class="tiehint">' + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (D.loveOpt ? (t.love === 'ok' ? '。恋愛に発展：するにしているので、想いが恋に変わることもある' : '。恋愛に発展：しないにしているので、想いは恋にならない') : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '') + '</span></div>';
     }).join('');
@@ -419,8 +432,10 @@
         if (S.per && S.per[c.id]) o.per = S.per[c.id];
         return o;
       }),
-      ties: (S.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; return o; }),
+      ties: (S.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; ['sub', 'grade', 'feel', 'feelB', 'mode'].forEach(function (f) { if (t[f]) o[f] = t[f]; }); return o; }),
       teacher: S.teacher && idx[S.teacher] != null ? idx[S.teacher] : null,
+      /* グループごとの「仲間」（書き出す住人のグループだけ） */
+      grpComrade: (function () { var m = {}, any = false; Object.keys(S.grpComrade || {}).forEach(function (g) { if (S.grpComrade[g] && S.chars.some(function (c) { return (only ? idx[c.id] != null : true) && inGrp(c, g); })) { m[g] = 1; any = true; } }); return any ? m : undefined; })(),
       /* 内容のスイッチ（R18版）も一緒に書き出す（全員を書き出すときだけ） */
       ct: !only && !HK.SAFE_ON && S.glob && S.glob.ct && Object.keys(S.glob.ct).length ? S.glob.ct : undefined
     };
@@ -508,8 +523,15 @@
       var CO2 = HK.coldOpts ? HK.coldOpts(t.type) : null;
       var nt0 = t.cold && CO2 && CO2.map[t.cold] ? { a: a, b: b, type: t.type, cold: t.cold } : { a: a, b: b, type: t.type };
       if (t.love === 'ok' && (HK.TIES[t.type].family || HK.TIES[t.type].loveOpt)) nt0.love = 'ok';
+      /* 追加の欄（型・度合い・気持ち・様子）。古い JSON にはないので、ないときは今までどおり */
+      ['sub', 'grade', 'feel', 'feelB', 'mode'].forEach(function (f) { if (typeof t[f] === 'string' && t[f]) nt0[f] = t[f]; });
+      if (HK.tieExtraNorm) HK.tieExtraNorm(nt0);
+      if (HK.tieHidden && HK.tieHidden(nt0.type)) return;
       S.ties.push(nt0); tn++;
     });
+    /* グループごとの「仲間」（古い JSON にはない） */
+    if (replace) S.grpComrade = {};
+    if (data.grpComrade && typeof data.grpComrade === 'object' && !Array.isArray(data.grpComrade)) { S.grpComrade = S.grpComrade || {}; Object.keys(data.grpComrade).forEach(function (g) { if (data.grpComrade[g] && String(g).trim()) S.grpComrade[String(g).trim().slice(0, 40)] = 1; }); }
     if (data.teacher != null && map[data.teacher]) S.teacher = map[data.teacher];
     if (data.ct && typeof data.ct === 'object' && !HK.SAFE_ON && HK.Content) { S.glob = S.glob || {}; S.glob.ct = {}; HK.Content.TAGS.forEach(function (t) { if (data.ct[t.id]) S.glob.ct[t.id] = 1; }); }
     /* 恋愛相手の固定と呼び方は、全員を読み込んでから番号を住人に戻す */
@@ -772,7 +794,24 @@
       ties: (function () {
         cleanTies();
         var J = castFor(S.scenId).map(function (c) { return c.id; });
-        return S.ties.filter(function (t) { return J.indexOf(t.a) >= 0 && J.indexOf(t.b) >= 0; }).map(function (t) { return { a: J.indexOf(t.a), b: J.indexOf(t.b), type: t.type, cold: HK.coldOpts && HK.coldOpts(t.type) ? t.cold || '' : '', love: t.love === 'ok' ? 'ok' : '' }; });
+        var out = S.ties.filter(function (t) { return J.indexOf(t.a) >= 0 && J.indexOf(t.b) >= 0; }).map(function (t) {
+          var o = { a: J.indexOf(t.a), b: J.indexOf(t.b), type: t.type, cold: HK.coldOpts && HK.coldOpts(t.type) ? t.cold || '' : '', love: t.love === 'ok' ? 'ok' : '' };
+          /* 追加の欄（型・度合い・気持ち・様子）は、ある関係だけに付ける */
+          (HK.tieExtra ? HK.tieExtra(t.type) : []).forEach(function (x) { if (t[x.f]) o[x.f] = t[x.f]; });
+          return o;
+        });
+        /* 「仲間」を入れたグループの住人どうしに、関係「仲間」を重ねる（同じ二人のほかの関係はそのまま。仲間は補助） */
+        var cg = Object.keys(S.grpComrade || {}).filter(function (g) { return S.grpComrade[g]; });
+        if (cg.length && HK.TIES.comrade) {
+          var cast = castFor(S.scenId), seenC = {};
+          for (var i = 0; i < cast.length; i++) for (var j = i + 1; j < cast.length; j++) {
+            var x = cast[i], y = cast[j];
+            if (!cg.some(function (g) { return inGrp(x, g) && inGrp(y, g); }) || seenC[i + '-' + j]) continue;
+            seenC[i + '-' + j] = 1;
+            out.push({ a: J.indexOf(x.id), b: J.indexOf(y.id), type: 'comrade', cold: '', love: '' });
+          }
+        }
+        return out;
       })()
     };
   }
@@ -896,11 +935,13 @@
         S.ties = S.ties || [];
         pr.ties.forEach(function (nt) {
           var ex = S.ties.filter(function (x) { return x.type === nt.type && ((x.a === nt.a && x.b === nt.b) || (x.a === nt.b && x.b === nt.a)); })[0];
-          if (ex) { ex.a = nt.a; ex.b = nt.b; ex.type = nt.type; if (nt.cold) ex.cold = nt.cold; else delete ex.cold; } else S.ties.push(nt);
+          if (ex) { ex.a = nt.a; ex.b = nt.b; ex.type = nt.type; if (nt.cold) ex.cold = nt.cold; else delete ex.cold; ['sub', 'grade', 'feel', 'feelB', 'mode'].forEach(function (f) { if (nt[f]) ex[f] = nt[f]; else delete ex[f]; }); } else S.ties.push(nt);
         });
+        /* 「グループ名 仲間」の行：そのグループを仲間とみなす */
+        (pr.groups || []).forEach(function (g) { S.grpComrade = S.grpComrade || {}; S.grpComrade[g] = 1; });
         save(); renderCast();
         if (pr.warnings.length) { var tw = $('#tiewarns'); tw.hidden = false; tw.innerHTML = pr.warnings.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join(''); }
-        toast(pr.ties.length + '件の関係を読み込みました');
+        toast(pr.ties.length + '件の関係を読み込みました' + ((pr.groups || []).length ? '（' + pr.groups.join('・') + 'を仲間とみなします）' : ''));
         break;
       case 'tobox': setTab('box'); break;
       case 'joinall':
@@ -924,6 +965,12 @@
         S.join[S.scenId] = dcur;
         toast('「' + t.dataset.g + '」を参加から外しました');
         save(); renderBox(); break;
+      case 'grpcomrade':
+        S.grpComrade = S.grpComrade || {};
+        if (S.grpComrade[t.dataset.g]) delete S.grpComrade[t.dataset.g]; else S.grpComrade[t.dataset.g] = 1;
+        save(); renderCast();
+        toast('「' + t.dataset.g + '」を仲間と' + (S.grpComrade[t.dataset.g] ? 'みなします' : 'みなさないようにしました'));
+        break;
       case 'grphide':
         S.grpHide = S.grpHide || {};
         if (S.grpHide[t.dataset.g]) delete S.grpHide[t.dataset.g]; else S.grpHide[t.dataset.g] = 1;
@@ -1088,7 +1135,8 @@
       var tt = S.ties[+t.dataset.k];
       /* 変更の結果、同じ二人に同じ関係が二つになるなら戻す */
       if (tt && /^(?:a|b|type)$/.test(t.dataset.p)) { var na = t.dataset.p === 'a' ? t.value : tt.a, nb = t.dataset.p === 'b' ? t.value : tt.b, nty = t.dataset.p === 'type' ? t.value : tt.type; if (hasTie(na, nb, nty, +t.dataset.k)) { toast('その二人には「' + (HK.TIES[nty] ? HK.TIES[nty].label : nty) + '」がすでにあります'); t.value = tt[t.dataset.p]; return; } }
-      if (tt) { tt[t.dataset.p] = t.value; if (t.dataset.p === 'love' && !t.value) delete tt.love; if (t.dataset.p === 'type' || t.dataset.p === 'cold' || t.dataset.p === 'love') { save(); renderCast(); return; } }
+      if (tt && /^(?:sub|grade|feel|feelB|mode)$/.test(t.dataset.p)) { if (t.value && !(tt.type === 'fiance' && t.value === 'eager')) tt[t.dataset.p] = t.value; else delete tt[t.dataset.p]; save(); renderCast(); return; }
+      if (tt) { tt[t.dataset.p] = t.value; if (t.dataset.p === 'love' && !t.value) delete tt.love; if (t.dataset.p === 'type' && HK.tieExtraNorm) HK.tieExtraNorm(tt); if (t.dataset.p === 'type' || t.dataset.p === 'cold' || t.dataset.p === 'love') { save(); renderCast(); return; } }
     }
     else if (f === 'seed') S.seed = t.value.replace(/[^\d]/g, '');
     else if (f === 'teacher') { S.teacher = t.value; save(); renderBox(); return; }

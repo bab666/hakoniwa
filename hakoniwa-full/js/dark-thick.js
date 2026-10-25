@@ -78,7 +78,7 @@
     after: L('{a}は濡れた布で{b}の体を丁寧に拭い、額に口づけた。それから部屋を出て、外から鍵を掛けた。錠前の音が、夜の底に沈んだ。|{a}は{b}を抱きしめたまま、子守唄のように名前を呼び続けた。{b}は閉ざされた窓の方を、眠るまで見ていた。|朝、{a}は何事もなかったように「おはよう」と言った。{b}は、返事をしなかった。')
   };
   function cageLong(ctx, a, b, top) {
-    var rng = ctx.rng, O = HK.Obsess, ty = O.type(a), stn = O.stance(ctx, b, a), m = { a: a.name, b: b.name, v: b.name };
+    var rng = ctx.rng, O = HK.Obsess, ty = O.type(a, ctx, b), stn = O.stance(ctx, b, a), m = { a: a.name, b: b.name, v: b.name };
     var said = CAGE.say[ty] || CAGE.say.bind;
     /* 困惑している人は、拒みきれずに流されることがある（半々） */
     var react = stn === 'accept' || stn === 'mutual' || (stn === 'confused' && rng() < 0.5) ? pk(rng, YIELD) : resist(rng, b);

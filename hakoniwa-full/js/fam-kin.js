@@ -19,12 +19,23 @@
       if (b.ng.indexOf(a.i) < 0) b.ng.push(a.i);
     });
   };
+  /* 関係「無関心」「恐怖」の二人は、互いの noLove に入れる（engine.js の HK.noLovePair：恋愛にも体の関係にもならない。エンジン型は ties.js の HK.Ties.after） */
+  HK.fearNG = function (P, ties) {
+    if (!P) return;
+    (ties || []).forEach(function (t) {
+      if (!t || t.a === t.b || (t.type !== 'apathy' && t.type !== 'fear')) return;
+      var a = P[t.a], b = P[t.b];
+      if (!a || !b || a === b) return;
+      [[a, b], [b, a]].forEach(function (q) { var l = q[0].noLove = Array.isArray(q[0].noLove) ? q[0].noLove : []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); });
+    });
+  };
   var ST = HK.Story;
   if (ST && ST.state && !ST.state._kin) {
     var st0 = ST.state;
     ST.state = function (input, scenId) {
       var S = st0.apply(this, arguments);
       HK.kinNG(S && S.P, input && input.ties);
+      HK.fearNG(S && S.P, input && input.ties);
       return S;
     };
     ST.state._kin = true;

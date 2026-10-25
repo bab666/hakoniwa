@@ -52,6 +52,9 @@
     if (ngs.length) bits.push('恋愛にしない：' + ngs.map(function (o) { return o.name; }).join('・'));
     var n = tiesOf(c).length;
     if (n) bits.push('関係 ' + n + '件');
+    /* 「仲間」を入れたグループ（ui.js の S.grpComrade） */
+    var cg = grpsOf(c).filter(function (g) { return S().grpComrade && S().grpComrade[g]; });
+    if (cg.length) bits.push('仲間：' + cg.join('・'));
     return (c.color ? '<i class="csw" style="background:' + esc(c.color) + '" aria-hidden="true"></i>' : '') + esc(bits.join('・'));
   };
 
@@ -97,6 +100,14 @@
     if (HK.tieOptions) return HK.tieOptions(sel);
     return HK.TIE_ORDER.map(function (id) { var d = HK.TIES[id]; return opt(id, d.label, sel); }).join('');
   }
+  /* 関係の追加の欄（型・度合い・気持ち・様子。ties.js の HK.tieExtra）。許嫁は二人それぞれの気持ち */
+  function extraSels(t, k, attr) {
+    return (HK.tieExtra ? HK.tieExtra(t.type) : []).map(function (x) {
+      var who = x.who ? byId(x.who === 'a' ? t.a : t.b) : null, v = t[x.f] || (t.type === 'fiance' ? 'eager' : '');
+      return '<select ' + attr + ' data-xf="' + x.f + '" data-k="' + k + '" aria-label="' + esc(who ? who.name + 'の気持ち' : x.aria) + '">' + x.order.map(function (id) { return opt(id, (who ? who.name + 'の気持ち：' : '') + x.map[id].label, v); }).join('') + '</select>';
+    }).join('');
+  }
+  UI.extraSels = extraSels;
   function tieRow(c, o, t, k) {
     var D = HK.TIES[t.type], h = '<div class="one">' +
       '<select data-gf="ttype" data-k="' + k + '" aria-label="' + esc(o.name) + 'との関係の種類">' + typeOpts(t.type) + '</select>';
@@ -104,6 +115,7 @@
     var CO = HK.coldOpts ? HK.coldOpts(t.type) : null;
     if ((D.family && !D.loveOK) || D.loveOpt) h += '<select data-gf="tlove" data-k="' + k + '" aria-label="恋愛">' + opt('', D.loveOpt ? '恋愛に発展：しない' : '恋愛：なし', t.love || '') + opt('ok', D.loveOpt ? '恋愛に発展：する' : '恋愛：あり', t.love || '') + '</select>';
     if (CO) h += '<select data-gf="tcold" data-k="' + k + '" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return opt(id, CO.map[id].label, t.cold || ''); }).join('') + '</select>';
+    h += extraSels(t, k, 'data-gf="textra"');
     h += '<button type="button" class="btn ghost small" data-gact="tdel" data-k="' + k + '">外す</button></div>';
     return h + '<p class="gearhint">' + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (D.loveOpt ? (t.love === 'ok' ? '。恋愛に発展：するにしているので、想いが恋に変わることもある' : '。恋愛に発展：しないにしているので、想いは恋にならない') : '') + '</p>';
   }
@@ -388,7 +400,8 @@
       })(); break;
       case 'keigo': if (isInput) return; c.keigo = c.keigo || {}; if (t.checked) c.keigo[t.dataset.o] = 1; else delete c.keigo[t.dataset.o]; changed(false); sampleRefresh(); (function () { var kn = ov && ov.querySelector('.gkn'), n = ov ? ov.querySelectorAll('[data-gf="keigo"]:checked').length : 0; if (kn) kn.textContent = n ? n + '人' : 'なし'; })(); break;
       case 'callone': c.calls = c.calls || {}; if (t.value.trim()) c.calls[t.dataset.o] = t.value.trim().slice(0, 16); else delete c.calls[t.dataset.o]; changed(false); sampleRefresh(); break;
-      case 'ttype': if (isInput || !tie) return; tie.type = t.value; var CO = HK.coldOpts ? HK.coldOpts(t.value) : null; if (!CO || !CO.map[tie.cold || '']) delete tie.cold; changed(true); break;
+      case 'ttype': if (isInput || !tie) return; tie.type = t.value; var CO = HK.coldOpts ? HK.coldOpts(t.value) : null; if (!CO || !CO.map[tie.cold || '']) delete tie.cold; if (HK.tieExtraNorm) HK.tieExtraNorm(tie); changed(true); break;
+      case 'textra': if (isInput || !tie) return; (function () { var xf = t.dataset.xf; if (t.value && !(tie.type === 'fiance' && t.value === 'eager')) tie[xf] = t.value; else delete tie[xf]; })(); changed(true); break;
       case 'tdir': if (isInput || !tie) return; var me = t.value === 'a'; var o = tie.a === c.id ? tie.b : tie.a; tie.a = me ? c.id : o; tie.b = me ? o : c.id; changed(true); break;
       case 'tlove': if (isInput || !tie) return; if (t.value === 'ok') tie.love = 'ok'; else delete tie.love; changed(false); break;
       case 'tcold': if (isInput || !tie) return; if (t.value) tie.cold = t.value; else delete tie.cold; changed(false); break;

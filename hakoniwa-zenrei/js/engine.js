@@ -113,8 +113,11 @@
   HK.ngPairHard = function (a, b) {
     if (!a || !b || a === b) return false;
     if ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0)) return true;
+    if (HK.noLovePair(a, b)) return true;
     return (a.lock != null && a.lock !== b.i) || (b.lock != null && b.lock !== a.i);
   };
+  /* 関係「無関心」「恐怖」の二人（ties.js の HK.Ties.after・fam-kin.js が住人の noLove に入れる）：恋愛にも体の関係にもならない */
+  HK.noLovePair = function (a, b) { return !!(a && b && a !== b && ((a.noLove && a.noLove.indexOf(b.i) >= 0) || (b.noLove && b.noLove.indexOf(a.i) >= 0))); };
   /* それに加えて、同じ人を恋人にしている二人（恋人が複数いる人の恋人どうし。coNG）も恋愛・R18にしない */
   HK.ngPair = function (a, b) {
     if (!a || !b || a === b) return false;
@@ -123,7 +126,7 @@
   };
   HK.lockBlocks = function (a, b) { return HK.ngPair(a, b); };
   /* 設定の「恋愛・R18にしない相手」だけ／「恋愛相手の固定」が食い違うか／同じ人の恋人どうし（coNG） */
-  HK.ngExplicit = function (a, b) { return !!(a && b && a !== b && ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0))); };
+  HK.ngExplicit = function (a, b) { return !!(a && b && a !== b && ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0) || HK.noLovePair(a, b))); };
   HK.lockConflict = function (a, b) { return !!(a && b && a !== b && ((a.lock != null && a.lock !== b.i) || (b.lock != null && b.lock !== a.i))); };
   function coNG(a, b) { return !!((a.coNG && a.coNG.indexOf(b.i) >= 0) || (b.coNG && b.coNG.indexOf(a.i) >= 0)); }
   /* 性行為の相手の固定（キャラの設定 sexLock）。恋愛とは別に、体の関係（夜・R18の場面）の相手を決める
@@ -216,6 +219,8 @@
   Ctx.prototype.mod = function (a, b, d, scale) {
     if (!a || !b || a === b) return;
     var r = this.R(a, b), k = (this.k || 1) * (scale == null ? 1 : scale);
+    /* 関係「無関心」：a から b への値は動かない（ties.js の HK.Ties.freezeInit／refreeze） */
+    if (this._frz && this._frz[a.i + '>' + b.i]) return;
     var pf = this.pair(a, b);
     for (var f in d) {
       if (!LIM[f]) continue;
@@ -306,6 +311,7 @@
     if (o.actors && o.actors.length >= 2 && this.chars && this.chars.some(function (c) { return c.lock != null; })) sexOnlyFix(this, o.actors);
     /* 恋愛が起きない組の恋愛の出来事は、記録に残さない（呼び出し側が e.n などを使えるよう、空の出来事を返す） */
     if (o.cat === 'romance' && o.kind !== 'phase' && !this.romanceOk(o.actors, sexEv(this, o))) return { n: this.log.length, step: this.stepIndex, cat: 'romance', actors: [], text: '', mag: 0, kind: 'event', skipped: true };
+    if (this._apathy && o.kind !== 'step' && o.kind !== 'phase' && apathyLead(this, o)) return { n: this.log.length, step: this.stepIndex, cat: o.cat, actors: [], text: '', mag: 0, kind: 'event', skipped: true };
     /* 監禁（執着の暴走）されている人は場に出てこない：執着の出来事（監禁の日々・逃走・救出・解放）と死のほかは、記録に残さない
        （present() から外れているが、名簿を直接たどる箱庭の出来事もあるので、ここで最後に止める） */
     if (!o.cageOk && o.kind !== 'step' && o.kind !== 'phase' && o.kind !== 'death' && (o.actors || []).some(function (c) { return c && c.flags && c.flags.caged != null; }))
@@ -339,7 +345,7 @@
     if (a && b && this.pair(a, b).kin) return false;
     /* 歪んだ関係から離れる決心をした二人（tie-abuse.js の abFree）は、もう恋愛の出来事を起こさない。
        別れたばかりの二人（brokeAt）も、しばらく（8回）は恋愛の出来事を起こさない（すぐに元に戻らないように） */
-    if (a && b) { var pfr = this.pair(a, b); if (pfr.abFree) return false; if (pfr.brokeAt != null && this.stepIndex - pfr.brokeAt < 8) return false; }
+    if (a && b) { var pfr = this.pair(a, b); if (pfr.abFree) return false; if (pfr.brokeAt != null && this.stepIndex - pfr.brokeAt < 8) return false; if (pfr.fiBroken != null) return false; }
     /* 悲しみの深い人（気分 grief 60 以上。emotion.js）は、恋愛の出来事を起こさない */
     if (HK.Emo && HK.Emo.blockLove(this, L)) return false;
     if (this.scen && this.scen.romanceCore) return true;
@@ -349,8 +355,11 @@
     if (a && b) return HK.canLove(a, b) && HK.canLove(b, a);
     return !(a && a.likes === 'none');
   };
+  /* 無関心な人（a→b）が、b を相手にした助け合い・恋愛の出来事の主役になるか（箱庭の進行の出来事も止める） */
+  function apathyLead(ctx, o) { var L = (o.actors || []).filter(Boolean); return !!(ctx._apathy && L.length >= 2 && (o.cat === 'help' || o.cat === 'romance') && L.slice(1).some(function (y) { return HK.Ties.apathy(ctx, L[0], y); })); }
   Ctx.prototype.act2 = function (o) {
     if (o.cat === 'romance' && !this.romanceOk(o.actors, sexEv(this, o))) return null;
+    if (this._apathy && apathyLead(this, o)) return null;
     this.k = o.k || (0.8 + this.rng() * 0.4);
     this._mag = 0; this._touched = {};
     var r = o.fx ? o.fx() : null;
@@ -453,9 +462,21 @@
   };
 
   /* ---------- メイン ---------- */
+  /* 物語型・一人用の箱庭（独自の simulate）へ渡す前に：関係「無関心」「恐怖」の二人を、互いの「恋愛・R18にしない相手」（loveNG）に足し、
+     二人のあいだの恋愛の関係を外す（ties.js の HK.fearTies）。どの箱庭の住人の写しも loveNG から ng を作るので、恋愛・夜・体の関係の判定がすべて偽になる。
+     該当する関係がなければ、渡された input をそのまま使う */
+  HK.fearInput = function (input) {
+    var ts = (input && input.ties) || [], fl = ts.filter(function (t) { return t && (t.type === 'apathy' || t.type === 'fear') && t.a !== t.b; });
+    if (!fl.length) return input;
+    var o = {}; for (var k in input) o[k] = input[k];
+    o.chars = (input.chars || []).map(function (c) { var x = {}; for (var k2 in c) x[k2] = c[k2]; x.loveNG = Array.isArray(c.loveNG) ? c.loveNG.slice() : []; return x; });
+    fl.forEach(function (t) { var A = o.chars[t.a], B = o.chars[t.b]; if (!A || !B) return; if (A.loveNG.indexOf(t.b) < 0) A.loveNG.push(t.b); if (B.loveNG.indexOf(t.a) < 0) B.loveNG.push(t.a); });
+    o.ties = HK.fearTies ? HK.fearTies(ts) : ts;
+    return o;
+  };
   HK.simulate = function (input) {
     var sc0 = HK.SCENARIOS[input.scenId];
-    if (sc0 && sc0.simulate) return sc0.simulate(input);
+    if (sc0 && sc0.simulate) return sc0.simulate(HK.fearInput(input));
     var ctx = new Ctx(input), scen = ctx.scen, rng = ctx.rng;
     var C = ctx.chars;
 
@@ -519,6 +540,8 @@
     })();
     /* 恋愛相手を固定した人は、ほかの人への惹かれを小さく始める（体の関係は許されている組は除く：惹かれは Ctx.say の補正で恋愛の手前に止める） */
     ctx.chars.forEach(function (a) { if (a.lock == null) return; ctx.chars.forEach(function (b) { if (b !== a && b.i !== a.lock && !HK.lockSexOnly(a, b)) { var r = ctx.R(a, b); r.att = Math.min(r.att, 6); } }); });
+    /* 許嫁で恋人と同じ扱いになった二人も、性行為の相手の固定「恋人とモブだけ」の恋人に入れる。無関心は、ここで値を覚えて動かさない（ties.js） */
+    if (HK.Ties && ctx.tiesAll) Object.keys(ctx.tiesAll).forEach(function (k) { ctx.tiesAll[k].forEach(function (t) { if (t.type === 'fiance' && t.couple) { var A = ctx.chars[t.a], B = ctx.chars[t.b]; (A.loveSet = A.loveSet || []).push(B.i); (B.loveSet = B.loveSet || []).push(A.i); } }); });
     C.forEach(function (c) {
       if (c.goal && c.goal.needsFocus) {
         var best = HK.Ties ? HK.Ties.focusFor(ctx, c) : null, bv = -999;
@@ -527,6 +550,7 @@
       }
     });
     if (scen.setup) scen.setup(ctx);
+    if (HK.Ties && HK.Ties.freezeInit) HK.Ties.freezeInit(ctx);
 
     var labels = scen.steps(ctx.env);
     var pool = HK.buildPool(scen);
@@ -553,12 +577,14 @@
       C.forEach(function (c) { if (c.alive) c.stress = HK.clamp(c.stress - 3, 0, 100); });
       var dec = scen.decay || 0.95;
       C.forEach(function (x) { C.forEach(function (y) { var r = ctx.rel[x.i][y.i]; if (r) { r.att *= dec; r.ten *= (dec + 1) / 2; } }); });
+      if (ctx._frz) HK.Ties.refreeze(ctx);
       snapshot(ctx);
       markRel(ctx, relPre, logStart);
       if (scen.end && scen.end(ctx, s, labels.length)) break;
     }
     if (scen.finish) { var relPreF = relState(ctx), logStartF = ctx.log.length; scen.finish(ctx); ctx.flush(); markRel(ctx, relPreF, logStartF); }
     ctx.flush();
+    if (ctx._frz) HK.Ties.refreeze(ctx);
     C.forEach(function (c) { if (!c.fate) c.fate = c.alive ? '生存' : '死亡'; });
     return finalize(ctx);
   };
@@ -668,6 +694,8 @@
         if (a.flags.revenge === o.i) w += 3 * HK.Dark.f(ctx, 'grudge');
         if (ctx.fac && ctx.fac.of[a.i] != null && ctx.fac.of[a.i] === ctx.fac.of[o.i]) w += 1;
         if (HK.Ties) w += HK.Ties.pull(ctx, a, o);
+        /* 恐怖：恐れる側は、恐れている相手のそばに寄らない（関係のない回では何もしない） */
+        if (ctx._fear && ctx._fear[a.i + '>' + o.i]) w *= 0.3;
         return w;
       });
     }
@@ -681,6 +709,8 @@
       if (e.when && !e.when(ctx, a, bb)) return;
       if (e.cat === 'romance' && bb && a.lock != null && a.lock !== bb.i && !(e.sex && HK.lockSexOnly(a, bb))) return;
       if (e.cat === 'romance' && !ctx.romanceOk(bb ? [a, bb] : [a], e)) return;
+      /* 無関心：a は b との助け合い・恋愛・嫉妬・心配の出来事に自分からは入らない */
+      if (bb && ctx._apathy && HK.Ties.apathyBlock(ctx, a, bb, e)) return;
       var w = e.w(ctx, a, bb);
       if (!(w > 0)) return;
       w *= ctx.bias(a, e.cat);
@@ -722,6 +752,7 @@
     var sex = res.sex != null ? !!res.sex : !!pick.e.sex;
     /* 出来事の側で恋愛に変わったときも、恋愛が起きない組なら書かない */
     if (cat === 'romance' && !ctx.romanceOk(pick.b ? [a, pick.b] : [a], { sex: sex })) return;
+    if (pick.b && ctx._apathy && HK.Ties.apathyBlock(ctx, a, pick.b, { cat: cat, id: pick.e.id, why: typeof res.why === 'string' ? res.why : '' })) return;
     var actors = [a];
     if (pick.b) actors.push(pick.b);
     if (res.with) res.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
@@ -867,6 +898,8 @@
       var finalScore = (ab.aff + ba.aff) / 2 + (ab.att + ba.att) / 4 - (ab.ten + ba.ten) / 2 * 0.8;
       var pred = POS[pf.base.kind];
       var tie = pf.tie ? { type: pf.tie.type, label: HK.tieLabel ? HK.tieLabel(pf.tie) : HK.TIES[pf.tie.type].label, a: pf.tie.a, b: pf.tie.b, pol: HK.TIES[pf.tie.type].pol } : null;
+      /* 仲間（グループの「仲間」から付いた関係）：関係図の薄い線（view-map.js） */
+      if (tie && (pf.tie.type === 'comrade' || (pf.tie.also || []).indexOf('comrade') >= 0)) tie.comrade = true;
       if (tie) pred = tie.pol > 0 ? 1 : tie.pol < 0 ? -1 : 0;
       var surprise = 0;
       if (tie) {

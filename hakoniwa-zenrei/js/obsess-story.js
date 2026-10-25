@@ -89,7 +89,7 @@
     live.forEach(function (a) { live.forEach(function (b) { if (a !== b && !blocked(S, a, b)) { var s = map(S)[a.i + '>' + b.i]; if (s && s.lv >= 35) cand.push([a, b, s]); } }); });
     if (!cand.length) return null;
     var hit = HK.weighted(rng, cand, function (x) { return x[2].lv; }), a = hit[0], b = hit[1], s = hit[2];
-    var c = rival(S, a, b, live), ty = O.type(a), stg = O.stage(s.lv), key, text, cat = 'conflict', mag = 14, tag = '執着';
+    var c = rival(S, a, b, live), ty = O.type(a, S, b), stg = O.stage(s.lv), key, text, cat = 'conflict', mag = 14, tag = '執着';
     s.n = (s.n || 0) + 1;
     var why = a.name + 'の' + b.name + 'への執着（' + Math.round(s.lv) + '・' + O.TYPE_NAME[ty] + '型）';
     if (!s.seen) {

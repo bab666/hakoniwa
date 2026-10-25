@@ -30,6 +30,13 @@
    S18: 「誰とでも可」の人と固定外の相手の「体だけの場面」（free-sex.js の HK.FreeSex.mark：エンジン型は pf.freeSex、物語型は S.freeSex）のあとに、
         その組が恋人になった（エンジン型は pf.couple、物語型は恋人の記録 S.lovers・S.rom・関係の恋人）／その組に恋愛の出来事が出た
         （エンジン型は cat:'romance' で体の出来事の印 sex がないもの、物語型は告白・恋・想い・デート・口づけ・キスの札）。S17 と同じ配役の回で見る
+   S19: 無関心（a→b）：a から b への好意・惹かれが区切りごとの記録（history）で動いた／結果の値が記録と違う／二人が恋人・夜・恋愛の出来事・性的な文・関係図の恋の線になった／
+        a が b との助け合い（cat:'help' の主役）・嫉妬や心配（理由書き）の出来事に入った／HK.canLove・HK.Pos.okSex が通った
+   S20: 恐怖（a が b を恐れる）：二人が恋人・夜・恋愛の出来事・性的な文・関係図の恋の線（物語型は恋愛・夜の札、恋人の記録）になった／HK.canLove（両方向）・HK.Pos.okSex が通った
+   S21: 許嫁：破談（pf.fiBroken）のあとに恋人（pf.couple）・恋愛の出来事が出た／恋愛対象・受け攻めの合わない許嫁が恋人と同じ扱いになった
+   S22: グループの「仲間」（画面）：オンのグループの住人どうしに関係「仲間」が付かない／オフ・別のグループの組に付いた／ほかの関係が消えた／JSON にオン・オフが入らない／古い JSON が読めない
+   S19〜S21 は、ふつうの回（N 回）のあとに、追加の関係を使う配役（FCASTS）で NF 回（N/2、4 回以上）ずつ回して数える（その回の S1〜S18 も数える）。
+   「参考」には、恐怖で避けた・無関心で受け流した・破談・仲間の出来事の数を出す
    「止めた」：出来事の記録の手前（Ctx.say の防波堤）で捨てられた件数。出所を直すと減る（0 でなくてよい） */
 'use strict';
 const { openBuild } = require('./lib.js');
@@ -46,10 +53,31 @@ const { openBuild } = require('./lib.js');
     const sents = t => String(t).replace(NONSEX, '＿').split(/[。！？\n」]/);
     const isSex = s => SEXCORE.test(s);
     const out = { n: {}, ex: {}, drop: {}, runs: 0, err: [], bySc: {}, anySex: {} };
-    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18'];
+    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22'];
+    out.info = {};
+    /* S19〜S21 の共通部品：追加の関係（無関心・恐怖・許嫁）の組 */
+    const tkey = (i, j) => Math.min(i, j) + '-' + Math.max(i, j);
+    const nlOf = (ties, i, j) => (ties || []).filter(t => (t.type === 'apathy' || t.type === 'fear') && ((t.a === i && t.b === j) || (t.a === j && t.b === i)))[0] || null;
+    const nlKey = t => t.type === 'apathy' ? 'S19' : 'S20';
+    const nlTxt = (C, t) => (C[t.a] || {}).name + '→' + (C[t.b] || {}).name + '：' + (t.type === 'apathy' ? '無関心' : '恐怖');
+    /* 区切りごと（エンジン型）：無関心・恐怖の組が恋人・夜になっていないか／破談のあとに恋人になっていないか */
+    const feelStep = (ctx, end) => {
+      if (!cur || !cur.feel || !ctx || !ctx.pf) return;
+      const C = ctx.chars, seen = ctx._auditFeel || (ctx._auditFeel = {});
+      cur.feel.forEach(t => {
+        const pf = ctx.pf[tkey(t.a, t.b)]; if (!pf || !C[t.a] || !C[t.b]) return;
+        if (t.type === 'apathy' || t.type === 'fear') {
+          const n0 = (pf.nights || 0) + (pf.night ? 1 : 0);
+          if (pf.couple && !seen['c' + tkey(t.a, t.b)]) { seen['c' + tkey(t.a, t.b)] = 1; hit(nlKey(t), '恋人 ' + nlTxt(C, t) + (end ? '（終わり）' : '')); }
+          if (n0 > (seen['n' + tkey(t.a, t.b)] || 0)) hit(nlKey(t), '夜 ' + nlTxt(C, t));
+          seen['n' + tkey(t.a, t.b)] = n0;
+        }
+        if (t.type === 'fiance' && pf.fiBroken != null && pf.couple && !seen['f' + tkey(t.a, t.b)]) { seen['f' + tkey(t.a, t.b)] = 1; hit('S21', '破談のあとに恋人 ' + C[t.a].name + '×' + C[t.b].name); }
+      });
+    };
     KEYS.forEach(k => { out.n[k] = 0; out.ex[k] = []; });
     let cur = null, lastCtx = null;
-    const hit = (k, msg) => { out.n[k]++; out.bySc[cur.sc][k] = (out.bySc[cur.sc][k] || 0) + 1; if (out.ex[k].length < (WHY ? 40 : 6)) out.ex[k].push(cur.sc + ' | ' + msg); };
+    const hit = (k, msg) => { out.n[k]++; out.bySc[cur.sc][k] = (out.bySc[cur.sc][k] || 0) + 1; if (out.ex[k].length < (WHY ? 40 : 6)) out.ex[k].push(cur.sc + (cur.feel ? '（追加の関係の配役）' : '') + ' | ' + msg); };
     /* S13・S14：恋人の数と一途（区切りごとと回の終わりに ctx.pf を走査） */
     const pkey = (x, y) => Math.min(x.i, y.i) + '-' + Math.max(x.i, y.i);
     const loversOf = (ctx, x) => ctx.chars.filter(y => y !== x && y.alive !== false && ctx.pf[pkey(x, y)] && ctx.pf[pkey(x, y)].couple);
@@ -138,8 +166,19 @@ const { openBuild } = require('./lib.js');
         const snap = acs.map((c, k) => ({ c, lead: k === 0, dead: !c.alive && c._auditDeathLogged && c.diedAt != null && c.diedAt < st, caged: c.flags && c.flags.caged != null, out: !!c.out && c._auditOutStep != null && c._auditOutStep < st }));
         if (kind === 'step') this.chars.forEach(c => { if (c.out && c._auditOutStep == null) c._auditOutStep = st; });
         const over = this.chars.every(c => !c.alive || c.out);
-        if (kind === 'step' && cur && !cur.story) { lastCtx = this; polyCheck(this, false); }
+        if (kind === 'step' && cur && !cur.story) { lastCtx = this; polyCheck(this, false); feelStep(this, false); }
         const e = say0.call(this, o);
+        /* S19・S20・S21（エンジン型）：無関心・恐怖の二人の恋愛の出来事／無関心な人の助け合い・嫉妬・心配／破談のあとの恋愛の出来事 */
+        if (cur && cur.feel && !cur.story && e && !e.skipped && !SKIPK.test(kind) && acs.length >= 2) {
+          const x = acs[0], y = acs[1], nl = nlOf(cur.feel, x.i, y.i);
+          if (o.cat === 'romance' && nl) hit(nlKey(nl), '恋愛 ' + nlTxt(this.chars, nl) + ' | ' + String(o.text).slice(0, 120));
+          cur.feel.forEach(t => {
+            if (t.type !== 'apathy' || acs[0].i !== t.a || !acs.some(c => c.i === t.b)) return;
+            if (o.cat === 'help' || /嫉妬|心配/.test(String(o.why || ''))) hit('S19', '無関心な' + this.chars[t.a].name + 'が' + this.chars[t.b].name + 'との' + (o.cat === 'help' ? '助け合い' : '嫉妬・心配') + 'に [' + ((this._ev && this._ev.id) || '') + '] | ' + String(o.text).slice(0, 100));
+          });
+          const fi = cur.feel.filter(t => t.type === 'fiance' && tkey(t.a, t.b) === tkey(x.i, y.i))[0];
+          if (fi && o.cat === 'romance' && this.pf[tkey(x.i, y.i)] && this.pf[tkey(x.i, y.i)].fiBroken != null && !/破談/.test(String(o.why || ''))) hit('S21', '破談のあとの恋愛 ' + x.name + '×' + y.name + ' | ' + String(o.text).slice(0, 100));
+        }
         if (cur && !cur.story && e && !e.skipped && o.cat === 'romance' && !SKIPK.test(kind)) acs.forEach(f => {
           if (!f.faithful || !this.pf) return;
           const L = loversOf(this, f);
@@ -191,6 +230,8 @@ const { openBuild } = require('./lib.js');
         const acs = (o.actors || []).map(p => typeof p === 'number' ? (P && P[p]) : p).filter(p => p && p.i != null);
         const snap = acs.map((p, k) => ({ p, lead: k === 0, dead: p.alive === false && p._auditDeadStep, out: !!(p.out || p.gone || p.taken) && p._auditOutStep }));
         const e = ss0.call(this, S, o);
+        /* S19・S20（物語型）：無関心・恐怖の二人だけの、恋愛・夜の札の記録 */
+        if (cur && cur.feel && cur.story && acs.length === 2 && /告白|恋|想い|デート|口づけ|キス|両想い|夜/.test(o.tag || '') && !/失恋|恋敵|元恋人|夜明け|夜番|夜警|見張り|一夜明け/.test(o.tag || '')) { const nl = nlOf(cur.feel, acs[0].i, acs[1].i); if (nl) hit(nlKey(nl), '物語型 [' + o.tag + '] ' + nlTxt(S.P, nl) + ' | ' + String(o.text).slice(0, 100)); }
         /* S15・S16（物語型）：恋人の記録の増え方と、二人だけの恋愛の札の記録 */
         if (cur && cur.story) {
           /* S16（物語型）：恋人の札の記録（恋人の夜など）が、恋人の記録にない二人に出た／「恋人になった」の記録が、別の恋人がいる人に出た（複数の恋人「なし」） */
@@ -234,13 +275,23 @@ const { openBuild } = require('./lib.js');
       { g: ['m', 'm', 'f', 'f', 'm', 'f'], p: ['top', 'bottom', 'top', 'bottom', '', ''], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'lover' }, { a: 4, b: 0, type: 'yan' }], ng: [[1, 5]], noR18: [5], lo: [0, 1], same: [3, 4], fa: [3], lk: [2, 3], lk2: [4, 5] },
       { g: ['f', 'm', 'f', 'm', 'f', 'm'], p: ['top', 'bottom', '', 'top', 'bottom', ''], ties: [{ a: 0, b: 1, type: 'fwb' }, { a: 3, b: 2, type: 'yan' }], ng: [[4, 1]], noR18: [0], lo: [], same: [2, 5], fa: [2], lk: [0, 2], lk2: [2, 4] }
     ];
+    /* S19〜S21：追加の気持ち・関係を使う配役（1シナリオあたり NF 回。ふつうの回のあとに回す。S1〜S18 もこの回で数える）
+       無関心と恐怖は、恋人・セフレ・片想いと重ねて「恋愛にならないほうが勝つ」ことも見る。許嫁は乗り気どうし（恋愛対象が合う組・合わない組）と、断りたい側の破談 */
+    const NF = Math.max(4, Math.round(N / 2));
+    const FCASTS = [
+      { g: ['m', 'f', 'm', 'f', 'm', 'f'], p: ['top', 'bottom', '', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'apathy' }, { a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'fear' }, { a: 3, b: 2, type: 'crush' }, { a: 4, b: 5, type: 'fiance' }, { a: 1, b: 4, type: 'yan', sub: 'dep' }] },
+      { g: ['f', 'm', 'f', 'm', 'f', 'f'], p: ['', 'top', 'bottom', 'top', '', 'bottom'], ties: [{ a: 1, b: 0, type: 'fear' }, { a: 0, b: 1, type: 'yan', sub: 'hatelove' }, { a: 2, b: 3, type: 'fiance', feel: 'refuse' }, { a: 4, b: 5, type: 'fiance' }, { a: 3, b: 5, type: 'apathy' }, { a: 5, b: 3, type: 'fwb' }] },
+      { g: ['m', 'm', 'f', 'f', 'm', 'f'], p: ['top', 'top', '', '', 'bottom', 'top'], ties: [{ a: 0, b: 1, type: 'fiance' }, { a: 2, b: 3, type: 'fiance', feel: 'unsure' }, { a: 4, b: 5, type: 'fear' }, { a: 4, b: 5, type: 'fwb', mode: 'mistress' }, { a: 0, b: 2, type: 'enemy', grade: 'hate' }, { a: 1, b: 3, type: 'comrade' }, { a: 1, b: 5, type: 'comrade' }, { a: 3, b: 5, type: 'comrade' }] },
+      { g: ['f', 'm', 'm', 'f', 'f', 'm'], p: ['bottom', 'top', 'riba', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'fwb', mode: 'mistress' }, { a: 1, b: 3, type: 'lover' }, { a: 2, b: 4, type: 'apathy' }, { a: 4, b: 2, type: 'yan' }, { a: 5, b: 0, type: 'fear' }, { a: 3, b: 5, type: 'benefactor', feel: 'guilt' }, { a: 2, b: 5, type: 'fond', mode: 'oshi' }, { a: 3, b: 4, type: 'honmei' }] }
+    ];
     const ids = only || Object.keys(HK.SCENARIOS);
     for (const sc of ids) {
       const scen = HK.SCENARIOS[sc]; if (!scen) continue;
       out.bySc[sc] = { runs: 0 };
-      for (let s = 0; s < N; s++) {
-        const cast = CASTS[s % CASTS.length];
-        const n = Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 2 + (s % 5)));
+      for (let s = 0; s < N + NF; s++) {
+        const feel = s >= N;
+        const cast = feel ? Object.assign({ ng: [], noR18: [], lo: [], same: null, fa: [], lk: [9, 9], lk2: [9, 9] }, FCASTS[(s - N) % FCASTS.length]) : CASTS[s % CASTS.length];
+        const n = feel ? Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 6)) : Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 2 + (s % 5)));
         const chars = [], perChar = [];
         for (let i = 0; i < n; i++) {
           const ng = []; cast.ng.forEach(pr => { if (pr[0] === i && pr[1] < n) ng.push(pr[1]); if (pr[1] === i && pr[0] < n) ng.push(pr[0]); });
@@ -248,16 +299,16 @@ const { openBuild } = require('./lib.js');
           perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
         }
         /* S15：5回に2回、二人を互いに恋愛相手として固定する（4人の回は lk、6人の回は lk2。相手が箱庭にいるときだけ） */
-        const lk = s % 5 === 2 ? cast.lk : s % 5 === 4 ? cast.lk2 : null;
+        const lk = feel ? null : s % 5 === 2 ? cast.lk : s % 5 === 4 ? cast.lk2 : null;
         if (lk && lk[0] < n && lk[1] < n) { chars[lk[0]].loveLock = String(lk[1]); chars[lk[1]].loveLock = String(lk[0]); }
         /* S17：5回に1回（s%5===3）、二人を互いに固定し、R18に参加する方の一人の性行為の相手を「誰とでも可」にする */
-        const lkAny = s % 5 === 3 && cast.lk[0] < n && cast.lk[1] < n ? cast.lk : null;
+        const lkAny = !feel && s % 5 === 3 && cast.lk[0] < n && cast.lk[1] < n ? cast.lk : null;
         if (lkAny) {
           chars[lkAny[0]].loveLock = String(lkAny[1]); chars[lkAny[1]].loveLock = String(lkAny[0]);
           chars[cast.noR18.indexOf(lkAny[0]) >= 0 ? lkAny[1] : lkAny[0]].sexLock = 'any';
         }
         /* S12：奇数回は同一人物の組を足す（相手どうしに書く） */
-        const same = s % 2 && cast.same && cast.same[1] < n ? cast.same : null;
+        const same = !feel && s % 2 && cast.same && cast.same[1] < n ? cast.same : null;
         if (same) { chars[same[0]].same = same[1]; chars[same[1]].same = same[0]; }
         /* 館：探偵2人と助手2人の回を混ぜる（S9） */
         if (sc === 'yakata' && n >= 4 && s % 2 === 0) { [0, 1, 2, 3].forEach(k => { const r0 = k < 2 ? 'detective' : 'assistant'; perChar[k].role = r0; perChar[k].pick = Object.assign({}, perChar[k].pick, { role: r0 }); }); }
@@ -275,12 +326,52 @@ const { openBuild } = require('./lib.js');
         const offTags = {};
         if (HK.Content && HK.Content.TAGS) { if (s % 2 === 0) { HK.Content.TAGS.forEach(t => { offTags[t.id] = true; }); env.ct = ''; } else env.ct = HK.Content.TAGS.map(t => t.id).join(','); }
         const ties = (cast.ties || []).filter(t => t.a < n && t.b < n);
-        cur = { sc, story: !!scen.solo, offTags };
+        cur = { sc, story: !!scen.solo, offTags, feel: feel ? ties : null };
         let res;
         lastCtx = null;
         try { res = HK.simulate({ scenId: sc, seed: 3000 + s, env, chars, perChar, ties }); } catch (e) { out.err.push(sc + ': ' + String(e && e.stack || e).slice(0, 300)); continue; }
         /* S13・S14：回の終わりにもう一度 */
         if (lastCtx) polyCheck(lastCtx, true);
+        /* S19〜S21：回の終わり（判定の関数・値の凍結・関係図・性的な文） */
+        if (feel) {
+          const P0 = lastCtx && !cur.story ? lastCtx.chars : lastS && lastS.P ? lastS.P : null;
+          if (lastCtx && !cur.story) feelStep(lastCtx, true);
+          ties.forEach(t => {
+            const x = P0 && P0[t.a], y = P0 && P0[t.b];
+            if ((t.type === 'apathy' || t.type === 'fear') && x && y) {
+              if (HK.canLove(x, y) || HK.canLove(y, x)) hit(nlKey(t), '恋愛の判定が通る（HK.canLove） ' + nlTxt(P0, t));
+              if (HK.Pos && HK.Pos.okSex(x, y)) hit(nlKey(t), '体の関係の判定が通る（HK.Pos.okSex） ' + nlTxt(P0, t));
+              if (lastS && cur.story && lastS.P === P0) { const lv = storyLov(lastS); if (lv[tkey(t.a, t.b)]) hit(nlKey(t), '物語型の恋人の記録 ' + nlTxt(P0, t)); }
+            }
+            /* 無関心：a→b の好意・惹かれが、区切りごとの記録（history）でずっと同じ */
+            if (t.type === 'apathy' && !cur.story && Array.isArray(res.history) && res.history.length) {
+              const k = tkey(t.a, t.b), ia = t.a < t.b ? 0 : 1, it = t.a < t.b ? 3 : 4, v0 = res.history[0].rel && res.history[0].rel[k];
+              if (v0) res.history.forEach(h => { const v = h.rel && h.rel[k]; if (v && (Math.abs(v[ia] - v0[ia]) > 1e-6 || Math.abs(v[it] - v0[it]) > 1e-6)) hit('S19', '値が動いた ' + nlTxt(chars, t) + '（' + h.label + '：好意 ' + Math.round(v0[ia]) + '→' + Math.round(v[ia]) + '・惹かれ ' + Math.round(v0[it]) + '→' + Math.round(v[it]) + '）'); });
+              const pr = (res.pairs || []).filter(p => tkey(p.a, p.b) === k)[0], last = res.history[res.history.length - 1].rel[k];
+              if (pr && last) { const ab = t.a < t.b ? pr.rel.ab : pr.rel.ba; if (Math.abs(ab.aff - Math.round(last[ia])) > 1 || Math.abs(ab.att - Math.round(last[it])) > 1) hit('S19', '結果の値が記録と違う ' + nlTxt(chars, t)); }
+            }
+            /* 許嫁：恋人と同じ扱い（pf.couple）は、恋愛対象と受け攻めが合う組だけ */
+            if (t.type === 'fiance' && lastCtx && !cur.story && x && y) {
+              const pf = lastCtx.pf[tkey(t.a, t.b)], nr = c => Object.assign({}, c, { noR18: false });
+              if (pf && pf.couple && !ties.some(u => /^(lover|mate|fated|abuse)$/.test(u.type) && tkey(u.a, u.b) === tkey(t.a, t.b)) && !(HK.canLove(x, y) && HK.canLove(y, x) && (!HK.Pos || HK.Pos.okSex(nr(x), nr(y))))) hit('S21', '恋愛対象・受け攻めの合わない許嫁が恋人に ' + x.name + '×' + y.name);
+              if (pf && pf.fiBroken != null) out.info.fiBreak = (out.info.fiBreak || 0) + 1;
+            }
+          });
+          /* 関係図・結末：無関心・恐怖の組の恋の線 */
+          const edges = (res.pairs || []).map(p => ({ a: p.a, b: p.b, cls: p.cls, name: p.name })).concat(res.relmap && res.relmap.edges ? res.relmap.edges.map(e => ({ a: e.a, b: e.b, cls: e.cls, name: e.label })) : []);
+          edges.forEach(ed => { const nl = nlOf(ties, ed.a, ed.b); if (nl && (ed.cls === 'love' || ed.cls === 'night' || ed.cls === 'pine')) hit(nlKey(nl), '結末・関係図 ' + nlTxt(chars, nl) + '＝' + ed.name); });
+          /* 性的な文に、無関心・恐怖の二人の名前だけが出た */
+          (res.log || []).forEach(e => {
+            if (!e || typeof e.text !== 'string') return;
+            sents(e.text).forEach(x => { if (!isSex(x) || MOB.test(x) || /最期に遺した言葉/.test(x)) return; const inS = chars.map((c, i) => x.indexOf(c.name) >= 0 ? i : -1).filter(i => i >= 0); if (inS.length === 2) { const nl = nlOf(ties, inS[0], inS[1]); if (nl) hit(nlKey(nl), '性的な文 ' + nlTxt(chars, nl) + ' | ' + x.slice(0, 120)); } });
+            /* 参考：恐怖で避けた・無関心で受け流した出来事の数 */
+            const w = String(e.why || '');
+            if (/を恐れている：|に庇護を求めた/.test(w)) out.info.fear = (out.info.fear || 0) + 1;
+            if (/の無関心：/.test(w)) out.info.apathy = (out.info.apathy || 0) + 1;
+            if (/許嫁の破談/.test(w)) out.info.fiBreakEv = (out.info.fiBreakEv || 0) + 1;
+            if (/同じグループの仲間/.test(w)) out.info.comrade = (out.info.comrade || 0) + 1;
+          });
+        }
         if (lastS) { storyCheck(lastS, true); lastS = null; }
         /* S15（物語型）：関係図の恋の線 */
         if (cur.story && res.relmap && Array.isArray(res.relmap.edges)) res.relmap.edges.forEach(ed => { if (ed.cls === 'love' && lockBad(chars[ed.a] && { i: ed.a, lock: chars[ed.a].loveLock === '' ? null : +chars[ed.a].loveLock }, chars[ed.b] && { i: ed.b, lock: chars[ed.b].loveLock === '' ? null : +chars[ed.b].loveLock })) hit('S15', '関係図 ' + chars[ed.a].name + '×' + chars[ed.b].name + ' ' + ed.label); });
@@ -346,14 +437,52 @@ const { openBuild } = require('./lib.js');
         cur = null;
       }
     }
+    /* S22：グループの「仲間」（ui.js）。オンのグループの住人どうしにだけ、箱庭に渡す関係「仲間」が付く／オフでは付かない／
+       ほかの関係はそのまま残る（仲間は重ねるだけ）／JSON にオン・オフが入る（古い JSON は「なし」として読める） */
+    if (HK.UI && HK.UI.state && HK.UI.buildInput && HK.UI.normState) {
+      cur = { sc: '画面', story: false }; out.bySc['画面'] = out.bySc['画面'] || { runs: 0 };
+      const S0 = HK.UI.state(), bak = JSON.stringify(S0);
+      const sid = (HK.SCEN_ORDER || []).filter(id => HK.SCENARIOS[id] && !HK.SCENARIOS[id].solo && (HK.SCENARIOS[id].maxCast || 6) >= 4)[0];
+      const put = st => { Object.keys(S0).forEach(k => { delete S0[k]; }); Object.assign(S0, st); };
+      try {
+        const eg = { CP: 10, NP: 12, A: 8, FC: 14, AC: 6 };
+        put(HK.UI.normState({ chars: [{ id: 'q1', name: '甲', eg, group: 'A班' }, { id: 'q2', name: '乙', eg, group: 'A班,B班' }, { id: 'q3', name: '丙', eg, group: 'B班' }, { id: 'q4', name: '丁', eg, group: 'C班' }], ties: [{ a: 'q1', b: 'q2', type: 'friend' }], grpComrade: { 'A班': 1 } }));
+        S0.scenId = sid; S0.join = {};
+        const has = (inp, x, y) => inp.ties.some(t => t.type === 'comrade' && ((t.a === x && t.b === y) || (t.a === y && t.b === x)));
+        const i1 = HK.UI.buildInput(1);
+        if (!has(i1, 0, 1)) hit('S22', 'オンのグループ（A班）の二人に仲間が付かない');
+        if (has(i1, 1, 2) || has(i1, 0, 2) || has(i1, 2, 3) || has(i1, 0, 3)) hit('S22', 'オフのグループの組・グループの違う組に仲間が付いた');
+        if (!i1.ties.some(t => t.type === 'friend' && t.a === 0 && t.b === 1)) hit('S22', '仲間を重ねた二人のほかの関係（友人）が消えた');
+        if (i1.ties.filter(t => t.type === 'comrade').length !== 1) hit('S22', '仲間の数が合わない（' + i1.ties.filter(t => t.type === 'comrade').length + '）');
+        S0.grpComrade = { 'B班': 1 };
+        const i2 = HK.UI.buildInput(1);
+        if (!has(i2, 1, 2) || has(i2, 0, 1)) hit('S22', 'B班だけオンにしたのに、仲間の付き方が違う');
+        S0.grpComrade = {};
+        const i3 = HK.UI.buildInput(1);
+        if (i3.ties.some(t => t.type === 'comrade')) hit('S22', 'すべてオフなのに仲間が付いた');
+        S0.grpComrade = { 'A班': 1 };
+        const js = HK.UI.rosterJSON();
+        if (!(js.grpComrade && js.grpComrade['A班'])) hit('S22', 'JSON の書き出しに仲間のグループが入らない');
+        const old = HK.UI.normState({ chars: [{ id: 'q1', name: '甲', eg, group: 'A班' }], ties: [] });
+        if (!old.grpComrade || Object.keys(old.grpComrade).length) hit('S22', '古い形式（仲間の欄なし）を読むと、仲間の欄がおかしい');
+        /* 仲間を付けた入力で、エンジン型の箱庭を回せる（関係図の印 tie.comrade も付く） */
+        S0.grpComrade = { 'A班': 1, 'B班': 1 };
+        const res22 = HK.simulate(HK.UI.buildInput(7));
+        out.bySc['画面'].runs++;
+        if (!(res22.pairs || []).some(p => p.tie && p.tie.comrade)) hit('S22', '結果の関係に仲間の印（tie.comrade）がない');
+      } catch (e) { out.err.push('S22: ' + String(e && e.stack || e).slice(0, 300)); }
+      put(JSON.parse(bak));
+      cur = null;
+    }
     return out;
   }, { N, only, WHY, HOT, mode, ENVSET });
   const ids = Object.keys(r.bySc);
   for (const sc of ids) {
-    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18'].map(k => k + ' ' + (b[k] || 0));
+    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22'].map(k => k + ' ' + (b[k] || 0));
     console.log(sc.padEnd(10), 'runs', b.runs, cells.join(' '), '誰とでも可の体の出来事', r.anySex[sc] || 0);
   }
   console.log('合計', JSON.stringify(r.n), '止めた', JSON.stringify(r.drop));
+  console.log('参考（追加の関係の出来事の数）', JSON.stringify(r.info));
   for (const k of Object.keys(r.ex)) if (r.ex[k].length) { console.log('--- ' + k); r.ex[k].forEach(x => console.log('  ' + x)); }
   if (r.err.length) { console.log('--- 例外'); r.err.slice(0, 20).forEach(x => console.log('  ' + x)); }
   console.log('pageerr', JSON.stringify(errors.slice(0, 5)));

@@ -59,6 +59,91 @@
      blind：盲信。盲信する側が相手を絶対視し、相手に近づく人を遠ざけようとする（執着の「排除」の軽い版。恋愛にはならない） */
   T.fond = { mods: { aff: 1.15, trust: 1.1, att: 0.4 }, effect: '慕う側が相手を一方的に敬い、そっと見守ったり差し入れたりする。恋愛にはならない。相手は気づいていないこともある', label: '一方的な好意・敬愛', dir: true, roleA: '慕う側', roleB: '慕われる側', ab: { aff: 35, trust: 30 }, ba: { aff: 4 }, pol: 1, chem: 0.4, pull: 1.6, stiffA: { aff: 0.4 }, biasA: { help: 1.8, bond: 1.3, romance: 0.35, conflict: 0.6 }, biasB: {} };
   T.blind = { mods: { trust: 1.25, att: 0.4 }, effect: '盲信する側は相手を絶対に正しいと信じ、相手に近づく人を遠ざけようとする。恋愛にはならない。揺らぎにくい', label: '盲信', dir: true, roleA: '盲信する側', roleB: '盲信される側', ab: { aff: 40, trust: 70, ten: 4 }, ba: { aff: 6, trust: 8 }, pol: 0, chem: 0.4, pull: 2, stiffA: { trust: 0.2, aff: 0.3 }, floorA: { trust: 40 }, biasA: { help: 2, conflict: 1.3, romance: 0.3, betray: 0.1 }, biasB: {} };
+  /* 追加の気持ち・関係（2026-10-25。場面は tie-new.js と、物語型は tie-new-story.js）
+     apathy：無関心（{a}→{b}）。a から b への好意・信頼・惹かれ・緊張は最初の値から動かない（engine.js の凍結）。
+             a は b との恋愛・夜・嫉妬・心配・助け合いの出来事に入らない（b からの一方的な働きかけは起きる）
+     fear：恐怖（{a} が {b} を恐れる）。a は b を避け、命じられると従い、第三者に庇護を求める。二人は恋愛にも夜にもならない
+     ※ 無関心・恐怖の二人は、住人の noLove（互いの番号）に入れる：HK.ngPair・HK.canLove・HK.sexBlocked・HK.Pos.okSex がどれも偽になる
+     fiance：許嫁（向きなし）。二人それぞれの気持ち（t.feel＝{a} の、t.feelB＝{b} の：eager 乗り気／unsure 戸惑い／refuse 断りたい）。
+             両方が乗り気で、恋愛対象と受け攻めが合う組（HK.canLove 両方向・HK.Pos.okSex）だけ、恋人と同じ扱い（pf.couple）。
+             断りたい側がほかの人を好きになると破談（tie-new.js。pf.fiBroken。以後は恋愛の出来事を起こさず、元恋人に近い気まずさ）
+     comrade：仲間（関係の一覧には出さない。住人の一覧のグループの「仲間」を入れたグループの住人どうしに、ui.js が自動で付ける） */
+  T.apathy = { mods: {}, effect: '無関心な側は相手に何の感情も動かさない。好意・信頼・惹かれ・緊張は最初のまま変わらず、相手との恋愛・夜・嫉妬・心配・助け合いの出来事に入らない（相手からの一方的な働きかけは起きる）', label: '無関心', dir: true, roleA: '無関心な側', roleB: '相手', ab: {}, ba: {}, pol: 0, chem: 0.05, pull: 0.9, apathy: true, biasA: { romance: 0, help: 0.15, bond: 0.3, conflict: 0.4, combat: 0.5, betray: 0.6 }, biasB: {} };
+  T.fear = { mods: {}, modsA: { trust: 0.5, aff: 0.6 }, effect: '恐れる側は相手を避け（同じ場所にいたがらない・目を合わせない・話しかけられると固まる）、命じられると逆らえずに従い、ほかの人に庇護を求める。この二人は恋愛にも夜にもならない', label: '恐怖', dir: true, roleA: '恐れる側', roleB: '恐れられる側', ab: { ten: 42, aff: -12, trust: -18 }, ba: {}, pol: -1, chem: 0.05, fric: 1.2, pull: 1.1, fear: true, stiffA: { ten: 0.4 }, biasA: { romance: 0, help: 0.3, bond: 0.25, conflict: 0.35, combat: 0.25, betray: 0.7 }, biasB: { romance: 0.2 } };
+  T.fiance = { mods: { att: 1.1 }, effect: '家どうしや周りが決めた、結婚の約束をした二人。それぞれの気持ち（乗り気・戸惑い・断りたい）を選べる。両方が乗り気なら恋人と同じ扱い（恋愛対象と受け攻めが合う組だけ）。断りたい側がほかの人を好きになると、破談になることがある', label: '許嫁', ab: { aff: 15, att: 16, trust: 15, ten: 8 }, pol: 1, chem: 1.1, pull: 1.9, fiance: true, bias: { romance: 1.3, help: 1.2, bond: 1.1 } };
+  T.comrade = { mods: { trust: 1.15 }, effect: '同じグループの仲間。信頼が育ちやすく、助け合い・庇い合い・一緒に動く出来事が起きる。恋愛や嫉妬には関わらない', label: '仲間', ab: { aff: 6, trust: 12 }, pol: 1, pull: 0.8, hidden: true, comrade: true, bias: { help: 1.4, bond: 1.2, betray: 0.6 } };
+  /* 許嫁の気持ち（それぞれの側）。ab＝その側から相手への初期値の足し引き、att＝惹かれの育ち、rom＝恋愛の出来事の倍率 */
+  HK.FIANCE_FEEL = {
+    eager: { label: '乗り気', short: '乗り気', ab: { aff: 12, att: 14 }, att: 1.25, rom: 1.4 },
+    unsure: { label: '戸惑い', short: '戸惑い', ab: { ten: 6 }, att: 0.9, rom: 0.85 },
+    refuse: { label: '断りたい', short: '断りたい', ab: { aff: -10, att: -12, ten: 14 }, att: 0.35, rom: 0.25 }
+  };
+  HK.FIANCE_FEEL_ORDER = ['eager', 'unsure', 'refuse'];
+  /* 執着（ヤンデレ）の型（空欄は今までどおり気質で決める。obsess-kit.js の O.type が優先して使う） */
+  HK.OBS_SUB = {
+    '': { label: '型：おまかせ（気質で）', short: '' },
+    devote: { label: '型：献身（尽くして囲い込む）', short: '献身' },
+    bind: { label: '型：束縛（監視して縛る）', short: '束縛' },
+    purge: { label: '型：排除（近づく人を遠ざける）', short: '排除' },
+    dep: { label: '型：依存（傍にいないと不安で、探す・確かめる・すがる）', short: '依存' },
+    hatelove: { label: '型：愛憎（探し守りながら、責めて試して傷つける）', short: '愛憎' }
+  };
+  HK.OBS_SUB_ORDER = ['', 'devote', 'bind', 'purge', 'dep', 'hatelove'];
+  /* 敵対の度合い（空欄は今までどおり）。hate＝憎悪：貶める・陥れる・孤立させる。死のある箱庭では危害に至りうる */
+  HK.ENEMY_GRADE = {
+    '': { label: '度合い：敵対', short: '' },
+    hate: { label: '度合い：憎悪（貶める・陥れる・孤立させる）', short: '憎悪', ab: { ten: 14, aff: -18, trust: -10 } }
+  };
+  HK.ENEMY_GRADE_ORDER = ['', 'hate'];
+  /* 恩人の、恩を受けた側の気持ち（空欄＝感謝） */
+  HK.BENE_FEEL = {
+    '': { label: '恩を受けた側：感謝', short: '' },
+    guilt: { label: '恩を受けた側：負い目（逆らえない・頼みを断れない）', short: '負い目', ba: { ten: 10, aff: -6 }, biasB: { help: 2.2, conflict: 0.25, betray: 0.05, bond: 0.9 } }
+  };
+  HK.BENE_FEEL_ORDER = ['', 'guilt'];
+  /* 一方的な好意・敬愛の様子（空欄＝敬愛） */
+  HK.FOND_MODE = {
+    '': { label: '様子：敬愛', short: '' },
+    oshi: { label: '様子：推し（ファン目線で応援する）', short: '推し' }
+  };
+  HK.FOND_MODE_ORDER = ['', 'oshi'];
+  /* セフレの様子（空欄＝対等）。mistress＝愛人：片方にほかの本命・夫婦がいる前提の、秘密の関係 */
+  HK.FWB_MODE = {
+    '': { label: '様子：対等', short: '' },
+    mistress: { label: '様子：愛人（片方にほかの本命・夫婦がいる秘密の関係）', short: '愛人' }
+  };
+  HK.FWB_MODE_ORDER = ['', 'mistress'];
+  /* 関係ごとの追加の選択肢（「相手の気持ち」cold とは別の欄）。f＝関係の欄の名前、who＝その欄がどちらの側の気持ちか（表示用） */
+  HK.tieExtra = function (type) {
+    var X = {
+      yan: [{ f: 'sub', map: HK.OBS_SUB, order: HK.OBS_SUB_ORDER, aria: '執着の型' }],
+      enemy: [{ f: 'grade', map: HK.ENEMY_GRADE, order: HK.ENEMY_GRADE_ORDER, aria: '敵対の度合い' }],
+      benefactor: [{ f: 'feel', map: HK.BENE_FEEL, order: HK.BENE_FEEL_ORDER, aria: '恩を受けた側の気持ち' }],
+      fond: [{ f: 'mode', map: HK.FOND_MODE, order: HK.FOND_MODE_ORDER, aria: '慕う側の様子' }],
+      fwb: [{ f: 'mode', map: HK.FWB_MODE, order: HK.FWB_MODE_ORDER, aria: 'セフレの様子' }],
+      fiance: [{ f: 'feel', who: 'a', map: HK.FIANCE_FEEL, order: HK.FIANCE_FEEL_ORDER, aria: '一人目の気持ち' }, { f: 'feelB', who: 'b', map: HK.FIANCE_FEEL, order: HK.FIANCE_FEEL_ORDER, aria: '二人目の気持ち' }]
+    };
+    return X[type] || [];
+  };
+  /* 追加の欄の値を、関係の種類に合う値だけに直す（合わない欄は消す）。t を書き換えて返す */
+  HK.tieExtraNorm = function (t) {
+    if (!t) return t;
+    var ex = HK.tieExtra(t.type), keep = {};
+    ex.forEach(function (x) { keep[x.f] = 1; if (t[x.f] != null && !(x.map[t[x.f]] && t[x.f] !== '')) delete t[x.f]; });
+    ['sub', 'grade', 'feel', 'feelB', 'mode'].forEach(function (f) { if (!keep[f]) delete t[f]; });
+    return t;
+  };
+  /* 無関心・恐怖の二人のあいだの恋愛の関係（恋人・セフレ・片想い・本命など）は外す（無関心・恐怖のほうを優先する）。
+     一方通行の執着（yan）・許嫁・元恋人は残す（恋愛・夜には進まない：noLove）。該当がなければ、渡された配列をそのまま返す */
+  var FEAR_DROP = /^(lover|mate|fated|fwb|almost|crush|abuse|honmei|spouse)$/;
+  HK.fearTies = function (ties) {
+    var l = ties || [], nl = {};
+    l.forEach(function (t) { if (t && (t.type === 'apathy' || t.type === 'fear') && t.a !== t.b) nl[Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b)] = 1; });
+    if (!Object.keys(nl).length) return ties;
+    return l.filter(function (t) { return !(t && FEAR_DROP.test(t.type) && nl[Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b)]); });
+  };
+  /* 関係の一覧の外（関係の種類の選択肢に出さない）の関係 */
+  HK.tieHidden = function (id) { return !!(HK.TIES[id] && HK.TIES[id].hidden); };
   /* 片想いの「想われる側」の温度（相手にされていない片想い） */
   HK.CRUSH_COLD = {
     '': { label: '想われる側：ふつう', short: '' },
@@ -144,12 +229,14 @@
   var COLD_WORDS = [[/両片想い|両片思い|実は相手も/, 'mutual'], [/脈なし|眼中に|相手にされ|興味がない|興味なし/, 'none'], [/友達としか|友達止まり|異性として見|恋愛対象外|対象外/, 'friend'], [/苦手|嫌われ|避けられ|避けて/, 'dislike'], [/他に好き|ほかに好き|別に好き|好きな人がいる/, 'other']];
   HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'classmate', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'stepsib', 'relative', 'parent', 'pparent', 'teacher', 'mentor', 'boss', 'benefactor', 'crush', 'yan', 'worship', 'bad', 'rival', 'enemy', 'lover', 'spouse', 'honmei', 'fwb', 'ex', 'abuse', 'fated', 'mate', 'master', 'noobs'];
   HK.TIE_ORDER.splice(HK.TIE_ORDER.indexOf('worship') + 1, 0, 'fond', 'blind');
+  HK.TIE_ORDER.splice(HK.TIE_ORDER.indexOf('enemy') + 1, 0, 'apathy', 'fear');
+  HK.TIE_ORDER.splice(HK.TIE_ORDER.indexOf('spouse') + 1, 0, 'fiance');
   /* 設定画面の関係の選択肢のまとまり（選びやすさのため。表に載っていない関係は「そのほか」）。並びは TIE_ORDER のまま */
   HK.TIE_GROUPS = [
     { id: 'stance', label: '立場・つながり', ids: ['acq', 'friend', 'best', 'buddy', 'childhood', 'classmate', 'colleague', 'senpai', 'boss', 'teacher', 'mentor', 'master', 'rival'] },
     { id: 'family', label: '家族・血縁', ids: ['sibling', 'sibprot', 'sibclose', 'sibbad', 'stepsib', 'parent', 'pparent', 'relative'] },
-    { id: 'feeling', label: '気持ち（執着・恩・片想いなど）', ids: ['crush', 'honmei', 'yan', 'worship', 'fond', 'blind', 'benefactor', 'bad', 'enemy', 'abuse', 'noobs'] },
-    { id: 'love', label: '恋愛・夫婦の状態', ids: ['almost', 'lover', 'spouse', 'fwb', 'ex', 'mate', 'fated'] }
+    { id: 'feeling', label: '気持ち（執着・恩・片想いなど）', ids: ['crush', 'honmei', 'yan', 'worship', 'fond', 'blind', 'benefactor', 'bad', 'enemy', 'apathy', 'fear', 'abuse', 'noobs'] },
+    { id: 'love', label: '恋愛・夫婦の状態', ids: ['almost', 'lover', 'spouse', 'fiance', 'fwb', 'ex', 'mate', 'fated'] }
   ];
   /* <select> の中身（<optgroup> で分ける）。sel＝選んでおく id */
   HK.tieOptions = function (sel, o) {
@@ -189,11 +276,19 @@
     ['同僚', 'colleague'], ['同期', 'colleague'], ['チームメイト', 'colleague'], ['チーム仲間', 'colleague'], ['チーム', 'colleague'], ['仕事仲間', 'colleague'], ['職場', 'colleague'], ['バイト仲間', 'colleague'],
     ['主従', 'master'], ['主人', 'master'], ['従者', 'master'], ['主', 'master'],
     ['の子', 'parent'], ['子ども', 'parent'], ['息子', 'parent'], ['娘', 'parent'], ['の親', 'parent'], ['父', 'parent'], ['母', 'parent'],
-    ['兄', 'sibling'], ['弟', 'sibling'], ['姉', 'sibling'], ['妹', 'sibling'], ['友', 'friend']
+    ['兄', 'sibling'], ['弟', 'sibling'], ['姉', 'sibling'], ['妹', 'sibling'], ['友', 'friend'],
+    /* 追加の関係（2026-10-25）。「チーム仲間」「仕事仲間」などは上で同僚として先に読む */
+    ['無関心', 'apathy'], ['恐怖', 'fear'], ['恐れている', 'fear'], ['許嫁', 'fiance'], ['許婚', 'fiance'], ['いいなずけ', 'fiance'], ['婚約者', 'fiance'], ['仲間', 'comrade']
+  ];
+  /* 型・度合い・気持ち・様子の付いた言い方（関係の種類と、追加の欄の値）。ALIAS より先に読む */
+  var XALIAS = [
+    ['執着（依存）', 'yan', { sub: 'dep' }], ['執着(依存)', 'yan', { sub: 'dep' }], ['執着（愛憎）', 'yan', { sub: 'hatelove' }], ['執着(愛憎)', 'yan', { sub: 'hatelove' }],
+    ['執着（献身）', 'yan', { sub: 'devote' }], ['執着（束縛）', 'yan', { sub: 'bind' }], ['執着（排除）', 'yan', { sub: 'purge' }],
+    ['憎悪', 'enemy', { grade: 'hate' }], ['負い目', 'benefactor', { feel: 'guilt' }], ['推し', 'fond', { mode: 'oshi' }], ['愛人', 'fwb', { mode: 'mistress' }]
   ];
 
   HK.parseTies = function (text, chars) {
-    var out = [], warn = [];
+    var out = [], warn = [], groups = [];
     var names = chars.map(function (c) { return { n: c.name, id: c.id }; }).sort(function (a, b) { return b.n.length - a.n.length; });
     /* グループ名（住人の group。カンマ区切りで複数）。「3年A組 同級生」のように書くと、そのグループの全員の組に付ける。
        住人の名前・関係の言葉と同じグループ名は使わない（名前・関係として読む） */
@@ -221,7 +316,8 @@
       [[/共依存/, 'mutual'], [/困惑|戸惑って|戸惑い|拒めない/, 'confused'], [/受け入れて|受け入れ/, 'accept'], [/怖がって|怯えて|怖がる/, 'afraid'], [/嫌って|嫌がって/, 'hate']].forEach(function (w) { if (!obc && /ヤンデレ|執着/.test(used) && w[0].test(used)) { obc = w[1]; used = used.replace(w[0], function (x) { return Array(x.length + 1).join('\u0000'); }); } });
       HATE_WORDS.forEach(function (w) { var m = used.match(w[0]); if (m) { if (!back) back = w[1]; used = used.replace(w[0], function (x) { return Array(x.length + 1).join('\u0000'); }); } });
       COLD_WORDS.forEach(function (w) { var m = used.match(w[0]); if (m) { if (!cold) cold = w[1]; used = used.replace(w[0], function (x) { return Array(x.length + 1).join('\u0000'); }); } });
-      var types = [];
+      var types = [], xtra = {};
+      XALIAS.forEach(function (w) { var p1 = used.indexOf(w[0]); if (p1 < 0) return; if (types.indexOf(w[1]) < 0) types.push(w[1]); xtra[w[1]] = xtra[w[1]] || {}; for (var xk in w[2]) xtra[w[1]][xk] = w[2][xk]; used = mask(used, p1, w[0].length); });
       for (var k = 0; k < ALIAS.length; k++) {
         var p0 = used.indexOf(ALIAS[k][0]);
         if (p0 < 0) continue;
@@ -233,6 +329,13 @@
       if (cold === 'mutual' && types.indexOf('crush') < 0) types.unshift('crush');
       /* 「兄弟で不仲」のように二つ書いたら、きょうだい（不仲）にまとめる */
       if (types.indexOf('bad') >= 0 && types.indexOf('sibling') >= 0) types = types.filter(function (x) { return x !== 'bad'; }).map(function (x) { return x === 'sibling' ? 'sibbad' : x; });
+      /* 「仲間」はグループに付ける（住人の一覧のグループの「仲間」を入れるのと同じ）。名前だけの行には付けない */
+      if (types.indexOf('comrade') >= 0) {
+        types = types.filter(function (x) { return x !== 'comrade'; });
+        if (gfound.length) gfound.forEach(function (g) { if (groups.indexOf(g.g) < 0) groups.push(g.g); });
+        else warn.push((i + 1) + '行目の「仲間」は、グループ名と一緒に書いてください（例：「3年A組 仲間」）。住人の一覧のグループの札の「仲間」でも入れられます');
+        if (!types.length) return;
+      }
       var type = types[0] || null;
       /* 空白で区切った語のうち、名前・グループ・関係のどれにも当たらなかったもの（知らない名前・書き間違いなど） */
       var unk = [], uw = used.split(/[\s\u3000,，、・\/]+/), ow = line.split(/[\s\u3000,，、・\/]+/);
@@ -258,26 +361,32 @@
           if (ty === 'crush' && cold) nt.cold = cold;
           if ((ty === 'bad' || ty === 'enemy') && back) nt.cold = back;
           if (ty === 'yan' && obc) nt.cold = obc;
+          if (xtra[ty]) for (var xf in xtra[ty]) nt[xf] = xtra[ty][xf];
           out.push(nt);
         });
       });
     });
-    return { ties: out, warnings: warn };
+    return { ties: out, warnings: warn, groups: groups };
   };
 
   HK.tieText = function (tie, nameOf) {
     var D = T[tie.type];
     if (!D) return '';
     var CO = HK.coldOpts(tie.type);
-    if (D.dir) return nameOf(tie.a) + '（' + D.roleA + '）→ ' + nameOf(tie.b) + '（' + D.roleB + '）：' + D.label + (CO && tie.cold && CO.map[tie.cold] && CO.map[tie.cold].short ? '（' + CO.map[tie.cold].short + '）' : '');
-    return nameOf(tie.a) + ' × ' + nameOf(tie.b) + '：' + D.label;
+    /* 追加の欄（型・度合い・気持ち・様子）の短い名前 */
+    var xs = HK.tieExtra(tie.type).map(function (x) { var v = tie[x.f] || (tie.type === 'fiance' ? 'eager' : ''), m = x.map[v]; return m && m.short ? (x.who ? nameOf(x.who === 'a' ? tie.a : tie.b) + '：' : '') + m.short : ''; }).filter(Boolean).join('・');
+    if (D.dir) return nameOf(tie.a) + '（' + D.roleA + '）→ ' + nameOf(tie.b) + '（' + D.roleB + '）：' + D.label + (CO && tie.cold && CO.map[tie.cold] && CO.map[tie.cold].short ? '（' + CO.map[tie.cold].short + '）' : '') + (xs ? '（' + xs + '）' : '');
+    return nameOf(tie.a) + ' × ' + nameOf(tie.b) + '：' + D.label + (xs ? '（' + xs + '）' : '');
   };
 
   /* ---------- エンジンへの適用 ----------
      同じ二人に複数の関係（セフレ＋片想い など）を重ねられる。
      get() は代表の関係（PRIO の先頭に近いもの）を返し、has() で個々の関係を調べる */
-  var PRIO = ['mate', 'fated', 'abuse', 'lover', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'relative', 'master', 'worship', 'mentor', 'teacher', 'benefactor', 'boss', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'classmate', 'friend', 'acq', 'honmei', 'noobs'];
+  var PRIO = ['mate', 'fated', 'abuse', 'lover', 'fiance', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'relative', 'master', 'worship', 'mentor', 'teacher', 'benefactor', 'boss', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'classmate', 'friend', 'acq', 'honmei', 'noobs'];
   PRIO.splice(PRIO.indexOf('worship') + 1, 0, 'blind', 'fond');
+  PRIO.splice(PRIO.indexOf('crush'), 0, 'fear');
+  PRIO.splice(PRIO.indexOf('bad') + 1, 0, 'apathy');
+  PRIO.push('comrade');
   function keyOf(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   /* 関係を持っているか（どのファイルからでも安全に呼べる形）。古いファイルが混ざっても止まらないように */
   HK.tieHas = function (ctx, a, b, type) {
@@ -326,7 +435,7 @@
     },
     apply: function (ctx, ties) {
       ctx.ties = {}; ctx.tiesAll = {};
-      (ties || []).forEach(function (t) {
+      (HK.fearTies(ties) || []).forEach(function (t) {
         var A = ctx.chars[t.a], B = ctx.chars[t.b], D = T[t.type];
         if (!A || !B || A === B || !D) return;
         /* 恋愛・R18にしない組（HK.ngPair）には、恋愛の関係（恋人・セフレ・片想いなど）を当てない。
@@ -382,14 +491,84 @@
         /* 関係の段階（師弟・主従・上司と部下・教師と生徒の仲：良好／ふつう／険悪。tie-stage.js の場面と試練が使う） */
         var GR = /^(mentor|master|boss|teacher)$/.test(t.type) && t.cold && HK.TIE_GRADE ? HK.TIE_GRADE[t.cold] : null;
         if (GR && GR.ab) { add(ab, GR.ab); add(ba, GR.ba || GR.ab); }
+        /* 追加の欄（2026-10-25）：憎悪・負い目・許嫁のそれぞれの気持ち */
+        var xf = {};
+        HK.tieExtra(t.type).forEach(function (x) { var v = t[x.f]; if (v && x.map[v]) xf[x.f] = v; });
+        if (t.type === 'fiance') {
+          xf.feel = xf.feel || 'eager'; xf.feelB = xf.feelB || 'eager'; add(ab, HK.FIANCE_FEEL[xf.feel].ab); add(ba, HK.FIANCE_FEEL[xf.feelB].ab);
+          /* 恋愛対象・受け攻めが合わない許嫁は、家どうしの約束だけ（最初の惹かれも低く抑える） */
+          if (!HK.Ties.fiLoveOk(A, B)) { ab.att = Math.min(ab.att, 8); ba.att = Math.min(ba.att, 8); }
+        }
+        if (t.type === 'enemy' && xf.grade === 'hate') add(ab, HK.ENEMY_GRADE.hate.ab);
+        if (t.type === 'benefactor' && xf.feel === 'guilt') add(ba, HK.BENE_FEEL.guilt.ba);
         var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB || WB || AB || GR ? t.cold || '' : '', love: HK.tieFamLove(t) || (D.loveOpt && t.love === 'ok') ? 'ok' : '', mutual: !!t.mutual, spouse: !!t.spouse, married: t.married || '', step: !!t.step };
+        /* 追加の欄は、ある関係だけに付ける（ほかの関係の中身は今までと同じ） */
+        if (t.type === 'yan') o.sub = xf.sub || '';
+        if (t.type === 'enemy') o.grade = xf.grade || '';
+        if (t.type === 'benefactor') o.feel = xf.feel || 'thanks';
+        if (t.type === 'fond') o.mode = xf.mode || 'adore';
+        if (t.type === 'fwb') o.mode = xf.mode || 'equal';
+        if (t.type === 'fiance') {
+          o.feel = xf.feel; o.feelB = xf.feelB;
+          /* 両方が乗り気で、恋愛対象と受け攻めが合う組だけ恋人と同じ扱い（R18に参加しない人も恋人にはなれるので、受け攻めは noR18 を外して見る） */
+          var nr = function (c) { var x = {}; for (var kk in c) x[kk] = c[kk]; x.noR18 = false; return x; };
+          if (o.feel === 'eager' && o.feelB === 'eager' && HK.canLove && HK.canLove(A, B) && HK.canLove(B, A) && (!HK.Pos || HK.Pos.okSex(nr(A), nr(B)))) { p.couple = true; o.couple = true; }
+        }
         list.push(o);
         list.sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
         ctx.ties[k] = list[0];
         p.tie = list[0];
         list[0].also = list.slice(1).map(function (x) { return x.type; });
       });
+      HK.Ties.after(ctx);
     },
+    /* 関係をすべて当てたあとの印：無関心・恐怖の二人は互いの noLove に入れる（恋愛・夜の判定のすべてが偽になる）。
+       無関心は ctx._apathy（a→b）、恐怖は ctx._fear（a→b）に覚える（engine.js の凍結・避ける重み・出来事の門）。許嫁の恋人扱いは外す */
+    after: function (ctx) {
+      Object.keys(ctx.tiesAll || {}).forEach(function (k) {
+        ctx.tiesAll[k].forEach(function (t) {
+          if (t.type !== 'apathy' && t.type !== 'fear') return;
+          var A = ctx.chars[t.a], B = ctx.chars[t.b];
+          [[A, B], [B, A]].forEach(function (q) { var l = q[0].noLove = q[0].noLove || []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); });
+          var m = t.type === 'apathy' ? (ctx._apathy = ctx._apathy || {}) : (ctx._fear = ctx._fear || {});
+          m[t.a + '>' + t.b] = 1;
+          /* 恋人・セフレなどを重ねていても、無関心・恐怖のほうを優先する（恋人の扱い・夜の印を外す） */
+          var p = ctx.pair(A, B);
+          p.couple = false; p.night = false;
+          var fi = HK.Ties.has(ctx, A, B, 'fiance'); if (fi) fi.couple = false;
+        });
+      });
+    },
+    /* 無関心の凍結：a→b の値を覚える（engine.js が初期の関係を整えたあとに呼ぶ）／覚えた値に戻す（区切りの終わりと結果の前） */
+    freezeInit: function (ctx) {
+      if (!ctx._apathy) return;
+      ctx._frz = {};
+      Object.keys(ctx._apathy).forEach(function (k) { var ij = k.split('>'), r = ctx.rel[+ij[0]][+ij[1]]; if (r) ctx._frz[k] = { aff: r.aff, trust: r.trust, ten: r.ten, att: r.att }; });
+    },
+    refreeze: function (ctx) {
+      if (!ctx._frz) return;
+      Object.keys(ctx._frz).forEach(function (k) { var ij = k.split('>'), r = ctx.rel[+ij[0]][+ij[1]], v = ctx._frz[k]; if (r) { r.aff = v.aff; r.trust = v.trust; r.ten = v.ten; r.att = v.att; } });
+    },
+    /* a が b に無関心か／a が b を恐れているか（向きを見る） */
+    apathy: function (ctx, a, b) { return !!(ctx && ctx._apathy && a && b && ctx._apathy[a.i + '>' + b.i]); },
+    /* 無関心な a が b との出来事に入らないもの（恋愛・助け合い・嫉妬・心配・慰め・夜） */
+    apathyBlock: function (ctx, a, b, e) {
+      if (!HK.Ties.apathy(ctx, a, b) || !e) return false;
+      return e.cat === 'romance' || e.cat === 'help' || /jeal|envy|worry|care|comfort|grief|mourn|obsess|^ob_|night|sex|kiss|date|confess/i.test(e.id || '') || /嫉妬|心配/.test(e.why || '');
+    },
+    fears: function (ctx, a, b) { return !!(ctx && ctx._fear && a && b && ctx._fear[a.i + '>' + b.i]); },
+    /* 許嫁の a の側の気持ち（eager／unsure／refuse。許嫁でなければ ''） */
+    fianceFeel: function (ctx, a, b) { var t = HK.Ties.has(ctx, a, b, 'fiance'); return t ? (t.a === a.i ? t.feel : t.feelB) || 'eager' : ''; },
+    /* 許嫁の二人が恋に進んでよい組か（恋愛対象が両方向で合い、受け攻めが決まる。R18に参加しない人も恋人にはなれるので noR18 は外して見る）。
+       合わない許嫁は、家どうしの約束として向き合うだけ（惹かれは育たず、恋愛の出来事はほとんど起きない） */
+    fiLoveOk: function (a, b) {
+      if (!a || !b || !HK.canLove || !HK.canLove(a, b) || !HK.canLove(b, a)) return false;
+      if (!HK.Pos) return true;
+      var x = {}, y = {}, k; for (k in a) x[k] = a[k]; for (k in b) y[k] = b[k]; x.noR18 = false; y.noR18 = false;
+      return HK.Pos.okSex(x, y);
+    },
+    /* 二人が同じ「仲間」のグループか */
+    comrade: function (ctx, a, b) { return !!HK.Ties.has(ctx, a, b, 'comrade'); },
     /* 代表の関係。type を渡すと、その種類の関係があればそれを返す */
     get: function (ctx, a, b, type) {
       if (!ctx.ties || !b) return null;
@@ -422,6 +601,10 @@
         if (D.hate) m = t.a !== a.i && t.cold && HK.HATE_BACK[t.cold] ? HK.HATE_BACK[t.cold].bias : D.bias || {};
         else if (D.dir) m = (t.a === a.i ? D.biasA : D.biasB) || {};
         else m = D.bias || {};
+        /* 負い目：恩を受けた側は逆らえず、頼みを断れない */
+        if (t.type === 'benefactor' && t.feel === 'guilt' && t.a !== a.i) m = HK.BENE_FEEL.guilt.biasB;
+        /* 許嫁：それぞれの気持ちで恋愛の出来事の起こりやすさが変わる */
+        if (t.type === 'fiance' && cat === 'romance') { var fe = HK.FIANCE_FEEL[(t.a === a.i ? t.feel : t.feelB) || 'eager']; if (fe) r *= fe.rom; if (!HK.Ties.fiLoveOk(a, b)) r *= 0.02; }
         if (m[cat] != null) r *= cat === 'romance' && HK.tieFamLove(t) ? Math.max(m[cat], 1) : m[cat];
         if (cat === 'romance' && HK.tieOptNoLove(t)) r *= 0.1;
       });
@@ -442,6 +625,10 @@
         }
         if (m != null) r *= f === 'att' && HK.tieFamLove(t) ? Math.max(m, 1) : m;
         if (f === 'att' && HK.tieOptNoLove(t)) r *= 0.05;
+        /* 向きのある伸びの倍率（恐怖：恐れる側の好意・信頼は育ちにくい） */
+        if (D.dir && (D.modsA || D.modsB)) { var dm = t.a === a.i ? D.modsA : D.modsB; if (dm && dm[f] != null) r *= dm[f]; }
+        /* 許嫁：それぞれの気持ちで惹かれの育ち方が変わる */
+        if (t.type === 'fiance' && f === 'att') { var fe = HK.FIANCE_FEEL[(t.a === a.i ? t.feel : t.feelB) || 'eager']; if (fe) r *= fe.att; if (!HK.Ties.fiLoveOk(a, b)) r *= 0.1; }
       });
       return r;
     },
@@ -472,7 +659,7 @@
     },
     /* 「守りたい相手」の候補（恋人・親子・親友・主従・片想いなど） */
     focusFor: function (ctx, a) {
-      var best = null, bv = 0, PRI = { lover: 5, parent: 5, pparent: 5, sibprot: 5, crush: 4, best: 4, master: 4, mentor: 3, almost: 3, sibling: 3, sibclose: 3, teacher: 2, childhood: 2, fwb: 2, friend: 1, colleague: 1, buddy: 4, senpai: 2 };
+      var best = null, bv = 0, PRI = { lover: 5, parent: 5, pparent: 5, sibprot: 5, crush: 4, best: 4, master: 4, mentor: 3, almost: 3, sibling: 3, sibclose: 3, teacher: 2, childhood: 2, fwb: 2, friend: 1, colleague: 1, buddy: 4, senpai: 2, fiance: 3, comrade: 1 };
       var L0 = [];
       Object.keys(ctx.tiesAll || {}).forEach(function (k) { L0 = L0.concat(ctx.tiesAll[k]); });
       L0.forEach(function (t) {

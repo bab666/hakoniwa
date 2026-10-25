@@ -162,6 +162,8 @@
     if (p.cls === 'enemy' || p.cls === 'kill') t.enemy = 1;
     if (p.label === 'kinbond' || p.label === 'kinfeud' || famTie(p)) t.kin = 1;
     if (p.tie && ROLE[p.tie.type]) { t.role = 1; if (p.tie.type !== 'senpai') t.kin = 1; }
+    /* 仲間（グループの「仲間」）：ほかの印がなければ、線の絞り込みが「全部」のときだけ薄い線で出す */
+    if (p.tie && p.tie.comrade) t.comrade = 1;
     return t;
   }
   var MODES = [
@@ -185,11 +187,17 @@
     var hasG = hullOn(res), s = S(res), gof = hasG ? groupOf(res) : {}, small = few(res);
     /* 一つの派閥だけに絞っているときは、派閥の中の線を省くと何も残らないので描く */
     var gOnly = !!(res._base && /^g:/.test(s.sub || ''));
-    var draw = [], faint = [], hidden = { inner: 0, kind: 0, thin: 0 };
+    var draw = [], faint = [], hidden = { inner: 0, kind: 0, thin: 0, comrade: 0 }, mates = [];
     var cand = [];
     pairs.forEach(function (p) {
       var ga = gof[p.a], gb = gof[p.b], same = ga != null && ga === gb, cross = ga != null && gb != null && ga !== gb;
       var mine = focus != null && (p.a === focus || p.b === focus);
+      /* 仲間だけの線（恋愛・対立・家族・立場の印がない）：既定では省き、「全部」のときは薄い線 */
+      var tg = tags(p);
+      if (tg.comrade && !tg.love && !tg.enemy && !tg.kin && !tg.role && (p.cls === 'friend' || p.cls === 'none' || p.cls === 'partner' || p.label === 'strangers' || p.label === 'friends' || p.label === 'partners')) {
+        if (s.mode === 'all' && mates.length < 40) mates.push(p); else hidden.comrade++;
+        return;
+      }
       if (mine) { if (s.mode === 'auto' || inMode(p, s.mode, cross, small)) cand.push({ p: p, must: true }); else hidden.kind++; return; }
       /* 派閥の中は描かない（恋人・両片想いなど、はっきりした恋愛の線だけは残す） */
       if (same && !s.inner && !gOnly && !(p.cls === 'love' && s.mode !== 'enemy' && s.mode !== 'kin')) { hidden.inner++; return; }
@@ -206,8 +214,8 @@
       var t = tags(p);
       if ((t.love || t.enemy || t.kin) && faint.length < 40) faint.push(p); else hidden.thin++;
     });
-    s.stat = { hidden: hidden, hasG: hasG };
-    return { draw: draw, faint: faint };
+    s.stat = { hidden: hidden, hasG: hasG, mates: mates.length };
+    return { draw: draw, faint: faint.concat(mates) };
   };
   M.drawn = function (res, d) { var s = S(res); s.drawn = d; };
 
@@ -352,6 +360,8 @@
     if (h && h.inner && hasG && !s.inner && !/^g:/.test(s.sub || '')) parts.push('派閥の中の' + h.inner + '本は省略');
     if (h && h.kind) parts.push('ほかの種類' + h.kind + '本は非表示');
     if (h && h.thin) parts.push('弱い' + h.thin + '本は省略');
+    if (s.stat && s.stat.mates) parts.push('仲間の薄い線' + s.stat.mates + '本');
+    else if (h && h.comrade) parts.push('仲間の線' + h.comrade + '本は「全部」で薄く表示');
     if (d.labSkip) parts.push('重なるラベル' + d.labSkip + '個は省略');
     var sn = subNote(res);
     return '<div class="mapbar">' + subSelect(res) + '</div><div class="mapbar"><span class="hint" style="margin:0">線：</span>' + chips +

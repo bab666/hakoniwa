@@ -44,7 +44,7 @@
     (S.ties || []).forEach(function (t) {
       var D = HK.TIES[t.type];
       if (!D || !D.hate) return;
-      var v = D.hate === 2 ? 78 : 46;
+      var v = D.hate === 2 ? (t.grade === 'hate' ? 92 : 78) : 46;   /* 敵対の度合い「憎悪」は、はじめから最上位 */
       m[t.a + '>' + t.b] = Math.max(m[t.a + '>' + t.b] || 0, v);
       if (!t.cold) m[t.b + '>' + t.a] = Math.max(m[t.b + '>' + t.a] || 0, v);
     });

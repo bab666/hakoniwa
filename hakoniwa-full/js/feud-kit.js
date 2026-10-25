@@ -8,7 +8,63 @@
 (function () {
   'use strict';
   var HK = window.HK;
-  if (!HK || !HK.TL) return;
+  if (!HK) return;
+  /* ---------- 感情のギャップ（HK.Gap。2026-10-25）----------
+     強い感情を向ける人ほど、相手から返ってくる気持ちとの差（ギャップ）を感じると、過激な行動に出やすい。
+     of(x, a, b)：a の b への想いの強さ（執着の段階・本命・盲信・憎悪・恐怖の重み）と、b の a への好意の差（0〜1）。
+                  b がほかの人に向けている好意が a より高ければ、その分を上乗せする
+     k(x, a, b)：過激な枝の重みの倍率（差 0 → 1.0、差 1 → 2.2）に、展開の重さ（穏やか 0.6・ふつう 1・重い 1.4）を掛けたもの
+     why(x, a, b)：記録の理由書きに添える一言（「想いの差：大（自分 80／相手 20）」）
+     x はエンジン型の ctx（R と pair がある）か、物語型の S（ties だけ。好意は opt.back で渡す。なければ 0 とみる）。乱数は使わない */
+  var clampG = function (v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; };
+  function gTies(x, a, b) {
+    if (x && x.R && x.pair) return HK.Ties ? HK.Ties.all(x, a, b) : [];
+    return ((x && x.ties) || []).filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); });
+  }
+  var G = HK.Gap = {
+    /* a の b への想いの強さ（0〜100） */
+    self: function (x, a, b) {
+      var v = 0, l = gTies(x, a, b);
+      l.forEach(function (t) {
+        var from = t.a === a.i;
+        if (t.type === 'yan' && from) v = Math.max(v, 55);
+        if (t.type === 'honmei' && from) v = Math.max(v, 70);
+        if (t.type === 'blind' && from) v = Math.max(v, 75);
+        if (t.type === 'enemy' && (from || !t.cold)) v = Math.max(v, t.grade === 'hate' ? 90 : 60);
+        if (t.type === 'fear' && from) v = Math.max(v, 60);
+      });
+      /* 執着の段階（obsess-kit.js の執着度）があれば、そちらを使う */
+      if (x && x.R && HK.Obsess && HK.Obsess.state) { var pf = x.pair(a, b); if (pf.ob && pf.ob[a.i]) v = Math.max(v, pf.ob[a.i].lv || 0); }
+      else if (x && x.obs && x.obs[a.i + '>' + b.i]) v = Math.max(v, x.obs[a.i + '>' + b.i].lv || 0);
+      return clampG(v, 0, 100);
+    },
+    /* b の a への好意（0〜100）と、b がほかの人に向けているいちばん高い好意 */
+    back: function (x, a, b, opt) {
+      if (opt && opt.back != null) return { to: clampG(opt.back, 0, 100), other: clampG(opt.other || 0, 0, 100) };
+      if (!(x && x.R && x.chars)) return { to: 0, other: 0 };
+      var to = clampG(x.R(b, a).aff, 0, 100), other = 0;
+      x.chars.forEach(function (c) { if (c !== a && c !== b && c.alive !== false) other = Math.max(other, clampG(x.R(b, c).aff, 0, 100)); });
+      return { to: to, other: other };
+    },
+    of: function (x, a, b, opt) {
+      if (!x || !a || !b || a === b) return 0;
+      var s = opt && opt.self != null ? opt.self : G.self(x, a, b), bk = G.back(x, a, b, opt);
+      if (s <= 0) return 0;
+      var g = Math.max(0, s - bk.to) / 100;
+      if (bk.other > bk.to) g += (bk.other - bk.to) / 200;
+      return clampG(g, 0, 1);
+    },
+    k: function (x, a, b, opt) {
+      var d = HK.Dark ? HK.Dark.pick(x, 0.6, 1, 1.4) : 1;
+      return (1 + 1.2 * G.of(x, a, b, opt)) * d;
+    },
+    why: function (x, a, b, opt) {
+      var s = opt && opt.self != null ? opt.self : G.self(x, a, b), g = G.of(x, a, b, opt);
+      if (s <= 0) return '';
+      return '想いの差：' + (g >= 0.55 ? '大' : g >= 0.25 ? '中' : '小') + '（自分 ' + Math.round(s) + '／相手 ' + Math.round(G.back(x, a, b, opt).to) + '）';
+    }
+  };
+  if (!HK.TL) return;
   var LOVE = 'lover,mate,fated,almost,crush,fwb,ex', HATE = 'enemy,bad,sibbad', RIVAL = 'rival', CLOSE = 'friend,colleague,buddy,childhood,best,sibling,sibprot,sibclose,parent,pparent,mentor,master,teacher,classmate,boss,benefactor,relative,worship,fond,blind';
   function inL(t, l) { return l.split(',').indexOf(t) >= 0; }
   function ties(S, a, b) { return (S.ties || []).filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); }); }
@@ -80,4 +136,54 @@
       return { text: t + (pick ? pick(l) : '').replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name) + HK.TL.line(a, 'LH_AFTER', b), r18: false };
     }
   };
+
+  /* ---------- 憎悪（敵対の度合い grade: 'hate'。2026-10-25）----------
+     a が b を憎んでいる（敵対の関係で {a}＝敵視する側、度合い「憎悪」）。出来事：貶める・陥れる・孤立させる・危害
+     ・危害は「死のある箱庭」（opt.lethal）だけ命に関わりうる。重みと致命の見込みに想いの差（HK.Gap.k）と展開の重さ（harm・kill）を掛ける
+     ・全年齢版・全年齢モードでは、危害は脅しまで（死には至らない）
+     ・反応は b（憎まれている側）の態度9種。台詞の一人称は「私」で書き、口調の言い換えに任せる
+     文は物語型の箱庭（tie-new-story.js）からも使える：HK.Feud.HATE[種類]・HK.Feud.HATE_RE[種類][態度] */
+  var L2 = function (s) { return s.split('|'); };
+  F.hateGrade = function (x, a, b) {
+    return ties(x && x.R && x.pair ? { ties: HK.Ties ? HK.Ties.all(x, a, b) : [] } : x, a, b).some(function (t) { return t.type === 'enemy' && t.grade === 'hate' && t.a === a.i; });
+  };
+  F.HATE = {
+    demean: L2('{a}は皆の前で、{b}の失敗をわざとらしく数え上げた。「よくそれで平気な顔をしていられるね」――笑い声が起きるのを、{a}は冷たい目で確かめていた。|{a}は{b}の意見を最後まで聞かずに遮った。「誰も{b}にそんなこと頼んでない」――その言い方には、はっきりとした侮蔑がこもっていた。|{a}は{b}の持ち物を指先でつまみ上げ、汚いものでも見るように放り捨てた。「こういうところに、育ちが出るよね」'),
+    trap: L2('{a}は自分のしくじりを、さりげなく{b}のせいにした。辻褄の合う話を、{a}は前もって用意していた。|{a}は{b}が任された段取りに、こっそり手を入れた。何も知らない{b}は、皆の前で恥をかくことになった。|{a}は{b}にわざと間違ったことを教えた。{b}がその通りに動いて失敗するのを、{a}は少し離れたところから眺めていた。'),
+    isolate: L2('{a}は{c}の耳もとで、{b}についての根も葉もない話を囁いた。{c}はその日から、{b}と目を合わせなくなった。|{a}は{b}を誘わないように、{c}に念を押した。「あの人がいると、空気が悪くなるから」|{a}は{b}が席を外したすきに、{c}たちに{b}の陰口を吹き込んだ。戻ってきた{b}を迎えたのは、気まずい沈黙だった。'),
+    harm: L2('{a}は{b}が一人になるのを待って、背後から突き飛ばした。{b}は硬い床に叩きつけられ、しばらく起き上がれなかった。|{a}は{b}の足もとに、わざと危ないものを仕掛けておいた。{b}は手を深く切り、血が止まらなかった。|{a}は{b}の水筒に、何かを混ぜた。{b}はその夜、ひどい熱と吐き気に苦しんだ。'),
+    harmKill: L2('{a}は{b}を人目のない場所へ呼び出し、二度と戻らせなかった。帰ってきた{a}の袖口には、乾いた血がこびりついていた。|{a}は{b}が助けを求める声を聞きながら、扉を閉めた。{a}がもう一度扉を開けたとき、{b}はもう動かなかった。|{a}は最後まで{b}の目を見ていた。「ずっと、こうしたかった」――それが、{b}が聞いた最後の言葉だった。'),
+    threat: L2('{a}は{b}の前に立ちふさがり、低い声で告げた。「次に私の前に出てきたら、ただじゃおかない」|{a}は{b}の胸ぐらを掴みかけて、寸前で手を止めた。その目に宿ったものの冷たさに、{b}は思わず後ずさった。|{a}は{b}の荷物の上に、「消えろ」と書いた紙を置いた。字は、隠す気もないほど{a}のものだった。')
+  };
+  F.HATE_RE = {
+    demean: {
+      proud: L2('{b}は拳を握りしめた。「言いたいことはそれだけか。……覚えてろよ」'), stern: L2('{b}は表情を変えずに言った。「事実と違う。訂正してもらう」――声は低く、震えていなかった。'),
+      tsun: L2('{b}「な、なによ……！　そんな言い方しなくてもいいでしょ！」{b}の目には、悔し涙がにじんでいた。'), gentle: L2('{b}は困ったように笑ったが、膝の上の手は小さく震えていた。「……そう見えるなら、ごめんね」'),
+      devoted: L2('{b}は俯いて唇を噛んだ。「私、そんなに駄目かな……」――誰も、その問いには答えなかった。'), cool: L2('{b}は肩をすくめた。「論点がずれている。私の話をしたいなら、根拠を出して」'),
+      free: L2('{b}は「はいはい、私が悪うございました」とおどけてみせた。けれど、そのあと{b}はしばらく誰とも口をきかなかった。'), shy: L2('{b}は真っ赤になって俯き、何も言い返せなかった。小さな背中が、さらに小さくなった。'),
+      polite: L2('{b}は丁寧に頭を下げた。「ご指摘、肝に銘じます」――その丁寧さが、かえって場を冷やした。')
+    },
+    trap: {
+      proud: L2('{b}「……ふざけんな。誰がやったか、分かってんだよ」{b}は{a}を睨みつけたが、証拠は何もなかった。'), stern: L2('{b}は黙って責めを受けた。言い訳をするより先に、誰がこれを仕組んだのかを考えていた。'),
+      tsun: L2('{b}「私じゃないもん！　……信じてくれなくても、私じゃない！」'), gentle: L2('{b}は皆に謝った。自分のせいではないと分かっていても、責める相手を探す気にはなれなかった。'),
+      devoted: L2('{b}は何度も頭を下げた。「ごめんなさい、私がちゃんとしていれば……」――{a}は、その姿を見て薄く笑った。'), cool: L2('{b}は失敗の跡を一つずつ確かめ、手が加えられた箇所に気づいた。{b}は何も言わず、{a}の顔を見た。'),
+      free: L2('{b}は「あれ、おかしいな」と首をかしげた。笑ってごまかしたが、その目は{a}のほうを鋭く見ていた。'), shy: L2('{b}は泣きそうな顔で立ち尽くした。どうしてこうなったのか、{b}にはまるで分からなかった。'),
+      polite: L2('{b}は静かに言った。「私の不手際ということにしておきます。……今は、ですが」')
+    },
+    isolate: {
+      proud: L2('{b}は空いた席を見て舌打ちした。「群れなきゃ何もできねえ連中だな」――強がりの声は、少しかすれていた。'), stern: L2('{b}は誰にも声をかけず、一人で黙々と自分の務めを続けた。背筋だけは、まっすぐに伸ばしたままだった。'),
+      tsun: L2('{b}「べ、別に一人でも平気だし！」――そう言った{b}は、誰もいない方を向いて目をこすった。'), gentle: L2('{b}は輪から外されたことに気づいて、そっと離れた。誰かを責めるより、自分が何をしたのかを考えていた。'),
+      devoted: L2('{b}は何度も皆の顔をうかがった。誰も目を合わせてくれないことが、何より堪えた。'), cool: L2('{b}は周りの態度の変化を冷静に見ていた。誰が話を流したのか、見当はついていた。'),
+      free: L2('{b}は一人で鼻歌を歌いながら、平気なふりをした。歌は、途中で途切れた。'), shy: L2('{b}は隅のほうで膝を抱えた。話しかけられないことには慣れているつもりだったのに、胸が痛かった。'),
+      polite: L2('{b}は「お邪魔のようですので」と小さく会釈して、その場を離れた。')
+    },
+    harm: {
+      proud: L2('{b}は痛みに顔を歪めながら、{a}を睨み返した。「……やってくれたな」'), stern: L2('{b}は呻き声一つ上げずに傷を押さえた。その目は、まっすぐ{a}に向いていた。'),
+      tsun: L2('{b}「痛っ……な、なんでこんなこと……！」{b}の声は、恐怖と怒りで裏返っていた。'), gentle: L2('{b}は傷を押さえて座り込んだ。「……どうして、ここまで」――その問いに、{a}は答えなかった。'),
+      devoted: L2('{b}は震える声で言った。「私、何かしたなら謝るから……もう、やめて」'), cool: L2('{b}は自分の傷の具合を淡々と確かめた。「これは事故じゃない」――それだけを、はっきり口にした。'),
+      free: L2('{b}は笑おうとして、うまく笑えなかった。痛みより、{a}の目のほうが怖かった。'), shy: L2('{b}は声も出せずに震えていた。{a}の影が、すぐそばにあった。'),
+      polite: L2('{b}は荒い息を整えてから言った。「……このことは、決して忘れません」')
+    }
+  };
+  F.HATE_RE.threat = F.HATE_RE.harm;
 })();

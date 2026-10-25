@@ -6,6 +6,7 @@ js/poly.js
 js/events-common.js
 js/persona.js
 js/tie-rel.js
+js/tie-new.js
 js/daily-kit.js
 js/rel-group.js
 js/tie-stage.js

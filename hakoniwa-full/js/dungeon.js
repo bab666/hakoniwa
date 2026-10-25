@@ -816,6 +816,8 @@
     S.mids = {};
     for (var mf = 1; mf < S.floors - 1; mf += 2) { var mb = pickBoss(S, thOf(mf), ['mid', 'both'], used); if (mb) { S.mids[mf] = mb; used.push(mb.id); } }
     if (DG.partySetup) DG.partySetup(S, input);
+    /* 関係「無関心」「恐怖」の二人は、恋愛にも体の関係にもならない（fam-kin.js の HK.fearNG） */
+    if (HK.fearNG) { var PM = []; S.party.forEach(function (h) { PM[h.i] = h; }); HK.fearNG(PM, input.ties); }
 
     S.floorName = floorName(S, 0);
     var P0 = S.party;

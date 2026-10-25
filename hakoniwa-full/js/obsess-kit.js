@@ -33,9 +33,14 @@
     if (pf.kin) return true;
     if (ctx.env && ctx.env.romance === 0) return true;
     if (a.lock != null && a.lock !== b.i) return true;
+    /* 無関心な人・恐れている人は、その相手に嫉妬も執着もしない（ties.js） */
+    if (HK.Ties && HK.Ties.apathy && (HK.Ties.apathy(ctx, a, b) || HK.Ties.fears(ctx, a, b))) return true;
+    /* 相手が自分を恐れている・無関心でも、関係「執着」の想いは一方的に続く（恋愛・夜には進まない：noLove は HK.Pos・HK.canLove が見る） */
+    var y0 = O.yanTie(ctx, a, b), nl = y0 && HK.noLovePair && HK.noLovePair(a, b);
+    var a1 = nl ? Object.assign({}, a, { noLove: null }) : a, b1 = nl ? Object.assign({}, b, { noLove: null }) : b;
     /* 関係「執着」を設定した組は恋愛対象の違いを越えるが、先生・未成年・恋愛相手の固定は越えない */
-    if (!pf.couple && !HK.canLove(a, b) && !(O.yanTie(ctx, a, b) && HK.canLove(Object.assign({}, a, { likes: '' }), b))) return true;
-    if (HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b)) return true;
+    if (!pf.couple && !HK.canLove(a1, b1) && !(y0 && HK.canLove(Object.assign({}, a1, { likes: '' }), b1))) return true;
+    if (HK.Pos && HK.Pos.clash && HK.Pos.clash(a1, b1)) return true;
     return false;
   };
   /* 嫉妬してよいか：a が c（好きな相手）のことで嫉妬する */
@@ -64,6 +69,8 @@
     /* pace：区切りの少ない箱庭（合コン・一年間のクラス）ほど速く積もる（O.install の opt.pace） */
     var kit = ctx.scen && ctx.scen.obsessKit, s = st(ctx, a, b), k = d > 0 ? (0.55 + a.tr.jealous * 0.9) * ((kit && kit.pace) || 1) : 1;
     if (d > 0) k *= HK.Dark.pace(ctx);   /* 展開の重さ（mood-dial.js）：穏やかほど執着がゆっくり積もる */
+    /* 型を選んだ執着：想いの差（feud-kit.js の HK.Gap）が大きいほど速く積もる（型がおまかせなら今までどおり） */
+    if (d > 0 && HK.Gap && O.subOf(ctx, a, b)) k *= 1 + 0.5 * HK.Gap.of(ctx, a, b);
     var nv = clamp(s.lv + d * k, 0, 100);
     if (d > 0 && !s.set && nv > O.NAT_CAP) {
       if (s.surge == null) s.surge = (O.surgeOk(a, R(ctx, a, b).att) || (HK.Dark.on(ctx) === 'dark' && (a.tr.jealous || 0) >= 0.5 && R(ctx, a, b).att >= 60)) && ctx.rng() < O.SURGE_P * HK.Dark.f(ctx, 'cage');
@@ -104,7 +111,18 @@
   };
 
   /* ---------- 型と相手の気持ち ---------- */
-  O.type = function (a) {
+  /* 関係「執着」で選んだ型（x は箱庭の ctx か、物語型の S。選んでいなければ ''） */
+  var SUB = { devote: 'devote', bind: 'bind', purge: 'purge', dep: 'depend', depend: 'depend', hatelove: 'hatelove' };
+  O.subOf = function (x, a, b) {
+    if (!x || !a || !b) return '';
+    var l = x.R && x.pair ? tieAll(x, a, b) : (x.ties || []).filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); });
+    for (var i = 0; i < l.length; i++) if (l[i].type === 'yan' && l[i].a === a.i && l[i].sub && SUB[l[i].sub]) return SUB[l[i].sub];
+    return '';
+  };
+  /* 型：関係で選んだ型（O.subOf）を優先し、なければ気質から。x・b を渡さないときは気質だけで決める（今までどおり） */
+  O.type = function (a, x, b) {
+    var sb = x && b ? O.subOf(x, a, b) : '';
+    if (sb) return sb;
     var t = a.tr, s = {
       devote: t.np * 0.85 + t.ac * 0.25,
       bind: t.cp * 0.85 + t.lead * 0.3,
@@ -114,7 +132,7 @@
     Object.keys(s).forEach(function (k) { if (s[k] > s[best]) best = k; });
     return best;
   };
-  O.TYPE_NAME = { devote: '献身', bind: '束縛', purge: '排除', depend: '依存' };
+  O.TYPE_NAME = { devote: '献身', bind: '束縛', purge: '排除', depend: '依存', hatelove: '愛憎' };
   O.stance = function (ctx, b, a) {
     var y = O.yanTie(ctx, a, b);
     if (y && y.cold) return y.cold;
@@ -155,6 +173,9 @@
     devote2: L('{a}は{b}の持ち物を、いつのまにか全部把握していた。なくした物は、{a}がいつも先に見つけた。|{b}の行く先々に、{a}が「偶然」いた。|{a}「{b}のことは、私が一番わかってる。だから、ほかの人はいらないよね」'),
     bind2: L('{a}は{b}の持ち物を勝手に確かめ、知らない名前を見つけるたびに問い詰めた。|{a}「今日はどこにも行かないで。約束して」それは頼みではなく、命令だった。|{a}は{b}が誰と何分話したかまで数えていた。'),
     purge2: L('{a}は{c}を呼び出し、低い声で告げた。「{b}に近づくな」|{c}の持ち物が、いつのまにか壊されていた。{c}は{a}の視線に気づいて、背筋が冷えた。|{a}は{c}についての良くない噂を、さりげなく{b}の耳に入れた。'),
+    /* 愛憎（関係「執着」の型で選んだときだけ）：探す・守ると、責める・試す・傷つける言葉が同じ人から出る */
+    hatelove: L('{a}は{b}の姿が見えなくなると、黙って探しに出た。見つけると、何も言わずに隣に立った。「……勝手にいなくならないで。腹が立つから」|{b}が危ない目に遭いかけたとき、{a}は誰より先に飛び出して{b}をかばった。そのあとで、{a}は{b}を睨んだ。「守ってやったなんて、思わないで」|{a}は{b}の言葉尻を捕まえて、静かに責めた。「そういうところが、本当に嫌い」――それでも、{a}は{b}のそばを離れなかった。|{a}は{b}に、わざと答えにくいことを訊いた。「私と{b}の大事なもの、どっちを選ぶ？」答えを待つ{a}の目は、試すようで、すがるようでもあった。'),
+    hatelove2: L('{a}は{b}の腕を掴んで引き戻した。「どこへ行く気？　……行かせない。憎くて仕方ないのに、いなくなるのはもっと許せない」|{a}は{b}の古傷になっている失敗を、わざと皆の前で口にした。{b}が顔をこわばらせると、{a}は満足そうに、そして少しだけ苦しそうに笑った。|{a}「私のことだけ考えて苦しめばいい」――そう言い捨てた夜、{a}は{b}の部屋の前で、朝まで座り込んでいた。|{a}は{b}をかばって傷を負い、手当てしようとした{b}の手を払いのけた。「触らないで。……優しくされると、憎めなくなる」'),
     depend2: L('{a}「{b}に捨てられたら、生きてる意味なんてない」{a}の手首には、新しい傷があった。|{a}は{b}が少し離れただけで泣き崩れ、{b}は戻るしかなかった。|{a}「ねえ、私だけ見てて。……じゃないと、何するか分からない」'),
     /* 執着される側の反応 */
     r_unaware: L('{b}は{a}の気遣いを、ただの優しさだと思っていた。|{b}「いつもありがとう、{a}」{b}の無邪気な笑顔に、{a}は満足そうに目を細めた。'),
@@ -216,7 +237,7 @@
 
   /* ---------- 出来事 ---------- */
   function cool(ctx, s, n) { var kit = ctx.scen && ctx.scen.obsessKit, c = kit && kit.cool != null ? kit.cool : 2; return ctx.stepIndex - s.at >= Math.min(n || 2, c); }
-  function why(ctx, a, b, s) { return a.name + 'の' + b.name + 'への執着（' + Math.round(s.lv) + '・' + O.TYPE_NAME[O.type(a)] + '型）'; }
+  function why(ctx, a, b, s) { var sb = O.subOf(ctx, a, b), g = sb && HK.Gap ? HK.Gap.why(ctx, a, b) : ''; return a.name + 'の' + b.name + 'への執着（' + Math.round(s.lv) + '・' + O.TYPE_NAME[O.type(a, ctx, b)] + '型' + (g ? '・' + g : '') + '）'; }
 
   /* 嫉妬が積もる（関係を設定していなくても）：好きな相手が恋敵と親しいと、区切りごとに少しずつ。O.install が箱庭の after に足す */
   O.tick = function (ctx) {
@@ -251,12 +272,14 @@
     opt = opt || {};
     var b = O.target(ctx, a);
     if (!b) return null;
-    var s = st(ctx, a, b), stg = O.stage(s.lv), ty = O.type(a), c = O.rival(ctx, a, b);
+    var s = st(ctx, a, b), stg = O.stage(s.lv), ty = O.type(a, ctx, b), c = O.rival(ctx, a, b);
     if (!cool(ctx, s)) return null;
     s.at = ctx.stepIndex;
     if (!s.seen) return seed(ctx, a, b, s);
     if (s.cage) return O.cageTick(ctx, a, b, s, opt);
-    if ((stg >= 3 || (stg >= 2 && s.lv >= 70 && HK.Dark.on(ctx) === 'dark')) && !s.climax) { var cl = O.climax(ctx, a, b, s, ty, c, opt); if (cl) return cl; }
+    /* 型を選んだ執着は、想いの差（HK.Gap）が大きいと束縛の段階のうちから暴走しうる */
+    var gp = HK.Gap && O.subOf(ctx, a, b) ? HK.Gap.of(ctx, a, b) : 0;
+    if ((stg >= 3 || (stg >= 2 && s.lv >= 70 && (HK.Dark.on(ctx) === 'dark' || gp >= 0.6))) && !s.climax) { var cl = O.climax(ctx, a, b, s, ty, c, opt); if (cl) return cl; }
     var key = stg >= 2 ? ty + '2' : ty;
     if (key === 'purge2' && !c) key = 'bind2';
     var txt = T(ctx, key, !c);
@@ -266,8 +289,9 @@
     ctx.mod(b, a, dB);
     if (key === 'purge2' && c) { ctx.mod(c, a, { ten: 14, aff: -10 }); ctx.mod(a, c, { ten: 10 }); ctx.stress(c, 8); }
     if (ty === 'depend' && stg >= 2) { ctx.stress(a, 10); ctx.stress(b, 8); }
+    if (ty === 'hatelove') { ctx.mod(b, a, { ten: 4, aff: -2 }); ctx.stress(b, stg >= 2 ? 8 : 4); }
     O.add(ctx, a, b, 3 + a.tr.jealous * 2);
-    return { with: c && /\{c\}/.test(txt) ? [b, c] : [b], cat: stg >= 2 ? 'conflict' : 'romance', text: F(ctx, txt, a, b, c), why: why(ctx, a, b, s), mag: 10 + stg * 8 };
+    return { with: c && /\{c\}/.test(txt) ? [b, c] : [b], cat: stg >= 2 || ty === 'hatelove' ? 'conflict' : 'romance', text: F(ctx, txt, a, b, c), why: why(ctx, a, b, s), mag: 10 + stg * 8 };
   };
 
   /* 執着される側の反応 */
@@ -276,7 +300,7 @@
     if (!a) return null;
     var s = st(ctx, a, b);
     if (s.cage || !cool(ctx, s, 1)) return null;
-    var stn = O.stance(ctx, b, a), ty = O.type(a), key, d;
+    var stn = O.stance(ctx, b, a), ty = O.type(a, ctx, b), key, d;
     /* 落ち着かせる（NP・Aが高い人は、拒むより先に向き合う） */
     if ((stn === 'accept' || stn === 'unaware') && b.tr.np + b.tr.a * 0.5 > 1.0 && ctx.rng() < 0.5) { key = 'r_calm'; d = -12; ctx.mod2(a, b, { trust: 8 }, { trust: 4 }); }
     else if (stn === 'mutual') { key = 'r_mutual'; d = 6; ctx.mod2(a, b, { att: 6, aff: 4 }, { att: 6, aff: 4 }); }
@@ -294,10 +318,12 @@
   O.climax = function (ctx, a, b, s, ty, c, opt) {
     var safe = SAFE(), stn = O.stance(ctx, b, a), opts = [];
     if (HK.Dark.skip(ctx, 'cage')) return null;   /* 展開の重さ：穏やかでは、暴走をまれに見送る */
-    if (opt.cage !== false) opts.push(['cage', (ty === 'bind' ? 3 : ty === 'devote' ? 2 : 1.4) * HK.Dark.f(ctx, 'cage')]);
-    if (opt.harm !== false && c) opts.push(['harm', (ty === 'purge' ? 3.5 : ty === 'bind' ? 1.4 : 0.6) * HK.Dark.f(ctx, 'harm') * HK.Dark.pick(ctx, 0.6, 1, 1.6)]);
+    /* 型を選んだ執着：想いの差が大きいほど、監禁・恋敵への危害に傾く（HK.Gap.k。おまかせの型では 1） */
+    var gk = HK.Gap && O.subOf(ctx, a, b) ? HK.Gap.k(ctx, a, b) : 1;
+    if (opt.cage !== false) opts.push(['cage', (ty === 'bind' ? 3 : ty === 'devote' || ty === 'hatelove' ? 2 : 1.4) * HK.Dark.f(ctx, 'cage') * gk]);
+    if (opt.harm !== false && c) opts.push(['harm', (ty === 'purge' ? 3.5 : ty === 'hatelove' ? 1.8 : ty === 'bind' ? 1.4 : 0.6) * HK.Dark.f(ctx, 'harm') * HK.Dark.pick(ctx, 0.6, 1, 1.6) * gk]);
     /* 心中の起こりやすさは箱庭ごとに opt.shinjuW で下げられる（出られない部屋は 0.35） */
-    if (opt.shinju !== false) opts.push(['shinju', (ty === 'depend' ? 3 : stn === 'mutual' ? 2.2 : 0.7) * (opt.shinjuW == null ? 1 : opt.shinjuW) * HK.Dark.f(ctx, 'shinju') * HK.Dark.pick(ctx, 0.6, 1, 1.6)]);
+    if (opt.shinju !== false) opts.push(['shinju', (ty === 'depend' ? 3 : stn === 'mutual' ? 2.2 : ty === 'hatelove' ? 1.5 : 0.7) * (opt.shinjuW == null ? 1 : opt.shinjuW) * HK.Dark.f(ctx, 'shinju') * HK.Dark.pick(ctx, 0.6, 1, 1.6)]);
     /* 箱庭ごとの暴走（opt.more → [[id, 重み, run(ctx, a, b, s, ty, c)], ...]） */
     var more = opt.more ? opt.more(ctx, a, b, s, ty, c, safe) || [] : [];
     more.forEach(function (m) { if (m[1] > 0) opts.push(m); });
@@ -315,7 +341,7 @@
       return { with: [b], cat: 'conflict', text: F(ctx, T(ctx, safe ? 'cage_s' : 'cage'), a, b), why: why(ctx, a, b, s) + '。執着が暴走した', mag: 45 };
     }
     if (pick === 'harm') {
-      var lethal = !safe && opt.lethal !== false && ty === 'purge' && s.lv >= 90 && ctx.rng() < 0.35 * HK.Dark.f(ctx, 'kill');
+      var lethal = !safe && opt.lethal !== false && (ty === 'purge' || (ty === 'hatelove' && gk > 1.6)) && s.lv >= 90 && ctx.rng() < 0.35 * HK.Dark.f(ctx, 'kill') * gk;
       /* 恋敵に向いたあとも、執着そのものは続く（次の暴走もありうる） */
       s.climax = null; s.lv = clamp(s.lv - 10, 0, 100);
       ctx.mod(c, a, { ten: 35, aff: -30, trust: -30 }); ctx.mod(b, a, { ten: 12, trust: -10 });
