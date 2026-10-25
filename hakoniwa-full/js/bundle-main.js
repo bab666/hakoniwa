@@ -346,6 +346,96 @@
     set: function (k, v) { try { window.localStorage.setItem('hakoniwa:' + k, JSON.stringify(v)); return true; } catch (e) { return false; /* 保存できない環境・容量超過 */ } }
   };
 })();
+;/* ==== js/ego-desc.js ==== */
+/* 箱庭シミュレーター: エゴグラムの傾向の説明（住人の ⚙️ 設定の「この住人の傾向」と、住人一覧の態度の一語）
+   (a) 高い因子・低い因子の一言 (b) 態度（9種）と一行の説明 (c) 箱庭での出やすい動き の目安を、表から組み立てる。
+   画面の表示だけに使い、行動の判断には使わない（行動はエンジンがエゴグラムの数値から決める）。両ビルド同一 */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  var HI = 14, LO = 6;   /* HK.lvl と同じ境目：14以上が高い、6以下が低い */
+  var D = HK.EGO_DESC = {
+    /* 高い因子の一言 */
+    HIGH: {
+      CP: '規律を重んじ、主導権を握りたがる', NP: '面倒見がよく、情に厚い', A: '理性的で分析的',
+      FC: '感情に正直で、好奇心が強い', AC: '協調的で、周りに合わせて我慢しがち'
+    },
+    /* 低い因子の一言 */
+    LOW: {
+      CP: 'ルールや上下関係にこだわらない', NP: '他人の世話には関心が薄く、共感は苦手', A: '理屈より勢いで動く',
+      FC: '感情に流されにくく、はしゃいだり思いつきで動いたりするのは苦手', AC: '周りに合わせず、我を通す'
+    },
+    /* 高い因子が二つそろったときの型（強い順に並べた二つの組。順は問わない） */
+    PAIR: {
+      'CP+NP': '頼れる兄貴・姉貴分', 'CP+A': '冷徹な指揮官', 'CP+FC': '我の強いリーダー', 'CP+AC': '規則に忠実な優等生',
+      'NP+A': '落ち着いた世話役', 'NP+FC': '明るい人気者', 'NP+AC': '尽くす献身家',
+      'A+FC': '好奇心旺盛な発明家', 'A+AC': '慎重な参謀', 'FC+AC': '気分屋の甘えん坊'
+    },
+    /* 態度（文面の表の種類）。HK.PERSONA と同じ鍵 */
+    ATT: {
+      proud: { label: '強気', line: 'プライドが高く、押されると言い返して張り合う' },
+      stern: { label: '厳格', line: '自分を律して筋を通す。乱れた場でも崩れまいと耐える' },
+      tsun: { label: '意地っ張り', line: '本心を素直に認めず、つい強がってしまう' },
+      gentle: { label: '穏やか', line: 'おっとりと受け流し、困った人を放っておけない' },
+      devoted: { label: '健気', line: '我慢強く、相手のために尽くして頑張る' },
+      cool: { label: '冷静', line: '一歩引いて観察し、理屈で判断する' },
+      free: { label: '奔放', line: '素直に驚き、楽しいことには迷わず飛び込む' },
+      shy: { label: '恥じらい', line: '内気で、すぐ赤くなって謝ってしまう' },
+      polite: { label: '丁寧', line: '誰にでも丁寧語で話す、礼儀正しい人' }
+    },
+    /* 箱庭での動き（行動の重心の目安） */
+    MOVE: [
+      { id: 'help', label: '助ける', top: '仲間の手当てや手伝いに回りやすい', f: function (t) { return t.np * 0.6 + t.ac * 0.25 + t.warmth * 0.15; } },
+      { id: 'conflict', label: '争う', top: '言い争いや衝突の中心になりやすい', f: function (t) { return t.aggr * 0.7 + t.lead * 0.3; } },
+      { id: 'romance', label: '恋愛', top: '恋や親しい交流が生まれやすい', f: function (t) { return t.fc * 0.45 + t.warmth * 0.35 + t.impulse * 0.2; } },
+      { id: 'solo', label: '一人で動く', top: '一人で探索や調べものに出やすい', f: function (t) { return t.cold * 0.45 + t.a * 0.35 + (1 - t.warmth) * 0.2; } }
+    ],
+    BALANCE: 'バランス型。目立って高い因子も低い因子もなく、場面や相手に合わせて振る舞いが変わる',
+    FLAT: 'どの動きにも大きくは偏らない'
+  };
+  function egOf(c) {
+    var src = (c && c.eg) || {}, eg = {};
+    HK.FACTORS.forEach(function (k) { var v = +src[k]; eg[k] = src[k] == null || isNaN(v) ? 10 : HK.clamp(v, 0, 20); });
+    return eg;
+  }
+  function attKey(c) {
+    var k = HK.personaOf ? HK.personaOf({ tone: c && c.tone, eg: egOf(c) }) : 'gentle';
+    return D.ATT[k] ? k : 'gentle';
+  }
+  /* 住人一覧に出す態度の一語 */
+  HK.egoAttWord = function (c) { return D.ATT[attKey(c)].label; };
+  /* 説明の行（文字列の配列。3〜5行） */
+  HK.egoDesc = function (c) {
+    var eg = egOf(c), tr = HK.traits(eg), out = [];
+    var by = HK.FACTORS.slice().sort(function (x, y) { return eg[y] - eg[x]; });
+    var hi = by.filter(function (k) { return eg[k] >= HI; }).slice(0, 3);
+    var lo = by.slice().reverse().filter(function (k) { return eg[k] <= LO; }).slice(0, 3);
+    /* (a) 高い因子・低い因子 */
+    var tops = by.filter(function (k) { return eg[k] === eg[by[0]]; }), even = eg[by[0]] - eg[by[4]] < 1;
+    if (!hi.length && !lo.length) out.push(D.BALANCE + (even ? '（5つの因子がほぼ同じ高さ）' : '（いちばん強いのは ' + tops.join('・') + '）'));
+    else {
+      if (hi.length) {
+        var pk = hi.length >= 2 ? (D.PAIR[hi[0] + '+' + hi[1]] || D.PAIR[hi[1] + '+' + hi[0]]) : '';
+        out.push(hi.map(function (k) { return D.HIGH[k]; }).join('。') + (pk ? '。' + pk + 'タイプ' : '') + '（' + hi.join('・') + ' が高い）');
+      } else out.push('飛び抜けて高い因子はなく、強いて言えば「' + tops.map(function (k) { return HK.FACTOR_NAME[k]; }).join('」「') + '」寄り（' + tops.join('・') + ' がいちばん強い）');
+      if (lo.length) out.push(lo.map(function (k) { return D.LOW[k]; }).join('。') + '（' + lo.join('・') + ' が低い）');
+    }
+    /* (b) 態度 */
+    var ak = attKey(c), A0 = D.ATT[ak], auto = HK.personaAuto ? HK.personaAuto(tr) : ak;
+    out.push('態度：' + A0.label + '――' + A0.line + (c && c.tone && auto !== ak && D.ATT[auto] ? '（口調の設定から。エゴグラムだけなら「' + D.ATT[auto].label + '」）' : ''));
+    /* (c) 箱庭での動き */
+    var mv = D.MOVE.map(function (m) { return { m: m, v: m.f(tr) }; });
+    var top = mv.slice().sort(function (x, y) { return y.v - x.v; })[0];
+    var vs = mv.map(function (x) { return x.v; }), flat = Math.max.apply(null, vs) - Math.min.apply(null, vs) < 0.12;
+    out.push('箱庭での動きの目安：' + mv.map(function (x) { return x.m.label + (x.v >= 0.62 ? '◎' : x.v >= 0.42 ? '○' : '△'); }).join('・') + '。' + (flat ? D.FLAT : top.m.top));
+    /* (d) 目立つ気質（極端なものだけ） */
+    var tk = Object.keys(HK.TRAIT_NAME || {}), mk = [];
+    tk.forEach(function (k) { if (tr[k] >= 0.75) mk.push({ k: k, d: tr[k] - 0.5, t: HK.TRAIT_NAME[k] + 'が強め' }); else if (tr[k] <= 0.2) mk.push({ k: k, d: 0.5 - tr[k], t: HK.TRAIT_NAME[k] + 'が弱め' }); });
+    mk.sort(function (x, y) { return y.d - x.d; });
+    if (mk.length) out.push('目立つ気質：' + mk.slice(0, 3).map(function (x) { return x.t; }).join('、'));
+    return out;
+  };
+})();
 ;/* ==== js/ties.js ==== */
 /* 箱庭診断: 住人どうしの既存の関係（初期値と振る舞いの補正） */
 (function () {
@@ -535,7 +625,7 @@
     ['運命の番', 'fated'], ['運命', 'fated'], ['番', 'mate'], ['セフレ', 'fwb'], ['本命', 'honmei'], ['恋人', 'lover'], ['夫婦', 'spouse'], ['配偶者', 'spouse'], ['旦那', 'spouse'], ['奥さん', 'spouse'], ['彼氏', 'lover'], ['彼女', 'lover'], ['付き合って', 'lover'],
     ['先輩後輩', 'senpai'], ['先輩', 'senpai'], ['後輩', 'senpai'], ['センパイ', 'senpai'],
     ['バディ', 'buddy'], ['相棒', 'buddy'], ['コンビ', 'buddy'], ['相方', 'buddy'],
-    ['同僚', 'colleague'], ['同期', 'colleague'], ['仕事仲間', 'colleague'], ['職場', 'colleague'], ['バイト仲間', 'colleague'],
+    ['同僚', 'colleague'], ['同期', 'colleague'], ['チームメイト', 'colleague'], ['チーム仲間', 'colleague'], ['チーム', 'colleague'], ['仕事仲間', 'colleague'], ['職場', 'colleague'], ['バイト仲間', 'colleague'],
     ['主従', 'master'], ['主人', 'master'], ['従者', 'master'], ['主', 'master'],
     ['の子', 'parent'], ['子ども', 'parent'], ['息子', 'parent'], ['娘', 'parent'], ['の親', 'parent'], ['父', 'parent'], ['母', 'parent'],
     ['兄', 'sibling'], ['弟', 'sibling'], ['姉', 'sibling'], ['妹', 'sibling'], ['友', 'friend']
@@ -544,10 +634,17 @@
   HK.parseTies = function (text, chars) {
     var out = [], warn = [];
     var names = chars.map(function (c) { return { n: c.name, id: c.id }; }).sort(function (a, b) { return b.n.length - a.n.length; });
+    /* グループ名（住人の group。カンマ区切りで複数）。「3年A組 同級生」のように書くと、そのグループの全員の組に付ける。
+       住人の名前・関係の言葉と同じグループ名は使わない（名前・関係として読む） */
+    var gmap = {};
+    chars.forEach(function (c) { String(c.group || '').split(/[,，、]/).forEach(function (g) { g = g.trim(); if (g && (gmap[g] = gmap[g] || []).indexOf(c.id) < 0) gmap[g].push(c.id); }); });
+    var gnames = Object.keys(gmap).filter(function (g) { return !names.some(function (x) { return x.n === g; }) && !ALIAS.some(function (w) { return w[0] === g; }); }).sort(function (a, b) { return b.length - a.length; });
+    var mask = function (s, p, n) { return s.slice(0, p) + Array(n + 1).join('\u0000') + s.slice(p + n); };
     String(text || '').split(/\r?\n/).forEach(function (raw, i) {
       var line = raw.replace(/^\s*(?:[-*・●○]|\d+[.)])\s*/, '').trim();
       if (!line) return;
-      var found = [], used = line;
+      var found = [], used = line, gfound = [];
+      gnames.forEach(function (g) { var p = used.indexOf(g); if (p >= 0) { gfound.push({ g: g, pos: p }); used = mask(used, p, g.length); } });
       names.forEach(function (x) {
         var p = used.indexOf(x.n);
         if (p >= 0 && found.every(function (f) { return f.id !== x.id; })) {
@@ -555,6 +652,8 @@
           used = used.slice(0, p) + Array(x.n.length + 1).join('\u0000') + used.slice(p + x.n.length);
         }
       });
+      /* グループの人は、グループ名を書いた位置に並べる（名前でも書いた人は、名前の位置のまま） */
+      gfound.forEach(function (g) { gmap[g.g].forEach(function (id, j) { if (found.every(function (f) { return f.id !== id; })) found.push({ id: id, pos: g.pos + j / 1000, grp: g.g }); }); });
       found.sort(function (a, b) { return a.pos - b.pos; });
       /* 「セフレで片想い」のように、一行に複数の関係を書いてもよい */
       var cold = '', back = '', obc = '';
@@ -574,16 +673,32 @@
       /* 「兄弟で不仲」のように二つ書いたら、きょうだい（不仲）にまとめる */
       if (types.indexOf('bad') >= 0 && types.indexOf('sibling') >= 0) types = types.filter(function (x) { return x !== 'bad'; }).map(function (x) { return x === 'sibling' ? 'sibbad' : x; });
       var type = types[0] || null;
-      if (found.length < 2 || !type) { warn.push((i + 1) + '行目「' + raw.trim().slice(0, 24) + '」は' + (found.length < 2 ? '登録済みの名前が二つ見つかりませんでした' : '関係の種類が分かりませんでした')); return; }
+      /* 空白で区切った語のうち、名前・グループ・関係のどれにも当たらなかったもの（知らない名前・書き間違いなど） */
+      var unk = [], uw = used.split(/[\s\u3000,，、・\/]+/), ow = line.split(/[\s\u3000,，、・\/]+/);
+      if (uw.length === ow.length) uw.forEach(function (w, j) { var r = w.replace(/[→←⇔↔\-－ー―~〜×&＆+＋:：（）()「」。！!？?とはのがでをにもや]/g, ''); if (r && w.indexOf('\u0000') < 0 && ow[j].length === w.length) unk.push(ow[j]); });
+      var unkTxt = unk.length ? '「' + unk.slice(0, 3).join('」「') + '」' + (unk.length > 3 ? 'など' : '') : '';
+      if (found.length < 2 || !type) {
+        warn.push((i + 1) + '行目「' + raw.trim().slice(0, 24) + '」は' + (found.length < 2 ? (gfound.length ? 'グループ「' + gfound[0].g + '」の住人が二人そろいませんでした' : '登録済みの名前が二つ見つかりませんでした') + (unkTxt ? '（' + unkTxt + 'は登録済みの名前・グループにありません）' : '') : '関係の種類が分かりませんでした' + (unkTxt ? '（' + unkTxt + 'を関係の名前として読めませんでした）' : '')));
+        return;
+      }
+      if (unkTxt) warn.push((i + 1) + '行目の' + unkTxt + 'は登録済みの名前・グループにないので、ほかの人どうしにだけ付けました');
+      /* 3人以上（グループを含む）：向きのない関係は全員の組、向きのある関係（上司と部下・師弟・片想いなど）は「最初の人→残りの全員」 */
+      var ids = found.map(function (f) { return f.id; });
       types.forEach(function (ty) {
-        var a = found[0].id, b = found[1].id;
-        /* 「BはAの親」「子」などの言い回しで向きを反転 */
-        if (T[ty].dir && /の(子|子ども|息子|娘|従者|部下|後輩|生徒|弟子|弟|妹)|←/.test(line)) { var t = a; a = b; b = t; }
-        var nt = { a: a, b: b, type: ty };
-        if (ty === 'crush' && cold) nt.cold = cold;
-        if ((ty === 'bad' || ty === 'enemy') && back) nt.cold = back;
-        if (ty === 'yan' && obc) nt.cold = obc;
-        out.push(nt);
+        if (T[ty].dir && found[0].grp) { warn.push((i + 1) + '行目の「' + T[ty].label + '」は向きのある関係なので、最初に' + T[ty].roleA + 'の名前を書いてください（例：「名前 ' + found[0].grp + ' ' + T[ty].label + '」）'); return; }
+        var prs = [];
+        if (T[ty].dir) for (var j = 1; j < ids.length; j++) prs.push([ids[0], ids[j]]);
+        else for (var p = 0; p < ids.length; p++) for (var q = p + 1; q < ids.length; q++) prs.push([ids[p], ids[q]]);
+        prs.forEach(function (pr) {
+          var a = pr[0], b = pr[1];
+          /* 「BはAの親」「子」などの言い回しで向きを反転 */
+          if (T[ty].dir && /の(子|子ども|息子|娘|従者|部下|後輩|生徒|弟子|弟|妹)|←/.test(line)) { var t = a; a = b; b = t; }
+          var nt = { a: a, b: b, type: ty };
+          if (ty === 'crush' && cold) nt.cold = cold;
+          if ((ty === 'bad' || ty === 'enemy') && back) nt.cold = back;
+          if (ty === 'yan' && obc) nt.cold = obc;
+          out.push(nt);
+        });
       });
     });
     return { ties: out, warnings: warn };
@@ -69815,6 +69930,10 @@
         { h: 'まとめて読み込む', items: [
           '1行に「名前 名前 関係」。例：`朝霧→鷹野 片想い（脈なし）`、`鷹野-白石 親友`、`白石とミナトは恋人`',
           '「セフレで片想い」のように関係を重ねても、関係を1つずつ追加してもかまいません。',
+          '**複数人にまとめて** … 1行に3人以上の名前を書くと、全員の組に同じ関係を付けます。例：`朝霧 鷹野 白石 ミナト 同僚`（6組）、`朝霧 鷹野 白石 チーム`（チーム・チームメイトは同僚として付けます）。',
+          '**向きのある関係**（上司と部下・先輩後輩・師弟・教師と生徒・片想いなど）は、最初に書いた人→残りの全員です。例：`朝霧 鷹野 白石 上司と部下` は、朝霧が上司で、鷹野と白石が部下（2組）。',
+          '**グループ名** … 住人につけたグループ名を書くと、そのグループの全員の組に付けます。例：`3年A組 同級生`、`営業部 同僚`。`朝霧 営業部 上司と部下` のように名前と混ぜると、朝霧→営業部の全員になります（グループ名だけでは、向きのある関係は付けられません）。',
+          '同じ二人に同じ関係がすでにあれば、新しく読み込んだほうで置き換えます（増えません）。登録されていない名前や、読めなかった関係は、下に注意として出ます。',
           '向きのある関係（片想い・親子・主従）は、先に書いた方が想う側・親・主です。',
           '片想いに「脈なし」「友達としか」「苦手」「他に好きな人」と添えると、想われる側の気持ちも決まります。「両片想い」と書くと、お互いに想っているのに相手は何とも思っていないと思い込んでいる二人になります。',
           '執着は `朝霧→鷹野 執着（怖がって）` のように書けます。「受け入れ」「嫌って」「共依存」も使えます。重ねるときは `鷹野→白石 片想いで執着なし`。'
@@ -69972,6 +70091,7 @@
       sections: [
         { h: 'ポイント', items: [
           '「関係を重ねる」で、同じ相手に複数の関係をつけられます。',
+          'グループ（住人の行のメモの左の欄）を付けた住人には「グループの全員と」が出ます。印を付けて「関係を追加」を押すと、同じグループの全員に選んだ関係を付けます（すでに同じ関係がある相手は飛ばします。向きのある関係は、この住人が左です）。',
           '呼び方の欄に書いた呼び名は、台詞の中で相手の名前の代わりに使われます。',
           '二人称・一人称の欄は、その相手に話しかける台詞だけで使われます（例：ふだんは「あなた」「私」でも、幼なじみには「お前」「俺」）。候補から選ぶか、自由に書けます。空なら「話し方」の二人称・一人称のままです。',
           '誰に話しかけているか分からない台詞や、ほかの人に向けた台詞では、いつもの二人称・一人称のままです。呼び方も決めた相手には、二人称の代わりに呼び方を使います。',
@@ -70317,7 +70437,7 @@
       '<span class="avset">' + '<button type="button" class="avbtn" data-act="iconpick" aria-label="' + esc(c.name) + 'のアイコンを' + (c.icon ? '変える' : '設定する') + '" title="アイコンを' + (c.icon ? '変える' : '設定する') + '">' + HK.Icons.html(c.name, i, 44) + (c.icon ? '' : '<i class="avplus" aria-hidden="true">＋</i>') + '</button>' +
       (c.icon ? '<button type="button" class="avdel" data-act="icondel" aria-label="' + esc(c.name) + 'のアイコンを外す" title="アイコンを外す">×</button>' : '') + '</span>' +
       '<div class="who"><input type="text" id="nm-' + c.id + '" data-f="name" value="' + esc(c.name) + '" aria-label="名前" maxlength="24">' +
-      '<div class="codeline"><input type="text" class="code" id="cd-' + c.id + '" data-f="code" value="' + HK.toCode(c.eg) + '" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="5文字コード（CP NP A FC AC）"><span class="ty">' + esc(HK.egoType(c.eg).label) + '</span></div></div>' +
+      '<div class="codeline"><input type="text" class="code" id="cd-' + c.id + '" data-f="code" value="' + HK.toCode(c.eg) + '" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="5文字コード（CP NP A FC AC）"><span class="ty">' + esc(HK.egoType(c.eg).label) + '</span>' + (HK.egoAttWord ? '<span class="egatt" title="態度（台詞の表の種類）。⚙️ 設定の「この住人の傾向」に説明があります">' + esc(HK.egoAttWord(c)) + '</span>' : '') + '</div></div>' +
       '<div class="ego">' + HK.FACTORS.map(function (k) {
         return '<label title="' + esc(HK.FACTOR_FULL[k]) + '">' + k + '<input type="number" id="eg-' + c.id + '-' + k + '" inputmode="decimal" min="0" max="20" step="1" data-f="eg" data-k="' + k + '" value="' + c.eg[k] + '"></label>';
       }).join('') + '</div>' +
@@ -70386,8 +70506,8 @@
       '<p class="hint">箱庭に入る前からある関係です。初期の好意や信頼が変わり、行動の傾向にも補正がかかります。各住人の ⚙️ 設定からも編集できます。</p>' +
       '<div class="tiebox"><div class="ties">' + (rows || '<p class="hint" style="margin:0">まだ関係は登録されていません。</p>') + '</div>' +
       '<div class="row" style="margin-top:8px"><button class="btn" data-act="tieadd"' + (S.chars.length < 2 ? ' disabled' : '') + '>関係を1つ追加</button></div>' +
-      '<div style="margin-top:12px"><textarea id="tiebulk" rows="3" placeholder="朝霧→鷹野 片想い（脈なし）\n鷹野-白石 親友\n白石とミナトは恋人"></textarea>' +
-      '<div class="row" style="margin-top:6px"><button class="btn" data-act="tieimport">まとめて読み込む</button><span class="fmt">1行に「名前 名前 関係」。書き方は見出しの ？ にあります。</span></div>' +
+      '<div style="margin-top:12px"><textarea id="tiebulk" rows="3" placeholder="朝霧→鷹野 片想い（脈なし）\n鷹野-白石 親友\n白石とミナトは恋人\n朝霧 鷹野 白石 同僚\n3年A組 同級生"></textarea>' +
+      '<div class="row" style="margin-top:6px"><button class="btn" data-act="tieimport">まとめて読み込む</button><span class="fmt">1行に「名前 名前 関係」。3人以上の名前（「名前 名前 名前 チーム」）や、グループ名（「3年A組 同級生」）を書くと、全員の組にまとめて付けます（上司と部下などの向きのある関係は、最初の人→残りの全員）。書き方は見出しの ？ にあります。</span></div>' +
       '<ul class="warn" id="tiewarns" hidden></ul></div></div>';
   }
 
@@ -71047,6 +71167,7 @@
     var i = S.chars.indexOf(c);
     row.querySelector('.gwrap').innerHTML = egoGraph(c.eg, i);
     row.querySelector('.ty').textContent = HK.egoType(c.eg).label;
+    var ea = row.querySelector('.egatt'); if (ea && HK.egoAttWord) ea.textContent = HK.egoAttWord(c);
     var tn = row.querySelector('select[data-f="tone"] option[value=""]');
     if (tn) tn.textContent = '口調：おまかせ（' + autoTone(c) + '）';
     if (fromCode) {
@@ -71280,6 +71401,9 @@
   function lab(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === (v || '')) return list[i][1]; return ''; }
   function toneLabel(k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return t ? t.label : ''; }
   function callLabel(v) { var l = (HK.CALL_STYLES || []).filter(function (o) { return o.v === (v || ''); })[0]; return l ? l.label : ''; }
+  /* 住人のグループ（カンマ区切りで複数）と、同じグループの住人（関係を「グループの全員と」付けるとき） */
+  function grpsOf(c) { var g = []; String((c && c.group) || '').split(/[,，、]/).forEach(function (x) { x = x.trim(); if (x && g.indexOf(x) < 0) g.push(x); }); return g; }
+  function groupMates(c) { var g = grpsOf(c); return g.length ? S().chars.filter(function (o) { return o !== c && grpsOf(o).some(function (x) { return g.indexOf(x) >= 0; }); }) : []; }
   function tiesOf(c) { UI.cleanTies(); return (S().ties || []).filter(function (t) { return t.a === c.id || t.b === c.id; }); }
 
   /* ---------- 住人の行に出す要約 ---------- */
@@ -71341,10 +71465,13 @@
     '.gtie .one{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.gtie input[type=text]{width:12em}' +
     'details.gkeigo{margin:8px 0 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px}details.gkeigo summary{cursor:pointer;font-size:13px;color:var(--muted)}details.gkeigo .gkn{font-size:12px;margin-left:4px;color:var(--ink)}details.gkeigo[open] summary{margin-bottom:4px}' +
     '@media (max-width:520px){.gearbox{padding:12px}.gtie input[type=text]{width:100%}}';
+  /* この住人の傾向（エゴグラムの説明）と、住人一覧の態度の一語 */
+  css += 'details.gego{margin:10px 0 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:color-mix(in srgb,var(--accent) 5%,transparent)}details.gego summary{cursor:pointer;font-size:14px;font-weight:600}details.gego .gegc{font-size:12px;font-weight:400;color:var(--muted);margin-left:6px}details.gego ul{margin:6px 0 2px;padding-left:1.2em;font-size:13px;line-height:1.7}details.gego li{margin:2px 0}' +
+    '.egatt{display:inline-block;font-size:11px;line-height:1.5;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 6px;margin-left:6px;white-space:nowrap;vertical-align:1px}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   /* ---------- 設定の窓 ---------- */
-  var cur = null, ov = null, opener = null, keigoOpen = false;
+  var cur = null, ov = null, opener = null, keigoOpen = false, egoOpen = true;
   function opt(v, label, sel, title) { return '<option value="' + esc(v) + '"' + (v === sel ? ' selected' : '') + (title ? ' title="' + esc(title) + '"' : '') + '>' + esc(label) + '</option>'; }
   function selOf(f, list, v, extra) { return '<select data-gf="' + f + '"' + (extra || '') + '>' + list.map(function (o) { return opt(o[0], o[1], v || ''); }).join('') + '</select>'; }
   function typeOpts(sel) {
@@ -71429,9 +71556,10 @@
         '<button type="button" class="btn ghost small" data-gact="tadd" data-o="' + o.id + '">関係を重ねる</button></div></div>';
     }).join('');
     var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手">' + others.map(function (o) { return opt(o.id, o.name, ''); }).join('') + '</select></label>' +
-      '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + '</select></label><button type="button" class="btn small" data-gact="tnew">関係を追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
+      '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + '</select></label>' + (function () { var gm = groupMates(c); return gm.length ? '<label title="' + esc('同じグループ（' + grpsOf(c).join('・') + '）の全員に、選んだ関係を付けます：' + gm.map(function (o) { return o.name; }).join('・') + '。向きのある関係は、' + c.name + 'が左（上司・先輩・師匠など）になります') + '"><input type="checkbox" data-gf="newgrp"> グループの全員と（' + gm.length + '人）</label>' : ''; })() + '<button type="button" class="btn small" data-gact="tnew">関係を追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
       '<p class="gearhint">行動はエゴグラムだけで決まります。ここで決めるのは台詞の見た目と関係の初期値です。見出しの ？ に詳しい説明があります。</p>' +
+      (HK.egoDesc ? '<details class="gego"' + (egoOpen ? ' open' : '') + '><summary>この住人の傾向<span class="gegc">' + esc(HK.toCode(c.eg)) + '・' + esc(HK.egoAttWord(c)) + '</span></summary><ul id="egodesc">' + HK.egoDesc(c).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul><p class="gearhint">エゴグラムの5文字コード（住人の行で変えられます）から読んだ目安です。態度は台詞の表の種類で、口調を決めるとその口調に合わせます。</p></details>' : '') +
       '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3><div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
       '<div class="gearrow"><label>語尾の記号 <input type="text" data-gf="marks" value="' + esc(c.marks || '') + '" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label></div>' +
       '<p class="gearhint">文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます。空なら付けません。</p>' +
@@ -71468,7 +71596,7 @@
     sampleTick();
   }
   function open(id, from) {
-    if (cur !== id) keigoOpen = false;
+    if (cur !== id) { keigoOpen = false; egoOpen = true; }
     cur = id; opener = from || null;
     if (!ov) {
       ov = document.createElement('div');
@@ -71476,6 +71604,7 @@
       ov.innerHTML = '<div class="gearbox" role="dialog" aria-modal="true" aria-labelledby="geartitle"></div>';
       document.body.appendChild(ov);
       ov.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('gkeigo')) keigoOpen = e.target.open; }, true);
+      ov.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('gego')) egoOpen = e.target.open; }, true);
     }
     ov.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -71508,8 +71637,18 @@
     else if (act === 'tadd' || act === 'tnew') {
       var oid = act === 'tadd' ? b.dataset.o : (ov.querySelector('[data-gf="newo"]') || {}).value;
       var ty = act === 'tadd' ? 'friend' : (ov.querySelector('[data-gf="newt"]') || {}).value || 'friend';
+      var dupOf = function (x, o2) { return s.ties.some(function (t) { return t.type === x && ((t.a === c.id && t.b === o2) || (t.a === o2 && t.b === c.id)); }); };
+      /* 「グループの全員と」：同じグループの全員に、選んだ関係を付ける（すでに同じ関係がある相手は飛ばす） */
+      var allG = act === 'tnew' && (ov.querySelector('[data-gf="newgrp"]') || {}).checked;
+      if (allG) {
+        var gm = groupMates(c), nadd = 0;
+        gm.forEach(function (o) { if (!dupOf(ty, o.id)) { s.ties.push({ a: c.id, b: o.id, type: ty }); nadd++; } });
+        UI.toast(nadd ? 'グループの' + nadd + '人に「' + HK.TIES[ty].label + '」を付けました' + (gm.length > nadd ? '（' + (gm.length - nadd) + '人はすでに付いていました）' : '') : 'グループの全員に、すでに「' + HK.TIES[ty].label + '」が付いています');
+        if (nadd) changed(true);
+        return;
+      }
       if (!oid || !byId(oid)) return;
-      var dup = function (x) { return s.ties.some(function (t) { return t.type === x && ((t.a === c.id && t.b === oid) || (t.a === oid && t.b === c.id)); }); };
+      var dup = function (x) { return dupOf(x, oid); };
       if (dup(ty)) {
         /* 同じ関係がすでにある：まだ付いていない関係に替えて足す（行の種類はあとから変えられる） */
         var alt = HK.TIE_ORDER.filter(function (x) { return HK.TIES[x] && !dup(x); })[0];
