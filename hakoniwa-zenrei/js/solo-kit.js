@@ -39,10 +39,16 @@
     return S;
   };
 
+  /* この回でまだ使っていない文から選ぶ。使い切ったら、いちばん前に使った文から戻す */
   K.pick = function (S, arr) {
-    var r = S.recent, t = arr[S.rng.int(arr.length)];
-    for (var i = 0; i < 6 && r.indexOf(t) >= 0; i++) t = arr[S.rng.int(arr.length)];
-    r.push(t); if (r.length > 24) r.shift();
+    /* 文字列は中身で、出来事（オブジェクト）はそのもので覚える */
+    var U = S._kUse = S._kUse || new Map(), free = [], i, t;
+    function k(x) { return typeof x === 'string' ? '$' + x : x; }
+    for (i = 0; i < arr.length; i++) if (!U.get(k(arr[i]))) free.push(arr[i]);
+    if (free.length) t = free[S.rng.int(free.length)];
+    else { t = arr[0]; for (i = 1; i < arr.length; i++) if (U.get(k(arr[i])) < U.get(k(t))) t = arr[i]; }
+    S._kUseN = (S._kUseN || 0) + 1; U.set(k(t), S._kUseN);
+    S.recent.push(t); if (S.recent.length > 24) S.recent.shift();
     return t;
   };
   K.fmt = function (S, str, vars) {
