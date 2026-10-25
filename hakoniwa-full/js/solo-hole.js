@@ -151,6 +151,17 @@
   };
 
   function ngOf(c) { return c && Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : []; }
+  /* 感覚が戻る文（DRIP）：同じ回で同じ文を繰り返さない（2文目以降から、まだ使っていないものを優先） */
+  function dripPick(S, arr, rng) {
+    S._drip = S._drip || {};
+    var used = S._drip[arr === (HK.HoleMore && HK.HoleMore.DRIP_TOP) ? 't' : 'b'] = S._drip[arr === (HK.HoleMore && HK.HoleMore.DRIP_TOP) ? 't' : 'b'] || {};
+    var cand = [];
+    for (var i = 1; i < arr.length; i++) if (!used[i]) cand.push(i);
+    if (!cand.length) { for (var j = 1; j < arr.length; j++) { delete used[j]; cand.push(j); } }
+    var k = cand[rng.int(cand.length)];
+    used[k] = 1;
+    return arr[k];
+  }
   function run(input) {
     var S = K.state(input, 'hole'), rng = S.rng, env = S.env;
     /* 穴にはまる人と、壁の向こう（下半身側）の住人（solo-hole-behind.js） */
@@ -443,7 +454,7 @@
       h.reason -= chunk * 0.09; h.corrupt += 3 * S.k;
       var parts = [];
       while (h.pleasure >= 100 && parts.length < 3) parts.push(K.climax(S, { silent: true }));
-      var lead = mode === 'late' && w === 0 ? K.fmt(S, pk(S, X.LATE)) + ' ' : mode === 'drip' && w > 0 && rng() < 0.5 ? K.fmt(S, topMe ? X.DRIP_TOP[1 + rng.int(X.DRIP_TOP.length - 1)] : X.DRIP[1 + rng.int(X.DRIP.length - 1)]) + ' ' : '';
+      var lead = mode === 'late' && w === 0 ? K.fmt(S, pk(S, X.LATE)) + ' ' : mode === 'drip' && w > 0 && rng() < 0.5 ? K.fmt(S, dripPick(S, topMe ? X.DRIP_TOP : X.DRIP, rng)) + ' ' : '';
       /* 地の文のあとに「……」が続くと、話し手が分からず口調が付かない。そのときは名前を前に置く */
       var lineTxt = lead + (parts.length ? (lead ? h.name : '') + (parts[0].charAt(0) === '「' ? '' : K.moan(S)) + parts.join('') : K.fmt(S, pk(S, confList)));
       if (parts.length && rng() < 0.7) lineTxt += ' ' + K.fmt(S, pk(S, confList));

@@ -20,7 +20,7 @@ const { openBuild } = require('./lib.js');
     const DUNGEON_RE = /迷宮|魔物|冒険者|次の部屋|罠の部屋/;
     const PH = /\{(?:a|b|c|d|x|y|t|m|n|p|v|w|sensei|name|o|h|s|sa|sb|T|U|place|kind|ue|shita|yobi|oya|ko|oyayobi|shin|note|bw|L|S|race|like|hate|taste|dish)\}|undefined|NaN|\bnull\b|\[object /;
     const PUNCT = /。。|、、|」」(?!」)|「「|！！！！|？？？/;
-    const SEX = /挿入|挿れ|射精|精液|愛液|ちんぽ|喘ぎ|腰を振|フェラ|絶頂|イっ|イく|中に出|犯さ|犯し|セックス|性交|乳首|秘部|膣|陰茎|肉棒|勃起|♡|淫ら|快楽堕ち|種付け|孕ま/;
+    const SEX = /挿入|挿れ|射精|精液|愛液|ちんぽ|喘ぎ|腰を振|フェラ|絶頂|イっ|イく|中に出|(?<!殺人を|罪を|過ちを|ミスを|法を|規則を|禁を)犯[さし]|セックス|性交|乳首|秘部|膣|陰茎|肉棒|勃起|♡|淫ら|快楽堕ち|種付け|孕ま/;
     const SAFE = !!HK.SAFE_ON;
     const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ', 'ソウタ', 'カエデ'];
     const out = { n: {}, ex: {}, runs: 0, slow: [], perSc: {} };
@@ -55,7 +55,8 @@ const { openBuild } = require('./lib.js');
           const tp = t.replace(/「「[^「」]*」」/g, '「』');
           if (PUNCT.test(tp)) hit('T3', sc, s, tp.match(PUNCT)[0] + ' ← ' + t);
           if (SAFE && SEX.test(t)) hit('T5', sc, s, t.match(SEX)[0] + ' ← ' + t);
-          if (sc !== 'dungeon' && sc !== 'rpg' && DUNGEON_RE.test(t + ' ' + (e.why || ''))) hit('T8', sc, s, (t + ' ' + (e.why || '')).match(DUNGEON_RE)[0] + ' ← ' + t);
+          /* 感覚遮断穴の「場所：ダンジョンの罠部屋」は迷宮の中なので除く */
+          if (sc !== 'dungeon' && sc !== 'rpg' && !(sc === 'hole' && env.place === 'dungeon') && DUNGEON_RE.test(t + ' ' + (e.why || ''))) hit('T8', sc, s, (t + ' ' + (e.why || '')).match(DUNGEON_RE)[0] + ' ← ' + t);
           if (res2 && res2.log && res2.log[k] && res2.log[k].text !== t && out.ex.T4.length < 99) { hit('T4', sc, s, t + ' ### ' + res2.log[k].text); }
         });
         if (res2 && res2.log && res2.log.length !== L.length) hit('T4', sc, s, 'length ' + L.length + ' vs ' + res2.log.length);
