@@ -13,6 +13,7 @@ js/voice.js
 js/voice-tone.js
 js/tone-registry.js
 js/tone-plus.js
+js/tone-keigo-unify.js
 js/tone-gentleman.js
 js/tone-extra2.js
 js/voice-more.js

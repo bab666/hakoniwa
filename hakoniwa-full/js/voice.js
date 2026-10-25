@@ -322,6 +322,8 @@
       var TE = { 'い': 'って', 'ち': 'って', 'り': 'って', 'き': 'いて', 'ぎ': 'いで', 'し': 'して', 'に': 'んで', 'び': 'んで', 'み': 'んで' };
       var te = TE[nm[2]] || nm[2] + 'て';
       if (/^(?:見|寝|着|居|似|煮)$/.test(nm[1].slice(-1)) && nm[2] === 'い') te = 'いて';
+      /* 「話しかけてみなよ」の「〜てみ」は一段の「みる」（「話しかけてんで」にしない） */
+      if (nm[2] === 'み' && /[てで]$/.test(nm[1])) te = 'みて';
       return lead + nm[1] + te + 'ください' + tail;
     }
     var ph = prohibit(s);
@@ -556,6 +558,8 @@
             else if (ov != null && !kg && HK.TONE_FINISH && HK.TONE_FINISH[who.tone]) own = true;
             q = V.replaceFP(ov != null ? ov : q, who);
             if (ov == null && !pre) { if (who.persona === 'polite' || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(V.unHonor ? V.unHonor(q) : q, who); }
+            /* 敬語の口調で、敬語の文とため口の文が混ざる台詞の、ため口の文末を敬語に寄せる（tone-keigo-unify.js。仕上げの前に通し、仕上げが口調の味を付ける） */
+            if (V.keigoUnify && !nounQ && !own && !pre) q = V.keigoUnify(q, who);
             /* 口調ごとの仕上げ（後輩の「〜っす」、お嬢様の「〜ですわ」など。HK.toneFinish で登録したもの） */
             var fin = !own && !nounQ && HK.TONE_FINISH && HK.TONE_FINISH[who.tone];
             /* 仕上げには、敬語で話す相手への台詞か（kg）を渡す。派生の口調が敬語の文を崩すときの判断に使う */
