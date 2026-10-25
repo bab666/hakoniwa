@@ -8,6 +8,8 @@
   var HK = window.HK, JS = HK.JASHIN, ST = HK.Story;
   if (!JS || !JS.R18 || !ST) return;
   function L(s) { return s.split('|'); }
+  /* 一回の結果の中で同じ文を繰り返さない選び方（ero-kit.js の HK.Ero.fresh。使い切ったら、いちばん前に使ったものから戻す） */
+  function fp(S, a) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(S, a, function (l) { return ST.pick(S, l); }) : ST.pick(S, a); }
   var M = function () { return HK.R18M; };
 
   var LUST = L('{x}は{y}を書架に押しつけ、服を引き裂くように剥ぎ取った。掌の口が{y}の肌のあちこちに吸いつき、{y}は仲間の目も構わずに声を上げた。|{x}は{y}を本の山の上に押し倒した。崩れた本のページが舞う中で、二人は獣のように互いを貪った。|{x}は{y}の手首を掴んで閲覧机に押し伏せた。掌の口に耳元で何かを囁かれるたび、{x}の腰は荒々しさを増し、{y}の声は書庫じゅうに響いた。');
@@ -18,15 +20,16 @@
 
   /* 呼ぶ側（jashin-place.js）は、向きの決まる組（HK.Pos.okSex）のときだけ呼ぶ */
   JS.R18.climaxRel = function (S, kind, a, b) {
+    JS.R18.spend(S, [a, b]);
     var R = M(), o = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b], X = o[0], Y = o[1], m = { x: X.name, y: Y.name };
     a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1;
     if (kind === 'fertile') {
       var fpool = JS.R18.ff(X, Y) ? FERTILE_FF.filter(function (x) { return (HK.Pos && HK.Pos.bothRiba && HK.Pos.bothRiba(X, Y)) || !/擦り合わせ/.test(x); }) : FERTILE;
-      var t = ST.fmt(ST.pick(S, fpool), m) + JS.R18.sex(S, X, Y, { mood: 'drug', fore: false });
-      if ((!HK.Content || HK.Content.ok(S, 'preg')) && S.rng() < 0.6) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(ST.pick(S, PREG), m); }
+      var t = ST.fmt(fp(S, fpool), m) + JS.R18.sex(S, X, Y, { mood: 'drug', fore: false });
+      if ((!HK.Content || HK.Content.ok(S, 'preg')) && S.rng() < 0.6) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(fp(S, PREG), m); }
       return t;
     }
-    return ST.fmt(ST.pick(S, LUST), m) + JS.R18.sex(S, X, Y, { mood: 'rough', fore: false }) + (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + '仲間が二人を引き剥がしたとき、' + X.name + 'の掌の口は、まだ物欲しげに開いたり閉じたりしていた。';
+    return ST.fmt(fp(S, LUST), m) + JS.R18.sex(S, X, Y, { mood: 'rough', fore: false }) + (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + '仲間が二人を引き剥がしたとき、' + X.name + 'の掌の口は、まだ物欲しげに開いたり閉じたりしていた。';
   };
 
   /* 場所ごとの眷属 */
@@ -54,7 +57,7 @@
     p.m.fear = Math.min(100, p.m.fear + 8);
     /* 無音堂：声を漏らせば消える */
     if (PL.id === 'bamboo') {
-      var t = ST.fmt(ST.pick(S, BAMBOO), { a: p.name });
+      var t = ST.fmt(fp(S, BAMBOO), { a: p.name });
       if (rng() < 0.3 + (p.aphro ? 0.2 : 0) - p.tr.cp * 0.2) {
         JS.core.die(S, p, '無音堂で、声を漏らして', [t + (R ? R.say(S, p, 'climax') : '') + 'その声が、{a}の最後の声になった。']);
         return;
@@ -63,6 +66,14 @@
       return;
     }
     if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < lv * 0.4) p.preg = true;
-    ST.say(S, { actors: [p], tag: PL.name, kind: 'climax', text: (R ? R.resist(S, 'god', p, { endure: false }) : '') + ST.fmt(ST.pick(S, PLACE[PL.id]), { a: p.name, g: S.G.call }) + (R ? R.moans(S, p, ['mid', 'climax']) + R.npc(S, 'god', p) : '') + (p.preg ? '下腹に、熱いものが宿った感覚があった。' : ''), why: PL.name + 'の眷属に襲われた' + (p.preg ? '（疑似妊娠）' : ''), mag: 26 });
+    ST.say(S, { actors: [p], tag: PL.name, kind: 'climax', text: (R ? R.resist(S, 'god', p, { endure: false }) : '') + ST.fmt(fp(S, PLACE[PL.id]), { a: p.name, g: S.G.call }) + (R ? R.moans(S, p, ['mid', 'climax']) + R.npc(S, 'god', p) : '') + (p.preg ? '下腹に、熱いものが宿った感覚があった。' : ''), why: PL.name + 'の眷属に襲われた' + (p.preg ? '（疑似妊娠）' : ''), mag: 26 });
+  };
+  /* 一回の中の性的な夜の上限（solo-jashin-r18.js の room）：眷属に襲われるのも、まだ余裕のある人だけ */
+  var cave1 = JS.R18.cave;
+  JS.R18.cave = function (S, live) {
+    if (!JS.R18.room(S, [])) return;
+    var n0 = S.log.length;
+    cave1(S, live.filter(function (q) { return JS.R18.room(S, [q]); }));
+    JS.R18.spendLog(S, n0);
   };
 })();

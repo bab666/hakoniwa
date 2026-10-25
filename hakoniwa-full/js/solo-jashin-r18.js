@@ -8,6 +8,8 @@
   var HK = window.HK, JS = HK.JASHIN, ST = HK.Story, scen = HK.SCENARIOS && HK.SCENARIOS.jashin;
   if (!JS || !scen || !ST) return;
   function L(s) { return s.split('|'); }
+  /* 一回の結果の中で同じ文を繰り返さない選び方（ero-kit.js の HK.Ero.fresh。使い切ったら、いちばん前に使ったものから戻す） */
+  function fp(S, a) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(S, a, function (l) { return ST.pick(S, l); }) : ST.pick(S, a); }
   scen.env.push({ id: 'jyobai', label: '村人・神の夜の割合', min: 0, max: 100, def: 100, lo: '住人どうしだけ', hi: 'いつもどおり', desc: '夜の出来事のうち、夜這い・夢の神・清めの湯・神ごとの夜になる割合。0なら住人どうしの夜だけ（夜の出来事の起こりやすさ・内容のスイッチと合わせて効く）' });
   scen.env.push({ id: 'jlewd', label: '夜の出来事の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: '毎晩', desc: '媚薬の食事・夜這い・参加者どうしの夜・儀式での行為の起きやすさ' });
 
@@ -56,19 +58,19 @@
     });
     /* 一つの記録の中で、口にした人ごとに別の文を割り当てる（同じ文が二人分並ばないように） */
     var tk = rng.shuffle ? rng.shuffle(D.take.slice()) : D.take.slice(), lv0 = rng.shuffle ? rng.shuffle(D.leave.slice()) : D.leave.slice();
-    var t = ST.pick(S, D.intro) + take.map(function (p, i) { var al = key === 'sake' ? alcOf(p) : 3; return ST.fmt(i < tk.length ? tk[i] : ALSO[i % ALSO.length], { a: p.name }) + (al <= 2 && rng() < 0.7 ? ST.fmt(SAKE_WEAK[i % 2], { a: p.name }) : al >= 4 && rng() < 0.6 ? ST.fmt(SAKE_STRONG[i % 2], { a: p.name }) : '') + (rng() < 0.5 ? pz(S, p, 'drug') : ''); }).join('') + left.map(function (p, i) { return ST.fmt(lv0[i % lv0.length], { a: p.name }); }).join('');
+    var t = fp(S, D.intro) + take.map(function (p, i) { var al = key === 'sake' ? alcOf(p) : 3; return ST.fmt(i < tk.length ? tk[i] : ALSO[i % ALSO.length], { a: p.name }) + (al <= 2 && rng() < 0.7 ? ST.fmt(SAKE_WEAK[i % 2], { a: p.name }) : al >= 4 && rng() < 0.6 ? ST.fmt(SAKE_STRONG[i % 2], { a: p.name }) : '') + (rng() < 0.5 ? pz(S, p, 'drug') : ''); }).join('') + left.map(function (p, i) { return ST.fmt(lv0[i % lv0.length], { a: p.name }); }).join('');
     ST.say(S, { actors: live, tag: D.label, text: t, why: '媚薬が盛られていた（' + D.label + '）。口にした：' + (take.map(function (p) { return p.name; }).join('・') || 'なし') + '／気づいて席を外した：' + (left.map(function (p) { return p.name; }).join('・') || 'なし') + '。慎重さ・A・職業で気づく', mag: 16 });
     (S.r18Doses = S.r18Doses || []).push(key);
   }
   var YOBAI = L('夜半、{a}の部屋の襖が音もなく開いた。村の若い衆が、無言で布団に滑り込んできた。媚薬の熱に浮かされた{a}は、押しのける腕に力が入らなかった。|{a}は暗闇の中で、知らない手に浴衣の帯を解かれた。「祭りの前に、清めておかにゃならん」――耳元で囁く声に、{a}の体は勝手に応えていた。|月明かりの差す座敷で、{a}は村人たちに代わる代わる抱かれた。誰かが祝詞のような歌を口ずさんでいた。|{a}は夜這いに来た村人の腰に、自分から脚を絡めていた。朝になって、自分が何をしたのか思い出し、顔を覆った。');
   YOBAI = YOBAI.concat(L('{a}は、布団の両側から伸びてきた手に、口を塞がれた。祭りの前の「味見」だと、誰かが笑った。媚薬の熱で、{a}の拒む声はすぐに甘くなった。|夜明け前、{a}の部屋から出ていく村人は、三人目だった。{a}は乱れた布団の上で、焦点の合わない目で天井を見ていた。|{a}の耳元で、村の男が囁いた。「よそから来た人の体は、神さまがお喜びになる」――{a}は奥を突かれるたびに、自分の知らない声を上げていた。'));
   /* 拒む人への夜這い：始まり →（抵抗して黙らされる）→ 行為 */
-  var YOBAI_FORCE = L('夜半、{a}の部屋の襖が音もなく開いた。村の男が、無言で布団に滑り込んできた。|{a}が寝入りかけたとき、布団の両側から手が伸びてきた。祭りの前の「味見」だと、誰かが笑った。|夜更け、{a}の部屋に、酒臭い村の男が押し入ってきた。「よそから来た人の体は、神さまがお喜びになる」|{a}は厠からの帰り、暗い廊下で口を塞がれ、空き座敷に引きずり込まれた。');
-  var YOBAI_ACT = L('男は{a}の浴衣の裾を割り、押さえつけたまま、奥まで沈めた。|{a}は村人たちに代わる代わる組み敷かれた。誰かが祝詞のような歌を口ずさんでいた。|男は{a}の脚を抱え上げ、獣のように腰を打ちつけ続けた。夜明け前、{a}の部屋から出ていく村人は、三人目だった。|男は{a}をうつ伏せに押さえつけ、背後から何度も貫いた。畳に爪を立てる{a}の指先が、白くなっていた。');
+  var YOBAI_FORCE = L('夜半、{a}の部屋の襖が音もなく開いた。村の男が、無言で布団に滑り込んできた。|{a}が寝入りかけたとき、布団の両側から手が伸びてきた。祭りの前の「味見」だと、誰かが笑った。|夜更け、{a}の部屋に、酒臭い村の男が押し入ってきた。「よそから来た人の体は、神さまがお喜びになる」|{a}は厠からの帰り、暗い廊下で口を塞がれ、空き座敷に引きずり込まれた。|夜更け、{a}の部屋の行灯がふっと消えた。暗闇の中で、何人もの足音が布団を囲んだ。|{a}が湯上がりの火照りを冷ましていると、縁側の暗がりから腕が伸びてきた。そのまま、奥の納戸へ引きずり込まれた。|寝苦しさに目を覚ますと、{a}の上に、知らない男が馬乗りになっていた。「＠祭りの前じゃ。声を出しなさんな」');
+  var YOBAI_ACT = L('男は{a}の浴衣の裾を割り、押さえつけたまま、奥まで沈めた。|{a}は村人たちに代わる代わる組み敷かれた。誰かが祝詞のような歌を口ずさんでいた。|男は{a}の脚を抱え上げ、獣のように腰を打ちつけ続けた。夜明け前、{a}の部屋から出ていく村人は、三人目だった。|男は{a}をうつ伏せに押さえつけ、背後から何度も貫いた。畳に爪を立てる{a}の指先が、白くなっていた。|男は{a}の手首を帯で押さえ、乱暴に脚を割り開いて沈めた。障子の向こうで、別の誰かが順番を待っていた。|{a}は畳の上で何度も体を返され、そのたびに違う手に押さえつけられた。祭囃子の稽古の音が、遠くで鳴り続けていた。|男は{a}の口を塞いだまま、背後から深く貫いた。{a}の爪が、畳の目を掻きむしった。|村人は{a}の腰を抱え上げ、獣のように何度も打ちつけた。夜明けが近づくと、男は何事もなかったように帯を締め直して出ていった。');
   /* 自分で攻めを選んだ人への夜這い：組み敷くのは{a}のほう（{a}が女性なら、娘とは指と舌で） */
-  var YOBAI_TOP = L('夜半、{a}の部屋に村の娘が忍び込んできた。媚薬に浮かされた{a}は、気づけば娘を組み敷き、奥まで沈めていた。|{a}は暗闇の中で、自分の上に跨ろうとする村人の手首を掴んだ。そのまま体を入れ替えて布団に押さえつけ、相手が音を上げるまで、熱に任せて責め立てた。');
-  var YOBAI_TOP_F = L('夜半、{a}の部屋に村の娘が忍び込んできた。媚薬に浮かされた{a}は、気づけば娘を組み敷き、浴衣をはだけさせて、指と舌で娘が泣き出すまで責め立てていた。|夜半、{a}の部屋に村の若い男が忍び込んできた。{a}は伸びてきた手を捻り上げて布団に押さえつけ、自分から男の上に跨った。主導権は、最後まで{a}の手を離れなかった。|{a}は暗闇の中で、自分の上に跨ろうとする村人の手首を掴んだ。そのまま体を入れ替えて布団に押さえつけ、相手が音を上げるまで、熱に任せて責め立てた。');
-  var YOBAI_TOP_NPC = L('村人は、{a}の下で荒い息を吐き、喉の奥で呻いた。|村の娘は、{a}の下で身をよじり、方言混じりの甘い声を上げた。');
+  var YOBAI_TOP = L('夜半、{a}の部屋に村の娘が忍び込んできた。媚薬に浮かされた{a}は、気づけば娘を組み敷き、奥まで沈めていた。|{a}は暗闇の中で、自分の上に跨ろうとする村人の手首を掴んだ。そのまま体を入れ替えて布団に押さえつけ、相手が音を上げるまで、熱に任せて責め立てた。|夜半、襖の隙間から、村の若い衆が這い込んできた。{a}は寝たふりのまま男の手首を掴み、布団の上へ引き倒した。媚薬の熱に任せて組み敷くと、男は抵抗をやめ、{a}の下で荒い息を吐きはじめた。|{a}は、布団に潜り込んできた村の娘の口を、掌でそっと塞いだ。「静かに」――そう囁いて娘を仰向けにさせ、{a}はゆっくりと奥まで沈めた。娘は掌の下で、くぐもった甘い声を何度も漏らした。|夜這いに来た村人を、{a}は逆に壁際へ追い詰めた。媚薬が回った体は、熱を吐き出す相手を求めていた。{a}は相手の背中を壁に押しつけ、夜が白むまで離さなかった。|{a}の部屋に忍んできた娘は、気づけば自分のほうが布団に押さえつけられていた。{a}は娘の膝を割り、奥を確かめるようにゆっくりと腰を沈めた。祭囃子の稽古の音に、娘の声が溶けていった。');
+  var YOBAI_TOP_F = L('夜半、{a}の部屋に村の娘が忍び込んできた。媚薬に浮かされた{a}は、気づけば娘を組み敷き、浴衣をはだけさせて、指と舌で娘が泣き出すまで責め立てていた。|夜半、{a}の部屋に村の若い男が忍び込んできた。{a}は伸びてきた手を捻り上げて布団に押さえつけ、自分から男の上に跨った。主導権は、最後まで{a}の手を離れなかった。|{a}は暗闇の中で、自分の上に跨ろうとする村人の手首を掴んだ。そのまま体を入れ替えて布団に押さえつけ、相手が音を上げるまで、熱に任せて責め立てた。|夜半、襖の隙間から、村の若い衆が這い込んできた。{a}は寝たふりのまま男の手首を掴んで布団に引き倒し、その腰に跨った。媚薬の熱が引くまで、{a}は男の上から降りなかった。|{a}は、布団に潜り込んできた村の娘の口を、掌でそっと塞いだ。「静かに」――そう囁いて娘を仰向けにさせ、{a}は浴衣の裾から指を差し入れた。娘は掌の下で、くぐもった甘い声を何度も漏らした。|夜這いに来た村の男を、{a}は逆に畳の上へ組み伏せた。{a}は男の胸に手をついて腰を落とし、自分の好きな速さで揺らした。男が音を上げても、{a}は笑って動きを緩めなかった。');
+  var YOBAI_TOP_NPC = L('村人は、{a}の下で荒い息を吐き、喉の奥で呻いた。|村の娘は、{a}の下で身をよじり、方言混じりの甘い声を上げた。|村人は、{a}に手首を押さえられたまま、何度も許しを乞うような声を上げた。|村の娘は、乱れた浴衣の袖を噛み、{a}の下で何度も肩を震わせた。|村人は、朝になると{a}と目を合わせようとせず、逃げるように部屋を出ていった。');
   var YOBAI_NO = L('夜半、{a}の部屋の襖が少しだけ開いた。{a}が「誰だ」と声を上げると、気配は闇に消えた。|{a}は襖につっかえ棒をして眠った。朝まで、外から何度も引く音がした。|{a}は寝たふりをしながら、枕の下の懐中電灯を握りしめていた。襖が開いた瞬間に光を浴びせると、影は慌てて逃げていった。');
   /* 女性どうし：民宿の布団・廊下・障子越しの気配の中で、指と舌と肌で */
   var MUTUAL_FF = L('媚薬の熱に耐えきれず、{x}は{y}の部屋を訪ねた。言葉は要らなかった。{x}は{y}を布団に横たえ、浴衣の合わせを開いて、火照った胸に唇を這わせた。|「おかしいの、体が……」――{y}がそう言い終わる前に、{x}が唇を塞いだ。二人は布団の上で脚を絡め、夜明けまで互いの熱を擦り合わせた。|{x}と{y}は、怖さを紛らわせるように抱き合った。触れ合ううちに熱が止まらなくなり、{x}の指は{y}の浴衣の裾の奥へ滑り込んでいった。|障子越しに村人の気配がするのも構わず、{x}は{y}を後ろから抱きすくめ、浴衣の上から胸を揉みしだいた。{y}は声を殺そうとして、殺しきれなかった。|「怖いから、一緒に寝てもいい？」――{y}の言葉に頷いた{x}は、布団の中で{y}の震える体を抱き寄せた。震えは、やがて別のものに変わった。|{x}は、{y}の浴衣の合わせから手を差し入れた。{y}は拒まなかった。「……今だけ、何も考えさせないで」|二人は民宿の暗い廊下で鉢合わせた。媚薬の熱を持て余していたのは、どちらも同じだった。{x}は{y}を壁に押しつけ、帯を解いて、濡れたところへ指を這わせた。|{x}は{y}の脚を開かせ、行灯の明かりの中で、そこへ顔を埋めた。{y}は布団の端を噛んで、甘い悲鳴を押し殺し続けた。');
@@ -82,16 +84,16 @@
     '「怖いから、一緒に寝てもいい？」――{x}の言葉に頷いた{y}は、布団の中で{x}に抱き寄せられた。震えは、やがて別のものに変わった。{x}は{y}の上に身を起こし、ためらいもなく腰を沈めた。|' +
     '二人は民宿の暗い廊下で鉢合わせた。媚薬の熱を持て余していたのは、どちらも同じだった。{x}は{y}を壁に押しつけてその場に座り込ませ、膝の上に跨って繋がった。|' +
     '{x}は{y}を何度も果てさせた。それでも{x}の熱は引かず、{y}は朝まで、{x}の下で甘い声を上げ続けた。{x}は{y}の胸に手をついたまま、最後の一滴まで搾り取った。');
-  var PREG = L('翌朝、{y}の下腹が、わずかに膨らんでいた。女将がそれを見て、嬉しそうに手を合わせた。「まあ、おめでたい。神さまの器が、できなさった」|{y}は朝から、下腹の奥で何かが動く感覚に怯えていた。村の老婆が言った。「あんたの中に、もう宿っとる」|{y}の下腹に、昨夜まではなかった紋様が浮かんでいた。村の秘術で、{y}の体は「孕んだ」ことにされていた。');
+  var PREG = L('翌朝、{y}の下腹が、わずかに膨らんでいた。女将がそれを見て、嬉しそうに手を合わせた。「まあ、おめでたい。神さまの器が、できなさった」|{y}は朝から、下腹の奥で何かが動く感覚に怯えていた。村の老婆が言った。「あんたの中に、もう宿っとる」|{y}の下腹に、昨夜まではなかった紋様が浮かんでいた。村の秘術で、{y}の体は「孕んだ」ことにされていた。|{y}は朝餉の匂いに、急に胸が悪くなった。女将が意味ありげに微笑み、{y}の背中をさすった。「よかった。ちゃんと、宿りなさった」|{y}の臍の下に、薄い痣のような輪が浮かんでいた。輪は、指でなぞると、かすかに熱を帯びた。|{y}は夜中に、下腹の奥から小さく叩かれるような感覚で目を覚ました。隣で眠る相手には、言えなかった。|翌朝、村の老婆が{y}の顔を見るなり、両手を合わせて拝んだ。「＠もう、神さまの子の匂いがする」');
   var RITUAL = L('{a}は白い薄衣一枚で祭壇に横たえられた。村人たちが周りを囲み、祝詞に合わせて{a}の肌に油を塗り込めていった。やがて祭壇の奥から、人ではないものの気配が這い寄り、{a}の脚を押し開いた。|{a}は祭壇の上で、村の男たちに「清め」と称して代わる代わる抱かれた。最後に{g}の御前へ差し出されたとき、{a}はもう自分の名前も思い出せなかった。|祭壇の上で、{a}の体に冷たい何かが何本も絡みついた。それは{a}の奥深くまで入り込み、何かを注ぎ込み続けた。{a}の悲鳴は、いつしか甘い声に変わっていた。');
   RITUAL = RITUAL.concat(L('祭壇の{a}の周りで、村人たちが輪になって踊った。一人が踊りの輪から外れるたびに、{a}の上に覆いかぶさった。祝詞は、夜が明けるまで途切れなかった。|{a}は御神酒を口移しで飲まされた。体が溶けるように熱くなり、{a}は自分から祭壇の上で脚を開いていた。{g}の御前で、{a}は何度も、何度も清められた。'));
   /* 清めの湯（村人に体を洗われる）。自分で攻めを選んだ人は、湯殿に入らない */
   var BATH_NO = L('{a}は女将に「祭りの前に、清めの湯へ」と勧められた。湯殿の戸を開けると、村の若い衆が待ち構えていた。{a}は手桶を投げつけ、湯にも浸からずに引き返した。|{a}は清めの湯に誘われたが、白く濁った湯を一瞥して「いらない」と戸を閉めた。湯殿の中から、残念そうな舌打ちが聞こえた。|{a}は湯殿の前で立ち止まり、中の気配を一瞥して「結構です」とだけ言った。女将の笑顔が、一瞬だけ引きつった。');
-  var BATH = L('{a}は女将に「祭りの前に、清めの湯へ」と勧められた。湯殿には、村の若い衆が待っていた。何本もの手が、湯の中で{a}の体じゅうを這い回った。|{a}が湯に浸かっていると、村人たちが入ってきて、無言で{a}の体を洗い始めた。手が脚のあいだに滑り込んだとき、{a}はもう、湯の熱と媚薬の熱の区別がつかなかった。|清めの湯は、白く濁っていた。湯の中で何かが{a}の肌を撫で、敏感なところを探り当てた。{a}は湯殿の縁にしがみつき、声を殺して果てた。');
+  var BATH = L('{a}は女将に「祭りの前に、清めの湯へ」と勧められた。湯殿には、村の若い衆が待っていた。何本もの手が、湯の中で{a}の体じゅうを這い回った。|{a}が湯に浸かっていると、村人たちが入ってきて、無言で{a}の体を洗い始めた。手が脚のあいだに滑り込んだとき、{a}はもう、湯の熱と媚薬の熱の区別がつかなかった。|清めの湯は、白く濁っていた。湯の中で何かが{a}の肌を撫で、敏感なところを探り当てた。{a}は湯殿の縁にしがみつき、声を殺して果てた。|清めの湯の湯気は、甘く重たかった。{a}がふらついたところを、村の女たちが両側から支え、湯の中で肌を撫ではじめた。撫でる手は、少しずつ、遠慮のない場所へ降りていった。|湯殿の灯りが消え、暗闇の中で湯だけがぬるく揺れていた。湯の底から伸びてきた何本もの手が、{a}の脚を開かせた。{a}は湯殿の縁に縋り、声を殺しきれずに何度も果てた。|「＠清めは、隅々まで」――村の男が、{a}の体を後ろから抱え込んだ。湯の中で、指が{a}の奥を何度も探った。湯から上がるころには、{a}は一人で立てなくなっていた。');
   /* 自分で攻めを選んだ人の夢：神に抗い、逆に屈服させる */
   var DREAM_TOP = L('夢の中で、{g}の気配が{a}にのしかかろうとした。{a}は顔の見えない何かの喉元を掴み返し、逆に祭壇の上へねじ伏せた。夢の終わりに、先に音を上げたのは神のほうだった。目覚めると、掌にまだ熱が残っていた。|夢の中で、闇の中から伸びてきたものが{a}の脚に絡みつこうとした。{a}はそれを踏みつけ、根元から引き千切った。闇の奥で、何かが怯えたように身を引いた。|{a}は毎晩、同じ夢を見た。{g}が{a}の名を呼び、身を委ねろと囁く夢を。{a}は一度も応えなかった。夢の終わりにはいつも、{a}の足元に跪いているのは{g}のほうだった。');
   /* 夢の中で神に抱かれる（神ごと） */
-  var DREAM = L('{a}は夢の中で、{g}に抱かれていた。顔の見えない何かが{a}の体を開き、熱いものを奥深くに注ぎ込んだ。目覚めると、布団がぐっしょりと濡れていた。|夢の中で、{a}は祭壇に横たわっていた。闇の中から伸びてきたものが、{a}の口にも、脚のあいだにも入り込んできた。{a}は夢の中で、何度も達した。|{a}は毎晩、同じ夢を見た。{g}が{a}の名を呼び、{a}は自分から身を委ねる夢を。夢を見るたびに、目覚めたときの体の疼きは強くなっていった。');
+  var DREAM = L('{a}は夢の中で、{g}に抱かれていた。顔の見えない何かが{a}の体を開き、熱いものを奥深くに注ぎ込んだ。目覚めると、布団がぐっしょりと濡れていた。|夢の中で、{a}は祭壇に横たわっていた。闇の中から伸びてきたものが、{a}の口にも、脚のあいだにも入り込んできた。{a}は夢の中で、何度も達した。|{a}は毎晩、同じ夢を見た。{g}が{a}の名を呼び、{a}は自分から身を委ねる夢を。夢を見るたびに、目覚めたときの体の疼きは強くなっていった。|夢の中で、{a}は社の床に横たえられていた。御簾の向こうから伸びてきた冷たい手が、{a}の着物の合わせを一枚ずつ開いていった。目覚めると、肌には指の跡のような赤みが残っていた。|夢の中で、{a}は水底に沈んでいた。息は苦しくなかった。水そのものが{a}の体の隅々まで入り込み、{a}は泡を吐きながら何度も達した。|夢の中で、{g}の声が{a}の名を呼んだ。呼ばれるたびに、体の奥を撫でられるような感覚が走った。{a}は自分の喘ぎ声で目を覚まし、布団の中で膝を抱えた。|夢の中で、{a}は祭りの行列の真ん中にいた。面をつけた村人たちに担がれ、社の奥へ運ばれていく。奥で待っていたものに抱かれた瞬間、{a}は悲鳴とも嬌声ともつかない声を上げた。');
   var DREAM_GOD = {
     dagon: '夢の中で、{a}は冷たい海の底に沈んでいた。ぬめった鱗の腕が{a}を抱きすくめ、水かきのある指が{a}の奥を探った。{a}は海の中で、魚のように口を開けて喘いだ。',
     cthulhu: '夢の中で、緑の石の都市の奥から伸びてきた無数の触腕が、{a}の手足を絡め取った。一本は口に、一本は脚のあいだに。{a}は夢の中で、海の底の神に孕まされていた。',
@@ -177,7 +179,7 @@
   Object.keys(DREAM_GOD_MORE).forEach(function (k) { DREAM_GOD[k] = (DREAM_GOD[k] ? [DREAM_GOD[k]] : []).concat(DREAM_GOD_MORE[k]); });
   Object.keys(DREAM_GOD).forEach(function (k) { if (typeof DREAM_GOD[k] === 'string') DREAM_GOD[k] = [DREAM_GOD[k]]; });
   /* 取り憑かれた仲間に襲われる */
-  var POSSESS = L('夜半、{x}が{y}の部屋に入ってきた。目が、{x}のものではなかった。「神さまに、捧げなきゃ」――{x}は{y}を押さえつけ、荒々しく体を重ねた。|{x}は虚ろな目のまま、{y}の上に跨った。{y}が名前を呼んでも、{x}は答えず、ただ腰を揺らし続けた。|{x}の口から、{x}のものではない祝詞が漏れていた。{x}は{y}の手首を布団に押さえつけ、取り憑いたものの熱に任せて体を重ねた。');
+  var POSSESS = L('夜半、{x}が{y}の部屋に入ってきた。目が、{x}のものではなかった。「神さまに、捧げなきゃ」――{x}は{y}を押さえつけ、荒々しく体を重ねた。|{x}は虚ろな目のまま、{y}の上に跨った。{y}が名前を呼んでも、{x}は答えず、ただ腰を揺らし続けた。|{x}の口から、{x}のものではない祝詞が漏れていた。{x}は{y}の手首を布団に押さえつけ、取り憑いたものの熱に任せて体を重ねた。|{x}は{y}の耳元で、{x}の声ではない声で笑った。そのまま{y}の浴衣を剥ぎ、押さえつけたまま荒々しく体を重ねた。{y}が泣いて名前を呼んでも、取り憑いたものは{x}の体を止めなかった。|{x}の瞳は、行灯の光を映さなかった。{x}は{y}を布団に押し伏せ、祝詞を唱えるように低く呟きながら、何度も体を重ねた。{y}の声は、障子の外の虫の音にかき消された。');
   /* 取り憑かれた側が受けになる組：{x}=攻め（正気の側） {y}=取り憑かれた側 */
   var POSSESS_REV = L('夜半、{y}が{x}の部屋に入ってきた。目が、{y}のものではなかった。「神さまに、捧げなきゃ」――のしかかろうとする{y}の手首を、{x}は掴んで布団に組み伏せた。正気に引き戻すように、{x}は{y}を荒々しく抱いた。|虚ろな目の{y}が、{x}の布団に這い込んできた。{x}は{y}の両手首をひとまとめに押さえつけ、名前を呼び続けながら、{y}の体に神ではなく自分を刻み込んでいった。|取り憑かれた{y}が、虚ろな笑みで{x}の首に腕を回してきた。{x}はその手首を掴んで仰向けに倒し、正気に戻すように名前を呼びながら、主導権を渡さなかった。');
   /* イゴーロナク：荒々しく */
@@ -188,16 +190,16 @@
   var HAME = L('村人は、枕元に転がっていた{a}のカメラを拾い上げ、レンズを{a}に向けた。「\u2060いつもこれで撮ってるんだろ」――{a}の乱れた姿は、{a}自身の機材で、余すところなく記録された。|村人の一人が、{a}の自撮り棒にスマホを付けて、ずっと撮り続けていた。「\u2060撮れ高ってやつだ」――村人たちは笑った。|事が済むと、村人は{a}のスマホを取り上げ、撮ったばかりの動画を{a}の配信アカウントに上げようとした。{a}は泣きながら、それを止めた。|村人は{a}のカメラを三脚に据え、録画の赤いランプが点いたのを確かめてから、{a}にのしかかった。「\u2060祭りの記録だ。神さまにも見せねばならん」');
   function streamAfter(S, p, o, recv) {
     var rng = S.rng;
-    if (recv && rng() < 0.5) { p.m.fear = Math.min(100, p.m.fear + 10); p.hame = true; ST.say(S, { actors: [p], tag: 'ハメ撮り', text: ST.fmt(ST.pick(S, HAME), { a: p.name }), why: p.name + '（配信者）は、自分の機材で村人に撮られてしまった（恐怖 +10）', mag: 22 }); return; }
-    if (rng() < 0.4) { p.leak = true; ST.say(S, { actors: [p], tag: '配信事故', text: ST.fmt(ST.pick(S, STREAM_LEAK), { s: p.name, o: o }), why: p.name + '（配信者）は配信を切り忘れていた', mag: 22 }); }
+    if (recv && rng() < 0.5) { p.m.fear = Math.min(100, p.m.fear + 10); p.hame = true; ST.say(S, { actors: [p], tag: 'ハメ撮り', text: ST.fmt(fp(S, HAME), { a: p.name }), why: p.name + '（配信者）は、自分の機材で村人に撮られてしまった（恐怖 +10）', mag: 22 }); return; }
+    if (rng() < 0.4) { p.leak = true; ST.say(S, { actors: [p], tag: '配信事故', text: ST.fmt(fp(S, STREAM_LEAK), { s: p.name, o: o }), why: p.name + '（配信者）は配信を切り忘れていた', mag: 22 }); }
   }
   /* ドッキリだと思い込んだ大物 */
-  var PRANK = L('夜這いに来た村人を、{a}は「仕掛け人さん、体張りますねえ」と笑って迎え入れた。それがドッキリでないと気づいたのは、奥まで貫かれてからだった。|{a}は「これ、誰の仕込み？」と囁きながら、村人に身を任せた。仕掛け人は、どこにもいなかった。|{a}は「カメラどこ？」と部屋を見回しながら、村人を布団に招き入れた。カメラは、どこにもなかった。');
+  var PRANK = L('夜這いに来た村人を、{a}は「仕掛け人さん、体張りますねえ」と笑って迎え入れた。それがドッキリでないと気づいたのは、奥まで貫かれてからだった。|{a}は「これ、誰の仕込み？」と囁きながら、村人に身を任せた。仕掛け人は、どこにもいなかった。|{a}は「カメラどこ？」と部屋を見回しながら、村人を布団に招き入れた。カメラは、どこにもなかった。|{a}は布団に入ってきた村人に「台本ある？」と小声で聞いた。返事の代わりに帯が解かれ、{a}はそのまま、台本のない夜に呑まれていった。|{a}は「リアクション、大きめでいい？」と笑って村人の首に腕を回した。大げさな声は、途中から演技ではなくなっていた。|{a}は襖の隙間に向かってピースをしてから、村人を布団に招き入れた。隙間の向こうには、誰もいなかった。');
   /* 洞窟の中で（クライマックス） */
-  var CAVE = L('洞窟の暗がりから、ぬめった触手が伸びてきて、{a}の脚に絡みついた。触手は衣服の下に潜り込み、{a}の奥へ入り込んだ。{a}は仲間の前で、声を抑えることもできずに達した。|洞窟の壁から、{g}の眷属が湧き出し、{a}を押し倒した。仲間が引き剥がすまでの短いあいだに、{a}の中には、何かが注ぎ込まれていた。|洞窟の水たまりに足を取られた{a}の体を、生温かい粘液が包み込んだ。粘液は{a}の肌を舐め回し、{a}は膝から崩れ落ちて、甘い声を上げた。');
+  var CAVE = L('洞窟の暗がりから、ぬめった触手が伸びてきて、{a}の脚に絡みついた。触手は衣服の下に潜り込み、{a}の奥へ入り込んだ。{a}は仲間の前で、声を抑えることもできずに達した。|洞窟の壁から、{g}の眷属が湧き出し、{a}を押し倒した。仲間が引き剥がすまでの短いあいだに、{a}の中には、何かが注ぎ込まれていた。|洞窟の水たまりに足を取られた{a}の体を、生温かい粘液が包み込んだ。粘液は{a}の肌を舐め回し、{a}は膝から崩れ落ちて、甘い声を上げた。|洞窟の天井から、黒い滴がぽたりと{a}の首筋に落ちた。滴は肌の上で形を変え、細い指のように襟の中へ潜り込んでいった。{a}は岩壁に縋りついたまま、声を殺しきれずに崩れ落ちた。|暗がりで{a}の足首を掴んだのは、冷たい鱗の手だった。{a}は岩場に引き倒され、仲間の灯りが届かない窪みへ引きずり込まれた。灯りが戻ってきたとき、{a}は濡れた岩の上で、焦点の合わない目をしていた。|洞窟の奥の苔が、{a}の体の形に沈み込んだ。苔は生き物のように脈打ち、{a}の肌を舐めるように這い上がってきた。{a}は苔の褥に縫いとめられたまま、何度も甘い声を上げさせられた。|壁に刻まれた{g}の紋が、{a}が触れた瞬間に赤く光った。体の奥に、見えない何かが入り込んでくる感覚があった。{a}は膝をつき、仲間の名前を呼ぼうとして、別の声を上げた。|湿った闇の中で、無数の細い触手が{a}の手足に絡みついた。触手は{a}の体を宙に持ち上げ、ゆっくりと開いていった。仲間が松明を振り回して追い払うまで、{a}は何度も宙で体を跳ねさせた。');
   /* 自分で攻めを選んだ人の儀式：祭壇の上で、逆に神をねじ伏せる */
-  var RITUAL_TOP = L('{a}は白い薄衣を着せられ、祭壇の前に引き出された。祭壇の奥から這い寄ってきた人ではないものを、{a}は素手で掴み返し、逆に祭壇の上へ組み伏せた。村人たちの祝詞が、悲鳴に変わった。|{a}の脚に、祭壇の奥から伸びてきた冷たいものが絡みつこうとした。{a}はそれを掴んで引きずり出し、{g}の御前で、それが震えて動かなくなるまで責め立てた。|村人たちは{a}を祭壇に押さえつけようとしたが、{a}は一人を蹴り倒し、もう一人の腕を捻り上げた。{g}の御前で、{a}は最後まで、誰にも膝をつかなかった。');
-  var MIKO = L('――夜が明けたとき、{a}の腹は大きく膨らんでいた。村人たちはひれ伏して言った。「巫女さまが、神の御子を宿された」{a}はもう二度と、村の外へ出ることはない。|――{a}は神の子を産む巫女として、神社の奥の間に迎えられた。{a}は虚ろな目で、膨らんだ腹を愛おしげに撫でていた。|――{a}の体に注がれたものは、{a}の中で育ち始めた。村は新しい巫女を得て、歓喜の歌に包まれた。');
+  var RITUAL_TOP = L('{a}は白い薄衣を着せられ、祭壇の前に引き出された。祭壇の奥から這い寄ってきた人ではないものを、{a}は素手で掴み返し、逆に祭壇の上へ組み伏せた。村人たちの祝詞が、悲鳴に変わった。|{a}の脚に、祭壇の奥から伸びてきた冷たいものが絡みつこうとした。{a}はそれを掴んで引きずり出し、{g}の御前で、それが震えて動かなくなるまで責め立てた。|村人たちは{a}を祭壇に押さえつけようとしたが、{a}は一人を蹴り倒し、もう一人の腕を捻り上げた。{g}の御前で、{a}は最後まで、誰にも膝をつかなかった。|祭壇の上で{a}の手首を押さえようとした村人の腕を、{a}は逆に捻り上げた。祭壇の奥から伸びてきたものさえ、{a}は掴んで引き寄せ、{g}の御前で組み伏せた。祝詞は途中で途切れ、篝火だけがぱちぱちと鳴っていた。|{a}は差し出された盃を祭壇に叩きつけた。闇の奥から這い寄ってきた冷たい腕を、{a}は膝で押さえつけ、逆にそれが震えて縮こまるまで責め立てた。村人たちは、誰一人として祭壇に近づけなかった。');
+  var MIKO = L('――夜が明けたとき、{a}の腹は大きく膨らんでいた。村人たちはひれ伏して言った。「巫女さまが、神の御子を宿された」{a}はもう二度と、村の外へ出ることはない。|――{a}は神の子を産む巫女として、神社の奥の間に迎えられた。{a}は虚ろな目で、膨らんだ腹を愛おしげに撫でていた。|――{a}の体に注がれたものは、{a}の中で育ち始めた。村は新しい巫女を得て、歓喜の歌に包まれた。|――{a}の下腹には、昨夜までなかった紋様が、心臓のように脈打っていた。村の女たちは{a}に白い着物を着せ、二度と山道へは出さなかった。|――{a}は社の奥で目を覚ました。腹の奥で、何かがゆっくりと寝返りを打った。障子の外では、村人たちが新しい巫女を讃える歌を歌っていた。|――翌朝、{a}の瞳は{g}と同じ色に濁っていた。{a}は膨らんだ腹を抱え、村人たちに微笑みかけた。その笑みは、もう{a}のものではなかった。');
 
   /* 態度9種（HK.personaOf）ごとの書き分け：drug＝媚薬が回ったとき、react＝夜這い・清めの湯で組み敷かれたとき、
      rite＝生贄の祭壇で、after＝夜這いなどの翌朝、mutual＝参加者どうしの夜の翌朝（合意の場面なので拒む言葉は使わない）。{a}=本人 */
@@ -268,7 +270,7 @@
   };
   function pz(S, p, k) {
     var t = JP[(HK.personaOf ? HK.personaOf(p) : p.persona) || 'gentle'] || JP.gentle;
-    return t[k] ? ST.fmt(ST.pick(S, t[k]), { a: p.name, g: S.G ? S.G.call : '' }) : '';
+    return t[k] ? ST.fmt(fp(S, t[k]), { a: p.name, g: S.G ? S.G.call : '' }) : '';
   }
 
   /* 受け攻めの決まり（pos.js）：自分で攻めを選んだ人は、村人・神・眷属に「される」側にしない。
@@ -285,7 +287,7 @@
     if (isFF(x, y) && HK.FF) {
       /* 山場を段落に分けて厚く（r18-thick.js） */
       if (HK.R18Thick && HK.R18Thick.on(S)) return HK.R18Thick.ff(S, x, y, opt);
-      var ctx = { pick: function (a) { return ST.pick(S, a); } }, st = opt.mood === 'rough' ? 'rough' : opt.mood === 'love' ? 'gentle' : HK.FF.styleOf(x);
+      var ctx = { pick: function (a) { return fp(S, a); } }, st = opt.mood === 'rough' ? 'rough' : opt.mood === 'love' ? 'gentle' : HK.FF.styleOf(x);
       var f = function (t) { return t.replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name); };
       return f(HK.FF.pick(ctx, 'body', st)) + (R ? R.say(S, y, 'start') + (opt.short ? '' : R.say(S, x, 'top') + R.say(S, y, 'mid')) + R.say(S, y, 'climax') : '') + f(HK.FF.pick(ctx, 'climax', st));
     }
@@ -294,6 +296,27 @@
 
   JS.R18 = {
     hardTop: hardTop, okPair: okPair, ff: isFF, sex: pairSex,
+    /* 一回の中の性的な夜の数の上限（ホラーの箱庭なので、濃い場面ばかりにしない）。
+       回全体で 1＋起こりやすさ×3 回（既定40で2回・最大で4回）、一人あたり2夜まで */
+    cap: function (S) { return 1 + Math.round(Math.max(0, Math.min(100, S.env.jlewd || 0)) * 3 / 100); },
+    room: function (S, ps) {
+      if ((S.r18Tot || 0) >= JS.R18.cap(S)) return false;
+      var w = S.r18Who || {};
+      return (ps || []).every(function (p) { return p && (w[p.i] || 0) < 2; });
+    },
+    /* 性的な夜を一つ数える（ps は場面に出た人） */
+    spend: function (S, ps) {
+      S.r18Tot = (S.r18Tot || 0) + 1;
+      var w = S.r18Who || (S.r18Who = {});
+      (ps || []).forEach(function (p) { if (p) w[p.i] = (w[p.i] || 0) + 1; });
+    },
+    /* n0 番目より後に出た山場（kind: 'climax'）を数える。数えたら true */
+    spendLog: function (S, n0) {
+      var who = {}, any = false;
+      (S.log || []).slice(n0).forEach(function (o) { if (o && o.kind === 'climax') { any = true; (o.actors || []).forEach(function (i) { who[i] = 1; }); } });
+      if (any) JS.R18.spend(S, Object.keys(who).map(function (i) { return S.P[+i]; }));
+      return any;
+    },
     /* 態度9種ごとの書き分け（JP）を、神ごとの夜（solo-jashin-r18-god.js）からも使う */
     pz: pz,
     on: function (S) { return !HK.SAFE_ON && (S.env.jlewd || 0) > 0; },
@@ -308,6 +331,9 @@
       var rng = S.rng, lv = S.env.jlewd / 100;
       /* R18に参加しない人（キャラの設定）は、夜の出来事に出ない */
       if (HK.State && !HK.State.r18ok(p)) return false;
+      /* 上限に届いた回・この人がもう二夜を過ごしたときは、夜の出来事にしない */
+      if (!JS.R18.room(S, [p])) return false;
+      live = live.filter(function (q) { return q === p || JS.R18.room(S, [q]); });
       /* 二日目以降の宵の口：まだ使っていない別の盛り方で、もう一度盛られることがある（一晩に一度） */
       var day = Math.floor((16 + h) / 24), hh = (16 + h) % 24;
       if (day >= 1 && hh === 20 && S.r18DoseDay !== day) {
@@ -330,14 +356,14 @@
       if (r0 < 0.16 + (S.G.myth ? 0.06 : 0)) {
         /* 自分で攻めを選んだ人は、夢の中でも神に抱かれない（抗い、逆に屈服させる） */
         if (top) {
-          ST.say(S, { actors: [p], tag: '夢', text: ST.fmt(ST.pick(S, DREAM_TOP), { a: p.name, g: S.G.call }), why: S.G.call + 'が夢に現れたが、' + p.name + 'は抗った（受け攻めの指定：攻め）', mag: 22 });
+          ST.say(S, { actors: [p], tag: '夢', text: ST.fmt(fp(S, DREAM_TOP), { a: p.name, g: S.G.call }), why: S.G.call + 'が夢に現れたが、' + p.name + 'は抗った（受け攻めの指定：攻め）', mag: 22 });
           return true;
         }
         if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < 0.2 + lv * 0.2) p.preg = true;
-        var dt = ST.fmt(DREAM_GOD[S.G.id] && rng() < 0.75 ? ST.pick(S, DREAM_GOD[S.G.id]) : ST.pick(S, DREAM), { a: p.name, g: S.G.call });
+        var dt = ST.fmt(DREAM_GOD[S.G.id] && rng() < 0.75 ? fp(S, DREAM_GOD[S.G.id]) : fp(S, DREAM), { a: p.name, g: S.G.call });
         /* たまに長い版（jashin-dark-thick.js） */
         var dLong = HK.JDark && HK.JDark.roll(S, p) ? HK.JDark.text(S, 'dream', p) : '';
-        ST.say(S, { actors: [p], tag: '夢', kind: 'climax', text: (dLong || dt + (HK.R18M ? HK.R18M.moans(S, p, ['mid', 'climax']) : '')) + (p.preg ? (dLong ? '\n\n' : '') + ST.fmt(ST.pick(S, PREG), { y: p.name }) : ''), why: S.G.call + 'が夢に現れた' + (p.preg ? '（疑似妊娠した）' : ''), mag: 26 });
+        ST.say(S, { actors: [p], tag: '夢', kind: 'climax', text: (dLong || dt + (HK.R18M ? HK.R18M.moans(S, p, ['mid', 'climax']) : '')) + (p.preg ? (dLong ? '\n\n' : '') + ST.fmt(fp(S, PREG), { y: p.name }) : ''), why: S.G.call + 'が夢に現れた' + (p.preg ? '（疑似妊娠した）' : ''), mag: 26 });
         return true;
       }
       /* 取り憑かれた仲間 */
@@ -346,13 +372,13 @@
         poss.lastNight = h; poss.cnt.r18 = (poss.cnt.r18 || 0) + 1;
         /* 向きは受け攻めの指定どおり。取り憑かれた側が受けなら、正気の側が組み伏せる */
         var po = HK.Pos ? HK.Pos.order(poss, p, [poss, p]) : [poss, p];
-        ST.say(S, { actors: [po[0], po[1]], tag: '憑依', kind: 'climax', text: ST.fmt(ST.pick(S, po[0] === poss ? POSSESS : POSSESS_REV), { x: po[0].name, y: po[1].name }) + pairSex(S, po[0], po[1], { mood: 'rough', fore: false, short: true }), why: poss.name + 'は取り憑かれていた', mag: 28 });
+        ST.say(S, { actors: [po[0], po[1]], tag: '憑依', kind: 'climax', text: ST.fmt(fp(S, po[0] === poss ? POSSESS : POSSESS_REV), { x: po[0].name, y: po[1].name }) + pairSex(S, po[0], po[1], { mood: 'rough', fore: false, short: true }), why: poss.name + 'は取り憑かれていた', mag: 28 });
         return true;
       }
       /* 清めの湯 */
       if (r0 > 0.88) {
-        if (top) { ST.say(S, { actors: [p], tag: '清めの湯', text: ST.fmt(ST.pick(S, BATH_NO), { a: p.name }), why: '祭りの前の「清め」に誘われたが、' + p.name + 'は応じなかった', mag: 12 }); return true; }
-        ST.say(S, { actors: [p], tag: '清めの湯', kind: 'climax', text: HK.JDark && HK.JDark.roll(S, p) ? HK.JDark.text(S, 'bath', p) : ST.fmt(ST.pick(S, BATH), { a: p.name }) + (HK.R18M ? HK.R18M.npc(S, 'villager') + pz(S, p, 'react') + (HK.R18M.isStrong(p) ? HK.R18M.resist(S, 'crowd', p) : HK.R18M.moans(S, p, ['start', 'mid', 'climax'])) : ''), why: '祭りの前の「清め」と称して、村人に体を弄ばれた' + (p.aphro ? '（媚薬が回っていた）' : ''), mag: 24 });
+        if (top) { ST.say(S, { actors: [p], tag: '清めの湯', text: ST.fmt(fp(S, BATH_NO), { a: p.name }), why: '祭りの前の「清め」に誘われたが、' + p.name + 'は応じなかった', mag: 12 }); return true; }
+        ST.say(S, { actors: [p], tag: '清めの湯', kind: 'climax', text: HK.JDark && HK.JDark.roll(S, p) ? HK.JDark.text(S, 'bath', p) : ST.fmt(fp(S, BATH), { a: p.name }) + (HK.R18M ? HK.R18M.npc(S, 'villager') + pz(S, p, 'react') + (HK.R18M.isStrong(p) ? HK.R18M.resist(S, 'crowd', p) : HK.R18M.moans(S, p, ['start', 'mid', 'climax'])) : ''), why: '祭りの前の「清め」と称して、村人に体を弄ばれた' + (p.aphro ? '（媚薬が回っていた）' : ''), mag: 24 });
         return true;
       }
       /* 参加者どうし（媚薬が回っている二人ほど） */
@@ -361,11 +387,11 @@
         var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
         var rough = S.ygo && (X.viol > 30 || Y.viol > 30);
         var fmXY = !rough && !isFF(X, Y) && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm';
-        var t0 = ST.fmt(ST.pick(S, rough ? YGO_SEX : isFF(X, Y) ? MUTUAL_FF : fmXY ? MUTUAL_FM : MUTUAL), { x: X.name, y: Y.name });
+        var t0 = ST.fmt(fp(S, rough ? YGO_SEX : isFF(X, Y) ? MUTUAL_FF : fmXY ? MUTUAL_FM : MUTUAL), { x: X.name, y: Y.name });
         /* 主導する側が女性・相手が男性なら、導入の文も跨る書き方に（合意の場面だけ） */
-        if (!rough && HK.FM && HK.FM.fixWith && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm') t0 = HK.FM.fixWith({ pick: function (a) { return ST.pick(S, a); } }, t0, X, Y.name);
+        if (!rough && HK.FM && HK.FM.fixWith && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm') t0 = HK.FM.fixWith({ pick: function (a) { return fp(S, a); } }, t0, X, Y.name);
         var t = t0 + pairSex(S, X, Y, { mood: rough ? 'rough' : p.aphro || q.aphro ? 'drug' : 'love', fore: false });
-        if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < 0.5 + lv * 0.3) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(ST.pick(S, PREG), { y: Y.name }); }
+        if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < 0.5 + lv * 0.3) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(fp(S, PREG), { y: Y.name }); }
         if (rng() < 0.5) t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + pz(S, Y, 'mutual');
         p.m.fear = Math.max(0, p.m.fear - 8); q.m.fear = Math.max(0, q.m.fear - 8);
         var strm = [X, Y].filter(function (c) { return c.job === 'streamer'; })[0];
@@ -375,15 +401,15 @@
       }
       /* 村人の夜這い */
       var resist = p.tr.cp * 0.4 + p.tr.caution * 0.3 - (p.aphro ? 0.35 : 0);
-      if (rng() < resist) { ST.say(S, { actors: [p], tag: '夜這い', text: ST.fmt(ST.pick(S, YOBAI_NO), { a: p.name }), why: '夜這いをはねのけた（CP・慎重さ' + (p.aphro ? '。媚薬は回っていたが' : '') + '）', mag: 12 }); return true; }
+      if (rng() < resist) { ST.say(S, { actors: [p], tag: '夜這い', text: ST.fmt(fp(S, YOBAI_NO), { a: p.name }), why: '夜這いをはねのけた（CP・慎重さ' + (p.aphro ? '。媚薬は回っていたが' : '') + '）', mag: 12 }); return true; }
       top = top || (HK.Pos && HK.Pos.vsNpc(p, '') === 'top');
       p.m.fear = Math.min(100, p.m.fear + 6);
       if (p.prank && !top) {
-        ST.say(S, { actors: [p], tag: '夜這い', kind: 'climax', text: ST.fmt(ST.pick(S, PRANK), { a: p.name }) + (HK.R18M ? HK.R18M.moans(S, p, ['start', 'mid', 'climax']) : ''), why: 'ドッキリだと思い込んでいたので、拒まなかった', mag: 26 });
+        ST.say(S, { actors: [p], tag: '夜這い', kind: 'climax', text: ST.fmt(fp(S, PRANK), { a: p.name }) + (HK.R18M ? HK.R18M.moans(S, p, ['start', 'mid', 'climax']) : ''), why: 'ドッキリだと思い込んでいたので、拒まなかった', mag: 26 });
         return true;
       }
       if ((!HK.Content || HK.Content.ok(S, 'preg')) && !top && rng() < 0.3 + lv * 0.3) p.preg = true;
-      ST.say(S, { actors: [p], tag: '夜這い', kind: 'climax', text: (function () { var M = HK.R18M, ma = { a: p.name }; if (!top && HK.JDark && HK.JDark.roll(S, p)) return HK.JDark.text(S, 'yobai', p); if (!M) return ST.fmt(ST.pick(S, top ? YOBAI_TOP : YOBAI), ma); if (top) return ST.fmt(ST.pick(S, HK.Pos && HK.Pos.isF(p) ? YOBAI_TOP_F : YOBAI_TOP), ma) + M.say(S, p, 'top') + ST.fmt(ST.pick(S, YOBAI_TOP_NPC), ma) + (HK.Pos && HK.Pos.isF(p) ? '' : M.say(S, p, 'topc')); if (!p.aphro || M.isStrong(p)) return ST.fmt(ST.pick(S, YOBAI_FORCE), ma) + M.resist(S, { name: '村の男' }, p, { endure: false }) + ST.fmt(ST.pick(S, YOBAI_ACT), ma) + pz(S, p, 'react') + M.say(S, p, 'endure'); return ST.fmt(ST.pick(S, YOBAI), ma) + M.npc(S, 'villager') + pz(S, p, 'react') + M.moans(S, p, ['start', 'mid', 'climax']); })() + (p.preg && !top ? ST.fmt(ST.pick(S, PREG), { y: p.name }) : '') + (!top && rng() < 0.6 ? pz(S, p, 'after') : ''), why: '村人の夜這い' + (p.aphro ? '（媚薬で抗えなかった）' : ''), mag: 26 });
+      ST.say(S, { actors: [p], tag: '夜這い', kind: 'climax', text: (function () { var M = HK.R18M, ma = { a: p.name }; if (!top && HK.JDark && HK.JDark.roll(S, p)) return HK.JDark.text(S, 'yobai', p); if (!M) return ST.fmt(fp(S, top ? YOBAI_TOP : YOBAI), ma); if (top) return ST.fmt(fp(S, HK.Pos && HK.Pos.isF(p) ? YOBAI_TOP_F : YOBAI_TOP), ma) + M.say(S, p, 'top') + ST.fmt(fp(S, YOBAI_TOP_NPC), ma) + (HK.Pos && HK.Pos.isF(p) ? '' : M.say(S, p, 'topc')); if (!p.aphro || M.isStrong(p)) return ST.fmt(fp(S, YOBAI_FORCE), ma) + M.resist(S, { name: '村の男' }, p, { endure: false }) + ST.fmt(fp(S, YOBAI_ACT), ma) + pz(S, p, 'react') + M.say(S, p, 'endure'); return ST.fmt(fp(S, YOBAI), ma) + M.npc(S, 'villager') + pz(S, p, 'react') + M.moans(S, p, ['start', 'mid', 'climax']); })() + (p.preg && !top ? ST.fmt(fp(S, PREG), { y: p.name }) : '') + (!top && rng() < 0.6 ? pz(S, p, 'after') : ''), why: '村人の夜這い' + (p.aphro ? '（媚薬で抗えなかった）' : ''), mag: 26 });
       if (p.job === 'streamer') streamAfter(S, p, '村人', !top);
       return true;
     },
@@ -399,7 +425,7 @@
       if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < lv * 0.4) p.preg = true;
       p.m.fear = Math.min(100, p.m.fear + 8);
       var cLong = HK.JDark && HK.JDark.roll(S, p) ? HK.JDark.text(S, 'cave', p) : '';
-      ST.say(S, { actors: [p], tag: '洞窟', kind: 'climax', text: (cLong || (HK.R18M ? HK.R18M.resist(S, 'god', p, { endure: false }) : '') + ST.fmt(ST.pick(S, CAVE), { a: p.name, g: S.G.call }) + (HK.R18M ? HK.R18M.npc(S, 'god', p) : '')) + (p.preg ? (cLong ? '\n\n' : '') + '下腹に、熱いものが宿った感覚があった。' : ''), why: '洞窟の眷属に襲われた' + (p.preg ? '（疑似妊娠）' : ''), mag: 26 });
+      ST.say(S, { actors: [p], tag: '洞窟', kind: 'climax', text: (cLong || (HK.R18M ? HK.R18M.resist(S, 'god', p, { endure: false }) : '') + ST.fmt(fp(S, CAVE), { a: p.name, g: S.G.call }) + (HK.R18M ? HK.R18M.npc(S, 'god', p) : '')) + (p.preg ? (cLong ? '\n\n' : '') + '下腹に、熱いものが宿った感覚があった。' : ''), why: '洞窟の眷属に襲われた' + (p.preg ? '（疑似妊娠）' : ''), mag: 26 });
     },
     /* 生贄の儀（R18）。巫女になったら miko: true */
     ritual: function (S, vic) {
@@ -407,14 +433,17 @@
       if (HK.State && !HK.State.mobSexOk(vic)) return null;
       if (HK.Content && !HK.Content.ok(S, 'force')) return null;
       if (rng() > 0.35 + lv * 0.6) return null;
+      /* 性的な夜の上限に届いていたら、成人向けの儀式にしない（ふつうの生贄の儀になる） */
+      if (!JS.R18.room(S, [vic])) return null;
+      JS.R18.spend(S, [vic]);
       var top = HK.Pos && HK.Pos.vsNpc(vic, '') === 'top';
       /* 自分で攻めを選んだ人は、祭壇の上でも抱かれない。神に抗い、逆にねじ伏せる */
-      if (top) return { text: ST.fmt(ST.pick(S, RITUAL_TOP), { a: vic.name, g: S.G.call }) + (HK.R18M ? HK.R18M.say(S, vic, 'top') : '') + vic.name + 'の姿は、それきり誰の目にも映らなかった。', miko: false };
+      if (top) return { text: ST.fmt(fp(S, RITUAL_TOP), { a: vic.name, g: S.G.call }) + (HK.R18M ? HK.R18M.say(S, vic, 'top') : '') + vic.name + 'の姿は、それきり誰の目にも映らなかった。', miko: false };
       var strong = HK.R18M && HK.R18M.isStrong(vic);
       var rLong = HK.JDark && HK.JDark.roll(S, vic);
-      var t = rLong ? HK.JDark.text(S, 'ritual', vic) + '\n\n' : (strong ? HK.R18M.resist(S, 'crowd', vic, { endure: false }) : '') + ST.fmt(ST.pick(S, RITUAL), { a: vic.name, g: S.G.call }) + pz(S, vic, 'rite') + (HK.R18M ? (strong ? HK.R18M.say(S, vic, 'endure') : HK.R18M.moans(S, vic, ['start', 'mid', 'climax'])) + HK.R18M.npc(S, 'god', vic) : '');
+      var t = rLong ? HK.JDark.text(S, 'ritual', vic) + '\n\n' : (strong ? HK.R18M.resist(S, 'crowd', vic, { endure: false }) : '') + ST.fmt(fp(S, RITUAL), { a: vic.name, g: S.G.call }) + pz(S, vic, 'rite') + (HK.R18M ? (strong ? HK.R18M.say(S, vic, 'endure') : HK.R18M.moans(S, vic, ['start', 'mid', 'climax'])) + HK.R18M.npc(S, 'god', vic) : '');
       var miko = !top && (!HK.Content || HK.Content.ok(S, 'preg')) && rng() < (vic.preg ? 0.75 : 0.25 + lv * 0.25);
-      if (miko) t += ST.fmt(ST.pick(S, MIKO), { a: vic.name });
+      if (miko) t += ST.fmt(fp(S, MIKO), { a: vic.name });
       else t += vic.name + 'の姿は、それきり誰の目にも映らなかった。';
       return { text: t, miko: miko };
     }

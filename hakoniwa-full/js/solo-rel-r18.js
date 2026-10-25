@@ -227,7 +227,7 @@
         if (k !== 'lock' && k !== 'mentor') return false;
         if (Z.part(ctx) < 1) return false;
         var pf = ctx.pair(a, b);
-        if ((pf.zr18 || 0) >= 2 || (pf.zr18At != null && ctx.stepIndex - pf.zr18At < 6)) return false;
+        if ((pf.zr18 || 0) + (pf.zlvN || 0) + (pf.sitN || 0) >= 2 || (pf.zr18At != null && ctx.stepIndex - pf.zr18At < 6)) return false;
         if (pf.sitAt != null && ctx.stepIndex - pf.sitAt < 4) return false;
         return ready(ctx, a, b, k);
       },

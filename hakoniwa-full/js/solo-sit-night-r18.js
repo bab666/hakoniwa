@@ -521,7 +521,8 @@
     if (!RN.okPair(ctx, a, b) || (HK.Pos && !HK.Pos.okSex(a, b))) return false;
     if (a.hp < 15 || b.hp < 15) return false;
     var pf = ctx.pair(a, b), s = ctx.stepIndex;
-    if ((pf.sitN || 0) >= 2) return false;
+    /* 同じ二人の夜は一回の中で2回まで（ゾンビの街の恋人の夜 zlvN・関係の夜 zr18 と合わせて数える） */
+    if ((pf.sitN || 0) + (pf.zlvN || 0) + (pf.zr18 || 0) >= 2) return false;
     var last = [pf.sitAt, pf.irAt, pf.zlvAt, pf.zr18At].filter(function (x) { return x != null; });
     return !last.some(function (x) { return s - x < gap; });
   }

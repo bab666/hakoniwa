@@ -9,6 +9,8 @@
   var HK = window.HK, JS = HK.JASHIN, ST = HK.Story;
   if (!JS || !JS.R18 || !ST) return;
   function L(s) { return s.split('|'); }
+  /* 一回の結果の中で同じ文を繰り返さない選び方（ero-kit.js の HK.Ero.fresh。使い切ったら、いちばん前に使ったものから戻す） */
+  function fp(S, a) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(S, a, function (l) { return ST.pick(S, l); }) : ST.pick(S, a); }
   function M() { return HK.R18M; }
   function fmt(t, o) { return ST.fmt(t, o); }
   function ok(p, h, cd) { return p.lastNight == null || h - p.lastNight >= cd; }
@@ -40,31 +42,31 @@
     if (r < 0.25 && ms.length) {
       var q = rng.pick(ms); mark(q, h); act = [p, q];
       var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
-      t = fmt(ST.pick(S, JS.R18.ff(X, Y) ? SHUB_PAIR_FF : SHUB_PAIR), { x: X.name, y: Y.name }) + JS.R18.sex(S, X, Y, { mood: 'drug', fore: false });
-      if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < 0.5) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + fmt(ST.pick(S, SHUB_PREG), { a: Y.name }); }
+      t = fmt(fp(S, JS.R18.ff(X, Y) ? SHUB_PAIR_FF : SHUB_PAIR), { x: X.name, y: Y.name }) + JS.R18.sex(S, X, Y, { mood: 'drug', fore: false });
+      if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < 0.5) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + fmt(fp(S, SHUB_PREG), { a: Y.name }); }
       why = '収穫祭の葡萄酒に酔い、参加者どうしで交わった' + (m && m.lastPos(S) ? '（' + m.lastPos(S) + '）' : '') + (Y.preg ? '（' + Y.name + 'が疑似妊娠した）' : '');
     } else if (top(p)) {
       /* 自分で攻めを選んだ人：誘ってきた村人を組み伏せるか、仔山羊・石舞台をはねのける */
       var w = rng.pick(HK.Pos && HK.Pos.isF(p) ? ['若い衆', '杜氏', '娘'] : W), wm = { a: p.name, w: w };
-      if (r < 0.72) { t = fmt(ST.pick(S, SHUB_TOP), wm) + (m ? m.say(S, p, 'top') : '') + fmt(ST.pick(S, SHUB_TOP_NPC), { a: p.name, w: '村の' + w }); why = '収穫祭の夜。誘ってきた村人を、' + p.name + 'のほうが組み伏せた（受け攻めの指定：攻め）'; }
-      else { t = fmt(ST.pick(S, SHUB_GOAT_NO), wm); why = '豊穣の母の器にされかけたが、' + p.name + 'ははねのけた'; mag = 22; }
+      if (r < 0.72) { t = fmt(fp(S, SHUB_TOP), wm) + (m ? m.say(S, p, 'top') : '') + fmt(fp(S, SHUB_TOP_NPC), { a: p.name, w: '村の' + w }); why = '収穫祭の夜。誘ってきた村人を、' + p.name + 'のほうが組み伏せた（受け攻めの指定：攻め）'; }
+      else { t = fmt(fp(S, SHUB_GOAT_NO), wm); why = '豊穣の母の器にされかけたが、' + p.name + 'ははねのけた'; mag = 22; }
     } else if (r < 0.5) {
       var others = ms.filter(function (q) { return rng() < 0.5 && !top(q); }).slice(0, 2);
       others.forEach(function (q) { mark(q, h); });
       act = [p].concat(others);
-      t = fmt(ST.pick(S, SHUB_FEAST), { a: p.name }) + (others.length ? '篝火の向こうでは、' + others.map(function (q) { return q.name; }).join('と') + 'も、村人たちの輪に引き込まれていた。' : '') + (m ? m.npc(S, 'villager') + (others.length ? m.group(S, act) : m.moans(S, p, ['start', 'mid', 'climax'])) : '');
+      t = fmt(fp(S, SHUB_FEAST), { a: p.name }) + (others.length ? '篝火の向こうでは、' + others.map(function (q) { return q.name; }).join('と') + 'も、村人たちの輪に引き込まれていた。' : '') + (m ? m.npc(S, 'villager') + (others.length ? m.group(S, act) : m.moans(S, p, ['start', 'mid', 'climax'])) : '');
       why = '収穫祭の夜の交わり（豊穣の母に捧げる営み）' + (p.aphro ? '・媚薬と葡萄酒が回っていた' : '');
     } else if (r < 0.72) {
-      t = fmt(ST.pick(S, SHUB_WINE), { a: p.name, w: rng.pick(W) }) + (m ? m.moans(S, p, ['start', 'mid', 'climax']) : '');
+      t = fmt(fp(S, SHUB_WINE), { a: p.name, w: rng.pick(W) }) + (m ? m.moans(S, p, ['start', 'mid', 'climax']) : '');
       why = '初物の葡萄酒で酔わされ、村人に抱かれた';
     } else if (r < 0.88) {
       var strong = m && m.isStrong(p);
-      t = fmt(ST.pick(S, SHUB_GOAT), { a: p.name }) + (strong ? m.resist(S, 'god', p, { endure: false }) : '') + (m ? (strong ? m.say(S, p, 'endure') : m.moans(S, p, ['start', 'mid', 'climax'])) + m.npc(S, 'god', p) : '');
-      if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < 0.5) { p.preg = true; t += fmt(ST.pick(S, SHUB_PREG), { a: p.name }); }
+      t = fmt(fp(S, SHUB_GOAT), { a: p.name }) + (strong ? m.resist(S, 'god', p, { endure: false }) : '') + (m ? (strong ? m.say(S, p, 'endure') : m.moans(S, p, ['start', 'mid', 'climax'])) + m.npc(S, 'god', p) : '');
+      if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < 0.5) { p.preg = true; t += fmt(fp(S, SHUB_PREG), { a: p.name }); }
       why = '黒い仔山羊に襲われた' + (p.preg ? '（疑似妊娠した）' : ''); mag = 30;
     } else {
-      t = fmt(ST.pick(S, SHUB_RITE), { a: p.name }) + (m ? m.moans(S, p, ['start', 'mid', 'climax']) + m.npc(S, 'god', p) : '');
-      if (!HK.Content || HK.Content.ok(S, 'preg')) { p.preg = true; t += fmt(ST.pick(S, SHUB_PREG), { a: p.name }); }
+      t = fmt(fp(S, SHUB_RITE), { a: p.name }) + (m ? m.moans(S, p, ['start', 'mid', 'climax']) + m.npc(S, 'god', p) : '');
+      if (!HK.Content || HK.Content.ok(S, 'preg')) { p.preg = true; t += fmt(fp(S, SHUB_PREG), { a: p.name }); }
       why = '豊穣の母の器として、石舞台に捧げられた（疑似妊娠した：生贄にされると巫女になりやすい）'; mag = 32;
     }
     ST.say(S, { actors: act, tag: '収穫祭の夜', kind: 'climax', text: t, why: why, mag: mag });
@@ -92,19 +94,19 @@
       /* 向きは受け攻めの指定どおり。ラミアの側が受けなら、{a}が尾ごと組み伏せる */
       var lo = HK.Pos ? HK.Pos.order(lover, p, [lover, p]) : [lover, p];
       if (lo[0] === p) {
-        var tr = fmt(ST.pick(S, LAMIA), { a: p.name, b: lover.name }) + fmt(ST.pick(S, LAMIA_REV), { a: p.name, b: lover.name }) + (m ? m.say(S, p, 'top') + m.moans(S, lover, ['start', 'mid', 'climax']) : '') + fmt(ST.pick(S, LAMIA_AFTER), { a: p.name, b: lover.name });
+        var tr = fmt(fp(S, LAMIA), { a: p.name, b: lover.name }) + fmt(fp(S, LAMIA_REV), { a: p.name, b: lover.name }) + (m ? m.say(S, p, 'top') + m.moans(S, lover, ['start', 'mid', 'climax']) : '') + fmt(fp(S, LAMIA_AFTER), { a: p.name, b: lover.name });
         ST.say(S, { actors: [p, lover], tag: '蛇の夜', kind: 'climax', text: tr, why: '蛇の父の呪いで、' + p.name + 'の想う相手（' + lover.name + '）がラミアの姿になって迫ってきた。' + p.name + 'のほうが組み伏せた（受け攻めの指定）', mag: 32 });
         return true;
       }
-      var t = fmt(ST.pick(S, LAMIA), { a: p.name, b: lover.name }) + (strong ? m.resist(S, { name: lover.name }, p, { endure: false }) : '') + fmt(ST.pick(S, LAMIA_ACT), { a: p.name, b: lover.name }) + (m ? m.say(S, lover, 'top') + (strong ? m.say(S, p, 'endure') : m.moans(S, p, ['start', 'mid', 'climax'])) + m.say(S, lover, 'topc') : '') + fmt(ST.pick(S, LAMIA_AFTER), { a: p.name, b: lover.name });
+      var t = fmt(fp(S, LAMIA), { a: p.name, b: lover.name }) + (strong ? m.resist(S, { name: lover.name }, p, { endure: false }) : '') + fmt(fp(S, LAMIA_ACT), { a: p.name, b: lover.name }) + (m ? m.say(S, lover, 'top') + (strong ? m.say(S, p, 'endure') : m.moans(S, p, ['start', 'mid', 'climax'])) + m.say(S, lover, 'topc') : '') + fmt(fp(S, LAMIA_AFTER), { a: p.name, b: lover.name });
       ST.say(S, { actors: [p, lover], tag: '蛇の夜', kind: 'climax', text: t, why: '蛇の父の呪いで、' + p.name + 'の想う相手（' + lover.name + '）がラミアの姿になって迫ってきた', mag: 32 });
       return true;
     }
     if (top(p)) {
-      ST.say(S, { actors: [p], tag: '蛇の夢', text: fmt(ST.pick(S, YIG_DREAM_TOP), { a: p.name }) + fmt(ST.pick(S, YIG_WAKE_TOP), { a: p.name }), why: '夢の中に蛇の父の眷属が現れたが、' + p.name + 'はねじ伏せた（受け攻めの指定：攻め）', mag: 22 });
+      ST.say(S, { actors: [p], tag: '蛇の夢', text: fmt(fp(S, YIG_DREAM_TOP), { a: p.name }) + fmt(fp(S, YIG_WAKE_TOP), { a: p.name }), why: '夢の中に蛇の父の眷属が現れたが、' + p.name + 'はねじ伏せた（受け攻めの指定：攻め）', mag: 22 });
       return true;
     }
-    var t2 = fmt(ST.pick(S, YIG_DREAM), { a: p.name }) + (strong ? m.resist(S, 'god', p, { endure: false }) : '') + (m ? (strong ? m.say(S, p, 'endure') : m.moans(S, p, ['start', 'mid', 'climax'])) : '') + fmt(ST.pick(S, YIG_WAKE), { a: p.name });
+    var t2 = fmt(fp(S, YIG_DREAM), { a: p.name }) + (strong ? m.resist(S, 'god', p, { endure: false }) : '') + (m ? (strong ? m.say(S, p, 'endure') : m.moans(S, p, ['start', 'mid', 'climax'])) : '') + fmt(fp(S, YIG_WAKE), { a: p.name });
     ST.say(S, { actors: [p], tag: '蛇の夢', kind: 'climax', text: t2, why: '夢の中で、蛇の父の眷属に犯された', mag: 28 });
     return true;
   }
@@ -121,10 +123,10 @@
     mark(p, h);
     if (top(p)) {
       p.m.hp = Math.max(0, p.m.hp - 6); p.m.fear = Math.min(100, p.m.fear + 10);
-      ST.say(S, { actors: [p], tag: 'チョー・チョー人の夜', text: fmt(ST.pick(S, TCHO_TOP), { a: p.name }), why: 'チョー・チョー人の村人たちが襲ってきたが、' + p.name + 'は叩き伏せて追い払った（体力−6・恐怖＋10）', mag: 26 });
+      ST.say(S, { actors: [p], tag: 'チョー・チョー人の夜', text: fmt(fp(S, TCHO_TOP), { a: p.name }), why: 'チョー・チョー人の村人たちが襲ってきたが、' + p.name + 'は叩き伏せて追い払った（体力−6・恐怖＋10）', mag: 26 });
       return true;
     }
-    var t = fmt(ST.pick(S, TCHO), { a: p.name }) + (m ? m.resist(S, 'crowd', p, { endure: false }) : '') + fmt(ST.pick(S, TCHO_ACT), { a: p.name }) + (m ? m.say(S, p, 'endure') : '') + fmt(ST.pick(S, TCHO_AFTER), { a: p.name });
+    var t = fmt(fp(S, TCHO), { a: p.name }) + (m ? m.resist(S, 'crowd', p, { endure: false }) : '') + fmt(fp(S, TCHO_ACT), { a: p.name }) + (m ? m.say(S, p, 'endure') : '') + fmt(fp(S, TCHO_AFTER), { a: p.name });
     p.m.hp = Math.max(0, p.m.hp - 18); p.m.fear = Math.min(100, p.m.fear + 22);
     ST.say(S, { actors: [p], tag: 'チョー・チョー人の夜', kind: 'climax', text: t, why: '象の神を奉じるチョー・チョー人の村人たちが、残虐性をむき出しにして襲ってきた（体力−18・恐怖＋22）', mag: 34 });
     return true;
@@ -148,7 +150,7 @@
     shy: L('{a}は声も出せずに、ただ身を縮めていた。見られることも、触れられることも、何もかもが怖かった。|{a}は両腕で顔を隠した。隠せたのは、顔だけだった。|{a}の拒む声は、蚊の鳴くように小さかった。人ではないものには、届きもしなかった。'),
     polite: L('{a}は「お、おやめください」と最後まで丁寧に頼んだ。丁寧な言葉は、途中から言葉にならなくなった。|{a}は乱れまいと居住まいを正そうとしたが、異様な力に押さえつけられて、それも叶わなかった。|{a}は「どうか、ご容赦を」と震える声で繰り返した。神には、人の作法は通じなかった。')
   };
-  function gp(S, p) { var t = GP[(HK.personaOf ? HK.personaOf(p) : p.persona) || 'gentle'] || GP.gentle; return fmt(ST.pick(S, t), { a: p.name }); }
+  function gp(S, p) { var t = GP[(HK.personaOf ? HK.personaOf(p) : p.persona) || 'gentle'] || GP.gentle; return fmt(fp(S, t), { a: p.name }); }
   /* きっかけごとの言い方（理由の欄）と、媚薬が回っていたときの書き出し */
   var KIND = { d: '夢の中で', r: '村の儀式で', b: '眷属に襲われ', v: '村人たちに襲われ', p: '神に取り憑かれ' };
   var G_DRUG = L('{a}の体には、昼間に盛られた薬の熱がまだ残っていた。|媚薬の熱が引かないまま、{a}は寝つけずにいた。|{a}は火照る体を持て余し、何度も寝返りを打っていた。');
@@ -177,33 +179,33 @@
       var q = rng.pick(ms); mark(q, h);
       var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1], Pz = HK.Pos;
       var ck = Pz && Pz.ff(X, Y) ? 'ff' : Pz && Pz.isF(X) && !Pz.isF(Y) ? 'fm' : 'm', xm = { x: X.name, y: Y.name, g: g };
-      var t = fmt(ST.pick(S, GD.P), xm) + fmt(ST.pick(S, G_PAIR[ck]), xm) + JS.R18.sex(S, X, Y, { mood: 'drug', fore: false });
-      if ((!HK.Content || HK.Content.ok(S, 'preg')) && GD.preg && rng() < GD.preg) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + fmt(ST.pick(S, G_PREG), { a: Y.name }); }
+      var t = fmt(fp(S, GD.P), xm) + fmt(fp(S, G_PAIR[ck]), xm) + JS.R18.sex(S, X, Y, { mood: 'drug', fore: false });
+      if ((!HK.Content || HK.Content.ok(S, 'preg')) && GD.preg && rng() < GD.preg) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + fmt(fp(S, G_PREG), { a: Y.name }); }
       if (JS.R18.pz && rng() < 0.5) t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + JS.R18.pz(S, Y, 'mutual');
       ST.say(S, { actors: [X, Y], tag: GD.tag, kind: 'climax', text: t, why: GD.who + 'の気配に当てられ、参加者どうしで交わった' + (m && m.lastPos(S) ? '（' + m.lastPos(S) + '）' : '') + (Y.preg ? '（' + Y.name + 'が疑似妊娠した）' : ''), mag: 30 });
       return true;
     }
     /* 自分で攻めを選んだ人 */
     if (top(p)) {
-      var tp = kindOf(ST.pick(S, GD.T.concat(G_TOP)));
+      var tp = kindOf(fp(S, GD.T.concat(G_TOP)));
       var tt = fmt(tp.t, am);
-      if (tp.k === 'x') tt += (m ? m.say(S, p, 'top') : '') + fmt(ST.pick(S, G_TOPNPC), am);
+      if (tp.k === 'x') tt += (m ? m.say(S, p, 'top') : '') + fmt(fp(S, G_TOPNPC), am);
       var to = { actors: [p], tag: GD.tag, text: tt, why: tp.k === 'x' ? GD.who + 'の夜。寄ってきた相手を、' + p.name + 'のほうが組み伏せた（受け攻めの指定：攻め）' : GD.who + 'が迫ってきたが、' + p.name + 'ははねのけた（受け攻めの指定：攻め）', mag: tp.k === 'x' ? 26 : 20 };
       if (tp.k === 'x') to.kind = 'climax';
       ST.say(S, to);
       return true;
     }
     /* 受ける夜 */
-    var pt = kindOf(ST.pick(S, GD.N)), part = pt.t.split('／'), dream = pt.k === 'd';
+    var pt = kindOf(fp(S, GD.N)), part = pt.t.split('／'), dream = pt.k === 'd';
     var strong = m && m.isStrong(p), fight = m && !dream && (strong || !p.aphro);
     /* 夢の文の最後の「目覚めると〜」は、喘ぎと反応のあとへ回す */
     var act = part[1] || '', wi = Math.max(act.lastIndexOf('。目覚め'), act.lastIndexOf('。目が覚め')), wake = '';
     if (wi >= 0) { wake = act.slice(wi + 1); act = act.slice(0, wi + 1); }
-    var t2 = (p.aphro && rng() < 0.6 ? fmt(ST.pick(S, G_DRUG), am) : '') + fmt(part[0], am) + (fight ? m.resist(S, pt.k === 'v' ? 'crowd' : 'god', p, { endure: false }) : '') + fmt(act, am) + (pt.k === 'v' && JS.R18.pz ? JS.R18.pz(S, p, 'react') : gp(S, p));
+    var t2 = (p.aphro && rng() < 0.6 ? fmt(fp(S, G_DRUG), am) : '') + fmt(part[0], am) + (fight ? m.resist(S, pt.k === 'v' ? 'crowd' : 'god', p, { endure: false }) : '') + fmt(act, am) + (pt.k === 'v' && JS.R18.pz ? JS.R18.pz(S, p, 'react') : gp(S, p));
     if (m) t2 += (fight ? m.say(S, p, 'endure') : m.moans(S, p, dream ? ['mid', 'climax'] : ['start', 'mid', 'climax'])) + m.npc(S, pt.k === 'v' ? 'villager' : 'god', p);
     t2 += fmt(wake, am);
-    if ((!HK.Content || HK.Content.ok(S, 'preg')) && GD.preg && rng() < GD.preg * (0.5 + lv * 0.5)) { p.preg = true; t2 += fmt(ST.pick(S, G_PREG), am); }
-    t2 += fmt(ST.pick(S, GD.A.concat(G_AFTER)), am);
+    if ((!HK.Content || HK.Content.ok(S, 'preg')) && GD.preg && rng() < GD.preg * (0.5 + lv * 0.5)) { p.preg = true; t2 += fmt(fp(S, G_PREG), am); }
+    t2 += fmt(fp(S, GD.A.concat(G_AFTER)), am);
     var fear = dream ? 8 : 14, hurt = dream ? 0 : 4;
     p.m.fear = Math.min(100, p.m.fear + fear); p.m.hp = Math.max(0, p.m.hp - hurt);
     ST.say(S, { actors: [p], tag: GD.tag, kind: 'climax', text: t2, why: KIND[pt.k] + '、' + GD.who + 'に体を弄ばれた' + (fight ? '（抗った）' : p.aphro ? '（媚薬が回っていた）' : '') + (p.preg ? '（疑似妊娠した：生贄にされると巫女になりやすい）' : '') + '（恐怖＋' + fear + (hurt ? '・体力−' + hurt : '') + '）', mag: dream ? 26 : 30 });
@@ -215,9 +217,16 @@
   JS.R18.night = function (S, p, live, h) {
     /* R18に参加しない人は夜に出ない。「恋人だけ」の人は神の夜には進まず、住人どうしの夜（base）だけ */
     if (HK.State && !HK.State.r18ok(p)) return false;
-    if (p.noMob || (HK.Content && !HK.Content.ok(S, 'force')) || S.rng() > (S.env.jyobai == null ? 1 : S.env.jyobai / 100)) return base(S, p, live, h);
-    var f = GODR[S.G.id] || godNight;
-    if (f(S, p, live, h)) return true;
-    return base(S, p, live, h);
+    /* 一回の中の性的な夜の上限（solo-jashin-r18.js の room）。相手になれるのも、まだ余裕のある人だけ */
+    if (!JS.R18.room(S, [p])) return false;
+    live = live.filter(function (q) { return q === p || JS.R18.room(S, [q]); });
+    var n0 = S.log.length, r = (function () {
+      if (p.noMob || (HK.Content && !HK.Content.ok(S, 'force')) || S.rng() > (S.env.jyobai == null ? 1 : S.env.jyobai / 100)) return base(S, p, live, h);
+      var f = GODR[S.G.id] || godNight;
+      if (f(S, p, live, h)) return true;
+      return base(S, p, live, h);
+    })();
+    if (r) JS.R18.spendLog(S, n0);
+    return r;
   };
 })();

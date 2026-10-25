@@ -111,7 +111,8 @@
       if (HK.Pos && !HK.Pos.okSex(a, b)) return false;
       if (Z.part(ctx) < 2) return false;
       var pf = ctx.pair(a, b);
-      if ((pf.zlvN || 0) >= 2 || (pf.zlvAt != null && ctx.stepIndex - pf.zlvAt < 6)) return false;
+      /* 同じ二人の夜は一回の中で2回まで（R18版の状況の夜 sitN・関係の夜 zr18 と合わせて数える） */
+      if ((pf.zlvN || 0) + (pf.sitN || 0) + (pf.zr18 || 0) >= 2 || (pf.zlvAt != null && ctx.stepIndex - pf.zlvAt < 6)) return false;
       /* R18版の「状況の夜」（solo-sit-night-r18.js）と同じ日には重ねない（全年齢版では sitAt は付かない） */
       if (pf.sitAt != null && ctx.stepIndex - pf.sitAt < 4) return false;
       return Z.day(ctx) >= 2 || a.stress > 35 || b.stress > 35 || a.z.bitten || b.z.bitten;
