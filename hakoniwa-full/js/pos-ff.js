@@ -115,6 +115,8 @@
     fix: function (ctx, text, a, b, opt) {
       var RE = HK.Pos && HK.Pos.MALE_RE;
       if (!RE || typeof text !== 'string' || !RE.test(text)) return text;
+      /* 性器なしの人がいる組は pos-nogen.js が口・指と玩具の文に直す */
+      if (HK.NoGen && HK.NoGen.on(a, b)) return text;
       var o = HK.Pos.order(a, b, [a, b]), A = o[0], B = o[1], st = (opt && opt.st) || styleOf(A), riba = HK.Pos.bothRiba && HK.Pos.bothRiba(A, B);
       var drug = /媚薬|薬の|甘い匂い|発情/.test(text), used = {};
       return text.replace(/[^。！？」]*(?:「[^」]*」[^。！？」]*)*[。！？]?/g, function (sen) {

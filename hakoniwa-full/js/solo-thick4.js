@@ -242,12 +242,13 @@
       return true;
     },
     /* 型を、性別に合わせて直す */
+    /* 竿の有無は性別ではなく性器（HK.Pos.hasM。attr.js の genital。決めていなければ性別・ふたなりどおり） */
     kindFor: function (kind, dom, sub) {
-      var df = isF(dom), sf = isF(sub);
+      var Pz = HK.Pos, df = Pz && Pz.hasM ? !Pz.hasM(dom) : isF(dom), sf = Pz && Pz.hasM ? !Pz.hasM(sub) : isF(sub);
       if (kind === 'in') return df ? (sf ? 'ff' : 'ride') : 'in';
-      /* 女性の主導役に男性が口で奉仕する型は、女性が跨る型に（女性に竿の言葉を使わない） */
+      /* 竿のない主導役に口で奉仕する型は、跨る型に（竿のない人に竿の言葉を使わない） */
       if (kind === 'kneel') return df ? (sf ? 'ff' : 'ride') : 'kneel';
-      /* 竿のない相手に跨る型は、男性の主導役なら入れる型に、女性どうしなら指と舌に */
+      /* 竿のない相手に跨る型は、竿のある主導役なら入れる型に、どちらも竿がなければ指と舌に */
       if (kind === 'ride') return sf ? (df ? 'ff' : 'in') : kind;
       if (kind === 'serve') return sf ? 'ff' : kind;
       return kind;
@@ -255,7 +256,13 @@
     /* o = { dom, sub（{name, persona, eg, tr, gender}）, kind, lead（元の文・埋めたもの）, peak（絶頂の段落を元の文で置き換えるとき）,
            sad（嗜虐的な振る舞いを使うか）, jealous（嫉妬エッチの場面か）, after（余韻に足す一文・埋めたもの） } */
     scene: function (S, o) {
-      var dom = o.dom || {}, sub = o.sub || {}, kind = T4.kindFor(o.kind || 'in', dom, sub), tb = P[kind] || P.in;
+      var dom = o.dom || {}, sub = o.sub || {};
+      /* 性器なしの人がいる組（pos-nogen.js）：崩れていく側が none なら口まで、主導する側が none なら指と玩具だけ */
+      if (HK.NoGen && HK.NoGen.on(dom, sub)) {
+        var ng = HK.NoGen.scene({ S: S, rng: S.rng, a: dom, b: sub, after: o.after || null });
+        return ((o.lead ? o.lead + '\n\n' : '') + ng.text).replace(/\{a\}/g, dom.name || '相手').replace(/\{b\}/g, sub.name || '相手');
+      }
+      var kind = T4.kindFor(o.kind || 'in', dom, sub), tb = P[kind] || P.in;
       var sad = !!(o.sad && ROUGH[kind] && HK.Ero && HK.Ero.sadist && HK.Ero.sadist(dom, sub));
       /* 首を押さえるのは、嫉妬エッチのときだけ */
       var hard = sad && o.jealous ? CHOKE : sad ? ROUGH : null;

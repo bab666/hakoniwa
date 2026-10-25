@@ -131,11 +131,11 @@
     function okS(a, b) { return !kinBlock(a, b) && (!PO || PO.okSex(a, b)) && !(HK.ngPair && HK.ngPair(a, b)) && !(HK.sexBlocked && HK.sexBlocked(a, b)); }
     function ord(a, b) { return PO ? PO.order(a, b, [a, b]) : [a, b]; }
     /* いちもつのある人（男性と、ふたなりの女性）。男性器前提の企画・当てっこは、ふたなりがいても外さない */
-    function hasP(p) { return PO ? !PO.isF(p) : p.gender === 'm'; }
+    function hasP(p) { return PO ? (PO.hasM ? PO.hasM(p) : !PO.isF(p)) : p.gender === 'm'; }
     /* アシスタントを選ぶ：いちもつ前提の企画や、女性の挑戦者が受ける企画では男性のアシスタントにする（女性どうしにしない） */
     function assist(p, K) {
       var pool = VA.ASSIST;
-      if ((VA.ASSIST_NEED_M && VA.ASSIST_NEED_M.indexOf(K.name) >= 0) || (p.gender === 'f' && VA.ASSIST_FF_OK && VA.ASSIST_FF_OK.indexOf(K.name) < 0 && !K.ffok)) pool = pool.filter(function (x) { return !VA.ASSIST_F_RE.test(x); });
+      if ((VA.ASSIST_NEED_M && VA.ASSIST_NEED_M.indexOf(K.name) >= 0) || ((PO && PO.genSet && PO.genSet(p) ? !PO.hasM(p) : p.gender === 'f') && VA.ASSIST_FF_OK && VA.ASSIST_FF_OK.indexOf(K.name) < 0 && !K.ffok)) pool = pool.filter(function (x) { return !VA.ASSIST_F_RE.test(x); });
       return rng.pick(pool.length ? pool : VA.ASSIST);
     }
     function skill(p, st) {

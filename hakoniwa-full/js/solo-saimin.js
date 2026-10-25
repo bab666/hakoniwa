@@ -490,8 +490,9 @@
   var A_MALE = /\{a\}の(?:根元|亀頭|竿|裏筋|鈴口|カリ|先走り|ちんぽ|肉棒|ペニス|陰茎|睾丸)|\{a\}(?:は|が)[^。「」{]{0,30}(?:射精|精を(?:吐き出|放))/;
   function bodyL(S, p, key, arr) {
     var L0 = eL(S, key, arr);
-    if (p.aTop || !HK.Pos || !HK.Pos.isF(p)) return L0;
-    var ok = (L0 || []).filter(function (t) { return !A_MALE.test(t); }).concat(eL(S, key + 'F', []) || []);
+    /* 体の判定は性別ではなく性器（HK.Pos.hasM・hasF。attr.js の genital） */
+    if (p.aTop || !HK.Pos || HK.Pos.hasM(p)) return L0;
+    var ok = (L0 || []).filter(function (t) { return !A_MALE.test(t); }).concat(HK.Pos.hasF(p) ? eL(S, key + 'F', []) || [] : []);
     return ok.length ? ok : L0;
   }
   /* {m0}〜{m2} は {a} の喘ぎ、{hm0}〜{hm2} は {h} の喘ぎ（かける側がモブなら穏やかの喘ぎ）、{s:wet} などは擬音。

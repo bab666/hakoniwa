@@ -7,7 +7,11 @@
    向きを決められない組（攻め×攻めなど）は、恋愛にも体の関係にもならない（HK.canLove が false を返す）。
    リバ同士の組だけは、場面ごとに入れ替わってよい。それ以外の組は、一度決まった向きを最後まで変えない。
    ふたなり（futa、R18版のみ）：攻め・リバを選んだ女性に付けると、攻めに回る場面を男性の体（いちもつ）を前提にした描写で書く（P.isF が false）。
-     オメガバースでは使わない（P.isFBody を見る）。双頭の玩具・貝合わせのような対等な繋がりは、二人ともリバ（P.bothRiba）のときだけ。 */
+     オメガバースでは使わない（P.isFBody を見る）。双頭の玩具・貝合わせのような対等な繋がりは、二人ともリバ（P.bothRiba）のときだけ。
+   性器の有無（genital、R18版のみ。attr.js の欄）：''（おまかせ＝性別どおり：男性→男性器、女性→女性器、ふたなり→両方）／m 男性器／f 女性器／mf 両方／none なし。
+     体の描写の判定（P.hasM・P.hasF・P.noGen、それを読む P.isFBody・P.futa・P.isF）は性別ではなくこれを見る。胸・喉仏などは性別どおり。
+     none の人は、受けのとき口（口内）まで、攻めのとき指と玩具だけ（pos-nogen.js の HK.NoGen）。P.okSex は変えない（組み立て側が形を選ぶ）。
+     全年齢版・全年齢モード（HK.SAFE_ON）では使わない（保存だけ） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -32,11 +36,22 @@
   P.canBottom = function (c) { return !P.hardTop(c); };
   var LBL = { top: '攻め', bottom: '受け', riba: 'リバ' };
   P.label = function (c) { return LBL[P.of(c)] || 'おまかせ'; };
-  /* 体が女性か（性別の設定そのもの。オメガバースなど、ふたなりの設定を使わない箱庭はこちらを見る） */
-  P.isFBody = function (c) { return src(c, 'gender') === 'f'; };
+  /* 性器の有無（R18版のみ）：自分で決めた値（決めていなければ ''。全年齢では常に ''） */
+  P.GENITAL = { m: 1, f: 1, mf: 1, none: 1 };
+  P.genSet = function (c) { if (HK.SAFE_ON || !c) return ''; var v = src(c, 'genital'); return P.GENITAL[v] ? v : ''; };
+  /* ふたなり（性器の欄を決めていない人だけ。女性で、自分で「攻め」か「リバ」を選び、設定で「ふたなり」を付けた人） */
+  function futaOld(c) { return !HK.SAFE_ON && src(c, 'gender') === 'f' && !!src(c, 'futa') && explicit(c) && P.of(c) !== 'bottom'; }
+  /* 実際の性器：'m'／'f'／'mf'／'none'（おまかせは性別どおり。性別がおまかせ・その他の人は、これまでどおり男性の体） */
+  P.gen = function (c) { var g = P.genSet(c); if (g) return g; if (!c) return ''; return src(c, 'gender') === 'f' ? (futaOld(c) ? 'mf' : 'f') : 'm'; };
+  P.hasM = function (c) { var g = P.gen(c); return g === 'm' || g === 'mf'; };
+  P.hasF = function (c) { var g = P.gen(c); return g === 'f' || g === 'mf'; };
+  P.noGen = function (c) { return P.gen(c) === 'none'; };
+  /* 体が女性か（オメガバースなど、ふたなりの設定を使わない箱庭はこちらを見る）。性器を決めた人は性器から（女性器のある人＝女性の体。なしの人は性別どおり） */
+  P.isFBody = function (c) { var g = P.genSet(c); if (g) return g === 'f' || g === 'mf' || (g === 'none' && src(c, 'gender') === 'f'); return src(c, 'gender') === 'f'; };
   /* ふたなり（R18版のみ）：女性で、自分で「攻め」か「リバ」を選び、設定で「ふたなり」を付けた人。
-     攻めに回る場面では男性の体（いちもつ）を前提にした描写で書く。自分で「受け」を選んだ人・おまかせの女性には効かない */
-  P.futa = function (c) { return !HK.SAFE_ON && P.isFBody(c) && !!src(c, 'futa') && explicit(c) && P.of(c) !== 'bottom'; };
+     攻めに回る場面では男性の体（いちもつ）を前提にした描写で書く。自分で「受け」を選んだ人・おまかせの女性には効かない。
+     性器を「両方」にした人は、受けの指定でなければ同じ扱い（性別・ふたなりの欄に関係なく） */
+  P.futa = function (c) { var g = P.genSet(c); if (g) return g === 'mf' && P.of(c) !== 'bottom'; return futaOld(c); };
   /* 描写の上で「女性の体」として書く人（ふたなりの攻めは除く）。女性どうし（ff）・女性が攻め（fm）の判定はこれで行う */
   P.isF = function (c) { return P.isFBody(c) && !P.futa(c); };
   /* 女性どうしの組（いちもつの描写を使わない）。ふたなりの攻めが入る組は、男性の体を前提にした描写でよい */

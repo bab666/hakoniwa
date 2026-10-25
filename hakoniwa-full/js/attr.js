@@ -2,6 +2,8 @@
    住人の設定（⚙️）の「体と設定」で決め、どの箱庭でも同じに効く。箱庭ごとの役（perFields）とは別の、住人そのものの見た目・性格。
    ・build 体格：''（おまかせ＝ふつう扱い）／small 小柄／avg ふつう／large 大柄。二人の差で文を差し替える（HK.Attr.sizeDiff）
    ・bust 胸（R18版・女性だけ）：''／s 控えめ／m ふつう／l 豊か。R18 の地の文の差し替え語（HK.Attr.bustWord）
+   ・genital 性器（R18版だけ。全年齢版では保存だけ）：''（おまかせ＝性別どおり）／m 男性器／f 女性器／mf 両方／none なし。
+     体の描写の判定は pos.js（HK.Pos.hasM・hasF・noGen）。none の人は受けのとき口まで、攻めのとき指と玩具だけ（pos-nogen.js）
    ・race 種族：''（人間）／human／vampire 吸血鬼／beast 獣人／demon 魔族／angel 天使／ghost 幽霊／other その他（raceNote に自由記入）。
      文の飾り（耳・尾・牙・翼）。死のある箱庭の「特殊役職：吸血鬼」と同じ扱いにする（special.js の SP.setup。両方が吸血鬼でも一人分）
    ・night 夜の性格（R18版だけ）：''（おまかせ＝気質から）／sadist サド／maso マゾ／mean 意地悪／sweet 甘々／shy 恥じらい／none 表と同じ。
@@ -29,19 +31,20 @@
   A.RACE = [['', 'おまかせ（人間）'], ['human', '人間'], ['vampire', '吸血鬼'], ['beast', '獣人'], ['demon', '魔族'], ['angel', '天使'], ['ghost', '幽霊'], ['other', 'その他']];
   A.NIGHT = [['', 'おまかせ（気質から）'], ['sadist', 'サド'], ['maso', 'マゾ'], ['mean', '意地悪'], ['sweet', '甘々'], ['shy', '恥じらい'], ['none', '表と同じ']];
   A.WILL = [['', 'おまかせ'], ['weak', '弱い'], ['avg', 'ふつう'], ['strong', '強い']];
+  A.GENITAL = [['', 'おまかせ（性別どおり）'], ['m', '男性器'], ['f', '女性器'], ['mf', '両方'], ['none', 'なし']];
   function has(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return true; return false; }
   function val(list, v) { v = v == null ? '' : String(v); return has(list, v) ? v : ''; }
   function lab(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return list[i][1]; return ''; }
   function note(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>]/g, '').trim().slice(0, 12) : ''; }
-  A.label = function (k, v) { return lab({ build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL }[k] || [], v); };
-  var SIMPLE = ['build', 'bust', 'race', 'night', 'will'];
+  A.label = function (k, v) { return lab({ build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL }[k] || [], v); };
+  var SIMPLE = ['build', 'bust', 'race', 'night', 'will', 'genital'];
   /* 相手ごとの二人称・一人称（VF：欄の名前） */
   var VF = ['youFor', 'fpFor'];
   A.YOU_OPTS = ['あなた', 'きみ', 'おまえ', 'あんた', 'そっち'];
   A.FP_OPTS = ['私', '俺', '僕', 'あたし'];
   function word(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>\s\u2060-\u2064]/g, '').slice(0, 8) : ''; }
   function wmap(m, keyOk) { var o = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { var w = word(m[k]); if (w && (!keyOk || keyOk(k))) o[k] = w; }); return o; }
-  function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL }[k]; }
+  function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL }[k]; }
   /* 好きな食べ物・嫌いな食べ物（自由記入）と好きな味（決まった7つから複数）。画面と書き出しは読点区切りの文字列、実行時は配列 */
   A.TASTES = ['甘い', 'しょっぱい', '辛い', '酸っぱい', '苦い', 'あっさり', 'こってり'];
   var FOODK = ['foodLike', 'foodHate'];
@@ -138,6 +141,7 @@
     if (!HK.SAFE_ON && c.bust && c.gender === 'f') bits.push('胸：' + lab(A.BUST, c.bust));
     if (c.race && c.race !== 'human') bits.push('種族：' + lab(A.RACE, c.race) + (c.raceNote ? '（' + c.raceNote + '）' : ''));
     if (!HK.SAFE_ON && c.night) bits.push('夜：' + lab(A.NIGHT, c.night));
+    if (!HK.SAFE_ON && c.genital) bits.push('性器：' + lab(A.GENITAL, c.genital));
     if (c.will) bits.push('心の強さ：' + lab(A.WILL, c.will));
     if (fstr(c.foodLike)) bits.push('好物：' + fstr(c.foodLike));
     if (fstr(c.foodHate)) bits.push('苦手な食べ物：' + fstr(c.foodHate));
@@ -163,6 +167,7 @@
       '<label title="耳・尾・牙・翼などの文の飾りが付きます。死のある箱庭では、吸血鬼は特殊役職の吸血鬼と同じ扱いになります">種族 ' + sel('race') + '</label>' +
       (c.race === 'other' ? '<label>種族の名前 <input type="text" data-gf="at_raceNote" value="' + esc(c.raceNote || '') + '" maxlength="12" placeholder="例：人魚" style="width:7em"></label>' : '') +
       (!HK.SAFE_ON ? '<label title="R18の場面での振る舞い。作風（山場の書き方）より優先します。マゾは受け攻めを変えません（攻めを選んだ人は攻めのまま）">夜の性格 ' + sel('night') + '</label>' : '') +
+      (!HK.SAFE_ON ? '<label title="R18の場面の体の書き方が、性別ではなくこちらに従います。「なし」にすると、受けのときは口まで、攻めのときは指と玩具だけになります">性器 ' + sel('genital') + '</label>' : '') +
       '<label title="快楽堕ち・催眠・常識改変・感覚遮断穴などで、堕ちやすさが変わります。強いと、体は流されても心は折れません">心の強さ ' + sel('will') + '</label>' + same + '</div>' + nf + food(c, esc) + '</details>';
   };
   /* 「体と設定」の食べ物の行：好きな食べ物・嫌いな食べ物（自由記入）と好きな味（いくつでも） */
@@ -236,8 +241,9 @@
     var tl = A.tasteList(src.taste);
     if (tl.length) dst.taste = tl;
     if (!HK.SAFE_ON) {
-      var bu = val(A.BUST, src.bust), nt = val(A.NIGHT, src.night);
+      var bu = val(A.BUST, src.bust), nt = val(A.NIGHT, src.night), gn = val(A.GENITAL, src.genital);
       if (bu) dst.bust = bu;
+      if (gn) dst.genital = gn;
       if (nt) dst.night = nt;
       if (src.nightFor && typeof src.nightFor === 'object') {
         var nf = null;
@@ -281,7 +287,7 @@
   /* 胸の差し替え語（R18版・女性だけ。決めていなければ ''） */
   A.BUST_WORD = { s: L('控えめな胸|小ぶりな胸|慎ましい胸'), m: L('形のいい胸|柔らかな胸|手に馴染む胸'), l: L('豊かな胸|たわわな胸|大きな胸') };
   A.bustWord = function (c, pick) {
-    if (HK.SAFE_ON || !c || !c.bust || !HK.Pos || !HK.Pos.isFBody(c)) return '';
+    if (HK.SAFE_ON || !c || !c.bust || (c.gender || (c.src && c.src.gender)) !== 'f') return '';
     var l = A.BUST_WORD[c.bust]; if (!l) return '';
     return pick ? pick(l) : l[0];
   };

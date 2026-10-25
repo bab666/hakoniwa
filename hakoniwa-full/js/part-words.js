@@ -24,8 +24,9 @@
   function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   var M_RE = new RegExp(M_SRC.map(esc).join('|'), 'g'), F_RE = new RegExp(F_SRC.map(esc).join('|'), 'g');
   var P = function () { return HK.Pos; };
-  function hasM(c) { return c.gender === 'm' || !!(P() && P().futa && P().futa(c)); }
-  function hasF(c) { return c.gender === 'f'; }
+  /* 持ち主の判定は性器（HK.Pos.hasM・hasF。attr.js の genital。決めていなければ性別・ふたなりどおり） */
+  function hasM(c) { var Q = P(); if (Q && Q.genSet && Q.genSet(c)) return Q.hasM(c); return c.gender === 'm' || !!(Q && Q.futa && Q.futa(c)); }
+  function hasF(c) { var Q = P(); if (Q && Q.genSet && Q.genSet(c)) return Q.hasF(c); return c.gender === 'f'; }
   function word(c, kind, src, inQ) {
     if (!c) return null;
     var custom = kind === 'm' ? c.partM : c.partF;
@@ -95,7 +96,7 @@
   V.processResult = function (res, input) {
     var r = pr0.apply(this, arguments);
     if (HK.SAFE_ON || !res || !input || !input.chars) return r;
-    var people = input.chars.map(function (c) { return { name: c.name, gender: c.gender || '', pos: c.pos || '', futa: !!c.futa, partWords: STYLE[c.partWords] ? c.partWords : '', partM: (c.partM || '').trim(), partF: (c.partF || '').trim() }; });
+    var people = input.chars.map(function (c) { return { name: c.name, gender: c.gender || '', pos: c.pos || '', futa: !!c.futa, genital: c.genital || '', partWords: STYLE[c.partWords] ? c.partWords : '', partM: (c.partM || '').trim(), partF: (c.partF || '').trim() }; });
     if (!people.some(used)) return r;
     (res.log || []).forEach(function (e) { if (e && typeof e.text === 'string') e.text = HK.PartWords.apply(e.text, people); });
     return r;

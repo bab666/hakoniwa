@@ -353,6 +353,8 @@
     /* 一回の結果の中で同じ文（反応・喘ぎ・場所の一文など）を繰り返さない（ero-kit.js の HK.Ero.freshPick） */
     var pick = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(opt.rng, opt.pick) : opt.pick, a = opt.a, b = opt.b, st = opt.style || 'gentle';
     if (HK.NovelMoan) HK.NovelMoan.top = a;
+    /* 性器なしの人がいる組（pos-nogen.js）：受けが none なら口まで、攻めが none なら指と玩具だけ */
+    if (HK.NoGen && HK.NoGen.on(a, b)) { var ng = HK.NoGen.scene({ pick: opt.pick, rng: opt.rng, a: a, b: b, open: opt.open, after: opt.after || false }); return { text: ng.text, hard: false, jealous: false, mode: ng.mode }; }
     /* この回で二人が体を重ねた回数（二度目以降は崩れ方を後戻りさせない） */
     var nth = HK.Ero && HK.Ero.pairNight ? HK.Ero.pairNight(opt.rng, a, b) : 1;
     var P = HK.Pos, fem = P && P.isF, mode = fem && fem(a) && fem(b) ? 'ff' : fem && fem(a) && !fem(b) ? 'fm' : 'mf';

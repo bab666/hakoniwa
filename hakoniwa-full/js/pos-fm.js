@@ -81,7 +81,8 @@
     pair: function (a, b) {
       if (!a || !b || a === b) return null;
       var o = P.order(a, b, [a, b]);
-      return P.isF(o[0]) && P.isTop(o[0]) && isM(o[1]) && P.okSex(o[0], o[1]) ? o : null;
+      /* 性器なしの人がいる組は、ここで跨る文に直さない（pos-nogen.js の口・指と玩具の文にする） */
+      return P.isF(o[0]) && P.isTop(o[0]) && isM(o[1]) && P.okSex(o[0], o[1]) && !(P.noGen && (P.noGen(o[0]) || P.noGen(o[1]))) ? o : null;
     },
     on: function (a, b) { return !!FM.pair(a, b); },
     pick: function (ctx, kind, st) { var Pl = POOLS[kind] || BODY; return pickArr(ctx, Pl[st] || Pl.gentle); },
@@ -95,7 +96,7 @@
     },
     /* 相手が名前だけ（モブ・客）のとき：A は女性の攻め、bn は男性の相手の名前（呼ぶ側で確かめること） */
     fixWith: function (ctx, text, A, bn) {
-      if (!A || !bn || typeof text !== 'string' || !SEXCTX.test(text.replace(/「[^」]*」/g, ''))) return text;
+      if (!A || !bn || typeof text !== 'string' || (P.noGen && P.noGen(A)) || !SEXCTX.test(text.replace(/「[^」]*」/g, ''))) return text;
       var B = { name: bn }, st = styleOf(A), an = A.name, last = '', used = {};
       var reA = new RegExp(an + '(?:は|が|も)'), reB = new RegExp(bn + '(?:は|が|も)'), inB = new RegExp(bn + 'の(?:中|奥|後ろ|ナカ)'), partA = new RegExp(an + 'の(?:もの|モノ|昂り|先端|根元|竿|ちんぽ|肉棒|ペニス)');
       var changed = false;

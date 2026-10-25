@@ -188,6 +188,8 @@
   X.scene = function (opt) {
     var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = opt.mode || X.mode(a, b), g = X.group(opt.style || 'gentle', mode), out = [];
     var TS = HK.ThickSex;
+    /* 性器なしの人がいる組（pos-nogen.js）：口まで／指と玩具だけ */
+    if (HK.NoGen && HK.NoGen.on(a, b)) { E.pairNight(opt.S, a, b); var ng = HK.NoGen.scene({ S: opt.S, pick: opt.pick, rng: opt.rng || (opt.S && opt.S.rng), a: a, b: b, ero: true, open: opt.open, after: opt.after || false }); return { text: X.fill(opt.S, ng.text, a, b), mode: ng.mode }; }
     E.pairNight(opt.S, a, b);
     out.push(opt.open || pick(X.OPEN[mode]));
     out.push(pick(mode === 'ff' ? X.FF_BODY[g] : mode === 'fm' ? X.FM_BODY[g] : X.BODY[g]));
@@ -211,12 +213,14 @@
   X.short = function (opt) {
     var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = opt.mode || X.mode(a, b);
     E.pairNight(opt.S, a, b);
+    if (HK.NoGen && HK.NoGen.on(a, b)) return { text: X.fill(opt.S, (opt.open || '') + HK.NoGen.short({ S: opt.S, pick: opt.pick, rng: opt.S && opt.S.rng, a: a, b: b }) + (opt.after || ''), a, b), mode: HK.NoGen.kind(a, b) };
     var t = (opt.open || '') + pick(X.SHORT[mode]) + (opt.again ? pick(X.shortAgain(mode)) : '') + (opt.after || '');
     return { text: X.fill(opt.S, t, a, b), mode: mode };
   };
   /* 濃い：もう一度の段落（小説調・男性向け。短い版は一文） */
   X.again = function (S, pick, a, b, ero, short) {
     var mode = X.mode(a, b);
+    if (HK.NoGen && HK.NoGen.on(a, b)) { var g0 = HK.NoGen.short({ S: S, pick: pick, rng: S && S.rng, a: a, b: b }); return ero ? X.fill(S, g0, a, b) : g0; }
     pick = E.freshPick(S, pick);
     var t = short ? pick(ero ? X.shortAgain(mode) : X.AGAIN.shortNovel) : pick(X.noSwap(X.AGAIN[ero ? 'ero' : 'novel'][mode], a, b));
     return ero ? X.fill(S, t, a, b) : t;

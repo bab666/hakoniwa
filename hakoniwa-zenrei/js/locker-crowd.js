@@ -269,7 +269,7 @@
     ST.snap(S, keys);
     /* 一人で慰められるか（R18版・描写あり・R18に参加する人）。手錠のあいだはできない */
     var selfOk = !!(R && S.R18 && HK.State.r18ok(A));
-    var body = Pos && !Pos.isF(A) && (A.gender === 'm' || (Pos.futa && Pos.futa(A))) ? 'm' : A.gender === 'f' ? 'f' : 'x';
+    var body = Pos && Pos.genSet && Pos.genSet(A) ? (Pos.hasM(A) ? 'm' : Pos.hasF(A) ? 'f' : 'x') : Pos && !Pos.isF(A) && (A.gender === 'm' || (Pos.futa && Pos.futa(A))) ? 'm' : A.gender === 'f' ? 'f' : 'x';
     var finder = env.finder || 'random';
     for (var turn = 0; turn < env.turns && !escaped; turn++) {
       ST.step(S, ((turn + 1) * 5) + '分');
@@ -562,7 +562,7 @@
     if (p.rest > 0) { p.rest--; return; }
     var urge = p.m.heat / 100 + p.tr.impulse * 0.3 + p.tr.fc * 0.15 - p.m.reason / 130 - p.tr.cp * 0.12;
     if (R && S.R18 && HK.State.r18ok(p) && !p.bound && p.m.heat >= 60 && urge > 0.4 + rng() * 0.3) {
-      var body = HK.Pos && !HK.Pos.isF(p) && (p.gender === 'm' || (HK.Pos.futa && HK.Pos.futa(p))) ? 'm' : p.gender === 'f' ? 'f' : 'x';
+      var body = HK.Pos && HK.Pos.genSet && HK.Pos.genSet(p) ? (HK.Pos.hasM(p) ? 'm' : HK.Pos.hasF(p) ? 'f' : 'x') : HK.Pos && !HK.Pos.isF(p) && (p.gender === 'm' || (HK.Pos.futa && HK.Pos.futa(p))) ? 'm' : p.gender === 'f' ? 'f' : 'x';
       var t = ST.fmt(pk(R.SELF[body][1]), v) + ST.fmt(pk(R.SELF[body][2]), v);
       if (S.eroOn) t += HK.Ero.fill(S, ST.fmt(pk(R.SELF_ERO[body]), v), p);
       t += moan(S, p, false) + ST.fmt(pk(R.SELF_CL[p.persona] || R.SELF_CL.gentle), v);

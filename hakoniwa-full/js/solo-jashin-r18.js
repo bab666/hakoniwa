@@ -288,6 +288,8 @@
     opt = opt || {};
     /* 描写の作風「男性向け」（story-lewd.js） */
     if (HK.Lewd && HK.Lewd.storyEro && HK.Lewd.storyEro(S)) return HK.Lewd.storyEroSex(S, x, y);
+    /* 性器なしの人がいる組（pos-nogen.js）：口まで／指と玩具だけ */
+    if (HK.NoGen && HK.NoGen.on(x, y)) return HK.NoGen.text(S, x, y, opt);
     if (isFF(x, y) && HK.FF) {
       /* 山場を段落に分けて厚く（r18-thick.js） */
       if (HK.R18Thick && HK.R18Thick.on(S)) return HK.R18Thick.ff(S, x, y, opt);

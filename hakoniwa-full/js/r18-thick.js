@@ -360,6 +360,8 @@
     if (HK.Pos) { var od = HK.Pos.order(x, y, [x, y]); x = od[0]; y = od[1]; }
     if (HK.R18Thick.log) HK.R18Thick.log.push([x, y]);
     if (HK.NovelMoan) HK.NovelMoan.top = x;
+    /* 性器なしの人がいる組（pos-nogen.js）：口まで／指と玩具だけ */
+    if (HK.NoGen && HK.NoGen.on(x, y)) { S.r18Last = HK.NoGen.kind(x, y) === 'oral' ? '口' : '指と玩具'; return HK.NoGen.text(S, x, y, opt); }
     if (HK.Pos && HK.FF && HK.Pos.ff(x, y)) return soft(S, x, y, opt, 'ff');
     if (HK.FM && HK.FM.on(x, y)) return soft(S, x, y, opt, 'fm');
     /* 攻めの指定がなくても、主導する側が女性で相手が男性なら、跨って迎え入れる書き方（男性の体の書き方を女性に当てない） */
@@ -369,6 +371,6 @@
   /* 女性どうしを自前で組み立てる箱庭（邪神村 pairSex・吹雪の館 SX）用 */
   /* log：点検用（配列を入れると、組み立てた組 [攻め, 受け] を記録する） */
   /* POOLS：点検用（段ごとの文数を数えるときに読む） */
-  HK.R18Thick = { on: on, log: null, ff: function (S, x, y, opt) { count(S, x, y); if (HK.R18Thick.log) HK.R18Thick.log.push([x, y]); return soft(S, x, y, opt || {}, 'ff'); },
+  HK.R18Thick = { on: on, log: null, ff: function (S, x, y, opt) { count(S, x, y); if (HK.R18Thick.log) HK.R18Thick.log.push([x, y]); if (HK.NoGen && HK.NoGen.on(x, y)) return HK.NoGen.text(S, x, y, opt); return soft(S, x, y, opt || {}, 'ff'); },
     POOLS: { ENTER: ENTER, MID_STRONG: MID_STRONG, MID_SOFT: MID_SOFT, PEAK: PEAK, AFTER: AFTER, PLEASE: PLEASE, SOFT_MID: SOFT_MID, SOFT_AFTER: SOFT_AFTER, SOFT_PLEASE: SOFT_PLEASE, SOFT_ENTER: SOFT_ENTER, SOFT_STRONG: SOFT_STRONG, SOFT_WEAK: SOFT_WEAK, SOFT_PLEASE_M: SOFT_PLEASE_M, SOFT_AFTER_M: SOFT_AFTER_M, ROUGH_SADIST: ROUGH_SADIST, JEALOUS_CHOKE: JEALOUS_CHOKE, ROUGH_SOFT: ROUGH_SOFT, JEALOUS_SOFT: JEALOUS_SOFT } };
 })();

@@ -201,6 +201,8 @@
       /* 向きは必ず HK.Pos.order に従う（自分で攻めを選んだ人を受けの位置に置かない） */
       if (HK.Pos) { var od = HK.Pos.order(x, y, [x, y]); x = od[0]; y = od[1]; }
       if (HK.NovelMoan) HK.NovelMoan.top = x;
+      /* 性器なしの人がいる組（pos-nogen.js）：受けが none なら口まで、攻めが none なら指と玩具だけ */
+      if (HK.NoGen && HK.NoGen.on(x, y)) { S.r18Last = HK.NoGen.kind(x, y) === 'oral' ? '口' : '指と玩具'; return HK.NoGen.text(S, x, y, opt); }
       if (HK.Pos && HK.FF && HK.Pos.ff(x, y)) return ffSex(S, x, y, opt);
       if (HK.FM && HK.FM.on(x, y)) return fmSex(S, x, y, opt);
       var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };

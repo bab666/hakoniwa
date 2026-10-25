@@ -15,7 +15,8 @@
   OM.alphaTop = function (T, U) { return !!(T && U && T.om && U.om && T.om.sex === 'a' && U.om.sex !== 'a'); };
   OM.bodyKind = function (T, U) {
     var P = HK.Pos, fb = function (c) { return P && P.isFBody ? P.isFBody(c) : !!(c && c.gender === 'f'); };
-    var aT = OM.alphaTop(T, U), fT = fb(T) && !aT, fU = fb(U);
+    /* 性器を決めた人（attr.js の genital）は性器から：男性器のないαは挿れる側にしない */
+    var aT = OM.alphaTop(T, U) && !(P && P.genSet && P.genSet(T) && !P.hasM(T)), fT = fb(T) && !aT, fU = fb(U);
     /* 女性のαを挿れる側で書いた組を覚えておく（pos-ff.js・pos-fm.js の見直しで直さないように） */
     if (aT && fb(T) && P && P.maleTop && T.name && U.name) P.maleTop[T.name + '\u0001' + U.name] = 1;
     return fT && fU ? 'ff' : fT ? 'ride' : fU ? 'mf' : 'mm';

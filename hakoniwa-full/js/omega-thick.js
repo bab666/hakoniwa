@@ -493,6 +493,11 @@
     body: function (T, U, o) {
       /* 一回の結果の中で同じ文を繰り返さない（呼ぶ側の pick を包む。使い切ったら、いちばん前に使ったものから戻す） */
       var pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(o.rng, o.pick) : o.pick, Pz = HK.Pos, V = HK.Voice, rng = o.rng, dp = o.depth || 2;
+      /* 性器なしの人がいる組（pos-nogen.js）：受けが none なら口まで、攻めが none なら指と玩具だけ（ノット・挿入の段落は使わない） */
+      if (HK.NoGen && HK.NoGen.on(T, U)) {
+        var ng = HK.NoGen.scene({ pick: o.pick, rng: rng, a: T, b: U, after: o.noAfter ? false : (o.after || null) });
+        return ((o.lead || '') + ng.text).replace(/\{a\}/g, '{T}').replace(/\{b\}/g, '{U}').replace(/\{bed\}/g, o.bed || 'シーツ');
+      }
       var kd = TK.kind(T, U, o.flav), riba = kd === 'ff' && Pz && Pz.bothRiba && Pz.bothRiba(T, U);
       var rough = kd !== 'ff' && kd !== 'ride' && !!(o.rough || (HK.Ero && HK.Ero.sadist && HK.Ero.sadist(T, U) && rng() < 0.3));
       var set = kd === 'ff' ? FF : kd === 'ride' ? RIDE : rough ? ROUGH : (CORE[topOf(T)] || CORE.NP);
@@ -717,7 +722,7 @@
     var r = st && st.short ? TE.short({ S: ctx, pick: pk, a: T, b: U, mode: md }) : TE.scene({ S: ctx, pick: pk, rng: ctx.rng, a: T, b: U, mode: md, style: HK.ThickSex ? HK.ThickSex.style(T) : 'gentle', place: 'omega', again: ctx.env.lewd === 'high' });
     var t = r.text;
     var aT = !!(T.om && T.om.sex === 'a');
-    if (kd !== 'ff' && kd !== 'ride' && aT && !(st && st.short)) t += '\n\n' + TE.fill(ctx, pk(KNOT_ERO), T, U);
+    if (kd !== 'ff' && kd !== 'ride' && aT && !(st && st.short) && !(HK.NoGen && HK.NoGen.on(T, U))) t += '\n\n' + TE.fill(ctx, pk(KNOT_ERO), T, U);
     t = t.replace(/\{a\}/g, T.name).replace(/\{b\}/g, U.name);
     if (kd === 'ff' && HK.FF) t = HK.FF.fix(ctx, t, T, U, { tools: true });
     var sc = OM.sc || function (x) { return x; };
