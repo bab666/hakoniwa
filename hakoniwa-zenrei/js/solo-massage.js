@@ -252,8 +252,10 @@
     /* 受け攻め：自分で攻めを選んだ客は、施術者に「される」側に回らない。際どくなった時点で手を止めさせ、帰るか、立場を入れ替える */
     var hardTop = TR ? pairOK && !tTop : !!(HK.Pos && HK.Pos.hardTopNpc(h));
     function cTop() { return TR ? !tTop : !!(HK.Pos && HK.Pos.vsNpc(h, '') === 'top'); }
-    /* 女性どうし（女性セラピストと女性の客）：いちもつを前提にした描写を使わない */
-    var ff = h.gender === 'f' && staff.g === 'f';
+    /* 客の体に竿がないか（性器を決めた人は性器から。HK.Pos.hasM。決めていなければ性別どおり） */
+    var noP = function (c) { return HK.Pos && HK.Pos.genSet && HK.Pos.genSet(c) ? !HK.Pos.hasM(c) : c.gender === 'f'; };
+    /* 女性どうし（女性セラピストと竿のない客）：いちもつを前提にした描写を使わない */
+    var ff = noP(h) && staff.g === 'f';
     /* ふたなり（HK.Pos.futa。攻め・リバの女性）：施術は女性の客として受け、客が攻めに回る場面だけ男性の体で書く */
     h.futa = !!(input.chars[h.i] && input.chars[h.i].futa);
     var custF = HK.Pos ? HK.Pos.isF(h) : h.gender === 'f', ffTop = ff && custF;
@@ -285,7 +287,7 @@
     /* 後半の山場を厚くする段落（solo-massage-lewd.js）。物語とは別の乱数で選ぶ。kindR＝客が受ける組、kindT＝客が主導する組 */
     var ML = !dark && HK.MassageLewd;
     S.lwSeed = input.seed || 1;
-    var kindR = ff ? 'ff' : staff.g === 'f' && h.gender !== 'f' ? 'lady' : 'recv', kindT = custF ? (staff.g === 'm' ? 'topF' : 'topFF') : 'top';
+    var kindR = ff ? 'ff' : staff.g === 'f' && !noP(h) ? 'lady' : 'recv', kindT = custF ? (staff.g === 'm' ? 'topF' : 'topFF') : 'top';
     function lwc(dom) { return { S: S, h: h, ero: eroOn, dom: dom, fmt: function (t) { return K.fmt(S, t); } }; }
     function lwOn() { return !!(ML && ML.on(S, env)); }
     function logC(list) {
@@ -379,7 +381,7 @@
       /* 描写の長さ：数行で短く（混ぜるなら半分）なら、段落に分けた場面にしない */
       if (lcf && LWX.short(env, rng)) return null;
       var key = top ? (ffTop ? 'topFF' : custF && staff.g === 'm' ? 'topF' : TV.sad(rng, h, null) ? 'topSad' : 'top')
-        : ff ? 'fallFF' : staff.g === 'f' && h.gender !== 'f' ? 'fallLady' : 'fall';
+        : ff ? 'fallFF' : staff.g === 'f' && !noP(h) ? 'fallLady' : 'fall';
       var sc = MT[key] && MT[key].length ? K.pick(S, noMut(MT[key])) : null;
       return sc ? { n: sc.n, t: TV.voice(rng, sc.t, h, h), thick: true } : null;
     }
@@ -568,7 +570,7 @@
           /* 男性向け：客が自分から求めた（おねだり）か、客が主導するときだけ。最初と最後の体位に段落を足す */
           var ex = '';
           if (eroOn && (asked || custTop) && (j === 0 || j === pool.length - 1)) {
-            var EK = HK.MassageThick.ERO, ek = custTop ? 'top' : ff ? 'ff' : staff.g === 'f' && h.gender !== 'f' ? 'lady' : 'recv', d0 = h.eroDom;
+            var EK = HK.MassageThick.ERO, ek = custTop ? 'top' : ff ? 'ff' : staff.g === 'f' && !noP(h) ? 'lady' : 'recv', d0 = h.eroDom;
             h.eroDom = custTop;
             ex = (p.thick ? '\n\n' : '') + K.fmt(S, HK.Ero.fill(S, K.pick(S, EK[ek]), h));
             h.eroDom = d0;
