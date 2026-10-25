@@ -33014,7 +33014,8 @@
     if (HK.Pos && HK.FF && HK.Pos.ff(x, y)) return soft(S, x, y, opt, 'ff');
     if (HK.FM && HK.FM.on(x, y)) return soft(S, x, y, opt, 'fm');
     /* 攻めの指定がなくても、主導する側が女性で相手が男性なら、跨って迎え入れる書き方（男性の体の書き方を女性に当てない） */
-    if (HK.FM && HK.Pos && HK.Pos.isF && HK.Pos.isF(x) && ((y.gender || (y.src && y.src.gender)) === 'm')) return soft(S, x, y, opt, 'fm');
+    /* 相手が女性でも男性器のある人（ふたなり）なら同じ。攻めに男性器がないときは、男性の体の書き方を当てない */
+    if (HK.FM && HK.Pos && HK.Pos.isF && HK.Pos.isF(x) && ((y.gender || (y.src && y.src.gender)) === 'm' || (HK.Pos.hasM && HK.Pos.hasM(y) && !HK.Pos.hasM(x)))) return soft(S, x, y, opt, 'fm');
     return mm(S, x, y, opt);
   };
   /* 女性どうしを自前で組み立てる箱庭（邪神村 pairSex・吹雪の館 SX）用 */
