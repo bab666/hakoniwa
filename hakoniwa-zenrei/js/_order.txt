@@ -240,6 +240,7 @@ js/scenario-jinro.js
 late js/jinro-after.js
 js/jinro-love.js
 late js/rel-bad-story.js
+late js/tie-new-story.js
 js/safe.js
 js/safe-room.js
 js/share-card.js

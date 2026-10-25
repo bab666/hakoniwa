@@ -352,6 +352,7 @@ late js/jinro-after.js
 late js/jinro-wolfnight.js
 js/jinro-love.js
 late js/rel-bad-story.js
+late js/tie-new-story.js
 js/solo-rel-bad.js
 js/safe.js
 js/safe-room.js
