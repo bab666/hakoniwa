@@ -761,7 +761,7 @@
   function summarize(res) {
     if (res.solo) return res.summary;
     var top = res.pairs.filter(function (p) { return p.label !== 'strangers'; }).slice(0, 2);
-    return top.map(function (p) { return res.chars[p.a].name + '×' + res.chars[p.b].name + '＝' + p.name; }).join('、');
+    return top.map(function (p) { return (HK.pairName ? HK.pairName(res, p) : res.chars[p.a].name + '×' + res.chars[p.b].name) + '＝' + p.name; }).join('、');
   }
 
   /* あとで読む分（js/bundle-late.js）がまだのうちに動かそうとしたら、読み終わるのを待ってから動かす */

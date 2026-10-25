@@ -10,9 +10,9 @@
     betray: 'var(--obsess)', solo: 'var(--muted)', escape: 'var(--night)', death: 'var(--kill)'
   };
   var css = '';
-  /* 区切り */
+  /* 区切り（時刻・時期の札。文字は --ink にして、ライトでもダークでも札の地の色と重ならないように） */
   css += 'html body .stepblk{border-top:1px dashed var(--line);padding-block:12px}' +
-    'html body .stepblk .when{align-self:start;justify-self:start;display:inline-block;font-weight:700;font-size:12px;color:var(--accent-ink,var(--accent));background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:999px;padding:2px 11px;letter-spacing:.03em;line-height:1.6}' +
+    'html body .stepblk .when{align-self:start;justify-self:start;display:inline-block;font-weight:700;font-size:12px;color:var(--ink);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:999px;padding:2px 11px;letter-spacing:.03em;line-height:1.6}' +
     'html body .stepblk ol{gap:9px}';
   /* 種類の札と左の帯 */
   Object.keys(C).forEach(function (k) {

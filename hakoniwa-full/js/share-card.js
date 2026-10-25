@@ -129,7 +129,7 @@
       d.stats = (B.stats || []).map(function (s) { return [plain(s[0]), plain(s[1])]; });
       d.lines = (B.lines || []).map(plain).filter(function (l) { return l.indexOf('主な関係：') !== 0; });
       if (B.last && B.last.length) d.lines = d.lines.concat(B.last.slice(0, 2).map(function (x) { return plain('最期の言葉　' + x.text); }));
-      d.pairs = (res.pairs || []).filter(function (p) { return p.label !== 'strangers'; }).slice(0, 8).map(function (p) { return { who: [p.a, p.b], text: names[p.a] + ' × ' + names[p.b] + '　' + plain(p.name) }; });
+      d.pairs = (res.pairs || []).filter(function (p) { return p.label !== 'strangers'; }).slice(0, 8).map(function (p) { var o = HK.pairIdx ? HK.pairIdx(res, p) : [p.a, p.b]; return { who: o, text: names[o[0]] + ' × ' + names[o[1]] + '　' + plain(p.name) }; });
     }
     return d;
   };

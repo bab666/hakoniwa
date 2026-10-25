@@ -214,6 +214,7 @@ js/pos-fm-tease.js
 js/pos-ff.js
 js/pos-fm.js
 js/persona-final.js
+js/pair-name.js
 js/icons.js
 js/view.js
 js/dungeon-view.js

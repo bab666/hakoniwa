@@ -198,6 +198,8 @@
 
   function pairCard(p, res) {
     var A = res.chars[p.a], B = res.chars[p.b], L = res.log;
+    /* 見出しの二人は攻め×受けの順（pair-name.js） */
+    var po = HK.pairIdx ? HK.pairIdx(res, p) : [p.a, p.b];
     var tieLabel = p.tie ? tieName(p.tie, res) : '';
     var pred = p.tie
       ? (p.surprise ? 'もともと<b>「' + esc(tieLabel) + '」</b>だったのに「' + esc(p.name) + '」に変わった。' : 'もともと：<b>' + esc(tieLabel) + '</b>　相性予想：' + esc(p.base.kindLabel))
@@ -211,7 +213,7 @@
     }).join('');
     var r = p.rel;
     return '<article class="pcard' + (p.surprise ? ' sur' : '') + '">' +
-      '<div class="hd"><span class="avpair">' + av(res, p.a, 34) + av(res, p.b, 34) + '</span><span class="nm">' + esc(A.name) + ' × ' + esc(B.name) + '</span>' + (p.tie ? '<span class="tiechip">' + esc(p.tie.label) + ' →</span>' : '') + '<span class="lbl ' + p.cls + '">' + esc(p.name) + '</span>' + (p.surprise ? '<span class="surtag">意外</span>' : '') + '</div>' +
+      '<div class="hd"><span class="avpair">' + av(res, po[0], 34) + av(res, po[1], 34) + '</span><span class="nm">' + esc(res.chars[po[0]].name) + ' × ' + esc(res.chars[po[1]].name) + '</span>' + (p.tie ? '<span class="tiechip">' + esc(p.tie.label) + ' →</span>' : '') + '<span class="lbl ' + p.cls + '">' + esc(p.name) + '</span>' + (p.surprise ? '<span class="surtag">意外</span>' : '') + '</div>' +
       '<div class="txt">' + paint(p.text, res) + '</div>' +
       '<div class="pred">' + pred + notes + '</div>' +
       spark(p, res) +
@@ -421,7 +423,7 @@
     L.push('');
     L.push('■ 関係');
     res.pairs.forEach(function (p) {
-      L.push('・' + res.chars[p.a].name + '×' + res.chars[p.b].name + '：' + p.name + (p.surprise ? '［意外］' : '') + '　' + p.text);
+      L.push('・' + (HK.pairName ? HK.pairName(res, p) : res.chars[p.a].name + '×' + res.chars[p.b].name) + '：' + p.name + (p.surprise ? '［意外］' : '') + '　' + p.text);
       p.key.forEach(function (n) { L.push('　　' + res.log[n].label + '　' + res.log[n].text); });
     });
     L.push('');

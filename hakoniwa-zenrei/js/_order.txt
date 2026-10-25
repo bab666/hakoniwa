@@ -152,6 +152,7 @@ js/zombie-cure.js
 js/zombie-assault.js
 js/zombie-map.js
 js/persona-final.js
+js/pair-name.js
 js/pos.js
 js/attr.js
 js/special.js

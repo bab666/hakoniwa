@@ -20,7 +20,10 @@
     var byFate = function (re) { return C.filter(function (c) { return re.test(c.fate); }); };
     var withLabel = function (ids) { return res.pairs.filter(function (p) { return ids.indexOf(p.label) >= 0; }); };
     var pn = function (p) { return nm(p.a) + '×' + nm(p.b); };
-    return { C: C, nm: nm, pair: pair, names: names, byFate: byFate, withLabel: withLabel, pn: pn };
+    /* 組の表記は攻め×受けの順（pair-name.js）。pn2 は番号で */
+    if (HK.pairName) pn = function (p) { return HK.pairName(res, p); };
+    var pn2 = function (a, b) { return pn({ a: a, b: b }); };
+    return { C: C, nm: nm, pair: pair, names: names, byFate: byFate, withLabel: withLabel, pn: pn, pn2: pn2 };
   }
 
   function mainPairs(res, X, skip) {
@@ -68,7 +71,7 @@
     if (dates.length) {
       var last = {};
       dates.forEach(function (d) { last[d.a + '-' + d.b] = d; });
-      Object.keys(last).slice(0, 3).forEach(function (k) { var d = last[k]; lines.push(X.nm(d.a) + '×' + X.nm(d.b) + 'の最近のデート：' + d.place); });
+      Object.keys(last).slice(0, 3).forEach(function (k) { var d = last[k]; lines.push(X.pn2(d.a, d.b) + 'の最近のデート：' + d.place); });
     }
     if ((O.gifts || []).length) { var g = O.gifts[O.gifts.length - 1]; lines.push('最後の贈り物：' + X.nm(g.from) + '→' + X.nm(g.to) + '「' + g.name + '」'); }
     if (O.cases) lines.push('探偵と助手が解決した事件：' + O.cases + '件');
@@ -96,14 +99,14 @@
       var trios = ex.filter(function (e) { return e.trio; });
       if (group) headline = '条件を満たし、' + X.names(group.group) + 'が全員で部屋を出た。';
       else if (trios.length) headline = trios.map(function (e) { return X.names(e.group) + 'の' + (['', '', '二人', '三人', '四人', '五人'][e.group.length] || e.group.length + '人'); }).join('と') + 'が、一緒に条件を満たして部屋を出た。' + (pairs.length ? 'ほかに' + pairs.map(function (e) { return X.nm(e.a) + '×' + X.nm(e.b); }).join('、') + 'も脱出。' : '') + (left.length ? X.names(left) + 'は取り残された。' : '');
-      else if (pairs.length) headline = pairs.map(function (e) { return X.nm(e.a) + '×' + X.nm(e.b); }).join('、') + (pairs.length > 1 ? ' の' + pairs.length + '組' : '') + 'が成立して脱出。' + (left.length ? X.names(left) + 'は取り残された。' : '');
+      else if (pairs.length) headline = pairs.map(function (e) { return X.pn2(e.a, e.b); }).join('、') + (pairs.length > 1 ? ' の' + pairs.length + '組' : '') + 'が成立して脱出。' + (left.length ? X.names(left) + 'は取り残された。' : '');
       else headline = '誰も条件を満たせず、' + (left.length > 2 ? '全員' : X.names(left)) + 'が部屋に取り残された。';
       if (stayed.length) headline += X.names(stayed) + 'は条件を満たしたが、自分から部屋に残った。';
       ex.forEach(function (e) {
         if (e.trio) { lines.push(e.label + '　' + X.names(e.group) + '　' + (['', '', '二人', '三人', '四人', '五人'][e.group.length] || e.group.length + '人') + 'で一緒に条件を満たして脱出。部屋を出たあとは「' + (e.bondLabel || '―') + '」'); return; }
         if (e.group != null) return;
         var p = X.pair(e.a, e.b);
-        lines.push(e.label + '　' + X.nm(e.a) + '×' + X.nm(e.b) + '　条件を満たして' + (e.stay != null ? X.nm(e.a) + 'が脱出（' + X.nm(e.stay) + 'は自分から残った）' : '脱出') + '。部屋を出たあとの関係は「' + (p ? p.name : '―') + '」');
+        lines.push(e.label + '　' + X.pn2(e.a, e.b) + '　条件を満たして' + (e.stay != null ? X.nm(e.a) + 'が脱出（' + X.nm(e.stay) + 'は自分から残った）' : '脱出') + '。部屋を出たあとの関係は「' + (p ? p.name : '―') + '」');
       });
       if (group) lines.push(group.label + '　全員で脱出');
     }
@@ -128,12 +131,12 @@
     var couples = X.withLabel(['lovers']);
     var night = tg.filter(function (t) { return t.night; });
     var headline = tg.length
-      ? tg.map(function (t) { return X.nm(t.a) + '×' + X.nm(t.b); }).join('、') + 'が二人で店を出た' + (night.length ? '（うち' + night.length + '組はお持ち帰り）' : '') + '。'
+      ? tg.map(function (t) { return X.pn2(t.a, t.b); }).join('、') + 'が二人で店を出た' + (night.length ? '（うち' + night.length + '組はお持ち帰り）' : '') + '。'
       : '誰も二人きりでは帰らなかった。';
     if (couples.length) headline += 'カップル成立：' + couples.map(X.pn).join('、') + '。';
     tg.forEach(function (t) {
       var p = X.pair(t.a, t.b);
-      lines.push(X.nm(t.a) + '×' + X.nm(t.b) + '　' + (t.night ? 'お持ち帰り' : '一緒に帰った') + '。関係は「' + (p ? p.name : '―') + '」');
+      lines.push(X.pn2(t.a, t.b) + '　' + (t.night ? 'お持ち帰り' : '一緒に帰った') + '。関係は「' + (p ? p.name : '―') + '」');
     });
     var solo = X.byFate(/一人で帰った/), crushed = X.byFate(/潰れた/);
     if (solo.length) lines.push('一人で帰った：' + X.names(solo));
