@@ -21,6 +21,7 @@
       { id: 'hours', label: '儀式までの時間', min: 12, max: 72, def: 36, lo: '半日', hi: '三日', unit: '時間' },
       { id: 'hostile', label: '村人の敵意', min: 0, max: 100, def: 50, lo: '表向きは親切', hi: '隠す気がない' },
       { id: 'ev', label: '怪異の頻度', min: 0, max: 100, def: 55, lo: 'じわじわ', hi: '次から次へ' },
+      { id: 'romance', label: '恋愛の起こりやすさ', min: 0, max: 100, def: 50, lo: '起きない', hi: '起きやすい', desc: '一行どうしの恋の気配・告白・恋人の場面の起こりやすさ。0にすると恋愛の交流を出しません' },
       { id: 'npc', label: '記者と警察官', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'both', label: '両方いる' }, { v: 'reporter', label: '記者だけ' }, { v: 'police', label: '警察官だけ' }, { v: 'none', label: 'どちらもいない' }] },
       { id: 'amnesia', label: '記憶を失っている人', min: 0, max: 50, def: 8, lo: 'いない', hi: '二人に一人', unit: '％', desc: '一人ずつ、この確率で記憶を失ったまま参加する' },
       { id: 'tour', label: 'シークレットツアー', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ（約10％）' }, { v: 'yes', label: 'ツアーにする' }, { v: 'no', label: 'ツアーにしない' }] }

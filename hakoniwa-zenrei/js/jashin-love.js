@@ -119,10 +119,11 @@
     /* 恋が叶ったあと */
     if (L0.done) {
       var b0 = L0.t;
-      if (!b0 || !al(b0) || b0.bound || rng() > 0.4) return false;
+      if (!b0 || !al(b0) || b0.bound || rng() > 0.4 * (ST.romK ? ST.romK(S) : 1)) return false;
       return loverMoment(S, p, b0, h);
     }
     if (p.goal !== p.goal0 || p.goal.id !== 'love') return false;
+    if (ST.romK && ST.romK(S) < 1 && rng() > ST.romK(S)) return false;
     var b = L0.t;
     if (!b || !al(b)) b = L0.t = pickTarget(S, p, live);
     if (!b || b.bound) return false;

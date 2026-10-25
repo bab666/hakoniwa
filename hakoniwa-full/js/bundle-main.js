@@ -45311,6 +45311,14 @@
   var HK = window.HK, esc = HK.escape;
   var ST = HK.Story = {};
 
+  /* 環境値「恋愛の起こりやすさ」（宇宙船・邪神村などの物語型）：エンジン型（engine.js）と同じ倍率。0 なら恋愛の交流を出さない（HK.canLove も偽） */
+  ST.romK = function (S) { var r = S && S.env && S.env.romance; if (r == null || r === '') return 1; r = +r; return r === 0 ? 0 : 0.3 + r / 50 * 0.7; };
+  ST._cur = null;
+  if (HK.canLove && !HK.canLove._storyRom) {
+    var cl0 = HK.canLove;
+    HK.canLove = function (a, b) { var S = ST._cur; if (S && S.env && +S.env.romance === 0 && S.env.romance !== '' && !(S.scen && S.scen.romanceCore)) return false; return cl0.apply(this, arguments); };
+    HK.canLove._storyRom = true;
+  }
   ST.state = function (input, scenId) {
     var scen = HK.SCENARIOS[scenId], env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
@@ -45333,6 +45341,7 @@
     /* 複数の恋人の設定（poly.js の HK.Poly.mode が S.poly を読む）と、関係の恋人の一覧（性行為の相手の固定「恋人だけ」・一途で使う。engine.js と同じ作り方） */
     S.poly = HK.Poly ? HK.Poly.modeOf(input.env) : 'none';
     (input.ties || []).forEach(function (t) { if (t && /^(lover|mate|fated)$/.test(t.type) && S.P[t.a] && S.P[t.b] && t.a !== t.b) { (S.P[t.a].loveSet = S.P[t.a].loveSet || []).push(t.b); (S.P[t.b].loveSet = S.P[t.b].loveSet || []).push(t.a); } });
+    ST._cur = S;
     return S;
   };
   /* 最近使った文を避けて選ぶ */
@@ -45426,6 +45435,7 @@
     });
   };
   ST.result = function (S, input, o) {
+    ST._cur = null;
     if (o && o.ending && Array.isArray(o.ending.lines) && HK.Dark && HK.Dark.note(S)) o.ending.lines.push(HK.Dark.note(S));   /* 展開の重さ（mood-dial.js）：ふつう以外なら結末に一行 */
     if (S.egoNotes && !S.egoDone) { S.egoDone = true; ST.egoNotes(S); }
     var res = {
@@ -57701,6 +57711,7 @@
       { id: 'hours', label: '儀式までの時間', min: 12, max: 72, def: 36, lo: '半日', hi: '三日', unit: '時間' },
       { id: 'hostile', label: '村人の敵意', min: 0, max: 100, def: 50, lo: '表向きは親切', hi: '隠す気がない' },
       { id: 'ev', label: '怪異の頻度', min: 0, max: 100, def: 55, lo: 'じわじわ', hi: '次から次へ' },
+      { id: 'romance', label: '恋愛の起こりやすさ', min: 0, max: 100, def: 50, lo: '起きない', hi: '起きやすい', desc: '一行どうしの恋の気配・告白・恋人の場面の起こりやすさ。0にすると恋愛の交流を出しません' },
       { id: 'npc', label: '記者と警察官', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'both', label: '両方いる' }, { v: 'reporter', label: '記者だけ' }, { v: 'police', label: '警察官だけ' }, { v: 'none', label: 'どちらもいない' }] },
       { id: 'amnesia', label: '記憶を失っている人', min: 0, max: 50, def: 8, lo: 'いない', hi: '二人に一人', unit: '％', desc: '一人ずつ、この確率で記憶を失ったまま参加する' },
       { id: 'tour', label: 'シークレットツアー', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ（約10％）' }, { v: 'yes', label: 'ツアーにする' }, { v: 'no', label: 'ツアーにしない' }] }
@@ -59538,7 +59549,7 @@
   /* ---------- 恋人を作る ---------- */
   function love(S, p, h, live) {
     var rng = S.rng;
-    if (rng() > 0.5) return false;
+    if (rng() > 0.5 * (ST.romK ? ST.romK(S) : 1)) return false;
     var L0 = p.love || (p.love = { t: null, pt: 0, tries: 0 });
     if (L0.done) return false;
     if (!L0.t || !al(L0.t)) {
@@ -59914,10 +59925,11 @@
     /* 恋が叶ったあと */
     if (L0.done) {
       var b0 = L0.t;
-      if (!b0 || !al(b0) || b0.bound || rng() > 0.4) return false;
+      if (!b0 || !al(b0) || b0.bound || rng() > 0.4 * (ST.romK ? ST.romK(S) : 1)) return false;
       return loverMoment(S, p, b0, h);
     }
     if (p.goal !== p.goal0 || p.goal.id !== 'love') return false;
+    if (ST.romK && ST.romK(S) < 1 && rng() > ST.romK(S)) return false;
     var b = L0.t;
     if (!b || !al(b)) b = L0.t = pickTarget(S, p, live);
     if (!b || b.bound) return false;
@@ -66548,7 +66560,8 @@
       { id: 'find', label: '星の見つかりやすさ', min: 0, max: 100, def: 40, lo: 'ほとんど見つからない', hi: 'すぐ見つかる', desc: '毎月、星に辿り着けるかどうかの運。航海士と通信士の腕でも上がる' },
       { id: 'danger', label: '宇宙の過酷さ', min: 0, max: 100, def: 45, lo: '穏やか', hi: '過酷', desc: '故障や事故、探索の危険の起きやすさ' },
       { id: 'supply', label: '積んでいる物資', min: 0, max: 100, def: 50, lo: 'ぎりぎり', hi: '潤沢', desc: '食料と修理部品の量' },
-      { id: 'contact', label: '未知との遭遇', min: 0, max: 100, def: 50, lo: 'めったにない', hi: 'たびたび', desc: '漂流中に、不思議なものに出会う頻度' }
+      { id: 'contact', label: '未知との遭遇', min: 0, max: 100, def: 50, lo: 'めったにない', hi: 'たびたび', desc: '漂流中に、不思議なものに出会う頻度' },
+      { id: 'romance', label: '恋愛の起こりやすさ', min: 0, max: 100, def: 50, lo: '起きない', hi: '起きやすい', desc: '船員どうしの想い・恋人になる出来事の起こりやすさ。0にすると恋愛の交流（恋の気配・想い・告白・恋人）を出しません' }
     ].concat(R18ON ? [{ id: 'slewd', label: '夜の出来事の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: 'たびたび', desc: '船員どうしの夜、星の花粉、異星の生き物、文明の儀式の起きやすさ' }] : []),
     stats: [{ id: 'hp', label: '体力', desc: '怪我や飢え、探索の危険への強さ' }, { id: 'tech', label: '技術', desc: '修理・航法・調査の腕' }],
     perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（気質から）', options: ROLES.map(function (r) { return { id: r.id, label: r.label }; }) }],
@@ -67161,7 +67174,7 @@
     var opts = [
       ['drink', 1.0], ['team', 1.0], ['confide', 0.7], ['game', 0.7], ['nurse', sick.length ? 0.9 : 0], ['birthday', 0.25], ['drink_all', L0.length >= 3 ? 0.3 : 0],
       ['fight', 0.25 + tense * 0.9], ['drink_bad', 0.2 + tense * 0.4], ['ration', sp.food < 35 ? 0.3 + tense * 0.6 : 0.05], ['duty', 0.2 + tense * 0.4], ['game_bad', 0.15 + tense * 0.2],
-      ['good', 0.6], ['bad', 0.15 + tense * 0.4], ['please', L0.some(pleaser) ? 0.6 + tense * 0.5 : 0], ['jealous', L0.length >= 3 ? 0.35 : 0], ['makeup', neg.length ? 0.8 : 0], ['love', lv.length ? 0.6 : 0]
+      ['good', 0.6], ['bad', 0.15 + tense * 0.4], ['please', L0.some(pleaser) ? 0.6 + tense * 0.5 : 0], ['jealous', L0.length >= 3 ? 0.35 : 0], ['makeup', neg.length ? 0.8 : 0], ['love', lv.length ? 0.6 * ST.romK(S) : 0]
     ];
     var kind = HK.weighted(rng, opts, function (o) { return o[1]; })[0];
     /* 二人を選ぶ：揉めごとは気の荒い・相性の悪い二人、仲が深まる出来事は誰とでも */
@@ -73076,7 +73089,7 @@
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
       '<h2 class="sec">' + (scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
       (scen.castHint || scen.solo ? '<p class="hint">' + (scen.castHint ? esc(scen.castHint) : 'この箱庭は一人用です。チェックを入れた住人が挑みます。' + (HK.SAFE_ON ? '' : '登場人物はすべて成人として扱います。')) + '</p>' : '') +
-      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p>' + loveCrowdNote(S.scenId) + '<div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return inGrp(c, g); }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button></span>'; }).join('') + '</div>' : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th><th>最初の行動</th><th>短期目標</th>' + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
+      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p>' + loveCrowdNote(S.scenId) + '<div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return inGrp(c, g); }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button><button class="btn small ghost" data-act="joingrpdel" data-g="' + esc(g) + '" title="このグループを参加から外す" aria-label="' + esc(g) + 'を参加から外す">−</button></span>'; }).join('') + '</div>' : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th><th>最初の行動</th><th>短期目標</th>' + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
       (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、カードの「この箱庭のTIPS」にあります。</p>' : '') +
       (sexCols && S.chars.length ? '<p class="hint" style="margin-top:8px">性別と恋愛対象は、住人タブの ⚙️ 設定と同じものです。</p>' : '') +
       (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') +
@@ -73276,6 +73289,13 @@
         if (gcur.length > gmx) { gcur = gcur.slice(0, gmx); toast('上限の' + gmx + '人まで参加にしました'); }
         else toast('「' + t.dataset.g + '」' + (act === 'joingrpadd' ? 'を参加に加えました' : 'だけを参加にしました'));
         S.join[S.scenId] = S.chars.filter(function (c) { return gcur.indexOf(c.id) >= 0; }).map(function (c) { return c.id; });
+        save(); renderBox(); break;
+      case 'joingrpdel':
+        S.join = S.join || {};
+        var dmem = S.chars.filter(function (c) { return inGrp(c, t.dataset.g); }).map(function (c) { return c.id; });
+        var dcur = joined(S.scenId).map(function (x) { return x.id; }).filter(function (id) { return dmem.indexOf(id) < 0; });
+        S.join[S.scenId] = dcur;
+        toast('「' + t.dataset.g + '」を参加から外しました');
         save(); renderBox(); break;
       case 'grphide':
         S.grpHide = S.grpHide || {};

@@ -42,7 +42,8 @@
       { id: 'find', label: '星の見つかりやすさ', min: 0, max: 100, def: 40, lo: 'ほとんど見つからない', hi: 'すぐ見つかる', desc: '毎月、星に辿り着けるかどうかの運。航海士と通信士の腕でも上がる' },
       { id: 'danger', label: '宇宙の過酷さ', min: 0, max: 100, def: 45, lo: '穏やか', hi: '過酷', desc: '故障や事故、探索の危険の起きやすさ' },
       { id: 'supply', label: '積んでいる物資', min: 0, max: 100, def: 50, lo: 'ぎりぎり', hi: '潤沢', desc: '食料と修理部品の量' },
-      { id: 'contact', label: '未知との遭遇', min: 0, max: 100, def: 50, lo: 'めったにない', hi: 'たびたび', desc: '漂流中に、不思議なものに出会う頻度' }
+      { id: 'contact', label: '未知との遭遇', min: 0, max: 100, def: 50, lo: 'めったにない', hi: 'たびたび', desc: '漂流中に、不思議なものに出会う頻度' },
+      { id: 'romance', label: '恋愛の起こりやすさ', min: 0, max: 100, def: 50, lo: '起きない', hi: '起きやすい', desc: '船員どうしの想い・恋人になる出来事の起こりやすさ。0にすると恋愛の交流（恋の気配・想い・告白・恋人）を出しません' }
     ].concat(R18ON ? [{ id: 'slewd', label: '夜の出来事の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: 'たびたび', desc: '船員どうしの夜、星の花粉、異星の生き物、文明の儀式の起きやすさ' }] : []),
     stats: [{ id: 'hp', label: '体力', desc: '怪我や飢え、探索の危険への強さ' }, { id: 'tech', label: '技術', desc: '修理・航法・調査の腕' }],
     perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（気質から）', options: ROLES.map(function (r) { return { id: r.id, label: r.label }; }) }],
@@ -655,7 +656,7 @@
     var opts = [
       ['drink', 1.0], ['team', 1.0], ['confide', 0.7], ['game', 0.7], ['nurse', sick.length ? 0.9 : 0], ['birthday', 0.25], ['drink_all', L0.length >= 3 ? 0.3 : 0],
       ['fight', 0.25 + tense * 0.9], ['drink_bad', 0.2 + tense * 0.4], ['ration', sp.food < 35 ? 0.3 + tense * 0.6 : 0.05], ['duty', 0.2 + tense * 0.4], ['game_bad', 0.15 + tense * 0.2],
-      ['good', 0.6], ['bad', 0.15 + tense * 0.4], ['please', L0.some(pleaser) ? 0.6 + tense * 0.5 : 0], ['jealous', L0.length >= 3 ? 0.35 : 0], ['makeup', neg.length ? 0.8 : 0], ['love', lv.length ? 0.6 : 0]
+      ['good', 0.6], ['bad', 0.15 + tense * 0.4], ['please', L0.some(pleaser) ? 0.6 + tense * 0.5 : 0], ['jealous', L0.length >= 3 ? 0.35 : 0], ['makeup', neg.length ? 0.8 : 0], ['love', lv.length ? 0.6 * ST.romK(S) : 0]
     ];
     var kind = HK.weighted(rng, opts, function (o) { return o[1]; })[0];
     /* 二人を選ぶ：揉めごとは気の荒い・相性の悪い二人、仲が深まる出来事は誰とでも */

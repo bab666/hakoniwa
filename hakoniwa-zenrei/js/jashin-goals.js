@@ -85,7 +85,7 @@
   /* ---------- 恋人を作る ---------- */
   function love(S, p, h, live) {
     var rng = S.rng;
-    if (rng() > 0.5) return false;
+    if (rng() > 0.5 * (ST.romK ? ST.romK(S) : 1)) return false;
     var L0 = p.love || (p.love = { t: null, pt: 0, tries: 0 });
     if (L0.done) return false;
     if (!L0.t || !al(L0.t)) {

@@ -6,6 +6,14 @@
   var HK = window.HK, esc = HK.escape;
   var ST = HK.Story = {};
 
+  /* 環境値「恋愛の起こりやすさ」（宇宙船・邪神村などの物語型）：エンジン型（engine.js）と同じ倍率。0 なら恋愛の交流を出さない（HK.canLove も偽） */
+  ST.romK = function (S) { var r = S && S.env && S.env.romance; if (r == null || r === '') return 1; r = +r; return r === 0 ? 0 : 0.3 + r / 50 * 0.7; };
+  ST._cur = null;
+  if (HK.canLove && !HK.canLove._storyRom) {
+    var cl0 = HK.canLove;
+    HK.canLove = function (a, b) { var S = ST._cur; if (S && S.env && +S.env.romance === 0 && S.env.romance !== '' && !(S.scen && S.scen.romanceCore)) return false; return cl0.apply(this, arguments); };
+    HK.canLove._storyRom = true;
+  }
   ST.state = function (input, scenId) {
     var scen = HK.SCENARIOS[scenId], env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
@@ -28,6 +36,7 @@
     /* 複数の恋人の設定（poly.js の HK.Poly.mode が S.poly を読む）と、関係の恋人の一覧（性行為の相手の固定「恋人だけ」・一途で使う。engine.js と同じ作り方） */
     S.poly = HK.Poly ? HK.Poly.modeOf(input.env) : 'none';
     (input.ties || []).forEach(function (t) { if (t && /^(lover|mate|fated)$/.test(t.type) && S.P[t.a] && S.P[t.b] && t.a !== t.b) { (S.P[t.a].loveSet = S.P[t.a].loveSet || []).push(t.b); (S.P[t.b].loveSet = S.P[t.b].loveSet || []).push(t.a); } });
+    ST._cur = S;
     return S;
   };
   /* 最近使った文を避けて選ぶ */
@@ -121,6 +130,7 @@
     });
   };
   ST.result = function (S, input, o) {
+    ST._cur = null;
     if (o && o.ending && Array.isArray(o.ending.lines) && HK.Dark && HK.Dark.note(S)) o.ending.lines.push(HK.Dark.note(S));   /* 展開の重さ（mood-dial.js）：ふつう以外なら結末に一行 */
     if (S.egoNotes && !S.egoDone) { S.egoDone = true; ST.egoNotes(S); }
     var res = {
