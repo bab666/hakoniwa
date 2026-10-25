@@ -39,7 +39,9 @@
   /* 恋敵：b と恋愛の関係がある、a 以外の人 */
   function rival(S, a, b, live) { return live.filter(function (c) { return c !== a && c !== b && (loveT(S, c, b) || loveT(S, b, c)); })[0] || null; }
   function alive(p) { return p && p.alive !== false && !p.out && !p.fallen; }
-  function fill(t, a, b, c) { return String(t).replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name).replace(/\{c\}/g, c ? c.name : ''); }
+  /* {where}＝監禁した場所（箱庭ごとの文 PACK[id].where が文字列ならそれ。なければ共通の言い方） */
+  function fill(t, a, b, c) { var w = (O.PACK && O.PACK[curId] && typeof O.PACK[curId].where === 'string' && O.PACK[curId].where) || '誰も来ない部屋'; return String(t).replace(/\{where\}/g, w).replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name).replace(/\{c\}/g, c ? c.name : ''); }
+  var curId = '';
   function pick(S, arr, noC) {
     var l = (arr || []).filter(function (x) { return !noC || x.indexOf('{c}') < 0; });
     return l.length ? l[S.rng.int(l.length)] : '';
@@ -63,6 +65,7 @@
   O.storyTick = function (S, live, opt) {
     opt = opt || {};
     var rng = S.rng, pack = opt.pack || null, pace = opt.pace || 1, safe = !!HK.SAFE_ON;
+    curId = (S.scen && S.scen.id) || opt.id || '';
     live = (live || []).filter(alive);
     if (live.length < 2) return null;
     var stepNo = S.log ? S.log.length : 0;
