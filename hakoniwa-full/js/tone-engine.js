@@ -19,6 +19,7 @@
      進行=ておる            ← 〜ている／〜てる → 〜ておる／〜とる
      断定=や                ← 〜だ → 〜や（だよ・だね・だろ・だった・だから・だけど も）
      助詞落とし=0.3         ← が・は・を を落とす割合
+     存在=おる              ← いる／いた／いない／います → おる／おった／おらぬ（が・は・も・に などの直後だけ。〜ている は進行の規則）
      縮約=はい              ← 分からない→分かんない、ちょうだい→ちょーだい など
      強調語=マジ／めっちゃ  ← 形容詞の前に差し込む（台詞に一度まで）
      [効果]                 ← 組み込みの小さな変形
@@ -70,10 +71,23 @@
   };
 
   /* ---------- 文を切る（文末の処理のため）。tail は …‥っ〜ー♡ など、文末記号の手前の飾り ---------- */
-  var END = /([。！？!?]+)/;
+  var END = /([。！？!?]+)/, POLITE_CUT = /(?:です|ます|ません|ました|でしょう|ください|ましょう|でした)(?:から|けど|が|し|ので|のに|よ|ね|よね)?$/;
   function segs(q) {
     var parts = q.split(END), out = [];
-    for (var i = 0; i < parts.length; i += 2) { var body = parts[i], punct = parts[i + 1] || ''; if (body || punct) out.push({ body: body, punct: punct }); }
+    for (var i = 0; i < parts.length; i += 2) {
+      var body = parts[i], punct = parts[i + 1] || '';
+      /* 「好きです、〈〉のこと」「動きますから、」のような敬語の言いさしは、読点でも切って文末の辞書を当てる */
+      var sub = body.split('、');
+      if (sub.length > 1) {
+        var acc = '';
+        for (var k = 0; k < sub.length - 1; k++) {
+          acc += sub[k];
+          if (POLITE_CUT.test(acc)) { out.push({ body: acc, punct: '、' }); acc = ''; } else acc += '、';
+        }
+        body = acc + sub[sub.length - 1];
+      }
+      if (body || punct) out.push({ body: body, punct: punct });
+    }
     return out;
   }
   function join(ss) { return ss.map(function (s) { return s.body + s.punct; }).join(''); }
@@ -92,7 +106,7 @@
   function conj(stem, form) {
     var last = stem.slice(-1), pre = stem.slice(0, -1);
     /* する（〜します・勉強します・何とかします）：「し」の前が五段の「す」で終わる動詞の漢字一字（話し・出し・返し）でなければ する */
-    var suru = last === 'し' && !/[話出返消押渡隠回落戻倒起鳴指示伸干放正済許殺探離貸刺移映残直試流通増減足察差指刺]$/.test(pre);
+    var suru = last === 'し' && !/[話出返消押渡隠回落戻倒起鳴指示伸干放正済許殺探離貸刺移映残直試流通増減足察差指刺外越殴壊卸干貸]$/.test(pre) && !/(過ご|なく|無く|増や|減ら|こぼ|ずら|ころ|まわ|かく|こわ|なお|かえ|はな|わた|おと|さが|よこ|ほど|ゆる|たお|もど|お|だ|け|さ|ど)$/.test(pre);
     /* 一段の「い」「み」は、いる・みる（〜ている・〜てみる）のときだけ。それ以外の い・み は五段（思い・飲み） */
     var ichiIM = (last === 'い' || last === 'み') && (!pre || /[てで]$/.test(pre));
     if (/^(?:来|き)$/.test(stem)) return { 'る': '来る', 'た': '来た', 'ない': '来ない', 'なかった': '来なかった', 'よう': '来よう' }[form];
@@ -119,11 +133,19 @@
   var NO_TERU = '捨建育当慌果企隔宛充裁満絶断討撃打企待持立勝';
   function ruleProg(q, to) {
     var te = to, de = /^て/.test(to) ? to.replace(/^て/, 'で') : /^と/.test(to) ? to.replace(/^と/, 'ど') : to;
-    return q.replace(/(.)(ている|てる|でいる|でる)(?=[^ぁ-ゖ]|[よねのかなぞぜさわしっ…‥〜～ー♡、。！？!?]|$)/g, function (m, pre, v) {
+    return q.replace(/(.)(ている|てる|でいる|でる)(?![ぁ-ゖ]?[ばれ])/g, function (m, pre, v, at) {
       if (NO_TERU.indexOf(pre) >= 0 && /^て/.test(v)) return m;
+      /* 「兄弟っている」「推しっている」「〇〇ってる」の っ は引用（名詞＋って）：二字の漢字・漢字＋し・カタカナの直後の っ なら触らない */
+      if (pre === 'っ' && /(?:[一-鿿々]{2}|[一-鿿々]し|[ァ-ヶー]|[A-Za-zＡ-Ｚａ-ｚ0-9０-９]|」)$/.test(q.slice(0, at))) return m;
       if (/^で/.test(v) && !/[んい]$/.test(pre)) return m;   /* 「〜んでいる」「〜いでいる」以外の「でる」は触らない */
       return pre + (/^で/.test(v) ? de : te);
     });
+  }
+  /* 存在の「いる」（〜ている は進行の規則）：が・は・も・に・と・か・で・読点・文頭の直後だけ */
+  function ruleExist(q, to, neg) {
+    var nai = neg === 'ぬ' ? 'おらぬ' : neg === 'へん' ? 'おらへん' : 'おらん';
+    var M2 = { 'いる': to, 'いた': to.replace(/る$/, 'った'), 'いない': nai, 'いません': nai, 'います': to.replace(/る$/, 'ります'), 'いました': to.replace(/る$/, 'りました'), 'いれば': to.replace(/る$/, 'れば') };
+    return q.replace(/(^|[がはもにとかで、\s　])(いる|いた|いない|いません|います|いました|いれば)(?=[^ぁ-ゖ]|[よねのかなぞぜさわしっ…‥〜～ー♡、。！？!?]|$)/g, function (m, p, v) { return p + (M2[v] || v); });
   }
   function ruleCopula(body, to) {
     /* 文中の だから・だけど・だって・だった */
@@ -173,6 +195,7 @@
     var r = d.rules || {}, fx = d.effects || {};
     /* 規則（文の内側） */
     if (r.prog) q = ruleProg(q, r.prog);
+    if (r.exist) q = ruleExist(q, r.exist, r.neg);
     if (r.contract) q = ruleContract(q);
     /* 語彙 */
     if (d.words && d.words.length) {
@@ -193,10 +216,15 @@
       /* 文末 */
       if (d.ends && d.ends.length) {
         var st = splitTail(body), core = st[0];
+        var punct = s.punct;
         if (core.slice(-1) !== MARK) for (var j = 0; j < d.ends.length; j++) {
-          var e = d.ends[j], head = core.slice(0, core.length - e[0].length);
-          if (core.length >= e[0].length && core.slice(core.length - e[0].length) === e[0] && (!e[2] || e[2].test(head.replace(new RegExp(MARK, 'g'), '')))) {
+          var e = d.ends[j], from = e[0], qm = /[？?]$/.test(from);
+          /* 「ません？=ませんこと？」のように ？ 付きの項目は、文末記号ごと見る */
+          if (qm) { if (!/^[？?]/.test(punct)) continue; from = from.slice(0, -1); }
+          var head = core.slice(0, core.length - from.length);
+          if (core.length >= from.length && core.slice(core.length - from.length) === from && (!e[2] || e[2].test(head.replace(new RegExp(MARK, 'g'), '')))) {
             var to = choose(e[1], seed + '#e' + i);
+            if (qm) { var tq = to.match(/[？?]+$/); to = to.replace(/[？?]+$/, ''); punct = (tq ? tq[0] : '') + punct.replace(/^[？?]+/, ''); }
             /* {る}{た}{ない}{なかった}{よう}：丁寧形の語幹（〜ます の前）を活用させる */
             if (/\{(る|た|ない|なかった|よう)\}/.test(to)) {
               var sm = head.match(/([ぁ-ゖ一-鿿々ァ-ヶー]+?)([きぎしちにびみりいえけげせぜてでねべめれ]|[一-鿿々])$/);
@@ -210,7 +238,7 @@
           }
         }
       }
-      return { body: body.replace(new RegExp(MARK, 'g'), ''), punct: s.punct };
+      return { body: body.replace(new RegExp(MARK, 'g'), ''), punct: punct };
     });
     if (fx.stretch) ss = fxStretch(ss, seed);
     if (fx.bangOn) ss = fxBangOn(ss, seed);
@@ -222,7 +250,7 @@
   };
 
   /* ---------- 辞書の文字列を読む ---------- */
-  var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph' };
+  var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '存在': 'exist' };
   var FX_KEYS = { '感嘆符を落とす': 'bangOff', '伸ばす': 'stretch', '言い切りに！': 'bangOn', '言い切りに!': 'bangOn', '短くする': 'short', '言いよどみ': 'stammer' };
   function alts(v) { return String(v).split(/[／/]/).map(function (x) { return x.replace(/^\s+|\s+$/g, ''); }).filter(function (x, i, a) { return x !== '' || a.length === 1; }); }
   /* 文字列 → { dicts: { 鍵: 辞書 }, errors } */
@@ -270,6 +298,7 @@
         else if (rk === 'emph') cur.rules.emph = alts(v);
         else if (rk === 'neg') { if (/^(ぬ|へん|ん)$/.test(v)) cur.rules.neg = v; else out.errors.push((i + 1) + '行目：否定は ぬ／へん／ん'); }
         else if (rk === 'prog') { if (/^[てと]/.test(v)) cur.rules.prog = v; else out.errors.push((i + 1) + '行目：進行は「ておる」「とる」のような形'); }
+        else if (rk === 'exist') { if (/る$/.test(v)) cur.rules.exist = v; else out.errors.push((i + 1) + '行目：存在は「おる」のような形'); }
         else cur.rules[rk] = v;
         return;
       }

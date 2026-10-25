@@ -3,7 +3,8 @@
    例：node dict-regress.js ../../hakoniwa-full kohai,ojou,noja,kansai,gyaru --show=10
    ・元の台詞は1本（K／F／P のどれか分からない）なので、そのまま辞書に当てる（控えめな見積もり。3本化が進むと上がる）
    ・一致の段階：完全一致／文末一致（最後の文の末尾3文字）／差分の種類（文末だけ・語彙・組み替え）
-   ・「組み替え」の割合が 2 割を超える口調は、辞書では届かない台詞が多い（ベースを足すか、行単位の上書きに残す）の目安 */
+   ・「組み替え」の割合が 2 割を超える口調は、辞書では届かない台詞が多い（ベースを足すか、行単位の上書きに残す）の目安
+   ・3本（「K｜F｜P」）で書かれた台詞は、その口調のベースから作って比べ、「└3本」の行に分けて出す（こちらが辞書の本当の成績） */
 'use strict';
 const fs = require('fs'), path = require('path');
 const dir = path.resolve(process.argv[2] || '../../hakoniwa-full');
@@ -52,21 +53,32 @@ function classify(a, b) {
   if (struct || 1 - lcs / Math.max(a.length, b.length) > 0.6) return 'struct';
   return vocab ? 'vocab' : 'end';
 }
+/* 3本で書かれた台詞（「K｜F｜P」）：元の台詞が K・F・P のどれかに一致すれば、その口調のベースから作る（正解との比較が正しくなる） */
+const TRIPLE = {};
+for (const f of fs.readdirSync(path.join(dir, 'js')).filter(f => f.endsWith('.js') && !f.startsWith('bundle'))) {
+  const s = fs.readFileSync(path.join(dir, 'js', f), 'utf8');
+  (s.match(/「[^」]*｜[^」]*」/g) || []).forEach(q => { const sp = T.split(q.slice(1, -1)); if (!sp) return; [sp.K, sp.F, sp.P].forEach(k => { if (k && !TRIPLE[k]) TRIPLE[k] = sp; }); });
+}
 const tail3 = s => s.replace(/[。！？!?…‥♡っ、\s]+$/, '').slice(-3);
 const tones = (only || Object.keys(T.dicts)).filter(k => T.dictOf(k));
 console.log('口調'.padEnd(10) + '  件数  完全一致  文末一致  残り：文末だけ  語彙  組み替え');
 for (const t of tones) {
   const R = rows.filter(r => r[0] === t), d = T.dictOf(t);
-  const c = { n: 0, exact: 0, tail: 0, end: 0, vocab: 0, struct: 0 }, samples = [];
+  const mk = () => ({ n: 0, exact: 0, tail: 0, end: 0, vocab: 0, struct: 0 });
+  const c = mk(), c3 = mk(), samples = [], samples3 = [];
   for (const [, raw, fix] of R) {
-    const out = T.apply(raw, d, { name: '〈〉' });
-    c.n++;
-    if (out === fix) { c.exact++; continue; }
-    if (tail3(out) === tail3(fix)) c.tail++;
-    const k = classify(out, fix); c[k === 'same' ? 'end' : k]++;
-    if (samples.length < SHOW) samples.push([raw, out, fix, k]);
+    const tr = TRIPLE[raw.replace(/〈〉/g, '{b}')] || TRIPLE[raw];
+    const base = tr ? (tr[d.base] || tr.K).replace(/\{b\}/g, '〈〉') : raw;
+    const out = T.apply(base, d, { name: '〈〉' }), o = tr ? c3 : c, sm = tr ? samples3 : samples;
+    o.n++;
+    if (out === fix) { o.exact++; continue; }
+    if (tail3(out) === tail3(fix)) o.tail++;
+    const k = classify(out, fix); o[k === 'same' ? 'end' : k]++;
+    if (sm.length < SHOW) sm.push([base, out, fix, k]);
   }
-  const pct = x => (100 * x / Math.max(1, c.n)).toFixed(0).padStart(3) + '%';
-  console.log(t.padEnd(10) + String(c.n).padStart(6) + '  ' + pct(c.exact) + '      ' + pct(c.tail) + '      ' + pct(c.end) + '       ' + pct(c.vocab) + '  ' + pct(c.struct));
-  samples.forEach(s => console.log('   [' + s[3] + '] ' + s[0] + '\n      → ' + s[1] + '\n      正 ' + s[2]));
+  const pct = (x, n) => (100 * x / Math.max(1, n)).toFixed(0).padStart(3) + '%';
+  const row = (lab, o) => console.log(lab.padEnd(10) + String(o.n).padStart(6) + '  ' + pct(o.exact, o.n) + '      ' + pct(o.tail, o.n) + '      ' + pct(o.end, o.n) + '       ' + pct(o.vocab, o.n) + '  ' + pct(o.struct, o.n));
+  row(t, c);
+  if (c3.n) row('  └3本', c3);
+  samples3.concat(samples).forEach(s => console.log('   [' + s[3] + '] ' + s[0] + '\n      → ' + s[1] + '\n      正 ' + s[2]));
 }
