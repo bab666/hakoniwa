@@ -110,17 +110,37 @@
      本文は DG.TOP の書き下ろし（罠を壊して逃れる・魔物を逆に組み伏せる・媚薬で自分の体が火照るだけ）に差し替える */
   function isTop(h) { return !!(h && HK.Pos && HK.Pos.hardTopNpc(h)); }
   DG.isTop = isTop;
+  function topKey(ev, kind) {
+    var k = kind || ev.kind;
+    return k === 'mon' || k === 'spring' || k === 'captive' || k === 'cap' || k === 'boss' ? k : (ev.o && ev.o.mind) || k === 'odd' ? 'mind' : k === 'chest' ? 'chest' : 'trap';
+  }
   function evText(S, ev, kind) {
     var T = DG.TOP;
     if (!T || !isTop(S.h)) return fmt(S, pick(S, ev.texts), ev);
-    var k = kind || ev.kind;
-    var arr = T[k === 'mon' || k === 'spring' || k === 'captive' || k === 'cap' || k === 'boss' ? k : (ev.o && ev.o.mind) || k === 'odd' ? 'mind' : k === 'chest' ? 'chest' : 'trap'];
-    return fmt(S, pick(S, arr), ev);
+    /* 捕まって責められる場面（挿入なし。dungeon-topfall.js の DG.TEASE） */
+    if (S.h._teaseEv === ev && DG.teaseText) return fmt(S, DG.teaseText(S, S.h, topKey(ev, kind)), ev);
+    return fmt(S, pick(S, T[topKey(ev, kind)]), ev);
   }
+  /* 攻めの挑戦者（モブには受けでない人）が罠・魔物に捕まって、挿入はされずに、いちもつや体を責められる場面にするか（R18版のみ）。
+     罠・魔物・捕縛中・主の技のときだけ、今までの「罠を壊す・魔物を組み伏せる」文と半々。物語とは別の乱数で決める（攻めのいない回は何も変わらない）。
+     描写の有無が「ほのめかす」・罠の淫らさが15未満なら起こさない。責められた場合は開発度が受けの0.6倍で伸び、拘束も（0.6倍の強さで）続く */
+  function zr(S) { return S.tzR || (S.tzR = HK.rng(((S.seed0 || 0) * 13 + 7919) >>> 0)); }
+  function teaseRoll(S, ev, key) {
+    var h = S.h, X = HK.Lewd;
+    h._teaseEv = null;
+    if (!isTop(h) || HK.SAFE_ON || !DG.TEASE || !DG.TEASE[key] || S.env.trap < 15) return false;
+    if (X && X.conf('dungeon') && X.lv(S.env) === 'low') return false;
+    if (DG.teaseLeft && !DG.teaseLeft(S, h, key)) return false;
+    if (zr(S)() >= 0.5) return false;
+    h._teaseEv = ev;
+    return true;
+  }
+  function teased(h, ev) { return !!(h && ev && h._teaseEv === ev); }
+  DG.teased = teased;
   DG.evText = function (S, ev, kind) { return evText(S, ev, kind); };
   var RICHMAP = { avoid: 'avoid', resist: 'resist', win: 'win', sneak: 'sneak', skipChest: 'skip', skipSpring: 'skip', rest: 'rest' };
   function line(S, key, ev) {
-    var TL = isTop(S.h) && DG.TOP && DG.TOP.lines[key];
+    var TL = isTop(S.h) && DG.TOP && (DG.TOP.lines[key] || (DG.TEASE && DG.TEASE.lines && DG.TEASE.lines[key]));
     if (TL) return fmt(S, pick(S, TL), ev);
     var rk = RICHMAP[key], R0 = rk && DG.RICH && DG.RICH[rk] && S.h && DG.RICH[rk][S.h.persona];
     if (R0) return fmt(S, pick(S, R0), ev);
@@ -225,8 +245,11 @@
     if (hasCurse(h, 'obey') && (o.mind || o.lure === 'ac')) gain *= 1.3;
     h.pleasure += gain;
     h.reason -= gain * (0.13 + (o.mind ? 0.08 : 0)) * (1 - w * 0.45) * S.k;
-    /* 開発度（責められた部位ほど伸びる）は、攻めの挑戦者には付かない */
-    if (isTop(h)) { /* 伸ばさない */ }
+    /* 開発度（責められた部位ほど伸びる）は、攻めの挑戦者には付かない（罠・魔物に捕まって責められた場面だけ、受けの0.6倍） */
+    h.lastEv = ev;
+    if (isTop(h)) {
+      if (teased(h, ev)) { if (part === 'all') DG.PART_ORDER.forEach(function (k) { h.dev[k] = Math.min(10, (h.dev[k] || 0) + 0.21); }); else h.dev[part] = Math.min(10, (h.dev[part] || 0) + (o.dev || 1) * 0.6); }
+    }
     else if (part === 'all') DG.PART_ORDER.forEach(function (k) { h.dev[k] = Math.min(10, (h.dev[k] || 0) + 0.35); });
     else h.dev[part] = Math.min(10, (h.dev[part] || 0) + (o.dev || 1));
     if (o.sens) h.sens += o.sens;
@@ -264,18 +287,18 @@
       h.reason -= (4 + h.climax) * (1 - w * 0.4) * S.k;
       h.sens += 0.04 + (hasCurse(h, 'mark') ? 0.05 : 0);
       h.pleasure = 18 + rng.int(18) + (hasCurse(h, 'mark') ? 14 : 0) + (hasCurse(h, 'heat') ? 8 : 0);
-      var top = isTop(h) && DG.CLIMAX_TOP, cn = h.climax, moanOn = DG.MOAN && !top && rng() < 0.45;
+      var top = isTop(h) && DG.CLIMAX_TOP, cn = h.climax, moanOn = DG.MOAN && !top && rng() < 0.45, tz = top && teased(h, ev) && !!DG.teaseClimax;
       later(S, function () {
         /* 絶頂の言い回しは、書く時点の段階で選ぶ（原因の出来事の反応より前の段階に戻らないように） */
         var hs = S.h; S.h = h;
         var sg = stage(h), XS = !top && HK.SoloKit && HK.SoloKit.CLIMAX_SOLO && HK.SoloKit.CLIMAX_SOLO[h.persona];
         /* 一人用箱庭と共通の絶頂の言い回し（solo-kit.js の CLIMAX_SOLO）も混ぜて、同じ文が続かないように */
-        var ctext = fmt(S, pick(S, top ? DG.CLIMAX_TOP[sg] : XS ? DG.CLIMAX[h.persona][sg].concat(XS[sg]) : DG.CLIMAX[h.persona][sg]), ev);
+        var ctext = fmt(S, (tz && DG.teaseClimax(S, h)) || pick(S, top ? DG.CLIMAX_TOP[sg] : XS ? DG.CLIMAX[h.persona][sg].concat(XS[sg]) : DG.CLIMAX[h.persona][sg]), ev);
         if (moanOn) ctext = '「' + pick(S, DG.MOAN[h.persona]) + '」' + ctext;
         S.h = hs;
         /* 絶頂した本人（パーティーでは書くときに別の人の番になっていることがある。dungeon-lewd.js が読む） */
         S.lwWho = h; S.lwEv = ev;
-        var o = say(S, { kind: 'climax', tag: '絶頂', text: ctext, why: cn === 1 ? '初めての絶頂' : cn + '回目' });
+        var o = say(S, { kind: 'climax', tag: '絶頂', text: ctext, why: cn === 1 ? '初めての絶頂' : cn + '回目', tease: tz || undefined });
         S.lwWho = null;
         if (cn === 1) key(S, o, '最初の絶頂');
         if (cn === 5 || cn === 10) key(S, o, cn + '回目の絶頂');
@@ -426,10 +449,11 @@
       return;
     }
     S.cnt.traps++;
+    if (isTop(h)) teaseRoll(S, ev, topKey(ev, viaChest ? 'chest' : null));
     var text = (deliberate ? line(S, 'seek', ev) + ' ' : '') + evText(S, ev, viaChest ? 'chest' : null);
     var before = h.pleasure;
     stim(S, ev, mult * (deliberate ? 1.15 : 1));
-    var o = say(S, { kind: 'ev', tag: viaChest ? '宝箱' : ev.o.mind ? '幻惑' : '罠', text: text + react(S), why: (deliberate ? why + '／' : '') + DG.PARTS[ev.partNow] + '＋' + Math.round(h.pleasure - before > 0 ? h.pleasure - before : 0) });
+    var o = say(S, { kind: 'ev', tag: viaChest ? '宝箱' : ev.o.mind ? '幻惑' : '罠', tease: teased(h, ev) || undefined, text: text + react(S), why: (deliberate ? why + '／' : '') + DG.PARTS[ev.partNow] + '＋' + Math.round(h.pleasure - before > 0 ? h.pleasure - before : 0) });
     if (deliberate && S.cnt.seek === 1) key(S, o, '自分から罠に触れた');
     S.holdTarget = S.lastMain;
     if (ev.o.hold) hold(S, ev, ev.o.hold);
@@ -437,14 +461,15 @@
 
   function hold(S, ev, n) {
     var h = S.h, rng = S.rng;
-    /* 攻めの挑戦者は捕まえられない（本文で、もう振りほどいている） */
-    if (isTop(h)) { S.defer = false; flushQ(S); return; }
+    /* 攻めの挑戦者は捕まえられない（本文で、もう振りほどいている）。捕まって責められた場面だけ、拘束が続く（0.6倍の強さ） */
+    var tz = teased(h, ev);
+    if (isTop(h) && !tz) { S.defer = false; flushQ(S); return; }
     h.holdN = (h.holdN || 0) + 1;
     for (var i = 0; i < n; i++) {
       if (S.over || S.h.fallen) return;
       var esc = 0.22 + st(h, 'fight') * 0.06 + h.tr.cp * 0.2 + h.tr.a * 0.08 + h.hp / 500 - h.corrupt / 260 - h.pleasure / 500;
       if (rng() < esc) { S.defer = false; note(S, '→' + line(S, 'holdEscape', ev), null, S.holdTarget); flushQ(S); return; }
-      stim(S, ev, 0.72);
+      stim(S, ev, 0.72 * (tz ? 0.6 : 1));
       if (settle(S)) return;
     }
     S.defer = false;
@@ -475,9 +500,10 @@
     }
     h.hp -= 12 + rng.int(12) + S.floor * 2; h.lostN = (h.lostN || 0) + 1;
     S.cnt.traps++;
+    if (isTop(h)) teaseRoll(S, ev, 'mon');
     var before = h.pleasure;
     stim(S, ev, 1);
-    say(S, { kind: 'ev', tag: isTop(h) ? '逆襲' : '敗北', text: evText(S, ev) + react(S), why: DG.PARTS[ev.partNow] + '＋' + Math.round(Math.max(0, h.pleasure - before)) });
+    say(S, { kind: 'ev', tag: isTop(h) && !teased(h, ev) ? '逆襲' : '敗北', tease: teased(h, ev) || undefined, text: evText(S, ev) + react(S), why: DG.PARTS[ev.partNow] + '＋' + Math.round(Math.max(0, h.pleasure - before)) });
     if (settle(S)) return;
     if (h.hp <= 0) { capture(S, ev); return; }
     S.holdTarget = S.lastMain;
@@ -496,8 +522,9 @@
     seen(S, ev);
     S.h.capRounds++;
     ev = Object.create(ev); ev.name = S.h.captor.name;
+    if (isTop(h)) teaseRoll(S, ev, 'cap');
     stim(S, ev, 1 + S.h.capRounds * 0.1);
-    say(S, { kind: 'ev', tag: '捕縛中', text: evText(S, ev, 'cap') + react(S), why: '捕らわれて' + S.h.capRounds + '部屋分' });
+    say(S, { kind: 'ev', tag: '捕縛中', tease: teased(h, ev) || undefined, text: evText(S, ev, 'cap') + react(S), why: '捕らわれて' + S.h.capRounds + '部屋分' });
     if (settle(S)) return;
     var esc = 0.12 + h.tr.cp * 0.22 + h.tr.a * 0.1 + st(h, 'fight') * 0.03 + h.reason / 320 - h.corrupt / 220;
     if (S.h.goal.id === 'secret') esc -= 0.1;
@@ -637,8 +664,9 @@
       var Fv = F.filter(function (x) { return !isTop(x); });
       var h = S.h = HK.weighted(rng, Fv.length ? Fv : F, function (x) { return 1.2 - x.tr.caution * 0.6 + x.corrupt / 150; });
       var mv = order[r % order.length], ev = bossEv(S, B, mv);
+      if (isTop(h)) teaseRoll(S, ev, 'boss');
       stim(S, ev, 1 + r * 0.08);
-      say(S, { kind: 'ev', tag: S.bossTag, text: (mid && r === 0 ? B.name + '：' : '') + '《' + mv.n + '》' + evText(S, ev, 'boss') + react(S), why: DG.PARTS[ev.partNow] });
+      say(S, { kind: 'ev', tag: S.bossTag, tease: teased(h, ev) || undefined, text: (mid && r === 0 ? B.name + '：' : '') + '《' + mv.n + '》' + evText(S, ev, 'boss') + react(S), why: DG.PARTS[ev.partNow] });
       S.holdTarget = S.lastMain;
       if (mv.o.hold) hold(S, ev, mv.o.hold);
       var splash = [];
@@ -739,7 +767,9 @@
     var ex = '';
     if (cf && top && X.ero(S.env) && TH.fallTopEro && window.HK.Ero) { var d0 = h.eroDom; h.eroDom = true; ex += '\n\n' + window.HK.Ero.fill(S, pick(S, TH.fallTopEro), h); h.eroDom = d0; }
     if (cf && X.high(S.env) && TH.fallAgain) ex += '\n\n' + pick(S, top ? TH.fallAgainTop : TH.fallAgain);
-    return fmt(S, TV.voice(S.rng, pick(S, l), h, h) + ex + (cd ? '\n\n' + pick(S, cd) : ''), h.captor || S.lastEv);
+    /* 声は仲間どうしの場面（dungeon-tempt.js・dungeon-topfall.js）と同じ描写用の乱数で選ぶ（一回の中で同じ声を重ねない） */
+    var vr = S.tmR || (S.tmR = { rng: window.HK.rng(((S._tmSeed || 0) * 31 + 9973) >>> 0) });
+    return fmt(S, TV.voice(vr.rng, pick(S, l), h, h) + ex + (cd ? '\n\n' + pick(S, cd) : ''), h.captor || S.lastEv);
   }
   DG.fallHero = function (S, h) {
     if (h.fallLogged) return;
@@ -748,7 +778,7 @@
     var f = DG.pickFall(S);
     h.fallTitle = f.title; h.fallText = fmt(S, f.text, h.captor || S.lastEv);
     var thk = thickFall(S, h);
-    var of = say(S, { kind: 'sys', tag: '陥落', text: (thk || line(S, 'fall', h.captor || S.lastEv)) + (S.party.length > 1 && thk ? '\n\n' : '') + (S.party.length > 1 ? fmt(S, pick(S, DG.LINES.fallParty || ['{a}は仲間の呼ぶ声に、もう振り返らなかった。'])) : ''), why: h.name + '：堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) });
+    var of = say(S, { kind: 'sys', tag: '陥落', text: (thk || line(S, 'fall', h.captor || S.lastEv)) + (S.party.length > 1 && thk ? '\n\n' : '') + (S.party.length > 1 ? fmt(S, pick(S, DG.LINES.fallParty || ['{a}は仲間の呼ぶ声に、もう振り返らなかった。'])) : ''), why: h.name + '：堕ち度 ' + Math.round(h.corrupt) + (h.dgWatch >= 1 ? '（見て上がった分 +' + Math.round(h.dgWatch) + '）' : '') + '・理性 ' + Math.round(Math.max(0, h.reason)) });
     /* 心の強さが強い人：体は堕ちても心は折れない一文を添える（attr.js） */
     if (HK.Attr && HK.Attr.strong(h)) of.text += '\n\n' + HK.Attr.hold(function (l) { return pick(S, l); }, h, 'dungeon');
     key(S, of, h.name + 'が快楽に堕ちた');
@@ -767,7 +797,7 @@
     var tk = env.theme === 'mix' ? 'mix' : env.theme;
     var S = {
       rng: rng, env: env, log: [], hist: [], turns: [], seen: {}, cause: {}, flags: {},
-      themeKey: tk, floors: env.floors, rooms: env.rooms, floor: 0, room: 0, over: null,
+      themeKey: tk, floors: env.floors, rooms: env.rooms, floor: 0, room: 0, over: null, seed0: (+input.seed || 0) >>> 0,
       cnt: { traps: 0, avoided: 0, fights: 0, won: 0, items: 0, rescued: 0, seek: 0, edge: 0, cloth: 0, cured: 0, rests: 0, captured: 0, mids: 0, saved: 0, assault: 0 }
     };
     S.mixOrder = rng.shuffle(DG.THEME_KEYS);

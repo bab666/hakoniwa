@@ -68,6 +68,8 @@
     var ev = (S.lwWho && S.lwEv) || S.lastEv, m = { p: (ev && ev.partNow && DG.PARTS[ev.partNow]) || '体' }, body = HK.Pos && HK.Pos.isF(h) ? 'f' : 'm';
     if (o.kind === 'climax' && o.tag === '絶頂') {
       if (top) {
+        /* 罠・魔物に捕まって責められた攻め（挿入なし）：dungeon-topfall.js の DG.teaseLewd が厚さ・作風・濃さの段落を足す */
+        if (o.tease && DG.teaseLewd) { var Rt = rngOf(S); DG.teaseLewd(S, o, h, { ero: ero, hi: hi, thick: S.env.lewdLen === 'thick' || (S.env.lewdLen === 'mix' && Rt.rng() < 0.5) }); return; }
         if (ero) { var d0 = h.eroDom; h.eroDom = true; o.text += ' ' + fill(S, pick(S, T.topEro), h, m); h.eroDom = d0; }
         return;
       }
@@ -80,6 +82,8 @@
       o.text = out.join(thick ? '\n\n' : ' ');
       return;
     }
+    /* 捕まって責められた攻め：罠・技の場面の半分ほどに、挿入を思わせない喘ぎを一つ */
+    if (top && o.tease && ero && o.kind === 'ev' && moved && DG.teaseMoan && rngOf(S).rng.int(2)) { o.text += ' ' + h.name + '「' + DG.teaseMoan(S, h, mst(h)) + '」'; return; }
     if (!ero || top) return;
     if (o.kind === 'climax' && o.tag === '寸止め') { o.text += ' ' + h.name + '「' + moan(S, h, 1) + '」'; return; }
     /* 罠・技などで責められた場面：半分ほどに喘ぎを一つ */

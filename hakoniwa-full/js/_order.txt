@@ -150,6 +150,7 @@ late js/dungeon-lewd.js
 js/dungeon-bosses.js
 js/dungeon-party.js
 js/dungeon-tempt.js
+js/dungeon-topfall.js
 js/dungeon-end.js
 js/dungeon-host.js
 js/solo-kit.js

@@ -18,6 +18,8 @@
   /* 体の書き分け：fb 女性の体で受ける／mb 男性の体で受ける／ft 女性の攻め（跨る）／mt 男性の攻め（ふたなりの攻めもこちら） */
   function bodyKey(h) {
     var P = HK.Pos, top = isTop(h);
+    /* 性器なし（HK.Pos.noGen）の人は、体のことをぼかした文（挿入・性器の語を出さない） */
+    if (P && P.noGen && P.noGen(h)) return top ? 'lowT' : 'lowB';
     if (top) return (P ? P.isF(h) : h.gender === 'f') ? 'ft' : 'mt';
     return (P ? P.isFBody(h) : h.gender === 'f') ? 'fb' : 'mb';
   }
@@ -259,6 +261,28 @@
     return nm(s + pk(S, per[top && c === 'caught' ? 'marked' : c]), h);
   }
 
+  /* 攻めの挑戦者の堕ち方（dungeon-topfall.js）：触手に加勢した／仲間に手を出した／仲間の痴態を見て堕ちた（見て上がった分が15以上）。{b}＝相手の仲間 */
+  var TOPX = {
+    join: {
+      fall: ['迷宮の奥で触手を従える{a}の耳には、いまもあの日の{b}の声が残っている。初めて触手と並んで仲間を抱いたときから、{a}は狩る側でいることをやめられなくなった。', '{a}は今も、触手に捕らわれた獲物を見つけると足を止める。助けるためではないことを、{a}自身がいちばんよく知っている。'],
+      clear: ['地上に戻っても、{a}は{b}の前でだけは目を伏せる。触手に縛られた{b}を、助けるより先に抱いてしまったあの部屋のことを、二人はまだ一度も話していない。', '{a}は帰還の報告で、あの部屋のことだけは書かなかった。助けに入ったはずの手が何をしたのか、{a}は今も夜中にふと思い出す。']
+    },
+    reach: {
+      fall: ['{a}が最後に手を伸ばしたのは、魔物ではなく{b}だった。それから{a}は、迷宮の奥で獲物を探す目を隠さなくなった。', '{a}は見ているだけでは足りなくなった夜のことを、今では笑って話す。笑いかける相手は、もう迷宮の魔物しかいない。'],
+      clear: ['地上に戻ってからも、{a}と{b}の間には、迷宮で越えた一線の気配が残っていた。どちらも、それを罠のせいにはしなかった。', '{a}は時々、迷宮で{b}に手を伸ばした夜のことを思い出す。思い出すたびに、あれが本当に迷宮のせいだったのか分からなくなる。']
+    },
+    watch: {
+      fall: ['{a}を堕としたのは罠でも魔物でもなかった。仲間の乱れる姿を、目を逸らさずに見続けたこと――それだけで、{a}の中の何かは少しずつ形を変えていった。', '{a}は今も迷宮の奥で、誰かが罠にかかる音に耳を澄ませている。見ているだけで満ちていく熱を、{a}はもう手放せない。'],
+      clear: ['地上に戻った{a}は、迷宮で仲間が乱れていく姿を見ていたことを、誰にも話さなかった。それでも目を閉じると、あの声がまだ耳に残っていた。', '{a}は罠にも魔物にも屈しなかった。ただ、仲間の乱れる姿から目を逸らせなかった自分のことだけは、いまだに許せずにいる。']
+    }
+  };
+  function topX(S, h) {
+    var k = h.dgJoinN ? 'join' : h.dgReachN ? 'reach' : (h.dgWatch || 0) >= 15 ? 'watch' : '';
+    if (!k || (!h.fallen && S.over !== 'clear')) return '';
+    return nm(pk(S, TOPX[k][h.fallen ? 'fall' : 'clear']), h, { name: h.dgPartner || '仲間' });
+  }
+  DG.topX = topX;
+
   var end0 = DG.ending;
   DG.ending = function (S) {
     var E = end0(S);
@@ -267,6 +291,7 @@
     S.party.forEach(function (h) {
       var t = h.fallen ? fallOchi(S, h) : S.over === 'clear' ? clearOchi(S, h) : '';
       if (!t) return;
+      t += topX(S, h);
       h.ochi = h.fallen ? 'fall-' + depth(S, h) : 'clear-' + clearCat(h);
       E.lines.push((solo ? 'その後――' : h.name + 'のその後――') + t);
     });
