@@ -920,7 +920,7 @@
       ending: E, advice: DG.advice(S, E), stepCount: S.hist.length - 1, partyNotes: S.partyNotes || []
     };
     res.outcome = E.title;
-    res.summary = heroes.map(function (h) { return h.name; }).join('・') + '：' + E.title + '（地下' + Math.min(res.reached, S.floors) + '階）';
+    res.summary = heroes.map(function (h) { return h.name; }).join('・') + '：' + E.title + (/階）$/.test(E.title) ? '' : '（地下' + Math.min(res.reached, S.floors) + '階）');
     res.chars = heroes.map(function (h) { return { name: h.name, i: h.i }; });
     return res;
   };

@@ -23212,7 +23212,9 @@
     };
     S.mixOrder = rng.shuffle(DG.THEME_KEYS);
     S.recent = []; S.q = [];
-    S.party = input.chars.slice(0, 4).map(function (c, i) { return mkHero(S, c, (input.perChar && input.perChar[i]) || {}, i); });
+    /* 主催者の役（dungeon-host.js）：住人が主催者なら挑戦者から外す（h.i は入力の並びのまま）。なし・モブなら今までどおり */
+    var hostI = DG.hostSetup ? DG.hostSetup(S, input) : -1;
+    S.party = input.chars.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.i !== hostI; }).slice(0, 4).map(function (x) { return mkHero(S, x.c, (input.perChar && input.perChar[x.i]) || {}, x.i); });
     S.h = S.party[0];
     S.k = clamp(Math.pow(20 / (S.floors * S.rooms), 0.85), 0.4, 1.3);
     if (tk === 'mix') S.theme = { label: '混成迷宮' };
@@ -23227,6 +23229,7 @@
     S.floorName = floorName(S, 0);
     var P0 = S.party;
     say(S, { kind: 'sys', tag: '開始', text: P0.length > 1 ? P0.map(function (x) { return x.name; }).join('・') + 'は互いの装備を確かめ合い、' + S.floorName + 'へ踏み込んだ。' : fmt(S, pick(S, DG.LINES.start)) + (S.h.goal.id === 'curse' ? '下腹には淫紋が刻まれている。' : ''), why: P0.map(function (x) { return (P0.length > 1 ? x.name + '：' : '') + '方針「' + x.action.label + '」目標「' + x.goal.label + '」'; }).join('／') });
+    if (DG.hostStart) DG.hostStart(S);
     snap(S);
 
     var budget = S.floors * S.rooms + 16, steps = 0;
@@ -23289,6 +23292,8 @@
         }
         S.defer = false; flushQ(S);
         if (!S.over && DG.partyAfter && S.party.filter(function (x) { return !x.fallen; }).length > 1) { DG.partyAfter(S, h, S.roomHit); S.defer = false; flushQ(S); }
+        /* 主催者が見ている・ときどき手を出す（dungeon-host.js。主催者がいなければ何もしない） */
+        if (!S.over && S.host && DG.hostRoom) { DG.hostRoom(S, S.roomHit); S.h = h; S.defer = false; flushQ(S); }
       }
       S.party.forEach(function (x) {
         if (x.fallen || S.over) return;
@@ -23364,7 +23369,7 @@
       ending: E, advice: DG.advice(S, E), stepCount: S.hist.length - 1, partyNotes: S.partyNotes || []
     };
     res.outcome = E.title;
-    res.summary = heroes.map(function (h) { return h.name; }).join('・') + '：' + E.title + '（地下' + Math.min(res.reached, S.floors) + '階）';
+    res.summary = heroes.map(function (h) { return h.name; }).join('・') + '：' + E.title + (/階）$/.test(E.title) ? '' : '（地下' + Math.min(res.reached, S.floors) + '階）');
     res.chars = heroes.map(function (h) { return { name: h.name, i: h.i }; });
     return res;
   };
@@ -23644,6 +23649,7 @@
 
   function k(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   function rel(S, a, b) { return S.rel[k(a, b)]; }
+  function byI(P, i) { for (var j = 0; j < P.length; j++) if (P[j].i === i) return P[j]; return null; }
   function t2(S, s, a, b) { return s.replace(/\{a\}/g, a.name).replace(/\{b\}/g, b ? b.name : '').replace(/\{t\}/g, S.lastEv ? S.lastEv.name : '罠'); }
   function pk(S, arr) { return DG.pick(S, arr); }
   function st(h, id) { return h.stats[id] || 3; }
@@ -23668,7 +23674,8 @@
       });
     });
     (input.ties || []).forEach(function (t) {
-      var a = P[t.a], b = P[t.b];
+      /* 住人の番号（h.i）で引く（主催者を挑戦者から外したとき、並びと番号がずれるので） */
+      var a = byI(P, t.a), b = byI(P, t.b);
       if (!a || !b || !HK.TIES[t.type]) return;
       var r = rel(S, a, b), D = HK.TIES[t.type];
       r.tie = t.type;
@@ -24128,7 +24135,7 @@
     S._tmSeed = (+(input && input.seed) || 0) >>> 0;
     var src = (input && input.chars) || [];
     S.party.forEach(function (h, i) {
-      var c = src[i] || {};
+      var c = src[h.i != null ? h.i : i] || {};
       if (h.sexLock == null || h.sexLock === '') {
         var s = c.sexLock;
         h.sexLock = s === 'any' || s === 'lover' ? s : s == null || s === '' || isNaN(+s) ? null : +s;
@@ -24136,7 +24143,7 @@
     });
     ((input && input.ties) || []).forEach(function (t) {
       if (!/^(lover|mate|fated|spouse)$/.test(t.type)) return;
-      var x = S.party[t.a], y = S.party[t.b];
+      var x = S.party.filter(function (p) { return p.i === t.a; })[0], y = S.party.filter(function (p) { return p.i === t.b; })[0];
       if (!x || !y) return;
       (x.loveSet = x.loveSet || []).push(y.i); (y.loveSet = y.loveSet || []).push(x.i);
     });
@@ -24423,6 +24430,363 @@
       E.lines.push((solo ? 'その後――' : h.name + 'のその後――') + t);
     });
     return E;
+  };
+})();
+;/* ==== js/dungeon-host.js ==== */
+/* 箱庭シミュレーター（R18版のみ）: エロトラップダンジョン ― 主催者の役（迷宮を造った人）
+   環境値「主催者」（HK.Roles：おまかせ＝なし／住人から／モブ／なし）と、住人ごとの欄「主催者になる／ならない」。
+   ・おまかせ・なしは今までどおり（主催者は出てこない。物語の乱数にも触れない）
+   ・住人の主催者は挑戦者にならない。観察室の水晶から挑戦者を眺めて、態度に合わせて品評し、ときどき手を出す
+     （罠を強める／お気に入りを助ける／声でからかう）。挑戦者は途中で「主催者が仲間だった」と気づくことがある
+   ・住人の主催者と挑戦者の体の場面は、HK.Pos.okSex（受け攻め・恋愛対象）と HK.Pos.order の向き（攻めを選んだ人は受けない）、
+     HK.State.r18ok（二人とも）、HK.ngPair・HK.sexBlocked を通る組だけ。通らない組には品評・助ける・からかう（性的でない文）だけ
+   ・モブの主催者（迷宮の主を名乗る誰か）は、品評と罠・助け舟だけ（体には触れない）
+   ・最低人数：住人が一人だけなら、その人は挑戦者のまま（主催者はなしにする）。主催者も4人の枠に数える
+   ・結末に主催者の一行を足す。文は物語とは別の乱数で選ぶ
+   {h}＝主催者 {a}＝挑戦者 {n}＝挑戦者たち。体の場面は dungeon-tempt.js（DG.TEMPT）の組ごとの文・態度9種の山場を使う。登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK, DG = HK && HK.DG;
+  if (!DG || !HK.SCENARIOS || !HK.SCENARIOS.dungeon || !HK.Roles) return;
+  function L(s) { return s.split('|'); }
+  var ROLE = { allowMob: true, allowNone: true, auto: 'none', yes: '主催者になる', mob: { given: true },
+    desc: '迷宮を造った主催者を、住人がやるか・モブがやるか・なしにするかを選びます。住人の主催者は挑戦せず、観察室から挑戦者を眺めて品評し、ときどき罠を強めたり、お気に入りを助けたりします。住人が一人だけのときは主催者を置きません',
+    fit: function (c) { var t = c.tr || HK.traits(c.eg); return 0.3 + t.fc * 0.5 + t.cp * 0.3 + (t.lead || 0) * 0.3; } };
+  HK.Roles.install(HK.SCENARIOS.dungeon, 'host', '主催者', ROLE);
+
+  var T = {
+    intro: {
+      res: L('迷宮の最奥には、誰も知らない小部屋がある。壁一面の水晶に、{n}の姿が映し出されていた。それを眺めながら頬杖をついているのは、この迷宮を一から組み上げた主催者――{h}だった。|{n}が入り口の扉をくぐった瞬間、迷宮のどこかで小さな鈴が鳴った。{h}は読みかけの設計図を閉じ、観察用の水晶に灯をともした。仲間が自分の迷宮に挑みに来たことを、{h}だけが知っていた。|罠の配置も、魔物の巣の場所も、すべて{h}が決めたものだった。{h}は観察室の椅子に深く腰かけ、水晶に映る{n}の顔を一人ずつ確かめた。挑戦者たちはまだ、この迷宮の主催者が誰なのかを知らない。'),
+      mob: L('入り口の石板には、主催者の名が刻まれていた。――{h}。{n}が足を踏み入れると、どこからともなく愉快そうな声が響いた。「ようこそ。私の迷宮を、存分に味わっていってくれ」|{n}の頭上で、ぱちりと水晶の目が開いた。「挑戦者が来たか。私は{h}、この迷宮の主催者だ」声は通路の奥から反響して、どこから聞こえるのか分からなかった。|迷宮の壁には、ところどころに小さな水晶が埋め込まれていた。それが主催者である{h}の目だと、{n}はすぐに気づいた。見られている――その感覚は、最初の部屋に入る前から肌にまとわりついていた。')
+    },
+    /* 品評：主催者の態度9種（性的な語を使わない） */
+    comment: {
+      proud: L('{h}は水晶に映る{a}を見下ろして、鼻を鳴らした。{h}「その程度の罠で足が止まるのか。造ったこっちが拍子抜けだ」{h}は次の部屋の仕掛けを、黙って一段きつく組み直した。|{h}は腕を組んだまま、水晶の中の{a}をじっと睨んでいた。{h}「いい顔をするじゃないか。もっと見せろ」口では文句を言いながら、{h}は一度も目を逸らさなかった。|{a}が罠をすり抜けるのを見て、{h}は舌打ちした。{h}「ちっ、勘のいい奴だ」{h}は手元の図面に、乱暴に赤い印をつけた。'),
+      stern: L('{h}は背筋を伸ばしたまま、水晶に映る{a}の足運びを見つめていた。{h}「踏み込みが甘い。あれでは次の階で捕まる」{h}は記録帳に、短く注意書きを書き加えた。|{h}は{a}の様子を、試験官のような目で検分していた。{h}「規則どおりに進めば、抜けられるように造ってある」それでも{a}が罠に足を取られると、{h}の眉がわずかに寄った。|{h}「……悪くない」{h}は罠を避けた{a}を見て、一言だけ呟いた。それ以上は何も言わず、{h}は次の部屋の仕掛けを点検し直した。'),
+      tsun: L('{h}は水晶の前で頬杖をついて、{a}をにらんでいた。{h}「べ、別に心配なんかしてないし。罠に引っかかればいいのに」そう言いながら、{h}の指は落ち着きなく机を叩いていた。|{h}「ふん、{a}のくせに、なかなかやるじゃない」{h}はぷいと顔を背けた。けれど横目は、ずっと水晶のほうを追いかけていた。|{a}が罠に足を取られると、{h}は思わず腰を浮かせた。{h}「……っ、今のは、仕掛けの具合を見ただけだから」誰もいない観察室で、{h}は誰にともなく言い訳をした。'),
+      gentle: L('{h}は温かいお茶を手に、水晶に映る{a}を眺めていた。{h}「あらあら、大変そう。でも、{a}ならきっと大丈夫」{h}は湯気の向こうで、のんびりと目を細めた。|{h}は{a}が罠に驚く顔を見て、くすくすと笑った。{h}「ごめんね、その仕掛け、ちょっと意地悪だったかしら」{h}は次の部屋の罠を、ほんの少しだけ緩めておいた。|{h}「がんばって、{a}」{h}は水晶に向かって、小さく手を振った。届くはずのない声援を、{h}は何度も繰り返した。'),
+      devoted: L('{h}は両手を胸の前で握りしめて、水晶の中の{a}を見守っていた。{h}「無理しないで……でも、ちゃんと最後まで見届けるから」{h}は{a}が次の部屋へ進むまで、瞬きも忘れていた。|{h}は{a}のために用意した仕掛けの一覧を、何度も読み返していた。{h}「喜んでもらえるかな。がんばって造ったんだ」水晶の中の{a}は、そんなことを知る由もなかった。|{h}「{a}、そこ、右の床は踏まないで……」{h}は届かない声で、ひとつひとつ罠の場所を教えていた。自分で仕掛けたものなのに、{h}はそれを忘れてしまったかのようだった。'),
+      cool: L('{h}は水晶に映る{a}の動きを、淡々と記録帳に書き留めていた。{h}「反応速度、想定より二割速い。罠の発動を少し早めるべきだな」{h}の声には、何の感情もこもっていなかった。|{h}は{a}の表情の変化を、指で数えるように観察していた。{h}「面白い。理性が削れるときは、まず視線が泳ぐのか」{h}はペン先で、次の項目に印をつけた。|{h}「{a}は慎重すぎる。もう少し大胆なら、もっと良い記録が取れるのに」{h}は水晶の角度を変えて、{a}を正面から捉えた。観察室には、ペンを走らせる音だけが響いていた。'),
+      free: L('{h}は水晶にかじりつくようにして、{a}の姿を追っていた。{h}「わ、今の見た！？めっちゃいい反応！」誰もいない観察室で、{h}は一人で手を叩いて喜んだ。|{h}「次はあの罠に引っかかってくれないかな～」{h}は足をぶらぶらさせながら、水晶の中の{a}に期待の目を向けた。{a}がそれを避けると、{h}は大げさに天井を仰いだ。|{h}は{a}が部屋を抜けるたびに、手元の板に丸をつけていた。{h}「よし、次はもっと面白いの出しちゃおう」{h}の頭の中では、もう新しい仕掛けの案が三つも四つも回っていた。'),
+      shy: L('{h}は水晶を指の隙間から覗いて、{a}の姿を追っていた。{h}「み、見てるだけ……見てるだけだから……」それでも{a}が罠に驚くたびに、{h}は自分のことのように肩をすくめた。|{h}は観察室の隅で膝を抱え、小さな声で呟いた。{h}「{a}に、こんなの造ったって知られたら……」頬を赤くしながらも、{h}は水晶から目を離せなかった。|{h}「ご、ごめんね、{a}……」{h}は罠の作動を知らせる鈴が鳴るたびに、小さく謝った。謝りながらも、{h}は次の仕掛けの準備をやめなかった。'),
+      polite: L('{h}は姿勢を正して、水晶に映る{a}に会釈した。{h}「ようこそお越しくださいました。次のお部屋も、心を込めてご用意しております」その声は、客を迎える宿の主人のように穏やかだった。|{h}は{a}の様子を見て、丁寧に記録帳を繰った。{h}「お疲れのようですね。少し休めるお部屋をご用意いたしましょうか」そう言いながら、{h}は次の罠の目盛りを確かめていた。|{h}「お見事です、{a}様」{h}は罠を抜けた{a}に、水晶越しに小さく拍手を送った。その笑顔は、どこまでも礼儀正しかった。')
+    },
+    /* 品評に添える、水晶の中の挑戦者の様子 */
+    tail: {
+      calm: L('{a}は、まだ涼しい顔で通路を歩いていた。|{a}の足取りは、まだしっかりとしていた。|{a}は地図を確かめながら、慎重に次の部屋をうかがっていた。'),
+      heat: L('{a}は頬を上気させて、壁に手をついていた。|{a}の息は浅く、足取りもどこか危うかった。|{a}は何度も首を振って、ぼんやりしかける意識を払っていた。'),
+      top: L('{a}は罠の残骸を踏み越えて、平然と次の部屋へ向かっていた。|{a}は壊した仕掛けを振り返りもせず、水晶のほうをちらりと睨んだ。|{a}の目は、迷宮そのものを品定めするように鋭かった。')
+    },
+    /* 罠を強める（攻めの挑戦者には効かない） */
+    boost: {
+      b: L('{h}は手元の盤に並ぶ目盛りのひとつを、そっと押し上げた。次の瞬間、{a}の足元で、眠っていたはずの罠がもう一度光を放った。{h}「せっかく来たんだ、もう少し付き合ってもらおう」|{h}「ちょっと物足りないな」{h}が水晶を指で弾くと、{a}のいる部屋の空気が甘く淀んだ。止まっていた仕掛けが息を吹き返し、{a}の体にふたたび絡みついた。|{h}は{a}が罠を抜けかけたところで、壁の奥の歯車を一段回した。逃げ道だった扉がゆっくりと閉じ、部屋の罠がもう一巡、{a}を狙って動き出した。水晶の前で、{h}は満足そうに頷いた。'),
+      top: L('{h}は目盛りを押し上げて、{a}の足元の罠をもう一度動かした。けれど{a}は飛び出した仕掛けを素手で掴み、壁から引き剥がして放り捨てた。水晶越しに睨み返されて、{h}は思わず目盛りから手を離した。|{h}が歯車を回すと、{a}のいる部屋の罠が一斉に起き上がった。{a}はそれを一つずつ踏み砕き、最後に壁の水晶を指さした。{a}「見てるんだろう。次はそっちに行くぞ」|{h}は罠の勢いを上げたが、{a}は眉ひとつ動かさなかった。暴れる仕掛けを片手で押さえつけ、{a}は逆にその造りを確かめ始めた。{h}「……造り直しだな、あれは」')
+    },
+    /* お気に入りを助ける：捕らわれたとき（cap）／危うくなったとき（cool） */
+    save: {
+      cap: L('水晶の中で{a}が捕らわれたのを見て、{h}は思わず立ち上がった。{h}は迷わず盤の非常の札を引き、巣の仕掛けを止めた。拘束がほどけた{a}は、何が起きたのか分からないまま、床に膝をついた。|{h}「……それはやりすぎだ」{h}は唇を噛んで、{a}を捕らえた魔物を呼び戻す笛を吹いた。魔物は名残惜しそうに{a}を放し、壁の向こうへ引っ込んでいった。|{h}は観察室を飛び出し、隠し通路を駆け下りた。{a}を閉じ込めていた檻の鍵を外から開け、姿を見られる前にまた物陰へ消えた。{a}が振り返ったときには、そこには誰もいなかった。'),
+      cool: L('{h}は{a}の様子を見て、眉を寄せた。{h}「少し、休ませてあげないと」{h}が盤の札を一枚裏返すと、{a}の行く先に、冷たい泉の湧く小部屋が現れた。|{h}は罠の目盛りを、{a}の部屋の分だけそっと下げた。甘く淀んでいた空気がすっと澄み、{a}はようやく深く息をついた。{h}は、自分でも理由の分からない安堵を覚えた。|{h}「{a}には、ここで終わってほしくないんだ」{h}は迷宮の通路に、冷たい風を一筋だけ送り込んだ。火照った頬を撫でる風に、{a}は少しだけ正気を取り戻した。')
+    },
+    /* 声でからかう（姿は見せない） */
+    tease: L('通路の壁の中から、楽しげな声が響いた。「さっきの顔、とてもよかったよ、{a}」{a}は耳まで赤くなって、声のしたほうを睨みつけた。|{a}が休もうと腰を下ろすと、すぐそばの水晶が瞬いた。「休憩？いいね、ここからだとよく見える」{a}は慌てて立ち上がり、水晶に外套を被せた。|天井から、ひらりと一枚の紙が落ちてきた。そこには、{a}がさっき罠にかかったときの様子が、細かく書きつけられていた。最後の行には「次も期待している」とあり、{a}は紙を握りつぶした。'),
+    /* 主催者が仲間だと気づく */
+    discover: L('{n}が辿り着いた小部屋の壁には、迷宮の設計図が何枚も貼られていた。図面の隅に書き込まれた癖のある字に、見覚えがあった。――{h}の字だ。|通路に響いた声は、聞き慣れたものだった。{n}が水晶を覗き込むと、その向こうで、{h}が気まずそうに手を振っていた。この迷宮を造った主催者は、仲間の{h}だったのだ。|隠し扉の向こうから、慌てた足音が聞こえた。{n}が扉をこじ開けると、観察用の水晶の前で、{h}が固まっていた。{h}「……あー。ばれちゃったか」'),
+    /* 気づいた挑戦者の反応（挑戦者の態度9種） */
+    react: {
+      proud: L('{a}「{h}、お前の仕業か。あとで覚えてろよ」|{a}は拳を鳴らした。「出たら、真っ先に{h}を殴りに行く」|{a}「道理で、底意地の悪い罠ばかりだと思った」'),
+      stern: L('{a}は深いため息をついた。「{h}。説明してもらうぞ」|{a}「仲間を罠に掛けるとは、感心しないな、{h}」|{a}は眉間を押さえた。「……あとで、{h}には話がある」'),
+      tsun: L('{a}「は、はあ！？{h}が造ったの！？最っ低！」|{a}は真っ赤になって叫んだ。「{h}、全部見てたってこと！？」|{a}「べ、別に驚いてないし。{h}ならやりそうだと思ってたし」'),
+      gentle: L('{a}は目を丸くしてから、困ったように笑った。「まあ、{h}だったの」|{a}「{h}ったら、こんなに大がかりなものを造ってたのね」|{a}は頬に手を当てた。「どうりで、どこか優しい罠だと思ったわ、{h}」'),
+      devoted: L('{a}「{h}が……？でも、{h}が造ったなら、最後まで行かなきゃ」|{a}は胸に手を当てた。「{h}が、ずっと見ててくれたんだね」|{a}「{h}の迷宮なら、ちゃんと踏破してみせるから」'),
+      cool: L('{a}は目を細めた。「なるほど。罠の癖が、{h}の考え方そのものだ」|{a}「{h}か。なら、次の部屋の配置も読める」|{a}は小さく頷いた。「主催者が{h}だと分かれば、攻め方も変わる」'),
+      free: L('{a}「えっ、{h}なの！？すごい、全部{h}が造ったの！？」|{a}は手を叩いて笑った。「{h}、次の罠どんなの！？教えて！」|{a}「なあんだ、{h}かあ。じゃあ遠慮なく楽しんじゃお」'),
+      shy: L('{a}は顔を覆った。「{h}に、全部見られてたなんて……」|{a}「う、うそ……{h}が……？」|{a}は消え入りそうな声で呟いた。「も、もう、{h}の顔見られない……」'),
+      polite: L('{a}は目を見開いてから、静かに頭を下げた。「{h}さんでしたか。……あとで、お話を伺っても？」|{a}「{h}さんのご趣味だったのですね。存じませんでした」|{a}「なるほど、{h}さんが。……少々、驚きました」')
+    },
+    /* 関係が近い（恋人・想い人など）／険悪な相手が主催者だったとき */
+    reactLove: L('{h}を見る{a}の目には、怒りよりも先に、ほっとしたような色が浮かんでいた。|{a}は一瞬むっとしてから、{h}らしいと小さく笑った。|{a}は、{h}にずっと見られていたのだと思うと、急に顔が熱くなった。'),
+    reactBad: L('{a}の目つきが険しくなった。{h}にだけは、弱みを見せたくなかった。|{a}「よりによって{h}か」――声には、隠しきれない棘があった。|{a}は{h}のいるほうを睨みつけ、二度と隙を見せないと決めた。'),
+    /* 主催者が自分から降りてくる（体の場面の導入）。{a}＝主催者 {b}＝挑戦者。lead＝主催者が攻め／offer＝主催者が受け */
+    sex: {
+      lead: L('{b}が小部屋で息を整えていると、壁の一部が音もなく開いた。現れたのは、この迷宮の主催者――{a}だった。{a}「ずっと見てたんだ。そんな顔で歩かれたら、我慢できない」{a}は{b}の顎に指をかけ、熱を帯びた目を覗き込んだ。|隠し扉から出てきた{a}は、壁にもたれる{b}の前で足を止めた。{a}「罠の続き、私が直接してあげようか」低い声が耳元で囁き、{a}の手が{b}の腰を引き寄せた。{b}の喉が、小さく鳴った。|{a}は観察室を出て、{b}のいる部屋へまっすぐ降りてきた。{a}「主催者として、挑戦者の具合を確かめに来た」冗談めかした口調とは裏腹に、{a}の指は{b}の外套の留め具を迷いなく外していった。'),
+      offer: L('{b}が休んでいると、隠し扉から{a}がそっと顔を出した。{a}「……水晶越しに見てたら、私のほうがおかしくなっちゃった」{a}は{b}の隣に座り込み、火照った額を{b}の肩に押しつけた。|壁の奥から現れた{a}は、気まずそうに笑ってから、{b}の前に膝をついた。{a}「造った罠より、{b}のほうがずっと危ない」{a}は{b}の手を取り、自分の頬に押し当てた。|{a}は、{b}の前に姿を見せるつもりはなかった。けれど気づけば隠し扉を開け、{b}の袖を握りしめていた。{a}「お願い。少しだけ、そばにいさせて」')
+    },
+    refuse: L('{b}は{a}の手首を掴んで、静かに押し戻した。{b}「やめておこう。今は、迷宮の熱に流されたくない」{a}は少しだけ寂しそうに笑って、隠し扉の向こうへ戻っていった。|{b}は首を横に振り、{a}との間に一歩分の距離を取った。{b}「出てからなら、ちゃんと話を聞く」{a}は「……そっか」とだけ答えて、深く頭を下げた。|{b}は差し出された手を取らなかった。{b}「主催者が挑戦者に手を出すのは、反則だろう」{a}は肩をすくめて引き下がり、観察室へ続く階段を上っていった。'),
+    fade: L('{b}は、差し出された{a}の手を取った。二人は隠し扉の向こうへ消え、しばらく戻ってこなかった。{b}が通路に戻ってきたとき、その頬はまだほんのりと赤かった。|{b}が小さく頷くと、{a}は{b}の手を引いて、観察室へ続く階段を上っていった。扉が閉まり、水晶の灯がひとつ消えた。迷宮の通路には、しばらく誰の足音も響かなかった。|{a}は{b}を抱き寄せたまま、隠し扉を後ろ手に閉めた。その向こうで何があったのかは、迷宮の壁だけが知っている。戻ってきた{b}の外套は、留め具がひとつ掛け違えられていた。'),
+    after: L('事が済むと、{a}は{b}の乱れた髪を指で梳いた。{a}「続きは、迷宮を出てからね」{a}は隠し扉の向こうへ戻り、{b}はしばらく壁にもたれたまま動けなかった。|{b}が息を整えるあいだ、{a}は黙って外套を掛けてやった。{a}「……主催者失格だな、これは」苦笑いを残して、{a}はまた水晶の前へ戻っていった。|二人はしばらく、何も言わずに寄り添っていた。やがて{a}は名残惜しそうに{b}から離れ、隠し扉の取っ手に手をかけた。{a}「最後まで見てるから。がんばって」'),
+    /* 結末に足す一行 */
+    end: {
+      resClear: L('迷宮の出口で{n}を待っていたのは、主催者の{h}だった。{h}は照れくさそうに頭をかいて、「踏破、おめでとう」と言った。差し出された手を握るかどうか、{n}は少しだけ迷った。|地上に戻った{n}のもとへ、{h}が駆け寄ってきた。{h}「全部見てた。……すごかったよ」主催者の顔と仲間の顔が、{h}の中でまだうまく混ざっていなかった。|{h}は迷宮の設計図を丸めて、{n}に手渡した。{h}「次は、もっと難しいのを造っておく」{n}は、それを受け取るべきか本気で悩んだ。'),
+      resFall: L('水晶の前で、主催者の{h}は長いあいだ黙り込んでいた。迷宮に呑まれていく{n}の姿を、{h}は最後まで見届けた。{h}「……造りすぎた、かな」|{h}は迷宮の最奥へ降りていき、堕ちた{n}の前に立った。主催者として迎えるべきか、仲間として連れ戻すべきか、{h}にはまだ決められなかった。水晶の灯だけが、二つの答えのあいだで揺れていた。|{h}は観察室の灯を一つずつ落としていった。最後の水晶に映る{n}は、もう出口のほうを見ていなかった。{h}はしばらく、消えた水晶の前から動けなかった。'),
+      resHidden: L('最後まで、{n}は主催者の正体に気づかなかった。{h}も、それを明かすつもりはなかった。迷宮の設計図は、{h}の机の引き出しにしまわれたままだ。|{h}は何食わぬ顔で、迷宮から戻った{n}を出迎えた。主催者の正体は、{h}だけの秘密になった。水晶に残った記録を、{h}はときどき一人で見返している。|{n}が主催者の正体を知るのは、もう少し先のことになる。{h}は迷宮の入り口に鍵をかけ、何もなかったような顔で家路についた。その鞄の中では、次の迷宮の設計図が出番を待っていた。'),
+      mobClear: L('迷宮の主催者、{h}の声が、最後にもう一度だけ響いた。「見事だ。また挑みに来るといい」{n}が振り返ったとき、入り口の石板の名は消えていた。|{n}が地上に出ると、どこからか拍手が聞こえた。主催者の{h}は、最後まで姿を見せなかった。「次の迷宮で待っている」――そんな書き置きだけが、出口の石に残されていた。|主催者の{h}は、踏破した{n}の名を迷宮の壁に刻ませた。それが称賛なのか、次の罠への招待状なのかは分からなかった。{n}は一度だけ振り返り、それから二度と振り返らなかった。'),
+      mobFall: L('主催者の{h}は、堕ちた{n}を迷宮の新しい住人として迎え入れた。{h}「ようこそ。ここはもう、君たちの家だ」水晶の灯は、ひとつ、またひとつと消えていった。|{h}の満足げな笑い声が、迷宮の隅々まで長く響いた。{n}の姿は、主催者の記録帳の最後の頁に書き加えられた。次の頁は、まだ白いままだった。|主催者の{h}は、水晶に映る{n}を眺めながら、新しい罠の設計図を広げた。挑戦者のいなくなった迷宮は、次の客を待って静まり返った。{h}の指先だけが、楽しげに図面の上を滑っていた。')
+    }
+  };
+  DG.HOST = T;
+
+  /* ---------- 小道具 ---------- */
+  var P = function () { return HK.Pos; };
+  function R(S) { return S.hostR; }
+  function pk(S, arr) {
+    var U = S.hostUse = S.hostUse || {}, free = [], i, t, r = R(S);
+    for (i = 0; i < arr.length; i++) if (!U[arr[i]]) free.push(arr[i]);
+    if (free.length) t = free[r.int(free.length)];
+    else { t = arr[0]; for (i = 1; i < arr.length; i++) if (U[arr[i]] < U[t]) t = arr[i]; }
+    S.hostUseN = (S.hostUseN || 0) + 1; U[t] = S.hostUseN;
+    return t;
+  }
+  function nm(s, m) { return s.replace(/\{(a|b|h|n|t|u|ev)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
+  function names(l) { return l.map(function (x) { return x.name; }).join('・'); }
+  function sayAs(S, h, o) { var prev = S.h; S.h = h; var e = DG.say(S, o); S.h = prev; return e; }
+  function freeOf(S) { return S.party.filter(function (x) { return !x.fallen && !x.captor && x.corrupt < 100 && x.reason > 0; }); }
+  function isTop(h) { return !!(DG.isTop && DG.isTop(h)); }
+  function hasCurse(h, id) { return h.curses && h.curses.indexOf(id) >= 0; }
+  function pn(S, s) { (S.partyNotes = S.partyNotes || []).push(s); }
+  /* 住人どうしの体の関係（主催者×挑戦者）：受け攻め・恋愛対象（okSex）、R18（両方）、恋愛・R18にしない相手、性行為の相手の固定 */
+  function sexOk(a, b) {
+    if (!a || !b || a === b || !P()) return false;
+    if (!HK.State || !HK.State.r18ok(a) || !HK.State.r18ok(b)) return false;
+    if (HK.ngPair && HK.ngPair(a, b)) return false;
+    if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
+    if (HK.State.pairSex && !HK.State.pairSex(a, b)) return false;
+    return P().okSex(a, b);
+  }
+  function loveOk(a, b) { return HK.State && HK.State.pairLove ? HK.State.pairLove(a, b) : !!(HK.canLove && HK.canLove(a, b) && HK.canLove(b, a)); }
+  /* 主催者と挑戦者の関係（登録した関係から） */
+  var NEAR = /^(lover|mate|fated|spouse|almost|crush|fwb|best|childhood|buddy|sibclose|worship)$/, BAD = /^(rival|enemy|bad|sibbad|ex)$/;
+  function tieOf(S, x) {
+    var o = { near: false, bad: false, w: 0 };
+    (S.ties || []).forEach(function (t) {
+      if (!((t.a === S.host.i && t.b === x.i) || (t.b === S.host.i && t.a === x.i))) return;
+      if (NEAR.test(t.type) && (t.type !== 'crush' || t.a === S.host.i)) { o.near = true; o.w += 1; }
+      if (BAD.test(t.type)) { o.bad = true; o.w -= 0.8; }
+    });
+    return o;
+  }
+
+  /* ---------- 主催者を決める（物語の乱数に触れない） ---------- */
+  DG.hostSetup = function (S, input) {
+    var chars = (input && input.chars) || [], env = (input && input.env) || {};
+    var src = env[HK.Roles.envId('host')] || 'auto';
+    S.host = null;
+    /* おまかせ＝なし：住人の欄で「主催者になる」を選んだ人がいなければ、何もしない */
+    var anyYes = chars.some(function (c, i) { var pc = input.perChar && input.perChar[i]; return pc && pc.pick && pc.pick.host === 'yes'; });
+    if (src === 'none' || (src === 'auto' && !anyYes)) return -1;
+    var rng = HK.rng(((+input.seed || 0) * 131 + 7919) >>> 0);
+    var list = chars.map(function (c, i) { var x = {}; for (var k in c) x[k] = c[k]; x.i = i; x.tr = HK.traits(c.eg); return x; });
+    var r = HK.Roles.resolve({ rng: rng, env: env, chars: list }, 'host', input, ROLE);
+    /* 住人が一人だけなら、その人は挑戦者のまま（主催者はなし） */
+    if (r.kind === 'res' && chars.length < 2) r = { kind: 'none', who: [], mob: null };
+    if (r.kind === 'none') return -1;
+    var h;
+    if (r.kind === 'res') {
+      var c = chars[r.who[0].i];
+      h = { i: r.who[0].i, name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa,
+        ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock, calls: c.calls || {} };
+      var sl = c.sexLock; h.sexLock = sl === 'any' || sl === 'lover' ? sl : sl == null || sl === '' || isNaN(+sl) ? null : +sl;
+      if (HK.charFlags) HK.charFlags(c, h, 'dungeon');
+      h.kind = 'res';
+    } else { h = r.mob; h.i = -1; h.kind = 'mob'; h.tr = h.tr || HK.traits(h.eg); }
+    h.persona = HK.personaOf(h);
+    h.climax = 0;
+    S.host = h; S.hostR = HK.rng(((+input.seed || 0) * 37 + 104729) >>> 0);
+    S.hostN = 0; S.hostLast = -99; S.hostSex = 0; S.hostKnown = h.kind === 'mob';
+    return h.kind === 'res' ? h.i : -1;
+  };
+
+  /* お気に入り：関係の近い人、なければ相性のいい人（モブの主催者は気まぐれ） */
+  function fav(S) {
+    var h = S.host, best = null, bv = -9;
+    S.party.forEach(function (x) {
+      var v = h.kind === 'res' ? tieOf(S, x).w + (HK.baseCompat ? HK.baseCompat(h, x).aff / 100 : 0) : x === S.party[0] ? 0.2 : 0;
+      v += R(S)() * 0.2;
+      if (v > bv) { bv = v; best = x; }
+    });
+    return best;
+  }
+
+  DG.hostStart = function (S) {
+    var h = S.host; if (!h) return;
+    S.hostFav = fav(S);
+    /* 関係の恋人（恋人だけ、の相手）：主催者と挑戦者のあいだにも写す（dungeon-tempt.js の loveSet と同じ） */
+    if (h.kind === 'res') (S.ties || []).forEach(function (t) {
+      if (!/^(lover|mate|fated|spouse)$/.test(t.type)) return;
+      var o = t.a === h.i ? t.b : t.b === h.i ? t.a : null, x = o == null ? null : S.party.filter(function (p) { return p.i === o; })[0];
+      if (!x) return;
+      (h.loveSet = h.loveSet || []).push(x.i); (x.loveSet = x.loveSet || []).push(h.i);
+    });
+    var o = sayAs(S, S.party[0], { kind: 'sys', tag: '主催者', text: nm(pk(S, T.intro[h.kind]), { h: h.name, n: names(S.party) }), why: h.kind === 'res' ? '主催者：' + h.name + '（住人。挑戦はしない）／お気に入り：' + S.hostFav.name : '主催者：' + h.name + '（モブ）' });
+    DG.key(S, o, '主催者' + h.name + 'の迷宮');
+  };
+
+  /* 主催者が仲間だと気づく（住人の主催者だけ） */
+  function discover(S, how) {
+    var h = S.host;
+    if (S.hostKnown || h.kind !== 'res') return null;
+    S.hostKnown = true;
+    var F = S.party.filter(function (x) { return !x.fallen; });
+    if (!F.length) return null;
+    var t = nm(pk(S, T.discover), { h: h.name, n: names(F) });
+    F.slice(0, 3).forEach(function (x) {
+      t += ' ' + nm(pk(S, T.react[x.persona] || T.react.gentle), { a: x.name, h: h.name });
+      var tt = tieOf(S, x);
+      if (tt.near && loveOk(x, h)) t += nm(pk(S, T.reactLove), { a: x.name, h: h.name });
+      else if (tt.bad) t += nm(pk(S, T.reactBad), { a: x.name, h: h.name });
+    });
+    var o = sayAs(S, F[0], { kind: 'ev', tag: '主催者の正体', text: t, why: how || '迷宮の主催者が仲間だと気づいた' });
+    DG.key(S, o, '主催者が' + h.name + 'だと気づいた');
+    pn(S, 'この迷宮の主催者が' + h.name + 'だと、' + names(F) + 'は途中で気づいた。');
+    return o;
+  }
+
+  function comment(S, x) {
+    var h = S.host, top = isTop(x), heat = x.pleasure >= 45 || x.corrupt >= 45;
+    var t = nm(pk(S, T.comment[h.persona] || T.comment.gentle), { h: h.name, a: x.name }) + nm(pk(S, T.tail[top ? 'top' : heat ? 'heat' : 'calm']), { a: x.name });
+    sayAs(S, x, { kind: 'ev', tag: '主催者', text: t, why: h.name + 'の品評（態度「' + (HK.PERSONA[h.persona] ? HK.PERSONA[h.persona].label : h.persona) + '」）' });
+  }
+
+  function boost(S, x) {
+    var h = S.host, top = isTop(x);
+    S.h = x;
+    if (top) {
+      sayAs(S, x, { kind: 'ev', tag: '主催者の罠', text: nm(pk(S, T.boost.top), { h: h.name, a: x.name }), why: h.name + 'が罠を強めたが、' + x.name + 'は自分で攻めを選んでいるので、罠を壊して退けた' });
+      x.reason += 2;
+      return;
+    }
+    var ev = { id: 'host_boost', name: h.name + 'が強めた罠', kind: 'trap', themes: null, part: 'any', power: 9 + S.env.trap / 10, o: {}, texts: [] };
+    DG.stim(S, ev, 1);
+    sayAs(S, x, { kind: 'ev', tag: '主催者の罠', text: nm(pk(S, T.boost.b), { h: h.name, a: x.name }), why: h.name + 'が' + x.name + 'の部屋の罠を強めた（快感 ' + Math.round(x.pleasure) + '）' });
+    DG.flushQ(S);
+    if (DG.settle(S)) DG.fallHero(S, x);
+  }
+
+  function save(S, x) {
+    var h = S.host, cap = !!x.captor;
+    if (cap) { x.captor = null; x.bossCapture = false; x.hp = Math.max(x.hp, 30); x.reason += 4; }
+    else { x.pleasure = Math.max(0, x.pleasure - 25); x.reason += 8; }
+    sayAs(S, x, { kind: 'ev', tag: '主催者の助け舟', text: nm(pk(S, T.save[cap ? 'cap' : 'cool']), { h: h.name, a: x.name }), why: h.name + 'がお気に入りの' + x.name + 'を' + (cap ? '捕らわれたところから助けた' : '休ませた') });
+    pn(S, '主催者の' + h.name + 'は、お気に入りの' + x.name + 'にこっそり助け舟を出した。');
+  }
+
+  function tease(S, x) {
+    x.reason -= 3 + x.tr.ac * 4;
+    sayAs(S, x, { kind: 'ev', tag: '主催者の声', text: nm(pk(S, T.tease), { h: S.host.name, a: x.name }), why: S.host.name + 'が声でからかった（AC ' + Math.round(x.eg.AC) + '）' });
+  }
+
+  /* 描写の文だけを選ぶ（dungeon-tempt.js と同じ組み立て） */
+  function voice(S, s, bot, top) { var TV = HK.ThickVM; return TV ? TV.voice(R(S), s, bot, top) : s.replace(/\{v[a-z0-9]+\}/g, '……っ'); }
+  function eroFill(S, s, who, dom) {
+    var E = HK.Ero; if (!E) return s.replace(/\{s:\w+\}。?|「\{m\d\}」――/g, '');
+    var d0 = who.eroDom; if (dom) who.eroDom = true;
+    var out = E.fill({ rng: R(S) }, s, who); who.eroDom = d0; return out;
+  }
+  function combo(t, u) { var tf = P().isF(t), uf = P().isF(u); return tf ? (uf ? 'ff' : 'fm') : (uf ? 'mf' : 'mm'); }
+  function spend(S, h, top) { h.climax = (h.climax || 0) + 1; if (h.corrupt != null) { h.corrupt += (top ? 2 : 3.5) * (S.k || 1); h.pleasure = 14 + S.hostR.int(16); } }
+
+  /* 住人の主催者が降りてくる。体の場面にするのは、点検を通る組だけ */
+  function sexCand(S) {
+    var h = S.host;
+    if (HK.SAFE_ON || h.kind !== 'res' || S.hostSex || !DG.TEMPT) return [];
+    return freeOf(S).filter(function (x) { return (x.pleasure >= 40 || x.corrupt >= 45 || hasCurse(x, 'heat')) && sexOk(h, x); });
+  }
+  function descend(S, x) {
+    var h = S.host, TT = DG.TEMPT, r = R(S);
+    var o = P().order(h, x, [h, x]), t = o[0], u = o[1], lead = t === h;
+    var M = { a: h.name, b: x.name, t: t.name, u: u.name, ev: '罠' };
+    var intro = nm(pk(S, T.sex[lead ? 'lead' : 'offer']), M);
+    var tt = tieOf(S, x), love = loveOk(h, x);
+    var want = x.corrupt / 90 + x.pleasure / 160 + x.tr.fc * 0.25 + (tt.near ? 0.45 : 0) - (tt.bad ? 0.5 : 0) - x.tr.cp * 0.3 - Math.max(0, x.reason) / 250 + r() * 0.4;
+    S.hostSex = 1;
+    var why0 = h.name + 'が観察室から降りてきた（' + x.name + 'の快感 ' + Math.round(x.pleasure) + '・堕ち度 ' + Math.round(x.corrupt) + '）';
+    if (want <= 0.55) {
+      x.reason += 3;
+      sayAs(S, x, { kind: 'ev', tag: '主催者', text: intro + '\n\n' + nm(pk(S, T.refuse), M), why: why0 + ' → ' + x.name + 'は断った' });
+      return;
+    }
+    var X = HK.Lewd, cf = X && X.conf('dungeon');
+    var low = (cf && X.lv(S.env) === 'low') || S.env.trap < 15;
+    var thick = !low && (S.env.lewdLen === 'thick' || (S.env.lewdLen === 'mix' && r() < 0.5) || !cf);
+    var ero = !low && cf && X.ero(S.env) && !!HK.Ero;
+    var cb = combo(t, u), parts = [];
+    if (low) parts.push(intro, nm(pk(S, T.fade), M));
+    else {
+      parts.push(intro + ' ' + nm(pk(S, TT.yield), M));
+      parts.push(nm(voice(S, pk(S, TT.act[cb]), u, t), M));
+      var cl = voice(S, pk(S, TT.climax[u.persona] || TT.climax.gentle), u, t);
+      if (ero) { cl += ' ' + eroFill(S, pk(S, TT.ero[cb]), u, false); cl += ' ' + eroFill(S, pk(S, TT.eroTop[cb === 'ff' || cb === 'fm' ? 'f' : 'm']), t, true); }
+      cl += ' ' + pk(S, TT.topFin[cb]);
+      parts.push(nm(cl, M));
+      parts.push(nm(pk(S, T.after), M));
+    }
+    spend(S, x, x === t); spend(S, h, h === t);
+    x.reason -= 4;
+    S.hostSex = 2;
+    var ev = sayAs(S, x, { kind: 'ev', tag: '主催者', text: parts.join(thick || low ? '\n\n' : ' '), why: why0 + ' → ' + x.name + 'は応じた（' + t.name + 'が攻め）' + (love ? '' : '／恋愛にはしない組') });
+    DG.key(S, ev, h.name + 'が' + x.name + 'のもとへ降りてきた');
+    pn(S, '主催者の' + h.name + 'は一度だけ観察室を降り、' + x.name + 'と肌を重ねた。');
+    S.hostSexWith = x.name;
+    S.h = x;
+    if (DG.settle(S)) DG.fallHero(S, x);
+  }
+
+  /* 一部屋ごと：新しい階では品評、ときどき手を出す */
+  DG.hostRoom = function (S, hit) {
+    var h = S.host; if (!h || S.over) return;
+    var r = R(S), F = freeOf(S);
+    var live = S.party.filter(function (x) { return !x.fallen; });
+    if (!live.length) return;
+    /* 住人の主催者：後半の階に入ると、気づくことがある */
+    if (h.kind === 'res' && !S.hostKnown && S.floor >= Math.ceil(S.floors / 2) && r() < 0.35) { discover(S, '迷宮の後半で、主催者の手がかりを見つけた'); return; }
+    if (S.hostFl !== S.floor) {
+      S.hostFl = S.floor;
+      if (F.length && r() < 0.65) { comment(S, (hit && F.indexOf(hit.h) >= 0 && r() < 0.6) ? hit.h : F[r.int(F.length)]); return; }
+    }
+    if ((S.hostN || 0) >= 4 || S.log.length - S.hostLast < 6 || r() > 0.24) return;
+    var fv = S.hostFav && !S.hostFav.fallen ? S.hostFav : null, t = h.tr;
+    var opts = [];
+    if (fv && (fv.captor && !fv.bossCapture || fv.pleasure >= 70 || fv.corrupt >= 75)) opts.push(['save', 0.6 + t.np * 0.8 + (h.persona === 'gentle' || h.persona === 'devoted' ? 0.5 : 0), fv]);
+    var bt = F.filter(function (x) { return !(HK.ngPair && HK.ngPair(h, x)); });
+    if (bt.length) opts.push(['boost', 0.4 + t.fc * 0.5 + t.cp * 0.3 + (h.kind === 'mob' ? 0.4 : 0) + (/proud|tsun|cool|free/.test(h.persona) ? 0.3 : 0), bt[r.int(bt.length)]]);
+    if (F.length) opts.push(['tease', 0.3 + t.fc * 0.4 + t.ac * 0.2, F[r.int(F.length)]]);
+    var sc = sexCand(S);
+    if (sc.length) opts.push(['sex', 0.25 + t.fc * 0.3 + (1 - t.cp) * 0.1, sc[r.int(sc.length)]]);
+    var pickd = HK.weighted(r, opts, function (o) { return o[1]; });
+    if (!pickd) return;
+    S.hostN = (S.hostN || 0) + 1; S.hostLast = S.log.length;
+    /* 声・助け舟・降りてくる：住人の主催者なら、ここで正体が知れることがある */
+    if (h.kind === 'res' && !S.hostKnown && (pickd[0] === 'sex' || r() < 0.4)) discover(S, pickd[0] === 'sex' ? '主催者が自分から姿を見せた' : '聞き覚えのある声・見覚えのある手口で気づいた');
+    if (pickd[0] === 'save') save(S, pickd[2]);
+    else if (pickd[0] === 'boost') boost(S, pickd[2]);
+    else if (pickd[0] === 'tease') tease(S, pickd[2]);
+    else descend(S, pickd[2]);
+  };
+
+  /* 結末に主催者の一行を足す */
+  var end0 = DG.ending;
+  DG.ending = function (S) {
+    var E = end0(S), h = S.host;
+    if (!h || !E || !Array.isArray(E.lines)) return E;
+    var clear = S.over === 'clear', P0 = S.party;
+    var who = clear ? P0.filter(function (x) { return !x.fallen; }) : P0.filter(function (x) { return x.fallen; });
+    if (!who.length) who = P0;
+    var key = h.kind === 'mob' ? (clear ? 'mobClear' : 'mobFall') : !S.hostKnown ? 'resHidden' : clear ? 'resClear' : 'resFall';
+    E.lines.push(nm(pk(S, T.end[key]), { h: h.name, n: names(who) }));
+    if (h.kind === 'res' && S.hostSex === 2 && S.hostSexWith) E.lines.push('主催者の' + h.name + 'は、一度だけ観察室を降りて' + S.hostSexWith + 'と肌を重ねた。' + (S.hostKnown ? '' : 'そのとき見た顔のことを、' + S.hostSexWith + 'は誰にも話していない。'));
+    return E;
+  };
+  var fin0 = DG.finish;
+  DG.finish = function (S, input) {
+    var res = fin0(S, input), h = S.host;
+    if (!h) return res;
+    res.host = { name: h.name, kind: h.kind, i: h.i, known: !!S.hostKnown };
+    res.summary += '／主催者：' + h.name + (h.kind === 'mob' ? '（モブ）' : '');
+    /* 住人の主催者も、結果の住人一覧に入れる（入力の並びのまま） */
+    if (h.kind === 'res') {
+      var seen = {};
+      res.chars = res.chars.concat([{ name: h.name, i: h.i }]).filter(function (c) { if (seen[c.i]) return false; seen[c.i] = 1; return true; }).sort(function (a, b) { return a.i - b.i; });
+    }
+    return res;
   };
 })();
 ;/* ==== js/solo-kit.js ==== */
@@ -25288,6 +25652,9 @@
     desc: '壁の穴に下半身がはまり、向こう側の感覚は遮断されている。そこで何をされても分からない――解放されるまでは。※成人キャラクター向け',
     unit: '時間', simulate: function (input) {
       var r = run(input), n = (input.chars || []).length;
+      /* 主催者（hole-host.js）：結果に主催者を載せる */
+      if (r && r._host && HK.HoleHost) HK.HoleHost.finish(r._host, r);
+      if (r) delete r._host;
       /* 壁の向こうの住人も、結果の住人一覧に入れる（台詞の口調・名前の色） */
       if (n > 1) { var si = HK.HoleBehind ? HK.HoleBehind.cast(input).si : 0; r.chars = input.chars.map(function (c, i) { return { name: c.name, i: i }; }); if (r.hero) r.hero.i = si; }
       return r;
@@ -25331,6 +25698,9 @@
     /* 恋愛・R18にしない相手（HK.ngPair で見る）：SoloKit の住人には載らないので、ここで写す */
     h.i = cast.si || 0; h.ng = ngOf(input.chars[h.i]); (function (c) { h.lock = c && c.loveLock !== '' && c.loveLock != null && !isNaN(+c.loveLock) ? +c.loveLock : null; if (HK.charFlags) HK.charFlags(c, h, 'hole'); })(input.chars[h.i]);
     if (BH) BH.setup(S, input, cast);
+    /* 主催者（hole-host.js）：住人の主催者は、はまる人にも壁の向こうにもならない（cast で外してある）。なし・おまかせなら何もしない */
+    var HH = HK.HoleHost, hostOn = !!(HH && HH.setup(S, input));
+    var fin = function (E0, adv0, ex0) { if (hostOn) HH.end(S, E0); var r0 = K.finish(S, input, E0, adv0, ex0); if (hostOn) r0._host = S; return r0; };
     h.sens = 0.85 + (h.stats.sense - 3) * 0.12;
     var H = env.hours, pl = PLACE[env.place] || PLACE.lab;
     S.k = clamp(Math.pow(6 / H, 0.5), 0.5, 1.4);
@@ -25422,6 +25792,7 @@
       return '本人は感じていない' + (m.length ? '／' + m.join('・') : '');
     }
     say(S, { kind: 'sys', tag: '開始', text: K.fmt(S, pl.in.replace('◯', String(H))) + K.fmt(S, '腰から下の感覚は、きれいに消えていた。何をされても、分からない。'), why: '目標：' + h.goal.label + '／' + h.action.label });
+    if (hostOn) HH.start(S);
     K.snap(S, { s: 0 });
     var stepH = Math.max(1, Math.ceil(H / 8));
     for (var t = stepH; t <= H; t += stepH) {
@@ -25474,6 +25845,8 @@
         say(S, { kind: 'ev', tag: 'こちら側', text: K.fmt(S, pk(S, X.THIS[plKey])) + ' ' + K.fmt(S, pk(S, X.THIS_REACT[h.persona])), why: '上半身の側にも、人が来た' });
         h.reason -= 3; h.corrupt += 2;
       }
+      /* 主催者が見ている・ときどき手を出す（hole-host.js） */
+      if (hostOn) { var hr = HH.tick(S, { stored: stored, live: live, hardTop: hardTop }); stored = hr.stored; if (hr.release) { early = true; K.settle(S); K.snap(S, { s: 0 }); break; } }
       /* こちら側の心 */
       if (live) { if (hot > 0) hot--; K.settle(S); K.snap(S, { s: 0 }); continue; }
       var imag = h.tr.fc * 0.35 + h.tr.ac * 0.25 + h.tr.impulse * 0.2 + (h.action.id === 'imagine' ? 0.35 : 0) + (h.goal.id === 'secret' ? 0.25 : 0);
@@ -25521,7 +25894,7 @@
       var ER = BH.rescueEnd(S, input, { live: live, stored: stored, hardTop: hardTop, topMe: topMe }, rescue);
       /* 結び（hole-end.js）：救出（達していない）／救出絶頂／攻めの人は攻め側の結び */
       if (HK.HoleEnd) HK.HoleEnd.push(S, ER, hardTop ? 'top' : rC ? 'rescueC' : 'rescue', { b: rescue.rescued, doer: rescue.doers.indexOf(rescue.rescued) >= 0, live: live, topMe: topMe, nR: h.climax - nR0, stored: stored, sit: 'rescued' });
-      return K.finish(S, input, ER, ['壁の向こうの住人が助けるか手を出すかは、はまっている人との関係・その人の性格（NP・CP・FC・衝動）・発情の見え方で決まる。', '助け出された瞬間に、溜まっていた感覚は一度に戻る。'], { meta: pl.n + '・' + H + '時間・救出', estats: [['経過', S.step + '時間'], ['助けた人', rescue.rescued.name], ['手を出した人', rescue.doers.length ? rescue.doers.map(function (d) { return d.name; }).join('・') : 'いない'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
+      return fin(ER, ['壁の向こうの住人が助けるか手を出すかは、はまっている人との関係・その人の性格（NP・CP・FC・衝動）・発情の見え方で決まる。', '助け出された瞬間に、溜まっていた感覚は一度に戻る。'], { meta: pl.n + '・' + H + '時間・救出', estats: [['経過', S.step + '時間'], ['助けた人', rescue.rescued.name], ['手を出した人', rescue.doers.length ? rescue.doers.map(function (d) { return d.name; }).join('・') : 'いない'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
     }
 
     /* ---------- 解放 ---------- */
@@ -25541,7 +25914,7 @@
         revenge ? '最後に締め上げられたのは、壁の向こう側の方だった。' : ''
       ].filter(Boolean) };
       if (HK.HoleEnd) HK.HoleEnd.push(S, Et, 'top', { sit: revenge ? 'revenge' : 'held' });
-      return K.finish(S, input, Et, ['自分で「攻め」を選んでいるので、壁の向こうで「される」側には回らなかった。', '抜け出せるかどうかは、攻撃性（' + Math.round(h.tr.aggr * 100) + '）とCP（' + Math.round(h.eg.CP) + '）しだい。'], { meta: pl.n + '・' + H + '時間', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['追い払った', visits + '回'], ['返り討ち', revenge ? 'あり' : 'なし']], gaugeS: '溜まった感覚' });
+      return fin(Et, ['自分で「攻め」を選んでいるので、壁の向こうで「される」側には回らなかった。', '抜け出せるかどうかは、攻撃性（' + Math.round(h.tr.aggr * 100) + '）とCP（' + Math.round(h.eg.CP) + '）しだい。'], { meta: pl.n + '・' + H + '時間', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['追い払った', visits + '回'], ['返り討ち', revenge ? 'あり' : 'なし']], gaugeS: '溜まった感覚' });
     }
     if (live) {
       K.step(S, '解放');
@@ -25567,7 +25940,7 @@
       /* 結び（hole-end.js）：受け入れた・堕ちた＝快楽堕ちの結び／耐えた・崩れた＝感覚が戻ったあとの結び */
       if (HK.HoleEnd) HK.HoleEnd.push(S, EL, stL === 'fall' || stL === 'enjoy' ? 'fall' : 'ret', { live: true, topMe: topMe, broken: stL === 'broken' });
       var advL = ['最中に感覚が戻ると、溜まっていた分が一度に届き、そのあとは一つ一つを生で感じる。', '受け入れていく早さは、意志（CP・A・理性）で遅くなり、過激さ ' + env.wild + '・感じやすさ ' + h.stats.sense + 'で早くなる。'];
-      return K.finish(S, input, EL, advL, { meta: pl.n + '・' + H + '時間・最中に戻る', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['感覚が戻ってから', liveN + '回'], [topMe ? '中で果てた回数' : '奥に注がれた回数', meta.cum + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
+      return fin(EL, advL, { meta: pl.n + '・' + H + '時間・最中に戻る', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['感覚が戻ってから', liveN + '回'], [topMe ? '中で果てた回数' : '奥に注がれた回数', meta.cum + '回'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
     }
     K.step(S, early ? '脱出の瞬間' : mode === 'late' ? '解放……？' : '解放');
     var o0;
@@ -25633,9 +26006,230 @@
     adv.push('待っている間に削れたのは、' + (h.tr.fc + h.tr.ac > h.tr.a + h.tr.cold ? '想像力（FC・AC）のせい。何も感じないのに、心だけが先に熱くなった。' : '時間そのもの。A・ドライさのおかげで、想像には呑まれにくかった。'));
     adv.push('戻ってきた感覚の量は、人通り ' + env.traffic + '・過激さ ' + env.wild + '・感じやすさ ' + h.stats.sense + 'で決まった。解放のしかたは「' + X.RELEASE_MODE[mode] + '」。');
     if (state !== 'hold') adv.push('精神力（' + h.stats.mind + '）とCP（' + Math.round(h.eg.CP) + '）がもう少しあれば、最後の波に耐えられたかもしれない。');
-    return K.finish(S, input, E, adv, { meta: pl.n + '・' + H + '時間・' + X.RELEASE_MODE[mode], estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], [topMe ? '中で果てた回数' : '奥に注がれた回数', meta.cum + '回'], ['触手・道具', meta.tent + '回'], ['遮断の揺らぎ', leaks + '回'], ['解放時の絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
+    return fin(E, adv, { meta: pl.n + '・' + H + '時間・' + X.RELEASE_MODE[mode], estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], [topMe ? '中で果てた回数' : '奥に注がれた回数', meta.cum + '回'], ['触手・道具', meta.tent + '回'], ['遮断の揺らぎ', leaks + '回'], ['解放時の絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
   }
   HK.SCEN_ORDER.push('hole');
+})();
+;/* ==== js/hole-host.js ==== */
+/* 箱庭シミュレーター（R18版のみ）: 感覚遮断穴 ― 主催者の役（遮断穴を営んでいる人）
+   環境値「主催者」（HK.Roles：おまかせ＝なし／住人から／モブ／なし）と、住人ごとの欄「主催者になる／ならない」。
+   ・おまかせ・なしは今までどおり（主催者は出てこない。物語の乱数にも触れない）
+   ・住人の主催者は、穴にはまる人にも、壁の向こうの人にもならない。壁の裏の帳場から覗き窓で眺めて、態度に合わせて品評し、
+     ときどき手を出す（客を呼び込む・遮断を深める／お気に入りを早めに出す／伝声管でからかう）。
+     はまっている人は、途中か帰り際に「主催者が知り合いだった」と気づくことがある
+   ・主催者は体には触れない（性的な場面にはしない）。呼び込みで溜まる感覚は「壁の向こうの誰か」のもの。
+     恋愛・R18にしない相手（HK.ngPair）の組では、呼び込み・遮断の調整もしない
+   ・役割「穴にはまる」「壁の向こう」を選んだ人は、「主催者になる」を選んでいない限り主催者にしない
+   ・最低人数：住人が一人だけなら、その人がはまる（主催者はなし）。主催者も4人の枠に数える
+   {h}＝主催者 {a}＝はまっている人。文は物語とは別の乱数で選ぶ。登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK, K = HK && HK.SoloKit;
+  if (!K || !HK.SCENARIOS || !HK.SCENARIOS.hole || !HK.Roles) return;
+  function L(s) { return s.split('|'); }
+  var ROLE = { allowMob: true, allowNone: true, auto: 'none', yes: '主催者になる', mob: { given: true },
+    desc: '遮断穴を営む主催者を、住人がやるか・モブがやるか・なしにするかを選びます。住人の主催者は穴にも壁の向こうにも入らず、帳場の覗き窓から眺めて品評し、ときどき客を呼び込んだり、お気に入りを早めに出したりします。住人が一人だけのときは主催者を置きません',
+    fit: function (c) { var t = c.tr || HK.traits(c.eg); return 0.3 + t.fc * 0.4 + t.a * 0.3 + (t.lead || 0) * 0.3; } };
+  HK.Roles.install(HK.SCENARIOS.hole, 'host', '主催者', ROLE);
+
+  var T = {
+    intro: {
+      res: L('この「遮断穴」を仕切っているのは、{h}だった。{h}は壁の裏の小部屋で帳簿を広げ、覗き窓から{a}の上半身を眺めた。{a}はまだ、この場の主催者が誰なのかを知らない。|{a}がはまった壁の裏には、細い通路と小さな帳場があった。そこに座っているのは、この遮断穴の主催者――{h}だ。{h}は穴の札を「使用中」に掛け替えて、静かに息をついた。|{h}は、遮断の具合を確かめる計器の針を指先でなぞった。今日の「お客」は{a}だった。主催者が知り合いだとは、{a}は夢にも思っていないだろう。'),
+      mob: L('壁の上には、小さな真鍮の札が打ちつけてあった。「当遮断穴の主催　{h}」――その下に、細い伝声管の口が開いている。「ようこそ。お時間まで、ごゆっくり」と、落ち着いた声が流れてきた。|{a}の目の前の壁に、覗き窓がひとつ開いた。「私は{h}。この穴を営んでいる者です」窓の向こうの目は、品定めするように{a}を見つめてから、ぱたりと閉じた。|伝声管から、咳払いがひとつ聞こえた。「主催の{h}です。遮断は完璧ですので、ご安心を」{a}は何を安心すればいいのか分からないまま、壁を睨みつけた。')
+    },
+    /* 品評：主催者の態度9種（性的な語を使わない） */
+    comment: {
+      proud: L('{h}は覗き窓から{a}を見下ろして、鼻を鳴らした。{h}「いいざまだな。しばらくそこで反省してろ」{h}は帳簿に大きく「延長」と書きかけて、やめた。|{h}「穴にはまったくらいで騒ぐな」{h}は伝声管の蓋を閉めたまま、ひとりごちた。それでも{h}の目は、何度も覗き窓のほうへ戻っていった。|{h}は腕を組んで、壁の向こうの人の出入りを数えていた。{h}「{a}の奴、まだ平気な顔をしてやがる」{h}は面白くなさそうに、計器の針を指で弾いた。'),
+      stern: L('{h}は計器の針を確かめ、帳簿に時刻を書き入れた。{h}「規定の時間までは、出すわけにいかない」覗き窓の向こうの{a}を一度だけ見て、{h}はまた帳簿に目を落とした。|{h}「{a}、姿勢を崩すな。遮断の具合が乱れる」{h}は伝声管越しに、事務的に告げた。返事の代わりに、壁のこちら側で{a}が何か言い返す声がした。|{h}は規則正しく、一時間ごとに覗き窓を開けた。{a}の顔色を確かめ、計器の数字を読み、窓を閉める。その手順を、{h}は一度も省かなかった。'),
+      tsun: L('{h}は覗き窓の前で、そわそわと行ったり来たりしていた。{h}「べ、別に{a}の様子が気になるわけじゃないし。仕事だし」そう言いながら、{h}は五分おきに窓を開けていた。|{h}「なんで{a}がはまってるのよ……」{h}は帳簿を握りしめて、頭を抱えた。それでも受付の札を「休止中」に変える勇気は、出なかった。|{h}は伝声管に口を近づけて、すぐに離した。{h}「……声かけたら、ばれるじゃない」{h}はむくれた顔で、計器の針をにらみつけた。'),
+      gentle: L('{h}は覗き窓から{a}の顔をのぞいて、困ったように微笑んだ。{h}「あらあら、退屈そうね」{h}は小さな水差しを用意して、窓の縁にそっと置いた。|{h}は帳場で編み物をしながら、ときどき{a}のほうへ目をやった。{h}「もう少しの辛抱よ、{a}」その声は、伝声管には乗らないくらい小さかった。|{h}「お腹すいてないかしら」{h}は{a}の頭の上の棚に、焼き菓子をひとつ置いた。{a}が首を伸ばしても届かない位置だったことに、{h}は気づいていなかった。'),
+      devoted: L('{h}は覗き窓に額をつけるようにして、{a}を見守っていた。{h}「何かあったら、すぐ止めるから」{h}は計器の非常の札に、ずっと手を添えていた。|{h}は{a}のために、壁の縁に柔らかい布を詰め直した。{h}「少しでも、楽になるといいんだけど」{a}は、急に腰回りが楽になった理由を知らなかった。|{h}「{a}、がんばって……」{h}は帳場の椅子にも座らず、立ったまま時間を数えていた。自分で始めた商売なのに、{h}はひどく落ち着かなかった。'),
+      cool: L('{h}は計器の数字を、淡々と記録帳に写していた。{h}「遮断率、九割九分。{a}の反応は想定どおり」{h}の筆は、一度も止まらなかった。|{h}は覗き窓から{a}の表情を観察し、余白に小さく書きつけた。{h}「待つ時間が長いほど、想像で消耗する。興味深い」{h}は次の頁をめくった。|{h}「{a}は時間を数えるほうか、数えないほうか」{h}は顎に手を当てて、覗き窓の向こうを眺めた。答えが出るまで、{h}は帳場を離れなかった。'),
+      free: L('{h}は覗き窓にかじりついて、{a}の顔を眺めていた。{h}「わ、今の顔いい！記念に描いとこ」{h}は帳簿の裏に、さらさらと似顔絵を描き始めた。|{h}「ねえねえ、{a}って意外と暇つぶし下手だよね」{h}は誰もいない帳場で、ひとりで笑い転げた。それから伝声管の蓋に手をかけて、話しかけようか迷った。|{h}は計器の針を眺めながら、足をぶらぶらさせていた。{h}「次はどんなお客が来るかなー」{h}にとっては、{a}の困り顔も、この商売の楽しみのひとつだった。'),
+      shy: L('{h}は覗き窓を指一本ぶんだけ開けて、こっそり{a}をのぞいた。{h}「み、見てない、見てないから……」目が合いそうになって、{h}は慌てて窓を閉めた。|{h}は帳場の隅で、膝を抱えて小さくなっていた。{h}「{a}に、こんなお店やってるって知られたら……」{h}は顔を真っ赤にして、帳簿で顔を隠した。|{h}「ご、ごめんね、{a}……」{h}は伝声管に聞こえないように、小さく謝った。それでも札を「休止中」に変えることは、{h}にはできなかった。'),
+      polite: L('{h}は覗き窓を開け、{a}に丁寧に一礼した。{h}「ご不便をおかけしております。お時間まで、もうしばらくお待ちくださいませ」窓は、音もなく閉じられた。|{h}は帳簿に{a}の名を書き入れ、几帳面に時刻を添えた。{h}「本日のお客様は、お一人様ですね」その声は、老舗の宿の主人のように穏やかだった。|{h}「お加減はいかがでしょう、{a}様」{h}は伝声管越しに、そっと尋ねた。返事を待つあいだ、{h}は背筋を伸ばしたまま微動だにしなかった。')
+    },
+    /* 客を呼び込む・遮断を深める：まだ感覚が戻っていない（pre）／戻っている（live）／攻めを選んだ人（top） */
+    boost: {
+      pre: L('{h}は表の札を「空きあり」に掛け替えて、通りに向かって手招きした。ほどなく、壁の向こうに新しい足音が増えていった。{a}は何も感じないまま、伝声管から漏れる客の笑い声を聞いていた。|{h}は計器のつまみを、遮断がいちばん深くなるところまで回した。壁の向こうで何が起きても、{a}には何も届かない――その分だけ、溜まっていく。{h}は帳簿に、小さく丸をつけた。|{h}「せっかくだし、もう少し賑やかにしようか」{h}は呼び込みの鈴を三度鳴らした。壁の向こうの人の出入りが、目に見えて増えた。'),
+      live: L('{h}は表の札を「空きあり」に掛け替えて、通りに向かって手招きした。壁の向こうの足音が増えるたびに、戻ってきた感覚が{a}の腰を震わせた。{a}は唇を噛んで、覗き窓のほうを睨んだ。|{h}は呼び込みの鈴を鳴らした。すぐに壁の向こうに誰かが立つ気配がして、{a}の体がびくりと跳ねた。{h}「休んでいる暇はないよ」|{h}は計器のつまみを、ほんの少しだけ戻した。遮断の薄くなった壁越しに、向こう側の手つきがそのまま{a}に伝わってきた。{a}は額を壁に押しつけて、声をこらえた。'),
+      top: L('{h}は呼び込みの鈴を鳴らしたが、壁の向こうから聞こえてきたのは客の悲鳴だった。{a}の脚が、近づく者を片っ端から蹴り返していた。{h}は帳簿を閉じて、深いため息をついた。|{h}が表の札を掛け替えると、{a}は伝声管に向かって低く言った。{a}「今、客を入れたな。出たら覚えておけ」{h}は黙って、札を「休止中」に戻した。|{h}は遮断のつまみを回したが、{a}は気にも留めなかった。壁の向こうに立った誰かは、すぐに{a}の脚に追い払われた。{h}「……この人は、商売にならないな」')
+    },
+    /* お気に入りを早めに出す */
+    save: L('{h}は計器の非常の札を引き、遮断の術をその場で解いた。{h}「今日はここまで。……{a}には、これ以上は無理だ」壁の留め具が外れ、{a}の腰がゆっくりと穴から抜けた。|{h}は覗き窓を閉めると、迷わず壁の裏の留め具に手をかけた。{h}「予定より早いけど、もうおしまい」{a}は急に軽くなった腰に戸惑いながら、壁から転がり出た。|{h}「{a}、出すよ」{h}は伝声管にそう告げてから、穴の縁の金具をひとつずつ外していった。最後の金具が外れたとき、{a}の体はふわりとこちら側へ戻ってきた。'),
+    /* 伝声管・覗き窓でからかう */
+    tease: L('伝声管から、くすくすと笑う声が漏れてきた。「いい顔してるね。壁の向こうの様子、教えてあげようか？」{a}は返事をせず、真っ赤になって伝声管の口を手で塞いだ。|覗き窓がすっと開いて、細い指が一枚の紙を差し入れた。紙には、ここまでに壁の向こうへ来た人の数が、正の字で書かれていた。{a}はその数を数えかけて、途中でやめた。|「あと何時間か、数えてる？」伝声管の声は、楽しそうに続けた。「教えてあげない」――{a}が言い返す前に、伝声管の蓋はぱたんと閉じられた。'),
+    /* 主催者が知り合いだと気づく */
+    discover: L('伝声管から聞こえた声に、{a}ははっと顔を上げた。聞き違えるはずがなかった。――この穴の主催者は、{h}だ。|覗き窓の向こうの目と、{a}の目が合った。見慣れた目元に、{a}は息を呑んだ。この穴を営んでいるのは、{h}だったのだ。|覗き窓の隙間から、帳場の机が少しだけ見えた。そこに置かれた湯呑みにも、走り書きの字にも、見覚えがあった。{a}「……{h}？　ここ、{h}のお店なの？」'),
+    react: {
+      proud: L('{a}「{h}、てめえか。ここから出たら、真っ先に殴る」|{a}は壁を拳で叩いた。「{h}！聞こえてるんだろう！」|{a}「道理で、ずいぶん底意地の悪い穴だと思った」'),
+      stern: L('{a}「{h}。……出たら、きちんと説明してもらう」|{a}は目を閉じて、深く息を吐いた。「{h}、商売は選べ」|{a}「仲間をこんな目に遭わせるとは、感心しないぞ、{h}」'),
+      tsun: L('{a}「はあ！？{h}のお店だったの！？最っ低！」|{a}は耳まで赤くなった。「{h}、ずっと見てたってこと！？」|{a}「べ、別に驚いてないし。{h}ならやりそうだし」'),
+      gentle: L('{a}は目を丸くしてから、困ったように笑った。「まあ、{h}のお店だったのね」|{a}「{h}ったら、こんな商売をしていたの」|{a}「{h}なら、ひどいことはしないわよね？」'),
+      devoted: L('{a}「{h}が……？じゃあ、{h}が見ててくれたんだ」|{a}はほっとしたように、肩の力を抜いた。「{h}がいるなら、大丈夫」|{a}「{h}のお店なら、最後までちゃんと待つから」'),
+      cool: L('{a}「なるほど。この遮断の精度は、{h}の仕事か」|{a}は小さく頷いた。「{h}なら、時間はきっちり守るはずだ」|{a}「{h}。あとで、この術式の仕組みを聞かせてもらう」'),
+      free: L('{a}「えっ、{h}なの！？すごい、これ{h}のお店！？」|{a}は思わず笑い出した。「{h}、ちょっと、出してよー！」|{a}「なあんだ、{h}かあ。ねえ、ついでに何か飲み物ちょうだい」'),
+      shy: L('{a}は両手で顔を覆った。「{h}に、こんな格好を見られてたなんて……」|{a}「う、うそ……{h}……？」|{a}は消え入りそうな声で呟いた。「も、もう、{h}の顔、見られない……」'),
+      polite: L('{a}は目を見開いてから、静かに息を整えた。「{h}さんでしたか。……あとで、お話を伺っても？」|{a}「{h}さんのお店だったのですね。存じませんでした」|{a}「なるほど、{h}さんが。……少々、驚きました」')
+    },
+    reactLove: L('{h}だと分かった途端、{a}の顔から強張りがすっと抜けた。|{a}は一瞬むっとしてから、{h}らしいと小さく笑った。|{a}は、{h}にずっと見られていたのだと思うと、急に顔が熱くなった。'),
+    reactBad: L('{a}の目つきが険しくなった。{h}にだけは、こんな姿を見られたくなかった。|{a}「よりによって{h}か」――声には、隠しきれない棘があった。|{a}は覗き窓を睨みつけ、二度と弱音を吐かないと決めた。'),
+    end: {
+      known: L('{a}が帳場に顔を出すと、{h}は気まずそうに帳簿を閉じた。{h}「……お代は、いらないから」{a}は何か言いかけて、結局ため息だけをついた。|{h}は、穴から出た{a}に温かい手ぬぐいを差し出した。{h}「おつかれさま。……怒ってる？」{a}の返事は、しばらく返ってこなかった。|{a}が身支度を整えるあいだ、{h}は帳場で黙って待っていた。主催者と客として向き合うのは、二人とも初めてだった。{a}が先に口を開くまで、{h}は顔を上げなかった。'),
+      hidden: L('最後まで、{a}はこの穴の主催者が{h}だとは気づかなかった。{h}は何食わぬ顔で、空いた穴の札を「準備中」に掛け替えた。帳簿の{a}の欄には、小さな印がひとつだけ付けられていた。|{a}が去ったあと、{h}はひとりで帳簿を閉じた。主催者の正体は、{h}だけの秘密になった。次に会ったとき、どんな顔をすればいいのかは分からなかった。|{h}は覗き窓の掛け金を下ろして、深く息をついた。{a}は、主催者が知り合いだとは最後まで知らないままだった。{h}はそれを、少しだけ寂しく思った。'),
+      mob: L('帰り際、受付には主催者の{h}が座っていた。{h}「またのお越しを」{a}は振り返らずに、まっすぐ出口へ向かった。|主催者の{h}は、帳簿の{a}の欄に「上客」と書き込んだ。それが褒め言葉なのかどうか、{a}には分からなかった。{a}は、二度とこの道を通らないと決めた。|{h}は空いた穴を丁寧に拭き清め、札を「空きあり」に戻した。主催者にとって、{a}は今日の大勢の客のひとりにすぎなかった。表の通りには、もう次の客が立っていた。'),
+      knownFall: L('主催者の{h}は、穴に戻っていく{a}の背中を、覗き窓から黙って見送った。止めるべきか迷ううちに、札は「使用中」に掛け替わっていた。{h}は帳簿の{a}の欄に、そっと「常連」と書き足した。|{h}は帳場を出て、壁の前に立つ{a}の肩に手を置きかけた。けれど{a}の蕩けた横顔を見て、{h}はその手を引っ込めた。主催者として、知り合いとして、何を言えばいいのか分からなかった。|{a}「{h}のお店、また来てもいい？」――そう尋ねられて、{h}はしばらく答えられなかった。やがて{h}は黙って頷き、帳簿の新しい頁を開いた。主催者の指は、ほんの少しだけ震えていた。'),
+      hiddenFall: L('{a}は最後まで、この穴の主催者が{h}だとは知らなかった。{h}は覗き窓の向こうで、穴へ戻っていく{a}を見届けた。帳簿の{a}の欄には、もう印を付ける余白がなかった。|主催者の{h}は、自分から戻ってきた{a}の札を、黙って「使用中」に掛け替えた。{a}は、帳場にいるのが誰なのかを知らないままだった。{h}は、それでいいと思うことにした。|{h}は計器の針を見つめたまま、長いあいだ動かなかった。壁にはまっているのが{a}だということを、{h}だけが知っていた。主催者の秘密は、日を追うごとに重くなっていった。'),
+      mobFall: L('主催者の{h}は、戻ってきた{a}に「おかえりなさい」と微笑んだ。帳簿の{a}の欄には、「常連」の印が増えていった。{a}は、それを誇らしく思うようになっていた。|{h}は{a}のために、いちばん端の穴を空けておくようになった。主催者にとって、{a}はもう上客のひとりだった。{a}が通りに姿を見せると、札は黙って「空きあり」に変わった。|主催者の{h}は、帳簿を閉じて満足げに息をついた。{a}のような客がいる限り、この穴が空になることはない。表の札は、今日も「使用中」のままだった。'),
+      freed: L('予定の時間より早く遮断を解いたのは、主催者の{h}だった。|{a}を途中で穴から出したのは、主催者の{h}の判断だった。|時間を待たずに{a}を出すと決めたのは、主催者の{h}だった。')
+    }
+  };
+
+  /* ---------- 小道具 ---------- */
+  function pk(S, arr) {
+    var U = S.hostUse = S.hostUse || {}, free = [], i, t, r = S.hostR;
+    for (i = 0; i < arr.length; i++) if (!U[arr[i]]) free.push(arr[i]);
+    if (free.length) t = free[r.int(free.length)];
+    else { t = arr[0]; for (i = 1; i < arr.length; i++) if (U[arr[i]] < U[t]) t = arr[i]; }
+    S.hostUseN = (S.hostUseN || 0) + 1; U[t] = S.hostUseN;
+    return t;
+  }
+  function nm(s, m) { return s.replace(/\{(a|h)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
+  function sidePick(input, i) { return ((input.perChar && input.perChar[i] && input.perChar[i].pick) || {}).side; }
+  function hostYes(input, i) { return ((input.perChar && input.perChar[i] && input.perChar[i].pick) || {}).host === 'yes'; }
+  var NEAR = /^(lover|mate|fated|spouse|almost|crush|fwb|best|childhood|buddy|sibclose|sibprot|parent|worship)$/, BAD = /^(rival|enemy|bad|sibbad|ex)$/;
+  function tieOf(input, a, b) {
+    var o = { near: false, bad: false };
+    (input.ties || []).forEach(function (t) {
+      if (!((t.a === a && t.b === b) || (t.a === b && t.b === a))) return;
+      if (NEAR.test(t.type) && (t.type !== 'crush' || t.a === a)) o.near = true;
+      if (BAD.test(t.type)) o.bad = true;
+    });
+    return o;
+  }
+
+  var HH = HK.HoleHost = { text: T };
+  /* 主催者を決める（入力だけで決まる。物語の乱数に触れない）：{ kind: 'none'|'res'|'mob', i, mob } */
+  HH.resolve = function (input) {
+    var chars = (input && input.chars) || [], env = (input && input.env) || {};
+    var src = env[HK.Roles.envId('host')] || 'auto';
+    var anyYes = chars.some(function (c, i) { return hostYes(input, i); });
+    if (src === 'none' || (src === 'auto' && !anyYes)) return { kind: 'none', i: -1 };
+    /* 役割「穴にはまる」「壁の向こう」を選んだ人は、「主催者になる」を選んでいない限り外す */
+    var list = [];
+    chars.forEach(function (c, i) {
+      if (sidePick(input, i) && !hostYes(input, i)) return;
+      var x = {}; for (var k in c) x[k] = c[k]; x.i = i; x.tr = HK.traits(c.eg); list.push(x);
+    });
+    var rng = HK.rng(((+input.seed || 0) * 131 + 7919) >>> 0);
+    var r = HK.Roles.resolve({ rng: rng, env: env, chars: list }, 'host', input, ROLE);
+    /* 住人が一人だけなら、その人がはまる（主催者はなし） */
+    if (r.kind === 'res' && chars.length < 2) return { kind: 'none', i: -1 };
+    if (r.kind === 'res') return { kind: 'res', i: r.who[0].i };
+    if (r.kind === 'mob') return { kind: 'mob', i: -1, mob: r.mob };
+    return { kind: 'none', i: -1 };
+  };
+  HH.idx = function (input) { return HH.resolve(input).i; };
+
+  HH.setup = function (S, input) {
+    S.host = null;
+    var r = HH.resolve(input);
+    if (r.kind === 'none') return null;
+    var h;
+    if (r.kind === 'res') {
+      var c = input.chars[r.i];
+      h = { i: r.i, name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', pos: c.pos || '', futa: !!c.futa,
+        ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock, kind: 'res' };
+      if (HK.charFlags) HK.charFlags(c, h, 'hole');
+      var tt = tieOf(input, r.i, S.h.i);
+      h.near = tt.near; h.bad = tt.bad;
+    } else { h = r.mob; h.i = -1; h.kind = 'mob'; h.tr = h.tr || HK.traits(h.eg); }
+    h.persona = HK.personaOf(h);
+    S.host = h; S.hostR = HK.rng(((+input.seed || 0) * 37 + 104729) >>> 0);
+    S.hostN = 0; S.hostKnown = h.kind === 'mob'; S.hostFreed = false;
+    return h;
+  };
+
+  HH.start = function (S) {
+    var h = S.host; if (!h) return;
+    var o = K.say(S, { kind: 'sys', tag: '主催者', text: nm(pk(S, T.intro[h.kind]), { h: h.name, a: S.h.name }), why: h.kind === 'res' ? '主催者：' + h.name + '（住人。穴にも壁の向こうにも入らない）' : '主催者：' + h.name + '（モブ）' });
+    K.key(S, o, '主催者' + h.name + 'の遮断穴');
+  };
+
+  function discover(S, how) {
+    var h = S.host, a = S.h;
+    if (S.hostKnown || h.kind !== 'res') return null;
+    S.hostKnown = true;
+    var t = nm(pk(S, T.discover), { h: h.name, a: a.name }) + ' ' + nm(pk(S, T.react[a.persona] || T.react.gentle), { h: h.name, a: a.name });
+    var love = HK.canLove && HK.canLove(a, h) && HK.canLove(h, a);
+    if (h.near && love) t += nm(pk(S, T.reactLove), { h: h.name, a: a.name });
+    else if (h.bad) t += nm(pk(S, T.reactBad), { h: h.name, a: a.name });
+    var o = K.say(S, { kind: 'ev', tag: '主催者の正体', text: t, why: how || '主催者が知り合いだと気づいた' });
+    K.key(S, o, '主催者が' + h.name + 'だと気づいた');
+    return o;
+  }
+
+  /* 一時間ごと：品評、ときどき手を出す。st = { stored, live, hardTop }。戻り値 { stored, release } */
+  HH.tick = function (S, st) {
+    var h = S.host, a = S.h, r = S.hostR, out = { stored: st.stored, release: false };
+    if (!h) return out;
+    if ((S.hostN || 0) >= 3 || r() > 0.28) {
+      if (r() < 0.3) K.say(S, { kind: 'ev', tag: '主催者', text: nm(pk(S, T.comment[h.persona] || T.comment.gentle), { h: h.name, a: a.name }), why: h.name + 'の品評（態度「' + (HK.PERSONA[h.persona] ? HK.PERSONA[h.persona].label : h.persona) + '」）' });
+      return out;
+    }
+    var t = h.tr, opts = [], ng = !!(HK.ngPair && HK.ngPair(h, a));
+    /* お気に入り（関係が近い・面倒見がいい）を、溜まりすぎる前に出す */
+    var worry = st.stored > 160 || a.corrupt > 60 || (st.live && a.pleasure > 70);
+    if (worry && h.kind === 'res' && (h.near || t.np > 0.6)) opts.push(['save', 0.5 + t.np * 0.8 + (h.near ? 0.6 : 0)]);
+    if (worry && h.kind === 'mob' && a.corrupt > 85) opts.push(['save', 0.15]);
+    if (!ng) opts.push(['boost', 0.4 + t.fc * 0.5 + t.cp * 0.3 + (h.kind === 'mob' ? 0.4 : 0) - (h.near ? 0.3 : 0)]);
+    opts.push(['tease', 0.3 + t.fc * 0.4 + t.ac * 0.2]);
+    var p = HK.weighted(r, opts, function (o) { return o[1]; });
+    if (!p) return out;
+    S.hostN++;
+    if (h.kind === 'res' && !S.hostKnown && r() < (p[0] === 'boost' ? 0.2 : 0.45)) discover(S, '伝声管の声・覗き窓の目で気づいた');
+    if (p[0] === 'save') {
+      S.hostFreed = true; out.release = true;
+      var o = K.say(S, { kind: 'sys', tag: '主催者の助け舟', text: nm(pk(S, T.save), { h: h.name, a: a.name }), why: h.name + 'が、予定より早く遮断を解いた（溜まった感覚 ' + Math.round(st.stored) + '・堕ち度 ' + Math.round(a.corrupt) + '）' });
+      K.key(S, o, h.name + 'が早めに出した');
+    } else if (p[0] === 'boost') {
+      if (st.hardTop) K.say(S, { kind: 'ev', tag: '主催者の呼び込み', text: nm(pk(S, T.boost.top), { h: h.name, a: a.name }), why: '自分で攻めを選んでいるので、呼び込んだ客は追い払われた' });
+      else if (st.live) {
+        var rs = K.stim(S, 12 + S.env.wild / 10, { part: 'belly', defer: true });
+        K.say(S, { kind: 'ev', tag: '主催者の呼び込み', text: nm(pk(S, T.boost.live), { h: h.name, a: a.name }), why: h.name + 'が客を呼び込んだ（感覚は戻っている）' });
+        K.logClimax(S, rs.climaxes);
+      } else {
+        out.stored += (30 + S.env.wild * 0.4) * (a.sens || 1);
+        K.say(S, { kind: 'ev', tag: '主催者の呼び込み', text: nm(pk(S, T.boost.pre), { h: h.name, a: a.name }), why: h.name + 'が客を呼び込み、遮断を深めた（溜まった感覚 ' + Math.round(out.stored) + '）' });
+        a.corrupt += 1.5 * (S.k || 1);
+      }
+    } else {
+      a.reason -= 3 + a.tr.ac * 4;
+      K.say(S, { kind: 'ev', tag: '主催者の声', text: nm(pk(S, T.tease), { h: h.name, a: a.name }), why: h.name + 'がからかった（AC ' + Math.round(a.eg.AC) + '）' });
+    }
+    K.settle(S);
+    return out;
+  };
+
+  /* 結末：主催者の一行（住人なら、帰り際に気づくこともある）。早めに出したときは題を直す */
+  HH.end = function (S, E) {
+    var h = S.host, a = S.h;
+    if (!h || !E || !Array.isArray(E.lines)) return E;
+    if (h.kind === 'res' && !S.hostKnown && (S.hostFreed || S.hostR() < 0.5)) discover(S, S.hostFreed ? '穴から出してくれた人の顔を見た' : '帰り際、帳場で顔を合わせた');
+    if (S.hostFreed) {
+      E.lines.push(nm(pk(S, T.end.freed), { h: h.name, a: a.name }));
+      if (/^自力脱出/.test(E.title || '')) E.title = E.title.replace(/^自力脱出/, '途中で解放');
+    }
+    var k0 = h.kind === 'mob' ? 'mob' : S.hostKnown ? 'known' : 'hidden';
+    E.lines.push(nm(pk(S, T.end[k0 + (E.kind === 'over' ? 'Fall' : '')] || T.end[k0]), { h: h.name, a: a.name }));
+    return E;
+  };
+  HH.finish = function (S, res) {
+    var h = S.host; if (!h || !res) return res;
+    res.host = { name: h.name, kind: h.kind, i: h.i, known: !!S.hostKnown, freed: !!S.hostFreed };
+    res.summary += '／主催者：' + h.name + (h.kind === 'mob' ? '（モブ）' : '');
+    return res;
+  };
 })();
 ;/* ==== js/dungeon-events-a.js ==== */
 /* 箱庭診断: エロトラップダンジョンのイベント（罠） */

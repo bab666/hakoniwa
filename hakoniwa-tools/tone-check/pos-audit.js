@@ -76,6 +76,7 @@ const { openBuild } = require('./lib.js');
           else if (e.options && /lewd/.test(e.id)) { const hi = e.options.filter(o => /high|max|lewd/.test(o.v))[0]; if (hi) env[e.id] = hi.v; }
           if (e.id === 'mode' && e.options && e.options.some(o => o.v === 'lewd')) env[e.id] = 'lewd';
         });
+        Object.keys(env).forEach(k => { if (/^role_/.test(k)) env[k] = s % 2 ? 'res' : 'auto'; });
         ENVSET.forEach(kv => { env[kv[0]] = isNaN(+kv[1]) ? kv[1] : +kv[1]; });
         const ties = (cast.ties || []).filter(t => t.a < n && t.b < n);
         let res;

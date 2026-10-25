@@ -26192,10 +26192,13 @@
   /* はまる人と、壁の向こうの人を決める（役割「穴にはまる」の人、いなければ一人目） */
   BH.cast = function (input) {
     var n = (input.chars || []).length, pick = function (i) { return ((input.perChar && input.perChar[i] && input.perChar[i].pick) || {}).side; };
-    var si = 0;
-    for (var i = 0; i < n; i++) if (pick(i) === 'stuck') { si = i; break; }
+    /* 主催者（hole-host.js）になった住人は、はまる人にも壁の向こうの人にもしない */
+    var hi = HK.HoleHost ? HK.HoleHost.idx(input) : -1, si = -1;
+    for (var i = 0; i < n; i++) if (i !== hi && pick(i) === 'stuck') { si = i; break; }
+    for (var i2 = 0; si < 0 && i2 < n; i2++) if (i2 !== hi) si = i2;
+    if (si < 0) si = 0;
     var others = [];
-    for (var j = 0; j < n; j++) if (j !== si) others.push(j);
+    for (var j = 0; j < n; j++) if (j !== si && j !== hi) others.push(j);
     return { si: si, others: others.slice(0, 3) };
   };
   BH.setup = function (S, input, cast) {

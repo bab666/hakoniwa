@@ -12,7 +12,8 @@ const { openBuild } = require('./lib');
   const dir = process.argv[2], N = +process.argv[3] || 40, mode = process.argv[4] || 'r18', WHY = process.argv.includes('--why');
   if (!dir) { console.log('使い方: node orient-audit.js <ビルドのフォルダ> [回数] [r18|safe] [--why]'); process.exit(1); }
   const { browser, page, errors } = await openBuild(dir, mode === 'safe' ? 'safe' : mode === 'r18' ? 'r18' : '');
-  const r = await page.evaluate(({ N, WHY }) => {
+  const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
+  const r = await page.evaluate(({ N, WHY, ENVSET }) => {
     const SEX = /挿入|挿れ|射精|精液|愛液|ちんぽ|喘ぎ|喘い|腰を振|腰を打ち|奥まで(?:突|沈|貫)|深く沈|フェラ|咥え込|秘所|貫か|貫い|絶頂|イっ|イく|中に出|舐め上げ|乳首|性器|ひだ|襞|潮を|搾り取|犯し|犯さ|セックス|抱き潰|跨って腰|騎乗|ノット|夜を共に|体を重ね|肌を重ね|一夜を共に|抱かれ|抱いた|求め合/;
     const CONF = /(?:付き合って|恋人になって)(?:ください|ほしい|くれ(?!た))|付き合おう|恋人になった|両想いに|告白した|想いを告げ|好きだ。|好きです。/;
     const NOTSEX = /精液検査|ほかの結果：[^\n]*|ほかに：[^\n]*|アシスタントに[^。]*|抱いた(?:まま|肩|膝)|肩を抱|膝を抱|頭を抱|抱いた(?:子|赤)|日照りに喘|息を喘|旅路の果て/;
@@ -42,7 +43,9 @@ const { openBuild } = require('./lib');
         (sc.env || []).forEach((e, k) => {
           if (e.options && e.options.length > 1 && (s + k) % 3 === 0) env[e.id] = e.options[(s + k) % e.options.length].v;
           if (e.max != null && s % 2 === 0 && /lewd|night|romance|heat|ev|dose|aphro|love|shady|prey|pleasure/.test(e.id)) env[e.id] = e.max;
+          if (/^role_/.test(e.id)) env[e.id] = s % 2 ? 'res' : 'auto';
         });
+        ENVSET.forEach(kv => { env[kv[0]] = isNaN(+kv[1]) ? kv[1] : +kv[1]; });
         const ties = s % 4 === 3 && n >= 2 ? [{ a: 0, b: 1, type: ['friend', 'enemy', 'best', 'colleague'][s % 4] }] : [];
         let res;
         /* 内容のスイッチ（content.js）：指定がなければすべて入にして、いちばん広く回す */
@@ -74,7 +77,7 @@ const { openBuild } = require('./lib');
       }
     });
     return res0;
-  }, { N, WHY });
+  }, { N, WHY, ENVSET });
   const tot = { O1: 0, O2: 0, O3: 0 };
   for (const id in r) { const o = r[id]; tot.O1 += o.O1; tot.O2 += o.O2; tot.O3 += o.O3; console.log(id.padEnd(10), 'runs', o.runs, 'err', o.err, 'O1', o.O1, 'O2', o.O2, 'O3', o.O3); o.ex.forEach(x => console.log('    ' + x.replace(/\n/g, ' '))); }
   console.log('合計', JSON.stringify(tot));
