@@ -763,6 +763,7 @@
     var env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
     env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
+    env.heavy = HK.Dark ? HK.Dark.on(input.env) : 'normal';   /* 展開の重さ（mood-dial.js。全体の設定） */
     var tk = env.theme === 'mix' ? 'mix' : env.theme;
     var S = {
       rng: rng, env: env, log: [], hist: [], turns: [], seen: {}, cause: {}, flags: {},
@@ -776,6 +777,7 @@
     S.party = input.chars.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.i !== hostI; }).slice(0, 4).map(function (x) { return mkHero(S, x.c, (input.perChar && input.perChar[x.i]) || {}, x.i); });
     S.h = S.party[0];
     S.k = clamp(Math.pow(20 / (S.floors * S.rooms), 0.85), 0.4, 1.3);
+    S.k *= HK.Dark.f(S, 'fall');   /* 展開の重さ（mood-dial.js）：穏やかほど堕ちが遅い */
     if (tk === 'mix') S.theme = { label: '混成迷宮' };
     else S.theme = { label: DG.THEMES[tk].label, floors: DG.THEMES[tk].floors };
     var used = [], thOf = function (f) { return tk === 'mix' ? S.mixOrder[f % 5] : tk; };
@@ -919,6 +921,7 @@
   DG.finish = function (S, input) {
     S.h = S.party[0];
     var E = DG.ending(S);
+    if (E && Array.isArray(E.lines) && HK.Dark && HK.Dark.note(S)) E.lines.push(HK.Dark.note(S));   /* 展開の重さ（mood-dial.js）：ふつう以外なら結末に一行 */
     var heroes = S.party.map(function (h) { return heroOut(S, h); });
     var res = {
       solo: true, scenId: 'dungeon', seed: input.seed, env: S.env, input: input,

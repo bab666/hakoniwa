@@ -63,9 +63,10 @@
     if (O.blocked(ctx, a, b) || !b.alive) return 0;
     /* pace：区切りの少ない箱庭（合コン・一年間のクラス）ほど速く積もる（O.install の opt.pace） */
     var kit = ctx.scen && ctx.scen.obsessKit, s = st(ctx, a, b), k = d > 0 ? (0.55 + a.tr.jealous * 0.9) * ((kit && kit.pace) || 1) : 1;
+    if (d > 0) k *= HK.Dark.pace(ctx);   /* 展開の重さ（mood-dial.js）：穏やかほど執着がゆっくり積もる */
     var nv = clamp(s.lv + d * k, 0, 100);
     if (d > 0 && !s.set && nv > O.NAT_CAP) {
-      if (s.surge == null) s.surge = O.surgeOk(a, R(ctx, a, b).att) && ctx.rng() < O.SURGE_P;
+      if (s.surge == null) s.surge = (O.surgeOk(a, R(ctx, a, b).att) || (HK.Dark.on(ctx) === 'dark' && (a.tr.jealous || 0) >= 0.5 && R(ctx, a, b).att >= 60)) && ctx.rng() < O.SURGE_P * HK.Dark.f(ctx, 'cage');
       if (!s.surge) nv = Math.max(s.lv, Math.min(nv, O.NAT_CAP));
     }
     s.lv = nv;
@@ -253,7 +254,7 @@
     s.at = ctx.stepIndex;
     if (!s.seen) return seed(ctx, a, b, s);
     if (s.cage) return O.cageTick(ctx, a, b, s, opt);
-    if (stg >= 3 && !s.climax) { var cl = O.climax(ctx, a, b, s, ty, c, opt); if (cl) return cl; }
+    if ((stg >= 3 || (stg >= 2 && s.lv >= 70 && HK.Dark.on(ctx) === 'dark')) && !s.climax) { var cl = O.climax(ctx, a, b, s, ty, c, opt); if (cl) return cl; }
     var key = stg >= 2 ? ty + '2' : ty;
     if (key === 'purge2' && !c) key = 'bind2';
     var txt = T(ctx, key, !c);
@@ -290,10 +291,11 @@
   /* 暴走：監禁・恋敵への危害・心中のどれか（箱庭ごとに opt で止められる） */
   O.climax = function (ctx, a, b, s, ty, c, opt) {
     var safe = SAFE(), stn = O.stance(ctx, b, a), opts = [];
-    if (opt.cage !== false) opts.push(['cage', ty === 'bind' ? 3 : ty === 'devote' ? 2 : 1.4]);
-    if (opt.harm !== false && c) opts.push(['harm', ty === 'purge' ? 3.5 : ty === 'bind' ? 1.4 : 0.6]);
+    if (HK.Dark.skip(ctx, 'cage')) return null;   /* 展開の重さ：穏やかでは、暴走をまれに見送る */
+    if (opt.cage !== false) opts.push(['cage', (ty === 'bind' ? 3 : ty === 'devote' ? 2 : 1.4) * HK.Dark.f(ctx, 'cage')]);
+    if (opt.harm !== false && c) opts.push(['harm', (ty === 'purge' ? 3.5 : ty === 'bind' ? 1.4 : 0.6) * HK.Dark.f(ctx, 'harm') * HK.Dark.pick(ctx, 0.6, 1, 1.6)]);
     /* 心中の起こりやすさは箱庭ごとに opt.shinjuW で下げられる（出られない部屋は 0.35） */
-    if (opt.shinju !== false) opts.push(['shinju', (ty === 'depend' ? 3 : stn === 'mutual' ? 2.2 : 0.7) * (opt.shinjuW == null ? 1 : opt.shinjuW)]);
+    if (opt.shinju !== false) opts.push(['shinju', (ty === 'depend' ? 3 : stn === 'mutual' ? 2.2 : 0.7) * (opt.shinjuW == null ? 1 : opt.shinjuW) * HK.Dark.f(ctx, 'shinju') * HK.Dark.pick(ctx, 0.6, 1, 1.6)]);
     /* 箱庭ごとの暴走（opt.more → [[id, 重み, run(ctx, a, b, s, ty, c)], ...]） */
     var more = opt.more ? opt.more(ctx, a, b, s, ty, c, safe) || [] : [];
     more.forEach(function (m) { if (m[1] > 0) opts.push(m); });
@@ -311,7 +313,7 @@
       return { with: [b], cat: 'conflict', text: F(ctx, T(ctx, safe ? 'cage_s' : 'cage'), a, b), why: why(ctx, a, b, s) + '。執着が暴走した', mag: 45 };
     }
     if (pick === 'harm') {
-      var lethal = !safe && opt.lethal !== false && ty === 'purge' && s.lv >= 90 && ctx.rng() < 0.35;
+      var lethal = !safe && opt.lethal !== false && ty === 'purge' && s.lv >= 90 && ctx.rng() < 0.35 * HK.Dark.f(ctx, 'kill');
       /* 恋敵に向いたあとも、執着そのものは続く（次の暴走もありうる） */
       s.climax = null; s.lv = clamp(s.lv - 10, 0, 100);
       ctx.mod(c, a, { ten: 35, aff: -30, trust: -30 }); ctx.mod(b, a, { ten: 12, trust: -10 });
@@ -323,6 +325,7 @@
     /* 心中：共依存か、執着される側が抵抗できなければ。全年齢版・死なない箱庭では未遂 */
     var resist = stn === 'mutual' ? 0.15 : stn === 'accept' ? 0.45 : stn === 'confused' ? 0.6 : 0.75;
     resist += b.tr.np * 0.15 + b.tr.a * 0.1;
+    resist = HK.Dark.live(ctx, resist, 'shinju');
     if (safe || opt.lethal === false || ctx.rng() < resist) {
       ctx.mod2(a, b, { trust: 10, att: 6 }, { ten: 14, att: 4 }); ctx.stress(a, 20); ctx.stress(b, 25);
       s.lv = clamp(s.lv - 25, 0, 100); s.climax = null;

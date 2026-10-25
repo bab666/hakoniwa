@@ -1,5 +1,5 @@
 /* 横断の点検：文の崩れ・同じシードで同じ結果・全年齢への漏れ・重さ・結末の組み立て
-   使い方: node text-audit.js <ビルドのディレクトリ> [1箱庭あたりの回数=12] [r18|safe|''] [箱庭id,…] [--why]
+   使い方: node text-audit.js <ビルドのディレクトリ> [1箱庭あたりの回数=12] [r18|safe|''] [箱庭id,…] [--why] [--env=heavy:mild,lewd:high]（設定を固定して回す）
    T1 置き換え漏れ（{a} {b} {x} {sensei} {place} など。住人の属性の文の {note} {bw} {L} {S} も）・undefined・NaN・null・[object
    T2 空の記録（本文が空・空白だけ）
    T3 句読点の重なり（。。 、、 」」の誤り など）・名前の直後の「はは」「がが」
@@ -14,7 +14,8 @@ const { openBuild } = require('./lib.js');
   const args = process.argv.slice(2).filter(a => !/^--/.test(a));
   const dir = args[0], N = +args[1] || 12, mode = args[2] || '', only = args[3] ? args[3].split(',') : null, WHY = process.argv.includes('--why');
   const { browser, page, errors } = await openBuild(dir, mode);
-  const r = await page.evaluate(({ N, only, WHY }) => {
+  const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
+  const r = await page.evaluate(({ N, only, WHY, ENVSET }) => {
     const KEYS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
     const PH = /\{(?:a|b|c|d|x|y|t|m|n|p|v|w|sensei|name|o|h|s|sa|sb|T|U|place|kind|ue|shita|yobi|oya|ko|oyayobi|shin|note|bw|L|S|race)\}|undefined|NaN|\bnull\b|\[object /;
     const PUNCT = /。。|、、|」」(?!」)|「「|！！！！|？？？/;
@@ -35,6 +36,7 @@ const { openBuild } = require('./lib.js');
         const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
         (scen.env || []).forEach((e, k) => { if (e.options && e.options.length > 1 && (s + k) % 3 === 0) env[e.id] = e.options[(s + k) % e.options.length].v; if (/^role_/.test(e.id)) env[e.id] = s % 2 ? 'res' : 'auto'; });
         if (HK.Content) env.ct = s % 2 ? HK.Content.TAGS.map(t => t.id).join(',') : '';
+        ENVSET.forEach(kv => { env[kv[0]] = isNaN(+kv[1]) ? kv[1] : +kv[1]; });
         const ties = n >= 2 ? [{ a: 0, b: 1, type: ['lover', 'spouse', 'honmei', 'abuse', 'friend', 'crush'][s % 6] }] : [];
         const mkIn = () => ({ scenId: sc, seed: 4100 + s, env: JSON.parse(JSON.stringify(env)), chars: JSON.parse(JSON.stringify(chars)), perChar: chars.map(() => ({ pick: {} })), ties: JSON.parse(JSON.stringify(ties)) });
         let res, res2, t0 = Date.now();
@@ -60,7 +62,7 @@ const { openBuild } = require('./lib.js');
       }
     });
     return out;
-  }, { N, only, WHY });
+  }, { N, only, WHY, ENVSET });
   Object.keys(r.perSc).forEach(sc => console.log(sc.padEnd(10), JSON.stringify(r.perSc[sc])));
   console.log('runs', r.runs, '合計', JSON.stringify(r.n));
   Object.keys(r.ex).forEach(k => { if (r.ex[k].length) { console.log('--- ' + k); r.ex[k].forEach(x => console.log('  ' + x.replace(/\n/g, ' '))); } });

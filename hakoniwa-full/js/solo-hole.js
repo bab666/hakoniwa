@@ -166,6 +166,7 @@
     h.sens = 0.85 + (h.stats.sense - 3) * 0.12;
     var H = env.hours, pl = PLACE[env.place] || PLACE.lab;
     S.k = clamp(Math.pow(6 / H, 0.5), 0.5, 1.4);
+    S.k *= HK.Dark.f(S, 'fall');   /* 展開の重さ（mood-dial.js）：穏やかほど堕ちが遅い */
     /* ふたなりの設定（SoloKit の住人には載らないので、ここで写す） */
     h.futa = !!(input.chars[cast.si || 0] || {}).futa;
     /* 自分で「攻め」を選んだ人は、壁の向こうで「される」側にならない：手を出そうとした相手は追い払われ、感覚は何も溜まらない */

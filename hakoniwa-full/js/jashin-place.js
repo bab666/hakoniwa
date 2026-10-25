@@ -251,7 +251,7 @@
     live.forEach(function (p) {
       if (n >= 2 || !JS.alive(p) || p.out || p.bound || rng() > 0.13) return;
       var dodge = 0.3 + JS.skill(p, 'obs') * 0.25 + p.tr.caution * 0.2 + p.stats.luck * 0.03 - p.m.fear / 500;
-      if (rng() < dodge) {
+      if (rng() < HK.Dark.live(S, dodge, 'kill')) {
         var dt = ST.fmt(ST.pick(S, PL.die), { a: p.name }).split('。');
         ST.sayB(S, { actors: [p], tag: '罠', text: (dt.length > 2 ? dt[0] + '。――だが' : p.name + 'の足元で、何かが動いた。――') + p.name + 'は、寸前でそれに気づき、身を翻していた。', why: p.name + 'は寸前で気づいた（観察・慎重さ・運）' }, p.name + 'が' + PL.name + 'の罠を避けた');
         return;

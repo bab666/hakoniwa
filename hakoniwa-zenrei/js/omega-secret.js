@@ -273,7 +273,7 @@
         + (a.honmei === b.i ? 30 : 0) + (a.goal && a.goal.id === 'mate' ? 10 : 0) - (a.goal && a.goal.id === 'free' ? 15 : 0)
         + (h.confessed ? 15 : 0) - (h.caught ? 15 : 0) - (h.lied ? 20 : 0) - (h.times - 1) * 12 + (h.via === 'heat' ? 12 : 0) + (ctx.R(b, a).att > 50 ? 8 : 0) - 30;
       var parts = [];
-      if (keep > ctx.rng() * 80) {
+      if (keep > ctx.rng() * 80 * HK.Dark.f(ctx, 'breakup')) {
         h.st = 'mend'; pf.forgiven = (pf.forgiven || 0) + 1;
         parts.push(ctx.pick(MEND[top(a)] || MEND.NP));
         if (bond && nose(a)) parts.push(ctx.pick(MEND_BOND));

@@ -378,7 +378,7 @@
       /* 本命・恋愛相手・体の相手を決めている人は踏みとどまりやすい（耐えがたいほどの熱なら妥協する） */
       if (A.honmei != null || A.lock != null || typeof A.sexLock === 'number') want -= desperate(A) && A.m.heat > 85 ? 0.1 : 0.45;
       var force = HK.Content && HK.Content.on(S.env, 'force', 'locker');
-      if (want > 0.55 && rng() < 0.7) {
+      if (want > 0.55 && rng() < 0.7 * HK.Dark.f(S, 'fall')) {
         var top = side === 'top' ? A : m, bot = side === 'top' ? m : A, md = modeOf(top, bot), vv = { a: top.name, b: bot.name };
         t += ST.fmt(pk(R.ASK), v) + ST.fmt(pk(R.MOB_SEX[md]), vv);
         if (S.eroOn) t += HK.ThickEro.fill(S, ST.fmt(pk(R.MOB_ERO[md]), vv), top, bot);
@@ -386,7 +386,7 @@
         t += ST.fmt(pk(R.MOB_AFTER), v);
         bumpClimax(A); outcome = 'mob'; tag = '求めた'; kind = 'climax'; mag = 34;
         why = A.name + 'は熱に耐えきれず、自分から' + m.name + 'に頼んだ（合意・' + (side === 'top' ? A.name + 'が攻め' : m.name + 'が攻め') + '）';
-      } else if (want <= 0.55 && force && side === 'bottom' && !(Pos && Pos.hardTopNpc(A)) && rng() < 0.45) {
+      } else if (want <= 0.55 && force && side === 'bottom' && !(Pos && Pos.hardTopNpc(A)) && rng() < 0.45 * HK.Dark.f(S, 'raid')) {
         var mdF = modeOf(m, A), vF = { a: m.name, b: A.name };
         t += ST.fmt(pk(R.FORCE[mdF]), vF) + ST.fmt(pk(R.FREACT[A.persona] || R.FREACT.gentle), { a: A.name, m: m.name });
         if (S.eroOn) t += HK.ThickEro.fill(S, ST.fmt(pk(R.FORCE_ERO[mdF]), vF), m, A);

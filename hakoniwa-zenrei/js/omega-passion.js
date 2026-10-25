@@ -295,7 +295,7 @@
       var keep = r.aff * 0.8 + r.trust * 0.4 + a.tr.np * 35 + a.tr.ac * 10 - a.tr.cp * 25 - a.tr.jealous * 35 - 25 - (how === 'flaunt' ? 15 : 0) + (how === 'confess' ? 15 : 0) + (BD.bonded(ctx, a, b) ? 25 : 0);
       ctx.mod(a, d, { ten: 30, aff: -25, trust: -30 });
       ctx.stress(a, 30);
-      if (keep > ctx.rng() * 130) {
+      if (keep > ctx.rng() * 130 * HK.Dark.f(ctx, 'breakup')) {
         pf.forgiven = (pf.forgiven || 0) + 1;
         ctx.mod2(a, b, { trust: -22, ten: 14 }, { trust: 6, ten: 6 });
         t += ctx.pick(FOUND.forgive);

@@ -50,7 +50,7 @@
       var t = '深夜、' + tgt.name + 'の部屋に何者かが忍び込んだ。――廊下で張っていた' + g.name + 'が、その影に飛びかかった。' + TL.line(g, 'LH_GUARD', tgt);
       rel(S, g, tgt, '守った', 'obsess');
       c.m.sus = clamp(c.m.sus + 20, 0, 100);
-      if (rng() < 0.6 + Y.skill(g, 'fight') * 0.3) {
+      if (rng() < HK.Dark.live(S, 0.6 + Y.skill(g, 'fight') * 0.3, 'kill')) {
         var hint = Y.gain(S, g, 'obs');
         ST.key(S, ST.say(S, { actors: [g, tgt], tag: '愛憎', kind: 'climax', text: t + '揉み合いの末、影は窓から吹雪の中へ逃げていった。' + g.name + 'は、' + tgt.name + 'の無事を確かめると、何も言わずに部屋を出ていった。' + (hint ? '――' + hint + '。' : ''), why: '愛憎（' + FD.label(S, g, tgt) + '）。憎んでいても、誰かに奪われるのは許せない――犯行を防いだ（犯人への疑い +20）', mag: 36 }), g.name + 'が' + tgt.name + 'を守った');
         return true;
@@ -124,7 +124,7 @@
     var rng = S.rng, ps = pairs(live, function (a, b) { return FD.hateStrong(S, a, b) && !a.hateDone; });
     if (!ps.length || !S.kills.length) return false;
     var pr = rng.pick(ps), a = pr[0], b = pr[1];
-    if (rng() > 0.05 + a.tr.aggr * 0.06 + a.tr.cold * 0.05 + a.m.fear / 1500) return false;
+    if (rng() > (0.05 + a.tr.aggr * 0.06 + a.tr.cold * 0.05 + a.m.fear / 1500) * HK.Dark.f(S, 'grudge')) return false;
     a.hateDone = true;
     rel(S, a, b, '憎んでいる', 'enemy');
     var lock = rng() < 0.5;

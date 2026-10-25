@@ -33,6 +33,7 @@
     var scen = HK.SCENARIOS[scenId], env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
     env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
+    env.heavy = HK.Dark ? HK.Dark.on(input.env) : 'normal';   /* 展開の重さ（mood-dial.js。全体の設定） */
     var S = { scen: scen, rng: HK.rng(input.seed), env: env, log: [], hist: [], turns: [], recent: [], flags: {}, cnt: {}, q: [], step: 0, label: '' };
     S.h = K.hero(S, input.chars[0], (input.perChar && input.perChar[0]) || {});
     S.party = [S.h];
@@ -138,6 +139,7 @@
   };
   K.finish = function (S, input, E, advice, extra) {
     var h = S.h;
+    if (E && Array.isArray(E.lines) && HK.Dark && HK.Dark.note(S)) E.lines.push(HK.Dark.note(S));   /* 展開の重さ（mood-dial.js）：ふつう以外なら結末に一行 */
     var hero = {
       i: 0, name: h.name, eg: h.eg, memo: h.memo, top: h.top, persona: h.persona, tone: h.tone, stats: h.stats, tr: h.tr,
       action: h.action.label, goal: h.goal.label, goalId: h.goal.id, autoAction: h.autoAction, autoGoal: h.autoGoal,

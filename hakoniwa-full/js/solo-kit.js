@@ -33,6 +33,7 @@
     var scen = HK.SCENARIOS[scenId], env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
     env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
+    env.heavy = HK.Dark ? HK.Dark.on(input.env) : 'normal';   /* 展開の重さ（mood-dial.js。全体の設定） */
     var S = { scen: scen, rng: HK.rng(input.seed), env: env, log: [], hist: [], turns: [], recent: [], flags: {}, cnt: {}, q: [], step: 0, label: '' };
     S.h = K.hero(S, input.chars[0], (input.perChar && input.perChar[0]) || {});
     S.party = [S.h];
@@ -146,6 +147,7 @@
   };
   K.finish = function (S, input, E, advice, extra) {
     var h = S.h;
+    if (E && Array.isArray(E.lines) && HK.Dark && HK.Dark.note(S)) E.lines.push(HK.Dark.note(S));   /* 展開の重さ（mood-dial.js）：ふつう以外なら結末に一行 */
     var hero = {
       i: 0, name: h.name, eg: h.eg, memo: h.memo, top: h.top, persona: h.persona, tone: h.tone, stats: h.stats, tr: h.tr,
       action: h.action.label, goal: h.goal.label, goalId: h.goal.id, autoAction: h.autoAction, autoGoal: h.autoGoal,
@@ -184,7 +186,7 @@
       L('{a}は柔らかく眉を下げたまま、甘く震えて達した。|{a}は果てたあと、「困ったわね」と頬を押さえた。|{a}は抗うより先に、とろりと果ててしまった。'),
       L('{a}は優しい吐息を漏らしながら、ゆっくりと果てた。|{a}は果てたあと、満ち足りたように目を細めた。|{a}は波を拒まず、包まれるように達した。'),
       L('{a}は微笑んだまま、深く長く果てた。|{a}は果てる瞬間、「気持ちいいわ」と素直に口にした。|{a}は穏やかな顔のまま、何度も震えて達した。'),
-      L('{a}は慈しむように熱を受け入れ、何度目かの波に沈んで果てた。|{a}は果てて、蕩けきった笑みを浮かべた。|{a}の柔らかな声は、もう甘い喘ぎにしかならなかった。')],
+      L('{a}は慈しむように熱に身を委ね、何度目かの波に沈んで果てた。|{a}は果てて、蕩けきった笑みを浮かべた。|{a}の柔らかな声は、もう甘い喘ぎにしかならなかった。')],
     devoted: [L('{a}は「だ、大丈夫です」と言いながら、こらえきれずに果てた。|{a}は唇を噛んだまま、小さく震えて達した。|{a}は果てたあと、申し訳なさそうに目を伏せた。'),
       L('{a}は「ごめんなさい」と何度も謝りながら達した。|{a}は健気に耐えたぶん、大きな波に呑まれて果てた。|{a}は果てたあと、潤んだ目で息を整えた。'),
       L('{a}は我慢するのをやめて、素直に果てた。|{a}は果てたあと、ほっとしたように小さく笑った。|{a}は「よかった」と呟きながら達した。'),

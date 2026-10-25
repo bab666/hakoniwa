@@ -70,7 +70,7 @@
     if (E0.bonus) S.gBonus = (S.gBonus || 0) + E0.bonus;
     if (E0.flag) S.gf[E0.flag] = (S.gf[E0.flag] || 0) + 1;
     if (E0.clue) { var ct = giveClue(S, a); if (ct) { text += ct; why += '（手がかり ' + S.found.length + '/' + S.G.clues.length + '）'; } }
-    if (E0.die && rng() < E0.die) {
+    if (E0.die && rng() < E0.die * HK.Dark.f(S, 'kill')) {
       C.die(S, a, S.G.call + 'の' + tag + 'で', E0.dt || ['{a}は、それきり動かなくなった。'], text);
       return true;
     }

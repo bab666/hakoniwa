@@ -258,6 +258,7 @@
     var noSx = h.gender === 'x';
     function fw(arr) { var a2 = noSx ? arr.filter(function (t) { return t.indexOf('{sx}') < 0; }) : arr; return K.fmt(S, K.pick(S, a2.length ? a2 : arr)).replace(/\{sx\}/g, sx); }
     if (wrong) S.k = 1.25 * 0.85;
+    S.k *= HK.Dark.f(S, 'fall');   /* 展開の重さ（mood-dial.js）：穏やかほど堕ちが遅い */
     var sus = 0, noticed = false, deceived = 0, stayed = false, left = false, fell = false, asked = false;
     /* 描写を軽めに：快楽に負けたあとは暗転して回数だけ。最中の絶頂は短い一文に */
     /* 描写の有無（lewd-unify.js）：ほのめかす＝軽め（暗転）。設定をそろえる前の入力は「行為の描写」を見る */

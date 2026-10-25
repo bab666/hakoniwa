@@ -81,7 +81,7 @@
     letgo: L('{b}と{c}が並んで笑っているのを見ても、{a}の胸はもう、前ほどは痛まなかった。「お幸せに」と小さく呟いて、{a}は自分の場所へ戻った。|{a}は{b}への想いを、心のいちばん奥の引き出しにしまった。捨てることはできなかった。でも、しまうことはできた。|ある朝、{a}は{b}のことを考えずに目を覚ましている自分に気づいた。少しだけ寂しくて、少しだけほっとした。')
   };
 
-  function mk(id, cat, w, when, run) { return { id: id, cat: cat, scope: 'pair', mini: true, sig: true, when: when, w: w, run: run }; }
+  function mk(id, cat, w, when, run) { return { id: id, cat: cat, scope: 'pair', mini: true, sig: true, when: when, w: /^hb_(?:comfort|letgo)$/.test(id) ? w : function (ctx, a, b) { return w(ctx, a, b) * HK.Dark.f(ctx, 'heartbreak'); }, run: run }; }
   var LIST = HK.Heartbreak = [
     /* 知る：想う相手が、ほかの誰かと恋人になった（または心を決めていた） */
     mk('hb_news', 'solo', function () { return 4; },

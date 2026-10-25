@@ -319,7 +319,7 @@
       if (l.type === 'flat' && l.calm && s >= l.crashAt) {
         l.calm = false; l.lv = Math.min(100, l.lv + 15); l.lv0 = Math.max(l.lv0, l.lv); l.last = s; addStress(o, 25);
         t = { text: fill(ctx.pick(l.dev ? DEV_CRASH[l.dev] : CRASH), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '淡々としていた分、あとから崩れた'), mag: 25 };
-      } else if (l.type === 'hold' && !l.broke && l.lv >= 40 && (o.stress >= 65 || s - l.at >= 4) && ctx.rng() < 0.5) {
+      } else if (l.type === 'hold' && !l.broke && l.lv >= 40 && (o.stress >= 65 || s - l.at >= 4) && ctx.rng() < 0.5 * HK.Dark.f(ctx, 'madness')) {
         l.broke = true; l.last = s; addStress(o, -10);
         t = { text: fill(ctx.pick(l.dev ? DEV_BREAK[l.dev] : BREAK), vars(ctx, l, opt, { a: o.name })), why: why(o, l, '人前では抱え込んでいたものが、一人のときに崩れた'), mag: 22 };
       } else if (!l.accepted && !l.calm && l.lv < Math.max(24, l.lv0 * (l.dev ? 0.35 : 0.5)) && s - l.at >= Math.max(3, (n - l.at) * (l.dev ? 0.7 : 0.5))) {
@@ -385,7 +385,7 @@
     scen.events.push({
       id: 'gf_reckless', cat: 'solo', scope: 'solo', noOdd: true,
       when: function (ctx, a) { var l = lossOf(a); return !!l && l.lv >= 50 && !l.calm && l.reckless < 2 && l.type !== 'flat' && ctx.stepIndex - l.at >= 1; },
-      w: function (ctx, a) { var l = lossOf(a); return (0.2 + a.tr.impulse * 0.8 + (l.type === 'blame' || l.type === 'bright' ? 0.4 : 0)) * (opt.w || 1); },
+      w: function (ctx, a) { var l = lossOf(a); return (0.2 + a.tr.impulse * 0.8 + (l.type === 'blame' || l.type === 'bright' ? 0.4 : 0)) * (opt.w || 1) * HK.Dark.f(ctx, 'harm'); },
       run: function (ctx, a) {
         var l = lossOf(a), c = nearFriend(ctx, a, null);
         l.reckless++; l.last = ctx.stepIndex; addStress(a, 5);

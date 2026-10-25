@@ -271,6 +271,7 @@
         a = rest[0];
         var h = gHeat(a);
         k = h > 0.58 ? 'rage' : !gTie(ctx, a, b) && (a.tr.cold > 0.55 || (h > 0.42 && a.tr.np < 0.4)) ? 'cold' : 'ache';
+        if (k === 'cold' && HK.Dark.skip(ctx, 'breakup')) k = 'ache';   /* 展開の重さ（mood-dial.js）：穏やかでは、別れを選ばないこともある */
       } else {
         /* 合コンの中でできた恋人を {c} に、もう一人を {a} に（二人とも設定の恋人という組は出さない） */
         c = ps.filter(function (o) { return !gTie(ctx, b, o); })[0];
@@ -592,7 +593,7 @@
           var t = ctx.pick(G_TWO[k]) + ctx.pick(G_TWO_C[ck]);
           /* 問い詰めた側が、その場で別れを選ぶことがある（合コンの中でできた恋人どうしのときだけ）。好意・信頼・NP で踏みとどまり、嫉妬・CP で切る */
           var keep = rc.aff * 0.8 + rc.trust * 0.4 + a.tr.np * 35 + a.tr.ac * 10 - a.tr.cp * 25 - a.tr.jealous * 35 - (ck === 'dodge' ? 15 : 0) + 15;
-          var end = k === 'press' && !gTie(ctx, a, c) && keep < ctx.rng() * 100;
+          var end = k === 'press' && !gTie(ctx, a, c) && keep < ctx.rng() * 100 * HK.Dark.f(ctx, 'breakup');
           if (end) { pc.couple = false; pc.gTwoBroke = true; ctx.mod2(a, c, { aff: -14, ten: 10 }, { aff: -4, ten: 6 }); t += ctx.pick(G_TWO_END); }
           var KN = { spar: '笑顔のさや当て', grab: c.name + 'の取り合い', press: c.name + 'を問い詰めた', sulk: '何も言えずに見ていた' }, CN = { soothe: 'なだめようとした（NP）', shrink: '縮こまった', dodge: 'はぐらかした（ドライさ）' };
           return { text: ctx.t(t, a, b, c), with: [b, c], mag: end ? 32 : 24,

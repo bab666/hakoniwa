@@ -221,7 +221,7 @@
     ST.budget(S, 2 * T.length);
     T.forEach(function (p) {
       var v = { a: p.name, h: p.h };
-      var t = ST.fmt(ST.pick(S, p.T.intro), v) + (p.consent && SM.CONSENT ? ST.fmt(ST.pick(S, SM.CONSENT), v) : '') + ST.fmt(ST.pick(S, p.M.intro), v);
+      var t = ST.fmt(ST.pick(S, p.T.intro), v) + (p.consent && SM.CONSENT ? ST.fmt(ST.pick(S, SM.CONSENT.filter(function (x) { return !(p.noR18 || p.noSex) || !/エッチ/.test(x); })), v) : '') + ST.fmt(ST.pick(S, p.M.intro), v);
       say(p, { tag: p.T.label, text: t, why: '催眠をかけるのは' + p.h + '（' + p.T.label + (p.hf ? '・女性' : '') + '）。' + ST.fmt(p.T.motive, v) + (p.consent ? '／始める前に、二人で同意していた（内容のスイッチ「合意のない展開」が切）' : p.noForce ? '／内容のスイッチ「合意のない展開」が切なので、いたずらの暗示だけ' : '') });
       var o = say(p, { tag: '診断', text: p.name + 'のかかりやすさは' + Math.round(p.sus * 100) + '％。弱い暗示は「' + p.weak.map(function (k) { return SM.SUG[k].label; }).join('」「') + '」。', why: 'AC・FCが高いほど、A・CPが低いほどかかりやすい／' + p.M.name + 'との相性・' + p.h + 'への警戒の薄さ・方針「' + p.action.label + '」' }, '', true);
       ST.key(S, o, p.name + 'のかかりやすさ');
@@ -263,7 +263,7 @@
           p.used['ev_' + e.id] = (p.used['ev_' + e.id] || 0) + 1; p.cnt.ev++;
           var fx = e.fx;
           if (fx.depth) p.m.depth = clamp(p.m.depth + fx.depth, 0, 100);
-          if (fx.fall) p.m.fall = clamp(p.m.fall + fx.fall, 0, 100);
+          if (fx.fall) p.m.fall = clamp(p.m.fall + fx.fall * HK.Dark.f(S, 'fall'), 0, 100);
           if (fx.record) p.recorded = true;
           if (fx.aware) p.halfAware = true;
           if (fx.guilt) p.guilt = true;
@@ -304,7 +304,7 @@
           t += fb;
           t += tq(p);
           p.m.plea = clamp(p.m.plea + (f.plea || 0) * p.sens * (full ? 1 : 0.5), 0, 120);
-          p.m.fall = clamp(p.m.fall + (f.fall || 0) * (full ? 1 : 0.45), 0, 100);
+          p.m.fall = clamp(p.m.fall + (f.fall || 0) * (full ? 1 : 0.45) * HK.Dark.f(S, 'fall'), 0, 100);
           var cl = full ? (f.climax || 0) : 0;
           if (p.m.plea >= 100) { cl++; p.m.plea = 30; }
           /* 小説調の山場：本番の暗示を受け入れて達したときは、段落に分けて厚く（solo-thick4.js） */
@@ -315,7 +315,7 @@
           var thick = !big && full && g.lewd && (cl ? rng() < 0.85 : rng() < 0.3) && HK.Thick4 && HK.Thick4.ok(S, lew) ? thickSug(S, p, fb, vk) : null;
           if (thick) { t = t.replace(fb, thick); if (!cl) cl = 1; }
           if (cl) {
-            p.cnt.climax += cl; p.m.fall = clamp(p.m.fall + cl * 3, 0, 100);
+            p.cnt.climax += cl; p.m.fall = clamp(p.m.fall + cl * 3 * HK.Dark.f(S, 'fall'), 0, 100);
             /* 男性向けの文：本文に絶頂の喘ぎ（{m2}）がなければ、態度ごとの崩れた声を足す */
             if (lew !== 'low' && eroOn(S) && !aTop) { if (!big && !/\{m2\}/.test(body)) t += p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; }
             else if (!thick && !big && lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + (aTop && SM.CLIMAX_TOP ? fresh(p, topVoice(p, 'CLIMAX', [])) : '「' + fresh(p, topL(p, V.CLIMAX[p.persona])) + '」');
@@ -610,6 +610,7 @@
     /* 中に出されて我に返ったあと：その場で通報した人は通報、流された人は快楽堕ちへ寄る */
     if (p.reportedNow) return 'report';
     if (p.swept) { w.angry *= 0.15; w.report = 0; w.revenge *= 0.2; w.counter = 0; w.shy *= 0.4; w.fall = w.fall * 2 + 1; if (p.bad) w.depend = (w.depend || 0) + 0.8; w.accept *= 1.3; w.dazed *= 1.2; w.confused *= 0.7; }
+    w.fall *= HK.Dark.f(S, 'fall'); if (w.depend) w.depend *= HK.Dark.f(S, 'fall');   /* 展開の重さ（mood-dial.js） */
     if (p.fled) { w.shy += 0.4; w.angry += 0.2; w.fall *= 0.5; w.sweet *= 0.5; w.confused += 0.3; w.accept *= 0.5; }
     /* 向きの決まらない組・いたずらだけ：体の関係を受け入れる結末にはしない（いたずらとして受け流すのは残す） */
     if (p.noSex && !p.cnt.lewd) w.accept *= 0.6;

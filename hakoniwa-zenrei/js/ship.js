@@ -300,17 +300,17 @@
           ST.key(S, o, d.name + 'の正体が明らかになった');
         } else if (stg === 1 && x.kind === 'life') ST.key(S, o, '生命体「' + d.name + '」を見つけた');
         if (R18ON && r18on(S) && x.kind === 'life' && rng() < S.env.slewd / 100 * 0.35) alienR18(S, a, d);
-        if (x.kind === 'life' && /parasite|symbiotic/.test(d.kind) && rng() < 0.2) infect(S, a, d.name);
+        if (x.kind === 'life' && /parasite|symbiotic/.test(d.kind) && rng() < 0.2 * HK.Dark.f(S, 'kill')) infect(S, a, d.name);
       } else {
         var hurt = 12 + rng.int(18) + (x.kind === 'life' && d.kind === 'hostile' ? 8 : 0);
-        var dead = rng() < 0.03 + S.env.danger / 100 * 0.2 + d.rare * 0.02 + (x.kind === 'life' && d.kind === 'hostile' ? 0.08 : 0);
+        var dead = rng() < (0.03 + S.env.danger / 100 * 0.2 + d.rare * 0.02 + (x.kind === 'life' && d.kind === 'hostile' ? 0.08 : 0)) * HK.Dark.f(S, 'kill');
         var v = tm.length > 1 && rng() < 0.4 ? tm[1] : a;
         if (dead) { die(S, v, Pn.name + 'の' + KIND_JP[x.kind] + 'の調査中に', t + F(d.death, { v: v.name, w: (tm.filter(function (q) { return q !== v; })[0] || { name: '仲間' }).name, x: Pn.name })); continue; }
         a.m.hp = clamp(a.m.hp - hurt, 1, 100); a.m.fear = clamp(a.m.fear + 10, 0, 100);
         t += F(x.kind === 'res' ? d.trouble : d.bad, { a: a.name, x: Pn.name });
         ST.say(S, { actors: tm, tag: '探索失敗', text: t, why: lab + 'の調査に失敗（' + a.name + 'の体力 -' + hurt + '）', mag: 20 });
         heal(S, a);
-        if (x.kind === 'life' && rng() < 0.35) infect(S, a, d.name);
+        if (x.kind === 'life' && rng() < 0.35 * HK.Dark.f(S, 'kill')) infect(S, a, d.name);
         else if (rng() < 0.12 + S.env.danger / 100 * 0.1) { lose(S, a); continue; }
       }
       if (rng() < 0.4) ST.sayB(S, { actors: tm, text: F(pk(S, SH.T.BACK), { a: a.name, x: Pn.name }), why: '' }, names(tm) + 'が帰船');
@@ -341,7 +341,7 @@
     else if (sp[tr.stat] != null) sp[tr.stat] = clamp(sp[tr.stat] - dmg, 0, 100);
     S.ship.morale = clamp(S.ship.morale - 6, 0, 100);
     /* 残りが二人以下なら、死に至るほどの事故は起きにくい（全滅は大きなトラブルの doom で） */
-    if (rng() < (0.06 + S.env.danger / 100 * 0.32) * (live(S).length <= 2 ? 0.35 : live(S).length === 3 ? 0.7 : 1)) {
+    if (rng() < (0.06 + S.env.danger / 100 * 0.32) * (live(S).length <= 2 ? 0.35 : live(S).length === 3 ? 0.7 : 1) * HK.Dark.f(S, 'kill')) {
       var v = rng.pick(live(S)), w = live(S).filter(function (q) { return q !== v; })[0];
       return die(S, v, tr.name + 'で', t + F(tr.ng, { a: fx.name }) + F(tr.death, { v: v.name, w: w ? w.name : '仲間' }));
     }
@@ -357,7 +357,7 @@
     if (!D) {
       if (m < 2 || S.doomDone) return;
       var n = S.P.length, k = n >= 5 ? 1.5 : n === 4 ? 0.8 : n === 3 ? 0.3 : 0;
-      if (rng() >= (0.012 + S.env.danger / 100 * 0.02) * k) return;
+      if (rng() >= (0.012 + S.env.danger / 100 * 0.02) * k * HK.Dark.f(S, 'wipe')) return;
       var d = rng.pick(DM.filter(function (y) { return !y.planet || S.planet; }));
       S.doom = { d: d, tries: 0, at: m };
       S.ship.morale = clamp(S.ship.morale - 10, 0, 100);
@@ -370,6 +370,7 @@
     var a = best(S, D.d.skill) || L0[0], help = L0.filter(function (q) { return q !== a && skill(q, D.d.skill) >= 0.45; }).length;
     var ch = 0.38 + skill(a, D.d.skill) * 0.3 + Math.min(help, 2) * 0.05 - S.env.danger / 100 * 0.1 - D.tries * 0.05;
     D.tries++;
+    ch = HK.Dark.live(S, ch, 'wipe');   /* 展開の重さ（mood-dial.js）：全滅を食い止める見込み */
     var SKJ = { repair: '修理', med: '医療', sci: '科学', fight: '戦い' }[D.d.skill] || '';
     if (rng() < ch) {
       S.doom = null; S.doomDone = true; a.cnt.fix++;
@@ -403,7 +404,7 @@
       var o = ST.say(S, { actors: [a], tag: '未知との遭遇：' + en.name, text: t, why: a.name + 'の判断（科学・航法）', mag: 26 });
       return ST.key(S, o, en.name + 'に出会った');
     }
-    if (en.death && rng() < 0.15 + S.env.danger / 100 * 0.15) { var v = rng.pick(live(S)); return die(S, v, en.name + 'に遭遇して', t + F(en.ng, { a: a.name }) + F(en.death, { v: v.name, w: a === v ? '仲間' : a.name })); }
+    if (en.death && rng() < (0.15 + S.env.danger / 100 * 0.15) * HK.Dark.f(S, 'kill')) { var v = rng.pick(live(S)); return die(S, v, en.name + 'に遭遇して', t + F(en.ng, { a: a.name }) + F(en.death, { v: v.name, w: a === v ? '仲間' : a.name })); }
     S.ship.hull = clamp(S.ship.hull - 10, 0, 100); a.m.hp = clamp(a.m.hp - 10, 1, 100);
     ST.say(S, { actors: [a], tag: '未知との遭遇：' + en.name, text: t + F(en.ng, { a: a.name }), why: '対応を誤った（船体 -10）', mag: 22 });
   }
@@ -501,20 +502,20 @@
     live(S).filter(function (p) { return p.inf; }).forEach(function (a) {
       if (!alive(a)) return;
       var dr = live(S).filter(function (q) { return q !== a && !q.inf; }).sort(function (x, y) { return skill(y, 'med') - skill(x, 'med'); })[0];
-      if (dr && rng() < 0.1 + skill(dr, 'med') * 0.4) {
+      if (dr && rng() < HK.Dark.live(S, 0.1 + skill(dr, 'med') * 0.4, 'kill')) {
         a.inf = 0; setRel(S, a, dr, 0.2); mark(S, a, dr, 'nurse'); stress(a, -10);
         ST.say(S, { actors: [dr, a], tag: '感染症', text: F(pk(S, C.INF_CURE), { a: a.name, b: dr.name, x: a.infSrc || '星の生き物' }), why: dr.name + 'の医療の腕 ' + Math.round(skill(dr, 'med') * 100), mag: 22 });
         return;
       }
-      if (rng() < 0.08 + a.m.hp / 100 * 0.1) { a.inf = 0; ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_SELF), { a: a.name }), why: '自分の体の力で持ち直した' }, a.name + 'は病に打ち勝った'); return; }
+      if (rng() < HK.Dark.live(S, 0.08 + a.m.hp / 100 * 0.1, 'kill')) { a.inf = 0; ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_SELF), { a: a.name }), why: '自分の体の力で持ち直した' }, a.name + 'は病に打ち勝った'); return; }
       a.inf++; a.m.hp = clamp(a.m.hp - 8 * a.inf, 1, 100); stress(a, 8);
       live(S).forEach(function (q) { if (q !== a) stress(q, 3); });
-      if (a.inf >= 3 && rng() < 0.35 + S.env.danger / 100 * 0.2) { var w = closest(S, a) || { name: '仲間' }; die(S, a, '感染症で', F(pk(S, C.INF_DEATH), { v: a.name, w: w.name })); return; }
+      if (a.inf >= 3 && rng() < (0.35 + S.env.danger / 100 * 0.2) * HK.Dark.f(S, 'kill')) { var w = closest(S, a) || { name: '仲間' }; die(S, a, '感染症で', F(pk(S, C.INF_DEATH), { v: a.name, w: w.name })); return; }
       ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_WORSE), { a: a.name }), why: '病状が悪化した（段階 ' + a.inf + '・体力 ' + Math.round(a.m.hp) + '）' }, a.name + 'の病状が悪化した');
       /* うつる：近しい人ほど、そばにいるのでうつりやすい */
       var cand = live(S).filter(function (q) { return q !== a && !q.inf; });
       var q = cand.length ? HK.weighted(rng, cand, function (z) { return 0.1 + Math.max(0, bond(S, z, a)) * 1.5 + (lover(S, z, a) ? 1 : 0); }) : null;
-      if (q && rng() < 0.12 + Math.max(0, bond(S, q, a)) * 0.25 + (lover(S, q, a) ? 0.15 : 0)) {
+      if (q && rng() < (0.12 + Math.max(0, bond(S, q, a)) * 0.25 + (lover(S, q, a) ? 0.15 : 0)) * HK.Dark.f(S, 'kill')) {
         q.inf = 1; q.infSrc = a.infSrc; q.cnt.inf = (q.cnt.inf || 0) + 1; stress(q, 10);
         ST.say(S, { actors: [a, q], tag: '感染拡大', text: F(pk(S, lover(S, a, q) && !family(S, a, q) && C.INF_SPREAD_LOVE ? C.INF_SPREAD_LOVE : C.INF_SPREAD), { a: a.name, b: q.name }), why: q.name + 'は' + a.name + 'のそばにいた（関係 ' + Math.round(bond(S, q, a) * 100) + '）', mag: 26 });
       }
@@ -586,14 +587,14 @@
     /* 異種族の誘い（R18）：友好的だと思ってついていったら、言葉が通じず、誘われていたとは気づかなかった */
     if (r18on(S) && SH.X && live(S).length >= 2 && (!HK.Content || HK.Content.ok(S, 'force')) && rng() < S.env.slewd / 100 * 0.15) lure(S);
     /* 研究のための誘拐（文明のある星） */
-    if (Pn.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(Pn.civ.d.state) && live(S).length >= 2 && rng() < 0.05 + S.env.danger / 100 * 0.08) {
+    if (Pn.civ.st >= 1 && /primitive|living|advanced|transcendent/.test(Pn.civ.d.state) && live(S).length >= 2 && rng() < (0.05 + S.env.danger / 100 * 0.08) * HK.Dark.f(S, 'raid')) {
       var v = HK.weighted(rng, live(S), function (q) { return 0.5 + q.cnt.find * 0.3; });
       v.away = 'taken'; v.awayM = 0; v.cnt.taken = (v.cnt.taken || 0) + 1; stress(v, 20);
       var o3 = ST.say(S, { actors: [v], tag: '誘拐', kind: 'climax', text: F(pk(S, C.TAKEN), { a: v.name, x: Pn.civ.d.name }), why: Pn.civ.d.name + '（' + CIV_JP[Pn.civ.d.state] + '）が、研究のために連れ去った', mag: 38 });
       ST.key(S, o3, v.name + 'が連れ去られた');
     }
     /* 星の生命体からの感染（調査とは別に） */
-    if (Pn.life.length && live(S).length && rng() < 0.03 + S.env.danger / 100 * 0.04) { var lf = rng.pick(Pn.life); if (lf.st >= 1) infect(S, rng.pick(live(S)), lf.d.name); }
+    if (Pn.life.length && live(S).length && rng() < (0.03 + S.env.danger / 100 * 0.04) * HK.Dark.f(S, 'kill')) { var lf = rng.pick(Pn.life); if (lf.st >= 1) infect(S, rng.pick(live(S)), lf.d.name); }
   }
   /* ---------- 絆が動く出来事 ---------- */
   function pairs(L0) { var o = []; L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i) o.push([a, b]); }); }); return o; }

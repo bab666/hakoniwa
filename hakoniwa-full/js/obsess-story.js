@@ -64,7 +64,7 @@
   /* 一回ぶん。起きなければ null */
   O.storyTick = function (S, live, opt) {
     opt = opt || {};
-    var rng = S.rng, pack = opt.pack || null, pace = opt.pace || 1, safe = !!HK.SAFE_ON;
+    var rng = S.rng, pack = opt.pack || null, pace = (opt.pace || 1) * HK.Dark.pace(S), safe = !!HK.SAFE_ON;
     curId = (S.scen && S.scen.id) || opt.id || '';
     live = (live || []).filter(alive);
     if (live.length < 2) return null;
@@ -77,7 +77,7 @@
         var s = st(S, a, b), nv = clamp(s.lv + (0.6 + (a.tr.jealous || 0.4) * 3) * pace * (yanT(S, a, b) ? 0.6 : 1), 0, 100);
         /* 関係「執着」を設定していない組は嫉妬どまり（obsess-kit.js の NAT_CAP）。嫉妬深い人の気持ちが高まったまれな場合だけ、その上へ */
         if (!yanT(S, a, b) && nv > (O.NAT_CAP || 34)) {
-          if (s.surge == null) s.surge = (a.tr.jealous || 0) >= 0.7 && rng() < (O.SURGE_P || 0.3);
+          if (s.surge == null) s.surge = (a.tr.jealous || 0) >= 0.7 && rng() < (O.SURGE_P || 0.3) * HK.Dark.f(S, 'cage');
           if (!s.surge) nv = Math.max(s.lv, Math.min(nv, O.NAT_CAP || 34));
         }
         s.lv = nv;
@@ -106,7 +106,7 @@
       return { actors: [b, a], tag: '執着', text: (opt.place || '') + text, why: b.name + 'の気持ち（' + { unaware: '気づいていない', afraid: '怖がっている', hate: '嫌っている', confused: '困惑している', accept: '受け入れている', mutual: '共依存' }[sn] + '）と' + a.name + 'の執着（' + Math.round(s.lv) + '）', mag: 12, cat: sn === 'accept' || sn === 'mutual' ? 'romance' : 'conflict' };
     }
     /* 暴走（一度まで。死には至らない） */
-    if (stg >= 3 && !s.climax) {
+    if ((stg >= 3 || (stg >= 2 && s.lv >= 70 && HK.Dark.on(S) === 'dark')) && !s.climax && !HK.Dark.skip(S, 'cage')) {
       s.climax = 1;
       var opts = [['cage', 2], ['harm', c ? 1.5 : 0], ['shinju', ty === 'depend' ? 2 : 0.8]].filter(function (o) { return o[1] > 0; });
       var k = HK.weighted(rng, opts, function (o) { return o[1]; })[0];

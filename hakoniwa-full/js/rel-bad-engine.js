@@ -172,7 +172,7 @@
           if (D.need3 && !third(ctx, a, b)) return false;
           return true;
         },
-        w: function (ctx, a, b) { return D.w(ctx, a, b) * (MUL[id] || 1); },
+        w: function (ctx, a, b) { return D.w(ctx, a, b) * (MUL[id] || 1) * (D.cat === 'conflict' ? HK.Dark.f(ctx, 'grudge') : 1); },
         run: function (ctx, a, b) {
           RK.mark(ctx, a, b, k);
           var c = third(ctx, a, b);

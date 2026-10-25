@@ -55,6 +55,7 @@ js/tone-new2-rows.js
 js/engine.js
 js/emotion.js
 js/content.js
+js/mood-dial.js
 js/mob.js
 js/fwb.js
 js/scenarios-a.js

@@ -84,6 +84,7 @@
     var avgA = live.reduce(function (s0, p) { return s0 + p.tr.a; }, 0) / live.length;
     var poss = live.filter(function (p) { return p.possessed; }).length;
     var chance = clamp(0.3 + skill(rite, 'rite') * 0.33 + live.length * 0.02 + avgA * 0.1 - S.fake * 0.14 - (S.partial ? 0.15 : 0) - poss * 0.1 + (S.sealBonus || 0) + bonus, 0.05, 0.92);
+    chance = clamp(chance * HK.Dark.pick(S, 1, 1, 0.8), 0.05, 0.92);   /* 展開の重さ（mood-dial.js）：重いでは封印がしくじりやすい */
     var t = gx.t ? ST.fmt(gx.t, { a: rite.name }) : rite.name + 'が祠の前に進み出た。' + S.G.sol + '――';
     if (S.fake && rng() < 0.5) t += '途中で、誰かが記者の言葉を思い出して手を止めかけた。';
     var why = '成功率 ' + Math.round(chance * 100) + '％（' + rite.name + 'の儀式の力・人数' + live.length + (bonus - (gx.bonus || 0) > 0 ? '・呼び出した神の助け' : bonus - (gx.bonus || 0) < 0 ? '・術者のすり替え' : '') + (S.fake ? '・信じた偽情報 ' + S.fake : '') + (S.partial ? '・手がかり不足' : '') + (poss ? '・取り憑かれた仲間' : '') + (gx.why ? '・' + gx.why : '') + '）';
@@ -91,7 +92,7 @@
       S.result = 'sealed';
       var o2 = ST.say(S, { actors: live.concat(taken), tag: '封印', kind: 'climax', text: t + (gx.okT || '地の底から響いていた唸り声が、ふっと途絶えた。') + pl(S, PL, 'out', M.COLLAPSE), why: why + '――成功', mag: 50 });
       ST.key(S, o2, '封印に成功');
-      live.forEach(function (p) { if (alive(p) && rng() < 0.06 - p.stats.luck * 0.005) C.die(S, p, '崩れる' + (PL ? PL.noun : '洞窟') + 'で', PL && PL.id !== 'cave' ? PL.die : M.COLLAPSE_DIE); });
+      live.forEach(function (p) { if (alive(p) && rng() < (0.06 - p.stats.luck * 0.005) * HK.Dark.f(S, 'kill')) C.die(S, p, '崩れる' + (PL ? PL.noun : '洞窟') + 'で', PL && PL.id !== 'cave' ? PL.die : M.COLLAPSE_DIE); });
       var minute = h + 1 + rng() * 1.5, outs = S.P.filter(function (p) { return p.alive && !p.out; });
       outs.forEach(function (p) { p.taken = false; p.out = true; p.esc = minute; p.fate = p.bound ? '縛られたまま連れ出された（' + JS.hm(minute) + '）' : '生還（' + JS.hm(minute) + '）'; });
       ST.say(S, { actors: outs, tag: '脱出', kind: 'climax', text: (taken.length ? '座敷牢から、' + C.names(taken) + 'が助け出された。' : '') + (bound.length ? '縛られた' + C.names(bound) + 'も、引きずるようにして連れ出した。' : '') + '霧が晴れ、山道の先に国道の明かりが見えた。一行は振り返らずに走った。', why: '生還 ' + outs.length + '人', mag: 40 });
@@ -100,7 +101,7 @@
     ST.say(S, { actors: live, tag: '失敗', text: t + (gx.ngT || 'しかし、何かが足りなかった。'), why: why + '――失敗', mag: 40 });
     if (manifest(S, h + 1, 0.42 + S.P.length * 0.04)) return;
     var vic = taken[0] || live.slice().sort(function (a, b) { return a.stats.luck - b.stats.luck; })[0];
-    C.sacrifice(S, vic, h + 1);
+    if (vic && !HK.Dark.skip(S, 'kill')) C.sacrifice(S, vic, h + 1); else if (vic && vic.taken) { vic.taken = false; vic.out = true; vic.esc = h + 1; vic.fate = '逃げ延びた（' + JS.hm(h + 1) + '）'; ST.say(S, { actors: [vic], tag: '救出', text: '祭壇へ引き出される直前、' + vic.name + 'の縄がゆるんだ。' + vic.name + 'は松明の列の隙間をすり抜け、闇の中へ転がり出た。そのまま、山道を駆け下りた。', why: '見張りの隙を突いて逃れた（展開の重さ：穏やか）', mag: 30 }); }   /* 展開の重さ（mood-dial.js）：穏やかでは、生贄の座が空くこともある */
     C.flee(S, h + 2);
   }
 
@@ -118,7 +119,7 @@
     if (S.counter) pm *= 0.35;
     var left = S.P.filter(function (p) { return p.alive && !p.out; });
     if (!left.length) return true;
-    if (rng() < pm) {
+    if (rng() < pm * HK.Dark.pick(S, 0.05, 1, 2)) {   /* 展開の重さ（mood-dial.js）：顕現した神が村ごと呑み込む */
       S.engulf = true;
       left.forEach(function (p) { p.alive = false; p.taken = false; p.fate = S.G.call + 'に呑み込まれた（' + JS.hm(h) + '）'; });
       var o2 = ST.say(S, { actors: left, tag: '全滅', kind: 'climax', text: fmtG(S, ST.pick(S, M.ENGULF)), why: '顕現した神が、村ごと呑み込んだ（' + Math.round(pm * 100) + '％）', mag: 56 });

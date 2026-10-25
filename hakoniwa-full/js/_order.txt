@@ -69,6 +69,7 @@ js/engine.js
 js/emotion.js
 js/emotion-r18.js
 js/content.js
+js/mood-dial.js
 js/mob.js
 js/ero-kit.js
 js/part-words.js

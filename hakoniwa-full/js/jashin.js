@@ -162,8 +162,8 @@
         /* 発狂中は動けない。そのぶん死の罠や村人の襲撃を引きやすい（jashin-special.js） */
         if (JS.SPEC && JS.SPEC.mad(p)) {
           var dg = JS.SPEC.danger(p);
-          if (rng() < trapRate(S, p, h) * dg) return trap(S, p, P.filter(alive), false);
-          if (rng() < (S.hostile / 100) * (night(h) ? 0.16 : 0.05) * dg * (S.shrineRage ? 1.8 : 1)) return attack(S, p, live);
+          if (rng() < trapRate(S, p, h) * dg * HK.Dark.f(S, 'kill')) return trap(S, p, P.filter(alive), false);
+          if (rng() < (S.hostile / 100) * (night(h) ? 0.16 : 0.05) * dg * (S.shrineRage ? 1.8 : 1) * HK.Dark.f(S, 'raid')) return attack(S, p, live);
           return JS.SPEC.act(S, p);
         }
         /* 渇いた吸血鬼は、ほかのことより先に血を求める */
@@ -172,10 +172,10 @@
         if (JS.MUNO && JS.MUNO.act(S, p, h, P.filter(alive))) return;
         var evp = env.ev / 100;
         var r = rng();
-        if (rng() < trapRate(S, p, h)) return trap(S, p, P.filter(alive), false);
+        if (rng() < trapRate(S, p, h) * HK.Dark.f(S, 'kill')) return trap(S, p, P.filter(alive), false);
         if (r < evp * 0.25) return S.FX && rng() < 0.5 ? godHorror(S, p) : scare(S, p);
         if (r < evp * 0.25 + 0.05 && !S.shrine && (p.goal.id === 'deny' || p.prank || p.tr.impulse > 0.6 || p.goal.id === 'content' || rng() < 0.15)) return shrine(S, p);
-        if (night(h) && rng() < (S.hostile / 100) * 0.16 * (p.action.id === 'alone' || p.goal.id === 'content' ? 1.8 : 1) * (S.shrineRage ? 1.8 : 1)) return attack(S, p, live);
+        if (night(h) && rng() < (S.hostile / 100) * 0.16 * (p.action.id === 'alone' || p.goal.id === 'content' ? 1.8 : 1) * (S.shrineRage ? 1.8 : 1) * HK.Dark.f(S, 'raid')) return attack(S, p, live);
         if ((p.goal.id === 'escape' || p.m.fear > 80) && rng() < 0.12) return escape(S, p, h);
         if (JS.GOALX && JS.GOALX.act(S, p, h, P.filter(alive))) return;
         if (JS.MAGE && JS.MAGE.act(S, p, h, P.filter(alive))) return;
@@ -248,7 +248,7 @@
     p.m.fear = clamp(p.m.fear + (p.prank ? 4 : 10) + (p.job === 'psychic' ? 6 : 0) - p.tr.cp * 4, 0, 100);
     var t = ST.fmt(ST.pick(S, JS.SCARE), { a: p.name }) + (p.prank ? ST.fmt(ST.pick(S, M.PRANK_ACT), { a: p.name }) : ST.fmt(ST.pick(S, JS.SCARE_REACT[p.top] || JS.SCARE_REACT.NP), { a: p.name }));
     ST.sayB(S, { actors: [p], tag: '怪異', text: t, why: '恐怖 ' + Math.round(p.m.fear), mag: 10 }, p.name + 'は怪異に遭った');
-    if (p.m.fear >= 90 && S.rng() < 0.4) {
+    if (p.m.fear >= 90 && S.rng() < 0.4 * HK.Dark.f(S, 'madness')) {
       p.panic = true;
       ST.say(S, { actors: [p], tag: '錯乱', text: p.name + 'は悲鳴を上げて民宿を飛び出し、闇の中へ走っていった。', why: '恐怖が限界を超えた（' + Math.round(p.m.fear) + '）', mag: 24 });
       p.action = JS.ACTIONS.filter(function (a) { return a.id === 'alone'; })[0];
@@ -271,7 +271,7 @@
     ST.key(S, o, p.name + 'が祠を壊した');
   }
   function tickCurse(S, p, h) {
-    if (p.curse != null && h - p.curse >= 8 && S.rng() < 0.18) {
+    if (p.curse != null && h - p.curse >= 8 && S.rng() < 0.18 * HK.Dark.f(S, 'kill')) {
       var save = P0(S).filter(function (q) { return alive(q) && q !== p && (q.job === 'priest' || q.job === 'psychic' || q.magic); })[0];
       if (save && S.rng() < 0.6) { p.curse = null; ST.say(S, { actors: [save, p], tag: 'お祓い', text: save.name + 'は' + p.name + 'の首の痣に手を当て、長い祝詞を唱えた。痣は、少しずつ薄れていった。', why: save.name + '（' + jobOf(save).label + '）が呪いを祓った', mag: 18 }); return; }
       die(S, p, '祠の呪いで', L('{a}の首の痣が、ついに喉元まで這い上がった。{a}は声も出せずに崩れ落ちた。|朝、{a}は布団の中で冷たくなっていた。首には、くっきりと手の形の痣が残っていた。'));
@@ -290,6 +290,7 @@
     var helper = near.sort(function (a, b) { return skill(b, 'fight') - skill(a, 'fight'); })[0];
     var def = skill(p, 'fight') + p.stats.luck * 0.05 + (helper ? skill(helper, 'fight') * 0.6 + 0.15 : 0) + (p.goal.id === 'protect' ? 0.05 : 0);
     var t = ST.fmt(ST.pick(S, JS.ATTACK), { a: p.name });
+    def = HK.Dark.live(S, def, 'raid');   /* 展開の重さ（mood-dial.js）：抵抗できる見込み */
     if (JS.MAGE && JS.MAGE.defend(S, p, live, t)) return;
     var roll = rng() * 1.1;
     if (p.foresee && roll > def) { p.foresee = false; return ST.say(S, { actors: [p], tag: '予見', text: t + '――しかし{a}は、昼間の占いで見た光景を思い出していた。{a}は一歩早く身をかわし、闇に紛れて逃げ延びた。'.replace(/\{a\}/g, p.name), why: '占い師の予見が、一度だけ危険を避けさせた', mag: 24 }); }
@@ -374,12 +375,13 @@
     }
     if (vic && !vic.alive) vic = null;
     /* 連れ去られていなければ、隠れてやり過ごせることもある（運・慎重さ） */
-    if (vic && !vic.taken && rng() < vic.stats.luck * 0.07 + vic.tr.caution * 0.25) {
+    if (vic && !vic.taken && rng() < HK.Dark.live(S, vic.stats.luck * 0.07 + vic.tr.caution * 0.25, 'kill')) {
       ST.say(S, { actors: [vic], tag: '隠れる', text: vic.name + 'は床下に潜り込み、息を殺した。松明の明かりが、すぐそばを何度も通り過ぎていった。――生贄の座は、空いたままになった。', why: '運と慎重さで、生贄に選ばれるのを逃れた', mag: 30 });
       vic = null;
     }
     /* 儀式を乗っ取る人（jashin-goals.js）：生贄を止める／自分の手で選び直す */
     if (JS.GOALX) { var hj = JS.GOALX.hijackRitual(S, h, vic); if (hj) { if (hj.skip) { S.fleeBonus = (S.fleeBonus || 0) + (hj.bonus || 0); flee(S, h + 1); return; } if (hj.vic !== undefined) vic = hj.vic; } }
+    if (vic && vic.taken && HK.Dark.skip(S, 'kill')) { vic.taken = false; vic.out = true; vic.esc = h; vic.fate = '逃げ延びた（' + hm(h) + '）'; ST.say(S, { actors: [vic], tag: '救出', text: '祭壇へ引き出される直前、' + vic.name + 'の縄がゆるんだ。' + vic.name + 'は松明の列の隙間をすり抜け、闇の中へ転がり出た。そのまま、山道を駆け下りた。', why: '見張りの隙を突いて逃れた（展開の重さ：穏やか）', mag: 30 }); vic = null; }   /* 展開の重さ（mood-dial.js） */
     if (vic) sacrifice(S, vic, h);
     if (JS.CAVE.manifest(S, h, (vic ? 0.32 : 0.15) + S.P.length * 0.03)) return;
     flee(S, h + 1);
@@ -397,7 +399,7 @@
     var rng = S.rng, ok = [], ng = [];
     S.P.filter(alive).forEach(function (p) {
       if (p.bound) return die(S, p, '縛られたまま', [(p.boundAt || '民宿') + 'に取り残された{a}は、縛られたまま身をよじった。祭り囃子が近づいてきても、もう、どうすることもできなかった。']);
-      (rng() < (S.inCave ? 0.24 : 0.33) + (S.fleeBonus || 0) + (S.fog ? 0.06 : 0) + p.stats.luck * 0.07 + p.stats.stamina * 0.04 - p.m.fear / 400 ? ok : ng).push(p);
+      (rng() < HK.Dark.pick(S, 0.6, 0, -0.2) + HK.Dark.live(S, (S.inCave ? 0.24 : 0.33) + (S.fleeBonus || 0) + (S.fog ? 0.06 : 0) + p.stats.luck * 0.07 + p.stats.stamina * 0.04 - p.m.fear / 400, 'kill') ? ok : ng).push(p);
     });
     /* 逃げ遅れた大事な人のために、引き返す */
     var saved = JS.REL.goBack(S, ng, ok);
@@ -468,7 +470,7 @@
       var tg = live.filter(function (q) { return q !== p && alive(q); });
       if (!tg.length || rng() > 0.13) return;
       var b = rng.pick(tg);
-      if (p.viol > th + 25 && rng() < 0.35) {
+      if (p.viol > th + 25 && rng() < 0.35 * HK.Dark.f(S, 'kill')) {
         p.viol = th;
         if (JS.DRAMA) JS.DRAMA.edge(S, p, b, '殺害', 'kill', p);
         return die(S, b, p.name + 'に襲われて', [ST.fmt(ST.pick(S, M.YGO_KILL), { a: p.name, b: '{a}' })]);
@@ -487,7 +489,7 @@
     if (!by && JS.REL.cover(S, m, b)) return false;
     var angry = others.reduce(function (s0, q) { return s0 + q.tr.aggr + q.tr.cold * 0.5; }, 0) / others.length;
     var t = by ? '' : ST.fmt(ST.pick(S, openly ? M.MAGE_DETECT_OPEN : M.MAGE_DETECT), { a: m.name, b: b.name });
-    if (rng() < 0.2 + angry * 0.5 || S.ygo) {
+    if (rng() < (0.2 + angry * 0.5) * HK.Dark.f(S, 'grudge') || S.ygo) {
       var o = ST.say(S, { actors: [b, m], tag: '露見', kind: 'climax', text: t + ST.fmt(ST.pick(S, M.MAGE_KILLED), { a: m.name, b: b.name }), why: m.name + 'のたくらみが' + b.name + 'にばれた（観察' + (b.job === 'detective' ? '・探偵' : '') + '）。一行の怒り（攻撃性・冷たさ）で、殺されてしまった', mag: 44 });
       m.alive = false; m.fate = '仲間に殺された（' + hm(S.h) + '）'; if (JS.DRAMA) JS.DRAMA.edge(S, b, m, '制裁', 'kill', b); ST.key(S, o, m.name + 'の正体が露見');
     } else {
@@ -517,7 +519,7 @@
       ST.say(S, { actors: helper && roll > av - (helper ? skill(helper, 'obs') * 0.25 : 0) ? [p, helper] : [p], tag: '死の罠', text: set + (helper && roll > av - skill(helper, 'obs') * 0.25 ? ST.fmt(ST.pick(S, M.TRAP_HELP), { a: p.name, b: helper.name }) : ST.fmt(ST.pick(S, M.TRAP_AVOID), { a: p.name })), why: (cave ? '洞窟' : S.G.name) + 'の死の罠を避けた（観察・慎重さ・運' + (helper ? '・' + helper.name + 'の助け' : '') + '）', mag: 24 });
       return true;
     }
-    if (rng() < 0.4 && p.m.hp > 35) {
+    if (rng() < HK.Dark.live(S, 0.4, 'kill') && p.m.hp > 35) {
       p.m.hp = clamp(p.m.hp - 30, 0, 100); p.m.fear = clamp(p.m.fear + 15, 0, 100);
       ST.say(S, { actors: [p], tag: '死の罠', text: set + ST.fmt(ST.pick(S, M.TRAP_HURT), { a: p.name }), why: (cave ? '洞窟' : S.G.name) + 'の死の罠。体力があったので命は拾った', mag: 28 });
       return true;

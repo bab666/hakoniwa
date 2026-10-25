@@ -430,7 +430,7 @@
       var r = this.R(win, lose);
       var mercy = win.tr.np * 0.7 + Math.max(0, r.aff) / 100 + (win.goal && win.goal.id === 'nokill' ? 0.8 : 0) - (win.goal && win.goal.id === 'last' ? 0.5 : 0)
         + (win.tol != null ? (0.45 - win.tol) * 0.6 : 0);   /* 生い立ち（deathgame-kit.js）：人の死に慣れていないほど、とどめをためらう */
-      if (opt.canSpare !== false && mercy > rng() * 1.4) {
+      if (opt.canSpare !== false && mercy > rng() * 1.4 * HK.Dark.f(this, 'kill')) {
         lose.hp = 6;
         this.mod2(lose, win, { aff: 30, ten: -15, trust: 15 }, { aff: 10 });
         res.spared = true;
@@ -658,7 +658,7 @@
         var r = ctx.R(a, o);
         var w = 1 + (Math.abs(r.aff) + r.ten + r.att) / 55;
         if (a.focus === o) w += 2.5;
-        if (a.flags.revenge === o.i) w += 3;
+        if (a.flags.revenge === o.i) w += 3 * HK.Dark.f(ctx, 'grudge');
         if (ctx.fac && ctx.fac.of[a.i] != null && ctx.fac.of[a.i] === ctx.fac.of[o.i]) w += 1;
         if (HK.Ties) w += HK.Ties.pull(ctx, a, o);
         return w;
@@ -677,9 +677,11 @@
       var w = e.w(ctx, a, bb);
       if (!(w > 0)) return;
       w *= ctx.bias(a, e.cat);
+      if (e.cat === 'combat' || e.cat === 'kill' || e.cat === 'betray') w *= HK.Dark.f(ctx, e.cat === 'betray' ? 'grudge' : 'kill');   /* 展開の重さ（mood-dial.js） */
       if (bb && HK.Ties) w *= HK.Ties.bias(ctx, a, bb, e.cat);
       if (bb && e.cat === 'romance' && (a.honmei != null || bb.honmei != null)) w *= HK.honmeiFactor(ctx, a, bb);
       if (HK.Emo) w *= HK.Emo.weight(ctx, a, e);   /* 気分（emotion.js）：悲しみ→恋愛を控える、怒り→対立など */
+      if (bb && e.cat === 'romance' && HK.Dark.on(ctx) !== 'normal' && HK.Dark.cheat(ctx, a, bb)) w *= HK.Dark.f(ctx, 'cheat');   /* 展開の重さ：恋人のいる人の、ほかの人との恋愛・夜 */
       if (w <= 0) return;
       if (e.pri) w *= (ctx.scen.priBoost || 2.4);
       cands.push({ e: e, w: w, b: bb });

@@ -54,6 +54,7 @@
     var X = ctxOf(res);
     var out = f ? f(res, X) : { headline: res.outcome || '', stats: [], lines: [] };
     (res.end.notes || []).forEach(function (l) { out.lines.push(l); });
+    if (HK.Dark && HK.Dark.note(res)) out.lines.push(HK.Dark.note(res));   /* 展開の重さ（mood-dial.js）：ふつう以外なら一行 */
     var mp = mainPairs(res, X);
     if (mp.length) out.lines.push('主な関係：' + mp.join('、'));
     if (HK.Epilogue) HK.Epilogue.build(res, out);   /* その後・最期の言葉（epilogue.js） */

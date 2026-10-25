@@ -1,7 +1,7 @@
 /* 全箱庭をシミュレーションして、住人の台詞（元の文・変換後・口調・文脈）を集める
    node collect.js <ビルドのフォルダ> <出力.json> [seeds=12] [r18]
    例：node collect.js ../../hakoniwa-full out-full.json 40 r18
-   環境変数 HOT=1 で過激さ・媚薬などの設定を最大に（R18の場面の台詞を集める）、TONE=gentleman で全員の口調を固定、FPS=俺,あたし で一人称を順に設定、SCEN=variety,saimin で箱庭を絞る、ENV=release=mid,lewd=80 で場面の設定を固定 */
+   環境変数 HOT=1 で過激さ・媚薬などの設定を最大に（R18の場面の台詞を集める）、TONE=gentleman で全員の口調を固定、FPS=俺,あたし で一人称を順に設定、SCEN=variety,saimin で箱庭を絞る、ENV=release=mid,lewd=80 で場面の設定を固定（全体の設定 heavy なども可：ENV=heavy=mild） */
 'use strict';
 const fs = require('fs');
 const { openBuild } = require('./lib');
@@ -49,8 +49,8 @@ const { openBuild } = require('./lib');
           else if (e.options && e.options.length > 1 && !/lewd|^mode$/.test(e.id) && (s + k) % 2) env[e.id] = e.options[(s + k) % e.options.length].v;
           if (e.id === 'mode' && e.options && e.options.some(o => o.v === 'lewd')) env[e.id] = 'lewd';
         });
-        /* ENV=release=mid,lewd=80 で場面の設定を固定 */
-        OPT.env.forEach(([k, v]) => { if (k in env) env[k] = isNaN(+v) ? v : +v; });
+        /* ENV=release=mid,lewd=80 で場面の設定を固定（全体の設定 heavy なども可：ENV=heavy=mild） */
+        OPT.env.forEach(([k, v]) => { if (k in env || (HK.GLOBAL_ENV || []).some(g => g.id === k)) env[k] = isNaN(+v) ? v : +v; });
         const start = rec.length;
         /* 内容のスイッチ（content.js）：指定がなければすべて入にして、いちばん広く回す */
         if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');

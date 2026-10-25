@@ -17,7 +17,7 @@
     var css = ':root{' + L.join(';') + '}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){' + D.join(';') + '}}:root[data-theme="dark"]{' + D.join(';') + '}';
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   })();
-  function genv(scen) { return scen.solo ? scen.env : scen.env.concat(HK.GLOBAL_ENV); }
+  function genv(scen) { return scen.solo ? scen.env.concat(HK.GLOBAL_ENV.filter(function (e) { return e.all; })) : scen.env.concat(HK.GLOBAL_ENV); }
   function smin(id) { return (HK.SCENARIOS[id] && HK.SCENARIOS[id].minCast) || 2; }
   function smax(id) { return Math.min(JOIN_MAX, (HK.SCENARIOS[id] && HK.SCENARIOS[id].maxCast) || 12); }
   /* この箱庭に参加する住人（未設定なら先頭から上限まで） */

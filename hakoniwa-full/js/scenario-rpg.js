@@ -128,14 +128,15 @@
     var leader = P.slice().sort(function (a, b) { return (b.tr.lead + b.tr.cp * 0.5) - (a.tr.lead + a.tr.cp * 0.5); })[0];
     function snap() { P.forEach(function (p) { p.m.hp = Math.round(p.hp / p.mhp * 100); p.m.gold = p.found; }); ST.snap(S, ['hp', 'gold']); }
     function hurt(p, d) {
-      d = Math.max(1, Math.round(d - p.def * 0.5));
+      d = Math.max(1, Math.round((d - p.def * 0.5) * HK.Dark.pick(S, 0.85, 1, 1.15)));
       p.hp -= d;
       if (SPX) SPX.hurt(p, d);
       if (p.hp <= 0) {
         p.hp = 0; p.alive = false; p.down++;
         var pr = alive().filter(function (x) { return JOBS[x.job].heal; })[0];
-        if (pr && rng() < 0.55 + pr.tr.np * 0.3) { p.alive = true; p.hp = Math.round(p.mhp * 0.35); pr.cnt.heal++; return p.name + 'が倒れた！――' + pr.name + 'の祈りで、' + p.name + 'は立ち上がった。'; }
-        if (pot > 0 && rng() < 0.68) { pot--; p.alive = true; p.hp = Math.round(p.mhp * 0.4); return p.name + 'が倒れた！――仲間が回復薬を飲ませ、' + p.name + 'は息を吹き返した。'; }
+        if (pr && rng() < HK.Dark.live(S, 0.55 + pr.tr.np * 0.3, 'kill')) { p.alive = true; p.hp = Math.round(p.mhp * 0.35); pr.cnt.heal++; return p.name + 'が倒れた！――' + pr.name + 'の祈りで、' + p.name + 'は立ち上がった。'; }
+        if (pot > 0 && rng() < HK.Dark.live(S, 0.68, 'kill')) { pot--; p.alive = true; p.hp = Math.round(p.mhp * 0.4); return p.name + 'が倒れた！――仲間が回復薬を飲ませ、' + p.name + 'は息を吹き返した。'; }
+        if (HK.Dark.on(S) === 'mild' && rng() < 0.8) { p.alive = true; p.hp = 1; return p.name + 'が倒れた！――それでも' + p.name + 'は、かろうじて意識をつなぎとめた。'; }   /* 展開の重さ：穏やか */
         return p.name + 'は倒れた。';
       }
       return '';

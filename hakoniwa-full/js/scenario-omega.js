@@ -590,7 +590,7 @@
   EV.push({
     id: 'om_breakup', cat: 'conflict', scope: 'pair', pri: true,
     when: function (ctx, a, b) { var pf = ctx.pair(a, b), r = ctx.R(a, b), q = ctx.R(b, a); return pf.couple && !pf.preset && (r.ten > 50 || r.aff < 5 || pf.switchStrain) && (q.ten > 40 || q.aff < 15 || pf.switchStrain) && ctx.stepIndex - (pf.since || 0) >= 3; },
-    w: function (ctx, a, b) { return 0.8 + ctx.R(a, b).ten / 50; },
+    w: function (ctx, a, b) { return (0.8 + ctx.R(a, b).ten / 50) * HK.Dark.f(ctx, 'breakup'); },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b), om = ctx.om;
       var reason = pf.switchStrain ? 'switch' : (ctx.env.society > 55 && (sx(a) === sx(b) || sx(a) === 'o' || sx(b) === 'o') && ctx.rng() < 0.5 ? 'bias' : 'drift');

@@ -294,7 +294,7 @@
     var found = S.pool.filter(function (x) { return x.found && !x.fake; }).length;
     var live = S.P.filter(function (q) { return alive(q) && q !== c && q !== S.acc; });
     if (!live.length) return;
-    if (S.forceTgt) { var ft = S.forceTgt; S.forceTgt = null; if (alive(ft)) { S.nextWhy = S.forceWhy; murder(S, ft, day, false); S.kills[S.kills.length - 1].why = S.nextWhy; S.newKill = true; return; } }
+    if (S.forceTgt) { var ft = S.forceTgt; S.forceTgt = null; if (alive(ft) && !HK.Dark.skip(S, 'kill')) { S.nextWhy = S.forceWhy; murder(S, ft, day, false); S.kills[S.kills.length - 1].why = S.nextWhy; S.newKill = true; return; } }
     /* 危ない相手：証拠を多く掴んでいる人・探りを入れてきた人・探偵 */
     var danger = function (q) { return q.cnt.clue * 2 + (q.approached ? 3 : 0) + (q.isDet ? 1.5 : 0) + (S.mot.triangle && q === S.x ? -5 : 0); };
     var top = live.slice().sort(function (a, b) { return danger(b) - danger(a); })[0];
@@ -302,6 +302,7 @@
     var plan = S.kills.length - 1 < S.planned;
     var ch = plan ? 0.45 + sv * 0.4 : threat ? (0.08 + sv * 0.72) * (0.6 + c.tr.aggr * 0.3 + c.tr.cold * 0.3) : sv * 0.25;
     if (live.length === 1) ch *= 0.5;
+    ch *= HK.Dark.pick(S, 0.2, 1, 1.8);   /* 展開の重さ（mood-dial.js） */
     if (S.kills.length >= 5 || rng() > ch) return;
     /* 狙い：追い詰められていれば口封じ。計画どおりなら次の獲物。口封じに共犯も */
     var tgt, why;
@@ -614,11 +615,12 @@
     var t2 = c.tr, n = c.stats.nerve || 3;
     var ws = { arrest: 0.4 + t2.cp * 0.3 + t2.ac * 0.3, suicide: 0.1 + t2.ac * 0.3 + (/mercy|despair|framesuicide/.test(S.mot.id) ? 0.5 : 0) + (S.mot.id === 'loyal' ? 0.3 : 0), flee: t2.impulse * 0.5 + t2.fc * 0.2 + n * 0.04, attack: t2.aggr * 0.5 + t2.cold * 0.3 + (/fame|experiment|despair/.test(S.mot.id) ? 0.4 : 0) };
     if (S.mot.id === 'split') ws.attack += 0.3;
+    ws.suicide *= HK.Dark.endings(S); ws.attack *= HK.Dark.endings(S);   /* 展開の重さ：悪い結末（自害・探偵を襲う） */
     var e = HK.weighted(rng, Object.keys(ws), function (k) { return Math.pow(Math.max(0.03, ws[k]), 2); });
     if (e === 'attack') {
       var stop = live.filter(function (q) { return q !== c && q !== d && !q.bound; }).sort(function (a, b) { return skill(b, 'fight') + (d.buddies.indexOf(b) >= 0 ? 0.3 : 0) - skill(a, 'fight') - (d.buddies.indexOf(a) >= 0 ? 0.3 : 0); })[0];
       var ta = F(pk(S, T.END_ATTACK), { c: c.name, d: d.name });
-      if (stop && rng() < skill(stop, 'fight') + 0.35 + (d.buddies.indexOf(stop) >= 0 ? 0.15 : 0)) {
+      if (stop && rng() < HK.Dark.live(S, skill(stop, 'fight') + 0.35 + (d.buddies.indexOf(stop) >= 0 ? 0.15 : 0), 'kill')) {
         c.bound = true; c.fate = '探偵を襲い、取り押さえられた';
         S.over = 'arrest';
         return ST.say(S, { actors: [c, d, stop], tag: '結末', kind: 'climax', text: ta + F(pk(S, T.END_ATTACK_STOP), { b: stop.name, c: c.name, d: d.name }) + '翌朝、吹雪が止み、' + c.name + 'は警察に引き渡された。', why: c.name + 'は探偵を襲った（攻撃性・ドライさ）。' + stop.name + 'が止めた' + (d.buddies.indexOf(stop) >= 0 ? '（バディ）' : ''), mag: 50 });

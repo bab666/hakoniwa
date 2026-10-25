@@ -344,6 +344,8 @@
     if (!q || rng() > 0.2 + q.tr.warmth * 0.35 + (q.goal.id === 'protect' ? 0.15 : 0)) return vic;
     var o = ST.say(S, { actors: [q, vic], tag: '身代わり', kind: 'climax', text: pickT(S, T.SUBST, { a: vic.name, b: q.name }), why: q.name + 'が' + vic.name + '（' + relLabel(S, q, vic) + '）の身代わりになった（温かさ）', mag: 44 });
     ST.key(S, o, q.name + 'が身代わりに'); ED(S, q, vic, '身代わり', 'guard', q);
+    /* 身代わりで解き放たれた人は、そのまま逃がす（連れ去られていた人が、あとの「逃走」の場面に出ないように） */
+    if (vic.taken) { vic.out = true; vic.esc = S.h; vic.fate = '身代わりのおかげで逃げ延びた（' + JS.hm(S.h) + '）'; }
     vic.taken = false;
     return q;
   }

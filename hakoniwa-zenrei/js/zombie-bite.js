@@ -84,7 +84,7 @@
       var actors = [v].concat(mates.filter(function (o) { return o !== v; })).concat(v !== a ? [a] : []);
       actors = actors.filter(function (c, i) { return actors.indexOf(c) === i; });
       ctx.stress(v, 10);
-      var gap = skill - danger;
+      var gap = skill - danger * HK.Dark.pick(ctx, 0.8, 1, 1.6);   /* 展開の重さ（mood-dial.js） */
       if (gap > 0.12) {
         var fight = v.tr.aggr + (v.weapon ? v.weapon.pow * 0.06 : 0) > 0.55 && rng() < 0.7;
         t += fill(ctx.pick(fight ? OUT.fight : OUT.escape), m);
@@ -93,7 +93,7 @@
       }
       /* 仲間が助けに入る */
       var helper = mates.filter(function (o) { return o !== v && ctx.R(o, v).aff > 10 && o.tr.aggr + o.tr.np > 0.7; }).sort(function (x, y) { return ctx.R(y, v).aff - ctx.R(x, v).aff; })[0];
-      if (helper && rng() < 0.45 + ctx.R(helper, v).aff / 250) {
+      if (helper && rng() < HK.Dark.live(ctx, 0.45 + ctx.R(helper, v).aff / 250, 'kill')) {
         t += fill(ctx.pick(OUT.save), { a: v.name, b: helper.name, bw: wname(helper) });
         ctx.mod(v, helper, { aff: 10, trust: 14 });
         return { with: actors, text: t, why: why + '／' + helper.name + 'がとっさに助けた（' + v.name + 'への好意 ' + Math.round(ctx.R(helper, v).aff) + '）', mag: 22 };
@@ -104,7 +104,7 @@
         return { with: actors, text: t, why: why + '：けがを負った（化膿すると危ない）', mag: 18 };
       }
       /* まれに、犯される展開になる（R18版のみ。襲われる人が「攻め」指定でないときだけ） */
-      if (Z.ZA_TEXT && Z.zombieAssault && Z.loveLv(ctx) !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) && !(HK.Pos && !HK.Pos.canReceive(v)) && !(HK.State && !HK.State.mobSexOk(v)) && !v.z.zassault && rng() < (0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) * (ctx.env.zlust == null ? 1 : ctx.env.zlust / 50)) {
+      if (Z.ZA_TEXT && Z.zombieAssault && Z.loveLv(ctx) !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) && !(HK.Pos && !HK.Pos.canReceive(v)) && !(HK.State && !HK.State.mobSexOk(v)) && !v.z.zassault && rng() < (0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) * (ctx.env.zlust == null ? 1 : ctx.env.zlust / 50) * HK.Dark.f(ctx, 'raid')) {
         v.z.zassault = true; v.flags.mobHit = { at: ctx.stepIndex, by: 'ゾンビ' };
         var ra = Z.zombieAssault(ctx, v, [a].concat(mates).filter(function (o, i, arr) { return o !== v && arr.indexOf(o) === i; }), A);
         ra.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });

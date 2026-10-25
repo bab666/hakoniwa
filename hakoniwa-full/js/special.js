@@ -143,7 +143,7 @@
     opt = opt || {};
     if (p.mad || (!p.spec && !opt.all) || !A.alive(p)) return false;
     var s = A.stress(p), tr = p.tr || {};
-    p.wear = (p.wear || 0) + Math.max(0, s - (opt.base || 72)) / 8 + (opt.add || 0);
+    p.wear = (p.wear || 0) + Math.max(0, s - (opt.base || 72)) / 8 * HK.Dark.f(A, 'madness') + (opt.add || 0);
     var lim = (opt.lim || 26) * (1 + (tr.cp || 0) * 0.35 + (tr.a || 0) * 0.2 - (tr.ac || 0) * 0.2);
     if (p.wear < lim) return false;
     return SP.goMad(A, p, opt);

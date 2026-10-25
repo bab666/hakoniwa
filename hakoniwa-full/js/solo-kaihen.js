@@ -520,7 +520,7 @@
       p.m.imm = 64;
       if (!p.willHeld) { p.willHeld = true; return ST.key(S, ST.say(S, { actors: [p], tag: '心は折れない', text: HK.Attr.hold(function (l) { return pkF(S, l); }, p, 'kaihen'), why: p.name + 'の心の強さ：強い（改変度が上がりきっても、心までは呑み込まれなかった）', mag: 30 }), p.name + 'は心を手放さなかった'); }
     }
-    if (p.m.imm > 72 / (HK.Attr ? HK.Attr.willK(p) : 1)) { p.sunk = true; return ST.key(S, ST.say(S, { actors: [p], tag: '呑み込まれる', text: ST.fmt(pkF(S, nm(S, outPool(SIT, 'sink'))), v), why: p.name + 'の改変度が' + Math.round(p.m.imm) + 'に達した', mag: 40 }), p.name + 'も改変された'); }
+    if (p.m.imm > HK.Dark.pick(S, 88, 72, 62) / (HK.Attr ? HK.Attr.willK(p) : 1)) { p.sunk = true; return ST.key(S, ST.say(S, { actors: [p], tag: '呑み込まれる', text: ST.fmt(pkF(S, nm(S, outPool(SIT, 'sink'))), v), why: p.name + 'の改変度が' + Math.round(p.m.imm) + 'に達した', mag: 40 }), p.name + 'も改変された'); }
     /* 止めようとしても誰も取り合わないと、逃げ出したくなる */
     var flee = (p.tr.cp * 0.4 + p.tr.a * 0.3 + p.tr.caution * 0.3) * (p.m.doubt / 100) - p.m.imm / 150 + (p.cnt.stop || 0) * 0.04;
     if (S.step >= 1 && rng() < flee * 0.35) { p.fled = true; return ST.key(S, ST.say(S, { actors: [p], tag: '脱出', text: ST.fmt(pkF(S, nm(S, outPool(SIT, 'flee'))), v), why: p.name + 'の慎重さとCP・A' + (p.cnt.stop ? '（止めようとして、誰にも取り合ってもらえなかった）' : ''), mag: 35 }), p.name + 'が逃げ出した'); }
