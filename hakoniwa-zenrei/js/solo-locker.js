@@ -1,5 +1,6 @@
 /* 箱庭シミュレーター: 媚薬ロッカー（R18）
    媚薬の充満する狭いロッカーに閉じ込められた二人。仕掛けを解いて脱出できるか。
+   一人のとき・三人以上のときは locker-crowd.js（LK.crowd）で進める。
    感度が上がると、堪え性のない人から手を出し始める。乗るか嗜めるかは関係と性格しだい。
    拘束されたままなら生殺し、動けるなら狭い中での焦らしセックス。脱出後にベッドで続きをすることも */
 (function () {
@@ -8,17 +9,19 @@
   if (!LK || !ST) return;
 
   var scen = {
-    id: 'locker', name: '媚薬ロッカー', kicker: '2人・R18', solo: true, maxCast: 2, minCast: 2,
-    desc: '媚薬の充満する狭いロッカーに閉じ込められた二人。仕掛けを解いて無事に脱出できるか。手を出すのは誰か、乗るのか嗜めるのか、拘束されたまま生殺しか、狭い中で焦らしセックスか。出たあと、目の前のベッドで続きをするかも。※成人キャラクター向け',
+    id: 'locker', name: '媚薬ロッカー', kicker: '1〜6人・R18', solo: true, maxCast: 6, minCast: 1,
+    desc: '媚薬の充満する狭いロッカーに閉じ込められた二人。仕掛けを解いて無事に脱出できるか。手を出すのは誰か、乗るのか嗜めるのか、拘束されたまま生殺しか、狭い中で焦らしセックスか。出たあと、目の前のベッドで続きをするかも。一人なら、ひとりきりで耐えるか慰めるか、見回りの人に見つかるか。三人以上なら、倉庫に並ぶロッカーに分かれて押し込まれ、誰と誰がくっつくかは運しだい。※成人キャラクター向け',
     note: '※登場人物はすべて成人として扱います。',
     unit: 'コマ', simulate: function (input) { return run(input); },
-    castHint: 'ちょうど2人。二人の関係（恋人・主従・ライバルなど）は「既存の関係」から決まります。まれに、自分から望んで閉じ込められている人がいます（役割で指定もできます）。',
+    castHint: '1〜6人。2人のときが本筋で、二人の関係（恋人・主従・ライバルなど）は「既存の関係」から決まります。まれに、自分から望んで閉じ込められている人がいます（役割で指定もできます。2人のときだけ）。1人なら一人きりのロッカー、3人以上なら倉庫のロッカーに二人ずつ・三人ずつ分かれて閉じ込められます。',
     env: [
       { id: 'bind', label: '拘束', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'both', label: '二人とも手錠' }, { v: 'one', label: '片方だけ手錠' }, { v: 'none', label: '拘束なし' }] },
       { id: 'dose', label: '媚薬の濃さ', min: 0, max: 100, def: 65, lo: 'ほのか', hi: '理性が飛ぶ' },
       { id: 'diff', label: '仕掛けの難しさ', min: 0, max: 100, def: 50, lo: '簡単', hi: '激ムズ' },
       { id: 'turns', label: '制限時間', min: 6, max: 14, def: 12, lo: '30分', hi: '70分', desc: '5分ごとに区切る。時間切れになると扉は開くが……' },
       { id: 'ev', label: 'ハプニングの頻度', min: 0, max: 100, def: 45, lo: 'たまに', hi: '頻繁' },
+      { id: 'layout', label: 'ロッカーの分け方（3人以上）', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'big', label: '大きなロッカーに三人ずつ' }, { v: 'split', label: '二人ずつ別のロッカーに' }], desc: '3人以上のとき、誰と誰が同じロッカーになるかは運しだい。余った人は一人のロッカーに' },
+      { id: 'finder', label: '見回りの人（1人のとき）', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ（運しだい）' }, { v: 'mob', label: '来る' }, { v: 'none', label: '来ない（自力で出る）' }], desc: '1人のとき、外から扉を開けてくれる人が来るか' },
       { id: 'lewd', label: '描写の濃さ', type: 'select', def: 'mid', options: [{ v: 'low', label: 'ぼかす' }, { v: 'mid', label: 'ほどほど' }, { v: 'high', label: '濃いめ' }] }
     ],
     stats: [
@@ -40,6 +43,7 @@
     events: []
   };
   HK.SCENARIOS.locker = scen;
+  LK.SCEN = scen;
   HK.SCEN_ORDER.push('locker');
 
   var LV = ['touch', 'kiss', 'grope', 'oral', 'sex'];
@@ -48,6 +52,8 @@
 
   var LK_HATE_LEAD = ['狭いロッカーの中で、{b}は{a}の胸に、そっと額を預けた。', '{b}は、触れ合った{a}の手を、そのまま握ろうとした。', '{b}は、熱に浮かされた目で、{a}の顔を見上げた。'];
   function run(input) {
+    /* 一人・三人以上は locker-crowd.js へ */
+    if (input && input.chars && input.chars.length !== 2 && LK.crowd) return LK.crowd(input);
     var S = ST.state(input, 'locker'), rng = S.rng, env = S.env, P = S.P, lew = env.lewd || 'mid', V = HK.Voice;
     var A = P[0], B = P[1];
     var pk = function (arr) { return LK.pick(S, arr); };

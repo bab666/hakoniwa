@@ -164,6 +164,7 @@ js/solo-locker-data.js
 js/solo-locker-more.js
 js/solo-locker-bed.js
 js/locker-ties.js
+js/locker-crowd.js
 js/solo-locker.js
 js/rpg-data.js
 js/scenario-rpg.js
