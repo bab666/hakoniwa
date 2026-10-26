@@ -19992,15 +19992,17 @@
   add({ id: 'zr_lrefuse', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { return RK.locked(a) && !RK.lockedTo(a, b) && ctx.R(b, a).att > 35 && !ctx.pair(a, b).lockRef; },
     w: function (ctx, a, b) { return 0.8 + ctx.R(b, a).att / 60; },
-    run: function (ctx, a, b) { ctx.pair(a, b).lockRef = true; ctx.mod(b, a, { att: -10, ten: 6 }); ctx.stress(b, 12); var t = ctx.chars[a.lock]; return { text: fill(ctx.pick(T.lockRefuse), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を' + (t ? t.name + 'と' : '') + '決めている。' + b.name + 'の想い（惹かれ ' + Math.round(ctx.R(b, a).att) + '）には応えない' }; } });
+    run: function (ctx, a, b) { ctx.pair(a, b).lockRef = true; ctx.mod(b, a, { att: -10, ten: 6 }); ctx.stress(b, 12); var t = HK.lockNames(ctx.chars, a); return { text: fill(ctx.pick(T.lockRefuse), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を' + (t ? t + 'と' : '') + '決めている。' + b.name + 'の想い（惹かれ ' + Math.round(ctx.R(b, a).att) + '）には応えない' }; } });
   add({ id: 'zr_ldevote', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { return RK.lockedTo(a, b) && RK.cool(ctx, a, b, 'ldev', 5); },
     w: function (ctx, a, b) { return 0.8 + a.tr.np * 0.4 + a.tr.ac * 0.3 + ctx.R(a, b).att / 80; },
-    run: function (ctx, a, b) { RK.mark(ctx, a, b, 'ldev'); ctx.mod(a, b, { att: 6, aff: 4 }); ctx.mod(b, a, { aff: 6, att: 3 }); return { text: fill(ctx.pick(T.lockDevote), { a: a.name, b: b.name }), why: a.name + 'の想う相手は、' + b.name + 'ただ一人' }; } });
+    run: function (ctx, a, b) { RK.mark(ctx, a, b, 'ldev'); ctx.mod(a, b, { att: 6, aff: 4 }); ctx.mod(b, a, { aff: 6, att: 3 }); return { text: fill(ctx.pick(T.lockDevote), { a: a.name, b: b.name }), why: a.name + 'の想う相手は、' + (HK.locks(a).length > 1 ? b.name + 'たち（決めた人）' : b.name + 'ただ一人') }; } });
+  /* 固定した相手（複数なら順に）のうち、生きていて別の場所にいる人 */
+  function lseekTo(ctx, a) { return HK.lockPeople(ctx.chars, a).filter(function (t) { return t.alive && !t.out && t.z && a.z && t.z.area !== a.z.area; })[0] || null; }
   add({ id: 'zr_lseek', cat: 'solo', scope: 'solo',
-    when: function (ctx, a) { if (!RK.locked(a)) return false; var t = ctx.chars[a.lock]; if (!t || !t.alive || t.out || t.z.area === a.z.area) return false; return a.flags.lseekAt == null || ctx.stepIndex - a.flags.lseekAt > 6; },
+    when: function (ctx, a) { if (!RK.locked(a)) return false; var t = lseekTo(ctx, a); if (!t) return false; return a.flags.lseekAt == null || ctx.stepIndex - a.flags.lseekAt > 6; },
     w: function (ctx, a) { return 0.7 + a.tr.ac * 0.4 + a.tr.np * 0.3; },
-    run: function (ctx, a) { a.flags.lseekAt = ctx.stepIndex; var t = ctx.chars[a.lock]; if (a.tr.np + a.tr.impulse > 0.9) { a.focus = t; } return { text: fill(ctx.pick(T.lockSeek), { a: a.name, b: t.name }), why: a.name + 'は、離れた場所にいる' + t.name + 'を想っている' + (a.focus === t ? '（探しに行くと決めた）' : '') }; } });
+    run: function (ctx, a) { a.flags.lseekAt = ctx.stepIndex; var t = lseekTo(ctx, a); if (a.tr.np + a.tr.impulse > 0.9) { a.focus = t; } return { text: fill(ctx.pick(T.lockSeek), { a: a.name, b: t.name }), why: a.name + 'は、離れた場所にいる' + t.name + 'を想っている' + (a.focus === t ? '（探しに行くと決めた）' : '') }; } });
 
   /* ---------- 兄貴・姉貴分／関西弁 ---------- */
   add({ id: 'zr_aniki', cat: 'help', scope: 'pair',

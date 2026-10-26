@@ -12617,6 +12617,9 @@
   HK.lockAny = function (a) { return HK.locks(a).length > 0; };
   HK.lockTo = function (a, b) { return !!b && HK.locks(a).indexOf(b.i) >= 0; };
   HK.lockOut = function (a, b) { var L = HK.locks(a); return L.length > 0 && !(b && L.indexOf(b.i) >= 0); };
+  /* HK.lockPeople(chars, a)：a が固定した相手のうち、chars（番号で引ける住人の並び）にいる人（固定の順）。HK.lockNames は名前を「・」でつないだもの */
+  HK.lockPeople = function (chars, a) { return HK.locks(a).map(function (k) { return k >= 0 && chars ? chars[k] : null; }).filter(function (x) { return x && x !== a; }); };
+  HK.lockNames = function (chars, a) { return HK.lockPeople(chars, a).map(function (x) { return x.name; }).join('・'); };
   HK.sexLockOut = function (x, y) {
     if (!x || !y) return false;
     if (Array.isArray(x.sexLocks)) return x.sexLocks.indexOf(y.i) < 0;
@@ -14253,7 +14256,7 @@
    固定外の相手との「体だけの場面」の共通部品（全箱庭。エンジン型 ctx と物語型 S のどちらでも使える）
    ・HK.State.freeSex(ctx, a, b)：体だけの場面にしてよい組か。a か b が「誰とでも可」で固定外の相手（HK.lockSexOnly）で、
        受け攻めと恋愛対象の性別（HK.Pos.okSex）・両方 R18 に参加（全年齢版・全年齢モードでは常に偽）・その場にいる（HK.State.pairSex）、
-       体の関係の縛り（HK.sexBlocked：恋愛・R18にしない相手・同一人物・恋人だけ・〇〇だけ・一途）を通る組。
+       体の関係の縛り（HK.sexBlocked：恋愛・R18にしない相手・同じ人の恋人どうし・恋人だけ・〇〇だけ・一途。同一人物は縛らない）を通る組。
        恋愛相手の固定（HK.canLove）は見ない（体だけの関係なので）。家族の「恋愛：なし」（エンジン型は ctx.pair().kin、物語型は ng）・先生・未成年は止める
    ・HK.FreeSex.factor(ctx, a, b)：固定した恋人がその場にいれば 0.3（起きにくくする）
    ・HK.FreeSex.lead(ctx, a, b)：導入の一文。「恋ではない」ことが分かる文（「誰とでも可」の人の態度9種 × 3文以上）
@@ -14291,10 +14294,13 @@
 
   var F = HK.FreeSex = {};
   /* 固定した恋人（その場にいる人）。いなければ null */
+  /* 恋愛相手の固定は複数人を持てる（HK.locks）。notI がその中にいれば固定外ではないので null。いれば、その場にいる最初の一人 */
   F.loverOf = function (ctx, x, notI) {
-    if (!x || !HK.lockAny(x) || x.lock === notI) return null;
-    var y = people(ctx)[x.lock];
-    return y && y !== x && HK.State.here(y) ? y : null;
+    if (!x || !HK.lockAny(x)) return null;
+    var L = HK.locks(x), P = people(ctx);
+    if (L.indexOf(notI) >= 0) return null;
+    for (var k = 0; k < L.length; k++) { var y = P[L[k]]; if (y && y !== x && HK.State.here(y)) return y; }
+    return null;
   };
   F.factor = function (ctx, a, b) {
     return F.loverOf(ctx, a, b.i) || F.loverOf(ctx, b, a.i) ? 0.3 : 1;
@@ -17721,9 +17727,10 @@
   /* 中心のある円満な三人：中心の人が二人の両方と交われるなら、中心だけが二人と繋がる形 */
   function loveShape(ctx, g) {
     var hm = harmonyOf(ctx, g), cl = hm && clashOf(ctx, g);
-    if (!hm || (hm.full && !cl) || sexLockOut(g)) return null;
+    if (!hm || (hm.full && !cl)) return null;
     /* 取り合いは、取り合われる人を中心に（執着している二人どうしは直接は交わらない） */
     var h = cl ? cl.w : hm.hub, o = g.filter(function (c) { return c !== h; });
+    if (hubOut(g, h)) return null;
     if (blocked(h, o[0]) || blocked(h, o[1])) return null;
     return okSex(h, o[0]) && okSex(h, o[1]) ? { sg: [h].concat(o), hubOnly: true } : null;
   }
@@ -17735,6 +17742,16 @@
   function blocked(x, y) { return !!((HK.sexNG && HK.sexNG(x, y)) || (HK.ngPair && HK.ngPair(x, y))); }
   function soft(x, y) { return !!(x.trioHub && y.trioHub) && !(HK.ngExplicit && HK.ngExplicit(x, y)) && !x.noR18 && !y.noR18; }
   function sexLockOut(g) { return g.some(function (x) { return g.some(function (y) { return y !== x && blocked(x, y) && !soft(x, y); }); }); }
+  /* 中心のある円満な三人（loveShape）：中心 h の恋人どうしの二人は「同じ人の恋人どうし」（coNG）なので、二人の間だけは coNG を見ない
+     （二人は直接は触れ合わない形）。二人の間でも、性行為の相手の固定（HK.sexNG）と苦手な組（HK.ngExplicit）は止める（trioHub の soft は同じに通す）。
+     併合（2026-10-26）で sexLockOut が ngPair（coNG を含む）も見るようになり、恋人二人の中心の三人が起きなくなっていたのを直す */
+  function hubOut(g, h) {
+    return g.some(function (x) { return g.some(function (y) {
+      if (y === x) return false;
+      var b = x !== h && y !== h ? !!((HK.sexNG && HK.sexNG(x, y)) || (HK.ngExplicit && HK.ngExplicit(x, y))) : blocked(x, y);
+      return b && !soft(x, y);
+    }); });
+  }
   function sexShape(g, hubOnly) {
     if (sexLockOut(g)) return null;
     /* 固定の食い違いだけで止まっている組（soft）があれば、その二人を中心にはしない（中心は残りの一人） */
@@ -18023,11 +18040,14 @@
     var ltW = ltOn && first && !tShort && ctx.rng() < 0.85 ? ltPick('warm') : null;
     if (ltW) out.push(ltW);
     else if (first && !tShort) {
-      var w = pickTagged(X.WARM.filter(function (o) { return o.t.some(noHub); }), function (z) { return (z.jeal ? 2.6 : 1) * (z.open ? 1.8 : 1) * (z.kinds ? 2 : 1); });
+      /* 前戯の文も、触れ合わせない二人（apart：中心の形で直接は繋がらない二人・恋愛対象の合わない二人）が触れ合う文を除く */
+      var warmPool = [];
+      X.WARM.forEach(function (o) { var ls = o.t.filter(function (l) { return noHub(l) && apartOK(l); }); if (ls.length) { var c = {}; for (var k in o) c[k] = o[k]; c.t = ls; warmPool.push(c); } });
+      var w = pickTagged(warmPool, function (z) { return (z.jeal ? 2.6 : 1) * (z.open ? 1.8 : 1) * (z.kinds ? 2 : 1); });
       if (w) { out.push(w.text); if (w.o.jeal || w.o.open) used.push(w.o.jeal ? '嫉妬の前戯' : OPEN_LABEL[op] + 'な受け'); }
     }
     /* 本番 */
-    var ml = ffE && X.MAIN_FF ? X.MAIN_FF[sp.p].filter(swapOK).concat(ctx.flags.toolbox ? (X.TOY_FF[sp.p] || []).filter(toyOK).filter(swapOK) : []).filter(function (l) { return apartOK(l); }) : X.MAIN[sp.p].filter(noHub).filter(swapOK);
+    var ml = ffE && X.MAIN_FF ? X.MAIN_FF[sp.p].filter(swapOK).concat(ctx.flags.toolbox ? (X.TOY_FF[sp.p] || []).filter(toyOK).filter(swapOK) : []).filter(function (l) { return apartOK(l); }) : X.MAIN[sp.p].filter(noHub).filter(swapOK).filter(function (l) { return apartOK(l); });
     var ml0 = X.MAIN[sp.p].filter(swapOK), ml1 = ml0.filter(function (l) { return apartOK(l); });
     out.push(X.fill(fpk(ml.length ? ml : ml1.length ? ml1 : ml0), r));
     /* 夜の性格の一文（attr-r18.js）：攻め→受けの組ごとに、二つまで（サド二人×マゾ一人なら、攻めの振る舞いと受けの崩れ方） */
@@ -18531,11 +18551,10 @@
      alone   孤独：部屋に残ったまま過ごす。気分（HK.Emo）と態度9種で書き分け、二人以上なら過ごし方（友人・攻め×攻めの気まずさ・敵視）も
      friend  仲の良い人が助けに来る：外に出た人のうち、中の誰かと恋人・本命・親友・相棒・執着などの仲の人が、扉を外から開ける方法を調べて戻ってくる
      rescue  警察・救助隊：喜び（態度9種）と、出ていった人に愛憎・敵視・執着を向けている人の誓い
-     again   また知らない人と：扉が開いたと思ったら、知らない人たち（モブ）が入ってきて、また扉が閉まる
      loop    ループ：扉から飛び出すと、廊下の先はまた白い部屋だった（実際に繰り返しはしない）
    ■ HK.RoomLeft.decide(ctx)：scenario-room.js の finish から。残った人を確かめ、結末を選んで ctx.flags.roomLeft に置く（まだ書かない）
      HK.RoomLeft.write(ctx)：room-know.js の結末の締めのあとに。記録を書き、行く末（fate・fateNote）・気分・外に出たかを直す
-     結果の res.end.room.left に { id, title, who, by, mobs, vows, stayed, rescued } が入り、endings.js の E.whiteroom が「なお、あとから…」を書く */
+     結果の res.end.room.left に { id, title, who, by, vows, stayed, rescued } が入り、endings.js の E.whiteroom が「なお、あとから…」を書く */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -18640,21 +18659,6 @@
     lovehate: L('{a}は{b}の出ていった扉を思い出し、唇を噛んだ。「好きだった。だから、置いていったことは許さない｜＝｜好きでした。だから、置いていったことは許しません」|{a}「{b}に会ったら、まず一発殴る。それから……それから、のことは、そのとき考える｜＝｜{b}に会ったら、まず一発殴ります。それから……それから、のことは、そのとき考えます」|{a}は{b}への想いと恨みを、どちらも捨てられないまま外に出た。「必ず、もう一度会う｜＝｜必ず、もう一度会います」'),
     abandon: L('{a}は、自分を置いて扉をくぐった{b}の背中を忘れていなかった。「あのときの顔、一生覚えてるから｜あのときの顔は、一生覚えている｜あのときの顔、一生覚えていますから」|{a}は「{b}は、振り返りもしなかった｜＝｜{b}は、振り返りもしませんでした」とだけ言って、拳を握った。「次に会ったら、ただじゃおかない｜次に会ったら、ただではおかない｜次に会ったら、ただではおきません」|{a}は外に出ると、まず{b}の連絡先を探した。礼を言うためでは、なかった。')
   };
-  /* また知らない人と（{L}＝残った人、{M}＝入ってきた人たち） */
-  T.againOpen = L('ある朝、扉の鍵が外れる音がした。{L}は跳ね起きた。助けが来た――そう思った。|扉の向こうで話し声がした。{L}は扉に駆け寄り、「ここだよ！｜ここだ！｜ここです！」と叫んだ。扉が、ゆっくりと開いた。|照明がふいに明るくなり、扉が音もなく開いた。{L}は思わず立ち上がった。ついに、外に出られる。');
-  T.againIn = L('入ってきたのは、救助隊ではなかった。{M}――見知らぬ顔ぶれが、きょとんとした顔で部屋を見回した。背後で、扉が閉まった。|けれど扉の向こうに立っていたのは、{M}という、まったく知らない人たちだった。全員が中に入ったところで、扉はまた閉ざされた。|眠そうな顔の{M}が、押し出されるように部屋に入ってきた。誰もが「ここはどこ」と訊いた。扉は、もう閉まっていた。');
-  T.againPaper = L('扉の紙の文字が、いつの間にか書き換わっていた。新しい条件が、新しい顔ぶれの数だけ並んでいた。|扉の紙は新しいものに貼り替えられていた。条件の欄は、まだ空白だった。|扉には、見覚えのない二枚目の紙が増えていた。「ようこそ」とだけ書いてあった。');
-  T.againReact = {
-    proud: L('{a}は「また、か」と吐き捨て、新入りたちに向き直った。「いいか、この部屋のことは俺が一番分かってる」|{a}は新入りたちを見渡して、「足を引っぱるなよ」と言った。強がりでも言わないと、立っていられなかった。|{a}は閉じた扉を一度だけ睨み、それから先輩風を吹かせることにした。'),
-    stern: L('{a}は深く息を吸い、新入りたちに部屋の決まりを一つずつ説明しはじめた。|{a}は「落ち着いてください。まず、扉の紙を読みましょう」と言った。自分に言い聞かせるような声だった。|{a}は壁に引いた線の横に、新しく一本の印をつけた。数えなおしだった。'),
-    tsun: L('{a}は「なんで知らない人なの」と頭を抱えた。それでも、怯えている新入りに毛布を投げてやった。|{a}は「別に、歓迎とかしないから」と言いながら、差し入れの箱の開け方を教えた。|{a}は扉に背を向けて座りこんだ。「……ほんと、最悪」'),
-    gentle: L('{a}は泣きそうになるのをこらえて、新入りたちに笑いかけた。「大丈夫。ここ、ご飯は出るから」|{a}は混乱している新入りの肩に手を置いて、「一緒に出よう」と言った。|{a}は小さくため息をつき、それから新入りたちの名前を一人ずつ尋ねた。'),
-    devoted: L('{a}は自分のことはさておいて、新入りたちの顔色を一人ずつ確かめた。|{a}は「怖いですよね。私も、最初はそうでした」と言って、水を配った。|{a}は残っていた食べ物を、全部新入りたちに分けた。'),
-    cool: L('{a}は新入りたちを観察し、「人数が増えた分、条件の組み合わせも増えた」とつぶやいた。|{a}は動揺を顔に出さず、扉の紙の新しい文字を書き写した。|{a}は「前の扉と、開き方が同じとは限らない」と冷静に言った。声だけが、わずかにかすれていた。'),
-    free: L('{a}は「新しい顔ぶれだ！」と手を叩いた。新入りたちの引きつった顔を見て、少しだけ笑いを引っ込めた。|{a}は「よし、自己紹介大会！」と言いだした。誰も笑わなかったが、{a}は気にしなかった。|{a}は天井を見上げて大笑いした。笑うしか、なかった。'),
-    shy: L('{a}は扉の前で立ちすくんだまま、動けなかった。知らない人たちの視線が、怖かった。|{a}は部屋の隅に戻って膝を抱えた。新入りの一人が、心配そうに{a}の名前を尋ねた。|{a}は声にならない声で「どうして」とつぶやいた。'),
-    polite: L('{a}は気を取り直して、新入りたちに頭を下げた。「先に閉じ込められていた{a}と申します。よろしくお願いいたします」|{a}は丁寧に部屋の様子を説明した。その指先は、少しだけ震えていた。|{a}は「お互い、早く出られるといいですね」と穏やかに言った。笑顔は、少し引きつっていた。')
-  };
   /* ループ（{L}＝残った人） */
   T.loopOpen = L('突然、扉の鍵が外れる音がした。条件は満たしていない。それでも扉は、細く開いていた。{L}は迷わず飛び出した。|照明が一度だけまたたき、扉がひとりでに開いた。{L}は考えるより先に、外の廊下へ駆け出していた。|がちゃり、と音がして、扉が開いた。{L}は振り返らずに、白い廊下を走った。');
   T.loopHall = L('廊下はまっすぐで、どこまでも白かった。突き当たりの扉を押し開けると――そこは、白い部屋だった。扉には一枚の紙。見覚えのある文字が並んでいた。|走っても走っても、廊下の景色は変わらなかった。ようやく見つけた扉の先には、ベッドと、テーブルと、条件の紙。最初に目を覚ましたときと、何もかも同じ部屋だった。|角を曲がると、扉が一つだけあった。開けると、白い部屋だった。壁の時計は、目覚めたときと同じ時刻を指していた。');
@@ -18673,10 +18677,9 @@
   /* その後（結末の行の「〇〇のその後――」。部屋に残った人だけ。{a}） */
   T.after = {
     alone: L('{a}がその後どうなったのかを、知る人はいない。白い部屋の扉は、今も閉じたままだという。|{a}のいた白い部屋の話は、いつのまにか噂話のひとつになった。|{a}はまだ、あの白い部屋で扉が開くのを待っているのかもしれない。'),
-    again: L('{a}は、新しい顔ぶれと一緒に、また最初から条件の紙を読み上げることになった。|{a}の白い部屋には、知らない人たちの名前が増えた。今度こそ、と{a}は思った。|{a}は新入りたちに、白い部屋での過ごし方を教える側になった。'),
     loop: L('{a}の姿を、外で見た人はいない。ただ、白い部屋の夢を見たという人の話に、ときどき{a}の名前が出てくる。|{a}は今も、白い部屋の最初の一時間にいるのかもしれない。|{a}がその後どうなったのかは、誰にも分からない。扉の紙だけが、変わらずそこにある。')
   };
-  var TITLE = { alone: '最後まで部屋に残った', friend: '仲の良い人が助けに来た', rescue: '救助隊に助け出された', again: '別の人たちと閉じ込められた', loop: '白い部屋に戻った（？）' };
+  var TITLE = { alone: '最後まで部屋に残った', friend: '仲の良い人が助けに来た', rescue: '救助隊に助け出された', loop: '白い部屋に戻った（？）' };
 
   /* ---------- 残った人と、外にいる人 ---------- */
   function insideOf(ctx) {
@@ -18724,14 +18727,13 @@
       alone: 40 * (1 + stress / 250) * (inside.length === 1 ? 1.1 : 1),
       rescue: 38 * (outs.length ? 1.25 : 1) * (inside.some(function (c) { return c.flags && c.flags.knocked; }) ? 1.2 : 1),
       friend: best ? 55 * best.s / 100 : 0,
-      again: 10 * uncanny,
       loop: 10 * uncanny
     };
     var tot = 0, k;
     for (k in W) tot += W[k];
     var x = ctx.rng() * tot, id = 'alone';
     for (k in W) { x -= W[k]; if (x < 0) { id = k; break; } }
-    var o = { id: id, title: TITLE[id], who: inside.map(function (c) { return c.i; }), outs: outs.map(function (c) { return c.i; }), by: [], mobs: [], vows: [], stayed: inside.filter(function (c) { return c.flags && c.flags.stayed; }).map(function (c) { return c.i; }), rescued: id === 'friend' || id === 'rescue', cand: best ? best.k : '' };
+    var o = { id: id, title: TITLE[id], who: inside.map(function (c) { return c.i; }), outs: outs.map(function (c) { return c.i; }), by: [], vows: [], stayed: inside.filter(function (c) { return c.flags && c.flags.stayed; }).map(function (c) { return c.i; }), rescued: id === 'friend' || id === 'rescue', cand: best ? best.k : '' };
     if (id === 'friend') { o.by = [best.r.i]; o.to = best.x.i; o.bond = best.k; }
     ctx.flags.roomLeft = o;
     return o;
@@ -18801,21 +18803,6 @@
       });
       parts.push(fill(pk(ctx, T.rescueEnd), { L: LN }));
       why = '結末：取り残された人の結末（救助隊）' + (o.vows.length ? '／' + o.vows.map(function (v) { return C[v.a].name + 'から' + C[v.b].name + 'へ：' + { hate: '敵視', obsess: '執着', lovehate: '愛憎', abandon: '置いていかれた恨み' }[v.k]; }).join('、') : '');
-    } else if (o.id === 'again') {
-      var n = 3 + (ctx.rng() < 0.5 ? 1 : 0), gs = ctx.rng() < 0.5 ? ['m', 'f', 'm', 'f'] : ['f', 'm', 'f', 'm'], used = {};
-      C.forEach(function (c) { used[c.name] = 1; });
-      for (var m = 0, tries = 0; m < n && tries < 40; tries++) {
-        var mb = HK.Mob ? HK.Mob.make(ctx, { gender: gs[m], given: true }) : { name: ['佐伯湊', '七瀬澪', '倉田律', '雨宮灯'][m] };
-        /* 同じ名前・同じ苗字（頭の二文字）の人は並べない */
-        if (used[mb.name] || o.mobs.some(function (s) { return s.slice(0, 2) === mb.name.slice(0, 2); })) continue;
-        used[mb.name] = 1; o.mobs.push(mb.name); m++;
-      }
-      parts.push(fill(pk(ctx, T.againOpen), { L: LN }));
-      parts.push(fill(pk(ctx, T.againIn), { M: o.mobs.join('・') }));
-      parts.push(persons(ctx, G, 'againReact', U));
-      parts.push(pk(ctx, T.againPaper));
-      G.forEach(function (c) { bump(ctx, c, { fear: 25, grief: 12 }, 'また閉じ込められた'); });
-      why = '結末：取り残された人の結末（また知らない人と）／入ってきた人：' + o.mobs.join('・');
     } else {
       parts.push(fill(pk(ctx, T.loopOpen), { L: LN }));
       parts.push(pk(ctx, T.loopHall));
@@ -18829,7 +18816,6 @@
       var st = o.stayed.indexOf(c.i) >= 0;
       if (o.id === 'friend') { c.fate = '脱出'; c.fateNote = (st ? '条件を満たしたが自分から残り、' : '') + 'あとから' + C[o.by[0]].name + 'に助け出された'; c.out = true; }
       else if (o.id === 'rescue') { c.fate = '脱出'; c.fateNote = (st ? '条件を満たしたが自分から残り、' : '') + 'あとから救助隊に助け出された'; c.out = true; }
-      else if (o.id === 'again') { c.fate = '別の人たちと閉じ込められた'; c.fateNote = '助けが来たと思ったら、' + o.mobs.join('・') + 'と一緒に、また閉じ込められた'; }
       else if (o.id === 'loop') { c.fate = '白い部屋に戻った（？）'; c.fateNote = '開いた扉から飛び出したが、廊下の先はまた白い部屋だった'; }
     });
     ctx.flags.outcome = (ctx.flags.outcome || '') + '（' + TITLE[o.id] + '）';
@@ -18844,15 +18830,17 @@
     var who = X.names(o.who), base = (o.outs || []).length > 0;
     if (o.id === 'friend') return 'なお、あとから' + X.nm(o.by[0]) + 'が戻ってきて、' + who + 'を助け出した。';
     if (o.id === 'rescue') return base ? 'なお、あとから' + who + 'も救助隊に助け出された。' : 'なお、' + who + 'は、あとから救助隊に助け出された。';
-    if (o.id === 'again') return 'なお、' + who + 'は助けが来たと思ったが、扉から入ってきた' + o.mobs.join('・') + 'と一緒に、また閉じ込められた。';
     if (o.id === 'loop') return 'なお、' + who + 'は開いた扉から飛び出したが、廊下の先はまた白い部屋だった……。';
+    /* 今はない結末（古いセーブ・共有の結果）は、題名だけを出す */
+    if (o.id !== 'alone' && o.title) return 'なお、' + who + '：' + o.title + '。';
     return 'なお、' + who + 'は最後まで部屋に残った。';
   };
   /* 部屋に残った人の「その後」（救い出された人は epilogue.js の「脱出」のその後に任せる） */
   RL.afterLines = function (res) {
     var o = res && res.end && res.end.room && res.end.room.left;
-    if (!o || o.rescued) return [];
-    var C = res.chars || [], key = o.id === 'again' || o.id === 'loop' ? o.id : 'alone', out = [];
+    /* 今はない結末（古いセーブ・共有の結果）は、その後を書かない */
+    if (!o || o.rescued || !TITLE[o.id] || !o.who) return [];
+    var C = res.chars || [], key = o.id === 'loop' ? 'loop' : 'alone', out = [];
     o.who.forEach(function (i, k) {
       var c = C[i];
       if (!c) return;
@@ -30296,7 +30284,7 @@
     }
     if (LF) {
       headline += (out.length ? '脱出は' + out.length + '人。' : '') + HK.RoomLeft.note(res, X);
-      lines.push('取り残された人の結末：' + LF.title + (LF.id === 'friend' ? '（' + X.nm(LF.by[0]) + 'が外から扉を開けた）' : LF.id === 'again' ? '（' + LF.mobs.join('・') + 'が入ってきた）' : ''));
+      lines.push('取り残された人の結末：' + LF.title + (LF.id === 'friend' && LF.by && LF.by.length ? '（' + X.nm(LF.by[0]) + 'が外から扉を開けた）' : ''));
       (LF.vows || []).forEach(function (v) { lines.push(X.nm(v.a) + '：' + X.nm(v.b) + 'に' + { hate: '借りを返すと誓った', obsess: '必ず会いに行くと決めた', lovehate: 'もう一度会うと誓った（愛憎）', abandon: '置いていかれた恨みを忘れないと誓った' }[v.k]); });
     }
     (room.consumed || []).forEach(function (c) {
@@ -35065,7 +35053,7 @@
         a.flags.mourned = a.flags.mourned || {}; a.flags.mourned[o.i] = true;
         var k = RK.kind(ctx, a, o) || 'lock';
         ctx.stress(a, 18);
-        return { text: RK.fill(ctx.pick(TEXT[k] || TEXT.lock), { a: a.name, b: o.name }), why: a.name + 'は、' + o.name + 'を失った（' + ({ protA: '我が子のように守ってきた弟妹', protB: '守ってくれた兄姉', sibclose: '親友のようなきょうだい', teacherA: '教え子', teacherB: '先生', mentorA: '弟子', mentorB: '師匠', lock: 'ただ一人と決めていた相手' })[k] + '）', mag: 30, with: [o] };
+        return { text: RK.fill(ctx.pick(TEXT[k] || TEXT.lock), { a: a.name, b: o.name }), why: a.name + 'は、' + o.name + 'を失った（' + ({ protA: '我が子のように守ってきた弟妹', protB: '守ってくれた兄姉', sibclose: '親友のようなきょうだい', teacherA: '教え子', teacherB: '先生', mentorA: '弟子', mentorB: '師匠', lock: HK.locks(a).length > 1 ? '恋愛の相手と決めていた一人' : 'ただ一人と決めていた相手' })[k] + '）', mag: 30, with: [o] };
       }
     });
   };
@@ -35440,9 +35428,9 @@
   add({ id: 'ir_lrefuse', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { return RK.locked(a) && !RK.lockedTo(a, b) && ctx.R(b, a).att > 35 && !ctx.pair(a, b).lockRef; },
     w: function (ctx, a, b) { return 0.8 + ctx.R(b, a).att / 60; },
-    run: function (ctx, a, b) { ctx.pair(a, b).lockRef = true; ctx.mod(b, a, { att: -10, ten: 6 }); ctx.stress(b, 12); var t = ctx.chars[a.lock]; return { text: fill(ctx.pick(T.lockRefuse), mm(a, b)), why: a.name + 'は恋愛の相手を' + (t ? t.name + 'と' : '') + '決めている。' + b.name + 'の想い（惹かれ ' + Math.round(ctx.R(b, a).att) + '）には応えない' }; } });
+    run: function (ctx, a, b) { ctx.pair(a, b).lockRef = true; ctx.mod(b, a, { att: -10, ten: 6 }); ctx.stress(b, 12); var t = HK.lockNames(ctx.chars, a); return { text: fill(ctx.pick(T.lockRefuse), mm(a, b)), why: a.name + 'は恋愛の相手を' + (t ? t + 'と' : '') + '決めている。' + b.name + 'の想い（惹かれ ' + Math.round(ctx.R(b, a).att) + '）には応えない' }; } });
   ev('ir_ldevote', 'romance', function (ctx, a, b) { return RK.lockedTo(a, b); }, 5, function (ctx, a, b) { return 0.8 + a.tr.np * 0.4 + a.tr.ac * 0.3 + ctx.R(a, b).att / 80; },
-    function (ctx, a, b) { ctx.mod(a, b, { att: 6, aff: 4 }); ctx.mod(b, a, { aff: 6, att: 3 }); return { text: fill(ctx.pick(T.lockDevote), mm(a, b)), why: a.name + 'の想う相手は、' + b.name + 'ただ一人' }; });
+    function (ctx, a, b) { ctx.mod(a, b, { att: 6, aff: 4 }); ctx.mod(b, a, { aff: 6, att: 3 }); return { text: fill(ctx.pick(T.lockDevote), mm(a, b)), why: a.name + 'の想う相手は、' + (HK.locks(a).length > 1 ? b.name + 'たち（決めた人）' : b.name + 'ただ一人') }; });
   /* 兄貴・姉貴分／関西弁 */
   ev('ir_aniki', 'help', function (ctx, a) { return RK.tone(a) === 'aniki'; }, 5, function (ctx, a, b) { return 0.6 + a.tr.np * 0.5 + a.tr.lead * 0.4 + b.stress / 100; },
     function (ctx, a, b) { ctx.others(a).forEach(function (o) { ctx.stress(o, -5); ctx.mod(o, a, { trust: 4 }); }); return { text: fill(ctx.pick(T.anikiRally), mm(a, b)), why: a.name + 'の面倒見のよさ（NP・CP。兄貴・姉貴分）' }; });
@@ -36689,7 +36677,7 @@
   /* b の心が向いている相手（a 以外）。設定された関係（恋人・b からの片想い・セフレ）を最優先する */
   U.heartOf = function (ctx, b, a) {
     /* 恋愛相手を固定している人の心は、その相手にある */
-    if (HK.lockOut(b, a) && ctx.chars[b.lock] && ctx.chars[b.lock].alive !== false) return ctx.chars[b.lock];
+    if (HK.lockOut(b, a)) { var lp = HK.lockPeople(ctx.chars, b).filter(function (x) { return x.alive !== false; })[0]; if (lp) return lp; }
     var best = null, bv = 45;
     ctx.chars.forEach(function (o) {
       if (o === b || o === a) return;
@@ -36716,7 +36704,7 @@
   };
   U.unreq = function (ctx, a, b) { return U.crushOn(ctx, a, b) && !!U.cold(ctx, a, b); };
   var COLD_WHY = { none: '興味がない', friend: '友達としか見ていない', dislike: '苦手に思っている', other: 'ほかに好きな人がいる' };
-  U.why = function (ctx, a, b) { var c = U.cold(ctx, a, b); return a.name + 'の片想い。' + (c === 'other' ? b.name + 'には' + (HK.lockOut(b, a) && ctx.chars[b.lock] ? ctx.chars[b.lock].name + 'という、' : '') + 'ほかに好きな人がいる' : b.name + 'は' + a.name + 'を' + (COLD_WHY[c] || '意識していない')) + '（' + b.name + 'から' + a.name + 'への惹かれ ' + Math.round(ctx.R(b, a).att) + '）'; };
+  U.why = function (ctx, a, b) { var c = U.cold(ctx, a, b); return a.name + 'の片想い。' + (c === 'other' ? b.name + 'には' + (HK.lockOut(b, a) && HK.lockNames(ctx.chars, b) ? HK.lockNames(ctx.chars, b) + 'という、' : '') + 'ほかに好きな人がいる' : b.name + 'は' + a.name + 'を' + (COLD_WHY[c] || '意識していない')) + '（' + b.name + 'から' + a.name + 'への惹かれ ' + Math.round(ctx.R(b, a).att) + '）'; };
 
   /* ---------- 文 ---------- */
   var SCN = function (ctx) { return ctx.scen.id; };
@@ -38376,7 +38364,9 @@
       '<label title="耳・尾・牙・翼などの文の飾りが付きます。死のある箱庭（ゾンビの街・邪神村RTA・吹雪の館・宇宙船漂流記・ダンジョンRPG）では、吸血鬼は死んでも蘇り、三日に一度人の血を吸います">種族 ' + sel('race') + '</label>' +
       (c.race === 'other' ? '<label>種族の名前 <input type="text" data-gf="at_raceNote" value="' + esc(c.raceNote || '') + '" maxlength="12" placeholder="例：人魚" style="width:7em"></label>' : '') +
 /* r18: 全年齢版では省略 */
-      '<label title="快楽堕ち・催眠・常識改変・感覚遮断穴などで、堕ちやすさが変わります。強いと、体は流されても心は折れません">心の強さ ' + sel('will') + '</label>' + same + '</div>' + food(c, esc);
+      /* 心の強さの説明：R18版は堕ちる場面の箱庭も書く（全年齢版の bundle には入れない） */
+/* r18: 全年齢版では省略 */
+      (HK.SAFE_ON ? '<label title="催眠の箱庭で、暗示のかかりやすさが変わります。強いと、流されても心は折れません">心の強さ ' + sel('will') + '</label>' : '') + same + '</div>' + food(c, esc);
   };
   /* 「恋愛と夜」の節に置く、全体の夜の性格（R18版だけ。相手ごとに決めていない相手・モブが相手のとき） */
   A.nightHtml = function (c, h) {
@@ -44478,7 +44468,7 @@
     if (r18No && !ngP) { ngP = true; tieNL = true; nlWhy = r18No.name + 'はR18に参加しない'; }
     /* 性行為の相手を別の人に固定している（または固定した相手がこの箱庭にいない）：体の関係にならない（pos.js の向きの判定で clash になる） */
     var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (HK.sexLockOut(A, B) ? A : B) : null;
-    var sexWhy = sexP ? sexWho.name + 'は、' + W_SEXL + (input.chars[sexWho.sexLock] ? input.chars[sexWho.sexLock].name + 'に' : 'ほかの人に') + '決めている' : '';
+    var sexWhy = sexP ? sexWho.name + 'は、' + W_SEXL + (function () { /* 性行為の相手の固定は複数人を持てる（sexLocks。engine.js の HK.charFlags） */ var nm = (sexWho.sexLocks || (typeof sexWho.sexLock === 'number' ? [sexWho.sexLock] : [])).map(function (k) { return input.chars[k] && input.chars[k].name; }).filter(Boolean); return nm.length ? nm.join('・') + 'に' : 'ほかの人に'; })() + '決めている' : '';
     if (ngP) plotter = null;
     /* 拘束 */
     var bind = env.bind === 'random' ? rng.pick(['both', 'one', 'none', 'both']) : env.bind;
@@ -44694,7 +44684,7 @@
           continue;
         }
         /* 恋愛相手を別に決めている人は、ほとんど手を出さない */
-        if (HK.lockOut(a, b)) { urge -= 0.45; if (urge > 0.3 && !a.lockSaid) { a.lockSaid = true; ST.sayB(S, { actors: [a, b], tag: '心に決めた人', text: ST.fmt(pk(LK.LOCKED || ['{a}は{b}の肩を押し返した。「……ごめん。心に決めた人がいるから」']), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を決めている（' + b.name + 'ではない）', mag: 18 }); continue; } }
+        if (HK.lockOut(a, b)) { urge -= 0.45; if (urge > 0.3 && !a.lockSaid) { a.lockSaid = true; ST.sayB(S, { actors: [a, b], tag: '心に決めた人', text: ST.fmt(pk(LK.LOCKED || ['{a}は{b}の肩を押し返した。「……ごめん。心に決めた人がいるから｜……すまない。心に決めた人がいる｜……ごめんなさい。心に決めた人がいるんです」']), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を決めている（' + b.name + 'ではない）', mag: 18 }); continue; } }
         if (urge < 0.36 + rng() * 0.3) continue;
         /* 受け攻め：向きの決まらない二人は、手を出さずに耐える */
         if (clash) { holdClash(a, b); continue; }
@@ -58377,7 +58367,8 @@
   }
 
   /* ---------- 切り替えボタン（R18版だけ） ---------- */
-  var SAFE_URL = 'https://kaimin.sakura.ne.jp/archive/tools/hakoniwa/';
+  /* 全年齢版の公開URL。共有ボタン（share-card.js）が付けるリンクもこれ（R18版・全年齢モードからの共有も全年齢版へ）。index.html の og:url・og:image も同じURL */
+  var SAFE_URL = HK.PUBLIC_URL = 'https://kaimin.sakura.ne.jp/archive/tools/hakoniwa/';
   function toggleUI() {
     if (BUILD) return;
     var brand = document.querySelector('header.top .brand');
@@ -58702,7 +58693,7 @@
   'use strict';
   var HK = window.HK;
   var CONF = HK.CONF = HK.CONF || {};
-  /* 投稿に付けるリンク。公開先が決まったらここにURLを入れる（空なら Tool置き場） */
+  /* 投稿に付けるリンク。空なら全年齢版の公開URL（js/safe.js の HK.PUBLIC_URL。R18版・全年齢版・全年齢モードのどれでも同じ。共有カードの og タグが付くページ）。それも無ければ Tool置き場 */
   if (CONF.siteUrl == null) CONF.siteUrl = '';
   CONF.toolsUrl = CONF.toolsUrl || 'https://kaimin.sakura.ne.jp/archive/#/links';
   CONF.boothUrl = CONF.boothUrl || 'https://bab666.booth.pm';
@@ -58719,7 +58710,8 @@
   var isMobile = /Android|iPhone|iPad|iPod/i.test(ua) || (/Mac/.test(plat) && navigator.maxTouchPoints > 1);
   var isMac = /Mac/.test(plat) && !isMobile;
 
-  function link() { return CONF.siteUrl || CONF.toolsUrl; }
+  function link() { return CONF.siteUrl || HK.PUBLIC_URL || CONF.toolsUrl; }
+  SH.link = link;
   function plain(s) { return String(s == null ? '' : s).replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'"); }
   function safe(s) { return String(s).replace(/[\\/:*?"<>|\s]/g, '').slice(0, 16) || '箱庭'; }
 
@@ -59526,7 +59518,6 @@
         ] },
         { h: '心の強さ', items: [
           '催眠の箱庭で、暗示のかかりやすさが変わります（弱いとかかりやすく、強いとかかりにくい）。',
-          '感覚遮断穴の「精神力」はこの値です（弱い 1・ふつう 3・強い 5。おまかせなら回ごとにランダム）。',
           '強いと、体は流されても心は折れない一文が付きます。'
         ] },
         { h: '好きな食べ物・嫌いな食べ物・好きな味', items: [
