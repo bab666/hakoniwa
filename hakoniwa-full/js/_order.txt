@@ -118,6 +118,7 @@ js/room-reluct.js
 js/room-trio-lines.js
 js/room-trio.js
 js/room-left.js
+js/room-cheer.js
 js/hate-sex-r18.js
 js/hate-love-r18.js
 js/room-know.js
@@ -203,6 +204,7 @@ js/factions.js
 late js/birthday.js
 late js/classroom-life.js
 js/classroom-teacher.js
+js/classroom-cheer.js
 js/endings.js
 js/epilogue.js
 js/scenario-futari.js
@@ -229,6 +231,7 @@ js/island-stay.js
 js/island-corpse.js
 js/island-sea.js
 js/island-love.js
+js/island-cheer.js
 js/unreq.js
 js/fwbcrush.js
 js/pining.js
