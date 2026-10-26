@@ -52,9 +52,9 @@
       run: function (ctx) {
         var P = ctx.present(), a = ctx.rng.pick(P);
         ctx.incident(a.name + 'のスマホが鳴った。画面には元恋人の名前。');
-        if (a.tr.honesty > 0.6) ctx.act2({ actors: [a], cat: 'bond', fx: function () { ctx.others(a).forEach(function (o) { ctx.mod(o, a, { trust: 4 }); }); }, text: ctx.t('「元カレ……いや、元カノか。どっちでもいいや｜元カレ……いや、元カノか。どちらでもいい｜元カレ……いや、元カノですか。どちらでもいいです」{a}は画面を伏せて笑った。', a), why: a.name + 'の本音の出やすさ' });
+        if (a.tr.honesty > 0.6) ctx.act2({ actors: [a], cat: 'bond', fx: function () { ctx.others(a).forEach(function (o) { ctx.mod(o, a, { trust: 4 }); }); }, text: ctx.t('「元カレ……いや、元カノか。どっちでもいいや｜元カレ……いや、元カノか。どちらでもいい｜元カレ……いえ、元カノでした。どちらでもいいです」{a}は画面を伏せて笑った。', a), why: a.name + 'の本音の出やすさ' });
         else if (a.tr.cold > 0.55) ctx.act2({ actors: [a], cat: 'solo', text: ctx.t('{a}は表情を変えずに着信を切り、電源ごと落とした。', a), why: a.name + 'のドライさ' });
-        else ctx.act2({ actors: [a], cat: 'solo', fx: function () { ctx.stress(a, 14); }, text: ctx.t('{a}は「ちょっと｜＝｜ちょっと失礼します」と言って席を外し、しばらく戻ってこなかった。', a), why: a.name + 'のAC：切り捨てられない' });
+        else ctx.act2({ actors: [a], cat: 'solo', fx: function () { ctx.stress(a, 14); }, text: ctx.t('{a}は「ちょっと｜少し失礼する｜ちょっと失礼します」と言って席を外し、しばらく戻ってこなかった。', a), why: a.name + 'のAC：切り捨てられない' });
         ctx.others(a).forEach(function (o) {
           if (R(ctx, o, a).att > 35) ctx.act2({ actors: [o, a], cat: 'conflict', fx: function () { ctx.mod(o, a, { att: 4, ten: 6 }); ctx.stress(o, 8); }, text: ctx.t('{a}は、{b}が戻ってくるまでグラスの氷ばかり見ていた。', o, a), why: o.name + 'は' + a.name + 'に惹かれていた（嫉妬・執着 ' + Math.round(o.tr.jealous * 100) + '）' });
         });
@@ -151,7 +151,7 @@
         } else {
           drinker = ctx.most(P, function (c) { return c.tr.np * 0.45 + c.tr.impulse * 0.45 + c.tr.cold * 0.3 + (c.goal.id === 'quick' ? 0.4 : 0) + (c.goal.id === 'respect' ? 0.3 : 0); });
           how = drinker.tr.np >= Math.max(drinker.tr.impulse, drinker.tr.cold) ? 'np' : drinker.tr.impulse >= drinker.tr.cold ? 'fc' : 'cold';
-          var line = { np: '「誰かに飲ませるくらいなら、自分が飲む｜＝｜誰かに飲ませるくらいなら、自分が飲みます」{a}はそう言って小瓶を空けた。', fc: '「どうせなら試してみたいでしょ｜どうせなら試してみたいだろう｜どうせなら試してみたいでしょう」{a}は止める間もなく一息に飲み干した。', cold: '「効率の問題だよ｜効率の問題だ｜効率の問題です」{a}は表情も変えずに小瓶を傾けた。' }[how];
+          var line = { np: '「誰かに飲ませるくらいなら、私が飲む｜＝｜誰かに飲ませるくらいなら、私が飲みます」{a}はそう言って小瓶を空けた。', fc: '「どうせなら試してみたいでしょ｜どうせなら試してみたいだろう｜どうせなら試してみたいでしょう」{a}は止める間もなく一息に飲み干した。', cold: '「効率の問題だよ｜効率の問題だ｜効率の問題です」{a}は表情も変えずに小瓶を傾けた。' }[how];
           ctx.act2({ actors: [drinker], cat: 'romance', mag: 10, text: ctx.t(line, drinker), why: drinker.name + 'の' + { np: 'NP（自分が引き受ける）', fc: '衝動性（FC高・A低）', cold: 'ドライさ（A高・NP低）' }[how] });
         }
         drinker.flags.aphro = true;
@@ -190,8 +190,8 @@
           else if (c.tr.fc > 0.65) {
             /* 隣にノリのいい人（FC・人懐こさ）か仲のいい人がいれば、二人でピース */
             var pal = ctx.most(ctx.others(c).filter(function (o) { return o.tr.ac <= 0.6 && (o.tr.fc > 0.5 || o.tr.warmth > 0.55 || ctx.R(o, c).aff > 25); }), function (o) { return o.tr.fc * 0.5 + o.tr.warmth * 0.3 + ctx.R(o, c).aff / 100; });
-            var duo = pal ? ctx.pick(['{a}はレンズに向かってピースした。「どうせ見てるなら｜どうせ見ているなら｜どうせ見ているなら」――{b}もすかさず隣に並んで、二人でピースした。', '{a}はレンズに向かってピースした。{b}が横から顔を出して、ダブルピースで割り込んだ。', '{a}は{b}の腕を引っぱって、二人でレンズに向かってピースした。「盛れてる？｜盛れているか｜盛れていますか？」', '{a}と{b}は、レンズの前で指ハートを半分ずつ作って、くっつけた。']) : '';
-            ctx.act2({ actors: pal ? [c, pal] : [c], cat: 'bond', fx: function () { ctx.others(c).forEach(function (o) { ctx.stress(o, -5); ctx.mod(o, c, { aff: 3 }); }); if (pal) ctx.mod2(c, pal, { aff: 5 }, { aff: 5 }); }, text: pal ? ctx.t(duo, c, pal) : ctx.t('{a}はレンズに向かってピースした。「どうせ見てるなら｜どうせ見ているなら｜どうせ見ているなら」', c), why: c.name + 'のFC' + (pal ? '。' + pal.name + 'も乗った（FC・人懐こさ）' : '') });
+            var duo = pal ? ctx.pick(['{a}はレンズに向かってピースした。「どうせ見てるなら｜どうせ見ているなら｜どうせ見ているのでしたら」――{b}もすかさず隣に並んで、二人でピースした。', '{a}はレンズに向かってピースした。{b}が横から顔を出して、ダブルピースで割り込んだ。', '{a}は{b}の腕を引っぱって、二人でレンズに向かってピースした。「盛れてる？｜盛れているか｜盛れていますか？」', '{a}と{b}は、レンズの前で指ハートを半分ずつ作って、くっつけた。']) : '';
+            ctx.act2({ actors: pal ? [c, pal] : [c], cat: 'bond', fx: function () { ctx.others(c).forEach(function (o) { ctx.stress(o, -5); ctx.mod(o, c, { aff: 3 }); }); if (pal) ctx.mod2(c, pal, { aff: 5 }, { aff: 5 }); }, text: pal ? ctx.t(duo, c, pal) : ctx.t('{a}はレンズに向かってピースした。「どうせ見てるなら｜どうせ見ているなら｜どうせ見ているのでしたら」', c), why: c.name + 'のFC' + (pal ? '。' + pal.name + 'も乗った（FC・人懐こさ）' : '') });
           }
         });
       }

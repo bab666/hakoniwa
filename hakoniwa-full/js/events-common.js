@@ -195,10 +195,10 @@
       run: function (ctx, a, b) {
         if (b.tr.cp > 0.7 && b.tr.np < 0.4) {
           ctx.mod2(a, b, { ten: -4 }, { ten: -2, trust: 2 });
-          return { text: ctx.t('{a}が先に謝った。{b}は「最初からそうすればいいじゃん｜最初からそうすればいい｜最初からそうすればいいんです」とだけ言った。', a, b), why: b.name + 'のCP高・NP低：謝罪を当然として受け取る' };
+          return { text: ctx.t('{a}が先に謝った。{b}は「最初からそうすればいいじゃん｜最初からそうすればいい｜最初からそうすればいいじゃないですか」とだけ言った。', a, b), why: b.name + 'のCP高・NP低：謝罪を当然として受け取る' };
         }
         ctx.mod2(a, b, { ten: -14, trust: 5 }, { ten: -16, trust: 8, aff: 5 });
-        return { text: ctx.t('{a}が{b}に頭を下げた。{b}も「こっちも悪かった｜＝｜こちらも悪かったです」と返した。', a, b), why: a.name + 'のAC・NP（関係を修復したがる）' };
+        return { text: ctx.t('{a}が{b}に頭を下げた。{b}も「こっちも悪かった｜こちらも悪かった｜こちらこそ、すみませんでした」と返した。', a, b), why: a.name + 'のAC・NP（関係を修復したがる）' };
       }
     },
     {

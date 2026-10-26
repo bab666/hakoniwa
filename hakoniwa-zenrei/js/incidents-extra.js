@@ -49,7 +49,7 @@
         P.forEach(function (c) { ctx.stress(c, -3); });
         var pr = zPair(ctx, P, 15);
         if (pr) ctx.act2({ actors: pr, cat: R(ctx, pr[0], pr[1]).att > 35 && loveOK(ctx, pr[0], pr[1]) ? 'romance' : 'bond', fx: function () { ctx.mod2(pr[0], pr[1], loveOK(ctx, pr[0], pr[1]) ? { aff: 5, att: 3 } : { aff: 5 }, loveOK(ctx, pr[0], pr[1]) ? { aff: 5, att: 3 } : { aff: 5 }); },
-          text: ctx.t(ctx.pick(L('雨宿りの軒下で、{a}と{b}は濡れた肩を寄せ合った。しばらく、どちらも何も言わなかった。|{a}は{b}に、乾いた上着を半分かけた。「雨の音、嫌いじゃない｜＝｜雨の音、嫌いじゃないです」と{b}が言った。')), pr[0], pr[1]), why: '雨で群れが静まった（ハプニングの頻度 ' + ctx.env.incident + '）' });
+          text: ctx.t(ctx.pick(L('雨宿りの軒下で、{a}と{b}は濡れた肩を寄せ合った。しばらく、どちらも何も言わなかった。|{a}は{b}に、乾いた上着を半分かけた。「雨の音、嫌いじゃない｜雨の音は、嫌いではない｜雨の音、嫌いじゃないです」と{b}が言った。')), pr[0], pr[1]), why: '雨で群れが静まった（ハプニングの頻度 ' + ctx.env.incident + '）' });
       }
     },
     {

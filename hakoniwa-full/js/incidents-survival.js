@@ -78,7 +78,7 @@
         if (grab && grab.tr.aggr > 0.6 && grab !== giver) {
           var who = ctx.most(ctx.others(grab), function (o) { return o.tr.cp + o.tr.a * 0.5; });
           ctx.act2({ actors: [grab, who], cat: 'conflict', fx: function () { grab.hp += 6; ctx.others(grab).forEach(function (o) { ctx.mod(o, grab, { trust: -12, ten: 10 }); }); ctx.mod2(who, grab, { ten: 15 }, { ten: 10 }); },
-            text: ctx.t('配給の貝を一つ余計に取った{a}を、{b}が見逃さなかった。「数えてるんだぞ｜数えているんだ｜数えているんですよ」', grab, who), why: grab.name + 'の攻撃性・ドライさ／' + who.name + 'のCP・A（不正を許さない）' });
+            text: ctx.t('配給の貝を一つ余計に取った{a}を、{b}が見逃さなかった。「数えてるんだよ｜数えているんだ｜数えているんですよ」', grab, who), why: grab.name + 'の攻撃性・ドライさ／' + who.name + 'のCP・A（不正を許さない）' });
         }
         ctx.food += 6;
         P.forEach(function (c) { c.stress = HK.clamp(c.stress + 10, 0, 100); });
@@ -167,7 +167,7 @@
         if (eater.alive && nurse && nurse.tr.np > 0.45) ctx.act2({ actors: [nurse, eater], cat: 'help', fx: function () { eater.hp += 10; ctx.mod2(nurse, eater, { aff: 3 }, { aff: 12, trust: 12 }); },
           text: ctx.t('{a}は{b}の背中をさすり続け、真水を少しずつ飲ませた。', nurse, eater), why: nurse.name + 'のNP' });
         if (eater.alive && mock && mock !== nurse && mock.tr.cp > 0.6) ctx.act2({ actors: [mock, eater], cat: 'conflict', fx: function () { ctx.mod(eater, mock, { ten: 12, aff: -6 }); },
-          text: ctx.t('「だから言っただろ｜だから言っただろう｜だから言ったでしょう」と{a}が吐き捨てた。{b}は言い返す気力もなかった。', mock, eater), why: mock.name + 'のCP高・NP低' });
+          text: ctx.t('「だから言ったじゃん｜だから言っただろう｜だから言ったでしょう」と{a}が吐き捨てた。{b}は言い返す気力もなかった。', mock, eater), why: mock.name + 'のCP高・NP低' });
       }
     },
     {
@@ -181,7 +181,7 @@
         P.forEach(function (c) { c.stress = HK.clamp(c.stress + 16, 0, 100); });
         var blamer = ctx.most(ctx.others(sig), function (o) { return o.tr.aggr + o.stress / 100; });
         if (blamer && blamer.tr.aggr > 0.55) ctx.act2({ actors: [blamer, sig], cat: 'conflict', fx: function () { ctx.mod2(blamer, sig, { ten: 14, aff: -6 }, { ten: 10 }); },
-          text: ctx.t('「火を焚くのが遅かったんだ｜火を焚くのが遅かったのだ｜火を焚くのが遅かったんです」{a}は{b}のせいにした。', blamer, sig), why: blamer.name + 'の攻撃性と失望' });
+          text: ctx.t('「火を焚くのが遅かったんだ｜火を焚くのが遅かった｜火を焚くのが遅かったんです」{a}は{b}のせいにした。', blamer, sig), why: blamer.name + 'の攻撃性と失望' });
         var comf = ctx.most(P, function (c) { return c.tr.np + c.tr.fc * 0.3; });
         var low = ctx.most(ctx.others(comf), function (o) { return o.stress; });
         if (comf && low && comf.tr.np > 0.5) ctx.act2({ actors: [comf, low], cat: 'help', fx: function () { ctx.stress(low, -15); ctx.mod(low, comf, { aff: 8, trust: 8 }); },

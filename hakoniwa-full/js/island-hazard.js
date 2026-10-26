@@ -79,7 +79,7 @@
       var go = vote > 0.2 || rng() < 0.25;
       H.stage = go ? 'arm' : 'avoid';
       ctx.act2({ actors: [lead, shy], cat: go ? 'bond' : 'conflict', fx: function () { ctx.mod2(lead, shy, { ten: go ? 3 : 8 }, { ten: go ? 5 : 3 }); },
-        text: go ? lead.name + '「このままじゃ、また誰かがやられる。こっちから' + B.name + 'を仕留めに行こう｜このままでは、また誰かがやられる。こちらから' + B.name + 'を仕留めに行こう｜このままでは、また誰かがやられます。こちらから' + B.name + 'を仕留めに行きましょう」' + shy.name + '「…本気？｜…本気か？｜…本気ですか？」' + lead.name + '「本気。まずは武器だ｜本気だ。まずは武器だ｜本気です。まずは武器です」' :
+        text: go ? lead.name + '「このままじゃ、また誰かがやられる。こっちから' + B.name + 'を仕留めに行こう｜このままでは、また誰かがやられる。こちらから' + B.name + 'を仕留めに行こう｜このままでは、また誰かがやられます。こちらから' + B.name + 'を仕留めに行きましょう」' + shy.name + '「…本気？｜…本気か？｜…本気ですか？」' + lead.name + '「本気。まずは武器｜本気だ。まずは武器だ｜本気です。まずは武器からです」' :
           lead.name + '「' + B.name + 'を退治しに行くべきだ｜＝｜' + B.name + 'を退治しに行くべきです」' + shy.name + '「危なすぎる。近づかなければいいだけでしょ｜危なすぎる。近づかなければいいだけだろう｜危なすぎます。近づかなければいいだけでしょう」結局、拠点の周りに近づかないことになった。',
         why: '討伐か回避か（全員の攻撃性・CP・狩猟と慎重さの綱引き）' });
       return;
@@ -111,12 +111,12 @@
       var intro = names(party) + 'は' + wpn + 'を手に、' + B.name + 'の巣へ向かった。';
       if (power > need + 0.25) {
         fx = function () { party.forEach(function (c) { ctx.others(c).forEach(function (o) { ctx.mod(o, c, { trust: 8, aff: 4 }); }); party.forEach(function (d) { if (c !== d) ctx.mod(c, d, { trust: 10, aff: 6 }); }); }); P.forEach(function (c) { ctx.stress(c, -15); }); if (B.meat) ctx.food += B.meat; };
-        text = intro + pk(ctx, [hero.name + 'の' + wpn + 'が、' + B.name + 'の頭を正確に捉えた。' + hero.name + '「…やった、やったぞ！｜＝｜…やった、やりました！」', '三方向から追い詰め、最後は' + hero.name + 'がとどめを刺した。帰り道、全員が少しだけ笑っていた。', hero.name + '「今だ！｜＝｜今です！」の合図で一斉にかかった。' + B.name + 'は動かなくなった。']) + (B.meat ? 'その夜は' + B.name + 'の肉で宴になった。' : '拠点に、ようやく安心が戻った。');
+        text = intro + pk(ctx, [hero.name + 'の' + wpn + 'が、' + B.name + 'の頭を正確に捉えた。' + hero.name + '「…やった、やった！｜…やった、やったぞ！｜…やった、やりました！」', '三方向から追い詰め、最後は' + hero.name + 'がとどめを刺した。帰り道、全員が少しだけ笑っていた。', hero.name + '「今だ！｜＝｜今です！」の合図で一斉にかかった。' + B.name + 'は動かなくなった。']) + (B.meat ? 'その夜は' + B.name + 'の肉で宴になった。' : '拠点に、ようやく安心が戻った。');
         H.stage = 'done'; I.slain = (I.slain || []).concat([{ b: B.name, hero: hero.i }]);
       } else if (power > need - 0.15) {
         var hurt = pk(ctx, party);
         fx = function () { hurt.hp -= B.dmg * 0.7; if (B.venom) hurt.flags.venom = 2; party.forEach(function (c) { ctx.stress(c, 6); }); if (B.meat) ctx.food += B.meat * 0.6; };
-        text = intro + B.name + 'は仕留めた。だが' + hurt.name + 'が深手を負った。' + hurt.name + '「…平気。平気だから、そんな顔すんな｜…平気だ。平気だから、そんな顔をするな｜…平気です。平気ですから、そんな顔をしないでください」';
+        text = intro + B.name + 'は仕留めた。だが' + hurt.name + 'が深手を負った。' + hurt.name + '「…平気。平気だから、そんな顔しないで｜…平気だ。平気だから、そんな顔をするな｜…平気です。平気ですから、そんな顔をしないでください」';
         H.stage = 'done'; I.slain = (I.slain || []).concat([{ b: B.name, hero: hero.i }]);
       } else {
         var down = pk(ctx, party);
