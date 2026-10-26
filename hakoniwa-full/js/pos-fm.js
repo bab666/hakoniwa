@@ -97,8 +97,8 @@
     /* 相手が名前だけ（モブ・客）のとき：A は女性の攻め、bn は男性の相手の名前（呼ぶ側で確かめること） */
     fixWith: function (ctx, text, A, bn) {
       if (!A || !bn || typeof text !== 'string' || (P.noGen && P.noGen(A)) || !SEXCTX.test(text.replace(/「[^」]*」/g, ''))) return text;
-      var B = { name: bn }, st = styleOf(A), an = A.name, last = '', used = {};
-      var reA = new RegExp(an + '(?:は|が|も)'), reB = new RegExp(bn + '(?:は|が|も)'), inB = new RegExp(bn + 'の(?:中|奥|後ろ|ナカ|\\{ナカ\\}|\\{後ろ\\})'), partA = new RegExp(an + 'の(?:もの|モノ|昂り|先端|根元|竿|ちんぽ|肉棒|ペニス|\\{男性器\\}|\\{亀頭\\})');
+      var B = { name: bn }, st = styleOf(A), an = A.name, anR = HK.reEsc(an), bnR = HK.reEsc(bn), last = '', used = {};
+      var reA = new RegExp(anR + '(?:は|が|も)'), reB = new RegExp(bnR + '(?:は|が|も)'), inB = new RegExp(bnR + 'の(?:中|奥|後ろ|ナカ|\\{ナカ\\}|\\{後ろ\\})'), partA = new RegExp(anR + 'の(?:もの|モノ|昂り|先端|根元|竿|ちんぽ|肉棒|ペニス|\\{男性器\\}|\\{亀頭\\})');
       var changed = false;
       /* 段落に分けた山場で、すでに女性上位（跨る・腰を落とす・呑み込む）の書き方になっている段落は直さない */
       if (text.indexOf('\n\n') >= 0) {

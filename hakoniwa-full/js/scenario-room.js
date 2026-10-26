@@ -1069,7 +1069,7 @@
   /* 誰かを殺さないと出られない（全年齢版・全年齢モードは、気絶させる）。ドライで攻撃的な人ほど踏み切り、優しい人・相手を想う人は踏みとどまる */
   function killRule(ctx) { return ctx.rules.filter(function (r) { return r.k === 'kill'; })[0]; }
   EV.push({
-    id: 'cond_kill', cat: 'betray', scope: 'pair', pri: true,
+    id: 'cond_kill', cat: 'betray', dk: 'kill', scope: 'pair', pri: true,
     /* 憎悪を持っても殺さない相手（attr.js の HK.Attr.spare）には、この出来事を選ばない（文を先に書いてから kill を呼ぶ作りなので、選ぶ段階で外す。全年齢の「気絶させる」も同じ） */
     when: function (ctx, a, b) { var r = killRule(ctx); return !!r && !globDone(ctx, r) && ctx.stepIndex > 0 && !a.flags.down && !b.flags.knocked && b.alive !== false && a.stress > 40 && !(HK.Attr && HK.Attr.spare && HK.Attr.spare(ctx, b, a)); },
     w: function (ctx, a, b) { return Math.max(0.02, a.tr.cold * 0.6 + a.tr.aggr * 0.5 - a.tr.np * 0.6 + a.stress / 140 - Math.max(0, ctx.R(a, b).aff) / 120 - 0.3); },

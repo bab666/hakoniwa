@@ -38,7 +38,7 @@
     var scen = HK.SCENARIOS[scenId], env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
     env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
-    env.heavy = HK.Dark ? HK.Dark.on(input.env) : 'normal';   /* 展開の重さ（mood-dial.js。全体の設定） */
+    if (HK.Dark) HK.Dark.keep(input.env, env); else env.heavy = 'normal';   /* 展開の重さ（mood-dial.js。全体の設定） */
     var S = { scen: scen, rng: HK.rng(input.seed), env: env, log: [], hist: [], turns: [], recent: [], flags: {}, cnt: {}, q: [], step: 0, label: '' };
     S.h = K.hero(S, input.chars[0], (input.perChar && input.perChar[0]) || {});
     S.party = [S.h];
@@ -83,6 +83,8 @@
   K.say = function (S, o) {
     o.n = S.log.length; o.room = S.step; o.floor = 0;
     o.v = { r: Math.round(Math.max(0, S.h.reason)), p: Math.round(S.h.pleasure), c: Math.round(S.h.corrupt) };
+    /* エロシーンの印（ero-scene.js） */
+    if (o.kind !== 'step' && HK.EroScene && HK.EroScene.hit(S, o)) o.lewd = true;
     S.log.push(o);
     return o;
   };

@@ -401,12 +401,12 @@
       var orv = K.say(S, { kind: 'sys', tag: '立場逆転', text: K.fmt(S, K.pick(S, top ? M.TOP_REVERSE : M.REVERSE)), why: top ? (TR ? '受け攻め：' + TR.name + 'との組では客が主導する側' : '攻めの指定：触られる側には回らない') + '／FC・攻撃性 ' + Math.round(h.tr.aggr * 100) + '・経験 ' + h.stats.exp : '強気・攻撃性 ' + Math.round(h.tr.aggr * 100) + '・経験 ' + h.stats.exp });
       K.key(S, orv, '施術者を押し倒した');
       var rv = dark ? [K.pick(S, MD.reverse)] : S.rng.shuffle(M.REVERSE_ACT).slice(0, 2);
-      rv.forEach(function (t2) { K.say(S, { kind: 'ev', tag: '逆転', text: K.fmt(S, t2), why: '' }); });
+      rv.forEach(function (t2) { K.say(S, { kind: 'ev', tag: '逆転', lewd: true, text: K.fmt(S, t2), why: '' }); });
       /* 厚く：客が施術者を責めはじめるところを段落で */
-      if (!dark && lwOn()) K.say(S, { kind: 'ev', tag: '逆転', text: ML.rev(lwc(true), kindT).replace(/^\n\n/, ''), why: '主導権は客の側' });
+      if (!dark && lwOn()) K.say(S, { kind: 'ev', tag: '逆転', lewd: true, text: ML.rev(lwc(true), kindT).replace(/^\n\n/, ''), why: '主導権は客の側' });
       if (top && !dark) {
         var tp = thick(true) || K.pick(S, posTop());
-        K.say(S, { kind: 'ev', tag: tp.n, text: K.fmt(S, tp.t), why: '主導権は最後まで客の側' });
+        K.say(S, { kind: 'ev', tag: tp.n, lewd: true, text: K.fmt(S, tp.t), why: '主導権は最後まで客の側' });
       }
       if (!top) { h.pleasure += 30; while (h.pleasure >= 100) K.climax(S); }
       /* まれに、腕を見込まれてスカウトされる。受けるかどうかは性格と店の様子しだい */
@@ -444,7 +444,7 @@
       var text = K.fmt(S, K.pick(S, dark && MD.act[st[0]] ? MD.act[st[0]] : ACT[st[0]])), bd = band(lvl);
       if (sleeping) {
         /* 寝ている間：本人の反応のかわりに、寝ている間の様子 */
-        K.say(S, { kind: 'ev', tag: st[0] + '（睡眠中）', text: text + ' ' + K.fmt(S, K.pick(S, M.SLEEP_DUR)), why: '眠っている間に施術が進んだ／快感 ＋' + Math.round(r.gain) });
+        K.say(S, { kind: 'ev', tag: st[0] + '（睡眠中）', lewd: lvl >= 3 || r.climaxes.length > 0, text: text + ' ' + K.fmt(S, K.pick(S, M.SLEEP_DUR)), why: '眠っている間に施術が進んだ／快感 ＋' + Math.round(r.gain) });
         logC(r.climaxes);
         sleeping--;
         if (!sleeping) {
@@ -461,7 +461,7 @@
           wrongShown++; h.reason += 1; sus += 3;
           rx = ' ' + fw(M.WRONG[h.persona] || M.WRONG.gentle) + (wrongShown > 1 && rng() < 0.5 ? ' ' + fw(M.WRONG_BODY) : '');
         }
-        K.say(S, { kind: 'ev', tag: wrongNow ? st[0] + '（拒否反応）' : st[0], text: text + rx + shiftT, why: (lvl >= 2 ? '際どさ ' + Math.round(lvl) + '／快感 ＋' + Math.round(r.gain) : '') + (wrongNow ? '／' + wrongWhy + '：抵抗が強い' : '') });
+        K.say(S, { kind: 'ev', tag: wrongNow ? st[0] + '（拒否反応）' : st[0], lewd: lvl >= 3 || r.climaxes.length > 0, text: text + rx + shiftT, why: (lvl >= 2 ? '際どさ ' + Math.round(lvl) + '／快感 ＋' + Math.round(r.gain) : '') + (wrongNow ? '／' + wrongWhy + '：抵抗が強い' : '') });
         logC(r.climaxes);
       }
       /* 施術者の一言 */
@@ -535,7 +535,7 @@
       }
       if (!hardTop && !left && !sleeping && stayed && !asked && h.corrupt > (wrong ? 75 : 55) && rng() < (wrong ? 0.2 : 0.4) + h.tr.fc * 0.3) {
         asked = true;
-        K.say(S, { kind: 'ev', tag: 'おねだり', text: K.fmt(S, K.pick(S, ['{a}は自分から{m}の手を掴んで、そこへ導いた。「…もっと、ちゃんと｜…もっと、ちゃんとしろ｜…もっと、ちゃんとしてください」', '{a}は消え入りそうな声で言った。「…最後まで、して｜…最後まで、しろ｜…最後まで、してください」', '{a}「延長って、できる？｜延長はできるか｜延長って、できますか」――声が震えていた。'])), why: '堕ち度 ' + Math.min(100, Math.round(h.corrupt)) });
+        K.say(S, { kind: 'ev', tag: 'おねだり', lewd: true, text: K.fmt(S, K.pick(S, ['{a}は自分から{m}の手を掴んで、そこへ導いた。「…もっと、ちゃんと｜…もっと、ちゃんとしろ｜…もっと、ちゃんとしてください」', '{a}は消え入りそうな声で言った。「…最後まで、して｜…最後まで、しろ｜…最後まで、してください」', '{a}「延長って、できる？｜延長はできるか｜延長って、できますか」――声が震えていた。'])), why: '堕ち度 ' + Math.min(100, Math.round(h.corrupt)) });
       }
       if (K.settle(S) && !hardTop) fell = true;
       K.snap(S, { s: sus });
@@ -544,7 +544,7 @@
     if (extended && !hardTop && !left && !reversed && !fell) {
       S.step = seq.length; K.step(S, '延長');
       var rx2 = K.stim(S, 40, { part: 'all', mult: 1.2, defer: true });
-      K.say(S, { kind: 'ev', tag: '延長', text: K.fmt(S, K.pick(S, ['延長の三十分は、それまでの九十分よりずっと長かった。{m}の手はもう、遠慮をしなかった。', '{m}「延長分は、特に念入りに」――{a}は延長を頼んだことを、ほんの少しだけ後悔した。', '延長の間、{a}は時計を見なかった。見る余裕がなかった。'])) + phUp(2) + tail(0.7) + (lwOn() ? ML.ext(lwc(false)) : ''), why: '延長した' });
+      K.say(S, { kind: 'ev', tag: '延長', lewd: true, text: K.fmt(S, K.pick(S, ['延長の三十分は、それまでの九十分よりずっと長かった。{m}の手はもう、遠慮をしなかった。', '{m}「延長分は、特に念入りに」――{a}は延長を頼んだことを、ほんの少しだけ後悔した。', '延長の間、{a}は時計を見なかった。見る余裕がなかった。'])) + phUp(2) + tail(0.7) + (lwOn() ? ML.ext(lwc(false)) : ''), why: '延長した' });
       logC(rx2.climaxes);
       if (K.settle(S)) fell = true;
     }
@@ -569,7 +569,7 @@
       /* 厚く：堕ちた瞬間を段落で（客が主導する組は、体位の場面のほうで厚くする） */
       if (!dark && !custTop && lwOn()) head.text += ML.fall(lwc(false), kindR);
       var darkN = 0, c0 = h.climax;
-      if (dark) K.say(S, { kind: 'sys', tag: '暗転', text: K.fmt(S, K.pick(S, MD.blackout)), why: '描写：軽め（暗転）' });
+      if (dark) K.say(S, { kind: 'sys', tag: '暗転', lewd: true, text: K.fmt(S, K.pick(S, MD.blackout)), why: '描写：軽め（暗転）' });
       pool.forEach(function (p, j) {
         /* 最後の体位は山場：R18版では段落に分けた厚い場面（solo-massage-thick.js） */
         if (!dark && j === pool.length - 1) { var thp = thick(custTop); if (thp) p = thp; }
@@ -589,7 +589,7 @@
           var lw = '', lk = custTop ? kindT : kindR;
           if (j === pool.length - 1) { if (lwOn()) lw = ML.peak(lwc(custTop), lk, highOn); }
           else if (j >= 1 && lwOn()) lw = ML.mid(lwc(custTop), lk);
-          K.say(S, { kind: 'ev', tag: p.n, text: K.fmt(S, p.t) + ex + lw + (function (tl) { return lw ? '' : tl; })(rr.climaxes.length || p.thick ? '' : tail(0.8)), why: '体位の指定：' + p.n });
+          K.say(S, { kind: 'ev', tag: p.n, lewd: true, text: K.fmt(S, p.t) + ex + lw + (function (tl) { return lw ? '' : tl; })(rr.climaxes.length || p.thick ? '' : tail(0.8)), why: '体位の指定：' + p.n });
           K.logClimax(S, rr.climaxes);
         }
         /* 落ちすぎた客は、行為の最中に新人の練習台に誘われる（断れない） */
@@ -600,7 +600,7 @@
           if (hesi) tt += K.fmt(S, K.pick(S, M.TRAINEE_HESITATE[h.persona] || M.TRAINEE_HESITATE.gentle)) + ' ' + K.fmt(S, K.pick(S, dark ? MD.traineePress : custTop ? M.TRAINEE_PRESS_TOP : ff ? M.TRAINEE_PRESS_FF : M.TRAINEE_PRESS));
           else tt += K.fmt(S, K.pick(S, M.TRAINEE_YES[h.persona] || M.TRAINEE_YES.gentle));
           h.pleasure += 40; while (h.pleasure >= 100) K.climax(S);
-          var otr = K.say(S, { kind: 'sys', tag: '練習台の約束', text: tt, why: '快楽に落ちきった（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・' + K.W_CL + ' ' + h.climax + '回）／もう断れなかった' + (hesi ? '（性格上、返事を渋った）' : '') });
+          var otr = K.say(S, { kind: 'sys', tag: '練習台の約束', lewd: true, text: tt, why: '快楽に落ちきった（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・' + K.W_CL + ' ' + h.climax + '回）／もう断れなかった' + (hesi ? '（性格上、返事を渋った）' : '') });
           K.key(S, otr, '新人の練習台になると約束した');
         }
       });

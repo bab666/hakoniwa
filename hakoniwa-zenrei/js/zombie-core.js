@@ -454,7 +454,7 @@
     ctx.present().forEach(function (c) {
       var z = c.z;
       if (!z.bitten || !c.alive || c.out) return;
-      if (z.dkAt !== z.bitten.at) { z.dkAt = z.bitten.at; if (HK.Dark.on(ctx) === 'mild' && ctx.rng() < 0.75) { z.bitten = null; z.turnAt = -1; if (z.aware) ctx.act2({ actors: [c], cat: 'solo', text: ctx.t('{a}の咬み跡は赤く腫れたが、熱は出なかった。……どうやら、感染はしなかったらしい。', c), why: '傷が浅かった（展開の重さ：穏やか）', mag: 18 }); return; } }   /* 展開の重さ（mood-dial.js） */
+      if (z.dkAt !== z.bitten.at) { z.dkAt = z.bitten.at; if (HK.Dark.on(ctx, 'kill') === 'mild' && ctx.rng() < 0.75) { z.bitten = null; z.turnAt = -1; if (z.aware) ctx.act2({ actors: [c], cat: 'solo', text: ctx.t('{a}の咬み跡は赤く腫れたが、熱は出なかった。……どうやら、感染はしなかったらしい。', c), why: '傷が浅かった（' + HK.Dark.tag(ctx, 'kill') + '）', mag: 18 }); return; } }   /* 展開の重さ（mood-dial.js） */
       if (!z.aware && s >= z.turnAt - 1) { z.aware = true; ctx.act2({ actors: [c], cat: 'solo', text: ctx.t(ctx.pick(BITE.fever), c), why: '気づかないうちに感染していた（引っかき傷）', mag: 20 }); }
       if (z.aware && !z.decided && s > z.bitten.at - 1) { z.decided = true; decide(ctx, c); }
       if (Z.shinjuCheck && c.alive && !c.out && Z.shinjuCheck(ctx, c)) return;

@@ -8,7 +8,8 @@
    区分と話し手は voice.js の processText が台詞を整えるときに決め（V._segBuf）、この包みが、ほかの仕上げ（全年齢の言い換え・
    語の差し替えなど）がすべて済んだあとで、できあがった文に合わせて e.seg にする。台詞の中身が変わって合わせられないときは、文から決め直す。
    e.seg は数え上げない属性（保存・共有・履歴の JSON には入らない）。保存から開いた記録は HK.Seg.of(e, 名前の一覧) で作り直す。
-   この包みは、HK.simulate を包むほかのどの処理よりも後（_order.txt の最後の方）に読むこと */
+   この包みは、HK.simulate を包むほかのどの処理よりも後（_order.txt の最後の方）に読むこと。
+   名前に記号のある住人の置き換え（HK.NameSafe）の包みは、さらにその外側（このファイルの最後） */
 (function () {
   'use strict';
   var HK = window.HK, V = HK.Voice || {};
@@ -182,5 +183,36 @@
     };
     for (var k in sim0) if (Object.prototype.hasOwnProperty.call(sim0, k)) HK.simulate[k] = sim0[k];
     HK.simulate._seg = true;
+  }
+  /* さらに外側の包み：名前に記号（！。？（）など）のある住人は、箱庭を動かしているあいだだけ、記号を私用領域の文字にした名前で動かす（core.js の HK.NameSafe）。
+     話し手の判定・口調の置き換え・seg・呼び方が、記号のない名前と同じように効く。結果を返す前に、文・seg・キーの名前を全部元に戻す */
+  var NS = HK.NameSafe;
+  /* 保存から開いた記録の seg を作り直すとき（HK.Seg.of → S.build）も、名前の記号を置き換えてから区分を決め、文と nk を戻す */
+  if (NS) {
+    var build0 = S.build;
+    S.build = function (text, names, sq) {
+      if (typeof text !== 'string' || !Array.isArray(names) || !names.some(function (n) { return NS.need(n); })) return build0.apply(this, arguments);
+      var seg = build0.call(this, NS.encText(text, names), names.map(function (n) { return NS.enc(n); }), sq);
+      seg.forEach(function (x) { if (x && typeof x.s === 'string') x.s = NS.dec(x.s); });
+      if (typeof seg.nk === 'string') seg.nk = NS.dec(seg.nk);
+      return seg;
+    };
+  }
+  if (NS && HK.simulate && !HK.simulate._nameSafe) {
+    var sim2 = HK.simulate;
+    HK.simulate = function (input) {
+      var cs = input && input.chars;
+      if (!Array.isArray(cs) || !cs.some(function (c) { return c && NS.need(c.name); })) return sim2.apply(this, arguments);
+      var ren = {};
+      cs.forEach(function (c) { if (c && NS.need(c.name)) ren[c.name] = NS.enc(c.name); });
+      /* 名前をキーにした設定（相手ごとの呼び方 calls・敬語 keigo）も置き換える */
+      var rk = function (m) { if (!m || typeof m !== 'object' || Array.isArray(m)) return m; var o = {}; Object.keys(m).forEach(function (k) { o[ren[k] || k] = m[k]; }); return o; };
+      var in2 = Object.assign({}, input, { chars: cs.map(function (c) { return c && typeof c === 'object' ? Object.assign({}, c, { name: ren[c.name] || c.name, calls: rk(c.calls), keigo: rk(c.keigo) }) : c; }) });
+      var r = sim2.call(this, in2);
+      try { NS.decDeep(r); } catch (err) { /* 戻しに失敗しても結果は返す */ }
+      return r;
+    };
+    for (var k2 in sim2) if (Object.prototype.hasOwnProperty.call(sim2, k2)) HK.simulate[k2] = sim2[k2];
+    HK.simulate._nameSafe = true;
   }
 })();

@@ -84,7 +84,7 @@
     var avgA = live.reduce(function (s0, p) { return s0 + p.tr.a; }, 0) / live.length;
     var poss = live.filter(function (p) { return p.possessed; }).length;
     var chance = clamp(0.3 + skill(rite, 'rite') * 0.33 + live.length * 0.02 + avgA * 0.1 - S.fake * 0.14 - (S.partial ? 0.15 : 0) - poss * 0.1 + (S.sealBonus || 0) + bonus, 0.05, 0.92);
-    chance = clamp(chance * HK.Dark.pick(S, 1, 1, 0.8), 0.05, 0.92);   /* 展開の重さ（mood-dial.js）：重いでは封印がしくじりやすい */
+    chance = clamp(chance * HK.Dark.pick(S, 1, 1, 0.8, 'kill'), 0.05, 0.92);   /* 展開の重さ（mood-dial.js）：重いでは封印がしくじりやすい */
     var t = gx.t ? ST.fmt(gx.t, { a: rite.name }) : rite.name + 'が祠の前に進み出た。' + S.G.sol + '――';
     if (S.fake && rng() < 0.5) t += '途中で、誰かが記者の言葉を思い出して手を止めかけた。';
     var why = '成功率 ' + Math.round(chance * 100) + '％（' + rite.name + 'の儀式の力・人数' + live.length + (bonus - (gx.bonus || 0) > 0 ? '・呼び出した神の助け' : bonus - (gx.bonus || 0) < 0 ? '・術者のすり替え' : '') + (S.fake ? '・信じた偽情報 ' + S.fake : '') + (S.partial ? '・手がかり不足' : '') + (poss ? '・取り憑かれた仲間' : '') + (gx.why ? '・' + gx.why : '') + '）';
@@ -119,7 +119,7 @@
     if (S.counter) pm *= 0.35;
     var left = S.P.filter(function (p) { return p.alive && !p.out; });
     if (!left.length) return true;
-    if (rng() < pm * HK.Dark.pick(S, 0.05, 1, 2)) {   /* 展開の重さ（mood-dial.js）：顕現した神が村ごと呑み込む */
+    if (rng() < pm * HK.Dark.pick(S, 0.05, 1, 2, 'kill')) {   /* 展開の重さ（mood-dial.js）：顕現した神が村ごと呑み込む */
       S.engulf = true;
       left.forEach(function (p) { p.alive = false; p.taken = false; p.fate = S.G.call + 'に呑み込まれた（' + JS.hm(h) + '）'; });
       var o2 = ST.say(S, { actors: left, tag: '全滅', kind: 'climax', text: fmtG(S, ST.pick(S, M.ENGULF)), why: '顕現した神が、村ごと呑み込んだ（' + Math.round(pm * 100) + '％）', mag: 56 });

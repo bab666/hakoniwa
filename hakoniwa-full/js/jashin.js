@@ -400,14 +400,14 @@
     /* r18:begin */
     if (r18 && r18.miko) vic.fate = '神の子を産む巫女になった（' + hm(h) + '）';
     /* r18:end */
-    var o = ST.say(S, { actors: [vic], tag: '生贄', kind: 'climax', text: (r18 ? r18.text : vic.name + 'は白い着物を着せられ、祭壇の前に引き出された。' + S.G.rite + '。――' + vic.name + 'の姿は、それきり誰の目にも映らなかった。'), why: vic.name + 'が生贄に選ばれた' + (vic !== orig ? '（' + orig.name + 'の身代わりになった）' : vic.villager ? '（村の出身だった）' : vic.takenAt != null ? '（連れ去られていた）' : '（運と体力が最も低かった）'), mag: 52 });
+    var o = ST.say(S, { actors: [vic], tag: '生贄', kind: 'climax', lewd: r18 ? true : undefined, text: (r18 ? r18.text : vic.name + 'は白い着物を着せられ、祭壇の前に引き出された。' + S.G.rite + '。――' + vic.name + 'の姿は、それきり誰の目にも映らなかった。'), why: vic.name + 'が生贄に選ばれた' + (vic !== orig ? '（' + orig.name + 'の身代わりになった）' : vic.villager ? '（村の出身だった）' : vic.takenAt != null ? '（連れ去られていた）' : '（運と体力が最も低かった）'), mag: 52 });
     ST.key(S, o, vic.name + 'が生贄になった');
   }
   function flee(S, h) {
     var rng = S.rng, ok = [], ng = [];
     S.P.filter(alive).forEach(function (p) {
       if (p.bound) return die(S, p, '縛られたまま', [(p.boundAt || '民宿') + 'に取り残された{a}は、縛られたまま身をよじった。祭り囃子が近づいてきても、もう、どうすることもできなかった。']);
-      (rng() < HK.Dark.pick(S, 0.6, 0, -0.2) + HK.Dark.live(S, (S.inCave ? 0.24 : 0.33) + (S.fleeBonus || 0) + (S.fog ? 0.06 : 0) + p.stats.luck * 0.07 + p.stats.stamina * 0.04 - p.m.fear / 400, 'kill') ? ok : ng).push(p);
+      (rng() < HK.Dark.pick(S, 0.6, 0, -0.2, 'kill') + HK.Dark.live(S, (S.inCave ? 0.24 : 0.33) + (S.fleeBonus || 0) + (S.fog ? 0.06 : 0) + p.stats.luck * 0.07 + p.stats.stamina * 0.04 - p.m.fear / 400, 'kill') ? ok : ng).push(p);
     });
     /* 逃げ遅れた大事な人のために、引き返す */
     var saved = JS.REL.goBack(S, ng, ok);

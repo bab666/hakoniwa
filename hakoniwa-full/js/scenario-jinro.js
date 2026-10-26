@@ -451,7 +451,7 @@
       }
       ST.step(S, (day + 1) + '日目・朝');
       if (prey && prey === guard) { guardOK++; moments.push(hunter.name + 'が' + prey.name + 'を守り抜いた'); say({ actors: [], tag: '平和な朝', text: pk(J.peace), why: '狩人の' + hunter.name + 'が' + prey.name + 'を守った' + rogueNote }); }
-      else if (prey && HK.Dark.skip(S, 'night')) say({ actors: [], tag: '平和な朝', text: pk(J.peace), why: '人狼は、この夜は誰も襲わなかった（展開の重さ：穏やか）' });
+      else if (prey && HK.Dark.skip(S, 'night')) say({ actors: [], tag: '平和な朝', text: pk(J.peace), why: '人狼は、この夜は誰も襲わなかった（' + HK.Dark.tag(S, 'night') + '）' });
       else if (prey) { prey.alive = false; killed.push(prey); prey.fate = '襲撃（' + (day + 1) + '日目の朝）'; if (prey.ally) { prey.ally.ally = null; prey.ally = null; } say({ actors: [prey.i], tag: '襲撃', text: F(pk(J.killed), { x: prey.name }), why: '人狼の戦法「' + PLAN_LABEL[plan.kill] + '」' + rogueNote + nkNote }); }
       snap();
       winner = check();

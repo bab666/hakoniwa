@@ -328,7 +328,7 @@
         var top;
         if (Q) { var o = P.order(N, Q, [N, Q]); top = o[0] === N; }
         /* モブが相手：攻め指定（モブには受けでない）なら攻め。文の中で none の人が自分から挿れる書き方なら攻めとして扱う */
-        else top = P.hardTopNpc(N) || new RegExp(N.name + '(?:は|が)[^。「」]{0,30}?(?:貫い|突き入れ(?!られ)|挿れ(?!られ)|腰を(?:振っ|打ちつけ)(?!られ)|中に出し|射精し|注ぎ込ん|沈めて|沈めた|押し入っ|ねじ込ん)').test(sen);
+        else top = P.hardTopNpc(N) || new RegExp(HK.reEsc(N.name) + '(?:は|が)[^。「」]{0,30}?(?:貫い|突き入れ(?!られ)|挿れ(?!られ)|腰を(?:振っ|打ちつけ)(?!られ)|中に出し|射精し|注ぎ込ん|沈めて|沈めた|押し入っ|ねじ込ん)').test(sen);
         var own = sexy ? NG.own(cl(sen), N.name) : NG.ownStrict(sen, N.name);
         roles[i] = { top: top, Q: Q };
         if (own || NG.bad(mlOff(sen), top, sexy)) bad.push(i);

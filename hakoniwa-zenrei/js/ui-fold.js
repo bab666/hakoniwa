@@ -6,7 +6,7 @@
   'use strict';
   var HK = window.HK;
   var CLOSED = { '関係の結末': 1, '住人ごとの読み解き': 1 };
-  var KEY = 'hakoniwa_fold_v1', state = {};
+  var KEY = HK && HK.STORE ? HK.STORE.key('hakoniwa_fold_v1') : 'hakoniwa_fold_v1', state = {};   /* 鍵は版ごと（safe.js の HK.STORE） */
   try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { state = {}; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* 保存できなくても開閉はできる */ } }
   function norm(t) { return String(t || '').replace(/[\d０-９\/／\s　]+/g, '').slice(0, 30); }

@@ -27,6 +27,9 @@
     if (c.fp) bits.push('一人称：' + c.fp);
     if (c.marks) bits.push('語尾：' + c.marks);
     if (c.toneCustom && !HK.TONE_CUSTOM_OFF) bits.push('付け替え：' + c.toneCustom);
+    /* r18:begin */
+    if (c.moanTone && !HK.SAFE_ON) bits.push('喘ぎ：' + toneLabel(c.moanTone));
+    /* r18:end */
     if (HK.Ending && HK.Ending.on(c)) bits.push(HK.Ending.labelFor(c));
     if (c.call) bits.push('呼び方：' + callLabel(c.call));
     if (c.gender) bits.push(lab(GENDERS, c.gender));
@@ -178,6 +181,12 @@
     var keys = HK.TONE_KEYS || HK.PERSONA_KEYS;
     var toneSel = '<select data-gf="tone" aria-label="口調">' + opt('', 'おまかせ（' + toneLabel(autoK) + '）', c.tone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.tone || '', t.desc); }).join('') + '</select>';
     var tInfo = HK.toneInfo ? HK.toneInfo(c.tone || autoK) : HK.PERSONA[c.tone || autoK];
+    /* 喘ぎの口調（R18版だけ。moan-engine.js が喘ぎを作るときにいつもの口調の代わりに使う）：口調の欄のすぐ下 */
+    var moanRow = '';
+    /* r18:begin */
+    if (!HK.SAFE_ON) moanRow = '<div class="gearrow"><label>喘ぎの口調 <select data-gf="moanTone" aria-label="喘ぎの口調">' + opt('', 'いつもの口調と同じ', c.moanTone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.moanTone || '', t.desc); }).join('') + '</select></label></div>' +
+      '<p class="gearhint">喘ぎ声・夜の場面の声だけ、この口調で出します（普段は作った口調で話す人の、素の声が出る様子に）。</p>';
+    /* r18:end */
     var callSel = '<select data-gf="call" aria-label="基本の呼び方">' + (HK.CALL_STYLES || [{ v: '', label: 'おまかせ' }]).map(function (o) { return opt(o.v, o.label, c.call || ''); }).join('') + '</select>';
     /* 相手の性別で分けるとき：男性・女性・その他ごとの敬称 */
     var SUF = (HK.CALL_STYLES || []).filter(function (o) { return o.v && o.v !== 'gender'; }), CGD = { m: 'kun', f: 'chan', x: 'san' };
@@ -238,7 +247,7 @@
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
       /* 固定の説明は各節の ？（TIPS）に置き、ここには選んだものによって変わる説明（口調・関係・この住人の傾向）だけを出す */
       (HK.egoDesc ? '<details class="gego"' + (egoOpen ? ' open' : '') + '><summary>この住人の傾向<span class="gegc">' + esc(HK.toCode(c.eg)) + '・' + esc(HK.egoAttWord(c)) + '</span></summary><ul id="egodesc">' + HK.egoDesc(c).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul></details>' : '') +
-      '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3><div class="gearrow"><label>口調 ' + toneSel + '</label>' + (HK.Ending ? HK.Ending.badge(c) : '') + '<label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
+      '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3><div class="gearrow"><label>口調 ' + toneSel + '</label>' + (HK.Ending ? HK.Ending.badge(c) : '') + '<label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' + moanRow +
       '<div class="gearrow"><label title="文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます">語尾の記号 <input type="text" data-gf="marks" value="' + esc(c.marks || '') + '" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label>' +
       (HK.TONE_CUSTOM_OFF ? '' : '<label title="口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで">語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label>') + '</div>' +
       '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
@@ -364,6 +373,7 @@
     if (HK.Ending && HK.Ending.gearField(c, f, t, isInput, changed, sampleRefresh, s.chars.filter(function (x) { return x !== c; })[0])) return;
     switch (f) {
       case 'tone': if (isInput) return; c.tone = HK.toneValid && HK.toneValid(t.value) ? t.value : ''; changed(true); break;
+      case 'moanTone': if (isInput) return; if (HK.toneValid && HK.toneValid(t.value)) c.moanTone = t.value; else delete c.moanTone; changed(true); break;
       case 'fp': c.fp = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;
       case 'you': c.you = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;
       case 'marks': c.marks = t.value.trim().slice(0, 30); changed(false); sampleRefresh(); break;

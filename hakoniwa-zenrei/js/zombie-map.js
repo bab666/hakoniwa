@@ -6,8 +6,9 @@
   var HK = window.HK;
   if (!HK.Endings || !HK.Endings.zombie) return;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  var KEY = 'hakoniwa_zmap_open';
-  function isOpen() { try { return localStorage.getItem(KEY) !== '0'; } catch (e) { return true; } }
+  /* 鍵は版ごと（safe.js の HK.STORE。このファイルは safe.js より先に読むので、使うときに決める） */
+  function KEY() { return HK.STORE ? HK.STORE.key('hakoniwa_zmap_open') : 'hakoniwa_zmap_open'; }
+  function isOpen() { try { return localStorage.getItem(KEY()) !== '0'; } catch (e) { return true; } }
   function tag(f) {
     if (/救助/.test(f)) return ['救助', 'ok'];
     if (/脱出/.test(f)) return ['脱出', 'ok'];
@@ -46,7 +47,7 @@
   };
   document.addEventListener('toggle', function (e) {
     var d = e.target;
-    if (d && d.classList && d.classList.contains('zmap')) { try { localStorage.setItem(KEY, d.open ? '1' : '0'); } catch (x) { /* 保存できなくても開閉はできる */ } }
+    if (d && d.classList && d.classList.contains('zmap')) { try { localStorage.setItem(KEY(), d.open ? '1' : '0'); } catch (x) { /* 保存できなくても開閉はできる */ } }
   }, true);
   var base = HK.Endings.zombie;
   HK.Endings.zombie = function (res, X) {

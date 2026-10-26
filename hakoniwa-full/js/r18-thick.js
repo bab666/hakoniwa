@@ -370,7 +370,7 @@
     var aft = kind === 'ff' && K.after && rng() < 0.35 ? fill(K.after(ctx, K.afterMode(mood))) : kind === 'fm' && K.POOLS.after && rng() < 0.35 ? fill(K.pick(ctx, 'after', st)) : F(pick(S, aftL), m);
     /* 攻めの台詞：繋がったあとの一言（top）に足して、始まりと山場か事後に一言ずつ（ero-top-lines-r18.js） */
     /* 書き出し・手立て・最中の文にすでにある攻めの台詞も数える（女性の攻めの書き出しには台詞が入っていることがある） */
-    var xq = new RegExp(x.name + '「', 'g'), nq = function (t) { return (String(t || '').match(xq) || []).length; };
+    var xq = new RegExp(HK.reEsc(x.name) + '「', 'g'), nq = function (t) { return (String(t || '').match(xq) || []).length; };
     var ma0 = kind === 'fm' && rng() < 0.6 ? moan(S, x, 0, true) : '', bodyT = fill(body), midF = fill(midT);
     var ts = topSay(S, x, y, mood, kind, { in: true, start: nq(open) > 0, mid: nq(bodyT + midF + ma0) > 0 }), sl = ts.sl;
     return J(RW(S, x, y, [

@@ -53,6 +53,6 @@
     HK.Story.step(S, '人狼の勝利の夜');
     var k = p.love ? 'afterSoft' : react(y);
     var t = HK.Story.fmt(HK.Story.pick(S, p.love ? T.soft : T.force), m) + '\n\n' + R.sex(S, x, y, { mood: p.love ? 'love' : 'rough' }) + '\n\n' + HK.Story.fmt(HK.Story.pick(S, T[k]), m);
-    HK.Story.say(S, { kind: 'climax', actors: [x.i, y.i], tag: '人狼の勝利の夜', text: t, why: '人狼の' + x.name + '（攻め）が、生き残った村人の' + y.name + '（受け）を「ゲームの続き」として食べに行った' + (p.love ? '（近い関係で、合意のうえ）' : '（強引に。' + y.name + 'の反応：' + { melt: '流される', resent: '根に持つ（CP・攻撃性が高い）', lost: '困惑する（ACが高い）' }[k] + '）') + (R.lastPos && R.lastPos(S) ? '・' + R.lastPos(S) : ''), mag: 30 });
+    HK.Story.say(S, { kind: 'climax', lewd: true, actors: [x.i, y.i], tag: '人狼の勝利の夜', text: t, why: '人狼の' + x.name + '（攻め）が、生き残った村人の' + y.name + '（受け）を「ゲームの続き」として食べに行った' + (p.love ? '（近い関係で、合意のうえ）' : '（強引に。' + y.name + 'の反応：' + { melt: '流される', resent: '根に持つ（CP・攻撃性が高い）', lost: '困惑する（ACが高い）' }[k] + '）') + (R.lastPos && R.lastPos(S) ? '・' + R.lastPos(S) : ''), mag: 30 });
   };
 })();

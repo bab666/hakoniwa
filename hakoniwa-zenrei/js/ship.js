@@ -881,8 +881,10 @@
     if (ps && ps.length >= 2) { var y = X.pr[rk(ps[0], ps[1])]; if (y && (y.n >= 2 || S.m - y.m < 3)) return false; }
     return true;
   }
+  /* R18の場面を一つ書いた（このすぐあとの記録が、その場面。エロシーンの印 ero-scene.js も付ける） */
   function sxNote(S, ps) {
     sxRoom(S);
+    if (HK.EroScene) HK.EroScene.touch(S);
     var X = S.sx; X.n++; X.m = S.m;
     if (ps && ps.length >= 2) { var k = rk(ps[0], ps[1]), y = X.pr[k] || (X.pr[k] = { n: 0, m: -9 }); y.n++; y.m = S.m; }
   }

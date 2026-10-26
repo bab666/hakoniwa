@@ -8,6 +8,7 @@
    C: 「」があるのに話し手も区分も決まらなかった（u）
    整合：seg をつなぐと e.text と同じか（join）、HK.fmtLong の改行が seg を使っても同じか（fmt）、隠しの区分（_sq）が残っていないか（sq）。どれも 0 にする
    参考：区分ごとの件数、区分の合わせ方（中身で合った／順番で合った／文から決め直した）
+   環境変数 NAMES=ユキノ！,アキラ。,… で住人の名前を変える（名前に記号のある住人の点検）
    --dump=出力.json で、すべての「」（前後の文・区分・話し手）を書き出す（誤りの型を目で見るとき） */
 'use strict';
 const fs = require('fs');
@@ -19,13 +20,15 @@ const { openBuild } = require('./lib.js');
   const DUMPF = (process.argv.find(a => /^--dump=/.test(a)) || '').slice(7);
   if (!dir) { console.error('使い方: node seg-audit.js <ビルド> [回数] [r18|safe|\'\'] [箱庭id,…] [--why]'); process.exit(1); }
   const { browser, page, errors } = await openBuild(dir, mode);
-  const r = await page.evaluate(({ N, only, WHY, DUMP }) => {
+  const NAMES0 = (process.env.NAMES || '').split(',').filter(Boolean);
+  const r = await page.evaluate(({ N, only, WHY, DUMP, NAMES0 }) => {
     const HK = window.HK, S = HK.Seg;
     const out = { dump: [], n: { a1n: 0, a1w: 0, a1: 0, a2: 0, b1: 0, b2: 0, c: 0, join: 0, fmt: 0, fmtSeg: 0, sq: 0 }, kinds: {}, ex: { a1: [], a1w: [], a2: [], b1: [], b2: [], c: [], join: [], fmt: [] }, bySc: {}, runs: 0, err: [], quotes: 0 };
     if (!S) { out.err.push('HK.Seg がない'); return out; }
     S.stat.content = S.stat.order = S.stat.redo = 0;
     const lim = WHY ? 60 : 5;
-    const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'], tones = HK.TONE_KEYS.slice();
+    /* 環境変数 NAMES=ユキノ！,アキラ。,…（6人ぶん）で、名前に記号のある住人でも点検できる */
+    const NAMES = NAMES0.length >= 6 ? NAMES0.slice(0, 6) : ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'], tones = HK.TONE_KEYS.slice();
     /* 住人以外の人物を表す語（b の判定。主語がこれで、住人の名前を含まない） */
     const MOBN = /(?:村人|村の|店員|店長|客|男|女|老人|老婆|子ども|子供|少年|少女|医者|医師|看護師|兵士|警官|警備員|司会|係員|教師|先生|生徒|乗客|船員|案内人|使用人|執事|メイド|神主|巫女|住職|村長|長老|婆|爺|主人|女将|マスター|店主|運転手|配達員|管理人|受付|スタッフ|騎士|商人|衛兵|門番|職員|研究員|隊員|監視員|看守|ゴブリン|オーク|魔物|ゾンビ|生存者|略奪者|男たち|女たち|連中|誰か|声|アナウンス|放送|スピーカー|機械|AI|システム|神|邪神|サキュバス|インキュバス|施術師|マッサージ師|整体師|カメラマン|監督|客引き|酔っ払い|サラリーマン|他校|隣の|相手)/;
     const PERS = /(?:人|者|員|師|長|主|客|家|官|士|婆|爺|娘|男|女|猫|さん|様|殿|神|鬼|獣|医|僧|兵|童|衆|の子|マン|ター|スト)$/;
@@ -59,6 +62,8 @@ const { openBuild } = require('./lib.js');
         try { res = HK.simulate({ scenId: id, seed: 12345 + s * 101, env, chars, perChar, ties: s % 3 === 2 ? [{ a: 0, b: 1, type: 'lover' }] : [] }); } catch (e) { out.err.push(id + ':' + s + ' ' + (e && e.message)); continue; }
         out.runs++; out.bySc[id].runs++;
         const names = chars.map(c => c.name), dead = {};
+        /* 名前に記号（！。？など）のある住人：下の b1・b2 の文の区切りで、名前の中の記号を区切りと見ないよう、置き換えた名前（core.js の HK.NameSafe。長さは同じ）で調べる */
+        const NSF = HK.NameSafe, namesE = NSF ? names.map(n => NSF.enc(n)) : names;
         (res.log || []).forEach(e => {
           if (!e || typeof e.text !== 'string') return;
           if (e._sq) out.n.sq++;
@@ -87,17 +92,18 @@ const { openBuild } = require('./lib.js');
             if (dead[x.who] && !isDeath && !/^(?:memory|grief|mourn|epilogue)$/.test(e.cat || '')) hit('a2', show());
             if (x.nm) return;
             /* b1：「……」と村人が言った */
-            const after = e.text.slice(qb, qb + 40), m1 = after.match(/^(?:と|って)、?([^、。「」\s]{1,14}?)(?:が|は)([^。「」]{0,14})/);
-            if (m1 && !names.some(nm => m1[1].indexOf(nm) >= 0) && !PRON.test(m1[1]) && MOBN.test(m1[1]) && SAYV.test(m1[2])) hit('b1', show());
+            const textE = NSF ? NSF.encText(e.text, names) : e.text;
+            const after = textE.slice(qb, qb + 40), m1 = after.match(/^(?:と|って)、?([^、。「」\s]{1,14}?)(?:が|は)([^。「」]{0,14})/);
+            if (m1 && !namesE.some(nm => m1[1].indexOf(nm) >= 0) && !PRON.test(m1[1]) && MOBN.test(m1[1]) && SAYV.test(m1[2])) hit('b1', show());
             /* b2：前の文の主語が住人以外の人物（同じ文の「 の前に住人の名前がないとき） */
-            const pre = e.text.slice(0, qa), cut = lastBound(pre), span = pre.slice(cut);
-            const aft = e.text.slice(qb, qb + 12).replace(/^――/, '');
+            const pre = textE.slice(0, qa), cut = lastBound(pre), span = pre.slice(cut);
+            const aft = textE.slice(qb, qb + 12).replace(/^――/, '');
             /* 「……」――レンジが言うと：すぐあとに住人の名前と話す動詞があれば、その人の台詞（数えない） */
-            const said = names.some(nm => aft.indexOf(nm) === 0 && /^[はがも][^。「」]{0,6}?(?:言|呟|囁|叫|笑|答え|返|告げ|訊|尋ね)/.test(aft.slice(nm.length)));
+            const said = namesE.some(nm => aft.indexOf(nm) === 0 && /^[はがも][^。「」]{0,6}?(?:言|呟|囁|叫|笑|答え|返|告げ|訊|尋ね)/.test(aft.slice(nm.length)));
             if (!span.trim() && cut > 0 && /。$/.test(pre.slice(0, cut)) && !/^(?:と|って)/.test(aft) && !said) {
               const pv = pre.slice(0, cut - 1), pl = pv.slice(lastBound(pv)), m2 = pl.match(/([^、。「」\s]{1,16}?)(?:たち|ら|達)?(?:は|が|の方から)(?!ら)/);
               const subj = m2 ? m2[1].replace(/^.*[をにでとへ]/, '') : '';
-              if (subj && !names.some(nm => pl.indexOf(nm) >= 0) && !PRON.test(subj) && !/(?:一人|二人|本人|彼女|彼)$/.test(subj) && (MOBN.test(subj) || PERS.test(subj) || ACTV.test(pl))) hit('b2', show());
+              if (subj && !namesE.some(nm => pl.indexOf(nm) >= 0) && !PRON.test(subj) && !/(?:一人|二人|本人|彼女|彼)$/.test(subj) && (MOBN.test(subj) || PERS.test(subj) || ACTV.test(pl))) hit('b2', show());
             }
           });
           if (e.kind === 'death' && acts.length) dead[acts[0]] = true;
@@ -106,7 +112,7 @@ const { openBuild } = require('./lib.js');
     });
     out.stat = Object.assign({}, S.stat);
     return out;
-  }, { N, only, WHY, DUMP });
+  }, { N, only, WHY, DUMP, NAMES0 });
   if (DUMPF) fs.writeFileSync(DUMPF, JSON.stringify(r.dump));
   delete r.dump;
   console.log('== seg-audit', dir, mode || '(全年齢版)', '回数', r.runs, '「」', r.quotes, 'ページのエラー', errors.length, errors.slice(0, 2));

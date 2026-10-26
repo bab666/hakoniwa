@@ -738,6 +738,24 @@
     }
     return (out + text.slice(last)).replace(/\u2062/g, '');
   };
+  /* 名前に記号（！。？（）など）のある住人：箱庭の外から直接呼ばれたとき（設定の画面の見本など）は、ここで名前の記号を私用領域の文字に置き換えてから整え、最後に戻す（core.js の HK.NameSafe）。
+     箱庭の中では voice-seg.js の包みが先に置き換えているので、ここは素通りする */
+  (function () {
+    var NS = HK.NameSafe, pt0 = V.processText;
+    if (!NS) return;
+    V.processText = function (text, people, actors) {
+      if (typeof text !== 'string' || !Array.isArray(people) || !people.some(function (p) { return p && NS.need(p.name); })) return pt0.apply(this, arguments);
+      var ren = {}, order = [];
+      people.forEach(function (p) { if (p && NS.need(p.name) && !ren[p.name]) { ren[p.name] = NS.enc(p.name); order.push(p.name); } });
+      order.sort(function (a, b) { return b.length - a.length; });
+      var rk = function (m) { if (!m || typeof m !== 'object' || Array.isArray(m)) return m; var o = {}; Object.keys(m).forEach(function (k) { o[ren[k] || k] = m[k]; }); return o; };
+      var P2 = people.map(function (p) { return p && ren[p.name] ? Object.assign({}, p, { name: ren[p.name], calls: rk(p.calls), keigo: rk(p.keigo), youFor: rk(p.youFor), fpFor: rk(p.fpFor) }) : p && (p.calls || p.keigo || p.youFor || p.fpFor) ? Object.assign({}, p, { calls: rk(p.calls), keigo: rk(p.keigo), youFor: rk(p.youFor), fpFor: rk(p.fpFor) }) : p; });
+      var A2 = Array.isArray(actors) ? actors.map(function (x) { return x && typeof x === 'object' && ren[x.name] ? Object.assign({}, x, { name: ren[x.name] }) : x; }) : actors;
+      var t2 = text;
+      order.forEach(function (n) { t2 = t2.split(n).join(ren[n]); });
+      return NS.dec(pt0.call(this, t2, P2, A2));
+    };
+  })();
   /* シミュレーション結果全体に適用 */
   /* 語尾の記号：文末の「。」「！」を、設定した記号に置き換える（「分かった。引き受けよう」→「分かった！！！引き受けよう！！！」「分かった♣引き受けよう♦」）。
      記号は空白・読点・カンマ区切りで複数（文ごとに台詞の文字から決まるくじで選ぶので、同じ台詞は同じ結果になる）。

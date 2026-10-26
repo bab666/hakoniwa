@@ -357,7 +357,7 @@
   /* この混乱に乗じて、邪魔な相手を消す */
   var MURDER = L('{a}は、{b}を群れのいる路地へ誘い込んだ。「こっち｜こっちだ｜こちらです」――{a}だけが、引き返してきた。|{a}は、{b}と二人きりになるのを待っていた。屋上の縁で、{a}は{b}の背中を押した。|「ゾンビかと思った｜＝｜ゾンビかと思いました」――{a}はそう言うつもりで、{b}に' + '{wa}' + 'を向けた。|{a}は眠っている{b}の部屋の外から、そっと鍵をかけた。窓の外には、群れが集まり始めていた。');
   EV.push({
-    id: 'z_murder', cat: 'betray', scope: 'pair',
+    id: 'z_murder', cat: 'betray', dk: 'kill', scope: 'pair',
     when: function (ctx, a, b) {
       var r = ctx.R(a, b), t = tieT(ctx, a, b);
       return (r.ten > 45 || t === 'enemy' || t === 'rival' || a.goal.id === 'chaos') && r.aff < 15 && a.tr.cold + a.tr.aggr > 1.0 && !ctx.pair(a, b).couple && !spare(ctx, b, a);

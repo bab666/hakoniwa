@@ -298,5 +298,6 @@ js/obsess-omega.js
 js/grief-kit.js
 js/lewd-unify.js
 js/lewd-mark.js
+js/ero-scene.js
 js/reset.js
 js/voice-seg.js

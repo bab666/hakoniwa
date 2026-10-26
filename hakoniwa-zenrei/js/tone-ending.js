@@ -320,7 +320,8 @@
     var me = { name: c.name, fp: c.fp || '', you: c.you || '', marks: c.marks || '', gender: c.gender || '', tone: E.toneOf(c), persona: HK.personaOf ? HK.personaOf({ tone: c.tone, eg: c.eg }) : 'gentle' };
     var ppl = [me, { name: o.name, fp: '', gender: o.gender || '', tone: '', persona: 'gentle' }];
     var nm = new RegExp('^' + String(c.name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    out.lines = (HK.TONE_SAMPLE || []).concat(E.LONG).map(function (t) { return V.processText(t.replace(/\{n\}/g, c.name).replace(/\{o\}/g, o.name), ppl).replace(nm, ''); });
+    /* 名前に「$&」などがあっても置き換えの記号として読まないよう、関数で差し込む */
+    out.lines = (HK.TONE_SAMPLE || []).concat(E.LONG).map(function (t) { return V.processText(t.replace(/\{n\}/g, function () { return c.name; }).replace(/\{o\}/g, function () { return o.name; }), ppl).replace(nm, ''); });
     return out;
   };
 

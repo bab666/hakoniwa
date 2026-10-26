@@ -1,7 +1,7 @@
 /* 全箱庭をシミュレーションして、住人の台詞（元の文・変換後・口調・文脈）を集める
    node collect.js <ビルドのフォルダ> <出力.json> [seeds=12] [r18]
    例：node collect.js ../../hakoniwa-full out-full.json 40 r18
-   環境変数 HOT=1 で過激さ・媚薬などの設定を最大に（R18の場面の台詞を集める）、TONE=gentleman で全員の口調を固定、FPS=俺,あたし で一人称を順に設定、SCEN=variety,saimin で箱庭を絞る、GENDERS=f,f,m で住人の性別を順に設定（x は性別なし）、ENV=release=mid,lewd=80 で場面の設定を固定（全体の設定 heavy なども可：ENV=heavy=mild） */
+   環境変数 NAMES=ユキノ！,アキラ。,… で住人の名前（6人ぶん。記号を含む名前の点検）、HOT=1 で過激さ・媚薬などの設定を最大に（R18の場面の台詞を集める）、TONE=gentleman で全員の口調を固定、FPS=俺,あたし で一人称を順に設定、SCEN=variety,saimin で箱庭を絞る、GENDERS=f,f,m で住人の性別を順に設定（x は性別なし）、ENV=release=mid,lewd=80 で場面の設定を固定（全体の設定 heavy なども可：ENV=heavy=mild） */
 'use strict';
 const fs = require('fs');
 const { openBuild } = require('./lib');
@@ -13,7 +13,7 @@ const { openBuild } = require('./lib');
   const TIES = (process.env.TIES || '').split(',').filter(Boolean).map(s => { const m = s.match(/^(\d+)-(\d+):(\w+)$/); return m ? { a: +m[1], b: +m[2], type: m[3] } : null; }).filter(Boolean);
   const PICK = {};
   (process.env.PICK || '').split(',').filter(Boolean).forEach(s => { const m = s.match(/^(\d+):(\w+)=(\w+)$/); if (m) (PICK[m[1]] = PICK[m[1]] || {})[m[2]] = m[3]; });
-  const OPT = { n: +(seeds || 12), tone: process.env.TONE || '', fps: (process.env.FPS || '').split(',').filter(Boolean), only: (process.env.SCEN || '').split(',').filter(Boolean), ties: TIES, pick: PICK, hot: !!process.env.HOT, s0: +(process.env.SEED0 || 0), env: (process.env.ENV || '').split(',').filter(Boolean).map(x => x.split('=')), gens: (process.env.GENDERS || '').split(',').map(x => x.trim()).filter(x => /^[mfx]$/.test(x)).map(x => x === 'x' ? '' : x) };
+  const OPT = { names: (process.env.NAMES || '').split(',').filter(Boolean), n: +(seeds || 12), tone: process.env.TONE || '', fps: (process.env.FPS || '').split(',').filter(Boolean), only: (process.env.SCEN || '').split(',').filter(Boolean), ties: TIES, pick: PICK, hot: !!process.env.HOT, s0: +(process.env.SEED0 || 0), env: (process.env.ENV || '').split(',').filter(Boolean).map(x => x.split('=')), gens: (process.env.GENDERS || '').split(',').map(x => x.trim()).filter(x => /^[mfx]$/.test(x)).map(x => x === 'x' ? '' : x) };
   const data = await page.evaluate((OPT) => {
     const HK = window.HK, V = HK.Voice;
     let cur = null, curText = '', ovs = null; const rec = [];
@@ -24,10 +24,12 @@ const { openBuild } = require('./lib');
       const o = ac.apply(this, arguments);
       const i = cur && cur.raw ? curText.indexOf(cur.raw) : -1;
       /* 名詞の引用か（台詞の区分 seg の c。voice.js の processText が決めた区分 V._qKind をそのまま使う） */
-      rec.push({ nq: V._qKind === 'c', kind: V._qKind || '', ov: cur && cur.ov, fp: V.fpFor(who), ctx: i < 0 ? '' : curText.slice(Math.max(0, i - 60), i + cur.raw.length + 20), tone: who.tone, persona: who.persona, g: who.gender, name: who.name, raw: cur && cur.who === who ? cur.raw : null, out: o });
+      /* 名前に記号のある住人（NAMES で指定）は、箱庭の中では記号を私用領域の文字にした名前で動くので、集めた文では元に戻す（core.js の HK.NameSafe） */
+      const D = x => (typeof x === 'string' && HK.NameSafe ? HK.NameSafe.dec(x) : x);
+      rec.push({ nq: V._qKind === 'c', kind: V._qKind || '', ov: cur && cur.ov, fp: D(V.fpFor(who)), ctx: i < 0 ? '' : D(curText.slice(Math.max(0, i - 60), i + cur.raw.length + 20)), tone: who.tone, persona: who.persona, g: who.gender, name: D(who.name), raw: cur && cur.who === who ? D(cur.raw) : null, out: D(o) });
       return o;
     };
-    const tones = HK.TONE_KEYS.slice(), NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];
+    const tones = HK.TONE_KEYS.slice(), NAMES = OPT.names.length >= 6 ? OPT.names.slice(0, 6) : ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];
     const results = [], fails = []; let ti = 0;
     function rnd(s) { let x = s; return () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648; }
     HK.SCEN_ORDER.slice().forEach(id => {

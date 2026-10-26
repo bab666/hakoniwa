@@ -40,7 +40,7 @@
     return short ? t : '\n\n' + t;
   };
   /* この記録（場面）で交わりの部品を使ったか（山場の判定に使う） */
-  function touch(S) { if (S && S.log) S._r18N = S.log.length; }
+  function touch(S) { if (S && S.log) S._r18N = S.log.length; if (HK.EroScene) HK.EroScene.touch(S); }
   /* 参加者どうしの交わり（合意の場面）を組み立てているとき */
   function pair(S) { if (S && S.log) S._r18P = S.log.length; }
   function inPair(S) { return S._r18P === (S.log || []).length; }
@@ -145,12 +145,14 @@
         var od = HK.Pos ? HK.Pos.order(acts[0], acts[1], [acts[0], acts[1]]) : acts, x = od[0], y = od[1];
         var pk = function (l) { return pick(S, l); };
         /* 攻めの台詞（ero-top-lines-r18.js）：受けだけが喘ぎ続けないように、最中の一言を半分ほど添える（元の山場に攻めの台詞がなければ） */
-        var tl = HK.EroTop && !new RegExp(x.name + '「').test(o.text) && S.rng() < 0.6 ? HK.EroTop.say(S, x, y, 'mid', { kind: HK.Pos && HK.Pos.isF(x) ? (HK.Pos.isF(y) ? 'ff' : 'fm') : 'm' }) : '';
+        var tl = HK.EroTop && !new RegExp(HK.reEsc(x.name) + '「').test(o.text) && S.rng() < 0.6 ? HK.EroTop.say(S, x, y, 'mid', { kind: HK.Pos && HK.Pos.isF(x) ? (HK.Pos.isF(y) ? 'ff' : 'fm') : 'm' }) : '';
         if (er && !/♡/.test(o.text)) add.push(tl + TE.fill(S, pk(PAIR), x, y).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name));
         if (hi && S._r18A !== (S.log || []).length) add.push(TE.again(S, pk, x, y, er, !sep).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name));
       }
-      if (add.length) o.text = o.text + sep + add.join(sep);
+      if (add.length) { o.text = o.text + sep + add.join(sep); o.lewd = true; }
     }
+    /* エロシーンの印（ero-scene.js）：R18の場面の札の山場（生贄は儀式の文が性的なときだけ。交わりの部品を使った場面は touch で付く） */
+    if (o && o.kind === 'climax' && S && S.scen && SCEN[S.scen.id] && TAGS[o.tag] && o.tag !== '生贄' && !HK.SAFE_ON) o.lewd = true;
     return sayEv.apply(this, arguments);
   };
 })();

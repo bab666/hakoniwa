@@ -195,6 +195,8 @@
     escape: L('{b}は{a}が眠ったすきに、震える手で鍵を外し、外へ逃げ出した。|{b}はわずかな隙を見逃さなかった。{a}の腕をすり抜け、扉の外へ走った。'),
     rescue: L('{c}は{b}の姿が見えないことに気づき、探し回った末に閉ざされた扉を見つけた。扉を破ると、そこに{b}と{a}がいた。|{c}が扉を叩き続けた。{a}は観念したように、{b}の手を離した。'),
     release: L('{a}は泣きながら、{b}の手首の布をほどいた。「……ごめん。ごめんね｜……すまない。すまない｜……ごめんなさい。ごめんなさい」|{b}が何も言わずに{a}を抱きしめると、{a}は子どものように泣いて、扉の鍵を開けた。'),
+    /* 結末まで監禁が続いたときの行く末（O.finishCage） */
+    cageEnd: L('{a}は最後まで、{b}を{where}から出さなかった。扉の鍵は、今も{a}だけが持っている。|{b}が{where}に閉じ込められていることを、外の誰も知らないまま時間が過ぎた。{a}は今日も、{b}のもとへ帰っていく。'),
     /* 暴走：恋敵への危害 */
     harm: L('{a}は{c}を人気のない場所に呼び出した。数時間後、{c}は血まみれで見つかった。{a}は{b}の隣で、何事もなかったように笑っていた。|{c}は背後から突き飛ばされ、階段の下で動けなくなった。振り返ると、{a}が見下ろしていた。|{a}は{c}の飲み物に、何かを混ぜた。{c}はその夜、ひどく苦しんだ。'),
     harm_s: L('{a}は{c}を呼び出し、「{b}に二度と近づかないで｜{b}に二度と近づくな｜{b}に二度と近づかないでください」と迫った。その声の冷たさに、{c}は震え上がった。|{c}の机には、「{b}に近づくな｜＝｜{b}に近づかないでください」と書かれた紙が何度も入れられた。字は、{a}のものによく似ていた。'),
@@ -272,6 +274,8 @@
   /* 執着する側の行動（段階・型ごと） */
   O.act = function (ctx, a, opt) {
     opt = opt || {};
+    /* 閉じ込められている人は、自分からは動かない（監禁は一方向だけ：先に閉じ込めたほうを優先し、相手を閉じ込め返さない） */
+    if (a.flags.caged != null) return null;
     var b = O.target(ctx, a);
     if (!b) return null;
     var s = st(ctx, a, b), stg = O.stage(s.lv), ty = O.type(a, ctx, b), c = O.rival(ctx, a, b);
@@ -322,10 +326,11 @@
     if (HK.Dark.skip(ctx, 'cage')) return null;   /* 展開の重さ：穏やかでは、暴走をまれに見送る */
     /* 型を選んだ執着：想いの差が大きいほど、監禁・恋敵への危害に傾く（HK.Gap.k。おまかせの型では 1） */
     var gk = HK.Gap && O.subOf(ctx, a, b) ? HK.Gap.k(ctx, a, b) : 1;
-    if (opt.cage !== false) opts.push(['cage', (ty === 'bind' ? 3 : ty === 'devote' || ty === 'hatelove' ? 2 : 1.4) * HK.Dark.f(ctx, 'cage') * gk]);
+    /* 監禁は一方向だけ：どちらかがもう閉じ込められていれば、監禁は選ばない（同じ区切りで互いを閉じ込め合って、二人とも出てこなくなるのを防ぐ） */
+    if (opt.cage !== false && a.flags.caged == null && b.flags.caged == null) opts.push(['cage', (ty === 'bind' ? 3 : ty === 'devote' || ty === 'hatelove' ? 2 : 1.4) * HK.Dark.f(ctx, 'cage') * gk]);
     if (opt.harm !== false && c) opts.push(['harm', (ty === 'purge' ? 3.5 : ty === 'hatelove' ? 1.8 : ty === 'bind' ? 1.4 : 0.6) * HK.Dark.f(ctx, 'harm') * HK.Dark.pick(ctx, 0.6, 1, 1.6) * gk]);
     /* 心中の起こりやすさは箱庭ごとに opt.shinjuW で下げられる（出られない部屋は 0.35） */
-    if (opt.shinju !== false) opts.push(['shinju', (ty === 'depend' ? 3 : stn === 'mutual' ? 2.2 : ty === 'hatelove' ? 1.5 : 0.7) * (opt.shinjuW == null ? 1 : opt.shinjuW) * HK.Dark.f(ctx, 'shinju') * HK.Dark.pick(ctx, 0.6, 1, 1.6)]);
+    if (opt.shinju !== false) opts.push(['shinju', (ty === 'depend' ? 3 : stn === 'mutual' ? 2.2 : ty === 'hatelove' ? 1.5 : 0.7) * (opt.shinjuW == null ? 1 : opt.shinjuW) * HK.Dark.f(ctx, 'shinju') * HK.Dark.pick(ctx, 0.6, 1, 1.6, 'shinju')]);
     /* 箱庭ごとの暴走（opt.more → [[id, 重み, run(ctx, a, b, s, ty, c)], ...]） */
     var more = opt.more ? opt.more(ctx, a, b, s, ty, c, safe) || [] : [];
     more.forEach(function (m) { if (m[1] > 0) opts.push(m); });
@@ -398,6 +403,22 @@
     return { with: [b], cat: 'conflict', text: F(ctx, T(ctx, 'cageDay'), a, b), why: a.name + (SAFE() ? 'の囲い込み（' : 'による監禁（') + s.cage.n + '区切り目）', mag: 15 };
   };
 
+  /* 結末まで監禁が続いた二人：行く末を必ず書く。閉じ込められた人は場に出ない（present から外れる）ので、
+     箱庭の結末の文（一人で帰った・独り身など）から漏れたり、食い違ったりする。箱庭の側で書いた組（b.flags.cageDone。合コン）は除く */
+  O.finishCage = function (ctx) {
+    if (SAFE()) return;
+    ctx.chars.forEach(function (b) {
+      if (b.flags.caged == null || b.alive === false || b.flags.cageDone) return;
+      var a = ctx.chars[b.flags.caged];
+      if (!a || a.alive === false) return;
+      b.flags.cageDone = true;
+      b.fate = '監禁';
+      b.fateNote = a.name + 'に閉じ込められたまま、外に出られずにいる';
+      a.fateNote = (a.fateNote ? a.fateNote + '。' : '') + b.name + 'を閉じ込めたまま';
+      ctx.say({ kind: 'event', cat: 'conflict', actors: [a, b], cageOk: true, text: F(ctx, T(ctx, 'cageEnd'), a, b), why: a.name + 'による監禁（結末まで続いた）', mag: 30 });
+    });
+  };
+
   /* ---------- 結末の分類（engine.js の classify から） ---------- */
   O.classify = function (ctx, A, B, pf) {
     if (pf.shinju) return { id: 'shinju', dir: pf.shinju.by };
@@ -433,6 +454,9 @@
     var W = opt.w || 1;
     var after0 = scen.after;
     scen.after = function (ctx) { var r = after0 ? after0.apply(this, arguments) : undefined; O.tick(ctx); if (opt.after) opt.after(ctx); return r; };
+    /* 結末まで監禁が続いた二人の行く末（箱庭の結末のあとに） */
+    var fin0 = scen.finish;
+    scen.finish = function (ctx) { var r = fin0 ? fin0.apply(this, arguments) : undefined; O.finishCage(ctx); return r; };
     scen.events.push({
       /* 執着は箱庭の進行役のイベント（pri）と同じ扱い：設定した執着が、ほかの出来事に埋もれないように */
       id: 'ob_act', cat: 'conflict', noOdd: true, pri: true,

@@ -611,7 +611,7 @@
         '扉が開いた。{a}は出ていく二人に手を振ってから、部屋の隅の{b}の隣に腰を下ろした。{a}「待たせた。次は、二人で｜待たせたな。次は、二人でだ｜お待たせしました。次は、二人で」',
         '鍵の外れる音に、{b}が顔を上げた。{a}は扉をくぐらず、{b}の手を取った。{a}「先に出てて。{b}と一緒に行くから｜先に出ていろ。{b}と一緒に行く｜先に出ていてください。{b}と一緒に行きますから」――二人は頷いて、先に扉をくぐった。'
       ]), sf.s, sf.o);
-      return { cat: 'escape', mag: 40, text: text + st, why: why + '／' + sf.s.name + 'には、部屋に残る恋人（' + sf.o.name + '）がいる。場面は三人までにして、' + sf.s.name + 'が残った', with: g.concat([sf.o]) };
+      return { cat: 'escape', mag: 40, text: text + st, why: why + '／' + sf.s.name + 'には、部屋に残る恋人（' + sf.o.name + '）がいる。場面は三人までにして、' + sf.s.name + 'が残った', with: g.concat([sf.o]), lewd: night ? true : undefined };
     }
     g.forEach(function (c) {
       c.out = true; c.fate = '脱出';
@@ -622,7 +622,7 @@
     var ex = { group: g.map(function (c) { return c.i; }), label: ctx.label, trio: true, night: !!night, kind: kind || 'warm' };
     (ctx.flags.exits = ctx.flags.exits || []).push(ex);
     ctx.flags.trios.push(ex);
-    return { cat: 'escape', mag: 40, text: text + '扉の鍵が外れる音がした。' + nm3(g) + 'は、' + kn(g.length) + 'そろって部屋を出た。', why: why, with: g };
+    return { cat: 'escape', mag: 40, text: text + '扉の鍵が外れる音がした。' + nm3(g) + 'は、' + kn(g.length) + 'そろって部屋を出た。', why: why, with: g, lewd: night ? true : undefined };
   };
 
   /* 「一人だけ」と決めた人を、三人に誘う（説得）。折れれば、次から三人の場面に入れる */

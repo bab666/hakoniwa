@@ -352,6 +352,66 @@
     return out.filter(function (x, i, arr) { return x || (i > 0 && i < arr.length - 1); }).join(hadNL ? '\n\n' : '\n').replace(/\n{3,}/g, '\n\n');
   };
 
+  /* 正規表現に文字列をそのまま入れるための逃がし（名前・語など） */
+  HK.reEsc = function (s) { return String(s == null ? '' : s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
+  /* 名前の記号（！。？…・（）♪☆〜 . ! ? ( ) [ ] * + $ ^ | \ 空白など）を、箱庭を動かしているあいだだけ私用領域の文字（U+E200〜U+E2FF）に置き換える。
+     名前の中の「！」「。」が文の区切りに、「(」「?」が正規表現の特殊文字に見えて、話し手の判定・口調の置き換え・一人称・呼び方が効かなくなるのを防ぐ。
+     使う所：voice-seg.js の HK.simulate のいちばん外側の包み（結果を返す前に全部戻す）と、voice.js の V.processText（見本など、箱庭の外から呼ばれたとき）。
+     文字ごとに一対一で置き換えるので、長さは変わらず（seg の位置がずれない）、名前の一部（頭の二文字など）を切り出しても戻せる */
+  var NS = HK.NameSafe = { BASE: 0xE200, MAX: 0x100 };
+  var NS_OK = /[ぁ-ゖゝゞァ-ヺー-ヾ一-鿿㐀-䶿々〆〇A-Za-z0-9Ａ-Ｚａ-ｚ０-９\u2064\uD800-\uDFFF\uE200-\uE2FF]/, NS_RE = /[\uE200-\uE2FF]/g, NS_FWD = {}, NS_REV = {}, NS_N = 0;
+  function nsCode(ch) {
+    if (!NS_FWD[ch]) { if (NS_N >= NS.MAX) return null; var c = String.fromCharCode(NS.BASE + NS_N++); NS_FWD[ch] = c; NS_REV[c] = ch; }
+    return NS_FWD[ch];
+  }
+  /* 置き換えの要る名前か（文字・数字・長音・名前の印 U+2064・置き換えたあとの文字 以外の文字がある）。置き換えたあとの名前は置き換え直さない */
+  NS.need = function (name) {
+    if (typeof name !== 'string' || !name) return false;
+    for (var i = 0; i < name.length; i++) if (!NS_OK.test(name[i])) return true;
+    return false;
+  };
+  NS.enc = function (name) {
+    if (!NS.need(name)) return name;
+    var out = '';
+    for (var i = 0; i < name.length; i++) { var ch = name[i]; out += NS_OK.test(ch) ? ch : (nsCode(ch) || ch); }
+    return out;
+  };
+  NS.dec = function (s) { return typeof s === 'string' && NS_N && s.search(NS_RE) >= 0 ? s.replace(NS_RE, function (c) { return NS_REV[c] || c; }) : s; };
+  NS.has = function (s) { return typeof s === 'string' && NS_N > 0 && s.search(NS_RE) >= 0; };
+  /* 結果の中の文字列（キーも）を全部戻す。記録の e.seg（数え上げない属性）とその nk も戻す */
+  NS.decDeep = function (o, seen) {
+    seen = seen || [];
+    if (typeof o === 'string') return NS.dec(o);
+    if (!o || typeof o !== 'object' || seen.indexOf(o) >= 0) return o;
+    seen.push(o);
+    if (Array.isArray(o)) { for (var i = 0; i < o.length; i++) o[i] = NS.decDeep(o[i], seen); }
+    else Object.keys(o).forEach(function (k) { var v = NS.decDeep(o[k], seen), k2 = NS.dec(k); if (k2 !== k) delete o[k]; o[k2] = v; });
+    if (Array.isArray(o.seg) && Object.prototype.propertyIsEnumerable.call(o, 'seg') === false) {
+      o.seg.forEach(function (x) { if (x && typeof x.s === 'string') x.s = NS.dec(x.s); });
+      if (typeof o.seg.nk === 'string') o.seg.nk = NS.dec(o.seg.nk);
+    }
+    return o;
+  };
+
+  /* 文 text の中の、記号のある名前（names）を置き換える／戻す（長さは変わらない） */
+  NS.encText = function (text, names) {
+    if (typeof text !== 'string' || !Array.isArray(names)) return text;
+    names.filter(function (n) { return NS.need(n); }).sort(function (a, b) { return b.length - a.length; }).forEach(function (n) { if (text.indexOf(n) >= 0) text = text.split(n).join(NS.enc(n)); });
+    return text;
+  };
+  /* 長い場面の整形（HK.fmtLong）も、名前の「！」「？」「。」を文の区切りや台詞の前の区切りと見ないように、置き換えた名前で整えてから戻す */
+  var fmtLong0 = HK.fmtLong;
+  HK.fmtLong = function (text, names, seg) {
+    if (typeof text !== 'string' || !Array.isArray(names) || !names.some(function (n) { return NS.need(n); })) return fmtLong0.apply(this, arguments);
+    var n2 = names.map(function (n) { return NS.enc(n); }), seg2 = seg;
+    if (Array.isArray(seg)) {
+      seg2 = seg.map(function (x) { return x && typeof x.s === 'string' ? Object.assign({}, x, { s: NS.encText(x.s, names) }) : x; });
+      seg2.blk = seg.blk;
+      seg2.nk = seg.nk === HK.fmtSpeech(names).key ? HK.fmtSpeech(n2).key : seg.nk;
+    }
+    return NS.dec(fmtLong0.call(this, NS.encText(text, names), n2, seg2));
+  };
+
   HK.store = {
     get: function (k, d) { try { var v = window.localStorage.getItem('hakoniwa:' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
     set: function (k, v) { try { window.localStorage.setItem('hakoniwa:' + k, JSON.stringify(v)); return true; } catch (e) { return false; /* 保存できない環境・容量超過 */ } }

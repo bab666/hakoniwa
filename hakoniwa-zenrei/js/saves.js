@@ -7,7 +7,8 @@
   'use strict';
   var HK = window.HK;
   if (!HK || typeof document === 'undefined') return;
-  var DB = 'hakoniwa-saves', ST = 'saves', LS = 'hakoniwa:saves', VER = 1;
+  /* 保存先の名前は版ごと（safe.js の HK.STORE。R18版は hakoniwa-saves／hakoniwa:saves、全年齢版は hakoniwa-z-saves／hakoniwa-z:saves） */
+  var KS = HK.STORE, DB = KS ? KS.db : 'hakoniwa-saves', ST = 'saves', LS = KS ? KS.key('hakoniwa:saves') : 'hakoniwa:saves', VER = 1;
   var cache = null;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -25,10 +26,39 @@
         if (!window.indexedDB) { idb = false; return ok(false); }
         var rq = indexedDB.open(DB, VER);
         rq.onupgradeneeded = function () { var d = rq.result; if (!d.objectStoreNames.contains(ST)) d.createObjectStore(ST, { keyPath: 'id' }); };
-        rq.onsuccess = function () { idb = rq.result; ok(idb); };
+        rq.onsuccess = function () { idb = rq.result; migrate(idb).then(function () { ok(idb); }); };
         rq.onerror = function () { idb = false; ok(false); };
         rq.onblocked = function () { idb = false; ok(false); };
       } catch (e) { idb = false; ok(false); }
+    });
+  }
+  /* 全年齢版：分ける前の共有のセーブ（hakoniwa-saves）を一度だけ写す（safe.js の移行の続き。印の db が 'wait' のときだけ）。
+     R18モードで保存したもの（r18）は写さない。同じ id がもうあれば写さない。旧い DB は消さず、無ければ作らない */
+  function migrate(d) {
+    var f = KS && KS.zenrei && KS.flag();
+    if (!f || f.db !== 'wait' || KS.oldDb === DB) return Promise.resolve();
+    var done = function (n) { KS.setFlag({ db: n }); };
+    return new Promise(function (ok) {
+      try {
+        var rq = indexedDB.open(KS.oldDb), fresh = false;
+        rq.onupgradeneeded = function (e) { if (!e.oldVersion) { fresh = true; try { rq.transaction.abort(); } catch (x) { /* なし */ } } };
+        rq.onerror = function (e) { if (e && e.preventDefault) e.preventDefault(); if (fresh) done(0); ok(); };
+        rq.onblocked = function () { ok(); };
+        rq.onsuccess = function () {
+          var od = rq.result;
+          if (fresh || !od.objectStoreNames.contains(ST)) { od.close(); done(0); return ok(); }
+          var g = od.transaction(ST, 'readonly').objectStore(ST).getAll();
+          g.onerror = function () { od.close(); ok(); };
+          g.onsuccess = function () {
+            od.close();
+            var list = (g.result || []).filter(function (r) { return r && r.id && !r.r18; });
+            var tx = d.transaction(ST, 'readwrite'), os = tx.objectStore(ST), n = 0;
+            list.forEach(function (r) { var c = os.count(r.id); c.onsuccess = function () { if (!c.result) { os.put(r); n++; } }; });
+            tx.oncomplete = function () { done(n); ok(); };
+            tx.onerror = tx.onabort = function () { ok(); };
+          };
+        };
+      } catch (e) { ok(); }
     });
   }
   function lsAll() { try { return JSON.parse(localStorage.getItem(LS) || '[]'); } catch (e) { return []; } }
@@ -146,7 +176,8 @@
         (Object.keys(scs).length > 1 ? '<select id="savefilter" aria-label="箱庭で絞り込む"><option value="">すべての箱庭</option>' + Object.keys(scs).map(function (k) { return '<option value="' + esc(k) + '"' + (filter === k ? ' selected' : '') + '>' + esc(scs[k]) + '</option>'; }).join('') + '</select>' : '') +
         '<input type="file" id="savefile" accept="application/json,.json" hidden></div></div>' +
         (shown.length ? '<ul class="savelist">' + shown.map(item).join('') + '</ul>' : '<p class="empty">まだセーブデータはありません。</p>') +
-        (hid ? '<p class="hint small">' + (HK.SAFE_BUILD ? 'R18版で保存した' + hid + '件は、R18版（R18モード）のときだけ表示します。' : 'R18モードで保存した' + hid + '件は、R18モードのときだけ表示します。') + '</p>' : '') +
+        (HK.SAFE_BUILD ? '<p class="hint small">保存は版ごとに別になりました（全年齢版とR18版のセーブ・住人・履歴は、同じブラウザでも別々に残ります）。R18版のセーブを全年齢版で使うには、R18版の「まるごと書き出し」と全年齢版の「まるごと読み込む」（住人タブの「別の端末へ移す」）で移せます（R18モードで保存したものは移りません）。' + (hid ? 'R18モードで保存した' + hid + '件は、全年齢版では表示しません。' : '') + '</p>' :
+          hid ? '<p class="hint small">R18モードで保存した' + hid + '件は、R18モードのときだけ表示します。</p>' : '') +
         '<p class="hint small">※ 保存した結果は、そのときの内容のまま開けます。「同じ条件でもう一度」は、今のバージョンで回し直すので、結果が変わることがあります。</p>';
     });
   }

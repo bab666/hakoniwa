@@ -49,6 +49,8 @@
       };
     });
     this.chars.forEach(function (c, i) { c.persona = HK.personaOf(c); HK.charFlags(input.chars[i], c, input.scenId); });
+    /* 喘ぎの口調（R18版。moan-engine.js の HK.Moan が見る）：決めた人だけ写す */
+    this.chars.forEach(function (c, i) { if (input.chars[i].moanTone) c.moanTone = String(input.chars[i].moanTone); });
     this.rel = this.chars.map(function () { return []; });
   }
 
@@ -365,11 +367,15 @@
        （present() から外れているが、名簿を直接たどる箱庭の出来事もあるので、ここで最後に止める） */
     if (!o.cageOk && o.kind !== 'step' && o.kind !== 'phase' && o.kind !== 'death' && (o.actors || []).some(function (c) { return c && c.flags && c.flags.caged != null; }))
       return { n: this.log.length, step: this.stepIndex, cat: o.cat || 'phase', actors: [], text: '', mag: 0, kind: 'event', skipped: true };
+    /* エロシーンの印（ero-scene.js）：o.lewd、性的な場面の文を組み立てたときの touch、体の語の印。
+       出来事の定義の sex:true は「体の関係を許すか」の印で、断った・翌朝などの文も含むので使わない */
+    var lw = HK.EroScene && o.kind !== 'step' && o.kind !== 'death' && HK.EroScene.hit(this, o);
     var e = {
       n: this.log.length, step: this.stepIndex, label: this.label, cat: o.cat || 'phase',
       actors: (o.actors || []).map(function (c) { return c.i; }), text: o.text, why: o.why || '',
       odd: !!o.odd, mag: o.mag || 0, kind: o.kind || 'phase'
     };
+    if (lw) e.lewd = true;
     this.log.push(e);
     return e;
   };
@@ -416,7 +422,7 @@
     var why = typeof o.why === 'function' ? o.why(r) : o.why;
     if (!text) { this.flush(); return null; }
     var actors = (o.actors || []).filter(Boolean);
-    var e = this.say({ kind: 'event', cat: o.cat || 'bond', actors: actors, text: text, why: why || '', mag: this._mag + (o.mag || 0), odd: !!o.odd, sex: sexEv(this, o).sex });
+    var e = this.say({ kind: 'event', cat: o.cat || 'bond', actors: actors, text: text, why: why || '', mag: this._mag + (o.mag || 0), odd: !!o.odd, sex: sexEv(this, o).sex, lewd: typeof o.lewd === 'function' ? o.lewd(r) : o.lewd });
     if (actors[0]) actors[0].cats[e.cat] = (actors[0].cats[e.cat] || 0) + 1;
     if (o.odd && actors[0]) actors[0].odd.push(e.n);
     for (var kk in this._touched) { var pr = this._touched[kk]; this.pair(pr[0], pr[1]).moments.push({ n: e.n, mag: e.mag }); }
@@ -617,7 +623,8 @@
       p *= scen.actRate || 1;
       for (var ai = 0; ai < actors.length; ai++) {
         var a = actors[ai];
-        if (!a.alive || a.out || a.flags.down || a.mad) continue;
+        /* この区切りのうちに閉じ込められた人（執着の監禁。obsess-kit.js）は、もう動かない */
+        if (!a.alive || a.out || a.flags.down || a.mad || a.flags.caged != null) continue;
         if (rng() > p) continue;
         act(ctx, a, pool);
       }
@@ -764,7 +771,7 @@
       var w = e.w(ctx, a, bb);
       if (!(w > 0)) return;
       w *= ctx.bias(a, e.cat);
-      if (e.cat === 'combat' || e.cat === 'kill' || e.cat === 'betray') w *= HK.Dark.f(ctx, e.cat === 'betray' ? 'grudge' : 'kill');   /* 展開の重さ（mood-dial.js） */
+      if (e.cat === 'combat' || e.cat === 'kill' || e.cat === 'betray') w *= HK.Dark.f(ctx, e.dk || (e.cat === 'betray' ? 'spite' : 'kill'));   /* 展開の重さ（mood-dial.js） */
       if (bb && HK.Ties) w *= HK.Ties.bias(ctx, a, bb, e.cat);
       if (bb && e.cat === 'romance' && (a.honmei != null || bb.honmei != null)) w *= HK.honmeiFactor(ctx, a, bb);
       if (HK.Emo) w *= HK.Emo.weight(ctx, a, e);   /* 気分（emotion.js）：悲しみ→恋愛を控える、怒り→対立など */
@@ -795,6 +802,9 @@
     var ev0 = ctx._ev; ctx._ev = pick.e;
     try { actRun(ctx, a, pick, odd); } finally { ctx._ev = ev0; }
   }
+  /* エロシーンの印（ero-scene.js）：結果の lewd があればそれ。なければ、結果の側で sex:true を返した（体の関係の場面を書いた）とき、
+     または R18 の場面の出来事（定義に sex と r18 の両方）のとき。定義の sex:true だけ（許可の印）では付けない */
+  function eroOf(res, ev) { if (res.lewd != null) return !!res.lewd; return res.sex === true || !!(ev && ev.sex && ev.r18) ? true : undefined; }
   function actRun(ctx, a, pick, odd) {
     var res = pick.e.run(ctx, a, pick.b);
     if (!res) return;
@@ -807,7 +817,7 @@
     if (pick.b) actors.push(pick.b);
     if (res.with) res.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
     if (res.odd) odd = true;
-    var e = ctx.say({ kind: 'event', cat: cat, actors: actors, text: res.text, why: res.why, odd: odd, mag: ctx._mag + (res.mag || 0), cageOk: /^ob_/.test(pick.e.id || ''), sex: sex });
+    var e = ctx.say({ kind: 'event', cat: cat, actors: actors, text: res.text, why: res.why, odd: odd, mag: ctx._mag + (res.mag || 0), cageOk: /^ob_/.test(pick.e.id || ''), sex: sex, lewd: eroOf(res, pick.e) });
     if (e.skipped) return;
     a.cats[cat] = (a.cats[cat] || 0) + 1;
     if (odd) a.odd.push(e.n);

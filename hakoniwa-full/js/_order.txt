@@ -437,6 +437,7 @@ js/grief-kit.js
 js/dark-thick.js
 js/lewd-unify.js
 js/lewd-mark.js
+js/ero-scene.js
 js/futari-r18.js
 js/reset.js
 js/voice-seg.js

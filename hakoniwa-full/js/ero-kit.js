@@ -157,11 +157,13 @@
   /* ctx … true（奥を深く突かれた場面）、または { deep, force, late } */
   E.moan = function (S, who, stage, ctx) {
     var cx = ctx && typeof ctx === 'object' ? ctx : { deep: !!ctx };
-    var ps = (who && (HK.personaOf ? HK.personaOf(who) : who.persona)) || 'gentle';
+    /* 喘ぎの口調（住人の設定 moanTone。moan-engine.js の HK.Moan.psOf／toneOf）があれば、その口調と態度で */
+    var MO = HK.Moan && HK.Moan.psOf ? HK.Moan : null;
+    var ps = (MO ? MO.psOf(who) : who && (HK.personaOf ? HK.personaOf(who) : who.persona)) || 'gentle';
     var st = Math.max(0, Math.min(2, stage | 0));
     /* 主導権を握っている側（who.eroDom）：こらえる・とろける段階は、拒まない喘ぎ */
     if (who && who.eroDom && st < 2) { var dk = ROUGH[ps] ? 'rough' : 'soft'; return pickFresh(S, DOM[dk][st], 'dom.' + dk + st); }
-    var tone = who && HK.toneOf ? HK.toneOf(who) : ps, TM = E.TONE_MOAN[tone];
+    var tone = MO && who ? MO.toneOf(who) : who && HK.toneOf ? HK.toneOf(who) : ps, TM = E.TONE_MOAN[tone];
     if (TM && TM.daku && TM.daku.length && !(who && who.eroDom) && E.dakuOf(who)) {
       var fal = fallenOf(who), late = cx.late || moanCount(S, who) > 6;
       var p = st === 2 ? 0.8 : st === 1 ? (cx.deep || cx.force || late || fal ? 0.6 : 0) : (fal || cx.force ? 0.35 : 0);

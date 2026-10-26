@@ -139,6 +139,8 @@
     if (['', 'tb', 'tr', 'br', 'any'].indexOf(c.posLike || '') < 0) c.posLike = '';
     migUserTone(c);
     c.tone = okTone(c.tone) ? c.tone || '' : '';
+    /* 喘ぎの口調（R18版。moan-engine.js）：決めたときだけ持つ。空ならいつもの口調 */
+    if (c.moanTone && typeof c.moanTone === 'string' && okTone(c.moanTone)) c.moanTone = String(c.moanTone); else delete c.moanTone;
     c.fp = str(c.fp, 8).trim();
     c.color = typeof c.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(c.color) ? c.color : '';
     c.call = okCall(c.call) ? c.call || '' : '';
@@ -607,6 +609,7 @@
         if (HK.Attr) HK.Attr.exportTo(o, c, ref);
         if (HK.Shared) HK.Shared.exportTo(o, c);
         if (c.toneCustom) o.toneCustom = c.toneCustom;
+        if (c.moanTone) o.moanTone = c.moanTone;
         /* 固定した相手：一人なら番号（以前の形）、二人以上なら番号の並び */
         var lks = idList(c.loveLock).map(ref).filter(function (x) { return x != null; });
         if (lks.length) o.loveLock = lks.length === 1 ? lks[0] : lks;
@@ -690,6 +693,7 @@
       if (HK.Attr) HK.Attr.importFrom(c, o);
       if (HK.Shared) HK.Shared.importFrom(c, o);
       if (o.toneCustom != null) c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(String(o.toneCustom).slice(0, 120)) : '');
+      if (o.moanTone != null) c.moanTone = okTone(o.moanTone) ? String(o.moanTone || '') : '';
       c._lk = o.loveLock; c._sl = o.sexLock; c._slm = !!o.sexLockMob; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
       if (o.fp != null) c.fp = String(o.fp).trim().slice(0, 8);
       if (typeof o.icon === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(o.icon) && o.icon.length < 400000) c.icon = o.icon;
@@ -1003,6 +1007,8 @@
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
           var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' ? c.sexLock : c.sexLock === 'pick' || c.sexLock === 'pickMob' ? lockIdx(c.sexLocks) : '', sexLockMob: c.sexLock === 'pickMob' && idList(c.sexLocks).length > 0, loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          /* 喘ぎの口調（R18版。全年齢モードでは渡さない） */
+          if (c.moanTone && !HK.SAFE_ON) o.moanTone = c.moanTone;
           return HK.Attr ? HK.Attr.toInput(o, c, ids) : o;
         });
       })(),

@@ -93,7 +93,7 @@
         if (fm) e.text = e.text.split(/(?<=。)/).map(function (sen) {
           if (sen.indexOf(x.name + 'は') >= 0 && FM_BAD.test(sen)) return S.rng.pick(FM_SAFE).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name);
           /* 男性の受けの「中・奥」を言う文は、腰の跳ね方に */
-          if (new RegExp(y.name + 'の(中|奥)').test(sen) && !/「/.test(sen)) return sen.replace(new RegExp(y.name + 'の(中|奥)が?[^。]*。'), y.name + 'の腰が、そのたびに小さく跳ねた。');
+          if (new RegExp(HK.reEsc(y.name) + 'の(中|奥)').test(sen) && !/「/.test(sen)) return sen.replace(new RegExp(HK.reEsc(y.name) + 'の(中|奥)が?[^。]*。'), y.name + 'の腰が、そのたびに小さく跳ねた。');
           return sen;
         }).join('');
         e.text = e.text.replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '');

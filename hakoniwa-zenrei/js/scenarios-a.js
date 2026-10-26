@@ -181,6 +181,12 @@
     ]
   };
   var GC_PAIR = {
+    /* 執着の監禁のまま終わった二人（obsess-kit.js）。二人とも途中で店を抜けた */
+    cage: [
+      '{a}と{b}の席は、いつの間にか空になっていた。{a}が{b}の手を引いて店を出ていくところを、誰も見ていなかった。{b}の電話は、その夜ずっとつながらなかった。',
+      'お開きの時間には、{a}と{b}の姿はもうなかった。二人は途中で店を抜けていた。{a}の部屋の鍵は、内側から閉まったままだった。',
+      '{a}は{b}を連れて、途中で店を出た。幹事が送ったメッセージには、最後まで既読がつかなかった。二人がどこへ行ったのか、店に残った誰も知らない。'
+    ],
     keep: [
       '{a}と{b}は、最初から決まっていたように同じタクシーに乗った。恋人どうしの二人にとって、この合コンは少し長い寄り道だった。次の週末の約束は、もう決まっていた。',
       '{a}と{b}は並んで店を出て、同じ部屋に帰っていった。周りに冷やかされても、二人は手を離さなかった。恋人のまま、二人の夜は終わった。',
@@ -302,10 +308,14 @@
     ctx.label = second ? '終電のあと' : 'お開きのあと';
     ctx.say({ kind: 'step', cat: 'phase', text: ctx.label });
     /* 人数には、同じ席にいたモブ（goukon-mob.js）も数える */
-    ctx.say({ text: ctx.pick(GC_OPEN[second ? 'yes' : 'no']).replace(/\{n\}/g, P.length + (ctx.gkMob ? ctx.gkMob.length : 0)), mag: 25, why: '結末：' + (second ? '二次会のあと、終電で解散' : '一次会でお開き') });
+    /* 途中で店を抜けた二人（監禁）は、解散の場の人数に入れない */
+    var nHere = P.filter(function (c) { return !T.some(function (t) { return t.cage && (t.a === c.i || t.b === c.i); }); }).length;
+    ctx.say({ text: ctx.pick(GC_OPEN[second ? 'yes' : 'no']).replace(/\{n\}/g, nHere + (ctx.gkMob ? ctx.gkMob.length : 0)), mag: 25, why: '結末：' + (second ? '二次会のあと、終電で解散' : '一次会でお開き') });
     var loves = 0, kinds = [];
     T.forEach(function (t) {
       var a = ctx.chars[t.a], b = ctx.chars[t.b], pf = ctx.pair(a, b), k;
+      /* 執着の監禁のまま終わった二人：途中で店を抜けた（閉じ込められた人が出る記録なので cageOk） */
+      if (t.cage) { kinds.push('cage'); ctx.say({ text: ctx.t(ctx.pick(GC_PAIR.cage), a, b), actors: [a, b], mag: 25, cageOk: true, why: '結末：途中で店を抜けた二人（' + a.name + 'による監禁）' }); return; }
       if (t.night) k = t.outc === 'keep' ? 'keep' : t.outc === 'fwb' ? 'fwb' : t.outc === 'forget' ? 'forget' : (t.outc === 'lover' || pf.couple) ? 'lover' : 'unsure';
       else k = t.walk ? 'walkLove' : pf.couple ? 'couple' : 'walk';
       if (k === 'lover' || k === 'walkLove' || k === 'couple') loves++;
@@ -332,9 +342,13 @@
       else {
         var LV = { lover: 1, walkLove: 1, couple: 1 }, lp = T.filter(function (t, i) { return LV[kinds[i]]; });
         var nmOf = function (l) { return l.slice(0, 2).map(function (t) { return ctx.chars[t.a].name + 'と' + ctx.chars[t.b].name; }).join('、') + (l.length > 2 ? 'ほか' : ''); };
+        /* 監禁のまま終わった組は「一緒に帰った」に数えず、「途中で店を抜けた」と書く */
+        var T2 = T.filter(function (t, i) { return kinds[i] !== 'cage'; }), k2 = kinds.filter(function (k) { return k !== 'cage'; }), cg = T.filter(function (t) { return t.cage; });
         if (lp.length) tail = nmOf(lp) + 'が恋人になった';
-        else if (kinds.every(function (k) { return k === 'keep'; })) tail = nmOf(T) + '（恋人どうし）が一緒に帰った';
-        else tail = nmOf(T) + (kinds.every(function (k) { return k !== 'walk'; }) ? 'が同じタクシーで帰った' : 'が一緒に帰った');
+        else if (!T2.length) tail = nmOf(cg) + 'が途中で店を抜けた';
+        else if (k2.every(function (k) { return k === 'keep'; })) tail = nmOf(T2) + '（恋人どうし）が一緒に帰った';
+        else tail = nmOf(T2) + (k2.every(function (k) { return k !== 'walk'; }) ? 'が同じタクシーで帰った' : 'が一緒に帰った');
+        if (cg.length && T2.length) tail += '。' + nmOf(cg) + 'は途中で店を抜けた';
       }
       ctx.flags.outcome = head + ' ― ' + tail;
     }
@@ -451,6 +465,19 @@
         if (mutual < 26 || dry > 0.56 || (tieHas(a, b, 'rival') && mutual < 36) || (imp > 0.72 && mutual < 36)) return 'forget';
         return 'unsure';
       }
+      /* 執着の監禁（obsess-kit.js）が続いたまま終わった組：閉じ込められた人は店にいない（present から外れている）ので、
+         監禁した人が「一人で帰った」「終電の窓に…」にならないように、二人とも途中で店を抜けた（連れ去り）扱いにする */
+      ctx.chars.forEach(function (b) {
+        if (b.flags.caged == null || b.alive === false) return;
+        var a = ctx.chars[b.flags.caged];
+        if (!a || a.alive === false || a.out) return;
+        used[a.i] = used[b.i] = 1;
+        a.fate = b.fate = '途中で抜けた';
+        a.fateNote = b.name + 'を連れて、途中で店を出た（監禁）';
+        b.fateNote = a.name + 'に連れ出され、途中で店を出た（監禁）';
+        b.flags.cageDone = true;
+        (ctx.flags.together = ctx.flags.together || []).push({ a: a.i, b: b.i, night: !!ctx.pair(a, b).night, cage: true });
+      });
       var rf = gRom(ctx), cand = [];
       for (var i = 0; i < P.length; i++) for (var j = i + 1; j < P.length; j++) {
         var a = P[i], b = P[j], ab = R(ctx, a, b), ba = R(ctx, b, a);

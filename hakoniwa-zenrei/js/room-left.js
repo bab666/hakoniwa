@@ -245,7 +245,7 @@
       parts.push(persons(ctx, G, 'joy', U));
       G.forEach(function (c) { bump(ctx, c, { joy: 40, fear: -30 }, '救助隊が来た'); });
       /* 出ていった人への誓い（穏やかでは少なく、重いでは多く） */
-      var pv = Math.min(1, 0.85 * (HK.Dark ? HK.Dark.f(ctx, 'grudge') : 1));
+      var pv = Math.min(1, 0.85 * (HK.Dark ? HK.Dark.f(ctx, 'spite') : 1));
       G.forEach(function (c) {
         if (o.vows.length >= 2) return;
         var best = null;

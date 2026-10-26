@@ -6,8 +6,11 @@
   var HK = window.HK;
   function keys(st) {
     var out = [];
-    /* セーブデータ（saves.js）は消さない：IndexedDB に置いたセーブはもともと消えないので、IndexedDB が使えない環境の localStorage のセーブ（hakoniwa:saves）も残してそろえる */
-    try { for (var i = 0; i < st.length; i++) { var k = st.key(i); if (k && /^hakoniwa/.test(k) && k !== 'hakoniwa:saves') out.push(k); } } catch (e) { /* 使えない環境 */ }
+    /* セーブデータ（saves.js）は消さない：IndexedDB に置いたセーブはもともと消えないので、IndexedDB が使えない環境の localStorage のセーブ（hakoniwa:saves）も残してそろえる。
+       消すのはこの版の鍵だけ（safe.js の HK.STORE。R18版で消しても全年齢版の保存は残り、その逆も同じ）。全年齢版の移行の印は残す（消すと、R18版の保存をまた写してしまう） */
+    var KS = HK.STORE, mine = function (k) { return KS ? KS.mine(k) : /^hakoniwa/.test(k); };
+    var keep = KS ? [KS.key('hakoniwa:saves'), KS.FLAG] : ['hakoniwa:saves'];
+    try { for (var i = 0; i < st.length; i++) { var k = st.key(i); if (k && mine(k) && keep.indexOf(k) < 0) out.push(k); } } catch (e) { /* 使えない環境 */ }
     return out;
   }
   function wipe() {

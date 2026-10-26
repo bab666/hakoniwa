@@ -18,6 +18,50 @@
   var hash = (location.hash || '').replace('#', '');
   var ON = BUILD || hash === 'safe' || (hash !== 'r18' && load() === '1');
   HK.SAFE_BUILD = BUILD; HK.SAFE_ON = ON;
+
+  /* ---------- 保存の鍵（版ごとに分ける） ----------
+     R18版（hakoniwa-full）は従来どおり hakoniwa で始まる鍵（hakoniwa:state・hakoniwa_fold_v1・IndexedDB hakoniwa-saves など）。
+     全年齢版は同じ名前の「hakoniwa」を「hakoniwa-z」に替えた鍵（hakoniwa-z:state・hakoniwa-z_fold_v1・hakoniwa-z-saves）。
+     同じ場所（オリジン）に置いても、片方の保存がもう片方に出たり上書きしたりしない。R18版の全年齢モード（#safe）は R18版の鍵のまま。
+     key(名前)：R18版の鍵の名前 → この版の鍵（どちらの版の名前を渡してもよい）。canon(鍵)：どちらの版の鍵でも R18版の名前に。mine(鍵)：この版の鍵か。
+     ※core.js の HK.store は従来の鍵で作られるので、ここで版ごとの鍵のものに置き換える（それより前に読むのは tone-engine.js の adv だけ。下で読み直す） */
+  var ZEN = BUILD, ZPFX = 'hakoniwa-z';
+  var KST = HK.STORE = {
+    zenrei: ZEN, prefix: (ZEN ? ZPFX : 'hakoniwa') + ':', db: (ZEN ? ZPFX : 'hakoniwa') + '-saves', oldDb: 'hakoniwa-saves',
+    FLAG: ZPFX + ':migrated',                                   /* 全年齢版で、旧い共有の鍵から写したことの印 */
+    canon: function (k) { k = String(k); return k.indexOf(ZPFX) === 0 ? 'hakoniwa' + k.slice(ZPFX.length) : k; },
+    key: function (k) { k = KST.canon(k); return ZEN && k.indexOf('hakoniwa') === 0 ? ZPFX + k.slice(8) : k; },
+    mine: function (k) { return typeof k === 'string' && k.indexOf('hakoniwa') === 0 && (k.indexOf(ZPFX) === 0) === ZEN; },
+    flag: function () { try { var v = window.localStorage.getItem(KST.FLAG); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+    setFlag: function (o) { try { window.localStorage.setItem(KST.FLAG, JSON.stringify(Object.assign(KST.flag() || {}, o))); return true; } catch (e) { return false; } }
+  };
+  HK.store = {
+    get: function (k, d) { try { var v = window.localStorage.getItem(KST.prefix + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set: function (k, v) { try { window.localStorage.setItem(KST.prefix + k, JSON.stringify(v)); return true; } catch (e) { return false; /* 保存できない環境・容量超過 */ } }
+  };
+  /* 移行（全年齢版だけ・一度だけ）：分ける前は両方の版が同じ鍵に保存していたので、全年齢版を新しい鍵で初めて開いたとき、
+     旧い共有の鍵（hakoniwa: と hakoniwa_ で始まるもの）を写す。旧い鍵は R18版が使うので消さない。R18 だけの項目は ui.js の normState が落とし、
+     R18モードで保存したセーブ（r18 の印）と R18 だけの辞書（喘ぎ）は写さない。IndexedDB のセーブは saves.js が開くときに写す（印の db が 'wait' のあいだ） */
+  (function migrate() {
+    if (!ZEN) return;
+    var ls;
+    try { ls = window.localStorage; if (ls.getItem(KST.FLAG) != null) return; } catch (e) { return; }
+    var n = 0, ks = [];
+    try { for (var i = 0; i < ls.length; i++) { var k = ls.key(i); if (k && /^hakoniwa[:_]/.test(k)) ks.push(k); } } catch (e) { return; }
+    ks.forEach(function (k) {
+      var to = KST.key(k);
+      try {
+        if (ls.getItem(to) != null) return;
+        var v = ls.getItem(k);
+        if (k === 'hakoniwa:saves') { var l = JSON.parse(v || '[]'); if (Array.isArray(l)) v = JSON.stringify(l.filter(function (r) { return r && !r.r18; })); }
+        if (k === 'hakoniwa:adv') { var a = JSON.parse(v || 'null'); if (a && typeof a === 'object') { delete a.moan; v = JSON.stringify(a); } }   /* R18 だけの辞書（喘ぎ）は写さない */
+        ls.setItem(to, v); n++;
+      } catch (e) { /* 入りきらない鍵は写さない */ }
+    });
+    KST.setFlag({ at: Date.now(), ls: n, db: 'wait' });
+  })();
+  /* tone-engine.js は先に旧い鍵の adv を読んでいるので、この版の鍵で読み直す（やめた口調の辞書を住人へ移す ui.js の oldTone 用） */
+  if (ZEN && HK.Tone) { var adv0 = HK.store.get('adv', null); HK.Tone.userText = adv0 && typeof adv0.tone === 'string' ? adv0.tone : ''; }
   /* 全年齢では、関係の説明から R18 の言い回し（内容のスイッチ・媚薬）を外す */
   if (ON && HK.TIES) {
     if (HK.TIES.honmei) HK.TIES.honmei.effect = '想う人は本命との恋愛の出来事が起きやすく、ほかの人からの誘いは断りがち。出られない部屋の重い条件や焦りの限界など、耐えがたい状況では、ほかの人とも妥協することがある';

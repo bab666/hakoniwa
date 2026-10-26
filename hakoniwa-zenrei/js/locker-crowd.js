@@ -397,7 +397,7 @@
         t += ST.fmt(pk(R.MOB_AFTER), v);
         bumpClimax(A); outcome = 'mob'; tag = '求めた'; kind = 'climax'; mag = 34;
         why = A.name + 'は熱に耐えきれず、自分から' + m.name + 'に頼んだ（合意・' + (side === 'top' ? A.name + 'が攻め' : m.name + 'が攻め') + '）';
-      } else if (want <= 0.55 && force && side === 'bottom' && !(Pos && Pos.hardTopNpc(A)) && rng() < 0.45 * HK.Dark.f(S, 'raid')) {
+      } else if (want <= 0.55 && force && side === 'bottom' && !(Pos && Pos.hardTopNpc(A)) && rng() < 0.45 * HK.Dark.f(S, 'assault')) {
         var mdF = modeOf(m, A), vF = { a: m.name, b: A.name };
         t += ST.fmt(pk(R.FORCE[mdF]), vF) + ST.fmt(pk(R.FREACT[A.persona] || R.FREACT.gentle), { a: A.name, m: m.name });
         if (S.eroOn) t += HK.ThickEro.fill(S, ST.fmt(pk(R.FORCE_ERO[mdF]), vF), m, A);

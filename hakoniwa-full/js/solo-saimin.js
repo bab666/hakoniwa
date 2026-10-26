@@ -183,7 +183,7 @@
       /* かける側への呼びかけ（{you}）：モブなら印（mob.js の HK.Mob.addr。台詞では話し手の二人称になる）、住人なら「あなた」（相手ごとの二人称が効く） */
       if (typeof o.text === 'string' && o.text.indexOf('{you}') >= 0) o.text = !HY && p.hm && HK.Mob ? HK.Mob.you(o.text, p.hm, p.ty === 'lover' ? '' : 'さん') : o.text.replace(/\{you\}/g, 'あなた');
       /* かける側の呼び名が「アキラの元患者」のようなとき、「アキラはアキラの元患者を」→「アキラは自分の元患者を」 */
-      if (typeof o.text === 'string') o.text = o.text.replace(new RegExp(p.name + '(は|が|も)' + p.name + '(の|に)', 'g'), p.name + '$1自分$2');
+      if (typeof o.text === 'string') o.text = o.text.replace(new RegExp(HK.reEsc(p.name) + '(は|が|も)' + HK.reEsc(p.name) + '(の|に)', 'g'), p.name + '$1自分$2');
       /* 女性の攻め指定が男性の相手（モブを含む）と：入れる側の書き方を、跨る書き方に直す（pos-fm.js） */
       /* 女性のかける側が男性に跨る組（p.fm）も、残った男性の向きの文を同じように直す（女性の攻めは {h}） */
       if (HK.FM && !HK.SAFE_ON && p.fm && (HY || p.hm) && typeof o.text === 'string') {

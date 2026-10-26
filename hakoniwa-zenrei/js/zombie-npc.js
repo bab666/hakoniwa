@@ -234,14 +234,14 @@
           return ctx.act2({ actors: P, cat: 'combat', text: fillN(ctx, '{a}は「{you}たちに渡すものはない｜＝｜{you}たちに渡すものはありません」と{n}たちに殴りかかったが、多勢に無勢だった。食料をほとんど奪われ、{a}は肋骨を押さえてうずくまった。', n, f), why: '略奪者のほうが多かった', mag: 26 });
         }
         /* まれに、一人が犯される（R18版の solo-zombie-raid.js。襲われる人が「攻め」指定でないときだけ） */
-        if (Z.raiderAssault && Z.loveLv(ctx) !== 'off' && ctx.env.zraid !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) && rng() < 0.3 * HK.Dark.f(ctx, 'raid')) {
+        if (Z.raiderAssault && Z.loveLv(ctx) !== 'off' && ctx.env.zraid !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) && rng() < 0.3 * HK.Dark.f(ctx, 'assault')) {
           var vs = P.filter(function (c) { return !(HK.Pos && !HK.Pos.canReceive(c)) && !(HK.State && !HK.State.mobSexOk(c)) && !c.flags.raided; });
           if (vs.length) {
             var v = HK.weighted(rng, vs, function (c) { return 1 + (1 - c.tr.cp) * 0.6 + (c.hp < 50 ? 0.4 : 0); });
             P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 1); });
             v.flags.mobHit = { at: ctx.stepIndex, by: n.label || '略奪者' };
             var ra = Z.raiderAssault(ctx, v, P.filter(function (c) { return c !== v; }), n);
-            return ctx.act2({ actors: ra.with, cat: 'betray', text: ra.text, why: ra.why, mag: ra.mag });
+            return ctx.act2({ actors: ra.with, cat: 'betray', text: ra.text, why: ra.why, mag: ra.mag, lewd: true });
           }
         }
         P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 1); ctx.stress(c, 8); });

@@ -177,7 +177,7 @@
     hl1: { f: 'hatelove', why: '探す・守る' },
     hl2: { f: 'hatelove', why: '責める・試す', w: function (a, S) { return (0.5 + a.tr.aggr * 0.6) * (HK.Dark ? HK.Dark.f(S, 'harm') : 1); } },
     ht1: { f: 'hate', why: '陥れる', w: function (a, S) { return (0.6 + a.tr.aggr * 0.6) * (HK.Dark ? HK.Dark.f(S, 'harm') : 1); } },
-    ht2: { f: 'hate', why: '貶めて孤立させる', w: function (a, S) { return (0.6 + a.tr.cp * 0.5) * (HK.Dark ? HK.Dark.f(S, 'grudge') : 1); } },
+    ht2: { f: 'hate', why: '貶めて孤立させる', w: function (a, S) { return (0.6 + a.tr.cp * 0.5) * (HK.Dark ? HK.Dark.f(S, 'spite') : 1); } },
     gu1: { f: 'guilt', why: '恩を受けた負い目で逆らえない' }, gu2: { f: 'guilt', why: '恩人の頼みを断れない' },
     os1: { f: 'oshi', why: '遠くから見守る' }, os2: { f: 'oshi', why: '差し入れて、話しかけられると固まる' },
     ms1: { f: 'mistress', why: '人目を忍ぶ' }, ms2: { f: 'mistress', why: '秘密がばれかける' },

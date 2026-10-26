@@ -84,7 +84,7 @@
       var actors = [v].concat(mates.filter(function (o) { return o !== v; })).concat(v !== a ? [a] : []);
       actors = actors.filter(function (c, i) { return actors.indexOf(c) === i; });
       ctx.stress(v, 10);
-      var gap = skill - danger * HK.Dark.pick(ctx, 0.8, 1, 1.6);   /* 展開の重さ（mood-dial.js） */
+      var gap = skill - danger * HK.Dark.pick(ctx, 0.8, 1, 1.6, 'kill');   /* 展開の重さ（mood-dial.js） */
       if (gap > 0.12) {
         var fight = v.tr.aggr + (v.weapon ? v.weapon.pow * 0.06 : 0) > 0.55 && rng() < 0.7;
         t += fill(ctx.pick(fight ? OUT.fight : OUT.escape), m);
@@ -104,11 +104,12 @@
         return { with: actors, text: t, why: why + '：けがを負った（化膿すると危ない）', mag: 18 };
       }
       /* まれに、犯される展開になる（R18版のみ。襲われる人が「攻め」指定でないときだけ） */
-      if (Z.ZA_TEXT && Z.zombieAssault && Z.loveLv(ctx) !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) && !(HK.Pos && !HK.Pos.canReceive(v)) && !(HK.State && !HK.State.mobSexOk(v)) && !v.z.zassault && rng() < (0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) * (ctx.env.zlust == null ? 1 : ctx.env.zlust / 50) * HK.Dark.f(ctx, 'raid')) {
+      if (Z.ZA_TEXT && Z.zombieAssault && Z.loveLv(ctx) !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) && !(HK.Pos && !HK.Pos.canReceive(v)) && !(HK.State && !HK.State.mobSexOk(v)) && !v.z.zassault && rng() < (0.1 + (Z.part(ctx) === 3 ? 0.05 : 0)) * (ctx.env.zlust == null ? 1 : ctx.env.zlust / 50) * HK.Dark.f(ctx, 'assault')) {
         v.z.zassault = true; v.flags.mobHit = { at: ctx.stepIndex, by: 'ゾンビ' };
         var ra = Z.zombieAssault(ctx, v, [a].concat(mates).filter(function (o, i, arr) { return o !== v && arr.indexOf(o) === i; }), A);
         ra.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
-        return { with: actors, text: t + ra.text, why: why + '／' + ra.why, mag: ra.mag };
+        /* エロシーンの印（ero-scene.js）：場所によらず、群れに押し倒された場面は性的な場面として記録する */
+        return { with: actors, text: t + ra.text, why: why + '／' + ra.why, mag: ra.mag, lewd: true };
       }
       /* 咬まれる（身代わり・見捨てる・囮などは群れのときと同じ判定） */
       var res = Z.victim(ctx, [v].concat(mates.filter(function (o) { return o !== v; })), v, A);

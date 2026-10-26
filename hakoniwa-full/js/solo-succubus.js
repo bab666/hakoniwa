@@ -296,7 +296,7 @@
     if (ml && (!p.best || ml > p.best.ml)) p.best = { name: q.name, ml: ml };
     if (kind !== 'melt') { var hu = heatUp(S, p); if (hu) { t += hu; why += '／昂りが一段上がった（昂り ' + Math.round(p.m.plea) + '）'; } }
     var tag = { fail: '失敗', half: 'あと一歩', win: '成功', big: '大成功', melt: '感じすぎ' }[kind];
-    var o = ST.sayB(S, { actors: [p], tag: tag, text: t, why: why + '（誘惑の出来 ' + Math.round(score) + '）', mag: kind === 'big' ? 40 : kind === 'win' ? 26 : 12, kind: kind === 'big' || kind === 'win' || kind === 'melt' ? 'climax' : 'event' }, p.name + '×' + q.name + '＝' + tag + (ml ? ' ' + ml + 'ml' : ''), kind === 'big' || (p.cnt.win === 1 && kind === 'win') || (kind === 'melt' && p.cnt.melt === 1));
+    var o = ST.sayB(S, { actors: [p], tag: tag, lewd: kind === 'half' && ml > 0 ? true : undefined, text: t, why: why + '（誘惑の出来 ' + Math.round(score) + '）', mag: kind === 'big' ? 40 : kind === 'win' ? 26 : 12, kind: kind === 'big' || kind === 'win' || kind === 'melt' ? 'climax' : 'event' }, p.name + '×' + q.name + '＝' + tag + (ml ? ' ' + ml + 'ml' : ''), kind === 'big' || (p.cnt.win === 1 && kind === 'win') || (kind === 'melt' && p.cnt.melt === 1));
     if (o && kind === 'melt' && p.cnt.melt === 1) ST.key(S, o, p.name + 'は感じすぎて吸えなかった');
     if (o && kind === 'big') ST.key(S, o, p.name + 'の大成功');
     if (o && p.cnt.win === 1 && kind === 'win') ST.key(S, o, p.name + 'の初めての獲物');
@@ -333,7 +333,7 @@
     if (fx.shame) p.cnt.shame++;
     if (fx.plea) p.m.plea = clamp(p.m.plea + fx.plea, 0, 100);
     if (fx.love) { p.inLove = true; p.m.mood += 10; }
-    var o = ST.say(S, { actors: sen && fx.senpai ? [p, sen] : [p], tag: 'ハプニング', text: t, why: why || (fx.ml ? '+' + fx.ml + 'ml' : fx.mana ? '魔力' + fx.mana : ''), mag: fx.love ? 30 : 12 });
+    var o = ST.say(S, { actors: sen && fx.senpai ? [p, sen] : [p], tag: 'ハプニング', lewd: fx.ml || fx.plea || et !== e.t ? true : undefined, text: t, why: why || (fx.ml ? '+' + fx.ml + 'ml' : fx.mana ? '魔力' + fx.mana : ''), mag: fx.love ? 30 : 12 });
     if (fx.love) ST.key(S, o, p.name + 'の一目惚れ');
     if (fx.bonusPrey) { hunt(S, T, p, sen, SE); return true; }
     return !!(fx.skip || fx.love);
@@ -417,7 +417,7 @@
     if (ml && (!p.best || ml > p.best.ml)) p.best = { name: q.name, ml: ml };
     if (kind !== 'melt') { var hu = heatUp(S, p); if (hu) { t += hu; why += '／昂りが一段上がった（昂り ' + Math.round(p.m.plea) + '）'; } }
     var tag = { fail: '失敗', half: 'あと一歩', win: '成功', big: '大成功', melt: '感じすぎ' }[kind];
-    var o = ST.sayB(S, { actors: [p], tag: tag, text: t, why: why + '（誘惑の出来 ' + Math.round(score) + '）', mag: kind === 'big' ? 40 : kind === 'win' ? 26 : 12, kind: kind === 'big' || kind === 'win' || kind === 'melt' ? 'climax' : 'event' }, p.name + '×' + q.name + '＝' + tag + (ml ? ' ' + ml + 'ml' : ''), kind === 'big' || (p.cnt.win === 1 && kind === 'win') || (kind === 'melt' && p.cnt.melt === 1));
+    var o = ST.sayB(S, { actors: [p], tag: tag, lewd: kind === 'half' && ml > 0 ? true : undefined, text: t, why: why + '（誘惑の出来 ' + Math.round(score) + '）', mag: kind === 'big' ? 40 : kind === 'win' ? 26 : 12, kind: kind === 'big' || kind === 'win' || kind === 'melt' ? 'climax' : 'event' }, p.name + '×' + q.name + '＝' + tag + (ml ? ' ' + ml + 'ml' : ''), kind === 'big' || (p.cnt.win === 1 && kind === 'win') || (kind === 'melt' && p.cnt.melt === 1));
     if (o && kind === 'big') ST.key(S, o, p.name + 'の大成功');
     if (o && p.cnt.win === 1 && kind === 'win') ST.key(S, o, p.name + 'の初めての獲物');
   }

@@ -5,15 +5,21 @@
    ・まるごと読み込む：「足す」（セーブは追加、同じ名前の住人は上書きするか確認）か「置き換える」。住人の JSON・セーブの JSON（古い形式）もここから読める
    ・設定を文字列で：住人・関係・環境値・高度設定（セーブ・履歴・アイコンは除く）を短い文字列（hakoniwa1z. 圧縮／hakoniwa1n. 圧縮なし ＋ base64url）にする
    全年齢版では、R18版で保存したセーブと R18 だけの辞書（喘ぎなど）は読み込まない。住人の R18 だけの設定は normState（ui.js）に任せる。
-   全年齢／R18 の切り替え（hakoniwa-safe-mode）と R18版のパスワードの印（hakoniwa-r18-unlock）はその端末の設定として、書き出さず、読み込みでも変えない */
+   全年齢／R18 の切り替え（hakoniwa-safe-mode）と R18版のパスワードの印（hakoniwa-r18-unlock）はその端末の設定として、書き出さず、読み込みでも変えない
+   保存の鍵は版ごと（safe.js の HK.STORE）：書き出すのはこの版の鍵だけ。読み込むときは、ファイルの鍵（R18版の hakoniwa:… でも全年齢版の hakoniwa-z:… でも、
+   分ける前の古いファイルでも）をこの版の鍵に読み替える（own）。全年齢版の移行の印（hakoniwa-z:migrated）も端末ごとの印として書き出さない */
 (function () {
   'use strict';
   var HK = window.HK;
   if (!HK || typeof document === 'undefined') return;
   var FMT = 'hakoniwa-all', VER = 1, SFMT = 'hakoniwa-settings', PFX = 'hakoniwa1', LONG = 20000, LINE_MAX = 10000;
-  var MSG = 'hakoniwa-portable-msg';                 /* 読み込み直したあとに出す知らせ（sessionStorage） */
-  /* 書き出さず、読み込みでも変えない鍵（端末ごとの設定）：全年齢／R18 の切り替え、R18版のパスワードを入れた印（pass-gate.js） */
+  var KS = HK.STORE;
+  function K(k) { return KS ? KS.key(k) : k; }                  /* R18版の鍵の名前 → この版の鍵 */
+  function mine(k) { return KS ? KS.mine(k) : /^hakoniwa/.test(k); }
+  var MSG = K('hakoniwa-portable-msg');              /* 読み込み直したあとに出す知らせ（sessionStorage） */
+  /* 書き出さず、読み込みでも変えない鍵（端末ごとの設定）：全年齢／R18 の切り替え、R18版のパスワードを入れた印（pass-gate.js）、全年齢版の移行の印 */
   var KEEP = { 'hakoniwa-safe-mode': 1, 'hakoniwa-r18-unlock': 1 };
+  if (KS) { KEEP[KS.FLAG] = 1; KEEP[K('hakoniwa-safe-mode')] = 1; KEEP[K('hakoniwa-r18-unlock')] = 1; }
   var mode = 'add', strOpen = false, strVal = '', lastMsg = '', ready = null;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -28,7 +34,7 @@
   /* localStorage：値が JSON ならそのまま（読みやすく）、JSON として往復しない値は文字列のまま */
   function lsRaw() {
     var o = {};
-    try { var st = window.localStorage; for (var i = 0; i < st.length; i++) { var k = st.key(i); if (k && /^hakoniwa/.test(k)) o[k] = st.getItem(k); } } catch (e) { /* 使えない環境 */ }
+    try { var st = window.localStorage; for (var i = 0; i < st.length; i++) { var k = st.key(i); if (k && mine(k)) o[k] = st.getItem(k); } } catch (e) { /* 使えない環境 */ }
     return o;
   }
   function lsPack() {
@@ -38,12 +44,12 @@
   }
   /* IndexedDB：hakoniwa で始まるデータベースを列挙（databases() が無い環境はセーブの DB だけ）。無い DB をうっかり作らない */
   function idbNames() {
-    var base = [HK.Saves ? HK.Saves.DB : 'hakoniwa-saves'];
+    var base = [HK.Saves ? HK.Saves.DB : K('hakoniwa-saves')];
     return new Promise(function (ok) {
       try {
         if (!window.indexedDB || !indexedDB.databases) return ok(base);
         indexedDB.databases().then(function (l) {
-          var n = (l || []).map(function (d) { return d && d.name; }).filter(function (x) { return x && /^hakoniwa/.test(x); });
+          var n = (l || []).map(function (d) { return d && d.name; }).filter(function (x) { return x && mine(x); });
           base.forEach(function (b) { if (n.indexOf(b) < 0) n.push(b); });
           ok(n);
         }, function () { ok(base); });
@@ -86,15 +92,30 @@
   }
   /* ファイルの中のセーブ（IndexedDB のセーブの store と、localStorage に置いたセーブ）を、id で重ならないよう一列に */
   function savesOf(data) {
-    var out = [], seen = {}, SDB = HK.Saves ? HK.Saves.DB : 'hakoniwa-saves', SST = HK.Saves ? HK.Saves.STORE : 'saves', SLS = HK.Saves ? HK.Saves.LS : 'hakoniwa:saves';
+    var out = [], seen = {}, SDB = HK.Saves ? HK.Saves.DB : K('hakoniwa-saves'), SST = HK.Saves ? HK.Saves.STORE : 'saves', SLS = HK.Saves ? HK.Saves.LS : K('hakoniwa:saves');
     var add = function (r) { if (r && r.result && (r.result.log || r.result.ending) && !(r.id && seen[r.id])) { if (r.id) seen[r.id] = 1; out.push(r); } };
     (Array.isArray(data.indexedDB) ? data.indexedDB : []).forEach(function (d) { var s = d && d.name === SDB && d.stores && d.stores[SST]; if (s && Array.isArray(s.records)) s.records.forEach(add); });
     var ls = data.localStorage && data.localStorage[SLS];
     if (Array.isArray(ls)) ls.forEach(add);
     return out;
   }
-  function stateOf(data) { var s = data.localStorage && data.localStorage['hakoniwa:state']; return s && typeof s === 'object' ? s : null; }
-  function histOf(data) { var h = data.localStorage && data.localStorage['hakoniwa:history']; return Array.isArray(h) ? h : []; }
+  function stateOf(data) { var s = data.localStorage && data.localStorage[K('hakoniwa:state')]; return s && typeof s === 'object' ? s : null; }
+  function histOf(data) { var h = data.localStorage && data.localStorage[K('hakoniwa:history')]; return Array.isArray(h) ? h : []; }
+  /* 読み込むファイルの鍵を、この版の鍵に読み替える（R18版のファイルを全年齢版で読む・その逆・分ける前のファイル）。鍵が重なったら、この版の名前のものを優先 */
+  function own(data) {
+    var conv = function (o) {
+      var m = {};
+      Object.keys(o || {}).forEach(function (k) { if (/^hakoniwa/.test(k) && !(K(k) in m && k !== K(k))) m[K(k)] = o[k]; });
+      return m;
+    };
+    var d = {}; Object.keys(data).forEach(function (k) { d[k] = data[k]; });
+    d.localStorage = conv(data.localStorage); d.localStorageText = conv(data.localStorageText);
+    d.indexedDB = (Array.isArray(data.indexedDB) ? data.indexedDB : []).map(function (x) {
+      if (!x || typeof x.name !== 'string') return x;
+      var y = {}; Object.keys(x).forEach(function (k) { y[k] = x[k]; }); y.name = K(x.name); return y;
+    });
+    return d;
+  }
   function advOf(o) { var a = o && typeof o === 'object' ? o : {}, m = {}; Object.keys(a).forEach(function (k) { if (typeof a[k] === 'string' && a[k] && advOk(k)) m[k] = a[k].slice(0, 20000); }); return m; }
   /* 全年齢版では、この版に節がある辞書だけ（R18版の喘ぎの辞書などは入れない）。
      やめた欄（箱庭全体の口調の辞書 tone。ui-adv.js の RETIRED）は、どちらの版でも書き出さず、読み込まない */
@@ -179,8 +200,8 @@
   }
   /* セーブ以外の IndexedDB（今はない。増えたときのため）：ある store にだけ入れる */
   function putOther(dbs, wipe) {
-    var SDB = HK.Saves ? HK.Saves.DB : 'hakoniwa-saves';
-    return Promise.all((dbs || []).filter(function (d) { return d && d.name && d.name !== SDB && /^hakoniwa/.test(d.name) && d.stores; }).map(function (d) {
+    var SDB = HK.Saves ? HK.Saves.DB : K('hakoniwa-saves');
+    return Promise.all((dbs || []).filter(function (d) { return d && d.name && d.name !== SDB && mine(d.name) && d.stores; }).map(function (d) {
       return openExisting(d.name).then(function (db) {
         if (!db) return 0;
         var names = Object.keys(d.stores).filter(function (sn) { return db.objectStoreNames.contains(sn); });
@@ -239,15 +260,16 @@
 
   /* ---------- まるごと読み込む ---------- */
   function importAll(data, how) {
+    data = own(data);
     var st = stateOf(data) || {}, saves = savesOf(data), sv = safeSaves(saves), drop = saves.length - sv.length, hist = histOf(data);
     var from = (data.exportedLocal || data.exported || '') + (data.build === 'zenrei' ? '（全年齢版）' : data.build === 'full' ? '（R18版）' : '');
     var what = '住人' + (st.chars || []).length + '人・関係' + (st.ties || []).length + '本・セーブ' + sv.length + '件・履歴' + hist.length + '件';
     if (how === 'rep') {
       if (!window.confirm(from + ' に書き出したデータ（' + what + '）で、このブラウザの住人・関係・設定・セーブ・履歴・辞書をすべて置き換えます。\n今のデータは消えます（元に戻せません）。よろしいですか？')) { say('読み込みをやめました'); return; }
-      var map = {}, SLS = HK.Saves ? HK.Saves.LS : 'hakoniwa:saves';
-      Object.keys(data.localStorage || {}).forEach(function (k) { if (/^hakoniwa/.test(k) && k !== SLS) map[k] = JSON.stringify(data.localStorage[k]); });
-      Object.keys(data.localStorageText || {}).forEach(function (k) { if (/^hakoniwa/.test(k) && k !== SLS && typeof data.localStorageText[k] === 'string') map[k] = data.localStorageText[k]; });
-      if (HK.SAFE_BUILD && map['hakoniwa:adv']) map['hakoniwa:adv'] = JSON.stringify(advOf(parse(map['hakoniwa:adv'])));
+      var map = {}, SLS = HK.Saves ? HK.Saves.LS : K('hakoniwa:saves'), AK = K('hakoniwa:adv');
+      Object.keys(data.localStorage || {}).forEach(function (k) { if (mine(k) && k !== SLS) map[k] = JSON.stringify(data.localStorage[k]); });
+      Object.keys(data.localStorageText || {}).forEach(function (k) { if (mine(k) && k !== SLS && typeof data.localStorageText[k] === 'string') map[k] = data.localStorageText[k]; });
+      if (HK.SAFE_BUILD && map[AK]) map[AK] = JSON.stringify(advOf(parse(map[AK])));
       if (!writeLS(map, true)) { say('ブラウザの保存領域に入りきらず、読み込めませんでした（今のデータはそのままです）'); return; }
       var p = HK.Saves ? HK.Saves.clear() : Promise.resolve(true);
       p.then(function () { return putSaves(sv); }).then(function (n) {
@@ -258,7 +280,7 @@
       return;
     }
     /* 足す */
-    var r = addRoster(st), na = addAdv(advOf(data.localStorage && data.localStorage['hakoniwa:adv']));
+    var r = addRoster(st), na = addAdv(advOf(data.localStorage && data.localStorage[K('hakoniwa:adv')]));
     /* 履歴：重ならないものを足して、新しい順に12件 */
     var cur = HK.store.get('history', []), key = function (h) { return [h.t, h.seed, h.names, h.input && h.input.scenId].join('|'); };
     if (!Array.isArray(cur)) cur = [];
@@ -375,8 +397,8 @@
       var S = clone(st); (S.chars || []).forEach(function (c) { if (c && icon[c.name] && !c.icon) c.icon = icon[c.name]; });
       S.savedAt = Date.now();
       /* 控え（state:backup）は消して、読み込み直したときに今の内容で作り直す（古い控えとの食い違いの知らせを出さない） */
-      var map = { 'hakoniwa:state': JSON.stringify(S), 'hakoniwa:state:backup': null };
-      if (HK.Adv) { var a = {}; Object.keys(HK.Adv.data || {}).forEach(function (k) { if (!advOk(k)) return; a[k] = ''; }); Object.keys(adv).forEach(function (k) { a[k] = adv[k]; }); map['hakoniwa:adv'] = JSON.stringify(a); }
+      var map = {}; map[K('hakoniwa:state')] = JSON.stringify(S); map[K('hakoniwa:state:backup')] = null;
+      if (HK.Adv) { var a = {}; Object.keys(HK.Adv.data || {}).forEach(function (k) { if (!advOk(k)) return; a[k] = ''; }); Object.keys(adv).forEach(function (k) { a[k] = adv[k]; }); map[K('hakoniwa:adv')] = JSON.stringify(a); }
       if (!writeLS(map, false)) { say('ブラウザの保存領域に入りきらず、読み込めませんでした（今のデータはそのままです）'); return; }
       reload('文字列から設定を読み込みました（置き換え）：' + what);
       return;
