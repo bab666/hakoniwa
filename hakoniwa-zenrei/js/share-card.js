@@ -5,7 +5,7 @@
   'use strict';
   var HK = window.HK;
   var CONF = HK.CONF = HK.CONF || {};
-  /* 投稿に付けるリンク。公開先が決まったらここにURLを入れる（空なら Tool置き場） */
+  /* 投稿に付けるリンク。空なら全年齢版の公開URL（js/safe.js の HK.PUBLIC_URL。R18版・全年齢版・全年齢モードのどれでも同じ。共有カードの og タグが付くページ）。それも無ければ Tool置き場 */
   if (CONF.siteUrl == null) CONF.siteUrl = '';
   CONF.toolsUrl = CONF.toolsUrl || 'https://kaimin.sakura.ne.jp/archive/#/links';
   CONF.boothUrl = CONF.boothUrl || 'https://bab666.booth.pm';
@@ -22,7 +22,8 @@
   var isMobile = /Android|iPhone|iPad|iPod/i.test(ua) || (/Mac/.test(plat) && navigator.maxTouchPoints > 1);
   var isMac = /Mac/.test(plat) && !isMobile;
 
-  function link() { return CONF.siteUrl || CONF.toolsUrl; }
+  function link() { return CONF.siteUrl || HK.PUBLIC_URL || CONF.toolsUrl; }
+  SH.link = link;
   function plain(s) { return String(s == null ? '' : s).replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'"); }
   function safe(s) { return String(s).replace(/[\\/:*?"<>|\s]/g, '').slice(0, 16) || '箱庭'; }
 

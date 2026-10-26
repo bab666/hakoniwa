@@ -25,7 +25,8 @@
   }
 
   /* ---------- 切り替えボタン（R18版だけ） ---------- */
-  var SAFE_URL = 'https://kaimin.sakura.ne.jp/archive/tools/hakoniwa/';
+  /* 全年齢版の公開URL。共有ボタン（share-card.js）が付けるリンクもこれ（R18版・全年齢モードからの共有も全年齢版へ）。index.html の og:url・og:image も同じURL */
+  var SAFE_URL = HK.PUBLIC_URL = 'https://kaimin.sakura.ne.jp/archive/tools/hakoniwa/';
   function toggleUI() {
     if (BUILD) return;
     var brand = document.querySelector('header.top .brand');
