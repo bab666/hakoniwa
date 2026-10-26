@@ -48,6 +48,7 @@
     if (!HK.SAFE_ON && c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba')) bits.push('モブには受け');
     /* r18:end */
     if (HK.Attr) bits = bits.concat(HK.Attr.summary(c, byId));
+    if (HK.Shared) bits = bits.concat(HK.Shared.summary(c));
     var ngs = (c.loveNG || []).map(byId).filter(Boolean);
     if (ngs.length) bits.push('恋愛にしない：' + ngs.map(function (o) { return o.name; }).join('・'));
     var n = tiesOf(c).length;
@@ -254,6 +255,8 @@
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
       /* ③体と設定：体格・種族・心の強さ・同一人物・好物（R18版：胸・性器・性器の呼び方） */
       '<div class="gearsec"><h3>体と設定' + (HK.Tips ? HK.Tips.btn('gear-body') : '') + '</h3>' + scope(SCOPE.body) + (HK.Attr ? HK.Attr.gearHtml(c, others, { esc: esc, opt: opt, selOf: selOf }) : '') + partRow + '</div>' +
+      /* ③'箱庭の能力：箱庭をまたいで共通の能力値・欄（体力・運・推理力・特殊役職 など。shared-stats.js） */
+      (HK.Shared && HK.Shared.shown().length ? '<div class="gearsec"><h3>箱庭の能力' + (HK.Tips ? HK.Tips.btn('gear-ab') : '') + '</h3>' + scope(HK.Shared.scope()) + HK.Shared.gearHtml(c, { esc: esc, opt: opt }) + '</div>' : '') +
       /* ④恋愛（R18版は恋愛と夜）：受け攻め・恋愛対象（受け攻め）・恋愛相手の固定・一途・恋愛にしない相手（R18：性行為の相手の固定・R18に参加しない・夜の性格・ふたなり など） */
       '<div class="gearsec"><h3>' + (HK.SAFE_ON ? '恋愛' : '恋愛と夜') + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3>' + scope(SCOPE.love) +
       '<div class="gearrow"><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
@@ -365,6 +368,7 @@
     var tie = t.dataset.k != null ? (s.ties || [])[+t.dataset.k] : null;
     var isInput = ev.type === 'input';
     if (HK.Attr && HK.Attr.gearField(c, f, t, isInput, changed, byId)) return;
+    if (HK.Shared && HK.Shared.gearField(c, f, t, isInput, changed)) return;
     switch (f) {
       case 'tone': if (isInput) return; c.tone = HK.toneValid && HK.toneValid(t.value) ? t.value : ''; changed(true); break;
       case 'fp': c.fp = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;

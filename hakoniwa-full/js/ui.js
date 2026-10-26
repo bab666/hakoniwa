@@ -77,7 +77,7 @@
     });
   }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { var o = { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
+  function mk(c) { var o = { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -115,6 +115,8 @@
     c.futa = !!c.futa;
     c.daku = !!c.daku;
     if (HK.Attr) HK.Attr.norm(c);
+    /* 箱庭をまたいで共通の能力値・欄（shared-stats.js） */
+    if (HK.Shared) HK.Shared.norm(c);
     c.faithful = !!c.faithful;
     c.noR18 = !!c.noR18;
     c.posNpc = c.posNpc === 'bottom' ? 'bottom' : '';
@@ -175,6 +177,8 @@
     S0.grpComrade = obj(S0.grpComrade);
     Object.keys(S0.grpComrade).forEach(function (g) { if (!S0.grpComrade[g] || !String(g).trim()) delete S0.grpComrade[g]; else S0.grpComrade[g] = 1; });
     S0.chars.forEach(function (c) { migVamp(c, S0.per[c.id]); });
+    /* 箱庭ごとに入っていた共通の能力値・欄を住人へ移す（shared-stats.js） */
+    if (HK.Shared) S0.chars.forEach(function (c) { HK.Shared.migrate(c, S0.per[c.id]); });
     normRefs(S0);
     return S0;
   }
@@ -435,6 +439,7 @@
         if (c.you) o.you = c.you;
         if (c.marks) o.marks = c.marks;
         if (HK.Attr) HK.Attr.exportTo(o, c, ref);
+        if (HK.Shared) HK.Shared.exportTo(o, c);
         if (c.toneCustom) o.toneCustom = c.toneCustom;
         if (c.loveLock && ref(c.loveLock) != null) o.loveLock = ref(c.loveLock);
         if (c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly') o.sexLock = c.sexLock;
@@ -511,12 +516,15 @@
       if (o.you != null) c.you = String(o.you).trim().slice(0, 8);
       if (o.marks != null) c.marks = String(o.marks).trim().slice(0, 30);
       if (HK.Attr) HK.Attr.importFrom(c, o);
+      if (HK.Shared) HK.Shared.importFrom(c, o);
       if (o.toneCustom != null) c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(String(o.toneCustom).slice(0, 120)) : '');
       c._lk = o.loveLock; c._sl = o.sexLock; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
       if (o.fp != null) c.fp = String(o.fp).trim().slice(0, 8);
       if (typeof o.icon === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(o.icon) && o.icon.length < 400000) c.icon = o.icon;
       if (o.per && typeof o.per === 'object') { S.per = S.per || {}; S.per[c.id] = JSON.parse(JSON.stringify(o.per)); migVamp(c, S.per[c.id]); }
       normChar(c);
+      /* 古いJSON：箱庭ごとに入っていた共通の能力値・欄を住人へ */
+      if (HK.Shared && S.per && S.per[c.id]) HK.Shared.migrate(c, S.per[c.id]);
       map[i] = c.id;
       } catch (err) { map[i] = null; skipped++; if (window.console) console.warn("JSON import skip", i, err); }
     });
@@ -630,6 +638,8 @@
     /* 手で直したJSONなどで欠けた欄を補う */
     if (!pp.stats || typeof pp.stats !== 'object') pp.stats = {};
     if (!pp.action) pp.action = 'auto'; if (!pp.goal) pp.goal = 'auto'; if (!pp.weapon) pp.weapon = 'random';
+    /* 箱庭をまたいで共通の能力値・欄は、住人の値（c.ab・お酒）をこの箱庭の保存に写す */
+    if (HK.Shared) HK.Shared.apply(c, scenId, pp);
     return pp;
   }
 
@@ -717,7 +727,9 @@
     var extra = (scen.stats || []).map(function (s) { return '<span class="chip" title="' + esc(s.desc) + '">' + esc(s.label) + '</span>'; }).join('') + (scen.weapons ? '<span class="chip">支給武器</span>' : '');
     var sexCols = S.scenId === 'goukon' || S.scenId === 'omega';
     var pfs = scen.perFields || [];
-    var statHead = (scen.stats || []).map(function (s) { return '<th title="' + esc(s.desc) + '">' + esc(s.label) + '</th>'; }).join('') + (scen.weapons ? '<th>武器</th>' : '') + pfs.map(function (f) { return '<th>' + esc(f.label) + '</th>'; }).join('') + (sexCols ? '<th>性別</th><th>恋愛対象</th>' : '');
+    /* 箱庭をまたいで共通の能力値・欄（shared-stats.js）は、見出しに ＊ を付けて説明を添える */
+    var shn = function (id, pick) { return HK.Shared ? HK.Shared.headNote(S.scenId, id, pick) : ''; };
+    var statHead = (scen.stats || []).map(function (s) { var n = shn(s.id, false); return '<th title="' + esc(s.desc + (n ? ' ' + n : '')) + '">' + esc(s.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (scen.weapons ? '<th>武器</th>' : '') + pfs.map(function (f) { var n = shn(f.id, true); return '<th' + (n ? ' title="' + esc(n) + '"' : '') + '>' + esc(f.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (sexCols ? '<th>性別</th><th>恋愛対象</th>' : '');
     var J = joined(S.scenId), jmax = smax(S.scenId);
     var rows = S.chars.map(function (c, i) {
       var on = J.indexOf(c) >= 0;
@@ -1132,6 +1144,8 @@
       if (!cp) return;
       var pp = per(cp, S.scenId); pp.pick = pp.pick || {};
       if (t.value === 'auto' || !String(t.value).trim()) delete pp.pick[t.dataset.k]; else pp.pick[t.dataset.k] = String(t.value).trim();
+      /* 共通の欄（特殊役職・生い立ち・検死の知識）は住人の値も変える（ほかの箱庭の同じ欄にも効く） */
+      if (HK.Shared) HK.Shared.set(cp, S.scenId, t.dataset.k, t.value, true);
       /* ほかの欄を選べなくする欄（offWhen）がある箱庭は、行を描き直す */
       if (((HK.SCENARIOS[S.scenId] || {}).perFields || []).some(function (x) { return x.offWhen; })) { save(); renderBox(); return; }
     }
@@ -1141,7 +1155,11 @@
       var p = per(cc, S.scenId);
       if (f === 'per') p[t.dataset.k] = t.value;
       else if (f === 'weapon') p.weapon = t.value;
-      else { if (t.value === 'random') delete p.stats[t.dataset.k]; else p.stats[t.dataset.k] = +t.value; }
+      else {
+        if (t.value === 'random') delete p.stats[t.dataset.k]; else p.stats[t.dataset.k] = +t.value;
+        /* 共通の能力値（体力・運など）は住人の値も変える（ほかの箱庭の同じ能力値にも効く。酒の強さは「お酒」） */
+        if (HK.Shared) HK.Shared.set(cc, S.scenId, t.dataset.k, t.value, false);
+      }
     }
     else if (f === 'join') {
       S.join = S.join || {};

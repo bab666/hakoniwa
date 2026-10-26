@@ -254,6 +254,7 @@ late js/tips-scen-b.js
 late js/tips-scen-c.js
 late js/tips-scen-d.js
 js/scen-tags.js
+js/shared-stats.js
 js/ui.js
 js/ui-gear.js
 js/notice.js

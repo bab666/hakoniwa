@@ -73984,6 +73984,24 @@
         ] }
       ]
     },
+    'gear-ab': {
+      title: '箱庭の能力',
+      lead: '箱庭をまたいで同じ意味の能力値・欄を、住人ごとに一つの値で持ちます。箱庭の「住人ごとの初動と目標」の表で ＊ の付いた列と同じ値で、どちらで変えても揃います。',
+      sections: [
+        { h: '能力値（1〜5。ランダムなら箱庭ごとに決まります）', items: [
+          '体力：無人島・出られない部屋・ゾンビの街・邪神村RTA・宇宙船漂流記（全年齢版はバトルロワイヤルも）。運：無人島・ゾンビの街・媚薬ロッカー・ダンジョンRPG・邪神村RTA。',
+          '腕っぷし（ダンジョンRPG・エロトラップダンジョン）、運動（クラスメイト・バトルロワイヤル）、知能（ダンジョンRPG・人狼）、推理力（吹雪の館・裁判デスゲーム）、我慢（エロバラエティ・媚薬ロッカー）、感じやすさ（マッサージ・感覚遮断穴・常識改変・催眠）、経験（出られない部屋・マッサージ）、魅力・色気（サキュバス・エロバラエティ）、技巧（サキュバス・エロバラエティ）。',
+          '合コンの「酒の強さ」は、プロフィールの「お酒」と同じ値です。'
+        ] },
+        { h: '欄', items: [
+          '特殊役職（不死）は、死のある箱庭（ゾンビの街・ダンジョンRPG・邪神村RTA・吹雪の館・宇宙船漂流記）で共通です。生い立ちと検死の知識は、吹雪の館・裁判デスゲーム・バトルロワイヤルで共通です。',
+          '役割・職業・配役・担当のように、箱庭ごとに意味の違う欄は、これまでどおり箱庭ごとに決めます。'
+        ] },
+        { h: '以前の保存', items: [
+          '箱庭ごとに決めてあった値は、最初に見つかった箱庭の値を住人の値として引き継ぎます。'
+        ] }
+      ]
+    },
     'gear-love': {
       title: '恋愛と夜',
       lead: '受け攻め・恋愛相手の固定・一途・恋愛にしない相手は全箱庭に効きます。恋愛相手を固定すると、その相手以外とは恋愛に発展しません。苦手な組み合わせは「恋愛・R18にしない相手」で止められます。',
@@ -74192,6 +74210,177 @@
     }).join('') + '</div>';
   };
 })();
+;/* ==== js/shared-stats.js ==== */
+/* 箱庭シミュレーター: 箱庭をまたいで同じ意味の能力値・欄を住人ごとに一つにまとめる（全年齢版・R18版共通。ui.js の前に読む）
+   箱庭ごとの能力値（scen.stats）と住人ごとの欄（scen.perFields）のうち、同じ意味のものを「共通の項目」として住人に持たせる。
+   ・値は住人の c.ab { 項目: 値 } に一つだけ持つ（能力値は '1'〜'5'、欄は選択肢の id。空＝ランダム／おまかせ）。
+     酒の強さだけは、住人の設定の「お酒」（c.alcohol）をそのまま使う（合コンの「酒の強さ」と同じ 1〜5）
+   ・箱庭の表で変えると c.ab が変わり、ほかの箱庭の同じ項目も同じ値で表示される。住人の設定（⚙️）の「箱庭の能力」でも変えられる
+   ・箱庭ごとの保存（S.per[住人][箱庭].stats / pick）は、表示と実行の前に SH.apply で c.ab から写す（古い保存は SH.migrate で c.ab へ）
+   ・役割・職業・配役など、箱庭ごとに意味の違う欄はまとめない（無人島の担当、館の役割、人狼の配役 など）
+   この版にない箱庭は数えない。二つ以上の箱庭にある項目だけを住人の設定に出す */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK) return;
+  var SH = HK.Shared = {};
+  /* k：項目、label：住人の設定での名前、m：{ 箱庭: その箱庭での id }、pick：住人ごとの欄（perFields）のとき true */
+  SH.GROUPS = [
+    { k: 'hp', label: '体力', m: { island: 'hp', whiteroom: 'hp', zombie: 'hp', jashin: 'stamina', ship: 'hp', br: 'hp' } },
+    { k: 'luck', label: '運', m: { island: 'luck', zombie: 'luck', locker: 'luck', rpg: 'luck', jashin: 'luck' } },
+    { k: 'fight', label: '腕っぷし', m: { rpg: 'str', dungeon: 'fight' } },
+    { k: 'sport', label: '運動', m: { classroom: 'sport', br: 'agi' } },
+    { k: 'int', label: '知能', m: { rpg: 'int', jinro: 'int' } },
+    { k: 'wit', label: '推理力', m: { yakata: 'wit', trial: 'brain' } },
+    { k: 'gaman', label: '我慢', m: { variety: 'gaman', locker: 'gaman' } },
+    { k: 'sense', label: '感じやすさ', m: { massage: 'sense', hole: 'sense', kaihen: 'sens', saimin: 'sens' } },
+    { k: 'exp', label: '経験（恋愛・夜）', m: { whiteroom: 'exp', massage: 'exp' } },
+    { k: 'charm', label: '魅力・色気', m: { succubus: 'charm', variety: 'iro' } },
+    { k: 'tech', label: '技巧', m: { succubus: 'tech', variety: 'tech' } },
+    { k: 'drink', label: '酒の強さ', m: { goukon: 'drink' }, alc: true },
+    { k: 'special', label: '特殊役職', m: { zombie: 'special', rpg: 'special', jashin: 'special', yakata: 'special', ship: 'special' }, pick: true },
+    { k: 'life', label: '生い立ち', m: { br: 'life', trial: 'life' }, pick: true },
+    { k: 'know', label: '検死の知識', m: { yakata: 'know', trial: 'know' }, pick: true }
+  ];
+  var BY = {};
+  SH.GROUPS.forEach(function (g) { BY[g.k] = g; });
+  /* その箱庭のその欄が共通の項目なら、その項目（なければ null） */
+  SH.groupOf = function (sid, id, pick) {
+    for (var i = 0; i < SH.GROUPS.length; i++) {
+      var g = SH.GROUPS[i];
+      if (!!g.pick === !!pick && g.m[sid] === id) return g;
+    }
+    return null;
+  };
+  /* この版にある箱庭だけで数えた、その項目の箱庭 */
+  function scensOf(g) { return Object.keys(g.m).filter(function (sid) { return HK.SCENARIOS && HK.SCENARIOS[sid]; }); }
+  function fieldOf(g, sid) { return ((HK.SCENARIOS[sid] || {}).perFields || []).filter(function (f) { return f.id === g.m[sid]; })[0] || null; }
+  /* 欄の選択肢（最初の箱庭の perField から） */
+  function optsOf(g) {
+    var sid = scensOf(g)[0], f = sid && fieldOf(g, sid);
+    return f ? { auto: f.auto || 'おまかせ', options: f.options || [] } : { auto: 'おまかせ', options: [] };
+  }
+  function okStat(v) { v = +v; return v >= 1 && v <= 5 && Math.floor(v) === v; }
+  function okVal(g, v) {
+    if (v == null || v === '' || v === 'auto' || v === 'random') return false;
+    if (!g.pick) return okStat(v);
+    return optsOf(g).options.some(function (o) { return o.id === v; });
+  }
+  /* 住人の設定に出す項目：この版で二つ以上の箱庭にあるもの（酒の強さは「お酒」の欄があるので出さない） */
+  SH.shown = function () { return SH.GROUPS.filter(function (g) { return !g.alc && scensOf(g).length >= 2; }); };
+  /* その項目が出てくる箱庭の名前 */
+  SH.where = function (g) { return scensOf(g).map(function (sid) { return HK.SCENARIOS[sid].name; }); };
+
+  /* ui.js normChar：c.ab を整える（選択肢の分からない欄は、箱庭が揃ってから整うよう値の形だけ見る） */
+  SH.norm = function (c) {
+    var src = c.ab && typeof c.ab === 'object' ? c.ab : {}, ab = {};
+    Object.keys(src).forEach(function (k) {
+      var g = BY[k], v = src[k];
+      if (!g || g.alc || v == null || v === '') return;
+      if (g.pick ? typeof v === 'string' && /^[\w-]{1,24}$/.test(v) : okStat(v)) ab[k] = String(v);
+    });
+    c.ab = ab;
+    /* abM：古い保存（箱庭ごとの値）からの移し替えを済ませた印。済んだあとは、消した値が古い保存から戻らないようにする */
+    c.abM = !!c.abM;
+    return c;
+  };
+  function get(c, g) { return g.alc ? (HK.ALC_OK && HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '') : (c.ab && c.ab[g.k]) || ''; }
+  function put(c, g, v) {
+    if (g.alc) { c.alcohol = okStat(v) ? String(+v) : ''; return; }
+    c.ab = c.ab || {};
+    if (okVal(g, v)) c.ab[g.k] = String(v); else delete c.ab[g.k];
+  }
+  /* 古い保存：箱庭ごとに入っていた値を c.ab へ（まだ c.ab にない項目だけ。箱庭の並び順で先に見つかった値） */
+  SH.migrate = function (c, per) {
+    if (!c || c.abM) return;
+    c.abM = true;
+    if (!per || typeof per !== 'object') return;
+    c.ab = c.ab || {};
+    var order = (HK.SCEN_ORDER || []).concat(Object.keys(per));
+    SH.GROUPS.forEach(function (g) {
+      if (get(c, g)) return;
+      for (var i = 0; i < order.length; i++) {
+        var sid = order[i], p = per[sid], id = g.m[sid];
+        if (!p || !id) continue;
+        var v = g.pick ? p.pick && p.pick[id] : p.stats && p.stats[id];
+        if (v != null && v !== '' && v !== 'auto' && v !== 'random' && (g.pick ? !HK.SCENARIOS[sid] || okVal(g, v) : okStat(v))) { put(c, g, v); return; }
+      }
+    });
+  };
+  /* ui.js per()：その箱庭の保存に、住人の共通の値を写す（ないときは箱庭の値も消してランダム／おまかせに） */
+  SH.apply = function (c, sid, pp) {
+    SH.GROUPS.forEach(function (g) {
+      var id = g.m[sid];
+      if (!id) return;
+      var v = get(c, g);
+      if (g.pick) {
+        pp.pick = pp.pick || {};
+        if (v) pp.pick[id] = v; else delete pp.pick[id];
+      } else {
+        if (v) pp.stats[id] = +v; else delete pp.stats[id];
+      }
+    });
+    return pp;
+  };
+  /* ui.js：箱庭の表で変えたとき。共通の項目なら c.ab（酒の強さは c.alcohol）を変えて true */
+  SH.set = function (c, sid, id, v, pick) {
+    var g = SH.groupOf(sid, id, pick);
+    if (!g) return false;
+    put(c, g, v);
+    return true;
+  };
+  /* 箱庭の表の見出しに添える説明（共通の項目だけ） */
+  SH.headNote = function (sid, id, pick) {
+    var g = SH.groupOf(sid, id, pick);
+    if (!g) return '';
+    if (g.alc) return '住人の設定の「お酒」と同じ値です（1 弱い〜5 ザル）。';
+    var others = SH.where(g).filter(function (n) { return n !== HK.SCENARIOS[sid].name; });
+    return others.length ? '住人ごとに共通の値です。' + others.join('・') + 'の「' + g.label + '」も同じ値になります（住人の設定の「箱庭の能力」でも変えられます）。' : '';
+  };
+
+  /* ---------- 住人の設定（⚙️）の「箱庭の能力」の節 ---------- */
+  SH.gearHtml = function (c, h) {
+    var gs = SH.shown();
+    if (!gs.length) return '';
+    var rows = gs.map(function (g) {
+      var v = get(c, g), title = h.esc(SH.where(g).join('・'));
+      var sel;
+      if (g.pick) {
+        var o = optsOf(g);
+        sel = '<select data-gf="ab" data-k="' + g.k + '" aria-label="' + h.esc(g.label) + '">' + h.opt('', o.auto, v) + o.options.map(function (x) { return h.opt(x.id, x.label, v); }).join('') + '</select>';
+      } else {
+        sel = '<select data-gf="ab" data-k="' + g.k + '" aria-label="' + h.esc(g.label) + '">' + h.opt('', 'ランダム', v) + [1, 2, 3, 4, 5].map(function (n) { return h.opt(String(n), String(n), v); }).join('') + '</select>';
+      }
+      return '<label title="' + title + '">' + h.esc(g.label) + ' ' + sel + '</label>';
+    }).join('');
+    return '<div class="gearrow">' + rows + '</div>';
+  };
+  SH.scope = function () {
+    return '効く箱庭：' + SH.shown().map(function (g) { return g.label + '（' + SH.where(g).join('・') + '）'; }).join('、') + '。箱庭の「住人ごとの初動と目標」の表と同じ値で、どちらで変えても揃います。';
+  };
+  /* 住人の行の要約（決めた項目だけ） */
+  SH.summary = function (c) {
+    return SH.shown().filter(function (g) { return get(c, g); }).map(function (g) {
+      var v = get(c, g);
+      if (!g.pick) return g.label + '：' + v;
+      var o = optsOf(g).options.filter(function (x) { return x.id === v; })[0];
+      return g.label + '：' + (o ? o.label : v);
+    });
+  };
+  /* ui-gear.js onField から。扱ったら true */
+  SH.gearField = function (c, f, t, isInput, changed) {
+    if (f !== 'ab') return false;
+    if (isInput) return true;
+    var g = BY[t.dataset.k];
+    if (!g) return true;
+    put(c, g, t.value);
+    changed(false);
+    return true;
+  };
+  /* 書き出し・読み込み（rosterJSON / importJSON） */
+  SH.exportTo = function (o, c) { if (c.ab && Object.keys(c.ab).length) o.ab = JSON.parse(JSON.stringify(c.ab)); if (c.abM) o.abM = true; return o; };
+  SH.importFrom = function (c, o) { if (o.ab && typeof o.ab === 'object') c.ab = JSON.parse(JSON.stringify(o.ab)); c.abM = !!o.abM; };
+})();
 ;/* ==== js/ui.js ==== */
 /* 箱庭診断 ui: 住人の登録・箱庭の設定・実行・状態保存 */
 (function () {
@@ -74272,7 +74461,7 @@
     });
   }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { var o = { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
+  function mk(c) { var o = { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -74310,6 +74499,8 @@
     c.futa = !!c.futa;
     c.daku = !!c.daku;
     if (HK.Attr) HK.Attr.norm(c);
+    /* 箱庭をまたいで共通の能力値・欄（shared-stats.js） */
+    if (HK.Shared) HK.Shared.norm(c);
     c.faithful = !!c.faithful;
     c.noR18 = !!c.noR18;
     c.posNpc = c.posNpc === 'bottom' ? 'bottom' : '';
@@ -74370,6 +74561,8 @@
     S0.grpComrade = obj(S0.grpComrade);
     Object.keys(S0.grpComrade).forEach(function (g) { if (!S0.grpComrade[g] || !String(g).trim()) delete S0.grpComrade[g]; else S0.grpComrade[g] = 1; });
     S0.chars.forEach(function (c) { migVamp(c, S0.per[c.id]); });
+    /* 箱庭ごとに入っていた共通の能力値・欄を住人へ移す（shared-stats.js） */
+    if (HK.Shared) S0.chars.forEach(function (c) { HK.Shared.migrate(c, S0.per[c.id]); });
     normRefs(S0);
     return S0;
   }
@@ -74630,6 +74823,7 @@
         if (c.you) o.you = c.you;
         if (c.marks) o.marks = c.marks;
         if (HK.Attr) HK.Attr.exportTo(o, c, ref);
+        if (HK.Shared) HK.Shared.exportTo(o, c);
         if (c.toneCustom) o.toneCustom = c.toneCustom;
         if (c.loveLock && ref(c.loveLock) != null) o.loveLock = ref(c.loveLock);
         if (c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly') o.sexLock = c.sexLock;
@@ -74706,12 +74900,15 @@
       if (o.you != null) c.you = String(o.you).trim().slice(0, 8);
       if (o.marks != null) c.marks = String(o.marks).trim().slice(0, 30);
       if (HK.Attr) HK.Attr.importFrom(c, o);
+      if (HK.Shared) HK.Shared.importFrom(c, o);
       if (o.toneCustom != null) c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(String(o.toneCustom).slice(0, 120)) : '');
       c._lk = o.loveLock; c._sl = o.sexLock; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
       if (o.fp != null) c.fp = String(o.fp).trim().slice(0, 8);
       if (typeof o.icon === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(o.icon) && o.icon.length < 400000) c.icon = o.icon;
       if (o.per && typeof o.per === 'object') { S.per = S.per || {}; S.per[c.id] = JSON.parse(JSON.stringify(o.per)); migVamp(c, S.per[c.id]); }
       normChar(c);
+      /* 古いJSON：箱庭ごとに入っていた共通の能力値・欄を住人へ */
+      if (HK.Shared && S.per && S.per[c.id]) HK.Shared.migrate(c, S.per[c.id]);
       map[i] = c.id;
       } catch (err) { map[i] = null; skipped++; if (window.console) console.warn("JSON import skip", i, err); }
     });
@@ -74825,6 +75022,8 @@
     /* 手で直したJSONなどで欠けた欄を補う */
     if (!pp.stats || typeof pp.stats !== 'object') pp.stats = {};
     if (!pp.action) pp.action = 'auto'; if (!pp.goal) pp.goal = 'auto'; if (!pp.weapon) pp.weapon = 'random';
+    /* 箱庭をまたいで共通の能力値・欄は、住人の値（c.ab・お酒）をこの箱庭の保存に写す */
+    if (HK.Shared) HK.Shared.apply(c, scenId, pp);
     return pp;
   }
 
@@ -74912,7 +75111,9 @@
     var extra = (scen.stats || []).map(function (s) { return '<span class="chip" title="' + esc(s.desc) + '">' + esc(s.label) + '</span>'; }).join('') + (scen.weapons ? '<span class="chip">支給武器</span>' : '');
     var sexCols = S.scenId === 'goukon' || S.scenId === 'omega';
     var pfs = scen.perFields || [];
-    var statHead = (scen.stats || []).map(function (s) { return '<th title="' + esc(s.desc) + '">' + esc(s.label) + '</th>'; }).join('') + (scen.weapons ? '<th>武器</th>' : '') + pfs.map(function (f) { return '<th>' + esc(f.label) + '</th>'; }).join('') + (sexCols ? '<th>性別</th><th>恋愛対象</th>' : '');
+    /* 箱庭をまたいで共通の能力値・欄（shared-stats.js）は、見出しに ＊ を付けて説明を添える */
+    var shn = function (id, pick) { return HK.Shared ? HK.Shared.headNote(S.scenId, id, pick) : ''; };
+    var statHead = (scen.stats || []).map(function (s) { var n = shn(s.id, false); return '<th title="' + esc(s.desc + (n ? ' ' + n : '')) + '">' + esc(s.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (scen.weapons ? '<th>武器</th>' : '') + pfs.map(function (f) { var n = shn(f.id, true); return '<th' + (n ? ' title="' + esc(n) + '"' : '') + '>' + esc(f.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (sexCols ? '<th>性別</th><th>恋愛対象</th>' : '');
     var J = joined(S.scenId), jmax = smax(S.scenId);
     var rows = S.chars.map(function (c, i) {
       var on = J.indexOf(c) >= 0;
@@ -75327,6 +75528,8 @@
       if (!cp) return;
       var pp = per(cp, S.scenId); pp.pick = pp.pick || {};
       if (t.value === 'auto' || !String(t.value).trim()) delete pp.pick[t.dataset.k]; else pp.pick[t.dataset.k] = String(t.value).trim();
+      /* 共通の欄（特殊役職・生い立ち・検死の知識）は住人の値も変える（ほかの箱庭の同じ欄にも効く） */
+      if (HK.Shared) HK.Shared.set(cp, S.scenId, t.dataset.k, t.value, true);
       /* ほかの欄を選べなくする欄（offWhen）がある箱庭は、行を描き直す */
       if (((HK.SCENARIOS[S.scenId] || {}).perFields || []).some(function (x) { return x.offWhen; })) { save(); renderBox(); return; }
     }
@@ -75336,7 +75539,11 @@
       var p = per(cc, S.scenId);
       if (f === 'per') p[t.dataset.k] = t.value;
       else if (f === 'weapon') p.weapon = t.value;
-      else { if (t.value === 'random') delete p.stats[t.dataset.k]; else p.stats[t.dataset.k] = +t.value; }
+      else {
+        if (t.value === 'random') delete p.stats[t.dataset.k]; else p.stats[t.dataset.k] = +t.value;
+        /* 共通の能力値（体力・運など）は住人の値も変える（ほかの箱庭の同じ能力値にも効く。酒の強さは「お酒」） */
+        if (HK.Shared) HK.Shared.set(cc, S.scenId, t.dataset.k, t.value, false);
+      }
     }
     else if (f === 'join') {
       S.join = S.join || {};
@@ -75537,6 +75744,7 @@
     if (!HK.SAFE_ON && c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba')) bits.push('モブには受け');
     /* r18:end */
     if (HK.Attr) bits = bits.concat(HK.Attr.summary(c, byId));
+    if (HK.Shared) bits = bits.concat(HK.Shared.summary(c));
     var ngs = (c.loveNG || []).map(byId).filter(Boolean);
     if (ngs.length) bits.push('恋愛にしない：' + ngs.map(function (o) { return o.name; }).join('・'));
     var n = tiesOf(c).length;
@@ -75743,6 +75951,8 @@
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
       /* ③体と設定：体格・種族・心の強さ・同一人物・好物（R18版：胸・性器・性器の呼び方） */
       '<div class="gearsec"><h3>体と設定' + (HK.Tips ? HK.Tips.btn('gear-body') : '') + '</h3>' + scope(SCOPE.body) + (HK.Attr ? HK.Attr.gearHtml(c, others, { esc: esc, opt: opt, selOf: selOf }) : '') + partRow + '</div>' +
+      /* ③'箱庭の能力：箱庭をまたいで共通の能力値・欄（体力・運・推理力・特殊役職 など。shared-stats.js） */
+      (HK.Shared && HK.Shared.shown().length ? '<div class="gearsec"><h3>箱庭の能力' + (HK.Tips ? HK.Tips.btn('gear-ab') : '') + '</h3>' + scope(HK.Shared.scope()) + HK.Shared.gearHtml(c, { esc: esc, opt: opt }) + '</div>' : '') +
       /* ④恋愛（R18版は恋愛と夜）：受け攻め・恋愛対象（受け攻め）・恋愛相手の固定・一途・恋愛にしない相手（R18：性行為の相手の固定・R18に参加しない・夜の性格・ふたなり など） */
       '<div class="gearsec"><h3>' + (HK.SAFE_ON ? '恋愛' : '恋愛と夜') + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3>' + scope(SCOPE.love) +
       '<div class="gearrow"><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
@@ -75854,6 +76064,7 @@
     var tie = t.dataset.k != null ? (s.ties || [])[+t.dataset.k] : null;
     var isInput = ev.type === 'input';
     if (HK.Attr && HK.Attr.gearField(c, f, t, isInput, changed, byId)) return;
+    if (HK.Shared && HK.Shared.gearField(c, f, t, isInput, changed)) return;
     switch (f) {
       case 'tone': if (isInput) return; c.tone = HK.toneValid && HK.toneValid(t.value) ? t.value : ''; changed(true); break;
       case 'fp': c.fp = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;

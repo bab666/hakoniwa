@@ -179,6 +179,7 @@ table.per th, table.per td { padding: 8px 10px; border-bottom: 1px solid var(--l
 table.per th { font-size: 12px; color: var(--muted); font-weight: 500; background: var(--bg); }
 table.per tr:last-child td { border-bottom: 0; }
 table.per tr.off td { opacity: 0.45; }
+table.per th .shmark { color: var(--accent, #3d6f93); font-size: 11px; margin-left: 2px; cursor: help; }
 table.per tr.off td:first-child { opacity: 1; }
 table.per select { max-width: 200px; }
 /* 箱庭ごとの住人表：見出し行と「参加・住人」の列を固定（横・縦にスクロールしても見失わない） */
@@ -490,7 +491,7 @@ details.zmap > summary:hover { background: var(--accent-soft); }
 
 <script>window.HK_SAFE_BUILD = 1;</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script src="js/bundle-main.js?v=931bee9226"></script>
+<script src="js/bundle-main.js?v=6546b5cc05"></script>
 <script>(function () { var HK = window.HK; HK.LATE_READY = false; var s = document.createElement('script'); s.src = 'js/bundle-late.js?v=a9406a976f';
   s.onload = function () { HK.LATE_READY = true; if (HK.onLate) HK.onLate(); };
   s.onerror = function () { HK.LATE_READY = true; HK.LATE_FAILED = true; if (HK.onLate) HK.onLate(); };

@@ -179,6 +179,7 @@ body.noselect { -webkit-user-select: none; user-select: none; cursor: grabbing; 
 table.per { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13px; }
 table.per th, table.per td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
 table.per th { font-size: 12px; color: var(--muted); font-weight: 500; background: var(--bg); }
+table.per th .shmark { color: var(--accent, #3d6f93); font-size: 11px; margin-left: 2px; cursor: help; }
 table.per tr:last-child td { border-bottom: 0; }
 table.per tr.off td { opacity: 0.45; }
 table.per tr.off td:first-child { opacity: 1; }
@@ -492,7 +493,7 @@ details.zmap > summary:hover { background: var(--accent-soft); }
 <div class="toast" id="toast" hidden></div>
 
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script src="js/bundle-main.js?v=3e1dffda38"></script>
+<script src="js/bundle-main.js?v=fb2e171524"></script>
 <script>(function () { var HK = window.HK; HK.LATE_READY = false; var s = document.createElement('script'); s.src = 'js/bundle-late.js?v=69bd156576';
   s.onload = function () { HK.LATE_READY = true; if (HK.onLate) HK.onLate(); };
   s.onerror = function () { HK.LATE_READY = true; HK.LATE_FAILED = true; if (HK.onLate) HK.onLate(); };
