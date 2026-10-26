@@ -27,6 +27,9 @@ for (const f of fs.readdirSync(path.join(dir, 'js')).filter(f => /^tone-fix/.tes
   const s = fs.readFileSync(path.join(dir, 'js', f), 'utf8');
   const re = /'(\w+)\\t((?:[^'\\]|\\.)*)\\t((?:[^'\\]|\\.)*)'/g; let m;
   while ((m = re.exec(s))) { const un = x => x.replace(/\\'/g, "'").replace(/\\\\/g, '\\'); rows.push([m[1], un(m[2]), un(m[3])]); }
+  /* 二重引用符で書いた行（tone-fix-g7d.js などの "chara_down\t元\t直し"）も読む */
+  const re2 = /"(\w+)\\t((?:[^"\\]|\\.)*)\\t((?:[^"\\]|\\.)*)"/g;
+  while ((m = re2.exec(s))) { const un = x => x.replace(/\\"/g, '"').replace(/\\\\/g, '\\'); rows.push([m[1], un(m[2]), un(m[3])]); }
 }
 /* 差分の分類（元 → 正解）：文末だけ／語彙／組み替え */
 function diff(a, b) {

@@ -317,7 +317,8 @@
 
   /* ---------- 効果 ---------- */
   /* 「！」を「。」に。「！」の後ろの空き（「黙れ！　あなたの」）も詰める（「黙れ。　あなたの」にしない） */
-  function fxBang(q) { return q.replace(/！+[\s　]*/g, '。').replace(/。(?=」|$)/g, '。'); }
+  /* 「！？」の「！」は落とすだけ（「見た。？」にしない） */
+  function fxBang(q) { return q.replace(/[！!]+(?=[？?])/g, '').replace(/！+[\s　]*/g, '。').replace(/。(?=」|$)/g, '。'); }
   function fxStretch(ss, seed) {
     return ss.map(function (s, i) {
       var st = splitTail(s.body);
@@ -661,10 +662,12 @@
     /* 「なかった……です……」の「です」を外すと「……」が並ぶので、元の文にあった長さまでに */
     return out.replace(/[…‥]{3,}/g, function (m) { return m.length <= dots0 ? m : '……'; });
   };
+  var CHEER_Q = /^[…‥\s]*(?:やった[ーぁあ〜！!、]|やったやった|わーい|わぁい|わあい|いえーい|イエーイ|やっほ|よっしゃ|たのしー|楽しー|うれしー|嬉しー)(?![^♡]*♡)/;
   T.apply1 = function (q, d, who) {
     if (!q || !d) return q;
     /* 喘ぎ・短い声には語尾を足さない（「気持ちいい……♡」）。ただし敬語でない口調なら、喘ぎの中の敬語だけ崩す（「気持ち、いい、です……」→「気持ち、いい……」。R18版は喘ぎの崩し方 HK.Moan.kForm） */
-    if (MOAN.test(q) || /[♡゛]/.test(q)) return d.base !== 'P' && P_FORM_IN.test(q) ? (HK.Moan && HK.Moan.kForm ? HK.Moan.kForm(q) : T.casualize(q, q)) : q;
+    /* 歓声（「やったぁ！」「わーい」）は喘ぎではない。辞書の語彙で言い換える（2026-10-26 順81） */
+    if (!CHEER_Q.test(q) && (MOAN.test(q) || /[♡゛]/.test(q))) return d.base !== 'P' && P_FORM_IN.test(q) ? (HK.Moan && HK.Moan.kForm ? HK.Moan.kForm(q) : T.casualize(q, q)) : q;
     var f = T.formOf(q);
     /* 最後の文が常体でも、途中に敬語の文（「〜もらいますね。声も演目のうちなので」）があれば崩す（崩す表は敬語の文末にしか当たらない） */
     if (d.base !== 'P' && (f === 'P' || segs(q).some(function (s) { return P_FORM_MID.test(splitTail(s.body)[0]); }))) q = T.casualize(q, q);

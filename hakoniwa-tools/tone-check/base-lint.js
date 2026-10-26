@@ -29,7 +29,8 @@ for (const f of fs.readdirSync(path.join(dir, 'js')).filter(f => f.endsWith('.js
   if (!qs.length) continue;
   files++;
   qs.forEach(q => {
-    const body = q.slice(1, -1);
+    /* 頭の話し手の目印「＠{b}＠」（voice.js。3本の台詞でも頭に一つだけ付ける）は、印の数え方から外す */
+    const body = q.slice(1, -1).replace(/^＠[^＠「」｜。、！？\s]{0,16}＠/, '');
     if (/^(?:base|元の台詞|id)｜/.test(body)) return;   /* 見出しのコメント */
     const p = body.split('｜');
     const probs = [];
