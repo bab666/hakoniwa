@@ -135,6 +135,7 @@ js/island-cook.js
 js/island-life.js
 js/island-hazard.js
 js/mini-goukon.js
+js/goukon-rel.js
 js/goukon-talk.js
 js/drunk.js
 js/goukon-mob.js

@@ -159,6 +159,13 @@
     '{b}は「酔ってるでしょ｜酔っているな｜酔ってるでしょう」と笑って、{a}の額を指でつついた。',
     '{b}は少し黙ってから、「ごめん｜すまない｜すみません」と小さく言った。'
   ];
+  /* 関係性のまま（環境値 rel：goukon-rel.js）で、もとから知り合いの二人の告白・断り：「初対面」「今日会ったばかり」の文の代わり */
+  var G_CONFESS_K = G_CONFESS.filter(function (t) { return !/初対面/.test(t); }).concat([
+    '{a}は{b}のグラスに自分のグラスを当てて、小さな声で言った。「ずっと前から知ってるのに、こんな場所で言うの、変かな。……付き合ってほしい｜ずっと前から知っているのに、こんな場所で言うのは、変だろうか。……付き合ってほしい｜ずっと前から知ってるのに、こんな場所で言うの、変でしょうか。……付き合ってほしいです」'
+  ]);
+  var G_NO_K = G_NO.filter(function (t) { return !/会ったばかり/.test(t); }).concat([
+    '{b}は困ったように笑った。「今の関係のままがいい……じゃ、だめ？｜今の関係のままがいい……では、だめか｜今の関係のままがいいです……じゃ、だめですか？」'
+  ]);
 
   /* 合コンの結末：お開き（一次会で解散）／終電で解散（二次会まで）。最後に「お開きのあと」（二次会まで行ったら「終電のあと」）の段で、誰が誰と帰ったか・一人で帰った人を締める */
   var GC_OPEN = {
@@ -581,7 +588,8 @@
           pf.gconf = true;
           if (yes) { pf.couple = true; ctx.mod2(a, b, { att: 8, aff: 10, trust: 6 }, { att: 8, aff: 10, trust: 6 }); }
           else { ctx.mod2(a, b, { att: -3 }, { aff: 2 }); ctx.stress(a, 10); }
-          return { text: ctx.t(ctx.pick(G_CONFESS) + ctx.pick(yes ? G_YES : G_NO), a, b), why: a.name + 'の惹かれ（' + Math.round(R(ctx, a, b).att) + '）と本音の出やすさ。' + b.name + 'の惹かれ（' + Math.round(rb.att) + '）・好意（' + Math.round(rb.aff) + '）' + (yes ? '。その場で恋人に' : ''), mag: yes ? 26 : 16 };
+          var kn = !!(HK.GoukonRel && HK.GoukonRel.known(ctx, a, b));
+          return { text: ctx.t(ctx.pick(kn ? G_CONFESS_K : G_CONFESS) + ctx.pick(yes ? G_YES : kn ? G_NO_K : G_NO), a, b), why: a.name + 'の惹かれ（' + Math.round(R(ctx, a, b).att) + '）と本音の出やすさ。' + b.name + 'の惹かれ（' + Math.round(rb.att) + '）・好意（' + Math.round(rb.aff) + '）' + (yes ? '。その場で恋人に' : ''), mag: yes ? 26 : 16 };
         }
       },
       {
