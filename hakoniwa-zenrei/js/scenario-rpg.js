@@ -389,7 +389,7 @@
           /* 休憩：関係が出る */
           var tt = tieOf(input, a, b);
           A.forEach(function (p) { p.hp = Math.min(p.mhp, p.hp + Math.round(p.mhp * 0.15)); });
-          ST.say(S, { actors: [a.i, b.i], tag: '休憩', text: fillT(pickT(CAMP), a, b), why: '休憩' + (tt && HK.TIES[tt] ? '（' + HK.TIES[tt].label + '）' : '') });
+          ST.say(S, { actors: [a.i, b.i], tag: '休憩', text: fillT(pickT(CAMP), a, b), why: '休憩' + (tt && HK.TIES[tt] ? '（' + (function () { var t0 = (input.ties || []).filter(function (x) { return (x.a === a.i && x.b === b.i) || (x.a === b.i && x.b === a.i); })[0]; return HK.Sib && HK.Sib.isSibTie(t0) && HK.tieLabel ? HK.tieLabel(t0) : HK.TIES[tt].label; })() + '）' : '') });
         } else if (r < 0.95) {
           /* 迷子を助けるか（NP） */
           var helper = A.slice().sort(function (x, y) { return y.tr.np - x.tr.np; })[0];

@@ -417,9 +417,15 @@
     return { ties: out, warnings: warn, groups: groups };
   };
 
-  HK.tieText = function (tie, nameOf) {
+  /* who（省略可）：番号か id → 住人 の関数。きょうだいなら名前に続柄を添える（「美咲（姉）→ 健（弟）：兄弟（庇護）」。sib-word.js） */
+  HK.tieText = function (tie, nameOf, who) {
     var D = T[tie.type];
     if (!D) return '';
+    if (who && HK.Sib && HK.Sib.uiRole && (HK.Sib.isSibTie(tie) || tie.type === 'stepsib')) {
+      var A0 = who(tie.a), B0 = who(tie.b), ra = HK.Sib.uiRole(tie, A0, B0, 'a'), rb = HK.Sib.uiRole(tie, A0, B0, 'b'), nf = nameOf;
+      if (ra || rb) nameOf = function (id) { var r = id === tie.a ? ra : id === tie.b ? rb : ''; return nf(id) + (r ? '（' + r + '）' : ''); };
+      if (D.dir && (ra || rb)) return nameOf(tie.a) + '→ ' + nameOf(tie.b) + '：' + D.label;
+    }
     var CO = HK.coldOpts(tie.type);
     /* 追加の欄（型・度合い・気持ち・様子）の短い名前 */
     var xs = HK.tieExtra(tie.type).map(function (x) { var v = tie[x.f] || (tie.type === 'fiance' ? 'eager' : ''), m = x.map[v]; return m && m.short ? (x.who ? nameOf(x.who === 'a' ? tie.a : tie.b) + '：' : '') + HK.tieExtraShort(x, v, nameOf(tie.a), nameOf(tie.b)) : ''; }).filter(Boolean).join('・');
@@ -734,6 +740,8 @@
     },
     note: function (ctx, t) {
       var D = T[t.type], A = ctx.chars[t.a], B = ctx.chars[t.b];
+      /* きょうだいは「美咲は健の姉（姉弟（庇護））」のように、二人の性別・年齢で（sib-word.js） */
+      if (HK.Sib && HK.Sib.isSibTie(t)) { var sl = HK.tieLabel(t) || D.label, up = D.dir ? HK.Sib.rel(B, A, { tie: t }) : ''; return D.dir ? A.name + 'は' + B.name + 'の' + (up && up !== 'きょうだい' ? up : D.roleA) + '（' + sl + '）' : sl; }
       return D.dir ? A.name + 'は' + B.name + 'の' + D.roleA + '（' + D.label + '）' : D.label;
     }
   };

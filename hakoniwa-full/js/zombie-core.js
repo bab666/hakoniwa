@@ -107,7 +107,8 @@
       z.start = z.area; z.path.push(z.area);
       /* 家族 */
       var fp = (c.pick || {}).fam, kin = ctx.chars.filter(function (o) { var t = tieT(ctx, c, o); return o !== c && (t === 'parent' || t === 'sibling'); })[0];
-      if (kin) z.family = { pc: kin.i, rel: tieT(ctx, c, kin) === 'sibling' || /^sib/.test((HK.Ties.get(ctx, c, kin) || {}).type || '') ? 'きょうだい' : '家族', state: 'ok' };
+      /* きょうだいは二人の性別・年齢で「姉」「弟」など（sib-word.js。c から見た kin） */
+      if (kin) z.family = { pc: kin.i, rel: tieT(ctx, c, kin) === 'sibling' || /^sib/.test((HK.Ties.get(ctx, c, kin) || {}).type || '') ? (HK.Sib ? HK.Sib.word(c, kin, 'plain', ctx) : 'きょうだい') : '家族', state: 'ok' };
       else if (fp === 'none') z.family = null;
       else if (fp === 'in' || fp === 'out') {
         var inside = fp === 'in';
@@ -305,7 +306,7 @@
         bad: ['{a}は' + an(ctx, to) + 'で{b}と鉢合わせた。どちらも、武器を下ろさなかった。', an(ctx, to) + 'にいたのは{b}だった。{a}は舌打ちをこらえた。よりによって、こいつか。']
       }[kind];
       ctx.act2({ actors: [a, b], cat: kind === 'bad' ? 'conflict' : 'bond', fx: function () { if (kind === 'bad') ctx.mod2(a, b, { ten: 6 }, { ten: 6 }); else ctx.mod2(a, b, { aff: kind === 'new' ? 3 : 8, trust: kind === 'new' ? 5 : 8 }, { aff: kind === 'new' ? 3 : 8, trust: kind === 'new' ? 5 : 8 }); },
-        text: ctx.t(ctx.pick(T), a, b), why: { kin: '再会（' + (TD ? TD.label : '') + '）', good: '再会（好意）', new: '居合わせた', bad: 'もともとの緊張' }[kind], mag: kind === 'kin' ? 16 : 8 });
+        text: ctx.t(ctx.pick(T), a, b), why: { kin: '再会（' + (TD ? (function () { var tt = HK.Ties.get(ctx, a, b); return HK.Sib && HK.Sib.isSibTie(tt) && HK.tieLabel ? HK.tieLabel(tt) : TD.label; })() : '') + '）', good: '再会（好意）', new: '居合わせた', bad: 'もともとの緊張' }[kind], mag: kind === 'kin' ? 16 : 8 });
     });
   }
 

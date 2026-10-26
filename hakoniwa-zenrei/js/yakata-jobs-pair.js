@@ -214,7 +214,7 @@
       why += '。' + r.u.name + 'は' + r.d.name + 'の読みを信じた（今回は当たっていた）';
     }
     else if (r.k === 'love') { t += F(pk(S, R.love), m); base += 0.1; fear(x, -6); fear(y, -6); finder = r.u; why += '。' + r.u.name + 'は' + r.d.name + 'を守るように寄り添って調べた（二人の恐怖 -6）'; }
-    else if (r.k === 'family') { t += F(pk(S, r.sub === 'parent' ? R.parent : R.sib), m); base += 0.1; finder = r.d; why += r.sub === 'parent' ? '。' + r.u.name + 'は、' + r.d.name + 'を一人で危ない所へ行かせなかった' : '。きょうだいで、言い合いながら手分けした'; }
+    else if (r.k === 'family') { t += F(pk(S, r.sub === 'parent' ? R.parent : R.sib), m); base += 0.1; finder = r.d; why += r.sub === 'parent' ? '。' + r.u.name + 'は、' + r.d.name + 'を一人で危ない所へ行かせなかった' : '。' + (HK.Sib ? HK.Sib.pairWord(r.u, r.d, S) : 'きょうだい') + 'で、言い合いながら手分けした'; }
     else if (r.k === 'lead') { t += F(pk(S, pr.lead), m); base += 0.1; finder = r.d; why += '。' + r.u.name + 'が指示を出し、' + r.d.name + 'が動いた'; }
     else if (r.k === 'close') { t += F(pk(S, pr.close), m); base += 0.15; why += '。息が合った'; }
     else { base += 0.05; why += '。名刺交換から始まった'; }

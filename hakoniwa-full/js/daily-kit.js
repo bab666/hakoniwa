@@ -5,7 +5,7 @@
      関係 rel：lovers（恋人どうし。HK.canLove を両方向・HK.ngPair・家族でない）／friend／colleague／family（家族・親族。恋愛にしない）／any
      気分 mood：HK.Emo.mood（フェーズ7）。HK.Emo がなければ calm とみなす
      三人以上の場面（g）：恋人どうしが絡むものは、仲良し系（冷やかし・応援）とやきもち系を同じくらいに（group-audit で「日常の三人」として数える）
-     家族の場面：きょうだいは性別の組み合わせ（兄弟・姉妹・姉弟・兄妹）で呼び方と一文を変える。親子・親族も。惹かれ（att）は動かさない
+     家族の場面：きょうだいは性別・年齢・向き（sib-word.js の HK.Sib）で上下と続柄（姉弟・兄妹・双子…）を決め、呼び方と一文を変える。親子・親族も。惹かれ（att）は動かさない
    ・HK.Daily.install(scen, {places, weight, when, homeLovers, noNight})：箱庭に日常の部品を混ぜる（出来事一つぶんの窓口を HK.MINI[箱庭] に足す）
    ・HK.Daily.at(ctx, c)：今いる場所の id（日常の場面の最中か、箱庭が scen.places を持つときだけ）。Ctx.t の {place} はこれを優先する（HK.Daily.label）
    ・同じ回の中で、同じ日常の文・小道具の一句はできるだけ繰り返さない（ctx._dailyUsed）。点検は hakoniwa-tools/tone-check/daily-audit.js
@@ -114,10 +114,17 @@
     if (a.age && b.age && +a.age !== +b.age) return +a.age > +b.age;
     return a.i < b.i;
   }
-  /* 家族の二人を「上（{a}）・下（{b}）」の順に並べる。きょうだい（庇護）・親子は関係の向き、ほかは年齢（分からなければ名簿の順） */
+  /* 家族の二人を「上（{a}）・下（{b}）」の順に並べる。きょうだい（庇護）・親子は関係の向き。
+     ほかのきょうだいは HK.Sib（年齢）で決め、双子・年齢が分からないときは名簿の順に並べるだけ（上下の語は使わない：kinTokens・sibKey）。親族は年齢 */
   function orient(ctx, a, b, ft) {
     var t = ft.t;
     if (t.type === 'sibprot' || ft.kind === 'parent') return t.a === a.i ? [a, b] : [b, a];
+    if (ft.kind === 'sib' && HK.Sib) {
+      var o = HK.Sib.info(a, b, { tie: t });
+      if (o.pos === 'ue') return [b, a];
+      if (o.pos === 'shita') return [a, b];
+      return a.i < b.i ? [a, b] : [b, a];
+    }
     return older(a, b) ? [a, b] : [b, a];
   }
   function callOf(y, x, list) {
@@ -133,7 +140,22 @@
     if (g === 'm' && h === 'f') return '兄妹';
     return 'きょうだい';
   }
+  /* SIB_LINE の鍵：上下が決まっていれば性別の組み合わせ、向きのない双子は「双子」、ほかは「きょうだい」（E＝上、Y＝下に並べたあと） */
+  function sibKey(E, Y, t) {
+    if (!HK.Sib) return sibCombo(E, Y);
+    var o = HK.Sib.info(E, Y, { tie: t });
+    if (!o.g || !o.ga) return 'きょうだい';
+    if (o.pos === 'twin') return '双子';
+    if (o.pos !== 'shita') return 'きょうだい';
+    return sibCombo(E, Y);
+  }
   function kinTokens(ft, E, Y) {
+    /* きょうだい：続柄・二人のまとめ・呼び方は HK.Sib（双子・年齢が分からないときは上下の語を使わず、呼び方は名前） */
+    if (ft.kind === 'sib' && HK.Sib) {
+      var SB = HK.Sib, env = { tie: ft.t }, kd = SB.pairWord(E, Y, env);
+      if (ft.t.step && kd !== 'きょうだい') kd = '義理の' + kd;
+      return { kind: kd, ue: SB.word(Y, E, 'plain', env), shita: SB.word(E, Y, 'plain', env), yobi: SB.callFor(Y, E, env) };
+    }
     if (ft.kind === 'sib') {
       var combo = sibCombo(E, Y), up = E.gender === 'm' ? '兄' : E.gender === 'f' ? '姉' : 'きょうだい', dn = Y.gender === 'm' ? '弟' : Y.gender === 'f' ? '妹' : 'きょうだい';
       if (combo === 'きょうだい') { up = 'きょうだい'; dn = 'きょうだい'; }
@@ -151,13 +173,14 @@
     return { shin: '親戚' };
   }
   function fill(s, tk) { return s.replace(/\{(kind|ue|shita|yobi|oya|ko|oyayobi|shin)\}/g, function (m, k) { return tk && tk[k] != null ? tk[k] : ''; }); }
-  /* きょうだいの組み合わせで変わる一文（{a}＝上、{b}＝下） */
+  /* きょうだいの組み合わせで変わる一文（{a}＝上、{b}＝下。鍵は sibKey）。続柄の語は印（{sib:a→b}・{sibs}。sib-word.js）で、双子・義理も崩れない */
   D.SIB_LINE = {
-    '兄弟': L('兄弟というのは、黙っていても通じるところがあった。|{b}にとって、兄の{a}の背中は、いつまでも少しだけ大きかった。|言葉が少ないのは兄弟だからだろうか。それでも、二人のあいだの空気は柔らかかった。'),
-    '姉妹': L('姉妹の話は、いつの間にか三つくらいに枝分かれしていた。|{a}は、妹の{b}の顔に、自分そっくりの表情を見つけて少し笑った。|同じところで同時に笑うのは、この姉妹の昔からの癖だった。'),
-    '姉弟': L('{a}にとって{b}は、いくつになっても手のかかる弟だった。|{b}は、姉に頭が上がらないことを、とうに受け入れていた。|姉の小言を聞き流すのが、{b}は昔から上手だった。'),
-    '兄妹': L('{b}は、兄の不器用な優しさを、とっくに見抜いていた。|{a}は、妹の{b}にだけは昔から甘かった。|兄に言い返す妹の口ぶりは、小さいころとまるで同じだった。'),
-    'きょうだい': L('きょうだいの気安さは、何年たっても変わらなかった。|同じ家で育った二人の笑い方は、どこか似ていた。|{a}と{b}のやり取りには、きょうだいにしか分からない呼吸があった。')
+    '兄弟': L('{sibs}というのは、黙っていても通じるところがあった。|{b}にとって、{sib:b→a}の{a}の背中は、いつまでも少しだけ大きかった。|言葉が少ないのは{sibs}だからだろうか。それでも、二人のあいだの空気は柔らかかった。'),
+    '姉妹': L('{sibs}の話は、いつの間にか三つくらいに枝分かれしていた。|{a}は、{sib:a→b}の{b}の顔に、自分そっくりの表情を見つけて少し笑った。|同じところで同時に笑うのは、この{sibs}の昔からの癖だった。'),
+    '姉弟': L('{a}にとって{b}は、いくつになっても手のかかる{sib:a→b}だった。|{b}は、{sib:b→a}に頭が上がらないことを、とうに受け入れていた。|{sib:b→a}の小言を聞き流すのが、{b}は昔から上手だった。'),
+    '兄妹': L('{b}は、{sib:b→a}の不器用な優しさを、とっくに見抜いていた。|{a}は、{sib:a→b}の{b}にだけは昔から甘かった。|{sib:b→a}に言い返す{sib:a→b}の口ぶりは、小さいころとまるで同じだった。'),
+    '双子': L('{sibs}というのは、言葉より先に目で話すものらしかった。|{a}と{b}は、同じところで同時に吹き出した。生まれたときからの癖だった。|{a}が言いかけたことを、{b}が先に口にした。{sibs}のあいだでは、珍しいことでもなかった。'),
+    'きょうだい': L('{sibs}の気安さは、何年たっても変わらなかった。|同じ家で育った二人の笑い方は、どこか似ていた。|{a}と{b}のやり取りには、{sibs}にしか分からない呼吸があった。')
   };
 
   /* ======================= 出来事の部品（DSL） =======================
@@ -578,7 +601,7 @@
     if (!res || !res.text) return null;
     var text = fill(res.text, tk);
     if (ft && ft.kind === 'sib' && ctx.rng() < 0.5) {
-      var SL = D.SIB_LINE[sibCombo(A, B)] || D.SIB_LINE['きょうだい'], sl = SL.filter(function (x) { return !U[x]; });
+      var SL = D.SIB_LINE[sibKey(A, B, ft.t)] || D.SIB_LINE['きょうだい'], sl = SL.filter(function (x) { return !U[x]; });
       if (sl.length) { var line = ctx.rng.pick(sl); U[line] = 1; text += ctx.t(line, A, B); }
     }
     if (food && food.text) { text += food.text; res.why = (res.why || 'その場の流れ') + '／' + food.why; }

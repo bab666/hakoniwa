@@ -121,7 +121,8 @@
       var k = ORDER[i], hit = ts.filter(function (t) { return CAT[k].split(',').indexOf(t.type) >= 0; })[0];
       if (!hit) continue;
       var A = hit.a === a.i ? a : b, B = A === a ? b : a, p = a, q = b;
-      var lab = HK.TIES && HK.TIES[hit.type] ? HK.TIES[hit.type].label : hit.type;
+      /* きょうだいの関係名は、二人の性別・年齢で「姉弟」など（sib-word.js） */
+      var lab = HK.Sib && HK.Sib.isSibTie(hit) && HK.tieLabel ? HK.tieLabel(hit) : HK.TIES && HK.TIES[hit.type] ? HK.TIES[hit.type].label : hit.type;
       if (k === 'fear') { p = hit.type === 'abuse' ? B : A; q = p === a ? b : a; }       /* p＝怖がる側 */
       else if (k === 'apathy' || k === 'blind' || k === 'crush' || k === 'lead') { p = A; q = B; }   /* p＝無関心な側・信じる側・想う側・上の側 */
       else if (k === 'family') { if (/^(parent|pparent|sibprot)$/.test(hit.type)) { p = A; q = B; } else k = 'sib'; }

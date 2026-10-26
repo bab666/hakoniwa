@@ -18,7 +18,7 @@
     train: L('{a}は{b}の手を取って、銛の構えを直させた。「波を読め。魚は、波の切れ目に来る｜＝｜波を読んでください。魚は、波の切れ目に来ます」|{a}は{b}に、罠の仕掛け方を一度だけ見せた。二度目は、{b}にやらせた。|{a}は{b}の結んだロープを黙ってほどき、もう一度結ばせた。三度目で、{a}は小さく頷いた。|{a}は{b}に、星と風から天気を読む方法を教えた。「明日は荒れる。覚えておけ｜＝｜明日は荒れます。覚えておいてください」'),
     surpass: L('{a}が釣り上げた大物を見て、{b}は目を見開いた。「……もう、私より上手いな｜＝｜……もう、私より上手いですね」|嵐の前兆に先に気づいたのは、{a}だった。{b}は弟子の判断に黙って従い、その夜、誰も怪我をしなかった。'),
     protFood: L('{a}は自分の分の焼き魚を、黙って{b}の皿に移した。「腹減ってないから｜腹は減っていない｜お腹は空いていませんから」|{a}はやっと見つけた果物を、皮をむいて{b}に渡した。自分は、皮の裏をかじった。|{a}は{b}が寝ているあいだに、自分の水を{b}の分に足しておいた。'),
-    protStorm: L('嵐の夜、{a}は{b}を毛布でくるみ、自分は外側で寝た。雨に打たれ続けた背中が、朝には冷えきっていた。|雷が鳴るたびに、{a}は{b}の肩を抱き寄せた。子どもの頃、雷が怖いと泣いていた弟妹だった。'),
+    protStorm: L('嵐の夜、{a}は{b}を毛布でくるみ、自分は外側で寝た。雨に打たれ続けた背中が、朝には冷えきっていた。|雷が鳴るたびに、{a}は{b}の肩を抱き寄せた。子どもの頃、雷が怖いと泣いていた{sib:a→b}だった。'),
     protRebel: L('{a}は{b}に言い返した。「もう子どもじゃない。魚くらい自分で獲れる｜＝｜もう子どもじゃありません。魚くらい自分で獲れます」――{b}は何も言えなかった。|{a}は{b}の制止を振り切って、ひとりで崖の上の鳥の巣を取りに行った。戻ってきた{a}を、{b}は泣きながら叱った。'),
     protCare: L('{a}は日焼けで真っ赤になった{b}の肩に、アロエを塗ってやった。「昔からすぐ赤くなるんだから｜昔から、すぐに赤くなるんだからな｜昔からすぐ赤くなるんですから」|{a}は{b}の髪についた砂を、丁寧に払った。{b}は「子ども扱いしないで｜子ども扱いするな｜子ども扱いしないでください」と言いながら、黙って払われていた。|{a}は眠れない{b}の背中を、子どもの頃のように一晩中さすり続けた。'),
     closeSignal: L('{a}と{b}は、子どもの頃に作った秘密の合図で、離れた浜から互いの無事を知らせ合った。|{a}と{b}は、砂浜に二人だけに分かる暗号を書いて伝言にした。'),
@@ -67,16 +67,16 @@
     function (ctx, a, b) { ctx.mod(b, a, { trust: 15, aff: 8 }); ctx.food = (ctx.food || 0) + 6; return { text: fill(ctx.pick(T.surpass), mm(a, b)), why: '弟子の' + a.name + 'が、師の' + b.name + 'に並んだ（稽古 ' + a.flags.trained + '回）', mag: 22 }; });
   /* きょうだい（庇護） */
   ev('ir_pfood', 'help', function (ctx, a, b) { return RK.kind(ctx, a, b) === 'protA' && (ctx.food < 25 || b.hp < 70); }, 4, function (ctx, a) { return 0.8 + a.tr.np * 0.8; },
-    function (ctx, a, b) { a.hp -= 4; b.hp = Math.min(100, b.hp + 5); ctx.mod(b, a, { aff: 8, trust: 6 }); return { text: fill(ctx.pick(T.protFood), mm(a, b)), why: a.name + 'は弟妹の' + b.name + 'を我が子のように守る（NP' + Math.round(a.eg.NP) + '）' }; });
+    function (ctx, a, b) { a.hp -= 4; b.hp = Math.min(100, b.hp + 5); ctx.mod(b, a, { aff: 8, trust: 6 }); return { text: fill(ctx.pick(T.protFood), mm(a, b)), why: a.name + 'は{sib:a→b}の' + b.name + 'を我が子のように守る（NP' + Math.round(a.eg.NP) + '）' }; });
   ev('ir_pstorm', 'help', function (ctx, a, b) { return RK.kind(ctx, a, b) === 'protA' && ctx.env.storm > 30; }, 7, function (ctx, a) { return 0.5 + a.tr.np * 0.6; },
-    function (ctx, a, b) { a.hp -= 3; ctx.stress(b, -12); ctx.mod(b, a, { aff: 8 }); return { text: fill(ctx.pick(T.protStorm), mm(a, b)), why: a.name + 'の、弟妹への庇護（NP）' }; });
+    function (ctx, a, b) { a.hp -= 3; ctx.stress(b, -12); ctx.mod(b, a, { aff: 8 }); return { text: fill(ctx.pick(T.protStorm), mm(a, b)), why: a.name + 'の、{sib:a→b}への庇護（NP）' }; });
   ev('ir_prebel', 'conflict', is('protB'), 10, function (ctx, a) { return a.tr.fc * 0.5 + a.tr.cp * 0.3 + a.tr.impulse * 0.3 - a.tr.ac * 0.3; },
-    function (ctx, a, b) { ctx.mod2(a, b, { ten: 8 }, { ten: 6 }); ctx.stress(b, 10); a.flags.grownUp = true; return { text: fill(ctx.pick(T.protRebel), mm(a, b)), why: '弟妹の' + a.name + 'が、' + b.name + 'の庇護に反発した（FC・CP）' }; });
+    function (ctx, a, b) { ctx.mod2(a, b, { ten: 8 }, { ten: 6 }); ctx.stress(b, 10); a.flags.grownUp = true; return { text: fill(ctx.pick(T.protRebel), mm(a, b)), why: '{sib:b→a}の' + a.name + 'が、' + b.name + 'の庇護に反発した（FC・CP）' }; });
   ev('ir_pcare', 'help', is('protA'), 4, function (ctx, a, b) { return 0.5 + a.tr.np * 0.6 + b.stress / 100; },
-    function (ctx, a, b) { ctx.stress(b, -12); ctx.mod(b, a, { aff: 5 }); return { text: fill(ctx.pick(T.protCare), mm(a, b)), why: a.name + 'の、弟妹への世話焼き（NP）' }; });
+    function (ctx, a, b) { ctx.stress(b, -12); ctx.mod(b, a, { aff: 5 }); return { text: fill(ctx.pick(T.protCare), mm(a, b)), why: a.name + 'の、{sib:a→b}への世話焼き（NP）' }; });
   /* きょうだい（親友のよう） */
   ev('ir_csig', 'bond', is('sibclose'), 5, function (ctx, a) { return 0.6 + a.tr.fc * 0.5; },
-    function (ctx, a, b) { ctx.mod2(a, b, { trust: 8, aff: 4 }, { trust: 8, aff: 4 }); ctx.stress(a, -6); ctx.stress(b, -6); var r = ctx.rng(); return { text: fill(ctx.pick(r < 0.35 ? T.closeSignal : r < 0.7 ? T.closeRace : T.closeMemory), mm(a, b)), why: '親友のようなきょうだい（FC）' }; });
+    function (ctx, a, b) { ctx.mod2(a, b, { trust: 8, aff: 4 }, { trust: 8, aff: 4 }); ctx.stress(a, -6); ctx.stress(b, -6); var r = ctx.rng(); return { text: fill(ctx.pick(r < 0.35 ? T.closeSignal : r < 0.7 ? T.closeRace : T.closeMemory), mm(a, b)), why: '親友のような{sibs}（FC）' }; });
   /* 恋愛相手の固定 */
   add({ id: 'ir_lrefuse', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { return RK.locked(a) && !RK.lockedTo(a, b) && ctx.R(b, a).att > 35 && !ctx.pair(a, b).lockRef; },
@@ -108,7 +108,7 @@
       pf.owe = repay ? null : b.i;
       b.hp = Math.min(100, b.hp + 5); ctx.stress(b, -10);
       ctx.mod2(a, b, { trust: 8, aff: 5 }, { trust: 8, aff: 5 });
-      return { text: fill(ctx.pick(repay ? GUARD.repay : GUARD.help), { a: a.name, b: b.name }), why: repay ? a.name + 'が' + b.name + 'に借りを返した（親友のようなきょうだいは、守り合う）' : a.name + 'が' + b.name + 'を支えた（今度は' + b.name + 'が返す番）' };
+      return { text: fill(ctx.pick(repay ? GUARD.repay : GUARD.help), { a: a.name, b: b.name }), why: repay ? a.name + 'が' + b.name + 'に借りを返した（親友のような{sibs}は、守り合う）' : a.name + 'が' + b.name + 'を支えた（今度は' + b.name + 'が返す番）' };
     } });
   RK.mourn(isl, MOURN, 'ir');
 })();

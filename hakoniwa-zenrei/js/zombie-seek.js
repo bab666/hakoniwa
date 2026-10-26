@@ -24,6 +24,8 @@
     var all = T.all(ctx, a, o);
     function has(t) { return all.some(function (x) { return x.type === t; }); }
     if (has('lover') || has('mate') || has('fated') || ctx.pair(a, o).couple) return 'lover';
+    /* きょうだい（庇護）は親子に似た関係（like: parent）だが、文は「親」「我が子」でなく、きょうだいのもの（呼び名は姉・弟など。kn） */
+    if (has('sibprot')) return 'sib';
     if (T.from(ctx, a, o, 'parent') || T.from(ctx, a, o, 'pparent')) return 'parent';
     if (T.from(ctx, o, a, 'parent') || T.from(ctx, o, a, 'pparent')) return 'child';
     if (has('sibling') || has('sibprot') || has('sibclose') || has('sibbad')) return 'sib';
@@ -41,6 +43,8 @@
   }
   var GROUP = { lover: 'love', crush: 'love', parent: 'fam', child: 'fam', sib: 'fam', relative: 'fam', beneA: 'bene', beneB: 'bene', bossA: 'boss', bossB: 'boss', worship: 'worship', yan: 'yan', worshipped: 'friend', best: 'friend', classmate: 'friend', colleague: 'friend', care: 'friend' };
   var KNAME = { lover: '恋人', crush: '想いを寄せる相手', parent: '我が子', child: '親', sib: 'きょうだい', relative: '親族', beneA: 'かつて助けた相手', beneB: '恩人', bossA: '部下', bossB: '上司', worship: '信仰する相手', yan: '執着する相手', worshipped: '自分を慕う相手', best: '親友', classmate: '同級生', colleague: '同僚', care: '大切な相手' };
+  /* 関係の呼び名。きょうだいは二人の性別・年齢で「姉」「弟」など（sib-word.js）。a から見た T */
+  function kn(ctx, k, a, T) { return k === 'sib' && HK.Sib ? HK.Sib.word(a, T, 'plain', ctx) : KNAME[k]; }
   /* 執着・信仰する側：危険を顧みず探しに行く */
   function bold(k) { return k === 'worship' || k === 'yan'; }
   /* 関係の深さ（grief-kit の深さ。読み込まれていなければ好意から） */
@@ -57,7 +61,7 @@
     lover: L('{a}は、{b}がいないまま夜を越すことに耐えられなかった。{a}「{b}を探しに行く。止めても無駄だ｜＝｜{b}を探しに行きます。止めても無駄です」|{a}は{b}と最後に交わした言葉を思い出していた。あれが最後になるなんて、認めない。{a}は黙って荷物をまとめた。|{a}は、{b}の笑った顔ばかり思い出していた。{a}「{b}は生きてる。迎えに行く｜{b}は生きている。迎えに行く｜{b}は生きています。迎えに行きます」'),
     parent: L('{a}は{b}の名前を何度もつぶやいた。我が子がこの街のどこかにいる。それだけで、じっとしてはいられなかった。|{a}「{b}を探す。親が探さないで、誰が探すんだ｜{b}を探す。親が探さずに、誰が探すというのだ｜{b}を探します。親が探さないで、誰が探すんですか」――{a}の声は、少しも震えていなかった。'),
     child: L('{a}は、{b}がまだどこかで自分を待っている気がしてならなかった。{a}「親を探しに行く。……一人でも｜＝｜……一人でも、親を探しに行きます」|{a}は{b}の顔を思い浮かべて、唇を噛んだ。今度は、自分が迎えに行く番だった。'),
-    sib: L('{a}は{b}のことを考えていた。きょうだいなら、きっとどこかで踏ん張っている。{a}「{b}を探しに行く｜＝｜{b}を探しに行きます」|{a}「{b}のことだ、どうせ無茶をしてる。迎えに行ってやらないと｜{b}のことだ、どうせ無茶をしている。迎えに行ってやらねばならない｜{b}のことですから、どうせ無茶をしています。迎えに行かないといけません」――{a}は笑ってみせたが、目は笑っていなかった。'),
+    sib: L('{a}は{b}のことを考えていた。{sib:a→b}なら、きっとどこかで踏ん張っている。{a}「{b}を探しに行く｜＝｜{b}を探しに行きます」|{a}「{b}のことだ、どうせ無茶をしてる。迎えに行ってやらないと｜{b}のことだ、どうせ無茶をしている。迎えに行ってやらねばならない｜{b}のことですから、どうせ無茶をしています。迎えに行かないといけません」――{a}は笑ってみせたが、目は笑っていなかった。'),
     relative: L('{a}は、{b}のことが頭から離れなかった。同じ家に住んでいなくても、親族は親族だ。{a}「{b}を探す。放ってはおけない｜＝｜{b}を探します。放ってはおけません」|{a}は、親戚の集まりで{b}と並んで座った日のことを思い出した。あの顔を、もう一度見たかった。'),
     beneA: L('{a}は、かつて手を差し伸べた{b}のことを思った。あのとき助けた命を、こんなところで終わらせたくない。{a}「{b}を探しに行く｜＝｜{b}を探しに行きます」|{a}「{b}は一人で抱え込む性分だ。誰かが行ってやらないと｜{b}は一人で抱え込む性分だ。誰かが行ってやらねばならない｜{b}は一人で抱え込む性分です。誰かが行ってあげないといけません」――{a}は立ち上がった。'),
     beneB: L('{a}は、{b}に救われた日のことを思い出していた。今度は自分が恩を返す番だ。{a}「{b}を探す。この命は、{b}にもらったものだから｜{b}を探す。この命は、{b}にもらったものだ｜{b}を探します。この命は、{b}にもらったものですから」|{a}「{b}がいなければ、私はとっくにいなかった｜＝｜{b}がいなければ、私はとっくにいませんでした」――{a}は迷わず、外へ出る支度を始めた。'),
@@ -168,7 +172,7 @@
     ctx.stress(a, bold(u.k) ? 10 : 5);
     var m = { a: a.name, b: T.name, area: Z.an(ctx, a.z.area) };
     ctx.act2({ actors: [a, T], cat: 'solo', text: ctx.t(fill(ctx.pick(GO[u.k] || GO.care), m), a, T) + goalText(a, from),
-      why: a.name + 'にとって' + T.name + 'は' + KNAME[u.k] + '（関係の深さ ' + Math.round(u.d) + '）。別の場所にいて、まだ会えていない' + (bold(u.k) ? '／' + (u.k === 'worship' ? '信仰' : '執着') + 'する側は、危険を顧みずに探しに行く' : ''), mag: 14 + (bold(u.k) ? 6 : 0) });
+      why: a.name + 'にとって' + T.name + 'は' + kn(ctx, u.k, a, T) + '（関係の深さ ' + Math.round(u.d) + '）。別の場所にいて、まだ会えていない' + (bold(u.k) ? '／' + (u.k === 'worship' ? '信仰' : '執着') + 'する側は、危険を顧みずに探しに行く' : ''), mag: 14 + (bold(u.k) ? 6 : 0) });
   }
   function done(ctx, a, T, how) {
     var from = a.goal.label, k = a.z.skK || kind(ctx, a, T);
@@ -200,7 +204,7 @@
       out.pre += fill(ctx.pick(SOUGHT[k] || SOUGHT.base), m);
       foundFx(ctx, s, T, k);
       out.post += done(ctx, s, T, 'found');
-      out.who.push(s.name + 'は' + T.name + '（' + KNAME[k] + '）を探していた');
+      out.who.push(s.name + 'は' + T.name + '（' + kn(ctx, k, s, T) + '）を探していた');
     });
     return out.who.length ? out : null;
   };
@@ -265,7 +269,7 @@
         if (T.z.area === a.z.area && !T.z.alone) {
           foundFx(ctx, a, T, k);
           var ft = foundText(ctx, a, T);
-          ctx.act2({ actors: [a, T], cat: 'bond', text: ft + done(ctx, a, T, 'found'), why: a.name + 'は' + KNAME[k] + 'の' + T.name + 'を探し続けていた（探し始めてから ' + (ctx.stepIndex - a.z.skAt) + ' 区切り）。ようやく会えた', mag: 22 });
+          ctx.act2({ actors: [a, T], cat: 'bond', text: ft + done(ctx, a, T, 'found'), why: a.name + 'は' + kn(ctx, k, a, T) + 'の' + T.name + 'を探し続けていた（探し始めてから ' + (ctx.stepIndex - a.z.skAt) + ' 区切り）。ようやく会えた', mag: 22 });
           return;
         }
         /* 噂の場所に着いたのに、相手は動いていた：噂を追い直す */

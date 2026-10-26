@@ -72,7 +72,8 @@
       if (t.type === 'fond') w = mine ? 38 : 12;
       /* 恩を受けた側が恩人を失う */
       if (t.type === 'benefactor' && !mine) w = 42;
-      if (w > best) { best = w; rel = relWord(t.type, mine) || rel; }
+      /* きょうだいは二人の性別・年齢で「姉」「弟」など（sib-word.js。o から見た v） */
+      if (w > best) { best = w; rel = (HK.Sib && HK.Sib.isSibTie(t) && TIE_W[t.type] ? HK.Sib.word(o, v, 'plain', { tie: t }) : '') || relWord(t.type, mine) || rel; }
     });
     var pf = ctx.pair(o, v);
     if (pf.couple && best < 55) { best = 55; rel = '恋人'; }

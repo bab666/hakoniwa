@@ -6,7 +6,9 @@
      2. 向きのある関係（兄弟（庇護）：roleA＝兄姉側）があれば、その向きで上下を決める（年齢より優先。利用者が選んだ向きなので）
      3. 両方の年齢があれば、年上が上。同じ年齢なら双子（義理のきょうだいは双子にせず、上下を決めない）
      4. どちらかの年齢が未設定で向きもなければ、上下は決めない（続柄は ''。地の文では「姉妹」「兄弟」「きょうだい」にする）
-   ・双子：向きがあれば「双子の姉／双子の妹」。向きがなければ性別だけで「双子の姉」「双子の兄」（上下は決め打ちしない）
+   ・双子：向き（兄弟（庇護））があれば「双子の姉／双子の妹」。向きがなければ上下を付けない。
+     同性の双子は互いに「双子」（二人のまとめは「双子の姉妹」「双子の兄弟」）、異性の双子は性別で「双子の兄」「双子の妹」（まとめは「双子の兄妹」）。
+     どちらも上下は年齢で決まらないので、呼びかけ（{sibcall}）は名前
    ・関係名の表示（HK.tieLabel から）：「兄弟姉妹」→「姉弟」、「兄弟（庇護）」→「姉弟（庇護）」、「義理の兄弟」→「義理の姉弟」のように言い換える。
      性別・上下が分からず言い換えられないときは、元の関係名のまま
    ・文の印（地の文・台詞の中で使える。{a}{b}{c} と同じ人を指す）
@@ -76,19 +78,21 @@
   S.rel = function (a, b, env) {
     var o = S.info(a, b, env);
     if (!o.g) return 'きょうだい';
-    if (o.pos === 'twin') return '双子の' + UE[o.g];
+    /* 向きのない双子：同性は「双子」、異性は男を「双子の兄」・女を「双子の妹」（a の性別が分からなければ「双子」） */
+    if (o.pos === 'twin') return o.ga && o.ga !== o.g ? '双子の' + (o.g === 'm' ? '兄' : '妹') : '双子';
     if (!o.pos) return '';
     return (o.twin ? '双子の' : '') + (o.pos === 'ue' ? UE[o.g] : SHITA[o.g]);
   };
 
-  /* 二人をまとめた言い方：姉弟・兄妹・姉妹・兄弟・双子の姉妹・双子の兄弟・双子の姉弟・双子・きょうだい */
+  /* 二人をまとめた言い方：姉弟・兄妹・姉妹・兄弟・双子の姉妹・双子の兄弟・双子の兄妹（向きがあれば双子の姉弟も）・きょうだい */
   S.pairWord = function (a, b, env) {
     var o = S.info(a, b, env), ga = o.ga, gb = o.g;
     if (!ga || !gb) return 'きょうだい';
     var tw = o.twin || o.pos === 'twin';
     if (ga === gb) return (tw ? '双子の' : '') + (ga === 'f' ? '姉妹' : '兄弟');
     /* 男女：上の人の性別で「姉弟」か「兄妹」 */
-    if (!o.pos || o.pos === 'twin') return tw ? '双子' : 'きょうだい';
+    if (o.pos === 'twin') return '双子の兄妹';
+    if (!o.pos) return 'きょうだい';
     var up = o.pos === 'ue' ? gb : ga;
     return (tw ? '双子の' : '') + (up === 'f' ? '姉弟' : '兄妹');
   };
@@ -196,6 +200,85 @@
   S.resElder = function (tie, res) {
     if (!tie || !res || !S.isSibTie(tie) && !(tie.type === 'relative' && /義理/.test(tie.label || ''))) return null;
     return S.elder(tie, resPerson(res, tie.a), resPerson(res, tie.b));
+  };
+
+  /* ---------- 弟妹から上のきょうだいへの呼び方（既定） ----------
+     弟妹側の住人が、上のきょうだいを呼ぶ語を決めていない（相手ごとの呼び方 calls も、相手ごとの二人称 youFor もない）とき、
+     台詞の仕上げ（HK.Voice.processResult）のあいだだけ、口調に合う語（姉さん・姉貴・お姉ちゃん・お姉様・姉上…）を
+     相手ごとの呼び方として足す。保存された設定は変えない（入力の写しにだけ足す）。
+     こうすると tone-plus.js の呼び方の仕組み（名前・二人称の置き換え）がそのまま効く */
+  function sibTiesOf(input) { return ((input && input.ties) || []).filter(function (t) { return t && (SIB_TYPES[t.type] || (t.type === 'relative' && t.step)); }); }
+  S.autoCalls = function (input) {
+    var C = (input && input.chars) || [], out = [];
+    sibTiesOf(input).forEach(function (t) {
+      [[t.a, t.b], [t.b, t.a]].forEach(function (p) {
+        var A = C[p[0]], B = C[p[1]];
+        if (!A || !B || !B.name || A === B) return;
+        if (A.calls && A.calls[B.name]) return;
+        if (A.youFor && A.youFor[p[1]]) return;
+        var a = withI(A, p[0]), b = withI(B, p[1]), o = S.info(a, b, { tie: t });
+        if (o.pos !== 'ue' || !o.g) return;
+        out.push({ who: p[0], to: p[1], name: B.name, call: CALL[S.callGroup(a)][o.g][0] });
+      });
+    });
+    return out;
+  };
+  S.withCalls = function (input) {
+    var L = S.autoCalls(input);
+    if (!L.length) return input;
+    var inp = {}, k;
+    for (k in input) inp[k] = input[k];
+    inp.chars = input.chars.map(function (c) {
+      var mine = L.filter(function (x) { return input.chars[x.who] === c; });
+      if (!mine.length) return c;
+      var o = {}, j;
+      for (j in c) o[j] = c[j];
+      o.calls = {};
+      for (j in (c.calls || {})) o.calls[j] = c.calls[j];
+      mine.forEach(function (x) { if (!o.calls[x.name]) o.calls[x.name] = x.call; });
+      return o;
+    });
+    return inp;
+  };
+  var V = HK.Voice;
+  if (V && V.processResult && !V.processResult._sib) {
+    var pr0 = V.processResult;
+    V.processResult = function (res, input) { return pr0.call(this, res, S.withCalls(input)); };
+    V.processResult._sib = true;
+  }
+
+  /* ---------- 設定欄（ui-gear.js・ui.js）向け ----------
+     c・o：画面の住人（id を持つ）、t：画面の関係（a・b は住人の id）。
+     { rel: o の続柄（c から見て）, call: c が o を呼ぶ語（呼び方の設定があればそれ、自動なら「姉さん」など、名前なら ''）, auto: 自動の呼び方か, notes: 注意の文 } */
+  S.ui = function (c, o, t) {
+    if (!c || !o || !t || !S.isSibTie(t) && t.type !== 'stepsib') return null;
+    var a = withI(c, c.id), b = withI(o, o.id), env = { tie: t }, inf = S.info(a, b, env);
+    var r = { rel: S.rel(a, b, env) || '', call: '', auto: false, notes: [] };
+    var own = c.calls && c.calls[o.id];
+    if (own) r.call = own;
+    else if (inf.pos === 'ue' && inf.g && !(c.youFor && c.youFor[o.id])) { r.call = CALL[S.callGroup(c)][inf.g][0]; r.auto = true; }
+    var aa = age(c), ab = age(o), gw = { f: '姉か妹', m: '兄か弟' }[inf.g] || '上か下';
+    if (inf.dir) {
+      /* 庇護の向きと年齢が逆 */
+      var upIsO = inf.pos === 'ue';
+      if (aa && ab && aa !== ab && (ab > aa) !== upIsO) {
+        var older = ab > aa ? o : c, prot = upIsO ? o : c;
+        r.notes.push('年齢では' + older.name + 'が年上ですが、庇護の向き（' + prot.name + 'が兄姉）を優先します');
+      }
+    } else if (!aa || !ab) {
+      r.notes.push('年齢が未設定なので' + gw + 'か決められません（文では『' + S.pairWord(a, b, env) + '』になります）。年齢か『兄弟（庇護）』の向きを決めてください');
+    } else if (aa === ab) {
+      if (inf.step) r.notes.push('義理のきょうだいで同じ年齢なので、' + gw + 'かは決めません（文では『' + S.pairWord(a, b, env) + '』になります）');
+      else r.notes.push('同じ年齢なので双子として扱います');
+    }
+    return r;
+  };
+  /* 関係の一覧の行の名前に添える続柄（「美咲（姉）」）。分からなければ '' */
+  S.uiRole = function (t, A, B, who) {
+    if (!t || !A || !B) return '';
+    var a = withI(A, t.a), b = withI(B, t.b), env = { tie: t };
+    var x = who === 'a' ? S.rel(b, a, env) : S.rel(a, b, env);
+    return x === 'きょうだい' ? '' : x;
   };
 
   /* ---------- 文の印 ---------- */

@@ -124,6 +124,10 @@
     if (CO) h += '<select data-gf="tcold" data-k="' + k + '" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return opt(id, CO.map[id].label, t.cold || ''); }).join('') + '</select>';
     h += extraSels(t, k, 'data-gf="textra"');
     h += '<button type="button" class="btn ghost small" data-gact="tdel" data-k="' + k + '">外す</button></div>';
+    /* きょうだい：続柄と呼び方（自動のときは「自動（姉）」）、注意（年齢が未設定・同じ年齢・庇護の向きと年齢が逆）。sib-word.js */
+    var sb = HK.Sib && HK.Sib.ui ? HK.Sib.ui(c, o, t) : null;
+    if (sb) h += '<p class="gearhint gsib">続柄：' + esc(sb.rel ? '自動（' + sb.rel + '）' : '自動（決まっていません）') + '　呼び方：' + esc(sb.auto ? '自動（' + sb.call + '）' : sb.call ? sb.call : '名前（' + o.name + '）') +
+      (sb.notes.length ? '<br>' + esc(sb.notes.join('。')) + '。' : '') + '</p>';
     return h + '<p class="gearhint">' + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (D.loveOpt ? (t.love === 'ok' ? '。恋愛に発展：するにしているので、想いが恋に変わることもある' : '。恋愛に発展：しないにしているので、想いは恋にならない') : '') + '</p>';
   }
   /* 口調の見本：ふつうの言い回しの台詞を、この住人の口調・一人称・呼び方に直して見せる（数秒ごとに切り替わる） */

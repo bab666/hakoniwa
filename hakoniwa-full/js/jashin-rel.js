@@ -78,7 +78,7 @@
         if (a.amn || b.amn) return;
         done[a.i + '-' + b.i] = 1; k++;
         if (c === 'crush' && mutual(S, a, b)) return ST.sayB(S, { actors: [x, y], tag: '関係', text: pickT(S, T.INTRO.mutual, { a: x.name, b: y.name }), why: '関係：' + relLabel(S, a, b) + '（お互いに想っているのに、どちらも自分の片想いだと思っている）' }, x.name + 'と' + y.name);
-        ST.sayB(S, { actors: [x, y], tag: '関係', text: pickT(S, T.INTRO[c], { a: x.name, b: y.name }), why: '関係：' + tiesOf(S, a, b).map(function (t) { return HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).join('・') }, x.name + 'と' + y.name);
+        ST.sayB(S, { actors: [x, y], tag: '関係', text: pickT(S, T.INTRO[c], { a: x.name, b: y.name }), why: '関係：' + tiesOf(S, a, b).map(function (t) { return HK.Sib && HK.Sib.isSibTie(t) && HK.tieLabel ? HK.tieLabel(t) : HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).join('・') }, x.name + 'と' + y.name);
       });
     });
   }
@@ -139,7 +139,7 @@
     if (JS.DRAMA) JS.DRAMA.tick(S, A(S), h);
   }
   function relLabel(S, a, b) {
-    var bo = both(S, a, b), l = tiesOf(S, a, b).filter(function (t) { return !(bo && t.type === 'crush'); }).map(function (t) { return HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; });
+    var bo = both(S, a, b), l = tiesOf(S, a, b).filter(function (t) { return !(bo && t.type === 'crush'); }).map(function (t) { return HK.Sib && HK.Sib.isSibTie(t) && HK.tieLabel ? HK.tieLabel(t) : HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; });
     if (bo) l.unshift('両片想い');
     /* 同じ関係が二度足されていても（恋人になる出来事が重なったときなど）、一度だけ書く */
     l = l.filter(function (x, i) { return l.indexOf(x) === i; });

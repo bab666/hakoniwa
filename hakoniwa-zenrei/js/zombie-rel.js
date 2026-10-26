@@ -22,7 +22,7 @@
     mentorLast: L('{a}は咬み跡を見せずに、{b}に{w}を渡した。「これからは、あなたが誰かを守る番だ｜＝｜これからは、あなたが誰かを守る番です」|{a}は{b}を呼んで、最後の稽古をつけた。{b}が一本取ったとき、{a}は満足そうに目を閉じた。|{a}は{b}に言った。「振り返るな。それが最後の教えだ｜＝｜振り返らないでください。それが最後の教えです」――{b}はまだ、その意味を知らなかった。'),
     /* きょうだい（庇護） */
     protFood: L('{a}は自分の分の缶詰を、黙って{b}の前に置いた。「腹減ってないから｜腹は減っていない｜お腹は空いていませんから」――腹の虫が鳴ったのは、そのすぐあとだった。|{a}は乾パンを二つに割って、大きい方を{b}に渡した。昔から、ずっとそうしてきた。|{a}は{b}が寝ているあいだに、自分の水を{b}のボトルに移した。'),
-    protDecoy: L('{a}は{b}を物置に押し込み、外から扉を閉めた。「十数えたら逃げろ。絶対に、振り返るな｜＝｜十数えたら逃げてください。絶対に、振り返らないでください」――{a}はわざと大きな音を立てて、群れを引きつけた。|{a}は{b}の頭を撫でて、「すぐ戻る｜＝｜すぐ戻ります」と言った。それから、ゾンビのいる方へ走っていった。|群れが迫ったとき、{a}は迷わず{b}の前に出た。弟妹を守るのは、自分の役目だった。'),
+    protDecoy: L('{a}は{b}を物置に押し込み、外から扉を閉めた。「十数えたら逃げろ。絶対に、振り返るな｜＝｜十数えたら逃げてください。絶対に、振り返らないでください」――{a}はわざと大きな音を立てて、群れを引きつけた。|{a}は{b}の頭を撫でて、「すぐ戻る｜＝｜すぐ戻ります」と言った。それから、ゾンビのいる方へ走っていった。|群れが迫ったとき、{a}は迷わず{b}の前に出た。{sib:a→b}を守るのは、自分の役目だった。'),
     protRebel: L('{a}は{b}に言い返した。「もう子どもじゃない。自分のことは自分で決める｜もう子どもではない。自分のことは自分で決める｜もう子どもじゃありません。自分のことは自分で決めます」――{b}は言葉を失った。|{a}は{b}の制止を振り切って、ひとりで偵察に出た。戻ってきた{a}を、{b}は泣きながら叱った。|{a}は{b}の過保護に耐えきれず、声を荒げた。「守られてばっかりじゃ、生き残れないんだよ！｜守られてばかりでは、生き残れないんだ！｜守られてばかりじゃ、生き残れないんです！」'),
     protHide: L('{a}は{b}の腕の咬み跡を見て、自分の包帯で黙って隠した。「誰にも言うな。……どうにかする｜＝｜誰にも言わないでください。……どうにかします」|{a}は{b}の熱を確かめて、震える声で言った。「大丈夫。ただの風邪だ｜大丈夫だ。ただの風邪だ｜大丈夫です。ただの風邪です」――嘘だと、二人とも分かっていた。'),
     protCare: L('{a}は眠れない{b}の背中を、子どもの頃のように一晩中さすり続けた。|{a}は{b}の髪についた血を、残り少ない水で丁寧に拭った。「ほら、きれいになった｜＝｜ほら、きれいになりました」|{a}は{b}の靴紐が解けているのに気づいて、しゃがんで結び直した。{b}は「子ども扱いすんな｜子ども扱いするな｜子ども扱いしないでください」と言いながら、黙って結ばれていた。'),
@@ -41,7 +41,7 @@
     kansai: L('{a}の軽口が、張り詰めた空気を少しだけ緩めた。「こんなん、帰ったら一生の笑い話にしたるわ」|{a}は{b}の肩を叩いた。「しゃあない、なんとかなるて」――根拠はなかったが、{b}は少し笑った。|{a}は缶詰の残りを数えて、「まあ、なんとかなるやろ」と言った。誰よりも先に、その言葉を信じようとしていた。')
   };
   var MOURN = {
-    protA: L('{a}は{b}の遺した靴を抱きしめて、声を上げずに泣いた。守ると、約束していたのに。|{a}は{b}の名前を何度も呼んだ。返事は、もうなかった。我が子のように育ててきた、たった一人の弟妹だった。'),
+    protA: L('{a}は{b}の遺した靴を抱きしめて、声を上げずに泣いた。守ると、約束していたのに。|{a}は{b}の名前を何度も呼んだ。返事は、もうなかった。我が子のように育ててきた、たった一人の{sib:a→b}だった。'),
     protB: L('{a}は{b}がいつも背負っていたリュックを、自分で背負った。重かった。ずっと、こんなに重いものを背負わせていたのだと知った。|{a}は{b}の口癖を真似してみた。「腹減ってないから｜腹は減っていない｜お腹は空いていませんから」――言いながら、涙が止まらなかった。'),
     sibclose: L('{a}は二人で決めた口笛を、誰もいない夜に一度だけ吹いた。返ってくる音は、もうなかった。|{a}は{b}と最後に言い合った、くだらない喧嘩の内容を思い出した。謝りそびれたままだった。'),
     teacherA: L('{a}は{b}の名前を、出席簿の最後に書き足した。そこに丸をつけることは、もう二度とない。|{a}は{b}に教えた逃げ道を、ひとりで何度もなぞった。教えたことは、間違っていなかったはずなのに。'),
@@ -87,33 +87,33 @@
   add({ id: 'zr_pfood', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'protA' && a.z.food > 0 && b.z.food <= 1 && RK.cool(ctx, a, b, 'pfood', 4); },
     w: function (ctx, a, b) { return 0.8 + a.tr.np * 0.8; },
-    run: function (ctx, a, b) { RK.mark(ctx, a, b, 'pfood'); a.z.food--; b.z.food++; a.hp -= 3; ctx.mod(b, a, { aff: 8, trust: 6 }); return { text: fill(ctx.pick(T.protFood), m2(a, b, ctx)), why: a.name + 'は弟妹の' + b.name + 'を我が子のように守る（NP' + Math.round(a.eg.NP) + '）' }; } });
+    run: function (ctx, a, b) { RK.mark(ctx, a, b, 'pfood'); a.z.food--; b.z.food++; a.hp -= 3; ctx.mod(b, a, { aff: 8, trust: 6 }); return { text: fill(ctx.pick(T.protFood), m2(a, b, ctx)), why: a.name + 'は{sib:a→b}の' + b.name + 'を我が子のように守る（NP' + Math.round(a.eg.NP) + '）' }; } });
   add({ id: 'zr_pdecoy', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'protA' && danger(ctx, a) > 50 && !a.flags.decoy; },
     w: function (ctx, a, b) { return 0.3 + a.tr.np * 0.6 + a.tr.cp * 0.2 - a.tr.caution * 0.3; },
-    run: function (ctx, a, b) { a.flags.decoy = true; a.hp -= 15 + ctx.rng.int(15); ctx.mod(b, a, { aff: 14, trust: 10 }); ctx.stress(b, 25); if (a.hp <= 0) ctx.kill(a, null, '弟妹の' + b.name + 'を逃がすため、群れを引きつけて'); return { text: fill(ctx.pick(T.protDecoy), m2(a, b, ctx)), why: a.name + 'は弟妹の' + b.name + 'の囮になった（危険度 ' + Math.round(danger(ctx, a)) + '）', mag: 30 }; } });
+    run: function (ctx, a, b) { a.flags.decoy = true; a.hp -= 15 + ctx.rng.int(15); ctx.mod(b, a, { aff: 14, trust: 10 }); ctx.stress(b, 25); if (a.hp <= 0) ctx.kill(a, null, (HK.Sib ? HK.Sib.word(a, b, 'plain', ctx) : '弟妹') + 'の' + b.name + 'を逃がすため、群れを引きつけて'); return { text: fill(ctx.pick(T.protDecoy), m2(a, b, ctx)), why: a.name + 'は{sib:a→b}の' + b.name + 'の囮になった（危険度 ' + Math.round(danger(ctx, a)) + '）', mag: 30 }; } });
   add({ id: 'zr_prebel', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'protB' && RK.cool(ctx, a, b, 'prebel', 10); },
     w: function (ctx, a, b) { return a.tr.fc * 0.5 + a.tr.cp * 0.3 + a.tr.impulse * 0.3 - a.tr.ac * 0.3; },
-    run: function (ctx, a, b) { RK.mark(ctx, a, b, 'prebel'); ctx.mod2(a, b, { ten: 8 }, { ten: 6 }); ctx.stress(b, 10); a.flags.grownUp = true; return { text: fill(ctx.pick(T.protRebel), m2(a, b, ctx)), why: '弟妹の' + a.name + 'が、' + b.name + 'の庇護に反発した（FC・CP）' }; } });
+    run: function (ctx, a, b) { RK.mark(ctx, a, b, 'prebel'); ctx.mod2(a, b, { ten: 8 }, { ten: 6 }); ctx.stress(b, 10); a.flags.grownUp = true; return { text: fill(ctx.pick(T.protRebel), m2(a, b, ctx)), why: '{sib:b→a}の' + a.name + 'が、' + b.name + 'の庇護に反発した（FC・CP）' }; } });
   add({ id: 'zr_phide', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'protA' && b.z.bitten && !b.flags.phid; },
     w: function (ctx, a, b) { return 1 + a.tr.np * 0.8 - a.tr.honesty * 0.4; },
-    run: function (ctx, a, b) { b.flags.phid = true; ctx.pair(a, b).secret = true; ctx.stress(a, 25); ctx.mod(b, a, { trust: 12 }); return { text: fill(ctx.pick(T.protHide), m2(a, b, ctx)), why: a.name + 'は弟妹の' + b.name + 'が咬まれていると知り、かばった', mag: 26 }; } });
+    run: function (ctx, a, b) { b.flags.phid = true; ctx.pair(a, b).secret = true; ctx.stress(a, 25); ctx.mod(b, a, { trust: 12 }); return { text: fill(ctx.pick(T.protHide), m2(a, b, ctx)), why: a.name + 'は{sib:a→b}の' + b.name + 'が咬まれていると知り、かばった', mag: 26 }; } });
   add({ id: 'zr_pcare', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'protA' && RK.cool(ctx, a, b, 'pcare', 4); },
     w: function (ctx, a, b) { return 0.5 + a.tr.np * 0.6 + b.stress / 100; },
-    run: function (ctx, a, b) { RK.mark(ctx, a, b, 'pcare'); ctx.stress(b, -12); ctx.mod(b, a, { aff: 5 }); return { text: fill(ctx.pick(T.protCare), m2(a, b, ctx)), why: a.name + 'の、弟妹への世話焼き（NP）' }; } });
+    run: function (ctx, a, b) { RK.mark(ctx, a, b, 'pcare'); ctx.stress(b, -12); ctx.mod(b, a, { aff: 5 }); return { text: fill(ctx.pick(T.protCare), m2(a, b, ctx)), why: a.name + 'の、{sib:a→b}への世話焼き（NP）' }; } });
 
   /* ---------- きょうだい（親友のよう） ---------- */
   add({ id: 'zr_csig', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'sibclose' && RK.cool(ctx, a, b, 'csig', 6); },
     w: function (ctx, a, b) { return 0.6 + a.tr.fc * 0.4 + a.tr.a * 0.2; },
-    run: function (ctx, a, b) { RK.mark(ctx, a, b, 'csig'); ctx.mod2(a, b, { trust: 8 }, { trust: 8 }); return { text: fill(ctx.pick(ctx.rng() < 0.5 ? T.closeSignal : T.closeMemory), m2(a, b, ctx)), why: '親友のようなきょうだい' }; } });
+    run: function (ctx, a, b) { RK.mark(ctx, a, b, 'csig'); ctx.mod2(a, b, { trust: 8 }, { trust: 8 }); return { text: fill(ctx.pick(ctx.rng() < 0.5 ? T.closeSignal : T.closeMemory), m2(a, b, ctx)), why: '親友のような{sibs}' }; } });
   add({ id: 'zr_cback', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'sibclose' && danger(ctx, a) > 35 && RK.cool(ctx, a, b, 'cback', 6); },
     w: function (ctx, a, b) { return 0.5 + a.tr.aggr * 0.3 + a.tr.np * 0.3; },
-    run: function (ctx, a, b) { RK.mark(ctx, a, b, 'cback'); ctx.mod2(a, b, { trust: 10, aff: 4 }, { trust: 10, aff: 4 }); ctx.stress(a, -6); ctx.stress(b, -6); return { text: fill(ctx.pick(T.closeBack), m2(a, b, ctx)), why: '親友のようなきょうだいの連携（危険度 ' + Math.round(danger(ctx, a)) + '）', mag: 14 }; } });
+    run: function (ctx, a, b) { RK.mark(ctx, a, b, 'cback'); ctx.mod2(a, b, { trust: 10, aff: 4 }, { trust: 10, aff: 4 }); ctx.stress(a, -6); ctx.stress(b, -6); return { text: fill(ctx.pick(T.closeBack), m2(a, b, ctx)), why: '親友のような{sibs}の連携（危険度 ' + Math.round(danger(ctx, a)) + '）', mag: 14 }; } });
 
   /* ---------- 恋愛相手の固定 ---------- */
   add({ id: 'zr_lrefuse', cat: 'romance', scope: 'pair',
@@ -159,7 +159,7 @@
       pf.owe = repay ? null : b.i;
       if (b.z.food <= 0 && a.z.food > 1) { a.z.food--; b.z.food++; } b.hp = Math.min(100, b.hp + 5); ctx.stress(b, -10);
       ctx.mod2(a, b, { trust: 8, aff: 5 }, { trust: 8, aff: 5 });
-      return { text: fill(ctx.pick(repay ? GUARD.repay : GUARD.help), { a: a.name, b: b.name }), why: repay ? a.name + 'が' + b.name + 'に借りを返した（親友のようなきょうだいは、守り合う）' : a.name + 'が' + b.name + 'を支えた（今度は' + b.name + 'が返す番）' };
+      return { text: fill(ctx.pick(repay ? GUARD.repay : GUARD.help), { a: a.name, b: b.name }), why: repay ? a.name + 'が' + b.name + 'に借りを返した（親友のような{sibs}は、守り合う）' : a.name + 'が' + b.name + 'を支えた（今度は' + b.name + 'が返す番）' };
     } });
   RK.mourn(Z.scen, MOURN, 'zr');
 })();

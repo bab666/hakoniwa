@@ -487,6 +487,15 @@
   function charOpts(sel) {
     return S.chars.map(function (c) { return '<option value="' + c.id + '"' + (c.id === sel ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('');
   }
+  /* きょうだいの関係の行：二人の続柄（「美咲（姉）→ 健（弟）：兄弟（庇護）」）と注意（年齢が未設定・同じ年齢・庇護の向きと年齢が逆）を添える（sib-word.js） */
+  function sibText(t) {
+    if (!HK.Sib || !HK.Sib.ui || !HK.tieText || !(HK.Sib.isSibTie(t) || t.type === 'stepsib')) return '';
+    var byId = function (id) { return S.chars.filter(function (c) { return c.id === id; })[0] || null; };
+    var A = byId(t.a), B = byId(t.b);
+    if (!A || !B) return '';
+    var tx = HK.tieText(t, function (id) { var c = byId(id); return c ? c.name : ''; }, byId), u = HK.Sib.ui(A, B, t);
+    return '<b>' + esc(tx) + '</b>。' + (u && u.notes.length ? esc(u.notes.join('。')) + '。' : '');
+  }
   function tiesSection() {
     cleanTies();
     var rows = S.ties.map(function (t, k) {
@@ -505,7 +514,7 @@
           return '<select id="tx' + x.f + '-' + k + '" data-f="tie" data-k="' + k + '" data-p="' + x.f + '" aria-label="' + esc(who ? who.name + 'の気持ち' : x.aria) + '">' + x.order.map(function (id) { return '<option value="' + id + '"' + (v === id ? ' selected' : '') + '>' + esc((who ? who.name + 'の気持ち：' : '') + (HK.tieExtraLabel ? HK.tieExtraLabel(x, id, na, nb) : x.map[id].label)) + '</option>'; }).join('') + '</select>';
         }).join('') +
         '<button class="btn ghost small" data-act="tiedel" data-k="' + k + '">削除</button>' +
-        '<span class="tiehint">' + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (D.loveOpt ? (t.love === 'ok' ? '。恋愛に発展：するにしているので、想いが恋に変わることもある' : '。恋愛に発展：しないにしているので、想いは恋にならない') : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '') + '</span></div>';
+        '<span class="tiehint">' + sibText(t) + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (D.loveOpt ? (t.love === 'ok' ? '。恋愛に発展：するにしているので、想いが恋に変わることもある' : '。恋愛に発展：しないにしているので、想いは恋にならない') : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '') + '</span></div>';
     }).join('');
     return '<h2 class="sec">住人どうしの既存の関係' + (HK.Tips ? HK.Tips.btn('ties') : '') + '</h2>' +
       '<p class="hint">箱庭に入る前からある関係です。初期の好意や信頼が変わり、行動の傾向にも補正がかかります。各住人の ⚙️ 設定からも編集できます。</p>' +

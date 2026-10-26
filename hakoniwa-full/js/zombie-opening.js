@@ -117,7 +117,7 @@
         var p = B.pairs[0];
         var known = HK.Ties && HK.Ties.get(ctx, p[0], p[1]);
         t = f(ctx.pick(known ? PACTK : PACT2), { a: p[0].name, b: p[1].name, w: wname(p[0]) });
-        if (known) why = 'もともと知った仲（' + (HK.TIES && HK.TIES[known.like || known.type] ? HK.TIES[known.like || known.type].label : '知り合い') + '）。同じ' + an(ctx, +k) + 'で合流した';
+        if (known) why = 'もともと知った仲（' + (HK.Sib && HK.Sib.isSibTie(known) && HK.tieLabel ? HK.tieLabel(known) : HK.TIES && HK.TIES[known.like || known.type] ? HK.TIES[known.like || known.type].label : '知り合い') + '）。同じ' + an(ctx, +k) + 'で合流した';
       } else {
         var lead = ctx.most(g, function (c) { return c.tr.lead; });
         t = f(ctx.pick(PACTG), { g: names(g), lead: lead.name, area: an(ctx, +k) });

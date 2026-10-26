@@ -208,7 +208,10 @@
         var bt = b.eg && HK.egoType ? HK.egoType(b.eg).top : '';
         if (VA.KIN_REACT && VA.KIN_REACT[bt] && rng() < 0.6) tx += ST.fmt(pkv(VA.KIN_REACT[bt]), { a: a.name, b: b.name, mc: mc });
         if (kinBlock(a, b) && VA.INTRO_KIN_NOTE) tx += ST.fmt(pkv(VA.INTRO_KIN_NOTE), { a: a.name, b: b.name, mc: mc });
-        sayV({ actors: [a, b], tag: D.label + 'で出演', text: tx, why: '関係「' + D.label + '」の二人が出演' + (kinBlock(a, b) ? '（血縁なので、二人を組ませる企画はない）' : ''), mag: 16 });
+        /* 関係の表示名は、きょうだいなら二人の性別・年齢で「姉弟」など（HK.tieLabel）。続柄の印は sib-word.js で解く */
+        var lb = HK.tieLabel ? HK.tieLabel(t) || D.label : D.label;
+        if (HK.Sib) tx = HK.Sib.fill(tx, a, b, null, S);
+        sayV({ actors: [a, b], tag: lb + 'で出演', text: tx, why: '関係「' + lb + '」の二人が出演' + (kinBlock(a, b) ? '（血縁なので、二人を組ませる企画はない）' : ''), mag: 16 });
       }); });
     }
     intro.forEach(function (p) {
