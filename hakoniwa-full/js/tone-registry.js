@@ -81,7 +81,7 @@
     otaku: { label: '男オタク（〜ですぞ）', desc: '「それは聞いていませんぞ」「なんと！」「感謝ですぞ」。丁寧だけど独特の語尾で話す、オタクの話し方。一人称は「拙者」。文面は敬語のものを使う', base: 'polite', top: 'FC', fp: { m: '拙者', f: '私', x: '拙者' }, group: 'polite', dictOnly: true, reluct: -0.05,
       axis: { polite: 2, attitude: 'free', ending: 'm' } },
     tsun_soft: { label: '意地っ張り（柔らかい語尾）', desc: '「聞いてないけど……」「何とかなるよ……」「……ありがと、ね」。意地っ張りの当たりを柔らかくした話し方。文面は意地っ張りのものを使う', base: 'tsun', top: 'CP', fp: { m: '俺', f: '私', x: '私' }, dictOnly: true, reluct: 0.12 },
-    keigo_twist: { label: 'ひねくれ敬語（〜ですけどね）', desc: '「何とかなりますけどね」「まあ、大丈夫ですよ、一応」「大したものですね」。敬語は崩さず、「けど」「まあ」で捻る話し方。文面は敬語のものを使う', base: 'polite', top: 'A', fp: { m: '私', f: '私', x: '私' }, group: 'polite', dictOnly: true, reluct: 0.1 },
+    keigo_twist: { label: 'ひねくれ敬語（〜ですけどね）', desc: '「へえ、それは聞いていませんが」「まあ、本当に助かりましたけどね」「何とかなるんじゃないですか？」。敬語は崩さず、丁寧なまま冷ややかに捻る話し方。「〜けどね」は台詞の締めに時々、ほかは「〜ませんが」「〜ですよ？」の皮肉と「まあ、」「へえ、」の前置き。文面は敬語のものを使う', base: 'polite', top: 'A', fp: { m: '私', f: '私', x: '私' }, group: 'polite', dictOnly: true, reluct: 0.1 },
     mukuchi_ne: { label: '無口（……だね）', desc: '「え……それ聞いてない」「……無理はしなくていいよ」「……本当だね」。ほとんど喋らず、話してもひと言だけ。無口と違って、元の「よ」「ね」「だね」が残る、少しやさしい話し方。態度はエゴグラムから決まる', base: null, top: null, egoTable: true, group: 'soft', dictOnly: true, reluct: 0.12 },
     ronkyaku: { label: '冷徹な論客（〜なのだよ）', desc: '「フッ……。相変わらず、キミの理屈は破綻しているな」「何とかなるのだよ」。冷静沈着で論理的、プライドが高く慇懃無礼。めったに取り乱さないが、崩れると「バカな……！」。二人称は「キミ」。文面は厳格のものを使う', base: 'stern', top: 'A', fp: { m: '私', f: '私', x: '私' }, firm: 'plain', dictOnly: true, reluct: 0.1,
       axis: { polite: 0, attitude: 'proud', ending: 'm' } },
