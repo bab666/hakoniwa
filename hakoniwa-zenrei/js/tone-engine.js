@@ -219,9 +219,9 @@
       if (r.copula) body = ruleCopula(body, r.copula);
       if (r.drop) body = ruleDrop(body, r.drop, seed + i);
       /* 文末 */
+      var punct = s.punct;
       if (d.ends && d.ends.length) {
         var st = splitTail(body), core = st[0];
-        var punct = s.punct;
         if (core.slice(-1) !== MARK) for (var j = 0; j < d.ends.length; j++) {
           var e = d.ends[j], from = e[0], qm = /[？?]$/.test(from);
           /* 「ません？=ませんこと？」のように ？ 付きの項目は、文末記号ごと見る */
@@ -262,7 +262,8 @@
   /* ---------- 辞書の文字列を読む ---------- */
   var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '強調語の割合': 'emphRate', '存在': 'exist' };
   var FX_KEYS = { '感嘆符を落とす': 'bangOff', '伸ばす': 'stretch', '言い切りに！': 'bangOn', '言い切りに!': 'bangOn', '短くする': 'short', '言いよどみ': 'stammer', '前に……': 'dots', '間を置く': 'pause' };
-  function alts(v) { return String(v).split(/[／/]/).map(function (x) { return x.replace(/^\s+|\s+$/g, ''); }).filter(function (x, i, a) { return x !== '' || a.length === 1; }); }
+  /* 「元=先1／先2」の候補。空の候補（「です(い)=／です」の左側）は「消す」の意味で残す */
+  function alts(v) { return String(v).split(/[／/]/).map(function (x) { return x.replace(/^\s+|\s+$/g, ''); }); }
   /* 文字列 → { dicts: { 鍵: 辞書 }, errors } */
   T.parse = function (text, userMode) {
     var out = { dicts: {}, errors: [] }, cur = null, sec = null, n = 0;
