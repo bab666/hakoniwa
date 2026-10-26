@@ -293,23 +293,35 @@
      ・地の文は句点で区切って、だいたい2〜3文（60〜110字）ごとに改行する
      ・もとから改行のある文（段落に分けた山場）は、段落の形は変えず、台詞だけを独立させる
      names：登場人物の名前の一覧（台詞の話者の判定に使う。名前の直後の「 だけを台詞とみなす） */
-  HK.fmtLong = function (text, names) {
-    var s = String(text == null ? '' : text);
-    if (s.length < 140 || !/[。！？」]/.test(s)) return s;
+  /* 長い文の台詞の塊：文頭か句点・閉じ括弧・ダッシュのあとに続く 名前「…」（「…」が続けて並ぶものも一つ）と、文頭の「…」。
+     塊の前後に印 TK を入れた行を返す。voice-seg.js（HK.Seg）も同じ関数で seg の塊（h）を決めるので、seg からの改行と結果が同じになる */
+  HK.fmtSpeech = function (names) {
     var nm = (names || []).filter(Boolean).map(String).sort(function (a, b) { return b.length - a.length; });
     var NAME = nm.length ? '(?:' + nm.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')' : null;
-    /* 台詞の塊：文頭か句点・閉じ括弧・ダッシュのあとに続く 名前「…」（「…」が続けて並ぶものも一つ） */
-    var SPEECH = NAME ? new RegExp('(^|[。！？」）\\s―…])(' + NAME + '(?:「[^「」]*」)+)(?!と|って|、と|など)', 'g') : null;
-    var LONE = /(^|[。！？」）\s―…])((?:「[^「」]*」)+)(?=$|[^と、っな])/g;
+    return {
+      key: nm.join('\u0001'),
+      SPEECH: NAME ? new RegExp('(^|[。！？」）\\s―…])(' + NAME + '(?:「[^「」]*」)+)(?!と|って|、と|など)', 'g') : null,
+      LONE: /(^|[。！？」）\s―…])((?:「[^「」]*」)+)(?=$|[^と、っな])/g
+    };
+  };
+  HK.fmtMarkLine = function (line, R, TK) {
+    var marked = line;
+    if (R.SPEECH) marked = marked.replace(R.SPEECH, function (m, pre, sp) { return pre + TK + sp + TK; });
+    return marked.replace(R.LONE, function (m, pre, sp) { return pre + TK + sp + TK; });
+  };
+  /* seg（voice-seg.js の e.seg）を渡すと、塊を seg から取る（名前の並びが seg を作ったときと同じで、文が変わっていないときだけ） */
+  HK.fmtLong = function (text, names, seg) {
+    var s = String(text == null ? '' : text);
+    if (s.length < 140 || !/[。！？」]/.test(s)) return s;
+    var R = HK.fmtSpeech(names);
     var hadNL = /\n/.test(s);
     var TK = '\u0000';
-    var out = s.split(/\n+/).map(function (line) {
+    var fromSeg = seg && seg.blk && seg.nk === R.key && HK.Seg && HK.Seg.text(seg) === s ? HK.Seg.markTK(seg, TK).split(/\n+/) : null;
+    var out = (fromSeg || s.split(/\n+/)).map(function (line) {
       line = line.trim();
       if (!line) return '';
       var blocks = [];
-      var marked = line;
-      if (SPEECH) marked = marked.replace(SPEECH, function (m, pre, sp) { return pre + TK + sp + TK; });
-      marked = marked.replace(LONE, function (m, pre, sp) { return pre + TK + sp + TK; });
+      var marked = fromSeg ? line : HK.fmtMarkLine(line, R, TK);
       marked.split(TK).forEach(function (seg, k) {
         seg = seg.replace(/^\s+|\s+$/g, '');
         if (!seg) return;
@@ -4850,7 +4862,18 @@
    シミュレーションの結果テキストを最後に一度だけ見直し、台詞（「」）ごとに話し手を判定して、
    ・一人称を、その人の一人称（設定がなければ口調と性別から決まるもの）にそろえる
    ・口調が「敬語」の人の台詞を、です・ます調に整える
-   すべての箱庭で共通に使う（HK.simulate の結果に対して適用） */
+   すべての箱庭で共通に使う（HK.simulate の結果に対して適用）
+
+   ■ 台詞の区分（seg）
+   processText は、結果の記録（log）を整えるとき（V._segBuf が配列のとき）、いちばん外側の「」ごとに
+   区分と話し手を V._segBuf に積む。voice-seg.js（HK.Seg）が、ほかの仕上げがすべて終わったあとで、それを記録の e.seg
+   （[{t:'n', s:地の文}, {t:'l', who:住人の番号, s:'名前「台詞」'}, …]）にまとめる。区分は
+     l 台詞行（文の頭か、名前「 の直後。話し手あり）／q 地の文に埋まった発話（話し手あり）／c 名詞の引用（「〜」という話・札の文字。口調を変えない）／
+     m 喘ぎ・モブ（「 の頭の \u2060 の印、または前の文の主語が住人以外）／u 話し手が決まらない発話
+   ■ ソースで話し手をはっきりさせる目印（推定が誤る文だけに使う。画面には残らない）
+     「＠{a}＠台詞」 … 話し手を {a}（住人の名前）に固定する（3本の台詞でも、頭に ＠{a}＠ を付ければよい）
+     「＠＠題名」     … 名詞の引用（区分 c。話し手なし、口調を変えない）
+     「＠台詞」       … これまでどおり、話し手なし（モブ・喘ぎ。区分 m。solo-story-kit.js などが \u2060 に置き換える） */
 (function () {
   'use strict';
   var HK = window.HK, V = HK.Voice = HK.Voice || {};
@@ -5250,7 +5273,9 @@
         /* 「〇〇の声が」「〇〇の残したメモには」のような所有の形も、話し手として扱う */
         /* 「〇〇の静かな声が」「〇〇の甘い囁きが」のように、声の前に短い飾りがついていても話し手 */
         var poss = nx === 'の' && (/^の(?:声|口|唇|喉|残した|書き残した|書いた|メモ|手紙|字|書き置き|置き手紙)/.test(span.slice(at + p.name.length)) || /^の[^、。「」\s]{1,8}?(?:声|囁き|ささやき)(?:が|で|は)/.test(span.slice(at + p.name.length)));
-        if (/[はがも「、]/.test(nx) || endHere || poss) {
+        /* 「〇〇（名探偵）は」：名前のあとの役割の括弧は飛ばす。「〇〇の「……」」：名前の直後の「の」で台詞が続く形も話し手 */
+        var role = nx === '（' && /^（[^）「」]{1,12}）[はがも、「]/.test(span.slice(at + p.name.length)), ofQ = nx === 'の' && !span.slice(at + p.name.length + 1).trim();
+        if (/[はがも「、]/.test(nx) || endHere || poss || role || ofQ) {
           /* 「AはBが果てそうになるたびに、「……」」の B は従属節の主語。前に「Aは」があれば A を話し手にする */
           if (best && nx === 'が' && span.charAt(bp + best.name.length) === 'は' && /^が[^、。「」]{0,20}(?:たびに|たび、|ときに|とき、|うちに|間に|あいだ)/.test(span.slice(at + p.name.length))) continue;
           if (at > bp || (at === bp && best && p.name.length > best.name.length)) { bp = at; best = p; }
@@ -5275,7 +5300,32 @@
   }
   /* 「〇〇は△△に「……」と言われて」の受け身：話し手は「に」「から」の人 */
   var PASSIVE = /^(?:と|って)(?:言われ|頼まれ|告げられ|聞かれ|訊かれ|尋ねられ|返され|囁かれ|呼ばれ|叱られ|笑われ|促され|詰め寄られ|泣きつかれ|せがまれ|ねだられ|怒鳴られ|注意され|誘われ|誤魔化され|ごまかされ)/;
+  /* 住人以外の人物（村の年寄り・無口な職人・喋る猫・魔術師…）を表す語の終わり */
+  var PERSON_END = /(?:人|者|員|師|長|主|客|家|官|士|婆|爺|娘|男|女|猫|さん|様|殿|神|鬼|獣|先生|先輩|後輩|医|僧|兵|年寄り|少年|少女|子ども|子供|童|幽霊|悪魔|ゴブリン|オーク|スライム|マスター|オーナー|ママ|運転手|マン|女将|宮司|巫女|伯爵|衆|司会|スタッフ|セラピスト|メイド|執事|若頭|探偵|刑事|弟子|インキュバス|サキュバス|の子)$/;
+  var NOT_MOB = /(?:^|[^ぁ-んァ-ヶ一-鿿])?(?:一人|二人|三人|四人|五人|本人|他人|大人|恋人|住人|一同|彼女|彼|皆|全員|みんな)$/;
+  /* 人のしぐさ・話す動詞で終わる文（「〜が手招きした」「〜は弟子たちに命じた」） */
+  var ACT_END = /(?:言[っいうわえ]|囁[いか]|告げ|訊[いか]|尋ね|答え|呟[いか]|促[しさ]|声をかけ|教え|叫[んば]|笑[っいうわ]|怒鳴|呼びかけ|話しかけ|命じ|手招き|読み上げ|頷[いか]|うなず|撫で|差し出|取り出|振り返|微笑[んみ]|指さ|指差|呼び止め|現れ|近づ|立ちはだか|鼻を鳴ら|舌なめずり|口を開|切り出|割り込|覗き込|顔を出|勧め|入ってき|やってき|頭を下げ|会釈)[^。、「」]{0,10}$/;
+  function isMobWord(x, people) { return !!x && !people.some(function (p) { return p.name && x.indexOf(p.name) >= 0; }) && !NOT_MOB.test(x); }
+  /* 文の主語が住人以外の人物か（「村の年寄りたちが、一行を集会所へ手招きした」「売れないバンドマンの方から〜に声をかけてきた」） */
+  function mobSubj(sen, people) {
+    var m = sen.match(/([^\s、。「」をにでとへはが]{1,14}?)(?:たち|ら|達)?(?:は|が|の方から)(?!ら)/);
+    if (!m || !isMobWord(m[1], people) || people.some(function (p) { return p.name && sen.slice(0, m.index).indexOf(p.name) >= 0; })) return false;
+    /* 「拡声器の声がした」「村長の声が響いた」：住人でない人の声 */
+    return PERSON_END.test(m[1]) || ACT_END.test(sen) || /^[^、。「」\s]{1,10}の声$/.test(m[1]);
+  }
+  V.mobSubj = mobSubj;
+  /* 台詞らしい言い方か（題名・名詞の引用と分ける） */
+  function speechy(q) {
+    q = String(q || '').replace(/[\u2060-\u2064]/g, '');
+    return /[。！？!?…‥、♡っ]/.test(q) || /[ぁ-ん][ー〜～]+$/.test(q) || /(?:よ|ね|な|わ|ぞ|ぜ|さ|か|の|て|で|た|だ|い|う|く|ぐ|す|つ|ぬ|ぶ|む|る|ん|ろ|れ|え|け|や|ば|も|ら|り|じゃん)$/.test(q);
+  }
+  V.speechy = speechy;
+  /* 「……」のあとが話す動詞（「と告げた」「と言った」）か */
+  var SAID_AFTER = /^(?:と|って)、?(?:言|呟|囁|叫|漏ら|こぼ|返|答え|告げ|続け|付け足|付け加え|言い切|言い放|吐き捨て|口にし|ぼや|訊|尋ね|宣言|報告|促|呼びかけ)/;
+  /* speakerOf が「住人以外の人物の台詞」と見て null を返したとき true（区分 m。voice-seg.js） */
+  var spMob = false;
   function speakerOf(text, s, e, people) {
+    spMob = false;
     var seg = text.slice(0, s), cut = lastBound(seg), span = seg.slice(cut);
     if (PASSIVE.test(text.slice(e, e + 16))) {
       var pas = null, pp = -1, where = span.trim() ? span : seg.slice(lastBound(seg.slice(0, Math.max(0, cut - 1))), cut);
@@ -5284,11 +5334,18 @@
     }
     var w = subjectIn(span, people);
     if (w) return w;
+    /* 主語のない節（「〇〇は〜。それから口を開けて中を見せ、「27mlでした」と告げた」）：直前の文の主語が話し手（住人以外の人物なら話し手なし） */
+    if (/、\s*$/.test(span) && !/[はがも]/.test(span) && SAID_AFTER.test(text.slice(e, e + 12)) && cut > 0 && /。$/.test(seg.slice(0, cut))) {
+      var pv0 = seg.slice(0, cut - 1), pl0 = pv0.slice(lastBound(pv0));
+      if (mobSpoke(pl0, people) || mobSubj(pl0, people)) { spMob = true; return null; }
+      var ps0 = subjectIn(pl0, people);
+      if (ps0) return ps0;
+    }
     if (!span.trim()) {
       var after = text.slice(e, e + 30), hit = null, quoted = /^(?:と|って)/.test(after);
       people.forEach(function (p) {
         if (!p.name) return;
-        var re = new RegExp('^(?:――|と|って)?' + p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:は|が|の|も|、|。)');
+        var re = new RegExp('^(?:――|と、?|って、?)?' + p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:は|が|の|も|、|。)');
         if (re.test(after) && (!hit || p.name.length > hit.name.length)) hit = p;
       });
       /* 「……」と言いかけた〇〇の袖を／「……」と呟いた〇〇は：話す動詞のすぐあとの住人が話し手 */
@@ -5305,16 +5362,18 @@
       if (hit && !quoted && cut > 0 && /。$/.test(seg.slice(0, cut))) {
         var pv = seg.slice(0, cut - 1), pvl = pv.slice(lastBound(pv)), pvs = subjectIn(pvl, people);
         /* 「〇〇が話しかけると、村の子どもがこっそり教えてくれた。「……」」は住人以外の台詞 */
-        if (mobSpoke(pvl, people)) return null;
+        if (mobSpoke(pvl, people)) { spMob = true; return null; }
         if (pvs) return pvs;
+        /* 直前の文の主語が住人以外の人物（「村の年寄りたちが、一行を手招きした。「……」アキラは」「〜の方から声をかけてきた。「……」」） */
+        if (mobSubj(pvl, people)) { spMob = true; return null; }
         /* 直前の文の主語が住人以外（「ゴブリンが賭場を開いていた。「……」」）なら、その人物の台詞。住人の口調にはしない */
         /* 「店長はタオルを畳み直して、静かに言った。「……」――〇〇は」も、住人以外の人物の台詞 */
-        if (!/^(?:二人|三人|四人|みんな|全員|皆|彼ら|彼女ら)/.test(pvl) && /^[^、。「」\s]{1,10}[はが][^「」]*(?:言|囁|告げ|訊|尋ね|答え|呟|続け|促|声をかけ)(?:った|いた|げた|ねた|えた|けた|た|んだ)$/.test(pvl)) return null;
-        if (/(^|、)[^、。「」\s]{1,10}が[^、。「」]*(た|ている|ていた|る|だ)$/.test(pvl) && !/(声|音|風|雨|扉|戸|鍵|灯り|明かり|電気|時計|水|火|鐘)が/.test(pvl)) return null;
+        if (!/^(?:二人|三人|四人|みんな|全員|皆|彼ら|彼女ら)/.test(pvl) && /^[^、。「」\s]{1,10}[はが][^「」]*(?:言|囁|告げ|訊|尋ね|答え|呟|続け|促|声をかけ)(?:った|いた|げた|ねた|えた|けた|た|んだ)$/.test(pvl)) { spMob = true; return null; }
+        if (/(^|、)[^、。「」\s]{1,10}が[^、。「」]*(た|ている|ていた|る|だ)$/.test(pvl) && !/(声|音|風|雨|扉|戸|鍵|灯り|明かり|電気|時計|水|火|鐘)が/.test(pvl)) { spMob = true; return null; }
       }
       if (hit) return hit;
-      /* 「……」と言いながら、〇〇は／「……」と呟いて、〇〇が */
-      var am = after.length ? text.slice(e, e + 50).match(/^と(?:言|呟|囁|叫|笑|漏ら|こぼ|返|答え|喘|甘え|ねだ|せが|懇願)[^。「」、]{0,10}、/) : null;
+      /* 「……」と言いながら、〇〇は／「……」と呟いて、〇〇が／「……」と小さく呟いて、〇〇は */
+      var am = after.length ? text.slice(e, e + 50).match(/^と[^。「」、]{0,6}?(?:言|呟|囁|叫|笑|漏ら|こぼ|返|答え|喘|甘え|ねだ|せが|懇願)[^。「」、]{0,10}、/) : null;
       if (am) {
         var rest = text.slice(e + am[0].length, e + am[0].length + 20);
         people.forEach(function (p) {
@@ -5322,11 +5381,16 @@
         });
         if (hit) return hit;
       }
+      /* 「……」と村人が言った：と・って のすぐあとの主語が住人以外の人物なら、その人物の台詞 */
+      var ms = after.match(/^(?:と|って)、?([^、。「」\s]{1,14}?)(?:たち|ら|達)?(?:が|は)/);
+      if (ms && isMobWord(ms[1], people) && (PERSON_END.test(ms[1]) || ms[1] === '誰か')) { spMob = true; return null; }
       /* 直前の文の主語（「〇〇は震える声で訊いた。「……」」）。最後の節の主語が住人以外（「村の子どもが教えてくれた」）なら住人の台詞にしない */
       if (cut > 0 && /。$/.test(seg.slice(0, cut))) {
         var prev = seg.slice(0, cut - 1), pc = lastBound(prev), pl = prev.slice(pc);
-        if (mobSpoke(pl, people)) return null;
-        return subjectIn(pl, people);
+        if (mobSpoke(pl, people)) { spMob = true; return null; }
+        var ps1 = subjectIn(pl, people);
+        if (!ps1 && mobSubj(pl, people)) spMob = true;
+        return ps1;
       }
     }
     return null;
@@ -5384,12 +5448,62 @@
     return !!(older && to.age > who.age);
   }
 
+  /* ---------- 台詞の区分（seg）の部品 ---------- */
+  /* 「〜」のあとがこの形なら名詞の引用（「〜」という話・「〜」と書いた札）。話し手の言葉ではないので、口調を変えない */
+  var NOUN_AFTER = /^(?:を|の|に|が|へ|や|という|って書|と書|とある|と記|と刻|と彫|と印|と読め|と名[づ付]け|と呼(?!び止|びかけ|びとめ))/;
+  /* text の start（「）〜i（」）の台詞 q が名詞の引用か。who は判定した話し手（なければ null） */
+  function nounQOf(text, start, i, q, who) {
+    var post = text.slice(i + 1, i + 9);
+    var nq = NOUN_AFTER.test(post) ||
+      /* 「引いたのは「人妻と配達員」だった」のような題名も台詞ではない */
+      (/^だ/.test(post) && /(?:のは|お題は|テーマは|題名は|企画は)$/.test(text.slice(Math.max(0, start - 6), start))) ||
+      /* 「〜」だと／「〜交換会」で（台詞らしくない言い方の題名・名前） */
+      (/^だと/.test(post) && !/[。！？!?]$/.test(q)) || (/^(?:で(?![すし])|だ|です|。)/.test(post) && !speechy(q));
+    /* 「ありがとう」を連発・「好き」を繰り返す：口にした言葉は台詞 */
+    if (nq && /^を(?:連発|繰り返|何度も|口に|呟|叫)/.test(post) && speechy(q)) nq = false;
+    /* 「ミナトの「大丈夫？」に、」：名前の「……」は、その人の台詞 */
+    if (nq && who && who.name && text.slice(Math.max(0, start - who.name.length - 1), start) === who.name + 'の' && speechy(q)) nq = false;
+    /* 「ミナト「お加減はいかがですか。強さを調整いたしますね」のぼせた〜」：話し手の名前のすぐ後の、言い切った台詞は台詞（後ろの「の」は地の文） */
+    if (nq && who && who.name && text.slice(Math.max(0, start - who.name.length), start) === who.name && (/。/.test(q) || /(?:ね|よ|か|わ|ぞ|ぜ|な|です|ます|ください|[！？!?])$/.test(q))) nq = false;
+    /* 「『12ml。採取完了です』と記録した」：読み上げながら記録する台詞（言い切りのあるもの）は台詞として言い換える */
+    if (nq && /^と(?:記録|報告|告げ|宣言|読み上げ|書きつけ)/.test(text.slice(i + 1, i + 8)) && /(。|です|ます|だ|よ|ね|ました)$/.test(q)) nq = false;
+    return nq;
+  }
+  /* 「 の直前にある住人の名前（いちばん長いもの）の番号。なければ -1 */
+  function nameBefore(text, start, people) {
+    var hit = -1;
+    people.forEach(function (p, k) { if (p.name && text.slice(Math.max(0, start - p.name.length), start) === p.name && (hit < 0 || p.name.length > people[hit].name.length)) hit = k; });
+    return hit;
+  }
+  /* 目印「＠名前＠台詞」「＠＠題名」（\u2060 に置き換わったものも）を読む。目印でなければ null。
+     名前が住人なら話し手をその人に固定（k:'s'）、住人でない名前（モブ）なら話し手なし（\u2060 の印を残す）、空なら名詞の引用（k:'c'） */
+  function marked(q, people) {
+    var c0 = q.charAt(0);
+    if (c0 !== '＠' && c0 !== '\u2060') return null;
+    var m = q.match(/^[＠\u2060]([^＠「」｜。、！？\s]{0,16})＠/);
+    if (!m) return c0 === '＠' ? { q: '\u2060' + q.slice(1), who: null, k: 'm' } : null;
+    if (!m[1]) return { q: q.slice(m[0].length), who: null, k: 'c' };
+    var nm = m[1].replace(/\u2064/g, ''), who = null;
+    people.forEach(function (p) { if (p.name && p.name.replace(/\u2064/g, '') === nm) who = p; });
+    return who ? { q: q.slice(m[0].length), who: who, k: 's' } : { q: '\u2060' + q.slice(m[0].length), who: null, k: 'm' };
+  }
+  /* できあがった文の「」（start〜i）の区分と話し手を、文だけから決める（保存から開いた記録の seg を作り直すとき。voice-seg.js の HK.Seg.of） */
+  V.quoteKind = function (text, start, i, people) {
+    var q = text.slice(start + 1, i);
+    if (q.charAt(0) === '\u2060') return { k: 'm', w: nameBefore(text, start, people) };
+    var who = speakerOf(text, start, i + 1, people);
+    if (!who) return { k: spMob ? 'm' : nounQOf(text, start, i, q, null) ? 'c' : 'u', w: -1 };
+    return { k: nounQOf(text, start, i, q, who) ? 'c' : 's', w: people.indexOf(who) };
+  };
+  V.speakerOf = speakerOf;
+  V.nounQOf = nounQOf;
+
   /* people: [{name, fp, tone, persona, gender, keigo}]。actors（任意）はその出来事の登場人物
      台詞の頭の \u2062 は「書き下ろしの敬語の行（tone-lines.js）」。言い換えず、一人称と呼び方だけそろえる */
   V.processText = function (text, people, actors) {
     if (typeof text === 'string' && text.indexOf('\u2062') >= 0 && (text.indexOf('「') < 0 || !people || !people.length)) text = text.replace(/\u2062/g, '');
     if (!text || typeof text !== 'string' || (text.indexOf('「') < 0 && text.indexOf('（') < 0) || !people || !people.length) return text;
-    var out = '', last = 0, depth = 0, start = -1;
+    var out = '', last = 0, depth = 0, start = -1, rec = Array.isArray(V._segBuf) ? V._segBuf : null;
     for (var i = 0; i < text.length; i++) {
       var ch = text[i];
       if (ch === '（' && depth === 0) {
@@ -5406,17 +5520,18 @@
       else if (ch === '」' && depth > 0) {
         depth--;
         if (depth === 0 && start >= 0) {
-          var q = text.slice(start + 1, i), who = q.charAt(0) === '\u2060' ? null : speakerOf(text, start, i + 1, people);
+          var q = text.slice(start + 1, i), fix = marked(q, people);
+          if (fix) q = fix.q;
+          var who = fix ? fix.who : q.charAt(0) === '\u2060' ? null : speakerOf(text, start, i + 1, people);
+          /* 区分（seg）：s 話し手のある発話（l・q は voice-seg.js が文の形で分ける）／c 名詞の引用／m 喘ぎ・モブ／u 話し手が決まらない */
+          var kind = fix ? fix.k : q.charAt(0) === '\u2060' ? 'm' : who ? 's' : spMob ? 'm' : nounQOf(text, start, i, q, null) ? 'c' : 'u';
           if (!who && q.indexOf('｜') >= 0 && HK.Tone && HK.Tone.split) q = (HK.Tone.split(q) || { K: q }).K;
           if (who) {
             var q0 = q;
-            var nounQ = /^(?:を|の|に|が|へ|や|という|って書|と書|とある|と記|と刻|と彫|と印|と読め)/.test(text.slice(i + 1, i + 4)) ||
-              /* 「引いたのは「人妻と配達員」だった」のような題名も台詞ではない */
-              (/^だ/.test(text.slice(i + 1, i + 2)) && /(?:のは|お題は|テーマは|題名は|企画は)$/.test(text.slice(Math.max(0, start - 6), start)));
-            /* 「ミナト「お加減はいかがですか。強さを調整いたしますね」のぼせた〜」：話し手の名前のすぐ後の、言い切った台詞は台詞（後ろの「の」は地の文） */
-            if (nounQ && who && who.name && text.slice(Math.max(0, start - who.name.length), start) === who.name && (/。/.test(q) || /(?:ね|よ|か|わ|ぞ|ぜ|な|です|ます|ください|[！？!?])$/.test(q))) nounQ = false;
-            /* 「『12ml。採取完了です』と記録した」：読み上げながら記録する台詞（言い切りのあるもの）は台詞として言い換える */
-            if (nounQ && /^と(?:記録|報告|告げ|宣言|読み上げ|書きつけ)/.test(text.slice(i + 1, i + 8)) && /(。|です|ます|だ|よ|ね|ました)$/.test(q)) nounQ = false;
+            var nounQ = !fix && nounQOf(text, start, i, q, who);
+            if (nounQ) kind = 'c';
+            /* いま整えている台詞の区分（点検の道具 collect.js が読む） */
+            V._qKind = kind;
             /* 口調ごとの書き下ろし（voice-override.js）があれば、自動の言い換えより優先する */
             /* 敬語で話す相手への台詞：書き下ろしの敬語の行はそのまま、それ以外は敬語に言い換える */
             var pre = q.charAt(0) === '\u2062';
@@ -5475,6 +5590,7 @@
             if (sv1) { who.fp = sv1.fp; who.you = sv1.you; }
           }
           q = q.replace(/([！？!?])。/g, '$1');   /* 「ごめんごめん！。」のような重なりを整える */
+          if (rec) rec.push({ k: kind, w: who ? people.indexOf(who) : kind === 'm' ? nameBefore(text, start, people) : -1 });
           out += text.slice(last, start + 1) + q + '」';
           last = i + 1; start = -1;
         }
@@ -5533,7 +5649,13 @@
     var f = function (t, ac) { return V.processText(t, people, ac); };
     /* 描写の作風「男性向け」（ero-kit.js）の結果では、はっきりした口調でも♡を残す（tone-firm.js） */
     V._keepHeart = !HK.SAFE_ON && !!(input.env && input.env.style === 'ero');
-    (res.log || []).forEach(function (e) { if (e && typeof e.text === 'string') e.text = V.nestQuote(f(e.text, e.actors)); });
+    /* 記録ごとに、「」の区分と話し手を V._segBuf に集め、voice-seg.js（HK.Seg.keep）に渡す（e.seg は、ほかの仕上げがすべて済んでから作る） */
+    (res.log || []).forEach(function (e) {
+      if (!e || typeof e.text !== 'string') return;
+      var buf = V._segBuf = [];
+      try { e.text = V.nestQuote(f(e.text, e.actors)); } finally { V._segBuf = null; }
+      if (HK.Seg && HK.Seg.keep) HK.Seg.keep(e, buf);
+    });
     var E = res.ending || res.end;
     if (E) {
       if (Array.isArray(E.lines)) E.lines = E.lines.map(function (l) { return typeof l === 'string' ? f(l) : l; });
@@ -7611,19 +7733,34 @@
     add('じゃん', NOUN_DA, p.n, true);
     return out;
   }
+  /* 問いの「〜た？」：漢字一字の語幹（寝た・見た・来た・出た）も過去として拾う */
+  var PAST_TA_Q = '(?:' + PAST_TA + '|[一-鿿々])';
+  /* くだけた常体の問いの形を、問いの語尾に書き換える。長い項目から当たる（tone-engine.js の並べ替え）。
+     ・「の」を挟む形（の？・のかな？・んでしょ？・んだ？）は o、名詞の後ろ（なの？・だよね？・本当？）は n、動詞・形容詞の後ろは v
+     ・頼みごとの「〜てくれる？」「〜もらえる？」も同じに付ける（敬語の「くれますかな？」と揃える） */
   function kAsk(ask) {
     var q = qParts(ask), out = [];
     var add = function (from, cond, to) { out.push(from + (cond ? '(' + cond + ')' : '') + '=' + to); };
-    ['の？', 'のか？'].forEach(function (f) { add(f, '', q.o + '？'); });
+    ['の？', 'のか？', 'のかな？', 'のかい？', 'のかね？', 'んでしょ？', 'んでしょう？', 'んだよね？', 'んだね？'].forEach(function (f) { add(f, '', q.o + '？'); });
     add('のか', '', q.o);
+    /* 名詞の後ろの「なの？」（本当なの？→本当かな？・本当っす？）。「みんなの？」は除く */
+    add('なの？', '(?:^|[^ん])', q.n + '？');
+    /* 「どうしたんだ？」（動詞の後ろの「んだ」）は「の」の形、「読んだ？」（漢字＋んだ の過去）は動詞の形 */
+    add('んだ？', '[一-鿿々]', 'んだ' + q.v + '？');
+    add('んだ？', VERBQ, q.o + '？');
     /* 「〜か」で始まる問いの語尾（かね・かい）なら、？のない問い（嘘をつけるか）にも付ける */
-    if (/^か/.test(q.n)) add('か', VERBQ, q.n);
-    ['か？', 'かな？', 'かい？'].forEach(function (f) { add(f, VERBQ, q.v + '？'); add(f, '', q.n + '？'); });
-    /* 頼みごとの「〜してくれる？」「〜もらえる？」は問いの語尾にしない */
-    add('る？', '(?<!くれ)(?<!もらえ)(?<!貰え)', 'る' + q.v + '？');
+    if (/^か/.test(q.n)) add('か', VERBQ, q.v);
+    /* 念押し・同意を求める問い（分かるでしょ？・そうだよね？・いいじゃん？）も、問いの語尾に置き換える */
+    ['か？', 'かな？', 'かい？', 'でしょ？', 'でしょう？', 'よね？', 'ね？', 'じゃん？'].forEach(function (f) { add(f, VERBQ, q.v + '？'); add(f, '', q.n + '？'); });
+    ['だよね？', 'だね？'].forEach(function (f) { add(f, NOUN_DA, q.n + '？'); });
+    add('る？', '', 'る' + q.v + '？');
     ['ない？', 'たい？', 'しい？', 'いい？', 'つ？', 'す？', 'む？', 'ぶ？', 'ぐ？'].forEach(function (f) { add(f, '', f.slice(0, -1) + q.v + '？'); });
     add('く？', '(?<!し)', 'く' + q.v + '？'); add('う？', '(?<![おこごそぞとどのほぼぽもよょろ])', 'う' + q.v + '？');
-    add('た？', PAST_TA, 'た' + q.v + '？');
+    add('た？', PAST_TA_Q, 'た' + q.v + '？');
+    /* 形容詞（痛い？・寒い？）。「かい？」「だい？」と、返事の「はい？」は除く */
+    add('い？', '[一-鿿々ぁ-ゖ](?<![かだ])(?<!^は)', 'い' + q.v + '？');
+    /* 名詞だけの問い（本当？・大丈夫？・ほんと？）：漢字で終わる語と「ほんと」。カタカナ（名前・マジ）は呼びかけ・驚きが多いので当てない */
+    add('？', '(?:[一-鿿々]|ほんと)', q.n + '？');
     return out;
   }
   var P_FORMS = ['ませんでした', 'ましたよ', 'ましたね', 'ました', 'ませんよ', 'ませんね', 'ません', 'ますよね', 'ますよ', 'ますね', 'ます', 'でしたよ', 'でしたね', 'でした', 'ですよね', 'ですよ', 'ですね', 'です', 'ましょうね', 'ましょう', 'ございます'];
@@ -7758,10 +7895,12 @@
   E.check = function (c) { var b = build(c), r = register(b); return { key: b.key, text: b.text, errors: b.uerr.concat(b.uerr.length ? [] : r.errors) }; };
 
   /* ---------- 見本（住人の設定の画面） ---------- */
+  /* 長めの3文：箱庭で実際に使われている台詞をもとにした（rel-core-extra.js の食料を譲る場面・白い部屋の幼なじみの場面、mini-serifu.js の al_hold）。
+     気遣い（言い切り）・言い合い（！）・謝って問いかける（？）の3種で、驚き・笑い・前置き・問い・言い切りの効き方を見る */
   E.LONG = [
-    '{n}「相変わらず、あなたの理屈はめちゃくちゃだね｜相変わらず、あなたの理屈は破綻しているな｜相変わらず、あなたの理屈は破綻していますね」',
-    '{n}「私の仕事は、有罪を勝ち取ることじゃない。本当のことを見つけること、それだけだよ｜私の仕事は、有罪を勝ち取ることではない。真実を追求すること、それだけだ｜私の仕事は、有罪を勝ち取ることではありません。真実を追求すること、それだけです」',
-    '{n}「黙って！　あなたのせいで、私の完璧な計画が台無しになるところだったんだよ！｜黙れ！　あなたのせいで、私の完璧な計画が台無しになるところだったのだぞ！｜黙ってください！　あなたのせいで、私の完璧な計画が台無しになるところだったんですよ！」'
+    '{n}「こういうの、もうやめて。あなたが倒れたら意味がない｜こういうのは、もうやめろ。あなたが倒れたら意味がない｜こういうの、もうやめてください。あなたが倒れたら意味がありません」',
+    '{n}「こっちの台詞。子どものころ物置に閉じ込められたのも、あなたのせいだった！｜こちらの台詞だ。子どものころ物置に閉じ込められたのも、あなたのせいだった！｜こちらの台詞です。子どものころ物置に閉じ込められたのも、あなたのせいでした！」',
+    '{n}「{o}、あのときは疑ってごめん。……まだ、私と組んでてくれる？｜{o}、あのときは疑ってすまなかった。……まだ、私と組んでくれるか？｜{o}さん、あのときは疑ってすみません。……まだ、私と組んでいてくれますか？」'
   ];
   E.preview = function (c, o) {
     var V = HK.Voice, out = { lines: [], errors: [] };
@@ -13544,7 +13683,7 @@
     });
   };
   /* ---------- 記録ごと ---------- */
-  var EXPL = /果て|達し|イ[っッくかきキ]|挿|喘|貫|腰を[振沈打揺使]|繋が|奥まで|突き上げ|絶頂|♡|射精|精液|ナカ|抱き潰|体を重ね|肌を重ね/;
+  var EXPL = /果て|達し|イ[っッくかきキ]|挿|喘|貫|腰を[振沈打揺使]|繋が|奥まで|突き上げ|絶頂|♡|射精|精液|ナカ|抱き潰|体を重ね|肌を重ね|\{(?:男性器|亀頭|女性器|陰核|ナカ|精液|愛液)\}/;
   function evBump(ctx, cat, A, text) {
     var a = A[0], b = A[1];
     if (!a) return;
@@ -37912,7 +38051,7 @@
   P.fbFor = function (a, b) { return P.nori(a) && P.of(a, b) !== 'top' && P.of(b, a) !== 'bottom' ? [b, a] : [a, b]; };
 
   /* 男性の体を前提にした言葉（女性どうしの場面で使ってはいけない）。点検にも使う */
-  P.MALE_RE = /ちんぽ|ちんこ|ペニス|陰茎|肉棒|いちもつ|一物|男根|亀頭|勃起|射精|精液|白濁|種付け|孕ませ|中に出|中出し|子種|睾丸|カリ首|フェラ|裏筋|鈴口|先走り|怒張|剛直|屹立/;
+  P.MALE_RE = /ちんぽ|ちんこ|ペニス|陰茎|肉棒|いちもつ|一物|男根|亀頭|勃起|射精|精液|白濁|種付け|孕ませ|中に出|中出し|子種|睾丸|カリ首|フェラ|裏筋|鈴口|先走り|怒張|剛直|屹立|\{(?:男性器|亀頭|精液)\}/;
 
   /* 恋愛対象（受け攻め）を、恋愛できる相手の判定に加える */
   if (HK.canLove && !HK.canLove._pos) {
@@ -39646,10 +39785,10 @@
   function av(res, i, size, extra) { var c = res.chars[i]; return c ? HK.Icons.html(c.name, i, size, extra) : ''; }
 
   /* 本文中のキャラ名に色をつける */
-  function paint(text, res) {
-    /* 山場の長い描写は段落（改行）で区切ってある。長い文は段落と台詞で改行する（HK.fmtLong） */
+  function paint(text, res, seg) {
+    /* 山場の長い描写は段落（改行）で区切ってある。長い文は段落と台詞で改行する（HK.fmtLong。記録の seg があれば台詞の塊を seg から取る） */
     var list = res.chars.map(function (c) { return { n: esc(c.name), i: c.i }; }).sort(function (a, b) { return b.n.length - a.n.length; });
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.chars.map(function (c) { return c.name; })) : text).replace(/\n/g, '<br>');
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.chars.map(function (c) { return c.name; }), seg) : text).replace(/\n/g, '<br>');
     if (!list.length) return t;
     var re = new RegExp(list.map(function (x) { return x.n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
     return t.replace(re, function (m) {
@@ -39930,9 +40069,11 @@
         if (e.goal || e.goalExit) chip = (e.goal || []).map(function (g) { return '<span class="goalb">条件達成：' + esc(g) + '</span>'; }).join('') + (e.goalExit ? '<span class="goalb exitb">扉が開いた</span>' : '') + chip;
         /* 決定的な関係の節目（付き合い始めた・別れた・浮気）の札（engine.js の markRel） */
         if (e.mark && e.mark.length) chip = e.mark.map(function (m) { return '<span class="markb mark-' + esc(m) + '">' + esc((HK.MARK_NAME || {})[m] || m) + '</span>'; }).join('') + chip;
-        var who = (e.actors || []).slice(0, 3);
+        /* 台詞・地の文・引用の区分（voice-seg.js の e.seg）：台詞行の話し手の顔を先頭に。発話のある出来事を吹き出しにする（名詞の引用だけなら吹き出しにしない） */
+        var sg = HK.Seg ? HK.Seg.of(e, res) : null, lead = sg ? HK.Seg.speakers(sg).filter(function (i) { return res.chars[i]; })[0] : null;
+        var who = (lead != null ? [lead] : []).concat((e.actors || []).filter(function (i) { return i !== lead; })).slice(0, 3);
         var avs = who.length ? '<span class="avs">' + who.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
-        return '<li class="' + cls + (avs ? ' hasav' : '') + (avs && e.kind === 'event' && /「/.test(e.text) ? ' talk' : '') + '">' + avs + '<div class="evb">' + chip + paint(e.text, res) + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+        return '<li class="' + cls + (avs ? ' hasav' : '') + (avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)) ? ' talk' : '') + '">' + avs + '<div class="evb">' + chip + paint(e.text, res, sg) + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
@@ -40966,8 +41107,8 @@
 /* r18: 全年齢版では省略 */
   function pc(i) { return 'var(--p' + (i % 30) + ')'; }
   function av(res, i, size) { var h = res.heroes[i]; return h && HK.Icons ? HK.Icons.html(h.name, i, size) : ''; }
-  function paint(text, res) {
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.heroes.map(function (h) { return h.name; })) : text).replace(/\n/g, '<br>');
+  function paint(text, res, seg) {
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.heroes.map(function (h) { return h.name; }), seg) : text).replace(/\n/g, '<br>');
     res.heroes.slice().sort(function (a, b) { return b.name.length - a.name.length; }).forEach(function (h) { var n = esc(h.name); if (n) t = t.split(n).join('\u0001' + h.i + '\u0002'); });
     return t.replace(/\u0001(\d+)\u0002/g, function (m, i) { return '<span class="name" style="color:' + pc(+i) + '">' + esc(res.heroes[+i].name) + '</span>'; });
   }
@@ -41021,9 +41162,12 @@
     });
     var html = groups.filter(function (g) { return g.items.length; }).map(function (g) {
       return '<div class="stepblk"><div class="when">' + esc(g.label) + '</div><ol>' + g.items.map(function (e) {
-        var avs = e.actors.length ? '<span class="avs">' + e.actors.slice(0, 3).map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
+        /* 台詞・地の文・引用の区分（voice-seg.js の e.seg）：台詞行の話し手の顔を先頭に。名詞の引用だけなら吹き出しにしない */
+        var sg = HK.Seg ? HK.Seg.of(e, res) : null, lead = sg ? HK.Seg.speakers(sg).filter(function (i) { return res.heroes[i]; })[0] : null;
+        var ids = (lead != null ? [lead] : []).concat(e.actors.filter(function (i) { return i !== lead; })).slice(0, 3);
+        var avs = e.actors.length || lead != null ? '<span class="avs">' + ids.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
         var tc = tagCls(e);
-        return '<li class="ev' + (tc ? ' cat-' + tc : '') + (e.trouble ? ' trouble' : '') + (tc === 'death' ? ' death' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (avs ? ' hasav' : '') + (avs && /「/.test(e.text) ? ' talk' : '') + '">' + avs + '<div class="evb">' + (e.tag ? '<span class="c' + (tc ? ' cc-' + tc : '') + '">' + esc(e.tag) + '</span>' : '') + paint(e.text, res) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+        return '<li class="ev' + (tc ? ' cat-' + tc : '') + (e.trouble ? ' trouble' : '') + (tc === 'death' ? ' death' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (avs ? ' hasav' : '') + (avs && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)) ? ' talk' : '') + '">' + avs + '<div class="evb">' + (e.tag ? '<span class="c' + (tc ? ' cc-' + tc : '') + '">' + esc(e.tag) + '</span>' : '') + paint(e.text, res, sg) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
@@ -42280,7 +42424,7 @@
   function eL(S, key, arr) { return HK.Ero ? HK.Ero.L(S, 'saimin', key, arr) : arr; }
   /* 受ける{a}が女性の体（ふたなりでない）なら、{a}を男性の体で書いた文（{a}の根元・亀頭、{a}が射精する など）を外し、
      女性の体の文（キーの後ろに F。solo-saimin-ero.js の 'sug.edge.fullF' など）を足す。残らなければ元の文のまま */
-  var A_MALE = /\{a\}の(?:根元|亀頭|竿|裏筋|鈴口|カリ|先走り|ちんぽ|肉棒|ペニス|陰茎|睾丸)|\{a\}(?:は|が)[^。「」{]{0,30}(?:射精|精を(?:吐き出|放))/;
+  var A_MALE = /\{a\}の(?:根元|亀頭|竿|裏筋|鈴口|カリ|先走り|ちんぽ|肉棒|ペニス|陰茎|睾丸|\{男性器\}|\{亀頭\})|\{a\}(?:は|が)[^。「」{]{0,30}(?:射精|精を(?:吐き出|放))/;
   function bodyL(S, p, key, arr) {
     var L0 = eL(S, key, arr);
     /* 体の判定は性別ではなく性器（HK.Pos.hasM・hasF。attr.js の genital） */
@@ -58168,9 +58312,9 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', toggleUI); else toggleUI();
   /* ---------- 結果の文をまろやかにする ---------- */
   /* はっきり性的な文：その場面を「二人だけの秘密」に置き換える */
-  var HARD = /挿入|挿れ|中出し|中に出|精液|白濁|射精|イく|イっ|イッ|イか|イキ|絶頂|乳首|股間|陰部|ペニス|性器|秘所|秘部|腰を振|腰を打ち|突き上げ|奥まで|奥へ|奥に|奥を|最奥|膣|フェラ|咥え|口に含|舐め|舌を這|愛液|勃|跨|騎乗|正常位|後背位|座位|寝バック|立ちバック|全裸|裸に|服を剥|服の中|下着|胸を揉|揉みしだ|押し倒|セックス|性行為|避妊|孕|ノット|結び目|種付|注ぎ込|腰を沈|腰を落と|喘ぎ|喘い|果て|あられもない|しゃぶ|迎え入れ|受け入れていた|繋がり|繋がった|繋がって|押し入|達し|寸止め|一突き|揺れ続け|唇を這わ|全身に唇|服は[^。]*床に落ち|数ミリの揺れ|身悶え|擦れ|軋む|軋ん/;
+  var HARD = /挿入|挿れ|中出し|中に出|精液|白濁|射精|イく|イっ|イッ|イか|イキ|絶頂|乳首|股間|陰部|ペニス|性器|秘所|秘部|腰を振|腰を打ち|突き上げ|奥まで|奥へ|奥に|奥を|最奥|膣|フェラ|咥え|口に含|舐め|舌を這|愛液|勃|跨|騎乗|正常位|後背位|座位|寝バック|立ちバック|全裸|裸に|服を剥|服の中|下着|胸を揉|揉みしだ|押し倒|セックス|性行為|避妊|孕|ノット|結び目|種付|注ぎ込|腰を沈|腰を落と|喘ぎ|喘い|果て|あられもない|しゃぶ|迎え入れ|受け入れていた|繋がり|繋がった|繋がって|押し入|達し|寸止め|一突き|揺れ続け|唇を這わ|全身に唇|服は[^。]*床に落ち|数ミリの揺れ|身悶え|擦れ|軋む|軋ん|\{(?:男性器|亀頭|女性器|陰核|ナカ|乳首|後ろ|精液|愛液|股間)\}/;
   /* ほのめかし程度の文：黙って消す */
-  var SOFT = /乾いている|しよ？|楽しもう|ガスのせいにしちゃ|我慢しなくていい|脱ぎ|ベルトを外|服にも手を|濡れて|濡らし|脱が|脱い|気持ちよ|気持ちい|(?:快感|快楽|刺激|甘い痺れ|熱|奥|そこ)(?:を|で|が)?感じ|感じやす|感じちゃ|感じてしま|感じさせ|焦らさ|焦らし|焦れ|ねだ|数センチ|脚を絡|脚の間|きちゃ|疼|敏感|太腿|内腿|ずぶ|吸い付|吸いつ|腰に触れ|腰をすり|指を這|乱れた息|とろけ|蕩け|弄|声を漏らし|甘い声|甘い音|体の奥|潤滑|谷間|胸の膨らみ|鼠径|お尻の丸み|そこへ導/;
+  var SOFT = /乾いている|しよ？|楽しもう|ガスのせいにしちゃ|我慢しなくていい|脱ぎ|ベルトを外|服にも手を|濡れて|濡らし|脱が|脱い|気持ちよ|気持ちい|(?:快感|快楽|刺激|甘い痺れ|熱|奥|そこ)(?:を|で|が)?感じ|感じやす|感じちゃ|感じてしま|感じさせ|焦らさ|焦らし|焦れ|ねだ|数センチ|脚を絡|脚の間|きちゃ|疼|敏感|太腿|内腿|ずぶ|吸い付|吸いつ|腰に触れ|腰をすり|指を這|乱れた息|とろけ|蕩け|弄|声を漏らし|甘い声|甘い音|体の奥|潤滑|谷間|胸の膨らみ|鼠径|お尻の丸み|そこへ導|\{(?:胸|尻)\}/;
   var FADE = ['――その先のことは、二人だけの秘密だ。', '――そこから先は、閉じた扉の向こうの話だ。', '――夜は、静かに更けていった。', '――翌朝、二人は少しだけ照れくさそうに目を逸らした。'];
   var WORD = [[/発情していた/g, '火照っていた'], [/発情して/g, '火照って'], [/発情し/g, '火照っ'], [/ベッドで激しく/g, 'ベッドで朝まで'], [/激しいセックス/g, '二人きりの夜'], [/絶頂/g, '高鳴り'], [/快感/g, '高鳴り'], [/堕ちた/g, '流された'], [/発情/g, '火照り'], [/媚薬/g, '媚薬'], [/喘ぎ声/g, '吐息'], [/堕ち度/g, '揺らぎ'], [/快楽に/g, '誘惑に'], [/快楽/g, '心地よさ'], [/堕ち/g, '流され']];
   /* 先に言い換える語（施術の名前・方針の名前など） */
@@ -63028,7 +63172,7 @@
   };
   /* 結果を作る前に、古い設定の値を読み替える。
      R18版で描写の有無が「ほのめかす」のときは、共通の出来事（執着・敵対など）に残ったはっきりした文を、全年齢と同じ方法でまろやかにする（safe.js の HK.SafeText） */
-  var EXPL = /果て|達し|イ[っッくかきキ]|挿|喘|貫|腰を[振沈打揺使]|繋が|奥まで|突き上げ|絶頂|♡|射精|精液|ちんぽ|ナカ/;
+  var EXPL = /果て|達し|イ[っッくかきキ]|挿|喘|貫|腰を[振沈打揺使]|繋が|奥まで|突き上げ|絶頂|♡|射精|精液|ちんぽ|ナカ|\{(?:男性器|亀頭|女性器|陰核|ナカ|精液|愛液)\}/;
   if (HK.simulate && !HK.simulate._lewd) {
     var sim0 = HK.simulate;
     HK.simulate = function (input) {
@@ -63094,6 +63238,59 @@
   X.install('locker', { desc: D.locker });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: D.goukon });
 })();
+;/* ==== js/lewd-mark.js ==== */
+/* 箱庭シミュレーター: 体の語の印（{…}）の後始末（両ビルド共通。このファイルには性的な語を書かない）
+   R18の文では体の語を印で書き、R18版の lewd-words.js が結果を仕上げるときに語へ置き換える（印の一覧と書き方は docs/reports/2026-10-26/lewd-words.md）。
+   ここは保険：結果のどこかに印が残っていたら（全年齢モード・全年齢版・置き換えの表がない・記録の外の文）、
+   ・R18版で全年齢モードでなく、置き換えの関数（HK.LewdWords.plain）があれば、地の文の列で置き換える
+   ・そうでなければ、無難な語（「そこ」など）に替える
+   全年齢版の bundle には印そのものが入らない（hakoniwa-tools/build/build.js の検査で止まる）ので、全年齢版でこの後始末が働くことはふつうない */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK || !HK.simulate || HK.simulate._lewdMark) return;
+  /* 印の形：{ と } で挟んだ、かな・漢字の1〜3字。口調の辞書の活用の印（{る}{た}{て}{ない}{よう}{なかった}）や {役} は除く */
+  var GEN = /\{([ぁ-ヿ一-鿿]{1,3})\}/g;
+  var NOT = { 'る': 1, 'た': 1, 'て': 1, 'ない': 1, 'よう': 1, 'なかった': 1, '役': 1 };
+  /* 無難な語（印の名前 → 語。ない印は「そこ」） */
+  var SAFE = { '胸': '胸', '尻': '腰', '後ろ': '後ろ', 'ナカ': '奥' };
+  function safeText(t) {
+    return t.replace(GEN, function (m, k) { return NOT[k] ? m : SAFE[k] || 'そこ'; });
+  }
+  function has(t) {
+    if (t.indexOf('{') < 0) return false;
+    GEN.lastIndex = 0;
+    var m, hit = false;
+    while ((m = GEN.exec(t))) { if (!NOT[m[1]]) { hit = true; break; } }
+    GEN.lastIndex = 0;
+    return hit;
+  }
+  function fix(t, env) {
+    if (!has(t)) return t;
+    var LW = HK.LewdWords;
+    if (!HK.SAFE_ON && LW && LW.plain) { try { t = LW.plain(t, env); } catch (e) { /* 下で無難な語に */ } }
+    return has(t) ? safeText(t) : t;
+  }
+  /* 結果の全体をたどって、文字列に残った印を直す */
+  function walk(o, env, seen) {
+    if (typeof o === 'string') return fix(o, env);
+    if (!o || typeof o !== 'object' || seen.has(o)) return o;
+    seen.add(o);
+    if (Array.isArray(o)) { for (var i = 0; i < o.length; i++) { var v = o[i]; if (v && (typeof v === 'string' || typeof v === 'object')) o[i] = walk(v, env, seen); } return o; }
+    Object.keys(o).forEach(function (k) { var v = o[k]; if (v && (typeof v === 'string' || typeof v === 'object')) { var w = walk(v, env, seen); if (w !== v) o[k] = w; } });
+    return o;
+  }
+  HK.LewdMark = { has: has, fix: fix, safe: safeText };
+  var sim0 = HK.simulate;
+  HK.simulate = function (input) {
+    var r = sim0.apply(this, arguments);
+    try { if (r && typeof r === 'object') walk(r, (input && input.env) || {}, new Set()); } catch (e) { /* 後始末に失敗しても結果は返す */ }
+    return r;
+  };
+  /* 前の包みの印（_lewd など）を引き継ぐ */
+  Object.keys(sim0).forEach(function (k) { HK.simulate[k] = sim0[k]; });
+  HK.simulate._lewdMark = true;
+})();
 ;/* ==== js/reset.js ==== */
 /* 箱庭シミュレーター: 保存データ（キャッシュ）の消去
    新しい箱庭が動かないときのために、このブラウザに保存した名簿・設定・履歴・表示の状態をまとめて消す。
@@ -63143,4 +63340,191 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build); else build();
   HK.resetStorage = wipe;
+})();
+;/* ==== js/voice-seg.js ==== */
+/* 箱庭シミュレーター: 台詞・地の文・引用の区分（seg）
+   結果の記録（log）の各項目 e に、文を区分ごとに分けた e.seg を付ける（e.text はこれまでどおり残す）。
+     e.seg = [{ t:'n', s:'地の文' }, { t:'l', who:0, s:'アキラ「台詞」', nm:3, h:1 }, …]（s をつなぐと e.text と同じ）
+     t … n 地の文／l 台詞行（文の頭か、名前「 の直後。話し手あり）／q 地の文に埋まった発話（話し手あり）／
+         c 名詞の引用（「〜」という話・札の文字。口調を変えない）／m 喘ぎ・モブ（話し手なし。名前「 の形なら who にその人）／u 話し手が決まらない発話
+     who … 話し手の住人の番号（input.chars・res.chars・res.heroes の番号）。nm … s の頭の名前の長さ（名前「 の形のとき）
+     h … 長い文の改行で一つの台詞の塊になるもの（core.js の HK.fmtLong と同じ規則。同じ番号が一つの塊）
+   区分と話し手は voice.js の processText が台詞を整えるときに決め（V._segBuf）、この包みが、ほかの仕上げ（全年齢の言い換え・
+   語の差し替えなど）がすべて済んだあとで、できあがった文に合わせて e.seg にする。台詞の中身が変わって合わせられないときは、文から決め直す。
+   e.seg は数え上げない属性（保存・共有・履歴の JSON には入らない）。保存から開いた記録は HK.Seg.of(e, 名前の一覧) で作り直す。
+   この包みは、HK.simulate を包むほかのどの処理よりも後（_order.txt の最後の方）に読むこと */
+(function () {
+  'use strict';
+  var HK = window.HK, V = HK.Voice || {};
+  var S = HK.Seg = {};
+  /* 合わせ方の件数（点検用。seg-audit.js）：中身で合った／順番で合った／文から決め直した */
+  S.stat = { content: 0, order: 0, redo: 0 };
+  var NM = /⁤/g;
+  function hide(o, k, v) { Object.defineProperty(o, k, { value: v, configurable: true, writable: true, enumerable: false }); }
+
+  /* いちばん外側の「」の位置（voice.js の processText と同じ数え方：（……）の心の声は飛ばす） */
+  function quotes(t) {
+    var out = [], depth = 0, st = -1;
+    for (var i = 0; i < t.length; i++) {
+      var ch = t[i];
+      if (ch === '（' && depth === 0) { var cl = t.indexOf('）', i); if (cl > i) { i = cl; continue; } }
+      if (ch === '「') { if (depth === 0) st = i; depth++; }
+      else if (ch === '」' && depth > 0) { depth--; if (depth === 0 && st >= 0) { out.push({ a: st, b: i }); st = -1; } }
+    }
+    return out;
+  }
+  S.quotes = quotes;
+
+  /* processText が集めた区分（buf）に、整えたあとの台詞の中身を添えて、記録に隠して持たせる（voice.js の processResult から） */
+  S.keep = function (e, buf) {
+    if (!e || !buf || !buf.length) return;
+    var Q = quotes(e.text);
+    if (Q.length === buf.length) Q.forEach(function (x, k) { buf[k].s = e.text.slice(x.a + 1, x.b).replace(NM, ''); });
+    hide(e, '_sq', buf);
+  };
+
+  /* 長い文の改行の塊（core.js の HK.fmtLong と同じ規則）：[開始, 終わり) の一覧 */
+  function blocks(text, R) {
+    var out = [], TK = '\u0000', pos = 0;
+    text.split(/(\n+)/).forEach(function (part, k) {
+      if (k % 2) { pos += part.length; return; }
+      var lead = part.length - part.replace(/^\s+/, '').length, line = part.trim();
+      if (line && HK.fmtMarkLine) {
+        var marked = HK.fmtMarkLine(line, R, TK), o = pos + lead, inB = false, bs = 0;
+        for (var i = 0; i < marked.length; i++) {
+          if (marked[i] === TK) { if (inB) out.push([bs, o]); else bs = o; inB = !inB; continue; }
+          o++;
+        }
+      }
+      pos += part.length;
+    });
+    return out;
+  }
+
+  /* 話し手の決まらない「」（u）を、文の形で分け直す（言い換えには使わない。区分だけ）：
+     題名・名詞の引用（c）／住人でない誰かの発話（m。「司会の〇〇「……」」「誰かが「……」と漏らした」）／それ以外は u のまま */
+  var BOUND = /[。！？!?」\n]|――/g;
+  function lastBound(s) { var cut = 0, m; BOUND.lastIndex = 0; while ((m = BOUND.exec(s))) cut = m.index + m[0].length; return cut; }
+  var FRAME = /(?:目標|最初|型|名前|名|題|題名|テーマ|お題|命令|暗示|合言葉|看板|札|文字|口癖|モットー|メニュー|コース|項目|内容|方針|作戦|役|役割|職業|称号|あだ名|呼び名|答え|正解|お告げ|条件|ルール|指示|罰ゲーム|ゲーム|種目|企画)(?:は|が|も)?、?\s*$/;
+  function refine(text, a, b, names) {
+    var q = text.slice(a + 1, b), post = text.slice(b + 1, b + 9), pre = text.slice(0, a), cut = lastBound(pre), span = pre.slice(cut);
+    var sp = V.speechy ? V.speechy(q) : true;
+    if (FRAME.test(span) || /[：:→]\s*$/.test(span)) return 'c';
+    if (!sp && (/^(?:する|して|し[、た]|され|な(?!が)|だ|です|とか|など|まで|より|から|で|も|は|。|、)/.test(post) || text[a - 1] === '」' || text[b + 1] === '「' || /[^、。\sはがもをにでとへのや]$/.test(span))) return 'c';
+    if (span.trim()) return 'm';
+    if (cut > 0 && V.mobSubj) { var pv = pre.slice(0, cut - 1); if (V.mobSubj(pv.slice(lastBound(pv)), names.map(function (n) { return { name: n }; }))) return 'm'; }
+    return 'u';
+  }
+
+  /* 文 text を seg に分ける。names は住人の名前（番号順）、sq は processText が集めた区分（なければ文から決める） */
+  S.build = function (text, names, sq) {
+    text = String(text == null ? '' : text);
+    var R = HK.fmtSpeech ? HK.fmtSpeech(names) : null, Q = quotes(text), people = null;
+    var B = R ? blocks(text, R) : [];
+    /* 区分を台詞に合わせる：中身が同じものを先に（全年齢の言い換えで消えた台詞は飛ばす）、数が同じなら順番で */
+    var j = 0, D = Q.map(function (x, k) {
+      var s = text.slice(x.a + 1, x.b);
+      if (sq && j < sq.length) {
+        for (var d = j; d < Math.min(sq.length, j + 5); d++) if (sq[d].s != null && sq[d].s === s) { j = d + 1; S.stat.content++; return sq[d]; }
+        if (sq.length === Q.length) { j = k + 1; S.stat.order++; return sq[k]; }
+      }
+      /* 文から決め直す（voice.js の V.quoteKind） */
+      S.stat.redo++;
+      if (!V.quoteKind) return { k: 'u', w: -1 };
+      people = people || names.map(function (n) { return { name: n || '' }; });
+      return V.quoteKind(text, x.a, x.b, people);
+    });
+    /* 塊が台詞の区切りとそろっているか（そろっていなければ HK.fmtLong は seg を使わず、これまでの方法で改行する） */
+    var blk = true, hOf = [], pre = [];
+    B.forEach(function (b, bi) {
+      var inside = Q.map(function (x, k) { return k; }).filter(function (k) { return Q[k].a >= b[0] && Q[k].b < b[1]; });
+      if (!inside.length) { blk = false; return; }
+      var f = inside[0], l = inside[inside.length - 1];
+      if (Q[l].b + 1 !== b[1]) blk = false;
+      for (var k = f; k < l; k++) if (Q[k].b + 1 !== Q[k + 1].a) blk = false;
+      if (inside.length !== l - f + 1) blk = false;
+      pre[f] = Q[f].a - b[0];
+      if (/[「」]/.test(text.slice(b[0], Q[f].a))) blk = false;
+      inside.forEach(function (k) { hOf[k] = bi + 1; });
+    });
+    var seg = [], at = 0;
+    Q.forEach(function (x, k) {
+      var d = D[k] || { k: 'u', w: -1 }, h = hOf[k] || 0, nm = h && pre[k] > 0 ? pre[k] : 0;
+      /* 塊でない「名前「……」」（前の台詞に続く「アキラ「……」ミナト「……」」の二つ目など）も台詞行。名前は台詞の側に入れる */
+      if (!nm && !h) nm = nameAt(text, x.a, names);
+      if (nm && x.a - nm < at) { nm = 0; if (h) blk = false; }
+      var from = x.a - nm;
+      if (from > at) seg.push({ t: 'n', s: text.slice(at, from) });
+      var t = d.k === 's' ? (h || nm ? 'l' : 'q') : d.k === 'u' ? refine(text, x.a, x.b, names) : d.k;
+      var o = { t: t, s: text.slice(from, x.b + 1) };
+      if (d.w >= 0) o.who = d.w;
+      if (nm) o.nm = nm;
+      if (h) o.h = h;
+      seg.push(o);
+      at = x.b + 1;
+    });
+    if (at < text.length || !seg.length) seg.push({ t: 'n', s: text.slice(at) });
+    seg.blk = blk;
+    seg.nk = R ? R.key : '';
+    return seg;
+  };
+  /* 「 の直前の住人の名前の長さ（名前の前が文の切れ目・閉じ括弧などのとき。なければ 0） */
+  function nameAt(text, a, names) {
+    var best = 0;
+    names.forEach(function (n) {
+      if (!n || n.length <= best || text.slice(a - n.length, a) !== n) return;
+      var c = text.charAt(a - n.length - 1);
+      if (!c || !/[ぁ-んァ-ヶー一-鿿々A-Za-z0-9０-９Ａ-Ｚａ-ｚ]/.test(c)) best = n.length;
+    });
+    return best;
+  }
+  S.text = function (seg) { return (seg || []).map(function (x) { return x.s; }).join(''); };
+  /* HK.fmtLong 用：塊の前後に印を入れた文 */
+  S.markTK = function (seg, TK) {
+    return seg.map(function (x, i) {
+      if (!x.h) return x.s;
+      var p = seg[i - 1], n = seg[i + 1];
+      return (p && p.h === x.h ? '' : TK) + x.s + (n && n.h === x.h ? '' : TK);
+    }).join('');
+  };
+  /* 記録 e の seg（なければ・文が変わっていれば作り直す）。names は住人の名前の一覧か、res（res.chars・res.heroes から取る） */
+  function namesOf(x) {
+    if (Array.isArray(x)) return x.map(function (c) { return typeof c === 'string' ? c : c && c.name || ''; });
+    var L = x && (x.chars && x.chars.length ? x.chars : x.heroes) || [];
+    return L.map(function (c) { return c && c.name || ''; });
+  }
+  S.of = function (e, names) {
+    if (!e || typeof e.text !== 'string') return [];
+    if (e.seg && S.text(e.seg) === e.text) return e.seg;
+    var seg = S.build(e.text, namesOf(names));
+    hide(e, 'seg', seg);
+    return seg;
+  };
+  /* 台詞行（l）の話し手（出た順・重なりなし） */
+  S.speakers = function (seg, kinds) {
+    var out = [], K = kinds || 'l';
+    (seg || []).forEach(function (x) { if (K.indexOf(x.t) >= 0 && x.who >= 0 && out.indexOf(x.who) < 0) out.push(x.who); });
+    return out;
+  };
+  /* 発話（台詞行・埋まった発話・モブ・決まらない発話）があるか（画面の吹き出し） */
+  S.talk = function (seg) { return (seg || []).some(function (x) { return /^[lqmu]$/.test(x.t); }); };
+
+  /* いちばん外側の包み：ほかの仕上げがすべて済んだ文に合わせて e.seg を作る */
+  if (HK.simulate && !HK.simulate._seg) {
+    var sim0 = HK.simulate;
+    HK.simulate = function (input) {
+      var r = sim0.apply(this, arguments);
+      if (r && Array.isArray(r.log)) {
+        var names = namesOf(input && input.chars && input.chars.length ? input.chars : r);
+        r.log.forEach(function (e) {
+          if (!e || typeof e !== 'object') return;
+          try { if (typeof e.text === 'string') hide(e, 'seg', S.build(e.text, names, e._sq)); } catch (err) { /* 区分に失敗しても結果は返す */ }
+          if (e._sq) delete e._sq;
+        });
+      }
+      return r;
+    };
+    for (var k in sim0) if (Object.prototype.hasOwnProperty.call(sim0, k)) HK.simulate[k] = sim0[k];
+    HK.simulate._seg = true;
+  }
 })();

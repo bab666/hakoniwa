@@ -11,7 +11,7 @@ const { openBuild } = require('./lib');
 (async () => {
   const dir = process.argv[2], N = +process.argv[3] || 40, mode = process.argv[4] || 'r18', WHY = process.argv.includes('--why');
   if (!dir) { console.log('使い方: node orient-audit.js <ビルドのフォルダ> [回数] [r18|safe] [--why]'); process.exit(1); }
-  const { browser, page, errors } = await openBuild(dir, mode === 'safe' ? 'safe' : mode === 'r18' ? 'r18' : '');
+  const { browser, page, errors } = await openBuild(dir, mode === 'safe' ? 'safe' : mode === 'r18' ? 'r18' : '', { lewdMode: 'direct' });
   const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
   const r = await page.evaluate(({ N, WHY, ENVSET }) => {
     const SEX = /挿入|挿れ|射精|精液|愛液|ちんぽ|喘ぎ|喘い|腰を振|腰を打ち|奥まで(?:突|沈|貫)|(?<!牙が)深く沈|フェラ|咥え込|秘所|貫か|貫い|絶頂|イっ|イく|中に出|舐め上げ|乳首|性器|ひだ|襞|潮を|搾り取|犯し|犯さ|セックス|抱き潰|跨って腰|騎乗|ノット|夜を共に|体を重ね|肌を重ね|一夜を共に|抱かれ|抱いた|求め合/;

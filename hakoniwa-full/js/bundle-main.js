@@ -293,23 +293,35 @@
      ・地の文は句点で区切って、だいたい2〜3文（60〜110字）ごとに改行する
      ・もとから改行のある文（段落に分けた山場）は、段落の形は変えず、台詞だけを独立させる
      names：登場人物の名前の一覧（台詞の話者の判定に使う。名前の直後の「 だけを台詞とみなす） */
-  HK.fmtLong = function (text, names) {
-    var s = String(text == null ? '' : text);
-    if (s.length < 140 || !/[。！？」]/.test(s)) return s;
+  /* 長い文の台詞の塊：文頭か句点・閉じ括弧・ダッシュのあとに続く 名前「…」（「…」が続けて並ぶものも一つ）と、文頭の「…」。
+     塊の前後に印 TK を入れた行を返す。voice-seg.js（HK.Seg）も同じ関数で seg の塊（h）を決めるので、seg からの改行と結果が同じになる */
+  HK.fmtSpeech = function (names) {
     var nm = (names || []).filter(Boolean).map(String).sort(function (a, b) { return b.length - a.length; });
     var NAME = nm.length ? '(?:' + nm.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')' : null;
-    /* 台詞の塊：文頭か句点・閉じ括弧・ダッシュのあとに続く 名前「…」（「…」が続けて並ぶものも一つ） */
-    var SPEECH = NAME ? new RegExp('(^|[。！？」）\\s―…])(' + NAME + '(?:「[^「」]*」)+)(?!と|って|、と|など)', 'g') : null;
-    var LONE = /(^|[。！？」）\s―…])((?:「[^「」]*」)+)(?=$|[^と、っな])/g;
+    return {
+      key: nm.join('\u0001'),
+      SPEECH: NAME ? new RegExp('(^|[。！？」）\\s―…])(' + NAME + '(?:「[^「」]*」)+)(?!と|って|、と|など)', 'g') : null,
+      LONE: /(^|[。！？」）\s―…])((?:「[^「」]*」)+)(?=$|[^と、っな])/g
+    };
+  };
+  HK.fmtMarkLine = function (line, R, TK) {
+    var marked = line;
+    if (R.SPEECH) marked = marked.replace(R.SPEECH, function (m, pre, sp) { return pre + TK + sp + TK; });
+    return marked.replace(R.LONE, function (m, pre, sp) { return pre + TK + sp + TK; });
+  };
+  /* seg（voice-seg.js の e.seg）を渡すと、塊を seg から取る（名前の並びが seg を作ったときと同じで、文が変わっていないときだけ） */
+  HK.fmtLong = function (text, names, seg) {
+    var s = String(text == null ? '' : text);
+    if (s.length < 140 || !/[。！？」]/.test(s)) return s;
+    var R = HK.fmtSpeech(names);
     var hadNL = /\n/.test(s);
     var TK = '\u0000';
-    var out = s.split(/\n+/).map(function (line) {
+    var fromSeg = seg && seg.blk && seg.nk === R.key && HK.Seg && HK.Seg.text(seg) === s ? HK.Seg.markTK(seg, TK).split(/\n+/) : null;
+    var out = (fromSeg || s.split(/\n+/)).map(function (line) {
       line = line.trim();
       if (!line) return '';
       var blocks = [];
-      var marked = line;
-      if (SPEECH) marked = marked.replace(SPEECH, function (m, pre, sp) { return pre + TK + sp + TK; });
-      marked = marked.replace(LONE, function (m, pre, sp) { return pre + TK + sp + TK; });
+      var marked = fromSeg ? line : HK.fmtMarkLine(line, R, TK);
       marked.split(TK).forEach(function (seg, k) {
         seg = seg.replace(/^\s+|\s+$/g, '');
         if (!seg) return;
@@ -5053,7 +5065,18 @@
    シミュレーションの結果テキストを最後に一度だけ見直し、台詞（「」）ごとに話し手を判定して、
    ・一人称を、その人の一人称（設定がなければ口調と性別から決まるもの）にそろえる
    ・口調が「敬語」の人の台詞を、です・ます調に整える
-   すべての箱庭で共通に使う（HK.simulate の結果に対して適用） */
+   すべての箱庭で共通に使う（HK.simulate の結果に対して適用）
+
+   ■ 台詞の区分（seg）
+   processText は、結果の記録（log）を整えるとき（V._segBuf が配列のとき）、いちばん外側の「」ごとに
+   区分と話し手を V._segBuf に積む。voice-seg.js（HK.Seg）が、ほかの仕上げがすべて終わったあとで、それを記録の e.seg
+   （[{t:'n', s:地の文}, {t:'l', who:住人の番号, s:'名前「台詞」'}, …]）にまとめる。区分は
+     l 台詞行（文の頭か、名前「 の直後。話し手あり）／q 地の文に埋まった発話（話し手あり）／c 名詞の引用（「〜」という話・札の文字。口調を変えない）／
+     m 喘ぎ・モブ（「 の頭の \u2060 の印、または前の文の主語が住人以外）／u 話し手が決まらない発話
+   ■ ソースで話し手をはっきりさせる目印（推定が誤る文だけに使う。画面には残らない）
+     「＠{a}＠台詞」 … 話し手を {a}（住人の名前）に固定する（3本の台詞でも、頭に ＠{a}＠ を付ければよい）
+     「＠＠題名」     … 名詞の引用（区分 c。話し手なし、口調を変えない）
+     「＠台詞」       … これまでどおり、話し手なし（モブ・喘ぎ。区分 m。solo-story-kit.js などが \u2060 に置き換える） */
 (function () {
   'use strict';
   var HK = window.HK, V = HK.Voice = HK.Voice || {};
@@ -5453,7 +5476,9 @@
         /* 「〇〇の声が」「〇〇の残したメモには」のような所有の形も、話し手として扱う */
         /* 「〇〇の静かな声が」「〇〇の甘い囁きが」のように、声の前に短い飾りがついていても話し手 */
         var poss = nx === 'の' && (/^の(?:声|口|唇|喉|残した|書き残した|書いた|メモ|手紙|字|書き置き|置き手紙)/.test(span.slice(at + p.name.length)) || /^の[^、。「」\s]{1,8}?(?:声|囁き|ささやき)(?:が|で|は)/.test(span.slice(at + p.name.length)));
-        if (/[はがも「、]/.test(nx) || endHere || poss) {
+        /* 「〇〇（名探偵）は」：名前のあとの役割の括弧は飛ばす。「〇〇の「……」」：名前の直後の「の」で台詞が続く形も話し手 */
+        var role = nx === '（' && /^（[^）「」]{1,12}）[はがも、「]/.test(span.slice(at + p.name.length)), ofQ = nx === 'の' && !span.slice(at + p.name.length + 1).trim();
+        if (/[はがも「、]/.test(nx) || endHere || poss || role || ofQ) {
           /* 「AはBが果てそうになるたびに、「……」」の B は従属節の主語。前に「Aは」があれば A を話し手にする */
           if (best && nx === 'が' && span.charAt(bp + best.name.length) === 'は' && /^が[^、。「」]{0,20}(?:たびに|たび、|ときに|とき、|うちに|間に|あいだ)/.test(span.slice(at + p.name.length))) continue;
           if (at > bp || (at === bp && best && p.name.length > best.name.length)) { bp = at; best = p; }
@@ -5478,7 +5503,32 @@
   }
   /* 「〇〇は△△に「……」と言われて」の受け身：話し手は「に」「から」の人 */
   var PASSIVE = /^(?:と|って)(?:言われ|頼まれ|告げられ|聞かれ|訊かれ|尋ねられ|返され|囁かれ|呼ばれ|叱られ|笑われ|促され|詰め寄られ|泣きつかれ|せがまれ|ねだられ|怒鳴られ|注意され|誘われ|誤魔化され|ごまかされ)/;
+  /* 住人以外の人物（村の年寄り・無口な職人・喋る猫・魔術師…）を表す語の終わり */
+  var PERSON_END = /(?:人|者|員|師|長|主|客|家|官|士|婆|爺|娘|男|女|猫|さん|様|殿|神|鬼|獣|先生|先輩|後輩|医|僧|兵|年寄り|少年|少女|子ども|子供|童|幽霊|悪魔|ゴブリン|オーク|スライム|マスター|オーナー|ママ|運転手|マン|女将|宮司|巫女|伯爵|衆|司会|スタッフ|セラピスト|メイド|執事|若頭|探偵|刑事|弟子|インキュバス|サキュバス|の子)$/;
+  var NOT_MOB = /(?:^|[^ぁ-んァ-ヶ一-鿿])?(?:一人|二人|三人|四人|五人|本人|他人|大人|恋人|住人|一同|彼女|彼|皆|全員|みんな)$/;
+  /* 人のしぐさ・話す動詞で終わる文（「〜が手招きした」「〜は弟子たちに命じた」） */
+  var ACT_END = /(?:言[っいうわえ]|囁[いか]|告げ|訊[いか]|尋ね|答え|呟[いか]|促[しさ]|声をかけ|教え|叫[んば]|笑[っいうわ]|怒鳴|呼びかけ|話しかけ|命じ|手招き|読み上げ|頷[いか]|うなず|撫で|差し出|取り出|振り返|微笑[んみ]|指さ|指差|呼び止め|現れ|近づ|立ちはだか|鼻を鳴ら|舌なめずり|口を開|切り出|割り込|覗き込|顔を出|勧め|入ってき|やってき|頭を下げ|会釈)[^。、「」]{0,10}$/;
+  function isMobWord(x, people) { return !!x && !people.some(function (p) { return p.name && x.indexOf(p.name) >= 0; }) && !NOT_MOB.test(x); }
+  /* 文の主語が住人以外の人物か（「村の年寄りたちが、一行を集会所へ手招きした」「売れないバンドマンの方から〜に声をかけてきた」） */
+  function mobSubj(sen, people) {
+    var m = sen.match(/([^\s、。「」をにでとへはが]{1,14}?)(?:たち|ら|達)?(?:は|が|の方から)(?!ら)/);
+    if (!m || !isMobWord(m[1], people) || people.some(function (p) { return p.name && sen.slice(0, m.index).indexOf(p.name) >= 0; })) return false;
+    /* 「拡声器の声がした」「村長の声が響いた」：住人でない人の声 */
+    return PERSON_END.test(m[1]) || ACT_END.test(sen) || /^[^、。「」\s]{1,10}の声$/.test(m[1]);
+  }
+  V.mobSubj = mobSubj;
+  /* 台詞らしい言い方か（題名・名詞の引用と分ける） */
+  function speechy(q) {
+    q = String(q || '').replace(/[\u2060-\u2064]/g, '');
+    return /[。！？!?…‥、♡っ]/.test(q) || /[ぁ-ん][ー〜～]+$/.test(q) || /(?:よ|ね|な|わ|ぞ|ぜ|さ|か|の|て|で|た|だ|い|う|く|ぐ|す|つ|ぬ|ぶ|む|る|ん|ろ|れ|え|け|や|ば|も|ら|り|じゃん)$/.test(q);
+  }
+  V.speechy = speechy;
+  /* 「……」のあとが話す動詞（「と告げた」「と言った」）か */
+  var SAID_AFTER = /^(?:と|って)、?(?:言|呟|囁|叫|漏ら|こぼ|返|答え|告げ|続け|付け足|付け加え|言い切|言い放|吐き捨て|口にし|ぼや|訊|尋ね|宣言|報告|促|呼びかけ)/;
+  /* speakerOf が「住人以外の人物の台詞」と見て null を返したとき true（区分 m。voice-seg.js） */
+  var spMob = false;
   function speakerOf(text, s, e, people) {
+    spMob = false;
     var seg = text.slice(0, s), cut = lastBound(seg), span = seg.slice(cut);
     if (PASSIVE.test(text.slice(e, e + 16))) {
       var pas = null, pp = -1, where = span.trim() ? span : seg.slice(lastBound(seg.slice(0, Math.max(0, cut - 1))), cut);
@@ -5487,11 +5537,18 @@
     }
     var w = subjectIn(span, people);
     if (w) return w;
+    /* 主語のない節（「〇〇は〜。それから口を開けて中を見せ、「27mlでした」と告げた」）：直前の文の主語が話し手（住人以外の人物なら話し手なし） */
+    if (/、\s*$/.test(span) && !/[はがも]/.test(span) && SAID_AFTER.test(text.slice(e, e + 12)) && cut > 0 && /。$/.test(seg.slice(0, cut))) {
+      var pv0 = seg.slice(0, cut - 1), pl0 = pv0.slice(lastBound(pv0));
+      if (mobSpoke(pl0, people) || mobSubj(pl0, people)) { spMob = true; return null; }
+      var ps0 = subjectIn(pl0, people);
+      if (ps0) return ps0;
+    }
     if (!span.trim()) {
       var after = text.slice(e, e + 30), hit = null, quoted = /^(?:と|って)/.test(after);
       people.forEach(function (p) {
         if (!p.name) return;
-        var re = new RegExp('^(?:――|と|って)?' + p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:は|が|の|も|、|。)');
+        var re = new RegExp('^(?:――|と、?|って、?)?' + p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:は|が|の|も|、|。)');
         if (re.test(after) && (!hit || p.name.length > hit.name.length)) hit = p;
       });
       /* 「……」と言いかけた〇〇の袖を／「……」と呟いた〇〇は：話す動詞のすぐあとの住人が話し手 */
@@ -5508,16 +5565,18 @@
       if (hit && !quoted && cut > 0 && /。$/.test(seg.slice(0, cut))) {
         var pv = seg.slice(0, cut - 1), pvl = pv.slice(lastBound(pv)), pvs = subjectIn(pvl, people);
         /* 「〇〇が話しかけると、村の子どもがこっそり教えてくれた。「……」」は住人以外の台詞 */
-        if (mobSpoke(pvl, people)) return null;
+        if (mobSpoke(pvl, people)) { spMob = true; return null; }
         if (pvs) return pvs;
+        /* 直前の文の主語が住人以外の人物（「村の年寄りたちが、一行を手招きした。「……」アキラは」「〜の方から声をかけてきた。「……」」） */
+        if (mobSubj(pvl, people)) { spMob = true; return null; }
         /* 直前の文の主語が住人以外（「ゴブリンが賭場を開いていた。「……」」）なら、その人物の台詞。住人の口調にはしない */
         /* 「店長はタオルを畳み直して、静かに言った。「……」――〇〇は」も、住人以外の人物の台詞 */
-        if (!/^(?:二人|三人|四人|みんな|全員|皆|彼ら|彼女ら)/.test(pvl) && /^[^、。「」\s]{1,10}[はが][^「」]*(?:言|囁|告げ|訊|尋ね|答え|呟|続け|促|声をかけ)(?:った|いた|げた|ねた|えた|けた|た|んだ)$/.test(pvl)) return null;
-        if (/(^|、)[^、。「」\s]{1,10}が[^、。「」]*(た|ている|ていた|る|だ)$/.test(pvl) && !/(声|音|風|雨|扉|戸|鍵|灯り|明かり|電気|時計|水|火|鐘)が/.test(pvl)) return null;
+        if (!/^(?:二人|三人|四人|みんな|全員|皆|彼ら|彼女ら)/.test(pvl) && /^[^、。「」\s]{1,10}[はが][^「」]*(?:言|囁|告げ|訊|尋ね|答え|呟|続け|促|声をかけ)(?:った|いた|げた|ねた|えた|けた|た|んだ)$/.test(pvl)) { spMob = true; return null; }
+        if (/(^|、)[^、。「」\s]{1,10}が[^、。「」]*(た|ている|ていた|る|だ)$/.test(pvl) && !/(声|音|風|雨|扉|戸|鍵|灯り|明かり|電気|時計|水|火|鐘)が/.test(pvl)) { spMob = true; return null; }
       }
       if (hit) return hit;
-      /* 「……」と言いながら、〇〇は／「……」と呟いて、〇〇が */
-      var am = after.length ? text.slice(e, e + 50).match(/^と(?:言|呟|囁|叫|笑|漏ら|こぼ|返|答え|喘|甘え|ねだ|せが|懇願)[^。「」、]{0,10}、/) : null;
+      /* 「……」と言いながら、〇〇は／「……」と呟いて、〇〇が／「……」と小さく呟いて、〇〇は */
+      var am = after.length ? text.slice(e, e + 50).match(/^と[^。「」、]{0,6}?(?:言|呟|囁|叫|笑|漏ら|こぼ|返|答え|喘|甘え|ねだ|せが|懇願)[^。「」、]{0,10}、/) : null;
       if (am) {
         var rest = text.slice(e + am[0].length, e + am[0].length + 20);
         people.forEach(function (p) {
@@ -5525,11 +5584,16 @@
         });
         if (hit) return hit;
       }
+      /* 「……」と村人が言った：と・って のすぐあとの主語が住人以外の人物なら、その人物の台詞 */
+      var ms = after.match(/^(?:と|って)、?([^、。「」\s]{1,14}?)(?:たち|ら|達)?(?:が|は)/);
+      if (ms && isMobWord(ms[1], people) && (PERSON_END.test(ms[1]) || ms[1] === '誰か')) { spMob = true; return null; }
       /* 直前の文の主語（「〇〇は震える声で訊いた。「……」」）。最後の節の主語が住人以外（「村の子どもが教えてくれた」）なら住人の台詞にしない */
       if (cut > 0 && /。$/.test(seg.slice(0, cut))) {
         var prev = seg.slice(0, cut - 1), pc = lastBound(prev), pl = prev.slice(pc);
-        if (mobSpoke(pl, people)) return null;
-        return subjectIn(pl, people);
+        if (mobSpoke(pl, people)) { spMob = true; return null; }
+        var ps1 = subjectIn(pl, people);
+        if (!ps1 && mobSubj(pl, people)) spMob = true;
+        return ps1;
       }
     }
     return null;
@@ -5587,12 +5651,62 @@
     return !!(older && to.age > who.age);
   }
 
+  /* ---------- 台詞の区分（seg）の部品 ---------- */
+  /* 「〜」のあとがこの形なら名詞の引用（「〜」という話・「〜」と書いた札）。話し手の言葉ではないので、口調を変えない */
+  var NOUN_AFTER = /^(?:を|の|に|が|へ|や|という|って書|と書|とある|と記|と刻|と彫|と印|と読め|と名[づ付]け|と呼(?!び止|びかけ|びとめ))/;
+  /* text の start（「）〜i（」）の台詞 q が名詞の引用か。who は判定した話し手（なければ null） */
+  function nounQOf(text, start, i, q, who) {
+    var post = text.slice(i + 1, i + 9);
+    var nq = NOUN_AFTER.test(post) ||
+      /* 「引いたのは「人妻と配達員」だった」のような題名も台詞ではない */
+      (/^だ/.test(post) && /(?:のは|お題は|テーマは|題名は|企画は)$/.test(text.slice(Math.max(0, start - 6), start))) ||
+      /* 「〜」だと／「〜交換会」で（台詞らしくない言い方の題名・名前） */
+      (/^だと/.test(post) && !/[。！？!?]$/.test(q)) || (/^(?:で(?![すし])|だ|です|。)/.test(post) && !speechy(q));
+    /* 「ありがとう」を連発・「好き」を繰り返す：口にした言葉は台詞 */
+    if (nq && /^を(?:連発|繰り返|何度も|口に|呟|叫)/.test(post) && speechy(q)) nq = false;
+    /* 「ミナトの「大丈夫？」に、」：名前の「……」は、その人の台詞 */
+    if (nq && who && who.name && text.slice(Math.max(0, start - who.name.length - 1), start) === who.name + 'の' && speechy(q)) nq = false;
+    /* 「ミナト「お加減はいかがですか。強さを調整いたしますね」のぼせた〜」：話し手の名前のすぐ後の、言い切った台詞は台詞（後ろの「の」は地の文） */
+    if (nq && who && who.name && text.slice(Math.max(0, start - who.name.length), start) === who.name && (/。/.test(q) || /(?:ね|よ|か|わ|ぞ|ぜ|な|です|ます|ください|[！？!?])$/.test(q))) nq = false;
+    /* 「『12ml。採取完了です』と記録した」：読み上げながら記録する台詞（言い切りのあるもの）は台詞として言い換える */
+    if (nq && /^と(?:記録|報告|告げ|宣言|読み上げ|書きつけ)/.test(text.slice(i + 1, i + 8)) && /(。|です|ます|だ|よ|ね|ました)$/.test(q)) nq = false;
+    return nq;
+  }
+  /* 「 の直前にある住人の名前（いちばん長いもの）の番号。なければ -1 */
+  function nameBefore(text, start, people) {
+    var hit = -1;
+    people.forEach(function (p, k) { if (p.name && text.slice(Math.max(0, start - p.name.length), start) === p.name && (hit < 0 || p.name.length > people[hit].name.length)) hit = k; });
+    return hit;
+  }
+  /* 目印「＠名前＠台詞」「＠＠題名」（\u2060 に置き換わったものも）を読む。目印でなければ null。
+     名前が住人なら話し手をその人に固定（k:'s'）、住人でない名前（モブ）なら話し手なし（\u2060 の印を残す）、空なら名詞の引用（k:'c'） */
+  function marked(q, people) {
+    var c0 = q.charAt(0);
+    if (c0 !== '＠' && c0 !== '\u2060') return null;
+    var m = q.match(/^[＠\u2060]([^＠「」｜。、！？\s]{0,16})＠/);
+    if (!m) return c0 === '＠' ? { q: '\u2060' + q.slice(1), who: null, k: 'm' } : null;
+    if (!m[1]) return { q: q.slice(m[0].length), who: null, k: 'c' };
+    var nm = m[1].replace(/\u2064/g, ''), who = null;
+    people.forEach(function (p) { if (p.name && p.name.replace(/\u2064/g, '') === nm) who = p; });
+    return who ? { q: q.slice(m[0].length), who: who, k: 's' } : { q: '\u2060' + q.slice(m[0].length), who: null, k: 'm' };
+  }
+  /* できあがった文の「」（start〜i）の区分と話し手を、文だけから決める（保存から開いた記録の seg を作り直すとき。voice-seg.js の HK.Seg.of） */
+  V.quoteKind = function (text, start, i, people) {
+    var q = text.slice(start + 1, i);
+    if (q.charAt(0) === '\u2060') return { k: 'm', w: nameBefore(text, start, people) };
+    var who = speakerOf(text, start, i + 1, people);
+    if (!who) return { k: spMob ? 'm' : nounQOf(text, start, i, q, null) ? 'c' : 'u', w: -1 };
+    return { k: nounQOf(text, start, i, q, who) ? 'c' : 's', w: people.indexOf(who) };
+  };
+  V.speakerOf = speakerOf;
+  V.nounQOf = nounQOf;
+
   /* people: [{name, fp, tone, persona, gender, keigo}]。actors（任意）はその出来事の登場人物
      台詞の頭の \u2062 は「書き下ろしの敬語の行（tone-lines.js）」。言い換えず、一人称と呼び方だけそろえる */
   V.processText = function (text, people, actors) {
     if (typeof text === 'string' && text.indexOf('\u2062') >= 0 && (text.indexOf('「') < 0 || !people || !people.length)) text = text.replace(/\u2062/g, '');
     if (!text || typeof text !== 'string' || (text.indexOf('「') < 0 && text.indexOf('（') < 0) || !people || !people.length) return text;
-    var out = '', last = 0, depth = 0, start = -1;
+    var out = '', last = 0, depth = 0, start = -1, rec = Array.isArray(V._segBuf) ? V._segBuf : null;
     for (var i = 0; i < text.length; i++) {
       var ch = text[i];
       if (ch === '（' && depth === 0) {
@@ -5609,17 +5723,18 @@
       else if (ch === '」' && depth > 0) {
         depth--;
         if (depth === 0 && start >= 0) {
-          var q = text.slice(start + 1, i), who = q.charAt(0) === '\u2060' ? null : speakerOf(text, start, i + 1, people);
+          var q = text.slice(start + 1, i), fix = marked(q, people);
+          if (fix) q = fix.q;
+          var who = fix ? fix.who : q.charAt(0) === '\u2060' ? null : speakerOf(text, start, i + 1, people);
+          /* 区分（seg）：s 話し手のある発話（l・q は voice-seg.js が文の形で分ける）／c 名詞の引用／m 喘ぎ・モブ／u 話し手が決まらない */
+          var kind = fix ? fix.k : q.charAt(0) === '\u2060' ? 'm' : who ? 's' : spMob ? 'm' : nounQOf(text, start, i, q, null) ? 'c' : 'u';
           if (!who && q.indexOf('｜') >= 0 && HK.Tone && HK.Tone.split) q = (HK.Tone.split(q) || { K: q }).K;
           if (who) {
             var q0 = q;
-            var nounQ = /^(?:を|の|に|が|へ|や|という|って書|と書|とある|と記|と刻|と彫|と印|と読め)/.test(text.slice(i + 1, i + 4)) ||
-              /* 「引いたのは「人妻と配達員」だった」のような題名も台詞ではない */
-              (/^だ/.test(text.slice(i + 1, i + 2)) && /(?:のは|お題は|テーマは|題名は|企画は)$/.test(text.slice(Math.max(0, start - 6), start)));
-            /* 「ミナト「お加減はいかがですか。強さを調整いたしますね」のぼせた〜」：話し手の名前のすぐ後の、言い切った台詞は台詞（後ろの「の」は地の文） */
-            if (nounQ && who && who.name && text.slice(Math.max(0, start - who.name.length), start) === who.name && (/。/.test(q) || /(?:ね|よ|か|わ|ぞ|ぜ|な|です|ます|ください|[！？!?])$/.test(q))) nounQ = false;
-            /* 「『12ml。採取完了です』と記録した」：読み上げながら記録する台詞（言い切りのあるもの）は台詞として言い換える */
-            if (nounQ && /^と(?:記録|報告|告げ|宣言|読み上げ|書きつけ)/.test(text.slice(i + 1, i + 8)) && /(。|です|ます|だ|よ|ね|ました)$/.test(q)) nounQ = false;
+            var nounQ = !fix && nounQOf(text, start, i, q, who);
+            if (nounQ) kind = 'c';
+            /* いま整えている台詞の区分（点検の道具 collect.js が読む） */
+            V._qKind = kind;
             /* 口調ごとの書き下ろし（voice-override.js）があれば、自動の言い換えより優先する */
             /* 敬語で話す相手への台詞：書き下ろしの敬語の行はそのまま、それ以外は敬語に言い換える */
             var pre = q.charAt(0) === '\u2062';
@@ -5678,6 +5793,7 @@
             if (sv1) { who.fp = sv1.fp; who.you = sv1.you; }
           }
           q = q.replace(/([！？!?])。/g, '$1');   /* 「ごめんごめん！。」のような重なりを整える */
+          if (rec) rec.push({ k: kind, w: who ? people.indexOf(who) : kind === 'm' ? nameBefore(text, start, people) : -1 });
           out += text.slice(last, start + 1) + q + '」';
           last = i + 1; start = -1;
         }
@@ -5736,7 +5852,13 @@
     var f = function (t, ac) { return V.processText(t, people, ac); };
     /* 描写の作風「男性向け」（ero-kit.js）の結果では、はっきりした口調でも♡を残す（tone-firm.js） */
     V._keepHeart = !HK.SAFE_ON && !!(input.env && input.env.style === 'ero');
-    (res.log || []).forEach(function (e) { if (e && typeof e.text === 'string') e.text = V.nestQuote(f(e.text, e.actors)); });
+    /* 記録ごとに、「」の区分と話し手を V._segBuf に集め、voice-seg.js（HK.Seg.keep）に渡す（e.seg は、ほかの仕上げがすべて済んでから作る） */
+    (res.log || []).forEach(function (e) {
+      if (!e || typeof e.text !== 'string') return;
+      var buf = V._segBuf = [];
+      try { e.text = V.nestQuote(f(e.text, e.actors)); } finally { V._segBuf = null; }
+      if (HK.Seg && HK.Seg.keep) HK.Seg.keep(e, buf);
+    });
     var E = res.ending || res.end;
     if (E) {
       if (Array.isArray(E.lines)) E.lines = E.lines.map(function (l) { return typeof l === 'string' ? f(l) : l; });
@@ -7814,19 +7936,34 @@
     add('じゃん', NOUN_DA, p.n, true);
     return out;
   }
+  /* 問いの「〜た？」：漢字一字の語幹（寝た・見た・来た・出た）も過去として拾う */
+  var PAST_TA_Q = '(?:' + PAST_TA + '|[一-鿿々])';
+  /* くだけた常体の問いの形を、問いの語尾に書き換える。長い項目から当たる（tone-engine.js の並べ替え）。
+     ・「の」を挟む形（の？・のかな？・んでしょ？・んだ？）は o、名詞の後ろ（なの？・だよね？・本当？）は n、動詞・形容詞の後ろは v
+     ・頼みごとの「〜てくれる？」「〜もらえる？」も同じに付ける（敬語の「くれますかな？」と揃える） */
   function kAsk(ask) {
     var q = qParts(ask), out = [];
     var add = function (from, cond, to) { out.push(from + (cond ? '(' + cond + ')' : '') + '=' + to); };
-    ['の？', 'のか？'].forEach(function (f) { add(f, '', q.o + '？'); });
+    ['の？', 'のか？', 'のかな？', 'のかい？', 'のかね？', 'んでしょ？', 'んでしょう？', 'んだよね？', 'んだね？'].forEach(function (f) { add(f, '', q.o + '？'); });
     add('のか', '', q.o);
+    /* 名詞の後ろの「なの？」（本当なの？→本当かな？・本当っす？）。「みんなの？」は除く */
+    add('なの？', '(?:^|[^ん])', q.n + '？');
+    /* 「どうしたんだ？」（動詞の後ろの「んだ」）は「の」の形、「読んだ？」（漢字＋んだ の過去）は動詞の形 */
+    add('んだ？', '[一-鿿々]', 'んだ' + q.v + '？');
+    add('んだ？', VERBQ, q.o + '？');
     /* 「〜か」で始まる問いの語尾（かね・かい）なら、？のない問い（嘘をつけるか）にも付ける */
-    if (/^か/.test(q.n)) add('か', VERBQ, q.n);
-    ['か？', 'かな？', 'かい？'].forEach(function (f) { add(f, VERBQ, q.v + '？'); add(f, '', q.n + '？'); });
-    /* 頼みごとの「〜してくれる？」「〜もらえる？」は問いの語尾にしない */
-    add('る？', '(?<!くれ)(?<!もらえ)(?<!貰え)', 'る' + q.v + '？');
+    if (/^か/.test(q.n)) add('か', VERBQ, q.v);
+    /* 念押し・同意を求める問い（分かるでしょ？・そうだよね？・いいじゃん？）も、問いの語尾に置き換える */
+    ['か？', 'かな？', 'かい？', 'でしょ？', 'でしょう？', 'よね？', 'ね？', 'じゃん？'].forEach(function (f) { add(f, VERBQ, q.v + '？'); add(f, '', q.n + '？'); });
+    ['だよね？', 'だね？'].forEach(function (f) { add(f, NOUN_DA, q.n + '？'); });
+    add('る？', '', 'る' + q.v + '？');
     ['ない？', 'たい？', 'しい？', 'いい？', 'つ？', 'す？', 'む？', 'ぶ？', 'ぐ？'].forEach(function (f) { add(f, '', f.slice(0, -1) + q.v + '？'); });
     add('く？', '(?<!し)', 'く' + q.v + '？'); add('う？', '(?<![おこごそぞとどのほぼぽもよょろ])', 'う' + q.v + '？');
-    add('た？', PAST_TA, 'た' + q.v + '？');
+    add('た？', PAST_TA_Q, 'た' + q.v + '？');
+    /* 形容詞（痛い？・寒い？）。「かい？」「だい？」と、返事の「はい？」は除く */
+    add('い？', '[一-鿿々ぁ-ゖ](?<![かだ])(?<!^は)', 'い' + q.v + '？');
+    /* 名詞だけの問い（本当？・大丈夫？・ほんと？）：漢字で終わる語と「ほんと」。カタカナ（名前・マジ）は呼びかけ・驚きが多いので当てない */
+    add('？', '(?:[一-鿿々]|ほんと)', q.n + '？');
     return out;
   }
   var P_FORMS = ['ませんでした', 'ましたよ', 'ましたね', 'ました', 'ませんよ', 'ませんね', 'ません', 'ますよね', 'ますよ', 'ますね', 'ます', 'でしたよ', 'でしたね', 'でした', 'ですよね', 'ですよ', 'ですね', 'です', 'ましょうね', 'ましょう', 'ございます'];
@@ -7961,10 +8098,12 @@
   E.check = function (c) { var b = build(c), r = register(b); return { key: b.key, text: b.text, errors: b.uerr.concat(b.uerr.length ? [] : r.errors) }; };
 
   /* ---------- 見本（住人の設定の画面） ---------- */
+  /* 長めの3文：箱庭で実際に使われている台詞をもとにした（rel-core-extra.js の食料を譲る場面・白い部屋の幼なじみの場面、mini-serifu.js の al_hold）。
+     気遣い（言い切り）・言い合い（！）・謝って問いかける（？）の3種で、驚き・笑い・前置き・問い・言い切りの効き方を見る */
   E.LONG = [
-    '{n}「相変わらず、あなたの理屈はめちゃくちゃだね｜相変わらず、あなたの理屈は破綻しているな｜相変わらず、あなたの理屈は破綻していますね」',
-    '{n}「私の仕事は、有罪を勝ち取ることじゃない。本当のことを見つけること、それだけだよ｜私の仕事は、有罪を勝ち取ることではない。真実を追求すること、それだけだ｜私の仕事は、有罪を勝ち取ることではありません。真実を追求すること、それだけです」',
-    '{n}「黙って！　あなたのせいで、私の完璧な計画が台無しになるところだったんだよ！｜黙れ！　あなたのせいで、私の完璧な計画が台無しになるところだったのだぞ！｜黙ってください！　あなたのせいで、私の完璧な計画が台無しになるところだったんですよ！」'
+    '{n}「こういうの、もうやめて。あなたが倒れたら意味がない｜こういうのは、もうやめろ。あなたが倒れたら意味がない｜こういうの、もうやめてください。あなたが倒れたら意味がありません」',
+    '{n}「こっちの台詞。子どものころ物置に閉じ込められたのも、あなたのせいだった！｜こちらの台詞だ。子どものころ物置に閉じ込められたのも、あなたのせいだった！｜こちらの台詞です。子どものころ物置に閉じ込められたのも、あなたのせいでした！」',
+    '{n}「{o}、あのときは疑ってごめん。……まだ、私と組んでてくれる？｜{o}、あのときは疑ってすまなかった。……まだ、私と組んでくれるか？｜{o}さん、あのときは疑ってすみません。……まだ、私と組んでいてくれますか？」'
   ];
   E.preview = function (c, o) {
     var V = HK.Voice, out = { lines: [], errors: [] };
@@ -13928,7 +14067,7 @@
     });
   };
   /* ---------- 記録ごと ---------- */
-  var EXPL = /果て|達し|イ[っッくかきキ]|挿|喘|貫|腰を[振沈打揺使]|繋が|奥まで|突き上げ|絶頂|♡|射精|精液|ナカ|抱き潰|体を重ね|肌を重ね/;
+  var EXPL = /果て|達し|イ[っッくかきキ]|挿|喘|貫|腰を[振沈打揺使]|繋が|奥まで|突き上げ|絶頂|♡|射精|精液|ナカ|抱き潰|体を重ね|肌を重ね|\{(?:男性器|亀頭|女性器|陰核|ナカ|精液|愛液)\}/;
   function evBump(ctx, cat, A, text) {
     var a = A[0], b = A[1];
     if (!a) return;
@@ -14538,6 +14677,240 @@
     var t = String(text);
     return t.replace(/\{s:(\w+)\}/g, function (m, k) { return E.sfx(S, k); })
       .replace(/\{m([012])\}/g, function (m, n, at, all) { return E.moan(S, who, +n, E.ctxOf(all, at)); });
+  };
+})();
+;/* ==== js/lewd-words.js ==== */
+/* 箱庭シミュレーター: 性的な語の印（R18版のみ）
+   R18の文では、性器などの語を {男性器} {亀頭} {女性器} {陰核} {ナカ} {胸} {乳首} {尻} {後ろ} {精液} {愛液} {股間} の印で書く。
+   結果の文を仕上げるとき（HK.Voice.processResult のあと。part-words.js の言い換えより前）に、印を語に置き換える。
+   ■ 列（表 TABLE の n＝小説調、e＝男性向け。d＝直接／s＝やわらか／b＝ぼかす、m＝医学的）
+     ・地の文：描写の作風（env.style。novel／ero）× 描写の有無（env.lewd。low＝ぼかす／mid＝やわらか／high＝直接）
+     ・台詞：話し手の態度（HK.personaOf の9種）。shy・tsun＝ぼかす、devoted・gentle・polite＝やわらか、proud・free＝直接、
+       cool・stern＝小説調では医学的・男性向けでは直接。作風が男性向けなら男性向けの列。話し手の分からない台詞（モブなど）は地の文と同じ
+     ・住人の設定「性器の呼び方」（partWords：soft＝ぼかす／direct＝直接／medical＝医学的）があれば、台詞は話し手の、
+       地の文はその体の持ち主（「名前の{男性器}」のいちばん近い「名前の」）の設定を優先。自由記入（partM・partF）は {男性器}・{女性器} に使う
+   ■ 同じ文の同じ印は同じ語にする。候補が二つ以上あれば、文から決まる番号（hash）から始めて、その回でまだ使っていない語を選ぶ（emotion.js の X.word と同じ考え方）
+   ■ 点検のときは HK.LewdWords.MODE = 'direct' で、いつも「直接」の列を使う（ぼかした語だと pos-audit が性器の取り違えを見逃すため）
+   ■ V10（pos-audit）：{男性器}・{亀頭} の印なのに、その場の住人の誰にも男性器がない／{女性器}・{陰核} なのに誰にも女性器がない、を HK.LewdWords.V10 にためる
+   ■ 印が残ったときの後始末（全年齢モード・この表がないとき）は両ビルド共通の lewd-mark.js
+   書き方の決まりは docs/reports/2026-10-26/lewd-words.md */
+(function () {
+  'use strict';
+  var HK = window.HK, V = HK && HK.Voice;
+  if (!HK) return;
+  /* 語の表。各マスは「／」区切りで1〜3語。どの語も「の・を・が・に」に続けられる名詞。「お」の付け外しは語の側で持つ */
+  var T = {
+    '男性器': { nd: '肉棒／男根', ns: '昂り／熱いもの', nb: 'もの', ed: 'ちんぽ／肉棒', es: '肉棒／竿', eb: 'モノ', m: '陰茎／ペニス' },
+    '亀頭': { nd: '亀頭', ns: '先端', nb: '先端', ed: '亀頭', es: '亀頭／先っぽ', eb: '先っぽ', m: '亀頭' },
+    '女性器': { nd: '秘所／秘裂', ns: '秘めたところ／脚の間', nb: 'そこ', ed: 'まんこ／おまんこ', es: 'おまんこ／割れ目', eb: 'あそこ', m: '膣／陰部' },
+    '陰核': { nd: '陰核／肉芽', ns: '花芯', nb: '敏感な芽', ed: 'クリ／クリトリス', es: 'クリ', eb: '敏感なところ', m: '陰核' },
+    'ナカ': { nd: 'ナカ', ns: '中', nb: '奥', ed: 'ナカ', es: 'ナカ', eb: '中', m: '体内' },
+    '胸': { nd: '乳房', ns: '胸／膨らみ', nb: '胸', ed: 'おっぱい', es: 'おっぱい／胸', eb: '胸', m: '乳房' },
+    '乳首': { nd: '乳首', ns: '胸の先', nb: '胸の先', ed: '乳首', es: '乳首', eb: '胸の先', m: '乳頭' },
+    '尻': { nd: '尻', ns: 'お尻', nb: 'お尻', ed: 'ケツ／お尻', es: 'お尻', eb: 'お尻', m: '臀部' },
+    '後ろ': { nd: '後孔', ns: '後ろ', nb: '後ろ', ed: 'アナル／ケツ穴', es: 'アナル／お尻の穴', eb: '後ろ', m: '肛門' },
+    '精液': { nd: '白濁／精液', ns: '精／白濁', nb: '精', ed: '精液／ザーメン', es: '精液／白濁', eb: '白濁', m: '精液' },
+    '愛液': { nd: '愛液', ns: '蜜', nb: '蜜', ed: '愛液／まん汁', es: '愛液', eb: '蜜', m: '分泌液' },
+    '股間': { nd: '股間', ns: '脚の間／股間', nb: '脚の間', ed: '股間', es: '股間', eb: '股', m: '陰部' }
+  };
+  var KEYS = Object.keys(T);
+  var TABLE = {};
+  KEYS.forEach(function (k) { TABLE[k] = {}; Object.keys(T[k]).forEach(function (c) { TABLE[k][c] = T[k][c].split('／'); }); });
+  var RE = new RegExp('\\{(' + KEYS.join('|') + ')\\}', 'g');
+  var MARK = '⁤';
+  /* 台詞の態度 → 列（n＝小説調の列。e＝男性向けの列） */
+  var PERSONA_COL = {
+    shy: { n: 'nb', e: 'eb' }, tsun: { n: 'nb', e: 'eb' },
+    devoted: { n: 'ns', e: 'es' }, gentle: { n: 'ns', e: 'es' }, polite: { n: 'ns', e: 'es' },
+    proud: { n: 'nd', e: 'ed' }, free: { n: 'nd', e: 'ed' },
+    cool: { n: 'm', e: 'ed' }, stern: { n: 'm', e: 'ed' }
+  };
+  var PART_COL = { soft: 'b', direct: 'd', medical: 'm' };
+  var LV_COL = { low: 'b', mid: 's', high: 'd' };
+  var OWN = { '男性器': 'm', '亀頭': 'm', '女性器': 'f', '陰核': 'f' };
+  /* 判定用の直接の語（HK.Pos.MALE_RE・pos-nogen.js の FEM などに当たる語） */
+  var DIRECT = { '男性器': 'ちんぽ', '亀頭': '亀頭', '女性器': 'まんこ', '陰核': '陰核', 'ナカ': 'ナカ', '胸': '胸', '乳首': '乳首', '尻': '尻', '後ろ': 'アナル', '精液': '精液', '愛液': '愛液', '股間': '股間' };
+  function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0); }
+  var P = function () { return HK.Pos; };
+  function hasM(c) { var Q = P(); if (Q && Q.hasM) return Q.hasM(c); return c.gender === 'm'; }
+  function hasF(c) { var Q = P(); if (Q && Q.hasF) return Q.hasF(c); return c.gender === 'f'; }
+  function ero(env) { return HK.Lewd && HK.Lewd.ero ? HK.Lewd.ero(env) : !!(env && env.style === 'ero'); }
+  function lv(env) { return HK.Lewd && HK.Lewd.lv ? HK.Lewd.lv(env) : (env && env.lewd) || 'mid'; }
+  /* 地の文の列 */
+  function narrCol(ctx) {
+    var pre = ero(ctx.env) ? 'e' : 'n';
+    if (X.MODE === 'direct') return pre + 'd';
+    return pre + (LV_COL[lv(ctx.env)] || 's');
+  }
+  /* 住人の設定から列を決める（設定がなければ null） */
+  function partCol(c, ctx) {
+    if (!c || !PART_COL[c.partWords]) return null;
+    var k = PART_COL[c.partWords];
+    return k === 'm' ? 'm' : (ero(ctx.env) ? 'e' : 'n') + k;
+  }
+  /* 台詞の列 */
+  function quoteCol(who, ctx) {
+    if (X.MODE === 'direct') return narrCol(ctx);
+    if (!who) return narrCol(ctx);
+    var pc = partCol(who, ctx);
+    if (pc) return pc;
+    var pk = PERSONA_COL[who.persona];
+    if (!pk) return narrCol(ctx);
+    return ero(ctx.env) ? pk.e : pk.n;
+  }
+  /* 台詞の話し手：「名前「」の形（part-words.js の speaker() と同じ）。あとで e.seg（話し手つきの区分）に切り替えるときはここだけ直す */
+  function speakerOf(text, start, people) {
+    if (X.speakerHook) { var r = X.speakerHook(text, start, people); if (r !== undefined) return r; }
+    var pre = text.slice(Math.max(0, start - 20), start).split(MARK).join('');
+    var hit = null;
+    people.forEach(function (c) { if (c.name && pre.slice(-c.name.length) === c.name && (!hit || c.name.length > hit.name.length)) hit = c; });
+    return hit;
+  }
+  /* 地の文の印の持ち主：直前の「名前の」（part-words.js と同じ。間に句読点・助詞が入れば持ち主なし） */
+  function ownerOf(sent, off, people) {
+    var before = sent.slice(Math.max(0, off - 14), off).split(MARK).join('');
+    var best = null, bi = -1;
+    people.forEach(function (c) {
+      if (!c.name) return;
+      var m = before.match(new RegExp(esc(c.name) + '(?:の|が持つ)(?=[^。、「」のにをがはでとへ]{0,6}$)'));
+      if (m && m.index > bi) { bi = m.index; best = c; }
+    });
+    return best;
+  }
+  /* 一語を選ぶ。同じ文の同じ印（同じ列）は同じ語。候補が複数なら、まだ使っていない語から */
+  function pick(key, col, ctx, seedStr) {
+    var memoK = col + '|' + key;
+    if (ctx.memo[memoK]) return ctx.memo[memoK];
+    var arr = (TABLE[key] && TABLE[key][col]) || TABLE[key].ns;
+    var k0 = hash(seedStr + '|' + key + '|' + col) % arr.length, w = arr[k0], best = 1e9;
+    for (var d = 0; d < arr.length; d++) {
+      var t = arr[(k0 + d) % arr.length], u = ctx.used[t] || 0;
+      if (u < best) { best = u; w = t; }
+    }
+    ctx.used[w] = (ctx.used[w] || 0) + 1;
+    ctx.memo[memoK] = w;
+    return w;
+  }
+  /* 一つの印を語にする。who＝台詞の話し手（地の文なら null）、owner＝体の持ち主 */
+  function wordFor(key, ctx, who, owner, seedStr, inQ) {
+    var c = inQ ? who : owner;
+    if (X.MODE !== 'direct' && c) {
+      if (key === '男性器' && c.partM) return c.partM;
+      if (key === '女性器' && c.partF) return c.partF;
+    }
+    var col = inQ ? quoteCol(who, ctx) : (X.MODE !== 'direct' && partCol(owner, ctx)) || narrCol(ctx);
+    return pick(key, col, ctx, seedStr);
+  }
+  /* V10：その場の住人の誰にも、その印の体がない */
+  function checkV10(key, ctx, text) {
+    var need = OWN[key];
+    if (!need || !ctx.here || !ctx.here.length) return;
+    var ok = ctx.here.some(function (c) { return need === 'm' ? hasM(c) : hasF(c); });
+    if (ok) return;
+    if (X.V10.length < 2000) X.V10.push({ mk: key, scen: ctx.scen || '', names: ctx.here.map(function (c) { return c.name.split(MARK).join(''); }), text: String(text).split(MARK).join('') });
+  }
+  /* 一続きの地の文を、文ごとに置き換える */
+  function narrSeg(seg, ctx, seed) {
+    return seg.split(/(?<=[。！？\n])/).map(function (sent) {
+      if (sent.indexOf('{') < 0) return sent;
+      ctx.memo = {};
+      return sent.replace(RE, function (m, key, off) {
+        var owner = ctx.people.length ? ownerOf(sent, off, ctx.people) : null;
+        return wordFor(key, ctx, null, owner, seed + sent.length + '|' + off, false);
+      });
+    }).join('');
+  }
+  /* 本文の印を置き換える。ctx: { env, people:[{name, persona, gender, genital, partWords, partM, partF}], here:[その場の住人], used, scen } */
+  function resolve(text, ctx) {
+    if (!text || typeof text !== 'string' || text.indexOf('{') < 0) return text;
+    RE.lastIndex = 0;
+    if (!RE.test(text)) return text;
+    RE.lastIndex = 0;
+    ctx = ctx || {};
+    ctx.people = ctx.people || [];
+    ctx.used = ctx.used || {};
+    ctx.memo = {};
+    var seed = String(hash(text.split(MARK).join('')));
+    if (ctx.v10 !== false) { var found = {}; text.replace(RE, function (m, k) { found[k] = 1; return m; }); Object.keys(found).forEach(function (k) { checkV10(k, ctx, text); }); }
+    var out = '', depth = 0, buf = '', qs = -1;
+    for (var i = 0; i < text.length; i++) {
+      var ch = text[i];
+      if (ch === '「') {
+        if (depth === 0) { out += narrSeg(buf, ctx, seed); buf = ''; qs = i; }
+        depth++; buf += ch; continue;
+      }
+      if (ch === '」' && depth > 0) {
+        depth--; buf += ch;
+        if (depth === 0) {
+          if (buf.indexOf('{') >= 0) {
+            var who = speakerOf(text, qs, ctx.people), memo0 = ctx.memo;
+            ctx.memo = {};
+            buf = buf.replace(RE, function (m, key, off) { return wordFor(key, ctx, who, who, seed + '|q' + qs + '|' + off, true); });
+            ctx.memo = memo0;
+          }
+          out += buf; buf = '';
+        }
+        continue;
+      }
+      buf += ch;
+    }
+    return out + narrSeg(buf, ctx, seed);
+  }
+  /* 結果の住人（processResult の people と同じ作り） */
+  function peopleOf(res, input) {
+    return (input.chars || []).map(function (c, i) {
+      var r = (res && res.chars && res.chars[i]) || (res && res.heroes && res.heroes[i]) || {};
+      var persona = r.persona || (HK.personaOf ? HK.personaOf({ tone: c.tone, eg: c.eg }) : '');
+      return { name: c.name || '', persona: persona, gender: c.gender || '', pos: c.pos || '', futa: !!c.futa, genital: c.genital || '', src: c,
+        partWords: PART_COL[c.partWords] ? c.partWords : '', partM: (c.partM || '').trim(), partF: (c.partF || '').trim() };
+    });
+  }
+  /* その出来事の場にいる住人：出来事の登場人物（番号か住人）と、本文に名前が出る人 */
+  function hereOf(e, people) {
+    var set = [];
+    (e && e.actors || []).forEach(function (x) {
+      var p = typeof x === 'number' ? people[x] : x && x.i != null ? people[x.i] : null;
+      if (p && set.indexOf(p) < 0) set.push(p);
+    });
+    var t = e && typeof e.text === 'string' ? e.text : '';
+    people.forEach(function (p) { if (p.name && t.indexOf(p.name) >= 0 && set.indexOf(p) < 0) set.push(p); });
+    return set;
+  }
+  /* 結果全体（記録・結末・住人のメモ）の印を置き換える */
+  function applyResult(res, input) {
+    if (!res || !input) return res;
+    var people = peopleOf(res, input), used = {}, env = input.env || {}, scen = input.scenId || '';
+    var base = function (here) { return { env: env, people: people, here: here, used: used, scen: scen }; };
+    (res.log || []).forEach(function (e) { if (e && typeof e.text === 'string' && e.text.indexOf('{') >= 0) e.text = resolve(e.text, base(hereOf(e, people))); });
+    var E = res.ending || res.end;
+    if (E) {
+      if (Array.isArray(E.lines)) E.lines = E.lines.map(function (l) { return typeof l === 'string' ? resolve(l, base(null)) : l; });
+      if (typeof E.text === 'string') E.text = resolve(E.text, base(null));
+    }
+    (res.chars || []).forEach(function (c) { if (typeof c.fateNote === 'string') c.fateNote = resolve(c.fateNote, base(null)); if (Array.isArray(c.notes)) c.notes = c.notes.map(function (n) { return typeof n === 'string' ? resolve(n, base(null)) : n; }); });
+    return res;
+  }
+  var X = HK.LewdWords = {
+    TABLE: TABLE, KEYS: KEYS, RE: RE, PERSONA_COL: PERSONA_COL,
+    MODE: null,          /* 'direct'＝点検用（いつも直接の列） */
+    V10: [],             /* 点検用：体のない印 */
+    speakerHook: null,   /* (text, start, people) → 話し手（undefined なら既定の判定） */
+    resolve: resolve,
+    applyResult: applyResult,
+    peopleOf: peopleOf,
+    /* 結果の外で作った文（見本など）を、地の文の列で置き換える */
+    plain: function (text, env) { return resolve(text, { env: env || {}, people: [], v10: false }); },
+    /* 判定用：印を、決まった直接の語に戻す（生成の途中で本文の言葉を見る判定 pos-nogen.js などのため。表示には使わない） */
+    direct: function (text) { return typeof text !== 'string' ? text : text.replace(RE, function (m, k) { return DIRECT[k] || m; }); }
+  };
+  if (!V || !V.processResult) return;
+  var pr0 = V.processResult;
+  V.processResult = function (res, input) {
+    var r = pr0.apply(this, arguments);
+    if (HK.SAFE_ON || !res || !input) return r;
+    try { applyResult(res, input); } catch (e) { /* 印の置き換えに失敗しても結果は返す（残った印は lewd-mark.js が後始末する） */ }
+    return r;
   };
 })();
 ;/* ==== js/part-words.js ==== */
@@ -16175,52 +16548,52 @@
   X.OPEN = {
     mf: L('{a}は{b}をベッドに押し倒し、服の上から硬くなったものを押しつけた。{a}「ほら、もうこんなに。……{b}のせい」|{a}は{b}の唇を貪りながら、下着の中に手を滑り込ませた。指先がぬるりと滑る。{a}「キスだけで、もうぐちょぐちょじゃん」|{a}は{b}の服を剥ぎ取り、胸の先にしゃぶりついた。{s:suck}。{b}「{mb0}」'),
     fm: L('{a}は{b}をベッドに突き倒し、その腰に跨った。下着越しに、熱くなったところをわざとゆっくり擦りつける。{a}「もう硬い。……期待してたんだ？」|{a}は{b}のものを取り出して握り、先っぽを親指でぐりぐりと撫でた。{a}「ほら、お汁出てきた。かわいい」|{a}は{b}の脚のあいだに顔を埋め、根元まで咥え込んだ。{s:suck}。{b}「{mb0}」'),
-    ff: L('{a}は{b}の下着を引き下ろし、とろとろに濡れたところを指でなぞった。{a}「もうこんなに。……えっち」|{a}は{b}の胸を揉みしだきながら、乳首を舌で転がした。{s:suck}。{b}「{mb0}」|{a}は{b}をベッドに寝かせ、脚を大きく開かせた。{a}「ぜんぶ見せて。……ひくひくしてる」')
+    ff: L('{a}は{b}の下着を引き下ろし、とろとろに濡れたところを指でなぞった。{a}「もうこんなに。……えっち」|{a}は{b}の胸を揉みしだきながら、{乳首}を舌で転がした。{s:suck}。{b}「{mb0}」|{a}は{b}をベッドに寝かせ、脚を大きく開かせた。{a}「ぜんぶ見せて。……ひくひくしてる」')
   };
 
   /* ---------- 繋がって揺れる（mf：{a} は男性） ---------- */
   X.BODY = {
     hard: L('{a}は{b}の腰を掴み、一気に根元までねじ込んだ。{s:hit}。{b}「{mb1}」\n\n{a}「奥、当たってるでしょ。ほら、もっと締めて」\n\n容赦のない突き上げが続く。{a}の腰が打ちつけられるたびに、結合部からいやらしい音が溢れた。|{a}は{b}を四つん這いにさせ、後ろから奥まで突き入れた。{s:hit}。\n\n{a}「声、我慢すんな。ナカ、ぎゅうぎゅう締めつけてる」\n\n{b}「{mb1}」――{b}の腕から力が抜け、尻だけを高く掲げた格好で揺さぶられ続けた。|{a}は{b}の両脚を肩に担ぎ、真上から体重をかけて奥を抉った。{s:hit}。\n\n{a}「ここでしょ。一番奥、とんとんされるの好きだよね」\n\n{b}「{mb1}」――突かれるたびに{b}の腰が跳ね、二人の下にとろりと染みが広がった。'),
-    soft: L('{a}は{b}と指を絡め、ゆっくりと根元まで沈めた。{s:wet}。{b}「{mb1}」\n\n{a}「{b}のナカ、あったかくて、とろとろ……」\n\n奥に押し当てたまま腰を回すと、{b}の中がきゅうきゅうと甘えるように吸いついた。|{a}は{b}を抱きしめ、奥をこねるように優しく揺らした。{s:wet}。\n\n{a}「ここ、好き？　いっぱいしてあげる」\n\n{b}「{mb1}」――同じところを何度もとんとんと撫でられて、{b}の目がとろんと蕩けていった。|{a}は{b}の脚を抱えて、浅いところと深いところを交互に、ゆっくりと突いた。{s:wet}。\n\n{a}「……吸いついてくる」\n\n{b}「{mb1}」――{b}は{a}にしがみついて、もっと、とねだった。'),
-    tease: L('{a}は先っぽだけを{b}の入口に押し当て、ぬるぬると擦りつけるだけで、なかなか入れなかった。\n\n{a}「欲しいなら、おねだりして。ちゃんと言えるよね？」\n\n{b}「{mb1}」――{b}が泣きそうな声でねだった。それを聞いて、{a}はようやく一番奥まで、一息に突き入れた。{s:hit}。|{a}は奥まで沈めたまま、少しも動かなかった。ナカがひくひくと勝手に締まる。\n\n{a}「自分で腰振ってる。……えっちだね」\n\n{b}「{mb1}」――{b}は我慢できずに腰を揺らした。{a}は笑って、激しく突き上げ始めた。{s:hit}。|{a}は{b}がイきそうになるたびに腰を止め、また浅いところから追い上げ直した。{s:wet}。\n\n{a}「まだイっちゃだめ。……あと一回、我慢」\n\n{b}「{mb1}」――三度目に止められたとき、{b}は涙をこぼして「お願い」と繰り返した。'),
-    play: L('{a}は{b}を後ろから抱きかかえ、耳たぶを甘噛みしながら下から突き上げた。{s:hit}。\n\n{a}「声出したら負け。……はい、もう負け」\n\n{b}「{mb1}」――笑い声が、突かれるたびに甘く崩れていった。|{a}は角度を変えながら「ここ？　こっち？」と{b}の弱いところを探した。{s:wet}。\n\n{a}「当たり。ナカがきゅって言った」\n\n{b}「{mb1}」――見つかった場所を、{a}は面白がって何度も突いた。|{a}は{b}を抱えたまま上になったり下になったりしながら繋がり続けた。{s:hit}。\n\n{a}「いろんな体勢、ぜんぶ試そう」\n\n{b}「{mb1}」')
+    soft: L('{a}は{b}と指を絡め、ゆっくりと根元まで沈めた。{s:wet}。{b}「{mb1}」\n\n{a}「{b}の{ナカ}、あったかくて、とろとろ……」\n\n奥に押し当てたまま腰を回すと、{b}の中がきゅうきゅうと甘えるように吸いついた。|{a}は{b}を抱きしめ、奥をこねるように優しく揺らした。{s:wet}。\n\n{a}「ここ、好き？　いっぱいしてあげる」\n\n{b}「{mb1}」――同じところを何度もとんとんと撫でられて、{b}の目がとろんと蕩けていった。|{a}は{b}の脚を抱えて、浅いところと深いところを交互に、ゆっくりと突いた。{s:wet}。\n\n{a}「……吸いついてくる」\n\n{b}「{mb1}」――{b}は{a}にしがみついて、もっと、とねだった。'),
+    tease: L('{a}は先っぽだけを{b}の入口に押し当て、ぬるぬると擦りつけるだけで、なかなか入れなかった。\n\n{a}「欲しいなら、おねだりして。ちゃんと言えるよね？」\n\n{b}「{mb1}」――{b}が泣きそうな声でねだった。それを聞いて、{a}はようやく一番奥まで、一息に突き入れた。{s:hit}。|{a}は奥まで沈めたまま、少しも動かなかった。{ナカ}がひくひくと勝手に締まる。\n\n{a}「自分で腰振ってる。……えっちだね」\n\n{b}「{mb1}」――{b}は我慢できずに腰を揺らした。{a}は笑って、激しく突き上げ始めた。{s:hit}。|{a}は{b}がイきそうになるたびに腰を止め、また浅いところから追い上げ直した。{s:wet}。\n\n{a}「まだイっちゃだめ。……あと一回、我慢」\n\n{b}「{mb1}」――三度目に止められたとき、{b}は涙をこぼして「お願い」と繰り返した。'),
+    play: L('{a}は{b}を後ろから抱きかかえ、耳たぶを甘噛みしながら下から突き上げた。{s:hit}。\n\n{a}「声出したら負け。……はい、もう負け」\n\n{b}「{mb1}」――笑い声が、突かれるたびに甘く崩れていった。|{a}は角度を変えながら「ここ？　こっち？」と{b}の弱いところを探した。{s:wet}。\n\n{a}「当たり。{ナカ}がきゅって言った」\n\n{b}「{mb1}」――見つかった場所を、{a}は面白がって何度も突いた。|{a}は{b}を抱えたまま上になったり下になったりしながら繋がり続けた。{s:hit}。\n\n{a}「いろんな体勢、ぜんぶ試そう」\n\n{b}「{mb1}」')
   };
   X.CLIMAX = {
-    hard: L('{a}は最後に{b}の腰を強く引き寄せ、一番奥に押しつけたまま吐き出した。{s:cum}。\n\n{b}「{mb2}」\n\n注がれる熱に{b}の体がびくびくと跳ね、抜かれたあとも、溢れたものが太ももを伝った。|{a}は{b}がイっても止まらず、痙攣するナカをさらに突き続けてから奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{b}は白目を剥きかけながら、何度も何度もイき続けた。|{a}「出すから、奥で全部受け止めて」――{s:hit}、そして{s:cum}。\n\n{b}「{mb2}」\n\n{b}はつま先をぴんと伸ばしたまま、長いあいだ震えていた。'),
+    hard: L('{a}は最後に{b}の腰を強く引き寄せ、一番奥に押しつけたまま吐き出した。{s:cum}。\n\n{b}「{mb2}」\n\n注がれる熱に{b}の体がびくびくと跳ね、抜かれたあとも、溢れたものが太ももを伝った。|{a}は{b}がイっても止まらず、痙攣する{ナカ}をさらに突き続けてから奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{b}は白目を剥きかけながら、何度も何度もイき続けた。|{a}「出すから、奥で全部受け止めて」――{s:hit}、そして{s:cum}。\n\n{b}「{mb2}」\n\n{b}はつま先をぴんと伸ばしたまま、長いあいだ震えていた。'),
     soft: L('{a}は{b}をぎゅっと抱きしめ、一番奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{b}もそれに合わせてイき、二人は繋がったまま、何度もキスをした。|{a}「一緒に、イこう」――{b}が頷いた瞬間、二人は同時に果てた。{s:cum}。\n\n{b}「{mb2}」\n\n奥に広がる熱に、{b}は幸せそうに目を細めた。|{a}が奥をこねるように押し上げると、{b}は甘い声を上げてイった。その締めつけに、{a}もたまらず中に注いだ。{s:cum}。\n\n{b}「{mb2}」'),
     tease: L('{a}「いいよ、イって」――許された瞬間、{b}は堰を切ったようにイった。{a}もその締めつけの中で、奥にたっぷりと出した。{s:cum}。\n\n{b}「{mb2}」|焦らされ続けた体は、一度崩れたら止まらなかった。{b}が何度もイくあいだ、{a}は奥を突き続け、最後に一番深いところで果てた。{s:cum}。\n\n{b}「{mb2}」|{a}「ほら、おねだりできたご褒美」――{s:hit}。{b}は声にならない声を上げてイき、{a}も奥で脈打った。{s:cum}。\n\n{b}「{mb2}」'),
-    play: L('{a}「先にイったほうが負け」――負けたのは{b}だった。{a}は笑いながら、その痙攣するナカで果てた。{s:cum}。\n\n{b}「{mb2}」|{b}がイってしがみつくと、{a}もつられて奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\n汗だくのまま、二人は顔を見合わせて吹き出した。|{a}「せーの」――掛け声と同時に深く突かれて、{b}は本当にイってしまった。{a}も笑いながら中に出した。{s:cum}。\n\n{b}「{mb2}」')
+    play: L('{a}「先にイったほうが負け」――負けたのは{b}だった。{a}は笑いながら、その痙攣する{ナカ}で果てた。{s:cum}。\n\n{b}「{mb2}」|{b}がイってしがみつくと、{a}もつられて奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\n汗だくのまま、二人は顔を見合わせて吹き出した。|{a}「せーの」――掛け声と同時に深く突かれて、{b}は本当にイってしまった。{a}も笑いながら中に出した。{s:cum}。\n\n{b}「{mb2}」')
   };
 
   /* ---------- 女性の {a} が男性の {b} に跨る（fm） ---------- */
   X.FM_BODY = {
-    dom: L('{a}は{b}のちんぽを掴んで自分の入口にあてがい、見下ろしたまま、ゆっくりと腰を落とした。{s:wet}。\n\n{a}「ほら、ぜんぶ入った。……まだ動かないで」\n\n{b}「{mb1}」――{a}が腰を上下させるたびに、ぱちゅん、ぱちゅんと音が響いた。|{a}は{b}の胸に手をつき、腰だけを使って{b}を搾るように揺れた。{s:hit}。\n\n{a}「イきそうな顔。……まだ我慢して」\n\n{b}「{mb1}」――{b}が腰を浮かせると、{a}はその腰を押さえつけて、また焦らした。|{a}は{b}の手首を押さえつけ、ナカをきゅうっと締め上げながら腰を回した。{s:wet}。\n\n{a}「我慢してる顔、かわいい。……もっと見せて」\n\n{b}「{mb1}」'),
-    soft: L('{a}は{b}の上にそっと跨り、少しずつ腰を沈めた。{s:wet}。\n\n{a}「ん……おっきい……♡」\n\n{b}「{mb1}」――根元まで繋がると、{a}は{b}の胸に額を預けて、甘えるように腰を揺らした。|{a}は{b}の手を自分の腰に添えさせ、その手に導かれるように揺れた。{s:wet}。\n\n{a}「{b}の、ナカでびくびくしてる……♡」\n\n{b}「{mb1}」|{a}は{b}に跨ったまま唇を重ね、舌を絡めながらゆっくりと腰を上下させた。{s:wet}。\n\n{b}「{mb1}」'),
-    play: L('{a}は{b}のお腹の上に陣取り、「捕まえた」と笑ってから腰を落とした。{s:hit}。\n\n{a}「先に声出したほうが負け」\n\n{b}「{mb1}」――{a}は{b}が声を上げるたびに「一点」と数えた。|{a}は{b}に跨ったまま腰を回し、「ここ？　それとも、こっち？」と囁いた。{s:wet}。\n\n{b}「{mb1}」――{b}の反応を見つけるたびに、{a}は楽しそうに同じ動きを繰り返した。|{a}は弾むように腰を振りながら、{b}の乳首を指でつまんだ。{s:hit}。\n\n{a}「ここも弱い。……覚えた」\n\n{b}「{mb1}」')
+    dom: L('{a}は{b}の{男性器}を掴んで自分の入口にあてがい、見下ろしたまま、ゆっくりと腰を落とした。{s:wet}。\n\n{a}「ほら、ぜんぶ入った。……まだ動かないで」\n\n{b}「{mb1}」――{a}が腰を上下させるたびに、ぱちゅん、ぱちゅんと音が響いた。|{a}は{b}の胸に手をつき、腰だけを使って{b}を搾るように揺れた。{s:hit}。\n\n{a}「イきそうな顔。……まだ我慢して」\n\n{b}「{mb1}」――{b}が腰を浮かせると、{a}はその腰を押さえつけて、また焦らした。|{a}は{b}の手首を押さえつけ、{ナカ}をきゅうっと締め上げながら腰を回した。{s:wet}。\n\n{a}「我慢してる顔、かわいい。……もっと見せて」\n\n{b}「{mb1}」'),
+    soft: L('{a}は{b}の上にそっと跨り、少しずつ腰を沈めた。{s:wet}。\n\n{a}「ん……おっきい……♡」\n\n{b}「{mb1}」――根元まで繋がると、{a}は{b}の胸に額を預けて、甘えるように腰を揺らした。|{a}は{b}の手を自分の腰に添えさせ、その手に導かれるように揺れた。{s:wet}。\n\n{a}「{b}の、{ナカ}でびくびくしてる……♡」\n\n{b}「{mb1}」|{a}は{b}に跨ったまま唇を重ね、舌を絡めながらゆっくりと腰を上下させた。{s:wet}。\n\n{b}「{mb1}」'),
+    play: L('{a}は{b}のお腹の上に陣取り、「捕まえた」と笑ってから腰を落とした。{s:hit}。\n\n{a}「先に声出したほうが負け」\n\n{b}「{mb1}」――{a}は{b}が声を上げるたびに「一点」と数えた。|{a}は{b}に跨ったまま腰を回し、「ここ？　それとも、こっち？」と囁いた。{s:wet}。\n\n{b}「{mb1}」――{b}の反応を見つけるたびに、{a}は楽しそうに同じ動きを繰り返した。|{a}は弾むように腰を振りながら、{b}の{乳首}を指でつまんだ。{s:hit}。\n\n{a}「ここも弱い。……覚えた」\n\n{b}「{mb1}」')
   };
   X.FM_CLIMAX = {
-    dom: L('{a}が深く腰を落とし、ナカをきつく締め上げた。{a}「いいよ、出して」――{b}は腰を跳ね上げ、{a}の奥に何度も吐き出した。{s:cum}。\n\n{b}「{mb2}」|{a}は{b}が限界を迎える寸前で一度止め、それから一番深く腰を沈めた。{s:cum}。\n\n{b}「{mb2}」\n\n{a}は脈打つ熱を奥で受け止めながら、満足そうに{b}を見下ろした。|{a}「ほら、ぜんぶ搾りとってあげる」――{s:hit}。{b}は耐えきれずに果てた。{s:cum}。\n\n{b}「{mb2}」'),
-    soft: L('{a}が深く腰を沈めた瞬間、{b}は{a}を抱きしめて果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{a}も小さく震え、{b}の胸の上に崩れ落ちた。|二人は額を合わせたまま、ほとんど同時に果てた。{s:cum}。\n\n{b}「{mb2}」|{a}のナカがきゅうっと締まり、{b}はたまらず{a}の腰を抱き寄せて奥に注いだ。{s:cum}。\n\n{b}「{mb2}」'),
-    play: L('{b}が先に果てた。{s:cum}。{a}「勝った♡」――{a}は笑いながら{b}の胸に倒れ込んだ。\n\n{b}「{mb2}」|{a}「せーの」――深く腰を落とされて、{b}は本当にそれで果てた。{s:cum}。\n\n{b}「{mb2}」|{a}がイってナカを痙攣させると、{b}もつられて奥に吐き出した。{s:cum}。\n\n{b}「{mb2}」')
+    dom: L('{a}が深く腰を落とし、{ナカ}をきつく締め上げた。{a}「いいよ、出して」――{b}は腰を跳ね上げ、{a}の奥に何度も吐き出した。{s:cum}。\n\n{b}「{mb2}」|{a}は{b}が限界を迎える寸前で一度止め、それから一番深く腰を沈めた。{s:cum}。\n\n{b}「{mb2}」\n\n{a}は脈打つ熱を奥で受け止めながら、満足そうに{b}を見下ろした。|{a}「ほら、ぜんぶ搾りとってあげる」――{s:hit}。{b}は耐えきれずに果てた。{s:cum}。\n\n{b}「{mb2}」'),
+    soft: L('{a}が深く腰を沈めた瞬間、{b}は{a}を抱きしめて果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{a}も小さく震え、{b}の胸の上に崩れ落ちた。|二人は額を合わせたまま、ほとんど同時に果てた。{s:cum}。\n\n{b}「{mb2}」|{a}の{ナカ}がきゅうっと締まり、{b}はたまらず{a}の腰を抱き寄せて奥に注いだ。{s:cum}。\n\n{b}「{mb2}」'),
+    play: L('{b}が先に果てた。{s:cum}。{a}「勝った♡」――{a}は笑いながら{b}の胸に倒れ込んだ。\n\n{b}「{mb2}」|{a}「せーの」――深く腰を落とされて、{b}は本当にそれで果てた。{s:cum}。\n\n{b}「{mb2}」|{a}がイって{ナカ}を痙攣させると、{b}もつられて奥に吐き出した。{s:cum}。\n\n{b}「{mb2}」')
   };
 
   /* ---------- 女性どうし（ff） ---------- */
   X.FF_BODY = {
-    dom: L('{a}は{b}の脚を大きく開かせ、指を二本、根元まで沈めた。奥のざらついたところを掻くように動かす。{s:wet}。\n\n{a}「ここでしょ。……逃げないで」\n\n{b}「{mb1}」――空いた手で胸の先をつままれ、{b}の背中が弓なりに反った。|{a}は{b}の太ももを押さえつけ、脚のあいだに顔を埋めた。{s:suck}。\n\n{b}「{mb1}」――舌でクリをしつこく弾かれ、{b}の腰が浮いた。|{a}は{b}のナカを指で掻き回しながら、耳元で囁いた。{s:wet}。\n\n{a}「いやらしい音。……聞こえる？」\n\n{b}「{mb1}」'),
-    soft: L('{a}は{b}の乳首を唇で含みながら、指先でそっとクリを撫でた。{s:wet}。\n\n{a}「ここ、好き？」\n\n{b}「{mb1}」――{b}が頷くと、{a}は指を一本だけ中に沈め、ゆっくりと揺らした。|{a}は{b}の脚のあいだに顔を寄せ、溢れたものを舌ですくい取った。{s:suck}。\n\n{b}「{mb1}」|{a}は{b}を抱きしめたまま、指で入口をくちくちと撫で続けた。{s:wet}。\n\n{a}「とろとろ。……かわいい」\n\n{b}「{mb1}」'),
-    play: L('{a}は{b}の脚のあいだに指を滑らせ、「どっちが先にイくか、勝負」と笑った。{s:wet}。\n\n{b}「{mb1}」|{a}は{b}の弱いところを探すように、指をあちこちに滑らせた。{s:wet}。{a}「みーつけた」\n\n{b}「{mb1}」|{a}は{b}の胸に頬ずりしながら、指でナカを浅くかき混ぜた。{s:wet}。\n\n{a}「声、かわいい。もっと聞かせて」\n\n{b}「{mb1}」')
+    dom: L('{a}は{b}の脚を大きく開かせ、指を二本、根元まで沈めた。奥のざらついたところを掻くように動かす。{s:wet}。\n\n{a}「ここでしょ。……逃げないで」\n\n{b}「{mb1}」――空いた手で胸の先をつままれ、{b}の背中が弓なりに反った。|{a}は{b}の太ももを押さえつけ、脚のあいだに顔を埋めた。{s:suck}。\n\n{b}「{mb1}」――舌で{陰核}をしつこく弾かれ、{b}の腰が浮いた。|{a}は{b}の{ナカ}を指で掻き回しながら、耳元で囁いた。{s:wet}。\n\n{a}「いやらしい音。……聞こえる？」\n\n{b}「{mb1}」'),
+    soft: L('{a}は{b}の{乳首}を唇で含みながら、指先でそっと{陰核}を撫でた。{s:wet}。\n\n{a}「ここ、好き？」\n\n{b}「{mb1}」――{b}が頷くと、{a}は指を一本だけ中に沈め、ゆっくりと揺らした。|{a}は{b}の脚のあいだに顔を寄せ、溢れたものを舌ですくい取った。{s:suck}。\n\n{b}「{mb1}」|{a}は{b}を抱きしめたまま、指で入口をくちくちと撫で続けた。{s:wet}。\n\n{a}「とろとろ。……かわいい」\n\n{b}「{mb1}」'),
+    play: L('{a}は{b}の脚のあいだに指を滑らせ、「どっちが先にイくか、勝負」と笑った。{s:wet}。\n\n{b}「{mb1}」|{a}は{b}の弱いところを探すように、指をあちこちに滑らせた。{s:wet}。{a}「みーつけた」\n\n{b}「{mb1}」|{a}は{b}の胸に頬ずりしながら、指で{ナカ}を浅くかき混ぜた。{s:wet}。\n\n{a}「声、かわいい。もっと聞かせて」\n\n{b}「{mb1}」')
   };
   X.FF_CLIMAX = {
-    dom: L('{a}がナカの一番弱いところを押し上げた瞬間、{b}は潮を噴いてイった。{s:wet}。\n\n{b}「{mb2}」\n\n{a}は震えが収まるまで、指を抜かなかった。|{a}がクリを強く吸い上げると、{b}の腰が大きく跳ねた。{s:suck}。\n\n{b}「{mb2}」|{a}は{b}がイっても指を止めず、二度目の波まで追い上げた。{s:wet}。\n\n{b}「{mb2}」'),
-    soft: L('甘い痺れが{b}の腰の奥から広がり、{b}は{a}にしがみついてイった。{s:wet}。\n\n{b}「{mb2}」|{a}の舌がやわらかくクリを押した瞬間、{b}は小さく声を上げてイった。{s:suck}。\n\n{b}「{mb2}」|{a}の指にナカをゆっくり撫でられ続けて、{b}はとろけるようにイった。{s:wet}。\n\n{b}「{mb2}」'),
+    dom: L('{a}が{ナカ}の一番弱いところを押し上げた瞬間、{b}は潮を噴いてイった。{s:wet}。\n\n{b}「{mb2}」\n\n{a}は震えが収まるまで、指を抜かなかった。|{a}が{陰核}を強く吸い上げると、{b}の腰が大きく跳ねた。{s:suck}。\n\n{b}「{mb2}」|{a}は{b}がイっても指を止めず、二度目の波まで追い上げた。{s:wet}。\n\n{b}「{mb2}」'),
+    soft: L('甘い痺れが{b}の腰の奥から広がり、{b}は{a}にしがみついてイった。{s:wet}。\n\n{b}「{mb2}」|{a}の舌がやわらかく{陰核}を押した瞬間、{b}は小さく声を上げてイった。{s:suck}。\n\n{b}「{mb2}」|{a}の指に{ナカ}をゆっくり撫でられ続けて、{b}はとろけるようにイった。{s:wet}。\n\n{b}「{mb2}」'),
     play: L('{b}が先にイって、{a}は「勝ち♡」と笑った。{s:wet}。\n\n{b}「{mb2}」|笑い声が途切れた瞬間、{b}はびくびくと腰を震わせてイった。{s:wet}。\n\n{b}「{mb2}」|{a}「イっちゃえ」――耳元で囁かれた瞬間、{b}は{a}の指を締めつけてイった。{s:wet}。\n\n{b}「{mb2}」')
   };
 
   /* ---------- 感じていく（受けの快感。男性向け） ---------- */
   X.FEEL = {
-    mf: L('奥を突かれるたびに、{b}の頭の中が真っ白になっていった。{b}「{mb1}」――自分からも腰を押しつけて、{b}は{a}のちんぽを奥へ奥へと欲しがった。|{b}のナカは{a}の形を覚えたみたいに、ぎゅうっと吸いついて離さない。{s:wet}。{b}「{mb1}」|{b}は指先を震わせ、だらしなく開いた口から涎をこぼした。{b}「{mb1}」|{a}がカリで浅いところを何度も引っかけるたび、{b}の内側がひくひくと吸いついた。{b}「{mb1}」――逃げようとした腰を引き戻され、また奥まで埋められる。|一番奥をぐりぐりと押し潰されて、{b}の足の指がぎゅっと丸まった。{b}「{mb1}」――突かれるたびに、繋がったところから濡れた音が溢れていく。|{b}はシーツを握りしめたまま、揺さぶられるリズムに合わせて声を跳ねさせた。{b}「{mb1}」――ナカはもう、{a}の形にすっかり馴染んでいた。'),
-    fm: L('{a}のナカに根元まで搾られて、{b}の腰がびくびくと勝手に跳ねた。{b}「{mb1}」|熱くてぬるぬるのナカに締めつけられるたび、{b}の目の前がちかちかと白く瞬いた。{s:wet}。{b}「{mb1}」|{a}が腰を落とすたびに、ぱちゅんと音が鳴り、{b}は情けない声を止められなかった。{b}「{mb1}」|{a}が腰を落とすたびに、{b}のものが根元までぬるりと呑み込まれた。{b}「{mb1}」――ぎゅっと締められて、{b}は思わず腰を浮かせた。|{a}は{b}の胸に手をついて、前後にいやらしく腰を擦りつけた。{b}「{mb1}」――ナカでしごかれる感覚に、{b}の太ももががくがくと震えた。|{a}にじっと見下ろされながら、{b}は情けない声を止められなかった。{b}「{mb1}」――{a}は楽しそうに、わざとゆっくり腰を上下させた。'),
-    ff: L('{b}の脚のあいだから、くちゅくちゅといやらしい音が絶え間なく響いた。{b}「{mb1}」|{b}の腰が、{a}の指を追うように勝手に揺れた。とろとろに溢れたものが、太ももまで濡らしていく。{b}「{mb1}」|{b}は自分の胸を抱くようにして、何度も小さく震えた。{b}「{mb1}」|{a}の舌がぷっくり膨らんだ芽をちゅうっと吸い上げるたび、{b}の腰がびくんと跳ねた。{b}「{mb1}」――溢れた蜜が、内腿まで伝っていく。|{a}は二本の指でナカのざらついたところを擦りながら、親指で外側も押し潰した。{b}「{mb1}」――{b}は首を振って、それでも脚を閉じられなかった。|{a}に胸の先を甘噛みされながら、ナカを指でかき回された。{b}「{mb1}」――上と下を同時に責められて、{b}の目に涙が浮かんだ。')
+    mf: L('奥を突かれるたびに、{b}の頭の中が真っ白になっていった。{b}「{mb1}」――自分からも腰を押しつけて、{b}は{a}の{男性器}を奥へ奥へと欲しがった。|{b}の{ナカ}は{a}の形を覚えたみたいに、ぎゅうっと吸いついて離さない。{s:wet}。{b}「{mb1}」|{b}は指先を震わせ、だらしなく開いた口から涎をこぼした。{b}「{mb1}」|{a}がカリで浅いところを何度も引っかけるたび、{b}の内側がひくひくと吸いついた。{b}「{mb1}」――逃げようとした腰を引き戻され、また奥まで埋められる。|一番奥をぐりぐりと押し潰されて、{b}の足の指がぎゅっと丸まった。{b}「{mb1}」――突かれるたびに、繋がったところから濡れた音が溢れていく。|{b}はシーツを握りしめたまま、揺さぶられるリズムに合わせて声を跳ねさせた。{b}「{mb1}」――{ナカ}はもう、{a}の形にすっかり馴染んでいた。'),
+    fm: L('{a}の{ナカ}に根元まで搾られて、{b}の腰がびくびくと勝手に跳ねた。{b}「{mb1}」|熱くてぬるぬるの{ナカ}に締めつけられるたび、{b}の目の前がちかちかと白く瞬いた。{s:wet}。{b}「{mb1}」|{a}が腰を落とすたびに、ぱちゅんと音が鳴り、{b}は情けない声を止められなかった。{b}「{mb1}」|{a}が腰を落とすたびに、{b}のものが根元までぬるりと呑み込まれた。{b}「{mb1}」――ぎゅっと締められて、{b}は思わず腰を浮かせた。|{a}は{b}の胸に手をついて、前後にいやらしく腰を擦りつけた。{b}「{mb1}」――{ナカ}でしごかれる感覚に、{b}の太ももががくがくと震えた。|{a}にじっと見下ろされながら、{b}は情けない声を止められなかった。{b}「{mb1}」――{a}は楽しそうに、わざとゆっくり腰を上下させた。'),
+    ff: L('{b}の脚のあいだから、くちゅくちゅといやらしい音が絶え間なく響いた。{b}「{mb1}」|{b}の腰が、{a}の指を追うように勝手に揺れた。とろとろに溢れたものが、太ももまで濡らしていく。{b}「{mb1}」|{b}は自分の胸を抱くようにして、何度も小さく震えた。{b}「{mb1}」|{a}の舌がぷっくり膨らんだ芽をちゅうっと吸い上げるたび、{b}の腰がびくんと跳ねた。{b}「{mb1}」――溢れた蜜が、内腿まで伝っていく。|{a}は二本の指で{ナカ}のざらついたところを擦りながら、親指で外側も押し潰した。{b}「{mb1}」――{b}は首を振って、それでも脚を閉じられなかった。|{a}に胸の先を甘噛みされながら、{ナカ}を指でかき回された。{b}「{mb1}」――上と下を同時に責められて、{b}の目に涙が浮かんだ。')
   };
   /* 攻め側の声（主導する側の喘ぎ） */
   X.FEEL_A = {
@@ -16231,28 +16604,28 @@
 
   /* ---------- 短い版（数行。始まり＋最中＋果て） ---------- */
   X.SHORT = {
-    mf: L('{a}は{b}の脚を開かせ、一気に奥までねじ込んだ。{s:hit}。{b}「{mb1}」――何度も奥を突かれたあと、{a}は一番奥でたっぷりと吐き出した。{s:cum}。{b}「{mb2}」|{a}は{b}を後ろから抱えて、ぬるぬるのナカを激しく突き上げた。{s:hit}。最後は奥に押しつけたまま果てて、{b}もびくびくとイき続けた。{b}「{mb2}」|{a}は{b}と指を絡めたまま、ゆっくり奥をこね続けた。{s:wet}。{b}「{mb1}」――二人はほとんど同時に果てた。{s:cum}。{b}「{mb2}」|{a}は焦らすように先っぽだけを擦りつけた。{b}が泣きながらおねだりした。{a}はそこでようやく、根元まで突き入れた。{s:hit}。{b}「{mb2}」――そのまま奥で、熱いものが弾けた。{s:cum}。'),
-    fm: L('{a}は{b}に跨って、ちんぽを根元まで呑み込んだ。{s:wet}。{a}「まだ。……我慢して」――焦らされたあと、{b}は{a}の奥に何度も吐き出した。{s:cum}。{b}「{mb2}」|{a}は{b}の胸に手をつき、ぱちゅんぱちゅんと腰を打ちつけた。{s:hit}。{b}「{mb1}」――搾りとられるように、{b}は{a}のナカで果てた。{s:cum}。{b}「{mb2}」|{a}は{b}の上で甘えるように腰を揺らした。{s:wet}。{b}「{mb2}」――二人は抱き合ったまま、一緒に果てた。{s:cum}。'),
-    ff: L('{a}は{b}のナカに指を二本沈め、弱いところをしつこく掻いた。{s:wet}。{b}「{mb2}」――{b}は潮を噴きながらイった。|{a}は{b}の脚のあいだに顔を埋め、クリを強く吸い上げた。{s:suck}。{b}「{mb2}」――{b}の腰が大きく跳ねた。|{a}は{b}の乳首を舌で転がしながら、指で入口をくちくちと撫で続けた。{s:wet}。{b}「{mb2}」――{b}はとろけるようにイった。')
+    mf: L('{a}は{b}の脚を開かせ、一気に奥までねじ込んだ。{s:hit}。{b}「{mb1}」――何度も奥を突かれたあと、{a}は一番奥でたっぷりと吐き出した。{s:cum}。{b}「{mb2}」|{a}は{b}を後ろから抱えて、ぬるぬるの{ナカ}を激しく突き上げた。{s:hit}。最後は奥に押しつけたまま果てて、{b}もびくびくとイき続けた。{b}「{mb2}」|{a}は{b}と指を絡めたまま、ゆっくり奥をこね続けた。{s:wet}。{b}「{mb1}」――二人はほとんど同時に果てた。{s:cum}。{b}「{mb2}」|{a}は焦らすように先っぽだけを擦りつけた。{b}が泣きながらおねだりした。{a}はそこでようやく、根元まで突き入れた。{s:hit}。{b}「{mb2}」――そのまま奥で、熱いものが弾けた。{s:cum}。'),
+    fm: L('{a}は{b}に跨って、{男性器}を根元まで呑み込んだ。{s:wet}。{a}「まだ。……我慢して」――焦らされたあと、{b}は{a}の奥に何度も吐き出した。{s:cum}。{b}「{mb2}」|{a}は{b}の胸に手をつき、ぱちゅんぱちゅんと腰を打ちつけた。{s:hit}。{b}「{mb1}」――搾りとられるように、{b}は{a}の{ナカ}で果てた。{s:cum}。{b}「{mb2}」|{a}は{b}の上で甘えるように腰を揺らした。{s:wet}。{b}「{mb2}」――二人は抱き合ったまま、一緒に果てた。{s:cum}。'),
+    ff: L('{a}は{b}の{ナカ}に指を二本沈め、弱いところをしつこく掻いた。{s:wet}。{b}「{mb2}」――{b}は潮を噴きながらイった。|{a}は{b}の脚のあいだに顔を埋め、{陰核}を強く吸い上げた。{s:suck}。{b}「{mb2}」――{b}の腰が大きく跳ねた。|{a}は{b}の{乳首}を舌で転がしながら、指で入口をくちくちと撫で続けた。{s:wet}。{b}「{mb2}」――{b}はとろけるようにイった。')
   };
 
   /* ---------- 濃い：果てたあと、もう一度（小説調／男性向け） ---------- */
   X.AGAIN = {
     novel: {
       mf: L('一度果てても、{a}は{b}を離さなかった。抜かないまま、また硬さを取り戻していく。{b}が息を整える間もなく、{a}はふたたびゆっくりと腰を揺らし始めた。二度目は一度目よりも長く、深く、{b}は声が枯れるまで{a}の名前を呼んだ。|{b}は{a}の胸に頬を預けたまま、まだ熱の残る指で{a}の肌をなぞった。それが合図だった。{a}は{b}を組み敷き直し、今度は後ろから、もう一度深く繋がった。|汗の引かない肌を重ねたまま、二人はもう一度求め合った。ゆっくりと、確かめるように。夜が白むころ、二人はようやく眠りに落ちた。|「……まだ、足りない」――{b}のその一言で、{a}はまた{b}を抱き寄せた。二度目、三度目と重ねるうちに、どちらが先に果てたのかも分からなくなった。|{a}は{b}の汗に濡れた前髪を指でよけ、額に口づけた。そのまま唇は頬へ、首筋へと下りていき、{b}の体がまた熱を帯びはじめる。二度目の{a}は、一度目よりずっとゆっくりと、{b}の奥を確かめるように動いた。|息が落ち着いたころ、{a}は{b}を横向きに抱き直し、背中から腕を回した。耳元で名前を呼ばれただけで、{b}の体は小さく震えた。そのまま二人は、もう一度、静かに繋がった。|「もう一回だけ」と言ったのは、どちらが先だったのか分からない。{a}は{b}の脚を抱え上げ、さっきよりも深いところまで沈んでいった。{b}は{a}の背中に爪を立て、二度目の波に呑まれていった。|{b}がうとうとしかけたころ、背中に{a}の唇が触れた。肩甲骨から腰へと口づけが下りていき、{b}の眠気はすっかり消えてしまった。二度目の{a}は、一度目よりもずっと意地悪に、{b}が自分からねだるまで焦らし続けた。|{a}は{b}を膝の上に抱き上げ、向かい合ったまま、もう一度ゆっくりと繋がった。{b}は{a}の首に腕を回し、額をくっつけたまま小さく揺れた。今度は、互いの顔から一度も目を逸らさなかった。|息が落ち着くより先に、{b}のほうから{a}の唇を求めた。{a}は少し驚いたように笑い、それから{b}をもう一度敷布に沈めた。二度目は、言葉もなく、ただ熱だけを確かめ合うような交わりだった。|{a}は{b}の脚を撫で上げ、まだ熱の残る内腿に口づけた。{b}が身をよじって逃げようとすると、{a}はその腰を引き戻し、もう一度奥まで沈んだ。{b}の抗議の声は、すぐに甘い吐息に変わった。'),
-      fm: L('一度果てても、{a}は{b}の上から降りなかった。{b}のものがナカでまた硬くなっていくのを感じて、{a}は小さく笑い、もう一度腰を揺らし始めた。|{a}は{b}の胸に崩れ落ちたまま、しばらく息を整えた。それから顔を上げ、「まだ、終わりじゃないよ」と囁いて、ふたたび{b}を自分の奥へ導いた。|汗に濡れた体を重ねたまま、二人はもう一度求め合った。今度は{a}が、ゆっくりと、{b}の顔を見下ろしながら。|{a}は{b}の隣に寝転び、指先で{b}の胸をなぞった。{b}が身じろぎしたのを合図に、{a}はくすりと笑って、もう一度{b}の腰に跨った。今度はさっきよりもゆっくりと、{b}が音を上げるまで焦らすように。|{a}は{b}の手を取り、自分の腰に当てさせた。「今度は、あなたが動かして」――{b}の手に導かれるまま、{a}はもう一度深く腰を沈めた。二度目は、二人とも一度目より長くもたなかった。|汗ばんだ{a}の体が、また{b}の上でゆっくりと揺れはじめた。{b}は「もう無理」と言いかけて、{a}の締めつけに声を呑んだ。夜が白むまで、{a}は何度も{b}を自分の中へ迎え入れた。|{a}は{b}の胸に頬を預けたまま、指先で{b}の鎖骨をなぞった。{b}がくすぐったそうに笑うと、{a}は顔を上げ、「まだ寝かせないよ」と囁いた。二度目の{a}は、一度目よりずっとゆっくりと腰を沈めた。|{a}は{b}の手を取り、自分の胸に押し当てさせた。そのまま腰を浮かせ、もう一度{b}を深く迎え入れる。{b}が息を詰めるのを見下ろして、{a}は満足げに目を細めた。|{a}は一度{b}の上から降りると、今度は背中を向けて跨り直した。{b}の目の前で、{a}の腰がゆっくりと円を描きはじめる。{b}は堪えきれずに、{a}の腰に手を伸ばした。|汗ばんだ髪をかき上げながら、{a}は{b}を見下ろした。「もう一回、できるよね？」――答えを待たずに、{a}はまた腰を揺らし始めた。夜が明けるまで、{b}は{a}の下から抜け出せなかった。'),
+      fm: L('一度果てても、{a}は{b}の上から降りなかった。{b}のものが{ナカ}でまた硬くなっていくのを感じて、{a}は小さく笑い、もう一度腰を揺らし始めた。|{a}は{b}の胸に崩れ落ちたまま、しばらく息を整えた。それから顔を上げ、「まだ、終わりじゃないよ」と囁いて、ふたたび{b}を自分の奥へ導いた。|汗に濡れた体を重ねたまま、二人はもう一度求め合った。今度は{a}が、ゆっくりと、{b}の顔を見下ろしながら。|{a}は{b}の隣に寝転び、指先で{b}の胸をなぞった。{b}が身じろぎしたのを合図に、{a}はくすりと笑って、もう一度{b}の腰に跨った。今度はさっきよりもゆっくりと、{b}が音を上げるまで焦らすように。|{a}は{b}の手を取り、自分の腰に当てさせた。「今度は、あなたが動かして」――{b}の手に導かれるまま、{a}はもう一度深く腰を沈めた。二度目は、二人とも一度目より長くもたなかった。|汗ばんだ{a}の体が、また{b}の上でゆっくりと揺れはじめた。{b}は「もう無理」と言いかけて、{a}の締めつけに声を呑んだ。夜が白むまで、{a}は何度も{b}を自分の中へ迎え入れた。|{a}は{b}の胸に頬を預けたまま、指先で{b}の鎖骨をなぞった。{b}がくすぐったそうに笑うと、{a}は顔を上げ、「まだ寝かせないよ」と囁いた。二度目の{a}は、一度目よりずっとゆっくりと腰を沈めた。|{a}は{b}の手を取り、自分の胸に押し当てさせた。そのまま腰を浮かせ、もう一度{b}を深く迎え入れる。{b}が息を詰めるのを見下ろして、{a}は満足げに目を細めた。|{a}は一度{b}の上から降りると、今度は背中を向けて跨り直した。{b}の目の前で、{a}の腰がゆっくりと円を描きはじめる。{b}は堪えきれずに、{a}の腰に手を伸ばした。|汗ばんだ髪をかき上げながら、{a}は{b}を見下ろした。「もう一回、できるよね？」――答えを待たずに、{a}はまた腰を揺らし始めた。夜が明けるまで、{b}は{a}の下から抜け出せなかった。'),
       ff: L('一度達しても、{a}は{b}を離さなかった。まだ震えの残る{b}の脚のあいだに、もう一度指を沈める。{b}は首を振りながら、それでも{a}の手を止めなかった。|二人は互いの体を確かめ合うように、何度も何度も触れ合った。夜が白むころには、どちらの指がどちらのものかも分からなくなっていた。|{b}が今度は{a}を引き寄せ、そのまま二人で、もう一度熱の中へ沈んでいった。|{a}は{b}の震える内腿に口づけを落とし、そのまま顔を埋めた。達したばかりの場所を舌でゆっくりなぞられ、{b}は声にならない声を上げた。二度目は、一度目よりもずっと深く{b}を連れ去った。|{a}は{b}を後ろから抱きしめ、胸を包んでいた手を、またゆっくりと下へ滑らせた。「まだ、敏感なままだね」と囁かれ、{b}は耳まで赤くした。{a}の指は、{b}が泣き声のような声を上げるまで止まらなかった。|息が整うのを待ってから、{a}は{b}の指に自分の指を絡めた。それから空いた手で、もう一度{b}の熱を探り当てた。二人の夜は、窓の外が明るくなるまで終わらなかった。|{a}は{b}の胸に頬を寄せたまま、指先でその肌をなぞりはじめた。{b}がくすぐったそうに身じろぎすると、{a}はその手首を捕まえて、もう一度{b}の脚のあいだへ指を滑らせた。二度目は、互いの息を確かめ合うような、ゆっくりとした夜だった。|{a}は{b}の髪を耳にかけ、そのまま首筋に唇を落とした。{b}の肩がぴくりと跳ねる。唇がゆっくりと下へ降りていくにつれて、{b}の息はまた甘く乱れていった。|{a}は{b}を背中から抱き寄せ、片脚を自分の脚に絡めさせた。逃げ場のない姿勢のまま、指がもう一度{b}の熱を探り当てる。{b}は{a}の腕にしがみつき、二度目の波に身を委ねた。|「もう少しだけ」と囁いたのは{b}のほうだった。{a}は嬉しそうに目を細め、{b}の内腿に口づけを落とした。二人が眠りについたのは、窓の外が白み始めてからだった。')
     },
     ero: {
-      mf: L('{a}「まだ硬いの、分かる？」――抜かないまま、{a}はまた腰を動かし始めた。{s:hit}。{b}「{mb2}」――イったばかりの敏感なナカを突かれ、{b}は何度も連続でイかされた。最後にもう一度奥に注がれる。{s:cum}。|{a}は{b}をうつ伏せにして、溢れた精液をちんぽで塗り広げるように、もう一度後ろから突き入れた。{s:hit}。{b}「{mb2}」――二回戦は、一回戦より長かった。|{b}「もっと、ちょうだい……♡」――おねだりされて、{a}は{b}の脚を抱え直した。{s:hit}。朝までに、{a}は三回、{b}の奥に吐き出した。{s:cum}。|{a}「休ませると思った？」――{a}は{b}を横向きにして片脚を抱え上げ、まだ蕩けたままのナカへ、もう一度根元まで沈めた。{s:hit}。{b}「{mb2}」――敏感になりすぎた体は、数回突かれただけでまたイってしまった。|{a}は{b}を膝の上に抱き上げ、下から突き上げた。{s:wet}。{b}「{mb2}」――一回目に注がれたものが溢れて、つながったところをいやらしく濡らしていく。{a}はそのまま、二回目も一番奥に吐き出した。{s:cum}。|{b}がシーツに顔を埋めて息を整えていると、{a}の手がまた腰を掴んだ。{s:hit}。{b}「{mb2}」――ぐったりした体を後ろから好きなように揺さぶられ、{b}は朝までに何度イったのか、もう数えられなかった。'),
-      fm: L('{a}「まだ出せるよね？」――{a}は{b}の上で、また腰を揺らし始めた。{s:wet}。{b}「{mb2}」――イったばかりのちんぽを搾られて、{b}は情けない声を上げた。|{a}は{b}のものを口で綺麗にしてから、もう一度跨った。{s:suck}。{b}「{mb2}」――二回目も、{a}のナカでたっぷりと搾りとられた。{s:cum}。|{a}「あと一回だけ……♡」――結局、{b}が空っぽになるまで、{a}は降りてくれなかった。{s:hit}。|{a}は{b}の胸に手をついて、達したばかりのちんぽをナカでぎゅっと締めつけた。{s:wet}。{b}「{mb2}」――萎える暇も与えられず、{b}はまた{a}の腰の動きに合わせて硬くさせられた。二回目は、一回目より長く搾りとられた。{s:cum}。|{a}は背中を向けて{b}に跨り直し、自分から腰を沈めた。{s:hit}。{b}「{mb2}」――ぱちゅぱちゅと揺れる{a}の腰から目が離せないまま、{b}はまた{a}のナカに出してしまった。{s:cum}。|{a}「ねえ、もう一回♡」――{a}は{b}の唇を塞ぎながら、ゆっくりと腰で円を描いた。{s:wet}。{b}「{mb2}」――結局、朝まで{a}の下から抜け出せなかった。'),
-      ff: L('{a}「まだイけるでしょ？」――イったばかりの{b}のナカを、{a}はまた指で掻き回した。{s:wet}。{b}「{mb2}」――連続でイかされて、{b}は下に敷いたものまでびしょびしょにした。|{b}が今度は{a}の脚のあいだに顔を埋めた。{s:suck}。二人は交代で何度もイかせ合って、朝まで止まらなかった。|{a}はとろとろになった{b}の脚を開かせ、もう一度舌を這わせた。{s:suck}。{b}「{mb2}」|{a}はイったばかりの{b}の脚を肩に担ぎ、とろとろになったところへ二本の指を沈めた。{s:wet}。{b}「{mb2}」――奥のいいところを掻かれ続けて、{b}は腰を跳ねさせながら何度も潮を噴いた。|{a}は{b}の胸の先を舌で転がしながら、濡れた割れ目を指でくちゅくちゅと弄りつづけた。{s:wet}。{b}「{mb2}」――上と下を同時に責められて、{b}は二回目も、三回目も、あっけなくイかされた。|{a}「次はこっち、ね？」――{a}は{b}をうつ伏せにして、後ろから指を差し入れた。{s:wet}。{b}「{mb2}」――シーツを握りしめたまま、{b}は朝まで{a}の指から逃げられなかった。')
+      mf: L('{a}「まだ硬いの、分かる？」――抜かないまま、{a}はまた腰を動かし始めた。{s:hit}。{b}「{mb2}」――イったばかりの敏感な{ナカ}を突かれ、{b}は何度も連続でイかされた。最後にもう一度奥に注がれる。{s:cum}。|{a}は{b}をうつ伏せにして、溢れた{精液}を{男性器}で塗り広げるように、もう一度後ろから突き入れた。{s:hit}。{b}「{mb2}」――二回戦は、一回戦より長かった。|{b}「もっと、ちょうだい……♡」――おねだりされて、{a}は{b}の脚を抱え直した。{s:hit}。朝までに、{a}は三回、{b}の奥に吐き出した。{s:cum}。|{a}「休ませると思った？」――{a}は{b}を横向きにして片脚を抱え上げ、まだ蕩けたままの{ナカ}へ、もう一度根元まで沈めた。{s:hit}。{b}「{mb2}」――敏感になりすぎた体は、数回突かれただけでまたイってしまった。|{a}は{b}を膝の上に抱き上げ、下から突き上げた。{s:wet}。{b}「{mb2}」――一回目に注がれたものが溢れて、つながったところをいやらしく濡らしていく。{a}はそのまま、二回目も一番奥に吐き出した。{s:cum}。|{b}がシーツに顔を埋めて息を整えていると、{a}の手がまた腰を掴んだ。{s:hit}。{b}「{mb2}」――ぐったりした体を後ろから好きなように揺さぶられ、{b}は朝までに何度イったのか、もう数えられなかった。'),
+      fm: L('{a}「まだ出せるよね？」――{a}は{b}の上で、また腰を揺らし始めた。{s:wet}。{b}「{mb2}」――イったばかりの{男性器}を搾られて、{b}は情けない声を上げた。|{a}は{b}のものを口で綺麗にしてから、もう一度跨った。{s:suck}。{b}「{mb2}」――二回目も、{a}の{ナカ}でたっぷりと搾りとられた。{s:cum}。|{a}「あと一回だけ……♡」――結局、{b}が空っぽになるまで、{a}は降りてくれなかった。{s:hit}。|{a}は{b}の胸に手をついて、達したばかりの{男性器}を{ナカ}でぎゅっと締めつけた。{s:wet}。{b}「{mb2}」――萎える暇も与えられず、{b}はまた{a}の腰の動きに合わせて硬くさせられた。二回目は、一回目より長く搾りとられた。{s:cum}。|{a}は背中を向けて{b}に跨り直し、自分から腰を沈めた。{s:hit}。{b}「{mb2}」――ぱちゅぱちゅと揺れる{a}の腰から目が離せないまま、{b}はまた{a}の{ナカ}に出してしまった。{s:cum}。|{a}「ねえ、もう一回♡」――{a}は{b}の唇を塞ぎながら、ゆっくりと腰で円を描いた。{s:wet}。{b}「{mb2}」――結局、朝まで{a}の下から抜け出せなかった。'),
+      ff: L('{a}「まだイけるでしょ？」――イったばかりの{b}の{ナカ}を、{a}はまた指で掻き回した。{s:wet}。{b}「{mb2}」――連続でイかされて、{b}は下に敷いたものまでびしょびしょにした。|{b}が今度は{a}の脚のあいだに顔を埋めた。{s:suck}。二人は交代で何度もイかせ合って、朝まで止まらなかった。|{a}はとろとろになった{b}の脚を開かせ、もう一度舌を這わせた。{s:suck}。{b}「{mb2}」|{a}はイったばかりの{b}の脚を肩に担ぎ、とろとろになったところへ二本の指を沈めた。{s:wet}。{b}「{mb2}」――奥のいいところを掻かれ続けて、{b}は腰を跳ねさせながら何度も潮を噴いた。|{a}は{b}の胸の先を舌で転がしながら、濡れた割れ目を指でくちゅくちゅと弄りつづけた。{s:wet}。{b}「{mb2}」――上と下を同時に責められて、{b}は二回目も、三回目も、あっけなくイかされた。|{a}「次はこっち、ね？」――{a}は{b}をうつ伏せにして、後ろから指を差し入れた。{s:wet}。{b}「{mb2}」――シーツを握りしめたまま、{b}は朝まで{a}の指から逃げられなかった。')
     },
     /* 短い版の一文 */
     shortNovel: L('一度では終わらず、二人は夜が白むまで何度も求め合った。|果てたあとも、{a}は{b}を離さなかった。二度目は、一度目より長かった。|息が整うより先に、二人はまた唇を重ねていた。|二人は眠りかけては目を覚まし、そのたびにまた互いを求めた。|夜明けまでに、二人は何度も熱を分け合った。|落ち着いたと思ったのも束の間、二人はもう一度、互いの熱の中へ沈んでいった。'),
     /* 短い版の一文（男性向け）：shortEro は男性が動く組（mf）。女性の攻め×男性（fm）・女性どうし（ff）は shortEroFm / shortEroFf */
     shortEroFm: L('{a}「まだ終わりじゃないよ」――{a}は{b}の上から降りないまま、二回戦、三回戦と腰を揺らし続けた。{s:wet}。|{a}は抜かせないまま腰を回し、{b}がまた硬くなるのを待って、もう一度搾り取った。{s:cum}。|{b}「も、もう出ない……っ」――そう訴えても、{a}は{b}の上で朝まで腰を止めなかった。{s:wet}。|何度果てても熱は引かず、{a}は夜が明けるまで{b}の上から降りなかった。{s:wet}。|{a}「もう一回……♡」――{a}は{b}の胸に手をついて、また自分から腰を沈めた。{s:wet}。'),
-    shortEroFf: L('{a}「まだ終わりじゃないよ」――{a}は{b}のナカに指を沈め直し、朝までイかせ続けた。{s:wet}。|{b}「もっと……♡」――おねだりは朝まで止まらず、{a}の指も舌も休まなかった。{s:wet}。|何度達しても熱は引かず、二人は夜が明けるまで脚を絡めたまま擦り合わせた。{s:wet}。|{b}「もう、むり……♡」――そう言いながら、{b}は自分からもう一度脚を開いた。{s:wet}。|休む間もなく二回戦が始まり、{b}は{a}の舌に甘い声を朝まで止められなかった。{s:suck}。'),
+    shortEroFf: L('{a}「まだ終わりじゃないよ」――{a}は{b}の{ナカ}に指を沈め直し、朝までイかせ続けた。{s:wet}。|{b}「もっと……♡」――おねだりは朝まで止まらず、{a}の指も舌も休まなかった。{s:wet}。|何度達しても熱は引かず、二人は夜が明けるまで脚を絡めたまま擦り合わせた。{s:wet}。|{b}「もう、むり……♡」――そう言いながら、{b}は自分からもう一度脚を開いた。{s:wet}。|休む間もなく二回戦が始まり、{b}は{a}の舌に甘い声を朝まで止められなかった。{s:suck}。'),
     shortEro: L('{a}「まだ終わりじゃないよ」――二回戦、三回戦と、{b}は朝までイかされ続けた。{s:hit}。|抜かないまま二回目が始まり、{b}はイきっぱなしのまま何度も注がれた。{s:cum}。|{b}「もっと……♡」――おねだりは朝まで止まらなかった。{s:wet}。|休む間もなく二回戦が始まり、{b}は甘い声を朝まで止められなかった。{s:hit}。|何度果てても熱は引かず、二人は夜が明けるまで繋がったままだった。{s:wet}。|{b}「もう、むり……♡」――そう言いながら、{b}は自分からもう一度脚を開いた。{s:wet}。')
   };
 
@@ -16261,13 +16634,13 @@
      pen：入れる側（形ごと）がみな男性のときだけ使う挿入の文。soft：誰でも使える指・舌・口の文 ---------- */
   X.TRIO = {
     pen: {
-      oneTwo: L('{t}は{m}と{u}を並べて四つん這いにさせ、交互に後ろから突き入れた。{s:hit}。{m}「{mm1}」――{u}「{mu1}」――二人分の喘ぎが重なって、白い部屋に響いた。|{t}は{m}のナカを突きながら、隣の{u}のナカを指で掻き回した。{s:wet}。{u}「{mu1}」――{t}は{m}で一度果て、抜いたその足で{u}に根元まで突き入れた。{s:hit}。|{m}と{u}を重ねて寝かせ、{t}は上の穴と下の穴を一突きずつ交互に味わった。{s:hit}。{m}「{mm1}」――{u}「{mu1}」'),
-      twoOne: L('{t}が後ろから、{m}が前から、{u}を同時に貫いた。{s:hit}。{u}「{mu1}」――前と後ろから交互に奥を突かれて、{u}は涎を垂らしながら二人にしがみついた。|{u}は{m}のちんぽを咥えさせられたまま、{t}に後ろから激しく突かれた。{s:suck}、{s:hit}。{u}「{mu1}」――喉と奥を同時に塞がれて、{u}の目がとろんと蕩けていった。|{t}と{m}は、{u}のナカに代わる代わる突き入れた。{s:hit}。{t}「次、交代」――休む間もなく二本目を受け入れて、{u}は「{mu1}」と鳴いた。'),
+      oneTwo: L('{t}は{m}と{u}を並べて四つん這いにさせ、交互に後ろから突き入れた。{s:hit}。{m}「{mm1}」――{u}「{mu1}」――二人分の喘ぎが重なって、白い部屋に響いた。|{t}は{m}の{ナカ}を突きながら、隣の{u}の{ナカ}を指で掻き回した。{s:wet}。{u}「{mu1}」――{t}は{m}で一度果て、抜いたその足で{u}に根元まで突き入れた。{s:hit}。|{m}と{u}を重ねて寝かせ、{t}は上の穴と下の穴を一突きずつ交互に味わった。{s:hit}。{m}「{mm1}」――{u}「{mu1}」'),
+      twoOne: L('{t}が後ろから、{m}が前から、{u}を同時に貫いた。{s:hit}。{u}「{mu1}」――前と後ろから交互に奥を突かれて、{u}は涎を垂らしながら二人にしがみついた。|{u}は{m}の{男性器}を咥えさせられたまま、{t}に後ろから激しく突かれた。{s:suck}、{s:hit}。{u}「{mu1}」――喉と奥を同時に塞がれて、{u}の目がとろんと蕩けていった。|{t}と{m}は、{u}の{ナカ}に代わる代わる突き入れた。{s:hit}。{t}「次、交代」――休む間もなく二本目を受け入れて、{u}は「{mu1}」と鳴いた。'),
       sandwich: L('{m}は{u}の奥まで突き入れたまま、後ろから{t}に貫かれた。{s:hit}。{m}「{mm1}」――{t}が突くたびに{m}の腰が押し出され、その勢いで{u}の奥まで抉られる。{u}「{mu1}」|{t}の腰が{m}を押し、{m}の腰が{u}を押す。{s:hit}。三人分の肌がぶつかる音と、{m}と{u}の喘ぎが重なった。{u}「{mu1}」'),
       ring: L('三人は輪のように繋がった。{t}が{m}を、{m}が{u}を、{u}が{t}を。{s:hit}。誰の喘ぎか分からない声が、ひっきりなしに重なった。{u}「{mu1}」|{t}は{m}の奥に、{m}は{u}の奥に、{u}は{t}の奥に、順番に突き入れていった。{s:hit}。{m}「{mm1}」')
     },
-    soft: L('{t}は{u}の脚のあいだに顔を埋め、{m}は{u}の胸の先にしゃぶりついた。{s:suck}。{u}「{mu1}」――上と下を同時に責められて、{u}の腰ががくがくと震えた。|{t}と{m}は左右から{u}を挟み、二人がかりで指を沈めた。{s:wet}。{u}「{mu1}」――ナカで二本の指がばらばらに動くたびに、{u}は潮を噴いた。|{t}は{m}と{u}の脚を開かせて並べ、右手と左手で同時にナカを掻き回した。{s:wet}。{m}「{mm1}」――{u}「{mu1}」'),
-    climax: L('{t}「みんなで一緒に、イこう」――{s:hit}。{u}「{mu2}」――{u}がびくびくとイったのを合図に、三人は次々に果てた。{s:cum}。|{u}がイきっぱなしになって、ナカが痙攣するたびに{t}も{m}も搾りとられた。{s:cum}。{u}「{mu2}」――最後は三人とも汗と体液でぐちゃぐちゃのまま、折り重なって動けなくなった。|{m}「{mm2}」――{u}「{mu2}」――二人分の絶頂の声が重なり、{t}もそれに引きずられるように果てた。{s:cum}。'),
+    soft: L('{t}は{u}の脚のあいだに顔を埋め、{m}は{u}の胸の先にしゃぶりついた。{s:suck}。{u}「{mu1}」――上と下を同時に責められて、{u}の腰ががくがくと震えた。|{t}と{m}は左右から{u}を挟み、二人がかりで指を沈めた。{s:wet}。{u}「{mu1}」――{ナカ}で二本の指がばらばらに動くたびに、{u}は潮を噴いた。|{t}は{m}と{u}の脚を開かせて並べ、右手と左手で同時に{ナカ}を掻き回した。{s:wet}。{m}「{mm1}」――{u}「{mu1}」'),
+    climax: L('{t}「みんなで一緒に、イこう」――{s:hit}。{u}「{mu2}」――{u}がびくびくとイったのを合図に、三人は次々に果てた。{s:cum}。|{u}がイきっぱなしになって、{ナカ}が痙攣するたびに{t}も{m}も搾りとられた。{s:cum}。{u}「{mu2}」――最後は三人とも汗と体液でぐちゃぐちゃのまま、折り重なって動けなくなった。|{m}「{mm2}」――{u}「{mu2}」――二人分の絶頂の声が重なり、{t}もそれに引きずられるように果てた。{s:cum}。'),
     again: L('{t}「まだ終わりじゃないよね？」――役を入れ替えて、三人は二回戦を始めた。{s:hit}。{u}「{mu2}」――朝までに、誰が何回イったのか、もう誰にも数えられなかった。|一度果てても、三人は離れなかった。今度は{u}が真ん中で、前からも後ろからも求められ続けた。{s:hit}。{u}「{mu2}」|{m}が{u}の上に跨り直したのを合図に、三人はまた絡み合った。{s:wet}。{m}「{mm2}」'),
     againNovel: L('一度果てても、三人は離れなかった。役を入れ替え、もう一度、互いの熱を確かめ合った。|息が整うのを待たずに、誰からともなくまた手が伸びた。二度目は、一度目よりもずっと長かった。|三人は折り重なったまま少し眠り、目を覚ますと、またどちらからともなく求め合った。')
   };
@@ -16279,33 +16652,33 @@
     add(N, 'fm', '{a}は{b}の胸から降りると、隣に寝転んで指先で{b}の腹をなぞった。そこが少しずつ反応しはじめるのを見て、「ほら、まだできる」と笑い、今度は背中を向けて{b}に跨った。|二度目は、{b}のほうが{a}の腰を掴んで離さなかった。{a}は「乗ってるのは私なんだけど」と言いながら、{b}の手に導かれるまま、さっきより深く腰を落とした。|{a}は{b}の唇を指でなぞり、その指を自分の胸元へ滑らせた。「今度は、見ててね」――{a}はゆっくりと{b}の上に戻り、目を逸らさせないまま、もう一度{b}を自分の奥へ迎えた。|息が整うのを待ちきれずに、{a}は{b}の膝の上に向かい合わせに座った。首に腕を回し、額を合わせたまま、二人は小さく揺れ続けた。二度目は、一度目よりもずっと静かで、ずっと長かった。|{a}は{b}の脚のあいだに座り込み、まだ熱の残るそこを手のひらで包んだ。{b}が音を上げるまで撫でてから、もう一度跨った。「降りるのは、私が満足してから」|{a}は{b}の手首を枕の上に押さえ、跨ったままゆっくりと腰を回した。二度目の{b}は、一度目よりも早く{a}の名前を呼んだ。{a}は満足そうに笑って、そのまま夜が明けるまで降りなかった。');
     add(N, 'ff', '{b}の呼吸が落ち着いたころ、{a}はその胸に頬を乗せ、ゆっくりと舌で胸の先を転がしはじめた。{b}は「もう無理」と笑ったが、指先が脚のあいだに戻ってくると、すぐに笑えなくなった。|二度目は、{b}のほうが先に{a}へ手を伸ばした。{a}は驚いた顔をしてから、嬉しそうに{b}の手に身を任せた。それから二人は交代で、何度も相手を高みへ連れていった。|{a}は{b}を自分の膝のあいだに座らせ、背中から抱きしめた。耳元で「もう少しだけ」と囁きながら、指で{b}の中をやさしくかき混ぜる。{b}は{a}の腕にしがみついたまま、二度目の波に呑まれた。|{a}は{b}の脚を自分の肩に乗せ、時間をかけて内腿に口づけていった。達したばかりの花芯に舌が触れるたび、{b}の腰がびくりと跳ねた。二度目は、一度目よりも静かで、ずっと深かった。|{a}は{b}と向かい合って横になり、指先で{b}の濡れたところをそっと撫で続けた。急ぐ理由はもうなかった。夜が白むまで、指先の小さな動きと、{b}の細い声だけが続いた。|{a}は眠りかけた{b}の内腿に、いたずらのように指を這わせた。{b}が目を閉じたまま腰を寄せてくると、{a}は笑って、もう一度その奥へ指を沈めた。');
     add(X.AGAIN, 'shortNovel', '一度では熱が引かず、二人は姿勢を変えて、もう一度繋がった。|汗が乾く前に、どちらからともなくまた唇が重なった。|二度目は一度目よりゆっくりと、互いの顔を確かめながら求め合った。|眠ったと思った相手の指が動き、二人はまた互いを引き寄せた。|喉を潤すために起きたはずが、気づけばまたシーツの中で絡み合っていた。|夜が明けるまでに、二人は何度も相手の名前を呼び合った。');
-    add(R, 'mf', '{a}「まだ全然足りない」――{a}は{b}を四つん這いにさせ、溢れたものを指ですくってから、もう一度後ろから根元まで沈めた。{s:hit}。{b}「{mb2}」――イったばかりのナカを擦られて、{b}は腕から崩れ落ちた。|{a}は{b}を抱き起こして膝の上に座らせ、下から突き上げた。{s:hit}。{b}「{mb2}」――自分の重みで奥まで呑み込まされ、{b}は{a}の肩にしがみついたまま何度もイった。最後にまた、奥でどくどくと注がれた。{s:cum}。|{a}は抜かないまま{b}の脚を肩に担ぎ上げ、真上から体重をかけて沈めた。{s:hit}。{b}「{mb2}」――さっきより深いところを抉られて、{b}は声も出せずに痙攣した。');
+    add(R, 'mf', '{a}「まだ全然足りない」――{a}は{b}を四つん這いにさせ、溢れたものを指ですくってから、もう一度後ろから根元まで沈めた。{s:hit}。{b}「{mb2}」――イったばかりの{ナカ}を擦られて、{b}は腕から崩れ落ちた。|{a}は{b}を抱き起こして膝の上に座らせ、下から突き上げた。{s:hit}。{b}「{mb2}」――自分の重みで奥まで呑み込まされ、{b}は{a}の肩にしがみついたまま何度もイった。最後にまた、奥でどくどくと注がれた。{s:cum}。|{a}は抜かないまま{b}の脚を肩に担ぎ上げ、真上から体重をかけて沈めた。{s:hit}。{b}「{mb2}」――さっきより深いところを抉られて、{b}は声も出せずに痙攣した。');
     add(R, 'fm', '{a}は{b}のものを根元まで咥え込み、また硬くなるまで舌で嬲った。{s:suck}。{b}「{mb2}」――{a}は満足そうに口を離して、もう一度跨った。{s:wet}。|{a}は{b}に背中を向けて跨り、腰を高く上げては深く落とした。{s:hit}。{b}「{mb2}」――目の前で揺れる腰と締めつけに、{b}はすぐに二度目を搾り取られた。{s:cum}。|{a}「今度は、ゆっくりね」――{a}は奥まで沈めたまま、腰だけをねっとりと回した。{s:wet}。{b}「{mb2}」――敏感になったところを捏ねられて、{b}は情けない声を止められなかった。');
-    add(R, 'ff', '{a}は{b}の脚を大きく開かせ、イったばかりでひくひくしているところに舌を這わせた。{s:suck}。{b}「{mb2}」――連続で吸い上げられて、{b}は腰を跳ねさせながら何度もイった。|{a}は{b}を後ろから抱えて、指を二本ナカに沈めたまま、クリを親指で捏ね回した。{s:wet}。{b}「{mb2}」――前と中を同時に責められて、{b}はびしょびしょになるまで止めてもらえなかった。|{a}「もう一回、イくとこ見せて」――{a}は指を曲げてナカの弱いところをとんとんと叩き続けた。{s:wet}。{b}「{mb2}」――{b}は{a}にしがみついたまま、潮を噴いてイった。');
-    add(X.AGAIN, 'shortEro', '{a}は{b}をうつ伏せにして、もう一度奥まで沈めた。{s:hit}。{b}はシーツを握りしめたまま、何度もイかされた。|抜かれる前に、{a}はまた腰を動かし始めた。{s:wet}。{b}のナカは、二回目の精液まで搾り取った。{s:cum}。|{a}「まだ締めつけてくる」――二回戦は、一回目よりも長く激しかった。{s:hit}。');
+    add(R, 'ff', '{a}は{b}の脚を大きく開かせ、イったばかりでひくひくしているところに舌を這わせた。{s:suck}。{b}「{mb2}」――連続で吸い上げられて、{b}は腰を跳ねさせながら何度もイった。|{a}は{b}を後ろから抱えて、指を二本ナカに沈めたまま、{陰核}を親指で捏ね回した。{s:wet}。{b}「{mb2}」――前と中を同時に責められて、{b}はびしょびしょになるまで止めてもらえなかった。|{a}「もう一回、イくとこ見せて」――{a}は指を曲げて{ナカ}の弱いところをとんとんと叩き続けた。{s:wet}。{b}「{mb2}」――{b}は{a}にしがみついたまま、潮を噴いてイった。');
+    add(X.AGAIN, 'shortEro', '{a}は{b}をうつ伏せにして、もう一度奥まで沈めた。{s:hit}。{b}はシーツを握りしめたまま、何度もイかされた。|抜かれる前に、{a}はまた腰を動かし始めた。{s:wet}。{b}の{ナカ}は、二回目の{精液}まで搾り取った。{s:cum}。|{a}「まだ締めつけてくる」――二回戦は、一回目よりも長く激しかった。{s:hit}。');
     add(X.AGAIN, 'shortEroFm', '{a}は{b}のものを手で扱いて硬くさせ、もう一度根元まで呑み込んだ。{s:wet}。|{a}「おかわり」――笑いながら跨り直した{a}に、{b}はまた搾り取られた。{s:cum}。|{a}は{b}の上で向きを変え、背中を見せながら腰を振り続けた。{s:hit}。');
-    add(X.AGAIN, 'shortEroFf', '{a}はイったばかりの{b}のクリを、舌で休みなく転がし続けた。{s:suck}。|{b}「もう、むり……っ♡」――そう言いながら、{b}は{a}の指を離さなかった。{s:wet}。|{a}は指と舌を代わる代わる使って、朝まで{b}をイかせ続けた。{s:wet}。');
+    add(X.AGAIN, 'shortEroFf', '{a}はイったばかりの{b}の{陰核}を、舌で休みなく転がし続けた。{s:suck}。|{b}「もう、むり……っ♡」――そう言いながら、{b}は{a}の指を離さなかった。{s:wet}。|{a}は指と舌を代わる代わる使って、朝まで{b}をイかせ続けた。{s:wet}。');
     /* 男性向けの最中・果てる */
-    add(X.BODY, 'hard', '{a}は{b}の両脚を抱え上げ、体重をかけて真上から叩きつけた。{s:hit}。{b}「{mb1}」\n\n{a}「ほら、奥まで全部。……締めすぎ」\n\n逃げようとする腰を引き戻されるたびに、ナカの一番深いところをごりごりと抉られた。|{a}は{b}を壁に押しつけ、片脚を抱えたまま下から突き上げた。{s:hit}。{b}「{mb1}」\n\n{a}「立ってられないなら、しがみついてろ」\n\n突き上げられるたびに{b}の爪先が浮き、ぐちゅぐちゅと結合部から音が溢れた。');
-    add(X.BODY, 'soft', '{a}は{b}を膝の上に向かい合わせに座らせ、ゆっくりと根元まで沈めた。{s:wet}。{b}「{mb1}」\n\n{a}「{b}のナカ、吸いついてくる……かわいい」\n\n抱き合ったまま小刻みに揺らされて、{b}は{a}の肩にとろけた顔を埋めた。|{a}は{b}を横向きに抱いて、背中から包むように奥まで入れた。{s:wet}。{b}「{mb1}」\n\n{a}「ここ、とんとんされるの好きでしょ」\n\n奥を優しく叩かれるたびに、{b}のナカがきゅんきゅんと甘えるように締まった。');
-    add(X.BODY, 'tease', '{a}は奥まで入れたまま、少しも動かずに{b}の乳首を指で弾いた。{b}「{mb1}」\n\n{a}「動いてほしい？　じゃあ、自分で腰振ってみて」\n\n{b}が恥ずかしそうに腰を揺らし始めると、{a}は意地悪く笑って、その腰を押さえて止めた。|{a}は先っぽだけを出し入れして、{b}の入口をくちゅくちゅと捏ね回した。{s:wet}。{b}「{mb1}」\n\n{a}「奥、欲しいって顔してる。……言えたらね」');
+    add(X.BODY, 'hard', '{a}は{b}の両脚を抱え上げ、体重をかけて真上から叩きつけた。{s:hit}。{b}「{mb1}」\n\n{a}「ほら、奥まで全部。……締めすぎ」\n\n逃げようとする腰を引き戻されるたびに、{ナカ}の一番深いところをごりごりと抉られた。|{a}は{b}を壁に押しつけ、片脚を抱えたまま下から突き上げた。{s:hit}。{b}「{mb1}」\n\n{a}「立ってられないなら、しがみついてろ」\n\n突き上げられるたびに{b}の爪先が浮き、ぐちゅぐちゅと結合部から音が溢れた。');
+    add(X.BODY, 'soft', '{a}は{b}を膝の上に向かい合わせに座らせ、ゆっくりと根元まで沈めた。{s:wet}。{b}「{mb1}」\n\n{a}「{b}の{ナカ}、吸いついてくる……かわいい」\n\n抱き合ったまま小刻みに揺らされて、{b}は{a}の肩にとろけた顔を埋めた。|{a}は{b}を横向きに抱いて、背中から包むように奥まで入れた。{s:wet}。{b}「{mb1}」\n\n{a}「ここ、とんとんされるの好きでしょ」\n\n奥を優しく叩かれるたびに、{b}の{ナカ}がきゅんきゅんと甘えるように締まった。');
+    add(X.BODY, 'tease', '{a}は奥まで入れたまま、少しも動かずに{b}の{乳首}を指で弾いた。{b}「{mb1}」\n\n{a}「動いてほしい？　じゃあ、自分で腰振ってみて」\n\n{b}が恥ずかしそうに腰を揺らし始めると、{a}は意地悪く笑って、その腰を押さえて止めた。|{a}は先っぽだけを出し入れして、{b}の入口をくちゅくちゅと捏ね回した。{s:wet}。{b}「{mb1}」\n\n{a}「奥、欲しいって顔してる。……言えたらね」');
     add(X.BODY, 'play', '{a}は{b}を抱えたまま転がって、上になったり下になったりしながら突き上げた。{s:hit}。{b}「{mb1}」\n\n{a}「今のどっちが気持ちよかった？　もう一回確かめよ」|{a}は{b}の脚を抱えて「いち、に、さん」と数えながら、さんで奥まで突き入れた。{s:hit}。{b}「{mb1}」\n\n{a}「タイミング覚えた？　じゃあ次は数えないね」');
-    add(X.CLIMAX, 'hard', '{a}は{b}の腰を骨が鳴るほど引き寄せ、一番奥に押しつけたまま吐き出した。{s:cum}。\n\n{b}「{mb2}」\n\nどくどくと注がれる熱に、{b}のナカは何度も痙攣して{a}を搾り取った。|{a}は{b}の髪を掴んで顔を上げさせ、イき顔を見下ろしながら奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\n抜かれたあと、{b}の太ももを白いものがとろりと伝った。');
+    add(X.CLIMAX, 'hard', '{a}は{b}の腰を骨が鳴るほど引き寄せ、一番奥に押しつけたまま吐き出した。{s:cum}。\n\n{b}「{mb2}」\n\nどくどくと注がれる熱に、{b}の{ナカ}は何度も痙攣して{a}を搾り取った。|{a}は{b}の髪を掴んで顔を上げさせ、イき顔を見下ろしながら奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\n抜かれたあと、{b}の太ももを白いものがとろりと伝った。');
     add(X.CLIMAX, 'soft', '{a}は{b}をぎゅっと抱きしめて、「出すよ」と囁いてから奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\nお腹の奥があったかくなって、{b}は{a}にしがみついたまま何度も小さくイった。|二人は指を絡めたまま、同じ瞬間に果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{a}は繋がったまま、{b}のとろけた顔に何度もキスをした。');
     add(X.CLIMAX, 'tease', '{b}が泣きそうな声でねだるまで寸止めを繰り返してから、{a}は一番奥へ一気に突き入れた。{s:hit}。\n\n{b}「{mb2}」\n\n{b}がイきながら締めつけると、{a}も奥にたっぷりと吐き出した。{s:cum}。|{a}「まだイっちゃだめ。……はい、いいよ」――許された瞬間、{b}は腰を跳ねさせてイった。{s:cum}。\n\n{b}「{mb2}」');
-    add(X.CLIMAX, 'play', '{a}「せーの、で一緒にね」――{a}が奥まで突いた瞬間、二人は本当に同時にイった。{s:cum}。\n\n{b}「{mb2}」\n\n息を切らしたまま、二人は顔を見合わせて吹き出した。|{b}が先にイって{a}の首にしがみつくと、{a}は「ずるい」と笑って、そのナカで果てた。{s:cum}。\n\n{b}「{mb2}」');
-    add(X.FM_BODY, 'dom', '{a}は{b}に背中を向けて跨り、根元まで呑み込んでから腰を上下させた。{s:hit}。\n\n{a}「出したら、お仕置きね」\n\n{b}「{mb1}」――目の前で揺れるお尻と締めつけに、{b}は必死に耐えた。|{a}は{b}の両手を頭の上で押さえ、上から見下ろしたまま腰をくねらせた。{s:wet}。\n\n{a}「ほら、ナカでびくびくしてる。……我慢して」\n\n{b}「{mb1}」');
+    add(X.CLIMAX, 'play', '{a}「せーの、で一緒にね」――{a}が奥まで突いた瞬間、二人は本当に同時にイった。{s:cum}。\n\n{b}「{mb2}」\n\n息を切らしたまま、二人は顔を見合わせて吹き出した。|{b}が先にイって{a}の首にしがみつくと、{a}は「ずるい」と笑って、その{ナカ}で果てた。{s:cum}。\n\n{b}「{mb2}」');
+    add(X.FM_BODY, 'dom', '{a}は{b}に背中を向けて跨り、根元まで呑み込んでから腰を上下させた。{s:hit}。\n\n{a}「出したら、お仕置きね」\n\n{b}「{mb1}」――目の前で揺れる{尻}と締めつけに、{b}は必死に耐えた。|{a}は{b}の両手を頭の上で押さえ、上から見下ろしたまま腰をくねらせた。{s:wet}。\n\n{a}「ほら、{ナカ}でびくびくしてる。……我慢して」\n\n{b}「{mb1}」');
     add(X.FM_BODY, 'soft', '{a}は{b}の首に腕を回して抱きつき、膝の上で小さく腰を揺らした。{s:wet}。\n\n{a}「{b}の、奥まで当たってる……♡」\n\n{b}「{mb1}」|{a}は{b}の手を自分の胸に導き、揉まれながらゆっくりと腰を沈めた。{s:wet}。\n\n{a}「ん……♡　そのまま、触ってて」\n\n{b}「{mb1}」');
     add(X.FM_BODY, 'play', '{a}は{b}に跨って「何回我慢できるか数えるね」と笑い、腰を落とすたびに数を数えた。{s:hit}。\n\n{b}「{mb1}」――七まで数えたところで、{a}は「まだいける？」と首を傾げた。|{a}は{b}の上で弾むように腰を振り、ベッドがぎしぎし鳴るのを面白がった。{s:hit}。\n\n{b}「{mb1}」');
     add(X.FM_CLIMAX, 'dom', '{a}は{b}の顎を掴んで目を合わせさせ、「出して」と命じた。{s:cum}。\n\n{b}「{mb2}」\n\n{b}が奥で果てるのを感じながら、{a}も締めつけたまま甘く震えた。|{a}は寸前で腰を浮かせて焦らし、{b}が懇願したところで根元まで沈めた。{s:cum}。\n\n{b}「{mb2}」');
     add(X.FM_CLIMAX, 'soft', '{a}がぎゅっと抱きついて腰を沈めると、{b}はその奥で果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{a}は「あったかい……♡」と呟いて、{b}の胸に頬ずりした。|二人は額を合わせたまま一緒に果てた。{s:cum}。\n\n{b}「{mb2}」');
-    add(X.FM_CLIMAX, 'play', '{a}「十回目でイったら負けね」――九回目で、{b}は果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{a}は「惜しい」と笑って、{b}の胸に倒れ込んだ。|{a}が先にイってナカをきゅうきゅう締めると、{b}もつられて奥に吐き出した。{s:cum}。\n\n{b}「{mb2}」');
-    add(X.FF_BODY, 'dom', '{a}は{b}をうつ伏せにさせて腰だけを上げさせ、後ろから指を二本沈めた。{s:wet}。\n\n{a}「お尻、揺れてる。……もっと欲しいんだ」\n\n{b}「{mb1}」――ナカのざらついたところを擦られて、{b}の太ももがぶるぶる震えた。|{a}は{b}の脚を肩に担ぎ、クリを舌で弾きながら指でナカを掻いた。{s:suck}。\n\n{b}「{mb1}」');
-    add(X.FF_BODY, 'soft', '{a}は{b}を後ろから抱きしめ、片手で胸を揉みながら、もう片方の指でクリをくるくる撫でた。{s:wet}。\n\n{a}「ここ、ぷっくりしてきた……♡」\n\n{b}「{mb1}」|{a}は{b}の脚のあいだに顔を埋め、溢れた蜜をゆっくり舐めとった。{s:suck}。\n\n{b}「{mb1}」');
-    add(X.FF_BODY, 'play', '{a}は{b}の脚のあいだで指を動かしながら、「何回イけるか記録しよ」と笑った。{s:wet}。\n\n{b}「{mb1}」|{a}は{b}の乳首をちゅぱちゅぱ吸いながら、指でナカを浅くかき混ぜた。{s:suck}。\n\n{a}「声、どんどん高くなってる」\n\n{b}「{mb1}」');
-    add(X.FF_CLIMAX, 'dom', '{a}が指を曲げてナカの弱いところを押し潰すと、{b}は腰を跳ねさせて潮を噴いた。{s:wet}。\n\n{b}「{mb2}」|{a}はクリを強く吸い上げたまま、指を休みなく動かし続けた。{s:suck}。\n\n{b}「{mb2}」\n\n{b}は{a}の頭を太ももで挟んだまま、がくがくと痙攣した。');
-    add(X.FF_CLIMAX, 'soft', '{a}の舌がクリをやさしく包んだ瞬間、{b}はとろけるような声でイった。{s:suck}。\n\n{b}「{mb2}」|{a}に抱きしめられたまま指でナカを撫でられ続けて、{b}は甘くイった。{s:wet}。\n\n{b}「{mb2}」');
-    add(X.FF_CLIMAX, 'play', '{a}「はい、三回目」――{b}は数えられながらイった。{s:wet}。\n\n{b}「{mb2}」|{a}がくすぐるようにクリを弾いた瞬間、{b}は笑い声の途中でイった。{s:wet}。\n\n{b}「{mb2}」');
+    add(X.FM_CLIMAX, 'play', '{a}「十回目でイったら負けね」――九回目で、{b}は果てた。{s:cum}。\n\n{b}「{mb2}」\n\n{a}は「惜しい」と笑って、{b}の胸に倒れ込んだ。|{a}が先にイって{ナカ}をきゅうきゅう締めると、{b}もつられて奥に吐き出した。{s:cum}。\n\n{b}「{mb2}」');
+    add(X.FF_BODY, 'dom', '{a}は{b}をうつ伏せにさせて腰だけを上げさせ、後ろから指を二本沈めた。{s:wet}。\n\n{a}「{尻}、揺れてる。……もっと欲しいんだ」\n\n{b}「{mb1}」――{ナカ}のざらついたところを擦られて、{b}の太ももがぶるぶる震えた。|{a}は{b}の脚を肩に担ぎ、{陰核}を舌で弾きながら指で{ナカ}を掻いた。{s:suck}。\n\n{b}「{mb1}」');
+    add(X.FF_BODY, 'soft', '{a}は{b}を後ろから抱きしめ、片手で胸を揉みながら、もう片方の指で{陰核}をくるくる撫でた。{s:wet}。\n\n{a}「ここ、ぷっくりしてきた……♡」\n\n{b}「{mb1}」|{a}は{b}の脚のあいだに顔を埋め、溢れた蜜をゆっくり舐めとった。{s:suck}。\n\n{b}「{mb1}」');
+    add(X.FF_BODY, 'play', '{a}は{b}の脚のあいだで指を動かしながら、「何回イけるか記録しよ」と笑った。{s:wet}。\n\n{b}「{mb1}」|{a}は{b}の{乳首}をちゅぱちゅぱ吸いながら、指で{ナカ}を浅くかき混ぜた。{s:suck}。\n\n{a}「声、どんどん高くなってる」\n\n{b}「{mb1}」');
+    add(X.FF_CLIMAX, 'dom', '{a}が指を曲げて{ナカ}の弱いところを押し潰すと、{b}は腰を跳ねさせて潮を噴いた。{s:wet}。\n\n{b}「{mb2}」|{a}は{陰核}を強く吸い上げたまま、指を休みなく動かし続けた。{s:suck}。\n\n{b}「{mb2}」\n\n{b}は{a}の頭を太ももで挟んだまま、がくがくと痙攣した。');
+    add(X.FF_CLIMAX, 'soft', '{a}の舌が{陰核}をやさしく包んだ瞬間、{b}はとろけるような声でイった。{s:suck}。\n\n{b}「{mb2}」|{a}に抱きしめられたまま指で{ナカ}を撫でられ続けて、{b}は甘くイった。{s:wet}。\n\n{b}「{mb2}」');
+    add(X.FF_CLIMAX, 'play', '{a}「はい、三回目」――{b}は数えられながらイった。{s:wet}。\n\n{b}「{mb2}」|{a}がくすぐるように{陰核}を弾いた瞬間、{b}は笑い声の途中でイった。{s:wet}。\n\n{b}「{mb2}」');
     add(X.TRIO, 'againNovel', '誰かが水を取りに立ち上がり、戻ってきたときには、残りの二人がもう絡み合っていた。そのまま、三人はまた一つになった。|一度離れた体は、少し眠ったあとでまた自然に寄り添った。今度は誰も言葉を使わなかった。|息が落ち着くと、三人は順番を入れ替えて、もう一度互いを確かめ合った。夜は、まだ長かった。');
   })();
   /* 2026-10-25（続き）：小説調の「もう一度」をさらに増やす */
@@ -29011,7 +29384,7 @@
     return { short: c ? X.short(ctx.env, ctx.rng) : false, ero: !!(c && X.ero(ctx.env) && HK.ThickEro) };
   }
   /* 結び（α×Ω）の男性向け：{a}＝α（攻め）、{b}＝受け */
-  var KNOT_ERO = L('{a}の根元がぐぷりと膨らみ、{b}のナカに深く結びついた。抜けなくなったまま、熱いものがどくどくと注がれ続ける。{s:cum}。{b}「{mb2}」|結ばれたまま奥をぐりぐりと押し上げられて、{b}はイきっぱなしになった。{s:cum}。{b}「{mb2}」――注がれるたびに、うなじの奥が甘く疼いた。|{a}は{b}のうなじに歯を立てながら、結びついた根元で最後の一滴まで注ぎ込んだ。{s:cum}。{b}「{mb2}」');
+  var KNOT_ERO = L('{a}の根元がぐぷりと膨らみ、{b}の{ナカ}に深く結びついた。抜けなくなったまま、熱いものがどくどくと注がれ続ける。{s:cum}。{b}「{mb2}」|結ばれたまま奥をぐりぐりと押し上げられて、{b}はイきっぱなしになった。{s:cum}。{b}「{mb2}」――注がれるたびに、うなじの奥が甘く疼いた。|{a}は{b}のうなじに歯を立てながら、結びついた根元で最後の一滴まで注ぎ込んだ。{s:cum}。{b}「{mb2}」');
   function eroScene(ctx, T, U, head, after, kd) {
     var pk = function (arr) { return fp(ctx, arr); }, TE = HK.ThickEro, st = lw.last;
     /* 男性向けの体の組（thick-sex-ero.js の mf／fm／ff）も、第二性を優先した組（kd）に合わせる */
@@ -29268,8 +29641,8 @@
 
   /* ================= 男性向けの山場（擬音と♡）。体の組ごと ================= */
   var ERO_PEAK = {
-    m: L('{s:hit}――{T}が奥を突き上げるたびに、{sO}の甘い匂いが部屋に溢れた。{U}「{mb2}」――{rel}の{T}に貫かれて、{U}はとろけた顔で何度もイった。{s:cum}――{T}は{U}の一番奥に、熱をたっぷりと注ぎ込んだ。|「{rel}なのに、こんな……っ♡」――{U}は自分の言葉に煽られるように、{T}のものをきゅうきゅうと締めつけた。{s:hit}{s:hit}――{T}は容赦なく腰を打ちつけた。{U}「{mb2}」――{s:cum}、奥で脈打つ熱に、{U}は舌を出したまま震えた。|{T}は{U}の腰を抱え直して、発情でとろとろになったナカを深く抉った。{s:wet}――溢れた蜜が太腿を伝う。{U}「{mb2}」――{s:cum}、{rel}の熱を注がれて、{U}はうなじを震わせながらイき続けた。'),
-    ff: L('{s:wet}――{T}の指が{U}のナカを掻き回すたびに、発情の蜜がとめどなく溢れた。{U}「{mb2}」――{rel}の{T}に一番弱いところを擦り上げられて、{U}は背中を反らせて何度もイった。{U}の太腿が、{T}の手首をぎゅっと挟み込んだ。|「{rel}の指で、こんなに……っ♡」――{U}は自分の言葉に真っ赤になりながら、腰を{T}の指に擦りつけた。{s:wet}{s:wet}――{T}がわざと音を立てて舐め上げると、{U}は甘く鳴いた。{U}「{mb2}」――{U}は痙攣しながら、{T}の髪を掴んで離さなかった。|{T}は{U}の花芯を舌で転がしながら、指を二本、奥まで沈めた。{s:wet}――{sO}の匂いが濃くなっていく。{U}「{mb2}」――{U}はびくびくと腰を跳ねさせて、{rel}の{T}の名前を呼びながらイった。'),
+    m: L('{s:hit}――{T}が奥を突き上げるたびに、{sO}の甘い匂いが部屋に溢れた。{U}「{mb2}」――{rel}の{T}に貫かれて、{U}はとろけた顔で何度もイった。{s:cum}――{T}は{U}の一番奥に、熱をたっぷりと注ぎ込んだ。|「{rel}なのに、こんな……っ♡」――{U}は自分の言葉に煽られるように、{T}のものをきゅうきゅうと締めつけた。{s:hit}{s:hit}――{T}は容赦なく腰を打ちつけた。{U}「{mb2}」――{s:cum}、奥で脈打つ熱に、{U}は舌を出したまま震えた。|{T}は{U}の腰を抱え直して、発情でとろとろになった{ナカ}を深く抉った。{s:wet}――溢れた蜜が太腿を伝う。{U}「{mb2}」――{s:cum}、{rel}の熱を注がれて、{U}はうなじを震わせながらイき続けた。'),
+    ff: L('{s:wet}――{T}の指が{U}の{ナカ}を掻き回すたびに、発情の蜜がとめどなく溢れた。{U}「{mb2}」――{rel}の{T}に一番弱いところを擦り上げられて、{U}は背中を反らせて何度もイった。{U}の太腿が、{T}の手首をぎゅっと挟み込んだ。|「{rel}の指で、こんなに……っ♡」――{U}は自分の言葉に真っ赤になりながら、腰を{T}の指に擦りつけた。{s:wet}{s:wet}――{T}がわざと音を立てて舐め上げると、{U}は甘く鳴いた。{U}「{mb2}」――{U}は痙攣しながら、{T}の髪を掴んで離さなかった。|{T}は{U}の花芯を舌で転がしながら、指を二本、奥まで沈めた。{s:wet}――{sO}の匂いが濃くなっていく。{U}「{mb2}」――{U}はびくびくと腰を跳ねさせて、{rel}の{T}の名前を呼びながらイった。'),
     fm: L('{s:hit}――{T}は{U}の上で激しく腰を振り、{sO}の匂いを撒き散らした。{U}「{mb2}」――{rel}の{T}に搾り取られるように締めつけられて、{U}は堪えきれずに果てた。{s:cum}――{T}も{U}の上で背中を反らせて、甘い声を上げた。|「{rel}の上で、こんなに……っ♡」――{T}は{U}を見下ろしながら、根元まで咥え込んだ腰をぐりぐりと押しつけた。{s:wet}――繋がったところから、いやらしい音が響く。{U}「{mb2}」――{s:cum}、{U}は{T}の腰を掴んだまま、奥に何度も吐き出した。|{T}はわざと浅いところで腰を止め、{U}が自分から突き上げるのを待った。我慢できなくなった{U}が腰を跳ね上げると、{T}は♡の混じった声で笑った。{s:hit}――{U}「{mb2}」――{s:cum}、{U}は{rel}の{T}の中で果て、{T}もその熱に震えながらイった。')
   };
 
@@ -33863,10 +34236,10 @@
     },
     /* 最中：組ごと（mf 男×女・ff 女×女・fm 女攻め×男・mm 男×男）。{vb1}＝受けの声、{vt}＝攻めの一言 */
     act: {
-      mf: L('{t}は{u}を外套の上に横たえ、火照った肌に唇を落としていった。首筋から胸元へ、胸元から下腹へと降りるたびに、{u}の腰が小さく跳ねる。{u}「{vb1}」{t}は濡れそぼった{u}の秘所を指でほぐしてから、ゆっくりと自分のいちもつを沈めた。{t}「{vt}」奥まで満たされた瞬間、{u}は{t}の背中に爪を立てて、声にならない息を漏らした。|{t}は{u}を壁際に追い詰め、片脚を抱え上げた。{u}「{vb1}」とろけきった{u}の中は、触れる前からひくひくと疼いていた。{t}が腰を進めるたびに、{u}は{t}の首にすがりついて甘い声を上げる。{t}「{vt}」迷宮の湿った空気の中で、二人の息づかいだけがどんどん速くなっていった。|{t}は{u}を毛布の上に組み敷き、{u}の脚の間に体を割り込ませた。{u}の秘所はもう、{t}を待ちわびるように蜜をこぼしていた。{u}「{vb1}」{t}がゆっくりと奥まで沈めると、{u}は背をしならせて{t}にしがみついた。{t}「{vt}」揺さぶられるたびに、{u}の声は甘く崩れていった。'),
-      ff: L('{t}は{u}を外套の上に横たえ、火照った肌に唇を這わせていった。胸の先を舌で転がされるたびに、{u}の腰が小さく浮き上がる。{u}「{vb1}」{t}は濡れそぼった{u}の秘所を指でなぞり、ゆっくりと二本の指を沈めた。{t}「{vt}」中の弱いところを指の腹で探り当てられて、{u}は{t}の肩に爪を立てた。|{t}は{u}の脚の間に顔を埋め、とろとろに濡れたところへ舌を這わせた。{u}「{vb1}」{u}は思わず{t}の髪に指を絡め、腰を震わせる。{t}は舌で花芯を転がしながら、指でゆっくりと中をかき回した。{t}「{vt}」迷宮の湿った空気の中で、{u}の甘い声だけがどんどん高くなっていった。|{t}は{u}を壁際に追い詰め、唇を重ねたまま{u}の衣の中へ手を滑り込ませた。指先が胸のふくらみをなぞり、下腹をなぞり、熱く濡れた秘所に辿り着く。{u}「{vb1}」{t}の指が中に入ってくるたびに、{u}は膝を震わせて{t}にすがりついた。{t}「{vt}」二人の吐息が絡み合って、狭い通路を甘く満たしていった。'),
-      fm: L('{t}は{u}を外套の上に押し倒し、その胸に手をついて跨がった。{u}のいちもつはもう、触れる前から硬く張りつめていた。{t}はそれを自分の熱く濡れた入り口にあてがい、焦らすようにゆっくりと腰を沈めていく。{u}「{vb1}」{t}「{vt}」{t}が腰を前後に揺らすたびに、{u}は毛布を握りしめて喉を反らした。|{t}は{u}の上着の前を開き、首筋から胸へと口づけを落としていった。{u}「{vb1}」張りつめた{u}のいちもつを手のひらで包んで扱くと、{u}の腰がびくりと跳ねる。{t}は満足げに笑って{u}に跨がり、自分の奥へとそれを呑み込んでいった。{t}「{vt}」締めつけるように腰を回されて、{u}はたまらず{t}の腰にすがった。|{t}は{u}を壁にもたれさせ、その前に膝をついた。{t}の舌先が{u}のいちもつをなぞり上げると、{u}は思わず{t}の髪に指を絡めた。{u}「{vb1}」{t}は十分に昂らせてから立ち上がり、{u}の膝に跨がって、ゆっくりと腰を落としていった。{t}「{vt}」{t}が自分の好きな速さで腰を使うたびに、{u}の息は浅く乱れていった。'),
-      mm: L('{t}は{u}を外套の上にうつ伏せにさせ、背筋に沿って唇を落としていった。軟膏をまとわせた指で、{t}は{u}の後ろを丁寧にほぐしていく。{u}「{vb1}」十分に柔らかくなったところで、{t}はゆっくりと自分のいちもつを沈めた。{t}「{vt}」奥まで満たされた{u}は、毛布に額を押しつけて、甘く掠れた息を吐いた。|{t}は{u}を壁際に追い詰め、張りつめた{u}のいちもつを手のひらで包み込んだ。{u}「{vb1}」{t}は扱く手を止めないまま、もう片方の指で{u}の後ろをほぐしていく。やがて{t}は{u}の片脚を抱え上げ、熱く硬いものを奥へと押し進めた。{t}「{vt}」揺さぶられるたびに、{u}は{t}の肩にすがりついて声を震わせた。|{t}は{u}を毛布の上に組み敷き、深く口づけながら衣を剥いでいった。軟膏で濡らした指が後ろをほぐしていくと、{u}の腰が逃げるように揺れる。{u}「{vb1}」{t}はその腰を両手で掴んで引き戻し、ゆっくりと奥まで沈めた。{t}「{vt}」揺さぶられるたびに、{u}の張りつめたものが二人の腹の間で擦れて、先走りをこぼした。')
+      mf: L('{t}は{u}を外套の上に横たえ、火照った肌に唇を落としていった。首筋から胸元へ、胸元から下腹へと降りるたびに、{u}の腰が小さく跳ねる。{u}「{vb1}」{t}は濡れそぼった{u}の{女性器}を指でほぐしてから、ゆっくりと自分の{男性器}を沈めた。{t}「{vt}」奥まで満たされた瞬間、{u}は{t}の背中に爪を立てて、声にならない息を漏らした。|{t}は{u}を壁際に追い詰め、片脚を抱え上げた。{u}「{vb1}」とろけきった{u}の中は、触れる前からひくひくと疼いていた。{t}が腰を進めるたびに、{u}は{t}の首にすがりついて甘い声を上げる。{t}「{vt}」迷宮の湿った空気の中で、二人の息づかいだけがどんどん速くなっていった。|{t}は{u}を毛布の上に組み敷き、{u}の脚の間に体を割り込ませた。{u}の{女性器}はもう、{t}を待ちわびるように蜜をこぼしていた。{u}「{vb1}」{t}がゆっくりと奥まで沈めると、{u}は背をしならせて{t}にしがみついた。{t}「{vt}」揺さぶられるたびに、{u}の声は甘く崩れていった。'),
+      ff: L('{t}は{u}を外套の上に横たえ、火照った肌に唇を這わせていった。胸の先を舌で転がされるたびに、{u}の腰が小さく浮き上がる。{u}「{vb1}」{t}は濡れそぼった{u}の{女性器}を指でなぞり、ゆっくりと二本の指を沈めた。{t}「{vt}」中の弱いところを指の腹で探り当てられて、{u}は{t}の肩に爪を立てた。|{t}は{u}の脚の間に顔を埋め、とろとろに濡れたところへ舌を這わせた。{u}「{vb1}」{u}は思わず{t}の髪に指を絡め、腰を震わせる。{t}は舌で花芯を転がしながら、指でゆっくりと中をかき回した。{t}「{vt}」迷宮の湿った空気の中で、{u}の甘い声だけがどんどん高くなっていった。|{t}は{u}を壁際に追い詰め、唇を重ねたまま{u}の衣の中へ手を滑り込ませた。指先が胸のふくらみをなぞり、下腹をなぞり、熱く濡れた{女性器}に辿り着く。{u}「{vb1}」{t}の指が中に入ってくるたびに、{u}は膝を震わせて{t}にすがりついた。{t}「{vt}」二人の吐息が絡み合って、狭い通路を甘く満たしていった。'),
+      fm: L('{t}は{u}を外套の上に押し倒し、その胸に手をついて跨がった。{u}の{男性器}はもう、触れる前から硬く張りつめていた。{t}はそれを自分の熱く濡れた入り口にあてがい、焦らすようにゆっくりと腰を沈めていく。{u}「{vb1}」{t}「{vt}」{t}が腰を前後に揺らすたびに、{u}は毛布を握りしめて喉を反らした。|{t}は{u}の上着の前を開き、首筋から胸へと口づけを落としていった。{u}「{vb1}」張りつめた{u}の{男性器}を手のひらで包んで扱くと、{u}の腰がびくりと跳ねる。{t}は満足げに笑って{u}に跨がり、自分の奥へとそれを呑み込んでいった。{t}「{vt}」締めつけるように腰を回されて、{u}はたまらず{t}の腰にすがった。|{t}は{u}を壁にもたれさせ、その前に膝をついた。{t}の舌先が{u}の{男性器}をなぞり上げると、{u}は思わず{t}の髪に指を絡めた。{u}「{vb1}」{t}は十分に昂らせてから立ち上がり、{u}の膝に跨がって、ゆっくりと腰を落としていった。{t}「{vt}」{t}が自分の好きな速さで腰を使うたびに、{u}の息は浅く乱れていった。'),
+      mm: L('{t}は{u}を外套の上にうつ伏せにさせ、背筋に沿って唇を落としていった。軟膏をまとわせた指で、{t}は{u}の後ろを丁寧にほぐしていく。{u}「{vb1}」十分に柔らかくなったところで、{t}はゆっくりと自分の{男性器}を沈めた。{t}「{vt}」奥まで満たされた{u}は、毛布に額を押しつけて、甘く掠れた息を吐いた。|{t}は{u}を壁際に追い詰め、張りつめた{u}の{男性器}を手のひらで包み込んだ。{u}「{vb1}」{t}は扱く手を止めないまま、もう片方の指で{u}の後ろをほぐしていく。やがて{t}は{u}の片脚を抱え上げ、熱く硬いものを奥へと押し進めた。{t}「{vt}」揺さぶられるたびに、{u}は{t}の肩にすがりついて声を震わせた。|{t}は{u}を毛布の上に組み敷き、深く口づけながら衣を剥いでいった。軟膏で濡らした指が後ろをほぐしていくと、{u}の腰が逃げるように揺れる。{u}「{vb1}」{t}はその腰を両手で掴んで引き戻し、ゆっくりと奥まで沈めた。{t}「{vt}」揺さぶられるたびに、{u}の張りつめたものが二人の腹の間で擦れて、先走りをこぼした。')
     },
     /* 山場：受けの態度9種 */
     climax: {
@@ -33889,10 +34262,10 @@
     },
     /* 男性向け：受けの絶頂（擬音と♡の喘ぎ）。組ごと */
     ero: {
-      mf: L('{s:hit}。{u}「{m2}」――奥を突き上げられるたびに、{u}の秘所はきゅうきゅうと{t}を締めつけた。|{s:wet}。{u}「{m2}」――とろとろに濡れた奥をかき回されて、{u}は{t}の腰に脚を絡めたまま何度もイった。|{s:cum}。{u}「{m2}」――奥にたっぷりと注がれて、{u}はびくびくと腰を跳ねさせながら蕩けた顔で果てた。'),
-      ff: L('{s:wet}。{u}「{m2}」――{t}の指に中の弱いところを擦り上げられて、{u}はぷしゃっと潮を噴きながらイった。|{s:wet}。{u}「{m2}」――花芯を舌で吸われたまま指で奥をかき回されて、{u}の腰はがくがくと跳ね続けた。|{s:suck}。{u}「{m2}」――{t}にとろとろの秘所を舐めしゃぶられて、{u}は脚をぴんと伸ばしたまま深くイった。'),
-      fm: L('{s:hit}。{u}「{m2}」――{t}に上から腰を叩きつけられて、{u}はこらえきれずに勢いよく吐き出した。|{s:wet}。{u}「{m2}」――きつく締めつけられたまま腰を回されて、{u}のいちもつはびくびくと脈打ちながら果てた。|{s:cum}。{u}「{m2}」――根元まで呑み込まれたまま搾り取られて、{u}は腰を震わせて何度も吐き出した。'),
-      mm: L('{s:hit}。{u}「{m2}」――奥を突き上げられるたびに、触れられてもいない{u}のいちもつから先走りがとろとろと溢れた。|{s:cum}。{u}「{m2}」――奥に熱いものを注がれた瞬間、{u}も腹の上に勢いよく吐き出していた。|{s:wet}。{u}「{m2}」――前を扱かれながら奥を揺さぶられて、{u}はびくびくと腰を跳ねさせて果てた。')
+      mf: L('{s:hit}。{u}「{m2}」――奥を突き上げられるたびに、{u}の{女性器}はきゅうきゅうと{t}を締めつけた。|{s:wet}。{u}「{m2}」――とろとろに濡れた奥をかき回されて、{u}は{t}の腰に脚を絡めたまま何度もイった。|{s:cum}。{u}「{m2}」――奥にたっぷりと注がれて、{u}はびくびくと腰を跳ねさせながら蕩けた顔で果てた。'),
+      ff: L('{s:wet}。{u}「{m2}」――{t}の指に中の弱いところを擦り上げられて、{u}はぷしゃっと潮を噴きながらイった。|{s:wet}。{u}「{m2}」――花芯を舌で吸われたまま指で奥をかき回されて、{u}の腰はがくがくと跳ね続けた。|{s:suck}。{u}「{m2}」――{t}にとろとろの{女性器}を舐めしゃぶられて、{u}は脚をぴんと伸ばしたまま深くイった。'),
+      fm: L('{s:hit}。{u}「{m2}」――{t}に上から腰を叩きつけられて、{u}はこらえきれずに勢いよく吐き出した。|{s:wet}。{u}「{m2}」――きつく締めつけられたまま腰を回されて、{u}の{男性器}はびくびくと脈打ちながら果てた。|{s:cum}。{u}「{m2}」――根元まで呑み込まれたまま搾り取られて、{u}は腰を震わせて何度も吐き出した。'),
+      mm: L('{s:hit}。{u}「{m2}」――奥を突き上げられるたびに、触れられてもいない{u}の{男性器}から先走りがとろとろと溢れた。|{s:cum}。{u}「{m2}」――奥に熱いものを注がれた瞬間、{u}も腹の上に勢いよく吐き出していた。|{s:wet}。{u}「{m2}」――前を扱かれながら奥を揺さぶられて、{u}はびくびくと腰を跳ねさせて果てた。')
     },
     /* 男性向け：攻めの主導する声。攻めの体（m 男性の体・f 女性の体） */
     eroTop: {
@@ -34143,12 +34516,12 @@
   /* ---------- 捕まって責められる攻め（挿入なし） ---------- */
   var TZ = DG.TEASE = {
     trap: {
-      m: L('{t}が動き出したかと思うと、仕掛けの奥から細い触手が何本も這い出してきた。{a}が振り払うより先に、触手は{p}を撫で、そのまま下へ滑り込んで、張りつめかけたいちもつに巻きついた。挿れてくる気配はない。ただ根元から先へ、ゆっくりと搾るように扱き上げてくるだけだった。|{a}が{t}の仕掛けを叩き壊そうと踏み込んだ瞬間、床から伸びた蔓が両の手首に絡みついた。身動きの取れなくなった{a}の下衣の中へ、ぬめる蔓先が潜り込んでくる。先端の敏感なところだけを、くるくると円を描くように撫で回され、{a}の喉から低い唸りが漏れた。|{t}の仕掛けが{a}の腰に吸いついた。柔らかな襞がひとりでにうごめき、張りつめたものを丸ごと包み込んで、吸っては緩め、吸っては緩めをくり返す。{a}は仕掛けを引き剥がそうと掴んだが、指に力が入らなかった。|{t}から溢れた粘液が{a}の{p}を伝い、脚の付け根へと流れ落ちていった。粘液はそこで意思を持ったように蠢き、硬くなったいちもつの裏側を、根元から先端まで何度も舐め上げる。{a}は奥歯を噛みしめた。果てさせる気のない、焦らすだけの動きだった。|{a}が{t}に背を向けた一瞬、腰に何かが巻きついた。細い触手が下衣の隙間から入り込み、昂りの根元をきゅっと締めつけたまま、先端だけを小刻みに擦り立ててくる。達しそうになるたびに締めつけが強まり、{a}は荒い息を吐いて壁に拳を打ちつけた。'),
+      m: L('{t}が動き出したかと思うと、仕掛けの奥から細い触手が何本も這い出してきた。{a}が振り払うより先に、触手は{p}を撫で、そのまま下へ滑り込んで、張りつめかけた{男性器}に巻きついた。挿れてくる気配はない。ただ根元から先へ、ゆっくりと搾るように扱き上げてくるだけだった。|{a}が{t}の仕掛けを叩き壊そうと踏み込んだ瞬間、床から伸びた蔓が両の手首に絡みついた。身動きの取れなくなった{a}の下衣の中へ、ぬめる蔓先が潜り込んでくる。先端の敏感なところだけを、くるくると円を描くように撫で回され、{a}の喉から低い唸りが漏れた。|{t}の仕掛けが{a}の腰に吸いついた。柔らかな襞がひとりでにうごめき、張りつめたものを丸ごと包み込んで、吸っては緩め、吸っては緩めをくり返す。{a}は仕掛けを引き剥がそうと掴んだが、指に力が入らなかった。|{t}から溢れた粘液が{a}の{p}を伝い、脚の付け根へと流れ落ちていった。粘液はそこで意思を持ったように蠢き、硬くなった{男性器}の裏側を、根元から先端まで何度も舐め上げる。{a}は奥歯を噛みしめた。果てさせる気のない、焦らすだけの動きだった。|{a}が{t}に背を向けた一瞬、腰に何かが巻きついた。細い触手が下衣の隙間から入り込み、昂りの根元をきゅっと締めつけたまま、先端だけを小刻みに擦り立ててくる。達しそうになるたびに締めつけが強まり、{a}は荒い息を吐いて壁に拳を打ちつけた。'),
       f: L('{t}が動き出したかと思うと、仕掛けの奥から細い触手が何本も這い出してきた。{a}が振り払うより先に、触手は{p}を撫で、胸の先に吸いついて、もう一本が脚の間の小さな芽を探り当てた。中へ入ってくる気配はない。ただ表面だけを、執拗に、焦らすように擦り続けた。|{a}が{t}の仕掛けを叩き壊そうと踏み込んだ瞬間、床から伸びた蔓が両の手首に絡みついた。ぬめる蔓先が服の裾から潜り込み、胸の先をくすぐってから、下着越しに敏感な芽をゆっくりと押し撫でる。{a}は唇を噛んで、熱を帯びていく体を睨みつけた。|{t}の仕掛けが{a}の胸元に吸いついた。柔らかな襞がひとりでにうごめき、胸の先を吸っては緩め、吸っては緩めをくり返す。同じ仕掛けの小さな舌が脚の付け根まで伸びて、敏感な芽の上を羽のように撫でていった。{a}は仕掛けを引き剥がそうと掴んだが、指に力が入らなかった。|{t}から溢れた粘液が{a}の{p}を伝い、脚の付け根へと流れ落ちていった。粘液はそこで意思を持ったように蠢き、花芯の周りをくるくるとなぞっては、肝心なところに触れる寸前で離れていく。{a}は奥歯を噛みしめた。果てさせる気のない、焦らすだけの動きだった。|{a}が{t}に背を向けた一瞬、腰に何かが巻きついた。細い触手が下着の隙間から入り込み、脚の間の芽をつまむように捕らえて、小刻みに震わせてくる。達しそうになるたびに震えが止まり、{a}は荒い息を吐いて壁に拳を打ちつけた。'),
       x: L('{t}が動き出したかと思うと、仕掛けの奥から細い触手が何本も這い出してきた。{a}が振り払うより先に、触手は{p}を撫で、脇腹から背筋、内腿へと、肌の薄いところばかりを選んで這い回った。{a}は身をよじったが、触手は少しも離れなかった。|{a}が{t}の仕掛けを叩き壊そうと踏み込んだ瞬間、床から伸びた蔓が両の手首に絡みついた。ぬめる蔓先が服の裾から潜り込み、胸の先をくすぐり、臍のくぼみをなぞり、内腿をゆっくりと撫で上げていく。{a}は唇を噛んで、熱を帯びていく体を睨みつけた。|{t}の仕掛けが{a}の胸元に吸いついた。柔らかな襞がひとりでにうごめき、胸の先を吸っては緩め、吸っては緩めをくり返す。小さな舌のようなものが首筋と耳の裏まで伸びて、羽のように撫でていった。{a}は仕掛けを引き剥がそうと掴んだが、指に力が入らなかった。|{t}から溢れた粘液が{a}の{p}を伝い、全身へ薄く広がっていった。粘液は肌の上で意思を持ったように蠢き、背中や脇腹、膝の裏まで、弱いところを探しては撫でていく。{a}は奥歯を噛みしめた。果てさせる気のない、焦らすだけの動きだった。')
     },
     mon: {
-      m: L('{t}は{a}の剣をかわし、懐に潜り込んで下衣の上から昂りを掴んだ。{a}が引き剥がそうとするほど、ぬめる指は根元から先端へと執拗に扱き上げてくる。挿れようとはしない。ただ、{a}が果てる寸前で手を緩め、また最初から扱き直すのをくり返した。|{t}の絡みつく腕が、{a}の両腕を背中にまとめて捻り上げた。身動きの取れない{a}の前に屈み込んだ{t}は、張りつめたいちもつを舌で根元から舐め上げ、先端を唇で浅く含んでは離した。{a}は「離せ」と唸ったが、腰は勝手に前へ出ていた。|{t}は{a}を壁際に押し返すと、細い舌を何本も伸ばして、下衣の中の昂りに巻きつけた。一本は先端を、一本は裏側を、一本は根元をと、それぞれが違う速さで擦り立てる。{a}の膝が震えた。|{t}の吐いた甘い粘液を浴びて、{a}の昂りは一気に張りつめた。{t}はそこへ吸いつくように身を寄せ、熱を搾り出すように何度も締めつけては緩める。{a}は{t}を押しのけようとしたが、その手はいつの間にか、{t}の頭を引き寄せていた。|{t}は組み伏せ返そうとする{a}の手首を絡め取り、下腹にぬるりと身を擦りつけた。張りつめたものを擦り上げる動きは、果てさせるためではなく、焦らすためのものだった。寸前で止まるたびに、{a}の口から悔しげな息が漏れた。'),
+      m: L('{t}は{a}の剣をかわし、懐に潜り込んで下衣の上から昂りを掴んだ。{a}が引き剥がそうとするほど、ぬめる指は根元から先端へと執拗に扱き上げてくる。挿れようとはしない。ただ、{a}が果てる寸前で手を緩め、また最初から扱き直すのをくり返した。|{t}の絡みつく腕が、{a}の両腕を背中にまとめて捻り上げた。身動きの取れない{a}の前に屈み込んだ{t}は、張りつめた{男性器}を舌で根元から舐め上げ、先端を唇で浅く含んでは離した。{a}は「離せ」と唸ったが、腰は勝手に前へ出ていた。|{t}は{a}を壁際に押し返すと、細い舌を何本も伸ばして、下衣の中の昂りに巻きつけた。一本は先端を、一本は裏側を、一本は根元をと、それぞれが違う速さで擦り立てる。{a}の膝が震えた。|{t}の吐いた甘い粘液を浴びて、{a}の昂りは一気に張りつめた。{t}はそこへ吸いつくように身を寄せ、熱を搾り出すように何度も締めつけては緩める。{a}は{t}を押しのけようとしたが、その手はいつの間にか、{t}の頭を引き寄せていた。|{t}は組み伏せ返そうとする{a}の手首を絡め取り、下腹にぬるりと身を擦りつけた。張りつめたものを擦り上げる動きは、果てさせるためではなく、焦らすためのものだった。寸前で止まるたびに、{a}の口から悔しげな息が漏れた。'),
       f: L('{t}は{a}の剣をかわし、懐に潜り込んで服の上から胸の先をつまみ上げた。{a}が引き剥がそうとするほど、もう片方の手は脚の間へ滑り込み、敏感な芽を布越しに円を描いて撫で回す。中へは入ってこない。{a}が達しかけるたびに手を止め、また最初から撫で直した。|{t}の絡みつく腕が、{a}の両腕を背中にまとめて捻り上げた。{t}は{a}の胸元に顔を埋めて胸の先を舌で転がし、脚の間の小さな芽を指先で軽く弾いた。{a}は「離せ」と唸ったが、腰は勝手に前へ出ていた。|{t}は{a}を壁際に押し返すと、細い舌を何本も伸ばして、服の中へ潜り込ませた。一本は胸の先を、一本は脇腹を、一本は脚の間の芽をと、それぞれが違う速さで擦り立てる。{a}の膝が震えた。|{t}の吐いた甘い粘液を浴びて、{a}の肌は一気に火照った。{t}は濡れた指で花芯の周りをなぞり、触れる寸前で何度も逸らす。{a}は{t}を押しのけようとしたが、その手はいつの間にか、{t}の腕を掴んで引き寄せていた。'),
       x: L('{t}は{a}の剣をかわし、懐に潜り込んで服の上から胸の先をつまみ上げた。{a}が引き剥がそうとするほど、もう片方の手は脇腹から背中、内腿へと這い回り、肌の弱いところを探り当てていく。{a}が息を詰めるたびに手を止め、また最初からなぞり直した。|{t}の絡みつく腕が、{a}の両腕を背中にまとめて捻り上げた。{t}は{a}の首筋に吸いつき、耳の裏を舌でなぞり、胸の先を指先で軽く弾いた。{a}は「離せ」と唸ったが、体は勝手に震えていた。|{t}は{a}を壁際に押し返すと、細い舌を何本も伸ばして、服の中へ潜り込ませた。一本は胸の先を、一本は脇腹を、一本は内腿をと、それぞれが違う速さで擦り立てる。{a}の膝が震えた。')
     },
@@ -34158,7 +34531,7 @@
       x: L('檻の格子の隙間から、{t}の触手が何本も伸びてきた。眠りかけていた{a}の足首に絡みつき、腿を這い上がって、脇腹と胸の先を撫で回す。{a}が目を覚ましたときには、触手はもう、肌の弱いところばかりを探り当てていた。|{t}の巣の見張りが、檻の中の{a}の前に小さな器具を置いていった。器具は勝手に這い寄って{a}の胸元と首筋に吸いつき、肌が粟立つまで小刻みに震えては止まる。{a}は器具を叩き壊したが、翌朝には新しいものが置かれていた。|檻の床に敷かれた苔が、夜になると柔らかく蠢き出した。横になった{a}の背中と内腿を、苔は羽のようにくすぐり続ける。{a}は苔を引きむしったが、むしってもむしっても、また生えてきた。')
     },
     boss: {
-      m: L('{t}の放った無数の触手が、{a}の四肢に絡みついて宙に吊り上げた。{t}は笑いながら、張りつめた{a}のいちもつに一本だけ触手を巻きつけ、果てる寸前まで扱いては止め、扱いては止めをくり返した。|{t}は{a}の剣を絡め取ると、その手で{a}の下衣を引き裂いた。露わになった昂りの根元を見えない輪で締めつけたまま、{t}は先端を指先でゆっくりと撫で回す。{a}は牙を剥くように唸ったが、{t}は余裕の笑みを崩さなかった。|{t}の吐息が{a}の下腹を撫でた瞬間、昂りが痛いほど張りつめた。{t}は触れもせずに、ただ息だけで先端をくすぐり続ける。{a}は{t}に掴みかかったが、その指先は熱に震えていた。'),
+      m: L('{t}の放った無数の触手が、{a}の四肢に絡みついて宙に吊り上げた。{t}は笑いながら、張りつめた{a}の{男性器}に一本だけ触手を巻きつけ、果てる寸前まで扱いては止め、扱いては止めをくり返した。|{t}は{a}の剣を絡め取ると、その手で{a}の下衣を引き裂いた。露わになった昂りの根元を見えない輪で締めつけたまま、{t}は先端を指先でゆっくりと撫で回す。{a}は牙を剥くように唸ったが、{t}は余裕の笑みを崩さなかった。|{t}の吐息が{a}の下腹を撫でた瞬間、昂りが痛いほど張りつめた。{t}は触れもせずに、ただ息だけで先端をくすぐり続ける。{a}は{t}に掴みかかったが、その指先は熱に震えていた。'),
       f: L('{t}の放った無数の触手が、{a}の四肢に絡みついて宙に吊り上げた。{t}は笑いながら、{a}の胸の先と脚の間の芽に一本ずつ触手を這わせ、達する寸前まで擦っては止め、擦っては止めをくり返した。|{t}は{a}の剣を絡め取ると、その手で{a}の服を引き裂いた。露わになった胸の先を指先で転がしながら、もう片方の指で花芯の周りをゆっくりとなぞる。{a}は牙を剥くように唸ったが、{t}は余裕の笑みを崩さなかった。|{t}の吐息が{a}の下腹を撫でた瞬間、脚の間がじんと疼いた。{t}は触れもせずに、ただ息だけで敏感なところをくすぐり続ける。{a}は{t}に掴みかかったが、その指先は熱に震えていた。'),
       x: L('{t}の放った無数の触手が、{a}の四肢に絡みついて宙に吊り上げた。{t}は笑いながら、{a}の胸の先と脇腹、内腿に触手を這わせ、肌が粟立つまで撫でては止め、撫でては止めをくり返した。|{t}は{a}の剣を絡め取ると、その手で{a}の服を引き裂いた。露わになった胸の先を指先で転がしながら、もう片方の指で背筋をゆっくりとなぞり下ろす。{a}は牙を剥くように唸ったが、{t}は余裕の笑みを崩さなかった。|{t}の吐息が{a}の首筋を撫でた瞬間、全身の肌が粟立った。{t}は触れもせずに、ただ息だけで耳の裏や鎖骨をくすぐり続ける。{a}は{t}に掴みかかったが、その指先は熱に震えていた。')
     },
@@ -34171,7 +34544,7 @@
     },
     /* 山場：体の一文（名前を出さない）＋態度9種の一文 */
     cbody: {
-      m: L('焦らし続けた動きが不意に速まり、こらえていた熱が根元からせり上がった。|根元を締めつけていた輪が、ふっと緩んだ。張りつめたいちもつが大きく跳ね、びくびくと脈打った。|先端ばかりを撫でていたものが、最後に根元からきつく巻きついて扱き上げた。|何度も寸前で止められた昂りが、とうとう抑えきれなくなった。'),
+      m: L('焦らし続けた動きが不意に速まり、こらえていた熱が根元からせり上がった。|根元を締めつけていた輪が、ふっと緩んだ。張りつめた{男性器}が大きく跳ね、びくびくと脈打った。|先端ばかりを撫でていたものが、最後に根元からきつく巻きついて扱き上げた。|何度も寸前で止められた昂りが、とうとう抑えきれなくなった。'),
       f: L('焦らし続けた動きが不意に速まり、胸の先と花芯を同時に擦り上げた。|脚の間の芽をつまんでいたものが小刻みに震え出し、甘い痺れが背筋を駆け上がった。|何度も寸前で止められていた疼きが、とうとう抑えきれなくなった。'),
       x: L('肌の上を這い回っていたものが一斉に動きを速め、全身の産毛が逆立った。|胸の先を吸っていたものがきつく吸い上げた瞬間、痺れるような波が背筋を駆け上がった。|何度も寸前で止められていた熱が、とうとう抑えきれなくなった。')
     },
@@ -34275,10 +34648,10 @@
       unwilling: L('{u}は首を振った。{u}「だめ、{t}まで……っ」けれど触手に縛られた体では、拒むことさえままならなかった。|{u}「やめ……っ、{t}、正気に……」懇願する声は、触手の動きにかき消された。'),
       /* 最中：組ごと（mf 男×女・ff 女×女・fm 女攻め×男・mm 男×男）と、性器なしの組（oral_m/f/x：受けが性器なし、攻めの体ごと／hand_f/m：攻めが性器なし、受けの体ごと） */
       act: {
-        mf: L('触手が{u}の両脚を左右から抱え上げ、濡れそぼった秘所を{t}の前にさらけ出した。{t}は迷わず腰を進め、張りつめたいちもつを根元まで沈めた。{u}「{vb1}」突き上げるたびに、胸に吸いついた触手がきゅうっと先を吸い上げ、{u}の中がきつく締まる。{t}「{vt}」|{t}は宙に吊られた{u}を背後から抱きすくめ、熱く濡れた奥へ一息に貫いた。触手は{u}の胸を揉みしだき、花芯にまで細い先を這わせて、{t}の動きに合わせて擦り立てる。{u}「{vb1}」前からも後ろからも責め立てられて、{u}の腰はがくがくと震え続けた。|触手が{u}の腰を持ち上げ、{t}のいちもつの上へゆっくりと下ろしていく。自分の重みで深く呑み込まされて、{u}は声にならない息を漏らした。{u}「{vb1}」{t}が下から突き上げるのに合わせて、触手は{u}の胸の先と花芯を同時にねぶり回した。{t}「{vt}」'),
+        mf: L('触手が{u}の両脚を左右から抱え上げ、濡れそぼった{女性器}を{t}の前にさらけ出した。{t}は迷わず腰を進め、張りつめた{男性器}を根元まで沈めた。{u}「{vb1}」突き上げるたびに、胸に吸いついた触手がきゅうっと先を吸い上げ、{u}の中がきつく締まる。{t}「{vt}」|{t}は宙に吊られた{u}を背後から抱きすくめ、熱く濡れた奥へ一息に貫いた。触手は{u}の胸を揉みしだき、花芯にまで細い先を這わせて、{t}の動きに合わせて擦り立てる。{u}「{vb1}」前からも後ろからも責め立てられて、{u}の腰はがくがくと震え続けた。|触手が{u}の腰を持ち上げ、{t}の{男性器}の上へゆっくりと下ろしていく。自分の重みで深く呑み込まされて、{u}は声にならない息を漏らした。{u}「{vb1}」{t}が下から突き上げるのに合わせて、触手は{u}の胸の先と花芯を同時にねぶり回した。{t}「{vt}」'),
         ff: L('触手が{u}の両脚を左右から抱え上げ、とろとろに濡れたところを{t}の前にさらけ出した。{t}は{u}の脚の間に顔を寄せ、花芯を舌で転がしながら、二本の指を中へ沈めた。{u}「{vb1}」胸に吸いついた触手がきゅうっと先を吸い上げるたびに、{u}の中が指をきつく締めつける。{t}「{vt}」|{t}は宙に吊られた{u}を背後から抱きすくめ、濡れた花芯を指の腹で押し撫でた。触手は{u}の胸を揉みしだき、別の細い先が、指に寄り添うように{u}の中を探っていく。{u}「{vb1}」内と外から同時に責め立てられて、{u}の腰はがくがくと震え続けた。|触手に床へ押さえつけられた{u}の上に、{t}が覆いかぶさって唇を重ねた。舌を絡めながら、指先で{u}の弱いところを探り当てる。{u}「{vb1}」触手が{u}の脚を閉じさせまいと押さえつけ、{t}の指が奥の柔らかなところをくり返し擦り上げた。{t}「{vt}」'),
-        fm: L('触手が{u}の両腕を頭の上でまとめ上げ、仰向けに床へ縫いとめた。{t}はその腰に跨がり、触手に扱かれて張りつめた{u}のいちもつを、自分の濡れた入り口へ導いた。{u}「{vb1}」{t}がゆっくりと腰を沈めると、胸の先を吸っていた触手までが動きを速めた。{t}「{vt}」|{t}は宙に吊るされた{u}の前に立ち、張りつめたいちもつを手のひらで包み込んだ。触手が{u}の後ろを撫で、胸を吸い、{t}の手が根元から先へと扱き上げる。{u}「{vb1}」限界が近づくと、{t}はそれを自分の中へ迎え入れ、きつく締めつけた。{t}「{vt}」|触手に手足を絡め取られた{u}の胸に、{t}が手をついた。{t}は上から腰を落とし、{u}の昂りを根元まで呑み込んだまま、前後にゆっくりと揺らす。そのたびに、背後から{u}に絡みついた触手もぬるぬると蠢いた。{u}「{vb1}」{t}「{vt}」'),
-        mm: L('触手が{u}を四つん這いに押さえつけ、腰だけを高く持ち上げた。{t}は粘液でぬめる{u}の後ろに張りつめたいちもつをあてがい、ゆっくりと根元まで沈めた。{u}「{vb1}」前に回った触手が{u}の昂りに巻きつき、{t}の動きに合わせて扱き上げる。{t}「{vt}」|{t}は宙に吊られた{u}を背後から抱きすくめ、ほぐれきった後ろへ一息に貫いた。触手は{u}の胸の先を吸い、張りつめた昂りを根元から搾り上げる。{u}「{vb1}」前と後ろを同時に責め立てられて、{u}は{t}の腕の中で何度も背を反らした。|触手が{u}の脚を大きく開かせ、{t}の腰の上へ下ろしていく。自分の重みで深く呑み込まされて、{u}は喉を反らした。{u}「{vb1}」{t}が下から突き上げるたびに、触手が{u}のいちもつを扱き上げ、先端を細い先でくすぐった。{t}「{vt}」'),
+        fm: L('触手が{u}の両腕を頭の上でまとめ上げ、仰向けに床へ縫いとめた。{t}はその腰に跨がり、触手に扱かれて張りつめた{u}の{男性器}を、自分の濡れた入り口へ導いた。{u}「{vb1}」{t}がゆっくりと腰を沈めると、胸の先を吸っていた触手までが動きを速めた。{t}「{vt}」|{t}は宙に吊るされた{u}の前に立ち、張りつめた{男性器}を手のひらで包み込んだ。触手が{u}の後ろを撫で、胸を吸い、{t}の手が根元から先へと扱き上げる。{u}「{vb1}」限界が近づくと、{t}はそれを自分の中へ迎え入れ、きつく締めつけた。{t}「{vt}」|触手に手足を絡め取られた{u}の胸に、{t}が手をついた。{t}は上から腰を落とし、{u}の昂りを根元まで呑み込んだまま、前後にゆっくりと揺らす。そのたびに、背後から{u}に絡みついた触手もぬるぬると蠢いた。{u}「{vb1}」{t}「{vt}」'),
+        mm: L('触手が{u}を四つん這いに押さえつけ、腰だけを高く持ち上げた。{t}は粘液でぬめる{u}の後ろに張りつめた{男性器}をあてがい、ゆっくりと根元まで沈めた。{u}「{vb1}」前に回った触手が{u}の昂りに巻きつき、{t}の動きに合わせて扱き上げる。{t}「{vt}」|{t}は宙に吊られた{u}を背後から抱きすくめ、ほぐれきった後ろへ一息に貫いた。触手は{u}の胸の先を吸い、張りつめた昂りを根元から搾り上げる。{u}「{vb1}」前と後ろを同時に責め立てられて、{u}は{t}の腕の中で何度も背を反らした。|触手が{u}の脚を大きく開かせ、{t}の腰の上へ下ろしていく。自分の重みで深く呑み込まされて、{u}は喉を反らした。{u}「{vb1}」{t}が下から突き上げるたびに、触手が{u}の{男性器}を扱き上げ、先端を細い先でくすぐった。{t}「{vt}」'),
         oral_m: L('触手が{u}の手足を絡め取り、膝立ちのまま{t}の前に差し出した。{t}は{u}の髪を撫で、熱く硬くなったものを唇に押し当てる。{u}「{vb1}」{u}が口を開くと、{t}はゆっくりと腰を進め、舌の上を滑らせた。その間も、触手は{u}の胸の先や内腿をぬるぬると撫で続けていた。|{t}は宙に吊られた{u}の頬を両手で包み、口いっぱいに自分の熱を含ませた。触手が{u}の肌を這い回るたびに、{u}の喉が小さく鳴って、唇がきゅっとすぼまる。{u}「{vb1}」{t}「{vt}」'),
         oral_f: L('触手が{u}の手足を絡め取り、膝立ちのまま{t}の前に差し出した。{t}は{u}の頭を抱き寄せ、自分の脚のあいだへ導く。{u}「{vb1}」{u}の舌が熱いところに触れると、{t}の太ももが小さく震えた。その間も、触手は{u}の胸の先や脇腹をぬるぬると撫で続けていた。|{t}は宙に吊られた{u}の顎を持ち上げ、自分の濡れた指を咥えさせてから、その唇を脚のあいだへ導いた。{t}「同じように」触手が{u}の背筋をなぞるたびに、{u}の舌が震える。{u}「{vb1}」'),
         oral_x: L('触手が{u}の手足を絡め取り、膝立ちのまま{t}の前に差し出した。{t}は{u}の口に指を二本差し入れ、舌の上をゆっくりと撫でた。{u}「{vb1}」{u}が指に吸いつくと、{t}は喉の手前まで指を沈めては引き、また沈めた。触手は{u}の胸の先や内腿を撫で続けていた。|{t}は宙に吊られた{u}の舌を自分の舌で絡め取り、唇の裏、上顎と、口の中を隅々まで舐め尽くした。触手が{u}の肌を這い回るたびに、{u}の喉が小さく鳴る。{u}「{vb1}」{t}「{vt}」'),
@@ -34313,7 +34686,7 @@
         mf: L('{s:hit}。{t}が奥を突き上げるたびに、触手に吸われた胸の先まで震えて、{u}の中はきゅうきゅうと締めつけた。|{s:cum}。奥へたっぷりと注がれて、{u}は触手に吊られたまま蕩けた顔で腰を跳ねさせた。'),
         ff: L('{s:wet}。指と触手に中を同時にかき回されて、{u}はぷしゃっと潮を噴いた。|{s:suck}。花芯を吸われ、触手に胸を吸われて、{u}は脚をぴんと伸ばしたまま深くイった。'),
         fm: L('{s:hit}。上から腰を叩きつけられ、触手に胸の先を吸われて、{u}はこらえきれずに勢いよく吐き出した。|{s:cum}。根元まで呑み込まれたまま触手に後ろを撫で回されて、{u}は何度も腰を震わせて吐き出した。'),
-        mm: L('{s:hit}。奥を突き上げられるたびに、触手に扱かれた{u}のいちもつから先走りがとろとろと溢れた。|{s:cum}。奥へ注がれた瞬間、触手に搾り上げられていた{u}も、腹の上に勢いよく吐き出していた。')
+        mm: L('{s:hit}。奥を突き上げられるたびに、触手に扱かれた{u}の{男性器}から先走りがとろとろと溢れた。|{s:cum}。奥へ注がれた瞬間、触手に搾り上げられていた{u}も、腹の上に勢いよく吐き出していた。')
       },
       /* 攻めの果て：組ごと */
       fin: {
@@ -35516,11 +35889,11 @@
       ],
       lady: [
         '{m}は{a}のものをオイルで濡れた手でしごき上げてから、ゆっくりと腰を落とした。{s:wet}。{a}「{m1}」――「⁠まだ出しちゃだめですよ」と囁かれ、{a}は施術台の上で情けない声を漏らした。',
-        '{m}は{a}の上で、ぱちゅん、ぱちゅんと腰を弾ませた。{s:hit}。{a}「{m2}」――搾りとられるように、{a}は{m}のナカで果てた。{s:cum}。'
+        '{m}は{a}の上で、ぱちゅん、ぱちゅんと腰を弾ませた。{s:hit}。{a}「{m2}」――搾りとられるように、{a}は{m}の{ナカ}で果てた。{s:cum}。'
       ],
       ff: [
-        '{m}はオイルを纏った指を二本、{a}のナカへ沈めた。{s:wet}。{a}「{m1}」――奥のざらついたところを丁寧に揉みほぐされ、{a}は潮を噴いてイった。{a}「{m2}」',
-        '{m}は{a}の脚のあいだに顔を寄せ、クリを舌でゆっくりと転がした。{s:suck}。{a}「{m2}」――{a}は施術台の上で、背中を反らせて何度も震えた。'
+        '{m}はオイルを纏った指を二本、{a}の{ナカ}へ沈めた。{s:wet}。{a}「{m1}」――奥のざらついたところを丁寧に揉みほぐされ、{a}は潮を噴いてイった。{a}「{m2}」',
+        '{m}は{a}の脚のあいだに顔を寄せ、{陰核}を舌でゆっくりと転がした。{s:suck}。{a}「{m2}」――{a}は施術台の上で、背中を反らせて何度も震えた。'
       ],
       top: [
         '{a}は{m}を施術台に押し倒し、自分の好きな速さで腰を使った。{s:hit}。{a}「{m1}」――{m}が音を上げても、{a}は手を緩めなかった。',
@@ -35879,7 +36252,7 @@
   /* 際どい段の施術の文（R18版）。全年齢版は上の穏やかな文のまま */
   /* r18:begin */
   ACT['脚'] = L('{m}「脚の付け根にリンパ節があるんです。ここを流さないと、むくみが取れなくて」指が内腿を、際どいところまで滑り上がった。|内腿を揉みほぐす手が、膝から付け根まで何度も往復した。往復のたびに、ほんの少しずつ奥へ。|{m}「鼠径部、しっかり流しておきますね」――{a}はそれが医学用語なのか、言い訳なのか判断がつかなかった。');
-  ACT['臀部'] = L('{m}「大臀筋が凝り固まってます。座り仕事、多いでしょう」手のひらがお尻を大きく掴んで、揉みしだいた。|お尻の丸みに沿ってオイルが塗られ、親指がその谷間すれすれを押し上げた。|{m}「ここは骨盤の歪みに直結するので」――そう言われると、拒む理由が見つからなかった。');
+  ACT['臀部'] = L('{m}「大臀筋が凝り固まってます。座り仕事、多いでしょう」手のひらが{尻}を大きく掴んで、揉みしだいた。|{尻}の丸みに沿ってオイルが塗られ、親指がその谷間すれすれを押し上げた。|{m}「ここは骨盤の歪みに直結するので」――そう言われると、拒む理由が見つからなかった。');
   ACT['胸元'] = L('{m}「では仰向けに。デコルテのリンパを流します」鎖骨から下へ滑った手が、胸の膨らみの縁を何度もなぞった。|{m}「胸の周りの筋肉も、呼吸に関わるので」手のひらが、胸全体を包み込むように回った。|タオルが胸元までずらされた。{m}「ここ、硬くなってますね。…血行の問題です」');
   ACT['下腹'] = L('{m}「下腹は冷えが溜まりやすいんです」温かい手のひらが、へその下でゆっくりと円を描いた。|指先が下腹の奥を探るように押し込まれた。そこを押されると、なぜか体の芯がきゅっと縮んだ。|{m}「ここをほぐすと、全身の巡りがよくなります」――手は、どんどん下へ降りていった。');
   ACT['特別'] = L('{m}は声を落とした。「ここからは、特別な施術になります。…力を抜いてください」タオルが、完全に取り払われた。|{m}「体の内側の凝りをほぐします」――もう、それはどう考えてもマッサージではなかった。|{m}の指が、誰にも触れさせたことのない場所に、当たり前のように触れた。「力を抜いて。深呼吸｜力を抜け。深呼吸だ｜力を抜いてください。深呼吸です」');
@@ -47184,7 +47557,7 @@
   P.fbFor = function (a, b) { return P.nori(a) && P.of(a, b) !== 'top' && P.of(b, a) !== 'bottom' ? [b, a] : [a, b]; };
 
   /* 男性の体を前提にした言葉（女性どうしの場面で使ってはいけない）。点検にも使う */
-  P.MALE_RE = /ちんぽ|ちんこ|ペニス|陰茎|肉棒|いちもつ|一物|男根|亀頭|勃起|射精|精液|白濁|種付け|孕ませ|中に出|中出し|子種|睾丸|カリ首|フェラ|裏筋|鈴口|先走り|怒張|剛直|屹立/;
+  P.MALE_RE = /ちんぽ|ちんこ|ペニス|陰茎|肉棒|いちもつ|一物|男根|亀頭|勃起|射精|精液|白濁|種付け|孕ませ|中に出|中出し|子種|睾丸|カリ首|フェラ|裏筋|鈴口|先走り|怒張|剛直|屹立|\{(?:男性器|亀頭|精液)\}/;
 
   /* 恋愛対象（受け攻め）を、恋愛できる相手の判定に加える */
   if (HK.canLove && !HK.canLove._pos) {
@@ -49172,7 +49545,7 @@
     fixWith: function (ctx, text, A, bn) {
       if (!A || !bn || typeof text !== 'string' || (P.noGen && P.noGen(A)) || !SEXCTX.test(text.replace(/「[^」]*」/g, ''))) return text;
       var B = { name: bn }, st = styleOf(A), an = A.name, last = '', used = {};
-      var reA = new RegExp(an + '(?:は|が|も)'), reB = new RegExp(bn + '(?:は|が|も)'), inB = new RegExp(bn + 'の(?:中|奥|後ろ|ナカ)'), partA = new RegExp(an + 'の(?:もの|モノ|昂り|先端|根元|竿|ちんぽ|肉棒|ペニス)');
+      var reA = new RegExp(an + '(?:は|が|も)'), reB = new RegExp(bn + '(?:は|が|も)'), inB = new RegExp(bn + 'の(?:中|奥|後ろ|ナカ|\\{ナカ\\}|\\{後ろ\\})'), partA = new RegExp(an + 'の(?:もの|モノ|昂り|先端|根元|竿|ちんぽ|肉棒|ペニス|\\{男性器\\}|\\{亀頭\\})');
       var changed = false;
       /* 段落に分けた山場で、すでに女性上位（跨る・腰を落とす・呑み込む）の書き方になっている段落は直さない */
       if (text.indexOf('\n\n') >= 0) {
@@ -49411,6 +49784,8 @@
   /* ---------- 見直し（取りこぼし対策） ---------- */
   /* 性的でない言い回しは判定の前に消す（pos-audit.js の NONSEX と同じ考え方） */
   var NONSEX = /迎え入れるように[^。]{0,4}(?:両腕|腕)|(?:巣|群れ|社会|輪)で(?:ひとつ|一つ)にな|(?:手|掌|両手|腕|指|毛布|布団|胸)の(?:中|奥)(?:で|に|へ|から)?|腰を振(?:って|りながら)踊|の(?:一つ|ひとつ)に(?:な|数え)|(?:島|森|山|洞窟|洞穴|谷|村|路地|廊下|建物|屋敷|館|店|倉庫|船|艦|基地|通路|坑道|神殿|祠|社|遺跡|迷宮|森の|林|藪|茂み|浜|岩場|棚|引き出し|押し入れ|クローゼット|鞄|カバン|袋|胸|心|記憶|目|瞳|頭)の(?:奥|中)|奥(?:の部屋|の間|の院|座敷|歯|義|様|さん|手|地|深い|ゆかし)|釣り竿|物干し竿|竿竹|ヤドカリ|カリカリ|カリスマ|影が(?:一つ|ひとつ)に|一物の|腹に一物|白濁した(?:湯|水|液|霧|空)|犯人|犯行|犯罪|上達|到達|配達|伝達|達成|発達|通達|熟達|調達|速達|先達|一貫|貫徹|貫通|貫禄|突き止め|突き当た|突き放|突き返|突き出|突き抜け|(?:拳|腕|手|杖|旗|剣|槍)を(?:天に)?突き上げ|(?:電話|回線|通信|無線|話|気持ち|心|記憶|縁|手)が繋が|繋がり(?:のある|を感じ|が深|がある)|(?:洞窟|森|遺跡|施設|地下|迷宮|神殿)の最奥|(?:情報|知識|映像|光|風|水|空気|お茶|茶|酒|視線|注目|愛情|力|魔力|毒)(?:が|を)?[^。]{0,4}(?:注がれ|流れ込|注ぎ)|注がれた(?:お茶|茶|酒|水|コーヒー|紅茶|スープ|グラス|杯)|(?:お茶|茶|酒|水|コーヒー|紅茶|スープ)を注/g;
+  /* 体の語の印（{男性器} など。lewd-words.js）は、判定の前に直接の語へ戻してから見る */
+  function cl(x) { var s = String(x), LW = HK.LewdWords; if (LW && LW.direct && s.indexOf('{') >= 0) s = LW.direct(s); return s.replace(NONSEX, '＿'); }
   /* 本文が性的な場面か（はっきりした語だけで見る。「奥」「抱」「腰」など、ふだんの文にも出る語では決めない） */
   var SEXT = /突き続け|脚を開かせ|押し倒|組み敷|押し殺した声|声が漏れ|甘い声|エッチ|イカせ|イかせ|イった|イっちゃ|イっ(?:て|た)|イく|イき|果て(?:た|て|る(?!し)|ない)(?!し)|喘|挿れ|挿入|舐め(?:回|上げ|取|られ|させ)|愛撫|達し(?:た|て|そう)|体を重ね|♡|濡れ(?:た|て)(?:ところ|奥|そこ|中|秘)|とろとろ|蜜が|蜜を|搾り|脈打|ノット|種付け|孕ま|白濁|中に出|咥え|しゃぶ|射精|精液|絶頂|快感|快楽|抱き潰|抱いた|抱かれ|犯され|犯し(?:た|て)|貫かれ|貫い|突き上げられ|跨[っがりる]|腰を(?:振|打ちつけ|打ち付け|沈め|落と|揺ら)|乳首|胸の先|脚のあいだ|脚の間|秘所|膣|ちんぽ|おまんこ|嬌声|甘い声|根元まで|媚薬|扱かれ|扱い(?:た|て)|しごか|勃|硬くなった|熱く張りつめ|昂り|一つにな|ひとつにな|繋がっ|最奥|奥まで(?:突|沈|貫|届|入|埋)|奥を(?:突|抉|擦)|締めつけ|締め付け/;
   var MALE = P.MALE_RE;
@@ -49426,7 +49801,7 @@
   /* 文が none の人の場面にふさわしくないか。top＝none の人が攻め */
   NG.bad = function (sen, top, sexy) {
     if (sexy === false) return false;
-    var s = String(sen).replace(NONSEX, '＿');
+    var s = cl(sen);
     if (MALE.test(s) || MALE2.test(s) || FEM.test(s)) return true;
     /* 受けの none の人から精を採った量（常識改変の「12ml」など）は書かない */
     if (!top && /\d+\s*ml|\d+ミリ/.test(s)) return true;
@@ -49451,11 +49826,11 @@
   var EXPL = /の奥を(?:突|抉|擦|叩)|腰を落とし[^。]{0,16}(?:揺ら|沈|呑|咥|繋|動|擦)|(?:の|が)(?:中|奥|ナカ)で(?:果て|弾け|脈打)|熱が[^。]{0,10}(?:中|奥)で|(?:喉|奥|中)(?:の奥)?まで迎え入れ|扱かれ|搾られ|果て続け|\d+ml|採取|根元まで|での繋がり|(?:ゆっくりと|上から|深く|自分から|正確に|静かに|そのまま)腰を落と|打ちつけ(?:始め|た|て|る)|打ち付け|奥まで(?:沈|押し入|突|貫|届|埋|呑|入|暴|犯)|奥まで、?[^。]{0,12}(?:沈め|突き入|押し入)|器官を[^。]{0,16}沈め|体の奥まで(?:探|潜|入|届|這)|小刻みに奥を突|押し入っ|押し入れられ|腰を(?:沈め|打ちつけ|打ち付け|振)|深く(?:腰を|沈め|突|貫)|突き上げ|繋がった|繋がって|繋がり合|深く繋が|繋がると|繋がり直|先走り|竿|花芯|挿れ|貫い|貫か|中に出|注がれ|注ぎ込|ナカ|膣|秘所|射精|精液|ちんぽ|肉棒|ねじ込|搾り取|扱き(?:上げ|ながら|続け|立て)|扱いて|扱いた|しごい|しごか|抜き差し|ピストン|子宮|結腸/;
   NG.ownStrict = function (t, nm) {
     var e = nm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(e + '(?:の|自身の)(?:もの|モノ)(?:が|を|は|で|に)(?=[^。]{0,16}(?:包|握|扱|しご|咥|舐|擦|撫|吸|脈|硬|張|反り|跳|震|弾|放|濡|勃|根元|先|跨|呑|沈|迎え))').test(String(t).replace(NONSEX, '＿'));
+    return new RegExp(e + '(?:の|自身の)(?:もの|モノ)(?:が|を|は|で|に)(?=[^。]{0,16}(?:包|握|扱|しご|咥|舐|擦|撫|吸|脈|硬|張|反り|跳|震|弾|放|濡|勃|根元|先|跨|呑|沈|迎え))').test(cl(t));
   };
-  NG.sexS = function (x) { var c = String(x).replace(NONSEX, '＿'); return VSTRONG.test(c) || EXPL.test(c) || SEXT.test(c) || FEM.test(c) || MALE.test(c); };
+  NG.sexS = function (x) { var c = cl(x); return VSTRONG.test(c) || EXPL.test(c) || SEXT.test(c) || FEM.test(c) || MALE.test(c); };
   NG.sexy = function (t) {
-    var c = String(t).replace(NONSEX, '＿');
+    var c = cl(t);
     if (VSTRONG.test(c) || EXPL.test(c) || FEM.test(c) || MALE.test(c)) return true;
     var m = c.match(new RegExp(SEXT.source, 'g'));
     return !!(m && m.length >= 2);
@@ -49558,7 +49933,7 @@
         if (Q) { var o = P.order(N, Q, [N, Q]); top = o[0] === N; }
         /* モブが相手：攻め指定（モブには受けでない）なら攻め。文の中で none の人が自分から挿れる書き方なら攻めとして扱う */
         else top = P.hardTopNpc(N) || new RegExp(N.name + '(?:は|が)[^。「」]{0,30}?(?:貫い|突き入れ(?!られ)|挿れ(?!られ)|腰を(?:振っ|打ちつけ)(?!られ)|中に出し|射精し|注ぎ込ん|沈めて|沈めた|押し入っ|ねじ込ん)').test(sen);
-        var own = sexy ? NG.own(String(sen).replace(NONSEX, '＿'), N.name) : NG.ownStrict(sen, N.name);
+        var own = sexy ? NG.own(cl(sen), N.name) : NG.ownStrict(sen, N.name);
         roles[i] = { top: top, Q: Q };
         if (own || NG.bad(sen, top, sexy)) bad.push(i);
       });
@@ -49566,7 +49941,7 @@
       /* 相手：悪い文に名前が出る住人。出ないときは、悪い文にモブ・魔物の語があればモブ、なければ本文のもう一人 */
       var badTxt = bad.map(function (i) { return list[i]; }).join(''), named2 = others.filter(function (c) { return badTxt.indexOf(c.name) >= 0; });
       /* 悪い文に名前がなければ、性的な文に名前が出る住人（一人だけのとき）。それもなければモブ・魔物が相手 */
-      var sexTxt = list.filter(function (x) { return SEXT.test(String(x).replace(NONSEX, '＿')); }).join(''), named3 = others.filter(function (c) { return sexTxt.indexOf(c.name) >= 0; });
+      var sexTxt = list.filter(function (x) { return SEXT.test(cl(x)); }).join(''), named3 = others.filter(function (c) { return sexTxt.indexOf(c.name) >= 0; });
       var Q = named2.length ? named2[0] : hasMob(badTxt) ? null : named3.length === 1 ? named3[0] : null;
       if (Q && !P.okSex(N, Q)) Q = null;
       var top;
@@ -49839,10 +50214,10 @@
   function av(res, i, size, extra) { var c = res.chars[i]; return c ? HK.Icons.html(c.name, i, size, extra) : ''; }
 
   /* 本文中のキャラ名に色をつける */
-  function paint(text, res) {
-    /* 山場の長い描写は段落（改行）で区切ってある。長い文は段落と台詞で改行する（HK.fmtLong） */
+  function paint(text, res, seg) {
+    /* 山場の長い描写は段落（改行）で区切ってある。長い文は段落と台詞で改行する（HK.fmtLong。記録の seg があれば台詞の塊を seg から取る） */
     var list = res.chars.map(function (c) { return { n: esc(c.name), i: c.i }; }).sort(function (a, b) { return b.n.length - a.n.length; });
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.chars.map(function (c) { return c.name; })) : text).replace(/\n/g, '<br>');
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.chars.map(function (c) { return c.name; }), seg) : text).replace(/\n/g, '<br>');
     if (!list.length) return t;
     var re = new RegExp(list.map(function (x) { return x.n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
     return t.replace(re, function (m) {
@@ -50123,9 +50498,11 @@
         if (e.goal || e.goalExit) chip = (e.goal || []).map(function (g) { return '<span class="goalb">条件達成：' + esc(g) + '</span>'; }).join('') + (e.goalExit ? '<span class="goalb exitb">扉が開いた</span>' : '') + chip;
         /* 決定的な関係の節目（付き合い始めた・別れた・浮気）の札（engine.js の markRel） */
         if (e.mark && e.mark.length) chip = e.mark.map(function (m) { return '<span class="markb mark-' + esc(m) + '">' + esc((HK.MARK_NAME || {})[m] || m) + '</span>'; }).join('') + chip;
-        var who = (e.actors || []).slice(0, 3);
+        /* 台詞・地の文・引用の区分（voice-seg.js の e.seg）：台詞行の話し手の顔を先頭に。発話のある出来事を吹き出しにする（名詞の引用だけなら吹き出しにしない） */
+        var sg = HK.Seg ? HK.Seg.of(e, res) : null, lead = sg ? HK.Seg.speakers(sg).filter(function (i) { return res.chars[i]; })[0] : null;
+        var who = (lead != null ? [lead] : []).concat((e.actors || []).filter(function (i) { return i !== lead; })).slice(0, 3);
         var avs = who.length ? '<span class="avs">' + who.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
-        return '<li class="' + cls + (avs ? ' hasav' : '') + (avs && e.kind === 'event' && /「/.test(e.text) ? ' talk' : '') + '">' + avs + '<div class="evb">' + chip + paint(e.text, res) + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+        return '<li class="' + cls + (avs ? ' hasav' : '') + (avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)) ? ' talk' : '') + '">' + avs + '<div class="evb">' + chip + paint(e.text, res, sg) + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
@@ -51163,8 +51540,8 @@
   /* r18:end */
   function pc(i) { return 'var(--p' + (i % 30) + ')'; }
   function av(res, i, size) { var h = res.heroes[i]; return h && HK.Icons ? HK.Icons.html(h.name, i, size) : ''; }
-  function paint(text, res) {
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.heroes.map(function (h) { return h.name; })) : text).replace(/\n/g, '<br>');
+  function paint(text, res, seg) {
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.heroes.map(function (h) { return h.name; }), seg) : text).replace(/\n/g, '<br>');
     res.heroes.slice().sort(function (a, b) { return b.name.length - a.name.length; }).forEach(function (h) { var n = esc(h.name); if (n) t = t.split(n).join('\u0001' + h.i + '\u0002'); });
     return t.replace(/\u0001(\d+)\u0002/g, function (m, i) { return '<span class="name" style="color:' + pc(+i) + '">' + esc(res.heroes[+i].name) + '</span>'; });
   }
@@ -51218,9 +51595,12 @@
     });
     var html = groups.filter(function (g) { return g.items.length; }).map(function (g) {
       return '<div class="stepblk"><div class="when">' + esc(g.label) + '</div><ol>' + g.items.map(function (e) {
-        var avs = e.actors.length ? '<span class="avs">' + e.actors.slice(0, 3).map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
+        /* 台詞・地の文・引用の区分（voice-seg.js の e.seg）：台詞行の話し手の顔を先頭に。名詞の引用だけなら吹き出しにしない */
+        var sg = HK.Seg ? HK.Seg.of(e, res) : null, lead = sg ? HK.Seg.speakers(sg).filter(function (i) { return res.heroes[i]; })[0] : null;
+        var ids = (lead != null ? [lead] : []).concat(e.actors.filter(function (i) { return i !== lead; })).slice(0, 3);
+        var avs = e.actors.length || lead != null ? '<span class="avs">' + ids.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
         var tc = tagCls(e);
-        return '<li class="ev' + (tc ? ' cat-' + tc : '') + (e.trouble ? ' trouble' : '') + (tc === 'death' ? ' death' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (avs ? ' hasav' : '') + (avs && /「/.test(e.text) ? ' talk' : '') + '">' + avs + '<div class="evb">' + (e.tag ? '<span class="c' + (tc ? ' cc-' + tc : '') + '">' + esc(e.tag) + '</span>' : '') + paint(e.text, res) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+        return '<li class="ev' + (tc ? ' cat-' + tc : '') + (e.trouble ? ' trouble' : '') + (tc === 'death' ? ' death' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (avs ? ' hasav' : '') + (avs && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)) ? ' talk' : '') + '">' + avs + '<div class="evb">' + (e.tag ? '<span class="c' + (tc ? ' cc-' + tc : '') + '">' + esc(e.tag) + '</span>' : '') + paint(e.text, res, sg) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
@@ -51611,7 +51991,7 @@
       },
       acts: [
         ['手技採取', '{p}は手袋をはめた手で{r}のものを握り、一定のリズムで扱き上げた。|{p}は潤滑ゼリーを手のひらで温めてから、{r}の竿全体に塗り広げ、根元から先端まで丁寧に搾った。', '{p}は空いた手で{r}の睾丸を転がし、射精の兆候を見逃さないよう、じっと顔を観察した。'],
-        ['口腔採取', '{p}はマスクを外し、「口の方が採取効率がいいので」と言って{r}のものを咥えた。|{p}は舌で亀頭の裏筋をなぞりながら、喉の奥まで{r}を迎え入れた。', '{p}は頬をすぼめて吸い上げ、出たものを一滴もこぼさないよう、ゆっくりと口を離して採取容器に移した。'],
+        ['口腔採取', '{p}はマスクを外し、「口の方が採取効率がいいので」と言って{r}のものを咥えた。|{p}は舌で{亀頭}の裏筋をなぞりながら、喉の奥まで{r}を迎え入れた。', '{p}は頬をすぼめて吸い上げ、出たものを一滴もこぼさないよう、ゆっくりと口を離して採取容器に移した。'],
         ['前立腺マッサージ', '{p}は指サックをはめ、「前立腺からの採取も併用します」と{r}の後ろに指を沈めた。|{p}は{r}の内側のしこりを探り当て、そこを指の腹で押し上げた。', '前と後ろを同時に責められ、{r}の腰が診察台の上で跳ねた。{p}は淡々と「いい反応です」と記録した。'],
         ['搾精機の装着', '{p}は透明なカップ型の搾精機を{r}に装着し、ダイヤルを回した。|{p}は「機械に任せましょう」と言って、{r}を搾精機につなぎ、真空ポンプを作動させた。', '搾精機は一定のリズムで{r}を吸い上げ、{p}はモニターの数値を見ながら強さを上げていった。'],
         ['騎乗位採取', '{p}は白衣の前を開け、「直接採取が一番正確です」と言って{r}の上に跨った。|{p}は診察台に上がり、{r}のものを自分の中にゆっくりと沈めた。「動きますね」', '{p}は腰を上下させながらも、表情だけは診察中の医師のままだった。{r}が果てる瞬間、{p}は奥でそれを受け止めた。'],
@@ -51702,7 +52082,7 @@
         AC: L('「ふ、フォーム確認のため、触らせていただきます……」|「す、すみません、私まだリリース講習の途中で……」')
       },
       acts: [
-        ['補助付きスクワット', '{p}は{r}の背後に立ち、「補助します」と腰を密着させた。スクワットのたびに、{p}の手が{r}の股間を握り込んだ。', '最後の一回で{r}が膝を折ると、{p}はそのまま{r}を扱き切った。'],
+        ['補助付きスクワット', '{p}は{r}の背後に立ち、「補助します」と腰を密着させた。スクワットのたびに、{p}の手が{r}の{股間}を握り込んだ。', '最後の一回で{r}が膝を折ると、{p}はそのまま{r}を扱き切った。'],
         ['ストレッチ', '{p}は{r}を仰向けにし、脚を大きく開かせてストレッチを始めた。|{p}は{r}の上に体重をかけ、ぴったりと体を重ねて股関節を伸ばした。', '伸ばされたままの{r}の脚の間に、{p}が顔をうずめた。「内側の筋肉もほぐしますね」'],
         ['ベンチでのリリース', '{p}はベンチに{r}を寝かせ、そのまま跨った。「仕上げのリリースです」', '{p}は呼吸を合わせて腰を上下させ、{r}がバーベルの代わりに{p}の腰を掴んだ。'],
         ['サウナでの仕上げ', '{p}はサウナに{r}を連れ込み、汗だくの体を重ねた。「デトックスの仕上げです」', '{p}は{r}の汗を舐め取りながら、ゆっくりと下へ降りていった。'],
@@ -51903,7 +52283,7 @@
       ['後背位採取', '{p}は診察台に手をつき、白衣の裾をたくし上げた。「後ろからの方が、深部まで届くので」|{p}は「体位を変えます」と言って四つん這いになり、{r}を後ろから迎え入れた。', '{r}が腰を打ちつけるたび、診察台がきしんだ。{p}はシーツを握りしめ、「記録、を……」と言ったきり、続けられなかった。', 'in'],
       ['対面座位での問診', '{p}は{r}の膝に跨り、繋がったまま問診票を読み上げた。「最近、ストレスは……ん、感じますか」|{p}は「話しながらの方がリラックスできますから」と、{r}を受け入れたまま向かい合った。', '{p}は質問の合間に小さく腰を揺らし、{r}の答えが途切れるたび、カルテに何かを書きつけた。', 'in'],
       ['精液検査（連続採取）', '{p}は「三回連続で採取して、量の推移を見ます」と告げ、一回目を手で、二回目を口で搾り取った。|{p}は採取容器を三つ並べた。「全部、満たしましょうね」', '三回目、{p}は{r}の上に跨って、最後の一滴を自分の奥で受け止めた。容器は二つしか埋まらなかった。', 'in'],
-      ['触診（全身）', '{p}は{r}の全身を指先でなぞり、感じやすい場所を一つずつカルテに記していった。|{p}は「感度の検査です」と言って、{r}の乳首、内腿、会陰を順番に押した。', '最後に{p}は{r}のものを握り、「ここが一番の数値ですね」と微笑んだ。', 'hand'],
+      ['触診（全身）', '{p}は{r}の全身を指先でなぞり、感じやすい場所を一つずつカルテに記していった。|{p}は「感度の検査です」と言って、{r}の{乳首}、内腿、会陰を順番に押した。', '最後に{p}は{r}のものを握り、「ここが一番の数値ですね」と微笑んだ。', 'hand'],
       ['院長の立ち会い採取', '院長が見守る中、{p}は{r}に跨った。「指導医の前ですから、手順どおりに」|{p}は院長の「もっと深く」という指示に頷き、{r}を根元まで受け入れた。', '院長がストップウォッチを押した。{p}は時間内に終わらせようと、必死に腰を振った。', 'in']
     ]);
 
@@ -53152,7 +53532,7 @@
 
   /* 搾精の場面（成功・大成功） */
   SB.TAKE = {
-    CP: L('{a}は{t}をベッドに突き飛ばし、上に跨った。「勝手にイったら、おしおきよ」――{a}は自分のペースで腰を沈め、{t}が懇願するまで動きを止めなかった。|{a}は{t}に跪かせ、ヒールの爪先で{t}の股間をなぞった。それから「ご褒美」と言って、ゆっくりと{t}を自分の中に迎え入れた。'),
+    CP: L('{a}は{t}をベッドに突き飛ばし、上に跨った。「勝手にイったら、おしおきよ」――{a}は自分のペースで腰を沈め、{t}が懇願するまで動きを止めなかった。|{a}は{t}に跪かせ、ヒールの爪先で{t}の{股間}をなぞった。それから「ご褒美」と言って、ゆっくりと{t}を自分の中に迎え入れた。'),
     NP: L('{a}は{t}を膝枕にして、髪を撫でながら片手で{t}のものを優しく包んだ。「いいよ、出しちゃって」――{t}は子どものように{a}の胸に顔を埋めた。|{a}は{t}を抱きしめたまま、ゆっくりと腰を揺らした。「頑張らなくていいの。全部、私が受け止めるから」'),
     A: L('{a}は{t}の反応を一つずつ確かめながら、最も感じる角度と速さを見つけ出した。{t}は、自分でも知らなかった弱点を責められ続けた。|{a}は「あと三往復で出ますね」と囁き、きっかり三往復目で{t}を果てさせた。'),
     FC: L('{a}は笑いながら{t}を押し倒し、体中にキスを降らせた。「えへへ、いただきまーす！」――尻尾が楽しそうに揺れていた。|{a}は{t}の上で跳ねるように腰を振り、「もっと！　もっとちょうだい！」とせがんだ。'),
@@ -54222,25 +54602,25 @@
   };
   /* 男性向け */
   var DUEL_E = {
-    fT: L('{a}は{r}を押し倒して跨り、反り返ったちんぽを自分で導いて一気に腰を落とした。{s:hit}――「先にイった方が、全部吐き出すんだからね」――{a}は淫紋を光らせ、根元まで呑み込んだままぐりぐりと腰を擦りつけた。{r}の腰がびくんと跳ねるたび、{a}は勝ち誇ったように目を細めた。{a}「{m1}」' +
-      '|{a}は{r}の胸に手をついて、亀頭だけを咥えたまま焦らすように腰を揺らした。{s:wet}――{r}が下から腰を浮かせようとすると、{a}は太腿で押さえ込んで笑った。「だーめ。勝負なんだから」――きゅうきゅうと締めつけられて、{r}のちんぽが先走りをだらだらと垂らしはじめる。{a}「{m1}」' +
+    fT: L('{a}は{r}を押し倒して跨り、反り返った{男性器}を自分で導いて一気に腰を落とした。{s:hit}――「先にイった方が、全部吐き出すんだからね」――{a}は淫紋を光らせ、根元まで呑み込んだままぐりぐりと腰を擦りつけた。{r}の腰がびくんと跳ねるたび、{a}は勝ち誇ったように目を細めた。{a}「{m1}」' +
+      '|{a}は{r}の胸に手をついて、{亀頭}だけを咥えたまま焦らすように腰を揺らした。{s:wet}――{r}が下から腰を浮かせようとすると、{a}は太腿で押さえ込んで笑った。「だーめ。勝負なんだから」――きゅうきゅうと締めつけられて、{r}の{男性器}が先走りをだらだらと垂らしはじめる。{a}「{m1}」' +
       '|{a}は{r}の上で激しく腰を跳ねさせた。{s:hit}――濡れた音が響くたび、二人の淫紋が競うように明滅する。{r}の甘い魔力が背筋を這い上がってきても、{a}は唇を噛んで腰を止めなかった。{a}「{m1}」'),
-    fB: L('{r}は{a}を組み敷いて脚を大きく割り開き、張りつめたちんぽを奥までねじ込んだ。{s:hit}――「ほら、吸ってみろよ」――突かれるたびに{a}の淫紋が明滅し、精を奪われそうになる。{a}は奥をきゅうっと締め上げて耐えた。{a}「{m1}」' +
-      '|{r}は{a}の両手首を頭の上でまとめて押さえ、ゆっくりと抜き差しした。{s:wet}――カリが入り口をめくるたびに、{a}の腰が勝手に浮く。それでも{a}は{r}を睨み上げ、ナカをうねらせて精を吸い出そうとした。{a}「{m1}」' +
+    fB: L('{r}は{a}を組み敷いて脚を大きく割り開き、張りつめた{男性器}を奥までねじ込んだ。{s:hit}――「ほら、吸ってみろよ」――突かれるたびに{a}の淫紋が明滅し、精を奪われそうになる。{a}は奥をきゅうっと締め上げて耐えた。{a}「{m1}」' +
+      '|{r}は{a}の両手首を頭の上でまとめて押さえ、ゆっくりと抜き差しした。{s:wet}――カリが入り口をめくるたびに、{a}の腰が勝手に浮く。それでも{a}は{r}を睨み上げ、{ナカ}をうねらせて精を吸い出そうとした。{a}「{m1}」' +
       '|{r}は{a}を四つん這いにさせ、尻を掴んで後ろから奥を叩いた。{s:hit}――尻尾の付け根を指でなぞられて、{a}の背中が跳ねる。負けじと腰を押しつけ返すと、{r}の息も荒くなっていった。{a}「{m1}」'),
-    mT: L('{a}は{r}をうつ伏せにして尻を高く上げさせ、反り返ったちんぽを根元までねじ込んだ。{s:hit}――{r}のナカが精を吸い出そうと、きゅうきゅうと絡みついてくる。{a}は歯を食いしばり、腰を打ちつける速さを上げた。{a}「{m1}」' +
-      '|{a}は{r}の両脚を肩に担ぎ、真上から奥まで突き下ろした。{s:wet}――「吸えるもんなら、吸ってみろ」――{r}のちんぽは突かれるたびに揺れ、先走りを腹に垂らしている。{a}は淫紋を光らせて、{r}の弱いところを抉り続けた。{a}「{m1}」' +
+    mT: L('{a}は{r}をうつ伏せにして尻を高く上げさせ、反り返った{男性器}を根元までねじ込んだ。{s:hit}――{r}の{ナカ}が精を吸い出そうと、きゅうきゅうと絡みついてくる。{a}は歯を食いしばり、腰を打ちつける速さを上げた。{a}「{m1}」' +
+      '|{a}は{r}の両脚を肩に担ぎ、真上から奥まで突き下ろした。{s:wet}――「吸えるもんなら、吸ってみろ」――{r}の{男性器}は突かれるたびに揺れ、先走りを腹に垂らしている。{a}は淫紋を光らせて、{r}の弱いところを抉り続けた。{a}「{m1}」' +
       '|{a}は{r}を壁に押しつけ、片脚を抱えたまま下から突き上げた。{s:hit}――{r}の甘い魔力が絡みついてきても、{a}は腰を止めない。勝負の熱で、二人の角が赤く光っていた。{a}「{m1}」'),
-    mB: L('{r}は{a}を四つん這いにさせ、後ろから奥までずぶずぶと沈めた。{s:hit}――突かれるたびに{a}のちんぽも揺れて、先走りがシーツに糸を引く。{a}は奥を締め上げ、逆に{r}の精を吸い出そうと腰を押しつけ返した。{a}「{m1}」' +
+    mB: L('{r}は{a}を四つん這いにさせ、後ろから奥までずぶずぶと沈めた。{s:hit}――突かれるたびに{a}の{男性器}も揺れて、先走りがシーツに糸を引く。{a}は奥を締め上げ、逆に{r}の精を吸い出そうと腰を押しつけ返した。{a}「{m1}」' +
       '|{r}は{a}を仰向けにして脚を割り、前立腺をごりごりと擦り上げた。{s:wet}――「同業のくせに、ここが弱いんだな」――{a}は涙目で睨み返しながら、淫紋に魔力を集めて耐えた。{a}「{m1}」' +
-      '|{r}は{a}を膝に乗せて下から突き上げ、張りつめた{a}のちんぽを扱いた。{s:hit}――前と後ろを同時に責められても、{a}は{r}の肩に爪を立てて腰を落とし返した。{a}「{m1}」')
+      '|{r}は{a}を膝に乗せて下から突き上げ、張りつめた{a}の{男性器}を扱いた。{s:hit}――前と後ろを同時に責められても、{a}は{r}の肩に爪を立てて腰を落とし返した。{a}「{m1}」')
   };
   var D_WIN = L('先に果てたのは{r}だった。{r}の体から溢れた精が、重なったところから{a}の淫紋へ一気に流れ込んでいく。「……くそ、負けだ」――{r}はぐったりと寝台に沈み、{a}は{ml}ml分の精を一滴残らず飲み干した。' +
     '|{r}の淫紋が、ふっと光を失った。我慢比べに負けた{r}は、溜めこんでいた精をすべて{a}に明け渡した。{a}は満ちていく魔力に目を細めた――{ml}ml。' +
     '|最後の一押しで、{r}が声を上げて果てた。{f}の淫魔が一晩かけて集めた精が、どっと{a}へ流れ込む。{a}の角の先まで魔力が満ちて、淡く光った――{ml}ml。');
-  var D_WIN_E = L('{r}のちんぽがびくびくと跳ね、{s:cum}――溜めこんでいた精が一気に噴き上がった。{a}の淫紋が真っ赤に光り、流れ込む精を一滴残らず呑み込んでいく。「くそ、っ……負け、だ……」――{ml}ml。{a}「{m1}」' +
+  var D_WIN_E = L('{r}の{男性器}がびくびくと跳ね、{s:cum}――溜めこんでいた精が一気に噴き上がった。{a}の淫紋が真っ赤に光り、流れ込む精を一滴残らず呑み込んでいく。「くそ、っ……負け、だ……」――{ml}ml。{a}「{m1}」' +
     '|{s:cum}――{r}は情けない声を上げて、何度も何度も精を吐き出した。{a}は最後の一滴まで搾り取って、ぺろりと唇を舐めた。{f}の淫魔の濃い精、{ml}ml。{a}「{m1}」' +
-    '|我慢比べに負けた{r}は、腰を震わせながら{s:cum}と白濁をぶちまけた。{a}の下腹の淫紋が、どくどくと脈打つように精を吸い上げる。――{ml}ml。{r}はしばらく、呆けた顔で天井を見ていた。');
+    '|我慢比べに負けた{r}は、腰を震わせながら{s:cum}と{精液}をぶちまけた。{a}の下腹の淫紋が、どくどくと脈打つように精を吸い上げる。――{ml}ml。{r}はしばらく、呆けた顔で天井を見ていた。');
   var D_LOSE = L('先に果てたのは{a}の方だった。淫紋がほどけた瞬間、溜めていた精が{r}へと流れ出していく。{r}は満足げに舌なめずりをして、「ごちそうさま」と笑った――{a}は{lost}mlを失った。' +
     '|{a}の我慢は、あと一歩のところで崩れた。果てた拍子に淫紋の守りが外れ、{lost}ml分の精が{r}に持っていかれる。{a}はぐったりと崩れ落ち、悔しさに尻尾を叩きつけた。' +
     '|勝負は{r}に軍配が上がった。{a}が果てて力の抜けた隙に、{r}は淫紋ごと精を吸い出していった。「{f}の勝ちだ」――{a}は{lost}ml軽くなった体で、しばらく起き上がれなかった。');
@@ -54354,18 +54734,18 @@
       '|{x}は{y}を膝に乗せ、下からゆっくりと突き上げた。張りつめた{y}自身を手のひらで包むと、{y}の喉から甘い声がこぼれる。{x}は{y}の額に額を寄せて、呼吸を合わせた。')
   };
   var GIVE_E = {
-    MF: L('{x}は{y}の脚を開かせ、張りつめたちんぽをとろとろのナカへ根元まで沈めた。{s:wet}――「ゆっくりでいいから、ちゃんと吸って」――奥をとん、とんと優しく叩かれるたびに、{y}の淫紋がきゅんと光る。{y}「{n1}」' +
+    MF: L('{x}は{y}の脚を開かせ、張りつめた{男性器}をとろとろの{ナカ}へ根元まで沈めた。{s:wet}――「ゆっくりでいいから、ちゃんと吸って」――奥をとん、とんと優しく叩かれるたびに、{y}の淫紋がきゅんと光る。{y}「{n1}」' +
       '|{x}は{y}を抱き起こして膝に乗せ、下から深く突き上げた。{s:hit}――{y}は{x}の首にしがみつき、自分からも腰を落とす。重なったところから溢れる熱が、そのまま魔力に変わっていった。{y}「{n1}」' +
       '|{x}は{y}を四つん這いにさせ、後ろからゆっくりと抜き差しした。{s:wet}――{y}の尻尾が{x}の腕に絡みつき、もっと、とねだるように揺れる。{x}「{m1}」――{y}「{n1}」'),
-    FM: L('{x}は{y}に跨り、反り返ったちんぽを自分で導いて、ずぶりと腰を落とした。{s:wet}――「ほら、全部ちょうだい」――{x}がきゅうっと締めつけると、{y}の腰がびくんと跳ねた。{y}「{n1}」' +
+    FM: L('{x}は{y}に跨り、反り返った{男性器}を自分で導いて、ずぶりと腰を落とした。{s:wet}――「ほら、全部ちょうだい」――{x}がきゅうっと締めつけると、{y}の腰がびくんと跳ねた。{y}「{n1}」' +
       '|{x}は{y}の胸に手をついて、ぱちゅ、ぱちゅと腰を上下させた。{s:hit}――{y}が下から腰を浮かせるたび、{x}は「まだだめ」と笑って押さえ込む。{x}「{m1}」' +
       '|{x}は{y}の上で腰をくねらせ、根元まで呑み込んだまま奥でぐりぐりと擦りつけた。{s:wet}――{y}の玉がきゅっとせり上がり、先走りがとろりと溢れる。{y}「{n1}」'),
     FF: L('{x}は{y}の脚を割り開き、濡れた割れ目に指を二本沈めた。{s:wet}――ざらついたところを指で擦り上げるたびに、{y}の腰が跳ねて甘い精気が溢れ出す。{y}「{n1}」' +
       '|{x}は{y}の芽に吸いつき、舌先で何度も弾いた。{s:suck}――{y}の太ももが{x}の頭を挟み込み、とろとろの蜜がシーツに垂れる。{y}「{n1}」' +
       '|{x}は{y}と脚を絡めて、濡れたところどうしをくちゅくちゅと擦り合わせた。{s:wet}――二人の淫紋が同じ色で明滅し、{y}がしがみついてくる。{x}「{m1}」――{y}「{n1}」'),
-    MM: L('{x}は{y}をうつ伏せにさせ、張りつめたちんぽを後ろからゆっくり根元まで沈めた。{s:wet}――奥の弱いところをとん、とんと叩くたびに、{y}のちんぽから先走りがシーツへ垂れる。{y}「{n1}」' +
-      '|{x}は{y}の脚を抱え上げ、正面から深く突き入れた。{s:hit}――突きながら{y}のちんぽを手のひらで扱いてやると、{y}は{x}の腕にしがみついた。{y}「{n1}」' +
-      '|{x}は{y}を膝に乗せて、下から突き上げた。{s:hit}――二本のちんぽが腹の間で擦れ合い、どちらのものとも分からない先走りで濡れていく。{x}「{m1}」――{y}「{n1}」')
+    MM: L('{x}は{y}をうつ伏せにさせ、張りつめた{男性器}を後ろからゆっくり根元まで沈めた。{s:wet}――奥の弱いところをとん、とんと叩くたびに、{y}の{男性器}から先走りがシーツへ垂れる。{y}「{n1}」' +
+      '|{x}は{y}の脚を抱え上げ、正面から深く突き入れた。{s:hit}――突きながら{y}の{男性器}を手のひらで扱いてやると、{y}は{x}の腕にしがみついた。{y}「{n1}」' +
+      '|{x}は{y}を膝に乗せて、下から突き上げた。{s:hit}――二本の{男性器}が腹の間で擦れ合い、どちらのものとも分からない先走りで濡れていく。{x}「{m1}」――{y}「{n1}」')
   };
   /* 精が移る（分ける側が果てる）。女性どうしでも使うので、男性の体の言葉・挿入の言葉を入れない */
   var FLOW = L('やがて{g}が小さく震えて果てた。溜めこんでいた精が、重ねた肌から{c}の淫紋へと流れ込んでいく。{c}の羽に色が戻り、変身の揺らぎがすっと消えた――{ml}ml。' +
@@ -54430,14 +54810,14 @@
       '|{r}は{c}を正面から包み込むように重なり、深く繋がった。{c}は{r}の背中に腕を回して、流れ込む魔力にしがみつく。{r}が果てたあと、{c}の尻尾はすっかり元気を取り戻していた。')
   };
   var RG_E = {
-    fT: L('{c}は{r}に跨って、反り返ったちんぽを根元まで呑み込んだ。{s:wet}――「好きなだけ搾れ。今夜は特別だ」――{c}が腰を揺らすたび、{r}は{s:cum}と惜しげもなく精を吐き出した。{c}「{c1}」' +
-      '|{c}は{r}の胸に手をついて、ぱちゅ、ぱちゅと腰を上下させた。{s:hit}――{r}のちんぽがびくびくと跳ね、熱い精がどくどくと淫紋に吸われていく。{c}「{c1}」'),
-    fB: L('{r}は{c}の脚を開かせ、張りつめたちんぽをゆっくり奥まで沈めた。{s:wet}――「全部やる。こぼすなよ」――最奥で{r}が{s:cum}と果てると、{c}の淫紋が真っ赤に光った。{c}「{c1}」' +
+    fT: L('{c}は{r}に跨って、反り返った{男性器}を根元まで呑み込んだ。{s:wet}――「好きなだけ搾れ。今夜は特別だ」――{c}が腰を揺らすたび、{r}は{s:cum}と惜しげもなく精を吐き出した。{c}「{c1}」' +
+      '|{c}は{r}の胸に手をついて、ぱちゅ、ぱちゅと腰を上下させた。{s:hit}――{r}の{男性器}がびくびくと跳ね、熱い精がどくどくと淫紋に吸われていく。{c}「{c1}」'),
+    fB: L('{r}は{c}の脚を開かせ、張りつめた{男性器}をゆっくり奥まで沈めた。{s:wet}――「全部やる。こぼすなよ」――最奥で{r}が{s:cum}と果てると、{c}の淫紋が真っ赤に光った。{c}「{c1}」' +
       '|{r}は{c}を後ろから抱え込み、奥をとん、とんと優しく叩いた。{s:hit}――三度目に{r}が果てたとき、{c}の羽はすっかり元の艶を取り戻していた。{c}「{c1}」'),
-    mT: L('{c}は{r}を四つん這いにさせ、張りつめたちんぽを根元までねじ込んだ。{s:hit}――{r}は「遠慮するな」と笑い、精を吸わせるようにナカをうねらせる。{r}のちんぽから{s:cum}と白濁が散るたび、{c}の淫紋に魔力が満ちた。{c}「{c1}」' +
+    mT: L('{c}は{r}を四つん這いにさせ、張りつめた{男性器}を根元までねじ込んだ。{s:hit}――{r}は「遠慮するな」と笑い、精を吸わせるように{ナカ}をうねらせる。{r}の{男性器}から{s:cum}と{精液}が散るたび、{c}の淫紋に魔力が満ちた。{c}「{c1}」' +
       '|{c}は{r}の脚を抱えて、正面から深く突き入れた。{s:wet}――「好きに動け、全部やる」――{r}は{c}の腕にしがみつき、{s:cum}と何度も果てた。{c}「{c1}」'),
     mB: L('{r}は{c}をうつ伏せにさせ、後ろからゆっくり根元まで沈めた。{s:wet}――奥でびくびくと脈打ったかと思うと、{r}は{s:cum}と熱い精を吐き出した。{c}の淫紋がそれを吸い上げ、消えかけた羽がぱっと広がった。{c}「{c1}」' +
-      '|{r}は{c}を膝に乗せ、下から突き上げながら{c}のちんぽを扱いた。{s:hit}――「まだ吸えるだろ」――{r}が果てるたびに、{c}の下腹の淫紋が熱く脈打った。{c}「{c1}」')
+      '|{r}は{c}を膝に乗せ、下から突き上げながら{c}の{男性器}を扱いた。{s:hit}――「まだ吸えるだろ」――{r}が果てるたびに、{c}の下腹の淫紋が熱く脈打った。{c}「{c1}」')
   };
   var RG_SOFT = L('{r}は懐から小瓶を取り出して、{c}の手に握らせた。「今夜の稼ぎの一部だ。返さなくていい」――{c}が飲み干すと、冷えきっていた体に温かさが戻った――{ml}ml。' +
     '|{r}は{c}の手首に指を当てて、淫紋から淫紋へと精を少しずつ移した。「勘違いするなよ。弱った相手に勝っても自慢にならないだけだ」――{c}の羽に、ゆっくりと色が戻った――{ml}ml。' +
@@ -54763,18 +55143,18 @@
   };
   /* 男性向け（擬音・♡喘ぎ） */
   var SEX_E = {
-    MF: L('{x}は{y}の脚を大きく開かせ、張りつめたちんぽをとろとろのナカへ根元まで沈めた。{s:wet}――奥をとん、とんと叩かれるたびに、{y}の腰が勝手に浮く。{a}の淫紋が、きゅんと疼くように光った。{y}「{n1}」' +
+    MF: L('{x}は{y}の脚を大きく開かせ、張りつめた{男性器}をとろとろの{ナカ}へ根元まで沈めた。{s:wet}――奥をとん、とんと叩かれるたびに、{y}の腰が勝手に浮く。{a}の淫紋が、きゅんと疼くように光った。{y}「{n1}」' +
       '|{x}は{y}を四つん這いにさせ、尻を掴んで後ろから深く突き入れた。{s:hit}――ぱちゅ、ぱちゅと濡れた音が部屋に響く。{y}はシーツに顔を押しつけて、甘い声を噛み殺せない。{y}「{n1}」' +
       '|{x}は{y}を膝に抱き上げ、下からずん、と突き上げた。{s:hit}――{y}は{x}の首にしがみつき、自分からも腰を落とす。{x}「{m1}」――{y}「{n1}」'),
-    FM: L('{x}は{y}に跨り、反り返ったちんぽを自分で導いて、ずぶりと腰を落とした。{s:wet}――「ほら、まだ出しちゃだめ」――{x}がきゅうっと締めつけると、{y}の腰がびくんと跳ねた。{y}「{n1}」' +
+    FM: L('{x}は{y}に跨り、反り返った{男性器}を自分で導いて、ずぶりと腰を落とした。{s:wet}――「ほら、まだ出しちゃだめ」――{x}がきゅうっと締めつけると、{y}の腰がびくんと跳ねた。{y}「{n1}」' +
       '|{x}は{y}の胸に手をついて、ぱちゅ、ぱちゅと腰を上下させた。{s:hit}――{y}が下から腰を浮かせるたび、{x}は太腿で押さえ込んで笑う。先走りが、つながったところからとろりと溢れた。{x}「{m1}」' +
       '|{x}は{y}の上で腰をくねらせ、根元まで呑み込んだまま奥でぐりぐりと擦りつけた。{s:wet}――{y}の玉がきゅっとせり上がり、{x}は「まだ、まだ」と意地悪く囁く。{y}「{n1}」'),
     FF: L('{x}は{y}の脚を割り開き、濡れた割れ目に指を二本沈めた。{s:wet}――ざらついたところを指の腹で擦り上げるたび、{y}の腰が跳ねる。{a}の淫紋が、溢れ出す精気を吸ってきゅんと光った。{y}「{n1}」' +
       '|{x}は{y}の芽に吸いつき、舌先で何度も弾いた。{s:suck}――{y}の太ももが{x}の頭を挟み込み、とろとろの蜜がシーツに垂れる。{y}「{n1}」' +
-      '|{x}は{y}を後ろから抱きすくめ、指で芽をこねながら、もう片方の指をナカでくちゅくちゅと動かした。{s:wet}――{y}は{x}の腕にしがみついて、がくがくと膝を震わせる。{x}「{m1}」――{y}「{n1}」'),
-    MM: L('{x}は{y}をうつ伏せにさせ、張りつめたちんぽを後ろからゆっくり根元まで沈めた。{s:wet}――奥の弱いところを叩くたびに、{y}のちんぽから先走りがシーツへ垂れる。{y}「{n1}」' +
-      '|{x}は{y}の脚を肩に担ぎ、真上から深く突き下ろした。{s:hit}――突きながら{y}のちんぽを扱いてやると、{y}は{x}の腕に爪を立てた。{y}「{n1}」' +
-      '|{x}は{y}を膝に乗せて、下から突き上げた。{s:hit}――二人のちんぽが腹のあいだで擦れ合い、先走りでぬるぬると濡れていく。{x}「{m1}」――{y}「{n1}」')
+      '|{x}は{y}を後ろから抱きすくめ、指で芽をこねながら、もう片方の指を{ナカ}でくちゅくちゅと動かした。{s:wet}――{y}は{x}の腕にしがみついて、がくがくと膝を震わせる。{x}「{m1}」――{y}「{n1}」'),
+    MM: L('{x}は{y}をうつ伏せにさせ、張りつめた{男性器}を後ろからゆっくり根元まで沈めた。{s:wet}――奥の弱いところを叩くたびに、{y}の{男性器}から先走りがシーツへ垂れる。{y}「{n1}」' +
+      '|{x}は{y}の脚を肩に担ぎ、真上から深く突き下ろした。{s:hit}――突きながら{y}の{男性器}を扱いてやると、{y}は{x}の腕に爪を立てた。{y}「{n1}」' +
+      '|{x}は{y}を膝に乗せて、下から突き上げた。{s:hit}――二人の{男性器}が腹のあいだで擦れ合い、先走りでぬるぬると濡れていく。{x}「{m1}」――{y}「{n1}」')
   };
   /* 描写をぼかす */
   var FADE = L('――{a}と{t}は、人目のない部屋へ消えた。扉の向こうで何があったのかは、二人だけが知っている。しばらくして出てきた{t}は、少しだけぼんやりとした顔をしていた。' +
@@ -54790,7 +55170,7 @@
   var CL_E = {
     tM: L('{t}「{c2}」――{t}の腰がびくびくと跳ね、{s:cum}――溜まっていた精が一気に溢れ出した。{a}の淫紋が真っ赤に光り、流れ出す精を一滴残らず吸い上げていく。――{ml}ml。' +
       '|{s:cum}――{t}は情けない声を上げて、何度も何度も吐き出した。{a}は最後の一滴まで搾り取ると、ぺろりと唇を舐めた。{t}「{c2}」――{ml}ml。' +
-      '|{t}はがくがくと腰を震わせて、{s:cum}と白濁をぶちまけた。{a}の下腹の淫紋が、どくどくと脈打つように精を呑み込む。{t}「{c2}」――{ml}ml。'),
+      '|{t}はがくがくと腰を震わせて、{s:cum}と{精液}をぶちまけた。{a}の下腹の淫紋が、どくどくと脈打つように精を呑み込む。{t}「{c2}」――{ml}ml。'),
     tF: L('{t}「{c2}」――{t}の背中が弓なりに反り、全身がびくびくと痙攣した。{s:wet}――溢れ出した精気が、{a}の淫紋へどくどくと流れ込んでいく。――{ml}ml。' +
       '|{t}は{a}にしがみついたまま、がくがくと腰を震わせて達した。{s:wet}――とろとろの蜜と一緒に、甘い精気が{a}の淫紋へ吸い上げられていく。{t}「{c2}」――{ml}ml。' +
       '|{s:wet}――{t}の太ももががくがくと震え、頭の中が白く弾けた。{a}の淫紋が、{t}の絶頂ごと精気を啜り上げる。{t}「{c2}」――{ml}ml。')
@@ -56418,7 +56798,7 @@
   function eL(S, key, arr) { return HK.Ero ? HK.Ero.L(S, 'saimin', key, arr) : arr; }
   /* 受ける{a}が女性の体（ふたなりでない）なら、{a}を男性の体で書いた文（{a}の根元・亀頭、{a}が射精する など）を外し、
      女性の体の文（キーの後ろに F。solo-saimin-ero.js の 'sug.edge.fullF' など）を足す。残らなければ元の文のまま */
-  var A_MALE = /\{a\}の(?:根元|亀頭|竿|裏筋|鈴口|カリ|先走り|ちんぽ|肉棒|ペニス|陰茎|睾丸)|\{a\}(?:は|が)[^。「」{]{0,30}(?:射精|精を(?:吐き出|放))/;
+  var A_MALE = /\{a\}の(?:根元|亀頭|竿|裏筋|鈴口|カリ|先走り|ちんぽ|肉棒|ペニス|陰茎|睾丸|\{男性器\}|\{亀頭\})|\{a\}(?:は|が)[^。「」{]{0,30}(?:射精|精を(?:吐き出|放))/;
   function bodyL(S, p, key, arr) {
     var L0 = eL(S, key, arr);
     /* 体の判定は性別ではなく性器（HK.Pos.hasM・hasF。attr.js の genital） */
@@ -58263,7 +58643,7 @@
     { id: 'kiss', name: '「キスで開く扉」', diff: 30, dex: 0, brain: 0, lewd: true, try: L('扉の内側に、ハート形のセンサーがついていた。「二人の唇が三十秒触れ合うと開きます」|液晶に指示が出た。『脱出したければ、キスをすること』'), ok: L('{a}と{b}が三十秒唇を重ねると、扉のロックが外れた。二人とも、離れるのに少し時間がかかった。|センサーが「認証完了」と告げた。キスの余韻が、二人の唇に残っていた。'), ng: L('{a}は唇を寄せかけて、やめた。「……こんな方法、認めない｜……こんな方法は、認めない｜……こんな方法、認めません」|二人は唇を重ねたが、途中で{b}が顔を背け、センサーがリセットされた。') }
   ];
   /* r18:begin */
-  LK.GIMMICK[2].ng.unshift('{a}はからくり箱を落とした。拾おうとして屈んだ拍子に、{b}の股間に頬が当たった。');
+  LK.GIMMICK[2].ng.unshift('{a}はからくり箱を落とした。拾おうとして屈んだ拍子に、{b}の{股間}に頬が当たった。');
   LK.GIMMICK[4].ng.unshift('{a}が答えを言いかけたところで、ガスに当てられて喘ぎ声になった。スピーカーが「聞き取れません」と言った。');
   /* r18:end */
   LK.QUIET = L('二人はしばらく黙ったまま、浅い呼吸を繰り返していた。|{a}と{b}は、互いの心臓の音が聞こえるほどの距離で、じっと次の手を考えた。|狭いロッカーの中で、二人の汗がじわりと混ざり合っていった。|{a}は気を紛らわせようと、天井の小さな穴の数を数え始めた。|{b}が身じろぎするたびに、{a}の体がびくりと震えた。');
@@ -58305,11 +58685,11 @@
     },
     grope: { label: '愛撫',
       /* r18:begin */
-      t: L('{a}は{b}の服の中に手を差し入れ、敏感なところを探り当てた。|{a}は{b}の股間を、服の上から何度も撫で上げた。|{a}は{b}の乳首を指先で転がし、反応を確かめた。'), bound: L('{a}は不自由な体をくねらせ、{b}の体に自分の熱い部分を擦りつけた。')
+      t: L('{a}は{b}の服の中に手を差し入れ、敏感なところを探り当てた。|{a}は{b}の{股間}を、服の上から何度も撫で上げた。|{a}は{b}の{乳首}を指先で転がし、反応を確かめた。'), bound: L('{a}は不自由な体をくねらせ、{b}の体に自分の熱い部分を擦りつけた。')
       /* r18:end */
     },
     /* r18:begin */
-    oral: { label: '口で', t: L('{a}は狭いロッカーの中で無理やり膝をつき、{b}の下を口に含んだ。|{a}は体を折り曲げて{b}の股間に顔を埋め、舌を這わせた。'), bound: L('{a}は後ろ手のまま膝をつき、口だけで{b}のファスナーを下ろした。') },
+    oral: { label: '口で', t: L('{a}は狭いロッカーの中で無理やり膝をつき、{b}の下を口に含んだ。|{a}は体を折り曲げて{b}の{股間}に顔を埋め、舌を這わせた。'), bound: L('{a}は後ろ手のまま膝をつき、口だけで{b}のファスナーを下ろした。') },
     sex: { label: '挿入', t: L('{a}は{b}の片脚を抱え上げ、立ったまま奥まで沈めた。ロッカーが軋んだ。|狭すぎて大きくは動けない。{a}と{b}は繋がったまま、小刻みに腰を揺らすことしかできなかった。|{a}は{b}を扉に押しつけて、後ろから繋がった。扉が一突きごとにがたがたと鳴った。'), bound: L('手の使えないまま、{a}は{b}の上にゆっくりと腰を落とした。手が使えないぶん、腰だけで{b}を貪った。'),
       /* 受け攻めの指定：仕掛けた{a}が受けのとき（{a}が{b}を迎え入れる） */
       ride: L('{a}は{b}の首にしがみついて片脚を絡め、自分から{b}を迎え入れた。ロッカーが軋んだ。|{a}は{b}に背を向けて扉に手をつき、腰を押しつけて{b}を自分の中に導いた。扉が一突きごとにがたがたと鳴った。|{a}は{b}の膝の上に無理やり跨り、狭いロッカーの中でゆっくりと腰を落とした。'),
@@ -59116,12 +59496,12 @@
   /* 描写の作風「男性向け」：ロッカーの中で相手が応じた行為（3＝口、4＝繋がる）に足す段落。{a}＝攻め {b}＝受け（{mb1}{mb2}＝受けの声） */
   LK.ERO_ACT = {
     3: L('狭いロッカーの中で、{a}は{b}の脚のあいだに顔を埋めた。{s:suck}。{b}「{mb1}」――逃げ場のない暗闇で、音だけがやけに大きく響いた。|{a}は{b}の下着の中に手を滑り込ませ、とろとろになったところを指でかき回した。{s:wet}。{b}「{mb1}」――媚薬のせいで、触れられたそばから腰が勝手に揺れた。|{s:suck}。{b}「{mb2}」――{b}は{a}の口の中で、びくびくと震えながら果てた。'),
-    4: L('{a}は{b}をロッカーの壁に押しつけたまま、奥まで繋がった。{s:hit}。{b}「{mb1}」――狭くて動けないぶん、一突きごとが深く奥に響いた。|媚薬で敏感になった{b}のナカは、{a}を咥え込んで離さなかった。{s:wet}。{b}「{mb2}」――{b}は扉に額を押しつけたまま、びくびくとイった。|{s:hit}。{b}「{mb2}」――ロッカーががたがたと揺れるのも構わず、二人は腰をぶつけ合った。')
+    4: L('{a}は{b}をロッカーの壁に押しつけたまま、奥まで繋がった。{s:hit}。{b}「{mb1}」――狭くて動けないぶん、一突きごとが深く奥に響いた。|媚薬で敏感になった{b}の{ナカ}は、{a}を咥え込んで離さなかった。{s:wet}。{b}「{mb2}」――{b}は扉に額を押しつけたまま、びくびくとイった。|{s:hit}。{b}「{mb2}」――ロッカーががたがたと揺れるのも構わず、二人は腰をぶつけ合った。')
   };
   /* 女性の攻め×男性の受けの「繋がる」（4）：{a}＝女性の攻めが跨る・自分で導く（{a} を入れる側にしない）。{mb1}{mb2}＝男性の受けの声 */
   LK.ERO_ACT_FM = {
     4: L('{a}は{b}をロッカーの壁に押しつけたまま、膝の上で深く腰を沈め直した。狭くて大きくは動けないぶん、一度沈むごとに奥まで響く。{s:wet}。{b}「{mb1}」――逃げ場のない暗闇で、{b}は{a}にしがみつくことしかできなかった。|' +
-      '媚薬でとろとろになった{a}のナカが、{b}を根元まで咥え込んで離さなかった。{a}が小刻みに腰を揺らすたび、ロッカーががたがたと鳴る。{s:wet}。{b}「{mb2}」――{b}は扉に後頭部を押しつけたまま、{a}の中でびくびくと果てた。|' +
+      '媚薬でとろとろになった{a}の{ナカ}が、{b}を根元まで咥え込んで離さなかった。{a}が小刻みに腰を揺らすたび、ロッカーががたがたと鳴る。{s:wet}。{b}「{mb2}」――{b}は扉に後頭部を押しつけたまま、{a}の中でびくびくと果てた。|' +
       '{a}は{b}の首に腕を回し、片脚を{b}の腰に絡めたまま、小刻みに腰を揺らした。狭くて大きくは動けないぶん、{a}は締めつけだけで{b}を追い詰めていく。{s:wet}。{b}「{mb2}」――{b}が果てても、{a}は腰を上げなかった。')
   };
   /* 男性の受けへの「口」（3）：{a} が {b} のものを咥える（{a} はどちらの性別でもよい） */
@@ -59132,7 +59512,7 @@
   };
   /* 女性どうしの「繋がる」（4）：指と肌で */
   LK.ERO_ACT_FF = {
-    4: L('{a}は{b}をロッカーの壁に押しつけたまま、指を二本、奥まで沈めた。{s:wet}。{b}「{mb1}」――狭くて逃げられないぶん、弱いところを何度も擦られた。|媚薬で敏感になった{b}のナカは、{a}の指をきゅうきゅうと締めつけて離さなかった。{s:wet}。{b}「{mb2}」――{b}は扉に額を押しつけたまま、びくびくとイった。|{a}は{b}の脚のあいだに太腿を割り込ませ、濡れたところを擦り上げた。{s:wet}。{b}「{mb2}」')
+    4: L('{a}は{b}をロッカーの壁に押しつけたまま、指を二本、奥まで沈めた。{s:wet}。{b}「{mb1}」――狭くて逃げられないぶん、弱いところを何度も擦られた。|媚薬で敏感になった{b}の{ナカ}は、{a}の指をきゅうきゅうと締めつけて離さなかった。{s:wet}。{b}「{mb2}」――{b}は扉に額を押しつけたまま、びくびくとイった。|{a}は{b}の脚のあいだに太腿を割り込ませ、濡れたところを擦り上げた。{s:wet}。{b}「{mb2}」')
   };
   /* 扉が開いたあとの夜（男性向け）：最中の段落に男性向けの最中を、絶頂の段落の頭に男性向けの果てる段を足す（thick-sex-ero.js の文） */
   function eroBed(S, o, run) {
@@ -60896,7 +61276,7 @@
   };
   /* 男性向け：一人で果てる山場（{m1}{m2}＝本人の喘ぎ） */
   R.SELF_ERO = {
-    f: L('{a}は壁に背中を押しつけ、指を二本、奥まで沈めた。{s:wet}。{a}「{m1}」――誰もいない箱の中に、濡れた音だけがいやらしく響く。指が弱いところを擦るたび、腰がびくびくと跳ねた。|媚薬でとろとろになったナカが、自分の指をきゅうきゅうと締めつけた。{s:wet}。{a}「{m2}」――{a}は腰をがくがくと震わせて、一人きりのロッカーで何度も上り詰めた。|{a}は胸の先を摘まみ上げながら、花芯を指の腹で押し潰した。{s:wet}。{a}「{m2}」――目の前が白く弾けて、{a}は扉に額を押しつけたまま、太腿をびくびくと痙攣させた。'),
+    f: L('{a}は壁に背中を押しつけ、指を二本、奥まで沈めた。{s:wet}。{a}「{m1}」――誰もいない箱の中に、濡れた音だけがいやらしく響く。指が弱いところを擦るたび、腰がびくびくと跳ねた。|媚薬でとろとろになった{ナカ}が、自分の指をきゅうきゅうと締めつけた。{s:wet}。{a}「{m2}」――{a}は腰をがくがくと震わせて、一人きりのロッカーで何度も上り詰めた。|{a}は胸の先を摘まみ上げながら、花芯を指の腹で押し潰した。{s:wet}。{a}「{m2}」――目の前が白く弾けて、{a}は扉に額を押しつけたまま、太腿をびくびくと痙攣させた。'),
     m: L('{a}は張りつめたものを握り込み、先走りでぬるついた手で根元から扱き上げた。{s:wet}。{a}「{m1}」――狭いロッカーに、自分の荒い息と濡れた音だけがこもる。|扱く手が止まらなかった。{a}は扉に額を押しつけ、腰を突き出したまま、脈打つものを手の中で弾けさせた。{s:cum}。{a}「{m2}」――熱いものが、ロッカーの床にぱたぱたと落ちた。|{a}は先端を親指で擦りながら、根元をきつく握った。{s:wet}。{a}「{m2}」――堪えきれずに腰が跳ね、{a}は自分の手のひらに何度も熱を吐き出した。'),
     x: L('{a}は壁に背中を押しつけ、一番熱いところを夢中で擦り上げた。{s:wet}。{a}「{m1}」――誰もいない箱の中に、濡れた音だけがいやらしく響いた。|{a}の手の動きは、もう自分でも止められなかった。{s:wet}。{a}「{m2}」――{a}は腰をがくがくと震わせて、一人きりのロッカーで上り詰めた。')
   };
@@ -60915,9 +61295,9 @@
   };
   /* 男性向け：見回りの人との山場（{mb1}{mb2}＝受けの喘ぎ） */
   R.MOB_ERO = {
-    ins: L('{a}は{b}の腰を掴んで、根元まで一気に沈めた。{s:hit}。{b}「{mb1}」――媚薬で敏感になったナカを奥まで擦り上げられて、{b}の目の焦点がとろりと溶けた。|{a}は{b}をロッカーに押しつけたまま、腰を打ちつけ続けた。{s:hit}。{b}「{mb2}」――{a}が最奥で果てると、{b}もびくびくと痙攣しながら上り詰めた。{s:cum}。'),
+    ins: L('{a}は{b}の腰を掴んで、根元まで一気に沈めた。{s:hit}。{b}「{mb1}」――媚薬で敏感になった{ナカ}を奥まで擦り上げられて、{b}の目の焦点がとろりと溶けた。|{a}は{b}をロッカーに押しつけたまま、腰を打ちつけ続けた。{s:hit}。{b}「{mb2}」――{a}が最奥で果てると、{b}もびくびくと痙攣しながら上り詰めた。{s:cum}。'),
     fm: L('{a}は{b}の上で腰を深く沈め、締めつけたまま前後にくねらせた。{s:wet}。{b}「{mb1}」――{b}が下から腰を跳ね上げるたび、{a}の唇から甘い吐息がこぼれた。|{a}はわざと動きを止めて{b}を見下ろし、限界の顔を確かめてから、一気に腰を落とした。{s:wet}。{b}「{mb2}」――{b}が果てる震えを、{a}は上からきゅうっと搾り取った。'),
-    ff: L('{a}は{b}のナカに指を二本沈め、弱いところだけを執拗に擦り上げた。{s:wet}。{b}「{mb1}」――{b}の太腿が{a}の手を挟み込んで、がくがくと震えた。|{a}は{b}の花芯を舌で吸い上げながら、指を奥で曲げた。{s:wet}。{b}「{mb2}」――{b}は背中を反らせ、マットを掻きむしるようにして達した。')
+    ff: L('{a}は{b}の{ナカ}に指を二本沈め、弱いところだけを執拗に擦り上げた。{s:wet}。{b}「{mb1}」――{b}の太腿が{a}の手を挟み込んで、がくがくと震えた。|{a}は{b}の花芯を舌で吸い上げながら、指を奥で曲げた。{s:wet}。{b}「{mb2}」――{b}は背中を反らせ、マットを掻きむしるようにして達した。')
   };
   R.MOB_AFTER = L('終わったあと、{m}は黙って{a}の服を直し、冷たい水を差し出した。「＠……このことは、お互い忘れましょう」|{a}が息を整えるあいだ、{m}は廊下の様子を見張っていた。去り際に、{m}は小さく「＠お大事に」とだけ言った。|{m}は{a}の髪を一度だけ撫でて、見回りに戻っていった。名前を聞きそびれたことに、{a}はずいぶんあとで気づいた。');
 
@@ -60940,9 +61320,9 @@
     polite: L('「お、おやめください……っ、このような……」――{a}の丁寧な言葉は、途中で途切れた。|「……っ、どうか、ご容赦を……」――{a}の懇願は、聞き入れられなかった。|{a}は乱れた息の合間に、「いけません」と何度も繰り返した。')
   };
   R.FORCE_ERO = {
-    ins: L('{a}は{b}の腰を押さえつけたまま、容赦なく奥を突き上げた。{s:hit}。{b}「{mb1}」――拒む声とは裏腹に、媚薬に焼かれたナカは{a}をきつく締めつけていた。|{a}は{b}を壁に縫いとめ、休みなく腰を打ちつけた。{s:hit}。{b}「{mb2}」――{a}が最奥で果てると、{b}の体もびくびくと震えて上り詰めてしまった。{s:cum}。'),
+    ins: L('{a}は{b}の腰を押さえつけたまま、容赦なく奥を突き上げた。{s:hit}。{b}「{mb1}」――拒む声とは裏腹に、媚薬に焼かれた{ナカ}は{a}をきつく締めつけていた。|{a}は{b}を壁に縫いとめ、休みなく腰を打ちつけた。{s:hit}。{b}「{mb2}」――{a}が最奥で果てると、{b}の体もびくびくと震えて上り詰めてしまった。{s:cum}。'),
     fm: L('{a}は{b}の上で腰を沈めたまま、逃がさないように締めつけた。{s:wet}。{b}「{mb1}」――{b}の腰は、意思とは関係なく下から跳ね上がった。|{a}は{b}を見下ろしながら、搾り取るように腰を揺らし続けた。{s:wet}。{b}「{mb2}」――{b}は歯を食いしばったまま、{a}の中で果てさせられた。'),
-    ff: L('{a}の指が、{b}の弱いところだけを執拗に擦り上げた。{s:wet}。{b}「{mb1}」――拒む声とは裏腹に、{b}のナカは{a}の指をきゅうきゅうと締めつけた。|{a}は{b}の手首を押さえたまま、指を奥で曲げ続けた。{s:wet}。{b}「{mb2}」――{b}は背中を反らせ、意思とは関係なく上り詰めてしまった。')
+    ff: L('{a}の指が、{b}の弱いところだけを執拗に擦り上げた。{s:wet}。{b}「{mb1}」――拒む声とは裏腹に、{b}の{ナカ}は{a}の指をきゅうきゅうと締めつけた。|{a}は{b}の手首を押さえたまま、指を奥で曲げ続けた。{s:wet}。{b}「{mb2}」――{b}は背中を反らせ、意思とは関係なく上り詰めてしまった。')
   };
   R.FORCE_AFTER = L('{m}が去ったあと、{a}は乱れた服を握りしめたまま、しばらく動けなかった。|{m}は何事もなかったように扉を開け放って去っていった。{a}は壁にもたれたまま、熱と悔しさが引くのを待った。|{a}は震える手で服を直した。ガスのせいだ、と自分に言い聞かせても、胸の奥の冷たさは消えなかった。');
 
@@ -60992,7 +61372,7 @@
   /* 男性向け：三人の山場。pen＝攻めが全員男性の体のとき、soft＝それ以外（指・舌・唇で）。{mt1}{mm1}{mu1} など＝その役の人の喘ぎ */
   R.TRIO_ERO = {
     pen: {
-      oneTwo: L('{t}は{m}の奥を突き上げながら、{u}のナカを指でかき回した。{s:hit}。{m}「{mm1}」{u}「{mu1}」――二人分の喘ぎが、狭いロッカーの中で重なった。|{t}は{m}から{u}へ、{u}から{m}へと、交互に繋がり直した。{s:hit}。{u}「{mu2}」――待たされたぶんだけ、{u}の声はとろけきっていた。'),
+      oneTwo: L('{t}は{m}の奥を突き上げながら、{u}の{ナカ}を指でかき回した。{s:hit}。{m}「{mm1}」{u}「{mu1}」――二人分の喘ぎが、狭いロッカーの中で重なった。|{t}は{m}から{u}へ、{u}から{m}へと、交互に繋がり直した。{s:hit}。{u}「{mu2}」――待たされたぶんだけ、{u}の声はとろけきっていた。'),
       twoOne: L('{t}が{u}を後ろから突き上げるたび、{u}の体が前の{m}へ押し出され、そのまま{m}に唇を塞がれた。{s:hit}。{u}「{mu1}」――前と後ろから同時に責められて、{u}の頭は真っ白になった。|{t}と{m}は、{u}を挟んで交互に腰を打ちつけた。{s:hit}。{u}「{mu2}」――休む間もなく奥を擦られて、{u}は二人のあいだで何度も果てた。'),
       sandwich: L('{m}が{u}の奥へ沈むのと同時に、{t}が{m}を後ろから貫いた。{s:hit}。{m}「{mm1}」{u}「{mu1}」――押し込まれるたびに、三人分の体が一つの波のように揺れた。|{t}が腰を打ちつけるたび、その勢いのまま{m}が{u}を突き上げた。{s:hit}。{m}「{mm2}」――前と後ろから同時に襲う快感に、{m}の声はもう言葉になっていなかった。')
     },
@@ -61058,7 +61438,7 @@
       if (R.PCL[k]) add(R.PCL[k], PC[k]);
       if (R.TCL[k]) add(R.TCL[k], TC[k]);
     });
-    add(R.SELF_ERO.f, '{a}はロッカーの壁に片手をついて腰を突き出し、後ろから自分の指を二本沈めた。{s:wet}。{a}「{m1}」――指を曲げるたびに、ナカの弱いところがきゅうきゅうと吸いついた。|{a}はクリを指で挟んでぐりぐりと捏ね回した。{s:wet}。{a}「{m2}」――膝ががくがく震えて、{a}は扉にしがみついたままイった。');
+    add(R.SELF_ERO.f, '{a}はロッカーの壁に片手をついて腰を突き出し、後ろから自分の指を二本沈めた。{s:wet}。{a}「{m1}」――指を曲げるたびに、{ナカ}の弱いところがきゅうきゅうと吸いついた。|{a}は{陰核}を指で挟んでぐりぐりと捏ね回した。{s:wet}。{a}「{m2}」――膝ががくがく震えて、{a}は扉にしがみついたままイった。');
     add(R.SELF_ERO.m, '{a}は先走りでぬるぬるになったものを、根元からきつく扱き上げた。{s:wet}。{a}「{m1}」――狭い箱の中に、ぬちゅぬちゅと濡れた音がこもった。|{a}は扉に額を押しつけたまま、先っぽを親指でぐりぐりと擦った。{s:wet}。{a}「{m2}」――腰が勝手に突き出て、{a}は壁に白いものを飛ばした。');
     add(R.SELF_ERO.x, '{a}は壁にもたれたまま、熱くなったところを夢中で擦り続けた。{s:wet}。{a}「{m1}」――媚薬の熱が、どんどん下腹に溜まっていく。|{a}は膝を震わせながら、手の動きを速めた。{s:wet}。{a}「{m2}」――頭の中が真っ白に弾けて、{a}はずるずると座り込んだ。');
     add(R.TP.ins, '{a}は{b}を後ろから抱えたまま、ゆっくりと奥まで繋がった。前に押し出された{b}の顔を、{c}が両手で包んだ。|{a}が深く沈むたびに、{b}は{c}の手を強く握った。{c}はその手を握り返しながら、{b}の耳たぶに唇を寄せた。');
@@ -72358,7 +72738,7 @@
     ride: [
       '{t}は{u}を寝台に押し倒して跨がり、硬く張りつめたものを自らの中へゆっくりと迎え入れた。腰を沈める速さも深さも、すべて{t}が決めていた。',
       '{t}「動かないで」 {u}の胸に両手をついたまま、{t}は好きな速さで腰をくねらせた。熱く締めつけられ、{u}はただ荒い息を漏らすしかなかった。',
-      '無重力のなか、{t}は{u}の腰に脚を絡めて跨がり、熱い屹立を根元まで呑み込んだ。漂わないよう{u}を抱え込んだまま、{t}は貪るように腰を揺すった。',
+      '無重力のなか、{t}は{u}の腰に脚を絡めて跨がり、熱い{男性器}を根元まで呑み込んだ。漂わないよう{u}を抱え込んだまま、{t}は貪るように腰を揺すった。',
       '操縦席に座る{u}の膝に跨がり、{t}は上から深く腰を落とした。焦らすように浮かせては沈めるたび、{u}は肘掛けを握りしめて呻いた。',
       '{t}は{u}の両手を寝台に縫いとめ、上から見下ろしながら腰を打ち下ろした。限界を訴える{u}の声を聞いても、{t}は速さを緩めなかった。',
       '果てかけた{u}の根元を指で締めつけ、{t}はわざと動きを止めた。息が整うのを待ってから再び腰を沈め、{t}は何度も{u}を追いつめた。'
@@ -72368,7 +72748,7 @@
       '{t}は{u}の脚の間に顔をうずめ、熱く潤んだところを舌先で丹念になぞった。敷布を握りしめた{u}は、こらえきれずに甘い声を上げた。',
       'シャワーの湯の中で、{t}は{u}を背後から抱きすくめ、指先で秘めた芽を弄んだ。高まる喘ぎを湯音に隠しながら、{t}は{u}の耳たぶを甘く噛んだ。',
       '{t}「まだだめ」 {u}が昇りつめる寸前で、{t}は指の動きを止めた。焦らされては責められ、{u}は涙ぐみながら{t}の指に身をゆだねた。',
-      '{t}は{u}の脚を割り開き、自分の濡れた秘所を重ねてゆっくりと擦りつけた。主導権を握ったまま腰を揺らす{t}の下で、{u}は何度も震えた。',
+      '{t}は{u}の脚を割り開き、自分の濡れた{女性器}を重ねてゆっくりと擦りつけた。主導権を握ったまま腰を揺らす{t}の下で、{u}は何度も震えた。',
       '無重力の貨物室で、{t}は{u}を壁際に押さえ、二本の指を奥へと沈めた。中をかき回されるたびに跳ねる体を、{t}は抱きとめて離さなかった。',
       '{t}は{u}の首筋から胸、腹へと唇を這わせ、最後に脚の付け根へたどり着いた。舌と指で同時に責め立てられ、{u}は声にならない声を上げて昇りつめた。',
       '医務室から持ち出した細い振動器を、{t}は{u}の敏感なところへ押し当てた。逃げようとする腰を片手で押さえ、{t}は{u}が果てるまで手を緩めなかった。'
@@ -73181,21 +73561,21 @@
   R.xFadeTop = L('{a}は{x}を手懐け、そのまま主導権を握った。――その先は、{a}と{x}だけが知っている。|{a}は伸びてきた{x}を逆に掴み取った。――しばらくして、{x}はおとなしく{a}の足元に寄り添っていた。');
   /* 男性向け：自分で攻めを選んだ人が生き物を責める（{m1}＝主導する側の声）。xEroTopM は責める側が男性の体のときだけ足す */
   R.xEroTop = L('{a}は{x}の敏感な器官を握り込み、ぐちゅぐちゅと音を立てて激しくしごき上げた。ぬちゃ、ぬぽっ、と先走りが飛び散り、熱い体液が糸を引く。{s:wet}。{a}「{m1}」――{x}は甘い鳴き声を上げ、{a}の手の中で何度も激しく震えて果てた。|{a}は{x}を押し倒し、主導権を完全に握った。敏感な器官を握り込み、ぐちゅぐちゅと激しくしごく。ぬちゃ、ぬぽっ、と先走りが飛び散る。{s:wet}。{a}「{m1}」――{x}は甘い鳴き声を上げ、{a}の手の中で何度も痙攣して果てた。');
-  R.xEroTopM = L('{a}は逃げようとする{x}を押さえつけ、震える先端を舌でしつこく吸い、歯で軽く噛んだ。{s:suck}。ずぶっ、と奥まで突き入れ、激しく腰を打ち付けながら{x}が全身を明滅させて絶頂するまで、{a}は容赦なく腰を打ち付け、熱い精液を注ぎ込んだ。{a}「{m1}」|{a}は逃げようとする{x}を押さえつけ、震える先端を舌でねっとりと吸い上げ、歯で軽く噛んだ。{s:suck}。ずぶっ、と奥まで突き入れ、激しく腰を打ち付けながら{x}が全身を明滅させて絶頂するまで、{a}は手を緩めず、熱い精を注ぎ込んだ。{a}「{m1}」');
+  R.xEroTopM = L('{a}は逃げようとする{x}を押さえつけ、震える先端を舌でしつこく吸い、歯で軽く噛んだ。{s:suck}。ずぶっ、と奥まで突き入れ、激しく腰を打ち付けながら{x}が全身を明滅させて絶頂するまで、{a}は容赦なく腰を打ち付け、熱い{精液}を注ぎ込んだ。{a}「{m1}」|{a}は逃げようとする{x}を押さえつけ、震える先端を舌でねっとりと吸い上げ、歯で軽く噛んだ。{s:suck}。ずぶっ、と奥まで突き入れ、激しく腰を打ち付けながら{x}が全身を明滅させて絶頂するまで、{a}は手を緩めず、熱い精を注ぎ込んだ。{a}「{m1}」');
   /* 男性向け：船員どうしの夜・看病の夜の山場の候補（thick-sex-ero.js の山場と半々で選ぶ）。{t}＝攻め、{u}＝受け、
      {ma1}＝{t} の主導する側の声、{mb1}{mb2}＝{u} の喘ぎ。
      組：mf＝{t}が男性の体で{u}が女性の体、uf＝{u}が女性の体（男×女・女×女）、any＝どの組でも */
   R.EROX = {
     night: [
-      { k: 'mf', t: '{t}は{u}を寝台に押し倒し、作業着の留め具を乱暴に外した。ぱん、と生地が弾け、むき出しになった柔らかい乳房と濡れた秘部が露わになる。硬く勃起した肉棒を{u}の入口に押しつけ、一気に根元まで突き入れた。ずぶっ！　熱く狭い穴が締め付けてくる。{s:wet}。{u}「{mb1}」――狭い寝台が激しく軋み、ぐちゅっ、ぐぽっ、ぬちゃぬちゃと淫らな水音が船室に響き渡った。' },
-      { k: 'mf', t: '{u}の指が{t}の股間を掴み、硬く膨張した肉棒をぬるぬるにしごき上げる。先走りが糸を引き、ぬちゃぬちゃと音を立てる。{t}「{ma1}」と喘ぎながら腰を突き上げ、{u}の奥を抉るように打ち付けた。観測窓の外の星さえも、その激しい結合音と肉がぶつかる音を知っていた。' },
+      { k: 'mf', t: '{t}は{u}を寝台に押し倒し、作業着の留め具を乱暴に外した。ぱん、と生地が弾け、むき出しになった柔らかい{胸}と濡れた{女性器}が露わになる。硬く勃起した{男性器}を{u}の入口に押しつけ、一気に根元まで突き入れた。ずぶっ！　熱く狭い穴が締め付けてくる。{s:wet}。{u}「{mb1}」――狭い寝台が激しく軋み、ぐちゅっ、ぐぽっ、ぬちゃぬちゃと淫らな水音が船室に響き渡った。' },
+      { k: 'mf', t: '{u}の指が{t}の{股間}を掴み、硬く膨張した{男性器}をぬるぬるにしごき上げる。先走りが糸を引き、ぬちゃぬちゃと音を立てる。{t}「{ma1}」と喘ぎながら腰を突き上げ、{u}の奥を抉るように打ち付けた。観測窓の外の星さえも、その激しい結合音と肉がぶつかる音を知っていた。' },
       { k: 'mf', t: '{t}は{u}の両脚を大きく開き、腰を深く沈めて一気に奥まで突き入れた。ずぶっ！　ぐぽっぐぽっ！　と激しい水音が立ち、子宮口を突き上げるたび{u}「{mb2}」と声を裏返らせて何度も潮を吹き、痙攣しながら果てた。換気扇の音など、もう聞こえていなかった。' },
       { k: 'mf', t: '{t}は扉のロックを閉め、{u}を壁に押し付けたまま激しく腰を打ち付けた。ぱんぱんぱん！　と肉のぶつかる音が連続し、熱い穴が締め付けてくる。{u}「{mb2}」と崩れ落ちるまで、{t}は朝まで何度も射精し、止めなかった。' }
     ],
     nurse: [
-      { k: 'any', t: '{t}は熱っぽい{u}の額に口づけ、そのまま医務室の明かりを落とした。汗ばんだ肌に舌を這わせ、敏感な乳首を強く吸い上げる。{s:suck}。{u}「{mb1}」点滴の雫の音など、もうかき消されていた。' },
-      { k: 'uf', t: '{u}は{t}の手を自分の熱い股間に引き寄せ、ぐちゅぐちゅと音を立ててかき回させた。すでにびしょ濡れの秘部がぬちゃぬちゃと鳴る。{t}「こんなに濡らして…我慢できなかったのか」と耳元で囁きながら、指を奥までねじ込み、Gスポットを容赦なく抉る。{u}「{mb1}」と腰を跳ねさせた。' },
-      { k: 'mf', t: '{t}は{u}の汗だくの体を覆い、硬く勃起した肉棒を一気に根元まで結合した。ずぶっ！　ぬちゃぬちゃと激しく腰を振り、子宮を突くたび{u}「{mb2}」と声を上げ続け、{t}は熱い精液を何度も中に注ぎ込んだ。医務室の小さな明かりが消えたのは、二人が何度も果てた後だった。' }
+      { k: 'any', t: '{t}は熱っぽい{u}の額に口づけ、そのまま医務室の明かりを落とした。汗ばんだ肌に舌を這わせ、敏感な{乳首}を強く吸い上げる。{s:suck}。{u}「{mb1}」点滴の雫の音など、もうかき消されていた。' },
+      { k: 'uf', t: '{u}は{t}の手を自分の熱い{股間}に引き寄せ、ぐちゅぐちゅと音を立ててかき回させた。すでにびしょ濡れの{女性器}がぬちゃぬちゃと鳴る。{t}「こんなに濡らして…我慢できなかったのか」と耳元で囁きながら、指を奥までねじ込み、Gスポットを容赦なく抉る。{u}「{mb1}」と腰を跳ねさせた。' },
+      { k: 'mf', t: '{t}は{u}の汗だくの体を覆い、硬く勃起した{男性器}を一気に根元まで結合した。ずぶっ！　ぬちゃぬちゃと激しく腰を振り、子宮を突くたび{u}「{mb2}」と声を上げ続け、{t}は熱い{精液}を何度も中に注ぎ込んだ。医務室の小さな明かりが消えたのは、二人が何度も果てた後だった。' }
     ]
   };
   R.eroxPool = function (t, u, kind) {
@@ -73250,31 +73630,31 @@
      xEroAgainV：描写の有無「濃い」のとき、上の段落のあとに足すもう一段（空なら小説調の xAgain を使う） */
   R.xEroV = {
     lure: [
-      '{x}が甘い香を漂わせながら{a}にゆっくりと近づき、柔らかな触手が足首を撫で上げた。{a}は抵抗する前に体が熱くなり、脚ががくがくと震え出す。{s:wet}。{a}「{m0}」\n\n触手が股間を包み込み、ぐちゅぐちゅと敏感な部分を締め付け、先端を執拗に刺激する。ぬちゃ、ぬぽっ、と水音が立ち、{a}「{m1}」――腰が勝手に浮き、先走りが糸を引いて飛び散った。\n\n{x}がさらに深く絡みつき、内部を激しく抉り上げる。ずぶっずぶっ！　と突き上げられ、{s:cum}。{a}「{m2}」――視界が白く染まり、何度も痙攣しながら果てた。',
-      '{x}の甘い匂いが{a}の意識を溶かし、気づいたときには体中にぬるぬるした感触が這い回っていた。{a}は最初は「なにこれ…」と呟くだけだった。{s:wet}。{a}「{m0}」\n\n触手が胸と股間を同時に責め、乳首と先端を交互に吸い上げる。{s:suck}。ぬちゃぬちゃと音を立て、{a}「{m1}」――体が熱く火照り、腰がくねくねと揺れてしまう。\n\n一気に奥まで入り込まれ、ぐぽっぐぽっと激しく動かされる。{s:cum}。{a}「{m2}」――甘い絶頂が何度も襲い、動けなくなった。'
+      '{x}が甘い香を漂わせながら{a}にゆっくりと近づき、柔らかな触手が足首を撫で上げた。{a}は抵抗する前に体が熱くなり、脚ががくがくと震え出す。{s:wet}。{a}「{m0}」\n\n触手が{股間}を包み込み、ぐちゅぐちゅと敏感な部分を締め付け、先端を執拗に刺激する。ぬちゃ、ぬぽっ、と水音が立ち、{a}「{m1}」――腰が勝手に浮き、先走りが糸を引いて飛び散った。\n\n{x}がさらに深く絡みつき、内部を激しく抉り上げる。ずぶっずぶっ！　と突き上げられ、{s:cum}。{a}「{m2}」――視界が白く染まり、何度も痙攣しながら果てた。',
+      '{x}の甘い匂いが{a}の意識を溶かし、気づいたときには体中にぬるぬるした感触が這い回っていた。{a}は最初は「なにこれ…」と呟くだけだった。{s:wet}。{a}「{m0}」\n\n触手が胸と{股間}を同時に責め、{乳首}と先端を交互に吸い上げる。{s:suck}。ぬちゃぬちゃと音を立て、{a}「{m1}」――体が熱く火照り、腰がくねくねと揺れてしまう。\n\n一気に奥まで入り込まれ、ぐぽっぐぽっと激しく動かされる。{s:cum}。{a}「{m2}」――甘い絶頂が何度も襲い、動けなくなった。'
     ],
     force: [
       '{x}が一気に{a}を押し倒し、硬い地面に背中を押しつけた。逃げようとする腕を触手で固定し、股を強制的に開かれる。{a}「{m0}」――息が詰まり、体が強張る。\n\n容赦なく敏感な部分を握り潰すようにしごき上げ、ぐちゅぐちゅと音を立てる。{s:hit}。ぬぽっ、ぬちゃっ、と激しい水音が響き、{a}「{m1}」と声を裏返らせた。\n\nずぶっ！　と奥まで一気に突き入れられ、激しく腰を打ち付けられる。ぱんぱんぱん！　と肉の音が連続し、{a}「{m2}」――意識が飛ぶほど何度も絶頂させられた。',
       '{x}の触手が{a}の体を容赦なく締め上げ、逃げ場を奪った。顔の前に熱い先端が押しつけられ、強制的に口を開かされる。{a}「{m0}」――涎が糸を引く。\n\n同時に下半身を激しく抉られ、ぐちゅぐちゅ、ずぽっずぽっと水音が止まない。{s:hit}。{a}「{m1}」と涙目で喘ぎ、腰が勝手に跳ねる。\n\n限界を超えて中を抉られ続け、熱い体液を注ぎ込まれる。{s:cum}。{a}「{m2}」――体がびくびくと痙攣し、完全に力が抜けた。'
     ],
     take: [
-      '{a}は気づいたときには岩陰の奥、湿った暗い場所に運ばれていた。{x}の触手が全身を固定し、動けない。{a}「{m0}」\n\n熱い先端が股間を押し開き、ぐちゅっ、と一気に奥まで侵入してくる。{s:wet}。ぬちゃぬちゃと激しく動き出し、{a}「{m1}」――腹の奥が熱く疼き、先がびくびくと跳ねた。\n\n容赦なく子宮口を突き上げられ、何度も絶頂を強いられる。{s:cum}。{a}「{m2}」――{b}の顔がちらついても、もう声にならなかった。',
+      '{a}は気づいたときには岩陰の奥、湿った暗い場所に運ばれていた。{x}の触手が全身を固定し、動けない。{a}「{m0}」\n\n熱い先端が{股間}を押し開き、ぐちゅっ、と一気に奥まで侵入してくる。{s:wet}。ぬちゃぬちゃと激しく動き出し、{a}「{m1}」――腹の奥が熱く疼き、先がびくびくと跳ねた。\n\n容赦なく子宮口を突き上げられ、何度も絶頂を強いられる。{s:cum}。{a}「{m2}」――{b}の顔がちらついても、もう声にならなかった。',
       '運ばれた先は粘液にまみれた巣のような空間だった。{x}が{a}を優しく、しかし確実に固定し、敏感な部分を舌のような器官で舐め回す。{a}「{m0}」\n\nぐちゅぐちゅ、ぬぽぬぽと音を立てながら内部を広げられ、熱いものが何本も這い入ってくる。{s:wet}。{a}「{m1}」――体が熱く溶け、腰がくねってしまう。\n\n一気に奥を抉られ、視界が白く染まる。{s:cum}。{a}「{m2}」――{b}のことを思い浮かべる余裕さえ失った。'
     ],
     probe: [
       '{x}が{a}の体を丁寧に、しかし容赦なく調べ始めた。触手が服の下に滑り込み、敏感な部位を一つ一つ確認するように撫でる。{a}「{m0}」\n\n先端を舌のような器官で吸い上げ、ぐちゅぐちゅと音を立ててしごく。{s:suck}。ぬちゃ、ぬぽっ、と先走りが飛び散り、{a}「{m1}」――腰が浮き、体が熱く火照る。\n\n内部まで深く探られ、激しく抉られる。{s:cum}。{a}「{m2}」――調べられるだけで何度も果ててしまった。',
-      '{x}の細長い触手が{a}の口と股間を同時に侵し、奥まで丁寧に探るように動く。{a}「{m0}」\n\nぬるぬると内壁をなぞり、敏感な点を執拗に刺激する。{s:suck}。ぐぽっぐぽっと水音が立ち、{a}「{m1}」と声を裏返らせた。\n\n限界まで広げられ、熱い体液を注がれる。{s:cum}。{a}「{m2}」――体がびくびくと痙攣し、力が完全に抜けた。'
+      '{x}の細長い触手が{a}の口と{股間}を同時に侵し、奥まで丁寧に探るように動く。{a}「{m0}」\n\nぬるぬると内壁をなぞり、敏感な点を執拗に刺激する。{s:suck}。ぐぽっぐぽっと水音が立ち、{a}「{m1}」と声を裏返らせた。\n\n限界まで広げられ、熱い体液を注がれる。{s:cum}。{a}「{m2}」――体がびくびくと痙攣し、力が完全に抜けた。'
     ],
     invade: [
       '{x}の熱い先端が{a}の入口を押し開き、ずぶっ、と一気に根元まで入り込んだ。内壁が無理矢理広げられ、熱さが奥まで伝わる。{a}「{m0}」――息が止まり、体が強張る。\n\nすぐに激しい抽送が始まり、ぐちゅぐちゅ、ぬちゃぬちゃと淫らな水音が響き渡る。{s:wet}。{a}「{m1}」と腰を跳ねさせ、先がびくびくと跳ねた。\n\n容赦なく最奥を抉られ続け、熱い精のようなものを何度も注ぎ込まれる。{s:cum}。{a}「{m2}」――意識が飛びそうになりながら、何度も絶頂した。',
-      '{x}が複数の触手を同時に{a}の体に侵入させた。口と下半身を同時に塞がれ、逃げ場がない。{a}「{m0}」――涎と愛液が糸を引く。\n\nずぽっずぽっ、ぐぽっぐぽっと激しく動かされ、内壁をかき回される。{s:wet}。{a}「{m1}」と涙を浮かべて喘ぎ、腰が勝手に動く。\n\n限界を超えて中を埋め尽くされ、熱いものが溢れ出す。{s:cum}。{a}「{m2}」――体ががくがくと痙攣し、完全に堕ちた。'
+      '{x}が複数の触手を同時に{a}の体に侵入させた。口と下半身を同時に塞がれ、逃げ場がない。{a}「{m0}」――涎と{愛液}が糸を引く。\n\nずぽっずぽっ、ぐぽっぐぽっと激しく動かされ、内壁をかき回される。{s:wet}。{a}「{m1}」と涙を浮かべて喘ぎ、腰が勝手に動く。\n\n限界を超えて中を埋め尽くされ、熱いものが溢れ出す。{s:cum}。{a}「{m2}」――体ががくがくと痙攣し、完全に堕ちた。'
     ],
     civ: [
-      '文明の住人たちが儀式のように{a}を囲み、甘い香の油を体に塗りたくり始めた。抵抗する言葉は優しく遮られ、体が熱く火照る。{a}「{m0}」\n\n複数の手が股間を愛撫し、ぐちゅぐちゅと音を立てて刺激する。{s:hit}。ぬちゃぬちゃと水音が立ち、{a}「{m1}」――腰がくねり、先が跳ねる。\n\n儀式の頂点で奥まで結合され、激しく腰を打ち付けられる。{s:cum}。{a}「{m2}」――何度も果て、意識が遠のいた。',
+      '文明の住人たちが儀式のように{a}を囲み、甘い香の油を体に塗りたくり始めた。抵抗する言葉は優しく遮られ、体が熱く火照る。{a}「{m0}」\n\n複数の手が{股間}を愛撫し、ぐちゅぐちゅと音を立てて刺激する。{s:hit}。ぬちゃぬちゃと水音が立ち、{a}「{m1}」――腰がくねり、先が跳ねる。\n\n儀式の頂点で奥まで結合され、激しく腰を打ち付けられる。{s:cum}。{a}「{m2}」――何度も果て、意識が遠のいた。',
       '住人たちの柔らかな触手が{a}を優しく、しかし確実に拘束した。「受け入れれば楽になる」と囁かれ、体がびくりと反応した。{a}「{m0}」\n\n敏感な部分を執拗に責められ、ぬぽぬぽといやらしい音が響く。{s:hit}。{a}「{m1}」と声を上げ、腰が浮いた。\n\nすると、一気に奥まで入り込まれ、熱いものを注がれる。{s:cum}。{a}「{m2}」――体がびくびくと痙攣し、力が抜け落ちた。'
     ],
     alien: [
-      '{x}の異形の体が{a}に覆い被さり、ぬるぬるした皮膚が全身に密着した。熱い息がかかり、体が熱く疼き出す。{a}「{m0}」\n\n奇妙な形状の器官が股間を押し開き、ぐちゅぐちゅと音を立てて侵入してくる。{s:wet}。ぬちゃ、ぬぽっ、と水音が響き、{a}「{m1}」――腰が跳ね、先がびくびくする。\n\n容赦なく最奥を抉られ、熱い体液を何度も注ぎ込まれる。{s:cum}。{a}「{m2}」――視界が白く染まり、何度も絶頂した。',
+      '{x}の異形の体が{a}に覆い被さり、ぬるぬるした皮膚が全身に密着した。熱い息がかかり、体が熱く疼き出す。{a}「{m0}」\n\n奇妙な形状の器官が{股間}を押し開き、ぐちゅぐちゅと音を立てて侵入してくる。{s:wet}。ぬちゃ、ぬぽっ、と水音が響き、{a}「{m1}」――腰が跳ね、先がびくびくする。\n\n容赦なく最奥を抉られ、熱い体液を何度も注ぎ込まれる。{s:cum}。{a}「{m2}」――視界が白く染まり、何度も絶頂した。',
       '{x}の触手が予測できない動きで{a}の体を責め立てる。どこを刺激されるかわからず、体が敏感に反応してしまう。{a}「{m0}」\n\n突然奥まで一気に突き入れられ、ぐぽっぐぽっと激しく動かされる。{s:wet}。{a}「{m1}」と声を裏返らせ、涙が浮かぶ。\n\n限界を超えて中を埋め尽くされ、熱いものが溢れ出す。{s:cum}。{a}「{m2}」――体ががくがくと痙攣し、動けなくなった。'
     ],
     any: [
@@ -73979,19 +74359,19 @@
   /* ---------- 男性向けの山場（ship-lewd.js の R.EROX。ff＝女性どうし、fm＝{t}が女性の体で{u}が男性の体、mm＝男性どうし） ---------- */
   if (R.EROX) {
     [
-      { k: 'ff', t: '{t}は{u}を寝台に押し倒し、作業着の前をはだけさせて、ぷっくり尖った乳首にむしゃぶりついた。{s:suck}。同時に脚のあいだへ指を滑り込ませると、そこはもうとろとろに濡れていた。{u}「{mb1}」――二本の指でナカをぐちゅぐちゅと掻き回され、{u}は寝台の固定帯を握りしめたまま腰を跳ねさせた。{s:wet}。{u}「{mb2}」' },
-      { k: 'ff', t: '無重力の船室で、{t}は漂う{u}の脚を抱え込み、濡れた割れ目に舌を押しつけた。{s:suck}。逃げ場のない{u}は、{t}の頭を腿で挟んだまま宙で身をよじる。{u}「{mb1}」――クリをちゅうっと吸い上げられた瞬間、{u}はびくびくと痙攣しながら潮を散らした。{s:wet}。{u}「{mb2}」' },
-      { k: 'ff', t: '{t}は{u}をシャワー室の壁に押しつけ、湯音に紛れて指を三本、ナカに沈めた。{s:wet}。{t}「{ma1}」――奥のざらついたところを容赦なく擦られ、{u}は膝をがくがくさせて何度もイった。{u}「{mb2}」' },
-      { k: 'fm', t: '{t}は{u}を操縦席に押しつけて跨がり、硬く勃ち上がったちんぽを自分の手で入口に宛てがって、ずぷっと根元まで呑み込んだ。{s:wet}。{t}「{ma1}」――計器の警告音に合わせるように腰を弾ませ、ぱちゅんぱちゅんと水音を立てる。{u}「{mb1}」――{u}は肘掛けを握りしめたまま、{t}のナカで搾り取られた。{s:cum}。' },
-      { k: 'fm', t: '無重力の船室で、{t}は{u}の腰に脚を絡めて跨がり、浮いたまま奥まで咥え込んだ。{s:wet}。{u}「{mb1}」――ぐちゅ、ぬちゅ、と揺するたびに結合部から音が漏れる。{t}「{ma1}」――{t}がきゅうっと締め上げると、{u}は情けない声を上げて{t}のナカにびゅくびゅくと吐き出した。{s:cum}。{u}「{mb2}」' },
+      { k: 'ff', t: '{t}は{u}を寝台に押し倒し、作業着の前をはだけさせて、ぷっくり尖った{乳首}にむしゃぶりついた。{s:suck}。同時に脚のあいだへ指を滑り込ませると、そこはもうとろとろに濡れていた。{u}「{mb1}」――二本の指で{ナカ}をぐちゅぐちゅと掻き回され、{u}は寝台の固定帯を握りしめたまま腰を跳ねさせた。{s:wet}。{u}「{mb2}」' },
+      { k: 'ff', t: '無重力の船室で、{t}は漂う{u}の脚を抱え込み、濡れた割れ目に舌を押しつけた。{s:suck}。逃げ場のない{u}は、{t}の頭を腿で挟んだまま宙で身をよじる。{u}「{mb1}」――{陰核}をちゅうっと吸い上げられた瞬間、{u}はびくびくと痙攣しながら潮を散らした。{s:wet}。{u}「{mb2}」' },
+      { k: 'ff', t: '{t}は{u}をシャワー室の壁に押しつけ、湯音に紛れて指を三本、{ナカ}に沈めた。{s:wet}。{t}「{ma1}」――奥のざらついたところを容赦なく擦られ、{u}は膝をがくがくさせて何度もイった。{u}「{mb2}」' },
+      { k: 'fm', t: '{t}は{u}を操縦席に押しつけて跨がり、硬く勃ち上がった{男性器}を自分の手で入口に宛てがって、ずぷっと根元まで呑み込んだ。{s:wet}。{t}「{ma1}」――計器の警告音に合わせるように腰を弾ませ、ぱちゅんぱちゅんと水音を立てる。{u}「{mb1}」――{u}は肘掛けを握りしめたまま、{t}の{ナカ}で搾り取られた。{s:cum}。' },
+      { k: 'fm', t: '無重力の船室で、{t}は{u}の腰に脚を絡めて跨がり、浮いたまま奥まで咥え込んだ。{s:wet}。{u}「{mb1}」――ぐちゅ、ぬちゅ、と揺するたびに結合部から音が漏れる。{t}「{ma1}」――{t}がきゅうっと締め上げると、{u}は情けない声を上げて{t}の{ナカ}にびゅくびゅくと吐き出した。{s:cum}。{u}「{mb2}」' },
       { k: 'fm', t: '{t}は{u}を寝台に押し倒して手首を押さえ、上から腰をぐりぐりと回した。{s:wet}。{t}「まだ出しちゃだめ。……私がいいって言うまで」――寸止めを三度繰り返されて、{u}「{mb2}」と泣きそうな声を上げた{u}は、許しの言葉と同時に{t}の奥で果てた。{s:cum}。' },
       { k: 'mm', t: '{t}は{u}を貨物室の壁に押しつけ、作業着を膝まで下ろして、ほぐした後ろへずぶっと根元まで突き入れた。{s:hit}。{u}「{mb1}」――前を扱かれながら奥のしこりを抉られ、{u}は壁に額を擦りつけて喘いだ。{t}「{ma1}」――最後は奥に押しつけたまま、熱いものをたっぷりと注いだ。{s:cum}。' },
-      { k: 'mm', t: '{t}は{u}を寝台にうつ伏せにさせ、腰を高く引き上げて後ろからぱんぱんと打ちつけた。{s:hit}。{u}「{mb2}」――触られてもいない{u}のちんぽから、とろとろと先走りが垂れ続ける。{t}がいちばん奥で果てると、{u}も寝台に白いものを散らした。{s:cum}。' }
+      { k: 'mm', t: '{t}は{u}を寝台にうつ伏せにさせ、腰を高く引き上げて後ろからぱんぱんと打ちつけた。{s:hit}。{u}「{mb2}」――触られてもいない{u}の{男性器}から、とろとろと先走りが垂れ続ける。{t}がいちばん奥で果てると、{u}も寝台に白いものを散らした。{s:cum}。' }
     ].forEach(function (o) { R.EROX.night.push(o); });
     [
-      { k: 'fm', t: '{t}は熱でぐったりした{u}の上に跨がり、汗ばんだちんぽを指で扱いて硬くさせてから、ゆっくりと腰を落とした。{s:wet}。{t}「{ma1}」――熱い体の上で腰を揺らされ、{u}「{mb1}」と朦朧とした声を上げた{u}は、そのまま{t}のナカに吐き出した。{s:cum}。' },
+      { k: 'fm', t: '{t}は熱でぐったりした{u}の上に跨がり、汗ばんだ{男性器}を指で扱いて硬くさせてから、ゆっくりと腰を落とした。{s:wet}。{t}「{ma1}」――熱い体の上で腰を揺らされ、{u}「{mb1}」と朦朧とした声を上げた{u}は、そのまま{t}の{ナカ}に吐き出した。{s:cum}。' },
       { k: 'fm', t: '看病に来た{t}は、{u}の寝間着をはだけさせ、熱を持ったものを口に含んだ。{s:suck}。{u}「{mb1}」――硬くなったところで{t}は跨がり直し、{u}が果てるまで腰を止めなかった。{s:cum}。' },
-      { k: 'ff', t: '{t}は熱に浮かされた{u}の脚を開かせ、汗と蜜で濡れたところに指を沈めた。{s:wet}。{u}「{mb1}」――熱で敏感になったナカを掻き回され、{u}は点滴の管を揺らしながら何度もイった。{u}「{mb2}」' },
+      { k: 'ff', t: '{t}は熱に浮かされた{u}の脚を開かせ、汗と蜜で濡れたところに指を沈めた。{s:wet}。{u}「{mb1}」――熱で敏感になった{ナカ}を掻き回され、{u}は点滴の管を揺らしながら何度もイった。{u}「{mb2}」' },
       { k: 'mm', t: '{t}は{u}を横向きに抱き寄せ、熱い後ろへゆっくりと根元まで沈めた。{s:wet}。{u}「{mb1}」――熱で火照った体の奥を擦られて、{u}は枕に顔を押しつけたまま果てた。{s:cum}。' }
     ].forEach(function (o) { R.EROX.nurse.push(o); });
   }
@@ -74078,8 +74458,8 @@
     '無重力の貨物室で、{t}は{u}の脚を抱え込み、熱く潤んだところにむしゃぶりついた。{s:suck}。{u}「{mu2}」――漂う体を逃がさないまま、{t}は{u}が二度イくまで舌を止めなかった。|' +
     '{t}は{u}の胸の先を強く吸いながら、二本の指を奥まで沈めて掻き上げた。{s:wet}。{u}「{mu1}」――{u}は潮を噴いて果て、{t}の手首までびしょびしょにした。|' +
     'シャワー室の壁に{u}を押しつけ、{t}は湯音に紛れて指を激しく出し入れした。{s:wet}。{u}「{mu2}」――声を抑えきれずにイった{u}を、{t}は湯の中でもう一度追い上げた。');
-  more(CE.casual.fm, '{t}は{u}を操縦席に座らせたまま跨がり、ずぶっと根元まで腰を落とした。{s:wet}。{t}「{mt1}」――{u}が音を上げるまで、{t}は好き勝手に腰を振り続けた。{s:hit}。最後は{t}のナカで搾り取られた。{s:cum}。|' +
-    '無重力の船室で、{t}は{u}の腰に脚を絡めて跨がり、浮かんだまま激しく腰を打ちつけた。{s:hit}。{u}「{mu2}」――逃げ場のない{u}は、{t}にしがみついたままナカで果てた。{s:cum}。|' +
+  more(CE.casual.fm, '{t}は{u}を操縦席に座らせたまま跨がり、ずぶっと根元まで腰を落とした。{s:wet}。{t}「{mt1}」――{u}が音を上げるまで、{t}は好き勝手に腰を振り続けた。{s:hit}。最後は{t}の{ナカ}で搾り取られた。{s:cum}。|' +
+    '無重力の船室で、{t}は{u}の腰に脚を絡めて跨がり、浮かんだまま激しく腰を打ちつけた。{s:hit}。{u}「{mu2}」――逃げ場のない{u}は、{t}にしがみついたまま{ナカ}で果てた。{s:cum}。|' +
     '{t}は{u}を寝台に押さえつけ、跨がったまま腰をぐりぐりと回した。{s:wet}。{t}「{mt1}」――{u}が果てそうになるたびに止めては、また動く。三度目で、{u}は泣きそうな声でねだった。|' +
     '貨物室の積み荷の上で、{t}は{u}に跨がり、ぱちゅんぱちゅんと腰を打ち下ろした。{s:hit}。{u}「{mu1}」――名前もろくに呼ばない相手を、{t}は自分の快楽のためだけに使い切った。{s:cum}。');
   more(CE.again.mf, '{t}は前の夜に覚えた{u}の弱いところを、最初から先でぐりぐりと抉った。{s:wet}。{u}「{mu2}」――体が覚えている快感に、{u}は入れられただけでイきかけた。{t}「{mt1}」――{s:cum}。|' +
@@ -74092,19 +74472,19 @@
     '{u}は自分から脚を開き、{t}の指を待った。{s:wet}。{u}「{mu1}」――二本、三本と増やされるたび、{u}の声は前の夜より甘くなった。');
   more(CE.again.fm, '{t}は前の夜と同じように{u}に跨がり、今度は最初から根元まで呑み込んだ。{s:wet}。{t}「{mt1}」――前の夜に覚えた{u}の弱いところを、{t}は締めつけで容赦なく責めた。{s:cum}。|' +
     '{t}は{u}を寝台に押し倒し、背中を向けて跨がり直した。{s:hit}。{u}「{mu2}」――見せつけるように腰を振られて、{u}は前の夜よりずっと早く果てた。{s:cum}。|' +
-    '{t}は{u}の上で腰を止め、ナカだけでぎゅうぎゅうと締め上げた。{s:wet}。{u}「{mu1}」――動かないまま搾られて、{u}は情けない声を上げて果てた。|' +
+    '{t}は{u}の上で腰を止め、{ナカ}だけでぎゅうぎゅうと締め上げた。{s:wet}。{u}「{mu1}」――動かないまま搾られて、{u}は情けない声を上げて果てた。|' +
     '扉を閉めるなり、{t}は{u}を床に押し倒して跨がった。{s:hit}。{t}「{mt1}」――前の夜の続きを待っていたのは、{t}のほうだった。{u}が空になるまで、{t}は降りなかった。{s:cum}。');
   more(CE.love.mf, '{t}は{u}と指を絡めたまま、根元までゆっくり沈めて奥をこね回した。{s:wet}。{u}「{mu1}」――好き、好き、と繰り返す{u}の唇を塞いで、{t}は奥にたっぷりと注いだ。{s:cum}。|' +
     '観測窓の前に毛布を敷き、{t}は星明かりの中で{u}を深く突き上げた。{s:hit}。{u}「{mu2}」――恋人の腕の中で、{u}は何度も続けてイった。|' +
     '無重力の夜、{t}は{u}を抱きかかえたまま宙で繋がり、下から何度も奥を叩いた。{s:hit}。{u}「{mu1}」――漂う体を{t}にしがみつかせて、{u}は甘い声で果てた。{t}「{mt1}」――{s:cum}。|' +
     '{t}は{u}を後ろから抱きしめ、首筋に口づけながらゆっくり奥を擦り続けた。{s:wet}。{u}「{mu2}」――果てても果てても離してもらえず、{u}は幸せそうに蕩けた。');
   more(CE.love.ff, '{t}は{u}の脚を開かせ、恋人の熱いところを丁寧に舐め上げた。{s:suck}。{u}「{mu1}」――大好きな舌に何度も追い上げられ、{u}は甘く震えながら果てた。|' +
-    '{t}は{u}を抱きしめたまま、ナカに沈めた指で奥をとんとんと叩き続けた。{s:wet}。{u}「{mu2}」――好き、と囁かれるたびに、{u}はきゅうきゅうと{t}の指を締めつけてイった。|' +
+    '{t}は{u}を抱きしめたまま、{ナカ}に沈めた指で奥をとんとんと叩き続けた。{s:wet}。{u}「{mu2}」――好き、と囁かれるたびに、{u}はきゅうきゅうと{t}の指を締めつけてイった。|' +
     '無重力の船室で、{t}は漂う{u}の腰を抱え、胸の先を吸いながら指を出し入れした。{s:wet}。{u}「{mu1}」――恋人にしがみついたまま、{u}は宙で何度も腰を跳ねさせた。|' +
     '{t}は{u}の内腿に口づけを落としてから、芽を舌でちゅうっと吸い上げた。{s:suck}。{u}「{mu2}」――果てた{u}の額に、{t}は「かわいい」と口づけた。');
   more(CE.love.fm, '{t}は{u}に跨がり、見つめ合ったまま根元まで腰を沈めてゆっくりと回した。{s:wet}。{t}「{mt1}」――{u}が果てる瞬間、{t}はその唇を塞いで一緒に昇りつめた。{s:cum}。|' +
-    '観測窓の星明かりを背に、{t}は{u}の上でぱちゅぱちゅと腰を弾ませた。{s:hit}。{u}「{mu1}」――恋人に搾り取られて、{u}は幸せそうに{t}のナカで果てた。{s:cum}。|' +
-    '無重力の夜、{t}は{u}の腰に脚を絡めたまま、宙でゆっくりと腰を揺らした。{s:wet}。{u}「{mu2}」――「好き」と囁かれるたびに、{u}は{t}のナカで脈打った。|' +
+    '観測窓の星明かりを背に、{t}は{u}の上でぱちゅぱちゅと腰を弾ませた。{s:hit}。{u}「{mu1}」――恋人に搾り取られて、{u}は幸せそうに{t}の{ナカ}で果てた。{s:cum}。|' +
+    '無重力の夜、{t}は{u}の腰に脚を絡めたまま、宙でゆっくりと腰を揺らした。{s:wet}。{u}「{mu2}」――「好き」と囁かれるたびに、{u}は{t}の{ナカ}で脈打った。|' +
     '{t}は{u}の胸に手をつき、恋人の顔を見下ろしながら締めつけたり緩めたりを繰り返した。{s:wet}。{t}「{mt1}」――焦らされ尽くした{u}は、{t}の名前を叫んで果てた。{s:cum}。');
 
   /* 受ける側の態度（{u}）：夜の種類ごと・態度9種 */
@@ -77249,9 +77629,9 @@
   var Y_ERO = {
     /* 媚薬が回ったとき（一人ずつ。{m0}＝こらえる声） */
     drug: L('{a}は服の擦れる感触だけで、びくりと腰を跳ねさせた。慌てて膝を閉じても、熱は脚の間に溜まっていく一方だった。{a}「{m0}」|{a}は椅子の上で膝をきつく閉じ、もじもじと腰を揺らしていた。じわりと下着が湿っていくのが、自分でも分かった。{a}「{m0}」|{a}は胸の先が布に擦れるたびに、小さく息を呑んだ。尖ったそこが、薄い服の上からでも分かるほどだった。{a}「{m0}」'),
-    soloM: L('{a}は布団を跳ねのけ、張りつめたちんぽを握りしめた。先走りでぬるぬるになった手を上下させるたびに、腰が勝手に跳ねた。{s:wet}。{a}「{m1}」――止めようと思っても、手は速くなる一方だった。|{a}は浴室の壁に額を押しつけ、熱を持て余したちんぽを扱き上げた。シャワーの水音に、いやらしい音が混ざって響いた。{s:wet}。{a}「{m1}」――声を殺そうとして噛んだ唇が、すぐにほどけた。|{a}は寝台の縁に腰かけ、脈打つものを両手で包み込んだ。媚薬のせいで、少し擦るだけで頭の奥が白く弾けそうだった。{s:wet}。{a}「{m1}」――指の間から、とろりと先走りが溢れた。'),
+    soloM: L('{a}は布団を跳ねのけ、張りつめた{男性器}を握りしめた。先走りでぬるぬるになった手を上下させるたびに、腰が勝手に跳ねた。{s:wet}。{a}「{m1}」――止めようと思っても、手は速くなる一方だった。|{a}は浴室の壁に額を押しつけ、熱を持て余した{男性器}を扱き上げた。シャワーの水音に、いやらしい音が混ざって響いた。{s:wet}。{a}「{m1}」――声を殺そうとして噛んだ唇が、すぐにほどけた。|{a}は寝台の縁に腰かけ、脈打つものを両手で包み込んだ。媚薬のせいで、少し擦るだけで頭の奥が白く弾けそうだった。{s:wet}。{a}「{m1}」――指の間から、とろりと先走りが溢れた。'),
     soloF: L('{a}は寝間着の裾をたくし上げ、とろとろに濡れたそこへ指を沈めた。一本では足りず、すぐに二本目を咥え込んだ。{s:wet}。{a}「{m1}」――指を曲げるたびに、腰が勝手に浮いた。|{a}は浴室の壁にもたれ、脚の間に指を這わせた。膨らんだ芽を擦るたびに、膝ががくがくと震えた。{s:wet}。{a}「{m1}」――水音にまぎれて、甘い声が浴室に響いた。|{a}は枕を脚の間に挟み、腰を擦りつけた。それでは足りなくて、自分の指で奥を掻き回した。{s:wet}。{a}「{m1}」――シーツに、恥ずかしい染みが広がっていった。'),
-    soloMc: L('{a}「{m2}」――{a}は背を反らし、びゅくびゅくと何度も吐き出した。{s:cum}。シーツに散った白いものを見下ろしても、熱はまだ引かなかった。|{a}「{m2}」――手の中で、ちんぽが大きく跳ねた。{s:cum}。吐き出しても吐き出しても、硬さは少しも収まらなかった。|{a}「{m2}」――腰を突き出したまま、{a}は勢いよく精を放った。{s:cum}。濡れた手を見つめて、{a}は荒い息をついた。'),
+    soloMc: L('{a}「{m2}」――{a}は背を反らし、びゅくびゅくと何度も吐き出した。{s:cum}。シーツに散った白いものを見下ろしても、熱はまだ引かなかった。|{a}「{m2}」――手の中で、{男性器}が大きく跳ねた。{s:cum}。吐き出しても吐き出しても、硬さは少しも収まらなかった。|{a}「{m2}」――腰を突き出したまま、{a}は勢いよく精を放った。{s:cum}。濡れた手を見つめて、{a}は荒い息をついた。'),
     soloFc: L('{a}「{m2}」――{a}は指を咥え込んだまま、びくびくと痙攣して果てた。中が指をきゅうきゅうと締めつけて、なかなか離さなかった。溢れた蜜が、手首まで伝っていた。|{a}「{m2}」――爪先をぴんと伸ばして、{a}はイった。ぷしゃっ、と恥ずかしい音がして、シーツがぐっしょりと濡れた。それでも、疼きは消えなかった。|{a}「{m2}」――腰を浮かせたまま、{a}は長く果てた。指を抜いたあとも、中がひくひくと物欲しげに震えていた。'),
     soloAgain: L('{a}は息を整える間もなく、また手を伸ばした。二度目は、一度目よりずっと敏感だった。{a}「{m2}」――夜が白むまで、{a}の部屋から甘い声が途切れることはなかった。|一度果てても、媚薬の熱は少しも引かなかった。{a}は濡れた手のまま、また自分を慰め始めた。{a}「{m1}」――三度目を数えたところで、{a}は数えるのをやめた。|{a}はシーツを握りしめたまま、また自分の熱に手を伸ばした。{s:wet}。{a}「{m2}」――二度目は、一度目よりあっけなく果ててしまった。|{a}は果てたばかりの体を丸め、それでも指を止められなかった。{s:wet}。{a}「{m1}」――吹雪の音に紛れて、{a}は三度目の波に呑まれた。|{a}「{m2}」――熱は引くどころか、果てるたびに強くなっていった。{s:wet}。{a}が眠りに落ちたのは、窓の外が白みはじめてからだった。'),
     /* 濃い・小説調：一人の夜の続き */
@@ -77261,7 +77641,7 @@
     topF: L('{a}は使用人を寝台に押し倒して跨り、自分のいいところに当たるように腰をくねらせた。使用人が果てそうになるたびに、{a}は動きを止めて焦らした。{s:wet}。{a}「{m1}」――{a}が満足するまで、使用人は解放されなかった。|{a}は使用人の顔の上に跨り、舌で奉仕させた。使用人の舌が奥まで這うたびに、{a}は髪を掴んで引き寄せた。{s:wet}。{a}「{m1}」――{a}は使用人の顔をびしょびしょに濡らして果てた。|{a}は使用人を椅子に座らせ、その膝に跨って腰を沈めた。{s:wet}。{a}「{m1}」――使用人の手が肘掛けを握りしめるのを見下ろして、{a}は楽しげに腰を揺らした。|{a}は使用人の顔の上に跨り、舌で奉仕させた。{s:suck}。{a}「{m1}」――髪を掴んで逃がさないまま、{a}は何度も腰を震わせて達した。|{a}「{m1}」――{a}は使用人の胸に手をつき、自分のいいところに当たる角度を探して腰を落とした。{s:wet}。使用人が果てそうになるたびに、{a}は動きを止めて笑った。'),
     topAgain: L('{a}はひと息つくと、また使用人を組み敷いた。夜は、まだ長かった。使用人が部屋を出られたのは、空が白みはじめてからだった。|一度では収まらず、{a}は使用人に二度目を命じた。使用人は、もう逆らう気力も残っていなかった。夜明けまで、{a}は使用人を手放さなかった。|使用人がぐったりと崩れても、{a}はまだ満足しなかった。体を返させ、もう一度最初から責め直した。|{a}は水差しの水を一口飲むと、また使用人の上に覆いかぶさった。吹雪の夜は、まだ長かった。|夜明け前、使用人はとうとう声も出せなくなっていた。それでも{a}は、最後にもう一度だけ使用人を求めた。'),
     /* 乱交（{a}{b}{c}＝その場の三人。{ma}{mb}{mc}＝それぞれの声） */
-    group: L('{s:hit}。{s:wet}。{p}のあちこちで、肌のぶつかる音と水音が重なり合った。後ろから突かれながら、{a}は目の前の誰かの肌に縋りついた。{a}「{ma}」――その声に煽られて、{b}も夢中で腰を揺らした。{b}「{mb}」――{c}が果てる声を合図に、絡み合った体が次々に震えた。{c}「{mc}」|{p}の床で、{a}は誰かのちんぽを咥えさせられたまま、別の誰かに奥を突き上げられていた。{s:hit}。{a}「{ma}」――隣では{b}が、両側から胸と脚の間を同時に責められていた。{b}「{mb}」――{c}は誰に注がれたのかも分からないまま、とろけた顔でまた次をねだった。{c}「{mc}」|{s:wet}。{s:hit}。{p}の長椅子の上で、{a}は{b}に組み敷かれ、{c}の指に胸を弄ばれていた。{a}「{ma}」――誰かの脚が絡みつき、誰かの吐息が首筋にかかった。{b}「{mb}」――{b}が果てる震えが伝わり、{c}も堪えきれずに声を上げた。{c}「{mc}」'),
+    group: L('{s:hit}。{s:wet}。{p}のあちこちで、肌のぶつかる音と水音が重なり合った。後ろから突かれながら、{a}は目の前の誰かの肌に縋りついた。{a}「{ma}」――その声に煽られて、{b}も夢中で腰を揺らした。{b}「{mb}」――{c}が果てる声を合図に、絡み合った体が次々に震えた。{c}「{mc}」|{p}の床で、{a}は誰かの{男性器}を咥えさせられたまま、別の誰かに奥を突き上げられていた。{s:hit}。{a}「{ma}」――隣では{b}が、両側から胸と脚の間を同時に責められていた。{b}「{mb}」――{c}は誰に注がれたのかも分からないまま、とろけた顔でまた次をねだった。{c}「{mc}」|{s:wet}。{s:hit}。{p}の長椅子の上で、{a}は{b}に組み敷かれ、{c}の指に胸を弄ばれていた。{a}「{ma}」――誰かの脚が絡みつき、誰かの吐息が首筋にかかった。{b}「{mb}」――{b}が果てる震えが伝わり、{c}も堪えきれずに声を上げた。{c}「{mc}」'),
     groupFF: L('指と舌が、誰のものか分からないまま肌を這い回った。{s:wet}。{a}は{b}の指を奥まで咥え込み、{c}に胸の先を吸われていた。{a}「{ma}」――{b}は{a}に脚を絡めたまま、{c}の指で何度も果てた。{b}「{mb}」――最後に{c}が、二人に挟まれて甘い声を上げた。{c}「{mc}」|{p}のソファの上で、三人は脚を絡め合い、互いの濡れたところへ指を伸ばした。{s:wet}。{a}「{ma}」――{b}は{a}の胸に顔を埋め、{c}の指を奥へ奥へと誘い込んだ。{b}「{mb}」――{c}は二人の舌に挟まれて、腰を浮かせたまま震えた。{c}「{mc}」|{s:wet}。{p}の絨毯の上で、{a}は{b}の膝に頭を預け、{c}の舌に脚のあいだを責められていた。{a}「{ma}」――{b}は{a}の髪を撫でながら、自分の胸の先を{c}の指に摘ままれていた。{b}「{mb}」――三人分の甘い声が、吹雪の音に溶けていった。{c}「{mc}」')
   };
   /* 一人で悶える場面の本文（男性向け）。濃い＝もう一度。短く＝山場だけ */
@@ -78103,7 +78483,7 @@
     mirror: L('鏡の中の{a}が、鏡の外へ手を伸ばしてきた。自分と同じ顔、同じ体の何かに組み敷かれ、{a}は自分の手で、自分の知らない場所を暴かれていった。|鏡の向こうから、{a}と同じ顔が微笑んだ。次の瞬間、{a}は鏡の中に引き込まれ、自分自身の手に、自分のいちばん弱いところを探り当てられていた。|合わせ鏡の奥から、何人もの{a}が這い出してきた。同じ顔の群れに囲まれ、{a}は自分の声で喘ぐ自分たちの中で、正気を手放していった。'),
     wedding: L('{a}は白無垢を着せられ、床入りの褥に横たえられた。綿帽子の下の何かが、{a}の裾を割り、冷たいものを奥まで沈めてきた。村人たちは、襖の向こうで祝いの謡を歌っていた。|祝言の盃を無理やり飲まされた{a}は、褥の上で帯を解かれた。顔の見えない婿の冷たい手が、花嫁の肌を一寸ずつ確かめていった。|三三九度の謡が終わると、襖が閉められた。暗い座敷で、{a}は婿とも神ともつかないものに、夜通し花嫁として扱われた。'),
     feast: L('宴の輪の村人たちが、{a}を苔の上に押し倒した。何本もの手と、獣のような腰が、代わる代わる{a}を貫いた。|葡萄酒の雨に濡れた{a}は、宴の輪の中心に引き込まれた。苔の上で何本もの腕に抱え込まれ、{a}は歌声の中で代わる代わる求められた。|黒山羊の面をつけた村人たちが、{a}の手足を押さえて苔に縫いとめた。土の匂いと獣の匂いの中で、{a}は宴の供物になった。'),
-    books: L('書庫の本から這い出した掌の口が、{a}の体じゅうに吸いついた。乳首にも、脚のあいだにも。{a}は書架に縋りながら、何度も達した。|開いた頁から墨のような触手が伸び、{a}の手首を本棚に縛りつけた。文字が肌の上を這い、読まれるたびに{a}の体は熱く疼いた。|書架の隙間から伸びた何本もの手が、{a}の服を一枚ずつ剥いでいった。掌の口が囁く言葉に、{a}の体は勝手に応えていた。'),
+    books: L('書庫の本から這い出した掌の口が、{a}の体じゅうに吸いついた。{乳首}にも、脚のあいだにも。{a}は書架に縋りながら、何度も達した。|開いた頁から墨のような触手が伸び、{a}の手首を本棚に縛りつけた。文字が肌の上を這い、読まれるたびに{a}の体は熱く疼いた。|書架の隙間から伸びた何本もの手が、{a}の服を一枚ずつ剥いでいった。掌の口が囁く言葉に、{a}の体は勝手に応えていた。'),
     theater: L('{a}は舞台の上に引き出された。黄色い襤褸の役者が、台本どおりに{a}を床に組み伏せた。客席の観客たちは、身じろぎもせずにそれを見ていた。|幕が上がると、{a}は舞台の中央に縛られていた。黄衣の役者たちが代わる代わる{a}にのしかかり、客席から、乾いた拍手が湧いた。|台本の頁がめくられるたびに、{a}の衣装が一枚ずつ剥がされていった。最後の頁で、{a}は舞台の上で声を上げて果てた。'),
     reef: L('潮だまりから這い上がった深きものが、{a}を岩の上に押さえつけた。ぬめる鱗の腰が打ちつけられ、{a}の中に、冷たい卵のようなものが注ぎ込まれた。|満ち潮とともに、深きものの群れが{a}を岩場に引きずり上げた。冷たい水かきの手に体じゅうを撫で回され、{a}は波音の中で喘いだ。|岩礁の潮だまりに沈められた{a}の体に、ぬめる腕が何本も絡みついた。息継ぎのたびに、{a}の声は甘く崩れていった。'),
     temple: L('神殿の壁画から抜け出した触手が、{a}の手足を絡め取った。狂った角度の石段の上で、{a}は宙吊りのまま、奥の奥まで犯された。|狂った角度の回廊を逃げるうちに、{a}は同じ場所に戻されていた。壁から伸びた触手に絡め取られ、{a}は石の祭壇の上に横たえられた。|神殿の柱に刻まれた紋様が、{a}の肌に浮かび上がった。紋様が光るたびに、{a}の体は見えない何かに奥まで暴かれた。')
@@ -79467,9 +79847,9 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', toggleUI); else toggleUI();
   /* ---------- 結果の文をまろやかにする ---------- */
   /* はっきり性的な文：その場面を「二人だけの秘密」に置き換える */
-  var HARD = /挿入|挿れ|中出し|中に出|精液|白濁|射精|イく|イっ|イッ|イか|イキ|絶頂|乳首|股間|陰部|ペニス|性器|秘所|秘部|腰を振|腰を打ち|突き上げ|奥まで|奥へ|奥に|奥を|最奥|膣|フェラ|咥え|口に含|舐め|舌を這|愛液|勃|跨|騎乗|正常位|後背位|座位|寝バック|立ちバック|全裸|裸に|服を剥|服の中|下着|胸を揉|揉みしだ|押し倒|セックス|性行為|避妊|孕|ノット|結び目|種付|注ぎ込|腰を沈|腰を落と|喘ぎ|喘い|果て|あられもない|しゃぶ|迎え入れ|受け入れていた|繋がり|繋がった|繋がって|押し入|達し|寸止め|一突き|揺れ続け|唇を這わ|全身に唇|服は[^。]*床に落ち|数ミリの揺れ|身悶え|擦れ|軋む|軋ん/;
+  var HARD = /挿入|挿れ|中出し|中に出|精液|白濁|射精|イく|イっ|イッ|イか|イキ|絶頂|乳首|股間|陰部|ペニス|性器|秘所|秘部|腰を振|腰を打ち|突き上げ|奥まで|奥へ|奥に|奥を|最奥|膣|フェラ|咥え|口に含|舐め|舌を這|愛液|勃|跨|騎乗|正常位|後背位|座位|寝バック|立ちバック|全裸|裸に|服を剥|服の中|下着|胸を揉|揉みしだ|押し倒|セックス|性行為|避妊|孕|ノット|結び目|種付|注ぎ込|腰を沈|腰を落と|喘ぎ|喘い|果て|あられもない|しゃぶ|迎え入れ|受け入れていた|繋がり|繋がった|繋がって|押し入|達し|寸止め|一突き|揺れ続け|唇を這わ|全身に唇|服は[^。]*床に落ち|数ミリの揺れ|身悶え|擦れ|軋む|軋ん|\{(?:男性器|亀頭|女性器|陰核|ナカ|乳首|後ろ|精液|愛液|股間)\}/;
   /* ほのめかし程度の文：黙って消す */
-  var SOFT = /乾いている|しよ？|楽しもう|ガスのせいにしちゃ|我慢しなくていい|脱ぎ|ベルトを外|服にも手を|濡れて|濡らし|脱が|脱い|気持ちよ|気持ちい|(?:快感|快楽|刺激|甘い痺れ|熱|奥|そこ)(?:を|で|が)?感じ|感じやす|感じちゃ|感じてしま|感じさせ|焦らさ|焦らし|焦れ|ねだ|数センチ|脚を絡|脚の間|きちゃ|疼|敏感|太腿|内腿|ずぶ|吸い付|吸いつ|腰に触れ|腰をすり|指を這|乱れた息|とろけ|蕩け|弄|声を漏らし|甘い声|甘い音|体の奥|潤滑|谷間|胸の膨らみ|鼠径|お尻の丸み|そこへ導/;
+  var SOFT = /乾いている|しよ？|楽しもう|ガスのせいにしちゃ|我慢しなくていい|脱ぎ|ベルトを外|服にも手を|濡れて|濡らし|脱が|脱い|気持ちよ|気持ちい|(?:快感|快楽|刺激|甘い痺れ|熱|奥|そこ)(?:を|で|が)?感じ|感じやす|感じちゃ|感じてしま|感じさせ|焦らさ|焦らし|焦れ|ねだ|数センチ|脚を絡|脚の間|きちゃ|疼|敏感|太腿|内腿|ずぶ|吸い付|吸いつ|腰に触れ|腰をすり|指を這|乱れた息|とろけ|蕩け|弄|声を漏らし|甘い声|甘い音|体の奥|潤滑|谷間|胸の膨らみ|鼠径|お尻の丸み|そこへ導|\{(?:胸|尻)\}/;
   var FADE = ['――その先のことは、二人だけの秘密だ。', '――そこから先は、閉じた扉の向こうの話だ。', '――夜は、静かに更けていった。', '――翌朝、二人は少しだけ照れくさそうに目を逸らした。'];
   var WORD = [[/発情していた/g, '火照っていた'], [/発情して/g, '火照って'], [/発情し/g, '火照っ'], [/ベッドで激しく/g, 'ベッドで朝まで'], [/激しいセックス/g, '二人きりの夜'], [/絶頂/g, '高鳴り'], [/快感/g, '高鳴り'], [/堕ちた/g, '流された'], [/発情/g, '火照り'], [/媚薬/g, '媚薬'], [/喘ぎ声/g, '吐息'], [/堕ち度/g, '揺らぎ'], [/快楽に/g, '誘惑に'], [/快楽/g, '心地よさ'], [/堕ち/g, '流され']];
   /* 先に言い換える語（施術の名前・方針の名前など） */
@@ -84633,7 +85013,7 @@
   };
   /* 結果を作る前に、古い設定の値を読み替える。
      R18版で描写の有無が「ほのめかす」のときは、共通の出来事（執着・敵対など）に残ったはっきりした文を、全年齢と同じ方法でまろやかにする（safe.js の HK.SafeText） */
-  var EXPL = /果て|達し|イ[っッくかきキ]|挿|喘|貫|腰を[振沈打揺使]|繋が|奥まで|突き上げ|絶頂|♡|射精|精液|ちんぽ|ナカ/;
+  var EXPL = /果て|達し|イ[っッくかきキ]|挿|喘|貫|腰を[振沈打揺使]|繋が|奥まで|突き上げ|絶頂|♡|射精|精液|ちんぽ|ナカ|\{(?:男性器|亀頭|女性器|陰核|ナカ|精液|愛液)\}/;
   if (HK.simulate && !HK.simulate._lewd) {
     var sim0 = HK.simulate;
     HK.simulate = function (input) {
@@ -84715,6 +85095,59 @@
   /* 媚薬ロッカー：もとの「描写の濃さ」をそのまま読み替え、長さ・作風を追加（solo-locker.js・locker-thick.js）。男性向けは、相手が応じた行為と扉が開いたあとの夜だけ */
   X.install('locker', { desc: D.locker });
   X.install('goukon', { old: ['gnlewd'], from: { lewdLen: function (e) { return e.gnlewd; } }, desc: D.goukon });
+})();
+;/* ==== js/lewd-mark.js ==== */
+/* 箱庭シミュレーター: 体の語の印（{…}）の後始末（両ビルド共通。このファイルには性的な語を書かない）
+   R18の文では体の語を印で書き、R18版の lewd-words.js が結果を仕上げるときに語へ置き換える（印の一覧と書き方は docs/reports/2026-10-26/lewd-words.md）。
+   ここは保険：結果のどこかに印が残っていたら（全年齢モード・全年齢版・置き換えの表がない・記録の外の文）、
+   ・R18版で全年齢モードでなく、置き換えの関数（HK.LewdWords.plain）があれば、地の文の列で置き換える
+   ・そうでなければ、無難な語（「そこ」など）に替える
+   全年齢版の bundle には印そのものが入らない（hakoniwa-tools/build/build.js の検査で止まる）ので、全年齢版でこの後始末が働くことはふつうない */
+(function () {
+  'use strict';
+  var HK = window.HK;
+  if (!HK || !HK.simulate || HK.simulate._lewdMark) return;
+  /* 印の形：{ と } で挟んだ、かな・漢字の1〜3字。口調の辞書の活用の印（{る}{た}{て}{ない}{よう}{なかった}）や {役} は除く */
+  var GEN = /\{([ぁ-ヿ一-鿿]{1,3})\}/g;
+  var NOT = { 'る': 1, 'た': 1, 'て': 1, 'ない': 1, 'よう': 1, 'なかった': 1, '役': 1 };
+  /* 無難な語（印の名前 → 語。ない印は「そこ」） */
+  var SAFE = { '胸': '胸', '尻': '腰', '後ろ': '後ろ', 'ナカ': '奥' };
+  function safeText(t) {
+    return t.replace(GEN, function (m, k) { return NOT[k] ? m : SAFE[k] || 'そこ'; });
+  }
+  function has(t) {
+    if (t.indexOf('{') < 0) return false;
+    GEN.lastIndex = 0;
+    var m, hit = false;
+    while ((m = GEN.exec(t))) { if (!NOT[m[1]]) { hit = true; break; } }
+    GEN.lastIndex = 0;
+    return hit;
+  }
+  function fix(t, env) {
+    if (!has(t)) return t;
+    var LW = HK.LewdWords;
+    if (!HK.SAFE_ON && LW && LW.plain) { try { t = LW.plain(t, env); } catch (e) { /* 下で無難な語に */ } }
+    return has(t) ? safeText(t) : t;
+  }
+  /* 結果の全体をたどって、文字列に残った印を直す */
+  function walk(o, env, seen) {
+    if (typeof o === 'string') return fix(o, env);
+    if (!o || typeof o !== 'object' || seen.has(o)) return o;
+    seen.add(o);
+    if (Array.isArray(o)) { for (var i = 0; i < o.length; i++) { var v = o[i]; if (v && (typeof v === 'string' || typeof v === 'object')) o[i] = walk(v, env, seen); } return o; }
+    Object.keys(o).forEach(function (k) { var v = o[k]; if (v && (typeof v === 'string' || typeof v === 'object')) { var w = walk(v, env, seen); if (w !== v) o[k] = w; } });
+    return o;
+  }
+  HK.LewdMark = { has: has, fix: fix, safe: safeText };
+  var sim0 = HK.simulate;
+  HK.simulate = function (input) {
+    var r = sim0.apply(this, arguments);
+    try { if (r && typeof r === 'object') walk(r, (input && input.env) || {}, new Set()); } catch (e) { /* 後始末に失敗しても結果は返す */ }
+    return r;
+  };
+  /* 前の包みの印（_lewd など）を引き継ぐ */
+  Object.keys(sim0).forEach(function (k) { HK.simulate[k] = sim0[k]; });
+  HK.simulate._lewdMark = true;
 })();
 ;/* ==== js/futari-r18.js ==== */
 /* 箱庭シミュレーター: ふたりの日常の夜（R18版のみ。scenario-futari.js・lewd-unify.js より後に読む）
@@ -84953,4 +85386,191 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build); else build();
   HK.resetStorage = wipe;
+})();
+;/* ==== js/voice-seg.js ==== */
+/* 箱庭シミュレーター: 台詞・地の文・引用の区分（seg）
+   結果の記録（log）の各項目 e に、文を区分ごとに分けた e.seg を付ける（e.text はこれまでどおり残す）。
+     e.seg = [{ t:'n', s:'地の文' }, { t:'l', who:0, s:'アキラ「台詞」', nm:3, h:1 }, …]（s をつなぐと e.text と同じ）
+     t … n 地の文／l 台詞行（文の頭か、名前「 の直後。話し手あり）／q 地の文に埋まった発話（話し手あり）／
+         c 名詞の引用（「〜」という話・札の文字。口調を変えない）／m 喘ぎ・モブ（話し手なし。名前「 の形なら who にその人）／u 話し手が決まらない発話
+     who … 話し手の住人の番号（input.chars・res.chars・res.heroes の番号）。nm … s の頭の名前の長さ（名前「 の形のとき）
+     h … 長い文の改行で一つの台詞の塊になるもの（core.js の HK.fmtLong と同じ規則。同じ番号が一つの塊）
+   区分と話し手は voice.js の processText が台詞を整えるときに決め（V._segBuf）、この包みが、ほかの仕上げ（全年齢の言い換え・
+   語の差し替えなど）がすべて済んだあとで、できあがった文に合わせて e.seg にする。台詞の中身が変わって合わせられないときは、文から決め直す。
+   e.seg は数え上げない属性（保存・共有・履歴の JSON には入らない）。保存から開いた記録は HK.Seg.of(e, 名前の一覧) で作り直す。
+   この包みは、HK.simulate を包むほかのどの処理よりも後（_order.txt の最後の方）に読むこと */
+(function () {
+  'use strict';
+  var HK = window.HK, V = HK.Voice || {};
+  var S = HK.Seg = {};
+  /* 合わせ方の件数（点検用。seg-audit.js）：中身で合った／順番で合った／文から決め直した */
+  S.stat = { content: 0, order: 0, redo: 0 };
+  var NM = /⁤/g;
+  function hide(o, k, v) { Object.defineProperty(o, k, { value: v, configurable: true, writable: true, enumerable: false }); }
+
+  /* いちばん外側の「」の位置（voice.js の processText と同じ数え方：（……）の心の声は飛ばす） */
+  function quotes(t) {
+    var out = [], depth = 0, st = -1;
+    for (var i = 0; i < t.length; i++) {
+      var ch = t[i];
+      if (ch === '（' && depth === 0) { var cl = t.indexOf('）', i); if (cl > i) { i = cl; continue; } }
+      if (ch === '「') { if (depth === 0) st = i; depth++; }
+      else if (ch === '」' && depth > 0) { depth--; if (depth === 0 && st >= 0) { out.push({ a: st, b: i }); st = -1; } }
+    }
+    return out;
+  }
+  S.quotes = quotes;
+
+  /* processText が集めた区分（buf）に、整えたあとの台詞の中身を添えて、記録に隠して持たせる（voice.js の processResult から） */
+  S.keep = function (e, buf) {
+    if (!e || !buf || !buf.length) return;
+    var Q = quotes(e.text);
+    if (Q.length === buf.length) Q.forEach(function (x, k) { buf[k].s = e.text.slice(x.a + 1, x.b).replace(NM, ''); });
+    hide(e, '_sq', buf);
+  };
+
+  /* 長い文の改行の塊（core.js の HK.fmtLong と同じ規則）：[開始, 終わり) の一覧 */
+  function blocks(text, R) {
+    var out = [], TK = '\u0000', pos = 0;
+    text.split(/(\n+)/).forEach(function (part, k) {
+      if (k % 2) { pos += part.length; return; }
+      var lead = part.length - part.replace(/^\s+/, '').length, line = part.trim();
+      if (line && HK.fmtMarkLine) {
+        var marked = HK.fmtMarkLine(line, R, TK), o = pos + lead, inB = false, bs = 0;
+        for (var i = 0; i < marked.length; i++) {
+          if (marked[i] === TK) { if (inB) out.push([bs, o]); else bs = o; inB = !inB; continue; }
+          o++;
+        }
+      }
+      pos += part.length;
+    });
+    return out;
+  }
+
+  /* 話し手の決まらない「」（u）を、文の形で分け直す（言い換えには使わない。区分だけ）：
+     題名・名詞の引用（c）／住人でない誰かの発話（m。「司会の〇〇「……」」「誰かが「……」と漏らした」）／それ以外は u のまま */
+  var BOUND = /[。！？!?」\n]|――/g;
+  function lastBound(s) { var cut = 0, m; BOUND.lastIndex = 0; while ((m = BOUND.exec(s))) cut = m.index + m[0].length; return cut; }
+  var FRAME = /(?:目標|最初|型|名前|名|題|題名|テーマ|お題|命令|暗示|合言葉|看板|札|文字|口癖|モットー|メニュー|コース|項目|内容|方針|作戦|役|役割|職業|称号|あだ名|呼び名|答え|正解|お告げ|条件|ルール|指示|罰ゲーム|ゲーム|種目|企画)(?:は|が|も)?、?\s*$/;
+  function refine(text, a, b, names) {
+    var q = text.slice(a + 1, b), post = text.slice(b + 1, b + 9), pre = text.slice(0, a), cut = lastBound(pre), span = pre.slice(cut);
+    var sp = V.speechy ? V.speechy(q) : true;
+    if (FRAME.test(span) || /[：:→]\s*$/.test(span)) return 'c';
+    if (!sp && (/^(?:する|して|し[、た]|され|な(?!が)|だ|です|とか|など|まで|より|から|で|も|は|。|、)/.test(post) || text[a - 1] === '」' || text[b + 1] === '「' || /[^、。\sはがもをにでとへのや]$/.test(span))) return 'c';
+    if (span.trim()) return 'm';
+    if (cut > 0 && V.mobSubj) { var pv = pre.slice(0, cut - 1); if (V.mobSubj(pv.slice(lastBound(pv)), names.map(function (n) { return { name: n }; }))) return 'm'; }
+    return 'u';
+  }
+
+  /* 文 text を seg に分ける。names は住人の名前（番号順）、sq は processText が集めた区分（なければ文から決める） */
+  S.build = function (text, names, sq) {
+    text = String(text == null ? '' : text);
+    var R = HK.fmtSpeech ? HK.fmtSpeech(names) : null, Q = quotes(text), people = null;
+    var B = R ? blocks(text, R) : [];
+    /* 区分を台詞に合わせる：中身が同じものを先に（全年齢の言い換えで消えた台詞は飛ばす）、数が同じなら順番で */
+    var j = 0, D = Q.map(function (x, k) {
+      var s = text.slice(x.a + 1, x.b);
+      if (sq && j < sq.length) {
+        for (var d = j; d < Math.min(sq.length, j + 5); d++) if (sq[d].s != null && sq[d].s === s) { j = d + 1; S.stat.content++; return sq[d]; }
+        if (sq.length === Q.length) { j = k + 1; S.stat.order++; return sq[k]; }
+      }
+      /* 文から決め直す（voice.js の V.quoteKind） */
+      S.stat.redo++;
+      if (!V.quoteKind) return { k: 'u', w: -1 };
+      people = people || names.map(function (n) { return { name: n || '' }; });
+      return V.quoteKind(text, x.a, x.b, people);
+    });
+    /* 塊が台詞の区切りとそろっているか（そろっていなければ HK.fmtLong は seg を使わず、これまでの方法で改行する） */
+    var blk = true, hOf = [], pre = [];
+    B.forEach(function (b, bi) {
+      var inside = Q.map(function (x, k) { return k; }).filter(function (k) { return Q[k].a >= b[0] && Q[k].b < b[1]; });
+      if (!inside.length) { blk = false; return; }
+      var f = inside[0], l = inside[inside.length - 1];
+      if (Q[l].b + 1 !== b[1]) blk = false;
+      for (var k = f; k < l; k++) if (Q[k].b + 1 !== Q[k + 1].a) blk = false;
+      if (inside.length !== l - f + 1) blk = false;
+      pre[f] = Q[f].a - b[0];
+      if (/[「」]/.test(text.slice(b[0], Q[f].a))) blk = false;
+      inside.forEach(function (k) { hOf[k] = bi + 1; });
+    });
+    var seg = [], at = 0;
+    Q.forEach(function (x, k) {
+      var d = D[k] || { k: 'u', w: -1 }, h = hOf[k] || 0, nm = h && pre[k] > 0 ? pre[k] : 0;
+      /* 塊でない「名前「……」」（前の台詞に続く「アキラ「……」ミナト「……」」の二つ目など）も台詞行。名前は台詞の側に入れる */
+      if (!nm && !h) nm = nameAt(text, x.a, names);
+      if (nm && x.a - nm < at) { nm = 0; if (h) blk = false; }
+      var from = x.a - nm;
+      if (from > at) seg.push({ t: 'n', s: text.slice(at, from) });
+      var t = d.k === 's' ? (h || nm ? 'l' : 'q') : d.k === 'u' ? refine(text, x.a, x.b, names) : d.k;
+      var o = { t: t, s: text.slice(from, x.b + 1) };
+      if (d.w >= 0) o.who = d.w;
+      if (nm) o.nm = nm;
+      if (h) o.h = h;
+      seg.push(o);
+      at = x.b + 1;
+    });
+    if (at < text.length || !seg.length) seg.push({ t: 'n', s: text.slice(at) });
+    seg.blk = blk;
+    seg.nk = R ? R.key : '';
+    return seg;
+  };
+  /* 「 の直前の住人の名前の長さ（名前の前が文の切れ目・閉じ括弧などのとき。なければ 0） */
+  function nameAt(text, a, names) {
+    var best = 0;
+    names.forEach(function (n) {
+      if (!n || n.length <= best || text.slice(a - n.length, a) !== n) return;
+      var c = text.charAt(a - n.length - 1);
+      if (!c || !/[ぁ-んァ-ヶー一-鿿々A-Za-z0-9０-９Ａ-Ｚａ-ｚ]/.test(c)) best = n.length;
+    });
+    return best;
+  }
+  S.text = function (seg) { return (seg || []).map(function (x) { return x.s; }).join(''); };
+  /* HK.fmtLong 用：塊の前後に印を入れた文 */
+  S.markTK = function (seg, TK) {
+    return seg.map(function (x, i) {
+      if (!x.h) return x.s;
+      var p = seg[i - 1], n = seg[i + 1];
+      return (p && p.h === x.h ? '' : TK) + x.s + (n && n.h === x.h ? '' : TK);
+    }).join('');
+  };
+  /* 記録 e の seg（なければ・文が変わっていれば作り直す）。names は住人の名前の一覧か、res（res.chars・res.heroes から取る） */
+  function namesOf(x) {
+    if (Array.isArray(x)) return x.map(function (c) { return typeof c === 'string' ? c : c && c.name || ''; });
+    var L = x && (x.chars && x.chars.length ? x.chars : x.heroes) || [];
+    return L.map(function (c) { return c && c.name || ''; });
+  }
+  S.of = function (e, names) {
+    if (!e || typeof e.text !== 'string') return [];
+    if (e.seg && S.text(e.seg) === e.text) return e.seg;
+    var seg = S.build(e.text, namesOf(names));
+    hide(e, 'seg', seg);
+    return seg;
+  };
+  /* 台詞行（l）の話し手（出た順・重なりなし） */
+  S.speakers = function (seg, kinds) {
+    var out = [], K = kinds || 'l';
+    (seg || []).forEach(function (x) { if (K.indexOf(x.t) >= 0 && x.who >= 0 && out.indexOf(x.who) < 0) out.push(x.who); });
+    return out;
+  };
+  /* 発話（台詞行・埋まった発話・モブ・決まらない発話）があるか（画面の吹き出し） */
+  S.talk = function (seg) { return (seg || []).some(function (x) { return /^[lqmu]$/.test(x.t); }); };
+
+  /* いちばん外側の包み：ほかの仕上げがすべて済んだ文に合わせて e.seg を作る */
+  if (HK.simulate && !HK.simulate._seg) {
+    var sim0 = HK.simulate;
+    HK.simulate = function (input) {
+      var r = sim0.apply(this, arguments);
+      if (r && Array.isArray(r.log)) {
+        var names = namesOf(input && input.chars && input.chars.length ? input.chars : r);
+        r.log.forEach(function (e) {
+          if (!e || typeof e !== 'object') return;
+          try { if (typeof e.text === 'string') hide(e, 'seg', S.build(e.text, names, e._sq)); } catch (err) { /* 区分に失敗しても結果は返す */ }
+          if (e._sq) delete e._sq;
+        });
+      }
+      return r;
+    };
+    for (var k in sim0) if (Object.prototype.hasOwnProperty.call(sim0, k)) HK.simulate[k] = sim0[k];
+    HK.simulate._seg = true;
+  }
 })();

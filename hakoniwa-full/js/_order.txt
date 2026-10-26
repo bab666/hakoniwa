@@ -93,6 +93,7 @@ js/content.js
 js/mood-dial.js
 js/mob.js
 js/ero-kit.js
+js/lewd-words.js
 js/part-words.js
 js/ero-moan-tone.js
 js/novel-moan-tone.js
@@ -418,6 +419,7 @@ js/obsess-omega.js
 js/grief-kit.js
 js/dark-thick.js
 js/lewd-unify.js
+js/lewd-mark.js
 js/futari-r18.js
 js/reset.js
 js/voice-seg.js

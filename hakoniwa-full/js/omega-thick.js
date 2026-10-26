@@ -720,7 +720,7 @@
     return { short: c ? X.short(ctx.env, ctx.rng) : false, ero: !!(c && X.ero(ctx.env) && HK.ThickEro) };
   }
   /* 結び（α×Ω）の男性向け：{a}＝α（攻め）、{b}＝受け */
-  var KNOT_ERO = L('{a}の根元がぐぷりと膨らみ、{b}のナカに深く結びついた。抜けなくなったまま、熱いものがどくどくと注がれ続ける。{s:cum}。{b}「{mb2}」|結ばれたまま奥をぐりぐりと押し上げられて、{b}はイきっぱなしになった。{s:cum}。{b}「{mb2}」――注がれるたびに、うなじの奥が甘く疼いた。|{a}は{b}のうなじに歯を立てながら、結びついた根元で最後の一滴まで注ぎ込んだ。{s:cum}。{b}「{mb2}」');
+  var KNOT_ERO = L('{a}の根元がぐぷりと膨らみ、{b}の{ナカ}に深く結びついた。抜けなくなったまま、熱いものがどくどくと注がれ続ける。{s:cum}。{b}「{mb2}」|結ばれたまま奥をぐりぐりと押し上げられて、{b}はイきっぱなしになった。{s:cum}。{b}「{mb2}」――注がれるたびに、うなじの奥が甘く疼いた。|{a}は{b}のうなじに歯を立てながら、結びついた根元で最後の一滴まで注ぎ込んだ。{s:cum}。{b}「{mb2}」');
   function eroScene(ctx, T, U, head, after, kd) {
     var pk = function (arr) { return fp(ctx, arr); }, TE = HK.ThickEro, st = lw.last;
     /* 男性向けの体の組（thick-sex-ero.js の mf／fm／ff）も、第二性を優先した組（kd）に合わせる */
