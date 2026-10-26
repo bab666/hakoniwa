@@ -40,7 +40,7 @@ const { openBuild } = require('./lib.js');
       [/人狼ゲーム|処刑の投票/, ['jinro', 'trial']],
       [/被告人|裁判長/, ['trial']],
       [/支給品/, ['br']],
-      [/担任|学年/, ['classroom']],
+      [/担任|学年/, ['classroom', 'br']],
       [/催眠術|暗示を/, ['saimin']]
     ];
     const DUNGEON_RE = /迷宮|魔物|冒険者|次の部屋|罠の部屋/;
