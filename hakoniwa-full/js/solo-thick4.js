@@ -283,7 +283,7 @@
       else if (FLAVOR[scn] && S.rng() < 0.6) paras.push(pickF(S, FLAVOR[scn]));
       var dl = hard === CHOKE ? CHOKE_DOM : hard ? ROUGH_DOM : DOM[dp], sl = hard === CHOKE ? CHOKE_SUB : hard ? ROUGH_SUB : SUB1[sp];
       /* 崩れていく側の声（荒い・首の型の決まった台詞を除く）は、喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）を通す。元の表（SUB1・SUB2）も4割ほど残る */
-      var sv = function (k, old) { return HK.Moan && HK.Moan.say && sub.name && (sub.persona || sub.eg) ? HK.Moan.say(S, sub, k, { novel: true, top: dom.name ? dom : null }, old) : old(); };
+      var sv = function (k, old) { return HK.Moan && HK.Moan.say && sub.name && (sub.persona || sub.eg || sub.mob) ? HK.Moan.say(S, sub, k, { novel: true, top: dom.name ? dom : null }, old) : old(); };
       var s1 = hard ? pickF(S, sl) : sv('mid', function () { return pickF(S, sl); });
       paras.push('{T}「' + pickF(S, dl) + '」' + pickF(S, xp('link', LINK)) + '{B}「' + s1 + '」' + (hard === CHOKE ? '{T}「' + pickF(S, CHOKE_MID) + '」' : ''));
       /* 書き出しが短いときだけ、律動の段落を挟む（全体で 400 字前後） */

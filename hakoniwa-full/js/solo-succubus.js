@@ -279,7 +279,7 @@
       else if (q.incubus) { ml = Math.round(ml * 0.6); t += ST.fmt('――ところが{t}も、{a}から吸い返そうとしてきた。同業者どうしの吸い合いは、引き分けに終わった。', v); }
       /* 小説調の山場（solo-thick4.js）：主導権を握ったまま搾りきった回は、段落に分けて厚く。サキュバスが攻めなら貫いて、そうでなければ跨って。型ごとの決め台詞の文は絶頂の段落に置く */
       if (leadP && !rev && !q.incubus && HK.Thick4 && HK.Thick4.ok(S, lew)) {
-        var prey = { name: q.name, gender: 'm' };
+        var prey = { name: q.name, gender: 'm', mob: true };
         t = t.replace('――' + leadP, '――' + HK.Thick4.scene(S, { dom: p, sub: prey, kind: sTop ? 'in' : 'ride', peak: (sTop && HK.FM && HK.Pos.isF(p) ? HK.FM.fixWith({ pick: function (a) { return pkF(S, a); } }, leadP, p, prey.name) : leadP).replace(/([。」])「/g, '$1' + p.name + '「'), sad: HK.Thick4.rollSad(S, p, prey),
           after: ST.fmt(pkF(S, HEAT_AFTER[p.hs || 0]), { a: p.name, ml: ml }) }));
       }
