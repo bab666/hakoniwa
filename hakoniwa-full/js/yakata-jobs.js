@@ -458,7 +458,7 @@
   });
   E('sales', 'sal_card', function (S, a) { return S.P.some(function (q) { return free(q) && q !== a && (q.role === 'host' || q.role === 'butler' || q.role === 'heir') && !guilty(S, q); }); }, function (S, a) {
     var b = S.P.filter(function (q) { return free(q) && q !== a && (q.role === 'host' || q.role === 'butler' || q.role === 'heir') && !guilty(S, q); })[0], m = fmtM(S, a, b);
-    var t = F('{a}は、{b}に名刺を差し出した。「この館の昔の話を、少しだけ伺えませんか｜この館の昔の話を、少し聞かせてもらえないか｜この館の昔の話を、少しだけ伺えませんか」', m);
+    var t = F('{a}は、{b}に名刺を差し出した。「この館の昔の話、少しだけ聞かせてもらえないかな｜この館の昔の話を、少し聞かせてもらえないか｜この館の昔の話を、少しだけ伺えませんか」', m);
     if (S.rng() < 0.3 + sk(a, 'talk') * 0.45) {
       var g = clue(S, a, 'lore'); if (!g) return false;
       return say(S, 'sal_card', { actors: [a, b], tag: '名刺', text: t + F('{b}は名刺を眺めて少し笑い、館の古い話をいくつか聞かせた。', m) + '――' + g + '。', why: '営業は、名刺一枚で館の人の懐に入る（聞き込み ' + pct(sk(a, 'talk')) + '）' });
@@ -482,7 +482,7 @@
     return say(S, 'rep_dig', { actors: [a], tag: '取材', text: t + '誰も、記者に話したがらなかった。', why: '取材は空振りだった' });
   });
   E('butler', 'but_keys', function (S, a) { return hasKill(S); }, function (S, a) {
-    var m = fmtM(S, a), t = F('{a}は、鍵束の鍵を一本ずつ数えた。「一本、足りない。……昨夜まで、確かにあった｜一本足りない。……昨夜までは、確かにあった｜一本、足りません。……昨夜までは、確かにございました」', m);
+    var m = fmtM(S, a), t = F('{a}は、鍵束の鍵を一本ずつ数えた。「一本、足りない。……昨夜まで、確かにあった｜一本足りない。……昨夜までは、確かにあった｜一本、足りません。……昨夜までは、確かにありました」', m);
     if (S.rng() < 0.3 + sk(a, 'search') * 0.45) {
       var g = clue(S, a, 'search'); if (!g) return false;
       return say(S, 'but_keys', { actors: [a], tag: '鍵束', text: t + '――' + g + '。', why: '執事は、館の鍵を一本残らず把握している（捜索 ' + pct(sk(a, 'search')) + '）' });

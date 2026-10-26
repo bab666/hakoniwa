@@ -140,7 +140,7 @@
         var res = P.filter(function (o) { return mem.indexOf(o) < 0 && mem.some(function (m) { return ctx.R(o, m).aff > 35; }); })[0];
         if (res && rng() < 0.35 + res.tr.cp * 0.3 + res.tr.np * 0.2) {
           mem.forEach(function (m) { m.z.cult = null; ctx.mod(m, res, { aff: 20, trust: 20 }); });
-          return ctx.act2({ actors: [res].concat(mem), cat: 'help', text: fillN(ctx, '儀式の杯が回り始めたとき、{a}が祭壇を蹴り倒した。「帰るぞ｜＝｜帰りますよ」――' + Z.names(mem) + 'の手から、杯が落ちた。', n, res), why: res.name + 'の想い（' + Z.names(mem) + 'への好意）とCP', mag: 40 });
+          return ctx.act2({ actors: [res].concat(mem), cat: 'help', text: fillN(ctx, '儀式の杯が回り始めたとき、{a}が祭壇を蹴り倒した。「帰るよ｜帰るぞ｜帰りますよ」――' + Z.names(mem) + 'の手から、杯が落ちた。', n, res), why: res.name + 'の想い（' + Z.names(mem) + 'への好意）とCP', mag: 40 });
         }
         n.alive = false; n.note = '信者たちと「旅立った」'; zb.stats.npcDead++;
         ctx.act2({ actors: mem, cat: 'death', text: fillN(ctx, '{n}は信者たちに杯を配った。「新しい世界で会いましょう」――朝、礼拝堂の長椅子に、眠るように並んだ人々がいた。その中に、' + Z.names(mem) + 'もいた。', n), why: Z.names(mem) + 'は' + n.label + 'の教えにすがっていた', mag: 50 });
