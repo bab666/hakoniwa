@@ -176,6 +176,8 @@
     romOK: function (nt, ngP) {
       if (ngP || nt.noLove) return false;
       if (nt.type === 'worship' && !nt.love) return false;
+      /* R18に参加しない人も恋愛はできる（LK.loveOK は noR18 を外して HK.canLove を両方向で見る。体の関係は solo-locker.js の clash で止める） */
+      if (LK.loveOK) return LK.loveOK(nt.u, nt.d);
       return !HK.canLove || (HK.canLove(nt.u, nt.d) && HK.canLove(nt.d, nt.u));
     },
     /* 閉じ込められたとき（目覚め）の反応 */

@@ -159,7 +159,9 @@
     if (tl.some(function (t) { return /^(lover|mate|fated|fwb|crush|almost|ex|master)$/.test(t.type); })) return false;
     return tl.some(function (t) { return (HK.tieNoLove && HK.tieNoLove(t)) || (t.type === 'worship' && HK.tieOptNoLove && HK.tieOptNoLove(t)); });
   }
-  function okLove(a, b) { return !!(a && b && a !== b) && HK.canLove(a, b) && HK.canLove(b, a); }
+  /* 恋愛（HK.canLove を両方向）。R18に参加しない人も恋愛はできるので、LK.loveOK（noR18 を外して見る）を使う。
+     体の関係は canAct が HK.sexBlocked・HK.State.r18ok でこれまでどおり止める */
+  function okLove(a, b) { return !!(a && b && a !== b) && (LK.loveOK ? LK.loveOK(a, b) : HK.canLove(a, b) && HK.canLove(b, a)); }
   /* 同じロッカーの二人が手を出し合ってよいか：受け攻め・恋愛対象（HK.Pos.okSex）・恋愛・R18にしない相手（HK.ngPair）・
      体の関係の縛り（HK.sexBlocked）・恋愛（HK.canLove を両方向）・R18に参加しない（HK.State.r18ok。全年齢は見ない） */
   function canAct(S, a, b) {
