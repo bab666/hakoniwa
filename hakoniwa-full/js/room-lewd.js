@@ -1,5 +1,7 @@
 /* 箱庭シミュレーター: 出られない部屋 ― エッチの具体的な描写と、条件を果たした瞬間の描写
-   リード役の気質で「やり方」が、受ける側の気質で「反応」が変わる。登場人物はすべて成人として扱う */
+   リード役の気質で「やり方」が、受ける側の気質で「反応」が変わる。登場人物はすべて成人として扱う
+   流れ（2026-10-26。R18版）：始まり → 攻めの一言 → 前戯の一文（最中の文に繋がる動きがなければ、前戯から繋がるまでの一文）→ 最中 → 山場 → 攻めの一言 → 事後。
+   前戯と攻めの一言は room-thick.js（R18版のみ）の LW.foreFor・LW.insShort・LW.topSay。無ければ何もしない */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -137,19 +139,28 @@
   /* 厚い版（room-thick.js）からも、この一段落版の文を段の候補として使えるように */
   L.FF_POOLS = { OPEN: FF_OPEN, BODY: FF_BODY, TOY: FF_TOY, CLIMAX: FF_CLIMAX, AFTER: FF_AFTER, REPEAT: FF_REPEAT, SPEED: FF_SPEED };
   L.APHRO = APHRO; L.REPEAT = REPEAT;
+  /* 攻めの一言（room-thick.js の LW.topSay。白い部屋の表と共通の表 HK.EroTop を混ぜる）。無ければ何もしない。扉がまだ開かない組には扉の台詞を使わない */
+  function topK(ctx, A, B, mode) {
+    var API = HK.RoomAPI, closed = !!(API && API.pairDone && !API.pairDone(ctx, A, B));
+    return function (stg, p) { return L.topSay ? L.topSay(ctx, A, B, stg, mode, { closed: closed, p: p }) : ''; };
+  }
   function ffScene(ctx, A, B, mode, opt, st, roughLine) {
-    var tools = !!(ctx.flags && ctx.flags.toolbox), out = [];
+    var tools = !!(ctx.flags && ctx.flags.toolbox), out = [], tk = topK(ctx, A, B, mode);
     if (roughLine) out.push(roughLine);
     if (opt.toolText) out.push(opt.toolText.replace(/――$/, ''));
     else if (mode === 'repeat') out.push(pick(ctx, FF_REPEAT));
     else if (mode === 'speed') out.push(pick(ctx, FF_SPEED));
     else out.push(pick(ctx, FF_OPEN[st] || FF_OPEN.gentle));
+    /* 流れ（2026-10-26）：攻めの一言 → 前戯（room-thick.js の LW.foreFor）→ 指・舌で繋がる → 山場 → 攻めの一言 → 事後 */
+    if (mode !== 'speed') out.push(tk('start', 0.85));
     if (mode === 'aphro') out.push('媚薬で敏感になった{b}は、触れられるだけで腰が跳ねた。');
+    if (L.foreFor && !opt.toolText && mode !== 'speed') out.push(L.foreFor(ctx, A, B, true));
     out.push(tools && (opt.toolText || ctx.rng() < 0.35) ? pick(ctx, FF_TOY) : pick(ctx, FF_BODY[st] || FF_BODY.gentle));
     out.push(react(ctx, B));
     out.push(pick(ctx, FF_CLIMAX));
     var V = HK.Voice, pf = function (arr) { return fp(ctx, arr); };
     if (V && ctx.rng() < 0.7) out.push(V.line(pf, B.persona, 'climax', 'b'));
+    if (mode !== 'speed') out.push(tk('after', 0.75));
     if (FF_AFTER[mode]) out.push(pick(ctx, FF_AFTER[mode]));
     var txt = out.map(function (s) { return t(ctx, s, A, B); }).join('');
     if (HK.FF) txt = HK.FF.fix(ctx, txt, A, B, { tools: tools });
@@ -174,12 +185,18 @@
     if (roughLine) lew.push(roughLine);
     if (opt.toolText) lew.push(opt.toolText.replace(/――$/, ''));
     else if (mode !== 'repeat') lew.push(pick(ctx, OPEN[st]));
+    /* 流れ（2026-10-26）：始まり → 攻めの一言 → 前戯（room-thick.js の LW.foreFor。1文）→ 繋がる → 最中 → 山場 → 攻めの一言 → 事後 */
+    var tk = topK(ctx, A, B, mode);
+    if (mode !== 'speed') lew.push(tk('start', mode === 'repeat' ? 0.5 : 0.85));
     if (mode === 'aphro') lew.push(pick(ctx, APHRO));
+    var foreAt = L.foreFor && !opt.toolText && mode !== 'speed' ? lew.push('') - 1 : -1;
     var sp = SPECIAL.filter(function (x) { return x.st.indexOf(st) >= 0 && !(opt.toolText && /^\{b\}(が|は\{a\}の上)/.test(x.t)) && !(fx && x.swap); });
     var special = sp.length && ctx.rng() < 0.45 ? pick(ctx, sp).t.replace(/私／俺/, B.tr.cp + B.tr.fc > 1 ? '俺' : '私') : null;
     /* 仕掛けた側が受けのとき：縛った相手の上に自分から跨る */
     if (!special && !opt.toolText && L.NORI && HK.Pos && HK.Pos.nori(B) && ctx.rng() < 0.55) special = pick(ctx, L.NORI);
     lew.push(special || pick(ctx, BODY[st]));
+    /* 前戯の一文。最中の文に繋がる動き（挿れる・跨る・奥へ）がなければ、前戯から繋がるまでを一文にした版（LW.insShort）にする */
+    if (foreAt >= 0) lew[foreAt] = /沈め|沈ん|貫|繋が|迎え入れ|奥|跨|腰を落と|突き|打ちつけ|揺さぶ|一つにな|入っ|入れ/.test(lew[lew.length - 1]) || !L.insShort ? L.foreFor(ctx, A, B, true) : L.insShort(ctx, A, B);
     /* 夜の性格の一文（attr-r18.js：攻めの振る舞いと受けの崩れ方） */
     var ntx = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(A, B, HK.Pos && HK.Pos.isF(A) ? 'fm' : 'mf', function (arr) { return pick(ctx, arr); }, false) : '';
     if (ntx) lew.push(ntx);
@@ -197,6 +214,7 @@
       if (V && ctx.rng() < 0.8) lew.push(V.line(pf, B.persona, 'climax', 'b'));
       if (V && ctx.rng() < 0.25) lew.push(V.line(pf, A.persona, 'climax', 'a'));
     }
+    if (mode !== 'speed') lew.push(tk('after', 0.75));
     if (mode === 'repeat') lew.splice(0, 0, pick(ctx, REPEAT));
     if (mode === 'will' || mode === 'des' || mode === 'aphro') {
       /* まだ条件が残っている組には、扉が開く・部屋を出る締めを使わない */

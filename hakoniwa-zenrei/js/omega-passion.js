@@ -272,7 +272,9 @@
       var head = ctx.pick(motive === 'cheat' && HK.Pos && !hTop && HK.Pos.hardTop(b, a) ? NT.cheat.filter(function (l) { return !/上着を脱がせた/.test(l); }) : NT[motive]);
       /* R18版：夜そのものは、段落に分けた厚い版（omega-thick.js の OM.affairScene。受け攻め・女性どうし・女性攻め×男性・態度ごとの声はそちらで） */
       var thick = !HK.SAFE_ON && lewd(ctx) !== 'low' && OM.affairScene ? OM.affairScene(ctx, a, b) : null;
-      var t = head + s1 + s2;
+      /* 短い版（厚い版を使わないとき）：夜の一文の前に攻めの一言と前戯の一文、あとに事後の一言（omega-thick.js の OM.affairShort。R18版のみ。名前で埋めた文） */
+      var sh = !thick && !HK.SAFE_ON && lewd(ctx) !== 'low' && OM.affairShort ? OM.affairShort(ctx, a, b) : null;
+      var t = head + (sh ? sh.pre : '') + s1 + (sh ? sh.post : '') + s2;
       var why = motive === 'rival' ? a.name + 'は恋敵の' + pb.name + 'から奪いたかった（緊張 ' + Math.round(ctx.R(a, pb).ten) + '）' : motive === 'steal' ? a.name + 'の惹かれ（' + Math.round(ctx.R(a, b).att) + '）と衝動性。恋人のいる' + b.name + 'が拒みきれなかった' : a.name + 'には恋人（' + pa.name + '）がいる。それでも' + b.name + 'への惹かれ（' + Math.round(ctx.R(a, b).att) + '）が勝った';
       return { text: thick ? fill(ctx, head, a, b, part) + '\n\n' + thick + '\n\n' + fill(ctx, s2, a, b, part) : fill(ctx, t, a, b, part), why: why + (hateLove(ctx, a, b) ? '／愛憎' : '') + (fd ? '／運命の番' + fdw : ''), mag: 32 };
     }
