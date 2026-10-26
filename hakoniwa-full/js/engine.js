@@ -396,6 +396,9 @@
     /* ただし「恋愛はしないが体の関係は許されている組」（HK.lockSexOnly）は、体の関係の出来事（ev.sex）だけ通す。
        出来事（ev）を渡されたのに体の出来事でなければ、恋愛の出来事として止める（渡されないときは通す。起きたあとは Ctx.say で恋愛に進まないように補正する） */
     for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j]) && (!HK.lockSexOnly(L[i], L[j]) || (ev && !ev.sex))) return false;
+    /* 体の関係の出来事（ev.sex）は、R18に参加しない人・体の関係にならない組（HK.sexBlocked：性行為の相手の固定など）では起こさない。
+       恋愛は止めない（pos.js の HK.Pos.okLove）ので、恋人どうしの夜・恋愛が中心の箱庭の体の場面はここで止める */
+    if (ev && ev.sex) { for (var s0 = 0; s0 < L.length; s0++) { if (L[s0].noR18) return false; for (var s1 = s0 + 1; s1 < L.length; s1++) if (HK.sexBlocked(L[s0], L[s1])) return false; } }
     /* 恋愛なしの家族は、恋愛が中心の箱庭（romanceCore）でも恋愛の出来事を起こさない */
     if (a && b && this.pair(a, b).kin) return false;
     /* 歪んだ関係から離れる決心をした二人（tie-abuse.js の abFree）は、もう恋愛の出来事を起こさない。

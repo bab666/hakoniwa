@@ -653,8 +653,9 @@
     var PR = pairs(L0), tense = (100 - sp.morale) / 100 + (sp.food < 20 ? 0.35 : 0) + (sp.o2 < 30 ? 0.2 : 0);
     var sick = L0.filter(function (p) { return p.m.hp < 60; });
     var neg = PR.filter(function (x) { return (S.relD[rk(x[0], x[1])] || 0) < -0.15 || bond(S, x[0], x[1]) < -0.15; });
-    /* 想いが育つのは、恋人どうしか、恋人になれる（canJoin：恋愛対象・固定が両方向で合い、複数の恋人の設定にも合う。乗り換えも含む）二人だけ */
-    var lv = PR.filter(function (x) { return lover(S, x[0], x[1]) || (bond(S, x[0], x[1]) > 0.55 && HK.Pos && HK.Pos.okSex(x[0], x[1]) && canJoin(S, x[0], x[1])); });
+    /* 想いが育つのは、恋人どうしか、恋人になれる（canJoin：恋愛対象・固定が両方向で合い、複数の恋人の設定にも合う。乗り換えも含む）二人だけ。
+       受け攻めの向きは恋愛の判定（HK.Pos.okLove）で見る：R18に参加しない人も恋はする（夜は ship-night.js が HK.Pos.okSex で止める） */
+    var lv = PR.filter(function (x) { return lover(S, x[0], x[1]) || (bond(S, x[0], x[1]) > 0.55 && HK.Pos && HK.Pos.okLove(x[0], x[1]) && canJoin(S, x[0], x[1])); });
     var opts = [
       ['drink', 1.0], ['team', 1.0], ['confide', 0.7], ['game', 0.7], ['nurse', sick.length ? 0.9 : 0], ['birthday', 0.25], ['drink_all', L0.length >= 3 ? 0.3 : 0],
       ['fight', 0.25 + tense * 0.9], ['drink_bad', 0.2 + tense * 0.4], ['ration', sp.food < 35 ? 0.3 + tense * 0.6 : 0.05], ['duty', 0.2 + tense * 0.4], ['game_bad', 0.15 + tense * 0.2],

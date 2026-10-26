@@ -137,12 +137,14 @@
     return a.likes === b.gender;
   }
   P.genderOK = function (a, b) { return !!(a && b) && likesOne(a, b) && likesOne(b, a); };
-  P.orients = function (a, b) {
+  /* love が真のときは恋愛の判定（P.okLove）として見る：体の関係だけを止める設定（R18に参加しない・性行為の相手の固定・一途の体の縛り）は見ず、
+     恋愛・R18にしない組（engine.js の HK.ngPair：恋愛・R18にしない相手・恋愛相手の固定・同じ人の恋人どうし・無関心／恐怖）だけで止める */
+  P.orients = function (a, b, love) {
     if (!a || !b || a === b) return [];
     /* 恋愛・R18にしない組（engine.js の HK.ngPair）は、どちらの向きでも成り立たない */
     /* 体の関係にならない組（engine.js の HK.sexBlocked：恋愛・R18にしない相手・同じ人の恋人どうし・性行為の相手の固定）。
        恋愛相手の固定が食い違うだけの組は、性行為の相手の固定で「誰とでも可」などにしていれば体の関係になれる（恋愛には進まない） */
-    if (HK.sexBlocked ? HK.sexBlocked(a, b) : (HK.ngPair && HK.ngPair(a, b))) return [];
+    if (love ? (HK.ngPair && HK.ngPair(a, b)) : HK.sexBlocked ? HK.sexBlocked(a, b) : (HK.ngPair && HK.ngPair(a, b))) return [];
     /* 恋愛対象（キャラの設定の性別）が合わない組：どちらの向きでも成り立たない（恋愛にも体の関係にもしない） */
     if (!P.genderOK(a, b)) return [];
     var out = [];
@@ -154,9 +156,12 @@
     });
     return out;
   };
-  /* 恋愛・体の関係が成り立つ組か（受け攻めの指定と恋愛対象から） */
+  /* 体の関係が成り立つ組か（受け攻めの指定と恋愛対象・体の関係の縛りから） */
   P.okSex = function (a, b) { return P.orients(a, b).length > 0; };
-  P.okLove = P.okSex;
+  /* 恋愛が成り立つ組か：恋愛対象・受け攻めの向き・恋愛・R18にしない相手・恋愛相手の固定は okSex と同じに見るが、
+     「R18に参加しない」（noR18）・性行為の相手の固定・一途の体の縛りは体の関係だけを止める設定なので見ない
+     （2026-10-26 の利用者の決定「R18に参加しない人でも恋愛はできてほしい」。恋人になった二人の夜・体の関係は、出口ごとに HK.sexBlocked・HK.Pos.okSex で止める） */
+  P.okLove = function (a, b) { return P.orients(a, b, true).length > 0; };
   /* 向きを決められない組（攻め×攻め・指定が合わない組）。体の関係には一切ならない */
   P.clash = function (a, b) { return !!(a && b && a !== b && !P.okSex(a, b)); };
 

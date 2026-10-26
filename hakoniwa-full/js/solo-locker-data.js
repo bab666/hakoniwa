@@ -20,7 +20,7 @@
     return x;
   };
   /* 恋愛してよい二人か（HK.canLove を両方向）。R18に参加しない人（noR18）も恋愛はできるので、noR18 を外した写しで見る
-     （HK.canLove は受け攻め（pos.js の HK.Pos.okLove＝okSex）も見ていて、そこで noR18 が「体の関係にならない組」として弾かれるため。ties.js の許嫁と同じ扱い）。
+     （以前は pos.js の HK.Pos.okLove が okSex と同じで noR18 を弾いていたため。いまは okLove が noR18 を見ないので、HK.canLove をそのまま使っても同じ結果。ties.js の許嫁と同じ扱い）。
      体の関係（HK.Pos.okSex・HK.sexBlocked・HK.State.r18ok）は、呼ぶ側でこれまでどおり noR18 を見る */
   LK.loveOK = function (a, b) {
     if (!a || !b || a === b || !HK.canLove) return false;

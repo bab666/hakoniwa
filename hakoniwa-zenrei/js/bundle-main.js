@@ -13723,6 +13723,9 @@
     /* ただし「恋愛はしないが体の関係は許されている組」（HK.lockSexOnly）は、体の関係の出来事（ev.sex）だけ通す。
        出来事（ev）を渡されたのに体の出来事でなければ、恋愛の出来事として止める（渡されないときは通す。起きたあとは Ctx.say で恋愛に進まないように補正する） */
     for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j]) && (!HK.lockSexOnly(L[i], L[j]) || (ev && !ev.sex))) return false;
+    /* 体の関係の出来事（ev.sex）は、R18に参加しない人・体の関係にならない組（HK.sexBlocked：性行為の相手の固定など）では起こさない。
+       恋愛は止めない（pos.js の HK.Pos.okLove）ので、恋人どうしの夜・恋愛が中心の箱庭の体の場面はここで止める */
+    if (ev && ev.sex) { for (var s0 = 0; s0 < L.length; s0++) { if (L[s0].noR18) return false; for (var s1 = s0 + 1; s1 < L.length; s1++) if (HK.sexBlocked(L[s0], L[s1])) return false; } }
     /* 恋愛なしの家族は、恋愛が中心の箱庭（romanceCore）でも恋愛の出来事を起こさない */
     if (a && b && this.pair(a, b).kin) return false;
     /* 歪んだ関係から離れる決心をした二人（tie-abuse.js の abFree）は、もう恋愛の出来事を起こさない。
@@ -16085,6 +16088,8 @@
         used[c.a.i] = used[c.b.i] = 1;
         var imp = (c.a.tr.impulse + c.b.tr.impulse) / 2;
         var night = so || fs || (imp > 0.55 && rng() < imp * 0.9);
+        /* R18に参加しない人・体の関係にならない組（HK.sexBlocked）は、お持ち帰りの夜にしない（一緒に帰るだけ。恋愛は止めない） */
+        if (night && HK.sexBlocked && HK.sexBlocked(c.a, c.b)) night = false;
         if (night) ctx.pair(c.a, c.b).night = true;
         c.a.fate = c.b.fate = night ? 'お持ち帰り' : '一緒に帰った';
         var tg = { a: c.a.i, b: c.b.i, night: night };
@@ -25783,7 +25788,8 @@
     [[a, b], [b, a]].forEach(function (x) { var r = ctx.R(x[0], x[1]); r.att = HK.clamp(r.att + 12 + d * 32, 0, 100); r.aff = HK.clamp(r.aff + 4 + d * 8, -100, 100); });
     var late = mate && mate !== A;
     var vk = late ? 'late' : via;
-    var t = ctx.pick(REALIZE[vk]);
+    /* R18に参加しない人・体の関係にならない組（HK.sexBlocked）で、まだ夜を過ごしていない二人には「肌を重ねたその夜」の一文を使わない */
+    var t = ctx.pick(vk === 'kiss' && !pf.night && HK.sexBlocked && HK.sexBlocked(a, b) ? REALIZE.kiss.filter(function (x) { return !/肌を重ね/.test(x); }) : REALIZE[vk]);
     var c = via === 'sw' ? (a.om.switched && ctx.stepIndex === a.om.switchAt ? a : b.om.switched ? b : a) : a, d = c === a ? b : a;
     t = t.replace(/\{o\}/g, O.name).replace(/\{x\}/g, A.name).replace(/\{so\}/g, OM.shortScent(O)).replace(/\{m\}/g, mate ? mate.name : '')
       .replace(/\{c\}/g, c.name).replace(/\{d\}/g, d.name).replace(/\{sd\}/g, OM.shortScent(d)).replace(/\{x2\}/g, I(a) === '俺' ? '俺' : '私');
@@ -39922,12 +39928,14 @@
     return a.likes === b.gender;
   }
   P.genderOK = function (a, b) { return !!(a && b) && likesOne(a, b) && likesOne(b, a); };
-  P.orients = function (a, b) {
+  /* love が真のときは恋愛の判定（P.okLove）として見る：体の関係だけを止める設定（R18に参加しない・性行為の相手の固定・一途の体の縛り）は見ず、
+     恋愛・R18にしない組（engine.js の HK.ngPair：恋愛・R18にしない相手・恋愛相手の固定・同じ人の恋人どうし・無関心／恐怖）だけで止める */
+  P.orients = function (a, b, love) {
     if (!a || !b || a === b) return [];
     /* 恋愛・R18にしない組（engine.js の HK.ngPair）は、どちらの向きでも成り立たない */
     /* 体の関係にならない組（engine.js の HK.sexBlocked：恋愛・R18にしない相手・同じ人の恋人どうし・性行為の相手の固定）。
        恋愛相手の固定が食い違うだけの組は、性行為の相手の固定で「誰とでも可」などにしていれば体の関係になれる（恋愛には進まない） */
-    if (HK.sexBlocked ? HK.sexBlocked(a, b) : (HK.ngPair && HK.ngPair(a, b))) return [];
+    if (love ? (HK.ngPair && HK.ngPair(a, b)) : HK.sexBlocked ? HK.sexBlocked(a, b) : (HK.ngPair && HK.ngPair(a, b))) return [];
     /* 恋愛対象（キャラの設定の性別）が合わない組：どちらの向きでも成り立たない（恋愛にも体の関係にもしない） */
     if (!P.genderOK(a, b)) return [];
     var out = [];
@@ -39939,9 +39947,12 @@
     });
     return out;
   };
-  /* 恋愛・体の関係が成り立つ組か（受け攻めの指定と恋愛対象から） */
+  /* 体の関係が成り立つ組か（受け攻めの指定と恋愛対象・体の関係の縛りから） */
   P.okSex = function (a, b) { return P.orients(a, b).length > 0; };
-  P.okLove = P.okSex;
+  /* 恋愛が成り立つ組か：恋愛対象・受け攻めの向き・恋愛・R18にしない相手・恋愛相手の固定は okSex と同じに見るが、
+     「R18に参加しない」（noR18）・性行為の相手の固定・一途の体の縛りは体の関係だけを止める設定なので見ない
+     （2026-10-26 の利用者の決定「R18に参加しない人でも恋愛はできてほしい」。恋人になった二人の夜・体の関係は、出口ごとに HK.sexBlocked・HK.Pos.okSex で止める） */
+  P.okLove = function (a, b) { return P.orients(a, b, true).length > 0; };
   /* 向きを決められない組（攻め×攻め・指定が合わない組）。体の関係には一切ならない */
   P.clash = function (a, b) { return !!(a && b && a !== b && !P.okSex(a, b)); };
 
@@ -44613,7 +44624,7 @@
     return x;
   };
   /* 恋愛してよい二人か（HK.canLove を両方向）。R18に参加しない人（noR18）も恋愛はできるので、noR18 を外した写しで見る
-     （HK.canLove は受け攻め（pos.js の HK.Pos.okLove＝okSex）も見ていて、そこで noR18 が「体の関係にならない組」として弾かれるため。ties.js の許嫁と同じ扱い）。
+     （以前は pos.js の HK.Pos.okLove が okSex と同じで noR18 を弾いていたため。いまは okLove が noR18 を見ないので、HK.canLove をそのまま使っても同じ結果。ties.js の許嫁と同じ扱い）。
      体の関係（HK.Pos.okSex・HK.sexBlocked・HK.State.r18ok）は、呼ぶ側でこれまでどおり noR18 を見る */
   LK.loveOK = function (a, b) {
     if (!a || !b || a === b || !HK.canLove) return false;
@@ -57886,8 +57897,9 @@
     var PR = pairs(L0), tense = (100 - sp.morale) / 100 + (sp.food < 20 ? 0.35 : 0) + (sp.o2 < 30 ? 0.2 : 0);
     var sick = L0.filter(function (p) { return p.m.hp < 60; });
     var neg = PR.filter(function (x) { return (S.relD[rk(x[0], x[1])] || 0) < -0.15 || bond(S, x[0], x[1]) < -0.15; });
-    /* 想いが育つのは、恋人どうしか、恋人になれる（canJoin：恋愛対象・固定が両方向で合い、複数の恋人の設定にも合う。乗り換えも含む）二人だけ */
-    var lv = PR.filter(function (x) { return lover(S, x[0], x[1]) || (bond(S, x[0], x[1]) > 0.55 && HK.Pos && HK.Pos.okSex(x[0], x[1]) && canJoin(S, x[0], x[1])); });
+    /* 想いが育つのは、恋人どうしか、恋人になれる（canJoin：恋愛対象・固定が両方向で合い、複数の恋人の設定にも合う。乗り換えも含む）二人だけ。
+       受け攻めの向きは恋愛の判定（HK.Pos.okLove）で見る：R18に参加しない人も恋はする（夜は ship-night.js が HK.Pos.okSex で止める） */
+    var lv = PR.filter(function (x) { return lover(S, x[0], x[1]) || (bond(S, x[0], x[1]) > 0.55 && HK.Pos && HK.Pos.okLove(x[0], x[1]) && canJoin(S, x[0], x[1])); });
     var opts = [
       ['drink', 1.0], ['team', 1.0], ['confide', 0.7], ['game', 0.7], ['nurse', sick.length ? 0.9 : 0], ['birthday', 0.25], ['drink_all', L0.length >= 3 ? 0.3 : 0],
       ['fight', 0.25 + tense * 0.9], ['drink_bad', 0.2 + tense * 0.4], ['ration', sp.food < 35 ? 0.3 + tense * 0.6 : 0.05], ['duty', 0.2 + tense * 0.4], ['game_bad', 0.15 + tense * 0.2],
