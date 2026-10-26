@@ -100,11 +100,22 @@
      表示は名前入り（HK.tieExtraLabel）。名前が取れないところでは「一人目だけ／二人目だけ」 */
   HK.LOVEHATE = {
     '': { label: '愛憎：なし', short: '' },
-    a: { label: '愛憎：一人目だけ', short: '愛憎（一人目だけ）' },
-    b: { label: '愛憎：二人目だけ', short: '愛憎（二人目だけ）' },
+    a: { label: '愛憎：一人目だけ', short: '愛憎（一人目だけ）', nl: '愛憎：%だけ', ns: '愛憎（%だけ）' },
+    b: { label: '愛憎：二人目だけ', short: '愛憎（二人目だけ）', nl: '愛憎：%だけ', ns: '愛憎（%だけ）' },
     both: { label: '愛憎：双方', short: '愛憎（双方）' }
   };
   HK.LOVEHATE_ORDER = ['', 'a', 'b', 'both'];
+  /* きょうだいの上下（兄弟姉妹・兄弟（親友のよう）・兄弟（不仲）・義理のきょうだいの追加の欄 elder。2026-10-26）。
+     ''＝自動（年齢で決める。同じ年齢なら双子で上下なし）／a＝{a}（一人目）が上／b＝{b}（二人目）が上／none＝上下なし（年齢差があっても対等）。
+     a・b は年齢より優先（同じ年齢なら「双子の姉」「双子の弟」の形）。判定は sib-word.js の HK.Sib.info。兄弟（庇護）は向きで上下が決まるので、この欄はない。
+     表示は名前入り（HK.tieExtraLabel：nl・ns の % を名前に） */
+  HK.SIB_ELDER = {
+    '': { label: '上下：自動（年齢）', short: '' },
+    a: { label: '上下：一人目が上', short: '一人目が上', nl: '上下：%が上', ns: '%が上' },
+    b: { label: '上下：二人目が上', short: '二人目が上', nl: '上下：%が上', ns: '%が上' },
+    none: { label: '上下：なし（対等）', short: '上下なし' }
+  };
+  HK.SIB_ELDER_ORDER = ['', 'a', 'b', 'none'];
   /* 恩人の、恩を受けた側の気持ち（空欄＝感謝） */
   HK.BENE_FEEL = {
     '': { label: '恩を受けた側：感謝', short: '' },
@@ -135,31 +146,31 @@
       fwb: [{ f: 'mode', map: HK.FWB_MODE, order: HK.FWB_MODE_ORDER, aria: 'セフレの様子' }],
       fiance: [{ f: 'feel', who: 'a', map: HK.FIANCE_FEEL, order: HK.FIANCE_FEEL_ORDER, aria: '一人目の気持ち' }, { f: 'feelB', who: 'b', map: HK.FIANCE_FEEL, order: HK.FIANCE_FEEL_ORDER, aria: '二人目の気持ち' }]
     };
+    /* きょうだいの上下（兄弟（庇護）は向きで決まるので付けない） */
+    if (/^(sibling|sibclose|sibbad|stepsib)$/.test(type)) X[type] = [{ f: 'elder', map: HK.SIB_ELDER, order: HK.SIB_ELDER_ORDER, aria: '上下', names: true }];
     return X[type] || [];
   };
-  /* 追加の欄の選択肢の文字（names の欄は、一人目・二人目を名前に置き換える。na・nb＝名前。なければ元の文字） */
+  /* 追加の欄の選択肢の文字（names の欄は、一人目・二人目を名前に置き換える（選択肢の nl・ns の % に名前）。na・nb＝名前。なければ元の文字） */
   HK.tieExtraLabel = function (x, id, na, nb) {
     var m = x && x.map && x.map[id];
     if (!m) return '';
-    if (!x.names) return m.label;
-    if (id === 'a' && na) return '愛憎：' + na + 'だけ';
-    if (id === 'b' && nb) return '愛憎：' + nb + 'だけ';
-    return m.label;
+    if (!x.names || !m.nl) return m.label;
+    var n = id === 'a' ? na : id === 'b' ? nb : '';
+    return n ? m.nl.replace('%', n) : m.label;
   };
   HK.tieExtraShort = function (x, id, na, nb) {
     var m = x && x.map && x.map[id];
     if (!m || !m.short) return '';
-    if (!x.names) return m.short;
-    if (id === 'a' && na) return '愛憎（' + na + 'だけ）';
-    if (id === 'b' && nb) return '愛憎（' + nb + 'だけ）';
-    return m.short;
+    if (!x.names || !m.ns) return m.short;
+    var n = id === 'a' ? na : id === 'b' ? nb : '';
+    return n ? m.ns.replace('%', n) : m.short;
   };
   /* 追加の欄の値を、関係の種類に合う値だけに直す（合わない欄は消す）。t を書き換えて返す */
   HK.tieExtraNorm = function (t) {
     if (!t) return t;
     var ex = HK.tieExtra(t.type), keep = {};
     ex.forEach(function (x) { keep[x.f] = 1; if (t[x.f] != null && !(x.map[t[x.f]] && t[x.f] !== '')) delete t[x.f]; });
-    ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh'].forEach(function (f) { if (!keep[f]) delete t[f]; });
+    ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh', 'elder'].forEach(function (f) { if (!keep[f]) delete t[f]; });
     return t;
   };
   /* 無関心・恐怖の二人のあいだの恋愛の関係（恋人・セフレ・片想い・本命など）は外す（無関心・恐怖のほうを優先する）。
@@ -342,6 +353,20 @@
         if (rest.indexOf(lhName) >= 0 || names.filter(function (q) { return rest.indexOf(q.n) >= 0; }).length >= 2) return Array(x.length + 1).join('\u0000');
         return Array(p0 + 1).join('\u0000') + lhName + Array(x.length - p0 - lhName.length + 1).join('\u0000');
       });
+      /* きょうだいの上下（追加の欄 elder）：「上下:名前」「上下：名前が上」「上下（一人目）」「上下なし」。愛憎と同じく、名前より先に読む */
+      var elW = '', elName = '', elWarned = false;
+      used = used.replace(/上下\s*[:：]?\s*[（(]?\s*(なし|無し|対等|自動|年齢|一人目|1人目|二人目|2人目|[^\s　（）()]{1,18})?(\s*[）)])?/, function (x, w, cl, at) {
+        var fixed = { 'なし': 'none', '無し': 'none', '対等': 'none', '自動': 'auto', '年齢': 'auto', '一人目': 'a', '1人目': 'a', '二人目': 'b', '2人目': 'b' };
+        if (!w || fixed[w]) { elW = w ? fixed[w] : 'auto'; return Array(x.length + 1).join('\u0000'); }
+        /* 名前：登録済みの名前で始まるなら、その名前（と「が上」）までを読む（「上下:美咲が上」「上下:美咲」） */
+        var hit = names.filter(function (q) { return w.indexOf(q.n) === 0; })[0], nm = hit ? hit.n : w.replace(/が上$/, '');
+        var p0 = x.indexOf(w), end = p0 + nm.length + (x.substr(p0 + nm.length, 2) === 'が上' ? 2 : 0);
+        elW = 'name'; elName = nm;
+        var head = x.slice(0, end), tail = x.slice(end);
+        var rest = used.slice(0, at) + used.slice(at + head.length);
+        var keep = !(rest.indexOf(nm) >= 0 || names.filter(function (q) { return rest.indexOf(q.n) >= 0; }).length >= 2);
+        return (keep ? Array(p0 + 1).join('\u0000') + nm + Array(head.length - p0 - nm.length + 1).join('\u0000') : Array(head.length + 1).join('\u0000')) + tail;
+      });
       names.forEach(function (x) {
         var p = used.indexOf(x.n);
         if (p >= 0 && found.every(function (f) { return f.id !== x.id; })) {
@@ -370,6 +395,9 @@
       if (cold === 'mutual' && types.indexOf('crush') < 0) types.unshift('crush');
       /* 「愛憎」だけ書いたら、敵対（愛憎）として読む */
       if (lhW && types.indexOf('enemy') < 0 && types.indexOf('bad') < 0) types.unshift('enemy');
+      /* 「上下」だけ書いたら、兄弟姉妹として読む */
+      if (elW && !types.length) types.unshift('sibling');
+      if (elW && elW !== 'auto' && types.length && !types.some(function (x) { return /^(sibling|sibclose|sibbad|stepsib)$/.test(x); })) warn.push((i + 1) + '行目の「上下」は、兄弟姉妹・兄弟（親友のよう）・兄弟（不仲）・義理のきょうだいにだけ付けられます（兄弟（庇護）は向きで上下が決まります）');
       /* 「兄弟で不仲」のように二つ書いたら、きょうだい（不仲）にまとめる */
       if (types.indexOf('bad') >= 0 && types.indexOf('sibling') >= 0) types = types.filter(function (x) { return x !== 'bad'; }).map(function (x) { return x === 'sibling' ? 'sibbad' : x; });
       /* 「仲間」はグループに付ける（住人の一覧のグループの「仲間」を入れるのと同じ）。名前だけの行には付けない */
@@ -409,6 +437,11 @@
             var lhId = lhW;
             if (lhW === 'name') { var nmA = (names.filter(function (x) { return x.id === a; })[0] || {}).n, nmB = (names.filter(function (x) { return x.id === b; })[0] || {}).n; lhId = lhName && lhName === nmA ? 'a' : lhName && lhName === nmB ? 'b' : ''; if (!lhId && !lhWarned) { lhWarned = true; warn.push((i + 1) + '行目の「' + lhName + 'だけ」は、この行の二人の名前ではないので、愛憎は付けませんでした'); } }
             if (lhId) nt.lh = lhId;
+          }
+          if (elW && elW !== 'auto' && /^(sibling|sibclose|sibbad|stepsib)$/.test(ty)) {
+            var elId = elW;
+            if (elW === 'name') { var enA = (names.filter(function (x) { return x.id === a; })[0] || {}).n, enB = (names.filter(function (x) { return x.id === b; })[0] || {}).n; elId = elName === enA ? 'a' : elName === enB ? 'b' : ''; if (!elId && !elWarned && !found.some(function (f) { return (names.filter(function (x) { return x.id === f.id; })[0] || {}).n === elName; })) { elWarned = true; warn.push((i + 1) + '行目の「上下:' + elName + '」は、この行の住人の名前ではないので、上下は自動（年齢）のままにしました'); } }
+            if (elId) nt.elder = elId;
           }
           out.push(nt);
         });
@@ -568,6 +601,8 @@
         /* 追加の欄は、ある関係だけに付ける（ほかの関係の中身は今までと同じ） */
         if (t.type === 'yan') o.sub = xf.sub || '';
         if (t.type === 'enemy') o.grade = xf.grade || '';
+        /* きょうだいの上下の欄（義理のきょうだいは親族＋step に開いているので、元の t の値を見る） */
+        if (/^(sibling|sibclose|sibbad)$/.test(t.type) || (t.type === 'relative' && t.step)) { var el0 = t.elder; if (el0 && HK.SIB_ELDER[el0]) o.elder = el0; }
         /* きょうだい：二人の性別・年齢から決めた関係名（「姉弟（庇護）」など。sib-word.js）を覚えておく（HK.tieLabel が使う） */
         if (HK.Sib && HK.Sib.isSibTie(o)) o.sibLab = HK.Sib.tieLabel(o, A, B) || '';
         if (t.type === 'enemy' || t.type === 'bad') o.lh = xf.lh || '';

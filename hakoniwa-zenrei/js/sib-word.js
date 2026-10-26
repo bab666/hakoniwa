@@ -4,13 +4,15 @@
    ・決め方：
      1. b の性別が m/f でなければ「きょうだい」
      2. 向きのある関係（兄弟（庇護）：roleA＝兄姉側）があれば、その向きで上下を決める（年齢より優先。利用者が選んだ向きなので）
+        関係の追加の欄「上下」（t.elder。ties.js の HK.SIB_ELDER）：'a'／'b' ならその人が上（年齢より優先。同じ年齢なら「双子の姉」の形）、
+        'none' なら年齢差があっても上下を付けない（双子とも呼ばない。「姉妹」「兄弟」「きょうだい」と名前での呼びかけ）。'' は自動（3・4）
      3. 両方の年齢があれば、年上が上。同じ年齢なら双子（義理のきょうだいは双子にせず、上下を決めない）
      4. どちらかの年齢が未設定で向きもなければ、上下は決めない（続柄は ''。地の文では「姉妹」「兄弟」「きょうだい」にする）
    ・双子：向き（兄弟（庇護））があれば「双子の姉／双子の妹」。向きがなければ上下を付けない。
      同性の双子は互いに「双子」（二人のまとめは「双子の姉妹」「双子の兄弟」）、異性の双子は性別で「双子の兄」「双子の妹」（まとめは「双子の兄妹」）。
      どちらも上下は年齢で決まらないので、呼びかけ（{sibcall}）は名前
    ・関係名の表示（HK.tieLabel から）：「兄弟姉妹」→「姉弟」、「兄弟（庇護）」→「姉弟（庇護）」、「義理の兄弟」→「義理の姉弟」のように言い換える。
-     性別・上下が分からず言い換えられないときは、元の関係名のまま
+     性別が分からず言い換えられないときは、元の関係名のまま。男女で上下が決まらないとき（年齢が未設定・上下なし）は「きょうだい」「きょうだい（不仲）」「義理のきょうだい」
    ・文の印（地の文・台詞の中で使える。{a}{b}{c} と同じ人を指す）
        {sib:a→b}    a から見た b の続柄（姉・兄・妹・弟・双子の姉…。上下が分からなければ 姉妹・兄弟・きょうだい）
        {sibs}       a と b をまとめた言い方（姉弟・兄妹・姉妹・兄弟・双子の姉妹・きょうだい）。{sibs:ac} のように二人を選べる
@@ -59,15 +61,24 @@
   }
   S.findTie = findTie;
 
-  /* a から見た b の位置：{ g: b の性別, pos: 'ue'（b が上）/'shita'（b が下）/'twin'（双子・上下なし）/''（分からない）, twin, dir, step, tie } */
+  /* 関係の「上下」の欄（t.elder）：'a'／'b'／'none'。きょうだいの関係（庇護を除く）にだけ効く */
+  function elderOf(t) { var e = t && t.type !== 'sibprot' && S.isSibTie(t) ? t.elder : ''; return e === 'a' || e === 'b' || e === 'none' ? e : ''; }
+  S.elderOf = elderOf;
+  /* a から見た b の位置：{ g: b の性別, pos: 'ue'（b が上）/'shita'（b が下）/'twin'（双子・上下なし）/''（分からない・上下なし）, twin, dir, set（上下の欄で決めた）, flat（上下なし）, step, tie } */
   S.info = function (a, b, env) {
-    var t = findTie(env, a, b), ia = idx(a), ib = idx(b);
-    var o = { g: gen(b), ga: gen(a), pos: '', twin: false, dir: false, step: S.isStep(t), tie: t };
+    var t = findTie(env, a, b), ia = idx(a), ib = idx(b), el = elderOf(t);
+    var o = { g: gen(b), ga: gen(a), pos: '', twin: false, dir: false, set: false, flat: false, step: S.isStep(t), tie: t };
     var aa = age(a), ab = age(b);
+    /* 上下なし：年齢差があっても上下を付けない（双子にもしない） */
+    if (el === 'none') { o.flat = true; return o; }
     /* 義理のきょうだいは、同じ年齢でも双子にしない（上下は決めない） */
     if (aa && ab && aa === ab && !o.step) o.twin = true;
     if (t && t.type === 'sibprot' && ia != null && ib != null && (t.a === ia || t.a === ib)) {
       o.dir = true; o.pos = t.a === ib ? 'ue' : 'shita';
+    } else if (el && ia != null && ib != null && (t.a === ia || t.a === ib) && (t.b === ia || t.b === ib)) {
+      /* 上下の欄で決めた人が上（年齢より優先） */
+      var up = el === 'a' ? t.a : t.b;
+      o.set = true; o.pos = up === ib ? 'ue' : 'shita';
     } else if (aa && ab && aa !== ab) o.pos = ab > aa ? 'ue' : 'shita';
     else if (o.twin) o.pos = 'twin';
     return o;
@@ -156,7 +167,8 @@
       return (ga ? UE[ga] : '兄姉') + '（庇護）→' + (gb ? SHITA[gb] : '弟妹');
     }
     var w = S.pairWord(A, B, env);
-    if (w === 'きょうだい') return '';
+    /* 男女で上下が決まらない（年齢が未設定・上下なし）ときは「きょうだい」（「兄弟（不仲）」のように片方の性別の語にしない）。性別が分からなければ元の関係名 */
+    if (w === 'きょうだい' && !(gen(A) && gen(B) && gen(A) !== gen(B))) return '';
     return (step ? '義理の' : '') + w + (SUFFIX[step ? 'stepsib' : t.type] || '');
   };
   /* HK.tieLabel（ties.js）から：関係を当てたときに覚えた名前（t.sibLab）、なければ who（住人の配列か 番号→住人 の関数）、
@@ -184,22 +196,39 @@
     return { i: i, name: nm, gender: c.gender || '', age: c.age || '', tone: c.tone || '', calls: c.calls || null };
   }
   S.resPerson = resPerson;
+  /* 結果の p.tie には上下の欄（elder）が乗っていないことがあるので、入力の関係（res.input.ties）から写す。
+     入力の関係の a・b と向きが逆でも、上の人が同じになるように直す */
+  function resWithElder(tie, res) {
+    if (!tie || tie.elder != null || tie.type === 'sibprot') return tie;
+    var it = ((res && res.input && res.input.ties) || []).filter(function (x) {
+      return x && x.elder && (x.type === tie.type || (x.type === 'stepsib' && (tie.type === 'relative' || tie.step))) && ((x.a === tie.a && x.b === tie.b) || (x.a === tie.b && x.b === tie.a));
+    })[0];
+    if (!it) return tie;
+    var o = {}, k;
+    for (k in tie) o[k] = tie[k];
+    if (it.type === 'stepsib') o.step = true;
+    if (it.elder === 'none') o.elder = 'none';
+    else { var up = it.elder === 'a' ? it.a : it.b; o.elder = up === tie.a ? 'a' : 'b'; }
+    return o;
+  }
+  S.resWithElder = resWithElder;
   /* 結果の p.tie（type・label・a・b）の表示名。義理のきょうだいは結果では「親族」になっているので、入力の関係も見る。言い換えられなければ '' */
   S.resLabel = function (tie, res, mode) {
     if (!tie || !res) return '';
     var A = resPerson(res, tie.a), B = resPerson(res, tie.b);
     if (!A || !B) return '';
-    var t = tie;
+    var t = resWithElder(tie, res);
     if (tie.type === 'relative' && !tie.step) {
       var st = ((res.input && res.input.ties) || []).filter(function (x) { return x && x.type === 'stepsib' && ((x.a === tie.a && x.b === tie.b) || (x.a === tie.b && x.b === tie.a)); })[0];
       if (!st && !/義理/.test(tie.label || '')) return '';
       t = { type: 'relative', step: true, a: tie.a, b: tie.b };
+      if (st && st.elder) t.elder = st.elder === 'none' ? 'none' : (st.elder === 'a' ? st.a : st.b) === tie.a ? 'a' : 'b';
     }
     return S.tieLabel(t, A, B, mode);
   };
   S.resElder = function (tie, res) {
     if (!tie || !res || !S.isSibTie(tie) && !(tie.type === 'relative' && /義理/.test(tie.label || ''))) return null;
-    return S.elder(tie, resPerson(res, tie.a), resPerson(res, tie.b));
+    return S.elder(resWithElder(tie, res), resPerson(res, tie.a), resPerson(res, tie.b));
   };
 
   /* ---------- 弟妹から上のきょうだいへの呼び方（既定） ----------
@@ -253,7 +282,7 @@
   S.ui = function (c, o, t) {
     if (!c || !o || !t || !S.isSibTie(t) && t.type !== 'stepsib') return null;
     var a = withI(c, c.id), b = withI(o, o.id), env = { tie: t }, inf = S.info(a, b, env);
-    var r = { rel: S.rel(a, b, env) || '', call: '', auto: false, notes: [] };
+    var r = { rel: S.rel(a, b, env) || '', call: '', auto: false, notes: [], src: inf.flat ? 'none' : inf.set ? 'set' : inf.dir ? 'dir' : 'auto', pair: S.pairWord(a, b, env) };
     var own = c.calls && c.calls[o.id];
     if (own) r.call = own;
     else if (inf.pos === 'ue' && inf.g && !(c.youFor && c.youFor[o.id])) { r.call = CALL[S.callGroup(c)][inf.g][0]; r.auto = true; }
@@ -265,11 +294,17 @@
         var older = ab > aa ? o : c, prot = upIsO ? o : c;
         r.notes.push('年齢では' + older.name + 'が年上ですが、庇護の向き（' + prot.name + 'が兄姉）を優先します');
       }
+    } else if (inf.flat) {
+      r.notes.push('上下なしにしているので、' + (aa && ab && aa !== ab ? '年齢差があっても' : '') + '上下を付けずに対等に扱います（文では『' + r.pair + '』、呼びかけは名前になります）');
+    } else if (inf.set) {
+      var upO = inf.pos === 'ue', upP = upO ? o : c;
+      if (aa && ab && aa === ab && !inf.step) r.notes.push('同じ年齢なので双子として扱い、上下の設定どおり' + upP.name + 'を上にします');
+      else if (aa && ab && aa !== ab && (ab > aa) !== upO) r.notes.push('年齢では' + (ab > aa ? o : c).name + 'が年上ですが、上下の設定（' + upP.name + 'が上）を優先します');
     } else if (!aa || !ab) {
-      r.notes.push('年齢が未設定なので' + gw + 'か決められません（文では『' + S.pairWord(a, b, env) + '』になります）。年齢か『兄弟（庇護）』の向きを決めてください');
+      r.notes.push('年齢が未設定なので' + gw + 'か決められません（文では『' + r.pair + '』になります）。年齢か『上下』を決めてください');
     } else if (aa === ab) {
-      if (inf.step) r.notes.push('義理のきょうだいで同じ年齢なので、' + gw + 'かは決めません（文では『' + S.pairWord(a, b, env) + '』になります）');
-      else r.notes.push('同じ年齢なので双子として扱います');
+      if (inf.step) r.notes.push('義理のきょうだいで同じ年齢なので、' + gw + 'かは決めません（文では『' + r.pair + '』になります）。上下を付けるなら『上下』で選べます');
+      else r.notes.push('同じ年齢なので双子として扱います。上下を付けるなら『上下』で選べます');
     }
     return r;
   };
