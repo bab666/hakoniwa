@@ -31,6 +31,7 @@
      言い切り=0.3           ← 文末の終助詞（よ・ね・よね・さ・ぞ・だな）を、この割合で落として言い切りにする（問いには当てない）
      動揺=く……ッ！／バカな……！ ← 「！」で終わる強い感情の文（うそ・まさか なども）の頭に付ける一言。台詞に一度まで
      動揺の割合=0.5         ← 動揺を付ける割合（既定 0.5）
+     強い文の説明=残す      ← 「！」で終わる強い文でも、元の文の「〜のだ」を外さず、説明・念押しの語尾（のだ・んだ・だし・ね など）を足してよい（書かなければ、外して足さない。「のじゃ」「なのだよ」が持ち味の口調用）
      [効果]                 ← 組み込みの小さな変形
      感嘆符を落とす=はい ／ 伸ばす=はい ／ 言い切りに！=はい ／ 短くする=はい ／ 言いよどみ=はい ／ 前に……=はい ／ 間を置く=はい
    ■ 使い方
@@ -290,7 +291,8 @@
   }
 
   /* ---------- 効果 ---------- */
-  function fxBang(q) { return q.replace(/！+/g, '。').replace(/。(?=」|$)/g, '。'); }
+  /* 「！」を「。」に。「！」の後ろの空き（「黙れ！　あなたの」）も詰める（「黙れ。　あなたの」にしない） */
+  function fxBang(q) { return q.replace(/！+[\s　]*/g, '。').replace(/。(?=」|$)/g, '。'); }
   function fxStretch(ss, seed) {
     return ss.map(function (s, i) {
       var st = splitTail(s.body);
@@ -305,7 +307,8 @@
       return s;
     });
   }
-  function fxShort(ss) { if (ss.length <= 1) return ss; var f = ss[0]; return [{ body: (/^[…‥]/.test(f.body) ? '' : '……') + f.body, punct: f.punct === '。' ? '' : f.punct }]; }
+  /* 短くする：最初の文だけ残し、頭に「……」。もう「……」や「え……」のような短い間で始まる文には重ねない（「……え……待って」にしない） */
+  function fxShort(ss) { if (ss.length <= 1) return ss; var f = ss[0]; return [{ body: (/^(?:[ぁ-ゖァ-ヶー]{1,3})?[…‥]/.test(f.body.replace(new RegExp(MARK, 'g'), '')) ? '' : '……') + f.body, punct: f.punct === '。' ? '' : f.punct }]; }
   /* 言いよどみ：文頭のかなを一つ重ねる（「大丈夫」→ 漢字始まりは重ねられないので、最初の文の終わりを「……」で濁す）。
      元の文がもう言いよどんでいる・間投詞で始まる（「だ、大丈夫」「あ、」「え、」）・「……」で始まるときは何もしない */
   function fxStammer(q, seed) {
@@ -347,13 +350,49 @@
     if (qm || /[？?]$/.test(to) || /[のん]だ$/.test(to)) return false;
     /* 問いに念押し・言い切りの語尾を足さない（元の文にもともとあった語尾の言い換えはよい：「ね？=ね〜？」） */
     var tq = (head + t0).replace(/[〜ー～]+$/, ''), oq = (head + (from || '')).replace(/[〜ー～]+$/, '');
-    if (/^[？?]/.test(punct) && /(?:[よわぞぜさだね！!]|である)$/.test(tq) && tq.slice(-1) !== oq.slice(-1)) return true;
+    if (/^[？?]/.test(punct) && /(?:[よわぞぜさだね！!]|である|なあ)$/.test(tq) && tq.slice(-1) !== oq.slice(-1)) return true;
     /* 問いの終わりの「かな」「かね」「かい」「かしら」は問いの形なのでよい（「何をしたんですかな」） */
-    if (isQuestion(head + (from || '')) && !/の[よさ]$/.test(to) && /(?:[よわぞぜさだな！!]|である)[〜ー～]*$/.test(to) && !/(?:かな|かね|かい|かしら|だい)[〜ー～]*$/.test(to)) return true;
+    if (isQuestion(head + (from || '')) && !/の[よさ]$/.test(to) && /(?:[よわぞぜさだな！!]|である|なあ)[〜ー～]*$/.test(to) && !/(?:かな|かね|かい|かしら|だい|かなあ)[〜ー～]*$/.test(to)) return true;
     return false;
   }
-  /* 文末の表を一つの文に当てる（最初に合った項目だけ） */
-  function applyEnds(body, punct, ends, seed, i, strict) {
+  /* 強い文（「！」で終わる文：怒り・制止・驚き）の語尾（2026-10-26 の利用者の指摘「理由を特定して、ルールでカバー」）。
+     ・元の文の説明の「〜のだ（ぞ・よ・な）」は外す（「台無しになるところだったのだぞ！」→「台無しになるところだった！」、「変装なのだ！」→「変装だ！」）。
+       感嘆符を落とす口調で「〜のだ。」が残る（冷静の「〜だったのだ。」）のもこれで防ぐ
+     ・文末の表の候補が、元の文にない説明・念押しの語尾（のだ・んだ・のよ・だし・もん・ね・ねえ・なあ）を足すなら、その候補は使わない
+       （「だったんだし！」「だったんだよねえ！」「黙ってねえ！」にしない。元の「んだ」を「の」「のよ」に置き換える、元の「ね」を「ねえ」にするのはよい）
+     「のだ」「のじゃ」そのものが口調の持ち味の口調は、辞書の [規則] に 強い文の説明=残す と書けば、どちらもしない */
+  var STRONG_EXPL = /(?:なのだ[よぞな]?|のだ[よぞな]?|んだ[よぞし]?|のよ|の|ないし|いし|だし|だもん|もん|けど|ねえ|ね|なあ)$/;
+  /* 「ない」を「ねえ」にした（怒ってねえ・聞いてねえ）のは否定の形で、念押しの「ねえ」ではない */
+  function negNee(from, t) { return /ない$/.test(from) && /ねえ$/.test(t) && !/ないねえ$/.test(t); }
+  function strongCut(body) {
+    var st = splitTail(body), core = st[0];
+    if (core.slice(-1) === MARK) return body;
+    var m = core.match(/(な)?のだ(?:ぞ|よ|な)?$/);
+    if (!m) return body;
+    var head = core.slice(0, core.length - m[0].length);
+    if (!head || /[、\s　]$/.test(head)) return body;
+    return head + (m[1] ? 'だ' : '') + st[1];
+  }
+  function addsExpl(from, c) {
+    var t = c.replace(/[〜ー～…‥っッ♡]+$/, ''), m = t.match(STRONG_EXPL);
+    if (!m) return false;
+    var w = m[0];
+    if (/^(?:な?のだ|んだ|のよ|の$)/.test(w)) return !/[んの]/.test(from);
+    if (/(?:し|もん|けど)$/.test(w)) return !/(?:し|もん|けど)$/.test(from);
+    if (/ねえ?$/.test(w)) return !/ね$/.test(from) && !negNee(from, t);
+    if (w === 'なあ') return !/な$/.test(from);
+    return false;
+  }
+  /* 足した語尾を続く文で重ねない：候補が元の文にない ねえ・よぉ・し（だし・ないし）・もん・のだ・なあ・ね を足すとき、その語。
+     前の文で足したのと同じ語を足す候補は、ほかの候補があれば使わない（「じゃないし。……それだけだし」「座ってねえ。……聞いてないねえ」にしない） */
+  var ADD_TAIL = /(?:ねえ|よぉ|し|もん|のだ[よぞ]?|なあ|ね)$/;
+  function addedTail(from, to) {
+    if (to === from) return '';
+    var t = to.replace(/[〜ー～…‥っッ♡]+$/, ''), m = t.match(ADD_TAIL);
+    return m && from.slice(-m[0].length) !== m[0] && !negNee(from, t) ? m[0] : '';
+  }
+  /* 文末の表を一つの文に当てる（最初に合った項目だけ）。strong：強い文（「！」）で、説明・念押しの語尾を足さない。avoid：前の文で足した語尾 */
+  function applyEnds(body, punct, ends, seed, i, strict, strong, avoid) {
     if (!ends || !ends.length) return { body: body, punct: punct };
     var st = splitTail(body), core = st[0];
     if (core.slice(-1) === MARK) return { body: body, punct: punct };
@@ -368,12 +407,15 @@
         var okc = e[1].filter(function (c) {
           if (badEnd(h0, c, punct, qm, from)) return false;
           if (strict && /^[！!]/.test(punct) && /[。、]/.test(c.replace(/^[…‥、]+/, ''))) return false;
+          if (strong && c !== from && addsExpl(from, c)) return false;
           /* 新しい規則を使う辞書：問いには、問いの形（か・の・かな・かね など）でない付け足し（「たよぉ？」「でしょ、たぶん？」）を当てない */
           if (ask && c !== from && (!/(?:か|の|かな|かい|かね|だい)[〜ー～ぁあ]*$/.test(c) || /[。、]/.test(c.replace(/^[…‥、]+/, '')))) return false;
           return true;
         });
         if (!okc.length) return { body: body, punct: punct };
+        if (avoid) { var ok2 = okc.filter(function (c) { return addedTail(from, c) !== avoid; }); if (ok2.length) okc = ok2; }
         var to = okc.length === e[1].length ? choose(e[1], seed + '#e' + i) : choose(okc, seed + '#e' + i);
+        var added = addedTail(from, to);
         if (qm) { var tq = to.match(/[？?]+$/); to = to.replace(/[？?]+$/, ''); punct = (tq ? tq[0] : '') + punct.replace(/^[？?]+/, ''); }
         /* 候補が「！」「？」で終わり、文末に飾り（……・――・っ）があるときは、記号を飾りの後ろへ（「誰か――！」→「誰か！――！」にしない） */
         /* 敬語→ため口の表で言いよどみの頭が変わる（「す、すみません」→「ご、ごめん」）ときは、言いよどみも合わせる */
@@ -389,10 +431,10 @@
           /* 語幹は、直前の漢字・かな続き（「飲み」「やってみ」「勉強し」）。長すぎる語幹は最後の数文字に */
           if (stem.length > 6) { rest = head.slice(0, head.length - 6); stem = head.slice(-6); }
           to = to.replace(/\{(る|た|ない|なかった|よう|て)\}/g, function (m, f) { return conj(stem, f); });
-          return { body: rest + to + st[1], punct: punct };
+          return { body: rest + to + st[1], punct: punct, tail: added };
         }
         /* 語尾を消した（「よろしく、です」→「よろしく、」）ときは、残った読点も外す */
-        return { body: (to === '' ? head.replace(/[、\s　]+$/, '') : head) + to + st[1], punct: punct };
+        return { body: (to === '' ? head.replace(/[、\s　]+$/, '') : head) + to + st[1], punct: punct, tail: added };
       }
     }
     return { body: body, punct: punct };
@@ -464,7 +506,7 @@
     if (r.laugh) q = ruleLaugh(q, r.laugh, seed);
     if (r.emph && r.emph.length) q = ruleEmph(q, r.emph, seed, r.emphRate);
     /* 文ごと */
-    var ss = segs(q);
+    var ss = segs(q), prevTail = '';
     ss = ss.map(function (s, i) {
       var body = s.body;
       if (r.neg) body = ruleNeg(body, r.neg);
@@ -476,7 +518,11 @@
       /* 短い文はため口（敬語まじり）：決まり文句（ありがとうございます・よろしくお願いします など）、助詞のない短い一言、短い問いは、組み込みの敬語→ため口の表で崩す。それ以外は辞書の文末 */
       var pre0 = core0.replace(/(?:です|ます|ません|ました|でしょう|ください|ましょう|でした|ございます)[かねよ]*$/, '');
       var sc = r.shortCasual != null && (SET_PHRASE.test(core0) || (coreLen <= r.shortCasual && !/[はがをにへとでもの]/.test(pre0)) || (/^[？?]/.test(punct) && coreLen <= r.shortCasual + 2));
-      var ap = applyEnds(body, punct, sc ? CASUAL_ENDS : d.ends, seed, i, newRules(r));
+      /* 強い文（「！」）：元の文の説明の「のだ」を外し、説明・念押しの語尾を足さない（強い文の説明=残す の口調は除く） */
+      var strong = /^[！!]/.test(punct) && r.strongExpl !== '残す';
+      if (strong) body = strongCut(body);
+      var ap = applyEnds(body, punct, sc ? CASUAL_ENDS : d.ends, seed, i, newRules(r), strong, prevTail);
+      prevTail = ap.tail || '';
       return { body: ap.body.replace(new RegExp(MARK, 'g'), ''), punct: ap.punct };
     });
     if (fx.stretch) ss = fxStretch(ss, seed);
@@ -547,7 +593,7 @@
 
   /* ---------- 辞書の文字列を読む ---------- */
   var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '強調語の割合': 'emphRate', '存在': 'exist', '短い文はため口': 'shortCasual',
-    '前置き': 'lead', '前置きの割合': 'leadRate', '驚き': 'surprise', '笑い': 'laugh', '言い切り': 'flat', '動揺': 'shaken', '動揺の割合': 'shakenRate' };
+    '前置き': 'lead', '前置きの割合': 'leadRate', '驚き': 'surprise', '笑い': 'laugh', '言い切り': 'flat', '動揺': 'shaken', '動揺の割合': 'shakenRate', '強い文の説明': 'strongExpl' };
   var FX_KEYS = { '感嘆符を落とす': 'bangOff', '伸ばす': 'stretch', '言い切りに！': 'bangOn', '言い切りに!': 'bangOn', '短くする': 'short', '言いよどみ': 'stammer', '前に……': 'dots', '間を置く': 'pause' };
   /* 「元=先1／先2」の候補。空の候補（「です(い)=／です」の左側）は「消す」の意味で残す */
   function alts(v) { return String(v).split(/[／/]/).map(function (x) { return x.replace(/^\s+|\s+$/g, ''); }); }
@@ -590,7 +636,7 @@
       if (sec === 'ends') { var cond = null; var cm = k.match(/^(.+?)\((.+)\)$/); if (cm) { k = cm[1]; try { cond = new RegExp(cm[2] + '$'); } catch (e) { cond = null; } } cur.ends.push([k, alts(v), cond]); return; }
       if (sec === 'words') { cur.words.push([k, alts(v)]); return; }
       if (sec === 'rules') {
-        var rk = RULE_KEYS[k]; if (!rk) { out.errors.push((i + 1) + '行目：規則「' + k + '」は使えません（否定／進行／断定／助詞落とし／縮約／強調語／存在／短い文はため口／前置き／驚き／笑い／言い切り／動揺）'); return; }
+        var rk = RULE_KEYS[k]; if (!rk) { out.errors.push((i + 1) + '行目：規則「' + k + '」は使えません（否定／進行／断定／助詞落とし／縮約／強調語／存在／短い文はため口／前置き／驚き／笑い／言い切り／動揺／強い文の説明）'); return; }
         if (rk === 'drop') { var rate = parseFloat(v); cur.rules.drop = rate > 0 ? Math.min(1, rate) : 0; }
         else if (rk === 'emphRate') { var er = parseFloat(v); cur.rules.emphRate = er >= 0 ? Math.min(1, er) : 0.5; }
         else if (rk === 'shortCasual') { var sl = parseInt(v, 10); cur.rules.shortCasual = sl > 0 ? sl : 6; }
