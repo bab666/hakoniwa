@@ -154,6 +154,8 @@
     ctx.chars.forEach(function (c) {
       if (c === a || c === b || away(c) || !near(ctx, a, c)) return;
       if (O.coLove(ctx, a, b, c)) return;
+      /* 関係「無関心」（a→c）：a は c に関心がないので、c を恋敵として妬まない */
+      if (HK.Ties && HK.Ties.apathy && HK.Ties.apathy(ctx, a, c)) return;
       var r = R(ctx, b, c), v = r.att + r.aff * 0.5 + (ctx.pair(b, c).couple ? 60 : 0);
       if (v > bv) { bv = v; best = c; }
     });

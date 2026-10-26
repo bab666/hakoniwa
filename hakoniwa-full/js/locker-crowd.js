@@ -191,7 +191,7 @@
   /* ======================= 共通の部品 ======================= */
   function setup(input) {
     var S = ST.state(input, 'locker'), env = S.env;
-    S.ties = input.ties || [];
+    S.ties = (HK.Story && HK.Story.tiesOk ? HK.Story.tiesOk(S.P, input.ties) : input.ties || []);
     S.lew = env.lewd || 'mid';
     S.R18 = !HK.SAFE_ON && S.lew !== 'low';
     var LX = HK.Lewd, lcf = LX && LX.conf('locker');
@@ -723,16 +723,53 @@
 
   /* ---------- 三人のロッカー ---------- */
   function trioPairs(m) { return [[m[0], m[1]], [m[0], m[2]], [m[1], m[2]]]; }
-  /* 三人とも互いに体の関係になれる・想い合える組で、本命がいる人はその本命もこの三人の中にいて、熱が限界のときだけ */
+  /* 中心の人をはさむ二人（直接は繋がらない二人）が、触れ合う・唇を重ねるまではしてよいか：恋愛対象・恋愛（両方向）・縛り・R18は canAct と同じに見て、
+     受け攻めの向き（受け×受け・攻め×攻め）だけは問わない（受け攻めの合わない組は HK.canLove も偽になるので、canLove は見ない） */
+  function touchOk(S, a, b) {
+    if (!a || !b || a === b) return false;
+    /* HK.canLove は受け攻めの向き（HK.Pos.okLove）も見るので、ここでは恋愛対象（genderOK）と縛り（ngPair・sexBlocked）・恋愛にしない関係だけを見る */
+    if (HK.Pos && HK.Pos.genderOK && !HK.Pos.genderOK(a, b)) return false;
+    if (HK.ngPair && HK.ngPair(a, b)) return false;
+    if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
+    if (noLoveTie(S, a, b) || (a.minor || '') !== (b.minor || '')) return false;
+    if (!HK.SAFE_ON && !(HK.State.r18ok(a) && HK.State.r18ok(b))) return false;
+    return true;
+  }
+  /* 三人の場面の組み方：三人とも互いに体の関係になれる（全組 canAct）なら all、
+     そうでなければ、二人の両方と体の関係になれる一人（中心）がいて、残りの二人が受け攻めの向き以外は合う（touchOk）なら、その中心の番号（hub）。
+     どちらでもなければ null（攻め一人・受け二人のように、受けどうし・攻めどうしが組めないだけの三人も、中心を立てて三人の場面にする） */
+  function trioPlan(S, m) {
+    var ok = trioPairs(m).map(function (pr) { return canAct(S, pr[0], pr[1]); });
+    if (ok[0] && ok[1] && ok[2]) return { all: true };
+    for (var i = 0; i < 3; i++) {
+      var h = m[i], r = m.filter(function (c) { return c !== h; });
+      if (canAct(S, h, r[0]) && canAct(S, h, r[1]) && touchOk(S, r[0], r[1])) return { all: false, hub: h };
+    }
+    return null;
+  }
+  /* 三人とも互いに体の関係になれる・想い合える組（または中心のある三人）で、本命がいる人はその本命もこの三人の中にいて、熱が限界のときだけ */
   function trioOk(S, m) {
-    if (!trioPairs(m).every(function (pr) { return canAct(S, pr[0], pr[1]); })) return false;
+    if (!trioPlan(S, m)) return false;
     /* 恋人がこの三人の外にいる人は、三人の場面に加わらない */
     if (m.some(function (p) { return S.P.some(function (q) { return m.indexOf(q) < 0 && has(S, p, q, /^(lover|mate|fated)$/) && okLove(p, q); }); })) return false;
     return m.every(function (p) { return p.honmei == null || (m.some(function (q) { return q.i === p.honmei; }) && desperate(p)); });
   }
   /* 三人の上下：攻めが二人を抱く（oneTwo）／二人の攻めが一人を（twoOne）／真ん中が前を抱き、後ろから抱かれる（sandwich） */
   function trioShape(S, m) {
-    var Pos = HK.Pos, es = trioPairs(m).map(function (pr) { return Pos ? Pos.order(pr[0], pr[1], pr) : pr; });
+    var Pos = HK.Pos, pl = trioPlan(S, m);
+    if (!pl) return null;
+    /* 中心のある三人：中心と二人の向きだけで形を決める（直接は繋がらない二人どうしの向きは使わない。room-trio.js の shape と同じ考え方） */
+    if (!pl.all) {
+      var h = pl.hub, xy = m.filter(function (c) { return c !== h; }), x = xy[0], y = xy[1];
+      var ox = Pos ? Pos.order(h, x, [h, x]) : [h, x], oy = Pos ? Pos.order(h, y, [h, y]) : [h, y], ht = (ox[0] === h ? 1 : 0) + (oy[0] === h ? 1 : 0);
+      if (ht === 2) return { p: 'oneTwo', t: h, m: x, u: y, hub: true };
+      if (ht === 0) return { p: 'twoOne', t: x, m: y, u: h, hub: true };
+      var up = ox[0] === h ? y : x, dn = ox[0] === h ? x : y;
+      /* 前を抱きながら後ろから抱かれる形は、後ろの人が跨る組（女性の攻め×男性）では起こらない */
+      if (modeOf(up, h) === 'fm') return null;
+      return { p: 'sandwich', t: up, m: h, u: dn, hub: true };
+    }
+    var es = trioPairs(m).map(function (pr) { return Pos ? Pos.order(pr[0], pr[1], pr) : pr; });
     var tops = function (c) { return es.filter(function (e) { return e[0] === c; }).length; };
     var T2 = m.filter(function (c) { return tops(c) === 2; })[0], B0 = m.filter(function (c) { return tops(c) === 0; })[0];
     if (T2 && B0) {
@@ -780,7 +817,7 @@
       var sp = trioShape(S, m);
       if (!sp) return;
       Lk.trioSex = true; Lk.trioShape = sp; Lk.lv = 4; Lk.trioNow = true;
-      ST.key(S, ST.say(S, { actors: [sp.t, sp.m, sp.u], tag: '三人で', text: trioScene(S, sp), why: '三人の場面：同じロッカーの三人とも、互いに体の関係になれる組だった（受け攻め：' + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: sp.t.name + '→' + sp.m.name + '→' + sp.u.name }[sp.p] + '・仲良し）' + (S.trioNight ? '／夜の性格：' + S.trioNight : ''), mag: 36, kind: 'climax' }), 'ロッカー' + Lk.n + 'の三人');
+      ST.key(S, ST.say(S, { actors: [sp.t, sp.m, sp.u], tag: '三人で', text: trioScene(S, sp), why: (sp.hub ? '三人の場面：同じロッカーの三人のうち、' + { oneTwo: sp.t.name, twoOne: sp.u.name, sandwich: sp.m.name }[sp.p] + 'が二人の両方と体の関係になれる組だった（中心のある三人。二人どうしは直接は繋がらない。受け攻め：' : '三人の場面：同じロッカーの三人とも、互いに体の関係になれる組だった（受け攻め：') + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: sp.t.name + '→' + sp.m.name + '→' + sp.u.name }[sp.p] + '・仲良し）' + (S.trioNight ? '／夜の性格：' + S.trioNight : ''), mag: 36, kind: 'climax' }), 'ロッカー' + Lk.n + 'の三人');
       S.cw++;
       Lk.rest = 1;
       return;
@@ -841,7 +878,9 @@
     if (S.eroOn && HK.ThickEro && HK.ThickEro.trioFill) {
       var tops = sp.p === 'oneTwo' ? [sp.t] : [sp.t, sp.m], bots = sp.p === 'oneTwo' ? [sp.m, sp.u] : sp.p === 'twoOne' ? [sp.u] : [sp.m, sp.u];
       var pen = tops.every(function (c) { return !isF(c); }) && R.TRIO_ERO.pen[sp.p];
-      out += HK.ThickEro.trioFill(S, ST.fmt(pk(pen || R.TRIO_ERO.soft), vv), r);
+      /* 二人の攻めが一人を（twoOne）・中心のある三人は、指と舌の文のうち、受ける人に向かう文だけ（R.TRIO_ERO.softU）。攻めどうし・繋がらない二人が責め合う文にしない */
+      var soft = (sp.p === 'twoOne' || sp.hub) && R.TRIO_ERO.softU ? R.TRIO_ERO.softU[sp.p] || R.TRIO_ERO.soft : R.TRIO_ERO.soft;
+      out += HK.ThickEro.trioFill(S, ST.fmt(pk(pen || soft), vv), r);
     }
     /* 果てる：受ける人から順に（真ん中の sandwich は受ける側として） */
     var recv = sp.p === 'oneTwo' ? [[sp.m, sp.t], [sp.u, sp.t]] : sp.p === 'twoOne' ? [[sp.u, sp.t]] : [[sp.u, sp.m], [sp.m, sp.t]];

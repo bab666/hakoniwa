@@ -178,7 +178,7 @@
     if (h.kind === 'res') (S.ties || []).forEach(function (t) {
       if (!/^(lover|mate|fated|spouse)$/.test(t.type)) return;
       var o = t.a === h.i ? t.b : t.b === h.i ? t.a : null, x = o == null ? null : S.party.filter(function (p) { return p.i === o; })[0];
-      if (!x) return;
+      if (!x || (HK.ngPair && HK.ngPair(h, x))) return;
       (h.loveSet = h.loveSet || []).push(x.i); (x.loveSet = x.loveSet || []).push(h.i);
     });
     var o = sayAs(S, S.party[0], { kind: 'sys', tag: '主催者', text: nm(pk(S, T.intro[h.kind]), { h: h.name, n: names(S.party) }), why: h.kind === 'res' ? '主催者：' + h.name + '（住人。挑戦はしない）／お気に入り：' + S.hostFav.name : '主催者：' + h.name + '（モブ）' });

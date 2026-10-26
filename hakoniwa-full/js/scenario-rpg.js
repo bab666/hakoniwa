@@ -235,7 +235,7 @@
     function special(A, a, b, usedK) {
       /* 執着（ヤンデレ。obsess-story.js） */
       if (HK.Obsess && HK.Obsess.storyTick) {
-        if (!S.ties) S.ties = input.ties || [];
+        if (!S.ties) S.ties = (HK.Story && HK.Story.tiesOk ? HK.Story.tiesOk(S.P, input.ties) : input.ties || []);
         var ob = HK.Obsess.storyTick(S, A, { rate: 0.35 });
         if (ob) { ST.say(S, { actors: ob.actors.map(function (q) { return q.i; }), tag: ob.tag, kind: ob.kind, text: ob.text, why: ob.why, mag: ob.mag }); return true; }
       }

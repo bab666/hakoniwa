@@ -282,6 +282,9 @@
   H.beyondFor = function (c, plKey) {
     var base = H.BEYOND[plKey] || [], fem = H.BEYOND_FEM[plKey] || [], male = H.BEYOND_MALE[plKey] || {}, neu = H.BEYOND_NEU[plKey] || {};
     var P = HK.Pos, g = c && (c.gender || (c.src && c.src.gender)) || '';
+    /* 性器を決めた人（HK.Pos.genSet）は、性別ではなく性器で体の文を選ぶ（男性で女性器の人に「{a}のもの」を書かない） */
+    var gs = P && P.genSet ? P.genSet(c) : '';
+    if (gs === 'm') g = 'm'; else if (gs === 'f' || gs === 'mf') g = 'f';
     var futa = !!(P && P.futa && P.futa(c));
     if (g === 'f') return base.concat(futa ? (H.BEYOND_FUTA[plKey] || []).concat(H.BEYOND_FM[plKey] || []) : H.BEYOND_FF[plKey] || []);
     if (g === 'm') return base.map(function (e, i) { return male[i] || e; }).concat(H.BEYOND_FM[plKey] || []);

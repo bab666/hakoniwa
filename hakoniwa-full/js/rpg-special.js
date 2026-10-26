@@ -34,7 +34,7 @@
   }
   HK.RPG_SPEC = {
     setup: function (S, input) {
-      S.ties = S.ties || (input.ties || []);
+      S.ties = S.ties || (HK.Story && HK.Story.tiesOk ? HK.Story.tiesOk(S.P, input.ties) : input.ties || []);
       SP.setup(adapter(S, 0), S.P, function (p) { return input.perChar && input.perChar[p.i]; });
     },
     label: function (p) { return p.spec ? '・' + SP.LABEL[p.spec] : ''; },

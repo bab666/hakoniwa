@@ -138,7 +138,7 @@
     /* 受け攻め：向きの決まらない二人（攻め×攻めなど）は体の関係にならない。女性どうしは、いちもつの描写を使わない */
     var Pos = HK.Pos, clash = !!(Pos && Pos.clash(A, B)) || tieNL, ff = !!(Pos && Pos.ff(A, B)), R18 = !HK.SAFE_ON;
     /* 敵対している二人（関係がライバル・不仲・敵対）：攻めの側から強引に手を出し、受けは口では嫌がるが、まんざらではない応じ方をする（hate-sex-r18.js。R18版のみ） */
-    if (!S.ties) S.ties = input.ties || [];
+    if (!S.ties) S.ties = (HK.Story && HK.Story.tiesOk ? HK.Story.tiesOk(S.P, input.ties) : input.ties || []);
     var HSX = R18 && HK.HateSex, hateP = !!(HSX && rel === 'tension' && !ngP && !clash && HSX.hostile(S, A, B));
     function hardTop(p) { return !!(Pos && Pos.hardTop(p, p && p.o)); }
     if (bind === 'one') {
@@ -276,7 +276,7 @@
       });
       /* 敵視（hate-kit.js）：狭いロッカーの中で、一方が近づき、一方が嫌悪する */
       if (HK.HateKit && rng() < 0.3) {
-        if (!S.ties) S.ties = input.ties || [];
+        if (!S.ties) S.ties = (HK.Story && HK.Story.tiesOk ? HK.Story.tiesOk(S.P, input.ties) : input.ties || []);
         var HKt = HK.HateKit, hp = HKt.pairs(S, [A, B])[0];
         if (hp) {
           var hr = hp.st === 'love' ? HKt.loveGap(S, hp.a, hp.b, ST.fmt(pk(LK_HATE_LEAD), { a: hp.a.name, b: hp.b.name })) : hp.st === 'hate' ? HKt.quarrel(S, hp.a, hp.b) : HKt.style(hp.a) === 'active' ? HKt.harass(S, hp.a, hp.b) : HKt.snub(S, hp.a, hp.b);
@@ -490,7 +490,7 @@
           if (ok) wk.cnt.solve++;
         } else if (G2.lewd && rng() < 0.05 + (A.m.heat + B.m.heat) / 450 + ({ lover: 0.3, fwb: 0.25, almost: 0.2, tension: -0.15 }[rel] || 0)) {
           prog = 100;
-          ST.sayB(S, { actors: [A, B], tag: G2.name, text: ST.fmt(pk(pair.conn || pair.level >= 2 ? LK.KISS_MID : LK.KISS_OK), v0), why: '脱出のためにキスをした（発情 ' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）', mag: 24 }, '', true);
+          ST.sayB(S, { actors: [A, B], tag: G2.name, text: ST.fmt(pk(pair.conn || pair.level >= 2 ? LK.KISS_MID : LK.KISS_DUTY && HK.Pos && HK.Pos.genderOK && !HK.Pos.genderOK(A, B) ? LK.KISS_DUTY : LK.KISS_OK), v0), why: '脱出のためにキスをした（発情 ' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）', mag: 24 }, '', true);
         } else if (G2.lewd && !pair.conn && rng() < 0.3) {
           ST.sayB(S, { actors: [A, B], tag: G2.name, text: ST.fmt(pk(G2.try), v0) + ST.fmt(pk(G2.ng), v0), why: 'キスしないと開かない' }, 'キスの扉は開かないまま');
         }

@@ -14,6 +14,17 @@
     HK.canLove = function (a, b) { var S = ST._cur; if (S && S.env && +S.env.romance === 0 && S.env.romance !== '' && !(S.scen && S.scen.romanceCore)) return false; return cl0.apply(this, arguments); };
     HK.canLove._storyRom = true;
   }
+  /* 関係の設定を物語型の S.ties に写すとき：恋愛・R18にしない組（HK.ngPair：恋愛にしない相手・恋愛相手を別の人に固定した組など）には、恋愛の関係（恋人・セフレ・片想いなど）を当てない
+     （エンジン型の ties.js・邪神村・吹雪の館・宇宙船・人狼と同じ。媚薬ロッカー・ダンジョンRPG・エロトラップダンジョンの仲間が使う）
+     住人の写し（charFlags で sexLock・noR18 を写したもの）を P に渡す */
+  ST.tiesOk = function (P, ties) {
+    return (ties || []).filter(function (t) {
+      if (!t || !P || !P[t.a] || !P[t.b] || t.a === t.b) return !!t;
+      if (HK.ngPair && HK.ngPair(P[t.a], P[t.b]) && /^(lover|fwb|mate|fated|crush|almost|ex|yan)$/.test(t.type)) return false;
+      /* 体の関係にならない組（性行為の相手の固定・R18に参加しない：HK.sexBlocked）には、セフレの関係を当てない（ties.js と同じ） */
+      return !(t.type === 'fwb' && HK.sexBlocked && HK.sexBlocked(P[t.a], P[t.b]));
+    });
+  };
   ST.state = function (input, scenId) {
     var scen = HK.SCENARIOS[scenId], env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
@@ -35,7 +46,7 @@
     (input.ties || []).forEach(function (t) { if (t && t.type === 'honmei' && S.P[t.a] && S.P[t.b] && t.a !== t.b && !(HK.ngPair && HK.ngPair(S.P[t.a], S.P[t.b]))) S.P[t.a].honmei = t.b; });
     /* 複数の恋人の設定（poly.js の HK.Poly.mode が S.poly を読む）と、関係の恋人の一覧（性行為の相手の固定「恋人だけ」・一途で使う。engine.js と同じ作り方） */
     S.poly = HK.Poly ? HK.Poly.modeOf(input.env) : 'none';
-    (input.ties || []).forEach(function (t) { if (t && /^(lover|mate|fated)$/.test(t.type) && S.P[t.a] && S.P[t.b] && t.a !== t.b) { (S.P[t.a].loveSet = S.P[t.a].loveSet || []).push(t.b); (S.P[t.b].loveSet = S.P[t.b].loveSet || []).push(t.a); } });
+    ST.tiesOk(S.P, input.ties).forEach(function (t) { if (t && /^(lover|mate|fated)$/.test(t.type) && S.P[t.a] && S.P[t.b] && t.a !== t.b) { (S.P[t.a].loveSet = S.P[t.a].loveSet || []).push(t.b); (S.P[t.b].loveSet = S.P[t.b].loveSet || []).push(t.a); } });
     ST._cur = S;
     return S;
   };

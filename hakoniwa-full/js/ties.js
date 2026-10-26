@@ -444,6 +444,8 @@
         /* 恋愛相手の固定だけが食い違い、体の関係は許されている組（engine.js の HK.lockSexOnly）は、セフレの関係を残す */
         var sexOk0 = !mk0 && HK.lockSexOnly && HK.lockSexOnly(A, B);
         if (HK.ngPair && HK.ngPair(A, B) && (mk0 ? /^(lover|fwb|mate|fated|crush|almost|ex|yan|abuse|honmei)$/ : sexOk0 ? /^(lover|mate|fated|almost|ex|abuse|honmei)$/ : /^(lover|fwb|mate|fated|almost|ex|abuse|honmei)$/).test(t.type)) return;
+        /* 体の関係にならない組（性行為の相手の固定「恋人だけ」「特定の人だけ」・R18に参加しない：HK.sexBlocked）には、セフレの関係を当てない */
+        if (t.type === 'fwb' && HK.sexBlocked && HK.sexBlocked(A, B)) return;
         if (HK.ngPair && HK.ngPair(A, B) && /^(crush|yan)$/.test(t.type)) {
           /* 想う側（A）が別の人に恋愛相手を固定しているなら、その想いは使わない（固定した人は、ほかの人を想わない） */
           if (A.lock != null && A.lock !== B.i) return;

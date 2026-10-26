@@ -274,7 +274,7 @@
     ((input && input.ties) || []).forEach(function (t) {
       if (!/^(lover|mate|fated|spouse)$/.test(t.type)) return;
       var x = S.party.filter(function (p) { return p.i === t.a; })[0], y = S.party.filter(function (p) { return p.i === t.b; })[0];
-      if (!x || !y) return;
+      if (!x || !y || (HK.ngPair && HK.ngPair(x, y))) return;
       (x.loveSet = x.loveSet || []).push(y.i); (y.loveSet = y.loveSet || []).push(x.i);
     });
     return res;
