@@ -144,7 +144,7 @@
         if (!c || c.out || rng() > 0.35 + a.tr.honesty * 0.5 || (HK.Poly && !HK.Poly.canTry(ctx, a, c))) return;
         if (!fire) { ctx.incident('後夜祭。グラウンドの真ん中でキャンプファイヤーが燃えている。'); fire = true; }
         var yes = R(ctx, c, a).att > 30;
-        ctx.act2({ actors: [a, c], cat: 'romance', mag: 12, fx: function () { ctx.mod2(a, c, { att: yes ? 8 : 0 }, { att: yes ? 10 : 3, aff: yes ? 5 : 0 }); if (!yes) ctx.stress(a, 12); if (yes && R(ctx, a, c).aff > 30 && R(ctx, c, a).aff > 30) ctx.pair(a, c).couple = true; },
+        ctx.act2({ actors: [a, c], cat: 'romance', mag: 12, fx: function () { ctx.mod2(a, c, { att: yes ? 8 : 0 }, { att: yes ? 10 : 3, aff: yes ? 5 : 0 }); if (!yes) { ctx.stress(a, 12); hurt(ctx, a); } if (yes && R(ctx, a, c).aff > 30 && R(ctx, c, a).aff > 30) ctx.pair(a, c).couple = true; },
           text: ctx.t(ctx.pick(yes ? ['{a}は{b}をフォークダンスの輪に誘った。曲が終わっても、手はしばらく離れなかった。', '{a}は{b}の前に手を差し出した。{b}は笑ってその手を取り、火の粉の舞う輪の中に入っていった。', '{a}と{b}は輪から少し離れて、キャンプファイヤーの火が小さくなるまで並んで見ていた。'] : ['{a}は{b}をダンスに誘った。{b}は「ごめん、片付けがあるから｜すまない、片付けがある｜すみません、片付けがありますから」と校舎に戻っていった。', '{a}は{b}を誘おうと近づいたが、{b}はもう別の人と輪の中にいた。', '{a}は{b}に声をかけた。{b}は「また今度ね｜また今度な｜また今度、お願いします」と笑って、友達のところへ戻っていった。']), a, c), why: a.name + 'の惹かれと本音の出やすさ／' + c.name + 'の側の惹かれ（' + Math.round(R(ctx, c, a).att) + '）' });
       });
     },
@@ -204,7 +204,7 @@
           var c = crushOf(ctx, a, 50);
           if (!c || c.out || ctx.rng() > 0.3 + a.tr.honesty * 0.5 || (HK.Poly && !HK.Poly.canTry(ctx, a, c))) return;
           var yes = R(ctx, c, a).att > 28;
-          ctx.act2({ actors: [a, c], cat: 'romance', mag: 15, fx: function () { ctx.mod2(a, c, { att: 6 }, { att: yes ? 10 : 2 }); if (yes) ctx.pair(a, c).couple = true; else ctx.stress(a, 15); },
+          ctx.act2({ actors: [a, c], cat: 'romance', mag: 15, fx: function () { ctx.mod2(a, c, { att: 6 }, { att: yes ? 10 : 2 }); if (yes) ctx.pair(a, c).couple = true; else { ctx.stress(a, 15); hurt(ctx, a); } },
             text: ctx.t(ctx.pick(yes ? ['式のあと、{a}は{b}に第二ボタンをねだった。{b}は黙って、ボタンごと学ランの前を外した。', '式のあと、{a}は{b}を桜の木の下に呼び出した。「ずっと言えなかったことがある｜＝｜ずっと言えなかったことがあります」――{b}は、最後まで聞いてから頷いた。', '{a}は{b}の卒業アルバムの寄せ書きの欄に、一行だけ書いた。{b}はそれを読んで、{a}を追いかけた。'] : ['{a}は{b}を呼び止めて、それから「元気でね｜元気でな｜お元気で」とだけ言った。', '{a}は{b}に花束を渡した。言いたかったことは、花束の中のカードにも書けなかった。', '{a}は校門のところで{b}を待っていたが、{b}は友達に囲まれていて、結局手を振っただけだった。']), a, c), why: '最後の日。' + a.name + 'の惹かれ（' + Math.round(R(ctx, a, c).att) + '）' });
         });
         if (G3.length === P.length) return;
@@ -251,7 +251,7 @@
       if (c && !c.out) {
         var go = rng() < 0.2 + a.tr.honesty * 0.55 + (a.goal.id === 'lover' ? 0.2 : 0) - a.tr.ac * 0.15;
         if (!go) {
-          ctx.act2({ actors: [a, c], cat: 'solo', fx: function () { ctx.stress(a, 12); ctx.mod(a, c, { att: 4 }); }, text: ctx.t(ctx.pick(V_FAIL), a, null, c), why: a.name + 'のAC（' + Math.round(a.eg.AC) + '）：渡したい気持ちより、断られる怖さが勝った' });
+          ctx.act2({ actors: [a, c], cat: 'solo', fx: function () { ctx.stress(a, 7); ctx.mod(a, c, { att: 4 }); }, text: ctx.t(ctx.pick(V_FAIL), a, null, c), why: a.name + 'のAC（' + Math.round(a.eg.AC) + '）：渡したい気持ちより、断られる怖さが勝った' });
           return;
         }
         got[c.i] = (got[c.i] || 0) + 1;
@@ -263,11 +263,11 @@
           ctx.pair(a, c).confessed[a.i] = true;
           if (res === 'yes') { ctx.pair(a, c).couple = true; ctx.mod2(a, c, { att: 10, aff: 8 }, { att: 12, aff: 10, trust: 8 }); }
           else if (res === 'hold') { ctx.mod(c, a, { att: 6 }); ctx.flags.valentine.push({ a: a.i, b: c.i }); }
-          else { ctx.stress(a, 25); ctx.mod2(a, c, { ten: 8 }, { ten: 4 }); }
+          else { ctx.stress(a, 25); hurt(ctx, a); ctx.mod2(a, c, { ten: 8 }, { ten: 4 }); }
         }, text: ctx.t(line, a, c), why: a.name + 'の惹かれ（' + Math.round(R(ctx, a, c).att) + '）と本音の出やすさ／' + c.name + 'の側：惹かれ ' + Math.round(rc.att) + (taken ? '・すでに恋人がいる' : '') });
         P.forEach(function (o) {
           if (o === a || o === c) return;
-          if (crushOf(ctx, o, 55) === c && (!HK.Obsess || HK.Obsess.jealOk(ctx, o, c))) ctx.act2({ actors: [o, a], cat: 'conflict', fx: function () { ctx.mod(o, a, { ten: 14 }); ctx.stress(o, 12); ctx.pair(o, a).jealous++; }, text: ctx.t(ctx.pick(['{a}は、{b}が{c}に箱を渡すところを見てしまった。', '{a}は一日中、{c}の鞄の中身のことばかり考えていた。', '{a}の手の中で、渡せなかった箱が少し潰れた。']), o, a, c), why: o.name + 'も' + c.name + 'に惹かれていた' });
+          if (crushOf(ctx, o, 55) === c && (!HK.Obsess || HK.Obsess.jealOk(ctx, o, c))) ctx.act2({ actors: [o, a], cat: 'conflict', fx: function () { ctx.mod(o, a, { ten: 14 }); ctx.stress(o, 8); ctx.pair(o, a).jealous++; }, text: ctx.t(ctx.pick(['{a}は、{b}が{c}に箱を渡すところを見てしまった。', '{a}は一日中、{c}の鞄の中身のことばかり考えていた。', '{a}の手の中で、渡せなかった箱が少し潰れた。']), o, a, c), why: o.name + 'も' + c.name + 'に惹かれていた' });
         });
         return;
       }
@@ -302,14 +302,15 @@
         ctx.act2({ actors: [b, a], cat: 'romance', mag: 25, fx: function () { ctx.pair(a, b).couple = true; ctx.mod2(a, b, { att: 10, aff: 8 }, { att: 10, aff: 8 }); },
           text: ctx.t(ctx.pick(['{a}は{b}に、手作りのマカロンを渡した。「一か月、ちゃんと考えた。……付き合おう｜＝｜一か月、ちゃんと考えました。……付き合いましょう」', '{a}は{b}を校門で待っていた。差し出した箱には、メッセージカードが一枚入っていた。', '{a}は「三倍返し｜三倍返しだ｜三倍返しです」と言って、{b}に大きな箱を渡した。中身より、添えられた言葉の方が大事だった。']), b, a), why: b.name + 'の惹かれがこの一か月で育った（' + Math.round(r.att) + '）' });
       } else if (b.tr.cold > 0.6) {
-        ctx.act2({ actors: [b, a], cat: 'conflict', fx: function () { ctx.stress(a, 20); ctx.mod(a, b, { ten: 10 }); }, text: ctx.t('{a}はホワイトデーのことを、すっかり忘れていた。{b}は何も言わなかった。', b, a), why: b.name + 'のドライさ' });
+        ctx.act2({ actors: [b, a], cat: 'conflict', fx: function () { ctx.stress(a, 20); hurt(ctx, a); ctx.mod(a, b, { ten: 10 }); }, text: ctx.t('{a}はホワイトデーのことを、すっかり忘れていた。{b}は何も言わなかった。', b, a), why: b.name + 'のドライさ' });
       } else {
-        ctx.act2({ actors: [b, a], cat: 'romance', fx: function () { ctx.stress(a, 15); ctx.mod(b, a, { aff: 4 }); }, text: ctx.t(ctx.pick(['{a}はお返しのクッキーを渡して、「友達として、これからもよろしく｜友達として、これからもよろしくな｜友達として、これからもよろしくお願いします」と言った。', '{a}は丁寧に包んだお返しと一緒に、申し訳なさそうな顔を{b}に渡した。']), b, a), why: b.name + 'の惹かれは育たなかった（' + Math.round(r.att) + '）' });
+        ctx.act2({ actors: [b, a], cat: 'romance', fx: function () { ctx.stress(a, 15); hurt(ctx, a); ctx.mod(b, a, { aff: 4 }); }, text: ctx.t(ctx.pick(['{a}はお返しのクッキーを渡して、「友達として、これからもよろしく｜友達として、これからもよろしくな｜友達として、これからもよろしくお願いします」と言った。', '{a}は丁寧に包んだお返しと一緒に、申し訳なさそうな顔を{b}に渡した。']), b, a), why: b.name + 'の惹かれは育たなかった（' + Math.round(r.att) + '）' });
       }
     });
   }
 
   L.month = function (ctx, s) {
+    returnShort(ctx);
     var f = CAL[ctx.label];
     if (f) { f(ctx); ctx.flush(); }
     birthdays(ctx);
@@ -469,17 +470,81 @@
   }
 
   /* ======================= 不登校 ======================= */
+  /* 負担が続くと、まず遅刻・保健室・早退・一日だけの欠席（足が重い段 c.flags.slump）が出て、それが二か月以上続いたときだけ不登校になる。
+     たいていの不登校は数日で戻る（次の月のはじめに戻る）。いじめ・孤立・大きな失恋が重なった人（重い展開ではどれか一つでも）だけが長引く */
+  function dk(ctx, mild, normal, dark) { return HK.Dark ? HK.Dark.pick(ctx, mild, normal, dark) : normal; }
+  /* いちばん親しい同級生との、互いの好意の小さいほう（孤立の目安） */
+  function bestFriend(ctx, c) { var b = -99; ctx.present().forEach(function (o) { if (o !== c && !o.flags.teacher) b = Math.max(b, Math.min(R(ctx, c, o).aff, R(ctx, o, c).aff)); }); return b; }
+  /* 大きな失恋：ここ二か月のうちに、告白を断られた（clHeart）か、想う相手に恋人ができたと知った（heartbreak.js の hbNews） */
+  function heartbroken(ctx, c) {
+    if (c.flags.clHeart != null && ctx.stepIndex - c.flags.clHeart <= 2) return true;
+    return ctx.chars.some(function (o) { if (o === c) return false; var pf = ctx.pair(c, o); return pf.hbNews != null && ctx.stepIndex - pf.hbNews <= 2 && pf.hbBy !== c.i && R(ctx, c, o).att >= 30; });
+  }
+  function hurt(ctx, c) { c.flags.clHeart = ctx.stepIndex; }
+  /* 不登校の手前の段（1：遅刻・保健室、2：早退・一日だけの欠席） */
+  var SIGN = {
+    late: ['{a}は、一時間目が終わるころに教室へ入ってきた。寝坊したと言ったが、顔色が悪かった。', '{a}は朝のホームルームに間に合わなかった。校門の前で、しばらく立ち止まっていたらしい。', '{a}の遅刻が、今月だけで三回目になった。'],
+    nurse: ['{a}は二時間目の途中で手を挙げて、保健室に行った。戻ってきたのは昼休みだった。', '{a}は「お腹が痛い｜腹が痛い｜お腹が痛いです」と言って、保健室のベッドで一時間目をやり過ごした。', '{a}は、教室より保健室にいる時間のほうが長い日があった。'],
+    early: ['{a}は昼休みのあと、鞄を持って早退した。', '{a}は五限の前に「頭が痛い｜頭痛がする｜頭が痛いです」と言って帰っていった。', '{a}は、放課後を待たずに早退する日が増えた。'],
+    day: ['{a}は一日だけ学校を休んだ。次の日は、何事もなかったような顔で席に着いた。', '{a}の席が、一日だけ空いていた。翌朝の{a}は、少し眠そうだった。', '{a}は「熱っぽい｜熱っぽい｜熱っぽいです」とだけ連絡して、一日休んだ。']
+  };
+  /* {a}＝気づいた人 {b}＝足が重い人 */
+  var NOTICE = ['帰り道、{a}は{b}に「最近、大丈夫？｜最近、大丈夫か｜最近、大丈夫ですか」と聞いた。{b}は少し笑って、うなずいた。', '{a}は、{b}が休んだ時間のノートを、黙ってコピーして渡した。', '昼休み、{a}は{b}を中庭に誘った。何を話したわけでもないが、{b}の顔つきは少しやわらいだ。'];
+  var OUT_SHORT = ['{a}の席が、朝から空いていた。次の日も、その次の日も。', '{a}は、その週はずっと学校を休んだ。朝のホームルームで、担任は体調不良とだけ伝えた。', '{a}からの連絡は「しばらく休む｜しばらく休む｜しばらく休みます」の一行だけだった。{a}の机の上に、配られたプリントが少しずつ溜まっていった。'];
+  var OUT_DEEP = ['{a}の席が、朝から空いていた。次の日も、その次の日も。一週間たっても、{a}は来なかった。', '{a}は、学校に来なくなった。鞄は玄関に置かれたまま、もう何日も動いていないらしい。'];
+  var BACK_SHORT = ['{a}は数日休んだあと、何事もなかったように教室に戻ってきた。机の中には、誰かが取っておいたプリントが入っていた。', '{a}は四日ぶりに登校した。「おはよう｜＝｜おはようございます」と言う声は小さかったが、ちゃんと届いた。', '週明け、{a}は少し早めに登校して、自分の席に座っていた。休んでいたことには、誰も触れなかった。'];
+
+  /* 月のはじめ：数日だけ休んでいた人が戻る（その月の出来事には、もう教室にいる） */
+  function returnShort(ctx) {
+    ctx.chars.forEach(function (c) {
+      var A = c.flags.absent;
+      if (!c.alive || !c.out || !A || A.deep || A.months > 0) return;
+      if (ctx.rng() > dk(ctx, 0.95, 0.85, 0.7)) { A.months = 1; return; }
+      c.out = false; c.flags.absent = null; c.flags.returned = A.since; c.flags.slump = 0;
+      c.stress = HK.clamp(c.stress - 15, 0, 100);
+      ctx.act2({ actors: [c], cat: 'bond', mag: 8, text: ctx.t(ctx.pick(BACK_SHORT), c), why: '家で数日休んで、負担が少し下がった（' + Math.round(c.stress) + '）' });
+    });
+    ctx.flush();
+  }
+
   function absenceStep(ctx) {
-    var C = ctx.chars, B = bullyActive(ctx);
+    var C = ctx.chars, B = bullyActive(ctx), signs = 0;
     C.forEach(function (c) {
       if (!c.alive || c.flags.teacher) return;
       if (!c.out) {
-        var victim = B && B.tg === c.i && B.level >= 2;
-        if (c.stress >= 62 + c.tr.cp * 10 - c.tr.ac * 6 || (victim && c.stress >= 32 + c.tr.cp * 15 - B.level * 4)) {
-          c.out = true; c.flags.absent = { since: ctx.label, months: 0 };
-          ctx.act2({ actors: [c], cat: 'solo', mag: 20, fx: function () { ctx.chars.forEach(function (o) { if (o !== c && o.alive && R(ctx, o, c).aff > 30) ctx.stress(o, 10); }); },
-            text: ctx.t('{a}の席が、朝から空いていた。次の日も、その次の日も。', c), why: victim ? 'いじめ（段階' + B.level + '）と限界を越えた負担（' + Math.round(c.stress) + '）' : '積もった負担（' + Math.round(c.stress) + '）' });
+        var lv = B && B.tg === c.i ? B.level : 0;
+        var iso = ctx.stepIndex >= 2 && bestFriend(ctx, c) < 12, heart = heartbroken(ctx, c);
+        var lim = dk(ctx, 44, 37, 32) + c.tr.cp * 8 - c.tr.ac * 5 - lv * 4 - (iso ? 5 : 0) - (heart ? 4 : 0);
+        var sl = c.flags.slump || 0;
+        if (c.stress < lim) { if (sl && c.stress < lim - 8) c.flags.slump = sl - 1; return; }
+        sl = c.flags.slump = Math.min(4, sl + 1);
+        var heavy = (lv >= 2 ? 1 : 0) + (iso ? 1 : 0) + (heart ? 1 : 0);
+        /* 二か月続けて足が重い（前の月に遅刻・保健室などが出ている）と、不登校になることがある。今年すでに休んだ人がいれば起こりにくい */
+        var nA = ctx.flags.clAbsN || 0, p = dk(ctx, 0.35, 0.65, 0.8) + heavy * 0.15 - nA * 0.25;
+        /* 二人目からは、いじめ（段階2以上）を受けているか、いじめ・孤立・失恋が重なった人だけ（重い展開では、どれか一つでも） */
+        if (nA && heavy < dk(ctx, 2, 2, 1) && lv < 2) p = 0;
+        if (sl >= 2 && c.stress >= lim && ctx.rng() < p) {
+          var deep = heavy >= 2 || lv >= 3 || (heavy >= 1 && dk(ctx, false, false, true)) || (c.flags.absN || 0) >= 1;
+          c.out = true; c.flags.absent = { since: ctx.label, months: 0, deep: deep };
+          c.flags.absN = (c.flags.absN || 0) + 1; ctx.flags.clAbsN = (ctx.flags.clAbsN || 0) + 1;
+          var why = [];
+          if (lv) why.push('いじめ（段階' + lv + '）');
+          if (iso) why.push('クラスで孤立');
+          if (heart) why.push('失恋');
+          why.push('遅刻や保健室が続いたあとの、限界を越えた負担（' + Math.round(c.stress) + '）' + (deep ? '。長引きそうだ' : ''));
+          ctx.act2({ actors: [c], cat: 'solo', mag: deep ? 20 : 12, fx: function () { ctx.chars.forEach(function (o) { if (o !== c && o.alive && R(ctx, o, c).aff > 30) ctx.stress(o, deep ? 8 : 4); }); },
+            text: ctx.t(ctx.pick(deep ? OUT_DEEP : OUT_SHORT), c), why: why.join('・') });
+          return;
         }
+        if (signs >= 2) return;
+        signs++;
+        var kind = sl <= 1 ? (ctx.rng() < 0.5 ? 'late' : 'nurse') : (ctx.rng() < 0.5 ? 'early' : 'day');
+        var LAB = { late: '遅刻', nurse: '保健室', early: '早退', day: '一日だけの欠席' };
+        ctx.act2({ actors: [c], cat: 'solo', mag: 4 + sl * 2, fx: function () { ctx.stress(c, sl <= 1 ? -2 : -4); }, text: ctx.t(ctx.pick(SIGN[kind]), c),
+          why: LAB[kind] + '：負担（' + Math.round(c.stress) + '）' + (lv ? '・いじめ' : '') + (iso ? '・孤立' : '') + (heart ? '・失恋' : '') + (sl >= 2 ? '。足の重い日が続いている' : '') });
+        var f = ctx.most(ctx.present().filter(function (o) { return o !== c && !o.flags.teacher && R(ctx, o, c).aff > 25 && !(B && B.join.indexOf(o.i) >= 0) && !(B && B.by === o.i); }), function (o) { return R(ctx, o, c).aff / 60 + o.tr.np * 0.5; });
+        if (f && ctx.rng() < 0.3 + f.tr.np * 0.4)
+          ctx.act2({ actors: [f, c], cat: 'help', mag: 8, fx: function () { ctx.stress(c, -8); ctx.mod(c, f, { aff: 4, trust: 5 }); }, text: ctx.t(ctx.pick(NOTICE), f, c), why: f.name + 'のNPと、' + c.name + 'への好意（' + Math.round(R(ctx, f, c).aff) + '）。様子が違うのに気づいた' });
         return;
       }
       if (!c.flags.absent) return;
@@ -491,12 +556,14 @@
         var opened = R(ctx, c, v).trust > 10 || c.flags.absent.months > 1;
         ctx.act2({ actors: [v, c], cat: 'help', mag: 12, fx: function () { ctx.stress(c, opened ? -22 : -8); ctx.mod2(v, c, { aff: 4 }, { aff: opened ? 14 : 4, trust: opened ? 16 : 4, att: opened ? 5 : 0 }); },
           text: ctx.t(opened ? '{a}がプリントを届けに来た。{b}は玄関まで出てきて、少しだけ話をした。' : '{a}がプリントを届けに来た。{b}の部屋の窓は、最後まで開かなかった。', v, c), why: v.name + 'の' + (v.focus === c ? '目標（' + c.name + 'を見守る）' : 'NPと' + c.name + 'への好意') });
-      } else c.stress = HK.clamp(c.stress - 2, 0, 100);
+      }
+      /* 家で休んでいるあいだに、負担は少しずつ下がる（長引く人ほどゆっくり） */
+      c.stress = HK.clamp(c.stress - (c.flags.absent.deep ? dk(ctx, 8, 5, 3) : 10), 0, 100);
       var still = bullyActive(ctx) && bullyActive(ctx).tg === c.i;
-      if (c.stress < 45 && !still) {
+      if (c.stress < (c.flags.absent.deep ? 45 : 55) && !still) {
         c.out = false;
         var since = c.flags.absent.since;
-        c.flags.absent = null; c.flags.returned = since;
+        c.flags.absent = null; c.flags.returned = since; c.flags.slump = 1;
         ctx.act2({ actors: [c], cat: 'bond', mag: 15, fx: function () { ctx.present().forEach(function (o) { if (o !== c && o.tr.np > 0.5) ctx.mod(c, o, { aff: 4 }); }); },
           text: ctx.t('{a}が、' + since + '以来はじめて教室のドアを開けた。何人かが「おはよう｜＝｜おはようございます」と言った。', c), why: '負担が下がった（' + Math.round(c.stress) + '）' });
         note(ctx, c.name + 'は' + since + 'から学校を休んでいたが、' + ctx.label + 'に戻ってきた。');
@@ -505,7 +572,8 @@
   }
 
   L.after = function (ctx) {
-    ctx.present().forEach(function (c) { c.stress = HK.clamp(c.stress + 1 + c.tr.ac * 3 + (gr(ctx, c) === 3 ? 2 : 0) + (50 - ctx.env.climate) / 25, 0, 100); });
+    /* 月ごとの負担：気質（AC）・受験・クラスの雰囲気で少し積もり、ひと月たてば少しずつ薄れる（重い負担ほど多く抜ける。一年かけて誰もが積もりきらないように） */
+    ctx.present().forEach(function (c) { c.stress = HK.clamp(c.stress + 1 + c.tr.ac * 3 + (gr(ctx, c) === 3 ? 2 : 0) + (50 - ctx.env.climate) / 25 - c.stress * 0.04, 0, 100); });
     bullyStep(ctx);
     ctx.flush();
     absenceStep(ctx);
@@ -516,6 +584,14 @@
     var B = ctx.flags.bully;
     if (B && !B.stopped) note(ctx, 'いじめ：' + ctx.chars[B.by].name + '→' + ctx.chars[B.tg].name + '（' + B.since + '〜、段階' + B.level + '）。年度末まで、誰も止められなかった。' + (B.join.length ? '加わったのは' + B.join.map(function (i) { return ctx.chars[i].name; }).join('・') + '。' : ''));
     ctx.chars.forEach(function (c) {
+      /* 年度の終わりに数日だけ休んでいた人は、終業式（修了式・卒業式）には来る */
+      var A = c.flags.absent;
+      if (c.alive && c.out && A && !A.deep && A.months === 0) {
+        c.out = false; c.flags.absent = null; c.flags.returned = A.since;
+        ctx.act2({ actors: [c], cat: 'bond', mag: 6, text: ctx.t('{a}は数日休んだあと、最後の日には登校してきた。少し照れくさそうに、自分の席に座った。', c), why: '休んだのは数日だけだった' });
+        ctx.flush();
+        return;
+      }
       if (c.alive && c.out && c.flags.absent) {
         c.fate = '不登校';
         c.fateNote = c.flags.absent.since + 'から学校に来ていない';
