@@ -4,6 +4,8 @@
    ■ 保存の値 c.ending（住人ごと。ui.js の normChar → attr.js の A.norm → E.norm）
      { base: ''（その人の口調）| 'K' | 'F' | 'P' | 口調の鍵, plain: 'ですぞ', ask: 'ですかな', surprise: 'なんと！', laugh: 'フハハ', lead: 'ふむ', flat: ''（なし）| 'some' | 'often', off: true（使わない） }
      以前の「語尾の付け替え」（toneCustom の文字列）が残っていれば、読み込みのときに plain に写して空にする
+     c.toneDict（4000字まで）…「辞書を直接書く（上級）」。高度設定の口調の辞書と同じ書き方（[口調 …] の見出しは省いてよい）。
+       語尾の設定と両方あれば、直接書いた [文末]・[語彙]・[規則]・[効果] を、語尾の設定で作った辞書の上に重ねる（同じ項目は直接書いたほうが勝つ）。off は両方を止める
    ■ 作り方（E.toDict(c) → 辞書の文字列）
      ・ベースの口調の辞書（語彙・規則・効果）を土台にする。語尾を決めたら、ベースの口調の文末の項目は使わない（問いの語尾だけ決めたときは、問いの項目だけ差し替える）
      ・語尾が「です・ます」で始まれば敬語（P）の型（です=ですぞ、ます=ますぞ、ません=ませんぞ…。組み込みの otaku の並び）
@@ -38,6 +40,10 @@
     return o;
   };
   E.active = function (e) { return !!(e && !e.off && (e.plain || e.ask || e.surprise || e.laugh || e.lead || e.flat)); };
+  var DICT_MAX = 4000;
+  function dictText(c) { return c && typeof c.toneDict === 'string' ? c.toneDict.replace(/^\s+|\s+$/g, '') : ''; }
+  /* 語尾の設定か直接書いた辞書のどちらかを使う住人か */
+  E.on = function (c) { return !!(c && !(c.ending && c.ending.off) && (E.active(c.ending) || dictText(c))); };
   /* 古い「語尾の付け替え」（です→っす、だ→だぜ）から、ふだんの語尾を一つ選ぶ */
   function fromCustom(v) {
     var rows = HK.Voice && HK.Voice.toneCustomRows ? HK.Voice.toneCustomRows(v) : [];
@@ -52,12 +58,13 @@
       c.toneCustom = '';
     }
     c.ending = e;
+    c.toneDict = typeof c.toneDict === 'string' ? c.toneDict.slice(0, DICT_MAX) : '';
     return c;
   };
   /* 書き出し・シミュレーションへの受け渡し（値のあるときだけ） */
-  E.exportTo = function (o, c) { var e = E.clean(c.ending); if (Object.keys(e).length) o.ending = e; return o; };
-  E.importFrom = function (c, o) { if (o && o.ending && typeof o.ending === 'object') c.ending = E.clean(o.ending); };
-  E.toInput = function (o, c) { var e = E.clean(c.ending); if (E.active(e)) o.ending = e; return o; };
+  E.exportTo = function (o, c) { var e = E.clean(c.ending); if (Object.keys(e).length) o.ending = e; if (dictText(c)) o.toneDict = c.toneDict.slice(0, DICT_MAX); return o; };
+  E.importFrom = function (c, o) { if (o && o.ending && typeof o.ending === 'object') c.ending = E.clean(o.ending); if (o && typeof o.toneDict === 'string') c.toneDict = o.toneDict.slice(0, DICT_MAX); };
+  E.toInput = function (o, c) { if (!E.on(c)) return o; var e = E.clean(c.ending); if (E.active(e)) o.ending = e; if (dictText(c)) o.toneDict = c.toneDict.slice(0, DICT_MAX); return o; };
 
   /* ---------- ベースの口調 ---------- */
   function baseTone(c) {
@@ -176,6 +183,27 @@
   /* ---------- 辞書を作る ---------- */
   function splitList(v) { return String(v || '').split(/[／\/]/).map(function (x) { return x.replace(/^[\s　]+|[\s　]+$/g, ''); }).filter(Boolean).slice(0, 4); }
   E.labelOf = function (e) { var w = e && (e.plain || e.ask); return '語尾の設定（' + (w ? '〜' + bare(w).replace(/[？?]+$/, '') : 'かんたん') + '）'; };
+  /* 住人の画面・要約に出す名前（直接書いた辞書の 名前= があればそれ） */
+  E.labelFor = function (c) {
+    var u = dictText(c) ? parseUser(dictText(c)) : null, nm = u && u.d && u.d.label;
+    if (nm) return nm;
+    if (E.active(c && c.ending)) return E.labelOf(c.ending) + (u ? '＋辞書' : '');
+    return '自作の辞書（住人ごと）';
+  };
+  /* 直接書いた辞書を読む：[口調 …] の見出しは外して（中身だけとして扱う）、仮の見出しを付けて T.parse に通す。エラーの行番号は書いた文字列の行に直す */
+  var ucache = {};
+  function parseUser(text) {
+    if (ucache[text]) return ucache[text];
+    var n = 0, lines = text.split(/\r?\n/).map(function (l) { if (/^\s*[\[［]\s*口調(?:[\s　][^\]］]*)?[\]］]\s*$/.test(l)) { n++; return ''; } return l; });
+    var p = T.parse('[口調 e:tmp]\n' + lines.join('\n'), false), d = p.dicts['e:tmp'] || null;
+    var errs = p.errors.map(function (m) { return m.replace(/^(\d+)行目/, function (x, k) { return (+k - 1) + '行目'; }); });
+    if (n > 1) errs.push('[口調] は一つ分だけ書けます（見出しを外して、一つの口調として読みました）');
+    var bm = text.match(/^\s*ベース\s*[=＝]\s*([KFPkfp])\s*$/m);
+    var r = { d: d, errors: errs, base: bm ? bm[1].toUpperCase() : '' };
+    if (Object.keys(ucache).length > 30) ucache = {};
+    ucache[text] = r;
+    return r;
+  }
   /* 辞書の本文と、使う情報（鍵・ベース・ベースの口調） */
   function build(c) {
     var e = E.clean(c && c.ending), bt = baseTone(c), f0 = formOf(bt);
@@ -199,9 +227,24 @@
     if (e.lead) { rules.lead = splitList(e.lead).join('／'); rules.leadRate = '0.3'; }
     /* 言い切りは、いつも書く（0 でも書く：問いに言い切りの語尾を当てない細かい整え方が効くように） */
     rules.flat = flat === 'often' ? '0.6' : flat === 'some' ? '0.3' : (same && bd.rules && bd.rules.flat != null ? String(bd.rules.flat) : '0');
-    var body = ['ベース=' + base, '[文末]'].concat(ends, ['[語彙]'], words, ['[規則]'], Object.keys(rules).map(function (k) { return RULE_JA[k] + '=' + rules[k]; }), ['[効果]'], Object.keys(fx).map(function (k) { return FX_JA[k] + '=' + fx[k]; }));
-    var key = 'e:' + hash(bt + '#' + body.join('\n'));
-    return { key: key, base: base, tone: bt, e: e, text: ['[口調 ' + key + ']', '名前=' + E.labelOf(e)].concat(body).join('\n') };
+    /* 直接書いた辞書を上に重ねる：文末・語彙は前に置き（先に当たる）、同じ元の文末は語尾の設定の項目を外す。規則・効果は上書き */
+    var ut = e.off ? '' : dictText(c), u = ut ? parseUser(ut) : null, ud = u && u.d, head = [], label = E.active(e) ? E.labelOf(e) : '自作の辞書（住人ごと）';
+    if (ud) {
+      if (u.base) base = u.base;
+      var bareFrom = function (k) { return k.replace(/\(.*\)$/, ''); }, mine = {};
+      ud.ends.forEach(function (x) { mine[x[0]] = 1; });
+      ends = ud.ends.map(endLine).concat(ends.filter(function (l) { return !mine[bareFrom(l.split('=')[0])]; }));
+      words = ud.words.map(function (w) { return w[0] + '=' + w[1].join('／'); }).concat(words);
+      Object.keys(ud.rules || {}).forEach(function (k) { if (RULE_JA[k] && ud.rules[k] != null && ud.rules[k] !== false) rules[k] = ruleVal(k, ud.rules[k]); });
+      Object.keys(ud.effects || {}).forEach(function (k) { if (FX_JA[k]) { if (ud.effects[k]) fx[k] = 'はい'; else delete fx[k]; } });
+      if (ud.fp) head.push('一人称=' + [ud.fp.m, ud.fp.f, ud.fp.x].join('|'));
+      if (ud.you) head.push('二人称=' + ud.you);
+      if (ud.persona) head.push('態度=' + ud.persona);
+      if (ud.label) label = ud.label;
+    }
+    var body = head.concat(['ベース=' + base, '[文末]'], ends, ['[語彙]'], words, ['[規則]'], Object.keys(rules).map(function (k) { return RULE_JA[k] + '=' + rules[k]; }), ['[効果]'], Object.keys(fx).map(function (k) { return FX_JA[k] + '=' + fx[k]; }));
+    var key = 'e:' + hash(bt + '#' + label + '#' + body.join('\n'));
+    return { key: key, base: base, tone: bt, e: e, label: label, uerr: u ? u.errors : [], text: ['[口調 ' + key + ']', '名前=' + label].concat(body).join('\n') };
   }
   E.toDict = function (c) { return build(c).text; };
 
@@ -216,9 +259,10 @@
     if (!d) return r;
     var bi = (HK.toneInfo && HK.toneInfo(b.tone)) || {}, info = {};
     if (!HK.PERSONA[b.tone]) Object.keys(bi).forEach(function (k) { if (!SKIP[k]) info[k] = bi[k]; });
-    info.label = E.labelOf(b.e);
-    info.desc = 'ベースの口調「' + ((bi && bi.label) || b.tone) + '」の文面で、設定した語尾で話します（住人の設定の「語尾の設定（かんたん）」）';
-    info.base = HK.PERSONA[b.tone] ? b.tone : bi.base;
+    info.label = b.label;
+    info.desc = 'ベースの口調「' + ((bi && bi.label) || b.tone) + '」の文面で、設定した語尾で話します（住人の設定の「語尾の設定（かんたん）」「辞書を直接書く」）';
+    info.base = d.persona || (HK.PERSONA[b.tone] ? b.tone : bi.base);
+    if (d.fp) info.fp = d.fp;
     if (!info.top && HK.TONE_TOP && HK.TONE_TOP[b.tone]) info.top = HK.TONE_TOP[b.tone];
     /* 一人称の既定（住人の一人称の欄が空のとき）：ベースの口調のもの（基本の口調は態度ごとの表 voice.js の FP_DEF から） */
     if (!info.fp && HK.Voice && HK.Voice.fpDefault && HK.PERSONA[b.tone]) info.fp = { m: HK.Voice.fpDefault({ persona: b.tone, gender: 'm' }), f: HK.Voice.fpDefault({ persona: b.tone, gender: 'f' }), x: HK.Voice.fpDefault({ persona: b.tone, gender: 'x' }) };
@@ -234,10 +278,10 @@
   }
   /* 台詞の話し手の口調：語尾の設定を使う住人は e:… の鍵、使わない住人はいつもの口調 */
   E.toneOf = function (c) {
-    if (c && E.active(c.ending)) { var r = register(build(c)); if (r.ok) return r.key; }
+    if (E.on(c)) { var r = register(build(c)); if (r.ok) return r.key; }
     return HK.toneOf ? HK.toneOf(c) : (c && c.tone) || '';
   };
-  E.check = function (c) { var b = build(c), r = register(b); return { key: b.key, text: b.text, errors: r.errors }; };
+  E.check = function (c) { var b = build(c), r = register(b); return { key: b.key, text: b.text, errors: b.uerr.concat(b.uerr.length ? [] : r.errors) }; };
 
   /* ---------- 見本（住人の設定の画面） ---------- */
   E.LONG = [
@@ -248,7 +292,7 @@
   E.preview = function (c, o) {
     var V = HK.Voice, out = { lines: [], errors: [] };
     if (!V || !V.processText || !c) return out;
-    var on = E.active(c.ending), chk = on ? E.check(c) : null;
+    var on = E.on(c), chk = on ? E.check(c) : null;
     if (chk) out.errors = chk.errors;
     o = o || { name: '相手', gender: '' };
     var me = { name: c.name, fp: c.fp || '', you: c.you || '', marks: c.marks || '', gender: c.gender || '', tone: E.toneOf(c), persona: HK.personaOf ? HK.personaOf({ tone: c.tone, eg: c.eg }) : 'gentle' };
@@ -265,9 +309,9 @@
   function escH(s) { return (HK.escape || function (x) { return String(x); })(s); }
   function sampleHtml(c, o) {
     var p = E.preview(c, o), err = p.errors.length ? '辞書の読み込みで問題があります：' + p.errors.join(' / ') : '';
-    return { err: err, html: '<span class="tsh">' + (E.active(c.ending) ? '語尾の設定の見本（' + escH(E.labelOf(c.ending)) + '）' : '語尾を決めると、ここに見本が出ます（いまはふだんの口調）') + '</span>' + p.lines.map(function (l) { return '<span class="tsl">' + escH(l) + '</span>'; }).join('') };
+    return { err: err, html: '<span class="tsh">' + (E.on(c) ? '語尾の設定の見本（' + escH(E.labelFor(c)) + '）' : '語尾を決めるか辞書を書くと、ここに見本が出ます（いまはふだんの口調）') + '</span>' + p.lines.map(function (l) { return '<span class="tsl">' + escH(l) + '</span>'; }).join('') };
   }
-  E.badge = function (c) { return '<span class="gendb" id="endbadge"' + (E.active(c.ending) ? '' : ' hidden') + '>語尾の設定を使う</span>'; };
+  E.badge = function (c) { return '<span class="gendb" id="endbadge"' + (E.on(c) ? '' : ' hidden') + '>語尾の設定を使う</span>'; };
   E.gearHtml = function (c, o, h) {
     var e = c.ending || {}, opt = h.opt, esc = h.esc;
     var keys = (HK.TONE_KEYS || []).filter(function (k) { return !/^e:/.test(k); });
@@ -277,33 +321,42 @@
       keys.map(function (k) { var t = HK.toneInfo && HK.toneInfo(k); return t ? opt(k, t.label, e.base || '') : ''; }).join('') + '</select>';
     var inp = function (k, label, ph, title) { return '<label' + (title ? ' title="' + esc(title) + '"' : '') + '>' + label + ' <input type="text" data-gf="end:' + k + '" value="' + esc(e[k] || '') + '" maxlength="' + FIELDS[k] + '" placeholder="' + esc(ph) + '"></label>'; };
     var s = sampleHtml(c, o);
-    return '<details class="gend"' + (E.active(e) ? ' open' : '') + '><summary><b>語尾の設定（かんたん）</b><span class="gendon">' + (E.active(e) ? '使う' : e.off ? '使わない' : '未設定') + '</span></summary>' +
+    var st0 = function (on) { return on ? '使う' : e.off ? '使わない' : '未設定'; };
+    return '<details class="gend"' + (E.active(e) ? ' open' : '') + '><summary><b>語尾の設定（かんたん）</b><span class="gendon">' + st0(E.active(e)) + '</span></summary>' +
       '<p class="gearhint">例文の語尾を、同じ法則で書き換えます（です→ですぞ・ます→ますぞ・ません→ませんぞ、だ・だよ→だぜ・よ・ね→ぜ のように）。決めた欄だけが効き、空の欄はベースの口調のままです。一人称・二人称は上の欄を使います。</p>' +
-      '<div class="gearrow"><label>ベースの口調 ' + baseSel + '</label><label><input type="checkbox" data-gf="end:off"' + (e.off ? ' checked' : '') + '> いまは使わない</label></div>' +
+      '<div class="gearrow"><label>ベースの口調 ' + baseSel + '</label><label title="語尾の設定と、下の「辞書を直接書く」の両方を止めます（書いた中身は残ります）"><input type="checkbox" data-gf="end:off"' + (e.off ? ' checked' : '') + '> いまは使わない</label></div>' +
       '<div class="gearrow">' + inp('plain', '語尾（ふだん）', '例：〜ですぞ／〜だぜ／〜なのよ', '「です・ます」で始まれば敬語の語尾、それ以外は常体の語尾として扱います') + inp('ask', '語尾（問い）', '例：〜ですかな？／〜か？／〜なのかしら？') + '</div>' +
       '<div class="gearrow">' + inp('surprise', '驚いたとき', '例：なんと！／うわ、まじで', '文頭の「え」「うそ」「マジ」などを置き換えます。／で区切ると候補を4つまで') + inp('laugh', '短い笑い声', '例：フハハ／ふふ／にしし', '「はは」「ふふ」などを置き換えます') + '</div>' +
       '<div class="gearrow">' + inp('lead', '前置き（任意）', '例：やれやれ／ふむ', '台詞の頭にときどき付ける一言（3回に1回くらい）') +
       '<label>言い切り <select data-gf="end:flat" aria-label="言い切りを使う">' + opt('', 'なし（語尾をいつも付ける）', e.flat || '') + opt('some', 'たまに', e.flat || '') + opt('often', 'よく', e.flat || '') + '</select></label></div>' +
+      '</details>' +
+      /* 辞書を直接書く（上級）：高度設定の口調の辞書と同じ書き方。語尾の設定の上に重ねる */
+      '<details class="gend gendict"' + (dictText(c) ? ' open' : '') + '><summary><b>辞書を直接書く（上級）</b><span class="gendon gdon">' + st0(!!dictText(c) && !e.off) + '</span></summary>' +
+      '<p class="gearhint">この住人だけの口調の辞書を書けます（高度設定の「口調の辞書」と同じ書き方。[口調 …] の見出しと名前は省けます）。語尾の設定と両方あるときは、ここに書いた [文末]・[語彙]・[規則]・[効果] を上に重ね、同じ項目はこちらが勝ちます。</p>' +
+      '<p class="gearhint" style="white-space:pre-wrap">' + esc(T.help ? T.help() : '') + '</p>' +
+      '<textarea data-gf="end:dict" rows="8" maxlength="' + DICT_MAX + '" spellcheck="false" aria-label="この住人の口調の辞書" style="width:100%;font-size:13px;font-family:inherit" placeholder="' + esc('[文末]\nです=でござる\nます=まする\n[語彙]\nありがとう=かたじけない\n[規則]\n前置き=さて') + '">' + esc(c.toneDict || '') + '</textarea></details>' +
       '<p class="enderr" id="enderr"' + (s.err ? '' : ' hidden') + '>' + esc(s.err) + '</p>' +
-      '<div class="tonesample endsample" id="endsample" aria-live="polite">' + s.html + '</div></details>';
+      '<div class="tonesample endsample" id="endsample" aria-live="polite">' + s.html + '</div>';
   };
   /* 欄の入力。扱った欄なら true */
   E.gearField = function (c, f, t, isInput, changed, refresh, other) {
     if (!/^end:/.test(f || '')) return false;
     var k = f.slice(4), e = c.ending || {};
-    if (k === 'off') { if (isInput) return true; e.off = !!t.checked; }
+    if (k === 'dict') { c.toneDict = String(t.value).slice(0, DICT_MAX); }
+    else if (k === 'off') { if (isInput) return true; e.off = !!t.checked; }
     else if (k === 'base' || k === 'flat') { if (isInput) return true; e[k] = t.value; }
     else if (FIELDS[k]) e[k] = String(t.value).slice(0, FIELDS[k]);
     else return true;
     c.ending = isInput ? e : E.clean(e);
     changed(false);
-    var s = sampleHtml({ name: c.name, fp: c.fp, you: c.you, marks: c.marks, gender: c.gender, tone: c.tone, eg: c.eg, ending: E.clean(e) }, other);
-    var box = document.getElementById('endsample'), er = document.getElementById('enderr'), bd = document.getElementById('endbadge'), on = t.closest && t.closest('.gend'), lab = on && on.querySelector('.gendon');
+    var s = sampleHtml(c, other);
+    var box = document.getElementById('endsample'), er = document.getElementById('enderr'), bd = document.getElementById('endbadge');
     if (box) box.innerHTML = s.html;
     if (er) { er.textContent = s.err; er.hidden = !s.err; }
-    var act = E.active(E.clean(e));
-    if (bd) bd.hidden = !act;
-    if (lab) lab.textContent = act ? '使う' : e.off ? '使わない' : '未設定';
+    if (bd) bd.hidden = !E.on(c);
+    var labs = document.querySelectorAll('.gend .gendon'), ce = E.clean(e), st1 = function (on) { return on ? '使う' : ce.off ? '使わない' : '未設定'; };
+    if (labs[0]) labs[0].textContent = st1(E.active(ce));
+    if (labs[1]) labs[1].textContent = st1(!!dictText(c) && !ce.off);
     if (refresh) refresh();
     return true;
   };

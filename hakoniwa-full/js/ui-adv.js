@@ -58,7 +58,7 @@
   if (HK.Tone) {
     A.add({
       id: 'tone', title: '口調の辞書', rows: 10,
-      desc: '自分の口調を作れます。ベース（K くだけた常体／F 硬い常体／P 敬語）を選び、[文末]・[語彙]・[規則]・[効果] で言い換えを書きます。作った口調は住人の「口調」の選択欄の末尾に出ます。\n' + (HK.Tone.help ? HK.Tone.help() : ''),
+      desc: '自分の口調を作れます。ベース（K くだけた常体／F 硬い常体／P 敬語）を選び、[文末]・[語彙]・[規則]・[効果] で言い換えを書きます。作った口調は住人の「口調」の選択欄の末尾に出ます。ここは全員で共有する辞書です。住人ごとに書きたいときは、住人の設定の「辞書を直接書く」に書いてください。\n' + (HK.Tone.help ? HK.Tone.help() : ''),
       placeholder: HK.Tone.sample ? HK.Tone.sample() : '[口調]\n名前=ですぞ侍\nベース=P\n一人称=拙者\n[文末]\nです=ですぞ／ですな\nますか=ますかな\n[語彙]\nありがとうございます=かたじけない',
       apply: function (text) { return HK.Tone.setUser(text); },
       extra: function () { return '<div class="row" style="margin-top:4px"><button type="button" class="mini" data-act="adv:tone-demo">見本の台詞で試す</button><span class="desc" id="adv-tone-demo" style="font-size:12px;white-space:pre-wrap"></span></div>'; },

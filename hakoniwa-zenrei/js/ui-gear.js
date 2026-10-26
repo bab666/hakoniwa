@@ -27,7 +27,7 @@
     if (c.fp) bits.push('一人称：' + c.fp);
     if (c.marks) bits.push('語尾：' + c.marks);
     if (c.toneCustom && !HK.TONE_CUSTOM_OFF) bits.push('付け替え：' + c.toneCustom);
-    if (HK.Ending && HK.Ending.active(c.ending)) bits.push(HK.Ending.labelOf(c.ending));
+    if (HK.Ending && HK.Ending.on(c)) bits.push(HK.Ending.labelFor(c));
     if (c.call) bits.push('呼び方：' + callLabel(c.call));
     if (c.gender) bits.push(lab(GENDERS, c.gender));
     if (c.likes) bits.push('恋愛対象：' + lab(LIKES, c.likes));
