@@ -282,6 +282,9 @@ js/locker-ties.js
 js/locker-ties-r18.js
 js/locker-crowd.js
 js/locker-crowd-r18.js
+js/locker-night-top.js
+js/locker-night-bot.js
+js/locker-night.js
 js/solo-locker.js
 js/rpg-data.js
 js/scenario-rpg.js

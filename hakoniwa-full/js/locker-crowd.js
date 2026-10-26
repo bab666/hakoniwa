@@ -778,7 +778,7 @@
       var sp = trioShape(S, m);
       if (!sp) return;
       Lk.trioSex = true; Lk.trioShape = sp; Lk.lv = 4; Lk.trioNow = true;
-      ST.key(S, ST.say(S, { actors: [sp.t, sp.m, sp.u], tag: '三人で', text: trioScene(S, sp), why: '三人の場面：同じロッカーの三人とも、互いに体の関係になれる組だった（受け攻め：' + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: sp.t.name + '→' + sp.m.name + '→' + sp.u.name }[sp.p] + '・仲良し）', mag: 36, kind: 'climax' }), 'ロッカー' + Lk.n + 'の三人');
+      ST.key(S, ST.say(S, { actors: [sp.t, sp.m, sp.u], tag: '三人で', text: trioScene(S, sp), why: '三人の場面：同じロッカーの三人とも、互いに体の関係になれる組だった（受け攻め：' + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: sp.t.name + '→' + sp.m.name + '→' + sp.u.name }[sp.p] + '・仲良し）' + (S.trioNight ? '／夜の性格：' + S.trioNight : ''), mag: 36, kind: 'climax' }), 'ロッカー' + Lk.n + 'の三人');
       S.cw++;
       Lk.rest = 1;
       return;
@@ -823,7 +823,19 @@
     var out = ST.fmt(pk(R.OPEN3), vv) + ST.fmt(pk(R.SHAPE3[sp.p]), vv);
     /* 二人ずつ：oneTwo は t→m・t→u、twoOne は t→u・m→u、sandwich は t→m・m→u。{c}＝残りの一人 */
     var prs = sp.p === 'oneTwo' ? [[sp.t, sp.m, sp.u], [sp.t, sp.u, sp.m]] : sp.p === 'twoOne' ? [[sp.t, sp.u, sp.m], [sp.m, sp.u, sp.t]] : [[sp.t, sp.m, sp.u], [sp.m, sp.u, sp.t]];
-    prs.forEach(function (z) { out += ST.fmt(pk(R.TP[modeOf(z[0], z[1])]), { a: z[0].name, b: z[1].name, c: z[2].name }); });
+    /* 夜の性格（R18版のみ。locker-night.js）：二人ずつの最中（繋がっている）のあとに、攻め→受けの deep の一文。同じ人の同じ役（攻め／受け）は一度だけ */
+    var nUsed = {}, nLab = [];
+    S.trioNight = '';
+    prs.forEach(function (z) {
+      out += ST.fmt(pk(R.TP[modeOf(z[0], z[1])]), { a: z[0].name, b: z[1].name, c: z[2].name });
+      if (!LK.nightLine) return;
+      var uT = nUsed['a' + z[0].i], uB = nUsed['b' + z[1].i];
+      if (uT && uB) return;
+      var mo = modeOf(z[0], z[1]), nr = LK.nightLine(S, z[0], z[1], 'deep', { mode: mo === 'ins' ? 'mf' : mo, only: uT ? 'bot' : uB ? 'top' : undefined });
+      if (!nr || !nr.text) return;
+      out += nr.text; nLab.push(nr.label); nUsed['a' + z[0].i] = nUsed['b' + z[1].i] = true;
+    });
+    S.trioNight = nLab.join('・');
     if (S.eroOn && HK.ThickEro && HK.ThickEro.trioFill) {
       var tops = sp.p === 'oneTwo' ? [sp.t] : [sp.t, sp.m], bots = sp.p === 'oneTwo' ? [sp.m, sp.u] : sp.p === 'twoOne' ? [sp.u] : [sp.m, sp.u];
       var pen = tops.every(function (c) { return !isF(c); }) && R.TRIO_ERO.pen[sp.p];

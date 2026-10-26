@@ -20808,7 +20808,7 @@
     ],
     env: [
       { id: 'heat', label: '発情期の重さ', min: 0, max: 100, def: 50, lo: '抑制剤がよく効く', hi: '抗えない', desc: '高いほど発情期・ラットで理性が飛びやすく、一線を越えやすい' },
-      { id: 'destiny', label: '運命の抗えなさ', min: 0, max: 100, def: 50, lo: '理性で抗える', hi: '本能に呑まれる', desc: '運命の番と本能の強さ。高いほど運命の番に一目で落ち、恋人を捨てて運命へ走り、発情期に合意を待たずにうなじを噛んでしまう。低いほど「運命の番でも人は選べるよ｜運命の番でも人は選べる｜運命の番でも人は選べます」世界になり、積み重ねた関係が運命に勝つ' },
+      { id: 'destiny', label: '運命の抗えなさ', min: 0, max: 100, def: 50, lo: '理性で抗える', hi: '本能に呑まれる', desc: '運命の番と本能の強さ。高いほど運命の番に一目で落ち、恋人を捨てて運命へ走り、発情期に合意を待たずにうなじを噛んでしまう。低いほど「運命の番でも人は選べるよ」世界になり、積み重ねた関係が運命に勝つ' },
       { id: 'society', label: 'α優位の社会（Ωへの偏見）', min: 0, max: 100, def: 60, lo: 'ほぼ対等', hi: 'αが絶対', desc: 'αが社会の上に立ち、Ωが弱い立場に置かれる度合い。高いほどαは地位の高い職に就きやすく、Ωは差別・離職・αの威圧にさらされやすい' },
       { id: 'lewd', label: '描写の濃さ', type: 'select', def: 'mid', options: [{ v: 'low', label: '朝チュン（ぼかす）' }, { v: 'mid', label: 'ほどほど' }, { v: 'high', label: '濃いめ' }] }
     ],
@@ -30310,7 +30310,7 @@
   function goalReason(ctx, a) {
     var z = a.z, g = a.goal.id, d = Z.day(ctx);
     if (z.cult != null || z.bitten) return null;
-    if (g !== 'escape' && z.know.burn && ctx.env.end === 'burn' && a.tr.a + a.tr.caution > 0.9) return { id: 'escape', text: '{a}は、街ごと焼き払われるという話を、本当だと判断した。', why: '噂「街ごと焼き払う｜＝｜街ごと焼き払います」を信じた（冷静さ・慎重さ）' };
+    if (g !== 'escape' && z.know.burn && ctx.env.end === 'burn' && a.tr.a + a.tr.caution > 0.9) return { id: 'escape', text: '{a}は、街ごと焼き払われるという話を、本当だと判断した。', why: '噂「街ごと焼き払う」を信じた（冷静さ・慎重さ）' };
     if (g === 'chaos' && a.stress < 30 && a.tr.np > 0.45 && Z.here(ctx, a).some(function (o) { return ctx.R(a, o).aff > 45; })) { var f0 = Z.here(ctx, a).filter(function (o) { return ctx.R(a, o).aff > 45; })[0]; return { id: 'protect', focus: f0, text: '{a}は、{b}の寝顔を見ながら、自分が何をしようとしていたのかを考えた。', why: a.name + 'の中に残っていたNPと、' + f0.name + 'への好意' }; }
     if ((g === 'live' || g === 'chaos') && z.food <= 0 && z.hunger >= 2 && a.tr.a > 0.5) return { id: 'escape', text: '{a}は空腹の頭で考えた。この街に残っていても、飢えて死ぬだけだ。', why: '食料が尽きた（飢え ' + z.hunger + ' 日）' };
     if (g === 'protect' && a.focus && !a.focus.alive) {
@@ -30450,7 +30450,7 @@
       if (P && P !== K && pv > 0.75) {
         if (K.tr.aggr > 0.6 && rng() < 0.4) {
           var fr = ctx.fight(K, P, { noEvade: true, canSpare: true });
-          ctx.act2({ actors: [K, P, c], cat: 'combat', text: gfill(ctx.pick(GR.fightP), m) + fr.text, why: K.name + 'は「今のうちに殺すべき」、' + P.name + 'は「守るよ｜守る｜守ります」。' + fr.why, mag: 40 });
+          ctx.act2({ actors: [K, P, c], cat: 'combat', text: gfill(ctx.pick(GR.fightP), m) + fr.text, why: K.name + 'は「今のうちに殺すべき」、' + P.name + 'は「守るよ」。' + fr.why, mag: 40 });
           if (P.alive && fr.winner === P) return;
           if (!P.alive || fr.winner === K) {
             ctx.pair(K, c).zexec = K.i;
@@ -30464,7 +30464,7 @@
       }
       var mercy = ctx.R(K, c).aff > 25;
       ctx.pair(K, c)[mercy ? 'zmercy' : 'zexec'] = K.i;
-      ctx.act2({ actors: [K, c].concat(mates.filter(function (o) { return o !== K; })), cat: 'death', fx: function () { mates.forEach(function (o) { if (o !== K) ctx.mod(o, K, { ten: 15, trust: -10 }); }); }, text: gfill(ctx.pick(GR.kill), m), why: K.name + 'の判断（ドライさ ' + Math.round(K.tr.cold * 100) + '・CP' + (K.z.know.blood ? '・「返り血でも感染するよ｜返り血でも感染する｜返り血でも感染します」というデマを信じていた' : '') + '）' + (mercy ? '／情のある別れ' : ''), mag: 48 });
+      ctx.act2({ actors: [K, c].concat(mates.filter(function (o) { return o !== K; })), cat: 'death', fx: function () { mates.forEach(function (o) { if (o !== K) ctx.mod(o, K, { ten: 15, trust: -10 }); }); }, text: gfill(ctx.pick(GR.kill), m), why: K.name + 'の判断（ドライさ ' + Math.round(K.tr.cold * 100) + '・CP' + (K.z.know.blood ? '・「返り血でも感染するよ」というデマを信じていた' : '') + '）' + (mercy ? '／情のある別れ' : ''), mag: 48 });
       ctx.kill(c, K, mercy ? '発症する前に、' + K.name + 'の手で静かに' : '発症する前に、' + K.name + 'に殺された');
       return;
     }
@@ -30543,7 +30543,7 @@
         a.z.drugDone = true;
         var real = rng() < 0.35;
         if (real) a.z.turnAt += 6;
-        return { text: ctx.t('{a}は病院の研究棟で、噂の薬らしいアンプルを見つけ、自分の腕に打った。' + (real ? '……熱が、少しだけ引いた。' : '何も変わらなかった。'), a), why: '噂「病院に発症を遅らせる薬があるんだって｜病院に発症を遅らせる薬がある｜病院に発症を遅らせる薬があります」' + (real ? '（効いた：発症が遅れた）' : '（効かなかった）'), mag: 25 };
+        return { text: ctx.t('{a}は病院の研究棟で、噂の薬らしいアンプルを見つけ、自分の腕に打った。' + (real ? '……熱が、少しだけ引いた。' : '何も変わらなかった。'), a), why: '噂「病院に発症を遅らせる薬があるんだって」' + (real ? '（効いた：発症が遅れた）' : '（効かなかった）'), mag: 25 };
       }
       ctx.stress(a, 5);
       if (rng() < 0.3) Z.hordeEvent(ctx, [a].concat(Z.here(ctx, a).filter(function (o) { return ctx.R(a, o).trust > 15; })), A);
@@ -41183,7 +41183,7 @@
       var sp = trioShape(S, m);
       if (!sp) return;
       Lk.trioSex = true; Lk.trioShape = sp; Lk.lv = 4; Lk.trioNow = true;
-      ST.key(S, ST.say(S, { actors: [sp.t, sp.m, sp.u], tag: '三人で', text: trioScene(S, sp), why: '三人の場面：同じロッカーの三人とも、互いに体の関係になれる組だった（受け攻め：' + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: sp.t.name + '→' + sp.m.name + '→' + sp.u.name }[sp.p] + '・仲良し）', mag: 36, kind: 'climax' }), 'ロッカー' + Lk.n + 'の三人');
+      ST.key(S, ST.say(S, { actors: [sp.t, sp.m, sp.u], tag: '三人で', text: trioScene(S, sp), why: '三人の場面：同じロッカーの三人とも、互いに体の関係になれる組だった（受け攻め：' + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: sp.t.name + '→' + sp.m.name + '→' + sp.u.name }[sp.p] + '・仲良し）' + (S.trioNight ? '／夜の性格：' + S.trioNight : ''), mag: 36, kind: 'climax' }), 'ロッカー' + Lk.n + 'の三人');
       S.cw++;
       Lk.rest = 1;
       return;
@@ -41228,7 +41228,19 @@
     var out = ST.fmt(pk(R.OPEN3), vv) + ST.fmt(pk(R.SHAPE3[sp.p]), vv);
     /* 二人ずつ：oneTwo は t→m・t→u、twoOne は t→u・m→u、sandwich は t→m・m→u。{c}＝残りの一人 */
     var prs = sp.p === 'oneTwo' ? [[sp.t, sp.m, sp.u], [sp.t, sp.u, sp.m]] : sp.p === 'twoOne' ? [[sp.t, sp.u, sp.m], [sp.m, sp.u, sp.t]] : [[sp.t, sp.m, sp.u], [sp.m, sp.u, sp.t]];
-    prs.forEach(function (z) { out += ST.fmt(pk(R.TP[modeOf(z[0], z[1])]), { a: z[0].name, b: z[1].name, c: z[2].name }); });
+    /* 夜の性格（R18版のみ。locker-night.js）：二人ずつの最中（繋がっている）のあとに、攻め→受けの deep の一文。同じ人の同じ役（攻め／受け）は一度だけ */
+    var nUsed = {}, nLab = [];
+    S.trioNight = '';
+    prs.forEach(function (z) {
+      out += ST.fmt(pk(R.TP[modeOf(z[0], z[1])]), { a: z[0].name, b: z[1].name, c: z[2].name });
+      if (!LK.nightLine) return;
+      var uT = nUsed['a' + z[0].i], uB = nUsed['b' + z[1].i];
+      if (uT && uB) return;
+      var mo = modeOf(z[0], z[1]), nr = LK.nightLine(S, z[0], z[1], 'deep', { mode: mo === 'ins' ? 'mf' : mo, only: uT ? 'bot' : uB ? 'top' : undefined });
+      if (!nr || !nr.text) return;
+      out += nr.text; nLab.push(nr.label); nUsed['a' + z[0].i] = nUsed['b' + z[1].i] = true;
+    });
+    S.trioNight = nLab.join('・');
     if (S.eroOn && HK.ThickEro && HK.ThickEro.trioFill) {
       var tops = sp.p === 'oneTwo' ? [sp.t] : [sp.t, sp.m], bots = sp.p === 'oneTwo' ? [sp.m, sp.u] : sp.p === 'twoOne' ? [sp.u] : [sp.m, sp.u];
       var pen = tops.every(function (c) { return !isF(c); }) && R.TRIO_ERO.pen[sp.p];
@@ -41731,6 +41743,14 @@
         }
         /* 新しい関係ならではの最中（R18版のみ。locker-ties-r18.js） */
         if (nt && NT.r18Act && R18 && lew !== 'low' && lv === 4 && !nt.r18In) { nt.r18In = true; t += NT.r18Act(S, nt, tp, tp.o, { moan: moan }); }
+        /* 夜の性格（R18版のみ。locker-night.js）：キス〜口（1〜3）は動く側→受ける側、繋がる（4）は攻め→受けに。同じ組で各段階一回だけ。
+           swap のときは ax＝b（誘われて動いた攻め）。描写「ぼかす」・全年齢版では足さない */
+        var nightL = '';
+        if (R18 && lew !== 'low' && LK.nightLine && lv >= 1 && (lv === 4 ? !pair.nightDeep : !pair.nightEarly)) {
+          var nT = lv === 4 ? tp : ax, nB = lv === 4 ? tp.o : bx;
+          var nR = LK.nightLine(S, nT, nB, lv === 4 ? 'deep' : 'early', { mode: ff ? 'ff' : fmPair(nT, nB) ? 'fm' : 'mf' });
+          if (nR && nR.text) { t += nR.text; nightL = nR.label; if (lv === 4) pair.nightDeep = true; else pair.nightEarly = true; }
+        }
         /* 自分で攻めを選んだ人は、相手に「イかされる」側にしない */
         /* 繋がった瞬間には果てさせない（そこからの数コマを、続きの出来事で書く） */
         if (lv === 4) { ax.m.plea = Math.min(ax.m.plea, 55); bx.m.plea = Math.min(bx.m.plea, 60); }
@@ -41743,7 +41763,7 @@
         var G = gimmicks[gi];
         if (G && G.lewd && lv >= 1) { prog = 100; t += ST.fmt(pk(lv >= 2 && LK.KISS_MID ? LK.KISS_MID : G.ok), { a: a.name, b: b.name }); }
         eroNow = false;
-        var o2 = ST.sayB(S, { actors: [a, b], tag: actLabel(lv), text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた（' + (hardTop(b) ? '攻め' : '動く側') + '）' : resp === 'accept' ? '乗った' : hateNow ? '口では嫌がったが、拒みきらなかった' : '流された') + '（関係：' + RL[rel] + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(lv), lv >= 3 || pair.acts === 1);
+        var o2 = ST.sayB(S, { actors: [a, b], tag: actLabel(lv), text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた（' + (hardTop(b) ? '攻め' : '動く側') + '）' : resp === 'accept' ? '乗った' : hateNow ? '口では嫌がったが、拒みきらなかった' : '流された') + '（関係：' + RL[rel] + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）' + (nightL ? '／夜の性格：' + nightL : ''), mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(lv), lv >= 3 || pair.acts === 1);
         if (o2 && pair.acts === 1) ST.key(S, o2, '最初に手を出したのは' + a.name);
         if (o2 && lv === 4 && !pair.keySex) { pair.keySex = true; ST.key(S, o2, ff ? 'ロッカーの中で肌を重ねた' : 'ロッカーの中で繋がった'); }
         break;

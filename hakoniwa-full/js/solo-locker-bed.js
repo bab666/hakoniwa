@@ -253,7 +253,11 @@
     if (naka) { mids.splice(mids.indexOf(naka), 1); mids.push(naka); } /* 中出しは最後に */
     /* 種族のプレイの一文（attr-race-r18.js。いまの {a}{b} で。二人とも種族がなければ何もしない） */
     var rp = function (k) { return HK.Attr && HK.Attr.racePlay ? HK.Attr.racePlay(x, y, k, function (l) { return pick(S, l); }, { mode: ff ? 'ff' : fm ? 'fm' : 'mf' }) : ''; };
-    var t2 = ST.fmt(pick(S, LK.BED.fore), vv(x, y)) + rp('fore') + ST.fmt(pick(S, ff ? FF.insert : fmOwn ? FM.insert : LK.BED.insert), vv(x, y)) + ST.fmt(pick(S, ff && o.tone === 'rough' ? FF.rough : fm && LK.BED[o.tone][0] !== '' ? FM[o.tone] : LK.BED[o.tone]), vv(x, y));
+    /* 夜の性格の一文（attr-r18.js の HK.Attr.nightText。前戯のあとに一回だけ。受けが攻め指定の組には足さない。
+       理由書きの「夜の性格：〇〇」は attr-r18.js が ST.say を包んで自動で足す）。厚い段落（locker-thick.js）のときは段落を分ける */
+    var foreT = ST.fmt(pick(S, LK.BED.fore), vv(x, y)), rpF = rp('fore'), nightB = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(x, y, ff ? 'ff' : fm ? 'fm' : 'mf', function (l) { return pick(S, l); }, !!(HK.Ero && HK.Ero.on && HK.Ero.on(S))) : '';
+    if (nightB) nightB = ST.fmt(nightB, vv(x, y)) + (/\n\n$/.test(foreT) ? '\n\n' : '');
+    var t2 = foreT + rpF + nightB + ST.fmt(pick(S, ff ? FF.insert : fmOwn ? FM.insert : LK.BED.insert), vv(x, y)) + ST.fmt(pick(S, ff && o.tone === 'rough' ? FF.rough : fm && LK.BED[o.tone][0] !== '' ? FM[o.tone] : LK.BED[o.tone]), vv(x, y));
     t2 += rp('mid');
     var swapped = false, t3 = '';
     mids.forEach(function (m, i) {

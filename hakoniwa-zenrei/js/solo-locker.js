@@ -430,6 +430,14 @@
         }
         /* 新しい関係ならではの最中（R18版のみ。locker-ties-r18.js） */
         if (nt && NT.r18Act && R18 && lew !== 'low' && lv === 4 && !nt.r18In) { nt.r18In = true; t += NT.r18Act(S, nt, tp, tp.o, { moan: moan }); }
+        /* 夜の性格（R18版のみ。locker-night.js）：キス〜口（1〜3）は動く側→受ける側、繋がる（4）は攻め→受けに。同じ組で各段階一回だけ。
+           swap のときは ax＝b（誘われて動いた攻め）。描写「ぼかす」・全年齢版では足さない */
+        var nightL = '';
+        if (R18 && lew !== 'low' && LK.nightLine && lv >= 1 && (lv === 4 ? !pair.nightDeep : !pair.nightEarly)) {
+          var nT = lv === 4 ? tp : ax, nB = lv === 4 ? tp.o : bx;
+          var nR = LK.nightLine(S, nT, nB, lv === 4 ? 'deep' : 'early', { mode: ff ? 'ff' : fmPair(nT, nB) ? 'fm' : 'mf' });
+          if (nR && nR.text) { t += nR.text; nightL = nR.label; if (lv === 4) pair.nightDeep = true; else pair.nightEarly = true; }
+        }
         /* 自分で攻めを選んだ人は、相手に「イかされる」側にしない */
         /* 繋がった瞬間には果てさせない（そこからの数コマを、続きの出来事で書く） */
         if (lv === 4) { ax.m.plea = Math.min(ax.m.plea, 55); bx.m.plea = Math.min(bx.m.plea, 60); }
@@ -442,7 +450,7 @@
         var G = gimmicks[gi];
         if (G && G.lewd && lv >= 1) { prog = 100; t += ST.fmt(pk(lv >= 2 && LK.KISS_MID ? LK.KISS_MID : G.ok), { a: a.name, b: b.name }); }
         eroNow = false;
-        var o2 = ST.sayB(S, { actors: [a, b], tag: actLabel(lv), text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた（' + (hardTop(b) ? '攻め' : '動く側') + '）' : resp === 'accept' ? '乗った' : hateNow ? '口では嫌がったが、拒みきらなかった' : '流された') + '（関係：' + RL[rel] + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(lv), lv >= 3 || pair.acts === 1);
+        var o2 = ST.sayB(S, { actors: [a, b], tag: actLabel(lv), text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた（' + (hardTop(b) ? '攻め' : '動く側') + '）' : resp === 'accept' ? '乗った' : hateNow ? '口では嫌がったが、拒みきらなかった' : '流された') + '（関係：' + RL[rel] + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）' + (nightL ? '／夜の性格：' + nightL : ''), mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(lv), lv >= 3 || pair.acts === 1);
         if (o2 && pair.acts === 1) ST.key(S, o2, '最初に手を出したのは' + a.name);
         if (o2 && lv === 4 && !pair.keySex) { pair.keySex = true; ST.key(S, o2, ff ? 'ロッカーの中で肌を重ねた' : 'ロッカーの中で繋がった'); }
         break;

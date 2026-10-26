@@ -46,7 +46,7 @@
   function goalReason(ctx, a) {
     var z = a.z, g = a.goal.id, d = Z.day(ctx);
     if (z.cult != null || z.bitten) return null;
-    if (g !== 'escape' && z.know.burn && ctx.env.end === 'burn' && a.tr.a + a.tr.caution > 0.9) return { id: 'escape', text: '{a}は、街ごと焼き払われるという話を、本当だと判断した。', why: '噂「街ごと焼き払う｜＝｜街ごと焼き払います」を信じた（冷静さ・慎重さ）' };
+    if (g !== 'escape' && z.know.burn && ctx.env.end === 'burn' && a.tr.a + a.tr.caution > 0.9) return { id: 'escape', text: '{a}は、街ごと焼き払われるという話を、本当だと判断した。', why: '噂「街ごと焼き払う」を信じた（冷静さ・慎重さ）' };
     if (g === 'chaos' && a.stress < 30 && a.tr.np > 0.45 && Z.here(ctx, a).some(function (o) { return ctx.R(a, o).aff > 45; })) { var f0 = Z.here(ctx, a).filter(function (o) { return ctx.R(a, o).aff > 45; })[0]; return { id: 'protect', focus: f0, text: '{a}は、{b}の寝顔を見ながら、自分が何をしようとしていたのかを考えた。', why: a.name + 'の中に残っていたNPと、' + f0.name + 'への好意' }; }
     if ((g === 'live' || g === 'chaos') && z.food <= 0 && z.hunger >= 2 && a.tr.a > 0.5) return { id: 'escape', text: '{a}は空腹の頭で考えた。この街に残っていても、飢えて死ぬだけだ。', why: '食料が尽きた（飢え ' + z.hunger + ' 日）' };
     if (g === 'protect' && a.focus && !a.focus.alive) {
@@ -186,7 +186,7 @@
       if (P && P !== K && pv > 0.75) {
         if (K.tr.aggr > 0.6 && rng() < 0.4) {
           var fr = ctx.fight(K, P, { noEvade: true, canSpare: true });
-          ctx.act2({ actors: [K, P, c], cat: 'combat', text: gfill(ctx.pick(GR.fightP), m) + fr.text, why: K.name + 'は「今のうちに殺すべき」、' + P.name + 'は「守るよ｜守る｜守ります」。' + fr.why, mag: 40 });
+          ctx.act2({ actors: [K, P, c], cat: 'combat', text: gfill(ctx.pick(GR.fightP), m) + fr.text, why: K.name + 'は「今のうちに殺すべき」、' + P.name + 'は「守るよ」。' + fr.why, mag: 40 });
           if (P.alive && fr.winner === P) return;
           if (!P.alive || fr.winner === K) {
             ctx.pair(K, c).zexec = K.i;
@@ -200,7 +200,7 @@
       }
       var mercy = ctx.R(K, c).aff > 25;
       ctx.pair(K, c)[mercy ? 'zmercy' : 'zexec'] = K.i;
-      ctx.act2({ actors: [K, c].concat(mates.filter(function (o) { return o !== K; })), cat: 'death', fx: function () { mates.forEach(function (o) { if (o !== K) ctx.mod(o, K, { ten: 15, trust: -10 }); }); }, text: gfill(ctx.pick(GR.kill), m), why: K.name + 'の判断（ドライさ ' + Math.round(K.tr.cold * 100) + '・CP' + (K.z.know.blood ? '・「返り血でも感染するよ｜返り血でも感染する｜返り血でも感染します」というデマを信じていた' : '') + '）' + (mercy ? '／情のある別れ' : ''), mag: 48 });
+      ctx.act2({ actors: [K, c].concat(mates.filter(function (o) { return o !== K; })), cat: 'death', fx: function () { mates.forEach(function (o) { if (o !== K) ctx.mod(o, K, { ten: 15, trust: -10 }); }); }, text: gfill(ctx.pick(GR.kill), m), why: K.name + 'の判断（ドライさ ' + Math.round(K.tr.cold * 100) + '・CP' + (K.z.know.blood ? '・「返り血でも感染するよ」というデマを信じていた' : '') + '）' + (mercy ? '／情のある別れ' : ''), mag: 48 });
       ctx.kill(c, K, mercy ? '発症する前に、' + K.name + 'の手で静かに' : '発症する前に、' + K.name + 'に殺された');
       return;
     }
@@ -279,7 +279,7 @@
         a.z.drugDone = true;
         var real = rng() < 0.35;
         if (real) a.z.turnAt += 6;
-        return { text: ctx.t('{a}は病院の研究棟で、噂の薬らしいアンプルを見つけ、自分の腕に打った。' + (real ? '……熱が、少しだけ引いた。' : '何も変わらなかった。'), a), why: '噂「病院に発症を遅らせる薬があるんだって｜病院に発症を遅らせる薬がある｜病院に発症を遅らせる薬があります」' + (real ? '（効いた：発症が遅れた）' : '（効かなかった）'), mag: 25 };
+        return { text: ctx.t('{a}は病院の研究棟で、噂の薬らしいアンプルを見つけ、自分の腕に打った。' + (real ? '……熱が、少しだけ引いた。' : '何も変わらなかった。'), a), why: '噂「病院に発症を遅らせる薬があるんだって」' + (real ? '（効いた：発症が遅れた）' : '（効かなかった）'), mag: 25 };
       }
       ctx.stress(a, 5);
       if (rng() < 0.3) Z.hordeEvent(ctx, [a].concat(Z.here(ctx, a).filter(function (o) { return ctx.R(a, o).trust > 15; })), A);
