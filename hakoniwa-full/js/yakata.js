@@ -145,6 +145,8 @@
     }
     /* 最初の犠牲者 */
     var pool = P.filter(function (q) { return q !== cul && q !== S.acc; });
+    /* 殺さない（attr.js の HK.Attr.noKillPair）相手は、ほかに狙える人がいれば最初の犠牲者にしない（same-story.js） */
+    if (HK.SameStory && HK.SameStory.spare) pool = HK.SameStory.spare(S, cul, pool);
     var v1;
     var tr0 = mot.triangle && tri.length ? rng.pick(tri) : null;
     if (S.host.npc) v1 = S.host;
@@ -279,7 +281,7 @@
   }
   function murder(S, v, day, first) {
     var tr = pickTrick(S), m = fmtV(S, v);
-    var k = { v: v, trick: tr, day: day, m: m };
+    var k = { v: v, trick: tr, day: day, m: m, nk: HK.SameStory && HK.SameStory.note ? HK.SameStory.note(S, S.cul, v) : '' };
     S.kills.push(k);
     v.alive = false; v.fate = '殺された（' + day + '日目の夜・' + tr.place + '）';
     /* 手がかり：最初の事件は3つ＋動機、次からは1つずつ */
@@ -310,6 +312,11 @@
     else if (S.acc && alive(S.acc) && rng() < 0.15 + S.cul.tr.cold * 0.2) { tgt = S.acc; why = '共犯の' + S.acc.name + 'の口を封じた'; }
     else { tgt = HK.weighted(rng, live, function (q) { return (1 + Math.max(0, -bond(S, c, q)) * 3 - Math.max(0, bond(S, c, q)) * 0.8 - (S.mot.triangle && q === S.x ? 0.9 : 0)) * (Y.SPEC ? Y.SPEC.danger(q) : 1); }); why = plan ? '最初から次の獲物を決めていた（動機「' + S.mot.label + '」）' : '連続殺人（起きやすさ ' + S.env.serial + '）'; }
     if (!tgt) return;
+    /* 殺さない相手は、ほかに狙える人がいれば避ける（いなければ、やむを得ず。発見の理由書きに添える） */
+    if (HK.SameStory && HK.SameStory.nk && HK.SameStory.nk(S, c, tgt)) {
+      var nkAlt = HK.SameStory.spare(S, c, live).filter(function (q) { return q !== tgt && !HK.SameStory.nk(S, c, q); });
+      if (nkAlt.length) { tgt = nkAlt.sort(function (a, b) { return danger(b) - danger(a); })[0]; why += '（殺さないと決めた相手を避けて、' + tgt.name + 'を狙った）'; }
+    }
     S.nextWhy = why;
     /* 占い師の予見・バディの守り */
     var seer = S.P.filter(function (q) { return alive(q) && q.role === 'seer' && q !== c; })[0];
@@ -349,7 +356,7 @@
     k.found = true;
     var live = S.P.filter(alive), finder = rng.pick(live.filter(function (q) { return !q.isCul; }).concat(live)) || live[0];
     var t = F(pk(S, T.FIND), { a: finder.name, p: k.trick.place }) + F(k.trick.scene, k.m) + '――死因は、' + k.trick.method + 'だった。';
-    var o = ST.say(S, { actors: k.v.i != null ? [finder, k.v] : [finder], tag: '事件', kind: 'climax', text: t, why: (S.kills.length === 1 ? '最初の事件' : S.kills.length + '人目の犠牲者' + (k.why ? '：' + k.why + '……犯人の' + S.cul.name + 'が' : '')) + '（現場：' + k.trick.place + '・手口：' + k.trick.method + '・トリックの難しさ ' + k.trick.diff + '）', mag: 50 });
+    var o = ST.say(S, { actors: k.v.i != null ? [finder, k.v] : [finder], tag: '事件', kind: 'climax', text: t, why: (S.kills.length === 1 ? '最初の事件' : S.kills.length + '人目の犠牲者' + (k.why ? '：' + k.why + '……犯人の' + S.cul.name + 'が' : '')) + '（現場：' + k.trick.place + '・手口：' + k.trick.method + '・トリックの難しさ ' + k.trick.diff + '）' + (k.nk || ''), mag: 50 });
     ST.key(S, o, k.v.name + 'の死');
     live.forEach(function (p) { p.m.fear = clamp(p.m.fear + (p.prank ? 4 : 18) - (p.stats.nerve || 3) * 2, 0, 100); });
     /* 芸能人の思い込みが解ける */
@@ -617,6 +624,11 @@
     if (S.mot.id === 'split') ws.attack += 0.3;
     ws.suicide *= HK.Dark.endings(S); ws.attack *= HK.Dark.endings(S);   /* 展開の重さ：悪い結末（自害・探偵を襲う） */
     var e = HK.weighted(rng, Object.keys(ws), function (k) { return Math.pow(Math.max(0.03, ws[k]), 2); });
+    /* 殺さない相手（探偵）は、襲いかけても手を止める */
+    if (e === 'attack' && HK.SameStory && HK.SameStory.nk && HK.SameStory.nk(S, c, d)) {
+      c.bound = true; c.fate = '探偵を襲いかけ、自分で手を止めた'; S.over = 'arrest';
+      return ST.say(S, { actors: [c, d], tag: '結末', kind: 'climax', text: F(pk(S, T.END_ATTACK), { c: c.name, d: d.name }) + '――振り上げた手は、' + d.name + 'の目の前で止まった。' + c.name + 'は、そのまま膝をついた。翌朝、吹雪が止み、' + c.name + 'は警察に引き渡された。', why: c.name + 'は探偵を襲いかけたが、殺さないと決めた相手だった（殺さないの指定）', mag: 46 });
+    }
     if (e === 'attack') {
       var stop = live.filter(function (q) { return q !== c && q !== d && !q.bound; }).sort(function (a, b) { return skill(b, 'fight') + (d.buddies.indexOf(b) >= 0 ? 0.3 : 0) - skill(a, 'fight') - (d.buddies.indexOf(a) >= 0 ? 0.3 : 0); })[0];
       var ta = F(pk(S, T.END_ATTACK), { c: c.name, d: d.name });
@@ -665,6 +677,8 @@
       q.m.fear = clamp(q.m.fear + (k === 'bad' ? 0 : 20), 0, 100);
       ST.say(S, { actors: [q, c], tag: '動揺', text: F(pk(S, Y.REVEAL[k]), { b: q.name, c: c.name, sensei: sensei(q, c) }), why: q.name + 'は真相を知らなかった（' + (relLabel(S, q, c) || (S.relLab && S.relLab[rk(q, c)]) || '館で深まった関係') + '）', mag: k === 'bad' ? 20 : 36 });
     });
+    /* 犯人が同一人物だったときの、もう一人の反応（same-story.js） */
+    if (HK.SameStory && HK.SameStory.reveal) HK.SameStory.reveal(S, c, d);
   }
 
   /* ---------- 吹雪の館で深まる関係 ---------- */

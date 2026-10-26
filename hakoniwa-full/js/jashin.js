@@ -472,11 +472,14 @@
       if (rng() < 0.15) return ST.sayB(S, { actors: [p], tag: '衝動', text: ST.fmt(ST.pick(S, M.YGO_IRRITATE), { a: p.name }), why: '掌の口さまの影響で、暴力性が増している（' + Math.round(p.viol) + '）' }, p.name + 'が苛立っていた');
       var tg = live.filter(function (q) { return q !== p && alive(q); });
       if (!tg.length || rng() > 0.13) return;
-      var b = rng.pick(tg);
+      var b = rng.pick(HK.SameStory && HK.SameStory.spare ? HK.SameStory.spare(S, p, tg) : tg);   /* 殺さない相手は、ほかに襲える人がいれば避ける（same-story.js） */
       if (p.viol > th + 25 && rng() < 0.35 * HK.Dark.f(S, 'kill')) {
         p.viol = th;
         if (JS.DRAMA) JS.DRAMA.edge(S, p, b, '殺害', 'kill', p);
-        return die(S, b, p.name + 'に襲われて', [ST.fmt(ST.pick(S, M.YGO_KILL), { a: p.name, b: '{a}' })]);
+        var ygN = S.log.length;
+        die(S, b, p.name + 'に襲われて', [ST.fmt(ST.pick(S, M.YGO_KILL), { a: p.name, b: '{a}' })]);
+        if (HK.SameStory && HK.SameStory.mark) HK.SameStory.mark(S, ygN, HK.SameStory.note(S, p, b));
+        return;
       }
       b.m.hp = clamp(b.m.hp - 22, 0, 100); b.m.fear = clamp(b.m.fear + 15, 0, 100); p.viol -= 10;
       ST.say(S, { actors: [p, b], tag: '暴力', text: ST.fmt(ST.pick(S, M.YGO_ASSAULT), { a: p.name, b: b.name }), why: '掌の口さま（イゴーロナク）は、心の底の暴力を引き出す。' + p.name + 'の暴力性 ' + Math.round(p.viol + 10) + '（攻撃性が高く、CPが低いほど増えやすい）', mag: 28 });
@@ -492,7 +495,8 @@
     if (!by && JS.REL.cover(S, m, b)) return false;
     var angry = others.reduce(function (s0, q) { return s0 + q.tr.aggr + q.tr.cold * 0.5; }, 0) / others.length;
     var t = by ? '' : ST.fmt(ST.pick(S, openly ? M.MAGE_DETECT_OPEN : M.MAGE_DETECT), { a: m.name, b: b.name });
-    if (rng() < (0.2 + angry * 0.5) * HK.Dark.f(S, 'grudge') || S.ygo) {
+    /* 殺さない相手（HK.Attr.noKillPair）なら、裁かずに縛り上げる */
+    if ((rng() < (0.2 + angry * 0.5) * HK.Dark.f(S, 'grudge') || S.ygo) && !(HK.SameStory && HK.SameStory.nk && HK.SameStory.nk(S, b, m))) {
       var o = ST.say(S, { actors: [b, m], tag: '露見', kind: 'climax', text: t + ST.fmt(ST.pick(S, M.MAGE_KILLED), { a: m.name, b: b.name }), why: m.name + 'のたくらみが' + b.name + 'にばれた（観察' + (b.job === 'detective' ? '・探偵' : '') + '）。一行の怒り（攻撃性・冷たさ）で、殺されてしまった', mag: 44 });
       m.alive = false; m.fate = '仲間に殺された（' + hm(S.h) + '）'; if (JS.DRAMA) JS.DRAMA.edge(S, b, m, '制裁', 'kill', b); ST.key(S, o, m.name + 'の正体が露見');
     } else {

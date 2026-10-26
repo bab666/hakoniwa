@@ -159,11 +159,13 @@
     while (mur.filter(al).length > 1 && guard++ < 40) {
       var ms = mur.filter(al);
       var a = HK.weighted(rng, ms, function (p) { return 1 + JS.skill(p, 'fight') * 2 + p.tr.aggr; });
-      var b = HK.weighted(rng, ms.filter(function (q) { return q !== a; }), function (q) { return 1 + (a.mur && a.mur.t === q ? 3 : 0) + Math.max(0, -bond(S, a, q)) * 2; });
+      var bs = ms.filter(function (q) { return q !== a; });
+      if (HK.SameStory && HK.SameStory.spare) bs = HK.SameStory.spare(S, a, bs);   /* 殺さない相手は、ほかに戦える相手がいれば狙わない */
+      var b = HK.weighted(rng, bs, function (q) { return 1 + (a.mur && a.mur.t === q ? 3 : 0) + Math.max(0, -bond(S, a, q)) * 2; });
       if (ms.length === 2 && rng() < 0.12) {
         ms.forEach(function (p) { p.alive = false; p.fate = '殺人バトルで相討ち（' + JS.hm(h + 1) + '）'; });
         edge(S, ms[0], ms[1], '相討ち', 'kill');
-        ST.say(S, { actors: ms, tag: '殺人バトル', kind: 'climax', text: F(pk(S, B.double), { a: ms[0].name, b: ms[1].name }), why: '相討ち', mag: 50 });
+        ST.say(S, { actors: ms, tag: '殺人バトル', kind: 'climax', text: F(pk(S, B.double), { a: ms[0].name, b: ms[1].name }), why: '相討ち' + (HK.SameStory && HK.SameStory.note ? HK.SameStory.note(S, ms[0], ms[1]) : ''), mag: 50 });
         break;
       }
       var dm = { a: a.name, b: b.name, x: weaponOf(a), y: weaponOf(b) }; if (dm.x === dm.y) dm.y = 'もう一本の' + dm.y;
@@ -175,7 +177,7 @@
         lose.alive = false; lose.fate = '殺人バトルで' + win.name + 'に敗れた（' + JS.hm(h + 1) + '）'; lose.how = win.name + 'に殺されて';
         edge(S, win, lose, '殺害', 'kill', win);
         tt += F(pk(S, B.kill), wm);
-        ST.say(S, { actors: [win, lose], tag: '殺人バトル', kind: 'climax', text: tt, why: win.name + 'が' + lose.name + 'を倒した（腕っぷし・運）', mag: 46 });
+        ST.say(S, { actors: [win, lose], tag: '殺人バトル', kind: 'climax', text: tt, why: win.name + 'が' + lose.name + 'を倒した（腕っぷし・運）' + (HK.SameStory && HK.SameStory.note ? HK.SameStory.note(S, win, lose) : ''), mag: 46 });
       } else ST.sayB(S, { actors: [a, b], tag: '殺人バトル', text: tt, why: '殺し合いは続いた' }, a.name + 'と' + b.name + 'がぶつかった');
       /* 隠れていた人が巻き込まれる */
       var hid = others.filter(al);

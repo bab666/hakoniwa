@@ -569,7 +569,9 @@
       var fear = oth.reduce(function (s0, z) { return s0 + z.m.fear + z.m.st; }, 0) / oth.length / 200;
       if (rng() > 0.2 + fear * 0.4) return;
       a.abTalk = true;
-      var c = HK.weighted(rng, oth, function (z) { return Math.max(0.05, 0.3 + z.tr.cp * 0.6 + z.tr.caution * 0.4 + (capt(z) ? 0.5 : 0) - Math.max(0, bond(S, z, a)) * 1.2); });
+      /* 殺さない（attr.js の HK.Attr.noKillPair）相手を、置き去りにしようとは言い出さない（ほかに言い出す人がいれば。same-story.js） */
+      var ocs = HK.SameStory && HK.SameStory.nk ? oth.filter(function (z) { return !HK.SameStory.nk(S, z, a); }) : oth;
+      var c = HK.weighted(rng, ocs.length ? ocs : oth, function (z) { return Math.max(0.05, 0.3 + z.tr.cp * 0.6 + z.tr.caution * 0.4 + (capt(z) ? 0.5 : 0) - Math.max(0, bond(S, z, a)) * 1.2); });
       var t = F(pk(S, C.ABANDON_TALK), { a: a.name, c: c.name });
       var pr = oth.filter(function (z) { return z !== c && bond(S, z, a) >= 0.45; }).sort(function (x, y) { return bond(S, y, a) - bond(S, x, a); })[0];
       if (pr && rng() < 0.45 + bond(S, pr, a) * 0.4) {
@@ -581,7 +583,7 @@
       a.away = 'left'; a.fate = '感染したまま' + Pn.name + 'に置き去りにされた（' + S.m + 'か月目）';
       oth.forEach(function (z) { setRel(S, z, a, z === c ? -0.5 : -0.25); stress(z, 8); });
       S.left.push([c.i, a.i]); S.ship.morale = clamp(S.ship.morale - 10, 0, 100);
-      var o2 = ST.say(S, { actors: [c, a], tag: '置き去り', kind: 'climax', text: t + F(pk(S, C.ABANDON), { a: a.name }), why: '感染の広がりを恐れた（皆の不安とストレス ' + Math.round(fear * 100) + '）', mag: 44 });
+      var o2 = ST.say(S, { actors: [c, a], tag: '置き去り', kind: 'climax', text: t + F(pk(S, C.ABANDON), { a: a.name }), why: '感染の広がりを恐れた（皆の不安とストレス ' + Math.round(fear * 100) + '）' + (HK.SameStory && HK.SameStory.note ? HK.SameStory.note(S, c, a) : ''), mag: 44 });
       ST.key(S, o2, a.name + 'を星に置き去りにした');
       if (SH.AFTER) SH.AFTER.react(S, a, 'left', [c]);
     });
