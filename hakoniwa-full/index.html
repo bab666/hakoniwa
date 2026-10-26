@@ -388,8 +388,11 @@ table.per td:nth-child(2) b { white-space: nowrap; overflow: hidden; text-overfl
 .scen.adult.on { border-color: var(--adult-tag); box-shadow: inset 0 0 0 1px var(--adult-tag); }
 .r18tag { display: inline-block; padding: 0 6px; margin-left: 2px; border-radius: 3px; background: var(--adult-tag); color: var(--adult-tag-ink); font-weight: 700; letter-spacing: 0.04em; line-height: 1.6; }
 .site-foot .updated { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
-.scen.r18link { color: inherit; text-decoration: none; border-style: dashed; }
-.scen.r18link:hover, .scen.r18link:focus-visible { border-color: var(--accent); }
+.scen.r18link { color: inherit; text-decoration: none; border-style: dashed; cursor: default; }
+.scen.r18link:hover, .scen.r18link:focus-within { border-color: var(--accent); }
+.scen.r18link .r18buy { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.scen.r18link .r18buy a { flex: 1 1 auto; text-align: center; padding: 5px 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--accent); text-decoration: none; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.scen.r18link .r18buy a:hover, .scen.r18link .r18buy a:focus-visible { border-color: var(--accent); }
 .scnote { font-size: 12px; }
 
 /* 折りたたみ（項目ごと） */
@@ -481,6 +484,7 @@ details.zmap > summary:hover { background: var(--accent-soft); }
       <a href="https://kaimin.sakura.ne.jp/archive/tools/hako_R18_old/" target="_blank" rel="noopener">旧版はこちら</a>
       <a href="https://forms.gle/c2sujawbdxJy62FP8" target="_blank" rel="noopener">アンケート</a>
       <a href="https://bab666.booth.pm" target="_blank" rel="noopener">BOOTH</a>
+      <a href="https://note.com/unimi_note/n/n6fe17bec9d5a" target="_blank" rel="noopener">note</a>
       <a href="https://x.com/doko2727" target="_blank" rel="noopener">X（Twitter）</a>
       <a href="https://bsky.app/profile/unichi.bsky.social" target="_blank" rel="noopener">Bluesky</a>
     </nav>
@@ -492,8 +496,8 @@ details.zmap > summary:hover { background: var(--accent-soft); }
 <div class="toast" id="toast" hidden></div>
 
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script src="js/bundle-main.js?v=9c33097227"></script>
-<script>(function () { var HK = window.HK; HK.LATE_READY = false; var s = document.createElement('script'); s.src = 'js/bundle-late.js?v=0aedd8d992';
+<script src="js/bundle-main.js?v=8f578dbc0a"></script>
+<script>(function () { var HK = window.HK; HK.LATE_READY = false; var s = document.createElement('script'); s.src = 'js/bundle-late.js?v=6aa29049b3';
   s.onload = function () { HK.LATE_READY = true; if (HK.onLate) HK.onLate(); };
   s.onerror = function () { HK.LATE_READY = true; HK.LATE_FAILED = true; if (HK.onLate) HK.onLate(); };
   document.body.appendChild(s); })();</script>
