@@ -302,6 +302,81 @@
     return out;
   };
 
+  /* ---------- 辞書のサンプル（「サンプルを入れる」。住人の「辞書を直接書く」と高度設定の「口調の辞書」から） ----------
+     head は高度設定に入れるときの見出し（住人の欄では見出しなし）。足すときはこの並びに一つ足す */
+  E.SAMPLES = [
+    { id: 'gozaru', label: 'ござる（侍）', head: '[口調 ござる]\n名前=ござる（侍）', text: [
+      '# 「〜でござる」の侍の口調の見本。# で始まる行は説明で、辞書としては読み飛ばされます',
+      '# ベース：どの文を土台にするか（K＝くだけた常体、F＝硬い常体、P＝敬語）。ござるは敬語の文の「です・ます」を置き換えて作る',
+      'ベース=P',
+      '# 一人称・二人称：住人の設定の欄が空のときに使う（「男|女|その他」の順で3つ書いてもよい）',
+      '一人称=拙者',
+      '二人称=そなた',
+      '# 文末：文の終わり（。！？の手前）だけに効く「元=先」。／で候補を並べると、くじで一つ選ぶ。長い項目が先に当たる',
+      '# 「？」付きの項目は問いの文だけに当たる。{る}{た}{ない}{よう} は「ます」の前を活用させる印（帰りましょう→帰ろう）',
+      '[文末]',
+      'ですか？=でござるか？',
+      'ですか=でござるか',
+      'ですね=でござるな',
+      'ですよ=でござるよ',
+      'んですよ=のでござるよ',
+      'んです=のでござる',
+      'でした=でござった',
+      'でしょうか=でござろうか',
+      'でしょう=でござろう',
+      'です=でござる',
+      'ますか？=まするか？',
+      'ますか=まするか',
+      'ていますね=ておるな',
+      'ていますか=ておりまするか',
+      'ています=ておりまする',
+      'ますね=まするな',
+      'ますよ=まするぞ',
+      'ました=ましたぞ／申した',
+      'ませんでした=ませなんだ',
+      'ません=ませぬ',
+      'ましょう={よう}ぞ',
+      'ます=まする',
+      'ください=くだされ',
+      'てください=てくだされ',
+      'ないでください=ないでくだされ',
+      '# 語彙：文のどこでも効く言葉の置き換え（長い言葉から当たる）',
+      '[語彙]',
+      'ありがとうございます=かたじけない',
+      'ありがとう=かたじけない',
+      'すみません=面目ない',
+      'ごめんなさい=申し訳ござらぬ',
+      'すごい=見事',
+      '本当に=まことに',
+      '# 規則：前置き（台詞の頭の一言）・驚き（え・うそ などを置き換え）・笑い（はは・ふふ などを置き換え）・言い切り（よ・ね を落とす割合）',
+      '[規則]',
+      '前置き=ふむ。／して、',
+      '前置きの割合=0.3',
+      '驚き=なんと！／むむっ……',
+      '笑い=はっはっは',
+      '言い切り=0.2'
+    ].join('\n') }
+  ];
+  E.sampleDict = function (id, withHead) { var x = E.SAMPLES.filter(function (s) { return s.id === id; })[0]; return x ? (withHead ? x.head + '\n' : '') + x.text + '\n' : ''; };
+  E.sampleSel = function (attr) { return '<select ' + attr + ' aria-label="入れるサンプル">' + E.SAMPLES.map(function (x) { return '<option value="' + escH(x.id) + '">' + escH(x.label) + '</option>'; }).join('') + '</select>'; };
+  /* 欄に入れる（中身があれば置き換えるか確かめる）。入れたら input を出して、保存と見本の描き直しを各画面の入力の処理に任せる */
+  E.insertSample = function (ta, id, withHead) {
+    if (!ta) return false;
+    var v = E.sampleDict(id, withHead);
+    if (!v) return false;
+    if (ta.value.replace(/\s+/g, '') && typeof window.confirm === 'function' && !window.confirm('いまの内容を置き換えますか？')) return false;
+    ta.value = v;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    ta.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  };
+  if (typeof document !== 'undefined') document.addEventListener('click', function (ev) {
+    var b = ev.target && ev.target.closest && ev.target.closest('[data-endact="sample"]');
+    if (!b) return;
+    var box = b.closest('.gendict'), sel = box && box.querySelector('[data-endsel]');
+    E.insertSample(box && box.querySelector('[data-gf="end:dict"]'), sel ? sel.value : 'gozaru', false);
+  });
+
   /* ---------- 画面の欄（ui-gear.js の話し方の節から） ---------- */
   var css = '.gend{margin:10px 0 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px}.gend summary{cursor:pointer;font-size:13px;color:var(--muted)}.gend summary b{color:var(--ink);font-weight:600}.gend .gendon{font-size:12px;margin-left:6px;color:var(--accent)}' +
     '.gend .gearrow input[type=text]{width:11em}.gend .enderr{color:#c0392b;font-size:12px;line-height:1.6;margin:4px 0 0}.gend .endsample .tsl{display:block}.gendb{font-size:11px;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:0 6px;white-space:nowrap}';
@@ -334,6 +409,7 @@
       '<details class="gend gendict"' + (dictText(c) ? ' open' : '') + '><summary><b>辞書を直接書く（上級）</b><span class="gendon gdon">' + st0(!!dictText(c) && !e.off) + '</span></summary>' +
       '<p class="gearhint">この住人だけの口調の辞書を書けます（高度設定の「口調の辞書」と同じ書き方。[口調 …] の見出しと名前は省けます）。語尾の設定と両方あるときは、ここに書いた [文末]・[語彙]・[規則]・[効果] を上に重ね、同じ項目はこちらが勝ちます。</p>' +
       '<p class="gearhint" style="white-space:pre-wrap">' + esc(T.help ? T.help() : '') + '</p>' +
+      '<div class="gearrow"><label>サンプル ' + E.sampleSel('data-endsel') + '</label><button type="button" class="btn ghost small" data-endact="sample">サンプルを入れる</button><span class="gearhint" style="margin:0"># で始まる行は説明です（読み飛ばされます）</span></div>' +
       '<textarea data-gf="end:dict" rows="8" maxlength="' + DICT_MAX + '" spellcheck="false" aria-label="この住人の口調の辞書" style="width:100%;font-size:13px;font-family:inherit" placeholder="' + esc('[文末]\nです=でござる\nます=まする\n[語彙]\nありがとう=かたじけない\n[規則]\n前置き=さて') + '">' + esc(c.toneDict || '') + '</textarea></details>' +
       '<p class="enderr" id="enderr"' + (s.err ? '' : ' hidden') + '>' + esc(s.err) + '</p>' +
       '<div class="tonesample endsample" id="endsample" aria-live="polite">' + s.html + '</div>';
