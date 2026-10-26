@@ -210,6 +210,8 @@
         if (Y.SPEC) Y.SPEC.revive(S, day + 1, k ? 'eve' : 'noon');
         investigate(S);
         others(S);
+        /* 職業の捜査・職業×職業の出来事（yakata-jobs.js・yakata-jobs-pair.js） */
+        if (Y.JOBS) Y.JOBS.tick(S, day + 1, k);
         if (Y.FEUD) Y.FEUD.tick(S, day + 1);
         bondTick(S);
         culpritMove(S);
@@ -273,7 +275,7 @@
   /* ---------- 殺人 ---------- */
   function pickTrick(S) {
     var rng = S.rng, used = S.kills.map(function (k) { return k.trick; }), hard = S.env.hard / 50 + 1;
-    return HK.weighted(rng, Y.TRICKS.filter(function (t) { return used.indexOf(t) < 0; }), function (t) { return 1 / (1 + Math.abs(t.diff - hard)); });
+    return HK.weighted(rng, Y.TRICKS.filter(function (t) { return used.indexOf(t) < 0; }), function (t) { return 1 / (1 + Math.abs(t.diff - hard)) * (Y.JOBS ? Y.JOBS.trickW(S, t) : 1); });
   }
   function fmtV(S, v) {
     var rng = S.rng, inn = S.P.filter(function (q) { return alive(q) && q !== S.cul && q !== v; });
@@ -397,7 +399,7 @@
   /* ---------- 捜査 ---------- */
   function conceal(S, c) {
     var h = S.mot.nobody ? skill(S.v1.i != null ? S.v1 : S.cul, 'hide') : skill(S.cul, 'hide');
-    return clamp(h * 0.27 + (c && c.kill ? c.kill.trick.diff * 0.07 : 0.1) + (S.acc ? 0.05 : 0) - (S.sloppy ? 0.15 : 0) + 0.05 + (S.env.hard - 50) / 250, 0, 0.75);
+    return clamp(h * 0.27 + (c && c.kill ? c.kill.trick.diff * 0.07 : 0.1) + (S.acc ? 0.05 : 0) - (S.sloppy ? 0.15 : 0) + 0.05 + (S.env.hard - 50) / 250 + (Y.JOBS ? Y.JOBS.conceal(S, c) : 0), 0, 0.75);
   }
   function gain(S, p, pref) {
     var left = S.pool.filter(function (c) { return !c.found && !c.lost && !c.fake; });
@@ -443,7 +445,7 @@
   /* 偽の証拠を見つけた：見破れるか */
   function fakeFound(S, d, c, bud) {
     var rng = S.rng, n0 = S.pool.filter(function (x) { return x.found && !x.fake; }).length;
-    var see = skill(d, 'obs') * 0.55 + (bud ? 0.1 : 0) + (d.role === 'prof' || d.role === 'doctor' ? 0.1 : 0) - (c.cun || 0.5) * 0.35 - (d.role === 'ponkotsu' ? 0.3 : 0);
+    var see = skill(d, 'obs') * 0.55 + (bud ? 0.1 : 0) + (d.role === 'prof' || d.role === 'doctor' ? 0.1 : 0) - (c.cun || 0.5) * 0.35 - (d.role === 'ponkotsu' ? 0.3 : 0) - (Y.JOBS ? Y.JOBS.fake(S) : 0);
     var t = F(pk(S, T.INV[c.type] || T.INV.obs), { a: d.name, v: S.v1.name }) + '――' + c.t + '。';
     if (rng() < see) {
       c.found = true; c.fake = false; c.exposed = true; c.t = c.t + '――ただし、それは偽装だった'; d.cnt.clue++;
@@ -576,6 +578,8 @@
     var misled = found ? bad.length / found : 0;
     var wrong = (enough ? 0.04 + S.fake * 0.04 : partial ? 0.22 + S.fake * 0.06 : 0.8) + misled * (1.1 - skill(d, 'obs') * 0.5) - skill(d, 'obs') * 0.05;
     if (d.role === 'ponkotsu') wrong += 0.3;
+    /* 犯人の嘘のうまさ（職業と正直さ。yakata-jobs.js） */
+    if (Y.JOBS) wrong += Y.JOBS.deduce(S);
     if (bad.length) { var cnt = {}; bad.forEach(function (x) { var b = x.fake ? x.b : x.misread; if (b && alive(b)) cnt[b.i] = (cnt[b.i] || 0) + 1; }); var bi = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0]; S.misTarget = bi != null ? S.P[+bi] : null; }
     var wr = rng() < clamp(wrong, 0, 0.95);
     /* なすりつけが通っていれば、正しい推理の一部が、なすりつけられた人へ向く（yakata-frame.js） */

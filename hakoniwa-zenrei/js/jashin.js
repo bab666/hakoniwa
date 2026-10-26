@@ -110,6 +110,8 @@
     if (JS.SPEC) JS.SPEC.setup(S, input);
     /* 役職×役職の特別な出来事（jashin-duo.js） */
     if (JS.DUO) JS.DUO.setup(S);
+    /* 職業の捜査の出来事・職業×職業の出来事（jashin-jobs.js・jashin-jobs-pair.js） */
+    if (JS.JOBEV) JS.JOBEV.setup(S);
     var keys = ['fear', 'hp', 'clue'];
 
     /* ---------- 到着 ---------- */
@@ -156,6 +158,7 @@
       if (JS.LOOP) JS.LOOP.tick(S, P.filter(alive), h);
       /* 村の歓迎の宴（一度だけ。酒の強さで過ごし方が変わる。jashin-feast.js） */
       if (JS.FEAST) JS.FEAST.tick(S, P.filter(alive), h);
+      if (JS.JOBEV) JS.JOBEV.tick(S, P.filter(alive), h);
       /* 住人ごとの一時間 */
       live = P.filter(alive);
       live.forEach(function (p) {
@@ -181,6 +184,8 @@
         if (JS.GOALX && JS.GOALX.act(S, p, h, P.filter(alive))) return;
         if (JS.MAGE && JS.MAGE.act(S, p, h, P.filter(alive))) return;
         if (S.hold > 0 && rng() < 0.7) return ST.sayB(S, { actors: [p], text: p.name + 'は公民館で待機させられていた。窓の外を、村人が何度も通り過ぎた。', why: '警察官の指示で待機' }, p.name + 'は待機');
+        /* 職業の腕を活かした捜査（この一時間を使う。jashin-jobs.js） */
+        if (JS.JOBEV && JS.JOBEV.act(S, p, h, P.filter(alive))) return;
         investigate(S, p, h);
       });
       if (S.hold > 0) S.hold--;
