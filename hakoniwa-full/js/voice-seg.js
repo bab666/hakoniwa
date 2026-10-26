@@ -203,11 +203,12 @@
     HK.simulate = function (input) {
       var cs = input && input.chars;
       if (!Array.isArray(cs) || !cs.some(function (c) { return c && NS.need(c.name); })) return sim2.apply(this, arguments);
-      var ren = {};
+      /* 置き換え表は、名前が「constructor」「toString」などでも Object の持ち物を拾わないように、自分の持つ鍵だけを引く */
+      var ren = Object.create(null), rn = function (k) { return Object.prototype.hasOwnProperty.call(ren, k) ? ren[k] : k; };
       cs.forEach(function (c) { if (c && NS.need(c.name)) ren[c.name] = NS.enc(c.name); });
       /* 名前をキーにした設定（相手ごとの呼び方 calls・敬語 keigo）も置き換える */
-      var rk = function (m) { if (!m || typeof m !== 'object' || Array.isArray(m)) return m; var o = {}; Object.keys(m).forEach(function (k) { o[ren[k] || k] = m[k]; }); return o; };
-      var in2 = Object.assign({}, input, { chars: cs.map(function (c) { return c && typeof c === 'object' ? Object.assign({}, c, { name: ren[c.name] || c.name, calls: rk(c.calls), keigo: rk(c.keigo) }) : c; }) });
+      var rk = function (m) { if (!m || typeof m !== 'object' || Array.isArray(m)) return m; var o = {}; Object.keys(m).forEach(function (k) { o[rn(k)] = m[k]; }); return o; };
+      var in2 = Object.assign({}, input, { chars: cs.map(function (c) { return c && typeof c === 'object' ? Object.assign({}, c, { name: rn(c.name), calls: rk(c.calls), keigo: rk(c.keigo) }) : c; }) });
       var r = sim2.call(this, in2);
       try { NS.decDeep(r); } catch (err) { /* 戻しに失敗しても結果は返す */ }
       return r;

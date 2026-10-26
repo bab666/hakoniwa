@@ -202,7 +202,8 @@
     S0.chars.forEach(function (c) { byId[c.id] = c; });
     S0.chars.forEach(function (c) { (c.loveNG || []).forEach(function (k) { var o = byId[k]; if (o) { o.loveNG = o.loveNG || []; if (o.loveNG.indexOf(c.id) < 0) o.loveNG.push(c.id); } }); });
     S0.ties = (Array.isArray(S0.ties) ? S0.ties : []).filter(function (t) {
-      if (!t || !HK.TIES[t.type] || !ids[t.a] || !ids[t.b] || t.a === t.b) return false;
+      /* 関係の種類は自分の持つ鍵だけ（壊れた保存の type が「constructor」などでも読み込みが止まらないように） */
+      if (!t || typeof t.type !== 'string' || !Object.prototype.hasOwnProperty.call(HK.TIES, t.type) || !ids[t.a] || !ids[t.b] || t.a === t.b) return false;
       /* 仲間（comrade）はグループの「仲間」から自動で付けるので、関係としては持たない */
       if (HK.tieHidden && HK.tieHidden(t.type)) return false;
       var CO = HK.coldOpts ? HK.coldOpts(t.type) : null;
@@ -260,11 +261,37 @@
   (function () {
     var raw = HK.store.get('state', null), bk = HK.store.get('state:backup', null);
     if (!raw || typeof raw !== 'object' || !bk || !bk.state || typeof bk.state !== 'object' || !bk.at || bk.at === HK.store.get('state:backup:skip', 0)) return;
-    if (raw.v === bk.v && raw.savedAt === bk.at && bkBody(raw) === bkBody(bk.state)) return;
-    if (bkLost(bk.state, raw)) bkHold = bk;
+    /* 控えの形が崩れていて照らし合わせられないときは、知らせを出さない（崩れた控えは次の保存で書き直す）。ここで止まると画面が出ない */
+    try {
+      if (raw.v === bk.v && raw.savedAt === bk.at && bkBody(raw) === bkBody(bk.state)) return;
+      if (bkLost(bk.state, raw)) bkHold = bk;
+    } catch (e) { bkHold = null; }
   })();
-  var S;
-  try { S = normState(HK.store.get('state', null)); } catch (e) { S = normState({}); }
+  /* 読み込みで例外が出たとき（壊れた値・今の版が知らない形）：以前はサンプルの住人に差し替えて、そのまま保存を上書きしていた（住人がまるごと消える）。
+     今は、読めなかった保存をそのまま「state:rescue」に退避してから、住人・関係ごとに読めるものだけ拾う。退避できなかったら（保存領域がいっぱい）、
+     このページでは住人の保存を上書きしない（rescueHold）。どちらも画面の上に知らせを出し、元の保存を JSON で書き出せるようにする */
+  var S, rescue = null, rescueHold = false;
+  function salvage(raw) {
+    var src = obj(raw), chars = [], ties = [], base = {};
+    Object.keys(src).forEach(function (k) { if (k !== 'chars' && k !== 'ties') base[k] = src[k]; });
+    var tryN = function (o) { try { return normState(JSON.parse(JSON.stringify(o))); } catch (e) { return null; } };
+    if (!tryN(base)) base = {};
+    (Array.isArray(src.chars) ? src.chars : []).forEach(function (c) { if (tryN({ chars: chars.concat([c]) })) chars.push(c); });
+    (Array.isArray(src.ties) ? src.ties : []).forEach(function (t) { if (tryN({ chars: chars, ties: ties.concat([t]) })) ties.push(t); });
+    base.chars = chars; base.ties = ties;
+    return tryN(base) || normState({});
+  }
+  (function () {
+    var raw = HK.store.get('state', null);
+    try { S = normState(raw); return; } catch (e) { rescue = { at: Date.now(), err: String(e && e.message || e).slice(0, 200), state: HK.store.get('state', null) }; }
+    var had = rescue.state && typeof rescue.state === 'object' && Array.isArray(rescue.state.chars) ? rescue.state.chars.length : 0;
+    rescue.chars = had;
+    /* 退避（前の退避があれば、同じ中身のときは書き直さない） */
+    var prev = HK.store.get('state:rescue', null);
+    if (!(prev && JSON.stringify(prev.state) === JSON.stringify(rescue.state)) && !HK.store.set('state:rescue', rescue)) rescueHold = true;
+    S = salvage(rescue.state);
+    if (window.console) console.error('住人の保存を読み込めませんでした（退避して、読める分だけ使います）', rescue.err);
+  })();
   if (!S.chars.length) { S.chars = SAMPLE.map(mk); S.sample = true; }
   /* 以前の4人サンプルのまま保存されていたら、10人のサンプルに差し替える */
   else if (S.sample && S.chars.length < SAMPLE.length && S.chars.every(function (c, i) { return SAMPLE[i] && c.name === SAMPLE[i].name; })) {
@@ -277,21 +304,72 @@
   hist = hist.filter(function (h) { return h && h.input && Array.isArray(h.input.chars) && HK.SCENARIOS[h.input.scenId]; });
   var tab = 'cast', result = null, showAll = false;
 
+  function bkKey() { return (HK.STORE ? HK.STORE.prefix : 'hakoniwa:') + 'state:backup'; }
   function save() {
     HK.Icons.set(S.chars);
+    /* 読み込めなかった保存を退避できなかったときは、住人の保存を上書きしない（下の rescueNotice で書き出してもらう） */
+    if (rescueHold) return false;
     S.v = STATE_V; S.savedAt = Date.now();
     var ok = HK.store.set('state', S);
-    if (ok && !bkHold) HK.store.set('state:backup', { v: STATE_V, at: S.savedAt, state: S });
+    /* 控えを書けなかった（保存領域がいっぱい）ときは、古い控えを残さない。残すと、次に開いたとき「旧版を開いた」の知らせが誤って出て、
+       「控えから戻す」で古い住人に戻ってしまう */
+    if (ok && !bkHold && !rescue && !HK.store.set('state:backup', { v: STATE_V, at: S.savedAt, state: S })) { try { window.localStorage.removeItem(bkKey()); } catch (e) { /* 使えない環境 */ } }
     return ok;
+  }
+  /* 読み込めなかった保存の知らせ（上の rescue）。元の保存（退避したもの）を JSON で書き出せる。閉じると、それ以降は控えも書く */
+  function rescueNotice() {
+    var box = document.createElement('div');
+    box.id = 'rescuenote'; box.setAttribute('role', 'alert');
+    box.style.cssText = 'margin:8px 0 12px;padding:10px 12px;border:1px solid #c0392b;border-radius:8px;background:#fde8e6;color:#3a0d08;line-height:1.6';
+    box.innerHTML = '保存していた住人・関係を読み込む途中でエラーが起きました（住人' + rescue.chars + '人ぶんの保存）。読めた' + (S.sample ? '住人はいませんでした（いまはサンプルの住人です）' : '住人' + S.chars.length + '人・関係' + (S.ties || []).length + '本を表示しています') + '。' +
+      (rescueHold ? '<b>ブラウザの保存領域がいっぱいで元の保存を退避できなかったため、このページでの住人の変更は保存しません。</b>先に元の保存を書き出してください。' : '元の保存はそのまま退避してあります。') +
+      '<div class="row" style="margin-top:6px;flex-wrap:wrap;gap:6px;align-items:center"><button type="button" class="btn small" id="rescue-out">元の保存をJSONで書き出す</button>' +
+      (rescueHold ? '' : '<button type="button" class="btn small ghost" id="rescue-ok">閉じる</button>') + '</div>';
+    var host = document.querySelector('main') || document.body;
+    host.insertBefore(box, host.firstChild);
+    box.querySelector('#rescue-out').addEventListener('click', function () {
+      var text = JSON.stringify(rescue.state || null), d = new Date(), p2 = function (n) { return ('0' + n).slice(-2); };
+      var name = 'hakoniwa-state-rescue-' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + '.json';
+      try {
+        var blob = new Blob([text], { type: 'application/json' }), url = URL.createObjectURL(blob), a = document.createElement('a');
+        if (!('download' in a)) throw new Error('nodl');
+        a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        toast('元の保存をJSONで書き出しました');
+      } catch (e) { copy(text, '元の保存のJSONをクリップボードにコピーしました'); }
+    });
+    var okb = box.querySelector('#rescue-ok');
+    if (okb) okb.addEventListener('click', function () { rescue = null; box.remove(); save(); });
+  }
+  /* 全年齢版の初回の移行で、保存領域が足りず住人を写せなかったとき（safe.js の印の fail）。R18版の保存はそのまま残っている */
+  function migNotice() {
+    var KS = HK.STORE, f = KS && KS.zenrei && KS.flag && KS.flag();
+    if (!f || !Array.isArray(f.fail) || f.fail.indexOf('hakoniwa:state') < 0 || f.failSeen) return;
+    var box = document.createElement('div');
+    box.id = 'mignote'; box.setAttribute('role', 'alert');
+    box.style.cssText = 'margin:8px 0 12px;padding:10px 12px;border:1px solid #d9a400;border-radius:8px;background:#fff4c2;color:#3a2e00;line-height:1.6';
+    box.innerHTML = '保存の場所を版ごとに分けたときに、以前の住人・関係をこの全年齢版へ写しきれませんでした（ブラウザの保存領域がいっぱいでした）。以前の住人はもう一方の版にそのまま残っています。' +
+      'そちらの「まるごと書き出し」と、この版の「まるごと読み込む」（住人タブの「別の端末へ移す」）で移せます。' +
+      '<div class="row" style="margin-top:6px"><button type="button" class="btn small ghost" id="mig-ok">閉じる</button></div>';
+    var host = document.querySelector('main') || document.body;
+    host.insertBefore(box, host.firstChild);
+    box.querySelector('#mig-ok').addEventListener('click', function () { KS.setFlag({ failSeen: 1 }); box.remove(); });
   }
   /* 控えの知らせ（上の bkHold）。戻す：控えを state に写して読み込み直す。このまま使う：その控えでは二度と出さず、今の内容で控えを書き直す */
   function bkNotice() {
+    migNotice();
+    if (rescue) { rescueNotice(); return; }
     if (!bkHold) { save(); return; }
     var b = bkHold, d = new Date(b.at), p2 = function (n) { return ('0' + n).slice(-2); };
     var box = document.createElement('div');
     box.id = 'bknote'; box.setAttribute('role', 'alert');
     box.style.cssText = 'margin:8px 0 12px;padding:10px 12px;border:1px solid #d9a400;border-radius:8px;background:#fff4c2;color:#3a2e00;line-height:1.6';
+    /* 控えにあって今の住人にいない人・関係の数（旧版が読めずにサンプルの住人で上書きしたときなど、丸ごと入れ替わっていれば大きい） */
+    var have = {}, tk = function (t) { return t ? [t.a, t.b, t.type].join('|') : ''; }, haveT = (S.ties || []).map(tk);
+    S.chars.forEach(function (c) { have[c.id] = 1; });
+    var missC = (b.state.chars || []).filter(function (c) { return c && !have[c.id]; }).length, missT = (b.state.ties || []).filter(function (t) { return haveT.indexOf(tk(t)) < 0; }).length;
     box.innerHTML = '旧版を開いたため、住人の設定や関係の一部（新しい関係など）が消えている可能性があります。' +
+      (missC || missT ? '控えにある<b>' + (missC ? '住人' + missC + '人' : '') + (missC && missT ? '・' : '') + (missT ? '関係' + missT + '本' : '') + '</b>が、今の保存にありません。' : '') +
       '<div class="row" style="margin-top:6px;flex-wrap:wrap;gap:6px;align-items:center"><button type="button" class="btn small" id="bk-restore">控えから戻す</button>' +
       '<span class="hint" style="margin:0;color:inherit">（控え：' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ' 保存、住人' + ((b.state.chars || []).length) + '人・関係' + ((b.state.ties || []).length) + '本）</span>' +
       '<button type="button" class="btn small ghost" id="bk-keep">このまま使う</button></div>';
@@ -300,7 +378,11 @@
     box.querySelector('#bk-restore').addEventListener('click', function () {
       if (HK.store.set('state', b.state)) location.reload(); else toast('戻せませんでした（ブラウザの保存領域がいっぱいかもしれません）');
     });
-    box.querySelector('#bk-keep').addEventListener('click', function () { HK.store.set('state:backup:skip', b.at); bkHold = null; box.remove(); save(); });
+    box.querySelector('#bk-keep').addEventListener('click', function () {
+      /* 控えは書き直すと戻せなくなるので、欠けがあるときは確かめる */
+      if ((missC || missT) && !window.confirm('控えにある' + (missC ? '住人' + missC + '人' : '') + (missC && missT ? '・' : '') + (missT ? '関係' + missT + '本' : '') + 'は、このまま使うと戻せなくなります。よろしいですか？\n\n［OK］このまま使う\n［キャンセル］やめる（あとで「控えから戻す」を選べます）')) return;
+      HK.store.set('state:backup:skip', b.at); bkHold = null; box.remove(); save();
+    });
   }
   function $(sel) { return document.querySelector(sel); }
 
@@ -651,7 +733,7 @@
     var arr = Array.isArray(data) ? data : data && Array.isArray(data.chars) ? data.chars : null;
     if (!arr || !arr.length) { toast('住人のデータが見つかりませんでした'); return; }
     var list = replace || S.sample ? [] : S.chars.slice();
-    var map = [], added = 0, updated = 0, skipped = 0;
+    var map = [], added = 0, updated = 0, skipped = 0, per0 = S.per;
     if (replace || S.sample) S.per = {};
     arr.forEach(function (o, i) {
       if (typeof o === 'string') { var pr = HK.parseRoster ? HK.parseRoster(o) : null; o = pr && pr.chars[0] ? { name: pr.chars[0].name, eg: pr.chars[0].eg, memo: pr.chars[0].memo } : null; }
@@ -704,6 +786,8 @@
       map[i] = c.id;
       } catch (err) { map[i] = null; skipped++; if (window.console) console.warn("JSON import skip", i, err); }
     });
+    /* 一人も読めなかったら何も変えない（置き換えで、今の住人を空にして保存してしまわないように） */
+    if (!added && !updated) { S.per = per0; toast('読み込める住人が見つかりませんでした（名前とエゴグラムの値かコードが必要です）。今の住人はそのままです'); return; }
     S.chars = list; S.sample = false;
     if (replace) { S.ties = []; S.join = {}; S.teacher = ''; }
     var tn = 0;
@@ -715,7 +799,7 @@
     (Array.isArray(data.ties) ? data.ties : []).forEach(function (t) {
       if (!t || typeof t !== 'object') return;
       var a = ref(t.a), b = ref(t.b);
-      if (!a || !b || a === b || !HK.TIES[t.type]) return;
+      if (!a || !b || a === b || typeof t.type !== 'string' || !Object.prototype.hasOwnProperty.call(HK.TIES, t.type)) return;
       S.ties = (S.ties || []).filter(function (x) { return !(x.type === t.type && ((x.a === a && x.b === b) || (x.a === b && x.b === a))); });
       var CO2 = HK.coldOpts ? HK.coldOpts(t.type) : null;
       var nt0 = t.cold && CO2 && CO2.map[t.cold] ? { a: a, b: b, type: t.type, cold: t.cold } : { a: a, b: b, type: t.type };

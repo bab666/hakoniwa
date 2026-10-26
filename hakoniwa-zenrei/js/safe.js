@@ -46,19 +46,24 @@
     if (!ZEN) return;
     var ls;
     try { ls = window.localStorage; if (ls.getItem(KST.FLAG) != null) return; } catch (e) { return; }
-    var n = 0, ks = [];
+    var n = 0, ks = [], fail = [];
     try { for (var i = 0; i < ls.length; i++) { var k = ls.key(i); if (k && /^hakoniwa[:_]/.test(k)) ks.push(k); } } catch (e) { return; }
+    /* 住人（state）をいちばん先に、その控え（state:backup）をいちばん後に写す。保存領域（R18版と同じ場所で分け合う）が足りずに住人を写せなかったときは、
+       控えも写さない（控えだけ写ると、全年齢版はサンプルの住人で控えを上書きしてしまう）。写せなかった鍵は印の fail に残す（ui.js が知らせを出す） */
+    var rank = function (k) { return k === 'hakoniwa:state' ? 0 : k === 'hakoniwa:state:backup' ? 2 : 1; };
+    ks.sort(function (a, b) { return rank(a) - rank(b); });
     ks.forEach(function (k) {
       var to = KST.key(k);
       try {
         if (ls.getItem(to) != null) return;
+        if (k === 'hakoniwa:state:backup' && fail.indexOf('hakoniwa:state') >= 0) { fail.push(k); return; }
         var v = ls.getItem(k);
         if (k === 'hakoniwa:saves') { var l = JSON.parse(v || '[]'); if (Array.isArray(l)) v = JSON.stringify(l.filter(function (r) { return r && !r.r18; })); }
         if (k === 'hakoniwa:adv') { var a = JSON.parse(v || 'null'); if (a && typeof a === 'object') { delete a.moan; v = JSON.stringify(a); } }   /* R18 だけの辞書（喘ぎ）は写さない */
         ls.setItem(to, v); n++;
-      } catch (e) { /* 入りきらない鍵は写さない */ }
+      } catch (e) { fail.push(k); /* 入りきらない鍵は写さない */ }
     });
-    KST.setFlag({ at: Date.now(), ls: n, db: 'wait' });
+    KST.setFlag(fail.length ? { at: Date.now(), ls: n, db: 'wait', fail: fail } : { at: Date.now(), ls: n, db: 'wait' });
   })();
   /* tone-engine.js は先に旧い鍵の adv を読んでいるので、この版の鍵で読み直す（やめた口調の辞書を住人へ移す ui.js の oldTone 用） */
   if (ZEN && HK.Tone) { var adv0 = HK.store.get('adv', null); HK.Tone.userText = adv0 && typeof adv0.tone === 'string' ? adv0.tone : ''; }

@@ -5,16 +5,17 @@
   'use strict';
   var HK = window.HK, esc = HK.escape;
   var IC = HK.Icons = {};
-  var map = {}, imgs = {}, cols = {};
+  /* 名前で引く表は、名前が「constructor」「toString」などでも Object の持ち物を拾わないように、原型なしの入れ物にする */
+  var map = Object.create(null), imgs = Object.create(null), cols = Object.create(null);
   var SIZE = 128;
   function okCol(v) { return typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v); }
   /* イメージカラー（名前で引く）。並び替えや結果画面でも、その人の色で枠を描く */
-  IC.colors = function (chars) { cols = {}; (chars || []).forEach(function (c) { if (c && okCol(c.color)) cols[c.name] = c.color; }); };
+  IC.colors = function (chars) { cols = Object.create(null); (chars || []).forEach(function (c) { if (c && okCol(c.color)) cols[c.name] = c.color; }); };
   IC.color = function (name) { return cols[name] || ''; };
   function colVar(name, i) { return cols[name] || 'var(--p' + ((i || 0) % 30) + ')'; }
 
   IC.set = function (chars) {
-    map = {};
+    map = Object.create(null);
     IC.colors(chars);
     (chars || []).forEach(function (c) {
       if (!c.icon) return;
