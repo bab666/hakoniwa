@@ -121,10 +121,14 @@ const { openBuild } = require('./lib.js');
       ctx._audit16 = nowC;
     };
     /* S15・S16 の共通部品：固定の食い違い（どちらかが相手以外に固定している） */
-    const lockBad = (a, b) => !!(a && b && a !== b && ((a.lock != null && a.lock !== b.i) || (b.lock != null && b.lock !== a.i)));
+    /* 固定は複数人を持てる（住人の locks。なければ lock 一つ。engine.js の HK.locks と同じ読み方） */
+    const lks = x => Array.isArray(x.locks) ? x.locks : x.lock != null ? [x.lock] : [];
+    /* 配役の設定の loveLock（番号・番号の文字列・その並び・''）を番号の並びに */
+    const cfgL = v => (Array.isArray(v) ? v : v === '' || v == null ? [] : [v]).map(Number).filter(x => !isNaN(x));
+    const lockBad = (a, b) => !!(a && b && a !== b && ((lks(a).length && lks(a).indexOf(b.i) < 0) || (lks(b).length && lks(b).indexOf(a.i) < 0)));
     /* 「誰とでも可」で体の関係が許されている組（engine.js の HK.lockSexOnly を、配役の設定から見る）：どちらの側も「誰とでも可」か、固定なし・相手に固定 */
-    const anyOk = (a, b) => [[a, b], [b, a]].every(p => p[0].sx === 'any' || (!p[0].sx && (p[0].lock == null || p[0].lock === p[1].i)));
-    const lockTxt = (C, a, b) => [a, b].filter(x => x.lock != null).map(x => x.name + '→' + ((C[x.lock] || {}).name || '不在')).join('・');
+    const anyOk = (a, b) => [[a, b], [b, a]].every(p => p[0].sx === 'any' || (!p[0].sx && (!lks(p[0]).length || lks(p[0]).indexOf(p[1].i) >= 0)));
+    const lockTxt = (C, a, b) => [a, b].filter(x => lks(x).length).map(x => x.name + '→' + lks(x).map(k => (C[k] || {}).name || '不在').join('・')).join('／');
     /* 物語型の恋人の記録：S.lovers（組の配列）があればそれ、なければ恋仲（S.rom）と関係の恋人（S.ties） */
     const storyLov = S => {
       const o = {}, add = (i, j) => { if (i == null || j == null || i === j) return; o[Math.min(i, j) + '-' + Math.max(i, j)] = 1; };
@@ -302,6 +306,9 @@ const { openBuild } = require('./lib.js');
         /* S15：5回に2回、二人を互いに恋愛相手として固定する（4人の回は lk、6人の回は lk2。相手が箱庭にいるときだけ） */
         const lk = feel ? null : s % 5 === 2 ? cast.lk : s % 5 === 4 ? cast.lk2 : null;
         if (lk && lk[0] < n && lk[1] < n) { chars[lk[0]].loveLock = String(lk[1]); chars[lk[1]].loveLock = String(lk[0]); }
+        /* 固定の複数化（2026-10-26）：10回に1回（s%10===4）、lk の一人目は二人を固定する（三人目もその一人目だけを固定。二人目と三人目は恋愛・夜にならないはず） */
+        const lk3 = lk && s % 10 === 4 && n >= 3 && lk[0] < n && lk[1] < n ? [0, 1, 2, 3, 4, 5].filter(i => i < n && i !== lk[0] && i !== lk[1])[0] : null;
+        if (lk3 != null) { chars[lk[0]].loveLock = [lk[1], lk3]; chars[lk3].loveLock = [lk[0]]; }
         /* S17：5回に1回（s%5===3）、二人を互いに固定し、R18に参加する方の一人の性行為の相手を「誰とでも可」にする */
         const lkAny = !feel && s % 5 === 3 && cast.lk[0] < n && cast.lk[1] < n ? cast.lk : null;
         if (lkAny) {
@@ -377,7 +384,7 @@ const { openBuild } = require('./lib.js');
         }
         if (lastS) { storyCheck(lastS, true); lastS = null; }
         /* S15（物語型）：関係図の恋の線 */
-        if (cur.story && res.relmap && Array.isArray(res.relmap.edges)) res.relmap.edges.forEach(ed => { if (ed.cls === 'love' && lockBad(chars[ed.a] && { i: ed.a, lock: chars[ed.a].loveLock === '' ? null : +chars[ed.a].loveLock }, chars[ed.b] && { i: ed.b, lock: chars[ed.b].loveLock === '' ? null : +chars[ed.b].loveLock })) hit('S15', '関係図 ' + chars[ed.a].name + '×' + chars[ed.b].name + ' ' + ed.label); });
+        if (cur.story && res.relmap && Array.isArray(res.relmap.edges)) res.relmap.edges.forEach(ed => { if (ed.cls === 'love' && lockBad(chars[ed.a] && { i: ed.a, locks: cfgL(chars[ed.a].loveLock) }, chars[ed.b] && { i: ed.b, locks: cfgL(chars[ed.b].loveLock) })) hit('S15', '関係図 ' + chars[ed.a].name + '×' + chars[ed.b].name + ' ' + ed.label); });
         out.runs++; out.bySc[sc].runs++;
         /* 記録の文で見る点検（S4〜S7, S9） */
         const nm = chars.map(c => c.name);
@@ -428,7 +435,7 @@ const { openBuild } = require('./lib.js');
             if (!inS.length) return;
             const core = HK.State && HK.State.R18_CORE && HK.State.R18_CORE[sc];
             inS.forEach(i => { if (chars[i].noR18 && mode === 'r18' && !core) hit('S4', nm[i] + ' [' + (e.tag || e.cat || '') + '] | ' + x.slice(0, 140)); });
-            if (inS.length === 2 && (lk || lkAny)) { const L2 = inS.map(i => ({ i, lock: chars[i].loveLock === '' ? null : +chars[i].loveLock, sx: chars[i].sexLock })); if (lockBad(L2[0], L2[1]) && !anyOk(L2[0], L2[1])) hit('S15', '性的な文 ' + nm[inS[0]] + '×' + nm[inS[1]] + ' [' + (e.tag || e.cat || '') + '] | ' + x.slice(0, 140)); }
+            if (inS.length === 2 && (lk || lkAny)) { const L2 = inS.map(i => ({ i, locks: cfgL(chars[i].loveLock), sx: chars[i].sexLock })); if (lockBad(L2[0], L2[1]) && !anyOk(L2[0], L2[1])) hit('S15', '性的な文 ' + nm[inS[0]] + '×' + nm[inS[1]] + ' [' + (e.tag || e.cat || '') + '] | ' + x.slice(0, 140)); }
             for (let a = 0; a < inS.length; a++) for (let b = a + 1; b < inS.length; b++) if (chars[inS[a]].loveNG.indexOf(inS[b]) >= 0 && inS.length === 2) hit('S5', nm[inS[a]] + '×' + nm[inS[b]] + ' | ' + x.slice(0, 140));
             if (sameNg && inS.length === 2 && inS.indexOf(same[0]) >= 0 && inS.indexOf(same[1]) >= 0) hit('S12', nm[same[0]] + '×' + nm[same[1]] + ' | ' + x.slice(0, 140));
             inS.forEach(i => { if (chars[i].sexLock === 'loverOnly' && !core && MOB.test(x) && inS.length === 1) hit('S6', nm[i] + ' | ' + x.slice(0, 140)); });

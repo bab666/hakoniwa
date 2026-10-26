@@ -105,6 +105,9 @@
   HK.lockAny = function (a) { return HK.locks(a).length > 0; };
   HK.lockTo = function (a, b) { return !!b && HK.locks(a).indexOf(b.i) >= 0; };
   HK.lockOut = function (a, b) { var L = HK.locks(a); return L.length > 0 && !(b && L.indexOf(b.i) >= 0); };
+  /* HK.lockPeople(chars, a)：a が固定した相手のうち、chars（番号で引ける住人の並び）にいる人（固定の順）。HK.lockNames は名前を「・」でつないだもの */
+  HK.lockPeople = function (chars, a) { return HK.locks(a).map(function (k) { return k >= 0 && chars ? chars[k] : null; }).filter(function (x) { return x && x !== a; }); };
+  HK.lockNames = function (chars, a) { return HK.lockPeople(chars, a).map(function (x) { return x.name; }).join('・'); };
   HK.sexLockOut = function (x, y) {
     if (!x || !y) return false;
     if (Array.isArray(x.sexLocks)) return x.sexLocks.indexOf(y.i) < 0;

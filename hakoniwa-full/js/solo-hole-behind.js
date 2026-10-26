@@ -126,6 +126,8 @@
     var o = Pz.order(b, h, [b, h]);
     if (o[0] === b) return Pz.hardTop(h, b) ? null : Pz.isF(b) ? 'finger' : 'pen';
     /* 手を出す側が受け：挿入はしない。はまっている人が自分で攻めを選んでいれば、跨るだけ */
+    /* 跨るのは、はまっている人に男性器があるときだけ（性器「なし」の人には触れる・舐めるだけ） */
+    if (Pz.hasM && !Pz.hasM(h)) return 'tease';
     if (Pz.hardTop(h, b)) return 'ride';
     return S.rng() < 0.5 ? 'ride' : 'tease';
   }

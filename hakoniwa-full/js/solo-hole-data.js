@@ -287,7 +287,8 @@
     if (gs === 'm') g = 'm'; else if (gs === 'f' || gs === 'mf') g = 'f';
     var futa = !!(P && P.futa && P.futa(c));
     if (g === 'f') return base.concat(futa ? (H.BEYOND_FUTA[plKey] || []).concat(H.BEYOND_FM[plKey] || []) : H.BEYOND_FF[plKey] || []);
-    if (g === 'm') return base.map(function (e, i) { return male[i] || e; }).concat(H.BEYOND_FM[plKey] || []);
+    /* 性器「なし」の男性には、壁の向こうの女性が跨る文（BEYOND_FM）を足さない（跨られる体がない。solo-hole.js の topMe と同じ） */
+    if (g === 'm') return base.map(function (e, i) { return male[i] || e; }).concat(gs === 'none' ? [] : H.BEYOND_FM[plKey] || []);
     /* 性別おまかせ：女性の体の文を、どちらの体とも読める書き直しに差し替える（数を減らさない） */
     return base.map(function (e, i) { return fem.indexOf(i) < 0 ? e : neu[i] || e; });
   };

@@ -49,7 +49,7 @@
         a.flags.mourned = a.flags.mourned || {}; a.flags.mourned[o.i] = true;
         var k = RK.kind(ctx, a, o) || 'lock';
         ctx.stress(a, 18);
-        return { text: RK.fill(ctx.pick(TEXT[k] || TEXT.lock), { a: a.name, b: o.name }), why: a.name + 'は、' + o.name + 'を失った（' + ({ protA: '我が子のように守ってきた弟妹', protB: '守ってくれた兄姉', sibclose: '親友のようなきょうだい', teacherA: '教え子', teacherB: '先生', mentorA: '弟子', mentorB: '師匠', lock: 'ただ一人と決めていた相手' })[k] + '）', mag: 30, with: [o] };
+        return { text: RK.fill(ctx.pick(TEXT[k] || TEXT.lock), { a: a.name, b: o.name }), why: a.name + 'は、' + o.name + 'を失った（' + ({ protA: '我が子のように守ってきた弟妹', protB: '守ってくれた兄姉', sibclose: '親友のようなきょうだい', teacherA: '教え子', teacherB: '先生', mentorA: '弟子', mentorB: '師匠', lock: HK.locks(a).length > 1 ? '恋愛の相手と決めていた一人' : 'ただ一人と決めていた相手' })[k] + '）', mag: 30, with: [o] };
       }
     });
   };

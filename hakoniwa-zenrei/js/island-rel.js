@@ -81,9 +81,9 @@
   add({ id: 'ir_lrefuse', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { return RK.locked(a) && !RK.lockedTo(a, b) && ctx.R(b, a).att > 35 && !ctx.pair(a, b).lockRef; },
     w: function (ctx, a, b) { return 0.8 + ctx.R(b, a).att / 60; },
-    run: function (ctx, a, b) { ctx.pair(a, b).lockRef = true; ctx.mod(b, a, { att: -10, ten: 6 }); ctx.stress(b, 12); var t = ctx.chars[a.lock]; return { text: fill(ctx.pick(T.lockRefuse), mm(a, b)), why: a.name + 'は恋愛の相手を' + (t ? t.name + 'と' : '') + '決めている。' + b.name + 'の想い（惹かれ ' + Math.round(ctx.R(b, a).att) + '）には応えない' }; } });
+    run: function (ctx, a, b) { ctx.pair(a, b).lockRef = true; ctx.mod(b, a, { att: -10, ten: 6 }); ctx.stress(b, 12); var t = HK.lockNames(ctx.chars, a); return { text: fill(ctx.pick(T.lockRefuse), mm(a, b)), why: a.name + 'は恋愛の相手を' + (t ? t + 'と' : '') + '決めている。' + b.name + 'の想い（惹かれ ' + Math.round(ctx.R(b, a).att) + '）には応えない' }; } });
   ev('ir_ldevote', 'romance', function (ctx, a, b) { return RK.lockedTo(a, b); }, 5, function (ctx, a, b) { return 0.8 + a.tr.np * 0.4 + a.tr.ac * 0.3 + ctx.R(a, b).att / 80; },
-    function (ctx, a, b) { ctx.mod(a, b, { att: 6, aff: 4 }); ctx.mod(b, a, { aff: 6, att: 3 }); return { text: fill(ctx.pick(T.lockDevote), mm(a, b)), why: a.name + 'の想う相手は、' + b.name + 'ただ一人' }; });
+    function (ctx, a, b) { ctx.mod(a, b, { att: 6, aff: 4 }); ctx.mod(b, a, { aff: 6, att: 3 }); return { text: fill(ctx.pick(T.lockDevote), mm(a, b)), why: a.name + 'の想う相手は、' + (HK.locks(a).length > 1 ? b.name + 'たち（決めた人）' : b.name + 'ただ一人') }; });
   /* 兄貴・姉貴分／関西弁 */
   ev('ir_aniki', 'help', function (ctx, a) { return RK.tone(a) === 'aniki'; }, 5, function (ctx, a, b) { return 0.6 + a.tr.np * 0.5 + a.tr.lead * 0.4 + b.stress / 100; },
     function (ctx, a, b) { ctx.others(a).forEach(function (o) { ctx.stress(o, -5); ctx.mod(o, a, { trust: 4 }); }); return { text: fill(ctx.pick(T.anikiRally), mm(a, b)), why: a.name + 'の面倒見のよさ（NP・CP。兄貴・姉貴分）' }; });

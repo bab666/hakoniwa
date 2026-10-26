@@ -134,20 +134,38 @@
       if (!F.length || !M.length || !res) return res;
       var pairs = [];
       /* 恋愛・R18にしない組（キャラの設定 loveNG：相手の番号）と、恋愛相手を別の人に固定している組は、そもそも性的な場面にならないので直さない */
-      var lk = function (c) { return c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock; };
+      /* 固定は番号一つ・番号の並びのどちらでも（engine.js の HK.parseLocks。[-1] は「誰とも」） */
+      var lk = function (c) { var L = HK.parseLocks ? HK.parseLocks(c.loveLock) : []; return L.length ? L : null; };
       /* 恋愛相手を別の人に固定している組も同じ */
-      var ng = function (x, y) { var ix = cs.indexOf(x), iy = cs.indexOf(y); return (Array.isArray(x.loveNG) && x.loveNG.indexOf(iy) >= 0) || (Array.isArray(y.loveNG) && y.loveNG.indexOf(ix) >= 0) || (lk(x) != null && lk(x) !== iy) || (lk(y) != null && lk(y) !== ix); };
+      var ng = function (x, y) { var ix = cs.indexOf(x), iy = cs.indexOf(y); return (Array.isArray(x.loveNG) && x.loveNG.indexOf(iy) >= 0) || (Array.isArray(y.loveNG) && y.loveNG.indexOf(ix) >= 0) || (lk(x) != null && lk(x).indexOf(iy) < 0) || (lk(y) != null && lk(y).indexOf(ix) < 0); };
       F.forEach(function (f) { M.forEach(function (m) { if (FM.on(f, m) && !ng(f, m) && !(P.isMaleTop && P.isMaleTop(f, m))) pairs.push([f, m]); }); });
       if (!pairs.length) return res;
       var rng = HK.rng ? HK.rng(((input.seed || 1) * 7919 + 17) >>> 0) : null;
       var ctx = { pick: function (a) { return a[rng ? rng.int(a.length) : Math.floor(Math.random() * a.length)]; } };
       var items = (res.log || []).slice();
       if (res.ending && Array.isArray(res.ending.lines)) res.ending.lines.forEach(function (l, i) { items.push({ _end: i, text: l }); });
+      /* 二人がその記録に出ているか。出来事の記録に登場人物の番号（actors）があれば、二人ともそこにいるときだけ。
+         結末の行など番号のないものは名前で見る（カタカナの名前は、前後がカタカナなら別の語の一部として数えない：「ブラッドオレンジ」の「レンジ」など） */
+      var KATA = /[ァ-ヺー]/;
+      var hasName = function (t, n) {
+        if (!n) return false;
+        for (var i = t.indexOf(n); i >= 0; i = t.indexOf(n, i + 1)) {
+          if (KATA.test(n.charAt(0)) && KATA.test(t.charAt(i - 1))) continue;
+          if (KATA.test(n.charAt(n.length - 1)) && KATA.test(t.charAt(i + n.length))) continue;
+          return true;
+        }
+        return false;
+      };
+      var both = function (e, x, y) {
+        var ac = Array.isArray(e.actors) ? e.actors.filter(function (v) { return typeof v === 'number'; }) : [];
+        if (ac.length) return ac.indexOf(cs.indexOf(x)) >= 0 && ac.indexOf(cs.indexOf(y)) >= 0 && hasName(e.text, x.name) && hasName(e.text, y.name);
+        return hasName(e.text, x.name) && hasName(e.text, y.name);
+      };
       items.forEach(function (e) {
         if (!e || typeof e.text !== 'string') return;
         for (var k = 0; k < pairs.length; k++) {
           var p = pairs[k];
-          if (e.text.indexOf(p[0].name) >= 0 && e.text.indexOf(p[1].name) >= 0) { e.text = FM.fix(ctx, e.text, p[0], p[1]); }
+          if (both(e, p[0], p[1])) { e.text = FM.fix(ctx, e.text, p[0], p[1]); }
         }
         if (e._end != null) res.ending.lines[e._end] = e.text;
       });

@@ -117,9 +117,10 @@
   /* 中心のある円満な三人：中心の人が二人の両方と交われるなら、中心だけが二人と繋がる形 */
   function loveShape(ctx, g) {
     var hm = harmonyOf(ctx, g), cl = hm && clashOf(ctx, g);
-    if (!hm || (hm.full && !cl) || sexLockOut(g)) return null;
+    if (!hm || (hm.full && !cl)) return null;
     /* 取り合いは、取り合われる人を中心に（執着している二人どうしは直接は交わらない） */
     var h = cl ? cl.w : hm.hub, o = g.filter(function (c) { return c !== h; });
+    if (hubOut(g, h)) return null;
     if (blocked(h, o[0]) || blocked(h, o[1])) return null;
     return okSex(h, o[0]) && okSex(h, o[1]) ? { sg: [h].concat(o), hubOnly: true } : null;
   }
@@ -131,6 +132,16 @@
   function blocked(x, y) { return !!((HK.sexNG && HK.sexNG(x, y)) || (HK.ngPair && HK.ngPair(x, y))); }
   function soft(x, y) { return !!(x.trioHub && y.trioHub) && !(HK.ngExplicit && HK.ngExplicit(x, y)) && !x.noR18 && !y.noR18; }
   function sexLockOut(g) { return g.some(function (x) { return g.some(function (y) { return y !== x && blocked(x, y) && !soft(x, y); }); }); }
+  /* 中心のある円満な三人（loveShape）：中心 h の恋人どうしの二人は「同じ人の恋人どうし」（coNG）なので、二人の間だけは coNG を見ない
+     （二人は直接は触れ合わない形）。二人の間でも、性行為の相手の固定（HK.sexNG）と苦手な組（HK.ngExplicit）は止める（trioHub の soft は同じに通す）。
+     併合（2026-10-26）で sexLockOut が ngPair（coNG を含む）も見るようになり、恋人二人の中心の三人が起きなくなっていたのを直す */
+  function hubOut(g, h) {
+    return g.some(function (x) { return g.some(function (y) {
+      if (y === x) return false;
+      var b = x !== h && y !== h ? !!((HK.sexNG && HK.sexNG(x, y)) || (HK.ngExplicit && HK.ngExplicit(x, y))) : blocked(x, y);
+      return b && !soft(x, y);
+    }); });
+  }
   function sexShape(g, hubOnly) {
     if (sexLockOut(g)) return null;
     /* 固定の食い違いだけで止まっている組（soft）があれば、その二人を中心にはしない（中心は残りの一人） */
@@ -430,11 +441,14 @@
     var ltW = ltOn && first && !tShort && ctx.rng() < 0.85 ? ltPick('warm') : null;
     if (ltW) out.push(ltW);
     else if (first && !tShort) {
-      var w = pickTagged(X.WARM.filter(function (o) { return o.t.some(noHub); }), function (z) { return (z.jeal ? 2.6 : 1) * (z.open ? 1.8 : 1) * (z.kinds ? 2 : 1); });
+      /* 前戯の文も、触れ合わせない二人（apart：中心の形で直接は繋がらない二人・恋愛対象の合わない二人）が触れ合う文を除く */
+      var warmPool = [];
+      X.WARM.forEach(function (o) { var ls = o.t.filter(function (l) { return noHub(l) && apartOK(l); }); if (ls.length) { var c = {}; for (var k in o) c[k] = o[k]; c.t = ls; warmPool.push(c); } });
+      var w = pickTagged(warmPool, function (z) { return (z.jeal ? 2.6 : 1) * (z.open ? 1.8 : 1) * (z.kinds ? 2 : 1); });
       if (w) { out.push(w.text); if (w.o.jeal || w.o.open) used.push(w.o.jeal ? '嫉妬の前戯' : OPEN_LABEL[op] + 'な受け'); }
     }
     /* 本番 */
-    var ml = ffE && X.MAIN_FF ? X.MAIN_FF[sp.p].filter(swapOK).concat(ctx.flags.toolbox ? (X.TOY_FF[sp.p] || []).filter(toyOK).filter(swapOK) : []).filter(function (l) { return apartOK(l); }) : X.MAIN[sp.p].filter(noHub).filter(swapOK);
+    var ml = ffE && X.MAIN_FF ? X.MAIN_FF[sp.p].filter(swapOK).concat(ctx.flags.toolbox ? (X.TOY_FF[sp.p] || []).filter(toyOK).filter(swapOK) : []).filter(function (l) { return apartOK(l); }) : X.MAIN[sp.p].filter(noHub).filter(swapOK).filter(function (l) { return apartOK(l); });
     var ml0 = X.MAIN[sp.p].filter(swapOK), ml1 = ml0.filter(function (l) { return apartOK(l); });
     out.push(X.fill(fpk(ml.length ? ml : ml1.length ? ml1 : ml0), r));
     /* 夜の性格の一文（attr-r18.js）：攻め→受けの組ごとに、二つまで（サド二人×マゾ一人なら、攻めの振る舞いと受けの崩れ方） */
