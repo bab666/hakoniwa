@@ -4,6 +4,9 @@
    ・ライバル・敵対の探偵は、手がかりを奪い合う。敵対している名探偵どうしは、ぶつかり合うこともある
    ・憎しみだけの相手は、村人に生贄として差し出したり、人目のないところで手にかけたりする
    ・愛憎の二人は、揉めると無理やり唇や体を奪うこともあるが、それ以上に、相手が危ないときは身を挺して守る
+     愛憎の欄（tie.lh）を設定した組は、それに従う（片方だけなら、持つ側だけが揉めながら構い、守る）。
+     唇・体に踏み込むのは、恋愛対象と受け攻めの合う組だけ（feud-kit.js の HK.Feud.clash）。
+     同じ二人の「構う」（hate-love.js）と「揉める」は、同じ区切り（4時間）のうちに重ねない
    台詞は tone-lines.js（口調ごとの書き下ろし） */
 (function () {
   'use strict';
@@ -77,8 +80,9 @@
   /* 敵視の出来事（出会ったとき・嫌がらせ・無視・噛み合わない関係・衝突。hate-kit.js） */
   function hkTick(S, live, h) {
     if (!HK.HateKit) return false;
-    var r = HK.HateKit.storyTick(S, live, { rate: 0.1 + (JS.night(h) ? 0.03 : 0) });
+    var r = HK.HateKit.storyTick(S, live, { rate: 0.1 + (JS.night(h) ? 0.03 : 0), lhSkip: function (a, b) { return lhNear(S, a, b, h); } });
     if (!r) return false;
+    if (r.lh) FD.lhMark(S, r.actors[0], r.actors[1], h);
     ST.say(S, { actors: r.actors, tag: r.cat === 'romance' ? '片恋と嫌悪' : '敵視', text: r.text, why: r.why, mag: r.mag });
     edge(S, r.actors[0], r.actors[1], '敵視', 'enemy');
     return true;
@@ -123,17 +127,20 @@
     ST.say(S, { actors: [a, b], tag: '名探偵どうし', kind: 'climax', text: t + '掴み合いになった二人を、仲間が必死で引き剥がした。二人とも、それから口をきかなくなった。――村人たちは、その様子をにやにやと眺めていた。', why: '敵対している名探偵どうし。推理の主導権をめぐってぶつかった（村人の敵意 +4）', mag: 30 });
     return true;
   }
-  /* 愛憎の二人：揉めて、無理やり奪う */
+  /* 同じ二人の愛憎の出来事（構う・揉める）が、この4時間のうちにあったか */
+  function lhNear(S, a, b, h) { var t = FD.lhLast(S, a, b); return t != null && h - t < 4; }
+  /* 愛憎の二人：揉めて、無理やり奪う。愛憎を抱く側（FD.lhFrom）が強引な側。双方なら、気の強いほう */
   function lhClash(S, live, h) {
-    var rng = S.rng, ps = pairs(S, live, function (a, b) { return FD.lovehate(S, a, b) && (a.lhAt == null || h - a.lhAt > 8); });
+    var rng = S.rng, ps = pairs(S, live, function (a, b) { return FD.lhFrom(S, a, b) && (a.lhAt == null || h - a.lhAt > 8) && !lhNear(S, a, b, h); });
     if (!ps.length || rng() > 0.06 + (JS.night(h) ? 0.03 : 0)) return false;
-    var pr = rng.pick(ps), a = pr[0].tr.aggr + pr[0].tr.cp >= pr[1].tr.aggr + pr[1].tr.cp ? pr[0] : pr[1], b = a === pr[0] ? pr[1] : pr[0];
+    var pr = rng.pick(ps), a = !FD.lhFrom(S, pr[1], pr[0]) ? pr[0] : pr[0].tr.aggr + pr[0].tr.cp >= pr[1].tr.aggr + pr[1].tr.cp ? pr[0] : pr[1], b = a === pr[0] ? pr[1] : pr[0];
     a.lhAt = b.lhAt = h;
+    FD.lhMark(S, a, b, h);
     var r = FD.clash(S, a, b, function (l) { return pk(S, l); });
     a.m.fear = clamp(a.m.fear - 4, 0, 100); b.m.fear = clamp(b.m.fear + 6, 0, 100);
     if (r.r18) { a.cnt.r18 = (a.cnt.r18 || 0) + 1; b.cnt.r18 = (b.cnt.r18 || 0) + 1; }
-    edge(S, a, b, r.r18 ? '無理やり抱いた' : '唇を奪った', 'obsess');
-    ST.say(S, { actors: [a, b], tag: '愛憎', kind: r.r18 ? 'climax' : 'event', text: r.text, why: '愛憎（' + FD.label(S, a, b) + '）。憎しみと執着が、同じだけ育っている', mag: r.r18 ? 30 : 24 });
+    edge(S, a, b, r.r18 ? '無理やり抱いた' : r.touch === false ? '揉み合った' : '唇を奪った', r.touch === false ? 'enemy' : 'obsess');
+    ST.say(S, { actors: [a, b], tag: '愛憎', kind: r.r18 ? 'climax' : 'event', text: r.text, why: '愛憎（' + FD.label(S, a, b) + '）。' + FD.lhWhy(S, a, b) + (r.touch === false ? '（恋愛対象・受け攻めが合わないので、口論と掴み合いまで）' : ''), mag: r.r18 ? 30 : 24 });
     return true;
   }
   /* 憎しみだけの相手：生贄に差し出す・手にかける */
@@ -181,7 +188,7 @@
   /* ---------- 愛憎の二人：相手が危ないときは、身を挺して守る ---------- */
   var shield0 = JS.REL.shield;
   JS.REL.shield = function (S, p, live, t0) {
-    var rng = S.rng, g = live.filter(function (q) { return q !== p && JS.alive(q) && !q.bound && FD.lovehate(S, q, p); })[0];
+    var rng = S.rng, g = live.filter(function (q) { return q !== p && JS.alive(q) && !q.bound && FD.lhFrom(S, q, p); })[0];
     if (!g || rng() > 0.75) return shield0.apply(this, arguments);
     var t = t0 + g.name + 'が、' + p.name + 'と襲ってきた者のあいだに割って入った。' + TL.line(g, 'LH_GUARD', p);
     edge(S, g, p, '守った', 'obsess');

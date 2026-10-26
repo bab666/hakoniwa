@@ -9,7 +9,8 @@
          持つ側の台詞は態度9種（口では嫌悪、行動は構う）。相手も持っていれば（双方）言い返しながら構い返し、持たなければふつうの敵対（無視する・気にしない・苛立つ）
        嫉妬（tie_lh_jeal）：愛憎の相手が、ほかの人と恋愛・親密な出来事をした直後（または目に見えて親しいとき）に、嫌味・邪魔・八つ当たり・その人への敵意。
          嫉妬深い気質でなくても起きる（愛憎は想いがあるものとして扱う）。愛憎のない敵対・不仲は今までどおり（嫉妬の出来事 events-common.js の jealous は、好きな相手がいる人だけ）
-       物語型（邪神村・吹雪の館・人狼など。HateKit.storyTick）にも「構う」を出す
+       物語型（邪神村・吹雪の館・人狼など。HateKit.storyTick）にも「構う」を出す（結果に lh: true。opt.lhSkip(a, b) が真の組は飛ばす：
+         邪神村・館は、同じ二人の「揉める」（feud-kit.js の HK.Feud.clash）と同じ区切りで重ねないために使う）
    ■ 恋愛対象（HK.canLove 両方向）と受け攻め（HK.Pos.okSex）は越えない：合わない組は、構う・嫉妬するだけで体の関係にはならない（R18 の場面は hate-love-r18.js・hate-sex-r18.js）
    ■ 結末：愛憎の組で、体の関係か強い絡み（構う・嫉妬が合わせて3回以上）があれば、組の結末の名前を「腐れ縁（愛憎）」に（片方だけ：kusare1／双方：kusare。epilogue.js に行く末の一文）
    台詞は3本のベース「くだけた常体｜硬い常体｜敬語」（一人称は「私」、二人称は「あなた」。口調の辞書が言い換える）。登場人物はすべて成人として扱う */
@@ -323,12 +324,12 @@
     H.storyTick = function (S, live, opt) {
       opt = opt || {};
       var ps0 = [];
-      (live || []).forEach(function (a) { (live || []).forEach(function (b) { if (a !== b && here(a) && here(b) && LH.has(S, a, b)) ps0.push([a, b]); }); });
+      (live || []).forEach(function (a) { (live || []).forEach(function (b) { if (a !== b && here(a) && here(b) && LH.has(S, a, b) && !(opt.lhSkip && opt.lhSkip(a, b))) ps0.push([a, b]); }); });
       if (ps0.length && S.rng() < (opt.rate || 0.12) * 1.4) {
         var p = ps0[Math.floor(S.rng() * ps0.length)], a = p[0], b = p[1];
         var cs = live.filter(function (o) { return o !== a && o !== b && here(o); }), c = cs.length && S.rng() < 0.4 ? cs[Math.floor(S.rng() * cs.length)] : null;
         var r = LH.kamau(S, a, b, c);
-        return { text: (opt.place || '') + r.text, why: r.why, mag: 16, cat: 'conflict', actors: r.kind === 'cut' && c ? [a, b, c] : [a, b] };
+        return { text: (opt.place || '') + r.text, why: r.why, mag: 16, cat: 'conflict', actors: r.kind === 'cut' && c ? [a, b, c] : [a, b], lh: true };
       }
       return st0.apply(this, arguments);
     };
