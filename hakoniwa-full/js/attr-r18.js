@@ -114,9 +114,10 @@
   A.NIGHT_POOLS = { TOP: TOP, BOT: BOT, TOP_E: TOP_E, BOT_E: BOT_E };
 
   /* 夜の性格の一文（{a}{b} のまま）。T＝攻め・U＝受け、mode：mf／fm／ff。どちらにも夜の性格がなければ、乱数を使わずに '' */
-  A.nightText = function (T, U, mode, pick, ero) {
+  /* only：'top'＝攻めの文だけ／'bot'＝受けの文だけ（三人の場面で、受けの崩れ方を攻めごとに繰り返さないために） */
+  A.nightText = function (T, U, mode, pick, ero, only) {
     if (!T || !U || HK.SAFE_ON) return '';
-    var nt = A.nightOf(T, U), nb = A.nightOf(U, T);
+    var nt = only === 'bot' ? '' : A.nightOf(T, U), nb = only === 'top' ? '' : A.nightOf(U, T);
     if (!TOP[nt] && !BOT[nb]) return '';
     /* 受けが攻め指定の組（向きの決まらない組）には足さない（自分で攻めを選んだ人を受けにしない） */
     if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U, T)) return '';

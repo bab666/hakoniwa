@@ -14413,6 +14413,8 @@
   T.scene = function (opt) {
     /* 一回の結果の中で同じ文（反応・喘ぎ・場所の一文など）を繰り返さない（ero-kit.js の HK.Ero.freshPick） */
     var pick = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(opt.rng, opt.pick) : opt.pick, a = opt.a, b = opt.b, st = opt.style || 'gentle';
+    /* 夜の性格（attr.js）：サド＝荒い・意地悪＝焦らす・甘々＝優しい・恥じらい＝不慣れ の型を、気質から決めた型より優先する */
+    if (HK.Attr && HK.Attr.styleFor) st = HK.Attr.styleFor(HK.Attr.nightOf(a, b), st);
     if (HK.NovelMoan) HK.NovelMoan.top = a;
     /* 性器なしの人がいる組（pos-nogen.js）：受けが none なら口まで、攻めが none なら指と玩具だけ */
     if (HK.NoGen && HK.NoGen.on(a, b)) { var ng = HK.NoGen.scene({ pick: opt.pick, rng: opt.rng, a: a, b: b, open: opt.open, after: opt.after || false }); return { text: ng.text, hard: false, jealous: false, mode: ng.mode }; }
@@ -14433,7 +14435,9 @@
     /* 感じていく：受けの快感と喘ぎ、攻めの快感、場所の一文、崩れ方 */
     var feel = pick(mode === 'ff' ? T.FEEL_FF : mode === 'fm' ? T.FEEL_FM : T.FEEL).replace('{mb}', T.moan(pick, b));
     var fa = pick(T.FEEL_A[mode]), pl = opt.place && T.PLACE[opt.place] ? pick(T.PLACE[opt.place]) : '';
-    out.push(feel);
+    /* 夜の性格の一文（attr-r18.js：攻めの振る舞いと受けの崩れ方。どちらも決めていなければ空） */
+    var ntx = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(a, b, mode, pick, false) : '';
+    out.push(ntx + feel);
     /* 体の感触の段：住人の体格・種族・胸の一文（attr.js。何も決めていなければ空） */
     out.push((pl ? pl : '') + fa + T.react(pick, b, nth >= 2) + (HK.Attr ? HK.Attr.pairLine(a, b, 'touch', pick) : ''));
     var cl = mode === 'ff' ? pick(T.ffClimaxFor(g, ffBody)) : mode === 'fm' ? pick(T.FM_CLIMAX[g]) : pick(jl ? T.JEALOUS_CLIMAX : hard ? T.ROUGH_CLIMAX : T.CLIMAX[st] || T.CLIMAX.gentle);
@@ -14633,7 +14637,9 @@
   /* 一場面ぶん（段落）。opt = { S, pick, rng, a, b, style, open, after, place, mode } → { text, mode }（{a}{b} は呼ぶ側で埋める）。
      opt.mode：体の組（mf／fm／ff）を呼ぶ側で決めるとき（オメガバースは第二性を優先：女性のαの攻めは mf）。short も同じ */
   X.scene = function (opt) {
-    var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = opt.mode || X.mode(a, b), g = X.group(opt.style || 'gentle', mode), out = [];
+    var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = opt.mode || X.mode(a, b);
+    /* 夜の性格（attr.js）の型を、気質から決めた型より優先する */
+    var st0 = HK.Attr && HK.Attr.styleFor ? HK.Attr.styleFor(HK.Attr.nightOf(a, b), opt.style || 'gentle') : (opt.style || 'gentle'), g = X.group(st0, mode), out = [];
     var TS = HK.ThickSex;
     /* 性器なしの人がいる組（pos-nogen.js）：口まで／指と玩具だけ */
     if (HK.NoGen && HK.NoGen.on(a, b)) { E.pairNight(opt.S, a, b); var ng = HK.NoGen.scene({ S: opt.S, pick: opt.pick, rng: opt.rng || (opt.S && opt.S.rng), a: a, b: b, ero: true, open: opt.open, after: opt.after || false }); return { text: X.fill(opt.S, ng.text, a, b), mode: ng.mode }; }
@@ -14641,7 +14647,9 @@
     out.push(opt.open || pick(X.OPEN[mode]));
     out.push(pick(mode === 'ff' ? X.FF_BODY[g] : mode === 'fm' ? X.FM_BODY[g] : X.BODY[g]));
     var pl = opt.place && TS && TS.PLACE && TS.PLACE[opt.place] ? pick(TS.PLACE[opt.place]) : '';
-    out.push(pick(X.FEEL[mode]) + (pl ? pl : '') + pick(X.FEEL_A[mode]));
+    /* 夜の性格の一文（attr-r18.js の男性向けの文） */
+    var ntx = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(a, b, mode, pick, true) : '';
+    out.push(ntx + pick(X.FEEL[mode]) + (pl ? pl : '') + pick(X.FEEL_A[mode]));
     out.push(pick(mode === 'ff' ? X.FF_CLIMAX[g] : mode === 'fm' ? X.FM_CLIMAX[g] : X.CLIMAX[g]));
     var ci = out.length - 1;
     if (opt.again) out.push(pick(X.noSwap(X.AGAIN.ero[mode], a, b)));
@@ -16407,7 +16415,8 @@
     /* 敵対の強さで嫌っていて、強引な性格の側がいれば、その人がリードして、乱暴に（hate-kit.js） */
     var HKr = HK.HateKit, rough = HKr ? HKr.forcer(ctx, A, B) : null;
     if (rough && rough === B && !fx) { var sw = A; A = B; B = sw; }
-    var st = rough ? 'rough' : styleOf(ctx, A, mode);
+    /* 夜の性格（attr.js）：サド＝荒い・意地悪＝焦らす・甘々＝優しい・恥じらい＝不慣れ の型を、気質から決めた型より優先する */
+    var st = rough ? 'rough' : HK.Attr && HK.Attr.styleFor ? HK.Attr.styleFor(HK.Attr.nightOf(A, B), styleOf(ctx, A, mode)) : styleOf(ctx, A, mode);
     var lew = [];
     var roughLine = rough && HK.TL ? A.name + 'は' + B.name + 'の手首を掴んで、ベッドへ乱暴に押し倒した。' + HK.TL.line(A, 'H_ROUGH', B) : '';
     if (HK.Pos && HK.Pos.ff(A, B)) return ffScene(ctx, A, B, mode, opt, st, roughLine);
@@ -16420,6 +16429,9 @@
     /* 仕掛けた側が受けのとき：縛った相手の上に自分から跨る */
     if (!special && !opt.toolText && L.NORI && HK.Pos && HK.Pos.nori(B) && ctx.rng() < 0.55) special = pick(ctx, L.NORI);
     lew.push(special || pick(ctx, BODY[st]));
+    /* 夜の性格の一文（attr-r18.js：攻めの振る舞いと受けの崩れ方） */
+    var ntx = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(A, B, HK.Pos && HK.Pos.isF(A) ? 'fm' : 'mf', function (arr) { return pick(ctx, arr); }, false) : '';
+    if (ntx) lew.push(ntx);
     lew.push(react(ctx, B));
     var V = HK.Voice, pf = function (arr) { return fp(ctx, arr); };
     /* 口調ごとの「寸前」の一言 */
@@ -16915,6 +16927,14 @@
     return left.length > 0 && left.length < ctx.rules.length;
   }
   function pairDone(ctx, a, b) { return ctx.rules.every(function (r) { return ruleDone(ctx, r, a, b); }); }
+  /* 回数の表示の頭：3人以上の部屋では、条件は組ごとに数えるので「誰と誰の分」かを添える（組が変わると数が戻ったように見えるため） */
+  function pairTag(ctx, a, b) { return ctx.chars.length > 2 ? a.name + '×' + b.name + 'の' : ''; }
+  /* 回数の表示。条件の順番があって条件1がまだの条件2は、満たした時点で数が戻る（先の分は数えない）ので、数の代わりにそう書く */
+  function cntTag(ctx, r, a, b, cnt) {
+    if (r.n <= 1) return '';
+    if (seqOn(ctx) && r === ctx.rules[1] && !ruleDone(ctx, ctx.rules[0], a, b)) return '（' + pairTag(ctx, a, b) + K[r.k].noun + 'は条件1のあとから数える）';
+    return '（' + pairTag(ctx, a, b) + K[r.k].noun + ' ' + cnt + '/' + r.n + '）';
+  }
   function hasPairRule(ctx) { return ctx.rules.some(function (r) { var t = K[r.k].type; return t === 'act' || t === 'word'; }); }
 
   /* 円満な三人（三人とも互いに恋人どうし：room-trio.js）の二人だけが先に条件を満たしたとき、もう一人の恋人を部屋に残して出ていかない。
@@ -17371,7 +17391,7 @@
         if (a.out || K[r.k].type !== 'act' || !ACT_RE[r.k] || ruleDone(ctx, r, a, b) || !ACT_RE[r.k].test(e.text) || NO_RE.test(e.text)) return;
         var p = prog(ctx, a, b);
         p.act[r.k] = Math.min(r.n, (p.act[r.k] || 0) + 1);
-        var note = '扉の紙が、今の' + (FL_NOUN[r.k] || K[r.k].noun) + 'を数えた' + (r.n > 1 ? '（' + K[r.k].noun + ' ' + p.act[r.k] + '/' + r.n + '）' : '') + '。';
+        var note = '扉の紙が、今の' + (FL_NOUN[r.k] || K[r.k].noun) + 'を数えた' + cntTag(ctx, r, a, b, p.act[r.k]) + '。';
         if (pairDone(ctx, a, b)) {
           var ex = exitPair(ctx, a, b, note, '「' + snip(e.text) + '」の中で、条件の' + (FL_NOUN[r.k] || K[r.k].noun) + 'が済んでいた', false);
           ctx.say({ kind: 'event', cat: 'escape', actors: [a, b], text: ex.text, why: ex.why, mag: 30 });
@@ -17440,7 +17460,7 @@
       /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：はじめてのエッチに「恋ではない」一文。体だけの関係の印（恋人にはしない） */
       var fsx = r.k === 'h' && HK.State.freeSex && HK.State.freeSex(ctx, a, b);
       if (fsx) { if (first) text = HK.FreeSex.lead(ctx, a, b) + text; HK.FreeSex.mark(ctx, a, b); if (first) HK.FreeSex.jealous(ctx, a, b); }
-      if (r.n > 1) text += '（' + T.noun + ' ' + p.act[r.k] + '/' + r.n + '）';
+      text += cntTag(ctx, r, a, b, p.act[r.k]);
       var whyT = (cl ? cl.why + '／' : '') + (rough ? rough.name + 'は' + (rough === a ? b : a).name + 'を敵視している（嫌悪 ' + Math.round(HKr.level(ctx, rough, rough === a ? b : a)) + '）・強引な性格。条件のために、乱暴に' : wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった');
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, r.k === 'h');
       if (p.act[r.k] >= r.n) text += '扉はまだ開かない。' + a.name + 'と' + b.name + 'に残っているのは、' + leftText(ctx, a, b) + '。';
@@ -17525,7 +17545,7 @@
       var T = K[r.k];
       if (T.mode === 'both' && a.flags.partner == null) { a.flags.partner = b.i; if (b.flags.partner == null) b.flags.partner = a.i; }
       var cnt = T.mode === 'sum' ? (p.said[r.k + a.i] || 0) + (p.said[r.k + b.i] || 0) : p.said[r.k + a.i];
-      if (r.n > 1) text += '（' + T.noun + ' ' + cnt + '/' + r.n + '）';
+      text += cntTag(ctx, r, a, b, cnt);
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, false);
       if (pairOnlyWait(ctx, a, b)) text += '扉はまだ開かない。' + a.name + 'と' + b.name + 'に残っているのは、' + leftText(ctx, a, b) + '。';
       return { cat: cat, text: text, why: whyT };
@@ -18802,6 +18822,18 @@
     /* 本番 */
     var ml = ffE && X.MAIN_FF ? X.MAIN_FF[sp.p].filter(swapOK).concat(ctx.flags.toolbox ? (X.TOY_FF[sp.p] || []).filter(toyOK).filter(swapOK) : []) : X.MAIN[sp.p].filter(noHub).filter(swapOK);
     out.push(X.fill(fpk(ml.length ? ml : X.MAIN[sp.p].filter(swapOK)), r));
+    /* 夜の性格の一文（attr-r18.js）：攻め→受けの組ごとに、二つまで（サド二人×マゾ一人なら、攻めの振る舞いと受けの崩れ方） */
+    if (HK.Attr && HK.Attr.nightText) {
+      var NP = { oneTwo: [[sp.t, sp.m], [sp.t, sp.u]], twoOne: [[sp.t, sp.u], [sp.m, sp.u]], sandwich: [[sp.t, sp.m], [sp.m, sp.u]], ring: [[sp.t, sp.m], [sp.m, sp.u]] }[sp.p] || [[sp.t, sp.u]];
+      var keyOf = function (c) { return c === sp.t ? 't' : c === sp.m ? 'm' : 'u'; }, nAdded = 0;
+      NP.forEach(function (pr) {
+        if (nAdded >= 2 || !pr[0] || !pr[1] || pr[0] === pr[1]) return;
+        var md = HK.Pos && HK.Pos.isF(pr[0]) ? (HK.Pos.isF(pr[1]) ? 'ff' : 'fm') : 'mf';
+        /* 二つ目からは攻めの文だけ（同じ受けの崩れ方を二度書かない） */
+        var nt = HK.Attr.nightText(pr[0], pr[1], md, fpk, !!TE, nAdded ? 'top' : undefined);
+        if (nt) { out.push(X.fill(nt.replace(/\{a\}/g, '{' + keyOf(pr[0]) + '}').replace(/\{b\}/g, '{' + keyOf(pr[1]) + '}'), r)); nAdded++; }
+      });
+    }
     /* 男性向け：入れる側がみな男性なら挿入の文、そうでなければ指・舌・口の文を足す */
     if (TE) {
       var pens = { oneTwo: [sp.t], twoOne: [sp.t, sp.m], sandwich: [sp.t, sp.m], ring: [sp.t, sp.m, sp.u] }[sp.p] || [sp.t];
@@ -18915,8 +18947,8 @@
   function progText(ctx, g) {
     var r = pairRules(ctx).filter(function (q) { return K[q.k].type === 'act' && q.n > 1; })[0];
     if (!r) return '';
-    var n = Math.min.apply(null, pairsOf(g).map(function (pr) { return A.prog(ctx, pr[0], pr[1]).act[r.k] || 0; }));
-    return '（三人で' + K[r.k].noun + ' ' + n + '/' + r.n + '）';
+    /* 組ごとに数えるので、三つの組の分を並べる（いちばん少ない組だけ出すと、数が戻ったように見える） */
+    return '（三人で' + K[r.k].noun + '：' + pairsOf(g).map(function (pr) { return pr[0].name + '×' + pr[1].name + ' ' + (A.prog(ctx, pr[0], pr[1]).act[r.k] || 0) + '/' + r.n; }).join('・') + '）';
   }
 
   /* 三人（以上）で出る */

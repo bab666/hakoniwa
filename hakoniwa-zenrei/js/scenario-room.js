@@ -149,6 +149,14 @@
     return left.length > 0 && left.length < ctx.rules.length;
   }
   function pairDone(ctx, a, b) { return ctx.rules.every(function (r) { return ruleDone(ctx, r, a, b); }); }
+  /* 回数の表示の頭：3人以上の部屋では、条件は組ごとに数えるので「誰と誰の分」かを添える（組が変わると数が戻ったように見えるため） */
+  function pairTag(ctx, a, b) { return ctx.chars.length > 2 ? a.name + '×' + b.name + 'の' : ''; }
+  /* 回数の表示。条件の順番があって条件1がまだの条件2は、満たした時点で数が戻る（先の分は数えない）ので、数の代わりにそう書く */
+  function cntTag(ctx, r, a, b, cnt) {
+    if (r.n <= 1) return '';
+    if (seqOn(ctx) && r === ctx.rules[1] && !ruleDone(ctx, ctx.rules[0], a, b)) return '（' + pairTag(ctx, a, b) + K[r.k].noun + 'は条件1のあとから数える）';
+    return '（' + pairTag(ctx, a, b) + K[r.k].noun + ' ' + cnt + '/' + r.n + '）';
+  }
   function hasPairRule(ctx) { return ctx.rules.some(function (r) { var t = K[r.k].type; return t === 'act' || t === 'word'; }); }
 
   /* 円満な三人（三人とも互いに恋人どうし：room-trio.js）の二人だけが先に条件を満たしたとき、もう一人の恋人を部屋に残して出ていかない。
@@ -605,7 +613,7 @@
         if (a.out || K[r.k].type !== 'act' || !ACT_RE[r.k] || ruleDone(ctx, r, a, b) || !ACT_RE[r.k].test(e.text) || NO_RE.test(e.text)) return;
         var p = prog(ctx, a, b);
         p.act[r.k] = Math.min(r.n, (p.act[r.k] || 0) + 1);
-        var note = '扉の紙が、今の' + (FL_NOUN[r.k] || K[r.k].noun) + 'を数えた' + (r.n > 1 ? '（' + K[r.k].noun + ' ' + p.act[r.k] + '/' + r.n + '）' : '') + '。';
+        var note = '扉の紙が、今の' + (FL_NOUN[r.k] || K[r.k].noun) + 'を数えた' + cntTag(ctx, r, a, b, p.act[r.k]) + '。';
         if (pairDone(ctx, a, b)) {
           var ex = exitPair(ctx, a, b, note, '「' + snip(e.text) + '」の中で、条件の' + (FL_NOUN[r.k] || K[r.k].noun) + 'が済んでいた', false);
           ctx.say({ kind: 'event', cat: 'escape', actors: [a, b], text: ex.text, why: ex.why, mag: 30 });
@@ -674,7 +682,7 @@
       /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：はじめてのエッチに「恋ではない」一文。体だけの関係の印（恋人にはしない） */
       var fsx = r.k === 'h' && HK.State.freeSex && HK.State.freeSex(ctx, a, b);
       if (fsx) { if (first) text = HK.FreeSex.lead(ctx, a, b) + text; HK.FreeSex.mark(ctx, a, b); if (first) HK.FreeSex.jealous(ctx, a, b); }
-      if (r.n > 1) text += '（' + T.noun + ' ' + p.act[r.k] + '/' + r.n + '）';
+      text += cntTag(ctx, r, a, b, p.act[r.k]);
       var whyT = (cl ? cl.why + '／' : '') + (rough ? rough.name + 'は' + (rough === a ? b : a).name + 'を敵視している（嫌悪 ' + Math.round(HKr.level(ctx, rough, rough === a ? b : a)) + '）・強引な性格。条件のために、乱暴に' : wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった');
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, r.k === 'h');
       if (p.act[r.k] >= r.n) text += '扉はまだ開かない。' + a.name + 'と' + b.name + 'に残っているのは、' + leftText(ctx, a, b) + '。';
@@ -759,7 +767,7 @@
       var T = K[r.k];
       if (T.mode === 'both' && a.flags.partner == null) { a.flags.partner = b.i; if (b.flags.partner == null) b.flags.partner = a.i; }
       var cnt = T.mode === 'sum' ? (p.said[r.k + a.i] || 0) + (p.said[r.k + b.i] || 0) : p.said[r.k + a.i];
-      if (r.n > 1) text += '（' + T.noun + ' ' + cnt + '/' + r.n + '）';
+      text += cntTag(ctx, r, a, b, cnt);
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, false);
       if (pairOnlyWait(ctx, a, b)) text += '扉はまだ開かない。' + a.name + 'と' + b.name + 'に残っているのは、' + leftText(ctx, a, b) + '。';
       return { cat: cat, text: text, why: whyT };

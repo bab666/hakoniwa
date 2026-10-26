@@ -408,6 +408,18 @@
     /* 本番 */
     var ml = ffE && X.MAIN_FF ? X.MAIN_FF[sp.p].filter(swapOK).concat(ctx.flags.toolbox ? (X.TOY_FF[sp.p] || []).filter(toyOK).filter(swapOK) : []) : X.MAIN[sp.p].filter(noHub).filter(swapOK);
     out.push(X.fill(fpk(ml.length ? ml : X.MAIN[sp.p].filter(swapOK)), r));
+    /* 夜の性格の一文（attr-r18.js）：攻め→受けの組ごとに、二つまで（サド二人×マゾ一人なら、攻めの振る舞いと受けの崩れ方） */
+    if (HK.Attr && HK.Attr.nightText) {
+      var NP = { oneTwo: [[sp.t, sp.m], [sp.t, sp.u]], twoOne: [[sp.t, sp.u], [sp.m, sp.u]], sandwich: [[sp.t, sp.m], [sp.m, sp.u]], ring: [[sp.t, sp.m], [sp.m, sp.u]] }[sp.p] || [[sp.t, sp.u]];
+      var keyOf = function (c) { return c === sp.t ? 't' : c === sp.m ? 'm' : 'u'; }, nAdded = 0;
+      NP.forEach(function (pr) {
+        if (nAdded >= 2 || !pr[0] || !pr[1] || pr[0] === pr[1]) return;
+        var md = HK.Pos && HK.Pos.isF(pr[0]) ? (HK.Pos.isF(pr[1]) ? 'ff' : 'fm') : 'mf';
+        /* 二つ目からは攻めの文だけ（同じ受けの崩れ方を二度書かない） */
+        var nt = HK.Attr.nightText(pr[0], pr[1], md, fpk, !!TE, nAdded ? 'top' : undefined);
+        if (nt) { out.push(X.fill(nt.replace(/\{a\}/g, '{' + keyOf(pr[0]) + '}').replace(/\{b\}/g, '{' + keyOf(pr[1]) + '}'), r)); nAdded++; }
+      });
+    }
     /* 男性向け：入れる側がみな男性なら挿入の文、そうでなければ指・舌・口の文を足す */
     if (TE) {
       var pens = { oneTwo: [sp.t], twoOne: [sp.t, sp.m], sandwich: [sp.t, sp.m], ring: [sp.t, sp.m, sp.u] }[sp.p] || [sp.t];
@@ -521,8 +533,8 @@
   function progText(ctx, g) {
     var r = pairRules(ctx).filter(function (q) { return K[q.k].type === 'act' && q.n > 1; })[0];
     if (!r) return '';
-    var n = Math.min.apply(null, pairsOf(g).map(function (pr) { return A.prog(ctx, pr[0], pr[1]).act[r.k] || 0; }));
-    return '（三人で' + K[r.k].noun + ' ' + n + '/' + r.n + '）';
+    /* 組ごとに数えるので、三つの組の分を並べる（いちばん少ない組だけ出すと、数が戻ったように見える） */
+    return '（三人で' + K[r.k].noun + '：' + pairsOf(g).map(function (pr) { return pr[0].name + '×' + pr[1].name + ' ' + (A.prog(ctx, pr[0], pr[1]).act[r.k] || 0) + '/' + r.n; }).join('・') + '）';
   }
 
   /* 三人（以上）で出る */

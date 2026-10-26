@@ -166,7 +166,8 @@
     /* 敵対の強さで嫌っていて、強引な性格の側がいれば、その人がリードして、乱暴に（hate-kit.js） */
     var HKr = HK.HateKit, rough = HKr ? HKr.forcer(ctx, A, B) : null;
     if (rough && rough === B && !fx) { var sw = A; A = B; B = sw; }
-    var st = rough ? 'rough' : styleOf(ctx, A, mode);
+    /* 夜の性格（attr.js）：サド＝荒い・意地悪＝焦らす・甘々＝優しい・恥じらい＝不慣れ の型を、気質から決めた型より優先する */
+    var st = rough ? 'rough' : HK.Attr && HK.Attr.styleFor ? HK.Attr.styleFor(HK.Attr.nightOf(A, B), styleOf(ctx, A, mode)) : styleOf(ctx, A, mode);
     var lew = [];
     var roughLine = rough && HK.TL ? A.name + 'は' + B.name + 'の手首を掴んで、ベッドへ乱暴に押し倒した。' + HK.TL.line(A, 'H_ROUGH', B) : '';
     if (HK.Pos && HK.Pos.ff(A, B)) return ffScene(ctx, A, B, mode, opt, st, roughLine);
@@ -179,6 +180,9 @@
     /* 仕掛けた側が受けのとき：縛った相手の上に自分から跨る */
     if (!special && !opt.toolText && L.NORI && HK.Pos && HK.Pos.nori(B) && ctx.rng() < 0.55) special = pick(ctx, L.NORI);
     lew.push(special || pick(ctx, BODY[st]));
+    /* 夜の性格の一文（attr-r18.js：攻めの振る舞いと受けの崩れ方） */
+    var ntx = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(A, B, HK.Pos && HK.Pos.isF(A) ? 'fm' : 'mf', function (arr) { return pick(ctx, arr); }, false) : '';
+    if (ntx) lew.push(ntx);
     lew.push(react(ctx, B));
     var V = HK.Voice, pf = function (arr) { return fp(ctx, arr); };
     /* 口調ごとの「寸前」の一言 */

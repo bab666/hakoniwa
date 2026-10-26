@@ -186,7 +186,9 @@
   /* 一場面ぶん（段落）。opt = { S, pick, rng, a, b, style, open, after, place, mode } → { text, mode }（{a}{b} は呼ぶ側で埋める）。
      opt.mode：体の組（mf／fm／ff）を呼ぶ側で決めるとき（オメガバースは第二性を優先：女性のαの攻めは mf）。short も同じ */
   X.scene = function (opt) {
-    var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = opt.mode || X.mode(a, b), g = X.group(opt.style || 'gentle', mode), out = [];
+    var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = opt.mode || X.mode(a, b);
+    /* 夜の性格（attr.js）の型を、気質から決めた型より優先する */
+    var st0 = HK.Attr && HK.Attr.styleFor ? HK.Attr.styleFor(HK.Attr.nightOf(a, b), opt.style || 'gentle') : (opt.style || 'gentle'), g = X.group(st0, mode), out = [];
     var TS = HK.ThickSex;
     /* 性器なしの人がいる組（pos-nogen.js）：口まで／指と玩具だけ */
     if (HK.NoGen && HK.NoGen.on(a, b)) { E.pairNight(opt.S, a, b); var ng = HK.NoGen.scene({ S: opt.S, pick: opt.pick, rng: opt.rng || (opt.S && opt.S.rng), a: a, b: b, ero: true, open: opt.open, after: opt.after || false }); return { text: X.fill(opt.S, ng.text, a, b), mode: ng.mode }; }
@@ -194,7 +196,9 @@
     out.push(opt.open || pick(X.OPEN[mode]));
     out.push(pick(mode === 'ff' ? X.FF_BODY[g] : mode === 'fm' ? X.FM_BODY[g] : X.BODY[g]));
     var pl = opt.place && TS && TS.PLACE && TS.PLACE[opt.place] ? pick(TS.PLACE[opt.place]) : '';
-    out.push(pick(X.FEEL[mode]) + (pl ? pl : '') + pick(X.FEEL_A[mode]));
+    /* 夜の性格の一文（attr-r18.js の男性向けの文） */
+    var ntx = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(a, b, mode, pick, true) : '';
+    out.push(ntx + pick(X.FEEL[mode]) + (pl ? pl : '') + pick(X.FEEL_A[mode]));
     out.push(pick(mode === 'ff' ? X.FF_CLIMAX[g] : mode === 'fm' ? X.FM_CLIMAX[g] : X.CLIMAX[g]));
     var ci = out.length - 1;
     if (opt.again) out.push(pick(X.noSwap(X.AGAIN.ero[mode], a, b)));

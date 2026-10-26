@@ -154,6 +154,9 @@
     (S.r18Pos || (S.r18Pos = [])).push(pos.id);
     S.r18Last = pos.label;
     var mid = mood === 'plain' ? (rng() < 0.25 + ((x.tr && x.tr.aggr) || 0) * 0.4 ? 'rough' : 'love') : mood;
+    /* 夜の性格（attr.js）：成り行きの気分なら、サド・意地悪は荒く、甘々は愛のある最中に */
+    var nOf = HK.Attr ? HK.Attr.nightOf(x, y) : '';
+    if (mood === 'plain' && (nOf === 'sadist' || nOf === 'mean')) mid = 'rough'; else if (mood === 'plain' && nOf === 'sweet') mid = 'love';
     var fore = opt.fore !== false ? F(pick(S, D.FORE[mood === 'plain' || rng() < 0.3 ? 'plain' : mood]), m) : '';
     if (pos.oral) {
       /* 口・指は元の流れのまま、段落に分ける */
@@ -161,7 +164,7 @@
       return J([fore, F(pick(S, pos.t), m), sayOk(S, y, 'start', mood) + (opt.short ? '' : R.say(S, y, 'mid')), R.say(S, y, 'climax') + F(pick(S, D.CLIMAX.yubi), m)]);
     }
     if (opt.short) {
-      return J([F(pick(S, pos.t), m) + F(pick(S, ENTER[mid]), m), sayOk(S, y, 'start', mood), R.say(S, y, 'climax') + F(pick(S, byMid(PEAK, mid, mood)), m)]);
+      return J([F(pick(S, pos.t), m) + F(pick(S, ENTER[mid]), m) + (HK.Attr && HK.Attr.nightText ? F(HK.Attr.nightText(x, y, 'mf', function (l) { return pick(S, l); }, false).replace(/\{a\}/g, '{x}').replace(/\{b\}/g, '{y}'), m) : ''), sayOk(S, y, 'start', mood), R.say(S, y, 'climax') + F(pick(S, byMid(PEAK, mid, mood)), m)]);
     }
     var soft2 = softened(S, x, y, mood);
     var hs = hardSet(S, x, y, mood, opt);
@@ -309,6 +312,7 @@
     var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };
     var ctx = { pick: function (a) { return pick(S, a); } }, K = kind === 'ff' ? HK.FF : HK.FM;
     var st = mood === 'rough' ? 'rough' : mood === 'love' ? 'gentle' : HK.FF && HK.FF.styleOf ? HK.FF.styleOf(x) : 'gentle';
+    if (HK.Attr && HK.Attr.styleFor) st = HK.Attr.styleFor(HK.Attr.nightOf(x, y), st);
     var fill = function (s) { return F(s.replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name), m); };
     var riba = !!(kind === 'ff' && HK.Pos && HK.Pos.bothRiba && HK.Pos.bothRiba(x, y)), again = kind === 'ff' && seen(S, x, y);
     var tech = R.tech ? R.tech(S, x, y, kind, mood, opt) : null;
@@ -325,6 +329,9 @@
     }
     var body = tech ? apart(tech.t, open) : K.pick(ctx, 'body', st, bo);
     var mid = mood === 'plain' ? (rng() < 0.25 + ((x.tr && x.tr.aggr) || 0) * 0.4 ? 'rough' : 'love') : mood;
+    /* 夜の性格（attr.js）：成り行きの気分なら、サド・意地悪は荒く、甘々は愛のある最中に */
+    var nOf = HK.Attr ? HK.Attr.nightOf(x, y) : '';
+    if (mood === 'plain' && (nOf === 'sadist' || nOf === 'mean')) mid = 'rough'; else if (mood === 'plain' && nOf === 'sweet') mid = 'love';
     var peak = fill(pick(S, R.peakPool ? R.peakPool(kind, mid, st) : K.POOLS.climax[st] || K.POOLS.climax.gentle));
     /* 短い揉み合い（ff・rough）は、急ぐ場面の書き出しを添えることがある（縛る文は使わない） */
     if (opt.short) return J([(kind === 'ff' && mood === 'rough' && K.lead && rng() < 0.4 ? fill(K.lead(ctx, st, { speed: true })) : '') + fill(body), sayOk(S, y, 'start', mood), R.say(S, y, 'climax') + peak]);
