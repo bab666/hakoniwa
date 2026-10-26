@@ -181,7 +181,8 @@
   function E(S, key, base) { return eOn(S) && HK.Ero.has('kaihen', key) ? HK.Ero.T.kaihen[key] : base; }
   /* 喘ぎ：自分で攻めを選んだ人には、受け身の喘ぎを言わせない。モブの客は、気質をくじで決める */
   var NPC_PS = ['proud', 'free', 'cool', 'gentle', 'stern'];
-  function npcWho(S) { return { npc: true, persona: S.rng.pick(NPC_PS) }; }
+  /* モブの客の声は、住人の受けの喘ぎではなくモブの声（moan-mob.js の HK.Moan.mob：客・奉仕を受ける側） */
+  function npcWho(S) { return { npc: true, persona: S.rng.pick(NPC_PS), gender: 'm', mobRole: 'guest', mobTop: 'serv' }; }
   function emoan(S, who, n) {
     var m = HK.Ero.moan(S, who, n);
     if (!who || who.npc) return m;
@@ -191,11 +192,12 @@
     return S.rng.pick(topL(who, [m]));
   }
   /* {mp0}〜{mp2}＝施す側、{mr0}〜{mr2}＝受ける側の喘ぎ。擬音（{s:…}）も埋める */
-  function ef(S, t, g, rw) {
+  /* pw：施す側が住人でないとき（舞台のモブの演者）の声の主 */
+  function ef(S, t, g, rw, pw) {
     if (!eOn(S) || !t) return t;
     /* 施す側の絶頂の声は、一つの場面で一度だけ（絶頂の文と「自分も達した」の文で二重にならないように） */
     if (g && g.name) { var nmp = 0; t = t.split(g.name + '「{mp2}」').map(function (x, i) { return i === 0 ? x : (nmp++ ? '' : g.name + '「{mp2}」') + x; }).join(''); }
-    t = t.replace(/\{mp([012])\}/g, function (m, n) { return emoan(S, g, +n); }).replace(/\{mr([012])\}/g, function (m, n) { return emoan(S, rw || npcWho(S), +n); });
+    t = t.replace(/\{mp([012])\}/g, function (m, n) { return emoan(S, g || pw, +n); }).replace(/\{mr([012])\}/g, function (m, n) { return emoan(S, rw || npcWho(S), +n); });
     return HK.Ero.fill(S, t, g);
   }
   /* 攻めの施す側には回さない施術（{p} の体に指を入れられる）／攻めの受ける側には回さない施術（{r} の中に指を入れる・機械に搾られる・押さえつけて責める） */
@@ -637,7 +639,7 @@
       if (!eOn(S) && rng() < 0.5 && HK.Voice.CLIMAX[p.persona]) t += nClimax(S, p);
       t += ST.fmt(pkF(S, E(S, 'smob.' + pair + '.' + ak + '.climax', act.climax)), v) + stageCrowd(S, mname, p.name, true);
     }
-    t = ef(S, t, null, p);
+    t = ef(S, t, null, p, { npc: true, name: mname, gender: mg, mobRole: 'staff', mobTop: true });
     p.cnt.served++; p.cnt.climax++; p.m.sem += ml; p.m.plea = clamp(p.m.plea + 25 * p.sens, 0, 100);
     p.m.imm += 12 + p.tr.ac * 8; p.m.doubt -= 4; p.takenAt = S.step;
     var o = ST.sayB(S, { actors: [p], tag: '公開実演', text: t, why: p.name + 'は正気のまま、志願者として壇上に上げられた（' + mname + '・' + PAIR_JA[pair] + (p.likes === 'm' || p.likes === 'f' ? '。演者は恋愛対象に合わせた' : '') + '）' + (sx ? sx.why : ''), mag: 30 }, p.name + '→壇上で公開実演', first);

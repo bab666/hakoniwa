@@ -138,7 +138,7 @@
       p.ty = ty; p.T = famL && ty === 'friend' ? Object.assign({}, SM.TYPES[ty], { label: famL }) : SM.TYPES[ty];
       p.hc = HY || null; p.h = HY ? HY.name : ST.fmt(rng.pick(p.hf && p.T.namesF ? p.T.namesF : p.T.names), { a: p.name });
       /* モブのかける側の体（受け攻め・女攻めの文・喘ぎを選ぶための仮の人物） */
-      p.hm = HY ? null : { name: p.h, gender: p.hf ? 'f' : 'm', persona: 'gentle', mob: true };
+      p.hm = HY ? null : { name: p.h, gender: p.hf ? 'f' : 'm', persona: 'gentle', mob: true, mobRole: ty === 'stalker' || ty === 'grudge' ? 'guest' : 'street' };
       /* 女性のモブの喘ぎ・跨る文の書き方は、穏やかの態度で（男性向けの荒い喘ぎにしない） */
       if (p.hm && p.hf) p.hm.tone = 'gentle';
       p.mk = env.method !== 'random' && SM.METHODS[env.method] ? env.method : rng.pick(Object.keys(SM.METHODS));
@@ -515,6 +515,8 @@
     if (!eroOn(S)) return t;
     t = String(t).replace(/\{hm([012])\}/g, function (m, n) {
       var q = p.hc || p.hm || { persona: 'gentle' }, d = q.eroDom;
+      /* モブのかける側は、モブの声（moan-mob.js）。かけられた側が攻めでなければ主導する側 */
+      if (q.mob) q.mobTop = p.aTop ? false : 'serv';
       q.eroDom = !p.aTop && +n < 2;
       var s = HK.Ero.moan(S, q, +n); q.eroDom = d; return s;
     });
