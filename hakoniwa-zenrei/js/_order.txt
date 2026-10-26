@@ -203,6 +203,8 @@ js/solo-locker.js
 js/rpg-data.js
 js/scenario-rpg.js
 js/jashin-data.js
+js/jashin-jobs.js
+js/jashin-jobs-pair.js
 js/jashin-gods.js
 js/jashin-fx-a.js
 late js/jashin-fx-b.js
