@@ -83,6 +83,8 @@
     /* 表示の名前：「知り合い」に寄せた関係（親友・幼馴染・執着など）は、その関係の名前で出す */
     var RL = Object.assign({}, REL_LABEL);
     if (tie && rel === 'friend' && !/^(friend|acq)$/.test(tie.type) && HK.TIES[tie.type]) RL.friend = HK.TIES[tie.type].label;
+    /* きょうだいの関係（義理のきょうだい＝親族＋step も）は、二人の性別・年齢で「姉弟」「兄妹」などに言い換える（sib-word.js。言い換えられなければ元の名前） */
+    if (tie && HK.Sib && HK.Sib.isSibTie(tie) && HK.tieLabel) { var sibL = HK.tieLabel(tie, P); if (sibL) RL[rel] = sibL; }
     var master = null, servant = null, crusher = null;
     var mtie = tieL.filter(function (t) { return t.type === 'master'; })[0];
     if (mtie) { master = P[mtie.a]; servant = P[mtie.b]; }
@@ -111,7 +113,7 @@
     /* きょうだい・親子など家族の関係で「恋愛：なし」の二人（ties.js の HK.tieNoLove。fam-kin.js で恋愛・R18にしない相手にも入る）も同じ。
        恋愛の関係を重ねている二人・「恋愛：あり」の家族は今までどおり */
     var famT = tieL.some(function (t) { return /^(lover|mate|fated|fwb|crush|almost|ex|master)$/.test(t.type); }) ? null : tieL.filter(function (t) { return HK.tieNoLove && HK.tieNoLove(t); })[0];
-    if (famT) { tieNL = true; nlWhy = ((HK.TIES[famT.type] || {}).label || '家族') + '（恋愛にしない関係）'; }
+    if (famT) { tieNL = true; nlWhy = ((HK.tieLabel && HK.tieLabel(famT, P)) || (HK.TIES[famT.type] || {}).label || '家族') + '（恋愛にしない関係）'; }
     if (tieNL) ngP = true;
     /* R18に参加しない人（キャラの設定 noR18）がいる二人も、恋愛・R18にしない組として扱う（媚薬の熱も、性的な言い回しにしない：lockHeatSoft） */
     var r18No = A.noR18 ? A : B.noR18 ? B : null;

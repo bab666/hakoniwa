@@ -122,6 +122,8 @@
           ty = !kinNo && rng() < 0.5 ? 'lover' : 'friend';
           var FD = HK.TIES[tt.type];
           famL = (FD.dir ? (tt.a === HY.i ? FD.roleA : FD.roleB) : FD.label) || FD.label || '';
+          /* きょうだい（義理も）：かけられる人から見たかける側の続柄（姉・兄・妹・弟・双子。上下が分からなければ 姉妹・兄弟・きょうだい）。sib-word.js */
+          if (HK.Sib && HK.Sib.isSibTie(tt)) { var sw = HK.Sib.word(p, HY, 'plain', { tie: tt }); if (sw) famL = (HK.Sib.isStep(tt) ? '義理の' : '') + sw; }
         } else if (tt) ty = tt.type === 'crush' ? (tt.a === HY.i ? 'stalker' : 'friend') : TIEMAP[tt.type] || TIEMAP[(HK.TIES[tt.type] || {}).like];
       }
       if (!ty) ty = env.who !== 'random' && SM.TYPES[env.who] ? env.who : rng.pick(Object.keys(SM.TYPES));

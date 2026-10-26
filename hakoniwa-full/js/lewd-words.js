@@ -124,7 +124,8 @@
   function checkV10(key, ctx, text) {
     var need = OWN[key];
     if (!need || !ctx.here || !ctx.here.length) return;
-    var ok = ctx.here.some(function (c) { return need === 'm' ? hasM(c) : hasF(c); });
+    /* 男性器の印：オメガバースで挿れる側の体で書く女性のα（omA。applyResult で付ける）も持ち主として数える（pos-audit の V1・V4 の例外と同じ考え方） */
+    var ok = ctx.here.some(function (c) { return need === 'm' ? hasM(c) || !!c.omA : hasF(c); });
     if (ok) return;
     if (X.V10.length < 2000) X.V10.push({ mk: key, scen: ctx.scen || '', names: ctx.here.map(function (c) { return c.name.split(MARK).join(''); }), text: String(text).split(MARK).join('') });
   }
@@ -199,6 +200,15 @@
   function applyResult(res, input) {
     if (!res || !input) return res;
     var people = peopleOf(res, input), used = {}, env = input.env || {}, scen = input.scenId || '';
+    /* オメガバースで挿れる側の体で書いた人（V10 の数え方）：第二性を優先して女性のαの攻めを挿れる側で書いた組（HK.Pos.maleTop。omega-heat.js の OM.bodyKind が記録）の攻めと、
+       オメガバースの箱庭でαの人（途中で第二性が替わった人は元の第二性も見る）。性器を決めて男性器がない人は除く（OM.bodyKind と同じ） */
+    var Q = P(), mt = (Q && Q.maleTop) || {}, omF = res && res.end && res.end.omega, mtK = Object.keys(mt);
+    people.forEach(function (p, i) {
+      if (!p.name) return;
+      var alpha = !!(omF && ((omF.sex && omF.sex[i] === 'a') || (omF.orig && omF.orig[i] === 'a')));
+      var top = mtK.some(function (k) { return k.split('\u0001')[0] === p.name; });
+      if ((alpha || top) && !(Q && Q.genSet && Q.genSet(p) && !hasM(p))) p.omA = true;
+    });
     var base = function (here) { return { env: env, people: people, here: here, used: used, scen: scen }; };
     (res.log || []).forEach(function (e) { if (e && typeof e.text === 'string' && e.text.indexOf('{') >= 0) e.text = resolve(e.text, base(hereOf(e, people))); });
     var E = res.ending || res.end;
