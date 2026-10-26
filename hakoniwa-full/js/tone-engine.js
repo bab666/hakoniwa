@@ -112,10 +112,12 @@
     /* する（〜します・勉強します・何とかします）：「し」の前が五段の「す」で終わる動詞の漢字一字（話し・出し・返し）でなければ する */
     var suru = last === 'し' && !/[話出返消押渡隠回落戻倒起鳴指示伸干放正済許殺探離貸刺移映残直試流通増減足察差指刺外越殴壊卸干貸]$/.test(pre) && !/(過ご|なく|無く|増や|減ら|こぼ|ずら|ころ|まわ|かく|こわ|なお|かえ|はな|わた|おと|さが|よこ|ほど|ゆる|たお|もど|お|だ|け|さ|ど)$/.test(pre);
     /* 一段の「い」「み」は、いる・みる（〜ている・〜てみる）のときだけ。それ以外の い・み は五段（思い・飲み） */
-    var ichiIM = (last === 'い' || last === 'み') && (!pre || /[てで]$/.test(pre));
+    /* 語幹は前の語とつながって切り出される（「そばにい」「問題あり」）ので、助詞・副詞の直後の い・み も いる・みる（そばにいます→そばにいる） */
+    var ichiIM = (last === 'い' || last === 'み') && (!pre || /[てでにがはもとをへやだう、\s　…‥]$/.test(pre.replace(new RegExp(MARK, 'g'), '、')));
     if (/^(?:来|き)$/.test(stem)) return { 'る': '来る', 'た': '来た', 'ない': '来ない', 'なかった': '来なかった', 'よう': '来よう' }[form];
     if (suru) return pre + { 'る': 'する', 'た': 'した', 'ない': 'しない', 'なかった': 'しなかった', 'よう': 'しよう' }[form];
-    if (/^(?:あり)$/.test(stem)) return { 'る': 'ある', 'た': 'あった', 'ない': 'ない', 'なかった': 'なかった', 'よう': 'あろう' }[form];
+    /* ある（問題ありません→問題ない。「あらない」にしない） */
+    if (/あり$/.test(stem)) return stem.slice(0, -2) + { 'る': 'ある', 'た': 'あった', 'ない': 'ない', 'なかった': 'なかった', 'よう': 'あろう' }[form];
     var ichi = ichiIM || (ICHI.test(stem) && !((last === 'い' || last === 'み') && !ichiIM)) || /[えけげせぜてでねべめれ]$/.test(last) || /^[一-鿿々]$/.test(stem);
     if (ichi) return stem + { 'る': 'る', 'た': 'た', 'ない': 'ない', 'なかった': 'なかった', 'よう': 'よう' }[form];
     if (I2U[last]) return pre + ({ 'る': I2U[last], 'た': I2TA[last], 'ない': I2A[last] + 'ない', 'なかった': I2A[last] + 'なかった', 'よう': I2O[last] + 'う' }[form]);
@@ -168,7 +170,12 @@
   function ruleEmph(q, words, seed, rate) {
     /* 文に勢い（！や強い語）がないときは差し込まない。割合（既定 0.5）は辞書の「強調語の割合」で変えられる */
     if (!EMPH_HOT.test(q) || hash(seed + '#emph') % 100 >= Math.round((rate == null ? 0.5 : rate) * 100)) return q;
-    return q.replace(EMPH_AT, function (m) { return choose(words, seed + '#ew') + m; });
+    /* もう強調語が付いている語（「ガチ無理」「マジかわいい」）には重ねない */
+    return q.replace(EMPH_AT, function (m, g, at, all) {
+      var pv = all.slice(Math.max(0, at - 4), at).replace(new RegExp(MARK, 'g'), '');
+      if (words.concat(['マジ', 'ガチ', 'めっちゃ', 'すごく', 'とても', 'チョー', '超', 'ほんと', '本当に']).some(function (w) { return pv.slice(-w.length) === w; })) return m;
+      return choose(words, seed + '#ew') + m;
+    });
   }
 
   /* ---------- 効果 ---------- */
@@ -182,18 +189,50 @@
   }
   function fxBangOn(ss, seed) {
     return ss.map(function (s, i) {
-      if (s.punct || s.body.length > 8 || /[…‥、〜ー]$/.test(s.body)) return s;
+      if (s.punct || s.body.length > 8 || /[…‥、〜ー]$/.test(s.body) || isQuestion(s.body)) return s;
       if (/[だよぜぞ]$/.test(s.body) && hash(seed + '#bg' + i) % 100 < 50) return { body: s.body, punct: '！' };
       return s;
     });
   }
   function fxShort(ss) { if (ss.length <= 1) return ss; var f = ss[0]; return [{ body: (/^[…‥]/.test(f.body) ? '' : '……') + f.body, punct: f.punct === '。' ? '' : f.punct }]; }
+  /* 言いよどみ：文頭のかなを一つ重ねる（「大丈夫」→ 漢字始まりは重ねられないので、最初の文の終わりを「……」で濁す）。
+     元の文がもう言いよどんでいる・間投詞で始まる（「だ、大丈夫」「あ、」「え、」）・「……」で始まるときは何もしない */
   function fxStammer(q, seed) {
-    if (hash(seed + '#stm') % 100 >= 30 || /^[…‥]/.test(q)) return q;
-    var m = q.match(/^([ぁ-ゖァ-ヶ])/);
-    return m ? m[1] + '、' + q : 'あ、あの……' + q;
+    if (hash(seed + '#stm') % 100 >= 30 || /^[…‥]/.test(q) || /^[ぁ-ゖァ-ヶ][ゃゅょャュョ]?[、…‥]/.test(q)) return q;
+    var m = q.match(/^([ぁ-ゖァ-ヶ][ゃゅょぁぃぅぇぉャュョァィゥェォ]?)/);
+    if (m && !/^[ぁぃぅぇぉっゃゅょゎんゝゞァィゥェォッャュョヮンヽヾ]/.test(q)) return m[1] + '、' + q;
+    /* 漢字・記号始まり：最初の言い切り（。・文末）を「……」に。問い・！・……で終わる文はそのまま */
+    return q.replace(/^([^。！？!?…‥]*?[^。！？!?…‥〜ー～っッ♡、\s　])(。|$)/, function (x, b, p) { return b + '……'; });
   }
 
+  /* 文末の項目を当ててはいけない組み合わせ（当てずに次の項目を見る）
+     ・終助詞が重なる：「よ」＋「よね」→「よよね」、「よ」＋「わね」、「ね」＋「ね」（「よね」「わよ」「わね」「のよ」「のね」はよい）
+     ・問い（？で終わる文）に、言い切りの語尾（よ・わ・ぞ・ぜ・さ・だ・！）を付ける：「いいさ？」「行くわ？」「平気だよ？」「思いまーす！？」
+       （「ます？=ますの？」のように ？ 付きで書いた項目は別） */
+  var FINAL_P = /[よねわぞぜさ]$/, PAIR_OK = /^(?:よね|わよ|わね|ぞよ|さね)$/;
+  /* ？のない問い（「何をした」「いつからだ」「どうしたいんだ！」）：疑問の語があり、その後ろが「〜ても」「〜たら」のような条件・譲歩でないもの */
+  var QW = /(何|なに|誰|(?<![よなた])だれ|どこ|(?<![こそあど])いつ|なぜ|どうして|どう|どれ|どちら|どっち|いくつ|いくら(?!い)|どんな|(?<![ほけ])どの)(?!でも|も|か|ぞ|とか|となく|にも|にか|せ|より|度も|回も|人も|だか|とも|しろ|ら|だって|なり)/g;
+  function isQuestion(head) {
+    var m, rest = null;
+    QW.lastIndex = 0;
+    while ((m = QW.exec(head))) rest = head.slice(m.index + m[0].length);
+    /* 「どうするか決めて」「どちらが本気か答えて」のような、文の中の問いは除く */
+    return rest != null && !/(?:ても|でも|たら(?!いい|よい)|れば(?!いい|よい)|けど|のに|ので|ながら|とか|か(?=[一-鿿々ァ-ヶをがはもと、]))/.test(rest);
+  }
+  function badEnd(head, to, punct, qm, from) {
+    if (to === from) return false;   /* 元のまま（「だ=だ／だよ」の「だ」）はいつでもよい */
+    var t0 = to.replace(/^[\u2061]+/, '');
+    if (FINAL_P.test(head) && /^[よねわぞぜさ]/.test(t0) && !PAIR_OK.test(head.slice(-1) + t0.charAt(0))) return true;
+    /* 継ぎ目で同じかなが繰り返す：「ではない」＋「ではないか」、「くれたまえ」＋「たまえ」 */
+    for (var L = 2; L <= t0.length; L++) { var pf = t0.slice(0, L); if (/^[ぁ-ゖ]+$/.test(pf) && head.slice(-L) === pf) return true; }
+    /* 問いでも「〜のだ」「〜んだ」「〜の（よ・さ）」（何をしているのだ？・いつからなんだ？・何なのよ）はよい */
+    if (qm || /[？?]$/.test(to) || /[のん]だ$/.test(to)) return false;
+    /* 問いに念押し・言い切りの語尾を足さない（元の文にもともとあった語尾の言い換えはよい：「ね？=ね〜？」） */
+    var tq = (head + t0).replace(/[〜ー～]+$/, ''), oq = (head + (from || '')).replace(/[〜ー～]+$/, '');
+    if (/^[？?]/.test(punct) && /(?:[よわぞぜさだね！!]|である)$/.test(tq) && tq.slice(-1) !== oq.slice(-1)) return true;
+    if (isQuestion(head + (from || '')) && !/の[よさ]$/.test(to) && /(?:[よわぞぜさだな！!]|である)[〜ー～]*$/.test(to)) return true;
+    return false;
+  }
   /* 文末の表を一つの文に当てる（最初に合った項目だけ） */
   function applyEnds(body, punct, ends, seed, i) {
     if (!ends || !ends.length) return { body: body, punct: punct };
@@ -205,7 +244,10 @@
       if (qm) { if (!/^[？?]/.test(punct)) continue; from = from.slice(0, -1); }
       var head = core.slice(0, core.length - from.length);
       if (core.length >= from.length && core.slice(core.length - from.length) === from && (!e[2] || e[2].test(head.replace(new RegExp(MARK, 'g'), '')))) {
-        var to = choose(e[1], seed + '#e' + i);
+        /* 当ててはいけない候補は外して選ぶ。全部だめなら、この文は元のまま（短い項目に落ちると、もっと崩れるので） */
+        var h0 = head.replace(new RegExp(MARK, 'g'), ''), okc = e[1].filter(function (c) { return !badEnd(h0, c, punct, qm, from); });
+        if (!okc.length) return { body: body, punct: punct };
+        var to = okc.length === e[1].length ? choose(e[1], seed + '#e' + i) : choose(okc, seed + '#e' + i);
         if (qm) { var tq = to.match(/[？?]+$/); to = to.replace(/[？?]+$/, ''); punct = (tq ? tq[0] : '') + punct.replace(/^[？?]+/, ''); }
         /* {る}{た}{ない}{なかった}{よう}：丁寧形の語幹（〜ます の前）を活用させる */
         if (/\{(る|た|ない|なかった|よう)\}/.test(to)) {
@@ -234,6 +276,7 @@
   T.apply = function (q, d, who) {
     if (!q || !d) return q;
     var seed = q + '#' + ((who && who.name) || '');
+    var q0 = q, dots0 = (q.match(/[…‥]+/g) || []).reduce(function (n, x) { return Math.max(n, x.length); }, 0);
     var r = d.rules || {}, fx = d.effects || {};
     /* 規則（文の内側） */
     if (r.prog) q = ruleProg(q, r.prog);
@@ -245,7 +288,24 @@
       var map = d.wordsMap || (d.wordsMap = d.words.reduce(function (m, w) { if (!m[w[0]]) m[w[0]] = w[1]; return m; }, {}));
       var k = 0;
       /* 置き換えた語は印で包み、文末の処理（ます→っす など）が重ねて当たらないようにする */
-      q = q.replace(re, function (m) { k++; return MARK + choose(map[m], seed + '#w' + k) + MARK; });
+      q = q.replace(re, function (m, at, all) {
+        var nx = all.slice(at + m.length), to = choose(map[m], seed + '#w' + (k + 1));
+        /* 語の続きを切らない：「食べた」の語が「食べたい」「食べたくて」に当たって「食ったい」にならないように */
+        if (/た$/.test(m) && /^(?:い|く|かっ|が[らりるれっ]|けれ)/.test(nx)) return m;
+        /* 間投詞のようなかな2文字までの語（うん・はい・まあ・でも・おい・あら）は、語の中に当てない：「言うんだ」の「うん」、「おいしい」の「おい」、「それでも」の「でも」 */
+        if (/^[あいうえおはわまで][ぁ-ゖ]?$/.test(m) && (/^[ぁ-ゖ]/.test(nx) || /[ぁ-ゖ]$/.test(all.slice(0, at)))) return m;
+        /* 言い換えの付け足しが、元の文の続きと重なる：「ごめん=ごめんね」が「ごめんね」に当たって「ごめんねね」にならないように */
+        if (to.length > m.length && to.indexOf(m) === 0) { var ad = to.slice(m.length).replace(/^[\s　]+/, ''); if (ad && /^[ぁ-ゖ〜ー]/.test(ad) && nx.indexOf(ad.charAt(0)) === 0) return m; }
+        /* 語彙が足した念押しの語尾（だめ=だめだよ・だめ=いけないよ・ごめん=ごめんね）は、語のすぐ後に続きがある（「ごめんねだから」「分かったよの」）・
+           その文が問い（？）のときは外す：「だめだよ？」「いけないよかい？」にしない。読点・言い切りの前ではそのまま */
+        var tl = to.match(/(?:だよ|なのさ|ねえ|よ|ね|ぞ|ぜ|わ|さ)[〜ー～]*$/);
+        if (tl && to.length > tl[0].length && m.slice(-tl[0].length) !== tl[0] && !(/^ねえ/.test(tl[0]) && /ない$/.test(m))) {
+          var cont = /^[^。！!？?、，…‥」』）)\s　]/.test(nx), ask = /^[^。！!？?]*[？?]/.test(nx);
+          if (cont || ask) to = to.slice(0, to.length - tl[0].length);
+        }
+        k++;
+        return MARK + to + MARK;
+      });
     }
     if (r.emph && r.emph.length) q = ruleEmph(q, r.emph, seed, r.emphRate);
     /* 文ごと */
@@ -273,7 +333,12 @@
     if (fx.stammer) q = fxStammer(q, seed);
     /* 前に……：文頭に「……」（けだるげ）。間を置く：文の切れ目の「。」を「。……」に（半分くらい） */
     if (fx.dots && !/^[…‥]/.test(q)) q = '……' + q;
-    if (fx.pause) { var pk = 0; q = q.replace(/。(?=.)/g, function (m) { pk++; return hash(seed + '#pz' + pk) % 100 < 50 ? '。……' : m; }); }
+    if (fx.pause) { var pk = 0; q = q.replace(/(?<![…‥])。(?=[^…‥])/g, function (m) { pk++; return hash(seed + '#pz' + pk) % 100 < 50 ? '。……' : m; }); }
+    /* 「……」の重なり：語彙（ありがとう=……ありがと）や効果が足した「……」が元の「……」と並んだら一つに（元の文にあった長さまでは残す） */
+    if (!/[…‥]。/.test(q0)) q = q.replace(/([…‥])。/g, '$1');
+    /* 重なった語尾（「よよ」「ねね」）を一つに（元の文にあったものは残す） */
+    q = q.replace(/(よ|ね)\1(?=[。！？!?…‥〜ー～」]|$)/g, function (m, c) { return q0.indexOf(m) >= 0 ? m : c; });
+    q = q.replace(/[…‥]{3,}/g, function (m) { return m.length <= dots0 ? m : '……'; });
     return q;
   };
 
@@ -341,7 +406,8 @@
     Object.keys(out.dicts).forEach(function (k) {
       var d = out.dicts[k];
       if (!d.key) { if (!d.label) { out.errors.push(d.line + '行目の [口調]：名前がありません'); return; } d.key = userMode ? 'u:' + d.label : d.label; }
-      d.ends.sort(function (a, b) { return b[0].length - a[0].length; });
+      /* 同じ長さなら、条件つきの項目（「な(る)=な」）を先に（条件なしの「な=ね」に先を越されないように） */
+      d.ends.sort(function (a, b) { return b[0].length - a[0].length || (b[2] ? 1 : 0) - (a[2] ? 1 : 0); });
       if (!d.base) d.base = T.BASE[d.key] || 'K';
       dicts[d.key] = d;
     });
