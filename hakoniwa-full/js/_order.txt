@@ -57,6 +57,7 @@ late js/tone-fix-g6-r18.js
 late js/tone-fix-gc.js
 late js/tone-fix-gc-r18.js
 late js/tone-sample-fix.js
+late js/tone-fix-loose.js
 late js/tone-fix-g7a.js
 late js/tone-fix-g7a-r18.js
 late js/tone-fix-g7b.js

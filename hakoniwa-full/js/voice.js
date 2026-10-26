@@ -19,7 +19,8 @@
     return t[g];
   };
   V.fpFor = function (c) { var fp = String((c && c.fp) || '').trim().slice(0, 8); return fp || V.fpDefault(c); };
-  var FP_RE = /(俺様|オレ様|俺|僕|ぼく|オレ|ボク|わたくし|ワタクシ|あたくし|あたし|アタシ|わたし|ワタシ|私|拙者|わらわ|わし|ウチ|うち)(?=(?:たち|達|ら|は|が|も|の|を|に|へ|一人|ひとり|と|で|って|だ|、|。|！|？|…|―|」|）|\s|$|っ|、|ね|よ|さ|じゃ|から|まで|より|だけ|なんか|なんて|なら|かも|ばかり|ばっかり|しか|こそ|以外|自身|一番|いちばん|吊|な(?=の|ん)|か(?=[？?…!！」、]|$)|!|\?))/g;
+  /* 一人称の後ろに来る語。助詞を落とした「私」（「私まだ」「私やります」。後ろがひらがな）も一人称として置き換える（「私する」は除く） */
+  var FP_RE = /(俺様|オレ様|俺|僕|ぼく|オレ|ボク|わたくし|ワタクシ|あたくし|あたし|アタシ|わたし|ワタシ|私|拙者|わらわ|わし|ウチ|うち)(?=(?:たち|達|ら|は|が|も|の|を|に|へ|一人|ひとり|と|で|って|だ|、|。|！|？|…|―|」|）|\s|$|っ|、|ね|よ|さ|じゃ|から|まで|より|だけ|なんか|なんて|なら|かも|ばかり|ばっかり|しか|こそ|以外|自身|一番|いちばん|吊|な(?=の|ん)|か(?=[？?…!！」、]|$)|!|\?|(?<=私)(?=[ぁ-ゖ])(?![すし])))/g;
   /* 一人称の読みの頭（「わ、私」→「ぼ、僕」のように、どもりも一人称に合わせる）
      漢字の一人称は表から、ひらがな・カタカナで始まる一人称は最初の一音（「しょ」のような拗音も）から。
      読みが分からない一人称なら、どもりは省く（「わ、私」→「某」） */
@@ -602,7 +603,8 @@
             var d1 = !byDict && ov == null && !pre && !nb && !kg && !nounQ && HK.toneOpt && HK.toneOpt(who.tone, 'dictOnly') && HK.Tone && HK.Tone.apply1 ? HK.Tone.dictOf(who.tone) : null;
             if (byDict) { q = HK.Tone.apply(q, nb.dict, who); own = true; }
             else if (d1) { q = HK.Tone.apply1(q, d1, who); own = true; }
-            else if (ov == null && !pre) { if (who.persona === 'polite' || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(V.unHonor ? V.unHonor(q) : q, who); }
+            /* 「〜」という話・「〜」と書いた札（nounQ）は話し手の言葉ではないので、敬語の人でも敬語にしない */
+            else if (ov == null && !pre) { if ((who.persona === 'polite' && !nounQ) || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(V.unHonor ? V.unHonor(q) : q, who); }
             /* 敬語の口調で、敬語の文とため口の文が混ざる台詞の、ため口の文末を敬語に寄せる（tone-keigo-unify.js。仕上げの前に通し、仕上げが口調の味を付ける） */
             if (V.keigoUnify && !nounQ && !own && !pre) q = V.keigoUnify(q, who);
             /* 口調ごとの仕上げ（後輩の「〜っす」、お嬢様の「〜ですわ」など。HK.toneFinish で登録したもの） */
