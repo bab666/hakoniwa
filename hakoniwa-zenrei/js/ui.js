@@ -694,13 +694,17 @@
     return src[e.id] == null ? e.def : src[e.id];
   }
   /* 内容のスイッチ：全箱庭で共通の入れ切り（S.glob.ct）。R18版だけ */
+  var CT_MORE = '';
+  /* r18:begin */
+  CT_MORE = '展開の重さを「重い」にすると、妊娠・暴力・DVの場面が、合コン・出られない部屋・オメガバース・催眠などふつうの箱庭でも起きます（起きやすい関係・気質は、環境値のTIPSの「内容のスイッチ」に）。';
+  /* r18:end */
   function ctOn() { var m = (S.glob && S.glob.ct) || {}; return (HK.Content ? HK.Content.TAGS : []).filter(function (t) { return m[t.id]; }).map(function (t) { return t.id; }); }
   function contentBox() {
     if (!HK.Content || HK.SAFE_ON) return '';
     var m = (S.glob && S.glob.ct) || {};
     return '<div class="envitem wide"><div class="lab"><span>内容のスイッチ（全箱庭で共通・初期はすべて切）</span></div><div class="ctbox">' +
       HK.Content.TAGS.map(function (t) { return '<label title="' + esc(t.desc) + '"><input type="checkbox" data-f="ct" data-k="' + t.id + '"' + (m[t.id] ? ' checked' : '') + '> ' + esc(t.label) + '</label>'; }).join('') +
-      '</div><div class="desc">入れたものだけが起きます。切のときは、その場面を起こさないか、やわらかい分岐に替えます。エロトラップダンジョンなどR18が中心の箱庭では「合意のない展開」は常に入です。</div></div>';
+      '</div><div class="desc">入れたものだけが起きます。切のときは、その場面を起こさないか、やわらかい分岐に替えます。エロトラップダンジョンなどR18が中心の箱庭では「合意のない展開」は常に入です。' + CT_MORE + '</div></div>';
   }
   function envItem(e, scenId) {
     var v = envVal(e, scenId), g = HK.GLOBAL_ENV.indexOf(e) >= 0 ? '1' : '0';

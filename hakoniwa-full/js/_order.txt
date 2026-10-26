@@ -121,6 +121,8 @@ js/room-left.js
 js/room-cheer.js
 js/hate-sex-r18.js
 js/hate-love-r18.js
+js/content-text-r18.js
+js/content-events-r18.js
 js/room-know.js
 js/room-tie.js
 js/room-same.js

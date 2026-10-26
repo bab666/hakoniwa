@@ -258,6 +258,8 @@
       /* 受けの強い拒否 → 攻めの言い返し（嫌々・開き直り） */
       out.push('{b}「' + pick(x, PROTEST[p]) + '」');
       say('a', (opt.room ? RETORT_ROOM : RETORT)[tp]);
+      /* 内容のスイッチ「暴力をともなう性描写」が入（展開：重い）のときだけ、攻めの暴力と受けの反応の段（content-events-r18.js の HS.extra） */
+      if (HS.extra) { var vx = HS.extra(x, T, B, k); if (vx) out.push(vx); }
       var lastL = function () { return lh && x.rng() < 0.6 ? LHR.LAST[tp] : LAST[tp]; }, afterL = function () { return lh && x.rng() < 0.6 ? LHR.AFTER[p] : AFTER[p]; };
       if (low) { out.push(pick(x, FADE)); say('a', lastL()); out.push(pick(x, afterL())); if (lh) out.push(pick(x, LHR.TAIL)); return fill(x, out.join(''), T, B); }
       var sub = subOf(T, B, k);
