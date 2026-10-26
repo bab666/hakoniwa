@@ -1,5 +1,5 @@
 /* 箱庭シミュレーター ui: 住人ごとの設定（⚙️）
-   節は ①話し方 ②プロフィール ③体と設定 ④恋愛（R18版は恋愛と夜） ⑤相手ごとの設定（関係・呼び方・二人称/一人称・受け攻め・夜の性格）。
+   節は ①話し方 ②プロフィール ③体と設定 ④恋愛（R18版は恋愛と夜） ⑤相手ごとの設定（殺さない相手・関係・呼び方・二人称/一人称・受け攻め・夜の性格）。
    各節の見出しの下に「どの箱庭に効くか」の注意書き（SCOPE）を出す。欄の data-gf は保存との互換のため変えない。
    ※口調や関係は台詞・文面と関係の初期値に効く。行動の判断はエゴグラムの数値で決まる */
 (function () {
@@ -162,16 +162,16 @@
   var SCOPE = {
     talk: '効く箱庭：全箱庭の台詞（口調・一人称・二人称・語尾・呼び方・敬語）。行動の判断は変わりません。',
     profile: '効く箱庭：性別・恋愛対象は全箱庭の恋愛の相手選び。誕生月は学園などの誕生日の出来事、年齢は「年上の相手には敬語」、お酒は合コン・出られない部屋・オメガバース・邪神村、色は関係図・経過・結果画像。グループは住人の行（メモの左）、特殊役職は死のある箱庭の住人の欄で決めます。',
-    body: '効く箱庭：体格・種族は、全箱庭の二人の穏やかな場面に一文が付きます。心の強さは、催眠のかかりやすさ。好物は、食事・差し入れ・デートのある箱庭（無人島・合コン・クラスメイト・オメガバース・宇宙船・邪神村・ふたりの日常）。同一人物は全箱庭（二人は恋愛にならず、鏡を見るような場面が起きます）。',
+    body: '効く箱庭：体格・種族は、全箱庭の二人の穏やかな場面に一文が付きます。心の強さは、催眠のかかりやすさ。好物は、食事・差し入れ・デートのある箱庭（無人島・合コン・クラスメイト・オメガバース・宇宙船・邪神村・ふたりの日常）。同一人物は全箱庭（鏡を見るような場面が起きます。恋愛もほかの二人と同じように起こりえます）。闇堕ちVerは、いまは出られない部屋だけ。',
     love: '効く箱庭：受け攻め・恋愛対象（受け攻め）・恋愛相手の固定・一途・恋愛にしない相手は、全箱庭の恋愛の場面（相手選びと、どちらが動く側か）。受け攻めは「相手ごとの設定」で、相手ごとにも変えられます。',
-    ties: '効く箱庭：関係は全箱庭の関係の初期値と出来事。呼び方・二人称・一人称は、その相手に話しかける台詞。受け攻めは、全箱庭の恋愛の場面で、この相手との向きだけを変えます（ほかの相手・モブには全体の受け攻めのまま）。'
+    ties: '効く箱庭：関係は全箱庭の関係の初期値と出来事。呼び方・二人称・一人称は、その相手に話しかける台詞。受け攻めは、全箱庭の恋愛の場面で、この相手との向きだけを変えます（ほかの相手・モブには全体の受け攻めのまま）。憎悪を持っても殺さない相手は、死のある箱庭で、その相手を殺す場面が思いとどまる場面になります。'
   };
   /* r18:begin */
   if (!HK.SAFE_ON) {
     SCOPE.profile = SCOPE.profile.replace('全箱庭の恋愛の相手選び', '全箱庭の恋愛・夜の相手選び');
-    SCOPE.body = '効く箱庭：体格・種族は、全箱庭の二人の穏やかな場面とR18の夜に一文が付きます（一人用の箱庭はR18の夜だけ）。心の強さは、催眠・常識改変・感覚遮断穴・エロトラップダンジョンの堕ちやすさ。好物は、食事・差し入れ・デートのある箱庭（無人島・合コン・クラスメイト・オメガバース・宇宙船・邪神村・ふたりの日常）。同一人物は全箱庭（二人は恋愛・R18にならず、鏡を見るような場面が起きます）。胸・性器・性器の呼び方は、R18版の夜の場面（全箱庭のR18の場面）。';
+    SCOPE.body = '効く箱庭：体格・種族は、全箱庭の二人の穏やかな場面とR18の夜に一文が付きます（一人用の箱庭はR18の夜だけ）。心の強さは、催眠・常識改変・感覚遮断穴・エロトラップダンジョンの堕ちやすさ。好物は、食事・差し入れ・デートのある箱庭（無人島・合コン・クラスメイト・オメガバース・宇宙船・邪神村・ふたりの日常）。同一人物は全箱庭（鏡を見るような場面が起きます。恋愛・R18もほかの二人と同じように起こりえます）。闇堕ちVerは、いまは出られない部屋だけ。胸・性器・性器の呼び方は、R18版の夜の場面（全箱庭のR18の場面）。';
     SCOPE.love = '効く箱庭：受け攻め・恋愛対象（受け攻め）・恋愛相手の固定・一途・恋愛・R18にしない相手は、全箱庭の恋愛・夜の場面。性行為の相手の固定・R18に参加しない・夜の性格・ふたなり・モブには受け・濁点喘ぎは、R18版の夜の場面（「R18に参加しない」は、R18が中心の箱庭では効きません）。受け攻めと夜の性格は「相手ごとの設定」で、相手ごとにも変えられます。';
-    SCOPE.ties = '効く箱庭：関係は全箱庭の関係の初期値と出来事。呼び方・二人称・一人称は、その相手に話しかける台詞。受け攻めは、全箱庭の恋愛・夜の場面で、この相手との向きだけを変えます（ほかの相手・モブには全体の受け攻めのまま）。夜の性格は、R18版の夜の場面でこの相手に向ける振る舞い。';
+    SCOPE.ties = '効く箱庭：関係は全箱庭の関係の初期値と出来事。呼び方・二人称・一人称は、その相手に話しかける台詞。受け攻めは、全箱庭の恋愛・夜の場面で、この相手との向きだけを変えます（ほかの相手・モブには全体の受け攻めのまま）。夜の性格は、R18版の夜の場面でこの相手に向ける振る舞い。憎悪を持っても殺さない相手は、死のある箱庭で、その相手を殺す場面が思いとどまる場面になります。';
   }
   /* r18:end */
   return SCOPE;
@@ -231,6 +231,8 @@
         (HK.Attr && HK.Attr.forHtml ? '<span class="gforh">この人には：</span>' + HK.Attr.forHtml(c, o, { esc: esc, opt: opt }) : '') +
         '<button type="button" class="btn ghost small" data-gact="tadd" data-o="' + o.id + '">関係を重ねる</button></div>' + (note ? '<p class="gearhint gfnote">' + esc(note) + '</p>' : '') + '</div>';
     }).join('');
+    /* 憎悪を持っても殺さない相手（どちらに付けても、二人のあいだでは殺す場面が思いとどまる場面になる。attr.js の HK.Attr.noKillPair） */
+    var nkRow = others.length ? '<div class="gearrow"><span class="gearhint" style="flex:1 1 100%;margin:0">憎悪を持っても殺さない相手（憎悪・敵対・執着があっても、この相手を殺しません。ただし殺し合いが本筋の箱庭（バトルロワイヤル・裁判デスゲーム・人狼の襲撃など）や、発狂・暴走でやむを得ないときは殺すことがあります。相手の設定にも同じ印が付きます）</span>' + others.map(function (o) { return '<label><input type="checkbox" data-gf="nokill" data-o="' + esc(o.id) + '"' + ((c.noKillFor || []).indexOf(o.id) >= 0 ? ' checked' : '') + ' aria-label="' + esc(o.name) + 'を憎悪を持っても殺さない"> ' + esc(o.name) + '</label>'; }).join('') + '</div>' : '';
     var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手">' + others.map(function (o) { return opt(o.id, o.name, ''); }).join('') + '</select></label>' +
       '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + opt('', '（関係は付けずに相手ごとの設定だけ）', 'friend') + '</select></label>' + (function () { var gm = groupMates(c); return gm.length ? '<label title="' + esc('同じグループ（' + grpsOf(c).join('・') + '）の全員に、選んだ関係を付けます：' + gm.map(function (o) { return o.name; }).join('・') + '。向きのある関係は、' + c.name + 'が左（上司・先輩・師匠など）になります') + '"><input type="checkbox" data-gf="newgrp"> グループの全員と（' + gm.length + '人）</label>' : ''; })() + '<button type="button" class="btn small" data-gact="tnew">追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
@@ -273,7 +275,7 @@
       /* r18:end */
       ngRow + '</div>' +
       /* ⑤相手ごとの設定：関係・呼び方・二人称/一人称・受け攻め・夜の性格 */
-      '<div class="gearsec"><h3>相手ごとの設定' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + scope(SCOPE.ties) + (rel || '<p class="gearhint">まだ相手ごとの設定はありません。下の「相手」と「関係」を選んで追加してください（関係を付けずに、受け攻めや呼び方だけを決めることもできます）。</p>') + addable + '</div>';
+      '<div class="gearsec"><h3>相手ごとの設定' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + scope(SCOPE.ties) + nkRow + (rel || '<p class="gearhint">まだ相手ごとの設定はありません。下の「相手」と「関係」を選んで追加してください（関係を付けずに、受け攻めや呼び方だけを決めることもできます）。</p>') + addable + '</div>';
   }
   function render() {
     var c = byId(cur);
@@ -397,6 +399,12 @@
         var o = byId(t.dataset.o); if (!o) return;
         c.loveNG = (c.loveNG || []).filter(function (k) { return k !== o.id; }); o.loveNG = (o.loveNG || []).filter(function (k) { return k !== c.id; });
         if (t.checked) { c.loveNG.push(o.id); o.loveNG.push(c.id); if (c.loveLock === o.id) c.loveLock = ''; if (o.loveLock === c.id) o.loveLock = ''; }
+        changed(true);
+      })(); break;
+      case 'nokill': if (isInput) return; (function () {
+        var o = byId(t.dataset.o); if (!o) return;
+        c.noKillFor = (c.noKillFor || []).filter(function (k) { return k !== o.id; }); o.noKillFor = (o.noKillFor || []).filter(function (k) { return k !== c.id; });
+        if (t.checked) { c.noKillFor.push(o.id); o.noKillFor.push(c.id); }
         changed(true);
       })(); break;
       case 'keigo': if (isInput) return; c.keigo = c.keigo || {}; if (t.checked) c.keigo[t.dataset.o] = 1; else delete c.keigo[t.dataset.o]; changed(false); sampleRefresh(); (function () { var kn = ov && ov.querySelector('.gkn'), n = ov ? ov.querySelectorAll('[data-gf="keigo"]:checked').length : 0; if (kn) kn.textContent = n ? n + '人' : 'なし'; })(); break;

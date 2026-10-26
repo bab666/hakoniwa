@@ -113,11 +113,11 @@
     if (HK.SAFE_ON || !a || !b || a === b) return false;
     var S = HK.State;
     /* 体だけの夜（info.free）：HK.State.freeSex を通る組だけ（恋人でなくてよい。恋愛相手の固定 HK.canLove は見ない） */
-    if (info && info.free) return !!(S && S.freeSex && S.freeSex(ctx, a, b)) && !(HK.Attr && HK.Attr.samePair && HK.Attr.samePair(a, b));
+    if (info && info.free) return !!(S && S.freeSex && S.freeSex(ctx, a, b));
     if (S && !S.pairSex(a, b)) return false;
     if (HK.sexBlocked(a, b) || HK.ngPair(a, b)) return false;
     if (!HK.canLove(a, b) || !HK.canLove(b, a)) return false;
-    if (HK.Attr && HK.Attr.samePair && HK.Attr.samePair(a, b)) return false;
+    /* 同一人物の二人も、ほかの二人と同じに扱う（避けたいときは住人の「恋愛・R18にしない相手」） */
     return !!ctx.pair(a, b).couple;
   }
   var NIGHT_N = {}; (HK.Attr && HK.Attr.NIGHT || []).forEach(function (x) { NIGHT_N[x[0]] = x[1]; });

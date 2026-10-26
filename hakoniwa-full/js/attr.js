@@ -11,7 +11,13 @@
      maso は受け攻めを変えない（攻め指定が優先。受けに回ったときの崩れ方だけを変える）。全年齢では無視する
    ・will 心の強さ：''／weak 弱い／avg ふつう／strong 強い。快楽堕ち・催眠・常識改変・遮断穴の「堕ちる」判定に掛ける（HK.Attr.willK）。
      strong は体が堕ちても心は折れない文を添える（HK.Attr.hold）
-   ・same 同一人物：相手の番号。二人は恋愛・R18にしない（HK.ngPair・住人の ng に足す）。「鏡を見るような」共通の場面 3 本と、結果の関係名「もう一人の自分」
+   ・same 同一人物：相手の番号。「鏡を見るような」共通の場面 3 本と、結果の関係名「もう一人の自分」。恋愛・体の関係は縛らない
+     （避けたいときは「恋愛・R18にしない相手」loveNG や性行為の相手の固定で決める）
+   ・sameDark 同一人物の「闇堕ちVer」（真偽。同一人物を選んだ人だけ）：同一人物の相手を苛む、闇に堕ちた自分。判定は A.isDark(c)・A.darkOf(a, b)
+     （a・b が同一人物の組で、片方だけ闇堕ちならその人。出来事は出られない部屋の側で使う）
+   ・noKillFor 憎悪を持っても殺さない相手（相手の id の配列。片方に付ければ両方向に効く。画面の欄は ui-gear.js の「相手ごとの設定」）。
+     実行時は dst.noKill（相手の番号の配列）。判定は A.noKillPair(a, b)。エンジン型の Ctx.kill を包み、殺す代わりに「思いとどまる」出来事にする
+     （opt.force・殺し合いが本筋の箱庭 scen.killMain・殺す側が発狂中／ゾンビ化などで正気でないときは殺す）
    ・posFor 相手ごとの受け攻め（全年齢版・R18版共通）：{ 相手: 'top'|'bottom'|'riba' }。空・不正な値は持たない。nightFor と同じ経路で保存・書き出し・入力に渡す。
      実行時は pos.js の P.of(c, 相手)・P.explicit(c, 相手)・P.hardTop(c, 相手) が全体の受け攻め（pos）より優先して読む。
      画面の欄は「相手ごとの設定」の行（A.forHtml。夜の性格の相手ごとの指定 nightFor も同じ行）
@@ -69,6 +75,8 @@
     return A.TASTES.filter(function (t) { return src.indexOf(t) >= 0; });
   };
   function fstr(v) { return A.foodWords(v).join('、'); }
+  /* 相手の id の並び（画面の住人。重複・空を除く） */
+  function idl(v) { var o = []; if (Array.isArray(v)) v.forEach(function (k) { if (typeof k === 'string' && k && o.indexOf(k) < 0) o.push(k); }); return o; }
   function tstr(v) { return A.tasteList(v).join('、'); }
 
   /* ---------- 画面の住人（S.chars。相手は id で持つ） ---------- */
@@ -80,6 +88,8 @@
     o.nightFor = c.nightFor && typeof c.nightFor === 'object' ? JSON.parse(JSON.stringify(c.nightFor)) : {};
     o.posFor = pmap(c.posFor);
     o.same = typeof c.same === 'string' ? c.same : '';
+    o.sameDark = !!(o.same && c.sameDark);
+    o.noKillFor = idl(c.noKillFor);
     VF.forEach(function (k) { o[k] = wmap(c[k]); });
     FOODK.forEach(function (k) { o[k] = fstr(c[k]); });
     o.taste = tstr(c.taste);
@@ -94,6 +104,8 @@
     c.nightFor = nf;
     c.posFor = pmap(c.posFor);
     c.same = typeof c.same === 'string' ? c.same : '';
+    c.sameDark = !!c.sameDark;   /* 同一人物が無ければ normRefs・importRefs で外す（読み込みでは相手が後で決まるので、ここでは外さない） */
+    c.noKillFor = idl(c.noKillFor);
     VF.forEach(function (k) { c[k] = wmap(c[k]); });
     FOODK.forEach(function (k) { c[k] = fstr(c[k]); });
     c.taste = tstr(c.taste);
@@ -106,6 +118,10 @@
     Object.keys(c.posFor || {}).forEach(function (k) { if (!ids[k] || k === c.id) delete c.posFor[k]; });
     VF.forEach(function (f) { Object.keys(c[f] || {}).forEach(function (k) { if (!ids[k] || k === c.id) delete c[f][k]; }); });
     if (c.same && list) list.forEach(function (o) { if (o.id === c.same && !o.same) o.same = c.id; });
+    if (!c.same) c.sameDark = false;
+    /* 殺さない相手：今いる住人だけ。片方に書かれていれば、もう片方にも書く */
+    c.noKillFor = idl(c.noKillFor).filter(function (k) { return ids[k] && k !== c.id; });
+    if (c.noKillFor.length && list) list.forEach(function (o) { if (c.noKillFor.indexOf(o.id) >= 0) { o.noKillFor = idl(o.noKillFor); if (o.noKillFor.indexOf(c.id) < 0) o.noKillFor.push(c.id); } });
   };
   /* ui.js rosterJSON：書き出し（相手は ref で番号に） */
   A.exportTo = function (o, c, ref) {
@@ -113,7 +129,9 @@
     if (c.raceNote) o.raceNote = c.raceNote;
     FOODK.forEach(function (k) { if (fstr(c[k])) o[k] = fstr(c[k]); });
     if (tstr(c.taste)) o.taste = tstr(c.taste);
-    if (c.same && ref(c.same) != null) o.same = ref(c.same);
+    if (c.same && ref(c.same) != null) { o.same = ref(c.same); if (c.sameDark) o.sameDark = true; }
+    var nk = idl(c.noKillFor).map(ref).filter(function (x) { return x != null; });
+    if (nk.length) o.noKillFor = nk;
     if (c.nightFor) { var nf = {}; Object.keys(c.nightFor).forEach(function (k) { if (ref(k) != null && c.nightFor[k]) nf[ref(k)] = c.nightFor[k]; }); if (Object.keys(nf).length) o.nightFor = nf; }
     if (c.posFor) { var pf = {}; Object.keys(c.posFor).forEach(function (k) { if (ref(k) != null && posv(c.posFor[k])) pf[ref(k)] = c.posFor[k]; }); if (Object.keys(pf).length) o.posFor = pf; }
     VF.forEach(function (f) { if (!c[f]) return; var m = {}; Object.keys(c[f]).forEach(function (k) { if (ref(k) != null && word(c[f][k])) m[ref(k)] = word(c[f][k]); }); if (Object.keys(m).length) o[f] = m; });
@@ -125,6 +143,8 @@
     if (o.raceNote != null) c.raceNote = note(String(o.raceNote));
     FOODK.forEach(function (k) { if (o[k] != null) c[k] = fstr(o[k]); });
     if (o.taste != null) c.taste = tstr(o.taste);
+    if (o.sameDark != null) c.sameDark = !!o.sameDark;
+    c._atNk = o.noKillFor;
     c._atSame = o.same; c._atNf = o.nightFor; c._atPf = o.posFor; c._atYf = o.youFor; c._atFf = o.fpFor;
   };
   A.importRefs = function (c, ref) {
@@ -137,6 +157,9 @@
       if (m && typeof m === 'object') { c[x[1]] = c[x[1]] || {}; Object.keys(m).forEach(function (k) { var id = ref(k), w = word(m[k]); if (id && id !== c.id && w) c[x[1]][id] = w; }); }
       delete c[x[0]];
     });
+    if (Array.isArray(c._atNk)) { c.noKillFor = []; c._atNk.forEach(function (k) { var id = ref(k); if (id && id !== c.id && c.noKillFor.indexOf(id) < 0) c.noKillFor.push(id); }); }
+    delete c._atNk;
+    if (!c.same) c.sameDark = false;
     delete c._atSame; delete c._atNf;
   };
   /* ui.js buildInput：シミュレーションへ渡す（相手は箱庭に出る人の番号に） */
@@ -146,7 +169,10 @@
     FOODK.forEach(function (k) { if (fstr(c[k])) o[k] = fstr(c[k]); });
     if (tstr(c.taste)) o.taste = tstr(c.taste);
     var si = c.same ? ids.indexOf(c.same) : -1;
-    if (si >= 0) o.same = si;
+    if (si >= 0) { o.same = si; if (c.sameDark) o.sameDark = true; }
+    var nk = [];
+    idl(c.noKillFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && nk.indexOf(i) < 0) nk.push(i); });
+    if (nk.length) o.noKillFor = nk;
     if (c.nightFor) { var nf = {}, n = 0; Object.keys(c.nightFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && c.nightFor[k]) { nf[i] = c.nightFor[k]; n++; } }); if (n) o.nightFor = nf; }
     if (c.posFor) { var pf = {}, n2 = 0; Object.keys(c.posFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && posv(c.posFor[k])) { pf[i] = c.posFor[k]; n2++; } }); if (n2) o.posFor = pf; }
     VF.forEach(function (f) { if (!c[f]) return; var m = {}, k2 = 0; Object.keys(c[f]).forEach(function (k) { var i = ids.indexOf(k), w = word(c[f][k]); if (i >= 0 && w) { m[i] = w; k2++; } }); if (k2) o[f] = m; });
@@ -167,7 +193,9 @@
     if (fstr(c.foodHate)) bits.push('苦手な食べ物：' + fstr(c.foodHate));
     if (tstr(c.taste)) bits.push('好きな味：' + tstr(c.taste));
     var sm = c.same && byId(c.same);
-    if (sm) bits.push('同一人物：' + sm.name);
+    if (sm) bits.push('同一人物：' + sm.name + (c.sameDark ? '（闇堕ちVer）' : ''));
+    var nkl = idl(c.noKillFor).map(byId).filter(Boolean);
+    if (nkl.length) bits.push('殺さない：' + nkl.map(function (o) { return o.name; }).join('・'));
     var pfl = Object.keys(c.posFor || {}).map(function (id) { var o = byId(id); return o && posv(c.posFor[id]) ? o.name + 'に' + lab(A.POSFOR, c.posFor[id]) : ''; }).filter(Boolean);
     if (pfl.length) bits.push('相手ごとの受け攻め：' + pfl.join('・'));
     /* r18:begin */
@@ -180,7 +208,9 @@
      R18版だけの欄（胸・性器）は SAFE_ON で隠す。夜の性格は「恋愛と夜」の節（A.nightHtml）と、相手ごとの設定の行（A.forHtml）に置く */
   A.gearHtml = function (c, others, h) {
     var esc = h.esc, sel = function (k) { return h.selOf('at_' + k, listOf(k), c[k] || ''); };
-    var same = others.length ? '<label title="別の世界・別の時間の同じ人のように扱います。二人は恋愛・R18にならず、鏡を見るような場面が起きます">同一人物 <select data-gf="at_same" aria-label="同一人物"><option value="">なし</option>' + others.map(function (o) { return h.opt(o.id, o.name, c.same || ''); }).join('') + '</select></label>' : '';
+    var lw = HK.SAFE_ON ? '恋愛' : '恋愛・R18';
+    var same = others.length ? '<label title="別の世界・別の時間の同じ人のように扱います。鏡を見るような場面が起きます。' + lw + 'も、ほかの二人と同じように起こりえます（避けたいときは「' + lw + 'にしない相手」に印を付けます）">同一人物 <select data-gf="at_same" aria-label="同一人物"><option value="">なし</option>' + others.map(function (o) { return h.opt(o.id, o.name, c.same || ''); }).join('') + '</select></label>' +
+      (c.same ? '<label title="同一人物の相手を苛む、闇に堕ちた自分。エゴグラムの欠点が際立ち、愛憎より悪質に振る舞います。いまは出られない部屋だけで効きます"><input type="checkbox" data-gf="at_sameDark"' + (c.sameDark ? ' checked' : '') + '> 闇堕ちVer</label>' : '') : '';
     return '<div class="gearrow"><label title="二人の体格の差で、見上げる・抱き上げるといった文が変わります">体格 ' + sel('build') + '</label>' +
       /* r18:begin */
       (!HK.SAFE_ON && c.gender === 'f' ? '<label title="R18の場面の地の文で、胸の書き方が変わります">胸 ' + sel('bust') + '</label>' : '') +
@@ -243,12 +273,14 @@
     if (isInput) return true;
     if (listOf(k)) { c[k] = val(listOf(k), t.value); changed(k === 'race' || k === 'night'); return true; }
     if (k === 'pf') { c.posFor = c.posFor || {}; var pv = posv(t.value); if (pv) c.posFor[t.dataset.o] = pv; else delete c.posFor[t.dataset.o]; changed(true); return true; }
+    if (k === 'sameDark') { c.sameDark = !!(t.checked && c.same); changed(true); return true; }
     if (k === 'nf') { c.nightFor = c.nightFor || {}; var v = val(A.NIGHT, t.value); if (v) c.nightFor[t.dataset.o] = v; else delete c.nightFor[t.dataset.o]; changed(false); return true; }
     if (k === 'same') {
       var old = c.same && byId(c.same), o = t.value && byId(t.value);
-      if (old && old.same === c.id) old.same = '';
-      if (o && o.same) { var o2 = byId(o.same); if (o2 && o2.same === o.id) o2.same = ''; }
+      if (old && old.same === c.id && old !== o) { old.same = ''; old.sameDark = false; }
+      if (o && o.same && o.same !== c.id) { var o2 = byId(o.same); if (o2 && o2.same === o.id) { o2.same = ''; o2.sameDark = false; } }
       c.same = o ? o.id : '';
+      if (!o) c.sameDark = false;
       if (o) o.same = c.id;
       changed(true); return true;
     }
@@ -312,16 +344,59 @@
     if (Object.keys(pfm).length) dst.posFor = pfm;
     var sm = src.same;
     if (sm !== '' && sm != null && !isNaN(+sm) && +sm >= 0 && +sm !== dst.i) {
+      /* 同一人物（恋愛・体の関係は縛らない。縛りたいときは「恋愛・R18にしない相手」で決める） */
       dst.same = +sm;
-      /* 恋愛・R18にしない相手（engine.js の ngPairHard・ngExplicit・sexBlocked が読む ng）にも足す */
-      dst.ng = Array.isArray(dst.ng) ? dst.ng : [];
-      if (dst.ng.indexOf(+sm) < 0) dst.ng.push(+sm);
+      if (src.sameDark) dst.sameDark = true;
+    }
+    /* 憎悪を持っても殺さない相手（相手の番号） */
+    if (Array.isArray(src.noKillFor)) {
+      var nk = [];
+      src.noKillFor.forEach(function (k) { if (/^\d+$/.test(String(k)) && +k !== dst.i && nk.indexOf(+k) < 0) nk.push(+k); });
+      if (nk.length) dst.noKill = nk;
     }
     return dst;
   };
   function isRes(c) { return !!c && typeof c.i === 'number'; }
+  /* 相手の番号（実行時の住人は .i、入力の住人は .src.i。pos.js と同じ） */
+  function idxOf(o) { return !o ? null : typeof o.i === 'number' ? o.i : o.src && typeof o.src.i === 'number' ? o.src.i : typeof o._pi === 'number' ? o._pi : null; }
+  function sameOf(c) { var v = c && (c.same != null ? c.same : c.src ? c.src.same : null); return v === '' || v == null || isNaN(+v) ? null : +v; }
   /* 同一人物の二人か（どちらに書かれていても） */
-  A.samePair = function (a, b) { return !!(isRes(a) && isRes(b) && a !== b && ((a.same != null && a.same === b.i) || (b.same != null && b.same === a.i))); };
+  A.samePair = function (a, b) {
+    if (!a || !b || a === b) return false;
+    var ia = idxOf(a), ib = idxOf(b);
+    if (ia == null || ib == null || ia === ib) return false;
+    return sameOf(a) === ib || sameOf(b) === ia;
+  };
+  /* 同一人物の「闇堕ちVer」か */
+  A.isDark = function (c) { return !!(c && (c.sameDark || (c.src && c.src.sameDark)) && sameOf(c) != null); };
+  /* a・b が同一人物の組で、片方だけ闇堕ちならその人（両方・どちらでもなければ null） */
+  A.darkOf = function (a, b) {
+    if (!A.samePair(a, b)) return null;
+    var da = A.isDark(a), db = A.isDark(b);
+    return da && !db ? a : db && !da ? b : null;
+  };
+  /* 憎悪を持っても殺さない組か（どちらかが相手を「殺さない」にしていれば真）。実行時の dst.noKill、入力の住人は .src の noKill／noKillFor（番号） */
+  function nkList(c) {
+    if (!c) return null;
+    if (Array.isArray(c.noKill)) return c.noKill;
+    if (c.src && Array.isArray(c.src.noKill)) return c.src.noKill;
+    if (c.src && Array.isArray(c.src.noKillFor)) return c.src.noKillFor;
+    return null;
+  }
+  function nkHas(l, i) { if (!l) return false; for (var k = 0; k < l.length; k++) if (l[k] === i || (typeof l[k] === 'string' && /^\d+$/.test(l[k]) && +l[k] === i)) return true; return false; }
+  A.noKillPair = function (a, b) {
+    if (!a || !b || a === b) return false;
+    var ia = idxOf(a), ib = idxOf(b);
+    if (ia == null || ib == null || ia === ib) return false;
+    return nkHas(nkList(a), ib) || nkHas(nkList(b), ia);
+  };
+  /* 殺さない設定を越えて殺すとき：殺し合いが本筋の箱庭（scen.killMain）か、殺す側が正気でない（発狂中・ゾンビ化など、もう生きていない） */
+  A.killForced = function (ctx, killer) {
+    if (ctx && ((ctx.scen && ctx.scen.killMain) || ctx.killForce)) return true;
+    return !!(killer && (killer.alive === false || killer.mad || (killer.flags && (killer.flags.mad || killer.flags.berserk))));
+  };
+  /* 殺す出来事を起こす前に見る（物語型・キットの出来事から）：killer が victim を殺さないなら真 */
+  A.spare = function (ctx, victim, killer) { return !!(victim && killer && victim !== killer && !A.killForced(ctx, killer) && A.noKillPair(victim, killer)); };
   /* 夜の性格：a が b に向けるもの（相手ごとの指定が優先。'none'＝表と同じは '' と同じ扱い）。全年齢では常に '' */
   A.nightOf = function (a, b) {
     if (HK.SAFE_ON || !a) return '';
@@ -447,12 +522,7 @@
   };
 
   /* ---------- 判定への組み込み ---------- */
-  /* 同一人物の二人は恋愛・R18にしない（住人の ng にも足してあるが、ng を写さない住人のために ngPair も包む） */
-  if (HK.ngPair && !HK.ngPair._attr) {
-    var ng0 = HK.ngPair;
-    HK.ngPair = function (a, b) { return ng0.apply(this, arguments) || A.samePair(a, b); };
-    HK.ngPair._attr = true;
-  }
+  /* 同一人物の二人の恋愛・体の関係は縛らない（以前は HK.ngPair を包んで止めていた。止めたいときは住人の「恋愛・R18にしない相手」で決める） */
   /* 嗜虐的な攻め（ero-kit.js の HK.Ero.sadist）：夜の性格がサドなら通す（受けが攻め指定なら通さない）。甘々・恥じらい・マゾは通さない */
   if (HK.Ero && HK.Ero.sadist && !HK.Ero.sadist._attr) {
     var sad0 = HK.Ero.sadist;
@@ -463,6 +533,50 @@
       return sad0.apply(this, arguments);
     };
     HK.Ero.sadist._attr = true;
+  }
+
+  /* ---------- 憎悪を持っても殺さない（エンジン型の Ctx.kill・Ctx.fight を包む） ---------- */
+  /* {a}＝殺しかけた側、{b}＝殺されかけた側。台詞は 3 本（くだけた常体｜硬い常体｜敬語） */
+  A.NOKILL = L('{a}の手が、{b}の喉元の寸前で止まった。憎しみは、少しも薄れていなかった。{a}「……できない。あなたを殺すなんて、私にはできない｜……できない。あなたを殺すことは、私にはできない｜……できません。あなたを殺すなんて、私にはできません」{a}は震える手を下ろし、{b}から目を逸らした。|' +
+    '{a}は振り上げた手を、そのまま下ろした。握っていたものが、乾いた音を立てて足元に落ちた。{a}「……行って。気が変わらないうちに｜……行け。気が変わらないうちに｜……行ってください。気が変わらないうちに」{b}が去るまで、{a}は一度も顔を上げなかった。|' +
+    '{a}は{b}に背を向けた。最後の一線だけは、どうしても越えられなかった。{a}「次に会ったら、どうなるか分からないよ｜次に会ったら、どうなるか分からない｜次に会ったら、どうなるか分かりませんよ」{b}は息を詰めたまま、遠ざかる背中を見ていた。|' +
+    '{a}は{b}を見下ろしたまま、長いあいだ動かなかった。やがて、深く息を吐いた。{a}「……あなたを殺したら、私はもう戻れない気がする｜……あなたを殺せば、私はもう戻れない｜……あなたを殺したら、私はもう戻れない気がします」{a}はそれ以上何も言わずに、その場を離れた。');
+  var Ctx = HK.Ctx;
+  if (Ctx && Ctx.prototype.kill && !Ctx.prototype.kill._attrNk) {
+    var kill0 = Ctx.prototype.kill;
+    /* opt.force：殺さない設定を越えて殺す（殺し合いが本筋の箱庭・やむを得ない場合）。止めたときは null を返す（殺された人はそのまま生きている） */
+    Ctx.prototype.kill = function (v, killer, how, opt) {
+      if (v && v.alive && killer && killer !== v && !(opt && opt.force) && this._nkFight !== 'force' && A.spare(this, v, killer)) {
+        var ctx = this;
+        if (typeof v.hp === 'number' && v.hp < 8) v.hp = 8;
+        var pf = ctx.pair ? ctx.pair(v, killer) : null;
+        if (pf) pf.noKillStop = killer.i;
+        ctx.mod2(killer, v, { ten: 6, aff: 2 }, { ten: 14, trust: -6 });
+        var text = ctx.t(ctx.pick(A.NOKILL), killer, v), why = killer.name + 'は' + v.name + 'を「憎悪を持っても殺さない」相手にしている（相手ごとの設定）';
+        if (ctx._nkFight && typeof ctx._nkFight === 'object') { ctx._nkFight.text = text; ctx._nkFight.why = why; return null; }
+        ctx.pending = ctx.pending || [];
+        ctx.pending.push({ kind: 'event', cat: 'conflict', actors: [killer, v], text: text, why: why, mag: 30 });
+        return null;
+      }
+      return kill0.apply(this, arguments);
+    };
+    Ctx.prototype.kill._attrNk = true;
+  }
+  /* 戦いでとどめを刺す場面：止めたら、とどめを刺さなかった結果に書き換える（opt.force は kill に渡す） */
+  if (Ctx && Ctx.prototype.fight && !Ctx.prototype.fight._attrNk) {
+    var fight0 = Ctx.prototype.fight;
+    Ctx.prototype.fight = function (a, b, opt) {
+      var prev = this._nkFight, box = {};
+      this._nkFight = opt && opt.force ? 'force' : box;
+      var res;
+      try { res = fight0.apply(this, arguments); } finally { this._nkFight = prev; }
+      if (res && box.text && res.loser && res.loser.alive) {
+        res.killed = false; res.spared = true; res.noKill = true;
+        res.text = box.text; res.why = (res.why ? res.why + '／' : '') + box.why;
+      }
+      return res;
+    };
+    Ctx.prototype.fight._attrNk = true;
   }
 
   /* ---------- 同一人物：鏡を見るような共通の場面 3 本（エンジン型の箱庭） ---------- */
@@ -494,7 +608,8 @@
   }
 
   /* ---------- 結果の関係名「もう一人の自分」（tie-rel.js の結末の分類を包む） ---------- */
-  var MIRROR_SOFT = /^(friends|partners|strangers|awkward|guard|accomplice|oneway|pining)$/;
+  /* 恋愛の結末（恋人・両片想い・片想いなど）はそのまま出す（同一人物でも恋愛は縛らない） */
+  var MIRROR_SOFT = /^(friends|partners|strangers|awkward|guard|accomplice)$/;
   if (HK.LABELS && !HK.LABELS.mirror) HK.LABELS.mirror = { name: 'もう一人の自分', cls: 'friend', pol: 1 };
   var TR = HK.TieRel;
   if (TR && TR.refine && !TR.refine._attr) {
@@ -510,7 +625,7 @@
     TR.pairText = function (ctx, A0, B0, cl) {
       if (cl && cl.id === 'mirror') {
         if (/^(friends|partners|guard|accomplice)$/.test(cl.base || '')) return '鏡の中の自分と手を取り合うように、二人は互いのいちばんの理解者になった。';
-        if (/^(awkward|oneway)$/.test(cl.base || '')) return '同じ顔、同じ癖。二人は最後まで、もう一人の自分との距離をつかみかねていた。';
+        if (/^(awkward)$/.test(cl.base || '')) return '同じ顔、同じ癖。二人は最後まで、もう一人の自分との距離をつかみかねていた。';
         return '同じ人が二人いる。そのことに、二人とも少しずつ慣れていった。';
       }
       return pt0.apply(this, arguments);

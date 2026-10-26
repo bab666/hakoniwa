@@ -11,7 +11,8 @@
    S8: 内容のスイッチで切った出来事（tags）が出た
    S9: 吹雪の館で、助手が自分の探偵ではない探偵を「先生」と呼んだ（探偵2人以上の回）
    S10: 一回の遊びの中で、同じ性的な文が3つ以上の記録に出た（R18の文の被り。目安として見る）
-   S12: 同一人物（attr.js の same）の二人が、恋愛の記録・性的な文に二人だけで出た（奇数回は配役に同一人物の組を足す）
+   S12: 同一人物（attr.js の same）の二人に「恋愛・R18にしない相手」を付けたのに、恋愛の記録・性的な文に二人だけで出た
+        （奇数回は配役に同一人物の組を足す。同一人物だけでは恋愛・体の関係を縛らないので、4回に1回は互いに「恋愛・R18にしない相手」も付けて、その回だけ数える）
    S11: 最期の言葉（epilogue.js）の名前の取り違え：「〇〇が最期に遺した言葉」の〇〇が、その記録で亡くなった人（死の記録の主役・物語型は記録の登場人物で、亡くなった人）でない／
         言葉の中で自分の名前に呼びかけている／住人の最期の言葉（lastWords）・結末の最期の言葉（E.last）が、本人の名前で始まらない
    S13: 複数の恋人「なし」の回で、同じ人が同じ段階に二人以上と恋人（pf.couple）になっていた（区切りごとと回の終わりに ctx.pf を走査。
@@ -310,6 +311,8 @@ const { openBuild } = require('./lib.js');
         /* S12：奇数回は同一人物の組を足す（相手どうしに書く） */
         const same = !feel && s % 2 && cast.same && cast.same[1] < n ? cast.same : null;
         if (same) { chars[same[0]].same = same[1]; chars[same[1]].same = same[0]; }
+        const sameNg = same && s % 4 === 1 ? same : null;
+        if (sameNg) { [[0, 1], [1, 0]].forEach(([x, y]) => { const c = chars[sameNg[x]]; c.loveNG = Array.isArray(c.loveNG) ? c.loveNG : []; if (c.loveNG.indexOf(sameNg[y]) < 0) c.loveNG.push(sameNg[y]); }); }
         /* 館：探偵2人と助手2人の回を混ぜる（S9） */
         if (sc === 'yakata' && n >= 4 && s % 2 === 0) { [0, 1, 2, 3].forEach(k => { const r0 = k < 2 ? 'detective' : 'assistant'; perChar[k].role = r0; perChar[k].pick = Object.assign({}, perChar[k].pick, { role: r0 }); }); }
         const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
@@ -418,7 +421,7 @@ const { openBuild } = require('./lib.js');
           const seen = {};
           ss.forEach(x => { const k = x.replace(/[「」『』\s]/g, ''); if (k.length >= 12 && isSex(x)) { if (seen[k]) hit('S7', k.slice(0, 80) + ' || ' + e.text.slice(0, 120)); seen[k] = 1; } });
           /* S12：同一人物の二人だけの恋愛の記録 */
-          if (same && e.cat === 'romance' && Array.isArray(e.actors) && e.actors.length === 2 && e.actors.indexOf(same[0]) >= 0 && e.actors.indexOf(same[1]) >= 0) hit('S12', nm[same[0]] + '×' + nm[same[1]] + ' [romance] | ' + e.text.slice(0, 140));
+          if (sameNg && e.cat === 'romance' && Array.isArray(e.actors) && e.actors.length === 2 && e.actors.indexOf(same[0]) >= 0 && e.actors.indexOf(same[1]) >= 0) hit('S12', nm[same[0]] + '×' + nm[same[1]] + ' [romance] | ' + e.text.slice(0, 140));
           ss.forEach(x => {
             if (!isSex(x)) return;
             const inS = nm.map((n0, i) => x.indexOf(n0) >= 0 ? i : -1).filter(i => i >= 0);
@@ -427,7 +430,7 @@ const { openBuild } = require('./lib.js');
             inS.forEach(i => { if (chars[i].noR18 && mode === 'r18' && !core) hit('S4', nm[i] + ' [' + (e.tag || e.cat || '') + '] | ' + x.slice(0, 140)); });
             if (inS.length === 2 && (lk || lkAny)) { const L2 = inS.map(i => ({ i, lock: chars[i].loveLock === '' ? null : +chars[i].loveLock, sx: chars[i].sexLock })); if (lockBad(L2[0], L2[1]) && !anyOk(L2[0], L2[1])) hit('S15', '性的な文 ' + nm[inS[0]] + '×' + nm[inS[1]] + ' [' + (e.tag || e.cat || '') + '] | ' + x.slice(0, 140)); }
             for (let a = 0; a < inS.length; a++) for (let b = a + 1; b < inS.length; b++) if (chars[inS[a]].loveNG.indexOf(inS[b]) >= 0 && inS.length === 2) hit('S5', nm[inS[a]] + '×' + nm[inS[b]] + ' | ' + x.slice(0, 140));
-            if (same && inS.length === 2 && inS.indexOf(same[0]) >= 0 && inS.indexOf(same[1]) >= 0) hit('S12', nm[same[0]] + '×' + nm[same[1]] + ' | ' + x.slice(0, 140));
+            if (sameNg && inS.length === 2 && inS.indexOf(same[0]) >= 0 && inS.indexOf(same[1]) >= 0) hit('S12', nm[same[0]] + '×' + nm[same[1]] + ' | ' + x.slice(0, 140));
             inS.forEach(i => { if (chars[i].sexLock === 'loverOnly' && !core && MOB.test(x) && inS.length === 1) hit('S6', nm[i] + ' | ' + x.slice(0, 140)); });
           });
           if (sc === 'yakata' && perChar[0].role === 'detective' && /先生/.test(e.text)) {

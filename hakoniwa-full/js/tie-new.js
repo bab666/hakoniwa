@@ -392,7 +392,8 @@
     id: 'tie_nw_hate_harm', cat: 'conflict', w: function (ctx, r) { return 0.35 * gapK(ctx, r.A, r.B) * (HK.Dark ? HK.Dark.f(ctx, 'harm') : 1); }, roles: hateR,
     run: function (ctx, r) {
       var A = r.A, B = r.B, safe = !!HK.SAFE_ON, lv = HK.HateKit ? HK.HateKit.level(ctx, A, B) : 80, gw = gapWhy(ctx, A, B);
-      if (!safe && deadly(ctx) && ctx.kill && lv >= 80 && ctx.rng() < HK.clamp(0.22 * gapK(ctx, A, B) * (HK.Dark ? HK.Dark.f(ctx, 'kill') : 1), 0, 0.7)) {
+      /* 憎悪を持っても殺さない相手（attr.js の HK.Attr.spare）なら、危害までで止める */
+      if (!safe && deadly(ctx) && ctx.kill && lv >= 80 && ctx.rng() < HK.clamp(0.22 * gapK(ctx, A, B) * (HK.Dark ? HK.Dark.f(ctx, 'kill') : 1), 0, 0.7) && !(HK.Attr && HK.Attr.spare && HK.Attr.spare(ctx, B, A))) {
         ctx.kill(B, A, A.name + 'の憎しみに駆られて');
         return { cat: 'kill', text: fill(pk(ctx, HK.Feud.HATE.harmKill), A, B), why: hWhy(ctx, r, '：憎しみが命を奪った' + gw), mag: 60 };
       }

@@ -276,7 +276,7 @@
   function sameHome(ctx, a, b) { return ctx.ft.home[a.i] === ctx.ft.home[b.i]; }
   function couple(ctx, a, b) { return !!ctx.pair(a, b).couple; }
   function famTie(ctx, a, b) { return !!(ctx.pair(a, b).kin || (HK.Daily && HK.Daily.famTie && HK.Daily.famTie(ctx, a, b))); }
-  function loveOk(ctx, a, b) { return HK.canLove(a, b) && HK.canLove(b, a) && !HK.ngPair(a, b) && !famTie(ctx, a, b) && !(HK.Attr && HK.Attr.samePair && HK.Attr.samePair(a, b)); }
+  function loveOk(ctx, a, b) { return HK.canLove(a, b) && HK.canLove(b, a) && !HK.ngPair(a, b) && !famTie(ctx, a, b); }
   function colleague(ctx, a, b) { return !!(HK.Ties && (HK.Ties.has(ctx, a, b, 'colleague') || HK.Ties.has(ctx, a, b, 'boss'))); }
   function onTrip(ctx, c) { var T = ctx.ft.trip; return !!(T && T.day === ctx.ft.day && T.m.indexOf(c.i) >= 0); }
   function together(ctx, a, b) {

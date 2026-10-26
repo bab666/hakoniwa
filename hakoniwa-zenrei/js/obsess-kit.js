@@ -342,6 +342,8 @@
     }
     if (pick === 'harm') {
       var lethal = !safe && opt.lethal !== false && (ty === 'purge' || (ty === 'hatelove' && gk > 1.6)) && s.lv >= 90 && ctx.rng() < 0.35 * HK.Dark.f(ctx, 'kill') * gk;
+      /* 憎悪を持っても殺さない相手（attr.js の HK.Attr.spare）なら、命までは奪わない */
+      if (lethal && HK.Attr && HK.Attr.spare && HK.Attr.spare(ctx, c, a)) lethal = false;
       /* 恋敵に向いたあとも、執着そのものは続く（次の暴走もありうる） */
       s.climax = null; s.lv = clamp(s.lv - 10, 0, 100);
       ctx.mod(c, a, { ten: 35, aff: -30, trust: -30 }); ctx.mod(b, a, { ten: 12, trust: -10 });
@@ -354,7 +356,7 @@
     var resist = stn === 'mutual' ? 0.15 : stn === 'accept' ? 0.45 : stn === 'confused' ? 0.6 : 0.75;
     resist += b.tr.np * 0.15 + b.tr.a * 0.1;
     resist = HK.Dark.live(ctx, resist, 'shinju');
-    if (safe || opt.lethal === false || ctx.rng() < resist) {
+    if (safe || opt.lethal === false || ctx.rng() < resist || (HK.Attr && HK.Attr.spare && HK.Attr.spare(ctx, b, a))) {
       ctx.mod2(a, b, { trust: 10, att: 6 }, { ten: 14, att: 4 }); ctx.stress(a, 20); ctx.stress(b, 25);
       s.lv = clamp(s.lv - 25, 0, 100); s.climax = null;
       return { with: [b], cat: 'conflict', text: F(ctx, T(ctx, safe ? 'shinju_s' : 'shinjuFail'), a, b), why: why(ctx, a, b, s) + (safe ? '。「二人だけの世界」に誘い、' : '。心中に誘い、') + b.name + 'が引き止めた', mag: 45 };
