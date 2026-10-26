@@ -287,4 +287,5 @@ js/obsess-install.js
 js/obsess-omega.js
 js/grief-kit.js
 js/lewd-unify.js
+js/lewd-mark.js
 js/reset.js

@@ -6,7 +6,9 @@ function loadPlaywright() {
   for (const t of tries) { try { return require(t); } catch (e) { /* 次を試す */ } }
   throw new Error('playwright が見つかりません。npm i -D playwright するか、PLAYWRIGHT_MODULE にパスを指定してください');
 }
-async function openBuild(dir, hash) {
+/* opts.lewdMode：体の語の印（lewd-words.js）を解決する列の切り替え。'direct' ならいつも「直接」の列（点検用。ぼかした語だと取り違えを見逃すため）。
+   環境変数 HK_LEWD_MODE でも指定できる（opts より優先） */
+async function openBuild(dir, hash, opts) {
   const { chromium } = loadPlaywright();
   const opt = {};
   const exe = process.env.CHROMIUM_PATH || (require('fs').existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : '');
@@ -18,6 +20,8 @@ async function openBuild(dir, hash) {
   await page.goto('file://' + path.resolve(dir) + '/index.html' + (hash ? '#' + hash : ''));
   /* あとで読む分（bundle-late.js）があれば、読み終わるまで待つ */
   await page.waitForFunction(() => window.HK && window.HK.simulate && window.HK.TONE_KEYS && window.HK.LATE_READY !== false, null, { timeout: 120000 });
+  const lewdMode = process.env.HK_LEWD_MODE || (opts && opts.lewdMode) || '';
+  if (lewdMode) await page.evaluate(m => { if (window.HK && window.HK.LewdWords) window.HK.LewdWords.MODE = m === 'none' ? null : m; }, lewdMode);
   return { browser, page, errors };
 }
 module.exports = { openBuild };

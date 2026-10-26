@@ -45,7 +45,7 @@ const { openBuild } = require('./lib.js');
   const args = process.argv.slice(2).filter(a => !/^--/.test(a));
   const dir = args[0], N = +args[1] || 24, mode = args[2] || '', only = args[3] ? args[3].split(',') : null;
   const WHY = process.argv.includes('--why'), HOT = process.argv.includes('--hot');
-  const { browser, page, errors } = await openBuild(dir, mode);
+  const { browser, page, errors } = await openBuild(dir, mode, { lewdMode: 'direct' });
   const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
   const r = await page.evaluate(({ N, only, WHY, HOT, mode, ENVSET }) => {
     const SEXCORE = /抱き潰|エッチ|イカせ|イかせ|イった|イっ|果て|喘|挿れ|挿入|舐め|愛撫|達し|体を重ね|腰を(?:振|沈|打ち|揺|落と|突き|使)|跨[っがりるら]|犯|根元|締めつけ|締め付け|射精|ナカ|♡|昂り|濡れ|蜜|奥を|奥に|奥まで|一つにな|ひとつにな|繋がっ|繋がり|繋がる|呑み込|搾り|搾精|脈打|ノット|種付け|孕|精を|白濁|注が|中に出/;
