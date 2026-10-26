@@ -4,7 +4,7 @@
    ■ 保存の値 c.ending（住人ごと。ui.js の normChar → attr.js の A.norm → E.norm）
      { base: ''（その人の口調）| 'K' | 'F' | 'P' | 口調の鍵, plain: 'ですぞ', ask: 'ですかな', surprise: 'なんと！', laugh: 'フハハ', lead: 'ふむ', flat: ''（なし）| 'some' | 'often', off: true（使わない） }
      以前の「語尾の付け替え」（toneCustom の文字列）が残っていれば、読み込みのときに plain に写して空にする
-     c.toneDict（4000字まで）…「辞書を直接書く（上級）」。高度設定の口調の辞書と同じ書き方（[口調 …] の見出しは省いてよい）。
+     c.toneDict（4000字まで）…「辞書を直接書く（上級）」。住人ごとの辞書の書き方（tone-engine.js の形式。[口調 …] の見出しは省いてよい）。
        語尾の設定と両方あれば、直接書いた [文末]・[語彙]・[規則]・[効果] を、語尾の設定で作った辞書の上に重ねる（同じ項目は直接書いたほうが勝つ）。off は両方を止める
    ■ 作り方（E.toDict(c) → 辞書の文字列）
      ・ベースの口調の辞書（語彙・規則・効果）を土台にする。語尾を決めたら、ベースの口調の文末の項目は使わない（問いの語尾だけ決めたときは、問いの項目だけ差し替える）
@@ -324,8 +324,8 @@
     return out;
   };
 
-  /* ---------- 辞書のサンプル（「サンプルを入れる」。住人の「辞書を直接書く」と高度設定の「口調の辞書」から） ----------
-     head は高度設定に入れるときの見出し（住人の欄では見出しなし）。足すときはこの並びに一つ足す */
+  /* ---------- 辞書のサンプル（「サンプルを入れる」。住人の「辞書を直接書く」から） ----------
+     head は [口調 …] の見出しつきで使うときの見出し（住人の欄では見出しなし。箱庭全体の辞書は廃止）。足すときはこの並びに一つ足す */
   E.SAMPLES = [
     { id: 'gozaru', label: 'ござる（侍）', head: '[口調 ござる]\n名前=ござる（侍）', text: [
       '# 「〜でござる」の侍の口調の見本。# で始まる行は説明で、辞書としては読み飛ばされます',
@@ -427,9 +427,9 @@
       '<div class="gearrow">' + inp('lead', '前置き（任意）', '例：やれやれ／ふむ', '台詞の頭にときどき付ける一言（3回に1回くらい）') +
       '<label>言い切り <select data-gf="end:flat" aria-label="言い切りを使う">' + opt('', 'なし（語尾をいつも付ける）', e.flat || '') + opt('some', 'たまに', e.flat || '') + opt('often', 'よく', e.flat || '') + '</select></label></div>' +
       '</details>' +
-      /* 辞書を直接書く（上級）：高度設定の口調の辞書と同じ書き方。語尾の設定の上に重ねる */
+      /* 辞書を直接書く（上級）：住人ごとの辞書。語尾の設定の上に重ねる */
       '<details class="gend gendict"' + (dictText(c) ? ' open' : '') + '><summary><b>辞書を直接書く（上級）</b><span class="gendon gdon">' + st0(!!dictText(c) && !e.off) + '</span></summary>' +
-      '<p class="gearhint">この住人だけの口調の辞書を書けます（高度設定の「口調の辞書」と同じ書き方。[口調 …] の見出しと名前は省けます）。語尾の設定と両方あるときは、ここに書いた [文末]・[語彙]・[規則]・[効果] を上に重ね、同じ項目はこちらが勝ちます。</p>' +
+      '<p class="gearhint">この住人だけの口調の辞書を書けます（住人ごとの辞書の書き方。[口調 …] の見出しと名前は省けます）。語尾の設定と両方あるときは、ここに書いた [文末]・[語彙]・[規則]・[効果] を上に重ね、同じ項目はこちらが勝ちます。</p>' +
       '<p class="gearhint" style="white-space:pre-wrap">' + esc(T.help ? T.help() : '') + '</p>' +
       '<div class="gearrow"><label>サンプル ' + E.sampleSel('data-endsel') + '</label><button type="button" class="btn ghost small" data-endact="sample">サンプルを入れる</button><span class="gearhint" style="margin:0"># で始まる行は説明です（読み飛ばされます）</span></div>' +
       '<textarea data-gf="end:dict" rows="8" maxlength="' + DICT_MAX + '" spellcheck="false" aria-label="この住人の口調の辞書" style="width:100%;font-size:13px;font-family:inherit" placeholder="' + esc('[文末]\nです=でござる\nます=まする\n[語彙]\nありがとう=かたじけない\n[規則]\n前置き=さて') + '">' + esc(c.toneDict || '') + '</textarea></details>' +
