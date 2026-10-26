@@ -20,6 +20,7 @@ js/tone-registry.js
 js/tone-plus.js
 js/tone-engine.js
 js/tone-dict-builtin.js
+js/tone-ending.js
 js/tone-keigo-unify.js
 js/tone-gentleman.js
 js/tone-extra2.js

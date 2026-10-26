@@ -672,7 +672,8 @@
     if (!res || !input || !input.chars) return res;
     var people = input.chars.map(function (c, i) {
       var r = (res.chars && res.chars[i]) || (res.heroes && res.heroes[i]) || {};
-      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '' };
+      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.Ending ? HK.Ending.toneOf(c) : HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '' };
+      /* 語尾の設定（tone-ending.js）を使う住人の口調は e:… の鍵（辞書だけの口調）。文面の表（態度）はベースの口調のまま */
       p.persona = r.persona || HK.personaOf({ tone: c.tone, eg: c.eg });
       if (c.toneCustom) p.toneCustom = c.toneCustom;
       /* 相手ごとの二人称・一人称（番号 → 名前。attr.js の HK.Attr.voiceFor） */

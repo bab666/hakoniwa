@@ -41,7 +41,7 @@
   'use strict';
   var HK = window.HK;
   if (!HK) return;
-  var T = HK.Tone = { dicts: {}, user: {}, userText: '' };
+  var T = HK.Tone = { dicts: {}, user: {}, userText: '', ending: {} };
   function hash(s) { var x = 7; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0; return Math.abs(x); }
   function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   function choose(list, seed) { return list.length === 1 ? list[0] : list[hash(seed) % list.length]; }
@@ -62,7 +62,7 @@
     var g = HK.toneOpt ? HK.toneOpt(tone, 'group') : null;
     return g === 'polite' ? 'P' : g === 'soft' ? 'K' : 'F';
   };
-  T.dictOf = function (tone) { return (tone && (T.user[tone] || T.dicts[tone])) || null; };
+  T.dictOf = function (tone) { return (tone && (T.user[tone] || T.ending[tone] || T.dicts[tone])) || null; };
   /* 「K｜F｜P」を分ける。＝・空は左と同じ。1本なら null */
   T.split = function (q) {
     if (!q || q.indexOf('｜') < 0) return null;
@@ -577,6 +577,12 @@
       if (HK.TONE_KEYS && HK.TONE_KEYS.indexOf(k) < 0) HK.TONE_KEYS.push(k);
       registered.push(k);
     });
+    return p;
+  };
+  /* 住人ごとの語尾の設定（tone-ending.js の HK.Ending）が作った辞書を、鍵（e:…）で登録する。高度設定の辞書（setUser）とは別に持つので、両方を使える */
+  T.setEnding = function (key, text) {
+    var p = T.parse(text, false), d = p.dicts[key];
+    if (d) T.ending[key] = d; else delete T.ending[key];
     return p;
   };
   T.userKeys = function () { return Object.keys(T.user); };

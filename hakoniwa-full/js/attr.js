@@ -109,6 +109,8 @@
     VF.forEach(function (k) { c[k] = wmap(c[k]); });
     FOODK.forEach(function (k) { c[k] = fstr(c[k]); });
     c.taste = tstr(c.taste);
+    /* 語尾の設定（かんたん）：c.ending。古い「語尾の付け替え」（toneCustom）はここで ending.plain に写す（tone-ending.js） */
+    if (HK.Ending) HK.Ending.norm(c);
     return c;
   };
   /* ui.js normRefs：今いる住人だけに絞る（同一人物は両方に書く） */
@@ -135,6 +137,7 @@
     if (c.nightFor) { var nf = {}; Object.keys(c.nightFor).forEach(function (k) { if (ref(k) != null && c.nightFor[k]) nf[ref(k)] = c.nightFor[k]; }); if (Object.keys(nf).length) o.nightFor = nf; }
     if (c.posFor) { var pf = {}; Object.keys(c.posFor).forEach(function (k) { if (ref(k) != null && posv(c.posFor[k])) pf[ref(k)] = c.posFor[k]; }); if (Object.keys(pf).length) o.posFor = pf; }
     VF.forEach(function (f) { if (!c[f]) return; var m = {}; Object.keys(c[f]).forEach(function (k) { if (ref(k) != null && word(c[f][k])) m[ref(k)] = word(c[f][k]); }); if (Object.keys(m).length) o[f] = m; });
+    if (HK.Ending) HK.Ending.exportTo(o, c);
     return o;
   };
   /* ui.js importJSON：読み込み（相手は全員を読んだあとで A.importRefs） */
@@ -144,6 +147,7 @@
     FOODK.forEach(function (k) { if (o[k] != null) c[k] = fstr(o[k]); });
     if (o.taste != null) c.taste = tstr(o.taste);
     if (o.sameDark != null) c.sameDark = !!o.sameDark;
+    if (HK.Ending) HK.Ending.importFrom(c, o);
     c._atNk = o.noKillFor;
     c._atSame = o.same; c._atNf = o.nightFor; c._atPf = o.posFor; c._atYf = o.youFor; c._atFf = o.fpFor;
   };
@@ -176,6 +180,8 @@
     if (c.nightFor) { var nf = {}, n = 0; Object.keys(c.nightFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && c.nightFor[k]) { nf[i] = c.nightFor[k]; n++; } }); if (n) o.nightFor = nf; }
     if (c.posFor) { var pf = {}, n2 = 0; Object.keys(c.posFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && posv(c.posFor[k])) { pf[i] = c.posFor[k]; n2++; } }); if (n2) o.posFor = pf; }
     VF.forEach(function (f) { if (!c[f]) return; var m = {}, k2 = 0; Object.keys(c[f]).forEach(function (k) { var i = ids.indexOf(k), w = word(c[f][k]); if (i >= 0 && w) { m[i] = w; k2++; } }); if (k2) o[f] = m; });
+    /* 語尾の設定（使うときだけ。台詞の話し手の口調は voice.js の processResult で HK.Ending.toneOf） */
+    if (HK.Ending) HK.Ending.toInput(o, c);
     return o;
   };
   /* ui-gear.js：住人の行の要約に足す */
