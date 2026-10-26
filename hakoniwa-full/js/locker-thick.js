@@ -1,7 +1,8 @@
 /* 箱庭シミュレーター: 媚薬ロッカー（R18版のみ）― ロッカーを出たあとのベッドの山場を、段落に分けて厚くする
    solo-locker-bed.js の LK.bed を包み、そのあいだだけ前戯・挿入・体位・絶頂の文を、thick-sex.js（HK.ThickSex）の段落と差し替える。
    女性どうし・描写「ぼかす」・全年齢モードは、これまでどおり。リバ同士（途中で主導権が入れ替わりうる組）は、絶頂の文を差し替えない
-   一段落版の前戯・体位の文（LK.BED.fore／pos）も候補に混ぜ、描写「ほどほど」では繋がる一文（LK.BED.insert）も使う */
+   一段落版の前戯・体位の文（LK.BED.fore／pos）も候補に混ぜ、描写「ほどほど」では繋がる一文（LK.BED.insert）も使う
+   性器なしの人がいる組（pos-nogen.js）は一段落版のまま（2026-10-26） */
 (function () {
   'use strict';
   var HK = window.HK, LK = HK.LOCKER, T = HK.ThickSex, ST = HK.Story;
@@ -60,7 +61,8 @@
     var self = this, args = arguments;
     if (o && o.ero && !HK.SAFE_ON && o.lew !== 'low' && HK.ThickEro) { var o2 = Object.assign({}, o, { ero: false }); return eroBed(S, o2, function () { return LK.bed.call(self, S, o2); }); }
     /* 描写の長さ「数行で短く」（混ぜるなら半分）：一段落版（solo-locker-bed.js） */
-    if (HK.SAFE_ON || !o || o.ff || o.lew === 'low' || o.short) return bed0.apply(this, arguments);
+    /* 性器なしの人がいる組（pos-nogen.js）も一段落版に（厚い段落の「根元」「奥」などの文を使わない。一段落版は HK.NoGen.review が見直す） */
+    if (HK.SAFE_ON || !o || o.ff || o.lew === 'low' || o.short || (HK.NoGen && HK.NoGen.on && HK.NoGen.on(o.x, o.y))) return bed0.apply(this, arguments);
     var x = o.x, y = o.y, B = LK.BED, rng = S.rng;
     var riba = HK.Pos ? !HK.Pos.fixed(x, y) : false;
     var fem = HK.Pos && HK.Pos.isF, fm = fem && fem(x) && !fem(y);

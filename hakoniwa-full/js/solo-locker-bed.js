@@ -3,7 +3,10 @@
    ・最中の展開（中出しをせがむ・受けが自分から跨る・仕返しの寸止め・ロッカーに押しつけて・鏡の前・抜かずの二回戦…）
    ・結び（中に出したあと・朝まで・シャワーで続き・次の約束…）
    受け攻め：{a}=攻め（挿入する側） {b}=受け。誘い方だけは {q}=誘う人 {o}=相手。
-   リバ同士のときだけ、途中で主導権が入れ替わる展開がある（入れ替わったあとは {a}{b} も入れ替える） */
+   リバ同士のときだけ、途中で主導権が入れ替わる展開がある（入れ替わったあとは {a}{b} も入れ替える）
+   2026-10-26（R18版。流れと攻めの台詞）：誘い → 攻めの始まりの一言 → 脱がせる → 前戯 → 攻めの途中の一言 → 繋がる → 最中の展開 → 攻めの山場の一言 → 果て → 結び → 攻めの事後の一言。
+     攻めの台詞は、誘いや最中の展開の台詞と合わせて、一夜で3本になるまで（始まり1本・繋がるまで2本・事後→山場の順に3本）足す。
+     攻めの台詞はロッカーの表（TOP：始まり・事後は態度9種、途中はロッカーを出た夜の台詞）と共通の表（HK.EroTop）を混ぜる（zombie-thick.js の HK.EroT3.topSay。全年齢版には無いので何もしない） */
 (function () {
   'use strict';
   var HK = window.HK, LK = HK.LOCKER;
@@ -199,6 +202,48 @@
     master: L('朝、従者はいつもの時間に目を覚まし、主の寝顔を見つめたまま、しばらく動けなかった。')
   };
 
+  /* ---------- 攻めの台詞（3本の台詞。一人称は「私」、二人称は「あなた」） ---------- */
+  function P9(o) { var r = {}; for (var k in o) r[k] = L(o[k]); return r; }
+  var TOP = {
+    start: P9({
+      proud: 'ロッカーの中で散々煽ってくれたな。……覚悟しろよ｜ロッカーの中で散々煽ってくれたな。……覚悟しろ｜ロッカーの中で散々煽ってくれましたね。……覚悟してください|ガスのせいにしていいよ。……全部、私のせいでもいいけど｜ガスのせいにしていい。……全部、私のせいでも構わない｜ガスのせいにして構いません。……全部、私のせいでもいいですけど',
+      stern: 'もう扉は開いてる。……それでも、ここにいるんだね｜もう扉は開いている。……それでも、ここにいるんだな｜もう扉は開いています。……それでも、ここにいるんですね|狭い中で、よく我慢した。……もう我慢しなくていい｜狭い中で、よく耐えた。……もう我慢しなくていい｜狭い中で、よく耐えましたね。……もう我慢しなくていいです',
+      tsun: 'べ、別にガスのせいだから。……そういうことにしといて｜べ、別にガスのせいだ。……そういうことにしておけ｜べ、別にガスのせいです。……そういうことにしておいてください|さ、さっきの続き……したいって顔、してたから｜さ、さっきの続きをしたいという顔を、していたからだ｜さ、さっきの続きをしたいという顔を、していましたから',
+      gentle: '狭かったね。……今度は、ゆっくりしよう｜狭かったな。……今度は、ゆっくりしよう｜狭かったですね。……今度は、ゆっくりしましょう|ずっと我慢してたでしょ。もう、いいんだよ｜ずっと我慢していただろう。もう、いいんだ｜ずっと我慢していたでしょう。もう、いいんですよ',
+      devoted: 'ロッカーの中で触れられなかったところ……全部、触れさせて｜ロッカーの中で触れられなかったところに……全部、触れさせてくれ｜ロッカーの中で触れられなかったところに……全部、触れさせてください|媚薬が切れるまで、私が全部引き受けるから｜媚薬が切れるまで、私が全部引き受ける｜媚薬が切れるまで、私が全部お引き受けします',
+      cool: '……ガスの濃度は、もう関係ない。これは私の意思｜……ガスの濃度は、もう関係ない。これは私の意思だ｜……ガスの濃度は、もう関係ありません。これは私の意思です|扉は開いた。……出ていかないなら、そういうことだと受け取る｜＝｜扉は開きました。……出ていかないなら、そういうことだと受け取りますね',
+      free: 'やっと広いとこに出られた。ね、ベッドあるじゃん｜やっと広いところに出られた。ベッドもあるな｜やっと広いところに出られましたね。ベッドもありますし|ロッカーの中のは練習ってことで。本番、いこっか｜ロッカーの中のは練習だ。本番といこう｜ロッカーの中のは練習ということで。本番といきましょう',
+      shy: 'あ、あの……さっきの、続き……しても、いい？｜あ、あの……さっきの続きを……しても、いいか？｜あ、あの……さっきの続きを……しても、いいですか？|せ、狭いところじゃ、ちゃんとできなかったから……｜せ、狭いところでは、ちゃんとできなかった……｜せ、狭いところでは、ちゃんとできませんでしたから……',
+      polite: '扉が開いたのに、ごめん。……もう少しだけ、付き合って｜扉が開いたのに、すまない。……もう少しだけ付き合ってくれ｜扉が開いたのに、申し訳ありません。……もう少しだけ、お付き合いください|ロッカーの中では、失礼なことばかりしたね。……今度は、ちゃんとする｜ロッカーの中では、失礼なことばかりした。……今度は、きちんとする｜ロッカーの中では、失礼なことばかりしました。……今度は、きちんといたします'
+    }),
+    mid: L('ロッカーの中じゃ、ここまでできなかった｜ロッカーの中では、ここまでできなかった｜ロッカーの中では、ここまでできませんでした|' +
+      'もう狭くない。……好きなだけ声、出して｜もう狭くない。……好きなだけ声を出せ｜もう狭くありません。……好きなだけ、声を出してください|' +
+      'ガス、まだ効いてる？　……体、すごく熱い｜ガスはまだ効いているのか？　……体がすごく熱い｜ガスが、まだ効いていますか？　……体が、すごく熱いです|' +
+      'さっき焦らされた分、ちゃんと返すから｜さっき焦らされた分は、きちんと返す｜さっき焦らされた分は、きちんとお返ししますから'),
+    after: P9({
+      proud: '……媚薬のせいにするなよ。今のは、私たちのせいだ｜……媚薬のせいにするな。今のは、私たちのせいだ｜……媚薬のせいにしないでください。今のは、私たちのせいです|次は、ロッカーなしで呼ぶから｜次は、ロッカーなしで呼ぶ｜次は、ロッカーなしでお呼びします',
+      stern: '……水、飲んで。ガスが抜けるまで横になってて｜……水を飲め。ガスが抜けるまで横になっていろ｜……お水を飲んでください。ガスが抜けるまで、横になっていてください|今夜のことは、なかったことにはしないから｜今夜のことを、なかったことにはしない｜今夜のことを、なかったことにはしませんから',
+      tsun: 'ぜ、全部ガスのせいだから。……覚えてなくていいから｜ぜ、全部ガスのせいだ。……覚えていなくていい｜ぜ、全部ガスのせいです。……覚えていなくて結構ですから|……か、帰りたいなら、帰れば。止めないけど｜……か、帰りたいなら帰れ。止めはしない｜……か、帰りたいなら、お帰りください。止めませんけど',
+      gentle: '無理させちゃったね。……ほら、毛布｜無理をさせたな。……ほら、毛布だ｜無理をさせてしまいましたね。……どうぞ、毛布です|ガスが抜けても、こうしてていい？｜ガスが抜けても、こうしていていいか？｜ガスが抜けても、こうしていていいですか？',
+      devoted: 'あなたが眠るまで、ここにいる｜＝｜あなたが眠るまで、ここにいます|体、拭くね。……じっとしてて｜体を拭く。……じっとしていろ｜お体をお拭きしますね。……じっとしていてください',
+      cool: '……ガスの効果は、とっくに切れてた｜……ガスの効果は、とっくに切れていた｜……ガスの効果は、とっくに切れていましたよ|記録上は、媚薬の事故。……ということにしておく｜記録上は、媚薬の事故だ。……ということにしておく｜記録上は、媚薬の事故です。……ということにしておきますね',
+      free: 'あー、ロッカーも悪くなかったかも｜ああ、ロッカーも悪くなかったな｜ああ、ロッカーも悪くありませんでしたね|ね、また閉じ込められたら、どうする？｜また閉じ込められたら、どうする？｜また閉じ込められたら、どうしますか？',
+      shy: '……は、恥ずかしいから、こっち見ないで……｜……は、恥ずかしいから、こっちを見るな……｜……は、恥ずかしいので、こちらを見ないでください……|……ガ、ガスがなくても……また、したい……｜＝｜……ガ、ガスがなくても……また、したいです……',
+      polite: 'おつかれさま。……お水、置いとくね｜お疲れ。……水を置いておく｜お疲れさまでした。……お水、置いておきますね|明日の朝、改めてちゃんと話そう｜明日の朝、改めてきちんと話そう｜明日の朝、改めてきちんとお話ししましょう'
+    })
+  };
+  /* 関係 → 共通の表（HK.EroTop）の関係 */
+  var REL_ET = { lover: 'lover', ex: 'lover', crush: 'first', mutual: 'first', almost: 'first', tension: 'hate', friend: 'casual', stranger: 'casual', fwb: 'casual' };
+  /* 差し込み印と本数（zombie-thick.js の HK.EroT3.mark・fill・count。全年齢版には無いので印も付けない） */
+  function MK(k) { return HK.EroT3 ? HK.EroT3.mark(k) : ''; }
+  function cnt(t, x) { return HK.EroT3 ? HK.EroT3.count(t, x) : 0; }
+  function fillTop(t, x, slots, n, pre) { return HK.EroT3 ? HK.EroT3.fill(t, x, slots, Object.keys(slots), n, pre) : t; }
+  function topSay(S, o, x, y, stage, op) {
+    if (!HK.EroT3) return '';
+    var rel = o.rel === 'master' ? (o.master === x ? 'master' : 'serve') : REL_ET[o.rel] || 'casual';
+    return HK.EroT3.topSay(S, x, y, stage, TOP, Object.assign({ rel: rel }, op || {}));
+  }
+
   function vv(x, y) { return { a: x.name, b: y.name }; }
   function pickMid(S, c, n) {
     var rng = S.rng, out = [], pool = MID.filter(function (m) { return (!m.riba || c.riba) && (!c.ff || FF.mid[m.id]) && (!c.fm || FM.mid[m.id]); });
@@ -232,7 +277,11 @@
     if (kind === 'nori') INVITE.nori = LK.BED.noriInvite || INVITE.eager;
     /* ロッカーの中で手を出した人に「一度も手を出さなかった」と書かない */
     var inv = INVITE[kind].filter(function (l) { return (q.cnt.refuse > 0 || !/嗜め/.test(l)) && (q.cnt.make === 0 || !/手を出さなかった|理性を保って/.test(l)) && !(o.how === 'timeout' && /扉が開/.test(l)) && !(xHard && q !== x && !noPush(l)); });
-    var t1 = (o.how === 'timeout' ? LK.BED.timeout[0] : '') + ST.fmt(pick(S, inv.length ? inv : INVITE[kind]), { q: q.name, o: oo.name }) + ST.fmt(pick(S, LK.BED.strip), vv(x, y));
+    /* 誘い → 攻めの始まりの一言（攻めが誘ったときは控えめに）→ 脱がせる */
+    var t1 = (o.how === 'timeout' ? LK.BED.timeout[0] : '') + ST.fmt(pick(S, inv.length ? inv : INVITE[kind]), { q: q.name, o: oo.name }) + MK('S') + ST.fmt(pick(S, LK.BED.strip), vv(x, y));
+    /* 攻めが自分で誘ったときは誘いの台詞が始まりの一言（最中の厚い段落にも攻めの台詞が多いので、足すのは誘ったのが受けのときの7割） */
+    t1 = fillTop(t1, x, { S: function () { return q !== x && rng() < 0.7 ? topSay(S, o, x, y, 'start') : ''; } }, 1, 0);
+    var nTop = cnt(t1, x);
     var whyInv = { quietTop: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った（仕掛けた ' + q.cnt.make + '回・嗜めた ' + q.cnt.refuse + '回）', quietBottom: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った（仕掛けた ' + q.cnt.make + '回・嗜めた ' + q.cnt.refuse + '回）', nori: '受けの' + q.name + 'がノリノリで、自分から誘った', eager: q.name + 'が待ちきれなかった' + (o.plotter === q ? '（思惑どおり）' : ''), stop: oo.name + 'は帰ろうとしたが、' + q.name + 'が引き止めた', order: '主の' + q.name + 'が、耐えた従者に許しを与えた' }[kind];
     var o3 = ST.say(S, { actors: [A, B], tag: 'ベッドへ', text: t1, why: whyInv + '／発情 ' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + (o.pair.sexIn ? '／ロッカーの中では焦らされるだけだった' : ''), mag: 40 });
     ST.key(S, o3, kind === 'quietTop' || kind === 'quietBottom' ? 'おとなしかった' + q.name + 'からベッドへ誘った' : '部屋から出ずにベッドへ');
@@ -257,7 +306,9 @@
        理由書きの「夜の性格：〇〇」は attr-r18.js が ST.say を包んで自動で足す）。厚い段落（locker-thick.js）のときは段落を分ける */
     var foreT = ST.fmt(pick(S, LK.BED.fore), vv(x, y)), rpF = rp('fore'), nightB = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(x, y, ff ? 'ff' : fm ? 'fm' : 'mf', function (l) { return pick(S, l); }, !!(HK.Ero && HK.Ero.on && HK.Ero.on(S))) : '';
     if (nightB) nightB = ST.fmt(nightB, vv(x, y)) + (/\n\n$/.test(foreT) ? '\n\n' : '');
-    var t2 = foreT + rpF + nightB + ST.fmt(pick(S, ff ? FF.insert : fmOwn ? FM.insert : LK.BED.insert), vv(x, y)) + ST.fmt(pick(S, ff && o.tone === 'rough' ? FF.rough : fm && LK.BED[o.tone][0] !== '' ? FM[o.tone] : LK.BED[o.tone]), vv(x, y));
+    /* 前戯のあと、繋がる前に攻めの途中の一言（厚い段落のときは段落を分ける） */
+    var tIn = MK('M') + (/\n\n$/.test(foreT) ? '\n\n' : '');
+    var t2 = foreT + rpF + nightB + tIn + ST.fmt(pick(S, ff ? FF.insert : fmOwn ? FM.insert : LK.BED.insert), vv(x, y)) + ST.fmt(pick(S, ff && o.tone === 'rough' ? FF.rough : fm && LK.BED[o.tone][0] !== '' ? FM[o.tone] : LK.BED[o.tone]), vv(x, y));
     t2 += rp('mid');
     var swapped = false, t3 = '';
     mids.forEach(function (m, i) {
@@ -276,24 +327,33 @@
       labels.push(ff && FF.tag[m.id] || fm && FM.tag[m.id] || m.tag);
     });
     if (V && V.EDGE && V.EDGE[y.persona]) t2 += y.name + '「' + pick(S, V.EDGE[y.persona]) + '」';
+    t2 = fillTop(t2, x, { M: function () { return topSay(S, o, x, y, rng() < 0.5 ? 'in' : 'fore', { own: 0.45 }); } }, 2, nTop);
+    nTop += cnt(t2, x);
     ST.say(S, { actors: [A, B], tag: mids[0] ? (ff && FF.tag[mids[0].id] || fm && FM.tag[mids[0].id] || mids[0].tag) : '激しいセックス', text: t2, why: '関係：' + o.REL_LABEL[o.rel] + '／' + (o.tone === 'rough' ? '噛みつくように' : '甘く') + (swapped ? '／リバ同士なので、途中で攻守交代' : ''), mag: 45, kind: 'climax' });
 
     /* 絶頂と結び */
     var endKey = naka ? 'naka' : null;
     var pool = ['morning', 'shower', 'faint'].concat(o.tone === 'sweet' || o.rel === 'crush' || o.rel === 'mutual' || o.rel === 'almost' || o.rel === 'lover' ? ['promise', 'promise'] : ['fight', 'fight']);
     if (!endKey) endKey = rng.pick(pool);
-    t3 += naka ? '' : ST.fmt(pick(S, ff ? FF.pos : fmOwn ? FM.pos : LK.BED.pos), vv(x, y)) + o.moan(x, true) + o.moan(y) + ST.fmt(pick(S, ff ? FF.climax : fm && !(o.thick && o.thick.climax) ? FM.end : LK.BED.climax), vv(x, y));
+    /* 山場の手前の攻めの一言（半分ほど。共通の表だけ） */
+    var tPk = naka ? '' : MK('P') + (o.thick ? '\n\n' : '');
+    t3 += naka ? '' : ST.fmt(pick(S, ff ? FF.pos : fmOwn ? FM.pos : LK.BED.pos), vv(x, y)) + o.moan(x, true) + o.moan(y) + tPk + ST.fmt(pick(S, ff ? FF.climax : fm && !(o.thick && o.thick.climax) ? FM.end : LK.BED.climax), vv(x, y));
     function endOf(k) { return ff && k === 'shower' ? FF.shower : fm && k === 'shower' ? FM.shower : fm && k === 'naka' ? FM.endNaka : END[k]; }
     t3 += rp('climax') + ST.fmt(pick(S, endOf(endKey)), vv(x, y)) + rp('after');
     if (naka && rng() < 0.5) t3 += ST.fmt(pick(S, endOf(rng.pick(pool))), vv(x, y));
     /* 朝・そのあと：二人の関係で変わる */
     else if (!o.plotter && END_REL[o.rel] && rng() < 0.55) t3 += ST.fmt(pick(S, END_REL[o.rel]), vv(x, y));
     if (o.plotter) t3 += ST.fmt(pick(S, LK.AFTER.plotwin), { a: o.plotter.name, b: o.plotter.o.name });
-    else if (V && V.AFTER && V.AFTER[x.persona] && rng() < 0.6) {
+    else {
+      /* 攻めの事後の一言：半分ほどは元の事後の台詞（Voice.AFTER）、残りはロッカーの表と共通の表 */
       /* 攻めに「次はこっちがやる」と言わせない（もう攻めているので） */
-      var af = V.AFTER[x.persona].filter(function (l) { return !/がやる|の番|仕返し/.test(l); });
-      if (af.length) t3 += x.name + '「' + pick(S, af) + '」';
+      var af = V && V.AFTER && V.AFTER[x.persona] ? V.AFTER[x.persona].filter(function (l) { return !/がやる|の番|仕返し/.test(l); }) : [];
+      t3 += MK('A');
     }
+    t3 = fillTop(t3, x, {
+      A: function () { return af && af.length && (!HK.EroT3 || rng() < 0.45) ? x.name + '「' + pick(S, af) + '」' : topSay(S, o, x, y, 'after', { own: 0.65 }); },
+      P: function () { return topSay(S, o, x, y, 'peak', { own: 0 }); }
+    }, 3, nTop);
     var o4 = ST.say(S, { actors: [A, B], tag: mids[1] ? (ff && FF.tag[mids[1].id] || fm && FM.tag[mids[1].id] || mids[1].tag) : '絶頂', text: t3, why: naka ? y.name + 'が中に出してとせがんだ（' + (y.tr.fc > 0.55 ? '素直さ' : '媚薬で理性が溶けていた') + '）' : '媚薬が切れるまで', mag: 45, kind: 'climax' });
     if (naka) ST.key(S, o4, y.name + 'が中出しをせがんだ');
     return labels;
