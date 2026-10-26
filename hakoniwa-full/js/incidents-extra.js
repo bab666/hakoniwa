@@ -156,7 +156,7 @@
       run: function (ctx) {
         var P = ctx.present(), a = ctx.rng.pick(P);
         ctx.incident('第二性の定期検診の季節になった。' + a.name + 'の元にも、通知が届いた。');
-        if (sx(a) === 'o') ctx.act2({ actors: [a], cat: 'solo', fx: function () { ctx.stress(a, a.tr.ac > 0.55 ? 8 : 2); }, text: ctx.t(a.tr.ac > 0.55 ? '{a}は「フェロモン値：高め」の欄から、しばらく目を離せなかった。' : '{a}は結果を一瞥して、「いつも通り」とだけ呟いた。', a), why: a.name + 'のAC' });
+        if (sx(a) === 'o') ctx.act2({ actors: [a], cat: 'solo', fx: function () { ctx.stress(a, a.tr.ac > 0.55 ? 8 : 2); }, text: ctx.t(a.tr.ac > 0.55 ? '{a}は「フェロモン値：高め」の欄から、しばらく目を離せなかった。' : '{a}は結果を一瞥して、「いつも通り｜＝｜いつも通りです」とだけ呟いた。', a), why: a.name + 'のAC' });
         else if (sx(a) === 'a') ctx.act2({ actors: [a], cat: 'solo', text: ctx.t('{a}は検診の問診票の「番の有無」の欄で、少しだけペンを止めた。', a), why: 'α：番について考える' });
         else ctx.act2({ actors: [a], cat: 'solo', text: ctx.t('{a}は「β・特記事項なし」の結果を折りたたみ、なぜか少しだけ寂しくなった。', a), why: 'β：第二性の外側から見る' });
       }

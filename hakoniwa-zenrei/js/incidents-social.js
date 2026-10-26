@@ -54,7 +54,7 @@
         ctx.incident(a.name + 'のスマホが鳴った。画面には元恋人の名前。');
         if (a.tr.honesty > 0.6) ctx.act2({ actors: [a], cat: 'bond', fx: function () { ctx.others(a).forEach(function (o) { ctx.mod(o, a, { trust: 4 }); }); }, text: ctx.t('「元カレ……いや、元カノか。どっちでもいいや｜元カレ……いや、元カノか。どちらでもいい｜元カレ……いや、元カノですか。どちらでもいいです」{a}は画面を伏せて笑った。', a), why: a.name + 'の本音の出やすさ' });
         else if (a.tr.cold > 0.55) ctx.act2({ actors: [a], cat: 'solo', text: ctx.t('{a}は表情を変えずに着信を切り、電源ごと落とした。', a), why: a.name + 'のドライさ' });
-        else ctx.act2({ actors: [a], cat: 'solo', fx: function () { ctx.stress(a, 14); }, text: ctx.t('{a}は「ちょっと」と言って席を外し、しばらく戻ってこなかった。', a), why: a.name + 'のAC：切り捨てられない' });
+        else ctx.act2({ actors: [a], cat: 'solo', fx: function () { ctx.stress(a, 14); }, text: ctx.t('{a}は「ちょっと｜＝｜ちょっと失礼します」と言って席を外し、しばらく戻ってこなかった。', a), why: a.name + 'のAC：切り捨てられない' });
         ctx.others(a).forEach(function (o) {
           if (R(ctx, o, a).att > 35) ctx.act2({ actors: [o, a], cat: 'conflict', fx: function () { ctx.mod(o, a, { att: 4, ten: 6 }); ctx.stress(o, 8); }, text: ctx.t('{a}は、{b}が戻ってくるまでグラスの氷ばかり見ていた。', o, a), why: o.name + 'は' + a.name + 'に惹かれていた（嫉妬・執着 ' + Math.round(o.tr.jealous * 100) + '）' });
         });
@@ -295,7 +295,7 @@
         ctx.act2({ actors: [ch], cat: 'solo', text: ctx.t('{a}の机の中で、カンペが小さく光った。', ch), why: ch.name + 'の衝動性と、学力 ' + ctx.stat(ch, 'study') });
         if (!w) return;
         if (w.tr.cp > 0.65 && w.tr.np < 0.55) ctx.act2({ actors: [w, ch], cat: 'betray', mag: 18, fx: function () { ctx.mod(ch, w, { ten: 30, aff: -20, trust: -25 }); ctx.stress(ch, 25); }, text: ctx.t('{a}は手を挙げた。「先生、{b}が」', w, ch), why: w.name + 'のCP（' + Math.round(w.eg.CP) + '）：見逃せない' });
-        else if (w.tr.np > 0.5 || R(ctx, w, ch).aff > 25) { ctx.pair(w, ch).secret = true; ctx.act2({ actors: [w, ch], cat: 'help', mag: 12, fx: function () { ctx.mod2(w, ch, { trust: 5 }, { trust: 18, aff: 10 }); }, text: ctx.t('{a}は気づいていた。放課後、{b}にだけ「次はやめときな」と言った。', w, ch), why: w.name + 'の' + (w.tr.np > 0.5 ? 'NP' : ch.name + 'への好意') }); }
+        else if (w.tr.np > 0.5 || R(ctx, w, ch).aff > 25) { ctx.pair(w, ch).secret = true; ctx.act2({ actors: [w, ch], cat: 'help', mag: 12, fx: function () { ctx.mod2(w, ch, { trust: 5 }, { trust: 18, aff: 10 }); }, text: ctx.t('{a}は気づいていた。放課後、{b}にだけ「次はやめときな｜次はやめておけ｜次はやめておいたほうがいいですよ」と言った。', w, ch), why: w.name + 'の' + (w.tr.np > 0.5 ? 'NP' : ch.name + 'への好意') }); }
         else ctx.act2({ actors: [w, ch], cat: 'solo', fx: function () { ctx.mod(w, ch, { trust: -6 }); }, text: ctx.t('{a}は見なかったことにした。', w, ch), why: w.name + 'のドライさ' });
       }
     },
@@ -333,7 +333,7 @@
         if (slack && slack.tr.fc * (1 - slack.tr.ac) > 0.35) ctx.act2({ actors: [cond, slack], cat: 'conflict', fx: function () { ctx.mod2(cond, slack, { ten: 14 }, { ten: 12, aff: -4 }); },
           text: ctx.t('「ちゃんと声出して｜ちゃんと声を出せ｜ちゃんと声を出してください」{a}の注意に、{b}は聞こえるようにため息をついた。', cond, slack), why: cond.name + 'のCP／' + slack.name + 'のFC高・AC低' });
         var peace = ctx.most(ctx.others(cond), function (o) { return o.tr.np + o.tr.ac * 0.5; });
-        if (peace && peace !== slack) ctx.act2({ actors: [peace, cond], cat: 'help', fx: function () { ctx.mod(cond, peace, { trust: 8 }); }, text: ctx.t('練習のあと、{a}が楽譜にこっそり「おつかれ」と書いて{b}に返した。', peace, cond), why: peace.name + 'のNP' });
+        if (peace && peace !== slack) ctx.act2({ actors: [peace, cond], cat: 'help', fx: function () { ctx.mod(cond, peace, { trust: 8 }); }, text: ctx.t('練習のあと、{a}が楽譜にこっそり「おつかれ｜＝｜おつかれさまです」と書いて{b}に返した。', peace, cond), why: peace.name + 'のNP' });
       }
     },
     {

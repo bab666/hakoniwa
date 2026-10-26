@@ -338,14 +338,14 @@
       var sharp = live.slice().sort(function (a, b) { return skill(b, 'obs') + skill(b, 'lore') - skill(a, 'obs') - skill(a, 'lore'); })[0];
       var debunk = sharp && rng() < (skill(sharp, 'obs') + skill(sharp, 'lore')) * 0.45 + (sharp.job === 'detective' ? 0.25 : sharp.job === 'sleuth' ? 0.4 : sharp.job === 'ponkotsu' ? -0.3 : 0);
       if (tgt.job === 'ponkotsu') debunk = false;
-      if (debunk) ST.say(S, { actors: [tgt, sharp], tag: '偽情報', text: '記者が' + tgt.name + 'に耳打ちした。' + line + '――' + sharp.name + 'は首を振った。「その話、どこで聞いたんです？　出典がない。信じない方がいい」', why: sharp.name + 'が偽の情報を見抜いた（観察・知識' + (sharp.job === 'detective' ? '・探偵' : '') + '）', mag: 14 });
+      if (debunk) ST.say(S, { actors: [tgt, sharp], tag: '偽情報', text: '記者が' + tgt.name + 'に耳打ちした。' + line + '――' + sharp.name + 'は首を振った。「その話、どこで聞いたの？　出典がない。信じない方がいい｜その話、どこで聞いた。出典がない。信じない方がいい｜その話、どこで聞いたんです？　出典がありません。信じない方がいいですよ」', why: sharp.name + 'が偽の情報を見抜いた（観察・知識' + (sharp.job === 'detective' ? '・探偵' : '') + '）', mag: 14 });
       else { S.fake++; ST.say(S, { actors: [tgt], tag: '偽情報', text: '記者が' + tgt.name + 'に耳打ちした。' + line + (tgt.job === 'ponkotsu' ? ST.fmt(ST.pick(S, JS.RELT.PONK_BELIEVE), { a: tgt.name }) : '') + '――一行は、その話を半ば信じてしまった。', why: '偽の情報を信じた（対抗策を実行するときに不利になる）', mag: 14 }); }
     }
     if (S.police && S.police.alive && rng() < 0.2) {
       S.police.n++;
       var line2 = ST.pick(S, JS.POLICE.lines), cop = live.filter(function (q) { return q.job === 'police'; })[0];
       if (/待機/.test(line2)) S.hold = 1;
-      if (cop && rng() < 0.6) ST.say(S, { actors: [cop], tag: '警察官', text: '駐在の警察官が言った。' + line2 + '――' + cop.name + 'が警察手帳を見せた。「同業者として言わせてもらいますが、それは悪手です」二人の警察官は、しばらく睨み合った。', why: '仕切りたがる警察官と、住人の警察官の衝突', mag: 12 });
+      if (cop && rng() < 0.6) ST.say(S, { actors: [cop], tag: '警察官', text: '駐在の警察官が言った。' + line2 + '――' + cop.name + 'が警察手帳を見せた。「同業者として言わせてもらうけど、それは悪手だよ｜同業者として言わせてもらうが、それは悪手だ｜同業者として言わせてもらいますが、それは悪手です」二人の警察官は、しばらく睨み合った。', why: '仕切りたがる警察官と、住人の警察官の衝突', mag: 12 });
       else ST.say(S, { tag: '警察官', text: '駐在の警察官が言った。' + line2 + (S.hold ? '――一行は、しぶしぶ公民館に集められた。' : ''), why: '場を仕切りたがる警察官' + (S.hold ? '（次の時間は調べにくくなる）' : ''), mag: 10 });
       if (S.police.n >= 3 && night(h) && rng() < 0.4) { S.police.alive = false; ST.say(S, { tag: '警察官', text: '「村長に話をつけてくる」と出ていった駐在の警察官は、それきり戻らなかった。翌朝、駐在所には制帽だけが残されていた。', why: '仕切りたがる警察官の末路', mag: 20 }); }
     }
@@ -356,7 +356,7 @@
   function solve(S, partial, who) {
     S.solved = true; S.partial = partial;
     var lead = who || S.P.filter(alive).sort(function (a, b) { return skill(b, 'lore') - skill(a, 'lore'); })[0];
-    var o = ST.say(S, { actors: lead ? [lead] : [], tag: '対抗策', text: (lead ? lead.name + 'は集めた手がかりを並べ、顔を上げた。「分かった。この村の神は――' + S.G.name + 'だ」' : '手がかりがそろった。この村の神は、' + S.G.name + 'だ。') + '対抗策は、' + S.G.sol + '。' + (partial ? '（手がかりは一つ足りない。推測で補った）' : ''), why: partial ? '手がかり ' + S.found.length + '/' + S.G.clues.length + '。' + (lead ? lead.name + 'の知識で残りを推し量った' : '') : '手がかりが全部そろった', mag: 36 });
+    var o = ST.say(S, { actors: lead ? [lead] : [], tag: '対抗策', text: (lead ? lead.name + 'は集めた手がかりを並べ、顔を上げた。「分かった。この村の神は――' + S.G.name + 'だ｜＝｜分かりました。この村の神は――' + S.G.name + 'です」' : '手がかりがそろった。この村の神は、' + S.G.name + 'だ。') + '対抗策は、' + S.G.sol + '。' + (partial ? '（手がかりは一つ足りない。推測で補った）' : ''), why: partial ? '手がかり ' + S.found.length + '/' + S.G.clues.length + '。' + (lead ? lead.name + 'の知識で残りを推し量った' : '') : '手がかりが全部そろった', mag: 36 });
     ST.key(S, o, '対抗策が判明');
   }
 

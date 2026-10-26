@@ -78,7 +78,7 @@
         if (grab && grab.tr.aggr > 0.6 && grab !== giver) {
           var who = ctx.most(ctx.others(grab), function (o) { return o.tr.cp + o.tr.a * 0.5; });
           ctx.act2({ actors: [grab, who], cat: 'conflict', fx: function () { grab.hp += 6; ctx.others(grab).forEach(function (o) { ctx.mod(o, grab, { trust: -12, ten: 10 }); }); ctx.mod2(who, grab, { ten: 15 }, { ten: 10 }); },
-            text: ctx.t('配給の貝を一つ余計に取った{a}を、{b}が見逃さなかった。「数えてるんだぞ」', grab, who), why: grab.name + 'の攻撃性・ドライさ／' + who.name + 'のCP・A（不正を許さない）' });
+            text: ctx.t('配給の貝を一つ余計に取った{a}を、{b}が見逃さなかった。「数えてるんだぞ｜数えているんだ｜数えているんですよ」', grab, who), why: grab.name + 'の攻撃性・ドライさ／' + who.name + 'のCP・A（不正を許さない）' });
         }
         ctx.food += 6;
         P.forEach(function (c) { c.stress = HK.clamp(c.stress + 10, 0, 100); });
@@ -108,7 +108,7 @@
           ctx.act2({ actors: [taker], cat: 'conflict', fx: function () {
             taker.flags.knife = true;
             ctx.others(taker).forEach(function (o) { if (o.tr.caution > 0.55) ctx.mod(o, taker, { ten: 10, trust: -6 }); else ctx.mod(o, taker, { trust: 3 }); });
-          }, text: ctx.t('ナイフは{a}が預かることになった。「俺が持っているのが一番安全だ」と言って。', taker), why: taker.name + 'のCP×攻撃性。慎重な者ほど警戒した' });
+          }, text: ctx.t('ナイフは{a}が預かることになった。「私が持ってるのが一番安全｜私が持っているのが一番安全だ｜私が持っているのが一番安全です」と言って。', taker), why: taker.name + 'のCP×攻撃性。慎重な者ほど警戒した' });
         } else if (kind === '無線機') {
           var fixer = ctx.most(P, function (c) { return c.tr.a + ctx.stat(c, 'know') * 0.15; });
           var ok = rng() < 0.2 + ctx.stat(fixer, 'know') * 0.1 + fixer.tr.a * 0.25;
@@ -167,7 +167,7 @@
         if (eater.alive && nurse && nurse.tr.np > 0.45) ctx.act2({ actors: [nurse, eater], cat: 'help', fx: function () { eater.hp += 10; ctx.mod2(nurse, eater, { aff: 3 }, { aff: 12, trust: 12 }); },
           text: ctx.t('{a}は{b}の背中をさすり続け、真水を少しずつ飲ませた。', nurse, eater), why: nurse.name + 'のNP' });
         if (eater.alive && mock && mock !== nurse && mock.tr.cp > 0.6) ctx.act2({ actors: [mock, eater], cat: 'conflict', fx: function () { ctx.mod(eater, mock, { ten: 12, aff: -6 }); },
-          text: ctx.t('「だから言っただろ」と{a}が吐き捨てた。{b}は言い返す気力もなかった。', mock, eater), why: mock.name + 'のCP高・NP低' });
+          text: ctx.t('「だから言っただろ｜だから言っただろう｜だから言ったでしょう」と{a}が吐き捨てた。{b}は言い返す気力もなかった。', mock, eater), why: mock.name + 'のCP高・NP低' });
       }
     },
     {
@@ -181,11 +181,11 @@
         P.forEach(function (c) { c.stress = HK.clamp(c.stress + 16, 0, 100); });
         var blamer = ctx.most(ctx.others(sig), function (o) { return o.tr.aggr + o.stress / 100; });
         if (blamer && blamer.tr.aggr > 0.55) ctx.act2({ actors: [blamer, sig], cat: 'conflict', fx: function () { ctx.mod2(blamer, sig, { ten: 14, aff: -6 }, { ten: 10 }); },
-          text: ctx.t('「火を焚くのが遅かったんだ」{a}は{b}のせいにした。', blamer, sig), why: blamer.name + 'の攻撃性と失望' });
+          text: ctx.t('「火を焚くのが遅かったんだ｜火を焚くのが遅かったのだ｜火を焚くのが遅かったんです」{a}は{b}のせいにした。', blamer, sig), why: blamer.name + 'の攻撃性と失望' });
         var comf = ctx.most(P, function (c) { return c.tr.np + c.tr.fc * 0.3; });
         var low = ctx.most(ctx.others(comf), function (o) { return o.stress; });
         if (comf && low && comf.tr.np > 0.5) ctx.act2({ actors: [comf, low], cat: 'help', fx: function () { ctx.stress(low, -15); ctx.mod(low, comf, { aff: 8, trust: 8 }); },
-          text: ctx.t('砂浜に座り込んだ{b}の隣に、{a}が黙って腰を下ろした。「次は気づいてもらえる」', comf, low), why: comf.name + 'のNP' });
+          text: ctx.t('砂浜に座り込んだ{b}の隣に、{a}が黙って腰を下ろした。「次は気づいてもらえる｜＝｜次は気づいてもらえます」', comf, low), why: comf.name + 'のNP' });
       }
     },
     {
@@ -258,7 +258,7 @@
             text: ctx.t('{a}は一晩中、{b}の額の布を替え続けた。', c, sick), why: c.name + (c.tr.np > 0.5 ? 'のNP' : 'の' + sick.name + 'への好意') });
         });
         if (avoid.length) ctx.act2({ actors: [avoid[0], sick], cat: 'solo', fx: function () { ctx.mod(sick, avoid[0], { aff: -5 }); },
-          text: ctx.t('{a}は「うつると困る」と言って、寝床を離れた場所に移した。', avoid[0], sick), why: avoid[0].name + 'の慎重さ' });
+          text: ctx.t('{a}は「うつると困る｜＝｜うつると困ります」と言って、寝床を離れた場所に移した。', avoid[0], sick), why: avoid[0].name + 'の慎重さ' });
       }
     }
   ];
@@ -339,7 +339,7 @@
           if (sub && R(ctx, sub, cur).aff > 45 && sub.tr.np > 0.55 && rng() < 0.6) {
             shooter = sub;
             ctx.act2({ actors: [sub, cur], cat: 'help', mag: 20, fx: function () { ctx.mod2(sub, cur, { aff: 5 }, { aff: 20, trust: 20, att: 10 }); },
-              text: ctx.t('{b}の番で、{a}が銃を奪った。「代わる」', sub, cur), why: sub.name + 'のNPと' + cur.name + 'への好意（' + Math.round(R(ctx, sub, cur).aff) + '）' });
+              text: ctx.t('{b}の番で、{a}が銃を奪った。「代わる｜代わろう｜代わります」', sub, cur), why: sub.name + 'のNPと' + cur.name + 'への好意（' + Math.round(R(ctx, sub, cur).aff) + '）' });
           }
           if (rng() < 1 / left) { ctx.kill(shooter, null, 'ロシアンルーレットの' + (7 - left) + '発目で'); break; }
           left--;
@@ -429,16 +429,16 @@
         if (forcer.tr.cp > 0.7 && forcer.tr.np < 0.4 && meek && meek.tr.ac > 0.6) {
           tasterUsed = meek;
           ctx.act2({ actors: [forcer, meek], cat: 'conflict', fx: function () { ctx.mod(meek, forcer, { ten: 20, trust: -15 }); },
-            text: ctx.t('「お前が先に食え」{a}は{b}の前に皿を押しやった。{b}は逆らわなかった。', forcer, meek), why: forcer.name + 'のCP高・NP低／' + meek.name + 'のAC（' + Math.round(meek.eg.AC) + '）' });
+            text: ctx.t('「あなたが先に食べなよ｜あなたが先に食え｜あなたが先に食べてください」{a}は{b}の前に皿を押しやった。{b}は逆らわなかった。', forcer, meek), why: forcer.name + 'のCP高・NP低／' + meek.name + 'のAC（' + Math.round(meek.eg.AC) + '）' });
         } else {
           ctx.act2({ actors: [taster], cat: 'help', fx: function () { ctx.others(taster).forEach(function (o) { ctx.mod(o, taster, { trust: 6, aff: 4 }); }); },
-            text: ctx.t('「毒見なら俺がやる」{a}が真っ先にスプーンを取った。', taster), why: taster.name + 'のNP・FC' });
+            text: ctx.t('「毒見なら私がやる｜＝｜毒見なら私がやります」{a}が真っ先にスプーンを取った。', taster), why: taster.name + 'のNP・FC' });
         }
         var poisoned = rng.pick(P);
         var nose = ctx.most(ctx.others(poisoned), function (o) { return o.tr.a; });
         if (nose && rng() < nose.tr.a * 0.55) {
           ctx.act2({ actors: [nose, poisoned], cat: 'help', mag: 15, fx: function () { ctx.mod(poisoned, nose, { trust: 18, aff: 10 }); },
-            text: ctx.t('{b}が口をつける直前、{a}がその皿を払い落とした。「匂いが違う」', nose, poisoned), why: nose.name + 'のA（' + Math.round(nose.eg.A) + '）：観察力' });
+            text: ctx.t('{b}が口をつける直前、{a}がその皿を払い落とした。「匂いが違う｜＝｜匂いが違います」', nose, poisoned), why: nose.name + 'のA（' + Math.round(nose.eg.A) + '）：観察力' });
         } else {
           ctx.act2({ actors: [poisoned], cat: 'solo', fx: function () { hurt(ctx, poisoned, poisoned === tasterUsed ? 55 : 45, '毒入りの皿を引いて'); }, text: ctx.t('毒の皿を引いたのは{a}だった。', poisoned), why: '偶然' });
         }

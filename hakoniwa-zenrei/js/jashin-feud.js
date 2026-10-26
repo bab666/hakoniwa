@@ -162,7 +162,7 @@
       return true;
     }
     /* 人目のないところで手にかける */
-    var t2 = a.name + 'は、' + b.name + 'を「話がある」と神社の裏手へ呼び出した。' + TL.line(a, 'HATE_KILL', b);
+    var t2 = a.name + 'は、' + b.name + 'を「話がある｜＝｜お話があります」と神社の裏手へ呼び出した。' + TL.line(a, 'HATE_KILL', b);
     var win = 0.45 + a.tr.aggr * 0.2 + JS.skill(a, 'fight') * 0.2 - JS.skill(b, 'fight') * 0.2 - b.stats.luck * 0.02;
     if (rng() < win) {
       a.mur = { x: '石', t: b };

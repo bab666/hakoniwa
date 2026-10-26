@@ -24,7 +24,7 @@
         var v = HK.weighted(rng, vs, function (p) { return 0.4 + (p.action.id === 'alone' ? 2 : 0) + (6 - p.stats.stamina) * 0.15; });
         v.alive = false; v.ithFake = true; v.fate = '風の眷属に殺され、成り代わられた（' + JS.hm(h) + '）'; v.how = '風の眷属に殺されて';
         S.ith = { v: v, h: h, seen: 0, rev: false };
-        ST.say(S, { actors: [v], tag: '吹雪の夜', text: '吹雪の夜、' + v.name + 'は外の様子を見に出たきり、なかなか戻らなかった。明け方、' + v.name + 'は雪まみれで戻ってきた。「平気だよ。少し道に迷っただけだよ」――' + v.name + 'は、そう言って笑った。', why: '吹雪の中で、何かがあったらしい', mag: 18 });
+        ST.say(S, { actors: [v], tag: '吹雪の夜', text: '吹雪の夜、' + v.name + 'は外の様子を見に出たきり、なかなか戻らなかった。明け方、' + v.name + 'は雪まみれで戻ってきた。「平気だよ。少し道に迷っただけだよ｜平気だ。少し道に迷っただけだ｜平気です。少し道に迷っただけですよ」――' + v.name + 'は、そう言って笑った。', why: '吹雪の中で、何かがあったらしい', mag: 18 });
         return true;
       }
       if (I.rev || rng() > 0.4) return false;
@@ -54,7 +54,7 @@
   function reveal(S, sh, vs, sign) {
     var I = S.ith; I.rev = true;
     var ct = GD.giveClue(S, sh);
-    var o = ST.say(S, { actors: [sh], tag: '成り代わり', kind: 'climax', text: sign + '――' + sh.name + 'は、気づいてしまった。「あなた……' + I.v.name + 'じゃない」' + I.v.name + 'の姿をしたものの顔に、霜の亀裂が走った。それは人の声ではない声で笑い、窓を突き破って、吹雪の中へ消えた。' + ct, why: sh.name + 'が、成り代わりを見抜いた（観察' + (sh.job === 'psychic' ? '・霊感' : '') + '）', mag: 44 });
+    var o = ST.say(S, { actors: [sh], tag: '成り代わり', kind: 'climax', text: sign + '――' + sh.name + 'は、気づいてしまった。「あなた……' + I.v.name + 'じゃない｜あなた……' + I.v.name + 'ではない｜あなた……' + I.v.name + 'ではありませんね」' + I.v.name + 'の姿をしたものの顔に、霜の亀裂が走った。それは人の声ではない声で笑い、窓を突き破って、吹雪の中へ消えた。' + ct, why: sh.name + 'が、成り代わりを見抜いた（観察' + (sh.job === 'psychic' ? '・霊感' : '') + '）', mag: 44 });
     ST.key(S, o, I.v.name + 'は成り代わられていた');
     ST.say(S, { actors: [I.v], tag: '雪の中', text: '峠の雪の中から、本物の' + I.v.name + 'が見つかった。凍りついたその顔は、最後まで誰かを呼んでいるようだった。', why: I.v.name + 'は、吹雪の夜にすでに殺されていた', mag: 36 });
     S.gBonus = (S.gBonus || 0) + 0.06;
@@ -83,7 +83,7 @@
         }
         if (night && rng() < 0.3) {
           p.m.fear = clamp(p.m.fear + 6, 0, 100);
-          ST.sayB(S, { actors: [p], tag: '従者', text: p.name + 'は夜中にふらりと起き上がり、湖の方へ歩いていこうとした。その胸の傷からは、一滴の血も流れていなかった。仲間が引き止めると、' + p.name + 'は、ひどく穏やかな声で言った。「呼ばれてるんだ。行かなきゃ」', why: '棘に刺された者は、湖の主の従者になる' }, p.name + 'が湖へ向かおうとした');
+          ST.sayB(S, { actors: [p], tag: '従者', text: p.name + 'は夜中にふらりと起き上がり、湖の方へ歩いていこうとした。その胸の傷からは、一滴の血も流れていなかった。仲間が引き止めると、' + p.name + 'は、ひどく穏やかな声で言った。「呼ばれてるんだ。行かなきゃ｜呼ばれているんだ。行かなければ｜呼ばれているんです。行かなければなりません」', why: '棘に刺された者は、湖の主の従者になる' }, p.name + 'が湖へ向かおうとした');
           return true;
         }
       }
