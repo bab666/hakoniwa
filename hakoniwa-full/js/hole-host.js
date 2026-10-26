@@ -180,7 +180,7 @@
       var o = K.say(S, { kind: 'sys', tag: '主催者の助け舟', text: nm(pk(S, T.save), { h: h.name, a: a.name }), why: h.name + 'が、予定より早く遮断を解いた（溜まった感覚 ' + Math.round(st.stored) + '・堕ち度 ' + Math.round(a.corrupt) + '）' });
       K.key(S, o, h.name + 'が早めに出した');
     } else if (p[0] === 'boost') {
-      if (st.hardTop) K.say(S, { kind: 'ev', tag: '主催者の呼び込み', text: nm(pk(S, T.boost.top), { h: h.name, a: a.name }), why: '自分で攻めを選んでいるので、呼び込んだ客は追い払われた' });
+      if (st.hardTop) K.say(S, { kind: 'ev', tag: '主催者の呼び込み', text: nm(pk(S, T.boost.top), { h: h.name, a: a.name }), why: st.guard ? '性行為の相手を固定した相手だけにしているので、呼び込んだ客は追い払われた' : '自分で攻めを選んでいるので、呼び込んだ客は追い払われた' });
       else if (st.live) {
         var rs = K.stim(S, 12 + S.env.wild / 10, { part: 'belly', defer: true });
         K.say(S, { kind: 'ev', tag: '主催者の呼び込み', text: nm(pk(S, T.boost.live), { h: h.name, a: a.name }), why: h.name + 'が客を呼び込んだ（感覚は戻っている）' });

@@ -18,7 +18,7 @@
   function Ctx(input) {
     var self = this;
     this.input = input;
-    /* いま回している結果（性行為の相手の固定「恋人とモブだけ」で、その場で恋人になった相手を見るため。HK.sexNG） */
+    /* いま回している結果（HK.canLove の執着の関係・一途の判定・出られない部屋の条件など、組の判定から引くため） */
     HK._curCtx = this;
     this.scen = HK.SCENARIOS[input.scenId];
     this.seed = input.seed;
@@ -62,18 +62,23 @@
   /* 設定で決めた「恋愛・R18にしない相手」と「恋愛相手の固定」だけで見る */
   /* キャラの設定のうち、どの箱庭でも住人に写す縛り（engine・物語型・SoloKit・ダンジョン・穴で共通）
      ・noR18：R18に参加しない（受けも攻めもしない）。住人どうしの夜（HK.sexBlocked）にも、モブ・魔物との場面（HK.State.mobSexOk）にもならない
-     ・sexLock 'loverOnly'：恋人だけ。住人では「恋人とモブだけ」（'lover'）と同じ相手に限り、加えてモブ・魔物にも襲われない（noMob） */
+     ・性行為の相手の固定（HK.sexLockRead）：「固定した相手だけ」は住人では固定した相手とだけで、モブ・魔物など住人でない相手とも体の関係にならない（noMob）。
+       「固定した相手＋モブ」（sexLockMob）は住人では固定した相手とだけで、モブとの場面は縛らない */
   HK.charFlags = function (src, dst, scenId) {
     if (!src || !dst) return dst;
-    /* R18が中心の箱庭（HK.State.R18_CORE）では、R18に参加しない・モブにも襲われないは効かせない（住人どうしの「恋人とモブだけ」は効く） */
+    /* R18が中心の箱庭（HK.State.R18_CORE）では、R18に参加しない は効かせない。
+       性行為の相手の固定（「固定した相手だけ」でモブとも関係を持たない）は、R18が中心の箱庭でも効かせる（2026-10-26。各箱庭の止め方は HK.State.mobSexOk の説明） */
     var core = !!(scenId && HK.State && HK.State.R18_CORE[scenId]);
     dst.noR18 = !!src.noR18 && !HK.SAFE_ON && !core;
-    if (src.sexLock === 'loverOnly') { dst.sexLock = 'lover'; dst.noMob = !core; } else dst.noMob = !!dst.noMob;
     /* 恋愛相手の固定・性行為の相手の固定は複数人を持てる（locks・sexLocks）。lock・sexLock は最初の一人（「その人を探す」などの古い読み方のため） */
     dst.locks = HK.parseLocks(src.loveLock);
     if (dst.lock == null && dst.locks.length) dst.lock = dst.locks[0];
-    dst.sexLocks = HK.sexLocksOf(src.sexLock);
-    if (dst.sexLocks && typeof dst.sexLock !== 'number') dst.sexLock = dst.sexLocks[0];
+    var SL = HK.sexLockRead(src);
+    dst.sexLocks = SL.locks;
+    dst.sexLock = SL.k === 'any' ? 'any' : SL.locks ? SL.locks[0] : null;
+    /* モブ・魔物との場面：「固定した相手だけ」なら出さない（noMob）。合コンのモブ参加者など、写し先がもともと noMob を持つときはそのまま */
+    dst.sexMob = !!(SL.locks && SL.mob);
+    dst.noMob = !!dst.noMob || (!HK.SAFE_ON && !!(SL.locks && !SL.mob));
     /* 三人の場面：固定した相手が中心なら、固定していない人が一緒でも参加する（その人とは直接触れ合わない。room-trio.js）。R18版だけ */
     dst.trioHub = !!src.trioHub && !HK.SAFE_ON;
     /* 攻めだが、モブには受け（攻め・リバのときだけ） */
@@ -86,11 +91,12 @@
     dst.faithful = !!src.faithful;
     return dst;
   };
-  /* 恋愛相手の固定（キャラの設定 loveLock：番号か番号の配列）と性行為の相手の固定（sexLock：'any'／'lover'／'loverOnly'／番号か番号の配列）
+  /* 恋愛相手の固定（キャラの設定 loveLock：番号か番号の配列）と性行為の相手の固定（sexLock：'any'／番号か番号の配列。sexLockMob が真なら「固定した相手＋モブ」）
      ・HK.parseLocks(v)：固定した相手の番号の配列（空＝固定しない）。HK.lockFirst(v)：最初の一人（なければ null）
      ・HK.locks(c)：住人の固定した相手（c.locks。なければ c.lock から。モブの lock = -1 は「誰とも」）
      ・HK.lockOut(a, b)：a は固定していて b はその中にいない（a は b と恋愛しない）。HK.lockTo(a, b)：a は b を固定している。HK.lockAny(a)：誰かを固定している
-     ・HK.sexLockOf(v)：'any'／'lover'／'loverOnly'／最初の番号／null。HK.sexLocksOf(v)：番号の配列（番号で決めていなければ null）
+     ・HK.sexLockOf(v)：'any'／最初の番号／null。HK.sexLocksOf(v)：番号の配列（番号で決めていなければ null）。古い値 'lover'・'loverOnly' は null（HK.sexLockRead が恋愛相手の固定から読む）
+     ・HK.sexLockRead(src)：キャラの設定から { k: null|'any'|'pick', locks: 番号の配列|null, mob: モブとは可か } を読む（住人への写しは HK.charFlags）
      ・HK.sexLockOut(x, y)：x は性行為の相手を番号で決めていて、y はその中にいない */
   HK.parseLocks = function (v) {
     /* -1 は「固定した相手がこの箱庭にいない」（誰とも恋愛しない）。ui.js の buildInput が入れる */
@@ -99,8 +105,18 @@
     return [+v];
   };
   HK.lockFirst = function (v) { var L = HK.parseLocks(v); return L.length ? L[0] : null; };
-  HK.sexLockOf = function (v) { if (v === 'any' || v === 'lover' || v === 'loverOnly') return v; return HK.lockFirst(v); };
-  HK.sexLocksOf = function (v) { if (v === 'any' || v === 'lover' || v === 'loverOnly') return null; var L = HK.parseLocks(v); return L.length ? L : null; };
+  HK.sexLockOf = function (v) { if (v === 'any') return v; if (typeof v === 'string' && v && isNaN(+v)) return null; return HK.lockFirst(v); };
+  HK.sexLocksOf = function (v) { if (typeof v === 'string' && v && isNaN(+v)) return null; var L = HK.parseLocks(v); return L.length ? L : null; };
+  /* 性行為の相手の固定を読む一か所。番号（か番号の並び）なら「固定した相手だけ」、sexLockMob が真なら「固定した相手＋モブ」。
+     古い保存の値がそのまま来たとき（画面の読み込みで読み替えるので、ふつうは来ない）：'loverOnly' は恋愛相手の固定を写した「固定した相手だけ」、
+     'lover' は写した「固定した相手＋モブ」。恋愛相手を固定していなければ「恋愛相手の固定に合わせる」（null） */
+  HK.sexLockRead = function (src) {
+    var v = src ? src.sexLock : null;
+    if (v === 'any') return { k: 'any', locks: null, mob: true };
+    var old = v === 'lover' || v === 'loverOnly', L = old ? HK.parseLocks(src.loveLock) : HK.sexLocksOf(v) || [];
+    if (!L.length) return { k: null, locks: null, mob: true };
+    return { k: 'pick', locks: L, mob: old ? v === 'lover' : !!src.sexLockMob };
+  };
   HK.locks = function (c) { if (!c) return []; if (Array.isArray(c.locks)) return c.locks; return c.lock != null ? [c.lock] : []; };
   HK.lockAny = function (a) { return HK.locks(a).length > 0; };
   HK.lockTo = function (a, b) { return !!b && HK.locks(a).indexOf(b.i) >= 0; };
@@ -166,18 +182,15 @@
   /* 性行為の相手の固定（キャラの設定 sexLock）。恋愛とは別に、体の関係（夜・R18の場面）の相手を決める
      ・null（恋愛相手の固定に合わせる）：恋愛相手を固定していれば、その相手とだけ。していなければ誰とでも
      ・'any'（誰とでも可）：恋愛相手を固定していても、体の関係はほかの住人とも（恋愛には進まない：HK.lockSexOnly）
-     ・'lover'（恋人とモブだけ）：住人では、恋愛相手の固定の相手・関係の恋人（番・運命の番）・その場で恋人になった相手とだけ。モブ（住人でない相手）の場面は縛らない
-     ・番号：その住人とだけ（その人が箱庭にいなければ、住人の誰とも） */
+     ・番号（「固定した相手だけ」「固定した相手＋モブ」）：住人ではその人たちとだけ（その人が箱庭にいなければ、住人の誰とも）。
+       モブとの場面の違いは HK.charFlags の noMob（HK.State.mobSexOk）で見る */
   function sexOne(x, y) {
     /* 一途（住人の設定 faithful）：恋人がいる間は、恋人でない人と体の関係にならない（poly.js） */
     if (HK.Poly && HK.Poly.faithNG(x, y)) return true;
     var s = x.sexLock;
     if (s === 'any') return false;
-    if (s === 'lover' || s === 'loverOnly') {
-      var C = HK._curCtx;
-      return !((HK.lockAny(x) && HK.lockTo(x, y)) || (x.loveSet && x.loveSet.indexOf(y.i) >= 0) || (C && C.pf && C.chars && C.chars[x.i] === x && C.pair(x, y).couple));
-    }
-    if (s != null) return HK.sexLockOut(x, y);
+    if (Array.isArray(x.sexLocks) || typeof s === 'number') return HK.sexLockOut(x, y);
+    /* 古い値（'lover'・'loverOnly'）が写されずに残っていても落ちないように、恋愛相手の固定で見る */
     return HK.lockOut(x, y);
   }
   HK.sexNG = function (a, b) { if (!a || !b || a === b) return false; return sexOne(a, b) || sexOne(b, a); };
@@ -188,7 +201,9 @@
   /* 住人の状態の共通チェック（箱庭ごとの人選びはこれを通す）
      here：その場にいる（生きている・場を離れていない・監禁されていない。物語型は gone/taken/bound も見る）
      r18ok：R18の場面に出してよい（全年齢モードでは常に不可）
-     mobSexOk：モブ・魔物・村人・略奪者など住人でない相手との性的な場面に出してよい
+     mobSexOk：モブ・魔物・村人・略奪者など住人でない相手との性的な場面に出してよい（R18に参加しない人・性行為の相手を「固定した相手だけ」にした人は不可）。
+       R18が中心の箱庭のうち、マッサージ（モブの施術者はふつうの施術だけ）・感覚遮断穴（壁の向こうの手を追い払う）もこれで止める。
+       エロトラップダンジョンの罠・魔物、サキュバスの狩りの獲物、エロバラエティのアシスタントなど、箱庭の仕掛けそのものは縛らない
      pairSex：住人どうしの体の関係（恋愛対象・受け攻め・縛りは HK.Pos.okSex）／pairLove：恋愛（HK.canLove を両方向） */
   HK.State = {
     here: function (c) { return !!c && c.alive !== false && !c.out && !c.gone && !c.taken && !(c.flags && (c.flags.caged != null || c.flags.knocked)); },
@@ -554,7 +569,7 @@
       });
     });
     /* 箱庭が自動で足す関係（学園全体の先輩後輩など）。ユーザーが決めた関係のある組には足さない */
-    /* 性行為の相手の固定「恋人とモブだけ」で使う、関係の恋人（恋人・番・運命の番）の一覧 */
+    /* 関係の恋人（恋人・番・運命の番）の一覧（一途の判定 poly.js の faithNG で使う） */
     /* 恋愛・R18にしない組（HK.ngPair：恋愛相手を別の人に固定した組など）は、関係で恋人にしても恋人の一覧に入れない（ties.js も恋人の関係を当てない） */
     (input.ties || []).forEach(function (t) { if (/^(lover|mate|fated)$/.test(t.type) && ctx.chars[t.a] && ctx.chars[t.b] && t.a !== t.b && !(HK.ngPair && HK.ngPair(ctx.chars[t.a], ctx.chars[t.b]))) { (ctx.chars[t.a].loveSet = ctx.chars[t.a].loveSet || []).push(t.b); (ctx.chars[t.b].loveSet = ctx.chars[t.b].loveSet || []).push(t.a); } });
     if (HK.Ties) HK.Ties.apply(ctx, (input.ties || []).concat(scen.extraTies ? scen.extraTies(ctx, input) || [] : []));
@@ -575,7 +590,7 @@
     })();
     /* 恋愛相手を固定した人は、ほかの人への惹かれを小さく始める（体の関係は許されている組は除く：惹かれは Ctx.say の補正で恋愛の手前に止める） */
     ctx.chars.forEach(function (a) { if (!HK.lockAny(a)) return; ctx.chars.forEach(function (b) { if (b !== a && !HK.lockTo(a, b) && !HK.lockSexOnly(a, b)) { var r = ctx.R(a, b); r.att = Math.min(r.att, 6); } }); });
-    /* 許嫁で恋人と同じ扱いになった二人も、性行為の相手の固定「恋人とモブだけ」の恋人に入れる。無関心は、ここで値を覚えて動かさない（ties.js） */
+    /* 許嫁で恋人と同じ扱いになった二人も、関係の恋人の一覧に入れる。無関心は、ここで値を覚えて動かさない（ties.js） */
     if (HK.Ties && ctx.tiesAll) Object.keys(ctx.tiesAll).forEach(function (k) { ctx.tiesAll[k].forEach(function (t) { if (t.type === 'fiance' && t.couple) { var A = ctx.chars[t.a], B = ctx.chars[t.b]; (A.loveSet = A.loveSet || []).push(B.i); (B.loveSet = B.loveSet || []).push(A.i); } }); });
     C.forEach(function (c) {
       if (c.goal && c.goal.needsFocus) {

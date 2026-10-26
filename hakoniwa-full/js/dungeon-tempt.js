@@ -258,7 +258,7 @@
   }
   DG.tempt = tempt;
 
-  /* 仲間の設定から、性行為の相手の固定（誰とでも可・番号）と、関係の恋人（恋人だけ、の相手）を写す。描写の乱数の種もここで決める */
+  /* 仲間の設定から、性行為の相手の固定（誰とでも可・番号）と、関係の恋人（一途の判定で使う）を写す。描写の乱数の種もここで決める */
   var setup0 = DG.partySetup;
   DG.partySetup = function (S, input) {
     var res = setup0(S, input);

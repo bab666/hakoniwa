@@ -142,7 +142,7 @@
   var INSERT = {
     mv: L('{a}は{b}の脚を割り開き、硬く張りつめた{男性器}を{b}の{女性器}に押し当てた。{b}は最後に一度だけ首を振ったが、{a}はそのまま、ゆっくりと腰を沈めていく。根元まで呑み込んだ瞬間、{b}の{ナカ}は拒むどころか、{a}にきつく絡みついた。|{a}は{b}の腰を掴んで引き寄せ、一息に奥まで貫いた。{b}の喉から、悲鳴とも嬌声ともつかない声が漏れる。{b}は{a}の胸を叩いたが、その拳には、もう少しも力が入っていなかった。|{a}の{男性器}の先が、{b}の{女性器}の入り口をゆっくりと押し広げていった。{b}は唇を噛んで、入れるなと目で訴えたが、体のほうは{a}を少しずつ呑み込んでいく。最後まで沈められたとき、{b}の口からこぼれたのは罵声ではなく、震える吐息だった。'),
     ma: L('{a}は{b}の脚を抱え上げ、ほぐれた{b}の{後ろ}に{男性器}の先を押し当てた。{b}は「ま、待っ……」と言いかけたが、そのままゆっくりと押し入られて、言葉は呻きに変わった。根元まで埋められたとき、{b}の体は拒むどころか、{a}をきつく締めつけていた。|{a}は{b}をうつ伏せにしたまま腰を引き上げ、一息に奥まで貫いた。{b}はシーツを掴んで声を殺そうとしたが、内側を擦り上げられるたびに、喉の奥から呻きが漏れる。逃げようとしていた腰は、気づけば{a}の動きに合わせて揺れていた。|{a}の{男性器}が、{b}の{後ろ}をゆっくりと押し広げていった。{b}は拒む言葉を探して口を開いたが、出てきたのは震える吐息だけだった。奥の一点を擦られた瞬間、{b}の{男性器}がびくりと跳ねた。'),
-    ff: L('{a}は{b}の脚を割り開き、揃えた二本の指を、{b}の{女性器}の奥までゆっくりと沈めた。{b}は「抜いて」と言いかけたが、指を曲げられた瞬間、その言葉は甘い悲鳴に変わった。{b}の{ナカ}は、拒むどころか{a}の指をきつく締めつけていた。|{a}は{b}の太腿を肩に担ぎ上げ、指を深く突き入れたまま、{陰核}を舌で転がした。{b}は首を振って逃れようとしたが、内と外を同時に責められて、腰が勝手に浮き上がる。噛みしめていた唇から、こらえきれない声が溢れ出した。|{a}は{b}を抱き起こして膝の上に座らせ、向かい合ったまま、指を下からゆっくりと沈めていった。{b}は{a}の肩を掴んで突き放そうとしたが、奥を探られるたびに、その手は縋るように食い込んでいく。「嫌い」と言いかけた唇は、{a}の唇で塞がれた。'),
+    ff: L('{a}は{b}の脚を割り開き、揃えた二本の指を、{b}の{女性器}の奥までゆっくりと沈めた。{b}は「抜いて」と言いかけたが、指を曲げられた瞬間、その言葉は甘い悲鳴に変わった。{b}の{ナカ}は、拒むどころか{a}の指をきつく締めつけていた。|{a}は{b}の太腿を肩に担ぎ上げ、指を深く沈めたまま、{陰核}を舌で転がした。{b}は首を振って逃れようとしたが、内と外を同時に責められて、腰が勝手に浮き上がる。噛みしめていた唇から、こらえきれない声が溢れ出した。|{a}は{b}を抱き起こして膝の上に座らせ、向かい合ったまま、指を下からゆっくりと沈めていった。{b}は{a}の肩を掴んで突き放そうとしたが、奥を探られるたびに、その手は縋るように食い込んでいく。「嫌い」と言いかけた唇は、{a}の唇で塞がれた。'),
     fm: L('{a}は{b}の{男性器}を握って起こし、その上にゆっくりと腰を沈めた。{b}は「や、やめ……」と言いかけたが、熱い{ナカ}に根元まで呑み込まれて、言葉は呻きに変わった。押し返そうとしていた手は、気づけば{a}の腰を掴んでいた。|{a}は{b}の胸に両手をついて、濡れた入り口に{b}の{男性器}の先を宛がった。{a}は、{b}が身をよじるより早く、一息に腰を落とした。{b}の喉から漏れたのは、罵声ではなく、こらえきれない喘ぎだった。|{a}は{b}の上で膝立ちになり、見せつけるように、ゆっくりと{b}の{男性器}を自分の中へ迎え入れた。{b}は顔を背けたが、半分ほど呑み込まれたところで、こらえきれずに腰を震わせた。それに気づいた{a}が笑っても、{b}はもう、言い返すことができなかった。')
   };
   var ERO_INSERT = {
@@ -247,12 +247,19 @@
       var low = opt.low || (LW && LW.lv(env) === 'low'), short = LW && LW.short(env, x.rng), ero = LW && LW.ero(env), high = LW && LW.high(env);
       var k = kindOf(T, B), p = ps(B), tp = ps(T), out = [];
       var say = function (who, arr) { out.push('{' + who + '}' + pick(x, arr)); };   /* 表の台詞は「」込み */
+      /* 愛憎（hate-love.js・hate-love-r18.js）：受けが持つなら、受けが挑発して攻めに無理矢理構わせる導入を足す。
+         二度目から（夜・強引な場面が二回目以上）は腐れ縁の導入。事後は嫌悪と執着の混ざる文、受けのほうから求めるもう一度も出やすい */
+      var LHm = HK.LoveHate, LHR = LHm && LHm.R18, lhB = !!(LHR && LHm.has(x, B, T)), lh = !!(LHR && (lhB || LHm.has(x, T, B)));
+      var nth = opt.nth != null ? opt.nth : x.pair ? (x.pair(T, B).hateSex || 0) + (x.pair(T, B).hateNight || 0) : 0;
       if (opt.place) out.push(opt.place);
+      if (lh && nth >= 2) out.push(pick(x, LHR.AGAIN_LEAD));
+      if (lhB) out.push(pick(x, LHR.LURE[k]));
       out.push(pick(x, OPEN[k]));
       /* 受けの強い拒否 → 攻めの言い返し（嫌々・開き直り） */
       out.push('{b}「' + pick(x, PROTEST[p]) + '」');
       say('a', (opt.room ? RETORT_ROOM : RETORT)[tp]);
-      if (low) { out.push(pick(x, FADE)); say('a', LAST[tp]); out.push(pick(x, AFTER[p])); return fill(x, out.join(''), T, B); }
+      var lastL = function () { return lh && x.rng() < 0.6 ? LHR.LAST[tp] : LAST[tp]; }, afterL = function () { return lh && x.rng() < 0.6 ? LHR.AFTER[p] : AFTER[p]; };
+      if (low) { out.push(pick(x, FADE)); say('a', lastL()); out.push(pick(x, afterL())); if (lh) out.push(pick(x, LHR.TAIL)); return fill(x, out.join(''), T, B); }
       var sub = subOf(T, B, k);
       if (short) {
         /* 短く：口づけから繋がるまでは、繋がる段を一つだけ */
@@ -276,9 +283,10 @@
       out.push('{b}「{m2}」');
       out.push(pick(x, ero ? ERO_PEAK[k] : PEAK[k]));
       /* 攻めの一言（後味）→ 濃い：受けのほうからもう一度 → 受けの事後 */
-      say('a', LAST[tp]);
-      if (high) out.push(pick(x, AGAIN[k]));
-      out.push(pick(x, AFTER[p]));
+      say('a', lastL());
+      if (high || (lh && x.rng() < 0.5)) out.push(pick(x, AGAIN[k]));
+      out.push(pick(x, afterL()));
+      if (lh) out.push(pick(x, LHR.TAIL));
       return fill(x, out.join(''), T, B);
     },
     /* 媚薬ロッカーの段階ごとの応じ方（a＝仕掛けた攻め、b＝受け。lv：0 触れる〜4 繋がる）。口で嫌がる台詞と、まんざらな反応 */
@@ -290,7 +298,8 @@
     why: function (x, a, b) {
       var o = HS.order(x, a, b), T = o[0], B = o[1], ts = tiesOf(x, T, B).filter(function (t) { return HOST.test(t.type); });
       var src = ts.length ? (HK.TIES[ts[0].type] ? HK.TIES[ts[0].type].label : ts[0].type) : '嫌悪 ' + Math.round(Math.max(hateLv(x, T, B), hateLv(x, B, T)));
-      return T.name + 'と' + B.name + 'は敵対していた（' + src + '）。' + T.name + 'が強引に迫り、' + B.name + 'は口では嫌がったが、拒みきらなかった';
+      var lw = HK.LoveHate && HK.LoveHate.any(x, T, B) ? '／' + HK.LoveHate.why(x, T, B) + (HK.LoveHate.has(x, B, T) ? '。' + B.name + 'が挑発して構わせた' : '') : '';
+      return T.name + 'と' + B.name + 'は敵対していた（' + src + '）。' + T.name + 'が強引に迫り、' + B.name + 'は口では嫌がったが、拒みきらなかった' + lw;
     }
   };
   /* どちらかに、ほかの恋人がいるか（敵対の二人の場面は、恋人のいる人には起こさない） */
@@ -310,22 +319,24 @@
       when: function (ctx, a, b) {
         if (HK.SAFE_ON || ctx.flags.isOne || ctx.stepIndex < 1 || ctx.flags.trioCur) return false;
         if (a.out || b.out || a.flags.down || b.flags.down || a.flags.cagePair != null || b.flags.cagePair != null) return false;
-        if (!ctx.rules.some(function (r) { return r.k === 'h' && !A.ruleDone(ctx, r, a, b); })) return false;
         var pf = ctx.pair(a, b);
-        if (pf.hateSexAt != null && ctx.stepIndex - pf.hateSexAt < 2) return false;
+        /* 愛憎の組（hate-love.js）：条件のエッチを済ませたあとでも、部屋にいるあいだはまた起きうる（腐れ縁の二度目） */
+        var lhP = HK.LoveHate && HK.LoveHate.any(ctx, a, b) && (pf.hateSex || 0) >= 1 && (pf.hateSex || 0) < 3;   /* 繰り返しすぎないよう、部屋の中では三回まで */
+        if (!ctx.rules.some(function (r) { return r.k === 'h' && (lhP || !A.ruleDone(ctx, r, a, b)); })) return false;
+        if (pf.hateSexAt != null && ctx.stepIndex - pf.hateSexAt < (lhP ? 3 : 2)) return false;
         if (A.tieWall && A.tieWall(ctx, a, b, 3) >= 999) return false;
         if (HS.order(ctx, a, b)[0] !== a || !HS.hostile(ctx, a, b) || HS.taken(ctx, a, b)) return false;
         return true;
       },
-      w: function (ctx, a, b) { return 1.2 + (hateLv(ctx, a, b) + hateLv(ctx, b, a)) / 120 + (a.tr.aggr || 0) + (a.flags.aphro || 0) * 0.3 + ctx.stepIndex / Math.max(1, ctx.stepsTotal); },
+      w: function (ctx, a, b) { return (1.2 + (hateLv(ctx, a, b) + hateLv(ctx, b, a)) / 120 + (a.tr.aggr || 0) + (a.flags.aphro || 0) * 0.3 + ctx.stepIndex / Math.max(1, ctx.stepsTotal)) * (HK.LoveHate ? HK.LoveHate.k(ctx, a, b) : 1); },
       run: function (ctx, a, b) {
-        var pf = ctx.pair(a, b), p = A.prog(ctx, a, b), r = ctx.rules.filter(function (q) { return q.k === 'h'; })[0];
+        var pf = ctx.pair(a, b), p = A.prog(ctx, a, b), r = ctx.rules.filter(function (q) { return q.k === 'h'; })[0], done0 = !!(r && A.ruleDone(ctx, r, a, b));
         p.act.h = Math.min(r ? r.n : 1, (p.act.h || 0) + 1);
         pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.hateSex = (pf.hateSex || 0) + 1; pf.hateSexAt = ctx.stepIndex;
         ctx.mod2(a, b, { att: 10, aff: 4, ten: -4 }, { att: 12, aff: 5, ten: -6 });
-        var text = HS.scene(ctx, a, b, { room: true }), why = HS.why(ctx, a, b) + '／条件のエッチ';
+        var text = HS.scene(ctx, a, b, { room: !done0 }), why = HS.why(ctx, a, b) + (done0 ? '／条件はもう満たしていたのに、また（腐れ縁）' : '／条件のエッチ');
         if (A.pairDone(ctx, a, b)) { var ex = A.exitPair(ctx, a, b, text, why, true); ex.cat = 'romance'; return ex; }
-        return { cat: 'romance', text: text + (r && r.n > 1 ? '（エッチ ' + p.act.h + '/' + r.n + '）' : '') + '扉はまだ開かない。', why: why, mag: 30 };
+        return { cat: 'romance', text: text + (r && r.n > 1 && !done0 ? '（エッチ ' + p.act.h + '/' + r.n + '）' : '') + '扉はまだ開かない。', why: why, mag: 30 };
       }
     });
   }

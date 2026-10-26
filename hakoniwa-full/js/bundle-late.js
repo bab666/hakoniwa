@@ -27524,6 +27524,8 @@
   function kindOf(S, b, h) {
     var Pz = HK.Pos;
     if (!Pz || !Pz.okSex(b, h)) return null;
+    /* 恋愛・R18にしない組・性行為の相手の固定（「固定した相手だけ」「固定した相手＋モブ」で、相手が固定の外）・同じ人の恋人どうし：手を出さない（HK.sexBlocked） */
+    if ((HK.ngPair && HK.ngPair(b, h)) || (HK.sexBlocked && HK.sexBlocked(b, h))) return null;
     var o = Pz.order(b, h, [b, h]);
     if (o[0] === b) return Pz.hardTop(h, b) ? null : Pz.isF(b) ? 'finger' : 'pen';
     /* 手を出す側が受け：挿入はしない。はまっている人が自分で攻めを選んでいれば、跨るだけ */
@@ -27544,7 +27546,8 @@
     B.forEach(function (b) {
       b.know = rng() < 0.15 + Math.max(0, b.r.w) * 0.6 + (b.r.love ? 0.15 : 0) + (h.action.id === 'shout' ? 0.2 : 0);
       var w = b.know ? b.r.w : 0, love = b.know && (b.r.love || b.r.crush), t = b.tr;
-      b.kind = kindOf(S, b, h);
+      /* はまっている人が壁の向こうの手を追い払っている回（性行為の相手を「固定した相手だけ」：solo-hole.js の guard）は、住人も手を出さない（助けるか立ち去る） */
+      b.kind = st.guard ? null : kindOf(S, b, h);
       /* 本人が攻め寄り（跨られる側）に回っている回は、自分で攻めを選んだ人を除いて、挿れる代わりに跨る */
       if (st.topMe && (b.kind === 'pen' || b.kind === 'finger') && !(HK.Pos && HK.Pos.hardTop(b, h))) b.kind = 'ride';
       var v = vis / 2;
@@ -27662,9 +27665,9 @@
   BH.rescueEnd = function (S, input, st, res) {
     var h = S.h, b = res.rescued, F = function (t) { return K.fmt(S, t, { b: b.name }); };
     /* 恋愛・R18にしない組（HK.ngPair）なら、助けた人に縋らない */
-    /* 恋愛・R18にしない組・性行為の相手を固定した人（恋人だけ・〇〇だけ。HK.sexBlocked）・受け攻めの合わない組なら、助けた人に縋らない（ひとりで受け止める文） */
+    /* 恋愛・R18にしない組・性行為の相手を固定した人（固定した相手だけ・固定した相手＋モブ。HK.sexBlocked）・受け攻めの合わない組なら、助けた人に縋らない（ひとりで受け止める文） */
     var ng = !!(HK.ngPair && HK.ngPair(h, b)) || !!(HK.sexBlocked && HK.sexBlocked(h, b)) || !!(HK.Pos && !HK.Pos.okSex(h, b));
-    if (st.hardTop) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, T.rescuedTop)), why: '自分で攻めを選んでいるので、何も溜まっていなかった' });
+    if (st.hardTop) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, T.rescuedTop)), why: st.guard ? '性行為の相手を固定した相手だけにしているので、壁の向こうの手を追い払い、何も溜まっていなかった' : '自分で攻めを選んでいるので、何も溜まっていなかった' });
     else if (st.live || st.stored < 20) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, ng ? T.rescuedLiveNG : T.rescuedLive)), why: ng ? '恋愛・R18にしない相手（または体の関係にならない相手）なので、縋らない' : '' });
     else {
       h.pleasure += st.stored * 0.8; h.reason -= st.stored * 0.07; h.corrupt += st.stored * 0.03 * (S.k || 1);
@@ -34655,7 +34658,7 @@
   var GODR = { shub: shub, yig: yig, chaugnar: chaugnar };
   var base = JS.R18.night;
   JS.R18.night = function (S, p, live, h) {
-    /* R18に参加しない人は夜に出ない。「恋人だけ」の人は神の夜には進まず、住人どうしの夜（base）だけ */
+    /* R18に参加しない人は夜に出ない。性行為の相手を「固定した相手だけ」にした人（noMob）は神の夜には進まず、住人どうしの夜（base）だけ */
     if (HK.State && !HK.State.r18ok(p)) return false;
     /* 一回の中の性的な夜の上限（solo-jashin-r18.js の room）。相手になれるのも、まだ余裕のある人だけ */
     if (!JS.R18.room(S, [p])) return false;

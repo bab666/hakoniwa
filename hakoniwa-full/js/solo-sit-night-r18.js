@@ -611,7 +611,8 @@
         if (a.z.bitten || b.z.bitten || a.z.alone || b.z.alone || couple(ctx, a, b)) return false;
         return HS.order(ctx, a, b)[0] === a && HS.hostile(ctx, a, b) && !HS.taken(ctx, a, b);
       },
-      w: function (ctx, a) { return 5 + (a.tr.aggr || 0) * 2 + a.stress / 40; },
+      /* 愛憎の組（hate-love.js）は起きやすい（HK.LoveHate.k：片方 2 倍・双方 2.6 倍） */
+      w: function (ctx, a, b) { return (5 + (a.tr.aggr || 0) * 2 + a.stress / 40) * (HK.LoveHate ? HK.LoveHate.k(ctx, a, b) : 1); },
       run: function (ctx, a, b) {
         var HS = HK.HateSex, pf = ctx.pair(a, b), o = HS.order(ctx, a, b);
         pf.sitN = (pf.sitN || 0) + 1; pf.sitAt = ctx.stepIndex; pf.night = true; pf.hateSex = (pf.hateSex || 0) + 1;

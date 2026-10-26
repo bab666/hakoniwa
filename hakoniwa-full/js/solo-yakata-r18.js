@@ -301,7 +301,7 @@
       }
       /* 一人あぶれた人 */
       drunk.forEach(function (q) {
-        /* R18に参加しない人は出さない。「恋人だけ」の人は、使用人（モブ）の場面にしない */
+        /* R18に参加しない人は出さない。性行為の相手を「固定した相手だけ」にした人（noMob）は、使用人（モブ）の場面にしない */
         if (HK.State && !HK.State.r18ok(q)) return;
         if (q.noMob) return;
         if (rng() < 0.5) ST.sayB(S, { actors: [q], tag: '媚薬の夜', text: F(fp(S, PL('solo', SC.solo)), { a: q.name }) + (lwEro(S) ? soloEro(S, q) : HK.R18M ? HK.R18M.solo(S, q) : '') + (!lwEro(S) && lwHi(S) ? F(fp(S, Y_ERO.soloAgainN), { a: q.name }) : ''), why: '相手がいなかった' }, q.name + 'は一人で悶えた');

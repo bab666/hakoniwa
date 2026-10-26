@@ -354,7 +354,7 @@
       var mates = live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && ((HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) || !!(HK.State.freeSex && HK.State.freeSex(S, p, q))) && okPair(p, q); });
       var top = HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(p) : hardTop(p);
       var r0 = rng();
-      /* 「恋人だけ（モブにも襲われない）」の人：夢の神・清めの湯・村人の夜這いには進まず、住人どうしの夜だけ */
+      /* 性行為の相手を「固定した相手だけ」にした人（noMob）：夢の神・清めの湯・村人の夜這いには進まず、住人どうしの夜だけ */
       /* 「合意のない展開」が切なら、夢の神・憑依・清めの湯・夜這いには進まず、住人どうしの夜だけ */
       var frc = !HK.Content || HK.Content.ok(S, 'force');
       var yob = S.env.jyobai == null ? 1 : S.env.jyobai / 100;

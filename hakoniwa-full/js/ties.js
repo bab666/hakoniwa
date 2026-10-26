@@ -19,7 +19,7 @@
     pparent: { mods: { att: 0.72, trust: 1.15 }, effect: '親代わり・育ての親のような関係。基本は親子と同じで親代わりは子を守ろうとするが、血の繋がりがないぶん恋愛に発展することもある', label: '擬似親子', dir: true, roleA: '親代わり', roleB: '子', like: 'parent', ab: { aff: 48, trust: 30, ten: 6 }, ba: { aff: 32, trust: 40, ten: 12 }, pol: 1, chem: 0.65, pull: 1.9, family: true, loveOK: true, biasA: { help: 2, conflict: 1.3, romance: 0.72, combat: 0.15, betray: 0.2 }, biasB: { help: 1.2, conflict: 1.4, romance: 0.82, combat: 0.3 } },
     crush: { mods: { att: 1.3 }, effect: '想う側だけが恋愛的に動きやすい', label: '片想い', dir: true, roleA: '想う側', roleB: '想われる側', ab: { aff: 40, att: 50 }, ba: { aff: 5 }, pol: 0, pull: 2, biasA: { romance: 1.8, help: 1.3 }, biasB: {} },
     rival: { mods: { ten: 1.25, att: 1.1 }, effect: 'ぶつかりやすいが、惹かれることもある', label: 'ライバル', ab: { ten: 35, att: 10, trust: 10, aff: 5 }, pol: 0, fric: 1.3, pull: 1.6, bias: { conflict: 1.6, bond: 1.1, combat: 1.3 } },
-    enemy: { mods: { aff: 0.5, trust: 0.5, att: 0.5, ten: 1.3 }, effect: '強い嫌悪。好意・信頼が育ちにくく、争いやすい。相手の気持ちを選ぶと一方的な敵視にもできる（相手は気にしていない・友人だと思っている・愛している…）。嫌悪の強さは箱庭の中で上下し、下がれば不仲と同じ振る舞いに', label: '敵対', dir: true, roleA: '敵視する側', roleB: '相手', hate: 2, ab: { ten: 60, aff: -40, trust: -40 }, pol: -2, fric: 1.4, pull: 1.8, bias: { conflict: 2, combat: 2, betray: 1.5, romance: 0.3, help: 0.4 } },
+    enemy: { mods: { aff: 0.5, trust: 0.5, att: 0.5, ten: 1.3 }, effect: '強い嫌悪。好意・信頼が育ちにくく、争いやすい。相手の気持ちを選ぶと一方的な敵視にもできる（相手は気にしていない・友人だと思っている・愛している…）。嫌悪の強さは箱庭の中で上下し、下がれば不仲と同じ振る舞いに。愛憎（〇〇だけ／××だけ／双方）を選ぶと、持つ側は口では嫌いながら相手を構いたがり、相手がほかの人と親しくすると嫉妬する（嫌い合いながら離れられない腐れ縁に。恋愛対象・受け攻めは越えない）', label: '敵対', dir: true, roleA: '敵視する側', roleB: '相手', hate: 2, ab: { ten: 60, aff: -40, trust: -40 }, pol: -2, fric: 1.4, pull: 1.8, bias: { conflict: 2, combat: 2, betray: 1.5, romance: 0.3, help: 0.4 } },
     lover: { mods: { att: 1.2, ten: 0.85 }, effect: '惹かれが育ちやすく、争いを避ける', label: '恋人', ab: { aff: 55, att: 55, trust: 40 }, pol: 2, chem: 1.3, pull: 2.4, couple: true, bias: { romance: 1.8, help: 1.4, combat: 0.15, betray: 0.4 } },
     fwb: { mods: { att: 1.15, aff: 0.85 }, effect: '体の距離は近いが、気持ちは育ちにくい', label: 'セフレ', ab: { att: 45, aff: 15, trust: 15 }, pol: 1, chem: 1.2, pull: 1.8, night: true, bias: { romance: 1.6, bond: 0.8 } },
     ex: { mods: { att: 1.1, ten: 1.15 }, effect: '未練と気まずさが残る', label: '元恋人', ab: { aff: 10, att: 25, ten: 30, trust: 5 }, pol: 0, pull: 1.5, bias: { conflict: 1.3, romance: 1.2 } },
@@ -30,7 +30,7 @@
     sibprot: { mods: { att: 0.06, trust: 1.15 }, effect: '兄姉が弟妹を我が子のように守ろうとする。恋愛にはならない', label: '兄弟（庇護）', dir: true, roleA: '兄姉', roleB: '弟妹', like: 'parent', ab: { aff: 50, trust: 32, ten: 5 }, ba: { aff: 35, trust: 45, ten: 10 }, pol: 1, chem: 0.03, pull: 1.8, family: true, biasA: { help: 2, conflict: 1.25, romance: 0.05, combat: 0.15, betray: 0.2 }, biasB: { help: 1.3, conflict: 1.3, romance: 0.05, combat: 0.3, betray: 0.3 } },
     sibclose: { mods: { att: 0.08, trust: 1.3, ten: 0.75 }, effect: '親友や幼馴染のように仲のいいきょうだい。気安く、助け合う。恋愛にはならない', label: '兄弟（親友のよう）', like: 'sibling', ab: { aff: 45, trust: 50, ten: 3 }, pol: 2, chem: 0.05, pull: 1.9, family: true, bias: { help: 1.7, bond: 1.6, conflict: 1.0, romance: 0.1, combat: 0.25, betray: 0.3 } },
     sibbad: { mods: { att: 0.08, aff: 0.8, ten: 1.25 }, effect: '血はつながっているが反りが合わないきょうだい。顔を合わせれば口喧嘩。それでも、いざとなると見捨てきれない（信頼は底をつかない）。恋愛にはならない', label: '兄弟（不仲）', like: 'sibling', ab: { aff: -8, trust: 12, ten: 32 }, pol: -1, chem: 0.05, fric: 1.25, pull: 1.8, family: true, bias: { conflict: 1.9, help: 1.1, bond: 0.75, romance: 0.1, combat: 0.7, betray: 0.8 } },
-    bad: { mods: { aff: 0.75, trust: 0.8, ten: 1.15 }, effect: '気が合わず、何かと衝突する（敵対ほど強い嫌悪ではない）。いがみ合いながらも、きっかけがあれば打ち解けることもある。相手の気持ちを選ぶと一方的な敵視にもできる。嫌悪が強まれば敵対と同じ振る舞いに', label: '不仲', dir: true, roleA: '敵視する側', roleB: '相手', hate: 1, ab: { aff: -18, trust: -8, ten: 34 }, pol: -1, fric: 1.25, pull: 1.4, bias: { conflict: 1.6, help: 0.7, bond: 0.75, romance: 0.6, combat: 1.1, betray: 1.15 } },
+    bad: { mods: { aff: 0.75, trust: 0.8, ten: 1.15 }, effect: '気が合わず、何かと衝突する（敵対ほど強い嫌悪ではない）。いがみ合いながらも、きっかけがあれば打ち解けることもある。相手の気持ちを選ぶと一方的な敵視にもできる。嫌悪が強まれば敵対と同じ振る舞いに。愛憎（〇〇だけ／××だけ／双方）を選ぶと、持つ側は嫌いながらも相手を気にして構い、相手がほかの人と親しくすると嫉妬する', label: '不仲', dir: true, roleA: '敵視する側', roleB: '相手', hate: 1, ab: { aff: -18, trust: -8, ten: 34 }, pol: -1, fric: 1.25, pull: 1.4, bias: { conflict: 1.6, help: 0.7, bond: 0.75, romance: 0.6, combat: 1.1, betray: 1.15 } },
     yan: { mods: { att: 1.25, ten: 1.1 }, effect: '執着する側は、相手が誰かと親しくするたびに嫉妬し、執着を深めていく。深まると監視・束縛・恋敵への敵意に変わり、R18版では監禁・恋敵への危害・心中まで暴走することがある（全年齢版ではほのめかす程度）', label: '執着（ヤンデレ）', dir: true, roleA: '執着する側', roleB: '執着される側', ab: { aff: 30, att: 55, trust: -5, ten: 10 }, ba: { aff: 5 }, pol: 0, chem: 1.3, pull: 2, biasA: { romance: 1.6, conflict: 1.2 }, obsess: true },
     noobs: { mods: {}, effect: 'この二人のあいだでは、嫉妬も執着も生まれない（ほかの関係に重ねて使う）', label: '執着なし', ab: {}, pol: 0, pull: 0, noObsess: true },
     /* 同級生：同じ学年・クラスだった（いる）仲。職業や立場によらない */
@@ -95,6 +95,16 @@
     hate: { label: '度合い：憎悪（貶める・陥れる・孤立させる）', short: '憎悪', ab: { ten: 14, aff: -18, trust: -10 } }
   };
   HK.ENEMY_GRADE_ORDER = ['', 'hate'];
+  /* 愛憎（敵対・不仲の追加の欄 lh。2026-10-26）：口では嫌悪しながら、相手を構いたがる・相手がほかの人を構うと嫉妬する気持ちを、誰が持つか。
+     ''＝なし／a＝{a}（一人目）だけ／b＝{b}（二人目）だけ／both＝双方。判定は hate-love.js の HK.LoveHate（恋愛対象・受け攻めは越えない）。
+     表示は名前入り（HK.tieExtraLabel）。名前が取れないところでは「一人目だけ／二人目だけ」 */
+  HK.LOVEHATE = {
+    '': { label: '愛憎：なし', short: '' },
+    a: { label: '愛憎：一人目だけ', short: '愛憎（一人目だけ）' },
+    b: { label: '愛憎：二人目だけ', short: '愛憎（二人目だけ）' },
+    both: { label: '愛憎：双方', short: '愛憎（双方）' }
+  };
+  HK.LOVEHATE_ORDER = ['', 'a', 'b', 'both'];
   /* 恩人の、恩を受けた側の気持ち（空欄＝感謝） */
   HK.BENE_FEEL = {
     '': { label: '恩を受けた側：感謝', short: '' },
@@ -117,7 +127,9 @@
   HK.tieExtra = function (type) {
     var X = {
       yan: [{ f: 'sub', map: HK.OBS_SUB, order: HK.OBS_SUB_ORDER, aria: '執着の型' }],
-      enemy: [{ f: 'grade', map: HK.ENEMY_GRADE, order: HK.ENEMY_GRADE_ORDER, aria: '敵対の度合い' }],
+      /* 敵対の度合い（憎悪）は設定画面から外した（2026-10-26。hide）。保存済みの grade: 'hate' は読めて、今までどおり効く */
+      enemy: [{ f: 'lh', map: HK.LOVEHATE, order: HK.LOVEHATE_ORDER, aria: '愛憎', names: true }, { f: 'grade', map: HK.ENEMY_GRADE, order: HK.ENEMY_GRADE_ORDER, aria: '敵対の度合い', hide: true }],
+      bad: [{ f: 'lh', map: HK.LOVEHATE, order: HK.LOVEHATE_ORDER, aria: '愛憎', names: true }],
       benefactor: [{ f: 'feel', map: HK.BENE_FEEL, order: HK.BENE_FEEL_ORDER, aria: '恩を受けた側の気持ち' }],
       fond: [{ f: 'mode', map: HK.FOND_MODE, order: HK.FOND_MODE_ORDER, aria: '慕う側の様子' }],
       fwb: [{ f: 'mode', map: HK.FWB_MODE, order: HK.FWB_MODE_ORDER, aria: 'セフレの様子' }],
@@ -125,12 +137,29 @@
     };
     return X[type] || [];
   };
+  /* 追加の欄の選択肢の文字（names の欄は、一人目・二人目を名前に置き換える。na・nb＝名前。なければ元の文字） */
+  HK.tieExtraLabel = function (x, id, na, nb) {
+    var m = x && x.map && x.map[id];
+    if (!m) return '';
+    if (!x.names) return m.label;
+    if (id === 'a' && na) return '愛憎：' + na + 'だけ';
+    if (id === 'b' && nb) return '愛憎：' + nb + 'だけ';
+    return m.label;
+  };
+  HK.tieExtraShort = function (x, id, na, nb) {
+    var m = x && x.map && x.map[id];
+    if (!m || !m.short) return '';
+    if (!x.names) return m.short;
+    if (id === 'a' && na) return '愛憎（' + na + 'だけ）';
+    if (id === 'b' && nb) return '愛憎（' + nb + 'だけ）';
+    return m.short;
+  };
   /* 追加の欄の値を、関係の種類に合う値だけに直す（合わない欄は消す）。t を書き換えて返す */
   HK.tieExtraNorm = function (t) {
     if (!t) return t;
     var ex = HK.tieExtra(t.type), keep = {};
     ex.forEach(function (x) { keep[x.f] = 1; if (t[x.f] != null && !(x.map[t[x.f]] && t[x.f] !== '')) delete t[x.f]; });
-    ['sub', 'grade', 'feel', 'feelB', 'mode'].forEach(function (f) { if (!keep[f]) delete t[f]; });
+    ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh'].forEach(function (f) { if (!keep[f]) delete t[f]; });
     return t;
   };
   /* 無関心・恐怖の二人のあいだの恋愛の関係（恋人・セフレ・片想い・本命など）は外す（無関心・恐怖のほうを優先する）。
@@ -301,6 +330,18 @@
       if (!line) return;
       var found = [], used = line, gfound = [];
       gnames.forEach(function (g) { var p = used.indexOf(g); if (p >= 0) { gfound.push({ g: g, pos: p }); used = mask(used, p, g.length); } });
+      /* 愛憎（敵対・不仲の追加の欄）：「愛憎:双方」「愛憎（名前だけ）」「愛憎：一人目だけ」。「執着（愛憎）」は執着の型（XALIAS）として読む。
+         名前より先に読む（「名前だけ」の名前を三人目として数えないように。行のほかの場所に名前がなければ、その名前は住人として残す） */
+      var lhW = '', lhName = '', lhWarned = false;
+      used = used.replace(/(?<!執着[（(])愛憎\s*[:：]?\s*[（(]?\s*(双方|両方|お互い|互い|一人目だけ|1人目だけ|二人目だけ|2人目だけ|[^\s　（）()]{1,16}?だけ)?\s*[）)]?/, function (x, w, at) {
+        lhW = !w || /^(双方|両方|お互い|互い)$/.test(w) ? 'both' : /^(一人目|1人目)だけ$/.test(w) ? 'a' : /^(二人目|2人目)だけ$/.test(w) ? 'b' : 'name';
+        if (lhW !== 'name') return Array(x.length + 1).join('\u0000');
+        lhName = w.replace(/だけ$/, '');
+        var p0 = x.indexOf(w), rest = used.slice(0, at) + used.slice(at + x.length);
+        /* 名前がこの行のほかの場所にも書いてあるか、ほかに二人の名前があれば全部伏せる。なければ名前の部分だけ残す（住人として数える） */
+        if (rest.indexOf(lhName) >= 0 || names.filter(function (q) { return rest.indexOf(q.n) >= 0; }).length >= 2) return Array(x.length + 1).join('\u0000');
+        return Array(p0 + 1).join('\u0000') + lhName + Array(x.length - p0 - lhName.length + 1).join('\u0000');
+      });
       names.forEach(function (x) {
         var p = used.indexOf(x.n);
         if (p >= 0 && found.every(function (f) { return f.id !== x.id; })) {
@@ -327,6 +368,8 @@
       }
       /* 「両片想い」だけ書いたら、片想い（想われる側：実は想っている） */
       if (cold === 'mutual' && types.indexOf('crush') < 0) types.unshift('crush');
+      /* 「愛憎」だけ書いたら、敵対（愛憎）として読む */
+      if (lhW && types.indexOf('enemy') < 0 && types.indexOf('bad') < 0) types.unshift('enemy');
       /* 「兄弟で不仲」のように二つ書いたら、きょうだい（不仲）にまとめる */
       if (types.indexOf('bad') >= 0 && types.indexOf('sibling') >= 0) types = types.filter(function (x) { return x !== 'bad'; }).map(function (x) { return x === 'sibling' ? 'sibbad' : x; });
       /* 「仲間」はグループに付ける（住人の一覧のグループの「仲間」を入れるのと同じ）。名前だけの行には付けない */
@@ -362,6 +405,11 @@
           if ((ty === 'bad' || ty === 'enemy') && back) nt.cold = back;
           if (ty === 'yan' && obc) nt.cold = obc;
           if (xtra[ty]) for (var xf in xtra[ty]) nt[xf] = xtra[ty][xf];
+          if (lhW && (ty === 'enemy' || ty === 'bad')) {
+            var lhId = lhW;
+            if (lhW === 'name') { var nmA = (names.filter(function (x) { return x.id === a; })[0] || {}).n, nmB = (names.filter(function (x) { return x.id === b; })[0] || {}).n; lhId = lhName && lhName === nmA ? 'a' : lhName && lhName === nmB ? 'b' : ''; if (!lhId && !lhWarned) { lhWarned = true; warn.push((i + 1) + '行目の「' + lhName + 'だけ」は、この行の二人の名前ではないので、愛憎は付けませんでした'); } }
+            if (lhId) nt.lh = lhId;
+          }
           out.push(nt);
         });
       });
@@ -374,7 +422,7 @@
     if (!D) return '';
     var CO = HK.coldOpts(tie.type);
     /* 追加の欄（型・度合い・気持ち・様子）の短い名前 */
-    var xs = HK.tieExtra(tie.type).map(function (x) { var v = tie[x.f] || (tie.type === 'fiance' ? 'eager' : ''), m = x.map[v]; return m && m.short ? (x.who ? nameOf(x.who === 'a' ? tie.a : tie.b) + '：' : '') + m.short : ''; }).filter(Boolean).join('・');
+    var xs = HK.tieExtra(tie.type).map(function (x) { var v = tie[x.f] || (tie.type === 'fiance' ? 'eager' : ''), m = x.map[v]; return m && m.short ? (x.who ? nameOf(x.who === 'a' ? tie.a : tie.b) + '：' : '') + HK.tieExtraShort(x, v, nameOf(tie.a), nameOf(tie.b)) : ''; }).filter(Boolean).join('・');
     if (D.dir) return nameOf(tie.a) + '（' + D.roleA + '）→ ' + nameOf(tie.b) + '（' + D.roleB + '）：' + D.label + (CO && tie.cold && CO.map[tie.cold] && CO.map[tie.cold].short ? '（' + CO.map[tie.cold].short + '）' : '') + (xs ? '（' + xs + '）' : '');
     return nameOf(tie.a) + ' × ' + nameOf(tie.b) + '：' + D.label + (xs ? '（' + xs + '）' : '');
   };
@@ -502,11 +550,15 @@
           if (!HK.Ties.fiLoveOk(A, B)) { ab.att = Math.min(ab.att, 8); ba.att = Math.min(ba.att, 8); }
         }
         if (t.type === 'enemy' && xf.grade === 'hate') add(ab, HK.ENEMY_GRADE.hate.ab);
+        /* 愛憎：持つ側は、嫌いながらも惹かれている（惹かれを少し足す。恋愛対象・受け攻めの合わない相手には、engine.js の mod で惹かれが育たない） */
+        if (xf.lh === 'a' || xf.lh === 'both') add(ab, { att: HK.canLove(A, B) ? 18 : 0, ten: 4 });
+        if (xf.lh === 'b' || xf.lh === 'both') add(ba, { att: HK.canLove(B, A) ? 18 : 0, ten: 4 });
         if (t.type === 'benefactor' && xf.feel === 'guilt') add(ba, HK.BENE_FEEL.guilt.ba);
         var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB || WB || AB || GR ? t.cold || '' : '', love: HK.tieFamLove(t) || (D.loveOpt && t.love === 'ok') ? 'ok' : '', mutual: !!t.mutual, spouse: !!t.spouse, married: t.married || '', step: !!t.step };
         /* 追加の欄は、ある関係だけに付ける（ほかの関係の中身は今までと同じ） */
         if (t.type === 'yan') o.sub = xf.sub || '';
         if (t.type === 'enemy') o.grade = xf.grade || '';
+        if (t.type === 'enemy' || t.type === 'bad') o.lh = xf.lh || '';
         if (t.type === 'benefactor') o.feel = xf.feel || 'thanks';
         if (t.type === 'fond') o.mode = xf.mode || 'adore';
         if (t.type === 'fwb') o.mode = xf.mode || 'equal';
@@ -627,6 +679,8 @@
         }
         if (m != null) r *= f === 'att' && HK.tieFamLove(t) ? Math.max(m, 1) : m;
         if (f === 'att' && HK.tieOptNoLove(t)) r *= 0.05;
+        /* 愛憎を持つ側：嫌っていても、惹かれは育つ（敵対の惹かれにくさを打ち消す。持たない側は今までどおり） */
+        if (f === 'att' && t.lh && (t.lh === 'both' || (t.lh === 'a') === (t.a === a.i))) r *= D.mods && D.mods.att ? 1.6 / D.mods.att : 1.6;
         /* 向きのある伸びの倍率（恐怖：恐れる側の好意・信頼は育ちにくい） */
         if (D.dir && (D.modsA || D.modsB)) { var dm = t.a === a.i ? D.modsA : D.modsB; if (dm && dm[f] != null) r *= dm[f]; }
         /* 許嫁：それぞれの気持ちで惹かれの育ち方が変わる */

@@ -138,7 +138,10 @@
         var outs = P.filter(function (p) { return p.role === 'out' && !p.fled && !p.sunk && okPair(g, p) && !(HK.Pos && HK.Pos.hardTop(p, g)); });
         /* 衆人環視の舞台では、正気の人が「志願者」として壇上に上げられやすい */
         if (!r && outs.length && rng() < (sid === 'stage' ? 0.45 : 0.3)) r = rng.pick(outs);
-        if (!r && S.noGuest) {
+        /* 施す側が性行為の相手を「固定した相手だけ」にしている（engine.js の noMob）：モブの客は取らず、モブなしと同じく登場キャラの中から（いなければ空き時間） */
+        if (!r && (S.noGuest || g.noMob)) {
+          /* モブの客を取らない人は、半分は空き時間（同じ相手との施術ばかりが続かないように） */
+          if (!S.noGuest && rng() < 0.5) return idle(S, g, SIT);
           /* モブなし：登場キャラの中から相手を選ぶ（受ける側→正気の人→ほかの施す側を練習台に） */
           var tk = P.filter(function (x) { return x.role === 'taker' && !x.quit && takersFree.indexOf(x) >= 0 && okPair(g, x); });
           var mates = P.filter(function (x) { return x !== g && x.role === 'giver' && !x.quit && okPair(g, x); });
@@ -164,7 +167,8 @@
   }
 
   /* ---------- 施術 ---------- */
-  function okPair(a, b) { return !HK.Pos || HK.Pos.okSex(a, b); }
+  /* 住人どうしの施術：向きの決まる組（HK.Pos.okSex）で、恋愛・R18にしない組・性行為の相手の固定の外・同じ人の恋人どうし（HK.ngPair・HK.sexBlocked）でないこと */
+  function okPair(a, b) { return (!HK.Pos || HK.Pos.okSex(a, b)) && !(HK.ngPair && HK.ngPair(a, b)) && !(HK.sexBlocked && HK.sexBlocked(a, b)); }
   /* 自分で攻めを選んだ人の喘ぎ・絶頂の声から、受け身の台詞を外す */
   function topL(p, list) { return HK.R18M && HK.R18M.topLines ? HK.R18M.topLines(p, list) : list; }
   /* 小説調の果てる声：喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）から。元の表（Voice.CLIMAX。攻めを選んだ人は受け身の台詞を外したもの）も4割ほど残る */
@@ -448,6 +452,8 @@
   var NOMOB_EV = ['machine', 'blackout', 'camera', 'diary', 'self'];
   /* 客が来る出来事（客の多さ0のときは起きない） */
   var GUEST_EV = ['double', 'regular', 'friend', 'complaint'];
+  /* 施す側が性行為の相手を「固定した相手だけ」にしている（noMob）：客（モブ）の施術を前提にしない出来事だけ */
+  var NOMOB_G = ['diary', 'self'];
   var MOB = /\{boss\}|団体|新人|同僚|隣の人|周りの人|誰も気にして|スタッフ|監査|業者|ほかの客|他の客|客たち|お客たち|観客|客席|係員|係の人間|司会|皆さん|隣の席|後ろの席/;
   function mobby(S, t) { return S.noMob && (MOB.test(t) || (S.v.boss && t.indexOf(S.v.boss) >= 0)); }
   /* モブなし：文の中で、モブ（上司・同僚・新人など）が出てくる一文を取り除く（括弧の中では切らない） */
@@ -470,7 +476,7 @@
   function happen(S, SIT) {
     var rng = S.rng, G = S.P.filter(function (p) { return p.role === 'giver' && !p.quit; });
     if (!G.length) return;
-    var g = rng.pick(G), e = HK.weighted(rng, KH.EVENTS, function (x) { return S.noMob && NOMOB_EV.indexOf(x.id) < 0 ? 0 : S.noGuest && GUEST_EV.indexOf(x.id) >= 0 ? 0 : S.flags['ev_' + x.id] ? 0.04 : x.id === 'reverse' && HK.Pos && HK.Pos.hardTop(g) ? 0 : 1; });
+    var g = rng.pick(G), e = HK.weighted(rng, KH.EVENTS, function (x) { return S.noMob && NOMOB_EV.indexOf(x.id) < 0 ? 0 : S.noGuest && GUEST_EV.indexOf(x.id) >= 0 ? 0 : g.noMob && NOMOB_G.indexOf(x.id) < 0 ? 0 : S.flags['ev_' + x.id] ? 0.04 : x.id === 'reverse' && HK.Pos && HK.Pos.hardTop(g) ? 0 : 1; });
     S.flags['ev_' + e.id] = (S.flags['ev_' + e.id] || 0) + 1;
     var fx = e.fx, t = ef(S, ST.fmt(pkF(S, nm(S, E(S, 'ev.' + e.id, e.t))), { p: g.name, boss: S.v.boss }), g, null);
     if (fx.doubt) g.m.doubt += fx.doubt * (fx.doubt > 0 ? g.doubtRate : 1);

@@ -94,6 +94,19 @@
     var l = Array.isArray(v) ? v : typeof v === 'string' && v ? [v] : [];
     return l.filter(function (x, i) { return typeof x === 'string' && x && l.indexOf(x) === i; });
   }
+  /* 性行為の相手の固定の古い値の読み替え（2026-10-26。「恋人だけ」「恋人とモブだけ」をなくし、固定に一本化）。
+     保存・控え（normChar）と JSON の読み込みで、ここだけを通す：'loverOnly'（恋人だけ）→ 'pick'（固定した相手だけ）、'lover'（恋人とモブだけ）→ 'pickMob'（固定した相手＋モブ）。
+     相手（sexLocks）が空なら恋愛相手の固定（loveLock）を写し、それも空なら ''（恋愛相手の固定に合わせる） */
+  function migSexLock(c) {
+    var v = c.sexLock;
+    if (v !== 'lover' && v !== 'loverOnly') return c;
+    var L = idList(c.sexLocks);
+    if (!L.length) L = idList(c.loveLock);
+    c.sexLocks = L.slice();
+    c.sexLock = L.length ? (v === 'lover' ? 'pickMob' : 'pick') : '';
+    return c;
+  }
+  HK.sexLockMig = migSexLock;
   function normChar(c) {
     c = obj(c);
     c.id = typeof c.id === 'string' && c.id ? c.id : uid();
@@ -139,9 +152,11 @@
     c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(str(c.toneCustom, 120)) : '');
     /* 恋愛相手の固定：相手の id の並び（複数可。以前の保存は一人の id の文字列） */
     c.loveLock = idList(c.loveLock);
-    /* 性行為の相手の固定（R18）：''（恋愛相手の固定に合わせる）／any／lover／loverOnly／pick（sexLocks の人とだけ）。以前の保存は一人の id の文字列 */
-    if (c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly') c.sexLocks = [];
-    else if (c.sexLock === 'pick' || Array.isArray(c.sexLock) || (typeof c.sexLock === 'string' && c.sexLock)) { c.sexLocks = idList(c.sexLock === 'pick' ? c.sexLocks : c.sexLock); c.sexLock = c.sexLocks.length ? 'pick' : ''; }
+    /* 性行為の相手の固定（R18）：''（恋愛相手の固定に合わせる）／any（誰とでも可）／pick（固定した相手だけ：sexLocks の人とだけ、モブとも関係を持たない）／
+       pickMob（固定した相手＋モブ：住人では sexLocks の人とだけ、モブとは可）。古い lover・loverOnly は migSexLock で読み替える。以前の保存は一人の id の文字列 */
+    migSexLock(c);
+    if (c.sexLock === 'any') c.sexLocks = [];
+    else if (c.sexLock === 'pick' || c.sexLock === 'pickMob' || Array.isArray(c.sexLock) || (typeof c.sexLock === 'string' && c.sexLock)) { var slMob = c.sexLock === 'pickMob'; c.sexLocks = idList(c.sexLock === 'pick' || slMob ? c.sexLocks : c.sexLock); c.sexLock = c.sexLocks.length ? (slMob ? 'pickMob' : 'pick') : ''; }
     else { c.sexLock = ''; c.sexLocks = []; }
     c.loveNG = Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return typeof x === 'string'; }) : [];
     if (c.icon && !(typeof c.icon === 'string' && /^data:image\//.test(c.icon))) delete c.icon;
@@ -154,7 +169,7 @@
     S0.chars.forEach(function (c) {
       c.loveLock = idList(c.loveLock).filter(function (k) { return ids[k] && k !== c.id; });
       c.sexLocks = idList(c.sexLocks).filter(function (k) { return ids[k] && k !== c.id; });
-      if (c.sexLock === 'pick' && !c.sexLocks.length) c.sexLock = '';
+      if ((c.sexLock === 'pick' || c.sexLock === 'pickMob') && !c.sexLocks.length) c.sexLock = '';
       /* 恋愛・R18にしない相手：今いる住人だけ。片方に書かれていれば、もう片方にも書く */
       c.loveNG = (c.loveNG || []).filter(function (k, i, l) { return ids[k] && k !== c.id && l.indexOf(k) === i; });
       Object.keys(c.calls).forEach(function (k) { if (!ids[k] || k === c.id || typeof c.calls[k] !== 'string' || !c.calls[k].trim()) delete c.calls[k]; else c.calls[k] = c.calls[k].slice(0, 16); });
@@ -402,9 +417,11 @@
         ((D.family && !D.loveOK) || D.loveOpt ? '<select id="tl-' + k + '" data-f="tie" data-k="' + k + '" data-p="love" aria-label="恋愛"><option value=""' + (t.love === 'ok' ? '' : ' selected') + '>' + (D.loveOpt ? '恋愛に発展：しない' : '恋愛：なし') + '</option><option value="ok"' + (t.love === 'ok' ? ' selected' : '') + '>' + (D.loveOpt ? '恋愛に発展：する' : '恋愛：あり') + '</option></select>' : '') +
         (function () { var CO = HK.coldOpts ? HK.coldOpts(t.type) : null; return CO ? '<select id="tc-' + k + '" data-f="tie" data-k="' + k + '" data-p="cold" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return '<option value="' + id + '"' + ((t.cold || '') === id ? ' selected' : '') + '>' + esc(CO.map[id].label) + '</option>'; }).join('') + '</select>' : ''; })() +
         /* 追加の欄（型・度合い・気持ち・様子。許嫁は二人それぞれの気持ち） */
-        (HK.tieExtra ? HK.tieExtra(t.type) : []).map(function (x) {
+        /* hide の欄（敵対の度合い「憎悪」）は出さない（保存済みの値は残って効く）。愛憎の欄は、一人目・二人目を名前で出す */
+        (HK.tieExtra ? HK.tieExtra(t.type) : []).filter(function (x) { return !x.hide; }).map(function (x) {
           var who = x.who ? S.chars.filter(function (c) { return c.id === (x.who === 'a' ? t.a : t.b); })[0] : null, v = t[x.f] || (t.type === 'fiance' ? 'eager' : '');
-          return '<select id="tx' + x.f + '-' + k + '" data-f="tie" data-k="' + k + '" data-p="' + x.f + '" aria-label="' + esc(who ? who.name + 'の気持ち' : x.aria) + '">' + x.order.map(function (id) { return '<option value="' + id + '"' + (v === id ? ' selected' : '') + '>' + esc((who ? who.name + 'の気持ち：' : '') + x.map[id].label) + '</option>'; }).join('') + '</select>';
+          var na = (S.chars.filter(function (c) { return c.id === t.a; })[0] || {}).name, nb = (S.chars.filter(function (c) { return c.id === t.b; })[0] || {}).name;
+          return '<select id="tx' + x.f + '-' + k + '" data-f="tie" data-k="' + k + '" data-p="' + x.f + '" aria-label="' + esc(who ? who.name + 'の気持ち' : x.aria) + '">' + x.order.map(function (id) { return '<option value="' + id + '"' + (v === id ? ' selected' : '') + '>' + esc((who ? who.name + 'の気持ち：' : '') + (HK.tieExtraLabel ? HK.tieExtraLabel(x, id, na, nb) : x.map[id].label)) + '</option>'; }).join('') + '</select>';
         }).join('') +
         '<button class="btn ghost small" data-act="tiedel" data-k="' + k + '">削除</button>' +
         '<span class="tiehint">' + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (D.loveOpt ? (t.love === 'ok' ? '。恋愛に発展：するにしているので、想いが恋に変わることもある' : '。恋愛に発展：しないにしているので、想いは恋にならない') : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '') + '</span></div>';
@@ -501,15 +518,16 @@
         /* 固定した相手：一人なら番号（以前の形）、二人以上なら番号の並び */
         var lks = idList(c.loveLock).map(ref).filter(function (x) { return x != null; });
         if (lks.length) o.loveLock = lks.length === 1 ? lks[0] : lks;
-        if (c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly') o.sexLock = c.sexLock;
-        else if (c.sexLock === 'pick') { var sls = idList(c.sexLocks).map(ref).filter(function (x) { return x != null; }); if (sls.length) o.sexLock = sls.length === 1 ? sls[0] : sls; }
+        /* 性行為の相手の固定：誰とでも可は 'any'、固定した相手は番号（一人なら番号、二人以上なら並び）。「固定した相手＋モブ」は sexLockMob も付ける */
+        if (c.sexLock === 'any') o.sexLock = c.sexLock;
+        else if (c.sexLock === 'pick' || c.sexLock === 'pickMob') { var sls = idList(c.sexLocks).map(ref).filter(function (x) { return x != null; }); if (sls.length) { o.sexLock = sls.length === 1 ? sls[0] : sls; if (c.sexLock === 'pickMob') o.sexLockMob = true; } }
         if (c.loveNG && c.loveNG.length) { var ng = c.loveNG.map(ref).filter(function (x) { return x != null; }); if (ng.length) o.loveNG = ng; }
         if (c.calls) { var cl = {}; Object.keys(c.calls).forEach(function (id) { if (ref(id) != null && c.calls[id]) cl[ref(id)] = c.calls[id]; }); if (Object.keys(cl).length) o.calls = cl; }
         if (c.keigo) { var kg = Object.keys(c.keigo).filter(function (id) { return ref(id) != null && c.keigo[id]; }).map(ref); if (kg.length) o.keigo = kg; }
         if (S.per && S.per[c.id]) o.per = S.per[c.id];
         return o;
       }),
-      ties: (S.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; ['sub', 'grade', 'feel', 'feelB', 'mode'].forEach(function (f) { if (t[f]) o[f] = t[f]; }); return o; }),
+      ties: (S.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh'].forEach(function (f) { if (t[f]) o[f] = t[f]; }); return o; }),
       teacher: S.teacher && idx[S.teacher] != null ? idx[S.teacher] : null,
       /* グループごとの「仲間」（書き出す住人のグループだけ） */
       grpComrade: (function () { var m = {}, any = false; Object.keys(S.grpComrade || {}).forEach(function (g) { if (S.grpComrade[g] && S.chars.some(function (c) { return (only ? idx[c.id] != null : true) && inGrp(c, g); })) { m[g] = 1; any = true; } }); return any ? m : undefined; })(),
@@ -580,7 +598,7 @@
       if (HK.Attr) HK.Attr.importFrom(c, o);
       if (HK.Shared) HK.Shared.importFrom(c, o);
       if (o.toneCustom != null) c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(String(o.toneCustom).slice(0, 120)) : '');
-      c._lk = o.loveLock; c._sl = o.sexLock; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
+      c._lk = o.loveLock; c._sl = o.sexLock; c._slm = !!o.sexLockMob; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
       if (o.fp != null) c.fp = String(o.fp).trim().slice(0, 8);
       if (typeof o.icon === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(o.icon) && o.icon.length < 400000) c.icon = o.icon;
       if (o.per && typeof o.per === 'object') { S.per = S.per || {}; S.per[c.id] = JSON.parse(JSON.stringify(o.per)); migVamp(c, S.per[c.id]); }
@@ -606,8 +624,8 @@
       var CO2 = HK.coldOpts ? HK.coldOpts(t.type) : null;
       var nt0 = t.cold && CO2 && CO2.map[t.cold] ? { a: a, b: b, type: t.type, cold: t.cold } : { a: a, b: b, type: t.type };
       if (t.love === 'ok' && (HK.TIES[t.type].family || HK.TIES[t.type].loveOpt)) nt0.love = 'ok';
-      /* 追加の欄（型・度合い・気持ち・様子）。古い JSON にはないので、ないときは今までどおり */
-      ['sub', 'grade', 'feel', 'feelB', 'mode'].forEach(function (f) { if (typeof t[f] === 'string' && t[f]) nt0[f] = t[f]; });
+      /* 追加の欄（型・度合い・気持ち・様子・愛憎）。古い JSON にはないので、ないときは今までどおり */
+      ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh'].forEach(function (f) { if (typeof t[f] === 'string' && t[f]) nt0[f] = t[f]; });
       if (HK.tieExtraNorm) HK.tieExtraNorm(nt0);
       if (HK.tieHidden && HK.tieHidden(nt0.type)) return;
       S.ties.push(nt0); tn++;
@@ -626,8 +644,11 @@
       /* 固定した相手：番号・名前・その並び、のどれでも */
       var toIds = function (v) { return idList((Array.isArray(v) ? v : [v]).map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; })); };
       if (c._lk != null) { c.loveLock = toIds(c._lk); delete c._lk; }
-      if (c._sl === 'any' || c._sl === 'lover' || c._sl === 'loverOnly') { c.sexLock = c._sl; c.sexLocks = []; delete c._sl; }
-      else if (c._sl != null) { c.sexLocks = toIds(c._sl); c.sexLock = c.sexLocks.length ? 'pick' : ''; delete c._sl; }
+      /* 性行為の相手の固定：古い 'lover'・'loverOnly' は、恋愛相手の固定を戻したあとで migSexLock で読み替える（保存の読み込みと同じ） */
+      if (c._sl === 'any') { c.sexLock = c._sl; c.sexLocks = []; }
+      else if (c._sl === 'lover' || c._sl === 'loverOnly') { c.sexLock = c._sl; c.sexLocks = []; migSexLock(c); }
+      else if (c._sl != null && c._sl !== '') { c.sexLocks = toIds(c._sl); c.sexLock = c.sexLocks.length ? (c._slm ? 'pickMob' : 'pick') : ''; }
+      delete c._sl; delete c._slm;
       if (c._cl && typeof c._cl === 'object') { c.calls = c.calls || {}; Object.keys(c._cl).forEach(function (k) { var id = /^\d+$/.test(k) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; if (id) c.calls[id] = String(c._cl[k]).slice(0, 16); }); }
       delete c._cl;
       /* 敬語で話す相手：番号（または名前）の並び */
@@ -885,7 +906,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock === 'pick' ? lockIdx(c.sexLocks) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' ? c.sexLock : c.sexLock === 'pick' || c.sexLock === 'pickMob' ? lockIdx(c.sexLocks) : '', sexLockMob: c.sexLock === 'pickMob' && idList(c.sexLocks).length > 0, loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
           return HK.Attr ? HK.Attr.toInput(o, c, ids) : o;
         });
       })(),
@@ -1026,7 +1047,7 @@
         break;
       case 'del':
         S.chars = S.chars.filter(function (c) { return c.id !== row.dataset.id; });
-        S.chars.forEach(function (x) { x.loveLock = idList(x.loveLock).filter(function (k) { return k !== row.dataset.id; }); x.sexLocks = idList(x.sexLocks).filter(function (k) { return k !== row.dataset.id; }); if (x.sexLock === 'pick' && !x.sexLocks.length) x.sexLock = ''; if (x.loveNG) x.loveNG = x.loveNG.filter(function (k) { return k !== row.dataset.id; }); if (x.calls) delete x.calls[row.dataset.id]; if (x.keigo) delete x.keigo[row.dataset.id]; });
+        S.chars.forEach(function (x) { x.loveLock = idList(x.loveLock).filter(function (k) { return k !== row.dataset.id; }); x.sexLocks = idList(x.sexLocks).filter(function (k) { return k !== row.dataset.id; }); if ((x.sexLock === 'pick' || x.sexLock === 'pickMob') && !x.sexLocks.length) x.sexLock = ''; if (x.loveNG) x.loveNG = x.loveNG.filter(function (k) { return k !== row.dataset.id; }); if (x.calls) delete x.calls[row.dataset.id]; if (x.keigo) delete x.keigo[row.dataset.id]; });
         cleanTies(); save(); renderCast(); break;
       case 'tieadd':
         if (S.chars.length < 2) return;
@@ -1042,7 +1063,7 @@
         S.ties = S.ties || [];
         pr.ties.forEach(function (nt) {
           var ex = S.ties.filter(function (x) { return x.type === nt.type && ((x.a === nt.a && x.b === nt.b) || (x.a === nt.b && x.b === nt.a)); })[0];
-          if (ex) { ex.a = nt.a; ex.b = nt.b; ex.type = nt.type; if (nt.cold) ex.cold = nt.cold; else delete ex.cold; ['sub', 'grade', 'feel', 'feelB', 'mode'].forEach(function (f) { if (nt[f]) ex[f] = nt[f]; else delete ex[f]; }); } else S.ties.push(nt);
+          if (ex) { ex.a = nt.a; ex.b = nt.b; ex.type = nt.type; if (nt.cold) ex.cold = nt.cold; else delete ex.cold; ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh'].forEach(function (f) { if (nt[f]) ex[f] = nt[f]; else delete ex[f]; }); } else S.ties.push(nt);
         });
         /* 「グループ名 仲間」の行：そのグループを仲間とみなす */
         (pr.groups || []).forEach(function (g) { S.grpComrade = S.grpComrade || {}; S.grpComrade[g] = 1; });
@@ -1253,7 +1274,7 @@
       var tt = S.ties[+t.dataset.k];
       /* 変更の結果、同じ二人に同じ関係が二つになるなら戻す */
       if (tt && /^(?:a|b|type)$/.test(t.dataset.p)) { var na = t.dataset.p === 'a' ? t.value : tt.a, nb = t.dataset.p === 'b' ? t.value : tt.b, nty = t.dataset.p === 'type' ? t.value : tt.type; if (hasTie(na, nb, nty, +t.dataset.k)) { toast('その二人には「' + (HK.TIES[nty] ? HK.TIES[nty].label : nty) + '」がすでにあります'); t.value = tt[t.dataset.p]; return; } }
-      if (tt && /^(?:sub|grade|feel|feelB|mode)$/.test(t.dataset.p)) { if (t.value && !(tt.type === 'fiance' && t.value === 'eager')) tt[t.dataset.p] = t.value; else delete tt[t.dataset.p]; save(); renderCast(); return; }
+      if (tt && /^(?:sub|grade|feel|feelB|mode|lh)$/.test(t.dataset.p)) { if (t.value && !(tt.type === 'fiance' && t.value === 'eager')) tt[t.dataset.p] = t.value; else delete tt[t.dataset.p]; save(); renderCast(); return; }
       if (tt) { tt[t.dataset.p] = t.value; if (t.dataset.p === 'love' && !t.value) delete tt.love; if (t.dataset.p === 'type' && HK.tieExtraNorm) HK.tieExtraNorm(tt); if (t.dataset.p === 'type' || t.dataset.p === 'cold' || t.dataset.p === 'love') { save(); renderCast(); return; } }
     }
     else if (f === 'seed') S.seed = t.value.replace(/[^\d]/g, '');

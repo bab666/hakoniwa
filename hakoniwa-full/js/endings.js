@@ -153,6 +153,8 @@
     var solo = X.byFate(/一人で帰った/), crushed = X.byFate(/潰れた/);
     if (solo.length) lines.push('一人で帰った：' + X.names(solo));
     if (crushed.length) lines.push('潰れた：' + X.names(crushed));
+    var kusG = X.withLabel(['kusare', 'kusare1']);
+    if (kusG.length) lines.push('腐れ縁（愛憎）：' + kusG.map(X.pn).join('、'));
     var ones = X.withLabel(['oneway']);
     if (ones.length) lines.push('片想いのまま：' + ones.map(function (p) { return X.nm(p.dir) + '→' + X.nm(p.dir === p.a ? p.b : p.a); }).join('、'));
     return {
@@ -171,6 +173,9 @@
       (F ? 'クラスは「' + R[F.regime] + '」' + (F.groups.length ? '（' + F.groups.map(function (g) { return X.nm(g.leader) + '派'; }).join('・') + '）' : '') + 'に落ち着いた。' : '');
     var lines = [];
     if (rivals.length) lines.push('犬猿の仲：' + rivals.map(X.pn).join('、'));
+    /* 愛憎の二人（hate-love.js の腐れ縁） */
+    var kus = X.withLabel(['kusare', 'kusare1']);
+    if (kus.length) lines.push('腐れ縁（愛憎）：' + kus.map(X.pn).join('、'));
     var ones = X.withLabel(['oneway', 'pining']);
     if (ones.length) lines.push('言えなかった想い：' + ones.map(function (p) { return p.label === 'pining' ? X.pn(p) + '（両片想い）' : X.nm(p.dir) + '→' + X.nm(p.dir === p.a ? p.b : p.a); }).join('、'));
     var absent = X.byFate(/休みがち/), nogo = X.byFate(/不登校/);

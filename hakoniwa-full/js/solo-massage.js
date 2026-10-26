@@ -248,7 +248,14 @@
        向きは HK.Pos.order：施術者が攻めなら今までどおり、客が攻めなら際どい施術の手前で客が手を止めさせる（客を受ける側にしない）。
        なれない組は普通のマッサージのまま（plain） */
     var pairWhy = TR ? MC.pairWhy(TR, CR) : '', pairOK = !!TR && !pairWhy;
-    var tTop = !pairOK || HK.Pos.order(TR, CR, [TR, CR])[0] === TR, plain = !!TR && !pairOK;
+    /* モブの施術者で、客が性行為の相手を「固定した相手だけ」にしている（モブとの場面に出ない：engine.js の noMob）：普通のマッサージのまま */
+    var mobNG = !TR && !HK.SAFE_ON && !!h.noMob;
+    /* その理由の書き方（R18版だけ。全年齢では mobNG にならない）：[来店の理由, 結末の理由の札, 結末の説明] */
+    var mobNgW = ['', '', ''];
+    /* r18:begin */
+    mobNgW = ['性行為の相手を「固定した相手だけ」にしているので、モブの施術者とは際どい施術にならず、普通のマッサージのまま', '性行為の相手を固定した相手だけにしている', 'は性行為の相手を「固定した相手だけ」にしているので、最後まで普通のマッサージだった。'];
+    /* r18:end */
+    var tTop = !pairOK || HK.Pos.order(TR, CR, [TR, CR])[0] === TR, plain = (!!TR && !pairOK) || mobNG;
     /* 受け攻め：自分で攻めを選んだ客は、施術者に「される」側に回らない。際どくなった時点で手を止めさせ、帰るか、立場を入れ替える */
     var hardTop = TR ? pairOK && !tTop : !!(HK.Pos && HK.Pos.hardTopNpc(h));
     function cTop() { return TR ? !tTop : !!(HK.Pos && HK.Pos.vsNpc(h, '') === 'top'); }
@@ -331,29 +338,32 @@
 
     var introT = TR ? K.fmt(S, K.pick(S, MC.RES_INTRO)) + ' ' + K.fmt(S, K.pick(S, MC.RES_GREET[TR.persona] || MC.RES_GREET.gentle))
       : K.fmt(S, K.pick(S, ['{a}は雑居ビルの三階、「癒しの手」と書かれた扉を押した。受付には{m}が一人。「お待ちしておりました」', '{a}はポイントカードを握りしめて、駅裏のマッサージ店に入った。迎えたのは{m}だった。', '{a}は口コミサイトで星4.8の店を予約した。レビューの八割が「また来ます」だったのが、少しだけ気になった。']));
-    var whyP = plain ? '住人どうしの施術（' + pairWhy + '）：際どい施術にはならず、普通のマッサージのまま' : '';
-    K.say(S, { kind: 'sys', tag: '来店', text: introT, why: '目標：' + h.goal.label + '／' + h.action.label + (TR ? '／施術者は住人の' + TR.name + (o.picked ? '（住人の欄で選んだ）' : '（住人から）') + (plain ? '。' + whyP : hardTop ? '。受け攻めでは客の' + h.name + 'が主導する側' : '') : '') });
+    var whyP = mobNG ? mobNgW[0] : plain ? '住人どうしの施術（' + pairWhy + '）：際どい施術にはならず、普通のマッサージのまま' : '';
+    K.say(S, { kind: 'sys', tag: '来店', text: introT, why: '目標：' + h.goal.label + '／' + h.action.label + (TR ? '／施術者は住人の' + TR.name + (o.picked ? '（住人の欄で選んだ）' : '（住人から）') + (plain ? '。' + whyP : hardTop ? '。受け攻めでは客の' + h.name + 'が主導する側' : '') : mobNG ? '／' + whyP : '') });
     K.snap(S, { s: 0 });
     if (plain) return plainRun();
 
-    /* 住人どうしで体の関係にならない組：普通のマッサージのまま（施術者の手は、際どいところの手前で止まる） */
+    /* 住人どうしで体の関係にならない組・モブとの場面に出ない客：普通のマッサージのまま（施術者の手は、際どいところの手前で止まる）。
+       モブの施術者のときは、知り合いを前提にしない文（MC.PLAIN_MOB）を使う */
     function plainRun() {
+      var PM = !TR && MC.PLAIN_MOB ? MC.PLAIN_MOB : null;
       MC.PLAIN_SEQ.forEach(function (key, i) {
         S.step = i;
         K.step(S, (i + 1) + '. ' + MC.PLAIN_LABEL[key]);
-        K.say(S, { kind: 'ev', tag: key, text: K.fmt(S, K.pick(S, MC.PLAIN_ACT[key])) + (rng() < 0.5 ? ' ' + K.fmt(S, K.pick(S, M.REACT[h.persona][0])) : ''), why: '' });
-        if (key === '脚' && rng() < 0.65) { var oa = K.say(S, { kind: 'ev', tag: 'ぎりぎり', text: K.fmt(S, K.pick(S, MC.PLAIN_ALMOST)), why: whyP }); K.key(S, oa, '施術者の手が手前で止まった'); }
-        if (rng() < 0.4) K.say(S, { kind: 'ev', tag: '施術者', text: K.fmt(S, K.pick(S, rng() < 0.6 ? MC.PLAIN_TALK : M.STAFF_TALK[sk][0])), why: '' });
+        K.say(S, { kind: 'ev', tag: key, text: K.fmt(S, K.pick(S, PM && PM.act[key] ? PM.act[key] : MC.PLAIN_ACT[key])) + (rng() < 0.5 ? ' ' + K.fmt(S, K.pick(S, M.REACT[h.persona][0])) : ''), why: '' });
+        if (key === '脚' && rng() < 0.65) { var oa = K.say(S, { kind: 'ev', tag: 'ぎりぎり', text: K.fmt(S, K.pick(S, PM ? PM.almost : MC.PLAIN_ALMOST)), why: whyP }); K.key(S, oa, '施術者の手が手前で止まった'); }
+        if (rng() < 0.4) K.say(S, { kind: 'ev', tag: '施術者', text: K.fmt(S, K.pick(S, rng() < 0.6 ? (PM ? PM.talk : MC.PLAIN_TALK) : M.STAFF_TALK[sk][0])), why: '' });
         var AB = M.ACT[h.action.id];
         if (AB && rng() < 0.35) K.say(S, { kind: 'ev', tag: h.action.label, text: K.fmt(S, K.pick(S, AB.t[0])), why: '方針「' + h.action.label + '」' });
         h.reason = clamp(h.reason + 1, 0, 100);
         K.snap(S, { s: 0 });
       });
       var E = { type: 'ok', kind: 'ok', title: 'ただのマッサージだった ― ' + staff.n + 'の腕は本物', lines: [] };
-      E.lines.push(K.fmt(S, K.pick(S, MC.PLAIN_END)), K.fmt(S, K.pick(S, MC.PLAIN_END)));
+      E.lines.push(K.fmt(S, K.pick(S, PM ? PM.end : MC.PLAIN_END)), K.fmt(S, K.pick(S, PM ? PM.end : MC.PLAIN_END)));
       if (h.goal.id === 'heal') E.lines.push(h.name + 'の肩こりは、本当にきれいに治っていた。');
       if (h.goal.id === 'suspect') E.lines.push('噂の店は、少なくとも' + staff.n + 'の施術に限っては、まっとうな店だった。');
-      return done(K.finish(S, input, E, ['住人どうしの施術で、体の関係にならない組（' + pairWhy + '）なので、最後まで普通のマッサージだった。'], { meta: staff.n + '（住人）・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['施術者', staff.n], ['施術', '普通のマッサージ'], ['理由', pairWhy]], label3: '施術' }));
+      var plainWhy = mobNG ? mobNgW[1] : pairWhy;
+      return done(K.finish(S, input, E, [mobNG ? 'モブの施術者で、' + h.name + mobNgW[2] : '住人どうしの施術で、体の関係にならない組（' + pairWhy + '）なので、最後まで普通のマッサージだった。'], { meta: staff.n + (TR ? '（住人）' : '') + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['施術者', staff.n], ['施術', '普通のマッサージ'], ['理由', plainWhy]], label3: '施術' }));
     }
     /* 結果の仕上げ：客の番号、住人の施術者（記録の登場人物・名前の色） */
     function done(res) {

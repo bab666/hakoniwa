@@ -215,7 +215,7 @@
   var GODR = { shub: shub, yig: yig, chaugnar: chaugnar };
   var base = JS.R18.night;
   JS.R18.night = function (S, p, live, h) {
-    /* R18に参加しない人は夜に出ない。「恋人だけ」の人は神の夜には進まず、住人どうしの夜（base）だけ */
+    /* R18に参加しない人は夜に出ない。性行為の相手を「固定した相手だけ」にした人（noMob）は神の夜には進まず、住人どうしの夜（base）だけ */
     if (HK.State && !HK.State.r18ok(p)) return false;
     /* 一回の中の性的な夜の上限（solo-jashin-r18.js の room）。相手になれるのも、まだ余裕のある人だけ */
     if (!JS.R18.room(S, [p])) return false;

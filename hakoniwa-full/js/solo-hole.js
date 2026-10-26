@@ -184,6 +184,10 @@
     h.futa = !!(input.chars[cast.si || 0] || {}).futa;
     /* 自分で「攻め」を選んだ人は、壁の向こうで「される」側にならない：手を出そうとした相手は追い払われ、感覚は何も溜まらない */
     var hardTop = !!(HK.Pos && HK.Pos.hardTopNpc(h));
+    /* 性行為の相手を「固定した相手だけ」にした人（engine.js の noMob：モブとの場面に出ない）：攻めの指定と同じ流れで、壁の向こうの手を追い払い、
+       感覚は何も溜まらない（返り討ちにはしない）。壁の向こうの住人は、体の関係になれる組だけが手を出す（solo-hole-behind.js） */
+    var guard = !hardTop && !HK.SAFE_ON && !!h.noMob;
+    if (guard) hardTop = true;
     /* 攻め寄り（跨られる側）：自分で攻めを選んだ人は上の hardTop の流れへ抜けるので、ここに来るのは
        受け攻めを決めていないリバ・おまかせの男性（とふたなりのリバ）が、気質（CP・攻撃性・FC）で主導する側に回ったとき。
        壁の向こうの人は{a}のものに跨り、挿入される出来事は起きない。女性の体の人は受ける側のまま（跨られる体がないので）。
@@ -310,7 +314,7 @@
         visits++; people += f.n || 0; meta.cum += f.cum || 0; meta.tent += f.tent || 0; meta.mark += f.mark || 0; meta.ride += f.ride || 0;
         if (!hardTop) stored += (40 + env.wild * 0.6) * (1 + be.lv * 0.45 + (f.cum || 0) * 0.15 + (f.tent || 0) * 0.12) * (0.7 + rng() * 0.6) * h.sens;
         var txt = K.fmt(S, be.t.replace(/◯/g, String(H))) + (!hardTop && !f.amb && rng() < 0.55 ? K.fmt(S, pk(S, EL('contrast', X.CONTRAST))) : '');
-        say(S, { kind: 'ev', tag: '壁の向こう', text: txt, why: hardTop ? '攻めの指定：手を出そうとした相手を追い払った' : metaWhy() + '（溜まった感覚 ' + Math.round(stored) + '）' });
+        say(S, { kind: 'ev', tag: '壁の向こう', text: txt, why: hardTop ? (guard ? '性行為の相手を固定した相手だけにしている：手を出そうとした相手を追い払った' : '攻めの指定：手を出そうとした相手を追い払った') : metaWhy() + '（溜まった感覚 ' + Math.round(stored) + '）' });
         if (rng() > 0.5) break;
       }
       /* 受けの反抗：壁の向こうに食ってかかる（感覚が戻る前は相手が少し怯み、戻ったあとは快感を怒りで押し返す） */
@@ -322,7 +326,7 @@
       /* 壁の向こうの住人が、突き出た体に出くわす */
       if (BH && !S.behindDone && t >= S.behindAt) {
         S.behindDone = true;
-        var bst = { live: live, stored: stored, hardTop: hardTop, topMe: topMe, meta: meta };
+        var bst = { live: live, stored: stored, hardTop: hardTop, guard: guard, topMe: topMe, meta: meta };
         rescue = BH.encounter(S, bst);
         stored = bst.stored;
         if (rescue) break;
@@ -334,7 +338,7 @@
         h.reason -= 3; h.corrupt += 2;
       }
       /* 主催者が見ている・ときどき手を出す（hole-host.js） */
-      if (hostOn) { var hr = HH.tick(S, { stored: stored, live: live, hardTop: hardTop }); stored = hr.stored; if (hr.release) { early = true; earlyBy = 'host'; K.settle(S); K.snap(S, { s: 0 }); break; } }
+      if (hostOn) { var hr = HH.tick(S, { stored: stored, live: live, hardTop: hardTop, guard: guard }); stored = hr.stored; if (hr.release) { early = true; earlyBy = 'host'; K.settle(S); K.snap(S, { s: 0 }); break; } }
       /* こちら側の心 */
       if (live) { if (hot > 0) hot--; K.settle(S); K.snap(S, { s: 0 }); continue; }
       var imag = h.tr.fc * 0.35 + h.tr.ac * 0.25 + h.tr.impulse * 0.2 + (h.action.id === 'imagine' ? 0.35 : 0) + (h.goal.id === 'secret' ? 0.25 : 0);
@@ -379,7 +383,7 @@
     /* ---------- 助け出された：その場で終わり ---------- */
     if (rescue) {
       var nR0 = h.climax, rC = !hardTop && !(live || stored < 20);
-      var ER = BH.rescueEnd(S, input, { live: live, stored: stored, hardTop: hardTop, topMe: topMe }, rescue);
+      var ER = BH.rescueEnd(S, input, { live: live, stored: stored, hardTop: hardTop, guard: guard, topMe: topMe }, rescue);
       /* 結び（hole-end.js）：救出（達していない）／救出絶頂／攻めの人は攻め側の結び */
       if (HK.HoleEnd) HK.HoleEnd.push(S, ER, hardTop ? 'top' : rC ? 'rescueC' : 'rescue', { b: rescue.rescued, doer: rescue.doers.indexOf(rescue.rescued) >= 0, live: live, topMe: topMe, nR: h.climax - nR0, stored: stored, sit: 'rescued' });
       return fin(ER, ['壁の向こうの住人が助けるか手を出すかは、はまっている人との関係・その人の性格（NP・CP・FC・衝動）・発情の見え方で決まる。', '助け出された瞬間に、溜まっていた感覚は一度に戻る。'], { meta: pl.n + '・' + H + '時間・救出', estats: [['経過', S.step + '時間'], ['助けた人', rescue.rescued.name], ['手を出した人', rescue.doers.length ? rescue.doers.map(function (d) { return d.name; }).join('・') : 'いない'], ['絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
@@ -392,7 +396,7 @@
     if (hardTop) {
       /* 攻めの指定：何もさせなかった。戻ってくる感覚はない。抜け出したあと、壁の向こうの相手を逆に締め上げることもある */
       say(S, { kind: 'sys', tag: '解放', text: (early ? '' : K.fmt(S, pk(S, RELEASE))) + K.fmt(S, pk(S, X.TOP_RELEASE)), why: '壁の向こうには、何もさせなかった（追い払った相手 ' + visits + '）' });
-      var revenge = visits > 0 && rng() < 0.4 + h.tr.aggr * 0.3 + h.tr.cp * 0.2;
+      var revenge = !guard && visits > 0 && rng() < 0.4 + h.tr.aggr * 0.3 + h.tr.cp * 0.2;
       var ot = say(S, { kind: 'ev', tag: revenge ? '返り討ち' : '余韻', text: K.fmt(S, pk(S, revenge ? X.TOP_REVENGE[plKey] : X.TOP_AFTER)), why: revenge ? '壁の向こうに回り、手を出そうとした相手を逆に責めた（攻撃性・CP）' : '' });
       K.key(S, ot, revenge ? '壁の向こうの相手を返り討ちにした' : '何もさせずに出てきた');
       K.snap(S, { s: 0 });
@@ -402,7 +406,7 @@
         revenge ? '最後に締め上げられたのは、壁の向こう側の方だった。' : ''
       ].filter(Boolean) };
       if (HK.HoleEnd) HK.HoleEnd.push(S, Et, 'top', { sit: revenge ? 'revenge' : 'held' });
-      return fin(Et, ['自分で「攻め」を選んでいるので、壁の向こうで「される」側には回らなかった。', '抜け出せるかどうかは、攻撃性（' + Math.round(h.tr.aggr * 100) + '）とCP（' + Math.round(h.eg.CP) + '）しだい。'], { meta: pl.n + '・' + H + '時間', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['追い払った', visits + '回'], ['返り討ち', revenge ? 'あり' : 'なし']], gaugeS: '溜まった感覚' });
+      return fin(Et, [guard ? '性行為の相手を「固定した相手だけ」にしているので、壁の向こうの誰にも手を出させなかった。' : '自分で「攻め」を選んでいるので、壁の向こうで「される」側には回らなかった。', '抜け出せるかどうかは、攻撃性（' + Math.round(h.tr.aggr * 100) + '）とCP（' + Math.round(h.eg.CP) + '）しだい。'], { meta: pl.n + '・' + H + '時間', estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], ['追い払った', visits + '回'], ['返り討ち', revenge ? 'あり' : 'なし']], gaugeS: '溜まった感覚' });
     }
     if (live) {
       K.step(S, '解放');

@@ -147,12 +147,14 @@
       /* 受け攻め：かけられた側が攻めか（住人どうしは HK.Pos.order、モブ相手は HK.Pos.vsNpc）。
          住人どうしで向きの決まらない組（HK.Pos.okSex が false）は、性的な暗示を一切かけない。女性どうしは専用の文 */
       var Pz = HK.Pos;
-      /* モブが相手：モブとの場面に出してよい人（HK.State.mobSexOk。恋人のモブなら「恋人だけ」の人も）で、恋愛対象がかける側の性別に合うときだけ */
-      var mobNo = !HY && !HK.SAFE_ON && (!!(HK.State && !(HK.State.r18ok(p) && (!p.noMob || ty === 'lover'))) || !!(Pz && !Pz.genderOK(p, p.hm)));
+      /* モブが相手：モブとの場面に出してよい人（HK.State.mobSexOk。性行為の相手を「固定した相手だけ」にした人は、恋人の種類のモブでも不可）で、恋愛対象がかける側の性別に合うときだけ */
+      var mobNo = !HY && !HK.SAFE_ON && (!!(HK.State && !HK.State.mobSexOk(p)) || !!(Pz && !Pz.genderOK(p, p.hm)));
+      /* 住人が相手：恋愛・R18にしない組・性行為の相手の固定（固定の外の相手）・同じ人の恋人どうし（HK.ngPair・HK.sexBlocked）なら、性的な暗示をかけない */
+      var resNo = !!HY && !HK.SAFE_ON && (!!(HK.ngPair && HK.ngPair(HY, p)) || !!(HK.sexBlocked && HK.sexBlocked(HY, p)));
       /* 合意のない展開が切：恨み・ストーカーは性的な暗示をかけない（いたずらだけ）。ほかは、始める前に同意を取った催眠プレイ */
       p.noForce = S.gate && (ty === 'grudge' || ty === 'stalker');
       p.consent = S.gate && !p.noForce;
-      p.noSex = !!(Pz && HY && !Pz.okSex(HY, p)) || kinNo || mobNo || p.noForce;
+      p.noSex = !!(Pz && HY && !Pz.okSex(HY, p)) || kinNo || mobNo || resNo || p.noForce;
       p.aTop = !!(Pz && !p.noSex && (HY ? Pz.order(HY, p, [HY, p])[0] === p : Pz.vsNpc(p, '') === 'top'));
       p.ff = !!(Pz && (HY ? Pz.ff(HY, p) : p.hf && Pz.isF(p)));
       /* かける側が女性で、男性（女性でない人）を導く組（女攻め×男）：{h} が跨る・導く専用の文（fm）を使う。男性の体で書いた {h} の文は使わない。

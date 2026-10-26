@@ -333,7 +333,9 @@
   function stay(S, p) {
     var b = A(S).filter(function (q) { return q !== p && bond(S, p, q) >= 0.7; })[0] || S.P.filter(function (q) { return q !== p && q.alive && q.taken && bond(S, p, q) >= 0.7; })[0];
     if (!b || S.rng() > 0.55 + p.tr.warmth * 0.3) return false;
-    ST.sayB(S, { actors: [p, b], tag: '残る', text: pickT(S, T.STAY, { a: p.name, b: b.name }), why: p.name + 'は' + b.name + '（' + relLabel(S, p, b) + '）を置いて逃げられなかった' }, p.name + 'は残った');
+    /* 連れ去られたままの人は場にいないので、記録の登場人物にせず、専用の文にする */
+    var tk = !!b.taken && T.STAY_TAKEN;
+    ST.sayB(S, { actors: tk ? [p] : [p, b], tag: '残る', text: pickT(S, tk ? T.STAY_TAKEN : T.STAY, { a: p.name, b: b.name }), why: p.name + 'は' + b.name + '（' + relLabel(S, p, b) + '）を置いて逃げられなかった' }, p.name + 'は残った');
     return true;
   }
   /* 生贄の身代わり */

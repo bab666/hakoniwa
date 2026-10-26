@@ -36,6 +36,7 @@ late js/tone-lines-hate.js
 late js/tone-mixed-more.js
 js/hate-kit.js
 js/feud-kit.js
+js/hate-love.js
 late js/tone-darui.js
 js/tone-firm.js
 late js/tone-fix.js
@@ -118,6 +119,7 @@ js/room-trio-lines.js
 js/room-trio.js
 js/room-left.js
 js/hate-sex-r18.js
+js/hate-love-r18.js
 js/room-know.js
 js/room-tie.js
 js/room-same.js

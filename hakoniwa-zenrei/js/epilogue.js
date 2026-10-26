@@ -261,7 +261,10 @@
     apart: L('{a}と{b}は、別々の道を歩き始めた。|{a}と{b}は、すれ違っても会釈だけで済ませるようになった。|{a}と{b}が元に戻ることは、なかった。'),
     rival: L('{a}と{b}は、顔を合わせるたびに火花を散らした。|{a}と{b}は、互いを意識しながら、決して歩み寄らなかった。|{a}と{b}の因縁は、まだ終わっていなかった。'),
     friend: L('{a}と{b}は、その後も気の置けない仲だった。|{a}と{b}は、困ったときに真っ先に連絡し合う仲になった。|{a}と{b}は、ときどき集まっては、あの日々の話をした。'),
-    obsess: L('{a}と{b}の関係は、どこか歪んだまま続いた。|{a}と{b}は、離れようとしても、結局また引き寄せられた。|{a}と{b}のあいだにあるものを、周りの誰も言い当てられなかった。')
+    obsess: L('{a}と{b}の関係は、どこか歪んだまま続いた。|{a}と{b}は、離れようとしても、結局また引き寄せられた。|{a}と{b}のあいだにあるものを、周りの誰も言い当てられなかった。'),
+    /* 腐れ縁（愛憎。hate-love.js）：双方は {a}{b}、片方だけは {x}（愛憎を持つ側）→{y} */
+    kusare: L('{a}と{b}は、その後も顔を合わせるたびに憎まれ口を叩き合った。それでも、どちらも相手から離れようとはしなかった。|{a}と{b}は、二度と顔も見たくないと言い合った翌日に、また同じ場所で鉢合わせた。|{a}と{b}の喧嘩は、今もどこかで続いている。周りはもう、止めようともしなかった。'),
+    kusare1: L('{x}は今も、{y}の顔を見るたびに悪態をつく。それでいて、{y}の姿が見えないと、なぜか落ち着かなかった。|{x}は、{y}のことなど嫌いだと言い続けた。言い続けるために、何度でも{y}に会いに行った。|{x}が{y}に向ける嫌味は、相変わらず手厳しかった。{y}がそれに慣れてしまったことだけが、{x}には少し不満だった。')
   };
   var PAIR_TINT = {
     joy: L('二人とも、よく笑うようになった。|二人の笑い声が、よく聞こえた。'),
@@ -270,7 +273,7 @@
     fear: L('二人とも、あの日の怖さをまだ忘れられずにいた。|二人は、互いが無事であることを何度も確かめ合った。'),
     shame: L('二人とも、あのときのことになると目をそらした。|二人は、あの日のことを笑い話にはできずにいた。')
   };
-  var LABEL_G = { lovers: 'love', bonded: 'love', fatedmate: 'love', mated: 'love', pining: 'pining', oneway: 'oneway', night: 'night', vague: 'night', fwbsettle: 'night', breakup: 'apart', fwbend: 'apart', allybreak: 'apart', rivals: 'rival', dislike: 'rival', kinfeud: 'rival', lovehate: 'rival', awkward: 'apart', friends: 'friend', partners: 'friend', kinbond: 'friend', accomplice: 'friend', guard: 'friend', obsess: 'obsess' };
+  var LABEL_G = { lovers: 'love', bonded: 'love', fatedmate: 'love', mated: 'love', pining: 'pining', oneway: 'oneway', night: 'night', vague: 'night', fwbsettle: 'night', breakup: 'apart', fwbend: 'apart', allybreak: 'apart', rivals: 'rival', dislike: 'rival', kinfeud: 'rival', lovehate: 'rival', kusare: 'kusare', kusare1: 'kusare1', awkward: 'apart', friends: 'friend', partners: 'friend', kinbond: 'friend', accomplice: 'friend', guard: 'friend', obsess: 'obsess' };
   var CLS_G = { love: 'love', pine: 'pining', night: 'night', enemy: 'rival', partner: 'friend', friend: 'friend', guard: 'friend', obsess: 'obsess' };
   X.AF = AF; X.REL = REL; X.MOOD = MOOD; X.PAIR = PAIR;
   var GONE = /連れ去|行方不明|神隠し|消えた|取り残|流され|姿をくらま|逃亡|逮捕|取り押さえ|濡れ衣/, CAGED = /監禁|囚われ|閉じ込め|幽閉/, FALLEN = /堕ち|陥落|虜|巫女になった|従者|眷属|堕とされ/, ESC = /脱出|救助|生還|帰還|逃げ延び|街を出|島を出|抜け出|助けを呼びに|イカダ|生き延び/;

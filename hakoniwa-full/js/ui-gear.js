@@ -36,11 +36,9 @@
     var lk = namesOf(c.loveLock);
     if (lk.length) bits.push('恋愛相手：' + lk.join('・') + 'だけ');
     /* r18:begin */
-    var sl = !HK.SAFE_ON && c.sexLock === 'pick' ? namesOf(c.sexLocks) : [];
-    if (sl.length) bits.push('体の関係：' + sl.join('・') + 'だけ');
+    var sl = !HK.SAFE_ON && (c.sexLock === 'pick' || c.sexLock === 'pickMob') ? namesOf(c.sexLocks) : [];
+    if (sl.length) bits.push('体の関係：' + sl.join('・') + (c.sexLock === 'pickMob' ? '＋モブ' : 'だけ'));
     else if (!HK.SAFE_ON && c.sexLock === 'any' && lk.length) bits.push('体の関係：誰とでも');
-    else if (!HK.SAFE_ON && c.sexLock === 'lover') bits.push('体の関係：恋人とモブだけ');
-    else if (!HK.SAFE_ON && c.sexLock === 'loverOnly') bits.push('体の関係：恋人だけ');
     if (!HK.SAFE_ON && c.noR18) bits.push('R18に参加しない');
     if (!HK.SAFE_ON && c.trioHub) bits.push('三人の場面：固定の相手が中心なら');
     /* r18:end */
@@ -107,11 +105,13 @@
     if (HK.tieOptions) return HK.tieOptions(sel);
     return HK.TIE_ORDER.map(function (id) { var d = HK.TIES[id]; return opt(id, d.label, sel); }).join('');
   }
-  /* 関係の追加の欄（型・度合い・気持ち・様子。ties.js の HK.tieExtra）。許嫁は二人それぞれの気持ち */
+  /* 関係の追加の欄（型・気持ち・様子・愛憎。ties.js の HK.tieExtra）。許嫁は二人それぞれの気持ち */
   function extraSels(t, k, attr) {
-    return (HK.tieExtra ? HK.tieExtra(t.type) : []).map(function (x) {
+    /* hide の欄（敵対の度合い「憎悪」）は出さない（保存済みの値はそのまま残って効く）。愛憎の欄は、一人目・二人目を名前で出す */
+    return (HK.tieExtra ? HK.tieExtra(t.type) : []).filter(function (x) { return !x.hide; }).map(function (x) {
       var who = x.who ? byId(x.who === 'a' ? t.a : t.b) : null, v = t[x.f] || (t.type === 'fiance' ? 'eager' : '');
-      return '<select ' + attr + ' data-xf="' + x.f + '" data-k="' + k + '" aria-label="' + esc(who ? who.name + 'の気持ち' : x.aria) + '">' + x.order.map(function (id) { return opt(id, (who ? who.name + 'の気持ち：' : '') + x.map[id].label, v); }).join('') + '</select>';
+      var na = (byId(t.a) || {}).name, nb = (byId(t.b) || {}).name;
+      return '<select ' + attr + ' data-xf="' + x.f + '" data-k="' + k + '" aria-label="' + esc(who ? who.name + 'の気持ち' : x.aria) + '">' + x.order.map(function (id) { return opt(id, (who ? who.name + 'の気持ち：' : '') + (HK.tieExtraLabel ? HK.tieExtraLabel(x, id, na, nb) : x.map[id].label), v); }).join('') + '</select>';
     }).join('');
   }
   UI.extraSels = extraSels;
@@ -187,8 +187,8 @@
     /* r18:begin */
     /* 性行為の相手の固定（R18版のみ）：恋愛は縛らず、体の関係（夜・R18の場面）だけをこの相手に限る */
     if (!HK.SAFE_ON) {
-      sexSel = '<label>性行為の相手を固定 <select data-gf="sexlock" aria-label="性行為の相手の固定"><option value="">恋愛相手の固定に合わせる</option>' + opt('any', '誰とでも可（恋愛は固定のまま）', c.sexLock || '') + opt('lover', '恋人とモブだけ', c.sexLock || '') + opt('loverOnly', '恋人だけ（モブにも襲われない）', c.sexLock || '') + (others.length ? opt('pick', '選んだ人だけ', c.sexLock || '') : '') + '</select></label>';
-      if (c.sexLock === 'pick' && others.length) sexBox = det('sex', '性行為の相手', sumOf(c.sexLocks, 'まだ選んでいません'), cbs('sexlockc', c.sexLocks));
+      sexSel = '<label title="固定した相手だけ：住人では選んだ相手とだけ体の関係になり、モブ・魔物など住人でない相手ともなりません（マッサージはふつうの施術、感覚遮断穴は壁の向こうの手を追い払います）。固定した相手＋モブ：住人では選んだ相手とだけ、モブとの場面はふつうに起きます">性行為の相手を固定 <select data-gf="sexlock" aria-label="性行為の相手の固定"><option value="">恋愛相手の固定に合わせる</option>' + opt('any', '誰とでも可（恋愛は固定のまま）', c.sexLock || '') + (others.length ? opt('pick', '固定した相手だけ', c.sexLock || '') + opt('pickMob', '固定した相手＋モブ', c.sexLock || '') : '') + '</select></label>';
+      if ((c.sexLock === 'pick' || c.sexLock === 'pickMob') && others.length) sexBox = det('sex', '性行為の相手', sumOf(c.sexLocks, 'まだ選んでいません'), cbs('sexlockc', c.sexLocks));
     }
     /* r18:end */
     /* R18版だけの欄：体と設定の「性器の呼び方」、恋愛と夜の「ふたなり・モブには・R18に参加しない・濁点喘ぎ」 */
@@ -390,7 +390,7 @@
         if (t.checked) { c.loveLock.push(o.id); c.loveNG = (c.loveNG || []).filter(function (k) { return k !== o.id; }); o.loveNG = (o.loveNG || []).filter(function (k) { return k !== c.id; }); }
         changed(true);
       })(); break;
-      case 'sexlock': if (isInput) return; c.sexLock = ['any', 'lover', 'loverOnly', 'pick'].indexOf(t.value) >= 0 ? t.value : ''; if (c.sexLock !== 'pick') c.sexLocks = []; else openMap.sex = true; changed(true); break;
+      case 'sexlock': if (isInput) return; c.sexLock = ['any', 'pick', 'pickMob'].indexOf(t.value) >= 0 ? t.value : ''; if (c.sexLock !== 'pick' && c.sexLock !== 'pickMob') c.sexLocks = []; else openMap.sex = true; changed(true); break;
       case 'sexlockc': if (isInput) return; (function () {
         var o = byId(t.dataset.o); if (!o) return;
         c.sexLocks = (c.sexLocks || []).filter(function (k) { return k !== o.id; });
@@ -417,7 +417,7 @@
       case 'callone': c.calls = c.calls || {}; if (t.value.trim()) c.calls[t.dataset.o] = t.value.trim().slice(0, 16); else delete c.calls[t.dataset.o]; changed(false); sampleRefresh(); break;
       case 'ttype': if (isInput || !tie) return; tie.type = t.value; var CO = HK.coldOpts ? HK.coldOpts(t.value) : null; if (!CO || !CO.map[tie.cold || '']) delete tie.cold; if (HK.tieExtraNorm) HK.tieExtraNorm(tie); changed(true); break;
       case 'textra': if (isInput || !tie) return; (function () { var xf = t.dataset.xf; if (t.value && !(tie.type === 'fiance' && t.value === 'eager')) tie[xf] = t.value; else delete tie[xf]; })(); changed(true); break;
-      case 'tdir': if (isInput || !tie) return; var me = t.value === 'a'; var o = tie.a === c.id ? tie.b : tie.a; tie.a = me ? c.id : o; tie.b = me ? o : c.id; changed(true); break;
+      case 'tdir': if (isInput || !tie) return; var me = t.value === 'a'; var o = tie.a === c.id ? tie.b : tie.a, a0 = tie.a; tie.a = me ? c.id : o; tie.b = me ? o : c.id; if (tie.a !== a0 && (tie.lh === 'a' || tie.lh === 'b')) tie.lh = tie.lh === 'a' ? 'b' : 'a'; /* 向きを入れ替えても、愛憎を持つ人は同じ人のまま */ changed(true); break;
       case 'tlove': if (isInput || !tie) return; if (t.value === 'ok') tie.love = 'ok'; else delete tie.love; changed(false); break;
       case 'tcold': if (isInput || !tie) return; if (t.value) tie.cold = t.value; else delete tie.cold; changed(false); break;
     }

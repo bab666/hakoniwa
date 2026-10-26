@@ -174,7 +174,7 @@
   DG.hostStart = function (S) {
     var h = S.host; if (!h) return;
     S.hostFav = fav(S);
-    /* 関係の恋人（恋人だけ、の相手）：主催者と挑戦者のあいだにも写す（dungeon-tempt.js の loveSet と同じ） */
+    /* 関係の恋人（一途の判定 poly.js で使う）：主催者と挑戦者のあいだにも写す（dungeon-tempt.js の loveSet と同じ） */
     if (h.kind === 'res') (S.ties || []).forEach(function (t) {
       if (!/^(lover|mate|fated|spouse)$/.test(t.type)) return;
       var o = t.a === h.i ? t.b : t.b === h.i ? t.a : null, x = o == null ? null : S.party.filter(function (p) { return p.i === o; })[0];

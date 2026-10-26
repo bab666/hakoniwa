@@ -186,7 +186,8 @@
       if (HS && HS.order(ctx, a, b)[0] === a && HS.hostile(ctx, a, b)) return true;
       return hateLove(ctx, a, b) && (hateLove(ctx, b, a) || ctx.R(b, a).att > 40) && (pf.hateKiss || 0) >= 1;
     },
-    w: function (ctx, a, b) { return (0.6 + (a.tr.impulse + b.tr.impulse) * 0.5 + ctx.env.heat / 200) * strifeK(ctx); },
+    /* 愛憎の組（hate-love.js）は起きやすい（R18版。HK.LoveHate.k） */
+    w: function (ctx, a, b) { return (0.6 + (a.tr.impulse + b.tr.impulse) * 0.5 + ctx.env.heat / 200) * strifeK(ctx) * (!HK.SAFE_ON && HK.LoveHate && HK.HateSex ? HK.LoveHate.k(ctx, a, b) : 1); },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b);
       pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.hateNight = (pf.hateNight || 0) + 1; pf.lastHate = ctx.stepIndex;
@@ -222,7 +223,7 @@
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b), pb = partnerOf(ctx, b), pa = partnerOf(ctx, a);
       if (pf.couple || !HK.canLove(a, b) || !HK.canLove(b, a) || !(pb || pa) || pb === a) return false;
-      /* 浮気の二人：その場にいる・恋愛対象と受け攻め・恋愛・R18にしない相手・性行為の相手の固定（恋人だけ・決めた相手だけ）・R18に参加しない（omega-secret.js） */
+      /* 浮気の二人：その場にいる・恋愛対象と受け攻め・恋愛・R18にしない相手・性行為の相手の固定（固定した相手だけ・固定した相手＋モブ）・R18に参加しない（omega-secret.js） */
       if (OM.affairOk && !OM.affairOk(ctx, a, b)) return false;
       if (ctx.stepIndex - (pf.lastSteal == null ? -9 : pf.lastSteal) < 3) return false;
       /* 番のいるΩは、番以外を体が受けつけない */

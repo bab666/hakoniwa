@@ -40,7 +40,7 @@
       return mob;
     },
     _made: [],
-    /* 住人 c がモブとの体の場面に出られるか（R18に参加しない・恋人だけ・全年齢を見る） */
+    /* 住人 c がモブとの体の場面に出られるか（R18に参加しない・性行為の相手を固定した相手だけ・全年齢を見る） */
     sexOk: function (c) { return !!(HK.State ? HK.State.mobSexOk(c) : !HK.SAFE_ON); },
     /* モブを相手にしたときの住人の向き（'top'／'bottom'。自分で攻めを選んだ人は、モブには受けにしていない限り top） */
     side: function (c, def) { return HK.Pos && HK.Pos.vsNpc ? HK.Pos.vsNpc(c, def || 'bottom') : def || 'bottom'; }

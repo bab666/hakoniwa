@@ -34,6 +34,7 @@ late js/tone-lines-hate.js
 late js/tone-mixed-more.js
 js/hate-kit.js
 js/feud-kit.js
+js/hate-love.js
 late js/tone-darui.js
 js/tone-firm.js
 late js/tone-fix.js

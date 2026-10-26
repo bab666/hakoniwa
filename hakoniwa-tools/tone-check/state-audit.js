@@ -1,12 +1,14 @@
 /* 住人の状態の点検：死んだ人・監禁中の人・場を離れた人が出来事に出てこないか、「R18に参加しない」人や
-   「恋愛・R18にしない相手」の組が性的な場面に出てこないか、「恋人だけ」の人がモブと性的な場面にならないかを数える
+   「恋愛・R18にしない相手」の組が性的な場面に出てこないか、性行為の相手を「固定した相手だけ」にした人がモブと性的な場面にならないかを数える
    使い方: node state-audit.js <ビルドのディレクトリ> [1シナリオあたりの回数=24] [r18|safe|''] [シナリオid,…] [--why] [--hot]
    S1: 死んだ人（死の記録が出たあと）が、死・場面転換以外の出来事に出た
    S2: 監禁中の人が、執着の出来事（cageOk）以外の出来事に出た（記録に残ったもの。手前で止めた分は「止めた」に数える）
    S3: 場を離れた人（脱出・行方不明・連れ去り）が、出来事に出た（主役でも相手でも）
    S4: 「R18に参加しない」人が、性的な文に名前つきで出た
    S5: 「恋愛・R18にしない相手」の二人が、同じ性的な文に出た
-   S6: 「恋人だけ（モブにも襲われない）」の人が、住人でない相手との性的な文に出た
+   S6: 性行為の相手を「固定した相手だけ」にした人（sexLock が番号で sexLockMob なし。配役の lo）が、住人でない相手との性的な文に出た。
+       配役の lo は3回に1回「固定した相手＋モブ」（sexLockMob）にして、その回は数えない（モブとの場面はしてよい）。
+       箱庭の仕掛けそのものが相手の箱庭（エロトラップダンジョン・サキュバスの一夜・エロバラエティ：MOB_FREE）は数えない
    S7: 一つの場面（一つの記録）の中で、同じ文が二度出た（R18の文の重複）
    S8: 内容のスイッチで切った出来事（tags）が出た
    S9: 吹雪の館で、助手が自分の探偵ではない探偵を「先生」と呼んだ（探偵2人以上の回）
@@ -127,7 +129,9 @@ const { openBuild } = require('./lib.js');
     const cfgL = v => (Array.isArray(v) ? v : v === '' || v == null ? [] : [v]).map(Number).filter(x => !isNaN(x));
     const lockBad = (a, b) => !!(a && b && a !== b && ((lks(a).length && lks(a).indexOf(b.i) < 0) || (lks(b).length && lks(b).indexOf(a.i) < 0)));
     /* 「誰とでも可」で体の関係が許されている組（engine.js の HK.lockSexOnly を、配役の設定から見る）：どちらの側も「誰とでも可」か、固定なし・相手に固定 */
-    const anyOk = (a, b) => [[a, b], [b, a]].every(p => p[0].sx === 'any' || (!p[0].sx && (!lks(p[0]).length || lks(p[0]).indexOf(p[1].i) >= 0)));
+    /* 性行為の相手を番号で固定した側（「固定した相手だけ」「固定した相手＋モブ」）は、恋愛相手の固定ではなく性行為の相手の並びで見る（engine.js の sexOne と同じ） */
+    const sxL = x => { if (x.sx === 'any' || x.sx === '' || x.sx == null) return null; const L = cfgL(x.sx); return L.length ? L : null; };
+    const anyOk = (a, b) => [[a, b], [b, a]].every(p => p[0].sx === 'any' || (sxL(p[0]) ? sxL(p[0]).indexOf(p[1].i) >= 0 : (!lks(p[0]).length || lks(p[0]).indexOf(p[1].i) >= 0)));
     const lockTxt = (C, a, b) => [a, b].filter(x => lks(x).length).map(x => x.name + '→' + lks(x).map(k => (C[k] || {}).name || '不在').join('・')).join('／');
     /* 物語型の恋人の記録：S.lovers（組の配列）があればそれ、なければ恋仲（S.rom）と関係の恋人（S.ties） */
     const storyLov = S => {
@@ -273,7 +277,7 @@ const { openBuild } = require('./lib.js');
       ST.say._audit = true;
     }
     const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ', 'ソウタ', 'リコ'];
-    /* 配役：執着（監禁を起こす）・恋人・恋愛にしない相手・R18に参加しない人・恋人だけの人を混ぜる */
+    /* 配役：執着（監禁を起こす）・恋人・恋愛にしない相手・R18に参加しない人・性行為の相手を固定した人（lo）を混ぜる */
     const CASTS = [
       { g: ['m', 'f', 'm', 'f', 'm', 'f'], p: ['top', 'bottom', '', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'yan' }, { a: 2, b: 3, type: 'lover' }], ng: [[4, 5]], noR18: [2], lo: [3], same: [3, 4], lk: [2, 3], lk2: [1, 4] },
       { g: ['f', 'f', 'm', 'm', 'f', 'm'], p: ['', '', 'top', 'bottom', 'top', ''], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'yan' }], ng: [[0, 2]], noR18: [4], lo: [1], same: [3, 5], fa: [0], lk: [0, 1], lk2: [4, 5] },
@@ -289,6 +293,10 @@ const { openBuild } = require('./lib.js');
       { g: ['m', 'm', 'f', 'f', 'm', 'f'], p: ['top', 'top', '', '', 'bottom', 'top'], ties: [{ a: 0, b: 1, type: 'fiance' }, { a: 2, b: 3, type: 'fiance', feel: 'unsure' }, { a: 4, b: 5, type: 'fear' }, { a: 4, b: 5, type: 'fwb', mode: 'mistress' }, { a: 0, b: 2, type: 'enemy', grade: 'hate' }, { a: 1, b: 3, type: 'comrade' }, { a: 1, b: 5, type: 'comrade' }, { a: 3, b: 5, type: 'comrade' }] },
       { g: ['f', 'm', 'm', 'f', 'f', 'm'], p: ['bottom', 'top', 'riba', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'fwb', mode: 'mistress' }, { a: 1, b: 3, type: 'lover' }, { a: 2, b: 4, type: 'apathy' }, { a: 4, b: 2, type: 'yan' }, { a: 5, b: 0, type: 'fear' }, { a: 3, b: 5, type: 'benefactor', feel: 'guilt' }, { a: 2, b: 5, type: 'fond', mode: 'oshi' }, { a: 3, b: 4, type: 'honmei' }] }
     ];
+    /* 性行為の相手を固定する人（lo）の相手：関係の恋人がいればその人、いなければ隣の人（2026-10-26：「恋人だけ」をなくし、固定に一本化） */
+    const loPart = (cast, i, n) => { const t = (cast.ties || []).filter(t => t.type === 'lover' && (t.a === i || t.b === i) && t.a < n && t.b < n)[0]; return t ? (t.a === i ? t.b : t.a) : (i + 1) % n; };
+    /* 箱庭の仕掛けそのものがモブ・魔物の箱庭（「固定した相手だけ」でも縛らない。engine.js の HK.State.mobSexOk の説明） */
+    const MOB_FREE = { dungeon: 1, succubus: 1, variety: 1 };
     const ids = only || Object.keys(HK.SCENARIOS);
     for (const sc of ids) {
       const scen = HK.SCENARIOS[sc]; if (!scen) continue;
@@ -300,7 +308,7 @@ const { openBuild } = require('./lib.js');
         const chars = [], perChar = [];
         for (let i = 0; i < n; i++) {
           const ng = []; cast.ng.forEach(pr => { if (pr[0] === i && pr[1] < n) ng.push(pr[1]); if (pr[1] === i && pr[0] < n) ng.push(pr[0]); });
-          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: cast.g[i], likes: '', tone: '', fp: '', pos: cast.p[i], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: ng, noR18: cast.noR18.indexOf(i) >= 0, sexLock: cast.lo.indexOf(i) >= 0 ? 'loverOnly' : '', faithful: (cast.fa || []).indexOf(i) >= 0 });
+          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: cast.g[i], likes: '', tone: '', fp: '', pos: cast.p[i], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: ng, noR18: cast.noR18.indexOf(i) >= 0, sexLock: cast.lo.indexOf(i) >= 0 ? String(loPart(cast, i, n)) : '', sexLockMob: cast.lo.indexOf(i) >= 0 && s % 3 === 1, faithful: (cast.fa || []).indexOf(i) >= 0 });
           perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
         }
         /* S15：5回に2回、二人を互いに恋愛相手として固定する（4人の回は lk、6人の回は lk2。相手が箱庭にいるときだけ） */
@@ -438,7 +446,7 @@ const { openBuild } = require('./lib.js');
             if (inS.length === 2 && (lk || lkAny)) { const L2 = inS.map(i => ({ i, locks: cfgL(chars[i].loveLock), sx: chars[i].sexLock })); if (lockBad(L2[0], L2[1]) && !anyOk(L2[0], L2[1])) hit('S15', '性的な文 ' + nm[inS[0]] + '×' + nm[inS[1]] + ' [' + (e.tag || e.cat || '') + '] | ' + x.slice(0, 140)); }
             for (let a = 0; a < inS.length; a++) for (let b = a + 1; b < inS.length; b++) if (chars[inS[a]].loveNG.indexOf(inS[b]) >= 0 && inS.length === 2) hit('S5', nm[inS[a]] + '×' + nm[inS[b]] + ' | ' + x.slice(0, 140));
             if (sameNg && inS.length === 2 && inS.indexOf(same[0]) >= 0 && inS.indexOf(same[1]) >= 0) hit('S12', nm[same[0]] + '×' + nm[same[1]] + ' | ' + x.slice(0, 140));
-            inS.forEach(i => { if (chars[i].sexLock === 'loverOnly' && !core && MOB.test(x) && inS.length === 1) hit('S6', nm[i] + ' | ' + x.slice(0, 140)); });
+            inS.forEach(i => { const sl = chars[i].sexLock; if (sl !== '' && sl != null && sl !== 'any' && !chars[i].sexLockMob && mode === 'r18' && !MOB_FREE[sc] && MOB.test(x) && inS.length === 1) hit('S6', nm[i] + ' | ' + x.slice(0, 140)); });
           });
           if (sc === 'yakata' && perChar[0].role === 'detective' && /先生/.test(e.text)) {
             /* 助手（2,3）のうち、文の中の「先生」が指す探偵が自分の探偵でない：探偵の名前と助手の名前が同じ記録にあり、助手と結びついた探偵と違う */

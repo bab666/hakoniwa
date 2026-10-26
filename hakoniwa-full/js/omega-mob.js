@@ -57,6 +57,8 @@
     P.forEach(function (c) {
       if (sx(c) !== 'a' && sx(c) !== 'o') return;
       if (HK.lockAny(c) || c.likes === 'none') return;
+      /* 性行為の相手を「固定した相手だけ」にした人（engine.js の noMob：モブとは体の関係にならない）には、街の外の運命の番は現れない（番になる相手なので） */
+      if (!HK.SAFE_ON && c.noMob) return;
       /* 関係で「運命の番」が付いている人、本人も知らない運命の番が住人の中にいる人には現れない */
       if (P.some(function (o) { return o !== c && tieType(ctx, c, o) === 'fated'; })) return;
       if (om.fatedLatent && Object.keys(om.fatedLatent).some(function (k) { return k.split('-').indexOf(String(c.i)) >= 0; })) return;

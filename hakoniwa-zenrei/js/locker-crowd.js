@@ -369,7 +369,7 @@
       summary: '媚薬ロッカー：' + title
     });
   }
-  /* 見回りの人（モブ）に見つかる。体の場面は HK.Mob.sexOk（R18に参加しない・恋人だけ・全年齢）を通し、向きは HK.Pos.vsNpc */
+  /* 見回りの人（モブ）に見つかる。体の場面は HK.Mob.sexOk（R18に参加しない・性行為の相手を固定した相手だけ・全年齢）を通し、向きは HK.Pos.vsNpc */
   function found(S, A, body) {
     var rng = S.rng, pk = S.pk, R = LK.CROWD_R18, Pos = HK.Pos;
     var mg = A.likes === 'm' || A.likes === 'f' ? A.likes : rng() < 0.5 ? 'm' : 'f';

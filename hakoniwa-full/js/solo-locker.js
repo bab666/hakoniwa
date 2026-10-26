@@ -140,6 +140,8 @@
     /* 敵対している二人（関係がライバル・不仲・敵対）：攻めの側から強引に手を出し、受けは口では嫌がるが、まんざらではない応じ方をする（hate-sex-r18.js。R18版のみ） */
     if (!S.ties) S.ties = (HK.Story && HK.Story.tiesOk ? HK.Story.tiesOk(S.P, input.ties) : input.ties || []);
     var HSX = R18 && HK.HateSex, hateP = !!(HSX && rel === 'tension' && !ngP && !clash && HSX.hostile(S, A, B));
+    /* 愛憎（敵対・不仲の追加の欄。hate-love.js）：持つ側は構ってほしくて手を出しやすく、持つ側が受けなら口では嫌がりながら応じやすい。二度目・ベッドへの続きも起きやすい */
+    var LHo = HK.LoveHate, lhAny = !!(LHo && !ngP && LHo.any(S, A, B));
     function hardTop(p) { return !!(Pos && Pos.hardTop(p, p && p.o)); }
     if (bind === 'one') {
       boundOne = plotter ? plotter.o : rng() < 0.5 ? A : B;
@@ -278,7 +280,12 @@
       if (HK.HateKit && rng() < 0.3) {
         if (!S.ties) S.ties = (HK.Story && HK.Story.tiesOk ? HK.Story.tiesOk(S.P, input.ties) : input.ties || []);
         var HKt = HK.HateKit, hp = HKt.pairs(S, [A, B])[0];
-        if (hp) {
+        /* 愛憎（hate-love.js）：持つ側は、口では嫌いながら相手を構う（構われた側は、双方なら構い返し、片方だけならふつうの敵対） */
+        var lhH = lhAny ? (LHo.has(S, A, B) ? A : LHo.has(S, B, A) ? B : null) : null;
+        if (lhH && rng() < 0.6) {
+          var kr = LHo.kamau(S, lhH, lhH.o, null);
+          ST.sayB(S, { actors: [lhH, lhH.o], tag: '愛憎', text: kr.text, why: kr.why }, lhH.name + 'が' + lhH.o.name + 'に構った');
+        } else if (hp) {
           var hr = hp.st === 'love' ? HKt.loveGap(S, hp.a, hp.b, ST.fmt(pk(LK_HATE_LEAD), { a: hp.a.name, b: hp.b.name })) : hp.st === 'hate' ? HKt.quarrel(S, hp.a, hp.b) : HKt.style(hp.a) === 'active' ? HKt.harass(S, hp.a, hp.b) : HKt.snub(S, hp.a, hp.b);
           /* 嫌悪している側は、理性で踏みとどまる。近づいた側は、拒まれて熱を持て余す */
           hp.a.m.reason = clamp(hp.a.m.reason + 6, 0, 100);
@@ -305,6 +312,7 @@
         var urge = (a.goal && a.goal.id === 'want' ? 0.12 : a.goal && a.goal.id === 'out' ? -0.08 : 0) + (a.action && a.action.id === 'flow' ? 0.08 : a.action && a.action.id === 'solve' ? -0.06 : 0) + a.m.heat / 100 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.m.reason / 130 - a.tr.cp * 0.12 + (plotter === a ? 0.45 : 0) + ({ lover: 0.15, fwb: 0.2, almost: 0.1, crush: crusher === a ? 0.2 : 0, mutual: 0.2, tension: -0.1 }[rel] || 0) + (fwbAll && rel !== 'fwb' ? 0.2 : 0) + (crusher === a && rel !== 'crush' && rel !== 'mutual' ? 0.15 : 0);
         /* 敵対している二人：攻めの側は、苛立ちごとぶつけるように手を出しやすい */
         if (hateP && HSX.order(S, a, b)[0] === a) urge += 0.35;
+        if (lhAny && !clash && LHo.has(S, a, b)) urge += 0.2;
         if (nt) urge += NT.urge(nt, a);
         /* 本命がほかにいる人は、一途に踏みとどまる（媚薬の熱が限界なら妥協する） */
         if (a.honmei != null && a.honmei !== b.i) urge -= HK.honmeiDesperate && HK.honmeiDesperate(null, a) ? 0.05 : 0.3;
@@ -360,7 +368,7 @@
             ST.sayB(S, { actors: [tq, bq], tag: LK.CONT.tag.linger, text: ST.fmt(pk(contPool('linger', tq, bq)), { a: tq.name, b: bq.name }), why: '媚薬はまだ効いていたが、体の方が先に限界だった' }, tq.name + 'と' + bq.name + 'は寄り添っていた');
             break;
           }
-          var wq = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3 }[rel] || 0.1) - b.m.reason / 160 + (rng() - 0.5) * 0.3;
+          var wq = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3 }[rel] || 0.1) - b.m.reason / 160 + (rng() - 0.5) * 0.3 + (lhAny ? 0.3 : 0);
           if (wq < 0.4) { a.m.reason = clamp(a.m.reason + 6, 0, 100); continue; }
           startConn(tq); lewdNow = true; pair.acts++;
           ST.sayB(S, { actors: [tq, bq], tag: LK.CONT.tag.again, text: ST.fmt(pk(contPool('again', tq, bq)), { a: tq.name, b: bq.name }), why: '一度果てても、媚薬の熱は引かなかった（' + a.name + 'の発情 ' + Math.round(a.m.heat) + '）', mag: 28, kind: 'climax' }, tq.name + 'と' + bq.name + '：もう一度', true);
@@ -372,6 +380,7 @@
         a.cnt.make++;
         var w = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3, crush: crusher === b ? 0.45 : -0.05, mutual: 0.45, friend: 0, tension: -0.3, ex: 0.05, stranger: -0.1, master: servant === b ? 0.35 : 0.2 }[rel] || 0) + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (plotter === b ? 0.8 : 0) + (fwbAll && rel !== 'fwb' ? 0.35 : 0) + (fcKind === 'mutual' ? 0.2 : 0) + (crusher === b && rel !== 'crush' && rel !== 'mutual' ? 0.2 : 0) + (rng() - 0.5) * 0.3;
         if (HK.lockOut(b, a)) w -= 0.5;
+        if (lhAny && LHo.has(S, b, a)) w += 0.25;
         if (nt) w += NT.accW(nt, a, b);
         var resp = w > 0.55 ? 'accept' : w > 0.32 ? 'passive' : 'refuse';
         /* 受け攻め：挿入では、仕掛けた側が攻めか受けかで書き分ける */
@@ -519,7 +528,9 @@
     /* 自分から閉じ込められた人の思惑：ロッカーの中で最後まで行けたなら成功。打ち明けて怒られたら失敗 */
     var plotOk = plotter && !pair.plotMad && (pair.sexIn || (plotter.o.m.heat >= 50 && plotter.o.cnt.refuse <= 1));
     var bed = (both && A.m.heat + B.m.heat >= 140 && (A.cnt.accept + B.cnt.accept >= 1 || (A.m.heat >= 85 && B.m.heat >= 85)) && !pair.refusedHard && rng() < 0.85) || (plotter && plotOk && rng() < 0.8);
-    if (bed && !plotter && Math.max(A.m.reason, B.m.reason) > 18 && (A.tr.cp + B.tr.cp) / 2 + rng() * 0.6 > 0.75) bed = false;
+    if (bed && !plotter && Math.max(A.m.reason, B.m.reason) > 18 && (A.tr.cp + B.tr.cp) / 2 + rng() * 0.6 > 0.75 && !(lhAny && rng() < 0.6)) bed = false;
+    /* 愛憎の二人：ロッカーの中で最後までしたなら、口では「これきり」と言いながらベッドへ（腐れ縁。R18版） */
+    if (!bed && R18 && lhAny && pair.sexIn && !clash && !pair.refusedHard && LHo.sexOk(S, A, B) && rng() < 0.5) bed = true;
     if (servant && servant.cnt.hold >= 2 && !servant.broke && master.m.heat < 70) bed = false;
     /* 向きの決まらない二人は、ベッドを前にしても一線を越えない（耐え抜く展開に） */
     var endure = bed && clash;
@@ -583,6 +594,8 @@
     if (fcKind && LK.FC) lines.push(ST.fmt(pk(LK.FC.end[fcKind]), { c: crusher.name, o: crusher.o.name }));
     /* 両片想い：何かあった二人は「……こっちの台詞」と通じる。何もなかった二人は、すれ違ったまま */
     if (nt) { var ntL = NT.endLine(S, nt); if (ntL) lines.push(ntL); }
+    /* 愛憎：何かあった二人は腐れ縁 */
+    if (lhAny && pair.acts >= 1 && pair.level >= 1) lines.push((LHo.mutual(S, A, B) ? A.name + 'と' + B.name + '：腐れ縁（愛憎）。口では嫌い合いながら、結局また触れ合ってしまう' : (LHo.has(S, A, B) ? A : B).name + '→' + (LHo.has(S, A, B) ? B : A).name + '：腐れ縁（愛憎）。口では嫌いながら、構わずにいられない'));
     if (rel === 'mutual' && LK.MUT) lines.push(ST.fmt(pk(LK.MUT.end[outcome === 'bed' || (pair.acts >= 1 && outcome !== 'angry' && outcome !== 'plotfail') ? 'told' : 'miss']), v0));
     var rows = P.map(function (p) { return { i: p.i, rank: '', cells: [Math.round(p.m.heat) + '', Math.round(p.m.reason) + '', String(p.cnt.make), String(p.cnt.refuse), String(p.cnt.climax), String(p.cnt.solve), p.fate] }; });
     return ST.result(S, input, {

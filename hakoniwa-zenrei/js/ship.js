@@ -489,7 +489,7 @@
   function xeno(S, a, d, onlyMode, hidden) {
     var X2 = SH.X2, rng = S.rng;
     if (!X2 || !a || !d || !sxRoom(S, [a])) return false;
-    /* R18に参加しない人・「恋人だけ（モブにも襲われない）」の人は、星の生命体との場面にしない */
+    /* R18に参加しない人・性行為の相手を「固定した相手だけ」にした人は、星の生命体との場面にしない */
     if (HK.State && !HK.State.mobSexOk(a)) return false;
     /* 「合意のない展開」が切なら、攻めに回る人（生き物を組み伏せる側）だけ */
     if (HK.Content && !HK.Content.ok(S, 'force') && !(HK.Pos && HK.Pos.hardTopNpc(a))) return false;
