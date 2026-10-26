@@ -117,6 +117,8 @@ js/room-left.js
 js/hate-sex-r18.js
 js/room-know.js
 js/room-tie.js
+js/room-same.js
+js/room-same-r18.js
 js/room-tie-r18.js
 js/solo-room-jealous.js
 js/ego-image.js
@@ -378,6 +380,8 @@ js/scenario-jinro.js
 late js/jinro-after.js
 late js/jinro-wolfnight.js
 js/jinro-love.js
+js/same-story.js
+js/same-story-r18.js
 late js/rel-bad-story.js
 late js/tie-new-story.js
 js/solo-rel-bad.js

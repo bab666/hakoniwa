@@ -88,6 +88,7 @@ js/room-trio.js
 js/room-left.js
 js/room-know.js
 js/room-tie.js
+js/room-same.js
 js/scenario-trial.js
 js/ego-image.js
 js/omega-data.js
@@ -252,6 +253,7 @@ late js/jinro-data.js
 js/scenario-jinro.js
 late js/jinro-after.js
 js/jinro-love.js
+js/same-story.js
 late js/rel-bad-story.js
 late js/tie-new-story.js
 js/safe.js

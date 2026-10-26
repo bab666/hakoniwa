@@ -1070,7 +1070,8 @@
   function killRule(ctx) { return ctx.rules.filter(function (r) { return r.k === 'kill'; })[0]; }
   EV.push({
     id: 'cond_kill', cat: 'betray', scope: 'pair', pri: true,
-    when: function (ctx, a, b) { var r = killRule(ctx); return !!r && !globDone(ctx, r) && ctx.stepIndex > 0 && !a.flags.down && !b.flags.knocked && b.alive !== false && a.stress > 40; },
+    /* 憎悪を持っても殺さない相手（attr.js の HK.Attr.spare）には、この出来事を選ばない（文を先に書いてから kill を呼ぶ作りなので、選ぶ段階で外す。全年齢の「気絶させる」も同じ） */
+    when: function (ctx, a, b) { var r = killRule(ctx); return !!r && !globDone(ctx, r) && ctx.stepIndex > 0 && !a.flags.down && !b.flags.knocked && b.alive !== false && a.stress > 40 && !(HK.Attr && HK.Attr.spare && HK.Attr.spare(ctx, b, a)); },
     w: function (ctx, a, b) { return Math.max(0.02, a.tr.cold * 0.6 + a.tr.aggr * 0.5 - a.tr.np * 0.6 + a.stress / 140 - Math.max(0, ctx.R(a, b).aff) / 120 - 0.3); },
     run: function (ctx, a, b) {
       var will = a.tr.cold * 0.6 + a.tr.aggr * 0.5 + a.stress / 160 - a.tr.np * 0.5 - Math.max(0, ctx.R(a, b).aff) / 90;
