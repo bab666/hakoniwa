@@ -784,7 +784,7 @@
     var rows = rank.map(function (p) { return { i: p.i, rank: p.rank + '位' + (p.rankTie ? 'タイ' : ''), cells: [Math.round(p.m.score) + '点', String(p.cnt.first), String(p.cnt.climax), String(p.cnt.penalty), String(Math.round(p.m.pop)), p.title] }; });
     var lines = rank.map(function (p) { return p.rank + '位' + (p.rankTie ? '（同率）' : '') + ' ' + p.name + '　' + Math.round(p.m.score) + '点' + (p.tbWin ? '（同点決勝で勝利）' : p.tbLose ? '（同点決勝で惜敗）' : '') + '・称号「' + p.title + '」'; });
     lines.push('企画：' + used.map(function (k) { return k.name; }).join('→'));
-    couples.forEach(function (cp) { lines.push('カップル成立：' + cp[0].name + '×' + cp[1].name); });
+    couples.forEach(function (cp) { lines.push('カップル成立：' + (HK.pairNameOf ? HK.pairNameOf(cp[0], cp[1]) : cp[0].name + '×' + cp[1].name)); });
     return ST.result(S, input, {
       ending: { title: '「' + show + '」優勝は' + champ.name + '。', kind: 'ok', lines: lines },
       estats: [['優勝', champ.name], ['最高得点', Math.round(champ.m.score) + '点'], ['企画', env.corners + '本'], ['視聴率', rating + '％']],

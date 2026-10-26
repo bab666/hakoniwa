@@ -17,7 +17,14 @@
      相手は実行時の住人なら .i、入力の住人なら .src.i で引く（attr.js の A.nightOf と同じ）。
      全体で「攻め」の人が受けに回るのは、相手ごとに「受け」「リバ」と自分で決めた相手に対してだけ。モブ・指定の無い相手には今までどおり受けに回らない。
      二人を扱う関数（likes・canRole・orients・order・okSex・fixed・bothRiba・fbFor・ff など）は、二人のそれぞれについて相手への指定を見る。
-     三人以上の場面は P.hardTopIn(c, 人の一覧)（その場の誰か一人にでも攻めなら攻め）を使う */
+     三人以上の場面は P.hardTopIn(c, 人の一覧)（その場の誰か一人にでも攻めなら攻め）を使う
+     二人がお互いに相手ごとの指定をして食い違う組（どちらも「攻め」など）は、向きの決まらない組（体の関係にならない。画面の相手ごとの設定の行に注意。attr.js の A.forNote）
+   攻め度 topLv（全年齢版・R18版共通）：''（おまかせ＝3）／'1'〜'5'。向きが二通り成り立つ組（リバどうし・おまかせどうしなど）で、高い方が攻めに回る（P.lv）。
+     優先の順は 相手ごとの指定 ＞ 攻め度 ＞ 全体の受け攻め。自分で選んだ攻め・受け（全体・相手ごと）は変えない。同じなら従来どおり
+   モブ相手の受け攻め posNpc（R18版）：''（住人と同じ）／'top'／'bottom'／'riba'。モブ・魔物・村人・罠などとの場面だけに効く（P.npc・P.vsNpc・P.canReceive・P.hardTopNpc）。
+     「攻めを選んだ人を受けにしない」は住人どうしの決まり。モブ欄で受け・リバを選んだ人は、全体が攻めでもモブには受けで書く。モブ欄で攻めを選んだ人は、モブには受けない
+   夜の主導 lead（R18版）：''（おまかせ）／'top'（攻めが主導）／'sasoi'（受けが主導・誘い受け）／'osoi'（受けが主導・襲い受け）。受け攻めは変えない。
+     受けが主導の人は「ノリノリ」（P.nori）として扱い、攻めが主導の人は扱わない。山場の始まりの文は pos-lead-r18.js（HK.PosLead） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -173,6 +180,23 @@
   function key(a, b) { var x = a.name || String(a.i), y = b.name || String(b.i); return x < y ? x + '\u0001' + y : y + '\u0001' + x; }
   function nameOf(c) { return c.name || String(c.i); }
 
+  /* 攻め度（1〜5。決めていなければ 3） */
+  P.lv = function (c) { var v = Math.round(+src(c, 'topLv')); return v >= 1 && v <= 5 ? v : 3; };
+  P.LV_OPTS = [['', 'おまかせ（ふつう）'], ['1', '1（受けに回りやすい）'], ['2', '2'], ['3', '3（ふつう）'], ['4', '4'], ['5', '5（攻めに回りやすい）']];
+  /* 向きが二通り成り立つ組の、優先の決まり（相手ごとの指定 ＞ 攻め度）。決まれば [攻め, 受け]、決まらなければ null */
+  function prefer(a, b) {
+    /* 相手ごとの指定：片方だけが相手ごとに「受け」と決めていれば、その人が受け（もう片方の全体の受けより優先） */
+    var fa = pf(a, b), fb0 = pf(b, a);
+    if (fa === 'bottom' && fb0 !== 'bottom') return [b, a];
+    if (fb0 === 'bottom' && fa !== 'bottom') return [a, b];
+    /* 攻め度：高い方が攻め */
+    var la = P.lv(a), lb = P.lv(b);
+    if (la > lb) return [a, b];
+    if (lb > la) return [b, a];
+    return null;
+  }
+  P.prefer = function (a, b) { if (!a || !b || a === b || P.orients(a, b).length !== 2) return null; return prefer(a, b); };
+
   /* 二人のうち、攻め（動く側・挿入する側）を先にして返す。fb は場面側の希望 [攻め, 受け]
      指定の合わない組でも、自分で攻めを選んだ人を受けの位置には置かない（呼ぶ側は P.okSex で先に確かめること） */
   P.order = function (a, b, fb) {
@@ -182,6 +206,9 @@
     if (!os.length) return P.hardTop(b, a) && !P.hardTop(a, b) ? [b, a] : P.hardTop(a, b) ? [a, b] : fb;
     if (os.length === 1) return os[0];
     var pa = P.of(a, b), pb = P.of(b, a);
+    /* 相手ごとの指定・攻め度で決まる組（リバどうしも、攻め度が違えば高い方が攻め） */
+    var pr = prefer(a, b);
+    if (pr) return pr;
     if (pa === 'riba' && pb === 'riba') return fb;
     var k = key(a, b);
     if (lock[k]) return lock[k] === nameOf(a) ? [a, b] : [b, a];
@@ -204,25 +231,38 @@
   P.topOf = function (a, b, fb) { return P.order(a, b, fb)[0]; };
   /* 名前のない相手（モブ・魔物・道具）との組：キャラが攻めなら 'top'、受けなら 'bottom'、どちらでもよければ def。
      自分で攻めを選んだ人は、def が何であっても 'top'（受ける場面にしない） */
+  /* モブ相手の受け攻め（キャラの設定 posNpc：'top'｜'bottom'｜'riba'。''＝住人と同じ）。R18版だけ（全年齢では ''） */
+  var NPCV = { top: 1, bottom: 1, riba: 1 };
+  P.npcValid = function (v) { return NPCV[v] ? v : ''; };
+  P.npc = function (c) { if (!c || HK.SAFE_ON) return ''; var v = c.posNpc != null && c.posNpc !== '' ? c.posNpc : c.src && c.src.posNpc; return NPCV[v] ? v : ''; };
+  P.NPC_OPTS = [['', '住人と同じ'], ['top', '攻め'], ['bottom', '受け'], ['riba', 'リバ']];
   P.vsNpc = function (c, def) {
-    /* 「攻めだが、モブには受け」（キャラの設定 posNpc）：住人には攻めのまま、モブ・魔物・村人には受ける */
-    if (c && c.posNpc === 'bottom') return 'bottom';
+    /* モブ相手の受け攻め（posNpc）：住人どうしの指定とは別に、モブ・魔物・村人には攻め／受け／どちらでも */
+    var n = P.npc(c);
+    if (n === 'top' || n === 'bottom') return n;
+    if (n === 'riba') return def || '';
     var v = P.of(c);
     if (v === 'top') return 'top';
     if (v === 'bottom') return 'bottom';
     return def || '';
   };
-  /* モブ・魔物・道具に「される」場面に入れてよいか（自分で攻めを選んだ人は不可） */
-  P.canReceive = function (c) { return !P.hardTop(c) || !!(c && c.posNpc === 'bottom'); };
-  /* モブ・魔物との場面で、攻めに回る人か（攻め指定でも「モブには受け」なら受ける） */
-  P.hardTopNpc = function (c) { return P.hardTop(c) && !(c && c.posNpc === 'bottom'); };
+  /* モブ・魔物・道具に「される」場面に入れてよいか（自分で攻めを選んだ人は不可。モブ欄で受け・リバなら可、モブ欄で攻めなら不可） */
+  P.canReceive = function (c) { var n = P.npc(c); if (n) return n !== 'top'; return !P.hardTop(c); };
+  /* モブ・魔物との場面で、攻めに回る人か（攻め指定でも「モブには受け・リバ」なら受ける。モブ欄で攻めなら、全体が受けでも攻め） */
+  P.hardTopNpc = function (c) { var n = P.npc(c); if (n) return n === 'top'; return P.hardTop(c); };
   /* 攻めを挿れる側の体で書いた女性の組（オメガバースの女性のα×Ω・β。omega-heat.js の OM.bodyKind が記録する）。
      女性どうし・女性上位の見直し（pos-ff.js・pos-fm.js）は、この組を直さない。名前の組 攻め\u0001受け */
   P.maleTop = {};
   P.isMaleTop = function (a, b) { return !!(a && b && P.maleTop[a.name + '\u0001' + b.name]); };
   P.reset = function () { lock = {}; P.maleTop = {}; };
   /* ノリノリな性格（奔放・衝動的）：受けやおまかせでも、自分から跨ったり誘ったりする */
-  P.nori = function (c) { var t = (c && c.tr) || {}; if ((t.ac || 0) > 0.62 && (t.fc || 0) < 0.5) return false; return (t.fc || 0) > 0.6 || (t.impulse || 0) > 0.66; };
+  /* 夜の主導（lead。R18版だけ）：受けが主導（誘い受け・襲い受け）の人はノリノリ、攻めが主導の人はノリノリにしない */
+  P.leadOf = function (c) { if (!c || HK.SAFE_ON) return ''; var v = src(c, 'lead'); return v === 'top' || v === 'sasoi' || v === 'osoi' ? v : ''; };
+  P.nori = function (c) {
+    var ld = P.leadOf(c);
+    if (ld) return ld !== 'top';
+    var t = (c && c.tr) || {}; if ((t.ac || 0) > 0.62 && (t.fc || 0) < 0.5) return false; return (t.fc || 0) > 0.6 || (t.impulse || 0) > 0.66;
+  };
   /* 仕掛けた側 a がノリノリで、攻めの指定でなければ、自分が受けに回る向きを希望する */
   P.fbFor = function (a, b) { return P.nori(a) && P.of(a, b) !== 'top' && P.of(b, a) !== 'bottom' ? [b, a] : [a, b]; };
 

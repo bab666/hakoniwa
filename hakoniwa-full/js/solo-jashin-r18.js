@@ -10,8 +10,14 @@
   function L(s) { return s.split('|'); }
   /* 一回の結果の中で同じ文を繰り返さない選び方（ero-kit.js の HK.Ero.fresh。使い切ったら、いちばん前に使ったものから戻す） */
   function fp(S, a) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(S, a, function (l) { return ST.pick(S, l); }) : ST.pick(S, a); }
-  scen.env.push({ id: 'jyobai', label: '村人・神の夜の割合', min: 0, max: 100, def: 100, lo: '住人どうしだけ', hi: 'いつもどおり', desc: '夜の出来事のうち、夜這い・夢の神・清めの湯・神ごとの夜になる割合。0なら住人どうしの夜だけ（夜の出来事の起こりやすさ・内容のスイッチと合わせて効く）' });
-  scen.env.push({ id: 'jlewd', label: '夜の出来事の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: '毎晩', desc: '媚薬の食事・夜這い・参加者どうしの夜・儀式での行為の起きやすさ' });
+  /* 夜の出来事の起こりやすさを「住人どうしの夜」（jlewd）と「村人・神の夜」（jmob）に分ける（順162）。
+     以前の保存の「夜の出来事の起こりやすさ」（jlewd）はそのまま住人どうしに、村人・神の夜（jmob）がない保存には jlewd×以前の「村人・神の夜の割合」（jyobai）を引き継ぐ
+     （読み替えは solo-jashin-r18-god.js が HK.Lewd の from に登録する。保存そのものは書き換えない） */
+  scen.env.push({ id: 'jlewd', label: '住人どうしの夜の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: '毎晩', desc: '住人どうしの夜（媚薬の熱・恐怖の夜・恋人や惹かれ合った二人・役職どうしの夜）の起きやすさ。0にすると、住人どうしの夜は起きません' });
+  scen.env.push({ id: 'jmob', label: '村人・神の夜の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: '毎晩', desc: '村人の夜這い・清めの湯・夢に現れる神・取り憑かれた仲間・洞窟の眷属・生贄の儀・神ごとの夜の起きやすさ。夜這いが苦手なら、ここを0にしてください（住人どうしの夜はそのまま起きます）。以前の「夜の出来事の起こりやすさ」の値を引き継ぎます' });
+  /* 二つの起こりやすさ（0〜1） */
+  function lvPC(S) { return Math.max(0, Math.min(100, +S.env.jlewd || 0)) / 100; }
+  function lvMob(S) { var v = S.env.jmob == null ? S.env.jlewd : S.env.jmob; return Math.max(0, Math.min(100, +v || 0)) / 100; }
 
   var MEAL = L('歓迎の膳には、山菜と川魚と、甘い香りの濁り酒が並んだ。|女将が「村の名物です」と、とろりとした汁物をよそった。|夕餉の膳に、見たことのない赤い茸が添えられていた。');
   var MEAL_EAT = L('{a}は箸をつけた。しばらくすると、体の芯がじんわりと熱くなってきた。|{a}は濁り酒を一杯飲み干した。頬が火照り、肌が着物に擦れるだけで息が上がった。|{a}は勧められるままに食べた。夜が更けるほど、熱は下腹に溜まっていった。');
@@ -304,7 +310,11 @@
     hardTop: hardTop, okPair: okPair, ff: isFF, sex: pairSex,
     /* 一回の中の性的な夜の数の上限（ホラーの箱庭なので、濃い場面ばかりにしない）。
        回全体で 1＋起こりやすさ×3 回（既定40で2回・最大で4回）、一人あたり2夜まで */
-    cap: function (S) { return 1 + Math.round(Math.max(0, Math.min(100, S.env.jlewd || 0)) * 3 / 100); },
+    cap: function (S) { return 1 + Math.round(Math.max(lvPC(S), lvMob(S)) * 3); },
+    /* 住人どうしの夜（jlewd）・村人・神の夜（jmob）の起こりやすさ（0〜1。順162） */
+    lvPC: lvPC, lvMob: lvMob,
+    onPC: function (S) { return !HK.SAFE_ON && lvPC(S) > 0; },
+    onMob: function (S) { return !HK.SAFE_ON && lvMob(S) > 0; },
     room: function (S, ps) {
       if ((S.r18Tot || 0) >= JS.R18.cap(S)) return false;
       var w = S.r18Who || {};
@@ -325,7 +335,7 @@
     },
     /* 態度9種ごとの書き分け（JP）を、神ごとの夜（solo-jashin-r18-god.js）からも使う */
     pz: pz,
-    on: function (S) { return !HK.SAFE_ON && (S.env.jlewd || 0) > 0; },
+    on: function (S) { return !HK.SAFE_ON && (lvPC(S) > 0 || lvMob(S) > 0); },
     arrive: function (S) {
       S.P.forEach(function (p) { p.cnt.r18 = 0; });
       /* 最初の晩の盛り方（夕餉の膳が多め） */
@@ -334,7 +344,8 @@
     },
     /* 夜の出来事（起きたら true） */
     night: function (S, p, live, h) {
-      var rng = S.rng, lv = S.env.jlewd / 100;
+      /* 起きやすさは二つの大きいほう。住人どうし（pc）と村人・神（mob）の分け方は下の yob・pcKeep で決める（順162） */
+      var rng = S.rng, pc = lvPC(S), mob = lvMob(S), lv = Math.max(pc, mob);
       /* R18に参加しない人（キャラの設定）は、夜の出来事に出ない */
       if (HK.State && !HK.State.r18ok(p)) return false;
       /* 上限に届いた回・この人がもう二夜を過ごしたときは、夜の出来事にしない */
@@ -351,14 +362,17 @@
       if (rng() > lv * (p.aphro ? 0.32 : 0.12)) return false;
       p.lastNight = h; p.cnt.r18 = (p.cnt.r18 || 0) + 1;
       /* 体だけの関係の組（「誰とでも可」の人と固定外の相手。HK.State.freeSex。free-sex.js）も、参加者どうしの夜の相手になる（恋愛の条件 HK.canLove は見ない） */
-      var mates = live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && ((HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) || !!(HK.State.freeSex && HK.State.freeSex(S, p, q))) && okPair(p, q); });
+      var mates = pc <= 0 ? [] : live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && ((HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) || !!(HK.State.freeSex && HK.State.freeSex(S, p, q))) && okPair(p, q); });
       var top = HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(p) : hardTop(p);
       var r0 = rng();
       /* 性行為の相手を「固定した相手だけ」にした人（noMob）：夢の神・清めの湯・村人の夜這いには進まず、住人どうしの夜だけ */
       /* 「合意のない展開」が切なら、夢の神・憑依・清めの湯・夜這いには進まず、住人どうしの夜だけ */
       var frc = !HK.Content || HK.Content.ok(S, 'force');
-      var yob = S.env.jyobai == null ? 1 : S.env.jyobai / 100;
-      if (p.noMob || !frc || rng() > yob) { if (!mates.length) return false; r0 = 0.5; }
+      /* 村人・神の夜が0・「固定した相手だけ」・合意のない展開が切：住人どうしの夜だけ。
+         村人・神が住人どうしより低いときは、その割合（mob/pc）だけ村人・神の夜も混ぜ、残りは住人どうしの夜にする。
+         住人どうしが低いときは、混ぜた中の住人どうしの夜を pc/mob に間引く（pcKeep） */
+      var mobOk = mob > 0 && !p.noMob && frc, yob = pc > mob ? mob / pc : 1, pcKeep = pc >= mob ? 1 : pc / mob;
+      if (!mobOk || rng() > yob) { if (!mates.length) return false; r0 = 0.5; }
       /* 夢の中で神に抱かれる */
       if (r0 < 0.16 + (S.G.myth ? 0.06 : 0)) {
         /* 自分で攻めを選んだ人は、夢の中でも神に抱かれない（抗い、逆に屈服させる） */
@@ -389,17 +403,18 @@
         return true;
       }
       /* 参加者どうし（媚薬が回っている二人ほど） */
-      if (mates.length && (r0 === 0.5 || rng() < 0.4 + (p.aphro ? 0.15 : 0))) {
+      if (mates.length && (r0 === 0.5 || (rng() < 0.4 + (p.aphro ? 0.15 : 0) && (pcKeep >= 1 || rng() < pcKeep)))) {
         /* 体だけの関係の相手は、固定した恋人がその場にいれば選ばれにくい（×0.3） */
         var fm0 = mates.some(function (m) { return HK.State.freeSex && HK.State.freeSex(S, p, m); });
         var q = fm0 ? HK.weighted(rng, mates, function (m) { return HK.State.freeSex(S, p, m) ? HK.FreeSex.factor(S, p, m) : 1; }) : rng.pick(mates); q.lastNight = h; q.cnt.r18 = (q.cnt.r18 || 0) + 1;
         var free = !!(HK.State.freeSex && HK.State.freeSex(S, p, q));
         var o = HK.Pos ? HK.Pos.order(p, q, [p, q]) : [p, q], X = o[0], Y = o[1];
         var rough = S.ygo && (X.viol > 30 || Y.viol > 30);
-        var fmXY = !rough && !isFF(X, Y) && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm';
+        /* 女性が攻めで男性に跨る文は、体（性器の欄）で選ぶ：攻めが女性の体（ふたなりの攻めでない）、相手に男性器がある組だけ */
+        var fmXY = !rough && !isFF(X, Y) && (HK.Pos && HK.Pos.isF && HK.Pos.hasM ? HK.Pos.isF(X) && HK.Pos.hasM(Y) : (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm');
         var t0 = ST.fmt(fp(S, rough ? YGO_SEX : isFF(X, Y) ? MUTUAL_FF : fmXY ? MUTUAL_FM : MUTUAL), { x: X.name, y: Y.name });
         /* 主導する側が女性・相手が男性なら、導入の文も跨る書き方に（合意の場面だけ） */
-        if (!rough && HK.FM && HK.FM.fixWith && (X.gender || (X.src && X.src.gender)) === 'f' && (Y.gender || (Y.src && Y.src.gender)) === 'm') t0 = HK.FM.fixWith({ pick: function (a) { return fp(S, a); } }, t0, X, Y.name);
+        if (fmXY && HK.FM && HK.FM.fixWith) t0 =HK.FM.fixWith({ pick: function (a) { return fp(S, a); } }, t0, X, Y.name);
         var t = (free ? HK.FreeSex.lead(S, p, q) : '') + t0 + pairSex(S, X, Y, { mood: rough ? 'rough' : p.aphro || q.aphro ? 'drug' : free ? 'drug' : 'love', fore: false });
         if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < 0.5 + lv * 0.3) { Y.preg = true; t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + ST.fmt(fp(S, PREG), { y: Y.name }); }
         if (rng() < 0.5) t += (HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '') + pz(S, Y, 'mutual');
@@ -426,7 +441,8 @@
     },
     /* 洞窟の中で（クライマックス） */
     cave: function (S, live) {
-      var rng = S.rng, lv = S.env.jlewd / 100;
+      var rng = S.rng, lv = lvMob(S);
+      if (lv <= 0) return;
       if (HK.State) live = live.filter(HK.State.mobSexOk);
       if (HK.Content && !HK.Content.ok(S, 'force')) return;
       /* 眷属に襲われるのは、攻めを選んでいない人だけ */
@@ -440,7 +456,9 @@
     },
     /* 生贄の儀（R18）。巫女になったら miko: true */
     ritual: function (S, vic) {
-      var rng = S.rng, lv = S.env.jlewd / 100;
+      var rng = S.rng, lv = lvMob(S);
+      /* 生贄の儀の行為は「村人・神の夜」。0なら成人向けの儀式にしない（ふつうの生贄の儀になる） */
+      if (lv <= 0) return null;
       if (HK.State && !HK.State.mobSexOk(vic)) return null;
       if (HK.Content && !HK.Content.ok(S, 'force')) return null;
       if (rng() > 0.35 + lv * 0.6) return null;
@@ -454,7 +472,8 @@
       var rLong = HK.JDark && HK.JDark.roll(S, vic);
       var t = rLong ? HK.JDark.text(S, 'ritual', vic) + '\n\n' : (strong ? HK.R18M.resist(S, 'crowd', vic, { endure: false }) : '') + ST.fmt(fp(S, RITUAL), { a: vic.name, g: S.G.call }) + pz(S, vic, 'rite') + (HK.R18M ? (strong ? HK.R18M.say(S, vic, 'endure') : HK.R18M.moans(S, vic, ['start', 'mid', 'climax'])) + HK.R18M.npc(S, 'god', vic) : '');
       var miko = !top && (!HK.Content || HK.Content.ok(S, 'preg')) && rng() < (vic.preg ? 0.75 : 0.25 + lv * 0.25);
-      if (miko) t += ST.fmt(fp(S, MIKO), { a: vic.name });
+      /* 巫女の文の {g}（神の呼び名）も埋める（以前は {g} が残っていた） */
+      if (miko) t += ST.fmt(fp(S, MIKO), { a: vic.name, g: S.G.call });
       else t += vic.name + 'の姿は、それきり誰の目にも映らなかった。';
       return { text: t, miko: miko };
     }

@@ -11,7 +11,7 @@
   /* 結果の i 番目の住人を、受け攻めの判定に使える形に（設定は入力から、気質は結果から） */
   function who(res, i) {
     var c = (res.input && res.input.chars && res.input.chars[i]) || {}, r = (res.chars && res.chars[i]) || {};
-    return { i: i, name: r.name || c.name || String(i), gender: c.gender || '', pos: c.pos || '', posLike: c.posLike || '', likes: c.likes || '', futa: !!c.futa, posFor: c.posFor && typeof c.posFor === 'object' ? c.posFor : null, tr: r.tr || {} };
+    return { i: i, name: r.name || c.name || String(i), gender: c.gender || '', pos: c.pos || '', posLike: c.posLike || '', likes: c.likes || '', futa: !!c.futa, posFor: c.posFor && typeof c.posFor === 'object' ? c.posFor : null, topLv: c.topLv || '', tr: r.tr || {} };
   }
   /* pos.js の lean と同じ（指定が同じどうしで、どちらが動く側に回りやすいか） */
   function lean(c) {
@@ -25,6 +25,9 @@
     var os = P.orients(A, B);
     if (!os.length) return P.hardTop(B, A) && !P.hardTop(A, B) ? [B, A] : P.hardTop(A, B) ? [A, B] : null;
     if (os.length === 1) return os[0];
+    /* 相手ごとの指定・攻め度で決まる組（pos.js の P.order と同じ） */
+    var pr = P.prefer ? P.prefer(A, B) : null;
+    if (pr) return pr;
     var pa = P.of(A, B), pb = P.of(B, A);
     if (pa === 'riba' && pb === 'riba') return null;
     if (pa === 'top' && pb !== 'top') return [A, B];
@@ -52,5 +55,18 @@
     var o = HK.pairIdx(res, p), C = (res && res.chars) || [];
     var n = function (i) { return (C[i] && C[i].name) || ''; };
     return n(o[0]) + (sep == null ? '×' : sep) + n(o[1]);
+  };
+  /* 箱庭を回している最中（結果がまだない）の二人 a・b（箱庭の住人）の並び [攻め, 受け]。向きが決まらない組は [a, b] のまま */
+  HK.pairOrder = function (a, b) {
+    if (!a || !b || a === b || a.mob || b.mob) return [a, b];
+    var lo = a.i != null && b.i != null && b.i < a.i ? b : a, hi = lo === a ? b : a;
+    var d = null;
+    try { d = decided(lo, hi); } catch (e) { d = null; }
+    return d ? [d[0], d[1]] : [a, b];
+  };
+  /* 箱庭を回している最中の組の名前「攻め×受け」（記録の札・条件の数え方などに書く組）。sep は区切り（省略は「×」） */
+  HK.pairNameOf = function (a, b, sep) {
+    var o = HK.pairOrder(a, b);
+    return ((o[0] && o[0].name) || '') + (sep == null ? '×' : sep) + ((o[1] && o[1].name) || '');
   };
 })();

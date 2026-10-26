@@ -186,7 +186,7 @@
       var a = rest.sort(function (p, q) { return (R(ctx, q, b).aff + R(ctx, q, c).aff) - (R(ctx, p, b).aff + R(ctx, p, c).aff); })[0];
       if (a && ctx.rng() < 0.5) {
         ctx.mod(a, b, { aff: 3 }); ctx.mod(a, c, { aff: 3 }); ctx.stress(a, -4);
-        ctx.pending.push({ kind: 'event', cat: 'bond', actors: [a, b, c], text: ctx.t(ctx.pick(T.sendLead) + G.byPer(ctx, SEND, a), a, b, c), why: b.name + 'と' + c.name + 'が条件を満たして部屋を出た。残る' + a.name + 'が送り出した（送り出し・仲良し）', mag: 10 });
+        ctx.pending.push({ kind: 'event', cat: 'bond', actors: [a, b, c], text: ctx.t(ctx.pick(T.sendLead) + G.byPer(ctx, SEND, a), a, b, c), why: b.name + 'と' + c.name + 'が条件を満たして部屋を出た。残る' + a.name + 'が送り出した（送り出し・仲良し）', mag: 10, _rcA: a.i });
       }
       var de = gonePair(ctx, i);
       if (de && de.indexOf(b) < 0 && de.indexOf(c) < 0 && ctx.rng() < 0.6)
@@ -198,7 +198,11 @@
     var r = setup0 ? setup0.apply(this, arguments) : undefined;
     var say0 = ctx.say;
     ctx.flags.rcSeen = 0;
-    ctx.say = function () { var e = say0.apply(this, arguments); sendoff(ctx); return e; };
+    ctx.say = function (o) {
+      /* 送り出しの一言は、書き出すまでのあいだに送り出す側も部屋を出ていたら書かない（同じ区切りで続けて組が出たとき。2026-10-26 部屋のお題の条件で見つかった） */
+      if (o && o._rcA != null) { var sa = ctx.chars[o._rcA]; delete o._rcA; if (!sa || sa.out || sa.alive === false) return { skipped: true, n: ctx.log.length }; }
+      var e = say0.apply(this, arguments); sendoff(ctx); return e;
+    };
     return r;
   };
 })();

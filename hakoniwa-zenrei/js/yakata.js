@@ -27,7 +27,9 @@
       { id: 'motive', label: '動機', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }].concat(Y.MOTIVES.map(function (m) { return { v: m.id, label: m.cat + '：' + m.label }; })) }
     ],
     stats: [{ id: 'wit', label: '推理力', desc: '手がかりの見つけやすさ・推理の正確さ。犯人なら痕跡の消し方のうまさ' }, { id: 'nerve', label: '度胸', desc: '恐怖への強さ・腕っぷし。追い詰められたときの動きに効く' }],
-    perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（ゲストの職業を気質から）', groups: true, options: Y.ROLES.map(function (r) { return { id: r.id, label: r.label, group: r.group }; }) }].concat(HK.DGK ? [HK.DGK.KNOW] : []),
+    perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（ゲストの職業を気質から）', groups: true, options: Y.ROLES.map(function (r) { return { id: r.id, label: r.label, group: r.group }; }) },
+      /* 犯人になったときの動機（順22）。犯人に選ばれた人の動機は、その人の欄 > 全体の設定「動機」 > 抽選 */
+      { id: 'motive', label: '犯人になったら（動機）', auto: 'おまかせ（全体の設定・抽選）', groups: true, options: Y.MOTIVES.map(function (m) { return { id: m.id, label: m.label, group: m.cat }; }) }].concat(HK.DGK ? [HK.DGK.KNOW] : []),
     actions: [], goals: [], events: []
   };
   HK.SCENARIOS.yakata = scen;
@@ -73,6 +75,11 @@
   function names(l) { return l.map(function (p) { return p.name; }).join('・'); }
   function inv(S) { return S.P.filter(function (p) { return alive(p) && p.isDet && !p.bound; }); }
   function label(day, ph) { return day + '日目・' + ph; }
+  /* 蘇った不死・吸血鬼（yakata-special.js の k.revived）は被害者から外す（順167）。いちばん新しい「蘇っていない」事件。なければ最後の事件 */
+  function lastDead(S) { for (var i = S.kills.length - 1; i >= 0; i--) if (!S.kills[i].revived) return S.kills[i]; return S.kills[S.kills.length - 1]; }
+  /* 推理・捜査の文の「被害者」：最初の被害者が蘇っていれば、蘇っていない被害者の名前 */
+  function vicName(S) { var k0 = S.kills[0]; if (!k0 || !k0.revived) return S.v1.name; var k = lastDead(S); return k && !k.revived ? k.v.name : S.v1.name; }
+  Y.lastDead = lastDead;
 
   function run(input) {
     var S = ST.state(input, 'yakata'), rng = S.rng, env = S.env, P = S.P;
@@ -122,8 +129,12 @@
     var tri = [];
     P.forEach(function (x) { if (x !== cul && S.ties.some(function (t) { return t.type === 'crush' && t.a === cul.i && t.b === x.i; })) P.forEach(function (v) { if (v !== cul && v !== x && hasTie(S, x, v, 'lover,mate,fated,almost')) tri.push({ x: x, v: v }); }); });
     /* R18版：快楽殺人の起きやすさ（solo-yakata-r18.js が決める。'yes'=快楽殺人にする 'no'=選ばない） */
-    var pz = !Y.MOTIVE[env.motive] && Y.R18 && Y.R18.pleasure ? Y.R18.pleasure(S, env, cul) : null;
-    var mot = Y.MOTIVE[env.motive] || (pz === 'yes' && Y.MOTIVE.pleasure) || HK.weighted(rng, Y.MOTIVES, function (m) {
+    /* 動機の決まり方（順22）：犯人の欄「犯人になったら（動機）」 > 全体の設定「動機」 > 抽選 */
+    var ownMot = Y.MOTIVE[(((input.perChar && input.perChar[cul.i]) || {}).pick || {}).motive] || null;
+    var setMot = ownMot || Y.MOTIVE[env.motive] || null;
+    S.motSrc = ownMot ? '（' + cul.name + 'の欄で指定した動機）' : Y.MOTIVE[env.motive] ? '（全体の設定で指定した動機）' : '';
+    var pz = !setMot && Y.R18 && Y.R18.pleasure ? Y.R18.pleasure(S, env, cul) : null;
+    var mot = setMot || (pz === 'yes' && Y.MOTIVE.pleasure) || HK.weighted(rng, Y.MOTIVES, function (m) {
       var w = Math.max(0.05, m.fit(cul.tr)) * (m.jobs && m.jobs.split(',').indexOf(cul.role) >= 0 ? 3 : 1);
       if (m.tie) w *= P.some(function (q) { return q !== cul && hasTie(S, cul, q, m.tie); }) ? 3 : 0.25;
       if (S.host.npc && !m.host) w *= 0.08;
@@ -214,6 +225,7 @@
         if (Y.JOBS) Y.JOBS.tick(S, day + 1, k);
         if (Y.FEUD) Y.FEUD.tick(S, day + 1);
         bondTick(S);
+        flirt(S, k ? 'evening' : 'day');
         culpritMove(S);
         ST.flushShort(S, 'ほかに：');
         deduce(S, day >= env.days && k === 1);
@@ -325,7 +337,8 @@
     if (seer && rng() < 0.3) { ST.say(S, { actors: [seer, tgt], tag: '予見', text: F(pk(S, T.SEER), { a: seer.name, b: tgt.name }) + '一行は、' + tgt.name + 'の部屋の前で夜通し見張りをした。', why: '占い師の予見で、犯行を防いだ', mag: 24 }); c.m.sus = clamp(c.m.sus + 8, 0, 100); return; }
     /* 愛憎の相手は、身を挺して守る（yakata-feud.js） */
     if (Y.FEUD && Y.FEUD.guard(S, tgt, c)) return;
-    var guard = tgt.isDet ? tgt.buddies.filter(alive)[0] : S.P.filter(function (q) { return alive(q) && q !== c && q !== tgt && bond(S, q, tgt) >= 0.75; })[0];
+    /* 閉じ込められた人（濡れ衣・推理の誤り：bound）・発狂中の人は、守りに入れない */
+    var guard = (tgt.isDet ? tgt.buddies.filter(alive) : S.P.filter(function (q) { return alive(q) && q !== c && q !== tgt && bond(S, q, tgt) >= 0.75; })).filter(function (q) { return !q.bound && !q.mad; })[0];
     if (guard && rng() < 0.45) {
       if (rng() < skill(guard, 'fight') + 0.25) {
         c.m.sus = clamp(c.m.sus + 25, 0, 100);
@@ -350,6 +363,34 @@
     if (pairs.length && rng() < 0.5) { var pr = rng.pick(pairs); pr.forEach(function (p) { p.m.fear = clamp(p.m.fear - 8, 0, 100); }); ST.sayB(S, { actors: pr, tag: '夜', text: pining(S, pr[0], pr[1]) && T.PINE_NIGHT && (!HK.Pos || HK.Pos.okSex(pr[0], pr[1])) ? F(pk(S, T.PINE_NIGHT), { a: pr[0].name, b: pr[1].name }) : pr[0].name + 'と' + pr[1].name + (HK.Pos && !HK.Pos.okSex(pr[0], pr[1]) ? 'は、同じ部屋で交代に見張りをしながら夜を明かした。扉の向こうの物音に、二人で耳を澄ませた。' : 'は、同じ部屋で夜を明かした。互いの体温だけが、確かなものだった。'), why: '関係：' + relLabel(S, pr[0], pr[1]) }, pr[0].name + 'と' + pr[1].name + 'が寄り添った'); }
     var sc = live.filter(function (p) { return p.m.fear > 60; })[0];
     if (sc && rng() < 0.5) { sc.locked = true; ST.sayB(S, { actors: [sc], tag: '恐怖', text: F(pk(S, T.PANIC), { a: sc.name }), why: '恐怖 ' + Math.round(sc.m.fear) }, sc.name + 'は閉じこもった'); }
+    flirt(S, 'night');
+  }
+  /* ---------- 恋人どうしのいちゃつき（順23。日常キットの館の場面 HK.Daily.storyLove：談話室・暖炉の前・客室・雪の中庭） ----------
+     恋人・夫婦（恋人に開く）・運命の番・番と、互いに本命の二人だけ。HK.canLove を両方向・恋愛にしない組（ngPair）・恋愛なしの家族は除く。
+     死んだ人・閉じ込められた人・発狂中・部屋に閉じこもった人は出さない。一回に4場面まで */
+  function loverPairs(S) {
+    var live = S.P.filter(function (p) { return alive(p) && !p.bound && !p.mad && !p.locked; }), out = [];
+    live.forEach(function (a) {
+      live.forEach(function (b) {
+        if (a.i >= b.i) return;
+        if (!(hasTie(S, a, b, 'lover,mate,fated') || (a.honmei === b.i && b.honmei === a.i))) return;
+        if (kinNo(S, a, b) || (HK.ngPair && HK.ngPair(a, b)) || (HK.canLove && !(HK.canLove(a, b) && HK.canLove(b, a)))) return;
+        out.push([a, b]);
+      });
+    });
+    return out;
+  }
+  function flirt(S, time) {
+    if (!HK.Daily || !HK.Daily.storyLove || (S.flirtN || 0) >= 4) return;
+    var ps = loverPairs(S), rng = S.rng;
+    if (!ps.length || rng() > 0.3) return;
+    var pr = rng.pick(ps), x = rng() < 0.5 ? pr[0] : pr[1], y = x === pr[0] ? pr[1] : pr[0];
+    var r = HK.Daily.storyLove(S, 'yakata', x, y, time);
+    if (!r) return;
+    S.flirtN = (S.flirtN || 0) + 1;
+    x.m.fear = clamp(x.m.fear - 6, 0, 100); y.m.fear = clamp(y.m.fear - 6, 0, 100);
+    setRel(S, x, y, 0.05);
+    ST.sayB(S, { actors: [x, y], tag: '恋人', text: r.text, why: '恋人どうしの、つかの間の時間（' + r.label + '・関係：' + (relLabel(S, x, y) || '本命どうし') + '）。二人の恐怖が少し和らいだ' }, x.name + 'と' + y.name + 'が寄り添った');
   }
 
   /* ---------- 発見 ---------- */
@@ -429,7 +470,7 @@
         c.found = true; c.by = d; d.cnt.clue++; if (bud) bud.cnt.clue += 0.5;
         S.cul.m.sus = clamp(S.cul.m.sus + 12, 0, 100);
         var n = S.pool.filter(function (x) { return x.found; }).length;
-        var o = ST.say(S, { actors: bud ? [d, bud] : [d], tag: '手がかり ' + n + '/' + S.need, text: F(pk(S, T.INV[c.type] || T.INV.obs), { a: d.name, v: S.v1.name }) + '――' + c.t + '。', why: d.name + 'の' + { obs: '観察', lore: '知識', talk: '聞き込み', med: '検視', search: '捜索', spirit: '霊感' }[c.type] + '（' + Math.round(sk * 100) + '）' + (bud ? '＋バディ' + bud.name : '') + ' 対 犯人の隠蔽（' + Math.round(conceal(S, c) * 100) + '）', mag: 22 });
+        var o = ST.say(S, { actors: bud ? [d, bud] : [d], tag: '手がかり ' + n + '/' + S.need, text: F(pk(S, T.INV[c.type] || T.INV.obs), { a: d.name, v: vicName(S) }) + '――' + c.t + '。', why: d.name + 'の' + { obs: '観察', lore: '知識', talk: '聞き込み', med: '検視', search: '捜索', spirit: '霊感' }[c.type] + '（' + Math.round(sk * 100) + '）' + (bud ? '＋バディ' + bud.name : '') + ' 対 犯人の隠蔽（' + Math.round(conceal(S, c) * 100) + '）', mag: 22 });
         if (n === 1) ST.key(S, o, '最初の手がかり');
         /* 読み違い：本物の手がかりを、別の人を指すものだと思い込む */
         var inno = S.P.filter(function (q) { return alive(q) && q !== d && q !== S.cul && !q.bound; });
@@ -442,7 +483,7 @@
         return;
       }
       if (bud && S.rng() < 0.25) ST.sayB(S, { actors: [bud, d], tag: 'バディ', text: F(pk(S, T.BUDDY), { sensei: sensei(bud, d), a: d.name, b: bud.name }), why: bud.name + 'は' + d.name + 'の助手' }, bud.name + 'が' + d.name + 'を手伝った');
-      ST.sayB(S, { actors: [d], text: F(pk(S, T.INV[c.type] || T.INV.obs), { a: d.name, v: S.v1.name }).replace(/。$/, '') + pk(S, T.MISS), why: '犯人の隠蔽（' + Math.round(conceal(S, c) * 100) + '）が上回った' }, d.name + 'は空振り');
+      ST.sayB(S, { actors: [d], text: F(pk(S, T.INV[c.type] || T.INV.obs), { a: d.name, v: vicName(S) }).replace(/。$/, '') + pk(S, T.MISS), why: '犯人の隠蔽（' + Math.round(conceal(S, c) * 100) + '）が上回った' }, d.name + 'は空振り');
     });
   }
 
@@ -450,7 +491,7 @@
   function fakeFound(S, d, c, bud) {
     var rng = S.rng, n0 = S.pool.filter(function (x) { return x.found && !x.fake; }).length;
     var see = skill(d, 'obs') * 0.55 + (bud ? 0.1 : 0) + (d.role === 'prof' || d.role === 'doctor' ? 0.1 : 0) - (c.cun || 0.5) * 0.35 - (d.role === 'ponkotsu' ? 0.3 : 0) - (Y.JOBS ? Y.JOBS.fake(S) : 0);
-    var t = F(pk(S, T.INV[c.type] || T.INV.obs), { a: d.name, v: S.v1.name }) + '――' + c.t + '。';
+    var t = F(pk(S, T.INV[c.type] || T.INV.obs), { a: d.name, v: vicName(S) }) + '――' + c.t + '。';
     if (rng() < see) {
       c.found = true; c.fake = false; c.exposed = true; c.t = c.t + '――ただし、それは偽装だった'; d.cnt.clue++;
       S.cul.m.sus = clamp(S.cul.m.sus + 15, 0, 100); if (c.b) c.b.m.sus = clamp(c.b.m.sus - 15, 0, 100);
@@ -481,7 +522,8 @@
   }
   /* 探偵役以外の動き（職業ごと） */
   function others(S) {
-    var rng = S.rng, v = S.kills[S.kills.length - 1];
+    var rng = S.rng, v = lastDead(S);
+    if (v && v.revived) v = null;
     S.P.filter(function (p) { return alive(p) && !p.isDet && !p.bound && !p.mad; }).forEach(function (p) {
       if (rng() > 0.3) return;
       var r = p.role, g, why = '';
@@ -607,7 +649,7 @@
     if (!target) { target = c; wrong = false; }
     if (wrong) {
       target.bound = true; target.fate = '濡れ衣を着せられた';
-      var o = ST.say(S, { actors: [d, target], tag: '推理', kind: 'climax', text: t + F(pk(S, T.ACCUSE), { d: d.name, c: target.name, v: S.v1.name }) + F(pk(S, T.WRONG), { d: d.name, b: target.name }) + target.name + 'は、納屋に閉じ込められた。', why: d.name + 'の推理は外れた（' + (target === S.misTarget ? '偽の証拠や読み違えた手がかりをもとに推理を進めた' : partial ? '手がかりが足りないまま推し量った' : d.role === 'ponkotsu' ? 'ポンコツ探偵' : '犯人の工作に引っかかった') + '）。本当の犯人は' + c.name, mag: 46 });
+      var o = ST.say(S, { actors: [d, target], tag: '推理', kind: 'climax', text: t + F(pk(S, T.ACCUSE), { d: d.name, c: target.name, v: vicName(S) }) + F(pk(S, T.WRONG), { d: d.name, b: target.name }) + target.name + 'は、納屋に閉じ込められた。', why: d.name + 'の推理は外れた（' + (target === S.misTarget ? '偽の証拠や読み違えた手がかりをもとに推理を進めた' : partial ? '手がかりが足りないまま推し量った' : d.role === 'ponkotsu' ? 'ポンコツ探偵' : '犯人の工作に引っかかった') + '）。本当の犯人は' + c.name, mag: 46 });
       ST.key(S, o, d.name + 'の推理が外れた');
       S.wrongOnce = (S.wrongOnce || 0) + 1;
       if (S.wrongOnce >= 2 || S.env.days <= 2) S.over = 'wrong';
@@ -618,12 +660,12 @@
     var conf = F(pk(S, S.mot.confess), { x: S.x ? S.x.name : '' });
     /* 犯人がもう死んでいる（ほかの人に殺された・吸血鬼に襲われたなど）ときは、本人は語れない。遺品の走り書きで動機が明かされる */
     if (!alive(c)) {
-      ST.say(S, { actors: [d, c], tag: '遺品', text: pk(S, [c.name + 'の遺品の手帳から、走り書きが見つかった。', c.name + 'の部屋の暖炉の灰の中に、燃え残った便箋があった。', c.name + 'の上着の内ポケットに、折りたたんだ紙が入っていた。']) + '――「' + conf.replace(/^「|」$/g, '') + '」', why: '動機：' + S.mot.cat + '「' + S.mot.label + '」（犯人の' + c.name + 'は、すでに亡くなっていた）', mag: 40 });
+      ST.say(S, { actors: [d, c], tag: '遺品', text: pk(S, [c.name + 'の遺品の手帳から、走り書きが見つかった。', c.name + 'の部屋の暖炉の灰の中に、燃え残った便箋があった。', c.name + 'の上着の内ポケットに、折りたたんだ紙が入っていた。']) + '――「' + conf.replace(/^「|」$/g, '') + '」', why: '動機：' + S.mot.cat + '「' + S.mot.label + '」' + (S.motSrc || '') + '（犯人の' + c.name + 'は、すでに亡くなっていた）', mag: 40 });
       reveal(S, c, d);
       S.over = 'dead';
       return;
     }
-    ST.say(S, { actors: [c], tag: '告白', text: c.name + '「' + conf.replace(/^「|」$/g, '') + '」', why: '動機：' + S.mot.cat + '「' + S.mot.label + '」', mag: 40 });
+    ST.say(S, { actors: [c], tag: '告白', text: c.name + '「' + conf.replace(/^「|」$/g, '') + '」', why: '動機：' + S.mot.cat + '「' + S.mot.label + '」' + (S.motSrc || ''), mag: 40 });
     if (S.acc && alive(S.acc)) { S.acc.bound = true; S.acc.fate = '共犯として捕まった'; ST.say(S, { actors: [S.acc, c], tag: '共犯', text: S.acc.name + 'は、うなだれた。「……私も、手を貸した｜＝｜……私も、手を貸しました」', why: S.acc.name + 'は共犯だった（' + (relLabel(S, S.acc, c) || '協力者') + '）', mag: 30 }); }
     reveal(S, c, d);
     /* 犯人の最後の動き */
@@ -683,7 +725,8 @@
     qs.slice(0, 3).forEach(function (q) {
       var k = (c.buddies || []).indexOf(q) >= 0 ? 'buddy' : c.buddy === q && Y.REVEAL.buddyRev ? 'buddyRev' : c.buddy === q ? 'buddy' : pining(S, q, c) && Y.REVEAL.pining ? 'pining' : S.ties.some(function (t) { return t.type === 'crush' && t.a === q.i && t.b === c.i; }) ? 'crush' : hasTie(S, q, c, 'lover,mate,fated,almost,fwb') ? 'love' : hasTie(S, q, c, 'sibling,sibprot,sibclose,sibbad,parent,pparent') ? 'family' : bond(S, q, c) < 0 ? 'bad' : !ties(S, q, c).length ? 'trust' : 'close';
       q.m.fear = clamp(q.m.fear + (k === 'bad' ? 0 : 20), 0, 100);
-      ST.say(S, { actors: [q, c], tag: '動揺', text: F(pk(S, Y.REVEAL[k]), { b: q.name, c: c.name, sensei: sensei(q, c) }), why: q.name + 'は真相を知らなかった（' + (relLabel(S, q, c) || (S.relLab && S.relLab[rk(q, c)]) || '館で深まった関係') + '）', mag: k === 'bad' ? 20 : 36 });
+      /* 犯人がもう亡くなっているとき（遺品で明かされた）は、犯人を場面の登場人物にしない */
+      ST.say(S, { actors: alive(c) ? [q, c] : [q], tag: '動揺', text: F(pk(S, Y.REVEAL[k]),{ b: q.name, c: c.name, sensei: sensei(q, c) }), why: q.name + 'は真相を知らなかった（' + (relLabel(S, q, c) || (S.relLab && S.relLab[rk(q, c)]) || '館で深まった関係') + '）', mag: k === 'bad' ? 20 : 36 });
     });
     /* 犯人が同一人物だったときの、もう一人の反応（same-story.js） */
     if (HK.SameStory && HK.SameStory.reveal) HK.SameStory.reveal(S, c, d);
@@ -699,7 +742,8 @@
   function bondTick(S) {
     var rng = S.rng, live = S.P.filter(function (p) { return alive(p) && !p.bound; });
     if (live.length < 2 || rng() > 0.65) return;
-    var B = Y.BOND, last = S.kills[S.kills.length - 1];
+    var B = Y.BOND, last = lastDead(S);
+    if (last && last.revived) last = null;
     var opts = [];
     live.forEach(function (a) {
       live.forEach(function (b) {
@@ -799,12 +843,13 @@
     S.kills.forEach(function (k, i) { lines.push((i + 1) + '人目：' + k.v.name + '（' + k.trick.place + '・' + k.trick.method + '）――' + truthOf(S, k)); });
     if (S.acc) lines.push('共犯：' + S.acc.name);
     (S.extraKills || []).forEach(function (x) { lines.push('事件とは別の殺人：' + x.a.name + 'が、憎んでいた' + x.b.name + 'を手にかけた'); });
-    var rows = P.map(function (p) { return { i: p.i, rank: '', cells: [p.roleLabel, p.isCul ? '犯人' : p.isAcc ? '共犯' : S.kills.some(function (k) { return k.v === p; }) ? '被害者' : p.isDet ? '探偵役' : '', p.cnt.clue ? Math.round(p.cnt.clue) + 'つ' : '―', Math.round(p.m.sus) + '', p.fate] }; });
+    /* 蘇った不死・吸血鬼は被害者から外す（順167） */
+    var rows = P.map(function (p) { return { i: p.i, rank: '', cells: [p.roleLabel, p.isCul ? '犯人' : p.isAcc ? '共犯' : S.kills.some(function (k) { return k.v === p && !k.revived; }) ? '被害者' : S.kills.some(function (k) { return k.v === p; }) ? '蘇った' + (p.isDet ? '探偵役' : '') : p.isDet ? '探偵役' : '',p.cnt.clue ? Math.round(p.cnt.clue) + 'つ' : '―', Math.round(p.m.sus) + '', p.fate] }; });
     /* 助手と、結びついた探偵（点検の state-audit.js が、助手の「先生」の向きを確かめるのに使う） */
     var buddyMap = {}; S.P.forEach(function (p) { if (p.role === 'assistant' && p.buddy) buddyMap[p.i] = p.buddy.i; });
     var res0 = ST.result(S, input, {
       ending: { title: title, kind: /arrest|suicide|nobody|dead/.test(S.over) ? 'ok' : 'over', lines: lines },
-      estats: [['犯人', c.name + (S.acc ? '（共犯：' + S.acc.name + '）' : '')], ['動機', mot.label], ['犠牲者', S.kills.length + '人'], ['手がかり', found(S) + '/' + S.need], ['館', S.M]],
+      estats: [['犯人', c.name + (S.acc ? '（共犯：' + S.acc.name + '）' : '')], ['動機', mot.label], ['犠牲者', S.kills.filter(function (k) { return !k.revived; }).length + '人' + (S.kills.some(function (k) { return k.revived; }) ? '（ほかに蘇った人 ' + S.kills.filter(function (k) { return k.revived; }).length + '）' : '')], ['手がかり', found(S) + '/' + S.need], ['館', S.M]],
       table: { title: '館にいた人々', hint: '疑い：一行からの疑いの強さ。犯人は痕跡が見つかるほど上がり、罪を着せられた人も上がる。', cols: ['役割', '立場', '手がかり', '疑い', '結末'], rows: rows },
       meters: [{ label: '恐怖', color: '--love' }, { label: '疑い', color: '--enemy', dash: true }, { label: '手がかり', color: '--accent', max: 4 }],
       relmap: relmap(S),

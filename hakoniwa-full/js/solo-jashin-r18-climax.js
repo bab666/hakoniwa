@@ -46,7 +46,7 @@
   var BAMBOO = L('竹林の闇から伸びた冷たい指が、{a}の服の下に滑り込んだ。声を出せば、消える。{a}は唇を噛み、奥まで探られるままに耐えた。|無音堂の床板が軋む音さえ、ここでは鳴らなかった。音のない闇の中で、何本もの指が{a}の体を開き、{a}は袖を噛んで息を殺した。|口を縫われた白い影が、{a}の背後から覆いかぶさってきた。耳元に吐息だけを感じながら、{a}は声を飲み込み、体の奥を探られ続けた。');
   var cave0 = JS.R18.cave;
   JS.R18.cave = function (S, live) {
-    var PL = S.place, rng = S.rng, lv = S.env.jlewd / 100, R = M();
+    var PL = S.place, rng = S.rng, lv = JS.R18.lvMob ? JS.R18.lvMob(S) : S.env.jlewd / 100, R = M();
     if (HK.State) live = live.filter(HK.State.mobSexOk);
     if (HK.Content && !HK.Content.ok(S, 'force')) return;
     if (!PL || PL.id === 'cave' || (!PLACE[PL.id] && PL.id !== 'bamboo')) return cave0(S, live);

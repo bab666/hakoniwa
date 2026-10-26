@@ -83,8 +83,8 @@
     dst.noMob = !!dst.noMob || (!HK.SAFE_ON && !!(SL.locks && !SL.mob));
     /* 三人の場面：固定した相手が中心なら、固定していない人が一緒でも参加する（その人とは直接触れ合わない。room-trio.js）。R18版だけ */
     dst.trioHub = !!src.trioHub && !HK.SAFE_ON;
-    /* 攻めだが、モブには受け（攻め・リバのときだけ） */
-    dst.posNpc = src.posNpc === 'bottom' && (src.pos === 'top' || src.pos === 'riba') ? 'bottom' : '';
+    /* モブ相手の受け攻め（住人と同じ＝''／攻め／受け／リバ。pos.js の P.npc） */
+    dst.posNpc = HK.Pos && HK.Pos.npcValid ? HK.Pos.npcValid(src.posNpc) : src.posNpc === 'bottom' ? 'bottom' : '';
     /* 酒の強さ（1 弱い〜5 ザル。空ならおまかせ＝気質から） */
     dst.alcohol = HK.ALC_OK(src.alcohol) ? +src.alcohol : 0;
     /* 住人の共通の属性（体格・種族・夜の性格・心の強さ・同一人物。attr.js） */

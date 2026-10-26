@@ -326,6 +326,26 @@
       return true;
     }
   };
+  /* ---------- 犯人の凌辱・脅迫の夜（順168：ほかの夜の出来事と同じ濃さに） ----------
+     導入 → 抵抗（R18M.resist）→ 行為（組ごと：Y.R18T.asl の mf・mm・ff・fm）→ 抗う様子（態度9種の force）・耐える声 →
+     山場（受ける側の態度9種の peak）→ 喘ぎ（気の強い人は耐える声）→ 犯人の果て（組ごと）→（描写の有無「濃い」：もう一度）。結末の文は呼ぶ側で足す。
+     向きは呼ぶ側で HK.Pos.order（犯人が攻めの組だけ）。性器なしの人がいる組（pos-nogen.js）は、組を問わない以前の文。
+     描写の作風「男性向け」は、合意のない場面には使わない（tips の決まりどおり） */
+  function aslKind(c, v) { return HK.NoGen && HK.NoGen.on(c, v) ? '' : mBody(c) ? (mBody(v) ? 'mm' : 'mf') : (mBody(v) ? 'fm' : 'ff'); }
+  function assaultBody(S, c, v, intro, skipIntro) {
+    var T = Y.R18T || {}, A = T.asl || {}, M = HK.R18M, mv = { c: c.name, v: v.name };
+    var sep = HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '', k = aslKind(c, v), P = A.peak || {};
+    var per = (HK.personaOf ? HK.personaOf(v) : v.persona) || 'gentle', strong = !!(M && M.isStrong(v));
+    var t = (skipIntro || !intro || !intro.length ? '' : F(fp(S, intro), mv)) + (M ? M.resist(S, c, v, { endure: false }) : '');
+    t += sep + F(fp(S, A[k] || (isFF(c, v) && T.ff ? T.ff.assault : T.assault)), mv);
+    if (!lwShort(S)) t += pz(S, v, 'force') + (M ? M.say(S, v, 'endure') : '');
+    if (P[per] || P.gentle) t += sep + F(fp(S, P[per] || P.gentle), mv);
+    if (M) t += M.say(S, v, strong ? 'endure' : 'climax');
+    var fk = k === 'mf' || k === 'mm' ? 'm' : k;
+    if (A.fin && A.fin[fk]) t += F(fp(S, A.fin[fk]), mv);
+    if (lwHi(S) && A.again) t += sep + F(fp(S, A.again), mv) + (M ? M.say(S, v, 'endure') : '');
+    return t;
+  }
   /* ---------- 媚薬以外の夜の出来事（媚薬の夜でない夜に、1つ起きることがある） ----------
      凌辱（快楽殺人の犯人が無理やり）・吊り橋効果・犯人の脅し・大浴場・凍えた体を温め合う・取り調べでの誘惑
      起きても殺人は止まらない（false を返す）。凌辱のあと、そのまま殺されることもある */
@@ -353,7 +373,8 @@
         var mv = { c: c.name, v: v.name }, M = HK.R18M;
         /* たまに長い版（jashin-dark-thick.js）。結末（殺す／口をつぐむ）の文はそのまま続ける */
         var aLong = HK.JDark && HK.JDark.roll(S, v) ? HK.JDark.text(S, 'assault', v, c) + '\n\n' : '';
-        var t = (aLong || (T.assault_in ? F(fp(S, T.assault_in), mv) : '') + (M ? M.resist(S, c, v, { endure: false }) : '') + F(fp(S, isFF(c, v) && T.ff ? T.ff.assault : T.assault), mv) + pz(S, v, 'force') + (M ? M.say(S, v, 'endure') : '')) + F(fp(S, kill ? T.assault_kill : T.assault_live), { c: c.name, v: v.name });
+        var A = T.asl || {}, sep = HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '';
+        var t = (aLong || assaultBody(S, c, v, (T.assault_in || []).concat(A.inn || []))) + (aLong ? '' : sep) + F(fp(S, kill ? T.assault_kill.concat(A.kill || []) : T.assault_live.concat(A.live || [])), { c: c.name, v: v.name });
         ST.say(S, { actors: [c, v], tag: '凌辱', kind: 'climax', text: t, why: '快楽殺人の犯人' + c.name + 'が、' + v.name + 'を無理やり犯した（冷酷さ・衝動）。' + (kill ? 'そのまま殺した' : v.name + 'は恐怖で口をつぐんだ'), mag: 46 });
         Y.setRel(S, c, v, -0.8, '凌辱', c);
         if (kill) { S.forceTgt = v; S.forceWhy = '快楽殺人：' + v.name + 'を犯したあと、殺した'; }
@@ -365,7 +386,8 @@
       var hs = others.filter(function (q) { return (q.cnt.clue > 0 || q.approached) && !q.isDet && cTop(q); });
       if (hs.length) EV.push({ w: 1 + c.tr.cold + (S.mot.id === 'pleasure' ? 1 : 0), f: function () {
         var v = hs.sort(function (a, b) { return b.cnt.clue - a.cnt.clue; })[0];
-        ST.say(S, { actors: [c, v], tag: '脅迫', kind: 'climax', text: (HK.R18M && HK.R18M.isStrong(v) ? HK.R18M.resist(S, c, v) : F(fp(S, T.blackmail), { c: c.name, v: v.name })) + pz(S, v, 'force'), why: c.name + 'は、秘密に近づいた' + v.name + 'を脅し、体で黙らせた（' + v.name + 'は手がかりを口にできなくなる）', mag: 38 });
+        /* 脅しの書き出し（気の強い人は食ってかかって黙らされる）のあとは、凌辱と同じ組み立て（assaultBody） */
+        ST.say(S, { actors: [c, v], tag: '脅迫', kind: 'climax', text: assaultBody(S, c, v, T.blackmail, HK.R18M && HK.R18M.isStrong(v)), why:c.name + 'は、秘密に近づいた' + v.name + 'を脅し、体で黙らせた（' + v.name + 'は手がかりを口にできなくなる）', mag: 38 });
         v.approached = false; v.cnt.clue = Math.max(0, v.cnt.clue - 1); v.m.fear = Math.min(100, v.m.fear + 20);
         Y.setRel(S, c, v, -0.5, '脅迫', c);
       } });

@@ -112,8 +112,12 @@
       else if (pairs.length) headline = pairs.map(function (e) { return X.pn2(e.a, e.b); }).join('、') + (pairs.length > 1 ? ' の' + pairs.length + '組' : '') + 'が成立。' + (left.length ? X.names(left) + 'は取り残された。' : '');
       else headline = '誰も条件を満たせず、' + (left.length > 2 ? '全員' : X.names(left)) + 'が部屋に取り残された。';
       if (stayed.length) headline += X.names(stayed) + 'は条件を満たしたが、自分から部屋に残った。';
+      /* 全員で出られる部屋（順26）：条件を満たした組と一緒に出た人（何もしていない人） */
+      var along = []; ex.forEach(function (e) { (e.along || []).forEach(function (i) { if (along.indexOf(i) < 0) along.push(i); }); });
+      if (along.length) headline += X.names(along) + 'は、条件を満たした人と一緒に部屋を出た。';
       if (out.length) headline += out.length + '人で脱出した。';
       ex.forEach(function (e) {
+        if (e.along && e.along.length) lines.push(e.label + '　' + X.names(e.along) + '　' + (e.group ? X.names(e.group) : X.pn2(e.a, e.b)) + 'が条件を満たして開いた扉から、一緒に脱出');
         if (e.trio) { lines.push(e.label + '　' + X.names(e.group) + '　' + (['', '', '二人', '三人', '四人', '五人'][e.group.length] || e.group.length + '人') + 'で一緒に条件を満たして脱出。部屋を出たあとは「' + (e.bondLabel || '―') + '」'); return; }
         if (e.group != null) return;
         var p = X.pair(e.a, e.b);

@@ -36,6 +36,10 @@
     tsun_n: { label: '意地っ張り（中性的）', desc: '意地っ張りの、語尾が中性的な話し方', base: 'tsun', top: 'CP', neutral: true, fp: { m: '俺', f: '私', x: '僕' }, firm: 'plain', reluct: 0.12 },
     gentle: { group: 'soft' },
     gentle_n: { label: '穏やか（中性的）', desc: '穏やかの、語尾が中性的な話し方', base: 'gentle', top: 'NP', neutral: true, fp: { m: '僕', f: '私', x: '僕' }, group: 'soft' },
+    /* 2026-10-26（順149）：「穏やか」を男性に使うと語尾が女性的になる、という要望への、既存口調の性別ぶれの直し。辞書（tone-dict-builtin.js の gentle_m）だけで作る。
+       辞書が触らない喘ぎの台詞にも女性的な語尾（あら・〜わね）が残らないよう、男性・性別なしの人は穏やか（中性的）と同じ性別の語尾の仕上げ（neutral）も通す */
+    gentle_m: { label: '穏やか（男性）', desc: '穏やかの男性向けの語尾。「〜だね」「〜だよ」「〜かな」「〜してごらん」「〜じゃないかな」。「〜わ」「〜のよ」「〜かしら」「あら」は使わない。文面は穏やかのものを使う', base: 'gentle', top: 'NP', neutral: true, fp: { m: '僕', f: '私', x: '僕' }, group: 'soft', dictOnly: true, reluct: 0,
+      axis: { polite: 0, attitude: 'soft', ending: 'n' } },
     ane: { label: 'お姉さん（〜わよ）', desc: '「〜ね」「ふふ、いいわよ」「〜ってことね？」。余裕があって面倒見のいい、お姉さんの話し方。文面は穏やかのものを使う', base: 'gentle', top: 'NP', fp: { m: '私', f: '私', x: '私' }, derive: 'gentle', group: 'soft', reluct: -0.05 },
     devoted: { group: 'polite' },
     devoted_p: { label: '健気（くだけた）', desc: '健気の、敬語を使わない話し方', base: 'devoted', top: 'AC', plain: true, group: 'soft' },
@@ -124,7 +128,7 @@
     proud: MF('お前', 'あんた'), aniki: MF('お前', 'あんた'), yankee: MF('お前', 'あんた'), hero: MF('お前', 'あんた'), chara: MF('お前', 'あんた'),
     stern: MF('お前', 'あなた'), gentleman: '君', sondai: '君', cool: MF('お前', 'あなた'), calm: MF('君', 'あなた'), mystic: '君',
     tsun: 'あんた', tsun_n: 'あんた', gyaru: MF('お前', 'あんた'), free: MF('お前', 'あんた'), usan: 'あんた', darui: 'あんた',
-    gentle: 'きみ', gentle_n: 'きみ', ane: 'あなた', devoted: 'あなた', devoted_p: 'あなた', shy: 'あなた',
+    gentle: 'きみ', gentle_n: 'きみ', gentle_m: 'きみ', ane: 'あなた', devoted: 'あなた', devoted_p: 'あなた', shy: 'あなた',
     polite: 'あなた', ojou: 'あなた', kohai: 'あなた', genki: 'あなた', mixed: 'あなた',
     kansai: MF('お前', 'あんた'), noja: 'おぬし', mukuchi: MF('お前', 'あんた'),
     keigo_sarc: 'あなた', keigo_bossy: 'あなた', keigo_flat: 'あなた', tame: MF('お前', 'あんた'), chara_down: 'キミ',

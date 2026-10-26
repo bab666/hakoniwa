@@ -308,7 +308,7 @@
     return out.sort(function () { return S.rng() - 0.5; });
   }
   /* 一回の中の性的な夜の上限（R18版の JS.R18.room）に届いていたら、成人向けの描写にしない */
-  function r18(S, x, y) { return JS.R18 && JS.R18.on(S) && JS.R18.climaxRel && (!JS.R18.room || JS.R18.room(S, [x, y])) ? JS.R18.climaxRel : null; }
+  function r18(S, x, y) { return JS.R18 && (JS.R18.onPC ? JS.R18.onPC(S) : JS.R18.on(S)) && JS.R18.climaxRel && (!JS.R18.room || JS.R18.room(S, [x, y])) ? JS.R18.climaxRel : null; }
   function edge(S, a, b, lab, cls) { if (JS.DRAMA) JS.DRAMA.edge(S, a, b, lab, cls, a); }
   var LOVEISH = function (c) { return c === 'love'; }, CLOSE = function (c) { return c === 'love' || c === 'family' || c === 'close'; }, BAD = function (c) { return c === 'bad' || c === 'ex'; };
 

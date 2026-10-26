@@ -424,6 +424,21 @@
     }
     return old();
   };
+  /* 前戯で指を挿れたまま、繋がる段がいきなり始まらないように（2026-10-26 順146）：前戯の段に指を沈める文があり、
+     前戯の段にも繋がる段にも指を抜く言葉がなければ、前戯の段の終わりに指を抜く一文を置く（女性どうしは指のまま続くので置かない）。
+     本筋の乱数は使わない（前戯の文の長さで選ぶ）。男性向け（thick-sex-ero.js）も同じ関数を使う */
+  var FIN_IN = /指(?:を|が)[^。「」]{0,16}(?:ねじ込|沈め|沈ん|滑り込|差し入れ|埋め|潜り込|挿れ|入れ|ほぐ)|指で[^。「」]{0,12}(?:ほぐ|掻き回|かき回|抉)|指が一本/;
+  var FIN_OUT = /指を[^。「」]{0,10}(?:抜|引き抜|離)|指が[^。「」]{0,6}(?:抜け|離れ)|舐め取/;
+  T.FINGER_OUT = {
+    novel: L('{a}は濡れた指を、ゆっくりと引き抜いた。|指が抜けていくと、{b}は名残惜しそうに小さく息をこぼした。|{a}は指をそっと抜き、{b}の脚のあいだに体を寄せた。'),
+    ero: L('{a}はぬるりと指を引き抜き、糸を引くそれを{b}に見せつけた。|指がずるりと抜けていく感触に、{b}の腰がびくんと跳ねた。|{a}は指を引き抜くと、物足りなさにひくつく入口を眺めて笑った。')
+  };
+  T.fingerOut = function (fore, body, mode, ero) {
+    fore = String(fore || ''); body = String(body || '');
+    if (mode === 'ff' || !FIN_IN.test(fore) || FIN_OUT.test(fore) || FIN_OUT.test(body)) return '';
+    var l = T.FINGER_OUT[ero ? 'ero' : 'novel'];
+    return l[fore.length % l.length];
+  };
   /* 一場面ぶんの段落（始まりは呼ぶ側が渡す）。opt = { pick, rng, a, b, style, open, after, place, jealous } */
   T.scene = function (opt) {
     /* 一回の結果の中で同じ文（反応・喘ぎ・場所の一文など）を繰り返さない（ero-kit.js の HK.Ero.freshPick） */
@@ -471,7 +486,7 @@
     var sl = ET ? ET.slots(opt.ctx || opt.rng, { start: TQ.test(open0) || nt0, in: TQ.test(body), mid: TQ.test(fa) || TQ.test(ntx), peak: TQ.test(cl) || /^「[^」]*」――/.test(cl), after: cAf > 0 }, { after: !!opt.after, n: cnt(open0) + cnt(body) + cnt(fa) + cnt(ntx) + cnt(cl) + cAf + (/^「[^」]*」――/.test(cl) ? 1 : 0) + (nt0 ? 1 : 0) }) : {};
     /* 段の並び：始まり → 前戯 → 繋がる → 感じていく → 体の感触と崩れ方 → 果てる → 余韻（呼ぶ側の after） */
     out.push(open0 + (sl.start ? tsay('start') : ''));
-    out.push(fore + (sl.fore ? tsay('fore') : ''));
+    out.push(fore + (sl.fore ? tsay('fore') : '') + T.fingerOut(fore, body, mode, false));
     out.push((sl.in ? tsay('in') : '') + body);
     out.push(ntx + feel);
     /* 体の感触の段：住人の体格・種族・胸の一文（attr.js。何も決めていなければ空） */

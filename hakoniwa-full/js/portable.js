@@ -141,8 +141,10 @@
      やめた欄（箱庭全体の口調の辞書 tone。ui-adv.js の RETIRED）は、どちらの版でも書き出さず、読み込まない */
   function advOk(k) { if (HK.Adv && HK.Adv.RETIRED && HK.Adv.RETIRED[k]) return false; return !HK.SAFE_BUILD || !HK.Adv || HK.Adv.secs.some(function (s) { return s.id === k; }); }
 
+  /* 住人のアイコンの置き場（saves.js の HK.IconStore）。まるごと書き出しには DB として入れず、住人の保存（state）の中に戻して書き出す（古い版でも読める形） */
+  function iconDb() { return HK.IconStore ? HK.IconStore.DB : K('hakoniwa-icons'); }
   function collect() {
-    return idbNames().then(function (ns) { return Promise.all(ns.map(dumpDB)); }).then(function (dbs) {
+    return idbNames().then(function (ns) { return Promise.all(ns.filter(function (n) { return n !== iconDb(); }).map(dumpDB)); }).then(function (dbs) {
       var ls = lsPack(), d = new Date();
       var data = {
         format: FMT, version: VER, app: 'hakoniwa',
@@ -151,6 +153,11 @@
         localStorage: ls.json, localStorageText: ls.text, indexedDB: dbs.filter(Boolean)
       };
       var st = stateOf(data) || {};
+      /* アイコン：この画面の住人（置き場から読んだもの）を、同じ id の住人に入れる */
+      if (Array.isArray(st.chars) && HK.UI && HK.UI.state) {
+        var mem = {}; (HK.UI.state().chars || []).forEach(function (c) { if (c && c.icon) mem[c.id] = c.icon; });
+        st.chars.forEach(function (c) { if (c && !c.icon && mem[c.id]) c.icon = mem[c.id]; });
+      }
       data.summary = { chars: (st.chars || []).length, ties: (st.ties || []).length, saves: savesOf(data).length, history: histOf(data).length, keys: Object.keys(ls.json).length + Object.keys(ls.text).length };
       var text = JSON.stringify(data);
       return { data: data, text: text, name: 'hakoniwa-全部-' + stamp() + '.json' };
@@ -221,7 +228,7 @@
   /* セーブと履歴の結果（history.js。上の putHist で入れる）以外の IndexedDB（今はない。増えたときのため）：ある store にだけ入れる */
   function putOther(dbs, wipe) {
     var SDB = HK.Saves ? HK.Saves.DB : K('hakoniwa-saves'), HDB = HK.History ? HK.History.DB : K('hakoniwa-history');
-    return Promise.all((dbs || []).filter(function (d) { return d && d.name && d.name !== SDB && d.name !== HDB && mine(d.name) && d.stores; }).map(function (d) {
+    return Promise.all((dbs || []).filter(function (d) { return d && d.name && d.name !== SDB && d.name !== HDB && d.name !== iconDb() && mine(d.name) && d.stores; }).map(function (d) {
       return openExisting(d.name).then(function (db) {
         if (!db) return 0;
         var names = Object.keys(d.stores).filter(function (sn) { return db.objectStoreNames.contains(sn); });
@@ -240,6 +247,27 @@
         });
       });
     }));
+  }
+  /* 書き込む localStorage の中身（鍵 → JSON の文字列）の住人の保存・控えからアイコンを外し、アイコンの置き場（HK.IconStore）を入れ替える。
+     置き場が使えない・置けないときは、住人の保存に入れたまま（従来どおり）。map を書き換える */
+  function iconsOut(map) {
+    var SK = K('hakoniwa:state'), BK = K('hakoniwa:state:backup');
+    if (!HK.IconStore || map[SK] == null) return Promise.resolve(false);
+    var sp = HK.IconStore.split(map[SK]);
+    if (!sp.state) return Promise.resolve(false);
+    return HK.IconStore.replaceAll(sp.icons, true).then(function (ok) {
+      if (!ok) return false;
+      map[SK] = JSON.stringify(sp.state);
+      var bk = map[BK] != null ? parse(map[BK]) : null;
+      if (bk && bk.state) { bk.state = HK.IconStore.split(bk.state).state; map[BK] = JSON.stringify(bk); }
+      return true;
+    });
+  }
+  /* 読み込めなかったとき：アイコンの置き場を、この画面の住人のアイコンに戻す */
+  function iconsBack() {
+    if (!HK.IconStore || !HK.UI || !HK.UI.state) return;
+    var m = {}; (HK.UI.state().chars || []).forEach(function (c) { if (c && c.icon) m[c.id] = c.icon; });
+    HK.IconStore.replaceAll(m);
   }
   function putSaves(list) {
     if (!HK.Saves || !list.length) return Promise.resolve(0);
@@ -291,9 +319,10 @@
       Object.keys(data.localStorage || {}).forEach(function (k) { if (mine(k) && k !== SLS && k !== HLS) map[k] = JSON.stringify(data.localStorage[k]); });
       Object.keys(data.localStorageText || {}).forEach(function (k) { if (mine(k) && k !== SLS && k !== HLS && typeof data.localStorageText[k] === 'string') map[k] = data.localStorageText[k]; });
       if (HK.SAFE_BUILD && map[AK]) map[AK] = JSON.stringify(advOf(parse(map[AK])));
-      if (!writeLS(map, true)) { say('ブラウザの保存領域に入りきらず、読み込めませんでした（今のデータはそのままです）'); return; }
-      var p = HK.Saves ? HK.Saves.clear() : Promise.resolve(true), hl = hist.filter(function (h) { return h && h.input; }), hm = 0;
-      p.then(function () { return putSaves(sv); }).then(function (n) {
+      var hl = hist.filter(function (h) { return h && h.input; }), hm = 0;
+      iconsOut(map).then(function () {
+        if (!writeLS(map, true)) { iconsBack(); say('ブラウザの保存領域に入りきらず、読み込めませんでした（今のデータはそのままです）'); return; }
+        return (HK.Saves ? HK.Saves.clear() : Promise.resolve(true)).then(function () { return putSaves(sv); }).then(function (n) {
         /* 履歴の結果：今のものを消してから、ファイルの一覧が指すものを入れ、置けたかどうかの印を一覧に書き戻す */
         var want = hl.filter(function (h) { return h.id && h.r && !(HK.SAFE_BUILD && h.r18); }).length;
         return (HK.History ? HK.History.clear() : Promise.resolve(true)).then(function () { return putHist(hl, histResOf(data)); }).then(function (m) {
@@ -305,6 +334,7 @@
         return putOther(data.indexedDB, true).then(function () {
           reload('まるごと読み込みました（置き換え）：' + what.replace(/セーブ\d+件/, 'セーブ' + n + '件') + (n < sv.length ? '（セーブ' + (sv.length - n) + '件は保存しきれませんでした）' : '') + (hm > 0 ? '（履歴' + hm + '件は結果を読み込めなかったので、開くと今の版で回し直します）' : '') + (drop ? '。R18版で保存したセーブ' + drop + '件は、全年齢版では読み込みません' : ''));
         });
+      });
       });
       return;
     }
@@ -431,8 +461,10 @@
       /* 控え（state:backup）は消して、読み込み直したときに今の内容で作り直す（古い控えとの食い違いの知らせを出さない） */
       var map = {}; map[K('hakoniwa:state')] = JSON.stringify(S); map[K('hakoniwa:state:backup')] = null;
       if (HK.Adv) { var a = {}; Object.keys(HK.Adv.data || {}).forEach(function (k) { if (!advOk(k)) return; a[k] = ''; }); Object.keys(adv).forEach(function (k) { a[k] = adv[k]; }); map[K('hakoniwa:adv')] = JSON.stringify(a); }
-      if (!writeLS(map, false)) { say('ブラウザの保存領域に入りきらず、読み込めませんでした（今のデータはそのままです）'); return; }
-      reload('文字列から設定を読み込みました（置き換え）：' + what);
+      iconsOut(map).then(function () {
+        if (!writeLS(map, false)) { iconsBack(); say('ブラウザの保存領域に入りきらず、読み込めませんでした（今のデータはそのままです）'); return; }
+        reload('文字列から設定を読み込みました（置き換え）：' + what);
+      });
       return;
     }
     var r = addRoster(st), na = addAdv(adv);

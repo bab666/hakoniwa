@@ -193,8 +193,10 @@
        壁の向こうの人は{a}のものに跨り、挿入される出来事は起きない。女性の体の人は受ける側のまま（跨られる体がないので）。
        性器を「なし」にした男性も跨られる体がないので、受ける側のまま（HK.Pos.hasM。結末の「中で果てた」などが出ないように） */
     var topMe = false;
-    if (HK.Pos && !hardTop && !HK.Pos.isF(h) && HK.Pos.hasM(h) && (HK.Pos.of(h) === 'riba' || (HK.Pos.of(h) === '' && h.gender === 'm'))) {
-      var lead0 = (HK.Pos.of(h) === 'riba' ? 0.45 : 0.25) + (h.tr.cp - 0.5) * 0.5 + (h.tr.aggr - 0.5) * 0.35 + (h.tr.fc - 0.5) * 0.2 - (h.tr.ac - 0.5) * 0.3;
+    /* モブ相手の受け攻め（posNpc）を決めた人は、リバのときだけ（受けなら受けたまま） */
+    var nvH = HK.Pos && HK.Pos.npc ? HK.Pos.npc(h) : '';
+    if (HK.Pos && !hardTop && !HK.Pos.isF(h) && HK.Pos.hasM(h) && (nvH ? nvH === 'riba' : (HK.Pos.of(h) === 'riba' || (HK.Pos.of(h) === '' && h.gender === 'm')))) {
+      var lead0 = (nvH === 'riba' || HK.Pos.of(h) === 'riba' ? 0.45 : 0.25) + (h.tr.cp - 0.5) * 0.5 + (h.tr.aggr - 0.5) * 0.35 + (h.tr.fc - 0.5) * 0.2 - (h.tr.ac - 0.5) * 0.3;
       topMe = rng() < clamp(lead0, 0.08, 0.8);
     }
     /* 攻めの指定なら「中に出された」系の文を避ける */

@@ -28,11 +28,14 @@
     options: [
       { v: 'none', label: 'なし（恋人は一人まで。ほかの人を好きになったら乗り換え）' },
       { v: 'any', label: 'あり（複数の恋人を認める。三人で円満な恋人たちも）' },
-      { v: 'secret', label: '秘密（複数持てるが、恋人どうしは互いを知らない）' }
+      { v: 'secret', label: '秘密（複数持てるが、恋人どうしは互いを知らない）' },
+      /* 2026-10-26：恋人どうしが互いを知っている（あり）うえで、険悪か・仲が良いか */
+      { v: 'feud', label: 'あり・恋人どうしは険悪（鉢合わせると口論になる）' },
+      { v: 'warm', label: 'あり・恋人どうしは仲が良い（三人で過ごすことも）' }
     ],
-    desc: '一人の人が同時に何人と恋人になれるか。関係の設定で最初から恋人を二人つけた人は、どれを選んでもそのまま'
+    desc: '一人の人が同時に何人と恋人になれるか。「あり」の二つは、恋人どうし（同じ人の恋人の二人）が互いを知っていて、険悪か仲が良いか。関係の設定で最初から恋人を二人つけた人は、どれを選んでもそのまま'
   };
-  P.modeOf = function (env) { var v = env && env.poly; return v === 'any' || v === 'secret' ? v : 'none'; };
+  P.modeOf = function (env) { var v = env && env.poly; return v === 'any' || v === 'secret' || v === 'feud' || v === 'warm' ? v : 'none'; };
   /* x はエンジンの ctx か、物語型の S（S.poly） */
   P.mode = function (x) { if (!x) return 'none'; if (x.poly) return x.poly; return P.modeOf(x.env); };
 
@@ -232,6 +235,22 @@
     }
     var reg = ctx.flags.polyReg || {};
     Object.keys(reg).forEach(function (k) { if (!out.some(function (g) { return gkey(g.members) === k; })) out.push(reg[k]); });
+    /* 「あり・恋人どうしは険悪／仲が良い」：中心のある組の恋人どうし（中心以外の二人）の気持ちを、組ができたときに一度だけ寄せる（関係値だけ。記録は出さない） */
+    if (mode === 'feud' || mode === 'warm') out.forEach(function (g) {
+      if (!g.known || g.hub == null) return;
+      var oth = g.members.filter(function (i) { return i !== g.hub; }), done = ctx.flags.polyMood = ctx.flags.polyMood || {};
+      for (var x = 0; x < oth.length; x++) for (var y = x + 1; y < oth.length; y++) {
+        var k2 = oth[x] + '-' + oth[y];
+        if (done[k2]) continue;
+        done[k2] = 1;
+        [[C[oth[x]], C[oth[y]]], [C[oth[y]], C[oth[x]]]].forEach(function (q) {
+          var r = q[0] && q[1] ? ctx.R(q[0], q[1]) : null;
+          if (!r) return;
+          if (mode === 'feud') { r.ten = HK.clamp(r.ten + 18, 0, 100); r.aff = HK.clamp(r.aff - 10, -100, 100); }
+          else { r.aff = HK.clamp(r.aff + 12, -100, 100); r.trust = HK.clamp(r.trust + 8, -100, 100); r.ten = HK.clamp(r.ten - 6, 0, 100); }
+        });
+      }
+    });
     ctx.flags.polyGroups = out;
     return out;
   };
@@ -244,9 +263,20 @@
   /* 円満な三人か（知られていて、誰どうしも張りつめていない） */
   P.harmonious = function (ctx, g) {
     if (!g || !g.known || g.members.length !== 3) return false;
+    /* 恋人どうしは険悪（feud）：円満にはならない（全員が互いに恋人どうしの三人は除く） */
+    var md = P.mode(ctx);
+    if (md === 'feud' && !g.full) return false;
     var m = g.members.map(function (i) { return ctx.chars[i]; });
-    for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) if (i !== j) { var r = ctx.R(m[i], m[j]); if (!r || r.ten >= 50 || r.aff < 0) return false; }
+    for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) if (i !== j) { var r = ctx.R(m[i], m[j]); if (!r || r.ten >= (md === 'warm' ? 60 : 50) || r.aff < (md === 'warm' ? -10 : 0)) return false; }
     return true;
+  };
+  /* 恋人どうし（同じ人 h の恋人で、互いは恋人でない二人 x・y）。「あり・険悪」「あり・仲が良い」の場面が使う */
+  P.rivalsOf = function (ctx, x, y) {
+    if (!isCtx(ctx) || !x || !y || x === y || ctx.pair(x, y).couple) return null;
+    var hs = P.lovers(ctx, x).filter(function (h) { return h !== y && ctx.pair(h, y).couple && alive(h) && (!HK.State || HK.State.here(h)); });
+    if (!hs.length) return null;
+    var g = P.groupOf(ctx, x, true);
+    return g && g.members.indexOf(y.i) >= 0 ? hs[0] : null;
   };
 
   /* 「秘密」：恋人どうし（i・j）の夜で、どちらかのもう一人の恋人（pi・pj）がその場におらず、まだ知らされていない（engine.js の markRel） */
@@ -273,9 +303,17 @@
     gs.forEach(function (g) {
       /* 亡くなった人がいる組は、もう「複数の恋人」として結末に書かない（亡くなった人を、いまも愛し合っている扱いにしない） */
       if (g.members.some(function (i) { return ctx.chars[i] && ctx.chars[i].alive === false; })) return;
-      var ns = nm3(ctx, g), line;
+      var ns = nm3(ctx, g), line, md = P.mode(ctx);
+      /* 「あり・険悪」「あり・仲が良い」：中心のある組は、恋人どうし（中心以外の二人）の仲を添える。張りつめたまま終わったか、打ち解けたかは値で見る */
+      var rv = '';
+      if (g.known && g.hub != null && (md === 'feud' || md === 'warm')) {
+        var oth = g.members.filter(function (i) { return i !== g.hub; }).map(function (i) { return ctx.chars[i]; }), tens = 0, affs = 0, np = 0;
+        for (var x = 0; x < oth.length; x++) for (var y = 0; y < oth.length; y++) if (x !== y) { var rr = ctx.R(oth[x], oth[y]); tens += rr.ten; affs += rr.aff; np++; }
+        tens /= Math.max(1, np); affs /= Math.max(1, np);
+        rv = md === 'feud' ? (affs > 15 && tens < 25 ? '険悪だった恋人どうしも、いつしか少し歩み寄った' : '恋人どうしは最後まで険悪なまま') : (affs > 15 && tens < 40 ? '恋人どうしも仲が良い' : '恋人どうしは仲良くしようとしていた');
+      }
       if (!g.known) line = '秘密のままの恋：' + ns.join('・') + '（恋人どうしは、互いのことを知らないまま）';
-      else if (g.hub != null) line = '複数の恋人：' + ctx.chars[g.hub].name + 'を、' + ns.filter(function (x) { return x !== ctx.chars[g.hub].name; }).join('と') + 'が愛している（一人を二人が愛している）';
+      else if (g.hub != null) line = '複数の恋人：' + ctx.chars[g.hub].name + 'を、' + ns.filter(function (x) { return x !== ctx.chars[g.hub].name; }).join('と') + 'が愛している（一人を二人が愛している' + (rv ? '。' + rv : '') + '）';
       else line = '複数の恋人：' + ns.join('・') + '（' + (P.harmonious(ctx, g) ? '三人で円満' : '恋人どうしの三人') + '）';
       (ctx.flags.endNotes = ctx.flags.endNotes || []).push(line);
     });
@@ -356,4 +394,70 @@
       return null;
     }
   }];
+
+  /* ---------- 「あり・恋人どうしは険悪」「あり・恋人どうしは仲が良い」（2026-10-26） ----------
+     {a}＝恋人どうしの一人（動く人）、{b}＝もう一人、{c}＝二人が愛している人（中心）。中心がその場にいるときだけ。
+     険悪：鉢合わせ・口論（嫉妬系）／仲が良い：中心の話で盛り上がる・三人で過ごす（仲良し系）。恋人どうしの二人は恋愛にしない（惹かれは動かさない） */
+  var RIVAL = {
+    lead: L('{a}が{c}のところへ向かうと、ちょうど{b}が{c}の隣から立ち上がるところだった。二人は一瞬、足を止めた。どちらも、先に目を逸らそうとはしなかった。|{c}を挟んで、{a}と{b}の視線がぶつかった。{c}が何か言いかけたが、二人とも聞いていなかった。|{a}が{c}のために取っておいた席に、{b}が先に座っていた。{a}は黙って、その前に立った。|{a}と{b}は、{c}がどちらと過ごす時間が長いかで言い合いになった。言えば言うほど、空気が悪くなった。|{a}と{b}は、{c}の好きなものをどちらがよく分かっているかで張り合った。どちらも、少しも譲らなかった。'),
+    react: {
+      proud: L('{a}「また{b}？　{c}の隣は、今日は私の番｜また{b}か。{c}の隣は、今日は私の番だ｜また{b}ですか。{c}の隣は、今日は私の番です」'),
+      stern: L('{a}「順番は守ってもらう。{c}を困らせたくないなら、なおさら｜順番は守ってもらう。{c}を困らせたくないなら、なおさらだ｜順番は守っていただきます。{c}を困らせたくないなら、なおさらです」'),
+      tsun: L('{a}「べ、別に{b}がいたって気にしないし。……でも、そこは私の席｜別に{b}がいても気にしない。……だが、そこは私の席だ｜べ、別に{b}がいても気にしません。……でも、そこは私の席です」'),
+      gentle: L('{a}「……ごめん。今だけは、譲ってほしい｜……すまない。今だけは、譲ってほしい｜……ごめんなさい。今だけは、譲っていただけますか」――穏やかな声の奥に、隠しきれない棘があった。'),
+      devoted: L('{a}「{c}のことなら、私のほうが分かってる。邪魔しないで｜{c}のことなら、私のほうが分かっている。邪魔をするな｜{c}のことなら、私のほうが分かっています。邪魔をしないでください」'),
+      cool: L('{a}「同じ人を好きになった者どうし、仲良くする理由はない｜＝｜同じ人を好きになった者どうし、仲良くする理由はありません」――{a}の目は、少しも笑っていなかった。'),
+      free: L('{a}「えー、また{b}？　ちょっとは遠慮してよ｜また{b}か。少しは遠慮しろ｜また{b}ですか。少しは遠慮してください」――軽い口調のわりに、{a}は一歩も動かなかった。'),
+      shy: L('{a}は言い返せずに、唇を噛んだ。{a}「……そこ、私が座りたかった｜……そこは、私が座りたかった｜……そこ、私が座りたかったです」'),
+      polite: L('{a}「恐れ入るけど、今は私が{c}と話している｜恐れ入るが、今は私が{c}と話している｜恐れ入りますが、今は私が{c}と話しています」')
+    },
+    back: L('{b}「先に約束したのは私だけど｜先に約束したのは私だが｜先に約束したのは私ですけど」――{b}も一歩も引かなかった。|{b}は鼻で笑った。{b}「{c}が選ぶことでしょ｜{c}が選ぶことだろう｜{c}が選ぶことでしょう」|{b}「そっちこそ、少しは遠慮したら｜そっちこそ、少しは遠慮したらどうだ｜そちらこそ、少しは遠慮したらどうですか」――二人の声が、少しずつ大きくなった。'),
+    end: L('{c}が二人のあいだに割って入った。{c}「二人とも、そこまで｜二人とも、そこまでだ｜お二人とも、そこまでです」――{a}と{b}は、しぶしぶ口をつぐんだ。|{c}は困ったように二人を見比べ、どちらの名前も呼べずに黙り込んだ。{a}と{b}は、それぞれ反対の方向を向いた。|{c}「お願いだから、私の前で喧嘩しないで｜頼むから、私の前で喧嘩をしないでくれ｜お願いですから、私の前で喧嘩しないでください」――{c}の声が震えているのに気づいて、二人はようやく黙った。')
+  };
+  var FRIEND = {
+    lead: L('{a}と{b}は、{c}の寝起きの悪さの話で同時に吹き出した。同じ人を好きになった二人には、分かち合える話がいくらでもあった。|{a}は{b}に、{c}の好きな食べ物をこっそり教えた。{b}はお返しに、{c}が喜ぶ言葉を一つ教えた。|{a}と{b}は、{c}を喜ばせる方法を額を寄せて相談した。{c}は少し離れたところで、不思議そうに二人を見ていた。|{a}と{b}は、{c}を真ん中にして並んで座った。{c}が何か言うたびに、両側から笑い声が返った。|{c}が料理をしているあいだ、{a}と{b}は並んで皿を並べた。三人分の食器が揃うと、{c}は嬉しそうに笑った。|{a}と{b}と{c}は、三人で並んで夜空を見上げた。誰も、誰かを置いていこうとはしなかった。'),
+    react: {
+      proud: L('{a}「{b}がいると、{c}が笑う回数が増える。……悔しいけど、認める｜{b}がいると、{c}が笑う回数が増える。……悔しいが、認める｜{b}がいると、{c}が笑う回数が増えます。……悔しいですけど、認めます」'),
+      stern: L('{a}「{c}を支える者どうし、助け合おう｜＝｜{c}を支える者どうし、助け合いましょう」'),
+      tsun: L('{a}「べ、別に{b}と仲良くしたいわけじゃないし。{c}が喜ぶからだし｜別に{b}と仲良くしたいわけではない。{c}が喜ぶからだ｜べ、別に{b}と仲良くしたいわけではありません。{c}が喜ぶからです」'),
+      gentle: L('{a}「{b}がいてくれてよかった。一人じゃ、{c}を支えきれなかったと思う｜{b}がいてくれてよかった。一人では、{c}を支えきれなかったと思う｜{b}がいてくれてよかったです。一人では、{c}を支えきれなかったと思います」'),
+      devoted: L('{a}「{c}の幸せのためなら、{b}とも手を取り合う｜＝｜{c}の幸せのためなら、{b}とも手を取り合います」'),
+      cool: L('{a}「競うより分担したほうが効率がいい。{c}のことは、二人で見よう｜＝｜競うより分担したほうが効率がいいです。{c}のことは、二人で見ましょう」'),
+      free: L('{a}「ねえ{b}、今度二人で{c}を驚かせようよ！｜{b}、今度二人で{c}を驚かせよう！｜{b}、今度二人で{c}を驚かせましょう！」'),
+      shy: L('{a}「あ、あの……{b}と話すの、ちょっと楽しい｜……{b}と話すのは、少し楽しい｜あ、あの……{b}と話すの、少し楽しいです」'),
+      polite: L('{a}「同じ人を想う者として、これからもよろしく｜同じ人を想う者として、これからもよろしく頼む｜同じ人を想う者として、これからもよろしくお願いします」')
+    },
+    back: L('{b}は少し照れくさそうに笑った。{b}「こっちこそ｜こちらこそ｜こちらこそです」|{b}は{a}の肩を軽く叩いた。{b}「頼りにしてる｜頼りにしている｜頼りにしています」|{b}は何も言わずに頷いて、{a}の隣に座り直した。')
+  };
+  P.RIVAL = RIVAL; P.FRIEND = FRIEND;
+  function rivalWhen(md) {
+    return function (ctx, a, b) {
+      if (P.mode(ctx) !== md || ctx.flags.polyRivalAt === ctx.stepIndex) return false;
+      if (HK.State && (!HK.State.here(a) || !HK.State.here(b))) return false;
+      return !!P.rivalsOf(ctx, a, b);
+    };
+  }
+  P.EVENTS.push({
+    id: 'poly_rival_feud', cat: 'conflict', scope: 'pair',
+    when: rivalWhen('feud'),
+    w: function (ctx, a) { return 0.4 + a.tr.jealous * 0.4 + a.tr.cp * 0.2; },
+    run: function (ctx, a, b) {
+      var c = P.rivalsOf(ctx, a, b);
+      ctx.flags.polyRivalAt = ctx.stepIndex;
+      ctx.mod2(a, b, { ten: 6, aff: -3 }, { ten: 5, aff: -2 }); ctx.stress(a, 4); ctx.stress(b, 4); ctx.stress(c, 3);
+      var t = fill(ctx.pick(RIVAL.lead), a, b, c) + fill(ctx.pick(RIVAL.react[per(a)]), a, b, c) + fill(ctx.pick(RIVAL.back), a, b, c) + fill(ctx.pick(RIVAL.end), a, b, c);
+      return { with: [c], text: t, why: a.name + 'と' + b.name + 'は、どちらも' + c.name + 'の恋人。鉢合わせて口論になった（複数の恋人：恋人どうしは険悪・嫉妬）', mag: 14 };
+    }
+  }, {
+    id: 'poly_rival_warm', cat: 'bond', scope: 'pair',
+    when: rivalWhen('warm'),
+    w: function (ctx, a) { return 0.35 + a.tr.np * 0.3 + a.tr.fc * 0.1; },
+    run: function (ctx, a, b) {
+      var c = P.rivalsOf(ctx, a, b);
+      ctx.flags.polyRivalAt = ctx.stepIndex;
+      ctx.mod2(a, b, { aff: 4, trust: 3, ten: -3 }, { aff: 4, trust: 3, ten: -3 }); ctx.stress(a, -3); ctx.stress(b, -3); ctx.stress(c, -4);
+      var t = fill(ctx.pick(FRIEND.lead), a, b, c) + fill(ctx.pick(FRIEND.react[per(a)]), a, b, c) + fill(ctx.pick(FRIEND.back), a, b, c);
+      return { with: [c], text: t, why: a.name + 'と' + b.name + 'は、どちらも' + c.name + 'の恋人。三人で穏やかに過ごした（複数の恋人：恋人どうしも仲が良い・仲良し）', mag: 10 };
+    }
+  });
 })();

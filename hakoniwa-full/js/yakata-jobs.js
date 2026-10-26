@@ -64,7 +64,8 @@
   function pct(x) { return Math.round(x * 100); }
   function sus(p, d) { if (p && p.m) p.m.sus = clamp(p.m.sus + d, 0, 100); }
   function fear(p, d) { if (p && p.m) p.m.fear = clamp(p.m.fear + d, 0, 100); }
-  function lastKill(S) { return S.kills[S.kills.length - 1]; }
+  /* 蘇った不死・吸血鬼の事件は被害者から外す（yakata.js の Y.lastDead） */
+  function lastKill(S) { return Y.lastDead ? Y.lastDead(S) : S.kills[S.kills.length - 1]; }
   function fmtM(S, a, b) {
     var k = lastKill(S);
     return { a: a.name, b: b ? b.name : '', c: S.cul ? S.cul.name : '', v: k ? k.v.name : (S.v1 ? S.v1.name : ''), p: k ? k.trick.place : '広間', h: S.host ? S.host.name : '' };

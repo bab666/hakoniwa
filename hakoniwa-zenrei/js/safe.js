@@ -28,6 +28,7 @@
   var ZEN = BUILD, ZPFX = 'hakoniwa-z';
   var KST = HK.STORE = {
     zenrei: ZEN, prefix: (ZEN ? ZPFX : 'hakoniwa') + ':', db: (ZEN ? ZPFX : 'hakoniwa') + '-saves', oldDb: 'hakoniwa-saves',
+    iconDb: (ZEN ? ZPFX : 'hakoniwa') + '-icons',                /* 住人のアイコンの置き場（saves.js の HK.IconStore。住人の上限 200 人に合わせて localStorage から分けた） */
     FLAG: ZPFX + ':migrated',                                   /* 全年齢版で、旧い共有の鍵から写したことの印 */
     canon: function (k) { k = String(k); return k.indexOf(ZPFX) === 0 ? 'hakoniwa' + k.slice(ZPFX.length) : k; },
     key: function (k) { k = KST.canon(k); return ZEN && k.indexOf('hakoniwa') === 0 ? ZPFX + k.slice(8) : k; },
@@ -65,8 +66,8 @@
         ls.setItem(to, v); n++;
       } catch (e) { fail.push(k); /* 入りきらない鍵は写さない */ }
     });
-    /* hdb：履歴の結果の IndexedDB（hakoniwa-history）も、history.js が開くときに写す */
-    KST.setFlag(fail.length ? { at: Date.now(), ls: n, db: 'wait', hdb: 'wait', fail: fail } : { at: Date.now(), ls: n, db: 'wait', hdb: 'wait' });
+    /* hdb：履歴の結果の IndexedDB（hakoniwa-history）も、history.js が開くときに写す。ic：住人のアイコンの IndexedDB（hakoniwa-icons）も、saves.js の HK.IconStore が開くときに写す */
+    KST.setFlag(fail.length ? { at: Date.now(), ls: n, db: 'wait', hdb: 'wait', ic: 'wait', fail: fail } : { at: Date.now(), ls: n, db: 'wait', hdb: 'wait', ic: 'wait' });
   })();
   /* tone-engine.js は先に旧い鍵の adv を読んでいるので、この版の鍵で読み直す（やめた口調の辞書を住人へ移す ui.js の oldTone 用） */
   if (ZEN && HK.Tone) { var adv0 = HK.store.get('adv', null); HK.Tone.userText = adv0 && typeof adv0.tone === 'string' ? adv0.tone : ''; }
@@ -193,7 +194,7 @@
   Object.keys(HK.SCENARIOS).forEach(function (id) {
     var sc = HK.SCENARIOS[id];
     if (Array.isArray(sc.events)) sc.events = sc.events.filter(function (e) { return !e.r18; });
-    if (Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== 'ilewd' && e.id !== 'jlewd' && e.id !== 'jyobai' && e.id !== 'zlust' && e.id !== 'zraid' && e.id !== 'wolfnight' && e.id !== 'ylewd' && e.id !== 'slewd' && e.id !== 'ypleasure'; });
+    if (Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== 'ilewd' && e.id !== 'jlewd' && e.id !== 'jyobai' && e.id !== 'jmob' && e.id !== 'zlust' && e.id !== 'zraid' && e.id !== 'wolfnight' && e.id !== 'ylewd' && e.id !== 'slewd' && e.id !== 'ypleasure'; });
   });
   if (HK.ZB && HK.ZB.scen && HK.ZB.scen.events && HK.ZB.scen !== HK.SCENARIOS.zombie) HK.ZB.scen.events = HK.ZB.scen.events.filter(function (e) { return !e.r18; });
   function only(scen, id, opt) { (scen && scen.env || []).forEach(function (e) { if (e.id === id) { e.def = opt.v; e.options = [opt]; } }); }

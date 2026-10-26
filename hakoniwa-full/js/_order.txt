@@ -12,6 +12,7 @@ js/rel-group.js
 js/rel-core-extra.js
 js/tie-stage.js
 js/tie-abuse.js
+js/tie-layer.js
 js/tie-master-r18.js
 js/mob-after.js
 js/voice.js
@@ -136,6 +137,7 @@ js/room-tie.js
 js/room-same.js
 js/room-same-r18.js
 js/room-tie-r18.js
+js/room-games.js
 js/solo-room-jealous.js
 js/ego-image.js
 js/omega-data.js
@@ -258,6 +260,7 @@ js/island-love-r18.js
 js/zombie-map.js
 js/pos.js
 js/attr.js
+js/attr-height.js
 js/food.js
 js/special.js
 js/special-r18.js
@@ -266,6 +269,7 @@ js/pair-react.js
 js/rpg-special.js
 js/pos-fm-tease.js
 js/pos-ff.js
+js/pos-lead-r18.js
 js/pos-fm.js
 js/pos-nogen.js
 js/persona-final.js
@@ -411,6 +415,7 @@ late js/tie-new-story.js
 js/solo-rel-bad.js
 js/safe.js
 js/safe-room.js
+js/room-games-r18.js
 js/share-card.js
 js/egoquiz.js
 js/saves.js
@@ -423,6 +428,7 @@ late js/tips-scen-c.js
 late js/tips-scen-d.js
 js/scen-tags.js
 js/shared-stats.js
+js/ui-rand.js
 js/ui.js
 js/ui-gear.js
 js/ui-adv.js
@@ -444,5 +450,6 @@ js/ero-scene.js
 js/futari-r18.js
 js/reset.js
 js/voice-seg.js
+js/voice-fp.js
 late js/attr-r18.js
 late js/attr-race-r18.js

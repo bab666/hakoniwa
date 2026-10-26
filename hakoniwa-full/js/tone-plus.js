@@ -171,7 +171,7 @@
         .replace(new RegExp('だぜ' + END, 'g'), 'だよ').replace(new RegExp('([ぁ-ゖ])ぜ' + END, 'g'), '$1よ')
         .replace(/やがれ/g, 'なさい').replace(/だろうが(?=[…‥。！？!?、」]|$)/g, 'でしょう');
     }
-    if (who.gender === 'f' && (!HK.toneAxis || (HK.toneAxis(who.tone) || {}).ending !== 'm')) q = femSoft(q, who);
+    if (who.gender === 'f' && (!HK.toneAxis || (HK.toneAxis(who.tone) || {}).ending !== 'm')) q = femKiri(femSoft(q, who), who);
     return q;
   };
   /* 女性の話し手（男性的な口調を選んでいない人。HK.toneAxis の ending が 'm' の口調＝ヤンキー・兄貴分・熱血などは除く）：
@@ -183,7 +183,7 @@
     var drop = FEM_DROP[who.tone], ks = who.tone === 'kansai';
     var sent = function (str, off) { var a = str.slice(0, off); return a.slice(Math.max(a.lastIndexOf('。'), a.lastIndexOf('！'), a.lastIndexOf('？')) + 1); };
     return q.replace(/じゃねえか?/g, 'じゃない')
-      .replace(who.tone === 'usan' ? /^$/ : /((?:(?<![たかな])ら|(?<=に)なら|[まわがばさ]|でき|見え|言え|聞こえ|られ|れ|め|せ|け))(?<!ねえ)ねえ(?!ね)(?=[よかぞぜ…‥。！？!?、」♡〜]|$)/g, '$1ない')
+      .replace(who.tone === 'usan' ? /^$/ : /((?:(?<![たかな])ら|(?<=に)なら|[まわがばさ]|(?<=[かまらわ])ん|でき|見え|言え|聞こえ|られ|れ|め|せ|け))(?<!ねえ)ねえ(?!ね)(?=[よかぞぜ…‥。！？!?、」♡〜]|ん[だで]|$)/g, '$1ない')
       .replace(/(?:し|([えけげせてねべめれ]))やがって/g, function (m, e) { return (e || 'し') + 'てくれちゃって'; }).replace(/てやが(?:る|った)/g, function (m) { return /った$/.test(m) ? 'てた' : 'てる'; }).replace(/しやがる/g, 'する').replace(/やがれ/g, 'なさい')
       .replace(/くれてやる(?=[よぞぜ…‥。！？!?、」♡〜]|$|から)/g, 'あげる')
       .replace(/(て|(?<=ん)で)やる(?=[よぞぜ…‥。！？!?、」♡〜]|$|から)/g, function (m, te, off, str) { var s0 = sent(str, off); if (FEM_HARSH.test(s0)) return m; if (ks) return (te === 'て' ? 'た' : 'だ') + 'る'; return te + (FEM_WILL.test(s0) ? 'みせる' : 'あげる'); })
@@ -192,6 +192,110 @@
       .replace(/だろうが(?=[…‥。！？!?、」]|$)/g, 'でしょう')
       .replace(/だろ(?=[…‥。！!、」♡〜]|$)/g, function (m, off, str) { return /(?:何|なに|なん|どう|なぜ|どこ|いつ|誰(?!か)|どれ|どんな)/.test(sent(str, off)) ? m : 'でしょ'; })
       .replace(/(^|[「、…‥\s])おい(?=[、！!…‥。っ]|$)/g, '$1ねえ').replace(new RegExp('(?<=[一-鿿ァ-ヶー])しろ' + END, 'g'), 'しなさい');
+  }
+  /* 女性の話し手（男性的な口調を選んでいない人）の文末の、命令・禁止・詠嘆の「な」・「〜てくれ」・「〜のか」・「〜かよ」などの男性的な形（2026-10-26 順148）。
+     掛け合いの文や、硬い常体（F）のベース・強い口調の言い換え・書き下ろしから来る「全部聞かせろ」「声を殺すな」「正直な体だな」「もっと聞かせてくれ」を、
+     ・きりっとした口調（強気・厳格・冷静・冷静（落ち着き）・冷静（丸い）・意地っ張り）は「全部聞かせなさい」「声を殺さないで」「正直な体ね」「もっと聞かせて」に
+       （強気・意地っ張りは「〜なさいよ」も残す）。とっさの「伏せろ！」「離せ！」「触るな！」、喘ぎの混じる拒み（「触るな……っ」）は、そのまま
+     ・それ以外の口調は「全部聞かせて」「声を殺さないで」「正直な体だね」に
+     関西弁（独自の語尾）・ミステリアス以外の仕上げの済んだ口調もここを通るが、言い換えるのは文末の形だけ。脅し・罵り（殺す・死ね など）の文はそのまま */
+  var FEM_KIRI = { proud: 1, stern: 1, cool: 1, calm: 1, cool_soft: 1, tsun: 1, tsun_n: 1 }, FEM_KIRI_YO = { proud: 1, tsun: 1, tsun_n: 1 };
+  var FK_E2U = { 'え': 'う', 'け': 'く', 'げ': 'ぐ', 'せ': 'す', 'て': 'つ', 'べ': 'ぶ', 'め': 'む', 'れ': 'る' };
+  var FK_E2I = { 'え': 'い', 'け': 'き', 'げ': 'ぎ', 'せ': 'し', 'て': 'ち', 'べ': 'び', 'め': 'み', 'れ': 'り' };
+  var FK_U2TE = { 'う': 'って', 'つ': 'って', 'る': 'って', 'く': 'いて', 'ぐ': 'いで', 'す': 'して', 'む': 'んで', 'ぶ': 'んで', 'ぬ': 'んで' };
+  var FK_U2A = { 'う': 'わ', 'つ': 'た', 'る': 'ら', 'く': 'か', 'ぐ': 'が', 'す': 'さ', 'む': 'ま', 'ぶ': 'ば', 'ぬ': 'な' };
+  /* 五段の命令形（表にある動詞だけ。「夕焼け」「子供向け」「揺れ」のような名詞と取り違えないよう、名詞にもなる語は入れない） */
+  /* 直前が漢字なら当てない（「腕立て」「間抜け」「気休め」） */
+  var FK_GODAN = /(?<=^|[^一-鿿々])((?:言|従|使|買|笑|歌|払|誓|吸|拾|洗|追|戦|手伝|味わ|奪|狙|祝|嗅|這|会|謝|戻|帰|走|座|黙|乗|握|守|作|送|残|譲|上が|下が|代わ|当た|止ま|祈|眠|集ま|掴ま|頑張|振|イ|行|聞|書|置|引|抜|退|歩|働|動|叩|吐|拭|跪|鳴|啼|泣|突|磨|続|脱|喘|急|泳|稼|防|注|塞|離|返|出|話|渡|消|探|直|貸|回|隠|外|押|落と|起こ|許|鳴ら|揺ら|晒|垂ら|漏ら|待|持|立|勝|打|撃|放|飲|休|読|進|噛|頼|楽し|掴|踏|悩|呼|選|遊|運|飛|学|喜|結|叫|並)([えけげせてべめれ]))(よ)?$/;
+  /* 一段の命令形「〜ろ」の語幹の終わり（「ところ」「こころ」「いろいろ」「うしろ」に当てない） */
+  var FK_ICHI = /(?:[えけげせぜてでねべめれきぎじちにびみり]|(?:^|[^一-鿿々])[見寝着出居似煮射得経])$/;
+  /* 拒みの禁止（きりっとした口調では言い切りのまま） */
+  var FK_REFUSE = /(?:触る|さわる|見る|離す|動く|来る|くる|入れる|止める|抜く|待つ|やめる|近づく|寄る|近寄る|撮る)$/;
+  function fkTe(stem, godanU) {
+    if (godanU == null) return stem + 'て';
+    if (/(?:^|[^ぁ-ゖ])(?:行|い|イ)$/.test(stem) && godanU === 'く') return stem + 'って';
+    return stem + FK_U2TE[godanU];
+  }
+  function fkNai(v) {
+    if (/する$/.test(v)) return v.replace(/する$/, 'しない');
+    if (/来る$/.test(v)) return v.replace(/来る$/, '来ない');
+    if (/くる$/.test(v)) return v.replace(/くる$/, 'こない');
+    var pre = v.slice(0, -1), last = v.slice(-1);
+    /* 一段：え段・い段のかな＋る、一字の漢字の一段（見る・寝る・着る・出る など）。ほかの漢字＋る（帰る・触る・乗る）は五段 */
+    if (last === 'る' && (/[えけげせぜてでねべめれきぎじちにびみりい]$/.test(pre) && !/(?:しゃべ|いじ|ねじ|かじ|はい|かえ|まじ|すべ)$/.test(pre) || /(?:^|[^一-鿿々])[見寝着出居似煮射得経]$/.test(pre))) return pre + 'ない';
+    return FK_U2A[last] ? pre + FK_U2A[last] + 'ない' : null;
+  }
+  function fkEnd(body, next, more, kiri, keepYo, moanLine) {
+    var bang = /^[！!]/.test(next), ask = /^[？?]/.test(next), m;
+    var harsh = FEM_HARSH.test(body.replace(/(?:声|息|気配|足音)を殺/g, '')) || /死ね|くたばれ/.test(body);
+    var yo = function (y) { return y && (!kiri || keepYo) ? 'よ' : ''; };
+    /* 「〜てくれ」→「〜て」、「〜てくれないか」「〜ないか」（誘い・頼み）→「〜ない？」 */
+    if ((m = body.match(/([てで])くれ(よ)?$/))) return { b: body.slice(0, body.length - m[0].length) + m[1] + yo(m[2]) };
+    if (/(?<!じゃ|では|仕方|しかた|しょうが|しょうがな)ないか$/.test(body) && !harsh) return { b: body.slice(0, -1), p: ask || bang ? null : '？' };
+    if ((m = body.match(/(^|[をも、\s　])くれ(よ)?$/))) return { b: body.slice(0, body.length - m[0].length) + m[1] + 'ちょうだい' };
+    /* 「〜じゃないか」→「〜じゃない」（誘いの「〜ようじゃないか」はそのまま） */
+    if (/(?<![うよ])じゃないか$/.test(body)) return { b: body.slice(0, -1) };
+    /* 「〜かよ」：「〜のかよ」→「〜の？」、名詞＋「かよ」→「〜なの？」、動詞＋「かよ」（離すかよ）→「〜もんか」 */
+    if ((m = body.match(/(な?の)かよ$/))) return { b: body.slice(0, body.length - m[0].length) + m[1], p: bang ? null : '？' };
+    if (/[うくぐすつぬぶむる]かよ$/.test(body) && !/(?:こと|もの|ほど|程度|だけ|ばかり|終わり|おわり|限り|かぎり)かよ$/.test(body)) return { b: body.replace(/かよ$/, 'もんか') };
+    if (/[^かよ]かよ$/.test(body)) return { b: body.replace(/かよ$/, 'なの'), p: bang ? null : '？' };
+    /* 「〜のか」：問いは「〜の？」、気づきの「〜のか。」（続きがある）は「〜のね」。疑問詞のある「何なのか。」は「〜の」 */
+    if ((m = body.match(/(な?の)か$/)) && !/(?:もの|もん)か$/.test(body)) return ask ? { b: body.slice(0, -1) } : /(?:何|なに|なん|どう|なぜ|どこ|いつ|誰(?!か)|どれ|どんな)/.test(body) ? { b: body.slice(0, -1) } : more && !bang ? { b: body.slice(0, -1) + 'ね' } : { b: body.slice(0, -1), p: bang ? null : '？' };
+    /* 推し量りの「〜だろう」→「〜でしょう」（疑問詞のある独り言「どうしてだろう」は残す） */
+    if (/だろう$/.test(body) && !/(?:何|なに|なん|どう|なぜ|どこ|いつ|誰(?!か)|どれ|どんな)/.test(body)) return { b: body.replace(/だろう$/, 'でしょう') };
+    /* 詠嘆の「な」：「〜んだな」→「〜のね」、「〜だよな」→「〜だよね」、「〜だな」→「〜ね」（きりっとした口調）／「〜だね」 */
+    if (/[んの]だな$/.test(body)) return { b: body.replace(/[んの]だな$/, 'のね') };
+    if (/よな$/.test(body)) return { b: body.replace(/よな$/, 'よね') };
+    if (/いい子だ$/.test(body)) return { b: body.replace(/だ$/, kiri ? 'ね' : 'だね') };
+    /* あいづちの「だな」だけの台詞 */
+    if (/^だな$/.test(body)) return { b: kiri ? 'そうね' : 'だね' };
+    if (/(?<![まただ])だな$/.test(body) && body.length > 2) return { b: body.replace(/だな$/, kiri ? 'ね' : 'だね') };
+    /* 「〜たな」「〜ているな」は「〜たね」「〜ているね」。形容詞の「〜いな」（「嬉しいな」「寒いな」）は女性にも自然なので、きりっとした口調の「顔が赤いな」だけ「〜ね」に */
+    if (/(?:た|ている|でいる|てる|でる)な(よ)?$/.test(body)) return { b: body.replace(/な(よ)?$/, 'ね') };
+    if (kiri && /(?:い|ない|かった)な(よ)?$/.test(body) && !/(?:来|こ)ないな$|みたいな$|たいな$|いいな$/.test(body)) return { b: body.replace(/な(よ)?$/, 'ね') };
+    if ((m = body.match(/[うくぐすつぬぶむる]な(よ)?$/))) {
+      /* 動詞＋「な」：詠嘆（「いい匂いがするな」「分かるな」）は「〜ね」、禁止（「声を殺すな」）は「〜ないで」 */
+      var vs = body.slice(0, body.length - m[0].length + 1);
+      if (HK.Tone && HK.Tone.exclaimNa ? HK.Tone.exclaimNa(vs + 'な', next) : ask) return { b: vs + 'ね' };
+      if (harsh || (kiri && (bang || moanLine || FK_REFUSE.test(vs)))) return null;
+      var nai = fkNai(vs);
+      return nai ? { b: nai + 'で' + yo(m[1]) } : null;
+    }
+    /* 命令：きりっとした口調は「〜なさい」、ほかは「〜て」。きりっとした口調の「！」の命令はとっさの言葉なのでそのまま */
+    if (harsh || (kiri && bang) || /とは言え$|と言え$/.test(body)) return null;
+    var stem = null, gu = null, y = '';
+    /* 「待ってろ」「黙ってろ」「見てろ」→「待っていなさい」／「待ってて」 */
+    if ((m = body.match(/((?:[っんいきしちにびみりじえけせねめれげべ]|(?<=^|[^一-鿿々])[見寝着居出])[てで])ろ(よ)?$/))) {
+      var te = body.slice(0, body.length - m[0].length) + m[1];
+      return { b: te + (kiri ? 'いなさい' : 'て') + yo(m[2]) };
+    }
+    if ((m = body.match(/(?<![うぶっおも])しろ(よ)?$/)) && body.length > 2) { stem = body.slice(0, body.length - m[0].length) + 'し'; y = m[1]; }
+    else if ((m = body.match(/(?:来|(?<=^|[^ぁ-ゖ]|[へにまで])こ)い(よ)?$/))) { stem = body.slice(0, body.length - m[0].length) + '来'; y = m[1]; }
+    else if ((m = body.match(/ろ(よ)?$/)) && FK_ICHI.test(body.slice(0, body.length - m[0].length))) { stem = body.slice(0, body.length - m[0].length); y = m[1]; }
+    else if ((m = body.match(FK_GODAN))) { var e = m[2]; stem = body.slice(0, body.length - m[0].length) + m[1].slice(0, -1); y = m[3]; gu = FK_E2U[e]; if (kiri) stem += FK_E2I[e]; }
+    if (stem == null) return null;
+    if (kiri) return { b: stem + 'なさい' + yo(y) };
+    return { b: fkTe(stem, gu) + yo(y) };
+  }
+  function femKiri(q, who) {
+    if (!q || who.tone === 'kansai') return q;
+    var kiri = !!FEM_KIRI[who.tone], keepYo = !!FEM_KIRI_YO[who.tone];
+    var moanLine = /[ぁぃぅぇぉ♡]|[っッ](?=[…‥、。！!？?\s」〜～ー]|$)/.test(q);
+    /* 言葉：すげえ→すごい、飯→ご飯、謝りの「悪い。」→「ごめん。」 */
+    q = q.replace(/すげえ/g, 'すごい').replace(/すげ(?=[…‥、。！!？?っッ〜ー]|$)/g, 'すご').replace(/(^|[^ご御一-鿿々]|[朝昼晩])飯(?![場盒粒])/g, '$1ご飯')
+      .replace(/^([…‥\s]*)悪い(?=[。、])/, '$1ごめん').replace(/([てで])くれ(?=、)/g, '$1');
+    var parts = q.split(/([。！？!?…‥\n]+)/);
+    for (var i = 0; i < parts.length; i += 2) {
+      var seg = parts[i], tm = seg.match(/^([\s\S]*?)([っッー〜～♡、\s　]*)$/), body = tm[1];
+      if (!body || /[っッ]$/.test(body)) continue;
+      var next = parts[i + 1] || '', more = parts.slice(i + 2).join('').replace(/[\s　…‥。！？!?]/g, '') !== '';
+      var r = fkEnd(body, next, more, kiri, keepYo, moanLine);
+      if (!r) continue;
+      parts[i] = r.b + tm[2];
+      /* 問いにしたとき：「〜なの。くだらない」→「〜なの？　くだらない」 */
+      if (r.p && !tm[2]) parts[i + 1] = r.p + (more ? '　' : '') + next.replace(/^。/, '');
+    }
+    return parts.join('');
   }
   V.styleQuote = function (q, who) {
     var ex = who && EX[who.tone];

@@ -18,7 +18,8 @@
   function jobL(id) { var j = JS.JOB && JS.JOB[id]; return j ? j.label : id; }
   function hostile(S, a, b) { return JS.REL.cat(S, a, b) === 'bad' || JS.REL.cat(S, b, a) === 'bad' || JS.REL.bond(S, a, b) < -0.15 || JS.REL.bond(S, b, a) < -0.15; }
   function free(p) { return JS.alive(p) && !p.bound && !p.mad; }
-  function r18on(S) { return !!(JS.R18 && JS.R18.on(S)); }
+  /* 役職どうしの夜は「住人どうしの夜」（R18版の JS.R18.onPC。順162） */
+  function r18on(S) { return !!(JS.R18 && (JS.R18.onPC ? JS.R18.onPC(S) : JS.R18.on(S))); }
   function rel(S, a, b, d, lab) { if (JS.DRAMA && JS.DRAMA.setRel) JS.DRAMA.setRel(S, a, b, d, lab); }
   function edge(S, a, b, lab, cls) { if (JS.DRAMA) JS.DRAMA.edge(S, a, b, lab, cls, a); }
 

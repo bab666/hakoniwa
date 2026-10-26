@@ -156,7 +156,10 @@
     return { k: k0, t: best, A: A, B: B, dir: dir, r: r, ra: dir ? D.roleA : r, rb: dir ? D.roleB : r };
   }
   function fill(ctx, rel, s, a, b, c) {
-    return ctx.t(s.replace(/\{ra\}/g, rel.ra).replace(/\{rb\}/g, rel.rb).replace(/\{r\}/g, rel.r), a, b, c);
+    var t = ctx.t(s.replace(/\{ra\}/g, rel.ra).replace(/\{rb\}/g, rel.rb).replace(/\{r\}/g, rel.r), a, b, c);
+    /* 師弟：弟子（B）が師匠（A）の呼び方を決めていれば、「師匠」をその呼び方に（師匠本人の台詞は変えない。ties.js の HK.Ties.mentorWord。2026-10-26） */
+    if (rel.dir && rel.t && rel.t.type === 'mentor' && HK.Ties && HK.Ties.mentorWord) t = HK.Ties.mentorWord(t, rel.A, rel.B);
+    return t;
   }
   function whyOf(rel, sc) { return '関係「' + rel.r + '」の二人（' + SCENE[sc] + '）。住人どうしの関係：関係性のまま'; }
   /* 場にいる、関係の台詞のある組（並びはくじ）。組がなければくじを引かない */

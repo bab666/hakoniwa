@@ -29,37 +29,65 @@
     aphro: '媚薬を飲み切る', sake: '酒を飲み干す', spicy: '激辛ラーメンを完食', pill: '謎の錠剤を飲み切る', one: '一人しか出られない', kill: '誰かを殺す（全年齢では気絶させる）'
   };
   HK.ROOM_KINDS = K;
-
+  /* 部屋全体で数える条件か（飲む・殺す・お題（room-games.js の task：風船・ロシアンルーレットなど）） */
+  function isGlob(T) { return !!T && (T.type === 'consume' || T.type === 'kill' || T.type === 'task'); }
+  /* 二人の組で数える条件か（行為・言葉・傷つける・三人で） */
+  function isPairT(T) { return !!T && (T.type === 'act' || T.type === 'word' || T.type === 'hurt' || T.type === 'trio'); }
+  /* この版・このモードに無い条件（R18版の全年齢モードや全年齢版で、R18向けの条件を選んだ保存を開いたとき）は、近い条件に置き換える */
+  var ALT = { water: 'sake', gasballoon: 'balloon' };
+  function fixKind(k) { return K[k] ? k : ALT[k] && K[ALT[k]] ? ALT[k] : 'h'; }
+  /* 回数・本数の数字（くすぐりの秒・水の ml のように、数字に掛ける単位 mul を持つ条件がある） */
+  function nOf(k, v) { return Math.max(1, +v || 1) * (K[k].mul || 1); }
   function rulesOf(env) {
-    var r = [{ k: env.cond || 'h', n: Math.max(1, +env.n1 || 1) }];
-    if (r[0].k !== 'one' && env.cond2 && env.cond2 !== 'none' && env.cond2 !== r[0].k) r.push({ k: env.cond2, n: Math.max(1, +env.n2 || 1) });
+    var c1 = fixKind(env.cond || 'h'), c2 = env.cond2 && env.cond2 !== 'none' ? fixKind(env.cond2) : null;
+    /* 条件1で「一人しか出られない」、条件2にほかの条件：条件2を満たすと扉が開き、くぐれるのは一人だけ（only1 と同じ。2026-10-26 順164） */
+    if (c1 === 'one' && c2 && c2 !== 'one') return [{ k: c2, n: nOf(c2, env.n2) }];
+    var r = [{ k: c1, n: nOf(c1, env.n1) }];
+    if (c1 !== 'one' && c2 && c2 !== c1) r.push({ k: c2, n: nOf(c2, env.n2) });
     return r;
   }
+  /* 一人しか出られない（ほかの条件と併用）：only1 があり、または条件1が「一人しか」で条件2がある */
+  function oneWith(env) { return env.only1 === 'on' || (env.cond === 'one' && rulesOf(env)[0].k !== 'one'); }
+  /* 条件を満たした人と一緒に、残りの全員も出られる（env.allout。一人しか出られない部屋では働かない。2026-10-26 順26） */
+  function allOutEnv(env) { return env.allout === 'on' && rulesOf(env)[0].k !== 'one' && !oneWith(env); }
   /* 部屋の名前に並べる条件の名詞（「キス3回」「媚薬2本」「「好き」の言い合い」など） */
   var NOUN_N = { hand: '手繋ぎ', hug: 'ハグ', lap: '膝枕', kiss: 'キス', h: 'エッチ', love: '「好き」の言い合い', honne: '本音の打ち明け合い' };
   function nounN(r) {
     var T = K[r.k], n = r.n;
+    if (T.nounN) return T.nounN(n);
     if (T.type === 'consume') return T.item + n + T.unit;
     if (T.type === 'kill') return (HK.SAFE_ON ? '誰かの気絶' : '誰かの命') + (n > 1 ? n + '人分' : '');
     if (r.k === 'praise') return '相手のいいところ' + n + '個';
     return (NOUN_N[r.k] || T.noun) + (n > 1 ? n + T.unit + (T.type === 'word' ? 'ずつ' : '') : '');
   }
-  HK.roomLabel = function (env) {
+  HK.roomLabel = function (env) { return HK.roomLabelOf(env, rulesOf(env)); };
+  /* 条件の並び r から部屋の名前を作る（三人で、の条件が成り立たずに別の条件に替わったとき（room-games.js）も、これで付け直す） */
+  HK.roomLabelOf = function (env, r) {
     if (env.label && String(env.label).trim()) return String(env.label).trim();
-    var r = rulesOf(env);
     if (r[0].k === 'one') return '一人しか出られない部屋';
     /* 条件が二つ：順番あり（seq）は「〇〇したあとに、××しないと」、どちらからでもは「〇〇と××、両方を済ませないと」（2026-10-26 順77） */
     var s = r.length < 2 ? K[r[0].k].fin(r[0].n)
       : env.order === 'seq' ? K[r[0].k].mid(r[0].n).replace(/て$/, 'た').replace(/で$/, 'だ') + 'あとに、' + K[r[1].k].fin(r[1].n)
       : nounN(r[0]) + 'と' + nounN(r[1]) + '、両方を済ませないと';
     /* 「一人しか出られない」をほかの条件と併用（env.only1）：条件を満たしても、扉をくぐれるのは一人 */
-    return s + (env.only1 === 'on' ? '出られない部屋（ただし、出られるのは一人だけ）' : '出られない部屋');
+    /* 条件1に「一人しか出られない」・条件2にほかの条件、を選んだときも同じ（順164）。全員で出られる（env.allout）は、その旨を添える（順26） */
+    return s + (oneWith(env) ? '出られない部屋（ただし、出られるのは一人だけ）' : allOutEnv(env) ? '出られない部屋（ただし、条件を満たした人と一緒に、ほかの全員も出られる）' : '出られない部屋');
   };
-  /* 「一人しか出られない」：条件1で選ぶ（ほかの条件なし）か、ほかの条件と併用する（env.only1） */
-  HK.roomOnlyOne = function (env) { return rulesOf(env)[0].k === 'one' || env.only1 === 'on'; };
+  /* 「一人しか出られない」：条件1で選ぶ（ほかの条件なし）か、ほかの条件と併用する（env.only1、または条件1に選んで条件2を足す） */
+  HK.roomOnlyOne = function (env) { return rulesOf(env)[0].k === 'one' || oneWith(env); };
+  HK.roomAllOut = allOutEnv;
   HK.roomRules = rulesOf;
 
   var options = Object.keys(KLABEL).map(function (k) { return { v: k, label: KLABEL[k] }; });
+  /* 条件を足す（room-games.js・room-games-r18.js）：部品・見出し・条件1と条件2の選択肢に、末尾に足す（既存の選択肢の並びは変えない） */
+  function addKind(k, def, label) {
+    if (K[k]) return;
+    K[k] = def; KLABEL[k] = label;
+    options.push({ v: k, label: label });
+    (scen.env || []).forEach(function (e) { if (e.id === 'cond2' && e.options !== options) e.options.push({ v: k, label: label }); });
+  }
+  /* 回数・本数の説明に、単位の注意を足す（くすぐりは10秒、水は100mlを「1」として数える、など） */
+  function noteN(s) { (scen.env || []).forEach(function (e) { if (e.id === 'n1' || e.id === 'n2') e.desc = (e.desc ? e.desc + '。' : '') + s; }); }
 
   /* ---------- 進捗 ---------- */
   function prog(ctx, a, b) { var k = key(a, b); return (ctx.flags.prog[k] = ctx.flags.prog[k] || { act: {}, said: {} }); }
@@ -68,10 +96,10 @@
   /* 条件の生の数（二人の組なら [a の分, b の分]） */
   function rawOf(ctx, rule, a, b) {
     var T = K[rule.k];
-    if (T.type === 'consume') return [(ctx.flags.consumed[rule.k] || 0), 0];
+    if (T.type === 'consume' || T.type === 'task') return [(ctx.flags.consumed[rule.k] || 0), 0];
     if (T.type === 'kill') return [killCount(ctx), 0];
     var p = prog(ctx, a, b);
-    if (T.type === 'act') return [p.act[rule.k] || 0, 0];
+    if (T.type === 'act' || T.type === 'hurt' || T.type === 'trio') return [p.act[rule.k] || 0, 0];
     if (T.type === 'word') return [p.said[rule.k + a.i] || 0, p.said[rule.k + b.i] || 0];
     return [0, 0];
   }
@@ -79,12 +107,12 @@
   function seqOn(ctx) { return ctx.env.order === 'seq' && ctx.rules.length === 2; }
   function effOf(ctx, rule, a, b) {
     if (!seqOn(ctx) || rule !== ctx.rules[1]) return rawOf(ctx, rule, a, b);
-    var T = K[rule.k], glob = T.type === 'consume' || T.type === 'kill', r0glob = K[ctx.rules[0].k].type === 'consume' || K[ctx.rules[0].k].type === 'kill';
+    var T = K[rule.k], glob = isGlob(T), r0glob = isGlob(K[ctx.rules[0].k]);
     if (glob) { if (!ctx.flags.seqOpen && !(r0glob && ruleDone(ctx, ctx.rules[0], a, b))) return null; }
     else if (!ruleDone(ctx, ctx.rules[0], a, b)) return null;
     /* 条件1を満たした最初の時点で、それまでに数えた条件2の分を0に戻す（先に満たした条件2は数えない） */
     if (glob) {
-      if (!ctx.flags.seqResetG) { ctx.flags.seqResetG = true; if (T.type === 'consume') ctx.flags.consumed[rule.k] = 0; else ctx.flags.killBase = killCount(ctx); }
+      if (!ctx.flags.seqResetG) { ctx.flags.seqResetG = true; if (T.type === 'consume' || T.type === 'task') ctx.flags.consumed[rule.k] = 0; else ctx.flags.killBase = killCount(ctx); }
     } else {
       var p = prog(ctx, a, b);
       if (!p.seqReset) { p.seqReset = true; p.act[rule.k] = 0; p.said[rule.k + a.i] = 0; p.said[rule.k + b.i] = 0; }
@@ -106,8 +134,7 @@
      そのあいだの行為・言葉は数えない（p.pre に残すだけ）。起きにくくし、起きたら「まだ数えない」と書く（2026-10-26 順77） */
   function seqWait(ctx, rule, a, b) {
     if (!seqOn(ctx) || rule !== ctx.rules[1] || !a || !b) return false;
-    var t = K[rule.k].type;
-    return (t === 'act' || t === 'word') && !ruleDone(ctx, ctx.rules[0], a, b);
+    return isPairT(K[rule.k]) && !ruleDone(ctx, ctx.rules[0], a, b);
   }
   /* 「まだ数えない」の一文 */
   function waitNote(ctx, rule, a, b) {
@@ -138,9 +165,9 @@
   function markGoals(ctx, e) {
     var seen = ctx.flags.goalSeen, got = [];
     ctx.rules.forEach(function (r) {
-      var T = K[r.k], lab = KLABEL[r.k] + (r.n > 1 ? ' ' + r.n + T.unit : '');
+      var T = K[r.k], lab = (T.goal || KLABEL[r.k]) + (r.n > 1 ? ' ' + r.n + T.unit : '');
       if (T.type === 'one') return;
-      if (T.type === 'consume' || T.type === 'kill') {
+      if (isGlob(T)) {
         if (!seen[r.k] && globDone(ctx, r)) { seen[r.k] = 1; got.push(lab); }
         return;
       }
@@ -150,7 +177,7 @@
           var sk = r.k + ':' + key(a, b);
           if (seen[sk] || !ruleDone(ctx, r, a, b)) return;
           seen[sk] = 1;
-          got.push(lab + (ctx.chars.length > 2 ? '（' + a.name + '×' + b.name + '）' : ''));
+          got.push(lab + (ctx.chars.length > 2 ? '（' + (HK.pairNameOf ? HK.pairNameOf(a, b) : a.name + '×' + b.name) + '）' : ''));
         });
       });
     });
@@ -168,6 +195,9 @@
       /* 順番があって条件1がまだのときは、条件2は「そのあと」として全部の数を出す */
       var p = { act: {}, said: {} }; p.act[r.k] = v0[0]; p.said[r.k + a.i] = v0[0]; p.said[r.k + b.i] = v0[1];
       if (seqOn(ctx) && r === ctx.rules[1] && !ruleDone(ctx, ctx.rules[0], a, b)) { out.push('そのあと' + (T.type === 'consume' ? T.item + 'を' + r.n + T.unit : T.type === 'kill' ? '誰かの命' : T.noun + (r.n > 1 ? 'を' + r.n + T.unit : ''))); return; }
+      /* 足した条件（room-games.js）：残りの言い方を条件の側が持つ（left：部屋全体の残り／leftP：この組の残り） */
+      if (T.type === 'task') { out.push(T.left ? T.left(globLeft(ctx, r)) : T.noun + 'があと' + globLeft(ctx, r) + T.unit); return; }
+      if (T.type === 'hurt' || T.type === 'trio') { out.push(T.leftP ? T.leftP(r.n - (p.act[r.k] || 0), r.n) : T.noun); return; }
       if (T.type === 'act') out.push(T.noun + (r.n > 1 ? 'があと' + (r.n - (p.act[r.k] || 0)) + T.unit : ''));
       else if (T.type === 'word' && T.mode === 'both') {
         var who = [a, b].filter(function (c) { return (p.said[r.k + c.i] || 0) < r.n; }).map(function (c) { return c.name; });
@@ -187,7 +217,7 @@
   }
   function pairDone(ctx, a, b) { return ctx.rules.every(function (r) { return ruleDone(ctx, r, a, b); }); }
   /* 回数の表示の頭：3人以上の部屋では、条件は組ごとに数えるので「誰と誰の分」かを添える（組が変わると数が戻ったように見えるため） */
-  function pairTag(ctx, a, b) { return ctx.chars.length > 2 ? a.name + '×' + b.name + 'の' : ''; }
+  function pairTag(ctx, a, b) { return ctx.chars.length > 2 ? (HK.pairNameOf ? HK.pairNameOf(a, b) : a.name + '×' + b.name) + 'の' : ''; }
   /* 回数の表示。条件の順番があって条件1がまだの条件2は、満たした時点で数が戻る（先の分は数えない）ので、数の代わりにそう書く */
   function cntTag(ctx, r, a, b, cnt) {
     /* 条件1を待っている条件2：回数によらず「まだ数えない」と書く */
@@ -196,7 +226,22 @@
     if (seqOn(ctx) && r === ctx.rules[1] && !ruleDone(ctx, ctx.rules[0], a, b)) return '（' + pairTag(ctx, a, b) + K[r.k].noun + 'は条件1のあとから数える）';
     return '（' + pairTag(ctx, a, b) + K[r.k].noun + ' ' + cnt + '/' + r.n + '）';
   }
-  function hasPairRule(ctx) { return ctx.rules.some(function (r) { var t = K[r.k].type; return t === 'act' || t === 'word'; }); }
+  function hasPairRule(ctx) { return ctx.rules.some(function (r) { return isPairT(K[r.k]); }); }
+  /* 条件を満たした人と一緒に、残りの全員も出られる部屋か（順26） */
+  function allOut(ctx) { return !ctx.flags.isOne && !ctx.flags.oneCond && ctx.env.allout === 'on'; }
+  /* 扉が開いたとき、条件を満たした人（g）と一緒に、部屋に残っていた人も出る（倒れている人は担がれて出る）。出た記録（ctx.flags.exits の最後）に along を足し、文を返す */
+  var ALONG = ['扉が開くと、{L}も{G}のあとについて外へ出た。何もしていないのに出られたことに、{L}は少しだけ申し訳なさそうな顔をした。', '開いた扉の前で、{G}は振り返って{L}を手招きした。この部屋は、誰かが条件を満たせば全員が出られる部屋だった。{L}は顔を見合わせてから、扉をくぐった。', '鍵の外れる音を聞いて、{L}も立ち上がった。{G}が開けた扉から、部屋にいた全員が外へ出た。'];
+  function bringAlong(ctx, g) {
+    if (!allOut(ctx)) return '';
+    var L = ctx.present().filter(function (c) { return g.indexOf(c) < 0 && !c.out; });
+    if (!L.length) return '';
+    var gn = g.map(function (c) { return c.name; }).join('と');
+    L.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = gn + 'が条件を満たして開いた扉から、一緒に部屋を出た' + (c.flags.down ? '（倒れていたので、担がれて出た）' : ''); });
+    var ex = ctx.flags.exits || [], last = ex[ex.length - 1];
+    if (last) last.along = (last.along || []).concat(L.map(function (c) { return c.i; }));
+    var down = L.filter(function (c) { return c.flags.down; });
+    return ctx.pick(ALONG).replace(/\{L\}/g, names(L)).replace(/\{G\}/g, gn) + (down.length ? names(down) + 'は倒れたままだったので、' + gn + 'が肩を貸して運び出した。' : '');
+  }
 
   /* 円満な三人（三人とも互いに恋人どうし：room-trio.js）の二人だけが先に条件を満たしたとき、もう一人の恋人を部屋に残して出ていかない。
      三人で満たせる部屋なら二人とも残って三人で出るのを待ち、二人ずつの部屋なら一人が残ってもう一人の恋人に付き添う */
@@ -240,7 +285,8 @@
   }
   function exitPair(ctx, a, b, text, why, night) {
     if (ctx.flags.oneCond) return oneDoor(ctx, [a, b], text, why, night);
-    var stay = null, lt = loveThird(ctx, a, b);
+    /* 全員で出られる部屋（順26）では、三人目の恋人を待つ・付き添うために残る必要がない（その人も一緒に出る） */
+    var stay = null, lt = allOut(ctx) ? null : loveThird(ctx, a, b);
     if (lt) {
       var multiOk = (ctx.env.multi || 'open') !== 'no' && ctx.flags.multiKnown;
       if (multiOk) {
@@ -270,7 +316,7 @@
     }
     /* 体の関係を持てない組（三人の場面で数えられただけの二人など）は、夜を過ごしたことにしない */
     if (night && !okSex(a, b)) night = false;
-    if (night && ctx.present().length >= 3) {
+    if (night && ctx.present().length >= 3 && !allOut(ctx)) {
       [a, b].forEach(function (c) { if (!stay && eager(ctx, c) > 0.68 && ctx.rng() < 0.5) stay = c; });
     }
     if (stay) {
@@ -294,7 +340,9 @@
     a.fateNote = b.name + 'と一緒に部屋を出た'; b.fateNote = a.name + 'と一緒に部屋を出た';
     if (night) ctx.pair(a, b).night = true;
     ctx.mod2(a, b, { trust: 8 }, { trust: 8 });
-    return { cat: 'escape', mag: 35, text: text, why: why };
+    /* 全員で出られる部屋（順26）：部屋に残っていた人も、一緒に出る */
+    var al = bringAlong(ctx, [a, b]);
+    return { cat: 'escape', mag: 35, text: text + al, why: why + (al ? '／条件を満たした人と一緒に、ほかの全員も出られる部屋' : '') };
   }
   /* 条件の数え方は出来事ごとに散らばっている（会話・三人・口論の中の行為など）。
      区切りの終わりに、条件がそろったのにまだ部屋にいる組があれば、その場で扉を開ける */
@@ -312,6 +360,8 @@
       ctx.say({ kind: 'event', cat: 'escape', actors: [a, b], text: ex.text + (a.out && b.out ? a.name + 'と' + b.name + 'は、扉をくぐった。' : ''), why: ex.why, mag: ex.mag || 30 });
     }
   }
+  /* 部屋全体の条件の最後の一つ（「最後の一杯が空になった」。水・風船などは条件の側の last） */
+  function lastOf(r) { var T = K[r.k]; return T.last ? T.last(r.n) : '最後の一' + T.unit + 'が空になった'; }
   function exitAll(ctx) {
     var P = ctx.present().filter(function (c) { return !c.flags.knocked; });
     if (!P.length) return;
@@ -322,7 +372,7 @@
     P.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = kr ? (HK.SAFE_ON ? vn + 'を気絶させて開いた扉から、部屋を出た' : vn + 'の命と引き換えに開いた扉から、部屋を出た') : '条件を満たし、全員で部屋を出た'; });
     (ctx.flags.exits = ctx.flags.exits || []).push({ group: P.map(function (c) { return c.i; }), label: ctx.label });
     var et = kr ? ctx.pick(HK.SAFE_ON ? ['扉の鍵が外れる音がした。' + names(P) + 'は、床に倒れた' + vn + 'を振り返り、それから外へ出た。', '扉が開いた。' + names(P) + 'は、まだ目を覚まさない' + vn + 'を残して、扉をくぐった。'] : ['扉の鍵が外れる音がした。' + names(P) + 'は、' + vn + 'のほうを見ないようにして外へ出た。', '扉が音もなく開いた。' + names(P) + 'は、誰も口をきかないまま、' + vn + 'を残して部屋を出た。'])
-      : '最後の一' + K[ctx.rules[0].k].unit + 'が空になった瞬間、扉が音もなく開いた。' + names(P) + 'は、顔を見合わせてから外へ出た。';
+      : lastOf(ctx.rules[0]) + '瞬間、扉が音もなく開いた。' + names(P) + 'は、顔を見合わせてから外へ出た。';
     ctx.say({ kind: 'event', cat: 'escape', actors: P, text: et, why: '部屋全体の条件を満たした', mag: 30 });
   }
   /* 進捗が動いたあと、出られる組がいれば出す */
@@ -533,7 +583,8 @@
       { id: 'cond2', label: '条件2（任意）', type: 'select', def: 'none', options: [{ v: 'none', label: 'なし' }].concat(options.filter(function (o) { return o.v !== 'one'; })) },
       { id: 'n2', label: '条件2の回数・本数', min: 1, max: 100, def: 1, lo: '1', hi: '100' },
       { id: 'order', label: '条件の順番', type: 'select', def: 'any', options: [{ v: 'any', label: 'どちらからでも（同時に数える）' }, { v: 'seq', label: '条件1を満たしてから条件2（先に満たした条件2は数えない）' }], desc: 'どちらからでも：「媚薬2本とキス、両方を済ませないと出られない部屋」。条件1から：「媚薬を2本飲み切ったあとに、キスしないと出られない部屋」（条件1の前の条件2は、起きにくく、起きても数えない）' },
-      { id: 'only1', label: '一人しか出られない（ほかの条件と併用）', type: 'select', def: 'off', options: [{ v: 'off', label: 'なし' }, { v: 'on', label: 'あり：条件を満たしても、扉をくぐれるのは一人だけ' }] },
+      { id: 'only1', label: '一人しか出られない（ほかの条件と併用）', type: 'select', def: 'off', options: [{ v: 'off', label: 'なし' }, { v: 'on', label: 'あり：条件を満たしても、扉をくぐれるのは一人だけ' }], desc: '条件1に「一人しか出られない」、条件2にキスなどを選んでも同じになる（条件2を満たすと扉が開き、くぐれるのは一人）。三人以上で一緒に満たしたときも一人だけ' },
+      { id: 'allout', label: '条件を満たした人と一緒に、全員出られる', type: 'select', def: 'off', options: [{ v: 'off', label: 'なし（条件を満たした人だけが出る）' }, { v: 'on', label: 'あり：誰かが条件を満たして扉が開けば、何もしていない人も一緒に出られる' }], desc: '例：二人が条件を満たして扉が開いたとき、部屋に残っていた三人目もついでに出られる。「一人しか出られない」部屋では働かない' },
       { id: 'label', label: '部屋の名前（空欄なら自動）', type: 'text', def: '', placeholder: '例：媚薬を10本飲み切らないと出られない部屋' },
       { id: 'hours', label: '閉じ込められる時間', min: 4, max: 240, def: 10, lo: '4時間', hi: '10日', unit: '時間', desc: '48時間を超えると、経過は数時間ごとにまとめ、結果は重要な出来事だけの短縮版で表示する' },
       { id: 'pressure', label: '部屋の圧', min: 0, max: 100, def: 50, lo: '居心地がいい', hi: '息苦しい', desc: '高いほど焦りが溜まり、覚悟が早く決まる' }
@@ -569,7 +620,7 @@
       ctx.flags.hasAphroRule = ctx.rules.some(function (r) { return r.k === 'aphro'; });
       ctx.flags.isOne = ctx.rules[0].k === 'one';
       /* 「一人しか出られない」をほかの条件と併用：条件を満たした組（全員の条件なら全員）のうち、扉をくぐれるのは一人 */
-      ctx.flags.oneCond = !ctx.flags.isOne && ctx.env.only1 === 'on';
+      ctx.flags.oneCond = !ctx.flags.isOne && oneWith(ctx.env);
       ctx.flags.toolbox = ctx.rules.some(function (r) { return r.k === 'h' || r.k === 'kiss'; });
       ctx.chars.forEach(function (c) { c.baseTr = JSON.parse(JSON.stringify(c.tr)); c.hp = 40 + ctx.stat(c, 'hp') * 12; });
       ctx.stepsTotal = scen.steps(ctx.env).length;
@@ -582,7 +633,7 @@
     phase: function (ctx, s, n) {
       if (s === 0) {
         var cons = ctx.rules.filter(function (r) { return K[r.k].type === 'consume'; });
-        ctx.say({ text: names(ctx.present()) + 'は白い部屋で目を覚ました。扉には一枚の紙。「' + ctx.flags.roomLabel.replace(/部屋$/, '') + '」' + (cons.length ? '部屋の隅のテーブルには、' + cons.map(function (r) { return K[r.k].item + 'が' + r.n + K[r.k].unit; }).join('、') + '並んでいる。' : '') + (ctx.flags.toolbox ? 'ベッドの脇には、中身を想像したくない木箱が一つ置かれていた。' : '') + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(ctx.present(), 'trapped', ctx) : '') });
+        ctx.say({ text: names(ctx.present()) + 'は白い部屋で目を覚ました。扉には一枚の紙。「' + ctx.flags.roomLabel.replace(/部屋$/, '') + '」' + (cons.length ? '部屋の隅のテーブルには、' + cons.map(function (r) { return K[r.k].table ? K[r.k].table(r.n) : K[r.k].item + 'が' + r.n + K[r.k].unit; }).join('、') + '並んでいる。' : '') + (ctx.flags.toolbox ? 'ベッドの脇には、中身を想像したくない木箱が一つ置かれていた。' : '') + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(ctx.present(), 'trapped', ctx) : '') });
       }
       if (s === n - 1 && ctx.present().length > 1) ctx.say({ text: '照明が一段暗くなった。残された時間は少ない。' });
     },
@@ -853,7 +904,8 @@
     w: function (ctx, a) {
       var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && globLeft(ctx, x) > 0; })[0];
       /* 酒は、お酒に強い人ほど進んで引き受ける（キャラの設定「お酒」） */
-      return 0.8 + ITEM[r.k].fit(a) * 1.5 + a.stress / 120 + ctx.stepIndex / Math.max(4, ctx.env.hours) * 1.5 + (r.k === 'sake' && a.alcohol ? (a.alcohol - 3) * 0.3 : 0);
+      /* wb：飲み物ごとの起きやすさの上乗せ（水など。room-games-r18.js） */
+      return 0.8 + ITEM[r.k].fit(a) * 1.5 + a.stress / 120 + ctx.stepIndex / Math.max(4, ctx.env.hours) * 1.5 + (r.k === 'sake' && a.alcohol ? (a.alcohol - 3) * 0.3 : 0) + (ITEM[r.k].wb || 0);
     },
     run: function (ctx, a) {
       var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && globLeft(ctx, x) > 0; })[0];
@@ -867,7 +919,9 @@
         var meek = ctx.most(ctx.others(a), function (o) { return o.tr.ac; });
         if (meek && meek.tr.ac > 0.6) { drinker = meek; forced = true; }
       }
-      var scale = Math.max(1, Math.round(r.n / Math.max(4, ctx.stepsTotal * 1.2)));
+      /* mult：一度に飲む量の倍率（水は ml で数えるので、一度に多めに飲む。room-games-r18.js） */
+      var scale = Math.max(1, Math.round(r.n / Math.max(4, ctx.stepsTotal * 1.2) * (I.mult || 1)));
+      if (I.round) scale = Math.max(I.round, Math.round(scale / I.round) * I.round);
       var n = Math.min(left, (1 + (drinker.tr.impulse > 0.6 ? ctx.rng.int(3) : ctx.rng.int(2))) * scale);
       ctx.flags.consumed[r.k] = (ctx.flags.consumed[r.k] || 0) + n;
       var dk = ctx.flags.drank[drinker.i] = ctx.flags.drank[drinker.i] || {};
@@ -896,10 +950,11 @@
       if (total >= r.n) {
         ctx.say({ kind: 'event', cat: 'escape', actors: drinker !== a ? [a, drinker] : [a], text: text, why: whyT, mag: 10 });
         if (!hasPairRule(ctx)) { checkExit(ctx); return null; }
-        ctx.say({ text: '最後の一' + K[r.k].unit + 'が空になった。だが扉はまだ開かない。紙の残りの一文が、まだ残っている。' });
+        ctx.say({ text: lastOf(r) + '。だが扉はまだ開かない。紙の残りの一文が、まだ残っている。' });
         ctx.present().forEach(function (x) {
           ctx.present().forEach(function (y) {
-            if (x.i < y.i && !x.out && !y.out && pairDone(ctx, x, y)) {
+            /* 一人しか出られない部屋で、もう一人が出たあとは扉は開かない（組ごとに「開かなかった」を重ねない） */
+            if (x.i < y.i && !x.out && !y.out && !ctx.flags.oneOut && pairDone(ctx, x, y)) {
               var actR = ctx.rules.filter(function (q) { return K[q.k].type !== 'consume'; })[0];
               var ex = exitPair(ctx, x, y, x.name + 'と' + y.name + 'は、もう一つの条件をすでに満たしていた。' + (actR && HK.RoomLewd ? HK.RoomLewd.recap(ctx, x, y, actR.k, 0) : ''), '条件がすべて揃った', false);
               ctx.say({ kind: 'event', cat: 'escape', actors: [x, y], text: ex.text, why: ex.why, mag: 30 });
@@ -1274,5 +1329,7 @@
   HK.SCENARIOS.whiteroom = scen;
   HK.SCEN_ORDER.splice(1, 0, 'whiteroom');
   /* 追加の展開（room-trio.js など）から使う部品 */
-  HK.RoomAPI = { K: K, EV: EV, scen: scen, prog: prog, ruleDone: ruleDone, seqWait: seqWait, seqFlush: seqFlush, bumpAct: bumpAct, waitNote: waitNote, pairDone: pairDone, leftText: leftText, eager: eager, willing: willing, desperate: desperate, tieWall: tieWall, names: names, hasPairRule: hasPairRule, finishExit: finishExit, exitPair: exitPair };
+  HK.RoomAPI = { K: K, EV: EV, scen: scen, prog: prog, ruleDone: ruleDone, seqWait: seqWait, seqFlush: seqFlush, bumpAct: bumpAct, waitNote: waitNote, pairDone: pairDone, leftText: leftText, eager: eager, willing: willing, desperate: desperate, tieWall: tieWall, names: names, hasPairRule: hasPairRule, finishExit: finishExit, exitPair: exitPair,
+    /* 条件を足す側（room-games.js・room-games-r18.js）から使う部品 */
+    KLABEL: KLABEL, ITEM: ITEM, ACT_TEXT: ACT_TEXT, addKind: addKind, noteN: noteN, isGlob: isGlob, globLeft: globLeft, globDone: globDone, checkExit: checkExit, exitAll: exitAll, oneDoor: oneDoor, allOut: allOut, bringAlong: bringAlong, lastOf: lastOf, okSex: okSex, exclOther: exclOther, cntTag: cntTag };
 })();

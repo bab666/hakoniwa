@@ -132,7 +132,7 @@
   var BREAK = L('一人きりになった{spot}で、{a}はついに膝をついた。{a}「……どうして、置いていった｜……なぜ、置いていった｜……どうして、置いていったんですか」――ずっと飲み込んできた言葉が、ようやく声になった。{a}は誰にも見られないまま、長いあいだ泣いた。|{a}は{item}を握りしめたまま、壁にもたれて座り込んだ。張りつめていた糸が、ぷつりと切れたようだった。{a}の目から、こらえていた涙がとめどなく流れた。|皆の前ではいつもどおりだった{a}が、ふと姿を消した。探しに行った先で、{a}は{b}の名前を呼びながら、声を殺して泣いていた。{a}「ごめん。少しだけ、このままでいたい｜すまない。少しだけ、このままでいたい｜すみません。少しだけ、このままでいさせてください」');
   /* 少しだけ前を向く（喪失が薄れてきたとき、一度だけ） */
   var ACCEPT = {
-    sink: L('{a}は{spot}で、{b}のために静かに手を合わせた。{a}「ずっと泣いてばかりで、ごめん。もう少しだけ、ちゃんと生きてみる｜ずっと泣いてばかりで、すまなかった。もう少しだけ、ちゃんと生きてみる｜ずっと泣いてばかりで、ごめんなさい。もう少しだけ、ちゃんと生きてみます」――顔を上げた{a}の目に、ほんの少しだけ光が戻っていた。{a}はもう一度だけ深く頭を下げてから、皆のところへ戻った。|{a}は{b}の分まで食べると決めて、久しぶりに出されたものを残さず食べた。{a}「おいしい。……{b}にも、食べさせたかった｜うまい。……{b}にも、食べさせたかった｜おいしいです。……{b}にも、食べさせたかったです」――涙はこぼれたが、手は止まらなかった。食べ終えた{a}は、小さく「ごちそうさま｜＝｜ごちそうさまでした」と言った。|{a}は{item}に、小さく「おやすみ｜＝｜おやすみなさい」と言ってから眠った。その夜、{a}は久しぶりに朝まで目を覚まさなかった。起きたとき、{a}の顔は少しだけ穏やかだった。'),
+    sink: L('{a}は{spot}で、{b}のために静かに手を合わせた。{a}「ずっと泣いてばかりで、ごめん。もう少しだけ、ちゃんと生きてみる｜ずっと泣いてばかりで、すまなかった。もう少しだけ、ちゃんと生きてみる｜ずっと泣いてばかりで、ごめんなさい。もう少しだけ、ちゃんと生きてみます」――顔を上げた{a}の目に、ほんの少しだけ光が戻っていた。{a}はもう一度だけ深く頭を下げてから、皆のところへ戻った。|{a}は{b}の分まで食べると決めて、久しぶりに出されたものを残さず食べた。{a}「おいしい。……{b}にも、食べさせたかった｜うまい。……{b}にも、食べさせたかった｜おいしいです。……{b}にも、食べさせたかったです」――涙はこぼれたが、手は止まらなかった。食べ終えた{a}は、小さく「ごちそうさま｜＝｜ごちそうさまでした」と言った。|{a}は{item}に、小さく「＠{a}＠おやすみ｜＝｜おやすみなさい」と言ってから眠った。その夜、{a}は久しぶりに朝まで目を覚まさなかった。起きたとき、{a}の顔は少しだけ穏やかだった。'),
     blame: L('{a}は{b}に向かって、初めて「ありがとう｜＝｜ありがとうございます」と言った。ずっと謝ることしかできなかった口から出た、別の言葉だった。{a}はそれで、少しだけ肩の力が抜けた。|{a}「{b}は、私に生きてほしかったんだと思う｜{b}は、私に生きてほしかったのだと思う｜{b}は、私に生きてほしかったんだと思います」――{a}はぽつりとそう言った。自分を許したわけではなかった。それでも、前を向く理由にはなった。|嫌な役を、{a}はもう自分だけで背負わなくなった。{a}「一緒に行こう。一人では行かない｜＝｜一緒に行きましょう。一人では行きません」――{b}を失ってから、{a}が初めて口にした言葉だった。隣にいた者は、黙ってうなずいた。'),
     hold: L('{a}は皆の前で、初めて{b}の話をした。短く、言葉少なだったが、声は最後まで崩れなかった。話し終えた{a}の顔は、少しだけ軽くなって見えた。|{a}は引き受けすぎていた仕事を、ようやく人に任せた。{a}「{b}にも、よく言われていた。一人で抱えすぎだと｜＝｜一人で抱えすぎだと、{b}にもよく言われていました」――そう言って、{a}は珍しく自分から休んだ。その寝顔は、久しぶりに穏やかだった。|{a}は{item}を、誰の目にも見える場所に置いた。もう隠しておく必要はなかった。{a}「{b}も、ここにいればいい｜＝｜{b}も、ここにいればいいです」'),
     bright: L('{a}は{b}の話をしながら、心から笑った。笑いながら少しだけ泣いて、また笑った。{a}「ちゃんと泣けた。……やっと｜＝｜やっと……ちゃんと泣けました」|{a}は{b}の口癖で、皆を笑わせた。今度の笑い声は、誰の耳にも本物に聞こえた。{a}「{b}の分も、私が笑っておく｜＝｜{b}の分も、私が笑っておきます」|{a}はもう、一人になる時間を怖がらなくなった。{spot}で静かに座り、{b}のことを思い出す時間を持つようになった。戻ってきた{a}の笑顔は、前よりずっと自然だった。'),
@@ -229,7 +229,7 @@
   var DEF_SPOTS = L('部屋の隅|窓辺|いつもの場所');
 
   /* ======================= 仕組み ======================= */
-  function ok(c) { return c && c.alive && !c.out && !c.mad && !(c.flags && c.flags.caged != null); }
+  function ok(c) { return c && c.alive && !c.out && !c.mad && !(c.flags && (c.flags.caged != null || c.flags.offstage)); }
   function lossOf(c) { var l = c && c.flags && c.flags.loss; return l && !l.done ? l : null; }
   G.of = lossOf;
   function stage(l) {
@@ -262,6 +262,7 @@
       ctx.chars.forEach(function (o) {
         if (o === v || !ok(o)) return;
         var dp = G.depth(ctx, o, v, opt);
+        addMourn(ctx, o, v, dp, s, opt);   /* 死を引きずる日々（順166） */
         if (dp.d < (opt.min || 40)) return;
         var cur = lossOf(o), type = cur ? cur.type : typeOf(o);
         var lv = clamp(dp.d * MULT[type], 30, 100);
@@ -339,7 +340,172 @@
       if (!l.calm) l.lv = Math.max(0, l.lv - Math.max(1.5, l.lv0 * 0.6 / Math.max(2, Math.min(n - l.at, opt.span || 99))) / dur(l));
       if (l.lv <= 6 && l.accepted) l.done = true;
     });
+    mournTick(ctx, s, n, opt);
   }
+
+  /* ======================= 死を引きずる日々（順166） =======================
+     亡くなった人と近かった住人は、死後しばらく（その日と翌日。恋人・夫婦・家族・親友は3日）沈んだまま過ごす。
+     ・関係の近さ（close 恋人・夫婦・家族・親友／friend 友人・仲間／acq 顔見知り程度。無関心・敵対・手を下した人は引きずらない）で、長さと重さが変わる
+     ・場面：気分が沈む・名前を出す・遺品に触れる・食事が喉を通らない・夜に泣く（区切りの名前が「夜」なら夜の場面、「朝・昼」なら食事の場面が出やすい）
+     ・ストレスが高いと（気分 HK.Emo の悲しみ・怒りも見る）、ふさぎ込む・八つ当たり・空元気・一人で抜け出す のどれかになる（気質で選ぶ）
+     ・亡くなった次の区切りに、近かった人が二人以上いれば、短い弔いの場面（opt.funeral === false の箱庭は除く。無人島は亡骸の扱いの場面がある）
+     ・死ネタの重さ「穏やか」では、期間を一段短くし、場面を減らす
+     ・亡くなった人は主語・話し手にしない（名前は「〇〇の」「〇〇を」の形と、台詞の中だけ）。遺体には触れない（遺体の残らない死でも同じ文で使える：遺品と名前だけ）
+     ・一日の区切りの数：opt.perDay、なければ単位が「日」の箱庭の perUnit（なければ 1）。単位が日でない箱庭（月など）は、区切りの数で数える */
+  var MOURN_CLOSE = /^(?:lover|spouse|fiance|honmei|mate|fated|parent|pparent|sibprot|sibclose|sibling|stepsib|relative|best)$/;
+  var MOURN_FRIEND = /^(?:friend|buddy|childhood|almost|mentor|teacher|senpai|colleague|classmate|comrade|boss|benefactor|crush|yan|worship|fond|blind|master|acq)$/;
+  var MOURN_NO = /^(?:apathy|enemy|bad|sibbad|abuse|fear)$/;
+  var MOURN_KIND_NAME = { close: '恋人・家族・親友', friend: '友人・仲間', acq: '顔見知り' };
+  var MOURN = {
+    mood: {
+      deep: L('{a}は一日じゅう、ほとんど口をきかなかった。話しかけられても、少し遅れてから短く答えるだけだった。|{a}の目は赤く腫れたままだった。{b}がいないというだけで、景色の色が一段暗く見えた。|{a}は何をしていても、途中で手が止まった。{b}のいない時間に、まだ体が慣れていなかった。'),
+      lite: L('{a}はいつもより静かだった。{b}のことを考えているのだと、誰もが分かっていた。|{a}はふとした拍子に、ため息をついた。{b}のいない場所が、どうしても目に入った。|{b}のことが頭をよぎるたびに、{a}の笑顔は少しだけぎこちなくなった。')
+    },
+    name: {
+      deep: L('{a}は話の途中で、つい{b}の名前を出した。言ってから、{a}は口をつぐんだ。誰も、何も言えなかった。|{a}「{b}なら、こういうとき……｜{b}なら、こういうとき……｜{b}さんでしたら、こういうときは……」――{a}は言いかけて、その先を飲み込んだ。|{a}は誰かを呼ぼうとして、{b}の名前を口にしかけた。振り向いた先には、誰もいなかった。'),
+      lite: L('{a}は{b}の話をしかけて、途中でやめた。|皆で話しているとき、{a}はぽつりと言った。{a}「{b}にも、聞かせたかった｜{b}にも、聞かせたかった｜{b}さんにも、聞かせたかったです」|{a}は{b}のことを思い出して、少しだけ目を伏せた。')
+    },
+    item: {
+      deep: L('{a}は{item}を手に取ったまま、長いあいだ動かなかった。まだ、{b}の匂いが残っている気がした。|{a}は{item}を胸に抱えて眠った。朝になっても、手放せなかった。|{a}は{item}を、何度も指でなぞった。そうしていないと、手が震えた。'),
+      lite: L('{a}は{item}を見つけて、そっと元の場所に戻した。|{a}は{item}を、誰にも触らせないようにしまっておいた。|{a}は{item}の汚れを、丁寧に拭き取った。')
+    },
+    meal: {
+      deep: L('{a}の食事は、ほとんど減らなかった。一口食べるたびに、喉の奥がつかえた。|{a}は食事の席に着いたものの、手を止めたまま動かなかった。{b}の分の席が、空いたままだった。|{a}は無理に食べ物を口に運んだ。味は、何もしなかった。'),
+      lite: L('{a}は食事を半分ほど残した。|{a}はいつもの席に座ろうとして、そこが{b}の隣だったことを思い出した。|{a}は食事のあいだ、ほとんど話さなかった。')
+    },
+    night: {
+      deep: L('夜、{a}は毛布をかぶって声を殺して泣いた。それでも、すすり泣く声は隣まで聞こえていた。|{a}は眠れないまま、{b}の名前を何度も小さく呼んだ。返事がないと分かっていても、呼ぶのをやめられなかった。|夜中に目を覚ました{a}は、{b}の夢を見ていたことに気づいた。頬が濡れていた。'),
+      lite: L('{a}は夜、一人になってから少しだけ泣いた。|{a}はなかなか寝つけず、何度も寝返りを打った。|{a}は夜空を見上げて、{b}のことを思った。')
+    }
+  };
+  /* ストレスが高いときの振る舞い（{c}＝八つ当たりされた人／探しに来た人） */
+  var MOURN_ACT = {
+    withdraw: L('{a}は誰とも顔を合わせようとしなかった。{spot}にこもったまま、呼ばれても出てこなかった。|{a}は膝を抱えたまま、一日じゅう同じ場所から動かなかった。誰の言葉も、{a}の耳には届いていないようだった。|{a}は{b}のことを話そうとする人から、黙って離れていった。今は、誰とも話したくなかった。'),
+    lash: L('{c}の何気ない一言に、{a}が声を荒らげた。{a}「よく、そんなことが言える｜よく、そんなことが言えるな｜よく、そんなことが言えますね」――{c}が驚いて黙ると、{a}は自分の言葉に傷ついたような顔をした。|{a}は{c}が{b}の物に触れたのを見て、その手を払いのけた。払いのけてから、{a}は自分が何をしたのか分かって、唇を噛んだ。|{a}は些細なことで{c}に当たった。{a}「放っておいて｜放っておけ｜放っておいてください」――{c}は何か言いかけて、黙って背を向けた。'),
+    bright: L('{a}は誰よりも明るく振る舞った。{a}「平気。私が暗くしていたら、皆まで沈む｜平気だ。私が暗くしていたら、皆まで沈む｜平気です。私が暗くしていたら、皆まで沈みます」――その声は、少しだけ上ずっていた。|{a}はいつも以上に冗談を言った。笑い声のあとで、{a}がひとりで黙り込むのを、何人かが見ていた。|{a}は{b}の分まで働くと言って、休む間もなく動き回った。笑顔は崩さなかったが、目の下の隈は日ごとに濃くなった。'),
+    slip: L('{a}は誰にも言わずに、一人でその場を抜け出した。{spot}で、{a}は長いあいだ一人で座っていた。|気づくと、{a}の姿が見えなくなっていた。{a}は{b}とよく話した場所に、一人で立っていた。|{a}は夜明け前に、こっそり出ていった。戻ってきたとき、{a}の目は真っ赤だった。'),
+    found: L('探しに来た{c}が、{a}の隣に黙って座った。二人はしばらく、何も言わなかった。|{c}が{a}を見つけた。{c}「一人で行かないで｜一人で行くな｜一人で行かないでください」――{a}は小さく頷いた。|{c}は{a}の肩に上着をかけて、そのまま隣にいた。')
+  };
+  var MOURN_ACT_NAME = { withdraw: 'ふさぎ込む', lash: '八つ当たり', bright: '空元気', slip: '一人で抜け出す' };
+  /* 短い弔い（{a}＝いちばん近かった人、{l}＝弔う人たち、{b}＝亡くなった人） */
+  var FUNERAL = L('{l}は、{b}のために短い黙祷をした。誰も、最後まで目を開けなかった。|{a}が{b}の名前を書いた小さな札を立てた。{l}は一人ずつ、その前で手を合わせた。|{l}は{item}を囲んで座った。言葉は少なかったが、誰も席を立たなかった。|その夜、{l}は{b}の話をした。笑う人もいれば、泣く人もいた。それが、この場所でできる精一杯の弔いだった。');
+  function perDay(ctx, opt) {
+    if (opt.perDay) return opt.perDay;
+    var sc = ctx.scen || {};
+    return sc.unit === '日' ? (sc.perUnit || 1) : 0;
+  }
+  /* o から見た v の近さ（close／friend／acq／''） */
+  function nearKind(ctx, o, v, dp) {
+    var ts = HK.Ties ? HK.Ties.all(ctx, o, v) : [], k = '';
+    if (ts.some(function (t) { return MOURN_NO.test(t.type) && (t.type !== 'fear' || t.a === o.i); }) && !ctx.pair(o, v).couple) return '';
+    ts.forEach(function (t) {
+      if (t.type === 'crush' && t.a !== o.i) return;
+      if (MOURN_CLOSE.test(t.type)) k = 'close';
+      else if (MOURN_FRIEND.test(t.type) && k !== 'close') k = 'friend';
+    });
+    if (ctx.pair(o, v).couple) k = 'close';
+    var d = dp ? dp.d : G.depth(ctx, o, v).d;
+    if (!k) k = d >= 95 ? 'close' : d >= 45 ? 'friend' : d >= 22 ? 'acq' : '';
+    else if (k === 'friend' && d >= 110) k = 'close';
+    if (ctx.R(o, v).aff < -10 && k !== 'close') return '';
+    return k;
+  }
+  /* 亡くなったときに、引きずる期間を付ける（scan から） */
+  function addMourn(ctx, o, v, dp, s, opt) {
+    if (opt.mourn === false || v.killedBy === o.i) return;
+    var k = nearKind(ctx, o, v, dp);
+    if (!k) return;
+    var mild = HK.Dark && HK.Dark.on(ctx, 'kill') === 'mild';
+    if (mild) k = k === 'close' ? 'friend' : k === 'friend' ? 'acq' : '';
+    if (!k) return;
+    var pd = perDay(ctx, opt), days = { close: 3, friend: 2, acq: 1 }[k], until;
+    if (pd) until = (Math.floor(s / pd) + days) * pd - 1;
+    else until = s + days - 1;
+    var list = o.flags.mourn = o.flags.mourn || [];
+    list.push({ who: v.i, name: v.name, k: k, at: s, until: until, rel: dp && dp.rel ? dp.rel : '', used: {}, n: 0, last: -9, act: 0 });
+  }
+  function mournOf(ctx, o, s) {
+    var best = null, order = { close: 3, friend: 2, acq: 1 };
+    (o.flags.mourn || []).forEach(function (m) {
+      var v = ctx.chars[m.who];
+      if (!v || v.alive || s > m.until || s <= m.at) return;
+      if (!best || order[m.k] > order[best.k]) best = m;
+    });
+    return best;
+  }
+  function mournWhy(o, m, what) {
+    return o.name + 'は、' + (m.rel ? m.rel + 'の' : '') + m.name + 'を失って間もない（' + MOURN_KIND_NAME[m.k] + '・あと' + Math.max(0, m.until - m.at) + '区切りほど引きずる）' + (what ? '／' + what : '');
+  }
+  function mournTick(ctx, s, n, opt) {
+    var rng = ctx.rng, mild = HK.Dark && HK.Dark.on(ctx, 'kill') === 'mild', lab = String(ctx.label || ''), done = 0, max = opt.mournMax || (ctx.chars.length > 10 ? 3 : 2);
+    /* 短い弔い（亡くなった次の区切り。近かった人が二人以上） */
+    if (opt.funeral !== false) {
+      var fs = ctx.flags.gfFun = ctx.flags.gfFun || {};
+      ctx.chars.forEach(function (v) {
+        if (v.alive || fs[v.i] || v.out) return;
+        var ms = [];
+        ctx.chars.forEach(function (o) { if (!ok(o)) return; var m = (o.flags.mourn || []).filter(function (x) { return x.who === v.i && s > x.at && x.k !== 'acq'; })[0]; if (m) ms.push({ o: o, m: m }); });
+        var at = ms.length ? ms[0].m.at : null;
+        if (at == null || s <= at) return;
+        fs[v.i] = 1;
+        /* 近かった人が二人以上（恋人・家族・親友なら一人でも） */
+        if (!(ms.length >= 2 || ms.some(function (x) { return x.m.k === 'close'; })) || (mild && rng() < 0.5)) return;
+        ms.sort(function (x, y) { return (y.m.k === 'close' ? 1 : 0) - (x.m.k === 'close' ? 1 : 0); });
+        var lead = ms[0].o, who = ms.slice(0, 4).map(function (x) { return x.o; });
+        var m0 = vars(ctx, { name: v.name, rel: ms[0].m.rel }, opt, { a: lead.name, l: who.map(function (c) { return c.name; }).join('・') });
+        ctx.act2({ actors: who, cat: 'bond', mag: 14, fx: function () { who.forEach(function (c) { addStress(c, -4); }); }, text: fill(ctx.pick(FUNERAL), m0), why: v.name + 'の弔い（近かった' + who.length + '人）' });
+      });
+    }
+    var cand = [];
+    ctx.chars.forEach(function (o) {
+      if (!ok(o)) return;
+      var m = mournOf(ctx, o, s);
+      if (!m || m.last === s) return;
+      var p = { close: 0.75, friend: 0.45, acq: 0.3 }[m.k] * (mild ? 0.6 : 1) * (m.n >= 3 ? 0.6 : 1);
+      if (rng() < p) cand.push({ o: o, m: m });
+    });
+    cand.sort(function (x, y) { return (y.m.k === 'close' ? 2 : y.m.k === 'friend' ? 1 : 0) - (x.m.k === 'close' ? 2 : x.m.k === 'friend' ? 1 : 0); });
+    cand.slice(0, max).forEach(function (x) {
+      var o = x.o, m = x.m, e = o.emo || {}, deep = m.k === 'close' && !mild, lv = deep ? 'deep' : 'lite';
+      m.last = s; m.n++;
+      var mv = vars(ctx, { name: m.name, rel: m.rel }, opt, { a: o.name });
+      /* ストレスが高いときの振る舞い（一回の喪につき二度まで） */
+      if (m.k !== 'acq' && m.act < 2 && (o.stress >= 60 || (e.anger || 0) >= 40) && rng() < 0.6) {
+        var t = o.tr, w = { withdraw: 0.4 + t.ac * 0.6 + t.np * 0.3 + (e.grief || 0) / 200, lash: t.cp * 0.5 + t.aggr * 0.6 + (e.anger || 0) / 100, bright: t.fc * 0.8, slip: t.caution * 0.4 + t.impulse * 0.3 + t.a * 0.3 };
+        var others = ctx.others(o).filter(function (c) { return ok(c); });
+        if (!others.length) { w.lash = 0; }
+        var kind = HK.weighted(rng, ['withdraw', 'lash', 'bright', 'slip'], function (k2) { return m.used['b_' + k2] ? w[k2] * 0.3 : w[k2]; });
+        m.used['b_' + kind] = 1; m.act++;
+        var c = null, txt;
+        if (kind === 'lash') {
+          c = ctx.most(others, function (z) { return ctx.R(o, z).ten / 50 + rng() * 0.5; });
+          mv.c = c.name;
+          txt = fill(ctx.pick(MOURN_ACT.lash), mv);
+          ctx.mod2(o, c, { ten: 8 }, { ten: 6, aff: -3 });
+          if (HK.Emo) HK.Emo.bump(ctx, o, { anger: 10, shame: 6 });
+        } else if (kind === 'slip') {
+          txt = fill(ctx.pick(MOURN_ACT.slip), mv);
+          c = nearFriend(ctx, o, null);
+          if (c && rng() < 0.6) { mv.c = c.name; txt += fill(ctx.pick(MOURN_ACT.found), mv); ctx.mod(o, c, { trust: 5, aff: 4 }); } else c = null;
+        } else {
+          txt = fill(ctx.pick(MOURN_ACT[kind]), mv);
+          if (kind === 'bright') addStress(o, 4);
+        }
+        if (kind !== 'slip' || !c) addStress(o, kind === 'withdraw' ? 2 : 0);
+        ctx.act2({ actors: c ? [o, c] : [o], cat: kind === 'lash' ? 'conflict' : c ? 'help' : 'solo', mag: 12, text: txt, why: mournWhy(o, m, MOURN_ACT_NAME[kind] + '（負担 ' + Math.round(o.stress) + '）') });
+        return;
+      }
+      /* ふだんの区切り：気分が沈む・名前を出す・遺品に触れる・食事が喉を通らない・夜に泣く */
+      var night = /夜|夕/.test(lab), meal = /朝|昼|食/.test(lab), pd = perDay(ctx, opt);
+      var wk = { mood: 1, name: 1, item: 1, meal: meal || !pd ? 1.3 : 0.4, night: night || !pd ? 1.6 : 0.2 };
+      var k3 = HK.weighted(rng, ['mood', 'name', 'item', 'meal', 'night'], function (k4) { return m.used[k4] ? wk[k4] * 0.2 : wk[k4]; });
+      m.used[k3] = 1;
+      addStress(o, deep ? 3 : 1);
+      if (HK.Emo) HK.Emo.bump(ctx, o, { grief: deep ? 6 : 3 });
+      ctx.act2({ actors: [o], cat: 'solo', mag: deep ? 10 : 6, text: fill(ctx.pick(MOURN[k3][lv]), mv), why: mournWhy(o, m, { mood: '気分が沈む', name: '名前を出す', item: '遺品に触れる', meal: '食事が喉を通らない', night: '夜に泣く' }[k3]) });
+    });
+  }
+  G.mournOf = function (ctx, o) { return mournOf(ctx, o, ctx.stepIndex); };
 
   /* 引きずっている人のふだんの出来事に、ときどき一言 */
   var SKIP_CAT = /^(?:romance|lewd|sex|death|combat|betray)$/;
@@ -457,6 +623,7 @@
     reckless: SURVIVE.concat(L('{a}は武器も持たずに、{b}を失った場所へ一人で向かおうとした。{a}「{b}を、置いてきたままにできない｜{b}を、置いてきたままにはできない｜{b}を、置いてきたままにはできません」――外にはまだ、呻き声がいくつも響いていた。{a}の足は、それでも止まらなかった。|{a}はわざと物音を立てて、ゾンビの群れのほうへ歩いていった。まるで、自分から見つかろうとしているようだった。寸前で引き返したのは、ほとんど偶然だった。|{a}は見張りの番を、何日も続けて誰にも譲らなかった。眠らずに暗がりを見つめる目は、どこか焦点が合っていなかった。{a}「来るなら来ればいい。私が全部、相手をする｜＝｜来るなら来ればいいです。私が全部、相手をします」'))
   });
   G.install(SC.island, {
+    funeral: false,   /* 亡骸の扱いと弔いは island-corpse.js */
     items: L('{b}が編んだ籠|{b}の上着|{b}が拾った貝殻|{b}の靴'),
     spots: L('浜辺|焚き火のそば|岩場|見晴らしのいい丘'),
     reckless: SURVIVE.concat(L('{a}は荒れた海に、一人で漁に出ようとした。{a}「じっとしていると、{b}のことばかり考える｜＝｜じっとしていると、{b}のことばかり考えてしまいます」――波は、岩場を白く洗っていた。引き止められなければ、{a}は本当に沖へ出ていた。|{a}は誰も行かない崖の上まで、食べ物を探しに登っていった。足場の悪い斜面を、{a}はほとんど確かめもせずに進んだ。戻ってきた{a}の腕は、擦り傷だらけだった。|{a}は{b}が最後に向かった森の奥へ、何度も一人で入っていった。何かを探しているようでもあり、何かから逃げているようでもあった。{a}は夕暮れまで戻らなかった。'))

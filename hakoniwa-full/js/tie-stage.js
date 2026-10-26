@@ -38,7 +38,9 @@
   TS.tie = stageTie;
   TS.grade = function (t) { return t && (t.cold === 'good' || t.cold === 'bad') ? t.cold : ''; };
   function fill(t, a, b, R0, c) {
-    return t.replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name).replace(/\{c\}/g, c ? c.name : '').replace(/\{ra\}/g, R0.ra).replace(/\{rb\}/g, R0.rb).replace(/\{task\}/g, R0.task);
+    /* 師弟：弟子（b）が師匠（a）の呼び方を決めていれば、{ra}（師匠）をその呼び方に（ties.js の HK.Ties.mentorCall） */
+    var ra = (R0 === ROLE.mentor && HK.Ties && HK.Ties.mentorCall && HK.Ties.mentorCall(a, b)) || R0.ra;
+    return t.replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name).replace(/\{c\}/g, c ? c.name : '').replace(/\{ra\}/g, ra).replace(/\{rb\}/g, R0.rb).replace(/\{task\}/g, R0.task);
   }
 
   /* ---------- ふだんの場面（仲で三つに分ける） ---------- */

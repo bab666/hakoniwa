@@ -17,7 +17,7 @@
   var BLACK = /夜|媚薬|凌辱|襲|殺|死|挿入|愛撫|キス|口で|さわる|発情|儀式|結末|後日談|継承|証言|推理|逮捕|処刑|投票|事件|隠蔽|工作|真相|喪失|恋敵|失恋|別れ|浮気|監禁|暴走|R18|夜這い|寸止め|絶頂/;
   /* 二人ともその場にいるときだけ（亡くなった人・場を離れた人・閉じ込められた人の見た目や仕草を、弔い・看病などの場面に書かない） */
   function here2(a, b) { var H = HK.State && HK.State.here; return !H || (H(a) && H(b) && !((a.bound || b.bound) && !(HK.Story && HK.Story._cur && HK.Story._cur.scen && HK.Story._cur.scen.id === 'locker'))); }
-  function has(a, b) { return !!(a && b && a !== b && here2(a, b) && (A.sizeDiff(a, b) || A.hasLook(a) || A.hasLook(b))); }
+  function has(a, b) { return !!(a && b && a !== b && here2(a, b) && (A.sizeDiff(a, b) || A.hasLook(a) || A.hasLook(b) || (A.heightDiff && A.heightDiff(a, b)))); }
   function add(o, line) { if (!line) return; o.text = o.text.replace(/\s+$/, '') + line; o.look = true; }
   /* 気分の種族文（種族と強い気分のある人だけ。いなければ乱数を使わずに ''） */
   function moodLine(a, b, pk, owner) {

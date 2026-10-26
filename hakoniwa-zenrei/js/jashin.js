@@ -150,7 +150,8 @@
       live.forEach(function (p) { tickCurse(S, p, h); });
       /* NPC */
       /* 縛られて閉じ込められた人（bound）は、村人・記者とのやりとりや宴・推理の場面に出さない */
-      var free0 = live.filter(function (q) { return !q.bound; });
+      /* 呪い・取り憑き（tickCurse）でこの区切りに亡くなった・連れ去られた人も出さない（live はその前に作ったもの） */
+      var free0 = live.filter(function (q) { return alive(q) && !q.bound; });
       if (free0.length) npcTurn(S, free0, h);
       tickPlus(S, P.filter(alive), h);
       JS.REL.tick(S, P.filter(alive), h);

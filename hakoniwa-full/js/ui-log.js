@@ -10,9 +10,14 @@
     betray: 'var(--obsess)', solo: 'var(--muted)', escape: 'var(--night)', death: 'var(--kill)'
   };
   var css = '';
-  /* 区切り（時刻・時期の札。文字は --ink にして、ライトでもダークでも札の地の色と重ならないように） */
+  /* 区切り（時刻・時期の札。文字は --ink、地は --accent-soft の同じテーマの組で決める。コントラストはライト 12.8:1・ダーク 10.7:1）
+     ・変数が効かない端末でも組がずれないよう、文字と地の両方にライトの色を先に書き、変数の色で上書きする
+     ・Android の Chrome の「ウェブサイトをダークにする」などで、地と文字の片方だけが自動で塗り替えられて読めなくなる（淡い地に白文字・暗い地に黒文字）のを防ぐため、
+       札だけ color-scheme を「only」にして自動の塗り替えを断る（ダークのテーマのときは dark only） */
   css += 'html body .stepblk{border-top:1px dashed var(--line);padding-block:12px}' +
-    'html body .stepblk .when{align-self:start;justify-self:start;display:inline-block;font-weight:700;font-size:12px;color:var(--ink);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:999px;padding:2px 11px;letter-spacing:.03em;line-height:1.6}' +
+    'html body .stepblk .when{align-self:start;justify-self:start;display:inline-block;font-weight:700;font-size:12px;color:#1b232b;color:var(--ink,#1b232b);-webkit-text-fill-color:currentColor;background:#dce8f1;background:var(--accent-soft,#dce8f1);border:1px solid #a9bfd1;border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:999px;padding:2px 11px;letter-spacing:.03em;line-height:1.6;color-scheme:light only;opacity:1;mix-blend-mode:normal}' +
+    '@media (prefers-color-scheme: dark){html:not([data-theme="light"]) body .stepblk .when{color-scheme:dark only}}' +
+    'html[data-theme="dark"] body .stepblk .when{color-scheme:dark only}' +
     'html body .stepblk ol{gap:9px}';
   /* 種類の札と左の帯 */
   Object.keys(C).forEach(function (k) {

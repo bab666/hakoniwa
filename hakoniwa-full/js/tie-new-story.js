@@ -282,7 +282,8 @@
   /* 入力の関係から、この出来事で使う分を拾う（定義のない関係・型や気持ちを選んでいない関係は拾わない。拾う分がなければ乱数も引かない） */
   function pickTies(input, P) {
     var all = (input.ties || []).filter(function (t) { return t && P[t.a] && P[t.b] && t.a !== t.b; });
-    return { all: all, use: all.filter(function (t) { return USE.test(t.type) && holders(t, P).length > 0; }) };
+    /* 関係ごとの「出来事：起こさない」（ties.js の noev）の関係は、この出来事に使わない（関係の色は all のまま残す） */
+    return { all: all, use: all.filter(function (t) { return USE.test(t.type) && t.noev !== 'off' && holders(t, P).length > 0; }) };
   }
 
   /* ---------- 物語型の箱庭：場面の区切りのたびに ---------- */

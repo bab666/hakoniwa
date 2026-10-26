@@ -520,6 +520,20 @@
   /* 体の組（TK.kind の ff／ride／mf／mm）→ 前戯の組 */
   function foreSub(kd) { return kd === 'ff' ? 'ff' : kd === 'ride' ? 'fm' : kd === 'mf' ? 'mv' : 'ma'; }
   /* 前戯の候補。o.rough＝荒い、o.flav＝'omega' なら匂いの文も、o.heatO＝発情期のΩが受けなら濡れている文も */
+  /* 前戯で指を挿れたまま最中の文がいきなり始まらないように（2026-10-26 順146）：前戯に指を沈める文があり、指を抜く言葉がなければ、
+     最中の文に繋がる始まりがあるときは指を抜く一文を、なければ指を抜いて繋がる一文を、前戯の段の終わりに足す。女性どうし・跨る形は足さない。
+     本筋の乱数は使わない（前戯の文の長さで選ぶ） */
+  var FB_IN = /指(?:を|が)[^。「」]{0,16}(?:ねじ込|沈め|沈ん|滑り込|差し入れ|埋め|潜り込|挿れ|入れ|ほぐ|往復)|指で[^。「」]{0,12}(?:ほぐ|掻き回|かき回|抉)|指が一本/;
+  var FB_OUT = /指を[^。「」]{0,10}(?:抜|引き抜|離)|指が[^。「」]{0,6}(?:抜け|離れ)|舐め取/;
+  var FB_START = /押し入|挿れ|挿入|貫|繋が(?:っ|る|り)|突き入れ|腰を沈め|沈めて|沈めた|呑み込|入って/;
+  var FB_OUTL = ['{T}は濡れた指を、ゆっくりと引き抜いた。', '指が抜けていくと、{U}は名残惜しそうに小さく息をこぼした。', '{T}は指をそっと抜き、{U}の脚のあいだに体を寄せた。'];
+  var FB_JOIN = ['{T}は濡れた指を引き抜くと、{U}の脚を開かせ、ゆっくりと奥まで沈めていった。', '指が抜かれた空虚を、すぐに{T}の熱が埋めた。{U}の喉から、細い声が漏れた。', '{T}は指を抜き、代わりに自分の熱を入口に押し当てて、少しずつ奥まで沈めた。'];
+  function foreBridge(ftx, kd, mid) {
+    ftx = String(ftx || '');
+    if (kd === 'ff' || kd === 'ride' || !FB_IN.test(ftx) || FB_OUT.test(ftx) || FB_OUT.test(mid || '')) return '';
+    var l = FB_START.test(String(mid || '').slice(0, 80)) ? FB_OUTL : FB_JOIN;
+    return l[ftx.length % l.length];
+  }
   function forePool(T, U, kd, o) {
     var sb = foreSub(kd);
     if (o.rough) return FORE_H[sb];
@@ -603,7 +617,7 @@
       if (tp.start && !TQ.test(p0)) p0 += tp.start;
       /* 体の組み合わせの一文：住人の体格・種族（attr.js。何も決めていなければ空） */
       var paras = [p0];
-      if (o.fore) { var fpl = Array.isArray(o.fore) ? o.fore : forePool(T, U, kd, o); if (fpl && fpl.length) paras.push(fresh(fpl)); }
+      if (o.fore) { var fpl = Array.isArray(o.fore) ? o.fore : forePool(T, U, kd, o); if (fpl && fpl.length) { var ftx = fresh(fpl); paras.push(ftx + foreBridge(ftx, kd, mid)); } }
       paras.push(mid + (HK.Attr ? HK.Attr.pairLine(T, U, 'hold', pk) : '') + (tp.mid && !TQ.test(mid) ? '\n\n' + tp.mid : ''));
       var mi = paras.length - 1;
       (o.extra || []).forEach(function (x) { if (x) paras.push(x); });

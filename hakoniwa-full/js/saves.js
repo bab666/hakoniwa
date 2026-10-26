@@ -232,4 +232,147 @@
   function button() { return '<div class="row savebar"><button class="btn" id="savebtn" data-act="saveres">💾 この結果をセーブ</button><button class="btn ghost small" data-act="saveresjson" title="ブラウザに保存せず、この結果をそのままJSONファイルに書き出す">JSONで書き出す</button><button class="btn ghost small" data-tab="saves">セーブデータを見る</button></div>'; }
 
   HK.Saves = { render: render, button: button, save: save, all: all, importText: importText, put: put, clear: clear, DB: DB, STORE: ST, LS: LS };
+
+  /* ---------- 住人のアイコン（画像）の置き場（HK.IconStore）----------
+     住人の上限を 200 人にしたので、アイコン（1枚 10〜15KB の data URL）を住人の保存（localStorage の state。控えと合わせて2倍）に入れると、
+     ブラウザの保存領域（約5MB。Safari ではもっと少ないことがある）に入りきらない。アイコンだけを IndexedDB（版ごとの名前 HK.STORE.iconDb：
+     R18版 hakoniwa-icons／全年齢版 hakoniwa-z-icons）に住人の id で置き、住人の保存からは外す。
+     ・セーブの DB（hakoniwa-saves）とは別にする（版を上げると、旧版のページが同じ DB を開けなくなるため）
+     ・IndexedDB が使えない環境（プライベートブラウズなど）では、従来どおり住人の保存に入れたまま（strip が何もしない）
+     ・ui.js の save()：strip(S) で、IndexedDB に置き終えたアイコンだけを外して書く → sync(S.chars, again) で、まだ置いていないアイコンを置き、
+       置き終えたら again()（もう一度 save して外す）。load() が終わるまでは、IndexedDB にあって今の住人にないアイコンを消さない
+     ・全年齢版の初めての移行（safe.js の印の ic が 'wait'）では、R18版の置き場（hakoniwa-icons）からアイコンを写す（住人の id は同じ）
+     ・まるごと書き出し（portable.js）は、アイコンを住人の保存の中に入れて書き出し（この置き場は書き出さない）、読み込むときに外してここへ置く */
+  var IDBN = KS && KS.iconDb ? KS.iconDb : 'hakoniwa-icons', IST = 'icons', ic = { db: null, persisted: {}, loaded: false, busy: false, redo: null };
+  function icOpen() {
+    if (ic.opening) return ic.opening;
+    return (ic.opening = new Promise(function (ok) {
+      if (ic.db !== null) return ok(ic.db);
+      /* 開くのに返事がない環境（古い Safari の不具合など）では、このページではアイコンの置き場を使わない（住人の保存に入れたまま） */
+      var done = false, fin = function (d) { if (done) return; done = true; ic.db = d; ok(d); };
+      setTimeout(function () { fin(false); }, 10000);
+      try {
+        if (!window.indexedDB) return fin(false);
+        var rq = indexedDB.open(IDBN, 1);
+        rq.onupgradeneeded = function () { var d = rq.result; if (!d.objectStoreNames.contains(IST)) d.createObjectStore(IST, { keyPath: 'id' }); };
+        rq.onsuccess = function () { var d = rq.result; if (done) { try { d.close(); } catch (x) { /* なし */ } return; } icMigrate(d).then(function () { fin(d); }); };
+        rq.onerror = function (e) { if (e && e.preventDefault) e.preventDefault(); fin(false); };
+        rq.onblocked = function () { fin(false); };
+      } catch (e) { fin(false); }
+    }));
+  }
+  /* 全年齢版：R18版の置き場から一度だけ写す（無い DB は作らない） */
+  function icMigrate(d) {
+    var f = KS && KS.zenrei && KS.flag(), OLD = 'hakoniwa-icons';
+    if (!f || f.ic !== 'wait' || OLD === IDBN) return Promise.resolve();
+    var done = function (n) { KS.setFlag({ ic: n }); };
+    return new Promise(function (ok) {
+      try {
+        var rq = indexedDB.open(OLD), fresh = false;
+        rq.onupgradeneeded = function (e) { if (!e.oldVersion) { fresh = true; try { rq.transaction.abort(); } catch (x) { /* なし */ } } };
+        rq.onerror = function (e) { if (e && e.preventDefault) e.preventDefault(); if (fresh) done(0); ok(); };
+        rq.onblocked = function () { ok(); };
+        rq.onsuccess = function () {
+          var od = rq.result;
+          if (fresh || !od.objectStoreNames.contains(IST)) { od.close(); done(0); return ok(); }
+          var g = od.transaction(IST, 'readonly').objectStore(IST).getAll();
+          g.onerror = function () { od.close(); ok(); };
+          g.onsuccess = function () {
+            od.close();
+            var list = (g.result || []).filter(function (r) { return r && typeof r.id === 'string' && typeof r.url === 'string'; });
+            var tx = d.transaction(IST, 'readwrite'), os = tx.objectStore(IST);
+            list.forEach(function (r) { os.put(r); });
+            tx.oncomplete = function () { done(list.length); ok(); };
+            tx.onerror = tx.onabort = function () { ok(); };
+          };
+        };
+      } catch (e) { ok(); }
+    });
+  }
+  function okUrl(u) { return typeof u === 'string' && /^data:image\//.test(u); }
+  /* 書き込み：puts { id: url }、dels [id]、wipe（先に全部消す）。成功したら persisted を合わせて true */
+  function icWrite(puts, dels, wipe) {
+    return icOpen().then(function (d) {
+      if (!d) return false;
+      return new Promise(function (ok) {
+        try {
+          var tx = d.transaction(IST, 'readwrite'), os = tx.objectStore(IST), at = Date.now();
+          if (wipe) os.clear();
+          Object.keys(puts).forEach(function (id) { os.put({ id: id, url: puts[id], at: at }); });
+          (dels || []).forEach(function (id) { os.delete(id); });
+          tx.oncomplete = function () {
+            if (wipe) ic.persisted = {};
+            Object.keys(puts).forEach(function (id) { ic.persisted[id] = puts[id]; });
+            (dels || []).forEach(function (id) { delete ic.persisted[id]; });
+            ok(true);
+          };
+          tx.onerror = tx.onabort = function () { ok(false); };
+        } catch (e) { ok(false); }
+      });
+    });
+  }
+  var IS = HK.IconStore = {
+    DB: IDBN, STORE: IST,
+    /* 置いてあるアイコンを読む（{ id: url }）。使えなければ {} */
+    load: function () {
+      return icOpen().then(function (d) {
+        if (!d) { ic.loaded = true; return {}; }
+        return new Promise(function (ok) {
+          try {
+            var rq = d.transaction(IST, 'readonly').objectStore(IST).getAll();
+            rq.onsuccess = function () { var m = {}; (rq.result || []).forEach(function (r) { if (r && typeof r.id === 'string' && okUrl(r.url)) m[r.id] = r.url; }); ic.persisted = JSON.parse(JSON.stringify(m)); ic.loaded = true; ok(m); };
+            rq.onerror = function () { ok({}); };
+          } catch (e) { ok({}); }
+        });
+      });
+    },
+    /* 住人の保存に書く形：IndexedDB に置き終えたアイコン（同じ画像）だけを外した浅い写し。外すものがなければ S のまま */
+    strip: function (S) {
+      if (!ic.db || !S || !Array.isArray(S.chars)) return S;
+      var any = false, chars = S.chars.map(function (c) {
+        if (!c || !c.icon || ic.persisted[c.id] !== c.icon) return c;
+        any = true;
+        var o = {}; Object.keys(c).forEach(function (k) { if (k !== 'icon') o[k] = c[k]; });
+        return o;
+      });
+      if (!any) return S;
+      var o = {}; Object.keys(S).forEach(function (k) { o[k] = S[k]; });
+      o.chars = chars;
+      return o;
+    },
+    /* 今の住人に合わせる：まだ置いていないアイコンを置き、（読み込み済みなら）いない住人・外したアイコンを消す。新しく置けたら again() */
+    sync: function (chars, again) {
+      if (ic.frozen) return;
+      if (ic.busy) { ic.redo = { chars: chars, again: again }; return; }
+      var want = {}; (chars || []).forEach(function (c) { if (c && c.id && okUrl(c.icon)) want[c.id] = c.icon; });
+      var puts = {}, n = 0;
+      Object.keys(want).forEach(function (id) { if (ic.persisted[id] !== want[id]) { puts[id] = want[id]; n++; } });
+      var dels = ic.loaded ? Object.keys(ic.persisted).filter(function (id) { return !want[id]; }) : [];
+      if (!n && !dels.length) return;
+      ic.busy = true;
+      icWrite(puts, dels, false).then(function (ok) {
+        ic.busy = false;
+        var r = ic.redo; ic.redo = null;
+        /* 新しく置けたら again（save → もう一度 sync するので、待っていた分もそこで合わせる）。でなければ待っていた分を合わせる */
+        if (ok && n && again) again();
+        else if (r) IS.sync(r.chars, r.again);
+      });
+    },
+    /* まるごと読み込む（置き換え）など：全部を入れ替える。置けたら true（置けなければ、呼ぶ側は住人の保存に入れたまま書く）。
+       freeze：読み込み直すまで sync を止める（入れ替えたあと、読み込み直す前のこの画面の住人で消さないように） */
+    replaceAll: function (map, freeze) {
+      var puts = {}; Object.keys(map || {}).forEach(function (id) { if (okUrl(map[id])) puts[id] = map[id]; });
+      ic.frozen = !!freeze;
+      return icWrite(puts, [], true).then(function (ok) { if (ok) ic.loaded = true; else ic.frozen = false; return ok; });
+    },
+    /* 住人の保存の形（JSON の文字列か物）から、アイコンを外して { text, icons } を返す（portable.js の読み込み用） */
+    split: function (st) {
+      var o = typeof st === 'string' ? (function () { try { return JSON.parse(st); } catch (e) { return null; } })() : st, icons = {};
+      if (!o || typeof o !== 'object' || !Array.isArray(o.chars)) return { state: o, icons: icons };
+      o = JSON.parse(JSON.stringify(o));
+      o.chars.forEach(function (c) { if (c && typeof c.id === 'string' && okUrl(c.icon)) { icons[c.id] = c.icon; delete c.icon; } });
+      return { state: o, icons: icons };
+    },
+    ok: function () { return !!ic.db; }
+  };
 })();

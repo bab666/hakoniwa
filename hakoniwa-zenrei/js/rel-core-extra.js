@@ -49,6 +49,13 @@
   }
   function egoW(a, mood) { var t = a.tr || {}; return mood === 'rub' ? 0.7 + (t.cp || 0) * 0.4 + (t.fc || 0) * 0.3 : 0.7 + (t.np || 0) * 0.5 + (t.a || 0) * 0.2; }
   function rcOf(ctx, a, b) { var pf = ctx.pair(a, b); return pf._rc || (pf._rc = { at: {}, n: {}, last: -99 }); }
+  /* 家族の仲（ties.js の HK.KIN_GRADE。親子・きょうだいの関係の欄 kg）：不仲ならすれ違い系（rub）に、良好なら仲良し系（warm）に寄せる。空欄は今までどおり */
+  function kgW(ctx, a, b, g, mood) {
+    if (g !== 'parent' && g !== 'sib') return 1;
+    var r = find(ctx, a, b, g), kg = r && r.t.kg;
+    if (!kg) return 1;
+    return kg === 'bad' ? (mood === 'rub' ? 1.8 : 0.35) : (mood === 'rub' ? 0.4 : 1.6);
+  }
   var D = {};
   var RC = HK.RelCore = { D: D, find: find };
   /* 場面から出来事を作る */
@@ -67,7 +74,7 @@
         if ((q.n[o.k] || 0) >= S.max) return false;
         return lines(ctx, S, o, a, b).length > 0;
       },
-      w: function (ctx, a, b) { return (o.w || 1) * S.w * egoW(a, o.mood); },
+      w: function (ctx, a, b) { return (o.w || 1) * S.w * egoW(a, o.mood) * kgW(ctx, a, b, g, o.mood); },
       run: function (ctx, a, b) {
         var r = find(ctx, a, b, g), ok = lines(ctx, S, o, a, b);
         if (!r || !ok.length) return null;
@@ -78,6 +85,8 @@
         if (o.st) { ctx.stress(a, o.st[0]); ctx.stress(b, o.st[1]); }
         var t = ctx.t(strip(x), a, b);
         if (S.fill) t = S.fill(ctx, t, a, b);
+        /* 師弟：弟子が師匠の呼び方を決めていれば、「師匠」をその呼び方に（ties.js の HK.Ties.mentorWord） */
+        if (g === 'mentor' && HK.Ties && HK.Ties.mentorWord) t = HK.Ties.mentorWord(t, ctx.chars[r.t.a], ctx.chars[r.t.b]);
         /* 理由書きの続柄の印（{sibs}・{sib:a→b}。sib-word.js） */
         var w = whyOf(a, b, r, o.why);
         if (HK.Sib) w = HK.Sib.fill(w, a, b, null, ctx);
@@ -227,6 +236,8 @@
       ctx.present().forEach(function (x) {
         if (x === t) return;
         var r = find(ctx, t, x, 'parent') || find(ctx, t, x, 'sib');
+        /* 関係ごとの「出来事：起こさない」（ties.js の noev）なら出さない */
+        if (r && r.t.noev === 'off') return;
         if (r && (GROUP[r.t.type] === 'sib' || r.side === 'A')) cand.push({ x: x, r: r });
       });
       if (!cand.length || ctx.rng() > 0.35) return;

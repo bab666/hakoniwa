@@ -77,7 +77,7 @@
   var st0 = ST.state;
   ST.state = function (input, scenId) {
     var S = st0(input, scenId);
-    S.rbTies = (input.ties || []).filter(function (t) { return (t.type === 'sibbad' || t.type === 'bad') && S.P[t.a] && S.P[t.b]; });
+    S.rbTies = (input.ties || []).filter(function (t) { return (t.type === 'sibbad' || t.type === 'bad') && t.noev !== 'off' && S.P[t.a] && S.P[t.b]; });
     S.rbUsed = {};
     return S;
   };

@@ -23,7 +23,9 @@
   ], desc: '「三人以上で同時にした場合、全員がそれぞれ満たしたものとみなす」。回数が一回でも、三人の場面一度で全員分が数えられます。三人ちょうどでエッチか媚薬の部屋なら、受けに回れる人が一人でもいれば三人の場面（3P）が起こります' });
 
   function multiOf(ctx) { return ctx.env.multi || 'open'; }
-  function allowed(ctx) { return multiOf(ctx) !== 'no' && !ctx.flags.isOne && !ctx.flags.oneCond && A.hasPairRule(ctx); }
+  /* 一人しか出られない（ほかの条件と併用）部屋でも、三人で一緒に満たせる（満たしたあと、扉をくぐれるのは一人。2026-10-26 順164）。
+     条件「三人で」（room-games.js）の部屋は、その条件の場面だけで三人になる（ここの三人の場面は使わない） */
+  function allowed(ctx) { return multiOf(ctx) !== 'no' && !ctx.flags.isOne && !ctx.flags.trioRule && A.hasPairRule(ctx); }
   /* 受け攻めの部品（親が pos.js に足す予定のものは、無ければ自前の判定に戻す） */
   /* pos.js はこのファイルより後に読み込まれるので、HK.Pos は呼ぶたびに見る（読み込み時に束縛しない） */
   function isF(c) { var P = HK.Pos; return !!(P && P.isF(c)); }
@@ -598,7 +600,7 @@
     var r = pairRules(ctx).filter(function (q) { return K[q.k].type === 'act' && q.n > 1; })[0];
     if (!r) return '';
     /* 組ごとに数えるので、三つの組の分を並べる（いちばん少ない組だけ出すと、数が戻ったように見える） */
-    return '（三人で' + K[r.k].noun + '：' + pairsOf(g).map(function (pr) { return pr[0].name + '×' + pr[1].name + ' ' + (A.prog(ctx, pr[0], pr[1]).act[r.k] || 0) + '/' + r.n; }).join('・') + '）';
+    return '（三人で' + K[r.k].noun + '：' + pairsOf(g).map(function (pr) { return (HK.pairNameOf ? HK.pairNameOf(pr[0], pr[1]) : pr[0].name + '×' + pr[1].name) + ' ' + (A.prog(ctx, pr[0], pr[1]).act[r.k] || 0) + '/' + r.n; }).join('・') + '）';
   }
 
   /* 三人（以上）で出る */
@@ -613,7 +615,16 @@
     return out;
   }
   T.exitGroup = function (ctx, g, text, why, night, kind) {
-    var sf = stayFor(ctx, g);
+    /* 一人しか出られない（併用）：三人で満たしても、扉をくぐれるのは一人（順164）。夜を過ごした組の印は、体の関係を持てる組にだけ */
+    if (ctx.flags.oneCond && A.oneDoor) {
+      pairsOf(g).forEach(function (pr) { if (night && okSex(pr[0], pr[1])) ctx.pair(pr[0], pr[1]).night = true; });
+      /* 三人の場面の記録なので、三人とも登場人物に入れる（with） */
+      var od = A.oneDoor(ctx, g, text, why, false);
+      od.with = g; if (night) od.lewd = true;
+      return od;
+    }
+    /* 全員で出られる部屋（順26）：部屋に残る恋人を待つ必要はない（その人も一緒に出る） */
+    var sf = A.allOut && A.allOut(ctx) ? null : stayFor(ctx, g);
     if (sf) {
       var go = g.filter(function (c) { return c !== sf.s; });
       go.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = go.filter(function (o) { return o !== c; }).map(function (o) { return o.name; }).join('と') + 'と部屋を出た（' + sf.s.name + 'は、' + sf.o.name + 'のために残った）'; c.flags.trio = g.map(function (o) { return o.i; }); });
@@ -639,7 +650,26 @@
     var ex = { group: g.map(function (c) { return c.i; }), label: ctx.label, trio: true, night: !!night, kind: kind || 'warm' };
     (ctx.flags.exits = ctx.flags.exits || []).push(ex);
     ctx.flags.trios.push(ex);
-    return { cat: 'escape', mag: 40, text: text + '扉の鍵が外れる音がした。' + nm3(g) + 'は、' + kn(g.length) + 'そろって部屋を出た。', why: why, with: g, lewd: night ? true : undefined };
+    var al = A.bringAlong ? A.bringAlong(ctx, g) : '';
+    return { cat: 'escape', mag: 40, text: text + '扉の鍵が外れる音がした。' + nm3(g) + 'は、' + kn(g.length) + 'そろって部屋を出た。' + al, why: why + (al ? '／条件を満たした人と一緒に、ほかの全員も出られる部屋' : ''), with: g, lewd: night ? true : undefined };
+  };
+  /* 条件「三人で」（room-games.js）の三人の場面：三組とも体の関係を持てる三人（形が中心だけにならない）なら、円満な三人の場面（kind は恋人どうしの三人なら love など、ほかは warm）。
+     書けないときは null（呼ぶ側が抱き合う版に落とす） */
+  T.sexOk3 = function (g) {
+    if (g.length !== 3 || !pairsOf(g).every(function (p) { return okSex(p[0], p[1]); })) return false;
+    var sh = sexShape(g, false);
+    return !!sh && !sh.hubOnly;
+  };
+  T.condScene = function (ctx, g, first) {
+    if (!T.sexOk3(g)) return null;
+    var sh = sexShape(g, false);
+    var sp = shape(ctx, sh.sg, false), kind = harmony(ctx, g) ? loveKind(ctx, g) || 'warm' : 'warm';
+    if (kind === 'lovehub' || kind === 'loveclash') kind = 'warm';
+    var go = orderG(ctx, g, sh, sp, kind);
+    var text = scene(ctx, go, kind, first, ctx.present().length, { sg: go, hubOnly: false, sp: sp }, true);
+    var why = (KIND_WHY[kind] || '') + infoWhy(ctx, sh);
+    if (ctx.flags.lastTrioTags && ctx.flags.lastTrioTags.length) { why += '／見所：' + ctx.flags.lastTrioTags.join('・'); ctx.flags.lastTrioTags = null; }
+    return { text: text, why: why, kind: kind };
   };
 
   /* 「一人だけ」と決めた人を、三人に誘う（説得）。折れれば、次から三人の場面に入れる */
@@ -727,6 +757,12 @@
     return n(2) >= 2 || (sum >= 5 && n(1.5) >= 2) || sum >= 7;
   }
   function donePair(ctx, g) { return pairsOf(g).filter(function (p) { return (A.prog(ctx, p[0], p[1]).act.h || 0) > 0; })[0] || null; }
+  /* 条件の順番あり（2026-10-26 順164）：三人の場面で数える行為の条件が、三組とも条件1を待っている（今は数えない）なら、三人の場面は起きにくい
+     （doact と同じ 0.15 倍。数えない場面と「まだ数えない」の一文が何度も続かないように） */
+  function seqWaitAll(ctx, g) {
+    var rs = pairRules(ctx).filter(function (r) { return K[r.k].type === 'act'; });
+    return !!A.seqWait && rs.length > 0 && rs.every(function (r) { return pairsOf(g).every(function (p) { return A.seqWait(ctx, r, p[0], p[1]); }); });
+  }
   /* 三人の場面を始めてよい頃合いか：媚薬が回った／二人が先に始めていた／どこかの二人がその気（willing・desperate）／時間が四割過ぎた */
   function ready(ctx, g) {
     if (ctx.stepIndex < 1) return false;
@@ -803,7 +839,7 @@
       if (!g.every(function (c) { return exclOK3(ctx, c, g); })) return false;
       return ready(ctx, g);
     },
-    w: function (ctx) { var g = ctx.present(); return 5.5 + g.reduce(function (s, c) { return s + A.eager(ctx, c); }, 0) * 1.5 + (aphroHot(ctx, g) ? 2 : 0) + (donePair(ctx, g) ? 1.5 : 0); },
+    w: function (ctx) { var g = ctx.present(); return (5.5 + g.reduce(function (s, c) { return s + A.eager(ctx, c); }, 0) * 1.5 + (aphroHot(ctx, g) ? 2 : 0) + (donePair(ctx, g) ? 1.5 : 0)) * (seqWaitAll(ctx, g) ? 0.15 : 1); },
     run: function (ctx, a, b) {
       var g = ctx.present();
       var sh = loveShape(ctx, g) || sexShape(g, false);
@@ -858,7 +894,7 @@
       ctx._trioPlan = pl;
       return !!pl;
     },
-    w: function (ctx, a, b) { var pl = plan(ctx, a, b); return pl ? 0.6 + pl.v * 0.9 : 0; },
+    w: function (ctx, a, b) { var pl = plan(ctx, a, b); return pl ? (0.6 + pl.v * 0.9) * (seqWaitAll(ctx, pl.g) ? 0.15 : 1) : 0; },
     run: function (ctx, a, b) {
       var pl = plan(ctx, a, b);
       if (!pl) return { text: ctx.t('{a}と{b}は、紙の但し書きをもう一度読んだ。', a, b) };
@@ -899,7 +935,7 @@
       if (!c.g.every(function (i) { return free(ctx.chars[i]); })) { ctx.flags.trioCur = null; return false; }
       return c.g.indexOf(a.i) >= 0;
     },
-    w: function () { return 2.2; },
+    w: function (ctx) { var c = ctx.flags.trioCur; return c && seqWaitAll(ctx, c.g.map(function (i) { return ctx.chars[i]; })) ? 0.33 : 2.2; },
     run: function (ctx, a) {
       var c = ctx.flags.trioCur, g = c.g.map(function (i) { return ctx.chars[i]; });
       count(ctx, g);

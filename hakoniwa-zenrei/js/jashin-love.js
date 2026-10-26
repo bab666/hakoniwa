@@ -157,6 +157,34 @@
       if (!al(p) || !p.goal0 || (!p.love && p.goal0.id !== 'love')) return;
       if (S.rng() < 0.35) { p.love = p.love || { t: null, pt: 0, tries: 0 }; loveAct(S, p, h, live, true); }
     });
+    flirt(S, h);
   };
+  /* ---------- 恋人どうしのいちゃつき（順23。日常キットの村の場面 HK.Daily.storyLove：宿・社・畑・夜の縁側） ----------
+     恋人・夫婦（恋人に開く）・運命の番・番と、互いに本命の二人だけ。HK.canLove を両方向・恋愛にしない組（ngPair）は除く。
+     死んだ人・連れ去られた人・村を出た人（JS.alive）・縛られた人・発狂中・取り憑かれた人は出さない。「恋愛の起こりやすさ」が0なら起きない。一回に4場面まで */
+  function timeOf(h) { var hh = (16 + h) % 24; return hh >= 5 && hh < 10 ? 'morning' : hh < 16 && hh >= 10 ? 'day' : hh >= 16 && hh < 19 ? 'evening' : 'night'; }
+  function flirt(S, h) {
+    var rom = S.env.romance == null ? 50 : +S.env.romance;
+    if (!HK.Daily || !HK.Daily.storyLove || rom <= 0 || (S.flirtN || 0) >= 4 || (S.flirtH != null && h - S.flirtH < 6)) return;
+    var live = S.P.filter(function (p) { return al(p) && !p.bound && !p.possessed && !(JS.SPEC && JS.SPEC.mad && JS.SPEC.mad(p)); }), ps = [];
+    live.forEach(function (a) {
+      live.forEach(function (b) {
+        if (a.i >= b.i) return;
+        if (!(hasTie(S, a, b, 'lover,mate,fated') || (a.honmei === b.i && b.honmei === a.i))) return;
+        if ((HK.ngPair && HK.ngPair(a, b)) || (HK.tieNoLove && (S.ties || []).some(function (t) { return ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)) && HK.tieNoLove(t); }))) return;
+        if (HK.canLove && !(HK.canLove(a, b) && HK.canLove(b, a))) return;
+        ps.push([a, b]);
+      });
+    });
+    var rng = S.rng;
+    if (!ps.length || rng() > 0.12 * Math.min(2, rom / 50)) return;
+    var pr = rng.pick(ps), x = rng() < 0.5 ? pr[0] : pr[1], y = x === pr[0] ? pr[1] : pr[0];
+    var r = HK.Daily.storyLove(S, 'jashin', x, y, timeOf(h));
+    if (!r) return;
+    S.flirtN = (S.flirtN || 0) + 1; S.flirtH = h;
+    x.m.fear = clamp(x.m.fear - 6, 0, 100); y.m.fear = clamp(y.m.fear - 6, 0, 100);
+    setRel(S, x, y, 0.05);
+    ST.sayB(S, { actors: [x, y], tag: '恋人', text: r.text, why: '恋人どうしの、つかの間の時間（' + r.label + '）。二人の恐怖が少し和らいだ（恋愛の起こりやすさ ' + rom + '）' }, x.name + 'と' + y.name + 'が寄り添った');
+  }
   JS.LOVEX = { act: loveAct };
 })();

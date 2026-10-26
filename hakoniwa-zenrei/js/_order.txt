@@ -12,6 +12,7 @@ js/rel-group.js
 js/rel-core-extra.js
 js/tie-stage.js
 js/tie-abuse.js
+js/tie-layer.js
 js/voice.js
 js/voice-tone.js
 js/tone-registry.js
@@ -97,6 +98,7 @@ js/room-cheer.js
 js/room-know.js
 js/room-tie.js
 js/room-same.js
+js/room-games.js
 js/scenario-trial.js
 js/ego-image.js
 js/omega-data.js
@@ -187,6 +189,7 @@ js/persona-final.js
 js/pair-name.js
 js/pos.js
 js/attr.js
+js/attr-height.js
 js/food.js
 js/special.js
 js/zombie-special.js
@@ -285,6 +288,7 @@ late js/tips-scen-c.js
 late js/tips-scen-d.js
 js/scen-tags.js
 js/shared-stats.js
+js/ui-rand.js
 js/ui.js
 js/ui-gear.js
 js/ui-adv.js
@@ -303,3 +307,4 @@ js/lewd-mark.js
 js/ero-scene.js
 js/reset.js
 js/voice-seg.js
+js/voice-fp.js

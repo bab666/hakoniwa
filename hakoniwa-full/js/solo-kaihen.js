@@ -4,6 +4,12 @@
 (function () {
   'use strict';
   /* 同じ結果の中で、同じ文・台詞を繰り返さない：まだ使っていない文から選び、使い切ったら、いちばん前に使った文から戻す */
+  /* 文 t の at の位置に gc を差し込む（施す側が達する文を、終わりの締めより前に。at が範囲外なら末尾） */
+  function gcIns(t, gc, at) {
+    if (!(at >= 0 && at < t.length)) return t + gc;
+    /* 段落の頭に差し込むときは、段落を分ける */
+    return t.slice(0, at) + gc + (t.charAt(at - 1) === '\n' ? '\n\n' : '') + t.slice(at);
+  }
   function pkF(S, arr) {
     if (!arr || !arr.length) return window.HK.Story.pick(S, arr);
     var m = S._pkLru = S._pkLru || { n: 0, at: {} }, best = [], bv = Infinity;
@@ -242,7 +248,8 @@
     var Pz = HK.Pos, gTop = false, gFree = false;
     if (Pz) {
       if (r) { gTop = Pz.order(g, r, [r, g])[0] === g; gFree = !Pz.fixed(g, r); }
-      else { var vp = Pz.vsNpc(g, ''); gTop = vp === 'top'; gFree = Pz.of(g) === 'riba'; }
+      /* モブ相手の受け攻め（posNpc）を決めた人は、その指定で（リバだけ自由に） */
+      else { var vp = Pz.vsNpc(g, ''), nv = Pz.npc ? Pz.npc(g) : ''; gTop = vp === 'top'; gFree = nv ? nv === 'riba' : Pz.of(g) === 'riba'; }
     }
     /* 施す側が女性なら、攻めの施術は女性上位（跨る）のものにする */
     var gF = !!(Pz && Pz.isF(g)), TA = gF && KH.TOP_ACTS_F ? KH.TOP_ACTS_F : KH.TOP_ACTS;
@@ -280,10 +287,12 @@
       while (as.length < 3) as.push(act);
       var mlR = 0, tr = ST.fmt(pkF(S, F.rush), { p: g.name, r: ns[0], r2: ns[1], r3: ns[2], a1: as[0][0], a2: as[1][0], a3: as[2][0] });
       var mlx = Math.round(4 + rng() * 10); mlR = mlx * 3;
-      tr += ST.fmt(pkF(S, climaxOf(KH.ACTKIND[as[2][0]]) || KH.CLIMAX.hand), { p: g.name, r: ns[2], ml: mlx }) + ST.fmt(pkF(S, F.rushEnd), { p: g.name });
+      /* 施す側が達する文は、締め（rushEnd）より前に置く（終わったあとに達しない。2026-10-26 順146） */
+      var trC = ST.fmt(pkF(S, climaxOf(KH.ACTKIND[as[2][0]]) || KH.CLIMAX.hand), { p: g.name, r: ns[2], ml: mlx }), trE = ST.fmt(pkF(S, F.rushEnd), { p: g.name });
+      tr += trC; var rAt = tr.length; tr += trE;
       g.cnt.served += 3; g.m.sem += mlR; g.m.imm += 5; g.m.plea += (14 + rng() * 14) * g.sens;
       as.forEach(function (a) { g.cnt.acts[a[0]] = (g.cnt.acts[a[0]] || 0) + 1; });
-      if (g.m.plea >= 100) { g.m.plea = 25; g.cnt.gclimax++; tr += pkF(S, gTop && !gFree ? E(S, 'gclimax', KH.GCLIMAX).filter(function (x) { return !/奥/.test(x); }) : E(S, 'gclimax', KH.GCLIMAX)).replace(/\{p\}/g, g.name); }
+      if (g.m.plea >= 100) { g.m.plea = 25; g.cnt.gclimax++; tr = gcIns(tr, pkF(S, gTop && !gFree ? E(S, 'gclimax', KH.GCLIMAX).filter(function (x) { return !/奥/.test(x); }) : E(S, 'gclimax', KH.GCLIMAX)).replace(/\{p\}/g, g.name), rAt); }
       tr += heatUp(S, g);
       tr = ef(S, tr, g, npcWho(S));
       ST.sayB(S, { actors: [g], tag: '流れ作業', lewd: true, text: tr, why: g.name + 'の担当に予約が重なった（客の多さ ' + S.env.npc + '）', mag: 20 }, g.name + '→三人を連続対応（' + mlR + 'ml）', g.cnt.served === 3);
@@ -328,13 +337,16 @@
     var ml = Math.round((r ? 6 + rng() * 8 : 4 + rng() * 12) * (1 + ai * 0.08));
     t += ST.fmt(pkF(S, climaxOf(KH.ACTKIND[act[0]] || KH.climaxKind(t))), { p: g.name, r: rname, ml: ml });
     /* 小説調の山場（solo-thick4.js）：登場キャラが受ける施術は毎回、モブの客は三回に一回ほど、段落に分けて厚く */
-    var tk0 = { hand: 'serve', glove: 'serve', mouth: 'serve', face: 'serve', in: 'ride', top: 'in', topF: 'ride' }[KH.ACTKIND[act[0]]];
+    var tk0 = { hand: 'serve', glove: 'serve', mouth: 'serve', face: 'serve', in: 'ride', top: 'in', topF: 'ride' }[KH.ACTKIND[act[0]]], aft0 = '';
     if (tk0 && actAt >= 0 && actLead && HK.Thick4 && HK.Thick4.ok(S, lew) && (r || rng() < 0.35)) {
       var sub0 = r || { name: rname, gender: 'm' };
       t = t.slice(0, actAt) + HK.Thick4.scene(S, { dom: g, sub: sub0, kind: tk0, lead: actLead, sad: HK.Thick4.rollSad(S, g, sub0),
-        after: ST.fmt(pkF(S, HEAT_AFTER[g.hs || 0]), { p: g.name, ml: ml }) });
+        after: (aft0 = ST.fmt(pkF(S, HEAT_AFTER[g.hs || 0]), { p: g.name, ml: ml })) });
     }
     /* 掛け合い：終わりの締め／居合わせた正気の人の突っ込み */
+    /* 施す側が達する文を置く所：終わりの締め・突っ込みの前（厚い山場なら、その事後の文の前）。2026-10-26 順146 */
+    var gcAt = t.length;
+    if (aft0) { var ka0 = t.lastIndexOf(aft0.slice(0, 12)); if (ka0 > 0 && ka0 < gcAt) gcAt = ka0; }
     var te = KH.talk && rng() < 0.45 ? KH.talk(S, 'end', g, r, rname, kindT, false) : null;
     if (te) { t += te.text; talkWhy = talkWhy || te.why; }
     var tc = KH.talkCut && r && r.role !== 'out' && S.v.sid !== 'stage' ? KH.talkCut(S, g) : null;
@@ -346,7 +358,7 @@
     var gain = (8 + ai * 4 + rng() * 10) * g.sens;
     g.m.plea += gain;
     var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」' + (g.action.id === 'bold' ? '／大胆な方針' : g.action.id === 'care' ? '／丁寧な方針' : '');
-    if (g.m.plea >= 100) { g.m.plea = 25; g.cnt.gclimax++; t += pkF(S, gTop && !gFree ? E(S, 'gclimax', KH.GCLIMAX).filter(function (x) { return !/奥/.test(x); }) : E(S, 'gclimax', KH.GCLIMAX)).replace(/\{p\}/g, g.name) + (!ero && lew !== 'low' && rng() < 0.6 ? g.name + '「' + pkF(S, topL(g, HK.Voice.CLIMAX[g.persona] || HK.Voice.CLIMAX.gentle)) + '」' : ''); g.m.doubt += 6 * g.doubtRate; why += '／' + g.name + '自身も達した（感じやすさ ' + g.stats.sens + '）'; }
+    if (g.m.plea >= 100) { g.m.plea = 25; g.cnt.gclimax++; t = gcIns(t, pkF(S, gTop && !gFree ? E(S, 'gclimax', KH.GCLIMAX).filter(function (x) { return !/奥/.test(x); }) : E(S, 'gclimax', KH.GCLIMAX)).replace(/\{p\}/g, g.name) + (!ero && lew !== 'low' && rng() < 0.6 ? g.name + '「' + pkF(S, topL(g, HK.Voice.CLIMAX[g.persona] || HK.Voice.CLIMAX.gentle)) + '」' : ''), gcAt); g.m.doubt += 6 * g.doubtRate; why += '／' + g.name + '自身も達した（感じやすさ ' + g.stats.sens + '）'; }
     var hu = heatUp(S, g);
     if (hu) { t += hu; why += '／' + g.name + 'の昂りが一段上がった（快感 ' + Math.round(g.m.plea) + '）'; }
     if (r) {
@@ -412,13 +424,14 @@
       if (!eOn(S) && rng() < 0.45 && HK.Voice.CLIMAX[who.persona]) t += nClimax(S, who);
       t += ST.fmt(pkF(S, FMT ? E(S, 'fm.take', KH.FM_CLIMAX) : /手袋|ミトン|グローブ/.test(act[0]) && gAct && HK.Ero && HK.Ero.has('kaihen', 'ff.glove') && eOn(S) ? HK.Ero.T.kaihen['ff.glove'] : E(S, 'ff.' + dir, KH.FF_CLIMAX[dir])), v);
     }
+    var gcAt2 = t.length;   /* 施す側が達する文は、終わりの締めの前に置く（2026-10-26 順146） */
     var te = KH.talk && rng() < 0.45 ? KH.talk(S, 'end', g, r, r.name, ffK, true) : null;
     if (te) { t += te.text; talkWhy = talkWhy || te.why; }
     g.cnt.served++; g.m.imm += 2.5 + (g.goal.id === 'top' ? 2 : 0);
     g.m.plea += (gAct ? 8 : 18) * g.sens + rng() * 8;
     var why = g.name + '（' + SIT.giver + '・' + (g.topWhy || g.top + '優位') + '）の「' + act[0] + '」／' + (gF ? '女性どうしの施術' : FMT ? '女性の受け手が上になる施術' : '女性の受け手への施術') + '（' + (gAct ? g.name : r.name) + 'が動く側）';
     if (!gAct) g.cnt.gclimax++;
-    if (g.m.plea >= 100) { g.m.plea = 25; if (gAct) { g.cnt.gclimax++; t += pkF(S, KH.GCLIMAX.filter(function (x) { return !/奥/.test(x); })).replace(/\{p\}/g, g.name); } g.m.doubt += 6 * g.doubtRate; }
+    if (g.m.plea >= 100) { g.m.plea = 25; if (gAct) { g.cnt.gclimax++; t = gcIns(t, pkF(S, KH.GCLIMAX.filter(function (x) { return !/奥/.test(x); })).replace(/\{p\}/g, g.name), gcAt2); } g.m.doubt += 6 * g.doubtRate; }
     t += heatUp(S, g);
     r.cnt.served++; if (gAct) r.cnt.climax++; r.m.plea = clamp(r.m.plea + 25 * r.sens, 0, 100);
     if (r.role === 'out') { r.m.imm += 14 + r.tr.ac * 10; r.m.doubt -= 6; why += '／正気の' + r.name + 'も、施術を受けてしまった'; }

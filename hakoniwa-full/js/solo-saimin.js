@@ -42,7 +42,7 @@
     },
     castHint: '1〜2人（かける側とかけられる側で合わせて二人まで）。1人のときは、かける側はモブ（「かける相手」「かける人の性別」の設定で決まる）になります。2人のときは片方が「かける側」になり、もう片方に催眠をかけます（関係は「既存の関係」から決まります）。役割を決めなければ、2人目がかける側になります。全員を「かける側」にすると、かけられる人がいないので始められません。',
     env: [
-      { id: 'who', label: 'かける相手', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ（人ごとにランダム）' }, { v: 'colleague', label: '仕事の同僚' }, { v: 'lover', label: '恋人' }, { v: 'friend', label: '友人' }, { v: 'grudge', label: '恨みを持った相手' }, { v: 'stalker', label: 'ストーカー' }] },
+      { id: 'who', label: 'かける相手', type: 'select', def: 'random', desc: '催眠をかける人と、かけられる人の関係。おまかせ以外を選ぶと、住人2人に関係があっても、この設定が優先されます。おまかせのときは二人の関係から決まります（関係がなければランダム）', options: [{ v: 'random', label: 'おまかせ（人ごとにランダム）' }, { v: 'colleague', label: '仕事の同僚' }, { v: 'lover', label: '恋人' }, { v: 'friend', label: '友人' }, { v: 'grudge', label: '恨みを持った相手' }, { v: 'stalker', label: 'ストーカー' }] },
       { id: 'hsex', label: 'かける人の性別', type: 'select', def: 'random', desc: '1人のとき（かける側がモブ）だけ。おまかせなら、かけられる人の恋愛対象に合わせる', options: [{ v: 'random', label: 'おまかせ' }, { v: 'm', label: '男性' }, { v: 'f', label: '女性' }] },
       { id: 'method', label: 'かけ方', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'pendulum', label: '振り子' }, { v: 'app', label: '催眠アプリ' }, { v: 'voice', label: '囁き声' }, { v: 'aroma', label: '甘い香り' }, { v: 'snap', label: '指パッチン' }, { v: 'audio', label: '催眠音声' }, { v: 'book', label: '古い本の呪文' }] },
       { id: 'skill', label: '催眠の腕', min: 0, max: 100, def: 55, lo: '素人', hi: '達人', desc: '高いほど深くかけられ、相手の弱い暗示を見抜いて選ぶ' },
@@ -125,6 +125,14 @@
           /* きょうだい（義理も）：かけられる人から見たかける側の続柄（姉・兄・妹・弟・双子。上下が分からなければ 姉妹・兄弟・きょうだい）。sib-word.js */
           if (HK.Sib && HK.Sib.isSibTie(tt)) { var sw = HK.Sib.word(p, HY, 'plain', { tie: tt }); if (sw) famL = (HK.Sib.isStep(tt) ? '義理の' : '') + sw; }
         } else if (tt) ty = tt.type === 'crush' ? (tt.a === HY.i ? 'stalker' : 'friend') : TIEMAP[tt.type] || TIEMAP[(HK.TIES[tt.type] || {}).like];
+        /* 「かける相手」をおまかせ以外にしたときは、二人の関係より設定を優先する（おまかせのときだけ、二人の関係から決まる）。
+           ただし恋愛にならない二人（家族の「恋愛：なし」・恋愛対象が合わない）は、恋人・ストーカーにしない */
+        if (env.who !== 'random' && SM.TYPES[env.who]) {
+          ty = env.who;
+          var noLv = kinNo || (HK.canLove && !(HK.canLove(HY, p) && HK.canLove(p, HY)));
+          if (ty === 'lover' && noLv) ty = 'friend';
+          else if (ty === 'stalker' && (kinNo || (HK.canLove && !HK.canLove(HY, p)))) ty = 'grudge';
+        }
       }
       if (!ty) ty = env.who !== 'random' && SM.TYPES[env.who] ? env.who : rng.pick(Object.keys(SM.TYPES));
       /* 合意のない展開が切：おまかせで選んだモブの恨み・ストーカーは、同僚・友人・恋人に替える */

@@ -4,13 +4,14 @@
   var HK = window.HK;
   function R(ctx, a, b) { return ctx.R(a, b); }
   function names(list) { return list.map(function (c) { return c.name; }).join('・'); }
+  function L(s) { return s.split('|'); }
   /* ---------- 結末の締め：勝ち逃げ・脱出・ホテルに残る・黒幕への下克上で、ゲームが終わった場面を記録の最後に入れる ---------- */
   function closing(ctx) {
     var rng = ctx.rng, all = ctx.chars, F = ctx.flags, oc = F.outcome || '';
     /* 住人の黒幕は、生き残った宿泊客には数えない（正体を明かす場面は rolesFinal） */
     var live = all.filter(function (c) { return c.alive && !isMM(ctx, c); }), dead = all.filter(function (c) { return !c.alive && !isMM(ctx, c); });
     var fill = function (t, m) { return t.replace(/\{(\w)\}/g, function (_, k) { return m[k] != null ? m[k] : ''; }); };
-    var m = { l: names(live), d: names(dead.slice(-3)), n: dead.length };
+    var m = { l: names(live), d: names(dead.slice(-3)), n: dead.length, a: mmOf(ctx) ? mmOf(ctx).name : '' };
     var head, text;
     /* 黒幕の住人のほかに、誰も残らなかった */
     if (!live.length && mmOf(ctx) && mmOf(ctx).alive) {
@@ -19,7 +20,10 @@
       rolesFinal(ctx);
       return;
     }
-    if (/勝ち逃げ/.test(oc)) {
+    if (F.hostEnd === 'win' || (F.hostEnd === 'hold' && ctx.env.endrule === 'out')) {
+      head = '黒幕との対決';
+      text = fill(rng.pick(HOST_END[F.hostEnd]), m);
+    } else if (/勝ち逃げ/.test(oc)) {
       head = '勝ち逃げ';
       text = fill(rng.pick([
         'ホテルの正面玄関の鉄板が、一枚だけ外れた。{l}は誰もいなくなったロビーを抜け、外の光の中へ歩き出した。背後で扉が閉まる音がしても、振り返らなかった。',
@@ -55,6 +59,9 @@
         '{l}は、毎晩ロビーの灯りをともすことにした。扉は今も閉ざされているが、そこはもう処刑場ではなかった。'
       ]), m);
     }
+    /* 許された・輪から外された裏切り者のその後 */
+    var trA = trOf(ctx);
+    if (trA && trA.alive && live.indexOf(trA) >= 0 && TR_AFTER[F.trFate]) text += ctx.t(rng.pick(TR_AFTER[F.trFate]), trA);
     if (dead.length && head !== '勝ち逃げ') text += fill(rng.pick(['{d}の名前が書かれた投票のパネルは、最後まで灯ったままだった。', '{d}のことを、{l}は何度も思い出すことになる。', '{d}の遺品は、生き残った者の手で、一つずつ大切にしまわれた。']), m);
     ctx.say({ kind: 'step', cat: 'phase', text: '結末 ― ' + head });
     /* 暴かれなかった黒幕・裏切り者は、ゲームが終わる場面の前に正体を明かす */
@@ -383,6 +390,152 @@
     '黒幕は、裏切り者の{a}にも例外を作らなかった。{a}が黒幕に流し続けた情報は、最後まで{a}を守らなかった。'
   ];
 
+  /* ---------- 順163：黒幕（住人）が主催者として姿を見せる（環境値 mmstyle：host）。宿泊客には数えない（クラスメイトの担任と同じ扱い） ----------
+     壇上・モニターに姿を見せ、開幕の宣告・動機を配るときの煽り・死体が見つかったときの一言・処刑の宣告・事件のない朝の苛立ち・最後の対決をする。
+     殺人の犯人・被害者・投票の対象にはならない。正体は初めから分かっているので、暴かれる場面はない（反撃で管理室に踏み込まれる・最後の対決で決着がつく）
+     {a}＝黒幕、{b}＝宿泊客。気質（temp）で書き分ける */
+  var HOST_OPEN = {
+    cold: L('館内のモニターが一斉に点いた。映っていたのは{a}だった。{a}「はじめまして、かな。このゲームを作ったのは私｜はじめまして、と言うべきか。このゲームを作ったのは私だ｜はじめまして、と言うべきでしょうか。このゲームを作ったのは私です」――その声には、何の感情もこもっていなかった。|裁判場の壇上に、{a}が立っていた。{a}「ルールは一つ。殺して、隠し通せば、外に出られる｜ルールは一つだ。殺して、隠し通せば、外に出られる｜ルールは一つです。殺して、隠し通せば、外に出られます」――{a}は規則を読み上げるように言い、それきり口を閉じた。|{a}は管理室のマイクに向かって、淡々と規則を読み上げた。読み終えると、{a}はカメラの向こうから宿泊客を一人ずつ見つめた。'),
+    proud: L('裁判場の照明が落ち、壇上にだけ光が当たった。そこに座っていたのは{a}だった。{a}「ようこそ、私のホテルへ。今日からあなたたちは、私の駒｜ようこそ、私のホテルへ。今日からあなたたちは、私の駒だ｜ようこそ、私のホテルへ。今日からあなたたちは、私の駒です」|{a}はロビーの大階段の上から、宿泊客を見下ろした。{a}「逆らいたければ、どうぞ。できるものなら｜逆らいたければ、好きにしろ。できるものならな｜逆らいたいのでしたら、どうぞ。できるものなら、ですけれど」|壇上の{a}は、玉座のような椅子に深く腰かけていた。{a}「このホテルでは、私が法律。忘れないで｜このホテルでは、私が法だ。忘れるな｜このホテルでは、私が法律です。お忘れにならないでください」'),
+    warm: L('モニターに映った{a}は、なぜか少し悲しそうな顔をしていた。{a}「ごめんね。でも、始めないといけない｜すまない。だが、始めなければならない｜ごめんなさい。でも、始めなければいけません」――それが、ゲームの開幕の合図だった。|壇上の{a}は、宿泊客一人ひとりの名前を、慈しむように読み上げた。最後に、殺し合いの規則を、同じ優しい声で読んだ。|{a}「怖がらなくていい。ちゃんと、最後まで見ているから｜怖がらなくていい。最後まで、ちゃんと見ている｜怖がらなくて大丈夫です。最後まで、ちゃんと見ていますから」――館内放送の{a}の声は、どこまでも穏やかだった。'),
+    play: L('ファンファーレが鳴り響き、壇上に{a}が飛び出してきた。{a}「はーい、注目！　今日からここで、殺し合いをしてもらいまーす｜注目しろ。今日からここで、殺し合いをしてもらう｜はい、注目してください！　今日からここで、殺し合いをしていただきます」|モニターの中の{a}は、ウサギの耳のついた帽子をかぶっていた。{a}「ルールは簡単。殺して、ばれなければ勝ち｜ルールは簡単だ。殺して、ばれなければ勝ちだ｜ルールは簡単です。殺して、ばれなければ勝ちです」|{a}は裁判場の椅子の上でくるくる回りながら、規則を歌うように読み上げた。誰も笑わなかったが、{a}は一人で楽しそうだった。'),
+    timid: L('モニターに映った{a}は、原稿から目を上げなかった。{a}「……ゲームの、規則を、説明する｜……ゲームの規則を、説明する｜……ゲームの規則を、ご説明します」――{a}の声は小さく、ところどころ震えていた。|壇上の{a}は、誰とも目を合わせようとしなかった。それでも、殺し合いの規則だけは、一字一句まちがえずに読み上げた。|館内放送の声の主が{a}だと分かったとき、何人かが息を呑んだ。{a}はマイクの前で、自分の手をきつく握りしめていた。')
+  };
+  /* 動機を配るときの煽り（{b}＝狙われた人。いなければ全員に） */
+  var HOST_TAUNT = {
+    cold: L('{a}はモニター越しに、新しい動機の束を一枚ずつめくってみせた。{a}「効く人には、効くはず｜効く者には、効くはずだ｜効く方には、効くはずです」――{a}の目は、{b}の顔の上で止まっていた。|{a}は{b}の名前だけを、わざとゆっくり呼んだ。{a}「今日の動機は、あなたのために選んだ｜今日の動機は、あなたのために選んだ｜今日の動機は、あなたのために選びました」|{a}は動機の映像を流しながら、{b}の表情だけを記録していた。'),
+    proud: L('{a}は壇上から{b}を指さした。{a}「次に崩れるのは、あなた。賭けてもいい｜次に崩れるのは、あなただ。賭けてもいい｜次に崩れるのは、あなたです。賭けてもかまいません」|{a}「まだ誰も殺さないの？　つまらない｜まだ誰も殺さないのか。つまらん｜まだどなたも殺さないのですか。つまらないですね」――{a}は肘掛けを指で叩きながら、{b}を見下ろした。|{a}は配った動機の封筒を、{b}の前にだけ二通落とした。{a}「特別扱い。光栄に思って｜特別扱いだ。光栄に思え｜特別扱いです。光栄に思ってください」'),
+    warm: L('{a}は{b}に向かって、申し訳なさそうに微笑んだ。{a}「あなたには、一番つらいのを選んだ。ごめん｜あなたには、一番つらいものを選んだ。すまない｜あなたには、一番つらいものを選びました。ごめんなさい」|{a}の声は優しかった。{a}「無理しなくていい。誰かを殺したくなったら、それでいい｜無理はしなくていい。誰かを殺したくなったら、それでいい｜無理はしなくていいんです。誰かを殺したくなったら、それでいいんです」――その優しさが、{b}には一番こたえた。|{a}は動機を配り終えると、{b}の部屋にだけ温かい飲み物を届けさせた。添えられたカードには「がんばって」とだけあった。'),
+    play: L('{a}「じゃじゃーん！　今日の動機は、{b}のための特別版｜見ろ。今日の動機は、{b}のための特別版だ｜じゃじゃーん！　今日の動機は、{b}さんのための特別版です」――モニターの中で、{a}は手を叩いて笑った。|{a}は{b}の動機の映像に、わざわざ効果音をつけて流した。{b}が顔をそむけると、{a}は「あれ、面白くなかった？｜面白くなかったか｜あれ、面白くありませんでしたか」と首をかしげた。|{a}は動機の封筒で紙飛行機を折り、{b}の頭に当てた。{a}「当たり！　今日の主役は、あなた｜当たりだ。今日の主役は、あなただ｜当たりです！　今日の主役は、あなたです」'),
+    timid: L('{a}は動機の封筒を配りながら、{b}の前でだけ手が止まった。それでも、{a}は封筒を置いて、逃げるように壇上へ戻った。|{a}「……あなたの分は、これ｜……あなたの分は、これだ｜……あなたの分は、これです」――{a}は{b}と目を合わせずに、動機の映像を流した。|モニターの中の{a}は、{b}の名前を呼ぶときだけ、声が裏返った。')
+  };
+  /* 事件のなかった朝の苛立ち */
+  var HOST_QUIET = {
+    cold: L('{a}はモニターの中で、時計を一度だけ見た。{a}「予定より遅れている。次は、もっと強いものを｜予定より遅れている。次は、もっと強いものを使う｜予定より遅れています。次は、もっと強いものを使います」|{a}は何も言わずに、食料庫の鍵を一つ閉めた。それが{a}の返事だった。'),
+    proud: L('{a}は壇上の椅子を蹴った。{a}「私のゲームを、退屈にしないで｜私のゲームを、退屈にするな｜私のゲームを、退屈にしないでください」|{a}は館内放送で、一人ずつ名前を呼んで臆病者と罵った。'),
+    warm: L('{a}「みんな、優しいね。……でも、それじゃ終わらない｜皆、優しいな。……だが、それでは終わらない｜皆さん、優しいですね。……でも、それでは終わりません」――{a}の声は、少しだけ寂しそうだった。|{a}は朝の放送で、誰も死ななかったことを褒めた。そして、次の動機はもっと重くなると、同じ声で告げた。'),
+    play: L('{a}「えー、また誰も死んでない｜また誰も死んでいないのか｜えー、またどなたも亡くなっていないんですか」――モニターの中で、{a}は大げさに床へ寝転がった。|{a}は朝の放送で、退屈しのぎの替え歌を歌った。歌詞は、宿泊客の名前と、それぞれの一番の弱みでできていた。'),
+    timid: L('{a}は朝の放送で、何か言いかけてやめた。スピーカーからは、長い沈黙だけが流れた。|{a}「……このままだと、困る｜……このままでは、困る｜……このままでは、困ります」――{a}は誰に言うでもなく呟いた。')
+  };
+  /* 死体が見つかったときの一言 */
+  var HOST_BODY = L('死体発見アナウンスのあと、モニターに{a}が映った。{a}は何も言わず、ただ拍手をした。|{a}の声が、館内放送に重なった。{a}「捜査の時間。がんばって｜捜査の時間だ。励め｜捜査の時間です。がんばってください」|壇上の{a}は、宿泊客たちが現場に集まるのを、身を乗り出して眺めていた。');
+  /* 処刑の宣告（{b}＝処刑される人） */
+  var HOST_EXEC = {
+    cold: L('{a}は判決を読み上げた。{a}「クロは{b}。処刑を始める｜クロは{b}だ。処刑を始める｜クロは{b}さんです。処刑を始めます」――{a}の声は、最初の放送と少しも変わらなかった。|{a}は処刑のボタンに指をかけ、一度だけ{b}を見た。それから、迷わず押した。'),
+    proud: L('{a}は壇上から{b}を見下ろした。{a}「残念。あなたの負け｜残念だったな。あなたの負けだ｜残念でした。あなたの負けです」――{a}は高らかに処刑の開始を告げた。|{a}「さあ、皆でよく見て。これが、私のゲームに負けた者の末路｜さあ、皆よく見ろ。これが、私のゲームに負けた者の末路だ｜さあ、皆さんよくご覧ください。これが、私のゲームに負けた者の末路です」'),
+    warm: L('{a}は{b}に向かって、静かに頭を下げた。{a}「ありがとう。ここまで付き合ってくれて｜礼を言う。ここまで付き合ってくれて｜ありがとうございました。ここまで付き合ってくださって」――そして、処刑の始まりを告げた。|{a}は処刑の宣告を、泣きそうな声で読み上げた。読み終えても、{a}はボタンから指を離さなかった。'),
+    play: L('{a}「はい、大正解！　クロは{b}でした！　それでは、お待ちかねのおしおきタイム｜正解だ。クロは{b}だった。それでは、おしおきの時間だ｜はい、大正解です！　クロは{b}さんでした！　それでは、お待ちかねのおしおきの時間です」|{a}は処刑のボタンを押す前に、ドラムロールを鳴らした。{b}の顔から、最後の色が消えた。'),
+    timid: L('{a}はしばらく、判決の紙を持ったまま動かなかった。やがて、消え入りそうな声で{b}の名前を読み上げた。|{a}は処刑のボタンを押す瞬間、目を閉じた。押したのは、確かに{a}の指だった。')
+  };
+  /* 不正解（犯人の勝ち逃げ）のとき */
+  var HOST_WRONG = L('{a}はゆっくり立ち上がり、勝ち残った{b}に拍手を送った。{a}「おめでとう。嘘をつき通したのは、あなた一人｜おめでとう。嘘をつき通したのは、あなた一人だ｜おめでとうございます。嘘をつき通したのは、あなた一人です」|{a}は投票の結果を見て、満足そうに頷いた。{a}「これで、ゲームは終わり｜これで、ゲームは終わりだ｜これで、ゲームは終わりです」|モニターの{a}は、外れた投票の結果を、一人ずつ読み上げた。最後に、本当のクロの名前を、いちばん楽しそうに呼んだ。');
+  /* 反撃で管理室に踏み込んだ（{a}＝反撃を率いた人、{b}＝黒幕） */
+  var HOST_REBEL = L('{a}たちが管理室の扉を破ると、{b}はモニターの前で振り返った。{b}「……ここまで来るとは、思わなかった｜……ここまで来るとは、思わなかった｜……ここまで来るとは、思いませんでした」|管理室には、{b}が一人で待っていた。壇上で何度も見た顔が、今は手の届く距離にあった。{a}は、初めて{b}と同じ床の上に立った。|{a}が管理室の照明をつけると、{b}は椅子に座ったまま、静かに拍手をした。');
+  /* 最後の対決（ゲームの終わりに、生き残った宿泊客と黒幕が裁判場で向かい合う） */
+  var HOST_FINAL = L('最後の朝、裁判場には宿泊客と{a}だけが残っていた。{a}が壇上から降りてきたのは、ゲームが始まってから初めてのことだった。|最後の裁判は、殺人の裁判ではなかった。生き残った宿泊客は、壇上の{a}をまっすぐに見上げた。{b}が口を開いた。{b}「今度は、あなたが裁かれる番｜今度は、あなたが裁かれる番だ｜今度は、あなたが裁かれる番です」|ゲームの最後の日、{a}は自分から宿泊客の前に姿を現した。{a}「さあ、最後の裁判をしよう｜さあ、最後の裁判をしよう｜さあ、最後の裁判をしましょう」');
+  /* 対決で黒幕が勝つ（宿泊客は追い詰めきれなかった。扉は規則どおりに開く／開かない） */
+  var HOST_HOLD = {
+    cold: L('宿泊客たちの問いに、{a}は一つも答えなかった。最後まで、{a}は壇上の主催者だった。{a}「ゲーム終了。お疲れさま｜ゲーム終了だ。ご苦労だった｜ゲーム終了です。お疲れさまでした」'),
+    proud: L('{a}は宿泊客たちの言葉を、最後まで笑って聞き流した。{a}「裁く？　私を？　最後まで、あなたたちは私の駒だった｜裁くだと？　私を？　最後まで、あなたたちは私の駒だった｜裁く？　私を？　最後まで、あなたたちは私の駒でした」'),
+    warm: L('{a}は宿泊客たちの怒りを、黙って受け止めた。そして、深く頭を下げた。{a}「よく生き残ってくれた。それだけで、十分｜よく生き残ってくれた。それだけで十分だ｜よく生き残ってくださいました。それだけで十分です」'),
+    play: L('{a}は最後の裁判を、まるでクイズ番組のように仕切った。宿泊客たちは、{a}の思いどおりに答えを外した。{a}「ざんねーん！　でも、楽しかった｜残念だったな。だが、楽しかった｜残念でした！　でも、楽しかったです」'),
+    timid: L('{a}は宿泊客たちに囲まれても、一言も言い返さなかった。ただ、震える手で、最後のボタンを押した。それは処刑のボタンではなく、扉の錠を外すボタンだった。')
+  };
+  /* 結末の文（黒幕との対決）。{l}＝生き残った宿泊客、{a}＝黒幕 */
+  var HOST_END = {
+    win: L('{l}は、壇上から引きずり下ろされた{a}の横を通り抜けて、外の光の中へ出た。誰も振り返らなかった。|{a}を裁判場に残して、{l}はホテルを出た。最後の裁判で裁かれたのは、宿泊客ではなかった。|{l}がホテルを出たのは、{a}との最後の対決の日の夕方だった。黒幕の顔を最後に見たのは、自分たちだった。'),
+    hold: L('{l}は、{a}が開けた扉から外へ出た。勝ったのか、逃がされたのか、誰にも分からなかった。|扉は開いた。けれど{l}には、ゲームから解放された実感がなかった。壇上の{a}の顔が、いつまでも目に焼きついていた。|{l}はホテルを出たあとも、{a}の声を夢に見た。最後の裁判は、まだ終わっていない気がした。')
+  };
+  /* 黒幕（住人）と宿泊客の関係（恋人・家族など）に触れる一言（{a}＝黒幕、{b}＝宿泊客、{r}＝{b}から見た続き柄） */
+  var HOST_TIE = L('{b}は壇上の{a}を見上げた。{r}だった人が、そこにいた。{b}「どうして｜なぜだ｜どうしてですか」――{a}は答えなかった。|{a}は最後に一度だけ、{b}の方を見た。{r}として過ごした日々のことを、{a}は何も言わなかった。|{b}は{a}の名前を呼んだ。{r}として、ずっと呼んできた名前だった。');
+
+  /* ---------- 順163：裏切り者の追加 ----------
+     脱出の妨害（反撃の計画を崩す）・殺人の手引き（黒幕に命じられて鍵を開けておく）・暴かれたあとの「裏切り者の裁判」（処刑／許して反撃に加える／許さない） */
+  var TR_HINDER = L('決行に備えて書き起こした見取り図が、朝になると一か所だけ書き換えられていた。{a}は皆と一緒に首をかしげてみせた。書き換えたのは、{a}自身だった。|{a}は電子錠の番号のメモを、こっそり一桁ずつずらして書き写した。反撃の仲間たちは、その写しを信じて夜を待った。|{a}は見回りの時刻を、皆に半刻遅く伝えた。黒幕にそう言えと言われていた。その夜、反撃の仲間たちは、閉まったばかりのシャッターの前で立ち尽くした。|{a}は「鍵の在りかが分かった」と言って、皆を反対側の階へ連れていった。そこには何もなかった。{a}は皆と一緒に、悔しそうな顔をしてみせた。');
+  var TR_ASSIST = L('その夜、{a}は黒幕からの指示どおり、従業員通路の鍵を一つだけ開けておいた。誰がそこを通るのかは、知らされていなかった。|{a}は夜時間の前に、倉庫の在庫表を一行だけ消した。黒幕に頼まれたのは、それだけだった。それが何に使われるのか、{a}は考えないようにした。|{a}は黒幕の言いつけで、監視カメラの一台の向きを、ほんの少しだけ変えておいた。翌朝、そのカメラには何も映っていなかった。');
+  var TR_JUDGE = {
+    open: L('{b}が全員を裁判場に集めた。{b}「今日は、裏切り者の裁判をする｜今日は、裏切り者の裁判をする｜今日は、裏切り者の裁判をします」――被告席に立たされたのは、{a}だった。|裏切りが明らかになった夜、宿泊客たちは{a}を囲んで、どうするかを話し合った。誰も、すぐには口を開かなかった。|{a}は自分から被告席に立った。{b}が、皆に向かって言った。{b}「{a}をどうするか、皆で決めよう｜{a}をどうするか、皆で決めよう｜{a}さんをどうするか、皆で決めましょう」'),
+    exec: L('投票の結果は、処刑だった。{a}は最後まで、誰とも目を合わせなかった。|皆の手が、一つ、また一つと挙がっていった。{a}は挙がった手の数を数えて、静かに目を閉じた。|{b}は最後まで反対したが、票は覆らなかった。{a}は処刑台へ向かう途中、{b}に小さく「ありがとう｜＝｜ありがとうございます」と言った。'),
+    forgive: L('{b}が言った。{b}「黒幕に流した分、今度はこっちに流して｜黒幕に流した分を、今度はこちらに流せ｜黒幕に流した分を、今度はこちらに流してください」――{a}は泣きながら頷いた。裏切り者は、その日から反撃の仲間になった。|投票は割れた。最後の一票を入れた{b}は、{a}を許す方に手を挙げた。{a}はその場に崩れ落ち、何度も頭を下げた。|皆は{a}を許した。その代わり、{a}は黒幕に偽の報告を送ることになった。黒幕の目をくらます、二重の裏切りだった。'),
+    shun: L('誰も、{a}を処刑するとは言わなかった。けれど、許すと言う人もいなかった。その日から、{a}に話しかける人はいなくなった。|{a}は処刑を免れた。代わりに、皆の輪の外で食事をとることになった。{b}だけが、ときどき水を置いていった。|{a}の部屋の扉には、外から鍵がかけられることになった。{a}は抵抗しなかった。')
+  };
+  /* 裁判で処刑と決まった裏切り者への宣告（黒幕が姿を見せていないとき） */
+  var TR_JUDGE_CAST = ['館内放送：「宿泊客の皆様の総意、確かに承りました。裏切り者の処刑を執り行います」', '館内放送：「おや、ご自分たちで裁かれるのですね。では、こちらで執行いたしましょう」', '館内放送：「裏切り者の末路を、皆様でしっかりご覧ください」'];
+  /* 結末の一言（裏切り者のその後）。{a}＝裏切り者 */
+  var TR_AFTER = {
+    forgive: L('{a}は、許された日のことを一生忘れないだろう。外に出たあとも、{a}は皆に連絡を絶やさなかった。|{a}が黒幕に送り続けた偽の報告は、最後に皆を救った。{a}はそれを、誰にも誇らなかった。'),
+    shun: L('{a}は最後まで、皆の輪に戻れなかった。それでも、{a}は皆と同じ扉から外へ出た。|{a}と口をきく人は、最後まで少なかった。{a}は、それを当然の報いだと思っていた。')
+  };
+  function hostOf(ctx) { var m = mmOf(ctx); return ctx.flags.mmHost && m && m.alive ? m : null; }
+  /* 黒幕と宿泊客のあいだの、強い関係の続き柄（恋人・家族・親友など。恋人は恋愛対象が両方向で合うときだけ） */
+  var HOST_REL = { lover: '恋人', spouse: '夫婦', fiance: '婚約者', parent: '家族', pparent: '家族', sibling: 'きょうだい', sibprot: 'きょうだい', sibclose: 'きょうだい', best: '親友', childhood: '幼なじみ', buddy: '相棒', mentor: '師弟' };
+  function hostTie(ctx, h, list) {
+    var best = null;
+    list.forEach(function (b) {
+      if (best) return;
+      (HK.Ties ? HK.Ties.all(ctx, b, h) : []).some(function (t) {
+        var w = HOST_REL[t.type];
+        if (!w) return false;
+        if (/^(?:lover|spouse|fiance)$/.test(t.type) && !(HK.canLove(b, h) && HK.canLove(h, b))) return false;
+        best = { b: b, r: w }; return true;
+      });
+    });
+    return best;
+  }
+  /* 黒幕の幕引き（反撃・最後の対決で決着がついた）。MM_FALL の文を使う */
+  function hostFall(ctx, h, by) {
+    var F = ctx.flags, fall = fallOf(h), k = temp(h);
+    ctx.act2({ actors: [h, by], cat: fall === 'die' ? 'solo' : 'conflict', mag: 36, text: ctx.t(ctx.pick(MM_FALL[fall]), h, by), why: h.name + 'の気質（' + TEMP_LABEL[k] + '）。追い詰められた黒幕の幕引き' });
+    if (fall === 'die') ctx.kill(h, null, '黒幕として追い詰められ、自ら処刑台に上がった');
+    h.fate = { die: '黒幕（自ら処刑台へ）', caught: '黒幕（捕らえられた）', yield: '黒幕（自ら扉を開けた）' }[fall];
+    h.fateNote = { die: '主催者として姿を見せてゲームを動かしたが、追い詰められて自ら処刑台に上がった', caught: '主催者として姿を見せてゲームを動かしたが、宿泊客に捕らえられた', yield: '主催者として姿を見せてゲームを動かしたが、追い詰められて自分の手でゲームを終わらせた' }[fall];
+    F.mmFall = fall;
+  }
+  /* 最後の対決（ゲームが最後まで続いたとき）。勝てば HOST_END.win、黒幕が逃げ切れば hold */
+  function hostFinal(ctx, P) {
+    var F = ctx.flags, h = hostOf(ctx), rng = ctx.rng, RB = F.rebel || {};
+    if (!h || !P.length || F.over) return;
+    var lead = ctx.most(P, function (c) { return c.tr.lead + c.tr.a * 0.5 + ctx.stat(c, 'brain') * 0.08 + (c.goal.id === 'truth' ? 0.3 : 0); });
+    ctx.say({ kind: 'step', cat: 'phase', text: '最後の裁判 ― 黒幕との対決' });
+    ctx.act2({ actors: [h, lead], cat: 'conflict', mag: 40, text: ctx.t(ctx.pick(HOST_FINAL), h, lead), why: '主催者として姿を見せていた黒幕の' + h.name + 'と、生き残った宿泊客の最後の対決' });
+    var tie = hostTie(ctx, h, P);
+    if (tie) ctx.act2({ actors: [tie.b, h], cat: 'solo', mag: 20, text: ctx.t(ctx.pick(HOST_TIE), h, tie.b).replace(/\{r\}/g, tie.r), why: tie.b.name + 'にとって、黒幕の' + h.name + 'は' + tie.r + 'だった' });
+    var brainAvg = P.reduce(function (s0, c) { return s0 + ctx.stat(c, 'brain'); }, 0) / P.length;
+    var ch = HK.clamp(0.25 + brainAvg * 0.05 + lead.tr.lead * 0.15 + P.length * 0.05 + (RB.p || 0) / 250 + (F.truth || 0) / 300 + (F.trTurned ? 0.12 : 0) - ctx.stat(h, 'act') * 0.03, 0.1, 0.9);
+    F.hostEnd = rng() < ch ? 'win' : 'hold';
+    if (F.hostEnd === 'win') hostFall(ctx, h, lead);
+    else {
+      ctx.act2({ actors: [h], cat: 'solo', mag: 30, text: ctx.t(ctx.pick(HOST_HOLD[temp(h)]), h), why: '宿泊客は黒幕を追い詰めきれなかった（勝ち目 ' + Math.round(ch * 100) + '％）' });
+      h.fate = '黒幕（最後まで壇上に立った）'; h.fateNote = '主催者として姿を見せてゲームを動かし、最後の対決でも追い詰められなかった';
+    }
+    F.hostCh = ch;
+  }
+  /* 裏切り者の裁判（暴かれた・自分から打ち明けたあと） */
+  function trJudge(ctx, tr, by) {
+    var F = ctx.flags, rng = ctx.rng, P = ctx.present().filter(function (c) { return c !== tr && !isMM(ctx, c); });
+    if (!here(tr) || P.length < 2 || F.over) return;
+    by = by && here(by) && by !== tr ? by : ctx.most(P, function (c) { return c.tr.lead + c.tr.cp * 0.3; });
+    var len = P.reduce(function (s0, c) { return s0 + R(ctx, c, tr).aff / 60 + R(ctx, c, tr).trust / 80 + c.tr.np * 0.5 - c.tr.cold * 0.2; }, 0) / P.length + (F.trOut === 'confess' ? 0.35 : 0) + (/warm|timid/.test(temp(tr)) ? 0.15 : 0) - F.leaks * 0.04;
+    var w = { exec: Math.max(0.05, 0.6 - len) * HK.Dark.f(ctx, 'kill'), forgive: Math.max(0.05, 0.2 + len), shun: 0.5 };
+    var out = HK.weighted(rng, ['exec', 'forgive', 'shun'], function (k) { return w[k]; });
+    var mm = hostOf(ctx);
+    ctx.act2({ actors: [tr, by], cat: 'conflict', mag: 24, text: ctx.t(ctx.pick(TR_JUDGE.open), tr, by), why: '裏切り者だと知られた' + tr.name + 'を、宿泊客が裁く（情け ' + Math.round(len * 100) / 100 + '）' });
+    F.trFate = out;
+    if (out === 'exec') {
+      ctx.act2({ actors: [tr, by], cat: 'solo', mag: 30, text: ctx.t(ctx.pick(TR_JUDGE.exec), tr, by), why: '投票で処刑と決まった（' + HK.Dark.tag(ctx, 'kill') + '）' });
+      if (mm) ctx.act2({ actors: [mm, tr], cat: 'conflict', mag: 20, text: ctx.t(ctx.pick(HOST_EXEC[temp(mm)]), mm, tr), why: '黒幕の' + mm.name + 'が、裏切り者の処刑を宣告した' });
+      else ctx.incident(ctx.pick(TR_JUDGE_CAST));
+      ctx.kill(tr, null, '裏切り者として裁かれ、処刑された');
+    } else if (out === 'forgive') {
+      F.trTurned = true;
+      var RB = F.rebel;
+      if (RB) { RB.p = Math.min(99, RB.p + 15); RB.alert = Math.max(0, RB.alert - 15); if (!RB.stage) { RB.stage = 1; RB.by = by.i; } }
+      ctx.act2({ actors: [by, tr], cat: 'help', mag: 24, fx: function () { P.forEach(function (o) { ctx.mod(o, tr, { trust: 12, ten: -6 }); }); ctx.mod(tr, by, { aff: 15, trust: 20 }); ctx.stress(tr, -10); }, text: ctx.t(ctx.pick(TR_JUDGE.forgive), tr, by), why: '皆は' + tr.name + 'を許し、黒幕への反撃に加えた（反撃の進捗 +15）' });
+    } else {
+      ctx.act2({ actors: [tr], cat: 'solo', mag: 18, fx: function () { ctx.stress(tr, 18); P.forEach(function (o) { ctx.mod(o, tr, { trust: -10 }); }); }, text: ctx.t(ctx.pick(TR_JUDGE.shun), tr, by), why: '処刑はしないが、許しもしない。' + tr.name + 'は皆の輪から外された' });
+    }
+  }
+
   /* 役を決める（物語の乱数とは別の乱数で選ぶので、役がいないときは結果が変わらない） */
   function roleS(ctx, list, salt) { return { chars: list, env: ctx.env, scen: ctx.scen, rng: HK.rng(((ctx.seed || 1) * 7919 + salt) >>> 0) }; }
   function setupRoles(ctx) {
@@ -391,6 +544,13 @@
     if (!RO) return;
     var m = RO.resolve(roleS(ctx, ctx.chars, 11), 'mm', ctx.input);
     if (m.kind === 'res' && m.who[0]) F.mm = m.who[0].i;
+    /* 黒幕（住人）が主催者として姿を見せる：宿泊客には数えない（場に出ず、正体は初めから分かっている） */
+    if (F.mm != null && ctx.env.mmstyle === 'host' && ctx.chars.length >= 3) {
+      var h0 = ctx.chars[F.mm], base0 = ctx.present;
+      F.mmHost = true; F.mmBust = 'host'; h0.flags.offstage = true; h0.flags.host = true;
+      ctx.present = function () { return base0.call(this).filter(function (c) { return !(c.flags && c.flags.offstage); }); };
+      ctx.chars.forEach(function (c) { if (c !== h0) { var r = ctx.R(c, h0); r.att = 0; r.trust = Math.min(r.trust, -20); r.ten = Math.max(r.ten, 40); ctx.R(h0, c).att = 0; } });
+    }
     var rest = ctx.chars.filter(notMM(ctx));
     var t = RO.resolve(roleS(ctx, rest, 23), 'traitor', ctx.input);
     if (t.kind === 'res' && t.who[0]) {
@@ -435,6 +595,8 @@
       ctx.act2({ actors: [tr], cat: 'solo', mag: 30, text: ctx.t(ctx.pick(['その夜、{a}の部屋の扉に「契約終了」の札が貼られていた。朝になっても、{a}は部屋から出てこなかった。', '{a}は放送を聞いた瞬間、自分の運命を悟ったようだった。「……そうだよね」と、{a}は小さく笑った。黒幕の処刑は、その日のうちに行われた。', '{a}は最後に、黒幕の居場所について知っていることを全部書いた紙を、皆に渡した。それが、{a}の最後の仕事になった。']), tr), why: '姿を見せない黒幕は、用済みになった裏切り者を切り捨てた' });
       ctx.kill(tr, null, '裏切り者だと知られ、見せしめとして処刑された');
     }
+    /* 生きていれば、宿泊客が裏切り者を裁く（順163） */
+    if (tr.alive) { ctx.flush(); trJudge(ctx, tr, by); }
   }
   /* 裁判や議論のあとで、黒幕・裏切り者が暴かれるか */
   function roleCheck(ctx, det, quiet) {
@@ -477,8 +639,8 @@
         mm.fate = '黒幕（最後に正体を明かした）'; mm.fateNote = '宿泊客のふりをしてゲームを動かし続け、終わりに自分から正体を明かした';
         F.mmBust = 'end';
       }
-      var how = { trial: '裁判で正体を暴かれた', quiet: '事件のない日の議論で正体を暴かれた', rebel: '反撃に踏み込まれて正体を暴かれた', end: '最後まで正体を隠し通し、終わりに自分から明かした' }[F.mmBust] || '正体を隠したまま命を落とした';
-      notes.unshift('黒幕の正体：' + mm.name + '（宿泊客の一人。' + how + (F.mmFall ? '・' + { die: '自ら処刑台へ', caught: '捕らえられた', yield: '自分でゲームを終わらせた' }[F.mmFall] : '') + '）');
+      var how = { trial: '裁判で正体を暴かれた', quiet: '事件のない日の議論で正体を暴かれた', rebel: '反撃に踏み込まれて正体を暴かれた', end: '最後まで正体を隠し通し、終わりに自分から明かした', host: '主催者として初めから姿を見せていた' + (F.hostEnd === 'win' ? '。最後の対決で追い詰められた' : F.hostEnd === 'hold' ? '。最後の対決でも追い詰められなかった' : F.hostRebel ? '。反撃で管理室に踏み込まれた' : '') }[F.mmBust] || '正体を隠したまま命を落とした';
+      notes.unshift('黒幕の正体：' + mm.name + (F.mmHost ? '（住人。' : '（宿泊客の一人。') + how + (F.mmFall ? '・' + { die: '自ら処刑台へ', caught: '捕らえられた', yield: '自分でゲームを終わらせた' }[F.mmFall] : '') + '）');
     }
     if (tr) {
       var k2 = temp(tr);
@@ -490,13 +652,13 @@
       } else if (!tr.alive && !F.trOut) {
         ctx.say({ text: tr.name + 'が黒幕に通じていたことは、最後まで誰にも知られなかった。' });
       }
-      var how2 = { trial: '裁判で暴かれた', confess: '自分から打ち明けた', end: '最後に明かされた', discard: '勝ち逃げのあと、黒幕に切り捨てられた' }[F.trOut] || '誰にも知られないまま命を落とした';
+      var how2 = ({ trial: '裁判で暴かれた', confess: '自分から打ち明けた', end: '最後に明かされた', discard: '勝ち逃げのあと、黒幕に切り捨てられた' }[F.trOut] || '誰にも知られないまま命を落とした') + ({ exec: '。裏切り者の裁判で処刑された', forgive: '。裏切り者の裁判で許され、黒幕への反撃に加わった', shun: '。裏切り者の裁判で、処刑も許しもされずに輪から外された' }[F.trFate] || '') + (F.hinders ? '・脱出の妨害 ' + F.hinders + '回' : '');
       notes.splice(mm ? 1 : 0, 0, '裏切り者：' + tr.name + '（黒幕に従った理由：' + F.trWhy + '。密告 ' + F.leaks + '回・' + how2 + '）');
     } else if (F.trShort) notes.push('裏切り者：住人から選ぶ設定だったが、だまされる宿泊客が足りないため、なし');
   }
   function roleNote(ctx, c) {
     var F = ctx.flags;
-    if (isMM(ctx, c)) return '黒幕だった。宿泊客のふりをして動機を選び、疑いの種をまいていた（気質：' + TEMP_LABEL[temp(c)] + '）。';
+    if (isMM(ctx, c)) return F.mmHost ? '黒幕だった。主催者として壇上に立ち、動機を配り、処刑を宣告した（気質：' + TEMP_LABEL[temp(c)] + '）。' : '黒幕だった。宿泊客のふりをして動機を選び、疑いの種をまいていた（気質：' + TEMP_LABEL[temp(c)] + '）。';
     if (isTR(ctx, c)) return '黒幕に通じる裏切り者だった。理由は' + F.trWhy + '。';
     return '';
   }
@@ -625,6 +787,8 @@
     phase: function (ctx, s, n) {
       var P = ctx.present(), part = s % 4;
       if (s === 0) ctx.say({ text: names(P) + 'は、窓に鉄板の打ちつけられたホテルの客室で目を覚ました。館内放送が告げた。「ご宿泊の皆様。どなたかを殺し、裁判で見破られなければ、その方だけが生きてお帰りいただけます」' + (HK.Attr && HK.Attr.raceIntro ? HK.Attr.raceIntro(P, 'trapped', ctx) : '') });
+      var H0 = hostOf(ctx);
+      if (s === 0 && H0) ctx.act2({ actors: [H0], cat: 'conflict', mag: 24, text: ctx.t(ctx.pick(HOST_OPEN[temp(H0)]), H0), why: '黒幕の' + H0.name + 'が、主催者として姿を見せた（' + TEMP_LABEL[temp(H0)] + '）' });
       if (part === 0) {
         /* 良心に負けた裏切り者が、朝食の前に打ち明ける */
         if (ctx.flags.trConfess && trHid(ctx)) { ctx.flags.trConfess = false; trExpose(ctx, trOf(ctx), null, 'confess'); }
@@ -636,7 +800,7 @@
         var aim = motiveAim(ctx, P);
         if (aim && ctx.flags.pressure < 2) m = MOTIVES.slice().sort(function (x, y) { return y.fit(aim.tr) - x.fit(aim.tr); })[0];
         ctx.flags.motive = m;
-        ctx.incident('黒幕が新しい動機を配った。' + (m.texts ? ctx.pick(m.texts) : m.text) + '。');
+        ctx.incident((hostOf(ctx) ? '黒幕の' + hostOf(ctx).name : '黒幕') + 'が新しい動機を配った。' + (m.texts ? ctx.pick(m.texts) : m.text) + '。');
         if (aim) motiveAimScene(ctx, aim, m);
         var hit = aim || ctx.most(P, function (c) { return m.fit(c.tr) + c.stress / 200; });
         ctx.act2({ actors: [hit], cat: 'solo', fx: function () { ctx.stress(hit, 18); }, text: ctx.t('{a}は、配られた動機から目を離せなくなっていた。', hit), why: '動機「' + m.label + '」が' + hit.name + 'の気質に刺さった' });
@@ -658,10 +822,17 @@
       if (HK.DGK) ctx.chars.forEach(function (c) { notes.push(c.name + '：' + HK.DGK.note(c)); });
       if (RB && RB.stage) notes.push('黒幕への反撃：進捗 ' + Math.round(RB.p) + '％・黒幕の警戒 ' + Math.round(RB.alert) + '％' + (RB.hits ? '・悟られた回数 ' + RB.hits : ''));
       if (ctx.flags.over || (!P.length && ctx.flags.mm != null)) { closing(ctx); return; }
-      if (ctx.env.endrule === 'out') {
+      /* 主催者として姿を見せていた黒幕（住人）との最後の対決 */
+      var Hf = hostOf(ctx);
+      if (Hf) hostFinal(ctx, P);
+      if (ctx.flags.hostEnd === 'win') {
+        ctx.say({ text: '最後の扉が開いた。' + names(P) + 'は、黒幕の' + Hf.name + 'に背を向けて、外の光の中へ出た。' });
+        P.forEach(function (c) { c.fate = '黒幕を追い詰めて脱出'; c.fateNote = '最後の対決で黒幕の' + Hf.name + 'を追い詰め、ホテルを出た'; });
+        ctx.flags.outcome = '黒幕の' + Hf.name + 'との対決に勝ち、' + P.length + '人で脱出';
+      } else if (ctx.env.endrule === 'out') {
         ctx.say({ text: '最後の扉が開いた。' + names(P) + 'は、何日ぶりかの外の光の中へ出た。' });
         P.forEach(function (c) { c.fate = '生還'; c.fateNote = '最後まで生き残り、全員でホテルを出た'; });
-        ctx.flags.outcome = '生き残った' + P.length + '人で脱出';
+        ctx.flags.outcome = '生き残った' + P.length + '人で脱出' + (Hf && ctx.flags.hostEnd === 'hold' ? '（黒幕の' + Hf.name + 'は最後まで壇上に立った）' : '');
       } else {
         ctx.say({ text: names(P) + 'は、ホテルで生きていくことを選んだ。' });
         P.forEach(function (c) { c.fate = 'ホテルに残った'; c.fateNote = '殺し合いを拒んで、閉じたホテルで暮らすことを選んだ'; });
@@ -729,14 +900,17 @@
   if (HK.Roles) {
     HK.Roles.install(HK.SCENARIOS.trial, 'mm', '黒幕', { allowMob: true, auto: 'mob', yes: '黒幕になる',
       fit: function (c) { return c.tr.cold * 0.5 + c.tr.a * 0.3 + c.tr.cp * 0.2 + c.tr.fc * 0.15; },
-      desc: '黒幕を、宿泊客（住人）の一人にするかを選びます。モブ（おまかせ）は、これまでどおり姿を見せない黒幕です。住人が黒幕のときは、宿泊客のふりをしてゲームを動かし、裁判で正体を暴かれるか、最後に自分から明かします。住人の欄で「黒幕になる」を選んだ人が優先されます' });
+      desc: '黒幕を、宿泊客（住人）の一人にするかを選びます。モブ（おまかせ）は、これまでどおり姿を見せない黒幕です。住人が黒幕のときは、宿泊客のふりをしてゲームを動かし、裁判で正体を暴かれるか、最後に自分から明かします（下の「黒幕（住人）の出方」で、主催者として姿を見せることもできます）。住人の欄で「黒幕になる」を選んだ人が優先されます' });
+    /* 順163：黒幕（住人）の出方。クラスメイトの担任のように、宿泊客の人数に数えずに主催者として出すこともできる */
+    HK.SCENARIOS.trial.env.push({ id: 'mmstyle', label: '黒幕（住人）の出方', type: 'select', def: 'hide', options: [{ v: 'hide', label: '宿泊客に紛れる（正体を隠す）' }, { v: 'host', label: '主催者として姿を見せる（宿泊客に数えない）' }],
+      desc: '黒幕を住人から選んだときだけ効きます。「主催者として姿を見せる」では、黒幕は宿泊客に数えず（殺人・投票・恋愛には加わらない）、壇上やモニターに現れて、開幕の宣告・動機を配るときの煽り・処刑の宣告をし、最後まで残れば生き残った宿泊客と最後の対決をします。住人が3人以上のときだけ' });
     HK.Roles.install(HK.SCENARIOS.trial, 'traitor', '裏切り者', { allowMob: false, allowNone: true, auto: 'none', yes: '裏切り者になる',
       fit: function (c) { return c.tr.cold * 0.4 + c.tr.ac * 0.35 + c.tr.a * 0.2; },
-      desc: '黒幕に通じる裏切り者を、住人から選ぶか・なしにするかを選びます（おまかせはなし）。裏切り者は宿泊客の弱みや反撃の計画を黒幕に流し、証拠を細工します。裁判で暴かれるか、良心に負けて打ち明けるか、最後に明かされます。だまされる宿泊客が二人以上いるときだけ出ます' });
+      desc: '黒幕に通じる裏切り者を、住人から選ぶか・なしにするかを選びます（おまかせはなし）。裏切り者は宿泊客の弱みや反撃の計画を黒幕に流し、証拠を細工し、脱出の計画を崩し、夜の殺人の手引きもさせられます。裁判で暴かれるか、良心に負けて打ち明けるか、最後に明かされます。正体が知られると、宿泊客による「裏切り者の裁判」で、処刑・許して反撃に加える・許さず輪から外す のどれかが決まります。だまされる宿泊客が二人以上いるときだけ出ます' });
   }
   /* 黒幕（住人）や裏切り者の密告がいるとき、動機を誰に向けるか */
   function motiveAim(ctx, P) {
-    var F = ctx.flags, mm = mmHid(ctx), pool = P.filter(notRole(ctx));
+    var F = ctx.flags, mm = mmHid(ctx) || hostOf(ctx), pool = P.filter(notRole(ctx));
     if (!mm && !(F.leak != null && F.tr != null)) return null;
     var lk = F.leak != null ? ctx.chars[F.leak] : null;
     F.leak = null;
@@ -749,6 +923,9 @@
     if (mm) {
       F.mmSus += trace(ctx, mm, 3);
       ctx.act2({ actors: [mm, aim], cat: 'betray', mag: 18, fx: function () { ctx.stress(aim, 6); }, text: ctx.t(ctx.pick(MM_PLOT), mm, aim), why: '黒幕である' + mm.name + 'が、' + aim.name + 'に刺さる動機「' + m.label + '」を選んだ' + (F.tr != null && !F.trOut ? '（裏切り者の密告も使って）' : '') });
+    } else if (hostOf(ctx)) {
+      var H = hostOf(ctx);
+      ctx.act2({ actors: [H, aim], cat: 'conflict', mag: 16, fx: function () { ctx.stress(aim, 8); ctx.mod(aim, H, { ten: 6 }); }, text: ctx.t(ctx.pick(HOST_TAUNT[temp(H)]), H, aim), why: '黒幕の' + H.name + 'が、' + aim.name + 'に刺さる動機「' + m.label + '」を選んで煽った' + (F.tr != null && !F.trOut ? '（裏切り者の密告が狙いを定めた）' : '') });
     } else {
       ctx.act2({ actors: [aim], cat: 'solo', fx: function () { ctx.stress(aim, 6); }, text: ctx.t(ctx.pick(['今度の動機は、{a}の一番弱いところを正確に突いていた。{a}は、自分の話がどこから漏れたのか分からなかった。誰にも話していないはずのことだった。', '{a}は配られた動機を見て、息を呑んだ。そこに書かれていたのは、ここに来てから一人にしか話していない話だった。{a}は思わず、皆の顔を見回した。', '動機の封筒を開けた{a}の手が止まった。黒幕は、{a}が夜中にこぼした弱音まで知っていた。このホテルの中に、黒幕の耳がある。']), aim), why: '裏切り者の密告。黒幕は' + aim.name + 'の弱みに合わせて動機「' + m.label + '」を選んだ' });
     }
@@ -837,6 +1014,12 @@
     ctx.act2({ actors: acc ? [killer, victim, acc] : [killer, victim], cat: 'betray', mag: 30, fx: function () {
       if (acc) { ctx.pair(killer, acc).secret = true; ctx.mod2(killer, acc, { trust: 15 }, { trust: 15 }); }
     }, text: ctx.t('夜時間。{a}は' + place + 'の前で、{b}が来るのを待っていた。' + (acc ? '見張りに立っていたのは{c}だった。' : ''), killer, victim, acc), why: '動機：' + why.join('・') + (acc ? '。' + acc.name + 'は' + killer.name + 'への信頼とAC（' + Math.round(acc.eg.AC) + '）から加担した' : '') });
+    /* 裏切り者が、黒幕に命じられて殺人の手引きをする（誰のためかは知らされない。次の裁判の隠蔽に上乗せ） */
+    var trN = trHid(ctx);
+    if (trN && trN !== killer && trN !== victim && rng() < 0.35) {
+      F.sab += 6 + ctx.stat(trN, 'act') * 2; F.trSus += trace(ctx, trN, 4); F.assists = (F.assists || 0) + 1;
+      ctx.act2({ actors: [trN], cat: 'betray', mag: 12, text: ctx.t(ctx.pick(TR_ASSIST), trN), why: '裏切り者の' + trN.name + 'が、黒幕に命じられて夜の手引きをした（次の裁判の隠蔽 +' + (6 + ctx.stat(trN, 'act') * 2) + '）' });
+    }
     strike(ctx);
   }
 
@@ -943,7 +1126,7 @@
     P.forEach(function (a) { P.forEach(function (b) { if (a !== b) { avgAff += R(ctx, a, b).aff; n++; } }); });
     avgAff = n ? avgAff / n : 0;
     var avgStress = P.reduce(function (s0, c) { return s0 + c.stress; }, 0) / P.length;
-    var crew = P.filter(function (c) { return rebelWill(c) > 0.5 && !isMM(ctx, c) && !isTR(ctx, c); });
+    var crew = P.filter(function (c) { return (rebelWill(c) > 0.5 || (isTR(ctx, c) && ctx.flags.trTurned)) && !isMM(ctx, c) && (!isTR(ctx, c) || ctx.flags.trTurned); });
     var head = ctx.most(crew, function (c) { return c.tr.lead + rebelWill(c) * 0.3; }), brain = ctx.most(crew, function (c) { return c.tr.a + ctx.stat(c, 'brain') * 0.1; });
     var okUnity = avgAff > 2 && avgStress < 68;
     if (!RB.stage) {
@@ -962,9 +1145,17 @@
     /* 裏切り者がいると、計画は黒幕に筒抜けになる */
     var trR = trHid(ctx);
     if (trR) { heat = heat * 1.3 + 5; F.trSus += trace(ctx, trR, 3); }
+    /* 許された裏切り者は、黒幕に偽の報告を送って目をくらます */
+    else if (F.trTurned && trOf(ctx) && here(trOf(ctx))) heat *= 0.7;
     var p0 = RB.p;
     RB.p = Math.min(100, RB.p + gain); RB.alert = Math.min(100, RB.alert + heat);
     var lead = ctx.chars[RB.by] && ctx.chars[RB.by].alive && !ctx.chars[RB.by].out ? ctx.chars[RB.by] : head || crew[0];
+    /* 裏切り者が、脱出の妨害をやらされる（反撃の進捗を崩す） */
+    if (trR && RB.p > 10 && rng() < 0.3 + trR.tr.cold * 0.2) {
+      var lostH = 8 + ctx.stat(trR, 'act') * 2 + ctx.stat(trR, 'brain');
+      RB.p = Math.max(0, RB.p - lostH); F.hinders = (F.hinders || 0) + 1; F.trSus += trace(ctx, trR, 6);
+      ctx.act2({ actors: [trR], cat: 'betray', mag: 16, text: ctx.t(ctx.pick(TR_HINDER), trR), why: '裏切り者の' + trR.name + 'が、黒幕に命じられて脱出の計画を崩した（反撃の進捗 -' + Math.round(lostH) + '）' });
+    }
     var stg = REBEL_STAGE.filter(function (x) { return x.at > 0 && p0 < x.at && RB.p >= x.at; }).pop();
     /* 黒幕に悟られた */
     if (RB.alert >= 70) {
@@ -995,6 +1186,12 @@
       if (mmR) {
         ctx.act2({ actors: [lead, mmR], cat: 'escape', mag: 60, text: ctx.t(ctx.pick(MM_REBEL), lead, mmR), why: '黒幕への下克上（成功率 ' + Math.round(ch * 100) + '％：推理力・主導性・人数・警戒度）。黒幕は宿泊客の' + mmR.name + 'だった' });
         mmExpose(ctx, mmR, lead, 'rebel');
+      } else if (hostOf(ctx)) {
+        /* 主催者として姿を見せていた黒幕（住人）と、管理室で向かい合う */
+        var Hr = hostOf(ctx);
+        ctx.act2({ actors: [lead, Hr], cat: 'escape', mag: 60, text: ctx.t(ctx.pick(HOST_REBEL), lead, Hr), why: '黒幕への下克上（成功率 ' + Math.round(ch * 100) + '％：推理力・主導性・人数・警戒度）。管理室にいたのは、主催者の' + Hr.name + 'だった' });
+        F.hostRebel = true;
+        hostFall(ctx, Hr, lead);
       } else ctx.act2({ actors: crew, cat: 'escape', mag: 60, text: ctx.t('{a}が電子錠に番号を打ち込んだ。地下の管理室の扉が開いた。モニターの前に座っていた黒幕は、振り向きもせずに言った。「……ずいぶん、退屈させてくれませんでしたね」――' + crew.map(function (c) { return c.name; }).join('・') + 'は、黒幕からゲームの鍵を奪い取った。', lead),
         why: '黒幕への下克上（成功率 ' + Math.round(ch * 100) + '％：推理力・主導性・人数・警戒度）' });
       ctx.say({ text: 'ホテルの鉄板が、一枚ずつ外れていった。' + names(P) + 'は、自分たちの手で扉を開けた。' });
@@ -1012,7 +1209,9 @@
     var F = ctx.flags, T = F.tonight, rng = ctx.rng, C = ctx.chars, DG = HK.DGK;
     if (!T) {
       ctx.incident('朝のアナウンス。昨夜は、誰も死ななかった。');
-      if (F.pressure >= 1) ctx.say({ text: cast(ctx, 'quiet', ['モニターの中の声が苛立っていた。「退屈です。次の動機は、もっと強くします」']) });
+      var Hq = hostOf(ctx);
+      if (F.pressure >= 1 && Hq) ctx.act2({ actors: [Hq], cat: 'conflict', mag: 14, text: ctx.t(ctx.pick(HOST_QUIET[temp(Hq)]), Hq), why: '事件のない朝。黒幕の' + Hq.name + 'が苛立った' });
+      else if (F.pressure >= 1) ctx.say({ text: cast(ctx, 'quiet', ['モニターの中の声が苛立っていた。「退屈です。次の動機は、もっと強くします」']) });
       roleCheck(ctx, null, true);
       return;
     }
@@ -1041,6 +1240,8 @@
         text: ctx.t(ctx.pick(DG.SHOCK[calm.life]), calm), why: calm.name + 'の生い立ち（' + DG.LIFE_LABEL[calm.life] + '）' + (calm.life === 'killed' ? '。落ち着きすぎていて、疑いの目が向いた' : '') });
     }
     if (finder === K) ctx.act2({ actors: [K], cat: 'betray', odd: true, text: ctx.t('悲鳴を上げたのは、{a}だった。', K), why: '第一発見者を装った' });
+    var Hb = hostOf(ctx);
+    if (Hb && rng() < 0.6) ctx.act2({ actors: [Hb], cat: 'conflict', text: ctx.t(ctx.pick(HOST_BODY), Hb), why: '死体発見。黒幕の' + Hb.name + 'が見ていた' });
 
     /* 隠蔽力と推理力 */
     var helpers0 = P.filter(function (c) { return c !== K && c !== A; }), helpers = helpers0.filter(notRole(ctx));
@@ -1128,9 +1329,11 @@
         if (pity) ctx.act2({ actors: [pity, K], cat: 'help', fx: function () { ctx.mod(pity, K, { aff: 10 }); ctx.stress(pity, 10); }, text: ctx.t('{a}は投票のボタンの上で、長いこと指を止めていた。', pity, K), why: pity.name + 'のNP。正当防衛のような事件に、票を投じるのをためらった' });
       }
       ctx.say({ text: '投票の結果、' + K.name + 'が犯人に選ばれた。正解だった。' });
+      var Hx = hostOf(ctx);
+      if (Hx) ctx.act2({ actors: [Hx, K], cat: 'conflict', mag: 20, text: ctx.t(ctx.pick(HOST_EXEC[temp(Hx)]), Hx, K), why: '黒幕の' + Hx.name + 'が、処刑を宣告した（' + TEMP_LABEL[temp(Hx)] + '）' });
       ctx.kill(K, null, '裁判で処刑された（' + V.name + '殺しの犯人として）');
       ctx.flush();
-      if (rng() < 0.45) ctx.incident(cast(ctx, 'verdict'));
+      if (!Hx && rng() < 0.45) ctx.incident(cast(ctx, 'verdict'));
       P.forEach(function (o) {
         if (o === K || !o.alive) return;
         if (R(ctx, o, K).aff > 35) { o.flags.grief = K.i; o.stress = HK.clamp(o.stress + 20, 0, 100); ctx.act2({ actors: [o, K], cat: 'solo', text: ctx.t('処刑のあいだ、{a}は一度も目を閉じなかった。', o, K), why: o.name + 'の' + K.name + 'への好意（' + Math.round(R(ctx, o, K).aff) + '）。悲しみは次の夜の火種になる' }); }
@@ -1142,6 +1345,8 @@
       if (!scape) scape = A || K;
       ctx.act2({ actors: [K, scape], cat: 'betray', mag: 30, text: ctx.t('{a}の誘導に、誰も気づかなかった。票は{b}に集まった。', K, scape), why: '隠蔽（' + Math.round(conceal) + '）が推理（' + Math.round(detect) + '）を上回った' + (A ? '。共犯者' + A.name + 'の偽証が決め手' : '') + (faked && !exposed ? '。' + faker.name + 'の偽の検死が効いた' : '') + '。' + K.name + 'の' + (K.tr.a > 0.6 ? '頭の良さ' : '運') + twistWhy });
       ctx.say({ text: '「不正解です」――犯人は' + K.name + 'だった。' + (T.twist === 'counter' ? '襲われて、返り討ちにしただけの' + K.name + 'が、一人だけ生き残った。' : '') });
+      var Hw = hostOf(ctx);
+      if (Hw) ctx.act2({ actors: [Hw, K], cat: 'conflict', mag: 20, text: ctx.t(ctx.pick(HOST_WRONG), Hw, K), why: '黒幕の' + Hw.name + 'が、勝ち逃げを祝った' });
       var winners = [K];
       if (A && ctx.env.accrule === 'both') winners.push(A);
       var trD = trHid(ctx);

@@ -15,7 +15,8 @@
   function fmt(t, o) { return ST.fmt(t, o); }
   function ok(p, h, cd) { return p.lastNight == null || h - p.lastNight >= cd; }
   function mark(p, h) { p.lastNight = h; p.cnt.r18 = (p.cnt.r18 || 0) + 1; }
-  function mates(S, p, live, h, cd) { return live.filter(function (q) { return q !== p && (!HK.State || HK.State.mobSexOk(q)) && JS.alive(q) && !q.bound && ok(q, h, cd) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) && JS.R18.okPair(p, q); }); }
+  /* 神ごとの夜の中の住人どうしの場面は、「住人どうしの夜」が0なら出さない（順162） */
+  function mates(S, p, live, h, cd) { if (JS.R18.lvPC && JS.R18.lvPC(S) <= 0) return []; return live.filter(function (q) { return q !== p && (!HK.State || HK.State.mobSexOk(q)) && JS.alive(q) && !q.bound && ok(q, h, cd) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) && JS.R18.okPair(p, q); }); }
   /* 自分で攻めを選んだ人（村人・眷属・神に「される」場面に入れない） */
   function top(p) { return (HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(p) : JS.R18.hardTop(p)); }
 
@@ -34,7 +35,7 @@
   var SHUB_PREG = L('翌朝、{a}の下腹は、実った果実のように、ふっくらと膨らんでいた。村の女たちが、それを撫でて微笑んだ。「母さまの仔が、宿りなさった」|{a}の下腹の奥で、何かが、葡萄の房が揺れるように、ことりと動いた。');
   var W = ['娘', '若い衆', '女将', '杜氏'];
   function shub(S, p, live, h) {
-    var rng = S.rng, lv = S.env.jlewd / 100, m = M();
+    var rng = S.rng, lv = JS.R18.lvMob(S), m = M();
     if (!ok(p, h, 6) || rng() > lv * (p.aphro ? 0.55 : 0.4)) return false;
     mark(p, h);
     var r = rng(), t, why, mag = 28, act = [p];
@@ -85,7 +86,7 @@
   var YIG_WAKE_TOP = L('目覚めると、{a}の掌に、鱗の跡が赤く残っていた。|目覚めると、布団の脇に、脱ぎ捨てられた大きな蛇の抜け殻があった。');
   var LAMIA_AFTER = L('朝、{b}は何も覚えていなかった。ただ、{a}の体じゅうに、鱗の擦れた赤い跡が残っていた。|夜明けとともに、{b}の尾は人の脚に戻っていた。{b}は自分の膝に残る鱗の欠片を見つめ、青ざめた。');
   function yig(S, p, live, h) {
-    var rng = S.rng, lv = S.env.jlewd / 100, m = M();
+    var rng = S.rng, lv = JS.R18.lvMob(S), m = M();
     if (!ok(p, h, 8) || rng() > lv * (p.aphro ? 0.4 : 0.25)) return false;
     var lover = live.filter(function (q) { return q !== p && JS.alive(q) && !q.bound && JS.REL.bond(S, p, q) >= 0.35 && (HK.canLove ? HK.canLove(q, p) : true) && JS.R18.okPair(p, q); }).sort(function (a, b) { return JS.REL.bond(S, p, b) - JS.REL.bond(S, p, a); })[0];
     mark(p, h);
@@ -118,7 +119,7 @@
   /* 自分で攻めを選んだ人は、取り囲まれても組み敷かれない（叩き伏せて追い払う） */
   var TCHO_TOP = L('夜半、{a}の部屋に、子どものように小柄な村人たちが、音もなく入り込んできた。{a}は掴みかかってきた一人の首根っこを掴んで畳に叩きつけ、もう一人の腕を捻り上げた。村人たちは尖った歯を剥いて唸ったが、{a}が一歩も退かないと分かると、くすくす笑いながら闇に溶けていった。|寺の裏に呼び出された{a}を、小柄な村人たちが取り囲んだ。{a}は伸びてきた手を払いのけ、先頭の一人を寺の柱に押しつけた。「次に触ったら、折る」――村人たちは顔を見合わせ、聞き慣れない言葉で何か言い交わして、引き下がった。');
   function chaugnar(S, p, live, h) {
-    var rng = S.rng, lv = S.env.jlewd / 100, m = M();
+    var rng = S.rng, lv = JS.R18.lvMob(S), m = M();
     if (!ok(p, h, 10) || rng() > lv * (0.18 + S.hostile / 400)) return false;
     mark(p, h);
     if (top(p)) {
@@ -170,7 +171,7 @@
   function godNight(S, p, live, h) {
     var GD = JS.R18GN && JS.R18GN[S.G.id];
     if (!GD) return false;
-    var rng = S.rng, lv = S.env.jlewd / 100, m = M(), g = S.G.call;
+    var rng = S.rng, lv = JS.R18.lvMob(S), m = M(), g = S.G.call;
     if (!ok(p, h, 10) || rng() > lv * (p.aphro ? 0.3 : 0.16)) return false;
     mark(p, h);
     var r = rng(), ms = mates(S, p, live, h, 10), am = { a: p.name, g: g };
@@ -221,7 +222,9 @@
     if (!JS.R18.room(S, [p])) return false;
     live = live.filter(function (q) { return q === p || JS.R18.room(S, [q]); });
     var n0 = S.log.length, r = (function () {
-      if (p.noMob || (HK.Content && !HK.Content.ok(S, 'force')) || S.rng() > (S.env.jyobai == null ? 1 : S.env.jyobai / 100)) return base(S, p, live, h);
+      /* 村人・神の夜（jmob）が0なら神の夜には進まない。住人どうしの夜より低いときは、その割合（mob/pc）だけ神の夜に進む（順162） */
+      var pc = JS.R18.lvPC(S), mob = JS.R18.lvMob(S);
+      if (p.noMob || (HK.Content && !HK.Content.ok(S, 'force')) || mob <= 0 || S.rng() > (pc > mob ? mob / pc : 1)) return base(S, p, live, h);
       var f = GODR[S.G.id] || godNight;
       if (f(S, p, live, h)) return true;
       return base(S, p, live, h);
@@ -229,4 +232,15 @@
     if (r) JS.R18.spendLog(S, n0);
     return r;
   };
+  /* 以前の保存の読み替え（順162）：「村人・神の夜の起こりやすさ」（jmob）がない保存は、以前の「夜の出来事の起こりやすさ」（jlewd）を
+     引き継ぐ（以前の「村人・神の夜の割合」jyobai があれば、その割合をかける）。HK.Lewd.norm が、画面で読むときと結果を作るときに当てる。保存そのものは書き換えない */
+  var LC = HK.Lewd && HK.Lewd.CONF && HK.Lewd.CONF.jashin;
+  if (LC) {
+    LC.from = LC.from || {};
+    LC.from.jmob = function (e) {
+      if (e.jlewd == null && e.jyobai == null) return null;
+      var v = e.jlewd == null ? 40 : +e.jlewd, y = e.jyobai == null ? 100 : +e.jyobai;
+      return Math.round(Math.max(0, Math.min(100, v)) * Math.max(0, Math.min(100, y)) / 100);
+    };
+  }
 })();

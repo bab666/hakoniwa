@@ -9,6 +9,7 @@
    S6: 性行為の相手を「固定した相手だけ」にした人（sexLock が番号で sexLockMob なし。配役の lo）が、住人でない相手との性的な文に出た。
        配役の lo は3回に1回「固定した相手＋モブ」（sexLockMob）にして、その回は数えない（モブとの場面はしてよい）。
        箱庭の仕掛けそのものが相手の箱庭（エロトラップダンジョン・サキュバスの一夜・エロバラエティ：MOB_FREE）は数えない
+       S4・S6 の人には、回ごとに「モブ相手の受け攻め」（受け・リバ・攻め・住人と同じ）を付ける（モブには受けの設定が、R18に参加しない・固定した相手だけを越えないか）
    S7: 一つの場面（一つの記録）の中で、同じ文が二度出た（R18の文の重複）
    S8: 内容のスイッチで切った出来事（tags）が出た
    S9: 吹雪の館で、助手が自分の探偵ではない探偵を「先生」と呼んだ（探偵2人以上の回）
@@ -479,7 +480,9 @@ const { openBuild } = require('./lib.js');
         const chars = [], perChar = [];
         for (let i = 0; i < n; i++) {
           const ng = []; cast.ng.forEach(pr => { if (pr[0] === i && pr[1] < n) ng.push(pr[1]); if (pr[1] === i && pr[0] < n) ng.push(pr[0]); });
-          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: cast.g[i], likes: '', tone: '', fp: '', pos: cast.p[i], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: ng, noR18: cast.noR18.indexOf(i) >= 0, sexLock: cast.lo.indexOf(i) >= 0 ? String(loPart(cast, i, n)) : '', sexLockMob: cast.lo.indexOf(i) >= 0 && s % 3 === 1, faithful: (cast.fa || []).indexOf(i) >= 0 });
+          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: cast.g[i], likes: '', tone: '', fp: '', pos: cast.p[i], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: ng, noR18: cast.noR18.indexOf(i) >= 0, sexLock: cast.lo.indexOf(i) >= 0 ? String(loPart(cast, i, n)) : '', sexLockMob: cast.lo.indexOf(i) >= 0 && s % 3 === 1, faithful: (cast.fa || []).indexOf(i) >= 0,
+            /* モブ相手の受け攻め（2026-10-26 担当AW）：R18に参加しない人・固定した相手だけの人に、モブには受け・リバ・攻めを付けても S4・S6 が 0 か */
+            posNpc: cast.noR18.indexOf(i) >= 0 || cast.lo.indexOf(i) >= 0 ? ['bottom', 'riba', 'top', ''][s % 4] : '' });
           perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
         }
         /* S15：5回に2回、二人を互いに恋愛相手として固定する（4人の回は lk、6人の回は lk2。相手が箱庭にいるときだけ） */

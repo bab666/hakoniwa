@@ -239,7 +239,9 @@
       return ST.say(S, { actors: [p], tag: '天使', text: t, why: why + '／相手は天使だった', mag: 35 });
     }
     /* 受け攻め：サキュバスが攻めの指定なら、抱く側の文を使う */
-    var sTop = HK.Pos && (HK.Pos.vsNpc(p, '') === 'top' || (HK.Pos.of(p) === 'riba' && rng() < 0.5));
+    /* モブ相手の受け攻め（posNpc）を決めた人は、その指定で（リバだけ半々） */
+    var npcV = HK.Pos && HK.Pos.npc ? HK.Pos.npc(p) : '';
+    var sTop = HK.Pos && (HK.Pos.vsNpc(p, '') === 'top' || ((npcV ? npcV === 'riba' : HK.Pos.of(p) === 'riba') && rng() < 0.5));
     /* 自分で「攻め」を選んだサキュバスは、獲物に主導権を取られたり、逆に搾られたりしない */
     var hTop = !!(HK.Pos && HK.Pos.hardTopNpc(p));
     var noRecv = function (arr) { if (!hTop) return arr; var f = arr.filter(function (x) { return !SB.RECV_RE.test(x); }); return f.length ? f : arr; };
@@ -365,7 +367,8 @@
     if (sTop && futa && SB.TOP_FUTA && S.rng() < 0.45) base = SB.TOP_FUTA;
     if (!sTop && male && ty.tkM && S.rng() < 0.6) base = ty.tkM;
     /* 攻めのまま迎える文だけにする（獲物に組み敷かれる・押し倒される文は除く） */
-    if (topF) { var nb = (base || []).filter(function (x) { return !/組み敷かれ|押し倒され|貫かれ|突き上げられ|犯され/.test(x); }); if (nb.length) base = nb; }
+    /* 獲物がサキュバスを押し倒す・組み敷く文（「{t}は…{a}を押し倒した」）も除く（モブ相手を攻めにした女性のサキュバス。2026-10-26） */
+    if (topF) { var nb = (base || []).filter(function (x) { return !/組み敷かれ|押し倒され|貫かれ|突き上げられ|犯され|\{a\}を[^。]{0,8}(?:押し倒|組み敷)/.test(x); }); if (nb.length) base = nb; }
     return base;
   }
 

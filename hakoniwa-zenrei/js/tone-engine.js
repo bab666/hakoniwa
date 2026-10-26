@@ -53,7 +53,7 @@
 
   /* ---------- 組み込みの口調がどのベースから作られるか ---------- */
   T.BASE = {
-    gentle: 'K', gentle_n: 'K', ane: 'K', usan: 'K', free: 'K', gyaru: 'K', chara: 'K', shy: 'K', tame: 'K', kansai: 'K', mukuchi: 'K', boku_n: 'K', devoted_p: 'K', darui_lite: 'K', darui: 'K', tsun: 'K', tsun_n: 'K', honwaka: 'K', darui_talk: 'K', tsun_soft: 'K', mukuchi_ne: 'K',
+    gentle: 'K', gentle_n: 'K', gentle_m: 'K', ane: 'K', usan: 'K', free: 'K', gyaru: 'K', chara: 'K', shy: 'K', tame: 'K', kansai: 'K', mukuchi: 'K', boku_n: 'K', devoted_p: 'K', darui_lite: 'K', darui: 'K', tsun: 'K', tsun_n: 'K', honwaka: 'K', darui_talk: 'K', tsun_soft: 'K', mukuchi_ne: 'K',
     proud: 'F', aniki: 'F', yankee: 'F', stern: 'F', cool: 'F', calm: 'F', gentleman: 'F', sondai: 'F', noja: 'F', god: 'F', mystic: 'F', hero: 'F', cool_soft: 'F', ronkyaku: 'F', flat_plain: 'F',
     polite: 'P', devoted: 'P', kohai: 'P', ojou: 'P', genki: 'P', keigo_sarc: 'P', keigo_bossy: 'P', keigo_flat: 'P', chara_down: 'P', mixed: 'P', otaku: 'P', keigo_twist: 'P'
   };
@@ -361,6 +361,8 @@
   }
   function badEnd(head, to, punct, qm, from) {
     if (to === from) return false;   /* 元のまま（「だ=だ／だよ」の「だ」）はいつでもよい */
+    /* 名詞止め・体言止めの文に「なのさ」を付けない（「二人だけの秘密なのさ」「人間なのさ」→ ほかの候補の「だよ」「さ」）。疑問詞のある「何なのさ」はよい（2026-10-26 順151） */
+    if (/^[]*なのさ/.test(to) && /[一-鿿々ァ-ヶー]$/.test(head) && !/(?:何|なに|なん|どう|なぜ|どこ|いつ|誰|どれ|どんな)/.test(head)) return true;
     var t0 = to.replace(/^[\uE061]+/, '');
     if (FINAL_P.test(head) && /^[よねわぞぜさ]/.test(t0) && !PAIR_OK.test(head.slice(-1) + t0.charAt(0))) return true;
     /* 終助詞一つ（ね・よ など）の項目を、終助詞の後ろ（「決めたよね」の「ね」）で別の語尾にしない：「決めたよっしょ」「決めたよじゃん」 */
@@ -413,7 +415,7 @@
   }
   /* 足した語尾を続く文で重ねない：候補が元の文にない ねえ・よぉ・し（だし・ないし）・もん・のだ・なあ・ね を足すとき、その語。
      前の文で足したのと同じ語を足す候補は、ほかの候補があれば使わない（「じゃないし。……それだけだし」「座ってねえ。……聞いてないねえ」にしない） */
-  var ADD_TAIL = /(?:ねえ|よぉ|し|もん|のだ[よぞ]?|なあ|ね)$/;
+  var ADD_TAIL = /(?:ねえ|よぉ|し|もん|のだ[よぞ]?|なあ|ね|んだ)$/;
   function addedTail(from, to) {
     if (to === from) return '';
     var t = to.replace(/[〜ー～…‥っッ♡]+$/, ''), m = t.match(ADD_TAIL);
@@ -433,6 +435,8 @@
     var cl = s.slice(0, -1).split(/[、，…‥]/).pop();
     return /[一-鿿々ァ-ヶーいのんと]が(?![らりるれろっせさしすそ])/.test(cl) || NA_ADV.test(cl);
   }
+  /* 女性の話し手の文末の仕上げ（tone-plus.js の femKiri）でも、詠嘆の「な」と禁止の「な」を分けるのに使う */
+  T.exclaimNa = exclaimNa;
   /* 決まり文句（おはよう・ありがとう・ごちそうさまでした・すみませんでした など）の中の語尾は活用させない（「おはましょう」「おはようぜ」「ごちそうさまだったっす」にしない）。
      記号（！・？・〜）を足すだけの候補はよい。「〜でした」「〜ました」の決まり文句は、終助詞を一つ足すだけの候補もよい（ありがとうございましたわ・お疲れさまでしたぞ） */
   var GREET = /(?:おはよう|ありがとう|おめでとう|ごちそうさまでした|ごちそうさま|お疲れさまでした|おつかれさまでした|すみませんでした|申し訳ありませんでした|申し訳ございませんでした|ありがとうございました|ごめんなさい)$/;
@@ -596,7 +600,8 @@
       if (strong) body = strongCut(body);
       if (once) once.cur = i === lastI;
       var ap = applyEnds(body, punct, sc ? CASUAL_ENDS : d.ends, seed, i, newRules(r), strong, prevTail, sc ? null : once, grave);
-      prevTail = ap.tail || '';
+      /* 「〜んだ」「〜なんだ」で終わった文の次の文には、「〜んだ」を足す候補を選ばない（「止まったんだ。もう止まっているんだ」にしない。2026-10-26 順151） */
+      prevTail = ap.tail || (/[んの]だ$/.test(splitTail(ap.body.replace(new RegExp(MARK, 'g'), ''))[0]) ? 'んだ' : '');
       return { body: ap.body.replace(new RegExp(MARK, 'g'), ''), punct: ap.punct };
     });
     if (fx.stretch) ss = fxStretch(ss, seed);

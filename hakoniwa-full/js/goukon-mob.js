@@ -133,7 +133,8 @@
   function here(ctx) { return list(ctx).filter(function (m) { return !m.gone; }); }
   /* {you}：住人からモブへの呼びかけ（mob.js の HK.Mob.addr。台詞では話し手の二人称、全体の設定で「名前で」なら「〇〇さん」） */
   function fill(ctx, t, m, a, b) { return ctx.t(HK.Mob.you(t, m, 'さん').replace(/\{M\}/g, m.full).replace(/\{m\}/g, m.name), a, b); }
-  function top(c) { return HK.voiceTop ? HK.voiceTop(c) : HK.egoType(c.eg).top; }
+  /* いちばん強い因子（同率なら箱庭の中ではその中から選ぶ。口調で決まる人はその因子。core.js の HK.topPick） */
+  function top(c) { return HK.topPick ? HK.topPick(c) : HK.voiceTop ? HK.voiceTop(c) : HK.egoType(c.eg).top; }
   function why(m, s) { return 'モブ（' + m.full + '・' + KINDS[m.kind].label + '）' + (s ? '：' + s : '') + '。モブは住人ではなく、恋愛・夜の相手にならない'; }
   /* 恋愛の出来事にしてよい住人の組（両方向で恋愛対象・その場にいる・恋愛にしない組でない・家族でない） */
   function loveOk(ctx, a, b) { return HK.State.pairLove(a, b) && !HK.ngPair(a, b) && !ctx.pair(a, b).kin && ctx.romanceOk([a, b]); }

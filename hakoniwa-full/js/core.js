@@ -126,6 +126,15 @@
     var top = tops.length > 1 && HK._topRng ? tops[HK._topRng(tops.length)] : f[0], low = f[4];
     return { top: top, tops: tops, low: low, label: tops.join('・') + '優位・' + low + '低め', code: HK.toCode(eg) };
   };
+  /* 文言をいちばん強い因子で選ぶ所の共通の入口：口調で因子が決まる人（HK.voiceTop の口調の上書き）はその因子、
+     そうでなければ同率の因子（tops）から選ぶ。rng（0〜1 を返す関数）を渡せばそれで、なければ箱庭の中は HK._topRng、外は先の因子 */
+  HK.topPick = function (c, rng) {
+    var eg = (c && c.eg) || { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 };
+    if (!rng) return HK.voiceTop ? HK.voiceTop(c) : HK.egoType(eg).top;
+    var v = HK.voiceTop ? HK.voiceTop(c) : null, t = HK.egoType(eg);
+    if (v && t.tops.indexOf(v) < 0) return v;
+    return t.tops.length > 1 ? t.tops[Math.floor(rng() * t.tops.length) % t.tops.length] : t.tops[0];
+  };
   HK.lvl = function (v) { return v >= 14 ? '高' : v <= 6 ? '低' : '中'; };
   HK.fdesc = function (c, k) {
     return k + (c.eg[k] >= 14 ? '高' : c.eg[k] <= 6 ? '低' : '中') + '（' + Math.round(c.eg[k]) + '）';

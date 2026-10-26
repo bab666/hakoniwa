@@ -812,7 +812,9 @@
     (res.log || []).forEach(function (e) {
       if (!e || typeof e.text !== 'string') return;
       var buf = V._segBuf = [];
-      try { e.text = V.nestQuote(f(e.text, e.actors)); } finally { V._segBuf = null; }
+      /* 状況で変わる一人称（怒ったとき・恋人ができてから。voice-fp.js）：この記録の間だけ、話し手の一人称を差し替える */
+      var fpBack = V.fpSwap ? V.fpSwap(people, e) : null;
+      try { e.text = V.nestQuote(f(e.text, e.actors)); } finally { V._segBuf = null; if (fpBack) fpBack(); }
       if (HK.Seg && HK.Seg.keep) HK.Seg.keep(e, buf);
     });
     var E = res.ending || res.end;

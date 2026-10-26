@@ -127,6 +127,8 @@
     if (mates && mates.length > 1 && rng() < 0.35) t += '――裏には、小さく「みんなにも、よろしく」と書き足してあった。';
     if (kind === 'crushM') t += fill(ctx.pick(READ_M), m);
     else if (rng() < 0.45) t += fill(ctx.pick(READ), m);
+    /* 師弟：弟子（a）が師匠（b）の呼び方を決めていれば、手紙の「師匠」をその呼び方に（ties.js の HK.Ties.mentorWord。2026-10-26） */
+    if (kind === 'mentorB' && HK.Ties && HK.Ties.mentorWord) t = HK.Ties.mentorWord(t, b, a);
     /* 続柄の印（{sibs}。sib-word.js） */
     return HK.Sib ? HK.Sib.fill(t, a, b, null, ctx) : t;
   };

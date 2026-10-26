@@ -11,20 +11,21 @@
   var HK = window.HK;
   if (!HK) return;
   var SH = HK.Shared = {};
-  /* k：項目、label：住人の設定での名前、m：{ 箱庭: その箱庭での id }、pick：住人ごとの欄（perFields）のとき true */
+  /* k：項目、label：住人の設定での名前、m：{ 箱庭: その箱庭での id }、pick：住人ごとの欄（perFields）のとき true、
+     d：能力値（1〜5）の意味（「1＝…、5＝…」。⚙️設定の「箱庭の能力」と、箱庭の表の列の見出しの説明に出す。SH.scale） */
   SH.GROUPS = [
-    { k: 'hp', label: '体力', m: { island: 'hp', whiteroom: 'hp', zombie: 'hp', jashin: 'stamina', ship: 'hp', br: 'hp' } },
-    { k: 'luck', label: '運', m: { island: 'luck', zombie: 'luck', locker: 'luck', rpg: 'luck', jashin: 'luck' } },
-    { k: 'fight', label: '腕っぷし', m: { rpg: 'str', dungeon: 'fight' } },
-    { k: 'sport', label: '運動', m: { classroom: 'sport', br: 'agi' } },
-    { k: 'int', label: '知能', m: { rpg: 'int', jinro: 'int' } },
-    { k: 'wit', label: '推理力', m: { yakata: 'wit', trial: 'brain' } },
-    { k: 'gaman', label: '我慢', m: { variety: 'gaman', locker: 'gaman' } },
-    { k: 'sense', label: '感じやすさ', m: { massage: 'sense', hole: 'sense', kaihen: 'sens', saimin: 'sens' } },
-    { k: 'exp', label: '経験（恋愛・夜）', m: { whiteroom: 'exp', massage: 'exp' } },
-    { k: 'charm', label: '魅力・色気', m: { succubus: 'charm', variety: 'iro' } },
-    { k: 'tech', label: '技巧', m: { succubus: 'tech', variety: 'tech' } },
-    { k: 'drink', label: '酒の強さ', m: { goukon: 'drink' }, alc: true },
+    { k: 'hp', label: '体力', m: { island: 'hp', whiteroom: 'hp', zombie: 'hp', jashin: 'stamina', ship: 'hp', br: 'hp' }, d: '1＝すぐにばてて倒れやすい、5＝タフで倒れにくい' },
+    { k: 'luck', label: '運', m: { island: 'luck', zombie: 'luck', locker: 'luck', rpg: 'luck', jashin: 'luck' }, d: '1＝不運続き、5＝強運で切り抜けやすい' },
+    { k: 'fight', label: '腕っぷし', m: { rpg: 'str', dungeon: 'fight' }, d: '1＝喧嘩はからきし、5＝戦いに強い' },
+    { k: 'sport', label: '運動', m: { classroom: 'sport', br: 'agi' }, d: '1＝運動は苦手、5＝運動神経抜群' },
+    { k: 'int', label: '知能', m: { rpg: 'int', jinro: 'int' }, d: '1＝考えるのは苦手、5＝頭が切れる' },
+    { k: 'wit', label: '推理力', m: { yakata: 'wit', trial: 'brain' }, d: '1＝見落としが多い、5＝小さな手がかりにも気づく' },
+    { k: 'gaman', label: '我慢', m: { variety: 'gaman', locker: 'gaman' }, d: '1＝すぐ音を上げる、5＝我慢強い' },
+    { k: 'sense', label: '感じやすさ', m: { massage: 'sense', hole: 'sense', kaihen: 'sens', saimin: 'sens' }, d: '1＝鈍くて反応が薄い、5＝敏感で反応が大きい' },
+    { k: 'exp', label: '経験（恋愛・夜）', m: { whiteroom: 'exp', massage: 'exp' }, d: '1＝恋愛に不慣れでうぶ、5＝場数を踏んでいて慣れている' },
+    { k: 'charm', label: '魅力・色気', m: { succubus: 'charm', variety: 'iro' }, d: '1＝控えめで目立たない、5＝人目を引き、誘うのがうまい' },
+    { k: 'tech', label: '技巧', m: { succubus: 'tech', variety: 'tech' }, d: '1＝不器用、5＝手慣れていて器用' },
+    { k: 'drink', label: '酒の強さ', m: { goukon: 'drink' }, alc: true, d: '1＝すぐ酔う、5＝ザル' },
     { k: 'special', label: '特殊役職', m: { zombie: 'special', rpg: 'special', jashin: 'special', yakata: 'special', ship: 'special' }, pick: true },
     { k: 'life', label: '生い立ち', m: { br: 'life', trial: 'life' }, pick: true },
     { k: 'know', label: '検死の知識', m: { yakata: 'know', trial: 'know' }, pick: true }
@@ -119,6 +120,8 @@
     put(c, g, v);
     return true;
   };
+  /* 能力値の 1〜5 の意味（その箱庭のその能力値が共通の項目で、意味を書いてあれば「1〜5：1＝…、5＝…。」。なければ ''） */
+  SH.scale = function (sid, id) { var g = SH.groupOf(sid, id, false); return g && g.d ? '1〜5：' + g.d + '。' : ''; };
   /* 箱庭の表の見出しに添える説明（共通の項目だけ） */
   SH.headNote = function (sid, id, pick) {
     var g = SH.groupOf(sid, id, pick);
@@ -141,9 +144,11 @@
       } else {
         sel = '<select data-gf="ab" data-k="' + g.k + '" aria-label="' + h.esc(g.label) + '">' + h.opt('', 'ランダム', v) + [1, 2, 3, 4, 5].map(function (n) { return h.opt(String(n), String(n), v); }).join('') + '</select>';
       }
-      return '<label title="' + title + '">' + h.esc(g.label) + ' ' + sel + '</label>';
+      return '<label title="' + (g.d ? h.esc(g.d) + '（' + title + '）' : title) + '">' + h.esc(g.label) + ' ' + sel + '</label>';
     }).join('');
-    return '<div class="gearrow">' + rows + '</div>';
+    /* 1〜5 の意味（閉じておく） */
+    var sc = gs.filter(function (g) { return !g.pick && g.d; });
+    return '<div class="gearrow">' + rows + '</div>' + (sc.length ? '<details class="gego" style="margin-top:6px"><summary>1〜5 の意味</summary><ul>' + sc.map(function (g) { return '<li><b>' + h.esc(g.label) + '</b>：' + h.esc(g.d) + '</li>'; }).join('') + '</ul></details>' : '');
   };
   SH.scope = function () {
     return '効く箱庭：' + SH.shown().map(function (g) { return g.label + '（' + SH.where(g).join('・') + '）'; }).join('、') + '。箱庭の「住人ごとの初動と目標」の表と同じ値で、どちらで変えても揃います。';

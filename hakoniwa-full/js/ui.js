@@ -4,17 +4,21 @@
   var HK = window.HK, esc = HK.escape, V = HK.View;
   /* 死のある箱庭に「特殊役職」の欄を足す（special.js） */
   if (HK.Special) HK.Special.install();
-  var MAX = 100;   /* 登録できる住人の上限（箱庭に参加できるのは最大30人） */
+  /* 登録できる住人の上限（箱庭に参加できるのは最大30人）。2026-10-26 に 100 → 200。
+     アイコン（画像）は localStorage に入りきらないので、IndexedDB に分けて置く（saves.js の HK.IconStore。使えない環境では従来どおり住人の保存に入れる） */
+  var MAX = 200;
   var JOIN_MAX = 30;
-  /* 13人目以降の色トークン（明暗それぞれ。100人分） */
+  /* 13人目以降の色トークン（明暗それぞれ。200人分） */
   (function () {
     var L = [], D = [];
-    for (var i = 12; i < 100; i++) {
+    for (var i = 12; i < 200; i++) {
       var h = (i * 47 + 15) % 360;
       L.push('--p' + i + ':hsl(' + h + ' 55% 38%)');
       D.push('--p' + i + ':hsl(' + h + ' 65% 70%)');
     }
-    var css = ':root{' + L.join(';') + '}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){' + D.join(';') + '}}:root[data-theme="dark"]{' + D.join(';') + '}';
+    var css = ':root{' + L.join(';') + '}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){' + D.join(';') + '}}:root[data-theme="dark"]{' + D.join(';') + '}' +
+      /* 住人が多いとき（最大200人）の一覧：画面の外の行は描画を後回しにする（対応していないブラウザでは何もしない） */
+      '#castlist .res{content-visibility:auto;contain-intrinsic-size:auto 132px}';
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   })();
   function genv(scen) { return scen.solo ? scen.env.concat(HK.GLOBAL_ENV.filter(function (e) { return e.all; })) : scen.env.concat(HK.GLOBAL_ENV); }
@@ -65,7 +69,8 @@
   function inGrp(c, g) { return grpList(c).indexOf(g) >= 0; }
   HK.groupList = grpList;
   /* 住人の一覧で隠しているグループ（S.grpHide）。グループのある住人は、つけたグループがすべて隠れているときだけ一覧から隠す（箱庭の参加者選びには影響しない） */
-  function grpHidden(c) { var h = S.grpHide || {}, g = grpList(c); return g.length > 0 && g.every(function (x) { return h[x]; }); }
+  /* グループのない住人は「グループなし」の札（S.grpHideNone）で隠す。「グループで絞り込む」は、この二つをまとめて切り替える（表示だけ。保存は全員） */
+  function grpHidden(c) { var h = S.grpHide || {}, g = grpList(c); return g.length ? g.every(function (x) { return h[x]; }) : !!S.grpHideNone; }
   function groupsOf() { var g = [], seen = {}; S.chars.forEach(function (c) { grpList(c).forEach(function (x) { if (!seen[x]) { seen[x] = 1; g.push(x); } }); }); return g; }
   /* グループ順に並べる（グループ名の順、グループなしは最後。グループ内の順は保つ） */
   function sortByGroup() {
@@ -77,7 +82,10 @@
     });
   }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { var o = { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: idList(c.loveLock), sexLock: c.sexLock || '', sexLocks: idList(c.sexLocks), loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
+  /* 登録順（reg）：住人を足した時刻（同じミリ秒に続けて足しても順が崩れないよう、前の値より必ず大きくする）。並び替えたあとも「登録順に戻す」で戻せる */
+  var lastReg = 0;
+  function newReg() { var t = Date.now(); if (t <= lastReg) t = lastReg + 1; lastReg = t; return t; }
+  function mk(c) { var o = { id: uid(), reg: newReg(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: idList(c.loveLock), sexLock: c.sexLock || '', sexLocks: idList(c.sexLocks), loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -129,6 +137,8 @@
   function normChar(c) {
     c = obj(c);
     c.id = typeof c.id === 'string' && c.id ? c.id : uid();
+    /* 登録順（足した時刻）。古い保存には無い → normState で今の並びの順に振る */
+    c.reg = +c.reg > 0 && isFinite(+c.reg) ? Math.floor(+c.reg) : 0;
     c.name = str(c.name, 24).trim() || '名無し';
     c.eg = fixEg(c.eg);
     c.memo = str(c.memo, 80);
@@ -161,7 +171,7 @@
     c.noR18 = !!c.noR18;
     /* 三人の場面：固定した相手が中心なら参加する（R18版。room-trio.js） */
     c.trioHub = !!c.trioHub;
-    c.posNpc = c.posNpc === 'bottom' ? 'bottom' : '';
+    c.posNpc = HK.Pos ? HK.Pos.npcValid(c.posNpc) : '';
     /* お酒の強さ（1 弱い〜5 ザル。空ならおまかせ） */
     c.alcohol = HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '';
     /* 性器の呼び方（R18版。作風と自由記入） */
@@ -217,6 +227,12 @@
     S0.chars = (Array.isArray(S0.chars) ? S0.chars : []).filter(function (c) { return c && typeof c === 'object'; }).slice(0, MAX).map(normChar);
     var seen = {};
     S0.chars.forEach(function (c) { if (seen[c.id]) c.id = uid(); seen[c.id] = 1; });
+    /* 登録順の無い住人（古い保存）：今の並びの順に、時刻より小さい番号を振る（登録順に戻すと、古い住人が先・今の並びのまま） */
+    S0.chars.forEach(function (c, i) { if (!c.reg) c.reg = i + 1; if (c.reg > lastReg && c.reg < 1e14) lastReg = c.reg; });
+    /* 住人の一覧で隠しているグループ（表示だけ。グループ名 → 1）と、グループのない住人を隠すか */
+    S0.grpHide = obj(S0.grpHide);
+    Object.keys(S0.grpHide).forEach(function (g) { if (!S0.grpHide[g] || !String(g).trim()) delete S0.grpHide[g]; else S0.grpHide[g] = 1; });
+    S0.grpHideNone = !!S0.grpHideNone;
     S0.env = obj(S0.env); S0.glob = obj(S0.glob); S0.per = obj(S0.per); S0.join = obj(S0.join);
     S0.seed = str(S0.seed, 12).replace(/[^\d]/g, '');
     if (typeof S0.teacher !== 'string') S0.teacher = '';
@@ -256,7 +272,8 @@
     var tk = function (t) { return t ? [t.a, t.b, t.type].join('|') : ''; }, have = (Array.isArray(s.ties) ? s.ties : []).map(tk), sc = {};
     (Array.isArray(s.chars) ? s.chars : []).forEach(function (c) { if (c && c.id) sc[c.id] = c; });
     if ((b.ties || []).some(function (t) { return have.indexOf(tk(t)) < 0; })) return true;
-    return (b.chars || []).some(function (c) { var o = c && sc[c.id]; return !o || Object.keys(c).some(function (k) { return full(c[k]) && !full(o[k]); }); });
+    /* アイコンは IndexedDB に分けて置く（saves.js の HK.IconStore）ので、控えと住人の保存のどちらにあるかでは比べない */
+    return (b.chars || []).some(function (c) { var o = c && sc[c.id]; return !o || Object.keys(c).some(function (k) { return k !== 'icon' && full(c[k]) && !full(o[k]); }); });
   }
   (function () {
     var raw = HK.store.get('state', null), bk = HK.store.get('state:backup', null);
@@ -299,6 +316,19 @@
   }
   if (!HK.SCENARIOS[S.scenId]) S.scenId = HK.SCEN_ORDER[0];
   HK.Icons.set(S.chars);
+  /* アイコンの置き場（IndexedDB。saves.js の HK.IconStore）から読んで、住人の保存に無いアイコンを戻す。
+     読み終わる前にこのページで変えた・外したアイコン（iconTouched）は戻さない。読み終えたら保存して、まだ住人の保存に入っているアイコンを置き場へ移す */
+  var iconTouched = {};
+  if (HK.IconStore) HK.IconStore.load().then(function (m) {
+    var got = 0;
+    S.chars.forEach(function (c) { if (!c.icon && m[c.id] && !iconTouched[c.id]) { c.icon = m[c.id]; got++; } });
+    if (got) {
+      HK.Icons.set(S.chars);
+      var ae = document.activeElement, typing = ae && ae.closest && ae.closest('#view-cast') && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
+      if (tab === 'cast' && !typing) renderCast(); else if (tab === 'result' && result) renderResult();
+    }
+    if (!bkHold && !rescue) save(); else HK.IconStore.sync(S.chars, null);
+  });
   /* 「これまでの箱庭」（履歴）：一覧は localStorage の history（id・日時・箱庭・住人名・シード・要約・入力。r は結果を置いた印、r18 は R18モードで動かしたか）。
      結果そのものは history.js（HK.History）に id で置き、開くときはそれをそのまま表示する。id や r の無い古い形の履歴・置けなかった結果は、
      開いたときに今の版で回し直して表示し、結果を置いて以後は固定にする */
@@ -318,10 +348,13 @@
     /* 読み込めなかった保存を退避できなかったときは、住人の保存を上書きしない（下の rescueNotice で書き出してもらう） */
     if (rescueHold) return false;
     S.v = STATE_V; S.savedAt = Date.now();
-    var ok = HK.store.set('state', S);
+    /* アイコンは IndexedDB に置き終えたものだけ外して書く（HK.IconStore.strip）。まだ置いていないものは置き、置けたらもう一度 save して外す */
+    var out = HK.IconStore ? HK.IconStore.strip(S) : S;
+    var ok = HK.store.set('state', out);
     /* 控えを書けなかった（保存領域がいっぱい）ときは、古い控えを残さない。残すと、次に開いたとき「旧版を開いた」の知らせが誤って出て、
        「控えから戻す」で古い住人に戻ってしまう */
-    if (ok && !bkHold && !rescue && !HK.store.set('state:backup', { v: STATE_V, at: S.savedAt, state: S })) { try { window.localStorage.removeItem(bkKey()); } catch (e) { /* 使えない環境 */ } }
+    if (ok && !bkHold && !rescue && !HK.store.set('state:backup', { v: STATE_V, at: S.savedAt, state: out })) { try { window.localStorage.removeItem(bkKey()); } catch (e) { /* 使えない環境 */ } }
+    if (HK.IconStore) HK.IconStore.sync(S.chars, save);
     return ok;
   }
   /* 読み込めなかった保存の知らせ（上の rescue）。元の保存（退避したもの）を JSON で書き出せる。閉じると、それ以降は控えも書く */
@@ -470,13 +503,44 @@
       }).join('') + '</div>' +
       '<div class="gwrap">' + egoGraph(c.eg, i) + '</div>' +
       '<button class="btn ghost small" data-act="del" aria-label="' + esc(c.name) + 'を削除">削除</button>' +
-      '<div class="memo"><input type="text" class="grp" id="gp-' + c.id + '" data-f="group" value="' + esc(c.group || '') + '" placeholder="グループ（任意・カンマで複数）" maxlength="40" list="grplist" aria-label="' + esc(c.name) + 'のグループ" title="同じグループ名をつけた住人は、箱庭でまとめて選んだり、並び替えたりできます。カンマで区切ると複数のグループに入れられます"><input type="text" id="mm-' + c.id + '" data-f="memo" value="' + esc(c.memo) + '" placeholder="メモ（任意・結果には影響しません）" maxlength="80">' +
+      '<div class="memo"><input type="text" class="grp" id="gp-' + c.id + '" data-f="group" value="' + esc(c.group || '') + '" placeholder="グループ（任意・読点やカンマで複数）" maxlength="40" list="grplist" aria-label="' + esc(c.name) + 'のグループ" title="同じグループ名をつけた住人は、箱庭でまとめて選んだり、並び替えたり、一覧で絞り込んだりできます。読点（、）かカンマで区切ると複数のグループに入れられます（例：生徒会、2年A組）"><input type="text" id="mm-' + c.id + '" data-f="memo" value="' + esc(c.memo) + '" placeholder="メモ（任意・結果には影響しません）" maxlength="80">' +
       '<span class="gearpair" style="display:inline-flex;gap:6px;align-items:center;flex:0 0 auto"><button type="button" class="btn small gearbtn" data-act="gear" aria-label="' + esc(c.name) + 'の設定（口調・呼び方・関係など）" title="口調・一人称・呼び方・性別・恋愛・イメージカラー・関係をまとめて設定"><span aria-hidden="true">⚙️</span> 設定</button>' +
       '<button type="button" class="btn small ghost" data-act="dup"' + (S.chars.length >= MAX ? ' disabled title="住人が上限の' + MAX + '人まで登録されているので、複製できません"' : ' title="この住人の設定をすべて写した住人を、すぐ下に足します（関係と、ほかの住人を指す設定は写しません）"') + ' aria-label="' + esc(c.name) + 'を複製">複製</button></span>' +
       '<span class="csum">' + (HK.UI && HK.UI.summary ? HK.UI.summary(c) : '') + '</span></div>' +
       '</div>';
   }
 
+  /* ---------- 住人の一覧の上の道具：並び（登録順に戻す・グループ順）と、グループで絞り込む（表示だけ。保存・書き出し・箱庭の参加者選びは全員のまま） ---------- */
+  function regSorted() { for (var i = 1; i < S.chars.length; i++) if ((S.chars[i - 1].reg || 0) > (S.chars[i].reg || 0)) return false; return true; }
+  function sortByReg() { var idx = {}; S.chars.forEach(function (c, i) { idx[c.id] = i; }); S.chars.sort(function (a, b) { return ((a.reg || 0) - (b.reg || 0)) || (idx[a.id] - idx[b.id]); }); }
+  /* 今の絞り込み：''（すべて）／'g:グループ名'（そのグループだけ）／'none'（グループなしだけ）／'custom'（札で選んだ組み合わせ） */
+  function grpViewOf() {
+    var gs = groupsOf(), h = S.grpHide || {}, shown = gs.filter(function (g) { return !h[g]; });
+    if (shown.length === gs.length && !S.grpHideNone) return '';
+    if (shown.length === 1 && S.grpHideNone) return 'g:' + shown[0];
+    if (!shown.length && !S.grpHideNone) return 'none';
+    return 'custom';
+  }
+  function setGrpView(v) {
+    var gs = groupsOf();
+    S.grpHide = {}; S.grpHideNone = false;
+    if (v === 'none') gs.forEach(function (g) { S.grpHide[g] = 1; });
+    else if (/^g:/.test(v)) { gs.forEach(function (g) { if (g !== v.slice(2)) S.grpHide[g] = 1; }); S.grpHideNone = true; }
+  }
+  function castTools() {
+    var gs = groupsOf(), hid = S.chars.filter(grpHidden).length, noG = S.chars.filter(function (c) { return !grpList(c).length; }).length, v = grpViewOf();
+    var chip = function (g) { var on = !(S.grpHide && S.grpHide[g]); return '<button class="chip" data-act="grphide" data-g="' + esc(g) + '" aria-pressed="' + on + '" title="' + esc(g) + 'の住人を一覧で' + (on ? '隠す' : '表示する') + '">' + (on ? '' : '<s>') + esc(g) + '（' + S.chars.filter(function (c) { return inGrp(c, g); }).length + '）' + (on ? '' : '</s>') + '</button>'; };
+    var h = S.chars.length > 1 ? '<div class="row casttools" style="margin:-2px 0 8px;gap:6px;flex-wrap:wrap"><span class="hint" style="margin:0">並び：</span><button class="btn small" data-act="sortreg"' + (regSorted() ? ' disabled title="いまは登録順（住人を足した順）に並んでいます"' : ' title="並び替える前の、住人を足した順に戻します"') + '>登録順に戻す</button>' + (gs.length ? '<button class="btn small" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' : '';
+    if (!gs.length) return h;
+    return h + '<div class="row grpview" style="margin:-2px 0 8px;gap:6px;flex-wrap:wrap"><label class="hint" style="margin:0" for="grpview">グループで絞り込む：</label><select id="grpview" data-f="grpview" title="住人の一覧に出す人だけを絞ります（表示だけ。保存・書き出し・箱庭の参加者選びは全員のまま）">' +
+      '<option value=""' + (v === '' ? ' selected' : '') + '>すべて表示</option>' + gs.map(function (g) { return '<option value="g:' + esc(g) + '"' + (v === 'g:' + g ? ' selected' : '') + '>' + esc(g) + 'だけ</option>'; }).join('') +
+      (noG ? '<option value="none"' + (v === 'none' ? ' selected' : '') + '>グループなしだけ</option>' : '') + (v === 'custom' ? '<option value="custom" selected disabled>（札で選んだ組み合わせ）</option>' : '') + '</select>' +
+      '<span class="hint" style="margin:0">札（押すと表示・非表示）：</span>' + gs.map(chip).join('') +
+      (noG ? '<button class="chip" data-act="grphidenone" aria-pressed="' + !S.grpHideNone + '" title="グループのない住人を一覧で' + (S.grpHideNone ? '表示する' : '隠す') + '">' + (S.grpHideNone ? '<s>' : '') + 'グループなし（' + noG + '）' + (S.grpHideNone ? '</s>' : '') + '</button>' : '') +
+      (hid ? '<span class="hint" style="margin:0">' + hid + '人を隠しています</span><button class="btn small ghost" data-act="grpshowall">すべて表示</button>' : '') + '</div>';
+  }
+  /* ランダムで1人追加：名前の雰囲気（ui-rand.js の HK.RandChar）。このページを開いているあいだだけ覚える */
+  var randStyle = '';
   function renderCast() {
     var html =
       '<h2 class="sec">住人をまとめて登録' + (HK.Tips ? HK.Tips.btn('cast-import') : '') + '</h2>' +
@@ -495,13 +559,13 @@
       (S.sample ? '<p class="sample-note">いま並んでいるのはサンプルの住人です。自分のキャラクターに置き換えてください。</p>' : '') +
       '<input type="file" id="iconfile" accept="image/*" hidden>' +
       '<p class="hint" style="margin-top:-4px">≡ をドラッグで並び替え、左の丸でアイコンを設定できます。グループをつけると、箱庭でまとめて選べます。</p>' +
-      (groupsOf().length ? '<div class="row" style="margin:-2px 0 8px"><button class="btn small" data-act="sortgrp">グループ順に並べる</button><span class="hint" style="margin:0">グループ（押すと一覧での表示・非表示）：</span>' + groupsOf().map(function (g) { var on = !(S.grpHide && S.grpHide[g]); return '<button class="chip" data-act="grphide" data-g="' + esc(g) + '" aria-pressed="' + on + '" title="' + esc(g) + 'の住人を一覧で' + (on ? '隠す' : '表示する') + '">' + (on ? '' : '<s>') + esc(g) + '（' + S.chars.filter(function (c) { return inGrp(c, g); }).length + '）' + (on ? '' : '</s>') + '</button>'; }).join('') + (S.chars.some(grpHidden) ? '<span class="hint" style="margin:0">' + S.chars.filter(grpHidden).length + '人を隠しています</span>' : '') + '</div>' : '') +
+      castTools() +
       /* グループごとの「仲間」：オンのグループの住人どうしは、箱庭に入るときに関係「仲間」が付く（ほかの関係があれば、それに重ねる） */
       (groupsOf().length ? '<div class="row" style="margin:-2px 0 8px"><span class="hint" style="margin:0" title="オンにしたグループの住人どうしは、信頼が育ちやすく、助け合い・庇い合い・弔い・一緒に動く出来事が起きます。恋愛や嫉妬には関わりません。関係図には薄い線で出ます（線の絞り込みで「全部」のとき）">仲間とみなすグループ：</span>' + groupsOf().map(function (g) { var on = !!(S.grpComrade && S.grpComrade[g]); return '<button class="chip" data-act="grpcomrade" data-g="' + esc(g) + '" aria-pressed="' + on + '" title="' + esc(g) + 'の住人どうしを仲間と' + (on ? 'みなさない' : 'みなす') + '">' + (on ? '仲間：' : '') + esc(g) + '</button>'; }).join('') + '</div>' : '') +
       '<datalist id="grplist">' + groupsOf().map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>' +
       '<div class="cast" id="castlist">' + S.chars.map(function (c, i) { var h = resRow(c, i); return grpHidden(c) ? h.replace('<div class="res"', '<div class="res" hidden style="display:none"') : h; }).join('') + '</div>' +
       (S.chars.length >= MAX ? '<p class="hint" id="castfull" style="color:var(--warn)">住人が上限の' + MAX + '人まで登録されています。追加・複製するには、誰かを削除してください。</p>' : '') +
-      '<div class="row" style="margin-top:12px"><button class="btn" data-act="add"' + (S.chars.length >= MAX ? ' disabled' : '') + '>1人追加</button><button class="btn" data-act="quiz"' + (S.chars.length >= MAX ? ' disabled' : '') + '>質問に答えて診断して追加</button><span class="hint" style="margin:0">「<a href="https://kaimin.sakura.ne.jp/archive/tools/ego/" target="_blank" rel="noopener">ふたりのエゴグラム</a>」と同じ25問で、エゴグラムを出して住人にできます。</span></div>' +
+      '<div class="row" style="margin-top:12px"><button class="btn" data-act="add"' + (S.chars.length >= MAX ? ' disabled' : '') + '>1人追加</button>' + (HK.RandChar ? '<span class="randadd" style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap"><button class="btn" data-act="randadd"' + (S.chars.length >= MAX ? ' disabled' : '') + ' title="名前・性別・エゴグラム・口調・年齢・職業・体格・身長・種族' + (HK.SAFE_ON ? '' : '・夜の性格') + 'を乱数で決めた住人を1人足します（足したあとで自由に直せます）">ランダムで1人追加</button><select id="randstyle" data-f="randstyle" aria-label="ランダムで足す住人の名前の雰囲気">' + HK.RandChar.STYLES.map(function (o) { return '<option value="' + o[0] + '"' + (randStyle === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></span>' : '') + '<button class="btn" data-act="quiz"' + (S.chars.length >= MAX ? ' disabled' : '') + '>質問に答えて診断して追加</button><span class="hint" style="margin:0">「<a href="https://kaimin.sakura.ne.jp/archive/tools/ego/" target="_blank" rel="noopener">ふたりのエゴグラム</a>」と同じ25問で、エゴグラムを出して住人にできます。</span></div>' +
       tiesSection() +
       '<div class="row" style="margin-top:20px"><span class="spacer"></span><button class="btn primary" data-act="tobox">箱庭を選ぶ</button></div>';
     $('#view-cast').innerHTML = html;
@@ -524,6 +588,7 @@
     var ids = {}; S.chars.forEach(function (c) { ids[c.id] = 1; });
     var c = JSON.parse(JSON.stringify(src));
     do { c.id = uid(); } while (ids[c.id]);
+    c.reg = newReg();
     c.name = dupName(src.name);
     Object.keys(DUP_CLEAR).forEach(function (k) { c[k] = JSON.parse(JSON.stringify(DUP_CLEAR[k])); });
     if (c.sexLock === 'pick' || c.sexLock === 'pickMob') c.sexLock = '';
@@ -678,6 +743,7 @@
       chars: list.map(function (c) {
         var o = { name: c.name, code: HK.toCode(c.eg), eg: c.eg, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '' };
         if (c.posLike) o.posLike = c.posLike;
+        if (c.reg) o.reg = c.reg;
         if (c.icon) o.icon = c.icon;
         if (c.color) o.color = c.color;
         if (c.call) o.call = c.call;
@@ -690,7 +756,7 @@
         if (c.faithful) o.faithful = true;
         if (c.noR18) o.noR18 = true;
         if (c.trioHub) o.trioHub = true;
-        if (c.posNpc === 'bottom') o.posNpc = 'bottom';
+        if (HK.Pos && HK.Pos.npcValid(c.posNpc)) o.posNpc = c.posNpc;
         if (c.alcohol) o.alcohol = +c.alcohol;
         if (c.partWords) o.partWords = c.partWords;
         if (c.partM) o.partM = c.partM;
@@ -713,7 +779,7 @@
         if (R.per && R.per[c.id]) o.per = R.per[c.id];
         return o;
       }),
-      ties: (R.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh', 'elder'].forEach(function (f) { if (t[f]) o[f] = t[f]; }); return o; }),
+      ties: (R.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; HK.TIE_XF.forEach(function (f) { if (t[f]) o[f] = t[f]; }); return o; }),
       teacher: R.teacher && idx[R.teacher] != null ? idx[R.teacher] : null,
       /* グループごとの「仲間」（書き出す住人のグループだけ） */
       grpComrade: (function () { var m = {}, any = false; Object.keys(R.grpComrade || {}).forEach(function (g) { if (R.grpComrade[g] && R.chars.some(function (c) { return (only ? idx[c.id] != null : true) && inGrp(c, g); })) { m[g] = 1; any = true; } }); return any ? m : undefined; })(),
@@ -755,7 +821,7 @@
       if (!eg) { map[i] = null; skipped++; return; }
       var c = list.filter(function (x) { return x.name === name; })[0];
       if (c) { c.eg = eg; updated++; }
-      else { if (list.length >= MAX) { map[i] = null; skipped++; return; } c = mk({ name: name, eg: eg }); list.push(c); added++; }
+      else { if (list.length >= MAX) { map[i] = null; skipped++; return; } c = mk({ name: name, eg: eg }); c._new = 1; list.push(c); added++; }
       c.memo = String(o.memo || c.memo || '').slice(0, 80);
       if (o.group != null) c.group = String(o.group).trim().slice(0, 40);
       if (['', 'm', 'f', 'x'].indexOf(o.gender || '') >= 0) c.gender = o.gender || '';
@@ -774,7 +840,10 @@
       if (o.faithful) c.faithful = true;
       if (o.noR18) c.noR18 = true;
       if (o.trioHub) c.trioHub = true;
-      if (o.posNpc === 'bottom') c.posNpc = 'bottom';
+      if (HK.Pos && HK.Pos.npcValid(o.posNpc)) c.posNpc = o.posNpc;
+      /* 登録順（書き出したときの値。無い古い JSON は、足した順の新しい値のまま） */
+      if (c._new && +o.reg > 0 && isFinite(+o.reg)) c.reg = Math.floor(+o.reg);
+      delete c._new;
       if (HK.ALC_OK(o.alcohol)) c.alcohol = String(o.alcohol);
       if (o.partWords) c.partWords = o.partWords;
       if (o.partM != null) c.partM = String(o.partM);
@@ -814,7 +883,7 @@
       var nt0 = t.cold && CO2 && CO2.map[t.cold] ? { a: a, b: b, type: t.type, cold: t.cold } : { a: a, b: b, type: t.type };
       if (t.love === 'ok' && (HK.TIES[t.type].family || HK.TIES[t.type].loveOpt)) nt0.love = 'ok';
       /* 追加の欄（型・度合い・気持ち・様子・愛憎）。古い JSON にはないので、ないときは今までどおり */
-      ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh', 'elder'].forEach(function (f) { if (typeof t[f] === 'string' && t[f]) nt0[f] = t[f]; });
+      HK.TIE_XF.forEach(function (f) { if (typeof t[f] === 'string' && t[f]) nt0[f] = t[f]; });
       if (HK.tieExtraNorm) HK.tieExtraNorm(nt0);
       if (HK.tieHidden && HK.tieHidden(nt0.type)) return;
       S.ties.push(nt0); tn++;
@@ -1011,10 +1080,13 @@
     var hasAct = !!(scen.actions && scen.actions.length), hasGoal = !!(scen.goals && scen.goals.length);
     /* 箱庭をまたいで共通の能力値・欄（shared-stats.js）は、見出しに ＊ を付けて説明を添える */
     var shn = function (id, pick) { return HK.Shared ? HK.Shared.headNote(S.scenId, id, pick) : ''; };
-    var statHead = (scen.stats || []).map(function (s) { var n = shn(s.id, false); return '<th title="' + esc(s.desc + (n ? ' ' + n : '')) + '">' + esc(s.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (scen.weapons ? '<th>武器</th>' : '') + pfs.map(function (f) { var n = shn(f.id, true); return '<th' + (n ? ' title="' + esc(n) + '"' : '') + '>' + esc(f.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (sexCols ? '<th>性別</th><th>恋愛対象</th>' : '');
+    var statHead = (scen.stats || []).map(function (s) { var n = shn(s.id, false), sc = HK.Shared && HK.Shared.scale ? HK.Shared.scale(S.scenId, s.id) : ''; return '<th title="' + esc(s.desc + (sc ? ' ' + sc : '') + (n ? ' ' + n : '')) + '">' + esc(s.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (scen.weapons ? '<th>武器</th>' : '') + pfs.map(function (f) { var n = shn(f.id, true); return '<th' + (n ? ' title="' + esc(n) + '"' : '') + '>' + esc(f.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (sexCols ? '<th>性別</th><th>恋愛対象</th>' : '');
     var J = joined(S.scenId), jmax = smax(S.scenId);
+    /* 住人が多いとき（41人以上）は、参加しない人の行を軽くする（設定の欄は、参加にすると出る。住人200人でも箱庭タブが重くならないように） */
+    var lazyBox = S.chars.length > 40, nCols = (hasAct ? 1 : 0) + (hasGoal ? 1 : 0) + (scen.stats || []).length + (scen.weapons ? 1 : 0) + pfs.length + (sexCols ? 2 : 0);
     var rows = S.chars.map(function (c, i) {
       var on = J.indexOf(c) >= 0;
+      if (!on && lazyBox) return '<tr class="off lazy"><td><input type="checkbox" id="jn-' + c.id + '" data-f="join" data-id="' + c.id + '" aria-label="' + esc(c.name) + 'を参加させる"></td><td><span class="row" style="flex-wrap:nowrap"><span class="dot" style="background:var(--p' + i + ')"></span><b>' + esc(c.name) + '</b>' + (c.group ? '<span class="grptag">' + esc(grpList(c).join('・')) + '</span>' : '') + '</span></td>' + (nCols ? '<td colspan="' + nCols + '" class="hint" style="font-size:12px;margin:0;white-space:nowrap">参加にすると、ここで設定できます</td>' : '') + '</tr>';
       var p = per(c, S.scenId);
       var sel = function (f, list) {
         return '<select id="pc-' + c.id + '-' + f + '" data-f="per" data-id="' + c.id + '" data-k="' + f + '" aria-label="' + esc(c.name) + 'の' + (f === 'action' ? '最初の行動' : '短期目標') + '"><option value="auto">おまかせ（気質から）</option>' +
@@ -1057,7 +1129,7 @@
       (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、カードの「この箱庭のTIPS」にあります。</p>' : '') +
       (sexCols && S.chars.length ? '<p class="hint" style="margin-top:8px">性別と恋愛対象は、住人タブの ⚙️ 設定と同じものです。</p>' : '') +
       (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') +
-      '<div class="runbar"><label for="seed">シード</label><input type="text" id="seed" inputmode="numeric" data-f="seed" value="' + esc(S.seed) + '" placeholder="空欄でランダム"><span class="hint" style="margin:0">同じシードと条件なら同じ結末になります。</span><span class="spacer"></span><button class="btn primary" data-act="run">箱庭を動かす</button></div>';
+      '<div class="runbar nofold"><label for="seed">シード</label><input type="text" id="seed" inputmode="numeric" data-f="seed" value="' + esc(S.seed) + '" placeholder="空欄でランダム"><span class="hint" style="margin:0">同じシードと条件なら同じ結末になります。</span><span class="spacer"></span><button class="btn primary" data-act="run">箱庭を動かす</button></div>';
     $('#view-box').innerHTML = html;
     if (HK.Adv) HK.Adv.afterRender();
   }
@@ -1101,7 +1173,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' ? c.sexLock : c.sexLock === 'pick' || c.sexLock === 'pickMob' ? lockIdx(c.sexLocks) : '', sexLockMob: c.sexLock === 'pickMob' && idList(c.sexLocks).length > 0, loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' ? c.sexLock : c.sexLock === 'pick' || c.sexLock === 'pickMob' ? lockIdx(c.sexLocks) : '', sexLockMob: c.sexLock === 'pickMob' && idList(c.sexLocks).length > 0, loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
           /* 喘ぎの口調（R18版。全年齢モードでは渡さない） */
           if (c.moanTone && !HK.SAFE_ON) o.moanTone = c.moanTone;
           return HK.Attr ? HK.Attr.toInput(o, c, ids) : o;
@@ -1167,8 +1239,15 @@
     }
     if (onRes) onRes(res);
     setTab('result');
-    /* 箱庭を動かしたら、結果の頭（画面のいちばん上）から読めるように */
-    if (record) window.scrollTo(0, 0);
+    /* 箱庭を動かしたら、結果の頭（画面のいちばん上）から読めるように。スマホ・Safari ではシード欄のキーボードの収納や
+       描き終わる前のずれで途中に飛ぶので、フォーカスを外し、すぐ・次のフレーム・少し後にも念を押して上へ戻す */
+    if (record) {
+      try { var ae = document.activeElement; if (ae && ae !== document.body && ae.blur) ae.blur(); } catch (e) { /* 外せなくてもよい */ }
+      var toTop = function () { window.scrollTo(0, 0); if (document.documentElement) document.documentElement.scrollTop = 0; if (document.body) document.body.scrollTop = 0; };
+      toTop();
+      if (window.requestAnimationFrame) window.requestAnimationFrame(toTop);
+      setTimeout(toTop, 150); setTimeout(toTop, 500);
+    }
     return res;
   }
 
@@ -1348,7 +1427,7 @@
         S.ties = S.ties || [];
         pr.ties.forEach(function (nt) {
           var ex = S.ties.filter(function (x) { return x.type === nt.type && ((x.a === nt.a && x.b === nt.b) || (x.a === nt.b && x.b === nt.a)); })[0];
-          if (ex) { ex.a = nt.a; ex.b = nt.b; ex.type = nt.type; if (nt.cold) ex.cold = nt.cold; else delete ex.cold; ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh', 'elder'].forEach(function (f) { if (nt[f]) ex[f] = nt[f]; else delete ex[f]; }); } else S.ties.push(nt);
+          if (ex) { ex.a = nt.a; ex.b = nt.b; ex.type = nt.type; if (nt.cold) ex.cold = nt.cold; else delete ex.cold; HK.TIE_XF.forEach(function (f) { if (nt[f]) ex[f] = nt[f]; else delete ex[f]; }); } else S.ties.push(nt);
         });
         /* 「グループ名 仲間」の行：そのグループを仲間とみなす */
         (pr.groups || []).forEach(function (g) { S.grpComrade = S.grpComrade || {}; S.grpComrade[g] = 1; });
@@ -1390,6 +1469,21 @@
         S.grpHide = S.grpHide || {};
         if (S.grpHide[t.dataset.g]) delete S.grpHide[t.dataset.g]; else S.grpHide[t.dataset.g] = 1;
         save(); renderCast(); break;
+      case 'sortreg':
+        sortByReg(); save(); renderCast(); toast('登録順（住人を足した順）に戻しました'); break;
+      case 'grphidenone':
+        S.grpHideNone = !S.grpHideNone; save(); renderCast(); break;
+      case 'grpshowall':
+        S.grpHide = {}; S.grpHideNone = false; save(); renderCast(); break;
+      case 'randadd':
+        if (S.chars.length >= MAX || !HK.RandChar) return;
+        if (S.sample) S.sample = false;
+        var rc = HK.RandChar.make({ style: randStyle, names: S.chars.map(function (x) { return x.name; }) });
+        S.chars.push(mk(rc)); save(); renderCast();
+        toast('「' + rc.name + '」（' + HK.toCode(rc.eg) + (rc.memo ? '・' + rc.memo : '') + '）をランダムで足しました');
+        var rl = document.querySelector('#castlist .res:last-child input[data-f="name"]');
+        if (rl) rl.focus();
+        break;
       case 'sortgrp':
         sortByGroup(); save();
         if (document.getElementById('castlist')) renderCast();
@@ -1412,7 +1506,7 @@
       case 'iconpick': iconTarget = row && row.dataset.id; var fi = $('#iconfile'); if (fi) { fi.value = ''; fi.click(); } break;
       case 'icondel':
         var cd = S.chars.filter(function (x) { return row && x.id === row.dataset.id; })[0];
-        if (cd) { delete cd.icon; save(); renderCast(); }
+        if (cd) { delete cd.icon; iconTouched[cd.id] = 1; save(); renderCast(); }
         break;
       case 'jsonout': exportJSON(); break;
       case 'jpick': jpOpen = !jpOpen; renderCast(); break;
@@ -1550,6 +1644,8 @@
       else cur = cur.filter(function (x) { return x !== t.dataset.id; });
       S.join[S.scenId] = cur;
       var tr = t.closest('tr'); if (tr) tr.classList.toggle('off', !t.checked);
+      /* 軽くした行（住人が多いとき）を参加にしたら、設定の欄を出すために描き直す */
+      if (t.checked && tr && tr.classList.contains('lazy')) { var y0 = window.pageYOffset; save(); renderBox(); window.scrollTo(0, y0); var nb = document.getElementById('jn-' + t.dataset.id); if (nb) nb.focus(); return; }
       var jc = document.getElementById('joincount');
       if (jc) { var mx = smax(S.scenId); jc.innerHTML = '参加 <b class="num">' + cur.length + '</b> / 上限 ' + mx + '人' + (cur.length > mx ? '　<span style="color:var(--warn)">上限を超えています</span>' : ''); }
       updLoveWarn();
@@ -1558,12 +1654,14 @@
       var tt = S.ties[+t.dataset.k];
       /* 変更の結果、同じ二人に同じ関係が二つになるなら戻す */
       if (tt && /^(?:a|b|type)$/.test(t.dataset.p)) { var na = t.dataset.p === 'a' ? t.value : tt.a, nb = t.dataset.p === 'b' ? t.value : tt.b, nty = t.dataset.p === 'type' ? t.value : tt.type; if (hasTie(na, nb, nty, +t.dataset.k)) { toast('その二人には「' + (HK.TIES[nty] ? HK.TIES[nty].label : nty) + '」がすでにあります'); t.value = tt[t.dataset.p]; return; } }
-      if (tt && /^(?:sub|grade|feel|feelB|mode|lh|elder)$/.test(t.dataset.p)) { if (t.value && !(tt.type === 'fiance' && t.value === 'eager')) tt[t.dataset.p] = t.value; else delete tt[t.dataset.p]; save(); renderCast(); return; }
+      if (tt && HK.TIE_XF.indexOf(t.dataset.p) >= 0) { if (t.value && !(tt.type === 'fiance' && t.value === 'eager')) tt[t.dataset.p] = t.value; else delete tt[t.dataset.p]; save(); renderCast(); return; }
       if (tt) { tt[t.dataset.p] = t.value; if (t.dataset.p === 'love' && !t.value) delete tt.love; if (t.dataset.p === 'type' && HK.tieExtraNorm) HK.tieExtraNorm(tt); if (t.dataset.p === 'type' || t.dataset.p === 'cold' || t.dataset.p === 'love') { save(); renderCast(); return; } }
     }
     else if (f === 'seed') S.seed = t.value.replace(/[^\d]/g, '');
     else if (f === 'teacher') { S.teacher = t.value; save(); renderBox(); return; }
     else if (f === 'randfrom') { S.randFrom = t.value; save(); renderBox(); return; }
+    else if (f === 'grpview') { if (ev.type !== 'change' || t.value === 'custom') return; setGrpView(t.value); save(); renderCast(); return; }
+    else if (f === 'randstyle') { randStyle = t.value; return; }
     else if (f === 'randn') S.randN = parseInt(t.value, 10) || '';
     save();
   }
@@ -1649,7 +1747,7 @@
     var f = ev.target.files && ev.target.files[0], c = S.chars.filter(function (x) { return x.id === iconTarget; })[0];
     if (!f || !c) return;
     HK.Icons.fromFile(f).then(function (url) {
-      c.icon = url;
+      c.icon = url; iconTouched[c.id] = 1;
       var ok = save() !== false;
       renderCast();
       toast(ok ? c.name + 'のアイコンを設定しました' : 'ブラウザに保存しきれませんでした（このページを開いている間は表示されます）');

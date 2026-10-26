@@ -195,6 +195,8 @@
       else { parts.push(fill(ctx.pick(OPEN.all), { t: t, W: '条件を満たした人は' }).replace('部屋には、もう誰も残っていない。', '')); title = nm(stayed) + 'が自分から残った'; }
       if (stayed.length) parts.push(fill(ctx.pick(STAYED), { S: nm(stayed) }));
       ex.forEach(function (e) {
+        /* 全員で出られる部屋（順26）：条件を満たした組と一緒に出た人 */
+        if (e.along && e.along.length) parts.push(nm(e.along.map(function (i) { return C[i]; })) + 'は、' + (e.group ? nm(e.group.map(function (i) { return C[i]; })) : C[e.a].name + 'と' + C[e.b].name) + 'が開けた扉から、一緒に外へ出た。');
         if (e.trio) return; /* 三人で出た組は room-trio.js の後日談がある */
         if (e.group) { var g = e.group.map(function (i) { return C[i]; }); parts.push(fill(ctx.pick(PAIR.group), { G: nm(g) })); return; }
         var x = C[e.a], y = C[e.b];
