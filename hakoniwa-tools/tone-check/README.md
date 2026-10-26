@@ -86,6 +86,19 @@ node orient-audit.js ../../hakoniwa-zenrei 40 '' --why
 
 恋愛対象（男性／女性／なし）に合わない相手と、恋人・夜・片想いの結末（O1）、二人だけの性的な場面（O2）、告白（O3）になっていないかを全箱庭で数える。O2・O3 は文から拾うので、--why の例を目で確かめる。受け攻めは pos-audit.js で見る。
 
+## seg-audit.js（台詞・地の文・引用の区分の点検）
+
+```
+node seg-audit.js ../../hakoniwa-full 10 r18 --why
+node seg-audit.js ../../hakoniwa-full 10 safe --why
+node seg-audit.js ../../hakoniwa-zenrei 10 '' --why
+```
+
+記録ごとの `e.seg`（js/voice-seg.js。台詞行 l・地の文に埋まった発話 q・名詞の引用 c・喘ぎやモブ m・話し手が決まらない u）を全箱庭で調べる。
+A（推定の話し手が登場人物にいず文にも名前がない a1／死んだ人が話す a2）、B（モブの台詞を住人の台詞にしている b1・b2）、C（区分が決まらない u）を数え、
+整合（seg をつなぐと e.text と同じか・HK.fmtLong の改行が seg を使っても同じか・隠しの区分が残っていないか）は 0 にする。
+`--dump=出力.json` で全部の「」を前後の文つきで書き出せる（誤りの型を目で見るとき）。設計は `docs/reports/2026-10-26/seg-design.md`。
+
 ## state-audit.js（住人の状態の点検）
 
 ```

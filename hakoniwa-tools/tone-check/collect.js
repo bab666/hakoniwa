@@ -23,9 +23,8 @@ const { openBuild } = require('./lib');
     const ac = V.applyCalls; V.applyCalls = function (q, who) {
       const o = ac.apply(this, arguments);
       const i = cur && cur.raw ? curText.indexOf(cur.raw) : -1;
-      const after = i < 0 ? '' : curText.slice(i + cur.raw.length + 1, i + cur.raw.length + 5);
-      const before = i < 0 ? '' : curText.slice(Math.max(0, i - 7), i - 1);
-      rec.push({ nq: /^(?:を|の|に|が|へ|や|という|って書|と書)/.test(after) || (/^だ/.test(after) && /(?:のは|お題は|テーマは|題名は|企画は)$/.test(before)), ov: cur && cur.ov, fp: V.fpFor(who), ctx: i < 0 ? '' : curText.slice(Math.max(0, i - 60), i + cur.raw.length + 20), tone: who.tone, persona: who.persona, g: who.gender, name: who.name, raw: cur && cur.who === who ? cur.raw : null, out: o });
+      /* 名詞の引用か（台詞の区分 seg の c。voice.js の processText が決めた区分 V._qKind をそのまま使う） */
+      rec.push({ nq: V._qKind === 'c', kind: V._qKind || '', ov: cur && cur.ov, fp: V.fpFor(who), ctx: i < 0 ? '' : curText.slice(Math.max(0, i - 60), i + cur.raw.length + 20), tone: who.tone, persona: who.persona, g: who.gender, name: who.name, raw: cur && cur.who === who ? cur.raw : null, out: o });
       return o;
     };
     const tones = HK.TONE_KEYS.slice(), NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];

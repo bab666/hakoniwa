@@ -420,5 +420,6 @@ js/dark-thick.js
 js/lewd-unify.js
 js/futari-r18.js
 js/reset.js
+js/voice-seg.js
 late js/attr-r18.js
 late js/attr-race-r18.js

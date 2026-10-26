@@ -288,3 +288,4 @@ js/obsess-omega.js
 js/grief-kit.js
 js/lewd-unify.js
 js/reset.js
+js/voice-seg.js

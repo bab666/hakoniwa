@@ -292,23 +292,35 @@
      ・地の文は句点で区切って、だいたい2〜3文（60〜110字）ごとに改行する
      ・もとから改行のある文（段落に分けた山場）は、段落の形は変えず、台詞だけを独立させる
      names：登場人物の名前の一覧（台詞の話者の判定に使う。名前の直後の「 だけを台詞とみなす） */
-  HK.fmtLong = function (text, names) {
-    var s = String(text == null ? '' : text);
-    if (s.length < 140 || !/[。！？」]/.test(s)) return s;
+  /* 長い文の台詞の塊：文頭か句点・閉じ括弧・ダッシュのあとに続く 名前「…」（「…」が続けて並ぶものも一つ）と、文頭の「…」。
+     塊の前後に印 TK を入れた行を返す。voice-seg.js（HK.Seg）も同じ関数で seg の塊（h）を決めるので、seg からの改行と結果が同じになる */
+  HK.fmtSpeech = function (names) {
     var nm = (names || []).filter(Boolean).map(String).sort(function (a, b) { return b.length - a.length; });
     var NAME = nm.length ? '(?:' + nm.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')' : null;
-    /* 台詞の塊：文頭か句点・閉じ括弧・ダッシュのあとに続く 名前「…」（「…」が続けて並ぶものも一つ） */
-    var SPEECH = NAME ? new RegExp('(^|[。！？」）\\s―…])(' + NAME + '(?:「[^「」]*」)+)(?!と|って|、と|など)', 'g') : null;
-    var LONE = /(^|[。！？」）\s―…])((?:「[^「」]*」)+)(?=$|[^と、っな])/g;
+    return {
+      key: nm.join('\u0001'),
+      SPEECH: NAME ? new RegExp('(^|[。！？」）\\s―…])(' + NAME + '(?:「[^「」]*」)+)(?!と|って|、と|など)', 'g') : null,
+      LONE: /(^|[。！？」）\s―…])((?:「[^「」]*」)+)(?=$|[^と、っな])/g
+    };
+  };
+  HK.fmtMarkLine = function (line, R, TK) {
+    var marked = line;
+    if (R.SPEECH) marked = marked.replace(R.SPEECH, function (m, pre, sp) { return pre + TK + sp + TK; });
+    return marked.replace(R.LONE, function (m, pre, sp) { return pre + TK + sp + TK; });
+  };
+  /* seg（voice-seg.js の e.seg）を渡すと、塊を seg から取る（名前の並びが seg を作ったときと同じで、文が変わっていないときだけ） */
+  HK.fmtLong = function (text, names, seg) {
+    var s = String(text == null ? '' : text);
+    if (s.length < 140 || !/[。！？」]/.test(s)) return s;
+    var R = HK.fmtSpeech(names);
     var hadNL = /\n/.test(s);
     var TK = '\u0000';
-    var out = s.split(/\n+/).map(function (line) {
+    var fromSeg = seg && seg.blk && seg.nk === R.key && HK.Seg && HK.Seg.text(seg) === s ? HK.Seg.markTK(seg, TK).split(/\n+/) : null;
+    var out = (fromSeg || s.split(/\n+/)).map(function (line) {
       line = line.trim();
       if (!line) return '';
       var blocks = [];
-      var marked = line;
-      if (SPEECH) marked = marked.replace(SPEECH, function (m, pre, sp) { return pre + TK + sp + TK; });
-      marked = marked.replace(LONE, function (m, pre, sp) { return pre + TK + sp + TK; });
+      var marked = fromSeg ? line : HK.fmtMarkLine(line, R, TK);
       marked.split(TK).forEach(function (seg, k) {
         seg = seg.replace(/^\s+|\s+$/g, '');
         if (!seg) return;
