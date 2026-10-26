@@ -339,6 +339,8 @@ late js/jashin-place.js
 js/jashin-feud.js
 js/deathgame-kit.js
 js/yakata-data.js
+js/yakata-jobs.js
+js/yakata-jobs-pair.js
 js/yakata-tricks-a.js
 js/yakata-tricks-b.js
 js/yakata.js
