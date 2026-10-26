@@ -55,6 +55,18 @@ late js/tone-fix-g6-r18.js
 late js/tone-fix-gc.js
 late js/tone-fix-gc-r18.js
 late js/tone-sample-fix.js
+late js/tone-fix-g7a.js
+late js/tone-fix-g7a-r18.js
+late js/tone-fix-g7b.js
+late js/tone-fix-g7b-r18.js
+late js/tone-fix-g7c.js
+late js/tone-fix-g7c-r18.js
+late js/tone-fix-g7d.js
+late js/tone-fix-g7d-r18.js
+late js/tone-fix-g7e.js
+late js/tone-fix-g7e-r18.js
+late js/tone-fix-g7f.js
+late js/tone-fix-g7f-r18.js
 js/tone-polite-kin.js
 js/tone-new.js
 js/tone-ane.js
