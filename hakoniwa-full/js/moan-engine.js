@@ -62,13 +62,15 @@
   /* 一回の結果の中では同じ喘ぎをなるべく繰り返さない（ero-kit.js の pickFresh と同じ） */
   function fresh(S, list, tag) {
     if (!list || !list.length) return '';
+    /* 一つの場面（記録）の中で使った喘ぎは、表をまたいで避ける（ero-kit.js の E.sceneAvoid） */
+    if (E.sceneAvoid) list = E.sceneAvoid(S, list);
     /* 乱数そのもの（rng.int のある関数）を渡されたときは、その乱数に覚えておく */
     var st = S && S.rng ? S : S && S.int ? S : { rng: rng(S) };
     var seen = st._eroSeen = st._eroSeen || {}, used = seen[tag] = seen[tag] || [];
     var free = list.filter(function (x) { return used.indexOf(x) < 0; });
     if (!free.length) { var old = list.slice().sort(function (a, b) { return used.indexOf(a) - used.indexOf(b); }); free = old.slice(0, Math.max(1, Math.ceil(old.length / 2))); }
     var x = free[rint(S, free.length)], i = used.indexOf(x); if (i >= 0) used.splice(i, 1); used.push(x);
-    return x;
+    return E.sceneMark ? E.sceneMark(S, x) : x;
   }
   /* 喘ぎの口調（住人の設定「喘ぎの口調」c.moanTone。空ならいつもの口調）：喘ぎの声だけ、この口調とその態度で作る（普段は作った口調で話す人の、素の声）。
      住人の写しに moanTone を持たない箱庭もあるので、HK.simulate の入口で名前→口調の対応表（M.map）を作り、who.moanTone → 対応表 の順に見る。全年齢モードでは何もしない */

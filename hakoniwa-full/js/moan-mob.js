@@ -113,12 +113,14 @@
   /* 一回の結果の中で同じ声をなるべく繰り返さない（moan-engine.js の fresh と同じ考え） */
   function fresh(S, list, tag) {
     if (!list.length) return '';
+    /* 一つの場面（記録）の中で使った声は、表をまたいで避ける（ero-kit.js の E.sceneAvoid） */
+    if (E.sceneAvoid) list = E.sceneAvoid(S, list);
     var st = S && S.rng ? S : S && S.int ? S : null;
     var seen = st ? (st._mobSeen = st._mobSeen || {}) : {}, used = seen[tag] = seen[tag] || [];
     var free = list.filter(function (x) { return used.indexOf(x) < 0; });
     if (!free.length) { free = list.slice().sort(function (a, b) { return used.indexOf(a) - used.indexOf(b); }).slice(0, Math.max(1, Math.ceil(list.length / 2))); }
     var x = free[rint(S, free.length)], i = used.indexOf(x); if (i >= 0) used.splice(i, 1); used.push(x);
-    return x;
+    return E.sceneMark ? E.sceneMark(S, x) : x;
   }
   /* M.MOB_ON を false にすると、モブも住人と同じ表から引く（前と比べる点検用） */
   M.MOB_ON = true;

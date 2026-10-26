@@ -79,9 +79,26 @@
   };
   var ROUGH = { proud: 1, stern: 1, cool: 1, tsun: 1 };
   E.MOAN = M; E.DOM = DOM;
+  /* 一つの場面（一つの記録）の中では、同じ喘ぎを二度使わない（2026-10-26）。
+     表（tag）ごとの覚えだけだと、同じ行を持つ別の表（態度の表と口調の表・別の鍵）から同じ喘ぎが重なることがあるので、
+     記録の数（S.log の長さ）が変わるまでに使った喘ぎを、表をまたいで覚える。S が記録を持たない（乱数だけ）なら何もしない。
+     候補がすべてこの場面で使用済みなら絞らない（乱数の引き方は変えない：候補を絞るだけ） */
+  E.sceneAvoid = function (S, list) {
+    var log = S && S.log, m = S && S._eroScene;
+    if (!log || !list || list.length < 2 || !m || m.at !== log.length) return list;
+    var f = list.filter(function (x) { return m.used.indexOf(x) < 0; });
+    return f.length ? f : list;
+  };
+  E.sceneMark = function (S, x) {
+    var log = S && S.log; if (!log || x == null || x === '') return x;
+    var m = S._eroScene; if (!m || m.at !== log.length) m = S._eroScene = { at: log.length, used: [] };
+    m.used.push(x);
+    return x;
+  };
   /* 一回の結果の中では、同じ喘ぎをなるべく繰り返さない */
   /* 使い切ったら、いちばん前に使ったものから戻す（直前に使った文はすぐには戻らない） */
   function pickFresh(S, list, tag) {
+    list = E.sceneAvoid(S, list);
     var seen = S._eroSeen = S._eroSeen || {}, used = seen[tag] = seen[tag] || [];
     var free = list.filter(function (x) { return used.indexOf(x) < 0; });
     if (!free.length) {
@@ -92,7 +109,7 @@
     var x = free[S.rng.int(free.length)];
     var i = used.indexOf(x); if (i >= 0) used.splice(i, 1);
     used.push(x);
-    return x;
+    return E.sceneMark(S, x);
   }
   /* 一回の結果の中で同じ文を繰り返さない選び方（喘ぎ以外の地の文・反応・事後にも使う）。
      S … その回のもの（箱庭の ctx・物語型の S・rng のどれでも。中の rng に覚える）、base … 元の選び方（ctx.pick など。候補を絞ってから渡す）。

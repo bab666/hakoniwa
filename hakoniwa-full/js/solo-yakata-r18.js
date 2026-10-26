@@ -173,6 +173,8 @@
   /* 男性の体で書くか（女性でふたなりでない人は女性の体） */
   function mBody(p) { return !(HK.Pos && HK.Pos.isF(p)); }
   function EF(S, t, p, m) { return HK.Ero.fill(S, F(t, m || { a: p.name }), p); }
+  /* 媚薬が回ったとき：「R18に参加しない」人の一文（性的でない書き方。火照り・めまい・息苦しさ） */
+  var DRUG_SOFT = L('{a}は頬の火照りと軽いめまいに、椅子の背にもたれて目を閉じた。グラスの中身が、急に重く感じられた。|{a}は襟元を緩め、浅くなった息を整えようとした。暖炉の熱が、やけに近く感じられた。|{a}は額に手を当て、ふらつく足で窓辺へ行った。冷たいガラスに頬を寄せると、少しだけ楽になった。');
   var Y_ERO = {
     /* 媚薬が回ったとき（一人ずつ。{m0}＝こらえる声） */
     drug: L('{a}は服の擦れる感触だけで、びくりと腰を跳ねさせた。慌てて膝を閉じても、熱は脚の間に溜まっていく一方だった。{a}「{m0}」|{a}は椅子の上で膝をきつく閉じ、もじもじと腰を揺らしていた。じわりと下着が湿っていくのが、自分でも分かった。{a}「{m0}」|{a}は胸の先が布に擦れるたびに、小さく息を呑んだ。尖ったそこが、薄い服の上からでも分かるほどだった。{a}「{m0}」'),
@@ -229,7 +231,8 @@
       var t = F(fp(S, D.t), { c: c.name }) + fp(S, D.e);
       S.drugTools = D.id === 'oil';
       sober.slice(0, 2).forEach(function (q) { t += F(fp(S, SKIP), { a: q.name }); });
-      drunk.slice(0, 2).forEach(function (q) { if (lwEro(S)) t += EF(S, fp(S, Y_ERO.drug), q); else if (rng() < 0.5) t += pz(S, q, 'drug'); });
+      /* 「R18に参加しない」人（HK.State.r18ok が偽）には、媚薬の効きを性的でない書き方（火照り・めまい・息苦しさ）にする */
+      drunk.slice(0, 2).forEach(function (q) { if (HK.State && !HK.State.r18ok(q)) { if (rng() < 0.5) t += F(fp(S, DRUG_SOFT), { a: q.name }); } else if (lwEro(S)) t += EF(S, fp(S, Y_ERO.drug), q); else if (rng() < 0.5) t += pz(S, q, 'drug'); });
       var o = ST.say(S, { actors: [c].concat(drunk), tag: '媚薬', kind: 'climax', text: t, why: '犯人の' + c.name + 'が媚薬を盛った（' + { wine: 'ワイン', hotwine: 'ホットワイン', spirits: '強い酒', incense: 'お香', bath: '大浴場の湯', sweets: '菓子', heater: '暖房', tea: '紅茶', oil: 'マッサージオイル', dark: '停電と香水' }[D.id] + '）。追い詰められるほど盛りやすい（夜の出来事 ' + S.env.ylewd + '）。その夜、事件はうやむやになる', mag: 40 });
       ST.key(S, o, c.name + 'が媚薬を盛った');
       var P = D.p, scenes = 0;
@@ -293,7 +296,7 @@
         var x = drunk[0], y = drunk.slice(1).filter(function (q) { return can(x, q) || canFree(x, q); }).sort(function (a, b) { return Y.bond(S, x, b) - Y.bond(S, x, a); })[0];
         if (!y) { drunk.shift(); continue; }
         /* 乱交には、自分で攻めを選んだ人を入れない（誰に何をされるか分からない場面のため） */
-        var gp = drunk.filter(function (q) { return !(HK.Pos && HK.Pos.hardTopIn(q, drunk)); });
+        var gp = drunk.filter(function (q) { return !(HK.Pos && HK.Pos.hardTopIn(q, drunk)) && !(HK.State && !HK.State.r18ok(q)); });
         /* 恋愛・R18にしない組（HK.ngPair）は、同じ乱交の輪に入れない（入れる人が三人に満たなければ、二人の場面にする） */
         var gq = []; gp.forEach(function (q) { if (gq.every(function (z) { return !HK.ngPair(z, q); })) gq.push(q); }); gp = gq;
         if (gp.length >= 3 && rng() < lv * 0.5) { var g = gp.slice(0, Math.min(gp.length, 3 + Math.floor(rng() * 2))); ST.say(S, { actors: g, tag: '媚薬の夜', kind: 'climax', text: F(fp(S, g.every(function (q) { return HK.Pos && HK.Pos.isF(q); }) && Y.R18T && Y.R18T.ff ? Y.R18T.ff.group : PL('group', SC.group)), { p: P }) + (lwEro(S) ? groupEro(S, g, P) : HK.R18M ? HK.R18M.group(S, g) : ''), why: '媚薬の熱で、' + g.map(function (q) { return q.name; }).join('・') + 'が絡み合った', mag: 34 }); g.forEach(function (q) { drunk.splice(drunk.indexOf(q), 1); }); scenes++; continue; }

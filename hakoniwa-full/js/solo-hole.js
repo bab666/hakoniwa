@@ -222,6 +222,16 @@
     if (mode === 'mid' && (hardTop || !LV)) mode = 'burst';
     var tMid = mode === 'mid' ? Math.max(1, Math.round(H * (0.35 + rng() * 0.3))) : Infinity;
     var lpk = function (arr) { var f = arr.filter(function (x) { return !(topMe && LV.RECV.test(x)); }); return fresh(S, f.length ? f : arr); };
+    /* 最中の体の反応の一文（態度×段階）は、同じ文を一回の遊びで2回まで（3回目からは省く）。
+       表が2本ほどの段で、享受の段階が長く続いたときに同じ反応が何度も出ないように（2026-10-26） */
+    var rxN = {};
+    function rxLine(t2) {
+      var arr = eon && !topMe ? EK.L(S, 'hole', 'react.' + h.persona + '.' + t2, LV.REACT[h.persona][t2]) : LV.REACT[h.persona][t2];
+      var ok = arr.filter(function (x) { return (rxN[x] || 0) < 2; });
+      if (!ok.length) return '';
+      var x = lpk(ok); rxN[x] = (rxN[x] || 0) + 1;
+      return K.fmt(S, x);
+    }
     /* 最中の段階（0 抵抗／1 揺らぐ／2 享受）は値から決め、いったん上がったら下げない。上がったときは変わり目の一文を添える */
     var tierMax = -1, tierShown = -1;
     function tierNow() { var x = LV.tier(h); if (x > tierMax) tierMax = x; return tierMax; }
@@ -237,7 +247,7 @@
       /* 感覚の文は出来事の重さに合わせる（触れる程度なら軽い文、中に出されていなければ「注がれる」文を使わない） */
       var feels = be.lv === 0 && !(f.tent) ? LV.FEEL_LIGHT[t2] : (eon ? EK.L(S, 'hole', 'feel.' + (topMe ? 'top' : 'recv') + '.' + t2, LV.FEEL[topMe ? 'top' : 'recv'][t2]) : LV.FEEL[topMe ? 'top' : 'recv'][t2]).filter(function (x) { return f.cum || !/注が|果てる/.test(x); });
       var txt = K.fmt(S, be.t.replace(/◯/g, String(H))) + (rng() < 0.65 ? ' ' + K.fmt(S, lpk(eon ? EK.L(S, 'hole', 'live.' + plKey + '.' + t2, LV.LIVE[plKey][t2]) : LV.LIVE[plKey][t2])) : '') + ' ' + K.fmt(S, fresh(S, feels.length ? feels : LV.FEEL_LIGHT[t2])) +
-        ' ' + sh + K.fmt(S, lpk(eon && !topMe ? EK.L(S, 'hole', 'react.' + h.persona + '.' + t2, LV.REACT[h.persona][t2]) : LV.REACT[h.persona][t2])) + (t2 === 2 && rng() < 0.5 ? ' ' + K.fmt(S, fresh(S, eon ? EK.L(S, 'hole', 'enjoy.' + (topMe ? 'top' : 'recv'), LV.ENJOY[topMe ? 'top' : 'recv']) : LV.ENJOY[topMe ? 'top' : 'recv'])) : '');
+        ' ' + sh + rxLine(t2) + (t2 === 2 && rng() < 0.5 ? ' ' + K.fmt(S, fresh(S, eon ? EK.L(S, 'hole', 'enjoy.' + (topMe ? 'top' : 'recv'), LV.ENJOY[topMe ? 'top' : 'recv']) : LV.ENJOY[topMe ? 'top' : 'recv'])) : '');
       liveN++; liveTier = t2;
       say(S, { kind: 'ev', tag: ['感じてしまう', '体が応える', '自分から求める'][t2], text: txt, why: '感覚は戻っている／' + ['まだ抵抗している', '嫌なのに体が応える', '壁の向こうを受け入れた'][t2] + '（堕ち度 ' + Math.round(h.corrupt) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
       /* 激しくされて、甘イキが止まらなくなる（揺らぐ・享受の段階で、過激な出来事か、続けて果てたとき。一回の遊びで二度まで） */
