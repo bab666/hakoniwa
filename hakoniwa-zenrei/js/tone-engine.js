@@ -187,7 +187,7 @@
       return s;
     });
   }
-  function fxShort(ss) { if (ss.length <= 1) return ss; var f = ss[0]; return [{ body: (/^[…‥]/.test(f.body) ? '' : '……') + f.body, punct: f.punct }]; }
+  function fxShort(ss) { if (ss.length <= 1) return ss; var f = ss[0]; return [{ body: (/^[…‥]/.test(f.body) ? '' : '……') + f.body, punct: f.punct === '。' ? '' : f.punct }]; }
   function fxStammer(q, seed) {
     if (hash(seed + '#stm') % 100 >= 30 || /^[…‥]/.test(q)) return q;
     var m = q.match(/^([ぁ-ゖァ-ヶ])/);

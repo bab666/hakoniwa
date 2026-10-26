@@ -42,6 +42,7 @@ late js/tone-fix-g4.js
 late js/tone-fix-g5.js
 late js/tone-fix-g6.js
 late js/tone-fix-gc.js
+late js/tone-sample-fix.js
 js/tone-polite-kin.js
 js/tone-new.js
 js/tone-ane.js

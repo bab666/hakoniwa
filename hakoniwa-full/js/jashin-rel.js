@@ -373,7 +373,8 @@
         var ok = ts.some(function (t) { return (t.type === 'crush' && t.a === a.i) || ((t.type === 'almost' || t.type === 'ex') && a.i < b.i); });
         if (!ok || rng() > 0.55) return;
         done = 1; a.m.fear = clamp(a.m.fear - 10, 0, 100); b.m.fear = clamp(b.m.fear - 6, 0, 100);
-        if (mutual(S, a, b)) {
+        /* 両片想いでも、複数の恋人「なし」でどちらかに別の恋人がいれば恋人にはならない（HK.Poly.storyCan） */
+        if (mutual(S, a, b) && (!HK.Poly || HK.Poly.storyCan(S, a, b))) {
           b.m.fear = clamp(b.m.fear - 6, 0, 100);
           S.ties.push({ a: a.i, b: b.i, type: 'lover', born: true }); if (JS.DRAMA) JS.DRAMA.setRel(S, a, b, 0.2, '恋人');
           return ST.say(S, { actors: [a, b], tag: '告白', text: pickT(S, T.CONFESS_MUTUAL, { a: a.name, b: b.name }), why: '関係：両片想い。死を前にして想いを口にし、ようやく通じた（どちらも、自分の片想いだと思っていた）', mag: 32 });

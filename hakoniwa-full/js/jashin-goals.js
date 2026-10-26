@@ -89,7 +89,7 @@
     var L0 = p.love || (p.love = { t: null, pt: 0, tries: 0 });
     if (L0.done) return false;
     if (!L0.t || !al(L0.t)) {
-      var cs = live.filter(function (q) { return q !== p && !q.bound && canLove(p, q) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && HK.tieNoLove(t); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
+      var cs = live.filter(function (q) { return q !== p && !q.bound && canLove(p, q) && (!HK.Poly || HK.Poly.storyCan(S, p, q)) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && HK.tieNoLove(t); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
       if (!cs.length) return false;
       L0.t = HK.weighted(rng, cs, function (q) { return 1 + Math.max(0, bond(S, p, q)) * 2 + q.tr.warmth; }); L0.pt = 0;
       ST.sayB(S, { actors: [p, L0.t], tag: '恋', text: F(pk(S, T.LOVE_PICK), { a: p.name, b: L0.t.name }), why: p.name + 'の目標は「恋人を作る」（FC・NP・衝動）' }, p.name + 'は' + L0.t.name + 'が気になっていた');
@@ -98,7 +98,8 @@
     var b = L0.t, m = { a: p.name, b: b.name };
     if (L0.pt >= 2 && bond(S, p, b) >= 0.3) {
       /* 告白 */
-      var ok = rng() < 0.25 + bond(S, b, p) * 0.5 + b.tr.fc * 0.15 + b.tr.np * 0.1 - b.tr.cp * 0.15 - (hasLover(S, b) ? 0.35 : 0) + (S.tension > 50 ? 0.1 : 0);
+      /* 複数の恋人「なし」で、どちらかに別の恋人がいる組は実らない（HK.Poly.storyCan） */
+      var ok = (!HK.Poly || HK.Poly.storyCan(S, p, b)) && rng() < 0.25 + bond(S, b, p) * 0.5 + b.tr.fc * 0.15 + b.tr.np * 0.1 - b.tr.cp * 0.15 - (hasLover(S, b) ? 0.35 : 0) + (S.tension > 50 ? 0.1 : 0);
       var t = F(pk(S, T.LOVE_CONFESS), m) + F(pk(S, ok ? T.LOVE_OK : T.LOVE_FAIL), m);
       if (ok) {
         L0.done = true; if (!(S.ties || []).some(function (t) { return t.type === 'lover' && ((t.a === p.i && t.b === b.i) || (t.a === b.i && t.b === p.i)); })) S.ties.push({ a: p.i, b: b.i, type: 'lover' }); setRel(S, p, b, 0.4, '恋人'); edge(S, p, b, '恋人になった', 'love');
@@ -107,7 +108,7 @@
         p.goal = p.goal0 = JS.GOAL.protect; p.surv = 1;
         note(p, b.name + 'と恋人になった');
       } else { L0.pt = 0; L0.tries++; (L0.no = L0.no || []).push(b.i); L0.t = null; setRel(S, p, b, -0.05, '気まずい'); p.m.fear = clamp(p.m.fear + 6, 0, 100); }
-      var o = ST.say(S, { actors: [p, b], tag: '告白', kind: 'climax', text: t, why: ok ? p.name + 'の想いが届いた（' + b.name + 'の気持ち・FC）。目標が「' + JS.GOAL.protect.label + '」に変わった' : b.name + 'には届かなかった（' + (hasLover(S, b) ? '恋人がいた' : 'CP・気持ちが足りない') + '）', mag: 34 });
+      var o = ST.say(S, { actors: [p, b], tag: '告白', kind: 'climax', text: t, why: ok ? p.name + 'の想いが届いた（' + b.name + 'の気持ち・FC）。目標が「' + JS.GOAL.protect.label + '」に変わった' : b.name + 'には届かなかった（' + (hasLover(S, b) ? '恋人がいた' : hasLover(S, p) ? p.name + 'には恋人がいた' : 'CP・気持ちが足りない') + '）', mag: 34 });
       if (ok) ST.key(S, o, p.name + 'と' + b.name + 'が恋人に');
       return true;
     }

@@ -124,7 +124,8 @@
   var SAMPLE = {};
   Object.keys(HK.TONES || {}).forEach(function (k) { if (HK.TONES[k].sample) SAMPLE[k] = HK.TONES[k].sample; });
   /* 性別で見本を分けている口調（sampleF / sampleM）は、その性別のときだけそちらを使う */
-  function sampleOf(tk, g) { var T = HK.TONES[tk] || {}; return (g === 'f' && T.sampleF) || (g === 'm' && T.sampleM) || SAMPLE[tk]; }
+  /* 台詞の見本は全口調で同じ5文（tone-registry.js の HK.TONE_SAMPLE）。口調の辞書と書き下ろしで口調ごとの形になる */
+  function sampleOf(tk, g) { var T = HK.TONES[tk] || {}; return HK.TONE_SAMPLE || (g === 'f' && T.sampleF) || (g === 'm' && T.sampleM) || SAMPLE[tk]; }
   function sampleLines(c) {
     var V = HK.Voice;
     if (!V || !V.processText) return '';
@@ -134,7 +135,7 @@
     me.persona = HK.personaOf ? HK.personaOf({ tone: c.tone, eg: c.eg }) : 'gentle';
     var ppl = [me, { name: o.name, fp: '', gender: o.gender || '', tone: '', persona: 'gentle' }];
     if (me.calls && o.id && me.calls[o.id]) { me.calls = {}; me.calls[o.name] = c.calls[o.id]; } else me.calls = null;
-    var tk = me.tone && SAMPLE[me.tone] ? me.tone : SAMPLE[me.persona] ? me.persona : 'gentle';
+    var tk = me.tone && (HK.TONE_SAMPLE || SAMPLE[me.tone]) ? me.tone : SAMPLE[me.persona] ? me.persona : 'gentle';
     var SL = sampleOf(tk, c.gender);
     var lines = SL.map(function (t) { return esc(V.processText(t.replace(/\{n\}/g, c.name).replace(/\{o\}/g, o.name), ppl).replace(new RegExp('^' + c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), '')); });
     /* 敬語で話す相手がいれば、その相手への一言も見本に足す */
