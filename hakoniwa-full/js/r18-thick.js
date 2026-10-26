@@ -81,6 +81,8 @@
     var base = l[st], own = !dom && HK.NovelMoan ? HK.NovelMoan.list(who, st ? 2 : 0) : [];
     if (own.length) base = base.concat(own);
     var re = dom ? M_DOM : M_REF, c = base.filter(function (x) { return !re.test(x); });
+    /* 喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）を通す。こらえる（0）＝最中、崩れる（1）＝果てる。主導している側は攻めの声。元の表も4割ほど残る */
+    if (HK.Moan && HK.Moan.say) return who.name + '「' + HK.Moan.say(S, who, dom ? (st ? 'top' : 'topmid') : st ? 'climax' : 'mid', { novel: true }, c.length ? c : base) + '」';
     return who.name + '「' + pick(S, c.length ? c : base) + '」';
   }
   /* 嗜虐的な攻め（HK.Ero.sadist）のとき：少し乱暴に（髪を掴む・乱暴に押し倒す・強く腰を掴んで激しく打ちつける・両手首を押さえつける）。首・縛る拘束は使わない。{x}の台詞は口調の言い換えを通る */

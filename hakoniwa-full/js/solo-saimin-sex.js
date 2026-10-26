@@ -124,7 +124,9 @@
       var cvE = S.cv ? S.cv(p, aTop) : null;
       /* かけられた側が攻めなら、果てる側の声（弱気・受け身の台詞は使わない） */
       if (aTop && SM.CLIMAX_TOP) { cvE = null; var ct = p.ff ? SM.CLIMAX_TOP_FF : (SM.CLIMAX_TOP[p.persona] || SM.CLIMAX_TOP.gentle); cv = ct.map(function (x) { return x.replace(/^「|」$/g, ''); }); }
-      return { k: k, tag: '流されて', text: S.fmt(S.pick(sw), v) + (cvE ? p.name + '「' + cvE + '」' : cv ? p.name + '「' + S.pick(cv) + '」' : ''), why: '正気に戻っても流された（快楽堕ち ' + Math.round(fall * 100) + '・AC ' + Math.round(p.eg.AC) + '・FC ' + Math.round(p.eg.FC) + '）。' + (p.ff ? '続きを拒まなかった' : aTop ? '正気のまま、続きを止めなかった' : mid ? '続きを受け入れ、中出しも拒まなかった' : '二度目の中出しも受け入れた') };
+      /* 小説調の果てる声は、喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）から。元の表（Voice.CLIMAX）も4割ほど残る。攻めの声は元の表のまま */
+      var cvN = !cvE && cv && !aTop && HK.Moan && HK.Moan.say ? HK.Moan.say(S.rng || S, p, 'climax', { novel: true }, cv) : null;
+      return { k: k, tag: '流されて', text: S.fmt(S.pick(sw), v) + (cvE ? p.name + '「' + cvE + '」' : cvN ? p.name + '「' + cvN + '」' : cv ? p.name + '「' + S.pick(cv) + '」' : ''), why: '正気に戻っても流された（快楽堕ち ' + Math.round(fall * 100) + '・AC ' + Math.round(p.eg.AC) + '・FC ' + Math.round(p.eg.FC) + '）。' + (p.ff ? '続きを拒まなかった' : aTop ? '正気のまま、続きを止めなかった' : mid ? '続きを受け入れ、中出しも拒まなかった' : '二度目の中出しも受け入れた') };
     }
     if (k === 'report') {
       p.reportedNow = true;
@@ -360,7 +362,7 @@
       cv = S.pick(ct).replace(/^「|」$/g, '');
     } else {
       cv = S.cv ? S.cv(p, false) : null;
-      if (!cv) cv = S.pick(CL[p.persona] || CL.gentle).replace(/^「|」$/g, '');
+      if (!cv) { var clOld = function () { return S.pick(CL[p.persona] || CL.gentle).replace(/^「|」$/g, ''); }; cv = HK.Moan && HK.Moan.say ? HK.Moan.say(S.rng || S, p, 'climax', { novel: true }, clOld) : clOld(); }
     }
     if (!/\{m2\}/.test(body)) t += p.name + '「' + cv + '」';
     t += S.fmt(S.pick(END[cat]), v);

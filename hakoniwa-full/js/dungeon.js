@@ -294,7 +294,8 @@
         var sg = stage(h), XS = !top && HK.SoloKit && HK.SoloKit.CLIMAX_SOLO && HK.SoloKit.CLIMAX_SOLO[h.persona];
         /* 一人用箱庭と共通の絶頂の言い回し（solo-kit.js の CLIMAX_SOLO）も混ぜて、同じ文が続かないように */
         var ctext = fmt(S, (tz && DG.teaseClimax(S, h)) || pick(S, top ? DG.CLIMAX_TOP[sg] : XS ? DG.CLIMAX[h.persona][sg].concat(XS[sg]) : DG.CLIMAX[h.persona][sg]), ev);
-        if (moanOn) ctext = '「' + pick(S, DG.MOAN[h.persona]) + '」' + ctext;
+        /* 果てる声は喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）から：堕ちる前（段階0〜1）は嫌がる喘ぎ、深く堕ちるほど乗り気・理性崩壊 */
+        if (moanOn) { var mv = HK.Moan && HK.Moan.say ? HK.Moan.say(S, h, 'climax', { novel: true, force: sg <= 1 && !h.fallen, fall: sg >= 3 || !!h.fallen }, DG.MOAN[h.persona]) : pick(S, DG.MOAN[h.persona]); if (mv) ctext = '「' + mv + '」' + ctext; }
         S.h = hs;
         /* 絶頂した本人（パーティーでは書くときに別の人の番になっていることがある。dungeon-lewd.js が読む） */
         S.lwWho = h; S.lwEv = ev;

@@ -250,7 +250,8 @@
       if (lew === 'low') t += ST.fmt(pkF(S, noRecv(SB.MELT_LOW)), v);
       else {
         t += '――' + ST.fmt(pkF(S, sTop && EO(S) && HK.Pos.isF(p) ? EL(S, 'melt.topf', SB.MELT_TOP) : hTop && SB.MELT_HARD ? EL(S, 'melt.hard', SB.MELT_HARD) : sTop && SB.MELT_TOP ? EL(S, 'melt.top', SB.MELT_TOP) : EL(S, 'melt', SB.MELT)), v);
-        if (HK.Voice.CLIMAX[p.persona] && rng() < (EO(S) ? 0.3 : 0.6)) t += p.name + '「' + pkF(S, noRecv(HK.Voice.CLIMAX[p.persona])) + '」';
+        /* 果てる声は喘ぎの辞書（moan-engine.js の HK.Moan.say。小説調なら♡なし）から。上に乗っているときは攻めの声。元の表（Voice.CLIMAX）も残る */
+        if (HK.Voice.CLIMAX[p.persona] && rng() < (EO(S) ? 0.3 : 0.6)) t += p.name + '「' + (HK.Moan && HK.Moan.say ? HK.Moan.say(S, p, sTop ? 'top' : 'climax', { novel: !EO(S), top: q }, noRecv(HK.Voice.CLIMAX[p.persona])) : pkF(S, noRecv(HK.Voice.CLIMAX[p.persona]))) + '」';
         else if (SB.VOICE.MELT[p.persona]) t += p.name + pkF(S, noRecv(EL(S, 'voice.melt.' + p.persona, SB.VOICE.MELT[p.persona])));
       }
       t += ST.fmt(pkF(S, noRecv(EL(S, 'melt.after', SB.MELT_AFTER))), v) + (ml ? '（吸えたのは' + ml + 'mlだけ）' : '');

@@ -98,7 +98,13 @@
     var tl = K.noDg(S, DG.TAILS[h.persona][sg]);
     return tl.length ? ' ' + K.fmt(S, K.pick(S, tl)) : '';
   };
-  K.moan = function (S) { return '「' + K.pick(S, DG.MOAN[S.h.persona]) + '」'; };
+  /* 果てる声。R18版では喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）を通す：堕ちていない・意志の強いうちは嫌がる喘ぎ、堕ち度が高いほど乗り気・理性崩壊。
+     HK.Moan が無い（全年齢版）ときは元の表（Voice.CLIMAX） */
+  K.moan = function (S) {
+    var h = S.h, l = DG.MOAN && DG.MOAN[h.persona];
+    if (HK.Moan && HK.Moan.say) { var sg = K.stage(h), mv = HK.Moan.say(S, h, 'climax', { novel: true, force: sg <= 1 && K.will(h) >= 0.45, fall: sg >= 3 }, l && l.length ? function () { return K.pick(S, l); } : null); return mv ? '「' + mv + '」' : ''; }
+    return '「' + K.pick(S, l) + '」';
+  };
 
   /* 刺激：power は罠の強さに相当。opt: {part, mind, shame, hidden(記録しない絶頂), mult} 戻り値：増えた快感 */
   K.stim = function (S, power, opt) {

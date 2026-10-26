@@ -166,8 +166,8 @@
       if (!open) return fade();
       if (ero) { R.short++; R.last[pk2] = day; var sh = HK.ThickEro.short({ S: ctx, pick: pk, a: A, b: B, open: open, again: high, after: glow }); return done(sh.text); }
       var body;
-      if (fm && HK.FM && HK.FM.pick) { var st = HK.FF && HK.FF.styleOf ? HK.FF.styleOf(A) : 'gentle', fp = { pick: pk }; body = HK.FM.pick(fp, 'body', st) + '{b}「' + (TS ? TS.moan(pk, B, true) : '……っ') + '」' + HK.FM.pick(fp, 'climax', st); }
-      else { var sb = upk(SHORT[mode === 'ff' ? 'ff' : 'mf']); if (!sb) return fade(); body = (TS ? '{b}「' + TS.moan(pk, B, false) + '」' : '') + sb; }
+      if (fm && HK.FM && HK.FM.pick) { var st = HK.FF && HK.FF.styleOf ? HK.FF.styleOf(A) : 'gentle', fp = { pick: pk }; body = HK.FM.pick(fp, 'body', st) + '{b}「' + (TS ? TS.moan(pk, B, true, ctx) : '……っ') + '」' + HK.FM.pick(fp, 'climax', st); }
+      else { var sb = upk(SHORT[mode === 'ff' ? 'ff' : 'mf']); if (!sb) return fade(); body = (TS ? '{b}「' + TS.moan(pk, B, false, ctx) + '」' : '') + sb; }
       R.short++; R.last[pk2] = day;
       if (high) body += ff ? upk(AGAIN_FF) : HK.ThickEro ? HK.ThickEro.again(ctx, pk, A, B, false, true) : '';
       return done(open + body + glow);

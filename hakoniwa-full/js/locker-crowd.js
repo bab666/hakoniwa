@@ -242,12 +242,14 @@
     if (ok) wk.cnt.solve++;
     return ok;
   }
-  /* 喘ぎ：男性向けで相手が応じているときは HK.Ero、ほかは口調ごとの声。top＝攻めとして果てる */
-  function moan(S, p, top, mode, ero) {
+  /* 喘ぎ：男性向けで相手が応じているときは HK.Ero、ほかは喘ぎの辞書（moan-engine.js の HK.Moan.say。R18版だけ）の小説調。top＝攻めとして果てる。
+     ロッカーの中なので声を殺す場面として引く。o.force＝無理やりの場面。HK.Moan が無い（全年齢版）ときは口調ごとの元の表 */
+  function moan(S, p, top, mode, ero, o) {
     if (!S.R18 || S.lew === 'low') return '';
     /* 攻めが果てる声は、主導権を握った側の声（崩れる段階の「負けでいい」のような声を攻めに使わない） */
     if (ero && S.eroOn) { var d0 = p.eroDom; p.eroDom = !!top; var m = HK.Ero.moan(S, p, top ? 1 : 2); p.eroDom = d0; return p.name + '「' + m + '」'; }
     var V = HK.Voice, l = top ? (LK.TOPV && LK.TOPV.moan && LK.TOPV.moan[mode || 'ins'] && (LK.TOPV.moan[mode || 'ins'][p.persona] || LK.TOPV.moan[mode || 'ins'].gentle)) : V && V.CLIMAX && (V.CLIMAX[p.persona] || V.CLIMAX.gentle);
+    if (HK.Moan && HK.Moan.say) { var mv = HK.Moan.say(S, p, top ? 'top' : 'climax', { hush: true, novel: true, force: !!(o && o.force) }, l && l.length ? l : null); return mv ? p.name + '「' + mv + '」' : ''; }
     return l && l.length ? p.name + '「' + S.pk(l) + '」' : '';
   }
   /* 果てる文（態度9種）：受ける側は R.PCL、攻めは R.TCL。{a}＝果てる人 {b}＝相手 */
@@ -399,7 +401,7 @@
         var mdF = modeOf(m, A), vF = { a: m.name, b: A.name };
         t += ST.fmt(pk(R.FORCE[mdF]), vF) + ST.fmt(pk(R.FREACT[A.persona] || R.FREACT.gentle), { a: A.name, m: m.name });
         if (S.eroOn) t += HK.ThickEro.fill(S, ST.fmt(pk(R.FORCE_ERO[mdF]), vF), m, A);
-        t += moan(S, A, false, mdF, false) + climaxBy(S, A, m, false) + ST.fmt(pk(R.FORCE_AFTER), v);
+        t += moan(S, A, false, mdF, false, { force: true }) + climaxBy(S, A, m, false) + ST.fmt(pk(R.FORCE_AFTER), v);
         bumpClimax(A); outcome = 'forced'; tag = '強引に'; kind = 'climax'; mag = 34; tags = ['force'];
         why = m.name + 'が、動けない' + A.name + 'に無理やり手を出した（合意のない展開：内容のスイッチが入）';
       } else t += ST.fmt(pk(CW.ASK_NO), v) + ST.fmt(pk(CW.HELP), v);

@@ -6,6 +6,7 @@
    ■ 引き方
      HK.Moan.pick(S, who, 鍵, ctx)   … 鍵（'w1' など）で一つ選ぶ。ctx: { force 嫌がっている, deep 奥, late 後半, oral 口でされている, top 相手, p 部位の呼び方, talk 言葉の割合(0-1) }
      HK.Ero.moan(S, who, 段階0-2, ctx)（従来の呼び方）… 段階と ctx・主導権（who.eroDom）から鍵に読み替える
+     HK.Moan.say(S, who, 場面, o, 元の表)（箱庭ごとの喘ぎ・小説調の場面から）… 場面（始まり・最中・果てる・攻め・キス・口）と o（嫌がる・声を殺す・小説調）から鍵を選ぶ
      本文の {m0}〜{m2} はこれまでどおり。{m:w1} {m:p} {m:k} のように鍵でも差し込める（HK.Ero.fill）
    ■ 優先順位
      住人ごとの上書き ＞ 利用者の口調の喘ぎ ＞ 口調ごとの喘ぎ（ero-moan-tone.js） ＞ 利用者の態度の上書き ＞ 態度の基盤（moan-said.js・ero-kit.js の表） ＞ 共通（利用者の上書き ＞ moan-dict.js）
@@ -54,7 +55,8 @@
   /* 一回の結果の中では同じ喘ぎをなるべく繰り返さない（ero-kit.js の pickFresh と同じ） */
   function fresh(S, list, tag) {
     if (!list || !list.length) return '';
-    var st = S && S.rng ? S : { rng: rng(S) };
+    /* 乱数そのもの（rng.int のある関数）を渡されたときは、その乱数に覚えておく */
+    var st = S && S.rng ? S : S && S.int ? S : { rng: rng(S) };
     var seen = st._eroSeen = st._eroSeen || {}, used = seen[tag] = seen[tag] || [];
     var free = list.filter(function (x) { return used.indexOf(x) < 0; });
     if (!free.length) { var old = list.slice().sort(function (a, b) { return used.indexOf(a) - used.indexOf(b); }); free = old.slice(0, Math.max(1, Math.ceil(old.length / 2))); }
@@ -183,6 +185,60 @@
       return M.pick(S, who, k, cx);
     });
     return fill0.call(this, S, t, who);
+  };
+
+  /* ---------- 箱庭ごとの場面から引く（小説調・態度別の古い表の代わり） ----------
+     HK.Moan.say(S, who, kind, o, old)
+       kind … 'start' 始まり ／ 'mid' 最中 ／ 'climax' 受けが果てる ／ 'top' 攻めが果てる ／ 'topmid' 攻めの最中の声 ／ 'kiss' キス中 ／ 'suck' 口でしている ／ 'lick' 口でされる
+       o    … { force 嫌がっている（合意のない・敵対の場面）, hush 声を殺す場面（狭い所・隣に人がいる）, deep 奥, late 後半, top 相手,
+                novel 小説調（♡を落とし、言葉のある喘ぎを多めに。元の表も4割ほど残す）, talk 言葉の割合, fall 堕ちている（省けば住人の状態から） }
+       old  … 元の表（配列）か、元の選び方（関数）。全年齢モード・攻めを選んだ人の受け身の声・小説調の残す分に使う
+     利用者の辞書（高度設定の喘ぎの辞書）にその鍵の行があれば、元の表より必ずそちらを使う。
+     呼ぶ側は、HK.Moan が無い（全年齢版）・ぼかし（low）のときは自分の元の表を使う */
+  M.keyFor = function (S, who, kind, o) {
+    o = o || {};
+    var r = rand(S), ps = psOf(who), fal = o.fall != null ? !!o.fall : fallenOf(who), frc = !!o.force && !fal, hard = !!o.force && fal;
+    switch (kind) {
+      case 'kiss': return 'k0';
+      case 'suck': return 'o0';
+      case 'lick': return frc ? 'l1' : 'l0';
+      case 'top': return o.hush ? (r < 0.6 ? 't1' : 't4') : o.force && SOFT[ps] && r < 0.25 ? 't5' : r < 0.6 ? 't4' : 't1';
+      case 'topmid': return o.hush ? 't1' : r < 0.35 ? 't3' : r < 0.7 ? 't0' : 't1';
+      case 'start': return o.hush ? 'h0' : frc ? (r < 0.5 ? 'r0' : 'r1') : hard ? 'r2' : 'w0';
+      case 'mid':
+        if (o.hush) return o.force ? 'h1' : r < 0.7 ? 'h1' : 'h2';
+        if (frc) return o.deep && r < 0.3 ? 'p1' : o.late ? 'r2' : r < 0.5 ? 'r1' : 'r2';
+        if (hard) return o.deep && r < 0.3 ? 'p1' : 'r3';
+        return o.deep && r < 0.3 ? 'p0' : r < 0.15 ? 'b0' : 'w1';
+      default:
+        if (o.hush) return r < 0.7 ? 'h2' : frc ? 'r3' : 'w2';
+        if (frc) return ROUGH[ps] && r < 0.4 ? 'r4' : 'r3';
+        if (hard) return 'r3';
+        return (o.late && r < 0.3) || r < 0.12 ? 'w3' : o.deep && r < 0.25 ? 'p0' : 'w2';
+    }
+  };
+  /* 利用者の辞書に、この人のこの鍵の行があるか */
+  M.userHas = function (who, key) {
+    var U = M.user; if (!U) return false;
+    var nm = who && who.name, tone = toneOf(who), ps = psOf(who);
+    return !!((nm && U.who[nm] && U.who[nm][key]) || (U.tone[tone] && U.tone[tone][key]) || (U.persona[ps] && U.persona[ps][key]) || U.shared[key]);
+  };
+  /* 小説調：♡を落とす（空白の重なりも詰める） */
+  M.plain = function (s) { var t = String(s || '').replace(/♡+/g, '').replace(/[ 　]{2,}/g, '　').replace(/^[ 　]+|[ 　]+$/g, ''); return t || '……っ'; };
+  var RECV_KIND = { start: 1, mid: 1, climax: 1, lick: 1 };
+  M.say = function (S, who, kind, o, old) {
+    o = o || {};
+    var useOld = function () { if (typeof old === 'function') return old(); if (old && old.length) return fresh(S, old, (who && who.name) + '.old.' + kind); return null; };
+    /* 全年齢モードでは喘ぎを出さない（元の表があればそれ。R18の表は全年齢モードで空になる） */
+    if (HK.SAFE_ON) { var so = useOld(); return so == null ? '' : so; }
+    /* 自分で攻めを選んだ人の受け身の声は、元の表（攻め向けに絞ったもの）のまま */
+    if (RECV_KIND[kind] && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(who) && old) { var ho = useOld(); if (ho != null) return ho; }
+    var key = M.keyFor(S, who, kind, o);
+    if (o.novel && old && !M.userHas(who, key) && rand(S) < 0.4) { var no = useOld(); if (no) return no; }
+    var cx = { force: !!o.force, deep: !!o.deep, late: !!o.late, top: o.top || null, oral: kind === 'lick' };
+    if (o.talk != null) cx.talk = o.talk; else if (o.novel) cx.talk = 0.6;
+    var out = M.pick(S, who, key, cx);
+    return o.novel ? M.plain(out) : out;
   };
 
   /* ---------- 利用者の辞書 ---------- */

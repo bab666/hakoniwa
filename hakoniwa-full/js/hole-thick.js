@@ -187,7 +187,13 @@
   function voice(S, h, st) {
     if (ero(S)) return HK.Ero.moan(R(S), h, st);
     var T4 = HK.Thick4, p = persona(h), l = T4 && (st >= 2 ? T4.SUB2 : T4.SUB1)[p];
-    return l && l.length ? pick(S, l) : '……っ';
+    var old = function () { return l && l.length ? pick(S, l) : '……っ'; };
+    /* 喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）を通す：壁に囚われて堕ちる前（段階0〜1・意志が強い）は嫌がる喘ぎ。元の表も4割ほど残る */
+    if (HK.Moan && HK.Moan.say) {
+      var K = HK.SoloKit, sg = K && K.stage ? K.stage(h) : 2;
+      return HK.Moan.say(R(S), h, st >= 2 ? 'climax' : st ? 'mid' : 'start', { novel: true, force: sg <= 1 && !!(K && K.will && K.will(h) >= 0.45), fall: sg >= 3 }, old);
+    }
+    return old();
   }
   function fill(S, t, h, b) {
     t = t.replace(/\{a\}/g, h.name).replace(/\{b\}/g, (b && b.name) || '誰か').replace(/\{M(\d)\}/g, function (m, n) { return voice(S, h, +n); });

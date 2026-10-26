@@ -182,9 +182,13 @@
     /* top：その人が攻めとして果てる */
     /* R18の描写の設定（lewd-unify.js）：男性向けは、相手が応じた行為（accept）と、扉が開いたあとの夜だけ（eroNow の間）。♡の喘ぎ（ero-kit.js） */
     var LX = HK.Lewd, lcf = LX && LX.conf('locker'), eroOn = !!(lcf && HK.Ero && HK.Ero.on(S) && HK.ThickEro && lew !== 'low'), eroNow = false;
-    function moan(p, top) {
+    /* 小説調の果てる声は喘ぎの辞書（moan-engine.js の HK.Moan.say。R18版だけ）から。ロッカーの中は声を殺す場面（open＝扉が開いたあとの寝台）。
+       HK.Moan が無い（全年齢版）・ぼかすときは元の表（Voice.CLIMAX・攻めの声） */
+    function moan(p, top, open) {
       if (eroOn && eroNow) { var d0 = p.eroDom; p.eroDom = !!top; var m = HK.Ero.moan(S, p, top ? 1 : 2); p.eroDom = d0; return p.name + '「' + m + '」'; }
-      var l = lew === 'low' || !V ? null : top ? topV(p, 'moan') : V.CLIMAX[p.persona]; return l && l.length ? p.name + '「' + pk(l) + '」' : '';
+      var l = lew === 'low' || !V ? null : top ? topV(p, 'moan') : V.CLIMAX[p.persona];
+      if (lew !== 'low' && HK.Moan && HK.Moan.say) { var mv = HK.Moan.say(S, p, top ? 'top' : 'climax', { hush: !open, novel: true, top: top ? null : p.o }, l && l.length ? l : null); return mv ? p.name + '「' + mv + '」' : ''; }
+      return l && l.length ? p.name + '「' + pk(l) + '」' : '';
     }
     function say2(p, T) { var l = T[p.persona] || T.gentle; return p.name + pk(l); }
     function climax(p, t, top) { p.cnt.climax++; p.m.plea = 25; p.m.heat = clamp(p.m.heat - 10, 0, 100); return t + moan(p, top); }
@@ -531,7 +535,7 @@
       /* ベッドの展開は solo-locker-bed.js（誘い方・最中の展開・結び） */
       /* 扉が開いたあとの夜：描写の長さ（短く＝一段落版）と、男性向け（企みのある夜は除く） */
       eroNow = eroOn && !plotter;
-      bedLabels = LK.bed(S, { short: !!(lcf && LX.short(env, rng)), ero: eroNow, A: A, B: B, x: x, y: y, rel: rel, tone: tone, how: how, plotter: plotter, servant: svW ? null : servant, master: svW ? null : master, nt: nt, lew: lew, dose: env.dose, pair: pair, moan: moan, REL_LABEL: RL, ff: ff });
+      bedLabels = LK.bed(S, { short: !!(lcf && LX.short(env, rng)), ero: eroNow, A: A, B: B, x: x, y: y, rel: rel, tone: tone, how: how, plotter: plotter, servant: svW ? null : servant, master: svW ? null : master, nt: nt, lew: lew, dose: env.dose, pair: pair, moan: function (p, top) { return moan(p, top, true); }, REL_LABEL: RL, ff: ff });
       A.cnt.climax += 2 + rng.int(3); B.cnt.climax += 2 + rng.int(3);
     } else if (endure) {
       outcome = 'endure';

@@ -46,9 +46,16 @@
   var T = HK.ThickVM = {
     VB: VB, VT: VT,
     /* 段落の文に声を差し込む（名前の差し込みは各箱庭の fmt に任せる） */
+    /* 受ける側の声は、喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）を通す：{vb1}＝最中、{vb2}＝果てる。
+       段落の文から、強引な場面（嫌がる喘ぎ）・奥を突く場面・後半かを読む（HK.Ero.ctxOf）。元の表も4割ほど残る */
     voice: function (rng, text, bot, top) {
-      var pb = VB[ps(bot)] || VB.gentle, pt = VT[ps(top)] || VT.gentle;
-      return String(text).replace(/\{vb1\}/g, function () { return pk(rng, pb[0]); }).replace(/\{vb2\}/g, function () { return pk(rng, pb[1]); }).replace(/\{vt\}/g, function () { return pk(rng, pt); });
+      var pb = VB[ps(bot)] || VB.gentle, pt = VT[ps(top)] || VT.gentle, MO = HK.Moan && HK.Moan.say && rng ? HK.Moan : null, E = HK.Ero;
+      var vb = function (k, at, all) {
+        if (!MO) return pk(rng, pb[k]);
+        var cx = E && E.ctxOf ? E.ctxOf(all, at) : {};
+        return MO.say(rng, bot, k ? 'climax' : 'mid', { novel: true, force: cx.force, deep: cx.deep, late: cx.late, top: top !== bot ? top : null }, function () { return pk(rng, pb[k]); });
+      };
+      return String(text).replace(/\{vb1\}/g, function (m, at, all) { return vb(0, at, all); }).replace(/\{vb2\}/g, function (m, at, all) { return vb(1, at, all); }).replace(/\{vt\}/g, function () { return pk(rng, pt); });
     },
     /* 嗜虐的な攻め（受ける側が攻め指定なら使わない）：2〜3割 */
     sad: function (rng, top, bot) {

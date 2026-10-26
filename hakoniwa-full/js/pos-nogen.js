@@ -121,7 +121,7 @@
     var S = o.S || (o.rng && o.rng.int ? { rng: o.rng } : null), t = '';
     for (var i = 0; i < 8; i++) {
       if (o.ero && HK.Ero && HK.Ero.moan && S && S.rng && S.rng.int) t = HK.Ero.moan(S, who, st, { deep: false });
-      else if (HK.ThickSex && HK.ThickSex.moan) t = HK.ThickSex.moan(pick, who, st >= 2);
+      else if (HK.ThickSex && HK.ThickSex.moan) t = HK.ThickSex.moan(pick, who, st >= 2, S || o.rng);
       if (t && !MOAN_NG.test(t)) return t;
     }
     return st >= 2 ? (o.ero ? 'あ、あぁっ♡♡　だめ、きちゃう……っ♡♡' : 'あ……っ、だめ、きちゃう……っ') : (o.ero ? 'ん、ぁ……♡　そこ、だめ……♡' : 'ん……っ、ふ、ぁ……');

@@ -112,8 +112,10 @@
     if (u) { u.push(x); if (u.length > 40) u.shift(); }
     return x;
   }
+  /* 受ける側の声（{vb1}＝最中・{vb2}＝果てる）は、喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）を通す。この箱庭の軽い声（VB）も4割ほど残る */
   VA.thickVoice = function (rng, text, bot, top) {
-    var pb = VB[ps(bot)] || VB.gentle, pt = VT[ps(top)] || VT.gentle;
-    return String(text).replace(/\{vb1\}/g, function () { return pk(rng, pb[0]); }).replace(/\{vb2\}/g, function () { return pk(rng, pb[1]); }).replace(/\{vt\}/g, function () { return pk(rng, pt); });
+    var pb = VB[ps(bot)] || VB.gentle, pt = VT[ps(top)] || VT.gentle, MO = HK.Moan && HK.Moan.say ? HK.Moan : null;
+    var vb = function (k) { var old = function () { return pk(rng, pb[k]); }; return MO ? MO.say(rng, bot, k ? 'climax' : 'mid', { novel: true, top: top !== bot ? top : null }, old) : old(); };
+    return String(text).replace(/\{vb1\}/g, function () { return vb(0); }).replace(/\{vb2\}/g, function () { return vb(1); }).replace(/\{vt\}/g, function () { return pk(rng, pt); });
   };
 })();

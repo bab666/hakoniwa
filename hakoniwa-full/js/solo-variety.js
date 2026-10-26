@@ -147,7 +147,12 @@
     function quote(p, T) { var l = T[p.persona] || T.gentle; return p.name + pkv(l); }
     /* R18の描写の設定（lewd-unify.js）：男性向けなら ♡ の喘ぎ（ero-kit.js）・山場に段落を足す、濃いなら延長戦・もう一度。テンポを重視するので、描写の長さの設定はない */
     var LX = HK.Lewd, lcf = LX && LX.conf('variety'), ero = !!(lcf && HK.Ero && HK.Ero.on(S) && lew !== 'low'), high = !!(lcf && lew === 'high');
-    function moan(p) { if (ero) return p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; return lew !== 'low' && V && V.CLIMAX[p.persona] ? p.name + '「' + pkv(V.CLIMAX[p.persona]) + '」' : ''; }
+    /* 小説調の果てる声は喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）から。元の表（Voice.CLIMAX）も4割ほど残る */
+    function moan(p) {
+      if (ero) return p.name + '「' + HK.Ero.moan(S, p, 2) + '」';
+      if (lew === 'low' || !V || !V.CLIMAX[p.persona]) return '';
+      return p.name + '「' + (HK.Moan && HK.Moan.say ? HK.Moan.say(S, p, 'climax', { novel: true }, function () { return pkv(V.CLIMAX[p.persona]); }) : pkv(V.CLIMAX[p.persona])) + '」';
+    }
     /* 山場の厚い場面（R18版・描写が「ぼかす」以外。solo-variety-thick.js）。tb＝[攻める側, 受ける側] */
     function thick(kind, tb) {
       var TH = VA.THICK, TV = HK.ThickVM;
