@@ -100,6 +100,7 @@ js/content.js
 js/mood-dial.js
 js/mob.js
 js/ero-kit.js
+js/ero-top-lines-r18.js
 js/lewd-words.js
 js/part-words.js
 js/ero-moan-tone.js

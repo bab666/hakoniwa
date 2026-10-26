@@ -169,6 +169,55 @@
     add(N, 'ff', '{a}は{b}の胸に耳を当てて鼓動を聞いていたが、やがて指をまた脚のあいだへ滑らせた。{b}は小さく笑って、脚をそっと開いた。|{b}が眠りかけると、{a}は内腿に口づけを落として起こした。目を開けた{b}の前で、{a}はもう一度ゆっくりと顔を沈めた。|二度目の{a}は、一度目よりもずっと時間をかけた。指先で、舌で、{b}がもう無理だと首を振るまで、何度もほどいていった。|汗が引いたころ、{a}は{b}の背中に体を寄せ、後ろから回した指でもう一度{b}を探った。{b}は{a}の腕を抱いて、静かに二度目の波を迎えた。');
     add(X.AGAIN, 'shortNovel', '{a}は{b}を離さないまま、明け方まで何度も求めた。|二人は眠る前にもう一度だけ、と言って、結局三度目まで求め合った。|一度目のあとの静けさは、長くは続かなかった。|窓の外が明るくなるまで、二人の寝台は何度も軋んだ。');
   })();
+  /* ---------- 前戯（2026-10-26。男性向け）：始まりと繋がるあいだの段。体の組は thick-sex.js の T.foreKind（mv／ma／ff／fm／gen）、
+     型は soft（やさしい）／dom（荒い・焦らす）／play（じゃれる）。{mb0}{mb1}＝受けの喘ぎ ---------- */
+  X.FORE = {
+    mv: {
+      soft: L('{a}は{b}の{乳首}をちゅっ、ちゅっと吸いながら、指先で{女性器}の割れ目をなぞった。そこはもう、触れただけで糸を引くほど濡れていた。{s:wet}。\n\n{b}「{mb0}」\n\n{a}が{陰核}をくるくると撫で回すと、{b}の腰がびくびくと跳ねた。|' +
+        '{a}は{b}の脚を開かせて顔を埋め、{女性器}を下から上へべろりと舐め上げた。{s:suck}。{b}の太腿が、{a}の頭を挟んでぎゅっと閉じる。\n\n{b}「{mb0}」\n\n{a}は{陰核}に吸いついたまま、指で{ナカ}の浅いところをこりこりと掻いた。|' +
+        '{a}は{b}を膝の上に抱き寄せ、{胸}を揉みしだきながら、もう片方の手を脚のあいだに差し入れた。{s:wet}。くちゅくちゅといやらしい音が、{b}の耳まで届く。\n\n{b}「{mb0}」\n\n{a}が{ナカ}で指を鉤のように曲げると、{b}は{a}の首にしがみついて腰を震わせた。'),
+      dom: L('{a}は{b}の脚を大きく開かせ、指を二本、根元まで一気にねじ込んだ。{s:wet}。{ナカ}のざらついたところを容赦なく掻き回す。\n\n{b}「{mb0}」\n\n{a}は濡れて糸を引く指を{b}の目の前に突きつけ、わざとゆっくり舐め取ってみせた。|' +
+        '{a}は{b}を四つん這いにさせ、突き出された{尻}を両手で割り開いた。{女性器}に舌をねじ込み、{陰核}を指で弾く。{s:suck}。\n\n{b}「{mb0}」\n\n逃げようとする腰を引き戻され、{b}は舌で{ナカ}を掻き回された。|' +
+        '{a}は{b}の{陰核}だけを指先で弾き続け、{b}がイきそうになるたびに手を止めた。{s:wet}。寸前で放り出されるたび、{b}の腰がはしたなく揺れる。\n\n{b}「{mb1}」\n\n三度目に止められたとき、{b}はとうとう自分から{a}の手に{女性器}を擦りつけた。'),
+      play: L('{a}は{b}の{乳首}を指で弾いて笑い、反対側をちゅぱちゅぱと吸った。{s:suck}。笑っていた{b}の声が、すぐに甘く崩れていく。\n\n{b}「{mb0}」\n\n{a}の指が{女性器}に滑り込むと、そこはもう、とろとろに蕩けていた。|' +
+        '{a}は{b}の脚のあいだに寝そべり、{女性器}にふうっと息を吹きかけた。{b}がびくっと跳ねたのを見て、今度は舌先でちろちろとくすぐる。{s:suck}。\n\n{b}「{mb0}」\n\n笑いと喘ぎが混ざった声を上げながら、{b}の腰は{a}の舌を追いかけて勝手に揺れていた。')
+    },
+    ma: {
+      soft: L('{a}は{b}の{男性器}をゆっくりと扱きながら、たっぷり濡らした指で{後ろ}の入口をくるくるとほぐした。{s:wet}。指が一本、ぬぷりと沈んでいく。\n\n{b}「{mb0}」\n\n{a}が奥のしこりをとんとんと優しく叩くと、{b}の{男性器}の先からとろりと雫が溢れた。|' +
+        '{a}は{b}の{男性器}をじゅぷじゅぷと口で扱きながら、指で{後ろ}をほぐしていった。{s:suck}。前と後ろを同時に責められて、{b}の腰が浮く。\n\n{b}「{mb0}」\n\n指が奥のしこりを捉えるたびに、{b}の{男性器}が{a}の口の中でびくびくと跳ねた。'),
+      dom: L('{a}は{b}をうつ伏せにして腰を高く上げさせ、濡らした指を{後ろ}に二本まとめてねじ込んだ。{s:wet}。ぐちゅぐちゅと音を立てて、奥のしこりを容赦なく押し潰す。\n\n{b}「{mb0}」\n\n触られてもいない{b}の{男性器}から、とろとろと先走りが垂れていた。|' +
+        '{a}は{b}の{男性器}の根元をきつく握ったまま、{亀頭}だけを親指でぐりぐりと嬲った。{s:wet}。イきそうになるたびに止められ、{b}の太腿ががくがくと震える。\n\n{b}「{mb1}」\n\nそのあいだにも、{a}の指は{後ろ}をとろとろにほぐしていった。'),
+      play: L('{a}は{b}の{男性器}を指先でつんつんとつつき、跳ねる様子を面白がって眺めた。{b}が恥ずかしがって脚を閉じようとすると、その隙に濡らした指を{後ろ}へぬるりと滑り込ませる。{s:wet}。\n\n{b}「{mb0}」\n\n{a}は奥のしこりを見つけると、そこをくにくにと押した。')
+    },
+    ff: {
+      soft: L('{a}は{b}の{乳首}をちろちろと舐めながら、指先で{陰核}をくるくると撫でた。{s:wet}。{b}の{女性器}から、とろりと{愛液}が溢れ出す。\n\n{b}「{mb0}」\n\n{a}は濡れた指を一本だけ{ナカ}に沈め、内側の上のほうをやさしく擦った。|' +
+        '{a}は{b}の脚のあいだに顔を埋め、{女性器}をちゅぷちゅぷと音を立てて吸った。{s:suck}。{b}の手が、{a}の頭を抱え込むように押さえる。\n\n{b}「{mb0}」\n\n{a}が{陰核}を舌で包むと、{b}の太腿がぷるぷると震えた。'),
+      dom: L('{a}は{b}の両手首をひとまとめに押さえ、脚のあいだに指を二本、深く沈めた。{s:wet}。{ナカ}の弱いところを、ぐりぐりと抉るように押し上げる。\n\n{b}「{mb0}」\n\n{a}は親指で{陰核}を押し潰したまま、{b}が泣きそうな顔になるまで指を止めなかった。|' +
+        '{a}は{b}を四つん這いにさせ、後ろから{女性器}を指で広げてじっくりと眺めた。{b}が恥ずかしさに腰を引くと、{尻}をぴしゃりと叩いて引き戻す。{s:wet}。\n\n{b}「{mb0}」\n\n{a}は濡れたそこに舌を深く差し入れ、{陰核}を指で弾いた。'),
+      play: L('{a}は{b}の{胸}に顔を埋めて頬ずりし、{乳首}を交互にちゅぱちゅぱと吸った。{s:suck}。笑い声はすぐに、甘い声に変わった。\n\n{b}「{mb0}」\n\n{a}は下も確かめるように指を滑らせ、とろとろに濡れた{女性器}をくちゅりと撫でた。')
+    },
+    fm: {
+      soft: L('{a}は{b}の{男性器}を両手で包んで、ゆっくりと上下に扱いた。{s:wet}。手のひらの中でびくびくと脈打つのを感じて、{a}はうっとりと目を細める。\n\n{b}「{mb0}」\n\n{a}の脚のあいだはもう、{b}の指がぬるりと滑るほど濡れていた。|' +
+        '{a}は{b}の{男性器}を口いっぱいに頬張り、じゅぽじゅぽと音を立てて扱いた。{s:suck}。{b}の指が、{a}の髪に絡まる。\n\n{b}「{mb0}」\n\n{a}は口を離すと、唾液で濡れた{男性器}に頬ずりして、{b}を上目づかいに見上げた。'),
+      dom: L('{a}は{b}を押し倒して顔の上に跨り、濡れた{女性器}を唇に押しつけた。{s:suck}。{b}の舌が這うたびに、{a}は腰を揺らして自分のいいところに当てる。\n\n{b}「{mb0}」\n\n{a}はそのまま後ろ手に{b}の{男性器}を掴み、{亀頭}を指でぐりぐりと嬲った。|' +
+        '{a}は{b}の{男性器}の根元をきゅっと握って、イけないようにしたまま先っぽを舐め回した。{s:suck}。寸止めされるたびに、{b}の腰ががくがくと震える。\n\n{b}「{mb1}」\n\n{a}は濡れた唇を舐めて、{b}を見下ろした。'),
+      play: L('{a}は{b}の{男性器}を握って数を数えながら扱き、数えるたびに速さを変えた。{s:wet}。{b}がこらえきれずに腰を浮かせると、{a}はけらけらと笑う。\n\n{b}「{mb0}」\n\n{a}は濡れた自分の{女性器}を{b}の{男性器}にすりすりと擦りつけ、首を傾げて{b}の顔を覗き込んだ。')
+    },
+    gen: L('{a}は{b}の首筋をれろりと舐め上げながら、脚のあいだを指でまさぐった。{s:wet}。{b}の体が、触れられるたびにびくびくと跳ねる。\n\n{b}「{mb0}」\n\n{a}は一番敏感なところを見つけると、そこばかりを執拗に擦り続けた。|' +
+      '{a}は{b}の{乳首}をちゅうっと吸い上げ、もう片方を指でこりこりと転がした。{s:suck}。{b}の背中が、寝床から浮き上がる。\n\n{b}「{mb0}」\n\n{a}の手が脚のあいだへ滑り込むころには、{b}の体はもう、とろとろに蕩けていた。')
+  };
+  /* 前戯の段の受けの声：合意の場面なので、強く拒む声（やめ・ふざけ・離せ）は引き直す */
+  var REF0 = /ふざけ|やめ|離せ|触んな|触るな|見るな|調子に|誰が/;
+  var NOM = /根元|竿|\{男性器\}|\{亀頭\}|ものが|ものを|硬く|吐き出|射精|搾/;
+  X.okMoan = function (S, b, n) {
+    var t = '';
+    for (var i = 0; i < 6; i++) { t = E.moan(S, b, n); if (!REF0.test(t)) return t; }
+    return t;
+  };
+  X.forePool = function (mode, a, b, st) {
+    var TS = HK.ThickSex, k = TS && TS.foreKind ? TS.foreKind(mode, a, b) : 'gen', F0 = X.FORE[k] || X.FORE.gen;
+    return Array.isArray(F0) ? F0 : F0[TS && TS.foreGroup ? TS.foreGroup(st) : 'soft'] || F0.soft;
+  };
   /* 三人の場面の喘ぎ（{mu1}{mm2} など：u・m・t の役の人）と擬音を埋める */
   X.trioFill = function (S, text, r) {
     return String(text).replace(/\{m([tmu])([012])\}/g, function (m0, k, n, at, all) { var c = r[k]; return c ? E.moan(S, c, +n, E.ctxOf(all, at)) : ''; })
@@ -193,18 +242,42 @@
     /* 性器なしの人がいる組（pos-nogen.js）：口まで／指と玩具だけ */
     if (HK.NoGen && HK.NoGen.on(a, b)) { E.pairNight(opt.S, a, b); var ng = HK.NoGen.scene({ S: opt.S, pick: opt.pick, rng: opt.rng || (opt.S && opt.S.rng), a: a, b: b, ero: true, open: opt.open, after: opt.after || false }); return { text: X.fill(opt.S, ng.text, a, b), mode: ng.mode }; }
     E.pairNight(opt.S, a, b);
-    out.push(opt.open || pick(X.OPEN[mode]));
-    out.push(pick(mode === 'ff' ? X.FF_BODY[g] : mode === 'fm' ? X.FM_BODY[g] : X.BODY[g]));
+    /* 攻めの台詞（ero-top-lines-r18.js の HK.EroTop）：始まり・途中・山場か事後に一言ずつ。関係は opt.rel か、いまの回の二人から */
+    var ET = HK.EroTop, R0 = opt.S || opt.rng, eo = ET ? { rel: opt.rel || ET.relOf(R0, a, b), kind: mode === 'mf' ? 'm' : mode, who: '{a}' } : null;
+    var tsay = function (stg) { return ET ? ET.say(R0, a, b, stg, eo) : ''; };
+    var open0 = opt.open || pick(X.OPEN[mode]);
+    /* 前戯の段（2026-10-26）：始まりと繋がるあいだ（受けの体で選ぶ。thick-sex.js の T.foreKind） */
+    var fore = pick(X.forePool(mode, a, b, st0)).replace(/\{mb([01])\}/g, function (m0, n) { return X.okMoan(opt.S, b, +n); });
+    var body = pick(mode === 'ff' ? X.FF_BODY[g] : mode === 'fm' ? X.FM_BODY[g] : X.BODY[g]);
     var pl = opt.place && TS && TS.PLACE && TS.PLACE[opt.place] ? pick(TS.PLACE[opt.place]) : '';
     /* 夜の性格の一文（attr-r18.js の男性向けの文） */
     var ntx = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(a, b, mode, pick, true) : '';
-    out.push(ntx + pick(X.FEEL[mode]) + (pl ? pl : '') + pick(X.FEEL_A[mode]));
-    out.push(pick(mode === 'ff' ? X.FF_CLIMAX[g] : mode === 'fm' ? X.FM_CLIMAX[g] : X.CLIMAX[g]));
+    var cl = pick(mode === 'ff' ? X.FF_CLIMAX[g] : mode === 'fm' ? X.FM_CLIMAX[g] : X.CLIMAX[g]);
+    /* すでにある攻めの台詞（主導する側の声 {ma1} も、言葉の混じる声なので一本に数える。攻めの台詞は全部で3本ほどまで） */
+    var TQg = /\{a\}「|\{a\}は[^。「]{0,12}「/g, cnt = function (t) { return (String(t).match(TQg) || []).length; };
+    /* 夜の性格の一文（ntx と、attr-r18.js が始まりのあとに足す一文）にも攻めの台詞が入ることがあるので、夜の性格を決めた攻めは一本あるものとして数える */
+    var nt0 = HK.Attr && HK.Attr.nightOf ? !!HK.Attr.nightOf(a, b) : false;
+    /* 濃い：もう一度の段落（攻めの台詞が入っていることが多いので、先に選んで数える） */
+    var agT = opt.again ? pick(X.noSwap(X.AGAIN.ero[mode], a, b)) : '';
+    var cAf = cnt(opt.after || '') + cnt(agT), pre = cnt(open0) + cnt(body) + cnt(ntx) + cnt(cl) + cAf + (nt0 ? 1 : 0);
+    /* 女性の攻め×男性で、受けに男性器がない組（性器の指定）には、受けの男性器を前提にした感じ方の文を使わない */
+    var feelL = mode === 'fm' && HK.Pos && HK.Pos.hasM && !HK.Pos.hasM(b) ? X.FEEL.fm.filter(function (l) { return !NOM.test(l); }) : X.FEEL[mode];
+    /* 攻めの声：ほかの段ですでに攻めが3本以上喋っていれば、声のない一文（thick-sex.js の攻めの快感の文）にする */
+    var faL = pre >= 3 && TS && TS.FEEL_A && TS.FEEL_A[mode] ? TS.FEEL_A[mode].filter(function (l) { return !/「/.test(l); }) : [];
+    var fea = pick(feelL.length ? feelL : X.FEEL[mode]) + (pl ? pl : '') + pick(faL.length ? faL : X.FEEL_A[mode]);
+    var sl = ET ? ET.slots(R0, { start: cnt(open0) > 0 || nt0, in: cnt(body) > 0, mid: cnt(fea) + cnt(ntx) > 0, peak: cnt(cl) > 0, after: cAf > 0 }, { after: !!(opt.after || opt.again), n: pre + cnt(fea), target: R0 && (typeof R0 === 'function' ? R0 : R0.rng) && (typeof R0 === 'function' ? R0 : R0.rng)() < 0.6 ? 2 : 3 }) : {};
+    /* 始まりが空（物語型の ' '）なら、始まりの一言は前戯の頭に置く */
+    var blank = !/\S/.test(open0);
+    out.push(blank ? open0 : open0 + (sl.start ? tsay('start') : ''));
+    out.push((blank && sl.start ? tsay('start') : '') + fore + (sl.fore ? tsay('fore') : ''));
+    out.push((sl.in ? tsay('in') : '') + body);
+    out.push(ntx + fea);
+    out.push((sl.peak ? tsay('peak') : '') + cl + (sl.after ? '\n\n' + tsay('after') : ''));
     var ci = out.length - 1;
-    if (opt.again) out.push(pick(X.noSwap(X.AGAIN.ero[mode], a, b)));
+    if (agT) out.push(agT);
     if (opt.after) out.push(opt.after);
     /* 種族のプレイの一文（attr-race-r18.js。男性向けの山場の文も混ぜる） */
-    if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(out, a, b, pick, { fore: 0, mid: 1, climax: ci, after: opt.after ? out.length - 1 : -1 }, { mode: mode, ero: true });
+    if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(out, a, b, pick, { fore: blank ? 1 : [0, 1], mid: 2, climax: ci, after: opt.after ? out.length - 1 : -1 }, { mode: mode, ero: true });
     return { text: X.fill(opt.S, out.join('\n\n'), a, b), mode: mode };
   };
   /* 「もう一度」で受けの {b} が攻めの {a} を責め返す文（交代で・今度は {b} が）は、リバどうし（向きが決まっていない組）だけ */
@@ -221,7 +294,17 @@
     var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = opt.mode || X.mode(a, b);
     E.pairNight(opt.S, a, b);
     if (HK.NoGen && HK.NoGen.on(a, b)) return { text: X.fill(opt.S, (opt.open || '') + HK.NoGen.short({ S: opt.S, pick: opt.pick, rng: opt.S && opt.S.rng, a: a, b: b }) + (opt.after || ''), a, b), mode: HK.NoGen.kind(a, b) };
-    var t = (opt.open || '') + pick(X.SHORT[mode]) + (opt.again ? pick(X.shortAgain(mode)) : '') + (opt.after || '');
+    /* 攻めの台詞：短い版でも、始まりか繋がるところで一言、事後で一言（短い版の文は果てるところまで書いてあるので、山場の一言は入れない。ero-top-lines-r18.js） */
+    var ET = HK.EroTop, R0 = opt.S || opt.rng, eo = ET ? { rel: opt.rel || ET.relOf(R0, a, b), kind: mode === 'mf' ? 'm' : mode, who: '{a}' } : null;
+    var sh = pick(X.SHORT[mode]), s1 = '', s2 = '';
+    if (ET) {
+      var r = (R0 && R0.rng) || R0, rr = typeof r === 'function' ? r : Math.random;
+      /* 呼ぶ側の始まり・事後の文に攻めの台詞がすでにあれば、そこは足さない */
+      var TQ = /\{a\}「|\{a\}は[^。「」]{0,20}「/;
+      if (!/^\{a\}「/.test(sh) && !TQ.test(opt.open || '')) s1 = ET.say(R0, a, b, rr() < 0.6 ? 'start' : 'in', eo);
+      if (!TQ.test(opt.after || '')) s2 = ET.say(R0, a, b, 'after', eo);
+    }
+    var t = (opt.open || '') + s1 + sh + s2 + (opt.again ? pick(X.shortAgain(mode)) : '') + (opt.after || '');
     return { text: X.fill(opt.S, t, a, b), mode: mode };
   };
   /* 濃い：もう一度の段落（小説調・男性向け。短い版は一文） */

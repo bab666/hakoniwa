@@ -144,7 +144,9 @@
       } else if (acts.length >= 2) {
         var od = HK.Pos ? HK.Pos.order(acts[0], acts[1], [acts[0], acts[1]]) : acts, x = od[0], y = od[1];
         var pk = function (l) { return pick(S, l); };
-        if (er && !/♡/.test(o.text)) add.push(TE.fill(S, pk(PAIR), x, y).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name));
+        /* 攻めの台詞（ero-top-lines-r18.js）：受けだけが喘ぎ続けないように、最中の一言を半分ほど添える（元の山場に攻めの台詞がなければ） */
+        var tl = HK.EroTop && !new RegExp(x.name + '「').test(o.text) && S.rng() < 0.6 ? HK.EroTop.say(S, x, y, 'mid', { kind: HK.Pos && HK.Pos.isF(x) ? (HK.Pos.isF(y) ? 'ff' : 'fm') : 'm' }) : '';
+        if (er && !/♡/.test(o.text)) add.push(tl + TE.fill(S, pk(PAIR), x, y).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name));
         if (hi && S._r18A !== (S.log || []).length) add.push(TE.again(S, pk, x, y, er, !sep).replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name));
       }
       if (add.length) o.text = o.text + sep + add.join(sep);

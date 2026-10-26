@@ -136,6 +136,18 @@
   function byMid(T, mid, mood) { return mood === 'plain' && T.plain ? T[mid].concat(T.plain) : T[mid]; }
   /* 段落をつなぐ（空の段落は飛ばす） */
   function J(a) { return a.filter(function (x) { return x; }).join(P); }
+  /* 攻めの台詞（ero-top-lines-r18.js の HK.EroTop）：繋がったあとの一言（R18M.say の top）に足して、始まりと山場か事後に一言ずつ。
+     関係は場面の気分から（恋人の夜＝恋人どうし、その場の勢い＝体だけ）。T(段) は「名前「…」」か '' */
+  function topSay(S, x, y, mood, kind, have) {
+    var ET = HK.EroTop;
+    if (!ET) return { sl: {}, T: function () { return ''; } };
+    var eo = { rel: mood === 'love' ? 'lover' : mood === 'plain' ? 'casual' : '', kind: kind === 'mf' ? 'm' : kind };
+    have = have || {};
+    /* 夜の性格を決めた攻めは、attr-r18.js の夜の性格の一文で一本喋ることがあるので、始まりの一本として数える */
+    if (HK.Attr && HK.Attr.nightOf && HK.Attr.nightOf(x, y)) have.start = true;
+    var n = 0; Object.keys(have).forEach(function (k) { if (have[k]) n++; });
+    return { sl: ET.slots(S, have, { after: true, n: n, target: S.rng() < 0.6 ? 2 : 3 }), T: function (stg) { return ET.say(S, x, y, stg, eo); } };
+  }
   /* 種族のプレイの一文（attr-race-r18.js。二人とも種族がなければ何もしない）。idx は段落の番号（空の段落には足さない） */
   function RW(S, x, y, arr, idx, kind) { if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(arr, x, y, function (l) { return pick(S, l); }, idx, { mode: kind }); return arr; }
   var RW_HARD = { fore: [0, 1], mid: 3, climax: 6, after: 7 }, RW_MAIN = { fore: [0, 1], mid: 3, climax: 5, after: 6 };
@@ -163,7 +175,9 @@
     if (pos.oral) {
       /* 口・指は元の流れのまま、段落に分ける */
       if (pos.id === 'kuchi') return J([fore, F(pick(S, pos.t), m) + R.say(S, x, 'top'), opt.short ? '' : R.say(S, x, 'topc'), F(pick(S, D.CLIMAX.kuchi), m)]);
-      return J([fore, F(pick(S, pos.t), m), sayOk(S, y, 'start', mood) + (opt.short ? '' : R.say(S, y, 'mid')), R.say(S, y, 'climax') + F(pick(S, D.CLIMAX.yubi), m)]);
+      /* 指（yubi）：攻めの台詞がないので、指で責める側の一言（ero-top-lines-r18.js の指の表）を始まりと山場か事後に足す */
+      var ty = topSay(S, x, y, mood, 'ff', {}), sy = ty.sl;
+      return J([(sy.start || sy.fore ? ty.T(sy.start ? 'start' : 'fore') : '') + fore, (sy.in ? ty.T('in') : '') + F(pick(S, pos.t), m), sayOk(S, y, 'start', mood) + (opt.short ? '' : R.say(S, y, 'mid')), (sy.peak ? ty.T('peak') : '') + R.say(S, y, 'climax') + F(pick(S, D.CLIMAX.yubi), m) + (sy.after ? ty.T('after') : '')]);
     }
     if (opt.short) {
       return J([F(pick(S, pos.t), m) + F(pick(S, ENTER[mid]), m) + (HK.Attr && HK.Attr.nightText ? F(HK.Attr.nightText(x, y, 'mf', function (l) { return pick(S, l); }, false).replace(/\{a\}/g, '{x}').replace(/\{b\}/g, '{y}'), m) : ''), sayOk(S, y, 'start', mood), R.say(S, y, 'climax') + F(pick(S, byMid(PEAK, mid, mood)), m)]);
@@ -178,14 +192,17 @@
     var strong = R.isStrong(y), turn = strong && soft2 ? F(pick(S, AGAIN_TURN), m) : '';
     if (soft2) strong = false;
     var bridge = fore && D.BRIDGE ? F(pick(S, D.BRIDGE[mood] || D.BRIDGE.plain), m) : '';
+    /* 攻めの台詞：繋がったあとの一言（top）はいつもある。始まり（前戯の頭）と、山場か事後に一言ずつ足す（ero-top-lines-r18.js） */
+    var ts = topSay(S, x, y, mood, 'mf', { in: true }), sl = ts.sl;
+    var aftSay = sl.after ? ts.T('after') : rng() < 0.5 ? R.say(S, rng() < 0.6 ? y : x, 'after') : '';
     return J(RW(S, x, y, [
-      fore + (bridge ? bridge : ''),
-      F(pick(S, pos.t), m) + F(pick(S, ENTER[mood]), m),
+      (sl.start && fore ? ts.T('start') : '') + fore + (bridge ? bridge : '') + (sl.fore && fore ? ts.T('fore') : ''),
+      (sl.start && !fore ? ts.T('start') : '') + F(pick(S, pos.t), m) + F(pick(S, ENTER[mood]), m),
       R.say(S, x, 'top'),
       sayOk(S, y, 'start', mood) + turn + F(pick(S, byMid(strong ? MID_STRONG : MID_SOFT, mid, mood)), m),
       moan(S, y, 0) + F(pick(S, byMid(PLEASE, mid, mood)), m),
-      (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (rng() < 0.35 ? R.say(S, x, 'topc') : '') + F(pick(S, byMid(PEAK, mid, mood)), m),
-      flav(S) + F(pick(S, AFTER[mood]), m) + (rng() < 0.5 ? R.say(S, rng() < 0.6 ? y : x, 'after') : '')
+      (sl.peak ? ts.T('peak') : '') + (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (!sl.peak && rng() < 0.35 ? R.say(S, x, 'topc') : '') + F(pick(S, byMid(PEAK, mid, mood)), m),
+      flav(S) + F(pick(S, AFTER[mood]), m) + aftSay
     ], RW_MAIN, 'mf'));
   }
 
@@ -351,14 +368,19 @@
     var react = (strong && !soft2 ? SOFT_STRONG : SOFT_WEAK)[kind][mid];
     var aftL = SOFT_AFTER[kind].concat(SOFT_AFTER_M[kind][mood] || []);
     var aft = kind === 'ff' && K.after && rng() < 0.35 ? fill(K.after(ctx, K.afterMode(mood))) : kind === 'fm' && K.POOLS.after && rng() < 0.35 ? fill(K.pick(ctx, 'after', st)) : F(pick(S, aftL), m);
+    /* 攻めの台詞：繋がったあとの一言（top）に足して、始まりと山場か事後に一言ずつ（ero-top-lines-r18.js） */
+    /* 書き出し・手立て・最中の文にすでにある攻めの台詞も数える（女性の攻めの書き出しには台詞が入っていることがある） */
+    var xq = new RegExp(x.name + '「', 'g'), nq = function (t) { return (String(t || '').match(xq) || []).length; };
+    var ma0 = kind === 'fm' && rng() < 0.6 ? moan(S, x, 0, true) : '', bodyT = fill(body), midF = fill(midT);
+    var ts = topSay(S, x, y, mood, kind, { in: true, start: nq(open) > 0, mid: nq(bodyT + midF + ma0) > 0 }), sl = ts.sl;
     return J(RW(S, x, y, [
-      open,
-      fill(body) + F(enter, m),
+      (sl.start ? ts.T('start') : '') + open + (sl.fore && open ? ts.T('fore') : ''),
+      bodyT + F(enter, m),
       R.say(S, x, 'top'),
-      sayOk(S, y, 'start', mood) + turn + fill(midT) + F(apart(react, seen2 + midT), m),
-      moan(S, y, 0) + (kind === 'fm' && rng() < 0.6 ? moan(S, x, 0, true) : '') + F(apart(SOFT_PLEASE[kind].concat(SOFT_PLEASE_M[kind][mid] || []), seen2 + midT), m),
-      (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (R.topcF && rng() < 0.3 ? R.topcF(S, x) : '') + peak,
-      flav(S) + aft + (rng() < 0.5 ? R.say(S, y, 'after') : '')
+      sayOk(S, y, 'start', mood) + turn + midF + F(apart(react, seen2 + midT), m),
+      moan(S, y, 0) + ma0 + F(apart(SOFT_PLEASE[kind].concat(SOFT_PLEASE_M[kind][mid] || []), seen2 + midT), m),
+      (sl.peak ? ts.T('peak') : '') + (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (!sl.peak && R.topcF && rng() < 0.3 ? R.topcF(S, x) : '') + peak,
+      flav(S) + aft + (sl.after ? ts.T('after') : rng() < 0.5 ? R.say(S, y, 'after') : '')
     ], RW_MAIN, kind));
   }
 
