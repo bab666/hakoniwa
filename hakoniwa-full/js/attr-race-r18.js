@@ -12,7 +12,7 @@
        性器なし（HK.Pos.noGen）の人がいる組は、挿入・射精の語を含む文を使わない（残らなければ前戯の文）。
        牙（fang）の文は、相手が牙か透ける体（trans）を持つときは使わない。相手が首筋を差し出す（同意の）書き方にしてある。
        二人とも特徴が無ければ乱数を使わずに '' を返す
-   ■ 一回の夜の決まり（「1記録1文」の例外）：段落ごとに 1 文まで。同じ人の特徴の文は一回の夜で 2 文まで、同じ人を続けて出さない（二人とも特徴があれば交互）、
+   ■ 一回の夜の決まり（「1記録1文」の例外）：段落ごとに 1 文まで。夜より前の記録との間は、ふつうの決まり（同じ人は 2 記録あける）を守る。同じ人の特徴の文は一回の夜で 2 文まで、同じ人を続けて出さない（二人とも特徴があれば交互）、
        同じ人の同じ特徴は一回の夜で一度だけ（特徴が複数あれば featPick が順に回す）。二人の文が同じ段落に並ばない。
        一回の夜＝raceWeave の一回。直接 racePlay を呼ぶ場面（ship-night・solo-locker-bed）は、同じ記録・同じ二人の呼び出しを一回の夜として数える
    ■ HK.Attr.raceWeave(arr, T, U, pick, idx, o)：段落の配列 arr の idx.fore／mid／climax／after 番目（空の段落には足さない。番号の配列なら空でない最初の段落）に一文ずつ足す
@@ -482,7 +482,7 @@
   function newNight(own, T, U) {
     var N = { key: T.name + '\u0001' + U.name, id: ++nightSeq, who: {}, used: {}, last: '' };
     if (own) {
-      N.rec = recOf(own);
+      N.rec = N.rec0 = recOf(own);
       /* 同じ記録の中で、夜の前に特徴の文（pairLine など）を出した人は、もう 1 文使ったものとして数える */
       [T, U].forEach(function (x) {
         var l = own._featLast && own._featLast[x.name];
@@ -502,6 +502,9 @@
      featPick には写しの owner（_featRec と _featLast を差し替えたもの）を渡す。同じ特徴を続けない・順に回すは featPick のまま */
   function peekKey(own, x, partner, role, kind, mode, ero, ng, N, pick) {
     if (N.last === x.name || (N.who[x.name] || 0) >= 2) return '';
+    /* 夜より前の記録で特徴の文を出した人は、本物の owner の「2 記録あける」を守る（夜の中の 2 文目以降は夜の決まりだけ） */
+    var lp = own && own._featLast && own._featLast[x.name];
+    if (lp && N.rec0 != null && lp.at !== N.rec0 && N.rec0 - lp.at < (A.FEAT_GAP || 3)) return '';
     var used = N.used[x.name] || {};
     var keys = function (k) { return !used[k] && !barred(k, partner) && linesOf(role, k, kind, mode, ero, ng).length > 0; };
     var po = null;

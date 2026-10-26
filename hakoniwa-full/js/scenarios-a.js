@@ -406,6 +406,7 @@
     phase: function (ctx, s) {
       var P = ctx.present(), rng = ctx.rng;
       if (s === 0) ctx.say({ text: names(P) + 'がグラスを合わせた。' + (ctx.env.mood > 60 ? '最初から妙に空気がいい。' : ctx.env.mood < 35 ? '乾杯の声が少しだけ揃わなかった。' : '') });
+      if (s === 0 && HK.Attr && HK.Attr.meetScene) HK.Attr.meetScene(P, ctx);   /* 初対面の反応（体の特徴・目につく特徴。attr-meet.js） */
       if (s === 3 && P.length > 2) {
         var sh = rng.shuffle(P);
         for (var i = 0; i + 1 < sh.length; i += 2) {
@@ -727,6 +728,7 @@
       var P = ctx.present(), rng = ctx.rng, m = ctx.label;
       var e;
       if (s === 0) ctx.say({ text: ctx.env.grade === 'all' ? '始業式。' + [1, 2, 3].map(function (g) { var l = P.filter(function (c) { return c.grade === g; }); return l.length ? g + '年生の' + names(l) : ''; }).filter(Boolean).join('、') + '。同じ学園での一年が始まった。' : '始業式。' + names(P) + 'は同じクラスになった。' });
+      if (s === 0 && HK.Attr && HK.Attr.meetScene) HK.Attr.meetScene(P, ctx);   /* 初対面の反応（体の特徴・目につく特徴。attr-meet.js） */
       if (m === '5月' || m === '12月') {
         var rank = P.map(function (c) { return { c: c, v: ctx.stat(c, 'study') * 10 + rng() * 25 + c.tr.a * 10 }; }).sort(function (x, y) { return y.v - x.v; });
         /* 全員が休んでいる（不登校など）ときは、テストの結果の場面を出さない */

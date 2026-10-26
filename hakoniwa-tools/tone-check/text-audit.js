@@ -83,8 +83,10 @@ const { openBuild } = require('./lib.js');
           if (PUNCT.test(tp)) hit('T3', sc, s, tp.match(PUNCT)[0] + ' ← ' + t);
           if (SAFE && SEX.test(t)) hit('T5', sc, s, t.match(SEX)[0] + ' ← ' + t);
           /* 感覚遮断穴の「場所：ダンジョンの罠部屋」は迷宮の中なので除く */
-          FOREIGN.forEach(([re, ok]) => { if (ok.indexOf(sc) < 0 && re.test(t)) hit('T9', sc, s, t.match(re)[0] + ' ← ' + t); });
-          if (sc !== 'dungeon' && sc !== 'rpg' && !(sc === 'hole' && env.place === 'dungeon') && DUNGEON_RE.test(t + ' ' + (e.why || ''))) hit('T8', sc, s, (t + ' ' + (e.why || '')).match(DUNGEON_RE)[0] + ' ← ' + t);
+          /* 宇宙船の星の名前「紫の迷宮」など（ship.js の PN_COLOR＋PN_NOUN）は迷宮の語ではないので除く */
+          const t9 = sc === 'ship' ? t.replace(/(?:赤|青|白|黒|金|銀|翠|紫|灰|琥珀|瑠璃|薄紅)の迷宮/g, '') : t;
+          FOREIGN.forEach(([re, ok]) => { if (ok.indexOf(sc) < 0 && re.test(t9)) hit('T9', sc, s, t9.match(re)[0] + ' ← ' + t); });
+          if (sc !== 'dungeon' && sc !== 'rpg' && !(sc === 'hole' && env.place === 'dungeon') && DUNGEON_RE.test(t9 + ' ' + (e.why || ''))) hit('T8', sc, s, (t + ' ' + (e.why || '')).match(DUNGEON_RE)[0] + ' ← ' + t);
           if (res2 && res2.log && res2.log[k] && res2.log[k].text !== t && out.ex.T4.length < 99) { hit('T4', sc, s, t + ' ### ' + res2.log[k].text); }
         });
         if (res2 && res2.log && res2.log.length !== L.length) hit('T4', sc, s, 'length ' + L.length + ' vs ' + res2.log.length);

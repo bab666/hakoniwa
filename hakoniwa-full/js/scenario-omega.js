@@ -249,7 +249,7 @@
         where + 'で' + a.name + 'と' + b.name + 'の目が合った。知らない人のはずなのに、ずっと探していた気がした。',
         a.name + 'は' + where + 'で、知らない匂いに足を止めた。その先に' + b.name + 'がいた。'
       ]);
-      ctx.say({ kind: 'event', cat: 'romance', actors: [a, b], text: t + a.name + 'からは' + short(a) + '、' + b.name + 'からは' + short(b) + 'の匂いがした。' + (d < 0.3 ? '――それが運命の番の匂いだと、二人はまだ知らなかった。' : '運命の番だった。'), why: '運命の番の出会い（遺伝子レベルの惹かれ）／運命の抗えなさ ' + Math.round(d * 100) + (d < 0.3 ? '：出会っても気づくのに時間がかかる' : d > 0.7 ? '：一目で落ちる' : ''), mag: 40 });
+      ctx.say({ kind: 'event', cat: 'romance', actors: [a, b], text: t + a.name + 'からは' + short(a) + '、' + b.name + 'からは' + short(b) + 'の匂いがした。' + (d < 0.3 ? '――それが運命の番の匂いだと、二人はまだ知らなかった。' : '運命の番だった。') + (HK.Attr && HK.Attr.meetLine ? HK.Attr.meetLine(a, b, ctx) || HK.Attr.meetLine(b, a, ctx) : ''), why: '運命の番の出会い（遺伝子レベルの惹かれ）／運命の抗えなさ ' + Math.round(d * 100) + (d < 0.3 ? '：出会っても気づくのに時間がかかる' : d > 0.7 ? '：一目で落ちる' : ''), mag: 40 });
       [a, b].forEach(function (x) {
         var y = x === a ? b : a, p = partnerOf(ctx, x);
         if (p && p !== y) { ctx.pair(x, p).fatedPending = true; ctx.say({ kind: 'event', cat: 'romance', actors: [x, p], text: x.name + 'には、' + p.name + 'という恋人がいる。' + x.name + 'はその夜、' + p.name + 'からの連絡に返事ができなかった。', why: '運命の番と、今の恋人', mag: 15 }); }
