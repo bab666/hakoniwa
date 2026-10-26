@@ -274,8 +274,10 @@
     if (res !== lastRes) { who = null; lewdOnly = false; keyOnly = res.log.length > 260; }
     lastHost = host; lastRes = res;
     var S = HK.SCENARIOS[res.scenId], E = res.ending;
-    var envChips = S.env.map(function (e) {
-      var v = res.env[e.id], shown = e.type === 'select' ? (e.options.filter(function (o) { return o.v === v; })[0] || {}).label : v + (e.unit || '');
+    var envChips = (S.env || []).map(function (e) {
+      var v = (res.env || {})[e.id], shown = e.type === 'select' ? ((e.options || []).filter(function (o) { return o.v === v; })[0] || {}).label : v + (e.unit || '');
+      /* その設定ができる前にセーブした結果（値が無い・今は無い選択肢）は、その欄を出さない */
+      if (v == null || shown == null) return '';
       return '<span class="chip">' + esc(e.label) + '：' + esc(shown) + '</span>';
     }).join('');
     host.innerHTML =

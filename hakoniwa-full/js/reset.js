@@ -6,7 +6,8 @@
   var HK = window.HK;
   function keys(st) {
     var out = [];
-    try { for (var i = 0; i < st.length; i++) { var k = st.key(i); if (k && /^hakoniwa/.test(k)) out.push(k); } } catch (e) { /* 使えない環境 */ }
+    /* セーブデータ（saves.js）は消さない：IndexedDB に置いたセーブはもともと消えないので、IndexedDB が使えない環境の localStorage のセーブ（hakoniwa:saves）も残してそろえる */
+    try { for (var i = 0; i < st.length; i++) { var k = st.key(i); if (k && /^hakoniwa/.test(k) && k !== 'hakoniwa:saves') out.push(k); } } catch (e) { /* 使えない環境 */ }
     return out;
   }
   function wipe() {
@@ -24,7 +25,7 @@
     document.head.appendChild(st);
     var box = document.createElement('div');
     box.className = 'resetbox'; box.id = 'resetbox';
-    box.innerHTML = '<p><b>動かないときは</b>　新しい箱庭が動かない・表示が崩れるときは、このブラウザに保存された古いデータが原因のことがあります。消すと、住人の名簿・関係・箱庭ごとの設定・結果の履歴・全年齢／R18の切り替えが、すべて初期状態に戻ります。</p>' +
+    box.innerHTML = '<p><b>動かないときは</b>　新しい箱庭が動かない・表示が崩れるときは、このブラウザに保存された古いデータが原因のことがあります。消すと、住人の名簿・関係・箱庭ごとの設定・結果の履歴・全年齢／R18の切り替えが、すべて初期状態に戻ります（「セーブ」タブのセーブデータは残ります）。</p>' +
       '<button type="button" class="btn danger" id="reset-open">保存データを消去する…</button>' +
       '<div class="resetstep" id="reset-step" hidden role="group" aria-labelledby="reset-warn">' +
       '<p id="reset-warn" style="margin:0"><b>本当に消しますか？</b>　元には戻せません。住人を残したいときは、先にJSONで書き出してください。</p>' +

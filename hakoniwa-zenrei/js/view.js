@@ -250,9 +250,11 @@
     });
   }
 
+  /* 結果の箱庭。セーブを開くとき、一覧に出していない箱庭（scenario-futari.js の SCENARIOS_HIDDEN）や今は無い箱庭の結果でも落ちないように */
+  function scenOf(res) { return HK.SCENARIOS[res.scenId] || (HK.SCENARIOS_HIDDEN || {})[res.scenId] || { id: res.scenId, name: String(res.scenId || '箱庭'), env: [], stats: [] }; }
   function charCard(c, res) {
     var stats = Object.keys(c.stats || {}).map(function (k) {
-      var def = (HK.SCENARIOS[res.scenId].stats || []).filter(function (s) { return s.id === k; })[0];
+      var def = (scenOf(res).stats || []).filter(function (s) { return s.id === k; })[0];
       return (def ? def.label : k) + c.stats[k];
     }).join('・');
     var odd = c.odd.map(function (n) {
@@ -325,8 +327,7 @@
     if (fresh && !res.solo) { var sc0 = HK.SCENARIOS[res.scenId]; if (sc0 && sc0.longRun && sc0.longRun(res.env)) tl.keyOnly = true; }
     if (!res) { host.innerHTML = emptyState(lastOpts); return; }
     if (res.solo && HK.DView) { HK.DView.render(host, res, lastOpts, historyBlock(lastOpts.history || [])); return; }
-    /* セーブを開くとき：一覧に出していない箱庭（scenario-futari.js の SCENARIOS_HIDDEN）の結果も開けるように */
-    var scen = HK.SCENARIOS[res.scenId] || (HK.SCENARIOS_HIDDEN || {})[res.scenId] || { env: [] };
+    var scen = scenOf(res);
     var envChips = (scen.env || []).concat(HK.GLOBAL_ENV || []).map(function (e) {
       var v = (res.env || {})[e.id];
       var shown = e.type === 'select' ? ((e.options || []).filter(function (o) { return o.v === v; })[0] || {}).label : v + (e.unit || '');
@@ -431,7 +432,7 @@
   /* テキスト書き出し */
   V.toText = function (res) {
     if (res.solo && HK.DView) return HK.DView.toText(res);
-    var scen = HK.SCENARIOS[res.scenId], L = [];
+    var scen = scenOf(res), L = [];
     L.push('【箱庭シミュレーター】' + scen.name + '（シード ' + res.seed + '）');
     if (HK.Endings) {
       var E = HK.Endings.build(res);
