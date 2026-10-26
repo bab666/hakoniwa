@@ -248,7 +248,7 @@
         if (f === 'fiance' && S.tnBroke[pk]) return;
         var fe = f === 'fiance' ? fiFeel(t, a.i) : '';
         /* 乗り気でも、恋愛の成り立たない組・恋愛相手を固定した人は戸惑いの側で書く */
-        if (fe === 'eager' && (!(HK.canLove && HK.canLove(a, b)) || (a.lock != null && a.lock !== b.i))) fe = 'unsure';
+        if (fe === 'eager' && (!(HK.canLove && HK.canLove(a, b)) || HK.lockOut(a, b))) fe = 'unsure';
         (BYF[f] || []).forEach(function (k) {
           if (!TX[k] || used.indexOf(k) >= 0) return;
           if (k === 'fiE' && fe !== 'eager') return;
@@ -333,7 +333,7 @@
       if (j < 0) return;
       var c = input.chars[j];
       var T = { i: j, name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', alive: true,
-        lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock };
+        lock: HK.lockFirst(c.loveLock), locks: HK.parseLocks(c.loveLock) };
       T.persona = HK.personaOf(T);
       var P = []; P[h.i] = h; P[j] = T;
       var r = pickTies(input, P);

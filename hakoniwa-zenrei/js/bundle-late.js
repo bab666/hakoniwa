@@ -16831,7 +16831,7 @@
   function R(ctx, a, b) { return ctx.R(a, b); }
   function L(s) { return s.split('|'); }
   /* 恋愛の出来事にしてよい二人か（恋愛の起こりやすさ0・恋愛の成り立たない組・恋愛：なしの血縁・恋愛相手を別に決めた人は除く） */
-  function loveOK(ctx, a, b) { return ctx.env.romance !== 0 && (!HK.canLove || HK.canLove(a, b)) && !ctx.pair(a, b).kin && (a.lock == null || a.lock === b.i) && (b.lock == null || b.lock === a.i); }
+  function loveOK(ctx, a, b) { return ctx.env.romance !== 0 && (!HK.canLove || HK.canLove(a, b)) && !ctx.pair(a, b).kin && !HK.lockOut(a, b) && !HK.lockOut(b, a); }
   /* 同じエリアにいて、惹かれか好意のある二人（いなければ null） */
   function zPair(ctx, P, min, love) {
     var best = null, bv = min == null ? 20 : min;
@@ -20674,7 +20674,7 @@
         if (f === 'fiance' && S.tnBroke[pk]) return;
         var fe = f === 'fiance' ? fiFeel(t, a.i) : '';
         /* 乗り気でも、恋愛の成り立たない組・恋愛相手を固定した人は戸惑いの側で書く */
-        if (fe === 'eager' && (!(HK.canLove && HK.canLove(a, b)) || (a.lock != null && a.lock !== b.i))) fe = 'unsure';
+        if (fe === 'eager' && (!(HK.canLove && HK.canLove(a, b)) || HK.lockOut(a, b))) fe = 'unsure';
         (BYF[f] || []).forEach(function (k) {
           if (!TX[k] || used.indexOf(k) >= 0) return;
           if (k === 'fiE' && fe !== 'eager') return;
@@ -20759,7 +20759,7 @@
       if (j < 0) return;
       var c = input.chars[j];
       var T = { i: j, name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', alive: true,
-        lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock };
+        lock: HK.lockFirst(c.loveLock), locks: HK.parseLocks(c.loveLock) };
       T.persona = HK.personaOf(T);
       var P = []; P[h.i] = h; P[j] = T;
       var r = pickTies(input, P);

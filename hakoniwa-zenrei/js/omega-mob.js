@@ -56,7 +56,7 @@
     var pool = rng.shuffle(NAMES);
     P.forEach(function (c) {
       if (sx(c) !== 'a' && sx(c) !== 'o') return;
-      if (c.lock != null || c.likes === 'none') return;
+      if (HK.lockAny(c) || c.likes === 'none') return;
       /* 関係で「運命の番」が付いている人、本人も知らない運命の番が住人の中にいる人には現れない */
       if (P.some(function (o) { return o !== c && tieType(ctx, c, o) === 'fated'; })) return;
       if (om.fatedLatent && Object.keys(om.fatedLatent).some(function (k) { return k.split('-').indexOf(String(c.i)) >= 0; })) return;

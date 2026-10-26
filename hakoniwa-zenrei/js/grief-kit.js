@@ -80,7 +80,7 @@
     if (best < 60 && pf.ob && pf.ob[o.i] && HK.Obsess && HK.Obsess.level && HK.Obsess.level(ctx, o, v) >= 60) { best = 60; rel = rel || '執着していた相手'; }
     var key = o.i < v.i ? o.i + '-' + v.i : v.i + '-' + o.i;
     if ((pf.amagami || (ctx.om && ctx.om.bonded && ctx.om.bonded[key])) && best < 65) { best = 65; rel = '番'; }
-    if (o.lock === v.i && best < 50) { best = 50; rel = rel || 'ただ一人と決めた人'; }
+    if (HK.lockTo(o, v) && best < 50) { best = 50; rel = rel || 'ただ一人と決めた人'; }
     var r = ctx.R(o, v);
     var d = best + Math.max(0, r.aff) * 0.55 + Math.max(0, r.trust) * 0.25 + Math.max(0, r.att) * 0.2 - Math.max(0, r.ten - 50) * 0.3;
     if (r.aff < 0) d *= 0.4;

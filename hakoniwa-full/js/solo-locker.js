@@ -117,7 +117,7 @@
     var r18No = A.noR18 ? A : B.noR18 ? B : null;
     if (r18No && !ngP) { ngP = true; tieNL = true; nlWhy = r18No.name + 'はR18に参加しない'; }
     /* 性行為の相手を別の人に固定している（または固定した相手がこの箱庭にいない）：体の関係にならない（pos.js の向きの判定で clash になる） */
-    var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (A.sexLock != null && A.sexLock !== B.i ? A : B) : null;
+    var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (HK.sexLockOut(A, B) ? A : B) : null;
     var sexWhy = sexP ? sexWho.name + 'は、' + W_SEXL + (input.chars[sexWho.sexLock] ? input.chars[sexWho.sexLock].name + 'に' : 'ほかの人に') + '決めている' : '';
     if (ngP) plotter = null;
     /* 拘束 */
@@ -330,7 +330,7 @@
           continue;
         }
         /* 恋愛相手を別に決めている人は、ほとんど手を出さない */
-        if (a.lock != null && a.lock !== b.i) { urge -= 0.45; if (urge > 0.3 && !a.lockSaid) { a.lockSaid = true; ST.sayB(S, { actors: [a, b], tag: '心に決めた人', text: ST.fmt(pk(LK.LOCKED || ['{a}は{b}の肩を押し返した。「……ごめん。心に決めた人がいるから」']), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を決めている（' + b.name + 'ではない）', mag: 18 }); continue; } }
+        if (HK.lockOut(a, b)) { urge -= 0.45; if (urge > 0.3 && !a.lockSaid) { a.lockSaid = true; ST.sayB(S, { actors: [a, b], tag: '心に決めた人', text: ST.fmt(pk(LK.LOCKED || ['{a}は{b}の肩を押し返した。「……ごめん。心に決めた人がいるから」']), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を決めている（' + b.name + 'ではない）', mag: 18 }); continue; } }
         if (urge < 0.36 + rng() * 0.3) continue;
         /* 受け攻め：向きの決まらない二人は、手を出さずに耐える */
         if (clash) { holdClash(a, b); continue; }
@@ -367,7 +367,7 @@
         var act = LK.ACT[LV[lv]];
         a.cnt.make++;
         var w = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3, crush: crusher === b ? 0.45 : -0.05, mutual: 0.45, friend: 0, tension: -0.3, ex: 0.05, stranger: -0.1, master: servant === b ? 0.35 : 0.2 }[rel] || 0) + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (plotter === b ? 0.8 : 0) + (fwbAll && rel !== 'fwb' ? 0.35 : 0) + (fcKind === 'mutual' ? 0.2 : 0) + (crusher === b && rel !== 'crush' && rel !== 'mutual' ? 0.2 : 0) + (rng() - 0.5) * 0.3;
-        if (b.lock != null && b.lock !== a.i) w -= 0.5;
+        if (HK.lockOut(b, a)) w -= 0.5;
         if (nt) w += NT.accW(nt, a, b);
         var resp = w > 0.55 ? 'accept' : w > 0.32 ? 'passive' : 'refuse';
         /* 受け攻め：挿入では、仕掛けた側が攻めか受けかで書き分ける */

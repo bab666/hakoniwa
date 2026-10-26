@@ -27,8 +27,8 @@
     var l = HK.Ties ? HK.Ties.all(ctx, a, b) : [];
     return l.some(function (t) { return t.type === 'teacher' || HK.tieNoLove(t); });
   };
-  RK.locked = function (a) { return a && a.lock != null; };
-  RK.lockedTo = function (a, b) { return a && b && a.lock === b.i; };
+  RK.locked = function (a) { return a && HK.lockAny(a); };
+  RK.lockedTo = function (a, b) { return a && b && HK.lockTo(a, b); };
   /* 同じ出来事を何度も出しすぎない */
   RK.cool = function (ctx, a, b, id, gap) {
     var pf = ctx.pair(a, b), k = '_rk_' + id;

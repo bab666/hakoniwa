@@ -20,8 +20,8 @@
   /* a が b を想っているか（b の側の事情は見ない：b がほかの人に決めていても、a の想いは成り立つ） */
   function longs(ctx, a, b) {
     if (!alive(a) || !b || a === b || marked(a, b) || ctx.pair(a, b).kin) return false;
-    if (a.lock != null && a.lock !== b.i) return false;
-    var b0 = {}; for (var k in b) b0[k] = b[k]; b0.lock = null; b0.ng = [];
+    if (HK.lockOut(a, b)) return false;
+    var b0 = {}; for (var k in b) b0[k] = b[k]; b0.lock = null; b0.locks = null; b0.ng = [];
     if (!HK.canLove(a, b0)) return false;
     return !!(HK.Ties && HK.Ties.from(ctx, a, b, 'crush')) || ctx.R(a, b).att >= 50;
   }
@@ -30,7 +30,7 @@
     var best = null;
     ctx.chars.forEach(function (c) {
       if (best || c === a || c === b || !alive(c)) return;
-      if (couple(ctx, b, c) || b.lock === c.i) best = c;
+      if (couple(ctx, b, c) || HK.lockTo(b, c)) best = c;
     });
     return best;
   }
@@ -87,7 +87,7 @@
     mk('hb_news', 'solo', function () { return 4; },
       function (ctx, a, b) { return longs(ctx, a, b) && !ctx.pair(a, b).hbNews && !couple(ctx, a, b) && !!rivalOf(ctx, a, b); },
       function (ctx, a, b) {
-        var pf = ctx.pair(a, b), c = rivalOf(ctx, a, b), lock = !couple(ctx, b, c) && b.lock === c.i, m = { a: a.name, b: b.name, c: c.name };
+        var pf = ctx.pair(a, b), c = rivalOf(ctx, a, b), lock = !couple(ctx, b, c) && HK.lockTo(b, c), m = { a: a.name, b: b.name, c: c.name };
         pf.hbNews = ctx.stepIndex; pf.hbBy = c.i;
         if (HK.Emo) HK.Emo.bump(ctx, a, { grief: 30, shame: 12 }, '失恋');   /* 気分（emotion.js） */
         ctx.stress(a, 18); ctx.mod2(a, b, { att: -8 }, {}); ctx.mod(a, c, { ten: 8 });

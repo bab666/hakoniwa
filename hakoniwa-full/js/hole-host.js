@@ -126,7 +126,7 @@
     if (r.kind === 'res') {
       var c = input.chars[r.i];
       h = { i: r.i, name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', pos: c.pos || '', futa: !!c.futa,
-        ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock, kind: 'res' };
+        ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: HK.lockFirst(c.loveLock), locks: HK.parseLocks(c.loveLock), kind: 'res' };
       if (HK.charFlags) HK.charFlags(c, h, 'hole');
       var tt = tieOf(input, r.i, S.h.i);
       h.near = tt.near; h.bad = tt.bad;

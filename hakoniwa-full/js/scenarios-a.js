@@ -453,7 +453,7 @@
       cand.sort(function (x, y) { return y.v - x.v; });
       cand.forEach(function (c) {
         /* 恋愛はしないが体の関係は許されている二人は、恋愛相手の固定を外して恋愛対象の向きだけを見る（帰るなら、お持ち帰りの夜だけ） */
-        var so = HK.lockSexOnly && HK.lockSexOnly(c.a, c.b), ca = so ? Object.assign({}, c.a, { lock: null }) : c.a, cb = so ? Object.assign({}, c.b, { lock: null }) : c.b;
+        var so = HK.lockSexOnly && HK.lockSexOnly(c.a, c.b), ca = so ? Object.assign({}, c.a, { lock: null, locks: null }) : c.a, cb = so ? Object.assign({}, c.b, { lock: null, locks: null }) : c.b;
         /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：惹かれの閾値の代わりに、酔いと勢いで（恋人の組の半分ほど。固定した恋人がいれば ×0.3） */
         var fs = !!(HK.State.freeSex && HK.State.freeSex(ctx, c.a, c.b));
         if (used[c.a.i] || used[c.b.i]) return;
@@ -577,7 +577,7 @@
         w: function (ctx, a, b) { return (0.4 + a.tr.honesty * 0.7 + a.tr.impulse * 0.4 + R(ctx, a, b).att / 100) * (a.goal.id === 'lover' ? 1.8 : 1); },
         run: function (ctx, a, b) {
           var d = gRom(ctx), rb = R(ctx, b, a), pf = ctx.pair(a, b);
-          var yes = HK.canLove(b, a) && (!gTaken(ctx, b) || (HK.Poly && HK.Poly.mode(ctx) !== 'none')) && (!HK.Poly || HK.Poly.canCouple(ctx, a, b)) && (b.lock == null || b.lock === a.i) && rb.att > 36 - d * 10 && rb.aff > 8 - d * 6;
+          var yes = HK.canLove(b, a) && (!gTaken(ctx, b) || (HK.Poly && HK.Poly.mode(ctx) !== 'none')) && (!HK.Poly || HK.Poly.canCouple(ctx, a, b)) && !HK.lockOut(b, a) && rb.att > 36 - d * 10 && rb.aff > 8 - d * 6;
           pf.gconf = true;
           if (yes) { pf.couple = true; ctx.mod2(a, b, { att: 8, aff: 10, trust: 6 }, { att: 8, aff: 10, trust: 6 }); }
           else { ctx.mod2(a, b, { att: -3 }, { aff: 2 }); ctx.stress(a, 10); }

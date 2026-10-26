@@ -354,6 +354,9 @@
   /* 心の強さ：堕ちる速さの倍率（弱い 1.3・強い 0.7） */
   A.willK = function (c) { var w = c && c.will; return w === 'weak' ? 1.3 : w === 'strong' ? 0.7 : 1; };
   A.strong = function (c) { return !!c && c.will === 'strong'; };
+  /* 感覚遮断穴の「精神力」（1〜5）：心の強さから。弱い 1・ふつう 3・強い 5。決めていなければ乱数で 1〜5（以前の能力値の振り方と同じ） */
+  A.mindOf = function (c, rng) { var w = c && (c.will || (c.src && c.src.will)); return w === 'weak' ? 1 : w === 'avg' ? 3 : w === 'strong' ? 5 : 1 + rng.int(5); };
+  A.willLabel = function (c) { var w = c && (c.will || (c.src && c.src.will)); return w === 'weak' ? '弱い' : w === 'strong' ? '強い' : 'ふつう'; };
   /* 結末の状態（遮断穴など）：強い人は「堕ちた」を「崩れ落ちた」（心は折れない）にし、弱い人は堕ち度 77 から「堕ちた」にする。o = { fall: [堕ちた状態], down: 崩れた状態 } */
   A.fallState = function (h, st, o) {
     if (!h || !h.will) return st;

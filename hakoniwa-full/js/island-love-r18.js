@@ -79,7 +79,7 @@
     var p = ctx.pair(a, b);
     if (p.couple && was.couple) return '';
     /* 恋人どうし・セフレ・想い続けた相手（夜の前から恋人だった、セフレの約束がある、恋愛相手を決めている）では起きない */
-    if (was.couple || (HK.Ties && HK.Ties.has && HK.Ties.has(ctx, a, b, 'fwb')) || a.lock === b.i || b.lock === a.i) return '';
+    if (was.couple || (HK.Ties && HK.Ties.has && HK.Ties.has(ctx, a, b, 'fwb')) || HK.lockTo(a, b) || HK.lockTo(b, a)) return '';
     var out = '', rng = ctx.rng;
     var two = rng() < 0.5 ? [a, b] : [b, a];
     for (var k = 0; k < 2; k++) {

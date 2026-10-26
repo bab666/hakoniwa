@@ -83,6 +83,9 @@
     c.abM = true;
     if (!per || typeof per !== 'object') return;
     c.ab = c.ab || {};
+    /* 感覚遮断穴の「精神力」（1〜5）は、住人の「心の強さ」（弱い／ふつう／強い）に移す（attr.js の will。決めていない人だけ） */
+    var hm = per.hole && per.hole.stats && per.hole.stats.mind;
+    if (!c.will && hm >= 1 && hm <= 5) c.will = hm <= 2 ? 'weak' : hm >= 4 ? 'strong' : 'avg';
     var order = (HK.SCEN_ORDER || []).concat(Object.keys(per));
     SH.GROUPS.forEach(function (g) {
       if (get(c, g)) return;

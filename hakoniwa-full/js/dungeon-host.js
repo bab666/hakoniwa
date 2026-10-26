@@ -148,8 +148,8 @@
     if (r.kind === 'res') {
       var c = chars[r.who[0].i];
       h = { i: r.who[0].i, name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa,
-        ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock, calls: c.calls || {} };
-      var sl = c.sexLock; h.sexLock = sl === 'any' || sl === 'lover' ? sl : sl == null || sl === '' || isNaN(+sl) ? null : +sl;
+        ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: HK.lockFirst(c.loveLock), locks: HK.parseLocks(c.loveLock), calls: c.calls || {} };
+      var sl = c.sexLock; h.sexLock = HK.sexLockOf(sl);
       if (HK.charFlags) HK.charFlags(c, h, 'dungeon');
       h.kind = 'res';
     } else { h = r.mob; h.i = -1; h.kind = 'mob'; h.tr = h.tr || HK.traits(h.eg); }

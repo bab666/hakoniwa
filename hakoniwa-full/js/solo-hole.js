@@ -131,8 +131,8 @@
       { id: 'release', label: '解放のしかた', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ' }, { v: 'burst', label: '一気に戻る' }, { v: 'drip', label: '少しずつ戻る' }, { v: 'mid', label: '最中に戻る' }, { v: 'late', label: '帰り道で遅れて戻る' }] }
     ].concat(HK.Ero ? [HK.Ero.OPT] : []),
     stats: [
-      { id: 'sense', label: '感じやすさ', desc: '高いほど戻ってきた感覚に耐えられない' },
-      { id: 'mind', label: '精神力', desc: '待っている間に心が削れにくい' }
+      { id: 'sense', label: '感じやすさ', desc: '高いほど戻ってきた感覚に耐えられない' }
+      /* 精神力は住人の設定「心の強さ」（attr.js の will）から取る（弱い 1・ふつう 3・強い 5。おまかせはランダム）。HK.Attr.mindOf */
     ],
     actions: [
       { id: 'count', label: '時間を数えてやり過ごす', fit: function (t) { return t.a * 0.6 + t.caution * 0.3; } },
@@ -169,12 +169,14 @@
     if (cast.si) { S.h = K.hero(S, input.chars[cast.si], (input.perChar && input.perChar[cast.si]) || {}); S.h.i = cast.si; S.party = [S.h]; }
     var h = S.h;
     /* 恋愛・R18にしない相手（HK.ngPair で見る）：SoloKit の住人には載らないので、ここで写す */
-    h.i = cast.si || 0; h.ng = ngOf(input.chars[h.i]); (function (c) { h.lock = c && c.loveLock !== '' && c.loveLock != null && !isNaN(+c.loveLock) ? +c.loveLock : null; if (HK.charFlags) HK.charFlags(c, h, 'hole'); })(input.chars[h.i]);
+    h.i = cast.si || 0; h.ng = ngOf(input.chars[h.i]); (function (c) { h.lock = c ? HK.lockFirst(c.loveLock) : null; if (HK.charFlags) HK.charFlags(c, h, 'hole'); })(input.chars[h.i]);
     if (BH) BH.setup(S, input, cast);
     /* 主催者（hole-host.js）：住人の主催者は、はまる人にも壁の向こうにもならない（cast で外してある）。なし・おまかせなら何もしない */
     var HH = HK.HoleHost, hostOn = !!(HH && HH.setup(S, input));
     var fin = function (E0, adv0, ex0) { if (hostOn) HH.end(S, E0); var r0 = K.finish(S, input, E0, adv0, ex0); if (hostOn) r0._host = S; return r0; };
     h.sens = 0.85 + (h.stats.sense - 3) * 0.12;
+    /* 精神力（1〜5）：住人の設定「心の強さ」から。決めていなければランダム（以前の能力値と同じ振り方） */
+    h.stats.mind = HK.Attr && HK.Attr.mindOf ? HK.Attr.mindOf(h, rng) : 1 + rng.int(5);
     var H = env.hours, pl = PLACE[env.place] || PLACE.lab;
     S.k = clamp(Math.pow(6 / H, 0.5), 0.5, 1.4);
     S.k *= HK.Dark.f(S, 'fall');   /* 展開の重さ（mood-dial.js）：穏やかほど堕ちが遅い */
@@ -503,7 +505,7 @@
     var adv = [];
     adv.push('待っている間に削れたのは、' + (h.tr.fc + h.tr.ac > h.tr.a + h.tr.cold ? '想像力（FC・AC）のせい。何も感じないのに、心だけが先に熱くなった。' : '時間そのもの。A・ドライさのおかげで、想像には呑まれにくかった。'));
     adv.push('戻ってきた感覚の量は、人通り ' + env.traffic + '・過激さ ' + env.wild + '・感じやすさ ' + h.stats.sense + 'で決まった。解放のしかたは「' + X.RELEASE_MODE[mode] + '」。');
-    if (state !== 'hold') adv.push('精神力（' + h.stats.mind + '）とCP（' + Math.round(h.eg.CP) + '）がもう少しあれば、最後の波に耐えられたかもしれない。');
+    if (state !== 'hold') adv.push('心の強さ（' + (HK.Attr && HK.Attr.willLabel ? HK.Attr.willLabel(h) : h.stats.mind) + '）とCP（' + Math.round(h.eg.CP) + '）がもう少しあれば、最後の波に耐えられたかもしれない。');
     return fin(E, adv, { meta: pl.n + '・' + H + '時間・' + X.RELEASE_MODE[mode], estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], [topMe ? '中で果てた回数' : '奥に注がれた回数', meta.cum + '回'], ['触手・道具', meta.tent + '回'], ['遮断の揺らぎ', leaks + '回'], ['解放時の絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
   }
   HK.SCEN_ORDER.push('hole');

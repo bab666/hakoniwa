@@ -54,7 +54,7 @@
     /* 大事な人の死・罪悪感 */
     others.forEach(function (b) {
       if (b.alive) return;
-      var r = ctx.R(c, b), close = r.aff + r.att * 0.6 + (posTie(ctx, c, b) ? 30 : 0) + (c.lock === b.i ? 50 : 0);
+      var r = ctx.R(c, b), close = r.aff + r.att * 0.6 + (posTie(ctx, c, b) ? 30 : 0) + (HK.lockTo(c, b) ? 50 : 0);
       if (b.killedBy === c.i) out.push({ k: 'guilt', s: 0.2 + c.tr.np * 0.2 + c.tr.ac * 0.15, b: b, why: c.name + 'は' + b.name + 'の死に関わった（NP・ACが罪悪感を強める）' });
       else if (close > 40) out.push({ k: 'grief', s: 0.2 + close / 350 + c.tr.np * 0.1, b: b, why: b.name + 'を島で失った（好意 ' + Math.round(r.aff) + '）' });
     });
@@ -93,7 +93,7 @@
       boarders.forEach(function (x) {
         if (stayers.indexOf(x) >= 0) return;
         var love = null;
-        stayers.forEach(function (s) { var v = Math.min(ctx.R(x, s).att, ctx.R(s, x).att) + (x.lock === s.i ? 40 : 0); if (v > 45 && (!love || v > love.v)) love = { s: s, v: v }; });
+        stayers.forEach(function (s) { var v = Math.min(ctx.R(x, s).att, ctx.R(s, x).att) + (HK.lockTo(x, s) ? 40 : 0); if (v > 45 && (!love || v > love.v)) love = { s: s, v: v }; });
         if (love && ctx.rng() < 0.45 + x.tr.np * 0.2 + x.tr.impulse * 0.15) {
           var r = { k: 'withLove', s: 1, b: love.s, why: '想う相手の' + love.s.name + 'が島に残ると決めた（互いの惹かれ ' + Math.round(love.v) + '）' };
           add.push([x, r]);

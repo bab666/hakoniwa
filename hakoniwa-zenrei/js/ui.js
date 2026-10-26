@@ -77,7 +77,7 @@
     });
   }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { var o = { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
+  function mk(c) { var o = { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: idList(c.loveLock), sexLock: c.sexLock || '', sexLocks: idList(c.sexLocks), loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -88,6 +88,11 @@
     var o = {}; eg = obj(eg);
     HK.FACTORS.forEach(function (k) { var v = parseFloat(eg[k]); o[k] = isNaN(v) ? 10 : HK.clamp(v, 0, 20); });
     return o;
+  }
+  /* 住人の id の並び（文字列一つ・配列のどちらでも）。重複は除く */
+  function idList(v) {
+    var l = Array.isArray(v) ? v : typeof v === 'string' && v ? [v] : [];
+    return l.filter(function (x, i) { return typeof x === 'string' && x && l.indexOf(x) === i; });
   }
   function normChar(c) {
     c = obj(c);
@@ -119,6 +124,8 @@
     if (HK.Shared) HK.Shared.norm(c);
     c.faithful = !!c.faithful;
     c.noR18 = !!c.noR18;
+    /* 三人の場面：固定した相手が中心なら参加する（R18版。room-trio.js） */
+    c.trioHub = !!c.trioHub;
     c.posNpc = c.posNpc === 'bottom' ? 'bottom' : '';
     /* お酒の強さ（1 弱い〜5 ザル。空ならおまかせ） */
     c.alcohol = HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '';
@@ -130,9 +137,12 @@
     c.marks = str(c.marks, 30).trim();
     /* 語尾の付け替え（「です→っす、だ→だぜ」を5つまで。tone-new2.js） */
     c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(str(c.toneCustom, 120)) : '');
-    c.loveLock = typeof c.loveLock === 'string' ? c.loveLock : '';
-    /* 性行為の相手の固定（R18）：この人とだけ体の関係になる。恋愛は縛らない */
-    c.sexLock = typeof c.sexLock === 'string' ? c.sexLock : '';
+    /* 恋愛相手の固定：相手の id の並び（複数可。以前の保存は一人の id の文字列） */
+    c.loveLock = idList(c.loveLock);
+    /* 性行為の相手の固定（R18）：''（恋愛相手の固定に合わせる）／any／lover／loverOnly／pick（sexLocks の人とだけ）。以前の保存は一人の id の文字列 */
+    if (c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly') c.sexLocks = [];
+    else if (c.sexLock === 'pick' || Array.isArray(c.sexLock) || (typeof c.sexLock === 'string' && c.sexLock)) { c.sexLocks = idList(c.sexLock === 'pick' ? c.sexLocks : c.sexLock); c.sexLock = c.sexLocks.length ? 'pick' : ''; }
+    else { c.sexLock = ''; c.sexLocks = []; }
     c.loveNG = Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return typeof x === 'string'; }) : [];
     if (c.icon && !(typeof c.icon === 'string' && /^data:image\//.test(c.icon))) delete c.icon;
     return c;
@@ -142,8 +152,9 @@
     var ids = {};
     S0.chars.forEach(function (c) { ids[c.id] = 1; });
     S0.chars.forEach(function (c) {
-      if (!ids[c.loveLock] || c.loveLock === c.id) c.loveLock = '';
-      if (c.sexLock !== 'any' && c.sexLock !== 'lover' && c.sexLock !== 'loverOnly' && (!ids[c.sexLock] || c.sexLock === c.id)) c.sexLock = '';
+      c.loveLock = idList(c.loveLock).filter(function (k) { return ids[k] && k !== c.id; });
+      c.sexLocks = idList(c.sexLocks).filter(function (k) { return ids[k] && k !== c.id; });
+      if (c.sexLock === 'pick' && !c.sexLocks.length) c.sexLock = '';
       /* 恋愛・R18にしない相手：今いる住人だけ。片方に書かれていれば、もう片方にも書く */
       c.loveNG = (c.loveNG || []).filter(function (k, i, l) { return ids[k] && k !== c.id && l.indexOf(k) === i; });
       Object.keys(c.calls).forEach(function (k) { if (!ids[k] || k === c.id || typeof c.calls[k] !== 'string' || !c.calls[k].trim()) delete c.calls[k]; else c.calls[k] = c.calls[k].slice(0, 16); });
@@ -431,6 +442,7 @@
         if (c.daku) o.daku = true;
         if (c.faithful) o.faithful = true;
         if (c.noR18) o.noR18 = true;
+        if (c.trioHub) o.trioHub = true;
         if (c.posNpc === 'bottom') o.posNpc = 'bottom';
         if (c.alcohol) o.alcohol = +c.alcohol;
         if (c.partWords) o.partWords = c.partWords;
@@ -441,9 +453,11 @@
         if (HK.Attr) HK.Attr.exportTo(o, c, ref);
         if (HK.Shared) HK.Shared.exportTo(o, c);
         if (c.toneCustom) o.toneCustom = c.toneCustom;
-        if (c.loveLock && ref(c.loveLock) != null) o.loveLock = ref(c.loveLock);
+        /* 固定した相手：一人なら番号（以前の形）、二人以上なら番号の並び */
+        var lks = idList(c.loveLock).map(ref).filter(function (x) { return x != null; });
+        if (lks.length) o.loveLock = lks.length === 1 ? lks[0] : lks;
         if (c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly') o.sexLock = c.sexLock;
-        else if (c.sexLock && ref(c.sexLock) != null) o.sexLock = ref(c.sexLock);
+        else if (c.sexLock === 'pick') { var sls = idList(c.sexLocks).map(ref).filter(function (x) { return x != null; }); if (sls.length) o.sexLock = sls.length === 1 ? sls[0] : sls; }
         if (c.loveNG && c.loveNG.length) { var ng = c.loveNG.map(ref).filter(function (x) { return x != null; }); if (ng.length) o.loveNG = ng; }
         if (c.calls) { var cl = {}; Object.keys(c.calls).forEach(function (id) { if (ref(id) != null && c.calls[id]) cl[ref(id)] = c.calls[id]; }); if (Object.keys(cl).length) o.calls = cl; }
         if (c.keigo) { var kg = Object.keys(c.keigo).filter(function (id) { return ref(id) != null && c.keigo[id]; }).map(ref); if (kg.length) o.keigo = kg; }
@@ -508,6 +522,7 @@
       if (o.daku) c.daku = true;
       if (o.faithful) c.faithful = true;
       if (o.noR18) c.noR18 = true;
+      if (o.trioHub) c.trioHub = true;
       if (o.posNpc === 'bottom') c.posNpc = 'bottom';
       if (HK.ALC_OK(o.alcohol)) c.alcohol = String(o.alcohol);
       if (o.partWords) c.partWords = o.partWords;
@@ -560,9 +575,11 @@
       if (Array.isArray(c._ng)) c.loveNG = c._ng.map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; }).filter(Boolean);
       delete c._ng;
       if (HK.Attr) HK.Attr.importRefs(c, ref);
-      if (c._lk != null) { c.loveLock = (typeof c._lk === 'number' || /^\d+$/.test(String(c._lk)) ? map[+c._lk] : (list.filter(function (x) { return x.name === c._lk; })[0] || {}).id) || ''; delete c._lk; }
-      if (c._sl === 'any' || c._sl === 'lover' || c._sl === 'loverOnly') { c.sexLock = c._sl; delete c._sl; }
-      if (c._sl != null) { c.sexLock = (typeof c._sl === 'number' || /^\d+$/.test(String(c._sl)) ? map[+c._sl] : (list.filter(function (x) { return x.name === c._sl; })[0] || {}).id) || ''; delete c._sl; }
+      /* 固定した相手：番号・名前・その並び、のどれでも */
+      var toIds = function (v) { return idList((Array.isArray(v) ? v : [v]).map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; })); };
+      if (c._lk != null) { c.loveLock = toIds(c._lk); delete c._lk; }
+      if (c._sl === 'any' || c._sl === 'lover' || c._sl === 'loverOnly') { c.sexLock = c._sl; c.sexLocks = []; delete c._sl; }
+      else if (c._sl != null) { c.sexLocks = toIds(c._sl); c.sexLock = c.sexLocks.length ? 'pick' : ''; delete c._sl; }
       if (c._cl && typeof c._cl === 'object') { c.calls = c.calls || {}; Object.keys(c._cl).forEach(function (k) { var id = /^\d+$/.test(k) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; if (id) c.calls[id] = String(c._cl[k]).slice(0, 16); }); }
       delete c._cl;
       /* 敬語で話す相手：番号（または名前）の並び */
@@ -811,11 +828,13 @@
       chars: (function () {
         var cast = castFor(S.scenId), ids = cast.map(function (c) { return c.id; }), nm = {};
         S.chars.forEach(function (c) { nm[c.id] = c.name; });
+        /* 固定した相手の番号の並び。固定しているのに誰もこの箱庭にいなければ [-1]（誰とも、の印。engine.js の HK.parseLocks） */
+        var lockIdx = function (l) { l = idList(l); if (!l.length) return ''; var x = l.map(function (k) { return ids.indexOf(k); }).filter(function (i) { return i >= 0; }); return x.length ? x : [-1]; };
         return cast.map(function (c) {
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '', sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock ? ids.indexOf(c.sexLock) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock === 'pick' ? lockIdx(c.sexLocks) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
           return HK.Attr ? HK.Attr.toInput(o, c, ids) : o;
         });
       })(),
@@ -951,7 +970,7 @@
         break;
       case 'del':
         S.chars = S.chars.filter(function (c) { return c.id !== row.dataset.id; });
-        S.chars.forEach(function (x) { if (x.loveLock === row.dataset.id) x.loveLock = ''; if (x.sexLock === row.dataset.id) x.sexLock = ''; if (x.loveNG) x.loveNG = x.loveNG.filter(function (k) { return k !== row.dataset.id; }); if (x.calls) delete x.calls[row.dataset.id]; if (x.keigo) delete x.keigo[row.dataset.id]; });
+        S.chars.forEach(function (x) { x.loveLock = idList(x.loveLock).filter(function (k) { return k !== row.dataset.id; }); x.sexLocks = idList(x.sexLocks).filter(function (k) { return k !== row.dataset.id; }); if (x.sexLock === 'pick' && !x.sexLocks.length) x.sexLock = ''; if (x.loveNG) x.loveNG = x.loveNG.filter(function (k) { return k !== row.dataset.id; }); if (x.calls) delete x.calls[row.dataset.id]; if (x.keigo) delete x.keigo[row.dataset.id]; });
         cleanTies(); save(); renderCast(); break;
       case 'tieadd':
         if (S.chars.length < 2) return;

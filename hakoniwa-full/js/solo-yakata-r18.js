@@ -342,7 +342,7 @@
     var others = live.filter(function (q) { return q !== c && q !== S.acc && !q.locked; });
     var EV = [];
     /* 凌辱：快楽殺人の犯人だけ */
-    if (cOk && S.mot.id === 'pleasure' && !c.lock && (!HK.Content || (HK.Content.ok(S, 'violence') && HK.Content.ok(S, 'force')))) {
+    if (cOk && S.mot.id === 'pleasure' && !HK.lockAny(c) && (!HK.Content || (HK.Content.ok(S, 'violence') && HK.Content.ok(S, 'force')))) {
       var vs = others.filter(function (q) { return cTop(q); });
       if (vs.length) EV.push({ w: 3 + c.tr.cold * 2, f: function () {
         var v = HK.weighted ? HK.weighted(rng, vs, function (q) { return 1 + q.m.fear / 50 + (q.tr.caution < 0.4 ? 1 : 0); }) : rng.pick(vs);

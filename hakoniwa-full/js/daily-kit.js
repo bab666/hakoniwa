@@ -516,7 +516,7 @@
           if (!ft || ft.kind !== ev.dm.kin || couple(ctx, a, b)) return;
         } else if (!relOk(ctx, ev, a, b)) return;
         if (!moodOk(ev, a, b)) return;
-        if (ev.cat === 'romance' && (!ctx.romanceOk([a, b]) || (a.lock != null && a.lock !== b.i))) return;
+        if (ev.cat === 'romance' && (!ctx.romanceOk([a, b]) || HK.lockOut(a, b))) return;
         if (!unused(ctx, ev)) return;
         var S = spotsFor(ctx, ev, conf, a, b);
         if (!S.length) return;

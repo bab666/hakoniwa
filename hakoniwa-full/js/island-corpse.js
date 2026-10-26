@@ -28,7 +28,7 @@
   };
 
   function stances(ctx, c, v) {
-    var r = ctx.R(c, v), close = r.aff + r.att * 0.8 + (posTie(ctx, c, v) ? 30 : 0) + (c.lock === v.i ? 60 : 0);
+    var r = ctx.R(c, v), close = r.aff + r.att * 0.8 + (posTie(ctx, c, v) ? 30 : 0) + (HK.lockTo(c, v) ? 60 : 0);
     var I = ctx.isl || {}, n = ctx.present().length, hungry = Math.min(0.25, (I.hungry || 0) * 0.05) + (ctx.food < n * 6 ? 0.08 : 0);
     var t = c.tr;
     return {

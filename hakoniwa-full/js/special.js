@@ -222,7 +222,7 @@
   SP.vampTurn = function (A, p) {
     if (!vampDue(A, p) || !A.alive(p) || p.mad) return false;
     var vp = p.vamp, over = A.nowH - vp.due;
-    var lockP = p.lock == null ? null : p.lock < 0 ? 'absent' : A.all.filter(function (q) { return q.i === p.lock; })[0] || 'absent';
+    var lockP = !HK.lockAny(p) ? null : p.lock < 0 ? 'absent' : A.all.filter(function (q) { return HK.lockTo(p, q); })[0] || 'absent';
     var cand = donors(A, p);
     if (lockP) cand = lockP === 'absent' ? [] : cand.filter(function (q) { return q === lockP; });
     /* 吸える相手がいない環境：決めた相手が来ていない・二度と会えない・人間が誰も残っていない */

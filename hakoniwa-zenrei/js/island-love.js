@@ -76,7 +76,7 @@
     for (var i = 0; i < C.length; i++) {
       var c = C[i], p = ctx.pair(a, c);
       if (p.couple) return c;
-      if (a.lock != null && a.lock !== c.i) continue;
+      if (HK.lockOut(a, c)) continue;
       if (p.kin || p.rejected === a.i || !HK.canLove(a, c) || !HK.canLove(c, a)) continue;
       var r = R(ctx, a, c), v = r.att + r.aff * 0.4 - r.ten * 0.3 + (p.chem || 1) * 8;
       if (v > bv) { bv = v; best = c; }

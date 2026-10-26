@@ -385,7 +385,7 @@
       if (Pos && Pos.hardTopNpc(A)) side = 'top';
       var want = A.m.heat / 100 + A.tr.fc * 0.3 + (A.tr.impulse || 0) * 0.3 - A.tr.cp * 0.3 - A.m.reason / 150 + (A.goal && A.goal.id === 'want' ? 0.15 : 0);
       /* 本命・恋愛相手・体の相手を決めている人は踏みとどまりやすい（耐えがたいほどの熱なら妥協する） */
-      if (A.honmei != null || A.lock != null || typeof A.sexLock === 'number') want -= desperate(A) && A.m.heat > 85 ? 0.1 : 0.45;
+      if (A.honmei != null || HK.lockAny(A) || typeof A.sexLock === 'number') want -= desperate(A) && A.m.heat > 85 ? 0.1 : 0.45;
       var force = HK.Content && HK.Content.on(S.env, 'force', 'locker');
       if (want > 0.55 && rng() < 0.7 * HK.Dark.f(S, 'fall')) {
         var top = side === 'top' ? A : m, bot = side === 'top' ? m : A, md = modeOf(top, bot), vv = { a: top.name, b: bot.name };
@@ -633,7 +633,7 @@
       if (!canAct(S, a, b)) { holdPair(S, a, b, whyNot(S, a, b)); return; }
       /* 体だけの関係の組：固定した恋人が同じロッカーにいれば手を出しにくい（×0.3） */
       var fr = freeOk(S, a, b);
-      if (fr && Lk.m.some(function (q) { return q !== a && q !== b && (q.i === a.lock || q.i === b.lock); }) && rng() > 0.3) continue;
+      if (fr && Lk.m.some(function (q) { return q !== a && q !== b && (HK.lockTo(a, q) || HK.lockTo(b, q)); }) && rng() > 0.3) continue;
       var lvMax = Math.min(LK.MAXLV || 4, 4);
       if (a.bound && b.bound) lvMax = Math.min(lvMax, 1);
       var lv = Math.min(Lk.lv + (relW(S, a, b, 'acc') >= 0.45 && Lk.lv >= 0 && rng() < 0.5 ? 2 : 1), lvMax);

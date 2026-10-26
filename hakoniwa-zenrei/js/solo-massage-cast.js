@@ -97,8 +97,8 @@
   C.resident = function (input, i) {
     var c = input.chars[i], pc = (input.perChar && input.perChar[i]) || {};
     var p = { i: i, name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, memo: c.memo || '',
-      ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock,
-      sexLock: c.sexLock === 'any' || c.sexLock === 'lover' ? c.sexLock : c.sexLock === '' || c.sexLock == null || isNaN(+c.sexLock) ? null : +c.sexLock, pick: pc.pick || {}, rawNoR18: !!c.noR18 };
+      ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: HK.lockFirst(c.loveLock), locks: HK.parseLocks(c.loveLock),
+      sexLock: HK.sexLockOf(c.sexLock), pick: pc.pick || {}, rawNoR18: !!c.noR18 };
     if (HK.charFlags) HK.charFlags(c, p, 'massage');
     p.persona = HK.personaOf(p);
     (input.ties || []).forEach(function (t) { if (t && /^(lover|mate|fated)$/.test(t.type) && (t.a === i || t.b === i)) (p.loveSet = p.loveSet || []).push(t.a === i ? t.b : t.a); });

@@ -728,7 +728,7 @@
   function mkHero(S, src, pc, i) {
     var rng = S.rng, env = S.env, scen = HK.SCENARIOS.dungeon;
     var h = {
-      i: i, ng: Array.isArray(src.loveNG) ? src.loveNG.filter(function (x) { return x >= 0; }) : [], lock: src.loveLock === '' || src.loveLock == null || isNaN(+src.loveLock) ? null : +src.loveLock, name: src.name, eg: src.eg, memo: src.memo || '', tr: HK.traits(src.eg),
+      i: i, ng: Array.isArray(src.loveNG) ? src.loveNG.filter(function (x) { return x >= 0; }) : [], lock: HK.lockFirst(src.loveLock), locks: HK.parseLocks(src.loveLock), name: src.name, eg: src.eg, memo: src.memo || '', tr: HK.traits(src.eg),
       stats: {}, hp: 100, pleasure: 0, sens: 1, corrupt: 0, climax: 0, dev: {}, curses: [], items: [], outfit: env.outfit, cloth: OUTFIT[env.outfit] || 3,
       gender: src.gender || '', likes: src.likes || '', tone: src.tone || '', fp: src.fp || '', pos: src.pos || '', posLike: src.posLike || '', futa: !!src.futa
     };

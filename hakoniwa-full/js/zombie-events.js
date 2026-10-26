@@ -455,10 +455,10 @@
   function romShift(ctx) { return ctx.env.romance == null ? 0 : (ctx.env.romance - 50) / 50; }
   EV.push({
     id: 'z_confess', cat: 'romance', scope: 'pair',
-    when: function (ctx, a, b) { var r = ctx.R(a, b), pf = ctx.pair(a, b), d = romShift(ctx); return HK.canLove(a, b) && r.att > 38 - d * 12 && r.aff > 20 - d * 10 && !pf.couple && !pf.zconf && (!HK.Poly || HK.Poly.canTry(ctx, a, b)) && !pf.kin && (a.lock == null || a.lock === b.i); },
+    when: function (ctx, a, b) { var r = ctx.R(a, b), pf = ctx.pair(a, b), d = romShift(ctx); return HK.canLove(a, b) && r.att > 38 - d * 12 && r.aff > 20 - d * 10 && !pf.couple && !pf.zconf && (!HK.Poly || HK.Poly.canTry(ctx, a, b)) && !pf.kin && !HK.lockOut(a, b); },
     w: function (ctx, a, b) { return 0.35 + a.tr.honesty * 0.8 + ctx.R(a, b).att / 120; },
     run: function (ctx, a, b) {
-      var d = romShift(ctx), rb = ctx.R(b, a), yes = rb.att > 30 - d * 10 && rb.aff > 15 - d * 8 && (b.lock == null || b.lock === a.i), pf = ctx.pair(a, b);
+      var d = romShift(ctx), rb = ctx.R(b, a), yes = rb.att > 30 - d * 10 && rb.aff > 15 - d * 8 && !HK.lockOut(b, a), pf = ctx.pair(a, b);
       pf.zconf = true;
       if (yes) { pf.couple = true; ctx.mod2(a, b, { aff: 10, trust: 8, att: 8 }, { aff: 10, trust: 8, att: 8 }); }
       else { ctx.mod2(a, b, { att: -4 }, { aff: 2 }); ctx.stress(a, 10); }

@@ -9,7 +9,7 @@
   function R(ctx, a, b) { return ctx.R(a, b); }
   function L(s) { return s.split('|'); }
   /* 恋愛の出来事にしてよい二人か（恋愛の起こりやすさ0・恋愛の成り立たない組・恋愛：なしの血縁・恋愛相手を別に決めた人は除く） */
-  function loveOK(ctx, a, b) { return ctx.env.romance !== 0 && (!HK.canLove || HK.canLove(a, b)) && !ctx.pair(a, b).kin && (a.lock == null || a.lock === b.i) && (b.lock == null || b.lock === a.i); }
+  function loveOK(ctx, a, b) { return ctx.env.romance !== 0 && (!HK.canLove || HK.canLove(a, b)) && !ctx.pair(a, b).kin && !HK.lockOut(a, b) && !HK.lockOut(b, a); }
   /* 同じエリアにいて、惹かれか好意のある二人（いなければ null） */
   function zPair(ctx, P, min, love) {
     var best = null, bv = min == null ? 20 : min;

@@ -80,7 +80,7 @@
   function enemyTie(ctx, a, b) { var l = HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, a, b) : []; return l.some(function (t) { var d = HK.TIES[t.type]; return d && d.pol < 0; }); }
   function closest(ctx, a, list) {
     var best = null, bv = -1e9;
-    list.forEach(function (o) { if (o === a) return; var r = R(ctx, a, o), v = r.aff + r.att * 0.8 + r.trust * 0.3 + (tieOf(ctx, a, o) ? 30 : 0) + (a.lock === o.i ? 60 : 0); if (v > bv) { bv = v; best = o; } });
+    list.forEach(function (o) { if (o === a) return; var r = R(ctx, a, o), v = r.aff + r.att * 0.8 + r.trust * 0.3 + (tieOf(ctx, a, o) ? 30 : 0) + (HK.lockTo(a, o) ? 60 : 0); if (v > bv) { bv = v; best = o; } });
     return best && bv > 40 ? best : null;
   }
 
@@ -101,7 +101,7 @@
   function bonds(ctx, a) {
     var left = ctx.present().filter(function (o) { return o !== a; }), friend = null, fv = 0, foes = [];
     left.forEach(function (o) {
-      var r = R(ctx, a, o), v = r.aff + r.trust * 0.5 + r.att * 0.5 + (tieOf(ctx, a, o) ? 30 : 0) + (a.lock === o.i ? 60 : 0);
+      var r = R(ctx, a, o), v = r.aff + r.trust * 0.5 + r.att * 0.5 + (tieOf(ctx, a, o) ? 30 : 0) + (HK.lockTo(a, o) ? 60 : 0);
       if (v > fv) { fv = v; friend = o; }
       if (hostile(ctx, a, o) > 32 || r.aff < -18) foes.push(o);
     });
@@ -109,7 +109,7 @@
   }
   function decideHelp(ctx, a, sincere) {
     var B = bonds(ctx, a), p = sincere ? 0.85 : conscience(a) * 0.8, why;
-    if (B.friend) { p = Math.max(p, 0.95); why = '島に' + B.friend.name + 'が残っている（' + (a.lock === B.friend.i ? '想う相手' : tieOf(ctx, a, B.friend) ? '大事な関係' : '仲が良い') + '）'; }
+    if (B.friend) { p = Math.max(p, 0.95); why = '島に' + B.friend.name + 'が残っている（' + (HK.lockTo(a, B.friend) ? '想う相手' : tieOf(ctx, a, B.friend) ? '大事な関係' : '仲が良い') + '）'; }
     else if (B.foes.length && B.foes.length >= B.left.length / 2) { p *= sincere ? 0.7 : 0.3; why = '島に残っているのは、' + names(B.foes) + 'のような折り合いの悪い相手ばかり'; }
     else why = a.name + 'の良心（NP・本音の出やすさ・CP）';
     return { does: ctx.rng() < p, why: why };
@@ -157,7 +157,7 @@
   }
   function letter(ctx, a) {
     var P = ctx.present(), dear = closest(ctx, a, P);
-    var love = dear && (a.lock === dear.i || R(ctx, a, dear).att > 40);
+    var love = dear && (HK.lockTo(a, dear) || R(ctx, a, dear).att > 40);
     var t = love ? T.letterLove : dear && tieOf(ctx, a, dear) ? T.letterTie : T.letterNone;
     if (dear && t !== T.letterNone) ctx.stress(dear, 18);
     return fill(pick(ctx, t), mm(a, dear));
@@ -322,9 +322,9 @@
       if (!partner || !partner.alive || partner.out) {
         partner = null;
         var dear = closest(ctx, a, rest);
-        if (dear && a.tr.np * 0.5 + R(ctx, a, dear).aff / 150 + (a.lock === dear.i ? 0.4 : 0) > 0.55) {
+        if (dear && a.tr.np * 0.5 + R(ctx, a, dear).aff / 150 + (HK.lockTo(a, dear) ? 0.4 : 0) > 0.55) {
           txt = fill(pick(ctx, T.invite), mm(a, dear));
-          if (selfish(ctx, dear) > 0.2 || R(ctx, dear, a).att > 45 || dear.lock === a.i) partner = dear;
+          if (selfish(ctx, dear) > 0.2 || R(ctx, dear, a).att > 45 || HK.lockTo(dear, a)) partner = dear;
           else if (dear.tr.cp * 0.5 + dear.tr.honesty * 0.5 > 0.55) {
             ostracize(ctx, a, dear); a.flags.sfound = true;
             ctx.say({ kind: 'event', cat: 'conflict', actors: [a, dear], text: txt + fill(pick(ctx, T.refuseTell), mm(a, dear)) + fill(pick(ctx, T.ostraStart), mm(dear, a)), why: dear.name + 'のCP・本音の出やすさ（黙っていられなかった）', mag: 25 });

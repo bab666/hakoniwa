@@ -22,7 +22,7 @@
   /* b の心が向いている相手（a 以外）。設定された関係（恋人・b からの片想い・セフレ）を最優先する */
   U.heartOf = function (ctx, b, a) {
     /* 恋愛相手を固定している人の心は、その相手にある */
-    if (b.lock != null && b.lock !== a.i && ctx.chars[b.lock] && ctx.chars[b.lock].alive !== false) return ctx.chars[b.lock];
+    if (HK.lockOut(b, a) && ctx.chars[b.lock] && ctx.chars[b.lock].alive !== false) return ctx.chars[b.lock];
     var best = null, bv = 45;
     ctx.chars.forEach(function (o) {
       if (o === b || o === a) return;
@@ -41,7 +41,7 @@
     /* 両片想い（b からも片想い）は、相手にされていない片想いではない（pining.js） */
     if (HK.Ties && HK.Ties.from(ctx, b, a, 'crush')) return '';
     /* b が別の人に恋愛相手を固定している：ほかに好きな人がいる */
-    if (b.lock != null && b.lock !== a.i) return U.heartOf(ctx, b, a) ? 'other' : 'none';
+    if (HK.lockOut(b, a)) return U.heartOf(ctx, b, a) ? 'other' : 'none';
     if (ctx.R(b, a).att >= 20) return '';
     if (U.heartOf(ctx, b, a)) return 'other';
     if (ctx.R(b, a).ten > 30 || ctx.R(b, a).aff < -10) return 'dislike';
@@ -49,7 +49,7 @@
   };
   U.unreq = function (ctx, a, b) { return U.crushOn(ctx, a, b) && !!U.cold(ctx, a, b); };
   var COLD_WHY = { none: '興味がない', friend: '友達としか見ていない', dislike: '苦手に思っている', other: 'ほかに好きな人がいる' };
-  U.why = function (ctx, a, b) { var c = U.cold(ctx, a, b); return a.name + 'の片想い。' + (c === 'other' ? b.name + 'には' + (b.lock != null && b.lock !== a.i && ctx.chars[b.lock] ? ctx.chars[b.lock].name + 'という、' : '') + 'ほかに好きな人がいる' : b.name + 'は' + a.name + 'を' + (COLD_WHY[c] || '意識していない')) + '（' + b.name + 'から' + a.name + 'への惹かれ ' + Math.round(ctx.R(b, a).att) + '）'; };
+  U.why = function (ctx, a, b) { var c = U.cold(ctx, a, b); return a.name + 'の片想い。' + (c === 'other' ? b.name + 'には' + (HK.lockOut(b, a) && ctx.chars[b.lock] ? ctx.chars[b.lock].name + 'という、' : '') + 'ほかに好きな人がいる' : b.name + 'は' + a.name + 'を' + (COLD_WHY[c] || '意識していない')) + '（' + b.name + 'から' + a.name + 'への惹かれ ' + Math.round(ctx.R(b, a).att) + '）'; };
 
   /* ---------- 文 ---------- */
   var SCN = function (ctx) { return ctx.scen.id; };

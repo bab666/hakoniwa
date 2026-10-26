@@ -25,7 +25,7 @@
   }
   function fill(t, a, b) { return String(t).replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name); }
   /* 固定外の相手と体の関係を持つ側（相手以外に恋愛相手を固定している人） */
-  function freeOne(a, b) { return a.lock != null && a.lock !== b.i ? a : b; }
+  function freeOne(a, b) { return HK.lockOut(a, b) ? a : b; }
 
   HK.State.freeSex = function (ctx, a, b) {
     if (!a || !b || a === b || HK.SAFE_ON) return false;
@@ -41,7 +41,7 @@
   var F = HK.FreeSex = {};
   /* 固定した恋人（その場にいる人）。いなければ null */
   F.loverOf = function (ctx, x, notI) {
-    if (!x || x.lock == null || x.lock === notI) return null;
+    if (!x || !HK.lockAny(x) || x.lock === notI) return null;
     var y = people(ctx)[x.lock];
     return y && y !== x && HK.State.here(y) ? y : null;
   };

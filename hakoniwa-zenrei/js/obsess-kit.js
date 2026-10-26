@@ -32,7 +32,7 @@
     var pf = ctx.pair(a, b);
     if (pf.kin) return true;
     if (ctx.env && ctx.env.romance === 0) return true;
-    if (a.lock != null && a.lock !== b.i) return true;
+    if (HK.lockOut(a, b)) return true;
     /* 無関心な人・恐れている人は、その相手に嫉妬も執着もしない（ties.js） */
     if (HK.Ties && HK.Ties.apathy && (HK.Ties.apathy(ctx, a, b) || HK.Ties.fears(ctx, a, b))) return true;
     /* 相手が自分を恐れている・無関心でも、関係「執着」の想いは一方的に続く（恋愛・夜には進まない：noLove は HK.Pos・HK.canLove が見る） */

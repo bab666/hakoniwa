@@ -17,7 +17,7 @@
     if (!HK.canLove || !HK.canLove(x, y) || !HK.canLove(y, x)) return false;
     if (!ctx.romanceOk([x, y]) || RK.noRomance(ctx, x, y)) return false;
     if (t && HK.tieOptNoLove && HK.tieOptNoLove(t)) return false;
-    if ((x.lock != null && x.lock !== y.i) || (y.lock != null && y.lock !== x.i)) return false;
+    if (HK.lockOut(x, y) || HK.lockOut(y, x)) return false;
     return true;
   }
   function grown(ctx, a, b, aff, trust) { return ctx.R(a, b).aff > aff && ctx.R(b, a).aff > aff && ctx.R(a, b).trust > trust && ctx.R(b, a).trust > trust; }

@@ -885,7 +885,7 @@
         if (HK.ngPair && HK.ngPair(A, B) && (mk0 ? /^(lover|fwb|mate|fated|crush|almost|ex|yan|abuse|honmei)$/ : sexOk0 ? /^(lover|mate|fated|almost|ex|abuse|honmei)$/ : /^(lover|fwb|mate|fated|almost|ex|abuse|honmei)$/).test(t.type)) return;
         if (HK.ngPair && HK.ngPair(A, B) && /^(crush|yan)$/.test(t.type)) {
           /* 想う側（A）が別の人に恋愛相手を固定しているなら、その想いは使わない（固定した人は、ほかの人を想わない） */
-          if (A.lock != null && A.lock !== B.i) return;
+          if (HK.lockOut(A, B)) return;
           /* 想われる側（B）が別の人に固定しているなら、一方通行のまま（両片想い・共依存・受け入れている、にはしない） */
           if (t.cold === 'mutual' || t.cold === 'accept') { var t2 = {}; for (var k0 in t) t2[k0] = t[k0]; delete t2.cold; t = t2; }
         }
@@ -3417,7 +3417,7 @@
           if (!ft || ft.kind !== ev.dm.kin || couple(ctx, a, b)) return;
         } else if (!relOk(ctx, ev, a, b)) return;
         if (!moodOk(ev, a, b)) return;
-        if (ev.cat === 'romance' && (!ctx.romanceOk([a, b]) || (a.lock != null && a.lock !== b.i))) return;
+        if (ev.cat === 'romance' && (!ctx.romanceOk([a, b]) || HK.lockOut(a, b))) return;
         if (!unused(ctx, ev)) return;
         var S = spotsFor(ctx, ev, conf, a, b);
         if (!S.length) return;
@@ -10111,7 +10111,7 @@
     this.chars = input.chars.map(function (c, i) {
       var pc = (input.perChar && input.perChar[i]) || {};
       return {
-        i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], name: c.name, eg: c.eg, tr: HK.traits(c.eg), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, lock: c.loveLock == null || c.loveLock === '' || isNaN(+c.loveLock) ? null : +c.loveLock, sexLock: c.sexLock === 'any' || c.sexLock === 'lover' ? c.sexLock : c.sexLock == null || c.sexLock === '' || isNaN(+c.sexLock) ? null : +c.sexLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder,
+        i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], name: c.name, eg: c.eg, tr: HK.traits(c.eg), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, lock: HK.lockFirst(c.loveLock), locks: HK.parseLocks(c.loveLock), sexLock: HK.sexLockOf(c.sexLock), call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder,
         hp: 100, alive: true, out: false, stress: 0,
         stats: {}, statsRaw: pc.stats || {}, weaponPick: pc.weapon || 'random',
         actionPick: pc.action || 'auto', goalPick: pc.goal || 'auto', role: pc.role || '', pick: pc.pick || {},
@@ -10140,6 +10140,13 @@
     var core = !!(scenId && HK.State && HK.State.R18_CORE[scenId]);
     dst.noR18 = !!src.noR18 && !HK.SAFE_ON && !core;
     if (src.sexLock === 'loverOnly') { dst.sexLock = 'lover'; dst.noMob = !core; } else dst.noMob = !!dst.noMob;
+    /* 恋愛相手の固定・性行為の相手の固定は複数人を持てる（locks・sexLocks）。lock・sexLock は最初の一人（「その人を探す」などの古い読み方のため） */
+    dst.locks = HK.parseLocks(src.loveLock);
+    if (dst.lock == null && dst.locks.length) dst.lock = dst.locks[0];
+    dst.sexLocks = HK.sexLocksOf(src.sexLock);
+    if (dst.sexLocks && typeof dst.sexLock !== 'number') dst.sexLock = dst.sexLocks[0];
+    /* 三人の場面：固定した相手が中心なら、固定していない人が一緒でも参加する（その人とは直接触れ合わない。room-trio.js）。R18版だけ */
+    dst.trioHub = !!src.trioHub && !HK.SAFE_ON;
     /* 攻めだが、モブには受け（攻め・リバのときだけ） */
     dst.posNpc = src.posNpc === 'bottom' && (src.pos === 'top' || src.pos === 'riba') ? 'bottom' : '';
     /* 酒の強さ（1 弱い〜5 ザル。空ならおまかせ＝気質から） */
@@ -10149,6 +10156,30 @@
     /* 一途（恋人ができたら、その恋人がいる間はほかの人に惹かれない・浮気しない。poly.js） */
     dst.faithful = !!src.faithful;
     return dst;
+  };
+  /* 恋愛相手の固定（キャラの設定 loveLock：番号か番号の配列）と性行為の相手の固定（sexLock：'any'／'lover'／'loverOnly'／番号か番号の配列）
+     ・HK.parseLocks(v)：固定した相手の番号の配列（空＝固定しない）。HK.lockFirst(v)：最初の一人（なければ null）
+     ・HK.locks(c)：住人の固定した相手（c.locks。なければ c.lock から。モブの lock = -1 は「誰とも」）
+     ・HK.lockOut(a, b)：a は固定していて b はその中にいない（a は b と恋愛しない）。HK.lockTo(a, b)：a は b を固定している。HK.lockAny(a)：誰かを固定している
+     ・HK.sexLockOf(v)：'any'／'lover'／'loverOnly'／最初の番号／null。HK.sexLocksOf(v)：番号の配列（番号で決めていなければ null）
+     ・HK.sexLockOut(x, y)：x は性行為の相手を番号で決めていて、y はその中にいない */
+  HK.parseLocks = function (v) {
+    /* -1 は「固定した相手がこの箱庭にいない」（誰とも恋愛しない）。ui.js の buildInput が入れる */
+    if (Array.isArray(v)) return v.map(function (x) { return +x; }).filter(function (x, i, l) { return !isNaN(x) && x >= -1 && l.indexOf(x) === i; });
+    if (v === '' || v == null || typeof v === 'boolean' || isNaN(+v)) return [];
+    return [+v];
+  };
+  HK.lockFirst = function (v) { var L = HK.parseLocks(v); return L.length ? L[0] : null; };
+  HK.sexLockOf = function (v) { if (v === 'any' || v === 'lover' || v === 'loverOnly') return v; return HK.lockFirst(v); };
+  HK.sexLocksOf = function (v) { if (v === 'any' || v === 'lover' || v === 'loverOnly') return null; var L = HK.parseLocks(v); return L.length ? L : null; };
+  HK.locks = function (c) { if (!c) return []; if (Array.isArray(c.locks)) return c.locks; return c.lock != null ? [c.lock] : []; };
+  HK.lockAny = function (a) { return HK.locks(a).length > 0; };
+  HK.lockTo = function (a, b) { return !!b && HK.locks(a).indexOf(b.i) >= 0; };
+  HK.lockOut = function (a, b) { var L = HK.locks(a); return L.length > 0 && !(b && L.indexOf(b.i) >= 0); };
+  HK.sexLockOut = function (x, y) {
+    if (!x || !y) return false;
+    if (Array.isArray(x.sexLocks)) return x.sexLocks.indexOf(y.i) < 0;
+    return typeof x.sexLock === 'number' && x.sexLock !== y.i;
   };
   /* 酒の強さ：キャラの設定「お酒」。1 弱い・2 やや弱い・3 ふつう・4 強い・5 ザル。
      HK.alcLevel(c)：設定があればそれ、なければ気質（CP・冷静さが高く、ACが低いほど強い）と名前から1〜5に決める（その人に固定）
@@ -10185,7 +10216,7 @@
     if (!a || !b || a === b) return false;
     if ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0)) return true;
     if (HK.noLovePair(a, b)) return true;
-    return (a.lock != null && a.lock !== b.i) || (b.lock != null && b.lock !== a.i);
+    return HK.lockOut(a, b) || HK.lockOut(b, a);
   };
   /* 関係「無関心」「恐怖」の二人（ties.js の HK.Ties.after・fam-kin.js が住人の noLove に入れる）：恋愛にも体の関係にもならない */
   HK.noLovePair = function (a, b) { return !!(a && b && a !== b && ((a.noLove && a.noLove.indexOf(b.i) >= 0) || (b.noLove && b.noLove.indexOf(a.i) >= 0))); };
@@ -10198,7 +10229,7 @@
   HK.lockBlocks = function (a, b) { return HK.ngPair(a, b); };
   /* 設定の「恋愛・R18にしない相手」だけ／「恋愛相手の固定」が食い違うか／同じ人の恋人どうし（coNG） */
   HK.ngExplicit = function (a, b) { return !!(a && b && a !== b && ((a.ng && a.ng.indexOf(b.i) >= 0) || (b.ng && b.ng.indexOf(a.i) >= 0) || HK.noLovePair(a, b))); };
-  HK.lockConflict = function (a, b) { return !!(a && b && a !== b && ((a.lock != null && a.lock !== b.i) || (b.lock != null && b.lock !== a.i))); };
+  HK.lockConflict = function (a, b) { return !!(a && b && a !== b && (HK.lockOut(a, b) || HK.lockOut(b, a))); };
   function coNG(a, b) { return !!((a.coNG && a.coNG.indexOf(b.i) >= 0) || (b.coNG && b.coNG.indexOf(a.i) >= 0)); }
   /* 性行為の相手の固定（キャラの設定 sexLock）。恋愛とは別に、体の関係（夜・R18の場面）の相手を決める
      ・null（恋愛相手の固定に合わせる）：恋愛相手を固定していれば、その相手とだけ。していなければ誰とでも
@@ -10210,12 +10241,12 @@
     if (HK.Poly && HK.Poly.faithNG(x, y)) return true;
     var s = x.sexLock;
     if (s === 'any') return false;
-    if (s === 'lover') {
+    if (s === 'lover' || s === 'loverOnly') {
       var C = HK._curCtx;
-      return !((x.lock != null && x.lock === y.i) || (x.loveSet && x.loveSet.indexOf(y.i) >= 0) || (C && C.pf && C.chars && C.chars[x.i] === x && C.pair(x, y).couple));
+      return !((HK.lockAny(x) && HK.lockTo(x, y)) || (x.loveSet && x.loveSet.indexOf(y.i) >= 0) || (C && C.pf && C.chars && C.chars[x.i] === x && C.pair(x, y).couple));
     }
-    if (s != null) return s !== y.i;
-    return x.lock != null && x.lock !== y.i;
+    if (s != null) return HK.sexLockOut(x, y);
+    return HK.lockOut(x, y);
   }
   HK.sexNG = function (a, b) { if (!a || !b || a === b) return false; return sexOne(a, b) || sexOne(b, a); };
   /* 体の関係にならない組：恋愛・R18にしない相手・同じ人の恋人どうし・性行為の相手の固定 */
@@ -10243,7 +10274,7 @@
     var c0 = HK._curCtx;
     if (c0 && c0.ties && HK.Ties && HK.tieOptNoLove && a && b && c0.chars && c0.chars[a.i] === a && HK.Ties.all(c0, a, b).some(function (t) { return t.type === 'worship' && HK.tieOptNoLove(t) && t.cold !== 'dominate'; })) return false;
     /* 恋愛相手を決めた人は、その相手以外とは恋愛しない（相手が箱庭にいなければ誰とも） */
-    if (a && b && a.lock != null && a.lock !== b.i) return false;
+    if (a && b && HK.lockOut(a, b)) return false;
     if (a.role === 'teacher' || b.role === 'teacher') return false;
     /* 未成年（全年齢版の職業など）：幼子は恋愛しない。未成年と大人も恋愛しない */
     if (a.minor === 'child' || b.minor === 'child' || (a.minor || '') !== (b.minor || '')) return false;
@@ -10302,7 +10333,7 @@
       if (f === 'att' && d[f] > 0 && this.env && this.env.romance != null) m *= 0.5 + this.env.romance / 100;
       if (f === 'ten' && d[f] > 0 && this.env && this.env.strife != null) m *= 0.5 + this.env.strife / 100;
       if (d[f] > 0 && HK.Ties && this.ties) m *= HK.Ties.mult(this, a, b, f);
-      if (f === 'att' && d[f] > 0 && !HK.canLove(a, b)) m *= a.lock != null && a.lock !== b.i ? 0 : 0.08;
+      if (f === 'att' && d[f] > 0 && !HK.canLove(a, b)) m *= HK.lockOut(a, b) ? 0 : 0.08;
       /* 血のつながった家族：惹かれは育たず、信頼は減りにくく底がある */
       if (pf.kin && f === 'att' && d[f] > 0) m = 0;
       if (pf.kin && f === 'trust' && d[f] < 0) m *= 0.25;
@@ -10379,7 +10410,7 @@
   function sexEv(ctx, o) { return { sex: o && o.sex != null ? !!o.sex : !!(ctx._ev && ctx._ev.sex) }; }
   HK.sexEv = sexEv;
   Ctx.prototype.say = function (o) {
-    if (o.actors && o.actors.length >= 2 && this.chars && this.chars.some(function (c) { return c.lock != null; })) sexOnlyFix(this, o.actors);
+    if (o.actors && o.actors.length >= 2 && this.chars && this.chars.some(function (c) { return HK.lockAny(c); })) sexOnlyFix(this, o.actors);
     /* 恋愛が起きない組の恋愛の出来事は、記録に残さない（呼び出し側が e.n などを使えるよう、空の出来事を返す） */
     if (o.cat === 'romance' && o.kind !== 'phase' && !this.romanceOk(o.actors, sexEv(this, o))) return { n: this.log.length, step: this.stepIndex, cat: 'romance', actors: [], text: '', mag: 0, kind: 'event', skipped: true };
     if (this._apathy && o.kind !== 'step' && o.kind !== 'phase' && apathyLead(this, o)) return { n: this.log.length, step: this.stepIndex, cat: o.cat, actors: [], text: '', mag: 0, kind: 'event', skipped: true };
@@ -10422,7 +10453,7 @@
     if (this.scen && this.scen.romanceCore) return true;
     if (a && b && this.pair(a, b).couple) return true;
     if (this.env && this.env.romance === 0) return false;
-    if (a && b && HK.lockSexOnly(a, b)) { var a0 = Object.assign({}, a, { lock: null }), b0 = Object.assign({}, b, { lock: null }); return HK.canLove(a0, b0) && HK.canLove(b0, a0); }
+    if (a && b && HK.lockSexOnly(a, b)) { var a0 = Object.assign({}, a, { lock: null, locks: null }), b0 = Object.assign({}, b, { lock: null, locks: null }); return HK.canLove(a0, b0) && HK.canLove(b0, a0); }
     if (a && b) return HK.canLove(a, b) && HK.canLove(b, a);
     return !(a && a.likes === 'none');
   };
@@ -10610,7 +10641,7 @@
       });
     })();
     /* 恋愛相手を固定した人は、ほかの人への惹かれを小さく始める（体の関係は許されている組は除く：惹かれは Ctx.say の補正で恋愛の手前に止める） */
-    ctx.chars.forEach(function (a) { if (a.lock == null) return; ctx.chars.forEach(function (b) { if (b !== a && b.i !== a.lock && !HK.lockSexOnly(a, b)) { var r = ctx.R(a, b); r.att = Math.min(r.att, 6); } }); });
+    ctx.chars.forEach(function (a) { if (!HK.lockAny(a)) return; ctx.chars.forEach(function (b) { if (b !== a && !HK.lockTo(a, b) && !HK.lockSexOnly(a, b)) { var r = ctx.R(a, b); r.att = Math.min(r.att, 6); } }); });
     /* 許嫁で恋人と同じ扱いになった二人も、性行為の相手の固定「恋人とモブだけ」の恋人に入れる。無関心は、ここで値を覚えて動かさない（ties.js） */
     if (HK.Ties && ctx.tiesAll) Object.keys(ctx.tiesAll).forEach(function (k) { ctx.tiesAll[k].forEach(function (t) { if (t.type === 'fiance' && t.couple) { var A = ctx.chars[t.a], B = ctx.chars[t.b]; (A.loveSet = A.loveSet || []).push(B.i); (B.loveSet = B.loveSet || []).push(A.i); } }); });
     C.forEach(function (c) {
@@ -10778,7 +10809,7 @@
       if (tieOff && e.id && HK.TIE_EV_RE.test(e.id)) return;
       var bb = e.scope === 'pair' ? b : null;
       if (e.when && !e.when(ctx, a, bb)) return;
-      if (e.cat === 'romance' && bb && a.lock != null && a.lock !== bb.i && !(e.sex && HK.lockSexOnly(a, bb))) return;
+      if (e.cat === 'romance' && bb && HK.lockOut(a, bb) && !(e.sex && HK.lockSexOnly(a, bb))) return;
       if (e.cat === 'romance' && !ctx.romanceOk(bb ? [a, bb] : [a], e)) return;
       /* 無関心：a は b との助け合い・恋愛・嫉妬・心配の出来事に自分からは入らない */
       if (bb && ctx._apathy && HK.Ties.apathyBlock(ctx, a, bb, e)) return;
@@ -11803,7 +11834,7 @@
   }
   function fill(t, a, b) { return String(t).replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name); }
   /* 固定外の相手と体の関係を持つ側（相手以外に恋愛相手を固定している人） */
-  function freeOne(a, b) { return a.lock != null && a.lock !== b.i ? a : b; }
+  function freeOne(a, b) { return HK.lockOut(a, b) ? a : b; }
 
   HK.State.freeSex = function (ctx, a, b) {
     if (!a || !b || a === b || HK.SAFE_ON) return false;
@@ -11819,7 +11850,7 @@
   var F = HK.FreeSex = {};
   /* 固定した恋人（その場にいる人）。いなければ null */
   F.loverOf = function (ctx, x, notI) {
-    if (!x || x.lock == null || x.lock === notI) return null;
+    if (!x || !HK.lockAny(x) || x.lock === notI) return null;
     var y = people(ctx)[x.lock];
     return y && y !== x && HK.State.here(y) ? y : null;
   };
@@ -12300,7 +12331,7 @@
       cand.sort(function (x, y) { return y.v - x.v; });
       cand.forEach(function (c) {
         /* 恋愛はしないが体の関係は許されている二人は、恋愛相手の固定を外して恋愛対象の向きだけを見る（帰るなら、お持ち帰りの夜だけ） */
-        var so = HK.lockSexOnly && HK.lockSexOnly(c.a, c.b), ca = so ? Object.assign({}, c.a, { lock: null }) : c.a, cb = so ? Object.assign({}, c.b, { lock: null }) : c.b;
+        var so = HK.lockSexOnly && HK.lockSexOnly(c.a, c.b), ca = so ? Object.assign({}, c.a, { lock: null, locks: null }) : c.a, cb = so ? Object.assign({}, c.b, { lock: null, locks: null }) : c.b;
         /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：惹かれの閾値の代わりに、酔いと勢いで（恋人の組の半分ほど。固定した恋人がいれば ×0.3） */
         var fs = !!(HK.State.freeSex && HK.State.freeSex(ctx, c.a, c.b));
         if (used[c.a.i] || used[c.b.i]) return;
@@ -12422,7 +12453,7 @@
         w: function (ctx, a, b) { return (0.4 + a.tr.honesty * 0.7 + a.tr.impulse * 0.4 + R(ctx, a, b).att / 100) * (a.goal.id === 'lover' ? 1.8 : 1); },
         run: function (ctx, a, b) {
           var d = gRom(ctx), rb = R(ctx, b, a), pf = ctx.pair(a, b);
-          var yes = HK.canLove(b, a) && (!gTaken(ctx, b) || (HK.Poly && HK.Poly.mode(ctx) !== 'none')) && (!HK.Poly || HK.Poly.canCouple(ctx, a, b)) && (b.lock == null || b.lock === a.i) && rb.att > 36 - d * 10 && rb.aff > 8 - d * 6;
+          var yes = HK.canLove(b, a) && (!gTaken(ctx, b) || (HK.Poly && HK.Poly.mode(ctx) !== 'none')) && (!HK.Poly || HK.Poly.canCouple(ctx, a, b)) && !HK.lockOut(b, a) && rb.att > 36 - d * 10 && rb.aff > 8 - d * 6;
           pf.gconf = true;
           if (yes) { pf.couple = true; ctx.mod2(a, b, { att: 8, aff: 10, trust: 6 }, { att: 8, aff: 10, trust: 6 }); }
           else { ctx.mod2(a, b, { att: -3 }, { aff: 2 }); ctx.stress(a, 10); }
@@ -15227,24 +15258,31 @@
     if (!hm || (hm.full && !cl) || sexLockOut(g)) return null;
     /* 取り合いは、取り合われる人を中心に（執着している二人どうしは直接は交わらない） */
     var h = cl ? cl.w : hm.hub, o = g.filter(function (c) { return c !== h; });
-    if (HK.ngPair && (HK.ngPair(h, o[0]) || HK.ngPair(h, o[1]))) return null;
+    if (blocked(h, o[0]) || blocked(h, o[1])) return null;
     return okSex(h, o[0]) && okSex(h, o[1]) ? { sg: [h].concat(o), hubOnly: true } : null;
   }
   T.harmony = harmony; T.harmonyOf = harmonyOf;
   /* 体の関係の形：三人の全組が体の関係を持てるなら全員で、そうでなければ二人の両方と持てる一人を中心に（つながらない二人は直接は触れ合わない）。どれも無理なら null */
-  /* 性行為の相手を固定している人（engine.js の sexLock）は、決めた相手以外の人がいる三人の場面に入らない（直接は触れ合わない形でも） */
-  function sexLockOut(g) { return !!HK.sexNG && g.some(function (x) { return g.some(function (y) { return y !== x && HK.sexNG(x, y); }); }); }
+  /* 性行為の相手を固定している人（engine.js の sexLock）は、決めた相手以外の人がいる三人の場面に入らない（直接は触れ合わない形でも）。
+     ただし二人とも「三人の場面：固定した相手が中心なら参加する」（住人の設定 trioHub）なら、固定の食い違い・同じ人の恋人どうし（coNG）だけで
+     止まっている組は、その二人が直接は触れ合わない形（固定した相手を中心にした形）でだけ通す。苦手な組（恋愛・R18にしない相手）・R18に参加しない人は通さない */
+  function blocked(x, y) { return !!((HK.sexNG && HK.sexNG(x, y)) || (HK.ngPair && HK.ngPair(x, y))); }
+  function soft(x, y) { return !!(x.trioHub && y.trioHub) && !(HK.ngExplicit && HK.ngExplicit(x, y)) && !x.noR18 && !y.noR18; }
+  function sexLockOut(g) { return g.some(function (x) { return g.some(function (y) { return y !== x && blocked(x, y) && !soft(x, y); }); }); }
   function sexShape(g, hubOnly) {
     if (sexLockOut(g)) return null;
-    /* 恋愛・R18にしない組（苦手な組み合わせ・恋愛相手を別の人に固定している人）が一組でも入っていれば、三人では交わらない */
-    if (HK.ngPair && (HK.ngPair(g[0], g[1]) || HK.ngPair(g[0], g[2]) || HK.ngPair(g[1], g[2]))) return null;
-    if (!hubOnly && okSex(g[0], g[1]) && okSex(g[0], g[2]) && okSex(g[1], g[2])) return { sg: g, hubOnly: false };
-    for (var i = 0; i < 3; i++) {
-      var h = g[i], r = g.filter(function (c) { return c !== h; });
-      if (okSex(h, r[0]) && okSex(h, r[1])) return { sg: [h].concat(r), hubOnly: true };
+    /* 固定の食い違いだけで止まっている組（soft）があれば、その二人を中心にはしない（中心は残りの一人） */
+    var softPair = null;
+    for (var i = 0; i < 3; i++) for (var j = i + 1; j < 3; j++) if (blocked(g[i], g[j])) softPair = softPair || [g[i], g[j]];
+    if (!softPair && !hubOnly && okSex(g[0], g[1]) && okSex(g[0], g[2]) && okSex(g[1], g[2])) return { sg: g, hubOnly: false };
+    for (var k = 0; k < 3; k++) {
+      var h = g[k], r = g.filter(function (c) { return c !== h; });
+      if (softPair && softPair.indexOf(h) >= 0) continue;
+      if (!blocked(h, r[0]) && !blocked(h, r[1]) && okSex(h, r[0]) && okSex(h, r[1])) return { sg: [h].concat(r), hubOnly: true };
     }
     return null;
   }
+  T.soft = soft;
   /* きっかけごとの形。取り合われた人・誘われた人が中心のきっかけでは、その人が中心になれなければ成り立たない */
   function shapeFor(ctx, g, kind) {
     if (kind === 'lovehub' || kind === 'loveclash') return loveShape(ctx, g);
@@ -21537,7 +21575,7 @@
     var pool = rng.shuffle(NAMES);
     P.forEach(function (c) {
       if (sx(c) !== 'a' && sx(c) !== 'o') return;
-      if (c.lock != null || c.likes === 'none') return;
+      if (HK.lockAny(c) || c.likes === 'none') return;
       /* 関係で「運命の番」が付いている人、本人も知らない運命の番が住人の中にいる人には現れない */
       if (P.some(function (o) { return o !== c && tieType(ctx, c, o) === 'fated'; })) return;
       if (om.fatedLatent && Object.keys(om.fatedLatent).some(function (k) { return k.split('-').indexOf(String(c.i)) >= 0; })) return;
@@ -25375,8 +25413,8 @@
   C.resident = function (input, i) {
     var c = input.chars[i], pc = (input.perChar && input.perChar[i]) || {};
     var p = { i: i, name: c.name, eg: c.eg, tr: HK.traits(c.eg), gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, memo: c.memo || '',
-      ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock,
-      sexLock: c.sexLock === 'any' || c.sexLock === 'lover' ? c.sexLock : c.sexLock === '' || c.sexLock == null || isNaN(+c.sexLock) ? null : +c.sexLock, pick: pc.pick || {}, rawNoR18: !!c.noR18 };
+      ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: HK.lockFirst(c.loveLock), locks: HK.parseLocks(c.loveLock),
+      sexLock: HK.sexLockOf(c.sexLock), pick: pc.pick || {}, rawNoR18: !!c.noR18 };
     if (HK.charFlags) HK.charFlags(c, p, 'massage');
     p.persona = HK.personaOf(p);
     (input.ties || []).forEach(function (t) { if (t && /^(lover|mate|fated)$/.test(t.type) && (t.a === i || t.b === i)) (p.loveSet = p.loveSet || []).push(t.a === i ? t.b : t.a); });
@@ -30054,10 +30092,10 @@
   function romShift(ctx) { return ctx.env.romance == null ? 0 : (ctx.env.romance - 50) / 50; }
   EV.push({
     id: 'z_confess', cat: 'romance', scope: 'pair',
-    when: function (ctx, a, b) { var r = ctx.R(a, b), pf = ctx.pair(a, b), d = romShift(ctx); return HK.canLove(a, b) && r.att > 38 - d * 12 && r.aff > 20 - d * 10 && !pf.couple && !pf.zconf && (!HK.Poly || HK.Poly.canTry(ctx, a, b)) && !pf.kin && (a.lock == null || a.lock === b.i); },
+    when: function (ctx, a, b) { var r = ctx.R(a, b), pf = ctx.pair(a, b), d = romShift(ctx); return HK.canLove(a, b) && r.att > 38 - d * 12 && r.aff > 20 - d * 10 && !pf.couple && !pf.zconf && (!HK.Poly || HK.Poly.canTry(ctx, a, b)) && !pf.kin && !HK.lockOut(a, b); },
     w: function (ctx, a, b) { return 0.35 + a.tr.honesty * 0.8 + ctx.R(a, b).att / 120; },
     run: function (ctx, a, b) {
-      var d = romShift(ctx), rb = ctx.R(b, a), yes = rb.att > 30 - d * 10 && rb.aff > 15 - d * 8 && (b.lock == null || b.lock === a.i), pf = ctx.pair(a, b);
+      var d = romShift(ctx), rb = ctx.R(b, a), yes = rb.att > 30 - d * 10 && rb.aff > 15 - d * 8 && !HK.lockOut(b, a), pf = ctx.pair(a, b);
       pf.zconf = true;
       if (yes) { pf.couple = true; ctx.mod2(a, b, { aff: 10, trust: 8, att: 8 }, { aff: 10, trust: 8, att: 8 }); }
       else { ctx.mod2(a, b, { att: -4 }, { aff: 2 }); ctx.stress(a, 10); }
@@ -31529,8 +31567,8 @@
     var l = HK.Ties ? HK.Ties.all(ctx, a, b) : [];
     return l.some(function (t) { return t.type === 'teacher' || HK.tieNoLove(t); });
   };
-  RK.locked = function (a) { return a && a.lock != null; };
-  RK.lockedTo = function (a, b) { return a && b && a.lock === b.i; };
+  RK.locked = function (a) { return a && HK.lockAny(a); };
+  RK.lockedTo = function (a, b) { return a && b && HK.lockTo(a, b); };
   /* 同じ出来事を何度も出しすぎない */
   RK.cool = function (ctx, a, b, id, gap) {
     var pf = ctx.pair(a, b), k = '_rk_' + id;
@@ -31576,7 +31614,7 @@
     if (!HK.canLove || !HK.canLove(x, y) || !HK.canLove(y, x)) return false;
     if (!ctx.romanceOk([x, y]) || RK.noRomance(ctx, x, y)) return false;
     if (t && HK.tieOptNoLove && HK.tieOptNoLove(t)) return false;
-    if ((x.lock != null && x.lock !== y.i) || (y.lock != null && y.lock !== x.i)) return false;
+    if (HK.lockOut(x, y) || HK.lockOut(y, x)) return false;
     return true;
   }
   function grown(ctx, a, b, aff, trust) { return ctx.R(a, b).aff > aff && ctx.R(b, a).aff > aff && ctx.R(a, b).trust > trust && ctx.R(b, a).trust > trust; }
@@ -32040,7 +32078,7 @@
   function enemyTie(ctx, a, b) { var l = HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, a, b) : []; return l.some(function (t) { var d = HK.TIES[t.type]; return d && d.pol < 0; }); }
   function closest(ctx, a, list) {
     var best = null, bv = -1e9;
-    list.forEach(function (o) { if (o === a) return; var r = R(ctx, a, o), v = r.aff + r.att * 0.8 + r.trust * 0.3 + (tieOf(ctx, a, o) ? 30 : 0) + (a.lock === o.i ? 60 : 0); if (v > bv) { bv = v; best = o; } });
+    list.forEach(function (o) { if (o === a) return; var r = R(ctx, a, o), v = r.aff + r.att * 0.8 + r.trust * 0.3 + (tieOf(ctx, a, o) ? 30 : 0) + (HK.lockTo(a, o) ? 60 : 0); if (v > bv) { bv = v; best = o; } });
     return best && bv > 40 ? best : null;
   }
 
@@ -32061,7 +32099,7 @@
   function bonds(ctx, a) {
     var left = ctx.present().filter(function (o) { return o !== a; }), friend = null, fv = 0, foes = [];
     left.forEach(function (o) {
-      var r = R(ctx, a, o), v = r.aff + r.trust * 0.5 + r.att * 0.5 + (tieOf(ctx, a, o) ? 30 : 0) + (a.lock === o.i ? 60 : 0);
+      var r = R(ctx, a, o), v = r.aff + r.trust * 0.5 + r.att * 0.5 + (tieOf(ctx, a, o) ? 30 : 0) + (HK.lockTo(a, o) ? 60 : 0);
       if (v > fv) { fv = v; friend = o; }
       if (hostile(ctx, a, o) > 32 || r.aff < -18) foes.push(o);
     });
@@ -32069,7 +32107,7 @@
   }
   function decideHelp(ctx, a, sincere) {
     var B = bonds(ctx, a), p = sincere ? 0.85 : conscience(a) * 0.8, why;
-    if (B.friend) { p = Math.max(p, 0.95); why = '島に' + B.friend.name + 'が残っている（' + (a.lock === B.friend.i ? '想う相手' : tieOf(ctx, a, B.friend) ? '大事な関係' : '仲が良い') + '）'; }
+    if (B.friend) { p = Math.max(p, 0.95); why = '島に' + B.friend.name + 'が残っている（' + (HK.lockTo(a, B.friend) ? '想う相手' : tieOf(ctx, a, B.friend) ? '大事な関係' : '仲が良い') + '）'; }
     else if (B.foes.length && B.foes.length >= B.left.length / 2) { p *= sincere ? 0.7 : 0.3; why = '島に残っているのは、' + names(B.foes) + 'のような折り合いの悪い相手ばかり'; }
     else why = a.name + 'の良心（NP・本音の出やすさ・CP）';
     return { does: ctx.rng() < p, why: why };
@@ -32117,7 +32155,7 @@
   }
   function letter(ctx, a) {
     var P = ctx.present(), dear = closest(ctx, a, P);
-    var love = dear && (a.lock === dear.i || R(ctx, a, dear).att > 40);
+    var love = dear && (HK.lockTo(a, dear) || R(ctx, a, dear).att > 40);
     var t = love ? T.letterLove : dear && tieOf(ctx, a, dear) ? T.letterTie : T.letterNone;
     if (dear && t !== T.letterNone) ctx.stress(dear, 18);
     return fill(pick(ctx, t), mm(a, dear));
@@ -32282,9 +32320,9 @@
       if (!partner || !partner.alive || partner.out) {
         partner = null;
         var dear = closest(ctx, a, rest);
-        if (dear && a.tr.np * 0.5 + R(ctx, a, dear).aff / 150 + (a.lock === dear.i ? 0.4 : 0) > 0.55) {
+        if (dear && a.tr.np * 0.5 + R(ctx, a, dear).aff / 150 + (HK.lockTo(a, dear) ? 0.4 : 0) > 0.55) {
           txt = fill(pick(ctx, T.invite), mm(a, dear));
-          if (selfish(ctx, dear) > 0.2 || R(ctx, dear, a).att > 45 || dear.lock === a.i) partner = dear;
+          if (selfish(ctx, dear) > 0.2 || R(ctx, dear, a).att > 45 || HK.lockTo(dear, a)) partner = dear;
           else if (dear.tr.cp * 0.5 + dear.tr.honesty * 0.5 > 0.55) {
             ostracize(ctx, a, dear); a.flags.sfound = true;
             ctx.say({ kind: 'event', cat: 'conflict', actors: [a, dear], text: txt + fill(pick(ctx, T.refuseTell), mm(a, dear)) + fill(pick(ctx, T.ostraStart), mm(dear, a)), why: dear.name + 'のCP・本音の出やすさ（黙っていられなかった）', mag: 25 });
@@ -32395,7 +32433,7 @@
     /* 大事な人の死・罪悪感 */
     others.forEach(function (b) {
       if (b.alive) return;
-      var r = ctx.R(c, b), close = r.aff + r.att * 0.6 + (posTie(ctx, c, b) ? 30 : 0) + (c.lock === b.i ? 50 : 0);
+      var r = ctx.R(c, b), close = r.aff + r.att * 0.6 + (posTie(ctx, c, b) ? 30 : 0) + (HK.lockTo(c, b) ? 50 : 0);
       if (b.killedBy === c.i) out.push({ k: 'guilt', s: 0.2 + c.tr.np * 0.2 + c.tr.ac * 0.15, b: b, why: c.name + 'は' + b.name + 'の死に関わった（NP・ACが罪悪感を強める）' });
       else if (close > 40) out.push({ k: 'grief', s: 0.2 + close / 350 + c.tr.np * 0.1, b: b, why: b.name + 'を島で失った（好意 ' + Math.round(r.aff) + '）' });
     });
@@ -32434,7 +32472,7 @@
       boarders.forEach(function (x) {
         if (stayers.indexOf(x) >= 0) return;
         var love = null;
-        stayers.forEach(function (s) { var v = Math.min(ctx.R(x, s).att, ctx.R(s, x).att) + (x.lock === s.i ? 40 : 0); if (v > 45 && (!love || v > love.v)) love = { s: s, v: v }; });
+        stayers.forEach(function (s) { var v = Math.min(ctx.R(x, s).att, ctx.R(s, x).att) + (HK.lockTo(x, s) ? 40 : 0); if (v > 45 && (!love || v > love.v)) love = { s: s, v: v }; });
         if (love && ctx.rng() < 0.45 + x.tr.np * 0.2 + x.tr.impulse * 0.15) {
           var r = { k: 'withLove', s: 1, b: love.s, why: '想う相手の' + love.s.name + 'が島に残ると決めた（互いの惹かれ ' + Math.round(love.v) + '）' };
           add.push([x, r]);
@@ -32495,7 +32533,7 @@
   };
 
   function stances(ctx, c, v) {
-    var r = ctx.R(c, v), close = r.aff + r.att * 0.8 + (posTie(ctx, c, v) ? 30 : 0) + (c.lock === v.i ? 60 : 0);
+    var r = ctx.R(c, v), close = r.aff + r.att * 0.8 + (posTie(ctx, c, v) ? 30 : 0) + (HK.lockTo(c, v) ? 60 : 0);
     var I = ctx.isl || {}, n = ctx.present().length, hungry = Math.min(0.25, (I.hungry || 0) * 0.05) + (ctx.food < n * 6 ? 0.08 : 0);
     var t = c.tr;
     return {
@@ -33043,7 +33081,7 @@
     for (var i = 0; i < C.length; i++) {
       var c = C[i], p = ctx.pair(a, c);
       if (p.couple) return c;
-      if (a.lock != null && a.lock !== c.i) continue;
+      if (HK.lockOut(a, c)) continue;
       if (p.kin || p.rejected === a.i || !HK.canLove(a, c) || !HK.canLove(c, a)) continue;
       var r = R(ctx, a, c), v = r.att + r.aff * 0.4 - r.ten * 0.3 + (p.chem || 1) * 8;
       if (v > bv) { bv = v; best = c; }
@@ -33175,7 +33213,7 @@
   /* b の心が向いている相手（a 以外）。設定された関係（恋人・b からの片想い・セフレ）を最優先する */
   U.heartOf = function (ctx, b, a) {
     /* 恋愛相手を固定している人の心は、その相手にある */
-    if (b.lock != null && b.lock !== a.i && ctx.chars[b.lock] && ctx.chars[b.lock].alive !== false) return ctx.chars[b.lock];
+    if (HK.lockOut(b, a) && ctx.chars[b.lock] && ctx.chars[b.lock].alive !== false) return ctx.chars[b.lock];
     var best = null, bv = 45;
     ctx.chars.forEach(function (o) {
       if (o === b || o === a) return;
@@ -33194,7 +33232,7 @@
     /* 両片想い（b からも片想い）は、相手にされていない片想いではない（pining.js） */
     if (HK.Ties && HK.Ties.from(ctx, b, a, 'crush')) return '';
     /* b が別の人に恋愛相手を固定している：ほかに好きな人がいる */
-    if (b.lock != null && b.lock !== a.i) return U.heartOf(ctx, b, a) ? 'other' : 'none';
+    if (HK.lockOut(b, a)) return U.heartOf(ctx, b, a) ? 'other' : 'none';
     if (ctx.R(b, a).att >= 20) return '';
     if (U.heartOf(ctx, b, a)) return 'other';
     if (ctx.R(b, a).ten > 30 || ctx.R(b, a).aff < -10) return 'dislike';
@@ -33202,7 +33240,7 @@
   };
   U.unreq = function (ctx, a, b) { return U.crushOn(ctx, a, b) && !!U.cold(ctx, a, b); };
   var COLD_WHY = { none: '興味がない', friend: '友達としか見ていない', dislike: '苦手に思っている', other: 'ほかに好きな人がいる' };
-  U.why = function (ctx, a, b) { var c = U.cold(ctx, a, b); return a.name + 'の片想い。' + (c === 'other' ? b.name + 'には' + (b.lock != null && b.lock !== a.i && ctx.chars[b.lock] ? ctx.chars[b.lock].name + 'という、' : '') + 'ほかに好きな人がいる' : b.name + 'は' + a.name + 'を' + (COLD_WHY[c] || '意識していない')) + '（' + b.name + 'から' + a.name + 'への惹かれ ' + Math.round(ctx.R(b, a).att) + '）'; };
+  U.why = function (ctx, a, b) { var c = U.cold(ctx, a, b); return a.name + 'の片想い。' + (c === 'other' ? b.name + 'には' + (HK.lockOut(b, a) && ctx.chars[b.lock] ? ctx.chars[b.lock].name + 'という、' : '') + 'ほかに好きな人がいる' : b.name + 'は' + a.name + 'を' + (COLD_WHY[c] || '意識していない')) + '（' + b.name + 'から' + a.name + 'への惹かれ ' + Math.round(ctx.R(b, a).att) + '）'; };
 
   /* ---------- 文 ---------- */
   var SCN = function (ctx) { return ctx.scen.id; };
@@ -33753,8 +33791,8 @@
   /* a が b を想っているか（b の側の事情は見ない：b がほかの人に決めていても、a の想いは成り立つ） */
   function longs(ctx, a, b) {
     if (!alive(a) || !b || a === b || marked(a, b) || ctx.pair(a, b).kin) return false;
-    if (a.lock != null && a.lock !== b.i) return false;
-    var b0 = {}; for (var k in b) b0[k] = b[k]; b0.lock = null; b0.ng = [];
+    if (HK.lockOut(a, b)) return false;
+    var b0 = {}; for (var k in b) b0[k] = b[k]; b0.lock = null; b0.locks = null; b0.ng = [];
     if (!HK.canLove(a, b0)) return false;
     return !!(HK.Ties && HK.Ties.from(ctx, a, b, 'crush')) || ctx.R(a, b).att >= 50;
   }
@@ -33763,7 +33801,7 @@
     var best = null;
     ctx.chars.forEach(function (c) {
       if (best || c === a || c === b || !alive(c)) return;
-      if (couple(ctx, b, c) || b.lock === c.i) best = c;
+      if (couple(ctx, b, c) || HK.lockTo(b, c)) best = c;
     });
     return best;
   }
@@ -33820,7 +33858,7 @@
     mk('hb_news', 'solo', function () { return 4; },
       function (ctx, a, b) { return longs(ctx, a, b) && !ctx.pair(a, b).hbNews && !couple(ctx, a, b) && !!rivalOf(ctx, a, b); },
       function (ctx, a, b) {
-        var pf = ctx.pair(a, b), c = rivalOf(ctx, a, b), lock = !couple(ctx, b, c) && b.lock === c.i, m = { a: a.name, b: b.name, c: c.name };
+        var pf = ctx.pair(a, b), c = rivalOf(ctx, a, b), lock = !couple(ctx, b, c) && HK.lockTo(b, c), m = { a: a.name, b: b.name, c: c.name };
         pf.hbNews = ctx.stepIndex; pf.hbBy = c.i;
         if (HK.Emo) HK.Emo.bump(ctx, a, { grief: 30, shame: 12 }, '失恋');   /* 気分（emotion.js） */
         ctx.stress(a, 18); ctx.mod2(a, b, { att: -8 }, {}); ctx.mod(a, c, { ten: 8 });
@@ -34983,6 +35021,9 @@
   /* 心の強さ：堕ちる速さの倍率（弱い 1.3・強い 0.7） */
   A.willK = function (c) { var w = c && c.will; return w === 'weak' ? 1.3 : w === 'strong' ? 0.7 : 1; };
   A.strong = function (c) { return !!c && c.will === 'strong'; };
+  /* 感覚遮断穴の「精神力」（1〜5）：心の強さから。弱い 1・ふつう 3・強い 5。決めていなければ乱数で 1〜5（以前の能力値の振り方と同じ） */
+  A.mindOf = function (c, rng) { var w = c && (c.will || (c.src && c.src.will)); return w === 'weak' ? 1 : w === 'avg' ? 3 : w === 'strong' ? 5 : 1 + rng.int(5); };
+  A.willLabel = function (c) { var w = c && (c.will || (c.src && c.src.will)); return w === 'weak' ? '弱い' : w === 'strong' ? '強い' : 'ふつう'; };
   /* 結末の状態（遮断穴など）：強い人は「堕ちた」を「崩れ落ちた」（心は折れない）にし、弱い人は堕ち度 77 から「堕ちた」にする。o = { fall: [堕ちた状態], down: 崩れた状態 } */
   A.fallState = function (h, st, o) {
     if (!h || !h.will) return st;
@@ -35746,7 +35787,7 @@
   SP.vampTurn = function (A, p) {
     if (!vampDue(A, p) || !A.alive(p) || p.mad) return false;
     var vp = p.vamp, over = A.nowH - vp.due;
-    var lockP = p.lock == null ? null : p.lock < 0 ? 'absent' : A.all.filter(function (q) { return q.i === p.lock; })[0] || 'absent';
+    var lockP = !HK.lockAny(p) ? null : p.lock < 0 ? 'absent' : A.all.filter(function (q) { return HK.lockTo(p, q); })[0] || 'absent';
     var cand = donors(A, p);
     if (lockP) cand = lockP === 'absent' ? [] : cand.filter(function (q) { return q === lockP; });
     /* 吸える相手がいない環境：決めた相手が来ていない・二度と会えない・人間が誰も残っていない */
@@ -37414,7 +37455,7 @@
     var S = { scen: scen, rng: HK.rng(input.seed), env: env, log: [], hist: [], turns: [], recent: [], step: 0, label: '', flags: {} };
     S.P = input.chars.map(function (c, i) {
       var pc = (input.perChar && input.perChar[i]) || {};
-      var p = { i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: c.loveLock === '' || c.loveLock == null || isNaN(+c.loveLock) ? null : +c.loveLock, sexLock: c.sexLock === 'any' || c.sexLock === 'lover' ? c.sexLock : c.sexLock === '' || c.sexLock == null || isNaN(+c.sexLock) ? null : +c.sexLock, call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder, name: c.name, eg: c.eg, tr: HK.traits(c.eg), topWhy: HK.voiceTopWhy(c), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, pick: pc.pick || {}, stats: {}, m: {}, cnt: {}, notes: [], fate: '' };
+      var p = { i: i, ng: Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return x >= 0; }) : [], lock: HK.lockFirst(c.loveLock), locks: HK.parseLocks(c.loveLock), sexLock: HK.sexLockOf(c.sexLock), call: c.call || '', calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, bmonth: +c.bmonth || 0, keigoOlder: !!c.keigoOlder, name: c.name, eg: c.eg, tr: HK.traits(c.eg), topWhy: HK.voiceTopWhy(c), memo: c.memo || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, pick: pc.pick || {}, stats: {}, m: {}, cnt: {}, notes: [], fate: '' };
       /* 台詞の表を引く因子（口調に近い因子、なければいちばん強い因子。同点なら、この回の中で一つに決める） */
       HK.charFlags && HK.charFlags(c, p, scenId);
       p.top = HK.voiceTop(c);
@@ -40125,7 +40166,7 @@
       if (Pos && Pos.hardTopNpc(A)) side = 'top';
       var want = A.m.heat / 100 + A.tr.fc * 0.3 + (A.tr.impulse || 0) * 0.3 - A.tr.cp * 0.3 - A.m.reason / 150 + (A.goal && A.goal.id === 'want' ? 0.15 : 0);
       /* 本命・恋愛相手・体の相手を決めている人は踏みとどまりやすい（耐えがたいほどの熱なら妥協する） */
-      if (A.honmei != null || A.lock != null || typeof A.sexLock === 'number') want -= desperate(A) && A.m.heat > 85 ? 0.1 : 0.45;
+      if (A.honmei != null || HK.lockAny(A) || typeof A.sexLock === 'number') want -= desperate(A) && A.m.heat > 85 ? 0.1 : 0.45;
       var force = HK.Content && HK.Content.on(S.env, 'force', 'locker');
       if (want > 0.55 && rng() < 0.7 * HK.Dark.f(S, 'fall')) {
         var top = side === 'top' ? A : m, bot = side === 'top' ? m : A, md = modeOf(top, bot), vv = { a: top.name, b: bot.name };
@@ -40373,7 +40414,7 @@
       if (!canAct(S, a, b)) { holdPair(S, a, b, whyNot(S, a, b)); return; }
       /* 体だけの関係の組：固定した恋人が同じロッカーにいれば手を出しにくい（×0.3） */
       var fr = freeOk(S, a, b);
-      if (fr && Lk.m.some(function (q) { return q !== a && q !== b && (q.i === a.lock || q.i === b.lock); }) && rng() > 0.3) continue;
+      if (fr && Lk.m.some(function (q) { return q !== a && q !== b && (HK.lockTo(a, q) || HK.lockTo(b, q)); }) && rng() > 0.3) continue;
       var lvMax = Math.min(LK.MAXLV || 4, 4);
       if (a.bound && b.bound) lvMax = Math.min(lvMax, 1);
       var lv = Math.min(Lk.lv + (relW(S, a, b, 'acc') >= 0.45 && Lk.lv >= 0 && rng() < 0.5 ? 2 : 1), lvMax);
@@ -40753,7 +40794,7 @@
     var r18No = A.noR18 ? A : B.noR18 ? B : null;
     if (r18No && !ngP) { ngP = true; tieNL = true; nlWhy = r18No.name + 'はR18に参加しない'; }
     /* 性行為の相手を別の人に固定している（または固定した相手がこの箱庭にいない）：体の関係にならない（pos.js の向きの判定で clash になる） */
-    var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (A.sexLock != null && A.sexLock !== B.i ? A : B) : null;
+    var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (HK.sexLockOut(A, B) ? A : B) : null;
     var sexWhy = sexP ? sexWho.name + 'は、' + W_SEXL + (input.chars[sexWho.sexLock] ? input.chars[sexWho.sexLock].name + 'に' : 'ほかの人に') + '決めている' : '';
     if (ngP) plotter = null;
     /* 拘束 */
@@ -40966,7 +41007,7 @@
           continue;
         }
         /* 恋愛相手を別に決めている人は、ほとんど手を出さない */
-        if (a.lock != null && a.lock !== b.i) { urge -= 0.45; if (urge > 0.3 && !a.lockSaid) { a.lockSaid = true; ST.sayB(S, { actors: [a, b], tag: '心に決めた人', text: ST.fmt(pk(LK.LOCKED || ['{a}は{b}の肩を押し返した。「……ごめん。心に決めた人がいるから」']), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を決めている（' + b.name + 'ではない）', mag: 18 }); continue; } }
+        if (HK.lockOut(a, b)) { urge -= 0.45; if (urge > 0.3 && !a.lockSaid) { a.lockSaid = true; ST.sayB(S, { actors: [a, b], tag: '心に決めた人', text: ST.fmt(pk(LK.LOCKED || ['{a}は{b}の肩を押し返した。「……ごめん。心に決めた人がいるから」']), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を決めている（' + b.name + 'ではない）', mag: 18 }); continue; } }
         if (urge < 0.36 + rng() * 0.3) continue;
         /* 受け攻め：向きの決まらない二人は、手を出さずに耐える */
         if (clash) { holdClash(a, b); continue; }
@@ -41003,7 +41044,7 @@
         var act = LK.ACT[LV[lv]];
         a.cnt.make++;
         var w = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3, crush: crusher === b ? 0.45 : -0.05, mutual: 0.45, friend: 0, tension: -0.3, ex: 0.05, stranger: -0.1, master: servant === b ? 0.35 : 0.2 }[rel] || 0) + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (plotter === b ? 0.8 : 0) + (fwbAll && rel !== 'fwb' ? 0.35 : 0) + (fcKind === 'mutual' ? 0.2 : 0) + (crusher === b && rel !== 'crush' && rel !== 'mutual' ? 0.2 : 0) + (rng() - 0.5) * 0.3;
-        if (b.lock != null && b.lock !== a.i) w -= 0.5;
+        if (HK.lockOut(b, a)) w -= 0.5;
         if (nt) w += NT.accW(nt, a, b);
         var resp = w > 0.55 ? 'accept' : w > 0.32 ? 'passive' : 'refuse';
         /* 受け攻め：挿入では、仕掛けた側が攻めか受けかで書き分ける */
@@ -53807,6 +53848,10 @@
           '相手によって変えたいときは、「相手ごとの設定」の相手の行で、その相手への二人称・一人称を決められます（決めた相手に話しかける台詞では、こちらより優先します）。',
           'モブ（住人でない人）に話しかけるときは、ここの二人称で呼びます（環境値の「モブへの呼びかけ」で名前にもできます）。'
         ] },
+        { h: '語尾の付け替え', items: [
+          '口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで（例：`です→っす、だ→だぜ`）。',
+          '文の終わりにある語尾だけが替わります。'
+        ] },
         { h: '語尾の記号', items: [
           '文末の「。」「！」を好きな記号に置き換えます。例：`！！！` →「分かった！！！引き受けよう！！！」',
           '空白で区切って複数書くと、文ごとにランダムに選びます。例：`♣ ♦` →「分かった♣引き受けよう♦」',
@@ -53853,6 +53898,7 @@
         ] },
         { h: '心の強さ', items: [
           '催眠の箱庭で、暗示のかかりやすさが変わります（弱いとかかりやすく、強いとかかりにくい）。',
+          '感覚遮断穴の「精神力」はこの値です（弱い 1・ふつう 3・強い 5。おまかせなら回ごとにランダム）。',
           '強いと、体は流されても心は折れない一文が付きます。'
         ] },
         { h: '好きな食べ物・嫌いな食べ物・好きな味', items: [
@@ -53898,7 +53944,8 @@
         ] },
         { h: '固定のしくみ', items: [
           '固定すると、その相手以外とは恋愛に発展しません。夜の出来事や三人の場面でも、その相手以外とは関係を持ちません。片想いのままでも使えます。',
-          '相手が箱庭にいないときは、誰とも恋愛しません。',
+          '相手は何人でも選べます（押すと開きます）。二人以上を選ぶと、その中の誰とでも恋愛になれて、それ以外の人とはなりません（例：AがBとCを固定、BがAとCを固定、CがAとBを固定にすると、三人の中だけで恋愛が起きます）。',
+          '相手が一人も箱庭にいないときは、誰とも恋愛しません。',
           '環境値の「恋愛の起こりやすさ」が0のときは、固定していても恋愛は起きません。'
         ] },
         { h: '一途にしたいとき（ほかの人に心を移さない）', items: [
@@ -53907,7 +53954,7 @@
           '片方だけ一途にしたいときは、その人だけに設定します（相手の側は自由なままです）。'
         ] },
         { h: '恋愛にしない相手', items: [
-          '苦手な組み合わせの相手に印を付けると、その二人のあいだでは、どの箱庭でも恋愛・告白・夜の場面が起きません。',
+          '（押すと開きます）苦手な組み合わせの相手に印を付けると、その二人のあいだでは、どの箱庭でも恋愛・告白・夜の場面が起きません。',
           '印はどちらに付けても同じで、相手の設定にも自動で付きます。',
           '二人に恋人・片想いなどの関係を付けていても、恋愛の関係としては使われません（友人・同僚などの関係はそのまま）。',
           'ほかの人との恋愛はそのままです。'
@@ -54162,6 +54209,9 @@
     c.abM = true;
     if (!per || typeof per !== 'object') return;
     c.ab = c.ab || {};
+    /* 感覚遮断穴の「精神力」（1〜5）は、住人の「心の強さ」（弱い／ふつう／強い）に移す（attr.js の will。決めていない人だけ） */
+    var hm = per.hole && per.hole.stats && per.hole.stats.mind;
+    if (!c.will && hm >= 1 && hm <= 5) c.will = hm <= 2 ? 'weak' : hm >= 4 ? 'strong' : 'avg';
     var order = (HK.SCEN_ORDER || []).concat(Object.keys(per));
     SH.GROUPS.forEach(function (g) {
       if (get(c, g)) return;
@@ -54327,7 +54377,7 @@
     });
   }
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  function mk(c) { var o = { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: c.loveLock || '', sexLock: c.sexLock || '', loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
+  function mk(c) { var o = { id: uid(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: idList(c.loveLock), sexLock: c.sexLock || '', sexLocks: idList(c.sexLocks), loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: c.posNpc === 'bottom' ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -54338,6 +54388,11 @@
     var o = {}; eg = obj(eg);
     HK.FACTORS.forEach(function (k) { var v = parseFloat(eg[k]); o[k] = isNaN(v) ? 10 : HK.clamp(v, 0, 20); });
     return o;
+  }
+  /* 住人の id の並び（文字列一つ・配列のどちらでも）。重複は除く */
+  function idList(v) {
+    var l = Array.isArray(v) ? v : typeof v === 'string' && v ? [v] : [];
+    return l.filter(function (x, i) { return typeof x === 'string' && x && l.indexOf(x) === i; });
   }
   function normChar(c) {
     c = obj(c);
@@ -54369,6 +54424,8 @@
     if (HK.Shared) HK.Shared.norm(c);
     c.faithful = !!c.faithful;
     c.noR18 = !!c.noR18;
+    /* 三人の場面：固定した相手が中心なら参加する（R18版。room-trio.js） */
+    c.trioHub = !!c.trioHub;
     c.posNpc = c.posNpc === 'bottom' ? 'bottom' : '';
     /* お酒の強さ（1 弱い〜5 ザル。空ならおまかせ） */
     c.alcohol = HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '';
@@ -54380,9 +54437,12 @@
     c.marks = str(c.marks, 30).trim();
     /* 語尾の付け替え（「です→っす、だ→だぜ」を5つまで。tone-new2.js） */
     c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(str(c.toneCustom, 120)) : '');
-    c.loveLock = typeof c.loveLock === 'string' ? c.loveLock : '';
-    /* 性行為の相手の固定（R18）：この人とだけ体の関係になる。恋愛は縛らない */
-    c.sexLock = typeof c.sexLock === 'string' ? c.sexLock : '';
+    /* 恋愛相手の固定：相手の id の並び（複数可。以前の保存は一人の id の文字列） */
+    c.loveLock = idList(c.loveLock);
+    /* 性行為の相手の固定（R18）：''（恋愛相手の固定に合わせる）／any／lover／loverOnly／pick（sexLocks の人とだけ）。以前の保存は一人の id の文字列 */
+    if (c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly') c.sexLocks = [];
+    else if (c.sexLock === 'pick' || Array.isArray(c.sexLock) || (typeof c.sexLock === 'string' && c.sexLock)) { c.sexLocks = idList(c.sexLock === 'pick' ? c.sexLocks : c.sexLock); c.sexLock = c.sexLocks.length ? 'pick' : ''; }
+    else { c.sexLock = ''; c.sexLocks = []; }
     c.loveNG = Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return typeof x === 'string'; }) : [];
     if (c.icon && !(typeof c.icon === 'string' && /^data:image\//.test(c.icon))) delete c.icon;
     return c;
@@ -54392,8 +54452,9 @@
     var ids = {};
     S0.chars.forEach(function (c) { ids[c.id] = 1; });
     S0.chars.forEach(function (c) {
-      if (!ids[c.loveLock] || c.loveLock === c.id) c.loveLock = '';
-      if (c.sexLock !== 'any' && c.sexLock !== 'lover' && c.sexLock !== 'loverOnly' && (!ids[c.sexLock] || c.sexLock === c.id)) c.sexLock = '';
+      c.loveLock = idList(c.loveLock).filter(function (k) { return ids[k] && k !== c.id; });
+      c.sexLocks = idList(c.sexLocks).filter(function (k) { return ids[k] && k !== c.id; });
+      if (c.sexLock === 'pick' && !c.sexLocks.length) c.sexLock = '';
       /* 恋愛・R18にしない相手：今いる住人だけ。片方に書かれていれば、もう片方にも書く */
       c.loveNG = (c.loveNG || []).filter(function (k, i, l) { return ids[k] && k !== c.id && l.indexOf(k) === i; });
       Object.keys(c.calls).forEach(function (k) { if (!ids[k] || k === c.id || typeof c.calls[k] !== 'string' || !c.calls[k].trim()) delete c.calls[k]; else c.calls[k] = c.calls[k].slice(0, 16); });
@@ -54681,6 +54742,7 @@
         if (c.daku) o.daku = true;
         if (c.faithful) o.faithful = true;
         if (c.noR18) o.noR18 = true;
+        if (c.trioHub) o.trioHub = true;
         if (c.posNpc === 'bottom') o.posNpc = 'bottom';
         if (c.alcohol) o.alcohol = +c.alcohol;
         if (c.partWords) o.partWords = c.partWords;
@@ -54691,9 +54753,11 @@
         if (HK.Attr) HK.Attr.exportTo(o, c, ref);
         if (HK.Shared) HK.Shared.exportTo(o, c);
         if (c.toneCustom) o.toneCustom = c.toneCustom;
-        if (c.loveLock && ref(c.loveLock) != null) o.loveLock = ref(c.loveLock);
+        /* 固定した相手：一人なら番号（以前の形）、二人以上なら番号の並び */
+        var lks = idList(c.loveLock).map(ref).filter(function (x) { return x != null; });
+        if (lks.length) o.loveLock = lks.length === 1 ? lks[0] : lks;
         if (c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly') o.sexLock = c.sexLock;
-        else if (c.sexLock && ref(c.sexLock) != null) o.sexLock = ref(c.sexLock);
+        else if (c.sexLock === 'pick') { var sls = idList(c.sexLocks).map(ref).filter(function (x) { return x != null; }); if (sls.length) o.sexLock = sls.length === 1 ? sls[0] : sls; }
         if (c.loveNG && c.loveNG.length) { var ng = c.loveNG.map(ref).filter(function (x) { return x != null; }); if (ng.length) o.loveNG = ng; }
         if (c.calls) { var cl = {}; Object.keys(c.calls).forEach(function (id) { if (ref(id) != null && c.calls[id]) cl[ref(id)] = c.calls[id]; }); if (Object.keys(cl).length) o.calls = cl; }
         if (c.keigo) { var kg = Object.keys(c.keigo).filter(function (id) { return ref(id) != null && c.keigo[id]; }).map(ref); if (kg.length) o.keigo = kg; }
@@ -54758,6 +54822,7 @@
       if (o.daku) c.daku = true;
       if (o.faithful) c.faithful = true;
       if (o.noR18) c.noR18 = true;
+      if (o.trioHub) c.trioHub = true;
       if (o.posNpc === 'bottom') c.posNpc = 'bottom';
       if (HK.ALC_OK(o.alcohol)) c.alcohol = String(o.alcohol);
       if (o.partWords) c.partWords = o.partWords;
@@ -54810,9 +54875,11 @@
       if (Array.isArray(c._ng)) c.loveNG = c._ng.map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; }).filter(Boolean);
       delete c._ng;
       if (HK.Attr) HK.Attr.importRefs(c, ref);
-      if (c._lk != null) { c.loveLock = (typeof c._lk === 'number' || /^\d+$/.test(String(c._lk)) ? map[+c._lk] : (list.filter(function (x) { return x.name === c._lk; })[0] || {}).id) || ''; delete c._lk; }
-      if (c._sl === 'any' || c._sl === 'lover' || c._sl === 'loverOnly') { c.sexLock = c._sl; delete c._sl; }
-      if (c._sl != null) { c.sexLock = (typeof c._sl === 'number' || /^\d+$/.test(String(c._sl)) ? map[+c._sl] : (list.filter(function (x) { return x.name === c._sl; })[0] || {}).id) || ''; delete c._sl; }
+      /* 固定した相手：番号・名前・その並び、のどれでも */
+      var toIds = function (v) { return idList((Array.isArray(v) ? v : [v]).map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; })); };
+      if (c._lk != null) { c.loveLock = toIds(c._lk); delete c._lk; }
+      if (c._sl === 'any' || c._sl === 'lover' || c._sl === 'loverOnly') { c.sexLock = c._sl; c.sexLocks = []; delete c._sl; }
+      else if (c._sl != null) { c.sexLocks = toIds(c._sl); c.sexLock = c.sexLocks.length ? 'pick' : ''; delete c._sl; }
       if (c._cl && typeof c._cl === 'object') { c.calls = c.calls || {}; Object.keys(c._cl).forEach(function (k) { var id = /^\d+$/.test(k) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; if (id) c.calls[id] = String(c._cl[k]).slice(0, 16); }); }
       delete c._cl;
       /* 敬語で話す相手：番号（または名前）の並び */
@@ -55053,11 +55120,13 @@
       chars: (function () {
         var cast = castFor(S.scenId), ids = cast.map(function (c) { return c.id; }), nm = {};
         S.chars.forEach(function (c) { nm[c.id] = c.name; });
+        /* 固定した相手の番号の並び。固定しているのに誰もこの箱庭にいなければ [-1]（誰とも、の印。engine.js の HK.parseLocks） */
+        var lockIdx = function (l) { l = idList(l); if (!l.length) return ''; var x = l.map(function (k) { return ids.indexOf(k); }).filter(function (i) { return i >= 0; }); return x.length ? x : [-1]; };
         return cast.map(function (c) {
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: c.loveLock ? ids.indexOf(c.loveLock) : '', sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock ? ids.indexOf(c.sexLock) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: c.posNpc === 'bottom' && (c.pos === 'top' || c.pos === 'riba') ? 'bottom' : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' || c.sexLock === 'lover' || c.sexLock === 'loverOnly' ? c.sexLock : c.sexLock === 'pick' ? lockIdx(c.sexLocks) : '', loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
           return HK.Attr ? HK.Attr.toInput(o, c, ids) : o;
         });
       })(),
@@ -55193,7 +55262,7 @@
         break;
       case 'del':
         S.chars = S.chars.filter(function (c) { return c.id !== row.dataset.id; });
-        S.chars.forEach(function (x) { if (x.loveLock === row.dataset.id) x.loveLock = ''; if (x.sexLock === row.dataset.id) x.sexLock = ''; if (x.loveNG) x.loveNG = x.loveNG.filter(function (k) { return k !== row.dataset.id; }); if (x.calls) delete x.calls[row.dataset.id]; if (x.keigo) delete x.keigo[row.dataset.id]; });
+        S.chars.forEach(function (x) { x.loveLock = idList(x.loveLock).filter(function (k) { return k !== row.dataset.id; }); x.sexLocks = idList(x.sexLocks).filter(function (k) { return k !== row.dataset.id; }); if (x.sexLock === 'pick' && !x.sexLocks.length) x.sexLock = ''; if (x.loveNG) x.loveNG = x.loveNG.filter(function (k) { return k !== row.dataset.id; }); if (x.calls) delete x.calls[row.dataset.id]; if (x.keigo) delete x.keigo[row.dataset.id]; });
         cleanTies(); save(); renderCast(); break;
       case 'tieadd':
         if (S.chars.length < 2) return;
@@ -55554,7 +55623,7 @@
 ;/* ==== js/ui-gear.js ==== */
 /* 箱庭シミュレーター ui: 住人ごとの設定（⚙️）
    節は ①話し方 ②プロフィール ③体と設定 ④恋愛（R18版は恋愛と夜） ⑤相手ごとの設定（関係・呼び方・二人称/一人称・受け攻め・夜の性格）。
-   各節の見出しの下に「どの箱庭に効くか」の注意書き（SCOPE）を出す。欄の data-gf は保存との互換のため変えない。
+   固定の説明は各節の ？（TIPS）に置く。欄の data-gf は保存との互換のため変えない。
    ※口調や関係は台詞・文面と関係の初期値に効く。行動の判断はエゴグラムの数値で決まる */
 (function () {
   'use strict';
@@ -55586,8 +55655,8 @@
     if (c.likes) bits.push('恋愛対象：' + lab(LIKES, c.likes));
     if (c.faithful) bits.push('一途');
     if (c.pos) bits.push(lab(POS, c.pos));
-    var lk = c.loveLock && byId(c.loveLock);
-    if (lk) bits.push('恋愛相手：' + lk.name + 'だけ');
+    var lk = namesOf(c.loveLock);
+    if (lk.length) bits.push('恋愛相手：' + lk.join('・') + 'だけ');
 /* r18: 全年齢版では省略 */
     if (c.alcohol && HK.ALC_LABEL) bits.push('お酒：' + HK.ALC_LABEL[c.alcohol]);
 /* r18: 全年齢版では省略 */
@@ -55629,7 +55698,7 @@
     '.gearrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:6px 0}.gearrow label{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}.gearrow select,.gearrow input[type=text]{max-width:100%}' +
     '.gearhint{font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.6}.tonesample{margin:8px 0 2px;padding:8px 12px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent);border-radius:0 8px 8px 0;font-size:13px;line-height:1.7;min-height:1.7em}.tonesample .tsl{display:block}.tonesample.anim .tsl{display:none}.tonesample.anim .tsl.on{display:block;animation:tsfade .5s ease}.tonesample .tsh{font-size:11px;color:var(--muted);display:block;margin-bottom:2px}@keyframes tsfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.tonesample.anim .tsl{display:block}.tonesample.anim .tsl.on{animation:none}}.gtie{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:8px 0}.gtie .who{font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:4px}' +
     '.gtie .one{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.gtie input[type=text]{width:12em}' +
-    'details.gkeigo{margin:8px 0 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px}details.gkeigo summary{cursor:pointer;font-size:13px;color:var(--muted)}details.gkeigo .gkn{font-size:12px;margin-left:4px;color:var(--ink)}details.gkeigo[open] summary{margin-bottom:4px}' +
+    'details.gkeigo,details.gdet{margin:8px 0 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px}details.gkeigo summary,details.gdet summary{cursor:pointer;font-size:13px;color:var(--muted)}details.gkeigo .gkn,details.gdet .gkn{font-size:12px;margin-left:4px;color:var(--ink)}details.gkeigo[open] summary,details.gdet[open] summary{margin-bottom:4px}' +
     '.gscope{margin:-2px 0 8px;padding:4px 8px;border-left:3px solid var(--line);background:color-mix(in srgb,var(--ink) 3%,transparent);border-radius:0 6px 6px 0}.gforh{font-size:12px;color:var(--muted);margin-left:4px}.gfnote{color:var(--accent)}' +
     '@media (max-width:520px){.gearbox{padding:12px}.gtie input[type=text]{width:100%}}';
   /* この住人の傾向（エゴグラムの説明）と、住人一覧の態度の一語 */
@@ -55639,6 +55708,10 @@
 
   /* ---------- 設定の窓 ---------- */
   var cur = null, ov = null, opener = null, keigoOpen = false, egoOpen = true;
+  /* 折りたたみ（恋愛相手の固定・性行為の相手・恋愛にしない相手）の開閉。窓を開いているあいだだけ覚える。基本は閉じる */
+  var openMap = {};
+  function det(k, title, sum, inner) { return '<details class="gdet" data-k="' + k + '"' + (openMap[k] ? ' open' : '') + '><summary>' + title + ' <span class="gkn">' + esc(sum) + '</span></summary><div class="gearrow">' + inner + '</div></details>'; }
+  function namesOf(ids) { return (ids || []).map(byId).filter(Boolean).map(function (o) { return o.name; }); }
   function opt(v, label, sel, title) { return '<option value="' + esc(v) + '"' + (v === sel ? ' selected' : '') + (title ? ' title="' + esc(title) + '"' : '') + '>' + esc(label) + '</option>'; }
   function selOf(f, list, v, extra) { return '<select data-gf="' + f + '"' + (extra || '') + '>' + list.map(function (o) { return opt(o[0], o[1], v || ''); }).join('') + '</select>'; }
   function typeOpts(sel) {
@@ -55701,24 +55774,11 @@
     }, 2600);
   }
   function sampleRefresh() { var c = byId(cur), box = document.getElementById('tonesample'); if (c && box) box.innerHTML = sampleLines(c); }
-  /* 節ごとの「どの箱庭に効くか」の注意書き（見出しのすぐ下に出す）。R18版だけの記述は r18 の印の中で差し替える */
-  function scopes() {
-  var SCOPE = {
-    talk: '効く箱庭：全箱庭の台詞（口調・一人称・二人称・語尾・呼び方・敬語）。行動の判断は変わりません。',
-    profile: '効く箱庭：性別・恋愛対象は全箱庭の恋愛の相手選び。誕生月は学園などの誕生日の出来事、年齢は「年上の相手には敬語」、お酒は合コン・出られない部屋・オメガバース・邪神村、色は関係図・経過・結果画像。グループは住人の行（メモの左）、特殊役職は死のある箱庭の住人の欄で決めます。',
-    body: '効く箱庭：体格・種族は、全箱庭の二人の穏やかな場面に一文が付きます。心の強さは、催眠のかかりやすさ。好物は、食事・差し入れ・デートのある箱庭（無人島・合コン・クラスメイト・オメガバース・宇宙船・邪神村・ふたりの日常）。同一人物は全箱庭（二人は恋愛にならず、鏡を見るような場面が起きます）。',
-    love: '効く箱庭：受け攻め・恋愛対象（受け攻め）・恋愛相手の固定・一途・恋愛にしない相手は、全箱庭の恋愛の場面（相手選びと、どちらが動く側か）。受け攻めは「相手ごとの設定」で、相手ごとにも変えられます。',
-    ties: '効く箱庭：関係は全箱庭の関係の初期値と出来事。呼び方・二人称・一人称は、その相手に話しかける台詞。受け攻めは、全箱庭の恋愛の場面で、この相手との向きだけを変えます（ほかの相手・モブには全体の受け攻めのまま）。'
-  };
-/* r18: 全年齢版では省略 */
-  return SCOPE;
-  }
-  function scope(s) { return '<p class="gearhint gscope">' + esc(s) + '</p>'; }
   /* 関係を付けずに出した相手ごとの行（窓を開いているあいだだけ。何か決めれば、関係がなくても行は残る） */
   var extra = {};
   function extraOf(c) { return extra[c.id] || {}; }
   function body(c) {
-    var s = S(), others = s.chars.filter(function (x) { return x !== c; }), SCOPE = scopes();
+    var s = S(), others = s.chars.filter(function (x) { return x !== c; });
     var autoK = HK.toneAuto ? HK.toneAuto(HK.traits(c.eg)) : HK.personaAuto(HK.traits(c.eg));
     var keys = HK.TONE_KEYS || HK.PERSONA_KEYS;
     var toneSel = '<select data-gf="tone" aria-label="口調">' + opt('', 'おまかせ（' + toneLabel(autoK) + '）', c.tone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.tone || '', t.desc); }).join('') + '</select>';
@@ -55728,9 +55788,12 @@
     var SUF = (HK.CALL_STYLES || []).filter(function (o) { return o.v && o.v !== 'gender'; }), CGD = { m: 'kun', f: 'chan', x: 'san' };
     if (c.call === 'gender') callSel += [['m', '男性'], ['f', '女性'], ['x', 'その他']].map(function (g) { return '<label>' + g[1] + 'には <select data-gf="callG" data-g="' + g[0] + '" aria-label="' + g[1] + 'の呼び方">' + SUF.map(function (o) { return opt(o.v, o.label, (c.callG && c.callG[g[0]]) || CGD[g[0]]); }).join('') + '</select></label>'; }).join('');
     /* 恋愛・R18にしない相手（苦手な組み合わせ）。どちらに付けても、二人のあいだでは恋愛・R18の場面が起きない */
-    var ngRow = others.length ? '<div class="gearrow"><span class="gearhint" style="flex:1 1 100%;margin:0">' + (HK.SAFE_ON ? '恋愛にしない相手' : '恋愛・R18にしない相手') + '（この人との恋愛・夜の場面を起こさない。相手の設定にも同じ印が付きます）</span>' + others.map(function (o) { return '<label><input type="checkbox" data-gf="ng" data-o="' + esc(o.id) + '"' + ((c.loveNG || []).indexOf(o.id) >= 0 ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('') + '</div>' : '';
-    var lockSel = '<select data-gf="lock" aria-label="恋愛相手の固定"><option value="">固定しない</option>' + others.map(function (o) { return opt(o.id, o.name + 'だけ', c.loveLock || ''); }).join('') + '</select>';
-    var sexSel = '';
+    /* 相手を選ぶ折りたたみ（複数可）：恋愛相手の固定・性行為の相手・恋愛にしない相手。住人が多くても伸びないよう、基本は閉じる */
+    var cbs = function (gf, ids) { return others.map(function (o) { return '<label><input type="checkbox" data-gf="' + gf + '" data-o="' + esc(o.id) + '"' + ((ids || []).indexOf(o.id) >= 0 ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join(''); };
+    var sumOf = function (ids, none) { var n = namesOf(ids); return n.length ? n.join('・') + (n.length > 1 ? '（' + n.length + '人）' : '') : none; };
+    var ngRow = others.length ? det('ng', HK.SAFE_ON ? '恋愛にしない相手' : '恋愛・R18にしない相手', sumOf(c.loveNG, 'なし'), cbs('ng', c.loveNG)) : '';
+    var lockBox = others.length ? det('lock', '恋愛相手を固定', sumOf(c.loveLock, '固定しない'), cbs('lockc', c.loveLock)) : '';
+    var sexSel = '', sexBox = '';
 /* r18: 全年齢版では省略 */
     /* R18版だけの欄：体と設定の「性器の呼び方」、恋愛と夜の「ふたなり・モブには・R18に参加しない・濁点喘ぎ」 */
     var partRow = '', r18Row = '';
@@ -55757,42 +55820,35 @@
     var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手">' + others.map(function (o) { return opt(o.id, o.name, ''); }).join('') + '</select></label>' +
       '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + opt('', '（関係は付けずに相手ごとの設定だけ）', 'friend') + '</select></label>' + (function () { var gm = groupMates(c); return gm.length ? '<label title="' + esc('同じグループ（' + grpsOf(c).join('・') + '）の全員に、選んだ関係を付けます：' + gm.map(function (o) { return o.name; }).join('・') + '。向きのある関係は、' + c.name + 'が左（上司・先輩・師匠など）になります') + '"><input type="checkbox" data-gf="newgrp"> グループの全員と（' + gm.length + '人）</label>' : ''; })() + '<button type="button" class="btn small" data-gact="tnew">追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
-      '<p class="gearhint">行動はエゴグラムだけで決まります。ここで決めるのは台詞の見た目と関係の初期値です。見出しの ？ に詳しい説明があります。</p>' +
-      (HK.egoDesc ? '<details class="gego"' + (egoOpen ? ' open' : '') + '><summary>この住人の傾向<span class="gegc">' + esc(HK.toCode(c.eg)) + '・' + esc(HK.egoAttWord(c)) + '</span></summary><ul id="egodesc">' + HK.egoDesc(c).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul><p class="gearhint">エゴグラムの5文字コード（住人の行で変えられます）から読んだ目安です。態度は台詞の表の種類で、口調を決めるとその口調に合わせます。</p></details>' : '') +
-      '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3>' + scope(SCOPE.talk) + '<div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
-      '<div class="gearrow"><label>語尾の記号 <input type="text" data-gf="marks" value="' + esc(c.marks || '') + '" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label></div>' +
-      '<p class="gearhint">文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます。空なら付けません。</p>' +
-      (HK.TONE_CUSTOM_OFF ? '' : '<div class="gearrow"><label>語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label></div>' +
-      '<p class="gearhint">口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで。文の終わりにある語尾だけが替わります（喘ぎはそのまま）。</p>') + /* r18:ok */
+      /* 固定の説明は各節の ？（TIPS）に置き、ここには選んだものによって変わる説明（口調・関係・この住人の傾向）だけを出す */
+      (HK.egoDesc ? '<details class="gego"' + (egoOpen ? ' open' : '') + '><summary>この住人の傾向<span class="gegc">' + esc(HK.toCode(c.eg)) + '・' + esc(HK.egoAttWord(c)) + '</span></summary><ul id="egodesc">' + HK.egoDesc(c).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul></details>' : '') +
+      '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3><div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
+      '<div class="gearrow"><label title="文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます">語尾の記号 <input type="text" data-gf="marks" value="' + esc(c.marks || '') + '" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label>' +
+      (HK.TONE_CUSTOM_OFF ? '' : '<label title="口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで">語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label>') + '</div>' +
       '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
       '<div class="tonesample anim" id="tonesample" aria-live="polite">' + sampleLines(c) + '</div>' +
       '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label><label><input type="checkbox" data-gf="keigoOlder"' + (c.keigoOlder ? ' checked' : '') + '> 年上の相手には敬語（年齢を決めた人どうし）</label></div>' +
       (others.length ? '<details class="gkeigo"' + (keigoOpen ? ' open' : '') + '><summary>敬語で話す相手 <span class="gkn">' + (function () { var n = others.filter(function (o) { return c.keigo && c.keigo[o.id]; }).length; return n ? n + '人' : 'なし'; })() + '</span></summary><div class="gearrow">' + others.map(function (o) { return '<label><input type="checkbox" data-gf="keigo" data-o="' + o.id + '"' + (c.keigo && c.keigo[o.id] ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('') + '</div>' +
         ((c.tone || autoK) === 'polite' ? '<p class="gearhint">いまの口調は敬語なので、誰にでも敬語で話します。</p>' : '') + '</details>' : '') + '</div>' +
       /* ②プロフィール：性別・誕生月・年齢・お酒・恋愛対象・色 */
-      '<div class="gearsec"><h3>プロフィール' + (HK.Tips ? HK.Tips.btn('gear-profile') : '') + '</h3>' + scope(SCOPE.profile) + '<div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
+      '<div class="gearsec"><h3>プロフィール' + (HK.Tips ? HK.Tips.btn('gear-profile') : '') + '</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
         '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label>' +
         '<label>誕生月 ' + selOf('bmonth', [['', '決めない']].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (m) { return [String(m), m + '月']; })), c.bmonth || '') + '</label>' +
         '<label>年齢 <input type="number" data-gf="age" min="1" max="150" value="' + esc(c.age || '') + '" placeholder="決めない" style="width:5em"></label>' +
         '<label title="酒の強さ。合コン・出られない部屋の酒・オメガバースの飲みの場面・邪神村の歓迎の宴や御神酒などで、酔いやすさや振る舞いが変わります。おまかせは気質から決まります">お酒 ' + selOf('alcohol', [['', 'おまかせ'], ['1', '弱い'], ['2', 'やや弱い'], ['3', 'ふつう'], ['4', '強い'], ['5', 'ザル']], c.alcohol || '') + '</label></div>' +
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
       /* ③体と設定：体格・種族・心の強さ・同一人物・好物（R18版：胸・性器・性器の呼び方） */
-      '<div class="gearsec"><h3>体と設定' + (HK.Tips ? HK.Tips.btn('gear-body') : '') + '</h3>' + scope(SCOPE.body) + (HK.Attr ? HK.Attr.gearHtml(c, others, { esc: esc, opt: opt, selOf: selOf }) : '') + partRow + '</div>' +
+      '<div class="gearsec"><h3>体と設定' + (HK.Tips ? HK.Tips.btn('gear-body') : '') + '</h3>' + (HK.Attr ? HK.Attr.gearHtml(c, others, { esc: esc, opt: opt, selOf: selOf }) : '') + partRow + '</div>' +
       /* ③'箱庭の能力：箱庭をまたいで共通の能力値・欄（体力・運・推理力・特殊役職 など。shared-stats.js） */
-      (HK.Shared && HK.Shared.shown().length ? '<div class="gearsec"><h3>箱庭の能力' + (HK.Tips ? HK.Tips.btn('gear-ab') : '') + '</h3>' + scope(HK.Shared.scope()) + HK.Shared.gearHtml(c, { esc: esc, opt: opt }) + '</div>' : '') +
+      (HK.Shared && HK.Shared.shown().length ? '<div class="gearsec"><h3>箱庭の能力' + (HK.Tips ? HK.Tips.btn('gear-ab') : '') + '</h3>' + HK.Shared.gearHtml(c, { esc: esc, opt: opt }) + '</div>' : '') +
       /* ④恋愛（R18版は恋愛と夜）：受け攻め・恋愛対象（受け攻め）・恋愛相手の固定・一途・恋愛にしない相手（R18：性行為の相手の固定・R18に参加しない・夜の性格・ふたなり など） */
-      '<div class="gearsec"><h3>' + (HK.SAFE_ON ? '恋愛' : '恋愛と夜') + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3>' + scope(SCOPE.love) +
+      '<div class="gearsec"><h3>' + (HK.SAFE_ON ? '恋愛' : '恋愛と夜') + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3>' +
       '<div class="gearrow"><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
         '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label>' + nightRow + '</div>' +
-      '<div class="gearrow"><label>恋愛相手を固定 ' + lockSel + '</label>' + sexSel + '<label title="恋人ができたら、その恋人がいる間は、ほかの人と恋愛・夜の場面になりません（浮気しない）。恋人がいないうちは、ふつうに恋をします"><input type="checkbox" data-gf="faithful"' + (c.faithful ? ' checked' : '') + '> 一途（恋人ができたら、ほかの人に惹かれない・浮気しない）</label></div>' + r18Row + '<p class="gearhint">一途にしたい人は：恋愛相手を固定＋関係「本命」' +
-/* r18: 全年齢版では省略 */
-      '。ほかの人との恋愛・告白が起きず、' + (sexSel ? '' : '誘いも断るようになります。') +
-/* r18: 全年齢版では省略 */
-      '</p>' +
-/* r18: 全年齢版では省略 */
-      ngRow + '</div>' +
+      '<div class="gearrow">' + sexSel + '<label title="恋人ができたら、その恋人がいる間は、ほかの人と恋愛・夜の場面になりません（浮気しない）。恋人がいないうちは、ふつうに恋をします"><input type="checkbox" data-gf="faithful"' + (c.faithful ? ' checked' : '') + '> 一途（恋人ができたら、ほかの人に惹かれない・浮気しない）</label></div>' + r18Row +
+      lockBox + sexBox + ngRow + '</div>' +
       /* ⑤相手ごとの設定：関係・呼び方・二人称/一人称・受け攻め・夜の性格 */
-      '<div class="gearsec"><h3>相手ごとの設定' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + scope(SCOPE.ties) + (rel || '<p class="gearhint">まだ相手ごとの設定はありません。下の「相手」と「関係」を選んで追加してください（関係を付けずに、受け攻めや呼び方だけを決めることもできます）。</p>') + addable + '</div>';
+      '<div class="gearsec"><h3>相手ごとの設定' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + (rel || '<p class="gearhint">まだ相手ごとの設定はありません。下の「相手」と「関係」を選んで追加してください（関係を付けずに、受け攻めや呼び方だけを決めることもできます）。</p>') + addable + '</div>';
   }
   function render() {
     var c = byId(cur);
@@ -55803,7 +55859,7 @@
     sampleTick();
   }
   function open(id, from) {
-    if (cur !== id) { keigoOpen = false; egoOpen = true; extra = {}; }
+    if (cur !== id) { keigoOpen = false; egoOpen = true; extra = {}; openMap = {}; }
     cur = id; opener = from || null;
     if (!ov) {
       ov = document.createElement('div');
@@ -55812,6 +55868,7 @@
       document.body.appendChild(ov);
       ov.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('gkeigo')) keigoOpen = e.target.open; }, true);
       ov.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('gego')) egoOpen = e.target.open; }, true);
+      ov.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('gdet')) openMap[e.target.dataset.k] = e.target.open; }, true);
     }
     ov.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -55903,6 +55960,7 @@
       case 'daku': if (isInput) return; c.daku = t.checked; changed(false); break;
       case 'faithful': if (isInput) return; c.faithful = t.checked; changed(false); break;
       case 'noR18': if (isInput) return; c.noR18 = t.checked; changed(true); break;
+      case 'trioHub': if (isInput) return; c.trioHub = t.checked; changed(false); break;
       case 'partWords': if (isInput) return; c.partWords = ['soft', 'direct', 'medical'].indexOf(t.value) >= 0 ? t.value : ''; changed(true); break;
       case 'partM': c.partM = t.value.replace(/[「」『』{}]/g, '').trim().slice(0, 10); changed(false); break;
       case 'partF': c.partF = t.value.replace(/[「」『』{}]/g, '').trim().slice(0, 10); changed(false); break;
@@ -55911,12 +55969,28 @@
       case 'posLike': if (isInput) return; c.posLike = HK.Pos && HK.Pos.likeValid(t.value) ? t.value : ''; changed(false); break;
       case 'colorauto': if (isInput) return; if (t.checked) c.color = ''; else c.color = (ov.querySelector('[data-gf="color"]') || {}).value || '#3d6f93'; changed(true); UI.applyColors(s.chars); break;
       case 'color': if (/^#[0-9a-fA-F]{6}$/.test(t.value)) { c.color = t.value; UI.applyColors(s.chars); changed(false); } break;
-      case 'lock': if (isInput) return; c.loveLock = t.value; changed(false); break;
-      case 'sexlock': if (isInput) return; c.sexLock = t.value; changed(false); break;
+      /* 恋愛相手の固定（複数可）：印を付けた相手は「恋愛にしない相手」から外す */
+      case 'lockc': if (isInput) return; (function () {
+        var o = byId(t.dataset.o); if (!o) return;
+        c.loveLock = (c.loveLock || []).filter(function (k) { return k !== o.id; });
+        if (t.checked) { c.loveLock.push(o.id); c.loveNG = (c.loveNG || []).filter(function (k) { return k !== o.id; }); o.loveNG = (o.loveNG || []).filter(function (k) { return k !== c.id; }); }
+        changed(true);
+      })(); break;
+      case 'sexlock': if (isInput) return; c.sexLock = ['any', 'lover', 'loverOnly', 'pick'].indexOf(t.value) >= 0 ? t.value : ''; if (c.sexLock !== 'pick') c.sexLocks = []; else openMap.sex = true; changed(true); break;
+      case 'sexlockc': if (isInput) return; (function () {
+        var o = byId(t.dataset.o); if (!o) return;
+        c.sexLocks = (c.sexLocks || []).filter(function (k) { return k !== o.id; });
+        if (t.checked) c.sexLocks.push(o.id);
+        changed(true);
+      })(); break;
       case 'ng': if (isInput) return; (function () {
         var o = byId(t.dataset.o); if (!o) return;
         c.loveNG = (c.loveNG || []).filter(function (k) { return k !== o.id; }); o.loveNG = (o.loveNG || []).filter(function (k) { return k !== c.id; });
-        if (t.checked) { c.loveNG.push(o.id); o.loveNG.push(c.id); if (c.loveLock === o.id) c.loveLock = ''; if (o.loveLock === c.id) o.loveLock = ''; }
+        if (t.checked) {
+          c.loveNG.push(o.id); o.loveNG.push(c.id);
+          c.loveLock = (c.loveLock || []).filter(function (k) { return k !== o.id; }); o.loveLock = (o.loveLock || []).filter(function (k) { return k !== c.id; });
+          c.sexLocks = (c.sexLocks || []).filter(function (k) { return k !== o.id; }); o.sexLocks = (o.sexLocks || []).filter(function (k) { return k !== c.id; });
+        }
         changed(true);
       })(); break;
       case 'keigo': if (isInput) return; c.keigo = c.keigo || {}; if (t.checked) c.keigo[t.dataset.o] = 1; else delete c.keigo[t.dataset.o]; changed(false); sampleRefresh(); (function () { var kn = ov && ov.querySelector('.gkn'), n = ov ? ov.querySelectorAll('[data-gf="keigo"]:checked').length : 0; if (kn) kn.textContent = n ? n + '人' : 'なし'; })(); break;
@@ -56167,7 +56241,7 @@
     var pf = ctx.pair(a, b);
     if (pf.kin) return true;
     if (ctx.env && ctx.env.romance === 0) return true;
-    if (a.lock != null && a.lock !== b.i) return true;
+    if (HK.lockOut(a, b)) return true;
     /* 無関心な人・恐れている人は、その相手に嫉妬も執着もしない（ties.js） */
     if (HK.Ties && HK.Ties.apathy && (HK.Ties.apathy(ctx, a, b) || HK.Ties.fears(ctx, a, b))) return true;
     /* 相手が自分を恐れている・無関心でも、関係「執着」の想いは一方的に続く（恋愛・夜には進まない：noLove は HK.Pos・HK.canLove が見る） */
@@ -57165,7 +57239,7 @@
     if (best < 60 && pf.ob && pf.ob[o.i] && HK.Obsess && HK.Obsess.level && HK.Obsess.level(ctx, o, v) >= 60) { best = 60; rel = rel || '執着していた相手'; }
     var key = o.i < v.i ? o.i + '-' + v.i : v.i + '-' + o.i;
     if ((pf.amagami || (ctx.om && ctx.om.bonded && ctx.om.bonded[key])) && best < 65) { best = 65; rel = '番'; }
-    if (o.lock === v.i && best < 50) { best = 50; rel = rel || 'ただ一人と決めた人'; }
+    if (HK.lockTo(o, v) && best < 50) { best = 50; rel = rel || 'ただ一人と決めた人'; }
     var r = ctx.R(o, v);
     var d = best + Math.max(0, r.aff) * 0.55 + Math.max(0, r.trust) * 0.25 + Math.max(0, r.att) * 0.2 - Math.max(0, r.ten - 50) * 0.3;
     if (r.aff < 0) d *= 0.4;

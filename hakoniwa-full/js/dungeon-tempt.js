@@ -268,7 +268,7 @@
       var c = src[h.i != null ? h.i : i] || {};
       if (h.sexLock == null || h.sexLock === '') {
         var s = c.sexLock;
-        h.sexLock = s === 'any' || s === 'lover' ? s : s == null || s === '' || isNaN(+s) ? null : +s;
+        h.sexLock = HK.sexLockOf(s);
       }
     });
     ((input && input.ties) || []).forEach(function (t) {
