@@ -19,7 +19,7 @@
 
   function alive(p) { return JS.alive ? JS.alive(p) : p.alive !== false; }
   function foes(S, p, live) {
-    return live.filter(function (q) { return q !== p && alive(q) && !q.out && (JS.REL.cat(S, p, q) === 'bad' || JS.REL.bond(S, p, q) < -0.15); });
+    return live.filter(function (q) { return q !== p && alive(q) && !q.out && !q.bound && (JS.REL.cat(S, p, q) === 'bad' || JS.REL.bond(S, p, q) < -0.15); });
   }
 
   JS.MUNO = {

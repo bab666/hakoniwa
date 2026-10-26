@@ -198,6 +198,7 @@ js/solo-massage-thick.js
 js/solo-massage-cast.js
 js/solo-massage.js
 late js/solo-massage-lewd.js
+late js/solo-massage-love.js
 late js/solo-thick4.js
 late js/solo-hole-data.js
 late js/solo-hole-live.js
@@ -413,6 +414,7 @@ js/safe-room.js
 js/share-card.js
 js/egoquiz.js
 js/saves.js
+js/history.js
 js/portable.js
 js/tips.js
 late js/tips-scen-a.js

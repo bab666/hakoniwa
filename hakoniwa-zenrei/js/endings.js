@@ -18,18 +18,20 @@
       return arr.length > k ? arr.slice(0, k).join('・') + 'ほか' + (arr.length - k) + '人（計' + arr.length + '人）' : arr.join('・');
     };
     var byFate = function (re) { return C.filter(function (c) { return re.test(c.fate); }); };
-    var withLabel = function (ids) { return res.pairs.filter(function (p) { return ids.indexOf(p.label) >= 0; }); };
+    /* 恋人・友人・宿敵などの「いまの関係」の一覧は、二人とも生きている組だけ（亡くなった人を「付き合い始めた」などに数えない） */
+    var livePair = function (p) { return !(C[p.a] && C[p.a].alive === false) && !(C[p.b] && C[p.b].alive === false); };
+    var withLabel = function (ids) { return res.pairs.filter(function (p) { return ids.indexOf(p.label) >= 0 && livePair(p); }); };
     var pn = function (p) { return nm(p.a) + '×' + nm(p.b); };
     /* 組の表記は攻め×受けの順（pair-name.js）。pn2 は番号で */
     if (HK.pairName) pn = function (p) { return HK.pairName(res, p); };
     var pn2 = function (a, b) { return pn({ a: a, b: b }); };
-    return { C: C, nm: nm, pair: pair, names: names, byFate: byFate, withLabel: withLabel, pn: pn, pn2: pn2 };
+    return { C: C, nm: nm, pair: pair, names: names, byFate: byFate, withLabel: withLabel, pn: pn, pn2: pn2, livePair: livePair };
   }
 
   function mainPairs(res, X, skip) {
     return res.pairs.filter(function (p) { return p.label !== 'strangers' && (!skip || !skip(p)); })
       .sort(function (a, b) { return b.intensity - a.intensity; }).slice(0, 3)
-      .map(function (p) { return X.pn(p) + '＝' + (p.tie ? ((HK.Sib && HK.Sib.resLabel(p.tie, res)) || p.tie.label) + '→' : '') + p.name + (p.surprise ? '（意外）' : ''); });
+      .map(function (p) { return X.pn(p) + '＝' + (p.tie ? ((HK.Sib && HK.Sib.resLabel(p.tie, res)) || p.tie.label) + '→' : '') + p.name + (p.surprise ? '（意外）' : '') + (X.livePair && !X.livePair(p) && /^(?:love|night|pine|friend|partner|guard|obsess)$/.test(p.cls || '') ? '（死別）' : ''); });
   }
 
   function deathLines(res, X) {
@@ -103,11 +105,14 @@
     } else {
       var pairs = ex.filter(function (e) { return e.group == null; }), group = ex.filter(function (e) { return e.group != null && !e.trio; })[0];
       var trios = ex.filter(function (e) { return e.trio; });
+      /* 見出しの書式（順6・2026-10-26）：誰が条件を満たしたか → 取り残された人・自分から残った人 → 「〇人で脱出した。」をいつも最後に。
+         恋人どうしの組・恋人の三人（円満な三人）のように全員が出た結末でも、人数を書く */
       if (group) headline = '条件を満たし、' + X.names(group.group) + 'が全員で部屋を出た。';
-      else if (trios.length) headline = trios.map(function (e) { return X.names(e.group) + 'の' + (['', '', '二人', '三人', '四人', '五人'][e.group.length] || e.group.length + '人'); }).join('と') + 'が、一緒に条件を満たして部屋を出た。' + (pairs.length ? 'ほかに' + pairs.map(function (e) { return X.nm(e.a) + '×' + X.nm(e.b); }).join('、') + 'も脱出。' : '') + (left.length ? X.names(left) + 'は取り残された。' : '');
-      else if (pairs.length) headline = pairs.map(function (e) { return X.pn2(e.a, e.b); }).join('、') + (pairs.length > 1 ? ' の' + pairs.length + '組' : '') + 'が成立して脱出。' + (left.length ? X.names(left) + 'は取り残された。' : '');
+      else if (trios.length) headline = trios.map(function (e) { return X.names(e.group) + 'の' + (['', '', '二人', '三人', '四人', '五人'][e.group.length] || e.group.length + '人'); }).join('と') + 'が、一緒に条件を満たした。' + (pairs.length ? 'ほかに' + pairs.map(function (e) { return X.nm(e.a) + '×' + X.nm(e.b); }).join('、') + 'も成立。' : '') + (left.length ? X.names(left) + 'は取り残された。' : '');
+      else if (pairs.length) headline = pairs.map(function (e) { return X.pn2(e.a, e.b); }).join('、') + (pairs.length > 1 ? ' の' + pairs.length + '組' : '') + 'が成立。' + (left.length ? X.names(left) + 'は取り残された。' : '');
       else headline = '誰も条件を満たせず、' + (left.length > 2 ? '全員' : X.names(left)) + 'が部屋に取り残された。';
       if (stayed.length) headline += X.names(stayed) + 'は条件を満たしたが、自分から部屋に残った。';
+      if (out.length) headline += out.length + '人で脱出した。';
       ex.forEach(function (e) {
         if (e.trio) { lines.push(e.label + '　' + X.names(e.group) + '　' + (['', '', '二人', '三人', '四人', '五人'][e.group.length] || e.group.length + '人') + 'で一緒に条件を満たして脱出。部屋を出たあとは「' + (e.bondLabel || '―') + '」'); return; }
         if (e.group != null) return;
@@ -117,7 +122,7 @@
       if (group) lines.push(group.label + '　全員で脱出');
     }
     if (LF) {
-      headline += (out.length ? '脱出は' + out.length + '人。' : '') + HK.RoomLeft.note(res, X);
+      headline += HK.RoomLeft.note(res, X);
       lines.push('取り残された人の結末：' + LF.title + (LF.id === 'friend' && LF.by && LF.by.length ? '（' + X.nm(LF.by[0]) + 'が外から扉を開けた）' : ''));
       (LF.vows || []).forEach(function (v) { lines.push(X.nm(v.a) + '：' + X.nm(v.b) + 'に' + { hate: '借りを返すと誓った', obsess: '必ず会いに行くと決めた', lovehate: 'もう一度会うと誓った（愛憎）', abandon: '置いていかれた恨みを忘れないと誓った' }[v.k]); });
     }

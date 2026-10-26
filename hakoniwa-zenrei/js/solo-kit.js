@@ -16,7 +16,9 @@
     var h = {
       i: 0, name: src.name, eg: src.eg, memo: src.memo || '', tr: HK.traits(src.eg),
       stats: {}, hp: 100, pleasure: 0, sens: 1, corrupt: 0, climax: 0, dev: {}, curses: [], items: [], cloth: 4,
-      gender: src.gender || '', likes: src.likes || '', tone: src.tone || '', fp: src.fp || '', pos: src.pos || ''
+      gender: src.gender || '', likes: src.likes || '', tone: src.tone || '', fp: src.fp || '', pos: src.pos || '',
+      /* 恋愛・R18にしない相手（キャラの設定 loveNG：相手の番号）。住人どうしの場面がある箱庭（感覚遮断穴の壁の向こうなど）が HK.ngPair で見る */
+      ng: Array.isArray(src.loveNG) ? src.loveNG.filter(function (x) { return x >= 0; }) : []
     };
     if (HK.charFlags) HK.charFlags(src, h, scen && scen.id);
     /* いちばん強い因子（同点なら、この回の中で一つに決める。core.js の HK.egoType） */

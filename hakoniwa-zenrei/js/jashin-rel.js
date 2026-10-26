@@ -203,7 +203,9 @@
     rel.forEach(function (q) {
       var c = cat(S, q, p), bd = bond(S, q, p);
       q.m.fear = clamp(q.m.fear + (c === 'love' ? 25 : c === 'family' ? 20 : c === 'bad' ? 4 : 12), 0, 100);
-      var t = pickT(S, (c === 'crush' && mutual(S, q, p) ? T.GRIEF.mutual : T.GRIEF[c]) || T.GRIEF.close, { a: p.name, b: q.name }), why = q.name + 'と' + p.name + 'の関係：' + relLabel(S, q, p);
+      /* 遺体の残らない死（穴・塵・闇に引きずり込まれた など）では、亡骸を抱く文の代わりに、名前を呼ぶ・遺品を抱く文（engine.js の HK.State.noBody） */
+      var G0 = HK.State && HK.State.noBody(p) && T.GRIEF_NB ? T.GRIEF_NB : T.GRIEF;
+      var t = pickT(S, (c === 'crush' && mutual(S, q, p) ? G0.mutual : G0[c]) || G0.close, { a: p.name, b: q.name }), why = q.name + 'と' + p.name + 'の関係：' + relLabel(S, q, p);
       /* 後を追う（仇討ち・絶望） */
       if (bd >= 0.75 && !S.inCave && /村人|何者か/.test(p.how || '') && rng() < q.tr.aggr * 0.5 + q.tr.impulse * 0.3) {
         t += pickT(S, T.REVENGE, { b: q.name });
@@ -227,7 +229,7 @@
       var sl = live.filter(function (q) { return q.job === 'sleuth'; })[0] || live.filter(function (q) { return q.job === 'detective'; })[0] || live.filter(function (q) { return q.goal && q.goal.id === 'solve' && !q.bound; })[0];
       if (!sl || h - c.h < 2) return true;
       var ch = (sl.job === 'sleuth' ? 0.4 : 0.15) + JS.skill(sl, 'obs') * 0.3 + (sl.goal && sl.goal.id === 'solve' ? 0.15 : 0) + (c.prog || 0) * 0.08;
-      if (rng() > ch) { if (!c.looked) { c.looked = 1; ST.sayB(S, { actors: [sl], tag: '捜査', text: pickT(S, T.SLEUTH_CASE, { a: sl.name }), why: sl.name + 'が' + c.v.name + 'の死を調べている' }, sl.name + 'が現場を調べた'); } return true; }
+      if (rng() > ch) { if (!c.looked) { c.looked = 1; ST.sayB(S, { actors: [sl], tag: '捜査', text: pickT(S, (HK.State && HK.State.bodyless(T.SLEUTH_CASE, c.v)) || T.SLEUTH_CASE, { a: sl.name }), why: sl.name + 'が' + c.v.name + 'の死を調べている' }, sl.name + 'が現場を調べた'); } return true; }
       c.done = true;
       var vs = c.v.i != null ? c.v.name + 'さん' : c.v.name, t = pickT(S, T.SLEUTH_SOLVE, { a: sl.name, v: c.v.name, vs: vs });
       if (c.type === 'mage') {
@@ -313,7 +315,8 @@
     var gs = live.filter(function (q) { return q !== p && JS.alive(q) && !q.bound && bond(S, q, p) >= 0.6; }).sort(function (a, b) { return bond(S, b, p) - bond(S, a, p); });
     var g = gs[0];
     if (!g || rng() > bond(S, g, p) * 0.55 + g.tr.warmth * 0.15 + (g.job === 'manager' ? 0.15 : 0)) {
-      var ab = live.filter(function (q) { return q !== p && bond(S, q, p) < 0; })[0];
+      /* 見捨てる人も、その場にいる人だけ（名簿は区切りの初めに作ったものなので、脱出・連れ去り・縛られた人をここで外す） */
+      var ab = live.filter(function (q) { return q !== p && JS.alive(q) && !q.bound && bond(S, q, p) < 0; })[0];
       if (ab && rng() < 0.3) ST.sayB(S, { actors: [ab, p], tag: '見捨てる', text: pickT(S, T.ABANDON, { a: p.name, b: ab.name }), why: ab.name + 'と' + p.name + 'の関係：' + relLabel(S, ab, p) + '（助けなかった）' }, ab.name + 'は' + p.name + 'を見捨てた');
       return false;
     }

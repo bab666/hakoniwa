@@ -299,9 +299,17 @@
   }
   if (!HK.SCENARIOS[S.scenId]) S.scenId = HK.SCEN_ORDER[0];
   HK.Icons.set(S.chars);
-  var hist = HK.store.get('history', []);
-  if (!Array.isArray(hist)) hist = [];
-  hist = hist.filter(function (h) { return h && h.input && Array.isArray(h.input.chars) && HK.SCENARIOS[h.input.scenId]; });
+  /* 「これまでの箱庭」（履歴）：一覧は localStorage の history（id・日時・箱庭・住人名・シード・要約・入力。r は結果を置いた印、r18 は R18モードで動かしたか）。
+     結果そのものは history.js（HK.History）に id で置き、開くときはそれをそのまま表示する。id や r の無い古い形の履歴・置けなかった結果は、
+     開いたときに今の版で回し直して表示し、結果を置いて以後は固定にする */
+  var HIST_MAX = 12;
+  var histRaw = HK.store.get('history', []);
+  if (!Array.isArray(histRaw)) histRaw = [];
+  histRaw = histRaw.filter(function (h) { return h && h.input && Array.isArray(h.input.chars); });
+  var hist = histRaw.filter(function (h) { return HK.SCENARIOS[h.input.scenId]; });
+  /* この画面で出せない箱庭（全年齢モードで隠す R18 の箱庭など）の履歴は、表示しないが消さない（書き戻すときに足す） */
+  var histHid = histRaw.filter(function (h) { return !HK.SCENARIOS[h.input.scenId]; });
+  var histNote = '', histCur = null, histPend = [];   /* histPend：結果を置いている途中の履歴（一覧に「未保存」の印を出さない） */
   var tab = 'cast', result = null, showAll = false;
 
   function bkKey() { return (HK.STORE ? HK.STORE.prefix : 'hakoniwa:') + 'state:backup'; }
@@ -999,6 +1007,8 @@
     var extra = (scen.stats || []).map(function (s) { return '<span class="chip" title="' + esc(s.desc) + '">' + esc(s.label) + '</span>'; }).join('') + (scen.weapons ? '<span class="chip">支給武器</span>' : '');
     var sexCols = S.scenId === 'goukon' || S.scenId === 'omega';
     var pfs = scen.perFields || [];
+    /* 最初の行動・短期目標：選べるものがない箱庭（物語型の宇宙船漂流記・吹雪の館など）では、見出しと列を出さない */
+    var hasAct = !!(scen.actions && scen.actions.length), hasGoal = !!(scen.goals && scen.goals.length);
     /* 箱庭をまたいで共通の能力値・欄（shared-stats.js）は、見出しに ＊ を付けて説明を添える */
     var shn = function (id, pick) { return HK.Shared ? HK.Shared.headNote(S.scenId, id, pick) : ''; };
     var statHead = (scen.stats || []).map(function (s) { var n = shn(s.id, false); return '<th title="' + esc(s.desc + (n ? ' ' + n : '')) + '">' + esc(s.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (scen.weapons ? '<th>武器</th>' : '') + pfs.map(function (f) { var n = shn(f.id, true); return '<th' + (n ? ' title="' + esc(n) + '"' : '') + '>' + esc(f.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (sexCols ? '<th>性別</th><th>恋愛対象</th>' : '');
@@ -1017,7 +1027,7 @@
       }).join('');
       var wp = scen.weapons ? '<td><select id="pw-' + c.id + '" data-f="weapon" data-id="' + c.id + '" aria-label="' + esc(c.name) + 'の武器"><option value="random">ランダム支給</option>' +
         HK.WEAPONS.map(function (w) { return '<option value="' + w.id + '"' + (p.weapon === w.id ? ' selected' : '') + '>' + esc(w.name) + '</option>'; }).join('') + '</select></td>' : '';
-      return '<tr' + (on ? '' : ' class="off"') + '><td><input type="checkbox" id="jn-' + c.id + '" data-f="join" data-id="' + c.id + '"' + (on ? ' checked' : '') + ' aria-label="' + esc(c.name) + 'を参加させる"></td><td><span class="row" style="flex-wrap:nowrap"><span class="dot" style="background:var(--p' + i + ')"></span><b>' + esc(c.name) + '</b>' + (c.group ? '<span class="grptag">' + esc(grpList(c).join('・')) + '</span>' : '') + '</span></td><td>' + sel('action', scen.actions) + '</td><td>' + sel('goal', scen.goals) + '</td>' + st + wp + pfs.map(function (f) {
+      return '<tr' + (on ? '' : ' class="off"') + '><td><input type="checkbox" id="jn-' + c.id + '" data-f="join" data-id="' + c.id + '"' + (on ? ' checked' : '') + ' aria-label="' + esc(c.name) + 'を参加させる"></td><td><span class="row" style="flex-wrap:nowrap"><span class="dot" style="background:var(--p' + i + ')"></span><b>' + esc(c.name) + '</b>' + (c.group ? '<span class="grptag">' + esc(grpList(c).join('・')) + '</span>' : '') + '</span></td>' + (hasAct ? '<td>' + sel('action', scen.actions) + '</td>' : '') + (hasGoal ? '<td>' + sel('goal', scen.goals) + '</td>' : '') + st + wp + pfs.map(function (f) {
         /* ほかの欄の選び方でこの欄が意味を持たないとき（サキュバスの標的・遮断穴の主催者など）は、理由を出して選べなくする（perField.offWhen） */
         var offTx = f.offWhen ? f.offWhen(p.pick || {}) : '';
         if (offTx) return '<td><select id="pf-' + c.id + '-' + f.id + '" disabled title="' + esc(offTx) + '" aria-label="' + esc(c.name) + 'の' + esc(f.label) + '"><option>' + esc(offTx) + '</option></select></td>';
@@ -1041,9 +1051,9 @@
       (HK.Adv ? HK.Adv.html() : '') +
       '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
-      '<h2 class="sec">' + (scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
+      '<h2 class="sec">' + (!hasAct && !hasGoal ? (scen.solo ? '挑戦者の設定' : '住人ごとの設定') : scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
       (scen.castHint || scen.solo ? '<p class="hint">' + (scen.castHint ? esc(scen.castHint) : 'この箱庭は一人用です。チェックを入れた住人が挑みます。' + (HK.SAFE_ON ? '' : '登場人物はすべて成人として扱います。')) + '</p>' : '') +
-      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p>' + loveCrowdNote(S.scenId) + '<div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return inGrp(c, g); }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button><button class="btn small ghost" data-act="joingrpdel" data-g="' + esc(g) + '" title="このグループを参加から外す" aria-label="' + esc(g) + 'を参加から外す">−</button></span>'; }).join('') + '</div>' : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th><th>最初の行動</th><th>短期目標</th>' + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
+      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p>' + loveCrowdNote(S.scenId) + '<div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return inGrp(c, g); }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button><button class="btn small ghost" data-act="joingrpdel" data-g="' + esc(g) + '" title="このグループを参加から外す" aria-label="' + esc(g) + 'を参加から外す">−</button></span>'; }).join('') + '</div>' : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th>' + (hasAct ? '<th>最初の行動</th>' : '') + (hasGoal ? '<th>短期目標</th>' : '') + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
       (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、カードの「この箱庭のTIPS」にあります。</p>' : '') +
       (sexCols && S.chars.length ? '<p class="hint" style="margin-top:8px">性別と恋愛対象は、住人タブの ⚙️ 設定と同じものです。</p>' : '') +
       (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') +
@@ -1139,22 +1149,107 @@
     if (tab === 'cast') renderCast(); else if (tab === 'box') renderBox();
     if (pendingSim) { var ps = pendingSim; pendingSim = null; simulate(ps[0], ps[1]); }
   };
-  function simulate(input, record) {
-    if (HK.LATE_READY === false) { pendingSim = [input, record]; toast('データを読み込んでいます。終わりしだい動かします…'); return; }
+  /* onRes：描画の前に結果を渡す（履歴に結果を置く写しは、描画で付く印より前に取る。epilogue.js の afterDone など） */
+  function simulate(input, record, onRes) {
+    if (HK.LATE_READY === false) { pendingSim = [input, record]; toast('データを読み込んでいます。終わりしだい動かします…'); return null; }
     var res;
     try { res = HK.simulate(input); }
-    catch (err) { toast('シミュレーション中にエラーが起きました：' + err.message); if (window.console) console.error(err); return; }
+    catch (err) { toast('シミュレーション中にエラーが起きました：' + err.message); if (window.console) console.error(err); return null; }
     res.input = input;
     result = res; showAll = false;
     V.resetFilter();
     if (record) {
-      hist.unshift({ t: Date.now(), scenName: HK.SCENARIOS[input.scenId].name, names: input.chars.map(function (c) { return c.name; }).join('・'), seed: input.seed, summary: summarize(res), input: input });
-      hist = hist.slice(0, 12);
-      HK.store.set('history', hist);
+      histNote = ''; histCur = null;
+      var h = { id: histId(), t: Date.now(), scenName: HK.SCENARIOS[input.scenId].name, names: input.chars.map(function (c) { return c.name; }).join('・'), seed: input.seed, summary: summarize(res), input: input };
+      hist.unshift(h);
+      histSave();
+      histKeep(h, res);
     }
+    if (onRes) onRes(res);
     setTab('result');
     /* 箱庭を動かしたら、結果の頭（画面のいちばん上）から読めるように */
     if (record) window.scrollTo(0, 0);
+    return res;
+  }
+
+  /* ---------- 履歴（これまでの箱庭）：結果ごと残し、開くときはそのまま表示する ---------- */
+  function histId() { return 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  /* 一覧を書き戻す（隠している箱庭の履歴も足して、新しい順に HIST_MAX 件）。一覧から外れた履歴の結果は消す */
+  function histSave() {
+    var all = hist.concat(histHid).sort(function (a, b) { return (b.t || 0) - (a.t || 0); }).slice(0, HIST_MAX);
+    hist = hist.filter(function (h) { return all.indexOf(h) >= 0; });
+    histHid = histHid.filter(function (h) { return all.indexOf(h) >= 0; });
+    var ok = HK.store.set('history', all);
+    if (ok && HK.History) HK.History.keep(all.map(function (h) { return h.id; }));
+    return ok;
+  }
+  /* 結果を置く。置けなかった（保存領域が足りない）ときは一覧だけにして知らせる（開くと今の版で回し直す） */
+  function histKeep(h, res) {
+    if (!HK.History) return;
+    var rec = null;
+    try { rec = HK.History.make(h.id, res); } catch (e) { rec = null; }
+    histPend.push(h);
+    (rec ? HK.History.put(rec) : Promise.resolve(false)).then(function (ok) {
+      histPend = histPend.filter(function (x) { return x !== h; });
+      if (hist.indexOf(h) < 0) return;
+      if (ok) { h.r = 1; h.r18 = rec.r18; histSave(); return; }
+      delete h.r; delete h.r18; histSave();
+      toast('ブラウザの保存領域が足りないため、この結果は「これまでの箱庭」に一覧だけ残しました（開くと、今の版で回し直して表示します）');
+    });
+  }
+  var HIST_MSG = {
+    kept: '「これまでの箱庭」に残した結果を、動かしたときの内容のまま表示しています。',
+    old: 'この履歴は以前の形式（条件とシードだけ）だったので、今の版で回し直して表示しました。版が変わると内容が変わることがあります。この結果を履歴に残したので、次からはこの内容のまま開きます。',
+    lost: '履歴に残した結果が見つからなかったので（保存しきれなかった・ブラウザが整理したなど）、今の版で回し直して表示しました。以前と内容が違うことがあります。この結果を履歴に残し直しました。',
+    r18: 'この履歴はR18モードで動かした結果なので、全年齢モードでは今の版で回し直して表示しています（R18モードでは、残した内容のまま開きます）。',
+    z18: 'この履歴はR18版で動かした結果なので、全年齢版では今の版で回し直して表示しました。この結果を履歴に残したので、次からはこの内容のまま開きます。'
+  };
+  function histOpen(it) {
+    if (!it) return;
+    /* R18モードで動かした結果は、全年齢モードでは出さない（回し直して表示し、残した結果は書き換えない） */
+    var lock = HK.SAFE_ON && it.r18;
+    if (it.id && it.r && !lock && HK.History) {
+      HK.History.get(it.id).then(function (rec) {
+        if (rec && rec.result && HK.SAFE_ON && rec.r18) { histRerun(it, HK.SAFE_BUILD ? 'z18' : 'r18'); return; }
+        if (!(rec && rec.result)) { histRerun(it, 'lost'); return; }
+        result = rec.result;
+        if (!result.input) result.input = it.input;
+        showAll = false; V.resetFilter();
+        histNote = HIST_MSG.kept; histCur = it;
+        setTab('result');
+      });
+      return;
+    }
+    /* 全年齢版（移行や読み込みで写った R18版の履歴）は、回し直した結果をこの版の履歴として残す */
+    histRerun(it, lock ? (HK.SAFE_BUILD ? 'z18' : 'r18') : it.id ? 'lost' : 'old');
+  }
+  function histRerun(it, why) {
+    /* 知らせは先に決めておき、simulate の中の描画（setTab）で一度だけ出す */
+    var n0 = histNote, c0 = histCur;
+    histNote = HIST_MSG[why]; histCur = it;
+    var res = simulate(it.input, false, function (r) {
+      if (why === 'r18' || hist.indexOf(it) < 0) return;
+      if (!it.id) it.id = histId();
+      delete it.r;
+      histKeep(it, r);
+    });
+    if (!res) { histNote = n0; histCur = c0; }
+  }
+  /* 結果の画面：履歴から開いたときの知らせ（「同じ条件でもう一度」つき）と、履歴の一覧の説明・印（view.js の historyBlock に足す） */
+  function histDeco(host) {
+    if (result && histNote && !host.querySelector('#histnote')) {
+      var html = '<p class="hint" id="histnote" role="status">' + esc(histNote) + (histCur ? ' <button type="button" class="btn small ghost" data-act="histrerun" title="同じ住人・環境・シードで、今の版でもう一度回し、新しい履歴として残す">同じ条件でもう一度</button>' : '') + '</p>';
+      var hd = host.querySelector('.resulthead');
+      if (hd) hd.insertAdjacentHTML('afterend', html); else host.insertAdjacentHTML('afterbegin', html);
+    }
+    var box = host.querySelector('.hist');
+    if (!box) return;
+    var p = box.previousElementSibling;
+    if (p && p.classList.contains('hint')) p.textContent = '開くと、動かしたときの結果をそのまま表示します（以前の形式の履歴と、保存しきれなかった結果は、今の版で回し直して表示します）。名簿は書き換えません。';
+    Array.prototype.forEach.call(box.querySelectorAll('[data-act="hist"]'), function (b) {
+      var it = hist[+b.dataset.k];
+      if (it && !(it.id && it.r) && histPend.indexOf(it) < 0) b.insertAdjacentHTML('beforeend', '<span class="nums">' + (it.id ? '結果は未保存' : '以前の形式') + '（開くと回し直します）</span>');
+    });
   }
 
   function run(newSeed) {
@@ -1176,11 +1271,13 @@
     if (result && HK.Share) { var hd = host.querySelector('.resulthead'); if (hd && !host.querySelector('#sharebar')) hd.insertAdjacentHTML('afterend', HK.Share.bar()); }
     /* 結果のセーブ（saves.js） */
     if (result && HK.Saves && !host.querySelector('#savebtn')) { var sb = host.querySelector('#sharebar') || host.querySelector('.resulthead'); if (sb) sb.insertAdjacentHTML('afterend', HK.Saves.button()); }
+    /* 履歴から開いたときの知らせと、履歴の一覧の説明 */
+    histDeco(host);
   }
   /* セーブデータから結果を開く・同じ条件で回し直す */
   HK.UIres = {
     get: function () { return result; },
-    show: function (res) { result = res; showAll = false; V.resetFilter(); setTab('result'); },
+    show: function (res) { result = res; showAll = false; histNote = ''; histCur = null; V.resetFilter(); setTab('result'); },
     rerun: function (input) { if (input && HK.SCENARIOS[input.scenId]) simulate(input, true); }
   };
   /* 25問のエゴグラム診断から住人を追加・書き換え */
@@ -1336,10 +1433,9 @@
       case 'sharex': if (result && HK.Share) HK.Share.postResult(result, $('#sharemsg')); break;
       case 'copytext': if (result) copy(V.toText(result), '結果をコピーしました'); break;
       case 'showall': showAll = true; renderResult(); break;
-      case 'hist':
-        var it = hist[+t.dataset.k];
-        if (it) simulate(it.input, false);
-        break;
+      case 'hist': histOpen(hist[+t.dataset.k]); break;
+      /* 履歴から開いた結果を、同じ条件で今の版で回し直す（新しい履歴として残す） */
+      case 'histrerun': if (histCur && histCur.input && HK.SCENARIOS[histCur.input.scenId]) simulate(JSON.parse(JSON.stringify(histCur.input)), true); break;
       case 'node': V.toggleWho(+t.dataset.i); break;
       case 'who': V.toggleWho(+t.dataset.i); break;
       case 'whoclear': V.setWho([]); break;

@@ -55,6 +55,8 @@
     S.ssUsed[pkey(a, b) + ':' + k] = 1;
     var c = c0 || (K.third ? K.third(S, a, b) : null);
     var pool = typeof K.t === 'function' ? K.t(S, a, b, c) : K.t;
+    /* 遺体の残らない死（engine.js の HK.State.noBody）なら、亡骸を送り出す文を外す */
+    if (pool && b && b.alive === false && HK.State && HK.State.bodyless) pool = HK.State.bodyless(pool, b) || pool;
     if (!pool || !pool.length) return null;
     var text = ST.fmt(ST.pick(S, pool), { a: a.name, b: b.name, c: c ? c.name : '' });
     if (K.fx) K.fx(S, a, b, c);

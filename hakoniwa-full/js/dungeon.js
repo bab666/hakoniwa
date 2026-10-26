@@ -819,8 +819,9 @@
     S.mids = {};
     for (var mf = 1; mf < S.floors - 1; mf += 2) { var mb = pickBoss(S, thOf(mf), ['mid', 'both'], used); if (mb) { S.mids[mf] = mb; used.push(mb.id); } }
     if (DG.partySetup) DG.partySetup(S, input);
-    /* 関係「無関心」「恐怖」の二人は、恋愛にも体の関係にもならない（fam-kin.js の HK.fearNG） */
-    if (HK.fearNG) { var PM = []; S.party.forEach(function (h) { PM[h.i] = h; }); HK.fearNG(PM, input.ties); }
+    /* 関係「無関心」「恐怖」の二人と、恋愛：なしの家族は、恋愛にも体の関係にもならない（fam-kin.js の HK.fearNG・HK.kinNG） */
+    /* 住人の主催者（dungeon-host.js。挑戦者から外れる）も含める（主催者×挑戦者の体の場面を HK.ngPair で止めるため） */
+    if (HK.fearNG) { var PM = []; S.party.forEach(function (h) { PM[h.i] = h; }); if (S.host && S.host.kind === 'res' && S.host.i >= 0) PM[S.host.i] = S.host; HK.fearNG(PM, input.ties); if (HK.kinNG) HK.kinNG(PM, input.ties); }
 
     S.floorName = floorName(S, 0);
     var P0 = S.party;

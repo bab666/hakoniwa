@@ -233,13 +233,21 @@
     return 'jab';
   }
   function hateLv(x, a, b) { return HK.HateKit && HK.HateKit.level ? HK.HateKit.level(x, a, b) : 0; }
+  /* 狭い場所（媚薬ロッカー。物語型の S に hkSpace: 'cramped'。hate-kit.js と同じ印）：
+     隣に座る・物を取り上げて追いかけさせる・皿を置く・割り込む・脇をすり抜ける・一歩離れる文を使わず、「わざと突っかかる」だけにする */
+  var CRAMPED = {
+    jab: L('{a}は、狭い中でわざと{b}の肩に肘をぶつけた。{b}が顔を向けると、{a}は待っていたように口を開いた。|{a}は、{b}が何か言うたびに、いちいち反対のことを言った。{b}が呆れた顔をしても、やめる気配はなかった。{b}の目がこちらを向くたびに、{a}の口元は少しだけ緩んだ。|{a}は、{b}の耳元で、聞こえよがしにため息をついた。{b}が身をよじっても、{a}は顔を背けようとしなかった。むしろ、ほんの少しだけ{b}のほうへ体を寄せた。'),
+    cold: L('{b}は、{a}のほうを見もしなかった。返事の代わりに、小さく肩をすくめただけだった。{a}の言葉は、行き場をなくして宙に浮いた。|{b}は面倒くさそうに{a}を一瞥し、すぐに目を閉じた。相手にするだけ無駄だと、顔に書いてあった。{a}は唇を噛んだ。|{b}は眉ひとつ動かさずに、壁のほうへ顔を向けた。{a}が何をしたいのか、考える気もないようだった。肩を並べたまま、{a}は舌打ちをひとつした。'),
+    annoy: L('{b}は露骨に顔をしかめて、できるかぎり{a}から体を離した。何を企んでいるのかと、疑うような目だった。{a}がなぜ自分に絡んでくるのか、{b}には見当もつかなかった。|{b}は、うんざりしたように息を吐いた。嫌っている相手とこの狭さに押し込められているだけでも、迷惑でしかなかった。{b}は身をよじって、{a}に背を向けた。|{b}は{a}の手を払いのけた。触れられた場所を、汚れでも落とすように軽くはたいた。{a}の顔が、一瞬だけ歪んだ。')
+  };
   LH.kamau = function (x, a, b, c) {
-    var kind = kamauKind(x, a, b, c), K = KAMAU[kind], m = { a: a, b: b, c: c };
-    var text = pick(x, K.lead) + a.name + pick(x, K.say[ps(a)]);
+    var cr = !!(x && x.hkSpace === 'cramped');
+    var kind = cr ? 'jab' : kamauKind(x, a, b, c), K = KAMAU[kind], m = { a: a, b: b, c: c };
+    var text = pick(x, cr ? CRAMPED.jab : K.lead) + a.name + pick(x, K.say[ps(a)]);
     var both = LH.has(x, b, a), react;
     if (both) { text += pick(x, BACK.lead) + b.name + pick(x, BACK.say[ps(b)]); react = b.name + 'も同じ気持ち（愛憎：双方）。言い返しながら、構い返した'; }
-    else if (hateLv(x, b, a) >= 35 && rnd(x) < 0.6) { text += pick(x, NOFEEL.annoy); react = b.name + 'は愛憎を持たない（ふつうの敵対）。苛立って突き放した'; }
-    else { text += pick(x, NOFEEL.cold); react = b.name + 'は愛憎を持たない（ふつうの敵対）。気にも留めなかった'; }
+    else if (hateLv(x, b, a) >= 35 && rnd(x) < 0.6) { text += pick(x, cr ? CRAMPED.annoy : NOFEEL.annoy); react = b.name + 'は愛憎を持たない（ふつうの敵対）。苛立って突き放した'; }
+    else { text += pick(x, cr ? CRAMPED.cold : NOFEEL.cold); react = b.name + 'は愛憎を持たない（ふつうの敵対）。気にも留めなかった'; }
     if (isCtx(x)) {
       x.mod(a, b, { att: 3, ten: 2 });
       if (both) x.mod(b, a, { att: 3, ten: 1 }); else x.mod(b, a, { ten: 2 });

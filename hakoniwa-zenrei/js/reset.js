@@ -18,6 +18,9 @@
       try { keys(st).forEach(function (k) { st.removeItem(k); }); } catch (e) { /* 使えない環境 */ }
     });
     try { if (window.caches && caches.keys) caches.keys().then(function (ks) { ks.forEach(function (k) { if (/hakoniwa/.test(k)) caches.delete(k); }); }); } catch (e) { /* なし */ }
+    /* 履歴の結果（history.js の IndexedDB）も消す。一覧（history）は上で消える。消し終わるのを待てるよう Promise を返す */
+    try { if (HK && HK.History && HK.History.clear) return HK.History.clear(); } catch (e) { /* なし */ }
+    return Promise.resolve(true);
   }
   function build() {
     var host = document.querySelector('.foot-body');
@@ -42,9 +45,9 @@
     word.addEventListener('input', function () { go.disabled = word.value.trim() !== '削除する'; });
     go.addEventListener('click', function () {
       if (word.value.trim() !== '削除する') return;
-      wipe();
+      var again = function () { setTimeout(function () { location.replace(location.href.split('#')[0]); }, 400); };
+      wipe().then(again, again);
       if (HK && HK.toast) HK.toast('保存データを消しました。読み込み直します');
-      setTimeout(function () { location.replace(location.href.split('#')[0]); }, 400);
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build); else build();

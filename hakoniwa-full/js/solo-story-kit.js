@@ -68,6 +68,7 @@
     if (o.text && o.text.indexOf('「＠') >= 0) o.text = o.text.replace(/「＠/g, '「\u2060');
     o.n = S.log.length; o.label = S.label; o.kind = o.kind || 'event';
     o.actors = (o.actors || []).map(function (p) { return typeof p === 'number' ? p : p.i; });
+    if (HK.State && HK.State.markDeath && S.P) HK.State.markDeath(S.P, o);   /* 死の記録と遺体の有無（engine.js の HK.State.noBody） */
     if (HK.Emo && HK.Emo.story) HK.Emo.story(S, o);   /* 気分（emotion.js） */
     /* エロシーンの印（ero-scene.js）：o.lewd、生成器の touch、体の語の印 */
     if (o.kind !== 'step' && HK.EroScene && HK.EroScene.hit(S, o)) o.lewd = true;

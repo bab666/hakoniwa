@@ -342,7 +342,8 @@
   }
   /* 夜の場面（寄り添う・閉じこもる） */
   function nightScenes(S, day) {
-    var rng = S.rng, live = S.P.filter(alive);
+    /* 閉じ込められている人（濡れ衣・推理の誤り：bound）は、寄り添う・閉じこもる場面に出さない */
+    var rng = S.rng, live = S.P.filter(function (q) { return alive(q) && !q.bound; });
     var pairs = [];
     live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i && cat(S, a, b) === 'love') pairs.push([a, b]); }); });
     /* 向きの決まらない組（HK.Pos.okSex でない二人）は、寄り添って夜を過ごさず、交代で見張って明かす */
@@ -356,7 +357,8 @@
     var rng = S.rng, k = S.kills[S.kills.length - 1];
     if (!k || k.found) { if (S.drugNight !== S.curDay) ST.say(S, { kind: 'phase', text: pk(S, T.MORNING.slice(0, 2)) + 'この夜は、何も起きなかった。' }); return; }
     k.found = true;
-    var live = S.P.filter(alive), finder = rng.pick(live.filter(function (q) { return !q.isCul; }).concat(live)) || live[0];
+    /* 見つけるのは、閉じ込められていない人（閉じ込められた人が現場で悲鳴を上げない） */
+    var live = S.P.filter(alive), free = live.filter(function (q) { return !q.bound; }), finder = rng.pick(free.filter(function (q) { return !q.isCul; }).concat(free.length ? free : live)) || live[0];
     var t = F(pk(S, T.FIND), { a: finder.name, p: k.trick.place }) + F(k.trick.scene, k.m) + '――死因は、' + k.trick.method + 'だった。';
     var o = ST.say(S, { actors: k.v.i != null ? [finder, k.v] : [finder], tag: '事件', kind: 'climax', text: t, why: (S.kills.length === 1 ? '最初の事件' : S.kills.length + '人目の犠牲者' + (k.why ? '：' + k.why + '……犯人の' + S.cul.name + 'が' : '')) + '（現場：' + k.trick.place + '・手口：' + k.trick.method + '・トリックの難しさ ' + k.trick.diff + '）' + (k.nk || ''), mag: 50 });
     ST.key(S, o, k.v.name + 'の死');
@@ -365,7 +367,9 @@
     live.filter(function (p) { return p.prank; }).forEach(function (p) { if (S.kills.length === 1 && !p.sawBody) { p.sawBody = 1; ST.sayB(S, { actors: [p], tag: '企画？', text: F(Y.T.CELEB[1], { a: p.name }), why: 'まだ企画だと思っている' }, p.name + 'は企画だと思っていた'); }
       if (S.kills.length >= 2 || rng() < 0.5) { p.prank = false; p.m.fear = clamp(p.m.fear + 25, 0, 100); ST.sayB(S, { actors: [p], tag: '企画？', text: F(pk(S, T.CELEB_REAL), { a: p.name }), why: '本物の事件だと悟った' }, p.name + 'が悟った'); } });
     /* 関係のある人の反応 */
+    /* 閉じ込められている人は、亡骸のそばで悲しむ場面に出さない */
     if (k.v.i != null) live.forEach(function (q) {
+      if (q.bound) return;
       var c = cat(S, q, k.v); if (!c || c === 'close' && rng() < 0.5) return;
       if (c === 'bad') q.m.sus = clamp(q.m.sus + 15, 0, 100);
       q.m.fear = clamp(q.m.fear + (c === 'love' ? 20 : 10), 0, 100);

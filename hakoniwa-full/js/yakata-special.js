@@ -14,7 +14,7 @@
       rng: S.rng, all: S.P, env: S.env, scenId: 'yakata',
       r18: !!(Y.R18 && Y.R18.on(S)), lewd: clamp((S.env.ylewd || 0) / 100, 0.15, 0.85),
       alive: function (p) { return !!p.alive; },
-      here: function (p) { return !p.gone; },
+      here: function (p) { return !p.gone && !p.bound; },
       say: function (o) {
         var a0 = o.actors[0];
         var kk = o.tag === '蘇生' ? S.kills.filter(function (k) { return k.v === a0 && !k.revived; })[0] : null;

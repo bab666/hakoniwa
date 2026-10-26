@@ -342,6 +342,10 @@
     K.say(S, { kind: 'sys', tag: '来店', text: introT, why: '目標：' + h.goal.label + '／' + h.action.label + (TR ? '／施術者は住人の' + TR.name + (o.picked ? '（住人の欄で選んだ）' : '（住人から）') + (plain ? '。' + whyP : hardTop ? '。受け攻めでは客の' + h.name + 'が主導する側' : '') : mobNG ? '／' + whyP : '') });
     K.snap(S, { s: 0 });
     if (plain) return plainRun();
+    /* 恋人・番・夫婦・本命・片想いの相手がいる客（R18版だけ。solo-massage-love.js）：施術の段（始まり・最中・堕ちかけ・事後）ごとに、
+       その相手を匂わせる台詞を一つずつ（1回の施術で2〜3本まで）。全年齢版・全年齢モードでは出さない */
+    var LVM = !HK.SAFE_ON && HK.MassageLove ? HK.MassageLove.setup(S, input, h, o, TR) : null;
+    function loveAt(stage) { if (LVM) HK.MassageLove.say(S, LVM, stage); }
 
     /* 住人どうしで体の関係にならない組・モブとの場面に出ない客：普通のマッサージのまま（施術者の手は、際どいところの手前で止まる）。
        モブの施術者のときは、知り合いを前提にしない文（MC.PLAIN_MOB）を使う */
@@ -463,6 +467,12 @@
         }
         K.say(S, { kind: 'ev', tag: wrongNow ? st[0] + '（拒否反応）' : st[0], lewd: lvl >= 3 || r.climaxes.length > 0, text: text + rx + shiftT, why: (lvl >= 2 ? '際どさ ' + Math.round(lvl) + '／快感 ＋' + Math.round(r.gain) : '') + (wrongNow ? '／' + wrongWhy + '：抵抗が強い' : '') });
         logC(r.climaxes);
+        /* 相手を匂わせる台詞：始まり（最初の段）・最中（際どさ 2 以上）・堕ちかけ（とろける段階から）。攻めの客は際どくなる前の始まりだけ */
+        if (LVM) {
+          if (i === 0) loveAt('start');
+          else if (!hardTop && lvl >= 2 && !LVM.done.mid) loveAt('mid');
+          else if (!hardTop && ph >= 2) loveAt('fall');
+        }
       }
       /* 施術者の一言 */
       if (rng() < 0.5) K.say(S, { kind: 'ev', tag: '施術者', text: K.fmt(S, K.pick(S, M.STAFF_TALK[sk] ? M.STAFF_TALK[sk][hardTop ? 0 : bd] : M.STAFF_TALK.gentle[hardTop ? 0 : bd])), why: '' });
@@ -568,6 +578,8 @@
       var custTop = cTop();
       /* 厚く：堕ちた瞬間を段落で（客が主導する組は、体位の場面のほうで厚くする） */
       if (!dark && !custTop && lwOn()) head.text += ML.fall(lwc(false), kindR);
+      /* 相手を匂わせる台詞：堕ちかけ（まだなら） */
+      loveAt('fall');
       var darkN = 0, c0 = h.climax;
       if (dark) K.say(S, { kind: 'sys', tag: '暗転', lewd: true, text: K.fmt(S, K.pick(S, MD.blackout)), why: '描写：軽め（暗転）' });
       pool.forEach(function (p, j) {
@@ -610,6 +622,8 @@
       }
     }
 
+    /* 相手を匂わせる台詞：事後（際どい施術を受けて、帰らずに最後までいたとき） */
+    if (!left && (fell || asked || stayed || reversed || h.climax > 0)) loveAt('after');
     S.flags.wrong = wrong;
     var E = ending(S, { reversed: reversed, slept: slept, evidence: !!S.flags.evidence, left: left, fell: fell, asked: asked, stayed: stayed, noticed: !!S.flags.noticedAt, deceived: deceived, positions: positions, staff: staff, res: !!TR });
     var adv = [];

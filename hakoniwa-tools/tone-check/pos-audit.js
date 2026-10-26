@@ -18,6 +18,7 @@
    V10: 体の語の印（lewd-words.js）で、{男性器}・{亀頭} の印なのにその場の住人の誰にも男性器がない／{女性器}・{陰核} なのに誰にも女性器がない
        （印を語にするときに数える。「その場」は出来事の登場人物と本文に名前が出る住人。箱庭が用意した男性のモブ・星の生命体などが相手の文（V1 と同じ除外）、
        住人でない相手（客・魔物・モブなど NPC の語）が出る文は数えない。点検のあいだは印をいつも「直接」の列で語にする（lib.js の lewdMode））
+   V11: 自分で「受け」を選んだ住人（相手ごとの指定で見る）が、受けでない住人に挿れる・貫く・中に出す・組み敷く文（受け×受けの組・跨って迎える文は数えない。2026-10-26 追加）
    配役には性器の指定（なし・男性器・女性器・両方）を混ぜる（V1・V4・V6 の「女性」は男性器のない人として見る）
    POSFOR=1：相手ごとの受け攻め（posFor）を、全体の指定と食い違うように付けて回す（攻めの人は次の人に受け、受けの人は次の人に攻め、
      リバの人は二つ先の人に攻め、おまかせの人は回ごとに攻め／受け）。「自分で選んだ指定」は場面の二人について HK.Pos.of(a, b) で見る：
@@ -50,7 +51,7 @@ const { openBuild } = require('./lib.js');
     try { const SH = HK.SHIP; if (SH && SH.LIFE) SH.LIFE.forEach(x => x && x.name && MOBM.push(x.name)); } catch (e) { }
     const hasMobM = t => MOBM.some(nm => t.indexOf(nm) >= 0) || /夢の中|(?:風|氷|闇|影|水|炎|光|霧)の(?:腕|手|指|舌)|の民の住人|の若者たち|民(?=[をはがのに])|巨体|異星の|壁の向こう|向こう側の誰か|向こうの誰か|正体の分からない何か|若いスタッフ|二人のスタッフ|無口な職人|精液検査センター/.test(t);
     const skip = []; const sk = (why, sc, t, i) => { if (WHY && skip.length < 300) skip.push(why + ' | ' + sc + ' | …' + t.slice(Math.max(0, i - 30), i + 60) + '…'); };
-    const out = { skip, V1: [], V2: [], V3: [], V4: [], V5: [], V6: [], V7: [], V8: [], V10: [], n: { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V10: 0 }, err: [], runs: 0, bySc: {}, v5n: 0 };
+    const out = { skip, V1: [], V2: [], V3: [], V4: [], V5: [], V6: [], V7: [], V8: [], V10: [], V11: [], n: { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V10: 0, V11: 0 }, err: [], runs: 0, bySc: {}, v5n: 0 };
     const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];
     /* 配役の型：女性だけ（指定いろいろ）／攻めの指定が多い／攻めどうしを恋人に結ぶ／受け攻めそろい */
     const CASTS = [
@@ -78,7 +79,7 @@ const { openBuild } = require('./lib.js');
     const ids = (only || Object.keys(HK.SCENARIOS));
     for (const sc of ids) {
       const scen = HK.SCENARIOS[sc]; if (!scen) continue;
-      out.bySc[sc] = { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V10: 0, runs: 0 };
+      out.bySc[sc] = { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V10: 0, V11: 0, runs: 0 };
       for (let s = 0; s < N; s++) {
         const cast = CASTS[s % CASTS.length];
         const n = Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 2 + (s % 5)));
@@ -213,6 +214,18 @@ const { openBuild } = require('./lib.js');
               if (m) { const i0 = m.index; out.n.V4++; out.bySc[sc].V4++; if (out.V4.length < 400) out.V4.push(sc + '#' + s + ' | 攻め(女)=' + n0 + ' | …' + t.slice(Math.max(0, i0 - 10), i0 + m[0].length + 10) + '…'); break; }
             }
           }
+          /* V11（2026-10-26）：自分で「受け」を選んだ住人が、受けでない住人に挿れる・貫く・中に出す・組み敷く文（相手ごとの指定で見る。受け×受けの組は数えない）。
+             跨って自分から迎える文・押し倒して跨る文は受けのまま（女性上位）なので数えない */
+          for (const Bt of named) {
+            const oth11 = named.filter(c => c !== Bt && c.name.indexOf(Bt.name) < 0 && Bt.name.indexOf(c.name) < 0);
+            if (oth11.length !== 1) continue;
+            const O11 = oth11[0];
+            if (!(P.explicit(Bt, O11) && P.of(Bt, O11) === 'bottom') || (P.explicit(O11, Bt) && P.of(O11, Bt) === 'bottom')) continue;
+            const m11 = t.match(new RegExp(Bt.name + '(?:は|が)[^。「」]{0,30}?(?:貫い|挿れ(?!られ)|突き入れ(?!られ)|中に出し|押し倒し(?![^。]{0,12}跨)|組み敷い)'));
+            if (!m11 || /^(?:に|から)/.test(t.slice(m11.index + Bt.name.length)) || new RegExp('、' + O11.name + '(?:は|が)').test(m11[0]) || NPC_M.test(m11[0]) || hasMobM(m11[0])) continue;
+            out.n.V11 = (out.n.V11 || 0) + 1; out.bySc[sc].V11 = (out.bySc[sc].V11 || 0) + 1;
+            if ((out.V11 = out.V11 || []).length < 200) out.V11.push(sc + '#' + s + ' | 受け=' + Bt.name + '(' + Bt.gender + ') 相手=' + O11.name + '(' + (O11.pos || '-') + O11.gender + ') | …' + t.slice(Math.max(0, m11.index - 20), m11.index + m11[0].length + 20).replace(/\n/g, ' ') + '…');
+          }
           /* V6：女性の住人（ふたなりでない）の体が、男性の体で描かれた（受ける側の文も、相手が男性の場面も含む） */
           for (const T of PC.filter(c => !P.genSet(c) && !P.hasM(c))) {
             const n0 = T.name;
@@ -315,9 +328,9 @@ const { openBuild } = require('./lib.js');
   /* DUMP=箱庭#回：その回の配役と本文をすべて出す（調べるとき用） */
   if (r.dump) console.log('##### DUMP\n' + JSON.stringify(r.dump.chars.map(c => ({ name: c.name, g: c.gender, pos: c.pos, posFor: c.posFor, posLike: c.posLike, genital: c.genital }))) + '\n' + r.dump.texts.join('\n----\n'));
   console.log('runs', r.runs, 'counts', JSON.stringify(r.n), 'V5で見た夜の性格の文', r.v5n);
-  console.log('by scenario', JSON.stringify(Object.fromEntries(Object.entries(r.bySc).filter(([k, v]) => v.V1 || v.V2 || v.V3 || v.V4 || v.V5 || v.V6 || v.V7 || v.V8 || v.V10))));
+  console.log('by scenario', JSON.stringify(Object.fromEntries(Object.entries(r.bySc).filter(([k, v]) => v.V1 || v.V2 || v.V3 || v.V4 || v.V5 || v.V6 || v.V7 || v.V8 || v.V10 || v.V11))));
   if (r.err.length) console.log('ERRORS', r.err.slice(0, 8));
-  if (SAMPLES) for (const k of ['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V10']) { console.log('##### ' + k); r[k].forEach(x => console.log(x)); }
+  if (SAMPLES) for (const k of ['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V10', 'V11']) { console.log('##### ' + k); (r[k] || []).forEach(x => console.log(x)); }
   if (WHY) { console.log('##### 除外したもの'); r.skip.forEach(x => console.log(x.replace(/\n/g, ' '))); }
   console.log('pageerr', errors.slice(0, 5));
   await browser.close();

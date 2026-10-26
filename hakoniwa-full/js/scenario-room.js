@@ -35,11 +35,23 @@
     if (r[0].k !== 'one' && env.cond2 && env.cond2 !== 'none' && env.cond2 !== r[0].k) r.push({ k: env.cond2, n: Math.max(1, +env.n2 || 1) });
     return r;
   }
+  /* 部屋の名前に並べる条件の名詞（「キス3回」「媚薬2本」「「好き」の言い合い」など） */
+  var NOUN_N = { hand: '手繋ぎ', hug: 'ハグ', lap: '膝枕', kiss: 'キス', h: 'エッチ', love: '「好き」の言い合い', honne: '本音の打ち明け合い' };
+  function nounN(r) {
+    var T = K[r.k], n = r.n;
+    if (T.type === 'consume') return T.item + n + T.unit;
+    if (T.type === 'kill') return (HK.SAFE_ON ? '誰かの気絶' : '誰かの命') + (n > 1 ? n + '人分' : '');
+    if (r.k === 'praise') return '相手のいいところ' + n + '個';
+    return (NOUN_N[r.k] || T.noun) + (n > 1 ? n + T.unit + (T.type === 'word' ? 'ずつ' : '') : '');
+  }
   HK.roomLabel = function (env) {
     if (env.label && String(env.label).trim()) return String(env.label).trim();
     var r = rulesOf(env);
     if (r[0].k === 'one') return '一人しか出られない部屋';
-    var s = r.length > 1 ? K[r[0].k].mid(r[0].n) + '、' + K[r[1].k].fin(r[1].n) : K[r[0].k].fin(r[0].n);
+    /* 条件が二つ：順番あり（seq）は「〇〇したあとに、××しないと」、どちらからでもは「〇〇と××、両方を済ませないと」（2026-10-26 順77） */
+    var s = r.length < 2 ? K[r[0].k].fin(r[0].n)
+      : env.order === 'seq' ? K[r[0].k].mid(r[0].n).replace(/て$/, 'た').replace(/で$/, 'だ') + 'あとに、' + K[r[1].k].fin(r[1].n)
+      : nounN(r[0]) + 'と' + nounN(r[1]) + '、両方を済ませないと';
     /* 「一人しか出られない」をほかの条件と併用（env.only1）：条件を満たしても、扉をくぐれるのは一人 */
     return s + (env.only1 === 'on' ? '出られない部屋（ただし、出られるのは一人だけ）' : '出られない部屋');
   };
@@ -89,6 +101,31 @@
     var ok = T.type === 'word' ? (T.mode === 'sum' ? v[0] + v[1] >= rule.n : v[0] >= rule.n && v[1] >= rule.n) : v[0] >= rule.n;
     if (ok && seqOn(ctx) && rule === ctx.rules[0]) ctx.flags.seqOpen = true;
     return ok;
+  }
+  /* 条件の順番あり（seq）で、この二人の条件1がまだ済んでいないあいだの条件2（行為・言葉）。
+     そのあいだの行為・言葉は数えない（p.pre に残すだけ）。起きにくくし、起きたら「まだ数えない」と書く（2026-10-26 順77） */
+  function seqWait(ctx, rule, a, b) {
+    if (!seqOn(ctx) || rule !== ctx.rules[1] || !a || !b) return false;
+    var t = K[rule.k].type;
+    return (t === 'act' || t === 'word') && !ruleDone(ctx, ctx.rules[0], a, b);
+  }
+  /* 「まだ数えない」の一文 */
+  function waitNote(ctx, rule, a, b) {
+    var r0 = ctx.rules[0];
+    /* 二人の名前は入れない。条件1がエッチのときは、その語も出さない（体の関係になれない組の記録に、性的な語を並べないため） */
+    return '扉の紙は、今の' + (FL_NOUN[rule.k] || K[rule.k].noun) + 'を数えなかった。条件の順番では、' + (r0.k === 'h' ? '一つ目の条件を先に満たさないと' : '先に' + K[r0.k].fin(r0.n)) + '、数えてもらえない。';
+  }
+  /* 行為の条件を進める（inc だけ足す／to にする）。条件1を待っている条件2なら数えずに p.pre に足して false を返す。
+     条件1が済んだあとは、条件2の数え直し（effOf の基準）を先に済ませてから足す（同じ場面で足した分が 0 に戻らないように）。cap が偽なら上限で止めない */
+  /* 条件1が済んだあとの条件2の数え直し（effOf の基準）を、数を足す前に済ませる */
+  function seqFlush(ctx, r, a, b) { if (seqOn(ctx) && r === ctx.rules[1]) effOf(ctx, r, a, b); }
+  function bumpAct(ctx, r, a, b, inc, to, cap) {
+    var p = prog(ctx, a, b);
+    if (seqWait(ctx, r, a, b)) { p.pre = p.pre || {}; p.pre[r.k] = (p.pre[r.k] || 0) + (to != null ? to : inc || 1); return false; }
+    seqFlush(ctx, r, a, b);
+    var v = to != null ? to : (p.act[r.k] || 0) + (inc || 1);
+    p.act[r.k] = cap === false ? v : Math.min(r.n, v);
+    return true;
   }
   /* 部屋全体で数える条件（飲む・殺す）の残り。順番があって条件1がまだなら、条件2の飲む条件は始めない（0 を返す） */
   function globLeft(ctx, r) {
@@ -153,6 +190,8 @@
   function pairTag(ctx, a, b) { return ctx.chars.length > 2 ? a.name + '×' + b.name + 'の' : ''; }
   /* 回数の表示。条件の順番があって条件1がまだの条件2は、満たした時点で数が戻る（先の分は数えない）ので、数の代わりにそう書く */
   function cntTag(ctx, r, a, b, cnt) {
+    /* 条件1を待っている条件2：回数によらず「まだ数えない」と書く */
+    if (seqWait(ctx, r, a, b)) return waitNote(ctx, r, a, b);
     if (r.n <= 1) return '';
     if (seqOn(ctx) && r === ctx.rules[1] && !ruleDone(ctx, ctx.rules[0], a, b)) return '（' + pairTag(ctx, a, b) + K[r.k].noun + 'は条件1のあとから数える）';
     return '（' + pairTag(ctx, a, b) + K[r.k].noun + ' ' + cnt + '/' + r.n + '）';
@@ -493,7 +532,7 @@
       { id: 'n1', label: '条件1の回数・本数', min: 1, max: 100, def: 1, lo: '1', hi: '100', desc: '「キスを10回」「媚薬を10本」の数字' },
       { id: 'cond2', label: '条件2（任意）', type: 'select', def: 'none', options: [{ v: 'none', label: 'なし' }].concat(options.filter(function (o) { return o.v !== 'one'; })) },
       { id: 'n2', label: '条件2の回数・本数', min: 1, max: 100, def: 1, lo: '1', hi: '100' },
-      { id: 'order', label: '条件の順番', type: 'select', def: 'any', options: [{ v: 'any', label: 'どちらからでも' }, { v: 'seq', label: '条件1を満たしてから条件2（先に満たした条件2は数えない）' }], desc: '例：媚薬を飲み切ってから、エッチしないと出られない部屋' },
+      { id: 'order', label: '条件の順番', type: 'select', def: 'any', options: [{ v: 'any', label: 'どちらからでも（同時に数える）' }, { v: 'seq', label: '条件1を満たしてから条件2（先に満たした条件2は数えない）' }], desc: 'どちらからでも：「媚薬2本とキス、両方を済ませないと出られない部屋」。条件1から：「媚薬を2本飲み切ったあとに、キスしないと出られない部屋」（条件1の前の条件2は、起きにくく、起きても数えない）' },
       { id: 'only1', label: '一人しか出られない（ほかの条件と併用）', type: 'select', def: 'off', options: [{ v: 'off', label: 'なし' }, { v: 'on', label: 'あり：条件を満たしても、扉をくぐれるのは一人だけ' }] },
       { id: 'label', label: '部屋の名前（空欄なら自動）', type: 'text', def: '', placeholder: '例：媚薬を10本飲み切らないと出られない部屋' },
       { id: 'hours', label: '閉じ込められる時間', min: 4, max: 240, def: 10, lo: '4時間', hi: '10日', unit: '時間', desc: '48時間を超えると、経過は数時間ごとにまとめ、結果は重要な出来事だけの短縮版で表示する' },
@@ -585,6 +624,14 @@
   var NO_RE = /身を引いた|振り払った|振りほどいた|手を引っ込め|払いのけ|拒んだ/;
   var FL_NOUN = { hand: '手繋ぎ' };
   function snip(t) { t = String(t); return t.length > 28 ? t.slice(0, 27) + '…' : t; }
+  /* ほかの出来事の中の条件2の行為・言葉（条件の順番で、まだ数えない）：数えずに残し、組と条件ごとに一度だけ「まだ数えない」と書く */
+  function preSeen(ctx, r, a, b, e) {
+    var p = prog(ctx, a, b);
+    p.pre = p.pre || {}; p.pre[r.k] = (p.pre[r.k] || 0) + 1;
+    if ((p.preNote = p.preNote || {})[r.k]) return;
+    p.preNote[r.k] = 1;
+    ctx.say({ kind: 'event', cat: 'escape', actors: [a, b], text: waitNote(ctx, r, a, b), why: '「' + snip(e.text) + '」の中の' + (FL_NOUN[r.k] || K[r.k].noun) + 'は、条件の順番（条件1を満たしてから条件2）で、まだ数えない', mag: 4 });
+  }
   function countFlavor(ctx) {
     var from = ctx.flags.scan || 0, L = ctx.log;
     ctx.flags.scan = L.length;
@@ -599,6 +646,8 @@
       /* 会話の中で「好き」と言った（先に名前の出た方が言ったものとして数える） */
       ctx.rules.forEach(function (r) {
         if (r.k !== 'love' || a.out || ruleDone(ctx, r, a, b) || !/「[^」]*好き(?!な|に|じゃな)[^」]*」/.test(e.text)) return;
+        if (seqWait(ctx, r, a, b)) { preSeen(ctx, r, a, b, e); return; }
+        seqFlush(ctx, r, a, b);
         var p = prog(ctx, a, b);
         if ((p.said['love' + a.i] || 0) >= r.n) return;
         p.said['love' + a.i] = (p.said['love' + a.i] || 0) + 1;
@@ -611,8 +660,9 @@
       });
       ctx.rules.forEach(function (r) {
         if (a.out || K[r.k].type !== 'act' || !ACT_RE[r.k] || ruleDone(ctx, r, a, b) || !ACT_RE[r.k].test(e.text) || NO_RE.test(e.text)) return;
+        if (seqWait(ctx, r, a, b)) { preSeen(ctx, r, a, b, e); return; }
         var p = prog(ctx, a, b);
-        p.act[r.k] = Math.min(r.n, (p.act[r.k] || 0) + 1);
+        bumpAct(ctx, r, a, b, 1);
         var note = '扉の紙が、今の' + (FL_NOUN[r.k] || K[r.k].noun) + 'を数えた' + cntTag(ctx, r, a, b, p.act[r.k]) + '。';
         if (pairDone(ctx, a, b)) {
           var ex = exitPair(ctx, a, b, note, '「' + snip(e.text) + '」の中で、条件の' + (FL_NOUN[r.k] || K[r.k].noun) + 'が済んでいた', false);
@@ -623,6 +673,10 @@
     ctx.flags.scan = ctx.log.length;
   }
 
+  /* この二人が今できる行為の条件（まだ済んでいない・向きが決まる・気持ちか焦りがある） */
+  function actElig(ctx, a, b) {
+    return ctx.rules.filter(function (x) { var T = K[x.k]; return T.type === 'act' && !ruleDone(ctx, x, a, b) && !(T.lvl >= 5 && !okSex(a, b)) && (willing(ctx, a, b, T.lvl) || desperate(ctx, a, b, T.lvl)); });
+  }
   /* 行為（手を繋ぐ〜エッチ） */
   EV.push({
     id: 'doact', cat: 'romance', sex: true, scope: 'pair', pri: true,
@@ -643,15 +697,19 @@
         [[a, b], [b, a]].forEach(function (x) { var p = x[0].flags.partner; if (p != null) w *= p === x[1].i ? 2.2 : 0.35; });
         w *= 0.6 + eager(ctx, a);
       }
+      /* 条件の順番あり：できる行為が、条件1を待っている条件2だけなら、起きにくくする（数えないので） */
+      var el = actElig(ctx, a, b);
+      if (el.length && el.every(function (x) { return seqWait(ctx, x, a, b); })) w *= 0.15;
       return w;
     },
     run: function (ctx, a, b) {
-      var r = ctx.rules.filter(function (x) { var T = K[x.k]; return T.type === 'act' && !ruleDone(ctx, x, a, b) && !(T.lvl >= 5 && !okSex(a, b)) && (willing(ctx, a, b, T.lvl) || desperate(ctx, a, b, T.lvl)); })[0];
-      var T = K[r.k], p = prog(ctx, a, b), wl = willing(ctx, a, b, T.lvl);
-      var first = !p.act[r.k];
+      /* 条件1を待っていない条件を先に選ぶ */
+      var el = actElig(ctx, a, b), r = el.filter(function (x) { return !seqWait(ctx, x, a, b); })[0] || el[0];
+      var T = K[r.k], p = prog(ctx, a, b), wl = willing(ctx, a, b, T.lvl), wait = seqWait(ctx, r, a, b);
+      var first = !p.act[r.k] && !(p.pre && p.pre[r.k]);
       var span = Math.max(3, ctx.stepsTotal * 0.55);
       var inc = r.n > 3 ? Math.max(1, Math.round(r.n / span * (wl ? 1.3 : 0.8) * (0.6 + ctx.rng() * 0.8) * (6 - T.lvl) / 3)) : 1 + (wl && r.n > 1 && ctx.rng() < 0.5 ? 1 : 0);
-      p.act[r.k] = Math.min(r.n, (p.act[r.k] || 0) + inc);
+      bumpAct(ctx, r, a, b, inc);
       var g = T.lvl * 2.5;
       ctx.mod2(a, b, { att: wl ? g + 2 : g / 2, aff: wl ? g / 2 : 0, trust: 2 }, { att: wl ? g + 2 : g / 2, aff: wl ? g / 2 : 0, trust: 2 });
       var pool = ACT_TEXT[r.k][wl ? 'will' : 'des'];
@@ -667,7 +725,7 @@
         var tool = ctx.pick(TOOLS), other = user === a ? b : a;
         var tt = ctx.t(ctx.pick(tool.t), user, other);
         text = isH ? LW.scene(ctx, user, other, wl ? 'will' : 'des', { toolText: tt, lead: true }) : tt.replace(/――$/, '') + ctx.t(ctx.pick(ACT_TEXT.kiss.will), user, other);
-        if (r.n > 1) p.act[r.k] = Math.min(r.n, p.act[r.k] + 1);
+        if (r.n > 1) bumpAct(ctx, r, a, b, 1);
         ctx.mod2(user, other, { att: 4 }, { att: other.tr.fc > 0.5 ? 5 : 1, ten: other.tr.cp > 0.65 ? 4 : 0 });
         ctx.flags.toolUsed = (ctx.flags.toolUsed || 0) + 1;
       }
@@ -688,9 +746,9 @@
       var fsx = r.k === 'h' && HK.State.freeSex && HK.State.freeSex(ctx, a, b);
       if (fsx) { if (first) text = HK.FreeSex.lead(ctx, a, b) + text; HK.FreeSex.mark(ctx, a, b); if (first) HK.FreeSex.jealous(ctx, a, b); }
       text += cntTag(ctx, r, a, b, p.act[r.k]);
-      var whyT = (cl ? cl.why + '／' : '') + (rough ? rough.name + 'は' + (rough === a ? b : a).name + 'を敵視している（嫌悪 ' + Math.round(HKr.level(ctx, rough, rough === a ? b : a)) + '）・強引な性格。条件のために、乱暴に' : wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった');
+      var whyT = (wait ? '条件の順番：条件1のあとから数える（今のは数えない）／' : '') + (cl ? cl.why + '／' : '') + (rough ? rough.name + 'は' + (rough === a ? b : a).name + 'を敵視している（嫌悪 ' + Math.round(HKr.level(ctx, rough, rough === a ? b : a)) + '）・強引な性格。条件のために、乱暴に' : wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった');
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, r.k === 'h');
-      if (p.act[r.k] >= r.n) text += '扉はまだ開かない。' + a.name + 'と' + b.name + 'に残っているのは、' + leftText(ctx, a, b) + '。';
+      if (!wait && p.act[r.k] >= r.n) text += '扉はまだ開かない。' + a.name + 'と' + b.name + 'に残っているのは、' + leftText(ctx, a, b) + '。';
       return { text: text, why: whyT, mag: first ? 15 : 5 };
     }
   });
@@ -727,6 +785,10 @@
     return (a.flags.resign || a.stress > des) && (b.flags.resign || b.stress > des) && ab.trust > LVL_TRUST[lvl] - 18 && ba.trust > LVL_TRUST[lvl] - 18 && ab.ten < 60 && ba.ten < 60;
   }
 
+  /* この二人が今言える言葉の条件 */
+  function wordElig(ctx, a, b) {
+    return ctx.rules.filter(function (x) { return K[x.k].type === 'word' && !(x.k === 'love' && HK.ngPair(a, b)) && !ruleDone(ctx, x, a, b) && (K[x.k].mode === 'sum' || (prog(ctx, a, b).said[x.k + a.i] || 0) < x.n); });
+  }
   /* 言葉（好き／本音／いいところ） */
   EV.push({
     id: 'doword', cat: 'bond', scope: 'pair', pri: true,
@@ -737,14 +799,19 @@
       var p = prog(ctx, a, b);
       if (ctx.rules.some(function (r) { return K[r.k].type === 'word' && K[r.k].mode === 'both' && (p.said[r.k + b.i] || 0) > (p.said[r.k + a.i] || 0); })) w *= 3.5;
       if (a.flags.partner != null) w *= a.flags.partner === b.i ? 1.8 : 0.6;
+      /* 条件の順番あり：言える言葉が、条件1を待っている条件2だけなら、起きにくくする（数えないので） */
+      var el = wordElig(ctx, a, b);
+      if (el.length && el.every(function (x) { return seqWait(ctx, x, a, b); })) w *= 0.15;
       return w;
     },
     run: function (ctx, a, b) {
-      /* 恋愛・R18にしない二人は、「好き」と言い合う条件には手をつけない（ほかの言葉の条件だけ） */
-      var r = ctx.rules.filter(function (x) { return K[x.k].type === 'word' && !(x.k === 'love' && HK.ngPair(a, b)) && !ruleDone(ctx, x, a, b) && (K[x.k].mode === 'sum' || (prog(ctx, a, b).said[x.k + a.i] || 0) < x.n); })[0];
-      var p = prog(ctx, a, b), rr = R(ctx, a, b), text, whyT, cat = 'bond';
+      /* 恋愛・R18にしない二人は、「好き」と言い合う条件には手をつけない（ほかの言葉の条件だけ）。条件1を待っていない条件を先に選ぶ */
+      var el = wordElig(ctx, a, b), r = el.filter(function (x) { return !seqWait(ctx, x, a, b); })[0] || el[0];
+      var p = prog(ctx, a, b), rr = R(ctx, a, b), text, whyT, cat = 'bond', wait = seqWait(ctx, r, a, b);
       var inc = r.k === 'praise' ? 1 + ctx.rng.int(Math.max(1, Math.ceil(r.n / 4))) : r.n > 3 ? Math.max(1, Math.round(r.n / Math.max(3, ctx.stepsTotal * 0.5) * (0.6 + ctx.rng() * 0.8))) : 1;
-      p.said[r.k + a.i] = (p.said[r.k + a.i] || 0) + inc;
+      /* 条件1を待っている言葉は数えない（p.pre に残す）。条件1が済んだあとは、数え直しを先に済ませてから足す */
+      if (wait) { p.pre = p.pre || {}; p.pre[r.k] = (p.pre[r.k] || 0) + inc; }
+      else { seqFlush(ctx, r, a, b); p.said[r.k + a.i] = (p.said[r.k + a.i] || 0) + inc; }
       if (r.k === 'love') {
         cat = 'romance';
         var sincere = rr.att > 40 && rr.aff > 25;
@@ -915,7 +982,9 @@
       if (!G) return null;
       ctx.flags.groupDone = true;
       var others = ctx.present().filter(function (c) { return G.indexOf(c) < 0; });
-      G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i) { ctx.pair(x, y).night = true; ctx.mod2(x, y, { att: 8, aff: 4 }, { att: 8, aff: 4 }); var p = prog(ctx, x, y); p.act.h = (p.act.h || 0) + 1; } }); });
+      /* 条件の順番あり：条件1を待っている組のエッチは数えない（rh＝エッチの条件。数えない組があれば、最後に「まだ数えない」と書く） */
+      var rh = ctx.rules.filter(function (r) { return r.k === 'h'; })[0], gWait = null;
+      G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i) { ctx.pair(x, y).night = true; ctx.mod2(x, y, { att: 8, aff: 4 }, { att: 8, aff: 4 }); if (!bumpAct(ctx, rh, x, y, 1, null, false) && !gWait) gWait = [x, y]; } }); });
       others.forEach(function (o) { G.forEach(function (g) { ctx.mod(o, g, { ten: 6 }); }); ctx.stress(o, 8); });
       /* 輪の中心は、自分で攻めを選んだ人がいればその人（受ける側には回さない） */
       var lead = (HK.Pos && G.filter(function (c) { return HK.Pos.hardTopIn(c, G); })[0]) || a, g2 = G.filter(function (c) { return c !== lead; });
@@ -943,6 +1012,7 @@
         return HK.RoomTrio.exitGroup(ctx, G, text, names(G) + 'の積極性が揃った。但し書き：三人以上で同時なら全員分', true, 'free');
       }
       G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i && !x.out && !y.out && pairDone(ctx, x, y)) { var ex = exitPair(ctx, x, y, '', '複数人で条件を満たした', true); exitTxt.push(ex.text); } }); });
+      if (gWait) text += waitNote(ctx, rh, gWait[0], gWait[1]);
       return { text: text + (exitTxt.length ? exitTxt[0] : ''), why: names(G) + 'の積極性が揃った（' + G.map(function (c) { return Math.round(eager(ctx, c) * 100); }).join('・') + '）', mag: 35 };
     }
   });
@@ -957,7 +1027,7 @@
       if (clashH(ctx, a, b)) return false;
       /* 縛るのは、その組で攻めに回れる側だけ。自分で攻めを選んだ人を縛ることはない */
       if (HK.Pos && (HK.Pos.hardTop(b, a) || !canLead(a, b))) return false;
-      return ctx.rules.some(function (r) { return K[r.k].type === 'act' && K[r.k].lvl >= 2 && !ruleDone(ctx, r, a, b); }) && tieWall(ctx, a, b, 3) < 999 && HK.canLove(a, b);
+      return ctx.rules.some(function (r) { return K[r.k].type === 'act' && K[r.k].lvl >= 2 && !ruleDone(ctx, r, a, b) && !seqWait(ctx, r, a, b); }) && tieWall(ctx, a, b, 3) < 999 && HK.canLove(a, b);
     },
     w: function (ctx, a) { return (speedy(a) - 0.25) * 3 + a.stress / 120 + (a.goal.id === 'quick' ? 0.8 : 0); },
     run: function (ctx, a, b) {
@@ -972,7 +1042,8 @@
       pf.night = pf.night || ctx.rules.some(function (r) { return r.k === 'h'; });
       pf.forced = a.i;
       var p = prog(ctx, a, b);
-      ctx.rules.forEach(function (r) { if (K[r.k].type === 'act') p.act[r.k] = r.n; });
+      var waited = [];
+      ctx.rules.forEach(function (r) { if (K[r.k].type === 'act' && !bumpAct(ctx, r, a, b, 0, r.n)) waited.push(r); });
       var liked = R(ctx, b, a).att > 35;
       ctx.mod2(a, b, { att: 4, trust: -4 }, liked ? { att: 6, ten: 10, trust: -6 } : { ten: 35, trust: -35, aff: -20 });
       var text = ctx.t(ctx.pick(['{b}が扉の紙を読み返している隙に、{a}は' + tool + 'で{b}の手首を縛った。「すぐ終わらせるから。恨むなら部屋を恨んで｜すぐ終わらせる。恨むなら部屋を恨め｜すぐ終わらせます。恨むなら部屋を恨んでください」――', '{a}は何の前置きもなく{b}をベッドに押し倒し、' + tool + 'で両手をまとめた。「話し合ってたら日が暮れる｜話し合っていたら日が暮れる｜話し合っていたら日が暮れます」――', '{a}は「ちょっと手、貸して｜少し手を貸せ｜ちょっと手を貸してください」と言って、差し出された{b}の両手を' + tool + 'で縛った。――{a}は時計も見ずに、手際よく条件を片づけた。', '{a}は{b}が眠りかけた瞬間を逃さず、' + tool + 'で{b}の両手首を縛った。結び目は、驚くほど手慣れていた。――']), a, b);
@@ -982,6 +1053,7 @@
         ctx.rules.forEach(function (r) { if (SPD[r.k]) text += ctx.t(ctx.pick(SPD[r.k]), a, b); });
       }
       text += liked ? ctx.t('{b}は解かれた手首をさすりながら「…強引すぎ｜…強引すぎる｜…強引すぎます」とだけ言った。耳が赤かった。', a, b) : ctx.t('{b}は解かれた手首をさすったまま、{a}と一度も目を合わせなかった。', a, b);
+      if (waited.length) text += waitNote(ctx, waited[0], a, b);
       var whyT = a.name + 'のスピード型（ドライさ ' + Math.round(a.tr.cold * 100) + '・攻撃性 ' + Math.round(a.tr.aggr * 100) + '・NP低）';
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, pf.night);
       return { text: text, why: whyT, mag: 30 };
@@ -992,7 +1064,13 @@
   EV.push({
     id: 'aphro_heat', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) { return !a.flags.down && (a.flags.aphro || 0) >= 2.5 + ctx.stat(a, 'hp') * 0.5 && !ctx.pair(a, b).heatDone; },
-    w: function (ctx, a, b) { return 0.4 + (a.flags.aphro || 0) / 4 + R(ctx, a, b).att / 60 + (b.flags.aphro ? 0.4 : 0); },
+    w: function (ctx, a, b) {
+      var w = 0.4 + (a.flags.aphro || 0) / 4 + R(ctx, a, b).att / 60 + (b.flags.aphro ? 0.4 : 0);
+      /* 条件の順番あり：抱き合っても数えない間（条件2のエッチ・キス・ハグが条件1を待っている）は、踏みとどまりやすい */
+      var hr = ctx.rules.filter(function (r) { return r.k === 'h' || r.k === 'kiss' || r.k === 'hug'; });
+      if (hr.length && hr.every(function (r) { return seqWait(ctx, r, a, b); })) w *= 0.35;
+      return w;
+    },
     run: function (ctx, a, b) {
       var ab = R(ctx, a, b), ba = R(ctx, b, a), pf = ctx.pair(a, b);
       var heat = (a.flags.aphro || 0) + (a.flags.aphroTotal || 0) * 0.3;
@@ -1006,7 +1084,9 @@
         text = ctx.t(ctx.pick(['{a}の熱い指が{b}の頬に触れた。{b}はその手を払わなかった。', '「ごめん、私、もう無理｜すまない、私はもう無理だ｜ごめんなさい、私、もう無理です」{a}が掠れた声で言った。{b}は「…いいよ｜…構わない｜…構いません」とだけ答えて、{a}を引き寄せた。', '{b}も同じくらい熱かった。どちらからともなく唇が重なった。', '{a}は{b}の首筋に顔を埋めた。{b}の手が、ためらいながら{a}の背中に回った。']), a, b) + (HK.RoomLewd ? HK.RoomLewd.scene(ctx, a, b, 'aphro') : '――');
         why = '媚薬の量（' + Math.round(heat) + '）と、' + b.name + 'の側の惹かれ（' + Math.round(ba.att) + '）';
         var hr = ctx.rules.filter(function (r) { return r.k === 'h' || r.k === 'kiss' || r.k === 'hug'; });
-        hr.forEach(function (r) { var p = prog(ctx, a, b); p.act[r.k] = Math.min(r.n, (p.act[r.k] || 0) + 1); });
+        /* 条件の順番あり：条件1を待っている条件2は数えない（「まだ数えない」と書く） */
+        var hw = hr.filter(function (r) { return !bumpAct(ctx, r, a, b, 1); });
+        if (hw.length) { text += waitNote(ctx, hw[0], a, b); why += '／条件の順番：条件1のあとから数える（今のは数えない）'; }
         if (hr.length && checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, why, true);
         return { text: text, why: why, mag: 25 };
       }
@@ -1194,5 +1274,5 @@
   HK.SCENARIOS.whiteroom = scen;
   HK.SCEN_ORDER.splice(1, 0, 'whiteroom');
   /* 追加の展開（room-trio.js など）から使う部品 */
-  HK.RoomAPI = { K: K, EV: EV, scen: scen, prog: prog, ruleDone: ruleDone, pairDone: pairDone, leftText: leftText, eager: eager, willing: willing, desperate: desperate, tieWall: tieWall, names: names, hasPairRule: hasPairRule, finishExit: finishExit, exitPair: exitPair };
+  HK.RoomAPI = { K: K, EV: EV, scen: scen, prog: prog, ruleDone: ruleDone, seqWait: seqWait, seqFlush: seqFlush, bumpAct: bumpAct, waitNote: waitNote, pairDone: pairDone, leftText: leftText, eager: eager, willing: willing, desperate: desperate, tieWall: tieWall, names: names, hasPairRule: hasPairRule, finishExit: finishExit, exitPair: exitPair };
 })();

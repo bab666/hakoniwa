@@ -628,6 +628,13 @@
     after: function (ctx) {
       Object.keys(ctx.tiesAll || {}).forEach(function (k) {
         ctx.tiesAll[k].forEach(function (t) {
+          /* 恋愛：なしの家族（ctx.pair の kin）も互いの noLove に入れる（2026-10-26）。出来事ごとの kin の確かめを通らない判定
+             （HK.Pos.okSex・HK.sexBlocked だけを見る吸血の夜・敵対の夜・三人の場面など）でも、恋愛・体の関係にしない */
+          if (HK.tieNoLove && HK.tieNoLove(t) && ctx.chars[t.a] && ctx.chars[t.b] && t.a !== t.b) {
+            var KA = ctx.chars[t.a], KB = ctx.chars[t.b];
+            [[KA, KB], [KB, KA]].forEach(function (q) { var l = q[0].noLove = q[0].noLove || []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); });
+            return;
+          }
           if (t.type !== 'apathy' && t.type !== 'fear') return;
           var A = ctx.chars[t.a], B = ctx.chars[t.b];
           [[A, B], [B, A]].forEach(function (q) { var l = q[0].noLove = q[0].noLove || []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); });

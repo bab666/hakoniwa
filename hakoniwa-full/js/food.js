@@ -1,8 +1,8 @@
-/* 箱庭シミュレーター: 住人の食べ物の好み（好きな食べ物・嫌いな食べ物・好きな味）を場面に混ぜる共通の部品（HK.Food。全年齢版・R18版共通。attr.js の直後に読む）
-   ・欄は attr.js（foodLike・foodHate・taste）。実行時の住人には配列で写る（HK.Attr.copy）
-   ・HK.Food.like(c)／hate(c)／taste(c)：その人の好物・苦手な食べ物・好きな味（配列。なければ空）。has(c)：どれか一つでも決めているか。any(list)
+/* 箱庭シミュレーター: 住人の食べ物の好み（好きな食べ物・嫌いな食べ物・好きな味・苦手な味）を場面に混ぜる共通の部品（HK.Food。全年齢版・R18版共通。attr.js の直後に読む）
+   ・欄は attr.js（foodLike・foodHate・taste・tasteHate）。実行時の住人には配列で写る（HK.Attr.copy）
+   ・HK.Food.like(c)／hate(c)／taste(c)／badTastes(c)：その人の好物・苦手な食べ物・好きな味・苦手な味（配列。なければ空）。has(c)：どれか一つでも決めているか。any(list)
    ・cook(ctx, who, dish, q)：料理の味を決める → { dish, taste }。味は作る人の好きな味に寄るが、乱数で外れる
-   ・react(ctx, c, taste, dish, o)：食べた人の反応 → { v: 'good'|'meh'|'bad', text, why }。好きな味・好物なら喜び、苦手な味（好きな味の反対）・嫌いな食べ物なら顔をしかめる。
+   ・react(ctx, c, taste, dish, o)：食べた人の反応 → { v: 'good'|'meh'|'bad', text, why }。好きな味・好物なら喜び、苦手な味（設定の「苦手な味」だけ）・嫌いな食べ物なら顔をしかめる。
      何も決めていない人は気質から。文は「うまい／ふつう／まずい」×態度9種（HK.personaOf）で3文以上ずつ
    ・talk(ctx, a, b)：好物を会話に差し込む一句（相手の好物を覚えている・差し入れる・取り分ける、苦手を引き取る。相手が決めていなければ自分の好物）
    ・hateScene(ctx, a, b, item)：{a} が嫌いな食べ物を {b} に出された場面（隠して食べる／正直に言う。態度9種）
@@ -22,8 +22,6 @@
   F.TASTES = A.TASTES || ['甘い', 'しょっぱい', '辛い', '酸っぱい', '苦い', 'あっさり', 'こってり'];
   /* 名詞の前に置く形（{taste}）：甘い味付け・あっさりした味付け */
   var TN = { '甘い': '甘い', 'しょっぱい': 'しょっぱい', '辛い': '辛い', '酸っぱい': '酸っぱい', '苦い': 'ほろ苦い', 'あっさり': 'あっさりした', 'こってり': 'こってりした' };
-  /* 好きな味の反対（苦手な味とみなす。好きな味に入っていれば苦手にしない） */
-  var OPP = { '甘い': ['苦い', '酸っぱい'], 'しょっぱい': ['甘い'], '辛い': ['甘い'], '酸っぱい': ['こってり'], '苦い': ['甘い'], 'あっさり': ['こってり'], 'こってり': ['あっさり'] };
   var P9 = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite'];
   var TEASE = { proud: 1, tsun: 1, free: 1 };
   var HONEST = { proud: 1, stern: 1, cool: 1, free: 1 };
@@ -32,13 +30,10 @@
   F.like = function (c) { return c ? arr(c.foodLike) : []; };
   F.hate = function (c) { return c ? arr(c.foodHate) : []; };
   F.taste = function (c) { return c && A.tasteList ? A.tasteList(c.taste) : []; };
-  F.has = function (c) { return !!c && (F.like(c).length > 0 || F.hate(c).length > 0 || F.taste(c).length > 0); };
+  /* 苦手な味：住人の設定の「苦手な味」（tasteHate）だけ。決めていなければ無し（好きな味の反対から推定しない）。好きな味と重なる味は外す */
+  F.badTastes = function (c) { return c && A.tasteHateList ? A.tasteHateList(c) : []; };
+  F.has = function (c) { return !!c && (F.like(c).length > 0 || F.hate(c).length > 0 || F.taste(c).length > 0 || F.badTastes(c).length > 0); };
   F.any = function (list) { return (list || []).some(function (c) { return c && F.has(c); }); };
-  F.badTastes = function (c) {
-    var t = F.taste(c), out = [];
-    t.forEach(function (x) { (OPP[x] || []).forEach(function (y) { if (t.indexOf(y) < 0 && out.indexOf(y) < 0) out.push(y); }); });
-    return out;
-  };
   F.tasteWord = function (t) { return TN[t] || t || ''; };
   function persona(c) { var p = c && HK.personaOf ? HK.personaOf(c) : 'gentle'; return P9.indexOf(p) >= 0 ? p : 'gentle'; }
   F.persona = persona;

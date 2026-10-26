@@ -130,6 +130,9 @@
     var n = Math.min(2, (input.chars || []).length);
     if (n < 2 || !HK.Roles) return { mode: 'mob', ci: [0] };
     var P = [C.resident(input, 0), C.resident(input, 1)];
+    /* 恋愛：なしの家族・無関心・恐怖の二人は、際どい施術（体の関係）にしない（fam-kin.js。C.pairWhy が HK.ngPair で見る） */
+    if (HK.kinNG) HK.kinNG(P, input.ties);
+    if (HK.fearNG) HK.fearNG(P, input.ties);
     var S0 = { P: P, env: input.env || {}, rng: HK.rng((((input.seed || 1) * 131) + 7) >>> 0), scen: HK.SCENARIOS.massage };
     var r = HK.Roles.resolve(S0, 'therapist', input);
     if (r.kind === 'res' && r.who && r.who[0]) {

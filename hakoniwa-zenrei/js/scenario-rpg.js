@@ -183,14 +183,16 @@
       }
       if (hp > 0) return { win: false, hpLeft: hp, hpMax: hpMax, text: t + hit.slice(0, 4).join('') };
       /* 勝ったあと、倒れていた仲間が息を吹き返すことがある（僧侶がいれば高い）。戻らなければ、そのまま失われる */
+      /* 一度「もう目を開けなかった」人（lost）は亡くなったまま（次の戦いで息を吹き返したり、同じ文をくり返したりしない） */
       P.forEach(function (p) {
-        if (p.alive || p.captive || p.spec) return;
+        if (p.alive || p.captive || p.spec || p.lost) return;
         var pr = alive().filter(function (x) { return JOBS[x.job].heal; })[0];
         if (rng() < (pr ? 0.45 + pr.tr.np * 0.25 : 0.25) + p.tr.cp * 0.1) { p.alive = true; p.hp = Math.round(p.mhp * 0.25); hit.push(pick2([p.name + 'は戦いが終わると、仲間に揺り起こされて目を開けた。', pr ? pr.name + 'の長い祈りのあと、' + p.name + 'の指が動いた。' : '仲間が' + p.name + 'の傷を縛り、水を飲ませた。やがて、かすかに息が戻った。'])); }
-        else hit.push(p.name + 'は、もう目を開けなかった。');
+        else { p.lost = true; hit.push(p.name + 'は、もう目を開けなかった。'); }
       });
       var g = Math.round(mon[2] * lmul * (0.8 + rng() * 0.4));
-      var top = P.slice().sort(function (a, b) { return b.kills - a.kills; })[0];
+      /* とどめの描写と分け前は、生きている人の中でいちばん倒した人（倒れた人を、最後の一撃の主にしない） */
+      var top = (alive().length ? alive() : P).slice().sort(function (a, b) { return b.kills - a.kills; })[0];
       gold += g; top.found += g;
       var a0 = alive()[Math.floor(rng() * alive().length)];
       var RDx = HK.RPGData, fin = top && RDx.JOBACT[top.job] ? RDx.JOBACT[top.job][Math.floor(rng() * RDx.JOBACT[top.job].length)].replace(/\{a\}/g, top.name) : '';

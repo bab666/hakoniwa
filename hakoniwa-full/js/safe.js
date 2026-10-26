@@ -60,10 +60,13 @@
         var v = ls.getItem(k);
         if (k === 'hakoniwa:saves') { var l = JSON.parse(v || '[]'); if (Array.isArray(l)) v = JSON.stringify(l.filter(function (r) { return r && !r.r18; })); }
         if (k === 'hakoniwa:adv') { var a = JSON.parse(v || 'null'); if (a && typeof a === 'object') { delete a.moan; v = JSON.stringify(a); } }   /* R18 だけの辞書（喘ぎ）は写さない */
+        /* 履歴の結果（IndexedDB が使えない環境の置き場。history.js）：R18モードで動かした結果は写さない（一覧の履歴は写るので、開くと全年齢版で回し直す） */
+        if (k === 'hakoniwa:history:res') { var hr = JSON.parse(v || 'null'), ho = {}; if (hr && typeof hr === 'object') Object.keys(hr).forEach(function (id) { if (hr[id] && !hr[id].r18) ho[id] = hr[id]; }); v = JSON.stringify(ho); }
         ls.setItem(to, v); n++;
       } catch (e) { fail.push(k); /* 入りきらない鍵は写さない */ }
     });
-    KST.setFlag(fail.length ? { at: Date.now(), ls: n, db: 'wait', fail: fail } : { at: Date.now(), ls: n, db: 'wait' });
+    /* hdb：履歴の結果の IndexedDB（hakoniwa-history）も、history.js が開くときに写す */
+    KST.setFlag(fail.length ? { at: Date.now(), ls: n, db: 'wait', hdb: 'wait', fail: fail } : { at: Date.now(), ls: n, db: 'wait', hdb: 'wait' });
   })();
   /* tone-engine.js は先に旧い鍵の adv を読んでいるので、この版の鍵で読み直す（やめた口調の辞書を住人へ移す ui.js の oldTone 用） */
   if (ZEN && HK.Tone) { var adv0 = HK.store.get('adv', null); HK.Tone.userText = adv0 && typeof adv0.tone === 'string' ? adv0.tone : ''; }

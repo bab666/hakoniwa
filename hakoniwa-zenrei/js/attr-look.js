@@ -15,7 +15,9 @@
   if (!A || !A.pairLine) return;
   var WHITE = /看病|治療|娯楽|共同作業|晩酌|当番|打ち明け話|想い|寄り添う|誓い|^関係$|休憩|協力|大浴場|一行|告白|酒の席|雑談|日常|食事|散歩|談笑|弔い|朝|昼|夕/;
   var BLACK = /夜|媚薬|凌辱|襲|殺|死|挿入|愛撫|キス|口で|さわる|発情|儀式|結末|後日談|継承|証言|推理|逮捕|処刑|投票|事件|隠蔽|工作|真相|喪失|恋敵|失恋|別れ|浮気|監禁|暴走|R18|夜這い|寸止め|絶頂/;
-  function has(a, b) { return !!(a && b && a !== b && (A.sizeDiff(a, b) || A.hasLook(a) || A.hasLook(b))); }
+  /* 二人ともその場にいるときだけ（亡くなった人・場を離れた人・閉じ込められた人の見た目や仕草を、弔い・看病などの場面に書かない） */
+  function here2(a, b) { var H = HK.State && HK.State.here; return !H || (H(a) && H(b) && !((a.bound || b.bound) && !(HK.Story && HK.Story._cur && HK.Story._cur.scen && HK.Story._cur.scen.id === 'locker'))); }
+  function has(a, b) { return !!(a && b && a !== b && here2(a, b) && (A.sizeDiff(a, b) || A.hasLook(a) || A.hasLook(b))); }
   function add(o, line) { if (!line) return; o.text = o.text.replace(/\s+$/, '') + line; o.look = true; }
   /* 気分の種族文（種族と強い気分のある人だけ。いなければ乱数を使わずに ''） */
   function moodLine(a, b, pk, owner) {

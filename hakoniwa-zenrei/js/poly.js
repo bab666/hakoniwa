@@ -271,6 +271,8 @@
     ctx.flags.polyNoted = true;
     var gs = P.sync(ctx);
     gs.forEach(function (g) {
+      /* 亡くなった人がいる組は、もう「複数の恋人」として結末に書かない（亡くなった人を、いまも愛し合っている扱いにしない） */
+      if (g.members.some(function (i) { return ctx.chars[i] && ctx.chars[i].alive === false; })) return;
       var ns = nm3(ctx, g), line;
       if (!g.known) line = '秘密のままの恋：' + ns.join('・') + '（恋人どうしは、互いのことを知らないまま）';
       else if (g.hub != null) line = '複数の恋人：' + ctx.chars[g.hub].name + 'を、' + ns.filter(function (x) { return x !== ctx.chars[g.hub].name; }).join('と') + 'が愛している（一人を二人が愛している）';

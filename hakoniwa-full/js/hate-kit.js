@@ -10,6 +10,8 @@
      相手　　　：np（歩み寄る）／cp（言い返す）／fc（からかってつきまとう）／cold（気にしない）／ac（傷ついて引く）／mild
      相手の気持ちが avoid（苦手・避けている）なら、相手は無視する・第三者を頼る・身代わりに対応させる（H.avoid）
    ■ 出来事：出会ったとき／嫌がらせ／無視／友人だと思っている相手の誘い・かばう／愛している相手の歩み寄りと嫌悪／お互いの衝突
+   ■ 狭い場所（媚薬ロッカーなど）：物語型の S に hkSpace: 'cramped' を付けると、嫌がらせ・無視・衝突・避ける・歩み寄りの地の文を
+     狭い場所用（NC・AVC：肩を押しのける・背中を向ける・息を殺す・壁を蹴る など）にする。席・皿・荷物・周りの人・歩いて離れる文は使わない
    台詞は tone-lines.js・tone-lines-hate.js（口調ごとの書き下ろし） */
 (function () {
   'use strict';
@@ -157,6 +159,23 @@
     quarrelEnemy: L('{a}は{b}の胸ぐらを掴み、壁に押しつけた。|二人は、互いの襟首を掴んだまま、睨み合った。周りが慌てて割って入った。'),
     quarrelBad: L('二人の言い合いは、しばらく続いた。|言い合いは、どちらも引かないまま、平行線で終わった。')
   };
+  /* 狭い場所（媚薬ロッカーなど。物語型の S に hkSpace: 'cramped' を付けて渡す）：席・皿・荷物・周りの人・歩いて離れる文を使わない。
+     ここにない文は N のまま（場所を選ばない文） */
+  var NC = {
+    harass: L('{a}は、狭い中でわざと肘を張り、{b}の肩を冷たい壁へ押しのけた。|{a}は、{b}の足の甲を、わざと踵で踏みつけた。|{a}は、{b}が身じろぎするたびに、聞こえよがしに舌打ちをした。|{a}は、背中で{b}を壁際へ押しやり、自分だけ楽な姿勢を取った。'),
+    shrug: L('{b}は押しのけられた肩をそっと戻して、何事もなかったように前を向いた。|{b}は小さく息を吐いただけで、相手にしなかった。|{b}は肩をすくめようとして、狭さにあきらめた。それきり、気にも留めなかった。'),
+    snubCold: L('{a}は、聞こえないふりをした。|{a}は、肩が触れ合う距離にいながら、{b}をいないものとして扱った。|{a}は、{b}の声に、冷たい壁のほうへ顔を背けた。'),
+    snubPassive: L('{a}は、できるかぎり身を縮めて、{b}に背中を向けた。|{a}は、息を殺して、聞こえないふりをした。|{a}は、額を壁に押しつけるようにして、{b}から目を逸らした。'),
+    giftLead: L('{b}は、ポケットに残っていた飴を、{a}の手にそっと押しつけた。|{b}は、くしゃくしゃのハンカチを取り出して、{a}に差し出した。|{b}は、ポケットのガムを一枚、{a}の手に握らせた。'),
+    leanLead: L('{b}は、狭い中で、{a}の肩にそっと額を寄せた。|{b}は、押しつけられた体を離そうとせず、そっと{a}に寄り添った。|{b}は、{a}の手の甲に、そっと指先を重ねた。'),
+    disgustAfter: { ac: N.disgustAfter.ac, np: L('それでも、{b}は笑っていた。「嫌われてても、いいんだ｜嫌われていても、いいんだ｜嫌われていても、いいんです」|{b}は少しだけ寂しそうに笑って、触れないように、そっと身を引いた。|{b}は何も言わずに、くっついていた肩を、ほんの少しだけ離した。'), fc: L('{b}は「つれないなあ｜つれないな｜つれないですね」と笑って、また肩を寄せてきた。|{b}はまったく懲りていなかった。|{b}は笑って、くっついた肩を離そうとしなかった。'), other: L('{b}は、それ以上何も言わなかった。|{b}は黙って、できるかぎり{a}から体を離した。|{b}は唇を引き結んで、壁のほうへ目を逸らした。') },
+    melt: L('{a}は押しのけようとして、やめた。|{a}は、しばらく黙っていた。それから、小さく舌打ちをして、そのままにさせた。|{a}は身をよじりかけて、あきらめたように力を抜いた。'),
+    quarrelEnemy: L('{a}は{b}の胸ぐらを掴み、壁に押しつけた。背中を打った壁が、鈍い音を立てた。|二人は、鼻先が触れそうな距離で睨み合った。逃げ場のない狭さの中で、荒い息だけがぶつかった。|{a}は苛立ちまぎれに壁を蹴った。鈍い音が響き、{b}は顔をしかめて睨み返した。'),
+    quarrelBad: L('狭い中で、言い合いはしばらく続いた。声を落としても、互いの息がかかる距離だった。|言い合いは、どちらも引かないまま途切れた。背を向けることもできず、二人は気まずく黙り込んだ。|二人は小声で言い合い、やがて同時にそっぽを向いた。向けた先には、冷たい壁しかなかった。')
+  };
+  function cramped(x) { return !!(x && x.hkSpace === 'cramped'); }
+  /* 場所に合う文の束（狭い場所なら NC、なければ N） */
+  function NN(x, k) { return cramped(x) && NC[k] ? NC[k] : N[k]; }
   function F(t, a, b) { return t.replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name); }
   function P(x, l) { return x.pickArr ? x.pickArr(l) : l[(x.rng() * l.length) | 0]; }
 
@@ -167,14 +186,19 @@
     third: L('{b}は返事をせずに、近くにいた{c}の袖を引いた。{c}は事情を察して、{b}と{a}のあいだにさりげなく立った。|{b}は{c}に目で助けを求めた。{c}「{a}、その話なら私が聞く｜＝｜{a}、その話なら私が聞きます」――{b}はほっと息をついた。|{b}は{a}から逃げるように{c}の隣へ移り、{c}にばかり話しかけた。{a}の言葉は、行き場をなくした。'),
     proxy: L('{b}「……{c}、代わりに聞いておいて｜……{c}、代わりに聞いておいてくれ｜……{c}、代わりに聞いておいてください」――そう言い残して、{b}は席を外した。{c}は苦笑して、{a}に向き直った。|{b}は{a}への用件を、全部{c}に頼んだ。{a}が何を言っても、返ってくるのは{c}の声だった。|{b}は{a}の前に{c}を押し出した。「この件は{c}に任せてあるから｜この件は{c}に任せてある｜この件は{c}に任せてあります」――{c}は肩をすくめて、{a}の相手を引き受けた。')
   };
+  /* 狭い場所では、その場を離れることも、第三者のそばへ移ることもできない（無視するだけ） */
+  var AVC = {
+    lead: L('{a}が、狭い中で{b}のほうへ顔を向けた。|{a}は、わざとらしく{b}に声をかけてきた。|{a}が何か言いたげに、{b}の肩を指でつついた。'),
+    ignore: L('{b}は気づかないふりをして、目を閉じた。{a}の声は、狭い暗がりに吸い込まれて消えた。|{b}は小さく会釈だけして、できるかぎり身を縮めた。苦手な相手とは、関わらないのがいちばんだった。|{b}は{a}と目を合わせないまま、「……今、話しかけないで｜……今、話しかけるな｜……今、話しかけないでください」とだけ言った。')
+  };
   function thirdOf(x, a, b) {
     var L0 = isCtx(x) ? x.present() : (x.P || []).filter(function (p) { return p && p.alive !== false && !p.gone && !p.out; });
     L0 = L0.filter(function (c) { return c !== a && c !== b && (!isCtx(x) || x.R(c, b).aff > 0); });
     return L0.length ? L0[(x.rng() * L0.length) | 0] : null;
   }
   H.avoid = function (x, a, b, place) {
-    var c = thirdOf(x, a, b), r = x.rng(), k = !c || r < 0.4 ? 'ignore' : r < 0.7 ? 'third' : 'proxy';
-    var t = (place || '') + F(P(x, AV.lead), a, b) + F(P(x, AV[k]), a, b).replace(/\{c\}/g, c ? c.name : '');
+    var cr = cramped(x), c = cr ? null : thirdOf(x, a, b), r = x.rng(), k = !c || r < 0.4 ? 'ignore' : r < 0.7 ? 'third' : 'proxy';
+    var t = (place || '') + F(P(x, (cr ? AVC : AV).lead), a, b) + F(P(x, (cr ? AVC : AV)[k]), a, b).replace(/\{c\}/g, c ? c.name : '');
     if (isCtx(x)) { if (x.stress) x.stress(b, 4); if (c) x.mod2(b, c, { trust: 4 }, { aff: 2 }); }
     var why = { ignore: '無視した', third: (c ? c.name : '') + 'を頼った', proxy: (c ? c.name : '') + 'に代わりに対応させた' }[k];
     var o = { text: t + H.shift(x, a, b, 3), why: H.why(x, a, b) + '／' + b.name + 'は' + a.name + 'を避け、' + why, mag: 14, cat: k === 'ignore' ? 'solo' : 'bond' };
@@ -202,7 +226,7 @@
   H.harass = function (x, a, b) {
     var st = H.stance(x, b, a), rs = H.rstyle(b), lv = H.level(x, a, b);
     if (st === 'avoid') return H.avoid(x, a, b);
-    var t = F(P(x, N.harass), a, b) + TL.line(a, 'H_JAB', b), d = 0, why = '';
+    var t = F(P(x, NN(x, 'harass')), a, b) + TL.line(a, 'H_JAB', b), d = 0, why = '';
     if (st === 'hate') { t += TL.line(b, 'R_HATE_BACK', a); H.shift(x, b, a, 4); d = 4; why = 'お互いに敵視'; }
     else if (rs === 'np' || (st === 'friend' && rs !== 'cold') || (st === 'love' && rs !== 'ac')) {
       t += TL.line(b, 'R_PEACE', a);
@@ -210,7 +234,7 @@
       else { t += TL.line(a, 'H_BACKFIRE', b); d = 8; why = b.name + 'の歩み寄りが、かえって' + a.name + 'の癇に障った'; }
     } else if (rs === 'cp') { t += TL.line(b, 'R_PUSHBACK', a); d = 6; H.shift(x, b, a, 12); why = b.name + 'は言い返した（' + b.name + 'の嫌悪も上がった）'; }
     else if (rs === 'fc') { t += TL.line(b, 'R_TEASE', a); d = 5; why = b.name + 'はからかって受け流した'; }
-    else if (rs === 'cold') { t += F(P(x, N.shrug), a, b); d = 5; why = b.name + 'は気にも留めなかった（それがまた癇に障った）'; }
+    else if (rs === 'cold') { t += F(P(x, NN(x, 'shrug')), a, b); d = 5; why = b.name + 'は気にも留めなかった（それがまた癇に障った）'; }
     else { t += F(P(x, N.hurt), a, b) + TL.line(b, 'R_PUZZLED', a); d = st === 'love' ? 1 : 2; why = b.name + 'は理由が分からず傷ついた'; }
     if (isCtx(x) && x.stress) x.stress(b, st === 'love' ? 12 : 6);
     return { text: t + H.shift(x, a, b, d), why: H.why(x, a, b) + '／' + why, mag: 20, cat: 'conflict' };
@@ -220,7 +244,7 @@
     var st = H.stance(x, b, a), rs = H.rstyle(b), sty = H.style(a);
     if (st === 'avoid') return H.avoid(x, a, b);
     var line = st === 'friend' ? 'R_INVITE' : st === 'love' ? 'R_MEET_LOVE' : 'R_MEET_NORMAL';
-    var t = TL.line(b, line, a) + F(P(x, sty === 'cold' ? N.snubCold : N.snubPassive), a, b), d = 2;
+    var t = TL.line(b, line, a) + F(P(x, NN(x, sty === 'cold' ? 'snubCold' : 'snubPassive')), a, b), d = 2;
     if (rs === 'fc' || (st === 'love' && rs === 'np')) { t += TL.line(b, 'R_TEASE', a); d = 3; }
     else if (rs === 'ac' || st === 'love') { t += F(P(x, N.hurt), a, b); if (isCtx(x) && x.stress) x.stress(b, 8); }
     return { text: t + H.shift(x, a, b, d), why: H.why(x, a, b) + '／' + a.name + 'は' + (sty === 'cold' ? '冷たく無視した' : '避けた'), mag: 14, cat: 'solo' };
@@ -239,21 +263,22 @@
   H.loveGap = function (x, a, b, lead) {
     /* 差し出すものがあるときだけ「これ……」、ほかは、そばに寄る */
     var gift = !lead && x.rng() < 0.5;
-    var t = (lead || F(P(x, gift ? N.giftLead : N.leanLead), a, b)) + TL.line(b, gift ? 'R_APPROACH' : 'R_LEAN', a), lv = H.level(x, a, b);
+    var t = (lead || F(P(x, NN(x, gift ? 'giftLead' : 'leanLead')), a, b)) + TL.line(b, gift ? 'R_APPROACH' : 'R_LEAN', a), lv = H.level(x, a, b);
     if (x.rng() < 0.12 + (a.tr.np || 0) * 0.15 - lv / 500) {
-      t += F(P(x, N.melt), a, b) + TL.line(a, 'H_CONFUSED', b);
+      t += F(P(x, NN(x, 'melt')), a, b) + TL.line(a, 'H_CONFUSED', b);
       return { text: t + H.shift(x, a, b, -14), why: H.why(x, a, b) + '／好意を向けられて、嫌悪が揺らいだ', mag: 24, cat: 'romance' };
     }
     var rs = H.rstyle(b);
-    t += TL.line(a, 'H_DISGUST', b) + F(P(x, N.disgustAfter[rs] || N.disgustAfter.other), a, b);
+    var DA = NN(x, 'disgustAfter');
+    t += TL.line(a, 'H_DISGUST', b) + F(P(x, DA[rs] || DA.other), a, b);
     if (isCtx(x) && x.stress) x.stress(b, rs === 'ac' ? 16 : 8);
     return { text: t + H.shift(x, a, b, 6), why: H.why(x, a, b) + '／好意が、嫌悪で返された', mag: 22, cat: 'romance' };
   };
   /* お互いに敵視：衝突（嫌悪の強さで重さが変わる） */
   H.quarrel = function (x, a, b) {
     var lv = H.level(x, a, b), enemy = lv >= 65 || H.level(x, b, a) >= 65, t;
-    if (enemy) t = TL.line(a, 'H_THREAT', b) + TL.line(b, 'R_HATE_BACK', a) + F(P(x, N.quarrelEnemy), a, b);
-    else t = TL.line(a, 'BAD_BLAME', b) + TL.line(b, 'BAD_RETORT', a) + F(P(x, N.quarrelBad), a, b);
+    if (enemy) t = TL.line(a, 'H_THREAT', b) + TL.line(b, 'R_HATE_BACK', a) + F(P(x, NN(x, 'quarrelEnemy')), a, b);
+    else t = TL.line(a, 'BAD_BLAME', b) + TL.line(b, 'BAD_RETORT', a) + F(P(x, NN(x, 'quarrelBad')), a, b);
     if (isCtx(x) && x.stress) { x.stress(a, 6); x.stress(b, 6); }
     var s1 = H.shift(x, a, b, 4), s2 = H.shift(x, b, a, 4);
     return { text: t + s1 + s2, why: H.why(x, a, b) + '／' + (enemy ? '敵対どうしの衝突' : '不仲どうしの口論'), mag: enemy ? 26 : 18, cat: 'conflict' };

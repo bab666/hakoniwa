@@ -253,10 +253,13 @@
         var carers = ctx.others(sick).filter(function (o) { return o.tr.np > 0.5 || R(ctx, o, sick).aff > 35; });
         var avoid = ctx.others(sick).filter(function (o) { return carers.indexOf(o) < 0 && o.tr.caution > 0.55; });
         hurt(ctx, sick, 14, '熱が下がらないまま');
-        carers.slice(0, 2).forEach(function (c) {
+        /* 熱で亡くなったら、看病は最初の一人だけ（その看病のあとに死の記録が出る）。亡くなった人の寝床を移す場面も出さない */
+        carers.slice(0, 2).forEach(function (c, k) {
+          if (k > 0 && !sick.alive) return;
           ctx.act2({ actors: [c, sick], cat: 'help', fx: function () { sick.hp += 6; c.hp -= 4; ctx.mod2(c, sick, { aff: 4 }, { aff: 10, trust: 10, att: 4 }); },
             text: ctx.t('{a}は一晩中、{b}の額の布を替え続けた。', c, sick), why: c.name + (c.tr.np > 0.5 ? 'のNP' : 'の' + sick.name + 'への好意') });
         });
+        if (!sick.alive) { ctx.flush(); return; }
         if (avoid.length) ctx.act2({ actors: [avoid[0], sick], cat: 'solo', fx: function () { ctx.mod(sick, avoid[0], { aff: -5 }); },
           text: ctx.t('{a}は「うつると困る｜＝｜うつると困ります」と言って、寝床を離れた場所に移した。', avoid[0], sick), why: avoid[0].name + 'の慎重さ' });
       }

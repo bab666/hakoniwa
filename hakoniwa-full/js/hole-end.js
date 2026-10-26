@@ -259,6 +259,8 @@
   /* 助けた人との関係（恋愛は HK.canLove を両方向で通す） */
   function relOf(h, b) {
     if (!b) return 'far';
+    /* 恋愛：なしの家族は、恋愛・R18にしない組（fam-kin.js の HK.kinNG）でもあるが、家族の文で書く */
+    if (b.r && b.r.fam) return 'kin';
     if (HK.ngPair && HK.ngPair(h, b)) return 'ng';
     var r = b.r || {}, cl = function (x, y) { return !HK.canLove || HK.canLove(x, y); };
     if (r.love && !r.fam && cl(h, b) && cl(b, h)) return 'love';

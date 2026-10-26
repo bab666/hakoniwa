@@ -149,7 +149,9 @@
       /* 呪い・取り憑き */
       live.forEach(function (p) { tickCurse(S, p, h); });
       /* NPC */
-      npcTurn(S, live, h);
+      /* 縛られて閉じ込められた人（bound）は、村人・記者とのやりとりや宴・推理の場面に出さない */
+      var free0 = live.filter(function (q) { return !q.bound; });
+      if (free0.length) npcTurn(S, free0, h);
       tickPlus(S, P.filter(alive), h);
       JS.REL.tick(S, P.filter(alive), h);
       if (JS.DUO) JS.DUO.tick(S, P.filter(alive), h);
@@ -157,7 +159,7 @@
       if (JS.GODEV) JS.GODEV.tick(S, P.filter(alive), h);
       if (JS.LOOP) JS.LOOP.tick(S, P.filter(alive), h);
       /* 村の歓迎の宴（一度だけ。酒の強さで過ごし方が変わる。jashin-feast.js） */
-      if (JS.FEAST) JS.FEAST.tick(S, P.filter(alive), h);
+      if (JS.FEAST) JS.FEAST.tick(S, P.filter(function (q) { return alive(q) && !q.bound; }), h);
       if (JS.JOBEV) JS.JOBEV.tick(S, P.filter(alive), h);
       /* 住人ごとの一時間 */
       live = P.filter(alive);
@@ -194,7 +196,7 @@
       /* 手がかりがそろった */
       if (!S.solved && S.found.length >= G.clues.length) solve(S, false);
       else if (!S.solved && S.found.length >= G.clues.length - 1 && S.deadline - h <= 8) {
-        var wise = P.filter(alive).sort(function (a, b) { return skill(b, 'lore') - skill(a, 'lore'); })[0];
+        var wise = P.filter(function (q) { return alive(q) && !q.bound; }).sort(function (a, b) { return skill(b, 'lore') - skill(a, 'lore'); })[0];
         if (wise && rng() < skill(wise, 'lore') * 0.9) solve(S, true, wise);
       }
       if (!S.solved && S.found.length >= G.clues.length - 2 && S.deadline - h <= 16) {
@@ -446,7 +448,7 @@
     S.P.forEach(function (q) {
       if (!q.prank || !alive(q) || q === dead) return;
       q.prank = false; q.m.fear = clamp(q.m.fear + 30, 0, 100);
-      ST.say(S, { actors: [q], tag: 'ドッキリ？', text: ST.fmt(ST.pick(S, M.PRANK_REAL), { a: q.name }), why: dead.name + 'の死で、' + q.name + 'はようやくこれが本物だと悟った（恐怖 +30）', mag: 20 });
+      ST.say(S, { actors: [q], tag: 'ドッキリ？', text: ST.fmt(ST.pick(S, (HK.State && HK.State.bodyless(M.PRANK_REAL, dead)) || M.PRANK_REAL), { a: q.name }), why: dead.name + 'の死で、' + q.name + 'はようやくこれが本物だと悟った（恐怖 +30）', mag: 20 });
     });
   }
   function tickPlus(S, live, h) {

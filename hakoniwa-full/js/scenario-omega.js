@@ -979,7 +979,8 @@
     var om = ctx.om, P = ctx.chars;
     if (!om.ending) OM.B.check(ctx, true);
     var couples = [];
-    P.forEach(function (a) { P.forEach(function (b) { if (a.i < b.i && ctx.pair(a, b).couple) couples.push([a, b]); }); });
+    /* 亡くなった恋人（心中など）とは、もう「付き合っている」とは書かない */
+    P.forEach(function (a) { P.forEach(function (b) { if (a.i < b.i && a.alive !== false && b.alive !== false && ctx.pair(a, b).couple) couples.push([a, b]); }); });
     P.forEach(function (c) {
       /* 心中など（obsess-omega.js）で亡くなった人は、そのまま */
       if (!c.alive) return;
@@ -989,17 +990,19 @@
       c.fateNote = (o ? o.name + 'と' + (om.bonded[key(c, o)] ? '番になった' : '付き合っている') : om.scar[c.i] ? BD.scarText(ctx, c) : '恋人はいない') + (c.om.quit ? '。スイッチで' + c.om.quit + 'を辞めた' : c.om.switched ? '。途中で' + SX[c.om.sex] + 'にスイッチした' : '');
     });
     var E = om.ending;
+    /* 後日談（ネックガード・巣作り・番の暮らし）は、二人とも生きている番だけ（心中などで亡くなった番の「後日」を書かない） */
+    var liveBond = Object.keys(om.bonded).filter(function (k) { var ij = k.split('-'); return ctx.chars[+ij[0]].alive !== false && ctx.chars[+ij[1]].alive !== false; });
     /* 後日談：番になったあとのネックガード（omega-guard.js） */
-    if (OM.guardLate) Object.keys(om.bonded).forEach(function (k) { var ij = k.split('-'); OM.guardLate(ctx, ctx.chars[+ij[0]], ctx.chars[+ij[1]]); });
+    if (OM.guardLate) liveBond.forEach(function (k) { var ij = k.split('-'); OM.guardLate(ctx, ctx.chars[+ij[0]], ctx.chars[+ij[1]]); });
     /* 後日談：番になったΩの巣作り */
-    Object.keys(om.bonded).forEach(function (k) {
+    liveBond.forEach(function (k) {
       var ij = k.split('-'), x = ctx.chars[+ij[0]], y = ctx.chars[+ij[1]];
       if (!ctx.pair(x, y).couple || ctx.rng() > 0.7) return;
       var O = omegaOf(x, y), A = alphaOf(x, y), pa = STX.NEST_SELF[O.persona] ? O.persona : 'gentle', pm = STX.NEST_FIND[A.persona] ? A.persona : 'gentle';
       ctx.say({ kind: 'event', cat: 'romance', actors: [O, A], text: '――後日。' + fill(ctx, ctx.pick(STX.NEST_MAKE), O, A) + fill(ctx, ctx.pick(STX.NEST_SELF[pa]), O, A) + '――' + fill(ctx, ctx.pick(STX.NEST_FIND[pm]), O, A), why: '番のいるΩの巣作り（後日談）' });
     });
     /* 後日談：番になったあとの暮らし（omega-after.js） */
-    if (OM.afterLate) Object.keys(om.bonded).forEach(function (k) { var ij = k.split('-'); OM.afterLate(ctx, ctx.chars[+ij[0]], ctx.chars[+ij[1]]); });
+    if (OM.afterLate) liveBond.forEach(function (k) { var ij = k.split('-'); OM.afterLate(ctx, ctx.chars[+ij[0]], ctx.chars[+ij[1]]); });
     ctx.flags.outcome = E ? E.title : '';
     ctx.flags.omega = {
       months: Math.ceil((ctx.stepIndex + 1) / 2), ending: E, couples: couples.map(function (x) { return [x[0].i, x[1].i, !!om.bonded[key(x[0], x[1])]]; }),

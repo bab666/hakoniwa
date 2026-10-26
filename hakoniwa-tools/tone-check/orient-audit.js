@@ -6,6 +6,9 @@
      O1 結末の関係（エンジン型の pairs、物語型の relmap）が恋人・夜・片想い系なのに、恋愛対象が合わない
      O2 二人だけの出来事で、性的な文（行為の言葉）なのに、恋愛対象が合わない
      O3 二人だけの出来事で、告白・恋人になる文なのに、告白した側（最初の人）の恋愛対象が合わない
+     O4 恋愛：なしの家族・無関心・恐怖の二人が、結末の恋愛・夜・片想いの関係になった／二人の名前だけが出る性的な文・恋愛の文（告白・キス・恋人になる）に出た
+        （4回に1回、0-1 に恋愛：なしの家族、1-2 に無関心か恐怖を付けて、その回だけ数える。2026-10-26 追加：R18が中心の箱庭・吸血の夜で家族の二人が体の関係になっていたため）
+     O5 全年齢モード（safe）・全年齢版で、はっきりした性的な語の文が出た（2026-10-26 追加：女性上位の見直しが全年齢モードで事件の文を差し替えていたため）
    ・O2・O3 は文から拾うので誤判定がありうる。--why で例を出すので目で確かめる */
 const { openBuild } = require('./lib');
 (async () => {
@@ -35,8 +38,16 @@ const { openBuild } = require('./lib');
     }
     const res0 = {};
     const ids = HK.SCEN_ORDER.filter(id => HK.SCENARIOS[id]);
+    /* 恋愛：なしの家族（ties.js の family で loveOK でないもの） */
+    const FAMNL = {}; Object.keys(HK.TIES || {}).forEach(k => { if (HK.TIES[k].family && !HK.TIES[k].loveOK) FAMNL[k] = 1; });
+    /* O4：住人の名前がちょうど二人で、モブの語のない文。O5：全年齢モード・全年齢版の性的な文（はっきりした語だけ） */
+    const MOB4 = /男たち|客|触手|ゾンビ|魔物|村人|略奪者|モブ|生命体|異星|邪神|眷属|獲物|スタッフ|見知らぬ|壁の向こう/;
+    const NOT4 = /殺し|罪を|秘密を|嘘を|見て(?:い|しま)|見つめ|眺め|気づ|噂|想像|思い出|夢(?:に|で|を|の)|話を|話して|話し(?:た|合)|相談|からかわ|冷やかし|嫉妬|応援|祝福|目撃|もし|ふり|フリ|王様ゲーム|命令|お題|罰ゲーム|キス！|告白の練習|告白するなら|付き合ってや(?:る|らなく)|付き合ってもいない|ほかに：|ほかの結果：|だったものに抱かれ|腕の中でしばらく浅い息|数えてもらえない|口づけるように|肩を抱|抱きしめ|抱き寄せ|抱きとめ|抱きかかえ|抱き合/;
+    const SEX4 = /挿れ|挿入|射精|精液|腰を(?:振|打ちつけ|沈め|揺ら|落と)|跨[っが]|喘(?:ぎ|い)|絶頂|イかせ|イカせ|イった|イっちゃ|果て(?:た|て)|体を重ね|肌を重ね|繋がっ|中に出|愛撫|抱かれ|抱いた(?!まま)|口づけ|キス|唇を(?:重ね|奪)|告白し|付き合(?:って|おう|い始)|恋人(?:に|どうし|同士)にな|両想いにな/;
+    const SAFE5 = /挿れ|挿入|射精|精液|腰を(?:振|打ちつけ|沈め|揺ら)|跨って腰|喘ぎ|絶頂|♡|中に出|イかせ|イカせ|イっ(?:た|ちゃ)|ちんぽ|秘所|愛液|抱き潰/;
+    const SAFE = !!HK.SAFE_ON;
     ids.forEach(id => {
-      const sc = HK.SCENARIOS[id], o = res0[id] = { runs: 0, err: 0, O1: 0, O2: 0, O3: 0, ex: [] };
+      const sc = HK.SCENARIOS[id], o = res0[id] = { runs: 0, err: 0, O1: 0, O2: 0, O3: 0, O4: 0, O5: 0, ex: [] };
       for (let s = 0; s < N; s++) {
         const type = ['het', 'homo', 'mix'][s % 3];
         const n = Math.max(sc.minCast || 2, Math.min(sc.maxCast || 6, 2 + (s % 5)));
@@ -49,6 +60,14 @@ const { openBuild } = require('./lib');
         });
         ENVSET.forEach(kv => { env[kv[0]] = isNaN(+kv[1]) ? kv[1] : +kv[1]; });
         const ties = s % 4 === 3 && n >= 2 ? [{ a: 0, b: 1, type: ['friend', 'enemy', 'best', 'colleague'][s % 4] }] : [];
+        /* O4 の配役（2026-10-26）：4回に1回、恋愛：なしの家族（0-1）と無関心・恐怖（1-2）を付ける。恋愛対象は「両方」にそろえて、この二組だけが恋愛・夜の候補から外れるようにする */
+        const NL_T = s % 4 === 1 && n >= 2;
+        if (NL_T) {
+          chars.forEach(c => { c.likes = 'both'; });
+          ties.push({ a: 0, b: 1, type: ['sibling', 'parent', 'sibclose', 'relative', 'stepsib'][(s >> 2) % 5], love: '' });
+          if (n >= 3) ties.push({ a: 1, b: 2, type: (s >> 2) % 2 ? 'apathy' : 'fear' });
+        }
+        const nlPair = (a, b) => ties.some(t => (FAMNL[t.type] && t.love !== 'ok' || t.type === 'apathy' || t.type === 'fear') && ((t.a === a && t.b === b) || (t.a === b && t.b === a)));
         let res;
         /* 内容のスイッチ（content.js）：指定がなければすべて入にして、いちばん広く回す */
         if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
@@ -76,12 +95,26 @@ const { openBuild } = require('./lib');
           if (mm && !ok(C[a], C[b])) note('O2', who(a) + '×' + who(b) + ' ｜ ' + (e.tag || e.label || '') + ' ｜「' + mm[0] + '」 ' + t.slice(Math.max(0, mm.index - 50), mm.index + 40));
           else if (!mm && CONF.test(t) && !ROOM_LOVE_COND.test(t) && !one(C[a], C[b]) && !ok(C[a], C[b])) note('O3', who(a) + '→' + who(b) + ' ｜ ' + (e.tag || e.label || '') + ' ｜ ' + e.text.slice(0, 120));
         });
+        /* O4：恋愛：なしの家族・無関心・恐怖の二人が、結末の恋愛・夜の関係になった／二人の名前だけが出る性的な文・恋愛の文に出た（出来事の登場人物の数は問わない） */
+        if (NL_T) {
+          edges.forEach(e => { if (C[e.a] && C[e.b] && (e.cls === 'love' || e.cls === 'night' || e.cls === 'pine') && nlPair(e.a, e.b)) note('O4', '結末 ' + who(e.a) + '×' + who(e.b) + '＝' + e.name); });
+          const T4 = (res.log || []).map(e => e && typeof e.text === 'string' ? { t: e.text, tag: e.tag || e.label || '' } : null).filter(Boolean);
+          if (res.ending && Array.isArray(res.ending.lines)) res.ending.lines.forEach(l => typeof l === 'string' && T4.push({ t: l, tag: '結末' }));
+          T4.forEach(x => x.t.replace(NOTSEX, '').split(/(?<=[。！？\n])/).forEach(sn => {
+            const ns = []; C.forEach((c, i) => { if (sn.indexOf(c.name) >= 0) ns.push(i); });
+            const bare = sn.replace(/「[^」]*」/g, '「」');
+            if (ns.length !== 2 || !nlPair(ns[0], ns[1]) || MOB4.test(sn) || NOT4.test(bare) || !SEX4.test(bare)) return;
+            note('O4', who(ns[0]) + '×' + who(ns[1]) + ' ｜ ' + x.tag + ' ｜ ' + sn.slice(0, 140));
+          }));
+        }
+        /* O5：全年齢モード・全年齢版で、性的な文（はっきりした語）が出た */
+        if (SAFE) (res.log || []).forEach(e => { if (!e || typeof e.text !== 'string') return; const t5 = e.text.replace(NOTSEX, ''), m5 = t5.match(SAFE5); if (m5) note('O5', (e.tag || e.label || '') + ' ｜「' + m5[0] + '」 ' + t5.slice(Math.max(0, m5.index - 60), m5.index + 40)); });
       }
     });
     return res0;
   }, { N, WHY, ENVSET });
-  const tot = { O1: 0, O2: 0, O3: 0 };
-  for (const id in r) { const o = r[id]; tot.O1 += o.O1; tot.O2 += o.O2; tot.O3 += o.O3; console.log(id.padEnd(10), 'runs', o.runs, 'err', o.err, 'O1', o.O1, 'O2', o.O2, 'O3', o.O3); o.ex.forEach(x => console.log('    ' + x.replace(/\n/g, ' '))); }
+  const tot = { O1: 0, O2: 0, O3: 0, O4: 0, O5: 0 };
+  for (const id in r) { const o = r[id]; ['O1', 'O2', 'O3', 'O4', 'O5'].forEach(k => { tot[k] += o[k]; }); console.log(id.padEnd(10), 'runs', o.runs, 'err', o.err, 'O1', o.O1, 'O2', o.O2, 'O3', o.O3, 'O4', o.O4, 'O5', o.O5); o.ex.forEach(x => console.log('    ' + x.replace(/\n/g, ' '))); }
   console.log('合計', JSON.stringify(tot));
   console.log('pageerr', errors.slice(0, 3));
   await browser.close();

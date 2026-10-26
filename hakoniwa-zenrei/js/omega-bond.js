@@ -147,6 +147,8 @@
     var two = P.length === 2, hit = null;
     for (var i = 0; i < P.length && !hit; i++) for (var j = i + 1; j < P.length && !hit; j++) {
       var a = P[i], b = P[j], pf = ctx.pair(a, b), k = key(a, b);
+      /* 亡くなった人（心中など）を、恋人・番の結末の主役にしない（心中の結末は obsess-omega.js の extraHit が決める） */
+      if (a.alive === false || b.alive === false) continue;
       if (om.bonded[k] && pf.couple && (pf.presetBond ? s >= 20 : s - om.bondAt[k] >= 1)) hit = [a, b];
       else if (pf.couple && !B.ao(a, b) && s - (pf.since == null ? 0 : pf.since) >= (pf.preset ? 16 : 12) && ctx.R(a, b).trust > 55 && ctx.R(b, a).trust > 55 && ctx.R(a, b).ten < 30) hit = [a, b];
       else if (pf.couple && B.ao(a, b) && s - (pf.since == null ? 0 : pf.since) >= (pf.preset ? 20 : 14) && !B.canBite(ctx, B.alpha(a, b), B.omega(a, b))) hit = [a, b];
@@ -159,8 +161,9 @@
     }
     if (!hit && B.extraHit) hit = B.extraHit(ctx, s);
     if (!hit && last) {
-      var best = null, bv = -1;
+      var best = null, bv = -1, anyLive = P.filter(function (c) { return c.alive !== false; }).length >= 2;
       for (var x = 0; x < P.length; x++) for (var y = x + 1; y < P.length; y++) {
+        if (anyLive && (P[x].alive === false || P[y].alive === false)) continue;
         var r1 = ctx.R(P[x], P[y]), r2 = ctx.R(P[y], P[x]), v = r1.att + r2.att + Math.abs(r1.aff) + Math.abs(r2.aff) + r1.ten + r2.ten + (ctx.pair(P[x], P[y]).couple ? 200 : 0);
         if (v > bv) { bv = v; best = [P[x], P[y]]; }
       }
@@ -177,11 +180,13 @@
   /* 複数人のとき、主役の二人以外がどうなったか */
   function otherFate(ctx, c, main) {
     var om = ctx.om;
+    /* 亡くなった人（心中など）は、恋人・番の行く末を書かない。亡くなった恋人も「付き合っている」相手に数えない */
+    if (c.alive === false) return c.name + 'は、もうこの世にいない。';
     var mate = B.mateOf(ctx, c);
     if (om.scar[c.i]) return B.scarText(ctx, c);
-    var partner = ctx.chars.filter(function (o) { return o !== c && ctx.pair(c, o).couple; })[0];
+    var partner = ctx.chars.filter(function (o) { return o !== c && o.alive !== false && ctx.pair(c, o).couple; })[0];
     if (partner) return c.name + 'は' + partner.name + 'と' + (om.bonded[key(c, partner)] ? '番になっている。' : '付き合っている。');
-    var fw = ctx.chars.filter(function (o) { return o !== c && ctx.pair(c, o).fwb && !ctx.pair(c, o).couple; })[0];
+    var fw = ctx.chars.filter(function (o) { return o !== c && o.alive !== false && ctx.pair(c, o).fwb && !ctx.pair(c, o).couple; })[0];
     if (fw) return E.fwb[0] + '：' + c.name + 'は' + fw.name + 'と、恋人ではないまま夜だけを重ねている。';
     /* 運命の番だったのに、相手は積み重ねた恋人を選んだ（抗い切った結末） */
     var fm = main.filter(function (m) { return OM.isFated && OM.isFated(ctx, c, m) && om.met[key(c, m)] && ctx.pair(main[0], main[1]).couple; })[0];
@@ -194,7 +199,8 @@
     var split = Object.keys(om.fatedSplit).filter(function (k) { return k.split('-').indexOf(String(c.i)) >= 0; })[0];
     if (split) return c.name + 'は、恋人を運命の番に奪われた。';
     if (c.om.quit) return c.name + 'はスイッチで' + c.om.quit + 'を辞め、新しい暮らしを探している。';
-    if (mate) return c.name + 'は' + mate.name + 'の番のまま、離れて暮らしている。';
+    if (mate && mate.alive !== false) return c.name + 'は' + mate.name + 'の番のまま、離れて暮らしている。';
+    if (mate) return c.name + 'は、亡くなった' + mate.name + 'の番だったことを胸にしまったまま、ひとりで暮らしている。';
     return c.name + 'は誰とも結ばれず、自分の暮らしを続けている。';
   }
 })();

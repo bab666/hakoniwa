@@ -38,9 +38,21 @@
    S20: 恐怖（a が b を恐れる）：二人が恋人・夜・恋愛の出来事・性的な文・関係図の恋の線（物語型は恋愛・夜の札、恋人の記録）になった／HK.canLove（両方向）・HK.Pos.okSex が通った
    S21: 許嫁：破談（pf.fiBroken）のあとに恋人（pf.couple）・恋愛の出来事が出た／恋愛対象・受け攻めの合わない許嫁が恋人と同じ扱いになった
    S22: グループの「仲間」（画面）：オンのグループの住人どうしに関係「仲間」が付かない／オフ・別のグループの組に付いた／ほかの関係が消えた／JSON にオン・オフが入らない／古い JSON が読めない
+   S25〜S30（2026-10-26、死んだ・消えた人の再登場。記録ごとに、書く直前の住人の状態を写して文で見る。ふつうの回と、死のある箱庭を
+       不死・吸血鬼・同一人物・執着・愛憎・発狂しやすい気質・展開と死ネタの重さ「重い」で回す追加の回（N/2、4 回以上）で数える）
+   S25: 死んだ人（同じ区切りの中の死も含む）が、記録の文で主語（〇〇は／が／も）・話し手（〇〇「・seg の who）・性的な文として出た
+        （弔い・回想・遺体・遺品・名前を呼ぶ・仮定・「〇〇の分まで」・関係節・夢・幻・ゾンビ化・成り代わり・事件と推理の札などは除外の辞書 DZ で外す）
+   S26: 死んだ人が、出来事の主役（actors の一人目）になった／文に名前の出ない登場人物として残った（弔い・事件などの札は除く）
+   S27: 遺体の残らない死（穴・塵・呑み込まれた・引きずり込まれた・沈んだ など。engine.js の HK.State.noBody）の人に、亡骸・遺体・抱きしめる・手を握る文が出た
+   S28: 亡くなった人が、蘇り・治療・ループ・正気に戻る などの記録なしに、生きている状態に戻った
+   S29: 結末・行く末・その後・結末の文で、亡くなった人が生きている扱い（生還・恋人として暮らす など）／生きている人が亡くなった扱い。
+        主な関係で、亡くなった人の組の恋人・友人に（死別）がない
+   S30: 場を離れた人（脱出・行方不明・連れ去り）・閉じ込められた人（物語型の縛られた人・囚われ、監禁）が、主役・話し手として出た（脱出・救出・監禁の札は除く）
    S19〜S21 は、ふつうの回（N 回）のあとに、追加の関係を使う配役（FCASTS）で NF 回（N/2、4 回以上）ずつ回して数える（その回の S1〜S18 も数える）。
    「参考」には、恐怖で避けた・無関心で受け流した・破談・仲間の出来事の数を出す
-   「止めた」：出来事の記録の手前（Ctx.say の防波堤）で捨てられた件数。出所を直すと減る（0 でなくてよい） */
+   「止めた」：出来事の記録の手前（Ctx.say の防波堤）で捨てられた件数。出所を直すと減る（0 でなくてよい）
+   W1: 箱庭の場所に合わない語（PLACE_NG）が記録の地の文に出た。媚薬ロッカー：狭い箱の中に「席・皿・周りが（割って入る人）」は出ない
+       （2026-10-26 順83。hate-kit.js・hate-love.js の狭い場所の文 hkSpace: 'cramped'）。合計と箱庭ごとの数は最後の「W1」の行 */
 'use strict';
 const { openBuild } = require('./lib.js');
 (async () => {
@@ -56,7 +68,7 @@ const { openBuild } = require('./lib.js');
     const sents = t => String(t).replace(NONSEX, '＿').split(/[。！？\n」]/);
     const isSex = s => SEXCORE.test(s);
     const out = { n: {}, ex: {}, drop: {}, runs: 0, err: [], bySc: {}, anySex: {} };
-    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22'];
+    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30'];
     out.info = {};
     /* S19〜S21 の共通部品：追加の関係（無関心・恐怖・許嫁）の組 */
     const tkey = (i, j) => Math.min(i, j) + '-' + Math.max(i, j);
@@ -79,6 +91,9 @@ const { openBuild } = require('./lib.js');
       });
     };
     KEYS.forEach(k => { out.n[k] = 0; out.ex[k] = []; });
+    /* W1：箱庭の場所に合わない語（箱庭の id → 正規表現。台詞の中は見ない） */
+    out.n.W1 = 0; out.ex.W1 = [];
+    const PLACE_NG = { locker: /席|皿|周りが/ };
     let cur = null, lastCtx = null;
     const hit = (k, msg) => { out.n[k]++; out.bySc[cur.sc][k] = (out.bySc[cur.sc][k] || 0) + 1; if (out.ex[k].length < (WHY ? 40 : 6)) out.ex[k].push(cur.sc + (cur.feel ? '（追加の関係の配役）' : '') + ' | ' + msg); };
     /* S13・S14：恋人の数と一途（区切りごとと回の終わりに ctx.pf を走査） */
@@ -162,7 +177,7 @@ const { openBuild } = require('./lib.js');
       S._auditLovS = now;
     };
     /* 不在・遺体・後日談を描く文（その人がいないこと自体を書いている）は数えない */
-    const EXEMPT = /席が[^。]{0,6}空いて|見つかった|遺体|亡骸|死んでいた|それからも|その後|あれから|外では|一週間後|数日後|後日|夜明け|半年後|か月後|年後|外から見れば|部屋を出たあと|プリントを届け/;
+    const EXEMPT = /部屋を出た|席が[^。]{0,6}空いて|見つかった|遺体|亡骸|死んでいた|それからも|その後|あれから|外では|一週間後|数日後|後日|夜明け|半年後|か月後|年後|外から見れば|部屋を出たあと|プリントを届け/;
     const SKIPK = /^(?:step|phase|death|end|ending|summary)$/;
     /* 出来事の記録を包む：エンジン型（Ctx.say）と物語型（HK.Story.say） */
     const Ctx = HK.Ctx;
@@ -261,7 +276,7 @@ const { openBuild } = require('./lib.js');
           if (acs.length === 2 && /告白|恋|想い|デート|口づけ|キス|両想い/.test(o.tag || '') && !/失恋|恋敵|元恋人/.test(o.tag || '') && lockBad(acs[0], acs[1])) hit('S15', '恋愛 [' + o.tag + '] ' + acs[0].name + '×' + acs[1].name + '（固定：' + lockTxt(P, acs[0], acs[1]) + '）| ' + String(o.text).slice(0, 120));
         }
         const over = P && P.every(p => !p || p.alive === false || p.out || p.gone);
-        if (cur && cur.story && !SKIPK.test(kind) && !over && kind !== 'climax' && !/結末|全滅|死|最期|蘇生|復活|発見|遺体|喪失|追悼|弔い|回想|その後|脱出|救出|帰還|生還|行方不明|処刑|襲撃|生贄|事件|継承|霊媒|勝利|敗北|騙され|人質|囚われ|形見|遺言|真相|推理|後日|夜明け|雪の中/.test(o.tag || '')) {
+        if (cur && cur.story && !SKIPK.test(kind) && !over && kind !== 'climax' && !/結末|全滅|死|最期|蘇生|復活|発見|遺体|喪失|追悼|弔い|回想|その後|脱出|救出|帰還|生還|行方不明|処刑|襲撃|生贄|事件|継承|霊媒|勝利|敗北|騙され|人質|囚われ|形見|遺言|真相|推理|後日|夜明け|雪の中|おかっぱの子|成り代わり/.test(o.tag || '')) {
           snap.forEach(s => {
             if (s.dead && s.lead && !EXEMPT.test(String(o.text))) hit('S1', s.p.name + ' [' + (o.tag || '') + '/' + kind + '] ' + String(o.text).slice(0, 160));
             if (s.out && !EXEMPT.test(String(o.text))) hit('S3', s.p.name + ' [' + (o.tag || '') + '/' + kind + '] ' + String(o.text).slice(0, 160));
@@ -276,6 +291,161 @@ const { openBuild } = require('./lib.js');
         return e;
       };
       ST.say._audit = true;
+    }
+    /* ---------- S25〜S30：死んだ・消えた人が「生きている扱い」で出る（文レベル。2026-10-26） ----------
+       記録ごとに、その記録を書く直前の住人の状態（死・不在・閉じ込め・ゾンビ化）を写しておき、記録の文で見る。
+       死：エンジン型は死の記録（kind 'death'）が出たあと（死の記録より前に二つ以上の記録が出たときも）、物語型は死んだ状態で一つ記録が出たあと。
+       同じ区切りの中の死も数える（S1 は前の区切りの死だけ）。除外の辞書（DZ）：弔い・回想・遺体・遺品・名前を呼ぶ・「〇〇の分まで」・夢・幻・
+       ゾンビ化した人・成り代わり・事件と推理の札・人狼の終わったあとの感想戦 など */
+    let dz = null;
+    const DZ = {
+      /* 正当に亡くなった人に触れる札・理由（弔い・事件・推理・ゾンビ化など） */
+      TAG: /弔|追悼|回想|遺体|墓|形見|遺品|蘇生|復活|最期|発見|結末|その後|喪|悲しみ|悼|ループ|夢|幻|霊|遺言|死|全滅|殉|犠牲|葬|埋葬|供養|祈り|後日|継承|処刑|襲撃|生贄|真相|推理|事件|捜査|検死|告発|裁判|投票|遺留|手紙|再会|帰還|生還|救出|解放|ゾンビ|噛|咬|感染|転化|隠滅|偽装|工作|手がかり|取り調べ|証言|占い|CO|成り代わり|違和感|おかっぱの子|予言|grief|mourn|memory|death/,
+      WHY: /弔|悼|悲しみ|喪|死|遺体|最期|ゾンビ|蘇|復活|ループ|失った|亡くし|形見|遺品|成り代わ/,
+      /* 文の除外：亡くなったことそのもの・弔い・回想・遺体・名前を呼ぶ・仮定・関係節 */
+      SENT: /答えなかった|答えない|返事|途切れ|うめき|いた頃|知らない|逝|越えられ|最後に言った|身に起き|置き手紙|置いては帰れ|だったもの|死|亡|遺体|亡骸|遺品|形見|墓|弔|供養|冥福|祈|分まで|分も|思い出|面影|生前|かつて|あの(?:時|とき|日|夜|頃)|幻|夢|幽霊|霊|声が聞こえ|名を|名前|呼ん|呼び|叫|最期|遺言|遺し|残した|手紙|日記|書き置き|写真|記憶|覚えて|いない|いなくな|戻らない|戻ってこな|帰らない|帰ってこな|失っ|喪|悼|仇|殺|犠牲|骨|灰|塵|消え|ゾンビ|噛|咬|感染|蘇|甦|生き返|目を開け|起き上が|息を吹き返|冷た|動かな|横たわ|助けられなかった|守れなかった|いたら|いれば|だったら|生きて|代わりに|言っていた|言ってた|口癖|教えてくれた|くれた|だった|ていた|はずの|はずだった|穴|落ち|呑|攫|連れ去|血|倒れ|息|脈|胸に|抱え|運|埋|焼|燃|葬|棺|花を|手を合わせ|涙|泣|嗚咽|ループ|巻き戻|やり直|時間が戻|戻った|戻って|帰って|帰還|再会|会えた|見つけ|見つか|助け出|救出|解放|逃げ出|抜け出/,
+      SPK: /幻|夢|声が聞こえ|記憶|思い出|生前|遺言|最期|手紙|録音|書き置き|日記|かつて|あの(?:時|とき|日)|言っていた|言ってた|口癖|霊|幽霊|ループ|蘇|生き返|起き上が|目を開け|ていた|ていました/,
+      SEX: /抱き潰|エッチ|イカせ|イかせ|イった|喘|挿れ|挿入|愛撫|体を重ね|腰を(?:振|沈|打ち|揺|落と|突き|使)|犯し|射精|ナカ|♡|昂り|奥を突|一つにな|ひとつにな|繋がっ|搾精|ノット|種付け|孕|精を|白濁|中に出/,
+      /* 遺体に触れる文（遺体の残らない死の人に出たら S27） */
+      BODY: n => new RegExp(n + '(?:を(?:抱きしめ|抱き寄せ|抱きかかえ|抱き上げ|揺さぶ|揺す|背負)|の(?:体|亡骸|遺体|手|頬|肩|髪|顔|胸|頭|冷たい)(?:を|に)(?:抱|握|撫|触|拭|揺)|を抱いて|の亡骸|の遺体)'),
+      /* 生き返りの記録（蘇生・治療・ループ・正気に戻る・助け出された） */
+      REV: /周目|蘇|甦|生き返|息を吹き返|目を開け|起き上が|立ち上が|意識|復活|ループ|巻き戻|やり直|時間が戻|治療|回復|戻ってき|元に戻|人間に戻|正気|無事|生きて|助け出|救出|解放|揺り起こ|息が戻|指が動/,
+      /* 不在・閉じ込めの人に触れてよい札（脱出・救出・監禁の場面・後日談 など）と文 */
+      OUTTAG: /封印|発狂|推理|工作|真相|告発|全滅|脱出|帰還|生還|救出|解放|再会|戻|行方|連れ去|攫|監禁|執着|逃走|檻|囚|その後|後日|結末|手紙|夢|回想|夜明け|朝|時の彼方|予言|おかっぱの子|偽装|escape/,
+      OUTTXT: /電話|無線|通信|手紙|声が|メッセージ|夢|幻|記憶|思い出|扉の向こう|壁の向こう|扉の前|敷居|扉に手|背中に向かって|プリントを届け|病院のベッド/,
+      LIVE_FATE: /生還|生存|脱出|無事|救助|帰還|生き延び|生き残/,
+      DEAD_FATE: /死亡|殺され|死んだ|喰われ|命を落と|息絶|絶命|処刑|殉|犠牲/,
+      /* 人狼：ゲームが終わったあとの感想戦（亡くなったのはゲームの中だけ） */
+      JINRO_END: /勝利|敗北|感想|打ち上げ|罰ゲーム|景品|ご褒美|結果|騙され|種明かし/
+    };
+    const dzSent = (t, pos) => { let a = pos, b = pos; while (a > 0 && !/[。！？\n]/.test(t[a - 1])) a--; while (b < t.length && !/[。！？\n]/.test(t[b])) b++; return t.slice(a, b + 1); };
+    const dzQ = (t, pos) => { let d = 0; for (let k = 0; k < pos; k++) { if (t[k] === '「' || t[k] === '『') d++; else if ((t[k] === '」' || t[k] === '』') && d > 0) d--; } return d > 0; };
+    /* 関係節（「〇〇が拾った貝殻」「〇〇が刻んだ印」）の主語は、生きている扱いではない */
+    const dzRel = (n, s) => new RegExp(n + '(?:が|の)[^。、「」]{0,14}?(?:た|だ)[一-龥ぁ-んァ-ヶー]{1,4}(?:に|を|は|が|の|へ|で|と)').test(s);
+    if (Ctx && !Ctx.prototype.say._dz) {
+      const sayD = Ctx.prototype.say;
+      Ctx.prototype.say = function (o) {
+        if (!dz) return sayD.call(this, o);
+        dz.engine = this;
+        const pre = this.chars.map(c => ({ d: c.alive === false && (c._dzDL || (c._dzDC || 0) >= 2), z: c.fate === 'ゾンビ化', o: !!c.out && !!c._dzOS, c: !!(c.flags && c.flags.caged != null) && !!c._dzCS }));
+        const n0 = this.log.length;
+        const e = sayD.call(this, o);
+        if (e && !e.skipped && this.log.length > n0) dz.snap[e.n] = pre;
+        const n = e && !e.skipped ? e.n : -1;
+        this.chars.forEach(c => {
+          if (c.alive === false) { c._dzDC = (c._dzDC || 0) + 1; if (o.kind === 'death' && o.actors && o.actors[0] === c && !c._dzDL) { c._dzDL = true; dz.deaths.push({ i: c.i, n, nobody: HK.State && HK.State.noBody ? HK.State.noBody(c) : false }); } }
+          else if (c._dzDL || (c._dzDC || 0) >= 2) { dz.rev.push({ i: c.i, n, text: String(o.text || '') + String(o.why || '') + String(o.tag || '') }); c._dzDL = false; c._dzDC = 0; }
+          else c._dzDC = 0;
+          c._dzOS = !!c.out; c._dzCS = !!(c.flags && c.flags.caged != null);
+        });
+        return e;
+      };
+      Ctx.prototype.say._dz = true;
+    }
+    if (ST && ST.say && !ST.say._dz) {
+      const ssD = ST.say;
+      ST.say = function (S, o) {
+        if (!dz || !S || !S.P) return ssD.call(this, S, o);
+        dz.S = S;
+        const P = S.P, lk = S.scen && S.scen.id === 'locker';
+        const pre = P.map(p => ({ d: !!p && p.alive === false && !p.captive && (p._dzDC || 0) >= 1, z: false, o: !!p && !!(p.out || p.gone || p.taken) && p.alive !== false && !!p._dzOS, c: !!p && !!((p.bound && !lk) || p.captive) && p.alive !== false && !!p._dzCS }));
+        const n0 = S.log.length;
+        const e = ssD.call(this, S, o);
+        if (S.log.length > n0) dz.snap[S.log[S.log.length - 1].n] = pre;
+        const n = S.log.length - 1;
+        P.forEach(p => {
+          if (!p) return;
+          if (p.alive === false && !p.captive) { if (!p._dzDC) dz.deaths.push({ i: p.i, n, nobody: !!p.noBody }); p._dzDC = (p._dzDC || 0) + 1; }
+          else if (p._dzDC) { dz.rev.push({ i: p.i, n, text: String(o.text || '') + String(o.why || '') + String(o.tag || '') }); p._dzDC = 0; }
+          p._dzOS = !!(p.out || p.gone || p.taken); p._dzCS = !!((p.bound && !lk) || p.captive);
+        });
+        return e;
+      };
+      ST.say._dz = true;
+    }
+    function dzCheck(res, chars, sc) {
+      const log = res.log || [], nm = chars.map(c => c.name), D0 = {};
+      dz.deaths.forEach(d => { if (!D0[d.i] || D0[d.i].revN != null) D0[d.i] = { n: d.n, nobody: d.nobody }; });
+      /* S28：生き返りの記録（蘇生・治療・ループ など）がないまま、亡くなった人が生きている状態に戻った */
+      dz.rev.forEach(v => {
+        const from = (D0[v.i] && D0[v.i].n) || 0;
+        const seg = log.slice(Math.max(0, from), v.n + 1).filter(e => e && ((e.actors || []).indexOf(v.i) >= 0 || (typeof e.text === 'string' && e.text.indexOf(nm[v.i]) >= 0)));
+        if (!DZ.REV.test(v.text) && !seg.some(e => DZ.REV.test(String(e.text) + String(e.why || '') + String(e.tag || '')))) hit('S28', nm[v.i] + ' 記録' + v.n + 'で生き返った（死の記録 ' + from + '） | ' + v.text.slice(0, 100));
+        if (D0[v.i]) D0[v.i].revN = v.n;
+      });
+      log.forEach((e, idx) => {
+        if (!e || typeof e.text !== 'string') return;
+        const pre = dz.snap[e.n != null ? e.n : idx];
+        if (!pre) return;
+        const kind = e.kind || '', tag = String(e.tag || e.cat || ''), why = String(e.why || ''), t = e.text, A = e.actors || [];
+        if (/^(?:step|death|end|ending|summary)$/.test(kind)) return;
+        if (sc === 'jinro' && DZ.JINRO_END.test(tag)) return;
+        const mournE = DZ.TAG.test(tag) || DZ.TAG.test(kind) || DZ.WHY.test(why);
+        const seg = Array.isArray(e.seg) ? e.seg : [];
+        pre.forEach((st, i) => {
+          if (!st || !nm[i]) return;
+          const name = nm[i];
+          if (st.d && !st.z) {
+            /* S26：登場人物（主役、または文に名前の出ない人） */
+            if (A.indexOf(i) >= 0 && !mournE && kind !== 'phase' && e.cat !== 'phase') {
+              const pos0 = t.indexOf(name);
+              if (pos0 < 0 ? !DZ.SENT.test(t) : (A[0] === i && !DZ.SENT.test(dzSent(t, pos0)))) hit('S26', name + ' [' + tag + '/' + kind + '] ' + (A[0] === i ? '主役' : '名前の出ない相手') + ' | ' + t.slice(0, 140));
+            }
+            let pos = -1, spk = false;
+            while ((pos = t.indexOf(name, pos + 1)) >= 0) {
+              const after = t.slice(pos + name.length, pos + name.length + 14), s = dzSent(t, pos), inQ = dzQ(t, pos), ex = DZ.SENT.test(s) || dzRel(name, s);
+              if (/^(?:（[^）]{0,12}）)?「/.test(after) && !inQ) { spk = true; if (!DZ.SPK.test(s) && !mournE) hit('S25', '話し手 ' + name + ' [' + tag + '] | ' + s.slice(0, 140)); }
+              else if (!inQ && /^(?:は|が|も)/.test(after) && !/^(?:は|が|も)(?:もう|既に|すでに|死|亡|息|冷た|動かな|帰らな|戻らな|いな)/.test(after) && !ex && !mournE) hit('S25', '主語 ' + name + ' [' + tag + '/' + kind + '] | ' + s.slice(0, 140));
+              if (DZ.SEX.test(s.replace(NONSEX, '＿')) && !/回想|思い出|夢|かつて|あの夜/.test(s)) hit('S25', '性的な文 ' + name + ' [' + tag + '] | ' + s.slice(0, 140));
+              const d0 = D0[i];
+              if (d0 && d0.nobody && d0.revN == null && !/成り代わり|違和感/.test(tag) && DZ.BODY(name).test(s)) hit('S27', name + ' [' + tag + '] | ' + s.slice(0, 140));
+            }
+            if (!spk && !mournE && seg.some(g => (g.t === 'l' || g.t === 'q') && g.who === i && !DZ.SPK.test(String(g.s || '')) && !DZ.SPK.test(t))) hit('S25', '話し手（seg） ' + name + ' [' + tag + '] | ' + t.slice(0, 140));
+          } else if ((st.o || st.c) && !st.d) {
+            /* S30：場を離れた人・閉じ込められた人が、主役・話し手として出た */
+            const ab = st.o ? '不在' : '閉じ込め', okE = DZ.OUTTAG.test(tag + ' ' + why + ' ' + kind) || e.cageOk;
+            if (A[0] === i && kind !== 'phase' && !okE && !DZ.OUTTXT.test(t) && !EXEMPT.test(t)) hit('S30', ab + ' ' + name + ' [' + tag + '/' + kind + '] 主役 | ' + t.slice(0, 120));
+            let pos = -1;
+            while ((pos = t.indexOf(name, pos + 1)) >= 0) {
+              const after = t.slice(pos + name.length, pos + name.length + 14), s = dzSent(t, pos);
+              if (!dzQ(t, pos) && /^(?:（[^）]{0,12}）)?「/.test(after) && !okE && !DZ.OUTTXT.test(s)) hit('S30', ab + ' 話し手 ' + name + ' [' + tag + '] | ' + s.slice(0, 120));
+            }
+          }
+        });
+      });
+      /* S29：結末・行く末・その後・結末の文 */
+      const fDead = i => (dz.S && dz.S.P && dz.S.P[i]) ? dz.S.P[i].alive === false : (dz.engine && dz.engine.chars[i]) ? dz.engine.chars[i].alive === false : !!(res.chars && res.chars[i] && res.chars[i].alive === false);
+      chars.forEach((c, i) => {
+        const dead = fDead(i), fate = String((res.heroes && res.heroes[i] && res.heroes[i].fate) || (res.chars && res.chars[i] && res.chars[i].fate) || '');
+        if (dead && DZ.LIVE_FATE.test(fate) && !DZ.DEAD_FATE.test(fate)) hit('S29', '亡くなった' + nm[i] + 'の行く末が「' + fate + '」');
+        if (!dead && DZ.DEAD_FATE.test(fate) && !/蘇|生き返/.test(fate)) hit('S29', '生きている' + nm[i] + 'の行く末が「' + fate + '」');
+        if (!res.story && res.chars && res.chars[i] && res.chars[i].alive !== false && dead) hit('S29', '結果の住人の alive が食い違う ' + nm[i]);
+      });
+      let lines = res.ending && Array.isArray(res.ending.lines) ? res.ending.lines.slice() : [], ET = [];
+      if (!res.solo && HK.Endings) { try { const E2 = HK.Endings.build(res); lines = lines.concat(E2.lines || []); ET = [E2.title, E2.headline, E2.text].filter(x => typeof x === 'string'); } catch (err) { out.err.push(sc + ' Endings(S29): ' + err.message); } }
+      if (res.ending) ET = ET.concat([res.ending.title, res.ending.text].filter(x => typeof x === 'string'));
+      /* 死の一覧（① 〜）・レポートの題（：『』）は見ない */
+      ET.concat(lines.filter(l => typeof l === 'string' && !/のその後――|^主な関係：|^[①-⑳・] |：『/.test(l))).forEach(l => {
+        String(l).split(/[。\n]/).forEach(sn => chars.forEach((c, i) => {
+          if (!fDead(i) || !new RegExp(nm[i] + '(?:は|が|と|も|の隣)').test(sn)) return;
+          if (/恋人|付き合|番に|番の|結ばれ|寄り添|暮らし|隣に|今でも|今も|毎朝|唇を寄せ|二人の世界|幸せ|夜だけを重ね/.test(sn) && !/死|亡|逝|最期|遺|墓|弔|いない|失|喪|心中|もうこの世|最後に残った感情/.test(sn)) hit('S29', '結末の文で亡くなった' + nm[i] + 'が生きている扱い | ' + sn.slice(0, 120));
+        }));
+      });
+      lines.forEach(l => {
+        if (typeof l !== 'string') return;
+        if (/^主な関係：/.test(l)) l.slice(5).split('、').forEach(it => chars.forEach((c, i) => { if (fDead(i) && it.indexOf(nm[i]) >= 0 && /＝[^＝]*(?:恋人|両片想い|友人|相棒)(?:（意外）)?$/.test(it) && !/死別/.test(it)) hit('S29', '主な関係で亡くなった' + nm[i] + 'の組に（死別）がない | ' + it); }));
+        chars.forEach((c, i) => {
+          const name = nm[i], dead = fDead(i), m = l.match(new RegExp('^' + name + 'のその後――(.*)$'));
+          if (m) {
+            const deadT = /残された者|残された人|がいたら|の不在|のことを話すとき|最後に何を考えていた|のことを思い出すと|がいた場所|の分まで生きよう|返しきれなかった|書き置き|の名前が出るたび|が聞こえない/.test(m[1]);
+            const liveT = new RegExp(name + 'は[^。]*(?:外の世界|を出た|を出て|日常|暮らし|帰り|戻っ|走り|話して回|笑った|手紙を書|生き延び|振り返)').test(m[1]) && !deadT;
+            if (dead && liveT) hit('S29', '亡くなった人のその後が生きている扱い | ' + l.slice(0, 120));
+            if (!dead && deadT && !liveT) hit('S29', '生きている人のその後が亡くなった扱い | ' + l.slice(0, 120));
+          }
+          const m2 = l.match(new RegExp('^' + name + '(?:（[^）]*）)?：(.*)$'));
+          if (m2) { if (dead && DZ.LIVE_FATE.test(m2[1]) && !DZ.DEAD_FATE.test(m2[1])) hit('S29', '結末の行で亡くなった人が生還 | ' + l.slice(0, 100)); if (!dead && DZ.DEAD_FATE.test(m2[1]) && !/蘇|生き返/.test(m2[1])) hit('S29', '結末の行で生きている人が死亡 | ' + l.slice(0, 100)); }
+        });
+      });
     }
     const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ', 'ソウタ', 'リコ'];
     /* 配役：執着（監禁を起こす）・恋人・恋愛にしない相手・R18に参加しない人・性行為の相手を固定した人（lo）を混ぜる */
@@ -348,7 +518,11 @@ const { openBuild } = require('./lib.js');
         cur = { sc, story: !!scen.solo, offTags, feel: feel ? ties : null };
         let res;
         lastCtx = null;
-        try { res = HK.simulate({ scenId: sc, seed: 3000 + s, env, chars, perChar, ties }); } catch (e) { out.err.push(sc + ': ' + String(e && e.stack || e).slice(0, 300)); continue; }
+        dz = { snap: {}, deaths: [], rev: [], engine: null, S: null };
+        try { res = HK.simulate({ scenId: sc, seed: 3000 + s, env, chars, perChar, ties }); } catch (e) { out.err.push(sc + ': ' + String(e && e.stack || e).slice(0, 300)); dz = null; continue; }
+        /* S25〜S30：死んだ・消えた人の再登場（文レベル） */
+        try { dzCheck(res, chars, sc); } catch (e) { out.err.push(sc + ' dzCheck: ' + String(e && e.stack || e).slice(0, 300)); }
+        dz = null;
         /* S13・S14：回の終わりにもう一度 */
         if (lastCtx) polyCheck(lastCtx, true);
         /* S19〜S21：回の終わり（判定の関数・値の凍結・関係図・性的な文） */
@@ -409,6 +583,8 @@ const { openBuild } = require('./lib.js');
         const runSeen = {};
         (res.log || []).forEach(e => { if (!e || typeof e.text !== 'string') return; const once = {}; sents(e.text).forEach(x => { const k = x.replace(/[「」『』\s]/g, ''); if (k.length >= 15 && isSex(x) && !once[k]) { once[k] = 1; runSeen[k] = (runSeen[k] || 0) + 1; } }); });
         Object.keys(runSeen).forEach(k => { if (runSeen[k] >= 3) hit('S10', runSeen[k] + '回 | ' + k.slice(0, 80)); });
+        /* W1：箱庭の場所に合わない語（地の文だけ。「」の中は除く） */
+        if (PLACE_NG[sc]) (res.log || []).forEach(e => { if (!e || typeof e.text !== 'string') return; const nar = e.text.replace(/「[^」]*」/g, '「」'); const m = nar.match(PLACE_NG[sc]); if (m) hit('W1', '「' + m[0] + '」 [' + (e.tag || '') + '] | ' + nar.slice(Math.max(0, m.index - 60), m.index + 60)); });
         /* S11：最期の言葉の名前の取り違え */
         const LWR = /([^「」：\s　―]+?)が最期に遺した言葉：「([^」]*)」/g;
         const deadOf = i => (res.heroes && res.heroes[i]) ? !!res.heroes[i].dead : !!(res.chars && res.chars[i] && res.chars[i].alive === false);
@@ -458,6 +634,66 @@ const { openBuild } = require('./lib.js');
         cur = null;
       }
     }
+    /* W1（追加の回）：ふつうの配役には敵視の組がないので、媚薬ロッカーは敵対・不仲（愛憎つきも）の組で N/2 回（4回以上）回して、
+       対立の文（hate-kit.js・hate-love.js の狭い場所の文）に場所に合わない語が出ないかを見る（二人・三人・四人） */
+    if (HK.SCENARIOS.locker && PLACE_NG.locker && (!only || only.indexOf('locker') >= 0)) {
+      const scL = HK.SCENARIOS.locker, NW = Math.max(4, Math.round(N / 2));
+      out.bySc.locker = out.bySc.locker || { runs: 0 };
+      for (let s = 0; s < NW; s++) {
+        const n = 2 + (s % 3), types = ['enemy', 'bad'];
+        const chars = NAMES.slice(0, n).map((nm, i) => ({ name: nm, eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, gender: (s + i) % 2 ? 'f' : 'm', likes: 'both', pos: '', loveNG: [] }));
+        const ties = [{ a: 0, b: 1, type: types[s % 2], lh: s % 4 === 1 ? 'both' : s % 4 === 3 ? 'a' : '' }];
+        if (n >= 3) ties.push({ a: 2, b: 0, type: types[(s + 1) % 2] });
+        const env = {}; (scL.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
+        cur = { sc: 'locker', story: true, offTags: {}, feel: null };
+        let res;
+        try { res = HK.simulate({ scenId: 'locker', seed: 7000 + s, env, chars, ties, perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })) }); } catch (e) { out.err.push('W1 locker: ' + String(e && e.stack || e).slice(0, 300)); cur = null; continue; }
+        (res.log || []).forEach(e => { if (!e || typeof e.text !== 'string') return; const nar = e.text.replace(/「[^」]*」/g, '「」'); const m = nar.match(PLACE_NG.locker); if (m) hit('W1', '「' + m[0] + '」（敵対の配役） [' + (e.tag || '') + '] | ' + nar.slice(Math.max(0, m.index - 60), m.index + 60)); });
+        out.info.w1Runs = (out.info.w1Runs || 0) + 1;
+        cur = null;
+      }
+    }
+    /* S25〜S30（追加の回）：死のある箱庭を、不死・吸血鬼（不死あり／なし）・同一人物・執着（監禁）・愛憎・発狂しやすい気質・
+       展開の重さ「重い」・死ネタの重さ「重い」を混ぜた配役で ND 回（N/2、4 回以上）ずつ回す（その回の S1〜S18 も数える） */
+    const DZ_SC = ['zombie', 'jashin', 'yakata', 'ship', 'rpg', 'jinro', 'island', 'whiteroom', 'omega', 'locker', 'dungeon', 'succubus', 'br', 'trial', 'classroom'];
+    const ND = Math.max(4, Math.round(N / 2));
+    for (const sc of DZ_SC) {
+      const scen = HK.SCENARIOS[sc]; if (!scen || (only && only.indexOf(sc) < 0)) continue;
+      out.bySc[sc] = out.bySc[sc] || { runs: 0 };
+      for (let s = 0; s < ND; s++) {
+        const n = sc === 'jinro' ? 6 + (s % 3) : Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 3 + (s % 4)));
+        const chars = [], perChar = [];
+        for (let i = 0; i < n; i++) {
+          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: (i + s) % 3 === 0 ? 'f' : (i + s) % 3 === 1 ? 'm' : (i % 2 ? 'f' : 'm'), likes: '', tone: '', fp: '', pos: ['top', 'bottom', '', 'riba'][(i + s) % 4], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: [], noR18: false, sexLock: '', faithful: false });
+          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
+        }
+        if (s % 3 === 0) chars[n - 1].eg = { CP: 4, NP: 6, A: 2, FC: 8, AC: 20 };   /* 発狂しやすい気質 */
+        const ties = [];
+        if (s % 4 === 0) ties.push({ a: 0, b: 1, type: 'yan' });
+        if (s % 4 === 1) ties.push({ a: 0, b: 1, type: 'yan', sub: 'hatelove' });
+        if (s % 4 === 2) { ties.push({ a: 0, b: 1, type: 'lover' }); if (n >= 4) ties.push({ a: 2, b: 3, type: 'lover' }); }
+        if (s % 4 === 3 && n >= 4) { chars[2].same = 3; chars[3].same = 2; ties.push({ a: 1, b: 0, type: 'yan' }); }
+        if (s % 5 === 1) chars[1 % n].race = 'vampire';
+        if (s % 5 === 2) chars[Math.min(2, n - 1)].feats = ['immortal'];
+        if (s % 5 === 3) perChar[0].pick.special = 'immortal';
+        if (s % 5 === 4) { chars[1 % n].race = 'vampire'; chars[1 % n].feats = ['fang', 'cold']; }
+        const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
+        (scen.env || []).forEach((e, k) => { if (e.options && e.options.length > 1 && (s + k) % 3 === 0) env[e.id] = e.options[(s + k) % e.options.length].v; else if (e.max != null && e.min != null && (s + k) % 4 === 1) env[e.id] = e.max; });
+        (scen.env || []).forEach(e => { if (/^role_/.test(e.id)) env[e.id] = s % 2 ? 'res' : 'auto'; });
+        if (HOT) (scen.env || []).forEach(e => { if (e.max != null && /lewd|dose|shady|heat|prey|pleasure|traffic|ev$|aphro|night|npc|lust|yobai|danger|hostile|serial|outbreak|turn/.test(e.id)) env[e.id] = e.max; });
+        if (s % 3 === 0) { env.heavy = 'dark'; env.death = 'dark'; } else if (s % 3 === 1) env.death = 'dark';
+        if (sc === 'whiteroom' && s % 2 === 0) env.cond = 'kill';
+        if (HK.Content && HK.Content.TAGS) env.ct = s % 4 === 0 ? '' : HK.Content.TAGS.map(t => t.id).join(',');
+        cur = { sc, story: !!scen.solo, offTags: {}, feel: null };
+        dz = { snap: {}, deaths: [], rev: [], engine: null, S: null };
+        let res;
+        lastCtx = null; lastS = null;
+        try { res = HK.simulate({ scenId: sc, seed: 7000 + s, env, chars, perChar, ties }); } catch (e) { out.err.push(sc + '（S25〜の回）: ' + String(e && e.stack || e).slice(0, 300)); dz = null; cur = null; continue; }
+        try { dzCheck(res, chars, sc); } catch (e) { out.err.push(sc + ' dzCheck: ' + String(e && e.stack || e).slice(0, 300)); }
+        lastS = null; dz = null; cur = null;
+        out.runs++; out.bySc[sc].runs++; out.info.dzRuns = (out.info.dzRuns || 0) + 1;
+      }
+    }
     /* S22：グループの「仲間」（ui.js）。オンのグループの住人どうしにだけ、箱庭に渡す関係「仲間」が付く／オフでは付かない／
        ほかの関係はそのまま残る（仲間は重ねるだけ）／JSON にオン・オフが入る（古い JSON は「なし」として読める） */
     if (HK.UI && HK.UI.state && HK.UI.buildInput && HK.UI.normState) {
@@ -499,11 +735,12 @@ const { openBuild } = require('./lib.js');
   }, { N, only, WHY, HOT, mode, ENVSET });
   const ids = Object.keys(r.bySc);
   for (const sc of ids) {
-    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22'].map(k => k + ' ' + (b[k] || 0));
+    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30'].map(k => k + ' ' + (b[k] || 0));
     console.log(sc.padEnd(10), 'runs', b.runs, cells.join(' '), '誰とでも可の体の出来事', r.anySex[sc] || 0);
   }
   console.log('合計', JSON.stringify(r.n), '止めた', JSON.stringify(r.drop));
   console.log('参考（追加の関係の出来事の数）', JSON.stringify(r.info));
+  console.log('W1（箱庭の場所に合わない語）', r.n.W1, JSON.stringify(Object.keys(r.bySc).filter(sc => r.bySc[sc].W1).reduce((o, sc) => { o[sc] = r.bySc[sc].W1; return o; }, {})));
   for (const k of Object.keys(r.ex)) if (r.ex[k].length) { console.log('--- ' + k); r.ex[k].forEach(x => console.log('  ' + x)); }
   if (r.err.length) { console.log('--- 例外'); r.err.slice(0, 20).forEach(x => console.log('  ' + x)); }
   console.log('pageerr', JSON.stringify(errors.slice(0, 5)));

@@ -243,7 +243,13 @@
       var cl0 = hm && clashOf(ctx, g);
       if (hm) cands.push({ kind: cl0 ? 'loveclash' : hm.full ? 'love' : 'lovehub', h: cl0 ? cl0.w : hm.full ? g.slice().sort(function (p, q) { return A.eager(ctx, q) - A.eager(ctx, p); })[0] : hm.hub, v: 10 });
       /* 選べない三角関係：b と c がどちらも a に惹かれている */
+      /* 順5（2026-10-26）：片想い・執着（ヤンデレ）の二人が同じ人を想う三角関係は、目覚めてすぐの三人の場面で部屋が終わってしまい、
+         片想いと執着の出来事がどちらも出なかった。選べない三角関係の三人の場面は、部屋で時間が経ってから（全体の3割を過ぎてから）にし、
+         関係「執着（ヤンデレ）」で相手を想う人（独り占めしたい）は、この型では三人に加わらない（執着の出来事で取り合う） */
+      var yanTo = function (x, h) { var t = HK.Obsess && HK.Obsess.yanTie ? HK.Obsess.yanTie(ctx, x, h) : null; if (t) return true; t = HK.Ties && HK.Ties.has ? HK.Ties.has(ctx, x, h, 'yan') : null; return !!(t && t.a === x.i); };
+      var hubLate = ctx.stepIndex >= Math.max(2, Math.floor((ctx.stepsTotal || 10) * 0.3));
       var hub = function (h, x, y) {
+        if (!hubLate || yanTo(x, h) || yanTo(y, h)) return;
         if (R(ctx, x, h).att > 22 && R(ctx, y, h).att > 22 && R(ctx, h, x).att > 10 && R(ctx, h, y).att > 10 && R(ctx, x, y).ten < 55 && R(ctx, y, x).ten < 55 && HK.canLove(h, x) && HK.canLove(h, y) && HK.canLove(x, h) && HK.canLove(y, h))
           cands.push({ kind: 'hub', h: h, x: x, y: y, v: 1.2 + (R(ctx, x, h).att + R(ctx, y, h).att) / 70 });
       };
@@ -415,7 +421,7 @@
     var LV = HK.Lewd, r18 = !HK.SAFE_ON && LV;
     /* 全年齢版・全年齢モード（HK.SAFE_ON）も、ほのめかすと同じ暗転の一文に（行為の文を組み立てない） */
     if ((HK.SAFE_ON || (r18 && LV.lv(ctx.env) === 'low')) && HK.RoomFade3) return HK.RoomFade3(ctx);
-    var tShort = r18 && LV.short(ctx.env, ctx.rng), TE = r18 && LV.ero(ctx.env) && HK.ThickEro && HK.ThickEro.TRIO ? HK.ThickEro : null, tHigh = r18 && LV.high(ctx.env);
+    var tShort = r18 && LV.short(ctx.env, ctx.rng), TE = r18 && LV.ero(ctx.env) && HK.ThickEro && HK.ThickEro.TRIO ? HK.ThickEro : null, tHigh = r18 && LV.high(ctx.env), teC = null;
     var efill = function (l) { return X.fill(TE.trioFill(ctx, l, r), r); };
     var pickTagged = function (pool, wfn) {
       var cands = pool.filter(ok).filter(function (o) { return o.t.some(penOK); });
@@ -514,7 +520,9 @@
     /* 絶頂：形・嫉妬・開放度に合う文があれば優先 */
     var ltC = ltOn && !TE && !r.synced && ctx.rng() < 0.6 ? ltPick('climax') : null;
     if (ltC) out.push(ltC);
-    else if (TE && pickA(TE.TRIO.climax) !== null) out.push(efill(pickA(TE.TRIO.climax)));
+    /* 男性向けの絶頂：「{t}も{m}も搾りとられた」は、{t}{m}がどちらも入れる側（二人で一人を・挟む形）で、男性器のある人のときだけ（2026-10-26。
+       女性の攻め・受けの{m}が搾りとられる文になっていた） */
+    else if (TE && (teC = pickA(TE.TRIO.climax.filter(function (l) { return !/搾りと[られ]/.test(l) || ((sp.p === 'twoOne' || sp.p === 'sandwich') && HK.Pos && HK.Pos.hasM(sp.t) && HK.Pos.hasM(sp.m)); }))) !== null) out.push(efill(teC));
     else if (!r.synced) {
       var cx = (X.CLIMAX_X || []).filter(function (o) { return ok(o) && o.t.some(penOK) && (!o.after || o.after === after); });
       var c = cx.length && ctx.rng() < 0.7 ? HK.weighted(ctx.rng, cx, function (z) { return (z.jeal ? 2 : 1) * (z.open ? 1.5 : 1) * (z.kinds ? (isLoveAny(kind) ? 6 : 2) : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
@@ -564,20 +572,29 @@
   /* 進み具合：三人の組み合わせ全部に、同じだけ数える */
   function count(ctx, g) {
     var span = Math.max(3, ctx.stepsTotal * 0.55);
+    ctx.flags.trioWait = null;
     pairRules(ctx).forEach(function (r) {
       var Tk = K[r.k];
       pairsOf(g).forEach(function (pr) {
         var p = A.prog(ctx, pr[0], pr[1]);
         if (Tk.type === 'act') {
           var inc = r.n > 3 ? Math.max(1, Math.round(r.n / span * 1.2 * (0.6 + ctx.rng() * 0.8) * (6 - Tk.lvl) / 3)) : 1;
-          p.act[r.k] = Math.min(r.n, (p.act[r.k] || 0) + inc);
+          /* 条件の順番あり：条件1を待っている組の条件2は数えない（scenario-room.js の bumpAct。数えなかったら progText で「まだ数えない」と書く） */
+          if (A.bumpAct) { if (!A.bumpAct(ctx, r, pr[0], pr[1], inc) && !ctx.flags.trioWait) ctx.flags.trioWait = [r, pr[0], pr[1]]; } else p.act[r.k] = Math.min(r.n, (p.act[r.k] || 0) + inc);
+        } else if (A.seqWait && A.seqWait(ctx, r, pr[0], pr[1])) {
+          p.pre = p.pre || {}; p.pre[r.k] = (p.pre[r.k] || 0) + 1;
+          if (!ctx.flags.trioWait) ctx.flags.trioWait = [r, pr[0], pr[1]];
         } else {
+          if (A.seqFlush) A.seqFlush(ctx, r, pr[0], pr[1]);
           pr.forEach(function (c) { p.said[r.k + c.i] = Math.min(r.n, (p.said[r.k + c.i] || 0) + (Tk.mode === 'sum' ? Math.ceil(r.n / 2) : 1)); });
         }
       });
     });
   }
   function progText(ctx, g) {
+    /* 条件の順番あり：直前の count で数えなかった組があれば「まだ数えない」 */
+    var w = ctx.flags.trioWait;
+    if (w && A.waitNote) { ctx.flags.trioWait = null; return A.waitNote(ctx, w[0], w[1], w[2]); }
     var r = pairRules(ctx).filter(function (q) { return K[q.k].type === 'act' && q.n > 1; })[0];
     if (!r) return '';
     /* 組ごとに数えるので、三つの組の分を並べる（いちばん少ない組だけ出すと、数が戻ったように見える） */

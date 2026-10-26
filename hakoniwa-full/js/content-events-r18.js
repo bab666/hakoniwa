@@ -113,8 +113,9 @@
   /* ================= 暴力をともなう性描写：敵対する二人の強引なエッチに差し込む段 ================= */
   var HS = HK.HateSex;
   if (HS && HS.scene && HS.why) {
-    HS.extra = function (x, Tp, B, k) {
-      if (!on(x, 'violence') || !HS.hostile(x, Tp, B) || x.rng() >= 0.45) return '';
+    HS.extra = function (x, Tp, B, k, opt) {
+      /* 出られない部屋の条件のエッチ（opt.room）は「合意のない展開」に関わらず起きる場面なので、暴力の段は「暴力をともなう性描写」だけで決める */
+      if (!on(x, 'violence') || !HS.hostile(x, Tp, B, opt && opt.room ? { room: true } : null) || x.rng() >= 0.45) return '';
       var ps = HK.personaOf ? HK.personaOf(B) : B.persona;
       var t = pk(x, T.VIOL_TOP[k] || T.VIOL_TOP.m) + pk(x, T.VIOL_REACT[ps] || T.VIOL_REACT.gentle);
       x._ctViol = { n: x.log ? x.log.length : 0, text: t.replace(/\{a\}/g, Tp.name).replace(/\{b\}/g, B.name) };

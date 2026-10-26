@@ -30,7 +30,8 @@
      相手が分かる台詞では、ふだんの二人称・一人称より優先する（voice.js の V.processText。名前で引けるように A.voiceFor で写す）。
      画面の欄は「相手ごとの設定」の行（呼び方の隣。A.voiceForHtml）
    ・foodLike 好きな食べ物／foodHate 嫌いな食べ物：自由記入（読点区切りで5つまで・1つ12文字まで）。taste 好きな味：甘い／しょっぱい／辛い／酸っぱい／苦い／あっさり／こってり
-     （いくつでも。読点区切りで持つ）。実行時は配列で写す。使い方は food.js（HK.Food：料理の味・食べた人の反応・好物の一句）
+     （いくつでも。読点区切りで持つ）。tasteHate 苦手な味：同じ7つから（好きな味とは別の欄。同じ味を両方には入れない＝好きな味が優先。
+     決めなければ苦手な味はない。好きな味の反対から推定はしない）。実行時は配列で写す。使い方は food.js（HK.Food：料理の味・食べた人の反応・好物の一句）
    画面の欄（ui.js の mk・normChar・rosterJSON・import・buildInput、ui-gear.js の描画と入力）は、ここの関数を呼ぶだけにしてある。
    実行時の住人への写しは HK.charFlags（engine.js）から HK.Attr.copy を一度だけ呼ぶ（エンジン・物語型・SoloKit・ダンジョン・穴で共通）。
    登場人物はすべて成人として扱う */
@@ -71,7 +72,7 @@
   function posv(v) { return v === 'top' || v === 'bottom' || v === 'riba' ? v : ''; }
   function pmap(m, keyOk) { var o = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { var v = posv(m[k]); if (v && (!keyOk || keyOk(k))) o[k] = v; }); return o; }
   function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL }[k]; }
-  /* 好きな食べ物・嫌いな食べ物（自由記入）と好きな味（決まった7つから複数）。画面と書き出しは読点区切りの文字列、実行時は配列 */
+  /* 好きな食べ物・嫌いな食べ物（自由記入）と好きな味・苦手な味（決まった7つから複数）。画面と書き出しは読点区切りの文字列、実行時は配列 */
   A.TASTES = ['甘い', 'しょっぱい', '辛い', '酸っぱい', '苦い', 'あっさり', 'こってり'];
   var FOODK = ['foodLike', 'foodHate'];
   A.foodWords = function (v) {
@@ -87,6 +88,9 @@
   /* 相手の id の並び（画面の住人。重複・空を除く） */
   function idl(v) { var o = []; if (Array.isArray(v)) v.forEach(function (k) { if (typeof k === 'string' && k && o.indexOf(k) < 0) o.push(k); }); return o; }
   function tstr(v) { return A.tasteList(v).join('、'); }
+  /* 苦手な味（tasteHate）：好きな味（taste）に入っている味は外す（同じ味を両方に入れない） */
+  A.tasteHateList = function (c) { var t = A.tasteList(c && c.taste); return A.tasteList(c && c.tasteHate).filter(function (x) { return t.indexOf(x) < 0; }); };
+  function hstr(c) { return A.tasteHateList(c).join('、'); }
   /* 体の特徴の並び（鍵か表示名。知らない値・重複を除き、A.FEATS の並びにそろえる）。配列か文字列（読点区切り）を受ける */
   var FEATK = {}; A.FEATS.forEach(function (f) { FEATK[f[0]] = f[1]; });
   function featList(v) {
@@ -117,6 +121,7 @@
     VF.forEach(function (k) { o[k] = wmap(c[k]); });
     FOODK.forEach(function (k) { o[k] = fstr(c[k]); });
     o.taste = tstr(c.taste);
+    o.tasteHate = hstr(c);
     if (Array.isArray(c.feats)) o.feats = featList(c.feats); else delete o.feats;
     o.looks = lstr(c.looks);
     return o;
@@ -135,6 +140,7 @@
     VF.forEach(function (k) { c[k] = wmap(c[k]); });
     FOODK.forEach(function (k) { c[k] = fstr(c[k]); });
     c.taste = tstr(c.taste);
+    c.tasteHate = hstr(c);   /* 古い保存には無い → 空（苦手な味なし） */
     /* 体の特徴：配列なら利用者が選んだもの（空も可）、それ以外は種族どおり（欄を消す） */
     if (Array.isArray(c.feats)) c.feats = featList(c.feats); else delete c.feats;
     c.looks = lstr(c.looks);
@@ -160,6 +166,7 @@
     if (c.raceNote) o.raceNote = c.raceNote;
     FOODK.forEach(function (k) { if (fstr(c[k])) o[k] = fstr(c[k]); });
     if (tstr(c.taste)) o.taste = tstr(c.taste);
+    if (hstr(c)) o.tasteHate = hstr(c);
     if (Array.isArray(c.feats)) o.feats = featList(c.feats);
     if (lstr(c.looks)) o.looks = lstr(c.looks);
     if (c.same && ref(c.same) != null) { o.same = ref(c.same); if (c.sameDark) o.sameDark = true; }
@@ -177,6 +184,9 @@
     if (o.raceNote != null) c.raceNote = note(String(o.raceNote));
     FOODK.forEach(function (k) { if (o[k] != null) c[k] = fstr(o[k]); });
     if (o.taste != null) c.taste = tstr(o.taste);
+    /* 苦手な味：古い JSON・まとめて読み込むには無い → 空（苦手な味なし） */
+    if (o.tasteHate != null) c.tasteHate = tstr(o.tasteHate);
+    c.tasteHate = hstr(c);
     /* 体の特徴：配列（または読点区切りの文字列）なら選んだ特徴、無ければ今の値のまま（新しい住人は種族どおり） */
     if (Array.isArray(o.feats) || typeof o.feats === 'string') c.feats = featList(o.feats);
     if (o.looks != null) c.looks = lstr(o.looks);
@@ -206,9 +216,10 @@
     if (c.raceNote) o.raceNote = c.raceNote;
     FOODK.forEach(function (k) { if (fstr(c[k])) o[k] = fstr(c[k]); });
     if (tstr(c.taste)) o.taste = tstr(c.taste);
+    if (hstr(c)) o.tasteHate = hstr(c);
     if (Array.isArray(c.feats)) o.feats = featList(c.feats);
     if (lstr(c.looks)) o.looks = lstr(c.looks);
-    var si = c.same ? ids.indexOf(c.same) : -1;
+    var si =c.same ? ids.indexOf(c.same) : -1;
     if (si >= 0) { o.same = si; if (c.sameDark) o.sameDark = true; }
     var nk = [];
     idl(c.noKillFor).forEach(function (k) { var i = ids.indexOf(k); if (i >= 0 && nk.indexOf(i) < 0) nk.push(i); });
@@ -236,6 +247,7 @@
     if (fstr(c.foodLike)) bits.push('好物：' + fstr(c.foodLike));
     if (fstr(c.foodHate)) bits.push('苦手な食べ物：' + fstr(c.foodHate));
     if (tstr(c.taste)) bits.push('好きな味：' + tstr(c.taste));
+    if (hstr(c)) bits.push('苦手な味：' + hstr(c));
     var sm = c.same && byId(c.same);
     if (sm) bits.push('同一人物：' + sm.name + (c.sameDark ? '（闇堕ちVer）' : ''));
     var nkl = idl(c.noKillFor).map(byId).filter(Boolean);
@@ -311,13 +323,15 @@
     else h += A.FEATS.map(function (f) { return '<label' + (FEAT_TIP[f[0]] ? ' title="' + esc(FEAT_TIP[f[0]]) + '"' : '') + '><input type="checkbox" data-gf="at_feat" data-v="' + f[0] + '"' + (cur.indexOf(f[0]) >= 0 ? ' checked' : '') + '> ' + esc(f[1]) + '</label>'; }).join('');
     return h + '</div><div class="gearrow"><label title="目・髪・髪飾り・入れ墨など、目を引くものを読点で区切って3つまで。地の文と初対面の場面で触れられます">目につく特徴 <input type="text" data-gf="at_looks" value="' + esc(lstr(c.looks)) + '" maxlength="40" placeholder="例：金色の目、腕の入れ墨" aria-label="目につく特徴" style="width:14em"></label></div>';
   }
-  /* 「体と設定」の食べ物の行：好きな食べ物・嫌いな食べ物（自由記入）と好きな味（いくつでも） */
+  /* 「体と設定」の食べ物の行：好きな食べ物・嫌いな食べ物（自由記入）と好きな味・苦手な味（いくつでも。同じ味は片方だけ） */
   function food(c, esc) {
-    var tl = A.tasteList(c.taste);
+    var tl = A.tasteList(c.taste), hl = A.tasteHateList(c);
     return '<div class="gearrow"><label title="食事・差し入れ・デートなどの場面で、好物として名前が出ます。読点（、）で区切って5つまで">好きな食べ物 <input type="text" data-gf="at_foodLike" value="' + esc(fstr(c.foodLike)) + '" maxlength="64" placeholder="例：唐揚げ、プリン" aria-label="好きな食べ物" style="width:10em"></label>' +
       '<label title="出されると、態度によって隠して食べたり、正直に苦手だと言ったりします。読点（、）で区切って5つまで">嫌いな食べ物 <input type="text" data-gf="at_foodHate" value="' + esc(fstr(c.foodHate)) + '" maxlength="64" placeholder="例：ピーマン" aria-label="嫌いな食べ物" style="width:8em"></label></div>' +
-      '<div class="gearrow"><span class="gearhint" style="flex:1 1 100%;margin:0">好きな味（料理の味付けがこの味だと喜び、反対の味だと顔をしかめます。いくつでも）</span>' +
-      A.TASTES.map(function (t) { return '<label><input type="checkbox" data-gf="at_taste" data-v="' + esc(t) + '"' + (tl.indexOf(t) >= 0 ? ' checked' : '') + '> ' + esc(t) + '</label>'; }).join('') + '</div>';
+      '<div class="gearrow"><span class="gearhint" style="flex:1 1 100%;margin:0">好きな味（料理の味付けがこの味だと喜びます。いくつでも）</span>' +
+      A.TASTES.map(function (t) { return '<label><input type="checkbox" data-gf="at_taste" data-v="' + esc(t) + '"' + (tl.indexOf(t) >= 0 ? ' checked' : '') + '> ' + esc(t) + '</label>'; }).join('') + '</div>' +
+      '<div class="gearrow"><span class="gearhint" style="flex:1 1 100%;margin:0">苦手な味（苦手な味を決めると、その味付けの料理に顔をしかめます。決めなければ、苦手な味はありません。好きな味と同じ味は選べません）</span>' +
+      A.TASTES.map(function (t) { return '<label><input type="checkbox" data-gf="at_tasteHate" data-v="' + esc(t) + '"' + (hl.indexOf(t) >= 0 ? ' checked' : '') + '> ' + esc(t) + '</label>'; }).join('') + '</div>';
   }
   /* ui-gear.js の入力：この欄なら処理して true を返す。changed(rerender) は ui-gear.js の保存 */
   A.gearField = function (c, f, t, isInput, changed, byId) {
@@ -327,7 +341,22 @@
     if (k === 'foodLike' || k === 'foodHate') { c[k] = fstr(t.value); changed(false); return true; }
     if (k === 'looks') { c.looks = lstr(t.value); changed(false); return true; }
     if (k === 'feat') { var fl = A.featsOf(c), fv = t.dataset.v; if (FEATK[fv]) { fl = fl.filter(function (x) { return x !== fv; }); if (t.checked) fl.push(fv); c.feats = featList(fl); changed(false); } return true; }
-    if (k === 'taste') { var tl = A.tasteList(c.taste), tv = t.dataset.v; if (A.TASTES.indexOf(tv) >= 0) { tl = tl.filter(function (x) { return x !== tv; }); if (t.checked) tl.push(tv); c.taste = tstr(tl); changed(false); } return true; }
+    if (k === 'taste' || k === 'tasteHate') {
+      /* 好きな味・苦手な味：同じ味を両方に✓できない（片方に✓したら、もう片方を外す） */
+      var ok2 = k === 'taste' ? 'tasteHate' : 'taste', tv = t.dataset.v;
+      if (A.TASTES.indexOf(tv) >= 0) {
+        var tl = A.tasteList(c[k]).filter(function (x) { return x !== tv; });
+        if (t.checked) tl.push(tv);
+        c[k] = tstr(tl);
+        var hit2 = t.checked && A.tasteList(c[ok2]).indexOf(tv) >= 0;
+        if (hit2) c[ok2] = tstr(A.tasteList(c[ok2]).filter(function (x) { return x !== tv; }));
+        c.tasteHate = hstr(c);
+        var other = hit2 && t.ownerDocument ? t.ownerDocument.querySelector('input[data-gf="at_' + ok2 + '"][data-v="' + tv + '"]') : null;
+        if (other) other.checked = false;
+        changed(false);
+      }
+      return true;
+    }
     if (k === 'yf' || k === 'ff') { var vk = k === 'yf' ? 'youFor' : 'fpFor', w = word(t.value); c[vk] = c[vk] || {}; if (w) c[vk][t.dataset.o] = w; else delete c[vk][t.dataset.o]; changed(false); return true; }
     if (isInput) return true;
     if (listOf(k)) { c[k] = val(listOf(k), t.value); changed(k === 'race' || k === 'night'); return true; }
@@ -387,6 +416,8 @@
     FOODK.forEach(function (k) { var l = A.foodWords(src[k]); if (l.length) dst[k] = l; });
     var tl = A.tasteList(src.taste);
     if (tl.length) dst.taste = tl;
+    var hl = A.tasteHateList(src);
+    if (hl.length) dst.tasteHate = hl;
     /* 体の特徴（未設定なら写さない＝種族どおり）・目につく特徴 */
     if (Array.isArray(src.feats)) dst.feats = featList(src.feats);
     var lk = A.lookWords(src.looks);

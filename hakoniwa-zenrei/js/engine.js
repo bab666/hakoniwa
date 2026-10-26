@@ -214,6 +214,33 @@
     mobSexOk: function (c) { return HK.State.r18ok(c) && !c.noMob; },
     pairLove: function (a, b) { return !!(a && b && a !== b) && HK.State.here(a) && HK.State.here(b) && HK.canLove(a, b) && HK.canLove(b, a); },
     pairSex: function (a, b) { return !!(a && b && a !== b) && HK.State.here(a) && HK.State.here(b) && HK.State.r18ok(a) && HK.State.r18ok(b) && (!HK.Pos || HK.Pos.okSex(a, b)); },
+    /* 遺体の残らない死（穴に落ちた・塵になった・呑まれた・引きずり込まれた・連れ去られた・跡形もなく消えた など）。
+       noBody(c)：死の文（物語型は HK.Story.say が死の記録の文で p.noBody を付ける）・死に方・行く末から判定する。
+       bodyless(list, c)：遺体のない死の人なら、遺体に触れる文（亡骸・遺体・冷たい手・抱きしめる など）を外した並びを返す（全部外れたら null。遺体のある死ならそのまま） */
+    NOBODY: /穴に落ち|穴の底|穴へ|奈落|塵に|塵と|灰に|跡形|呑み込ま|呑み込ん|呑まれ|丸呑み|喰い尽く|食い尽く|骨も残|何も残らな|(?:川底|水底|淵|沼|湖|海|泥|水)(?:の底)?(?:に|へ)沈ん|沈んでいった|沈んで消え|連れて(?:い|行)かれ|引きずって(?:い|行)った|引きずられて(?:い|行)った|引きずり込|連れ去|攫わ|神隠し|消え失せ|消えた|消えて|蒸発|溶けて|溶け落|成り代わ|闇の奥へ|戻らなかった|帰らなかった|見つからなかった|行方/,
+    BODY: /亡骸|遺体|死体|骸|冷たい手|冷たくなった|手を握|を抱きしめ|抱き起こ|抱きかかえ|抱き寄せ|揺さぶ|瞼を閉じ|目を閉じさせ|体を拭|傍らに膝|の前で膝|の前で立ち尽く|を前に/,
+    noBody: function (c) {
+      if (!c || c.alive !== false) return false;
+      if (c.noBody != null) return !!c.noBody;
+      return HK.State.NOBODY.test([c.deathHow, c.how, c.fate, c.fateNote].join(' '));
+    },
+    bodyless: function (list, c) {
+      if (!list || !HK.State.noBody(c)) return list;
+      var f = list.filter(function (t) { return !HK.State.BODY.test(String(t)); });
+      return f.length ? f : null;
+    },
+    /* 物語型の死の記録（HK.Story.say）：死んだ人に、その死の記録の番号と遺体の有無を付ける。生き返ったら外す（次に死んだときに付け直す） */
+    markDeath: function (P, o) {
+      (P || []).forEach(function (p) {
+        if (!p) return;
+        if (p.alive === false) {
+          if (p._stDeathN != null) return;
+          p._stDeathN = o.n;
+          var t = (o.actors || []).indexOf(p.i) >= 0 || String(o.text || '').indexOf(p.name) >= 0 ? String(o.text || '') : '';
+          p.noBody = HK.State.NOBODY.test([t, p.how, p.fate].join(' '));
+        } else if (p._stDeathN != null) { p._stDeathN = null; p.noBody = null; }
+      });
+    },
     /* R18 が箱庭の中心で、R18に参加しない設定を効かせない箱庭（全員が不参加だと遊べないため。設定画面にも書く） */
     R18_CORE: { dungeon: 1, hole: 1, kaihen: 1, succubus: 1, variety: 1, massage: 1 }
   };
@@ -809,8 +836,11 @@
      または R18 の場面の出来事（定義に sex と r18 の両方）のとき。定義の sex:true だけ（許可の印）では付けない */
   function eroOf(res, ev) { if (res.lewd != null) return !!res.lewd; return res.sex === true || !!(ev && ev.sex && ev.r18) ? true : undefined; }
   function actRun(ctx, a, pick, odd) {
+    var n0 = ctx.log.length, alive0 = a.alive;
     var res = pick.e.run(ctx, a, pick.b);
     if (!res) return;
+    /* 出来事の途中（群れに襲われた など）で主役が亡くなり、その死の記録がもう出たなら、主役の続きの文は書かない（死んだ人が動く文になるため） */
+    if (alive0 && a.alive === false && ctx.log.slice(n0).some(function (e) { return e.kind === 'death' && e.actors && e.actors[0] === a.i; })) { ctx.flush(); return; }
     var cat = res.cat || pick.e.cat;
     var sex = res.sex != null ? !!res.sex : !!pick.e.sex;
     /* 出来事の側で恋愛に変わったときも、恋愛が起きない組なら書かない */

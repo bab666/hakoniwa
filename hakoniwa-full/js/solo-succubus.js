@@ -356,10 +356,16 @@
       if (male && HK.Ero.has('succubus', 'tkm.' + ty.id)) return EL(S, 'tkm.' + ty.id, ty.tk);
       return EL(S, 'tk.' + ty.id, ty.tk);
     }
+    /* 女性の体のサキュバスが攻め（ふたなりでない）：抱く側の文（ty.top・SB.TAKE_TOP）は挿れる側の体で書いてあるので、
+       跨って迎える側の文（ty.tk・SB.TAKE）で女性上位に書く（2026-10-26。描写の作風「小説調」で「奥を突いた」が出ていた） */
+    var topF = sTop && f;
+    if (topF) sTop = false;
     var base = sTop ? ty.top : ty.tk, old = sTop ? SB.TAKE_TOP && SB.TAKE_TOP[k] : SB.TAKE && SB.TAKE[k];
     if (old && old.length && S.rng() < 0.4) base = old;
     if (sTop && futa && SB.TOP_FUTA && S.rng() < 0.45) base = SB.TOP_FUTA;
     if (!sTop && male && ty.tkM && S.rng() < 0.6) base = ty.tkM;
+    /* 攻めのまま迎える文だけにする（獲物に組み敷かれる・押し倒される文は除く） */
+    if (topF) { var nb = (base || []).filter(function (x) { return !/組み敷かれ|押し倒され|貫かれ|突き上げられ|犯され/.test(x); }); if (nb.length) base = nb; }
     return base;
   }
 

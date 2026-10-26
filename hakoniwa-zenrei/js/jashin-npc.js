@@ -116,7 +116,9 @@
     }
     if (!xs.length || rng() > 0.4 || S.battleOn) return;
     var x = rng.pick(xs);
-    ST.sayB(S, { actors: [], tag: x.d.name, text: F(pk(S, x.d.death), M(S, p)), why: x.d.name + '：' + x.d.who }, x.d.name + 'が' + p.name + 'の死を見ていた');
+    /* 遺体の残らない死（engine.js の HK.State.noBody）では、亡骸の文の代わりに deathNB（消えた場所に向かう文） */
+    var dl = HK.State && HK.State.noBody(p) ? (HK.State.bodyless(x.d.death, p) || x.d.deathNB || x.d.death) : x.d.death;
+    ST.sayB(S, { actors: [], tag: x.d.name, text: F(pk(S, dl), M(S, p)), why: x.d.name + '：' + x.d.who }, x.d.name + 'が' + p.name + 'の死を見ていた');
   }
 
   /* 生贄の儀に顔を出す */

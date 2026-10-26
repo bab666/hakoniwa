@@ -15,7 +15,7 @@
       rng: S.rng, all: S.P, nowH: S.h || 0, env: S.env, scenId: 'jashin',
       r18: !!(JS.R18 && JS.R18.on(S)), lewd: clamp((S.env.jlewd || 0) / 100, 0.15, 0.85),
       alive: function (p) { return !!p.alive; },
-      here: function (p) { return !p.out && !p.taken; },
+      here: function (p) { return !p.out && !p.taken && !p.bound; },
       say: function (o) {
         var r = o.short && S.room != null ? HK.Story.sayB(S, o, o.short) : HK.Story.say(S, o);
         if (o.key && r) HK.Story.key(S, r, o.key);

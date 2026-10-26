@@ -249,10 +249,17 @@
       /* 互いに惹かれているか、焦りが限界か。支配では、支配する側が命じて、信仰する側は喜んで応じる */
       return A.willing(ctx, a, b, 5) || A.desperate(ctx, a, b, 5) || (RT.domOf(ctx, t) && ctx.stepIndex >= 1);
     },
-    w: function (ctx, a, b) { return 1.4 + (ctx.R(a, b).att + ctx.R(b, a).att) / 120 + ctx.stepIndex / Math.max(1, ctx.stepsTotal); },
+    w: function (ctx, a, b) {
+      var w = 1.4 + (ctx.R(a, b).att + ctx.R(b, a).att) / 120 + ctx.stepIndex / Math.max(1, ctx.stepsTotal);
+      /* 条件の順番あり：エッチが条件1を待っているあいだは、起きにくくする（数えないので） */
+      var rh = ctx.rules.filter(function (q) { return q.k === 'h'; })[0];
+      if (rh && A.seqWait && A.seqWait(ctx, rh, a, b)) w *= 0.15;
+      return w;
+    },
     run: function (ctx, a, b) {
       var t = tieFor(ctx, a, b), pf = ctx.pair(a, b), p = A.prog(ctx, a, b), r = ctx.rules.filter(function (q) { return q.k === 'h'; })[0];
-      p.act.h = Math.min(r ? r.n : 1, (p.act.h || 0) + 1);
+      /* 条件の順番あり：条件1を待っているエッチは数えない（scenario-room.js の bumpAct） */
+      var waitH = r && A.bumpAct ? !A.bumpAct(ctx, r, a, b, 1) : (p.act.h = Math.min(r ? r.n : 1, (p.act.h || 0) + 1), false);
       pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.tieSexAt = ctx.stepIndex;
       var dom = RT.domOf(ctx, t);
       if (dom) ctx.mod2(ctx.chars[t.a], ctx.chars[t.b], { aff: 6, trust: 4, att: 4 }, { aff: 3, trust: 3, att: 4 });
@@ -260,6 +267,7 @@
       var sc = TS.scene(ctx, a, b, t, {});
       var why = sc.T.name + 'と' + sc.B.name + '：' + WHY[sc.sub] + '／条件のエッチ（' + sc.T.name + 'が攻め）';
       if (A.pairDone(ctx, a, b)) { var ex = A.exitPair(ctx, a, b, sc.text, why, true); ex.cat = 'romance'; return ex; }
+      if (waitH) return { cat: 'romance', text: sc.text + A.waitNote(ctx, r, a, b), why: why + '／条件の順番：条件1のあとから数える（今のは数えない）', mag: 30 };
       return { cat: 'romance', text: sc.text + (r && r.n > 1 ? '（エッチ ' + p.act.h + '/' + r.n + '）' : '') + '扉はまだ開かない。', why: why, mag: 30 };
     }
   });

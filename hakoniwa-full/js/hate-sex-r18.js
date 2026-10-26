@@ -298,10 +298,12 @@
       var t = lv >= 4 ? pick(x, YIELD[p]) : '{b}「' + pick(x, PROTEST[p]) + '」' + pick(x, TELL[p]);
       return fill(x, t, a, b);
     },
-    why: function (x, a, b) {
+    why: function (x, a, b, opt) {
       var o = HS.order(x, a, b), T = o[0], B = o[1], ts = tiesOf(x, T, B).filter(function (t) { return HOST.test(t.type); });
       var src = ts.length ? (HK.TIES[ts[0].type] ? HK.TIES[ts[0].type].label : ts[0].type) : '嫌悪 ' + Math.round(Math.max(hateLv(x, T, B), hateLv(x, B, T)));
       var lw = HK.LoveHate && HK.LoveHate.any(x, T, B) ? '／' + HK.LoveHate.why(x, T, B) + (HK.LoveHate.has(x, B, T) ? '。' + B.name + 'が挑発して構わせた' : '') : '';
+      /* 出られない部屋の条件のエッチ（opt.room）は部屋の仕掛けの場面で、内容のスイッチ「合意のない展開」の場面ではない：「強引に」の言い方をせず、そう書く（2026-10-26） */
+      if (opt && opt.room) return T.name + 'と' + B.name + 'は敵対していた（' + src + '）。部屋の条件を満たすために、' + T.name + 'のほうから迫った。' + B.name + 'は口では嫌がったが、拒みきらなかった（部屋の条件の場面なので、内容のスイッチ「合意のない展開」に関わらず起きる）' + lw;
       return T.name + 'と' + B.name + 'は敵対していた（' + src + '）。' + T.name + 'が強引に迫り、' + B.name + 'は口では嫌がったが、拒みきらなかった' + lw;
     }
   };
@@ -333,13 +335,19 @@
         if (HS.order(ctx, a, b)[0] !== a || !HS.hostile(ctx, a, b, { room: condLeft }) || HS.taken(ctx, a, b)) return false;
         return true;
       },
-      w: function (ctx, a, b) { return (1.2 + (hateLv(ctx, a, b) + hateLv(ctx, b, a)) / 120 + (a.tr.aggr || 0) + (a.flags.aphro || 0) * 0.3 + ctx.stepIndex / Math.max(1, ctx.stepsTotal)) * (HK.LoveHate ? HK.LoveHate.k(ctx, a, b) : 1); },
+      w: function (ctx, a, b) {
+        /* 条件の順番：条件1を待っている条件2のエッチは起きにくく（×0.15） */
+        var rh = ctx.rules.filter(function (q) { return q.k === 'h'; })[0], sw = rh && A.seqWait && A.seqWait(ctx, rh, a, b) ? 0.15 : 1;
+        return (1.2 + (hateLv(ctx, a, b) + hateLv(ctx, b, a)) / 120 + (a.tr.aggr || 0) + (a.flags.aphro || 0) * 0.3 + ctx.stepIndex / Math.max(1, ctx.stepsTotal)) * (HK.LoveHate ? HK.LoveHate.k(ctx, a, b) : 1) * sw;
+      },
       run: function (ctx, a, b) {
         var pf = ctx.pair(a, b), p = A.prog(ctx, a, b), r = ctx.rules.filter(function (q) { return q.k === 'h'; })[0], done0 = !!(r && A.ruleDone(ctx, r, a, b));
-        p.act.h = Math.min(r ? r.n : 1, (p.act.h || 0) + 1);
+        /* 条件の順番（順77）：条件1を待っている条件2のエッチは数えない（A.bumpAct が偽を返す。そのときは「まだ数えない」の一文を足す） */
+        var counted = r ? (A.bumpAct ? A.bumpAct(ctx, r, a, b, 1) : (p.act.h = Math.min(r.n, (p.act.h || 0) + 1), true)) : true;
         pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.hateSex = (pf.hateSex || 0) + 1; pf.hateSexAt = ctx.stepIndex;
         ctx.mod2(a, b, { att: 10, aff: 4, ten: -4 }, { att: 12, aff: 5, ten: -6 });
-        var text = HS.scene(ctx, a, b, { room: !done0 }), why = HS.why(ctx, a, b) + (done0 ? '／条件はもう満たしていたのに、また（腐れ縁）' : '／条件のエッチ');
+        var text = HS.scene(ctx, a, b, { room: !done0 }), why = HS.why(ctx, a, b, { room: !done0 }) + (done0 ? '／条件はもう満たしていたのに、また（腐れ縁）' : '／条件のエッチ');
+        if (!counted && A.waitNote) return { cat: 'romance', text: text + A.waitNote(ctx, r, a, b), why: why + '／条件の順番：条件1がまだなので数えない', mag: 30 };
         if (A.pairDone(ctx, a, b)) { var ex = A.exitPair(ctx, a, b, text, why, true); ex.cat = 'romance'; return ex; }
         return { cat: 'romance', text: text + (r && r.n > 1 && !done0 ? '（エッチ ' + p.act.h + '/' + r.n + '）' : '') + '扉はまだ開かない。', why: why, mag: 30 };
       }

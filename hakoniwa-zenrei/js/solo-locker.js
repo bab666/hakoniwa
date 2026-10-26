@@ -284,6 +284,8 @@
       /* 敵視（hate-kit.js）：狭いロッカーの中で、一方が近づき、一方が嫌悪する */
       if (HK.HateKit && rng() < 0.3) {
         if (!S.ties) S.ties = (HK.Story && HK.Story.tiesOk ? HK.Story.tiesOk(S.P, input.ties) : input.ties || []);
+        /* 狭い場所の文（席を立つ・皿・荷物・周りが割って入る、などを使わない） */
+        S.hkSpace = 'cramped';
         var HKt = HK.HateKit, hp = HKt.pairs(S, [A, B])[0];
         /* 愛憎（hate-love.js）：持つ側は、口では嫌いながら相手を構う（構われた側は、双方なら構い返し、片方だけならふつうの敵対） */
         var lhH = lhAny ? (LHo.has(S, A, B) ? A : LHo.has(S, B, A) ? B : null) : null;

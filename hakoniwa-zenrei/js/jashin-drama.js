@@ -69,7 +69,9 @@
     if (P.length < 2) return;
     pparent(S, P, h);
     betrayal(S, P, h);
-    if (rng() > 0.4) return;
+    /* 疑似親子・裏切りで連れ去られた人がいれば、名簿を取り直す（連れ去られた人を、このあとの場面に出さない） */
+    P = live(S);
+    if (P.length < 2 || rng() > 0.4) return;
     var opts = [], lastDead = S.P.filter(function (p) { return !p.alive && p.i != null; }).pop();
     P.forEach(function (a) {
       P.forEach(function (b) {

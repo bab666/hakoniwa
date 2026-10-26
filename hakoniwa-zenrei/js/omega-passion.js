@@ -36,6 +36,15 @@
     var flip = function (c) { return sx(c) === 'a' ? 'o' : 'a'; };
     var pairs = [];
     P.forEach(function (a) { P.forEach(function (b) { if (a.i < b.i) pairs.push([a, b]); }); });
+    /* 順1（2026-10-26）：恋愛相手を固定した人には街の外の運命の番（omega-mob.js）は現れない。代わりに、固定した相手がα×Ω（スイッチでなれる組も）で
+       恋愛できる組なら、その相手が必ず運命の番になる（「運命の番の現れやすさ」が0なら運命の番そのものが出ない） */
+    pairs.forEach(function (pr) {
+      var a = pr[0], b = pr[1];
+      if (taken[a.i] || taken[b.i] || !(HK.lockTo(a, b) || HK.lockTo(b, a)) || !HK.canLove(a, b) || !HK.canLove(b, a)) return;
+      if (HK.Ties.all(ctx, a, b).some(HK.tieNoLove)) return;
+      var later = !ao(a, b) && ((a.om.sw && (flip(a) + sx(b) === 'ao' || flip(a) + sx(b) === 'oa')) || (b.om.sw && (sx(a) + flip(b) === 'ao' || sx(a) + flip(b) === 'oa')));
+      if (ao(a, b) || later) { om.fatedLatent[key(a, b)] = true; taken[a.i] = 1; taken[b.i] = 1; }
+    });
     rng.shuffle(pairs).forEach(function (pr) {
       var a = pr[0], b = pr[1];
       if (taken[a.i] || taken[b.i] || !HK.canLove(a, b) || !HK.canLove(b, a)) return;

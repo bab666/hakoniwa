@@ -62,7 +62,10 @@
 
   /* 性的な場面か（推理や喧嘩の「押し倒す」などは直さない） */
   /* 性的な場面の文か（「腰を抱えて」「後ろから」「洞窟の奥まで」「中に入った」のような、ふつうの文には反応しないように絞る） */
-  var SEXCTX = /押し入|穿[っちつ]|注ぎ込|貫[いかきく]|突き上げ|突き入|奥を突|奥まで突|奥まで沈|挿[れ入]|エッチ|繋が[っりる]|果て|喘|舐め|愛撫|達し|体を重ね|肌を重ね|腰を(?:振|打ち|沈|落と|揺ら|動か|使|くねら)|中に(?:出|注|吐)|犯し|犯さ|イ[かっカッ]|跨|交わ|貪/;
+  /* 「押し入」は「部屋に村人たちが押し入った」のような文にも出るので数えない（2026-10-26。邪神村の裏切りの文が性的な文に差し替わっていた） */
+  var SEXCTX = /穿[っちつ]|注ぎ込|貫[いかきく]|突き上げ|突き入|奥を突|奥まで突|奥まで沈|挿[れ入]|エッチ|繋が[っりる]|果て|喘|舐め|愛撫|達し|体を重ね|肌を重ね|腰を(?:振|打ち|沈|落と|揺ら|動か|使|くねら)|中に(?:出|注|吐)|犯し|犯さ|イ[かっカッ]|跨|交わ|貪/;
+  /* 記録全体が性的な場面か（戦い・吸血・事件の「貫く」「突き上げる」「腰を落とす」だけでは数えない） */
+  var SEXSURE = /挿[れ入]|繋が[っりる]|エッチ|果て|喘|愛撫|体を重ね|肌を重ね|腰を(?:振|打ち|沈め|揺ら|使)|中に(?:出|注|吐)|イ[かっ]|イカせ|イッ|抱き潰|交わ|♡|\{(?:男性器|女性器|ナカ|精液)\}/;
   /* 「」の中の句点で切らないように、文に分ける */
   function sentences(t) {
     var out = [], cur = '', d = 0;
@@ -96,7 +99,11 @@
     },
     /* 相手が名前だけ（モブ・客）のとき：A は女性の攻め、bn は男性の相手の名前（呼ぶ側で確かめること） */
     fixWith: function (ctx, text, A, bn) {
-      if (!A || !bn || typeof text !== 'string' || (P.noGen && P.noGen(A)) || !SEXCTX.test(text.replace(/「[^」]*」/g, ''))) return text;
+      if (HK.SAFE_ON || !A || !bn || typeof text !== 'string' || (P.noGen && P.noGen(A)) || !SEXCTX.test(text.replace(/「[^」]*」/g, ''))) return text;
+      /* 性的な場面の記録だけ直す：「貫く」「突き上げる」など戦い・事件の文にも出る語だけで、はっきりした語（SEXSURE）のない記録は直さない */
+      if (!SEXSURE.test(text.replace(/「[^」]*」/g, ''))) return text;
+      /* 二人が同じ文に出て、その文がはっきり性的な文になっている記録だけ（結末の「その後」のように、片方とモブの場面と、二人の別の文が並ぶ記録は直さない） */
+      if (!sentences(text).some(function (sen) { var b0 = sen.replace(/「[^」]*」/g, ''); return b0.indexOf(A.name) >= 0 && b0.indexOf(bn) >= 0 && SEXSURE.test(b0); })) return text;
       var B = { name: bn }, st = styleOf(A), an = A.name, anR = HK.reEsc(an), bnR = HK.reEsc(bn), last = '', used = {};
       var reA = new RegExp(anR + '(?:は|が|も)'), reB = new RegExp(bnR + '(?:は|が|も)'), inB = new RegExp(bnR + 'の(?:中|奥|後ろ|ナカ|\\{ナカ\\}|\\{後ろ\\})'), partA = new RegExp(anR + 'の(?:もの|モノ|昂り|先端|根元|竿|ちんぽ|肉棒|ペニス|\\{男性器\\}|\\{亀頭\\})');
       var changed = false;
@@ -128,6 +135,8 @@
   if (!sim0) return;
   HK.simulate = function (input) {
     var res = sim0.apply(this, arguments);
+    /* 全年齢モードでは見直さない（性的な文に差し替えないため） */
+    if (HK.SAFE_ON) return res;
     try {
       var cs = P.withIdx((input && input.chars) || []);
       var F = cs.filter(function (c) { return P.isF(c) && (P.isTop(c) || P.hasFor(c)); }), M = cs.filter(isM);
@@ -137,7 +146,9 @@
       /* 固定は番号一つ・番号の並びのどちらでも（engine.js の HK.parseLocks。[-1] は「誰とも」） */
       var lk = function (c) { var L = HK.parseLocks ? HK.parseLocks(c.loveLock) : []; return L.length ? L : null; };
       /* 恋愛相手を別の人に固定している組も同じ */
-      var ng = function (x, y) { var ix = cs.indexOf(x), iy = cs.indexOf(y); return (Array.isArray(x.loveNG) && x.loveNG.indexOf(iy) >= 0) || (Array.isArray(y.loveNG) && y.loveNG.indexOf(ix) >= 0) || (lk(x) != null && lk(x).indexOf(iy) < 0) || (lk(y) != null && lk(y).indexOf(ix) < 0); };
+      /* 恋愛：なしの家族・無関心・恐怖の二人（関係）も、体の関係にならない組なので直さない（2026-10-26） */
+      var tieNG = function (ix, iy) { return ((input && input.ties) || []).some(function (t) { return t && ((t.a === ix && t.b === iy) || (t.a === iy && t.b === ix)) && ((HK.tieNoLove && HK.tieNoLove(t)) || t.type === 'apathy' || t.type === 'fear'); }); };
+      var ng = function (x, y) { var ix = cs.indexOf(x), iy = cs.indexOf(y); return (Array.isArray(x.loveNG) && x.loveNG.indexOf(iy) >= 0) || (Array.isArray(y.loveNG) && y.loveNG.indexOf(ix) >= 0) || (lk(x) != null && lk(x).indexOf(iy) < 0) || (lk(y) != null && lk(y).indexOf(ix) < 0) || tieNG(ix, iy); };
       F.forEach(function (f) { M.forEach(function (m) { if (FM.on(f, m) && !ng(f, m) && !(P.isMaleTop && P.isMaleTop(f, m))) pairs.push([f, m]); }); });
       if (!pairs.length) return res;
       var rng = HK.rng ? HK.rng(((input.seed || 1) * 7919 + 17) >>> 0) : null;

@@ -116,6 +116,8 @@
       b.r = rel(input, i, cast.si);
       return b;
     });
+    /* 恋愛：なしの家族・無関心・恐怖の二人は、壁の向こうから手を出さない（fam-kin.js。kindOf が HK.ngPair で見る。誰の体か気づかなくても同じ） */
+    if (S.h && (HK.kinNG || HK.fearNG)) { var PM = []; PM[S.h.i] = S.h; S.behind.forEach(function (b) { PM[b.i] = b; }); if (HK.kinNG) HK.kinNG(PM, input.ties); if (HK.fearNG) HK.fearNG(PM, input.ties); }
     S.behindAt = S.behind.length ? Math.max(1, Math.round(S.env.hours * (0.25 + S.rng() * 0.45))) : Infinity;
   };
   function names(l) { return l.map(function (b) { return b.name; }).join(l.length > 2 ? '・' : 'と'); }

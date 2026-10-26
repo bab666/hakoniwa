@@ -141,7 +141,8 @@
       if ((HK.sexBlocked && HK.sexBlocked(a, b)) || (HK.Pos && HK.Pos.okSex && !HK.Pos.okSex(a, b))) return false;
       return seenOf(ctx, a, b) > (a.flags.jSeen || 0);
     },
-    w: function () { return 5; },
+    /* 条件の順番（順77）：条件1を待っている条件2のエッチは起きにくく（×0.15） */
+    w: function (ctx, a, b) { var rh = ctx.rules.filter(function (q) { return q.k === 'h'; })[0]; return rh && A.seqWait && A.seqWait(ctx, rh, a, b) ? 5 * 0.15 : 5; },
     run: function (ctx, a, b) {
       var c = withWhom(ctx, a, b), seen = seenOf(ctx, a, b);
       a.flags.jSeen = seen;
@@ -159,7 +160,10 @@
         var aTop = !HK.Pos || HK.Pos.topOf(a, b, [a, b]) === a, ffP = HK.Pos && HK.Pos.ff(a, b);
         t += m(ctx.pick(aTop ? CLAIM[grp(a)] : CLAIM[grp(a)].filter(function (l) { return !/押し倒/.test(l); }))) + m(ctx.pick(REPLY[grp(b)][rk]));
         t += m(ctx.pick(aTop ? CLAIM_SEX.filter(function (l) { return !(ffP || (HK.Pos && HK.Pos.isF(a) && !HK.Pos.isF(b))) || !/沈めた|深くなった/.test(l); }) : CLAIM_SEX_B)) + (LW ? LW.scene(ctx, a, b, (A.prog(ctx, a, b).act.h || 0) ? 'repeat' : 'will', { lead: true, jealous: true }) : '') + (function () { var r = ctx.rng(); return r < 0.4 ? m(CLAIM_AFTER[grp(a)][0]) : r < 0.8 ? m(CLAIM_AFTER[grp(b)][1]) : m(CLAIM_AFTER.rough[2]); })();
-        var p = A.prog(ctx, a, b); p.act.h = (p.act.h || 0) + 1;
+        /* 条件の順番（順77）：条件1を待っている条件2のエッチは数えない（A.bumpAct が偽。「まだ数えない」の一文を足す） */
+        var rh = ctx.rules.filter(function (q) { return q.k === 'h'; })[0], p = A.prog(ctx, a, b), counted = true;
+        if (rh && A.bumpAct) counted = A.bumpAct(ctx, rh, a, b, 1, null, false); else p.act.h = (p.act.h || 0) + 1;
+        if (!counted && A.waitNote) t += A.waitNote(ctx, rh, a, b);
         ctx.pair(a, b).night = true;
         ctx.mod2(a, b, { att: 10, aff: 6, ten: 2 }, { att: 8, aff: 4 });
         b.flags.partner = a.i; b.flags.excl = true; b.flags.exclOpen = false; b.flags.partnerAt = ctx.stepIndex;
