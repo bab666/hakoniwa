@@ -9,6 +9,8 @@
   function wname(c) { return c.weapon ? c.weapon.name : '素手'; }
   function luck(ctx, c) { return ctx.stat(c, 'luck'); }
   function an(ctx, i) { return Z.an(ctx, i); }
+  /* 憎悪を持っても殺さない相手（attr.js の HK.Attr.spare）：v を k が殺さないなら真。殺す出来事を選ぶ前に見る */
+  function spare(ctx, v, k) { return !!(HK.Attr && HK.Attr.spare && HK.Attr.spare(ctx, v, k)); }
 
   /* ======================= 目標の変化 ======================= */
   var GOAL = {};
@@ -182,7 +184,8 @@
       if (o.tr.caution > 0.55 && r.aff < 15 && o !== P) leavers.push(o);
     });
     var m = { c: c.name, k: K.name, p: P ? P.name : '', w: wname(K) };
-    if (kv > 0.3 && rng() < 0.4 + kv * 0.4) {
+    /* 処分しようとする人が、咬まれた人を「殺さない」にしているなら、処分の場面にしない（かばう・受け入れる・離れるのほうへ） */
+    if (kv > 0.3 && rng() < 0.4 + kv * 0.4 && !spare(ctx, c, K)) {
       if (P && P !== K && pv > 0.75) {
         if (K.tr.aggr > 0.6 && rng() < 0.4) {
           var fr = ctx.fight(K, P, { noEvade: true, canSpare: true });
@@ -357,7 +360,7 @@
     id: 'z_murder', cat: 'betray', scope: 'pair',
     when: function (ctx, a, b) {
       var r = ctx.R(a, b), t = tieT(ctx, a, b);
-      return (r.ten > 45 || t === 'enemy' || t === 'rival' || a.goal.id === 'chaos') && r.aff < 15 && a.tr.cold + a.tr.aggr > 1.0 && !ctx.pair(a, b).couple;
+      return (r.ten > 45 || t === 'enemy' || t === 'rival' || a.goal.id === 'chaos') && r.aff < 15 && a.tr.cold + a.tr.aggr > 1.0 && !ctx.pair(a, b).couple && !spare(ctx, b, a);
     },
     w: function (ctx, a, b) { var r = ctx.R(a, b), wit = Z.here(ctx, a).length - 1; return (0.25 + r.ten / 70 + (a.goal.id === 'chaos' ? 0.7 : 0) + (['enemy', 'rival'].indexOf(tieT(ctx, a, b)) >= 0 ? 0.5 : 0)) / (1 + wit * 0.8) * (0.4 + ctx.env.strife / 80); },
     run: function (ctx, a, b) {

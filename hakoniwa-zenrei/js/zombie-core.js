@@ -19,6 +19,12 @@
   function lastDay(ctx) { return day(ctx) >= ctx.env.days; }
   function luck(ctx, c) { return ctx.stat(c, 'luck'); }
   function wname(c) { return c.weapon ? c.weapon.name : '素手'; }
+  /* 憎悪を持っても殺さない相手（attr.js の HK.Attr.spare）：v を k が殺さないなら真。殺す出来事を選ぶ前に見る */
+  function spare(ctx, v, k) { return !!(HK.Attr && HK.Attr.spare && HK.Attr.spare(ctx, v, k)); }
+  /* 道連れにしようとした相手を「殺さない」にしているとき：手を止め、その夜は自分も死なない。{a}＝道連れにしかけた側、{b}＝相手 */
+  var SPARE_TAKE = L('{a}は眠っている{b}の首筋に手を伸ばしかけて、止めた。「……あなたまで連れていけない｜……あなたまでは連れていけない｜……あなたまで連れていくことはできません」――{a}は{b}の寝顔を見つめたまま、朝まで動かなかった。|' +
+    '{a}は{b}の手を握ったまま、長いあいだ黙っていた。「一緒に、と思ったけど……やっぱりできない｜一緒に、と思った。……だが、できない｜一緒に、と思いました。……でも、できません」――{a}は握っていたものを窓の外へ放り、{b}の隣で膝を抱えた。|' +
+    '{a}は{b}に覆いかぶさりかけて、自分の手が震えているのに気づいた。「……あなたには、生きててほしい｜……あなたには、生きていてほしい｜……あなたには、生きていてほしいんです」――{a}はその夜、終わらせるのをやめた。');
   Z.inArea = inArea; Z.here = here; Z.an = an; Z.day = day; Z.part = part; Z.names = names;
 
   var scen = {
@@ -392,7 +398,8 @@
       out.mag = 40; return out;
     }
     /* 見捨てる・囮にする */
-    var cold = others.filter(function (o) { return o.tr.cold + o.tr.aggr * 0.5 > 0.95 && ctx.R(o, v).aff < 25; })[0];
+    /* 見捨てる・囮にする人は、v を「殺さない」にしている人を除く（群れへ突き飛ばす・締め出すのは殺すのと同じ） */
+    var cold = others.filter(function (o) { return o.tr.cold + o.tr.aggr * 0.5 > 0.95 && ctx.R(o, v).aff < 25 && !spare(ctx, v, o); })[0];
     if (cold && rng() < (0.22 + (cold.goal.id === 'chaos' ? 0.25 : 0) + ctx.R(cold, v).ten / 200) * HK.Dark.f(ctx, 'grudge')) {
       var bait = cold.tr.aggr > 0.55 && (ctx.R(cold, v).ten > 30 || cold.goal.id === 'chaos') && rng() < 0.55;
       out.text = ctx.pick(bait ? VIC.bait : VIC.shut).replace(/\{x\}/g, cold.name).replace(/\{v\}/g, v.name);
@@ -505,6 +512,12 @@
         /* 残していく誰かを、一人にできない */
         var dep = mates.filter(function (o) { return ctx.R(c, o).aff > 55 && o.stress > 50 && ctx.R(o, c).aff > 40; })[0];
         if (dep && c.tr.ac + c.tr.np + c.tr.jealous > 1.4 && ctx.rng() < 0.4) {
+          /* 相手を殺さないなら、道連れも自分の死も起こさない（手を止める） */
+          if (spare(ctx, dep, c)) {
+            ctx.pair(c, dep).noKillStop = c.i;
+            ctx.act2({ actors: [c, dep], cat: 'conflict', fx: function () { ctx.mod2(c, dep, { aff: 4, ten: 6 }, { ten: 8 }); }, text: ctx.t(ctx.pick(SPARE_TAKE), c, dep), why: why + '／' + dep.name + 'を一人にできない想いはあったが、' + c.name + 'は' + dep.name + 'を「憎悪を持っても殺さない」相手にしている（相手ごとの設定）', mag: 30 });
+            break;
+          }
           if (dep.tr.caution * 0.5 + dep.tr.aggr * 0.4 > ctx.rng()) {
             ctx.pair(c, dep).zmercyTry = c.i;
             ctx.act2({ actors: [c, dep], cat: 'betray', fx: function () { ctx.mod2(c, dep, { ten: 10 }, { ten: 30, trust: -35 }); }, text: ctx.t('{a}は咬み跡を押さえながら、{b}の首に手をかけた。「一人で残していけない」――{b}は{a}の手を振りほどいた。{a}は泣きながら、ひとりで部屋を出ていった。', c, dep), why: why + '／' + dep.name + 'を残していけない（AC・NP・執着）が、' + dep.name + 'は抵抗した', mag: 45 });
@@ -695,6 +708,13 @@
       /* 一人では置いていけない */
       var dep = mates.filter(function (o) { return ctx.R(c, o).aff > 45 && (o.stress > 40 || (o.z.bitten && o.z.aware) || tieT(ctx, c, o) === 'parent' || tieT(ctx, c, o) === 'lover'); })[0];
       if (dep && c.tr.ac + c.tr.np + c.tr.jealous > 1.2 && rng() < 0.7) {
+        /* 相手を殺さないなら、道連れも自分の死も起こさない（手を止める） */
+        if (spare(ctx, dep, c)) {
+          ctx.pair(c, dep).noKillStop = c.i;
+          c.stress = Math.max(0, c.stress - 20);
+          ctx.act2({ actors: [c, dep], cat: 'conflict', fx: function () { ctx.mod2(c, dep, { aff: 4, ten: 6 }, { ten: 8 }); }, text: ctx.t(ctx.pick(SPARE_TAKE), c, dep), why: c.name + 'の絶望（焦り ' + Math.round(c.stress + 20) + '）／' + c.name + 'は' + dep.name + 'を「憎悪を持っても殺さない」相手にしている（相手ごとの設定）', mag: 30 });
+          return;
+        }
         var resist = dep.tr.caution * 0.5 + dep.tr.aggr * 0.4 + (dep.stress < 75 ? 0.2 : 0) > rng();
         if (resist) {
           ctx.pair(c, dep).zmercyTry = c.i;
