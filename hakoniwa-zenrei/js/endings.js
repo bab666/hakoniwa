@@ -118,7 +118,7 @@
     }
     if (LF) {
       headline += (out.length ? '脱出は' + out.length + '人。' : '') + HK.RoomLeft.note(res, X);
-      lines.push('取り残された人の結末：' + LF.title + (LF.id === 'friend' ? '（' + X.nm(LF.by[0]) + 'が外から扉を開けた）' : LF.id === 'again' ? '（' + LF.mobs.join('・') + 'が入ってきた）' : ''));
+      lines.push('取り残された人の結末：' + LF.title + (LF.id === 'friend' && LF.by && LF.by.length ? '（' + X.nm(LF.by[0]) + 'が外から扉を開けた）' : ''));
       (LF.vows || []).forEach(function (v) { lines.push(X.nm(v.a) + '：' + X.nm(v.b) + 'に' + { hate: '借りを返すと誓った', obsess: '必ず会いに行くと決めた', lovehate: 'もう一度会うと誓った（愛憎）', abandon: '置いていかれた恨みを忘れないと誓った' }[v.k]); });
     }
     (room.consumed || []).forEach(function (c) {
