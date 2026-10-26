@@ -271,6 +271,7 @@ js/safe-room.js
 js/share-card.js
 js/egoquiz.js
 js/saves.js
+js/portable.js
 js/tips.js
 late js/tips-scen-a.js
 late js/tips-scen-b.js

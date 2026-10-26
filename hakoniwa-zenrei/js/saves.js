@@ -58,6 +58,15 @@
     });
   }
 
+  /* すべて消す（まるごと読み込みの「置き換える」。portable.js） */
+  function clear() {
+    try { localStorage.removeItem(LS); } catch (e) { /* 使えない環境 */ }
+    return open().then(function (d) {
+      if (!d) return true;
+      return new Promise(function (ok) { try { var tx = d.transaction(ST, 'readwrite'); tx.objectStore(ST).clear(); tx.oncomplete = function () { ok(true); }; tx.onerror = function () { ok(false); }; } catch (e) { ok(false); } });
+    }).then(function (r) { cache = null; return r; });
+  }
+
   /* ---------- 結果からセーブデータを作る ---------- */
   function titleOf(res) { var e = res && (res.ending || res.end); return (e && e.title) || (res && res.summary) || ''; }
   function make(res) {
@@ -191,5 +200,5 @@
   /* 「経過と結末」に置くボタン */
   function button() { return '<div class="row savebar"><button class="btn" id="savebtn" data-act="saveres">💾 この結果をセーブ</button><button class="btn ghost small" data-act="saveresjson" title="ブラウザに保存せず、この結果をそのままJSONファイルに書き出す">JSONで書き出す</button><button class="btn ghost small" data-tab="saves">セーブデータを見る</button></div>'; }
 
-  HK.Saves = { render: render, button: button, save: save, all: all, importText: importText };
+  HK.Saves = { render: render, button: button, save: save, all: all, importText: importText, put: put, clear: clear, DB: DB, STORE: ST, LS: LS };
 })();

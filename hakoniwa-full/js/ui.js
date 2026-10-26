@@ -373,6 +373,8 @@
       '<div class="row" style="margin-top:8px"><button class="btn" data-act="import-add">追加で読み込む</button><button class="btn" data-act="import-replace">名簿を置き換える</button><span class="spacer"></span><button class="btn ghost" data-act="export">名簿をテキストでコピー</button></div>' +
       '<div class="row" style="margin-top:6px"><button class="btn" data-act="jsonout">住人をJSONで書き出す</button><button class="btn" data-act="jpick" aria-expanded="' + (jpOpen ? 'true' : 'false') + '">選んだ住人だけ書き出す</button><button class="btn" data-act="jsonadd">JSONを読み込む（追加）</button><button class="btn" data-act="jsonrep">JSONで置き換える</button><input type="file" id="jsonfile" accept=".json,application/json" hidden></div>' +
       pickPanel() +
+      /* 別の端末へ移す：まるごと書き出し・共有・文字列（portable.js） */
+      (HK.Portable ? HK.Portable.html() : '') +
       '<ul class="warn" id="warns" hidden></ul></div>' +
       '</div>' +
       '<h2 class="sec">住人　<span class="num" style="font-size:15px">' + S.chars.length + '/' + MAX + '</span>' + (HK.Tips ? HK.Tips.btn('cast') : '') + '</h2>' +
@@ -482,10 +484,12 @@
   /* ---------- JSONでの書き出し・読み込み ---------- */
   /* only（住人の id の配列）を渡すと、その住人だけを書き出す。
      選ばなかった住人との関係・恋愛相手の固定・呼び方・敬語の相手は、番号ではなく名前で書く（読み込む側で同じ名前の住人につながる） */
-  function rosterJSON(only) {
-    var idx = {}, name = {}, list = only ? S.chars.filter(function (c) { return only.indexOf(c.id) >= 0; }) : S.chars;
+  /* St を渡すと、今の名簿ではなくその状態から作る（まるごと読み込みの「足す」。portable.js が normState で整えて渡す）。そのときは高度設定を付けない */
+  function rosterJSON(only, St) {
+    var R = St || S;
+    var idx = {}, name = {}, list = only ? R.chars.filter(function (c) { return only.indexOf(c.id) >= 0; }) : R.chars;
     list.forEach(function (c, i) { idx[c.id] = i; });
-    S.chars.forEach(function (c) { name[c.id] = c.name; });
+    R.chars.forEach(function (c) { name[c.id] = c.name; });
     var ref = function (id) { return idx[id] != null ? idx[id] : only && name[id] ? name[id] : null; };
     var out = {
       format: 'hakoniwa-residents', version: 1, exported: new Date().toISOString(),
@@ -524,17 +528,17 @@
         if (c.loveNG && c.loveNG.length) { var ng = c.loveNG.map(ref).filter(function (x) { return x != null; }); if (ng.length) o.loveNG = ng; }
         if (c.calls) { var cl = {}; Object.keys(c.calls).forEach(function (id) { if (ref(id) != null && c.calls[id]) cl[ref(id)] = c.calls[id]; }); if (Object.keys(cl).length) o.calls = cl; }
         if (c.keigo) { var kg = Object.keys(c.keigo).filter(function (id) { return ref(id) != null && c.keigo[id]; }).map(ref); if (kg.length) o.keigo = kg; }
-        if (S.per && S.per[c.id]) o.per = S.per[c.id];
+        if (R.per && R.per[c.id]) o.per = R.per[c.id];
         return o;
       }),
-      ties: (S.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh'].forEach(function (f) { if (t[f]) o[f] = t[f]; }); return o; }),
-      teacher: S.teacher && idx[S.teacher] != null ? idx[S.teacher] : null,
+      ties: (R.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh'].forEach(function (f) { if (t[f]) o[f] = t[f]; }); return o; }),
+      teacher: R.teacher && idx[R.teacher] != null ? idx[R.teacher] : null,
       /* グループごとの「仲間」（書き出す住人のグループだけ） */
-      grpComrade: (function () { var m = {}, any = false; Object.keys(S.grpComrade || {}).forEach(function (g) { if (S.grpComrade[g] && S.chars.some(function (c) { return (only ? idx[c.id] != null : true) && inGrp(c, g); })) { m[g] = 1; any = true; } }); return any ? m : undefined; })(),
+      grpComrade: (function () { var m = {}, any = false; Object.keys(R.grpComrade || {}).forEach(function (g) { if (R.grpComrade[g] && R.chars.some(function (c) { return (only ? idx[c.id] != null : true) && inGrp(c, g); })) { m[g] = 1; any = true; } }); return any ? m : undefined; })(),
       /* 内容のスイッチ（R18版）も一緒に書き出す（全員を書き出すときだけ） */
-      ct: !only && !HK.SAFE_ON && S.glob && S.glob.ct && Object.keys(S.glob.ct).length ? S.glob.ct : undefined
+      ct: !only && !HK.SAFE_ON && R.glob && R.glob.ct && Object.keys(R.glob.ct).length ? R.glob.ct : undefined
     };
-    if (!only && HK.Adv) HK.Adv.exportTo(out);
+    if (!only && !St && HK.Adv) HK.Adv.exportTo(out);
     return out;
   }
   function exportJSON(only) {
