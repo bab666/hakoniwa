@@ -408,6 +408,8 @@
         if (swap) t += ST.fmt(pk(LK.TAKE[b.bound ? 'bound' : 'free']), vT) + ST.fmt(pk(actPool), vA);
         else if (hateNow) t += HSX.react(S, a, b, lv);
         else t += (giveIn ? ST.fmt(pk(hands(giveIn, a, b)), { a: a.name, b: b.name }) : '') + ST.fmt(pk(hands((rxText === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); }), a, b)), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
+        /* キスの最中の声（R18版のみ。moan-engine.js の共通の声 k0。言葉のない声）：受ける側が一つ。描写「ぼかす」・全年齢では足さない */
+        if (R18 && lew !== 'low' && LV[lv] === 'kiss' && HK.Moan && HK.Moan.pick && !bx.noR18 && rng() < 0.6) t += bx.name + '「' + HK.Moan.pick(S, bx, 'k0', {}) + '」';
         /* 最初の一回は、二人の関係で受け止め方が変わる */
         var RF = LK.REL && LK.REL.first[rel];
         if (pair.acts === 1 && RF && rng() < 0.75) t += ST.fmt(pk(RF), { a: a.name, b: b.name, c: (crusher || a).name, o: (crusher || a).o.name, u: nt ? nt.u.name : '', d: nt ? nt.d.name : '' });
@@ -437,6 +439,12 @@
           var nT = lv === 4 ? tp : ax, nB = lv === 4 ? tp.o : bx;
           var nR = LK.nightLine(S, nT, nB, lv === 4 ? 'deep' : 'early', { mode: ff ? 'ff' : fmPair(nT, nB) ? 'fm' : 'mf' });
           if (nR && nR.text) { t += nR.text; nightL = nR.label; if (lv === 4) pair.nightDeep = true; else pair.nightEarly = true; }
+        }
+        /* 夜の性格の短い一言（R18版のみ。locker-night-light.js）：early の文を出し終えた組の、キス・まさぐる（1・2）に。
+           同じコマで early の文を出したときと、敵対して口では嫌がっているときは足さない。攻めの文か受けの文のどちらか一つ */
+        if (R18 && lew !== 'low' && LK.nightLight && (lv === 1 || lv === 2) && pair.nightEarly && !nightL && !hateNow && rng() < 0.5) {
+          var nLt = LK.nightLight(S, ax, bx, {});
+          if (nLt && nLt.text) { t += nLt.text; nightL = nLt.label; }
         }
         /* 自分で攻めを選んだ人は、相手に「イかされる」側にしない */
         /* 繋がった瞬間には果てさせない（そこからの数コマを、続きの出来事で書く） */

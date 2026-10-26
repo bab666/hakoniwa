@@ -285,6 +285,7 @@ js/locker-crowd-r18.js
 js/locker-night-top.js
 js/locker-night-bot.js
 js/locker-night.js
+js/locker-night-light.js
 js/solo-locker.js
 js/rpg-data.js
 js/scenario-rpg.js

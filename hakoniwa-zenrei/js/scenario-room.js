@@ -671,6 +671,11 @@
         ctx.mod2(user, other, { att: 4 }, { att: other.tr.fc > 0.5 ? 5 : 1, ten: other.tr.cp > 0.65 ? 4 : 0 });
         ctx.flags.toolUsed = (ctx.flags.toolUsed || 0) + 1;
       }
+      /* キスの最中の声（R18版のみ。moan-engine.js の共通の声 k0。言葉のない声）：受ける側（受け攻めの受け）が一つ。体の関係を持てない組・R18に参加しない人・全年齢では足さない */
+      if (r.k === 'kiss' && !HK.SAFE_ON && HK.Moan && HK.Moan.pick && HK.Pos && okSex(a, b) && !a.noR18 && !b.noR18 && ctx.rng() < 0.6) {
+        var kv = HK.Pos.order(a, b, [a, b])[1];
+        text += kv.name + '「' + HK.Moan.pick(ctx, kv, 'k0', {}) + '」';
+      }
       /* 敵対の強さで嫌っていて、強引な性格の側がいれば、ちょっと乱暴に（R18版の描写は room-lewd.js） */
       var HKr = HK.HateKit, rough = HKr && (r.k === 'h' || r.k === 'kiss') ? HKr.forcer(ctx, a, b) : null;
       if (rough && !isH) {
