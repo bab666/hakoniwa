@@ -1149,7 +1149,7 @@
     if (tab === 'cast') renderCast(); else if (tab === 'box') renderBox();
     if (pendingSim) { var ps = pendingSim; pendingSim = null; simulate(ps[0], ps[1]); }
   };
-  /* onRes：描画の前に結果を渡す（履歴に結果を置く写しは、描画で付く印より前に取る。epilogue.js の afterDone など） */
+  /* onRes：描画の前に結果を渡す（履歴に結果を置く写しは、描画より前に取る。結末の組み立て HK.Endings.build は結果を書き換えないが、念のため） */
   function simulate(input, record, onRes) {
     if (HK.LATE_READY === false) { pendingSim = [input, record]; toast('データを読み込んでいます。終わりしだい動かします…'); return null; }
     var res;

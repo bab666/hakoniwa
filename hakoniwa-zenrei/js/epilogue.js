@@ -7,7 +7,11 @@
      箱庭専用の「その後」（無人島の island-after・部屋の三人 room-trio など）がすでに出した人は飛ばす（c.afterDone か、「〇〇のその後――」の行・「その後は「」の行く末）
    ■ 物語型（邪神村・吹雪の館・宇宙船・人狼村）：HK.Story.result から HK.Epilogue.story を呼び、結末の箇条書きに最期の言葉と「その後」を足す
    死の記録には、60% で「――〇〇が最期に遺した言葉：「……」」を足す（R18版の「ほのめかす」の和らげ lewd-unify.js より前に入る）。
-   台詞は「〇〇「……」」の形にして、口調の仕上げ（voice.js）を通す */
+   台詞は「〇〇「……」」の形にして、口調の仕上げ（voice.js）を通す。
+   「その後」の AF は、物語型（X.story。結果を作る途中なので口調の仕上げを通る）と結末の組み立て（X.build。口調の仕上げのあと）の両方で使う。
+   3本の台詞「…｜…｜…」は物語型では話し手の口調に言い換わるが、X.build では言い換えが効かないので、one() で態度に合う1本に絞ってから出す。
+   話し手が住人でない台詞（「誰かが「…」」など）は、はじめから1本で書く（話し手を取り違えて言い換えないように）。
+   HK.Epilogue.build は結果（res）を書き換えない（何度組み立てても同じ文になる） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -204,7 +208,7 @@
       polite: L('{a}は{p}を出たあと、関わった人たちに一人ずつ礼を伝えて回った。|{a}は「おかげさまで｜＝｜おかげさまで」と頭を下げ、元の暮らしに戻っていった。|{a}は外に出てからも、{p}で出会った人たちのことを折に触れて思い出した。')
     },
     dead: {
-      proud: L('{a}の強気な笑い方を、残された者たちは何度も思い出した。|{a}がいたら何と言ったか――皆、ときどきそれを口にした。|{a}の名前が出るたび、誰かが「あいつらしい｜＝｜あの人らしいです」と苦笑した。'),
+      proud: L('{a}の強気な笑い方を、残された者たちは何度も思い出した。|{a}がいたら何と言ったか――皆、ときどきそれを口にした。|{a}の名前が出るたび、誰かが「あいつらしい」と苦笑した。'),
       stern: L('{a}の残した言葉を、残された者たちは指針のように大切にした。|{a}が最後まで守ろうとしたものは、確かに誰かに受け継がれた。|{a}の几帳面な字の書き置きは、今も誰かの手元にある。'),
       tsun: L('{a}が素直に言えなかった気持ちは、残された者たちのほうがよく分かっていた。|{a}の憎まれ口が聞こえない静けさに、皆はなかなか慣れなかった。|{a}が隠していた優しさを、皆はあとになって一つずつ知った。'),
       gentle: L('{a}の穏やかな笑顔は、残された者たちの心に長く残った。|{a}のことを思い出すと、なぜか皆、少しだけ優しくなれた。|{a}がいた場所には、いつも誰かが花を置いた。'),
@@ -310,6 +314,17 @@
     if (lost) return { k: 'lost', b: lost };
     return { k: 'alone', b: null };
   }
+  /* 3本の台詞「くだけた常体｜硬い常体｜敬語」を1本に絞る（結末の組み立ては口調の仕上げのあとなので、言い換えが効かない）。
+     態度で選ぶ：丁寧（polite）は敬語、厳格・冷静（stern・cool）は硬い常体、ほかはくだけた常体。「＝」は左と同じ */
+  function one(t, a) {
+    var k = a === 'polite' ? 2 : a === 'stern' || a === 'cool' ? 1 : 0;
+    return String(t).replace(/「([^「」]*｜[^「」]*)」/g, function (m, q) {
+      var v = q.split('｜'), out = [];
+      v.forEach(function (x, i) { out[i] = x === '＝' && i > 0 ? out[i - 1] : x; });
+      return '「' + (out[Math.min(k, out.length - 1)] || out[0]) + '」';
+    });
+  }
+  X.one = one;
   X.after = function (res, c, used) {
     if (!res || !c) return '';
     var fc = fateCat(c);
@@ -327,7 +342,7 @@
         else if (md !== 'calm' || !(res.chars || []).some(function (o) { return o.alive === false; })) tail = pickU(MOOD[md] || MOOD.calm, seed + c.name + 'm', used);
       }
     }
-    return fill(base + tail, m);
+    return one(fill(base + tail, m), a);
   };
   X.pairAfter = function (res, p, used) {
     var C = res.chars || [], A = C[p.a], B = C[p.b];
@@ -382,7 +397,9 @@
       rest.forEach(function (c) {
         if (out.length >= MAXL) return;
         var t = X.after(res, c, used);
-        if (t) { out.push(c.name + 'のその後――' + t); c.afterDone = true; }
+        /* 書いた人の印は結果（res）に書き込まない（2回目以降の組み立て＝再描画・テキストでコピー・セーブ・履歴で「その後」が消えるため）。
+           この中では rest を一度しか回らないので、印は要らない */
+        if (t) out.push(c.name + 'のその後――' + t);
       });
       out.forEach(function (l) { E.lines.push(l); });
       /* 最期の言葉（口調の仕上げを通った、住人の覚え書きの行から） */
