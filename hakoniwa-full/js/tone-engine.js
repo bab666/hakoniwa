@@ -20,6 +20,7 @@
      断定=や                ← 〜だ → 〜や（だよ・だね・だろ・だった・だから・だけど も）
      助詞落とし=0.3         ← が・は・を を落とす割合
      存在=おる              ← いる／いた／いない／います → おる／おった／おらぬ（が・は・も・に などの直後だけ。〜ている は進行の規則）
+     短い文はため口=6       ← 敬語のベースで、助詞のない短い一言（大丈夫です→大丈夫、ありがとうございます→ありがとう）と短い問い（飲みますか？→飲む？）だけをため口にする（敬語まじり）
      縮約=はい              ← 分からない→分かんない、ちょうだい→ちょーだい など
      強調語=マジ／めっちゃ  ← 形容詞の前に差し込む（台詞に一度まで。文に勢い（！や強い語）があるときだけ）
      強調語の割合=0.4       ← 差し込む割合（既定 0.5）
@@ -193,6 +194,42 @@
     return m ? m[1] + '、' + q : 'あ、あの……' + q;
   }
 
+  /* 文末の表を一つの文に当てる（最初に合った項目だけ） */
+  function applyEnds(body, punct, ends, seed, i) {
+    if (!ends || !ends.length) return { body: body, punct: punct };
+    var st = splitTail(body), core = st[0];
+    if (core.slice(-1) === MARK) return { body: body, punct: punct };
+    for (var j = 0; j < ends.length; j++) {
+      var e = ends[j], from = e[0], qm = /[？?]$/.test(from);
+      /* 「ません？=ませんこと？」のように ？ 付きの項目は、文末記号ごと見る */
+      if (qm) { if (!/^[？?]/.test(punct)) continue; from = from.slice(0, -1); }
+      var head = core.slice(0, core.length - from.length);
+      if (core.length >= from.length && core.slice(core.length - from.length) === from && (!e[2] || e[2].test(head.replace(new RegExp(MARK, 'g'), '')))) {
+        var to = choose(e[1], seed + '#e' + i);
+        if (qm) { var tq = to.match(/[？?]+$/); to = to.replace(/[？?]+$/, ''); punct = (tq ? tq[0] : '') + punct.replace(/^[？?]+/, ''); }
+        /* {る}{た}{ない}{なかった}{よう}：丁寧形の語幹（〜ます の前）を活用させる */
+        if (/\{(る|た|ない|なかった|よう)\}/.test(to)) {
+          var sm = head.match(/([ぁ-ゖ一-鿿々ァ-ヶー]+?)([きぎしちにびみりいえけげせぜてでねべめれ]|[一-鿿々])$/);
+          var stem = sm ? sm[0] : head, rest = head.slice(0, head.length - stem.length);
+          /* 語幹は、直前の漢字・かな続き（「飲み」「やってみ」「勉強し」）。長すぎる語幹は最後の数文字に */
+          if (stem.length > 6) { rest = head.slice(0, head.length - 6); stem = head.slice(-6); }
+          to = to.replace(/\{(る|た|ない|なかった|よう)\}/g, function (m, f) { return conj(stem, f); });
+          return { body: rest + to + st[1], punct: punct };
+        }
+        return { body: head + to + st[1], punct: punct };
+      }
+    }
+    return { body: body, punct: punct };
+  }
+  var SET_PHRASE = /^(?:ありがとうございま(?:す|した)|よろしくお願いします|おはようございます|申し訳(?:あり|ござい)ません|おやすみなさい|お願いします|わかりました|分かりました|すみません|失礼します|了解です|大丈夫です|お疲れさまです|お疲れさまでした|ごめんなさい)$/;
+  /* 敬語 → ため口（規則「短い文はため口」で使う組み込みの表。長いものから） */
+  var CASUAL_ENDS = [
+    ['ありがとうございました', ['ありがとう']], ['ありがとうございます', ['ありがとう']], ['よろしくお願いします', ['よろしく']], ['おはようございます', ['おはよう']], ['申し訳ありません', ['ごめん']], ['申し訳ございません', ['ごめん']],
+    ['おやすみなさい', ['おやすみ']], ['ないでください', ['ないで']], ['お願いします', ['お願い']], ['わかりました', ['わかった']], ['分かりました', ['分かった']], ['すみません', ['ごめん']], ['失礼します', ['失礼']],
+    ['てください', ['て']], ['でください', ['で']], ['ください', ['ちょうだい']], ['ませんでした', ['{なかった}']], ['ましたか', ['{た}']], ['ませんか', ['{ない}']], ['ましょうか', ['{よう}か']], ['ましょう', ['{よう}']],
+    ['ますよね', ['{る}よね']], ['ますね', ['{る}ね']], ['ますよ', ['{る}よ']], ['ますか', ['{る}']], ['ました', ['{た}']], ['ません', ['{ない}']], ['ます', ['{る}']],
+    ['でしょうか', ['かな']], ['でしょう', ['でしょ']], ['ですよね', ['だよね']], ['ですね', ['ね'], /い$/], ['ですよ', ['よ'], /い$/], ['ですね', ['だね']], ['ですよ', ['だよ']], ['ですか', ['']], ['でした', ['だった']], ['です', ['']]
+  ];
   /* ---------- 適用 ---------- */
   T.apply = function (q, d, who) {
     if (!q || !d) return q;
@@ -219,31 +256,12 @@
       if (r.copula) body = ruleCopula(body, r.copula);
       if (r.drop) body = ruleDrop(body, r.drop, seed + i);
       /* 文末 */
-      var punct = s.punct;
-      if (d.ends && d.ends.length) {
-        var st = splitTail(body), core = st[0];
-        if (core.slice(-1) !== MARK) for (var j = 0; j < d.ends.length; j++) {
-          var e = d.ends[j], from = e[0], qm = /[？?]$/.test(from);
-          /* 「ません？=ませんこと？」のように ？ 付きの項目は、文末記号ごと見る */
-          if (qm) { if (!/^[？?]/.test(punct)) continue; from = from.slice(0, -1); }
-          var head = core.slice(0, core.length - from.length);
-          if (core.length >= from.length && core.slice(core.length - from.length) === from && (!e[2] || e[2].test(head.replace(new RegExp(MARK, 'g'), '')))) {
-            var to = choose(e[1], seed + '#e' + i);
-            if (qm) { var tq = to.match(/[？?]+$/); to = to.replace(/[？?]+$/, ''); punct = (tq ? tq[0] : '') + punct.replace(/^[？?]+/, ''); }
-            /* {る}{た}{ない}{なかった}{よう}：丁寧形の語幹（〜ます の前）を活用させる */
-            if (/\{(る|た|ない|なかった|よう)\}/.test(to)) {
-              var sm = head.match(/([ぁ-ゖ一-鿿々ァ-ヶー]+?)([きぎしちにびみりいえけげせぜてでねべめれ]|[一-鿿々])$/);
-              var stem = sm ? sm[0] : head, rest = head.slice(0, head.length - stem.length);
-              /* 語幹は、直前の漢字・かな続き（「飲み」「やってみ」「勉強し」）。長すぎる語幹は最後の数文字に */
-              if (stem.length > 6) { rest = head.slice(0, head.length - 6); stem = head.slice(-6); }
-              to = to.replace(/\{(る|た|ない|なかった|よう)\}/g, function (m, f) { return conj(stem, f); });
-              body = rest + to + st[1];
-            } else body = head + to + st[1];
-            break;
-          }
-        }
-      }
-      return { body: body.replace(new RegExp(MARK, 'g'), ''), punct: punct };
+      var punct = s.punct, core0 = splitTail(body)[0].replace(new RegExp(MARK, 'g'), '').replace(/^[…‥、\s　]+/, ''), coreLen = core0.length;
+      /* 短い文はため口（敬語まじり）：決まり文句（ありがとうございます・よろしくお願いします など）、助詞のない短い一言、短い問いは、組み込みの敬語→ため口の表で崩す。それ以外は辞書の文末 */
+      var pre0 = core0.replace(/(?:です|ます|ません|ました|でしょう|ください|ましょう|でした|ございます)[かねよ]*$/, '');
+      var sc = r.shortCasual != null && (SET_PHRASE.test(core0) || (coreLen <= r.shortCasual && !/[はがをにへとでもの]/.test(pre0)) || (/^[？?]/.test(punct) && coreLen <= r.shortCasual + 2));
+      var ap = applyEnds(body, punct, sc ? CASUAL_ENDS : d.ends, seed, i);
+      return { body: ap.body.replace(new RegExp(MARK, 'g'), ''), punct: ap.punct };
     });
     if (fx.stretch) ss = fxStretch(ss, seed);
     if (fx.bangOn) ss = fxBangOn(ss, seed);
@@ -260,7 +278,7 @@
   };
 
   /* ---------- 辞書の文字列を読む ---------- */
-  var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '強調語の割合': 'emphRate', '存在': 'exist' };
+  var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '強調語の割合': 'emphRate', '存在': 'exist', '短い文はため口': 'shortCasual' };
   var FX_KEYS = { '感嘆符を落とす': 'bangOff', '伸ばす': 'stretch', '言い切りに！': 'bangOn', '言い切りに!': 'bangOn', '短くする': 'short', '言いよどみ': 'stammer', '前に……': 'dots', '間を置く': 'pause' };
   /* 「元=先1／先2」の候補。空の候補（「です(い)=／です」の左側）は「消す」の意味で残す */
   function alts(v) { return String(v).split(/[／/]/).map(function (x) { return x.replace(/^\s+|\s+$/g, ''); }); }
@@ -306,6 +324,7 @@
         var rk = RULE_KEYS[k]; if (!rk) { out.errors.push((i + 1) + '行目：規則「' + k + '」は使えません（否定／進行／断定／助詞落とし／縮約／強調語）'); return; }
         if (rk === 'drop') { var rate = parseFloat(v); cur.rules.drop = rate > 0 ? Math.min(1, rate) : 0; }
         else if (rk === 'emphRate') { var er = parseFloat(v); cur.rules.emphRate = er >= 0 ? Math.min(1, er) : 0.5; }
+        else if (rk === 'shortCasual') { var sl = parseInt(v, 10); cur.rules.shortCasual = sl > 0 ? sl : 6; }
         else if (rk === 'contract') cur.rules.contract = yes(v);
         else if (rk === 'emph') cur.rules.emph = alts(v);
         else if (rk === 'neg') { if (/^(ぬ|へん|ん)$/.test(v)) cur.rules.neg = v; else out.errors.push((i + 1) + '行目：否定は ぬ／へん／ん'); }
