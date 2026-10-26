@@ -13,10 +13,10 @@
     final: L('{s:wet}。{a}「{m1}」――ローターが弱いところに押し当てられるたびに、{a}の腰がカメラの前でびくびくと跳ねた。テロップには「現在◯回目」の文字。{a}「{m2}」|{mc}「はい、あと三回！」――容赦のないカウントに、{a}はとろけた顔のままイかされ続けた。{s:wet}。{a}「{m2}」|{a}「{m1}」――電マの振動を最強にされた瞬間、{a}は台の上で潮を噴いてイった。{s:wet}。スタジオから「おおー」と歓声が上がった。'),
     finalTop: L('{a}は{mc}のネクタイを掴んで引き寄せ、電マを容赦なく押し当てた。{s:wet}。{mc}は進行も忘れて、情けない声を上げ続けた。|{a}は「司会の番だよ」と笑い、{mc}がイくまで手を緩めなかった。{s:wet}。スタジオは大爆笑だった。'),
     pairM: L('{t}は{b}の腰を掴んで、カメラの前で奥まで突き上げた。{s:hit}。{b}「{m1}」――スタッフのカンペには「もっと激しく」の文字。{b}「{m2}」|{s:hit}。{b}「{m2}」――{b}が先にイって、テロップに「勝者：{t}」と出た。'),
-    pairFM: L('{t}は{b}に跨り、ぱちゅん、ぱちゅんと腰を弾ませた。{s:hit}。{b}「{m1}」――搾りとられるように、{b}は{t}のナカで果てた。{s:cum}。|{t}「先にイったほうが負け♡」――{b}は三十秒もたなかった。{s:cum}。{b}「{m2}」'),
-    pairFF: L('{t}は{b}の脚を開かせ、カメラに見えるように指でナカをかき回した。{s:wet}。{b}「{m1}」――{b}は潮を噴いてイった。{b}「{m2}」|{t}は{b}のクリを舌で弾きながら、ピースサインをカメラに向けた。{s:suck}。{b}「{m2}」'),
+    pairFM: L('{t}は{b}に跨り、ぱちゅん、ぱちゅんと腰を弾ませた。{s:hit}。{b}「{m1}」――搾りとられるように、{b}は{t}の{ナカ}で果てた。{s:cum}。|{t}「先にイったほうが負け♡」――{b}は三十秒もたなかった。{s:cum}。{b}「{m2}」'),
+    pairFF: L('{t}は{b}の脚を開かせ、カメラに見えるように指で{ナカ}をかき回した。{s:wet}。{b}「{m1}」――{b}は潮を噴いてイった。{b}「{m2}」|{t}は{b}の{陰核}を舌で弾きながら、ピースサインをカメラに向けた。{s:suck}。{b}「{m2}」'),
     goneM: L('楽屋の扉に鍵をかけるなり、{t}は{b}を鏡台に手をつかせて、後ろから奥まで突き入れた。{s:hit}。{b}「{m1}」――鏡に映る自分のとろけた顔から、{b}は目を逸らせなかった。{b}「{m2}」|{s:hit}。{b}「{m2}」――廊下をスタッフが通るたびに、{b}は必死に口を押さえた。'),
-    goneFM: L('楽屋のソファで、{t}は{b}に跨って腰を落とした。{s:wet}。{b}「{m1}」――「収録より、こっちが本番♡」と囁かれ、{b}は{t}のナカで果てた。{s:cum}。|{t}は{b}のものを咥えてから、そのまま跨った。{s:suck}。{b}「{m2}」'),
+    goneFM: L('楽屋のソファで、{t}は{b}に跨って腰を落とした。{s:wet}。{b}「{m1}」――「収録より、こっちが本番♡」と囁かれ、{b}は{t}の{ナカ}で果てた。{s:cum}。|{t}は{b}のものを咥えてから、そのまま跨った。{s:suck}。{b}「{m2}」'),
     goneFF: L('楽屋の鏡の前で、{t}は{b}を後ろから抱きしめ、下着の中に指を滑り込ませた。{s:wet}。{b}「{m1}」――鏡越しに目が合ったまま、{b}はびくびくとイった。{b}「{m2}」|{t}は{b}をソファに寝かせ、脚のあいだに顔を埋めた。{s:suck}。{b}「{m2}」')
   };
   VA.THICK_ERO.goneSad = VA.THICK_ERO.goneM;
@@ -112,8 +112,10 @@
     if (u) { u.push(x); if (u.length > 40) u.shift(); }
     return x;
   }
+  /* 受ける側の声（{vb1}＝最中・{vb2}＝果てる）は、喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）を通す。この箱庭の軽い声（VB）も4割ほど残る */
   VA.thickVoice = function (rng, text, bot, top) {
-    var pb = VB[ps(bot)] || VB.gentle, pt = VT[ps(top)] || VT.gentle;
-    return String(text).replace(/\{vb1\}/g, function () { return pk(rng, pb[0]); }).replace(/\{vb2\}/g, function () { return pk(rng, pb[1]); }).replace(/\{vt\}/g, function () { return pk(rng, pt); });
+    var pb = VB[ps(bot)] || VB.gentle, pt = VT[ps(top)] || VT.gentle, MO = HK.Moan && HK.Moan.say ? HK.Moan : null;
+    var vb = function (k) { var old = function () { return pk(rng, pb[k]); }; return MO ? MO.say(rng, bot, k ? 'climax' : 'mid', { novel: true, top: top !== bot ? top : null }, old) : old(); };
+    return String(text).replace(/\{vb1\}/g, function () { return vb(0); }).replace(/\{vb2\}/g, function () { return vb(1); }).replace(/\{vt\}/g, function () { return pk(rng, pt); });
   };
 })();

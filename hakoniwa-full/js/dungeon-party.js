@@ -184,7 +184,7 @@
   };
   /* 敵視（hate-kit.js）：パーティの中のケンカ。嫌悪の強さで、口論から掴み合いまで */
   var setup0 = DG.partySetup;
-  DG.partySetup = function (S, input) { S.ties = (input && input.ties) || []; return setup0(S, input); };
+  DG.partySetup = function (S, input) { var PI = []; (S.party || []).forEach(function (h) { if (h && typeof h.i === 'number') PI[h.i] = h; }); S.ties = HK.Story && HK.Story.tiesOk ? HK.Story.tiesOk(PI, input && input.ties) : (input && input.ties) || []; return setup0(S, input); };
   var after0 = DG.partyAfter;
   DG.partyAfter = function (S, tgt, hit) {
     after0(S, tgt, hit);

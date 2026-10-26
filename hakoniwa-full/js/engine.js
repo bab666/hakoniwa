@@ -552,7 +552,8 @@
     });
     /* 箱庭が自動で足す関係（学園全体の先輩後輩など）。ユーザーが決めた関係のある組には足さない */
     /* 性行為の相手の固定「恋人とモブだけ」で使う、関係の恋人（恋人・番・運命の番）の一覧 */
-    (input.ties || []).forEach(function (t) { if (/^(lover|mate|fated)$/.test(t.type) && ctx.chars[t.a] && ctx.chars[t.b]) { (ctx.chars[t.a].loveSet = ctx.chars[t.a].loveSet || []).push(t.b); (ctx.chars[t.b].loveSet = ctx.chars[t.b].loveSet || []).push(t.a); } });
+    /* 恋愛・R18にしない組（HK.ngPair：恋愛相手を別の人に固定した組など）は、関係で恋人にしても恋人の一覧に入れない（ties.js も恋人の関係を当てない） */
+    (input.ties || []).forEach(function (t) { if (/^(lover|mate|fated)$/.test(t.type) && ctx.chars[t.a] && ctx.chars[t.b] && t.a !== t.b && !(HK.ngPair && HK.ngPair(ctx.chars[t.a], ctx.chars[t.b]))) { (ctx.chars[t.a].loveSet = ctx.chars[t.a].loveSet || []).push(t.b); (ctx.chars[t.b].loveSet = ctx.chars[t.b].loveSet || []).push(t.a); } });
     if (HK.Ties) HK.Ties.apply(ctx, (input.ties || []).concat(scen.extraTies ? scen.extraTies(ctx, input) || [] : []));
     /* 恋人が複数いる人の恋人どうし（関係の設定で、同じ人を恋人・番にしている二人）は、互いを恋愛・R18の相手にしない（coNG）。
        二人のあいだに恋愛の関係（恋人・セフレ・友達以上恋人未満・片想い・執着・元恋人など）を設定していれば除く */

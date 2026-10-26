@@ -80,6 +80,8 @@
 
   add({
     id: 'br', name: 'バトルロワイヤル', kicker: 'デスゲーム', zenreiOnly: true,
+    /* 殺し合いが本筋：住人の「憎悪を持っても殺さない」を越えて殺す（attr.js の HK.Attr.killForced） */
+    killMain: true,
     desc: '首輪をつけられ、ランダムな武器を一つ渡される。最後の一人だけが帰れる。',
     note: '※映画『バトル・ロワイアル』のパロディです。',
     unit: '時間帯', preRel: 2, lethal: true,
@@ -253,7 +255,7 @@
           ctx.mod(b, a, { trust: -80, ten: 40 });
           var res;
           if (a.weapon.sp === 'poison') {
-            if (ctx.rng() < 0.7) { ctx.kill(b, a, '水筒の水に毒が入っていた'); res = { text: '' }; }
+            if (ctx.rng() < 0.7) { ctx.kill(b, a, '水筒の水に毒が入っていた', { force: true }); res = { text: '' }; }
             else res = { text: b.name + 'は一口目で異変に気づき、水を吐き出した。' };
             return { mag: 40, text: ctx.t('{a}は{b}の水筒に、小瓶の中身を落とした。', a, b) + res.text, why: a.name + 'のドライさと目標「' + a.goal.label + '」' };
           }

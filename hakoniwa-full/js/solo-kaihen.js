@@ -167,6 +167,11 @@
   function okPair(a, b) { return !HK.Pos || HK.Pos.okSex(a, b); }
   /* 自分で攻めを選んだ人の喘ぎ・絶頂の声から、受け身の台詞を外す */
   function topL(p, list) { return HK.R18M && HK.R18M.topLines ? HK.R18M.topLines(p, list) : list; }
+  /* 小説調の果てる声：喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）から。元の表（Voice.CLIMAX。攻めを選んだ人は受け身の台詞を外したもの）も4割ほど残る */
+  function nClimax(S, who) {
+    var l = topL(who, HK.Voice.CLIMAX[who.persona]), old = function () { return pkF(S, l); };
+    return who.name + '「' + (HK.Moan && HK.Moan.say ? HK.Moan.say(S, who, 'climax', { novel: true }, old) : old()) + '」';
+  }
   /* 描写の作風「男性向け」（solo-kaihen-ero.js）。「ぼかす」のとき・小説調のとき・書き下ろしのないときは元の文 */
   function eOn(S) { return !!(HK.Ero && HK.Ero.on(S) && S.env.lewd !== 'low'); }
   function E(S, key, base) { return eOn(S) && HK.Ero.has('kaihen', key) ? HK.Ero.T.kaihen[key] : base; }
@@ -311,7 +316,7 @@
       if (KH.MOAN && kind0 === 'top' && rng() < (lew === 'high' ? 0.6 : 0.4)) { var mtk = 'moanTop.' + (g.hs || 0); t += g.name + '「' + pkF(S, ero && !gF && HK.Ero.has('kaihen', mtk) && rng() < 0.6 ? E(S, mtk, []) : topL(g, KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN))) + '」'; g.m.plea += 4 * g.sens; }
       if (KH.INNER && (kind0 === 'in' || kind0 === 'mouth' || kind0 === 'top') && rng() < (g.m.doubt > 15 ? 0.4 : 0.18)) { t += g.name + pkF(S, innerOf(S, g, kind0 === 'top' || (gTop && !gFree))); g.m.doubt += 2 * g.doubtRate; }
       /* 男性向けでは、受ける側の声は絶頂の文の中に入れる */
-      if (!ero && r && rng() < 0.45 && HK.Voice.CLIMAX[r.persona]) t += r.name + '「' + pkF(S, topL(r, HK.Voice.CLIMAX[r.persona])) + '」';
+      if (!ero && r && rng() < 0.45 && HK.Voice.CLIMAX[r.persona]) t += nClimax(S, r);
     }
     var ml = Math.round((r ? 6 + rng() * 8 : 4 + rng() * 12) * (1 + ai * 0.08));
     t += ST.fmt(pkF(S, climaxOf(KH.ACTKIND[act[0]] || KH.climaxKind(t))), { p: g.name, r: rname, ml: ml });
@@ -397,7 +402,7 @@
       if (!gAct && KH.MOAN && rng() < 0.6) { t += g.name + '「' + pkF(S, ok(KH.MOAN_P[g.persona] && rng() < 0.4 ? E(S, 'moan.' + g.persona, KH.MOAN_P[g.persona]) : E(S, 'moan', KH.MOAN)) || KH.MOAN) + '」'; g.m.plea += 6 * g.sens; }
       if (KH.INNER && rng() < (g.m.doubt > 15 ? 0.35 : 0.15)) { t += g.name + pkF(S, (g.accepted ? INNER_ACCEPT : gAct ? KH.INNER_TOP : KH.INNER).filter(function (x) { return !/奥/.test(x); })); if (HK._rxT) HK._rxT.push({ sc: 'kaihen', k: 'inner', who: g.name, acc: !!g.accepted }); g.m.doubt += 2 * g.doubtRate; }
       var who = gAct ? r : g;
-      if (!eOn(S) && rng() < 0.45 && HK.Voice.CLIMAX[who.persona]) t += who.name + '「' + pkF(S, topL(who, HK.Voice.CLIMAX[who.persona])) + '」';
+      if (!eOn(S) && rng() < 0.45 && HK.Voice.CLIMAX[who.persona]) t += nClimax(S, who);
       t += ST.fmt(pkF(S, FMT ? E(S, 'fm.take', KH.FM_CLIMAX) : /手袋|ミトン|グローブ/.test(act[0]) && gAct && HK.Ero && HK.Ero.has('kaihen', 'ff.glove') && eOn(S) ? HK.Ero.T.kaihen['ff.glove'] : E(S, 'ff.' + dir, KH.FF_CLIMAX[dir])), v);
     }
     var te = KH.talk && rng() < 0.45 ? KH.talk(S, 'end', g, r, r.name, ffK, true) : null;
@@ -623,7 +628,7 @@
       t += ST.fmt(pkF(S, act.lead), v) + ST.fmt(pkF(S, E(S, 'smob.' + pair + '.' + ak + '.mid', act.mid)), v);
       sx = saneTaken(S, SIT, p, mname);
       t += sx.text;
-      if (!eOn(S) && rng() < 0.5 && HK.Voice.CLIMAX[p.persona]) t += p.name + '「' + pkF(S, topL(p, HK.Voice.CLIMAX[p.persona])) + '」';
+      if (!eOn(S) && rng() < 0.5 && HK.Voice.CLIMAX[p.persona]) t += nClimax(S, p);
       t += ST.fmt(pkF(S, E(S, 'smob.' + pair + '.' + ak + '.climax', act.climax)), v) + stageCrowd(S, mname, p.name, true);
     }
     t = ef(S, t, null, p);

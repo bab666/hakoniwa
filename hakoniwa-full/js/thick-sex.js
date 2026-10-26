@@ -342,16 +342,21 @@
   function psOf(c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || c.persona || 'gentle'; }
   /* again … この回で同じ二人が二度目以降なら、前より早く崩れる文（REACT_AGAIN） */
   T.react = function (pick, b, again) { var ps = psOf(b), R = again ? T.REACT_AGAIN : T.REACT; return pick(R[ps] || R.gentle); };
-  /* 口調ごとの喘ぎ（novel-moan-tone.js：最中・果てる）を、態度の喘ぎに足して使う */
-  T.moan = function (pick, b, climax) {
+  /* 口調ごとの喘ぎ（novel-moan-tone.js：最中・果てる）を、態度の喘ぎに足して使う。
+     R（乱数か状態）を渡されたときは、喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調：♡なし・言葉多め）を通す。元の表も4割ほど残る */
+  T.moan = function (pick, b, climax, R) {
     var ps = psOf(b), M = climax ? T.CMOAN : T.MOAN, l = M[ps] || M.gentle, own = HK.NovelMoan ? HK.NovelMoan.list(b, climax ? 2 : 1) : [];
-    return pick(own.length ? l.concat(own) : l);
+    var old = function () { return pick(own.length ? l.concat(own) : l); };
+    if (R && HK.Moan && HK.Moan.say) return HK.Moan.say(R, b, climax ? 'climax' : 'mid', { novel: true, top: (HK.NovelMoan && HK.NovelMoan.top) || null }, old);
+    return old();
   };
 
   /* 一場面ぶんの段落（始まりは呼ぶ側が渡す）。opt = { pick, rng, a, b, style, open, after, place, jealous } */
   T.scene = function (opt) {
     /* 一回の結果の中で同じ文（反応・喘ぎ・場所の一文など）を繰り返さない（ero-kit.js の HK.Ero.freshPick） */
     var pick = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(opt.rng, opt.pick) : opt.pick, a = opt.a, b = opt.b, st = opt.style || 'gentle';
+    /* 夜の性格（attr.js）：サド＝荒い・意地悪＝焦らす・甘々＝優しい・恥じらい＝不慣れ の型を、気質から決めた型より優先する */
+    if (HK.Attr && HK.Attr.styleFor) st = HK.Attr.styleFor(HK.Attr.nightOf(a, b), st);
     if (HK.NovelMoan) HK.NovelMoan.top = a;
     /* 性器なしの人がいる組（pos-nogen.js）：受けが none なら口まで、攻めが none なら指と玩具だけ */
     if (HK.NoGen && HK.NoGen.on(a, b)) { var ng = HK.NoGen.scene({ pick: opt.pick, rng: opt.rng, a: a, b: b, open: opt.open, after: opt.after || false }); return { text: ng.text, hard: false, jealous: false, mode: ng.mode }; }
@@ -370,13 +375,15 @@
     else if (mode === 'fm') out.push(pick(T.FM_BODY[g]));
     else out.push(pick(jl ? T.JEALOUS_BODY : hard ? T.ROUGH_BODY : T.BODY[st] || T.BODY.gentle));
     /* 感じていく：受けの快感と喘ぎ、攻めの快感、場所の一文、崩れ方 */
-    var feel = pick(mode === 'ff' ? T.FEEL_FF : mode === 'fm' ? T.FEEL_FM : T.FEEL).replace('{mb}', T.moan(pick, b));
+    var feel = pick(mode === 'ff' ? T.FEEL_FF : mode === 'fm' ? T.FEEL_FM : T.FEEL).replace('{mb}', T.moan(pick, b, false, opt.rng));
     var fa = pick(T.FEEL_A[mode]), pl = opt.place && T.PLACE[opt.place] ? pick(T.PLACE[opt.place]) : '';
-    out.push(feel);
+    /* 夜の性格の一文（attr-r18.js：攻めの振る舞いと受けの崩れ方。どちらも決めていなければ空） */
+    var ntx = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(a, b, mode, pick, false) : '';
+    out.push(ntx + feel);
     /* 体の感触の段：住人の体格・種族・胸の一文（attr.js。何も決めていなければ空） */
     out.push((pl ? pl : '') + fa + T.react(pick, b, nth >= 2) + (HK.Attr ? HK.Attr.pairLine(a, b, 'touch', pick) : ''));
     var cl = mode === 'ff' ? pick(T.ffClimaxFor(g, ffBody)) : mode === 'fm' ? pick(T.FM_CLIMAX[g]) : pick(jl ? T.JEALOUS_CLIMAX : hard ? T.ROUGH_CLIMAX : T.CLIMAX[st] || T.CLIMAX.gentle);
-    out.push('{b}「' + T.moan(pick, b, true) + '」' + cl);
+    out.push('{b}「' + T.moan(pick, b, true, opt.rng) + '」' + cl);
     if (opt.after) out.push(opt.after);
     /* 種族のプレイの一文（attr-race-r18.js。二人とも種族がなければ何もしない）：前戯＝始まり・最中＝繋がって揺れる・山場＝果てる・事後＝余韻 */
     if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(out, a, b, pick, { fore: 0, mid: 1, climax: opt.after ? out.length - 2 : out.length - 1, after: opt.after ? out.length - 1 : -1 }, { mode: mode });

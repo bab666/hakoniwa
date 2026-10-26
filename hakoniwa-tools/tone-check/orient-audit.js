@@ -11,10 +11,12 @@ const { openBuild } = require('./lib');
 (async () => {
   const dir = process.argv[2], N = +process.argv[3] || 40, mode = process.argv[4] || 'r18', WHY = process.argv.includes('--why');
   if (!dir) { console.log('使い方: node orient-audit.js <ビルドのフォルダ> [回数] [r18|safe] [--why]'); process.exit(1); }
-  const { browser, page, errors } = await openBuild(dir, mode === 'safe' ? 'safe' : mode === 'r18' ? 'r18' : '');
+  const { browser, page, errors } = await openBuild(dir, mode === 'safe' ? 'safe' : mode === 'r18' ? 'r18' : '', { lewdMode: 'direct' });
   const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
   const r = await page.evaluate(({ N, WHY, ENVSET }) => {
     const SEX = /挿入|挿れ|射精|精液|愛液|ちんぽ|喘ぎ|喘い|腰を振|腰を打ち|奥まで(?:突|沈|貫)|(?<!牙が)深く沈|フェラ|咥え込|秘所|貫か|貫い|絶頂|イっ|イく|中に出|舐め上げ|乳首|性器|ひだ|襞|潮を|搾り取|犯し|犯さ|セックス|抱き潰|跨って腰|騎乗|ノット|夜を共に|体を重ね|肌を重ね|一夜を共に|抱かれ|抱いた|求め合/;
+    /* 出られない部屋の条件「『好き』と言い合う」を義理で満たす場面（扉を見たまま「好きだ。……これでいいか？」など）は告白ではないので O3 に数えない（3本化で硬い常体の「好きだ。」が CONF に当たるようになったため） */
+    const ROOM_LOVE_COND = /これでいい(?:か|ですか)?？|棒読み|扉を見たまま/;
     const CONF = /(?:付き合って|恋人になって)(?:ください|ほしい|くれ(?!た))|付き合おう|恋人になった|両想いに|告白した|想いを告げ|好きだ。|好きです。/;
     const NOTSEX = /(?:殺人|罪|過ち|犯罪)を犯[しさすせ]?|精液検査|ほかの結果：[^\n]*|ほかに：[^\n]*|アシスタントに[^。]*|抱いた(?:まま|肩|膝)|肩を抱|膝を抱|頭を抱|抱いた(?:子|赤)|日照りに喘|息を喘|旅路の果て|(?:胸|腹|喉|背中|心臓)を貫か/;
     const LOVE_T = /^(lover|fwb|mate|fated|crush|almost|ex|yan|worship)$/;
@@ -72,7 +74,7 @@ const { openBuild } = require('./lib');
           const t = e.text.replace(NOTSEX, '');
           var mm = t.match(SEX);
           if (mm && !ok(C[a], C[b])) note('O2', who(a) + '×' + who(b) + ' ｜ ' + (e.tag || e.label || '') + ' ｜「' + mm[0] + '」 ' + t.slice(Math.max(0, mm.index - 50), mm.index + 40));
-          else if (!mm && CONF.test(t) && !one(C[a], C[b]) && !ok(C[a], C[b])) note('O3', who(a) + '→' + who(b) + ' ｜ ' + (e.tag || e.label || '') + ' ｜ ' + e.text.slice(0, 120));
+          else if (!mm && CONF.test(t) && !ROOM_LOVE_COND.test(t) && !one(C[a], C[b]) && !ok(C[a], C[b])) note('O3', who(a) + '→' + who(b) + ' ｜ ' + (e.tag || e.label || '') + ' ｜ ' + e.text.slice(0, 120));
         });
       }
     });

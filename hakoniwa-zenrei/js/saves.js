@@ -137,7 +137,7 @@
         (Object.keys(scs).length > 1 ? '<select id="savefilter" aria-label="箱庭で絞り込む"><option value="">すべての箱庭</option>' + Object.keys(scs).map(function (k) { return '<option value="' + esc(k) + '"' + (filter === k ? ' selected' : '') + '>' + esc(scs[k]) + '</option>'; }).join('') + '</select>' : '') +
         '<input type="file" id="savefile" accept="application/json,.json" hidden></div></div>' +
         (shown.length ? '<ul class="savelist">' + shown.map(item).join('') + '</ul>' : '<p class="empty">まだセーブデータはありません。</p>') +
-        (hid ? '<p class="hint small">R18モードで保存した' + hid + '件は、R18モードのときだけ表示します。</p>' : '') +
+        (hid ? '<p class="hint small">' + (HK.SAFE_BUILD ? 'R18版で保存した' + hid + '件は、R18版（R18モード）のときだけ表示します。' : 'R18モードで保存した' + hid + '件は、R18モードのときだけ表示します。') + '</p>' : '') +
         '<p class="hint small">※ 保存した結果は、そのときの内容のまま開けます。「同じ条件でもう一度」は、今のバージョンで回し直すので、結果が変わることがあります。</p>';
     });
   }

@@ -176,10 +176,10 @@ body.noselect { -webkit-user-select: none; user-select: none; cursor: grabbing; 
 .tblwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
 table.per { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13px; }
 table.per th, table.per td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+table.per th .shmark { color: var(--accent, #3d6f93); font-size: 11px; margin-left: 2px; cursor: help; }
 table.per th { font-size: 12px; color: var(--muted); font-weight: 500; background: var(--bg); }
 table.per tr:last-child td { border-bottom: 0; }
 table.per tr.off td { opacity: 0.45; }
-table.per th .shmark { color: var(--accent, #3d6f93); font-size: 11px; margin-left: 2px; cursor: help; }
 table.per tr.off td:first-child { opacity: 1; }
 table.per select { max-width: 200px; }
 /* 箱庭ごとの住人表：見出し行と「参加・住人」の列を固定（横・縦にスクロールしても見失わない） */
@@ -387,8 +387,11 @@ table.per td:nth-child(2) b { white-space: nowrap; overflow: hidden; text-overfl
 .scen.adult.on { border-color: var(--adult-tag); box-shadow: inset 0 0 0 1px var(--adult-tag); }
 .r18tag { display: inline-block; padding: 0 6px; margin-left: 2px; border-radius: 3px; background: var(--adult-tag); color: var(--adult-tag-ink); font-weight: 700; letter-spacing: 0.04em; line-height: 1.6; }
 .site-foot .updated { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
-.scen.r18link { color: inherit; text-decoration: none; border-style: dashed; }
-.scen.r18link:hover, .scen.r18link:focus-visible { border-color: var(--accent); }
+.scen.r18link { color: inherit; text-decoration: none; border-style: dashed; cursor: default; }
+.scen.r18link:hover, .scen.r18link:focus-within { border-color: var(--accent); }
+.scen.r18link .r18buy { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.scen.r18link .r18buy a { flex: 1 1 auto; text-align: center; padding: 5px 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--accent); text-decoration: none; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.scen.r18link .r18buy a:hover, .scen.r18link .r18buy a:focus-visible { border-color: var(--accent); }
 .scnote { font-size: 12px; }
 
 /* 折りたたみ（項目ごと） */
@@ -479,6 +482,7 @@ details.zmap > summary:hover { background: var(--accent-soft); }
       <a href="https://kaimin.sakura.ne.jp/archive/#/links" target="_blank" rel="noopener">Tool置き場</a>
       <a href="https://forms.gle/c2sujawbdxJy62FP8" target="_blank" rel="noopener">アンケート</a>
       <a href="https://bab666.booth.pm" target="_blank" rel="noopener">BOOTH</a>
+      <a href="https://note.com/unimi_note/n/n6fe17bec9d5a" target="_blank" rel="noopener">note</a>
       <a href="https://x.com/doko2727" target="_blank" rel="noopener">X（Twitter）</a>
       <a href="https://bsky.app/profile/unichi.bsky.social" target="_blank" rel="noopener">Bluesky</a>
     </nav>
@@ -491,8 +495,8 @@ details.zmap > summary:hover { background: var(--accent-soft); }
 
 <script>window.HK_SAFE_BUILD = 1;</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script src="js/bundle-main.js?v=700e458009"></script>
-<script>(function () { var HK = window.HK; HK.LATE_READY = false; var s = document.createElement('script'); s.src = 'js/bundle-late.js?v=761080aa06';
+<script src="js/bundle-main.js?v=69aaf98a69"></script>
+<script>(function () { var HK = window.HK; HK.LATE_READY = false; var s = document.createElement('script'); s.src = 'js/bundle-late.js?v=d6644b07c6';
   s.onload = function () { HK.LATE_READY = true; if (HK.onLate) HK.onLate(); };
   s.onerror = function () { HK.LATE_READY = true; HK.LATE_FAILED = true; if (HK.onLate) HK.onLate(); };
   document.body.appendChild(s); })();</script>

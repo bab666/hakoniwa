@@ -145,6 +145,8 @@
     }
     /* 最初の犠牲者 */
     var pool = P.filter(function (q) { return q !== cul && q !== S.acc; });
+    /* 殺さない（attr.js の HK.Attr.noKillPair）相手は、ほかに狙える人がいれば最初の犠牲者にしない（same-story.js） */
+    if (HK.SameStory && HK.SameStory.spare) pool = HK.SameStory.spare(S, cul, pool);
     var v1;
     var tr0 = mot.triangle && tri.length ? rng.pick(tri) : null;
     if (S.host.npc) v1 = S.host;
@@ -208,6 +210,8 @@
         if (Y.SPEC) Y.SPEC.revive(S, day + 1, k ? 'eve' : 'noon');
         investigate(S);
         others(S);
+        /* 職業の捜査・職業×職業の出来事（yakata-jobs.js・yakata-jobs-pair.js） */
+        if (Y.JOBS) Y.JOBS.tick(S, day + 1, k);
         if (Y.FEUD) Y.FEUD.tick(S, day + 1);
         bondTick(S);
         culpritMove(S);
@@ -271,7 +275,7 @@
   /* ---------- 殺人 ---------- */
   function pickTrick(S) {
     var rng = S.rng, used = S.kills.map(function (k) { return k.trick; }), hard = S.env.hard / 50 + 1;
-    return HK.weighted(rng, Y.TRICKS.filter(function (t) { return used.indexOf(t) < 0; }), function (t) { return 1 / (1 + Math.abs(t.diff - hard)); });
+    return HK.weighted(rng, Y.TRICKS.filter(function (t) { return used.indexOf(t) < 0; }), function (t) { return 1 / (1 + Math.abs(t.diff - hard)) * (Y.JOBS ? Y.JOBS.trickW(S, t) : 1); });
   }
   function fmtV(S, v) {
     var rng = S.rng, inn = S.P.filter(function (q) { return alive(q) && q !== S.cul && q !== v; });
@@ -279,7 +283,7 @@
   }
   function murder(S, v, day, first) {
     var tr = pickTrick(S), m = fmtV(S, v);
-    var k = { v: v, trick: tr, day: day, m: m };
+    var k = { v: v, trick: tr, day: day, m: m, nk: HK.SameStory && HK.SameStory.note ? HK.SameStory.note(S, S.cul, v) : '' };
     S.kills.push(k);
     v.alive = false; v.fate = '殺された（' + day + '日目の夜・' + tr.place + '）';
     /* 手がかり：最初の事件は3つ＋動機、次からは1つずつ */
@@ -310,6 +314,11 @@
     else if (S.acc && alive(S.acc) && rng() < 0.15 + S.cul.tr.cold * 0.2) { tgt = S.acc; why = '共犯の' + S.acc.name + 'の口を封じた'; }
     else { tgt = HK.weighted(rng, live, function (q) { return (1 + Math.max(0, -bond(S, c, q)) * 3 - Math.max(0, bond(S, c, q)) * 0.8 - (S.mot.triangle && q === S.x ? 0.9 : 0)) * (Y.SPEC ? Y.SPEC.danger(q) : 1); }); why = plan ? '最初から次の獲物を決めていた（動機「' + S.mot.label + '」）' : '連続殺人（起きやすさ ' + S.env.serial + '）'; }
     if (!tgt) return;
+    /* 殺さない相手は、ほかに狙える人がいれば避ける（いなければ、やむを得ず。発見の理由書きに添える） */
+    if (HK.SameStory && HK.SameStory.nk && HK.SameStory.nk(S, c, tgt)) {
+      var nkAlt = HK.SameStory.spare(S, c, live).filter(function (q) { return q !== tgt && !HK.SameStory.nk(S, c, q); });
+      if (nkAlt.length) { tgt = nkAlt.sort(function (a, b) { return danger(b) - danger(a); })[0]; why += '（殺さないと決めた相手を避けて、' + tgt.name + 'を狙った）'; }
+    }
     S.nextWhy = why;
     /* 占い師の予見・バディの守り */
     var seer = S.P.filter(function (q) { return alive(q) && q.role === 'seer' && q !== c; })[0];
@@ -349,7 +358,7 @@
     k.found = true;
     var live = S.P.filter(alive), finder = rng.pick(live.filter(function (q) { return !q.isCul; }).concat(live)) || live[0];
     var t = F(pk(S, T.FIND), { a: finder.name, p: k.trick.place }) + F(k.trick.scene, k.m) + '――死因は、' + k.trick.method + 'だった。';
-    var o = ST.say(S, { actors: k.v.i != null ? [finder, k.v] : [finder], tag: '事件', kind: 'climax', text: t, why: (S.kills.length === 1 ? '最初の事件' : S.kills.length + '人目の犠牲者' + (k.why ? '：' + k.why + '……犯人の' + S.cul.name + 'が' : '')) + '（現場：' + k.trick.place + '・手口：' + k.trick.method + '・トリックの難しさ ' + k.trick.diff + '）', mag: 50 });
+    var o = ST.say(S, { actors: k.v.i != null ? [finder, k.v] : [finder], tag: '事件', kind: 'climax', text: t, why: (S.kills.length === 1 ? '最初の事件' : S.kills.length + '人目の犠牲者' + (k.why ? '：' + k.why + '……犯人の' + S.cul.name + 'が' : '')) + '（現場：' + k.trick.place + '・手口：' + k.trick.method + '・トリックの難しさ ' + k.trick.diff + '）' + (k.nk || ''), mag: 50 });
     ST.key(S, o, k.v.name + 'の死');
     live.forEach(function (p) { p.m.fear = clamp(p.m.fear + (p.prank ? 4 : 18) - (p.stats.nerve || 3) * 2, 0, 100); });
     /* 芸能人の思い込みが解ける */
@@ -390,7 +399,7 @@
   /* ---------- 捜査 ---------- */
   function conceal(S, c) {
     var h = S.mot.nobody ? skill(S.v1.i != null ? S.v1 : S.cul, 'hide') : skill(S.cul, 'hide');
-    return clamp(h * 0.27 + (c && c.kill ? c.kill.trick.diff * 0.07 : 0.1) + (S.acc ? 0.05 : 0) - (S.sloppy ? 0.15 : 0) + 0.05 + (S.env.hard - 50) / 250, 0, 0.75);
+    return clamp(h * 0.27 + (c && c.kill ? c.kill.trick.diff * 0.07 : 0.1) + (S.acc ? 0.05 : 0) - (S.sloppy ? 0.15 : 0) + 0.05 + (S.env.hard - 50) / 250 + (Y.JOBS ? Y.JOBS.conceal(S, c) : 0), 0, 0.75);
   }
   function gain(S, p, pref) {
     var left = S.pool.filter(function (c) { return !c.found && !c.lost && !c.fake; });
@@ -401,7 +410,7 @@
   }
   function investigate(S) {
     var rng = S.rng;
-    if (S.lateHeir) { var h = S.lateHeir; S.lateHeir = null; ST.say(S, { actors: [h], tag: '探偵役', text: S.cul.name + 'の推理は、どこか事件から目を逸らさせようとしているように聞こえた。' + h.name + 'は手帳を開いた。「……私が、調べる」', why: (S.cul.fakeDet ? '探偵の' + S.cul.name + 'が犯人なので、' : '') + h.name + 'が探偵役になった', mag: 30 }); }
+    if (S.lateHeir) { var h = S.lateHeir; S.lateHeir = null; ST.say(S, { actors: [h], tag: '探偵役', text: S.cul.name + 'の推理は、どこか事件から目を逸らさせようとしているように聞こえた。' + h.name + 'は手帳を開いた。「……私が、調べる｜＝｜……私が、調べます」', why: (S.cul.fakeDet ? '探偵の' + S.cul.name + 'が犯人なので、' : '') + h.name + 'が探偵役になった', mag: 30 }); }
     inv(S).filter(function (d) { return !d.mad; }).forEach(function (d) {
       if (!alive(d)) return;
       var left = S.pool.filter(function (c) { return !c.found && !c.lost; });
@@ -436,7 +445,7 @@
   /* 偽の証拠を見つけた：見破れるか */
   function fakeFound(S, d, c, bud) {
     var rng = S.rng, n0 = S.pool.filter(function (x) { return x.found && !x.fake; }).length;
-    var see = skill(d, 'obs') * 0.55 + (bud ? 0.1 : 0) + (d.role === 'prof' || d.role === 'doctor' ? 0.1 : 0) - (c.cun || 0.5) * 0.35 - (d.role === 'ponkotsu' ? 0.3 : 0);
+    var see = skill(d, 'obs') * 0.55 + (bud ? 0.1 : 0) + (d.role === 'prof' || d.role === 'doctor' ? 0.1 : 0) - (c.cun || 0.5) * 0.35 - (d.role === 'ponkotsu' ? 0.3 : 0) - (Y.JOBS ? Y.JOBS.fake(S) : 0);
     var t = F(pk(S, T.INV[c.type] || T.INV.obs), { a: d.name, v: S.v1.name }) + '――' + c.t + '。';
     if (rng() < see) {
       c.found = true; c.fake = false; c.exposed = true; c.t = c.t + '――ただし、それは偽装だった'; d.cnt.clue++;
@@ -473,7 +482,7 @@
       if (rng() > 0.3) return;
       var r = p.role, g, why = '';
       var mk = function (pool, type, tag, w) { if (p.isCul) return false; g = gain(S, p, type); if (!g) return false; ST.say(S, { actors: [p], tag: tag, text: F(pk(S, pool), { a: p.name, v: v ? v.v.name : '' }) + '――' + g + '。', why: w, mag: 20 }); return true; };
-      if (r === 'doctor' && !p.did && v) { p.did = 1; if (p.isCul) return ST.sayB(S, { actors: [p], tag: '検視', text: p.name + 'は検視を買って出た。「死因は見たとおりです」――それ以上は、何も言わなかった。', why: '医師が犯人なので、検視をごまかした' }, p.name + 'の検視'); if (mk(T.DOCTOR, 'med', '検視', '医師の検視')) return; }
+      if (r === 'doctor' && !p.did && v) { p.did = 1; if (p.isCul) return ST.sayB(S, { actors: [p], tag: '検視', text: p.name + 'は検視を買って出た。「死因は見たとおり｜死因は見たとおりだ｜死因は見たとおりです」――それ以上は、何も言わなかった。', why: '医師が犯人なので、検視をごまかした' }, p.name + 'の検視'); if (mk(T.DOCTOR, 'med', '検視', '医師の検視')) return; }
       if ((r === 'psychic' || r === 'mage') && v && rng() < 0.6) {
         if (r === 'mage' && rng() < 0.3) { p.m.sus = clamp(p.m.sus + 12, 0, 100); return ST.sayB(S, { actors: [p], tag: '降霊', text: F(pk(S, T.MAGE), { a: p.name, v: v.v.name }) + F(pk(S, T.MAGE_SUS), { a: p.name }), why: '魔術師は怪しまれた' }, p.name + 'の降霊'); }
         if (mk(r === 'mage' ? T.MAGE : T.PSYCHIC, 'spirit', r === 'mage' ? '降霊' : '霊視', '死者の声（霊感）')) return;
@@ -482,7 +491,7 @@
       }
       if (r === 'streamer' && rng() < 0.5 && mk(T.STREAM, 'search', '映像', '回しっぱなしのカメラ')) return;
       if (r === 'police' && rng() < 0.6) { if (p.isCul) return; if (mk(T.POLICE, 'talk', '取り調べ', '警察官の取り調べ')) return; }
-      if ((r === 'prof' || r === 'occult' || r === 'lawyer' || r === 'writer') && rng() < 0.35 && mk(L2(p.name + 'は、ふと口にした。「待って。これ、おかしくない？」'), 'lore', '気づき', role(p).label + 'の知識')) return;
+      if ((r === 'prof' || r === 'occult' || r === 'lawyer' || r === 'writer') && rng() < 0.35 && mk(L2(p.name + 'は、ふと口にした。「待って。これ、おかしくない？｜待て。これは、おかしくないか｜待ってください。これ、おかしくないですか？」'), 'lore', '気づき', role(p).label + 'の知識')) return;
       if (r === 'priest' && rng() < 0.5) { S.P.filter(alive).forEach(function (q) { q.m.fear = clamp(q.m.fear - 6, 0, 100); }); return ST.sayB(S, { actors: [p], tag: '弔い', text: p.name + 'は' + (v ? v.v.name : '死者') + 'のために祈りを捧げた。張りつめていた空気が、少しだけゆるんだ。', why: '神職が場を鎮めた（全員の恐怖 -6）' }, p.name + 'が祈った'); }
       if (alive(S.cul) && !S.mot.nobody && p !== S.cul && !p.isAcc && (p.cnt.clue > 0 || p.role === 'police' || p.role === 'reporter') && S.cul.m.sus > 25 && rng() < 0.35) return approach(S, p);
       /* 関係から：かばう・疑う */
@@ -544,11 +553,11 @@
     var clue = { type: 'med', t: '死亡推定時刻は夜中の二時ごろ。その時刻に一人でいたのは、' + (fb ? fb.name : '誰か') + 'だけだった', fake: true, b: fb, cun: skill(c, 'med') + c.tr.a * 0.3 };
     S.pool.push(clue);
     c.m.sus = clamp(c.m.sus - 15, 0, 100); if (fb) fb.m.sus = clamp(fb.m.sus + 12, 0, 100);
-    var o = ST.say(S, { actors: fb ? [c, fb] : [c], tag: '偽の検視', text: c.name + 'は手慣れた様子で' + k.v.name + 'の遺体を調べた。「死後硬直から見て、亡くなったのは夜中の二時ごろだね」――その時刻、' + c.name + 'は皆と一緒に広間にいた。', why: c.name + 'の検視の知識（' + (HK.DGK ? HK.DGK.KNOW_LABEL[c.kn] : '') + '）を使った偽装。死亡推定時刻をずらして、自分のアリバイを作った（' + c.name + 'が犯人）', mag: 22 });
+    var o = ST.say(S, { actors: fb ? [c, fb] : [c], tag: '偽の検視', text: c.name + 'は手慣れた様子で' + k.v.name + 'の遺体を調べた。「死後硬直から見て、亡くなったのは夜中の二時ごろだね｜死後硬直から見て、死んだのは夜中の二時ごろだ｜死後硬直から見て、亡くなったのは夜中の二時ごろですね」――その時刻、' + c.name + 'は皆と一緒に広間にいた。', why: c.name + 'の検視の知識（' + (HK.DGK ? HK.DGK.KNOW_LABEL[c.kn] : '') + '）を使った偽装。死亡推定時刻をずらして、自分のアリバイを作った（' + c.name + 'が犯人）', mag: 22 });
     if (ex && rng() < 0.25 + (skill(ex, 'med') - skill(c, 'med')) * 0.8 + ex.tr.a * 0.2) {
       clue.found = true; clue.fake = false; clue.exposed = true; clue.by = ex; clue.t = '死亡推定時刻の申告は嘘だった。' + k.v.name + 'が亡くなったのは、' + c.name + 'が一人でいた時間だった'; ex.cnt.clue++;
       c.m.sus = clamp(c.m.sus + 30, 0, 100); if (fb) fb.m.sus = clamp(fb.m.sus - 12, 0, 100);
-      ST.say(S, { actors: [ex, c], tag: '偽装を見破る', kind: 'climax', text: ex.name + 'が首を振った。「違う。死斑はもう固定されてる。顎の硬直も進みすぎだ。亡くなったのは、もっと早い。……どうして嘘をつくの、' + c.name + '」', why: ex.name + 'の検視の知識が、' + c.name + 'の偽装を見破った（検視 ' + Math.round(skill(ex, 'med') * 100) + ' 対 ' + Math.round(skill(c, 'med') * 100) + '）', mag: 30 });
+      ST.say(S, { actors: [ex, c], tag: '偽装を見破る', kind: 'climax', text: ex.name + 'が首を振った。「違う。死斑はもう固定されてる。顎の硬直も進みすぎだ。亡くなったのは、もっと早い。……どうして嘘をつくの、' + c.name + '｜違う。死斑はもう固定されている。顎の硬直も進みすぎだ。死んだのは、もっと早い。……なぜ嘘をつく、' + c.name + '｜違います。死斑はもう固定されています。顎の硬直も進みすぎです。亡くなったのは、もっと早い時刻です。……' + c.name + '、どうして嘘をつくんですか」', why: ex.name + 'の検視の知識が、' + c.name + 'の偽装を見破った（検視 ' + Math.round(skill(ex, 'med') * 100) + ' 対 ' + Math.round(skill(c, 'med') * 100) + '）', mag: 30 });
     }
     return true;
   }
@@ -569,6 +578,8 @@
     var misled = found ? bad.length / found : 0;
     var wrong = (enough ? 0.04 + S.fake * 0.04 : partial ? 0.22 + S.fake * 0.06 : 0.8) + misled * (1.1 - skill(d, 'obs') * 0.5) - skill(d, 'obs') * 0.05;
     if (d.role === 'ponkotsu') wrong += 0.3;
+    /* 犯人の嘘のうまさ（職業と正直さ。yakata-jobs.js） */
+    if (Y.JOBS) wrong += Y.JOBS.deduce(S);
     if (bad.length) { var cnt = {}; bad.forEach(function (x) { var b = x.fake ? x.b : x.misread; if (b && alive(b)) cnt[b.i] = (cnt[b.i] || 0) + 1; }); var bi = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0]; S.misTarget = bi != null ? S.P[+bi] : null; }
     var wr = rng() < clamp(wrong, 0, 0.95);
     /* なすりつけが通っていれば、正しい推理の一部が、なすりつけられた人へ向く（yakata-frame.js） */
@@ -584,7 +595,7 @@
     if (S.mot.nobody && !wrong) {
       /* 被害者の自作自演：犯人はいない */
       S.over = 'nobody';
-      var o0 = ST.say(S, { actors: [d, c], tag: '真相', kind: 'climax', text: t + '「この事件に、犯人はいません。' + S.v1.name + 'さんは、自ら命を絶った。――' + c.name + 'さんに、罪を着せるために」', why: '動機「' + S.mot.label + '」。' + d.name + 'の推理（手がかり ' + found(S) + '/' + S.need + '）', mag: 54 });
+      var o0 = ST.say(S, { actors: [d, c], tag: '真相', kind: 'climax', text: t + '「この事件に、犯人はいない。' + S.v1.name + 'は、自ら命を絶った。――' + c.name + 'に、罪を着せるために｜＝｜この事件に、犯人はいません。' + S.v1.name + 'さんは、自ら命を絶った。――' + c.name + 'さんに、罪を着せるために」', why: '動機「' + S.mot.label + '」。' + d.name + 'の推理（手がかり ' + found(S) + '/' + S.need + '）', mag: 54 });
       ST.key(S, o0, '真相：自作自演');
       return;
     }
@@ -609,7 +620,7 @@
       return;
     }
     ST.say(S, { actors: [c], tag: '告白', text: c.name + '「' + conf.replace(/^「|」$/g, '') + '」', why: '動機：' + S.mot.cat + '「' + S.mot.label + '」', mag: 40 });
-    if (S.acc && alive(S.acc)) { S.acc.bound = true; S.acc.fate = '共犯として捕まった'; ST.say(S, { actors: [S.acc, c], tag: '共犯', text: S.acc.name + 'は、うなだれた。「……私も、手を貸しました」', why: S.acc.name + 'は共犯だった（' + (relLabel(S, S.acc, c) || '協力者') + '）', mag: 30 }); }
+    if (S.acc && alive(S.acc)) { S.acc.bound = true; S.acc.fate = '共犯として捕まった'; ST.say(S, { actors: [S.acc, c], tag: '共犯', text: S.acc.name + 'は、うなだれた。「……私も、手を貸した｜＝｜……私も、手を貸しました」', why: S.acc.name + 'は共犯だった（' + (relLabel(S, S.acc, c) || '協力者') + '）', mag: 30 }); }
     reveal(S, c, d);
     /* 犯人の最後の動き */
     var t2 = c.tr, n = c.stats.nerve || 3;
@@ -617,6 +628,11 @@
     if (S.mot.id === 'split') ws.attack += 0.3;
     ws.suicide *= HK.Dark.endings(S); ws.attack *= HK.Dark.endings(S);   /* 展開の重さ：悪い結末（自害・探偵を襲う） */
     var e = HK.weighted(rng, Object.keys(ws), function (k) { return Math.pow(Math.max(0.03, ws[k]), 2); });
+    /* 殺さない相手（探偵）は、襲いかけても手を止める */
+    if (e === 'attack' && HK.SameStory && HK.SameStory.nk && HK.SameStory.nk(S, c, d)) {
+      c.bound = true; c.fate = '探偵を襲いかけ、自分で手を止めた'; S.over = 'arrest';
+      return ST.say(S, { actors: [c, d], tag: '結末', kind: 'climax', text: F(pk(S, T.END_ATTACK), { c: c.name, d: d.name }) + '――振り上げた手は、' + d.name + 'の目の前で止まった。' + c.name + 'は、そのまま膝をついた。翌朝、吹雪が止み、' + c.name + 'は警察に引き渡された。', why: c.name + 'は探偵を襲いかけたが、殺さないと決めた相手だった（殺さないの指定）', mag: 46 });
+    }
     if (e === 'attack') {
       var stop = live.filter(function (q) { return q !== c && q !== d && !q.bound; }).sort(function (a, b) { return skill(b, 'fight') + (d.buddies.indexOf(b) >= 0 ? 0.3 : 0) - skill(a, 'fight') - (d.buddies.indexOf(a) >= 0 ? 0.3 : 0); })[0];
       var ta = F(pk(S, T.END_ATTACK), { c: c.name, d: d.name });
@@ -665,6 +681,8 @@
       q.m.fear = clamp(q.m.fear + (k === 'bad' ? 0 : 20), 0, 100);
       ST.say(S, { actors: [q, c], tag: '動揺', text: F(pk(S, Y.REVEAL[k]), { b: q.name, c: c.name, sensei: sensei(q, c) }), why: q.name + 'は真相を知らなかった（' + (relLabel(S, q, c) || (S.relLab && S.relLab[rk(q, c)]) || '館で深まった関係') + '）', mag: k === 'bad' ? 20 : 36 });
     });
+    /* 犯人が同一人物だったときの、もう一人の反応（same-story.js） */
+    if (HK.SameStory && HK.SameStory.reveal) HK.SameStory.reveal(S, c, d);
   }
 
   /* ---------- 吹雪の館で深まる関係 ---------- */

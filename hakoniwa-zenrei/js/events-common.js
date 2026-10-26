@@ -62,7 +62,7 @@
         ctx.mod(a, b, { aff: 3 });
         ctx.stress(b, -12);
         return {
-          text: ctx.t(ctx.pick(['{a}は{b}の顔色の悪さに気づき、黙って隣に座った。', '{a}が{b}の分の飲み物を用意していた。{b}は小さく礼を言った。', '「無理してない？」と{a}が訊いた。{b}は答えるまでに少し時間がかかった。']), a, b),
+          text: ctx.t(ctx.pick(['{a}は{b}の顔色の悪さに気づき、黙って隣に座った。', '{a}が{b}の分の飲み物を用意していた。{b}は小さく礼を言った。', '「無理してない？｜無理をしていないか｜無理をしていませんか？」と{a}が訊いた。{b}は答えるまでに少し時間がかかった。']), a, b),
           why: a.name + 'の' + lv(a, 'NP') + (b.stress > 40 ? '、' + b.name + 'の疲弊' : '')
         };
       }
@@ -77,7 +77,7 @@
           return { text: ctx.t('{a}が{b}の' + topic(ctx, 'why') + 'に口を出した。{b}は反論せずに従った。', a, b), why: a.name + 'の' + lv(a, 'CP') + 'に、' + b.name + 'の' + lv(b, 'AC') + 'が引いた' };
         }
         ctx.mod2(a, b, { ten: 10, aff: -4 }, { ten: 14, aff: -7 });
-        return { text: ctx.t('{a}が' + topic(ctx, 'why') + 'について正論を言うと、{b}が噛みついた。「いちいちうるさい」', a, b), why: a.name + 'のCPと' + b.name + 'のFC（' + Math.round(b.eg.FC) + '）が衝突' };
+        return { text: ctx.t('{a}が' + topic(ctx, 'why') + 'について正論を言うと、{b}が噛みついた。「いちいちうるさい｜いちいちうるさいな｜いちいち、うるさいです」', a, b), why: a.name + 'のCPと' + b.name + 'のFC（' + Math.round(b.eg.FC) + '）が衝突' };
       }
     },
     {
@@ -92,7 +92,7 @@
         }
         if (b.tr.cold > 0.6) {
           ctx.mod2(a, b, { aff: -6, trust: -8 }, { trust: 2 });
-          return { cat: 'conflict', text: ctx.t('{a}が打ち明けた悩みに、{b}は「で、どうしたいの」とだけ返した。{a}は話すのをやめた。', a, b), why: b.name + 'のドライさ（A高・NP低）が' + a.name + 'の求めるものと噛み合わなかった' };
+          return { cat: 'conflict', text: ctx.t('{a}が打ち明けた悩みに、{b}は「で、どうしたいの｜で、どうしたいんだ｜で、どうしたいんですか」とだけ返した。{a}は話すのをやめた。', a, b), why: b.name + 'のドライさ（A高・NP低）が' + a.name + 'の求めるものと噛み合わなかった' };
         }
         ctx.mod2(a, b, { trust: 5, aff: 3 }, { trust: 3 });
         return { text: ctx.t('{a}は{b}に少しだけ本音を話した。{b}は曖昧に頷いた。', a, b), why: '打ち明けたい' + a.name + 'と、受け止め方に迷う' + b.name };
@@ -125,7 +125,7 @@
         var shy = b.tr.ac > 0.6;
         ctx.mod2(a, b, { att: 4, aff: 2 }, { att: shy ? 8 : 5, aff: 4 });
         return {
-          text: ctx.t(shy ? '{a}に' + topic(ctx, 'good') + 'を褒められて、{b}は返事をし損ねて俯いた。' : '{a}が{b}の' + topic(ctx, 'good') + 'を褒めた。{b}は「知ってる」と笑った。', a, b),
+          text: ctx.t(shy ? '{a}に' + topic(ctx, 'good') + 'を褒められて、{b}は返事をし損ねて俯いた。' : '{a}が{b}の' + topic(ctx, 'good') + 'を褒めた。{b}は「知ってる｜知っている｜知っています」と笑った。', a, b),
           why: a.name + 'の素直さ（NP・FC）' + (shy ? '、' + b.name + 'のAC高（褒められ慣れていない）' : '')
         };
       }
@@ -195,10 +195,10 @@
       run: function (ctx, a, b) {
         if (b.tr.cp > 0.7 && b.tr.np < 0.4) {
           ctx.mod2(a, b, { ten: -4 }, { ten: -2, trust: 2 });
-          return { text: ctx.t('{a}が先に謝った。{b}は「最初からそうすればいい」とだけ言った。', a, b), why: b.name + 'のCP高・NP低：謝罪を当然として受け取る' };
+          return { text: ctx.t('{a}が先に謝った。{b}は「最初からそうすればいいじゃん｜最初からそうすればいい｜最初からそうすればいいんです」とだけ言った。', a, b), why: b.name + 'のCP高・NP低：謝罪を当然として受け取る' };
         }
         ctx.mod2(a, b, { ten: -14, trust: 5 }, { ten: -16, trust: 8, aff: 5 });
-        return { text: ctx.t('{a}が{b}に頭を下げた。{b}も「こっちも悪かった」と返した。', a, b), why: a.name + 'のAC・NP（関係を修復したがる）' };
+        return { text: ctx.t('{a}が{b}に頭を下げた。{b}も「こっちも悪かった｜＝｜こちらも悪かったです」と返した。', a, b), why: a.name + 'のAC・NP（関係を修復したがる）' };
       }
     },
     {

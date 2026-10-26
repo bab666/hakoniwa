@@ -121,7 +121,7 @@
     var S = o.S || (o.rng && o.rng.int ? { rng: o.rng } : null), t = '';
     for (var i = 0; i < 8; i++) {
       if (o.ero && HK.Ero && HK.Ero.moan && S && S.rng && S.rng.int) t = HK.Ero.moan(S, who, st, { deep: false });
-      else if (HK.ThickSex && HK.ThickSex.moan) t = HK.ThickSex.moan(pick, who, st >= 2);
+      else if (HK.ThickSex && HK.ThickSex.moan) t = HK.ThickSex.moan(pick, who, st >= 2, S || o.rng);
       if (t && !MOAN_NG.test(t)) return t;
     }
     return st >= 2 ? (o.ero ? 'あ、あぁっ♡♡　だめ、きちゃう……っ♡♡' : 'あ……っ、だめ、きちゃう……っ') : (o.ero ? 'ん、ぁ……♡　そこ、だめ……♡' : 'ん……っ、ふ、ぁ……');
@@ -178,6 +178,8 @@
   /* ---------- 見直し（取りこぼし対策） ---------- */
   /* 性的でない言い回しは判定の前に消す（pos-audit.js の NONSEX と同じ考え方） */
   var NONSEX = /迎え入れるように[^。]{0,4}(?:両腕|腕)|(?:巣|群れ|社会|輪)で(?:ひとつ|一つ)にな|(?:手|掌|両手|腕|指|毛布|布団|胸)の(?:中|奥)(?:で|に|へ|から)?|腰を振(?:って|りながら)踊|の(?:一つ|ひとつ)に(?:な|数え)|(?:島|森|山|洞窟|洞穴|谷|村|路地|廊下|建物|屋敷|館|店|倉庫|船|艦|基地|通路|坑道|神殿|祠|社|遺跡|迷宮|森の|林|藪|茂み|浜|岩場|棚|引き出し|押し入れ|クローゼット|鞄|カバン|袋|胸|心|記憶|目|瞳|頭)の(?:奥|中)|奥(?:の部屋|の間|の院|座敷|歯|義|様|さん|手|地|深い|ゆかし)|釣り竿|物干し竿|竿竹|ヤドカリ|カリカリ|カリスマ|影が(?:一つ|ひとつ)に|一物の|腹に一物|白濁した(?:湯|水|液|霧|空)|犯人|犯行|犯罪|上達|到達|配達|伝達|達成|発達|通達|熟達|調達|速達|先達|一貫|貫徹|貫通|貫禄|突き止め|突き当た|突き放|突き返|突き出|突き抜け|(?:拳|腕|手|杖|旗|剣|槍)を(?:天に)?突き上げ|(?:電話|回線|通信|無線|話|気持ち|心|記憶|縁|手)が繋が|繋がり(?:のある|を感じ|が深|がある)|(?:洞窟|森|遺跡|施設|地下|迷宮|神殿)の最奥|(?:情報|知識|映像|光|風|水|空気|お茶|茶|酒|視線|注目|愛情|力|魔力|毒)(?:が|を)?[^。]{0,4}(?:注がれ|流れ込|注ぎ)|注がれた(?:お茶|茶|酒|水|コーヒー|紅茶|スープ|グラス|杯)|(?:お茶|茶|酒|水|コーヒー|紅茶|スープ)を注/g;
+  /* 体の語の印（{男性器} など。lewd-words.js）は、判定の前に直接の語へ戻してから見る */
+  function cl(x) { var s = String(x), LW = HK.LewdWords; if (LW && LW.direct && s.indexOf('{') >= 0) s = LW.direct(s); return s.replace(NONSEX, '＿'); }
   /* 本文が性的な場面か（はっきりした語だけで見る。「奥」「抱」「腰」など、ふだんの文にも出る語では決めない） */
   var SEXT = /突き続け|脚を開かせ|押し倒|組み敷|押し殺した声|声が漏れ|甘い声|エッチ|イカせ|イかせ|イった|イっちゃ|イっ(?:て|た)|イく|イき|果て(?:た|て|る(?!し)|ない)(?!し)|喘|挿れ|挿入|舐め(?:回|上げ|取|られ|させ)|愛撫|達し(?:た|て|そう)|体を重ね|♡|濡れ(?:た|て)(?:ところ|奥|そこ|中|秘)|とろとろ|蜜が|蜜を|搾り|脈打|ノット|種付け|孕ま|白濁|中に出|咥え|しゃぶ|射精|精液|絶頂|快感|快楽|抱き潰|抱いた|抱かれ|犯され|犯し(?:た|て)|貫かれ|貫い|突き上げられ|跨[っがりる]|腰を(?:振|打ちつけ|打ち付け|沈め|落と|揺ら)|乳首|胸の先|脚のあいだ|脚の間|秘所|膣|ちんぽ|おまんこ|嬌声|甘い声|根元まで|媚薬|扱かれ|扱い(?:た|て)|しごか|勃|硬くなった|熱く張りつめ|昂り|一つにな|ひとつにな|繋がっ|最奥|奥まで(?:突|沈|貫|届|入|埋)|奥を(?:突|抉|擦)|締めつけ|締め付け/;
   var MALE = P.MALE_RE;
@@ -193,7 +195,7 @@
   /* 文が none の人の場面にふさわしくないか。top＝none の人が攻め */
   NG.bad = function (sen, top, sexy) {
     if (sexy === false) return false;
-    var s = String(sen).replace(NONSEX, '＿');
+    var s = cl(sen);
     if (MALE.test(s) || MALE2.test(s) || FEM.test(s)) return true;
     /* 受けの none の人から精を採った量（常識改変の「12ml」など）は書かない */
     if (!top && /\d+\s*ml|\d+ミリ/.test(s)) return true;
@@ -218,11 +220,11 @@
   var EXPL = /の奥を(?:突|抉|擦|叩)|腰を落とし[^。]{0,16}(?:揺ら|沈|呑|咥|繋|動|擦)|(?:の|が)(?:中|奥|ナカ)で(?:果て|弾け|脈打)|熱が[^。]{0,10}(?:中|奥)で|(?:喉|奥|中)(?:の奥)?まで迎え入れ|扱かれ|搾られ|果て続け|\d+ml|採取|根元まで|での繋がり|(?:ゆっくりと|上から|深く|自分から|正確に|静かに|そのまま)腰を落と|打ちつけ(?:始め|た|て|る)|打ち付け|奥まで(?:沈|押し入|突|貫|届|埋|呑|入|暴|犯)|奥まで、?[^。]{0,12}(?:沈め|突き入|押し入)|器官を[^。]{0,16}沈め|体の奥まで(?:探|潜|入|届|這)|小刻みに奥を突|押し入っ|押し入れられ|腰を(?:沈め|打ちつけ|打ち付け|振)|深く(?:腰を|沈め|突|貫)|突き上げ|繋がった|繋がって|繋がり合|深く繋が|繋がると|繋がり直|先走り|竿|花芯|挿れ|貫い|貫か|中に出|注がれ|注ぎ込|ナカ|膣|秘所|射精|精液|ちんぽ|肉棒|ねじ込|搾り取|扱き(?:上げ|ながら|続け|立て)|扱いて|扱いた|しごい|しごか|抜き差し|ピストン|子宮|結腸/;
   NG.ownStrict = function (t, nm) {
     var e = nm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(e + '(?:の|自身の)(?:もの|モノ)(?:が|を|は|で|に)(?=[^。]{0,16}(?:包|握|扱|しご|咥|舐|擦|撫|吸|脈|硬|張|反り|跳|震|弾|放|濡|勃|根元|先|跨|呑|沈|迎え))').test(String(t).replace(NONSEX, '＿'));
+    return new RegExp(e + '(?:の|自身の)(?:もの|モノ)(?:が|を|は|で|に)(?=[^。]{0,16}(?:包|握|扱|しご|咥|舐|擦|撫|吸|脈|硬|張|反り|跳|震|弾|放|濡|勃|根元|先|跨|呑|沈|迎え))').test(cl(t));
   };
-  NG.sexS = function (x) { var c = String(x).replace(NONSEX, '＿'); return VSTRONG.test(c) || EXPL.test(c) || SEXT.test(c) || FEM.test(c) || MALE.test(c); };
+  NG.sexS = function (x) { var c = cl(x); return VSTRONG.test(c) || EXPL.test(c) || SEXT.test(c) || FEM.test(c) || MALE.test(c); };
   NG.sexy = function (t) {
-    var c = String(t).replace(NONSEX, '＿');
+    var c = cl(t);
     if (VSTRONG.test(c) || EXPL.test(c) || FEM.test(c) || MALE.test(c)) return true;
     var m = c.match(new RegExp(SEXT.source, 'g'));
     return !!(m && m.length >= 2);
@@ -325,7 +327,7 @@
         if (Q) { var o = P.order(N, Q, [N, Q]); top = o[0] === N; }
         /* モブが相手：攻め指定（モブには受けでない）なら攻め。文の中で none の人が自分から挿れる書き方なら攻めとして扱う */
         else top = P.hardTopNpc(N) || new RegExp(N.name + '(?:は|が)[^。「」]{0,30}?(?:貫い|突き入れ(?!られ)|挿れ(?!られ)|腰を(?:振っ|打ちつけ)(?!られ)|中に出し|射精し|注ぎ込ん|沈めて|沈めた|押し入っ|ねじ込ん)').test(sen);
-        var own = sexy ? NG.own(String(sen).replace(NONSEX, '＿'), N.name) : NG.ownStrict(sen, N.name);
+        var own = sexy ? NG.own(cl(sen), N.name) : NG.ownStrict(sen, N.name);
         roles[i] = { top: top, Q: Q };
         if (own || NG.bad(sen, top, sexy)) bad.push(i);
       });
@@ -333,7 +335,7 @@
       /* 相手：悪い文に名前が出る住人。出ないときは、悪い文にモブ・魔物の語があればモブ、なければ本文のもう一人 */
       var badTxt = bad.map(function (i) { return list[i]; }).join(''), named2 = others.filter(function (c) { return badTxt.indexOf(c.name) >= 0; });
       /* 悪い文に名前がなければ、性的な文に名前が出る住人（一人だけのとき）。それもなければモブ・魔物が相手 */
-      var sexTxt = list.filter(function (x) { return SEXT.test(String(x).replace(NONSEX, '＿')); }).join(''), named3 = others.filter(function (c) { return sexTxt.indexOf(c.name) >= 0; });
+      var sexTxt = list.filter(function (x) { return SEXT.test(cl(x)); }).join(''), named3 = others.filter(function (c) { return sexTxt.indexOf(c.name) >= 0; });
       var Q = named2.length ? named2[0] : hasMob(badTxt) ? null : named3.length === 1 ? named3[0] : null;
       if (Q && !P.okSex(N, Q)) Q = null;
       var top;

@@ -184,6 +184,8 @@
     if (typeof S0.teacher !== 'string') S0.teacher = '';
     if (typeof S0.randFrom !== 'string') S0.randFrom = '';
     S0.randN = Math.max(0, Math.min(100, parseInt(S0.randN, 10) || 0)) || '';
+    /* 版の印と保存日時（控えとの照らし合わせに使う。下の bkHold） */
+    S0.v = +S0.v || 0; S0.savedAt = +S0.savedAt || 0;
     /* グループごとの「このグループを仲間とみなす」（グループ名 → 1） */
     S0.grpComrade = obj(S0.grpComrade);
     Object.keys(S0.grpComrade).forEach(function (g) { if (!S0.grpComrade[g] || !String(g).trim()) delete S0.grpComrade[g]; else S0.grpComrade[g] = 1; });
@@ -205,6 +207,25 @@
       if (!c.race || c.race === 'human') { c.race = 'vampire'; delete p.pick.special; }
     });
   }
+  /* ---------- 住人・関係の控え（hakoniwa:state:backup） ----------
+     旧版（同じドメインに置いた hako_R18_old など）は保存の場所を共有していて、開いて何か変えると、旧版の知らない関係などを落として state を書き戻す。
+     今の版は保存のたびに、版の印（STATE_V）と保存日時（savedAt）を付けた控えも書く。起動時に state が控えと食い違い、控えにあるものが欠けていれば、
+     画面の上に知らせを出して控えから戻せるようにする（知らせを出しているあいだは控えを書き換えない）。履歴・セーブは対象外 */
+  var STATE_V = 2026102602, bkHold = null;
+  function bkBody(st) { var o = {}; Object.keys(st || {}).forEach(function (k) { if (k !== 'v' && k !== 'savedAt') o[k] = st[k]; }); return JSON.stringify(o); }
+  function bkLost(b, s) {
+    var full = function (v) { return !(v == null || v === '' || v === false || (typeof v === 'object' && !Object.keys(v).length)); };
+    var tk = function (t) { return t ? [t.a, t.b, t.type].join('|') : ''; }, have = (Array.isArray(s.ties) ? s.ties : []).map(tk), sc = {};
+    (Array.isArray(s.chars) ? s.chars : []).forEach(function (c) { if (c && c.id) sc[c.id] = c; });
+    if ((b.ties || []).some(function (t) { return have.indexOf(tk(t)) < 0; })) return true;
+    return (b.chars || []).some(function (c) { var o = c && sc[c.id]; return !o || Object.keys(c).some(function (k) { return full(c[k]) && !full(o[k]); }); });
+  }
+  (function () {
+    var raw = HK.store.get('state', null), bk = HK.store.get('state:backup', null);
+    if (!raw || typeof raw !== 'object' || !bk || !bk.state || typeof bk.state !== 'object' || !bk.at || bk.at === HK.store.get('state:backup:skip', 0)) return;
+    if (raw.v === bk.v && raw.savedAt === bk.at && bkBody(raw) === bkBody(bk.state)) return;
+    if (bkLost(bk.state, raw)) bkHold = bk;
+  })();
   var S;
   try { S = normState(HK.store.get('state', null)); } catch (e) { S = normState({}); }
   if (!S.chars.length) { S.chars = SAMPLE.map(mk); S.sample = true; }
@@ -219,7 +240,31 @@
   hist = hist.filter(function (h) { return h && h.input && Array.isArray(h.input.chars) && HK.SCENARIOS[h.input.scenId]; });
   var tab = 'cast', result = null, showAll = false;
 
-  function save() { HK.Icons.set(S.chars); return HK.store.set('state', S); }
+  function save() {
+    HK.Icons.set(S.chars);
+    S.v = STATE_V; S.savedAt = Date.now();
+    var ok = HK.store.set('state', S);
+    if (ok && !bkHold) HK.store.set('state:backup', { v: STATE_V, at: S.savedAt, state: S });
+    return ok;
+  }
+  /* 控えの知らせ（上の bkHold）。戻す：控えを state に写して読み込み直す。このまま使う：その控えでは二度と出さず、今の内容で控えを書き直す */
+  function bkNotice() {
+    if (!bkHold) { save(); return; }
+    var b = bkHold, d = new Date(b.at), p2 = function (n) { return ('0' + n).slice(-2); };
+    var box = document.createElement('div');
+    box.id = 'bknote'; box.setAttribute('role', 'alert');
+    box.style.cssText = 'margin:8px 0 12px;padding:10px 12px;border:1px solid #d9a400;border-radius:8px;background:#fff4c2;color:#3a2e00;line-height:1.6';
+    box.innerHTML = '旧版を開いたため、住人の設定や関係の一部（新しい関係など）が消えている可能性があります。' +
+      '<div class="row" style="margin-top:6px;flex-wrap:wrap;gap:6px;align-items:center"><button type="button" class="btn small" id="bk-restore">控えから戻す</button>' +
+      '<span class="hint" style="margin:0;color:inherit">（控え：' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ' 保存、住人' + ((b.state.chars || []).length) + '人・関係' + ((b.state.ties || []).length) + '本）</span>' +
+      '<button type="button" class="btn small ghost" id="bk-keep">このまま使う</button></div>';
+    var host = document.querySelector('main') || document.body;
+    host.insertBefore(box, host.firstChild);
+    box.querySelector('#bk-restore').addEventListener('click', function () {
+      if (HK.store.set('state', b.state)) location.reload(); else toast('戻せませんでした（ブラウザの保存領域がいっぱいかもしれません）');
+    });
+    box.querySelector('#bk-keep').addEventListener('click', function () { HK.store.set('state:backup:skip', b.at); bkHold = null; box.remove(); save(); });
+  }
   function $(sel) { return document.querySelector(sel); }
 
   var toastTimer = null;
@@ -425,7 +470,7 @@
     list.forEach(function (c, i) { idx[c.id] = i; });
     S.chars.forEach(function (c) { name[c.id] = c.name; });
     var ref = function (id) { return idx[id] != null ? idx[id] : only && name[id] ? name[id] : null; };
-    return {
+    var out = {
       format: 'hakoniwa-residents', version: 1, exported: new Date().toISOString(),
       partial: only ? true : undefined,
       chars: list.map(function (c) {
@@ -471,6 +516,8 @@
       /* 内容のスイッチ（R18版）も一緒に書き出す（全員を書き出すときだけ） */
       ct: !only && !HK.SAFE_ON && S.glob && S.glob.ct && Object.keys(S.glob.ct).length ? S.glob.ct : undefined
     };
+    if (!only && HK.Adv) HK.Adv.exportTo(out);
+    return out;
   }
   function exportJSON(only) {
     var data = rosterJSON(only), text = JSON.stringify(data, null, 1);
@@ -569,6 +616,7 @@
     if (replace) S.grpComrade = {};
     if (data.grpComrade && typeof data.grpComrade === 'object' && !Array.isArray(data.grpComrade)) { S.grpComrade = S.grpComrade || {}; Object.keys(data.grpComrade).forEach(function (g) { if (data.grpComrade[g] && String(g).trim()) S.grpComrade[String(g).trim().slice(0, 40)] = 1; }); }
     if (data.teacher != null && map[data.teacher]) S.teacher = map[data.teacher];
+    if (HK.Adv) HK.Adv.importFrom(data);
     if (data.ct && typeof data.ct === 'object' && !HK.SAFE_ON && HK.Content) { S.glob = S.glob || {}; S.glob.ct = {}; HK.Content.TAGS.forEach(function (t) { if (data.ct[t.id]) S.glob.ct[t.id] = 1; }); }
     /* 恋愛相手の固定と呼び方は、全員を読み込んでから番号を住人に戻す */
     list.forEach(function (c) {
@@ -737,9 +785,10 @@
       return '<label class="scen' + (adult ? ' adult' : '') + (id === S.scenId ? ' on' : '') + '" title="' + esc(full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (id === S.scenId ? ' checked' : '') + '>' +
         '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div>' + (HK.ScenTags ? HK.ScenTags.html(id, esc) : '') + '<div class="d">' + esc(cd) + '</div><div class="note">' + esc(cardNote(s.note)) + '</div>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</label>';
     }).join('');
-    /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url） */
-    if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<a class="scen r18link" href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">' +
-      '<div class="k">BOOTHで頒布中・18歳以上向け</div><div class="n">R-18版 ↗</div><div class="d">エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。</div></a>';
+    /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url＝BOOTH・CONF.noteUrl＝note） */
+    if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<div class="scen r18link">' +
+      '<div class="k">BOOTH・noteで頒布中・18歳以上向け</div><div class="n">R-18版</div><div class="d">エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。</div>' +
+      '<div class="r18buy"><a href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (HK.CONF.noteUrl ? '<a href="' + esc(HK.CONF.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '') + '</div></div>';
     var derived = (scen.derived || []).map(function (k) { return '<span class="chip" title="' + esc(HK.TRAIT_SRC[k]) + '">' + esc(HK.TRAIT_NAME[k]) + '<span class="nums">' + esc(HK.TRAIT_SRC[k]) + '</span></span>'; }).join('');
     var extra = (scen.stats || []).map(function (s) { return '<span class="chip" title="' + esc(s.desc) + '">' + esc(s.label) + '</span>'; }).join('') + (scen.weapons ? '<span class="chip">支給武器</span>' : '');
     var sexCols = S.scenId === 'goukon' || S.scenId === 'omega';
@@ -783,6 +832,7 @@
     var html =
       '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' +
       '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + ' <span class="envbtns"><button type="button" class="mini" data-act="envreset" title="この箱庭の環境値を初期値に戻す">初期値に戻す</button><button type="button" class="mini" data-act="envrand" title="環境値をランダムに決める（文字の項目はそのまま）">ランダム</button></span></h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + contentBox() + '</div></div>' +
+      (HK.Adv ? HK.Adv.html() : '') +
       '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
       '<h2 class="sec">' + (scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
@@ -793,6 +843,7 @@
       (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') +
       '<div class="runbar"><label for="seed">シード</label><input type="text" id="seed" inputmode="numeric" data-f="seed" value="' + esc(S.seed) + '" placeholder="空欄でランダム"><span class="hint" style="margin:0">同じシードと条件なら同じ結末になります。</span><span class="spacer"></span><button class="btn primary" data-act="run">箱庭を動かす</button></div>';
     $('#view-box').innerHTML = html;
+    if (HK.Adv) HK.Adv.afterRender();
   }
 
   /* 人数を決めてランダムに参加者を選ぶ（対象は全員か、グループ一つ） */
@@ -904,7 +955,11 @@
     if (J.length < mn) { toast(mn === 1 ? '挑戦する住人を1人選んでください' : '参加する住人を' + mn + '人以上選んでください'); return; }
     if (J.length > smax(S.scenId)) { toast(HK.SCENARIOS[S.scenId].name + 'は' + smax(S.scenId) + '人までです。参加者を減らしてください'); return; }
     var seed = !newSeed && /^\d+$/.test(String(S.seed).trim()) ? parseInt(S.seed, 10) : HK.newSeed();
-    simulate(buildInput(seed), true);
+    var input = buildInput(seed), sc = HK.SCENARIOS[S.scenId];
+    /* 箱庭ごとの始める前の検査（scen.check が止める理由の文を返したら始めない。無い箱庭は今までどおり） */
+    var why = sc && typeof sc.check === 'function' ? sc.check(input) : '';
+    if (why) { toast(why); return; }
+    simulate(input, true);
   }
 
   function renderResult() {
@@ -939,6 +994,7 @@
     if (!t) return;
     if (t.dataset.tab) { setTab(t.dataset.tab); return; }
     var act = t.dataset.act, row = t.closest('.res');
+    if (act && act.indexOf('adv:') === 0) { if (HK.Adv) HK.Adv.onAct(act, t); return; }
     switch (act) {
       /* 環境値：初期値に戻す／ランダムに決める（文字の項目はそのまま） */
       case 'envreset': case 'envrand': (function () {
@@ -1146,6 +1202,7 @@
       refreshRow(row, c, true);
     }
     else if (f === 'scen') { S.scenId = t.value; save(); renderBox(); return; }
+    else if (f === 'adv') { if (HK.Adv) HK.Adv.onInput(t); return; }
     else if (f === 'ct') {
       S.glob.ct = S.glob.ct || {};
       if (t.checked) S.glob.ct[t.dataset.k] = 1; else delete S.glob.ct[t.dataset.k];
@@ -1327,4 +1384,5 @@
   /* 書き出し・読み込み・入力の組み立て（点検・往復の試験から呼ぶ。画面の操作と同じ関数） */
   HK.UI.rosterJSON = rosterJSON; HK.UI.importJSON = importJSON; HK.UI.buildInput = buildInput; HK.UI.normState = normState;
   setTab('cast');
+  bkNotice();
 })();

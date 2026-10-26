@@ -36,8 +36,8 @@
         P.forEach(function (c) { ctx.stress(c, -6); });
         var doubt = ctx.most(P, function (c) { return c.tr.a * 0.7 + c.tr.caution * 0.4; });
         var hope = ctx.most(P.filter(function (c) { return c !== doubt; }), function (c) { return c.tr.fc * 0.6 + c.tr.impulse * 0.4; });
-        if (doubt && doubt.tr.a > 0.55) ctx.act2({ actors: [doubt], cat: 'solo', text: ctx.t('{a}は放送の内容を書き留め、繰り返し聞き直した。「録音かもしれない。……鵜呑みにはしない」', doubt), why: doubt.name + 'のA（' + Math.round(doubt.eg.A) + '）：冷静に疑う' });
-        if (hope) ctx.act2({ actors: [hope], cat: 'solo', fx: function () { ctx.stress(hope, -8); }, text: ctx.t('{a}は思わず拳を握った。「まだ、誰かが動いてるんだ」', hope), why: hope.name + 'のFC：希望に飛びつく' });
+        if (doubt && doubt.tr.a > 0.55) ctx.act2({ actors: [doubt], cat: 'solo', text: ctx.t('{a}は放送の内容を書き留め、繰り返し聞き直した。「録音かもしれない。……鵜呑みにはしない｜＝｜録音かもしれません。……鵜呑みにはしません」', doubt), why: doubt.name + 'のA（' + Math.round(doubt.eg.A) + '）：冷静に疑う' });
+        if (hope) ctx.act2({ actors: [hope], cat: 'solo', fx: function () { ctx.stress(hope, -8); }, text: ctx.t('{a}は思わず拳を握った。「まだ、誰かが動いてるんだ｜まだ、誰かが動いているのか｜まだ、誰かが動いているんですね」', hope), why: hope.name + 'のFC：希望に飛びつく' });
       }
     },
     {
@@ -49,7 +49,7 @@
         P.forEach(function (c) { ctx.stress(c, -3); });
         var pr = zPair(ctx, P, 15);
         if (pr) ctx.act2({ actors: pr, cat: R(ctx, pr[0], pr[1]).att > 35 && loveOK(ctx, pr[0], pr[1]) ? 'romance' : 'bond', fx: function () { ctx.mod2(pr[0], pr[1], loveOK(ctx, pr[0], pr[1]) ? { aff: 5, att: 3 } : { aff: 5 }, loveOK(ctx, pr[0], pr[1]) ? { aff: 5, att: 3 } : { aff: 5 }); },
-          text: ctx.t(ctx.pick(L('雨宿りの軒下で、{a}と{b}は濡れた肩を寄せ合った。しばらく、どちらも何も言わなかった。|{a}は{b}に、乾いた上着を半分かけた。「雨の音、嫌いじゃない」と{b}が言った。')), pr[0], pr[1]), why: '雨で群れが静まった（ハプニングの頻度 ' + ctx.env.incident + '）' });
+          text: ctx.t(ctx.pick(L('雨宿りの軒下で、{a}と{b}は濡れた肩を寄せ合った。しばらく、どちらも何も言わなかった。|{a}は{b}に、乾いた上着を半分かけた。「雨の音、嫌いじゃない｜＝｜雨の音、嫌いじゃないです」と{b}が言った。')), pr[0], pr[1]), why: '雨で群れが静まった（ハプニングの頻度 ' + ctx.env.incident + '）' });
       }
     },
     {
@@ -63,7 +63,7 @@
         if (keep && keep.tr.caution > 0.5) ctx.act2({ actors: [keep], cat: 'help', fx: function () { ctx.others(keep).forEach(function (o) { ctx.mod(o, keep, { trust: 4 }); }); }, text: ctx.t('{a}は手探りで懐中電灯を探し当て、光が外に漏れないよう布で覆った。', keep), why: keep.name + 'の慎重さ' });
         var pr = zPair(ctx, P, 25, true);
         if (pr) ctx.act2({ actors: pr, cat: 'romance', fx: function () { ctx.mod2(pr[0], pr[1], { att: 5, trust: 3 }, { att: 5, trust: 3 }); },
-          text: ctx.t(ctx.pick(L('暗闇の中で、{a}の手が{b}の手を探し当てた。どちらも、離そうとしなかった。|「……そこにいる？」{b}の声に、{a}は肩を触れ合わせて答えた。')), pr[0], pr[1]), why: '停電の暗闇で、互いの存在を確かめ合った' });
+          text: ctx.t(ctx.pick(L('暗闇の中で、{a}の手が{b}の手を探し当てた。どちらも、離そうとしなかった。|「……そこにいる？｜……そこにいるのか｜……そこにいますか？」{b}の声に、{a}は肩を触れ合わせて答えた。')), pr[0], pr[1]), why: '停電の暗闇で、互いの存在を確かめ合った' });
       }
     },
     {
@@ -76,7 +76,7 @@
         var go = ctx.most(P, function (c) { return c.tr.impulse * 0.6 + c.tr.fc * 0.4; });
         var stop = go ? ctx.most(P.filter(function (c) { return c !== go && c.z && go.z && c.z.area === go.z.area; }), function (c) { return c.tr.caution * 0.6 + c.tr.np * 0.3; }) : null;
         if (go && go.tr.impulse > 0.55) {
-          if (stop && stop.tr.caution > 0.45) ctx.act2({ actors: [stop, go], cat: 'help', fx: function () { ctx.mod2(stop, go, { trust: 3 }, { ten: 3, trust: 4 }); }, text: ctx.t('「様子を見に行こう」と言いかけた{b}の袖を、{a}が掴んだ。「群れが向かってる方だ。行くな」', stop, go), why: stop.name + 'の慎重さが、' + go.name + 'の衝動性を止めた' });
+          if (stop && stop.tr.caution > 0.45) ctx.act2({ actors: [stop, go], cat: 'help', fx: function () { ctx.mod2(stop, go, { trust: 3 }, { ten: 3, trust: 4 }); }, text: ctx.t('「様子を見に行こう｜＝｜様子を見に行きましょう」と言いかけた{b}の袖を、{a}が掴んだ。「群れが向かってる方だよ。行かないで｜群れが向かっている方だ。行くな｜群れが向かっている方です。行かないでください」', stop, go), why: stop.name + 'の慎重さが、' + go.name + 'の衝動性を止めた' });
           else ctx.act2({ actors: [go], cat: 'solo', fx: function () { ctx.stress(go, 6); }, text: ctx.t('{a}は窓から身を乗り出して、サイレンの方角をいつまでも見ていた。', go), why: go.name + 'の衝動性' });
         }
       }
@@ -93,7 +93,7 @@
         if (mates.length) {
           var b = ctx.rng.pick(mates);
           if (a.tr.np > 0.5 || R(ctx, a, b).aff > 30) ctx.act2({ actors: [a, b], cat: 'bond', fx: function () { if (b.z) b.z.food = (b.z.food || 0) + 1; ctx.mod(b, a, { aff: 8, trust: 8 }); }, text: ctx.t('{a}は缶詰を半分、黙って{b}の前に置いた。', a, b), why: a.name + 'のNP・' + b.name + 'への好意' });
-          else if (a.tr.cold > 0.55) ctx.act2({ actors: [a, b], cat: 'conflict', fx: function () { ctx.mod(b, a, { ten: 10, aff: -5 }); }, text: ctx.t('{a}は箱を抱えたまま、{b}に背を向けた。「見つけたのは私だ」', a, b), why: a.name + 'のドライさ' });
+          else if (a.tr.cold > 0.55) ctx.act2({ actors: [a, b], cat: 'conflict', fx: function () { ctx.mod(b, a, { ten: 10, aff: -5 }); }, text: ctx.t('{a}は箱を抱えたまま、{b}に背を向けた。「見つけたのは私だよ｜見つけたのは私だ｜見つけたのは私です」', a, b), why: a.name + 'のドライさ' });
         }
       }
     },
@@ -107,7 +107,7 @@
         var help = ctx.most(P, function (c) { return c.tr.np * 0.7 + c.tr.cp * 0.3; });
         var cold = help ? ctx.most(P.filter(function (c) { return c !== help && c.z && help.z && c.z.area === help.z.area; }), function (c) { return c.tr.cold; }) : null;
         if (help && help.tr.np > 0.55) {
-          if (cold && cold.tr.cold > 0.5) ctx.act2({ actors: [cold, help], cat: 'conflict', fx: function () { ctx.mod2(cold, help, { ten: 4 }, { ten: 8, aff: -3 }); }, text: ctx.t('立ち上がった{b}の前に、{a}が立ちはだかった。「今行っても、死体が一つ増えるだけだ」', cold, help), why: cold.name + 'のドライさと、' + help.name + 'のNPがぶつかった' });
+          if (cold && cold.tr.cold > 0.5) ctx.act2({ actors: [cold, help], cat: 'conflict', fx: function () { ctx.mod2(cold, help, { ten: 4 }, { ten: 8, aff: -3 }); }, text: ctx.t('立ち上がった{b}の前に、{a}が立ちはだかった。「今行っても、死体が一つ増えるだけだよ｜今行っても、死体が一つ増えるだけだ｜今行っても、死体が一つ増えるだけです」', cold, help), why: cold.name + 'のドライさと、' + help.name + 'のNPがぶつかった' });
           else ctx.act2({ actors: [help], cat: 'solo', fx: function () { ctx.stress(help, 8); }, text: ctx.t('{a}は耳を塞いだ。助けに行けなかった自分を、朝まで責め続けた。', help), why: help.name + 'のNP' });
         }
       }
@@ -136,7 +136,7 @@
         var o = O.length ? ctx.rng.pick(O) : null;
         var helper = o ? ctx.most(P.filter(function (c) { return c !== o; }), function (c) { return c.tr.np * 0.6 + Math.max(0, R(ctx, c, o).aff) / 80; }) : null;
         if (o && helper && (helper.tr.np > 0.5 || R(ctx, helper, o).aff > 30)) ctx.act2({ actors: [helper, o], cat: R(ctx, helper, o).att > 35 && loveOK(ctx, helper, o) ? 'romance' : 'help', fx: function () { ctx.mod(o, helper, loveOK(ctx, helper, o) ? { aff: 8, trust: 8, att: 3 } : { aff: 8, trust: 8 }); ctx.stress(o, -8); },
-          text: ctx.t('{a}は、三軒目の薬局でようやく見つけた抑制剤を{b}に手渡した。「足りなくなったら、また探すから」', helper, o), why: helper.name + 'のNP・' + o.name + 'への好意' });
+          text: ctx.t('{a}は、三軒目の薬局でようやく見つけた抑制剤を{b}に手渡した。「足りなくなったら、また探すから｜足りなくなったら、また探す｜足りなくなったら、また探しますから」', helper, o), why: helper.name + 'のNP・' + o.name + 'への好意' });
         else if (o) ctx.act2({ actors: [o], cat: 'solo', text: ctx.t('{a}は手持ちの抑制剤を数え、カレンダーと見比べて、黙って溜め息をついた。', o), why: 'Ωの暮らしに直撃する知らせ' });
       }
     },
@@ -156,7 +156,7 @@
       run: function (ctx) {
         var P = ctx.present(), a = ctx.rng.pick(P);
         ctx.incident('第二性の定期検診の季節になった。' + a.name + 'の元にも、通知が届いた。');
-        if (sx(a) === 'o') ctx.act2({ actors: [a], cat: 'solo', fx: function () { ctx.stress(a, a.tr.ac > 0.55 ? 8 : 2); }, text: ctx.t(a.tr.ac > 0.55 ? '{a}は「フェロモン値：高め」の欄から、しばらく目を離せなかった。' : '{a}は結果を一瞥して、「いつも通り」とだけ呟いた。', a), why: a.name + 'のAC' });
+        if (sx(a) === 'o') ctx.act2({ actors: [a], cat: 'solo', fx: function () { ctx.stress(a, a.tr.ac > 0.55 ? 8 : 2); }, text: ctx.t(a.tr.ac > 0.55 ? '{a}は「フェロモン値：高め」の欄から、しばらく目を離せなかった。' : '{a}は結果を一瞥して、「いつも通り｜＝｜いつも通りです」とだけ呟いた。', a), why: a.name + 'のAC' });
         else if (sx(a) === 'a') ctx.act2({ actors: [a], cat: 'solo', text: ctx.t('{a}は検診の問診票の「番の有無」の欄で、少しだけペンを止めた。', a), why: 'α：番について考える' });
         else ctx.act2({ actors: [a], cat: 'solo', text: ctx.t('{a}は「β・特記事項なし」の結果を折りたたみ、なぜか少しだけ寂しくなった。', a), why: 'β：第二性の外側から見る' });
       }
@@ -181,7 +181,7 @@
         var a = ctx.most(free, function (c) { return c.tr.fc * 0.5 + c.tr.warmth * 0.5; });
         ctx.incident('街で、第二性を問わない交流パーティーが開かれることになった。' + a.name + 'の手元にも、招待状が二枚届いた。');
         var b = ctx.most(P.filter(function (c) { return c !== a; }), function (c) { return R(ctx, a, c).att + R(ctx, a, c).aff * 0.5; });
-        if (b && loveOK(ctx, a, b) && R(ctx, a, b).att > 25 && a.tr.fc + a.tr.impulse > 0.9) ctx.act2({ actors: [a, b], cat: 'romance', fx: function () { ctx.mod2(a, b, { att: 6 }, { att: 5, aff: 4 }); }, text: ctx.t('{a}は二枚目の招待状を、少し迷ってから{b}に差し出した。「……一緒に行かない？」', a, b), why: a.name + 'のFC・衝動性と、' + b.name + 'への惹かれ' });
+        if (b && loveOK(ctx, a, b) && R(ctx, a, b).att > 25 && a.tr.fc + a.tr.impulse > 0.9) ctx.act2({ actors: [a, b], cat: 'romance', fx: function () { ctx.mod2(a, b, { att: 6 }, { att: 5, aff: 4 }); }, text: ctx.t('{a}は二枚目の招待状を、少し迷ってから{b}に差し出した。「……一緒に行かない？｜……一緒に行かないか｜……一緒に行きませんか？」', a, b), why: a.name + 'のFC・衝動性と、' + b.name + 'への惹かれ' });
         else ctx.act2({ actors: [a], cat: 'solo', text: ctx.t('{a}は招待状を机の引き出しにしまった。誘いたい相手の顔が浮かんだが、結局、声はかけなかった。', a), why: a.name + 'の遠慮' });
       }
     },

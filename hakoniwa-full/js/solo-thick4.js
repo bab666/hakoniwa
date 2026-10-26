@@ -282,14 +282,16 @@
       if (!o.lead || o.lead.length < 120 || hard) paras.push(pickF(S, hard ? hard[kind].body : pool('body', tb.body)) + (FLAVOR[scn] && S.rng() < 0.6 ? pickF(S, FLAVOR[scn]) : ''));
       else if (FLAVOR[scn] && S.rng() < 0.6) paras.push(pickF(S, FLAVOR[scn]));
       var dl = hard === CHOKE ? CHOKE_DOM : hard ? ROUGH_DOM : DOM[dp], sl = hard === CHOKE ? CHOKE_SUB : hard ? ROUGH_SUB : SUB1[sp];
-      var s1 = pickF(S, sl);
+      /* 崩れていく側の声（荒い・首の型の決まった台詞を除く）は、喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）を通す。元の表（SUB1・SUB2）も4割ほど残る */
+      var sv = function (k, old) { return HK.Moan && HK.Moan.say && sub.name && (sub.persona || sub.eg) ? HK.Moan.say(S, sub, k, { novel: true, top: dom.name ? dom : null }, old) : old(); };
+      var s1 = hard ? pickF(S, sl) : sv('mid', function () { return pickF(S, sl); });
       paras.push('{T}「' + pickF(S, dl) + '」' + pickF(S, xp('link', LINK)) + '{B}「' + s1 + '」' + (hard === CHOKE ? '{T}「' + pickF(S, CHOKE_MID) + '」' : ''));
       /* 書き出しが短いときだけ、律動の段落を挟む（全体で 400 字前後） */
       if (!o.lead || o.lead.length < 60) paras.push(pickF(S, hard === CHOKE ? CHOKE[kind].beat : pool('beat', tb.beat)));
       /* 快楽の描写：受け止める側の体が反応していく。主導する側の快感も、ときどき添える。もう一度こらえきれない声 */
-      if (hard !== CHOKE && FEEL[kind]) paras.push(pickF(S, xp('feel', FEEL[kind])) + (TFEEL[kind] && S.rng() < 0.5 ? pickF(S, xp('tfeel', TFEEL[kind])) : '') + '{B}「' + pickNot(S, SUB1[sp], s1) + '」');
+      if (hard !== CHOKE && FEEL[kind]) paras.push(pickF(S, xp('feel', FEEL[kind])) + (TFEEL[kind] && S.rng() < 0.5 ? pickF(S, xp('tfeel', TFEEL[kind])) : '') + '{B}「' + sv('mid', function () { return pickNot(S, SUB1[sp], s1); }) + '」');
       /* o.peak：絶頂の段落を、箱庭の元の文（型ごとの決め台詞など）で置き換える */
-      paras.push('{B}「' + pickF(S, SUB2[sp]) + '」' + (TOPV[kind] && S.rng() < 0.4 ? '{T}「' + pickF(S, TOPV[kind]) + '」' : '') + (o.peak || pickF(S, hard ? hard[kind].peak : pool('peak', tb.peak))));
+      paras.push('{B}「' + sv('climax', function () { return pickF(S, SUB2[sp]); }) + '」' + (TOPV[kind] && S.rng() < 0.4 ? '{T}「' + pickF(S, TOPV[kind]) + '」' : '') + (o.peak || pickF(S, hard ? hard[kind].peak : pool('peak', tb.peak))));
       paras.push(pickF(S, hard === CHOKE ? CHOKE_AFTER : hard ? ROUGH_AFTER : pool('after', tb.after)) + (o.after ? o.after : ''));
       return paras.join('\n\n').replace(/\{T\}/g, D).replace(/\{B\}/g, B);
     },

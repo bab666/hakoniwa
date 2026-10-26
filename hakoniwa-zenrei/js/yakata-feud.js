@@ -121,7 +121,8 @@
   /* 憎しみだけの相手：殺人騒ぎに紛れて、締め出す・手にかける */
   function hateMove(S, live, day) {
     /* 締め出し・手にかけるのは、敵対の強さの嫌悪（不仲なら、嫌がらせや口論にとどまる） */
-    var rng = S.rng, ps = pairs(live, function (a, b) { return FD.hateStrong(S, a, b) && !a.hateDone; });
+    /* 殺さない（attr.js の HK.Attr.noKillPair）組は、締め出し・手にかけることをしない（same-story.js） */
+    var rng = S.rng, ps = pairs(live, function (a, b) { return FD.hateStrong(S, a, b) && !a.hateDone && !(HK.SameStory && HK.SameStory.nk && HK.SameStory.nk(S, a, b)); });
     if (!ps.length || !S.kills.length) return false;
     var pr = rng.pick(ps), a = pr[0], b = pr[1];
     if (rng() > (0.05 + a.tr.aggr * 0.06 + a.tr.cold * 0.05 + a.m.fear / 1500) * HK.Dark.f(S, 'grudge')) return false;

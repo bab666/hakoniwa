@@ -89,7 +89,7 @@
     var L0 = p.love || (p.love = { t: null, pt: 0, tries: 0 });
     if (L0.done) return false;
     if (!L0.t || !al(L0.t)) {
-      var cs = live.filter(function (q) { return q !== p && !q.bound && canLove(p, q) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && HK.tieNoLove(t); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
+      var cs = live.filter(function (q) { return q !== p && !q.bound && canLove(p, q) && (!HK.Poly || HK.Poly.storyCan(S, p, q)) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && HK.tieNoLove(t); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
       if (!cs.length) return false;
       L0.t = HK.weighted(rng, cs, function (q) { return 1 + Math.max(0, bond(S, p, q)) * 2 + q.tr.warmth; }); L0.pt = 0;
       ST.sayB(S, { actors: [p, L0.t], tag: '恋', text: F(pk(S, T.LOVE_PICK), { a: p.name, b: L0.t.name }), why: p.name + 'の目標は「恋人を作る」（FC・NP・衝動）' }, p.name + 'は' + L0.t.name + 'が気になっていた');
@@ -98,7 +98,8 @@
     var b = L0.t, m = { a: p.name, b: b.name };
     if (L0.pt >= 2 && bond(S, p, b) >= 0.3) {
       /* 告白 */
-      var ok = rng() < 0.25 + bond(S, b, p) * 0.5 + b.tr.fc * 0.15 + b.tr.np * 0.1 - b.tr.cp * 0.15 - (hasLover(S, b) ? 0.35 : 0) + (S.tension > 50 ? 0.1 : 0);
+      /* 複数の恋人「なし」で、どちらかに別の恋人がいる組は実らない（HK.Poly.storyCan） */
+      var ok = (!HK.Poly || HK.Poly.storyCan(S, p, b)) && rng() < 0.25 + bond(S, b, p) * 0.5 + b.tr.fc * 0.15 + b.tr.np * 0.1 - b.tr.cp * 0.15 - (hasLover(S, b) ? 0.35 : 0) + (S.tension > 50 ? 0.1 : 0);
       var t = F(pk(S, T.LOVE_CONFESS), m) + F(pk(S, ok ? T.LOVE_OK : T.LOVE_FAIL), m);
       if (ok) {
         L0.done = true; if (!(S.ties || []).some(function (t) { return t.type === 'lover' && ((t.a === p.i && t.b === b.i) || (t.a === b.i && t.b === p.i)); })) S.ties.push({ a: p.i, b: b.i, type: 'lover' }); setRel(S, p, b, 0.4, '恋人'); edge(S, p, b, '恋人になった', 'love');
@@ -107,7 +108,7 @@
         p.goal = p.goal0 = JS.GOAL.protect; p.surv = 1;
         note(p, b.name + 'と恋人になった');
       } else { L0.pt = 0; L0.tries++; (L0.no = L0.no || []).push(b.i); L0.t = null; setRel(S, p, b, -0.05, '気まずい'); p.m.fear = clamp(p.m.fear + 6, 0, 100); }
-      var o = ST.say(S, { actors: [p, b], tag: '告白', kind: 'climax', text: t, why: ok ? p.name + 'の想いが届いた（' + b.name + 'の気持ち・FC）。目標が「' + JS.GOAL.protect.label + '」に変わった' : b.name + 'には届かなかった（' + (hasLover(S, b) ? '恋人がいた' : 'CP・気持ちが足りない') + '）', mag: 34 });
+      var o = ST.say(S, { actors: [p, b], tag: '告白', kind: 'climax', text: t, why: ok ? p.name + 'の想いが届いた（' + b.name + 'の気持ち・FC）。目標が「' + JS.GOAL.protect.label + '」に変わった' : b.name + 'には届かなかった（' + (hasLover(S, b) ? '恋人がいた' : hasLover(S, p) ? p.name + 'には恋人がいた' : 'CP・気持ちが足りない') + '）', mag: 34 });
       if (ok) ST.key(S, o, p.name + 'と' + b.name + 'が恋人に');
       return true;
     }
@@ -173,6 +174,8 @@
   /* ---------- 誰かを殺す ---------- */
   function setupMurder(S, p) {
     var rng = S.rng, others = S.P.filter(function (q) { return q !== p; });
+    /* 殺さない（attr.js の HK.Attr.noKillPair）相手は、ほかに狙える人がいれば狙わない（same-story.js） */
+    if (HK.SameStory && HK.SameStory.spare) others = HK.SameStory.spare(S, p, others);
     if (!others.length) return;
     var en = others.filter(function (q) { return bond(S, p, q) < -0.15; })[0];
     var fam = others.filter(function (q) { return hasTie(S, p, q, 'mate,parent,sibling,lover'); })[0];
@@ -195,7 +198,7 @@
     var b = M0.t;
     if (!b || !al(b)) {
       /* 狙った相手が先に死んだ。自暴自棄なら別の誰かへ */
-      if (M0.why === 'despair' || M0.why === 'thrill') { var nb = live.filter(function (q) { return q !== p && !q.bound; }); if (!nb.length) return false; M0.t = b = rng.pick(nb); }
+      if (M0.why === 'despair' || M0.why === 'thrill') { var nb = live.filter(function (q) { return q !== p && !q.bound; }); if (!nb.length) return false; if (HK.SameStory && HK.SameStory.spare) nb = HK.SameStory.spare(S, p, nb); M0.t = b = rng.pick(nb); }
       else { M0.done = true; p.goal = p.goal0 = JS.GOAL.escape; ST.sayB(S, { actors: [p], text: p.name + 'は、手を下すまでもなく' + (b ? b.name : '狙った相手') + 'が死んだことを知った。複雑な顔をしていた。', why: '狙っていた相手が先に死んだ（目標が「' + JS.GOAL.escape.label + '」に）' }, p.name + 'の殺意は行き場を失った'); return true; }
     }
     var m = { a: p.name, b: b.name, x: M0.x };
@@ -220,7 +223,9 @@
     }
     M0.done = true; S.murders = (S.murders || 0) + 1;
     S.killer = p; edge(S, p, b, '殺害', 'kill', p);
+    var mdN = S.log.length;
     JS.core.die(S, b, '何者かに殺されて', T.MURDER_DEATH, t + '――');
+    if (HK.SameStory && HK.SameStory.mark) HK.SameStory.mark(S, mdN, HK.SameStory.note(S, p, b));
     S.killer = null;
     b.how = p.name + 'に殺されて';
     (S.cases || []).forEach(function (c) { if (c.killer === p && c.v === b) c.kind = 'murder'; });
@@ -243,7 +248,8 @@
     if (!by && JS.REL.cover && JS.REL.cover(S, m, b)) return false;
     var angry = others.reduce(function (s0, q) { return s0 + q.tr.aggr + q.tr.cold * 0.5; }, 0) / others.length;
     var t = openly && by ? '' : F(pk(S, T.MURDER_DETECT), { a: m.name, b: b.name, x: m.mur.x, v: m.mur.t ? m.mur.t.name : '' });
-    if (rng() < 0.15 + angry * 0.4 || S.ygo) {
+    /* 殺さない相手なら、裁かずに縛り上げる */
+    if ((rng() < 0.15 + angry * 0.4 || S.ygo) && !(HK.SameStory && HK.SameStory.nk && HK.SameStory.nk(S, b, m))) {
       m.alive = false; m.fate = '仲間に裁かれた（' + JS.hm(S.h) + '）'; edge(S, b, m, '制裁', 'kill', b);
       var o = ST.say(S, { actors: [b, m], tag: '露見', kind: 'climax', text: t + F(pk(S, T.MURDER_KILLED), { a: m.name, b: b.name }), why: m.name + 'の殺人が' + b.name + 'にばれた。一行の怒りは止まらなかった', mag: 42 });
       ST.key(S, o, m.name + 'の殺人が露見');

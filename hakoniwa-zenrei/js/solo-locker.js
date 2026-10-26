@@ -138,7 +138,7 @@
     /* 受け攻め：向きの決まらない二人（攻め×攻めなど）は体の関係にならない。女性どうしは、いちもつの描写を使わない */
     var Pos = HK.Pos, clash = !!(Pos && Pos.clash(A, B)) || tieNL, ff = !!(Pos && Pos.ff(A, B)), R18 = !HK.SAFE_ON;
     /* 敵対している二人（関係がライバル・不仲・敵対）：攻めの側から強引に手を出し、受けは口では嫌がるが、まんざらではない応じ方をする（hate-sex-r18.js。R18版のみ） */
-    if (!S.ties) S.ties = input.ties || [];
+    if (!S.ties) S.ties = (HK.Story && HK.Story.tiesOk ? HK.Story.tiesOk(S.P, input.ties) : input.ties || []);
     var HSX = R18 && HK.HateSex, hateP = !!(HSX && rel === 'tension' && !ngP && !clash && HSX.hostile(S, A, B));
     function hardTop(p) { return !!(Pos && Pos.hardTop(p, p && p.o)); }
     if (bind === 'one') {
@@ -182,9 +182,13 @@
     /* top：その人が攻めとして果てる */
     /* R18の描写の設定（lewd-unify.js）：男性向けは、相手が応じた行為（accept）と、扉が開いたあとの夜だけ（eroNow の間）。♡の喘ぎ（ero-kit.js） */
     var LX = HK.Lewd, lcf = LX && LX.conf('locker'), eroOn = !!(lcf && HK.Ero && HK.Ero.on(S) && HK.ThickEro && lew !== 'low'), eroNow = false;
-    function moan(p, top) {
+    /* 小説調の果てる声は喘ぎの辞書（moan-engine.js の HK.Moan.say。R18版だけ）から。ロッカーの中は声を殺す場面（open＝扉が開いたあとの寝台）。
+       HK.Moan が無い（全年齢版）・ぼかすときは元の表（Voice.CLIMAX・攻めの声） */
+    function moan(p, top, open) {
       if (eroOn && eroNow) { var d0 = p.eroDom; p.eroDom = !!top; var m = HK.Ero.moan(S, p, top ? 1 : 2); p.eroDom = d0; return p.name + '「' + m + '」'; }
-      var l = lew === 'low' || !V ? null : top ? topV(p, 'moan') : V.CLIMAX[p.persona]; return l && l.length ? p.name + '「' + pk(l) + '」' : '';
+      var l = lew === 'low' || !V ? null : top ? topV(p, 'moan') : V.CLIMAX[p.persona];
+      if (lew !== 'low' && HK.Moan && HK.Moan.say) { var mv = HK.Moan.say(S, p, top ? 'top' : 'climax', { hush: !open, novel: true, top: top ? null : p.o }, l && l.length ? l : null); return mv ? p.name + '「' + mv + '」' : ''; }
+      return l && l.length ? p.name + '「' + pk(l) + '」' : '';
     }
     function say2(p, T) { var l = T[p.persona] || T.gentle; return p.name + pk(l); }
     function climax(p, t, top) { p.cnt.climax++; p.m.plea = 25; p.m.heat = clamp(p.m.heat - 10, 0, 100); return t + moan(p, top); }
@@ -272,7 +276,7 @@
       });
       /* 敵視（hate-kit.js）：狭いロッカーの中で、一方が近づき、一方が嫌悪する */
       if (HK.HateKit && rng() < 0.3) {
-        if (!S.ties) S.ties = input.ties || [];
+        if (!S.ties) S.ties = (HK.Story && HK.Story.tiesOk ? HK.Story.tiesOk(S.P, input.ties) : input.ties || []);
         var HKt = HK.HateKit, hp = HKt.pairs(S, [A, B])[0];
         if (hp) {
           var hr = hp.st === 'love' ? HKt.loveGap(S, hp.a, hp.b, ST.fmt(pk(LK_HATE_LEAD), { a: hp.a.name, b: hp.b.name })) : hp.st === 'hate' ? HKt.quarrel(S, hp.a, hp.b) : HKt.style(hp.a) === 'active' ? HKt.harass(S, hp.a, hp.b) : HKt.snub(S, hp.a, hp.b);
@@ -408,6 +412,8 @@
         if (swap) t += ST.fmt(pk(LK.TAKE[b.bound ? 'bound' : 'free']), vT) + ST.fmt(pk(actPool), vA);
         else if (hateNow) t += HSX.react(S, a, b, lv);
         else t += (giveIn ? ST.fmt(pk(hands(giveIn, a, b)), { a: a.name, b: b.name }) : '') + ST.fmt(pk(hands((rxText === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); }), a, b)), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
+        /* キスの最中の声（R18版のみ。moan-engine.js の共通の声 k0。言葉のない声）：受ける側が一つ。描写「ぼかす」・全年齢では足さない */
+        if (R18 && lew !== 'low' && LV[lv] === 'kiss' && HK.Moan && HK.Moan.pick && !bx.noR18 && rng() < 0.6) t += bx.name + '「' + HK.Moan.pick(S, bx, 'k0', {}) + '」';
         /* 最初の一回は、二人の関係で受け止め方が変わる */
         var RF = LK.REL && LK.REL.first[rel];
         if (pair.acts === 1 && RF && rng() < 0.75) t += ST.fmt(pk(RF), { a: a.name, b: b.name, c: (crusher || a).name, o: (crusher || a).o.name, u: nt ? nt.u.name : '', d: nt ? nt.d.name : '' });
@@ -430,6 +436,20 @@
         }
         /* 新しい関係ならではの最中（R18版のみ。locker-ties-r18.js） */
         if (nt && NT.r18Act && R18 && lew !== 'low' && lv === 4 && !nt.r18In) { nt.r18In = true; t += NT.r18Act(S, nt, tp, tp.o, { moan: moan }); }
+        /* 夜の性格（R18版のみ。locker-night.js）：キス〜口（1〜3）は動く側→受ける側、繋がる（4）は攻め→受けに。同じ組で各段階一回だけ。
+           swap のときは ax＝b（誘われて動いた攻め）。描写「ぼかす」・全年齢版では足さない */
+        var nightL = '';
+        if (R18 && lew !== 'low' && LK.nightLine && lv >= 1 && (lv === 4 ? !pair.nightDeep : !pair.nightEarly)) {
+          var nT = lv === 4 ? tp : ax, nB = lv === 4 ? tp.o : bx;
+          var nR = LK.nightLine(S, nT, nB, lv === 4 ? 'deep' : 'early', { mode: ff ? 'ff' : fmPair(nT, nB) ? 'fm' : 'mf' });
+          if (nR && nR.text) { t += nR.text; nightL = nR.label; if (lv === 4) pair.nightDeep = true; else pair.nightEarly = true; }
+        }
+        /* 夜の性格の短い一言（R18版のみ。locker-night-light.js）：early の文を出し終えた組の、キス・まさぐる（1・2）に。
+           同じコマで early の文を出したときと、敵対して口では嫌がっているときは足さない。攻めの文か受けの文のどちらか一つ */
+        if (R18 && lew !== 'low' && LK.nightLight && (lv === 1 || lv === 2) && pair.nightEarly && !nightL && !hateNow && rng() < 0.5) {
+          var nLt = LK.nightLight(S, ax, bx, {});
+          if (nLt && nLt.text) { t += nLt.text; nightL = nLt.label; }
+        }
         /* 自分で攻めを選んだ人は、相手に「イかされる」側にしない */
         /* 繋がった瞬間には果てさせない（そこからの数コマを、続きの出来事で書く） */
         if (lv === 4) { ax.m.plea = Math.min(ax.m.plea, 55); bx.m.plea = Math.min(bx.m.plea, 60); }
@@ -442,7 +462,7 @@
         var G = gimmicks[gi];
         if (G && G.lewd && lv >= 1) { prog = 100; t += ST.fmt(pk(lv >= 2 && LK.KISS_MID ? LK.KISS_MID : G.ok), { a: a.name, b: b.name }); }
         eroNow = false;
-        var o2 = ST.sayB(S, { actors: [a, b], tag: actLabel(lv), text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた（' + (hardTop(b) ? '攻め' : '動く側') + '）' : resp === 'accept' ? '乗った' : hateNow ? '口では嫌がったが、拒みきらなかった' : '流された') + '（関係：' + RL[rel] + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(lv), lv >= 3 || pair.acts === 1);
+        var o2 = ST.sayB(S, { actors: [a, b], tag: actLabel(lv), text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた（' + (hardTop(b) ? '攻め' : '動く側') + '）' : resp === 'accept' ? '乗った' : hateNow ? '口では嫌がったが、拒みきらなかった' : '流された') + '（関係：' + RL[rel] + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）' + (nightL ? '／夜の性格：' + nightL : ''), mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(lv), lv >= 3 || pair.acts === 1);
         if (o2 && pair.acts === 1) ST.key(S, o2, '最初に手を出したのは' + a.name);
         if (o2 && lv === 4 && !pair.keySex) { pair.keySex = true; ST.key(S, o2, ff ? 'ロッカーの中で肌を重ねた' : 'ロッカーの中で繋がった'); }
         break;
@@ -470,7 +490,7 @@
           if (ok) wk.cnt.solve++;
         } else if (G2.lewd && rng() < 0.05 + (A.m.heat + B.m.heat) / 450 + ({ lover: 0.3, fwb: 0.25, almost: 0.2, tension: -0.15 }[rel] || 0)) {
           prog = 100;
-          ST.sayB(S, { actors: [A, B], tag: G2.name, text: ST.fmt(pk(pair.conn || pair.level >= 2 ? LK.KISS_MID : LK.KISS_OK), v0), why: '脱出のためにキスをした（発情 ' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）', mag: 24 }, '', true);
+          ST.sayB(S, { actors: [A, B], tag: G2.name, text: ST.fmt(pk(pair.conn || pair.level >= 2 ? LK.KISS_MID : LK.KISS_DUTY && HK.Pos && HK.Pos.genderOK && !HK.Pos.genderOK(A, B) ? LK.KISS_DUTY : LK.KISS_OK), v0), why: '脱出のためにキスをした（発情 ' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）', mag: 24 }, '', true);
         } else if (G2.lewd && !pair.conn && rng() < 0.3) {
           ST.sayB(S, { actors: [A, B], tag: G2.name, text: ST.fmt(pk(G2.try), v0) + ST.fmt(pk(G2.ng), v0), why: 'キスしないと開かない' }, 'キスの扉は開かないまま');
         }
@@ -515,7 +535,7 @@
       /* ベッドの展開は solo-locker-bed.js（誘い方・最中の展開・結び） */
       /* 扉が開いたあとの夜：描写の長さ（短く＝一段落版）と、男性向け（企みのある夜は除く） */
       eroNow = eroOn && !plotter;
-      bedLabels = LK.bed(S, { short: !!(lcf && LX.short(env, rng)), ero: eroNow, A: A, B: B, x: x, y: y, rel: rel, tone: tone, how: how, plotter: plotter, servant: svW ? null : servant, master: svW ? null : master, nt: nt, lew: lew, dose: env.dose, pair: pair, moan: moan, REL_LABEL: RL, ff: ff });
+      bedLabels = LK.bed(S, { short: !!(lcf && LX.short(env, rng)), ero: eroNow, A: A, B: B, x: x, y: y, rel: rel, tone: tone, how: how, plotter: plotter, servant: svW ? null : servant, master: svW ? null : master, nt: nt, lew: lew, dose: env.dose, pair: pair, moan: function (p, top) { return moan(p, top, true); }, REL_LABEL: RL, ff: ff });
       A.cnt.climax += 2 + rng.int(3); B.cnt.climax += 2 + rng.int(3);
     } else if (endure) {
       outcome = 'endure';

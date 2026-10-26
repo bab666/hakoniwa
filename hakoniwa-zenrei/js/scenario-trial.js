@@ -577,6 +577,8 @@
 
   HK.SCENARIOS.trial = {
     id: 'trial', name: '裁判デスゲーム', kicker: 'デスゲーム・推理', zenreiOnly: true,
+    /* 殺し合いが本筋：住人の「憎悪を持っても殺さない」を越えて殺す（attr.js の HK.Attr.killForced） */
+    killMain: true,
     desc: 'ホテルに閉じ込められ「殺せば生きて帰れる」と告げられる。殺人が起きれば裁判。犯人を当てれば処刑、外せば犯人以外が全滅。',
     note: '※『ダンガンロンパ』や既存のデスゲーム作品のパロディです。',
     unit: '日', perUnit: 4, preRel: 3, lethal: true, minCast: 2, maxCast: 16,
@@ -869,7 +871,7 @@
       ctx.act2({ actors: [A0, K0], cat: 'betray', mag: 34, text: ctx.t(ctx.pick(['{b}が' + V0.name + 'に手を伸ばした瞬間、背後の{a}が動いた。見張りに立っていたはずの{a}の手が、{b}の首にかかった。', '{a}は' + V0.name + 'を逃がし、{b}の前に立ちはだかった。「やっぱり、こんなの間違ってる」――揉み合いの末、倒れたのは{b}だった。']), A0, K0),
         why: A0.name + 'のNP・正直さ。共犯者が土壇場で裏切った' + enemyWhy });
       ctx.mod2(V0, A0, { aff: 12, trust: 10 }, {});
-      ctx.kill(K0, A0, T.place + 'で、共犯者だったはずの' + A0.name + 'に殺された');
+      ctx.kill(K0, A0, T.place + 'で、共犯者だったはずの' + A0.name + 'に殺された', { force: true });
       T.orig = K0.i; T.target = V0.i; T.killer = A0.i; T.victim = K0.i; T.acc = null; T.twist = 'betray'; T.victims = [K0.i];
       T.motive = '返り討ち（共犯者の裏切り）';
       trauma(ctx, A0);
@@ -882,14 +884,14 @@
         text: ctx.t(hesitated ? ctx.pick(['{b}は振り上げた手を、ほんの一瞬だけ止めた。その一瞬で足りた。{a}は{b}を突き飛ばし、気づいたときには、{b}はもう動かなかった。', '{b}の手が震えていた。{a}はその手首を掴んで捻り上げ、凶器を奪った。――悲鳴を上げたのは、{b}の方だった。'])
           : ctx.pick(['体格が違いすぎた。{a}は襲いかかってきた{b}を力任せに振り払い、{b}は床に頭を打ちつけて動かなくなった。', '{a}は{b}の一撃をかわし、もみ合いになった。凶器は、{b}自身の胸に刺さっていた。']), V0, K0),
         why: (hesitated ? K0.name + 'がためらった（生い立ち・NP）' : '取っ組み合いの力の差') + '。襲われた' + V0.name + 'の返り討ち' + enemyWhy });
-      ctx.kill(K0, V0, T.place + 'で、襲った相手の' + V0.name + 'に返り討ちにされた');
+      ctx.kill(K0, V0, T.place + 'で、襲った相手の' + V0.name + 'に返り討ちにされた', { force: true });
       T.orig = K0.i; T.killer = V0.i; T.victim = K0.i; T.acc = null; T.twist = 'counter'; T.hes = hesitated; T.victims = [K0.i];
       T.motive = '返り討ち（' + (hesitated ? '犯人がためらった隙に反撃' : '体格差で犯人が負けた') + '）';
       trauma(ctx, V0);
       return;
     }
     if (hesitated) ctx.act2({ actors: [K0], cat: 'solo', text: ctx.t('{a}は一度、手を止めた。それでも、止まりきれなかった。', K0), why: K0.name + 'のためらい（生い立ち：' + (DG ? DG.LIFE_LABEL[K0.life] : '') + '）' });
-    ctx.kill(V0, K0, T.place + 'で殺害された');
+    ctx.kill(V0, K0, T.place + 'で殺害された', { force: true });
     T.victims = [V0.i];
     trauma(ctx, K0);
     /* ダブルキル（低い確率）：目撃者の口封じ／用済みの共犯者の始末。狙われた側の返り討ちもある */
@@ -902,25 +904,25 @@
         ctx.act2({ actors: [wit, K0], cat: 'solo', mag: 20, text: ctx.t('廊下の角から、{a}がその一部始終を見ていた。{b}と目が合った。{b}は動けなかった。{a}は自分の部屋まで走り、朝まで扉の前に家具を積み上げていた。', wit, K0), why: wit.name + 'が犯行を目撃した。' + K0.name + 'は口封じに踏み切れなかった' });
       } else if (rng() < 0.12 + Math.max(0, phys(ctx, wit) - phys(ctx, K0)) * 0.6) {
         ctx.act2({ actors: [wit, K0], cat: 'combat', mag: 40, text: ctx.t('{b}は、見てしまった{a}を追った。行き止まりの非常階段で、{a}は振り向きざまに消火器を振り下ろした。――二人目の死体は、犯人の方だった。', wit, K0), why: '口封じに来た' + K0.name + 'を、目撃者の' + wit.name + 'が返り討ちにした' });
-        ctx.kill(K0, wit, '目撃者の口を封じようとして、返り討ちにされた');
+        ctx.kill(K0, wit, '目撃者の口を封じようとして、返り討ちにされた', { force: true });
         T.prior = { killer: K0.i, victim: V0.i }; T.killer = wit.i; T.victim = K0.i; T.acc = null; T.twist = 'double-counter'; T.victims.push(K0.i);
         T.motive = '返り討ち（口封じに来た犯人が負けた）';
         trauma(ctx, wit);
       } else {
         ctx.act2({ actors: [K0, wit], cat: 'betray', mag: 44, text: ctx.t('物音に気づいて様子を見に来た{b}と、{a}の目が合った。{a}の手は、もう迷わなかった。', K0, wit), why: '目撃者の口封じ（' + K0.name + 'のドライさ・攻撃性・生い立ち）' });
-        ctx.kill(wit, K0, '犯行を目撃し、口を封じられた');
+        ctx.kill(wit, K0, '犯行を目撃し、口を封じられた', { force: true });
         T.victims.push(wit.i); T.twist = 'double';
       }
     } else if (A0 && ctx.env.accrule !== 'both' && rng() < 0.03 + K0.tr.cold * 0.1) {
       if (rng() < 0.15 + Math.max(0, phys(ctx, A0) - phys(ctx, K0)) * 0.6) {
         ctx.act2({ actors: [A0, K0], cat: 'combat', mag: 40, text: ctx.t('後始末を終えたあと、{b}は{a}に向き直った。「悪いな。生きて出られるのは一人なんだ」――{a}は先にそれを読んでいた。倒れたのは{b}だった。', A0, K0), why: '用済みの共犯者を始末しようとした' + K0.name + 'が、' + A0.name + 'に返り討ちにされた' });
-        ctx.kill(K0, A0, '共犯者を始末しようとして、返り討ちにされた');
+        ctx.kill(K0, A0, '共犯者を始末しようとして、返り討ちにされた', { force: true });
         T.prior = { killer: K0.i, victim: V0.i }; T.killer = A0.i; T.victim = K0.i; T.acc = null; T.twist = 'double-counter'; T.victims.push(K0.i);
         T.motive = '返り討ち（共犯者を始末しようとした犯人が負けた）';
         trauma(ctx, A0);
       } else {
         ctx.act2({ actors: [K0, A0], cat: 'betray', mag: 44, text: ctx.t('{b}が見張りから戻ってきたとき、{a}はもう次の準備を終えていた。「ここから出られるのは、実行犯だけなんだって」', K0, A0), why: '生還できるのは実行犯だけ。' + K0.name + 'は用済みの共犯者を始末した' });
-        ctx.kill(A0, K0, '用済みになった共犯者として始末された');
+        ctx.kill(A0, K0, '用済みになった共犯者として始末された', { force: true });
         T.victims.push(A0.i); T.acc = null; T.accGone = A0.i; T.twist = 'double';
       }
     }

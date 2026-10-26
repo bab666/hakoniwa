@@ -43,7 +43,7 @@
     {
       id: 'point', from: 2, min: 3,
       run: function (ctx) {
-        ctx.incident('「じゃあ、せーので一番気になる人を指さそう」と誰かが言い出した。');
+        ctx.incident('「じゃあ、せーので一番気になる人を指さそう｜では、せーので一番気になる者を指す｜では、せーので一番気になる人を指さしましょう」と誰かが言い出した。');
         pointAll(ctx, ctx.present().filter(function (c) { return c.flags.cagePair == null; }), 'せーの。', '同時指さし');
       }
     },
@@ -52,9 +52,9 @@
       run: function (ctx) {
         var P = ctx.present(), a = ctx.rng.pick(P);
         ctx.incident(a.name + 'のスマホが鳴った。画面には元恋人の名前。');
-        if (a.tr.honesty > 0.6) ctx.act2({ actors: [a], cat: 'bond', fx: function () { ctx.others(a).forEach(function (o) { ctx.mod(o, a, { trust: 4 }); }); }, text: ctx.t('「元カレ……いや、元カノか。どっちでもいいや」{a}は画面を伏せて笑った。', a), why: a.name + 'の本音の出やすさ' });
+        if (a.tr.honesty > 0.6) ctx.act2({ actors: [a], cat: 'bond', fx: function () { ctx.others(a).forEach(function (o) { ctx.mod(o, a, { trust: 4 }); }); }, text: ctx.t('「元カレ……いや、元カノか。どっちでもいいや｜元カレ……いや、元カノか。どちらでもいい｜元カレ……いや、元カノですか。どちらでもいいです」{a}は画面を伏せて笑った。', a), why: a.name + 'の本音の出やすさ' });
         else if (a.tr.cold > 0.55) ctx.act2({ actors: [a], cat: 'solo', text: ctx.t('{a}は表情を変えずに着信を切り、電源ごと落とした。', a), why: a.name + 'のドライさ' });
-        else ctx.act2({ actors: [a], cat: 'solo', fx: function () { ctx.stress(a, 14); }, text: ctx.t('{a}は「ちょっと」と言って席を外し、しばらく戻ってこなかった。', a), why: a.name + 'のAC：切り捨てられない' });
+        else ctx.act2({ actors: [a], cat: 'solo', fx: function () { ctx.stress(a, 14); }, text: ctx.t('{a}は「ちょっと｜＝｜ちょっと失礼します」と言って席を外し、しばらく戻ってこなかった。', a), why: a.name + 'のAC：切り捨てられない' });
         ctx.others(a).forEach(function (o) {
           if (R(ctx, o, a).att > 35) ctx.act2({ actors: [o, a], cat: 'conflict', fx: function () { ctx.mod(o, a, { att: 4, ten: 6 }); ctx.stress(o, 8); }, text: ctx.t('{a}は、{b}が戻ってくるまでグラスの氷ばかり見ていた。', o, a), why: o.name + 'は' + a.name + 'に惹かれていた（嫉妬・執着 ' + Math.round(o.tr.jealous * 100) + '）' });
         });
@@ -69,7 +69,7 @@
         var hide = ctx.most(ctx.others(t).filter(function (o) { return o !== def; }), function (o) { return o.tr.caution; });
         if (def && def.tr.cp * 0.5 + def.tr.aggr * 0.3 + def.tr.np * 0.3 > 0.35) {
           ctx.act2({ actors: [def, t], cat: 'help', mag: 12, fx: function () { ctx.mod(t, def, { att: 10, aff: 8, trust: 10 }); },
-            text: ctx.t('「連れなんで」{a}が立ち上がって、{b}と酔客の間に入った。', def, t), why: def.name + 'の' + (def.tr.cp > def.tr.np ? 'CP（筋を通す）' : 'NP（守る）') });
+            text: ctx.t('「連れなんで｜連れだ｜連れなんです」{a}が立ち上がって、{b}と酔客の間に入った。', def, t), why: def.name + 'の' + (def.tr.cp > def.tr.np ? 'CP（筋を通す）' : 'NP（守る）') });
         } else ctx.act2({ actors: [t], cat: 'solo', fx: function () { ctx.stress(t, 15); }, text: ctx.t('誰も動かなかった。{a}は愛想笑いでやり過ごした。', t), why: '全員の慎重さが勝った' });
         if (hide && hide.tr.caution > 0.65) ctx.act2({ actors: [hide, t], cat: 'solo', fx: function () { ctx.mod(t, hide, { att: -5 }); }, text: ctx.t('{a}はずっとメニューで顔を隠していた。', hide), why: hide.name + 'の慎重さ' });
       }
@@ -82,7 +82,7 @@
         var laugher = ctx.most(ctx.others(clumsy), function (o) { return o.tr.fc * o.tr.cp; });
         ctx.incident(clumsy.name + 'の肘が当たって、グラスが倒れた。');
         if (wiper) ctx.act2({ actors: [wiper, clumsy], cat: 'help', fx: function () { ctx.mod2(wiper, clumsy, { aff: 2 }, { aff: 7, att: 4 }); }, text: ctx.t('{a}が真っ先におしぼりを掴んで、{b}の袖を拭いた。', wiper, clumsy), why: wiper.name + 'のNP' });
-        if (laugher && laugher !== wiper && laugher.tr.fc * laugher.tr.cp > 0.35) ctx.act2({ actors: [laugher, clumsy], cat: 'conflict', fx: function () { ctx.mod(clumsy, laugher, { ten: clumsy.tr.ac > 0.6 ? 10 : 2, aff: clumsy.tr.fc > 0.6 ? 3 : -3 }); }, text: ctx.t('{a}は手を叩いて笑った。「やると思った」', laugher, clumsy), why: laugher.name + 'のFC×CP' });
+        if (laugher && laugher !== wiper && laugher.tr.fc * laugher.tr.cp > 0.35) ctx.act2({ actors: [laugher, clumsy], cat: 'conflict', fx: function () { ctx.mod(clumsy, laugher, { ten: clumsy.tr.ac > 0.6 ? 10 : 2, aff: clumsy.tr.fc > 0.6 ? 3 : -3 }); }, text: ctx.t('{a}は手を叩いて笑った。「やると思った｜＝｜やると思いました」', laugher, clumsy), why: laugher.name + 'のFC×CP' });
       }
     },
     {
@@ -93,7 +93,7 @@
         var talker = ctx.most(P, function (c) { return c.tr.honesty + (c.flags.drunk || 0) / 150; });
         var dodger = ctx.most(ctx.others(talker), function (o) { return o.tr.ac + o.tr.cold * 0.5 - o.tr.honesty; });
         ctx.act2({ actors: [talker], cat: 'bond', fx: function () { ctx.others(talker).forEach(function (o) { ctx.mod(o, talker, { trust: 5, att: o.tr.fc > 0.5 ? 4 : 1 }); }); }, text: ctx.t('{a}は、三年付き合って振られた話を、自分で笑いながら話し切った。', talker), why: talker.name + 'の本音の出やすさ' });
-        if (dodger) ctx.act2({ actors: [dodger], cat: 'solo', fx: function () { ctx.others(dodger).forEach(function (o) { if (R(ctx, o, dodger).att > 25) ctx.mod(o, dodger, { att: 5 }); }); }, text: ctx.t('{a}は「普通だよ」としか言わなかった。それがかえって気になった者もいた。', dodger), why: dodger.name + 'のAC／ドライさ。隠すほど興味を引く' });
+        if (dodger) ctx.act2({ actors: [dodger], cat: 'solo', fx: function () { ctx.others(dodger).forEach(function (o) { if (R(ctx, o, dodger).att > 25) ctx.mod(o, dodger, { att: 5 }); }); }, text: ctx.t('{a}は「普通だよ｜普通だ｜普通ですよ」としか言わなかった。それがかえって気になった者もいた。', dodger), why: dodger.name + 'のAC／ドライさ。隠すほど興味を引く' });
       }
     },
     {
@@ -105,7 +105,7 @@
         ctx.incident('会計の伝票が回ってきた。');
         var payer = ctx.most(P, function (c) { return c.tr.cp * 0.4 + c.tr.np * 0.4 + c.tr.fc * 0.2; });
         var counter = ctx.most(ctx.others(payer), function (o) { return o.tr.a * o.tr.cp; });
-        ctx.act2({ actors: [payer], cat: 'help', fx: function () { ctx.others(payer).forEach(function (o) { ctx.mod(o, payer, { att: o.tr.ac > 0.55 ? 6 : 2, aff: 3 }); }); }, text: ctx.t('{a}が伝票を取り上げた。「今日は多めに出すよ」', payer), why: payer.name + 'のCP・NP（面倒を見る側に立つ）' });
+        ctx.act2({ actors: [payer], cat: 'help', fx: function () { ctx.others(payer).forEach(function (o) { ctx.mod(o, payer, { att: o.tr.ac > 0.55 ? 6 : 2, aff: 3 }); }); }, text: ctx.t('{a}が伝票を取り上げた。「今日は多めに出すよ｜今日は多めに出す｜今日は多めに出しますよ」', payer), why: payer.name + 'のCP・NP（面倒を見る側に立つ）' });
         if (counter && counter.tr.a * counter.tr.cp > 0.4) ctx.act2({ actors: [counter, payer], cat: 'conflict', fx: function () { ctx.mod2(counter, payer, { ten: 4 }, { ten: 6 }); }, text: ctx.t('{a}は電卓アプリを開いて、一円単位で割り直した。', counter), why: counter.name + 'のA×CP' });
       }
     },
@@ -121,7 +121,7 @@
         ctx.incident(a.name + 'が終電を逃した。');
         var rb = R(ctx, b, a);
         ctx.act2({ actors: [b, a], cat: rb.att > 30 ? 'romance' : 'help', fx: function () { ctx.mod2(b, a, { att: rb.att > 30 ? 8 : 2 }, { att: 8, trust: 6 }); },
-          text: ctx.t(rb.att > 30 ? '「うち、ここから歩いて十分だけど」と{a}が言った。{b}は少し考えて、頷いた。' : '{a}はタクシー代を貸してやった。{b}は「絶対返す」と三回言った。', b, a), why: b.name + 'の側の惹かれ（' + Math.round(rb.att) + '）' });
+          text: ctx.t(rb.att > 30 ? '「うち、ここから歩いて十分だけど｜うちは、ここから歩いて十分だが｜うち、ここから歩いて十分ですけど」と{a}が言った。{b}は少し考えて、頷いた。' : '{a}はタクシー代を貸してやった。{b}は「絶対返す｜＝｜絶対返します」と三回言った。', b, a), why: b.name + 'の側の惹かれ（' + Math.round(rb.att) + '）' });
       }
     }
   ];
@@ -141,17 +141,17 @@
         var drinker = null, how;
         if (breaker.tr.cp > 0.7 && breaker.goal.id === 'noway' && ctx.rng() < 0.6) {
           ctx.act2({ actors: [breaker], cat: 'conflict', fx: function () { P.forEach(function (o) { ctx.stress(o, 10); if (o !== breaker) ctx.mod(o, breaker, { ten: o.goal.id === 'quick' ? 12 : 0, trust: o.tr.np > 0.5 ? 6 : 0 }); }); },
-            text: ctx.t('{a}は小瓶を拾い上げ、そのまま床に叩きつけた。「誰が飲むか、こんなもの」', breaker), why: breaker.name + 'のCP（' + Math.round(breaker.eg.CP) + '）と目標「' + breaker.goal.label + '」' });
+            text: ctx.t('{a}は小瓶を拾い上げ、そのまま床に叩きつけた。「誰が飲むの、こんなもの｜誰が飲むか、こんなもの｜誰が飲むんですか、こんなもの」', breaker), why: breaker.name + 'のCP（' + Math.round(breaker.eg.CP) + '）と目標「' + breaker.goal.label + '」' });
           return;
         }
         if (boss.tr.cp > 0.65 && boss.tr.np < 0.45 && meek && meek.tr.ac > 0.6) {
           drinker = meek; how = 'forced';
           ctx.act2({ actors: [boss, meek], cat: 'conflict', mag: 15, fx: function () { ctx.mod(meek, boss, { ten: 18, trust: -12, att: 4 }); },
-            text: ctx.t('「お前が飲め」{a}は{b}に小瓶を握らせた。{b}は数秒黙ってから、蓋を開けた。', boss, meek), why: boss.name + 'のCP高・NP低／' + meek.name + 'のAC（' + Math.round(meek.eg.AC) + '）：断れない' });
+            text: ctx.t('「あなたが飲んで｜あなたが飲め｜あなたが飲んでください」{a}は{b}に小瓶を握らせた。{b}は数秒黙ってから、蓋を開けた。', boss, meek), why: boss.name + 'のCP高・NP低／' + meek.name + 'のAC（' + Math.round(meek.eg.AC) + '）：断れない' });
         } else {
           drinker = ctx.most(P, function (c) { return c.tr.np * 0.45 + c.tr.impulse * 0.45 + c.tr.cold * 0.3 + (c.goal.id === 'quick' ? 0.4 : 0) + (c.goal.id === 'respect' ? 0.3 : 0); });
           how = drinker.tr.np >= Math.max(drinker.tr.impulse, drinker.tr.cold) ? 'np' : drinker.tr.impulse >= drinker.tr.cold ? 'fc' : 'cold';
-          var line = { np: '「誰かに飲ませるくらいなら、自分が飲む」{a}はそう言って小瓶を空けた。', fc: '「どうせなら試してみたいでしょ」{a}は止める間もなく一息に飲み干した。', cold: '「効率の問題だ」{a}は表情も変えずに小瓶を傾けた。' }[how];
+          var line = { np: '「誰かに飲ませるくらいなら、自分が飲む｜＝｜誰かに飲ませるくらいなら、自分が飲みます」{a}はそう言って小瓶を空けた。', fc: '「どうせなら試してみたいでしょ｜どうせなら試してみたいだろう｜どうせなら試してみたいでしょう」{a}は止める間もなく一息に飲み干した。', cold: '「効率の問題だよ｜効率の問題だ｜効率の問題です」{a}は表情も変えずに小瓶を傾けた。' }[how];
           ctx.act2({ actors: [drinker], cat: 'romance', mag: 10, text: ctx.t(line, drinker), why: drinker.name + 'の' + { np: 'NP（自分が引き受ける）', fc: '衝動性（FC高・A低）', cold: 'ドライさ（A高・NP低）' }[how] });
         }
         drinker.flags.aphro = true;
@@ -164,11 +164,11 @@
         ctx.others(drinker).forEach(function (o) {
           var r = R(ctx, o, drinker);
           if (o.tr.np > 0.55) ctx.act2({ actors: [o, drinker], cat: 'help', fx: function () { ctx.mod2(o, drinker, { att: 3 }, { trust: 14, aff: 8 }); },
-            text: ctx.t('{a}は水を汲んで{b}に渡し、手の届かない距離に座り直した。「辛かったら言って」', o, drinker), why: o.name + 'のNP：相手の意思を待つ' });
+            text: ctx.t('{a}は水を汲んで{b}に渡し、手の届かない距離に座り直した。「辛かったら言って｜辛かったら言え｜辛かったら言ってください」', o, drinker), why: o.name + 'のNP：相手の意思を待つ' });
           else if (r.att > 35) ctx.act2({ actors: [o, drinker], cat: 'romance', fx: function () { ctx.mod2(o, drinker, { att: 10 }, { att: 6 }); },
             text: ctx.t('{a}は、潤んだ目の{b}から視線を外せなくなっていた。', o, drinker), why: o.name + 'の元々の惹かれ（' + Math.round(r.att) + '）' });
           else if (o.tr.cp > 0.6 && how === 'fc') ctx.act2({ actors: [o, drinker], cat: 'conflict', fx: function () { ctx.mod(o, drinker, { ten: 8 }); },
-            text: ctx.t('「考えなしに飲むからだ」{a}は壁際から動かなかった。', o, drinker), why: o.name + 'のCP' });
+            text: ctx.t('「考えなしに飲むからだよ｜考えなしに飲むからだ｜考えなしに飲むからです」{a}は壁際から動かなかった。', o, drinker), why: o.name + 'のCP' });
         });
       }
     },
@@ -190,8 +190,8 @@
           else if (c.tr.fc > 0.65) {
             /* 隣にノリのいい人（FC・人懐こさ）か仲のいい人がいれば、二人でピース */
             var pal = ctx.most(ctx.others(c).filter(function (o) { return o.tr.ac <= 0.6 && (o.tr.fc > 0.5 || o.tr.warmth > 0.55 || ctx.R(o, c).aff > 25); }), function (o) { return o.tr.fc * 0.5 + o.tr.warmth * 0.3 + ctx.R(o, c).aff / 100; });
-            var duo = pal ? ctx.pick(['{a}はレンズに向かってピースした。「どうせ見てるなら」――{b}もすかさず隣に並んで、二人でピースした。', '{a}はレンズに向かってピースした。{b}が横から顔を出して、ダブルピースで割り込んだ。', '{a}は{b}の腕を引っぱって、二人でレンズに向かってピースした。「盛れてる？」', '{a}と{b}は、レンズの前で指ハートを半分ずつ作って、くっつけた。']) : '';
-            ctx.act2({ actors: pal ? [c, pal] : [c], cat: 'bond', fx: function () { ctx.others(c).forEach(function (o) { ctx.stress(o, -5); ctx.mod(o, c, { aff: 3 }); }); if (pal) ctx.mod2(c, pal, { aff: 5 }, { aff: 5 }); }, text: pal ? ctx.t(duo, c, pal) : ctx.t('{a}はレンズに向かってピースした。「どうせ見てるなら」', c), why: c.name + 'のFC' + (pal ? '。' + pal.name + 'も乗った（FC・人懐こさ）' : '') });
+            var duo = pal ? ctx.pick(['{a}はレンズに向かってピースした。「どうせ見てるなら｜どうせ見ているなら｜どうせ見ているなら」――{b}もすかさず隣に並んで、二人でピースした。', '{a}はレンズに向かってピースした。{b}が横から顔を出して、ダブルピースで割り込んだ。', '{a}は{b}の腕を引っぱって、二人でレンズに向かってピースした。「盛れてる？｜盛れているか｜盛れていますか？」', '{a}と{b}は、レンズの前で指ハートを半分ずつ作って、くっつけた。']) : '';
+            ctx.act2({ actors: pal ? [c, pal] : [c], cat: 'bond', fx: function () { ctx.others(c).forEach(function (o) { ctx.stress(o, -5); ctx.mod(o, c, { aff: 3 }); }); if (pal) ctx.mod2(c, pal, { aff: 5 }, { aff: 5 }); }, text: pal ? ctx.t(duo, c, pal) : ctx.t('{a}はレンズに向かってピースした。「どうせ見てるなら｜どうせ見ているなら｜どうせ見ているなら」', c), why: c.name + 'のFC' + (pal ? '。' + pal.name + 'も乗った（FC・人懐こさ）' : '') });
           }
         });
       }
@@ -208,7 +208,7 @@
           ctx.act2({ actors: [taker], cat: 'conflict', fx: function () { ctx.others(taker).forEach(function (o) { ctx.mod(o, taker, { ten: 8, aff: -4 }); }); }, text: ctx.t('{a}がトレイを引き寄せ、黙って食べ始めた。', taker), why: taker.name + 'の攻撃性・ドライさ' });
         } else if (giver.tr.np > 0.6) {
           var to = ctx.most(ctx.others(giver), function (o) { return o.stress + R(ctx, giver, o).aff; });
-          ctx.act2({ actors: [giver, to], cat: 'help', fx: function () { ctx.mod(to, giver, { aff: 10, trust: 10, att: 4 }); }, text: ctx.t('{a}はトレイをそのまま{b}の前に置いた。「先に食べて」', giver, to), why: giver.name + 'のNP' });
+          ctx.act2({ actors: [giver, to], cat: 'help', fx: function () { ctx.mod(to, giver, { aff: 10, trust: 10, att: 4 }); }, text: ctx.t('{a}はトレイをそのまま{b}の前に置いた。「先に食べて｜先に食べろ｜先に食べてください」', giver, to), why: giver.name + 'のNP' });
         } else {
           ctx.act2({ actors: [splitter], cat: 'help', fx: function () { ctx.others(splitter).forEach(function (o) { ctx.mod(o, splitter, { trust: 5 }); }); }, text: ctx.t('{a}がパンを等分に割った。端の大きさまで揃えて。', splitter), why: splitter.name + 'のA' });
         }
@@ -240,7 +240,7 @@
         var panic = ctx.most(P, function (c) { return c.tr.ac + c.tr.impulse * 0.5; });
         var lead = ctx.most(ctx.others(panic), function (o) { return o.tr.lead; });
         ctx.act2({ actors: [panic, lead], cat: 'help', fx: function () { if (lead) ctx.mod(panic, lead, { trust: 10 }); },
-          text: lead ? ctx.t('壁を押し返そうとする{a}の肩を、{b}が掴んだ。「止まった。もう止まってる」', panic, lead) : ctx.t('{a}は壁を押し返そうとしていた。', panic), why: panic.name + 'の焦り／' + (lead ? lead.name + 'の主導性' : '') });
+          text: lead ? ctx.t('壁を押し返そうとする{a}の肩を、{b}が掴んだ。「止まった。もう止まってる｜止まった。もう止まっている｜止まりました。もう止まっています」', panic, lead) : ctx.t('{a}は壁を押し返そうとしていた。', panic), why: panic.name + 'の焦り／' + (lead ? lead.name + 'の主導性' : '') });
       }
     },
     {
@@ -256,7 +256,7 @@
         }
         var giver = ctx.most(P, function (c) { return c.tr.np; }), claim = ctx.most(P, function (c) { return c.tr.cp + c.tr.cold * 0.5; });
         if (claim.tr.cp > 0.65 && claim.tr.np < 0.5) ctx.act2({ actors: [claim], cat: 'conflict', fx: function () { ctx.others(claim).forEach(function (o) { ctx.mod(o, claim, { ten: 6 }); }); }, text: ctx.t('{a}は当然のようにベッドに腰を下ろした。', claim), why: claim.name + 'のCP高・NP低' });
-        else ctx.act2({ actors: [giver], cat: 'help', fx: function () { ctx.others(giver).forEach(function (o) { ctx.mod(o, giver, { aff: 5 }); }); }, text: ctx.t('{a}は「床で平気」と言って、ベッドを譲った。', giver), why: giver.name + 'のNP' });
+        else ctx.act2({ actors: [giver], cat: 'help', fx: function () { ctx.others(giver).forEach(function (o) { ctx.mod(o, giver, { aff: 5 }); }); }, text: ctx.t('{a}は「床で平気｜床で平気だ｜床で平気です」と言って、ベッドを譲った。', giver), why: giver.name + 'のNP' });
       }
     },
     {
@@ -295,7 +295,7 @@
         ctx.act2({ actors: [ch], cat: 'solo', text: ctx.t('{a}の机の中で、カンペが小さく光った。', ch), why: ch.name + 'の衝動性と、学力 ' + ctx.stat(ch, 'study') });
         if (!w) return;
         if (w.tr.cp > 0.65 && w.tr.np < 0.55) ctx.act2({ actors: [w, ch], cat: 'betray', mag: 18, fx: function () { ctx.mod(ch, w, { ten: 30, aff: -20, trust: -25 }); ctx.stress(ch, 25); }, text: ctx.t('{a}は手を挙げた。「先生、{b}が」', w, ch), why: w.name + 'のCP（' + Math.round(w.eg.CP) + '）：見逃せない' });
-        else if (w.tr.np > 0.5 || R(ctx, w, ch).aff > 25) { ctx.pair(w, ch).secret = true; ctx.act2({ actors: [w, ch], cat: 'help', mag: 12, fx: function () { ctx.mod2(w, ch, { trust: 5 }, { trust: 18, aff: 10 }); }, text: ctx.t('{a}は気づいていた。放課後、{b}にだけ「次はやめときな」と言った。', w, ch), why: w.name + 'の' + (w.tr.np > 0.5 ? 'NP' : ch.name + 'への好意') }); }
+        else if (w.tr.np > 0.5 || R(ctx, w, ch).aff > 25) { ctx.pair(w, ch).secret = true; ctx.act2({ actors: [w, ch], cat: 'help', mag: 12, fx: function () { ctx.mod2(w, ch, { trust: 5 }, { trust: 18, aff: 10 }); }, text: ctx.t('{a}は気づいていた。放課後、{b}にだけ「次はやめときな｜次はやめておけ｜次はやめておいたほうがいいですよ」と言った。', w, ch), why: w.name + 'の' + (w.tr.np > 0.5 ? 'NP' : ch.name + 'への好意') }); }
         else ctx.act2({ actors: [w, ch], cat: 'solo', fx: function () { ctx.mod(w, ch, { trust: -6 }); }, text: ctx.t('{a}は見なかったことにした。', w, ch), why: w.name + 'のドライさ' });
       }
     },
@@ -331,9 +331,9 @@
         var slack = ctx.most(ctx.others(cond), function (o) { return o.tr.fc * (1 - o.tr.ac); });
         ctx.incident('合唱コンクールの練習が始まった。指揮は' + cond.name + '。');
         if (slack && slack.tr.fc * (1 - slack.tr.ac) > 0.35) ctx.act2({ actors: [cond, slack], cat: 'conflict', fx: function () { ctx.mod2(cond, slack, { ten: 14 }, { ten: 12, aff: -4 }); },
-          text: ctx.t('「ちゃんと声出して」{a}の注意に、{b}は聞こえるようにため息をついた。', cond, slack), why: cond.name + 'のCP／' + slack.name + 'のFC高・AC低' });
+          text: ctx.t('「ちゃんと声出して｜ちゃんと声を出せ｜ちゃんと声を出してください」{a}の注意に、{b}は聞こえるようにため息をついた。', cond, slack), why: cond.name + 'のCP／' + slack.name + 'のFC高・AC低' });
         var peace = ctx.most(ctx.others(cond), function (o) { return o.tr.np + o.tr.ac * 0.5; });
-        if (peace && peace !== slack) ctx.act2({ actors: [peace, cond], cat: 'help', fx: function () { ctx.mod(cond, peace, { trust: 8 }); }, text: ctx.t('練習のあと、{a}が楽譜にこっそり「おつかれ」と書いて{b}に返した。', peace, cond), why: peace.name + 'のNP' });
+        if (peace && peace !== slack) ctx.act2({ actors: [peace, cond], cat: 'help', fx: function () { ctx.mod(cond, peace, { trust: 8 }); }, text: ctx.t('練習のあと、{a}が楽譜にこっそり「おつかれ｜＝｜おつかれさまです」と書いて{b}に返した。', peace, cond), why: peace.name + 'のNP' });
       }
     },
     {
@@ -373,7 +373,7 @@
         var dreamer = ctx.most(P, function (c) { return c.tr.fc + c.tr.honesty * 0.5; });
         var realist = ctx.most(ctx.others(dreamer), function (o) { return o.tr.a * o.tr.cp; });
         ctx.act2({ actors: [dreamer], cat: 'bond', text: ctx.t('{a}は第一志望の欄に、誰も聞いたことのない夢を書いた。', dreamer), why: dreamer.name + 'のFC' });
-        if (realist && realist.tr.a * realist.tr.cp > 0.35) ctx.act2({ actors: [realist, dreamer], cat: 'conflict', fx: function () { ctx.mod(dreamer, realist, { ten: dreamer.tr.ac > 0.5 ? 12 : 6, att: dreamer.tr.ac > 0.5 ? 0 : 3 }); }, text: ctx.t('「それ、本気で言ってる？」{a}の一言に、{b}は笑って「本気」と返した。', realist, dreamer), why: realist.name + 'のA×CP' });
+        if (realist && realist.tr.a * realist.tr.cp > 0.35) ctx.act2({ actors: [realist, dreamer], cat: 'conflict', fx: function () { ctx.mod(dreamer, realist, { ten: dreamer.tr.ac > 0.5 ? 12 : 6, att: dreamer.tr.ac > 0.5 ? 0 : 3 }); }, text: ctx.t('「それ、本気で言ってる？｜それは、本気で言っているのか｜それ、本気で言っていますか？」{a}の一言に、{b}は笑って「本気｜本気だ｜本気です」と返した。', realist, dreamer), why: realist.name + 'のA×CP' });
       }
     }
   ];

@@ -33,7 +33,14 @@
     desc: '同僚・恋人・友人・恨みを持った相手・ストーカーの誰かに催眠をかけられる。かかるのか、かかったらどこまでしてしまうのか、どんな暗示に弱いのか。終わったあと、怒るのか、通報するのか、やり返すのか、堕ちるのか、困惑するのか、受け入れるのか。数日後の二人も描く。※成人キャラクター向け',
     note: '※登場人物はすべて成人として扱います。',
     unit: 'コマ', simulate: function (input) { return withFresh(function () { return run(input); }); },
-    castHint: '1〜2人（かける側とかけられる側で合わせて二人まで）。1人のときは、かける側はモブ（「かける相手」「かける人の性別」の設定で決まる）になります。2人のときは片方が「かける側」になり、もう片方に催眠をかけます（関係は「既存の関係」から決まります）。役割を決めなければ、2人目がかける側になります。',
+    /* 始める前の検査（ui.js の開始ボタン）：参加者の全員が役割で「かける側」を選んでいると、かけられる人がいないので始めない。
+       「おまかせ」か「かけられる側」の人が一人でもいれば始める（1人のおまかせは、かけられる側になり、かける側はモブ） */
+    check: function (input) {
+      var n = Math.min(2, (input.chars || []).length), pc = input.perChar || [];
+      for (var i = 0; i < n; i++) if (((pc[i] && pc[i].pick) || {}).role !== 'hypno') return '';
+      return n ? '催眠：かけられる側の住人が一人もいません。住人の役割で「かけられる側」を選ぶか、おまかせにしてください' + (n === 1 ? '（1人のときは、その人がかけられる側になり、かける側はモブになります）' : '') : '';
+    },
+    castHint: '1〜2人（かける側とかけられる側で合わせて二人まで）。1人のときは、かける側はモブ（「かける相手」「かける人の性別」の設定で決まる）になります。2人のときは片方が「かける側」になり、もう片方に催眠をかけます（関係は「既存の関係」から決まります）。役割を決めなければ、2人目がかける側になります。全員を「かける側」にすると、かけられる人がいないので始められません。',
     env: [
       { id: 'who', label: 'かける相手', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ（人ごとにランダム）' }, { v: 'colleague', label: '仕事の同僚' }, { v: 'lover', label: '恋人' }, { v: 'friend', label: '友人' }, { v: 'grudge', label: '恨みを持った相手' }, { v: 'stalker', label: 'ストーカー' }] },
       { id: 'hsex', label: 'かける人の性別', type: 'select', def: 'random', desc: '1人のとき（かける側がモブ）だけ。おまかせなら、かけられる人の恋愛対象に合わせる', options: [{ v: 'random', label: 'おまかせ' }, { v: 'm', label: '男性' }, { v: 'f', label: '女性' }] },
@@ -49,7 +56,7 @@
       { id: 'sugg', label: 'かかりやすさ', desc: '高いほど深くかかる。エゴグラムのAC・FCが高い、A・CPが低い人もかかりやすい' },
       { id: 'sens', label: '感じやすさ', desc: W_SENS }
     ],
-    perFields: [{ id: 'role', label: '役割', auto: 'かけられる側', options: [{ id: 'target', label: 'かけられる側' }, { id: 'hypno', label: 'かける側' }] }],
+    perFields: [{ id: 'role', label: '役割', auto: 'おまかせ', options: [{ id: 'target', label: 'かけられる側' }, { id: 'hypno', label: 'かける側' }] }],
     actions: [
       { id: 'trust', label: '素直に身を任せる', fit: function (t) { return t.ac * 0.5 + t.np * 0.4; } },
       { id: 'doubt', label: '疑ってかかる', fit: function (t) { return t.a * 0.6 + t.caution * 0.4; } },
@@ -190,7 +197,7 @@
     }
     function wake(p) {
       p.woke = true;
-      var o = say(p, { tag: '目覚め', text: ST.fmt(ST.pick(S, L('{a}がはっと目を見開いた。目の前に{h}の顔があった。自分の格好を見下ろして、{a}は息を呑んだ。|{a}の瞳に、急に光が戻った。{a}は「……え。{you}、何してるの」と後ずさった。|{a}は跳ね起きた。体はまだ火照っているのに、頭だけが冷えていた。')), { a: p.name, h: p.h }) + (SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: '催眠が浅くなって、途中で目を覚ました（深さ ' + Math.round(p.m.depth) + '）', mag: 35 }, '', true);
+      var o = say(p, { tag: '目覚め', text: ST.fmt(ST.pick(S, L('{a}がはっと目を見開いた。目の前に{h}の顔があった。自分の格好を見下ろして、{a}は息を呑んだ。|{a}の瞳に、急に光が戻った。{a}は「……え。{you}、何してるの｜……え。{you}、何をしているんだ｜……え。{you}、何をしているんですか」と後ずさった。|{a}は跳ね起きた。体はまだ火照っているのに、頭だけが冷えていた。')), { a: p.name, h: p.h }) + (SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: '催眠が浅くなって、途中で目を覚ました（深さ ' + Math.round(p.m.depth) + '）', mag: 35 }, '', true);
       ST.key(S, o, p.name + 'が途中で目を覚ました');
       /* エッチな暗示のあとで目を覚ましたなら、そこからも分かれる（流される／通報／逃げる） */
       if (p.cnt.lewd >= 1 && lew !== 'low' && SM.afterSnap && !p.snapDone) {
@@ -492,7 +499,7 @@
   function eL(S, key, arr) { return HK.Ero ? HK.Ero.L(S, 'saimin', key, arr) : arr; }
   /* 受ける{a}が女性の体（ふたなりでない）なら、{a}を男性の体で書いた文（{a}の根元・亀頭、{a}が射精する など）を外し、
      女性の体の文（キーの後ろに F。solo-saimin-ero.js の 'sug.edge.fullF' など）を足す。残らなければ元の文のまま */
-  var A_MALE = /\{a\}の(?:根元|亀頭|竿|裏筋|鈴口|カリ|先走り|ちんぽ|肉棒|ペニス|陰茎|睾丸)|\{a\}(?:は|が)[^。「」{]{0,30}(?:射精|精を(?:吐き出|放))/;
+  var A_MALE = /\{a\}の(?:根元|亀頭|竿|裏筋|鈴口|カリ|先走り|ちんぽ|肉棒|ペニス|陰茎|睾丸|\{男性器\}|\{亀頭\})|\{a\}(?:は|が)[^。「」{]{0,30}(?:射精|精を(?:吐き出|放))/;
   function bodyL(S, p, key, arr) {
     var L0 = eL(S, key, arr);
     /* 体の判定は性別ではなく性器（HK.Pos.hasM・hasF。attr.js の genital） */

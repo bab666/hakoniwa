@@ -113,11 +113,11 @@
     if (HK.SAFE_ON || !a || !b || a === b) return false;
     var S = HK.State;
     /* 体だけの夜（info.free）：HK.State.freeSex を通る組だけ（恋人でなくてよい。恋愛相手の固定 HK.canLove は見ない） */
-    if (info && info.free) return !!(S && S.freeSex && S.freeSex(ctx, a, b)) && !(HK.Attr && HK.Attr.samePair && HK.Attr.samePair(a, b));
+    if (info && info.free) return !!(S && S.freeSex && S.freeSex(ctx, a, b));
     if (S && !S.pairSex(a, b)) return false;
     if (HK.sexBlocked(a, b) || HK.ngPair(a, b)) return false;
     if (!HK.canLove(a, b) || !HK.canLove(b, a)) return false;
-    if (HK.Attr && HK.Attr.samePair && HK.Attr.samePair(a, b)) return false;
+    /* 同一人物の二人も、ほかの二人と同じに扱う（避けたいときは住人の「恋愛・R18にしない相手」） */
     return !!ctx.pair(a, b).couple;
   }
   var NIGHT_N = {}; (HK.Attr && HK.Attr.NIGHT || []).forEach(function (x) { NIGHT_N[x[0]] = x[1]; });
@@ -166,8 +166,8 @@
       if (!open) return fade();
       if (ero) { R.short++; R.last[pk2] = day; var sh = HK.ThickEro.short({ S: ctx, pick: pk, a: A, b: B, open: open, again: high, after: glow }); return done(sh.text); }
       var body;
-      if (fm && HK.FM && HK.FM.pick) { var st = HK.FF && HK.FF.styleOf ? HK.FF.styleOf(A) : 'gentle', fp = { pick: pk }; body = HK.FM.pick(fp, 'body', st) + '{b}「' + (TS ? TS.moan(pk, B, true) : '……っ') + '」' + HK.FM.pick(fp, 'climax', st); }
-      else { var sb = upk(SHORT[mode === 'ff' ? 'ff' : 'mf']); if (!sb) return fade(); body = (TS ? '{b}「' + TS.moan(pk, B, false) + '」' : '') + sb; }
+      if (fm && HK.FM && HK.FM.pick) { var st = HK.FF && HK.FF.styleOf ? HK.FF.styleOf(A) : 'gentle', fp = { pick: pk }; body = HK.FM.pick(fp, 'body', st) + '{b}「' + (TS ? TS.moan(pk, B, true, ctx) : '……っ') + '」' + HK.FM.pick(fp, 'climax', st); }
+      else { var sb = upk(SHORT[mode === 'ff' ? 'ff' : 'mf']); if (!sb) return fade(); body = (TS ? '{b}「' + TS.moan(pk, B, false, ctx) + '」' : '') + sb; }
       R.short++; R.last[pk2] = day;
       if (high) body += ff ? upk(AGAIN_FF) : HK.ThickEro ? HK.ThickEro.again(ctx, pk, A, B, false, true) : '';
       return done(open + body + glow);

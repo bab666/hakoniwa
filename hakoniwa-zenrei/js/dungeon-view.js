@@ -138,9 +138,11 @@
     if (res !== lastRes) lewdOnly = false;
     lastHost = host; lastRes = res;
     var S = HK.SCENARIOS[res.scenId] || HK.SCENARIOS.dungeon;
-    var envChips = S.env.map(function (e) {
-      var v = res.env[e.id];
-      var shown = e.type === 'select' ? (e.options.filter(function (o) { return o.v === v; })[0] || {}).label : v + (e.unit || '');
+    var envChips = (S.env || []).map(function (e) {
+      var v = (res.env || {})[e.id];
+      var shown = e.type === 'select' ? ((e.options || []).filter(function (o) { return o.v === v; })[0] || {}).label : v + (e.unit || '');
+      /* その設定ができる前にセーブした結果（値が無い・今は無い選択肢）は、その欄を出さない */
+      if (v == null || shown == null) return '';
       return chip(e.label + '：' + shown);
     }).join('');
     host.innerHTML =

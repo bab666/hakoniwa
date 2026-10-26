@@ -520,6 +520,8 @@
       if (nth >= 2 && RA) brk = { m: (RA[ps(U)] || RA.gentle).map(function (x) { return x.replace(/\{a\}/g, '{T}').replace(/\{b\}/g, '{U}'); }), p: brk.p };
       var vl = function (k) { var t = ''; for (var i = 0; i < 5; i++) { t = V && V.line ? V.line(pf, U.persona || 'gentle', k, 'U') : ''; if (!used[t]) break; } used[t] = 1; return t; };
       var edge = vl('edge'), climax = vl('climax');
+      /* 果てる声は、喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）を通す。元の言い回し（Voice.CLIMAX の枠つき）も4割ほど残る */
+      if (HK.Moan && HK.Moan.say) { var mvo = HK.Moan.say(rng, U, 'climax', { novel: true, top: T }, function () { return '\u0000'; }); if (mvo && mvo !== '\u0000') climax = '{U}「' + mvo + '」'; }
       /* 箱庭ごとの感覚の一文。女性どうしでは、突き上げ・繋がりの文を使わない */
       var FL = f >= 0 ? FLAV[f] : null;
       if (FL && (AD.fl || AD.fl2)) FL = { fl: FL.fl.concat(AD.fl || []), fl2: FL.fl2.concat(AD.fl2 || []) };
@@ -550,8 +552,9 @@
       return paras.join('\n\n')
         .replace(/\{fl\}/g, function () { return FL ? fresh(flp(FL.fl)) : ''; })
         .replace(/\{fl2\}/g, function () { return FL ? fresh(flp(FL.fl2)) : ''; })
-        .replace(/\{mU0\}/g, function () { return '{U}「' + fresh(nov[0]) + '」'; })
-        .replace(/\{mU1\}/g, function () { return '{U}「' + fresh(nov[1]) + '」'; })
+        /* 受ける側の高まる喘ぎ・絶頂の声も、喘ぎの辞書（HK.Moan.say の小説調）を通す。元の表（態度ごとの NOV）も4割ほど残る */
+        .replace(/\{mU0\}/g, function () { return '{U}「' + (HK.Moan && HK.Moan.say ? HK.Moan.say(rng, U, 'mid', { novel: true, deep: true, top: T }, function () { return fresh(nov[0]); }) : fresh(nov[0])) + '」'; })
+        .replace(/\{mU1\}/g, function () { return '{U}「' + (HK.Moan && HK.Moan.say ? HK.Moan.say(rng, U, 'climax', { novel: true, top: T }, function () { return fresh(nov[1]); }) : fresh(nov[1])) + '」'; })
         .replace(/\{mT\}/g, function () { return '{T}「' + fresh(TOPV[topOf(T)] || TOPV.NP) + '」'; })
         .replace(/\{edge\}/g, edge).replace(/\{climax\}/g, climax).replace(/\{bed\}/g, o.bed || 'シーツ');
     },
@@ -717,7 +720,7 @@
     return { short: c ? X.short(ctx.env, ctx.rng) : false, ero: !!(c && X.ero(ctx.env) && HK.ThickEro) };
   }
   /* 結び（α×Ω）の男性向け：{a}＝α（攻め）、{b}＝受け */
-  var KNOT_ERO = L('{a}の根元がぐぷりと膨らみ、{b}のナカに深く結びついた。抜けなくなったまま、熱いものがどくどくと注がれ続ける。{s:cum}。{b}「{mb2}」|結ばれたまま奥をぐりぐりと押し上げられて、{b}はイきっぱなしになった。{s:cum}。{b}「{mb2}」――注がれるたびに、うなじの奥が甘く疼いた。|{a}は{b}のうなじに歯を立てながら、結びついた根元で最後の一滴まで注ぎ込んだ。{s:cum}。{b}「{mb2}」');
+  var KNOT_ERO = L('{a}の根元がぐぷりと膨らみ、{b}の{ナカ}に深く結びついた。抜けなくなったまま、熱いものがどくどくと注がれ続ける。{s:cum}。{b}「{mb2}」|結ばれたまま奥をぐりぐりと押し上げられて、{b}はイきっぱなしになった。{s:cum}。{b}「{mb2}」――注がれるたびに、うなじの奥が甘く疼いた。|{a}は{b}のうなじに歯を立てながら、結びついた根元で最後の一滴まで注ぎ込んだ。{s:cum}。{b}「{mb2}」');
   function eroScene(ctx, T, U, head, after, kd) {
     var pk = function (arr) { return fp(ctx, arr); }, TE = HK.ThickEro, st = lw.last;
     /* 男性向けの体の組（thick-sex-ero.js の mf／fm／ff）も、第二性を優先した組（kd）に合わせる */

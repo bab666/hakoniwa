@@ -14,6 +14,17 @@
     HK.canLove = function (a, b) { var S = ST._cur; if (S && S.env && +S.env.romance === 0 && S.env.romance !== '' && !(S.scen && S.scen.romanceCore)) return false; return cl0.apply(this, arguments); };
     HK.canLove._storyRom = true;
   }
+  /* 関係の設定を物語型の S.ties に写すとき：恋愛・R18にしない組（HK.ngPair：恋愛にしない相手・恋愛相手を別の人に固定した組など）には、恋愛の関係（恋人・セフレ・片想いなど）を当てない
+     （エンジン型の ties.js・邪神村・吹雪の館・宇宙船・人狼と同じ。媚薬ロッカー・ダンジョンRPG・エロトラップダンジョンの仲間が使う）
+     住人の写し（charFlags で sexLock・noR18 を写したもの）を P に渡す */
+  ST.tiesOk = function (P, ties) {
+    return (ties || []).filter(function (t) {
+      if (!t || !P || !P[t.a] || !P[t.b] || t.a === t.b) return !!t;
+      if (HK.ngPair && HK.ngPair(P[t.a], P[t.b]) && /^(lover|fwb|mate|fated|crush|almost|ex|yan)$/.test(t.type)) return false;
+      /* 体の関係にならない組（性行為の相手の固定・R18に参加しない：HK.sexBlocked）には、セフレの関係を当てない（ties.js と同じ） */
+      return !(t.type === 'fwb' && HK.sexBlocked && HK.sexBlocked(P[t.a], P[t.b]));
+    });
+  };
   ST.state = function (input, scenId) {
     var scen = HK.SCENARIOS[scenId], env = {};
     scen.env.forEach(function (e) { env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def; });
@@ -35,7 +46,7 @@
     (input.ties || []).forEach(function (t) { if (t && t.type === 'honmei' && S.P[t.a] && S.P[t.b] && t.a !== t.b && !(HK.ngPair && HK.ngPair(S.P[t.a], S.P[t.b]))) S.P[t.a].honmei = t.b; });
     /* 複数の恋人の設定（poly.js の HK.Poly.mode が S.poly を読む）と、関係の恋人の一覧（性行為の相手の固定「恋人だけ」・一途で使う。engine.js と同じ作り方） */
     S.poly = HK.Poly ? HK.Poly.modeOf(input.env) : 'none';
-    (input.ties || []).forEach(function (t) { if (t && /^(lover|mate|fated)$/.test(t.type) && S.P[t.a] && S.P[t.b] && t.a !== t.b) { (S.P[t.a].loveSet = S.P[t.a].loveSet || []).push(t.b); (S.P[t.b].loveSet = S.P[t.b].loveSet || []).push(t.a); } });
+    ST.tiesOk(S.P, input.ties).forEach(function (t) { if (t && /^(lover|mate|fated)$/.test(t.type) && S.P[t.a] && S.P[t.b] && t.a !== t.b) { (S.P[t.a].loveSet = S.P[t.a].loveSet || []).push(t.b); (S.P[t.b].loveSet = S.P[t.b].loveSet || []).push(t.a); } });
     ST._cur = S;
     return S;
   };
@@ -156,8 +167,8 @@
   /* r18:end */
   function pc(i) { return 'var(--p' + (i % 30) + ')'; }
   function av(res, i, size) { var h = res.heroes[i]; return h && HK.Icons ? HK.Icons.html(h.name, i, size) : ''; }
-  function paint(text, res) {
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.heroes.map(function (h) { return h.name; })) : text).replace(/\n/g, '<br>');
+  function paint(text, res, seg) {
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.heroes.map(function (h) { return h.name; }), seg) : text).replace(/\n/g, '<br>');
     res.heroes.slice().sort(function (a, b) { return b.name.length - a.name.length; }).forEach(function (h) { var n = esc(h.name); if (n) t = t.split(n).join('\u0001' + h.i + '\u0002'); });
     return t.replace(/\u0001(\d+)\u0002/g, function (m, i) { return '<span class="name" style="color:' + pc(+i) + '">' + esc(res.heroes[+i].name) + '</span>'; });
   }
@@ -211,9 +222,12 @@
     });
     var html = groups.filter(function (g) { return g.items.length; }).map(function (g) {
       return '<div class="stepblk"><div class="when">' + esc(g.label) + '</div><ol>' + g.items.map(function (e) {
-        var avs = e.actors.length ? '<span class="avs">' + e.actors.slice(0, 3).map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
+        /* 台詞・地の文・引用の区分（voice-seg.js の e.seg）：台詞行の話し手の顔を先頭に。名詞の引用だけなら吹き出しにしない */
+        var sg = HK.Seg ? HK.Seg.of(e, res) : null, lead = sg ? HK.Seg.speakers(sg).filter(function (i) { return res.heroes[i]; })[0] : null;
+        var ids = (lead != null ? [lead] : []).concat(e.actors.filter(function (i) { return i !== lead; })).slice(0, 3);
+        var avs = e.actors.length || lead != null ? '<span class="avs">' + ids.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
         var tc = tagCls(e);
-        return '<li class="ev' + (tc ? ' cat-' + tc : '') + (e.trouble ? ' trouble' : '') + (tc === 'death' ? ' death' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (avs ? ' hasav' : '') + (avs && /「/.test(e.text) ? ' talk' : '') + '">' + avs + '<div class="evb">' + (e.tag ? '<span class="c' + (tc ? ' cc-' + tc : '') + '">' + esc(e.tag) + '</span>' : '') + paint(e.text, res) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+        return '<li class="ev' + (tc ? ' cat-' + tc : '') + (e.trouble ? ' trouble' : '') + (tc === 'death' ? ' death' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (avs ? ' hasav' : '') + (avs && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)) ? ' talk' : '') + '">' + avs + '<div class="evb">' + (e.tag ? '<span class="c' + (tc ? ' cc-' + tc : '') + '">' + esc(e.tag) + '</span>' : '') + paint(e.text, res, sg) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
@@ -274,8 +288,10 @@
     if (res !== lastRes) { who = null; lewdOnly = false; keyOnly = res.log.length > 260; }
     lastHost = host; lastRes = res;
     var S = HK.SCENARIOS[res.scenId], E = res.ending;
-    var envChips = S.env.map(function (e) {
-      var v = res.env[e.id], shown = e.type === 'select' ? (e.options.filter(function (o) { return o.v === v; })[0] || {}).label : v + (e.unit || '');
+    var envChips = (S.env || []).map(function (e) {
+      var v = (res.env || {})[e.id], shown = e.type === 'select' ? ((e.options || []).filter(function (o) { return o.v === v; })[0] || {}).label : v + (e.unit || '');
+      /* その設定ができる前にセーブした結果（値が無い・今は無い選択肢）は、その欄を出さない */
+      if (v == null || shown == null) return '';
       return '<span class="chip">' + esc(e.label) + '：' + esc(shown) + '</span>';
     }).join('');
     host.innerHTML =

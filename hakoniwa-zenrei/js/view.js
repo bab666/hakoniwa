@@ -12,10 +12,10 @@
   function av(res, i, size, extra) { var c = res.chars[i]; return c ? HK.Icons.html(c.name, i, size, extra) : ''; }
 
   /* 本文中のキャラ名に色をつける */
-  function paint(text, res) {
-    /* 山場の長い描写は段落（改行）で区切ってある。長い文は段落と台詞で改行する（HK.fmtLong） */
+  function paint(text, res, seg) {
+    /* 山場の長い描写は段落（改行）で区切ってある。長い文は段落と台詞で改行する（HK.fmtLong。記録の seg があれば台詞の塊を seg から取る） */
     var list = res.chars.map(function (c) { return { n: esc(c.name), i: c.i }; }).sort(function (a, b) { return b.n.length - a.n.length; });
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.chars.map(function (c) { return c.name; })) : text).replace(/\n/g, '<br>');
+    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.chars.map(function (c) { return c.name; }), seg) : text).replace(/\n/g, '<br>');
     if (!list.length) return t;
     var re = new RegExp(list.map(function (x) { return x.n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
     return t.replace(re, function (m) {
@@ -250,9 +250,11 @@
     });
   }
 
+  /* 結果の箱庭。セーブを開くとき、一覧に出していない箱庭（scenario-futari.js の SCENARIOS_HIDDEN）や今は無い箱庭の結果でも落ちないように */
+  function scenOf(res) { return HK.SCENARIOS[res.scenId] || (HK.SCENARIOS_HIDDEN || {})[res.scenId] || { id: res.scenId, name: String(res.scenId || '箱庭'), env: [], stats: [] }; }
   function charCard(c, res) {
     var stats = Object.keys(c.stats || {}).map(function (k) {
-      var def = (HK.SCENARIOS[res.scenId].stats || []).filter(function (s) { return s.id === k; })[0];
+      var def = (scenOf(res).stats || []).filter(function (s) { return s.id === k; })[0];
       return (def ? def.label : k) + c.stats[k];
     }).join('・');
     var odd = c.odd.map(function (n) {
@@ -294,9 +296,11 @@
         if (e.goal || e.goalExit) chip = (e.goal || []).map(function (g) { return '<span class="goalb">条件達成：' + esc(g) + '</span>'; }).join('') + (e.goalExit ? '<span class="goalb exitb">扉が開いた</span>' : '') + chip;
         /* 決定的な関係の節目（付き合い始めた・別れた・浮気）の札（engine.js の markRel） */
         if (e.mark && e.mark.length) chip = e.mark.map(function (m) { return '<span class="markb mark-' + esc(m) + '">' + esc((HK.MARK_NAME || {})[m] || m) + '</span>'; }).join('') + chip;
-        var who = (e.actors || []).slice(0, 3);
+        /* 台詞・地の文・引用の区分（voice-seg.js の e.seg）：台詞行の話し手の顔を先頭に。発話のある出来事を吹き出しにする（名詞の引用だけなら吹き出しにしない） */
+        var sg = HK.Seg ? HK.Seg.of(e, res) : null, lead = sg ? HK.Seg.speakers(sg).filter(function (i) { return res.chars[i]; })[0] : null;
+        var who = (lead != null ? [lead] : []).concat((e.actors || []).filter(function (i) { return i !== lead; })).slice(0, 3);
         var avs = who.length ? '<span class="avs">' + who.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
-        return '<li class="' + cls + (avs ? ' hasav' : '') + (avs && e.kind === 'event' && /「/.test(e.text) ? ' talk' : '') + '">' + avs + '<div class="evb">' + chip + paint(e.text, res) + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+        return '<li class="' + cls + (avs ? ' hasav' : '') + (avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)) ? ' talk' : '') + '">' + avs + '<div class="evb">' + chip + paint(e.text, res, sg) + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
@@ -325,10 +329,12 @@
     if (fresh && !res.solo) { var sc0 = HK.SCENARIOS[res.scenId]; if (sc0 && sc0.longRun && sc0.longRun(res.env)) tl.keyOnly = true; }
     if (!res) { host.innerHTML = emptyState(lastOpts); return; }
     if (res.solo && HK.DView) { HK.DView.render(host, res, lastOpts, historyBlock(lastOpts.history || [])); return; }
-    var scen = HK.SCENARIOS[res.scenId];
-    var envChips = scen.env.concat(HK.GLOBAL_ENV).map(function (e) {
-      var v = res.env[e.id];
-      var shown = e.type === 'select' ? (e.options.filter(function (o) { return o.v === v; })[0] || {}).label : v + (e.unit || '');
+    var scen = scenOf(res);
+    var envChips = (scen.env || []).concat(HK.GLOBAL_ENV || []).map(function (e) {
+      var v = (res.env || {})[e.id];
+      var shown = e.type === 'select' ? ((e.options || []).filter(function (o) { return o.v === v; })[0] || {}).label : v + (e.unit || '');
+      /* その設定ができる前にセーブした結果（値が無い・今は無い選択肢）は、その欄を出さない */
+      if (v == null || shown == null) return '';
       return '<span class="chip">' + esc(e.label) + '：' + esc(shown) + '</span>';
     }).join('');
     var sur = res.pairs.filter(function (p) { return p.surprise; });
@@ -428,7 +434,7 @@
   /* テキスト書き出し */
   V.toText = function (res) {
     if (res.solo && HK.DView) return HK.DView.toText(res);
-    var scen = HK.SCENARIOS[res.scenId], L = [];
+    var scen = scenOf(res), L = [];
     L.push('【箱庭シミュレーター】' + scen.name + '（シード ' + res.seed + '）');
     if (HK.Endings) {
       var E = HK.Endings.build(res);

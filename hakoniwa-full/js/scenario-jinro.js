@@ -59,6 +59,8 @@
 
   function run(input) {
     var ST = HK.Story, J = HK.JinroText, S = ST.state(input, 'jinro'), rng = S.rng, env = S.env, P = S.P, n = P.length;
+    /* 殺さない（attr.js の HK.Attr.noKillPair）の共通部品（same-story.js） */
+    var SSK = HK.SameStory && HK.SameStory.nk ? HK.SameStory : null;
     var prize = String(env.prizeText || '').trim().slice(0, 30) || PRIZE[env.prize] || '';
     function pk(a) { return ST.pick(S, a); }
     function F(t, m) { return fill(t, m); }
@@ -404,17 +406,20 @@
       }
       var votes = tally(function (p) {
         var others = A.filter(function (q) { return q !== p; });
-        if (LM) return LM.vote(S, p, others, wolfTarget(p, others), isW(p));
-        return wolfTarget(p, others);
+        var vt = LM ? LM.vote(S, p, others, wolfTarget(p, others), isW(p)) : wolfTarget(p, others);
+        /* 殺さない相手には票を入れない（ほかに入れられる相手がいれば、次に疑わしい人へ） */
+        if (SSK && vt && SSK.nk(S, p, vt)) { var alt = SSK.spare(S, p, others).slice().sort(function (a, b) { return (p.sus[b.i] || 0) - (p.sus[a.i] || 0); })[0]; if (alt) vt = alt; }
+        return vt;
       });
       if (LM) LM.flush(S, say, pk);
       A.forEach(function (p) { p.busVote = null; if (p.voted) { p.cnt.votes++; if (!isW(p) && isW(p.voted)) p.cnt.right++; } });
       var maxV = 0, tops = [];
       Object.keys(votes).forEach(function (k) { if (votes[k] > maxV) { maxV = votes[k]; tops = [+k]; } else if (votes[k] === maxV) tops.push(+k); });
       var exP = P[tops[Math.floor(rng() * tops.length)]];
+      var exNk = SSK && A.some(function (p) { return p.voted === exP && SSK.nk(S, p, exP); }) ? SSK.NOTE : '';
       exP.alive = false; executed.push(exP); exP.fate = '処刑（' + day + '日目）';
       var lw = (isW(exP) ? J.lastW : J.lastV)[exP.persona] || (isW(exP) ? J.lastW : J.lastV).gentle;
-      say({ actors: [exP.i], tag: '処刑', kind: 'climax', text: F(pk(J.exec), { x: exP.name }) + F(pk(lw), { x: exP.name }), why: '得票 ' + maxV + '／' + A.length + (tops.length > 1 ? '（同票からくじ引き）' : '') + '・' + exP.name + 'は' + ROLE[exP.role] + (policy !== 'gray' && exP === policyT ? '（方針「' + POLICY_LABEL[policy] + '」どおり）' : '') });
+      say({ actors: [exP.i], tag: '処刑', kind: 'climax', text: F(pk(J.exec), { x: exP.name }) + F(pk(lw), { x: exP.name }), why: '得票 ' + maxV + '／' + A.length + (tops.length > 1 ? '（同票からくじ引き）' : '') + '・' + exP.name + 'は' + ROLE[exP.role] + (policy !== 'gray' && exP === policyT ? '（方針「' + POLICY_LABEL[policy] + '」どおり）' : '') + exNk });
       if (exP.ally) { exP.ally.ally = null; exP.ally = null; }
       winner = check(); if (winner) break;
 
@@ -435,10 +440,19 @@
       prey = prey || vill.sort(function (a, b) { return (b.acc + (b === seer && seerCO.indexOf(b) >= 0 ? 0.6 : 0) + (medCO.indexOf(b) >= 0 ? 0.3 : 0)) - (a.acc + (a === seer && seerCO.indexOf(a) >= 0 ? 0.6 : 0) + (medCO.indexOf(a) >= 0 ? 0.3 : 0)); })[0];
       var rogue = A.filter(function (w) { return isW(w) && w.tr.impulse > 0.7; })[0], rogueNote = '';
       if (rogue && rng() < 0.2 && vill.length > 1) { var rp = vill.filter(function (q) { return q !== prey; }).sort(function (a, b) { return rogue.sus[a.i] - rogue.sus[b.i]; })[0] || prey; if (rp !== prey) { prey = rp; rogueNote = '（' + rogue.name + 'が独断で噛み先を変えた）'; moments.push(rogue.name + 'が独断で噛んだ'); } }
+      /* 殺さない：生きている人狼の誰かが殺さない相手は、ほかに噛める村人がいれば噛まない（いなければ、やむを得ず） */
+      var nkNote = '';
+      if (SSK && prey) {
+        var wv = A.filter(isW);
+        if (SSK.note(S, wv, prey)) {
+          var alt2 = SSK.spare(S, wv, vill).slice().sort(function (a, b) { return b.acc - a.acc; })[0];
+          if (alt2 && !SSK.note(S, wv, alt2)) prey = alt2; else nkNote = SSK.NOTE;
+        }
+      }
       ST.step(S, (day + 1) + '日目・朝');
       if (prey && prey === guard) { guardOK++; moments.push(hunter.name + 'が' + prey.name + 'を守り抜いた'); say({ actors: [], tag: '平和な朝', text: pk(J.peace), why: '狩人の' + hunter.name + 'が' + prey.name + 'を守った' + rogueNote }); }
       else if (prey && HK.Dark.skip(S, 'night')) say({ actors: [], tag: '平和な朝', text: pk(J.peace), why: '人狼は、この夜は誰も襲わなかった（展開の重さ：穏やか）' });
-      else if (prey) { prey.alive = false; killed.push(prey); prey.fate = '襲撃（' + (day + 1) + '日目の朝）'; if (prey.ally) { prey.ally.ally = null; prey.ally = null; } say({ actors: [prey.i], tag: '襲撃', text: F(pk(J.killed), { x: prey.name }), why: '人狼の戦法「' + PLAN_LABEL[plan.kill] + '」' + rogueNote }); }
+      else if (prey) { prey.alive = false; killed.push(prey); prey.fate = '襲撃（' + (day + 1) + '日目の朝）'; if (prey.ally) { prey.ally.ally = null; prey.ally = null; } say({ actors: [prey.i], tag: '襲撃', text: F(pk(J.killed), { x: prey.name }), why: '人狼の戦法「' + PLAN_LABEL[plan.kill] + '」' + rogueNote + nkNote }); }
       snap();
       winner = check();
     }

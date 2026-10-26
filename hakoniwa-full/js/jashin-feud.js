@@ -114,7 +114,7 @@
     var pr = ps[0], a = pr[0].tr.aggr >= pr[1].tr.aggr ? pr[0] : pr[1], b = a === pr[0] ? pr[1] : pr[0];
     var t = '推理の食い違いは、とうとう怒鳴り合いになった。' + TL.line(a, 'DET_FIGHT', b);
     edge(S, a, b, '衝突', 'enemy');
-    if (rng() < 0.12 + a.tr.aggr * 0.15) {
+    if (rng() < 0.12 + a.tr.aggr * 0.15 && !(HK.SameStory && HK.SameStory.nk && HK.SameStory.nk(S, a, b))) {   /* 殺さない相手（HK.Attr.noKillPair）は、揉み合っても殺さない */
       C.die(S, b, '推理の食い違いから' + a.name + 'と揉み合いになって', [t + a.name + 'が突き飛ばした先に、民宿の急な階段があった。{a}は、首をあり得ない方向に曲げて、階段の下に横たわっていた。']);
       return true;
     }
@@ -140,7 +140,8 @@
   function hateMove(S, live, h) {
     var rng = S.rng, C = JS.core, night = JS.night(h);
     /* 生贄に差し出す・手にかけるのは、敵対の強さの嫌悪（不仲なら、嫌がらせや口論にとどまる） */
-    var ps = pairs(S, live, function (a, b) { return FD.hateStrong(S, a, b) && !b.taken; });
+    /* 殺さない組は、生贄に差し出す・手にかけることをしない（same-story.js） */
+    var ps = pairs(S, live, function (a, b) { return FD.hateStrong(S, a, b) && !b.taken && !(HK.SameStory && HK.SameStory.nk && HK.SameStory.nk(S, a, b)); });
     if (!ps.length) return false;
     var pr = rng.pick(ps), a = pr[0], b = pr[1];
     var urge = 0.012 + a.tr.aggr * 0.025 + a.tr.cold * 0.02 + a.m.fear / 2500 + (night ? 0.01 : 0) + (S.ygo ? (a.viol || 0) / 2000 : 0) + (h > S.deadline * 0.6 ? 0.012 : 0);
@@ -162,7 +163,7 @@
       return true;
     }
     /* 人目のないところで手にかける */
-    var t2 = a.name + 'は、' + b.name + 'を「話がある」と神社の裏手へ呼び出した。' + TL.line(a, 'HATE_KILL', b);
+    var t2 = a.name + 'は、' + b.name + 'を「話がある｜＝｜お話があります」と神社の裏手へ呼び出した。' + TL.line(a, 'HATE_KILL', b);
     var win = 0.45 + a.tr.aggr * 0.2 + JS.skill(a, 'fight') * 0.2 - JS.skill(b, 'fight') * 0.2 - b.stats.luck * 0.02;
     if (rng() < win) {
       a.mur = { x: '石', t: b };

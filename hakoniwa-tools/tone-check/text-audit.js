@@ -6,7 +6,8 @@
    T4 同じ入力を続けて二回回して、記録が一致しない
    T5 全年齢（全年齢版・全年齢モード）で性的な語が出た
    T6 一回が 3 秒を超えた（固まりの目安）
-   T7 結末の組み立て（HK.Endings.build）で例外（T1・T5 は結末の行・見出し・最期の言葉 E.last も見る）
+   T7 結末の組み立て（HK.Endings.build）で例外（T1・T5・T10 は結末の行・見出し・最期の言葉 E.last も見る）
+   T10 体の語の印（{男性器} {ナカ} など。R18版の lewd-words.js が語に置き換える）が結果に残った（どのモードでも数える）
    人数は箱庭の最少〜最多を回ごとにずらし、役割（role_*）は「おまかせ」と「住人から」を交互に、内容のスイッチは回ごとに切／全部入 */
 'use strict';
 const { openBuild } = require('./lib.js');
@@ -16,7 +17,9 @@ const { openBuild } = require('./lib.js');
   const { browser, page, errors } = await openBuild(dir, mode);
   const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
   const r = await page.evaluate(({ N, only, WHY, ENVSET }) => {
-    const KEYS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9'];
+    const KEYS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10'];
+    /* T10：体の語の印の残り */
+    const LMK = /\{(?:男性器|亀頭|女性器|陰核|ナカ|胸|乳首|尻|後ろ|精液|愛液|股間)\}/;
     /* T9：その箱庭にしかないはずの語が、ほかの箱庭の文に出た（出られない部屋の前提の文の混入など）。語の右は、出てもよい箱庭 */
     const FOREIGN = [
       [/脱出の条件|部屋の条件|出られない部屋|木箱の道具/, ['whiteroom']],
@@ -75,6 +78,7 @@ const { openBuild } = require('./lib.js');
           if (typeof t !== 'string') return;
           if (PH.test(t)) hit('T1', sc, s, t.match(PH)[0] + ' ← ' + t);
           if (PH.test(e.why || '')) hit('T1', sc, s, 'why: ' + e.why);
+          if (LMK.test(t + ' ' + (e.why || ''))) hit('T10', sc, s, (t + ' ' + (e.why || '')).match(LMK)[0] + ' ← ' + t);
           const tp = t.replace(/「「[^「」]*」」/g, '「』');
           if (PUNCT.test(tp)) hit('T3', sc, s, tp.match(PUNCT)[0] + ' ← ' + t);
           if (SAFE && SEX.test(t)) hit('T5', sc, s, t.match(SEX)[0] + ' ← ' + t);
@@ -84,8 +88,8 @@ const { openBuild } = require('./lib.js');
           if (res2 && res2.log && res2.log[k] && res2.log[k].text !== t && out.ex.T4.length < 99) { hit('T4', sc, s, t + ' ### ' + res2.log[k].text); }
         });
         if (res2 && res2.log && res2.log.length !== L.length) hit('T4', sc, s, 'length ' + L.length + ' vs ' + res2.log.length);
-        try { if (HK.Endings && HK.Endings.build && !scen.solo && res.pairs) { const E = HK.Endings.build(res); (E.lines || []).concat([E.headline || ''], (E.last || []).map(x => x && x.text)).forEach(l => { if (typeof l === 'string' && PH.test(l)) hit('T1', sc, s, 'ending: ' + l); if (SAFE && typeof l === 'string' && SEX.test(l)) hit('T5', sc, s, 'ending: ' + l); }); } } catch (e) { hit('T7', sc, s, 'Endings.build: ' + e.message); }
-        const end = res.ending || res.end; if (end && Array.isArray(end.lines)) end.lines.forEach(l => { if (typeof l === 'string' && PH.test(l)) hit('T1', sc, s, 'ending: ' + l); if (SAFE && typeof l === 'string' && SEX.test(l)) hit('T5', sc, s, 'ending: ' + l); });
+        try { if (HK.Endings && HK.Endings.build && !scen.solo && res.pairs) { const E = HK.Endings.build(res); (E.lines || []).concat([E.headline || ''], (E.last || []).map(x => x && x.text)).forEach(l => { if (typeof l === 'string' && PH.test(l)) hit('T1', sc, s, 'ending: ' + l); if (typeof l === 'string' && LMK.test(l)) hit('T10', sc, s, 'ending: ' + l); if (SAFE && typeof l === 'string' && SEX.test(l)) hit('T5', sc, s, 'ending: ' + l); }); } } catch (e) { hit('T7', sc, s, 'Endings.build: ' + e.message); }
+        const end = res.ending || res.end; if (end && Array.isArray(end.lines)) end.lines.forEach(l => { if (typeof l === 'string' && PH.test(l)) hit('T1', sc, s, 'ending: ' + l); if (typeof l === 'string' && LMK.test(l)) hit('T10', sc, s, 'ending: ' + l); if (SAFE && typeof l === 'string' && SEX.test(l)) hit('T5', sc, s, 'ending: ' + l); });
       }
     });
     return out;

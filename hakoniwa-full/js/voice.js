@@ -2,7 +2,18 @@
    シミュレーションの結果テキストを最後に一度だけ見直し、台詞（「」）ごとに話し手を判定して、
    ・一人称を、その人の一人称（設定がなければ口調と性別から決まるもの）にそろえる
    ・口調が「敬語」の人の台詞を、です・ます調に整える
-   すべての箱庭で共通に使う（HK.simulate の結果に対して適用） */
+   すべての箱庭で共通に使う（HK.simulate の結果に対して適用）
+
+   ■ 台詞の区分（seg）
+   processText は、結果の記録（log）を整えるとき（V._segBuf が配列のとき）、いちばん外側の「」ごとに
+   区分と話し手を V._segBuf に積む。voice-seg.js（HK.Seg）が、ほかの仕上げがすべて終わったあとで、それを記録の e.seg
+   （[{t:'n', s:地の文}, {t:'l', who:住人の番号, s:'名前「台詞」'}, …]）にまとめる。区分は
+     l 台詞行（文の頭か、名前「 の直後。話し手あり）／q 地の文に埋まった発話（話し手あり）／c 名詞の引用（「〜」という話・札の文字。口調を変えない）／
+     m 喘ぎ・モブ（「 の頭の \u2060 の印、または前の文の主語が住人以外）／u 話し手が決まらない発話
+   ■ ソースで話し手をはっきりさせる目印（推定が誤る文だけに使う。画面には残らない）
+     「＠{a}＠台詞」 … 話し手を {a}（住人の名前）に固定する（3本の台詞でも、頭に ＠{a}＠ を付ければよい）
+     「＠＠題名」     … 名詞の引用（区分 c。話し手なし、口調を変えない）
+     「＠台詞」       … これまでどおり、話し手なし（モブ・喘ぎ。区分 m。solo-story-kit.js などが \u2060 に置き換える） */
 (function () {
   'use strict';
   var HK = window.HK, V = HK.Voice = HK.Voice || {};
@@ -19,7 +30,8 @@
     return t[g];
   };
   V.fpFor = function (c) { var fp = String((c && c.fp) || '').trim().slice(0, 8); return fp || V.fpDefault(c); };
-  var FP_RE = /(俺様|オレ様|俺|僕|ぼく|オレ|ボク|わたくし|ワタクシ|あたくし|あたし|アタシ|わたし|ワタシ|私|拙者|わらわ|わし|ウチ|うち)(?=(?:たち|達|ら|は|が|も|の|を|に|へ|一人|ひとり|と|で|って|だ|、|。|！|？|…|―|」|）|\s|$|っ|、|ね|よ|さ|じゃ|から|まで|より|だけ|なんか|なんて|なら|かも|ばかり|ばっかり|しか|こそ|以外|自身|一番|いちばん|吊|な(?=の|ん)|か(?=[？?…!！」、]|$)|!|\?))/g;
+  /* 一人称の後ろに来る語。助詞を落とした「私」（「私まだ」「私やります」。後ろがひらがな）も一人称として置き換える（「私する」は除く） */
+  var FP_RE = /(俺様|オレ様|俺|僕|ぼく|オレ|ボク|わたくし|ワタクシ|あたくし|あたし|アタシ|わたし|ワタシ|私|拙者|わらわ|わし|ウチ|うち)(?=(?:たち|達|ら|は|が|も|の|を|に|へ|一人|ひとり|と|で|って|だ|、|。|！|？|…|―|」|）|\s|$|っ|、|ね|よ|さ|じゃ|から|まで|より|だけ|なんか|なんて|なら|かも|ばかり|ばっかり|しか|こそ|以外|自身|一番|いちばん|吊|な(?=の|ん)|か(?=[？?…!！」、]|$)|!|\?|(?<=私)(?=[ぁ-ゖ])(?![すし])))/g;
   /* 一人称の読みの頭（「わ、私」→「ぼ、僕」のように、どもりも一人称に合わせる）
      漢字の一人称は表から、ひらがな・カタカナで始まる一人称は最初の一音（「しょ」のような拗音も）から。
      読みが分からない一人称なら、どもりは省く（「わ、私」→「某」） */
@@ -401,7 +413,9 @@
         /* 「〇〇の声が」「〇〇の残したメモには」のような所有の形も、話し手として扱う */
         /* 「〇〇の静かな声が」「〇〇の甘い囁きが」のように、声の前に短い飾りがついていても話し手 */
         var poss = nx === 'の' && (/^の(?:声|口|唇|喉|残した|書き残した|書いた|メモ|手紙|字|書き置き|置き手紙)/.test(span.slice(at + p.name.length)) || /^の[^、。「」\s]{1,8}?(?:声|囁き|ささやき)(?:が|で|は)/.test(span.slice(at + p.name.length)));
-        if (/[はがも「、]/.test(nx) || endHere || poss) {
+        /* 「〇〇（名探偵）は」：名前のあとの役割の括弧は飛ばす。「〇〇の「……」」：名前の直後の「の」で台詞が続く形も話し手 */
+        var role = nx === '（' && /^（[^）「」]{1,12}）[はがも、「]/.test(span.slice(at + p.name.length)), ofQ = nx === 'の' && !span.slice(at + p.name.length + 1).trim();
+        if (/[はがも「、]/.test(nx) || endHere || poss || role || ofQ) {
           /* 「AはBが果てそうになるたびに、「……」」の B は従属節の主語。前に「Aは」があれば A を話し手にする */
           if (best && nx === 'が' && span.charAt(bp + best.name.length) === 'は' && /^が[^、。「」]{0,20}(?:たびに|たび、|ときに|とき、|うちに|間に|あいだ)/.test(span.slice(at + p.name.length))) continue;
           if (at > bp || (at === bp && best && p.name.length > best.name.length)) { bp = at; best = p; }
@@ -426,7 +440,32 @@
   }
   /* 「〇〇は△△に「……」と言われて」の受け身：話し手は「に」「から」の人 */
   var PASSIVE = /^(?:と|って)(?:言われ|頼まれ|告げられ|聞かれ|訊かれ|尋ねられ|返され|囁かれ|呼ばれ|叱られ|笑われ|促され|詰め寄られ|泣きつかれ|せがまれ|ねだられ|怒鳴られ|注意され|誘われ|誤魔化され|ごまかされ)/;
+  /* 住人以外の人物（村の年寄り・無口な職人・喋る猫・魔術師…）を表す語の終わり */
+  var PERSON_END = /(?:人|者|員|師|長|主|客|家|官|士|婆|爺|娘|男|女|猫|さん|様|殿|神|鬼|獣|先生|先輩|後輩|医|僧|兵|年寄り|少年|少女|子ども|子供|童|幽霊|悪魔|ゴブリン|オーク|スライム|マスター|オーナー|ママ|運転手|マン|女将|宮司|巫女|伯爵|衆|司会|スタッフ|セラピスト|メイド|執事|若頭|探偵|刑事|弟子|インキュバス|サキュバス|の子)$/;
+  var NOT_MOB = /(?:^|[^ぁ-んァ-ヶ一-鿿])?(?:一人|二人|三人|四人|五人|本人|他人|大人|恋人|住人|一同|彼女|彼|皆|全員|みんな)$/;
+  /* 人のしぐさ・話す動詞で終わる文（「〜が手招きした」「〜は弟子たちに命じた」） */
+  var ACT_END = /(?:言[っいうわえ]|囁[いか]|告げ|訊[いか]|尋ね|答え|呟[いか]|促[しさ]|声をかけ|教え|叫[んば]|笑[っいうわ]|怒鳴|呼びかけ|話しかけ|命じ|手招き|読み上げ|頷[いか]|うなず|撫で|差し出|取り出|振り返|微笑[んみ]|指さ|指差|呼び止め|現れ|近づ|立ちはだか|鼻を鳴ら|舌なめずり|口を開|切り出|割り込|覗き込|顔を出|勧め|入ってき|やってき|頭を下げ|会釈)[^。、「」]{0,10}$/;
+  function isMobWord(x, people) { return !!x && !people.some(function (p) { return p.name && x.indexOf(p.name) >= 0; }) && !NOT_MOB.test(x); }
+  /* 文の主語が住人以外の人物か（「村の年寄りたちが、一行を集会所へ手招きした」「売れないバンドマンの方から〜に声をかけてきた」） */
+  function mobSubj(sen, people) {
+    var m = sen.match(/([^\s、。「」をにでとへはが]{1,14}?)(?:たち|ら|達)?(?:は|が|の方から)(?!ら)/);
+    if (!m || !isMobWord(m[1], people) || people.some(function (p) { return p.name && sen.slice(0, m.index).indexOf(p.name) >= 0; })) return false;
+    /* 「拡声器の声がした」「村長の声が響いた」：住人でない人の声 */
+    return PERSON_END.test(m[1]) || ACT_END.test(sen) || /^[^、。「」\s]{1,10}の声$/.test(m[1]);
+  }
+  V.mobSubj = mobSubj;
+  /* 台詞らしい言い方か（題名・名詞の引用と分ける） */
+  function speechy(q) {
+    q = String(q || '').replace(/[\u2060-\u2064]/g, '');
+    return /[。！？!?…‥、♡っ]/.test(q) || /[ぁ-ん][ー〜～]+$/.test(q) || /(?:よ|ね|な|わ|ぞ|ぜ|さ|か|の|て|で|た|だ|い|う|く|ぐ|す|つ|ぬ|ぶ|む|る|ん|ろ|れ|え|け|や|ば|も|ら|り|じゃん)$/.test(q);
+  }
+  V.speechy = speechy;
+  /* 「……」のあとが話す動詞（「と告げた」「と言った」）か */
+  var SAID_AFTER = /^(?:と|って)、?(?:言|呟|囁|叫|漏ら|こぼ|返|答え|告げ|続け|付け足|付け加え|言い切|言い放|吐き捨て|口にし|ぼや|訊|尋ね|宣言|報告|促|呼びかけ)/;
+  /* speakerOf が「住人以外の人物の台詞」と見て null を返したとき true（区分 m。voice-seg.js） */
+  var spMob = false;
   function speakerOf(text, s, e, people) {
+    spMob = false;
     var seg = text.slice(0, s), cut = lastBound(seg), span = seg.slice(cut);
     if (PASSIVE.test(text.slice(e, e + 16))) {
       var pas = null, pp = -1, where = span.trim() ? span : seg.slice(lastBound(seg.slice(0, Math.max(0, cut - 1))), cut);
@@ -435,11 +474,18 @@
     }
     var w = subjectIn(span, people);
     if (w) return w;
+    /* 主語のない節（「〇〇は〜。それから口を開けて中を見せ、「27mlでした」と告げた」）：直前の文の主語が話し手（住人以外の人物なら話し手なし） */
+    if (/、\s*$/.test(span) && !/[はがも]/.test(span) && SAID_AFTER.test(text.slice(e, e + 12)) && cut > 0 && /。$/.test(seg.slice(0, cut))) {
+      var pv0 = seg.slice(0, cut - 1), pl0 = pv0.slice(lastBound(pv0));
+      if (mobSpoke(pl0, people) || mobSubj(pl0, people)) { spMob = true; return null; }
+      var ps0 = subjectIn(pl0, people);
+      if (ps0) return ps0;
+    }
     if (!span.trim()) {
       var after = text.slice(e, e + 30), hit = null, quoted = /^(?:と|って)/.test(after);
       people.forEach(function (p) {
         if (!p.name) return;
-        var re = new RegExp('^(?:――|と|って)?' + p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:は|が|の|も|、|。)');
+        var re = new RegExp('^(?:――|と、?|って、?)?' + p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:は|が|の|も|、|。)');
         if (re.test(after) && (!hit || p.name.length > hit.name.length)) hit = p;
       });
       /* 「……」と言いかけた〇〇の袖を／「……」と呟いた〇〇は：話す動詞のすぐあとの住人が話し手 */
@@ -456,16 +502,18 @@
       if (hit && !quoted && cut > 0 && /。$/.test(seg.slice(0, cut))) {
         var pv = seg.slice(0, cut - 1), pvl = pv.slice(lastBound(pv)), pvs = subjectIn(pvl, people);
         /* 「〇〇が話しかけると、村の子どもがこっそり教えてくれた。「……」」は住人以外の台詞 */
-        if (mobSpoke(pvl, people)) return null;
+        if (mobSpoke(pvl, people)) { spMob = true; return null; }
         if (pvs) return pvs;
+        /* 直前の文の主語が住人以外の人物（「村の年寄りたちが、一行を手招きした。「……」アキラは」「〜の方から声をかけてきた。「……」」） */
+        if (mobSubj(pvl, people)) { spMob = true; return null; }
         /* 直前の文の主語が住人以外（「ゴブリンが賭場を開いていた。「……」」）なら、その人物の台詞。住人の口調にはしない */
         /* 「店長はタオルを畳み直して、静かに言った。「……」――〇〇は」も、住人以外の人物の台詞 */
-        if (!/^(?:二人|三人|四人|みんな|全員|皆|彼ら|彼女ら)/.test(pvl) && /^[^、。「」\s]{1,10}[はが][^「」]*(?:言|囁|告げ|訊|尋ね|答え|呟|続け|促|声をかけ)(?:った|いた|げた|ねた|えた|けた|た|んだ)$/.test(pvl)) return null;
-        if (/(^|、)[^、。「」\s]{1,10}が[^、。「」]*(た|ている|ていた|る|だ)$/.test(pvl) && !/(声|音|風|雨|扉|戸|鍵|灯り|明かり|電気|時計|水|火|鐘)が/.test(pvl)) return null;
+        if (!/^(?:二人|三人|四人|みんな|全員|皆|彼ら|彼女ら)/.test(pvl) && /^[^、。「」\s]{1,10}[はが][^「」]*(?:言|囁|告げ|訊|尋ね|答え|呟|続け|促|声をかけ)(?:った|いた|げた|ねた|えた|けた|た|んだ)$/.test(pvl)) { spMob = true; return null; }
+        if (/(^|、)[^、。「」\s]{1,10}が[^、。「」]*(た|ている|ていた|る|だ)$/.test(pvl) && !/(声|音|風|雨|扉|戸|鍵|灯り|明かり|電気|時計|水|火|鐘)が/.test(pvl)) { spMob = true; return null; }
       }
       if (hit) return hit;
-      /* 「……」と言いながら、〇〇は／「……」と呟いて、〇〇が */
-      var am = after.length ? text.slice(e, e + 50).match(/^と(?:言|呟|囁|叫|笑|漏ら|こぼ|返|答え|喘|甘え|ねだ|せが|懇願)[^。「」、]{0,10}、/) : null;
+      /* 「……」と言いながら、〇〇は／「……」と呟いて、〇〇が／「……」と小さく呟いて、〇〇は */
+      var am = after.length ? text.slice(e, e + 50).match(/^と[^。「」、]{0,6}?(?:言|呟|囁|叫|笑|漏ら|こぼ|返|答え|喘|甘え|ねだ|せが|懇願)[^。「」、]{0,10}、/) : null;
       if (am) {
         var rest = text.slice(e + am[0].length, e + am[0].length + 20);
         people.forEach(function (p) {
@@ -473,11 +521,16 @@
         });
         if (hit) return hit;
       }
+      /* 「……」と村人が言った：と・って のすぐあとの主語が住人以外の人物なら、その人物の台詞 */
+      var ms = after.match(/^(?:と|って)、?([^、。「」\s]{1,14}?)(?:たち|ら|達)?(?:が|は)/);
+      if (ms && isMobWord(ms[1], people) && (PERSON_END.test(ms[1]) || ms[1] === '誰か')) { spMob = true; return null; }
       /* 直前の文の主語（「〇〇は震える声で訊いた。「……」」）。最後の節の主語が住人以外（「村の子どもが教えてくれた」）なら住人の台詞にしない */
       if (cut > 0 && /。$/.test(seg.slice(0, cut))) {
         var prev = seg.slice(0, cut - 1), pc = lastBound(prev), pl = prev.slice(pc);
-        if (mobSpoke(pl, people)) return null;
-        return subjectIn(pl, people);
+        if (mobSpoke(pl, people)) { spMob = true; return null; }
+        var ps1 = subjectIn(pl, people);
+        if (!ps1 && mobSubj(pl, people)) spMob = true;
+        return ps1;
       }
     }
     return null;
@@ -535,12 +588,62 @@
     return !!(older && to.age > who.age);
   }
 
+  /* ---------- 台詞の区分（seg）の部品 ---------- */
+  /* 「〜」のあとがこの形なら名詞の引用（「〜」という話・「〜」と書いた札）。話し手の言葉ではないので、口調を変えない */
+  var NOUN_AFTER = /^(?:を|の|に|が|へ|や|という|って書|と書|とある|と記|と刻|と彫|と印|と読め|と名[づ付]け|と呼(?!び止|びかけ|びとめ))/;
+  /* text の start（「）〜i（」）の台詞 q が名詞の引用か。who は判定した話し手（なければ null） */
+  function nounQOf(text, start, i, q, who) {
+    var post = text.slice(i + 1, i + 9);
+    var nq = NOUN_AFTER.test(post) ||
+      /* 「引いたのは「人妻と配達員」だった」のような題名も台詞ではない */
+      (/^だ/.test(post) && /(?:のは|お題は|テーマは|題名は|企画は)$/.test(text.slice(Math.max(0, start - 6), start))) ||
+      /* 「〜」だと／「〜交換会」で（台詞らしくない言い方の題名・名前） */
+      (/^だと/.test(post) && !/[。！？!?]$/.test(q)) || (/^(?:で(?![すし])|だ|です|。)/.test(post) && !speechy(q));
+    /* 「ありがとう」を連発・「好き」を繰り返す：口にした言葉は台詞 */
+    if (nq && /^を(?:連発|繰り返|何度も|口に|呟|叫)/.test(post) && speechy(q)) nq = false;
+    /* 「ミナトの「大丈夫？」に、」：名前の「……」は、その人の台詞 */
+    if (nq && who && who.name && text.slice(Math.max(0, start - who.name.length - 1), start) === who.name + 'の' && speechy(q)) nq = false;
+    /* 「ミナト「お加減はいかがですか。強さを調整いたしますね」のぼせた〜」：話し手の名前のすぐ後の、言い切った台詞は台詞（後ろの「の」は地の文） */
+    if (nq && who && who.name && text.slice(Math.max(0, start - who.name.length), start) === who.name && (/。/.test(q) || /(?:ね|よ|か|わ|ぞ|ぜ|な|です|ます|ください|[！？!?])$/.test(q))) nq = false;
+    /* 「『12ml。採取完了です』と記録した」：読み上げながら記録する台詞（言い切りのあるもの）は台詞として言い換える */
+    if (nq && /^と(?:記録|報告|告げ|宣言|読み上げ|書きつけ)/.test(text.slice(i + 1, i + 8)) && /(。|です|ます|だ|よ|ね|ました)$/.test(q)) nq = false;
+    return nq;
+  }
+  /* 「 の直前にある住人の名前（いちばん長いもの）の番号。なければ -1 */
+  function nameBefore(text, start, people) {
+    var hit = -1;
+    people.forEach(function (p, k) { if (p.name && text.slice(Math.max(0, start - p.name.length), start) === p.name && (hit < 0 || p.name.length > people[hit].name.length)) hit = k; });
+    return hit;
+  }
+  /* 目印「＠名前＠台詞」「＠＠題名」（\u2060 に置き換わったものも）を読む。目印でなければ null。
+     名前が住人なら話し手をその人に固定（k:'s'）、住人でない名前（モブ）なら話し手なし（\u2060 の印を残す）、空なら名詞の引用（k:'c'） */
+  function marked(q, people) {
+    var c0 = q.charAt(0);
+    if (c0 !== '＠' && c0 !== '\u2060') return null;
+    var m = q.match(/^[＠\u2060]([^＠「」｜。、！？\s]{0,16})＠/);
+    if (!m) return c0 === '＠' ? { q: '\u2060' + q.slice(1), who: null, k: 'm' } : null;
+    if (!m[1]) return { q: q.slice(m[0].length), who: null, k: 'c' };
+    var nm = m[1].replace(/\u2064/g, ''), who = null;
+    people.forEach(function (p) { if (p.name && p.name.replace(/\u2064/g, '') === nm) who = p; });
+    return who ? { q: q.slice(m[0].length), who: who, k: 's' } : { q: '\u2060' + q.slice(m[0].length), who: null, k: 'm' };
+  }
+  /* できあがった文の「」（start〜i）の区分と話し手を、文だけから決める（保存から開いた記録の seg を作り直すとき。voice-seg.js の HK.Seg.of） */
+  V.quoteKind = function (text, start, i, people) {
+    var q = text.slice(start + 1, i);
+    if (q.charAt(0) === '\u2060') return { k: 'm', w: nameBefore(text, start, people) };
+    var who = speakerOf(text, start, i + 1, people);
+    if (!who) return { k: spMob ? 'm' : nounQOf(text, start, i, q, null) ? 'c' : 'u', w: -1 };
+    return { k: nounQOf(text, start, i, q, who) ? 'c' : 's', w: people.indexOf(who) };
+  };
+  V.speakerOf = speakerOf;
+  V.nounQOf = nounQOf;
+
   /* people: [{name, fp, tone, persona, gender, keigo}]。actors（任意）はその出来事の登場人物
      台詞の頭の \u2062 は「書き下ろしの敬語の行（tone-lines.js）」。言い換えず、一人称と呼び方だけそろえる */
   V.processText = function (text, people, actors) {
     if (typeof text === 'string' && text.indexOf('\u2062') >= 0 && (text.indexOf('「') < 0 || !people || !people.length)) text = text.replace(/\u2062/g, '');
     if (!text || typeof text !== 'string' || (text.indexOf('「') < 0 && text.indexOf('（') < 0) || !people || !people.length) return text;
-    var out = '', last = 0, depth = 0, start = -1;
+    var out = '', last = 0, depth = 0, start = -1, rec = Array.isArray(V._segBuf) ? V._segBuf : null;
     for (var i = 0; i < text.length; i++) {
       var ch = text[i];
       if (ch === '（' && depth === 0) {
@@ -557,16 +660,18 @@
       else if (ch === '」' && depth > 0) {
         depth--;
         if (depth === 0 && start >= 0) {
-          var q = text.slice(start + 1, i), who = q.charAt(0) === '\u2060' ? null : speakerOf(text, start, i + 1, people);
+          var q = text.slice(start + 1, i), fix = marked(q, people);
+          if (fix) q = fix.q;
+          var who = fix ? fix.who : q.charAt(0) === '\u2060' ? null : speakerOf(text, start, i + 1, people);
+          /* 区分（seg）：s 話し手のある発話（l・q は voice-seg.js が文の形で分ける）／c 名詞の引用／m 喘ぎ・モブ／u 話し手が決まらない */
+          var kind = fix ? fix.k : q.charAt(0) === '\u2060' ? 'm' : who ? 's' : spMob ? 'm' : nounQOf(text, start, i, q, null) ? 'c' : 'u';
+          if (!who && q.indexOf('｜') >= 0 && HK.Tone && HK.Tone.split) q = (HK.Tone.split(q) || { K: q }).K;
           if (who) {
             var q0 = q;
-            var nounQ = /^(?:を|の|に|が|へ|や|という|って書|と書|とある|と記|と刻|と彫|と印|と読め)/.test(text.slice(i + 1, i + 4)) ||
-              /* 「引いたのは「人妻と配達員」だった」のような題名も台詞ではない */
-              (/^だ/.test(text.slice(i + 1, i + 2)) && /(?:のは|お題は|テーマは|題名は|企画は)$/.test(text.slice(Math.max(0, start - 6), start)));
-            /* 「ミナト「お加減はいかがですか。強さを調整いたしますね」のぼせた〜」：話し手の名前のすぐ後の、言い切った台詞は台詞（後ろの「の」は地の文） */
-            if (nounQ && who && who.name && text.slice(Math.max(0, start - who.name.length), start) === who.name && (/。/.test(q) || /(?:ね|よ|か|わ|ぞ|ぜ|な|です|ます|ください|[！？!?])$/.test(q))) nounQ = false;
-            /* 「『12ml。採取完了です』と記録した」：読み上げながら記録する台詞（言い切りのあるもの）は台詞として言い換える */
-            if (nounQ && /^と(?:記録|報告|告げ|宣言|読み上げ|書きつけ)/.test(text.slice(i + 1, i + 8)) && /(。|です|ます|だ|よ|ね|ました)$/.test(q)) nounQ = false;
+            var nounQ = !fix && nounQOf(text, start, i, q, who);
+            if (nounQ) kind = 'c';
+            /* いま整えている台詞の区分（点検の道具 collect.js が読む） */
+            V._qKind = kind;
             /* 口調ごとの書き下ろし（voice-override.js）があれば、自動の言い換えより優先する */
             /* 敬語で話す相手への台詞：書き下ろしの敬語の行はそのまま、それ以外は敬語に言い換える */
             var pre = q.charAt(0) === '\u2062';
@@ -576,14 +681,19 @@
             var sv1 = null, yf1 = to1 && who.youFor && who.youFor[to1.name], ff1 = to1 && who.fpFor && who.fpFor[to1.name];
             if (yf1 || ff1) { sv1 = { fp: who.fp, you: who.you }; if (ff1) who.fp = ff1; if (yf1) who.you = yf1; }
             var kg = !nounQ && (pre || keigoHere(text, start, i + 1, q, who, people, actors));
-            var ov = pre ? null : !nounQ && V.overrideFor ? V.overrideFor(q, kg ? Object.assign({}, who, { tone: 'polite' }) : who, people) : null;
+            /* 3本のベース「K｜F｜P」で書かれた台詞（tone-engine.js）：口調に合うベースを選び、口調の辞書があればそれで言い換える（辞書がなければ、選んだベースをこれまでの言い換えに流す） */
+            var nb = q.indexOf('｜') >= 0 && HK.Tone && HK.Tone.pick ? HK.Tone.pick(q, who, kg) : null;
+            if (nb) { q = nb.q; q0 = q; if (nounQ) nb = null; }
+            /* 書き下ろし辞書は元の文（1本）で引いてあるので、3本の台詞では選んだベースで引けなければ残りのベースでも引く（既存の書き下ろしをそのまま生かす） */
+            var ovFor = function (w) { var r = V.overrideFor(q, w, people); if (r == null && nb && nb.alts) for (var ai = 0; ai < nb.alts.length && r == null; ai++) r = V.overrideFor(nb.alts[ai], w, people); return r; };
+            var ov = pre ? null : !nounQ && V.overrideFor ? ovFor(kg ? Object.assign({}, who, { tone: 'polite' }) : who) : null;
             /* 別の口調から派生する口調（tone-registry.js の derive。後輩・お嬢様など）：その口調名の書き下ろし・直しがあれば完成形としてそのまま使い、
                なければ元の口調の書き下ろしを引いて、最後に語尾を付け替える */
             var dv = !kg && !pre && !nounQ && HK.toneOpt ? HK.toneOpt(who.tone, 'derive') : null, own = false;
             if (dv && V.overrideFor) {
               if (ov != null) own = true;
               else {
-                ov = V.overrideFor(q, Object.assign({}, who, { tone: dv, _from: who.tone }), people);
+                ov = ovFor(Object.assign({}, who, { tone: dv, _from: who.tone }));
                 /* 派生元の書き下ろしが足した「！」を使わない口調（熱血：言い切りは言い切りのまま） */
                 if (ov != null && HK.toneOpt(who.tone, 'noBang') && !/[！!]$/.test(q)) ov = ov.replace(/！$/, '');
               }
@@ -591,7 +701,13 @@
             /* 派生元のない仕上げつきの口調（ヤンキーなど）も、その口調名の書き下ろし・直しは完成形として使う */
             else if (ov != null && !kg && HK.TONE_FINISH && HK.TONE_FINISH[who.tone]) own = true;
             q = V.replaceFP(ov != null ? ov : q, who);
-            if (ov == null && !pre) { if (who.persona === 'polite' || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(V.unHonor ? V.unHonor(q) : q, who); }
+            var byDict = ov == null && !pre && nb && nb.dict;
+            /* 辞書だけで作る口調（tone-registry.js の dictOnly）の1本の台詞：常体か敬語かを見て辞書を当てる（従来の言い換え・keigoUnify・仕上げは通さない。性別の語尾は通す） */
+            var d1 = !byDict && ov == null && !pre && !nb && !kg && !nounQ && HK.toneOpt && HK.toneOpt(who.tone, 'dictOnly') && HK.Tone && HK.Tone.apply1 ? HK.Tone.dictOf(who.tone) : null;
+            if (byDict) { q = HK.Tone.apply(q, nb.dict, who); own = true; }
+            else if (d1) { q = HK.Tone.apply1(q, d1, who); own = true; }
+            /* 「〜」という話・「〜」と書いた札（nounQ）は話し手の言葉ではないので、敬語の人でも敬語にしない */
+            else if (ov == null && !pre) { if ((who.persona === 'polite' && !nounQ) || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(V.unHonor ? V.unHonor(q) : q, who); }
             /* 敬語の口調で、敬語の文とため口の文が混ざる台詞の、ため口の文末を敬語に寄せる（tone-keigo-unify.js。仕上げの前に通し、仕上げが口調の味を付ける） */
             if (V.keigoUnify && !nounQ && !own && !pre) q = V.keigoUnify(q, who);
             /* 口調ごとの仕上げ（後輩の「〜っす」、お嬢様の「〜ですわ」など。HK.toneFinish で登録したもの） */
@@ -614,6 +730,7 @@
             if (sv1) { who.fp = sv1.fp; who.you = sv1.you; }
           }
           q = q.replace(/([！？!?])。/g, '$1');   /* 「ごめんごめん！。」のような重なりを整える */
+          if (rec) rec.push({ k: kind, w: who ? people.indexOf(who) : kind === 'm' ? nameBefore(text, start, people) : -1 });
           out += text.slice(last, start + 1) + q + '」';
           last = i + 1; start = -1;
         }
@@ -661,7 +778,8 @@
     if (!res || !input || !input.chars) return res;
     var people = input.chars.map(function (c, i) {
       var r = (res.chars && res.chars[i]) || (res.heroes && res.heroes[i]) || {};
-      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '' };
+      var p = { name: c.name, fp: c.fp || '', gender: c.gender || '', tone: HK.Ending ? HK.Ending.toneOf(c) : HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null, keigo: c.keigo || null, age: +c.age || 0, keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '' };
+      /* 語尾の設定（tone-ending.js）を使う住人の口調は e:… の鍵（辞書だけの口調）。文面の表（態度）はベースの口調のまま */
       p.persona = r.persona || HK.personaOf({ tone: c.tone, eg: c.eg });
       if (c.toneCustom) p.toneCustom = c.toneCustom;
       /* 相手ごとの二人称・一人称（番号 → 名前。attr.js の HK.Attr.voiceFor） */
@@ -671,7 +789,13 @@
     var f = function (t, ac) { return V.processText(t, people, ac); };
     /* 描写の作風「男性向け」（ero-kit.js）の結果では、はっきりした口調でも♡を残す（tone-firm.js） */
     V._keepHeart = !HK.SAFE_ON && !!(input.env && input.env.style === 'ero');
-    (res.log || []).forEach(function (e) { if (e && typeof e.text === 'string') e.text = V.nestQuote(f(e.text, e.actors)); });
+    /* 記録ごとに、「」の区分と話し手を V._segBuf に集め、voice-seg.js（HK.Seg.keep）に渡す（e.seg は、ほかの仕上げがすべて済んでから作る） */
+    (res.log || []).forEach(function (e) {
+      if (!e || typeof e.text !== 'string') return;
+      var buf = V._segBuf = [];
+      try { e.text = V.nestQuote(f(e.text, e.actors)); } finally { V._segBuf = null; }
+      if (HK.Seg && HK.Seg.keep) HK.Seg.keep(e, buf);
+    });
     var E = res.ending || res.end;
     if (E) {
       if (Array.isArray(E.lines)) E.lines = E.lines.map(function (l) { return typeof l === 'string' ? f(l) : l; });

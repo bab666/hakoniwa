@@ -1,5 +1,5 @@
 /* 箱庭シミュレーター ui: 住人ごとの設定（⚙️）
-   節は ①話し方 ②プロフィール ③体と設定 ④恋愛（R18版は恋愛と夜） ⑤相手ごとの設定（関係・呼び方・二人称/一人称・受け攻め・夜の性格）。
+   節は ①話し方 ②プロフィール ③体と設定 ④恋愛（R18版は恋愛と夜） ⑤相手ごとの設定（殺さない相手・関係・呼び方・二人称/一人称・受け攻め・夜の性格）。
    固定の説明は各節の ？（TIPS）に置く。欄の data-gf は保存との互換のため変えない。
    ※口調や関係は台詞・文面と関係の初期値に効く。行動の判断はエゴグラムの数値で決まる */
 (function () {
@@ -27,6 +27,7 @@
     if (c.fp) bits.push('一人称：' + c.fp);
     if (c.marks) bits.push('語尾：' + c.marks);
     if (c.toneCustom && !HK.TONE_CUSTOM_OFF) bits.push('付け替え：' + c.toneCustom);
+    if (HK.Ending && HK.Ending.on(c)) bits.push(HK.Ending.labelFor(c));
     if (c.call) bits.push('呼び方：' + callLabel(c.call));
     if (c.gender) bits.push(lab(GENDERS, c.gender));
     if (c.likes) bits.push('恋愛対象：' + lab(LIKES, c.likes));
@@ -130,17 +131,18 @@
   var SAMPLE = {};
   Object.keys(HK.TONES || {}).forEach(function (k) { if (HK.TONES[k].sample) SAMPLE[k] = HK.TONES[k].sample; });
   /* 性別で見本を分けている口調（sampleF / sampleM）は、その性別のときだけそちらを使う */
-  function sampleOf(tk, g) { var T = HK.TONES[tk] || {}; return (g === 'f' && T.sampleF) || (g === 'm' && T.sampleM) || SAMPLE[tk]; }
+  /* 台詞の見本は全口調で同じ文（tone-registry.js の HK.TONE_SAMPLE。いまは6文。文の数は固定しない）。口調の辞書と書き下ろしで口調ごとの形になる */
+  function sampleOf(tk, g) { var T = HK.TONES[tk] || {}; return HK.TONE_SAMPLE || (g === 'f' && T.sampleF) || (g === 'm' && T.sampleM) || SAMPLE[tk]; }
   function sampleLines(c) {
     var V = HK.Voice;
     if (!V || !V.processText) return '';
     var s = S(), o = s.chars.filter(function (x) { return x !== c; })[0] || { name: '相手', id: '' };
-    var me = { name: c.name, fp: (c.fpFor && o.id && c.fpFor[o.id]) || c.fp || '', you: (c.youFor && o.id && c.youFor[o.id]) || c.you || '', marks: c.marks || '', toneCustom: c.toneCustom || '', gender: c.gender || '', tone: HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null };
+    var me = { name: c.name, fp: (c.fpFor && o.id && c.fpFor[o.id]) || c.fp || '', you: (c.youFor && o.id && c.youFor[o.id]) || c.you || '', marks: c.marks || '', toneCustom: c.toneCustom || '', gender: c.gender || '', tone: HK.Ending ? HK.Ending.toneOf(c) : HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null };
     var kgo = c.keigo ? s.chars.filter(function (x) { return x !== c && c.keigo[x.id]; })[0] : null;
     me.persona = HK.personaOf ? HK.personaOf({ tone: c.tone, eg: c.eg }) : 'gentle';
     var ppl = [me, { name: o.name, fp: '', gender: o.gender || '', tone: '', persona: 'gentle' }];
     if (me.calls && o.id && me.calls[o.id]) { me.calls = {}; me.calls[o.name] = c.calls[o.id]; } else me.calls = null;
-    var tk = me.tone && SAMPLE[me.tone] ? me.tone : SAMPLE[me.persona] ? me.persona : 'gentle';
+    var tk = me.tone && (HK.TONE_SAMPLE || SAMPLE[me.tone]) ? me.tone : SAMPLE[me.persona] ? me.persona : 'gentle';
     var SL = sampleOf(tk, c.gender);
     var lines = SL.map(function (t) { return esc(V.processText(t.replace(/\{n\}/g, c.name).replace(/\{o\}/g, o.name), ppl).replace(new RegExp('^' + c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), '')); });
     /* 敬語で話す相手がいれば、その相手への一言も見本に足す */
@@ -223,16 +225,21 @@
         (HK.Attr && HK.Attr.forHtml ? '<span class="gforh">この人には：</span>' + HK.Attr.forHtml(c, o, { esc: esc, opt: opt }) : '') +
         '<button type="button" class="btn ghost small" data-gact="tadd" data-o="' + o.id + '">関係を重ねる</button></div>' + (note ? '<p class="gearhint gfnote">' + esc(note) + '</p>' : '') + '</div>';
     }).join('');
+    /* 憎悪を持っても殺さない相手（どちらに付けても、二人のあいだでは殺す場面が思いとどまる場面になる。attr.js の HK.Attr.noKillPair） */
+    /* 憎悪を持っても殺さない相手：折りたたみ（基本は閉じる）。説明は TIPS の「相手ごとの設定」に */
+    var nkRow = others.length ? det('nk', '憎悪を持っても殺さない相手', sumOf(c.noKillFor, 'なし'), cbs('nokill', c.noKillFor)) : '';
     var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手">' + others.map(function (o) { return opt(o.id, o.name, ''); }).join('') + '</select></label>' +
       '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + opt('', '（関係は付けずに相手ごとの設定だけ）', 'friend') + '</select></label>' + (function () { var gm = groupMates(c); return gm.length ? '<label title="' + esc('同じグループ（' + grpsOf(c).join('・') + '）の全員に、選んだ関係を付けます：' + gm.map(function (o) { return o.name; }).join('・') + '。向きのある関係は、' + c.name + 'が左（上司・先輩・師匠など）になります') + '"><input type="checkbox" data-gf="newgrp"> グループの全員と（' + gm.length + '人）</label>' : ''; })() + '<button type="button" class="btn small" data-gact="tnew">追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
       /* 固定の説明は各節の ？（TIPS）に置き、ここには選んだものによって変わる説明（口調・関係・この住人の傾向）だけを出す */
       (HK.egoDesc ? '<details class="gego"' + (egoOpen ? ' open' : '') + '><summary>この住人の傾向<span class="gegc">' + esc(HK.toCode(c.eg)) + '・' + esc(HK.egoAttWord(c)) + '</span></summary><ul id="egodesc">' + HK.egoDesc(c).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul></details>' : '') +
-      '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3><div class="gearrow"><label>口調 ' + toneSel + '</label><label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
+      '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3><div class="gearrow"><label>口調 ' + toneSel + '</label>' + (HK.Ending ? HK.Ending.badge(c) : '') + '<label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
       '<div class="gearrow"><label title="文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます">語尾の記号 <input type="text" data-gf="marks" value="' + esc(c.marks || '') + '" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label>' +
       (HK.TONE_CUSTOM_OFF ? '' : '<label title="口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで">語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label>') + '</div>' +
       '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
       '<div class="tonesample anim" id="tonesample" aria-live="polite">' + sampleLines(c) + '</div>' +
+      /* 語尾の設定（かんたん）：欄と見本は tone-ending.js */
+      (HK.Ending ? HK.Ending.gearHtml(c, others[0], { esc: esc, opt: opt }) : '') +
       '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label><label><input type="checkbox" data-gf="keigoOlder"' + (c.keigoOlder ? ' checked' : '') + '> 年上の相手には敬語（年齢を決めた人どうし）</label></div>' +
       (others.length ? '<details class="gkeigo"' + (keigoOpen ? ' open' : '') + '><summary>敬語で話す相手 <span class="gkn">' + (function () { var n = others.filter(function (o) { return c.keigo && c.keigo[o.id]; }).length; return n ? n + '人' : 'なし'; })() + '</span></summary><div class="gearrow">' + others.map(function (o) { return '<label><input type="checkbox" data-gf="keigo" data-o="' + o.id + '"' + (c.keigo && c.keigo[o.id] ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('') + '</div>' +
         ((c.tone || autoK) === 'polite' ? '<p class="gearhint">いまの口調は敬語なので、誰にでも敬語で話します。</p>' : '') + '</details>' : '') + '</div>' +
@@ -254,7 +261,7 @@
       '<div class="gearrow">' + sexSel + '<label title="恋人ができたら、その恋人がいる間は、ほかの人と恋愛・夜の場面になりません（浮気しない）。恋人がいないうちは、ふつうに恋をします"><input type="checkbox" data-gf="faithful"' + (c.faithful ? ' checked' : '') + '> 一途（恋人ができたら、ほかの人に惹かれない・浮気しない）</label></div>' + r18Row +
       lockBox + sexBox + ngRow + '</div>' +
       /* ⑤相手ごとの設定：関係・呼び方・二人称/一人称・受け攻め・夜の性格 */
-      '<div class="gearsec"><h3>相手ごとの設定' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + (rel || '<p class="gearhint">まだ相手ごとの設定はありません。下の「相手」と「関係」を選んで追加してください（関係を付けずに、受け攻めや呼び方だけを決めることもできます）。</p>') + addable + '</div>';
+      '<div class="gearsec"><h3>相手ごとの設定' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + nkRow + (rel || '<p class="gearhint">まだ相手ごとの設定はありません。下の「相手」と「関係」を選んで追加してください（関係を付けずに、受け攻めや呼び方だけを決めることもできます）。</p>') + addable + '</div>';
   }
   function render() {
     var c = byId(cur);
@@ -349,6 +356,7 @@
     var isInput = ev.type === 'input';
     if (HK.Attr && HK.Attr.gearField(c, f, t, isInput, changed, byId)) return;
     if (HK.Shared && HK.Shared.gearField(c, f, t, isInput, changed)) return;
+    if (HK.Ending && HK.Ending.gearField(c, f, t, isInput, changed, sampleRefresh, s.chars.filter(function (x) { return x !== c; })[0])) return;
     switch (f) {
       case 'tone': if (isInput) return; c.tone = HK.toneValid && HK.toneValid(t.value) ? t.value : ''; changed(true); break;
       case 'fp': c.fp = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;
@@ -397,6 +405,12 @@
           c.loveLock = (c.loveLock || []).filter(function (k) { return k !== o.id; }); o.loveLock = (o.loveLock || []).filter(function (k) { return k !== c.id; });
           c.sexLocks = (c.sexLocks || []).filter(function (k) { return k !== o.id; }); o.sexLocks = (o.sexLocks || []).filter(function (k) { return k !== c.id; });
         }
+        changed(true);
+      })(); break;
+      case 'nokill': if (isInput) return; (function () {
+        var o = byId(t.dataset.o); if (!o) return;
+        c.noKillFor = (c.noKillFor || []).filter(function (k) { return k !== o.id; }); o.noKillFor = (o.noKillFor || []).filter(function (k) { return k !== c.id; });
+        if (t.checked) { c.noKillFor.push(o.id); o.noKillFor.push(c.id); }
         changed(true);
       })(); break;
       case 'keigo': if (isInput) return; c.keigo = c.keigo || {}; if (t.checked) c.keigo[t.dataset.o] = 1; else delete c.keigo[t.dataset.o]; changed(false); sampleRefresh(); (function () { var kn = ov && ov.querySelector('.gkn'), n = ov ? ov.querySelectorAll('[data-gf="keigo"]:checked').length : 0; if (kn) kn.textContent = n ? n + '人' : 'なし'; })(); break;

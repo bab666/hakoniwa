@@ -9,12 +9,16 @@ js/tie-rel.js
 js/tie-new.js
 js/daily-kit.js
 js/rel-group.js
+js/rel-core-extra.js
 js/tie-stage.js
 js/tie-abuse.js
 js/voice.js
 js/voice-tone.js
 js/tone-registry.js
 js/tone-plus.js
+js/tone-engine.js
+js/tone-dict-builtin.js
+js/tone-ending.js
 js/tone-keigo-unify.js
 js/tone-gentleman.js
 js/tone-extra2.js
@@ -40,6 +44,14 @@ late js/tone-fix-g4.js
 late js/tone-fix-g5.js
 late js/tone-fix-g6.js
 late js/tone-fix-gc.js
+late js/tone-sample-fix.js
+late js/tone-fix-loose.js
+late js/tone-fix-g7a.js
+late js/tone-fix-g7b.js
+late js/tone-fix-g7c.js
+late js/tone-fix-g7d.js
+late js/tone-fix-g7e.js
+late js/tone-fix-g7f.js
 js/tone-polite-kin.js
 js/tone-new.js
 js/tone-ane.js
@@ -78,6 +90,7 @@ js/room-trio.js
 js/room-left.js
 js/room-know.js
 js/room-tie.js
+js/room-same.js
 js/scenario-trial.js
 js/ego-image.js
 js/omega-data.js
@@ -106,6 +119,7 @@ js/island-cook.js
 js/island-life.js
 js/island-hazard.js
 js/mini-goukon.js
+js/goukon-rel.js
 js/goukon-talk.js
 js/drunk.js
 js/goukon-mob.js
@@ -190,6 +204,8 @@ js/solo-locker.js
 js/rpg-data.js
 js/scenario-rpg.js
 js/jashin-data.js
+js/jashin-jobs.js
+js/jashin-jobs-pair.js
 js/jashin-gods.js
 js/jashin-fx-a.js
 late js/jashin-fx-b.js
@@ -221,6 +237,8 @@ js/jashin-place-lines.js
 late js/jashin-place.js
 js/jashin-feud.js
 js/yakata-data.js
+js/yakata-jobs.js
+js/yakata-jobs-pair.js
 js/yakata-tricks-a.js
 js/yakata-tricks-b.js
 js/yakata.js
@@ -241,6 +259,7 @@ late js/jinro-data.js
 js/scenario-jinro.js
 late js/jinro-after.js
 js/jinro-love.js
+js/same-story.js
 late js/rel-bad-story.js
 late js/tie-new-story.js
 js/safe.js
@@ -257,6 +276,7 @@ js/scen-tags.js
 js/shared-stats.js
 js/ui.js
 js/ui-gear.js
+js/ui-adv.js
 js/notice.js
 js/ui-fold.js
 js/ui-mobile.js
@@ -268,4 +288,6 @@ js/obsess-install.js
 js/obsess-omega.js
 js/grief-kit.js
 js/lewd-unify.js
+js/lewd-mark.js
 js/reset.js
+js/voice-seg.js

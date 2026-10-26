@@ -110,6 +110,8 @@
     if (JS.SPEC) JS.SPEC.setup(S, input);
     /* 役職×役職の特別な出来事（jashin-duo.js） */
     if (JS.DUO) JS.DUO.setup(S);
+    /* 職業の捜査の出来事・職業×職業の出来事（jashin-jobs.js・jashin-jobs-pair.js） */
+    if (JS.JOBEV) JS.JOBEV.setup(S);
     var keys = ['fear', 'hp', 'clue'];
 
     /* ---------- 到着 ---------- */
@@ -156,6 +158,7 @@
       if (JS.LOOP) JS.LOOP.tick(S, P.filter(alive), h);
       /* 村の歓迎の宴（一度だけ。酒の強さで過ごし方が変わる。jashin-feast.js） */
       if (JS.FEAST) JS.FEAST.tick(S, P.filter(alive), h);
+      if (JS.JOBEV) JS.JOBEV.tick(S, P.filter(alive), h);
       /* 住人ごとの一時間 */
       live = P.filter(alive);
       live.forEach(function (p) {
@@ -181,6 +184,8 @@
         if (JS.GOALX && JS.GOALX.act(S, p, h, P.filter(alive))) return;
         if (JS.MAGE && JS.MAGE.act(S, p, h, P.filter(alive))) return;
         if (S.hold > 0 && rng() < 0.7) return ST.sayB(S, { actors: [p], text: p.name + 'は公民館で待機させられていた。窓の外を、村人が何度も通り過ぎた。', why: '警察官の指示で待機' }, p.name + 'は待機');
+        /* 職業の腕を活かした捜査（この一時間を使う。jashin-jobs.js） */
+        if (JS.JOBEV && JS.JOBEV.act(S, p, h, P.filter(alive))) return;
         investigate(S, p, h);
       });
       if (S.hold > 0) S.hold--;
@@ -338,14 +343,14 @@
       var sharp = live.slice().sort(function (a, b) { return skill(b, 'obs') + skill(b, 'lore') - skill(a, 'obs') - skill(a, 'lore'); })[0];
       var debunk = sharp && rng() < (skill(sharp, 'obs') + skill(sharp, 'lore')) * 0.45 + (sharp.job === 'detective' ? 0.25 : sharp.job === 'sleuth' ? 0.4 : sharp.job === 'ponkotsu' ? -0.3 : 0);
       if (tgt.job === 'ponkotsu') debunk = false;
-      if (debunk) ST.say(S, { actors: [tgt, sharp], tag: '偽情報', text: '記者が' + tgt.name + 'に耳打ちした。' + line + '――' + sharp.name + 'は首を振った。「その話、どこで聞いたんです？　出典がない。信じない方がいい」', why: sharp.name + 'が偽の情報を見抜いた（観察・知識' + (sharp.job === 'detective' ? '・探偵' : '') + '）', mag: 14 });
+      if (debunk) ST.say(S, { actors: [tgt, sharp], tag: '偽情報', text: '記者が' + tgt.name + 'に耳打ちした。' + line + '――' + sharp.name + 'は首を振った。「その話、どこで聞いたの？　出典がない。信じない方がいい｜その話、どこで聞いた。出典がない。信じない方がいい｜その話、どこで聞いたんです？　出典がありません。信じない方がいいですよ」', why: sharp.name + 'が偽の情報を見抜いた（観察・知識' + (sharp.job === 'detective' ? '・探偵' : '') + '）', mag: 14 });
       else { S.fake++; ST.say(S, { actors: [tgt], tag: '偽情報', text: '記者が' + tgt.name + 'に耳打ちした。' + line + (tgt.job === 'ponkotsu' ? ST.fmt(ST.pick(S, JS.RELT.PONK_BELIEVE), { a: tgt.name }) : '') + '――一行は、その話を半ば信じてしまった。', why: '偽の情報を信じた（対抗策を実行するときに不利になる）', mag: 14 }); }
     }
     if (S.police && S.police.alive && rng() < 0.2) {
       S.police.n++;
       var line2 = ST.pick(S, JS.POLICE.lines), cop = live.filter(function (q) { return q.job === 'police'; })[0];
       if (/待機/.test(line2)) S.hold = 1;
-      if (cop && rng() < 0.6) ST.say(S, { actors: [cop], tag: '警察官', text: '駐在の警察官が言った。' + line2 + '――' + cop.name + 'が警察手帳を見せた。「同業者として言わせてもらいますが、それは悪手です」二人の警察官は、しばらく睨み合った。', why: '仕切りたがる警察官と、住人の警察官の衝突', mag: 12 });
+      if (cop && rng() < 0.6) ST.say(S, { actors: [cop], tag: '警察官', text: '駐在の警察官が言った。' + line2 + '――' + cop.name + 'が警察手帳を見せた。「同業者として言わせてもらうけど、それは悪手だよ｜同業者として言わせてもらうが、それは悪手だ｜同業者として言わせてもらいますが、それは悪手です」二人の警察官は、しばらく睨み合った。', why: '仕切りたがる警察官と、住人の警察官の衝突', mag: 12 });
       else ST.say(S, { tag: '警察官', text: '駐在の警察官が言った。' + line2 + (S.hold ? '――一行は、しぶしぶ公民館に集められた。' : ''), why: '場を仕切りたがる警察官' + (S.hold ? '（次の時間は調べにくくなる）' : ''), mag: 10 });
       if (S.police.n >= 3 && night(h) && rng() < 0.4) { S.police.alive = false; ST.say(S, { tag: '警察官', text: '「村長に話をつけてくる」と出ていった駐在の警察官は、それきり戻らなかった。翌朝、駐在所には制帽だけが残されていた。', why: '仕切りたがる警察官の末路', mag: 20 }); }
     }
@@ -356,7 +361,7 @@
   function solve(S, partial, who) {
     S.solved = true; S.partial = partial;
     var lead = who || S.P.filter(alive).sort(function (a, b) { return skill(b, 'lore') - skill(a, 'lore'); })[0];
-    var o = ST.say(S, { actors: lead ? [lead] : [], tag: '対抗策', text: (lead ? lead.name + 'は集めた手がかりを並べ、顔を上げた。「分かった。この村の神は――' + S.G.name + 'だ」' : '手がかりがそろった。この村の神は、' + S.G.name + 'だ。') + '対抗策は、' + S.G.sol + '。' + (partial ? '（手がかりは一つ足りない。推測で補った）' : ''), why: partial ? '手がかり ' + S.found.length + '/' + S.G.clues.length + '。' + (lead ? lead.name + 'の知識で残りを推し量った' : '') : '手がかりが全部そろった', mag: 36 });
+    var o = ST.say(S, { actors: lead ? [lead] : [], tag: '対抗策', text: (lead ? lead.name + 'は集めた手がかりを並べ、顔を上げた。「分かった。この村の神は――' + S.G.name + 'だ｜＝｜分かりました。この村の神は――' + S.G.name + 'です」' : '手がかりがそろった。この村の神は、' + S.G.name + 'だ。') + '対抗策は、' + S.G.sol + '。' + (partial ? '（手がかりは一つ足りない。推測で補った）' : ''), why: partial ? '手がかり ' + S.found.length + '/' + S.G.clues.length + '。' + (lead ? lead.name + 'の知識で残りを推し量った' : '') : '手がかりが全部そろった', mag: 36 });
     ST.key(S, o, '対抗策が判明');
   }
 
@@ -472,11 +477,14 @@
       if (rng() < 0.15) return ST.sayB(S, { actors: [p], tag: '衝動', text: ST.fmt(ST.pick(S, M.YGO_IRRITATE), { a: p.name }), why: '掌の口さまの影響で、暴力性が増している（' + Math.round(p.viol) + '）' }, p.name + 'が苛立っていた');
       var tg = live.filter(function (q) { return q !== p && alive(q); });
       if (!tg.length || rng() > 0.13) return;
-      var b = rng.pick(tg);
+      var b = rng.pick(HK.SameStory && HK.SameStory.spare ? HK.SameStory.spare(S, p, tg) : tg);   /* 殺さない相手は、ほかに襲える人がいれば避ける（same-story.js） */
       if (p.viol > th + 25 && rng() < 0.35 * HK.Dark.f(S, 'kill')) {
         p.viol = th;
         if (JS.DRAMA) JS.DRAMA.edge(S, p, b, '殺害', 'kill', p);
-        return die(S, b, p.name + 'に襲われて', [ST.fmt(ST.pick(S, M.YGO_KILL), { a: p.name, b: '{a}' })]);
+        var ygN = S.log.length;
+        die(S, b, p.name + 'に襲われて', [ST.fmt(ST.pick(S, M.YGO_KILL), { a: p.name, b: '{a}' })]);
+        if (HK.SameStory && HK.SameStory.mark) HK.SameStory.mark(S, ygN, HK.SameStory.note(S, p, b));
+        return;
       }
       b.m.hp = clamp(b.m.hp - 22, 0, 100); b.m.fear = clamp(b.m.fear + 15, 0, 100); p.viol -= 10;
       ST.say(S, { actors: [p, b], tag: '暴力', text: ST.fmt(ST.pick(S, M.YGO_ASSAULT), { a: p.name, b: b.name }), why: '掌の口さま（イゴーロナク）は、心の底の暴力を引き出す。' + p.name + 'の暴力性 ' + Math.round(p.viol + 10) + '（攻撃性が高く、CPが低いほど増えやすい）', mag: 28 });
@@ -492,7 +500,8 @@
     if (!by && JS.REL.cover(S, m, b)) return false;
     var angry = others.reduce(function (s0, q) { return s0 + q.tr.aggr + q.tr.cold * 0.5; }, 0) / others.length;
     var t = by ? '' : ST.fmt(ST.pick(S, openly ? M.MAGE_DETECT_OPEN : M.MAGE_DETECT), { a: m.name, b: b.name });
-    if (rng() < (0.2 + angry * 0.5) * HK.Dark.f(S, 'grudge') || S.ygo) {
+    /* 殺さない相手（HK.Attr.noKillPair）なら、裁かずに縛り上げる */
+    if ((rng() < (0.2 + angry * 0.5) * HK.Dark.f(S, 'grudge') || S.ygo) && !(HK.SameStory && HK.SameStory.nk && HK.SameStory.nk(S, b, m))) {
       var o = ST.say(S, { actors: [b, m], tag: '露見', kind: 'climax', text: t + ST.fmt(ST.pick(S, M.MAGE_KILLED), { a: m.name, b: b.name }), why: m.name + 'のたくらみが' + b.name + 'にばれた（観察' + (b.job === 'detective' ? '・探偵' : '') + '）。一行の怒り（攻撃性・冷たさ）で、殺されてしまった', mag: 44 });
       m.alive = false; m.fate = '仲間に殺された（' + hm(S.h) + '）'; if (JS.DRAMA) JS.DRAMA.edge(S, b, m, '制裁', 'kill', b); ST.key(S, o, m.name + 'の正体が露見');
     } else {
