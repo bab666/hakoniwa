@@ -9,6 +9,7 @@ js/tie-rel.js
 js/tie-new.js
 js/daily-kit.js
 js/rel-group.js
+js/rel-core-extra.js
 js/tie-stage.js
 js/tie-abuse.js
 js/tie-master-r18.js
