@@ -868,7 +868,11 @@
     if (J.length < mn) { toast(mn === 1 ? '挑戦する住人を1人選んでください' : '参加する住人を' + mn + '人以上選んでください'); return; }
     if (J.length > smax(S.scenId)) { toast(HK.SCENARIOS[S.scenId].name + 'は' + smax(S.scenId) + '人までです。参加者を減らしてください'); return; }
     var seed = !newSeed && /^\d+$/.test(String(S.seed).trim()) ? parseInt(S.seed, 10) : HK.newSeed();
-    simulate(buildInput(seed), true);
+    var input = buildInput(seed), sc = HK.SCENARIOS[S.scenId];
+    /* 箱庭ごとの始める前の検査（scen.check が止める理由の文を返したら始めない。無い箱庭は今までどおり） */
+    var why = sc && typeof sc.check === 'function' ? sc.check(input) : '';
+    if (why) { toast(why); return; }
+    simulate(input, true);
   }
 
   function renderResult() {

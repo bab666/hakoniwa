@@ -33,7 +33,14 @@
     desc: '同僚・恋人・友人・恨みを持った相手・ストーカーの誰かに催眠をかけられる。かかるのか、かかったらどこまでしてしまうのか、どんな暗示に弱いのか。終わったあと、怒るのか、通報するのか、やり返すのか、堕ちるのか、困惑するのか、受け入れるのか。数日後の二人も描く。※成人キャラクター向け',
     note: '※登場人物はすべて成人として扱います。',
     unit: 'コマ', simulate: function (input) { return withFresh(function () { return run(input); }); },
-    castHint: '1〜2人（かける側とかけられる側で合わせて二人まで）。1人のときは、かける側はモブ（「かける相手」「かける人の性別」の設定で決まる）になります。2人のときは片方が「かける側」になり、もう片方に催眠をかけます（関係は「既存の関係」から決まります）。役割を決めなければ、2人目がかける側になります。',
+    /* 始める前の検査（ui.js の開始ボタン）：参加者の全員が役割で「かける側」を選んでいると、かけられる人がいないので始めない。
+       「おまかせ」か「かけられる側」の人が一人でもいれば始める（1人のおまかせは、かけられる側になり、かける側はモブ） */
+    check: function (input) {
+      var n = Math.min(2, (input.chars || []).length), pc = input.perChar || [];
+      for (var i = 0; i < n; i++) if (((pc[i] && pc[i].pick) || {}).role !== 'hypno') return '';
+      return n ? '催眠：かけられる側の住人が一人もいません。住人の役割で「かけられる側」を選ぶか、おまかせにしてください' + (n === 1 ? '（1人のときは、その人がかけられる側になり、かける側はモブになります）' : '') : '';
+    },
+    castHint: '1〜2人（かける側とかけられる側で合わせて二人まで）。1人のときは、かける側はモブ（「かける相手」「かける人の性別」の設定で決まる）になります。2人のときは片方が「かける側」になり、もう片方に催眠をかけます（関係は「既存の関係」から決まります）。役割を決めなければ、2人目がかける側になります。全員を「かける側」にすると、かけられる人がいないので始められません。',
     env: [
       { id: 'who', label: 'かける相手', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ（人ごとにランダム）' }, { v: 'colleague', label: '仕事の同僚' }, { v: 'lover', label: '恋人' }, { v: 'friend', label: '友人' }, { v: 'grudge', label: '恨みを持った相手' }, { v: 'stalker', label: 'ストーカー' }] },
       { id: 'hsex', label: 'かける人の性別', type: 'select', def: 'random', desc: '1人のとき（かける側がモブ）だけ。おまかせなら、かけられる人の恋愛対象に合わせる', options: [{ v: 'random', label: 'おまかせ' }, { v: 'm', label: '男性' }, { v: 'f', label: '女性' }] },
@@ -49,7 +56,7 @@
       { id: 'sugg', label: 'かかりやすさ', desc: '高いほど深くかかる。エゴグラムのAC・FCが高い、A・CPが低い人もかかりやすい' },
       { id: 'sens', label: '感じやすさ', desc: W_SENS }
     ],
-    perFields: [{ id: 'role', label: '役割', auto: 'かけられる側', options: [{ id: 'target', label: 'かけられる側' }, { id: 'hypno', label: 'かける側' }] }],
+    perFields: [{ id: 'role', label: '役割', auto: 'おまかせ', options: [{ id: 'target', label: 'かけられる側' }, { id: 'hypno', label: 'かける側' }] }],
     actions: [
       { id: 'trust', label: '素直に身を任せる', fit: function (t) { return t.ac * 0.5 + t.np * 0.4; } },
       { id: 'doubt', label: '疑ってかかる', fit: function (t) { return t.a * 0.6 + t.caution * 0.4; } },
