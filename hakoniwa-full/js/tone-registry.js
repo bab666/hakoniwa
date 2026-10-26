@@ -73,7 +73,20 @@
     boku_n: { label: '中性的（僕）', desc: '「僕は〜だよ」「〜かな」「〜だね」。一人称は「僕」の、やわらかく中性的な話し方。文面は穏やかのものを使う', base: 'gentle', top: 'NP', neutral: true, fp: { m: '僕', f: '僕', x: '僕' }, derive: 'gentle_n', group: 'soft', reluct: 0.02,
       axis: { polite: 0, attitude: 'calm', ending: 'n' } },
     god: { label: '神の命令口調（〜せよ）', desc: '「面を上げよ」「我に従え」「〜であろう」。人ならざるものの、尊大で古めかしい命令口調。邪神村の神や、崇められる役に。文面は厳格のものを使う', base: 'stern', top: 'CP', fp: { m: '我', f: '我', x: '我' }, lines: 'base', derive: 'gentleman', firm: 'gentleman', reluct: 0.2,
-      axis: { polite: 0, attitude: 'proud', ending: 'm' } }
+      axis: { polite: 0, attitude: 'proud', ending: 'm' } },
+    /* 2026-10-26：利用者の要望の口調8つ。書き下ろしも従来の言い換えも持たず、辞書（tone-dict-builtin.js の4回目）だけで作る。
+       dictOnly … 1本の台詞にも辞書を当てる（voice.js の processText → HK.Tone.apply1。台詞の形から常体か敬語かを見て、辞書のベースに寄せてから当てる） */
+    honwaka: { label: 'ほんわか・おっとり（〜ねえ）', desc: '「そうだねえ」「何とかなるよぉ」「わぁ、すごいねえ」。ゆっくりやわらかい、おっとりした話し方。文面は穏やかのものを使う', base: 'gentle', top: 'NP', fp: { m: '僕', f: '私', x: '私' }, group: 'soft', dictOnly: true, reluct: 0 },
+    darui_talk: { label: '言葉数の多いダウナー', desc: '「聞いてないけど。まあ、どうでもいいか」「何とかなるよ。知らないけど」。けだるげなのに、付け足しの一言が多い話し方。文面は穏やかのものを使う', base: 'gentle', top: 'A', fp: { m: '俺', f: 'わたし', x: 'わたし' }, dictOnly: true, reluct: 0 },
+    otaku: { label: '男オタク（〜ですぞ）', desc: '「それは聞いていませんぞ」「なんと！」「感謝ですぞ」。丁寧だけど独特の語尾で話す、オタクの話し方。一人称は「拙者」。文面は敬語のものを使う', base: 'polite', top: 'FC', fp: { m: '拙者', f: '私', x: '拙者' }, group: 'polite', dictOnly: true, reluct: -0.05,
+      axis: { polite: 2, attitude: 'free', ending: 'm' } },
+    tsun_soft: { label: '意地っ張り（柔らかい語尾）', desc: '「聞いてないけど……」「何とかなるよ……」「……ありがと、ね」。意地っ張りの当たりを柔らかくした話し方。文面は意地っ張りのものを使う', base: 'tsun', top: 'CP', fp: { m: '俺', f: '私', x: '私' }, dictOnly: true, reluct: 0.12 },
+    keigo_twist: { label: 'ひねくれ敬語（〜ですけどね）', desc: '「何とかなりますけどね」「まあ、大丈夫ですよ、一応」「大したものですね」。敬語は崩さず、「けど」「まあ」で捻る話し方。文面は敬語のものを使う', base: 'polite', top: 'A', fp: { m: '私', f: '私', x: '私' }, group: 'polite', dictOnly: true, reluct: 0.1 },
+    mukuchi_ne: { label: '無口（……だね）', desc: '「……聞いてない……ね」「……そう、だね」。ほとんど喋らず、話してもひと言だけ。無口の言い切りを「……だね」「……かな」にやわらげた話し方。態度はエゴグラムから決まる', base: null, top: null, egoTable: true, group: 'soft', dictOnly: true, reluct: 0.12 },
+    ronkyaku: { label: '冷徹な論客（〜なのだよ）', desc: '「フッ……。相変わらず、キミの理屈は破綻しているな」「何とかなるのだよ」。冷静沈着で論理的、プライドが高く慇懃無礼。めったに取り乱さないが、崩れると「バカな……！」。二人称は「キミ」。文面は厳格のものを使う', base: 'stern', top: 'A', fp: { m: '私', f: '私', x: '私' }, firm: 'plain', dictOnly: true, reluct: 0.1,
+      axis: { polite: 0, attitude: 'proud', ending: 'm' } },
+    flat_plain: { label: '無機質（常体）', desc: '「問題ない。対処できる」「……そうか。それは聞いていない」。考えも感情も読めない、敬語を使わない淡々とした話し方。無口とは違い、文は省略せず淡々と言い切ります。文面は冷静のものを使う', base: 'cool', top: 'A', fp: { m: '私', f: '私', x: '私' }, firm: 'plain', dictOnly: true, reluct: 0.08,
+      axis: { polite: 0, attitude: 'flat', ending: 'm' } }
   };
   HK.TONES = TONES;
   /* 選択欄の並び（基本口調の名前は persona.js、追加の口調は TONE_EXTRA） */
@@ -113,7 +126,8 @@
     polite: 'あなた', ojou: 'あなた', kohai: 'あなた', genki: 'あなた', mixed: 'あなた',
     kansai: MF('お前', 'あんた'), noja: 'おぬし', mukuchi: MF('お前', 'あんた'),
     keigo_sarc: 'あなた', keigo_bossy: 'あなた', keigo_flat: 'あなた', tame: MF('お前', 'あんた'), chara_down: 'キミ',
-    cool_soft: MF('君', 'あなた'), darui_lite: 'あんた', boku_n: 'きみ', god: '汝'
+    cool_soft: MF('君', 'あなた'), darui_lite: 'あんた', boku_n: 'きみ', god: '汝',
+    honwaka: 'あなた', darui_talk: 'あんた', otaku: '貴殿', tsun_soft: 'あんた', keigo_twist: 'あなた', mukuchi_ne: MF('お前', 'あんた'), ronkyaku: 'キミ', flat_plain: 'あなた'
   };
   HK.toneYou = function (tone, gender) { var v = HK.TONE_YOU[tone]; if (!v) return ''; if (typeof v === 'string') return v; return v[gender === 'f' ? 'f' : gender === 'x' ? 'x' : 'm'] || ''; };
   HK.toneFinish = function (k, fn) { HK.TONE_FINISH[k] = fn; };   /* fn(台詞, 話し手, { kg: 敬語の相手か, raw: 元の台詞 }) */

@@ -598,7 +598,10 @@
             else if (ov != null && !kg && HK.TONE_FINISH && HK.TONE_FINISH[who.tone]) own = true;
             q = V.replaceFP(ov != null ? ov : q, who);
             var byDict = ov == null && !pre && nb && nb.dict;
+            /* 辞書だけで作る口調（tone-registry.js の dictOnly）の1本の台詞：常体か敬語かを見て辞書を当てる（従来の言い換え・keigoUnify・仕上げは通さない。性別の語尾は通す） */
+            var d1 = !byDict && ov == null && !pre && !nb && !kg && !nounQ && HK.toneOpt && HK.toneOpt(who.tone, 'dictOnly') && HK.Tone && HK.Tone.apply1 ? HK.Tone.dictOf(who.tone) : null;
             if (byDict) { q = HK.Tone.apply(q, nb.dict, who); own = true; }
+            else if (d1) { q = HK.Tone.apply1(q, d1, who); own = true; }
             else if (ov == null && !pre) { if (who.persona === 'polite' || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(V.unHonor ? V.unHonor(q) : q, who); }
             /* 敬語の口調で、敬語の文とため口の文が混ざる台詞の、ため口の文末を敬語に寄せる（tone-keigo-unify.js。仕上げの前に通し、仕上げが口調の味を付ける） */
             if (V.keigoUnify && !nounQ && !own && !pre) q = V.keigoUnify(q, who);
