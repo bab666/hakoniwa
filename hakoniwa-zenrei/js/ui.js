@@ -171,6 +171,8 @@
     if (typeof S0.teacher !== 'string') S0.teacher = '';
     if (typeof S0.randFrom !== 'string') S0.randFrom = '';
     S0.randN = Math.max(0, Math.min(100, parseInt(S0.randN, 10) || 0)) || '';
+    /* 版の印と保存日時（控えとの照らし合わせに使う。下の bkHold） */
+    S0.v = +S0.v || 0; S0.savedAt = +S0.savedAt || 0;
     /* グループごとの「このグループを仲間とみなす」（グループ名 → 1） */
     S0.grpComrade = obj(S0.grpComrade);
     Object.keys(S0.grpComrade).forEach(function (g) { if (!S0.grpComrade[g] || !String(g).trim()) delete S0.grpComrade[g]; else S0.grpComrade[g] = 1; });
@@ -187,6 +189,25 @@
       if (!c.race || c.race === 'human') { c.race = 'vampire'; delete p.pick.special; }
     });
   }
+  /* ---------- 住人・関係の控え（hakoniwa:state:backup） ----------
+     旧版（同じドメインに置いた hako_R18_old など）は保存の場所を共有していて、開いて何か変えると、旧版の知らない関係などを落として state を書き戻す。
+     今の版は保存のたびに、版の印（STATE_V）と保存日時（savedAt）を付けた控えも書く。起動時に state が控えと食い違い、控えにあるものが欠けていれば、
+     画面の上に知らせを出して控えから戻せるようにする（知らせを出しているあいだは控えを書き換えない）。履歴・セーブは対象外 */
+  var STATE_V = 2026102602, bkHold = null;
+  function bkBody(st) { var o = {}; Object.keys(st || {}).forEach(function (k) { if (k !== 'v' && k !== 'savedAt') o[k] = st[k]; }); return JSON.stringify(o); }
+  function bkLost(b, s) {
+    var full = function (v) { return !(v == null || v === '' || v === false || (typeof v === 'object' && !Object.keys(v).length)); };
+    var tk = function (t) { return t ? [t.a, t.b, t.type].join('|') : ''; }, have = (Array.isArray(s.ties) ? s.ties : []).map(tk), sc = {};
+    (Array.isArray(s.chars) ? s.chars : []).forEach(function (c) { if (c && c.id) sc[c.id] = c; });
+    if ((b.ties || []).some(function (t) { return have.indexOf(tk(t)) < 0; })) return true;
+    return (b.chars || []).some(function (c) { var o = c && sc[c.id]; return !o || Object.keys(c).some(function (k) { return full(c[k]) && !full(o[k]); }); });
+  }
+  (function () {
+    var raw = HK.store.get('state', null), bk = HK.store.get('state:backup', null);
+    if (!raw || typeof raw !== 'object' || !bk || !bk.state || typeof bk.state !== 'object' || !bk.at || bk.at === HK.store.get('state:backup:skip', 0)) return;
+    if (raw.v === bk.v && raw.savedAt === bk.at && bkBody(raw) === bkBody(bk.state)) return;
+    if (bkLost(bk.state, raw)) bkHold = bk;
+  })();
   var S;
   try { S = normState(HK.store.get('state', null)); } catch (e) { S = normState({}); }
   if (!S.chars.length) { S.chars = SAMPLE.map(mk); S.sample = true; }
@@ -201,7 +222,31 @@
   hist = hist.filter(function (h) { return h && h.input && Array.isArray(h.input.chars) && HK.SCENARIOS[h.input.scenId]; });
   var tab = 'cast', result = null, showAll = false;
 
-  function save() { HK.Icons.set(S.chars); return HK.store.set('state', S); }
+  function save() {
+    HK.Icons.set(S.chars);
+    S.v = STATE_V; S.savedAt = Date.now();
+    var ok = HK.store.set('state', S);
+    if (ok && !bkHold) HK.store.set('state:backup', { v: STATE_V, at: S.savedAt, state: S });
+    return ok;
+  }
+  /* 控えの知らせ（上の bkHold）。戻す：控えを state に写して読み込み直す。このまま使う：その控えでは二度と出さず、今の内容で控えを書き直す */
+  function bkNotice() {
+    if (!bkHold) { save(); return; }
+    var b = bkHold, d = new Date(b.at), p2 = function (n) { return ('0' + n).slice(-2); };
+    var box = document.createElement('div');
+    box.id = 'bknote'; box.setAttribute('role', 'alert');
+    box.style.cssText = 'margin:8px 0 12px;padding:10px 12px;border:1px solid #d9a400;border-radius:8px;background:#fff4c2;color:#3a2e00;line-height:1.6';
+    box.innerHTML = '旧版を開いたため、住人の設定や関係の一部（新しい関係など）が消えている可能性があります。' +
+      '<div class="row" style="margin-top:6px;flex-wrap:wrap;gap:6px;align-items:center"><button type="button" class="btn small" id="bk-restore">控えから戻す</button>' +
+      '<span class="hint" style="margin:0;color:inherit">（控え：' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ' 保存、住人' + ((b.state.chars || []).length) + '人・関係' + ((b.state.ties || []).length) + '本）</span>' +
+      '<button type="button" class="btn small ghost" id="bk-keep">このまま使う</button></div>';
+    var host = document.querySelector('main') || document.body;
+    host.insertBefore(box, host.firstChild);
+    box.querySelector('#bk-restore').addEventListener('click', function () {
+      if (HK.store.set('state', b.state)) location.reload(); else toast('戻せませんでした（ブラウザの保存領域がいっぱいかもしれません）');
+    });
+    box.querySelector('#bk-keep').addEventListener('click', function () { HK.store.set('state:backup:skip', b.at); bkHold = null; box.remove(); save(); });
+  }
   function $(sel) { return document.querySelector(sel); }
 
   var toastTimer = null;
@@ -1290,4 +1335,5 @@
   /* 書き出し・読み込み・入力の組み立て（点検・往復の試験から呼ぶ。画面の操作と同じ関数） */
   HK.UI.rosterJSON = rosterJSON; HK.UI.importJSON = importJSON; HK.UI.buildInput = buildInput; HK.UI.normState = normState;
   setTab('cast');
+  bkNotice();
 })();
