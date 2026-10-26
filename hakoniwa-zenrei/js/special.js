@@ -1,6 +1,8 @@
 /* 箱庭シミュレーター: 特殊役職（不死・吸血鬼）と発狂（全年齢版・R18版共通）
    死のある箱庭（ダンジョンRPG・ゾンビの街・邪神村RTA・吹雪の館の殺人・宇宙船漂流記）の住人の欄に「特殊役職」を足す。
    ・不死／吸血鬼：死んでも傷が塞がり、体力満タンで起き上がる。攫われて行方不明になることはある（そのときは戻らない）
+     蘇るかどうかは、特殊役職の「不死」か、住人の体の特徴の「不死」（attr.js の HK.Attr.isImmortal。吸血鬼は既定で持つ）で決める。
+     吸血鬼で体の特徴から不死を外した人は、血を吸うが蘇らない（p.spNoRev）。人間に不死を付けた人は特殊役職「不死」と同じ（両方で決めても一人分）
    ・精神が摩耗しすぎると発狂して動けなくなる。仲の良い人が落ち着かせるまで戻らず、そのあいだは死の出来事を引きやすい
    ・吸血鬼は三日に一度、人の血を吸う（ゾンビ・感染した人の血は吸えない）。好意のある相手を襲うか、同意を得て吸う。
      恋愛相手を固定している吸血鬼は、その人からしか吸えない。吸える相手がいない環境では、例外的に死ぬ
@@ -36,7 +38,7 @@
   SP.SCENES = ['rpg', 'zombie', 'jashin', 'yakata', 'ship'];
   SP.LABEL = { immortal: '不死', vampire: '吸血鬼' };
   /* 吸血鬼は特殊役職としては選ばず、住人の種族（attr.js の race = 'vampire'）で決める（2026-10-25）。古い保存の special = 'vampire' は ui.js が種族に移す */
-  SP.FIELD = { id: 'special', label: '特殊役職', auto: 'なし', options: [{ id: 'immortal', label: '不死（死んでも蘇る）' }], note: '吸血鬼は住人の設定の「種族」で選びます（死んでも蘇り、三日に一度血を吸います）' };
+  SP.FIELD = { id: 'special', label: '特殊役職', auto: 'なし', options: [{ id: 'immortal', label: '不死（死んでも蘇る）' }], note: '吸血鬼は住人の設定の「種族」で選びます（死んでも蘇り、三日に一度血を吸います）。住人の設定の「体の特徴」で不死を付けた人も、死んでも蘇ります' };
   /* 箱庭の欄に足す（箱庭がそろったあと、ui.js から一度） */
   SP.install = function () {
     SP.SCENES.forEach(function (id) {
@@ -49,9 +51,12 @@
   SP.setup = function (A, P, pcOf) {
     P.forEach(function (p) {
       var v = ((pcOf(p) || {}).pick || {}).special;
-      /* 吸血鬼は住人の種族（attr.js）で決める。不死を選んでいれば不死のまま。古い入力の special = 'vampire' も吸血鬼として扱う */
-      p.spec = v === 'immortal' ? v : (v === 'vampire' || (HK.Attr && HK.Attr.isVampire(p))) ? 'vampire' : '';
+      /* 吸血鬼（血を吸う）は住人の種族（attr.js）で決める。古い入力の special = 'vampire' も吸血鬼（蘇る）として扱う。
+         蘇るのは、特殊役職の不死か、体の特徴の不死（吸血鬼は既定で持つ。外した吸血鬼は蘇らない） */
+      var At = HK.Attr, vamp = v === 'vampire' || !!(At && At.isVampire(p)), imm = v === 'immortal' || v === 'vampire' || !!(At && At.isImmortal && At.isImmortal(p));
+      p.spec = vamp ? 'vampire' : imm ? 'immortal' : '';
       p.spRev = 0; p.mad = null; p.wear = 0;
+      if (vamp && !imm) p.spNoRev = true;
       if (p.spec === 'vampire') p.vamp = { due: 6 + A.rng() * 42, fed: 0, warn: false };
     });
   };

@@ -40040,8 +40040,13 @@
    ・bust 胸（R18版・女性だけ）：''／s 控えめ／m ふつう／l 豊か。R18 の地の文の差し替え語（HK.Attr.bustWord）
    ・genital 性器（R18版だけ。全年齢版では保存だけ）：''（おまかせ＝性別どおり）／m 男性器／f 女性器／mf 両方／none なし。
      体の描写の判定は pos.js（HK.Pos.hasM・hasF・noGen）。none の人は受けのとき口まで、攻めのとき指と玩具だけ（pos-nogen.js）
-   ・race 種族：''（人間）／human／vampire 吸血鬼／beast 獣人／demon 魔族／angel 天使／ghost 幽霊／other その他（raceNote に自由記入）。
-     文の飾り（耳・尾・牙・翼）。死のある箱庭の「特殊役職：吸血鬼」と同じ扱いにする（special.js の SP.setup。両方が吸血鬼でも一人分）
+   ・race 種族：''（人間）／human／vampire 吸血鬼／beast 獣人／demon 魔族／angel 天使／ghost 幽霊／android アンドロイド（人工物。人形・機械の体も）／
+     other その他（raceNote に自由記入）。吸血鬼は死のある箱庭で三日に一度血を吸う（special.js の SP.setup）
+   ・feats 体の特徴（A.FEATS の鍵の配列）：未設定（undefined）＝種族どおり（A.RACE_FEATS）。配列（空も可）＝利用者が選んだ特徴（空なら特徴の文を出さない）。
+     文の飾り（A.FEAT_FL：特徴ごと・kind ごと）。immortal（不死）は死のある箱庭で蘇る（特殊役職の「不死」と同じ。両方で決めても一人分）。
+     判定は A.featsOf(c)・A.feat(c, k)・A.isImmortal(c)。実行時は dst.feats（未設定なら写さない）
+   ・looks 目につく特徴（自由記入。読点区切りで 3 つまで・1 つ 12 文字まで）：地の文の飾り（A.LOOKS_FL の {feat}）。実行時は配列（A.looksOf(c)）
+   ・体の特徴・目につく特徴の文は「連続させない」（A.featPick：一つの記録に全員で 1 文・同じ人は 2 記録あける・同じ特徴を続けない）
    ・night 夜の性格（R18版だけ）：''（おまかせ＝気質から）／sadist サド／maso マゾ／mean 意地悪／sweet 甘々／shy 恥じらい／none 表と同じ。
      nightFor { 相手の番号: night } があれば、その相手にはそちらを優先する。R18 の山場の型（style）より優先する（attr-r18.js）。
      maso は受け攻めを変えない（攻め指定が優先。受けに回ったときの崩れ方だけを変える）。全年齢では無視する
@@ -40073,7 +40078,11 @@
   var A = HK.Attr = {};
   A.BUILD = [['', 'おまかせ'], ['small', '小柄'], ['avg', 'ふつう'], ['large', '大柄']];
   A.BUST = [['', 'おまかせ'], ['s', '控えめ'], ['m', 'ふつう'], ['l', '豊か']];
-  A.RACE = [['', 'おまかせ（人間）'], ['human', '人間'], ['vampire', '吸血鬼'], ['beast', '獣人'], ['demon', '魔族'], ['angel', '天使'], ['ghost', '幽霊'], ['other', 'その他']];
+  A.RACE = [['', 'おまかせ（人間）'], ['human', '人間'], ['vampire', '吸血鬼'], ['beast', '獣人'], ['demon', '魔族'], ['angel', '天使'], ['ghost', '幽霊'], ['android', 'アンドロイド'], ['other', 'その他']];
+  /* 体の特徴（種族によらずオン／オフ。並びは画面の並び） */
+  A.FEATS = [['ear', '獣の耳'], ['tail', '尻尾'], ['fang', '牙'], ['horn', '角'], ['wing', '翼'], ['trans', '体が透けている'], ['cold', '冷たい肌'], ['eye', '光る瞳'], ['drive', '機械の体（駆動音）'], ['immortal', '不死']];
+  /* 種族ごとの既定の特徴（人間・おまかせ・その他は無し。その他は種族の名前の文だけ） */
+  A.RACE_FEATS = { vampire: ['fang', 'cold', 'eye', 'immortal'], beast: ['ear', 'tail'], demon: ['horn', 'tail'], angel: ['wing'], ghost: ['trans', 'cold'], android: ['drive'] };
   A.NIGHT = [['', 'おまかせ（気質から）'], ['sadist', 'サド'], ['maso', 'マゾ'], ['mean', '意地悪'], ['sweet', '甘々'], ['shy', '恥じらい'], ['none', '表と同じ']];
   A.WILL = [['', 'おまかせ'], ['weak', '弱い'], ['avg', 'ふつう'], ['strong', '強い']];
   /* 性器（値は全年齢版でも保存・読み込みのために残す。見出しの語は R18版だけ） */
@@ -40112,6 +40121,21 @@
   /* 相手の id の並び（画面の住人。重複・空を除く） */
   function idl(v) { var o = []; if (Array.isArray(v)) v.forEach(function (k) { if (typeof k === 'string' && k && o.indexOf(k) < 0) o.push(k); }); return o; }
   function tstr(v) { return A.tasteList(v).join('、'); }
+  /* 体の特徴の並び（鍵か表示名。知らない値・重複を除き、A.FEATS の並びにそろえる）。配列か文字列（読点区切り）を受ける */
+  var FEATK = {}; A.FEATS.forEach(function (f) { FEATK[f[0]] = f[1]; });
+  function featList(v) {
+    var src = Array.isArray(v) ? v : typeof v === 'string' ? v.split(/[、,，・\/／\s]+/) : [];
+    return A.FEATS.map(function (f) { return f[0]; }).filter(function (k) { return src.indexOf(k) >= 0 || src.indexOf(FEATK[k]) >= 0; });
+  }
+  A.featList = featList;
+  A.featLabel = function (k) { return FEATK[k] || ''; };
+  /* 目につく特徴（自由記入）：読点区切りで 3 つまで・1 つ 12 文字まで。文に埋めるので、括弧・記号・文末の句点は外す */
+  A.lookWords = function (v) {
+    var src = Array.isArray(v) ? v : typeof v === 'string' ? v.split(/[、,，\/／\n]+/) : [], out = [];
+    src.forEach(function (w) { w = typeof w === 'string' ? w.replace(/[「」『』{}<>｜|＠@。．！？!?\u2060-\u2064]/g, '').trim().slice(0, 12) : ''; if (w && out.indexOf(w) < 0 && out.length < 3) out.push(w); });
+    return out;
+  };
+  function lstr(v) { return A.lookWords(v).join('、'); }
 
   /* ---------- 画面の住人（S.chars。相手は id で持つ） ---------- */
   /* ui.js mk：写すときにこの欄も写す */
@@ -40127,6 +40151,8 @@
     VF.forEach(function (k) { o[k] = wmap(c[k]); });
     FOODK.forEach(function (k) { o[k] = fstr(c[k]); });
     o.taste = tstr(c.taste);
+    if (Array.isArray(c.feats)) o.feats = featList(c.feats); else delete o.feats;
+    o.looks = lstr(c.looks);
     return o;
   };
   /* ui.js normChar：値を確かめる */
@@ -40143,6 +40169,9 @@
     VF.forEach(function (k) { c[k] = wmap(c[k]); });
     FOODK.forEach(function (k) { c[k] = fstr(c[k]); });
     c.taste = tstr(c.taste);
+    /* 体の特徴：配列なら利用者が選んだもの（空も可）、それ以外は種族どおり（欄を消す） */
+    if (Array.isArray(c.feats)) c.feats = featList(c.feats); else delete c.feats;
+    c.looks = lstr(c.looks);
     /* 語尾の設定（かんたん）：c.ending。古い「語尾の付け替え」（toneCustom）はここで ending.plain に写す（tone-ending.js） */
     if (HK.Ending) HK.Ending.norm(c);
     return c;
@@ -40165,6 +40194,8 @@
     if (c.raceNote) o.raceNote = c.raceNote;
     FOODK.forEach(function (k) { if (fstr(c[k])) o[k] = fstr(c[k]); });
     if (tstr(c.taste)) o.taste = tstr(c.taste);
+    if (Array.isArray(c.feats)) o.feats = featList(c.feats);
+    if (lstr(c.looks)) o.looks = lstr(c.looks);
     if (c.same && ref(c.same) != null) { o.same = ref(c.same); if (c.sameDark) o.sameDark = true; }
     var nk = idl(c.noKillFor).map(ref).filter(function (x) { return x != null; });
     if (nk.length) o.noKillFor = nk;
@@ -40180,6 +40211,9 @@
     if (o.raceNote != null) c.raceNote = note(String(o.raceNote));
     FOODK.forEach(function (k) { if (o[k] != null) c[k] = fstr(o[k]); });
     if (o.taste != null) c.taste = tstr(o.taste);
+    /* 体の特徴：配列（または読点区切りの文字列）なら選んだ特徴、無ければ今の値のまま（新しい住人は種族どおり） */
+    if (Array.isArray(o.feats) || typeof o.feats === 'string') c.feats = featList(o.feats);
+    if (o.looks != null) c.looks = lstr(o.looks);
     if (o.sameDark != null) c.sameDark = !!o.sameDark;
     if (HK.Ending) HK.Ending.importFrom(c, o);
     c._atNk = o.noKillFor;
@@ -40206,6 +40240,8 @@
     if (c.raceNote) o.raceNote = c.raceNote;
     FOODK.forEach(function (k) { if (fstr(c[k])) o[k] = fstr(c[k]); });
     if (tstr(c.taste)) o.taste = tstr(c.taste);
+    if (Array.isArray(c.feats)) o.feats = featList(c.feats);
+    if (lstr(c.looks)) o.looks = lstr(c.looks);
     var si = c.same ? ids.indexOf(c.same) : -1;
     if (si >= 0) { o.same = si; if (c.sameDark) o.sameDark = true; }
     var nk = [];
@@ -40224,6 +40260,8 @@
     if (c.build) bits.push('体格：' + lab(A.BUILD, c.build));
     if (!HK.SAFE_ON && c.bust && c.gender === 'f') bits.push('胸：' + lab(A.BUST, c.bust));
     if (c.race && c.race !== 'human') bits.push('種族：' + lab(A.RACE, c.race) + (c.raceNote ? '（' + c.raceNote + '）' : ''));
+    if (Array.isArray(c.feats)) bits.push('特徴：' + (featList(c.feats).map(A.featLabel).join('・') || 'なし'));
+    if (lstr(c.looks)) bits.push('目につく：' + lstr(c.looks));
     if (!HK.SAFE_ON && c.night) bits.push('夜：' + lab(A.NIGHT, c.night));
 /* r18: 全年齢版では省略 */
     if (c.will) bits.push('心の強さ：' + lab(A.WILL, c.will));
@@ -40248,12 +40286,12 @@
       (c.same ? '<label title="同一人物の相手を苛む、闇に堕ちた自分。エゴグラムの欠点が際立ち、愛憎より悪質に振る舞います。いまは出られない部屋だけで効きます"><input type="checkbox" data-gf="at_sameDark"' + (c.sameDark ? ' checked' : '') + '> 闇堕ちVer</label>' : '') : '';
     return '<div class="gearrow"><label title="二人の体格の差で、見上げる・抱き上げるといった文が変わります">体格 ' + sel('build') + '</label>' +
 /* r18: 全年齢版では省略 */
-      '<label title="耳・尾・牙・翼などの文の飾りが付きます。死のある箱庭（ゾンビの街・邪神村RTA・吹雪の館・宇宙船漂流記・ダンジョンRPG）では、吸血鬼は死んでも蘇り、三日に一度人の血を吸います">種族 ' + sel('race') + '</label>' +
+      '<label title="種族の体の特徴（耳・尻尾・牙・角・翼など）が文の飾りになります（下の「体の特徴」で選び直せます）。死のある箱庭（ゾンビの街・邪神村RTA・吹雪の館・宇宙船漂流記・ダンジョンRPG）では、不死の特徴がある人は死んでも蘇り、吸血鬼は三日に一度人の血を吸います">種族 ' + sel('race') + '</label>' +
       (c.race === 'other' ? '<label>種族の名前 <input type="text" data-gf="at_raceNote" value="' + esc(c.raceNote || '') + '" maxlength="12" placeholder="例：人魚" style="width:7em"></label>' : '') +
 /* r18: 全年齢版では省略 */
       /* 心の強さの説明：R18版は堕ちる場面の箱庭も書く（全年齢版の bundle には入れない） */
 /* r18: 全年齢版では省略 */
-      (HK.SAFE_ON ? '<label title="催眠の箱庭で、暗示のかかりやすさが変わります。強いと、流されても心は折れません">心の強さ ' + sel('will') + '</label>' : '') + same + '</div>' + food(c, esc);
+      (HK.SAFE_ON ? '<label title="催眠の箱庭で、暗示のかかりやすさが変わります。強いと、流されても心は折れません">心の強さ ' + sel('will') + '</label>' : '') + same + '</div>' + feats(c, esc) + food(c, esc);
   };
   /* 「恋愛と夜」の節に置く、全体の夜の性格（R18版だけ。相手ごとに決めていない相手・モブが相手のとき） */
   A.nightHtml = function (c, h) {
@@ -40283,6 +40321,15 @@
     } catch (e) { /* 注意が出せなくても欄はそのまま */ }
     return bits.join('。');
   };
+  /* 「体と設定」の体の特徴の行：「種族どおり」（既定。種族の特徴を薄く出す）か、外して特徴を一つずつ選ぶ。目につく特徴（自由記入） */
+  var FEAT_TIP = { immortal: '死のある箱庭で、死んでも蘇ります（特殊役職の「不死」と同じ）', drive: '駆動音・関節の音・変わらない体温など、人工の体の文になります', trans: '幽霊のように体が透ける文になります' };
+  function feats(c, esc) {
+    var auto = !Array.isArray(c.feats), cur = A.featsOf(c), def = A.RACE_FEATS[A.raceOf(c)] || [];
+    var h = '<div class="gearrow"><label title="尻尾・耳・牙・角などの体の特徴が、地の文の飾りになります。外すと、種族によらず一つずつ選べます（何も選ばなければ特徴の文は出ません）"><input type="checkbox" data-gf="at_featAuto"' + (auto ? ' checked' : '') + '> 体の特徴：種族どおり</label>';
+    if (auto) h += '<span class="gearhint" style="margin:0;opacity:.7">（' + esc(def.length ? def.map(A.featLabel).join('・') : A.raceOf(c) === 'other' ? '種族の名前の文' : '特徴なし') + '）</span>';
+    else h += A.FEATS.map(function (f) { return '<label' + (FEAT_TIP[f[0]] ? ' title="' + esc(FEAT_TIP[f[0]]) + '"' : '') + '><input type="checkbox" data-gf="at_feat" data-v="' + f[0] + '"' + (cur.indexOf(f[0]) >= 0 ? ' checked' : '') + '> ' + esc(f[1]) + '</label>'; }).join('');
+    return h + '</div><div class="gearrow"><label title="目・髪・髪飾り・入れ墨など、目を引くものを読点で区切って3つまで。地の文と初対面の場面で触れられます">目につく特徴 <input type="text" data-gf="at_looks" value="' + esc(lstr(c.looks)) + '" maxlength="40" placeholder="例：金色の目、腕の入れ墨" aria-label="目につく特徴" style="width:14em"></label></div>';
+  }
   /* 「体と設定」の食べ物の行：好きな食べ物・嫌いな食べ物（自由記入）と好きな味（いくつでも） */
   function food(c, esc) {
     var tl = A.tasteList(c.taste);
@@ -40297,10 +40344,13 @@
     var k = f.slice(3);
     if (k === 'raceNote') { c.raceNote = note(t.value); changed(false); return true; }
     if (k === 'foodLike' || k === 'foodHate') { c[k] = fstr(t.value); changed(false); return true; }
+    if (k === 'looks') { c.looks = lstr(t.value); changed(false); return true; }
+    if (k === 'feat') { var fl = A.featsOf(c), fv = t.dataset.v; if (FEATK[fv]) { fl = fl.filter(function (x) { return x !== fv; }); if (t.checked) fl.push(fv); c.feats = featList(fl); changed(false); } return true; }
     if (k === 'taste') { var tl = A.tasteList(c.taste), tv = t.dataset.v; if (A.TASTES.indexOf(tv) >= 0) { tl = tl.filter(function (x) { return x !== tv; }); if (t.checked) tl.push(tv); c.taste = tstr(tl); changed(false); } return true; }
     if (k === 'yf' || k === 'ff') { var vk = k === 'yf' ? 'youFor' : 'fpFor', w = word(t.value); c[vk] = c[vk] || {}; if (w) c[vk][t.dataset.o] = w; else delete c[vk][t.dataset.o]; changed(false); return true; }
     if (isInput) return true;
     if (listOf(k)) { c[k] = val(listOf(k), t.value); changed(k === 'race' || k === 'night'); return true; }
+    if (k === 'featAuto') { if (t.checked) delete c.feats; else c.feats = (A.RACE_FEATS[A.raceOf(c)] || []).slice(); changed(true); return true; }
     if (k === 'pf') { c.posFor = c.posFor || {}; var pv = posv(t.value); if (pv) c.posFor[t.dataset.o] = pv; else delete c.posFor[t.dataset.o]; changed(true); return true; }
     if (k === 'sameDark') { c.sameDark = !!(t.checked && c.same); changed(true); return true; }
     if (k === 'nf') { c.nightFor = c.nightFor || {}; var v = val(A.NIGHT, t.value); if (v) c.nightFor[t.dataset.o] = v; else delete c.nightFor[t.dataset.o]; changed(false); return true; }
@@ -40356,6 +40406,10 @@
     FOODK.forEach(function (k) { var l = A.foodWords(src[k]); if (l.length) dst[k] = l; });
     var tl = A.tasteList(src.taste);
     if (tl.length) dst.taste = tl;
+    /* 体の特徴（未設定なら写さない＝種族どおり）・目につく特徴 */
+    if (Array.isArray(src.feats)) dst.feats = featList(src.feats);
+    var lk = A.lookWords(src.looks);
+    if (lk.length) dst.looks = lk;
     if (!HK.SAFE_ON) {
       var bu = val(A.BUST, src.bust), nt = val(A.NIGHT, src.night), gn = val(A.GENITAL, src.genital);
       if (bu) dst.bust = bu;
@@ -40439,6 +40493,19 @@
   A.second = function (c) { return (c && c.om && c.om.sex) || (c && c.attr && c.attr.second) || ''; };
   A.raceOf = function (c) { var r = c && (c.race || (c.src && c.src.race)); return r && r !== 'human' ? r : ''; };
   A.isVampire = function (c) { return A.raceOf(c) === 'vampire'; };
+  /* 体の特徴の鍵の配列（c.feats が配列ならそれ、なければ種族の既定。実行時の住人は c.src も見る） */
+  A.featsOf = function (c) {
+    if (!c) return [];
+    var f = Array.isArray(c.feats) ? c.feats : c.src && Array.isArray(c.src.feats) ? c.src.feats : null;
+    return f ? featList(f) : (A.RACE_FEATS[A.raceOf(c)] || []).slice();
+  };
+  A.feat = function (c, k) { return A.featsOf(c).indexOf(k) >= 0; };
+  /* 不死（死のある箱庭で蘇る。special.js） */
+  A.isImmortal = function (c) { return A.feat(c, 'immortal'); };
+  /* 目につく特徴（配列） */
+  A.looksOf = function (c) { return A.lookWords(c && (c.looks != null ? c.looks : c.src ? c.src.looks : null)); };
+  /* 見た目の文を出せる人か（体の特徴・その他の種族の名前・目につく特徴のどれかがある） */
+  A.hasLook = function (c) { return !!c && A.featKeys(c).length > 0; };
   /* 体格の差：'a>b'（a のほうが大きい）／'b>a'／''。おまかせはふつうとして比べる。二人とも決めていなければ '' */
   var RANK = { small: 0, avg: 1, large: 2 };
   A.sizeDiff = function (a, b) {
@@ -40468,33 +40535,57 @@
   /* 心の強さを 0〜1 の意志に足す分（ダンジョンの will()）：弱い −0.2・強い +0.2 */
   A.willAdd = function (c) { var w = c && c.will; return w === 'weak' ? -0.2 : w === 'strong' ? 0.2 : 0; };
 
-  /* ---------- 文の飾り（種族・体格）。{c} はその人、{note} はその他の種族の名前 ---------- */
-  /* kind：touch（体の感触）／look（ふだんの見た目・仕草）／hold（抱き寄せる・抱き上げる） */
-  var RACE_FL = {
+  /* ---------- 文の飾り（体の特徴・目につく特徴・その他の種族・体格）。{c} はその人、{o} は相手、{note} はその他の種族の名前、{feat} は目につく特徴 ---------- */
+  /* kind：touch（体の感触）／look（ふだんの見た目・仕草）／hold（抱き寄せる・抱き上げる）。特徴ごとの文は、その特徴だけを書く（耳の文に尻尾を出さない） */
+  A.FEAT_FL = {
     touch: {
-      vampire: L('{c}の肌はひんやりとしていて、触れたところから少しずつ温もりを移されていった。|{c}の唇の端から、小さな牙がのぞいた。噛みつく代わりに、{c}はそこへ口づけだけを落とした。|{c}の赤い瞳が、薄暗がりの中でかすかに光っていた。'),
-      beast: L('{c}の耳がぴくりと震え、尻尾が落ち着きなく揺れた。|{c}の尻尾が、無意識のうちに{o}の脚へ絡みついた。|{c}の耳の付け根に指が触れると、{c}は喉の奥で小さく鳴いた。'),
-      demon: L('{c}の角の根元に指が触れると、{c}は小さく肩を跳ねさせた。|{c}の細い尾が、熱に浮かされたように{o}の腰に巻きついた。|{c}の瞳孔が、獣のように細く絞られた。'),
-      angel: L('{c}の背の白い羽が、ひとひら、ふたひら、敷布に落ちた。|{c}の翼が、{o}を包み込むように大きく広がった。|{c}の羽の付け根を撫でられて、{c}の背中がふるりと震えた。'),
-      ghost: L('{c}の体は、触れるたびにほんの少し透けて、また輪郭を取り戻した。|{c}の指先は冷たく、それでいて確かにそこにあった。|{c}の吐息だけが、不思議なほど温かかった。'),
-      other: L('{c}の体には、{note}ならではの手触りがあった。|触れるたびに、{c}の{note}らしい体が小さく応えた。|{c}は{note}らしいしぐさで、{o}の手に身をすり寄せた。')
+      ear: L('{c}の耳がぴくりと震えた。触れられるたび、柔らかな毛並みが小さく逆立った。|{c}の耳の付け根に指が触れると、{c}は喉の奥で小さく鳴いた。|{o}の指先が耳の縁をなぞると、{c}の耳はくすぐったそうにぺたりと伏せられた。|{c}の柔らかな耳が、{o}の頬にふわりと触れた。'),
+      tail: L('{c}の尻尾が、無意識のうちに{o}の脚へ絡みついた。|{c}の尻尾が落ち着きなく揺れて、{o}の手の甲をかすめた。|尻尾の付け根に触れられて、{c}はびくりと肩を跳ねさせた。|{c}の尻尾の先が、{o}の手首にくるりと巻きついた。'),
+      fang: L('{c}の唇の端から、小さな牙がのぞいた。噛みつく代わりに、{c}はそこへ口づけだけを落とした。|{c}の牙の先が、{o}の肌をかすめた。傷はつけず、ただ形をなぞるだけだった。|{c}は牙が当たらないよう、そっと唇を寄せた。'),
+      horn: L('{c}の角の根元に指が触れると、{c}は小さく肩を跳ねさせた。|{o}の指が、{c}の角の付け根をそっとなぞった。{c}は目を細めて、されるがままになっていた。|{c}の硬い角が、{o}の額にこつんと当たった。'),
+      wing: L('{c}の羽が一枚、{o}の肩にひらりと舞い落ちた。|{c}の羽の付け根を撫でられて、{c}の背中がふるりと震えた。|{c}の翼が、触れられるたびに小さく羽ばたいた。'),
+      trans: L('{c}の体は、触れるたびにほんの少し透けて、また輪郭を取り戻した。|{o}の手が、一瞬だけ{c}の腕をすり抜けかけた。{c}は慌てて輪郭を確かにした。|{c}の指先は透けていて、それでも確かに{o}の手を握っていた。'),
+      cold: L('{c}の肌はひんやりとしていて、触れたところから少しずつ温もりを移されていった。|{c}の指先は冷たく、それでいて確かにそこにあった。|{o}が手を重ねると、{c}の冷たい手が、その温かさに驚いたように小さく震えた。'),
+      eye: L('{c}の瞳が、薄暗がりの中でかすかに光っていた。|間近で見つめると、{c}の瞳には、灯りとは違う光が揺れていた。|{o}が顔を寄せると、{c}の光る瞳がゆっくりと細められた。'),
+      drive: L('{c}の手首の奥で、小さな駆動音がした。|{c}の肌は、どこに触れても同じ温度だった。設計どおりの、変わらない温かさだった。|触れられた{c}の関節が、かすかにきしむような音を立てた。|{c}の指先が、{o}の手の温度を確かめるように一瞬止まった。覚えておこうとしているようだった。'),
+      immortal: L('{c}の腕に残っていたはずの傷は、もう跡形もなく塞がっていた。|{o}の指が古傷を探したが、{c}の肌には傷ひとつ残っていなかった。|{c}の手の甲の切り傷が、見ているうちに薄く消えていった。')
     },
     look: {
-      vampire: L('{c}は日の差し込む窓辺を避けて、影のほうに腰を下ろした。|{c}が笑うと、口元に小さな牙がのぞいた。|{c}の赤い瞳が、灯りを映してきらりと光った。'),
-      beast: L('{c}の耳が、話し声のするほうへぴくりと向いた。|{c}の尻尾が、機嫌よさそうにゆらゆらと揺れていた。|{c}は鼻をひくつかせて、遠くの匂いを確かめていた。'),
-      demon: L('{c}は角が引っかからないよう、少し首を傾けて戸口をくぐった。|{c}の細い尾が、話の合間に床をとんと叩いた。|{c}の影は、灯りの加減でほんの少しだけ大きく見えた。'),
-      angel: L('{c}の背の翼が、ふわりと畳まれた。|{c}が身じろぎすると、白い羽が一枚、ひらりと舞った。|{c}のまわりだけ、空気が少し明るく見えた。'),
-      ghost: L('{c}の足元は、光の加減で少しだけ透けて見えた。|{c}は気づくと、音もなくすぐそばに立っていた。|{c}の座った椅子は、まったく軋まなかった。'),
-      other: L('{c}の{note}らしい仕草に、思わず目が留まった。|{c}は{note}らしく、少し変わった癖で身なりを整えた。|{c}の{note}らしい姿は、どこにいても目を引いた。')
+      ear: L('{c}の耳が、話し声のするほうへぴくりと向いた。|{c}の獣の耳が、機嫌よさそうにぴんと立っていた。|{c}は耳を片方だけ伏せて、何かを聞き流すふりをしていた。|物音がするたび、{c}の耳だけがくるりとそちらを向いた。'),
+      tail: L('{c}の尻尾が、機嫌よさそうにゆらゆらと揺れていた。|{c}の尻尾が、話の合間に床をとんと叩いた。|{c}は座るとき、尻尾を器用に脇へ寄せた。|{c}の尻尾の先だけが、隠しきれない気持ちを映して小さく揺れていた。'),
+      fang: L('{c}が笑うと、口元に小さな牙がのぞいた。|{c}は牙を隠すように、口元に手を添えて笑った。|{c}があくびをすると、鋭い牙が白く光った。'),
+      horn: L('{c}は角がどこかに引っかからないよう、少し首を傾けて歩いた。|{c}は考えごとをするとき、指先で角の先に触れる癖があった。|光を受けて、{c}の角がつややかに光った。'),
+      wing: L('{c}の背の翼が、ふわりと畳まれた。|{c}が身じろぎすると、羽が一枚、ひらりと舞った。|{c}は狭い場所では、翼を窮屈そうに背中へ寄せていた。'),
+      trans: L('{c}の足元は、光の加減で少しだけ透けて見えた。|{c}の体の向こうに、背後の景色がうっすらと見えていた。|{c}の輪郭が、灯りの揺れに合わせてかすかに揺らいだ。'),
+      cold: L('{c}は温かい飲み物を両手で包んで、冷たい指先を温めていた。|{c}の頬は、灯りの下でも白く冷えて見えた。|{c}が触れていたところには、ひやりとした冷たさが残っていた。'),
+      eye: L('{c}の瞳が、灯りを映してきらりと光った。|暗がりに入ると、{c}の瞳だけがぼんやりと光って見えた。|{c}の光る瞳が、暗がりの一点をじっと見つめていた。'),
+      drive: L('{c}が首を巡らせると、首の奥で低い駆動音が鳴った。|{c}の目の奥で、小さな光が一度だけ点滅した。|{c}の背中のあたりから、冷却の排気がかすかに漏れた。|{c}は少しのあいだ動きを止めた。何かを読み込んでいるような、短い間だった。|{c}は人の笑い方をなぞるように、ほんの少し遅れて笑った。'),
+      immortal: L('{c}は指先の切り傷に目もくれなかった。傷は、しばらくすると跡形もなく塞がっていた。|{c}は危ない場所でも平然としていた。死ぬことへの恐れが、どこか薄かった。|{c}の擦りむいた膝は、話しているうちに元どおりになっていた。')
     },
     hold: {
-      vampire: L('{c}の腕はひんやりとしていたが、抱き寄せる力は優しかった。|{c}は{o}の首筋に顔を寄せ、牙を立てずに、ただ脈の音を聞いていた。|{c}の冷たい胸に、{o}の体温が少しずつ移っていった。'),
-      beast: L('{c}の尻尾が、ふわりと{o}の腰に巻きついた。|{c}は{o}の肩口に鼻先をうずめて、匂いを確かめるように深く息を吸った。|{c}の耳が、抱き寄せた{o}の頬をくすぐった。'),
-      demon: L('{c}の尾が、離さないとでも言うように{o}の足首に絡んだ。|{c}は角が当たらないよう、少し首を傾けて{o}を抱き寄せた。|{c}の腕の中は、思いのほか熱かった。'),
-      angel: L('{c}は翼を広げて、{o}をすっぽりと包み込んだ。|{c}の羽が、抱き寄せた{o}の背中をやわらかく撫でた。|{c}の翼の内側は、陽だまりのように温かかった。'),
-      ghost: L('{c}の腕は、抱き寄せるたびにほんの少しだけ透けた。|{c}は確かめるように、{o}の背中に何度も手を当て直した。|{c}の抱擁は、冷たいのにどこか懐かしかった。'),
-      other: L('{c}の{note}らしい体が、{o}をそっと包んだ。|{c}は{note}らしい力加減で、{o}を抱き寄せた。|{c}の腕の中には、{note}ならではのぬくもりがあった。')
+      ear: L('{c}の耳が、抱き寄せた{o}の頬をくすぐった。|{c}は{o}の肩に頭を預けた。伏せた耳が、安心したように力を抜いていた。|{o}の腕の中で、{c}の耳がぴくぴくと嬉しそうに揺れた。'),
+      tail: L('{c}の尻尾が、ふわりと{o}の腰に巻きついた。|{c}の尻尾が、離さないとでも言うように{o}の足首に絡んだ。|抱き寄せられて、{c}の尻尾がぱたぱたと嬉しそうに揺れた。'),
+      fang: L('{c}は{o}の首筋に顔を寄せ、牙を立てずに、ただ脈の音を聞いていた。|{c}の牙が、抱き寄せた{o}の肩口にかすかに触れて、すぐに離れた。|{c}は牙が当たらないように、少しだけ顔の向きを変えて{o}を抱き寄せた。'),
+      horn: L('{c}は角が当たらないよう、少し首を傾けて{o}を抱き寄せた。|{c}の角の影が、抱き寄せた{o}の頬に落ちた。|{o}は{c}の角にそっと頬を寄せた。硬い感触が、不思議と落ち着いた。'),
+      wing: L('{c}は翼を広げて、{o}をすっぽりと包み込んだ。|{c}の羽が、抱き寄せた{o}の背中をやわらかく撫でた。|{c}の翼の内側は、陽だまりのように温かかった。'),
+      trans: L('{c}の腕は、抱き寄せるたびにほんの少しだけ透けた。|{c}は確かめるように、{o}の背中に何度も手を当て直した。透けた手のひらが、ようやく形を取り戻した。|抱き合った{c}の肩越しに、向こうの景色がうっすらと透けて見えた。'),
+      cold: L('{c}の腕はひんやりとしていたが、抱き寄せる力は優しかった。|{c}の冷たい体に、{o}の体温が少しずつ移っていった。|{c}の抱擁は、冷たいのにどこか懐かしかった。'),
+      eye: L('抱き寄せた{o}を、{c}の瞳がすぐそばから淡く照らしていた。|{o}の髪に顔をうずめたまま、{c}の瞳が暗がりで淡く光っていた。|{c}は光る瞳を閉じて、{o}を抱く腕に少しだけ力を込めた。'),
+      drive: L('{c}の腕の中は、一定の温度に保たれていた。冷たくも熱くもない、正確な温もりだった。|抱き寄せた{c}の体の奥から、静かな駆動音が聞こえてきた。|{c}は力加減を慎重に調整しながら、{o}を抱き寄せた。'),
+      immortal: L('{c}は{o}を抱き寄せた。いつか一人だけ取り残されることを、知っているような腕だった。|{c}は{o}の鼓動に耳を澄ませた。限りのある命の音を、確かめるように。|{c}は{o}を離さなかった。終わらない時間の中で、この温もりだけは覚えておきたかった。')
     }
+  };
+  /* その他の種族（特徴を選んでいない人だけ。{note}＝種族の名前） */
+  A.NOTE_FL = {
+    touch: L('{c}の体には、{note}ならではの手触りがあった。|触れるたびに、{c}の{note}らしい体が小さく応えた。|{c}は{note}らしいしぐさで、{o}の手に身をすり寄せた。'),
+    look: L('{c}の{note}らしい仕草に、思わず目が留まった。|{c}は{note}らしく、少し変わった癖で身なりを整えた。|{c}の{note}らしい姿は、どこにいても目を引いた。'),
+    hold: L('{c}の{note}らしい体が、{o}をそっと包んだ。|{c}は{note}らしい力加減で、{o}を抱き寄せた。|{c}の腕の中には、{note}ならではのぬくもりがあった。')
+  };
+  /* 目につく特徴（自由入力。{feat}＝その語。目・髪・髪飾り・入れ墨のどれでも崩れない短い文） */
+  A.LOOKS_FL = {
+    touch: L('{o}の視線が、{c}の{feat}のあたりで止まった。|間近で見ると、{c}の{feat}がいっそうはっきりと見えた。|{o}は、すぐそばにある{c}の{feat}に目を奪われた。|触れ合うほどの距離で、{c}の{feat}が{o}の目に焼きついた。'),
+    look: L('{o}の目は、つい{c}の{feat}に行った。|{c}の{feat}が、ひときわ目を引いた。|{c}が身じろぎするたび、{feat}がちらりと目に入った。|{c}の{feat}は、どこにいてもよく目立った。|{o}は話しながら、{c}の{feat}をそっと盗み見た。'),
+    hold: L('抱き寄せた{c}の{feat}が、{o}のすぐ目の前にあった。|{o}は{c}の{feat}を間近に見ながら、そっと腕に力を込めた。|腕の中の{c}の{feat}を、{o}はしばらく見つめていた。|{o}の腕の中で、{c}の{feat}がやけに近くに見えた。')
   };
   /* 体格の差（{L} 大きいほう、{S} 小さいほう）。touch・hold は {a}＝主導する側（攻め）・{b}＝受ける側で、向きを分けて書く */
   var SIZE_FL = {
@@ -40509,32 +40600,120 @@
     look: L('{S}は{L}を見上げて話した。並ぶと、背の差がいっそう目立った。|{L}は少しかがんで、{S}と目の高さを合わせた。|{L}は{S}の歩幅に合わせて、いつもよりゆっくり歩いた。|{S}は{L}の隣に立つと、肩のあたりにしか届かなかった。')
   };
   function fill(t, v) { return t.replace(/\{(\w+)\}/g, function (m, k) { return v[k] != null ? v[k] : m; }); }
-  /* 一人分の種族の一句（無ければ ''）。pick を渡さなければ先頭の文。o は相手（{o}） */
-  A.flavor = function (c, kind, pick, o) {
-    var r = A.raceOf(c), T = RACE_FL[kind] || RACE_FL.look, l = r && T[r];
-    if (!l || (r === 'other' && !c.raceNote)) return '';
-    return fill(pick ? pick(l) : l[0], { c: c.name, note: c.raceNote || '', o: (o && o.name) || '相手' });
+  /* ---------- 体の特徴の文を「連続させない」ルール（A.featPick） ----------
+     owner＝ctx か S（結果ごとの状態の置き場）。owner に覚えるもの：_featRec（最後に特徴の文を出した記録番号）、
+     _featLast[名前] = { at: 記録番号, feat: 鍵 }、_featUse[名前][鍵]（回数。順に回すため）、_featIntro（導入の記録番号と出した人）。
+     記録番号は owner.log の長さ（ST.say／ctx.say の一回が一つ）。log が無ければ、特徴の文を出した回数。
+     1. 一つの記録に、体の特徴の文は全員合わせて 1 文まで
+     2. 同じ人の特徴の文は、直前の 2 記録以内には出さない
+     3. 同じ人で同じ特徴を 2 回続けて出さない（特徴が複数あれば順に回す。特徴が一つしかない人は、前の文から GAP1 記録あける）
+     4. 目につく特徴（looks）・その他の種族の名前（note）も同じ枠で数える
+     5. 導入（opt.intro）は例外：1・2 を見ず、人ごとに 1 文まで（一人 1 特徴）
+     返す鍵：特徴の鍵（ear など）／'note'（その他の種族の名前の文）／'look:語'（目につく特徴）。出せなければ '' */
+  var GAP = 3, GAP1 = 6;
+  A.featLog = null;
+  /* owner を渡さない呼び出し（夜の場面の pairLine など）のための、いま記録を書いている ctx／S（attr-look.js が ctx.say・Story.say のたびに入れる） */
+  A.curOwner = null;
+  function ownerOf(o) { return o && typeof o === 'object' ? o : A.curOwner && typeof A.curOwner === 'object' ? A.curOwner : null; }   /* 点検用：配列を入れると { who, feat, at, kind, intro } を記録する */
+  function recNo(owner) { return Array.isArray(owner.log) ? owner.log.length : (owner._featCalls || 0); }
+  function noteOf(c) { return (c && (c.raceNote || (c.src && c.src.raceNote))) || ''; }
+  /* その人の文の候補の鍵（特徴 → 種族の名前 → 目につく特徴の順） */
+  A.featKeys = function (c) {
+    if (!c) return [];
+    var ks = A.featsOf(c);
+    if (!ks.length && A.raceOf(c) === 'other' && noteOf(c)) ks.push('note');
+    A.looksOf(c).forEach(function (w) { ks.push('look:' + w); });
+    return ks;
   };
-  /* 二人の場面に差し込む一文（体格の差・二人の種族・胸の中から一つ）。a＝主導する側（攻め）・b＝受ける側。
+  function pk0(owner, pick) {
+    if (typeof pick === 'function') return pick;
+    if (owner && typeof owner.pick === 'function') return function (l) { return owner.pick(l); };
+    if (owner && typeof owner.rng === 'function') return function (l) { return l[Math.floor(owner.rng() * l.length) % l.length]; };
+    return function (l) { return l[0]; };
+  }
+  A.featPick = function (owner, c, opt) {
+    opt = opt || {};
+    var ks = A.featKeys(c);
+    if (opt.keys) ks = ks.filter(typeof opt.keys === 'function' ? opt.keys : function (k) { return opt.keys.indexOf(k) >= 0 || (k.indexOf('look:') === 0 && opt.keys.indexOf('looks') >= 0); });
+    if (!ks.length) return '';
+    var own = ownerOf(owner);
+    if (!own) return ks.length === 1 ? ks[0] : pk0(null, opt.pick)(ks);
+    var r = recNo(own), nm = c.name, last = (own._featLast || {})[nm], it = own._featIntro;
+    if (opt.intro) { if (it && it.at === r && it.who[nm]) return ''; }
+    else {
+      if (own._featRec === r) return '';
+      if (last && r - last.at < GAP) return '';
+    }
+    if (last) {
+      if (ks.length > 1) ks = ks.filter(function (k) { return k !== last.feat; });
+      else if (ks[0] === last.feat && r - last.at < GAP1) return '';
+    }
+    /* 順に回す：これまでに出した回数の少ない鍵から（同じ回数なら乱数で） */
+    var u = (own._featUse || {})[nm] || {}, mn = Infinity;
+    ks.forEach(function (k) { mn = Math.min(mn, u[k] || 0); });
+    ks = ks.filter(function (k) { return (u[k] || 0) === mn; });
+    var k = ks.length === 1 ? ks[0] : pk0(own, opt.pick)(ks);
+    if (!opt.peek) A.featUse(own, c, k, opt);
+    return k;
+  };
+  /* 特徴の文を出したと記録する（featPick を opt.peek で呼んだあと、実際に使う鍵だけ） */
+  A.featUse = function (owner, c, k, opt) {
+    owner = ownerOf(owner);
+    if (!owner || !c || !k) return;
+    opt = opt || {};
+    var r = recNo(owner), nm = c.name;
+    owner._featRec = r;
+    (owner._featLast || (owner._featLast = {}))[nm] = { at: r, feat: k };
+    var u = owner._featUse || (owner._featUse = {}), m = u[nm] || (u[nm] = {});
+    m[k] = (m[k] || 0) + 1;
+    if (opt.intro) { var it = owner._featIntro; if (!it || it.at !== r) it = owner._featIntro = { at: r, who: {} }; it.who[nm] = 1; }
+    if (!Array.isArray(owner.log)) owner._featCalls = r + 1;
+    if (A.featLog) A.featLog.push({ who: nm, feat: k, at: r, kind: opt.kind || '', intro: !!opt.intro });
+  };
+  /* 鍵の文の表（kind ごと）。無ければ null */
+  A.featLines = function (k, kind) {
+    if (!k) return null;
+    if (k === 'note') return A.NOTE_FL[kind] || A.NOTE_FL.look;
+    if (k.indexOf('look:') === 0) return A.LOOKS_FL[kind] || A.LOOKS_FL.look;
+    var T = A.FEAT_FL[kind] || A.FEAT_FL.look;
+    return T[k] || null;
+  };
+  /* 鍵の一文（{c}{o}{note}{feat} を埋める）。同じ結果の中で同じ文を続けない（attr-race.js の A.raceFresh があれば使う） */
+  A.featText = function (c, k, kind, pick, o, owner) {
+    var l = A.featLines(k, kind);
+    if (!l || !l.length) return '';
+    owner = ownerOf(owner);
+    var pf = owner && typeof owner === 'object' && A.raceFresh ? A.raceFresh(owner, pk0(owner, pick)) : pk0(owner, pick);
+    return fill(pf(l), { c: c.name, o: (o && o.name) || '相手', note: noteOf(c), feat: k.indexOf('look:') === 0 ? k.slice(5) : '' });
+  };
+  /* 一人分の特徴の一句（無ければ乱数を使わずに ''）。pick を渡さなければ先頭の文。o は相手（{o}）、owner は ctx か S（連続させないルール） */
+  A.flavor = function (c, kind, pick, o, owner) {
+    var k = A.featPick(owner, c, { kind: kind, pick: pick });
+    return k ? A.featText(c, k, kind, pick, o, owner) : '';
+  };
+  /* 二人の場面に差し込む一文（体格の差・二人の体の特徴・胸の中から一つ）。a＝主導する側（攻め）・b＝受ける側。owner は ctx か S。
      どちらも何も決めていなければ乱数を使わずに '' を返す（決めていない人の結果は、これまでと変わらない） */
-  A.pairLine = function (a, b, kind, pick) {
+  A.pairLine = function (a, b, kind, pick, owner) {
     if (!a || !b) return '';
     var c = [], sd = A.sizeDiff(a, b), v = { a: a.name, b: b.name };
     if (sd) {
-      if (kind === 'look') c.push(fill(pick(SIZE_FL.look), sd === 'a>b' ? { L: a.name, S: b.name } : { L: b.name, S: a.name }));
-      else c.push(fill(pick(SIZE_FL[kind === 'hold' ? 'hold' : 'touch'][sd === 'a>b' ? 'big' : 'small']), v));
+      if (kind === 'look') c.push({ t: fill(pick(SIZE_FL.look), sd === 'a>b' ? { L: a.name, S: b.name } : { L: b.name, S: a.name }) });
+      else c.push({ t: fill(pick(SIZE_FL[kind === 'hold' ? 'hold' : 'touch'][sd === 'a>b' ? 'big' : 'small']), v) });
     }
-    [a, b].forEach(function (x) { var f = A.flavor(x, kind, pick, x === a ? b : a); if (f) c.push(f); });
-    if (kind === 'touch' && A.bustLine) { var bl = A.bustLine(a, b, pick); if (bl) c.push(bl); }
+    [a, b].forEach(function (x) { var k = A.featPick(owner, x, { kind: kind, pick: pick, peek: true }); if (k) c.push({ k: k, x: x, o: x === a ? b : a }); });
+    if (kind === 'touch' && A.bustLine) { var bl = A.bustLine(a, b, pick); if (bl) c.push({ t: bl }); }
     if (!c.length) return '';
-    return c.length === 1 ? c[0] : pick(c);
+    var it = c.length === 1 ? c[0] : pick(c);
+    if (!it.k) return it.t;
+    A.featUse(owner, it.x, it.k, { kind: kind });
+    return A.featText(it.x, it.k, kind, pick, it.o, owner);
   };
-  /* tie-rel.js（ふだんの場面）から：二人のどちらかに種族・体格があれば、ときどき見た目の一文を添える */
+  /* tie-rel.js（ふだんの場面）から：二人のどちらかに体の特徴・目につく特徴・体格があれば、ときどき見た目の一文を添える */
   A.daily = function (ctx, a, b, r, cat) {
     if (!r || typeof r.text !== 'string' || !a || !b || !/^(?:bond|help)$/.test(r.cat || cat || '')) return r;
-    if (!A.sizeDiff(a, b) && !A.raceOf(a) && !A.raceOf(b)) return r;
+    if (!A.sizeDiff(a, b) && !A.hasLook(a) && !A.hasLook(b)) return r;
     if (ctx.rng() >= 0.35) return r;
-    var t = A.pairLine(a, b, 'look', function (l) { return ctx.pick(l); });
+    var t = A.pairLine(a, b, 'look', function (l) { return ctx.pick(l); }, ctx);
     if (t) r.text += t;
     return r;
   };
@@ -41040,6 +41219,8 @@
 /* 箱庭シミュレーター: 特殊役職（不死・吸血鬼）と発狂（全年齢版・R18版共通）
    死のある箱庭（ダンジョンRPG・ゾンビの街・邪神村RTA・吹雪の館の殺人・宇宙船漂流記）の住人の欄に「特殊役職」を足す。
    ・不死／吸血鬼：死んでも傷が塞がり、体力満タンで起き上がる。攫われて行方不明になることはある（そのときは戻らない）
+     蘇るかどうかは、特殊役職の「不死」か、住人の体の特徴の「不死」（attr.js の HK.Attr.isImmortal。吸血鬼は既定で持つ）で決める。
+     吸血鬼で体の特徴から不死を外した人は、血を吸うが蘇らない（p.spNoRev）。人間に不死を付けた人は特殊役職「不死」と同じ（両方で決めても一人分）
    ・精神が摩耗しすぎると発狂して動けなくなる。仲の良い人が落ち着かせるまで戻らず、そのあいだは死の出来事を引きやすい
    ・吸血鬼は三日に一度、人の血を吸う（ゾンビ・感染した人の血は吸えない）。好意のある相手を襲うか、同意を得て吸う。
      恋愛相手を固定している吸血鬼は、その人からしか吸えない。吸える相手がいない環境では、例外的に死ぬ
@@ -41075,7 +41256,7 @@
   SP.SCENES = ['rpg', 'zombie', 'jashin', 'yakata', 'ship'];
   SP.LABEL = { immortal: '不死', vampire: '吸血鬼' };
   /* 吸血鬼は特殊役職としては選ばず、住人の種族（attr.js の race = 'vampire'）で決める（2026-10-25）。古い保存の special = 'vampire' は ui.js が種族に移す */
-  SP.FIELD = { id: 'special', label: '特殊役職', auto: 'なし', options: [{ id: 'immortal', label: '不死（死んでも蘇る）' }], note: '吸血鬼は住人の設定の「種族」で選びます（死んでも蘇り、三日に一度血を吸います）' };
+  SP.FIELD = { id: 'special', label: '特殊役職', auto: 'なし', options: [{ id: 'immortal', label: '不死（死んでも蘇る）' }], note: '吸血鬼は住人の設定の「種族」で選びます（死んでも蘇り、三日に一度血を吸います）。住人の設定の「体の特徴」で不死を付けた人も、死んでも蘇ります' };
   /* 箱庭の欄に足す（箱庭がそろったあと、ui.js から一度） */
   SP.install = function () {
     SP.SCENES.forEach(function (id) {
@@ -41088,9 +41269,12 @@
   SP.setup = function (A, P, pcOf) {
     P.forEach(function (p) {
       var v = ((pcOf(p) || {}).pick || {}).special;
-      /* 吸血鬼は住人の種族（attr.js）で決める。不死を選んでいれば不死のまま。古い入力の special = 'vampire' も吸血鬼として扱う */
-      p.spec = v === 'immortal' ? v : (v === 'vampire' || (HK.Attr && HK.Attr.isVampire(p))) ? 'vampire' : '';
+      /* 吸血鬼（血を吸う）は住人の種族（attr.js）で決める。古い入力の special = 'vampire' も吸血鬼（蘇る）として扱う。
+         蘇るのは、特殊役職の不死か、体の特徴の不死（吸血鬼は既定で持つ。外した吸血鬼は蘇らない） */
+      var At = HK.Attr, vamp = v === 'vampire' || !!(At && At.isVampire(p)), imm = v === 'immortal' || v === 'vampire' || !!(At && At.isImmortal && At.isImmortal(p));
+      p.spec = vamp ? 'vampire' : imm ? 'immortal' : '';
       p.spRev = 0; p.mad = null; p.wear = 0;
+      if (vamp && !imm) p.spNoRev = true;
       if (p.spec === 'vampire') p.vamp = { due: 6 + A.rng() * 42, fed: 0, warn: false };
     });
   };
@@ -43264,12 +43448,14 @@
   hook();
 })();
 ;/* ==== js/attr-look.js ==== */
-/* 箱庭シミュレーター attr-look: 種族・体格の「見た目の一文」を、全箱庭のふだんの場面に添える（attr.js の HK.Attr.pairLine(…, 'look')）
+/* 箱庭シミュレーター attr-look: 体の特徴・目につく特徴・体格の「見た目の一文」を、全箱庭のふだんの場面に添える（attr.js の HK.Attr.pairLine(…, 'look')）
    ・エンジン型（合コン・出られない部屋・クラスメイト・無人島・ゾンビの街・オメガバース・バトルロワイヤル・裁判デスゲーム）：
        二人の出来事（cat が bond／help／romance）のあとに、2割の確率で一文を足す
    ・物語型（宇宙船・邪神村・吹雪の館・ダンジョンRPG・人狼・一人用の箱庭）：二人の穏やかな場面（看病・晩酌・休憩・協力・打ち明け話 など）のあとに、2.5割で足す。
        夜・媚薬・事件・推理・死などの札には足さない
-   ・二人とも種族も体格も決めていなければ乱数を使わずに何もしない（決めていない人の結果は、これまでと変わらない）
+   ・二人とも体の特徴（種族の既定を含む）も目につく特徴も体格も決めていなければ乱数を使わずに何もしない（決めていない人の結果は、これまでと変わらない）
+   ・特徴の文は ctx／S を owner に渡し、「連続させない」ルール（attr.js の HK.Attr.featPick）に従う。
+     owner を渡さない呼び出し（夜の場面など）のために、記録を書くたびに HK.Attr.curOwner をその ctx／S にする
    ・tie-rel.js の関係の場面は、これまでどおり HK.Attr.daily が受け持つ（二重に足さない）
    ・気分（HK.Emo）が強い人に種族があれば、look の一文の代わりに気分の種族文（attr-race.js の HK.Attr.raceMood）を足す
    ・執着の出来事（tag／why に「執着」「監禁」「束縛」「暴走」「囲い込み」）で、執着する側に種族があれば、2割で執着の種族文（HK.Attr.raceObsess）を足す */
@@ -43279,7 +43465,7 @@
   if (!A || !A.pairLine) return;
   var WHITE = /看病|治療|娯楽|共同作業|晩酌|当番|打ち明け話|想い|寄り添う|誓い|^関係$|休憩|協力|大浴場|一行|告白|酒の席|雑談|日常|食事|散歩|談笑|弔い|朝|昼|夕/;
   var BLACK = /夜|媚薬|凌辱|襲|殺|死|挿入|愛撫|キス|口で|さわる|発情|儀式|結末|後日談|継承|証言|推理|逮捕|処刑|投票|事件|隠蔽|工作|真相|喪失|恋敵|失恋|別れ|浮気|監禁|暴走|R18|夜這い|寸止め|絶頂/;
-  function has(a, b) { return !!(a && b && a !== b && (A.sizeDiff(a, b) || A.raceOf(a) || A.raceOf(b))); }
+  function has(a, b) { return !!(a && b && a !== b && (A.sizeDiff(a, b) || A.hasLook(a) || A.hasLook(b))); }
   function add(o, line) { if (!line) return; o.text = o.text.replace(/\s+$/, '') + line; o.look = true; }
   /* 気分の種族文（種族と強い気分のある人だけ。いなければ乱数を使わずに ''） */
   function moodLine(a, b, pk, owner) {
@@ -43302,6 +43488,12 @@
     if (!A.raceOk(who) || !tg || tg === who || tg.alive === false || who.alive === false) return null;
     return { c: who, o: tg };
   }
+  /* HK.Attr.curOwner は一回の実行の中だけで使う（前の実行の ctx／S を持ち越さない。同じシードで同じ結果にするため） */
+  if (HK.simulate && !HK.simulate._attrLook) {
+    var sim0 = HK.simulate;
+    HK.simulate = function () { var prev = A.curOwner; A.curOwner = null; try { return sim0.apply(this, arguments); } finally { A.curOwner = prev; } };
+    HK.simulate._attrLook = true;
+  }
   /* エンジン型 */
   if (HK.Ctx && HK.Ctx.prototype.say && !HK.Ctx.prototype.say._attrLook) {
     var cs0 = HK.Ctx.prototype.say;
@@ -43311,9 +43503,10 @@
         if (ob) { if (ctx.rng() < 0.2) add(o, A.raceObsess(ob.c, ob.o, A.raceFresh(ctx, pk))); }
         else if (o && !o.look && !o.sex && !o.story && typeof o.text === 'string' && o.text.length >= 20 && /^(?:bond|help|romance)$/.test(o.cat || '') && (o.kind || 'event') === 'event' && o.actors && o.actors.length === 2) {
           var a = o.actors[0], b = o.actors[1];
-          if (has(a, b) && ctx.rng() < 0.2) add(o, moodLine(a, b, pk, ctx) || A.pairLine(a, b, 'look', pk));
+          if (has(a, b) && ctx.rng() < 0.2) add(o, moodLine(a, b, pk, ctx) || A.pairLine(a, b, 'look', pk, ctx));
         }
       } catch (e) { /* 飾りが失敗しても出来事は出す */ }
+      A.curOwner = this;
       return cs0.apply(this, arguments);
     };
     HK.Ctx.prototype.say._attrLook = true;
@@ -43329,9 +43522,10 @@
         if (ob) { if (S.rng() < 0.2) add(o, A.raceObsess(ob.c, ob.o, A.raceFresh(S, pk))); }
         else if (S && o && !o.look && typeof o.text === 'string' && o.text.length >= 20 && o.actors && o.actors.length === 2 && typeof o.tag === 'string' && WHITE.test(o.tag) && !BLACK.test(o.tag) && !BLACK.test(o.text.slice(0, 40))) {
           var a = acts[0], b = acts[1];
-          if (has(a, b) && S.rng && S.rng() < 0.25) add(o, moodLine(a, b, pk, S) || A.pairLine(a, b, 'look', pk));
+          if (has(a, b) && S.rng && S.rng() < 0.25) add(o, moodLine(a, b, pk, S) || A.pairLine(a, b, 'look', pk, S));
         }
       } catch (e) { /* 同上 */ }
+      if (S && typeof S === 'object') A.curOwner = S;
       return ss0.apply(this, arguments);
     };
     HK.Story.say._attrLook = true;
@@ -62133,10 +62327,15 @@
       title: '体と設定',
       lead: '住人そのものの見た目・性格です。どの箱庭でも同じに効きます（決めていない欄は、これまでどおり）。',
       sections: [
-        { h: '体格・種族', items: [
-          '二人の体格の差で、見上げる・抱き上げるといった文が変わります。種族は耳・尾・牙・翼などの文の飾りになります。',
+        { h: '体格・種族・体の特徴', items: [
+          '二人の体格の差で、見上げる・抱き上げるといった文が変わります。',
+          '種族を選ぶと、その種族の体の特徴が文の飾りになります（獣人は獣の耳・尻尾、魔族は角・尻尾、吸血鬼は牙・冷たい肌・光る瞳・不死、天使は翼、幽霊は体が透けている・冷たい肌、アンドロイドは機械の体）。',
+          '**体の特徴** … 「種族どおり」のチェックを外すと、種族によらず、獣の耳・尻尾・牙・角・翼・体が透けている・冷たい肌・光る瞳・機械の体（駆動音）・不死を一つずつオン／オフできます（魔族の角だけ、人間に角と尻尾、など）。何も選ばなければ、特徴の文は出ません。',
+          '**アンドロイド** … 人工の体を持つ種族です（人形・機械の体も含みます）。駆動音・関節の音・変わらない体温・冷却の排気・目の光などで書かれます。ほかの住人と同じ大人として扱い、恋愛もほかの住人と同じように起こります。',
+          '**目につく特徴** … 目・髪・髪飾り・入れ墨など、目を引くものを読点（、）で区切って3つまで書けます（1つ12文字まで。例：金色の目、左目の下の泣きぼくろ、腕の入れ墨）。地の文と初対面の場面で触れられます。',
           '全箱庭の二人の穏やかな場面（絆・助け合い・看病・晩酌・休憩など）に、見た目の一文が付きます。夜・事件・推理・死などの場面には付きません。',
-          '死のある箱庭（ゾンビの街・邪神村RTA・吹雪の館・宇宙船漂流記・ダンジョンRPG）では、種族の吸血鬼は死んでも蘇り、三日に一度人の血を吸います（特殊役職の「不死」と同じ蘇り方）。吸血鬼は特殊役職ではなく、この種族で選びます。'
+          '体の描写が続かないように、体の特徴・目につく特徴の文は一つの出来事に一文まで、同じ人の文は前の2つの出来事に出ていれば出しません。同じ特徴が続かないよう、順に回ります。',
+          '死のある箱庭（ゾンビの街・邪神村RTA・吹雪の館・宇宙船漂流記・ダンジョンRPG）では、体の特徴に**不死**がある人は死んでも蘇ります（特殊役職の「不死」と同じ蘇り方。両方で決めても一人分）。吸血鬼は三日に一度人の血を吸います。吸血鬼から不死を外すと、血は吸いますが蘇りません。吸血鬼は特殊役職ではなく、この種族で選びます。'
         ] },
         { h: '心の強さ', items: [
           '催眠の箱庭で、暗示のかかりやすさが変わります（弱いとかかりやすく、強いとかかりにくい）。',
