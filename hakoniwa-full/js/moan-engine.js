@@ -1,7 +1,10 @@
 /* 箱庭シミュレーター（R18版のみ）: 喘ぎの辞書のエンジン（HK.Moan）
    ■ 考え方
      ・言葉のない喘ぎ（短い声・吐息・鼻声・リズム）は口調に依らず全員で使い回す（moan-dict.js の HK.MOAN_SHARED。利用者が書き換えられる）
-     ・言葉のある喘ぎは「態度9種で書いた基盤（moan-said.js）→ 台詞と同じ口調の変換」で作る。口調ごとに書いてある喘ぎ（ero-moan-tone.js）があれば優先する
+     ・言葉のある喘ぎは態度9種で書いた基盤（moan-said.js）を、口調の色を薄めて出す（咄嗟の声は素に戻る）：
+       台詞の口調の変換（voice.js）は通さず（「」の頭に \u2060 の印）、一人称・二人称の置き換えだけ通す。敬語の基盤はくだけた形（K）に崩す（「やめて、ください」→「やめて」）。
+       口調の辞書は、まれ（ctx.toneRate、既定 M.TONE_RATE＝0.25）に文末の語尾だけ当てる（語彙・前置き・笑い・効果は当てない）。
+       口調ごとに書いた喘ぎ（ero-moan-tone.js）は基盤の後ろに下げ、ときどき（ctx.toneMoanRate、既定 M.TONE_MOAN_RATE＝0.25）だけ使う
      ・場面（乗り気・嫌がる・声を抑える・激しく突かれる・懇願・キス・口でしている・口でされる・攻め）× 段階の鍵で引く。鍵の一覧は moan-dict.js の先頭
    ■ 引き方
      HK.Moan.pick(S, who, 鍵, ctx)   … 鍵（'w1' など）で一つ選ぶ。ctx: { force 嫌がっている, deep 奥, late 後半, oral 口でされている, top 相手, p 部位の呼び方, talk 言葉の割合(0-1) }
@@ -9,7 +12,8 @@
      HK.Moan.say(S, who, 場面, o, 元の表)（箱庭ごとの喘ぎ・小説調の場面から）… 場面（始まり・最中・果てる・攻め・キス・口）と o（嫌がる・声を殺す・小説調）から鍵を選ぶ
      本文の {m0}〜{m2} はこれまでどおり。{m:w1} {m:p} {m:k} のように鍵でも差し込める（HK.Ero.fill）
    ■ 優先順位
-     住人ごとの上書き ＞ 利用者の口調の喘ぎ ＞ 口調ごとの喘ぎ（ero-moan-tone.js） ＞ 利用者の態度の上書き ＞ 態度の基盤（moan-said.js・ero-kit.js の表） ＞ 共通（利用者の上書き ＞ moan-dict.js）
+     住人ごとの上書き ＞ 利用者の口調の喘ぎ ＞ 利用者の態度の上書き ＞ 態度の基盤（moan-said.js。ときどき口調ごとの喘ぎ ero-moan-tone.js） ＞ 口調ごとの喘ぎ（ときどき）・ero-kit.js の表 ＞ 共通（利用者の上書き ＞ moan-dict.js）
+     利用者の辞書の行は、書いたとおり（これまでどおり台詞の口調の変換を通す）
    ■ 利用者の辞書（高度設定「喘ぎの辞書」。HK.Moan.setUser(文字列)）
      [喘ぎ 共通 乗り気 1]            ← 共通の、乗り気の1段階目（短い喘ぎ）を置き換える。1行に1つ（「|」で区切って複数も可）
      [喘ぎ 共通 乗り気 1 追加]       ← 置き換えずに足す
@@ -44,7 +48,7 @@
   var LEGACY = { r0: 's0', h1: 's0', w1: 's1', r2: 's1', w2: 's2', r3: 's2' };
   var PART_DEF = { proud: 'ちんぽ', tsun: 'ちんぽ', free: 'ちんぽ', cool: 'ちんぽ' };
 
-  var M = HK.Moan = { MODES: MODES, user: null };
+  var M = HK.Moan = { MODES: MODES, user: null, TONE_RATE: 0.25, TONE_MOAN_RATE: 0.25 };
   M.keys = function () { var out = []; Object.keys(MODES).forEach(function (m) { MODES[m].stages.forEach(function (s, i) { out.push({ key: m + i, mode: m, stage: i, label: MODES[m].label + '・' + s }); }); }); return out; };
   M.label = function (key) { var m = MODES[key.charAt(0)], i = +key.slice(1); return m && m.stages[i] ? m.label + '・' + m.stages[i] : key; };
 
@@ -69,19 +73,74 @@
   function fallenOf(who) { return !!(who && (who.fallen || who.fell || (who.corrupt || 0) >= 75)); }
   function count(S, who) { var st = S && S.rng ? S : {}; var m = st._eroCnt = st._eroCnt || {}, k = (who && who.name) || '?'; return (m[k] = (m[k] || 0) + 1); }
 
-  /* 言葉のある候補（優先順：住人 ＞ 利用者の口調 ＞ 口調の喘ぎ ＞ 利用者の態度 ＞ 態度の基盤 ＞ 従来の態度の表） */
-  function wordPool(who, key) {
+  /* 言葉のある候補（優先順：住人（pick で先に見る） ＞ 利用者の口調 ＞ 利用者の態度 ＞ 態度の基盤（ときどき口調の喘ぎ） ＞ 口調の喘ぎ（ときどき）・従来の態度の表）。
+     { list, src } を返す。src … 'user' 利用者の行（書いたまま） ／ 'tone' 口調ごとの喘ぎ（書き下ろし。口調の味つき） ／ 'base' 素の言葉（口調の色を薄めて出す） */
+  function wordPool(S, who, key, ctx) {
     var U = M.user, ps = psOf(who), tone = toneOf(who), lg = LEGACY[key];
-    if (U && U.tone[tone] && U.tone[tone][key]) return U.tone[tone][key];
-    var TM = E.TONE_MOAN && E.TONE_MOAN[tone];
-    if (TM && lg && TM[lg] && TM[lg].length) return TM[lg];
-    if (U && U.persona[ps] && U.persona[ps][key]) return U.persona[ps][key];
+    if (U && U.tone[tone] && U.tone[tone][key]) return { list: U.tone[tone][key], src: 'user' };
+    if (U && U.persona[ps] && U.persona[ps][key]) return { list: U.persona[ps][key], src: 'user' };
+    var TM = E.TONE_MOAN && E.TONE_MOAN[tone], tl = TM && lg && TM[lg] && TM[lg].length ? TM[lg] : null;
+    var tr = ctx && ctx.toneMoanRate != null ? ctx.toneMoanRate : M.TONE_MOAN_RATE;
+    if (tl && rand(S) < tr) return { list: tl, src: 'tone' };
     var SD = HK.MOAN_SAID && HK.MOAN_SAID[ps];
-    if (SD && SD[key] && SD[key].length) return SD[key];
+    if (SD && SD[key] && SD[key].length) return { list: SD[key], src: 'base' };
     var LM = E.MOAN && E.MOAN[ps];
-    if (LM && lg) return LM[{ s0: 0, s1: 1, s2: 2 }[lg]] || null;
-    return null;
+    if (LM && lg && LM[{ s0: 0, s1: 1, s2: 2 }[lg]]) return { list: LM[{ s0: 0, s1: 1, s2: 2 }[lg]], src: 'base' };
+    return tl ? { list: tl, src: 'tone' } : null;
   }
+  /* ---------- 口調の色を薄める（咄嗟の声は素に戻る） ---------- */
+  var NOTONE = '\u2060';   /* 「」の頭のこの印で、voice.js の台詞の言い換えを通さない */
+  var TL = '(?=[…‥っッ♡！？!?。、　\\s〜ー]|$)';
+  function kr(src, to) { return [new RegExp(src + TL, 'g'), to]; }
+  /* 敬語の基盤をくだけた形（K）に。長いもの・特別なものから */
+  var KFORM = [
+    kr('そのようなお顔を、?なさらないで(?:ください)?', 'そんな顔、しないで'), kr('(?:お願い|おねがい)、?(?:いたします|します|です)', 'おねがい'),
+    kr('お、おやめ、?(?:ください|くださ)', 'や、やめて'), kr('おやめ、?(?:ください|くださ)', 'やめて'), kr('もっと、?ください', 'もっと、して'), kr('([てで])、?ください(?:まし)?', '$1'),
+    kr('く、ください', 'ちょ、ちょうだい'), kr('ください', 'ちょうだい'), kr('申し訳、?ありません', 'ごめん'), kr('す、すみません', 'ご、ごめん'), kr('すみません', 'ごめん'),
+    kr('失礼、?いたしました', 'ごめん'), kr('いけません', 'だめ'), kr('ちが、?います', 'ちが、う'), kr('当たって、?い?ます', '当たって、る'), kr('もちません', 'もたない'),
+    kr('止まれません', '止まれない'), kr('とまりません', 'とまらない'), kr('足りません', '足りない'), kr('出ます', '出る'), kr('いき、?ます', 'いく'), kr('イきます', 'イく'),
+    kr('イっちゃいます', 'イっちゃう'), kr('イってしまいます', 'イっちゃう'), kr('達して、?しまいます', 'イっちゃう'), kr('します', 'する'), kr('お上手、?です', 'じょうず'),
+    kr('よい、?です', 'いい'), kr('かわいらしい、?ですね', 'かわいい、ね'), kr('(、?)ですね', '$1だね'), kr('、?です', '')
+  ];
+  var KEIGO = /(?:ですね|です|ます|ません|ませ|ください|くださ|ござ|いたし|いただ|(?:^|[^ん])なさい)(?=[…‥っッ♡！？!?。、　\s〜ー]|$)|なさらな|申し訳|お控え/;
+  function kForm(s) {
+    if (!KEIGO.test(s)) return s;
+    var s0 = s;
+    KFORM.forEach(function (r) { s = s.replace(r[0], r[1]); });
+    /* 語尾を外して「……」が重なったら一つに（元からの重なりは残す） */
+    return /[…‥]{3,}/.test(s0) ? s : s.replace(/[…‥]{3,}/g, '……');
+  }
+  /* 文末の語尾だけ口調の辞書を当てる（tone-engine.js の辞書の [文末] だけを使う。語彙・規則・前置き・笑い・効果は当てない）。最後の区切り（全角空白）の後ろだけ */
+  var END_DICT = {};
+  function endsOnly(s, who) {
+    var T = HK.Tone, tone = toneOf(who), d = T && T.dictOf ? T.dictOf(tone) : null;
+    if (!d || !d.ends || !d.ends.length || !T.apply) return s;
+    var md = END_DICT[tone];
+    /* 1文字の項目（よ=で・な=のう・だ=じゃ など）は、喘ぎの切れ端（「こんな」「やだ」）にも当たって崩れるので使わない */
+    if (!md || md.src !== d) md = END_DICT[tone] = { src: d, base: d.base, ends: d.ends.filter(function (e) { return e[0].replace(/[？?]$/, '').length >= 2; }), words: [], rules: {}, effects: {} };
+    if (!md.ends.length) return s;
+    var cut = s.lastIndexOf('　'), head = cut >= 0 ? s.slice(0, cut + 1) : '', tail = s.slice(cut + 1);
+    try { return head + T.apply(tail, md, who); } catch (e) { return s; }
+  }
+  /* 一人称・二人称だけそろえる（基盤には書いていないが、書いたときのため。「私」「あなた」） */
+  function persons(s, who) {
+    var V = HK.Voice;
+    if (!V || !who) return s;
+    if (/私/.test(s) && V.replaceFP) s = V.replaceFP(s, who);
+    if (/あなた/.test(s) && V.applyYou) { var yw = who.you || (HK.toneYou ? HK.toneYou(toneOf(who), who.gender) : ''); if (yw) s = V.applyYou(s, yw); }
+    return s;
+  }
+  /* 素の言葉の喘ぎを仕上げる：（まれに）文末の語尾だけ口調 → 一人称・二人称 → 台詞の言い換えを通さない印 */
+  function plainOut(S, who, s, ctx) {
+    if (!s || s.charAt(0) === NOTONE) return s;
+    var r = ctx && ctx.toneRate != null ? ctx.toneRate : M.TONE_RATE;
+    if (r > 0 && rand(S) < r) s = endsOnly(s, who);
+    return NOTONE + persons(s, who);
+  }
+  M.kForm = kForm;
+  /* 箱庭の本文へ出す喘ぎ（E.moan・{m:鍵}・HK.Moan.say）は、言葉のない声も台詞の言い換えを通さない（無口の「短くする」などで崩れないように）。
+     利用者の辞書の行（M.lastSrc＝'user'）だけは、これまでどおり言い換えを通す。HK.Moan.pick を直に呼ぶ所（キスの声 k0 など）は、作風（♡を残すか）が分からないので印を付けない */
+  function bare(s) { return s && s.charAt(0) !== NOTONE && M.lastSrc !== 'user' ? NOTONE + s : s; }
   function sharedPool(key) { var U = M.user, SH = HK.MOAN_SHARED || {}; if (U && U.shared[key]) return U.shared[key]; return SH[key] || null; }
   /* 部位の呼び方（{p}）を埋める。相手に男性器がなければ、その行は使わない */
   function fillPart(list, who, ctx) {
@@ -122,15 +181,19 @@
     if (!MODES[key.charAt(0)] || !MODES[key.charAt(0)].stages[+key.slice(1)]) key = 'w0';
     var U = M.user, ps = psOf(who), out = null, tag = (who && who.name) + '.' + key;
     /* 住人ごとの上書き */
+    M.lastSrc = 'user';
     if (U && who && who.name && U.who[who.name] && U.who[who.name][key]) out = fresh(S, fillPart(U.who[who.name][key], who, ctx), tag);
     if (out == null || out === '') {
+      M.lastSrc = 'shared';
       var wantWords = WORDS_ONLY[key] ? true : MIX[key] ? rand(S) < (ctx.talk != null ? ctx.talk : (MIX[key] < 1 ? MIX[key] : (TALK[ps] || 0.5))) : false;
-      var wp = wantWords ? wordPool(who, key) : null;
-      if (wp) wp = fillPart(wp, who, ctx);
-      if (wp && wp.length) out = fresh(S, wp, tag);
-      else if (key === 'p0' || key === 'p1') out = sharedPool(key) && rand(S) < 0.5 ? fresh(S, sharedPool(key), tag) : M.pound(S, who, key === 'p1', !ROUGH[ps] || fallenOf(who));
+      var wp0 = wantWords ? wordPool(S, who, key, ctx) : null, wp = wp0 ? fillPart(wp0.list, who, ctx) : null;
+      /* 素の言葉は敬語を崩す（崩しきれない行は、崩せる行があれば使わない） */
+      if (wp && wp0.src === 'base') { wp = wp.map(kForm); var wk = wp.filter(function (x) { return !KEIGO.test(x); }); if (wk.length) wp = wk; }
+      if (wp && wp.length) { M.lastSrc = wp0.src; out = fresh(S, wp, tag + '.' + wp0.src); if (wp0.src === 'base') out = plainOut(S, who, out, ctx); }
+      else if (key === 'p0' || key === 'p1') { var pp = sharedPool(key); if (pp && U && U.shared[key]) M.lastSrc = 'user'; out = pp && rand(S) < 0.5 ? fresh(S, pp, tag) : (M.lastSrc = 'shared', M.pound(S, who, key === 'p1', !ROUGH[ps] || fallenOf(who))); }
       else {
         var sp = sharedPool(key);
+        if (sp && U && U.shared[key]) M.lastSrc = 'user';
         if (!sp || !sp.length) {
           /* 言葉だけの鍵で候補がないとき（部位の行が使えない など）は近い鍵に */
           var alt = { b1: 'b0', b0: 'w1', b2: 'w1', w3: 'w2', r0: 'r1', t3: 't1', t4: 't1', t5: 't1' }[key];
@@ -142,7 +205,7 @@
     if (!out) return '……っ';
     if (dakuOk(S, who, key, ctx)) {
       var TM = E.TONE_MOAN && E.TONE_MOAN[toneOf(who)];
-      if (TM && TM.daku && TM.daku.length && (key === 'w2' || key === 'r3') && rand(S) < 0.6) return fresh(S, TM.daku, tag + '.daku');
+      if (TM && TM.daku && TM.daku.length && (key === 'w2' || key === 'r3') && rand(S) < 0.6) { M.lastSrc = 'tone'; return fresh(S, TM.daku, tag + '.daku'); }
       out = dakuize(S, out);
     }
     return out;
@@ -158,8 +221,8 @@
       else if (st === 1) key = cx.force && SOFT[ps] && rand(S) < 0.35 ? 't5' : rand(S) < 0.55 ? 't3' : 't1';
       else key = cx.force && SOFT[ps] && rand(S) < 0.25 ? 't5' : 't4';
       /* 従来の主導権の喘ぎ（ero-kit.js の DOM）も候補に残す：荒い／やわらかい */
-      if (st < 2 && rand(S) < 0.35 && moan0) return moan0.call(this, S, who, st, ctx);
-      return M.pick(S, who, key, cx);
+      if (st < 2 && rand(S) < 0.35 && moan0) return plainOut(S, who, kForm(moan0.call(this, S, who, st, ctx)), cx);
+      return bare(M.pick(S, who, key, cx));
     }
     if (cx.oral) key = cx.force ? 'l1' : 'l0';
     else if (cx.force) {
@@ -173,7 +236,7 @@
       else key = late && rand(S) < 0.3 ? 'w3' : 'w2';
       if (cx.deep && st > 0 && rand(S) < 0.3) key = fal || late ? 'p1' : 'p0';
     }
-    return M.pick(S, who, key, cx);
+    return bare(M.pick(S, who, key, cx));
   };
   /* 本文の {m:鍵} を埋める（{m0}〜{m2}・{s:…} は ero-kit.js の E.fill がそのまま） */
   var fill0 = E.fill;
@@ -182,7 +245,7 @@
       if (k.length === 1) k += '0';
       var cx = E.ctxOf(all, at);
       if (k === 'p') k = cx.force || fallenOf(who) ? 'p1' : 'p0';
-      return M.pick(S, who, k, cx);
+      return bare(M.pick(S, who, k, cx));
     });
     return fill0.call(this, S, t, who);
   };
@@ -224,7 +287,7 @@
     return !!((nm && U.who[nm] && U.who[nm][key]) || (U.tone[tone] && U.tone[tone][key]) || (U.persona[ps] && U.persona[ps][key]) || U.shared[key]);
   };
   /* 小説調：♡を落とす（空白の重なりも詰める） */
-  M.plain = function (s) { var t = String(s || '').replace(/♡+/g, '').replace(/[ 　]{2,}/g, '　').replace(/^[ 　]+|[ 　]+$/g, ''); return t || '……っ'; };
+  M.plain = function (s) { var t = String(s || ''), mk = t.charAt(0) === NOTONE ? NOTONE : ''; t = t.replace(/\u2060/g, '').replace(/♡+/g, '').replace(/[ 　]{2,}/g, '　').replace(/^[ 　]+|[ 　]+$/g, ''); return mk + (t || '……っ'); };
   var RECV_KIND = { start: 1, mid: 1, climax: 1, lick: 1 };
   M.say = function (S, who, kind, o, old) {
     o = o || {};
@@ -237,7 +300,7 @@
     if (o.novel && old && !M.userHas(who, key) && rand(S) < 0.4) { var no = useOld(); if (no) return no; }
     var cx = { force: !!o.force, deep: !!o.deep, late: !!o.late, top: o.top || null, oral: kind === 'lick' };
     if (o.talk != null) cx.talk = o.talk; else if (o.novel) cx.talk = 0.6;
-    var out = M.pick(S, who, key, cx);
+    var out = bare(M.pick(S, who, key, cx));
     return o.novel ? M.plain(out) : out;
   };
 
@@ -311,7 +374,7 @@
     R.int = function (m) { return Math.floor(R() * m); };
     var S = { rng: R }, who = { name: '見本', persona: persona || 'gentle', tone: tone || persona || 'gentle', eg: null };
     var out = [];
-    for (var i = 0; i < (n || 4); i++) out.push(M.pick(S, who, key, { top: { gender: 'm' }, talk: WORDS_ONLY[key] ? 1 : MIX[key] ? 0.5 : 0 }));
+    for (var i = 0; i < (n || 4); i++) out.push(M.pick(S, who, key, { top: { gender: 'm' }, talk: WORDS_ONLY[key] ? 1 : MIX[key] ? 0.5 : 0 }).replace(/\u2060/g, ''));
     return out;
   };
   /* 保存してある辞書を読む（ui-adv.js が HK.store の adv.moan に入れる） */
