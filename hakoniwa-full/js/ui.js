@@ -706,9 +706,10 @@
       return '<label class="scen' + (adult ? ' adult' : '') + (id === S.scenId ? ' on' : '') + '" title="' + esc(full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (id === S.scenId ? ' checked' : '') + '>' +
         '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div>' + (HK.ScenTags ? HK.ScenTags.html(id, esc) : '') + '<div class="d">' + esc(cd) + '</div><div class="note">' + esc(cardNote(s.note)) + '</div>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</label>';
     }).join('');
-    /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url） */
-    if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<a class="scen r18link" href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">' +
-      '<div class="k">BOOTHで頒布中・18歳以上向け</div><div class="n">R-18版 ↗</div><div class="d">エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。</div></a>';
+    /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url＝BOOTH・CONF.noteUrl＝note） */
+    if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<div class="scen r18link">' +
+      '<div class="k">BOOTH・noteで頒布中・18歳以上向け</div><div class="n">R-18版</div><div class="d">エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。</div>' +
+      '<div class="r18buy"><a href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (HK.CONF.noteUrl ? '<a href="' + esc(HK.CONF.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '') + '</div></div>';
     var derived = (scen.derived || []).map(function (k) { return '<span class="chip" title="' + esc(HK.TRAIT_SRC[k]) + '">' + esc(HK.TRAIT_NAME[k]) + '<span class="nums">' + esc(HK.TRAIT_SRC[k]) + '</span></span>'; }).join('');
     var extra = (scen.stats || []).map(function (s) { return '<span class="chip" title="' + esc(s.desc) + '">' + esc(s.label) + '</span>'; }).join('') + (scen.weapons ? '<span class="chip">支給武器</span>' : '');
     var sexCols = S.scenId === 'goukon' || S.scenId === 'omega';

@@ -11,6 +11,8 @@
   CONF.boothUrl = CONF.boothUrl || 'https://bab666.booth.pm';
   /* R-18版の販売ページ。全年齢版の箱庭一覧の「R-18版」欄からここへ飛ぶ。商品ページができたらURLを書き換える */
   CONF.r18Url = CONF.r18Url || 'https://bab666.booth.pm/items/9016418';
+  /* 同じR-18版の note の販売ページ。「R-18版」欄に BOOTH と並べて出す */
+  CONF.noteUrl = CONF.noteUrl || 'https://note.com/unimi_note/n/n6fe17bec9d5a';
   var TAG = '#箱庭シミュレーター';
   var FONT_D = '"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif';
   var FONT_B = '"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo","Noto Sans JP",sans-serif';
