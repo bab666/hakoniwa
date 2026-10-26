@@ -2,7 +2,7 @@
    固定外の相手との「体だけの場面」の共通部品（全箱庭。エンジン型 ctx と物語型 S のどちらでも使える）
    ・HK.State.freeSex(ctx, a, b)：体だけの場面にしてよい組か。a か b が「誰とでも可」で固定外の相手（HK.lockSexOnly）で、
        受け攻めと恋愛対象の性別（HK.Pos.okSex）・両方 R18 に参加（全年齢版・全年齢モードでは常に偽）・その場にいる（HK.State.pairSex）、
-       体の関係の縛り（HK.sexBlocked：恋愛・R18にしない相手・同一人物・恋人だけ・〇〇だけ・一途）を通る組。
+       体の関係の縛り（HK.sexBlocked：恋愛・R18にしない相手・同じ人の恋人どうし・恋人だけ・〇〇だけ・一途。同一人物は縛らない）を通る組。
        恋愛相手の固定（HK.canLove）は見ない（体だけの関係なので）。家族の「恋愛：なし」（エンジン型は ctx.pair().kin、物語型は ng）・先生・未成年は止める
    ・HK.FreeSex.factor(ctx, a, b)：固定した恋人がその場にいれば 0.3（起きにくくする）
    ・HK.FreeSex.lead(ctx, a, b)：導入の一文。「恋ではない」ことが分かる文（「誰とでも可」の人の態度9種 × 3文以上）
@@ -40,10 +40,13 @@
 
   var F = HK.FreeSex = {};
   /* 固定した恋人（その場にいる人）。いなければ null */
+  /* 恋愛相手の固定は複数人を持てる（HK.locks）。notI がその中にいれば固定外ではないので null。いれば、その場にいる最初の一人 */
   F.loverOf = function (ctx, x, notI) {
-    if (!x || !HK.lockAny(x) || x.lock === notI) return null;
-    var y = people(ctx)[x.lock];
-    return y && y !== x && HK.State.here(y) ? y : null;
+    if (!x || !HK.lockAny(x)) return null;
+    var L = HK.locks(x), P = people(ctx);
+    if (L.indexOf(notI) >= 0) return null;
+    for (var k = 0; k < L.length; k++) { var y = P[L[k]]; if (y && y !== x && HK.State.here(y)) return y; }
+    return null;
   };
   F.factor = function (ctx, a, b) {
     return F.loverOf(ctx, a, b.i) || F.loverOf(ctx, b, a.i) ? 0.3 : 1;

@@ -118,7 +118,7 @@
     if (r18No && !ngP) { ngP = true; tieNL = true; nlWhy = r18No.name + 'はR18に参加しない'; }
     /* 性行為の相手を別の人に固定している（または固定した相手がこの箱庭にいない）：体の関係にならない（pos.js の向きの判定で clash になる） */
     var sexP = !ngP && !!(HK.sexNG && HK.sexNG(A, B)), sexWho = sexP ? (HK.sexLockOut(A, B) ? A : B) : null;
-    var sexWhy = sexP ? sexWho.name + 'は、' + W_SEXL + (input.chars[sexWho.sexLock] ? input.chars[sexWho.sexLock].name + 'に' : 'ほかの人に') + '決めている' : '';
+    var sexWhy = sexP ? sexWho.name + 'は、' + W_SEXL + (function () { /* 性行為の相手の固定は複数人を持てる（sexLocks。engine.js の HK.charFlags） */ var nm = (sexWho.sexLocks || (typeof sexWho.sexLock === 'number' ? [sexWho.sexLock] : [])).map(function (k) { return input.chars[k] && input.chars[k].name; }).filter(Boolean); return nm.length ? nm.join('・') + 'に' : 'ほかの人に'; })() + '決めている' : '';
     if (ngP) plotter = null;
     /* 拘束 */
     var bind = env.bind === 'random' ? rng.pick(['both', 'one', 'none', 'both']) : env.bind;
@@ -334,7 +334,7 @@
           continue;
         }
         /* 恋愛相手を別に決めている人は、ほとんど手を出さない */
-        if (HK.lockOut(a, b)) { urge -= 0.45; if (urge > 0.3 && !a.lockSaid) { a.lockSaid = true; ST.sayB(S, { actors: [a, b], tag: '心に決めた人', text: ST.fmt(pk(LK.LOCKED || ['{a}は{b}の肩を押し返した。「……ごめん。心に決めた人がいるから」']), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を決めている（' + b.name + 'ではない）', mag: 18 }); continue; } }
+        if (HK.lockOut(a, b)) { urge -= 0.45; if (urge > 0.3 && !a.lockSaid) { a.lockSaid = true; ST.sayB(S, { actors: [a, b], tag: '心に決めた人', text: ST.fmt(pk(LK.LOCKED || ['{a}は{b}の肩を押し返した。「……ごめん。心に決めた人がいるから｜……すまない。心に決めた人がいる｜……ごめんなさい。心に決めた人がいるんです」']), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を決めている（' + b.name + 'ではない）', mag: 18 }); continue; } }
         if (urge < 0.36 + rng() * 0.3) continue;
         /* 受け攻め：向きの決まらない二人は、手を出さずに耐える */
         if (clash) { holdClash(a, b); continue; }

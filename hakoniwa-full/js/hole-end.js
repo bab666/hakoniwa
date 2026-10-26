@@ -247,8 +247,9 @@
   function per(h) { return h && PERS.indexOf(h.persona) >= 0 ? h.persona : 'gentle'; }
   function lv(S) { var X = HK.Lewd; return X && X.conf('hole') && S && S.env ? X.lv(S.env) : 'mid'; }
   function ero(S) { return !!(HK.Ero && HK.Ero.on && HK.Ero.on(S)); }
-  /* 体の組：top＝攻めに回った人（男性の体）、topf＝攻めに回ったが男性器のない人（女性の体で、跨って搾り取った側）、f／m＝受けた人の体 */
-  function bodyOf(h, topMe) { var P = HK.Pos; if (!P) return topMe ? 'top' : 'm'; return topMe ? (P.hasM(h) ? 'top' : 'topf') : P.isF(h) ? 'f' : P.hasM(h) ? 'm' : 'none'; }
+  /* 体の組：top＝攻めに回った人（男性の体）、topf＝攻めに回ったが男性器のない人（女性の体で、跨って搾り取った側）、f／m＝受けた人の体。
+     topf の文は女性の体（濡れる・膝を閉じる）で書いてあるので、女性の体でない「なし」の人（男性で性器なし）は none（穏やかな文）に寄せる */
+  function bodyOf(h, topMe) { var P = HK.Pos; if (!P) return topMe ? 'top' : 'm'; return topMe ? (P.hasM(h) ? 'top' : P.isFBody(h) ? 'topf' : 'none') : P.isF(h) ? 'f' : P.hasM(h) ? 'm' : 'none'; }
   /* 性器「なし」の人（none）は体の文を出さず、穏やかな文（soft）に寄せる */
   /* 助けた人との体の組（mf＝男性が女性を／ff／fm＝女性が男性を／mm） */
   function pairOf(h, b) {
