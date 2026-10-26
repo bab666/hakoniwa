@@ -72,6 +72,7 @@ js/tone-long.js
 js/tone-new2.js
 js/tone-new2-rows.js
 js/engine.js
+js/sib-word.js
 js/emotion.js
 js/content.js
 js/mood-dial.js

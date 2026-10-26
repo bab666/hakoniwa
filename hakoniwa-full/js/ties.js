@@ -447,9 +447,13 @@
   };
   /* 血縁（きょうだい・親子）で恋愛が起きない関係か。関係ごとに「恋愛：あり」（t.love === 'ok'）にもできる */
   /* 関係の表示名（夫婦・元夫婦・義理のきょうだいは、開いたあとの関係ではなく元の名前で） */
-  HK.tieLabel = function (t) {
+  /* きょうだいの関係は、二人の性別・年齢で「姉弟」「兄妹（庇護）」「義理の姉妹」のように言い換える（sib-word.js。分からなければ元の名前）。
+     who：住人の配列か 番号→住人 の関数（省略時は関係を当てたときに覚えた名前か、回している箱庭の入力） */
+  HK.tieLabel = function (t, who) {
     if (!t) return '';
     if (t.spouse) return t.type === 'ex' ? '元夫婦' : t.married && HK.MARRIED_COLD[t.married] ? HK.MARRIED_COLD[t.married].short === '円満' ? '夫婦' : HK.MARRIED_COLD[t.married].short : '夫婦';
+    var sl = HK.Sib && HK.Sib.labelOf ? HK.Sib.labelOf(t, who) : '';
+    if (sl) return sl;
     if (t.step) return '義理の兄弟';
     var D = T[t.type]; return D ? D.label : t.type;
   };
@@ -558,6 +562,8 @@
         /* 追加の欄は、ある関係だけに付ける（ほかの関係の中身は今までと同じ） */
         if (t.type === 'yan') o.sub = xf.sub || '';
         if (t.type === 'enemy') o.grade = xf.grade || '';
+        /* きょうだい：二人の性別・年齢から決めた関係名（「姉弟（庇護）」など。sib-word.js）を覚えておく（HK.tieLabel が使う） */
+        if (HK.Sib && HK.Sib.isSibTie(o)) o.sibLab = HK.Sib.tieLabel(o, A, B) || '';
         if (t.type === 'enemy' || t.type === 'bad') o.lh = xf.lh || '';
         if (t.type === 'benefactor') o.feel = xf.feel || 'thanks';
         if (t.type === 'fond') o.mode = xf.mode || 'adore';

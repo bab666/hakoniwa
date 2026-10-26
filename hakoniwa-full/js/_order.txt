@@ -93,6 +93,7 @@ js/tone-new2.js
 js/tone-new2-rows.js
 js/tone-new2-r18.js
 js/engine.js
+js/sib-word.js
 js/emotion.js
 js/emotion-r18.js
 js/content.js

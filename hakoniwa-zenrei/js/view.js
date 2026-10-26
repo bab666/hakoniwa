@@ -210,8 +210,13 @@
   function tieName(t, res) {
     var D = HK.TIES[t.type];
     if (!D) return '';
+    /* きょうだい：性別・年齢で「姉弟」「兄妹（庇護）」に言い換え、上の人が分かれば「美咲が姉の姉弟（庇護）」（sib-word.js） */
+    var sl = HK.Sib ? HK.Sib.resLabel(t, res) : '';
+    if (sl) { var el = HK.Sib.resElder(t, res); return el ? el.who.name + 'が' + el.word + 'の' + sl : sl; }
     return D.dir ? res.chars[t.a].name + 'が' + D.roleA + 'の' + D.label : D.label;
   }
+  /* 札（組の見出し）に出す関係名 */
+  function tieChip(t, res) { return (HK.Sib && HK.Sib.resLabel(t, res)) || t.label; }
 
   function pairCard(p, res) {
     var A = res.chars[p.a], B = res.chars[p.b], L = res.log;
@@ -232,7 +237,7 @@
     }).join('');
     var r = p.rel;
     return '<article class="pcard' + (p.surprise ? ' sur' : '') + '">' +
-      '<div class="hd"><span class="avpair">' + av(res, po[0], 34) + av(res, po[1], 34) + '</span><span class="nm">' + esc(res.chars[po[0]].name) + ' × ' + esc(res.chars[po[1]].name) + '</span>' + (p.tie ? '<span class="tiechip">' + esc(p.tie.label) + ' →</span>' : '') + '<span class="lbl ' + p.cls + '">' + esc(p.name) + '</span>' + (p.surprise ? '<span class="surtag">意外</span>' : '') + '</div>' +
+      '<div class="hd"><span class="avpair">' + av(res, po[0], 34) + av(res, po[1], 34) + '</span><span class="nm">' + esc(res.chars[po[0]].name) + ' × ' + esc(res.chars[po[1]].name) + '</span>' + (p.tie ? '<span class="tiechip">' + esc(tieChip(p.tie, res)) + ' →</span>' : '') + '<span class="lbl ' + p.cls + '">' + esc(p.name) + '</span>' + (p.surprise ? '<span class="surtag">意外</span>' : '') + '</div>' +
       '<div class="txt">' + paint(p.text, res) + '</div>' +
       '<div class="pred">' + pred + notes + '</div>' +
       spark(p, res) +

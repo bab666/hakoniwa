@@ -29,7 +29,7 @@
   function mainPairs(res, X, skip) {
     return res.pairs.filter(function (p) { return p.label !== 'strangers' && (!skip || !skip(p)); })
       .sort(function (a, b) { return b.intensity - a.intensity; }).slice(0, 3)
-      .map(function (p) { return X.pn(p) + '＝' + (p.tie ? p.tie.label + '→' : '') + p.name + (p.surprise ? '（意外）' : ''); });
+      .map(function (p) { return X.pn(p) + '＝' + (p.tie ? ((HK.Sib && HK.Sib.resLabel(p.tie, res)) || p.tie.label) + '→' : '') + p.name + (p.surprise ? '（意外）' : ''); });
   }
 
   function deathLines(res, X) {
