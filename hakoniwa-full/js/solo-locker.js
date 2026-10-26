@@ -330,7 +330,7 @@
           continue;
         }
         /* 恋愛相手を別に決めている人は、ほとんど手を出さない */
-        if (a.lock != null && a.lock !== b.i) { urge -= 0.45; if (urge > 0.3 && !a.lockSaid) { a.lockSaid = true; ST.sayB(S, { actors: [a, b], tag: '心に決めた人', text: ST.fmt(pk(LK.LOCKED || ['{a}は{b}の肩を押し返した。「……ごめん。心に決めた人がいるから」']), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を決めている（' + b.name + 'ではない）', mag: 18 }); continue; } }
+        if (a.lock != null && a.lock !== b.i) { urge -= 0.45; if (urge > 0.3 && !a.lockSaid) { a.lockSaid = true; ST.sayB(S, { actors: [a, b], tag: '心に決めた人', text: ST.fmt(pk(LK.LOCKED || ['{a}は{b}の肩を押し返した。「……ごめん。心に決めた人がいるから｜……すまない。心に決めた人がいる｜……ごめんなさい。心に決めた人がいるんです」']), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を決めている（' + b.name + 'ではない）', mag: 18 }); continue; } }
         if (urge < 0.36 + rng() * 0.3) continue;
         /* 受け攻め：向きの決まらない二人は、手を出さずに耐える */
         if (clash) { holdClash(a, b); continue; }
