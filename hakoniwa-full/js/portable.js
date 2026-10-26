@@ -96,8 +96,9 @@
   function stateOf(data) { var s = data.localStorage && data.localStorage['hakoniwa:state']; return s && typeof s === 'object' ? s : null; }
   function histOf(data) { var h = data.localStorage && data.localStorage['hakoniwa:history']; return Array.isArray(h) ? h : []; }
   function advOf(o) { var a = o && typeof o === 'object' ? o : {}, m = {}; Object.keys(a).forEach(function (k) { if (typeof a[k] === 'string' && a[k] && advOk(k)) m[k] = a[k].slice(0, 20000); }); return m; }
-  /* 全年齢版では、この版に節がある辞書だけ（R18版の喘ぎの辞書などは入れない） */
-  function advOk(k) { return !HK.SAFE_BUILD || !HK.Adv || HK.Adv.secs.some(function (s) { return s.id === k; }); }
+  /* 全年齢版では、この版に節がある辞書だけ（R18版の喘ぎの辞書などは入れない）。
+     やめた欄（箱庭全体の口調の辞書 tone。ui-adv.js の RETIRED）は、どちらの版でも書き出さず、読み込まない */
+  function advOk(k) { if (HK.Adv && HK.Adv.RETIRED && HK.Adv.RETIRED[k]) return false; return !HK.SAFE_BUILD || !HK.Adv || HK.Adv.secs.some(function (s) { return s.id === k; }); }
 
   function collect() {
     return idbNames().then(function (ns) { return Promise.all(ns.map(dumpDB)); }).then(function (dbs) {
@@ -227,11 +228,11 @@
     UI.importJSON(JSON.stringify(ros), false);
     return { n: ros.chars.length, over: over ? dup.length : 0, kept: over ? 0 : dup.length };
   }
-  /* 高度設定（口調の辞書など）を「足す」：今が空の欄は入れ、違う中身があれば置き換えるか聞く */
+  /* 高度設定の辞書を「足す」：今が空の欄は入れ、違う中身があれば置き換えるか聞く */
   function addAdv(adv) {
     if (!HK.Adv) return 0;
     var keys = Object.keys(adv), diff = keys.filter(function (k) { return HK.Adv.get(k) && HK.Adv.get(k) !== adv[k]; }), n = 0;
-    var rep = diff.length ? window.confirm('高度設定（口調の辞書など）の中身が、今のものと読み込むもので違います。\n読み込むものに置き換えますか？\n\n［OK］置き換える\n［キャンセル］今のものを残す') : false;
+    var rep = diff.length ? window.confirm('高度設定の辞書の中身が、今のものと読み込むもので違います。\n読み込むものに置き換えますか？\n\n［OK］置き換える\n［キャンセル］今のものを残す') : false;
     keys.forEach(function (k) { if (!HK.Adv.get(k) || (rep && diff.indexOf(k) >= 0)) { if (HK.Adv.get(k) !== adv[k]) { HK.Adv.set(k, adv[k], true); n++; } } });
     return n;
   }

@@ -107,6 +107,25 @@
     return c;
   }
   HK.sexLockMig = migSexLock;
+  /* 箱庭全体の口調の辞書（高度設定の adv.tone。tone-engine.js が読み込みのときに T.setUser で当てる）は 2026-10-26 にやめた。
+     住人ごとの「語尾の設定」「辞書を直接書く」（tone-ending.js）だけが効く。ここで当たっていた分を外す（保存の値は消さず、画面にも出さない。ui-adv.js の RETIRED）。
+     その辞書で作った口調（u:…）を選んでいた住人は、その口調の [口調] の節を住人の「辞書を直接書く」（c.toneDict。空のときだけ）に写し、口調はおまかせに戻す */
+  var oldTone = (function () {
+    var T = HK.Tone, m = {}, blocks = [], cur = null;
+    if (!T || !T.setUser || !T.userText) return m;
+    try {
+      T.userText.split(/\r?\n/).forEach(function (l) { if (/^\s*[\[［]\s*口調(?:[\s　][^\]］]*)?[\]］]\s*$/.test(l)) { cur = [l]; blocks.push(cur); } else if (cur) cur.push(l); });
+      blocks.forEach(function (b) { var tx = b.join('\n').replace(/\s+$/, ''), p = T.parse(tx, true); Object.keys(p.dicts).forEach(function (k) { if (/^u:/.test(k) && !m[k]) m[k] = tx; }); });
+    } catch (e) { /* 読めなければ写さない */ }
+    T.setUser('');
+    return m;
+  })();
+  function migUserTone(c) {
+    if (typeof c.tone !== 'string' || !/^u:/.test(c.tone)) return;
+    var tx = oldTone[c.tone];
+    if (tx && tx.length <= 4000 && !(typeof c.toneDict === 'string' && c.toneDict.trim())) c.toneDict = tx;
+    c.tone = '';
+  }
   function normChar(c) {
     c = obj(c);
     c.id = typeof c.id === 'string' && c.id ? c.id : uid();
@@ -118,6 +137,7 @@
     if (['', 'm', 'f', 'both', 'none'].indexOf(c.likes || '') < 0) c.likes = '';
     if (['', 'top', 'bottom', 'riba'].indexOf(c.pos || '') < 0) c.pos = '';
     if (['', 'tb', 'tr', 'br', 'any'].indexOf(c.posLike || '') < 0) c.posLike = '';
+    migUserTone(c);
     c.tone = okTone(c.tone) ? c.tone || '' : '';
     c.fp = str(c.fp, 8).trim();
     c.color = typeof c.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(c.color) ? c.color : '';
@@ -359,7 +379,8 @@
       '<div class="gwrap">' + egoGraph(c.eg, i) + '</div>' +
       '<button class="btn ghost small" data-act="del" aria-label="' + esc(c.name) + 'を削除">削除</button>' +
       '<div class="memo"><input type="text" class="grp" id="gp-' + c.id + '" data-f="group" value="' + esc(c.group || '') + '" placeholder="グループ（任意・カンマで複数）" maxlength="40" list="grplist" aria-label="' + esc(c.name) + 'のグループ" title="同じグループ名をつけた住人は、箱庭でまとめて選んだり、並び替えたりできます。カンマで区切ると複数のグループに入れられます"><input type="text" id="mm-' + c.id + '" data-f="memo" value="' + esc(c.memo) + '" placeholder="メモ（任意・結果には影響しません）" maxlength="80">' +
-      '<button type="button" class="btn small gearbtn" data-act="gear" aria-label="' + esc(c.name) + 'の設定（口調・呼び方・関係など）" title="口調・一人称・呼び方・性別・恋愛・イメージカラー・関係をまとめて設定"><span aria-hidden="true">⚙️</span> 設定</button>' +
+      '<span class="gearpair" style="display:inline-flex;gap:6px;align-items:center;flex:0 0 auto"><button type="button" class="btn small gearbtn" data-act="gear" aria-label="' + esc(c.name) + 'の設定（口調・呼び方・関係など）" title="口調・一人称・呼び方・性別・恋愛・イメージカラー・関係をまとめて設定"><span aria-hidden="true">⚙️</span> 設定</button>' +
+      '<button type="button" class="btn small ghost" data-act="dup"' + (S.chars.length >= MAX ? ' disabled title="住人が上限の' + MAX + '人まで登録されているので、複製できません"' : ' title="この住人の設定をすべて写した住人を、すぐ下に足します（関係と、ほかの住人を指す設定は写しません）"') + ' aria-label="' + esc(c.name) + 'を複製">複製</button></span>' +
       '<span class="csum">' + (HK.UI && HK.UI.summary ? HK.UI.summary(c) : '') + '</span></div>' +
       '</div>';
   }
@@ -386,6 +407,7 @@
       (groupsOf().length ? '<div class="row" style="margin:-2px 0 8px"><span class="hint" style="margin:0" title="オンにしたグループの住人どうしは、信頼が育ちやすく、助け合い・庇い合い・弔い・一緒に動く出来事が起きます。恋愛や嫉妬には関わりません。関係図には薄い線で出ます（線の絞り込みで「全部」のとき）">仲間とみなすグループ：</span>' + groupsOf().map(function (g) { var on = !!(S.grpComrade && S.grpComrade[g]); return '<button class="chip" data-act="grpcomrade" data-g="' + esc(g) + '" aria-pressed="' + on + '" title="' + esc(g) + 'の住人どうしを仲間と' + (on ? 'みなさない' : 'みなす') + '">' + (on ? '仲間：' : '') + esc(g) + '</button>'; }).join('') + '</div>' : '') +
       '<datalist id="grplist">' + groupsOf().map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>' +
       '<div class="cast" id="castlist">' + S.chars.map(function (c, i) { var h = resRow(c, i); return grpHidden(c) ? h.replace('<div class="res"', '<div class="res" hidden style="display:none"') : h; }).join('') + '</div>' +
+      (S.chars.length >= MAX ? '<p class="hint" id="castfull" style="color:var(--warn)">住人が上限の' + MAX + '人まで登録されています。追加・複製するには、誰かを削除してください。</p>' : '') +
       '<div class="row" style="margin-top:12px"><button class="btn" data-act="add"' + (S.chars.length >= MAX ? ' disabled' : '') + '>1人追加</button><button class="btn" data-act="quiz"' + (S.chars.length >= MAX ? ' disabled' : '') + '>質問に答えて診断して追加</button><span class="hint" style="margin:0">「<a href="https://kaimin.sakura.ne.jp/archive/tools/ego/" target="_blank" rel="noopener">ふたりのエゴグラム</a>」と同じ25問で、エゴグラムを出して住人にできます。</span></div>' +
       tiesSection() +
       '<div class="row" style="margin-top:20px"><span class="spacer"></span><button class="btn primary" data-act="tobox">箱庭を選ぶ</button></div>';
@@ -393,6 +415,63 @@
   }
 
   /* ---------- 既存の関係 ---------- */
+  /* ---------- 住人の複製（住人の行の「複製」） ----------
+     その住人の設定（エゴグラム・口調・語尾の設定・辞書・一人称/二人称・性別・恋愛対象・受け攻め・体の設定・好物・箱庭の能力・アイコン・箱庭ごとの設定 など）を
+     すべて写した住人を、すぐ下に足す。関係（S.ties）と、ほかの住人を指す設定（恋愛相手の固定・性行為の相手の固定・相手ごとの設定・恋愛にしない相手・
+     殺さない相手・同一人物）は写さない。名前は「〇〇２」のように、今いる住人と重ならないものにする */
+  var DUP_CLEAR = { loveLock: [], sexLocks: [], loveNG: [], noKillFor: [], calls: {}, keigo: {}, nightFor: {}, posFor: {}, youFor: {}, fpFor: {}, same: '', sameDark: false };
+  function zen(n) { return String(n).replace(/\d/g, function (d) { return String.fromCharCode(d.charCodeAt(0) + 0xFEE0); }); }
+  function dupName(name) {
+    var used = {}; S.chars.forEach(function (c) { used[c.name] = 1; });
+    var base = String(name || '').replace(/[０-９]+$/, '') || String(name || '名無し');
+    for (var n = 2; n < 1000; n++) { var suf = zen(n), nm = base.slice(0, 24 - suf.length) + suf; if (!used[nm]) return nm; }
+    return base.slice(0, 16) + Date.now().toString(36).slice(-8);
+  }
+  function dupChar(src) {
+    var ids = {}; S.chars.forEach(function (c) { ids[c.id] = 1; });
+    var c = JSON.parse(JSON.stringify(src));
+    do { c.id = uid(); } while (ids[c.id]);
+    c.name = dupName(src.name);
+    Object.keys(DUP_CLEAR).forEach(function (k) { c[k] = JSON.parse(JSON.stringify(DUP_CLEAR[k])); });
+    if (c.sexLock === 'pick' || c.sexLock === 'pickMob') c.sexLock = '';
+    /* 念のため：ほかの欄に残った住人の id（あとから足した相手ごとの欄）も外す */
+    Object.keys(c).forEach(function (k) {
+      var v = c[k];
+      if (k === 'id' || k === 'name') return;
+      if (typeof v === 'string') { if (ids[v]) c[k] = ''; }
+      else if (Array.isArray(v)) c[k] = v.filter(function (x) { return !(typeof x === 'string' && ids[x]); });
+      else if (v && typeof v === 'object') Object.keys(v).forEach(function (kk) { if (ids[kk]) delete v[kk]; });
+    });
+    c = normChar(c);
+    /* 箱庭ごとの設定（最初の行動・短期目標・能力値・武器・箱庭の欄）も写す。住人を指す値は外す */
+    if (S.per && S.per[src.id]) {
+      var pp = JSON.parse(JSON.stringify(S.per[src.id]));
+      Object.keys(pp).forEach(function (sid) { var o = pp[sid]; if (o && typeof o === 'object') Object.keys(o).forEach(function (k) { if (typeof o[k] === 'string' && ids[o[k]]) delete o[k]; }); });
+      S.per[c.id] = pp;
+    }
+    return c;
+  }
+  function dupRes(id) {
+    var src = S.chars.filter(function (c) { return c.id === id; })[0];
+    if (!src) return;
+    if (S.chars.length >= MAX) { toast('住人が上限の' + MAX + '人まで登録されているので、複製できません'); return; }
+    var c = dupChar(src);
+    S.sample = false;
+    S.chars.splice(S.chars.indexOf(src) + 1, 0, c);
+    save(); renderCast();
+    var q = '「' + src.name + '」を複製して「' + c.name + '」を足しました（関係と、ほかの住人を指す設定は写していません）。\n\n' +
+      '「' + c.name + '」を「' + src.name + '」と同一人物にしますか？' +
+      (src.same && src.same !== c.id ? '\n（' + src.name + 'はいま別の人と同一人物です。はいを選ぶと、' + c.name + 'の側だけに付けます）' : '') +
+      '\n\n［OK］はい（同一人物にする）\n［キャンセル］いいえ';
+    if (window.confirm(q)) {
+      c.same = src.id;
+      if (!src.same) src.same = c.id;
+      save(); renderCast();
+      toast('「' + c.name + '」を「' + src.name + '」と同一人物にしました');
+    } else toast('「' + c.name + '」を足しました');
+    var nm = document.getElementById('nm-' + c.id);
+    if (nm) { nm.focus(); nm.select(); }
+  }
   function cleanTies() {
     var ids = S.chars.map(function (c) { return c.id; });
     S.ties = (S.ties || []).filter(function (t) { return ids.indexOf(t.a) >= 0 && ids.indexOf(t.b) >= 0 && t.a !== t.b && HK.TIES[t.type]; });
@@ -1053,6 +1132,7 @@
         var last = document.querySelector('#castlist .res:last-child input[data-f="name"]');
         if (last) { last.focus(); last.select(); }
         break;
+      case 'dup': if (row) dupRes(row.dataset.id); break;
       case 'del':
         S.chars = S.chars.filter(function (c) { return c.id !== row.dataset.id; });
         S.chars.forEach(function (x) { x.loveLock = idList(x.loveLock).filter(function (k) { return k !== row.dataset.id; }); x.sexLocks = idList(x.sexLocks).filter(function (k) { return k !== row.dataset.id; }); if ((x.sexLock === 'pick' || x.sexLock === 'pickMob') && !x.sexLocks.length) x.sexLock = ''; if (x.loveNG) x.loveNG = x.loveNG.filter(function (k) { return k !== row.dataset.id; }); if (x.calls) delete x.calls[row.dataset.id]; if (x.keigo) delete x.keigo[row.dataset.id]; });
