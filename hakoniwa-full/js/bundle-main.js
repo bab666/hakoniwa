@@ -58687,6 +58687,8 @@
         if (swap) t += ST.fmt(pk(LK.TAKE[b.bound ? 'bound' : 'free']), vT) + ST.fmt(pk(actPool), vA);
         else if (hateNow) t += HSX.react(S, a, b, lv);
         else t += (giveIn ? ST.fmt(pk(hands(giveIn, a, b)), { a: a.name, b: b.name }) : '') + ST.fmt(pk(hands((rxText === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); }), a, b)), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
+        /* キスの最中の声（R18版のみ。moan-engine.js の共通の声 k0。言葉のない声）：受ける側が一つ。描写「ぼかす」・全年齢では足さない */
+        if (R18 && lew !== 'low' && LV[lv] === 'kiss' && HK.Moan && HK.Moan.pick && !bx.noR18 && rng() < 0.6) t += bx.name + '「' + HK.Moan.pick(S, bx, 'k0', {}) + '」';
         /* 最初の一回は、二人の関係で受け止め方が変わる */
         var RF = LK.REL && LK.REL.first[rel];
         if (pair.acts === 1 && RF && rng() < 0.75) t += ST.fmt(pk(RF), { a: a.name, b: b.name, c: (crusher || a).name, o: (crusher || a).o.name, u: nt ? nt.u.name : '', d: nt ? nt.d.name : '' });
@@ -58716,6 +58718,12 @@
           var nT = lv === 4 ? tp : ax, nB = lv === 4 ? tp.o : bx;
           var nR = LK.nightLine(S, nT, nB, lv === 4 ? 'deep' : 'early', { mode: ff ? 'ff' : fmPair(nT, nB) ? 'fm' : 'mf' });
           if (nR && nR.text) { t += nR.text; nightL = nR.label; if (lv === 4) pair.nightDeep = true; else pair.nightEarly = true; }
+        }
+        /* 夜の性格の短い一言（R18版のみ。locker-night-light.js）：early の文を出し終えた組の、キス・まさぐる（1・2）に。
+           同じコマで early の文を出したときと、敵対して口では嫌がっているときは足さない。攻めの文か受けの文のどちらか一つ */
+        if (R18 && lew !== 'low' && LK.nightLight && (lv === 1 || lv === 2) && pair.nightEarly && !nightL && !hateNow && rng() < 0.5) {
+          var nLt = LK.nightLight(S, ax, bx, {});
+          if (nLt && nLt.text) { t += nLt.text; nightL = nLt.label; }
         }
         /* 自分で攻めを選んだ人は、相手に「イかされる」側にしない */
         /* 繋がった瞬間には果てさせない（そこからの数コマを、続きの出来事で書く） */
@@ -75590,6 +75598,7 @@
   /* タグの定義（label は短く。desc は押したときの説明） */
   var DEF = {
     race: { label: '種族・体格', desc: '住人の「体と設定」の種族（獣人・吸血鬼・天使など）と体格が、二人の穏やかな場面に一文で出ます。決めていない人には何も付きません。' },
+    night: { label: '夜の顔', desc: '住人の「体と設定」の夜の性格（サド・マゾ・意地悪・甘々・恥じらい）が、夜の場面の文と抱き方に出ます。理由書きに「夜の性格：〇〇」と出ます。決めていない人には何も付きません。' },
     raceNight: { label: '種族・体格（夜）', desc: '一人用の箱庭では、種族・体格の一文は夜の場面にだけ出ます。' },
     relCore: { label: '関係が中心', desc: '設定した関係が出来事の中心になります。恋愛・嫉妬・仲良しの場面が多く出て、関係図も大きく動きます。' },
     relSome: { label: '関係は一部', desc: '物語の進行が主で、設定した関係は初期値・呼び方と、ところどころの場面に効きます。関係の出来事が少なめなのは仕様です。' },
@@ -75616,21 +75625,21 @@
   TG.DEF = DEF;
   /* 箱庭ごとの並び（上に出すものから） */
   TG.TABLE = {
-    goukon: ['relCore', 'race', 'food', 'drink', 'mob', 'romance'],
-    whiteroom: ['relCore', 'race', 'daily', 'drink', 'exit', 'romance'],
+    goukon: ['relCore', 'night', 'race', 'food', 'drink', 'mob', 'romance'],
+    whiteroom: ['relCore', 'night', 'race', 'daily', 'drink', 'exit', 'romance'],
     classroom: ['relCore', 'race', 'daily', 'birthday', 'food', 'romance'],
-    island: ['relCore', 'race', 'daily', 'food', 'death', 'romance'],
-    futari: ['relCore', 'race', 'daily', 'food', 'romance'],
+    island: ['relCore', 'night', 'race', 'daily', 'food', 'death', 'romance'],
+    futari: ['relCore', 'night', 'race', 'daily', 'food', 'romance'],
     br: ['relCore', 'race', 'death', 'romance'],
     trial: ['relCore', 'race', 'death', 'romance'],
-    zombie: ['relCore', 'race', 'undead', 'death', 'mob', 'romance'],
-    omega: ['relCore', 'race', 'job', 'daily', 'food', 'drink', 'mob', 'romance'],
-    ship: ['relSome', 'race', 'undead', 'death', 'food', 'romance'],
-    jashin: ['relSome', 'race', 'job', 'undead', 'death', 'food', 'drink', 'mob', 'romance'],
-    yakata: ['relSome', 'race', 'undead', 'death'],
+    zombie: ['relCore', 'night', 'race', 'undead', 'death', 'mob', 'romance'],
+    omega: ['relCore', 'night', 'race', 'job', 'daily', 'food', 'drink', 'mob', 'romance'],
+    ship: ['relSome', 'night', 'race', 'undead', 'death', 'food', 'romance'],
+    jashin: ['relSome', 'night', 'race', 'job', 'undead', 'death', 'food', 'drink', 'mob', 'romance'],
+    yakata: ['relSome', 'night', 'race', 'undead', 'death'],
     rpg: ['relSome', 'race', 'job', 'undead', 'death'],
-    jinro: ['relSome', 'race', 'death'],
-    locker: ['relSome', 'raceNight', 'mob'],
+    jinro: ['relSome', 'night', 'race', 'death'],
+    locker: ['relSome', 'night', 'raceNight', 'mob'],
     saimin: ['relSome', 'raceNight', 'will'],
     massage: ['relSome', 'raceNight', 'mob'],
     dungeon: ['relSome', 'raceNight', 'will', 'mob'],
@@ -75639,10 +75648,10 @@
     succubus: ['relLow', 'raceNight', 'mob'],
     variety: ['relLow', 'raceNight']
   };
-  /* 全年齢版・全年齢モードでは、一人用の箱庭の夜の一文は無い（種族の札を出さない） */
+  /* 全年齢版・全年齢モードでは、一人用の箱庭の夜の一文と夜の性格は無い（種族（夜）・夜の顔の札を出さない） */
   TG.of = function (id) {
     var ks = TG.TABLE[id] || [];
-    return ks.filter(function (k) { return DEF[k] && !(HK.SAFE_ON && k === 'raceNight'); }).map(function (k) { return { k: k, label: DEF[k].label, desc: DEF[k].desc }; });
+    return ks.filter(function (k) { return DEF[k] && !(HK.SAFE_ON && (k === 'raceNight' || k === 'night')); }).map(function (k) { return { k: k, label: DEF[k].label, desc: DEF[k].desc }; });
   };
   /* カードの中身（ui.js から） */
   TG.html = function (id, esc) {
