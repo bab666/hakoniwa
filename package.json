@@ -1,0 +1,12 @@
+{
+  "name": "hakoniwa-tools",
+  "private": true,
+  "description": "箱庭シミュレーターのビルドと点検の道具。ビルドに acorn が要るので、このフォルダで一度 npm install を実行する（node_modules は git に入れない）",
+  "scripts": {
+    "build": "node hakoniwa-tools/build/build.js hakoniwa-full && node hakoniwa-tools/build/build.js hakoniwa-zenrei",
+    "build:best": "node hakoniwa-tools/build/build.js hakoniwa-full --best && node hakoniwa-tools/build/build.js hakoniwa-zenrei --best"
+  },
+  "devDependencies": {
+    "acorn": "^8.18.0"
+  }
+}

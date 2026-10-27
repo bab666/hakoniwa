@@ -27,7 +27,7 @@ function strip(src, f, map) {
 function loadAcorn() { for (const t of [process.env.ACORN_MODULE, 'acorn', '/opt/node-tools/node_modules/acorn']) { try { if (t) return require(t); } catch (e) { /* 次 */ } } return null; }
 function needAcorn(why) {
   const a = loadAcorn();
-  if (!a) throw new Error('acorn が見つかりません（npm i acorn か ACORN_MODULE=パス）。' + why);
+  if (!a) throw new Error('acorn が見つかりません。リポジトリの直下（package.json のあるフォルダ）で一度 npm install を実行してください（または ACORN_MODULE=acorn のフォルダ）。' + why);
   return a;
 }
 /* 軽量化：コメント・字下げ・空行・余分な空白を落とす（字句の中身はそのまま写す） */
