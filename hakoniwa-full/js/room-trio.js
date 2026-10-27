@@ -196,7 +196,7 @@
     [['np', t.np], ['fc', t.fc], ['cold', t.cold], ['ac', t.ac], ['cp', t.cp]].forEach(function (x) { if (x[1] > bv) { bv = x[1]; best = x[0]; } });
     return best;
   }
-  EV.push({
+  HK.addTo(EV, {
     id: 'trio_note', cat: 'escape', scope: 'solo', pri: true,
     when: function (ctx, a) { return allowed(ctx) && !ctx.flags.multiKnown && ctx.present().length >= 3 && ctx.stepIndex >= 1 && free(a); },
     w: function (ctx, a) { return 0.7 + a.tr.a * 0.8 + (a.action && a.action.id === 'inspect' ? 1.2 : 0) + ctx.stepIndex * 0.15; },
@@ -673,7 +673,7 @@
   };
 
   /* 「一人だけ」と決めた人を、三人に誘う（説得）。折れれば、次から三人の場面に入れる */
-  EV.push({
+  HK.addTo(EV, {
     id: 'trio_persuade', cat: 'romance', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (!allowed(ctx) || !ctx.flags.multiKnown || ctx.present().length < 3 || !free(a) || !free(b) || ctx.flags.trioCur) return false;
@@ -825,7 +825,7 @@
     var hubNote = sh && sh.hubOnly ? '（' + pairsOf(sh.sg).filter(function (p) { return !okSex(p[0], p[1]); }).map(function (p) { return p[0].name + 'と' + p[1].name; }).join('・') + 'は直接は繋がらない）' : '';
     return '／形：' + (SHAPE_LABEL[info.p] || info.p) + hubNote + '／嫉妬：' + JEAL_LABEL[info.jeal] + (info.j ? '（' + info.j + '）' : '') + '／受けの開放度：' + OPEN_LABEL[info.open] + (info.s ? '（' + info.s + '）' : '') + (info.after ? '／結末：' + { sour: '険悪', bond: '連帯', yield: '折れた' }[info.after] : '');
   }
-  EV.push({
+  HK.addTo(EV, {
     id: 'trio_auto', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (!allowed(ctx) || !ctx.flags.multiKnown || ctx.flags.trioCur) return false;
@@ -859,7 +859,7 @@
     }
   });
   /* 媚薬だけの部屋（二人の条件がない）：媚薬が三人に回れば、熱に呑まれて三人で（一度だけ。条件の数には関わらない） */
-  EV.push({
+  HK.addTo(EV, {
     id: 'trio_heat', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (multiOf(ctx) === 'no' || ctx.flags.isOne || ctx.flags.oneCond || A.hasPairRule(ctx) || !ctx.flags.hasAphroRule || ctx.flags.trioHeat) return false;
@@ -883,7 +883,7 @@
       return { text: text, why: why, mag: 30, with: g.filter(function (c) { return c !== a && c !== b; }) };
     }
   });
-  EV.push({
+  HK.addTo(EV, {
     id: 'trio', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (!allowed(ctx) || !ctx.flags.multiKnown || ctx.present().length < 3 || !free(a) || !free(b)) return false;
@@ -926,7 +926,7 @@
     }
   });
   /* 二回目以降（回数が多い条件のとき） */
-  EV.push({
+  HK.addTo(EV, {
     id: 'trio_more', cat: 'romance', sex: true, scope: 'solo', pri: true,
     when: function (ctx, a) {
       var c = ctx.flags.trioCur;

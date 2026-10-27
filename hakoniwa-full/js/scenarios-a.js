@@ -6,7 +6,8 @@
   HK.SCEN_ORDER = HK.SCEN_ORDER || [];
   function R(ctx, a, b) { return ctx.R(a, b); }
   function names(list) { return list.map(function (c) { return c.name; }).join('・'); }
-  function add(s) { HK.SCENARIOS[s.id] = s; HK.SCEN_ORDER.push(s.id); }
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  function add(s) { HK.SCENARIOS[s.id] = s; if (HK.SCEN_ORDER.indexOf(s.id) < 0) HK.SCEN_ORDER.push(s.id); }
   /* 合コン：恋愛の起こりやすさ（既定の50で1、0で0、100で2） */
   function gRom(ctx) { return (ctx.env.romance == null ? 50 : ctx.env.romance) / 50; }
   function gTaken(ctx, a) { return ctx.chars.some(function (c) { return c !== a && ctx.pair(a, c).couple; }); }
@@ -826,8 +827,8 @@
      共通の告白（confess）は、二股になるときは一部だけ通し、残りは踏みとどまる／断られる文にする。
      片想い・両片想い・セフレからの告白（u_confess・pn_rival・pn_confess・fc_slip）は、二股になるときは起こりにくく */
   var G_COUPLE_W = { u_confess: 1, pn_rival: 1, pn_confess: 1, fc_slip: 1 };
-  var bp0 = HK.buildPool;
-  if (bp0) HK.buildPool = function (scen) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
+  HK.wrap(HK, 'buildPool', function (bp0) { if (!bp0) return bp0; return function (scen) {
     var pool = bp0.apply(this, arguments);
     if (!scen || scen.id !== 'goukon') return pool;
     return pool.map(function (e) {
@@ -850,5 +851,5 @@
       }
       return e;
     });
-  };
+  }; });
 })();

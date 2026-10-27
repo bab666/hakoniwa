@@ -51,7 +51,8 @@
     events: []
   };
   HK.SCENARIOS.succubus = scen;
-  HK.SCEN_ORDER.push('succubus');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('succubus') < 0) HK.SCEN_ORDER.push('succubus');
 
   function resolve(S, p, list, pick) {
     if (pick && pick !== 'auto') for (var i = 0; i < list.length; i++) if (list[i].id === pick) return list[i];

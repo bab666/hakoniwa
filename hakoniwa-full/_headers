@@ -4,6 +4,6 @@
   Cache-Control: no-cache, private
 /
   Cache-Control: no-cache, private
-# まとめたスクリプトは1年キャッシュ（版が変わると index.html の ?v= が変わる）。pass-gate.js などほかの js は対象外
-/js/bundle-*
+# かたまり（js/c/<名前>.<内容の hash>.js）は1年キャッシュ（中身が変わると名前が変わり、index.html の目録が新しい名前を指す）。pass-gate.js などほかの js は対象外
+/js/c/*
   Cache-Control: public, max-age=31536000, immutable

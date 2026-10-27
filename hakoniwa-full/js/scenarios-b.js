@@ -4,7 +4,8 @@
   var HK = window.HK;
   function R(ctx, a, b) { return ctx.R(a, b); }
   function names(list) { return list.map(function (c) { return c.name; }).join('・'); }
-  function add(s) { HK.SCENARIOS[s.id] = s; HK.SCEN_ORDER.push(s.id); }
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  function add(s) { HK.SCENARIOS[s.id] = s; if (HK.SCEN_ORDER.indexOf(s.id) < 0) HK.SCEN_ORDER.push(s.id); }
 
   /* ======================= 無人島 ======================= */
   add({

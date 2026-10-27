@@ -41,7 +41,7 @@
   /* 死のある箱庭（危害が命に関わりうる） */
   function deadly(ctx) { return !HK.SAFE_ON && !!(ctx && ctx.scen && /^(br|zombie|island)$/.test(ctx.scen.id)); }
   var TN = HK.TieNew = { P9: P9, per: per };
-  function push(ev) { ev.scope = 'pair'; ev.noOdd = true; HK.COMMON.push(ev); }
+  function push(ev) { ev.scope = 'pair'; ev.noOdd = true; HK.addTo(HK.COMMON, ev); }
   /* 出来事を一つ足す：roles(ctx, a, b) が役の組（なければ null）、run(ctx, r) が { text, why, cat?, with?, mag? } を返す */
   function add(o) {
     push({

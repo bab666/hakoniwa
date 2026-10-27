@@ -546,9 +546,9 @@
       '|{a}「……最後まで、嫌なやつ｜……最後まで、嫌なやつだ｜……最後まで、嫌な人でした」{a}はそれだけ言って、壁にもたれた。')
   };
   function selfBlame(c) { return !!c && (top(c) === 'AC' || c.persona === 'devoted' || c.persona === 'shy'); }
-  if (HK.Ctx && HK.Ctx.prototype.kill && !HK.Ctx.prototype.kill._rs) {
-    var kill0 = HK.Ctx.prototype.kill;
-    HK.Ctx.prototype.kill = function (v, killer, how) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
+  if (HK.Ctx && HK.Ctx.prototype.kill && !HK.Ctx.prototype.kill._rs) HK.wrap(HK.Ctx.prototype, 'kill', function (kill0) {
+    var f = function (v, killer, how) {
       var was = !!(v && v.alive);
       var r = kill0.apply(this, arguments);
       if (was && v.alive === false && killer && killer !== v && this.scen && this.scen.id === 'whiteroom' && dark(v)) {
@@ -556,8 +556,9 @@
       }
       return r;
     };
-    HK.Ctx.prototype.kill._rs = true;
-  }
+    f._rs = true;
+    return f;
+  });
   function darkLast(ctx, v, killer) {
     var f = top(killer), pool = ctx.rng() < 0.3 ? DLW.any : DLW[f] || DLW.any;
     var q = q3(ctx.pick(pool));

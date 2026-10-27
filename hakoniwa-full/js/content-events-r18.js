@@ -88,7 +88,7 @@
     return e;
   };
   /* 妊娠が分かる（身ごもった人が動いたとき。相手と二人の出来事） */
-  HK.COMMON.push({
+  HK.addTo(HK.COMMON, {
     id: 'ct_preg_news', cat: 'solo', scope: 'solo', pri: true, noOdd: true, r18: true,
     when: function (ctx, a) {
       var p = a._ctPreg;
@@ -132,7 +132,7 @@
   }
 
   /* ================= 合意のない展開：合コンの帰り道の、敵対する二人 ================= */
-  HK.COMMON.push({
+  HK.addTo(HK.COMMON, {
     id: 'ct_goukon_hate', cat: 'romance', sex: true, scope: 'pair', pri: true, r18: true,
     when: function (ctx, a, b) {
       if (!b || scenOf(ctx) !== 'goukon' || !HS || ctx.stepIndex < 3 || !on(ctx, 'force')) return false;
@@ -176,7 +176,7 @@
     if ((HK.sexBlocked && HK.sexBlocked(D, V)) || !ctx.romanceOk([D, V], { sex: true })) return false;
     return HK.Pos.order(D, V, [D, V])[0] === D;
   }
-  HK.COMMON.push({
+  HK.addTo(HK.COMMON, {
     id: 'ct_dv', cat: 'conflict', scope: 'pair', pri: true, r18: true,
     when: function (ctx, a, b) {
       if (!b || NO_SCEN[scenOf(ctx)] || !on(ctx, 'abuse')) return false;

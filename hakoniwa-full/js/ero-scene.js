@@ -68,9 +68,8 @@
     return old ? !!old(e) : false;
   };
   /* 結果を返すときに印を揃える */
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
   if (HK.simulate && !HK.simulate._eroScene) {
-    var sim0 = HK.simulate;
-    HK.simulate = function () { return X.finish(sim0.apply(this, arguments)); };
-    HK.simulate._eroScene = true;
+    HK.wrap(HK, 'simulate', function (sim0) { var f = function () { return X.finish(sim0.apply(this, arguments)); }; f._eroScene = true; return f; });
   }
 })();

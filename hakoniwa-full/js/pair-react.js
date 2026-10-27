@@ -87,8 +87,8 @@
   }
 
   /* 無人島・ゾンビの街の出来事の山を作るときだけ、二人の出来事（恋愛・R18・裏切りを除く）を包む。元の出来事は書き換えない */
-  var bp0 = HK.buildPool;
-  HK.buildPool = function (scen) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
+  HK.wrap(HK, 'buildPool', function (bp0) { return function (scen) {
     var pool = bp0.apply(this, arguments);
     if (!scen || !TARGET[scen.id]) return pool;
     return pool.map(function (e) {
@@ -97,6 +97,6 @@
       w.run = function (ctx, a, b) { return addReact(ctx, a, b, e, e.run.apply(this, arguments)); };
       return w;
     });
-  };
+  }; });
   HK.PairReact = { depth: depth, RX: RX, LABEL: LABEL };
 })();

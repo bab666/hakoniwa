@@ -154,8 +154,8 @@
     return { q: q, kind: kind, to: to ? to.i : null, line: c.name + '「' + q + '」' };
   };
   /* Ctx.kill を包む：最期の言葉を立て、死の記録に 60% で足す */
-  var kill1 = Ctx.prototype.kill;
-  Ctx.prototype.kill = function (v, killer, how) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
+  HK.wrap(Ctx.prototype, 'kill', function (kill1) { return function (v, killer, how) {
     var was = !!(v && v.alive);
     var r = kill1.apply(this, arguments);
     if (was && v.alive === false && !v.lastWords) {
@@ -171,7 +171,7 @@
       }
     }
     return r;
-  };
+  }; });
   /* 結果のまとめ（HK.Emo.summary から）：最期の言葉は住人の覚え書きにも載せる（口調の仕上げを通すため） */
   X.summary = function (ctx, chars) {
     (ctx.chars || []).forEach(function (c, k) {

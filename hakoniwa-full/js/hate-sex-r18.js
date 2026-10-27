@@ -557,7 +557,7 @@
   /* ---------- 出られない部屋：条件「エッチ」の部屋で、敵対する二人が ---------- */
   var A = HK.RoomAPI;
   if (A && A.EV && A.K) {
-    A.EV.push({
+    HK.addTo(A.EV, {
       /* 選ばれやすさは敵対の重み（conflict）で決める（恋愛の重みは、敵対の関係ではほとんど0になるため）。記録には恋愛（romance）として残す */
       id: 'hate_sex', cat: 'conflict', sex: true, scope: 'pair', pri: true, r18: true,
       when: function (ctx, a, b) {

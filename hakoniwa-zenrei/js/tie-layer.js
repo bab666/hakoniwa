@@ -25,7 +25,7 @@
   function all(ctx, a, b) { return HK.Ties.all(ctx, a, b); }
   function keyOf(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   var TL = HK.TieLayer = {};
-  function push(ev) { ev.scope = 'pair'; ev.noOdd = true; HK.COMMON.push(ev); }
+  function push(ev) { ev.scope = 'pair'; ev.noOdd = true; HK.addTo(HK.COMMON, ev); }
 
   /* ======================= 関係の出来事の窓口（出来事のオフ・過去の回想の差し込み） =======================
      最初の箱庭を回すとき（ties.js の HK.Ties.after）に、いちばん外側の HK.buildPool を一度だけ包み、出来事の山にある関係の出来事を包む。
@@ -47,9 +47,8 @@
   }
   function hookPool() {
     if (!HK.buildPool || HK.buildPool._tlW) return;
-    var bp = HK.buildPool;
-    HK.buildPool = function () { var p = bp.apply(this, arguments); (p || []).forEach(wrapEv); return p; };
-    HK.buildPool._tlW = true;
+    /* 最初の実行のときに包む＝どのファイルの包みよりも外側（HK.wrap の番号 1e9）。分割読み込みで後から届いた包みは内側に入る */
+    HK.wrap(HK, 'buildPool', function (bp) { var f = function () { var p = bp.apply(this, arguments); (p || []).forEach(wrapEv); return p; }; f._tlW = true; return f; }, 1e9);
   }
   TL.wrapEv = wrapEv;
   var af0 = HK.Ties.after;

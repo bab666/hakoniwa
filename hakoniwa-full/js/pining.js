@@ -3,7 +3,8 @@
    相手にされていない片想い（unreq.js）と同じく、合コン・教室・無人島・出られない部屋・ゾンビの街で起きる。
    目が合ってそらす／言いかけてやめる／相手の優しさを別の誰かへの好意と勘違いする／同じ人に恋の相談をする／冗談めかして言って流される、
    を重ねたあと、どちらかが告白して実る（重ねるほど起きやすい）。ほかの誰かが近づいて焦って告白する展開もある（合コンでは起きやすく、踏み切るのは2割ほど、控え目どうしなら1割ほど）。{a}{b}=両片想いの二人、{c}=巻き込まれる人
-   ・設定の「両片想い」は、箱庭に渡す前に向きを逆にした片想い二本に開く（HK.Ties.expand） */
+   ・設定の「両片想い」は、箱庭に渡す前に向きを逆にした片想い二本に開く（HK.Ties.expand。pining-core.js）
+   分割読み込み：このファイルは恋愛系のかたまり（pack-rel。ゾンビの街の出来事の表に足すため）、開く包みは中核の pining-core.js */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -12,19 +13,7 @@
   function fill(t, m) { return t.replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
   function alive(c) { return c && c.alive !== false && !c.out; }
 
-  /* 設定の「両片想い」を開いてから箱庭に渡す */
-  if (HK.simulate && !HK.simulate._pining) {
-    var sim0 = HK.simulate;
-    HK.simulate = function (input) {
-      if (input && input.ties && input.ties.some(function (t) { return t && ((t.type === 'crush' && t.cold === 'mutual') || t.type === 'spouse' || t.type === 'stepsib'); })) {
-        var o = {}; for (var k in input) o[k] = input[k];
-        o.ties = HK.Ties.expand(input.ties);
-        arguments[0] = o;
-      }
-      return sim0.apply(this, arguments);
-    };
-    HK.simulate._pining = true;
-  }
+  /* 設定の「両片想い」を開く包み（HK.simulate）は、どの箱庭でも要るので中核の pining-core.js にある */
 
   var P = HK.Pining = {};
   P.is = function (ctx, a, b) { return alive(a) && alive(b) && HK.Ties.pining(ctx, a, b); };

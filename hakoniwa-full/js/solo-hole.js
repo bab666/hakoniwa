@@ -525,5 +525,6 @@
     if (state !== 'hold') adv.push('心の強さ（' + (HK.Attr && HK.Attr.willLabel ? HK.Attr.willLabel(h) : h.stats.mind) + '）とCP（' + Math.round(h.eg.CP) + '）がもう少しあれば、最後の波に耐えられたかもしれない。');
     return fin(E, adv, { meta: pl.n + '・' + H + '時間・' + X.RELEASE_MODE[mode], estats: [['経過', ho + '時間'], ['壁の向こうの人数', (people || visits) + '人'], [topMe ? '中で果てた回数' : '奥に注がれた回数', meta.cum + '回'], ['触手・道具', meta.tent + '回'], ['遮断の揺らぎ', leaks + '回'], ['解放時の絶頂', h.climax + '回'], ['堕ち度', Math.round(h.corrupt)]], gaugeS: '溜まった感覚' });
   }
-  HK.SCEN_ORDER.push('hole');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('hole') < 0) HK.SCEN_ORDER.push('hole');
 })();

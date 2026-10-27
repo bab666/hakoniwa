@@ -40,24 +40,36 @@
     }
     return null;
   };
+  /* 箱庭：本体か、まだ読んでいない箱庭（分割読み込み）は目録から作った仮の箱庭（load.js の HK.Load.info。stats・perFields の id と label、あれば選択肢）。
+     読む前と後で、住人の設定に出る項目が変わらないようにする */
+  function scenOf(sid) { return (HK.SCENARIOS && HK.SCENARIOS[sid]) || (HK.Load && HK.Load.info ? HK.Load.info(sid) : null); }
   /* この版にある箱庭だけで数えた、その項目の箱庭 */
-  function scensOf(g) { return Object.keys(g.m).filter(function (sid) { return HK.SCENARIOS && HK.SCENARIOS[sid]; }); }
-  function fieldOf(g, sid) { return ((HK.SCENARIOS[sid] || {}).perFields || []).filter(function (f) { return f.id === g.m[sid]; })[0] || null; }
-  /* 欄の選択肢（最初の箱庭の perField から） */
+  function scensOf(g) { return Object.keys(g.m).filter(function (sid) { return !!scenOf(sid); }); }
+  function fieldOf(g, sid) {
+    var f = ((scenOf(sid) || {}).perFields || []).filter(function (x) { return x.id === g.m[sid]; })[0] || null;
+    /* 特殊役職の欄は ui.js が HK.Special.install で足す（仮の箱庭には無い）ので、選択肢は special.js から */
+    if ((!f || !f.options) && g.k === 'special' && HK.Special && HK.Special.FIELD) f = HK.Special.FIELD;
+    return f;
+  }
+  /* 欄の選択肢（選択肢の分かる最初の箱庭の perField から。まだどの箱庭も読んでおらず分からなければ unknown） */
   function optsOf(g) {
-    var sid = scensOf(g)[0], f = sid && fieldOf(g, sid);
-    return f ? { auto: f.auto || 'おまかせ', options: f.options || [] } : { auto: 'おまかせ', options: [] };
+    var ss = scensOf(g), f = null;
+    for (var i = 0; i < ss.length; i++) { var x = fieldOf(g, ss[i]); if (!f) f = x; if (x && x.options) { f = x; break; } }
+    return f && f.options ? { auto: f.auto || 'おまかせ', options: f.options } : { auto: (f && f.auto) || 'おまかせ', options: [], unknown: true };
   }
   function okStat(v) { v = +v; return v >= 1 && v <= 5 && Math.floor(v) === v; }
   function okVal(g, v) {
     if (v == null || v === '' || v === 'auto' || v === 'random') return false;
     if (!g.pick) return okStat(v);
-    return optsOf(g).options.some(function (o) { return o.id === v; });
+    var o = optsOf(g);
+    /* 選択肢がまだ分からないとき（箱庭を読む前）は、値の形だけ見て消さない（SH.norm と同じ） */
+    if (o.unknown) return typeof v === 'string' && /^[\w-]{1,24}$/.test(v);
+    return o.options.some(function (x) { return x.id === v; });
   }
   /* 住人の設定に出す項目：この版で二つ以上の箱庭にあるもの（酒の強さは「お酒」の欄があるので出さない） */
   SH.shown = function () { return SH.GROUPS.filter(function (g) { return !g.alc && scensOf(g).length >= 2; }); };
   /* その項目が出てくる箱庭の名前 */
-  SH.where = function (g) { return scensOf(g).map(function (sid) { return HK.SCENARIOS[sid].name; }); };
+  SH.where = function (g) { return scensOf(g).map(function (sid) { return scenOf(sid).name; }); };
 
   /* ui.js normChar：c.ab を整える（選択肢の分からない欄は、箱庭が揃ってから整うよう値の形だけ見る） */
   SH.norm = function (c) {
@@ -127,11 +139,29 @@
     var g = SH.groupOf(sid, id, pick);
     if (!g) return '';
     if (g.alc) return '住人の設定の「お酒」と同じ値です（1 弱い〜5 ザル）。';
-    var others = SH.where(g).filter(function (n) { return n !== HK.SCENARIOS[sid].name; });
+    var others = SH.where(g).filter(function (n) { return n !== (scenOf(sid) || {}).name; });
     return others.length ? '住人ごとに共通の値です。' + others.join('・') + 'の「' + g.label + '」も同じ値になります（住人の設定の「箱庭の能力」でも変えられます）。' : '';
   };
 
   /* ---------- 住人の設定（⚙️）の「箱庭の能力」の節 ---------- */
+  /* 選択肢がまだ分からない欄（目録には選択肢が無い）：その項目の箱庭を読み込み、読めたら開いている欄の選択肢を入れ直す（値はそのまま） */
+  var filling = {};
+  function fillLater(g) {
+    if (filling[g.k] || !HK.Load || !HK.Load.ensure) return;
+    filling[g.k] = 1;
+    HK.Load.ensure(scensOf(g)).then(function () {
+      delete filling[g.k];
+      var o = optsOf(g);
+      if (o.unknown) return;
+      Array.prototype.forEach.call(document.querySelectorAll('select[data-gf="ab"][data-k="' + g.k + '"]'), function (sel) {
+        var v = sel.value, ol = o.options.slice();
+        if (v && !ol.some(function (x) { return x.id === v; })) ol.push({ id: v, label: v });
+        sel.innerHTML = '';
+        [{ id: '', label: o.auto }].concat(ol).forEach(function (x) { var op = document.createElement('option'); op.value = x.id; op.textContent = x.label; sel.appendChild(op); });
+        sel.value = v;
+      });
+    }, function () { delete filling[g.k]; });
+  }
   SH.gearHtml = function (c, h) {
     var gs = SH.shown();
     if (!gs.length) return '';
@@ -139,8 +169,11 @@
       var v = get(c, g), title = h.esc(SH.where(g).join('・'));
       var sel;
       if (g.pick) {
-        var o = optsOf(g);
-        sel = '<select data-gf="ab" data-k="' + g.k + '" aria-label="' + h.esc(g.label) + '">' + h.opt('', o.auto, v) + o.options.map(function (x) { return h.opt(x.id, x.label, v); }).join('') + '</select>';
+        var o = optsOf(g), ol = o.options.slice();
+        if (o.unknown) fillLater(g);
+        /* 選択肢がまだ分からない（箱庭を読む前）ときも、決めてある値は消さずに見せる */
+        if (v && !ol.some(function (x) { return x.id === v; })) ol.push({ id: v, label: v });
+        sel = '<select data-gf="ab" data-k="' + g.k + '" aria-label="' + h.esc(g.label) + '">' + h.opt('', o.auto, v) + ol.map(function (x) { return h.opt(x.id, x.label, v); }).join('') + '</select>';
       } else {
         sel = '<select data-gf="ab" data-k="' + g.k + '" aria-label="' + h.esc(g.label) + '">' + h.opt('', 'ランダム', v) + [1, 2, 3, 4, 5].map(function (n) { return h.opt(String(n), String(n), v); }).join('') + '</select>';
       }

@@ -1015,5 +1015,6 @@
   }
 
   HK.SCENARIOS.omega = scen;
-  HK.SCEN_ORDER.push('omega');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('omega') < 0) HK.SCEN_ORDER.push('omega');
 })();

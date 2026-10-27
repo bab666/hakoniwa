@@ -4,6 +4,8 @@
   var HK = window.HK, esc = HK.escape, V = HK.View;
   /* 死のある箱庭に「特殊役職」の欄を足す（special.js） */
   if (HK.Special) HK.Special.install();
+  /* 分割読み込み：あとから読んだかたまりで登録された箱庭（ゾンビの街・館など）にも足す（install は何度呼んでも同じ） */
+  if (HK.Special && HK.Load && HK.Load.onChunk) HK.Load.onChunk(function () { HK.Special.install(); });
   /* 登録できる住人の上限（箱庭に参加できるのは最大30人）。2026-10-26 に 100 → 200。
      アイコン（画像）は localStorage に入りきらないので、IndexedDB に分けて置く（saves.js の HK.IconStore。使えない環境では従来どおり住人の保存に入れる） */
   var MAX = 200;
@@ -18,12 +20,21 @@
     }
     var css = ':root{' + L.join(';') + '}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){' + D.join(';') + '}}:root[data-theme="dark"]{' + D.join(';') + '}' +
       /* 住人が多いとき（最大200人）の一覧：画面の外の行は描画を後回しにする（対応していないブラウザでは何もしない） */
-      '#castlist .res{content-visibility:auto;contain-intrinsic-size:auto 132px}';
+      '#castlist .res{content-visibility:auto;contain-intrinsic-size:auto 132px}' +
+      /* 箱庭のデータを読み込み中・失敗の印（load.js）：カードの高さを変えないように右上に重ねる。設定欄の仮表示は高さを確保して、読み終えたときのずれを小さく */
+      '.scen .scload{position:absolute;top:-9px;right:8px;z-index:1;font-size:11px;line-height:1.5;padding:0 6px;border:1px solid var(--accent);border-radius:8px;background:var(--accent-soft);color:var(--accent);pointer-events:none;white-space:nowrap}' +
+      '.scen .scload.ng{background:var(--surface);color:var(--warn);border-color:var(--warn-line);pointer-events:auto}.scen .scload.ng button{font:inherit;color:inherit;background:none;border:0;padding:0 0 0 4px;text-decoration:underline;cursor:pointer}' +
+      '.boxwait{min-height:420px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;margin:16px 0;padding:16px;border:1px dashed var(--line);border-radius:var(--r);color:var(--muted);text-align:center}' +
+      '.boxwait p{margin:0}.prefrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:8px 0 0}.prefrow select{max-width:100%}' +
+      '#loadfail{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:62px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;gap:8px 10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--warn-line);border-radius:var(--r);background:var(--surface);color:var(--ink);box-shadow:0 2px 10px rgba(0,0,0,.2);font-size:14px}' +
+      '@media (min-width:700px){#loadfail{left:50%;right:auto;transform:translateX(-50%);max-width:640px}}';
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   })();
   function genv(scen) { return scen.solo ? scen.env.concat(HK.GLOBAL_ENV.filter(function (e) { return e.all; })) : scen.env.concat(HK.GLOBAL_ENV); }
-  function smin(id) { return (HK.SCENARIOS[id] && HK.SCENARIOS[id].minCast) || 2; }
-  function smax(id) { return Math.min(JOIN_MAX, (HK.SCENARIOS[id] && HK.SCENARIOS[id].maxCast) || 12); }
+  /* 箱庭の情報：本体（HK.SCENARIOS）か、まだ読んでいない箱庭は目録から作った仮の箱庭（load.js の HK.Load.info。stub: true。一覧・人数・名前にだけ使う） */
+  function scenOf(id) { return HK.Load && HK.Load.info ? HK.Load.info(id) : HK.SCENARIOS[id]; }
+  function smin(id) { var s = scenOf(id); return (s && s.minCast) || 2; }
+  function smax(id) { var s = scenOf(id); return Math.min(JOIN_MAX, (s && s.maxCast) || 12); }
   /* この箱庭に参加する住人（未設定なら先頭から上限まで） */
   function joined(id) {
     var max = smax(id), list = S.join && S.join[id];
@@ -314,7 +325,9 @@
   else if (S.sample && S.chars.length < SAMPLE.length && S.chars.every(function (c, i) { return SAMPLE[i] && c.name === SAMPLE[i].name; })) {
     S.chars = S.chars.concat(SAMPLE.slice(S.chars.length).map(mk));
   }
-  if (!HK.SCENARIOS[S.scenId]) S.scenId = HK.SCEN_ORDER[0];
+  /* この画面で出せる箱庭か（本体があるか、目録にあって並び SCEN_ORDER（全年齢モードで絞った後）にある） */
+  function scenKnown(id) { return !!scenOf(id); }
+  if (!scenKnown(S.scenId)) S.scenId = HK.SCEN_ORDER[0];
   HK.Icons.set(S.chars);
   /* アイコンの置き場（IndexedDB。saves.js の HK.IconStore）から読んで、住人の保存に無いアイコンを戻す。
      読み終わる前にこのページで変えた・外したアイコン（iconTouched）は戻さない。読み終えたら保存して、まだ住人の保存に入っているアイコンを置き場へ移す */
@@ -336,9 +349,9 @@
   var histRaw = HK.store.get('history', []);
   if (!Array.isArray(histRaw)) histRaw = [];
   histRaw = histRaw.filter(function (h) { return h && h.input && Array.isArray(h.input.chars); });
-  var hist = histRaw.filter(function (h) { return HK.SCENARIOS[h.input.scenId]; });
+  var hist = histRaw.filter(function (h) { return scenKnown(h.input.scenId); });
   /* この画面で出せない箱庭（全年齢モードで隠す R18 の箱庭など）の履歴は、表示しないが消さない（書き戻すときに足す） */
-  var histHid = histRaw.filter(function (h) { return !HK.SCENARIOS[h.input.scenId]; });
+  var histHid = histRaw.filter(function (h) { return !scenKnown(h.input.scenId); });
   var histNote = '', histCur = null, histPend = [];   /* histPend：結果を置いている途中の履歴（一覧に「未保存」の印を出さない） */
   var tab = 'cast', result = null, showAll = false;
 
@@ -991,40 +1004,7 @@
     return pp;
   }
 
-  /* R18版で、設定や展開しだいで R18 の描写が入る箱庭の説明（常に R18 の箱庭はキャッチコピーの R18 で示す） */
-  /* 人数・R18 を外すと何も残らないキャッチコピーの代わり */
-  var KICK_GENRE = { dungeon: '罠・探索', massage: 'あやしい施術', hole: '壁の穴・放置', kaihen: '日常のずれ', succubus: '夜の街・比べられる', saimin: 'いたずら', variety: 'テレビ番組・対決', locker: '密室' };
-  KICK_GENRE.futari = '同居・デート';
-  /* 一覧カードの概要（どの箱庭も60字前後にそろえる）。元の詳しい説明はカードの title（マウスを乗せると出る）に */
-  var CARD_DESC = {
-    goukon: '居酒屋の個室で一晩の合コン。酒が回るほど本音と衝動があふれ出す。最後に誰と誰が一緒に帰ったかで決着がつく。',
-    whiteroom: '目覚めると白い部屋。扉の紙には脱出条件。条件は自由に組み立てられる（例：媚薬を10本飲み切って、エッチしないと出られない部屋）。',
-    futari: '二人（か三人）の毎日を、朝・昼・夕方・夜ごとに眺める。同居・別々に住んでデート・シェアハウス。出会いから恋人、同棲、指輪の約束まで。',
-    classroom: '同じクラスで過ごす一年間。テスト、体育祭、文化祭、修学旅行。行事のたびに、恋も友情も対立も少しずつ動いていく。',
-    island: '漂着した無人島で救助を待つ日々。食料が尽きれば体力が削れ、疲れと飢えで人間関係も削れていく。誰が最後まで残るか。',
-    br: '首輪をつけられ、ランダムな武器を一つ渡される。最後に生き残った一人だけが帰れる。信じるか、裏切るか、隠れ続けるか。',
-    trial: 'ホテルに閉じ込められ「殺せば生きて帰れる」と告げられる。殺人が起きれば裁判。犯人を当てれば処刑、外せば犯人以外が全滅。',
-    zombie: 'ゾンビのはびこる街で7日間を生き延びる。9つのエリアで食料を奪い合い、噂に惑わされ、咬まれればいつかは向こう側へ。',
-    jashin: '地図にない山奥の村には、得体の知れない神が祀られている。祭りの夜までに神の正体と対抗策を突き止め、村から脱出せよ。',
-    yakata: '吹雪の山で辿り着いた、地図にない館。橋は落ち、最初の死体が見つかる。探偵は推理で追い、犯人は痕跡を消して逃げ切る。',
-    omega: 'α・β・Ωの第二性がある世界。発情期や運命の番、職業の事情に揺れながら、関係の結末（全37通り）が決まるまで見守る。',
-    /* r18:begin */
-    dungeon: '一人〜四人で淫らな罠の迷宮に挑む。堕ち度が満ちた人から快楽に堕ちていき、全員が堕ちる前に最深部の主を倒せば踏破。',
-    /* r18:end */
-    massage: ['評判のマッサージ店。施術は少しずつあやしくなっていく。いつ気づくか、言い訳に騙されるか、そのまま流されてしまうか。', '評判のマッサージ店。施術は少しずつ際どくなっていく。いつ気づくか、言い訳に騙されるか、それとも快楽に負けるか。'],
-    /* r18:begin */
-    hole: '壁の穴に下半身がはまり、向こう側の感覚は遮断されている。そこで何をされても分からない――穴から解放されるまでは。',
-    kaihen: 'エロいことが当たり前の仕事になった世界。クリニックやホテルで、理性的な人ほど真面目に「施す側」として働いてしまう。',
-    succubus: '住人がサキュバスになって一晩、街で精を集める。誰をどう誘惑し、一晩で何ml集められるか。先輩サキュバスの助言つき。',
-    /* r18:end */
-    saimin: ['同僚・恋人・友人・ストーカーの誰かに催眠をかけられる。どんな暗示に弱いのか。終わったあと、怒るのか、癖になるのか。', '同僚・恋人・友人・ストーカーの誰かに催眠をかけられる。どこまでしてしまうのか。終わったあと、怒るのか、堕ちるのか。'],
-    /* r18:begin */
-    variety: '深夜のお色気バラエティに出演し、約60の企画からランダムに選ばれる対決で得点を競う。ハプニングに罰ゲーム、恋の芽生えも。',
-    /* r18:end */
-    locker: ['媚薬の充満する狭いロッカーに閉じ込められた二人。仕掛けを解いて脱出できるか。扉が開いたあと、二人の関係はどう変わる？', '媚薬の充満する狭いロッカーに閉じ込められた二人。仕掛けを解いて脱出できるか。先に手を出すのは誰か、出たあと続きをするか。'],
-    rpg: 'パーティを組んでダンジョンへ。階ごとに戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、どこで引き返し、いくら持ち帰れるか。',
-    jinro: '住人どうしで人狼ゲーム。人狼は性格で騙りや潜伏を選び、村は仕切り役しだいで方針が変わる。信頼と協力、そして裏切り。'
-  };
+  /* カードの表（キャッチコピーの代わり・概要・R18 の描写の注記）は js/scen-meta.js の HK.ScenMeta（目録にも写す。2026-10-27） */
   /* 注意書きはカードでは短く（全文は title に）。R18版はどの箱庭にも「※成人として扱います」を付ける（全年齢版は付けない） */
   var ADULT_NOTE = '※成人として扱います';
   function cardNote(n) {
@@ -1034,17 +1014,62 @@
     if (HK.SAFE_ON) return head;
     return (head ? head + '　' : '') + (n && /未成年/.test(n) ? '※未成年の職業を選んだ人以外は成人として扱います' : ADULT_NOTE);
   }
-  var R18_PLOT = { goukon: 'お持ち帰りの夜', whiteroom: '条件がエッチ・媚薬などのとき' };
-  R18_PLOT.futari = '恋人どうしの夜';
   function scenR18(s, id) {
     var env = (s.env || []).filter(function (e) { return /R-?18/.test(e.label || ''); }).map(function (e) { return '「' + e.label.replace(/（R-?18）/, '') + '」'; });
     if (env.length) return '設定' + env[0] + (env.length > 1 ? 'など' : '') + 'で描写あり';
-    return R18_PLOT[id] ? R18_PLOT[id] + 'に描写あり' : '';
+    var rp = ((HK.ScenMeta && HK.ScenMeta.r18plot) || {})[id];
+    return rp ? rp + 'に描写あり' : '';
+  }
+  /* 箱庭タブ：選んだ箱庭の本体がまだなら読み込み、読み終えたら描き直す（load.js）。失敗はカードに「もう一度」 */
+  var boxBusy = {}, boxErr = {};
+  function boxLoad(id, wasStub) {
+    if (!HK.Load || !HK.Load.manifest || boxBusy[id] || boxErr[id]) return;
+    boxBusy[id] = 1;
+    HK.Load.ensure(id).then(function () {
+      delete boxBusy[id];
+      if (scenStub(id)) boxErr[id] = { reason: 'broken' };   /* 読み終えたのに本体が登録されていない */
+      if (tab !== 'box' || S.scenId !== id) return;
+      /* 描き直す（族のかたまりで全箱庭共通の環境値・欄が増えることがある）。文字を入力中の欄があれば、カードの印だけ外し、欄を離れてから描き直す */
+      var ae = document.activeElement, typing = !wasStub && !boxErr[id] && ae && ae.closest && ae.closest('#view-box') && (ae.tagName === 'TEXTAREA' || (ae.tagName === 'INPUT' && /^(text|number|search)$/.test(ae.type)));
+      if (!typing) { boxRedraw(); return; }
+      Array.prototype.forEach.call(document.querySelectorAll('#view-box .scload'), function (x) { x.remove(); });
+      ae.addEventListener('blur', function () { setTimeout(function () { if (tab === 'box' && S.scenId === id) boxRedraw(); }, 0); }, { once: true });
+    }, function (e) {
+      delete boxBusy[id]; boxErr[id] = e || { reason: 'net' };
+      if (e && e.reason === 'stale' && HK.Load.staleNotice) HK.Load.staleNotice();
+      if (tab === 'box' && S.scenId === id) boxRedraw();
+    });
+  }
+  /* 描き直しても、見ている位置と選んでいた欄を保つ */
+  function boxRedraw() {
+    var y = window.pageYOffset, ae = document.activeElement, fid = ae && ae.id;
+    renderBox();
+    if (Math.abs(window.pageYOffset - y) > 1) window.scrollTo(0, y);
+    var el = fid && document.getElementById(fid);
+    if (el && el !== document.activeElement && el.focus) { try { el.focus({ preventScroll: true }); } catch (x) { el.focus(); } }
+  }
+  function scLoadBadge(id) {
+    var e = boxErr[id];
+    if (e) return '<span class="scload ng" role="status">読み込めませんでした<button type="button" data-act="scenretry">もう一度</button></span>';
+    return '<span class="scload" role="status">読み込み中…</span>';
+  }
+  /* データの先読みの設定（load.js の HK.Load.pref。http(s) で配っているときだけ。file:// は手元のファイルなので先読みしない） */
+  function prefRow() {
+    if (!HK.Load || !HK.Load.manifest || !HK.Load.setPref || !/^https?:$/.test(location.protocol)) return '';
+    var v = HK.Load.pref(), o = function (k, l) { return '<option value="' + k + '"' + (v === k ? ' selected' : '') + '>' + l + '</option>'; };
+    return '<p class="hint prefrow"><label for="prefetch">データの先読み</label><select id="prefetch" data-f="prefetch">' + o('auto', '自動（おすすめ）') + o('all', 'すべて先読み') + o('pick', '選んだ箱庭だけ') + '</select>' +
+      '<span>パソコンでは裏で先に読み込みます。スマホでは選んだ箱庭だけ読みます</span></p>';
+  }
+  function runBar() {
+    return '<div class="runbar nofold"><label for="seed">シード</label><input type="text" id="seed" inputmode="numeric" data-f="seed" value="' + esc(S.seed) + '" placeholder="空欄でランダム"><span class="hint" style="margin:0">同じシードと条件なら同じ結末になります。</span><span class="spacer"></span><button class="btn primary" data-act="run">箱庭を動かす</button></div>';
   }
   function renderBox() {
-    var scen = HK.SCENARIOS[S.scenId];
+    var scen = scenOf(S.scenId);
+    var wait = !!(scen && scen.stub);
+    var loadSel = !!(HK.Load && HK.Load.manifest && !HK.Load.has(S.scenId));
+    if (loadSel) boxLoad(S.scenId, wait);
     /* 同じ箱庭が二重に登録されても、一覧には一度だけ出す */
-    HK.SCEN_ORDER = HK.SCEN_ORDER.filter(function (x, i, arr) { return arr.indexOf(x) === i && HK.SCENARIOS[x]; });
+    HK.SCEN_ORDER = HK.SCEN_ORDER.filter(function (x, i, arr) { return arr.indexOf(x) === i && (HK.SCENARIOS[x] || (HK.Load && HK.Load.meta && HK.Load.meta(x))); });
     /* 並び：成人向け（R18版）では、ダンジョンRPGと人狼をゾンビの街のすぐ後ろに置く */
     var order = HK.SCEN_ORDER.slice();
     if (!HK.SAFE_ON && order.indexOf('zombie') >= 0) {
@@ -1053,25 +1078,32 @@
       order.splice.apply(order, [order.indexOf('zombie') + 1, 0].concat(mv));
     }
     var cards = order.map(function (id) {
-      var s = HK.SCENARIOS[id];
+      var s = scenOf(id);
       /* 成人向けの箱庭は、ピンクのボックスと赤いR18タグでひと目で分かるようにする */
       var adult = !HK.SAFE_ON && /R-?18/.test(s.kicker || '');
       /* キャッチコピーに手書きで混ざった人数・R18 は外し、人数とR18の有無は下の一行にそろえて出す */
       var kt = String(s.kicker || '').replace(/（\d+(?:〜\d+)?人）/, '').replace(/^\d+(?:〜\d+)?人・/, '').replace(/・?R-?18/, '').replace(/^ソロ(?:（[^）]*）)?・?/, '').replace(/^・|・$/g, '');
-      if (!kt) kt = KICK_GENRE[id] || '';
+      if (!kt) kt = (HK.ScenMeta && HK.ScenMeta.kicker[id]) || '';
       var kick = esc(kt) + (adult ? '<span class="r18tag">R18</span>' : '');
       var lo = smin(id), hi = smax(id), meta = '参加 ' + (lo === hi ? lo + '人' : lo + '〜' + hi + '人');
       var r18s = !HK.SAFE_ON && !adult ? scenR18(s, id) : '';
       if (r18s) meta += '<span class="r18part"><span class="r18tag">R18</span>' + esc(r18s) + '</span>';
-      var cd = CARD_DESC[id], snote = HK.SAFE_ON ? String(s.note || '').replace(/[^。]*成人として扱[^。]*。?/g, '').replace(/^※\s*$/, '').trim() : s.note, full = s.desc + (snote ? '\n' + snote : '') + (HK.SAFE_ON || /成人として扱/.test(s.note || '') ? '' : '\n※登場人物はすべて成人として扱います。');
+      var cd = HK.ScenMeta && HK.ScenMeta.desc[id], snote = HK.SAFE_ON ? String(s.note || '').replace(/[^。]*成人として扱[^。]*。?/g, '').replace(/^※\s*$/, '').trim() : s.note, full = s.desc + (snote ? '\n' + snote : '') + (HK.SAFE_ON || /成人として扱/.test(s.note || '') ? '' : '\n※登場人物はすべて成人として扱います。');
       cd = Array.isArray(cd) ? cd[HK.SAFE_ON ? 0 : 1] : cd || s.desc;
-      return '<label class="scen' + (adult ? ' adult' : '') + (id === S.scenId ? ' on' : '') + '" title="' + esc(full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (id === S.scenId ? ' checked' : '') + '>' +
+      return '<label class="scen' + (adult ? ' adult' : '') + (id === S.scenId ? ' on' : '') + '" title="' + esc(full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (id === S.scenId ? ' checked' : '') + '>' + ((wait || loadSel) && id === S.scenId ? scLoadBadge(id) : '') +
         '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div>' + (HK.ScenTags ? HK.ScenTags.html(id, esc) : '') + '<div class="d">' + esc(cd) + '</div><div class="note">' + esc(cardNote(s.note)) + '</div>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</label>';
     }).join('');
     /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url＝BOOTH・CONF.noteUrl＝note） */
     if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<div class="scen r18link">' +
       '<div class="k">BOOTH・noteで頒布中・18歳以上向け</div><div class="n">R-18版</div><div class="d">エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。</div>' +
       '<div class="r18buy"><a href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (HK.CONF.noteUrl ? '<a href="' + esc(HK.CONF.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '') + '</div></div>';
+    if (wait) {
+      var we = boxErr[S.scenId];
+      $('#view-box').innerHTML = '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' + prefRow() +
+        '<div class="boxwait"' + (we ? '' : ' aria-busy="true"') + '>' + (we ? '<p>「' + esc(scen.name) + '」のデータを読み込めませんでした' + (we.reason === 'offline' ? '（通信できないため読み込めません）' : '') + '</p><p><button type="button" class="btn small" data-act="scenretry">もう一度</button></p>' :
+          '<p>「' + esc(scen.name) + '」のデータを読み込んでいます…</p><p class="hint" style="margin:0">読み込み中に「箱庭を動かす」を押すと、読み終わりしだい動かします。</p>') + '</div>' + runBar();
+      return;
+    }
     var derived = (scen.derived || []).map(function (k) { return '<span class="chip" title="' + esc(HK.TRAIT_SRC[k]) + '">' + esc(HK.TRAIT_NAME[k]) + '<span class="nums">' + esc(HK.TRAIT_SRC[k]) + '</span></span>'; }).join('');
     var extra = (scen.stats || []).map(function (s) { return '<span class="chip" title="' + esc(s.desc) + '">' + esc(s.label) + '</span>'; }).join('') + (scen.weapons ? '<span class="chip">支給武器</span>' : '');
     var sexCols = S.scenId === 'goukon' || S.scenId === 'omega';
@@ -1118,7 +1150,7 @@
     }).join('');
 
     var html =
-      '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' +
+      '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' + prefRow() +
       '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + ' <span class="envbtns"><button type="button" class="mini" data-act="envreset" title="この箱庭の環境値を初期値に戻す">初期値に戻す</button><button type="button" class="mini" data-act="envrand" title="環境値をランダムに決める（文字の項目はそのまま）">ランダム</button></span></h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + contentBox() + '</div></div>' +
       (HK.Adv ? HK.Adv.html() : '') +
       '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
@@ -1129,7 +1161,7 @@
       (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、カードの「この箱庭のTIPS」にあります。</p>' : '') +
       (sexCols && S.chars.length ? '<p class="hint" style="margin-top:8px">性別と恋愛対象は、住人タブの ⚙️ 設定と同じものです。</p>' : '') +
       (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') +
-      '<div class="runbar nofold"><label for="seed">シード</label><input type="text" id="seed" inputmode="numeric" data-f="seed" value="' + esc(S.seed) + '" placeholder="空欄でランダム"><span class="hint" style="margin:0">同じシードと条件なら同じ結末になります。</span><span class="spacer"></span><button class="btn primary" data-act="run">箱庭を動かす</button></div>';
+      runBar();
     $('#view-box').innerHTML = html;
     if (HK.Adv) HK.Adv.afterRender();
   }
@@ -1215,15 +1247,57 @@
   }
 
   /* あとで読む分（js/bundle-late.js）がまだのうちに動かそうとしたら、読み終わるのを待ってから動かす */
-  var pendingSim = null;
+  /* 分割読み込み（js/load.js の HK.Load）：箱庭の本体のかたまりも、読み終えてから使う。
+     動かす・回し直すは「箱庭のかたまり＋あとで読む分（late）」、残した結果を開くは「箱庭のかたまり」だけを待つ。
+     待つのは最後に頼んだ1つだけ（前の待ちは捨てる）。目録の無い古い形（HK.Load.manifest が無い）では、いつもすぐ続ける */
+  function scenStub(id) { return !HK.SCENARIOS[id] && !!(HK.Load && HK.Load.meta && HK.Load.meta(id)); }
+  function ready(id, scenOnly) { return (scenOnly || HK.LATE_READY !== false) && (!HK.Load || HK.Load.has(id)); }
+  var pending = null;
+  function whenReady(id, fn, msg, scenOnly) {
+    if (ready(id, scenOnly)) { pending = null; goReady(fn, id); return; }
+    var p = pending = { id: id, fn: fn, scenOnly: !!scenOnly };
+    toast(msg || 'データを読み込んでいます。終わりしだい動かします…');
+    if (HK.Load && HK.Load.manifest) HK.Load.ensure(id).then(function () { flushPending(p); }, function (e) {
+      if (pending !== p) return;
+      pending = null;
+      loadFail(e, function () { whenReady(id, fn, msg, scenOnly); });
+    });
+  }
+  function goReady(fn, id) {
+    /* 読み終えたのに仮の箱庭のまま（本体が登録されなかった）なら、落ちないように止めて知らせる */
+    if (scenStub(id)) { loadFail({ reason: 'broken' }, null); return; }
+    fn();
+  }
+  function flushPending(p) {
+    if (!p || pending !== p || !ready(p.id, p.scenOnly)) return;
+    pending = null;
+    goReady(p.fn, p.id);
+  }
+  /* 読み込めなかったときの知らせ（画面の下に残す。「もう一度」で読み直す）。新しい版が出ていたときは load.js の知らせ（画面の上）を出す */
+  function loadFail(e, retry) {
+    if (e && e.reason === 'stale') { if (HK.Load && HK.Load.staleNotice) HK.Load.staleNotice(); return; }
+    var old = document.getElementById('loadfail'); if (old) old.remove();
+    var why = e && e.reason === 'offline' ? '（通信できないため読み込めません）' : e && e.reason === 'broken' ? '（ページを読み込み直してください）' : '';
+    var d = document.createElement('div');
+    d.id = 'loadfail'; d.setAttribute('role', 'alert');
+    d.innerHTML = '<span>この箱庭のデータを読み込めませんでした' + why + '</span>' + (retry ? '<button type="button" class="btn small primary" data-lf="retry">もう一度</button>' : '') +
+      '<button type="button" class="btn small ghost" data-lf="close" aria-label="閉じる">×</button>';
+    d.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-lf]');
+      if (!b) return;
+      d.remove();
+      if (b.dataset.lf === 'retry' && retry) retry();
+    });
+    document.body.appendChild(d);
+  }
   HK.onLate = function () {
     if (HK.LATE_FAILED) toast('データの一部を読み込めませんでした。ページを読み込み直してください');
-    if (tab === 'cast') renderCast(); else if (tab === 'box') renderBox();
-    if (pendingSim) { var ps = pendingSim; pendingSim = null; simulate(ps[0], ps[1]); }
+    if (tab === 'cast') renderCast(); else if (tab === 'box') boxRedraw();
+    flushPending(pending);
   };
   /* onRes：描画の前に結果を渡す（履歴に結果を置く写しは、描画より前に取る。結末の組み立て HK.Endings.build は結果を書き換えないが、念のため） */
   function simulate(input, record, onRes) {
-    if (HK.LATE_READY === false) { pendingSim = [input, record]; toast('データを読み込んでいます。終わりしだい動かします…'); return null; }
+    if (!ready(input && input.scenId)) { whenReady(input && input.scenId, function () { simulate(input, record, onRes); }); return null; }
     var res;
     try { res = HK.simulate(input); }
     catch (err) { toast('シミュレーション中にエラーが起きました：' + err.message); if (window.console) console.error(err); return null; }
@@ -1285,6 +1359,9 @@
   };
   function histOpen(it) {
     if (!it) return;
+    /* 表示（結末の組み立て・一人用の表示）に箱庭のかたまりが要るので、読んでから開く */
+    var hsid = it.input && it.input.scenId;
+    if (!ready(hsid, true)) { whenReady(hsid, function () { histOpen(it); }, 'この箱庭のデータを読み込んでいます…', true); return; }
     /* R18モードで動かした結果は、全年齢モードでは出さない（回し直して表示し、残した結果は書き換えない） */
     var lock = HK.SAFE_ON && it.r18;
     if (it.id && it.r && !lock && HK.History) {
@@ -1303,6 +1380,8 @@
     histRerun(it, lock ? (HK.SAFE_BUILD ? 'z18' : 'r18') : it.id ? 'lost' : 'old');
   }
   function histRerun(it, why) {
+    /* 回し直しは口調の書き下ろし（late）も要る。読み終えてから、知らせを決めて回す */
+    if (!ready(it.input.scenId)) { whenReady(it.input.scenId, function () { histRerun(it, why); }); return; }
     /* 知らせは先に決めておき、simulate の中の描画（setTab）で一度だけ出す */
     var n0 = histNote, c0 = histCur;
     histNote = HIST_MSG[why]; histCur = it;
@@ -1335,7 +1414,10 @@
     var J = joined(S.scenId);
     var mn = smin(S.scenId);
     if (J.length < mn) { toast(mn === 1 ? '挑戦する住人を1人選んでください' : '参加する住人を' + mn + '人以上選んでください'); return; }
-    if (J.length > smax(S.scenId)) { toast(HK.SCENARIOS[S.scenId].name + 'は' + smax(S.scenId) + '人までです。参加者を減らしてください'); return; }
+    if (J.length > smax(S.scenId)) { toast(scenOf(S.scenId).name + 'は' + smax(S.scenId) + '人までです。参加者を減らしてください'); return; }
+    /* 箱庭のデータを読み込み中なら、読み終えてから動かす（そのあいだに別の箱庭を選んだら動かさない） */
+    var rsid = S.scenId;
+    if (!ready(rsid)) { whenReady(rsid, function () { if (S.scenId === rsid) run(newSeed); }); return; }
     var seed = !newSeed && /^\d+$/.test(String(S.seed).trim()) ? parseInt(S.seed, 10) : HK.newSeed();
     var input = buildInput(seed), sc = HK.SCENARIOS[S.scenId];
     /* 箱庭ごとの始める前の検査（scen.check が止める理由の文を返したら始めない。無い箱庭は今までどおり） */
@@ -1356,8 +1438,12 @@
   /* セーブデータから結果を開く・同じ条件で回し直す */
   HK.UIres = {
     get: function () { return result; },
-    show: function (res) { result = res; showAll = false; histNote = ''; histCur = null; V.resetFilter(); setTab('result'); },
-    rerun: function (input) { if (input && HK.SCENARIOS[input.scenId]) simulate(input, true); }
+    show: function (res) {
+      /* セーブ・共有から開くときも、箱庭のかたまりを読んでから表示する（saves.js の「開く」） */
+      var sid = res && (res.scenId || (res.input && res.input.scenId));
+      whenReady(sid, function () { result = res; showAll = false; histNote = ''; histCur = null; V.resetFilter(); setTab('result'); }, 'この箱庭のデータを読み込んでいます…', true);
+    },
+    rerun: function (input) { if (input && scenOf(input.scenId)) simulate(input, true); }
   };
   /* 25問のエゴグラム診断から住人を追加・書き換え */
   if (HK.EgoQuiz) {
@@ -1502,6 +1588,7 @@
         S.join = S.join || {}; S.join[S.scenId] = []; save(); renderBox(); break;
       case 'gobox': setTab('box'); break;
       case 'run': run(false); break;
+      case 'scenretry': delete boxErr[S.scenId]; renderBox(); break;
       case 'reroll': run(true); break;
       case 'iconpick': iconTarget = row && row.dataset.id; var fi = $('#iconfile'); if (fi) { fi.value = ''; fi.click(); } break;
       case 'icondel':
@@ -1529,7 +1616,7 @@
       case 'showall': showAll = true; renderResult(); break;
       case 'hist': histOpen(hist[+t.dataset.k]); break;
       /* 履歴から開いた結果を、同じ条件で今の版で回し直す（新しい履歴として残す） */
-      case 'histrerun': if (histCur && histCur.input && HK.SCENARIOS[histCur.input.scenId]) simulate(JSON.parse(JSON.stringify(histCur.input)), true); break;
+      case 'histrerun': if (histCur && histCur.input && scenOf(histCur.input.scenId)) simulate(JSON.parse(JSON.stringify(histCur.input)), true); break;
       case 'node': V.toggleWho(+t.dataset.i); break;
       case 'who': V.toggleWho(+t.dataset.i); break;
       case 'whoclear': V.setWho([]); break;
@@ -1600,7 +1687,11 @@
       S.sample = false;
       refreshRow(row, c, true);
     }
-    else if (f === 'scen') { S.scenId = t.value; save(); renderBox(); return; }
+    else if (f === 'scen') { S.scenId = t.value; delete boxErr[t.value]; save(); renderBox(); return; }
+    else if (f === 'prefetch') {
+      if (ev.type === 'change' && HK.Load && HK.Load.setPref) { HK.Load.setPref(t.value); toast('データの先読みを「' + t.options[t.selectedIndex].text + '」にしました'); }
+      return;
+    }
     else if (f === 'adv') { if (HK.Adv) HK.Adv.onInput(t); return; }
     else if (f === 'ct') {
       S.glob.ct = S.glob.ct || {};

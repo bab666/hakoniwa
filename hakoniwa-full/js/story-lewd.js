@@ -49,13 +49,13 @@
   function force(S) { if (S && S.log) S._r18F = S.log.length; }
   function forced(S, o) { return S._r18F === (S.log || []).length || !!(o && FORCED[o.tag]); }
   var FORCED = { '夜這い': 1, '清めの湯': 1, '凌辱': 1, '脅迫': 1 };
-  ['npc', 'resist', 'solo', 'group'].forEach(function (k) { var f = R[k]; if (typeof f === 'function') R[k] = function (S, by) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
+  ['npc', 'resist', 'solo', 'group'].forEach(function (k) { HK.wrap(R, k, function (f) { if (typeof f === 'function') return function (S, by) {
     touch(S);
     if ((k === 'npc' && by !== 'god') || (k === 'resist' && by !== 'god')) force(S);
     return f.apply(this, arguments);
-  }; });
-  var sex0 = R.sex;
-  R.sex = function (S, x, y) {
+  }; }); });
+  HK.wrap(R, 'sex', function (sex0) { return function (S, x, y) {
     touch(S); pair(S);
     if (ero(S)) return X.storyEroSex(S, x, y);
     var t = sex0.apply(this, arguments);
@@ -67,12 +67,11 @@
       S._r18A = S.log.length;
     }
     return t;
-  };
+  }; });
 
   /* 男性向けの喘ぎ：start／mid／climax は段階 0／1／2。自分で攻めを選んだ人・攻めの声は、主導する側の声 */
   var STAGE = { start: 0, mid: 1, climax: 2, top: 1, topc: 2 };
-  var say0 = R.say;
-  R.say = function (S, p, kind) {
+  HK.wrap(R, 'say', function (say0) { return function (S, p, kind) {
     touch(S);
     if (!ero(S) || STAGE[kind] == null || forced(S) || !inPair(S)) return say0.apply(this, arguments);
     var dom = kind === 'top' || kind === 'topc' || (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(p)), d = p.eroDom;
@@ -80,7 +79,7 @@
     var m = E.moan(S, p, STAGE[kind]);
     p.eroDom = d;
     return p.name + '「' + m + '」';
-  };
+  }; });
   R.moans = function (S, p, kinds) { return (kinds || ['start', 'climax']).map(function (k) { return R.say(S, p, k); }).join(''); };
 
   /* 自分で攻めを選んだ人：相手（村人・神・眷属）を責め立てる側。男性の攻め（SOLO_TOP）と女性の攻め（SOLO_TOP_F）で書き分ける */
@@ -238,8 +237,7 @@
   }
 
   function who(S, a) { return typeof a === 'number' ? S.P[a] : a; }
-  var sayEv = ST.say;
-  ST.say = function (S, o) {
+  HK.wrap(ST, 'say', function (sayEv) { return function (S, o) {
     /* R18に参加しない人（キャラの設定）が出る山場には、文を足さない */
     var noR = o && (o.actors || []).some(function (a) { var p = who(S, a); return p && HK.State && !HK.State.r18ok(p); });
     if (o && !noR && o.kind === 'climax' && typeof o.text === 'string' && on(S) && X.lv(S.env) !== 'low' && isSex(S, o) && (!forced(S, o) || topSolo(S, o)) && S._r18E !== (S.log || []).length) {
@@ -269,5 +267,5 @@
     /* エロシーンの印（ero-scene.js）：R18の場面の札の山場（生贄は儀式の文が性的なときだけ。交わりの部品を使った場面は touch で付く） */
     if (o && o.kind === 'climax' && S && S.scen && SCEN[S.scen.id] && TAGS[o.tag] && o.tag !== '生贄' && !HK.SAFE_ON) o.lewd = true;
     return sayEv.apply(this, arguments);
-  };
+  }; });
 })();

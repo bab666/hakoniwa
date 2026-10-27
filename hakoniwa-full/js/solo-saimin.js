@@ -72,7 +72,8 @@
   /* 描写の作風（R18版の ero-kit.js があるときだけ）：男性向けの文は solo-saimin-ero.js */
   if (HK.Ero && HK.Ero.OPT) scen.env.push(HK.Ero.OPT);
   HK.SCENARIOS.saimin = scen;
-  HK.SCEN_ORDER.push('saimin');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('saimin') < 0) HK.SCEN_ORDER.push('saimin');
 
   var TIEMAP = { teacher: 'colleague', mentor: 'colleague', lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'lover', colleague: 'colleague', senpai: 'colleague', master: 'colleague', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', acq: 'friend', almost: 'friend', enemy: 'grudge', rival: 'grudge', ex: 'grudge', crush: 'stalker', classmate: 'friend', boss: 'colleague', benefactor: 'friend', worship: 'friend', fond: 'friend', blind: 'stalker' };
   var FATE = { confused: '困惑したまま、答えを出せなかった', dazed: '放心して、しばらく何も手につかなかった', accept: '戸惑いながらも受け入れた', peace: '頭が良くなって喜んだ', forget: '何も覚えていない', body: '体だけが覚えている', angry: '激怒した', report: '通報した', revenge: 'やり返した', counter: '逆催眠をかけた', sweet: '照れながら許した', shy: '恥ずかしくて避けた', fall: '快楽に堕ちた（自分からねだる）', couple: '恋人になった', depend: '憎みながら離れられない', laugh: 'かからずに笑い飛ばした', noticed: '見破った' };

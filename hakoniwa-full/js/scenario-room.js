@@ -1327,7 +1327,8 @@
   });
 
   HK.SCENARIOS.whiteroom = scen;
-  HK.SCEN_ORDER.splice(1, 0, 'whiteroom');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('whiteroom') < 0) HK.SCEN_ORDER.splice(1, 0, 'whiteroom');
   /* 追加の展開（room-trio.js など）から使う部品 */
   HK.RoomAPI = { K: K, EV: EV, scen: scen, prog: prog, ruleDone: ruleDone, seqWait: seqWait, seqFlush: seqFlush, bumpAct: bumpAct, waitNote: waitNote, pairDone: pairDone, leftText: leftText, eager: eager, willing: willing, desperate: desperate, tieWall: tieWall, names: names, hasPairRule: hasPairRule, finishExit: finishExit, exitPair: exitPair,
     /* 条件を足す側（room-games.js・room-games-r18.js）から使う部品 */

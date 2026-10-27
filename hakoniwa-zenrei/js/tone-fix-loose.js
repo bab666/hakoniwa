@@ -19,9 +19,10 @@
     var lk = looseKey(key);
     if (lk.length < 4 || MOANISH.test(key)) return null;
     var ix = LOOSE[tone];
-    /* 索引は初めて外れたときに作る（あとから読む分の書き下ろしが読み終わる前に作ったものは作り直す） */
-    if (!ix || ix.T !== T || ix.late !== HK.LATE_READY) {
-      ix = LOOSE[tone] = { T: T, late: HK.LATE_READY, m: {} };
+    /* 索引は初めて外れたときに作る（あとから読む分の書き下ろしが読み終わる前に作ったもの・そのあとかたまりが増えたときのものは作り直す。HK.Load.gen は load.js） */
+    var gk = String(HK.LATE_READY) + ':' + (HK.Load ? HK.Load.gen : 0);
+    if (!ix || ix.T !== T || ix.gk !== gk) {
+      ix = LOOSE[tone] = { T: T, gk: gk, m: {} };
       for (var k in T) { var l = looseKey(k); if (l.length >= 4 && !MOANISH.test(k) && !(l in ix.m)) ix.m[l] = k; }
     }
     var hit = ix.m[lk];

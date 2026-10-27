@@ -167,9 +167,9 @@
   S.talk = function (seg) { return (seg || []).some(function (x) { return /^[lqmu]$/.test(x.t); }); };
 
   /* いちばん外側の包み：ほかの仕上げがすべて済んだ文に合わせて e.seg を作る */
-  if (HK.simulate && !HK.simulate._seg) {
-    var sim0 = HK.simulate;
-    HK.simulate = function (input) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
+  if (HK.simulate && !HK.simulate._seg) HK.wrap(HK, 'simulate', function (sim0) {
+    var sim = function (input) {
       var r = sim0.apply(this, arguments);
       if (r && Array.isArray(r.log)) {
         var names = namesOf(input && input.chars && input.chars.length ? input.chars : r);
@@ -181,9 +181,10 @@
       }
       return r;
     };
-    for (var k in sim0) if (Object.prototype.hasOwnProperty.call(sim0, k)) HK.simulate[k] = sim0[k];
-    HK.simulate._seg = true;
-  }
+    for (var k in sim0) if (Object.prototype.hasOwnProperty.call(sim0, k)) sim[k] = sim0[k];
+    sim._seg = true;
+    return sim;
+  });
   /* さらに外側の包み：名前に記号（！。？（）など）のある住人は、箱庭を動かしているあいだだけ、記号を私用領域の文字にした名前で動かす（core.js の HK.NameSafe）。
      話し手の判定・口調の置き換え・seg・呼び方が、記号のない名前と同じように効く。結果を返す前に、文・seg・キーの名前を全部元に戻す */
   var NS = HK.NameSafe;
@@ -198,9 +199,8 @@
       return seg;
     };
   }
-  if (NS && HK.simulate && !HK.simulate._nameSafe) {
-    var sim2 = HK.simulate;
-    HK.simulate = function (input) {
+  if (NS && HK.simulate && !HK.simulate._nameSafe) HK.wrap(HK, 'simulate', function (sim2) {
+    var sim = function (input) {
       var cs = input && input.chars;
       if (!Array.isArray(cs) || !cs.some(function (c) { return c && NS.need(c.name); })) return sim2.apply(this, arguments);
       /* 置き換え表は、名前が「constructor」「toString」などでも Object の持ち物を拾わないように、自分の持つ鍵だけを引く */
@@ -213,7 +213,8 @@
       try { NS.decDeep(r); } catch (err) { /* 戻しに失敗しても結果は返す */ }
       return r;
     };
-    for (var k2 in sim2) if (Object.prototype.hasOwnProperty.call(sim2, k2)) HK.simulate[k2] = sim2[k2];
-    HK.simulate._nameSafe = true;
-  }
+    for (var k2 in sim2) if (Object.prototype.hasOwnProperty.call(sim2, k2)) sim[k2] = sim2[k2];
+    sim._nameSafe = true;
+    return sim;
+  });
 })();

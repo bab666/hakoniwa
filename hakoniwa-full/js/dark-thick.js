@@ -416,9 +416,9 @@
 
   /* ---------- 執着の暴走に組み込む ---------- */
   var O = HK.Obsess;
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
   if (O && O.cageTick && O.climax) {
-    var cage0 = O.cageTick;
-    O.cageTick = function (ctx, a, b, s, opt) {
+    HK.wrap(O, 'cageTick', function (cage0) { return function (ctx, a, b, s, opt) {
       var r = cage0.apply(this, arguments);
       /* 作風「男性向け」：長い版を使わず、男性向けの文で組む（性器なしの人がいる組は今までどおり） */
       if (r && r.cat === 'romance' && /監禁の夜/.test(r.why || '') && eroOn(ctx)) {
@@ -431,9 +431,8 @@
         r.mag = Math.max(r.mag || 0, 40);
       }
       return r;
-    };
-    var cl0 = O.climax;
-    O.climax = function (ctx, a, b, s, ty, c, opt) {
+    }; });
+    HK.wrap(O, 'climax', function (cl0) { return function (ctx, a, b, s, ty, c, opt) {
       var r = cl0.apply(this, arguments);
       if (!r) return r;
       var w = r.why || '';
@@ -450,6 +449,6 @@
       if (/意思を待たずに番に/.test(w)) r.text = omegaLong(ctx, a, b, 'force');
       else if (/抑制剤を断ち、発情期で/.test(w)) r.text = omegaLong(ctx, a, b, 'trap') + (/うなじを噛んでしまった/.test(w) ? '\n\n' + HK.Obsess.fill(ctx, fl('我に返ったとき、{a}のうなじには{b}の噛み跡が残っていた。{a}はそれを指でなぞり、幸せそうに笑った。', { a: a.name, b: b.name }), a, b) : '');
       return r;
-    };
+    }; });
   }
 })();

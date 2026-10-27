@@ -40,13 +40,16 @@
     return o;
   }
   HK.LewdMark = { has: has, fix: fix, safe: safeText };
-  var sim0 = HK.simulate;
-  HK.simulate = function (input) {
-    var r = sim0.apply(this, arguments);
-    try { if (r && typeof r === 'object') walk(r, (input && input.env) || {}, new Set()); } catch (e) { /* 後始末に失敗しても結果は返す */ }
-    return r;
-  };
-  /* 前の包みの印（_lewd など）を引き継ぐ */
-  Object.keys(sim0).forEach(function (k) { HK.simulate[k] = sim0[k]; });
-  HK.simulate._lewdMark = true;
+  /* 包む順は元のファイルの順に固定（HK.wrap。分割読み込みで後から届いた包みが内側に入る） */
+  HK.wrap(HK, 'simulate', function (sim0) {
+    var sim = function (input) {
+      var r = sim0.apply(this, arguments);
+      try { if (r && typeof r === 'object') walk(r, (input && input.env) || {}, new Set()); } catch (e) { /* 後始末に失敗しても結果は返す */ }
+      return r;
+    };
+    /* 前の包みの印（_lewd など）を引き継ぐ */
+    Object.keys(sim0).forEach(function (k) { sim[k] = sim0[k]; });
+    sim._lewdMark = true;
+    return sim;
+  });
 })();

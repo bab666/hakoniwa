@@ -56,7 +56,8 @@
   };
   HK.SCENARIOS.locker = scen;
   LK.SCEN = scen;
-  HK.SCEN_ORDER.push('locker');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('locker') < 0) HK.SCEN_ORDER.push('locker');
 
   var LV = ['touch', 'kiss', 'grope', 'oral', 'sex'];
   var REL = { lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'fwb', master: 'master', crush: 'crush', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', senpai: 'friend', colleague: 'colleague', classmate: 'classmate', boss: 'boss', worship: 'worship', fond: 'friend', blind: 'worship', benefactor: 'benefactor', relative: 'relative', acq: 'friend', almost: 'almost', rival: 'tension', bad: 'tension', enemy: 'tension', ex: 'ex', sibling: 'friend' };

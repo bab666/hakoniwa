@@ -151,11 +151,12 @@
     HK.Ctx.prototype.say = function (o) { tag(o); return cs0.apply(this, arguments); };
     HK.Ctx.prototype.say._attrNight = true;
   }
-  if (HK.Story && HK.Story.say && !HK.Story.say._attrNight) {
-    var ss0 = HK.Story.say;
-    HK.Story.say = function (S, o) { tag(o); return ss0.apply(this, arguments); };
-    HK.Story.say._attrNight = true;
-  }
+  /* HK.Story.say・R18M.sex・TKC.body の包み直しは HK.wrap（物語型の箱庭のかたまりが後から届いても、包む順は元のファイルの順） */
+  if (HK.Story && HK.Story.say && !HK.Story.say._attrNight) HK.wrap(HK.Story, 'say', function (ss0) {
+    var f = function (S, o) { tag(o); return ss0.apply(this, arguments); };
+    f._attrNight = true;
+    return f;
+  });
   /* 段落の最初（始まり）のすぐあとに差し込む */
   function after1(text, ins) {
     if (!ins) return text;
@@ -199,9 +200,8 @@
     R.isStrong = function (y) { if (cur && y === cur[1] && A.nightOf(cur[1], cur[0]) === 'maso') return false; return is0.apply(this, arguments); };
     R.isStrong._attr = true;
   }
-  if (R && R.sex && !R.sex._attr) {
-    var sx0 = R.sex;
-    R.sex = function (S, x, y, opt) {
+  if (R && R.sex && !R.sex._attr) HK.wrap(R, 'sex', function (sx0) {
+    var f = function (S, x, y, opt) {
       if (!x || !y || HK.SAFE_ON) return sx0.apply(this, arguments);
       var od = HK.Pos ? HK.Pos.order(x, y, [x, y]) : [x, y], T = od[0], U = od[1];
       var nt = A.nightOf(T, U), nb = A.nightOf(U, T);
@@ -217,13 +217,13 @@
       var ero = !!(HK.Ero && HK.Ero.on && HK.Ero.on(S));
       return after1(r, names(A.nightText(T, U, mode, fresh(S, null), ero), T, U));
     };
-    R.sex._attr = true;
-  }
+    f._attr = true;
+    return f;
+  });
   /* omega-thick.js の HK.TKC.body（オメガバース・漂流記・ゾンビの山場）：サドの攻めは乱暴な抱き方に、始まりのあとに一文（{T}{U} のまま） */
   var TK = HK.TKC;
-  if (TK && TK.body && !TK.body._attr) {
-    var tb0 = TK.body;
-    TK.body = function (T, U, o) {
+  if (TK && TK.body && !TK.body._attr) HK.wrap(TK, 'body', function (tb0) {
+    var f = function (T, U, o) {
       if (!T || !U || !o) return tb0.apply(this, arguments);
       var nt = A.nightOf(T, U), nb = A.nightOf(U, T);
       if (!nt && !nb) return tb0.apply(this, arguments);
@@ -235,6 +235,7 @@
       var t = A.nightText(T, U, kd === 'ff' ? 'ff' : kd === 'ride' ? 'fm' : 'mf', fresh(o.rng, o.pick), false);
       return after1(r, t.replace(/\{a\}/g, '{T}').replace(/\{b\}/g, '{U}'));
     };
-    TK.body._attr = true;
-  }
+    f._attr = true;
+    return f;
+  });
 })();

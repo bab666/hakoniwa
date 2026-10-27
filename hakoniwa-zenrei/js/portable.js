@@ -344,7 +344,9 @@
     var cur = HK.store.get('history', []), key = function (h) { return [h.t, h.seed, h.names, h.input && h.input.scenId].join('|'); };
     if (!Array.isArray(cur)) cur = [];
     var ks = cur.map(key), hn = 0, added = [];
-    hist.forEach(function (h) { if (h && h.input && HK.SCENARIOS[h.input.scenId] && ks.indexOf(key(h)) < 0) { cur.push(h); added.push(h); ks.push(key(h)); hn++; } });
+    /* 箱庭がこの版にあるか：まだ読んでいない箱庭（分割読み込み）は目録の仮の箱庭（load.js の HK.Load.info）で見る */
+    var scenOk = function (id) { return !!(HK.SCENARIOS[id] || (HK.Load && HK.Load.info && HK.Load.info(id))); };
+    hist.forEach(function (h) { if (h && h.input && scenOk(h.input.scenId) && ks.indexOf(key(h)) < 0) { cur.push(h); added.push(h); ks.push(key(h)); hn++; } });
     cur.sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
     cur = cur.slice(0, 12);
     added = added.filter(function (h) { return cur.indexOf(h) >= 0; });

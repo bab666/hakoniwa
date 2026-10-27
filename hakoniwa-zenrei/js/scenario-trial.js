@@ -896,7 +896,8 @@
       }
     ].concat(ROLE_EVENTS)
   };
-  HK.SCEN_ORDER.push('trial');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('trial') < 0) HK.SCEN_ORDER.push('trial');
   if (HK.Roles) {
     HK.Roles.install(HK.SCENARIOS.trial, 'mm', '黒幕', { allowMob: true, auto: 'mob', yes: '黒幕になる',
       fit: function (c) { return c.tr.cold * 0.5 + c.tr.a * 0.3 + c.tr.cp * 0.2 + c.tr.fc * 0.15; },

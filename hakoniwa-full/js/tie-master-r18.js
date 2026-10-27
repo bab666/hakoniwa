@@ -98,7 +98,7 @@
     return { text: '\n\n' + MR.scene(ctx, D, U, 'over'), why: D.name + 'は立場が入れ替わったその場で、' + U.name + 'を無理やり組み敷いた（下剋上・無理やり。内容のスイッチ「無理矢理」が入）' };
   };
   /* 主従：従者（{a}）が主人（{b}）を襲う */
-  HK.COMMON.push({
+  HK.addTo(HK.COMMON, {
     id: 'tie_master_r18', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) {
       var t = HK.Ties && HK.Ties.from(ctx, b, a, 'master');

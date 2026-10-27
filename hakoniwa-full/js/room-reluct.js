@@ -130,7 +130,7 @@
   })();
 
   /* 渋る（説得される）出来事 */
-  EV.push({
+  HK.addTo(EV, {
     id: 'notHere', cat: 'romance', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (a.flags.down || b.flags.down || !HK.canLove(a, b)) return false;

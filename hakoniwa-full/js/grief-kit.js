@@ -521,8 +521,8 @@
     return r;
   }
   var MINE = [];
-  var bp0 = HK.buildPool;
-  HK.buildPool = function (scen) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
+  HK.wrap(HK, 'buildPool', function (bp0) { return function (scen) {
     var pool = bp0.apply(this, arguments);
     if (!scen || !scen.griefKit) return pool;
     return pool.map(function (e) {
@@ -534,7 +534,7 @@
       w.run = function (ctx, a) { return aside(ctx, a, e.run.apply(this, arguments), e.cat); };
       return w;
     });
-  };
+  }; });
 
   G.install = function (scen, opt) {
     if (!scen || !scen.events || scen.griefKit) return;

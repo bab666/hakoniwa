@@ -282,8 +282,8 @@
 
   /* 知り合いどうしには、初対面を前提にした出来事（連絡先の交換・名前の呼び方・出身地や仕事・血液型の当て合い・名前の間違い）を起こさない */
   var FIRST = { contact: 1, g_line_ask: 1, g_wrongname: 1, g_hometown: 1, g_horoscope: 1, g_name: 1, g_job: 1 };
-  var bp0 = HK.buildPool;
-  if (bp0) HK.buildPool = function (scen) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
+  HK.wrap(HK, 'buildPool', function (bp0) { if (!bp0) return bp0; return function (scen) {
     var pool = bp0.apply(this, arguments);
     if (!scen || scen.id !== 'goukon') return pool;
     return pool.map(function (e) {
@@ -292,7 +292,7 @@
       w.when = function (ctx, a, b) { if (known(ctx, a, b)) return false; return e.when ? e.when.apply(this, arguments) : true; };
       return w;
     });
-  };
+  }; });
 
   /* ---------- 全員初対面：合コンに渡す前に関係を外す ---------- */
   /* 残す関係：恋人の記録に関わるもの（恋人・番・運命の番・夫婦・許嫁・歪んだ関係）と、恋愛にしない決まり（無関心・恐怖） */

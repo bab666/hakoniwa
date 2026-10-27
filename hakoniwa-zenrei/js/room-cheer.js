@@ -15,7 +15,7 @@
   if (!scen || !G) return;
   var L = G.L;
   function R(ctx, a, b) { return ctx.R(a, b); }
-  function ev(o) { scen.events.push(o); }
+  function ev(o) { HK.addTo(scen.events, o); }   /* HK.addTo：部屋の出来事の表は、足したファイルの元の順に並べる（分割読み込み） */
   /* 応援の場面を起こしてよい部屋か（一人しか出られない・誰かを殺す部屋では起こさない） */
   function calm(ctx) { return !!(ctx.rules && !ctx.flags.isOne && !ctx.flags.oneCond && !ctx.rules.some(function (r) { return r.k === 'kill' || r.k === 'one'; })); }
   /* 文の書き分けに使う条件：二人でする条件（行為・言葉）を先に、なければ飲み切る条件 */

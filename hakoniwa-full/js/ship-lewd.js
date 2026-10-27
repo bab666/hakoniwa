@@ -304,13 +304,14 @@
   }
 
   /* 記録に書く直前：宇宙船の場面の印を片づけ、研究（男性向け）を組み、庇い展開を続ける */
-  var STY = HK.Story, say0 = STY && STY.say;
+  var STY = HK.Story;
   function isShip(S) { return !!(S && S.ship && S.scen && S.scen.id === 'ship'); }
   function covTag(tag) {
     if (tag === '異星の生き物' || tag === '異種族の誘い') return true;
     var T = SH.X2 && SH.X2.TAG; return !!(tag && T && Object.keys(T).some(function (k) { return T[k] === tag; }));
   }
-  if (say0) STY.say = function (S, o) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
+  if (STY && STY.say) HK.wrap(STY, 'say', function (say0) { return function (S, o) {
     if (!o || typeof o.text !== 'string' || !isShip(S)) return say0.apply(this, arguments);
     var a = o.actors && o.actors.length === 1 && o.actors[0] && typeof o.actors[0] === 'object' ? o.actors[0] : null, cv = null;
     if (a && covTag(o.tag) && !/自分で攻めを選んで/.test(o.why || '')) cv = R.coverPlan(S, a, o);
@@ -319,5 +320,5 @@
     var r = say0.apply(this, arguments);
     if (cv) R.coverRun(S, cv);
     return r;
-  };
+  }; });
 })();

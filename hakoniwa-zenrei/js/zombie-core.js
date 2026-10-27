@@ -80,7 +80,8 @@
   var ti = HK.SCEN_ORDER.indexOf('trial');
   if (ti < 0) ti = HK.SCEN_ORDER.indexOf('br');
   if (ti < 0) ti = HK.SCEN_ORDER.indexOf('island');
-  if (ti >= 0) HK.SCEN_ORDER.splice(ti + 1, 0, 'zombie'); else HK.SCEN_ORDER.push('zombie');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('zombie') < 0) { if (ti >= 0) HK.SCEN_ORDER.splice(ti + 1, 0, 'zombie'); else HK.SCEN_ORDER.push('zombie'); }
   Z.scen = scen;
 
   /* ======================= 準備 ======================= */

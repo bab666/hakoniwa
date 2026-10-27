@@ -127,7 +127,7 @@
   TS.SET = SET; TS.RE = RE;
   var SIT_WHY = { chide: { pos: '嗜められて素直に聞いた', neg: '嗜められてヘソを曲げた' }, success: { pos: '成功を「さすが」と認めた', neg: '成功に「調子に乗るな」' }, fail: { pos: '失敗を励ました', neg: '失敗に嫌味を言った' } };
   var GR_NAME = { '': 'ふつう', good: '良好', bad: '険悪' };
-  HK.COMMON.push({
+  HK.addTo(HK.COMMON, {
     id: 'tie_grade', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!stageTie(ctx, a, b); },
     w: function (ctx) { return 0.9 * own(ctx); },
@@ -168,7 +168,7 @@
   TS.TRIAL = TRIAL;
   TS.MARKS = { expel: '破門', graduate: '一人前', overturn: '主従逆転' };
   function installMarks() { if (HK.MARK_NAME) for (var k in TS.MARKS) if (!HK.MARK_NAME[k]) HK.MARK_NAME[k] = TS.MARKS[k]; }
-  HK.COMMON.push({
+  HK.addTo(HK.COMMON, {
     id: 'tie_trial', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { var t = stageTie(ctx, a, b); return !!t && ctx.stepIndex >= 2 && !ctx.pair(a, b).trialDone && here(a) && here(b); },
     w: function (ctx) { return 0.14 * own(ctx); },
@@ -222,7 +222,7 @@
     notice: L('{b}はそれに気づいて、{a}のほうへ小さく頭を下げた。{a}は慌てて目を逸らしたが、耳まで赤くなっていた。|{b}「いつもありがとう。気づいてたよ｜いつも感謝している。気づいていた｜いつもありがとうございます。気づいていました」――{a}はうろたえて、「なんのこと｜何のことだ｜何のことですか」としか言えなかった。|{b}は{a}に笑いかけて、差し入れのお礼に、自分の分を少し分けた。{a}はそれを、宝物のように受け取った。'),
     unaware: L('{b}はそれが誰の心遣いなのか知らないまま、「助かった｜＝｜助かりました」と呟いた。{a}はそれで十分だった。|{b}は気づかずに通り過ぎていった。{a}は、それでいいと思った。慕っているのは、自分の勝手だから。|{b}は差し入れに首をかしげ、近くにいた誰かに礼を言った。{a}は少しだけ苦笑して、何も言わなかった。')
   };
-  HK.COMMON.push({
+  HK.addTo(HK.COMMON, {
     id: 'tie_fond', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!(HK.Ties && HK.Ties.from(ctx, a, b, 'fond')); },
     w: function (ctx) { return 1.1 * own(ctx); },
@@ -243,7 +243,7 @@
     calm: L('{b}は困ったように{a}を見た。「{a}、そこまでしなくていいから｜{a}、そこまでしなくていい｜{a}、そこまでしなくていいです」{a}はすぐに頭を下げたが、{c}を見る目つきは変わらなかった。|{b}が「{c}とも話したい｜＝｜{c}とも話したいです」と言うと、{a}はしぶしぶ道を空けた。けれど、二人の会話が終わるまで、ずっとそばを離れなかった。|{b}は{a}の肩に手を置いて、なだめた。{a}はそれだけで、嘘のように大人しくなった。'),
     blind: L('{b}は{a}がしたことに気づいていなかった。{c}だけが、遠ざけられた理由を飲み込めずにいた。|{c}は肩をすくめて引き下がった。{b}のまわりには、いつの間にか{a}しかいなくなっていた。|{b}は{a}を褒めた。「いつも気が利くね｜いつもよく気が利く｜いつも気が利きますね」――{a}は誇らしげに頷いた。{c}は、それを遠くから見ていた。')
   };
-  HK.COMMON.push({
+  HK.addTo(HK.COMMON, {
     id: 'tie_blind', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) {
       if (!(HK.Ties && HK.Ties.from(ctx, a, b, 'blind'))) return false;

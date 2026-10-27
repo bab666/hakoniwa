@@ -282,7 +282,7 @@
     return best ? { t: best, s: bs } : null;
   }
   if (HK.COMMON) {
-    HK.COMMON.push({
+    HK.addTo(HK.COMMON, {
       id: 'tie_lh_kamau', cat: 'conflict', scope: 'pair',
       when: function (ctx, a, b) {
         if (!LH.has(ctx, a, b) || !here(a) || !here(b)) return false;
@@ -299,7 +299,7 @@
         return o;
       }
     });
-    HK.COMMON.push({
+    HK.addTo(HK.COMMON, {
       id: 'tie_lh_jeal', cat: 'conflict', scope: 'pair',
       /* a＝愛憎を持つ人、b＝愛憎の相手（t）と親しくしていた人 */
       when: function (ctx, a, b) {
@@ -365,9 +365,9 @@
   var TR = HK.TieRel;
   if (TR && !TR._lhHooked) {
     TR._lhHooked = true;
-    var rf0 = TR.refine, pt0 = TR.pairText;
-    TR.refine = function (ctx, A, B, pf, cl) { var r = LH.refine(ctx, A, B, pf, cl); return r || (rf0 ? rf0.apply(this, arguments) : null); };
-    TR.pairText = function (ctx, A, B, cl) { return LH.pairText(ctx, A, B, cl) || (pt0 ? pt0.apply(this, arguments) : null); };
+    /* HK.wrap：包む順を元のファイルの順に固定（rel-group.js の包みが後から届いても内側に入る） */
+    HK.wrap(TR, 'refine', function (rf0) { return function (ctx, A, B, pf, cl) { var r = LH.refine(ctx, A, B, pf, cl); return r || (rf0 ? rf0.apply(this, arguments) : null); }; });
+    HK.wrap(TR, 'pairText', function (pt0) { return function (ctx, A, B, cl) { return LH.pairText(ctx, A, B, cl) || (pt0 ? pt0.apply(this, arguments) : null); }; });
   }
   if (HK.LABELS) for (var k0 in LAB) if (!HK.LABELS[k0]) HK.LABELS[k0] = LAB[k0];
 })();

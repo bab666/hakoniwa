@@ -14,31 +14,49 @@
   var STY = [{ v: 'novel', label: '小説調' }, { v: 'ero', label: '男性向け' }];
   var CONF = {};
   function safe() { return !!HK.SAFE_ON; }
+  /* 箱庭の設定欄（env）を差し替える。
+     分割読み込み：その箱庭に要るかたまりがそろってから当てる（HK.Load.has。元の順で全部読んだときと同じく、族のファイルが設定欄に足したあとで差し替える）。
+     後から届いたかたまりで箱庭がそろったときは、下の HK.Load.onChunk で当てる（当てた箱庭は印 _lewdUnified で飛ばす）。
+     このファイルより後の番号のファイルが HK.addTo で足した欄（人狼の勝利の夜など）は、差し替えた欄より後ろに置く（元の順と同じ並び） */
+  var NUM = {};
+  function envOf(id) {
+    var o = CONF[id];
+    var sc = HK.SCENARIOS && HK.SCENARIOS[id];
+    if (!o || !sc || sc.stub || sc._lewdUnified || !Array.isArray(sc.env)) return;
+    if (HK.Load && HK.Load.has && !HK.Load.has(id)) return;
+    Object.defineProperty(sc, '_lewdUnified', { value: true, enumerable: false, configurable: true, writable: true });
+    var old = ['lewd', 'lewdLen', 'style'].concat(o.old || []);
+    var at = -1, env0 = sc.env, ord0 = env0.__ord, ord = [];
+    env0.forEach(function (e, i) { if (at < 0 && old.indexOf(e.id) >= 0) at = i; });
+    sc.env = env0.filter(function (e, i) { if (old.indexOf(e.id) >= 0) return false; ord.push(ord0 && ord0[i] != null ? ord0[i] : 0); return true; });
+    if (at > sc.env.length) at = sc.env.length;
+    if (at < 0) { at = sc.env.length; while (at > 0 && ord[at - 1] > NUM[id]) at--; }
+    var add = [];
+    if (safe()) add.push({ id: 'lewd', label: '描写の有無', type: 'select', def: 'low', options: [{ v: 'low', label: 'ほのめかす（全年齢版）' }] });
+    /* r18:begin */
+    else {
+      add.push({ id: 'lewd', label: '描写の有無', type: 'select', def: o.def || 'mid', options: LV, desc: o.desc || 'ほのめかす＝行為は書かずに雰囲気と翌朝だけ／ほどほど＝行為を描写する／濃い＝さらにもう一度求め合うところまで描く' });
+      if (o.len !== false) add.push({ id: 'lewdLen', label: '描写の長さ', type: 'select', def: o.lenDef || 'thick', options: LEN });
+      if (o.style !== false) add.push({ id: 'style', label: '描写の作風', type: 'select', def: 'novel', options: STY, desc: '男性向け＝擬音・♡のついた喘ぎ・おねだりの多い書き方' });
+    }
+    /* r18:end */
+    sc.env.splice.apply(sc.env, [at, 0].concat(add));
+    ord.splice.apply(ord, [at, 0].concat(add.map(function () { return NUM[id]; })));
+    Object.defineProperty(sc.env, '__ord', { value: ord, enumerable: false, configurable: true, writable: true });
+  }
   var X = HK.Lewd = {
     CONF: CONF,
     /* 箱庭の設定を差し替える（R18版でも全年齢版でも呼ぶ。全年齢では「ほのめかす」だけを出す） */
     install: function (id, o) {
       o = o || {};
       CONF[id] = o;
+      NUM[id] = (HK.Load && HK.Load.cur) || 0;
       var sc = HK.SCENARIOS && HK.SCENARIOS[id];
-      if (!sc || !Array.isArray(sc.env)) return;
-      var old = ['lewd', 'lewdLen', 'style'].concat(o.old || []);
-      var at = -1;
-      sc.env.forEach(function (e, i) { if (at < 0 && old.indexOf(e.id) >= 0) at = i; });
-      sc.env = sc.env.filter(function (e) { return old.indexOf(e.id) < 0; });
-      if (at < 0 || at > sc.env.length) at = sc.env.length;
-      var add = [];
-      if (safe()) add.push({ id: 'lewd', label: '描写の有無', type: 'select', def: 'low', options: [{ v: 'low', label: 'ほのめかす（全年齢版）' }] });
-      /* r18:begin */
-      else {
-        add.push({ id: 'lewd', label: '描写の有無', type: 'select', def: o.def || 'mid', options: LV, desc: o.desc || 'ほのめかす＝行為は書かずに雰囲気と翌朝だけ／ほどほど＝行為を描写する／濃い＝さらにもう一度求め合うところまで描く' });
-        if (o.len !== false) add.push({ id: 'lewdLen', label: '描写の長さ', type: 'select', def: o.lenDef || 'thick', options: LEN });
-        if (o.style !== false) add.push({ id: 'style', label: '描写の作風', type: 'select', def: 'novel', options: STY, desc: '男性向け＝擬音・♡のついた喘ぎ・おねだりの多い書き方' });
-      }
-      /* r18:end */
-      sc.env.splice.apply(sc.env, [at, 0].concat(add));
+      if (sc && sc._lewdUnified) sc._lewdUnified = false;   /* 呼ばれたら当て直す（今までどおり） */
+      envOf(id);
     },
     conf: function (id) { return CONF[id] || null; },
+    envOf: envOf,
     /* 古い設定の値を読み替える（保存してあった入力に新しい設定がないとき） */
     norm: function (id, env) {
       var o = CONF[id];
@@ -76,9 +94,9 @@
      R18版で描写の有無が「ほのめかす」のときは、共通の出来事（執着・敵対など）に残ったはっきりした文を、全年齢と同じ方法でまろやかにする（safe.js の HK.SafeText） */
   /* 「拳を突き上げた」（人狼の勝利など）は性的でないので見ない */
   var EXPL = /果て|達し|イ[っッくかきキ]|挿|喘|貫|腰を[振沈打揺使]|繋が|奥まで|(?<![拳腕手杖旗剣槍]を)突き上げ|絶頂|♡|射精|精液|ちんぽ|ナカ|\{(?:男性器|亀頭|女性器|陰核|ナカ|精液|愛液)\}/;
-  if (HK.simulate && !HK.simulate._lewd) {
-    var sim0 = HK.simulate;
-    HK.simulate = function (input) {
+  /* 包む順は元のファイルの順に固定（HK.wrap。分割読み込みで後から届いた包みが内側に入る） */
+  if (HK.simulate && !HK.simulate._lewd) HK.wrap(HK, 'simulate', function (sim0) {
+    var sim = function (input) {
       var id = input && input.scenId;
       if (id && input.env && CONF[id]) X.fill(id, input.env);
       var r = sim0.apply(this, arguments);
@@ -94,8 +112,9 @@
       }
       return r;
     };
-    HK.simulate._lewd = true;
-  }
+    sim._lewd = true;
+    return sim;
+  });
 })();
 
 /* ---------- 箱庭ごとの差し替え（上の箱庭から順にそろえていく） ---------- */
@@ -162,4 +181,6 @@
   /* 人狼：人狼の勝利の夜（jinro-wolfnight.js。R18版だけの場面なので、全年齢版には欄を出さない） */
   X.install('jinro', { desc: D.jinro });
   /* r18:end */
+  /* 分割読み込み：後から届いたかたまりで本体が登録された箱庭にも、上の差し替えを当てる（当てた箱庭は印 _lewdUnified で飛ばす） */
+  if (HK.Load && HK.Load.onChunk) HK.Load.onChunk(function () { Object.keys(X.CONF).forEach(function (id) { X.envOf(id); }); });
 })();

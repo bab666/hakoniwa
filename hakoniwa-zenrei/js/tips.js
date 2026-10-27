@@ -376,9 +376,11 @@
     }
   };
 
+  function scenOf(id) { return (HK.SCENARIOS && HK.SCENARIOS[id]) || (HK.Load && HK.Load.info ? HK.Load.info(id) : null); }
   function get(key) {
     if (key.indexOf('scen:') === 0) {
-      var id = key.slice(5), T = HK.TIPS_SCEN[id], sc = HK.SCENARIOS && HK.SCENARIOS[id];
+      /* 箱庭の名前は、まだ本体を読んでいない箱庭なら目録から（load.js の HK.Load.info。TIPS の中身は late にある） */
+      var id = key.slice(5), T = HK.TIPS_SCEN[id], sc = scenOf(id);
       if (!T) return null;
       var o = { title: (sc ? sc.name : id) + ' のTIPS', lead: T.lead, sections: T.sections, r18: T.r18, safe: T.safe };
       if (HK.SAFE_ON && T.safeLead) o.lead = T.safeLead;
@@ -445,7 +447,7 @@
     },
     scenBtn: function (id) {
       if (!HK.TIPS_SCEN[id]) return '';
-      var sc = HK.SCENARIOS && HK.SCENARIOS[id];
+      var sc = scenOf(id);
       return '<button type="button" class="tipscen" data-tip="scen:' + esc(id) + '" aria-label="' + esc(sc ? sc.name : id) + 'のTIPS"><span class="q" aria-hidden="true">？</span>この箱庭のTIPS</button>';
     }
   };

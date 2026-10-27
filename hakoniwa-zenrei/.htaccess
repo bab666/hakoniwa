@@ -1,4 +1,4 @@
-# ---- 配信の軽量化（hakoniwa-tools/build/build.js が js/bundle-*.js.br・.gz を作る。どのモジュールが無くても壊れないように IfModule で包む） ----
+# ---- 配信の軽量化（hakoniwa-tools/build/build.js が js/c/<かたまり>.<hash>.js と .br・.gz を作る。どのモジュールが無くても壊れないように IfModule で包む） ----
 # 1) 事前に圧縮した版を返す：ブラウザが br（brotli）を受け取れるなら .js.br、gzip なら .js.gz（無ければふつうの .js）
 <IfModule mod_mime.c>
   <FilesMatch "\.js\.br$">
@@ -33,11 +33,11 @@
   <FilesMatch "\.(js|br|gz|html?|css)$">
     Header merge Vary Accept-Encoding
   </FilesMatch>
-  # 3) まとめたスクリプト（bundle-*.js）は1年キャッシュ。版が変わると index.html の ?v= が変わるので古い版は使われない
-  <FilesMatch "^bundle-[a-z]+\.js(\.br|\.gz)?$">
+  # 3) かたまり（js/c/<名前>.<内容の hash 10桁>.js）は1年キャッシュ。中身が変わると名前が変わり、index.html の目録が新しい名前を指すので古い版は使われない
+  <FilesMatch "^[a-z0-9-]+\.[0-9a-f]{10}\.js(\.br|\.gz)?$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
-  # index.html は毎回たしかめる（新しい版の ?v= をすぐ届けるため）
+  # index.html は毎回たしかめる（目録と新しいかたまりの名前をすぐ届けるため）
   <FilesMatch "\.html?$">
     Header set Cache-Control "no-cache, private"
   </FilesMatch>

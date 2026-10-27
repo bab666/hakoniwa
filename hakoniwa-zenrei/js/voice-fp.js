@@ -43,14 +43,14 @@
     };
   }
   /* 物語型（邪神村・吹雪の館・宇宙船など） */
-  if (HK.Story && HK.Story.say) {
-    var ss0 = HK.Story.say;
-    HK.Story.say = function (S, o) {
+  /* 包み直しは HK.wrap（物語型の箱庭のかたまりが後から届いても、包む順は元のファイルの順） */
+  if (HK.Story && HK.Story.say) HK.wrap(HK.Story, 'say', function (ss0) {
+    return function (S, o) {
       var e = ss0.apply(this, arguments);
       try { if (S && S.P) mark(e, S.P, function (c) { return HK.Poly && HK.Poly.storyLovers ? HK.Poly.storyLovers(S, c) : []; }); } catch (err) { /* 同上 */ }
       return e;
     };
-  }
+  });
   /* voice.js の processResult から：記録 e の印に合わせて、話し手の一人称を差し替える。戻すための関数を返す（差し替えがなければ null） */
   V.fpSwap = function (people, e) {
     var x = e && e._fpx;

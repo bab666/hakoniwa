@@ -14,9 +14,10 @@
   function load() { try { return window.localStorage.getItem(KEY); } catch (e) { return null; } }
   function save(v) { try { window.localStorage.setItem(KEY, v); return true; } catch (e) { return false; } }
   var BUILD = !!window.HK_SAFE_BUILD;
-  /* 保存できない環境のために、URL の #safe / #r18 も見る */
-  var hash = (location.hash || '').replace('#', '');
-  var ON = BUILD || hash === 'safe' || (hash !== 'r18' && load() === '1');
+  /* 保存できない環境のために、URL の #safe / #r18 も見る。読み込み器（load.js）があれば、#safe&all のような複数の印（HK.Load.flags）で見る */
+  var LF = HK.Load && HK.Load.flags, hash = (location.hash || '').replace('#', '');
+  var hSafe = LF ? !!LF.safe : hash === 'safe', hR18 = LF ? !!LF.r18 : hash === 'r18';
+  var ON = BUILD || hSafe || (!hR18 && load() === '1');
   HK.SAFE_BUILD = BUILD; HK.SAFE_ON = ON;
 
   /* ---------- 保存の鍵（版ごとに分ける） ----------
@@ -169,9 +170,13 @@
   }
   HK.SafeText = softText;   /* 出られない部屋など、ほかの箱庭の仕上げにも使う（safe-room.js）。R18版の描写の有無「ほのめかす」でも使う（lewd-unify.js） */
 
+  /* 分割読み込み：箱庭の登録や表を書き換える部分は、今あるものに当てたうえで、後から届いたかたまりのたびに当て直す（どれも何度当てても同じ結果） */
+  function eachChunk(fn) { fn(); if (HK.Load && HK.Load.onChunk) HK.Load.onChunk(fn); }
+  /* 本体がまだ届いていない箱庭は、目録から作った仮の箱庭（HK.Load.info。一覧のカード用。SCEN_ORDER に無い id は null）で見る */
+  function scenOf(id) { return HK.SCENARIOS[id] || (HK.Load && HK.Load.info ? HK.Load.info(id) : null); }
   /* パロディの箱庭（バトルロワイヤル・裁判デスゲーム）は全年齢版だけに置く。R18モードでは出さない */
   if (!ON) {
-    HK.SCEN_ORDER = (HK.SCEN_ORDER || []).filter(function (id) { var s = HK.SCENARIOS[id]; if (s && s.zenreiOnly) { delete HK.SCENARIOS[id]; return false; } return true; });
+    eachChunk(function () { HK.SCEN_ORDER = (HK.SCEN_ORDER || []).filter(function (id) { var s = scenOf(id); if (s && s.zenreiOnly) { delete HK.SCENARIOS[id]; return false; } return true; }); });
     return;
   }
 
@@ -182,10 +187,12 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', foot); else foot();
 
-  /* ---------- 出す箱庭を絞る ---------- */
+  /* ---------- 出す箱庭を絞る（目録から作った仮の箱庭 stub も絞る。説明の差し替えも仮の箱庭に当て、一覧のカードを全年齢の書き方にする） ---------- */
   var SOFT_IDS = { locker: 1, omega: 1, massage: 1, saimin: 1 };
+  function only(scen, id, opt) { (scen && scen.env || []).forEach(function (e) { if (e.id === id) { e.def = opt.v; e.options = [opt]; } }); }
+  eachChunk(function () {
   HK.SCEN_ORDER = (HK.SCEN_ORDER || []).filter(function (id) {
-    var s = HK.SCENARIOS[id];
+    var s = scenOf(id);
     var ok = s && (SOFT_IDS[id] || !/R18/.test(s.kicker || ''));
     if (!ok) delete HK.SCENARIOS[id];
     return ok;
@@ -193,14 +200,15 @@
   /* R18の印がついた出来事（無人島・ゾンビの街の夜など）と、その設定を外す */
   Object.keys(HK.SCENARIOS).forEach(function (id) {
     var sc = HK.SCENARIOS[id];
-    if (Array.isArray(sc.events)) sc.events = sc.events.filter(function (e) { return !e.r18; });
+    /* 配列はその場で絞る（出られない部屋の HK.RoomAPI.EV のように、同じ配列を持っていて後から足すファイルがある。分割読み込みでは族のかたまりが後から足す） */
+    /* HK.addTo の印（__ord：足したファイルの番号）も一緒に詰める */
+    if (Array.isArray(sc.events)) { var ev = sc.events, od = ev.__ord, j = 0; for (var i = 0; i < ev.length; i++) if (!(ev[i] && ev[i].r18)) { if (od) od[j] = od[i] != null ? od[i] : od[od.length - 1]; ev[j++] = ev[i]; } ev.length = j; if (od) od.length = Math.min(od.length, j); }
     if (Array.isArray(sc.env)) sc.env = sc.env.filter(function (e) { return e.id !== 'ilewd' && e.id !== 'jlewd' && e.id !== 'jyobai' && e.id !== 'jmob' && e.id !== 'zlust' && e.id !== 'zraid' && e.id !== 'wolfnight' && e.id !== 'ylewd' && e.id !== 'slewd' && e.id !== 'ypleasure'; });
   });
   if (HK.ZB && HK.ZB.scen && HK.ZB.scen.events && HK.ZB.scen !== HK.SCENARIOS.zombie) HK.ZB.scen.events = HK.ZB.scen.events.filter(function (e) { return !e.r18; });
-  function only(scen, id, opt) { (scen && scen.env || []).forEach(function (e) { if (e.id === id) { e.def = opt.v; e.options = [opt]; } }); }
 
   /* ---------- 箱庭の説明と設定 ---------- */
-  var LKs = HK.SCENARIOS.locker, OMs = HK.SCENARIOS.omega, MSs = HK.SCENARIOS.massage, SMs = HK.SCENARIOS.saimin;
+  var LKs = scenOf('locker'), OMs = scenOf('omega'), MSs = scenOf('massage'), SMs = scenOf('saimin');
   if (LKs) {
     LKs.kicker = '1〜6人・密室';
     LKs.desc = '媚薬の充満する狭いロッカーに閉じ込められた二人。仕掛けを解いて無事に脱出できるか。先に理性が揺らぐのは誰か、乗るのか嗜めるのか。扉が開いたあと、二人の関係はどう変わるのか。一人なら、ひとりきりで熱に耐え抜けるか。三人以上なら、倉庫のロッカーに分かれて押し込まれ、誰と誰がくっつくかは運しだい。ロッカー越しのやきもちも、励まし合いも。';
@@ -208,7 +216,7 @@
   }
   if (OMs) {
     OMs.kicker = '恋愛・第二性';
-    OMs.desc = OMs.desc.replace('※成人キャラクター向け', '').trim();
+    OMs.desc = String(OMs.desc || '').replace('※成人キャラクター向け', '').trim();
     only(OMs, 'lewd', { v: 'low', label: '朝チュン（全年齢版）' });
   }
   if (MSs) {
@@ -221,7 +229,7 @@
     SMs.kicker = '1〜2人・いたずら';
     SMs.desc = '同僚・恋人・友人・恨みを持った相手・ストーカーの誰かに催眠をかけられる。かかるのか、どんないたずらの暗示に弱いのか。終わったあと、怒るのか、やり返すのか、癖になってしまうのか。';
     only(SMs, 'lewd', { v: 'low', label: 'ぼかす（いたずらの暗示・全年齢版）' });
-    (SMs.env || []).forEach(function (e) { if (e.id === 'mode') { e.options = e.options.filter(function (o) { return o.v !== 'lewd'; }); if (e.def === 'lewd') e.def = 'mix'; } });
+    (SMs.env || []).forEach(function (e) { if (e.id === 'mode' && e.options) { e.options = e.options.filter(function (o) { return o.v !== 'lewd'; }); if (e.def === 'lewd') e.def = 'mix'; } });
   }
   /* ゾンビの街：恋人たちの夜（R18）と、襲われる場面は出さない */
   var Z = HK.ZB;
@@ -242,6 +250,7 @@
     if (LK.ACT.oral) { LK.ACT.oral.label = 'その先へ'; LK.ACT.oral.t = ['{a}は{b}の耳元で何かを囁いた。{b}は、真っ赤になって頷いた。――その先は、ロッカーの扉の隙間からも見えなかった。']; }
     if (LK.ACT.sex) { LK.ACT.sex.label = '一線を越える'; LK.ACT.sex.t = ['{a}と{b}は、狭い暗闇の中で一線を越えた。――その先は、二人だけの秘密だ。', '{a}は{b}を抱き寄せた。{b}は拒まなかった。――そこから先のことを、二人は誰にも話していない。']; }
   }
+  });   /* eachChunk の終わり */
 
   /* ---------- マッサージ用の反応（全年齢） ---------- */
   var DG = HK.DG = HK.DG || {};
@@ -304,8 +313,9 @@
     DV.render = function (host, res) { var r = r1.apply(this, arguments); if (res && SOFT_IDS[res.scenId]) host.innerHTML = lab(host.innerHTML); return r; };
     DV.toText = function (res) { var t = t1.apply(this, arguments); return res && SOFT_IDS[res.scenId] ? lab(softText(t)) : t; };
   })();
-  var sim0 = HK.simulate;
-  HK.simulate = function (input) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包み（safe-room.js など）も元の順に並ぶ） */
+  HK.wrap(HK, 'simulate', function (sim0) {
+  var sim = function (input) {
     var id = input && input.scenId, soft = SOFT_IDS[id], self = this, args = arguments;
     /* 秘密の一文の順番は回ごとに最初から（続けて回しても、同じシードなら同じ結果に） */
     fi = 0;
@@ -319,5 +329,7 @@
     if (soft && r) { fi = 0; curId = id; walk(r, ''); (r.log || []).forEach(function (e) { fixEvent(e, r); }); }
     return r;
   };
-  for (var k in sim0) if (Object.prototype.hasOwnProperty.call(sim0, k)) HK.simulate[k] = sim0[k];
+  for (var k in sim0) if (Object.prototype.hasOwnProperty.call(sim0, k)) sim[k] = sim0[k];
+  return sim;
+  });
 })();

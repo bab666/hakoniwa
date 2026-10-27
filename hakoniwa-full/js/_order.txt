@@ -1,4 +1,29 @@
-# 読み込み順（上から順に実行）。「late 」を付けた行は画面が出たあとで読む。変えたら node hakoniwa-tools/build/build.js <このビルド> を実行
+# 読み込み順（全部読んだときの実行の順。上から順に 1 から通し番号が付き、HK.wrap／HK.addTo の並べ替えの鍵になる）。変えたら node hakoniwa-tools/build/build.js <このビルド> を実行
+# 注記：なし＝中核（core。起動時に読む）／「late 」＝画面が出たあと裏で読む（late の行は下の区切りより後ろに置く）／「 @pack:<族>」＝族のかたまり pack-<族>（その族の箱庭を選んだときに読む）
+# @chunk <かたまり> deps=<先に要るかたまり>／@need <箱庭> <かたまり>（登録するかたまりのほかに、動かすのに要るかたまり）
+@chunk pack-story deps=pack-rel
+@need goukon pack-rel
+@need whiteroom pack-rel
+@need classroom pack-rel
+@need island pack-rel
+@need zombie pack-rel
+@need omega pack-rel
+@need futari pack-rel
+@need ship pack-rel,pack-story
+@need jashin pack-rel,pack-story
+@need yakata pack-rel,pack-story
+@need rpg pack-rel,pack-story
+@need jinro pack-rel,pack-story
+@need dungeon pack-rel,pack-story
+@need kaihen pack-rel,pack-solo
+@need succubus pack-rel,pack-solo
+@need saimin pack-rel,pack-solo
+@need variety pack-rel,pack-solo
+@need locker pack-rel,pack-solo
+@need massage pack-solo
+@need hole pack-solo
+js/load.js
+js/load-order.js
 js/core.js
 js/ego-desc.js
 js/ties.js
@@ -6,15 +31,15 @@ js/poly.js
 js/events-common.js
 js/persona.js
 js/tie-rel.js
-js/tie-new.js
+js/tie-new.js @pack:rel
 js/daily-kit.js
-js/rel-group.js
-js/rel-core-extra.js
-js/tie-stage.js
-js/tie-abuse.js
-js/tie-layer.js
-js/tie-master-r18.js
-js/mob-after.js
+js/rel-group.js @pack:rel
+js/rel-core-extra.js @pack:rel
+js/tie-stage.js @pack:rel
+js/tie-abuse.js @pack:rel
+js/tie-layer.js @pack:rel
+js/tie-master-r18.js @pack:rel
+js/mob-after.js @pack:rel
 js/voice.js
 js/voice-tone.js
 js/tone-registry.js
@@ -27,19 +52,345 @@ js/tone-gentleman.js
 js/tone-extra2.js
 js/voice-more.js
 js/voice-override.js
+js/voice-override-solo.js
+js/tone-lines.js
+js/hate-kit.js
+js/feud-kit.js
+js/hate-love.js
+js/tone-firm.js
+js/tone-polite-kin.js
+js/tone-new.js
+js/tone-ane.js
+js/tone-usan.js
+js/tone-yankee.js
+js/tone-gyaru.js
+js/tone-chara.js
+js/tone-mystic.js
+js/tone-sondai.js
+js/tone-stern.js
+js/tone-long.js
+js/tone-new2.js
+js/tone-new2-rows.js
+js/tone-new2-r18.js
+js/engine.js
+js/sib-word.js
+js/emotion.js
+js/emotion-r18.js
+js/content.js
+js/mood-dial.js
+js/mob.js
+js/ero-kit.js
+js/ero-top-lines-r18.js
+js/lewd-words.js
+js/part-words.js
+js/ero-moan-tone.js
+js/novel-moan-tone.js
+js/moan-dict.js
+js/moan-said.js
+js/moan-engine.js
+js/moan-mob.js
+js/thick-sex.js
+js/thick-sex-ero.js
+js/fwb.js @pack:rel
+js/free-sex.js
+js/scenarios-a.js
+js/mini.js
+js/mini-tails.js @pack:rel
+js/scenarios-b.js @pack:rel
+js/room-lewd.js @pack:rel
+js/room-lewd-more.js @pack:rel
+js/room-lewd-x.js @pack:rel
+js/room-thick.js @pack:rel
+js/scenario-room.js
+js/room-reluct.js @pack:rel
+js/room-trio-lines.js @pack:rel
+js/room-trio.js @pack:rel
+js/room-left.js @pack:rel
+js/room-cheer.js @pack:rel
+js/hate-sex-r18.js
+js/hate-love-r18.js @pack:rel
+js/content-text-r18.js
+js/content-events-r18.js
+js/room-know.js @pack:rel
+js/room-tie.js @pack:rel
+js/room-same.js @pack:rel
+js/room-same-r18.js @pack:rel
+js/room-tie-r18.js @pack:rel
+js/room-games.js @pack:rel
+js/solo-room-jealous.js @pack:rel
+js/ego-image.js
+js/omega-data.js
+js/omega-jobs.js @pack:rel
+js/omega-heat.js
+js/omega-detective.js
+js/omega-bond.js @pack:rel
+js/omega-status.js @pack:rel
+js/omega-jobs-extra.js @pack:rel
+js/omega-jobs-each-a.js @pack:rel
+js/omega-jobs-each-b.js @pack:rel
+js/omega-jobs-pair.js @pack:rel
+js/omega-jobs-pair2.js @pack:rel
+js/scenario-omega.js @pack:rel
+js/omega-passion.js @pack:rel
+js/omega-mob.js @pack:rel
+js/omega-love.js @pack:rel
+js/omega-guard.js @pack:rel
+js/omega-after.js @pack:rel
+js/omega-ties.js @pack:rel
+js/omega-secret.js @pack:rel
+js/omega-thick-kit.js
+js/omega-thick.js @pack:rel
+js/omega-ties-r18.js @pack:rel
+js/island-cook.js @pack:rel
+js/island-life.js @pack:rel
+js/island-hazard.js @pack:rel
+js/mini-goukon.js @pack:rel
+js/goukon-rel.js
+js/goukon-talk.js @pack:rel
+js/drunk.js @pack:rel
+js/goukon-mob.js @pack:rel
+js/solo-goukon-night.js @pack:rel
+js/mini-room.js @pack:rel
+js/mini-room-cute.js @pack:rel
+js/mini-classroom.js @pack:rel
+js/mini-island.js @pack:rel
+js/mini-extra-a.js @pack:rel
+js/mini-extra-b.js @pack:rel
+js/mini-extra-c.js @pack:rel
+js/mini-serifu.js @pack:rel
+js/thick-vmd.js
+js/dungeon-rich.js
+js/dungeon-persona.js
+js/dungeon.js
+js/dungeon-bosses.js @pack:story
+js/dungeon-party.js @pack:story
+js/dungeon-tempt.js @pack:story
+js/dungeon-topfall.js @pack:story
+js/dungeon-end.js @pack:story
+js/dungeon-host.js @pack:story
+js/solo-kit.js
+js/solo-massage-thick.js @pack:solo
+js/solo-massage-cast.js @pack:solo
+js/solo-massage.js @pack:solo
+js/solo-hole.js @pack:solo
+js/hole-host.js @pack:solo
+js/dungeon-events-a.js @pack:story
+js/dungeon-events-b.js @pack:story
+js/dungeon-events-c.js @pack:story
+js/factions.js @pack:rel
+js/classroom-teacher.js @pack:rel
+js/classroom-cheer.js @pack:rel
+js/endings.js
+js/epilogue.js
+js/scenario-futari.js
+js/island-after.js @pack:rel
+js/zombie-data.js
+js/zombie-core.js @pack:rel
+js/zombie-opening.js @pack:rel
+js/zombie-events.js @pack:rel
+js/zombie-bite.js @pack:rel
+js/zombie-love.js @pack:rel
+js/zombie-together.js @pack:rel
+js/zombie-solo.js @pack:rel
+js/zombie-letter.js @pack:rel
+js/zombie-seek.js @pack:rel
+js/rel-kit.js
+js/zombie-bonds.js @pack:rel
+js/island-rel.js @pack:rel
+js/island-escape.js @pack:rel
+js/island-stay.js @pack:rel
+js/island-corpse.js @pack:rel
+js/island-sea.js @pack:rel
+js/island-love.js @pack:rel
+js/island-cheer.js @pack:rel
+js/unreq.js @pack:rel
+js/fwbcrush.js @pack:rel
+js/pining-core.js
+js/pining.js @pack:rel
+js/heartbreak.js @pack:rel
+js/zombie-cure.js @pack:rel
+js/zombie-assault.js @pack:rel
+js/solo-zombie-love.js @pack:rel
+js/zombie-thick.js @pack:rel
+js/solo-zombie-raid.js @pack:rel
+js/solo-rel-r18.js @pack:rel
+js/solo-sit-night-r18.js @pack:rel
+js/island-love-r18.js @pack:rel
+js/zombie-map.js @pack:rel
+js/pos.js
+js/attr.js
+js/attr-height.js
+js/food.js
+js/special.js
+js/special-r18.js
+js/zombie-special.js @pack:rel
+js/pair-react.js @pack:rel
+js/rpg-special.js @pack:story
+js/pos-fm-tease.js @pack:rel
+js/pos-ff.js
+js/pos-lead-r18.js
+js/pos-fm.js
+js/pos-nogen.js
+js/persona-final.js
+js/pair-name.js
+js/icons.js
+js/view.js
+js/view-map.js
+js/dungeon-view.js
+js/solo-story-kit.js
+js/attr-look.js
+js/attr-race.js
+js/attr-meet.js
+js/fam-kin.js
+js/solo-kaihen-data.js @pack:solo
+js/solo-kaihen-more.js @pack:solo
+js/solo-kaihen-voice.js @pack:solo
+js/solo-kaihen.js @pack:solo
+js/solo-succubus-data.js @pack:solo
+js/solo-succubus-more.js @pack:solo
+js/solo-succubus-kohyo.js @pack:solo
+js/solo-succubus.js @pack:solo
+js/solo-succubus-rival.js @pack:solo
+js/solo-succubus-target.js @pack:solo
+js/solo-saimin-data.js
+js/solo-saimin-more.js @pack:solo
+js/solo-saimin-sex.js @pack:solo
+js/solo-saimin.js @pack:solo
+js/solo-variety-data.js
+js/solo-variety-more.js @pack:solo
+js/solo-variety-plus.js @pack:solo
+js/solo-variety-intro.js @pack:solo
+js/solo-flow.js @pack:solo
+js/solo-variety.js @pack:solo
+js/solo-locker-data.js
+js/solo-locker-more.js @pack:solo
+js/solo-locker-bed.js @pack:solo
+js/locker-thick.js @pack:solo
+js/locker-ties.js @pack:solo
+js/locker-ties-r18.js @pack:solo
+js/locker-crowd.js @pack:solo
+js/locker-crowd-r18.js @pack:solo
+js/locker-night-top.js @pack:solo
+js/locker-night-bot.js @pack:solo
+js/locker-night.js @pack:solo
+js/locker-night-light.js @pack:solo
+js/solo-locker.js @pack:solo
+js/rpg-data.js @pack:story
+js/scenario-rpg.js @pack:story
+js/jashin-data.js
+js/jashin-jobs.js @pack:story
+js/jashin-jobs-pair.js @pack:story
+js/jashin-gods.js
+js/jashin-fx-a.js @pack:story
+js/jashin-gods-rev.js @pack:story
+js/jashin-more.js
+js/jashin-rel-text.js @pack:story
+js/jashin-rel.js @pack:story
+js/jashin-drama.js @pack:story
+js/jashin.js @pack:story
+js/jashin-muno.js @pack:story
+js/jashin-special.js @pack:story
+js/jashin-duo-data.js @pack:story
+js/jashin-duo.js @pack:story
+js/jashin-cave.js @pack:story
+js/jashin-loop.js @pack:story
+js/jashin-feast.js
+js/jashin-mage.js @pack:story
+js/jashin-goals-text.js @pack:story
+js/jashin-goals.js @pack:story
+js/jashin-love.js @pack:story
+js/jashin-npc-text.js @pack:story
+js/jashin-npc.js @pack:story
+js/jashin-godev.js @pack:story
+js/jashin-godev-data-a.js @pack:story
+js/jashin-godev-data-b.js @pack:story
+js/jashin-godev-sp-a.js @pack:story
+js/jashin-godev-sp-b.js @pack:story
+js/jashin-place-lines.js @pack:story
+js/jashin-feud.js @pack:story
+js/deathgame-kit.js @pack:story
+js/yakata-data.js
+js/yakata-jobs.js @pack:story
+js/yakata-jobs-pair.js @pack:story
+js/yakata-tricks-a.js @pack:story
+js/yakata-tricks-b.js @pack:story
+js/yakata.js @pack:story
+js/yakata-special.js @pack:story
+js/ship-res.js
+js/ship-life.js
+js/ship-life2.js @pack:story
+js/ship-civ.js
+js/ship-text.js
+js/ship-r18.js @pack:story
+js/ship-r18-xeno.js @pack:story
+js/ship-r18-xeno2.js @pack:story
+js/ship-thick.js @pack:story
+js/ship-lewd.js @pack:story
+js/ship-night.js @pack:story
+js/ship-r18-more.js @pack:story
+js/ship-bond.js @pack:story
+js/ship-crisis.js @pack:story
+js/ship.js @pack:story
+js/ship-special.js @pack:story
+js/ship-after.js @pack:story
+js/yakata-frame.js @pack:story
+js/yakata-feud.js @pack:story
+js/solo-r18-moan-data.js
+js/solo-r18-moan.js
+js/solo-feud-r18.js
+js/jashin-dark-thick.js @pack:story
+js/solo-yakata-r18.js @pack:story
+js/solo-jashin-r18.js @pack:story
+js/jashin-duo-r18.js @pack:story
+js/solo-jashin-r18-climax.js @pack:story
+js/scenario-jinro.js @pack:story
+js/jinro-love.js @pack:story
+js/same-story.js
+js/same-story-r18.js
+js/solo-rel-bad.js
+js/safe.js
+js/safe-room.js @pack:rel
+js/room-games-r18.js @pack:rel
+js/share-card.js
+js/egoquiz.js
+js/saves.js
+js/history.js
+js/portable.js
+js/tips.js
+js/scen-meta.js
+js/scen-tags.js
+js/shared-stats.js
+js/ui-rand.js
+js/ui.js
+js/ui-gear.js
+js/ui-adv.js
+js/ui-adv-moan.js
+js/notice.js
+js/ui-fold.js
+js/ui-mobile.js
+js/ui-log.js
+js/hate-install.js @pack:rel
+js/obsess-kit.js
+js/obsess-story.js @pack:story
+js/obsess-install.js @pack:rel
+js/obsess-omega.js @pack:rel
+js/grief-kit.js @pack:rel
+js/dark-thick.js @pack:rel
+js/lewd-unify.js
+js/lewd-mark.js
+js/ero-scene.js
+js/futari-r18.js @pack:rel
+js/reset.js
+js/voice-seg.js
+js/voice-fp.js
+# ==== ここから下は late の区切り：上の行（中核・族）をすべて読んだあとに実行される行。late の行と、もとは late だった族の行を、元の実行の順のまま置く ====
 late js/voice-override-rows.js
 late js/voice-override-rows2.js
 late js/voice-override-scenes.js
 late js/voice-override-scenes2.js
-js/voice-override-solo.js
-js/tone-lines.js
-late js/tone-lines-hate.js
+js/tone-lines-hate.js @pack:rel
 late js/tone-mixed-more.js
-js/hate-kit.js
-js/feud-kit.js
-js/hate-love.js
 late js/tone-darui.js
-js/tone-firm.js
 late js/tone-fix.js
 late js/voice-override-r18.js
 late js/tone-mixed-more-r18.js
@@ -77,380 +428,58 @@ late js/tone-fix-g7e.js
 late js/tone-fix-g7e-r18.js
 late js/tone-fix-g7f.js
 late js/tone-fix-g7f-r18.js
-js/tone-polite-kin.js
-js/tone-new.js
-js/tone-ane.js
-js/tone-usan.js
-js/tone-yankee.js
 late js/tone-hero.js
-js/tone-gyaru.js
-js/tone-chara.js
-js/tone-mystic.js
 late js/tone-genki.js
-js/tone-sondai.js
-js/tone-stern.js
-js/tone-long.js
-js/tone-new2.js
-js/tone-new2-rows.js
-js/tone-new2-r18.js
-js/engine.js
-js/sib-word.js
-js/emotion.js
-js/emotion-r18.js
-js/content.js
-js/mood-dial.js
-js/mob.js
-js/ero-kit.js
-js/ero-top-lines-r18.js
-js/lewd-words.js
-js/part-words.js
-js/ero-moan-tone.js
-js/novel-moan-tone.js
-js/moan-dict.js
-js/moan-said.js
-js/moan-engine.js
-js/moan-mob.js
-js/thick-sex.js
-js/thick-sex-ero.js
-js/fwb.js
-js/free-sex.js
-js/scenarios-a.js
-js/mini.js
-js/mini-tails.js
-js/scenarios-b.js
-js/room-lewd.js
-js/room-lewd-more.js
-js/room-lewd-x.js
-js/room-thick.js
-js/scenario-room.js
-js/room-reluct.js
-js/room-trio-lines.js
-js/room-trio.js
-js/room-left.js
-js/room-cheer.js
-js/hate-sex-r18.js
-js/hate-love-r18.js
-js/content-text-r18.js
-js/content-events-r18.js
-js/room-know.js
-js/room-tie.js
-js/room-same.js
-js/room-same-r18.js
-js/room-tie-r18.js
-js/room-games.js
-js/solo-room-jealous.js
-js/ego-image.js
-js/omega-data.js
-js/omega-jobs.js
-js/omega-heat.js
-js/omega-detective.js
-js/omega-bond.js
-js/omega-status.js
-js/omega-jobs-extra.js
-js/omega-jobs-each-a.js
-js/omega-jobs-each-b.js
-js/omega-jobs-pair.js
-js/omega-jobs-pair2.js
-js/scenario-omega.js
-js/omega-passion.js
-js/omega-mob.js
-late js/omega-mob-r18.js
-js/omega-love.js
-js/omega-guard.js
-js/omega-after.js
-js/omega-ties.js
-js/omega-secret.js
-js/omega-thick.js
-js/omega-ties-r18.js
-late js/incidents-social.js
-late js/incidents-survival.js
-late js/incidents-extra.js
-js/island-cook.js
-js/island-life.js
-js/island-hazard.js
-js/mini-goukon.js
-js/goukon-rel.js
-js/goukon-talk.js
-js/drunk.js
-js/goukon-mob.js
-js/solo-goukon-night.js
-js/mini-room.js
-js/mini-room-cute.js
-js/mini-classroom.js
-js/mini-island.js
-js/mini-extra-a.js
-js/mini-extra-b.js
-js/mini-extra-c.js
-js/mini-serifu.js
-js/thick-vmd.js
-late js/dungeon-lines.js
-js/dungeon-rich.js
-js/dungeon-persona.js
-js/dungeon.js
-late js/dungeon-thick.js
-late js/dungeon-lewd.js
-js/dungeon-bosses.js
-js/dungeon-party.js
-js/dungeon-tempt.js
-js/dungeon-topfall.js
-js/dungeon-end.js
-js/dungeon-host.js
-js/solo-kit.js
-late js/solo-massage-data.js
-js/solo-massage-thick.js
-js/solo-massage-cast.js
-js/solo-massage.js
-late js/solo-massage-lewd.js
-late js/solo-massage-love.js
-late js/solo-thick4.js
-late js/solo-hole-data.js
-late js/solo-hole-live.js
-late js/solo-hole-behind.js
-late js/solo-hole-ero.js
-late js/hole-thick.js
-late js/hole-end.js
-js/solo-hole.js
-js/hole-host.js
-js/dungeon-events-a.js
-js/dungeon-events-b.js
-js/dungeon-events-c.js
-js/factions.js
-late js/birthday.js
-late js/classroom-life.js
-js/classroom-teacher.js
-js/classroom-cheer.js
-js/endings.js
-js/epilogue.js
-js/scenario-futari.js
-js/island-after.js
-js/zombie-data.js
-js/zombie-core.js
-late js/zombie-npc.js
-js/zombie-opening.js
-js/zombie-events.js
-late js/zombie-reunion.js
-js/zombie-bite.js
-js/zombie-love.js
-js/zombie-together.js
-js/zombie-solo.js
-js/zombie-letter.js
-js/zombie-seek.js
-js/rel-kit.js
-js/zombie-bonds.js
-late js/zombie-rel.js
-js/island-rel.js
-late js/rel-bad-engine.js
-js/island-escape.js
-js/island-stay.js
-js/island-corpse.js
-js/island-sea.js
-js/island-love.js
-js/island-cheer.js
-js/unreq.js
-js/fwbcrush.js
-js/pining.js
-js/heartbreak.js
-js/zombie-cure.js
-js/zombie-assault.js
-js/solo-zombie-love.js
-js/zombie-thick.js
-js/solo-zombie-raid.js
-js/solo-rel-r18.js
-js/solo-sit-night-r18.js
-js/island-love-r18.js
-js/zombie-map.js
-js/pos.js
-js/attr.js
-js/attr-height.js
-js/food.js
-js/special.js
-js/special-r18.js
-js/zombie-special.js
-js/pair-react.js
-js/rpg-special.js
-js/pos-fm-tease.js
-js/pos-ff.js
-js/pos-lead-r18.js
-js/pos-fm.js
-js/pos-nogen.js
-js/persona-final.js
-js/pair-name.js
-js/icons.js
-js/view.js
-js/view-map.js
-js/dungeon-view.js
-js/solo-story-kit.js
-js/attr-look.js
-js/attr-race.js
-js/attr-meet.js
-js/fam-kin.js
-js/solo-kaihen-data.js
-js/solo-kaihen-more.js
-js/solo-kaihen-voice.js
-late js/solo-kaihen-ero.js
-late js/solo-kaihen-talk.js
-late js/solo-kaihen-after.js
-js/solo-kaihen.js
-js/solo-succubus-data.js
-js/solo-succubus-more.js
-late js/solo-succubus-types.js
-js/solo-succubus-kohyo.js
-late js/solo-succubus-ero.js
-js/solo-succubus.js
-js/solo-succubus-rival.js
-js/solo-succubus-target.js
-js/solo-saimin-data.js
-js/solo-saimin-more.js
-js/solo-saimin-sex.js
-late js/solo-saimin-ero.js
+js/omega-mob-r18.js @pack:rel
+js/incidents-social.js @pack:rel
+js/incidents-survival.js @pack:rel
+js/incidents-extra.js @pack:rel
+js/dungeon-lines.js @pack:story
+js/dungeon-thick.js @pack:story
+js/dungeon-lewd.js @pack:story
+js/solo-massage-data.js @pack:solo
+js/solo-massage-lewd.js @pack:solo
+js/solo-massage-love.js @pack:solo
+js/solo-thick4.js @pack:solo
+js/solo-hole-data.js @pack:solo
+js/solo-hole-live.js @pack:solo
+js/solo-hole-behind.js @pack:solo
+js/solo-hole-ero.js @pack:solo
+js/hole-thick.js @pack:solo
+js/hole-end.js @pack:solo
+js/birthday.js @pack:rel
+js/classroom-life.js @pack:rel
+js/zombie-npc.js @pack:rel
+js/zombie-reunion.js @pack:rel
+js/zombie-rel.js @pack:rel
+js/rel-bad-engine.js @pack:rel
+js/solo-kaihen-ero.js @pack:solo
+js/solo-kaihen-talk.js @pack:solo
+js/solo-kaihen-after.js @pack:solo
+js/solo-succubus-types.js @pack:solo
+js/solo-succubus-ero.js @pack:solo
+js/solo-saimin-ero.js @pack:solo
 late js/solo-saimin-thick.js
-js/solo-saimin.js
-js/solo-variety-data.js
-js/solo-variety-more.js
-js/solo-variety-plus.js
-late js/solo-variety-extra.js
-late js/solo-erotic-more-a.js
-late js/solo-erotic-more-b.js
-js/solo-variety-intro.js
-late js/solo-variety-thick.js
-js/solo-flow.js
-js/solo-variety.js
-js/solo-locker-data.js
-js/solo-locker-more.js
-js/solo-locker-bed.js
-js/locker-thick.js
-js/locker-ties.js
-js/locker-ties-r18.js
-js/locker-crowd.js
-js/locker-crowd-r18.js
-js/locker-night-top.js
-js/locker-night-bot.js
-js/locker-night.js
-js/locker-night-light.js
-js/solo-locker.js
-js/rpg-data.js
-js/scenario-rpg.js
-js/jashin-data.js
-js/jashin-jobs.js
-js/jashin-jobs-pair.js
-js/jashin-gods.js
-js/jashin-fx-a.js
-late js/jashin-fx-b.js
-js/jashin-gods-rev.js
-js/jashin-more.js
-js/jashin-rel-text.js
-js/jashin-rel.js
-js/jashin-drama.js
-js/jashin.js
-js/jashin-muno.js
-js/jashin-special.js
-js/jashin-duo-data.js
-js/jashin-duo.js
-js/jashin-cave.js
-js/jashin-loop.js
-js/jashin-feast.js
-js/jashin-mage.js
-js/jashin-goals-text.js
-js/jashin-goals.js
-js/jashin-love.js
-js/jashin-npc-text.js
-js/jashin-npc.js
-js/jashin-godev.js
-js/jashin-godev-data-a.js
-js/jashin-godev-data-b.js
-js/jashin-godev-sp-a.js
-js/jashin-godev-sp-b.js
-js/jashin-place-lines.js
-late js/jashin-place.js
-js/jashin-feud.js
-js/deathgame-kit.js
-js/yakata-data.js
-js/yakata-jobs.js
-js/yakata-jobs-pair.js
-js/yakata-tricks-a.js
-js/yakata-tricks-b.js
-js/yakata.js
-js/yakata-special.js
-js/ship-res.js
-js/ship-life.js
-js/ship-life2.js
-js/ship-civ.js
-js/ship-text.js
-js/ship-r18.js
-js/ship-r18-xeno.js
-js/ship-r18-xeno2.js
-late js/ship-xeno-thick.js
-js/ship-thick.js
-js/ship-lewd.js
-js/ship-night.js
-js/ship-r18-more.js
-js/ship-bond.js
-js/ship-crisis.js
-js/ship.js
-js/ship-special.js
-js/ship-after.js
-js/yakata-frame.js
-js/yakata-feud.js
-js/solo-r18-moan-data.js
-js/solo-r18-moan.js
-js/solo-feud-r18.js
-late js/r18-thick.js
-js/jashin-dark-thick.js
-late js/solo-yakata-r18-text.js
-js/solo-yakata-r18.js
-js/solo-jashin-r18.js
-js/jashin-duo-r18.js
-late js/solo-jashin-r18-god.js
-late js/solo-jashin-r18-godnight.js
-js/solo-jashin-r18-climax.js
+js/solo-variety-extra.js @pack:solo
+js/solo-erotic-more-a.js @pack:solo
+js/solo-erotic-more-b.js @pack:solo
+js/solo-variety-thick.js @pack:solo
+js/jashin-fx-b.js @pack:story
+js/jashin-place.js @pack:story
+js/ship-xeno-thick.js @pack:story
+js/r18-thick.js @pack:story
+js/solo-yakata-r18-text.js @pack:story
+js/solo-jashin-r18-god.js @pack:story
+js/solo-jashin-r18-godnight.js @pack:story
 late js/story-lewd.js
-late js/jinro-data.js
-js/scenario-jinro.js
-late js/jinro-after.js
-late js/jinro-wolfnight.js
-js/jinro-love.js
-js/same-story.js
-js/same-story-r18.js
-late js/rel-bad-story.js
+js/jinro-data.js @pack:story
+js/jinro-after.js @pack:story
+js/jinro-wolfnight.js @pack:story
+js/rel-bad-story.js
 late js/tie-new-story.js
-js/solo-rel-bad.js
-js/safe.js
-js/safe-room.js
-js/room-games-r18.js
-js/share-card.js
-js/egoquiz.js
-js/saves.js
-js/history.js
-js/portable.js
-js/tips.js
 late js/tips-scen-a.js
 late js/tips-scen-b.js
 late js/tips-scen-c.js
 late js/tips-scen-d.js
-js/scen-tags.js
-js/shared-stats.js
-js/ui-rand.js
-js/ui.js
-js/ui-gear.js
-js/ui-adv.js
-js/ui-adv-moan.js
-js/notice.js
-js/ui-fold.js
-js/ui-mobile.js
-js/ui-log.js
-js/hate-install.js
-js/obsess-kit.js
-js/obsess-story.js
-js/obsess-install.js
-js/obsess-omega.js
-js/grief-kit.js
-js/dark-thick.js
-js/lewd-unify.js
-js/lewd-mark.js
-js/ero-scene.js
-js/futari-r18.js
-js/reset.js
-js/voice-seg.js
-js/voice-fp.js
 late js/attr-r18.js
 late js/attr-race-r18.js

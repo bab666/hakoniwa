@@ -75,7 +75,8 @@
       }
     }
   ];
-  HK.COMMON = HK.COMMON.concat(F.events);
+  /* HK.addTo：共通の出来事の表は、足したファイルの元の順に並べる（分割読み込みで族のかたまりが後から届いても同じ並び） */
+  HK.addTo(HK.COMMON, F.events);
   /* 判定ラベル */
   HK.LABELS.fwbsettle = { name: 'セフレ', cls: 'night', pol: 1 };
 })();

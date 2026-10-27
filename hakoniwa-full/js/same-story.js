@@ -458,6 +458,8 @@
     }
   }
   wrapJashin();
+  /* 分割読み込み：jashin-rel.js（物語系のかたまり）が後から届いたら、そのときに包む（包んだ印 _same で二度包まない） */
+  if (HK.Load && HK.Load.onChunk) HK.Load.onChunk(wrapJashin);
 
   /* ======================= 媚薬ロッカー ======================= */
   function sameBox(a, b) { return !a.L || (a.L === b.L); }

@@ -384,9 +384,9 @@
     ], RW_MAIN, kind));
   }
 
-  var sex0 = R.sex;
   function count(S, x, y) { if (HK.Ero && HK.Ero.pairNight) HK.Ero.pairNight(S, x, y); }
-  R.sex = function (S, x, y, opt) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
+  HK.wrap(R, 'sex', function (sex0) { return function (S, x, y, opt) {
     count(S, x, y);
     if (!on(S)) return sex0.apply(this, arguments);
     opt = opt || {};
@@ -402,7 +402,7 @@
     /* 相手が女性でも男性器のある人（ふたなり）なら同じ。攻めに男性器がないときは、男性の体の書き方を当てない */
     if (HK.FM && HK.Pos && HK.Pos.isF && HK.Pos.isF(x) && ((y.gender || (y.src && y.src.gender)) === 'm' || (HK.Pos.hasM && HK.Pos.hasM(y) && !HK.Pos.hasM(x)))) return soft(S, x, y, opt, 'fm');
     return mm(S, x, y, opt);
-  };
+  }; });
   /* 女性どうしを自前で組み立てる箱庭（邪神村 pairSex・吹雪の館 SX）用 */
   /* log：点検用（配列を入れると、組み立てた組 [攻め, 受け] を記録する） */
   /* POOLS：点検用（段ごとの文数を数えるときに読む） */

@@ -659,5 +659,6 @@
     L0.push(h.name + '：' + K.W_CL + ' ' + h.climax + '回・堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・理性 ' + Math.max(0, Math.round(h.reason)));
     return { type: kind, kind: kind, title: title, lines: L0 };
   }
-  HK.SCEN_ORDER.push('massage');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('massage') < 0) HK.SCEN_ORDER.push('massage');
 })();

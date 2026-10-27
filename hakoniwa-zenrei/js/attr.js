@@ -816,10 +816,10 @@
     '{a}は{b}に背を向けた。最後の一線だけは、どうしても越えられなかった。{a}「次に会ったら、どうなるか分からないよ｜次に会ったら、どうなるか分からない｜次に会ったら、どうなるか分かりませんよ」{b}は息を詰めたまま、遠ざかる背中を見ていた。|' +
     '{a}は{b}を見下ろしたまま、長いあいだ動かなかった。やがて、深く息を吐いた。{a}「……あなたを殺したら、私はもう戻れない気がする｜……あなたを殺せば、私はもう戻れない｜……あなたを殺したら、私はもう戻れない気がします」{a}はそれ以上何も言わずに、その場を離れた。');
   var Ctx = HK.Ctx;
-  if (Ctx && Ctx.prototype.kill && !Ctx.prototype.kill._attrNk) {
-    var kill0 = Ctx.prototype.kill;
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
+  if (Ctx && Ctx.prototype.kill && !Ctx.prototype.kill._attrNk) HK.wrap(Ctx.prototype, 'kill', function (kill0) {
     /* opt.force：殺さない設定を越えて殺す（殺し合いが本筋の箱庭・やむを得ない場合）。止めたときは null を返す（殺された人はそのまま生きている） */
-    Ctx.prototype.kill = function (v, killer, how, opt) {
+    var f = function (v, killer, how, opt) {
       if (v && v.alive && killer && killer !== v && !(opt && opt.force) && this._nkFight !== 'force' && A.spare(this, v, killer)) {
         var ctx = this;
         if (typeof v.hp === 'number' && v.hp < 8) v.hp = 8;
@@ -834,8 +834,9 @@
       }
       return kill0.apply(this, arguments);
     };
-    Ctx.prototype.kill._attrNk = true;
-  }
+    f._attrNk = true;
+    return f;
+  });
   /* 戦いでとどめを刺す場面：止めたら、とどめを刺さなかった結果に書き換える（opt.force は kill に渡す） */
   if (Ctx && Ctx.prototype.fight && !Ctx.prototype.fight._attrNk) {
     var fight0 = Ctx.prototype.fight;
@@ -876,9 +877,9 @@
     };
   }
   if (HK.COMMON) {
-    HK.COMMON.push(mirrorEv('talk', 1.6, 'bond', [{ aff: 3, trust: 4 }, { aff: 3, trust: 4 }]));
-    HK.COMMON.push(mirrorEv('habit', 1.3, 'bond', [{ aff: 2, trust: 3 }, { aff: 2, trust: 3 }]));
-    HK.COMMON.push(mirrorEv('clash', 1, 'conflict', [{ ten: 5, aff: -1 }, { ten: 5, aff: -1 }]));
+    HK.addTo(HK.COMMON, mirrorEv('talk', 1.6, 'bond', [{ aff: 3, trust: 4 }, { aff: 3, trust: 4 }]));
+    HK.addTo(HK.COMMON, mirrorEv('habit', 1.3, 'bond', [{ aff: 2, trust: 3 }, { aff: 2, trust: 3 }]));
+    HK.addTo(HK.COMMON, mirrorEv('clash', 1, 'conflict', [{ ten: 5, aff: -1 }, { ten: 5, aff: -1 }]));
   }
 
   /* ---------- 結果の関係名「もう一人の自分」（tie-rel.js の結末の分類を包む） ---------- */
@@ -886,17 +887,17 @@
   var MIRROR_SOFT = /^(friends|partners|strangers|awkward|guard|accomplice)$/;
   if (HK.LABELS && !HK.LABELS.mirror) HK.LABELS.mirror = { name: 'もう一人の自分', cls: 'friend', pol: 1 };
   var TR = HK.TieRel;
-  if (TR && TR.refine && !TR.refine._attr) {
-    var rf0 = TR.refine;
-    TR.refine = function (ctx, A0, B0, pf, cl) {
+  /* HK.wrap：包む順を元のファイルの順に固定（rel-group.js の包みが後から届いても内側に入る） */
+  if (TR && TR.refine && !TR.refine._attr) HK.wrap(TR, 'refine', function (rf0) {
+    var f = function (ctx, A0, B0, pf, cl) {
       if (cl && A.samePair(A0, B0) && MIRROR_SOFT.test(cl.id) && !pf.kill) return { id: 'mirror', base: cl.id };
       return rf0.apply(this, arguments);
     };
-    TR.refine._attr = true;
-  }
-  if (TR && TR.pairText && !TR.pairText._attr) {
-    var pt0 = TR.pairText;
-    TR.pairText = function (ctx, A0, B0, cl) {
+    f._attr = true;
+    return f;
+  });
+  if (TR && TR.pairText && !TR.pairText._attr) HK.wrap(TR, 'pairText', function (pt0) {
+    var f = function (ctx, A0, B0, cl) {
       if (cl && cl.id === 'mirror') {
         if (/^(friends|partners|guard|accomplice)$/.test(cl.base || '')) return '鏡の中の自分と手を取り合うように、二人は互いのいちばんの理解者になった。';
         if (/^(awkward)$/.test(cl.base || '')) return '同じ顔、同じ癖。二人は最後まで、もう一人の自分との距離をつかみかねていた。';
@@ -904,6 +905,7 @@
       }
       return pt0.apply(this, arguments);
     };
-    TR.pairText._attr = true;
-  }
+    f._attr = true;
+    return f;
+  });
 })();

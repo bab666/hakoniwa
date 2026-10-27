@@ -55,11 +55,10 @@
   HK.RoomFade3 = function (ctx) { return ctx.pick(FADE3); };
   if (!HK.SAFE_ON) return;
   L.scene = fadeScene;
-  var recap0 = L.recap;
-  L.recap = function (ctx, a, b, k, n) { if (k === 'h') return ctx.t('{a}と{b}は、しばらく寄り添ったままでいた。', a, b) + (n > 1 ? '（' + n + '回目）' : ''); return recap0.apply(this, arguments); };
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。全年齢モードでは safe.js の包みとの順がずれると結果が変わる） */
+  HK.wrap(L, 'recap', function (recap0) { return function (ctx, a, b, k, n) { if (k === 'h') return ctx.t('{a}と{b}は、しばらく寄り添ったままでいた。', a, b) + (n > 1 ? '（' + n + '回目）' : ''); return recap0.apply(this, arguments); }; });
   /* 念のため：出られない部屋の結果に残ったはっきりした文は、ほかの箱庭と同じ方法でまろやかにする */
-  var sim0 = HK.simulate;
-  HK.simulate = function (input) {
+  HK.wrap(HK, 'simulate', function (sim0) { return function (input) {
     fi = 0;
     var r = sim0.apply(this, arguments);
     if (r && input && input.scenId === 'whiteroom' && HK.SafeText) {
@@ -67,7 +66,7 @@
       if (r.ending && Array.isArray(r.ending.lines)) r.ending.lines = r.ending.lines.map(function (l) { return typeof l === 'string' && EXPL.test(l) ? HK.SafeText(l) : l; });
     }
     return r;
-  };
+  }; });
   var EXPL = /挿|果て|達し|イ[っッくかカきキ]|喘|脚の間|貫|腰を[振沈打揺使]|繋が|舐め|脱が|跨|濡れ|奥まで|突き上げ|絶頂|中で/;
   var fi = 0;
   function ctxFade() { return FADE[fi++ % FADE.length].replace(/^――/, ''); }

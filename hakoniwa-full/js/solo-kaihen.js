@@ -59,7 +59,8 @@
   /* 描写の作風（小説調／男性向け）：ero-kit.js があるとき（R18版）だけ */
   if (HK.Ero) scen.env.push(HK.Ero.OPT);
   HK.SCENARIOS.kaihen = scen;
-  HK.SCEN_ORDER.push('kaihen');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('kaihen') < 0) HK.SCEN_ORDER.push('kaihen');
 
   var START = { clinic: 9, hotel: 15, office: 9, spa: 14, gym: 10, stage: 13 };
   var ROLE = { giver: '施す側', taker: '受ける側', out: '正気の人' };

@@ -12,7 +12,8 @@
   var HK = window.HK, scen = HK.SCENARIOS && HK.SCENARIOS.jinro, JA = HK.JinroAfter;
   if (!scen || !JA || HK.SAFE_ON) return;
   function L(s) { return s.split('|'); }
-  scen.env.push({ id: 'wolfnight', label: '人狼の勝利の夜', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ（人狼が勝ったとき、半分くらい）' }, { v: 'yes', label: '必ず（人狼が勝ったとき）' }, { v: 'off', label: 'なし' }], desc: '人狼陣営が勝ったあと、生き残った人狼（攻め）が、生き残った村人（受け）を「ゲームの続き」として食べに行く（R18）' });
+  /* HK.addTo：分割読み込みで箱庭が後からそろっても、描写の設定（lewd-unify.js）より後ろに並ぶ */
+  HK.addTo(scen.env, { id: 'wolfnight', label: '人狼の勝利の夜', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ（人狼が勝ったとき、半分くらい）' }, { v: 'yes', label: '必ず（人狼が勝ったとき）' }, { v: 'off', label: 'なし' }], desc: '人狼陣営が勝ったあと、生き残った人狼（攻め）が、生き残った村人（受け）を「ゲームの続き」として食べに行く（R18）' });
   var TW = { lover: 1, mate: 1, fated: 1, spouse: 1, honmei: 0.9, almost: 0.8, fwb: 0.7, best: 0.6, buddy: 0.55, childhood: 0.55, crush: 0.6, friend: 0.35 };
   function close(input, a, b) {
     var w = 0;

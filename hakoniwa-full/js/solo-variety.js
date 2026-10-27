@@ -39,7 +39,8 @@
     events: []
   };
   HK.SCENARIOS.variety = scen;
-  HK.SCEN_ORDER.push('variety');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('variety') < 0) HK.SCEN_ORDER.push('variety');
 
   var PTS = [30, 20, 15, 10, 8, 6, 4, 2];
   var STAT_TB = { gaman: '我慢', brain: '頭', pop: '人気', luck: '運' };

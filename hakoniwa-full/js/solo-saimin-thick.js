@@ -208,10 +208,9 @@
   /* 足す文の乱数は、回の種（input.seed）からも作る（以前は設定と人数だけで決まり、どの回でも同じ文が選ばれていた）。
      物語の乱数（S.rng）とは別なので、展開は変わらない。同じ種なら同じ文 */
   var SEED = 0;
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
   if (HK.simulate && !HK.simulate._smSeed) {
-    var sim0 = HK.simulate;
-    HK.simulate = function (input) { var p = SEED; SEED = (input && input.seed) >>> 0 || 0; try { return sim0.apply(this, arguments); } finally { SEED = p; } };
-    HK.simulate._smSeed = true;
+    HK.wrap(HK, 'simulate', function (sim0) { var f = function (input) { var p = SEED; SEED = (input && input.seed) >>> 0 || 0; try { return sim0.apply(this, arguments); } finally { SEED = p; } }; f._smSeed = true; return f; });
   }
   function R0(S) {
     if (!S.lwT) S.lwT = { rng: HK.rng((((S.env && S.env.skill) || 0) * 7919 + (S.P ? S.P.length : 0) * 131 + 271828 + Math.imul(SEED, 2654435761)) >>> 0), _eroSeen: S._eroSeen || (S._eroSeen = {}), scen: S.scen, env: S.env };

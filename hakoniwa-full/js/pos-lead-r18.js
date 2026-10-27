@@ -130,13 +130,14 @@
     };
     obj.scene._lead = true;
   }
+  var LAST = 1e9;   /* 最初のシミュレーションの前に包む＝どのファイルの包みよりも外側 */
   function install() {
     wrapScene(HK.ThickSex, false);
     wrapScene(HK.ThickEro, true);
     var R = HK.R18M;
-    if (R && R.sex && !R.sex._lead) {
-      var sx0 = R.sex;
-      R.sex = function (S, x, y, opt) {
+    /* R18M.sex・TKC.body は HK.wrap でいちばん外側（番号 LAST）に。分割読み込みで後から届いた包み（r18-thick.js など）は内側に入る */
+    if (R && R.sex && !R.sex._lead) HK.wrap(R, 'sex', function (sx0) {
+      var f = function (S, x, y, opt) {
         if (!x || !y || !anyLead(x, y)) return sx0.apply(this, arguments);
         var r = sx0.apply(this, arguments);
         if (typeof r !== 'string' || (opt && opt.short)) return r;
@@ -144,20 +145,21 @@
         var mode = P.isF(T) && P.isF(U) ? 'ff' : P.isF(T) && (U.gender || (U.src && U.src.gender)) === 'm' ? 'fm' : 'mf';
         return after1(r, names(PL.text(T, U, mode, fresh(S, null)), T, U));
       };
-      R.sex._lead = true;
-    }
+      f._lead = true;
+      return f;
+    }, LAST);
     var TK = HK.TKC;
-    if (TK && TK.body && !TK.body._lead) {
-      var tb0 = TK.body;
-      TK.body = function (T, U, o) {
+    if (TK && TK.body && !TK.body._lead) HK.wrap(TK, 'body', function (tb0) {
+      var f = function (T, U, o) {
         var r = tb0.apply(this, arguments);
         if (!T || !U || !o || typeof r !== 'string' || !anyLead(T, U)) return r;
         var kd = TK.kind ? TK.kind(T, U, o.flav) : '';
         var t = PL.text(T, U, kd === 'ff' ? 'ff' : kd === 'ride' ? 'fm' : 'mf', fresh(o.rng, o.pick));
         return after1(r, t.replace(/\{a\}/g, '{T}').replace(/\{b\}/g, '{U}'));
       };
-      TK.body._lead = true;
-    }
+      f._lead = true;
+      return f;
+    }, LAST);
   }
   /* 包むのは最初のシミュレーションの前（r18-thick.js は後から読む。attr-r18.js の夜の性格の包みより外側にして、主導の文を夜の性格の文より先に置く） */
   if (HK.simulate && !HK.simulate._lead) {

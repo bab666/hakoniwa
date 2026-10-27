@@ -336,9 +336,9 @@
     var TR = HK.TieRel;
     if (!TR || TR._polyHooked) return;
     TR._polyHooked = true;
-    var rf0 = TR.refine, pt0 = TR.pairText;
-    TR.refine = function (ctx, A, B, pf, cl) { var r = P.refine(ctx, A, B, pf, cl); return r || (rf0 ? rf0.apply(this, arguments) : null); };
-    TR.pairText = function (ctx, A, B, cl) { return P.pairText(ctx, A, B, cl) || (pt0 ? pt0.apply(this, arguments) : null); };
+    /* HK.wrap：呼んだファイル（rel-group.js）の番号で包む。分割読み込みで後から届いても、包む順は元のファイルの順 */
+    HK.wrap(TR, 'refine', function (rf0) { return function (ctx, A, B, pf, cl) { var r = P.refine(ctx, A, B, pf, cl); return r || (rf0 ? rf0.apply(this, arguments) : null); }; });
+    HK.wrap(TR, 'pairText', function (pt0) { return function (ctx, A, B, cl) { return P.pairText(ctx, A, B, cl) || (pt0 ? pt0.apply(this, arguments) : null); }; });
   };
 
   /* ---------- 秘密の発覚（「秘密」のときだけ。嫉妬系） ----------

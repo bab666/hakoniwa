@@ -190,7 +190,7 @@
       '<p class="savecast">' + esc(r.names) + (r.seed != null ? '　<span class="saveseed">シード ' + esc(r.seed) + '</span>' : '') + '</p></div>' +
       '<div class="saveact">' +
       '<button class="btn small" data-sv="open">開く</button>' +
-      (inp.scenId && HK.SCENARIOS[inp.scenId] ? '<button class="btn small ghost" data-sv="rerun" title="同じ住人・環境・シードで、今のバージョンでもう一度回す">同じ条件でもう一度</button>' : '') +
+      (inp.scenId && (HK.SCENARIOS[inp.scenId] || (HK.Load && HK.Load.info && HK.Load.info(inp.scenId))) ? '<button class="btn small ghost" data-sv="rerun" title="同じ住人・環境・シードで、今のバージョンでもう一度回す">同じ条件でもう一度</button>' : '') +
       '<button class="btn small ghost" data-sv="export">JSON</button>' +
       '<button class="btn small ghost" data-sv="del" aria-label="削除">削除</button></div></li>';
   }

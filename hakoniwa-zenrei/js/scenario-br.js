@@ -59,7 +59,8 @@
     ctx.say({ kind: 'event', cat: head === '全滅' ? 'combat' : 'escape', actors: head === '全滅' ? [] : all.filter(function (c) { return c.alive; }), text: text, why: 'ゲームの結末（' + head + '）', mag: 40 });
     if (!ctx.flags.outcome) ctx.flags.outcome = head === '脱出' ? names(out) + 'が島を脱出' : head === '時間切れ' ? '時間切れ ― ' + names(P) + 'が生き延びた' : head === '全滅' ? '全滅 ― 優勝者なし' : '';
   }
-  function add(s) { HK.SCENARIOS[s.id] = s; HK.SCEN_ORDER.push(s.id); }
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  function add(s) { HK.SCENARIOS[s.id] = s; if (HK.SCEN_ORDER.indexOf(s.id) < 0) HK.SCEN_ORDER.push(s.id); }
 
   /* ======================= バトルロワイヤル ======================= */
   HK.WEAPONS = [

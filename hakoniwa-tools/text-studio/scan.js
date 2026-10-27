@@ -40,8 +40,8 @@ const UI_FILE = /^(ui|view|tips|saves|share-card|egoquiz|icons|dungeon-view|safe
 function readOrder(dir) {
   const p = path.join(dir, 'js/_order.txt');
   if (!fs.existsSync(p)) throw new Error('js/_order.txt がありません: ' + dir);
-  return fs.readFileSync(p, 'utf8').split('\n').map(l => l.replace(/#.*$/, '').trim()).filter(Boolean)
-    .map(l => { const m = l.match(/^(late\s+)?(js\/\S+\.js)$/); return m ? { late: !!m[1], f: m[2] } : null; }).filter(Boolean);
+  return fs.readFileSync(p, 'utf8').split('\n').map(l => l.replace(/#.*$/, '').trim()).filter(l => l && !/^@/.test(l))
+    .map(l => { const m = l.match(/^(late\s+)?(js\/\S+\.js)(?:\s+@\S+)*$/); return m ? { late: !!m[1], f: m[2] } : null; }).filter(Boolean);
 }
 
 /* ---------- 一つのファイルを読む ---------- */

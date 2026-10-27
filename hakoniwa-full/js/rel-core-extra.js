@@ -102,14 +102,14 @@
   }
   RC.POOL = POOL;
   /* 出来事の山に足す（箱庭の events は書き換えない） */
-  var bp0 = HK.buildPool;
-  HK.buildPool = function (sc) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
+  HK.wrap(HK, 'buildPool', function (bp0) { return function (sc) {
     var p = bp0.apply(this, arguments), x = sc && POOL[sc.id];
     if (sc && D[sc.id] && D[sc.id].install && !sc._rcInstalled) { sc._rcInstalled = true; D[sc.id].install(sc); }
     if (!x) return p;
     var ex = sc.exclude || [];
     return p.concat(x.filter(function (e) { return ex.indexOf(e.id) < 0; }));
-  };
+  }; });
 
   /* ======================= クラスメイト（月ごと。札は月の名前：4月〜3月） ======================= */
   scen('classroom', { w: 2.0, gap: 3, max: 2, tag: function (ctx, a, b, k) { return k === ctx.label; } }, {

@@ -1075,5 +1075,6 @@
     ],
     steps: function () { return []; }
   };
-  HK.SCEN_ORDER.push('dungeon');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('dungeon') < 0) HK.SCEN_ORDER.push('dungeon');
 })();

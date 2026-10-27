@@ -35,7 +35,8 @@
   };
   HK.SCENARIOS.jashin = scen;
   var at = HK.SCEN_ORDER.indexOf('zombie');
-  HK.SCEN_ORDER.splice(at >= 0 ? at + 1 : HK.SCEN_ORDER.length, 0, 'jashin');
+  /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
+  if (HK.SCEN_ORDER.indexOf('jashin') < 0) HK.SCEN_ORDER.splice(at >= 0 ? at + 1 : HK.SCEN_ORDER.length, 0, 'jashin');
 
   function names(l) { return l.map(function (p) { return p.name; }).join('・'); }
   function jobOf(p) { return JS.JOB[p.job] || JS.JOB.civ; }

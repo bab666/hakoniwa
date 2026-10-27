@@ -41,7 +41,7 @@
     return here.filter(function (a) { return a !== b && loveOk(a, b) && (ctx.pair(a, b).couple || ctx.R(a, b).att > 45); })
       .sort(function (x, y) { return (ctx.pair(y, b).couple ? 100 : 0) + ctx.R(y, b).att - (ctx.pair(x, b).couple ? 100 : 0) - ctx.R(x, b).att; })[0] || null;
   }
-  HK.COMMON.push({
+  HK.addTo(HK.COMMON, {
     id: 'mob_after', cat: 'romance', scope: 'solo',
     when: function (ctx, b) { var h = b.flags && b.flags.mobHit; return !!h && !h.done && ctx.stepIndex - h.at <= 3 && !!partnerOf(ctx, b); },
     w: function () { return 3; }, pri: true,
