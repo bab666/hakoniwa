@@ -72,6 +72,8 @@
   var HK = window.HK, SM = HK.SAIMIN;
   if (!SM || !SM.SUG) return;
   function L(s) { return s.split('|'); }
+  /* 同じ人の台詞を二回続けない（solo-saimin.js の SM.vJoin。読み込み順に依らないよう、呼ぶときに引く） */
+  function vj(t, p, line) { return SM.vJoin ? SM.vJoin(t, p, line) : t + (line || ''); }
   var SWEPT = L('{a}は{h}を押しのけようとして、その手が止まった。正気に戻ったはずなのに、体の奥がまだ{h}を欲しがっていた。「……っ、ずるい……」――{a}は自分から腰を揺らし始め、二度目に奥へ注がれたときも、もう拒まなかった。|「抜いて」と言うつもりだった。けれど{h}が少し腰を引いた瞬間、{a}の脚は勝手に{h}の腰に絡みついていた。正気のまま、{a}は{h}を受け入れ直した。二度目の熱が中に広がると、{a}は唇を噛んで、それでも小さく達した。|{a}は自分が何をされたのか分かっていた。分かっていて、{h}にしがみついた。「……もう一回、して」――催眠のせいにできない言葉だった。{h}は今度は、{a}の目を見ながら奥で果てた。|{a}は震える声で「最低」と言った。そのくせ、{h}がもう一度動き出すと、腰を逃がさなかった。中に出されるたびに、{a}の「最低」は甘い声に溶けていった。');
   var SWEPT_TOP = L('{a}は我に返っても、{h}の中から抜けなかった。「……ごめん。止まれない」――{a}は正気のまま、もう一度{h}の奥を突き上げ、二度目もそのまま中に注いだ。|{a}は{h}を見下ろして、自分が何をしたのか理解した。それでも{h}が締めつけてくると、腰は勝手に動き出していた。');
   var REPORT = L('{a}は{h}を突き飛ばし、床に散らばった服をかき集めた。震える指でスマホを掴み、迷わず番号を押した。「……警察ですか。今、催眠をかけられて……」|{a}は{h}の頬を思いきり張り、シーツを体に巻きつけて立ち上がった。「動くな。今から警察を呼ぶ」――{h}は青ざめたまま、一歩も動けなかった。|{a}は無言で{h}から体を離し、脚を伝うものをティッシュで押さえたまま、スマホのカメラで部屋と{h}を撮った。それから、静かに一一〇番を押した。');
@@ -126,7 +128,7 @@
       if (aTop && SM.CLIMAX_TOP) { cvE = null; var ct = p.ff ? SM.CLIMAX_TOP_FF : (SM.CLIMAX_TOP[p.persona] || SM.CLIMAX_TOP.gentle); cv = ct.map(function (x) { return x.replace(/^「|」$/g, ''); }); }
       /* 小説調の果てる声は、喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）から。元の表（Voice.CLIMAX）も4割ほど残る。攻めの声は元の表のまま */
       var cvN = !cvE && cv && !aTop && HK.Moan && HK.Moan.say ? HK.Moan.say(S.rng || S, p, 'climax', { novel: true }, cv) : null;
-      return { k: k, tag: '流されて', text: S.fmt(S.pick(sw), v) + (cvE ? p.name + '「' + cvE + '」' : cvN ? p.name + '「' + cvN + '」' : cv ? p.name + '「' + S.pick(cv) + '」' : ''), why: '正気に戻っても流された（快楽堕ち ' + Math.round(fall * 100) + '・AC ' + Math.round(p.eg.AC) + '・FC ' + Math.round(p.eg.FC) + '）。' + (p.ff ? '続きを拒まなかった' : aTop ? '正気のまま、続きを止めなかった' : mid ? '続きを受け入れ、中出しも拒まなかった' : '二度目の中出しも受け入れた') };
+      return { k: k, tag: '流されて', text: vj(S.fmt(S.pick(sw), v), p, cvE ? p.name + '「' + cvE + '」' : cvN ? p.name + '「' + cvN + '」' : cv ? p.name + '「' + S.pick(cv) + '」' : ''), why: '正気に戻っても流された（快楽堕ち ' + Math.round(fall * 100) + '・AC ' + Math.round(p.eg.AC) + '・FC ' + Math.round(p.eg.FC) + '）。' + (p.ff ? '続きを拒まなかった' : aTop ? '正気のまま、続きを止めなかった' : mid ? '続きを受け入れ、中出しも拒まなかった' : '二度目の中出しも受け入れた') };
     }
     if (k === 'report') {
       p.reportedNow = true;
@@ -317,6 +319,8 @@
   var HK = window.HK, SM = HK.SAIMIN;
   if (!SM || !SM.SUG) return;
   function L(s) { return s.split('|'); }
+  /* 同じ人の台詞を二回続けない（solo-saimin.js の SM.vJoin。読み込み順に依らないよう、呼ぶときに引く） */
+  function vj(t, p, line) { return SM.vJoin ? SM.vJoin(t, p, line) : t + (line || ''); }
   function isF(c) { return !!(c && HK.Pos && HK.Pos.isF && HK.Pos.isF(c)); }
   var LEAD = {
     fall: L('――その夜、{a}は自分から{h}の部屋を訪ねた。玄関に立ったまま、「……かけて」とだけ言った。{h}は振り子を取り出しかけて、やめた。もう、要らなかった。|――その夜、{a}は{h}の前で、自分から上着を脱いだ。「催眠のせいにしたいなら、かけてもいいよ」――{h}は首を振り、{a}を抱き寄せた。|――{a}は呼ばれてもいないのに、また{h}の部屋にいた。鍵を開けた{h}を見上げる目は、もうとろけていた。二人とも、何も言わなかった。'),
@@ -364,7 +368,7 @@
       cv = S.cv ? S.cv(p, false) : null;
       if (!cv) { var clOld = function () { return S.pick(CL[p.persona] || CL.gentle).replace(/^「|」$/g, ''); }; cv = HK.Moan && HK.Moan.say ? HK.Moan.say(S.rng || S, p, 'climax', { novel: true }, clOld) : clOld(); }
     }
-    if (!/\{m2\}/.test(body)) t += p.name + '「' + cv + '」';
+    if (!/\{m2\}/.test(body)) t = vj(t, p, p.name + '「' + cv + '」');
     t += S.fmt(S.pick(END[cat]), v);
     return { text: t, why: '数日後の夜、' + (cat === 'fall' ? '自分から戻ってきた' : '今度は正気のまま') + '（' + WHY[vk].replace(/\{a\}/g, p.name).replace(/\{h\}/g, p.h) + '）', climax: 1 };
   };

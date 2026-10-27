@@ -171,7 +171,7 @@
   /* グループ見出しの「仲間とみなす」（ui.js の data-act="grpcomrade"）と、右端のボタン */
   function grpTools(g) {
     var on = !!(S().grpComrade && S().grpComrade[g]), sn = scenName();
-    return '<label class="cgsw" title="オンにしたグループの住人どうしは、信頼が育ちやすく、助け合い・庇い合い・弔い・一緒に動く出来事が起きます（恋愛や嫉妬には関わりません）"><input type="checkbox" class="sw" data-act="grpcomrade" data-g="' + esc(g) + '"' + (on ? ' checked' : '') + ' aria-label="' + esc(g) + 'の住人どうしを仲間とみなす">仲間とみなす</label>' +
+    return '<label class="cgsw" title="オンにしたグループの住人どうしは、信頼が育ちやすく、助け合い・庇い合い・弔い・一緒に動く出来事が起きます（恋愛や嫉妬には関わりません）。無人島・クラスメイトで「派閥の決め方：「仲間とみなす」グループで固定」にすると、このグループがそのまま派閥になります"><input type="checkbox" class="sw" data-act="grpcomrade" data-g="' + esc(g) + '"' + (on ? ' checked' : '') + ' aria-label="' + esc(g) + 'の住人どうしを仲間とみなす">仲間とみなす</label>' +
       '<span class="cgsp"></span><span class="cgact"><button type="button" class="btn small ghost" data-act="cgjoin" data-g="' + esc(g) + '" title="' + esc((sn ? '箱庭「' + sn + '」' : 'いま選んでいる箱庭') + 'の参加者に、' + g + 'の住人を加えます（入りきらないときは、' + g + 'の住人だけにします）') + '">このグループを箱庭に入れる</button>' +
       '<button type="button" class="btn small ghost" data-act="cgrename" data-g="' + esc(g) + '">名前を変更</button></span>';
   }

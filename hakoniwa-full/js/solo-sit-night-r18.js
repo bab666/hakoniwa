@@ -671,10 +671,12 @@
     if (!(Z && Z.scen && Z.loveLv)) return;
     HK.addTo(Z.scen.events, {
       /* 選ばれやすさは敵対の重み（conflict）で決め、記録には恋愛（romance）として残す（hate-sex-r18.js の出られない部屋と同じ） */
-      id: 'zr18_hate', cat: 'conflict', sex: true, scope: 'pair', pri: true, r18: true,
+      /* force：合意のない展開が入なら、恋愛対象「なし」の人も（pos.js の HK.Pos.forceOpen。2026-10-27 担当HC） */
+      id: 'zr18_hate', cat: 'conflict', sex: true, force: true, scope: 'pair', pri: true, r18: true,
       when: function (ctx, a, b) {
         var HS = HK.HateSex;
-        if (!HS || HK.SAFE_ON || Z.loveLv(ctx) === 'off' || !baseOk(ctx, a, b, 4)) return false;
+        if (!HS || HK.SAFE_ON || Z.loveLv(ctx) === 'off') return false;
+        if (!(HK.Pos && HK.Pos.forceOpen ? HK.Pos.forceOpen(ctx, [a, b], function () { return baseOk(ctx, a, b, 4); }) : baseOk(ctx, a, b, 4))) return false;
         if (a.z.bitten || b.z.bitten || a.z.alone || b.z.alone || couple(ctx, a, b)) return false;
         return HS.order(ctx, a, b)[0] === a && HS.hostile(ctx, a, b) && !HS.taken(ctx, a, b);
       },

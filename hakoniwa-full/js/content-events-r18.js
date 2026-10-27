@@ -36,6 +36,7 @@
     return HK.Content.on(x.env, tag, scenOf(x));
   }
   function pk(x, arr) { return arr[Math.floor(x.rng() * arr.length)]; }
+  var pk0 = pk;
   function tiesOf(ctx, a, b) { return HK.Ties && HK.Ties.all && ctx.tiesAll ? HK.Ties.all(ctx, a, b) : []; }
   function book(ctx) { CUR = ctx; return (ctx._ct = ctx._ct || { preg: [], dv: [] }); }
   /* 体の組：m＝攻めが男性の体／ff＝女性どうし／fm＝女性の攻めが男性に（hate-sex-r18.js と同じ） */
@@ -133,11 +134,12 @@
 
   /* ================= 合意のない展開：合コンの帰り道の、敵対する二人 ================= */
   HK.addTo(HK.COMMON, {
-    id: 'ct_goukon_hate', cat: 'romance', sex: true, scope: 'pair', pri: true, r18: true,
+    /* force：恋愛対象「なし」の人も（pos.js の HK.Pos.forceOpen・HK.Pos.okForce。2026-10-27 担当HC） */
+    id: 'ct_goukon_hate', cat: 'romance', sex: true, force: true, scope: 'pair', pri: true, r18: true,
     when: function (ctx, a, b) {
       if (!b || scenOf(ctx) !== 'goukon' || !HS || ctx.stepIndex < 3 || !on(ctx, 'force')) return false;
       var pf = ctx.pair(a, b);
-      if (pf.ctHate || pf.hateSexAt != null || !HK.State.pairSex(a, b) || !ctx.romanceOk([a, b], { sex: true })) return false;
+      if (pf.ctHate || pf.hateSexAt != null || !HK.Pos.okForce(ctx, a, b) || !ctx.romanceOk([a, b], { sex: true, force: true })) return false;
       return HS.order(ctx, a, b)[0] === a && HS.hostile(ctx, a, b) && !HS.taken(ctx, a, b);
     },
     w: function (ctx, a) { return 3 + (a.tr.aggr || 0) + (a.tr.impulse || 0) * 0.5; },
@@ -171,10 +173,44 @@
       .sort(function (x, y) { return (y.tr.np + ctx.R(y, V).aff / 100) - (x.tr.np + ctx.R(x, V).aff / 100); })[0] || null;
   }
   /* 拒めない夜：合意のない展開も入で、体の関係になれる組（支配する側が攻め） */
+  /* 恋愛対象「なし」の人も（合意のない展開が入。pos.js の HK.Pos.forceOpen。2026-10-27 担当HC） */
   function nightOk(ctx, D, V) {
-    if (!on(ctx, 'force') || !HK.Pos || !HK.State.pairSex(D, V) || !HK.canLove(D, V) || !HK.canLove(V, D)) return false;
-    if ((HK.sexBlocked && HK.sexBlocked(D, V)) || !ctx.romanceOk([D, V], { sex: true })) return false;
+    if (!on(ctx, 'force') || !HK.Pos) return false;
+    if (!HK.Pos.forceOpen(ctx, [D, V], function () { return HK.State.pairSex(D, V) && HK.canLove(D, V) && HK.canLove(V, D); })) return false;
+    if ((HK.sexBlocked && HK.sexBlocked(D, V)) || !ctx.romanceOk([D, V], { sex: true, force: true })) return false;
     return HK.Pos.order(D, V, [D, V])[0] === D;
+  }
+  /* 拒めない夜の文（{a}＝D 支配する側で攻め、{b}＝V）。返す：{ text, extra（理由に足す印） } */
+  function nightText(ctx, D, V) {
+    /* 性器なしの人がいる組（pos-nogen.js の HK.NoGen）は、挿れる・跨って迎える描写のない組の文（ff：指・唇・肌）で書く（2026-10-27 担当HC） */
+    var text, bk = HK.NoGen && HK.NoGen.on && HK.NoGen.on(D, V) ? 'ff' : kindOf(D, V), vio = on(ctx, 'violence');
+    /* 場所の合わない文（出られない部屋には寝室も帰る家もない）・恋愛対象「なし」の支配する側の「愛してる」は選ばない（2026-10-27 担当HC。合う文が無ければそのまま） */
+    var NG = new RegExp([scenOf(ctx) === 'whiteroom' ? '寝室|帰ってくるなり' : '', D.likes === 'none' ? '愛して' : ''].filter(Boolean).join('|') || '$^');
+    var pk = function (x, arr) { var l = arr.filter(function (t) { return !NG.test(t); }); return pk0(x, l.length ? l : arr); };
+    /* 2026-10-27（担当BM）：描写の作風「男性向け」なら段に分けて男性向けで書く。第三者が割って入る庇い展開（HK.HateSex.shield）もここで */
+    var HF = HS && HS.Force, LW = HK.Lewd, lowN = LW && LW.low(ctx.env), sub = HF ? HF.subOf(D, V, bk) : '';
+    var eroN = !!(HF && LW && LW.ero(ctx.env) && !lowN && sub), shortN = eroN && LW.short(ctx.env, ctx.rng);
+    var shN = HS && HS.shield && !lowN ? HS.shield(ctx, D, V, { ero: eroN, short: shortN }) : null;
+    if (!eroN && !shN) text = ctx.t(pk(ctx, T.DV_NIGHT[bk]) + (vio ? pk(ctx, T.DV_NIGHT_V[bk]) : ''), D, V);
+    else {
+      var ps = [pk(ctx, T.DV_OPEN)];
+      if (vio) ps.push(pk(ctx, T.DV_NIGHT_V[bk]));
+      if (shN) ps.push(shN.open + shN.both);
+      if (eroN) {
+        ps.push(HF.pick(ctx, T.DV_ERO[sub]));
+        if (shN) ps.push(shN.watch);
+        ps.push(HF.pick(ctx, HF.PEAK[HF.ps(V)]) + '{b}「{m2}」');
+        if (!shortN) {
+          ps.push(HF.pick(ctx, HF.FIN[sub]));
+          if (LW.high(ctx.env)) ps.push(HF.pick(ctx, HF.AGAIN));
+          ps.push(pk(ctx, T.DV_AFTER_E));
+        }
+      } else { ps.push(pk(ctx, T.DV_BODY[bk])); ps.push(shN.watch); }
+      if (shN) ps.push(shN.after);
+      text = HF.fill(ctx, ps.join(''), D, V, eroN);
+    }
+    var none = HK.Pos && HK.Pos.noneWhy ? HK.Pos.noneWhy(ctx, [D, V], true) : '';
+    return { text: text, extra: '／〔合意のない展開〕' + (vio ? '〔暴力をともなう性描写〕' : '') + (shN ? HS.shieldWhy(shN) : '') + none };
   }
   HK.addTo(HK.COMMON, {
     id: 'ct_dv', cat: 'conflict', scope: 'pair', pri: true, r18: true,
@@ -208,35 +244,9 @@
         k = seq[(st.n - 1) % seq.length];
         if (k === 'violence' && nightOk(ctx, D, V) && rng() < 0.6) k = 'night';
       }
-      var text, sex = false, extra = '', vio = false;
-      if (k === 'night') {
-        var bk = kindOf(D, V);
-        vio = on(ctx, 'violence');
-        /* 2026-10-27（担当BM）：描写の作風「男性向け」なら段に分けて男性向けで書く。第三者が割って入る庇い展開（HK.HateSex.shield）もここで */
-        var HF = HS && HS.Force, LW = HK.Lewd, lowN = LW && LW.low(ctx.env), sub = HF ? HF.subOf(D, V, bk) : '';
-        var eroN = !!(HF && LW && LW.ero(ctx.env) && !lowN && sub), shortN = eroN && LW.short(ctx.env, ctx.rng);
-        var shN = HS && HS.shield && !lowN ? HS.shield(ctx, D, V, { ero: eroN, short: shortN }) : null;
-        if (!eroN && !shN) text = ctx.t(pk(ctx, T.DV_NIGHT[bk]) + (vio ? pk(ctx, T.DV_NIGHT_V[bk]) : ''), D, V);
-        else {
-          var ps = [pk(ctx, T.DV_OPEN)];
-          if (vio) ps.push(pk(ctx, T.DV_NIGHT_V[bk]));
-          if (shN) ps.push(shN.open + shN.both);
-          if (eroN) {
-            ps.push(HF.pick(ctx, T.DV_ERO[sub]));
-            if (shN) ps.push(shN.watch);
-            ps.push(HF.pick(ctx, HF.PEAK[HF.ps(V)]) + '{b}「{m2}」');
-            if (!shortN) {
-              ps.push(HF.pick(ctx, HF.FIN[sub]));
-              if (LW.high(ctx.env)) ps.push(HF.pick(ctx, HF.AGAIN));
-              ps.push(pk(ctx, T.DV_AFTER_E));
-            }
-          } else { ps.push(pk(ctx, T.DV_BODY[bk])); ps.push(shN.watch); }
-          if (shN) ps.push(shN.after);
-          text = HF.fill(ctx, ps.join(''), D, V, eroN);
-        }
-        sex = true;
-        extra = '／〔合意のない展開〕' + (vio ? '〔暴力をともなう性描写〕' : '') + (shN ? HS.shieldWhy(shN) : '');
-      } else text = ctx.t(pk(ctx, T.DV[k]).replace(/\{c\}/g, C ? C.name : '周りの人'), D, V);
+      var text, sex = false, extra = '';
+      if (k === 'night') { var nt = nightText(ctx, D, V); text = nt.text; extra = nt.extra; sex = true; }
+      else text = ctx.t(pk(ctx, T.DV[k]).replace(/\{c\}/g, C ? C.name : '周りの人'), D, V);
       if (k === 'control') { ctx.mod2(D, V, { att: 2 }, { ten: 5, trust: -3 }); ctx.stress(V, 6); }
       else if (k === 'verbal') { ctx.mod2(D, V, { ten: 2 }, { aff: -4, ten: 6 }); ctx.stress(V, 8); }
       else if (k === 'violence') { ctx.mod2(D, V, { ten: 4 }, { aff: -6, trust: -6, ten: 10 }); ctx.stress(V, 12); }
@@ -261,6 +271,41 @@
         why: D.name + '（支配する側）と' + V.name + '（支配される側・' + STYLE[st.style] + '）の歪んだ関係' + whyK + '／〔DVなど歪んだ関係〕' + src + 'で、' + (st.src === 'yan' ? '執着が支配に変わった' : D.name + 'の支配的な気質（CP・ドライさ・攻撃性）') + '（内容のスイッチ「DVなど歪んだ関係」・展開：重い）' + extra,
         mag: k === 'free' ? 22 : k === 'violence' || k === 'night' || k === 'step' ? 16 : 10
       };
+    }
+  });
+
+  /* ================= 合意のない展開：関係「歪んだ関係」の拒めない夜（2026-10-27 担当HC） =================
+     関係「歪んだ関係」（tie-abuse.js）の二人は、内容のスイッチ「合意のない展開」が入なら（展開の重さが「ふつう」でも。穏やかなら起きない）、
+     支配する側が攻めの向き（HK.Pos.order）のときだけ、支配される側を拒めない夜に引き込む（「DVなど歪んだ関係」が切でも。重い場面の段は ct_dv・tie_abuse のまま）。
+     恋愛対象「なし」の人も（HK.Pos.forceOpen）。恋愛対象の性別・受け攻めの指定・恋愛やR18にしない相手・R18に参加しない・性行為の相手の固定は越えない。
+     支配される側が離れる決心をした二人（abFree・ctDvEnd）・監禁のさなかの人には起きない。一組で三回まで、二区切り（長い箱庭は三区切り）に一度 */
+  function abNightOk(ctx, D, V) {
+    var P = HK.Pos;
+    if (!P || !P.forceOn(ctx) || D.flags.caged != null || V.flags.caged != null || D.flags.cagePair != null || V.flags.cagePair != null) return false;
+    if (!P.forceOpen(ctx, [D, V], function () { return HK.State.pairSex(D, V) && HK.canLove(D, V) && HK.canLove(V, D); })) return false;
+    if ((HK.sexBlocked && HK.sexBlocked(D, V)) || !ctx.romanceOk([D, V], { sex: true, force: true })) return false;
+    return P.order(D, V, [D, V])[0] === D;
+  }
+  HK.addTo(HK.COMMON, {
+    id: 'ct_abuse_night', cat: 'conflict', sex: true, force: true, scope: 'pair', pri: true, r18: true,
+    when: function (ctx, a, b) {
+      if (!b || NO_SCEN[scenOf(ctx)] || HK.SAFE_ON || !HK.Ties || !HK.Ties.has) return false;
+      var t = HK.Ties.has(ctx, a, b, 'abuse');
+      if (!t || ctx.chars[t.a] !== a || ctx.chars[t.b] !== b || ctx.stepIndex < 1) return false;
+      var pf = ctx.pair(a, b);
+      if (pf.abFree || pf.ctDvEnd || (pf.abNightN || 0) >= 3 || (pf.abNightAt != null && ctx.stepIndex - pf.abNightAt < (LONG[scenOf(ctx)] ? 3 : 2))) return false;
+      return abNightOk(ctx, a, b);
+    },
+    /* 支配しやすい気質ほど、支配される側が怯えている・逃げ出したいほど起きやすい */
+    w: function (ctx, a, b) { var t = HK.Ties.has(ctx, a, b, 'abuse'), st = t && t.cold || ''; return (1.6 + domScore(a) * 1.6 + (st === 'fear' ? 0.6 : st === 'flee' ? 0.4 : 0) + (a.flags.aphro || 0) * 0.4) * (ctx.pair(a, b).abNightN ? 0.5 : 1); },
+    run: function (ctx, a, b) {
+      var pf = ctx.pair(a, b), t = HK.Ties.has(ctx, a, b, 'abuse'), st = t && t.cold || '';
+      pf.abNightN = (pf.abNightN || 0) + 1; pf.abNightAt = ctx.stepIndex; pf.night = true; pf.nights = (pf.nights || 0) + 1;
+      var nt = nightText(ctx, a, b);
+      ctx.mod2(a, b, { att: 2 }, { aff: -8, trust: -8, ten: 12 }); ctx.stress(b, 14);
+      if (HK.Emo) HK.Emo.bump(ctx, b, { fear: 30, grief: 6 }, a.name + 'との歪んだ関係');
+      var back = HK.ABUSE_BACK && HK.ABUSE_BACK[st] ? HK.ABUSE_BACK[st].short : '';
+      return { cat: 'conflict', sex: true, force: true, text: nt.text, why: a.name + '（支配する側）と' + b.name + '（支配される側' + (back ? '・' + back : '') + '）の歪んだ関係：拒めない夜（内容のスイッチ「合意のない展開」）' + nt.extra, mag: 16 };
     }
   });
 

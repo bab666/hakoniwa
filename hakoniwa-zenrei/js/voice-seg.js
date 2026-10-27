@@ -175,6 +175,8 @@
         var names = namesOf(input && input.chars && input.chars.length ? input.chars : r);
         r.log.forEach(function (e) {
           if (!e || typeof e !== 'object') return;
+          /* 句読点の仕上げ（core.js の HK.punctFix：文頭の「。」・「。。」・文頭の台詞のあとの「」。」）を、seg を作る前に一度だけ */
+          if (typeof e.text === 'string' && HK.punctFix) { try { e.text = HK.punctFix(e.text, names); } catch (err) { /* 直せなくても結果は返す */ } }
           try { if (typeof e.text === 'string') hide(e, 'seg', S.build(e.text, names, e._sq)); } catch (err) { /* 区分に失敗しても結果は返す */ }
           if (e._sq) delete e._sq;
         });

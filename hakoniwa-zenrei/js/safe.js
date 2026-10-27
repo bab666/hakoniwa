@@ -130,14 +130,16 @@
     if (strong >= 3 && kanji <= 2 && rest.length <= 14) return true;
     return /そこ|もっと|奥|中/.test(q) && strong >= 1 && q.length < 40 && kanji <= 2;
   }
-  /* 文に分ける：「」の中の。では切らない */
+  /* 文に分ける：「」『』（）の中の。では切らない（『〜。〜』の後ろ半分だけ消して「『〜。）」のような崩れが残らないように。2026-10-27 担当HF） */
   function sentences(t) {
-    var out = [], cur = '', d = 0;
+    var out = [], cur = '', d = 0, p = 0;
     for (var i = 0; i < t.length; i++) {
       var ch = t[i]; cur += ch;
-      if (ch === '「') d++;
-      else if (ch === '」') { d = Math.max(0, d - 1); if (d === 0 && !/[とっ、。をがのにはもや]/.test(t[i + 1] || '')) { out.push(cur); cur = ''; } }
-      else if (d === 0 && /[。！？!?]/.test(ch)) { out.push(cur); cur = ''; }
+      if (ch === '「' || ch === '『') d++;
+      else if (ch === '（') p++;
+      else if (ch === '）') p = Math.max(0, p - 1);
+      else if (ch === '」' || ch === '』') { d = Math.max(0, d - 1); if (d === 0 && p === 0 && !/[とっ、。をがのにはもや]/.test(t[i + 1] || '')) { out.push(cur); cur = ''; } }
+      else if (d === 0 && p === 0 && /[。！？!?]/.test(ch)) { out.push(cur); cur = ''; }
     }
     if (cur) out.push(cur);
     return out;

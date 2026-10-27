@@ -383,7 +383,8 @@
     }
   }
   /* 体の関係の出来事か（出来事の定義の印 sex:true）。say・act2 に渡された印がなければ、いま act() が起こしている出来事（ctx._ev）の印を見る */
-  function sexEv(ctx, o) { return { sex: o && o.sex != null ? !!o.sex : !!(ctx._ev && ctx._ev.sex) }; }
+  /* force：合意のない展開の切羽詰まった場面の印（pos.js の HK.Pos.forceOpen。恋愛対象「なし」の人も体の場面に入れる） */
+  function sexEv(ctx, o) { return { sex: o && o.sex != null ? !!o.sex : !!(ctx._ev && ctx._ev.sex), force: !!(o && o.force != null ? o.force : ctx._ev && ctx._ev.force) }; }
   HK.sexEv = sexEv;
   Ctx.prototype.say = function (o) {
     if (o.actors && o.actors.length >= 2 && this.chars && this.chars.some(function (c) { return HK.lockAny(c); })) sexOnlyFix(this, o.actors);
@@ -452,7 +453,7 @@
     var why = typeof o.why === 'function' ? o.why(r) : o.why;
     if (!text) { this.flush(); return null; }
     var actors = (o.actors || []).filter(Boolean);
-    var e = this.say({ kind: 'event', cat: o.cat || 'bond', actors: actors, text: text, why: why || '', mag: this._mag + (o.mag || 0), odd: !!o.odd, sex: sexEv(this, o).sex, lewd: typeof o.lewd === 'function' ? o.lewd(r) : o.lewd });
+    var e = this.say({ kind: 'event', cat: o.cat || 'bond', actors: actors, text: text, why: why || '', mag: this._mag + (o.mag || 0), odd: !!o.odd, sex: sexEv(this, o).sex, force: sexEv(this, o).force, lewd: typeof o.lewd === 'function' ? o.lewd(r) : o.lewd });
     if (actors[0]) actors[0].cats[e.cat] = (actors[0].cats[e.cat] || 0) + 1;
     if (o.odd && actors[0]) actors[0].odd.push(e.n);
     for (var kk in this._touched) { var pr = this._touched[kk]; this.pair(pr[0], pr[1]).moments.push({ n: e.n, mag: e.mag }); }
@@ -844,13 +845,14 @@
     var cat = res.cat || pick.e.cat;
     var sex = res.sex != null ? !!res.sex : !!pick.e.sex;
     /* 出来事の側で恋愛に変わったときも、恋愛が起きない組なら書かない */
-    if (cat === 'romance' && !ctx.romanceOk(pick.b ? [a, pick.b] : [a], { sex: sex })) return;
+    var force = res.force != null ? !!res.force : !!pick.e.force;
+    if (cat === 'romance' && !ctx.romanceOk(pick.b ? [a, pick.b] : [a], { sex: sex, force: force })) return;
     if (pick.b && ctx._apathy && HK.Ties.apathyBlock(ctx, a, pick.b, { cat: cat, id: pick.e.id, why: typeof res.why === 'string' ? res.why : '' })) return;
     var actors = [a];
     if (pick.b) actors.push(pick.b);
     if (res.with) res.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
     if (res.odd) odd = true;
-    var e = ctx.say({ kind: 'event', cat: cat, actors: actors, text: res.text, why: res.why, odd: odd, mag: ctx._mag + (res.mag || 0), cageOk: /^ob_/.test(pick.e.id || ''), sex: sex, lewd: eroOf(res, pick.e) });
+    var e = ctx.say({ kind: 'event', cat: cat, actors: actors, text: res.text, why: res.why, odd: odd, mag: ctx._mag + (res.mag || 0), cageOk: /^ob_/.test(pick.e.id || ''), sex: sex, force: force, lewd: eroOf(res, pick.e) });
     if (e.skipped) return;
     a.cats[cat] = (a.cats[cat] || 0) + 1;
     if (odd) a.odd.push(e.n);

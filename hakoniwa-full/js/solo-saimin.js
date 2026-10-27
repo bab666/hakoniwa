@@ -28,6 +28,35 @@
   W_CL = '絶頂'; W_SENS = '高いほど快感が溜まりやすく、絶頂しやすい';
   /* r18:end */
   function withFresh(f) { var sp = ST.pick; ST.pick = freshPick; try { return f(); } finally { ST.pick = sp; } }
+  /* 同じ人の台詞を続けない（2026-10-27 の利用者の報告：受け・攻めとも同じ人の台詞が二回重なる）。
+     文 t の最後の台詞の話し手を、「名前「」・「名前は／が「」の形から見る（同じ段落で、後ろの地の文が40字以内のときだけ。分からなければ ''） */
+  function lastSpk(t, names) {
+    var j = t.lastIndexOf('」');
+    if (j < 0) return '';
+    var after = t.slice(j + 1);
+    if (/\n/.test(after) || after.replace(/[―\s　]/g, '').length > 40) return '';
+    var d = 0, i = j;
+    for (; i >= 0; i--) { if (t[i] === '」') d++; else if (t[i] === '「' && --d === 0) break; }
+    if (i < 0) return '';
+    var pre = t.slice(t.lastIndexOf('\n', i) + 1, i), cl = pre.slice(Math.max(pre.lastIndexOf('。'), pre.lastIndexOf('」'), pre.lastIndexOf('！'), pre.lastIndexOf('？')) + 1);
+    var best = '', at = -1;
+    names.forEach(function (n) { if (n && cl.slice(-n.length) === n && n.length > best.length) best = n; });
+    if (best) return best;
+    /* 台詞の前の句に名前がなければ、同じ段落の前の文の主語（「名前は／が」）を見る（「アキラは笑った。「……」」） */
+    /* 句の中の「名前の（唇が）」も話し手として見る（「アキラの唇が「いやです」と動いた」） */
+    [[cl, '[はがも]'], [cl, 'の'], [pre, '[はがも]']].some(function (x) {
+      names.forEach(function (n) {
+        if (!n) return;
+        var re = new RegExp(HK.reEsc(n) + x[1], 'g'), m;
+        while ((m = re.exec(x[0]))) if (m.index > at) { at = m.index; best = n; }
+      });
+      return !!best;
+    });
+    return best;
+  }
+  /* t の後ろに p の台詞 line（「名前「…」」）を足す。直前の台詞が p のものなら足さない（同じ人の台詞を二回続けない） */
+  function vJoin(t, p, line) { return !line ? t : lastSpk(t, [p.name, p.h]) === p.name ? t : t + line; }
+  SM.vJoin = vJoin;
   var scen = {
     id: 'saimin', name: '催眠', kicker: '1〜2人・R18', solo: true, maxCast: 2, minCast: 1,
     desc: '同僚・恋人・友人・恨みを持った相手・ストーカーの誰かに催眠をかけられる。かかるのか、かかったらどこまでしてしまうのか、どんな暗示に弱いのか。終わったあと、怒るのか、通報するのか、やり返すのか、堕ちるのか、困惑するのか、受け入れるのか。数日後の二人も描く。※成人キャラクター向け',
@@ -210,7 +239,7 @@
     }
     function wake(p) {
       p.woke = true;
-      var o = say(p, { tag: '目覚め', text: ST.fmt(ST.pick(S, L('{a}がはっと目を見開いた。目の前に{h}の顔があった。自分の格好を見下ろして、{a}は息を呑んだ。|{a}の瞳に、急に光が戻った。{a}は「……え。{you}、何してるの｜……え。{you}、何をしているんだ｜……え。{you}、何をしているんですか」と後ずさった。|{a}は跳ね起きた。体はまだ火照っているのに、頭だけが冷えていた。')), { a: p.name, h: p.h }) + (SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: '催眠が浅くなって、途中で目を覚ました（深さ ' + Math.round(p.m.depth) + '）', mag: 35 }, '', true);
+      var o = say(p, { tag: '目覚め', text: vJoin(ST.fmt(ST.pick(S, L('{a}がはっと目を見開いた。目の前に{h}の顔があった。自分の格好を見下ろして、{a}は息を呑んだ。|{a}の瞳に、急に光が戻った。{a}は「……え。{you}、何してるの｜……え。{you}、何をしているんだ｜……え。{you}、何をしているんですか」と後ずさった。|{a}は跳ね起きた。体はまだ火照っているのに、頭だけが冷えていた。')), { a: p.name, h: p.h }), p, SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: '催眠が浅くなって、途中で目を覚ました（深さ ' + Math.round(p.m.depth) + '）', mag: 35 }, '', true);
       ST.key(S, o, p.name + 'が途中で目を覚ました');
       /* エッチな暗示のあとで目を覚ましたなら、そこからも分かれる（流される／通報／逃げる） */
       if (p.cnt.lewd >= 1 && lew !== 'low' && SM.afterSnap && !p.snapDone) {
@@ -250,7 +279,10 @@
     ST.budget(S, 2 * T.length);
     T.forEach(function (p) {
       var v = { a: p.name, h: p.h };
-      var t = ST.fmt(ST.pick(S, p.T.intro), v) + (p.consent && SM.CONSENT ? ST.fmt(ST.pick(S, SM.CONSENT.filter(function (x) { return !(p.noR18 || p.noSex) || !/エッチ/.test(x); })), v) : '') + ST.fmt(ST.pick(S, p.M.intro), v);
+      var t = ST.fmt(ST.pick(S, p.T.intro), v) + (p.consent && SM.CONSENT ? ST.fmt(ST.pick(S, SM.CONSENT.filter(function (x) { return !(p.noR18 || p.noSex) || !/エッチ/.test(x); })), v) : '');
+      /* かける側の台詞で終わっていれば、かけ方の文は台詞のないものから選ぶ（かける側の台詞を二回続けない） */
+      var mi = p.M.intro, miq = lastSpk(t, [p.name, p.h]) === p.h ? mi.filter(function (x) { return x.indexOf('「') < 0; }) : [];
+      t += ST.fmt(ST.pick(S, miq.length ? miq : mi), v);
       say(p, { tag: p.T.label, text: t, why: '催眠をかけるのは' + p.h + '（' + p.T.label + (p.hf ? '・女性' : '') + '）。' + ST.fmt(p.T.motive, v) + (p.consent ? '／始める前に、二人で同意していた（内容のスイッチ「合意のない展開」が切）' : p.noForce ? '／内容のスイッチ「合意のない展開」が切なので、いたずらの暗示だけ' : '') });
       var o = say(p, { tag: '診断', text: p.name + 'のかかりやすさは' + Math.round(p.sus * 100) + '％。弱い暗示は「' + p.weak.map(function (k) { return SM.SUG[k].label; }).join('」「') + '」。', why: 'AC・FCが高いほど、A・CPが低いほどかかりやすい／' + p.M.name + 'との相性・' + p.h + 'への警戒の薄さ・方針「' + p.action.label + '」' }, '', true);
       ST.key(S, o, p.name + 'のかかりやすさ');
@@ -267,7 +299,7 @@
       if (HY) HY.cnt.tries++;
       if (p.m.depth < 40) {
         p.failed = true;
-        var o = say(p, { tag: 'かからない', text: ST.fmt(ST.pick(S, SM.INDUCE.fail), v) + (SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: p.name + 'はかからなかった（深さ ' + Math.round(p.m.depth) + '・三回試した）／警戒心 ' + p.m.resist, mag: 30 }, '', true);
+        var o = say(p, { tag: 'かからない', text: vJoin(ST.fmt(ST.pick(S, SM.INDUCE.fail), v), p, SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: p.name + 'はかからなかった（深さ ' + Math.round(p.m.depth) + '・三回試した）／警戒心 ' + p.m.resist, mag: 30 }, '', true);
         ST.key(S, o, p.name + 'は催眠にかからなかった');
         return;
       }
@@ -316,7 +348,8 @@
           p.cnt.ng++; p.m.depth = clamp(p.m.depth - 14 - Math.max(0, -p.aff[k]) * 30, 0, 100); p.m.resist = clamp(p.m.resist + 6, 0, 100);
           /* とろけたあとで拒むときは、はっきり拒む文ではなく、最後の一線で引っかかる文（段階を行き来させない） */
           var late = p.rs >= 1 && SM.RESIST_LATE, RSY = late && SM.RESIST_SAY_LATE ? SM.RESIST_SAY_LATE[p.persona] || SM.RESIST_SAY_LATE.gentle : SM.RESIST_SAY[p.persona];
-          t += ST.fmt(ST.pick(S, late ? SM.RESIST_LATE : SM.RESIST), v) + (RSY && rng() < 0.5 ? p.name + ST.pick(S, RSY) : '');
+          t += ST.fmt(ST.pick(S, late ? SM.RESIST_LATE : SM.RESIST), v);
+          t = vJoin(t, p, RSY && rng() < 0.5 ? p.name + ST.pick(S, RSY) : '');
           why += late ? '：その暗示だけは拒んだ' : '：拒んだ';
         } else {
           var full = res === 'full', f = g.fx;
@@ -331,7 +364,8 @@
           var body = ST.pick(S, bodyL(S, p, 'sug.' + k + '.' + ekey(p, vk), g[vk]));
           var fb = lew === 'low' && g.lewd && full ? ST.fmt(ST.pick(S, SM.SUG_LOW), v) : eF(S, p, ST.fmt(body, v));
           t += fb;
-          t += tq(p);
+          /* うわごと（乱数の順は変えずに先に引き、山場の差し替えのあとで足す） */
+          var tqs = tq(p);
           p.m.plea = clamp(p.m.plea + (f.plea || 0) * p.sens * (full ? 1 : 0.5), 0, 120);
           p.m.fall = clamp(p.m.fall + (f.fall || 0) * (full ? 1 : 0.45) * HK.Dark.f(S, 'fall'), 0, 100);
           var cl = full ? (f.climax || 0) : 0;
@@ -343,11 +377,12 @@
           if (big) { t = t.replace(fb, big); if (!cl) cl = 1; }
           var thick = !big && full && g.lewd && (cl ? rng() < 0.85 : rng() < 0.3) && HK.Thick4 && HK.Thick4.ok(S, lew) ? thickSug(S, p, fb, vk) : null;
           if (thick) { t = t.replace(fb, thick); if (!cl) cl = 1; }
+          t = vJoin(t, p, tqs);
           if (cl) {
             p.cnt.climax += cl; p.m.fall = clamp(p.m.fall + cl * 3 * HK.Dark.f(S, 'fall'), 0, 100);
             /* 男性向けの文：本文に絶頂の喘ぎ（{m2}）がなければ、態度ごとの崩れた声を足す */
-            if (lew !== 'low' && eroOn(S) && !aTop) { if (!big && !/\{m2\}/.test(body)) t += p.name + '「' + HK.Ero.moan(S, p, 2) + '」'; }
-            else if (!thick && !big && lew !== 'low' && V && V.CLIMAX[p.persona]) t += p.name + (aTop && SM.CLIMAX_TOP ? fresh(p, topVoice(p, 'CLIMAX', [])) : '「' + fresh(p, topL(p, V.CLIMAX[p.persona])) + '」');
+            if (lew !== 'low' && eroOn(S) && !aTop) { if (!big && !/\{m2\}/.test(body)) t = vJoin(t, p, p.name + '「' + HK.Ero.moan(S, p, 2) + '」'); }
+            else if (!thick && !big && lew !== 'low' && V && V.CLIMAX[p.persona]) t = vJoin(t, p, p.name + (aTop && SM.CLIMAX_TOP ? fresh(p, topVoice(p, 'CLIMAX', [])) : '「' + fresh(p, topL(p, V.CLIMAX[p.persona])) + '」'));
             why += '／' + W_CL + ' ' + cl + '回';
           }
           p.m.depth = clamp(p.m.depth + (full ? 5 : -5), 0, 100);
@@ -355,7 +390,8 @@
           /* 中に出された熱で、我に返る（快楽堕ちが進んでいるほど返りにくい） */
           if (full && g.snap && lew !== 'low' && SM.SNAP && rng() < g.snap * (1.2 - p.m.fall / 100)) {
             var snk = p.ff ? (aTop ? 'SNAP_FF_TOP' : 'SNAP_FF') : p.fm && SM.SNAP_FM ? 'SNAP_FM' : aTop && SM.SNAP_TOP_F && HK.Pos && HK.Pos.isF(p) ? 'SNAP_TOP_F' : aTop && SM.SNAP_TOP ? 'SNAP_TOP' : 'SNAP';
-            t += eF(S, p, ST.fmt(ST.pick(S, eL(S, snk, SM[snk])), v)) + (SM.RESIST_SAY[p.persona] && rng() < 0.5 ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : '');
+            t += eF(S, p, ST.fmt(ST.pick(S, eL(S, snk, SM[snk])), v));
+            t = vJoin(t, p, SM.RESIST_SAY[p.persona] && rng() < 0.5 ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : '');
             p.woke = true; p.wokeCum = true; p.m.depth = 0; p.aTopLast = aTop;
             why += '／' + snapWord(p) + '催眠が解けた（快楽堕ち ' + Math.round(p.m.fall) + '）';
             mag = 40;
@@ -422,7 +458,7 @@
       if (soft && route === 'report' && (p.ty === 'stalker' || p.ty === 'grudge') && SM.AFTER_SOFT.reportX) afL = SM.AFTER_SOFT.reportX;
       var t = eF(S, p, ST.fmt(ST.pick(S, afL), v));
       var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', confused: 'confused', dazed: 'dazed', accept: 'accept', body: null }[route];
-      if (mood && SM.AFTER_SAY[mood] && SM.AFTER_SAY[mood][p.persona]) t += p.name + ST.pick(S, p.aTop && SM.AFTER_SAY_TOP && SM.AFTER_SAY_TOP[mood] ? (SM.AFTER_SAY_TOP[mood][p.persona] || SM.AFTER_SAY_TOP[mood].gentle) : topL(p, SM.AFTER_SAY[mood][p.persona]));
+      if (mood && SM.AFTER_SAY[mood] && SM.AFTER_SAY[mood][p.persona]) t = vJoin(t, p, p.name + ST.pick(S, p.aTop && SM.AFTER_SAY_TOP && SM.AFTER_SAY_TOP[mood] ? (SM.AFTER_SAY_TOP[mood][p.persona] || SM.AFTER_SAY_TOP[mood].gentle) : topL(p, SM.AFTER_SAY[mood][p.persona])));
       /* 完堕ち：描写の長さ「厚く」なら、自分から戻ってきて堕ちきるまでを段落で（solo-saimin-thick.js。R18版だけ） */
       if ((route === 'fall' || route === 'depend') && SM.bigFall) { var bf = SM.bigFall(S, p, route); if (bf) { t += bf; p.bigFell = true; } }
       /* 心の強さが強い人：体が暗示を覚えてしまっても、心は折れない一文を添える */
@@ -604,7 +640,7 @@
     var TT = SM.EPI_TEMPER && SM.EPI_TEMPER[tmp] && SM.EPI_TEMPER[tmp][mood];
     if (TT) t += ST.fmt(ST.pick(S, TT), v);
     var SY = SM.EPI_SAY && SM.EPI_SAY[mood];
-    if (SY && SY[p.persona]) t += p.name + ST.pick(S, topL(p, SY[p.persona]));
+    if (SY && SY[p.persona]) t = vJoin(t, p, p.name + ST.pick(S, topL(p, SY[p.persona])));
     var why = (p.failed ? '催眠にかからなかった' : grp === 'erased' || grp === 'body' ? (p.erased === 'full' ? '記憶は消された' : '記憶は消えかけていた') : p.erased === 'part' ? '記憶はところどころ欠けていた' : '記憶は残っていた') +
       '／関係：' + p.T.label + '／気質：' + { bold: '強気', soft: 'やわらか', cool: '冷静', free: '奔放' }[tmp] + '／結末：' + p.fate;
     var sex = false;

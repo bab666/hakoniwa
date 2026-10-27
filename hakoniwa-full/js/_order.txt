@@ -473,6 +473,7 @@ js/dungeon-lewd.js @scen:dungeon
 js/solo-massage-data.js @scen:massage
 js/solo-massage-lewd.js @scen:massage
 js/solo-massage-love.js @scen:massage
+js/solo-massage-sleep.js @scen:massage
 js/solo-thick4.js @pack:solo
 js/solo-hole-data.js @scen:hole
 js/solo-hole-live.js @scen:hole

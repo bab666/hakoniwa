@@ -375,6 +375,8 @@
   }
   function timeline(res) {
     var ks = keySet(res), H = hotInfo(res), groups = [], cur = null;
+    /* 似た派閥の出来事が続くときは畳む（factions.js の HK.Factions.foldSet。表示だけ。人で絞り込んでいるときは畳まない） */
+    var fold = res.factions && HK.Factions && HK.Factions.foldSet && !tl.who.length ? HK.Factions.foldSet(res) : null;
     res.log.forEach(function (e) {
       if (e.kind === 'step') { cur = { label: e.label, step: e.step, items: [] }; groups.push(cur); return; }
       if (!cur) { cur = { label: '', step: null, items: [] }; groups.push(cur); }
@@ -385,32 +387,37 @@
       if (tl.keyOnly && !(ks[e.n] || e.kind === 'death' || e.odd || e.mag >= 25 || e.goal || e.goalExit || (e.mark && e.mark.length) || isHot(e, H))) return;
       if (tl.cat !== 'all' && e.cat !== tl.cat && e.kind !== 'death') return;
       if (tl.lewd && !HK.lewdEvent(e)) return;
+      if (fold && fold[e.n] && !isHot(e, H)) { if (!cur.fold) { cur.fold = { fold: [] }; cur.items.push(cur.fold); } cur.fold.fold.push(e); return; }
       cur.items.push(e);
     });
     var html = groups.filter(function (g) { return g.items.length; }).map(function (g) {
       /* 左の列：ターン番号（Mono）と局面名。重要な出来事のある区切りは番号を赤に */
-      var tn = tno(g.step), gh = g.items.some(function (e) { return isHot(e, H); });
+      var tn = tno(g.step), gh = g.items.some(function (e) { return !e.fold && isHot(e, H); });
       var when = '<div class="when' + (gh ? ' hot' : '') + '">' + (tn ? '<span class="tn">' + tn + '</span>' + (g.label ? '<span class="ph">' + esc(g.label) + '</span>' : '') : esc(g.label)) + '</div>';
       return '<div class="stepblk' + (gh ? ' hasHot' : '') + '">' + when + '<ol>' + g.items.map(function (e) {
-        var hot = isHot(e, H);
-        var cls = 'ev' + (e.kind === 'event' && e.cat ? ' cat-' + e.cat : '') + (e.trouble ? ' trouble' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (hot ? ' hot' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '');
-        var chip = e.kind === 'event' ? '<span class="c cc-' + esc(e.cat) + '">' + esc(HK.CAT_NAME[e.cat] || e.cat) + '</span>' : '';
-        /* 出られない部屋：条件を満たした・扉が開いた出来事の札 */
-        if (e.goal || e.goalExit) chip = (e.goal || []).map(function (g) { return '<span class="goalb">条件達成：' + esc(g) + '</span>'; }).join('') + (e.goalExit ? '<span class="goalb exitb">扉が開いた</span>' : '') + chip;
-        /* 決定的な関係の節目（付き合い始めた・別れた・浮気）の札（engine.js の markRel） */
-        if (e.mark && e.mark.length) chip = e.mark.map(function (m) { return '<span class="markb mark-' + esc(m) + '">' + esc((HK.MARK_NAME || {})[m] || m) + '</span>'; }).join('') + chip;
-        /* 台詞・地の文・引用の区分（voice-seg.js の e.seg）：台詞行の話し手の顔を先頭に。発話のある出来事を吹き出しにする（名詞の引用だけなら吹き出しにしない） */
-        var sg = HK.Seg ? HK.Seg.of(e, res) : null, lead = sg ? HK.Seg.speakers(sg).filter(function (i) { return res.chars[i]; })[0] : null;
-        var who = (lead != null ? [lead] : []).concat((e.actors || []).filter(function (i) { return i !== lead; })).slice(0, 3);
-        var avs = who.length ? '<span class="avs">' + who.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
-        /* 会話は吹き出しにせず、「」の引用だけ少し太く（.q） */
-        var talk = !!(avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)));
-        var body = paint(e.text, res, sg);
-        if (talk) body = body.replace(/「[^「」]*」/g, '<span class="q">$&</span>');
-        return '<li class="' + cls + (avs ? ' hasav' : '') + (talk ? ' talk' : '') + '">' + avs + '<div class="evb">' + chip + body + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+        if (e.fold) return '<li class="ev phase facfold"><details><summary style="cursor:pointer;color:var(--muted);font-size:12px">似た派閥の動き ' + e.fold.length + '件（続くので畳んでいます）</summary><ol style="padding-bottom:0">' + e.fold.map(evLi).join('') + '</ol></details></li>';
+        return evLi(e);
       }).join('') + '</ol></div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
+    function evLi(e) {
+      var hot = isHot(e, H);
+      var cls = 'ev' + (e.kind === 'event' && e.cat ? ' cat-' + e.cat : '') + (e.trouble ? ' trouble' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (hot ? ' hot' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '');
+      var chip = e.kind === 'event' ? '<span class="c cc-' + esc(e.cat) + '">' + esc(HK.CAT_NAME[e.cat] || e.cat) + '</span>' : '';
+      /* 出られない部屋：条件を満たした・扉が開いた出来事の札 */
+      if (e.goal || e.goalExit) chip = (e.goal || []).map(function (g) { return '<span class="goalb">条件達成：' + esc(g) + '</span>'; }).join('') + (e.goalExit ? '<span class="goalb exitb">扉が開いた</span>' : '') + chip;
+      /* 決定的な関係の節目（付き合い始めた・別れた・浮気）の札（engine.js の markRel） */
+      if (e.mark && e.mark.length) chip = e.mark.map(function (m) { return '<span class="markb mark-' + esc(m) + '">' + esc((HK.MARK_NAME || {})[m] || m) + '</span>'; }).join('') + chip;
+      /* 台詞・地の文・引用の区分（voice-seg.js の e.seg）：台詞行の話し手の顔を先頭に。発話のある出来事を吹き出しにする（名詞の引用だけなら吹き出しにしない） */
+      var sg = HK.Seg ? HK.Seg.of(e, res) : null, lead = sg ? HK.Seg.speakers(sg).filter(function (i) { return res.chars[i]; })[0] : null;
+      var who = (lead != null ? [lead] : []).concat((e.actors || []).filter(function (i) { return i !== lead; })).slice(0, 3);
+      var avs = who.length ? '<span class="avs">' + who.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
+      /* 会話は吹き出しにせず、「」の引用だけ少し太く（.q） */
+      var talk = !!(avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)));
+      var body = paint(e.text, res, sg);
+      if (talk) body = body.replace(/「[^「」]*」/g, '<span class="q">$&</span>');
+      return '<li class="' + cls + (avs ? ' hasav' : '') + (talk ? ' talk' : '') + '">' + avs + '<div class="evb">' + chip + body + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+    }
   }
   function tlBar(res) {
     var who = res.chars.map(function (c) {
@@ -533,7 +540,11 @@
       return '<li><span class="st">' + esc(x.label) + '</span><span class="rg">' + esc(R[x.regime]) + '</span>' +
         (x.groups.length ? x.groups.map(function (g) { return esc(res.chars[g.leader].name) + '派（' + g.members.length + '）'; }).join('　') + (x.loners.length ? '　無所属' + x.loners.length : '') : '') + '</li>';
     }).join('');
-    return '<h2 class="sec">派閥</h2><p class="hint">' + F.min + '人以上いるときだけ派閥が生まれる設定。人を引っぱる気質（CP・A高／AC低）の人物と、その人への信頼が揃うと輪ができる。</p>' +
+    /* 派閥の決め方・リーダーの決め方（factions.js の facMode・facLead。選んでいない結果は今までどおり） */
+    var fm = (res.env || {}).facMode, fl = (res.env || {}).facLead;
+    var hint = fm === 'none' ? '派閥は生まれない設定。' : fm === 'fix' ? '「仲間とみなす」グループをそのまま派閥にする設定（抜ける・鞍替え・解散は起きず、死亡・退場だけ反映。仲間のグループが無ければ自動）。' : F.min + '人以上いるときだけ派閥が生まれる設定。人を引っぱる気質（CP・A高／AC低）の人物と、その人への信頼が揃うと輪ができる。';
+    if (fl && fl !== 'auto' && fm !== 'none') hint += 'リーダーは派閥の中で' + fl + 'が最も高い人（交代しない）。';
+    return '<h2 class="sec">派閥</h2><p class="hint">' + hint + '</p>' +
       '<div class="panel fpanel"><p class="fhead">' + head + '</p>' + now +
       (ever && peak && peak !== last ? '<p class="hint" style="margin:8px 0 0">最も分裂したのは' + esc(peak.label) + '（' + esc(R[peak.regime]) + '）。</p>' : '') +
       (rows ? '<ol class="fhist">' + rows + '</ol>' : '') + '</div>';

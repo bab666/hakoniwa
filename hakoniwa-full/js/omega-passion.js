@@ -184,10 +184,12 @@
     end: L('朝、二人は目を合わせずに服を着た。「今のは、なかったことにしろ｜＝｜今のは、なかったことにしてください」「言われなくても｜言われなくても、そうする｜言われなくても、そうします」|{a}は眠る{b}の顔を、憎らしそうに、それでいて名残惜しそうに見つめていた。|{b}が先に部屋を出た。ドアが閉まる直前、「次はない｜＝｜次はありません」と言った。次は、たぶんある。')
   };
   EV.push({
-    id: 'om_hatenight', cat: 'romance', sex: true, scope: 'pair',
+    /* force：敵対する二人の強引な夜は、合意のない展開が入なら恋愛対象「なし」の人も（pos.js の HK.Pos.forceOpen。2026-10-27 担当HC） */
+    id: 'om_hatenight', cat: 'romance', sex: true, force: true, scope: 'pair',
     when: function (ctx, a, b) {
-      var pf = ctx.pair(a, b);
-      if (pf.couple || !HK.canLove(a, b) || !HK.canLove(b, a) || partnerOf(ctx, a) || partnerOf(ctx, b)) return false;
+      var pf = ctx.pair(a, b), HS0 = !HK.SAFE_ON && HK.HateSex;
+      var noneHost = function () { return !!(HS0 && HK.Pos && HK.Pos.noneIn && HK.Pos.noneIn([a, b]) && HS0.order(ctx, a, b)[0] === a && HS0.hostile(ctx, a, b)); };
+      if (pf.couple || ((!HK.canLove(a, b) || !HK.canLove(b, a)) && !noneHost()) || partnerOf(ctx, a) || partnerOf(ctx, b)) return false;
       var mb = BD.mateOf(ctx, b), ma = BD.mateOf(ctx, a);
       if ((mb && mb !== a) || (ma && ma !== b)) return false;
       if (ctx.stepIndex - (pf.lastHate == null ? -9 : pf.lastHate) < 2) return false;

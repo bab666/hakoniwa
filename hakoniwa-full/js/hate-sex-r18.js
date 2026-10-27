@@ -366,8 +366,9 @@
       if (!(opt && opt.room) && HK.Content && !HK.Content.ok(x, 'force')) return false;
       if (HK.ngPair && HK.ngPair(a, b)) return false;
       if (x.pair && x.pair(a, b).kin) return false;
-      if (HK.Pos && !HK.Pos.okSex(a, b)) return false;
-      if (HK.canLove && (!HK.canLove(a, b) || !HK.canLove(b, a))) return false;
+      /* 合意のない展開が入なら、恋愛対象「なし」の人も（HK.Pos.forceOpen。恋愛対象の性別・受け攻めの指定はこれまでどおり。2026-10-27 担当HC） */
+      var okP = function () { return (!HK.Pos || HK.Pos.okSex(a, b)) && (!HK.canLove || (HK.canLove(a, b) && HK.canLove(b, a))); };
+      if (!(HK.Pos && HK.Pos.forceOpen ? HK.Pos.forceOpen(x, [a, b], okP) : okP())) return false;
       if (tiesOf(x, a, b).some(function (t) { return HOST.test(t.type); })) return true;
       return hateLv(x, a, b) >= 35 || hateLv(x, b, a) >= 35;
     },
@@ -448,8 +449,12 @@
       var src = ts.length ? (HK.TIES[ts[0].type] ? HK.TIES[ts[0].type].label : ts[0].type) : '嫌悪 ' + Math.round(Math.max(hateLv(x, T, B), hateLv(x, B, T)));
       var lw = HK.LoveHate && HK.LoveHate.any(x, T, B) ? '／' + HK.LoveHate.why(x, T, B) + (HK.LoveHate.has(x, B, T) ? '。' + B.name + 'が挑発して構わせた' : '') : '';
       /* 出られない部屋の条件のエッチ（opt.room）は部屋の仕掛けの場面で、内容のスイッチ「合意のない展開」の場面ではない：「強引に」の言い方をせず、そう書く（2026-10-26） */
-      if (opt && opt.room) return T.name + 'と' + B.name + 'は敵対していた（' + src + '）。部屋の条件を満たすために、' + T.name + 'のほうから迫った。' + B.name + 'は口では嫌がったが、拒みきらなかった（部屋の条件の場面なので、内容のスイッチ「合意のない展開」に関わらず起きる）' + lw;
-      return T.name + 'と' + B.name + 'は敵対していた（' + src + '）。' + T.name + 'が強引に迫り、' + B.name + 'は口では嫌がったが、拒みきらなかった' + lw;
+      if (opt && opt.room) return T.name + 'と' + B.name + 'は敵対していた（' + src + '）。部屋の条件を満たすために、' + T.name + 'のほうから迫った。' + B.name + 'は口では嫌がったが、拒みきらなかった（部屋の条件の場面なので、内容のスイッチ「合意のない展開」に関わらず起きる）' + lw + HS.noneWhy(x, T, B);
+      return T.name + 'と' + B.name + 'は敵対していた（' + src + '）。' + T.name + 'が強引に迫り、' + B.name + 'は口では嫌がったが、拒みきらなかった' + lw + HS.noneWhy(x, T, B);
+    },
+    /* 恋愛対象「なし」の人が入る強引な場面の理由の印（HK.Pos.forceOpen で開いたとき。orient-audit.js が見る） */
+    noneWhy: function (x, T, B) {
+      return HK.Pos && HK.Pos.noneWhy ? HK.Pos.noneWhy(x, [T, B]) : '';
     }
   };
   /* どちらかに、ほかの恋人がいるか（敵対の二人の場面は、恋人のいる人には起こさない） */

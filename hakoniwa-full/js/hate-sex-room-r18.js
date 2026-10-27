@@ -11,7 +11,7 @@
   if (A && A.EV && A.K) {
     HK.addTo(A.EV, {
       /* 選ばれやすさは敵対の重み（conflict）で決める（恋愛の重みは、敵対の関係ではほとんど0になるため）。記録には恋愛（romance）として残す */
-      id: 'hate_sex', cat: 'conflict', sex: true, scope: 'pair', pri: true, r18: true,
+      id: 'hate_sex', cat: 'conflict', sex: true, force: true, scope: 'pair', pri: true, r18: true,
       when: function (ctx, a, b) {
         if (HK.SAFE_ON || ctx.flags.isOne || ctx.stepIndex < 1 || ctx.flags.trioCur) return false;
         if (a.out || b.out || a.flags.down || b.flags.down || a.flags.cagePair != null || b.flags.cagePair != null) return false;

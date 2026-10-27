@@ -532,6 +532,9 @@
   };
   var LURE_ACT = L('たどり着いた先で、{x}は{a}を柔らかな寝床に横たえ、全身でのしかかってきた。戸惑う{a}の肌を、{x}は自分の体温で確かめるように隅々まで撫で回した。何をされているのかに気づいた頃には、{a}の体はもう甘く痺れていた。|{x}は{a}の手足に体をすり寄せ、首筋や脇腹の柔らかいところばかりを繰り返しなぞった。じゃれているのだと思っていた{a}の笑い声は、いつの間にか上ずった吐息に変わっていた。|気づけば{a}は、{x}たちに囲まれて身動きが取れなくなっていた。温かな体がいくつも肌に触れ、服の隙間へと潜り込んでくる。歓迎の儀式だと思い込もうとした{a}の体は、言い訳より先に熱を帯びていった。|{x}は、{a}が拒まなかったことを「了承」と受け取ったらしい。ぬくもりに包まれたまま、{a}は夜が明けるまで{x}の求愛に付き合わされた。');
 
+  /* 誘いの行為（ship-lewd.js が小説調の行為の段の印を付ける） */
+  X2.LURE_ACT = LURE_ACT;
+
   /* 型を決める（生命体ごとの文があれば優先。性質の汎用、型ごとの汎用も候補に。どの生命体でも5つの型すべてが起きる） */
   X2.modes = function (d) {
     var sp = X2.SP[d.id] || {}, kd = X2.KIND[d.kind] || {}, nat = NAT[d.id] || [], out = [];
@@ -547,7 +550,7 @@
     var sp = X2.SP[d.id] || {}, kd = X2.KIND[d.kind] || {}, r = S.rng();
     var gen = function () {
       var X = SH.X;
-      if (m === 'lure' && X && X.lureLife && S.rng() < 0.6) return pick(X.lureLife) + pick(LURE_ACT);
+      if (m === 'lure' && X && X.lureLife && S.rng() < 0.6) return pick(X.lureLife) + pick(X2.LURE_ACT || LURE_ACT);
       return X2.GEN[m] ? pick(X2.GEN[m]) : '';
     };
     if (sp[m] && (r < 0.7 ||(!kd[m] && !X2.GEN[m]))) return pick(sp[m]);

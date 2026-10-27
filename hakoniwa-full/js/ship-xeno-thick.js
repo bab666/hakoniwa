@@ -96,13 +96,17 @@
   /* ship.js の xeno から呼ぶ。返り値は {a}{b}{x} 入りの段落つき本文（使わない回は null） */
   X2.thick = function (S, d, m, a, top, body, ft, always) {
     if (HK.SAFE_ON || !body) return null;
-    /* 描写の作風「男性向け」で襲われる側の回は、長い版を使わない（男性向けの段は ship-lewd.js が組む。吹雪の館と同じ扱い。2026-10-27 担当BN） */
-    if (!top && HK.Lewd && HK.Lewd.conf('ship') && HK.Lewd.ero(S.env) && HK.Lewd.lv(S.env) !== 'low') return null;
+    /* 描写の作風「男性向け」の回は、長い版（小説調）を使わない（男性向けの段は ship-lewd.js が組む。吹雪の館と同じ扱い。2026-10-27 担当BN）。
+       自分で攻めを選んだ人の回も同じ（2026-10-27：小説調の長い版と男性向けの段 xEroTop が一場面に混ざっていたため） */
+    if (HK.Lewd && HK.Lewd.conf('ship') && HK.Lewd.ero(S.env) && HK.Lewd.lv(S.env) !== 'low') return null;
     if (!always && S.rng() > 1 / 3) return null;
     ft = RESIST[ft] ? ft : 'NP';
     /* 元の文がもう翌朝まで語り終えているときは、長い版にしない（時間が前後しないように） */
     if (top) return /翌朝|それ以来|その夜|次の日/.test(body) ? null : [body, pk(S, TOP_MID), pk(S, TOP_LINE[ft]), pk(S, TOP_PEAK), pk(S, TOP_LAST[ft]), pk(S, TOP_AFTER)].join('\n\n');
     var sense = FORM[d.form] || KIND[d.kind] || KIND.neutral;
+    /* 元の文の中の救出・帰還（「そのあと」の印 \u0003。ship-lewd.js の R.markBody）から先は、余韻の段へ回す（救出のあとに感覚・頂の段が続かないように。2026-10-27） */
+    var cutAt = body.indexOf('\u0003'), bodyRest = cutAt >= 0 ? body.slice(cutAt) : '';
+    if (cutAt >= 0) body = body.slice(0, cutAt);
     var P = [body];
     /* 体の中・五感への侵入は、生命体ごとの感覚（半分）か、侵入の感覚、体のつくりの感覚。ときどき違う犯され方の段落をもう一つ重ねる */
     if (m === 'invade') {
@@ -113,7 +117,7 @@
     if (m === 'lure') P.push(pk(S, OVER.lure), pk(S, RESIST[ft]));
     else { P.push(pk(S, RESIST[ft])); if (S.rng() < 0.6) P.push(pk(S, OVER[m] || OVER.force)); }
     P.push(pk(S, BREAK[ft]), pk(S, PEAK[m] || PEAK.force));
-    var after = X2.AFTER[m] ? pk(S, X2.AFTER[m]) : '';
+    var after = bodyRest + (X2.AFTER[m] ? pk(S, X2.AFTER[m]) : '');
     if (X2.REACT && X2.REACT[ft] && S.rng() < 0.7) after += pk(S, X2.REACT[ft]);
     if (after) P.push(after);
     return P.join('\n\n');
@@ -130,12 +134,15 @@
       parasite: '\n\n{x}は{a}の胸元に吸いつき、離れなかった。吸われるたびに、頭の芯がとろりと蕩けていく。\n\n{a}「は、なれ……っ、ん、ぁ……」\n\n分泌された液が肌から染み込み、体じゅうが火照りはじめた。膝をすり合わせずにはいられない。気づけば{a}は、自分から{x}を胸に押し当てていた。\n\n{a}「や、っ……もっと、吸って……っ」\n\n口をついて出た言葉に、自分で驚く暇もなかった。快感の波が押し寄せ、{a}は毛布を噛んで声を殺しながら達した。',
       plant: '\n\n{x}の胞子を吸い込んだ瞬間、{a}の体の芯に火が灯った。立っていられなくなって倒れ込むと、柔らかな蔓が手足にそっと巻きついてきた。\n\n{a}「っ……あつ、い……」\n\n蔓の先端が、肌をなぞりながら服の内側へ潜り込む。湿った花の匂いの中で、敏感なところを一つずつ探り当てられ、{a}の腰が勝手に浮いた。\n\n{a}「ん、ぁ……っ、そこ、だめ……っ」\n\n蔓がゆっくりと奥へ伸びていくたび、甘い痺れが背骨を駆け上がる。最後に花弁が震えた瞬間、{a}は花粉にまみれたまま果てた。'
     };
-    Object.keys(PLAY_LONG).forEach(function (k) { if (X.play[k]) X.play[k] = X.play[k].concat([PLAY_LONG[k].replace(/^\n\n/, '')]); });
+    /* 小説調の行為の段の印（ship-lewd.js の R.markBody。男性向けの場面では落とす） */
+    var mk = SH.R18 && SH.R18.markBody ? SH.R18.markBody : function (t) { return t; };
+    Object.keys(PLAY_LONG).forEach(function (k) { if (X.play[k]) X.play[k] = X.play[k].concat([mk(PLAY_LONG[k].replace(/^\n\n/, ''))]); });
   }
   if (X && X.hugeAct) {
+    var mkW = SH.R18 && SH.R18.markBody ? function (t) { return SH.R18.markBody(t, true); } : function (t) { return t; };
     X.hugeAct = X.hugeAct.concat([
       '\n\n人のものとはまるで違う、太く脈打つものが、{a}の奥へゆっくりと沈められていった。押し広げられる感覚に、{a}は爪先まで突っ張らせた。\n\n{a}「む、り……っ、そんな、の……っ」\n\nけれど巨体は急がなかった。{a}の体が馴染むのを待つように、ゆっくりと、深く、揺さぶり続ける。痛みは少しずつ溶け、知らない場所から湧き上がる熱に変わっていった。\n\n{a}「あ、っ……なに、これ……奥、が……っ」\n\n巨体が喉を鳴らして果てた瞬間、注ぎ込まれる熱に押し出されるように、{a}もまた声を上げて達した。\n\n',
       '\n\n巨体は{a}を軽々と抱え上げ、自分の上に下ろした。体の重みで、{a}はどこまでも深く貫かれていく。\n\n{a}「ふ、か……っ、ぁ……」\n\n揺さぶられるたびに、太いものが奥のいちばん弱いところを押し上げた。逃げようにも、腰を掴む手はびくともしない。{a}は胸毛にしがみつき、快感に呑まれまいと唇を噛んだ。\n\n{a}「だ、め……っ、もう、イ……っ」\n\n抗う声はすぐに甘い悲鳴に変わり、{a}は巨体の腕の中で何度も果てた。\n\n'
-    ]);
+    ].map(mkW));
   }
 })();

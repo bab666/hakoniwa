@@ -40,7 +40,8 @@
     /* ff＝女性どうし、fm＝{t}が女性の体で{u}が男性の体（跨る）、mm＝男性どうし */
     return (R.EROX[kind === 'nurse' ? 'nurse' : 'night'] || []).filter(function (o) { return o.k === 'any' || (o.k === 'uf' && uf) || (o.k === 'mf' && !tf && uf) || (o.k === 'ff' && tf && uf) || (o.k === 'fm' && tf && !uf) || (o.k === 'mm' && !tf && !uf); });
   };
-  R.xAgain = L('一度では終わらなかった。{x}は日が沈むまで、何度も{a}を求め続けた。|しばらくして、{x}はまた{a}の体に絡みついてきた。二度目は、一度目よりずっと長かった。|{a}が野営地に戻れたのは、夜が明けてからだった。');
+  /* 濃い：もう一度（小説調）。「そのあと」（救出・帰還）の文より前に置く（ship-lewd.js の R.relocate。2026-10-27：帰還の一文は「そのあと」と重なるので、もう一度の文に替えた） */
+  R.xAgain = L('一度では終わらなかった。{x}は日が沈むまで、何度も{a}を求め続けた。|しばらくして、{x}はまた{a}の体に絡みついてきた。二度目は、一度目よりずっと長かった。|{x}は{a}を離さなかった。果てたばかりの体を抱え直され、{a}はもう一度、同じ熱の中へ引き戻された。');
   /* 船員どうしの夜（男性向け）：始まりは ship-thick.js の LEAD を使う */
   R.ero = function (S, t, u, kind, short, high) {
     var TE = HK.ThickEro;
@@ -133,6 +134,36 @@
   function markAfter(list) { return (list || []).map(function (t) { return String(t).charAt(0) === AF ? t : AF + t; }); }
   if (SH.X2 && SH.X2.AFTER) Object.keys(SH.X2.AFTER).forEach(function (k) { SH.X2.AFTER[k] = markAfter(SH.X2.AFTER[k]); });
   if (SH.X && SH.X.lureAfter) SH.X.lureAfter = markAfter(SH.X.lureAfter);
+  /* 小説調の行為の段（2026-10-27）：\u0004…\u0005。男性向けの段がある場面では落とし（作風を一場面で揃える）、ない場面では印だけ消す。
+     生命体・生き物の本文（X2.SP・X2.KIND・X2.GEN・X2.TOP・X.play・R.alien・R.alienTop・X.lureTop）は、最初の一文（出会い）を残して、行為の文から先を印で囲む。
+     巨体との行為（X.hugeAct）・誘いの行為（X2.LURE_ACT）・濃いのもう一度（R.xAgain）は丸ごと。
+     本文の中にある救出・帰還の文（「{b}が…助け出した」「地上に帰された」）からは「そのあと」（\u0003）にする（救出のあとに襲われる段が続かないように） */
+  var NA = '\u0004', NZ = '\u0005';
+  var ACT_S = /撫で|愛撫|舌|押し倒|喘|探ら|探り|貫|沈め|果て|揺さぶ|のしかか|奥|吸|擦|舐め|痺れ|疼|跨|組み伏せ|腰を|服の|快感|悦|甘い声|身をよじ|体じゅう|全身を|求愛に|交尾|繁殖/;
+  var RESCUE_S = /助け出した|地上に帰された|救い出|駆けつけた|連れ戻|野営地に戻|送り届け/;
+  function sents(t) { return String(t).match(/[^。]*。(?:」)?|[^。]+$/g) || [String(t)]; }
+  R.markBody = function (t, whole) {
+    t = String(t);
+    if (/[\u0003-\u0005]/.test(t)) return t;
+    if (whole) return NA + t + NZ;
+    var sn = sents(t), r = -1, a = -1;
+    for (var i = 1; i < sn.length; i++) if (RESCUE_S.test(sn[i].replace(/「[^」]*」/g, ''))) { r = i; break; }
+    var end = r < 0 ? sn.length : r;
+    for (var j = 1; j < end; j++) if (ACT_S.test(sn[j].replace(/「[^」]*」/g, ''))) { a = j; break; }
+    var open = sn.slice(0, a < 0 ? end : a).join(''), act = a < 0 ? '' : sn.slice(a, end).join(''), rest = r < 0 ? '' : sn.slice(r).join('');
+    return open + (act ? NA + act + NZ : '') + (rest ? AF + rest : '');
+  };
+  function markList(list, whole) { return Array.isArray(list) ? list.map(function (t) { return R.markBody(t, whole); }) : list; }
+  function markMap(o, whole) { if (o) Object.keys(o).forEach(function (k) { o[k] = markList(o[k], whole); }); }
+  if (SH.X2) {
+    if (SH.X2.SP) Object.keys(SH.X2.SP).forEach(function (id) { markMap(SH.X2.SP[id]); });
+    if (SH.X2.KIND) Object.keys(SH.X2.KIND).forEach(function (id) { markMap(SH.X2.KIND[id]); });
+    markMap(SH.X2.GEN); markMap(SH.X2.TOP);
+    if (SH.X2.LURE_ACT) SH.X2.LURE_ACT = markList(SH.X2.LURE_ACT, true);
+  }
+  if (SH.X) { markMap(SH.X.play); SH.X.hugeAct = markList(SH.X.hugeAct, true); SH.X.lureTop = markList(SH.X.lureTop); }
+  R.alien = markList(R.alien); R.alienTop = markList(R.alienTop);
+  R.xAgain = markList(R.xAgain, true);
   /* 男性向けの段は印で受け取る（xLewd は男性向けのときだけこれを呼ぶ） */
   R.xEroPool = function (kind) { return [XV + (kind || 'alien')]; };
   R.xEroAgainV = [XA];
@@ -176,15 +207,23 @@
     var d = a.eroDom; if (top) a.eroDom = true;
     var r = E.fill(S, text, a);
     a.eroDom = d;
-    return r;
+    /* 自分で攻めを選んだ人の男性向けの段（R.xEroTop）も、男性向けの段の印で返す（小説調の行為の段を落とす目印。2026-10-27） */
+    return top ? '\u0001' + r + '\u0002' : r;
   };
 
   /* 段落の並べ替え：男性向けの段（\u0001…\u0002）を「そのあと」の文（\u0003）の前へ移す。cut なら「そのあと」から先を落とす（庇い展開が続く回）。
      印のない文・男性向けの段がなく cut でもない文は、印を消すだけ（小説調の文は変えない） */
-  R.relocate = function (t, cut) {
-    if (!/[\u0001-\u0003]/.test(t)) return t;
+  R.relocate = function (t, cut, ero) {
+    if (!/[\u0001-\u0005]/.test(t)) return t;
     var bl = [];
     var s = t.replace(/\u0001([\s\S]*?)\u0002/g, function (m, x) { bl.push(x); return ''; }).replace(/[\u0001\u0002]/g, '');
+    /* 小説調の行為の段（\u0004…\u0005）：男性向けの段がある場面（ero）では落とす。ない場面では、「そのあと」より後ろにあるもの（濃いのもう一度）を「そのあと」の前へ */
+    if (ero && bl.length) s = s.replace(/\u0004[\s\S]*?\u0005/g, '');
+    else {
+      var i0 = s.indexOf(AF);
+      if (i0 >= 0) s = s.slice(0, i0) + s.slice(i0).replace(/\u0004([\s\S]*?)\u0005/g, function (m, x) { bl.push(x.replace(/^\s+|\s+$/g, '')); return ''; });
+    }
+    s = s.replace(/[\u0004\u0005]/g, '');
     if (!bl.length && !cut) return s.replace(/\u0003/g, '');
     var i = s.indexOf(AF), pre = (i >= 0 ? s.slice(0, i) : s).replace(/\u0003/g, '').replace(/\s+$/, '');
     var post = i >= 0 ? s.slice(i + 1).replace(/\u0003/g, '').replace(/^\s+|\s+$/g, '') : '';
@@ -315,7 +354,8 @@
     if (!o || typeof o.text !== 'string' || !isShip(S)) return say0.apply(this, arguments);
     var a = o.actors && o.actors.length === 1 && o.actors[0] && typeof o.actors[0] === 'object' ? o.actors[0] : null, cv = null;
     if (a && covTag(o.tag) && !/自分で攻めを選んで/.test(o.why || '')) cv = R.coverPlan(S, a, o);
-    o.text = R.relocate(o.text, !!cv);
+    var lw5 = lwOf(S);
+    o.text = R.relocate(o.text, !!cv, lw5.ero && lw5.lv !== 'low');
     if (a && o.tag === '研究' && R.labOn(S)) o.text = R.labEro(S, a, o.text);
     var r = say0.apply(this, arguments);
     if (cv) R.coverRun(S, cv);

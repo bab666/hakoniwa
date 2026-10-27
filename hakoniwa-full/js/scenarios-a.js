@@ -268,6 +268,40 @@
       '全員がそれぞれの電車で帰り、合コンは何事もなく終わった。恋は始まらなかったが、それもまた一つの結末だった。'
     ]
   };
+  /* 恋人どうしのまま気持ちが冷えきった二人（どちらかの好意が0未満）：関係の結末に「破局」と書くだけにせず、店を出る前に別れの出来事を記録に出す
+     （2026-10-27：別れの出来事がないのに、関係の結末だけ「恋人だった二人の間に、もう戻れない溝ができた。」になっていたため）。
+     {a}＝別れを切り出す側（好意の低いほう）、{b}＝相手。展開の重さが穏やか（mood-dial.js）で別れを選ばないときは、仲直りの出来事にする */
+  var G_SOUR = {
+    end: [
+      '一次会の終わり、{a}は{b}を店の外に呼び出した。{a}「やっぱり、私たちは合わないと思う｜＝｜やっぱり、私たちは合わないと思います」――{b}は言い返そうとして、やめた。店に戻ったとき、二人はもう恋人ではなかった。',
+      '{a}と{b}は、帰り支度の途中で小さく言い争った。きっかけは些細なことだったが、{a}は最後に「付き合うの、やめよう｜付き合うのは、やめにしよう｜お付き合いは、やめにしましょう」と言った。{b}は黙って頷き、二人は別々の電車で帰った。',
+      '店を出る前に、{a}は{b}にだけ聞こえる声で別れを告げた。{b}は笑おうとして、うまく笑えなかった。二人の恋は、店の明かりが消える前に終わった。'
+    ],
+    mend: [
+      '{a}と{b}は、店を出る前に外で少しだけ話した。{a}「さっきは、言いすぎた｜＝｜さっきは、言いすぎました」{b}「……私も｜……私もだ｜……私もです」――ぎこちないまま、二人は手をつなぎ直した。',
+      '{a}はおしぼりを畳みながら、{b}に小さく謝った。{b}はしばらく黙っていたが、やがて{a}のグラスに自分のグラスを当てた。仲直りは、それで十分だった。',
+      '{a}は帰り際、{b}の袖をそっと引いた。言い争ったことには触れずに、二人は並んで店を出た。気まずさは、駅に着くころには薄れていた。'
+    ]
+  };
+  function gSour(ctx, P, used) {
+    for (var i = 0; i < P.length; i++) for (var j = i + 1; j < P.length; j++) {
+      var a = P[i], b = P[j], pf = ctx.pair(a, b);
+      if (!pf.couple || used[a.i] || used[b.i]) continue;
+      var ab = R(ctx, a, b), ba = R(ctx, b, a), lo = Math.min(ab.aff, ba.aff);
+      if (lo >= 0) continue;
+      var x = ab.aff <= ba.aff ? a : b, y = x === a ? b : a;
+      if (HK.Dark && HK.Dark.skip(ctx, 'breakup')) {
+        ab.aff = Math.max(ab.aff, 4); ba.aff = Math.max(ba.aff, 4);
+        ctx.say({ kind: 'event', cat: 'bond', text: ctx.t(ctx.pick(G_SOUR.mend), x, y), actors: [x, y], mag: 18, why: '恋人どうしの' + x.name + 'から' + y.name + 'への好意が冷えていた（' + Math.round(lo) + '）。展開の重さ「穏やか」で、別れずに仲直りした' });
+        continue;
+      }
+      /* 同じ段階で恋人になった組の乗り換えの取り消し（poly.js の onBreak）を起こさない：別れても前の恋人は戻らない */
+      delete pf._polyUndo;
+      pf.couple = false; pf.gSour = true; pf.brokeAt = ctx.stepIndex;
+      var e = ctx.say({ kind: 'event', cat: 'conflict', text: ctx.t(ctx.pick(G_SOUR.end), x, y), actors: [x, y], mag: 24, why: '恋人どうしのまま、' + x.name + 'から' + y.name + 'への好意が冷えきった（' + Math.round(lo) + '）。店を出る前に別れた' });
+      if (e && e.n != null) pf.moments.push({ n: e.n, mag: 24 });
+    }
+  }
   /* 結末：合コンのあとで恋人が二人になっていた人（二股）。二人とも関係の設定で恋人にしてある場合は出さない */
   function gCloseTwo(ctx, P, T) {
     /* 複数の恋人「秘密｜秘密だ｜秘密です」（poly.js）：恋人どうしは互いを知らないので、二股の結末は出さない */
@@ -442,6 +476,18 @@
         c.tr.a = HK.clamp(c.baseTr.a - c.flags.drunk / 300);
       });
     },
+    /* 関係の結末（engine.js の classify より先に呼ばれる）。2026-10-27：
+       ・恋人のまま一緒に帰った・恋人どうしのまま終わった二人は、言い争いで緊張が高くても「破局」にしない（好意が0以上なら恋人のまま）
+       ・店の中で別れた二人（二股の問い詰め G_TWO_END・二股の結末 cold・冷えきった二人の別れ gSour）は、別れの出来事が記録にあるので「破局」 */
+    classify: function (ctx, A, B, pf) {
+      if (pf.kill) return null;
+      if (!pf.couple && (pf.gSour || pf.gTwoBroke)) return { id: 'breakup' };
+      if (pf.couple) {
+        var ab = ctx.R(A, B), ba = ctx.R(B, A);
+        if (ab.aff >= 0 && ba.aff >= 0 && (ab.ten > 70 || ba.ten > 70)) return { id: 'lovers' };
+      }
+      return null;
+    },
     finish: function (ctx) {
       var P = ctx.present(), used = {}, rng = ctx.rng, out = [];
       /* 夜のあと（全年齢でも出る短い一文） */
@@ -480,6 +526,8 @@
         b.flags.cageDone = true;
         (ctx.flags.together = ctx.flags.together || []).push({ a: a.i, b: b.i, night: !!ctx.pair(a, b).night, cage: true });
       });
+      /* 恋人どうしのまま気持ちが冷えきった二人は、ここで別れる（別れの出来事を記録に出す。仲直りもある） */
+      gSour(ctx, P, used);
       var rf = gRom(ctx), cand = [];
       for (var i = 0; i < P.length; i++) for (var j = i + 1; j < P.length; j++) {
         var a = P[i], b = P[j], ab = R(ctx, a, b), ba = R(ctx, b, a);
@@ -499,6 +547,8 @@
         } else if (c.v < 55 - rf * 20 || !HK.canLove(ca, cb) || !HK.canLove(cb, ca)) return;
         /* 家族（きょうだい・親子・親族など）で「恋愛：なし」の二人は、一緒に帰る組・お持ち帰りにしない */
         if (ctx.pair(c.a, c.b).kin) return;
+        /* 店を出る前に別れた二人（gSour）は、一緒に帰らない */
+        if (ctx.pair(c.a, c.b).gSour) return;
         if (so && !(HK.Pos && HK.Pos.okSex(c.a, c.b))) return;
         used[c.a.i] = used[c.b.i] = 1;
         var imp = (c.a.tr.impulse + c.b.tr.impulse) / 2;

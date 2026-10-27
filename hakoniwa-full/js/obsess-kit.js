@@ -39,9 +39,10 @@
     var y0 = O.yanTie(ctx, a, b), nl = y0 && HK.noLovePair && HK.noLovePair(a, b);
     var a1 = nl ? Object.assign({}, a, { noLove: null }) : a, b1 = nl ? Object.assign({}, b, { noLove: null }) : b;
     /* 関係「執着」を設定した組は恋愛対象の違いを越えるが、先生・未成年・恋愛相手の固定は越えない */
-    if (!pf.couple && !HK.canLove(a1, b1) && !(y0 && HK.canLove(Object.assign({}, a1, { likes: '' }), b1))) return true;
-    if (HK.Pos && HK.Pos.clash && HK.Pos.clash(a1, b1)) return true;
-    return false;
+    /* 内容のスイッチ「合意のない展開」が入なら、関係「執着」を設定した組は、恋愛対象「なし」の人どうしでも執着が続く（暴走の夜まで。恋愛にはならない。
+       pos.js の HK.Pos.forceOpen。2026-10-27 担当HC） */
+    var chk = function () { return (!pf.couple && !HK.canLove(a1, b1) && !(y0 && HK.canLove(Object.assign({}, a1, { likes: '' }), b1))) || !!(HK.Pos && HK.Pos.clash && HK.Pos.clash(a1, b1)); };
+    return y0 && HK.Pos && HK.Pos.forceOpen ? HK.Pos.forceOpen(ctx, [a1, b1], chk) : chk();
   };
   /* 嫉妬してよいか：a が c（好きな相手）のことで嫉妬する */
   O.jealOk = function (ctx, a, c) { return !(c && O.blocked(ctx, a, c)); };
@@ -392,12 +393,15 @@
     }
     /* 監禁の夜：受け入れている・共依存でなければ「合意のない展開」（内容のスイッチ）が入のときだけ */
     var stn0 = O.stance(ctx, b, a);
-    var night = !safe && opt.night !== false && (stn0 === 'mutual' || stn0 === 'accept' || (!HK.Content || HK.Content.ok(ctx, 'force'))) && ctx.romanceOk([a, b]) && HK.Pos && HK.Pos.okSex && HK.Pos.okSex(a, b) && ctx.rng() < 0.55;
+    /* 受け入れている・共依存でない夜は、合意のない展開の切羽詰まった場面：恋愛対象「なし」の人も（HK.Pos.forceOpen。2026-10-27 担当HC） */
+    var forced = !(stn0 === 'mutual' || stn0 === 'accept');
+    var gate = function () { return ctx.romanceOk([a, b]) && HK.Pos && HK.Pos.okSex && HK.Pos.okSex(a, b); };
+    var night = !safe && opt.night !== false && (!forced || (!HK.Content || HK.Content.ok(ctx, 'force'))) && (forced && HK.Pos && HK.Pos.forceOpen ? HK.Pos.forceOpen(ctx, [a, b], gate) : gate()) && ctx.rng() < 0.55;
     if (night) {
       var ord = HK.Pos.order(a, b), top = ord[0] === a;
       ctx.pair(a, b).night = true;
       ctx.mod2(a, b, { att: 6 }, { att: 4, ten: 6 });
-      return { with: [b], cat: 'romance', sex: true, text: F(ctx, T(ctx, top ? 'top' : 'bottom'), a, b), why: a.name + 'による監禁の夜（執着 ' + Math.round(s.lv) + (stn0 === 'mutual' ? '・共依存' : stn0 === 'accept' ? '・受け入れている' : '') + '）', mag: 30 };
+      return { with: [b], cat: 'romance', sex: true, force: forced, text: F(ctx, T(ctx, top ? 'top' : 'bottom'), a, b), why: a.name + 'による監禁の夜（執着 ' + Math.round(s.lv) + (stn0 === 'mutual' ? '・共依存' : stn0 === 'accept' ? '・受け入れている' : '') + '）' + (forced && HK.Pos.noneWhy ? HK.Pos.noneWhy(ctx, [a, b]) : ''), mag: 30 };
     }
     ctx.mod(b, a, { ten: 4 }); ctx.stress(b, 6);
     return { with: [b], cat: 'conflict', text: F(ctx, T(ctx, 'cageDay'), a, b), why: a.name + (SAFE() ? 'の囲い込み（' : 'による監禁（') + s.cage.n + '区切り目）', mag: 15 };

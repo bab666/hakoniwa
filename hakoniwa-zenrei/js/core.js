@@ -332,6 +332,8 @@
       var marked = fromSeg ? line : HK.fmtMarkLine(line, R, TK);
       marked.split(TK).forEach(function (seg, k) {
         seg = seg.replace(/^\s+|\s+$/g, '');
+        /* 台詞の塊のすぐあとの「。」「、」（「…」。〇〇は）は、塊を一行にすると次の行の頭に残るので落とす（保存から開いた古い記録も。HK.punctFix） */
+        if (k % 2 === 0 && blocks.length && blocks[blocks.length - 1].sp) seg = seg.replace(/^[。、]+\s*/, '');
         if (!seg) return;
         blocks.push({ sp: k % 2 === 1, t: seg });
       });
@@ -359,6 +361,22 @@
       }).join('');
     });
     return out.filter(function (x, i, arr) { return x || (i > 0 && i < arr.length - 1); }).join(hadNL ? '\n\n' : '\n').replace(/\n{3,}/g, '\n\n');
+  };
+
+  /* 句読点の仕上げ（2026-10-27 担当HF）：記録の文の句読点の崩れを軽く正す。voice-seg.js の HK.simulate のいちばん外側の包みが、
+     口調・語の差し替えなどの仕上げがすべて済んだ e.text に一度だけかける（そのあとで seg を作る）。点検は hakoniwa-tools/tone-check/punct-audit.js
+     ・本文の先頭・改行・「『 の直後の「。」「、」を落とす（印の解決で空になった断片・空の要素を join した名残）
+     ・「。。」「、。」「。、」→「。」、「、、」→「、」
+     ・文頭の台詞（「…」・名前「…」。HK.fmtLong が一行にする塊）のすぐあとの「。」を落とす（「…」。〇〇は → 「…」〇〇は）。
+       画面では台詞の塊を一行にするので、残りが「。〇〇は…」の行になっていた。文の途中の引用（店の名は「ひだまり」。）は変えない
+     names：登場人物の名前の一覧（名前「…」の形を見分ける） */
+  HK.punctFix = function (text, names) {
+    if (typeof text !== 'string' || !/[。、]/.test(text)) return text;
+    var s = text.replace(/(^|\n|[「『])[。、]+/g, '$1').replace(/[。、]*。[。、]*/g, '。').replace(/、{2,}/g, '、');
+    if (s.indexOf('」。') < 0) return s;
+    var nm = (names || []).filter(Boolean).map(String).sort(function (a, b) { return b.length - a.length; }).map(HK.reEsc || function (x) { return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
+    var re = new RegExp('(?<=^|[。！？）\\s―…])(' + (nm.length ? '(?:' + nm.join('|') + ')[\\u2060-\\u2064]*' : '') + ')?((?:「[^「」\\n]*」)+)。', 'g');
+    return s.replace(re, function (m, who, q) { return (who || '') + q; });
   };
 
   /* 正規表現に文字列をそのまま入れるための逃がし（名前・語など） */

@@ -39,7 +39,12 @@
       '@media (min-width:700px){#loadfail{left:50%;right:auto;transform:translateX(-50%);max-width:640px}}';
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   })();
-  function genv(scen) { return scen.solo ? scen.env.concat(HK.GLOBAL_ENV.filter(function (e) { return e.all; })) : scen.env.concat(HK.GLOBAL_ENV); }
+  /* fac：派閥の設定（factions.js）は派閥のある箱庭だけに、その箱庭の環境値のすぐあとに出す */
+  function genv(scen) {
+    if (scen.solo) return scen.env.concat(HK.GLOBAL_ENV.filter(function (e) { return e.all; }));
+    var g = HK.GLOBAL_ENV.filter(function (e) { return !e.fac || scen.factions; });
+    return scen.env.concat(g.filter(function (e) { return e.fac; }), g.filter(function (e) { return !e.fac; }));
+  }
   /* 箱庭の情報：本体（HK.SCENARIOS）か、まだ読んでいない箱庭は目録から作った仮の箱庭（load.js の HK.Load.info。stub: true。一覧・人数・名前にだけ使う） */
   function scenOf(id) { return HK.Load && HK.Load.info ? HK.Load.info(id) : HK.SCENARIOS[id]; }
   function smin(id) { var s = scenOf(id); return (s && s.minCast) || 2; }

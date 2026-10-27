@@ -638,6 +638,49 @@
   V.speakerOf = speakerOf;
   V.nounQOf = nounQOf;
 
+  /* 喘ぎ・とっさの短い声らしい台詞か（小さい母音・♡、または言葉の切れ目の「っ」があり、「……」か♡を含む）。
+     語尾の設定（tone-ending.js の e:… の口調）は、こういう台詞には当てない（喘ぎに語尾やクセを付けない。2026-10-27 の利用者の報告） */
+  var MOAN_RE = /[ぁぃぅぇぉ♡]|[っッ](?=[…‥、。！!？?\s　」〜～ー]|$)/;
+  /* 山場・寸前の声の表（persona.js の V.CLIMAX・V.EDGE）の行も、喘ぎと同じに扱う（表が後から増えたら作り直す） */
+  var VSET = null, VSET_N = -1;
+  function voiceRow(q) {
+    var n = 0, T = [V.CLIMAX, V.EDGE];
+    T.forEach(function (t) { if (t) Object.keys(t).forEach(function (k) { n += (t[k] || []).length; }); });
+    if (n !== VSET_N) { VSET = {}; VSET_N = n; T.forEach(function (t) { if (t) Object.keys(t).forEach(function (k) { (t[k] || []).forEach(function (l) { VSET[l] = 1; }); }); }); }
+    return !!VSET[q];
+  }
+  V.moanLike = function (q) { return !!q && ((MOAN_RE.test(q) && /[…‥♡]/.test(q)) || voiceRow(q)); };
+  /* 「……」をはさんだ短い声（「あら……もう……」「……だめよ……そんな、声で……」）。男性の女性的な語尾を外す対象にだけ使う */
+  V.shortVoice = function (q) { return !!q && /[…‥]/.test(q) && q.replace(/[…‥、。！？!?♡\s　っッー〜]/g, '').length <= 14; };
+  /* 男性の台詞から、女性的な語尾（あら・〜わ・〜のよ・〜かしら・名詞＋ね／よ）を外す。読点をはさんだ喘ぎの形（「だめ、よ」「上手、ね」「いいの、よ」）も見る。
+     お姉さん・お嬢様（語尾そのものが口調）は直さない。関西弁の「〜わ」は男性でも使うので残す。
+     語尾の設定の口調（辞書だけの口調）は、従来の言い換え（voice-tone.js の styleQuote）を通らないので、辞書を当てる前にここを通す */
+  var UF_KEEP = { ane: 1, ojou: 1 }, UF_E = '(?=[…‥。！？!?、」♡〜ー　\\sっ]|$)';   /* r18:ok */
+  /* 名詞の終わりの漢字（「見よ」「死ね」「寝ね」のような動詞の一字は除く） */
+  var UF_N = '(?:(?![見来死寝出居得経跳])[一-鿿々])';
+  var UF_RULES = [
+    [/(^|[「、…‥\s　])あら(あら|まあ)(?=[…‥、。！!？?っ]|$)/g, function (m, p, x) { return p + 'おや' + (x === 'あら' ? 'おや' : 'まあ'); }],
+    [/(^|[「、…‥\s　])あら(?=[…‥っ])/g, '$1あ'], [/(^|[「、…‥\s　])あら(?=[、。！!])/g, '$1おや'],
+    [new RegExp('かしら' + UF_E, 'g'), 'かな'], [new RegExp('ものよ' + UF_E, 'g'), 'ものだよ'],
+    [new RegExp('なの(、?)よ' + UF_E, 'g'), 'なん$1だよ'], [new RegExp('([ぁ-ゖ一-鿿々])の(、?)よね' + UF_E, 'g'), '$1ん$2だよね'], [new RegExp('([ぁ-ゖ一-鿿々])の(、?)よ' + UF_E, 'g'), '$1ん$2だよ'],
+    [new RegExp('なのね' + UF_E, 'g'), 'なんだね'], [new RegExp('([いるたくすつむぶう])のね' + UF_E, 'g'), '$1んだね'],
+    [new RegExp('(だめ|ダメ|じょうず|すぎ|いい子|そう|ほんと|(?![神主友王様殿君])' + UF_N + ')(、?)よ' + UF_E, 'g'), '$1$2だよ'],
+    [new RegExp('(じょうず|いい子|そう|' + UF_N + ')(、?)ね' + UF_E, 'g'), '$1$2だね'],
+    [new RegExp('ですわ' + UF_E, 'g'), 'です'], [new RegExp('ますわ' + UF_E, 'g'), 'ます'], [new RegExp('くださいまし' + UF_E, 'g'), 'ください']
+  ];
+  var UF_WA = [
+    [new RegExp('だ(、?)わ(よ|ね)?' + UF_E, 'g'), function (m, c, y) { return 'だ' + (y ? c + y : ''); }],
+    [new RegExp('(?<=[ぁ-ゖ一-鿿々ー])([いたくすつぬむぶる])(、?)わ(よ|ね)?' + UF_E, 'g'), function (m, k, c, y) { return k + c + (y || 'よ'); }]
+  ];
+  V.unfem = function (q, who) {
+    if (!q || !who) return q;
+    var t = who.tone, eb = HK.toneOpt && t ? HK.toneOpt(t, 'endingOf') : null;
+    if (eb) t = eb;
+    if (UF_KEEP[t]) return q;
+    UF_RULES.forEach(function (r) { q = q.replace(r[0], r[1]); });
+    if (t !== 'kansai' && !(HK.toneOpt && HK.toneOpt(t, 'kansai'))) UF_WA.forEach(function (r) { q = q.replace(r[0], r[1]); });
+    return q;
+  };
   /* people: [{name, fp, tone, persona, gender, keigo}]。actors（任意）はその出来事の登場人物
      台詞の頭の \u2062 は「書き下ろしの敬語の行（tone-lines.js）」。言い換えず、一人称と呼び方だけそろえる */
   V.processText = function (text, people, actors) {
@@ -672,6 +715,9 @@
             if (nounQ) kind = 'c';
             /* いま整えている台詞の区分（点検の道具 collect.js が読む） */
             V._qKind = kind;
+            /* 語尾の設定の口調（e:…）の人の喘ぎ・とっさの短い声は、語尾の設定・住人の辞書を当てず、ベースの口調で整える（最後に元へ戻す） */
+            var mq = !nounQ && V.moanLike(q), eb0 = HK.toneOpt && HK.toneOpt(who.tone, 'endingOf'), svT = null;
+            if (mq && eb0) { svT = { t: who.tone, c: who.toneCustom, fp: who.fp }; if (!who.fp && V.fpFor) who.fp = V.fpFor(who); who.tone = eb0; who.toneCustom = ''; }
             /* 口調ごとの書き下ろし（voice-override.js）があれば、自動の言い換えより優先する */
             /* 敬語で話す相手への台詞：書き下ろしの敬語の行はそのまま、それ以外は敬語に言い換える */
             var pre = q.charAt(0) === '\u2062';
@@ -705,7 +751,8 @@
             /* 辞書だけで作る口調（tone-registry.js の dictOnly）の1本の台詞：常体か敬語かを見て辞書を当てる（従来の言い換え・keigoUnify・仕上げは通さない。性別の語尾は通す） */
             var d1 = !byDict && ov == null && !pre && !nb && !kg && !nounQ && HK.toneOpt && HK.toneOpt(who.tone, 'dictOnly') && HK.Tone && HK.Tone.apply1 ? HK.Tone.dictOf(who.tone) : null;
             if (byDict) { q = HK.Tone.apply(q, nb.dict, who); own = true; }
-            else if (d1) { q = HK.Tone.apply1(q, d1, who); own = true; }
+            /* 男性の台詞は、辞書を当てる前に女性的な語尾を外す（従来の言い換えの styleQuote と同じ扱い。辞書が足す語尾はそのまま） */
+            else if (d1) { q = HK.Tone.apply1(who.gender === 'm' ? V.unfem(q, who) : q, d1, who); own = true; }
             /* 「〜」という話・「〜」と書いた札（nounQ）は話し手の言葉ではないので、敬語の人でも敬語にしない */
             else if (ov == null && !pre) { if ((who.persona === 'polite' && !nounQ) || kg) q = V.polite(q); else if (V.styleQuote && !nounQ) q = V.styleQuote(V.unHonor ? V.unHonor(q) : q, who); }
             /* 敬語の口調で、敬語の文とため口の文が混ざる台詞の、ため口の文末を敬語に寄せる（tone-keigo-unify.js。仕上げの前に通し、仕上げが口調の味を付ける） */
@@ -716,6 +763,8 @@
             if (fin) q = fin(q, who, { kg: kg, raw: q0 });
             /* 性別の語尾の仕上げ（辞書の書き下ろしにも通す。tone-plus.js の V.genderEnd） */
             if (V.genderEnd && !nounQ && !kg) q = V.genderEnd(q, who);
+            /* 男性の喘ぎ・短い声：態度の表の女性的な語尾（「だめ、よ」「上手、ね」「いいわ」）を外す */
+            if ((mq || (!eb0 && !nounQ && V.shortVoice(q0))) && who.gender === 'm') q = V.unfem(q, who);
             /* 住人ごとの語尾の付け替え（設定の toneCustom。tone-new2.js の V.applyToneCustom）：口調の仕上げのいちばん最後に */
             if (who.toneCustom && V.applyToneCustom && !HK.TONE_CUSTOM_OFF && !nounQ) q = V.applyToneCustom(q, who.toneCustom);
             /* 二人称の設定（敬語の相手への台詞は除く）。設定が空なら、口調と性別の既定（tone-registry.js の HK.TONE_YOU）でそろえる */
@@ -728,6 +777,7 @@
             /* 語尾の記号（キャラごとの設定。複数あれば文ごとにランダム） */
             if (who.marks && !nounQ) q = V.applyMarks(q, who.marks);
             if (sv1) { who.fp = sv1.fp; who.you = sv1.you; }
+            if (svT) { who.tone = svT.t; who.toneCustom = svT.c; who.fp = svT.fp; }
           }
           q = q.replace(/([！？!?])。/g, '$1');   /* 「ごめんごめん！。」のような重なりを整える */
           if (rec) rec.push({ k: kind, w: who ? people.indexOf(who) : kind === 'm' ? nameBefore(text, start, people) : -1 });

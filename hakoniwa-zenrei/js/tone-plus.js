@@ -361,7 +361,10 @@
     if (q.indexOf('\u2063') >= 0) q = q.replace(/\u2063([^\u2063\u2061]*)([\u2063\u2061])/g, function (m, nm, end) {
       var base = nm.replace(/(?:さん|くん|ちゃん|様|さま)$/, ''), own = who.calls && who.calls[base];
       if (own) return String(own).trim().slice(0, 16);
-      return byName && end === '\u2063' ? nm : youOf(who);
+      if (!(byName && end === '\u2063')) return youOf(who);
+      /* 名前で呼ぶときの敬称も、話し手の設定（敬称の設定 call・相手の性別で分ける）で決める。おまかせなら箱庭が書いた敬称のまま（2026-10-27） */
+      var cs = who.call && base ? V.callFor(who, { name: base, gender: '' }) : null;
+      return cs != null ? cs : nm;
     });
     var made = !byName && HK.Mob && HK.Mob._made;
     if (made && made.length) made.forEach(function (nm) {

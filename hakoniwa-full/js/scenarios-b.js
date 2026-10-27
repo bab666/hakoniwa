@@ -17,7 +17,7 @@
       { id: 'days', label: '救助までの日数', min: 4, max: 15, def: 8, lo: '4日', hi: '15日', unit: '日' },
       { id: 'res', label: '島の資源', min: 0, max: 100, def: 50, lo: '岩だらけ', hi: '果物が実る' },
       { id: 'storm', label: '天候の荒さ', min: 0, max: 100, def: 40, lo: '凪', hi: '嵐続き' },
-      { id: 'faction', label: '派閥が生まれる人数', min: 3, max: 8, def: 4, lo: '3人から', hi: '8人から', unit: '人以上', desc: 'この人数を下回ると派閥には分かれない。上回っても、引っぱる人や信頼がなければ生まれない' },
+      { id: 'faction', label: '派閥が生まれる人数', min: 3, max: 8, def: 4, lo: '3人から', hi: '8人から', unit: '人以上', desc: 'この人数を下回ると派閥には分かれない。上回っても、引っぱる人や信頼がなければ生まれない。派閥をなくす・グループで固定する・リーダーを気質で決めるときは「派閥の決め方」「派閥のリーダー」で' },
       { id: 'bugs', label: '虫を食べる描写', type: 'select', def: 'yes', options: [{ v: 'yes', label: 'あり（幼虫やイナゴも食料になる）' }, { v: 'no', label: 'なし（虫は食料に出てこない）' }], desc: '「なし」にすると、採集で虫を捕まえたり、虫を料理したりする場面が出なくなる' },
       { id: 'rescue', label: '救助', type: 'select', def: 'yes', options: [{ v: 'yes', label: '最終日に船が来る' }, { v: 'no', label: '来ない（イカダで脱出するしかない）' }] }
     ],

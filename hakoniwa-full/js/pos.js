@@ -203,6 +203,8 @@
     if (!a || !b || a === b) return fb || [a, b];
     fb = fb && fb.length === 2 ? fb : [a, b];
     var os = P.orients(a, b), r;
+    /* 恋愛対象「なし」の人が入る組（合意のない展開の切羽詰まった場面だけが、ここまで来る。HK.Pos.forceOpen）：「おまかせ」として向きを決める（受け攻めの指定どおりに） */
+    if (!os.length && P.noneIn([a, b])) os = openNone([a, b], function () { return P.orients(a, b); });
     if (!os.length) return P.hardTop(b, a) && !P.hardTop(a, b) ? [b, a] : P.hardTop(a, b) ? [a, b] : fb;
     if (os.length === 1) return os[0];
     var pa = P.of(a, b), pb = P.of(b, a);
@@ -268,6 +270,69 @@
 
   /* 男性の体を前提にした言葉（女性どうしの場面で使ってはいけない）。点検にも使う */
   P.MALE_RE = /ちんぽ|ちんこ|ペニス|陰茎|肉棒|いちもつ|一物|男根|亀頭|勃起|射精|精液|白濁|種付け|孕ませ|中に出|中出し|子種|睾丸|カリ首|フェラ|裏筋|鈴口|先走り|怒張|剛直|屹立|\{(?:男性器|亀頭|精液)\}/;
+
+  /* ---------- 合意のない展開の、切羽詰まった場面（2026-10-27 担当HC） ----------
+     恋愛対象「なし」は「恋愛にならない」の意味に留める。内容のスイッチ「合意のない展開」が入のとき（展開の重さが穏やかなら切。mood-dial.js）、
+     執着の暴走（監禁の夜）・歪んだ関係の拒めない夜・敵対する二人の強引なエッチ・出られない部屋の条件のエッチ では、恋愛対象「なし」の人も
+     受け手・攻め手になれる（P.forceOpen の中だけ、恋愛対象「なし」を「おまかせ」として判定する）。
+     恋愛対象（男性／女性）が相手の性別に合わない組・受け攻めの指定（攻めを選んだ人は受けにしない）・恋愛やR18にしない相手・R18に参加しない・
+     性行為の相手の固定・無関心／恐怖・血縁は、これまでどおり越えない。恋愛（告白・恋人になる）にもならない（恋愛の出来事は ev.force を持たない）。
+     使う側は、出来事の定義か結果に force: true を付け（engine.js の ctx.romanceOk が下の包みで開く）、理由（why）に P.FORCE_MARK を書く（orient-audit.js が見る） */
+  P.FORCE_MARK = '〔合意のない展開〕';
+  P.forceOn = function (x) { return !!(x && !HK.SAFE_ON && HK.Content && HK.Content.ok(x, 'force')); };
+  /* 恋愛対象「なし」の人が入っている組か（理由の書き分け・点検用） */
+  P.noneIn = function (list) { return (list || []).some(function (c) { return c && c.likes === 'none'; }); };
+  /* 理由（why）に足す一文：恋愛対象「なし」の人が入っていて、合意のない展開が入のときだけ「／〔合意のない展開〕恋愛対象「なし」の○○も、…」（bare なら印を付けない。印をもう書いた理由に足すとき）。それ以外は '' */
+  P.noneWhy = function (x, list, bare) {
+    var L = (list || []).filter(function (c) { return c && c.likes === 'none'; });
+    if (!L.length || !P.forceOn(x)) return '';
+    return '／' + (bare ? '' : P.FORCE_MARK) + '恋愛対象「なし」の' + L.map(function (c) { return c.name; }).join('・') + 'も、切羽詰まった場面で体の関係になった（恋愛にはならない）';
+  };
+  /* fn() を、list の恋愛対象「なし」の人を「おまかせ」として判定する（合意のない展開が入のときだけ。切なら fn() そのまま） */
+  function openNone(list, fn) {
+    var L = (list || []).filter(function (c, i, a) { return c && c.likes === 'none' && a.indexOf(c) === i; });
+    if (!L.length) return fn();
+    L.forEach(function (c) { c.likes = ''; });
+    try { return fn(); } finally { L.forEach(function (c) { c.likes = 'none'; }); }
+  }
+  P.forceOpen = function (x, list, fn) { return P.forceOn(x) ? openNone(list, fn) : fn(); };
+  /* 切羽詰まった場面の体の関係の組か（HK.State.pairSex＝その場にいる・R18に参加する・受け攻めと恋愛対象が合う、を開いて見る） */
+  P.okForce = function (x, a, b) { return P.forceOpen(x, [a, b], function () { return !!(HK.State && HK.State.pairSex ? HK.State.pairSex(a, b) : P.okSex(a, b)); }); };
+  /* 恋愛の出来事を起こしてよいか（engine.js の ctx.romanceOk）：切羽詰まった体の場面（ev.force かつ ev.sex）だけ、恋愛対象「なし」を開いて見る */
+  if (HK.Ctx && HK.wrap && !HK.Ctx.prototype.romanceOk._force) {
+    HK.wrap(HK.Ctx.prototype, 'romanceOk', function (orig) {
+      var f = function (actors, ev) {
+        if (!(ev && ev.force && ev.sex)) return orig.apply(this, arguments);
+        var self = this, args = arguments;
+        return P.forceOpen(this, actors, function () { return orig.apply(self, args); });
+      };
+      f._force = true;
+      return f;
+    });
+  }
+
+  /* 恋愛対象「なし」の人が入る組の結末（2026-10-27 担当HC）：恋人・両片想い・片想い・夜の関係（関係図の分類 love／pine／night）にはしない。
+     恋人になっている組（歪んだ関係など、遊ぶ人が決めた関係）はそのまま。切羽詰まった場面で体の関係になった組は「強いられた夜」（R18版だけ）、
+     それ以外は仲のよさ・緊張から「友人」「気まずい」「他人のまま」に（engine.js の結末の分類の最後に通る HK.TieRel.refine を包む） */
+  var FORCED = null;
+  /* r18:begin */
+  FORCED = { name: '強いられた夜', text: '恋愛にはならないまま、拒めなかった夜の記憶だけが残った。' };
+  /* r18:end */
+  var NONE_CLS = { love: 1, pine: 1, night: 1 };
+  if (HK.TieRel && HK.TieRel.refine && HK.wrap && !HK.TieRel.refine._none) {
+    HK.wrap(HK.TieRel, 'refine', function (orig) {
+      var f = function (ctx, A, B, pf, cl) {
+        var r = orig.apply(this, arguments), c = r || cl, L = c && HK.LABELS && HK.LABELS[c.id];
+        if (!c || !L || !NONE_CLS[L.cls] || !pf || pf.couple || !P.noneIn([A, B])) return r;
+        if (pf.night && FORCED && !HK.SAFE_ON) { if (!HK.LABELS.forced) HK.LABELS.forced = { name: FORCED.name, cls: 'obsess', pol: -1 }; return { id: 'forced' }; }
+        var ab = ctx.R(A, B), ba = ctx.R(B, A);
+        return { id: ab.aff > 24 && ba.aff > 24 ? 'friends' : (ab.ten + ba.ten) / 2 > 34 ? 'awkward' : 'strangers' };
+      };
+      f._none = true;
+      return f;
+    });
+    if (HK.TieRel.pairText) HK.wrap(HK.TieRel, 'pairText', function (orig) { return function (ctx, A, B, cl) { return cl && cl.id === 'forced' && FORCED ? FORCED.text : orig.apply(this, arguments); }; });
+  }
 
   /* 恋愛対象（受け攻め）を、恋愛できる相手の判定に加える */
   if (HK.canLove && !HK.canLove._pos) {

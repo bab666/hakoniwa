@@ -84,7 +84,19 @@
     if (mt && HK.personaOf) return HK.personaOf(Object.assign({}, who, { tone: mt })) || 'gentle';
     return (who && (HK.personaOf ? HK.personaOf(who) : who.persona)) || 'gentle';
   }
-  function toneOf(who) { return moanToneOf(who) || (who && HK.toneOf ? HK.toneOf(who) : null) || psOf(who); }
+  /* 喘ぎには住人の語尾の設定・住人の辞書（tone-ending.js の e:… の口調）を当てない：e:… ならベースの口調で引く */
+  function toneOf(who) {
+    var t = moanToneOf(who) || (who && HK.toneOf ? HK.toneOf(who) : null) || psOf(who), eb = t && HK.toneOpt ? HK.toneOpt(t, 'endingOf') : null;
+    return eb || t;
+  }
+  /* 男性の喘ぎから、態度の表・口調の表の女性的な語尾（「いいわ」「じょうず、ね」「だめよ」「あら」）を外す（voice.js の V.unfem。先頭の印 \u2060 は残す） */
+  function unfem(s, who) {
+    var V = HK.Voice;
+    if (!s || !who || who.gender !== 'm' || !V || !V.unfem) return s;
+    var w = { tone: toneOf(who) };
+    return s.charAt(0) === NOTONE ? NOTONE + V.unfem(s.slice(1), w) : V.unfem(s, w);
+  }
+  M.unfem = unfem;
   function hasM(c) { var P = HK.Pos; if (!c) return false; if (P && P.genSet && P.genSet(c)) return P.hasM(c); return c.gender === 'm' || !!(P && P.futa && P.futa(c)); }
   function fallenOf(who) { return !!(who && (who.fallen || who.fell || (who.corrupt || 0) >= 75)); }
   function count(S, who) { var st = S && S.rng ? S : {}; var m = st._eroCnt = st._eroCnt || {}, k = (who && who.name) || '?'; return (m[k] = (m[k] || 0) + 1); }
@@ -227,10 +239,11 @@
     if (!out) return '……っ';
     if (dakuOk(S, who, key, ctx)) {
       var TM = E.TONE_MOAN && E.TONE_MOAN[toneOf(who)];
-      if (TM && TM.daku && TM.daku.length && (key === 'w2' || key === 'r3') && rand(S) < 0.6) { M.lastSrc = 'tone'; return fresh(S, TM.daku, tag + '.daku'); }
+      if (TM && TM.daku && TM.daku.length && (key === 'w2' || key === 'r3') && rand(S) < 0.6) { M.lastSrc = 'tone'; return unfem(fresh(S, TM.daku, tag + '.daku'), who); }
       out = dakuize(S, out);
     }
-    return out;
+    /* 利用者の辞書の行（書いたまま）は直さない */
+    return M.lastSrc === 'user' ? out : unfem(out, who);
   };
 
   /* ---------- 従来の呼び方（段階 0〜2）を鍵に読み替える ---------- */
@@ -243,7 +256,7 @@
       else if (st === 1) key = cx.force && SOFT[ps] && rand(S) < 0.35 ? 't5' : rand(S) < 0.55 ? 't3' : 't1';
       else key = cx.force && SOFT[ps] && rand(S) < 0.25 ? 't5' : 't4';
       /* 従来の主導権の喘ぎ（ero-kit.js の DOM）も候補に残す：荒い／やわらかい */
-      if (st < 2 && rand(S) < 0.35 && moan0) return plainOut(S, who, kForm(moan0.call(this, S, who, st, ctx)), cx);
+      if (st < 2 && rand(S) < 0.35 && moan0) return unfem(plainOut(S, who, kForm(moan0.call(this, S, who, st, ctx)), cx), who);
       return bare(M.pick(S, who, key, cx));
     }
     if (cx.oral) key = cx.force ? 'l1' : 'l0';

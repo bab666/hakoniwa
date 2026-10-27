@@ -208,7 +208,8 @@
       else if (T.type === 'consume') out.push(T.item + 'があと' + globLeft(ctx, r) + T.unit);
       else if (T.type === 'kill') out.push(HK.SAFE_ON ? '誰かを気絶させること' : '誰かの命');
     });
-    return out.join('、');
+    /* 二人の条件は済んでいて、扉が開かない理由がほかにあるとき（一人しか出られない・ほかの条件待ち）は、空の「残っているのは、。」にしない */
+    return out.join('、') || (HK.roomOnlyOne && HK.roomOnlyOne(ctx.env) ? '扉をくぐる一人を決めることだけ' : 'ほかの条件がそろうのを待つことだけ');
   }
   /* この二人の、言葉か行為の条件が片づいて、残りが別の条件だけのとき */
   function pairOnlyWait(ctx, a, b) {

@@ -10,6 +10,74 @@
     none: '派閥なし', single: '一大グループ＋はぐれ者', two: '二大派閥', three: '三つ巴', multi: '群雄割拠', dictator: '独裁'
   };
 
+  /* 派閥の設定（全体の環境値 HK.GLOBAL_ENV。fac:1 は派閥のある箱庭＝無人島・クラスメイトだけに出す。ui.js の genv）
+     ・facMode 派閥の決め方：auto 自動（今までどおり）／fix 「仲間とみなす」グループで固定／none 派閥は生まれない
+     ・facLead リーダーの決め方：auto 自動（主導性と信頼。下克上もある）／CP・NP・A・FC・AC その値が最も高い人（交代しない）
+     既定の値（def）は置かない：選ばれていないときは結果の env に欄が出ない（JSON に入らない）ので、今までの結果・指紋と変わらない。
+     画面のセレクトは値が無いとき先頭（自動）を出す */
+  var FAC_ENV = [
+    { id: 'facMode', label: '派閥の決め方', type: 'select', fac: 1, options: [
+      { v: 'auto', label: '自動（関係と気質で生まれ、入れ替わる）' },
+      { v: 'fix', label: '「仲間とみなす」グループで固定' },
+      { v: 'none', label: '派閥は生まれない' }
+    ], desc: '固定：住人タブのグループ見出しで「仲間とみなす」を入れたグループが、そのまま派閥になります（人数の設定は見ません。抜ける・鞍替え・解散は起きず、死亡・退場だけ反映。仲間のグループが無ければ自動と同じ）。無人島・クラスメイトで共通' },
+    { id: 'facLead', label: '派閥のリーダー', type: 'select', fac: 1, options: [
+      { v: 'auto', label: '自動（主導性と信頼。下克上もある）' },
+      { v: 'CP', label: 'CP（厳しさ）が最も高い人' },
+      { v: 'NP', label: 'NP（優しさ）が最も高い人' },
+      { v: 'A', label: 'A（冷静さ）が最も高い人' },
+      { v: 'FC', label: 'FC（自由さ）が最も高い人' },
+      { v: 'AC', label: 'AC（協調性）が最も高い人' }
+    ], desc: '気質を選ぶと、派閥の中でその値が最も高い人がリーダーになり、下克上（リーダー交代）は起きません（リーダーが死亡・退場したときだけ次の人へ）。無人島・クラスメイトで共通' }
+  ];
+  if (HK.GLOBAL_ENV && !HK.GLOBAL_ENV.some(function (e) { return e.id === 'facMode'; })) {
+    if (HK.addTo) HK.addTo(HK.GLOBAL_ENV, FAC_ENV); else Array.prototype.push.apply(HK.GLOBAL_ENV, FAC_ENV);
+  }
+  function facMode(ctx) { var v = ctx.env && ctx.env.facMode; return v === 'fix' || v === 'none' ? v : 'auto'; }
+  function facLead(ctx) { var v = ctx.env && ctx.env.facLead; return /^(CP|NP|A|FC|AC)$/.test(v || '') ? v : ''; }
+  F.mode = facMode; F.leadBy = facLead;
+  /* 気質の値で最も高い人（同点は主導性、さらに同点は番号の小さい人）。乱数は使わない */
+  function topBy(ctx, mem, k) {
+    var C = ctx.chars;
+    return mem.slice().sort(function (x, y) { return ((C[y].eg && C[y].eg[k]) || 0) - ((C[x].eg && C[x].eg[k]) || 0) || C[y].tr.lead - C[x].tr.lead || x - y; })[0];
+  }
+  function leadFirst(g, L) { g.leader = L; g.members = [L].concat(g.members.filter(function (m) { return m !== L; })); return g; }
+  /* 「仲間とみなす」グループ（関係 comrade が全員どうしに付いた輪）を、はじめの住人の並びから組み立てる。
+     一人が二つのグループに入っているときは、先に見つかったほうに入れる（派閥は一人一つ） */
+  function comradeGroups(ctx) {
+    if (ctx._facCG) return ctx._facCG;
+    var C = ctx.chars, T = HK.Ties, used = {}, out = [];
+    var co = function (a, b) { return !!(T && T.has && T.has(ctx, a, b, 'comrade')); };
+    for (var i = 0; i < C.length; i++) {
+      if (used[i]) continue;
+      var g = [i];
+      for (var j = i + 1; j < C.length; j++) {
+        if (used[j]) continue;
+        if (g.every(function (m) { return co(C[m], C[j]); })) g.push(j);
+      }
+      if (g.length >= 2) { g.forEach(function (m) { used[m] = 1; }); out.push(g); }
+    }
+    return (ctx._facCG = out);
+  }
+  /* 固定：グループの顔ぶれはそのまま（いま居る人だけ）。リーダーは気質の指定、なければ主導性（下克上の印 flags.leader と前のリーダーを優先） */
+  function evalFixed(ctx, P, cg, prev) {
+    var lt = facLead(ctx), here = {}, prevL = {};
+    P.forEach(function (c) { here[c.i] = 1; });
+    (prev && prev.groups || []).forEach(function (g) { if (g.gid != null) prevL[g.gid] = g.leader; });
+    var groups = [];
+    cg.forEach(function (mem, k) {
+      var m = mem.filter(function (x) { return here[x]; });
+      if (m.length < 2) return;
+      var C = ctx.chars, L = lt ? topBy(ctx, m, lt) : m.slice().sort(function (x, y) {
+        var sc = function (z) { return C[z].tr.lead * 100 + (C[z].flags.leader ? 50 : 0) + (prevL[k] === z ? 15 : 0); };
+        return sc(y) - sc(x) || x - y;
+      })[0];
+      groups.push(leadFirst({ leader: L, members: m, gid: k }, L));
+    });
+    groups.sort(function (a, b) { return b.members.length - a.members.length || a.gid - b.gid; });
+    return finish(ctx, P, groups, '「仲間とみなす」グループのまま（派閥は固定）');
+  }
+
   function bond(ctx, o, L, prevLeader) {
     var r = R(ctx, o, L);
     return r.trust * 0.6 + r.aff * 0.4 + L.tr.lead * 18 - r.ten * 0.5 + (prevLeader === L.i ? 10 : 0) + (L.flags.leader ? 8 : 0);
@@ -23,6 +91,9 @@
   /* 現在の関係から派閥構造を算出 */
   F.evaluate = function (ctx) {
     var P = ctx.present(), th = ctx.env.faction || 4, prev = ctx.fac || { of: {} };
+    var mode = facMode(ctx);
+    if (mode === 'none') return { regime: 'none', reason: '派閥は生まれない設定', groups: [], loners: P.map(function (c) { return c.i; }), of: {} };
+    if (mode === 'fix') { var cg = comradeGroups(ctx); if (cg.length) return evalFixed(ctx, P, cg, ctx.fac); }
     if (P.length < th) {
       return { regime: 'none', reason: 'いま残っているのは' + P.length + '人。派閥に分かれるには少なすぎる（' + th + '人以上で派閥が生まれる設定）', groups: [], loners: P.map(function (c) { return c.i; }), of: {} };
     }
@@ -79,6 +150,14 @@
         }
       }
     }
+    /* リーダーを気質で決める設定：輪の顔ぶれはそのままで、頭だけ指定の気質が最も高い人に */
+    var lt = facLead(ctx);
+    if (lt) groups.forEach(function (g) { leadFirst(g, topBy(ctx, g.members, lt)); });
+    return finish(ctx, P, groups, '');
+  };
+
+  /* 派閥の形のまとめ（補佐・所属・無所属・体制の名前） */
+  function finish(ctx, P, groups, fixReason) {
     /* 補佐：派閥の中にいる、主導性のある人（二番手） */
     groups.forEach(function (g) { g.subs = g.members.filter(function (m) { return m !== g.leader && ctx.chars[m].tr.lead > 0.5; }); });
     var of = {};
@@ -92,8 +171,9 @@
         regime = 'dictator'; reason = L.name + 'のCP（' + Math.round(L.eg.CP) + '）と主導性に、ほぼ全員が従った';
       } else { regime = 'single'; reason = L.name + 'を中心に一つの輪ができた'; }
     } else regime = groups.length === 2 ? 'two' : groups.length === 3 ? 'three' : 'multi';
+    if (fixReason) reason = groups.length ? fixReason + (reason ? '。' + reason : '') : P.length < 2 ? 'いま残っているのは' + P.length + '人' : '「仲間とみなす」グループで、二人以上残っているものがない';
     return { regime: regime, reason: reason, groups: groups, loners: loners, of: of };
-  };
+  }
 
   function sameKey(f) {
     return f.regime + '|' + f.groups.map(function (g) { return g.leader + ':' + g.members.slice().sort().join(','); }).join('/');
@@ -106,7 +186,7 @@
     var C = ctx.chars;
     ctx.facHist = ctx.facHist || [];
     var changed = !prev || sameKey(prev) !== sameKey(f);
-    if (changed) narrate(ctx, prev, f);
+    if (changed) { if (f.groups.some(function (g) { return g.gid != null; }) || (prev && prev.groups.some(function (g) { return g.gid != null; }))) narrateFixed(ctx, prev, f); else narrate(ctx, prev, f); }
     ctx.fac = f;
     if (changed || s === n - 1) ctx.facHist.push({ step: s, label: ctx.label, regime: f.regime, reason: f.reason, groups: JSON.parse(JSON.stringify(f.groups)), loners: f.loners.slice() });
 
@@ -130,9 +210,41 @@
     }
     if (f.groups.length >= 2 && ctx.rng() < 0.45) clash(ctx, f);
     if (f.groups.length && ctx.rng() < 0.28) tide(ctx, f);
-    if (f.groups.length) coup(ctx, f);
+    if (f.groups.length && !facLead(ctx)) coup(ctx, f);
     if (f.regime === 'dictator' && f.loners.length && ctx.rng() < 0.55) purge(ctx, f);
   };
+
+  /* 時系列で畳むための印（結果の JSON には入らない）。畳み方は F.foldSet */
+  function tag(e, k) { if (e && typeof e === 'object') try { Object.defineProperty(e, 'fac', { value: k, enumerable: false, configurable: true }); } catch (x) { /* 印は無くても困らない */ } return e; }
+
+  /* 固定（「仲間とみなす」グループ）の語り：最初のまとまり・リーダーの交代（死亡・退場・下克上）・人が減って形を保てなくなった、だけ */
+  function narrateFixed(ctx, prev, f) {
+    var C = ctx.chars, place = ctx.scen.id === 'island' ? '島' : 'クラス';
+    var pg = {};
+    (prev ? prev.groups : []).forEach(function (g) { if (g.gid != null) pg[g.gid] = g; });
+    f.groups.forEach(function (g) {
+      var L = C[g.leader], was = pg[g.gid];
+      if (!was) {
+        var mem = g.members.filter(function (m) { return m !== g.leader; }).map(function (m) { return C[m]; });
+        tag(ctx.act2({ actors: [L].concat(mem), cat: 'bond', mag: 12, text: L.name + 'を中心に、' + names(mem) + 'がひとつにまとまった。' + place + 'の中で、仲間どうしの「' + L.name + '派」として動いていく。', why: '「仲間とみなす」グループ（派閥は固定）。リーダーは' + (facLead(ctx) ? facLead(ctx) + 'が最も高い' + L.name : L.name + 'の主導性（' + Math.round(L.tr.lead * 100) + '）') }), 'form');
+      } else if (was.leader !== g.leader) {
+        var O = C[was.leader];
+        /* 下克上（coup）はその場で語ったので、ここでは言わない */
+        if (O.alive && !O.out && g.members.indexOf(O.i) >= 0) return;
+        tag(ctx.act2({ actors: [L], cat: 'bond', mag: 10, text: O.name + 'がいなくなり、' + L.name + 'が代わって仲間たちをまとめることになった。', why: '派閥は固定。リーダーが' + (O.alive ? '退場した' : '亡くなった') }), 'lead');
+      }
+    });
+    Object.keys(pg).forEach(function (k) {
+      if (f.groups.some(function (g) { return g.gid === +k; })) return;
+      var g = pg[k], rest = g.members.filter(function (m) { return C[m].alive && !C[m].out; });
+      if (!rest.length) return;
+      tag(ctx.act2({ actors: rest.map(function (m) { return C[m]; }), cat: 'solo', text: C[g.leader].name + '派は、残ったのが' + names(rest.map(function (m) { return C[m]; })) + 'だけになり、派閥の形を保てなくなった。', why: '派閥は固定。仲間が死亡・退場で減った' }), 'scatter');
+    });
+    if (f.regime === 'dictator' && (!prev || prev.regime !== 'dictator')) {
+      var D = C[f.groups[0].leader];
+      tag(ctx.act2({ actors: [D], cat: 'conflict', mag: 20, text: D.name + 'の言葉が、そのまま' + place + 'の決まりになった。異を唱える者はほとんどいない。', why: f.reason }), 'dict');
+    }
+  }
 
   function narrate(ctx, prev, f) {
     var C = ctx.chars, place = ctx.scen.id === 'island' ? '島' : 'クラス';
@@ -142,7 +254,7 @@
       var was = prev && prev.groups.filter(function (x) { return x.leader === g.leader; })[0];
       if (!was) {
         var mem = g.members.filter(function (m) { return m !== g.leader; }).map(function (m) { return C[m]; });
-        ctx.act2({ actors: [L].concat(mem), cat: 'bond', mag: 12, text: L.name + 'を中心に、' + names(mem) + 'がまとまり始めた。' + place + 'の中に「' + L.name + '派」ができた。', why: '信頼・好意と' + L.name + 'の主導性（' + Math.round(L.tr.lead * 100) + '）' });
+        tag(ctx.act2({ actors: [L].concat(mem), cat: 'bond', mag: 12, text: L.name + 'を中心に、' + names(mem) + 'がまとまり始めた。' + place + 'の中に「' + L.name + '派」ができた。', why: '信頼・好意と' + L.name + 'の主導性（' + Math.round(L.tr.lead * 100) + '）' }), 'form');
       }
     });
     f.groups.forEach(function (g) {
@@ -151,43 +263,43 @@
         var c = C[m], L = C[g.leader];
         if (c.flags.subOf === L.i) return;
         c.flags.subOf = L.i;
-        ctx.act2({ actors: [c, L], cat: 'bond', mag: 8, text: ctx.pick([c.name + 'は、自分が前に出るより' + L.name + 'を支える方を選び、' + L.name + '派の参謀役に収まった。', c.name + 'は' + L.name + 'の右腕として、細かな段取りを引き受けるようになった。', c.name + 'は「トップは' + L.name + 'でいい」と言い、二番手の席に座った。']),
-          why: c.name + 'も主導性はある（' + Math.round(c.tr.lead * 100) + '）が、' + L.name + 'の求心力が上回った' + (c.tr.np + c.tr.ac > 1 ? '。NP・ACが高く、補佐に回るのが苦にならない' : '') });
+        tag(ctx.act2({ actors: [c, L], cat: 'bond', mag: 8, text: ctx.pick([c.name + 'は、自分が前に出るより' + L.name + 'を支える方を選び、' + L.name + '派の参謀役に収まった。', c.name + 'は' + L.name + 'の右腕として、細かな段取りを引き受けるようになった。', c.name + 'は「トップは' + L.name + 'でいい」と言い、二番手の席に座った。']),
+          why: c.name + 'も主導性はある（' + Math.round(c.tr.lead * 100) + '）が、' + L.name + 'の求心力が上回った' + (c.tr.np + c.tr.ac > 1 ? '。NP・ACが高く、補佐に回るのが苦にならない' : '') }), 'sub');
       });
     });
     Object.keys(f.of).forEach(function (k) {
       var i = +k, nowL = f.of[i], oldL = pof[i];
       if (oldL == null || oldL === nowL || i === nowL) return;
       var c = C[i];
-      ctx.act2({ actors: [c, C[oldL], C[nowL]], cat: 'betray', mag: 15, fx: function () { ctx.mod(C[oldL], c, { ten: 15, trust: -15 }); },
-        text: c.name + 'は' + C[oldL].name + 'のグループを抜けて、' + C[nowL].name + 'の側についた。', why: c.name + 'の' + C[nowL].name + 'への信頼（' + Math.round(R(ctx, c, C[nowL]).trust) + '）が上回った' });
+      tag(ctx.act2({ actors: [c, C[oldL], C[nowL]], cat: 'betray', mag: 15, fx: function () { ctx.mod(C[oldL], c, { ten: 15, trust: -15 }); },
+        text: c.name + 'は' + C[oldL].name + 'のグループを抜けて、' + C[nowL].name + 'の側についた。', why: c.name + 'の' + C[nowL].name + 'への信頼（' + Math.round(R(ctx, c, C[nowL]).trust) + '）が上回った' }), 'swap');
     });
     if (prev) prev.groups.forEach(function (g) {
       if (!f.groups.some(function (x) { return x.leader === g.leader; }) && C[g.leader].alive && !C[g.leader].out) {
-        ctx.act2({ actors: [C[g.leader]], cat: 'solo', text: C[g.leader].name + '派は、いつの間にか散り散りになっていた。', why: '求心力の低下' });
+        tag(ctx.act2({ actors: [C[g.leader]], cat: 'solo', text: C[g.leader].name + '派は、いつの間にか散り散りになっていた。', why: '求心力の低下' }), 'scatter');
       }
     });
     f.loners.forEach(function (i) {
-      if (pof[i] != null && C[i].alive) ctx.act2({ actors: [C[i]], cat: 'solo', text: C[i].name + 'は、どの輪にも属さなくなった。', why: '誰に対しても信頼が足りなかった／' + (C[i].tr.cold > 0.55 ? 'ドライさ' : '居場所のなさ') });
+      if (pof[i] != null && C[i].alive) tag(ctx.act2({ actors: [C[i]], cat: 'solo', text: C[i].name + 'は、どの輪にも属さなくなった。', why: '誰に対しても信頼が足りなかった／' + (C[i].tr.cold > 0.55 ? 'ドライさ' : '居場所のなさ') }), 'lone');
     });
     if (f.regime === 'dictator' && (!prev || prev.regime !== 'dictator')) {
       var D = C[f.groups[0].leader];
-      ctx.act2({ actors: [D], cat: 'conflict', mag: 20, text: D.name + 'の言葉が、そのまま' + place + 'の決まりになった。異を唱える者はほとんどいない。', why: f.reason });
+      tag(ctx.act2({ actors: [D], cat: 'conflict', mag: 20, text: D.name + 'の言葉が、そのまま' + place + 'の決まりになった。異を唱える者はほとんどいない。', why: f.reason }), 'dict');
     }
     if (prev && prev.regime === 'dictator' && f.regime !== 'dictator') {
-      ctx.say({ text: C[prev.groups[0].leader].name + 'の支配が崩れた。' });
+      tag(ctx.say({ text: C[prev.groups[0].leader].name + 'の支配が崩れた。' }), 'end');
     }
-    if (f.regime === 'none' && prev && prev.groups.length) ctx.say({ text: '派閥はなくなった。' + f.reason + '。' });
+    if (f.regime === 'none' && prev && prev.groups.length) tag(ctx.say({ text: '派閥はなくなった。' + f.reason + '。' }), 'end');
   }
 
   function clash(ctx, f) {
     var C = ctx.chars, A = C[f.groups[0].leader], B = C[f.groups[1].leader];
     var place = ctx.rng.pick(ctx.scen.id === 'island' ? ['水場と寝床の割り当て', '火の番の順番', '食料の分け方'] : ['席替えのやり方', '修学旅行の班決め', 'クラスTシャツのデザイン', '放課後の掃除当番']);
-    ctx.act2({ actors: [A, B], cat: 'conflict', fx: function () { ctx.mod2(A, B, { ten: 12, aff: -6 }, { ten: 12, aff: -6 }); },
-      text: place + 'を巡って、' + A.name + '派と' + B.name + '派が真っ二つに割れた。', why: '派閥の対立。双方の主導性' });
+    tag(ctx.act2({ actors: [A, B], cat: 'conflict', fx: function () { ctx.mod2(A, B, { ten: 12, aff: -6 }, { ten: 12, aff: -6 }); },
+      text: place + 'を巡って、' + A.name + '派と' + B.name + '派が真っ二つに割れた。', why: '派閥の対立。双方の主導性' }), 'clash');
     var mid = f.groups[1].members.concat(f.groups[0].members).map(function (i) { return C[i]; }).filter(function (c) { return c !== A && c !== B && c.tr.np > 0.6 && c.tr.ac > 0.5; })[0];
-    if (mid) ctx.act2({ actors: [mid], cat: 'help', fx: function () { ctx.mod(A, mid, { trust: 4 }); ctx.mod(B, mid, { trust: 4 }); ctx.stress(mid, 10); },
-      text: mid.name + 'が両方の顔を立てて、なんとか話をまとめた。本人はその夜、ひどく疲れた顔をしていた。', why: mid.name + 'のNP・AC（板挟み役）' });
+    if (mid) tag(ctx.act2({ actors: [mid], cat: 'help', fx: function () { ctx.mod(A, mid, { trust: 4 }); ctx.mod(B, mid, { trust: 4 }); ctx.stress(mid, 10); },
+      text: mid.name + 'が両方の顔を立てて、なんとか話をまとめた。本人はその夜、ひどく疲れた顔をしていた。', why: mid.name + 'のNP・AC（板挟み役）' }), 'clash');
   }
 
   /* 月日の流れ：出来事で、派閥の勢いが変わる（求心力＝メンバーからの信頼が動く） */
@@ -200,9 +312,9 @@
     var C = ctx.chars, T = TIDE[ctx.scen.id] || TIDE._;
     var g = ctx.rng.pick(f.groups), L = C[g.leader], up = ctx.rng() < 0.5 + (L.tr.np * 0.2 + L.tr.a * 0.15 - L.tr.cold * 0.15);
     var all = ctx.present();
-    ctx.act2({ actors: [L], cat: up ? 'bond' : 'conflict', mag: 12, fx: function () {
+    tag(ctx.act2({ actors: [L], cat: up ? 'bond' : 'conflict', mag: 12, fx: function () {
       all.forEach(function (o) { if (o !== L) ctx.mod(o, L, up ? { trust: g.members.indexOf(o.i) >= 0 ? 6 : 9, aff: 4 } : { trust: -12, aff: -6, ten: 6 }); });
-    }, text: L.name + 'は' + ctx.pick(up ? T.up : T.down) + '、' + (up ? L.name + '派の勢いが増した。様子見していた者たちの目も、' + L.name + 'に向き始めた。' : L.name + '派の求心力に陰りが見えた。'), why: '月日の流れで変わる力関係（' + L.name + 'の' + (up ? 'NP・A：人を惹きつけた' : 'ドライさ・判断ミス') + '）' });
+    }, text: L.name + 'は' + ctx.pick(up ? T.up : T.down) + '、' + (up ? L.name + '派の勢いが増した。様子見していた者たちの目も、' + L.name + 'に向き始めた。' : L.name + '派の求心力に陰りが見えた。'), why: '月日の流れで変わる力関係（' + L.name + 'の' + (up ? 'NP・A：人を惹きつけた' : 'ドライさ・判断ミス') + '）' }), 'tide');
   }
   /* 補佐の下克上：二番手の求心力がトップを上回ると、派閥の頭が入れ替わる */
   function coup(ctx, f) {
@@ -218,7 +330,7 @@
           mine.forEach(function (x) { ctx.mod(C[x], c, { trust: 10 }); ctx.mod(C[x], L, { trust: -10 }); });
           ctx.mod2(L, c, { ten: 25, trust: -25 }, { ten: 10 });
           c.flags.leader = true; L.flags.leader = false;
-          ctx.act2({ actors: [c, L], cat: 'betray', mag: 25, text: '気づけば、' + L.name + '派の皆が相談に行く相手は' + c.name + 'になっていた。' + c.name + 'は' + L.name + 'に代わって、派閥の先頭に立った。', why: '補佐の' + c.name + 'への信頼（' + Math.round(sC / mine.length) + '）が、' + L.name + 'への信頼（' + Math.round(sL / mine.length) + '）を上回った。' + c.name + 'のCP・主導性' });
+          tag(ctx.act2({ actors: [c, L], cat: 'betray', mag: 25, text: '気づけば、' + L.name + '派の皆が相談に行く相手は' + c.name + 'になっていた。' + c.name + 'は' + L.name + 'に代わって、派閥の先頭に立った。', why: '補佐の' + c.name + 'への信頼（' + Math.round(sC / mine.length) + '）が、' + L.name + 'への信頼（' + Math.round(sL / mine.length) + '）を上回った。' + c.name + 'のCP・主導性' }), 'coup');
         }
       });
     });
@@ -231,12 +343,61 @@
     var follower = f.groups[0].members.map(function (i) { return C[i]; }).filter(function (c) { return c !== D; });
     var doubter = follower.filter(function (c) { return c.tr.np > 0.6 && R(ctx, c, t).aff > 15; })[0];
     var island = ctx.scen.id === 'island';
-    ctx.act2({ actors: [D, t], cat: 'conflict', mag: 15, fx: function () { ctx.mod(t, D, { ten: 18, aff: -10 }); ctx.stress(t, 15); if (island) t.hp -= 6; follower.forEach(function (c) { ctx.mod(c, t, { aff: -4 }); }); },
+    tag(ctx.act2({ actors: [D, t], cat: 'conflict', mag: 15, fx: function () { ctx.mod(t, D, { ten: 18, aff: -10 }); ctx.stress(t, 15); if (island) t.hp -= 6; follower.forEach(function (c) { ctx.mod(c, t, { aff: -4 }); }); },
       text: island ? D.name + 'は、従わない' + t.name + 'の配給を減らすと決めた。誰も反対しなかった。' : D.name + 'のひと言で、クラスの誰も' + t.name + 'に話しかけなくなった。',
-      why: D.name + 'の独裁。' + t.name + 'は輪の外にいた' });
-    if (doubter) ctx.act2({ actors: [doubter, t, D], cat: 'help', fx: function () { ctx.mod(t, doubter, { aff: 14, trust: 14 }); ctx.mod(D, doubter, { ten: 8 }); },
-      text: doubter.name + 'だけが、こっそり' + t.name + 'に' + (island ? '自分の分の魚を半分' : 'ノートを貸していた') + '。', why: doubter.name + 'のNP。' + D.name + '派にいながら' });
+      why: D.name + 'の独裁。' + t.name + 'は輪の外にいた' }), 'purge');
+    if (doubter) tag(ctx.act2({ actors: [doubter, t, D], cat: 'help', fx: function () { ctx.mod(t, doubter, { aff: 14, trust: 14 }); ctx.mod(D, doubter, { ten: 8 }); },
+      text: doubter.name + 'だけが、こっそり' + t.name + 'に' + (island ? '自分の分の魚を半分' : 'ノートを貸していた') + '。', why: doubter.name + 'のNP。' + D.name + '派にいながら' }), 'purge');
   }
+
+  /* ---------- 時系列で畳む（表示だけ。記録・結果は変えない） ----------
+     似た派閥の出来事が続いて時系列が埋まらないように、view.js の時系列が畳む出来事の番号の表 { n: 1 } を返す。
+     ・派閥の顔ぶれの動き（結成・補佐・鞍替え・離脱・解散・リーダー交代）：前に見せた区切りから3区切りたつまでは畳む。
+       一人の鞍替え・離脱だけの小さな動き（結成・解散・補佐を含まない）は畳む（最初の派閥ができた区切りは全部見せる）
+     ・対立と勢いの出来事（真っ二つに割れた・勢いが増した／陰った）：3区切りに1回まで
+     ・同じ人の鞍替えは2回まで（3回目からは畳む）
+     ・独裁・下克上・粛清・支配の崩壊はいつも見せる
+     印 e.fac（その場で回した結果だけに付く）が無いとき（セーブを開いたときなど）は、文の形で見分ける */
+  var KIND_RE = [['form', /を中心に、.*がまとまり始めた。|がひとつにまとまった。.*として動いていく/], ['sub', /参謀役に収まった|の右腕として、細かな段取り|二番手の席に座った/], ['swap', /のグループを抜けて、.*の側についた/],
+    ['scatter', /派は、いつの間にか散り散りになっていた|派閥の形を保てなくなった/], ['lone', /は、どの輪にも属さなくなった/], ['lead', /が代わって仲間たちをまとめる/],
+    ['clash', /派が真っ二つに割れた|が両方の顔を立てて/], ['tide', /派の勢いが増した|派の求心力に陰りが見えた/]];
+  var FAM = { form: 'chg', sub: 'chg', swap: 'chg', scatter: 'chg', lone: 'chg', lead: 'chg', clash: 'flv', tide: 'flv' };
+  F.kindOf = function (e) {
+    if (!e) return null;
+    if (e.fac) return e.fac;
+    if (e.kind !== 'event' || !e.text) return null;
+    for (var i = 0; i < KIND_RE.length; i++) if (KIND_RE[i][1].test(e.text)) return KIND_RE[i][0];
+    return null;
+  };
+  F.foldSet = function (res) {
+    if (!res || !res.factions || !res.log) return null;
+    var by = {}, steps = [];
+    res.log.forEach(function (e) {
+      var k = F.kindOf(e);
+      if (!k || !FAM[k]) return;
+      if (!by[e.step]) { by[e.step] = []; steps.push(e.step); }
+      by[e.step].push({ e: e, k: k });
+    });
+    var fold = {}, last = { chg: null, flv: null }, swaps = {}, n = 0;
+    steps.forEach(function (st) {
+      var L = by[st], chg = L.filter(function (x) { return FAM[x.k] === 'chg'; }), flv = L.filter(function (x) { return FAM[x.k] === 'flv'; });
+      if (chg.length) {
+        var first = last.chg == null, big = chg.some(function (x) { return x.k === 'form' || x.k === 'scatter' || x.k === 'sub' || x.k === 'lead'; }) || chg.filter(function (x) { return x.k === 'swap' || x.k === 'lone'; }).length > 1;
+        var show = first || (big && st - last.chg >= 3);
+        chg.forEach(function (x) {
+          var hide = !show;
+          if (x.k === 'swap') { var a = x.e.actors[0]; swaps[a] = (swaps[a] || 0) + 1; if (swaps[a] > 2) hide = true; }
+          if (hide) { fold[x.e.n] = 1; n++; }
+        });
+        if (show) last.chg = st;
+      }
+      if (flv.length) {
+        if (last.flv != null && st - last.flv < 3) flv.forEach(function (x) { fold[x.e.n] = 1; n++; });
+        else last.flv = st;
+      }
+    });
+    return n ? fold : null;
+  };
 
   /* 住人ごとの所属まとめ */
   F.noteFor = function (ctx, c) {
