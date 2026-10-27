@@ -371,27 +371,30 @@
 
   /* ---------- 欄（portable.js の html が差し込む） ---------- */
   function statusText() {
-    if (!dir) return errMsg || 'まだフォルダを選んでいません。';
+    if (!dir) return errMsg || 'まだ選んでいません';
     var nm = '〈' + esc(dirName) + '〉';
-    if (st === 'perm') return nm + (armed ? '：ページを操作すると、使う許可を確かめます' : denies() >= DENY_MAX && !document.getElementById('sfbar') ? '：許可されなかったので、今回は使いません（下の［許可する］で使えます）' : '：使うには許可が要ります（画面の上の［許可］か、下の［許可する］）');
+    if (st === 'perm') return nm + (armed ? '：ページを操作すると、使う許可を確かめます' : denies() >= DENY_MAX && !document.getElementById('sfbar') ? '：許可されなかったので、今回は使いません（［許可する］で使えます）' : '：使うには許可が要ります（画面の上の［許可］か、［許可する］）');
     if (st === 'hold') return nm + '：フォルダの住人のほうが新しいので、住人の書き込みを止めています（画面の上の知らせから選んでください）';
     if (st === 'err') return nm + '：書き込めませんでした（' + esc(errMsg) + '）。次に住人が変わったときに、もう一度書きます';
     if (st === 'busy') return nm + 'から読み込んでいます…';
     return nm + 'に保存しています' + (lastAt ? '（最後に書いた時刻 ' + hm(lastAt) + '）' : '') + (memOnly ? '。このブラウザでは選んだフォルダを覚えられないので、次に開いたときはもう一度選んでください' : '');
   }
+  /* 「データ」ダイアログの「保存フォルダ」のタブ（ui-cast-tools.js）：状態の行1本（状態・ボタン・？）。説明の長文は「？」で開く */
+  var helpOpen = false;
   function html() {
-    /* 見出し（保存フォルダ）は portable.js の折りたたみ（.sfdet）の summary に置く */
     var h = '<div class="sfold" id="sfold">';
-    if (!CAN) return h + '<p class="hint sfna">このブラウザでは使えません（PC の Chrome／Edge で使えます）</p></div>';
-    return h + '<p class="hint" style="margin:2px 0 6px">選んだフォルダに、住人・関係が変わるたびに state.json、セーブは saves フォルダ、履歴は history フォルダに書き込みます（どれも「まるごと読み込む」で読めるファイルです）。ブラウザのデータが消えても、フォルダから戻せます。' + esc(ALWAYS) + '</p>' +
-      '<p class="hint" id="sf-stat" aria-live="polite" style="margin:0 0 6px">' + statusText() + '</p>' +
-      '<div class="row" style="flex-wrap:wrap;gap:6px">' +
-      '<button class="btn small" data-sf="pick">' + (dir ? 'フォルダを選び直す' : 'フォルダを選ぶ') + '</button>' +
+    if (!CAN) return h + '<p class="hint sfna">このブラウザでは使えません（PC の Chrome／Edge で使えます）。別の端末へは「まるごと」のタブから移せます。</p></div>';
+    return h + '<div class="sfrow"><span class="sfstat" id="sf-stat" aria-live="polite">' + statusText() + '</span>' +
+      '<span class="sfacts"><button class="btn small' + (dir ? '' : ' primary') + '" data-sf="pick">' + (dir ? 'フォルダを選び直す' : 'フォルダを選ぶ') + '</button>' +
       (dir && st === 'perm' ? '<button class="btn small primary" data-sf="allow">許可する</button>' : '') +
-      (dir ? '<button class="btn small" data-sf="read">フォルダから読み込む</button><button class="btn small ghost" data-sf="forget">使うのをやめる</button>' : '') +
-      '</div>' + (dir ? '<p class="hint" style="margin:4px 0 0">「フォルダから読み込む」は、上の「読み込み方」（足す／置き換える）で取り込みます。</p>' : '') + '</div>';
+      (dir ? '<button class="btn small ghost" data-sf="forget">使うのをやめる</button>' : '') +
+      '<button type="button" class="tipbtn" data-sf="help" aria-expanded="' + helpOpen + '" aria-controls="sf-help" aria-label="保存フォルダの説明" title="説明">？</button></span></div>' +
+      (dir ? '<div class="ctblk"><div class="ctrow"><button class="btn small" data-sf="read">フォルダから読み込む</button>' + (HK.Portable && HK.Portable.modeHtml ? HK.Portable.modeHtml() : '') + '</div><p class="ctdesc">ブラウザのデータが消えたときなどに、フォルダの中身から戻します。</p></div>' : '') +
+      '<p class="hint sfhelp" id="sf-help"' + (helpOpen ? '' : ' hidden') + '>PC の Chrome／Edge で使えます。選んだフォルダに、住人・関係が変わるたびに state.json、セーブは saves フォルダ、履歴は history フォルダに書き込みます（どれも「まるごと読み込む」で読めるファイルです）。ブラウザのデータが消えても、フォルダから戻せます。' + esc(ALWAYS) + '</p></div>';
   }
   function paint() {
+    /* 住人タブの「データ」の印（確認が要るとき） */
+    if (HK.CastTools && HK.CastTools.mark) HK.CastTools.mark();
     var el = document.getElementById('sfold');
     if (!el) return;
     var tmp = document.createElement('div'); tmp.innerHTML = html();
@@ -399,7 +402,8 @@
   }
   (function style() {
     var s = document.createElement('style');
-    s.textContent = '.sfold{margin-top:6px}.sfold .sfna{opacity:.7;margin:2px 0 0}' +
+    s.textContent = '.sfold{display:flex;flex-direction:column;gap:14px;min-width:0}.sfold .sfna{opacity:.7;margin:0}.sfrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r,4px)}' +
+      '.sfstat{flex:1 1 220px;min-width:0;font-size:13px;line-height:1.6}.sfacts{display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center}.sfhelp{margin:0;font-size:12px}.sfhelp[hidden]{display:none}' +
       '.sfbar{margin:8px 0 12px;padding:10px 12px;border:1px solid var(--accent);border-radius:var(--r,8px);background:var(--accent-soft,var(--surface));color:var(--ink);line-height:1.6;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}.sfbar span{flex:1 1 260px;min-width:0}';
     (document.head || document.documentElement).appendChild(s);
   })();
@@ -415,6 +419,7 @@
       else if (k === 'readadd') readFolder('add');
       else if (k === 'keep') keepBrowser();
       else if (k === 'forget') forget();
+      else if (k === 'help') { helpOpen = !helpOpen; paint(); var hb = document.querySelector('[data-sf="help"]'); if (hb) hb.focus(); }
       return;
     }
     /* セーブの保存・削除（saves.js の中の関数なので、ボタンの操作のあとで今のセーブと比べる） */

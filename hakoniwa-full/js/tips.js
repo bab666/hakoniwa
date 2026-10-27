@@ -8,7 +8,9 @@
   HK.TIPS_SCEN = HK.TIPS_SCEN || {};
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   /* **太字** と `コード` だけ使える */
-  function md(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>'); }
+  /* 文中の「⚙️」（住人ごとの設定のボタン）は、線画の歯車の SVG にする（絵文字は使わない） */
+  var GEAR = '<svg class="ic-gear" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M6.8 3.1L7.0 1.4L9.0 1.4L9.2 3.1L10.6 3.7L12.0 2.6L13.4 4.0L12.3 5.4L12.9 6.8L14.6 7.0L14.6 9.0L12.9 9.2L12.3 10.6L13.4 12.0L12.0 13.4L10.6 12.3L9.2 12.9L9.0 14.6L7.0 14.6L6.8 12.9L5.4 12.3L4.0 13.4L2.6 12.0L3.7 10.6L3.1 9.2L1.4 9.0L1.4 7.0L3.1 6.8L3.7 5.4L2.6 4.0L4.0 2.6L5.4 3.7Z"/><circle cx="8" cy="8" r="2.1"/></g></svg>';
+  function md(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\u2699\uFE0F?/g, GEAR); }
 
   HK.TIPS = {
     'cast-import': {
@@ -71,7 +73,7 @@
         { h: 'PCで作った設定をスマホで読む', items: [
           '1. PCで「まるごと書き出し」を押します。住人・関係・環境値・箱庭ごとの設定・セーブ・履歴・控え・高度設定の辞書・住人ごとの語尾や口調の辞書まで、このブラウザに保存しているものがすべて「hakoniwa-全部-日付.json」という1つのファイルになります。',
           '2. そのファイルを、LINE（自分だけのトークやKeepメモ）・メール・Google ドライブ・iCloud Drive などでスマホへ送ります。',
-          '3. スマホで箱庭を開き、住人タブの「まるごと読み込む」を押して、受け取ったファイルを選びます（LINEやメールで受け取ったときは、先に「ファイルに保存」してから選ぶと見つけやすくなります）。',
+          '3. スマホで箱庭を開き、住人タブの「データ」→「まるごと」の「まるごと読み込む」を押して、受け取ったファイルを選びます（LINEやメールで受け取ったときは、先に「ファイルに保存」してから選ぶと見つけやすくなります）。',
           '4. 読み込み方は、はじめて移すなら「置き換える」、スマホにある住人やセーブも残したいなら「足す」を選んでから押してください。',
           'スマホからPCへ送るときは、スマホで「共有（LINE・メールなど）」を押すと、送り先のアプリを選べます。共有が使えない端末やPCでは、ふつうのダウンロードになります。'
         ] },
@@ -86,7 +88,7 @@
         ] },
         { h: '保存フォルダ（PC の Chrome／Edge）', items: [
           '「フォルダを選ぶ」でパソコンのフォルダを選ぶと、住人・関係が変わるたびに **state.json**、セーブは **saves** フォルダ、履歴は **history** フォルダに、自動で書き込みます。どれも「まるごと書き出し」と同じ形のファイルなので、「まるごと読み込む」でも読めます。',
-          'ブラウザのデータを消してしまったときは、もう一度同じフォルダを選ぶと「フォルダの住人のほうが新しいです」と出るので、「読み込む」で戻せます。「フォルダから読み込む」は、上の「読み込み方」（足す／置き換える）で取り込みます。',
+          'ブラウザのデータを消してしまったときは、もう一度同じフォルダを選ぶと「フォルダの住人のほうが新しいです」と出るので、「読み込む」で戻せます。「フォルダから読み込む」は、その横の読み込み方（足す／置き換える）で取り込みます。',
           '次に開いたときは、画面の上の「保存フォルダを使う［許可］」を押すと続きから書き込みます（ブラウザが「毎回許可する」にしていれば、そのまま使います）。',
           'クラウドのフォルダ（OneDrive・Google ドライブ・Dropbox など）を選べば、そのままバックアップにもなります。スマホのブラウザや Safari・Firefox では使えません（「まるごと書き出し」を使ってください）。'
         ] },
@@ -111,14 +113,14 @@
           'アイコンは関係図・経過・結果画像に表示されます。',
           '「質問に答えて診断して追加」は、25問に答えてエゴグラムを出し、そのまま住人にできます。',
           '「ランダムで1人追加」は、名前・性別・エゴグラム・口調・年齢・職業（メモに書きます）・体格・身長・種族' + (HK.SAFE_BUILD ? '' : '（R18版は夜の性格も）') + 'を乱数で決めた住人を足します。名前は和風・洋風・モブ風（合コンなどのモブの名前。メモに「モブ風」）から選べます。足したあとで自由に直せます。',
-          '「登録順に戻す」で、並び替える前の、住人を足した順に戻せます（ドラッグやグループ順で並べ替えたあとでも戻せます）。'
+          '一覧の上の「並び」で、登録順・グループ順・名前順に並べ替えられます。「登録順」は、並び替える前の、住人を足した順です（ドラッグやグループ順で並べ替えたあとでも戻せます）。'
         ] },
         { h: 'グループ', items: [
           'メモの左の欄で、住人にグループ（作品名・チーム名など、20文字まで）をつけられます。一度使った名前は候補に出ます。',
-          '「グループ順に並べる」で、グループ名の順にまとめて並べ替えます（グループなしは最後。グループ内の順番はそのまま）。',
+          '「並び」の「グループ順」で、グループ名の順にまとめて並べ替えます（グループなしは最後。グループ内の順番はそのまま）。グループの見出しの「名前を変更」でグループ名をまとめて変えられ、「このグループを箱庭に入れる」でそのグループの住人を参加に加えられます。',
           '箱庭タブでは「グループで選ぶ」から、そのグループだけを参加させたり、＋で参加に加えたりできます。',
           '読点（、）かカンマで区切ると、一人を複数のグループに入れられます（例：`生徒会、2年A組`）。「グループで選ぶ」・関係の「まとめて読み込む」・仲間とみなすグループは、どのグループからも効きます。',
-          '「グループで絞り込む」で、住人の一覧に出す人をグループで絞れます（「〇〇だけ」「グループなしだけ」）。グループの札を押すと、そのグループの表示・非表示を一つずつ切り替えられます。表示だけの切り替えで、保存・書き出し・箱庭の参加者選びは全員のままです。'
+          '一覧の上のグループのチップ（件数つき）で、住人の一覧に出す人をグループで絞れます。「すべて」のときにグループを押すとそのグループだけになり、続けて押すと足したり外したりできます。表示だけの切り替えで、保存・書き出し・箱庭の参加者選びは全員のままです。'
         ] }
       ]
     },
@@ -484,7 +486,8 @@
     return h;
   }
 
-  var css = '.tipbtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:13px;font-weight:700;line-height:1;cursor:pointer;padding:0;margin-left:6px;vertical-align:2px;font-family:inherit}' +
+  var css = '.ic-gear{display:inline-block;width:1em;height:1em;vertical-align:-.15em}' +
+    '.tipbtn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:1px solid var(--line-2,var(--line));background:var(--surface);color:var(--muted);font-size:13px;font-weight:700;line-height:1;cursor:pointer;padding:0;margin-left:6px;vertical-align:2px;font-family:inherit}' +
     '.tipbtn:hover,.tipbtn:focus-visible{color:var(--accent);border-color:var(--accent)}' +
     '.tipul code{font-size:12px;padding:1px 5px;border-radius:4px;background:color-mix(in srgb,var(--ink) 7%,transparent);white-space:pre-wrap}.tiplead{font-size:14px;line-height:1.7;margin:6px 0 0}.tipul{margin:0;padding-left:1.2em;font-size:13px;line-height:1.75}.tipul li{margin:3px 0}' +
     '.tipscen{display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:3px 10px 3px 4px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);font-size:11.5px;font-family:inherit;line-height:1.4;cursor:pointer}' +

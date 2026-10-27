@@ -1,4 +1,6 @@
 /* 箱庭シミュレーター: スマホ幅（600px以下）向けの調整
+   ・箱庭タブの「箱庭を動かす」の帯（.runbar）を画面の下に固定する（高さ 44px のボタン。箱庭タブを見ているあいだだけ。
+     帯が出ているあいだは html に hk-runfix を付け、本文の下・知らせ（.toast）・読み込み失敗の帯（#loadfail）・上へ／下へのボタン（#pagejump）を帯の上へ逃がす）
    ・結果の表（二人の状態・みんなの状態 など）を、住人ごとのカードに組み替える（列の見出しを各欄の上に出す）
    ・箱庭タブの参加表（住人ごとの初動と目標）は欄が多いので、カードにせず表のまま（横スクロール・先頭2列と見出しの固定）にして、高さを抑え、横にスクロールできることを小さく知らせる
    ・タブ・設定の窓・シード欄・結果の札などが画面からはみ出さないようにする */
@@ -6,8 +8,8 @@
   'use strict';
   var css = '@media (max-width:600px){' +
     /* タブ：等幅3分割＋セーブのアイコンにする整形は index.html の CSS（2026-10-27） */
-    /* 見出しは少し小さく */
-    'html body h2.sec{font-size:18px}html body details.fold>summary{padding-top:22px}' +
+    /* 見出しは少し小さく、節の間隔は 32px（PC は 48px） */
+    'html body h2.sec{font-size:16px;margin-top:32px}html body h2.sec:first-child{margin-top:0}html body details.fold>summary{padding-top:32px}html body details.fold:first-child>summary{padding-top:0}' +
     /* 箱庭タブの参加表：表の形のまま、高さを画面の6割ほどに（index.html の横スクロール・先頭2列と見出しの固定はそのまま） */
     'html body #view-box .tblwrap{max-height:60vh}html body #view-box .tblhint{display:block}' +
     /* 結果の住人ごとの表 → カード */
@@ -27,6 +29,14 @@
     'html{overflow-anchor:none}' +
     /* シード */
     'html body .runbar{gap:8px 10px;padding:12px}html body .runbar input{width:9em;flex:1 1 9em}' +
+    /* 「箱庭を動かす」の帯を下に固定（紙の地に上の罫線、ボタンは藍の塗りで高さ 44px。説明の一文は帯では省く。--runfix-h は帯の高さ） */
+    'html.hk-runfix{--runfix-h:calc(61px + env(safe-area-inset-bottom,0px))}' +
+    'html.hk-runfix body{padding-bottom:var(--runfix-h)}' +
+    'html body #view-box>.runbar{position:fixed;left:0;right:0;bottom:0;z-index:15;margin:0;border-radius:0;flex-wrap:nowrap;gap:8px;min-height:var(--runfix-h,61px);padding:8px max(16px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--paper);color:var(--ink);border-top:1px solid var(--line)}' +
+    'html body #view-box>.runbar label{flex:none;font-size:12px;color:var(--muted)}html body #view-box>.runbar .hint,html body #view-box>.runbar .spacer{display:none}' +
+    'html body #view-box>.runbar input[type=text]{flex:1 1 auto;width:auto;min-width:0;min-height:44px;background:var(--paper);color:var(--ink);border-color:var(--line)}html body #view-box>.runbar input[type=text]::placeholder{color:var(--muted);opacity:1}html body #view-box>.runbar input[type=text]:focus{outline-color:var(--ink);border-color:var(--ink)}' +
+    'html body #view-box>.runbar .btn.primary{flex:none;min-height:44px;padding:0 18px;background:var(--ink);color:var(--paper);border-color:var(--ink)}html body #view-box>.runbar .btn:focus-visible{outline-color:var(--ink)}' +
+    'html.hk-runfix .toast{bottom:calc(var(--runfix-h) + 12px)}html.hk-runfix #loadfail{bottom:calc(var(--runfix-h) + 12px)}html.hk-runfix #pagejump{bottom:calc(var(--runfix-h) + 12px)}' +
     /* 結果の札・関係図 */
     'html body span.chip{white-space:normal;max-width:100%}html body .tray svg{min-width:440px}' +
     /* 設定の窓 */
@@ -58,14 +68,21 @@
       w.parentNode.insertBefore(p, w);
     });
   }
-  /* 箱庭タブ（初動と目標の表）と結果タブ（二人の状態などの表）の両方を見張る */
+  /* 「箱庭を動かす」の帯を下に固定しているか（箱庭タブを見ていて、帯がある）。html の hk-runfix で、本文の下の余白と、知らせ・ボタンの位置を帯の上へ */
+  var root = document.documentElement;
+  function runfix(host) {
+    var on = !!host && !host.hidden && !!host.querySelector(':scope>.runbar');
+    if (root.classList.contains('hk-runfix') !== on) root.classList.toggle('hk-runfix', on);
+  }
+  /* 箱庭タブ（初動と目標の表）と結果タブ（二人の状態などの表）の両方を見張る。箱庭タブは、タブの切り替え（hidden）も見る */
   function init() {
     ['view-box', 'view-result'].forEach(function (id) {
       var host = document.getElementById(id);
       if (!host) return;
-      var run = function () { label(host); if (id === 'view-box') hint(host); };
+      var run = function () { label(host); if (id === 'view-box') { hint(host); runfix(host); } };
       run();
       if (typeof MutationObserver !== 'undefined') new MutationObserver(run).observe(host, { childList: true, subtree: true });
+      if (id === 'view-box' && typeof MutationObserver !== 'undefined') new MutationObserver(function () { runfix(host); }).observe(host, { attributes: true, attributeFilter: ['hidden'] });
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

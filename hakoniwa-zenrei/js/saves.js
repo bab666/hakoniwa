@@ -117,7 +117,7 @@
       if (!ok) { toast('保存できませんでした（ブラウザの保存領域がいっぱいかもしれません。古いセーブを消すか、JSONで書き出してください）'); return; }
       cache = null;
       toast('セーブしました（「セーブ」タブで見られます）');
-      var b = document.getElementById('savebtn'); if (b) { b.textContent = '✓ セーブ済み'; b.disabled = true; }
+      var b = document.getElementById('savebtn'); if (b) { b.innerHTML = IC_DONE + 'セーブ済み'; b.disabled = true; }
     });
   }
 
@@ -228,8 +228,10 @@
     }
   });
 
-  /* 「経過と結末」に置くボタン */
-  function button() { return '<div class="row savebar"><button class="btn" id="savebtn" data-act="saveres">💾 この結果をセーブ</button><button class="btn ghost small" data-act="saveresjson" title="ブラウザに保存せず、この結果をそのままJSONファイルに書き出す">JSONで書き出す</button><button class="btn ghost small" data-tab="saves">セーブデータを見る</button></div>'; }
+  /* 「経過と結末」に置くボタン。絵は絵文字を使わず線画の SVG（ヘッダーの「セーブ」と同じ形／セーブ済みはチェック） */
+  var IC_SAVE = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2.5h7.5L12 5v6.5H2z M4.5 2.5v3h4v-3 M4 11.5V8h6v3.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+  var IC_DONE = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function button() { return '<div class="row savebar"><button class="btn" id="savebtn" data-act="saveres">' + IC_SAVE + 'この結果をセーブ</button><button class="btn ghost small" data-act="saveresjson" title="ブラウザに保存せず、この結果をそのままJSONファイルに書き出す">JSONで書き出す</button><button class="btn ghost small" data-tab="saves">セーブデータを見る</button></div>'; }
 
   HK.Saves = { render: render, button: button, save: save, all: all, importText: importText, put: put, clear: clear, DB: DB, STORE: ST, LS: LS };
 

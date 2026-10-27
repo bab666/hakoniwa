@@ -151,17 +151,19 @@
   }
 
   /* ---------- 住人の一覧（ui.js の renderCast が差し込む） ---------- */
+  /* グループの見出し：折りたたみの矢印・グループ名・人数（Mono）・注記・「仲間とみなす」・右端に「このグループを箱庭に入れる」「名前を変更」（ui-cast-tools.js の grpTools） */
+  var ARROW = '<svg width="10" height="6" viewBox="0 0 10 6" aria-hidden="true" focusable="false"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
   function castHead(s, n, v, no) {
     if (v.q && !s.show.length) return '';
-    var name = s.g || 'グループなし', open = s.open || !!v.q, notes = [];
+    var name = s.g || 'グループなし', open = s.open || !!v.q, notes = [], CT = HK.CastTools;
     if (s.multi) notes.push('うち' + s.multi + '人はほかのグループにも');
     if (s.also) notes.push('ほかのグループの節にも' + s.also + '人');
     if (!open) notes.push('折りたたみ中');
     var go = '';
     if (open && s.show.length && !n && v.paged) { var at = Math.floor(v.flat.indexOf(s.show[0]) / v.size); go = '<button type="button" class="btn small ghost" data-act="cppage" data-p="' + at + '" title="このグループの住人が出ているページへ">' + (at + 1) + 'ページ目へ</button>'; }
-    var tg = v.q ? '' : '<button type="button" class="btn small ghost" id="cgt-' + no + '" data-act="cpfold" data-g="' + esc(s.key) + '" aria-label="' + esc(name) + 'を' + (open ? '折りたたむ' : '開く') + '">' + (open ? '折りたたむ' : '開く') + '</button>';
-    return '<div class="cgrp" data-g="' + esc(s.key) + '"><button type="button" class="cgfold" id="cgf-' + no + '" data-act="cpfold" data-g="' + esc(s.key) + '" aria-expanded="' + open + '"' + (v.q ? ' disabled title="探しているあいだは、一致した人をどのグループでも出します"' : '') + '><span aria-hidden="true">' + (open ? '▾' : '▸') + '</span> ' + esc(name) + '</button>' +
-      '<span class="cgn">' + (v.q ? s.show.length + '人が一致／' : '') + s.list.length + '人</span>' + (notes.length ? '<span class="cgnote">' + esc(notes.join('・')) + '</span>' : '') + '<span class="cgsp"></span>' + go + tg + '</div>';
+    return '<div class="cgrp" data-g="' + esc(s.key) + '"><button type="button" class="cgfold" id="cgf-' + no + '" data-act="cpfold" data-g="' + esc(s.key) + '" aria-expanded="' + open + '" aria-label="' + esc(name) + 'を' + (open ? '折りたたむ' : '開く') + '"' + (v.q ? ' disabled title="探しているあいだは、一致した人をどのグループでも出します"' : '') + '>' + ARROW + '<span>' + esc(name) + '</span></button>' +
+      '<span class="cgn">' + (v.q ? s.show.length + ' / ' : '') + s.list.length + '</span>' + (notes.length ? '<span class="cgnote">' + esc(notes.join('・')) + '</span>' : '') +
+      (s.g && CT ? CT.grpTools(s.g).replace('<span class="cgsp"></span>', '<span class="cgsp"></span>' + go) : '<span class="cgsp"></span>' + go) + '</div>';
   }
   /* 仮の枠を住人の行に入れ替える（描き直しが続いたら、古い分は捨てる） */
   var SYNC = 6, fillGen = 0;
@@ -189,7 +191,8 @@
     if (b && lastTieRow && b.querySelector('p.hint') && !b.querySelector('.tierow')) { tieGen++; b.innerHTML = tieBody(castView()); after(b); }
   }
   function castHtml() { var p = castParts(); return '<div id="castpages">' + p.tools + '<div id="castbody">' + p.body + '</div></div>'; }
-  function castParts() {
+  /* bodyOnly：一覧だけ描き直すとき（ページ送り・折りたたみ・探す）は道具の行を組み立てない */
+  function castParts(bodyOnly) {
     var S = X.S(), v = castView(), on = {}, many = S.chars.length > SIZES[0], body = '', n = 0, later = [];
     v.onPage.forEach(function (i) { on[i] = 1; });
     var TG = allTags(), sel = st.tagSel;
@@ -199,10 +202,14 @@
     var tagRow = TG.list.length ? '<div class="row cptools cptags"><span class="hint">タグで絞り込む：</span>' + TG.list.map(function (t) { var on = !!sel[t]; return '<button type="button" class="chip" data-act="cptag" data-t="' + esc(t) + '" aria-pressed="' + on + '" title="' + esc(t) + 'のタグを持つ住人' + (on ? 'の絞り込みをやめる' : 'だけを出す（いくつも選ぶと、すべてを持つ人）') + '">' + esc(t) + '（' + TG.n[t] + '）</button>'; }).join('') +
       (Object.keys(sel).length ? '<button type="button" class="btn small ghost" data-act="cptagclear">タグの絞り込みをやめる</button>' : '') + '</div>' : '';
     var dl = '<datalist id="taglist">' + TG.list.map(function (t) { return '<option value="' + esc(t) + '">'; }).join('') + '</datalist>';
-    var tools = dl + (many || v.grouped ? '<div class="row cptools">' +
-      (many ? '<input type="search" id="cpq" value="' + esc(st.q) + '" placeholder="名前・メモ・グループ・タグで探す" aria-label="住人を名前・メモ・グループ・タグで探す" autocomplete="off" enterkeyhint="search">' : '') +
-      (v.grouped ? '<button type="button" class="btn small" data-act="cpfoldall">すべて折りたたむ</button><button type="button" class="btn small" data-act="cpopenall">すべて開く</button>' : '') +
-      (many ? '<label class="hint">1ページに <select id="cpsize" aria-label="1ページに出す住人の数">' + SIZES.map(function (n) { return '<option value="' + n + '"' + (n === V.size ? ' selected' : '') + '>' + n + '人</option>'; }).join('') + '</select></label>' : '') + '</div>' : '') + tagRow;
+    /* ツールバー（1本）：探す｜グループの件数つきチップ｜並び｜すべて折りたたむ・すべて開く＋「50 人 / 頁」（チップと並びは ui-cast-tools.js） */
+    var CT = HK.CastTools;
+    var tools = bodyOnly ? '' : dl + (S.chars.length > 1 ? '<div class="ctbar cptools" role="group" aria-label="住人の一覧の表示">' +
+      '<input type="search" id="cpq" value="' + esc(st.q) + '" placeholder="名前・メモ・グループ・タグで探す" aria-label="住人を名前・メモ・グループ・タグで探す" autocomplete="off" enterkeyhint="search">' +
+      (CT ? CT.chips() + CT.sortSel() : '') +
+      (v.grouped || many ? '<span class="ctview">' + (v.grouped && CT ? CT.foldBtns() : '') +
+        (many ? '<select id="cpsize" aria-label="1ページに出す住人の数">' + SIZES.map(function (n) { return '<option value="' + n + '"' + (n === V.size ? ' selected' : '') + '>' + n + ' 人 / 頁</option>'; }).join('') + '</select>' : '') + '</span>' : '') +
+      '</div>' : '') + tagRow;
     v.secs.forEach(function (s, no) {
       var rows = (v.q || s.open) ? s.show.filter(function (i) { return on[i]; }) : [];
       if (v.grouped) body += castHead(s, rows.length, v, no);
@@ -225,7 +232,7 @@
     var b = document.getElementById('castbody'), T = X.S().ties || [], v = castView();
     var big = !!T.length && (v.paged || T.length > TIE_PAGE);
     if (!b || big !== !!document.getElementById('tiepages') || (big && v.paged !== !!document.getElementById('tmode'))) { castRedraw(); return; }
-    var p = castParts();
+    var p = castParts(true);
     b.innerHTML = p.body;
     after(b);
     var tb = document.getElementById('tiebody');
@@ -592,6 +599,8 @@
     bind: function (ctx) { X = ctx; },
     castHtml: castHtml, tieHtml: tieHtml, typeOpt: typeOpt, lazyAttr: lazyAttr, LAZY_MIN: FIND_MIN, boxTools: boxTools, boxRows: boxRows, after: after,
     reveal: reveal, revealTie: revealTie, step: step,
+    /* グループの名前を変えたとき（ui-cast-tools.js）：節の折りたたみの鍵も移す */
+    renameGroup: function (o, n) { [V.fold, V.bfold].forEach(function (m) { var a = 'g:' + o, b = 'g:' + n; if (a in m) { if (!(b in m)) m[b] = m[a]; delete m[a]; } }); keep(); },
     /* 並び替え・絞り込みを変えたとき：住人の一覧の1ページ目へ */
     top: function () { st.page = 0; },
     /* 点検・試験用 */

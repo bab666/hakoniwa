@@ -687,28 +687,31 @@
     });
   }
 
-  /* ---------- 画面（住人タブ。ui.js の renderCast が html() を差し込む） ---------- */
-  function html() {
+  /* ---------- 画面（住人タブの「データ」ダイアログの「まるごと（別の端末へ）」。ui-cast-tools.js が html() を差し込む） ----------
+     各まとまりはボタン1行＋説明1行。読み込み方のラジオは「まるごと読み込む」の横（保存フォルダのタブの「フォルダから読み込む」も同じ読み込み方。modeHtml） */
+  function modeHtml() {
     var q = function (v, l) { return '<label class="ptmode"><input type="radio" name="ptmode" value="' + v + '"' + (mode === v ? ' checked' : '') + '> ' + l + '</label>'; };
-    return '<div class="portable" id="portable">' +
-      /* 見出しは「書き出し・読み込み（JSON・名簿）」と同じ段（.cgh。ui-import.js） */
-      '<h3 class="pthead cgh">別の端末へ移す' + (HK.Tips ? HK.Tips.btn('portable') : '') + '<span class="sub">PC→スマホなど</span></h3>' +
-      '<p class="hint" style="margin:2px 0 6px">住人・関係・設定・セーブ・履歴・辞書を、まるごと1つのファイルにして別のブラウザへ移せます。PCで「まるごと書き出し」→ LINE・メール・ドライブなどでスマホへ送る → スマホで「まるごと読み込む」。スマホからは「共有」で送れます。</p>' +
-      '<div class="row" style="flex-wrap:wrap;gap:6px"><button class="btn" data-pt="out">まるごと書き出し</button><button class="btn" data-pt="share">共有（LINE・メールなど）</button><button class="btn" data-pt="in">まるごと読み込む</button></div>' +
-      '<div class="row ptmodes" role="radiogroup" aria-label="読み込み方"><span class="hint" style="margin:0">読み込み方：</span>' + q('add', '足す（セーブは追加。同じ名前の住人は確認）') + q('rep', '置き換える') + '</div>' +
-      '<p class="hint" style="margin:2px 0 0">「まるごと読み込む」では、書き出したファイルを複数まとめて選べます（「足す」で順に読み込み、同じ名前で設定も同じ住人は飛ばします）。</p>' +
-      '<div class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px"><button class="btn small" data-pt="strout" title="住人・関係・環境値・辞書（セーブ・履歴・アイコンは除く）を短い文字列にしてコピー">設定を文字列でコピー</button><button class="btn small" data-pt="strin" aria-expanded="' + strOpen + '">文字列から読み込む</button></div>' +
-      '<div class="ptstr"' + (strOpen ? '' : ' hidden') + '><textarea id="pt-text" rows="3" spellcheck="false" autocomplete="off" placeholder="別の端末でコピーした「hakoniwa1」で始まる文字列を貼り付け">' + esc(strVal) + '</textarea>' +
-      '<div class="row" style="margin-top:4px"><button class="btn small primary" data-pt="strgo">貼り付けた文字列を読み込む</button><span class="hint" style="margin:0">設定だけ（セーブ・履歴・アイコンは入りません）</span></div></div>' +
-      '<p class="hint" id="pt-msg" aria-live="polite" style="margin:4px 0 0">' + esc(lastMsg) + '</p>' +
-      '<input type="file" id="pt-file" accept=".json,application/json" multiple hidden>' +
-      /* 保存フォルダ（PC の Chrome／Edge。save-folder.js）：折りたたみ（開閉は ui-import.js が保存。許可が要るときなどは開く） */
-      (HK.SaveFolder ? (function () { var op = HK.CastImport ? HK.CastImport.sfOpen() : 1; return '<details class="sfdet" id="sfdet"' + (op ? ' open' : '') + (op === 2 ? ' data-auto="1"' : '') + '><summary>保存フォルダ<span class="sub">PC の Chrome／Edge。変わるたびにフォルダへ書き込む</span></summary>' + HK.SaveFolder.html() + '</details>'; })() : '') + '</div>';
+    return '<span class="ptmodes" role="radiogroup" aria-label="読み込み方">' + q('add', '足す') + q('rep', '置き換える') + '</span>';
   }
-  function refresh() { if (HK.UI && HK.UI.renderCast && document.getElementById('portable')) HK.UI.renderCast(); }
+  function html() {
+    var blk = function (row, desc, more) { return '<div class="ctblk"><div class="ctrow">' + row + '</div><p class="ctdesc">' + desc + '</p>' + (more || '') + '</div>'; };
+    return '<div class="portable" id="portable">' +
+      blk('<button class="btn" data-pt="out">まるごと書き出し</button><button class="btn" data-pt="share">共有（LINE・メールなど）</button>',
+        '住人・関係・設定・セーブ・履歴・辞書を1つのファイルにします。スマホからは「共有」で送れます。') +
+      blk('<button class="btn" data-pt="in">まるごと読み込む</button>' + modeHtml(),
+        '書き出したファイルを選びます（複数まとめて選べます）。「足す」はセーブを追加し、同じ名前の住人は確かめます。') +
+      blk('<button class="btn small" data-pt="strout" title="住人・関係・環境値・辞書（セーブ・履歴・アイコンは除く）を短い文字列にしてコピー">設定を文字列でコピー</button><button class="btn small" data-pt="strin" aria-expanded="' + strOpen + '">文字列から読み込む</button>',
+        '設定だけを「hakoniwa1」で始まる短い文字列で受け渡します（セーブ・履歴・アイコンは入りません）。',
+        '<div class="ptstr"' + (strOpen ? '' : ' hidden') + '><textarea id="pt-text" rows="3" spellcheck="false" autocomplete="off" placeholder="別の端末でコピーした「hakoniwa1」で始まる文字列を貼り付け">' + esc(strVal) + '</textarea>' +
+        '<div class="ctrow" style="margin-top:6px"><button class="btn small primary" data-pt="strgo">貼り付けた文字列を読み込む</button></div></div>') +
+      '<p class="hint" id="pt-msg" aria-live="polite" style="margin:0">' + esc(lastMsg) + '</p>' +
+      '<input type="file" id="pt-file" accept=".json,application/json" multiple hidden></div>';
+  }
+  /* 欄を描き直す（「データ」ダイアログを開いていればその中身だけ。ui-cast-tools.js） */
+  function refresh() { if (!document.getElementById('portable')) return; if (HK.CastTools && HK.CastTools.refresh()) return; if (HK.UI && HK.UI.renderCast) HK.UI.renderCast(); }
   (function style() {
     var st = document.createElement('style');
-    st.textContent = '.portable{margin-top:28px}.sfdet{margin-top:14px;border-top:1px dashed var(--line);padding-top:8px}.sfdet>summary{display:flex;align-items:baseline;gap:4px 8px;flex-wrap:wrap;cursor:pointer;list-style:none;font-weight:600;font-size:13px;color:var(--ink)}.sfdet>summary .sub{font-weight:400;font-size:12px;color:var(--muted)}.portable .ptmodes{flex-wrap:wrap;gap:4px 12px;margin-top:6px;align-items:center}.portable .ptmode{white-space:nowrap}.portable .ptstr{margin-top:6px}.portable .ptstr[hidden]{display:none}.portable textarea{width:100%;box-sizing:border-box;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;word-break:break-all}';
+    st.textContent = '.portable{display:flex;flex-direction:column;gap:16px;min-width:0}.ptmodes{display:inline-flex;flex-wrap:wrap;gap:4px 12px;align-items:center;margin-left:4px;font-size:13px}.ptmode{white-space:nowrap}.portable .ptstr{margin-top:6px}.portable .ptstr[hidden]{display:none}.portable textarea{width:100%;box-sizing:border-box;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;word-break:break-all}';
     (document.head || document.documentElement).appendChild(st);
   })();
   document.addEventListener('click', function (ev) {
@@ -733,7 +736,7 @@
   try { var m0 = window.sessionStorage.getItem(MSG); if (m0) { window.sessionStorage.removeItem(MSG); lastMsg = m0; setTimeout(function () { toast(m0); }, 600); } } catch (e) { /* なし */ }
 
   HK.Portable = {
-    html: html, collect: collect, importText: importText, importAll: importAll, importMany: importMany, readFiles: readFiles, envelope: envelope, mergeAll: mergeAll,
+    html: html, modeHtml: modeHtml, collect: collect, importText: importText, importAll: importAll, importMany: importMany, readFiles: readFiles, envelope: envelope, mergeAll: mergeAll,
     toStr: toStr, fromStr: fromStr, importSettings: importSettings, settingsData: settingsData, say: say, mode: function () { return mode; }, FORMAT: FMT, VERSION: VER
   };
 })();

@@ -83,7 +83,9 @@
   };
 
   /* ---------- 見た目 ---------- */
-  var css = '.gearbtn{white-space:nowrap}.csum{font-size:12px;color:var(--muted);flex:1 1 100%;line-height:1.5}.csw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px;border:1px solid var(--line)}' +
+  /* ⚙ 設定のボタンの絵：住人の行（ui.js）の歯車は inline SVG の線画（.gearic）。ここでは大きさだけそろえる */
+  var css = '.gearbtn .gearic{display:inline-flex;flex:none;width:14px;height:14px}.gearbtn .gearic svg{display:block}' +
+    '.gearbtn{white-space:nowrap}.csum{font-size:12px;color:var(--muted);flex:1 1 100%;line-height:1.5}.csw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px;border:1px solid var(--line)}' +
     '.gearov{position:fixed;inset:0;z-index:30;background:rgba(10,14,18,.45);display:flex;align-items:flex-start;justify-content:center;padding:max(12px,env(safe-area-inset-top,0px)) 12px 12px;overflow-y:auto;-webkit-overflow-scrolling:touch}' +
     '.gearbox{background:var(--paper,var(--surface));color:var(--ink);border:1px solid var(--line2,var(--line));border-radius:var(--r-card,6px);width:100%;max-width:680px;padding:18px 20px 22px}' +
     '.gearhd{display:flex;align-items:center;gap:10px;margin-bottom:6px;padding-bottom:10px;border-bottom:1px solid var(--line)}.gearhd h2{font-size:17px;font-weight:700;margin:0;flex:1}.gearsec{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}.gearsec h3{font-size:14px;font-weight:700;margin:0 0 8px}' +

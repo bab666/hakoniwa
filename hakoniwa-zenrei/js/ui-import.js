@@ -1,19 +1,14 @@
-/* 箱庭シミュレーター: 住人タブの上部「住人をまとめて登録」の描画（2026-10-27 のデザインの適用。結果には影響しない）
-   ui.js の renderCast が HK.CastImport.html(o) を差し込む。ボタンの処理（data-act の import-add・import-replace・export・jsonout・jpick・jsonadd・jsonrep・quiz）は ui.js のまま。
-   ここで扱うのは、貼り付け欄の「n 行を検出」（ui.js の読み取り HK.UI.parseRoster＝parseGrouped で数える）と「サンプルを入れる」、折りたたみの開閉の保存だけ。
-   節の形：
-   ・上：左に貼り付け欄（#bulk）と［取り込む］（primary）［質問に答えて診断］「サンプルを入れる」（ghost）「n 行を検出」、右に書き方の箱（FORMAT。スマホ幅では下）
-   ・「書き出し・読み込み（JSON・名簿）」：<details>（既定は閉じる。「選んだ住人だけ書き出す」を開いているあいだは開く）。書き出す／読み込むの2列に、ボタンといつ使うかの1行
-   ・「別の端末へ移す」：portable.js の html()（見出しは .cgh でここと同じ段。保存フォルダの欄の折りたたみ .sfdet の開閉も、ここの鍵に保存する）
-   開閉の保存：localStorage の hakoniwa_castio_v1（版ごと。HK.STORE.key）に { io: 開いているか, sf: 保存フォルダの欄を開いているか }。
-   見出し（h2.sec）は ui-fold.js の節の折りたたみのまま（この中の <details> は .fold にしないので二重にならない） */
+/* 箱庭シミュレーター: 住人タブの上部「住人をまとめて登録」の描画と、「データ」ダイアログの「名簿・JSON」のタブ（2026-10-27 のデザインの適用。結果には影響しない）
+   ui.js の renderCast が HK.CastImport.html(o) を差し込む。「名簿・JSON」のタブは ui-cast-tools.js のダイアログが HK.CastImport.ioHtml(o) で描く。
+   ボタンの処理（data-act の import-add・import-replace・export・jsonout・jpick・jsonadd・jsonrep・quiz）は ui.js のまま。
+   ここで扱うのは、貼り付け欄の「n 行を検出」（ui.js の読み取り HK.UI.parseRoster＝parseGrouped で数える）と「サンプルを入れる」だけ。
+   節の形：左に貼り付け欄（#bulk）と［取り込む］（primary）［質問に答えて診断］「サンプルを入れる」（ghost）「n 行を検出」、右に書き方の箱（FORMAT。スマホ幅では下）
+   「名簿・JSON」：書き出す／読み込むの2列に、ボタン1行と説明1行。
+   見出し（h2.sec）は ui-fold.js の節の折りたたみのまま */
 (function () {
   'use strict';
   var HK = window.HK;
   if (!HK || typeof document === 'undefined') return;
-  var KEY = HK.STORE ? HK.STORE.key('hakoniwa_castio_v1') : 'hakoniwa_castio_v1', fold = {};
-  try { fold = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { fold = {}; }
-  function put() { try { localStorage.setItem(KEY, JSON.stringify(fold)); } catch (e) { /* 保存できなくても開閉はできる */ } }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   /* 貼り付け欄の中身：住人タブを描き直しても残す（取り込めたら ui.js が空にする） */
   var text = '';
@@ -39,23 +34,14 @@
     '.impfmt .fac li{display:flex;gap:10px;font-size:12px}.impfmt .fac .k{width:2.4em;flex:none;font-family:var(--f-num);font-weight:600;letter-spacing:.06em}.impfmt .fac .v{color:var(--muted2)}' +
     '.impfmt .forms>summary{cursor:pointer;font-size:12px;color:var(--muted2);width:max-content;max-width:100%}.impfmt .forms>summary:hover{color:var(--ink)}.impfmt .forms ul{margin-top:6px}' +
     '.impfmt .forms li{font-size:12px;color:var(--muted2);line-height:1.6}.impfmt .forms code{font-family:var(--f-num);font-size:11.5px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:0 4px;word-break:break-all}' +
-    /* 下の2つのまとまり（書き出し・読み込み／別の端末へ移す）の見出し：h3 相当の太字＋下罫線 */
-    '.cgh,.impio>summary{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin:0 0 10px;padding:0 0 6px;border-bottom:1px solid var(--line);font-size:14px;font-weight:700;line-height:1.5;color:var(--ink)}' +
-    '.impio{margin-top:28px}.impio>summary{cursor:pointer;list-style:none;margin-bottom:0}.impio[open]>summary{margin-bottom:12px}' +
-    '.impio>summary::-webkit-details-marker,.sfdet>summary::-webkit-details-marker{display:none}.impio>summary::marker,.sfdet>summary::marker{content:""}' +
-    '.impio>summary::before,.sfdet>summary::before{content:"";flex:none;align-self:center;width:6px;height:6px;margin:0 4px 3px 2px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}' +
-    '.impio[open]>summary::before,.sfdet[open]>summary::before{transform:rotate(45deg);margin-bottom:5px}' +
-    '.impio>summary:hover::before,.sfdet>summary:hover::before{border-color:var(--ink)}' +
-    '.impio>summary:focus-visible,.sfdet>summary:focus-visible{outline:2px solid var(--ink);outline-offset:2px}' +
-    '.cgh .sub,.impio>summary .sub{font-size:12px;font-weight:400;color:var(--muted)}' +
+    /* 「データ」ダイアログの「名簿・JSON」：書き出す／読み込むの2列。各項目はボタン1行＋説明1行 */
     '.iogrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 28px}' +
     '.iocol{display:flex;flex-direction:column;gap:10px;min-width:0}.iocol .eyebrow{margin:0}' +
-    '.ioit{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:baseline}.ioit .btn{justify-self:start;white-space:nowrap}' +
+    '.ioit{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}.ioit .btn{white-space:nowrap}' +
     '.ioit p{margin:0;font-size:12px;color:var(--muted);line-height:1.6}' +
-    '.impio .iobk{margin:12px 0 0;font-size:12px;color:var(--muted);padding-left:8px;border-left:2px solid var(--line2)}' +
-    '.impio .jpick{margin-top:12px!important}' +
+    '.iopane .jpick{margin-top:14px!important}' +
     '@media (max-width:760px){.impgrid{grid-template-columns:minmax(0,1fr)}.impmain textarea{flex:none}.iogrid{grid-template-columns:minmax(0,1fr)}}' +
-    '@media (max-width:600px){h2.sec.imphead .secnote{display:none}.ioit{grid-template-columns:minmax(0,1fr)}.impbar .spacer{display:none}.impcnt{flex-basis:100%}}';
+    '@media (max-width:600px){h2.sec.imphead .secnote{display:none}.impbar .spacer{display:none}.impcnt{flex-basis:100%}}';
   var st = document.createElement('style'); st.textContent = css; (document.head || document.documentElement).appendChild(st);
 
   /* 貼り付け欄の数：読めた住人の数と、読めなかった行の数 */
@@ -89,24 +75,23 @@
       '<li>CSV など、ほかの形は見出しの ？ にあります</li>' +
       '</ul></details></aside>';
   }
-  /* 書き出し・読み込み：ボタンといつ使うかの1行 */
+  /* 書き出し・読み込み：ボタン1行といつ使うかの1行 */
   function item(act, label, desc, extra) { return '<div class="ioit"><button class="btn small" data-act="' + act + '"' + (extra || '') + '>' + label + '</button><p>' + desc + '</p></div>'; }
-  function ioBox(o) {
-    var open = o.jp || !!fold.io;
-    return '<details class="impio" id="impio"' + (open ? ' open' : '') + '><summary>書き出し・読み込み（JSON・名簿）<span class="sub">バックアップや、ほかのブラウザ・人との受け渡しに</span></summary>' +
-      '<div class="iogrid"><div class="iocol"><span class="eyebrow">書き出す</span>' +
-      item('jsonout', '住人をJSONで書き出す', '全員の住人・関係・設定（アイコンも）を1つのファイルにします。バックアップや入れ替えに。') +
-      item('jpick', '選んだ住人だけ書き出す', 'チェックした住人だけのファイルを作ります。自分のキャラだけを人に渡すときに。', ' aria-expanded="' + (o.jp ? 'true' : 'false') + '"') +
-      item('export', '名簿をテキストでコピー', '名前と5文字コードを文字でコピーします（グループは【見出し】つき）。上の欄に貼れば読み込めます。') +
+  /* 「データ」ダイアログの「名簿・JSON」。o：{ jp: 「選んだ住人だけ書き出す」を開いているか, pick: その欄の HTML（ui.js の pickPanel） } */
+  function ioHtml(o) {
+    o = o || {};
+    return '<div class="iopane"><div class="iogrid"><div class="iocol"><span class="eyebrow">書き出す</span>' +
+      item('jsonout', '住人をJSONで書き出す', '全員の住人・関係・設定（アイコンも）を1つのファイルにします。') +
+      item('jpick', '選んだ住人だけ書き出す', 'チェックした住人だけのファイルを作ります。', ' aria-expanded="' + (o.jp ? 'true' : 'false') + '"') +
+      item('export', '名簿をテキストでコピー', '名前と5文字コードを文字でコピーします（グループは【見出し】つき）。') +
       '</div><div class="iocol"><span class="eyebrow">読み込む</span>' +
-      item('jsonadd', 'JSONを足す', '今の住人はそのままで、ファイルの住人を足します（同じ名前の住人は、ファイルの内容で上書き）。') +
+      item('jsonadd', 'JSONを足す', '今の住人はそのままで足します（同じ名前の住人は上書き）。') +
       item('jsonrep', 'JSONで置き換える', '今の住人と関係を消して、ファイルの内容だけにします。') +
-      item('import-replace', '名簿を置き換える', '上の欄に貼った住人だけの名簿にします（今の住人は消えます）。') +
+      item('import-replace', '名簿を置き換える', '「住人をまとめて登録」の欄に貼った住人だけにします。') +
       '</div></div>' + (o.pick || '') +
-      '<input type="file" id="jsonfile" accept=".json,application/json" hidden>' +
-      '<p class="iobk">念のため、キャラクター設定・セーブデータなどは定期的なバックアップをお願いいたします（「住人をJSONで書き出す」か、下の「まるごと書き出し」でファイルに残せます）。</p></details>';
+      '<input type="file" id="jsonfile" accept=".json,application/json" hidden></div>';
   }
-  /* o：{ full: 上限まで登録しているか, jp: 「選んだ住人だけ書き出す」を開いているか, pick: その欄の HTML（ui.js の pickPanel） } */
+  /* o：{ full: 上限まで登録しているか } */
   function html(o) {
     o = o || {};
     var dis = o.full ? ' disabled' : '';
@@ -118,18 +103,8 @@
       '<button class="btn" data-act="quiz"' + dis + ' title="「ふたりのエゴグラム」と同じ25問に答えて、エゴグラムを出して住人にします">質問に答えて診断</button>' +
       '<button class="btn ghost" data-act="impsample" title="書き方の見本（3人分）を欄に入れます">サンプルを入れる</button>' +
       '<span class="spacer"></span><span class="impcnt" id="bulkcount" aria-live="polite">' + countHtml(text) + '</span></div>' +
-      '<ul class="warn" id="warns" hidden></ul></div>' + fmtBox() + '</div>' +
-      ioBox(o) +
-      /* 別の端末へ移す：まるごと書き出し・共有・文字列・保存フォルダ（portable.js） */
-      (HK.Portable ? HK.Portable.html() : '');
+      '<ul class="warn" id="warns" hidden></ul></div>' + fmtBox() + '</div>';
   }
-  /* 保存フォルダの欄（portable.js が包む .sfdet。summary の矢印はここの CSS）：保存した開閉（1）。許可が要る・止めている・書けないときは開く（2。この開き方は覚えない） */
-  function sfOpen() {
-    var s = HK.SaveFolder && HK.SaveFolder.status ? HK.SaveFolder.status() : null;
-    if (fold.sf) return 1;
-    return s && s.name && (s.st === 'perm' || s.st === 'hold' || s.st === 'err') ? 2 : 0;
-  }
-
   document.addEventListener('input', function (ev) {
     if (ev.target.id !== 'bulk') return;
     text = ev.target.value;
@@ -143,16 +118,8 @@
     if (b.value.trim() && b.value !== SAMPLE && !window.confirm('欄に書いた内容を、書き方の見本に置き換えますか？')) return;
     b.value = text = SAMPLE; recount(); b.focus();
   });
-  /* 開閉の保存（「選んだ住人だけ書き出す」で開いたときは覚えない） */
-  document.addEventListener('toggle', function (ev) {
-    var d = ev.target;
-    if (!d || !d.classList) return;
-    if (d.id === 'impio') { var jp = d.querySelector('[data-act="jpick"]'); if (!(jp && jp.getAttribute('aria-expanded') === 'true')) { fold.io = d.open; put(); } }
-    else if (d.id === 'sfdet') { if (d.open && d.getAttribute('data-auto')) return; d.removeAttribute('data-auto'); fold.sf = d.open; put(); }
-  }, true);
-
   HK.CastImport = {
-    html: html, sfOpen: sfOpen, count: countHtml,
+    html: html, ioHtml: ioHtml, count: countHtml,
     /* 取り込めたら欄を空にする（ui.js の importRoster） */
     clear: function () { text = ''; }
   };

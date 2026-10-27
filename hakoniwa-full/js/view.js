@@ -4,6 +4,11 @@
   var HK = window.HK, esc = HK.escape;
   var V = (HK.View = {});
   var CLS_VAR = { love: '--love', pine: '--pine', night: '--night', obsess: '--obsess', enemy: '--enemy', kill: '--kill', partner: '--partner', friend: '--friend', guard: '--guard', none: '--none' };
+  /* 関係図の線の形（仕様 5）：色がなくても種類が分かるように、太さ・破線・矢印・× で描き分ける（色は「フル」のときだけ関係の色。ほかは藍） */
+  var LINE_W = { love: 3.5, obsess: 3.5, partner: 2, friend: 1.2, pine: 1.2, guard: 1.5, enemy: 1.5, kill: 2.5, night: 1.2, none: 1 };
+  var LINE_DASH = { enemy: '5 4', kill: '6 4', night: '2 4' };
+  /* 凡例の並びと名前（恋人と執着は同じ線） */
+  var LEG = [['love', '恋人・執着'], ['partner', '相棒'], ['friend', '友人'], ['pine', '片想い'], ['guard', '守護'], ['enemy', '敵対'], ['kill', '殺害'], ['night', '一夜']];
   var tl = { who: [], keyOnly: false, cat: 'all', lewd: false };
   var lastRes = null, lastHost = null, lastOpts = null;
 
@@ -29,6 +34,42 @@
     if (/脱出|救助|優勝|生還|帰った|お持ち帰り|進級|卒業|生き延びた/.test(f)) return 'ok';
     return 'mid';
   }
+
+  /* ---------- 重要な出来事（転機・情事・死亡。--hot の赤で示す。表示だけで記録は変えない） ---------- */
+  /* ターン番号（区切りの通し番号。T01〜） */
+  function tno(step) { return step == null || isNaN(step) ? '' : 'T' + (step < 9 ? '0' : '') + (step + 1); }
+  /* 組の転機：決め手（p.key）のうち、関係の節目の札（付き合い始めた・別れたなど）のある出来事、なければ動きの大きい出来事。他人のまま・変化なしの組は持たない */
+  function turnOf(p, res) {
+    if (!p.key || !p.key.length || p.label === 'strangers' || p.cls === 'none') return null;
+    var best = null, bs = -1;
+    p.key.forEach(function (n) {
+      var e = res.log[n];
+      if (!e) return;
+      var sc = (e.mark && e.mark.length ? 1000 : 0) + Math.abs(e.mag || 0);
+      if (sc > bs) { bs = sc; best = n; }
+    });
+    return best;
+  }
+  /* 結果ごとに一度だけ数える：組ごとの転機（tp）と、全体でいちばん大きい転機（top） */
+  var hotMemo = typeof WeakMap === 'function' ? new WeakMap() : null;
+  function hotInfo(res) {
+    var H = hotMemo && hotMemo.get(res);
+    if (H) return H;
+    H = { tp: {}, top: null };
+    var bs = -1;
+    res.pairs.forEach(function (p) {
+      var n = turnOf(p, res);
+      if (n == null) return;
+      H.tp[n] = 1;
+      var e = res.log[n], sc = (e.mark && e.mark.length ? 1000 : 0) + Math.abs(e.mag || 0);
+      if (sc > bs || (sc === bs && n < H.top)) { bs = sc; H.top = n; }
+    });
+    if (hotMemo) hotMemo.set(res, H);
+    return H;
+  }
+  /* 情事（エロシーン）は R18 版で全年齢モードでないときだけ */
+  function lewdHot(e) { return !HK.SAFE_ON && !!HK.lewdEvent && HK.lewdEvent(e); }
+  function isHot(e, H) { return e.kind === 'death' || !!(e.mark && e.mark.length) || !!H.tp[e.n] || lewdHot(e); }
 
   /* ---------- 関係図 ---------- */
   /* 文字幅の目安（全角=1、半角=0.55） */
@@ -91,7 +132,7 @@
     var focus = tl.who.length === 1 ? (sub ? (sub.indexOf(tl.who[0]) < 0 ? null : sub.indexOf(tl.who[0])) : tl.who[0]) : null;
     var LY = MV ? MV.layout(R, big, mapLayout) : mapLayout(n, big), W = LY.W, H = LY.H, NR = LY.NR, pos = LY.pos;
     var defs = '<defs>' + Object.keys(CLS_VAR).map(function (k) {
-      return '<marker id="ar-' + k + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(' + CLS_VAR[k] + ')"/></marker>';
+      return '<marker id="ar-' + k + '" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M1.5,1.5 L9,5 L1.5,8.5" fill="none" style="stroke:var(' + CLS_VAR[k] + ');stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round"/></marker>';
     }).join('') + '</defs>';
     /* 住人の丸と、その下の名前・結末の文字が占める範囲 */
     var nameFs = big ? 11 : 13, fateFs = big ? 9 : 11;
@@ -100,7 +141,7 @@
       var P = pos[i], w = Math.max(NR * 2 + 4, tw(shortName(c), nameFs), tw(c.fate || '', fateFs)) + 6;
       return { x1: P.x - w / 2, x2: P.x + w / 2, y1: P.y - NR - 3, y2: P.y + LY.below - 2 };
     });
-    var edges = '', labels = '', placed = (LY.taken || []).slice();
+    var edges = '', labels = '', placed = (LY.taken || []).slice(), xmarks = [];
     var pairs = R.pairs.filter(function (p) { return p.label !== 'strangers'; });
     var faint = [];
     if (MV) { var pk = MV.pick(R, pairs, focus, big, LY); pairs = pk.draw.concat(pk.faint); faint = pk.faint; }
@@ -138,12 +179,18 @@
       var faded = focus != null && p.a !== focus && p.b !== focus;
       /* 間引いた線は、細い点線だけ（ラベル・矢印なし） */
       if (faint.indexOf(p) >= 0) { edges += '<path d="M' + s0.x.toFixed(1) + ',' + s0.y.toFixed(1) + ' Q' + c.x.toFixed(1) + ',' + c.y.toFixed(1) + ' ' + s1.x.toFixed(1) + ',' + s1.y.toFixed(1) + '" fill="none" class="efaint" style="stroke:var(' + CLS_VAR[p.cls] + ');stroke-width:1;opacity:' + (faded ? 0.08 : 0.32) + '" stroke-dasharray="2 4"/>'; return; }
-      var wdt = 1.5 + Math.min(3, p.intensity / 160);
+      var wdt = LINE_W[p.cls] || 1.2, dash = LINE_DASH[p.cls];
       var col = 'var(' + CLS_VAR[p.cls] + ')';
       var straight = Math.abs(c.x - (from.x + to.x) / 2) < 0.5 && Math.abs(c.y - (from.y + to.y) / 2) < 0.5;
       var d = straight ? 'M' + s0.x.toFixed(1) + ',' + s0.y.toFixed(1) + ' L' + s1.x.toFixed(1) + ',' + s1.y.toFixed(1)
         : 'M' + s0.x.toFixed(1) + ',' + s0.y.toFixed(1) + ' Q' + c.x.toFixed(1) + ',' + c.y.toFixed(1) + ' ' + s1.x.toFixed(1) + ',' + s1.y.toFixed(1);
-      edges += '<path d="' + d + '" fill="none" style="stroke:' + col + ';stroke-width:' + wdt.toFixed(1) + ';opacity:' + (faded ? 0.15 : 0.9) + '"' + (p.cls === 'enemy' || p.cls === 'kill' ? ' stroke-dasharray="6 4"' : '') + (p.dir != null ? ' marker-end="url(#ar-' + p.cls + ')"' : '') + '/>';
+      edges += '<path d="' + d + '" fill="none" class="rl ' + p.cls + '" style="stroke:' + col + ';stroke-width:' + wdt + ';opacity:' + (faded ? 0.15 : 0.9) + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + (p.dir != null ? ' marker-end="url(#ar-' + p.cls + ')"' : '') + '/>';
+      /* 殺害：線の中ほどに × */
+      if (p.cls === 'kill') {
+        var xm = qpt(s0, c, s1, 0.5);
+        edges += '<path d="M' + (xm.x - 5).toFixed(1) + ',' + (xm.y - 5).toFixed(1) + ' L' + (xm.x + 5).toFixed(1) + ',' + (xm.y + 5).toFixed(1) + ' M' + (xm.x + 5).toFixed(1) + ',' + (xm.y - 5).toFixed(1) + ' L' + (xm.x - 5).toFixed(1) + ',' + (xm.y + 5).toFixed(1) + '" fill="none" class="rx" style="stroke:' + col + ';stroke-width:2.2;stroke-linecap:round;opacity:' + (faded ? 0.15 : 1) + '"/>';
+        xmarks.push({ x1: xm.x - 7, x2: xm.x + 7, y1: xm.y - 7, y2: xm.y + 7 });
+      }
       /* ラベル：線の上で、丸・名前・ほかのラベルと重ならない場所を探す */
       var txt = p.name + (p.surprise ? '＊' : ''), lw = tw(txt, labFs) + 8, lh = labFs + 6;
       var best = null, bo = 1e9, shortEdge = Math.sqrt(Math.pow(s1.x - s0.x, 2) + Math.pow(s1.y - s0.y, 2)) < lw + 18;
@@ -156,6 +203,7 @@
           var ov = 0;
           boxes.forEach(function (o) { ov += overlap(bx, o) * 3; });
           placed.forEach(function (o) { ov += overlap(bx, o) * 2; });
+          xmarks.forEach(function (o) { ov += overlap(bx, o) * 2; });
           linePts.forEach(function (q2) { if (q2.e !== ei && q2.x > bx.x1 && q2.x < bx.x2 && q2.y > bx.y1 && q2.y < bx.y2) ov += 25; });
           if (bx.x1 < 2 || bx.x2 > W - 2 || bx.y1 < 2 || bx.y2 > H - 2) ov += 500;
           ov += si && !shortEdge ? 4 : 0;
@@ -169,19 +217,48 @@
       placed.push(best);
       labels += '<text x="' + best.cx.toFixed(1) + '" y="' + (best.cy + labFs * 0.36).toFixed(1) + '" text-anchor="middle" class="elab" style="fill:' + col + ';opacity:' + (faded ? 0.2 : 1) + '">' + esc(txt) + '</text>';
     });
+    var st8 = nodeStates(res);
     var nodes = R.chars.map(function (c, k) {
-      var P = pos[k], dead = !c.alive, i = orig(k);
+      var P = pos[k], i = orig(k), ns = st8[i] || '', dead = ns === 'gone';
       var sel = tl.who.indexOf(i) >= 0;
-      return '<g class="node" data-act="node" data-i="' + i + '" tabindex="0" role="button" aria-label="' + esc(c.name) + 'の経過を絞り込む" style="cursor:pointer">' +
-        '<circle cx="' + P.x.toFixed(1) + '" cy="' + P.y.toFixed(1) + '" r="' + NR + '" class="nodebg" style="--c:' + pc(i) + ';stroke:' + pc(i) + ';stroke-width:' + (sel ? 5 : big ? 2 : 3) + ';opacity:' + (dead ? 0.6 : 1) + '"' + (dead ? ' stroke-dasharray="4 3"' : '') + '/>' +
-        (HK.Icons.url(c.name) ? '<g style="opacity:' + (dead ? 0.55 : 1) + (dead ? ';filter:grayscale(1)' : '') + '">' + HK.Icons.svg(c.name, i, P.x, P.y, NR - 1.5, i) + '</g>' :
-        '<text x="' + P.x.toFixed(1) + '" y="' + (P.y + (big ? 4 : 6)).toFixed(1) + '" text-anchor="middle" style="fill:' + pc(i) + ';font-weight:700;font-size:' + (big ? 12 : 17) + 'px">' + esc(HK.Icons.initial(c.name)) + '</text>') +
+      var sw = sel ? (big ? 4 : 5) : ns === 'bold' ? (big ? 2.5 : 3) : (big ? 1.3 : 1.5);
+      return '<g class="node' + (ns ? ' ' + ns : '') + '" data-act="node" data-i="' + i + '" tabindex="0" role="button" aria-label="' + esc(c.name) + 'の経過を絞り込む' + (ns === 'gone' ? '（死亡）' : ns === 'dash' ? '（離脱）' : '') + '" style="cursor:pointer">' +
+        '<circle cx="' + P.x.toFixed(1) + '" cy="' + P.y.toFixed(1) + '" r="' + NR + '" class="nodebg" style="--c:' + pc(i) + ';stroke:' + pc(i) + ';stroke-width:' + sw + ';opacity:' + (dead ? 0.45 : 1) + '"' + (ns === 'dash' ? ' stroke-dasharray="4 3"' : '') + '/>' +
+        (HK.Icons.url(c.name) ? '<g style="opacity:' + (dead ? 0.45 : 1) + (dead ? ';filter:grayscale(1)' : '') + '">' + HK.Icons.svg(c.name, i, P.x, P.y, NR - 1.5, i) + '</g>' :
+        '<text x="' + P.x.toFixed(1) + '" y="' + (P.y + (big ? 4 : 6)).toFixed(1) + '" text-anchor="middle" style="fill:' + pc(i) + ';font-weight:700;font-size:' + (big ? 12 : 17) + 'px;opacity:' + (dead ? 0.45 : 1) + '">' + esc(HK.Icons.initial(c.name)) + '</text>') +
         '<text x="' + P.x.toFixed(1) + '" y="' + (P.y + NR + (big ? 13 : 19)).toFixed(1) + '" text-anchor="middle" class="nlab" style="fill:var(--ink);font-size:' + nameFs + 'px;font-weight:600">' + esc(shortName(c)) + '</text>' +
         '<text x="' + P.x.toFixed(1) + '" y="' + (P.y + NR + (big ? 25 : 35)).toFixed(1) + '" text-anchor="middle" class="nlab" style="fill:var(--muted);font-size:' + fateFs + 'px">' + esc(c.fate) + '</text></g>';
     }).join('');
     var out = '<svg viewBox="0 0 ' + W.toFixed(0) + ' ' + H.toFixed(0) + '" role="img" aria-label="関係図"><style>.nodebg{fill:var(--surface);fill:color-mix(in srgb,var(--c) 16%,var(--surface))}.elab{font-size:' + labFs + 'px;font-weight:700;paint-order:stroke;stroke:var(--sand);stroke-width:4px;stroke-linejoin:round}.nlab{paint-order:stroke;stroke:var(--sand);stroke-width:3.5px;stroke-linejoin:round}</style>' + defs + (LY.under || '') + edges + nodes + labels + (LY.over || '') + '</svg>';
     if (MV) MV.drawn(res, { lines: pairs.length - faint.length, faint: faint.length, labels: placed.length - (LY.taken || []).length, labSkip: labSkip });
     return out;
+  }
+
+  /* 住人の丸の状態（元の番号ごと）：gone＝死亡（薄い丸）、dash＝離脱（破線の輪。最後の区切りで場にいない）、bold＝生存して主導（リーダー・派閥の長）。どれでもなければ '' */
+  function nodeStates(res) {
+    var H = res.history, last = H && H.length ? H[H.length - 1].alive : null, lead = {};
+    if (HK.MapView && HK.MapView.groups) HK.MapView.groups(res).forEach(function (g) { lead[g.leader] = 1; });
+    return res.chars.map(function (c, i) {
+      if (c.alive === false) return 'gone';
+      if (last && last[i] === false) return 'dash';
+      return c.leader || lead[i] ? 'bold' : '';
+    });
+  }
+  /* 関係図の凡例：この結果にある線の種類だけ（線の形は図と同じ）と、丸の輪の意味 */
+  function mapLegend(res) {
+    var has = {};
+    res.pairs.forEach(function (p) { if (p.label !== 'strangers') has[p.cls === 'obsess' ? 'love' : p.cls] = 1; });
+    var items = LEG.filter(function (x) { return has[x[0]]; }).map(function (x) {
+      var k = x[0], w = LINE_W[k], col = 'var(' + CLS_VAR[k] + ')', dash = LINE_DASH[k];
+      var ln = '<line x1="1" y1="5" x2="' + (k === 'pine' ? 21 : 25) + '" y2="5" style="stroke:' + col + ';stroke-width:' + w + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
+      if (k === 'pine') ln += '<path d="M17,1.5 L22,5 L17,8.5" fill="none" style="stroke:' + col + ';stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round"/>';
+      if (k === 'kill') ln += '<path d="M9.5,1.5 L16.5,8.5 M16.5,1.5 L9.5,8.5" fill="none" style="stroke:' + col + ';stroke-width:1.6;stroke-linecap:round"/>';
+      return '<span class="leg"><svg width="26" height="10" viewBox="0 0 26 10" aria-hidden="true">' + ln + '</svg>' + esc(x[1]) + '</span>';
+    }).join('');
+    var st8 = nodeStates(res), sk = {};
+    st8.forEach(function (s) { sk[s] = 1; });
+    var ring = [sk.bold ? '太い輪＝生存して主導' : '', sk.dash ? '破線の輪＝離脱' : '', sk.gone ? '薄い丸＝死亡' : ''].filter(Boolean).join(' · ');
+    return (items ? '<div class="mapleg">' + items + '</div>' : '') + (ring ? '<span class="mapring">' + ring + '</span>' : '');
   }
 
   /* view-map.js が使う部品 */
@@ -198,13 +275,29 @@
       return '<polyline fill="none" points="' + s.map(function (v, i) { return X(i).toFixed(1) + ',' + Y(v[idx]).toFixed(1); }).join(' ') + '" style="' + style + '"/>';
     }
     var last = s[n - 1];
+    /* 転機の印（--hot）：その出来事の区切りの位置に、細い縦線と点 */
+    var tk = sparkTurn(p, res), mk = '';
+    if (tk) mk = '<line x1="' + X(tk.i).toFixed(1) + '" x2="' + X(tk.i).toFixed(1) + '" y1="2" y2="' + (H - 2) + '" class="sparkhot" style="stroke:var(--hot);stroke-width:1;stroke-dasharray:2 2;vector-effect:non-scaling-stroke"/>' +
+      '<circle cx="' + X(tk.i).toFixed(1) + '" cy="' + Y(s[tk.i][0]).toFixed(1) + '" r="3.4" class="sparkhot" style="fill:var(--hot)"/>';
     return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
       '<line x1="0" x2="' + W + '" y1="' + mid + '" y2="' + mid + '" style="stroke:var(--line);stroke-width:1"/>' +
       line(2, 'stroke:var(--enemy);stroke-width:1.3;stroke-dasharray:3 3;vector-effect:non-scaling-stroke') +
       line(0, 'stroke:' + pc(p.a) + ';stroke-width:2;vector-effect:non-scaling-stroke') +
       line(1, 'stroke:' + pc(p.b) + ';stroke-width:2;vector-effect:non-scaling-stroke') +
       '<circle cx="' + X(n - 1) + '" cy="' + Y(last[0]) + '" r="2.6" style="fill:' + pc(p.a) + '"/>' +
-      '<circle cx="' + X(n - 1) + '" cy="' + Y(last[1]) + '" r="2.6" style="fill:' + pc(p.b) + '"/></svg>';
+      '<circle cx="' + X(n - 1) + '" cy="' + Y(last[1]) + '" r="2.6" style="fill:' + pc(p.b) + '"/>' + mk + '</svg>';
+  }
+  /* 組の転機が推移グラフの何点目か（p.series は区切りごとの記録 res.history と同じ並び。空きの点は詰めて描くので数え直す） */
+  function sparkTurn(p, res) {
+    var n = turnOf(p, res), e = n != null ? res.log[n] : null;
+    if (!e || e.step == null) return null;
+    var raw = p.series || [], hs = res.history || [], hi = -1;
+    for (var k = 0; k < hs.length; k++) if (hs[k] && hs[k].step === e.step) { hi = k; break; }
+    if (hi < 0) hi = Math.min(e.step, raw.length - 1);
+    if (hi < 0 || !raw[hi]) return null;
+    var idx = 0;
+    for (var j = 0; j < hi; j++) if (raw[j]) idx++;
+    return { i: idx, n: n, e: e };
   }
 
   function tieName(t, res) {
@@ -229,11 +322,12 @@
       ? '相性予想は<b>「' + esc(p.base.kindLabel) + '」</b>だったのに「' + esc(p.name) + '」に落ち着いた。'
       : '相性予想：<b>' + esc(p.base.kindLabel) + '</b>';
     var notes = p.base.notes.length ? '<br>' + p.base.notes.map(esc).join('／') : '';
+    var tp = turnOf(p, res), tk = sparkTurn(p, res);
     var keys = p.key.map(function (n) {
       var e = L[n];
       /* エロシーンは概要だけ（全文は経過で読める） */
       var body = HK.lewdEvent && HK.lewdBrief && HK.lewdEvent(e) ? '<span class="brief">' + esc(HK.lewdBrief(e)) + '</span>' : paint(e.text, res);
-      return '<li><span class="st">' + esc(e.label) + '</span>' + body + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</li>';
+      return '<li' + (n === tp ? ' class="hot"' : '') + '><span class="st">' + (tno(e.step) ? '<b class="tn">' + tno(e.step) + '</b>' : '') + esc(e.label) + '</span>' + body + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</li>';
     }).join('');
     var r = p.rel;
     return '<article class="pcard' + (p.surprise ? ' sur' : '') + '">' +
@@ -241,7 +335,7 @@
       '<div class="txt">' + paint(p.text, res) + '</div>' +
       '<div class="pred">' + pred + notes + '</div>' +
       spark(p, res) +
-      '<div class="sparkleg"><span style="color:' + pc(p.a) + '">― ' + esc(A.name) + '→' + esc(B.name) + ' 好意</span><span style="color:' + pc(p.b) + '">― ' + esc(B.name) + '→' + esc(A.name) + ' 好意</span><span style="color:var(--enemy)">┄ 緊張</span></div>' +
+      '<div class="sparkleg"><span style="color:' + pc(p.a) + '">― ' + esc(A.name) + '→' + esc(B.name) + ' 好意</span><span style="color:' + pc(p.b) + '">― ' + esc(B.name) + '→' + esc(A.name) + ' 好意</span><span style="color:var(--enemy)">┄ 緊張</span>' + (tk ? '<span class="sparkhot">● ' + tno(tk.e.step) + ' 転機</span>' : '') + '</div>' +
       '<div class="nums">' + esc(A.name) + '→ 好意' + r.ab.aff + ' 信頼' + r.ab.trust + ' 惹かれ' + r.ab.att + ' 緊張' + r.ab.ten + '<br>' + esc(B.name) + '→ 好意' + r.ba.aff + ' 信頼' + r.ba.trust + ' 惹かれ' + r.ba.att + ' 緊張' + r.ba.ten + '</div>' +
       (keys ? '<ul class="keys">' + keys + '</ul>' : '') +
       '<div><button class="btn small" data-act="pairfilter" data-a="' + p.a + '" data-b="' + p.b + '">この二人の経過を見る</button></div>' +
@@ -280,22 +374,26 @@
     return s;
   }
   function timeline(res) {
-    var ks = keySet(res), groups = [], cur = null;
+    var ks = keySet(res), H = hotInfo(res), groups = [], cur = null;
     res.log.forEach(function (e) {
-      if (e.kind === 'step') { cur = { label: e.label, items: [] }; groups.push(cur); return; }
-      if (!cur) { cur = { label: '', items: [] }; groups.push(cur); }
+      if (e.kind === 'step') { cur = { label: e.label, step: e.step, items: [] }; groups.push(cur); return; }
+      if (!cur) { cur = { label: '', step: null, items: [] }; groups.push(cur); }
       if (tl.who.length) {
         var all = tl.who.every(function (w) { return e.actors.indexOf(w) >= 0; });
         if (!all) return;
       }
-      if (tl.keyOnly && !(ks[e.n] || e.kind === 'death' || e.odd || e.mag >= 25 || e.goal || e.goalExit || (e.mark && e.mark.length))) return;
+      if (tl.keyOnly && !(ks[e.n] || e.kind === 'death' || e.odd || e.mag >= 25 || e.goal || e.goalExit || (e.mark && e.mark.length) || isHot(e, H))) return;
       if (tl.cat !== 'all' && e.cat !== tl.cat && e.kind !== 'death') return;
       if (tl.lewd && !HK.lewdEvent(e)) return;
       cur.items.push(e);
     });
     var html = groups.filter(function (g) { return g.items.length; }).map(function (g) {
-      return '<div class="stepblk"><div class="when">' + esc(g.label) + '</div><ol>' + g.items.map(function (e) {
-        var cls = 'ev' + (e.kind === 'event' && e.cat ? ' cat-' + e.cat : '') + (e.trouble ? ' trouble' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '');
+      /* 左の列：ターン番号（Mono）と局面名。重要な出来事のある区切りは番号を赤に */
+      var tn = tno(g.step), gh = g.items.some(function (e) { return isHot(e, H); });
+      var when = '<div class="when' + (gh ? ' hot' : '') + '">' + (tn ? '<span class="tn">' + tn + '</span>' + (g.label ? '<span class="ph">' + esc(g.label) + '</span>' : '') : esc(g.label)) + '</div>';
+      return '<div class="stepblk' + (gh ? ' hasHot' : '') + '">' + when + '<ol>' + g.items.map(function (e) {
+        var hot = isHot(e, H);
+        var cls = 'ev' + (e.kind === 'event' && e.cat ? ' cat-' + e.cat : '') + (e.trouble ? ' trouble' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (hot ? ' hot' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '');
         var chip = e.kind === 'event' ? '<span class="c cc-' + esc(e.cat) + '">' + esc(HK.CAT_NAME[e.cat] || e.cat) + '</span>' : '';
         /* 出られない部屋：条件を満たした・扉が開いた出来事の札 */
         if (e.goal || e.goalExit) chip = (e.goal || []).map(function (g) { return '<span class="goalb">条件達成：' + esc(g) + '</span>'; }).join('') + (e.goalExit ? '<span class="goalb exitb">扉が開いた</span>' : '') + chip;
@@ -305,7 +403,11 @@
         var sg = HK.Seg ? HK.Seg.of(e, res) : null, lead = sg ? HK.Seg.speakers(sg).filter(function (i) { return res.chars[i]; })[0] : null;
         var who = (lead != null ? [lead] : []).concat((e.actors || []).filter(function (i) { return i !== lead; })).slice(0, 3);
         var avs = who.length ? '<span class="avs">' + who.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
-        return '<li class="' + cls + (avs ? ' hasav' : '') + (avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)) ? ' talk' : '') + '">' + avs + '<div class="evb">' + chip + paint(e.text, res, sg) + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+        /* 会話は吹き出しにせず、「」の引用だけ少し太く（.q） */
+        var talk = !!(avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)));
+        var body = paint(e.text, res, sg);
+        if (talk) body = body.replace(/「[^「」]*」/g, '<span class="q">$&</span>');
+        return '<li class="' + cls + (avs ? ' hasav' : '') + (talk ? ' talk' : '') + '">' + avs + '<div class="evb">' + chip + body + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
@@ -320,10 +422,15 @@
     var sel = '<select id="tlcat" aria-label="種類で絞り込む">' + cats.filter(function (c) { return c === 'all' || used[c]; }).map(function (c) {
       return '<option value="' + c + '"' + (tl.cat === c ? ' selected' : '') + '>' + (c === 'all' ? 'すべての種類' : HK.CAT_NAME[c]) + '</option>';
     }).join('') + '</select>';
-    return '<div class="tlbar">' + who + (tl.who.length ? '<button class="btn small ghost" data-act="whoclear">絞り込みを解除</button>' : '') +
-      '<span class="spacer"></span>' + sel + '<button class="chip" data-act="keyonly" aria-pressed="' + tl.keyOnly + '">決め手と転機だけ</button>' +
-      (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="lewdonly" aria-pressed="' + !!tl.lewd + '">エロシーンだけ</button>' : '') + '</div>';
+    var all = !tl.keyOnly && !tl.lewd && tl.cat === 'all';
+    return '<div class="tlbar" role="group" aria-label="時系列の絞り込み"><button class="chip" data-act="tlall" aria-pressed="' + all + '">すべて</button>' +
+      '<button class="chip" data-act="keyonly" aria-pressed="' + tl.keyOnly + '" title="転機・死亡・関係の節目・決め手など、重要な出来事だけ"><i class="hotdot" aria-hidden="true"></i>重要のみ</button>' + sel +
+      (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="lewdonly" aria-pressed="' + !!tl.lewd + '">エロシーンだけ</button>' : '') +
+      '<span class="tlsep" aria-hidden="true"></span>' + who + (tl.who.length ? '<button class="btn small ghost" data-act="whoclear">絞り込みを解除</button>' : '') + '</div>';
   }
+
+  /* 見出しの横の凡例：この結果に情事（エロシーン）があるときだけ「情事」を入れる */
+  function hotLegend(res) { return '転機・' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '情事・' : '') + '死亡'; }
 
   /* ---------- 全体 ---------- */
   V.resetFilter = function () { tl = { who: [], keyOnly: false, cat: 'all', lewd: false }; };
@@ -354,14 +461,14 @@
       endingBlock(res) +
       '<div class="uses" style="margin-top:12px">' + envChips + '</div>' +
       (HK.MapView ? HK.MapView.classChart(res) : '') +
-      '<h2 class="sec">関係図</h2><figure class="trayfig">' + (function () { var sv = mapSvg(res); return (HK.MapView ? '<div id="mapbar">' + HK.MapView.bar(res) + '</div>' : '') + '<div class="tray" id="map">' + sv + '</div>'; })() + '<figcaption><span>住人の丸を押すと、その人の経過に絞り込めます。＊は意外な組み合わせ。矢印は気持ちや行為の向き。</span><span>砂箱 57×72×7cm</span></figcaption></figure>' +
+      '<h2 class="sec">関係図</h2><figure class="trayfig">' + (function () { var sv = mapSvg(res); return (HK.MapView ? '<div id="mapbar">' + HK.MapView.bar(res) + '</div>' : '') + '<div class="tray" id="map">' + sv + '</div>'; })() + '<figcaption><div class="maplegs">' + mapLegend(res) + '</div><div class="mapcap"><span>住人の丸を押すと、その人の経過に絞り込めます。＊は意外な組み合わせ。矢印は気持ちや行為の向き。</span><span>砂箱 57×72×7cm</span></div></figcaption></figure>' +
       factionBlock(res) +
       (sur.length ? '<h2 class="sec">意外な組み合わせ</h2><p class="hint">エゴグラム上の相性予想と、箱庭での結末が食い違ったペアです。解釈の掘りどころ。</p><div class="cards">' + sur.map(function (p) { return pairCard(p, res); }).join('') + '</div>' : '') +
       '<h2 class="sec">関係の結末</h2><div class="cards">' + rest.slice(0, limit).map(function (p) { return pairCard(p, res); }).join('') + '</div>' +
       (rest.length > limit ? '<div class="more"><button class="btn" data-act="showall">残り' + (rest.length - limit) + '組を表示</button></div>' : '') +
       (strangers ? '<p class="hint" style="margin-top:8px">ほかに「他人のまま」の組が' + strangers + '組あります。住人の丸を押すと、その人の関係だけを図で追えます。</p>' : '') +
       '<h2 class="sec">住人ごとの読み解き</h2><div class="cards">' + res.chars.map(function (c) { return charCard(c, res); }).join('') + '</div>' +
-      '<h2 class="sec" id="tlhead">時系列</h2>' + (scen.longRun && scen.longRun(res.env) ? '<p class="hint">長期間のため、最初は重要な出来事だけの短縮版で表示しています。「決め手と転機だけ」を外すと全部見られます。</p>' : '') + '<div id="tlbar">' + tlBar(res) + '</div><div class="tl" id="tl">' + timeline(res) + '</div>' +
+      '<h2 class="sec" id="tlhead">時系列<span class="hotleg"><i class="hotdot" aria-hidden="true"></i>' + hotLegend(res) + '</span></h2>' + (scen.longRun && scen.longRun(res.env) ? '<p class="hint">長期間のため、最初は重要な出来事だけの短縮版で表示しています。「すべて」を押すと全部見られます。</p>' : '') + '<div id="tlbar">' + tlBar(res) + '</div><div class="tl" id="tl">' + timeline(res) + '</div>' +
       historyBlock(lastOpts.history || []);
     host.innerHTML = html;
   };
@@ -384,13 +491,22 @@
   V.toggleKey = function () { tl.keyOnly = !tl.keyOnly; V.refreshTimeline(); };
   V.toggleLewd = function () { tl.lewd = !tl.lewd; V.refreshTimeline(); };
   V.setCat = function (c) { tl.cat = c; V.refreshTimeline(); };
+  /* 「すべて」：種類・重要のみ・エロシーンだけを外す（住人の絞り込みはそのまま） */
+  V.showAllKinds = function () { tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; V.refreshTimeline(); };
+  document.addEventListener('click', function (ev) {
+    var t = ev.target && ev.target.closest && ev.target.closest('[data-act="tlall"]');
+    if (t && lastRes) V.showAllKinds();
+  });
 
   /* ---------- 結末 ---------- */
   function endingBlock(res) {
     if (!HK.Endings) return '';
     var E = HK.Endings.build(res);
+    /* 全体の転機（いちばん大きい組の転機）を概要の最後に赤で */
+    var top = hotInfo(res).top, te = top != null ? res.log[top] : null;
+    var tst = te && tno(te.step) ? '<div class="tpstat"><dt>転機</dt><dd class="hot">' + tno(te.step) + '</dd>' + (te.label ? '<dd class="tplab">' + esc(te.label) + '</dd>' : '') + '</div>' : '';
     return '<section class="ending" aria-label="結末"><div class="eyebrow">結末</div><p class="ehead">' + paint(E.headline, res) + '</p>' +
-      (E.stats.length ? '<dl class="estats">' + E.stats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(s[1]) + '</dd></div>'; }).join('') + '</dl>' : '') +
+      (E.stats.length || tst ? '<dl class="estats">' + E.stats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(s[1]) + '</dd></div>'; }).join('') + tst + '</dl>' : '') +
       (E.lines.length ? '<ul class="elines">' + E.lines.map(function (l) { return '<li>' + paint(l, res) + '</li>'; }).join('') + '</ul>' : '') +
       (HK.Epilogue && HK.Epilogue.html ? HK.Epilogue.html(E, res, paint) : '') + (E.after || '') + '</section>';
   }
