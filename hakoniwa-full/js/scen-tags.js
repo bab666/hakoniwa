@@ -1,4 +1,4 @@
-/* 箱庭シミュレーター: 箱庭ごとの「対応機能」のタグ（箱庭の選択カードの人数の行の下に出す。全年齢版・R18版共通）
+/* 箱庭シミュレーター: 箱庭ごとの「対応機能」のタグ（箱庭の選択カードの説明の下に出す。全年齢版・R18版共通）
    どの設定がその箱庭に効くか・何が起きうるかを短い札で示し、「設定したのに出ない」「途中で人がいなくなった」を不具合と思われないようにする。
    タグを押すと説明が出る（ui.js の data-act="ftag"）。R18版だけの説明は r18 の印の中で差し替える。
    HK.ScenTags.of(id) → [{ k, label, desc }]。表は HK.ScenTags.TABLE（箱庭 id → タグの id の並び）。 */
@@ -65,12 +65,23 @@
     var ks = TG.TABLE[id] || [];
     return ks.filter(function (k) { return DEF[k] && !(HK.SAFE_ON && (k === 'raceNight' || k === 'night')); }).map(function (k) { return { k: k, label: DEF[k].label, desc: DEF[k].desc }; });
   };
-  /* カードの中身（ui.js から） */
-  TG.html = function (id, esc) {
-    var list = TG.of(id);
-    if (!list.length) return '';
-    return '<div class="tags">' + list.map(function (t) {
-      return '<span class="ftag' + (t.k === 'death' || t.k === 'exit' ? ' warn' : '') + '" data-act="ftag" data-k="' + t.k + '" title="' + esc(t.desc) + '" role="button" tabindex="0">' + esc(t.label) + '</span>';
-    }).join('') + '</div>';
+  /* カードの中身（ui.js から）。pre は先頭に足す札 [{ html（中身の HTML）, title, warn }]（R18 の描写の注記・箱庭の注意書きの短い札）。
+     選んでいないカード（PC）はタグを1行だけ見せる：いちばん狭いカード（190px）の1行に入る数を字数から見積もり、残りは「+n」の札にまとめる（.tx は選んだカードでだけ見える。
+     レイアウトを読まずに決めるので、カードの HTML は箱庭ごとに1回作れば足りる。見積もりがはみ出しても札は省略記号で縮む）。スマホ幅は選んだカードだけにタグを出す（index.html の CSS） */
+  var FIT = 158;   /* カードの中身の幅（190px − 左右の余白 16px×2） */
+  function est(text) { var w = 16; for (var i = 0; i < text.length; i++) w += text.charCodeAt(i) < 0x7f ? 6.3 : 10.5; return w; }
+  TG.html = function (id, esc, pre) {
+    var items = (pre || []).map(function (p) { return { html: p.html, title: p.title, warn: p.warn, k: 'note', w: est(p.text || '') + (p.extra || 0) }; })
+      .concat(TG.of(id).map(function (t) { return { html: esc(t.label), title: t.desc, warn: t.k === 'death' || t.k === 'exit', k: t.k, w: est(t.label) }; }));
+    if (!items.length) return '';
+    var n = items.length, used = 0, fit = 0;
+    for (var i = 0; i < n; i++) {
+      var w = items[i].w + (i ? 4 : 0), more = i < n - 1 ? 4 + est('+' + (n - i - 1)) : 0;
+      if (i && used + w + more > FIT) break;
+      used += w; fit = i + 1;
+    }
+    return '<div class="tags">' + items.map(function (t, j) {
+      return '<span class="ftag' + (t.warn ? ' warn' : '') + (j >= fit ? ' tx' : '') + '" data-act="ftag" data-k="' + t.k + '" title="' + esc(t.title || '') + '" role="button" tabindex="0">' + t.html + '</span>';
+    }).join('') + (fit < n ? '<span class="ftag ftmore" aria-hidden="true">+' + (n - fit) + '</span>' : '') + '</div>';
   };
 })();

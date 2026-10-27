@@ -393,6 +393,7 @@ js/notice.js
 js/ui-fold.js
 js/ui-mobile.js
 js/ui-log.js
+js/ui-filter.js
 js/hate-install.js @pack:rel
 js/obsess-kit.js
 js/obsess-story.js @pack:story

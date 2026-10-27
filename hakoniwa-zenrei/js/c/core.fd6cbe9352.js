@@ -11885,7 +11885,7 @@ return'<span style="white-space:nowrap">'+NAME[k]+'</span><span style="display:b
 var pk=c.moodPeak?'いちばん強かった気分：'+c.moodPeak.name+(c.moodPeak.label?'（'+c.moodPeak.label+'）':''):'最後まで、大きく心が揺れることはなかった';
 return'<div class="emo" data-face="'+fc+'" style="display:flex;align-items:center;gap:10px;margin:6px 0 2px">'+
 '<span class="emoface" data-face="'+fc+'" title="'+esc('いまの気分：'+NAME[m])+'" style="font-size:13px;white-space:nowrap;color:var(--muted)">'+FACE_SYM[fc]+'</span>'+
-'<span style="flex:1;display:grid;grid-template-columns:auto 1fr;gap:3px 8px;align-items:center;font-size:11px;color:var(--muted);max-width:260px" aria-label="気分の終わりの値">'+bars+'</span></div>'+
+'<span style="flex:1;display:grid;grid-template-columns:auto 1fr;gap:3px 8px;align-items:center;font-size:11px;color:var(--muted2,var(--muted));max-width:260px" aria-label="気分の終わりの値">'+bars+'</span></div>'+
 '<div class="sub">'+esc('気分：'+NAME[m]+'　'+pk)+'</div>';
 };
 var kill0=Ctx.prototype.kill;
@@ -17670,9 +17670,9 @@ var css='.fhull{fill:var(--surface);fill:color-mix(in srgb,var(--c) 9%,transpare
 '.kav{position:relative;display:inline-flex;border-radius:50%}.kav.lv{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--love)}'+
 '.kstar{position:absolute;right:-5px;top:-5px;width:15px;height:15px;border-radius:50%;color:var(--paper,#fff);font-size:9px;font-style:normal;line-height:15px;text-align:center}'+
 '.kname{font-size:12px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kcell .fate{font-size:10px;padding:0 5px}'+
-'.ksub{font-size:10px;color:var(--muted)}.klv{font-size:10px;color:var(--love);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'+
+'.ksub{font-size:10px;color:var(--muted2,var(--muted))}.klv{font-size:10px;color:var(--love);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'+
 '.kteach{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;color:var(--muted);margin:0 0 8px}.kteach span{display:inline-flex;align-items:center;gap:4px;color:var(--ink);font-weight:600}'+
-'.klegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:11px;color:var(--muted)}.kleg{display:inline-flex;align-items:center;gap:4px}'+
+'.klegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:11px;color:var(--muted2,var(--muted))}.kleg{display:inline-flex;align-items:center;gap:4px}'+
 '.kleg i{display:inline-block;width:12px;height:12px;border-radius:3px;border:2px solid}.klvm{color:var(--love)}';
 function addCss(){
 if(document.getElementById('hk-view-map-css'))return;
@@ -22019,6 +22019,28 @@ sections:[
 ]}
 ]
 },
+'howto':{
+title:'遊び方',
+lead:'住人を登録して箱庭を選び、動かすと、誰と誰がどんな関係に落ち着くかが見られます。上のタブの 1→2→3 の順に進みます。',
+sections:[
+{h:'1 住人',items:[
+'診断結果の文（「〇〇のエゴグラムは「BABAB」…」など）を貼って「追加で読み込む」か、「質問に答えて診断して追加」で住人を登録します。',
+'各住人の ⚙️ 設定で、性別・恋愛対象・口調・呼び方・住人どうしの関係などを決められます。'
+]},
+{h:'2 箱庭',items:[
+'箱庭（舞台）を選び、環境値で雰囲気や出来事の起こりやすさを調整します。一覧の上の札で、日常・極限などに絞り込めます。',
+'参加する住人と、それぞれの最初の行動・目標を決めます（空欄なら性格から自動で決まります）。'
+]},
+{h:'3 経過と結末',items:[
+'「箱庭を動かす」を押すと、関係図・関係の結末・住人ごとの読み解き・時系列が出ます。',
+'同じシードと条件なら同じ結末になります。残したい結果は、セーブ・テキストのコピー・画像の保存で残せます。'
+]},
+{h:'もっと知りたいとき',items:[
+'見出しの横の ？ を押すと、その欄のくわしい説明が出ます。箱庭ごとの説明は、カードの「この箱庭のTIPS」から読めます。',
+'見た目は、上の「藍のみ／キャラ色／フル」（色の量）と半月のボタン（白／黒）で切り替えられます。'
+]}
+]
+},
 'portable':{
 title:'別の端末へ移す（PC→スマホなど）',
 lead:'サーバーを使わずに、このブラウザに保存したものを別のブラウザへ移せます。データはファイルや文字列として自分で運ぶので、どこかへ送信されることはありません。',
@@ -22441,6 +22463,25 @@ var HK=window.HK=window.HK||{};
 var M=HK.ScenMeta={
 kicker:{dungeon:'罠・探索',massage:'あやしい施術',hole:'壁の穴・放置',kaihen:'日常のずれ',succubus:'夜の街・比べられる',saimin:'いたずら',variety:'テレビ番組・対決',locker:'密室',futari:'同居・デート'},
 desc:{
+goukon:'居酒屋の個室で一晩、最後に誰と一緒に帰るか。',
+whiteroom:'脱出の条件を満たすまで出られない、白い密室。',
+futari:'二人の毎日を、出会いから同棲・指輪の約束まで。',
+classroom:'同じクラスで過ごす一年、行事ごとに関係が動く。',
+island:'無人島で救助を待つ日々、飢えと疲れで仲も削れる。',
+ship:'故障した宇宙船で漂流する一年、辿り着ける星は一つ。',
+br:'首輪と武器を渡され、最後の一人だけが帰れる。',
+trial:'殺せば帰れるホテル、殺人が起きるたびに裁判。',
+zombie:'ゾンビのはびこる街で、7日間を生き延びる。',
+jashin:'山奥の村の神の正体を暴き、祭りの夜までに脱出。',
+yakata:'吹雪に閉ざされた館の殺人、探偵と犯人の知恵比べ。',
+omega:'α・β・Ωの世界で、関係の結末（全37通り）を見守る。',
+massage:['評判のマッサージ店で、施術が少しずつあやしくなる。','評判のマッサージ店で、施術が少しずつ際どくなる。'],
+saimin:['誰かに催眠をかけられて、どんな暗示に弱いかが分かる。','誰かに催眠をかけられて、どこまでしてしまうのか。'],
+locker:['媚薬の満ちたロッカーに二人きり、仕掛けを解いて脱出。','媚薬の満ちたロッカーに二人きり、先に手を出すのは誰か。'],
+rpg:'パーティでダンジョンに潜り、いくら持ち帰れるか。',
+jinro:'住人どうしの人狼ゲーム、騙りと推理と裏切り。'
+},
+descLong:{
 goukon:'居酒屋の個室で一晩の合コン。酒が回るほど本音と衝動があふれ出す。最後に誰と誰が一緒に帰ったかで決着がつく。',
 whiteroom:'目覚めると白い部屋。扉の紙には脱出条件。条件は自由に組み立てられる（例：媚薬を10本飲み切って、エッチしないと出られない部屋）。',
 futari:'二人（か三人）の毎日を、朝・昼・夕方・夜ごとに眺める。同居・別々に住んでデート・シェアハウス。出会いから恋人、同棲、指輪の約束まで。',
@@ -22449,6 +22490,7 @@ island:'漂着した無人島で救助を待つ日々。食料が尽きれば体
 br:'首輪をつけられ、ランダムな武器を一つ渡される。最後に生き残った一人だけが帰れる。信じるか、裏切るか、隠れ続けるか。',
 trial:'ホテルに閉じ込められ「殺せば生きて帰れる」と告げられる。殺人が起きれば裁判。犯人を当てれば処刑、外せば犯人以外が全滅。',
 zombie:'ゾンビのはびこる街で7日間を生き延びる。9つのエリアで食料を奪い合い、噂に惑わされ、咬まれればいつかは向こう側へ。',
+ship:'故障した宇宙船で漂流する一年。役割を分け合いながら新しい星を探す。資源・生命体・文明のある星のうち、辿り着けるのはただ一つ。',
 jashin:'地図にない山奥の村には、得体の知れない神が祀られている。祭りの夜までに神の正体と対抗策を突き止め、村から脱出せよ。',
 yakata:'吹雪の山で辿り着いた、地図にない館。橋は落ち、最初の死体が見つかる。探偵は推理で追い、犯人は痕跡を消して逃げ切る。',
 omega:'α・β・Ωの第二性がある世界。発情期や運命の番、職業の事情に揺れながら、関係の結末（全37通り）が決まるまで見守る。',
@@ -22459,8 +22501,9 @@ rpg:'パーティを組んでダンジョンへ。階ごとに戦闘・宝箱・
 jinro:'住人どうしで人狼ゲーム。人狼は性格で騙りや潜伏を選び、村は仕切り役しだいで方針が変わる。信頼と協力、そして裏切り。'
 },
 card:function(id){
-var o={},d=M.desc[id],k=M.kicker[id],r=(M.r18plot||{})[id];
+var o={},d=M.desc[id],l=M.descLong[id],k=M.kicker[id],r=(M.r18plot||{})[id];
 if(d!=null)o.desc=d;
+if(l!=null)o.descLong=l;
 if(k!=null)o.kicker=k;
 if(r!=null)o.r18plot=r;
 return o;
@@ -22524,12 +22567,21 @@ TG.of=function(id){
 var ks=TG.TABLE[id]||[];
 return ks.filter(function(k){return DEF[k]&& !(HK.SAFE_ON&&(k==='raceNight'||k==='night'));}).map(function(k){return{k:k,label:DEF[k].label,desc:DEF[k].desc};});
 };
-TG.html=function(id,esc){
-var list=TG.of(id);
-if(!list.length)return'';
-return'<div class="tags">'+list.map(function(t){
-return'<span class="ftag'+(t.k==='death'||t.k==='exit'?' warn':'')+'" data-act="ftag" data-k="'+t.k+'" title="'+esc(t.desc)+'" role="button" tabindex="0">'+esc(t.label)+'</span>';
-}).join('')+'</div>';
+var FIT=158;
+function est(text){var w=16;for(var i=0;i<text.length;i++)w+=text.charCodeAt(i)<0x7f?6.3:10.5;return w;}
+TG.html=function(id,esc,pre){
+var items=(pre||[]).map(function(p){return{html:p.html,title:p.title,warn:p.warn,k:'note',w:est(p.text||'')+(p.extra||0)};})
+.concat(TG.of(id).map(function(t){return{html:esc(t.label),title:t.desc,warn:t.k==='death'||t.k==='exit',k:t.k,w:est(t.label)};}));
+if(!items.length)return'';
+var n=items.length,used=0,fit=0;
+for(var i=0;i<n;i++){
+var w=items[i].w+(i?4:0),more=i<n-1?4+est('+'+(n-i-1)):0;
+if(i&&used+w+more>FIT)break;
+used+=w;fit=i+1;
+}
+return'<div class="tags">'+items.map(function(t,j){
+return'<span class="ftag'+(t.warn?' warn':'')+(j>=fit?' tx':'')+'" data-act="ftag" data-k="'+t.k+'" title="'+esc(t.title||'')+'" role="button" tabindex="0">'+t.html+'</span>';
+}).join('')+(fit<n?'<span class="ftag ftmore" aria-hidden="true">+'+(n-fit)+'</span>':'')+'</div>';
 };
 })();
 });
@@ -24453,11 +24505,9 @@ return pp;
 }
 var ADULT_NOTE='※成人として扱います';
 function cardNote(n){
-var m=n&&n.match(/※([^。]*?)(?:の描写|表現)/),head='';
-if(n&& /パロディ/.test(n))head='※'+(n.match(/『[^』]+』/)||['パロディ'])[0].replace(/^(?!『)/,'')+(/『/.test(n)?'のパロディ':'');
-else if(m)head='※'+m[1].replace(/（[^）]*）/,'')+'の描写あり';
-if(HK.SAFE_ON)return head;
-return(head?head+'　':'')+(n&& /未成年/.test(n)?'※未成年の職業を選んだ人以外は成人として扱います':ADULT_NOTE);
+var m=n&&n.match(/※([^。]*?)(?:の描写|表現)/);
+if(n&& /パロディ/.test(n))return(n.match(/『[^』]+』/)||['パロディ'])[0]+(/『/.test(n)?'のパロディ':'');
+return m?m[1].replace(/（[^）]*）/,'')+'の描写あり':'';
 }
 function scenR18(s,id){
 var env=(s.env||[]).filter(function(e){return/R-?18/.test(e.label||'');}).map(function(e){return'「'+e.label.replace(/（R-?18）/,'')+'」';});
@@ -24519,24 +24569,28 @@ order.splice.apply(order,[order.indexOf('zombie')+1,0].concat(mv));
 var ckey=(HK.Load?HK.Load.gen:0)+'|'+ !!HK.SAFE_ON+'|'+Object.keys(HK.TIPS_SCEN||{}).length;
 var cards=order.map(function(id){return BD?BD.card(id,ckey,function(){return cardOf(id,false);}):cardOf(id,true);}).join('');
 function cardOf(id,mark){
-var s=scenOf(id);
+var s=scenOf(id),SM=HK.ScenMeta||{};
 var adult= !HK.SAFE_ON&& /R-?18/.test(s.kicker||'');
 var kt=String(s.kicker||'').replace(/（\d+(?:〜\d+)?人）/,'').replace(/^\d+(?:〜\d+)?人・/,'').replace(/・?R-?18/,'').replace(/^ソロ(?:（[^）]*）)?・?/,'').replace(/^・|・$/g,'');
-if(!kt)kt=(HK.ScenMeta&&HK.ScenMeta.kicker[id])||'';
-var kick=esc(kt)+(adult?'<span class="r18tag">R18</span>':'');
-var lo=smin(id),hi=smax(id),meta='参加 '+(lo===hi?lo+'人':lo+'〜'+hi+'人');
-var r18s= !HK.SAFE_ON&& !adult?scenR18(s,id):'';
-if(r18s)meta+='<span class="r18part"><span class="r18tag">R18</span>'+esc(r18s)+'</span>';
-var cd=HK.ScenMeta&&HK.ScenMeta.desc[id],snote=HK.SAFE_ON?String(s.note||'').replace(/[^。]*成人として扱[^。]*。?/g,'').replace(/^※\s*$/,'').trim():s.note,full=s.desc+(snote?'\n'+snote:'')+(HK.SAFE_ON|| /成人として扱/.test(s.note||'')?'':'\n※登場人物はすべて成人として扱います。');
-cd=Array.isArray(cd)?cd[HK.SAFE_ON?0:1]:cd||s.desc;
+if(!kt)kt=(SM.kicker&&SM.kicker[id])||'';
+var lo=smin(id),hi=smax(id),cnt=lo===hi?lo+'人':lo+'〜'+hi+'人';
+var pick=function(v){return Array.isArray(v)?v[HK.SAFE_ON?0:1]:v;};
+var cl=pick((SM.descLong||{})[id])||s.desc,cd=pick((SM.desc||{})[id])||cl;
+var snote=HK.SAFE_ON?String(s.note||'').replace(/[^。]*成人として扱[^。]*。?/g,'').replace(/^※\s*$/,'').trim():s.note,full=cl+(snote?'\n'+snote:'')+(HK.SAFE_ON|| /成人として扱/.test(s.note||'')?'':'\n※登場人物はすべて成人として扱います。');
+var pre=[],r18s= !HK.SAFE_ON&& !adult?scenR18(s,id):'',nh=cardNote(s.note);
+if(r18s)pre.push({html:'<span class="r18tag">R18</span>'+esc(r18s),text:r18s,extra:34,title:'R18：'+r18s});
+if(nh)pre.push({html:esc(nh),text:nh,title:snote||nh,warn:true});
+var minor= !HK.SAFE_ON&& /未成年/.test(s.note||'')?'<div class="note">※未成年の職業を選んだ人以外は成人として扱います</div>':'';
 var on=mark&&id===S.scenId;
 return'<label class="scen'+(adult?' adult':'')+(on?' on':'')+'" title="'+esc(full)+'"><input type="radio" name="scen" id="sc-'+id+'" value="'+id+'" data-f="scen"'+(on?' checked':'')+'>'+((wait||loadSel)&&on?scLoadBadge(id):'')+
-'<div class="k">'+kick+'</div><div class="n">'+esc(s.name)+'</div><div class="m">'+meta+'</div>'+(HK.ScenTags?HK.ScenTags.html(id,esc):'')+'<div class="d">'+esc(cd)+'</div><div class="note">'+esc(cardNote(s.note))+'</div>'+(HK.Tips?HK.Tips.scenBtn(id):'')+'</label>';
+'<div class="k"><span class="kt">'+esc(kt)+'</span><span class="kn">'+cnt+'</span></div><div class="n">'+esc(s.name)+(adult?'<span class="r18tag">R18</span>':'')+'</div>'+
+'<div class="d'+(cl!==cd?' hasl':'')+'">'+esc(cd)+'</div>'+(cl!==cd?'<div class="dl">'+esc(cl)+'</div>':'')+
+(HK.ScenTags?HK.ScenTags.html(id,esc,pre):'')+minor+(HK.Tips?HK.Tips.scenBtn(id):'')+'</label>';
 }
-if(HK.SAFE_ON&&HK.CONF&&HK.CONF.r18Url)cards+='<div class="scen r18link">'+
-'<div class="k">BOOTH・noteで頒布中・18歳以上向け</div><div class="n">R-18版</div><div class="d">エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。</div>'+
+if(HK.SAFE_ON&&HK.CONF&&HK.CONF.r18Url)cards+='<div class="scen r18link" title="エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。">'+
+'<div class="k">BOOTH・noteで頒布中・18歳以上向け</div><div class="n">R-18版</div><div class="d">成人向けの箱庭を5つ追加。夜の場面もぼかさずに描きます。</div>'+
 '<div class="r18buy"><a href="'+esc(HK.CONF.r18Url)+'" target="_blank" rel="noopener">BOOTHで買う ↗</a>'+(HK.CONF.noteUrl?'<a href="'+esc(HK.CONF.noteUrl)+'" target="_blank" rel="noopener">noteで買う ↗</a>':'')+'</div></div>';
-var head='<h2 class="sec">箱庭を選ぶ</h2><div class="scens">'+cards+'</div>'+prefRow();
+var head='<h2 class="sec">箱庭を選ぶ'+(HK.SAFE_ON?'':'<span class="secnote" data-note="'+ADULT_NOTE+'"></span>')+'</h2><div class="scens">'+cards+'</div>'+prefRow();
 if(wait){
 var we=boxErr[S.scenId];
 drawBox([{k:'cards',html:head},{k:'run',html:runBar()}],opt,'<div class="boxwait"'+(we?'':' aria-busy="true"')+'>'+(we?'<p>「'+esc(scen.name)+'」のデータを読み込めませんでした'+(we.reason==='offline'?'（通信できないため読み込めません）':'')+'</p><p><button type="button" class="btn small" data-act="scenretry">もう一度</button></p>':
@@ -25347,13 +25401,13 @@ var css='.gearbtn{white-space:nowrap}.csum{font-size:12px;color:var(--muted);fle
 '.gearbox{background:var(--paper,var(--surface));color:var(--ink);border:1px solid var(--line2,var(--line));border-radius:var(--r-card,6px);width:100%;max-width:680px;padding:18px 20px 22px}'+
 '.gearhd{display:flex;align-items:center;gap:10px;margin-bottom:6px;padding-bottom:10px;border-bottom:1px solid var(--line)}.gearhd h2{font-size:17px;font-weight:700;margin:0;flex:1}.gearsec{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}.gearsec h3{font-size:14px;font-weight:700;margin:0 0 8px}'+
 '.gearrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:6px 0}.gearrow label{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}.gearrow select,.gearrow input[type=text]{max-width:100%}'+
-'.gearhint{font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.6}.tonesample{margin:8px 0 2px;padding:8px 12px;border-left:2px solid var(--ink);background:var(--bg1,var(--accent-soft));border-radius:0 4px 4px 0;font-size:13px;line-height:1.7;min-height:1.7em}.tonesample .tsl{display:block}.tonesample.anim .tsl{display:none}.tonesample.anim .tsl.on{display:block;animation:tsfade .5s ease}.tonesample .tsh{font-size:11px;color:var(--muted);display:block;margin-bottom:2px}@keyframes tsfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.tonesample.anim .tsl{display:block}.tonesample.anim .tsl.on{animation:none}}.gtie{border:1px solid var(--line);border-radius:var(--r-card,6px);padding:8px 10px;margin:8px 0}.gtie .who{font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:4px}'+
+'.gearhint{font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.6}.tonesample{margin:8px 0 2px;padding:8px 12px;border-left:2px solid var(--ink);background:var(--bg1,var(--accent-soft));border-radius:0 4px 4px 0;font-size:13px;line-height:1.7;min-height:1.7em}.tonesample .tsl{display:block}.tonesample.anim .tsl{display:none}.tonesample.anim .tsl.on{display:block;animation:tsfade .5s ease}.tonesample .tsh{font-size:11px;color:var(--muted2,var(--muted));display:block;margin-bottom:2px}@keyframes tsfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.tonesample.anim .tsl{display:block}.tonesample.anim .tsl.on{animation:none}}.gtie{border:1px solid var(--line);border-radius:var(--r-card,6px);padding:8px 10px;margin:8px 0}.gtie .who{font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:4px}'+
 '.gtie .one{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.gtie input[type=text]{width:12em}'+
 'details.gkeigo,details.gdet{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r-card,6px);padding:6px 10px}details.gkeigo summary,details.gdet summary{cursor:pointer;font-size:13px;color:var(--muted)}details.gkeigo .gkn,details.gdet .gkn{font-size:12px;margin-left:4px;color:var(--ink)}details.gkeigo[open] summary,details.gdet[open] summary{margin-bottom:4px}'+
 '.gscope{margin:-2px 0 8px;padding:4px 8px;border-left:2px solid var(--line2,var(--line));background:var(--bg1,transparent);border-radius:0 4px 4px 0}.gforh{font-size:12px;color:var(--muted);margin-left:4px}.gfnote{color:var(--accent)}'+
 '@media (max-width:520px){.gearbox{padding:12px}.gtie input[type=text]{width:100%}}';
 css+='details.gego{margin:10px 0 0;border:1px solid var(--line);border-radius:var(--r-card,6px);padding:6px 10px;background:var(--bg1,transparent)}details.gego summary{cursor:pointer;font-size:14px;font-weight:600}details.gego .gegc{font-size:12px;font-weight:400;color:var(--muted);margin-left:6px}details.gego ul{margin:6px 0 2px;padding-left:1.2em;font-size:13px;line-height:1.7}details.gego li{margin:2px 0}'+
-'.egatt{display:inline-block;font-size:11px;line-height:1.5;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 6px;margin-left:6px;white-space:nowrap;vertical-align:1px}';
+'.egatt{display:inline-block;font-size:11px;line-height:1.5;color:var(--muted2,var(--muted));border:1px solid var(--line);border-radius:999px;padding:0 6px;margin-left:6px;white-space:nowrap;vertical-align:1px}';
 var st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 var cur=null,ov=null,opener=null,keigoOpen=false,egoOpen=true;
 var openMap={};
@@ -25803,7 +25857,6 @@ HK.Load.def(266,'js/ui-mobile.js',function(){
 (function(){
 'use strict';
 var css='@media (max-width:600px){'+
-'html body .tabs{gap:0}html body .tab{padding:10px 8px 9px;font-size:13px}html body .tab b{margin-right:3px}'+
 'html body h2.sec{font-size:18px}html body details.fold>summary{padding-top:22px}'+
 'html body #view-box .tblwrap{max-height:60vh}html body #view-box .tblhint{display:block}'+
 'html body #view-result .tblwrap{overflow:visible;max-height:none;border:0;background:none}'+
@@ -25813,7 +25866,7 @@ var css='@media (max-width:600px){'+
 'html body #view-result table.per td{display:block;position:static!important;border:0!important;padding:0!important;box-shadow:none!important;background:none!important;min-width:0!important;max-width:none!important;width:auto!important;flex:1 1 calc(50% - 10px);text-align:left!important}'+
 'html body #view-result table.per td:nth-child(1){flex:0 0 auto;align-self:center}html body #view-result table.per td:nth-child(2){flex:1 1 100%;align-self:center;font-size:14px}'+
 'html body #view-result table.per td:nth-child(2) b{max-width:none}'+
-'html body #view-result table.per td[data-label]:nth-child(n+3)::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted);margin-bottom:2px}'+
+'html body #view-result table.per td[data-label]:nth-child(n+3)::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted2,var(--muted));margin-bottom:2px}'+
 'html body #view-result table.per td:nth-child(n+3){flex:1 1 calc(33% - 10px);font-size:15px}'+
 'html body #view-result table.per td:last-child{flex-basis:100%;font-size:13px}'+
 'html body #view-result table.per td select,html body #view-result table.per td input[type=text]{width:100%;max-width:none!important;min-width:0!important}'+
@@ -25896,8 +25949,98 @@ var st=document.createElement('style');st.textContent=css;document.head.appendCh
 })();
 });
 ;
+/* ==== js/ui-filter.js ==== */
+HK.Load.def(268,'js/ui-filter.js',function(){
+(function(){
+'use strict';
+var HK=window.HK;
+if(!HK||typeof document==='undefined')return;
+var EXTREME=['island','zombie','jashin','yakata','rpg','jinro','ship','br','trial','dungeon'];
+var CATS=[['all','すべて'],['daily','日常'],['extreme','極限'],['solo','ひとり用'],['r18','R-18 のみ']];
+var cur='all';
+var css='.scfilt{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}'+
+'.scfilt .fn{font-family:var(--f-num);font-size:11px;margin-left:4px;opacity:.85}'+
+'#view-box .scens>.fltoff{display:none!important}'+
+'.tab .tabn{font-family:var(--f-num);font-size:11px;font-weight:400;color:var(--muted2);margin-left:8px;max-width:11em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'+
+'.tab .tabn:empty{display:none}@media (max-width:600px){.tab .tabn{display:none}}'+
+'#agemode-slot{display:contents}#agemode-slot .agemode{margin:0}'+
+'.foot-links .agenow{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border:1px solid var(--ink);border-radius:var(--r,4px);color:var(--ink);font-family:var(--f-num);font-size:11px;font-weight:600;letter-spacing:.08em}';
+var st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
+function meta(id){return(HK.SCENARIOS&&HK.SCENARIOS[id])||(HK.Load&&HK.Load.meta&&HK.Load.meta(id))||null;}
+function catOf(card){
+var inp=card.querySelector('input[name="scen"]');
+if(!inp)return null;
+var id=inp.value,m=meta(id)||{},ex=EXTREME.indexOf(id)>=0,so= !ex&& !!m.solo;
+return{all:true,extreme:ex,solo:so,daily: !ex&& !so,r18:card.classList.contains('adult')};
+}
+function filt(){
+var box=document.getElementById('view-box'),grid=box&&box.querySelector('.scens');
+if(!grid)return;
+var cards=[],info=[],n={},ad=null;
+Array.prototype.forEach.call(grid.children,function(c){
+if(!c.classList|| !c.classList.contains('scen'))return;
+if(c.classList.contains('r18link')){ad=c;return;}
+var k=catOf(c);
+if(!k)return;
+cards.push(c);info.push(k);
+CATS.forEach(function(x){if(k[x[0]])n[x[0]]=(n[x[0]]||0)+1;});
+});
+if(!n[cur])cur='all';
+var html=CATS.filter(function(x){return x[0]==='all'||n[x[0]];}).map(function(x){
+return'<button type="button" class="chip" data-scflt="'+x[0]+'" aria-pressed="'+(cur===x[0])+'">'+x[1]+(x[0]==='all'?'<span class="fn">'+(n.all||0)+'</span>':'')+'</button>';
+}).join('');
+var row=grid.previousElementSibling;
+if(!row|| !row.classList.contains('scfilt')){
+row=document.createElement('div');row.className='scfilt';row.setAttribute('role','group');row.setAttribute('aria-label','箱庭の絞り込み');
+grid.parentNode.insertBefore(row,grid);
+}
+if(row.getAttribute('data-h')!==html){row.innerHTML=html;row.setAttribute('data-h',html);}
+cards.forEach(function(c,i){
+var off=cur!=='all'&& !info[i][cur]&& !c.classList.contains('on');
+if(c.classList.contains('fltoff')!==off)c.classList.toggle('fltoff',off);
+});
+if(ad&&ad.classList.contains('fltoff')!==(cur!=='all'))ad.classList.toggle('fltoff',cur!=='all');
+}
+function put(id,t){
+var b=document.getElementById(id);
+if(!b)return;
+var s=b.querySelector('.tabn');
+if(!s){s=document.createElement('small');s.className='tabn';b.appendChild(s);}
+if(s.textContent!==t)s.textContent=t;
+}
+function tabs(){
+var S=HK.UI&&HK.UI.state?HK.UI.state():null;
+if(!S)return;
+put('tab-cast',S.chars&&S.chars.length?S.chars.length+'人':'');
+var m=S.scenId?meta(S.scenId):null;
+put('tab-box',m&&m.name?m.name:'');
+}
+function age(){
+var slot=document.getElementById('agemode-slot'),box=document.querySelector('header.top .brand > .agemode');
+if(slot&&box)slot.appendChild(box);
+var now=document.querySelector('#agemode-slot .agemode .now'),fl=document.querySelector('.site-foot .foot-links');
+if(now&&fl){now.classList.add('agenow');fl.insertBefore(now,fl.firstChild);}
+}
+var raf=0;
+function sync(){raf=0;age();tabs();filt();}
+function later(){if(!raf)raf=(window.requestAnimationFrame||setTimeout)(sync);}
+document.addEventListener('click',function(ev){
+var b=ev.target&&ev.target.closest&&ev.target.closest('[data-scflt]');
+if(!b)return;
+cur=b.getAttribute('data-scflt')||'all';
+filt();
+});
+function init(){
+sync();
+var main=document.querySelector('main');
+if(main&&window.MutationObserver)new MutationObserver(later).observe(main,{childList:true,subtree:true});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+});
+;
 /* ==== js/obsess-kit.js ==== */
-HK.Load.def(269,'js/obsess-kit.js',function(){
+HK.Load.def(270,'js/obsess-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -26272,7 +26415,7 @@ if(opt.extra)HK.addTo(scen.events,opt.extra.slice());
 });
 ;
 /* ==== js/lewd-unify.js ==== */
-HK.Load.def(274,'js/lewd-unify.js',function(){
+HK.Load.def(275,'js/lewd-unify.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -26390,7 +26533,7 @@ if(HK.Load&&HK.Load.onChunk)HK.Load.onChunk(function(){Object.keys(X.CONF).forEa
 });
 ;
 /* ==== js/lewd-mark.js ==== */
-HK.Load.def(275,'js/lewd-mark.js',function(){
+HK.Load.def(276,'js/lewd-mark.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -26438,7 +26581,7 @@ return sim;
 });
 ;
 /* ==== js/ero-scene.js ==== */
-HK.Load.def(276,'js/ero-scene.js',function(){
+HK.Load.def(277,'js/ero-scene.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -26494,7 +26637,7 @@ HK.wrap(HK,'simulate',function(sim0){var f=function(){return X.finish(sim0.apply
 });
 ;
 /* ==== js/reset.js ==== */
-HK.Load.def(277,'js/reset.js',function(){
+HK.Load.def(278,'js/reset.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -26549,7 +26692,7 @@ HK.resetStorage=wipe;
 });
 ;
 /* ==== js/voice-seg.js ==== */
-HK.Load.def(278,'js/voice-seg.js',function(){
+HK.Load.def(279,'js/voice-seg.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK.Voice||{};
@@ -26732,7 +26875,7 @@ return sim;
 });
 ;
 /* ==== js/voice-fp.js ==== */
-HK.Load.def(279,'js/voice-fp.js',function(){
+HK.Load.def(280,'js/voice-fp.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -26790,7 +26933,7 @@ return saved.length?function(){saved.forEach(function(s){s[0].fp=s[1];});}:null;
 });
 ;
 /* ==== js/rel-bad-story.js ==== */
-HK.Load.def(301,'js/rel-bad-story.js',function(){
+HK.Load.def(302,'js/rel-bad-story.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story;
@@ -26959,4 +27102,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '77981344d1', 1);
+HK.Load.done('core', 'fd6cbe9352', 1);

@@ -5,8 +5,7 @@
 (function () {
   'use strict';
   var css = '@media (max-width:600px){' +
-    /* タブ：4つとも1画面に収める */
-    'html body .tabs{gap:0}html body .tab{padding:10px 8px 9px;font-size:13px}html body .tab b{margin-right:3px}' +
+    /* タブ：等幅3分割＋セーブのアイコンにする整形は index.html の CSS（2026-10-27） */
     /* 見出しは少し小さく */
     'html body h2.sec{font-size:18px}html body details.fold>summary{padding-top:22px}' +
     /* 箱庭タブの参加表：表の形のまま、高さを画面の6割ほどに（index.html の横スクロール・先頭2列と見出しの固定はそのまま） */

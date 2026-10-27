@@ -1074,14 +1074,13 @@
   }
 
   /* カードの表（キャッチコピーの代わり・概要・R18 の描写の注記）は js/scen-meta.js の HK.ScenMeta（目録にも写す。2026-10-27） */
-  /* 注意書きはカードでは短く（全文は title に）。R18版はどの箱庭にも「※成人として扱います」を付ける（全年齢版は付けない） */
+  /* 注意書きはカードでは短い札にしてタグの列に入れる（全文は札とカードの title に）。
+     R18版の「※成人として扱います」はカードに付けず、一覧の見出しの横に1行だけ（2026-10-27）。未成年の職業を選べる箱庭の注記は、選んだカードの中に出す */
   var ADULT_NOTE = '※成人として扱います';
   function cardNote(n) {
-    var m = n && n.match(/※([^。]*?)(?:の描写|表現)/), head = '';
-    if (n && /パロディ/.test(n)) head = '※' + (n.match(/『[^』]+』/) || ['パロディ'])[0].replace(/^(?!『)/, '') + (/『/.test(n) ? 'のパロディ' : '');
-    else if (m) head = '※' + m[1].replace(/（[^）]*）/, '') + 'の描写あり';
-    if (HK.SAFE_ON) return head;
-    return (head ? head + '　' : '') + (n && /未成年/.test(n) ? '※未成年の職業を選んだ人以外は成人として扱います' : ADULT_NOTE);
+    var m = n && n.match(/※([^。]*?)(?:の描写|表現)/);
+    if (n && /パロディ/.test(n)) return (n.match(/『[^』]+』/) || ['パロディ'])[0] + (/『/.test(n) ? 'のパロディ' : '');
+    return m ? m[1].replace(/（[^）]*）/, '') + 'の描写あり' : '';
   }
   function scenR18(s, id) {
     var env = (s.env || []).filter(function (e) { return /R-?18/.test(e.label || ''); }).map(function (e) { return '「' + e.label.replace(/（R-?18）/, '') + '」'; });
@@ -1150,28 +1149,35 @@
     /* カードの HTML は、選択と読み込み中の印を除いて箱庭ごとに1回だけ作る（かたまり・TIPS を読んだら作り直す） */
     var ckey = (HK.Load ? HK.Load.gen : 0) + '|' + !!HK.SAFE_ON + '|' + Object.keys(HK.TIPS_SCEN || {}).length;
     var cards = order.map(function (id) { return BD ? BD.card(id, ckey, function () { return cardOf(id, false); }) : cardOf(id, true); }).join('');
+    /* カード：肩見出し＋人数・名前（R18 の札）・短い説明の3行。選んだカードだけに長い説明・タグ（PC は選んでいなくても1行）・注記・TIPS を出す（CSS の .scen.on で出し入れ。カードの HTML は選択によらず同じ） */
     function cardOf(id, mark) {
-      var s = scenOf(id);
-      /* 成人向けの箱庭は、ピンクのボックスと赤いR18タグでひと目で分かるようにする */
+      var s = scenOf(id), SM = HK.ScenMeta || {};
+      /* 成人向けの箱庭は、名前の右の R18 の札でひと目で分かるようにする */
       var adult = !HK.SAFE_ON && /R-?18/.test(s.kicker || '');
-      /* キャッチコピーに手書きで混ざった人数・R18 は外し、人数とR18の有無は下の一行にそろえて出す */
+      /* キャッチコピーに手書きで混ざった人数・R18 は外し、人数は肩見出しの右にそろえて出す */
       var kt = String(s.kicker || '').replace(/（\d+(?:〜\d+)?人）/, '').replace(/^\d+(?:〜\d+)?人・/, '').replace(/・?R-?18/, '').replace(/^ソロ(?:（[^）]*）)?・?/, '').replace(/^・|・$/g, '');
-      if (!kt) kt = (HK.ScenMeta && HK.ScenMeta.kicker[id]) || '';
-      var kick = esc(kt) + (adult ? '<span class="r18tag">R18</span>' : '');
-      var lo = smin(id), hi = smax(id), meta = '参加 ' + (lo === hi ? lo + '人' : lo + '〜' + hi + '人');
-      var r18s = !HK.SAFE_ON && !adult ? scenR18(s, id) : '';
-      if (r18s) meta += '<span class="r18part"><span class="r18tag">R18</span>' + esc(r18s) + '</span>';
-      var cd = HK.ScenMeta && HK.ScenMeta.desc[id], snote = HK.SAFE_ON ? String(s.note || '').replace(/[^。]*成人として扱[^。]*。?/g, '').replace(/^※\s*$/, '').trim() : s.note, full = s.desc + (snote ? '\n' + snote : '') + (HK.SAFE_ON || /成人として扱/.test(s.note || '') ? '' : '\n※登場人物はすべて成人として扱います。');
-      cd = Array.isArray(cd) ? cd[HK.SAFE_ON ? 0 : 1] : cd || s.desc;
+      if (!kt) kt = (SM.kicker && SM.kicker[id]) || '';
+      var lo = smin(id), hi = smax(id), cnt = lo === hi ? lo + '人' : lo + '〜' + hi + '人';
+      var pick = function (v) { return Array.isArray(v) ? v[HK.SAFE_ON ? 0 : 1] : v; };
+      var cl = pick((SM.descLong || {})[id]) || s.desc, cd = pick((SM.desc || {})[id]) || cl;
+      var snote = HK.SAFE_ON ? String(s.note || '').replace(/[^。]*成人として扱[^。]*。?/g, '').replace(/^※\s*$/, '').trim() : s.note, full = cl + (snote ? '\n' + snote : '') + (HK.SAFE_ON || /成人として扱/.test(s.note || '') ? '' : '\n※登場人物はすべて成人として扱います。');
+      /* タグの列の先頭に足す札：R18 の描写が入る条件（R18版の、常には R18 でない箱庭）と、注意書き（死の描写・パロディなど） */
+      var pre = [], r18s = !HK.SAFE_ON && !adult ? scenR18(s, id) : '', nh = cardNote(s.note);
+      if (r18s) pre.push({ html: '<span class="r18tag">R18</span>' + esc(r18s), text: r18s, extra: 34, title: 'R18：' + r18s });
+      if (nh) pre.push({ html: esc(nh), text: nh, title: snote || nh, warn: true });
+      var minor = !HK.SAFE_ON && /未成年/.test(s.note || '') ? '<div class="note">※未成年の職業を選んだ人以外は成人として扱います</div>' : '';
       var on = mark && id === S.scenId;
       return '<label class="scen' + (adult ? ' adult' : '') + (on ? ' on' : '') + '" title="' + esc(full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (on ? ' checked' : '') + '>' + ((wait || loadSel) && on ? scLoadBadge(id) : '') +
-        '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div>' + (HK.ScenTags ? HK.ScenTags.html(id, esc) : '') + '<div class="d">' + esc(cd) + '</div><div class="note">' + esc(cardNote(s.note)) + '</div>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</label>';
+        '<div class="k"><span class="kt">' + esc(kt) + '</span><span class="kn">' + cnt + '</span></div><div class="n">' + esc(s.name) + (adult ? '<span class="r18tag">R18</span>' : '') + '</div>' +
+        '<div class="d' + (cl !== cd ? ' hasl' : '') + '">' + esc(cd) + '</div>' + (cl !== cd ? '<div class="dl">' + esc(cl) + '</div>' : '') +
+        (HK.ScenTags ? HK.ScenTags.html(id, esc, pre) : '') + minor + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</label>';
     }
     /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url＝BOOTH・CONF.noteUrl＝note） */
-    if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<div class="scen r18link">' +
-      '<div class="k">BOOTH・noteで頒布中・18歳以上向け</div><div class="n">R-18版</div><div class="d">エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。</div>' +
+    if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<div class="scen r18link" title="エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。">' +
+      '<div class="k">BOOTH・noteで頒布中・18歳以上向け</div><div class="n">R-18版</div><div class="d">成人向けの箱庭を5つ追加。夜の場面もぼかさずに描きます。</div>' +
       '<div class="r18buy"><a href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (HK.CONF.noteUrl ? '<a href="' + esc(HK.CONF.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '') + '</div></div>';
-    var head = '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' + prefRow();
+    /* R18版は「※成人として扱います」を見出しの横に1行だけ（文字は CSS の attr で出す：折りたたみの開閉の覚えは見出しの文字で引くので、文字を変えない） */
+    var head = '<h2 class="sec">箱庭を選ぶ' + (HK.SAFE_ON ? '' : '<span class="secnote" data-note="' + ADULT_NOTE + '"></span>') + '</h2><div class="scens">' + cards + '</div>' + prefRow();
     if (wait) {
       var we = boxErr[S.scenId];
       drawBox([{ k: 'cards', html: head }, { k: 'run', html: runBar() }], opt, '<div class="boxwait"' + (we ? '' : ' aria-busy="true"') + '>' + (we ? '<p>「' + esc(scen.name) + '」のデータを読み込めませんでした' + (we.reason === 'offline' ? '（通信できないため読み込めません）' : '') + '</p><p><button type="button" class="btn small" data-act="scenretry">もう一度</button></p>' :
