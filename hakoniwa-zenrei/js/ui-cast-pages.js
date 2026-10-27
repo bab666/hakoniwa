@@ -26,7 +26,7 @@
   })();
   function keep() { try { if (HK.store) HK.store.set('castview', V); } catch (e) { /* 保存できなくても表示は変えられる */ } }
   /* このページを開いているあいだだけの状態：住人のページ・探す語、関係の表示・ページ・探す語、箱庭タブの探す語・選んでいる人だけ・出す人数 */
-  var st = { want: '', page: 0, q: '', tmode: '', tpage: 0, tq: '', bq: '', bonly: false, bcap: BOX_CAP };
+  var st = { want: '', tagSel: {}, page: 0, q: '', tmode: '', tpage: 0, tq: '', bq: '', bonly: false, bcap: BOX_CAP };
 
   (function () {
     if (typeof document === 'undefined' || !document.head) return;
@@ -43,9 +43,10 @@
       'table.per tr.bxg td,table.per tr.bxmore td{position:static;max-width:none;width:auto;min-width:0;text-align:left;background:var(--accent-soft);padding:4px 10px;box-shadow:none}' +
       'table.per tr.bxmore td{background:var(--bg)}' +
       '.bxgin{position:sticky;left:10px;display:inline-flex;flex-wrap:wrap;gap:4px 10px;align-items:center;max-width:calc(100vw - 60px)}' +
+      '.res .memo input.tags{flex:0 1 150px}.cptags .chip{cursor:pointer}' +
       '.cpfind{width:9em;max-width:100%;font-size:12px}.cpfind.bad{border-color:var(--warn)}' +
       '.cpfilt{display:block;width:100%;max-width:20em;margin:0 0 6px;font-size:13px}' +
-      '#tiepages .cptools{margin-top:0}#castlist .res-ph{height:220px;border:1px dashed var(--line);border-radius:var(--r);background:var(--surface)}@media (max-width:600px){#castlist .res-ph{height:370px}}';
+      '#tiepages,#tiebody{min-width:0;max-width:100%}#tiepages select{max-width:100%}#tiepages .cptools{margin-top:0}#castlist .res-ph{height:220px;border:1px dashed var(--line);border-radius:var(--r);background:var(--surface)}@media (max-width:600px){#castlist .res-ph{height:370px}}';
     var s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
   })();
 
@@ -55,7 +56,37 @@
     try { s = s.normalize('NFKC'); } catch (e) { /* 古い環境 */ }
     return s.toLowerCase().replace(/[ァ-ヶ]/g, function (ch) { return String.fromCharCode(ch.charCodeAt(0) - 0x60); }).replace(/[\s　]+/g, '');
   }
-  function hit(c, q, memo) { return !q || (!!c && (norm(c.name).indexOf(q) >= 0 || (memo && norm(c.memo).indexOf(q) >= 0))); }
+  /* how：省略＝名前だけ（関係の表）／'box'＝名前・グループ・タグ（箱庭タブの参加者選び）／true＝名前・メモ・グループ・タグ（住人の一覧） */
+  function hit(c, q, how) {
+    if (!q) return true;
+    if (!c) return false;
+    if (norm(c.name).indexOf(q) >= 0) return true;
+    if (!how) return false;
+    if (norm(c.group).indexOf(q) >= 0 || norm(c.tags).indexOf(q) >= 0) return true;
+    return how === true && norm(c.memo).indexOf(q) >= 0;
+  }
+  /* タグ（グループとは別の目印。c.tags は読点・カンマ区切りの文字列）。文字列ごとに一度だけ分ける */
+  var tagMemo = Object.create(null), tagMemoN = 0;
+  function tagList(c) {
+    var s = String((c && c.tags) || ''), m = tagMemo[s];
+    if (m) return m;
+    var t = []; s.split(/[,，、]/).forEach(function (x) { x = x.trim(); if (x && t.indexOf(x) < 0) t.push(x); });
+    if (++tagMemoN > 5000) { tagMemo = Object.create(null); tagMemoN = 0; }
+    return (tagMemo[s] = t);
+  }
+  /* 住人に付いているタグ（最初に出てきた順）と人数 */
+  function allTags() {
+    var out = [], n = Object.create(null);
+    X.S().chars.forEach(function (c) { tagList(c).forEach(function (t) { if (!n[t]) { n[t] = 0; out.push(t); } n[t]++; }); });
+    return { list: out, n: n };
+  }
+  /* 「タグで絞り込む」で選んだタグをすべて持つか（AND） */
+  function tagOk(c) {
+    var ks = Object.keys(st.tagSel);
+    if (!ks.length) return true;
+    var t = tagList(c);
+    return ks.every(function (k) { return t.indexOf(k) >= 0; });
+  }
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
   /* ---------- 節（グループごと） ----------
@@ -88,9 +119,12 @@
   /* 住人の一覧の見え方：節・ページ・このページに出す人 */
   function castView() {
     var S = X.S(), secs = sections(false), grouped = secs.grouped, q = norm(st.q), flat = [], folded = 0;
+    /* 探す語かタグの絞り込みがあるときは、一致した人を折りたたんだ節の中でも出す */
+    var tf = Object.keys(st.tagSel).length > 0;
+    if (tf && !q) q = '\u0000';
     secs.forEach(function (s) {
       s.open = !grouped || !V.fold[s.key];
-      s.show = q ? s.list.filter(function (i) { return hit(S.chars[i], q, true); }) : s.list;
+      s.show = q ? s.list.filter(function (i) { return hit(S.chars[i], q === '\u0000' ? '' : q, true) && tagOk(S.chars[i]); }) : s.list;
       if (q || s.open) s.show.forEach(function (i) { flat.push(i); }); else folded += s.list.length;
     });
     var size = V.size, total = flat.length, pages = Math.max(1, Math.ceil(total / size));
@@ -158,10 +192,17 @@
   function castParts() {
     var S = X.S(), v = castView(), on = {}, many = S.chars.length > SIZES[0], body = '', n = 0, later = [];
     v.onPage.forEach(function (i) { on[i] = 1; });
-    var tools = many || v.grouped ? '<div class="row cptools">' +
-      (many ? '<input type="search" id="cpq" value="' + esc(st.q) + '" placeholder="名前・メモで探す" aria-label="住人を名前・メモで探す" autocomplete="off" enterkeyhint="search">' : '') +
+    var TG = allTags(), sel = st.tagSel;
+    st.tagKey = TG.list.join('\u0001');
+    Object.keys(sel).forEach(function (k) { if (!TG.n[k]) delete sel[k]; });
+    /* タグで絞り込む：札を押すと、その札のタグを持つ人だけ（いくつも押すと、すべてのタグを持つ人＝AND） */
+    var tagRow = TG.list.length ? '<div class="row cptools cptags"><span class="hint">タグで絞り込む：</span>' + TG.list.map(function (t) { var on = !!sel[t]; return '<button type="button" class="chip" data-act="cptag" data-t="' + esc(t) + '" aria-pressed="' + on + '" title="' + esc(t) + 'のタグを持つ住人' + (on ? 'の絞り込みをやめる' : 'だけを出す（いくつも選ぶと、すべてを持つ人）') + '">' + esc(t) + '（' + TG.n[t] + '）</button>'; }).join('') +
+      (Object.keys(sel).length ? '<button type="button" class="btn small ghost" data-act="cptagclear">タグの絞り込みをやめる</button>' : '') + '</div>' : '';
+    var dl = '<datalist id="taglist">' + TG.list.map(function (t) { return '<option value="' + esc(t) + '">'; }).join('') + '</datalist>';
+    var tools = dl + (many || v.grouped ? '<div class="row cptools">' +
+      (many ? '<input type="search" id="cpq" value="' + esc(st.q) + '" placeholder="名前・メモ・グループ・タグで探す" aria-label="住人を名前・メモ・グループ・タグで探す" autocomplete="off" enterkeyhint="search">' : '') +
       (v.grouped ? '<button type="button" class="btn small" data-act="cpfoldall">すべて折りたたむ</button><button type="button" class="btn small" data-act="cpopenall">すべて開く</button>' : '') +
-      (many ? '<label class="hint">1ページに <select id="cpsize" aria-label="1ページに出す住人の数">' + SIZES.map(function (n) { return '<option value="' + n + '"' + (n === V.size ? ' selected' : '') + '>' + n + '人</option>'; }).join('') + '</select></label>' : '') + '</div>' : '';
+      (many ? '<label class="hint">1ページに <select id="cpsize" aria-label="1ページに出す住人の数">' + SIZES.map(function (n) { return '<option value="' + n + '"' + (n === V.size ? ' selected' : '') + '>' + n + '人</option>'; }).join('') + '</select></label>' : '') + '</div>' : '') + tagRow;
     v.secs.forEach(function (s, no) {
       var rows = (v.q || s.open) ? s.show.filter(function (i) { return on[i]; }) : [];
       if (v.grouped) body += castHead(s, rows.length, v, no);
@@ -171,7 +212,7 @@
         else { body += '<div class="res-ph" data-ph="' + i + '" aria-hidden="true"></div>'; later.push(i); }
       });
     });
-    if (v.q && !v.total) body += '<p class="hint" style="margin:0">「' + esc(st.q) + '」に合う住人はいません。</p>';
+    if (v.q && !v.total) body += '<p class="hint" style="margin:0">' + (st.q ? '「' + esc(st.q) + '」に合う' : '') + (Object.keys(st.tagSel).length ? (st.q ? '、' : '') + '選んだタグをすべて持つ' : '') + '住人はいません。</p>';
     var note = v.folded && !v.q ? '（折りたたみ中の' + v.folded + '人を除く）' : '';
     st.want = '';
     fillLater(later);
@@ -197,6 +238,7 @@
     S.chars.forEach(function (c, k) { if (c.id === id) i = k; });
     if (i < 0) return;
     if (st.q && !hit(S.chars[i], norm(st.q), true)) st.q = '';
+    if (!tagOk(S.chars[i])) st.tagSel = {};
     var v = castView();
     v.secs.forEach(function (s) { if (s.list.indexOf(i) >= 0 && !s.open) { delete V.fold[s.key]; keep(); } });
     v = castView();
@@ -276,7 +318,7 @@
   }
   function boxTools() {
     var grouped = groupsOf(glCache()).length > 0;
-    return '<div class="row cptools bxtools"><input type="search" id="bxq" value="' + esc(st.bq) + '" placeholder="名前で探す" aria-label="参加者を選ぶ住人を名前で探す" autocomplete="off" enterkeyhint="search">' +
+    return '<div class="row cptools bxtools"><input type="search" id="bxq" value="' + esc(st.bq) + '" placeholder="名前・グループ・タグで探す" aria-label="参加者を選ぶ住人を名前・グループ・タグで探す" autocomplete="off" enterkeyhint="search">' +
       '<label class="hint"><input type="checkbox" id="bxonly"' + (st.bonly ? ' checked' : '') + '> 選んでいる人だけ表示</label>' +
       (grouped ? '<button type="button" class="btn small" data-act="bxfoldall">すべて折りたたむ</button><button type="button" class="btn small" data-act="bxopenall">すべて開く</button>' : '') +
       '<span class="hint">参加している人は、折りたたんだグループの中でもいつも表示します。</span></div>';
@@ -286,7 +328,7 @@
     J.forEach(function (c) { jn[c.id] = 1; });
     var line = function (cls, inner) { return '<tr class="' + cls + '"><td colspan="' + ncol + '"><div class="bxgin">' + inner + '</div></td></tr>'; };
     if (st.bonly) {
-      S.chars.forEach(function (c, i) { if (jn[c.id] && hit(c, q)) html += rowOf(c, i); });
+      S.chars.forEach(function (c, i) { if (jn[c.id] && hit(c, q, 'box')) html += rowOf(c, i); });
       return html || line('bxg', '<span class="cgnote">' + (q ? '「' + esc(st.bq) + '」に合う、選んでいる人はいません。' : 'まだ誰も選んでいません。') + '</span>');
     }
     var secs = sections(true), grouped = secs.grouped, shown = 0, rest = 0;
@@ -295,7 +337,7 @@
       s.list.forEach(function (i) {
         var c = S.chars[i], j = !!jn[c.id];
         if (j) nj++;
-        if (q && !hit(c, q)) return;
+        if (q && !hit(c, q, 'box')) return;
         nm++;
         if (!j && !open && !q) return;
         if (!j) { if (shown >= st.bcap) { rest++; return; } shown++; }
@@ -485,6 +527,8 @@
       if (!t || !X) return;
       var act = t.getAttribute('data-act'), g = t.getAttribute('data-g'), where = (t.closest('.cppager') || { dataset: {} }).dataset.where;
       switch (act) {
+        case 'cptag': var tk = t.getAttribute('data-t'); if (st.tagSel[tk]) delete st.tagSel[tk]; else st.tagSel[tk] = 1; st.page = 0; castRedraw(); break;
+        case 'cptagclear': st.tagSel = {}; st.page = 0; castRedraw(); break;
         case 'cpfold': if (V.fold[g]) delete V.fold[g]; else V.fold[g] = 1; keep(); redraw(pageRedraw); break;
         case 'cpfoldall': case 'cpopenall':
           V.fold = {};
@@ -533,6 +577,10 @@
       if (t.id === 'cpsize') { var n = +t.value; if (SIZES.indexOf(n) < 0) return; var first = st.page * V.size; V.size = n; st.page = Math.floor(first / n); keep(); castRedraw('cpsize'); }
       else if (t.id === 'tmode') { st.tmode = t.value === 'all' ? 'all' : 'page'; st.tpage = 0; castRedraw('tmode'); }
       else if (t.id === 'bxonly') { st.bonly = !!t.checked; boxRedraw('bxonly'); }
+      /* 住人のタグを書き終えたら：タグの札・候補が変わったときだけ、住人タブを描き直す（ui.js の onField が c.tags に入れたあと） */
+      else if (t.getAttribute && t.getAttribute('data-f') === 'tags') {
+        setTimeout(function () { if (X && allTags().list.join('\u0001') !== st.tagKey && document.getElementById('castpages')) castRedraw(); }, 0);
+      }
       else if (t.classList && t.classList.contains('cpfind')) pick(t);
     });
     document.addEventListener('keydown', function (ev) { var t = ev.target; if (ev.key === 'Enter' && t && t.classList && t.classList.contains('cpfind')) { ev.preventDefault(); pick(t); } });

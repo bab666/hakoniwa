@@ -4,6 +4,8 @@
   var HK = window.HK, esc = HK.escape, V = HK.View;
   /* 住人が多いとき（最大1000人）の住人タブの節・ページ送り・探す、箱庭タブの参加者選び（ui-cast-pages.js。このファイルより前に読む） */
   var CP = HK.CastPages || null;
+  /* 箱庭タブの描き方（ui-box-draw.js。このファイルより前に読む） */
+  var BD = HK.BoxDraw || null;
   /* 死のある箱庭に「特殊役職」の欄を足す（special.js） */
   if (HK.Special) HK.Special.install();
   /* 分割読み込み：あとから読んだかたまりで登録された箱庭（ゾンビの街・館など）にも足す（install は何度呼んでも同じ） */
@@ -109,7 +111,7 @@
   /* 登録順（reg）：住人を足した時刻（同じミリ秒に続けて足しても順が崩れないよう、前の値より必ず大きくする）。並び替えたあとも「登録順に戻す」で戻せる */
   var lastReg = 0;
   function newReg() { var t = Date.now(); if (t <= lastReg) t = lastReg + 1; lastReg = t; return t; }
-  function mk(c) { var o = { id: uid(), reg: newReg(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: idList(c.loveLock), sexLock: c.sexLock || '', sexLocks: idList(c.sexLocks), loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
+  function mk(c) { var o = { id: uid(), reg: newReg(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', tags: c.tags ? str(c.tags, 80).trim() : '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: idList(c.loveLock), sexLock: c.sexLock || '', sexLocks: idList(c.sexLocks), loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, trioHub: !!c.trioHub, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -167,6 +169,8 @@
     c.eg = fixEg(c.eg);
     c.memo = str(c.memo, 80);
     c.group = str(c.group, 40).trim();
+    /* タグ（グループとは別。読点・カンマで複数。住人の一覧で探す・絞り込むだけに使い、結果には影響しない） */
+    c.tags = str(c.tags, 80).trim();
     if (['', 'm', 'f', 'x'].indexOf(c.gender || '') < 0) c.gender = '';
     if (['', 'm', 'f', 'both', 'none'].indexOf(c.likes || '') < 0) c.likes = '';
     if (['', 'top', 'bottom', 'riba'].indexOf(c.pos || '') < 0) c.pos = '';
@@ -383,6 +387,18 @@
     if (HK.IconStore) HK.IconStore.sync(S.chars, save);
     return ok;
   }
+  /* 箱庭タブの後回しの描画（ui-box-draw.js）が終わってから保存する（何度呼んでも1回。長くても約2秒で保存する） */
+  var saveQ = 0;
+  function saveSoon() {
+    if (saveQ) return;
+    saveQ = 1;
+    var t0 = Date.now(), go = function () {
+      if (saveQ !== 1) return;
+      if (BD && BD.pending() && Date.now() - t0 < 2000) { setTimeout(go, 50); return; }
+      saveQ = 0; save();
+    };
+    setTimeout(go, 50);
+  }
   /* 読み込めなかった保存の知らせ（上の rescue）。元の保存（退避したもの）を JSON で書き出せる。閉じると、それ以降は控えも書く */
   function rescueNotice() {
     var box = document.createElement('div');
@@ -478,7 +494,7 @@
   }
 
   /* ---------- タブ ---------- */
-  function setTab(t) {
+  function setTab(t, quick) {
     tab = t;
     ['cast', 'box', 'result', 'saves'].forEach(function (k) {
       var tb = $('#tab-' + k), vw = $('#view-' + k);
@@ -487,11 +503,12 @@
     });
     if (t === 'saves' && HK.Saves) HK.Saves.render();
     if (t === 'cast') renderCast();
-    if (t === 'box') renderBox();
+    if (t === 'box') renderBox(quick ? { defer: true } : null);
     if (t === 'result') renderResult();
     if (HK.UI && HK.UI.applyColors) HK.UI.applyColors(t === 'result' && result && result.input ? result.input.chars : S.chars);
-    var top = $('.tabs').getBoundingClientRect().top + window.pageYOffset - 4;
-    if (window.pageYOffset > top) window.scrollTo(0, top);
+    /* タブの位置まで戻す。タブを押したとき（quick）は、描画の直前（rAF）に測る（ここで測ると、描き終える前のレイアウトを一度余計に計算する） */
+    var up = function () { var top = $('.tabs').getBoundingClientRect().top + window.pageYOffset - 4; if (window.pageYOffset > top) window.scrollTo(0, top); };
+    if (quick && window.requestAnimationFrame) requestAnimationFrame(up); else up();
   }
 
   /* ---------- 住人 ---------- */
@@ -529,7 +546,8 @@
       }).join('') + '</div>' +
       '<div class="gwrap">' + egoGraph(c.eg, i) + '</div>' +
       '<button class="btn ghost small" data-act="del" aria-label="' + esc(c.name) + 'を削除">削除</button>' +
-      '<div class="memo"><input type="text" class="grp" id="gp-' + c.id + '" data-f="group" value="' + esc(c.group || '') + '" placeholder="グループ（任意・読点やカンマで複数）" maxlength="40" list="grplist" aria-label="' + esc(c.name) + 'のグループ" title="同じグループ名をつけた住人は、箱庭でまとめて選んだり、並び替えたり、一覧で絞り込んだりできます。読点（、）かカンマで区切ると複数のグループに入れられます（例：生徒会、2年A組）"><input type="text" id="mm-' + c.id + '" data-f="memo" value="' + esc(c.memo) + '" placeholder="メモ（任意・結果には影響しません）" maxlength="80">' +
+      '<div class="memo"><input type="text" class="grp" id="gp-' + c.id + '" data-f="group" value="' + esc(c.group || '') + '" placeholder="グループ（任意・読点やカンマで複数）" maxlength="40" list="grplist" aria-label="' + esc(c.name) + 'のグループ" title="同じグループ名をつけた住人は、箱庭でまとめて選んだり、並び替えたり、一覧で絞り込んだりできます。読点（、）かカンマで区切ると複数のグループに入れられます（例：生徒会、2年A組）">' +
+        '<input type="text" class="tags" id="tg-' + c.id + '" data-f="tags" value="' + esc(c.tags || '') + '" placeholder="タグ（任意・読点やカンマで複数）" maxlength="80" list="taglist" aria-label="' + esc(c.name) + 'のタグ" title="グループとは別に付ける目印です。住人の一覧で探したり、「タグで絞り込む」で絞り込んだりできます（結果には影響しません）。読点（、）かカンマで区切ると複数付けられます"><input type="text" id="mm-' + c.id + '" data-f="memo" value="' + esc(c.memo) + '" placeholder="メモ（任意・結果には影響しません）" maxlength="80">' +
       '<span class="gearpair" style="display:inline-flex;gap:6px;align-items:center;flex:0 0 auto"><button type="button" class="btn small gearbtn" data-act="gear" aria-label="' + esc(c.name) + 'の設定（口調・呼び方・関係など）" title="口調・一人称・呼び方・性別・恋愛・イメージカラー・関係をまとめて設定"><span aria-hidden="true">⚙️</span> 設定</button>' +
       '<button type="button" class="btn small ghost" data-act="dup"' + (S.chars.length >= MAX ? ' disabled title="住人が上限の' + MAX + '人まで登録されているので、複製できません"' : ' title="この住人の設定をすべて写した住人を、すぐ下に足します（関係と、ほかの住人を指す設定は写しません）"') + ' aria-label="' + esc(c.name) + 'を複製">複製</button></span>' +
       '<span class="csum">' + (HK.UI && HK.UI.summary ? HK.UI.summary(c) : '') + '</span></div>' +
@@ -567,6 +585,15 @@
   }
   /* ランダムで1人追加：名前の雰囲気（ui-rand.js の HK.RandChar）。このページを開いているあいだだけ覚える */
   var randStyle = '';
+  /* 住人を足すボタンの行。一覧の上（top）と下（bottom）の両方に置く（上からも、スクロールせずに足せるように）。どちらから足しても、足した人が見えるページに移る */
+  function addRow(where) {
+    var full = S.chars.length >= MAX, dis = full ? ' disabled' : '', top = where === 'top';
+    return '<div class="row addrow" data-where="' + where + '" style="' + (top ? 'margin:0 0 8px;gap:6px;flex-wrap:wrap' : 'margin-top:12px') + '"><button class="btn' + (top ? ' small' : '') + '" data-act="add"' + dis + '>1人追加</button>' +
+      '<button class="btn' + (top ? ' small' : '') + '" data-act="add10"' + dis + ' title="名前とエゴグラムが仮の住人を、上限（' + MAX + '人）までの範囲で10人まとめて足します">10人追加</button>' +
+      (HK.RandChar ? '<span class="randadd" style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;max-width:100%"><button class="btn' + (top ? ' small' : '') + '" data-act="randadd"' + dis + ' title="名前・性別・エゴグラム・口調・年齢・職業・体格・身長・種族' + (HK.SAFE_ON ? '' : '・夜の性格') + 'を乱数で決めた住人を1人足します（足したあとで自由に直せます）">ランダムで1人追加</button><select id="randstyle' + (top ? '-top' : '') + '" data-f="randstyle" style="max-width:100%" aria-label="ランダムで足す住人の名前の雰囲気">' + HK.RandChar.STYLES.map(function (o) { return '<option value="' + o[0] + '"' + (randStyle === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></span>' : '') +
+      '<button class="btn' + (top ? ' small' : '') + '" data-act="quiz"' + dis + '>質問に答えて診断して追加</button>' +
+      (top ? '' : '<span class="hint" style="margin:0">「<a href="https://kaimin.sakura.ne.jp/archive/tools/ego/" target="_blank" rel="noopener">ふたりのエゴグラム</a>」と同じ25問で、エゴグラムを出して住人にできます。</span>') + '</div>';
+  }
   function renderCast() {
     var html =
       '<h2 class="sec">住人をまとめて登録' + (HK.Tips ? HK.Tips.btn('cast-import') : '') + '</h2>' +
@@ -590,9 +617,10 @@
       (groupsOf().length ? '<div class="row" style="margin:-2px 0 8px"><span class="hint" style="margin:0" title="オンにしたグループの住人どうしは、信頼が育ちやすく、助け合い・庇い合い・弔い・一緒に動く出来事が起きます。恋愛や嫉妬には関わりません。関係図には薄い線で出ます（線の絞り込みで「全部」のとき）">仲間とみなすグループ：</span>' + groupsOf().map(function (g) { var on = !!(S.grpComrade && S.grpComrade[g]); return '<button class="chip" data-act="grpcomrade" data-g="' + esc(g) + '" aria-pressed="' + on + '" title="' + esc(g) + 'の住人どうしを仲間と' + (on ? 'みなさない' : 'みなす') + '">' + (on ? '仲間：' : '') + esc(g) + '</button>'; }).join('') + '</div>' : '') +
       '<datalist id="grplist">' + groupsOf().map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>' +
       /* グループごとの節・ページ送り（ui-cast-pages.js）。絞り込みで隠した住人・折りたたんだ節・ほかのページの住人は描かない */
+      addRow('top') +
       (CP ? CP.castHtml() : '<div class="cast" id="castlist">' + S.chars.map(function (c, i) { var h = resRow(c, i); return grpHidden(c) ? h.replace('<div class="res"', '<div class="res" hidden style="display:none"') : h; }).join('') + '</div>') +
       (S.chars.length >= MAX ? '<p class="hint" id="castfull" style="color:var(--warn)">住人が上限の' + MAX + '人まで登録されています。追加・複製するには、誰かを削除してください。</p>' : '') +
-      '<div class="row" style="margin-top:12px"><button class="btn" data-act="add"' + (S.chars.length >= MAX ? ' disabled' : '') + '>1人追加</button>' + (HK.RandChar ? '<span class="randadd" style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap"><button class="btn" data-act="randadd"' + (S.chars.length >= MAX ? ' disabled' : '') + ' title="名前・性別・エゴグラム・口調・年齢・職業・体格・身長・種族' + (HK.SAFE_ON ? '' : '・夜の性格') + 'を乱数で決めた住人を1人足します（足したあとで自由に直せます）">ランダムで1人追加</button><select id="randstyle" data-f="randstyle" aria-label="ランダムで足す住人の名前の雰囲気">' + HK.RandChar.STYLES.map(function (o) { return '<option value="' + o[0] + '"' + (randStyle === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></span>' : '') + '<button class="btn" data-act="quiz"' + (S.chars.length >= MAX ? ' disabled' : '') + '>質問に答えて診断して追加</button><span class="hint" style="margin:0">「<a href="https://kaimin.sakura.ne.jp/archive/tools/ego/" target="_blank" rel="noopener">ふたりのエゴグラム</a>」と同じ25問で、エゴグラムを出して住人にできます。</span></div>' +
+      addRow('bottom') +
       tiesSection() +
       '<div class="row" style="margin-top:20px"><span class="spacer"></span><button class="btn primary" data-act="tobox">箱庭を選ぶ</button></div>';
     $('#view-cast').innerHTML = html;
@@ -792,6 +820,7 @@
       partial: only ? true : undefined,
       chars: list.map(function (c) {
         var o = { name: c.name, code: HK.toCode(c.eg), eg: c.eg, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '' };
+        if (c.tags) o.tags = c.tags;
         if (c.posLike) o.posLike = c.posLike;
         if (c.reg) o.reg = c.reg;
         if (c.icon) o.icon = c.icon;
@@ -874,6 +903,7 @@
       else { if (list.length >= MAX) { map[i] = null; skipped++; return; } c = mk({ name: name, eg: eg }); c._new = 1; list.push(c); added++; }
       c.memo = String(o.memo || c.memo || '').slice(0, 80);
       if (o.group != null) c.group = String(o.group).trim().slice(0, 40);
+      if (o.tags != null) c.tags = String(o.tags).trim().slice(0, 80);
       if (['', 'm', 'f', 'x'].indexOf(o.gender || '') >= 0) c.gender = o.gender || '';
       if (['', 'm', 'f', 'both', 'none'].indexOf(o.likes || '') >= 0) c.likes = o.likes || '';
       if (['', 'top', 'bottom', 'riba'].indexOf(o.pos || '') >= 0) c.pos = o.pos || '';
@@ -1100,7 +1130,8 @@
   function runBar() {
     return '<div class="runbar nofold"><label for="seed">シード</label><input type="text" id="seed" inputmode="numeric" data-f="seed" value="' + esc(S.seed) + '" placeholder="空欄でランダム"><span class="hint" style="margin:0">同じシードと条件なら同じ結末になります。</span><span class="spacer"></span><button class="btn primary" data-act="run">箱庭を動かす</button></div>';
   }
-  function renderBox() {
+  /* 描き方は js/ui-box-draw.js（HK.BoxDraw）：節ごとに覚えて変わった節だけ作り直す。opt.defer（タブを押した・箱庭を選び替えた）はカードだけ先に描き、残りは次の描画のあとで */
+  function renderBox(opt) {
     var scen = scenOf(S.scenId);
     var wait = !!(scen && scen.stub);
     var loadSel = !!(HK.Load && HK.Load.manifest && !HK.Load.has(S.scenId));
@@ -1114,7 +1145,10 @@
       order = order.filter(function (x) { return mv.indexOf(x) < 0; });
       order.splice.apply(order, [order.indexOf('zombie') + 1, 0].concat(mv));
     }
-    var cards = order.map(function (id) {
+    /* カードの HTML は、選択と読み込み中の印を除いて箱庭ごとに1回だけ作る（かたまり・TIPS を読んだら作り直す） */
+    var ckey = (HK.Load ? HK.Load.gen : 0) + '|' + !!HK.SAFE_ON + '|' + Object.keys(HK.TIPS_SCEN || {}).length;
+    var cards = order.map(function (id) { return BD ? BD.card(id, ckey, function () { return cardOf(id, false); }) : cardOf(id, true); }).join('');
+    function cardOf(id, mark) {
       var s = scenOf(id);
       /* 成人向けの箱庭は、ピンクのボックスと赤いR18タグでひと目で分かるようにする */
       var adult = !HK.SAFE_ON && /R-?18/.test(s.kicker || '');
@@ -1127,18 +1161,19 @@
       if (r18s) meta += '<span class="r18part"><span class="r18tag">R18</span>' + esc(r18s) + '</span>';
       var cd = HK.ScenMeta && HK.ScenMeta.desc[id], snote = HK.SAFE_ON ? String(s.note || '').replace(/[^。]*成人として扱[^。]*。?/g, '').replace(/^※\s*$/, '').trim() : s.note, full = s.desc + (snote ? '\n' + snote : '') + (HK.SAFE_ON || /成人として扱/.test(s.note || '') ? '' : '\n※登場人物はすべて成人として扱います。');
       cd = Array.isArray(cd) ? cd[HK.SAFE_ON ? 0 : 1] : cd || s.desc;
-      return '<label class="scen' + (adult ? ' adult' : '') + (id === S.scenId ? ' on' : '') + '" title="' + esc(full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (id === S.scenId ? ' checked' : '') + '>' + ((wait || loadSel) && id === S.scenId ? scLoadBadge(id) : '') +
+      var on = mark && id === S.scenId;
+      return '<label class="scen' + (adult ? ' adult' : '') + (on ? ' on' : '') + '" title="' + esc(full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (on ? ' checked' : '') + '>' + ((wait || loadSel) && on ? scLoadBadge(id) : '') +
         '<div class="k">' + kick + '</div><div class="n">' + esc(s.name) + '</div><div class="m">' + meta + '</div>' + (HK.ScenTags ? HK.ScenTags.html(id, esc) : '') + '<div class="d">' + esc(cd) + '</div><div class="note">' + esc(cardNote(s.note)) + '</div>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</label>';
-    }).join('');
+    }
     /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url＝BOOTH・CONF.noteUrl＝note） */
     if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<div class="scen r18link">' +
       '<div class="k">BOOTH・noteで頒布中・18歳以上向け</div><div class="n">R-18版</div><div class="d">エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。</div>' +
       '<div class="r18buy"><a href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (HK.CONF.noteUrl ? '<a href="' + esc(HK.CONF.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '') + '</div></div>';
+    var head = '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' + prefRow();
     if (wait) {
       var we = boxErr[S.scenId];
-      $('#view-box').innerHTML = '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' + prefRow() +
-        '<div class="boxwait"' + (we ? '' : ' aria-busy="true"') + '>' + (we ? '<p>「' + esc(scen.name) + '」のデータを読み込めませんでした' + (we.reason === 'offline' ? '（通信できないため読み込めません）' : '') + '</p><p><button type="button" class="btn small" data-act="scenretry">もう一度</button></p>' :
-          '<p>「' + esc(scen.name) + '」のデータを読み込んでいます…</p><p class="hint" style="margin:0">読み込み中に「箱庭を動かす」を押すと、読み終わりしだい動かします。</p>') + '</div>' + runBar();
+      drawBox([{ k: 'cards', html: head }, { k: 'run', html: runBar() }], opt, '<div class="boxwait"' + (we ? '' : ' aria-busy="true"') + '>' + (we ? '<p>「' + esc(scen.name) + '」のデータを読み込めませんでした' + (we.reason === 'offline' ? '（通信できないため読み込めません）' : '') + '</p><p><button type="button" class="btn small" data-act="scenretry">もう一度</button></p>' :
+          '<p>「' + esc(scen.name) + '」のデータを読み込んでいます…</p><p class="hint" style="margin:0">読み込み中に「箱庭を動かす」を押すと、読み終わりしだい動かします。</p>') + '</div>', wait || loadSel);
       return;
     }
     var derived = (scen.derived || []).map(function (k) { return '<span class="chip" title="' + esc(HK.TRAIT_SRC[k]) + '">' + esc(HK.TRAIT_NAME[k]) + '<span class="nums">' + esc(HK.TRAIT_SRC[k]) + '</span></span>'; }).join('');
@@ -1186,24 +1221,28 @@
       }).join('') + (sexCols ? '<td>' + gsel(c, 'gender', GENDERS, 'bg') + '</td><td>' + gsel(c, 'likes', LIKES, 'bl') + '</td>' : '') + '</tr>';
     };
     /* 住人が多いときは、グループごとの折りたたみ・名前で探す・選んでいる人だけ（ui-cast-pages.js）。参加している人はいつも出す */
-    var rows = lazyBox && CP ? CP.boxRows(rowOf, J, 2 + nCols) : S.chars.map(rowOf).join('');
+    var rows = lazyBox && CP ? CP.boxRows(rowOf, J, 2 + nCols).split(/(?=<tr[\s>])/) : S.chars.map(rowOf);
 
-    var html =
-      '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' + prefRow() +
-      '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + ' <span class="envbtns"><button type="button" class="mini" data-act="envreset" title="この箱庭の環境値を初期値に戻す">初期値に戻す</button><button type="button" class="mini" data-act="envrand" title="環境値をランダムに決める（文字の項目はそのまま）">ランダム</button></span></h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + contentBox() + '</div></div>' +
-      (HK.Adv ? HK.Adv.html() : '') +
-      '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
-      '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
-      '<h2 class="sec">' + (!hasAct && !hasGoal ? (scen.solo ? '挑戦者の設定' : '住人ごとの設定') : scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
+    var segs = [{ k: 'cards', html: head }, { k: 'env', html: '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + ' <span class="envbtns"><button type="button" class="mini" data-act="envreset" title="この箱庭の環境値を初期値に戻す">初期値に戻す</button><button type="button" class="mini" data-act="envrand" title="環境値をランダムに決める（文字の項目はそのまま）">ランダム</button></span></h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + contentBox() + '</div></div>' },
+      { k: 'adv', html: HK.Adv ? HK.Adv.html() : '' },
+      { k: 'uses', html: '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
+      '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' },
+      { k: 'per', html: '<h2 class="sec">' + (!hasAct && !hasGoal ? (scen.solo ? '挑戦者の設定' : '住人ごとの設定') : scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
       (scen.castHint || scen.solo ? '<p class="hint">' + (scen.castHint ? esc(scen.castHint) : 'この箱庭は一人用です。チェックを入れた住人が挑みます。' + (HK.SAFE_ON ? '' : '登場人物はすべて成人として扱います。')) + '</p>' : '') +
-      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p>' + loveCrowdNote(S.scenId) + '<div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return inGrp(c, g); }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button><button class="btn small ghost" data-act="joingrpdel" data-g="' + esc(g) + '" title="このグループを参加から外す" aria-label="' + esc(g) + 'を参加から外す">−</button></span>'; }).join('') + '</div>' : '') + (lazyBox && CP ? CP.boxTools() : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th>' + (hasAct ? '<th>最初の行動</th>' : '') + (hasGoal ? '<th>短期目標</th>' : '') + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
+      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p>' + loveCrowdNote(S.scenId) + '<div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return inGrp(c, g); }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button><button class="btn small ghost" data-act="joingrpdel" data-g="' + esc(g) + '" title="このグループを参加から外す" aria-label="' + esc(g) + 'を参加から外す">−</button></span>'; }).join('') + '</div>' : '') + (lazyBox && CP ? CP.boxTools() : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th>' + (hasAct ? '<th>最初の行動</th>' : '') + (hasGoal ? '<th>短期目標</th>' : '') + statHead + '</tr></thead><tbody><!--rows--></tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
       (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、カードの「この箱庭のTIPS」にあります。</p>' : '') +
       (sexCols && S.chars.length ? '<p class="hint" style="margin-top:8px">性別と恋愛対象は、住人タブの ⚙️ 設定と同じものです。</p>' : '') +
-      (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') +
-      runBar();
-    $('#view-box').innerHTML = html;
-    if (CP) CP.after($('#view-box'));
-    if (HK.Adv) HK.Adv.afterRender();
+      (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') },
+      { k: 'run', html: runBar() }];
+    /* 参加表は行ごとに分けて渡す（変わった行だけ入れ替える。住人の名前などは esc 済みなので <!-- は表の位置にしか無い） */
+    var pp = segs[4].html.split('<!--rows-->');
+    segs[4] = pp.length === 2 ? { k: 'per', pre: pp[0], rows: rows, post: pp[1] } : { k: 'per', html: pp.join(rows.join('')) };
+    drawBox(segs.filter(function (x) { return x.html || x.rows; }), opt, '', loadSel);
+  }
+  function drawBox(segs, opt, tail, badge) {
+    var vb = $('#view-box'), after = function () { if (CP) CP.after(vb); if (HK.Adv) HK.Adv.afterRender(); };
+    if (!BD) { vb.innerHTML = segs[0].html + tail + segs.slice(1).map(function (x) { return x.rows ? x.pre + x.rows.join('') + x.post : x.html; }).join(''); after(); return; }
+    BD.draw(vb, segs, { defer: !!(opt && opt.defer), sel: S.scenId, badge: badge ? scLoadBadge(S.scenId) : '', tail: tail, after: after, live: function () { return tab === 'box'; } });
   }
 
   /* 人数を決めてランダムに参加者を選ぶ（対象は全員か、グループ一つ） */
@@ -1507,7 +1546,7 @@
   document.addEventListener('click', function (ev) {
     var t = ev.target.closest('[data-act],[data-tab]');
     if (!t) return;
-    if (t.dataset.tab) { setTab(t.dataset.tab); return; }
+    if (t.dataset.tab) { setTab(t.dataset.tab, true); return; }
     var act = t.dataset.act, row = t.closest('.res');
     if (act && act.indexOf('adv:') === 0) { if (HK.Adv) HK.Adv.onAct(act, t); return; }
     switch (act) {
@@ -1540,6 +1579,18 @@
         var last = document.getElementById('nm-' + nc.id);
         if (last) { last.focus(); last.select(); }
         break;
+      /* 10人まとめて足す（上限まで）。最初に足した人が見えるページに移り、その人の名前の欄へ */
+      case 'add10':
+        var n10 = Math.min(10, MAX - S.chars.length), first10 = null;
+        if (n10 <= 0) return;
+        if (S.sample) S.sample = false;
+        for (var a10 = 0; a10 < n10; a10++) { var c10 = mk({ name: '住人' + (S.chars.length + 1), eg: { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 } }); S.chars.push(c10); if (!first10) first10 = c10; }
+        if (CP) CP.reveal(first10.id);
+        save(); renderCast();
+        toast(n10 + '人を足しました' + (n10 < 10 ? '（上限の' + MAX + '人までです）' : ''));
+        var f10 = document.getElementById('nm-' + first10.id);
+        if (f10) { f10.focus(); f10.select(); }
+        break;
       case 'dup': if (row) dupRes(row.dataset.id); break;
       case 'del':
         S.chars = S.chars.filter(function (c) { return c.id !== row.dataset.id; });
@@ -1567,7 +1618,7 @@
         if (pr.warnings.length) { var tw = $('#tiewarns'); tw.hidden = false; tw.innerHTML = pr.warnings.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join(''); }
         toast(pr.ties.length + '件の関係を読み込みました' + ((pr.groups || []).length ? '（' + pr.groups.join('・') + 'を仲間とみなします）' : ''));
         break;
-      case 'tobox': setTab('box'); break;
+      case 'tobox': setTab('box', true); break;
       case 'joinall':
         S.join = S.join || {}; S.join[S.scenId] = S.chars.slice(0, smax(S.scenId)).map(function (c) { return c.id; });
         if (S.chars.length > smax(S.scenId)) toast('上限の' + smax(S.scenId) + '人まで参加にしました');
@@ -1634,7 +1685,7 @@
         save(); renderBox(); break;
       case 'joinnone':
         S.join = S.join || {}; S.join[S.scenId] = []; save(); renderBox(); break;
-      case 'gobox': setTab('box'); break;
+      case 'gobox': setTab('box', true); break;
       case 'run': run(false); break;
       case 'scenretry': delete boxErr[S.scenId]; renderBox(); break;
       case 'reroll': run(true); break;
@@ -1710,6 +1761,7 @@
     if (f === 'name' && c) { c.name = t.value.trim() || '名無し'; S.sample = false; }
     else if (f === 'memo' && c) c.memo = t.value;
     else if (f === 'group' && c) { c.group = t.value.trim().slice(0, 40); }
+    else if (f === 'tags' && c) { c.tags = t.value.trim().slice(0, 80); }
     else if (f === 'tone' && c) {
       c.tone = (HK.toneValid ? HK.toneValid(t.value) : HK.PERSONA[t.value]) ? t.value : '';
       /* 口調の書き下ろしのかたまりを裏で読んでおく（動かすときに待たないように。失敗は動かすときに知らせる） */
@@ -1739,7 +1791,8 @@
       S.sample = false;
       refreshRow(row, c, true);
     }
-    else if (f === 'scen') { S.scenId = t.value; delete boxErr[t.value]; save(); renderBox(); return; }
+    /* 箱庭の選び替え：カードの印を先に描き、保存（住人が多いと重い）は次の描画のあとで */
+    else if (f === 'scen') { S.scenId = t.value; delete boxErr[t.value]; renderBox({ defer: true }); saveSoon(); return; }
     else if (f === 'prefetch') {
       if (ev.type === 'change' && HK.Load && HK.Load.setPref) { HK.Load.setPref(t.value); toast('データの先読みを「' + t.options[t.selectedIndex].text + '」にしました'); }
       return;
@@ -1804,7 +1857,7 @@
     else if (f === 'teacher') { S.teacher = t.value; save(); renderBox(); return; }
     else if (f === 'randfrom') { S.randFrom = t.value; save(); renderBox(); return; }
     else if (f === 'grpview') { if (ev.type !== 'change' || t.value === 'custom') return; setGrpView(t.value); if (CP) CP.top(); save(); renderCast(); return; }
-    else if (f === 'randstyle') { randStyle = t.value; return; }
+    else if (f === 'randstyle') { randStyle = t.value; Array.prototype.forEach.call(document.querySelectorAll('select[data-f="randstyle"]'), function (x) { if (x !== t) x.value = t.value; }); return; }
     else if (f === 'randn') S.randN = parseInt(t.value, 10) || '';
     save();
   }

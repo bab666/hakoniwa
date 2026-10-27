@@ -224,10 +224,60 @@
   function start(ask) {
     if (!dir) return Promise.resolve(false);
     return perm(ask).then(function (ok) {
-      if (!ok) { st = 'perm'; paint(); bar(); return false; }
+      if (!ok) {
+        st = 'perm';
+        /* 起動時（ask なし）は帯を出す前に、ページ上の最初の操作のときに許可を求める（下の arm）。拒否が続いているときは求めない（今回は使わない） */
+        if (!ask && arm()) { paint(); return false; }
+        paint(); if (!ask && denies() >= DENY_MAX) return false;
+        bar(); return false;
+      }
+      denies(0);
       return activate().then(function () { return true; });
     });
   }
+  /* ---------- 最初の操作で許可を求める ----------
+     Chrome 122 以降は、覚えたハンドルに操作の中で requestPermission を呼ぶと、「常に許可」を選んだサイトでは確認なしで granted になる。
+     queryPermission は次回も 'prompt' を返すことがあるので、起動時にすぐ帯を出すと「毎回許可を求められる」ように見えていた。
+     ページ上の最初の操作（click・keydown・touchstart。document に capture で一度だけ）で requestPermission を呼び、許可されれば帯を出さずに使い始める。
+     拒否・閉じた・操作の外と言われた（SecurityError）ときだけ帯を出す。拒否が DENY_MAX 回続いたら、自動では求めず「今回は使わない」にする */
+  var DENY_MAX = 3, armed = null;
+  function denyKey() { return 'hk-sfdeny:' + (SS() ? SS().DB : 'hakoniwa'); }
+  function denies(set) {
+    try {
+      if (set === 0) { window.localStorage.removeItem(denyKey()); return 0; }
+      var n = parseInt(window.localStorage.getItem(denyKey()), 10) || 0;
+      if (set === 1) { n++; window.localStorage.setItem(denyKey(), String(n)); }
+      return n;
+    } catch (e) { return 0; }
+  }
+  var EVS = ['click', 'keydown', 'touchstart'];
+  function disarm() { if (armed) { EVS.forEach(function (k) { document.removeEventListener(k, armed, true); }); armed = null; } }
+  function arm() {
+    disarm();
+    if (!dir || typeof dir.requestPermission !== 'function' || denies() >= DENY_MAX) return false;
+    var h = dir;
+    armed = function (ev) {
+      disarm();
+      if (dir !== h || st !== 'perm') return;
+      /* 保存フォルダの欄のボタン（選び直す・許可する など）は、そのボタンの処理に任せる */
+      if (ev && ev.target && ev.target.closest && ev.target.closest('[data-sf]')) return;
+      var p;
+      try { p = h.requestPermission({ mode: 'readwrite' }); } catch (e) { p = Promise.reject(e); }
+      Promise.resolve(p).then(function (r) {
+        if (dir !== h) return;
+        if (r === 'granted') { denies(0); return activate(); }
+        denies(1); paint(); bar();
+      }, function (e) {
+        if (dir !== h) return;
+        if (!(e && e.name === 'SecurityError')) denies(1);
+        paint(); bar();
+      });
+    };
+    EVS.forEach(function (k) { document.addEventListener(k, armed, true); });
+    return true;
+  }
+  var FILE = /^file:/.test(location.protocol);
+  var ALWAYS = 'Chrome の確認で「常に許可」を選ぶと、次に開いたときは確認なしで使えます。' + (FILE ? '手元のファイル（file://）で開いているので、ブラウザの仕様で毎回確認が要ります。' : '');
 
   /* ---------- 画面の上の帯（許可・フォルダのほうが新しい） ---------- */
   function unbar() { var b = document.getElementById('sfbar'); if (b) b.remove(); }
@@ -237,7 +287,7 @@
     var box = document.createElement('div');
     box.id = 'sfbar'; box.setAttribute('role', 'status'); box.className = 'sfbar';
     if (st === 'perm') {
-      box.innerHTML = '<span>保存フォルダ<b>〈' + esc(dirName) + '〉</b>を使う</span><button type="button" class="btn small primary" data-sf="allow">許可</button><button type="button" class="btn small ghost" data-sf="later">今回は使わない</button>';
+      box.innerHTML = '<span>保存フォルダ<b>〈' + esc(dirName) + '〉</b>を使う<br><small>' + esc(ALWAYS) + '</small></span><button type="button" class="btn small primary" data-sf="allow">許可</button><button type="button" class="btn small ghost" data-sf="later">今回は使わない</button>';
     } else {
       var S = UIS(), f = fInfo || {};
       box.innerHTML = '<span>保存フォルダ〈' + esc(dirName) + '〉の住人のほうが新しいです（フォルダ：' + (f.at ? md(f.at) + ' 保存・' : '') + '住人' + (f.n || 0) + '人・関係' + (f.ties || 0) + '本／このブラウザ：' + (S && S.sample ? 'サンプルの住人' : '住人' + (S ? S.chars.length : 0) + '人・関係' + (S ? (S.ties || []).length : 0) + '本') + '）。読み込むまで、フォルダへの住人の書き込みを止めています</span>' +
@@ -299,6 +349,7 @@
     var p;
     try { p = window.showDirectoryPicker(o); } catch (e) { p = Promise.reject(e); }
     p.then(function (h) {
+      disarm(); denies(0);
       dir = h; dirName = h.name || 'フォルダ'; memOnly = false;
       /* 別のフォルダを選んだら、前のフォルダに書いた印は使わない */
       if (!rec0 || rec0.name !== dirName) { sig = { s: {}, h: {} }; lastState = null; }
@@ -313,7 +364,7 @@
   }
   function forget() {
     if (!window.confirm('保存フォルダ〈' + dirName + '〉を使うのをやめますか？（フォルダの中のファイルはそのまま残ります）')) return;
-    dir = null; dirName = ''; st = 'none'; sig = { s: {}, h: {} }; lastState = null; rec0 = null; unbar();
+    disarm(); dir = null; dirName = ''; st = 'none'; sig = { s: {}, h: {} }; lastState = null; rec0 = null; unbar();
     if (SS()) SS().kvPut({ k: 'folder', del: 1 });
     paint(); toast('保存フォルダを使うのをやめました');
   }
@@ -322,7 +373,7 @@
   function statusText() {
     if (!dir) return errMsg || 'まだフォルダを選んでいません。';
     var nm = '〈' + esc(dirName) + '〉';
-    if (st === 'perm') return nm + '：使うには許可が要ります（画面の上の［許可］か、下の［許可する］）';
+    if (st === 'perm') return nm + (armed ? '：ページを操作すると、使う許可を確かめます' : denies() >= DENY_MAX && !document.getElementById('sfbar') ? '：許可されなかったので、今回は使いません（下の［許可する］で使えます）' : '：使うには許可が要ります（画面の上の［許可］か、下の［許可する］）');
     if (st === 'hold') return nm + '：フォルダの住人のほうが新しいので、住人の書き込みを止めています（画面の上の知らせから選んでください）';
     if (st === 'err') return nm + '：書き込めませんでした（' + esc(errMsg) + '）。次に住人が変わったときに、もう一度書きます';
     if (st === 'busy') return nm + 'から読み込んでいます…';
@@ -331,7 +382,7 @@
   function html() {
     var h = '<div class="sfold" id="sfold"><div class="pthead">保存フォルダ（PC の Chrome／Edge）</div>';
     if (!CAN) return h + '<p class="hint sfna">このブラウザでは使えません（PC の Chrome／Edge で使えます）</p></div>';
-    return h + '<p class="hint" style="margin:2px 0 6px">選んだフォルダに、住人・関係が変わるたびに state.json、セーブは saves フォルダ、履歴は history フォルダに書き込みます（どれも「まるごと読み込む」で読めるファイルです）。ブラウザのデータが消えても、フォルダから戻せます。</p>' +
+    return h + '<p class="hint" style="margin:2px 0 6px">選んだフォルダに、住人・関係が変わるたびに state.json、セーブは saves フォルダ、履歴は history フォルダに書き込みます（どれも「まるごと読み込む」で読めるファイルです）。ブラウザのデータが消えても、フォルダから戻せます。' + esc(ALWAYS) + '</p>' +
       '<p class="hint" id="sf-stat" aria-live="polite" style="margin:0 0 6px">' + statusText() + '</p>' +
       '<div class="row" style="flex-wrap:wrap;gap:6px">' +
       '<button class="btn small" data-sf="pick">' + (dir ? 'フォルダを選び直す' : 'フォルダを選ぶ') + '</button>' +
@@ -356,8 +407,8 @@
     if (t) {
       var k = t.dataset.sf;
       if (k === 'pick') pick();
-      else if (k === 'allow') start(true).then(function (ok) { if (!ok) toast('許可されませんでした'); });
-      else if (k === 'later') { unbar(); }
+      else if (k === 'allow') { disarm(); start(true).then(function (ok) { if (!ok) { denies(1); toast('許可されませんでした'); } }); }
+      else if (k === 'later') { unbar(); paint(); }
       else if (k === 'read') readFolder(HK.Portable && HK.Portable.mode ? HK.Portable.mode() : 'add');
       else if (k === 'readrep') readFolder('rep');
       else if (k === 'readadd') readFolder('add');
@@ -406,7 +457,7 @@
   ready.then(function () { setTimeout(boot, 0); });
 
   HK.SaveFolder = {
-    can: CAN, html: html, pick: pick, read: readFolder, forget: forget, start: start,
+    can: CAN, armed: function () { return !!armed; }, html: html, pick: pick, read: readFolder, forget: forget, start: start,
     writeState: writeState, syncSaves: syncSaves, syncHist: syncHist,
     status: function () { return { st: st, name: dirName, lastAt: lastAt, memOnly: memOnly, err: errMsg, sig: sig, last: lastState }; },
     /* 点検用：ハンドルを直接渡して使い始める（Playwright の試験。フォルダの選択の画面を出せないため） */
