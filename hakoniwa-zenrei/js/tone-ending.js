@@ -4,7 +4,7 @@
    ■ 保存の値 c.ending（住人ごと。ui.js の normChar → attr.js の A.norm → E.norm）
      { base: ''（その人の口調）| 'K' | 'F' | 'P' | 口調の鍵, plain: 'ですぞ', ask: 'ですかな', surprise: 'なんと！', laugh: 'フハハ', lead: 'ふむ', flat: ''（なし）| 'some' | 'often', off: true（使わない） }
      以前の「語尾の付け替え」（toneCustom の文字列）が残っていれば、読み込みのときに plain に写して空にする
-     c.toneDict（4000字まで）…「辞書を直接書く（上級）」。住人ごとの辞書の書き方（tone-engine.js の形式。[口調 …] の見出しは省いてよい）。
+     c.toneDict（4000字まで）…「口調の辞書（上級）」（旧「辞書を直接書く（上級）」）。住人ごとの辞書の書き方（tone-engine.js の形式。[口調 …] の見出しは省いてよい）。
        語尾の設定と両方あれば、直接書いた [文末]・[語彙]・[規則]・[効果] を、語尾の設定で作った辞書の上に重ねる（同じ項目は直接書いたほうが勝つ）。off は両方を止める
    ■ 作り方（E.toDict(c) → 辞書の文字列）
      ・ベースの口調の辞書（語彙・規則・効果）を土台にする。語尾を決めたら、ベースの口調の文末の項目は使わない（問いの語尾だけ決めたときは、問いの項目だけ差し替える）
@@ -280,7 +280,7 @@
     var bi = (HK.toneInfo && HK.toneInfo(b.tone)) || {}, info = {};
     if (!HK.PERSONA[b.tone]) Object.keys(bi).forEach(function (k) { if (!SKIP[k]) info[k] = bi[k]; });
     info.label = b.label;
-    info.desc = 'ベースの口調「' + ((bi && bi.label) || b.tone) + '」の文面で、設定した語尾で話します（住人の設定の「語尾の設定（かんたん）」「辞書を直接書く」）';
+    info.desc = 'ベースの口調「' + ((bi && bi.label) || b.tone) + '」の文面で、設定した語尾で話します（住人の設定の「語尾の設定（かんたん）」「口調の辞書（上級）」）';
     info.base = d.persona || (HK.PERSONA[b.tone] ? b.tone : bi.base);
     if (d.fp) info.fp = d.fp;
     if (!info.top && HK.TONE_TOP && HK.TONE_TOP[b.tone]) info.top = HK.TONE_TOP[b.tone];
@@ -401,14 +401,22 @@
   });
 
   /* ---------- 画面の欄（ui-gear.js の話し方の節から） ---------- */
-  var css = '.gend{margin:10px 0 0;border:1px solid var(--line);border-radius:var(--r-card,6px);padding:6px 10px}.gend summary{cursor:pointer;font-size:13px;color:var(--muted)}.gend summary b{color:var(--ink);font-weight:600}.gend .gendon{font-size:12px;margin-left:6px;color:var(--accent)}' +
+  var css = '.gend{margin:10px 0 0;border:1px solid var(--line);border-radius:var(--r-card,6px);padding:6px 10px}.gend summary{cursor:pointer;font-size:13px;color:var(--muted)}.gend summary b{color:var(--ink);font-weight:600}.gend .gendon{font-size:12px;margin-left:6px;color:var(--accent)}.gend .gendsub{font-size:11.5px;margin-left:8px;color:var(--muted)}.gendict .endsample{margin-top:10px}' +
     '.gend .gearrow input[type=text]{width:11em}.gend .enderr{color:#D7263D;color:var(--hot,#D7263D);font-size:12px;line-height:1.6;margin:4px 0 0}.gend .endsample .tsl{display:block}.gendb{font-size:11px;color:var(--ink);border:1px solid var(--ink);border-radius:3px;padding:0 6px;white-space:nowrap}';
   if (typeof document !== 'undefined' && document.head) { var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); }
   function escH(s) { return (HK.escape || function (x) { return String(x); })(s); }
   function sampleHtml(c, o) {
     var p = E.preview(c, o), err = p.errors.length ? '辞書の読み込みで問題があります：' + p.errors.join(' / ') : '';
-    return { err: err, html: '<span class="tsh">' + (E.on(c) ? '語尾の設定の見本（' + escH(E.labelFor(c)) + '）' : '語尾を決めるか辞書を書くと、ここに見本が出ます（いまはふだんの口調）') + '</span>' + p.lines.map(function (l) { return '<span class="tsl">' + escH(l) + '</span>'; }).join('') };
+    return { err: err, html: '<span class="tsh">' + (E.on(c) ? '語尾の設定・辞書で言い換えた見本（' + escH(E.labelFor(c)) + '）' : '語尾を決めるか辞書を書くと、ここに見本が出ます（いまはふだんの口調）') + '</span>' + p.lines.map(function (l) { return '<span class="tsl">' + escH(l) + '</span>'; }).join('') };
   }
+  /* 折りたたみの開閉：住人ごとに、この画面を開いているあいだ覚える（性別などを変えて設定の窓を描き直しても閉じないように）。
+     既定は、語尾の設定は使っているとき、口調の辞書（上級）は辞書を書いているときに開く */
+  var openK = {};
+  function isOpen(c, k, def) { var v = openK[(c && c.id) + ':' + k]; return v == null ? def : v; }
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('toggle', function (ev) {
+    var d = ev.target;
+    if (d && d.getAttribute && d.getAttribute('data-endk') && d.getAttribute('data-cid')) openK[d.getAttribute('data-cid') + ':' + d.getAttribute('data-endk')] = d.open;
+  }, true);
   E.badge = function (c) { return '<span class="gendb" id="endbadge"' + (E.on(c) ? '' : ' hidden') + '>語尾の設定を使う</span>'; };
   E.gearHtml = function (c, o, h) {
     var e = c.ending || {}, opt = h.opt, esc = h.esc;
@@ -420,22 +428,25 @@
     var inp = function (k, label, ph, title) { return '<label' + (title ? ' title="' + esc(title) + '"' : '') + '>' + label + ' <input type="text" data-gf="end:' + k + '" value="' + esc(e[k] || '') + '" maxlength="' + FIELDS[k] + '" placeholder="' + esc(ph) + '"></label>'; };
     var s = sampleHtml(c, o);
     var st0 = function (on) { return on ? '使う' : e.off ? '使わない' : '未設定'; };
-    return '<details class="gend"' + (E.active(e) ? ' open' : '') + '><summary><b>語尾の設定（かんたん）</b><span class="gendon">' + st0(E.active(e)) + '</span></summary>' +
+    var cid = esc(c.id || '');
+    return '<details class="gend" data-endk="e" data-cid="' + cid + '"' + (isOpen(c, 'e', E.active(e)) ? ' open' : '') + '><summary><b>語尾の設定（かんたん）</b><span class="gendon">' + st0(E.active(e)) + '</span></summary>' +
       '<p class="gearhint">例文の語尾を、同じ法則で書き換えます（です→ですぞ・ます→ますぞ・ません→ませんぞ、だ・だよ→だぜ・よ・ね→ぜ のように）。決めた欄だけが効き、空の欄はベースの口調のままです。一人称・二人称は上の欄を使います。</p>' +
-      '<div class="gearrow"><label>ベースの口調 ' + baseSel + '</label><label title="語尾の設定と、下の「辞書を直接書く」の両方を止めます（書いた中身は残ります）"><input type="checkbox" data-gf="end:off"' + (e.off ? ' checked' : '') + '> いまは使わない</label></div>' +
+      '<div class="gearrow"><label>ベースの口調 ' + baseSel + '</label><label title="語尾の設定と、下の「口調の辞書（上級）」の両方を止めます（書いた中身は残ります）"><input type="checkbox" data-gf="end:off"' + (e.off ? ' checked' : '') + '> いまは使わない</label></div>' +
       '<div class="gearrow">' + inp('plain', '語尾（ふだん）', '例：〜ですぞ／〜だぜ／〜なのよ', '「です・ます」で始まれば敬語の語尾、それ以外は常体の語尾として扱います') + inp('ask', '語尾（問い）', '例：〜ですかな？／〜か？／〜なのかしら？') + '</div>' +
       '<div class="gearrow">' + inp('surprise', '驚いたとき', '例：なんと！／うわ、まじで', '文頭の「え」「うそ」「マジ」などを置き換えます。／で区切ると候補を4つまで') + inp('laugh', '短い笑い声', '例：フハハ／ふふ／にしし', '「はは」「ふふ」などを置き換えます') + '</div>' +
       '<div class="gearrow">' + inp('lead', '前置き（任意）', '例：やれやれ／ふむ', '台詞の頭にときどき付ける一言（3回に1回くらい）') +
       '<label>言い切り <select data-gf="end:flat" aria-label="言い切りを使う">' + opt('', 'なし（語尾をいつも付ける）', e.flat || '') + opt('some', 'たまに', e.flat || '') + opt('often', 'よく', e.flat || '') + '</select></label></div>' +
       '</details>' +
-      /* 辞書を直接書く（上級）：住人ごとの辞書。語尾の設定の上に重ねる */
-      '<details class="gend gendict"' + (dictText(c) ? ' open' : '') + '><summary><b>辞書を直接書く（上級）</b><span class="gendon gdon">' + st0(!!dictText(c) && !e.off) + '</span></summary>' +
+      /* 口調の辞書（上級）：住人ごとの辞書を直接書く欄（語尾の設定の上に重ねる）と、語尾の設定・辞書で言い換えた台詞の見本（全文）。
+         見本は上の「台詞の見本」（1行ずつ切り替わる）と重なるので、辞書の欄と一緒に折りたたむ（既定は閉じる。辞書を書いている住人は開く。2026-10-27 の利用者の要望） */
+      '<details class="gend gendict" data-endk="d" data-cid="' + cid + '"' + (isOpen(c, 'd', !!dictText(c)) ? ' open' : '') + '><summary><b>口調の辞書（上級）</b><span class="gendon gdon">' + st0(!!dictText(c) && !e.off) + '</span><span class="gendsub">辞書を直接書く・言い換えた台詞の見本</span></summary>' +
       '<p class="gearhint">この住人だけの口調の辞書を書けます（住人ごとの辞書の書き方。[口調 …] の見出しと名前は省けます）。語尾の設定と両方あるときは、ここに書いた [文末]・[語彙]・[規則]・[効果] を上に重ね、同じ項目はこちらが勝ちます。</p>' +
       '<p class="gearhint" style="white-space:pre-wrap">' + esc(T.help ? T.help() : '') + '</p>' +
       '<div class="gearrow"><label>サンプル ' + E.sampleSel('data-endsel') + '</label><button type="button" class="btn ghost small" data-endact="sample">サンプルを入れる</button><span class="gearhint" style="margin:0"># で始まる行は説明です（読み飛ばされます）</span></div>' +
-      '<textarea data-gf="end:dict" rows="8" maxlength="' + DICT_MAX + '" spellcheck="false" aria-label="この住人の口調の辞書" style="width:100%;font-size:13px;font-family:inherit" placeholder="' + esc('[文末]\nです=でござる\nます=まする\n[語彙]\nありがとう=かたじけない\n[規則]\n前置き=さて') + '">' + esc(c.toneDict || '') + '</textarea></details>' +
-      '<p class="enderr" id="enderr"' + (s.err ? '' : ' hidden') + '>' + esc(s.err) + '</p>' +
-      '<div class="tonesample endsample" id="endsample" aria-live="polite">' + s.html + '</div>';
+      '<textarea data-gf="end:dict" rows="8" maxlength="' + DICT_MAX + '" spellcheck="false" aria-label="この住人の口調の辞書" style="width:100%;font-size:13px;font-family:inherit" placeholder="' + esc('[文末]\nです=でござる\nます=まする\n[語彙]\nありがとう=かたじけない\n[規則]\n前置き=さて') + '">' + esc(c.toneDict || '') + '</textarea>' +
+      '<div class="tonesample endsample" id="endsample" aria-live="polite">' + s.html + '</div></details>' +
+      /* 辞書の読み込みの問題は、閉じていても見えるように折りたたみの外に */
+      '<p class="enderr" id="enderr"' + (s.err ? '' : ' hidden') + '>' + esc(s.err) + '</p>';
   };
   /* 欄の入力。扱った欄なら true */
   E.gearField = function (c, f, t, isInput, changed, refresh, other) {

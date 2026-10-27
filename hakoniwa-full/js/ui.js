@@ -598,18 +598,8 @@
   }
   function renderCast() {
     var html =
-      '<h2 class="sec">住人をまとめて登録' + (HK.Tips ? HK.Tips.btn('cast-import') : '') + '</h2>' +
-      '<p class="hint">「<a href="https://kaimin.sakura.ne.jp/archive/tools/ego/" target="_blank" rel="noopener">ふたりのエゴグラム</a>」の5文字コード（CP→NP→A→FC→AC の順、A＝とても強い〜D＝控えめ）を名前と並べて貼ると登録できます（1行に1人）。診断結果の文をそのまま貼ってもOK。ほかの書き方は見出しの ？ にあります。</p>' +
-      '<div class="import"><div>' +
-      '<textarea id="bulk" rows="6" placeholder="- 朝霧 BDACD\n・鷹野：CABAB\nミナト bbbca // 後輩"></textarea>' +
-      '<div class="row" style="margin-top:8px"><button class="btn" data-act="import-add">追加で読み込む</button><button class="btn" data-act="import-replace">名簿を置き換える</button><span class="spacer"></span><button class="btn ghost" data-act="export">名簿をテキストでコピー</button></div>' +
-      '<div class="row" style="margin-top:6px"><button class="btn" data-act="jsonout">住人をJSONで書き出す</button><button class="btn" data-act="jpick" aria-expanded="' + (jpOpen ? 'true' : 'false') + '">選んだ住人だけ書き出す</button><button class="btn" data-act="jsonadd">JSONを読み込む（追加）</button><button class="btn" data-act="jsonrep">JSONで置き換える</button><input type="file" id="jsonfile" accept=".json,application/json" hidden></div>' +
-      '<p class="hint" style="margin:4px 0 6px">念のため、キャラクター設定・セーブデータなどは定期的なバックアップをお願いいたします（「住人をJSONで書き出す」か、下の「まるごと書き出し」でファイルに残せます）。</p>' +
-      pickPanel() +
-      /* 別の端末へ移す：まるごと書き出し・共有・文字列（portable.js） */
-      (HK.Portable ? HK.Portable.html() : '') +
-      '<ul class="warn" id="warns" hidden></ul></div>' +
-      '</div>' +
+      /* 住人をまとめて登録・書き出しと読み込み・別の端末へ移す（描画は ui-import.js。ボタンの処理はこのファイルの onClick） */
+      (HK.CastImport ? HK.CastImport.html({ full: S.chars.length >= MAX, jp: jpOpen, pick: pickPanel() }) : '') +
       '<h2 class="sec">住人　<span class="num" style="font-size:15px">' + S.chars.length + '/' + MAX + '</span>' + (HK.Tips ? HK.Tips.btn('cast') : '') + '</h2>' +
       (S.sample ? '<p class="sample-note">いま並んでいるのはサンプルの住人です。自分のキャラクターに置き換えてください。</p>' : '') +
       '<input type="file" id="iconfile" accept="image/*" hidden>' +
@@ -797,7 +787,7 @@
       if (ex) { ex.eg = c.eg; if (c.memo) ex.memo = c.memo; if (c.group != null) ex.group = c.group; updated++; }
       else if (list.length < MAX) { list.push(mk(c)); added++; }
     });
-    S.chars = list; S.sample = false; save();
+    S.chars = list; S.sample = false; save(); if (HK.CastImport) HK.CastImport.clear();
     renderCast();
     var msg = added + '人を追加' + (updated ? '、' + updated + '人を更新' : '') + 'しました';
     var w2 = $('#warns');
@@ -879,7 +869,7 @@
       if (!('download' in a)) throw new Error('nodl');
       a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-      toast(data.chars.length + '人分をJSONで書き出しました' + (only ? '（読み込む側で「JSONを読み込む（追加）」を使うと、同じ名前の住人だけが更新されます）' : ''));
+      toast(data.chars.length + '人分をJSONで書き出しました' + (only ? '（読み込む側で「JSONを足す」を使うと、同じ名前の住人だけが更新されます）' : ''));
     } catch (e) { copy(text, 'ファイルを保存できない環境なので、JSONをクリップボードにコピーしました'); }
   }
   function num(v) { v = parseFloat(v); return isNaN(v) ? null : HK.clamp(v, 0, 20); }
@@ -1011,7 +1001,7 @@
     Object.keys(jpSel).forEach(function (id) { if (ids.indexOf(id) < 0) delete jpSel[id]; });
     var n = Object.keys(jpSel).length, gs = groupsOf();
     return '<div class="jpick" id="jpick" style="margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)">' +
-      '<p class="hint" style="margin:0 0 6px">書き出す住人にチェックを入れてください。受け取った人が「JSONを読み込む（追加）」で読み込むと、同じ名前の住人だけが更新され、ほかの住人はそのまま残ります。選ばなかった住人との関係も、名前でつながります。</p>' +
+      '<p class="hint" style="margin:0 0 6px">書き出す住人にチェックを入れてください。受け取った人が「JSONを足す」で読み込むと、同じ名前の住人だけが更新され、ほかの住人はそのまま残ります。選ばなかった住人との関係も、名前でつながります。</p>' +
       '<div class="row" style="margin:0 0 6px;flex-wrap:wrap;gap:6px"><button class="btn small" data-act="jpall">全員</button><button class="btn small" data-act="jpnone">選択を外す</button>' +
       gs.map(function (g) { return '<button class="chip" data-act="jpgrp" data-g="' + esc(g) + '">【' + esc(g) + '】</button>'; }).join('') + '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:4px 14px">' + S.chars.map(function (c) {
@@ -1968,7 +1958,7 @@
   });
 
   HK.UI = HK.UI || {};
-  HK.UI.state = function () { return S; };
+  HK.UI.state = function () { return S; }; HK.UI.parseRoster = parseGrouped;   /* 「n 行を検出」（ui-import.js）も同じ読み取りで数える */
   /* 画面の上へ／下へ移動するボタン（右下に固定） */
   (function () {
     if (document.getElementById('pagejump')) return;

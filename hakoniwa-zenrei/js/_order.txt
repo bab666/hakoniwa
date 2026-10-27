@@ -276,6 +276,7 @@ js/shared-stats.js
 js/ui-rand.js
 js/ui-cast-pages.js
 js/ui-box-draw.js
+js/ui-import.js
 js/ui.js
 js/ui-gear.js
 js/ui-adv.js

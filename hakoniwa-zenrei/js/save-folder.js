@@ -380,7 +380,8 @@
     return nm + 'に保存しています' + (lastAt ? '（最後に書いた時刻 ' + hm(lastAt) + '）' : '') + (memOnly ? '。このブラウザでは選んだフォルダを覚えられないので、次に開いたときはもう一度選んでください' : '');
   }
   function html() {
-    var h = '<div class="sfold" id="sfold"><div class="pthead">保存フォルダ（PC の Chrome／Edge）</div>';
+    /* 見出し（保存フォルダ）は portable.js の折りたたみ（.sfdet）の summary に置く */
+    var h = '<div class="sfold" id="sfold">';
     if (!CAN) return h + '<p class="hint sfna">このブラウザでは使えません（PC の Chrome／Edge で使えます）</p></div>';
     return h + '<p class="hint" style="margin:2px 0 6px">選んだフォルダに、住人・関係が変わるたびに state.json、セーブは saves フォルダ、履歴は history フォルダに書き込みます（どれも「まるごと読み込む」で読めるファイルです）。ブラウザのデータが消えても、フォルダから戻せます。' + esc(ALWAYS) + '</p>' +
       '<p class="hint" id="sf-stat" aria-live="polite" style="margin:0 0 6px">' + statusText() + '</p>' +
@@ -398,7 +399,7 @@
   }
   (function style() {
     var s = document.createElement('style');
-    s.textContent = '.sfold{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}.sfold .sfna{opacity:.7;margin:2px 0 0}' +
+    s.textContent = '.sfold{margin-top:6px}.sfold .sfna{opacity:.7;margin:2px 0 0}' +
       '.sfbar{margin:8px 0 12px;padding:10px 12px;border:1px solid var(--accent);border-radius:var(--r,8px);background:var(--accent-soft,var(--surface));color:var(--ink);line-height:1.6;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}.sfbar span{flex:1 1 260px;min-width:0}';
     (document.head || document.documentElement).appendChild(s);
   })();
