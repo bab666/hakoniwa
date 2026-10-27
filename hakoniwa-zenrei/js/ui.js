@@ -2,25 +2,30 @@
 (function () {
   'use strict';
   var HK = window.HK, esc = HK.escape, V = HK.View;
+  /* 住人が多いとき（最大1000人）の住人タブの節・ページ送り・探す、箱庭タブの参加者選び（ui-cast-pages.js。このファイルより前に読む） */
+  var CP = HK.CastPages || null;
   /* 死のある箱庭に「特殊役職」の欄を足す（special.js） */
   if (HK.Special) HK.Special.install();
   /* 分割読み込み：あとから読んだかたまりで登録された箱庭（ゾンビの街・館など）にも足す（install は何度呼んでも同じ） */
   if (HK.Special && HK.Load && HK.Load.onChunk) HK.Load.onChunk(function () { HK.Special.install(); });
-  /* 登録できる住人の上限（箱庭に参加できるのは最大30人）。2026-10-26 に 100 → 200。
-     アイコン（画像）は localStorage に入りきらないので、IndexedDB に分けて置く（saves.js の HK.IconStore。使えない環境では従来どおり住人の保存に入れる） */
-  var MAX = 200;
+  /* 登録できる住人の上限（箱庭に参加できるのは最大30人）。2026-10-26 に 100 → 200、2026-10-27 に 200 → 1000。
+     アイコン（画像）は localStorage に入りきらないので、IndexedDB に分けて置く（saves.js の HK.IconStore。使えない環境では従来どおり住人の保存に入れる）。
+     住人・関係そのものも IndexedDB に置く（state-store.js の HK.StateStore。localStorage には約1MBまで写し、超えたら「IndexedDB にある」印だけ） */
+  var MAX = 1000;
   var JOIN_MAX = 30;
-  /* 13人目以降の色トークン（明暗それぞれ。200人分） */
+  /* 13人目以降の色トークン（明暗それぞれ。上限 MAX 人分） */
   (function () {
     var L = [], D = [];
-    for (var i = 12; i < 200; i++) {
+    for (var i = 12; i < MAX; i++) {
       var h = (i * 47 + 15) % 360;
       L.push('--p' + i + ':hsl(' + h + ' 55% 38%)');
       D.push('--p' + i + ':hsl(' + h + ' 65% 70%)');
     }
     var css = ':root{' + L.join(';') + '}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){' + D.join(';') + '}}:root[data-theme="dark"]{' + D.join(';') + '}' +
-      /* 住人が多いとき（最大200人）の一覧：画面の外の行は描画を後回しにする（対応していないブラウザでは何もしない） */
+      /* 住人が多いとき（最大 MAX 人）の一覧：画面の外の行は描画を後回しにする（対応していないブラウザでは何もしない） */
       '#castlist .res{content-visibility:auto;contain-intrinsic-size:auto 132px}' +
+      /* 関係の行も同じ（住人1000人・関係300本で、住人タブの描画が 3秒台 → 1秒ほど）。min-width:0 は、スマホの幅で欄が折り返さずに横にはみ出していたのを直す */
+      '#view-cast .tierow{content-visibility:auto;contain-intrinsic-size:auto 96px;min-width:0}' +
       /* 箱庭のデータを読み込み中・失敗の印（load.js）：カードの高さを変えないように右上に重ねる。設定欄の仮表示は高さを確保して、読み終えたときのずれを小さく */
       '.scen .scload{position:absolute;top:-9px;right:8px;z-index:1;font-size:11px;line-height:1.5;padding:0 6px;border:1px solid var(--accent);border-radius:8px;background:var(--accent-soft);color:var(--accent);pointer-events:none;white-space:nowrap}' +
       '.scen .scload.ng{background:var(--surface);color:var(--warn);border-color:var(--warn-line);pointer-events:auto}.scen .scload.ng button{font:inherit;color:inherit;background:none;border:0;padding:0 0 0 4px;text-decoration:underline;cursor:pointer}' +
@@ -76,7 +81,15 @@
 
   /* ---------- グループ（住人を「〇〇組」「原作A」などでまとめる。箱庭での参加者選びと並び替えに使う） ---------- */
   /* 住人のグループはカンマ・読点で区切って複数つけられる（「原作A, 生徒会」）。絞り込みは、どれかに一致すればそのグループの一員 */
-  function grpList(c) { var g = []; String((c && c.group) || '').split(/[,，、]/).forEach(function (x) { x = x.trim(); if (x && g.indexOf(x) < 0) g.push(x); }); return g; }
+  /* 分けた結果はグループの文字列ごとに覚えておく（住人1000人の描画で何万回も呼ぶため。返す配列は書き換えない） */
+  var grpMemo = Object.create(null), grpMemoN = 0;
+  function grpList(c) {
+    var s = String((c && c.group) || ''), m = grpMemo[s];
+    if (m) return m;
+    var g = []; s.split(/[,，、]/).forEach(function (x) { x = x.trim(); if (x && g.indexOf(x) < 0) g.push(x); });
+    if (++grpMemoN > 5000) { grpMemo = Object.create(null); grpMemoN = 0; }
+    return (grpMemo[s] = g);
+  }
   function inGrp(c, g) { return grpList(c).indexOf(g) >= 0; }
   HK.groupList = grpList;
   /* 住人の一覧で隠しているグループ（S.grpHide）。グループのある住人は、つけたグループがすべて隠れているときだけ一覧から隠す（箱庭の参加者選びには影響しない） */
@@ -576,12 +589,14 @@
       /* グループごとの「仲間」：オンのグループの住人どうしは、箱庭に入るときに関係「仲間」が付く（ほかの関係があれば、それに重ねる） */
       (groupsOf().length ? '<div class="row" style="margin:-2px 0 8px"><span class="hint" style="margin:0" title="オンにしたグループの住人どうしは、信頼が育ちやすく、助け合い・庇い合い・弔い・一緒に動く出来事が起きます。恋愛や嫉妬には関わりません。関係図には薄い線で出ます（線の絞り込みで「全部」のとき）">仲間とみなすグループ：</span>' + groupsOf().map(function (g) { var on = !!(S.grpComrade && S.grpComrade[g]); return '<button class="chip" data-act="grpcomrade" data-g="' + esc(g) + '" aria-pressed="' + on + '" title="' + esc(g) + 'の住人どうしを仲間と' + (on ? 'みなさない' : 'みなす') + '">' + (on ? '仲間：' : '') + esc(g) + '</button>'; }).join('') + '</div>' : '') +
       '<datalist id="grplist">' + groupsOf().map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>' +
-      '<div class="cast" id="castlist">' + S.chars.map(function (c, i) { var h = resRow(c, i); return grpHidden(c) ? h.replace('<div class="res"', '<div class="res" hidden style="display:none"') : h; }).join('') + '</div>' +
+      /* グループごとの節・ページ送り（ui-cast-pages.js）。絞り込みで隠した住人・折りたたんだ節・ほかのページの住人は描かない */
+      (CP ? CP.castHtml() : '<div class="cast" id="castlist">' + S.chars.map(function (c, i) { var h = resRow(c, i); return grpHidden(c) ? h.replace('<div class="res"', '<div class="res" hidden style="display:none"') : h; }).join('') + '</div>') +
       (S.chars.length >= MAX ? '<p class="hint" id="castfull" style="color:var(--warn)">住人が上限の' + MAX + '人まで登録されています。追加・複製するには、誰かを削除してください。</p>' : '') +
       '<div class="row" style="margin-top:12px"><button class="btn" data-act="add"' + (S.chars.length >= MAX ? ' disabled' : '') + '>1人追加</button>' + (HK.RandChar ? '<span class="randadd" style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap"><button class="btn" data-act="randadd"' + (S.chars.length >= MAX ? ' disabled' : '') + ' title="名前・性別・エゴグラム・口調・年齢・職業・体格・身長・種族' + (HK.SAFE_ON ? '' : '・夜の性格') + 'を乱数で決めた住人を1人足します（足したあとで自由に直せます）">ランダムで1人追加</button><select id="randstyle" data-f="randstyle" aria-label="ランダムで足す住人の名前の雰囲気">' + HK.RandChar.STYLES.map(function (o) { return '<option value="' + o[0] + '"' + (randStyle === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></span>' : '') + '<button class="btn" data-act="quiz"' + (S.chars.length >= MAX ? ' disabled' : '') + '>質問に答えて診断して追加</button><span class="hint" style="margin:0">「<a href="https://kaimin.sakura.ne.jp/archive/tools/ego/" target="_blank" rel="noopener">ふたりのエゴグラム</a>」と同じ25問で、エゴグラムを出して住人にできます。</span></div>' +
       tiesSection() +
       '<div class="row" style="margin-top:20px"><span class="spacer"></span><button class="btn primary" data-act="tobox">箱庭を選ぶ</button></div>';
     $('#view-cast').innerHTML = html;
+    if (CP) CP.after($('#view-cast'));
   }
 
   /* ---------- 既存の関係 ---------- */
@@ -629,6 +644,7 @@
     var c = dupChar(src);
     S.sample = false;
     S.chars.splice(S.chars.indexOf(src) + 1, 0, c);
+    if (CP) CP.reveal(c.id);
     save(); renderCast();
     var q = '「' + src.name + '」を複製して「' + c.name + '」を足しました（関係と、ほかの住人を指す設定は写していません）。\n\n' +
       '「' + c.name + '」を「' + src.name + '」と同一人物にしますか？' +
@@ -644,8 +660,10 @@
     if (nm) { nm.focus(); nm.select(); }
   }
   function cleanTies() {
-    var ids = S.chars.map(function (c) { return c.id; });
-    S.ties = (S.ties || []).filter(function (t) { return ids.indexOf(t.a) >= 0 && ids.indexOf(t.b) >= 0 && t.a !== t.b && HK.TIES[t.type]; });
+    /* 住人の id は表で引く（住人の行の要約 UI.summary が住人ごとに呼ぶので、住人1000人・関係300本で indexOf だと数秒かかった） */
+    var ids = Object.create(null);
+    S.chars.forEach(function (c) { ids[c.id] = 1; });
+    S.ties = (S.ties || []).filter(function (t) { return ids[t.a] && ids[t.b] && t.a !== t.b && HK.TIES[t.type]; });
   }
   /* 二人の間にその関係がすでにあるか（向きは問わない） */
   function hasTie(a, b, ty, skip) { return (S.ties || []).some(function (t, k) { return k !== skip && t.type === ty && ((t.a === a && t.b === b) || (t.a === b && t.b === a)); }); }
@@ -658,6 +676,21 @@
   function charOpts(sel) {
     return S.chars.map(function (c) { return '<option value="' + c.id + '"' + (c.id === sel ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('');
   }
+  /* 住人が多いとき（61人以上）は、関係の行の住人の欄を、選んでいる人だけの選択肢で描き（data-lazy）、触れたときに全員の選択肢を入れる。
+     住人1000人・関係300本だと選択肢が数十万になり、住人タブの描画に30秒以上かかったため */
+  var TIE_LAZY = 60;
+  function tieCharOpts(sel, byId) {
+    if (S.chars.length <= TIE_LAZY) return charOpts(sel);
+    var c = byId[sel];
+    return c ? '<option value="' + c.id + '" selected>' + esc(c.name) + '</option>' : '';
+  }
+  function tieFill(ev) {
+    var t = ev.target;
+    if (!t || t.tagName !== 'SELECT' || !t.hasAttribute('data-lazy')) return;
+    t.removeAttribute('data-lazy');
+    var v = t.value; t.innerHTML = charOpts(v); t.value = v;
+  }
+  ['focusin', 'mousedown', 'touchstart', 'keydown'].forEach(function (k) { document.addEventListener(k, tieFill, true); });
   /* きょうだいの関係の行：二人の続柄（「美咲（姉）→ 健（弟）：兄弟（庇護）」）と注意（年齢が未設定・同じ年齢・庇護の向きと年齢が逆）を添える（sib-word.js） */
   function sibText(t) {
     if (!HK.Sib || !HK.Sib.ui || !HK.tieText || !(HK.Sib.isSibTie(t) || t.type === 'stepsib')) return '';
@@ -669,12 +702,14 @@
   }
   function tiesSection() {
     cleanTies();
-    var rows = S.ties.map(function (t, k) {
+    var byId = {}, lz = S.chars.length > TIE_LAZY ? ' data-lazy="1"' : '';
+    S.chars.forEach(function (c) { byId[c.id] = c; });
+    var tieRow = function (t, k) {
       var D = HK.TIES[t.type];
       return '<div class="tierow" data-k="' + k + '">' +
-        '<select id="ta-' + k + '" data-f="tie" data-k="' + k + '" data-p="a" aria-label="関係の起点">' + charOpts(t.a) + '</select>' +
-        '<select id="tt-' + k + '" data-f="tie" data-k="' + k + '" data-p="type" aria-label="関係の種類">' + (HK.tieOptions ? HK.tieOptions(t.type, { dir: true }) : HK.TIE_ORDER.map(function (id) { var d = HK.TIES[id]; return '<option value="' + id + '"' + (id === t.type ? ' selected' : '') + '>' + esc(d.label) + (d.dir ? '（' + d.roleA + '→' + d.roleB + '）' : '') + '</option>'; }).join('')) + '</select>' +
-        '<select id="tb-' + k + '" data-f="tie" data-k="' + k + '" data-p="b" aria-label="関係の相手">' + charOpts(t.b) + '</select>' +
+        '<select id="ta-' + k + '" data-f="tie" data-k="' + k + '" data-p="a"' + lz + ' aria-label="関係の起点">' + tieCharOpts(t.a, byId) + '</select>' +
+        '<select id="tt-' + k + '" data-f="tie" data-k="' + k + '" data-p="type"' + (lz && CP ? ' data-lazyt="1"' : '') + ' aria-label="関係の種類">' + (lz && CP ? CP.typeOpt(t.type) : HK.tieOptions ? HK.tieOptions(t.type, { dir: true }) : HK.TIE_ORDER.map(function (id) { var d = HK.TIES[id]; return '<option value="' + id + '"' + (id === t.type ? ' selected' : '') + '>' + esc(d.label) + (d.dir ? '（' + d.roleA + '→' + d.roleB + '）' : '') + '</option>'; }).join('')) + '</select>' +
+        '<select id="tb-' + k + '" data-f="tie" data-k="' + k + '" data-p="b"' + lz + ' aria-label="関係の相手">' + tieCharOpts(t.b, byId) + '</select>' +
         ((D.family && !D.loveOK) || D.loveOpt ? '<select id="tl-' + k + '" data-f="tie" data-k="' + k + '" data-p="love" aria-label="恋愛"><option value=""' + (t.love === 'ok' ? '' : ' selected') + '>' + (D.loveOpt ? '恋愛に発展：しない' : '恋愛：なし') + '</option><option value="ok"' + (t.love === 'ok' ? ' selected' : '') + '>' + (D.loveOpt ? '恋愛に発展：する' : '恋愛：あり') + '</option></select>' : '') +
         (function () { var CO = HK.coldOpts ? HK.coldOpts(t.type) : null; return CO ? '<select id="tc-' + k + '" data-f="tie" data-k="' + k + '" data-p="cold" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return '<option value="' + id + '"' + ((t.cold || '') === id ? ' selected' : '') + '>' + esc(CO.map[id].label) + '</option>'; }).join('') + '</select>' : ''; })() +
         /* 追加の欄（型・度合い・気持ち・様子。許嫁は二人それぞれの気持ち） */
@@ -686,7 +721,9 @@
         }).join('') +
         '<button class="btn ghost small" data-act="tiedel" data-k="' + k + '">削除</button>' +
         '<span class="tiehint">' + sibText(t) + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (D.loveOpt ? (t.love === 'ok' ? '。恋愛に発展：するにしているので、想いが恋に変わることもある' : '。恋愛に発展：しないにしているので、想いは恋にならない') : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '') + '</span></div>';
-    }).join('');
+    };
+    /* 関係が多いとき・住人のページ送りがあるときは、表示する関係の選択・名前で探す・50本ずつのページ送り（ui-cast-pages.js） */
+    var rows = CP ? CP.tieHtml(tieRow) : S.ties.map(tieRow).join('');
     return '<h2 class="sec">住人どうしの既存の関係' + (HK.Tips ? HK.Tips.btn('ties') : '') + '</h2>' +
       '<p class="hint">箱庭に入る前からある関係です。初期の好意や信頼が変わり、行動の傾向にも補正がかかります。各住人の ⚙️ 設定からも編集できます。</p>' +
       '<div class="tiebox"><div class="ties">' + (rows || '<p class="hint" style="margin:0">まだ関係は登録されていません。</p>') + '</div>' +
@@ -1116,7 +1153,7 @@
     var J = joined(S.scenId), jmax = smax(S.scenId);
     /* 住人が多いとき（41人以上）は、参加しない人の行を軽くする（設定の欄は、参加にすると出る。住人200人でも箱庭タブが重くならないように） */
     var lazyBox = S.chars.length > 40, nCols = (hasAct ? 1 : 0) + (hasGoal ? 1 : 0) + (scen.stats || []).length + (scen.weapons ? 1 : 0) + pfs.length + (sexCols ? 2 : 0);
-    var rows = S.chars.map(function (c, i) {
+    var rowOf = function (c, i) {
       var on = J.indexOf(c) >= 0;
       if (!on && lazyBox) return '<tr class="off lazy"><td><input type="checkbox" id="jn-' + c.id + '" data-f="join" data-id="' + c.id + '" aria-label="' + esc(c.name) + 'を参加させる"></td><td><span class="row" style="flex-wrap:nowrap"><span class="dot" style="background:var(--p' + i + ')"></span><b>' + esc(c.name) + '</b>' + (c.group ? '<span class="grptag">' + esc(grpList(c).join('・')) + '</span>' : '') + '</span></td>' + (nCols ? '<td colspan="' + nCols + '" class="hint" style="font-size:12px;margin:0;white-space:nowrap">参加にすると、ここで設定できます</td>' : '') + '</tr>';
       var p = per(c, S.scenId);
@@ -1147,7 +1184,9 @@
         if (grp) opts += '</optgroup>';
         return '<td><select id="pf-' + c.id + '-' + f.id + '" data-f="pf" data-id="' + c.id + '" data-k="' + f.id + '" aria-label="' + esc(c.name) + 'の' + esc(f.label) + '"><option value="auto">' + esc(f.auto || 'おまかせ') + '</option>' + opts + '</select></td>';
       }).join('') + (sexCols ? '<td>' + gsel(c, 'gender', GENDERS, 'bg') + '</td><td>' + gsel(c, 'likes', LIKES, 'bl') + '</td>' : '') + '</tr>';
-    }).join('');
+    };
+    /* 住人が多いときは、グループごとの折りたたみ・名前で探す・選んでいる人だけ（ui-cast-pages.js）。参加している人はいつも出す */
+    var rows = lazyBox && CP ? CP.boxRows(rowOf, J, 2 + nCols) : S.chars.map(rowOf).join('');
 
     var html =
       '<h2 class="sec">箱庭を選ぶ</h2><div class="scens">' + cards + '</div>' + prefRow() +
@@ -1157,12 +1196,13 @@
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' +
       '<h2 class="sec">' + (!hasAct && !hasGoal ? (scen.solo ? '挑戦者の設定' : '住人ごとの設定') : scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
       (scen.castHint || scen.solo ? '<p class="hint">' + (scen.castHint ? esc(scen.castHint) : 'この箱庭は一人用です。チェックを入れた住人が挑みます。' + (HK.SAFE_ON ? '' : '登場人物はすべて成人として扱います。')) + '</p>' : '') +
-      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p>' + loveCrowdNote(S.scenId) + '<div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return inGrp(c, g); }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button><button class="btn small ghost" data-act="joingrpdel" data-g="' + esc(g) + '" title="このグループを参加から外す" aria-label="' + esc(g) + 'を参加から外す">−</button></span>'; }).join('') + '</div>' : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th>' + (hasAct ? '<th>最初の行動</th>' : '') + (hasGoal ? '<th>短期目標</th>' : '') + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
+      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p>' + loveCrowdNote(S.scenId) + '<div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return inGrp(c, g); }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button><button class="btn small ghost" data-act="joingrpdel" data-g="' + esc(g) + '" title="このグループを参加から外す" aria-label="' + esc(g) + 'を参加から外す">−</button></span>'; }).join('') + '</div>' : '') + (lazyBox && CP ? CP.boxTools() : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th>' + (hasAct ? '<th>最初の行動</th>' : '') + (hasGoal ? '<th>短期目標</th>' : '') + statHead + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
       (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、カードの「この箱庭のTIPS」にあります。</p>' : '') +
       (sexCols && S.chars.length ? '<p class="hint" style="margin-top:8px">性別と恋愛対象は、住人タブの ⚙️ 設定と同じものです。</p>' : '') +
       (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') +
       runBar();
     $('#view-box').innerHTML = html;
+    if (CP) CP.after($('#view-box'));
     if (HK.Adv) HK.Adv.afterRender();
   }
 
@@ -1248,19 +1288,22 @@
 
   /* あとで読む分（js/bundle-late.js）がまだのうちに動かそうとしたら、読み終わるのを待ってから動かす */
   /* 分割読み込み（js/load.js の HK.Load）：箱庭の本体のかたまりも、読み終えてから使う。
-     動かす・回し直すは「箱庭のかたまり＋あとで読む分（late）」、残した結果を開くは「箱庭のかたまり」だけを待つ。
+     動かす・回し直すは「箱庭のかたまり＋あとで読む分（late・tone-base）＋配役の口調のかたまり（tones：住人の配列か動かす入力。HK.Load.ensureTones）」、
+     残した結果を開くは「箱庭のかたまり」だけを待つ（結果は記録済みなので口調は要らない）。
      待つのは最後に頼んだ1つだけ（前の待ちは捨てる）。目録の無い古い形（HK.Load.manifest が無い）では、いつもすぐ続ける */
   function scenStub(id) { return !HK.SCENARIOS[id] && !!(HK.Load && HK.Load.meta && HK.Load.meta(id)); }
-  function ready(id, scenOnly) { return (scenOnly || HK.LATE_READY !== false) && (!HK.Load || HK.Load.has(id)); }
+  function ready(id, scenOnly, tones) {
+    return (scenOnly || HK.LATE_READY !== false) && (!HK.Load || HK.Load.has(id)) && (scenOnly || !tones || !HK.Load || !HK.Load.tonesReady || HK.Load.tonesReady(tones));
+  }
   var pending = null;
-  function whenReady(id, fn, msg, scenOnly) {
-    if (ready(id, scenOnly)) { pending = null; goReady(fn, id); return; }
-    var p = pending = { id: id, fn: fn, scenOnly: !!scenOnly };
+  function whenReady(id, fn, msg, scenOnly, tones) {
+    if (ready(id, scenOnly, tones)) { pending = null; goReady(fn, id); return; }
+    var p = pending = { id: id, fn: fn, scenOnly: !!scenOnly, tones: scenOnly ? null : tones || null };
     toast(msg || 'データを読み込んでいます。終わりしだい動かします…');
-    if (HK.Load && HK.Load.manifest) HK.Load.ensure(id).then(function () { flushPending(p); }, function (e) {
+    if (HK.Load && HK.Load.manifest) Promise.all([HK.Load.ensure(id), p.tones && HK.Load.ensureTones ? HK.Load.ensureTones(p.tones) : null]).then(function () { flushPending(p); }, function (e) {
       if (pending !== p) return;
       pending = null;
-      loadFail(e, function () { whenReady(id, fn, msg, scenOnly); });
+      loadFail(e, function () { whenReady(id, fn, msg, scenOnly, tones); });
     });
   }
   function goReady(fn, id) {
@@ -1269,7 +1312,7 @@
     fn();
   }
   function flushPending(p) {
-    if (!p || pending !== p || !ready(p.id, p.scenOnly)) return;
+    if (!p || pending !== p || !ready(p.id, p.scenOnly, p.tones)) return;
     pending = null;
     goReady(p.fn, p.id);
   }
@@ -1280,7 +1323,7 @@
     var why = e && e.reason === 'offline' ? '（通信できないため読み込めません）' : e && e.reason === 'broken' ? '（ページを読み込み直してください）' : '';
     var d = document.createElement('div');
     d.id = 'loadfail'; d.setAttribute('role', 'alert');
-    d.innerHTML = '<span>この箱庭のデータを読み込めませんでした' + why + '</span>' + (retry ? '<button type="button" class="btn small primary" data-lf="retry">もう一度</button>' : '') +
+    d.innerHTML = '<span>' + (e && /^tone-/.test(e.chunk || '') ? '口調のデータ' : 'この箱庭のデータ') + 'を読み込めませんでした' + why + '</span>' + (retry ? '<button type="button" class="btn small primary" data-lf="retry">もう一度</button>' : '') +
       '<button type="button" class="btn small ghost" data-lf="close" aria-label="閉じる">×</button>';
     d.addEventListener('click', function (ev) {
       var b = ev.target.closest('[data-lf]');
@@ -1297,7 +1340,7 @@
   };
   /* onRes：描画の前に結果を渡す（履歴に結果を置く写しは、描画より前に取る。結末の組み立て HK.Endings.build は結果を書き換えないが、念のため） */
   function simulate(input, record, onRes) {
-    if (!ready(input && input.scenId)) { whenReady(input && input.scenId, function () { simulate(input, record, onRes); }); return null; }
+    if (!ready(input && input.scenId, false, input)) { whenReady(input && input.scenId, function () { simulate(input, record, onRes); }, null, false, input); return null; }
     var res;
     try { res = HK.simulate(input); }
     catch (err) { toast('シミュレーション中にエラーが起きました：' + err.message); if (window.console) console.error(err); return null; }
@@ -1380,8 +1423,8 @@
     histRerun(it, lock ? (HK.SAFE_BUILD ? 'z18' : 'r18') : it.id ? 'lost' : 'old');
   }
   function histRerun(it, why) {
-    /* 回し直しは口調の書き下ろし（late）も要る。読み終えてから、知らせを決めて回す */
-    if (!ready(it.input.scenId)) { whenReady(it.input.scenId, function () { histRerun(it, why); }); return; }
+    /* 回し直しは口調の書き下ろし（late・tone-base・配役の口調）も要る。読み終えてから、知らせを決めて回す */
+    if (!ready(it.input.scenId, false, it.input)) { whenReady(it.input.scenId, function () { histRerun(it, why); }, null, false, it.input); return; }
     /* 知らせは先に決めておき、simulate の中の描画（setTab）で一度だけ出す */
     var n0 = histNote, c0 = histCur;
     histNote = HIST_MSG[why]; histCur = it;
@@ -1417,7 +1460,8 @@
     if (J.length > smax(S.scenId)) { toast(scenOf(S.scenId).name + 'は' + smax(S.scenId) + '人までです。参加者を減らしてください'); return; }
     /* 箱庭のデータを読み込み中なら、読み終えてから動かす（そのあいだに別の箱庭を選んだら動かさない） */
     var rsid = S.scenId;
-    if (!ready(rsid)) { whenReady(rsid, function () { if (S.scenId === rsid) run(newSeed); }); return; }
+    var rtn = castFor(rsid);
+    if (!ready(rsid, false, rtn)) { whenReady(rsid, function () { if (S.scenId === rsid) run(newSeed); }, null, false, rtn); return; }
     var seed = !newSeed && /^\d+$/.test(String(S.seed).trim()) ? parseInt(S.seed, 10) : HK.newSeed();
     var input = buildInput(seed), sc = HK.SCENARIOS[S.scenId];
     /* 箱庭ごとの始める前の検査（scen.check が止める理由の文を返したら始めない。無い箱庭は今までどおり） */
@@ -1451,7 +1495,8 @@
     HK.EgoQuiz.onSave = function (r) {
       var c = r.target ? S.chars.filter(function (x) { return x.id === r.target; })[0] : null;
       if (c) { c.eg = r.eg; if (r.name) c.name = r.name; }
-      else { if (S.chars.length >= MAX) { toast('住人は' + MAX + '人までです'); return; } S.chars.push(mk({ name: r.name, eg: r.eg })); }
+      else { if (S.chars.length >= MAX) { toast('住人は' + MAX + '人までです'); return; } var qc = mk({ name: r.name, eg: r.eg }); S.chars.push(qc); }
+      if (CP) CP.reveal((c || qc).id);
       S.sample = false; save(); renderCast();
       toast(r.name + '（' + HK.toCode(r.eg) + '）を' + (c ? '書き換えました' : '住人に追加しました'));
     };
@@ -1489,9 +1534,10 @@
       case 'add':
         if (S.chars.length >= MAX) return;
         if (S.sample) { S.sample = false; }
-        S.chars.push(mk({ name: '住人' + (S.chars.length + 1), eg: { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 } }));
+        var nc = mk({ name: '住人' + (S.chars.length + 1), eg: { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 } });
+        S.chars.push(nc); if (CP) CP.reveal(nc.id);
         save(); renderCast();
-        var last = document.querySelector('#castlist .res:last-child input[data-f="name"]');
+        var last = document.getElementById('nm-' + nc.id);
         if (last) { last.focus(); last.select(); }
         break;
       case 'dup': if (row) dupRes(row.dataset.id); break;
@@ -1504,7 +1550,7 @@
         S.ties = S.ties || [];
         /* 同じ二人に同じ関係を二重に作らない：最初の二人から順に、まだ付いていない関係で足す */
         var nt1 = freeTie(); if (!nt1) { toast('追加できる関係がありません'); return; }
-        S.ties.push(nt1);
+        S.ties.push(nt1); if (CP) CP.revealTie(S.ties.length - 1);
         save(); renderCast(); break;
       case 'tiedel':
         S.ties.splice(+t.dataset.k, 1); save(); renderCast(); break;
@@ -1554,24 +1600,26 @@
       case 'grphide':
         S.grpHide = S.grpHide || {};
         if (S.grpHide[t.dataset.g]) delete S.grpHide[t.dataset.g]; else S.grpHide[t.dataset.g] = 1;
+        if (CP) CP.top();
         save(); renderCast(); break;
       case 'sortreg':
-        sortByReg(); save(); renderCast(); toast('登録順（住人を足した順）に戻しました'); break;
+        sortByReg(); if (CP) CP.top(); save(); renderCast(); toast('登録順（住人を足した順）に戻しました'); break;
       case 'grphidenone':
-        S.grpHideNone = !S.grpHideNone; save(); renderCast(); break;
+        S.grpHideNone = !S.grpHideNone; if (CP) CP.top(); save(); renderCast(); break;
       case 'grpshowall':
-        S.grpHide = {}; S.grpHideNone = false; save(); renderCast(); break;
+        S.grpHide = {}; S.grpHideNone = false; if (CP) CP.top(); save(); renderCast(); break;
       case 'randadd':
         if (S.chars.length >= MAX || !HK.RandChar) return;
         if (S.sample) S.sample = false;
         var rc = HK.RandChar.make({ style: randStyle, names: S.chars.map(function (x) { return x.name; }) });
-        S.chars.push(mk(rc)); save(); renderCast();
+        var rcc = mk(rc); S.chars.push(rcc); if (CP) CP.reveal(rcc.id);
+        save(); renderCast();
         toast('「' + rc.name + '」（' + HK.toCode(rc.eg) + (rc.memo ? '・' + rc.memo : '') + '）をランダムで足しました');
-        var rl = document.querySelector('#castlist .res:last-child input[data-f="name"]');
+        var rl = document.getElementById('nm-' + rcc.id);
         if (rl) rl.focus();
         break;
       case 'sortgrp':
-        sortByGroup(); save();
+        sortByGroup(); if (CP) CP.top(); save();
         if (document.getElementById('castlist')) renderCast();
         renderBox(); toast('グループ順に並べました'); break;
       case 'joinrand':
@@ -1662,7 +1710,11 @@
     if (f === 'name' && c) { c.name = t.value.trim() || '名無し'; S.sample = false; }
     else if (f === 'memo' && c) c.memo = t.value;
     else if (f === 'group' && c) { c.group = t.value.trim().slice(0, 40); }
-    else if (f === 'tone' && c) c.tone = (HK.toneValid ? HK.toneValid(t.value) : HK.PERSONA[t.value]) ? t.value : '';
+    else if (f === 'tone' && c) {
+      c.tone = (HK.toneValid ? HK.toneValid(t.value) : HK.PERSONA[t.value]) ? t.value : '';
+      /* 口調の書き下ろしのかたまりを裏で読んでおく（動かすときに待たないように。失敗は動かすときに知らせる） */
+      if (HK.Load && HK.Load.ensureTones) HK.Load.ensureTones([c]).then(null, function () { /* 同上 */ });
+    }
     else if (f === 'fp' && c) c.fp = t.value.trim().slice(0, 8);
     else if (f === 'pos' && c) c.pos = ['top', 'bottom', 'riba'].indexOf(t.value) >= 0 ? t.value : '';
     else if (f === 'gender' || f === 'likes') {
@@ -1751,7 +1803,7 @@
     else if (f === 'seed') S.seed = t.value.replace(/[^\d]/g, '');
     else if (f === 'teacher') { S.teacher = t.value; save(); renderBox(); return; }
     else if (f === 'randfrom') { S.randFrom = t.value; save(); renderBox(); return; }
-    else if (f === 'grpview') { if (ev.type !== 'change' || t.value === 'custom') return; setGrpView(t.value); save(); renderCast(); return; }
+    else if (f === 'grpview') { if (ev.type !== 'change' || t.value === 'custom') return; setGrpView(t.value); if (CP) CP.top(); save(); renderCast(); return; }
     else if (f === 'randstyle') { randStyle = t.value; return; }
     else if (f === 'randn') S.randN = parseInt(t.value, 10) || '';
     save();
@@ -1783,6 +1835,7 @@
     var c = S.chars.splice(from, 1)[0];
     S.chars.splice(to, 0, c);
     S.sample = false;
+    if (CP) CP.reveal(id);
     save(); renderCast();
     var h = document.querySelector('.res[data-id="' + id + '"] .draghandle');
     if (h) h.focus();
@@ -1829,7 +1882,9 @@
     if (!h || (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown')) return;
     ev.preventDefault();
     var id = h.closest('.res').dataset.id, i = S.chars.map(function (c) { return c.id; }).indexOf(id);
-    moveChar(id, i + (ev.key === 'ArrowUp' ? -1 : 1));
+    /* グループごとの節に分けているときは、同じ節で一つ上（下）に見えている人と入れ替える（ui-cast-pages.js） */
+    var to = CP ? CP.step(id, ev.key === 'ArrowUp' ? -1 : 1) : i + (ev.key === 'ArrowUp' ? -1 : 1);
+    if (to >= 0) moveChar(id, to);
   });
 
   var iconTarget = null;
@@ -1873,6 +1928,7 @@
     document.body.appendChild(d);
   })();
   HK.UI.save = save; HK.UI.renderCast = renderCast; HK.UI.cleanTies = cleanTies; HK.UI.toast = toast;
+  if (CP) CP.bind({ S: function () { return S; }, grpList: grpList, grpHidden: grpHidden, groupsOf: groupsOf, resRow: resRow, renderCast: renderCast, boxRedraw: boxRedraw });
   HK.UI.refresh = function () { setTab(tab); };
   HK.UI.autoTone = autoTone;
   /* 書き出し・読み込み・入力の組み立て（点検・往復の試験から呼ぶ。画面の操作と同じ関数） */

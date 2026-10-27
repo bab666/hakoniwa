@@ -7,7 +7,10 @@
    全年齢版では、R18版で保存したセーブと R18 だけの辞書（喘ぎなど）は読み込まない。住人の R18 だけの設定は normState（ui.js）に任せる。
    全年齢／R18 の切り替え（hakoniwa-safe-mode）と R18版のパスワードの印（hakoniwa-r18-unlock）はその端末の設定として、書き出さず、読み込みでも変えない
    保存の鍵は版ごと（safe.js の HK.STORE）：書き出すのはこの版の鍵だけ。読み込むときは、ファイルの鍵（R18版の hakoniwa:… でも全年齢版の hakoniwa-z:… でも、
-   分ける前の古いファイルでも）をこの版の鍵に読み替える（own）。全年齢版の移行の印（hakoniwa-z:migrated）も端末ごとの印として書き出さない */
+   分ける前の古いファイルでも）をこの版の鍵に読み替える（own）。全年齢版の移行の印（hakoniwa-z:migrated）も端末ごとの印として書き出さない
+   住人・関係（state）・控え・退避は state-store.js（HK.StateStore。IndexedDB の hakoniwa-state）が受け持つ。書き出すときはそこから丸ごと（localStorage に
+   「IndexedDB にある」印しか無くても）hakoniwa:state として入れ、読み込むときもそこへ書く。hakoniwa-state の DB そのものは書き出さない（保存フォルダのハンドルも入るため）
+   ・複数のファイルをまとめて読み込める（「足す」で順に。同じ名前で設定も同じ住人は飛ばす。進み具合を出す）。保存フォルダ（save-folder.js）からの読み込みも同じ関数（importMany） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -143,9 +146,38 @@
 
   /* 住人のアイコンの置き場（saves.js の HK.IconStore）。まるごと書き出しには DB として入れず、住人の保存（state）の中に戻して書き出す（古い版でも読める形） */
   function iconDb() { return HK.IconStore ? HK.IconStore.DB : K('hakoniwa-icons'); }
+  /* 住人の保存の DB（state-store.js）。書き出さず、読み込みでも直接は書かない（hakoniwa:state の鍵として扱う） */
+  function stateDb() { return HK.StateStore ? HK.StateStore.DB : K('hakoniwa-state'); }
+  function skipDb(n) { return n === iconDb() || n === stateDb(); }
+  /* 住人・控え・退避の鍵（短い名前 → この版の鍵）。HK.StateStore が無いとき（古い構成）は空 */
+  function bigKeys() { var m = {}; ((HK.StateStore && HK.StateStore.KEYS) || []).forEach(function (k) { m[k] = K('hakoniwa:' + k); }); return m; }
+  /* localStorage の中身に、住人・控え・退避を HK.StateStore から丸ごと入れる（localStorage に印しか無くても） */
+  function bigPack(ls) {
+    var bk = bigKeys();
+    Object.keys(bk).forEach(function (k) {
+      var fk = bk[k], t = HK.StateStore.getText(k);
+      delete ls.json[fk]; delete ls.text[fk];
+      if (t == null) return;
+      var v = parse(t);
+      if (v !== undefined && JSON.stringify(v) === t) ls.json[fk] = v; else ls.text[fk] = t;
+    });
+    return ls;
+  }
+  /* まるごと書き出しと同じ形の入れ物（保存フォルダの state.json・saves/・history/ も、この形で書く） */
+  function envelope(ls, lsText, dbs, extra) {
+    var d = new Date(), o = {
+      format: FMT, version: VER, app: 'hakoniwa',
+      build: HK.SAFE_BUILD ? 'zenrei' : 'full', mode: HK.SAFE_ON ? 'safe' : 'r18',
+      exported: d.toISOString(), exportedLocal: d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()),
+      localStorage: ls || {}, localStorageText: lsText || {}, indexedDB: dbs || []
+    };
+    Object.keys(extra || {}).forEach(function (k) { o[k] = extra[k]; });
+    return o;
+  }
   function collect() {
-    return idbNames().then(function (ns) { return Promise.all(ns.filter(function (n) { return n !== iconDb(); }).map(dumpDB)); }).then(function (dbs) {
+    return idbNames().then(function (ns) { return Promise.all(ns.filter(function (n) { return !skipDb(n); }).map(dumpDB)); }).then(function (dbs) {
       var ls = lsPack(), d = new Date();
+      if (HK.StateStore) bigPack(ls);
       var data = {
         format: FMT, version: VER, app: 'hakoniwa',
         build: HK.SAFE_BUILD ? 'zenrei' : 'full', mode: HK.SAFE_ON ? 'safe' : 'r18',
@@ -225,10 +257,27 @@
     }
     return true;
   }
+  /* writeLS ＋ 住人・控え・退避（HK.StateStore）：map の住人の鍵は HK.StateStore に書く（wipe なら map に無い住人の鍵は消す）。
+     どれか書けなければ、localStorage と住人の保存を元に戻して false */
+  function writeAll(map, wipe) {
+    var SS = HK.StateStore;
+    if (!SS) return writeLS(map, wipe);
+    var bk = bigKeys(), big = {}, m2 = {};
+    Object.keys(map).forEach(function (k) { m2[k] = map[k]; });
+    Object.keys(bk).forEach(function (k) { var fk = bk[k]; if (fk in m2) { big[k] = m2[fk]; delete m2[fk]; } else if (wipe) big[k] = null; });
+    var snap = lsRaw(), prev = {};
+    Object.keys(big).forEach(function (k) { prev[k] = SS.getText(k); });
+    if (!writeLS(m2, wipe)) return false;
+    var bad = Object.keys(big).some(function (k) { return !SS.setText(k, big[k]); });
+    if (!bad) return true;
+    try { var st = window.localStorage; Object.keys(lsRaw()).forEach(function (k) { if (!KEEP[k]) st.removeItem(k); }); Object.keys(snap).forEach(function (k) { if (!KEEP[k]) st.setItem(k, snap[k]); }); } catch (e) { /* 戻せる範囲で */ }
+    Object.keys(prev).forEach(function (k) { SS.setText(k, prev[k]); });
+    return false;
+  }
   /* セーブと履歴の結果（history.js。上の putHist で入れる）以外の IndexedDB（今はない。増えたときのため）：ある store にだけ入れる */
   function putOther(dbs, wipe) {
     var SDB = HK.Saves ? HK.Saves.DB : K('hakoniwa-saves'), HDB = HK.History ? HK.History.DB : K('hakoniwa-history');
-    return Promise.all((dbs || []).filter(function (d) { return d && d.name && d.name !== SDB && d.name !== HDB && d.name !== iconDb() && mine(d.name) && d.stores; }).map(function (d) {
+    return Promise.all((dbs || []).filter(function (d) { return d && d.name && d.name !== SDB && d.name !== HDB && !skipDb(d.name) && mine(d.name) && d.stores; }).map(function (d) {
       return openExisting(d.name).then(function (db) {
         if (!db) return 0;
         var names = Object.keys(d.stores).filter(function (sn) { return db.objectStoreNames.contains(sn); });
@@ -275,45 +324,76 @@
   }
   function reload(msg) {
     try { window.sessionStorage.setItem(MSG, msg); } catch (e) { /* 知らせは出せなくてもよい */ }
-    setTimeout(function () { location.reload(); }, 300);
+    /* 住人の保存（IndexedDB。state-store.js）を書き終えてから読み込み直す */
+    var go = function () { setTimeout(function () { location.reload(); }, 300); };
+    if (HK.StateStore && HK.StateStore.flush) HK.StateStore.flush().then(go, go); else go();
   }
   /* 全年齢版：R18版（R18モード）で保存したセーブは入れない */
   function safeSaves(list) { return HK.SAFE_BUILD ? list.filter(function (r) { return !r.r18; }) : list; }
 
   /* 住人・関係を「足す」：読み込む状態を normState で整え、住人の JSON（rosterJSON）にして ui.js の importJSON（追加）へ。
-     同じ名前の住人は上書きするか確認し、残すときは、その人との関係・固定・呼び方を名前でつなぐ（rosterJSON の only） */
-  function addRoster(st0) {
+     同じ名前で設定もすべて同じ住人（アイコン・登録順は見ない）は飛ばす（関係は名前でつなぐ）。同じ名前で設定が違う住人は上書きするか確認し、
+     残すときは、その人との関係・固定・呼び方を名前でつなぐ（rosterJSON の only）。ctx（複数のファイル）があれば、確認の答えを次のファイルにも使う */
+  function fpOf(c, St) {
+    var o = HK.UI.rosterJSON([c.id], St).chars[0] || {};
+    delete o.reg; delete o.icon;
+    return JSON.stringify(o);
+  }
+  function addRoster(st0, ctx) {
     var UI = HK.UI;
     if (!st0 || !UI || !UI.normState || !UI.rosterJSON || !UI.importJSON) return { n: 0, over: 0 };
     var St = UI.normState(clone(st0));
     if (!St.chars.length) return { n: 0, over: 0 };
-    var cur = UI.state(), have = cur.sample ? [] : cur.chars.map(function (c) { return c.name; });
-    var dup = St.chars.filter(function (c) { return have.indexOf(c.name) >= 0; }), over = true;
-    if (dup.length) over = window.confirm('同じ名前の住人が' + dup.length + '人います（' + dup.slice(0, 8).map(function (c) { return c.name; }).join('・') + (dup.length > 8 ? 'ほか' : '') + '）。\n読み込むもので上書きしますか？\n\n［OK］上書きする\n［キャンセル］今の住人をそのまま残す（関係は名前でつなぎます）');
-    var only = over ? null : St.chars.filter(function (c) { return have.indexOf(c.name) < 0; }).map(function (c) { return c.id; });
-    if (only && !only.length) return { n: 0, over: 0, kept: dup.length };
-    var ros = UI.rosterJSON(only, St);
+    var cur = UI.state(), byName = {}, curFp = {};
+    if (!cur.sample) cur.chars.forEach(function (c) { (byName[c.name] = byName[c.name] || []).push(c); });
+    var same = [], dup = [];
+    St.chars.forEach(function (c) {
+      var hs = byName[c.name];
+      if (!hs) return;
+      var f = fpOf(c, St);
+      if (hs.some(function (h) { if (!(h.id in curFp)) curFp[h.id] = fpOf(h, cur); return curFp[h.id] === f; })) same.push(c.id); else dup.push(c);
+    });
+    var over = true;
+    if (dup.length) {
+      if (ctx && ctx.dupAns != null) over = ctx.dupAns;
+      else {
+        over = window.confirm('同じ名前の住人が' + dup.length + '人います（' + dup.slice(0, 8).map(function (c) { return c.name; }).join('・') + (dup.length > 8 ? 'ほか' : '') + '）。\n読み込むもので上書きしますか？' + (ctx && ctx.multi ? '（このあとのファイルも同じにします）' : '') + '\n\n［OK］上書きする\n［キャンセル］今の住人をそのまま残す（関係は名前でつなぎます）');
+        if (ctx) ctx.dupAns = over;
+      }
+    }
+    var skip = {};
+    same.forEach(function (id) { skip[id] = 1; });
+    if (!over) dup.forEach(function (c) { skip[c.id] = 1; });
+    var ids = St.chars.filter(function (c) { return !skip[c.id]; }).map(function (c) { return c.id; });
+    var res = { n: 0, over: 0, kept: over ? 0 : dup.length, same: same.length };
+    if (!ids.length) return res;
+    var ros = UI.rosterJSON(ids.length === St.chars.length ? null : ids, St);
     delete ros.ct; delete ros.adv;                     /* 内容のスイッチ・辞書は今のものを残す（辞書は下で別に聞く） */
     UI.importJSON(JSON.stringify(ros), false);
-    return { n: ros.chars.length, over: over ? dup.length : 0, kept: over ? 0 : dup.length };
+    res.n = ros.chars.length; res.over = over ? dup.length : 0;
+    return res;
   }
-  /* 高度設定の辞書を「足す」：今が空の欄は入れ、違う中身があれば置き換えるか聞く */
-  function addAdv(adv) {
+  /* 高度設定の辞書を「足す」：今が空の欄は入れ、違う中身があれば置き換えるか聞く（ctx があれば答えを次のファイルにも使う） */
+  function addAdv(adv, ctx) {
     if (!HK.Adv) return 0;
     var keys = Object.keys(adv), diff = keys.filter(function (k) { return HK.Adv.get(k) && HK.Adv.get(k) !== adv[k]; }), n = 0;
-    var rep = diff.length ? window.confirm('高度設定の辞書の中身が、今のものと読み込むもので違います。\n読み込むものに置き換えますか？\n\n［OK］置き換える\n［キャンセル］今のものを残す') : false;
+    var rep = false;
+    if (diff.length) {
+      if (ctx && ctx.advAns != null) rep = ctx.advAns;
+      else { rep = window.confirm('高度設定の辞書の中身が、今のものと読み込むもので違います。\n読み込むものに置き換えますか？' + (ctx && ctx.multi ? '（このあとのファイルも同じにします）' : '') + '\n\n［OK］置き換える\n［キャンセル］今のものを残す'); if (ctx) ctx.advAns = rep; }
+    }
     keys.forEach(function (k) { if (!HK.Adv.get(k) || (rep && diff.indexOf(k) >= 0)) { if (HK.Adv.get(k) !== adv[k]) { HK.Adv.set(k, adv[k], true); n++; } } });
     return n;
   }
 
   /* ---------- まるごと読み込む ---------- */
-  function importAll(data, how) {
+  function importAll(data, how, label) {
     data = own(data);
     var st = stateOf(data) || {}, saves = savesOf(data), sv = safeSaves(saves), drop = saves.length - sv.length, hist = histOf(data);
     var from = (data.exportedLocal || data.exported || '') + (data.build === 'zenrei' ? '（全年齢版）' : data.build === 'full' ? '（R18版）' : '');
     var what = '住人' + (st.chars || []).length + '人・関係' + (st.ties || []).length + '本・セーブ' + sv.length + '件・履歴' + hist.length + '件';
     if (how === 'rep') {
-      if (!window.confirm(from + ' に書き出したデータ（' + what + '）で、このブラウザの住人・関係・設定・セーブ・履歴・辞書をすべて置き換えます。\n今のデータは消えます（元に戻せません）。よろしいですか？')) { say('読み込みをやめました'); return; }
+      if (!window.confirm(from + ' に書き出したデータ（' + what + '）で、このブラウザの住人・関係・設定・セーブ・履歴・辞書をすべて置き換えます。\n今のデータは消えます（元に戻せません）。よろしいですか？')) { say('読み込みをやめました'); return false; }
       /* 履歴の結果の localStorage の置き場（history.js）は、下の putHist で入れ直す（全年齢版では R18モードの結果を入れない） */
       var map = {}, SLS = HK.Saves ? HK.Saves.LS : K('hakoniwa:saves'), AK = K('hakoniwa:adv'), HLS = HK.History ? HK.History.LS : K('hakoniwa:history:res');
       Object.keys(data.localStorage || {}).forEach(function (k) { if (mine(k) && k !== SLS && k !== HLS) map[k] = JSON.stringify(data.localStorage[k]); });
@@ -321,7 +401,7 @@
       if (HK.SAFE_BUILD && map[AK]) map[AK] = JSON.stringify(advOf(parse(map[AK])));
       var hl = hist.filter(function (h) { return h && h.input; }), hm = 0;
       iconsOut(map).then(function () {
-        if (!writeLS(map, true)) { iconsBack(); say('ブラウザの保存領域に入りきらず、読み込めませんでした（今のデータはそのままです）'); return; }
+        if (!writeAll(map, true)) { iconsBack(); say('ブラウザの保存領域に入りきらず、読み込めませんでした（今のデータはそのままです）'); return; }
         return (HK.Saves ? HK.Saves.clear() : Promise.resolve(true)).then(function () { return putSaves(sv); }).then(function (n) {
         /* 履歴の結果：今のものを消してから、ファイルの一覧が指すものを入れ、置けたかどうかの印を一覧に書き戻す */
         var want = hl.filter(function (h) { return h.id && h.r && !(HK.SAFE_BUILD && h.r18); }).length;
@@ -332,41 +412,164 @@
         });
       }).then(function (n) {
         return putOther(data.indexedDB, true).then(function () {
-          reload('まるごと読み込みました（置き換え）：' + what.replace(/セーブ\d+件/, 'セーブ' + n + '件') + (n < sv.length ? '（セーブ' + (sv.length - n) + '件は保存しきれませんでした）' : '') + (hm > 0 ? '（履歴' + hm + '件は結果を読み込めなかったので、開くと今の版で回し直します）' : '') + (drop ? '。R18版で保存したセーブ' + drop + '件は、全年齢版では読み込みません' : ''));
+          reload((label || 'まるごと読み込みました（置き換え）') + '：' + what.replace(/セーブ\d+件/, 'セーブ' + n + '件') + (n < sv.length ? '（セーブ' + (sv.length - n) + '件は保存しきれませんでした）' : '') + (hm > 0 ? '（履歴' + hm + '件は結果を読み込めなかったので、開くと今の版で回し直します）' : '') + (drop ? '。R18版で保存したセーブ' + drop + '件は、全年齢版では読み込みません' : ''));
         });
       });
       });
-      return;
+      return true;
     }
     /* 足す */
-    var r = addRoster(st), na = addAdv(advOf(data.localStorage && data.localStorage[K('hakoniwa:adv')]));
+    var ctx = addStart();
+    addPart(data, ctx, true);
+    addFinish(ctx).then(function (msg) { reload('まるごと読み込みました（足す）：' + msg); });
+  }
+  /* 「足す」を1つ以上のファイルで：addStart → ファイルごとに addPart → addFinish（履歴・セーブはまとめて入れる） */
+  function addStart(multi) { return { multi: !!multi, files: 0, n: 0, over: 0, kept: 0, same: 0, na: 0, hist: [], res: {}, saves: [], sid: {}, drop: 0, dbs: [], dupAns: null, advAns: null }; }
+  function addPart(data, ctx, owned) {
+    if (!owned) data = own(data);
+    var st = stateOf(data), saves = savesOf(data), sv = safeSaves(saves);
+    ctx.drop += saves.length - sv.length;
+    if (st) { var r = addRoster(st, ctx); ctx.n += r.n; ctx.over += r.over || 0; ctx.kept += r.kept || 0; ctx.same += r.same || 0; }
+    ctx.na += addAdv(advOf(data.localStorage && data.localStorage[K('hakoniwa:adv')]), ctx);
+    histOf(data).forEach(function (h) { ctx.hist.push(h); });
+    var hr = histResOf(data);
+    Object.keys(hr).forEach(function (k) { if (!ctx.res[k]) ctx.res[k] = hr[k]; });
+    sv.forEach(function (x) { if (x.id && ctx.sid[x.id]) return; if (x.id) ctx.sid[x.id] = 1; ctx.saves.push(x); });
+    ctx.dbs = ctx.dbs.concat(Array.isArray(data.indexedDB) ? data.indexedDB : []);
+    ctx.files++;
+  }
+  function addFinish(ctx) {
     /* 履歴：重ならないものを足して、新しい順に12件。足した履歴の結果も入れる（一覧からはみ出した履歴の結果は消す） */
     var cur = HK.store.get('history', []), key = function (h) { return [h.t, h.seed, h.names, h.input && h.input.scenId].join('|'); };
     if (!Array.isArray(cur)) cur = [];
     var ks = cur.map(key), hn = 0, added = [];
     /* 箱庭がこの版にあるか：まだ読んでいない箱庭（分割読み込み）は目録の仮の箱庭（load.js の HK.Load.info）で見る */
     var scenOk = function (id) { return !!(HK.SCENARIOS[id] || (HK.Load && HK.Load.info && HK.Load.info(id))); };
-    hist.forEach(function (h) { if (h && h.input && scenOk(h.input.scenId) && ks.indexOf(key(h)) < 0) { cur.push(h); added.push(h); ks.push(key(h)); hn++; } });
+    ctx.hist.forEach(function (h) { if (h && h.input && scenOk(h.input.scenId) && ks.indexOf(key(h)) < 0) { cur.push(h); added.push(h); ks.push(key(h)); hn++; } });
     cur.sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
     cur = cur.slice(0, 12);
     added = added.filter(function (h) { return cur.indexOf(h) >= 0; });
-    var getAll = putHist(added, hn ? histResOf(data) : {}).then(function () {
+    var sv = ctx.saves;
+    return putHist(added, hn ? ctx.res : {}).then(function () {
       if (hn && HK.store.set('history', cur) && HK.History) return HK.History.keep(cur.map(function (h) { return h.id; }));
-    }).then(function () { return HK.Saves ? HK.Saves.all() : []; });
-    getAll.then(function (list) {
+    }).then(function () { return HK.Saves ? HK.Saves.all() : []; }).then(function (list) {
       var ids = {}; list.forEach(function (x) { ids[x.id] = 1; });
       var nw = sv.filter(function (x) { return !(x.id && ids[x.id]); });
       return putSaves(nw).then(function (n) {
-        return putOther(data.indexedDB, false).then(function () {
+        return putOther(ctx.dbs, false).then(function () {
           var parts = [];
-          parts.push('住人' + r.n + '人' + (r.over ? '（うち同じ名前の' + r.over + '人を上書き）' : '') + (r.kept ? '・同じ名前の' + r.kept + '人は今のまま' : ''));
+          parts.push('住人' + ctx.n + '人' + (ctx.over ? '（うち同じ名前の' + ctx.over + '人を上書き）' : '') + (ctx.kept ? '・同じ名前の' + ctx.kept + '人は今のまま' : '') + (ctx.same ? '・同じ住人' + ctx.same + '人は省略' : ''));
           parts.push('セーブ' + n + '件を追加' + (sv.length - nw.length ? '（同じセーブ' + (sv.length - nw.length) + '件は省略）' : ''));
           parts.push('履歴' + hn + '件');
-          if (na) parts.push('辞書' + na + '件');
-          reload('まるごと読み込みました（足す）：' + parts.join('・') + (drop ? '。R18版で保存したセーブ' + drop + '件は、全年齢版では読み込みません' : ''));
+          if (ctx.na) parts.push('辞書' + ctx.na + '件');
+          return parts.join('・') + (ctx.drop ? '。R18版で保存したセーブ' + ctx.drop + '件は、全年齢版では読み込みません' : '');
         });
       });
     });
+  }
+  /* ---------- 複数のファイルをまとめて読み込む ----------
+     items：[{ name, text }]。how：'add'（順に「足す」。同じ名前で設定も同じ住人は飛ばす）／'rep'（1つにまとめてから置き換える。保存フォルダの読み込み）。
+     まるごと（hakoniwa-all。保存フォルダの state.json・saves/・history/ も同じ形）・設定（hakoniwa-settings）・住人の JSON・セーブの JSON を読める。
+     opt.label：終わったときの知らせの頭（既定は「Nこのファイルをまとめて読み込みました」） */
+  var isSaveRec = function (r) { return r && typeof r === 'object' && r.result && (r.result.log || r.result.ending); };
+  function sid() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function addItem(d, ctx) {
+    if (d.format === FMT) { addPart(d, ctx); return; }
+    if (d.f === SFMT) {
+      if (d.state && typeof d.state === 'object') { var r = addRoster(d.state, ctx); ctx.n += r.n; ctx.over += r.over || 0; ctx.kept += r.kept || 0; ctx.same += r.same || 0; }
+      ctx.na += addAdv(advOf(d.adv), ctx); ctx.files++; return;
+    }
+    var arr = Array.isArray(d) && d.length && d.every(isSaveRec) ? d : Array.isArray(d.saves) ? d.saves : isSaveRec(d) ? [d] : null;
+    if (arr) {
+      /* セーブの JSON（saves.js の書き出し）：saves.js の読み込みと同じ形に整える */
+      var sv = safeSaves(arr.filter(isSaveRec).map(function (x) {
+        return { id: x.id || sid(), at: x.at || Date.now(), v: 1, app: 'hakoniwa', name: x.name || '', scenId: x.scenId || (x.result.input || {}).scenId, scenName: x.scenName || '', names: x.names || '', seed: x.seed, title: x.title || '', memo: x.memo || '', r18: x.r18 !== false, result: x.result };
+      }));
+      ctx.drop += arr.filter(isSaveRec).length - sv.length;
+      sv.forEach(function (x) { if (ctx.sid[x.id]) return; ctx.sid[x.id] = 1; ctx.saves.push(x); });
+      ctx.files++; return;
+    }
+    if (Array.isArray(d.chars) || Array.isArray(d)) {
+      var n0 = HK.UI.state().chars.length;
+      HK.UI.importJSON(JSON.stringify(d), false);
+      ctx.n += Math.max(0, HK.UI.state().chars.length - n0); ctx.files++; return;
+    }
+    throw new Error('unknown');
+  }
+  /* 保存フォルダの読み込み（置き換える）：state.json（住人・関係・設定）と saves/・history/ のファイルを、まるごと書き出し1つの形にまとめる */
+  function mergeAll(datas) {
+    var ds = datas.filter(function (d) { return d && d.format === FMT; }).map(own);
+    if (!ds.length) return null;
+    var base = ds.filter(function (d) { return stateOf(d); })[0] || ds[0];
+    var SDB = HK.Saves ? HK.Saves.DB : K('hakoniwa-saves'), SST = HK.Saves ? HK.Saves.STORE : 'saves', SLS = HK.Saves ? HK.Saves.LS : K('hakoniwa:saves');
+    var HDB = HK.History ? HK.History.DB : K('hakoniwa-history'), HST = HK.History ? HK.History.STORE : 'results', HLS = HK.History ? HK.History.LS : K('hakoniwa:history:res');
+    var ls = clone(base.localStorage || {}), lst = clone(base.localStorageText || {}), hl = [], hseen = {}, saves = [], seen = {}, res = {};
+    ds.forEach(function (d) {
+      histOf(d).forEach(function (h) { var k = h && (h.id || [h.t, h.seed, h.names].join('|')); if (h && !hseen[k]) { hseen[k] = 1; hl.push(h); } });
+      savesOf(d).forEach(function (r) { if (r.id && seen[r.id]) return; if (r.id) seen[r.id] = 1; saves.push(r); });
+      var hr = histResOf(d); Object.keys(hr).forEach(function (k) { if (!res[k]) res[k] = hr[k]; });
+    });
+    hl.sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
+    delete ls[SLS]; delete ls[HLS];
+    if (hl.length) ls[K('hakoniwa:history')] = hl.slice(0, 12);
+    var dbs = [{ name: SDB, version: 1, stores: {} }, { name: HDB, version: 1, stores: {} }];
+    dbs[0].stores[SST] = { keyPath: 'id', autoIncrement: false, records: saves };
+    dbs[1].stores[HST] = { keyPath: 'id', autoIncrement: false, records: Object.keys(res).map(function (k) { return res[k]; }) };
+    return envelope(ls, lst, dbs, { build: base.build, mode: base.mode, exported: base.exported, exportedLocal: base.exportedLocal });
+  }
+  function importMany(items, how, opt) {
+    opt = opt || {};
+    var list = [], bad = [];
+    (items || []).forEach(function (it) {
+      var d = it && it.data !== undefined ? it.data : parse(String((it && it.text) || '').replace(/^\uFEFF/, ''));
+      if (!d || typeof d !== 'object') bad.push(it && it.name || '?'); else list.push({ name: (it && it.name) || '', data: d });
+    });
+    var badNote = function () { return bad.length ? '。読めなかったファイル' + bad.length + '個（' + bad.slice(0, 3).join('・') + (bad.length > 3 ? 'ほか' : '') + '）' : ''; };
+    if (!list.length) { say('読み込めるファイルがありませんでした' + badNote()); return Promise.resolve(false); }
+    if (how === 'rep') {
+      var m = mergeAll(list.map(function (x) { return x.data; }));
+      if (!m) { say('まるごと書き出しの形のファイルが見つかりませんでした'); return Promise.resolve(false); }
+      return Promise.resolve(importAll(m, 'rep', opt.label) !== false);
+    }
+    var ctx = addStart(list.length > 1), i = 0;
+    return new Promise(function (done) {
+      function step() {
+        if (i >= list.length) {
+          say('仕上げています…（' + list.length + '/' + list.length + '）');
+          addFinish(ctx).then(function (msg) {
+            reload((opt.label || (list.length > 1 ? list.length + '個のファイルをまとめて読み込みました（足す）' : 'まるごと読み込みました（足す）')) + '：' + msg + badNote());
+            done(true);
+          }, function () { say('読み込みの途中でエラーが起きました'); done(false); });
+          return;
+        }
+        var it = list[i++];
+        say('読み込んでいます… ' + i + '/' + list.length + (it.name ? '：' + it.name : ''));
+        setTimeout(function () {
+          try { addItem(it.data, ctx); } catch (e) { bad.push(it.name || String(i)); if (window.console && e && e.message !== 'unknown') console.error(e); }
+          step();
+        }, 20);
+      }
+      step();
+    });
+  }
+  /* 選んだファイル（1つ以上）を読む。1つなら今までどおり（まるごと・設定・住人・セーブの振り分け）、2つ以上なら「足す」で順に */
+  function readFiles(files) {
+    files = Array.prototype.slice.call(files || []);
+    if (!files.length) return;
+    var big = files.filter(function (f) { return f.size > 200 * 1024 * 1024; });
+    if (big.length) { say('ファイルが大きすぎます（1つ200MBまで）：' + big.map(function (f) { return f.name; }).join('・')); return; }
+    var readOne = function (f) {
+      return new Promise(function (ok) {
+        var rd = new FileReader();
+        rd.onload = function () { ok({ name: f.name, text: String(rd.result || '') }); };
+        rd.onerror = function () { ok({ name: f.name, text: '' }); };
+        rd.readAsText(f, 'utf-8');
+      });
+    };
+    if (files.length === 1) { readOne(files[0]).then(function (it) { if (!it.text) say('ファイルを読み込めませんでした'); else importText(it.text, mode); }); return; }
+    if (mode === 'rep' && !window.confirm('ファイルを' + files.length + '個選びました。複数のファイルは「足す」で順に読み込みます（置き換えはしません）。よろしいですか？')) { say('読み込みをやめました'); return; }
+    say(files.length + '個のファイルを開いています…');
+    Promise.all(files.map(readOne)).then(function (items) { importMany(items, 'add'); });
   }
   /* ファイル・貼り付けた JSON の振り分け：まるごと／設定の文字列の中身／住人の JSON（古い形式）／セーブの JSON */
   function importText(text, how) {
@@ -464,7 +667,7 @@
       var map = {}; map[K('hakoniwa:state')] = JSON.stringify(S); map[K('hakoniwa:state:backup')] = null;
       if (HK.Adv) { var a = {}; Object.keys(HK.Adv.data || {}).forEach(function (k) { if (!advOk(k)) return; a[k] = ''; }); Object.keys(adv).forEach(function (k) { a[k] = adv[k]; }); map[K('hakoniwa:adv')] = JSON.stringify(a); }
       iconsOut(map).then(function () {
-        if (!writeLS(map, false)) { iconsBack(); say('ブラウザの保存領域に入りきらず、読み込めませんでした（今のデータはそのままです）'); return; }
+        if (!writeAll(map, false)) { iconsBack(); say('ブラウザの保存領域に入りきらず、読み込めませんでした（今のデータはそのままです）'); return; }
         reload('文字列から設定を読み込みました（置き換え）：' + what);
       });
       return;
@@ -492,11 +695,14 @@
       '<p class="hint" style="margin:2px 0 6px">住人・関係・設定・セーブ・履歴・辞書を、まるごと1つのファイルにして別のブラウザへ移せます。PCで「まるごと書き出し」→ LINE・メール・ドライブなどでスマホへ送る → スマホで「まるごと読み込む」。スマホからは「共有」で送れます。</p>' +
       '<div class="row" style="flex-wrap:wrap;gap:6px"><button class="btn" data-pt="out">まるごと書き出し</button><button class="btn" data-pt="share">共有（LINE・メールなど）</button><button class="btn" data-pt="in">まるごと読み込む</button></div>' +
       '<div class="row ptmodes" role="radiogroup" aria-label="読み込み方"><span class="hint" style="margin:0">読み込み方：</span>' + q('add', '足す（セーブは追加。同じ名前の住人は確認）') + q('rep', '置き換える') + '</div>' +
+      '<p class="hint" style="margin:2px 0 0">「まるごと読み込む」では、書き出したファイルを複数まとめて選べます（「足す」で順に読み込み、同じ名前で設定も同じ住人は飛ばします）。</p>' +
       '<div class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px"><button class="btn small" data-pt="strout" title="住人・関係・環境値・辞書（セーブ・履歴・アイコンは除く）を短い文字列にしてコピー">設定を文字列でコピー</button><button class="btn small" data-pt="strin" aria-expanded="' + strOpen + '">文字列から読み込む</button></div>' +
       '<div class="ptstr"' + (strOpen ? '' : ' hidden') + '><textarea id="pt-text" rows="3" spellcheck="false" autocomplete="off" placeholder="別の端末でコピーした「hakoniwa1」で始まる文字列を貼り付け">' + esc(strVal) + '</textarea>' +
       '<div class="row" style="margin-top:4px"><button class="btn small primary" data-pt="strgo">貼り付けた文字列を読み込む</button><span class="hint" style="margin:0">設定だけ（セーブ・履歴・アイコンは入りません）</span></div></div>' +
       '<p class="hint" id="pt-msg" aria-live="polite" style="margin:4px 0 0">' + esc(lastMsg) + '</p>' +
-      '<input type="file" id="pt-file" hidden></div>';
+      '<input type="file" id="pt-file" accept=".json,application/json" multiple hidden>' +
+      /* 保存フォルダ（PC の Chrome／Edge。save-folder.js） */
+      (HK.SaveFolder ? HK.SaveFolder.html() : '') + '</div>';
   }
   function refresh() { if (HK.UI && HK.UI.renderCast && document.getElementById('portable')) HK.UI.renderCast(); }
   (function style() {
@@ -519,16 +725,14 @@
     var t = ev.target;
     if (t.name === 'ptmode') { mode = t.value === 'rep' ? 'rep' : 'add'; return; }
     if (t.id !== 'pt-file' || !t.files || !t.files[0]) return;
-    var f = t.files[0];
-    if (f.size > 200 * 1024 * 1024) { say('ファイルが大きすぎます（200MBまで）'); return; }
-    var rd = new FileReader();
-    rd.onload = function () { importText(String(rd.result || ''), mode); };
-    rd.onerror = function () { say('ファイルを読み込めませんでした'); };
-    rd.readAsText(f, 'utf-8');
+    readFiles(t.files);
   });
   document.addEventListener('input', function (ev) { if (ev.target.id === 'pt-text') strVal = ev.target.value; });
   /* 読み込み直したあとの知らせ */
   try { var m0 = window.sessionStorage.getItem(MSG); if (m0) { window.sessionStorage.removeItem(MSG); lastMsg = m0; setTimeout(function () { toast(m0); }, 600); } } catch (e) { /* なし */ }
 
-  HK.Portable = { html: html, collect: collect, importText: importText, importAll: importAll, toStr: toStr, fromStr: fromStr, importSettings: importSettings, settingsData: settingsData, FORMAT: FMT, VERSION: VER };
+  HK.Portable = {
+    html: html, collect: collect, importText: importText, importAll: importAll, importMany: importMany, readFiles: readFiles, envelope: envelope, mergeAll: mergeAll,
+    toStr: toStr, fromStr: fromStr, importSettings: importSettings, settingsData: settingsData, say: say, mode: function () { return mode; }, FORMAT: FMT, VERSION: VER
+  };
 })();

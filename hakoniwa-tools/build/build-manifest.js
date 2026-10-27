@@ -144,4 +144,4 @@ function readManifest(html) {
   if (!m) return null;
   try { return JSON.parse(m[1]); } catch (e) { return null; }
 }
-module.exports = { runVm, makeManifest, guardManifest, manifestJs, readManifest };
+module.exports = { runVm, makeManifest, guardManifest, manifestJs, readManifest, makeWindow, LOAD_FALLBACK };

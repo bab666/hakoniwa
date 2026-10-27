@@ -11,6 +11,10 @@
          （読む順で「有る／無い」が変わる）。
      (4) 同じ HK.X（と HK.SCENARIOS.<id>）を2つのかたまりが作っていない：「無いときに書いた」か「同じ値を書き直した（HK.X = HK.X || {} の形）」
          ファイルを作り手とし、作り手のかたまりが2つ以上あって、どれか1つ（core か、ほかの全員の deps）が必ず先に読まれる、と言えないもの。
+     (5) 口調のデータ：tone の印のファイル（_order.txt の「tone js/xx.js」）はどのかたまりにも def で入っていない。
+         口調のかたまり（目録の tone-base・tones.pack の tone-*）は 'tone:<口調>' の def だけを持ち、ほかのかたまりの後ろの def は 'tone:<そのかたまり>' でかたまりの最後にある。
+         'tone:' の def の中身は HK.Load.toneData('<口調>', {…文字・数・配列・物だけ…}) の並びだけ（何も読まない。acorn で字句の形を見る）。
+         目録の tones.pack の口調は HK.TONE_KEYS にある・かたまりがある。読み込み時の読み書き（下の実測）も、'tone:' の def は core のほかを読まない。
    自分で書いて自分で読む（HK.X = HK.X || {} など）読みは数えない。目録の仮の箱庭（stub: true）を書くのは持ち主に数えない。
    取り付け役（HK.Load.onChunk を登録したファイル）の読み込み時の読みは数えない（いま有る分に当て、後から来た分は onChunk で当てる作り）。
    中核のファイルが HK.SCENARIOS.<id>（箱庭の本体）を読むのは参考に出すだけ（画面の描画など。本体が無ければ HK.Load.info の仮の箱庭を使う作り）。
@@ -28,24 +32,56 @@ function readOrder(dir) {
     if (!s || s[0] === '#' || s[0] === '@') return;   /* @chunk・@need などの行はファイルではない */
     let chunk = 'core';
     if (/^late\s+/.test(s)) { chunk = 'late'; s = s.replace(/^late\s+/, ''); }
+    else if (/^tone\s+/.test(s)) { chunk = 'tone'; s = s.replace(/^tone\s+/, ''); }
     const m = s.match(/@(pack|scen):(\S+)/); if (m) chunk = m[1] + '-' + m[2];
     const file = s.split(/\s+/)[0];
     out.push({ file, chunk, n: 0 });
   });
-  /* 通し番号は実行順（build.js と同じ）：late 以外を並びの順に、そのあと late を並びの順に（js/load.js が 1） */
-  out.filter(o => o.chunk !== 'late').concat(out.filter(o => o.chunk === 'late')).forEach((o, i) => { o.n = i + 1; });
+  /* 通し番号は実行順（build.js と同じ）：late・tone 以外を並びの順に、そのあと late と tone を並びの順に（js/load.js が 1） */
+  const L = o => o.chunk === 'late' || o.chunk === 'tone';
+  out.filter(o => !L(o)).concat(out.filter(L)).forEach((o, i) => { o.n = i + 1; });
   return out;
 }
-/* かたまりのファイルから HK.Load.def(n, 'js/x.js', …) を拾う */
-function readDefs(dir, man) {
+/* かたまりのファイルから HK.Load.def(n, 'js/x.js', …) を拾う（口調のデータの def 'tone:<名前>' は toneDefs に分ける。n は小数もある） */
+function readDefs(dir, man, toneDefs) {
   const list = [['core', man.core]].concat(Object.keys(man.chunks).map(n => [n, man.chunks[n].src]));
   const defs = [];
   list.forEach(([name, src]) => {
     const code = fs.readFileSync(path.join(dir, src), 'utf8');
-    const re = /HK\.Load\.def\(\s*(\d+)\s*,\s*(['"])([^'"]+)\2/g; let m;
-    while ((m = re.exec(code))) defs.push({ n: +m[1], file: m[3], chunk: name });
+    const re = /HK\.Load\.def\(\s*(\d+(?:\.\d+)?)\s*,\s*(['"])([^'"]+)\2/g; let m, k = 0;
+    while ((m = re.exec(code))) {
+      const d = { n: +m[1], file: m[3], chunk: name, k: k++, at: m.index };
+      if (/^tone:/.test(d.file)) { if (toneDefs) toneDefs.push(d); } else defs.push(d);
+    }
+    if (toneDefs) toneDefs.filter(d => d.chunk === name).forEach(d => { d.total = k; });
   });
   return defs;
+}
+/* 口調のデータの def の中身が HK.Load.toneData('<口調>', {…値だけ…}) の並びだけか（acorn の構文木で見る） */
+function checkToneCode(dir, man, toneDefs, probs) {
+  let acorn; try { acorn = require('./build-min.js').loadAcorn(); } catch (e) { acorn = null; }
+  if (!acorn) { probs['5'].push('acorn が無いので口調のデータの中身を確かめられません（npm install）'); return; }
+  const lit = n => n.type === 'Literal' ? !(n.regex) : n.type === 'ArrayExpression' ? n.elements.every(x => x && lit(x)) :
+    n.type === 'ObjectExpression' ? n.properties.every(p => p.type === 'Property' && !p.computed && p.kind === 'init' && !p.method && lit(p.value)) :
+    n.type === 'UnaryExpression' && n.operator === '-' ? n.argument.type === 'Literal' : false;
+  const isTD = c => c.type === 'CallExpression' && c.callee.type === 'MemberExpression' && !c.callee.computed && c.callee.property.name === 'toneData' &&
+    c.callee.object.type === 'MemberExpression' && !c.callee.object.computed && c.callee.object.property.name === 'Load' && c.callee.object.object.type === 'Identifier' && c.callee.object.object.name === 'HK';
+  const chunks = Array.from(new Set(toneDefs.map(d => d.chunk)));
+  chunks.forEach(name => {
+    const src = name === 'core' ? man.core : man.chunks[name].src, code = fs.readFileSync(path.join(dir, src), 'utf8');
+    let ast; try { ast = acorn.parse(code, { ecmaVersion: 'latest' }); } catch (e) { probs['5'].push(name + '：構文の誤り ' + e.message); return; }
+    ast.body.forEach(st => {
+      const c = st.type === 'ExpressionStatement' && st.expression;
+      if (!c || c.type !== 'CallExpression' || !c.arguments[1] || c.arguments[1].type !== 'Literal' || !/^tone:/.test(String(c.arguments[1].value))) return;
+      const f = c.arguments[2], who = name + ' の ' + c.arguments[1].value;
+      if (!f || f.type !== 'FunctionExpression' || f.params.length) { probs['5'].push(who + '：def の第3引数が引数なしの関数でない'); return; }
+      f.body.body.forEach(s2 => {
+        const e = s2.type === 'ExpressionStatement' && s2.expression;
+        if (!e || !isTD(e)) { probs['5'].push(who + '：HK.Load.toneData の呼び出しでない文がある（' + s2.type + '）'); return; }
+        if (e.arguments.length !== 2 || e.arguments[0].type !== 'Literal' || typeof e.arguments[0].value !== 'string' || !lit(e.arguments[1])) probs['5'].push(who + '：toneData の引数が「口調の文字列と値だけの物」でない');
+      });
+    });
+  });
 }
 
 /* ページに入れる計測（window.HK を Proxy にする。持ち主・作り手・読み書きを記録） */
@@ -119,8 +155,8 @@ async function main() {
   const dir = path.resolve(pos[0]), mode = pos[1] != null ? pos[1] : (/zenrei/.test(dir) ? '' : 'r18');
   const man = CR.readManifest(dir);
   if (!man) { console.error('目録（HK_MANIFEST）が無い index.html です（分割読み込みの版ではない）'); process.exit(2); }
-  const order = readOrder(dir), defs = readDefs(dir, man);
-  const probs = { '1': [], '2': [], '3': [], "3'": [], '4': [] };
+  const order = readOrder(dir), toneDefs = [], defs = readDefs(dir, man, toneDefs);
+  const probs = { '1': [], '2': [], '3': [], "3'": [], '4': [], '5': [] };
   /* ---------- (1) 分類 ---------- */
   const chunkOf = {}, nOf = {}, FILES = {};
   defs.forEach(d => {
@@ -130,6 +166,7 @@ async function main() {
   const inOrder = {};
   order.forEach(o => {
     inOrder[o.file] = o;
+    if (o.chunk === 'tone') { if (chunkOf[o.file]) probs['5'].push(o.file + '：tone の印なのに、かたまり ' + chunkOf[o.file] + ' に def で入っている'); return; }
     if (o.file === 'js/load.js') { if (chunkOf[o.file]) probs['1'].push('js/load.js が def で包まれている'); chunkOf[o.file] = 'core'; nOf[o.file] = o.n; return; }
     if (!chunkOf[o.file]) { probs['1'].push(o.file + '：どのかたまりにも入っていない（_order.txt では ' + o.chunk + '）'); return; }
     if (chunkOf[o.file] !== o.chunk) probs['1'].push(o.file + '：かたまりが ' + chunkOf[o.file] + '（_order.txt の注記は ' + o.chunk + '）');
@@ -139,6 +176,22 @@ async function main() {
   const nBad = defs.filter(d => inOrder[d.file] && inOrder[d.file].n !== d.n);
   if (nBad.length) probs['1'].push('def の通し番号が _order.txt の実行順と違う：' + nBad.length + ' 本（例 ' + nBad.slice(0, 3).map(d => d.file + ' ' + d.n + '≠' + inOrder[d.file].n).join('、') + '）');
   /* かたまりの依存（自分・core・deps をたどった先） */
+  /* ---------- (5) 口調のデータ ---------- */
+  const tones = man.tones || {}, pack = tones.pack || {}, toneChunks = Object.keys(man.chunks).filter(n => /^tone-/.test(n));
+  toneDefs.forEach(d => {
+    if (/^tone-/.test(d.chunk)) {
+      const t = d.file.slice(5);
+      if (d.chunk === 'tone-base' ? (tones.auto || []).indexOf(t) < 0 : pack[t] !== d.chunk) probs['5'].push(d.chunk + ' に口調 ' + t + ' の def（目録の tones では ' + (pack[t] || ((tones.auto || []).indexOf(t) >= 0 ? 'tone-base' : '無し')) + '）');
+    } else {
+      if (d.file !== 'tone:' + d.chunk) probs['5'].push(d.chunk + ' の後ろの口調のデータの def の名前が ' + d.file + '（tone:' + d.chunk + ' のはず）');
+      if (d.k !== d.total - 1) probs['5'].push(d.chunk + ' の ' + d.file + ' がかたまりの最後の def でない');
+      const last = defs.filter(x => x.chunk === d.chunk).reduce((a, x) => Math.max(a, x.n), 0);
+      if (!(d.n > last)) probs['5'].push(d.chunk + ' の ' + d.file + ' の通し番号 ' + d.n + ' がソースの最後（' + last + '）より前');
+    }
+  });
+  toneChunks.forEach(n => { if (defs.some(d => d.chunk === n)) probs['5'].push(n + '：口調のかたまりに口調のデータでない def がある'); if (!toneDefs.some(d => d.chunk === n)) probs['5'].push(n + '：口調のかたまりが空'); });
+  Object.keys(pack).forEach(t => { if (!man.chunks[pack[t]]) probs['5'].push('目録 tones.pack の ' + t + ' → ' + pack[t] + ' というかたまりが無い'); });
+  checkToneCode(dir, man, toneDefs, probs);
   const allowed = name => { const s = new Set(['core', name]); if (man.chunks[name]) CR.depClosure(man, [name]).forEach(x => s.add(x)); return s; };
   /* ---------- 実測 ---------- */
   const b = await R.launch(); const ctx = await b.newContext(); const page = await ctx.newPage(); const errors = [];
@@ -146,9 +199,12 @@ async function main() {
   await page.addInitScript(INST, FILES);
   await page.goto(lib.buildUrl(dir, mode));
   await R.waitReady(page);
-  const rec = await page.evaluate(() => { window.__R.on = false; return { log: window.__R.log, own: window.__R.own, cre: window.__R.cre, attach: window.__R.attach }; });
+  const rec = await page.evaluate(() => { window.__R.on = false; return { log: window.__R.log, own: window.__R.own, cre: window.__R.cre, attach: window.__R.attach, toneKeys: (window.HK && window.HK.TONE_KEYS || []).slice() }; });
+  Object.keys(pack).concat(tones.auto || []).forEach(t => { if (rec.toneKeys.indexOf(t) < 0) probs['5'].push('目録 tones の口調 ' + t + ' が HK.TONE_KEYS に無い'); });
   await b.close();
-  const ch = f => f === 'js/load.js' ? 'core' : chunkOf[f];
+  /* 口調のデータの def（'tone:<名前>'）はその def のあるかたまり（tone:<かたまり> はそのかたまり、tone:<口調> は口調のかたまり） */
+  const toneChunkOf = {}; toneDefs.forEach(d => { toneChunkOf[d.file] = d.chunk; });
+  const ch = f => f === 'js/load.js' ? 'core' : /^tone:/.test(f) ? toneChunkOf[f] : chunkOf[f];
   const ordN = f => nOf[f] || 0;
   /* ---------- (2)(3)(3') 読み ---------- */
   const info = { attach: [], core: [] };
@@ -185,7 +241,7 @@ async function main() {
     probs['4'].push('HK.' + key + '：作り手が ' + cs.join('・') + '（' + rec.cre[key].join('・') + '）' + (allOr ? '［どれも HK.X = HK.X || … の形］' : '［上書きのおそれ］'));
   });
   /* ---------- 出力 ---------- */
-  const NAMES = { '1': '(1) かたまりへの振り分け', '2': '(2) 中核が中核以外の持ち物を読む', '3': '(3) 共有のかたまりが箱庭の持ち物を読む', "3'": "(3') かたまりどうしで依存の外を読む", '4': '(4) 同じ持ち物を2つのかたまりが作る' };
+  const NAMES = { '1': '(1) かたまりへの振り分け', '2': '(2) 中核が中核以外の持ち物を読む', '3': '(3) 共有のかたまりが箱庭の持ち物を読む', "3'": "(3') かたまりどうしで依存の外を読む", '4': '(4) 同じ持ち物を2つのかたまりが作る', '5': '(5) 口調のデータ' };
   let total = 0;
   Object.keys(probs).forEach(k => { const L = Array.from(new Set(probs[k])); total += L.length; console.log(NAMES[k] + '：' + L.length + ' 件'); L.slice(0, opt.v ? 1e9 : 15).forEach(x => console.log('   ' + x)); if (!opt.v && L.length > 15) console.log('   …ほか ' + (L.length - 15) + ' 件（--v で全部）'); });
   const sumBy = L => { const m = {}; L.forEach(x => { const f = x.split(' → ')[0]; m[f] = (m[f] || 0) + 1; }); return Object.keys(m).map(f => f + ' ' + m[f]).join('・'); };
@@ -193,7 +249,8 @@ async function main() {
   console.log('（参考・数えない）中核が読み込み時に箱庭の本体を引く（取り付け役でないもの。画面の描画など）：' + info.core.length + ' 件' + (info.core.length ? '（' + sumBy(info.core) + '）' : ''));
   if (opt.v) info.core.forEach(x => console.log('   ' + x));
   if (errors.length) { console.log('ページのエラー：' + errors.length + ' 件'); errors.slice(0, 5).forEach(e => console.log('   ' + e)); total += errors.length; }
-  const nChunk = {}; order.forEach(o => { const c = chunkOf[o.file] || '?'; nChunk[c] = (nChunk[c] || 0) + 1; });
+  const nChunk = {}; order.forEach(o => { const c = o.chunk === 'tone' ? 'tone（データ）' : chunkOf[o.file] || '?'; nChunk[c] = (nChunk[c] || 0) + 1; });
+  console.log('口調のデータ：口調のかたまり ' + toneChunks.length + ' 個（tone-base ' + (man.chunks['tone-base'] ? 'あり' : '無し') + '・tones.pack ' + Object.keys(pack).length + '）、tone: の def ' + toneDefs.length + ' 本（口調のかたまりの中 ' + toneDefs.filter(d => /^tone-/.test(d.chunk)).length + '・ほかのかたまりの後ろ ' + toneDefs.filter(d => !/^tone-/.test(d.chunk)).length + '）');
   console.log('かたまりごとのファイル数：' + Object.keys(nChunk).map(k => k + ' ' + nChunk[k]).join('・') + '／記録したファイル ' + Object.keys(rec.log).length + '・持ち物 ' + Object.keys(rec.own).length);
   console.log('chunk-audit ' + path.basename(dir) + ' ' + (mode || '(無印)') + '：' + total + ' 件');
   if (opt.out) fs.writeFileSync(opt.out, JSON.stringify({ probs, info, attach: rec.attach, own: rec.own, cre: rec.cre, chunkOf }, null, 1));

@@ -2,12 +2,34 @@
    書き下ろしたあとで元の台詞が少しだけ変わり、鍵が当たらなくなった行を拾う（tone-fix.js の引き方で外れたときだけ）：
    ・一人称だけの違い：元の台詞が「俺」「僕」「あたし」で書かれていた頃の鍵（いまの台詞は「私」で書く約束）
    ・読点・「……」・空白だけの違い（「〈〉、……会えて」と「〈〉……会えて」）。？・！・。の違いは別の台詞として扱う
-   派生の口調で元の口調の書き下ろしを引き継がない口調（registry の noBaseFix）には使わない。両方のビルドに同じファイルを置く */
+   派生の口調で元の口調の書き下ろしを引き継がない口調（registry の noBaseFix）には使わない。両方のビルドに同じファイルを置く
+   分割読み込みの第4段から、書き下ろしの表（tone-fix*.js）はビルドが口調ごとのデータのかたまり（HK.Load.toneData）にするので、
+   表を引く包み（もとは tone-fix.js の末尾）もここに置く：tone-fix.js が先に包んでいれば（js を1本ずつ読むとき・ビルドの vm）何もしない（V._toneFixHooked） */
 (function () {
   'use strict';
   var HK = window.HK, V = HK && HK.Voice;
   if (!V || !V.overrideFor) return;
   var FIX = V.TONE_FIX = V.TONE_FIX || {};
+  /* ---------- 書き下ろし（TONE_FIX）の引き方（tone-fix.js の末尾と同じ。包む順も同じ＝tone-firm.js の包みの外、ゆるい引き方の内） ---------- */
+  if (!V._toneFixHooked) {
+    V._toneFixHooked = true;
+    var ofx = V.overrideFor;
+    V.overrideFor = function (q, who, people) {
+      var T = who && FIX[who.tone];
+      if (T) {
+        var ns = (people || []).map(function (p) { return p.name; }).filter(Boolean).sort(function (a, b) { return b.length - a.length; }), names = [];
+        var key = ns.length ? q.replace(new RegExp(ns.map(esc).join('|'), 'g'), function (m) { names.push(m); return '〈〉'; }) : q;
+        var v = T[key];
+        /* 派生の口調（チャラい・熱血など、registry の noBaseFix）は、元の口調向けに書き下ろした台詞（tone-fix-g*.js）を引き継がない */
+        var GK = V.TONE_FIX_G;
+        if (v != null && who._from && HK.toneOpt && HK.toneOpt(who._from, 'noBaseFix') && GK && GK[who.tone] && GK[who.tone][key]) v = null;
+        /* 頭の「…」だけ違う台詞も同じものとして引く（頭の「…」は残す） */
+        if (v == null) { var lead = (key.match(/^[…‥]+/) || [''])[0]; if (lead && T[key.slice(lead.length)] != null) v = lead + T[key.slice(lead.length)].replace(/^[…‥]+/, ''); }
+        if (v != null) { var i = 0; return v.replace(/〈〉/g, function () { var n = names[Math.min(i, names.length - 1)]; i++; return n || ''; }); }
+      }
+      return ofx ? ofx.apply(this, arguments) : null;
+    };
+  }
   var LOOSE = {}, FPS = ['俺', '僕', 'あたし', 'わたし', 'オレ', '自分'];
   function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   var MOANISH = /♡|[ぁぃぅぇぉ]|[…‥、]っ|っ[…‥、]/;

@@ -18,9 +18,12 @@
       try { keys(st).forEach(function (k) { st.removeItem(k); }); } catch (e) { /* 使えない環境 */ }
     });
     try { if (window.caches && caches.keys) caches.keys().then(function (ks) { ks.forEach(function (k) { if (/hakoniwa/.test(k)) caches.delete(k); }); }); } catch (e) { /* なし */ }
-    /* 履歴の結果（history.js の IndexedDB）も消す。一覧（history）は上で消える。消し終わるのを待てるよう Promise を返す */
-    try { if (HK && HK.History && HK.History.clear) return HK.History.clear(); } catch (e) { /* なし */ }
-    return Promise.resolve(true);
+    /* 履歴の結果（history.js の IndexedDB）と、住人・関係（state-store.js の IndexedDB。localStorage には印か写ししか無い）も消す。
+       一覧（history）は上で消える。消し終わるのを待てるよう Promise を返す。保存フォルダ（save-folder.js）のハンドルは残す */
+    var ps = [];
+    try { if (HK && HK.StateStore && HK.StateStore.clear) ps.push(HK.StateStore.clear()); } catch (e) { /* なし */ }
+    try { if (HK && HK.History && HK.History.clear) ps.push(HK.History.clear()); } catch (e) { /* なし */ }
+    return Promise.all(ps).then(function () { return true; });
   }
   function build() {
     var host = document.querySelector('.foot-body');

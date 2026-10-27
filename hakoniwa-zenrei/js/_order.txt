@@ -1,5 +1,5 @@
 # 読み込み順（全部読んだときの実行の順。上から順に 1 から通し番号が付き、HK.wrap／HK.addTo の並べ替えの鍵になる）。変えたら node hakoniwa-tools/build/build.js <このビルド> を実行
-# 注記：なし＝中核（core。起動時に読む）／「late 」＝画面が出たあと裏で読む（late の行は下の区切りより後ろに置く）／「 @pack:<族>」＝族のかたまり pack-<族>（その族の箱庭を選んだときに読む）
+# 注記：なし＝中核（core。起動時に読む）／「late 」＝画面が出たあと裏で読む（late の行は下の区切りより後ろに置く）／「tone 」＝口調の書き下ろし（表だけを書くファイル。build が vm で読んで口調ごとのデータのかたまり tone-base・tone-<口調> と箱庭のかたまりの後ろに書き出す。late と同じく区切りより後ろ）／「 @pack:<族>」＝族のかたまり pack-<族>（その族の箱庭を選んだときに読む）
 # @chunk <かたまり> deps=<先に要るかたまり>／@need <箱庭> <かたまり>（登録するかたまりのほかに、動かすのに要るかたまり）
 @chunk pack-story deps=pack-rel
 @chunk scen-ship deps=pack-story
@@ -267,11 +267,14 @@ js/egoquiz.js
 js/saves.js
 js/history.js
 js/portable.js
+js/state-store.js
+js/save-folder.js
 js/tips.js
 js/scen-meta.js
 js/scen-tags.js
 js/shared-stats.js
 js/ui-rand.js
+js/ui-cast-pages.js
 js/ui.js
 js/ui-gear.js
 js/ui-adv.js
@@ -291,33 +294,33 @@ js/ero-scene.js
 js/reset.js
 js/voice-seg.js
 js/voice-fp.js
-# ==== ここから下は late の区切り：上の行（中核・族）をすべて読んだあとに実行される行。late の行と、もとは late だった族の行を、元の実行の順のまま置く ====
-late js/voice-override-rows.js
-late js/voice-override-rows2.js
-late js/voice-override-scenes.js
-late js/voice-override-scenes2.js
+# ==== ここから下は late の区切り：上の行（中核・族）をすべて読んだあとに実行される行。late・tone の行と、もとは late だった族の行を、元の実行の順のまま置く ====
+tone js/voice-override-rows.js
+tone js/voice-override-rows2.js
+tone js/voice-override-scenes.js
+tone js/voice-override-scenes2.js
 js/tone-lines-hate.js @pack:rel
-late js/tone-mixed-more.js
+tone js/tone-mixed-more.js
 late js/tone-darui.js
-late js/tone-fix.js
-late js/tone-fix-g1.js
-late js/tone-fix-g2.js
-late js/tone-fix-g3.js
-late js/tone-fix-g4.js
-late js/tone-fix-g5.js
-late js/tone-fix-g6.js
-late js/tone-fix-gc.js
-late js/tone-sample-fix.js
-late js/tone-fix-g82.js
-late js/tone-fix-g81.js
-late js/tone-fix-g83.js
+tone js/tone-fix.js
+tone js/tone-fix-g1.js
+tone js/tone-fix-g2.js
+tone js/tone-fix-g3.js
+tone js/tone-fix-g4.js
+tone js/tone-fix-g5.js
+tone js/tone-fix-g6.js
+tone js/tone-fix-gc.js
+tone js/tone-sample-fix.js
+tone js/tone-fix-g82.js
+tone js/tone-fix-g81.js
+tone js/tone-fix-g83.js
 late js/tone-fix-loose.js
-late js/tone-fix-g7a.js
-late js/tone-fix-g7b.js
-late js/tone-fix-g7c.js
-late js/tone-fix-g7d.js
-late js/tone-fix-g7e.js
-late js/tone-fix-g7f.js
+tone js/tone-fix-g7a.js
+tone js/tone-fix-g7b.js
+tone js/tone-fix-g7c.js
+tone js/tone-fix-g7d.js
+tone js/tone-fix-g7e.js
+tone js/tone-fix-g7f.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/incidents-social.js @pack:rel

@@ -283,7 +283,14 @@
   A.gearHtml = function (c, others, h) {
     var esc = h.esc, sel = function (k) { return h.selOf('at_' + k, listOf(k), c[k] || ''); };
     var lw = HK.SAFE_ON ? '恋愛' : '恋愛・R18';
-    var same = others.length ? '<label title="別の世界・別の時間の同じ人のように扱います。鏡を見るような場面が起きます。' + lw + 'も、ほかの二人と同じように起こりえます（避けたいときは「' + lw + 'にしない相手」に印を付けます）">同一人物 <select data-gf="at_same" aria-label="同一人物"><option value="">なし</option>' + others.map(function (o) { return h.opt(o.id, o.name, c.same || ''); }).join('') + '</select></label>' +
+    /* 住人が多いとき（61人以上）は、選んでいる人だけで描き、触れたときに全員を入れる（ui-cast-pages.js の lazyAttr。住人1000人で ⚙️ 設定を開くのが重かった） */
+    var sameOpts = function () {
+      var all = '<option value="">なし</option>' + others.map(function (o) { return h.opt(o.id, o.name, c.same || ''); }).join(''), CPg = HK.CastPages;
+      if (!(CPg && CPg.lazyAttr && others.length > CPg.LAZY_MIN)) return '>' + all;
+      var cur = others.filter(function (o) { return o.id === c.same; })[0];
+      return CPg.lazyAttr(all) + '>' + (cur ? h.opt(cur.id, cur.name, cur.id) : '<option value="" selected>なし</option>');
+    };
+    var same = others.length ? '<label title="別の世界・別の時間の同じ人のように扱います。鏡を見るような場面が起きます。' + lw + 'も、ほかの二人と同じように起こりえます（避けたいときは「' + lw + 'にしない相手」に印を付けます）">同一人物 <select data-gf="at_same" aria-label="同一人物"' + sameOpts() + '</select></label>' +
       (c.same ? '<label title="同一人物の相手を苛む、闇に堕ちた自分。エゴグラムの欠点が際立ち、愛憎より悪質に振る舞います。いまは出られない部屋だけで効きます"><input type="checkbox" data-gf="at_sameDark"' + (c.sameDark ? ' checked' : '') + '> 闇堕ちVer</label>' : '') : '';
     return '<div class="gearrow"><label title="二人の体格の差で、見上げる・抱き上げるといった文が変わります">体格 ' + sel('build') + '</label>' +
       /* r18:begin */

@@ -9,6 +9,10 @@
    ・仮の箱庭は HK.SCENARIOS に入れない（HK.SCENARIOS[id] の有無で箱庭を見るコードが多いため。HK.SCENARIOS は今までどおり本体の登録だけ）。
      画面（一覧・「選べる箱庭か」）は HK.Load.info(id) で引く：本体があれば本体、無ければ目録から作った仮の箱庭（stub: true と目録の scen の中身。SCEN_ORDER にある箱庭だけ）。
      目録そのものは HK.Load.meta(id)（書き換えない）
+   ・口調の書き下ろし（第4段）：ビルドが最終の表を口調ごとのデータにしたかたまり tone-base（自動の10口調）・tone-<口調>、
+     箱庭だけの行は scen-<id> の中。どれも HK.Load.toneData(口調, {F, S, O, M, N}) で表に上書きで入れる。
+     ensureTones(口調・住人・入力) は口調の閉包（HK.TONES の base・derive・endingOf など・喘ぎの口調・語尾の設定の元の口調・自動の10）のかたまりを読む。
+     LATE_READY は late と tone-base を読み終えたら true
    設計：docs/reports/2026-10-27/chunk-loading-design.md（2-3〜2-6）。両方のビルドに同じファイルを置く */
 (function () {
   'use strict';
@@ -19,6 +23,9 @@
   /* build が目録を作るとき（node の vm）は空の目録 {vm: true} が来る：目録が無いときと同じに動く */
   if (M && M.vm) M = null;
   var CH = (M && M.chunks) || {}, SC = (M && M.scen) || {};
+  /* 口調のかたまり：tones.auto＝自動の10口調（tone-base に入っている）、tones.pack＝口調 → かたまりの名前 */
+  var TN = (M && M.tones) || {}, TPACK = TN.pack || {};
+  function isTone(name) { return name === 'tone-base' || /^tone-/.test(name); }
   var RETRY = [1000, 3000, 9000];
 
   /* ---------- URL の印（#safe&all・#safe,all・#all・#r18・#futari、?all=1） ---------- */
@@ -136,6 +143,70 @@
   };
   L.scen = function (id) { return SC[id] || null; };
 
+  /* ---------- 口調の書き下ろしのデータ（ビルドが書き出したかたまり tone-base・tone-<口調>・scen-<id> の中から呼ばれる） ----------
+     d.F＝[[元, 書き下ろし(, 1＝TONE_FIX_G の印)], …]（HK.Voice.TONE_FIX[tone]）、d.S＝[元, …]（書き下ろし＝元。[元, 1] なら G の印つき）、
+     d.O＝HK.Voice.OVR[tone]、d.I＝{ 決まり文句の id: HK.Voice.INTENT の id の項目の [tone] }（voice-override.js の INTENT。voice-override-rows.js が口調ごとに足す）、
+     d.M＝HK.Ero.TONE_MOAN[tone]、d.N＝HK.NovelMoan.T[tone]（M・N は R18版だけ）。
+     どれも鍵ごとに上書きで入れる（同じ口調に何回来てもよい。最終の表の値なので、来た順に左右されない）。
+     表そのもの・口調ごとの表は置き換えずに足す（voice-override.js・ero-kit.js・novel-moan-tone.js が同じものを持っているため） */
+  function put(tab, tone, src) {
+    var t = tab[tone] = tab[tone] || {};
+    for (var k in src) if (Object.prototype.hasOwnProperty.call(src, k)) t[k] = src[k];
+  }
+  L.toneData = function (tone, d) {
+    if (!tone || !d) return;
+    var V = HK.Voice, i, r;
+    if (V && (d.F || d.S)) {
+      var FIX = V.TONE_FIX = V.TONE_FIX || {}, T = FIX[tone] = FIX[tone] || {}, G = null;
+      var mark = function (k) { if (!G) { var GG = V.TONE_FIX_G = V.TONE_FIX_G || {}; G = GG[tone] = GG[tone] || {}; } G[k] = 1; };
+      for (i = 0; i < (d.F || []).length; i++) { r = d.F[i]; T[r[0]] = r[1]; if (r[2]) mark(r[0]); }
+      for (i = 0; i < (d.S || []).length; i++) { r = d.S[i]; if (Array.isArray(r)) { T[r[0]] = r[0]; if (r[1]) mark(r[0]); } else T[r] = r; }
+    }
+    if (V && d.O) put(V.OVR = V.OVR || {}, tone, d.O);
+    if (V && d.I && Array.isArray(V.INTENT)) V.INTENT.forEach(function (x) { if (x && x.id != null && Object.prototype.hasOwnProperty.call(d.I, x.id)) x[tone] = d.I[x.id]; });
+    if (d.M && HK.Ero) put(HK.Ero.TONE_MOAN = HK.Ero.TONE_MOAN || {}, tone, d.M);
+    if (d.N && HK.NovelMoan && HK.NovelMoan.T) put(HK.NovelMoan.T, tone, d.N);
+    /* 表から作る索引（tone-fix-loose.js のゆるい引き方など）を作り直させる */
+    L.gen++;
+  };
+
+  /* ---------- 口調の閉包：口調の鍵・住人（名簿の住人・動かす入力の chars）・入力そのもの → 要る口調の鍵 ---------- */
+  function tonesOfChar(c, add) {
+    if (!c || typeof c !== 'object') return;
+    if (c.tone) add(c.tone);
+    try { if (HK.toneOf) add(HK.toneOf(c)); } catch (e) { /* 気質が無い住人など */ }
+    /* 語尾の設定（tone-ending.js）：e:… の口調は書き下ろしを持たないので、元の口調 */
+    try { if (c.ending && HK.Ending && HK.Ending.baseTone) add(HK.Ending.baseTone(c)); } catch (e) { /* 設定が壊れている */ }
+    /* 喘ぎの口調（R18版。全年齢モードでは使わない） */
+    if (c.moanTone && !HK.SAFE_ON) add(c.moanTone);
+  }
+  L.toneClosure = function (x) {
+    var out = [], seen = {}, TONES = HK.TONES || {};
+    function add(t) {
+      if (!t || typeof t !== 'string' || seen[t]) return;
+      seen[t] = 1; out.push(t);
+      /* base＝文面を借りる口調、derive＝派生元（その書き下ろしを引く）、endingOf＝語尾の設定の元の口調 もたどる */
+      var d = TONES[t];
+      if (d && typeof d === 'object') ['base', 'derive', 'endingOf'].forEach(function (k) { if (typeof d[k] === 'string') add(d[k]); });
+    }
+    (TN.auto || []).forEach(add);
+    (Array.isArray(x) ? x : [x]).forEach(function (v) {
+      if (v == null || v === '') return;
+      if (typeof v === 'string') add(v);
+      else if (Array.isArray(v.chars)) v.chars.forEach(function (c) { tonesOfChar(c, add); });   /* 動かす入力 */
+      else tonesOfChar(v, add);
+    });
+    return out;
+  };
+  /* 口調 → 読むかたまり（tone-base と、目録の tones.pack にある口調のかたまり。自動の10・自作・不明の口調は読まない） */
+  function toneChunks(x) {
+    var names = CH['tone-base'] ? ['tone-base'] : [];
+    L.toneClosure(x).forEach(function (t) { var n = TPACK[t]; if (n && CH[n] && names.indexOf(n) < 0) names.push(n); });
+    return names;
+  }
+  L.toneChunks = function (x) { return M ? toneChunks(x) : []; };
+  L.tonesReady = function (x) { return !M || toneChunks(x).every(function (n) { return S(n).done; }); };
+
   /* ---------- 1本読む（失敗は 1・3・9秒で3回まで再試行） ---------- */
   var waiting = [];   /* 止まっている再試行（裏から戻ったらすぐやり直す） */
   function later(fn, ms) {
@@ -202,6 +273,10 @@
     var names = closure(x);
     return Promise.all(names.map(load)).then(function () { return undefined; });
   };
+  L.ensureTones = function (x) {
+    if (!M) return Promise.resolve();
+    return Promise.all(toneChunks(x).map(load)).then(function () { return undefined; });
+  };
   L.status = function (x) {
     var names = closure(x);
     if (names.every(function (n) { return S(n).done; })) return 'done';
@@ -209,15 +284,18 @@
     if (names.some(function (n) { return S(n).failed; })) return 'failed';
     return '';
   };
-  /* 全部読む（点検用・#all）。late を最後に、ほかは目録の並びで1本ずつ（読む順が毎回同じになるように） */
+  /* 全部読む（点検用・#all）。late と口調のかたまりを最後に、ほかは目録の並びで1本ずつ（読む順が毎回同じになるように） */
   var allP = null;
   L.all = function () {
     if (!M) return Promise.resolve();
     if (allP) return allP;
-    var names = Object.keys(CH).filter(function (n) { return n !== 'late'; });
+    /* 口調のかたまりは late の後ろ（元の並びで口調の書き下ろしがあった位置） */
+    var tones = Object.keys(CH).filter(isTone).sort(function (a, b) { return (b === 'tone-base') - (a === 'tone-base'); });
+    var names = Object.keys(CH).filter(function (n) { return n !== 'late' && !isTone(n); });
     if (CH.late) names.push('late');
     names = closure(names);
     if (CH.late && names[names.length - 1] !== 'late') names = names.filter(function (n) { return n !== 'late'; }).concat(['late']);
+    names = names.concat(closure(tones).filter(function (n) { return names.indexOf(n) < 0; }));
     var p = Promise.resolve();
     names.forEach(function (n) { p = p.then(function () { return load(n); }); });
     allP = p.then(function () { return undefined; }, function (e) { allP = null; throw e; });
@@ -294,7 +372,8 @@
   function bgPrefetch(ms) {
     if (!M || !web()) return;
     clearTimeout(bgT);
-    bgT = setTimeout(function () { if (willPrefetch()) L.prefetch(Object.keys(CH)); }, ms);
+    /* 口調のかたまりは小さいので後ろに */
+    bgT = setTimeout(function () { if (willPrefetch()) L.prefetch(Object.keys(CH).filter(function (n) { return !isTone(n); }).concat(Object.keys(CH).filter(isTone))); }, ms);
   }
 
   /* ---------- 新しい版があるときの知らせ（画面の上に1つだけ） ---------- */
@@ -345,13 +424,17 @@
       L.all().then(function () { lateDone(false); }, function () { lateDone(true); });
       return;
     }
-    if (CH.late) L.ensure('late').then(function () { lateDone(false); }, function () { lateDone(true); });
+    /* late（口調以外のあとで読む分）と tone-base（自動の10口調の書き下ろし）を読み終えたら LATE_READY */
+    var first = ['late', 'tone-base'].filter(function (n) { return CH[n]; });
+    if (first.length) Promise.all(first.map(function (n) { return L.ensure(n); })).then(function () { lateDone(false); }, function () { lateDone(true); });
     else setTimeout(function () { lateDone(false); }, 0);
-    /* 前回の箱庭（住人の保存の scenId）。ui.js が S.scenId を決めていればそれ、なければ保存から */
-    var sid = '';
-    try { sid = HK.UI && HK.UI.state ? HK.UI.state().scenId : ''; } catch (e) { sid = ''; }
-    if (!sid) { try { var raw = HK.store && HK.store.get ? HK.store.get('state', null) : null; sid = raw && raw.scenId; } catch (e) { sid = ''; } }
+    /* 前回の箱庭（住人の保存の scenId）と住人の口調。ui.js が S を決めていればそれ、なければ保存から */
+    var sid = '', chars = null;
+    try { var us = HK.UI && HK.UI.state ? HK.UI.state() : null; sid = us ? us.scenId : ''; chars = us ? us.chars : null; } catch (e) { sid = ''; }
+    if (!sid || !chars) { try { var raw = HK.store && HK.store.get ? HK.store.get('state', null) : null; if (!sid) sid = raw && raw.scenId; if (!chars) chars = raw && raw.chars; } catch (e) { /* 保存を読めない */ } }
     if (sid && SC[sid]) L.ensure(sid).then(null, function () { /* 失敗は選んだときに知らせる */ });
+    /* 住人の口調の書き下ろし（小さいので、動かす前に裏で読んでおく。失敗は動かすときに知らせる） */
+    if (Array.isArray(chars) && chars.length) L.ensureTones(chars).then(null, function () { /* 同上 */ });
     bgPrefetch(4000);
   };
 })();

@@ -1,14 +1,18 @@
 /* 箱庭シミュレーター：読み込むスクリプトを「かたまり」にまとめ、目録（HK_MANIFEST）を index.html に書き込む
-   node build.js <ビルドのディレクトリ>（hakoniwa-full / hakoniwa-zenrei） [--best] [--no-min] [--no-guard] [--all] [--soft] [--no-manifest]
+   node build.js <ビルドのディレクトリ>（hakoniwa-full / hakoniwa-zenrei） [--best] [--no-min] [--no-guard] [--all] [--soft] [--no-manifest] [--no-tone-verify]
    ・<ビルド>/js/_order.txt が読み込み順の一覧（全部読んだときの元の順。# から行末はコメント）。1行の書き方：
        js/xx.js                     … 中核（core。起動時に読む）
-       late js/xx.js                … late（画面が出たあと裏で読む。読み終わると HK.LATE_READY = true・HK.onLate()）
+       late js/xx.js                … late（画面が出たあと裏で読む。late と tone-base を読み終わると HK.LATE_READY = true・HK.onLate()）
+       tone js/xx.js                … 口調の書き下ろし（表 TONE_FIX・TONE_FIX_G・OVR・TONE_MOAN・NovelMoan.T だけを書くファイル）。かたまりには入れず、
+                                      vm で全部を元の順で読んだ最後の表を、口調ごとのデータのかたまり tone-base（自動の10口調）・tone-<口調> と、
+                                      箱庭だけの行は scen-<id> の後ろ（'tone:scen-<id>'）に書き出す（build-tone.js）。表のほかを書き換えるファイルはエラー（late に残す）
        js/xx.js @pack:rel           … かたまり pack-rel（族の共有。選んだ箱庭が要るときに読む）
        js/xx.js @scen:goukon        … かたまり scen-goukon（箱庭ごと）
        @chunk pack-story deps=pack-rel   … かたまりの依存（先に読むかたまり。カンマ区切り）
        @need goukon pack-rel        … その箱庭を動かすのに要るかたまり（登録するかたまりのほかに。カンマ区切り。deps はたどらなくてよい）
      ファイルには「全部読んだときの実行順」で 1 から通し番号を振る（HK.Load.def の第1引数。HK.wrap／HK.addTo の並べ替えの鍵）：
-     late 以外（注記なし・@pack・@scen）の行を並びの順に 1 から、その後ろに late の行を並びの順に続ける（今までの bundle-main → bundle-late の実行順と同じ）。
+     late・tone 以外（注記なし・@pack・@scen）の行を並びの順に 1 から、その後ろに late と tone の行を並びの順に続ける（今までの bundle-main → bundle-late の実行順と同じ）。
+     口調のデータの def は、書き足したかたまりの最後の通し番号＋0.5（scen-<id> など）、口調のかたまりは全部の通し番号の後ろ。
    ・かたまりごとに、ファイルを HK.Load.def(<通し番号>, 'js/xx.js', function () { …元の中身… }); で包んで連結し、
      最後に HK.Load.done('<名前>', '<hash>', 1); を付けて js/c/<名前>.<hash>.js に書く（hash は軽量化後の本文の sha1 の10桁）。
      core の先頭は js/load.js（読み込み器。包まない）。_order.txt に書くなら先頭の行に注記なしで。書かなければ build が先頭に足す。
@@ -60,30 +64,32 @@ fs.readFileSync(orderPath, 'utf8').split('\n').forEach((line, i) => {
     return;
   }
   if (/^@/.test(l)) throw new Error(at + '読めない指示です（@chunk <名前> deps=a,b か @need <箱庭> <かたまり,…>）');
-  m = l.match(/^(late\s+)?(js\/[^\s@'"\\]+\.js)(?:\s+@(pack|scen):(\S+))?$/);
+  m = l.match(/^((?:late|tone)\s+)?(js\/[^\s@'"\\]+\.js)(?:\s+@(pack|scen):(\S+))?$/);
   if (!m) {
-    if (/^late\s+\S+\s+@/.test(l)) throw new Error(at + 'late と @pack:／@scen: は一緒に付けられません');
+    if (/^(late|tone)\s+\S+\s+@/.test(l)) throw new Error(at + 'late・tone と @pack:／@scen: は一緒に付けられません');
     if (/\s@\S+\s+@/.test(l)) throw new Error(at + '注記は1つだけです');
     if (/\s@/.test(l)) throw new Error(at + '注記は @pack:<族> か @scen:<箱庭の id> です');
-    throw new Error(at + '読めない行です（js/xx.js、late js/xx.js、js/xx.js @pack:<族>、js/xx.js @scen:<id>）');
+    throw new Error(at + '読めない行です（js/xx.js、late js/xx.js、tone js/xx.js、js/xx.js @pack:<族>、js/xx.js @scen:<id>）');
   }
-  if (m[1] && m[3]) throw new Error(at + 'late と @pack:／@scen: は一緒に付けられません');
-  const chunk = m[1] ? 'late' : m[3] ? m[3] + '-' + m[4] : 'core';
+  if (m[1] && m[3]) throw new Error(at + 'late・tone と @pack:／@scen: は一緒に付けられません');
+  const chunk = m[1] ? m[1].trim() : m[3] ? m[3] + '-' + m[4] : 'core';
+  if (m[3] && /^tone-/.test(chunk)) throw new Error(at + 'tone- で始まるかたまりの名前は口調のかたまり用です');
   if (!NAME.test(chunk)) throw new Error(at + 'かたまりの名前（' + chunk + '）は英小文字・数字・- だけにしてください');
   if (seen.has(m[2])) throw new Error(at + '重複しています: ' + m[2]);
   if (!fs.existsSync(path.join(dir, m[2]))) throw new Error(at + 'ファイルがありません: ' + m[2]);
   seen.add(m[2]);
   entries.push({ n: entries.length + 1, f: m[2], chunk });
 });
-/* 通し番号は実行順：late 以外を並びの順に、そのあと late を並びの順に */
-entries.filter(e => e.chunk !== 'late').concat(entries.filter(e => e.chunk === 'late')).forEach((e, i) => { e.n = i + 1; });
+/* 通し番号は実行順：late・tone 以外を並びの順に、そのあと late と tone を並びの順に */
+const isLate = e => e.chunk === 'late' || e.chunk === 'tone';
+entries.filter(e => !isLate(e)).concat(entries.filter(isLate)).forEach((e, i) => { e.n = i + 1; });
 /* js/load.js（読み込み器）：書くなら先頭に注記なしで。書いていなければ先頭に足す（無いうちは空の代わり） */
 const li = entries.findIndex(e => e.f === LOADF);
 if (li > 0) throw new Error('_order.txt：' + LOADF + ' は先頭の行に書いてください（今は ' + (li + 1) + '本目）');
 if (li === 0 && entries[0].chunk !== 'core') throw new Error('_order.txt：' + LOADF + ' は注記なし（core）にしてください');
 const hasLoad = fs.existsSync(path.join(dir, LOADF));
 if (!hasLoad) console.warn('※ ' + LOADF + ' がまだありません。空の代わりで作ります（このままでは画面は動きません）');
-const files = entries.filter(e => e.f !== LOADF);
+const files = entries.filter(e => e.f !== LOADF && e.chunk !== 'tone'), toneFiles = entries.filter(e => e.chunk === 'tone');
 /* かたまりの並び（初めて出てきた順。core が先頭） */
 const names = ['core'];
 /* late は core のすぐ後ろ（起動の流れで core の次に読むので、vm もその順で回す。族のかたまりに頼る late のファイルがあれば vm の例外で分かる） */
@@ -97,6 +103,7 @@ Object.keys(chunkDeps).forEach(c => {
   });
 });
 if (chunkDeps.core && chunkDeps.core.length) throw new Error('_order.txt：core に deps は付けられません');
+Object.keys(chunkDeps).forEach(c => { if (/^tone-/.test(c)) throw new Error('_order.txt：@chunk ' + c + '：口調のかたまりは build が作ります（deps は無し）'); });
 Object.keys(needs).forEach(id => needs[id].forEach(c => { if (names.indexOf(c) < 0) throw new Error('_order.txt：@need ' + id + ' の ' + c + ' というかたまりがありません'); }));
 /* 依存の順（循環はエラー）。同じ段は初めて出てきた順 */
 const exec = [];
@@ -121,6 +128,7 @@ const readSrc = f => fs.readFileSync(path.join(dir, f), 'utf8').replace(/\s+$/, 
 const topBad = [], guardBad = [], soft = [];
 const loadSrc = hasLoad ? readSrc(LOADF) : 'window.HK = window.HK || {};';
 const chunks = {};
+/* 1回目：かたまりごとにファイルを包んで並べる（全年齢版の検査は、口調のデータを足したあと） */
 names.forEach(name => {
   const list = files.filter(e => e.chunk === name), map = STRIP ? [] : null, parts = [];
   const add = (f, src, wrapN) => {
@@ -135,9 +143,69 @@ names.forEach(name => {
   };
   if (name === 'core') add(LOADF, loadSrc, 0);
   const srcs = list.map(e => ({ n: e.n, f: e.f, src: add(e.f, readSrc(e.f), e.n) }));
-  let body = parts.join('');
-  if (STRIP) guardBad.push(...M.guard(body, map, name, soft, HARD));
-  chunks[name] = { name, files: srcs, count: list.length + (name === 'core' ? 1 : 0), raw: Buffer.byteLength(body), body };
+  chunks[name] = { name, files: srcs, count: list.length + (name === 'core' ? 1 : 0), parts, map };
+});
+/* 口調の書き下ろし（tone の行）：vm で全部を読み、口調ごとのデータにする */
+const toneSrcs = toneFiles.map(e => {
+  let src = readSrc(e.f);
+  if (STRIP) src = M.strip(src, e.f, null);
+  topBad.push(...M.checkTop(src, e.f));
+  return { n: e.n, f: e.f, src };
+});
+let toneMade = null, toneInfo = '';
+/* 口調のデータの def を、かたまりの部品として足す（map は全年齢版の検査用：1行に1つ） */
+const addDef = (c, d) => {
+  const part = ';/* ==== ' + d.name + ' ==== */\nHK.Load.def(' + d.n + ", '" + d.name + "', function () {\n" + d.code + '});\n';
+  c.parts.push(part);
+  if (c.map) { let i = 0; part.replace(/\n/g, () => { c.map.push({ f: d.name, n: i++ }); return ''; }); }
+};
+if (toneSrcs.length && !topBad.length) {
+  const T0 = Date.now(), BT = require('./build-tone.js');
+  const vmOpt = { build: BUILD, safeBuild: STRIP, hash: STRIP ? '' : 'r18', loadSrc: hasLoad ? (STRIP ? M.strip(loadSrc, LOADF, null) : loadSrc) : null, acorn: M.loadAcorn() };
+  if (!vmOpt.acorn) throw new Error('acorn が見つかりません（口調のデータの振り分けに使います）。リポジトリの直下で npm install を実行してください');
+  const ch = exec.map(n => ({ name: n, files: chunks[n].files }));
+  toneMade = BT.make(vmOpt, ch, toneSrcs);
+  const R = toneMade.R;
+  if (R.errs.length) { console.warn('※ 口調のデータを作る vm の実行で ' + R.errs.length + ' 件の例外：'); R.errs.slice(0, 10).forEach(e => console.warn('  ' + e)); }
+  const badF = Object.keys(R.bad);
+  if (badF.length) {
+    console.error('※ tone の印のファイルが、口調の表のほかも読み込み時に書き換えています（' + badF.length + '本）。コードを含むファイルは _order.txt で late に戻してください');
+    badF.forEach(f => console.error('  ' + f + '：' + R.bad[f].slice(0, 3).join('／')));
+    process.exit(1);
+  }
+  /* 確かめ：読む順を3とおりに変えて、データから作った表が元の順で全部読んだときと同じか（鍵・値・G の印・ゆるい引き方の結果） */
+  if (!flag('--no-tone-verify')) {
+    const rest = exec.filter(n => n !== 'core' && n !== 'late'), lt = names.indexOf('late') >= 0 ? ['late'] : [];
+    const V = BT.verify(vmOpt, ch, toneMade, [['core'].concat(lt, ['@tones'], rest), ['core'].concat(rest, lt, ['@tones']), ['core', '@tones'].concat(rest, lt)]);
+    const ng = V.filter(v => v.diff.length || v.errs.length);
+    if (ng.length) {
+      console.error('※ 口調のデータで読んだときの表が、元の順で全部読んだときと違います（build-tone.js の振り分けを見てください）：');
+      ng.forEach(v => { console.error('  順：' + v.order + '：違い ' + v.diff.length + ' 件・例外 ' + v.errs.length + ' 件'); v.diff.concat(v.errs).slice(0, 8).forEach(x => console.error('    ' + x)); });
+      process.exit(1);
+    }
+  }
+  /* かたまりの後ろに足す def（late・pack-*・scen-*） */
+  Object.keys(toneMade.append).forEach(n => { if (!chunks[n]) throw new Error('口調のデータの行き先 ' + n + ' というかたまりがありません'); addDef(chunks[n], toneMade.append[n]); });
+  /* 口調のかたまり（tone-base が先、ほかは名前の順） */
+  Object.keys(toneMade.toneChunks).sort((a, b) => a === 'tone-base' ? -1 : b === 'tone-base' ? 1 : a < b ? -1 : 1).forEach(n => {
+    if (!NAME.test(n)) throw new Error('口調のかたまりの名前（' + n + '）が英小文字・数字・- だけになりません');
+    if (names.indexOf(n) >= 0) throw new Error('口調のかたまりの名前 ' + n + ' が、ほかのかたまりと重なります');
+    names.push(n);
+    const c = chunks[n] = { name: n, files: [], count: 0, parts: [], map: STRIP ? [] : null, tone: true };
+    toneMade.toneChunks[n].forEach(d => { addDef(c, d); c.count++; });
+  });
+  const st = toneMade.stat, by = st.byDest, sum = f => Object.keys(by).filter(f).reduce((a, k) => a + by[k], 0);
+  const scenB = sum(k => /^scen-/.test(k)), allB = sum(() => true);
+  toneInfo = '口調の書き下ろし ' + toneSrcs.length + '本 → ' + st.rows + '行（箱庭へ ' + st.scen + '行・' + Math.round(scenB / Math.max(1, allB) * 100) + '%（字数）、口調のかたまりへ ' + st.tone + '行、書き手のかたまりへ ' + st.writer + '行' +
+    (st.looseFix ? '、ゆるい鍵の組をそろえた ' + st.looseFix + '行' : '') + '。vm ' + (Date.now() - T0) + 'ms' + (flag('--no-tone-verify') ? '・確かめなし' : '') + '）';
+  if (toneMade.extra.length) console.warn('※ HK.TONE_KEYS に無い口調の書き下ろし（目録の tones.pack には入れる）：' + toneMade.extra.join(','));
+}
+/* 2回目：本文にまとめて、全年齢版の検査 */
+names.forEach(name => {
+  const c = chunks[name], body = c.parts.join('');
+  if (STRIP) guardBad.push(...M.guard(body, c.map, name, soft, HARD));
+  c.raw = Buffer.byteLength(body); c.body = body;
+  delete c.parts; delete c.map;
 });
 if (topBad.length) {
   console.error('※ HK.Load.def で包むと意味が変わるおそれのある書き方があります（' + topBad.length + '件）。全体を (function () { … })(); で包んでください');
@@ -204,15 +272,17 @@ if (flag('--no-manifest')) {
   const old = MF.readManifest(html);
   if (!old) console.warn('※ --no-manifest：前回の目録が index.html にありません。箱庭の情報が空の目録にします');
   manifest = { v, api: 1, build: BUILD, core: chunks.core.src, chunks: mchunks, order: old ? old.order : [], scen: old ? old.scen : {}, tones: old ? old.tones : { auto: [] } };
+  if (toneMade) manifest.tones = { auto: toneMade.auto, pack: toneMade.pack };
   vmInfo = '目録は前回のまま（--no-manifest）';
 } else {
   const R = MF.runVm({ build: BUILD, safeBuild: STRIP, hash: STRIP ? '' : 'r18', quiet: true, loadSrc: hasLoad ? chunksLoadSrc() : null,
-    chunks: exec.map(n => ({ name: n, hash: chunks[n].hash, files: chunks[n].files })) });
+    chunks: exec.map(n => ({ name: n, hash: chunks[n].hash, files: chunks[n].files })) });   /* 口調のかたまりは目録の情報に関わらないので vm では読まない */
   /* 並びは元の順で実行し直して取る（今までの bundle と同じ：late 以外を並びの順、そのあと late） */
   const fileOf = {}; names.forEach(n => chunks[n].files.forEach(x => { fileOf[x.f] = x; }));
   const seq = files.slice().sort((a, b) => a.n - b.n).map(e => fileOf[e.f]);   /* 通し番号の順＝late 以外、そのあと late */
   const R2 = MF.runVm({ build: BUILD, safeBuild: STRIP, hash: STRIP ? '' : 'r18', quiet: true, loadSrc: hasLoad ? chunksLoadSrc() : null, chunks: [{ name: 'core', files: seq, noDone: true }] });
   manifest = MF.makeManifest(R, { v, build: BUILD, core: chunks.core.src, chunks: mchunks, need: need(R.home), ord: R2.ord });
+  if (toneMade) manifest.tones.pack = toneMade.pack;
   R.ms += R2.ms;
   const errs = R.errs.concat(R2.errs.filter(e => R.errs.indexOf(e) < 0).map(e => '（元の順）' + e));
   if (errs.length) {
@@ -269,9 +339,21 @@ fs.writeFileSync(prevPath, JSON.stringify({ cur, prev: keepPrev || {} }, null, 1
 const k = n => Math.round(n / 1024) + 'KB';
 const tot = { raw: 0, gz: 0, br: 0 };
 console.log(path.basename(dir) + '（' + (STRIP ? '全年齢版' : 'R18版') + '）：かたまり ' + names.length + ' 個・' + entries.length + '本' + (hasLoad ? '' : '（＋load.js の代わり）') + '。' + vmInfo);
+const tz = { n: 0, raw: 0, gz: 0, br: 0, made: 0, list: [] };
 names.forEach(n => {
   const c = chunks[n], z = c.z; tot.raw += z.raw; tot.gz += z.gz; tot.br += z.br;
+  /* 口調のかたまりは1行にまとめる（下） */
+  if (c.tone) { tz.n++; tz.raw += z.raw; tz.gz += z.gz; tz.br += z.br; if (z.made) tz.made++; tz.list.push([n, z.br]); return; }
   console.log('  ' + n.padEnd(16) + String(c.count).padStart(3) + '本  ' + k(z.raw).padStart(7) + '（gz ' + k(z.gz) + '・br ' + k(z.br) + '）' + (z.made ? '' : '　変わらず') + (c.raw !== z.raw && !flag('--no-min') ? '　軽量化の前 ' + k(c.raw) : '') + ((chunkDeps[n] || []).length ? '　deps=' + chunkDeps[n].join(',') : ''));
 });
+if (tz.n) {
+  tz.list.sort((a, b) => b[1] - a[1]);
+  const base = chunks['tone-base'] && chunks['tone-base'].z;
+  console.log('  口調 ' + String(tz.n).padStart(3) + '個  ' + k(tz.raw).padStart(7) + '（gz ' + k(tz.gz) + '・br ' + k(tz.br) + '）' + (tz.made ? '　作り直し ' + tz.made + '個' : '　変わらず') +
+    '　tone-base br ' + (base ? k(base.br) : '-') + '・大きい順 ' + tz.list.filter(x => x[0] !== 'tone-base').slice(0, 5).map(x => x[0].replace(/^tone-/, '') + ' ' + k(x[1])).join('、'));
+  const big = tz.list.filter(x => x[1] > 90 * 1024);
+  if (big.length) console.warn('※ br が 90KB を超える口調のかたまり：' + big.map(x => x[0] + ' ' + k(x[1])).join('、'));
+}
+if (toneInfo) console.log('  ' + toneInfo);
 console.log('  合計 ' + k(tot.raw) + '（gz ' + k(tot.gz) + '・br ' + k(tot.br) + '）。index.html の目録 ' + k(Buffer.byteLength(MF.manifestJs(manifest))) + (removed ? '。古いファイルを ' + removed + ' 本消した' : ''));
 if (chunks.core.z.br > 1024 * 1024) console.warn('※ 中核（core）の br が 1MB を超えています（' + k(chunks.core.z.br) + '）。起動時に読む量の目安は 1MB 以下です');

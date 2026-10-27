@@ -102,7 +102,10 @@
   var cur = null, ov = null, opener = null, keigoOpen = false, egoOpen = true;
   /* 折りたたみ（恋愛相手の固定・性行為の相手・恋愛にしない相手）の開閉。窓を開いているあいだだけ覚える。基本は閉じる */
   var openMap = {};
-  function det(k, title, sum, inner) { return '<details class="gdet" data-k="' + k + '"' + (openMap[k] ? ' open' : '') + '><summary>' + title + ' <span class="gkn">' + esc(sum) + '</span></summary><div class="gearrow">' + inner + '</div></details>'; }
+  /* 住人が多いとき（61人以上）は、閉じている一覧の中身（住人を並べたチェック）を DOM に作らず、開いたときに入れる（lazyIn。住人1000人で窓を開くのが重かった） */
+  var lazyIn = {}, lazyMany = false;
+  function lazyBody(k, open, inner) { if (open || !lazyMany) return inner; lazyIn[k] = inner; return ''; }
+  function det(k, title, sum, inner) { return '<details class="gdet" data-k="' + k + '"' + (openMap[k] ? ' open' : '') + '><summary>' + title + ' <span class="gkn">' + esc(sum) + '</span></summary><div class="gearrow">' + lazyBody(k, openMap[k], inner) + '</div></details>'; }
   function namesOf(ids) { return (ids || []).map(byId).filter(Boolean).map(function (o) { return o.name; }); }
   function opt(v, label, sel, title) { return '<option value="' + esc(v) + '"' + (v === sel ? ' selected' : '') + (title ? ' title="' + esc(title) + '"' : '') + '>' + esc(label) + '</option>'; }
   function selOf(f, list, v, extra) { return '<select data-gf="' + f + '"' + (extra || '') + '>' + list.map(function (o) { return opt(o[0], o[1], v || ''); }).join('') + '</select>'; }
@@ -146,6 +149,15 @@
   function sampleLines(c) {
     var V = HK.Voice;
     if (!V || !V.processText) return '';
+    /* 分割読み込み（load.js）：この住人の口調の書き下ろしのかたまりがまだなら、読んでから描き直す（そのあいだは「読み込んでいます…」） */
+    if (HK.Load && HK.Load.tonesReady && !HK.Load.tonesReady([c])) {
+      var cid = c.id;
+      HK.Load.ensureTones([c]).then(function () { if (cur === cid) sampleRefresh(); }, function () {
+        var b = document.getElementById('tonesample');
+        if (b && cur === cid) b.innerHTML = '<span class="tsh">台詞の見本</span><span class="tsl on">口調のデータを読み込めませんでした。窓を開き直すと、もう一度読み込みます</span>';
+      });
+      return '<span class="tsh">台詞の見本</span><span class="tsl on">読み込んでいます…</span>';
+    }
     var s = S(), o = s.chars.filter(function (x) { return x !== c; })[0] || { name: '相手', id: '' };
     var me = { name: c.name, fp: (c.fpFor && o.id && c.fpFor[o.id]) || c.fp || '', you: (c.youFor && o.id && c.youFor[o.id]) || c.you || '', marks: c.marks || '', toneCustom: c.toneCustom || '', gender: c.gender || '', tone: HK.Ending ? HK.Ending.toneOf(c) : HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null };
     var kgo = c.keigo ? s.chars.filter(function (x) { return x !== c && c.keigo[x.id]; })[0] : null;
@@ -179,6 +191,7 @@
   function extraOf(c) { return extra[c.id] || {}; }
   function body(c) {
     var s = S(), others = s.chars.filter(function (x) { return x !== c; });
+    lazyIn = {}; lazyMany = others.length > 60;
     var autoK = HK.toneAuto ? HK.toneAuto(HK.traits(c.eg)) : HK.personaAuto(HK.traits(c.eg));
     var keys = HK.TONE_KEYS || HK.PERSONA_KEYS;
     var toneSel = '<select data-gf="tone" aria-label="口調">' + opt('', 'おまかせ（' + toneLabel(autoK) + '）', c.tone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.tone || '', t.desc); }).join('') + '</select>';
@@ -244,7 +257,9 @@
     /* 憎悪を持っても殺さない相手（どちらに付けても、二人のあいだでは殺す場面が思いとどまる場面になる。attr.js の HK.Attr.noKillPair） */
     /* 憎悪を持っても殺さない相手：折りたたみ（基本は閉じる）。説明は TIPS の「相手ごとの設定」に */
     var nkRow = others.length ? det('nk', '憎悪を持っても殺さない相手', sumOf(c.noKillFor, 'なし'), cbs('nokill', c.noKillFor)) : '';
-    var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手">' + others.map(function (o) { return opt(o.id, o.name, ''); }).join('') + '</select></label>' +
+    /* 住人が多いときは、相手の欄を最初の人だけで描き、触れたときに全員を入れる（ui-cast-pages.js の lazyAttr） */
+    var newoAll = others.map(function (o) { return opt(o.id, o.name, ''); }).join(''), newoLz = others.length && lazyMany && HK.CastPages && HK.CastPages.lazyAttr;
+    var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手"' + (newoLz ? HK.CastPages.lazyAttr(newoAll) + '>' + opt(others[0].id, others[0].name, '') : '>' + newoAll) + '</select></label>' +
       '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + opt('', '（関係は付けずに相手ごとの設定だけ）', 'friend') + '</select></label>' + (function () { var gm = groupMates(c); return gm.length ? '<label title="' + esc('同じグループ（' + grpsOf(c).join('・') + '）の全員に、選んだ関係を付けます：' + gm.map(function (o) { return o.name; }).join('・') + '。向きのある関係は、' + c.name + 'が左（上司・先輩・師匠など）になります') + '"><input type="checkbox" data-gf="newgrp"> グループの全員と（' + gm.length + '人）</label>' : ''; })() + '<button type="button" class="btn small" data-gact="tnew">追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
       /* 固定の説明は各節の ？（TIPS）に置き、ここには選んだものによって変わる説明（口調・関係・この住人の傾向）だけを出す */
@@ -257,7 +272,7 @@
       /* 語尾の設定（かんたん）：欄と見本は tone-ending.js */
       (HK.Ending ? HK.Ending.gearHtml(c, others[0], { esc: esc, opt: opt }) : '') +
       '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label><label><input type="checkbox" data-gf="keigoOlder"' + (c.keigoOlder ? ' checked' : '') + '> 年上の相手には敬語（年齢を決めた人どうし）</label></div>' +
-      (others.length ? '<details class="gkeigo"' + (keigoOpen ? ' open' : '') + '><summary>敬語で話す相手 <span class="gkn">' + (function () { var n = others.filter(function (o) { return c.keigo && c.keigo[o.id]; }).length; return n ? n + '人' : 'なし'; })() + '</span></summary><div class="gearrow">' + others.map(function (o) { return '<label><input type="checkbox" data-gf="keigo" data-o="' + o.id + '"' + (c.keigo && c.keigo[o.id] ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('') + '</div>' +
+      (others.length ? '<details class="gkeigo"' + (keigoOpen ? ' open' : '') + '><summary>敬語で話す相手 <span class="gkn">' + (function () { var n = others.filter(function (o) { return c.keigo && c.keigo[o.id]; }).length; return n ? n + '人' : 'なし'; })() + '</span></summary><div class="gearrow">' + lazyBody('keigo', keigoOpen, others.map(function (o) { return '<label><input type="checkbox" data-gf="keigo" data-o="' + o.id + '"' + (c.keigo && c.keigo[o.id] ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('')) + '</div>' +
         ((c.tone || autoK) === 'polite' ? '<p class="gearhint">いまの口調は敬語なので、誰にでも敬語で話します。</p>' : '') + '</details>' : '') + '</div>' +
       /* ②プロフィール：性別・誕生月・年齢・お酒・恋愛対象・色 */
       '<div class="gearsec"><h3>プロフィール' + (HK.Tips ? HK.Tips.btn('gear-profile') : '') + '</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
@@ -284,6 +299,8 @@
     if (!c) { close(); return; }
     var box = ov.querySelector('.gearbox'), y = ov.scrollTop;
     box.innerHTML = body(c);
+    /* 住人が多いとき（61人以上）：住人を選ぶ欄に「名前で探す」、住人を並べたチェックの一覧に「名前で絞り込む」を添える（ui-cast-pages.js） */
+    if (HK.CastPages) HK.CastPages.after(box);
     ov.scrollTop = y;
     sampleTick();
   }
@@ -298,6 +315,13 @@
       ov.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('gkeigo')) keigoOpen = e.target.open; }, true);
       ov.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('gego')) egoOpen = e.target.open; }, true);
       ov.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('gdet')) openMap[e.target.dataset.k] = e.target.open; }, true);
+      /* 開いたら、入れずにおいた一覧の中身を入れる（上の lazyIn） */
+      ov.addEventListener('toggle', function (e) {
+        var d = e.target, k = d.classList && (d.classList.contains('gkeigo') ? 'keigo' : d.classList.contains('gdet') ? d.dataset.k : null), box = k && d.open && lazyIn[k] != null ? d.querySelector('.gearrow') : null;
+        if (!box) return;
+        box.innerHTML = lazyIn[k]; delete lazyIn[k];
+        if (HK.CastPages) HK.CastPages.after(d);
+      }, true);
     }
     ov.hidden = false;
     document.body.style.overflow = 'hidden';

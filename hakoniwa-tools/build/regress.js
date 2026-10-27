@@ -9,7 +9,7 @@
 const path = require('path'), crypto = require('crypto');
 const lib = require('../tone-check/lib.js');
 
-/* ページの中で回す。arg = { N: 回数, kind: 1|2, ids: 回す箱庭（null なら HK.SCEN_ORDER の全部） }
+/* ページの中で回す。arg = { N: 回数, kind: 1|2, ids: 回す箱庭（null なら HK.SCEN_ORDER の全部）, cast: true なら回さずに配役だけ返す }
    kind 1 の口調の通し番号は、ids を絞っても SCEN_ORDER の並び全体で数える（＝全部回したときと同じ配役になる。
    人数は minCast・maxCast だけから決まるので、目録の仮の箱庭でも数えられる）。
    本体を読む前の仮の箱庭（HK.Load.info の stub）は回さず 'STUB' を返す */
@@ -27,7 +27,7 @@ const FP = function (arg) {
   want.forEach(id => {
     const sc = info(id);
     if (!sc) { res[id] = ['MISSING']; return; }
-    if (sc.stub) { res[id] = ['STUB']; return; }
+    if (sc.stub && !arg.cast) { res[id] = ['STUB']; return; }
     const n = castN(sc), parts = [];
     let ti = arg.kind === 2 ? idHash(id) % 9973 : (start[id] != null ? start[id] : 0);
     for (let s = 0; s < N; s++) {
@@ -36,6 +36,8 @@ const FP = function (arg) {
       for (let i = 0; i < n; i++) perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
       const env = {}; (sc.env || []).forEach((e, k) => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : ''); if (s % 2 && e.max != null) env[e.id] = e.max; if (s % 3 === 2 && e.options && e.options.length > 1) env[e.id] = e.options[(s + k) % e.options.length].v; });
       const ties = s % 2 ? [{ a: 0, b: 1, type: 'lover' }, { a: 1, b: Math.min(2, n - 1), type: 'yan' }].filter(t => t.a !== t.b && t.b < n) : [];
+      /* arg.cast：回さずに配役（住人の写し）だけを返す（chunk-regress が口調の閉包を読むのに使う） */
+      if (arg.cast) { parts.push(chars); continue; }
       let r; try { r = JSON.stringify(HK.simulate({ scenId: id, seed: 777 + s * 131, env, chars, perChar, ties })); } catch (e) { r = 'ERR ' + e.message; }
       parts.push(r);
     }
@@ -44,6 +46,10 @@ const FP = function (arg) {
   return res;
 };
 const sha12 = parts => crypto.createHash('sha1').update(parts.join('\n')).digest('hex').slice(0, 12);
+/* page で配役を取る（回さない）。opts = { N, kind: 1|2, ids } → { 箱庭: [回ごとの住人の写しの並び] }（本体を読む前の箱庭は目録の人数で数える） */
+async function casts(page, opts) {
+  return page.evaluate(FP, { N: opts.N || 6, kind: opts.kind || 1, ids: opts.ids || null, cast: true });
+}
 /* page で指紋を取る。opts = { N, kind: 1|2, ids, dump } → { 箱庭: 指紋 }（opts.dump があれば生の結果も返す） */
 async function fingerprint(page, opts) {
   const out = await page.evaluate(FP, { N: opts.N || 6, kind: opts.kind || 1, ids: opts.ids || null });
@@ -59,7 +65,7 @@ async function launch() {
 async function waitReady(page) {
   await page.waitForFunction(() => window.HK && window.HK.simulate && window.HK.TONE_KEYS && (window.HK.LATE_READY !== false), null, { timeout: 180000 });
 }
-module.exports = { FP, fingerprint, launch, waitReady, sha12 };
+module.exports = { FP, fingerprint, casts, launch, waitReady, sha12 };
 
 if (require.main === module) (async () => {
   const dir = process.argv[2], N = +process.argv[3] || 6, mode = process.argv[4] || 'r18';
