@@ -1,0 +1,100 @@
+/* 箱庭シミュレーター UI リデザイン — デザイントークン
+   出典: https://claude.ai/artifact/Y6mHx21Xx7e9upK9eYnuPe（Design キャンバス）
+   使い方: index.html の <style> 先頭の :root ブロックをこのファイルの内容で置き換える。
+   既存のクラス名・JS 生成マークアップは変えない前提。 */
+
+:root {
+  /* ── 基本：藍一色＋白。濃淡は color-mix で作る ── */
+  --c: #16233B;                                   /* 藍（UI の唯一の色） */
+  --paper: #ffffff;                               /* 地 */
+  --hot: #D7263D;                                 /* 重要（転機・情事・死亡）だけの赤 */
+
+  --ink: var(--c);
+  --muted: color-mix(in srgb, var(--c) 68%, var(--paper));    /* 補助文字 4.5:1 以上 */
+  --muted-s: color-mix(in srgb, var(--c) 76%, var(--paper));  /* 11px 級の小さな文字 */
+  --line: color-mix(in srgb, var(--c) 14%, var(--paper));     /* 罫線 */
+  --line-2: color-mix(in srgb, var(--c) 26%, var(--paper));   /* ボタン枠 */
+  --bg: var(--paper);
+  --surface: var(--paper);                                     /* 面の区別は罫線で */
+  --soft: color-mix(in srgb, var(--c) 4%, var(--paper));      /* 薄い面・背景 */
+  --soft-2: color-mix(in srgb, var(--c) 9%, var(--paper));    /* 面・選択状態 */
+  --mid: color-mix(in srgb, var(--c) 60%, var(--paper));      /* 相棒ラベルの塗り */
+
+  /* 既存変数の読み替え */
+  --accent: var(--c);
+  --accent-ink: var(--paper);
+  --accent-soft: var(--soft-2);
+  --sand: var(--soft);                            /* 関係図の地 */
+  --sand-line: var(--line-2);                     /* 関係図のドット */
+  --tray: var(--c);                               /* 関係図の枠 */
+  --warn: var(--c); --warn-line: var(--line-2); --warn-ink: var(--c);
+  --odd: var(--c);                                /* 「意外」は藍の破線で */
+  --adult-bg: var(--paper); --adult-line: var(--line-2);     /* R-18 は色面を使わずタグと枠線 */
+  --adult-tag: var(--c); --adult-tag-ink: var(--paper);
+
+  /* ── 関係の色（「フル」でのみ有効。他のモードでは藍に落とす） ── */
+  --love: #B83F66; --pine: #C5698B; --night: #9550AD; --obsess: #6F48A8;
+  --enemy: #B0442F; --kill: #4B1F1F; --partner: #2C7D61; --friend: #3F7F8B;
+  --guard: #4A5A9C;                               /* 旧 #A97817（金）は廃止 */
+  --none: var(--muted);
+
+  /* ── キャラのイメカラ（維持）。.av の --k に流す ── */
+  --p0: #c0392b; --p1: #2471a3; --p2: #1e8449; --p3: #9a6f00; --p4: #7d3c98; --p5: #b0498a;
+  --p6: #117a8b; --p7: #a04000; --p8: #4a5a9c; --p9: #5d7a14; --p10: #8e3b5b; --p11: #2e6f5a;
+
+  /* ── 文字 ── */
+  --f-body: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  --f-display: var(--f-body);                     /* 明朝は使わない */
+  --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace;
+  --r: 4px;
+}
+
+/* ── 黒版：白を #0A0B0F に、藍を #C9D4EC に置き換えるだけ ── */
+:root[data-theme="dark"] {
+  --c: #C9D4EC;
+  --paper: #0A0B0F;
+  --hot: #FF5C7A;
+  --muted: color-mix(in srgb, var(--c) 66%, var(--paper));
+  --line: color-mix(in srgb, var(--c) 16%, var(--paper));
+  --line-2: color-mix(in srgb, var(--c) 30%, var(--paper));
+  --soft: color-mix(in srgb, var(--c) 5%, var(--paper));
+  --soft-2: color-mix(in srgb, var(--c) 12%, var(--paper));
+  --mid: color-mix(in srgb, var(--c) 62%, var(--paper));
+  --love: #EC7A9C; --pine: #E39AB5; --night: #C597DE; --obsess: #A98BE0;
+  --enemy: #E57A62; --kill: #F09A8A; --partner: #6CC9A5; --friend: #79BCC8; --guard: #9AA9EC;
+  --p0: #f07c6e; --p1: #6fb1e6; --p2: #6cc98f; --p3: #e1bb53; --p4: #c08ae0; --p5: #ec8cc5;
+  --p6: #5fc6d6; --p7: #f09a5c; --p8: #9aa9ec; --p9: #a9c95a; --p10: #e08aab; --p11: #6bc4a5;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --c: #C9D4EC; --paper: #0A0B0F; --hot: #FF5C7A;
+    --muted: color-mix(in srgb, var(--c) 66%, var(--paper));
+    --line: color-mix(in srgb, var(--c) 16%, var(--paper));
+    --line-2: color-mix(in srgb, var(--c) 30%, var(--paper));
+    --soft: color-mix(in srgb, var(--c) 5%, var(--paper));
+    --soft-2: color-mix(in srgb, var(--c) 12%, var(--paper));
+    --mid: color-mix(in srgb, var(--c) 62%, var(--paper));
+    --love: #EC7A9C; --pine: #E39AB5; --night: #C597DE; --obsess: #A98BE0;
+    --enemy: #E57A62; --kill: #F09A8A; --partner: #6CC9A5; --friend: #79BCC8; --guard: #9AA9EC;
+    --p0: #f07c6e; --p1: #6fb1e6; --p2: #6cc98f; --p3: #e1bb53; --p4: #c08ae0; --p5: #ec8cc5;
+    --p6: #5fc6d6; --p7: #f09a5c; --p8: #9aa9ec; --p9: #a9c95a; --p10: #e08aab; --p11: #6bc4a5;
+    color-scheme: dark;
+  }
+}
+
+/* ── 色の量（ユーザー設定。:root の data-palette に mono / chars / full を付け、localStorage に保存） ── */
+/* mono: 藍のみ。イメカラも関係色も赤も藍に落とす */
+:root[data-palette="mono"] {
+  --hot: var(--c);
+  --love: var(--c); --pine: var(--c); --night: var(--c); --obsess: var(--c);
+  --enemy: var(--muted-s); --kill: var(--c); --partner: var(--mid); --friend: var(--c); --guard: var(--c);
+  --p0: var(--c); --p1: var(--c); --p2: var(--c); --p3: var(--c); --p4: var(--c); --p5: var(--c);
+  --p6: var(--c); --p7: var(--c); --p8: var(--c); --p9: var(--c); --p10: var(--c); --p11: var(--c);
+}
+/* chars: イメカラと赤は残し、関係色は藍に落とす */
+:root[data-palette="chars"] {
+  --love: var(--c); --pine: var(--c); --night: var(--c); --obsess: var(--c);
+  --enemy: var(--muted-s); --kill: var(--c); --partner: var(--mid); --friend: var(--c); --guard: var(--c);
+}
+/* full（既定）: 上の :root の値をそのまま使う */
