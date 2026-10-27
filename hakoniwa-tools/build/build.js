@@ -9,7 +9,13 @@
        （js/ のソースは R18版とバイト一致のまま。全年齢版の index.html が読むのは bundle だけ）。
        抜いたあとの bundle を acorn で字句に分け、文字列リテラルに性的な語（EXPLICIT）が残っていればエラーにしてビルドを止める
        （コメント・正規表現は見ない。全年齢版で使ってよい語の行は、その行に「/＊ r18:ok ＊/」（半角）を書く）。
-       印の付け忘れは、このエラーで見つかる（実行時の検知に頼らない）。--no-guard を付けると、エラーでも止めない（移行作業の途中だけ）。--all で残りを全部、--soft で二段目（HARD）の一覧も出す */
+       印の付け忘れは、このエラーで見つかる（実行時の検知に頼らない）。--no-guard を付けると、エラーでも止めない（移行作業の途中だけ）。--all で残りを全部、--soft で二段目（HARD）の一覧も出す
+   ・軽量化（両ビルド。全年齢版の検査のあと）：acorn で字句に分け、コメント・字下げ・空行・字句のあいだの余分な空白を落とす。
+       字句（文字列・テンプレート・正規表現を含む）は元のソースから一字も変えずに写す。改行があったところは改行を1つ残す（自動セミコロン挿入を変えない）。
+       ファイルの見出し（「;／＊ ==== js/xx.js ==== ＊／」）は残す。落としたあと字句に分け直し、字句の並び・改行の位置が元と同じでなければエラーで止める。
+       --no-min を付けると軽量化しない（調べもの用）
+   ・事前圧縮：bundle-main.js.gz／.br、bundle-late.js.gz／.br も作る（サーバが Accept-Encoding を見て返す。.htaccess）。中身が前と同じなら作り直さない。
+       .br はふだん品質9、公開の前は --best で品質11（1割ほど小さくなるが、作るのに1分ほどかかる） */
 'use strict';
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const args = process.argv.slice(2).filter(a => !/^--/.test(a)), flags = process.argv.slice(2).filter(a => /^--/.test(a));
@@ -35,6 +41,44 @@ function strip(src, f, map) {
   return out.map(o => o.t).join('\n');
 }
 function loadAcorn() { for (const t of [process.env.ACORN_MODULE, 'acorn', '/opt/node-tools/node_modules/acorn']) { try { if (t) return require(t); } catch (e) { /* 次 */ } } return null; }
+/* 軽量化：コメント・字下げ・空行・余分な空白を落とす（字句の中身はそのまま写す） */
+const NL = /[\n\r\u2028\u2029]/, HEAD = /\/\* ==== (js\/\S+\.js) ==== \*\//;
+const WORD = c => /[A-Za-z0-9_$\\#]/.test(c) || c > '\x7f', OPC = c => '+-*/%<>=!&|^~?.:'.indexOf(c) >= 0;
+function lex(acorn, code) {
+  const list = [];
+  for (const t of acorn.tokenizer(code, { ecmaVersion: 'latest', allowHashBang: true })) list.push(t);
+  return list;
+}
+function minify(code, name) {
+  const acorn = loadAcorn();
+  if (!acorn) throw new Error('acorn が見つかりません（npm i acorn か ACORN_MODULE=パス）。軽量化に使います（--no-min で軽量化なし）');
+  const toks = lex(acorn, code), out = [];
+  let prevEnd = 0, prev = '', prevNum = false;
+  toks.forEach(t => {
+    const raw = code.slice(t.start, t.end), gap = code.slice(prevEnd, t.start);
+    if (gap) {
+      const h = gap.match(HEAD);
+      if (h) out.push(prevEnd ? '\n' : '', '/* ==== ' + h[1] + ' ==== */\n');
+      else if (NL.test(gap)) { if (prevEnd) out.push('\n'); }
+      else if (prev && raw) {
+        const a = prev[prev.length - 1], b = raw[0];
+        if ((WORD(a) && WORD(b)) || (OPC(a) && OPC(b)) || (prevNum && b === '.')) out.push(' ');
+      }
+    }
+    out.push(raw);
+    if (raw) { prev = raw; prevNum = t.type.label === 'num'; }
+    prevEnd = t.end;
+  });
+  const min = out.join('') + '\n';
+  /* 確かめ：字句の並び（元の文字のまま）と、字句の前に改行があるかどうかが元と同じこと */
+  const sig = (c, list) => { let pe = 0; return list.map(t => { const s = (NL.test(c.slice(pe, t.start)) ? '\n' : '') + c.slice(t.start, t.end); pe = t.end; return s; }); };
+  const a = sig(code, toks), b = sig(min, lex(acorn, min));
+  /* 先頭の字句の前の改行（見出しのあと）は数えない */
+  if (a.length) a[0] = a[0].replace(/^\n/, ''); if (b.length) b[0] = b[0].replace(/^\n/, '');
+  if (a.length !== b.length) throw new Error(name + ' の軽量化で字句の数が変わりました（' + a.length + '→' + b.length + '）');
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) throw new Error(name + ' の軽量化で字句が変わりました（' + i + '番目：' + JSON.stringify(a[i]).slice(0, 80) + ' → ' + JSON.stringify(b[i]).slice(0, 80) + '）');
+  return min;
+}
 /* 抜いたあとの bundle に性的な語が残っていないか（文字列リテラルだけを見る） */
 function guard(code, map, name, soft) {
   const acorn = loadAcorn();
@@ -65,7 +109,7 @@ function cat(list, map) {
   }).join('');
 }
 const mapM = STRIP ? [] : null, mapL = STRIP ? [] : null;
-const main = cat(order.filter(o => !o.late), mapM), late = cat(order.filter(o => o.late), mapL);
+let main = cat(order.filter(o => !o.late), mapM), late = cat(order.filter(o => o.late), mapL);
 if (STRIP) {
   /* strip() は末尾の改行を落とすので、行の対応表を bundle の行と合わせ直す：ファイルごとの見出し行＋本文の行数 */
   const soft = [], bad = guard(main, mapM, 'bundle-main.js', soft).concat(guard(late, mapL, 'bundle-late.js', soft));
@@ -82,8 +126,26 @@ if (STRIP) {
   }
 }
 const hv = s => crypto.createHash('sha1').update(s).digest('hex').slice(0, 10);
-fs.writeFileSync(path.join(dir, 'js/bundle-main.js'), main);
-fs.writeFileSync(path.join(dir, 'js/bundle-late.js'), late);
+const raw0 = { main: Buffer.byteLength(main), late: Buffer.byteLength(late) };
+if (flags.indexOf('--no-min') < 0) { main = minify(main, 'bundle-main.js'); late = late ? minify(late, 'bundle-late.js') : late; }
+/* 書き出しと事前圧縮（.gz は gzip の最大圧縮。.br は brotli の品質9：最大の11は1割ほど小さいが1本に40秒かかるので、公開の前だけ --best で11にする。
+   中身が前と同じで、圧縮済みのファイルをほどくと同じ中身になるなら作り直さない（--best のときは作り直す） */
+const BRQ = flags.indexOf('--best') >= 0 ? 11 : 9;
+const zlib = require('zlib'), zs = {};
+function emit(base, code) {
+  const fp = path.join(dir, 'js', base), buf = Buffer.from(code, 'utf8');
+  /* 圧縮済みのファイルは、ほどいて中身が一致するときだけ使い回す（取り込みなどで .js と .gz／.br の版がずれていたら作り直す） */
+  const ok = (f, un) => { try { return un(fs.readFileSync(f)).equals(buf); } catch (e) { return false; } };
+  const same = BRQ < 11 && fs.existsSync(fp) && fs.readFileSync(fp).equals(buf) && ok(fp + '.gz', zlib.gunzipSync) && ok(fp + '.br', zlib.brotliDecompressSync);
+  if (!same) {
+    fs.writeFileSync(fp, buf);
+    fs.writeFileSync(fp + '.gz', zlib.gzipSync(buf, { level: 9 }));
+    fs.writeFileSync(fp + '.br', zlib.brotliCompressSync(buf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: BRQ, [zlib.constants.BROTLI_PARAM_LGWIN]: 24, [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length } }));
+  }
+  zs[base] = { raw: buf.length, gz: fs.statSync(fp + '.gz').size, br: fs.statSync(fp + '.br').size };
+}
+emit('bundle-main.js', main);
+emit('bundle-late.js', late);
 const lateUrl = 'js/bundle-late.js?v=' + hv(late);
 const block = '<!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->\n' +
   '<script src="js/bundle-main.js?v=' + hv(main) + '"></script>\n' +
@@ -104,5 +166,6 @@ try {
   if (md) html = html.replace(/最終更新：<time datetime="\d{4}-\d{2}-\d{2}">\d{4}年\d{1,2}月\d{1,2}日<\/time>/, '最終更新：<time datetime="' + md[1] + '-' + md[2] + '-' + md[3] + '">' + +md[1] + '年' + +md[2] + '月' + +md[3] + '日</time>');
 } catch (e) { console.warn('※ 最終更新の日付を合わせられませんでした: ' + e.message); }
 fs.writeFileSync(ip, html);
-const kb = n => Math.round(Buffer.byteLength(n) / 1024) + 'KB';
-console.log(path.basename(dir) + '：先に読む ' + order.filter(o => !o.late).length + '本 ' + kb(main) + '／あとで読む ' + order.filter(o => o.late).length + '本 ' + kb(late));
+const k = n => Math.round(n / 1024) + 'KB', zz = z => k(z.raw) + '（gz ' + k(z.gz) + '・br ' + k(z.br) + '）';
+console.log(path.basename(dir) + '：先に読む ' + order.filter(o => !o.late).length + '本 ' + zz(zs['bundle-main.js']) + '／あとで読む ' + order.filter(o => o.late).length + '本 ' + zz(zs['bundle-late.js']) +
+  (raw0.main !== zs['bundle-main.js'].raw ? '　※軽量化の前 ' + k(raw0.main) + '／' + k(raw0.late) : ''));

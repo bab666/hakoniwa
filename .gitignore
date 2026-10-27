@@ -1,1 +1,5 @@
 .claude/worktrees/
+
+# ビルドが作る事前圧縮ファイル（公開の直前に node hakoniwa-tools/build/build.js <build> --best で作り、.js と一緒にアップロードする）
+*.js.gz
+*.js.br
