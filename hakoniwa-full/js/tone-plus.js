@@ -397,6 +397,22 @@
      喘ぎ（♡・言葉にならない声）・短い台詞・すでに名前のある台詞には足さない。to＝台詞の相手（voice.js の addresseeOf） */
   var YOU_W = /(?:あなた|あんた|お前|おまえ|てめえ|貴様|おぬし|そなた|お主)(?!さん|方|様|たち|達|ら)|(?:きみ|(?<![大姫主父母諸細若暴ァ-ヶー一-鿿A-Za-z])君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なら|だけ|自身|こそ))/;
   function hashS(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+  /* どもり（「あ、あなた」「お、お前」「き、君」）の二人称を呼び方にするときは、どもりの頭の音も呼び方の頭の音にする（「み、ミナト」「た、鷹野さん」）。
+     頭の音は呼び方の最初の1モーラ（「きゃ」のような拗音も1つ。ひらがなで）。漢字で始まる呼び方は、住人の「名前の読み」（to.yomi。attr-yomi.js）の頭の音
+     （呼び方が名前の頭の字で始まるときだけ）。読みが分からなければ、どもりを落として呼び方だけにする（「あ、あなたにだけは」→「◆◆にだけは」）。2026-10-27 担当HR */
+  var YOU_HEAD = { 'お前': 'お', 'お主': 'お', '君': 'き', '貴様': 'き' }, MORA = /^[ぁ-ゖァ-ヶ][ぁぃぅぇぉゃゅょゎァィゥェォャュョヮ]?/;
+  function hiraS(s) { return s.replace(/[ァ-ヶ]/g, function (ch) { return String.fromCharCode(ch.charCodeAt(0) - 0x60); }); }
+  function mora1(s) { var m = String(s || '').replace(/^[\u2060-\u2064]+/, '').match(MORA); return m && !/^[ゃゅょゎっんー]/.test(hiraS(m[0])) ? hiraS(m[0]) : ''; }
+  function callHead(c, to) {
+    var s = String(c).replace(/^[\u2060-\u2064]+/, ''), n = String(to.name || '').replace(/^[\u2060-\u2064]+/, '');
+    return mora1(s) || (to.yomi && n && s.charAt(0) === n.charAt(0) ? mora1(to.yomi) : '');
+  }
+  function stutterTo(pre, w, c, to) {
+    var sm = pre.match(/(^|[…‥、。！？!?「『\s　\u2060-\u2064])(([ぁ-ゖァ-ヶ][ぁぃぅぇぉゃゅょァィゥェォャュョ]?)[、…‥]+(?:\3[、…‥]+)*)$/), yh = YOU_HEAD[w] || mora1(w);
+    if (!sm || !yh || hiraS(sm[3]) !== yh) return pre;
+    var hd = callHead(c, to), bits = sm[2].match(/[ぁ-ゖァ-ヶ][ぁぃぅぇぉゃゅょァィゥェォャュョ]?[、…‥]+/g);
+    return pre.slice(0, pre.length - sm[2].length) + (hd ? bits.map(function (b) { return hd + b.replace(MORA, ''); }).join('') : '');
+  }
   V.callAddress = function (q, who, to, raw) {
     if (!who || !to || to === who || !to.name || !(who.call || (who.calls && who.calls[to.name]))) return q;
     /* 相手がモブなら、呼び方を決めていない限り二人称のまま（V.mobAddr） */
@@ -406,10 +422,8 @@
     /* 自分で決めた二人称（you）も、呼び方を決めた相手には名前で */
     var yw = who.you ? new RegExp(who.you.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=[はがもをにとで、。！？…」のって]|$)') : null;
     if (YOU_W.test(q) || (yw && yw.test(q))) {
-      var done = false;
-      q = q.replace(new RegExp(YOU_W.source, 'g'), function (m) { if (done) return m; done = true; return c; });
-      if (!done && yw) q = q.replace(yw, c);
-      return q;
+      var ym = q.match(YOU_W) || (yw && q.match(yw));
+      return stutterTo(q.slice(0, ym.index), ym[0], c, to) + c + q.slice(ym.index + ym[0].length);
     }
     var body = q.replace(/[…‥、。！？!?っッ〜ー♡\s]/g, '');
     /* 名前を足すのは、相手がはっきりしているときだけ：直前の地の文で話しかける向きが決まる（2）・直後に「と〇〇に」がある（3）・二人だけの出来事（4）。

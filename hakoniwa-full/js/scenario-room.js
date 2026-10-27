@@ -1020,11 +1020,13 @@
       return { text: ctx.t(ctx.pick(['{a}は{b}の隣に移って、指先で{b}の手の甲をなぞった。「次は{b}の番かな｜次は{b}の番か｜次は{b}の番でしょうか」', '{a}「どうせなら、全員と仲良くなっといた方が早くない？｜どうせなら、全員と仲良くなっておいた方が早くないか？｜どうせなら、全員と仲良くなっておいた方が早くないですか？」{b}は返事に困った。', '{a}は誰かと話しながらも、ずっと{b}に視線を送っていた。', '{a}は{b}の耳元で「あとで、ね｜あとでだ｜あとでにしましょう」と囁いた。']), a, b) + (jealous ? ctx.t('それを見ていた{c}の顔が、少し曇った。', a, b, jealous) : ''), why: a.name + 'の積極性（' + Math.round(eager(ctx, a) * 100) + '）：一人に決めず、何人とでも' };
     }
   });
-  /* みんなで：積極的な人たちのうち、どの二人も体の関係を持ってよい組だけで輪を作る（攻め×攻めの二人は同じ輪に入らない） */
+  /* みんなで：積極的な人たちのうち、どの二人も体の関係を持ってよい組だけで輪を作る（攻め×攻めの二人は同じ輪に入らない）。
+     住人の設定「三人の場面（3P）：しない」の人（pos.js の HK.Pos.trioOptOut）は輪に入らない（2026-10-27 担当HN） */
+  function trioOut(c) { return !!(HK.Pos && HK.Pos.trioOptOut && HK.Pos.trioOptOut(c)); }
   function groupOf(ctx, a) {
-    if (eager(ctx, a) <= 0.55 || a.flags.partner != null) return null;
+    if (eager(ctx, a) <= 0.55 || a.flags.partner != null || trioOut(a)) return null;
     var G = [a];
-    ctx.present().filter(function (c) { return c !== a && eager(ctx, c) > 0.55 && c.flags.partner == null; })
+    ctx.present().filter(function (c) { return c !== a && eager(ctx, c) > 0.55 && c.flags.partner == null && !trioOut(c); })
       .sort(function (x, y) { return eager(ctx, y) - eager(ctx, x); })
       .forEach(function (c) { if (G.length < 4 && G.every(function (g) { return okSex(g, c); })) G.push(c); });
     return G.length >= 3 ? G : null;

@@ -138,6 +138,11 @@
     touch: L('三人は、どちらからともなく互いの背中に腕を回した。誰の心臓の音なのか、もう分からなかった。|{a}は{b}と{c}をまとめて抱き寄せた。三人分の体温で、ロッカーの中はますます熱くなった。|{b}が{a}の肩に頬をのせ、{c}がその背中にもたれた。三人は、そのまましばらく動かなかった。'),
     kiss: L('{a}は{b}に、{b}は{c}に、{c}は{a}に。三人は狭い箱の中で、順番に唇を重ねた。|{a}が{b}の唇を塞ぐと、{c}が待ちきれずに{a}の頬に口づけた。三人の息が、熱く混ざり合った。|三人は額を寄せ合い、誰からともなく唇を寄せた。誰と誰が触れているのか、途中から分からなくなった。')
   };
+  /* 中心のある三人（直接触れ合える組が二つ。{a}＝中心の人）：中心とだけ寄り添う・唇を重ねる。残りの二人（{b}{c}）は触れ合わない */
+  CW.T3H = {
+    touch: L('{a}は{b}と{c}の背中に、片方ずつ腕を回した。{b}と{c}は{a}の肩越しに目を伏せたまま、{a}の体温だけを感じていた。|{a}は右の{b}と左の{c}を、順番に抱き寄せた。三人の真ん中で、{a}の心臓だけがやけにうるさかった。|{b}が{a}の肩に頬をのせ、{c}も反対の肩にもたれた。二人が寄りかかっているのは、{a}ひとりだった。'),
+    kiss: L('{a}は{b}に唇を重ね、それから{c}にも同じように口づけた。{b}と{c}は、順番を待つあいだ、互いを見ないようにしていた。|{a}が{b}の唇を塞ぐと、{c}が待ちきれずに{a}の頬に口づけた。{a}は笑って、今度は{c}のほうを向いた。|{a}は二人の唇を、交互に何度も求めた。{b}と{c}が触れ合うことはなかったが、{a}を通して、三人の熱は混ざり合っていた。')
+  };
   CW.END_G = {
     open: L('仕掛けが解けると、倉庫中のロッカーが一斉に開いた。{all}はふらふらと外へ出て、互いの無事を確かめ合った。|ロックの外れる音が、あちこちで重なった。全員が倉庫の床に座り込み、しばらく誰も口をきかなかった。やがて、誰かが笑い出した。|扉が開くと、冷たい空気が倉庫に流れ込んだ。{all}は顔を見合わせて、ほっと息をついた。'),
     luck: L('外から足音が聞こえた。「＠誰か入ってますかー？」――見回りの人の合鍵で、ロッカーが次々と開いた。|倉庫の照明がぱっと点き、館内放送が流れた。「設備点検のため、全てのロックを解除します」――{all}は顔を見合わせた。|ガスのタンクが空になったのか、ロッカーの扉が一斉にひとりでに開いた。'),
@@ -166,15 +171,45 @@
      体の関係の縛り（HK.sexBlocked）・恋愛（HK.canLove を両方向）・R18に参加しない（HK.State.r18ok。全年齢は見ない） */
   function canAct(S, a, b) {
     if (!a || !b || a === b) return false;
+    if (consentOk(S, a, b)) return true;
+    /* 合意のない展開が入の、敵対・不仲・ライバルの二人（hate-sex-r18.js の HK.HateSex.hostile：恋愛対象「なし」も HK.Pos.forceOpen で開いて、
+       受け攻め・恋愛対象の性別・恋愛やR18にしない相手・体の関係の縛りを見る。性欲は見ない）。2026-10-27 担当HL */
+    return hostOk(S, a, b);
+  }
+  /* 合意の上で手を出し合える組（これまでの canAct）＋性欲「なし」の人がいない（HK.Pos.libOK。2026-10-27 担当HL） */
+  function consentOk(S, a, b) {
     if (HK.Pos && !HK.Pos.okSex(a, b)) return false;
     if (HK.ngPair && HK.ngPair(a, b) && !freeOk(S, a, b)) return false;
     if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
     /* 恋愛相手を固定し、性行為の相手を「誰とでも可」にした人と、固定外の相手（HK.State.freeSex。free-sex.js）は、恋愛（HK.canLove）を見ずに体の関係だけ */
     if (!(okLove(a, b) || freeOk(S, a, b)) || noLoveTie(S, a, b)) return false;
     if (!HK.SAFE_ON && !(HK.State.r18ok(a) && HK.State.r18ok(b))) return false;
+    if (!libOk(a, b)) return false;
     return true;
   }
   function freeOk(S, a, b) { return !!(HK.State.freeSex && HK.State.freeSex(S, a, b)); }
+  /* 性欲の強さ（pos.js）：「なし」の人は合意の場面に乗らない／起こりやすさの倍率（ふつうだけなら 1） */
+  function libOk(a, b) { return !(HK.Pos && HK.Pos.libOK) || HK.Pos.libOK([a, b]); }
+  function libMul(list) { return HK.Pos && HK.Pos.libMul ? HK.Pos.libMul(list) : 1; }
+  /* 敵対・不仲・ライバルの関係の二人で、合意のない展開が入（HK.HateSex.hostile。R18版のみ） */
+  var HOSTT = /^(rival|enemy|bad)$/;
+  function hostOk(S, a, b) {
+    var H = HK.HateSex;
+    if (!H || HK.SAFE_ON || !a || !b || a === b || noLoveTie(S, a, b)) return false;
+    if (!tiesOf(S, a, b).some(function (t) { return HOSTT.test(t.type); })) return false;
+    return !!H.hostile(S, a, b);
+  }
+  /* 強引な側（攻め）。hostOk の組だけ */
+  function hostTop(S, a, b) { return HK.HateSex.order(S, a, b)[0]; }
+  /* 合意の上では手を出せず、合意のない展開の経路だけで体の関係になる組（恋愛対象「なし」で体の関係の相手の設定が合わない・性欲「なし」など） */
+  function forceOnly(S, a, b) { return !consentOk(S, a, b) && hostOk(S, a, b); }
+  /* 愛憎（hate-love.js）：a が b に持つか */
+  function lhHas(S, a, b) { return !!(HK.LoveHate && HK.LoveHate.has(S, a, b)); }
+  /* 合意のない展開の経路だけの組の理由の印（orient-audit.js が見る） */
+  function forceWhy(S, a, b) {
+    var P = HK.Pos, nl = [a, b].filter(function (c) { return P && P.libOf && P.libOf(c) === 'none'; });
+    return (P && P.FORCE_MARK || '〔合意のない展開〕') + (nl.length ? nl.map(function (c) { return c.name; }).join('・') + 'は性欲が「なし」だが、媚薬と敵意の切羽詰まった場面で体の関係になった（合意のない展開）' : '合意のない展開の切羽詰まった場面');
+  }
   LK.crowdOk = canAct;
   /* a が b を想っている（関係の恋人・片想いなど、またはこの回だけの「気になる相手」）。恋愛は両方向で通る組だけ */
   function interest(S, a, b) {
@@ -508,9 +543,13 @@
     ST.budget(S, 6);
     var mins = (escTurn + 1) * 5;
     ST.key(S, ST.say(S, { actors: P, tag: { solve: '全員で脱出', luck: '幸運', timeout: '時間切れ' }[how], text: ST.fmt(pk(CW.END_G[how === 'solve' ? 'open' : how]), vall), why: '仕掛け ' + gi + '／' + gim.length + '・嫉妬系 ' + S.cj + '・仲良し系 ' + S.cw, mag: 26 }), '結末');
+    /* 扉が開いたあとのベッド（R18版。R18専用の locker-trio-bed.js の LK.crowdBed）：三人のロッカーの三人（3P）と、三人で来た回の二人のロッカー
+       （残りの一人が加わって 3P／二人きりで。二人きりは solo-locker-bed.js の LK.bed）。一回に一組だけ。全年齢版・全年齢モードでは起きない（2026-10-27 担当HL） */
+    var bedR = LK.crowdBed && !HK.SAFE_ON ? LK.crowdBed(S, lockers, how, CROWD_API) : null;
     /* ロッカーごとの「その後」 */
     lockers.forEach(function (Lk) {
       if (Lk.m.length < 2 || Lk.lv < 0) return;
+      if (bedR && bedR.Lk === Lk) return;
       if (Lk.m.length === 3 && Lk.trioIn) {
         var tq = Lk.trioNames;
         /* 恋人どうしがそろった三人は、恋人たちの組として記録する（poly.js） */
@@ -529,7 +568,7 @@
     else if (jealP && S.cj < S.cw) {
       var jb = P[jealP.jealOf], jc = jb.mates.filter(function (q) { return q !== jealP; })[0];
       ST.say(S, { actors: jc ? [jealP, jb, jc] : [jealP, jb], tag: '嫉妬のあと', text: ST.fmt(pk(CW.MOOD.jeal), { a: jealP.name, b: jb.name }), why: (jc ? '三人の場面：' + jb.name + 'が' + jc.name + 'と同じロッカーだったことへの、' : '') + jealP.name + 'の嫉妬は、ガスが抜けても残った' });
-    } else ST.say(S, { actors: P, tag: '帰り道', text: ST.fmt(pk(CW.MOOD.warm), vall), why: 'みんなで帰った（ロッカー越しに励まし合った回数 ' + S.cw + '）' });
+    } else if (!bedR) ST.say(S, { actors: P, tag: '帰り道', text: ST.fmt(pk(CW.MOOD.warm), vall), why: 'みんなで帰った（ロッカー越しに励まし合った回数 ' + S.cw + '）' });
     /* 一人ずつ */
     P.forEach(function (p) {
       var Lk = p.L, f;
@@ -541,6 +580,7 @@
       else if (p.cnt.refuse >= 1) f = '最後まで嗜めた';
       else if (p.cnt.hold) f = '触れずに耐え抜いた';
       else f = p.m.reason > 30 ? '理性を保ちきった' : 'ぎりぎりで踏みとどまった';
+      if (bedR && bedR.who.indexOf(p) >= 0) f += bedR.who.length === 3 ? '・三人でベッドへ' : '・ベッドで激しく';
       if (p.lostTo) f += '・失恋した';
       else if (p.cnt.jeal) f += '・嫉妬した';
       if (p.cnt.warm >= 2) f += '・みんなを励ました';
@@ -550,14 +590,15 @@
       p.notes.push('仕掛けた ' + p.cnt.make + '回・応じた ' + p.cnt.accept + '回・嗜めた ' + p.cnt.refuse + '回' + (p.cnt.hold ? '・耐えた ' + p.cnt.hold + '回' : '') + (p.cnt.solve ? '・仕掛けを解いた ' + p.cnt.solve + '回' : '') + (p.cnt.jeal ? '・嫉妬 ' + p.cnt.jeal + '回' : ''));
     });
     var far = lockers.filter(function (Lk) { return Lk.sexIn || Lk.trioSex; });
-    var title = (how === 'timeout' ? '制限時間内に脱出できず、ロッカーは時間切れで開いた。' : mins + '分で、' + P.length + '人とも外へ出た。') + (far.length ? far.map(function (Lk) { return names(Lk.trioSex ? Lk.m : [Lk.top, Lk.bot]); }).join('と、') + 'は、ロッカーの中で' + (far.some(function (Lk) { return Lk.trioSex; }) ? '熱を分け合った。' : '一線を越えた。') : lockers.some(function (Lk) { return Lk.lv >= 0; }) ? 'ロッカーの中のことは、みんなガスのせいにした。' : '誰も、一線は越えなかった。');
+    var title = (how === 'timeout' ? '制限時間内に脱出できず、ロッカーは時間切れで開いた。' : mins + '分で、' + P.length + '人とも外へ出た。') + (far.length ? far.map(function (Lk) { return names(Lk.trioSex ? Lk.m : [Lk.top, Lk.bot]); }).join('と、') + 'は、ロッカーの中で' + (far.some(function (Lk) { return Lk.trioSex; }) ? '熱を分け合った。' : '一線を越えた。') : lockers.some(function (Lk) { return Lk.lv >= 0; }) ? 'ロッカーの中のことは、みんなガスのせいにした。' : '誰も、一線は越えなかった。') + (bedR ? (bedR.who.length === 3 ? '三人は、そのまま倉庫の奥のベッドへ向かった。' : names(bedR.who) + 'は、そのまま倉庫の奥のベッドへ向かった。') : '');
     var lines = P.map(function (p) { return p.name + '：' + p.fate; });
     lines.push('ロッカー：' + lockers.map(function (Lk) { return names(Lk.m) + (Lk.lv >= 0 ? '（' + actLabel(Lk, Lk.lv) + '）' : ''); }).join('／'));
     lines.push('仕掛け：' + gim.map(function (g, i) { return g.name + (i < gi ? '（解除）' : ''); }).join('→') + (how === 'luck' ? '（外から開いた）' : ''));
     lines.push('ロッカー越しの出来事：すれ違い ' + S.cj + '回・励まし合い ' + S.cw + '回');
+    if (bedR) lines.push((bedR.who.length === 3 ? '三人で' : names(bedR.who) + 'は') + 'ベッドへ' + (bedR.labels.length ? '：' + bedR.labels.join('→') : ''));
     var rows = P.map(function (p) { return { i: p.i, rank: '', cells: ['ロッカー' + p.L.n, Math.round(p.m.heat) + '', Math.round(p.m.reason) + '', String(p.cnt.make), String(p.cnt.refuse), String(p.cnt.climax), String(p.cnt.solve), p.fate] }; });
     return ST.result(S, input, {
-      ending: { title: title, kind: far.length ? 'over' : 'ok', lines: lines },
+      ending: { title: title, kind: far.length || bedR ? 'over' : 'ok', lines: lines },
       estats: [['脱出まで', how === 'timeout' ? '時間切れ' : mins + '分'], ['人数', P.length + '人'], ['ロッカー', lockers.length + '台'], [W_CL, P.reduce(function (s, p) { return s + p.cnt.climax; }, 0) + '回']],
       table: { title: 'みんなの状態', hint: '同じロッカーの人とくっつく。発情が高く理性が低いほど手を出しやすい。', cols: ['場所', '発情', '理性', '仕掛けた', '嗜めた', W_CL, '解いた', '結末'], rows: rows },
       meters: [{ label: '発情', color: '--love' }, { label: '理性', color: '--accent' }, { label: '快感', color: '--pine', dash: true }, { label: '脱出', color: '--partner', dash: true }],
@@ -608,6 +649,7 @@
     if (HK.sexBlocked && HK.sexBlocked(a, b)) return n + 'とは体の関係にならない組な';
     if (noLoveTie(S, a, b)) return n + 'とは恋愛にしない関係な';
     if (HK.Pos && !HK.Pos.okSex(a, b)) return n + 'とは受け攻めの向きか恋愛対象が合わない';
+    if (!libOk(a, b)) return (HK.Pos.libOf(a) === 'none' ? a : b).name + 'は性欲が「なし」な';
     return n + 'とは恋愛にならない組な';
   }
   function relW(S, a, b, side) {
@@ -634,8 +676,17 @@
       /* 本命がほかにいる人は、一途に踏みとどまる（媚薬の熱が限界なら妥協する） */
       if (a.honmei != null && a.honmei !== b.i) urge -= desperate(a) ? 0.05 : 0.3;
       if (loyal(S, a, b)) urge -= desperate(a) ? 0.05 : 0.25;
+      /* 敵対の二人（合意のない展開が入。hostOk）：強引な側は、苛立ちごとぶつけるように手を出しやすい（solo-locker.js の二人のときと同じ +0.35）。
+         合意の上では手を出せない組（forceOnly）は、強引な側からだけ。愛憎を持つ側は、構ってほしくて手を出しやすい（+0.2）。2026-10-27 担当HL */
+      var hp = hostOk(S, a, b), hT = hp && hostTop(S, a, b) === a, fo = hp && !consentOk(S, a, b);
+      if (hT) urge += 0.35;
+      if (lhHas(S, a, b) && canAct(S, a, b)) urge += 0.2;
+      /* 性欲の強さ（HK.Pos.libMul）：合意の場面の起こりやすさに掛ける（ふつうの二人なら 1 で、今までどおり） */
+      var lm = fo ? 1 : libMul([a, b]);
+      if (lm !== 1 && urge > 0) urge *= lm;
       if (urge < 0.36 + rng() * 0.3) continue;
       if (!canAct(S, a, b)) { holdPair(S, a, b, whyNot(S, a, b)); return; }
+      if (fo && !hT) continue;
       /* 体だけの関係の組：固定した恋人が同じロッカーにいれば手を出しにくい（×0.3） */
       var fr = freeOk(S, a, b);
       if (fr && Lk.m.some(function (q) { return q !== a && q !== b && (HK.lockTo(a, q) || HK.lockTo(b, q)); }) && rng() > 0.3) continue;
@@ -643,7 +694,8 @@
       if (a.bound && b.bound) lvMax = Math.min(lvMax, 1);
       var lv = Math.min(Lk.lv + (relW(S, a, b, 'acc') >= 0.45 && Lk.lv >= 0 && rng() < 0.5 ? 2 : 1), lvMax);
       /* 攻めが手錠のままなら、キスまで */
-      var ord = Pos ? Pos.order(a, b, lv === 4 ? Pos.fbFor(a, b) : [a, b]) : [a, b], tp = ord[0], bt = ord[1];
+      /* 敵対の二人は、強引な側（HK.HateSex.order）を攻めに */
+      var ord = hp ? HK.HateSex.order(S, a, b) : Pos ? Pos.order(a, b, lv === 4 ? Pos.fbFor(a, b) : [a, b]) : [a, b], tp = ord[0], bt = ord[1];
       if (tp.bound && lv >= 2) lv = Math.min(lv, 1);
       if (lv <= Lk.lv) {
         if (a.bound && b.bound && Lk.lv >= 1 && (Lk.nama || 0) < 2 && rng() < 0.5) {
@@ -657,11 +709,17 @@
       var w = b.m.heat / 100 + relW(S, b, a, 'acc') + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (rng() - 0.5) * 0.3;
       if (b.honmei != null && b.honmei !== a.i) w -= desperate(b) ? 0.05 : 0.35;
       if (loyal(S, b, a)) w -= desperate(b) ? 0.05 : 0.3;
+      if (lhHas(S, b, a)) w += 0.25;
       var resp = w > 0.55 ? 'accept' : w > 0.32 ? 'passive' : 'refuse';
       var key = ['touch', 'kiss', 'grope', 'oral', 'sex'][lv], act = LK.ACT[key], md = modeOf(tp, bt), ff = md === 'ff';
       var FFA = ff && LK.FF_ACT && LK.FF_ACT[key], FMA = !FFA && key === 'sex' && md === 'fm' && LK.FM_ACT && LK.FM_ACT.sex;
       /* 低い段階は仕掛けた人がそのまま動く。愛撫から先は攻めが動く（受けから誘ったときは、誘う→攻めが応じる） */
       var lead = lv <= 1 ? a : tp, other = lead === a ? b : a, swap = lead !== a;
+      /* 敵対の二人で、強引な側から仕掛けたとき：受けは口では嫌がるが、拒みきらない（hate-sex-r18.js の HK.HateSex.react）。
+         合意の上では手を出せない組（fo）は、いつもこの形（受けの熱にかかわらず） */
+      var hateNow = hT && !swap && (fo || (resp !== 'accept' && b.m.heat >= 15));
+      if (fo && !hateNow) { a.cnt.make--; return; }
+      if (hateNow) resp = 'passive';
       var actPool = FFA ? (lead.bound ? FFA.bound : FFA.t) : FMA ? (lead.bound ? FMA.bound : FMA.t) : key === 'sex' ? (lead.bound ? act.boundTop : act.t) : (lead.bound ? act.bound : act.t);
       if (!actPool || !actPool.length) actPool = act.t;
       var vA = { a: lead.name, b: other.name }, vT = { a: a.name, b: b.name };
@@ -677,6 +735,7 @@
       b.cnt.accept++; Lk.lv = lv; Lk.lastAct = turn; S.lewdNow = true; b.rxLv = Math.max(b.rxCool ? 0 : b.rxLv || 0, resp === 'accept' ? 2 : 1); b.rxCool = false;
       var eroNow = resp === 'accept';
       if (swap) t += ST.fmt(pk(LK.TAKE[tp.bound ? 'bound' : 'free']), vT) + ST.fmt(pk(hands(actPool, tp, bt)), { a: tp.name, b: bt.name });
+      else if (hateNow) t += HK.HateSex.react(S, a, b, lv);
       else t += ST.fmt(pk(hands((resp === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (l) { return (lead === tp && md === 'ins') || !/受け入れ/.test(l); }), a, b)), vT) + (resp === 'accept' && rng() < 0.6 ? say2(S, b, LK.ACCEPT_SAY) : '');
       var gain = [15, 20, 30, 40, 50][lv];
       tp.m.plea += gain * tp.sens * 0.8; bt.m.plea += gain * bt.sens;
@@ -694,11 +753,12 @@
       if (bt.m.plea >= 100 && lv < 4) { if (HK.Pos && HK.Pos.hardTop(bt, tp)) bt.m.plea = 95; else { t += moan(S, bt, false, md, eroNow) + climaxBy(S, bt, tp, false); bumpClimax(bt); } }
       /* 体だけの関係：最初に手を出したときに「恋ではない」一文（free-sex.js） */
       /* 札も恋愛の札（キス・口づけ）にしない（恋愛の出来事として数えない） */
-      var ld = fr && !Lk.freeLed ? HK.FreeSex.lead(S, a, b) : '';
-      var said = ST.sayB(S, { actors: [a, b], tag: fr ? '体だけ・' + actLabel(Lk, lv).replace(/キス|口づけ/g, '唇') : actLabel(Lk, lv), text: ld + t, why: (fr ? HK.FreeSex.why(a, b) + '／' : '') + a.name + 'が「' + actLabel(Lk, lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた' : resp === 'accept' ? '乗った' : '流された') + '（ロッカー' + Lk.n + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(Lk, lv), lv >= 3);
+      var ld = fr && !hateNow && !Lk.freeLed ? HK.FreeSex.lead(S, a, b) : '';
+      var hw = hateNow ? HK.HateSex.why(S, a, b) + (fo ? '／' + forceWhy(S, a, b) : '') + '／' : '';
+      var said = ST.sayB(S, { actors: [a, b], tag: fr && !hateNow ? '体だけ・' + actLabel(Lk, lv).replace(/キス|口づけ/g, '唇') : actLabel(Lk, lv), text: ld + t, why: hw + (fr && !hateNow ? HK.FreeSex.why(a, b) + '／' : '') + a.name + 'が「' + actLabel(Lk, lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた' : hateNow ? '押し切られた' : resp === 'accept' ? '乗った' : '流された') + '（ロッカー' + Lk.n + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(Lk, lv), lv >= 3);
       if (ld && said) Lk.freeLed = true;
       if (lv === 4 && !Lk.keySex) { Lk.keySex = true; var o2 = S.log[S.log.length - 1]; if (o2) ST.key(S, o2, 'ロッカー' + Lk.n + 'で' + (ff ? '肌を重ねた' : '繋がった')); }
-      if (fr && lv === 4 && !Lk.freeMark) { Lk.freeMark = true; HK.FreeSex.mark(S, a, b); HK.FreeSex.jealous(S, a, b); }
+      if (fr && !fo && lv === 4 && !Lk.freeMark) { Lk.freeMark = true; HK.FreeSex.mark(S, a, b); HK.FreeSex.jealous(S, a, b); }
       return;
     }
   }
@@ -742,11 +802,21 @@
      そうでなければ、二人の両方と体の関係になれる一人（中心）がいて、残りの二人が受け攻めの向き以外は合う（touchOk）なら、その中心の番号（hub）。
      どちらでもなければ null（攻め一人・受け二人のように、受けどうし・攻めどうしが組めないだけの三人も、中心を立てて三人の場面にする） */
   function trioPlan(S, m) {
-    var ok = trioPairs(m).map(function (pr) { return canAct(S, pr[0], pr[1]); });
+    /* 住人の設定「三人の場面（3P）：しない」の人は加わらない（pos.js の HK.Pos.trioOptOut） */
+    if (HK.Pos && HK.Pos.trioOptOut && m.some(HK.Pos.trioOptOut)) return null;
+    /* R18版：3P の決まりは共通の HK.Pos.trioPlan（直接の行為をしてよい組＝性行為の相手の固定・受け攻め・恋愛対象・縛り・性欲を見る）。
+       ここでは合意の上で手を出し合える組（consentOk：恋愛・体だけの関係）を条件として渡す。直接できる組が二つなら中心（hub）のある三人で、
+       残りの二人は同じ場にいても触れ合わない（文は中心の人とだけ触れ合う表を使う）。一つ以下なら三人の場面にしない（2026-10-27 担当HL） */
+    if (!HK.SAFE_ON && HK.Pos && HK.Pos.trioPlan) {
+      var pl = HK.Pos.trioPlan(m[0], m[1], m[2], { ok: function (x, y) { return consentOk(S, x, y); } });
+      return !pl ? null : pl.all ? { all: true } : { all: false, hub: pl.hub };
+    }
+    /* 三人の場面は合意の上の場面なので、合意のない展開の経路だけの組（forceOnly）は組めない組として見る（2026-10-27 担当HL） */
+    var ok = trioPairs(m).map(function (pr) { return consentOk(S, pr[0], pr[1]); });
     if (ok[0] && ok[1] && ok[2]) return { all: true };
     for (var i = 0; i < 3; i++) {
       var h = m[i], r = m.filter(function (c) { return c !== h; });
-      if (canAct(S, h, r[0]) && canAct(S, h, r[1]) && touchOk(S, r[0], r[1])) return { all: false, hub: h };
+      if (consentOk(S, h, r[0]) && consentOk(S, h, r[1]) && touchOk(S, r[0], r[1])) return { all: false, hub: h };
     }
     return null;
   }
@@ -765,12 +835,12 @@
     if (!pl.all) {
       var h = pl.hub, xy = m.filter(function (c) { return c !== h; }), x = xy[0], y = xy[1];
       var ox = Pos ? Pos.order(h, x, [h, x]) : [h, x], oy = Pos ? Pos.order(h, y, [h, y]) : [h, y], ht = (ox[0] === h ? 1 : 0) + (oy[0] === h ? 1 : 0);
-      if (ht === 2) return { p: 'oneTwo', t: h, m: x, u: y, hub: true };
-      if (ht === 0) return { p: 'twoOne', t: x, m: y, u: h, hub: true };
+      if (ht === 2) return { p: 'oneTwo', t: h, m: x, u: y, hub: true, h: h };
+      if (ht === 0) return { p: 'twoOne', t: x, m: y, u: h, hub: true, h: h };
       var up = ox[0] === h ? y : x, dn = ox[0] === h ? x : y;
       /* 前を抱きながら後ろから抱かれる形は、後ろの人が跨る組（女性の攻め×男性）では起こらない */
       if (modeOf(up, h) === 'fm') return null;
-      return { p: 'sandwich', t: up, m: h, u: dn, hub: true };
+      return { p: 'sandwich', t: up, m: h, u: dn, hub: true, h: h };
     }
     var es = trioPairs(m).map(function (pr) { return Pos ? Pos.order(pr[0], pr[1], pr) : pr; });
     var tops = function (c) { return es.filter(function (e) { return e[0] === c; }).length; };
@@ -785,7 +855,18 @@
       var p = S.rng.pick(ks);
       return p === 'oneTwo' ? { p: p, t: T2, m: M, u: B0 } : p === 'twoOne' ? { p: p, t: T2, m: M, u: B0 } : { p: p, t: T2, m: M, u: B0 };
     }
+    /* 向きが三すくみ（a が b を、b が c を、c が a を）になる三人：一人を中心に立て、中心と二人の向きだけで形を決める（中心のある三人と同じ。2026-10-27 担当HL） */
+    for (var i = 0; i < 3; i++) { var hs = hubShape(m[i], m.filter(function (c) { return c !== m[i]; })); if (hs) return hs; }
     return null;
+  }
+  function hubShape(h, xy) {
+    var Pos = HK.Pos, x = xy[0], y = xy[1];
+    var ox = Pos ? Pos.order(h, x, [h, x]) : [h, x], oy = Pos ? Pos.order(h, y, [h, y]) : [h, y], ht = (ox[0] === h ? 1 : 0) + (oy[0] === h ? 1 : 0);
+    if (ht === 2) return { p: 'oneTwo', t: h, m: x, u: y, hub: true, h: h };
+    if (ht === 0) return { p: 'twoOne', t: x, m: y, u: h, hub: true, h: h };
+    var up = ox[0] === h ? y : x, dn = ox[0] === h ? x : y;
+    if (modeOf(up, h) === 'fm') return null;
+    return { p: 'sandwich', t: up, m: h, u: dn, hub: true, h: h };
   }
   function trioTurn(S, Lk, turn) {
     var rng = S.rng, pk = S.pk, m = Lk.m, R = LK.CROWD_R18;
@@ -794,39 +875,50 @@
     var heat = m.reduce(function (s, p) { return s + p.m.heat; }, 0) / 3, reason = m.reduce(function (s, p) { return s + p.m.reason; }, 0) / 3;
     var lead = m.slice().sort(function (p, q) { return (q.m.heat / 100 + q.tr.impulse * 0.3 + q.tr.fc * 0.15 - q.m.reason / 130) - (p.m.heat / 100 + p.tr.impulse * 0.3 + p.tr.fc * 0.15 - p.m.reason / 130); })[0];
     var urge = lead.m.heat / 100 + lead.tr.impulse * 0.35 + lead.tr.fc * 0.15 - lead.m.reason / 130 - lead.tr.cp * 0.12;
-    if (urge < 0.36 + rng() * 0.3) return;
     var others = m.filter(function (p) { return p !== lead; });
-    if (trioOk(S, m)) {
-      var willing = others.every(function (p) { return p.m.heat / 100 + p.tr.np * 0.15 + p.tr.fc * 0.15 - p.m.reason / 160 + relW(S, p, lead, 'acc') * 0.5 > 0.3; });
+    /* 三人とも組める三人（trioOk）：二人のときと同じく、期待している・流れに任せる人は手を出しやすい。愛憎を持つ相手がいれば +0.2、性欲の強さの倍率も掛ける（2026-10-27 担当HL）。
+       媚薬が回りきった三人（熱の平均 60・80 以上）は、寄り添う→唇を重ねる→三人で、の段を飛ばして進む */
+    var t3 = trioOk(S, m);
+    if (t3) {
+      urge += (lead.goal && lead.goal.id === 'want' ? 0.12 : lead.goal && lead.goal.id === 'out' ? -0.08 : 0) + (lead.action && lead.action.id === 'flow' ? 0.08 : lead.action && lead.action.id === 'solve' ? -0.06 : 0);
+      if (others.some(function (p) { return lhHas(S, lead, p); })) urge += 0.2;
+      var lm3 = libMul(m);
+      if (lm3 !== 1 && urge > 0) urge *= lm3;
+    }
+    if (urge < 0.36 + rng() * 0.3) return;
+    if (t3) {
+      /* 応じるか：愛憎を持つ側は口では嫌がりながら応じやすい（+0.25）。敵対する相手に強引に引き寄せられた側も、熱が回っていれば拒みきらない */
+      var willing = others.every(function (p) { return p.m.heat / 100 + p.tr.np * 0.15 + p.tr.fc * 0.15 - p.m.reason / 160 + relW(S, p, lead, 'acc') * 0.5 + (lhHas(S, p, lead) ? 0.25 : 0) > 0.3 || (hostOk(S, lead, p) && hostTop(S, lead, p) === lead && p.m.heat >= 15); });
       if (!willing) { holdPair(S, lead, others[0], '同じロッカーの' + names(others) + 'の気持ちが、まだ追いついていなかった'); return; }
-      var lvMax = Math.min(LK.MAXLV || 4, 4), nx = Math.min(Lk.lv + 1, lvMax >= 2 ? 2 : lvMax);
+      var lvMax = Math.min(LK.MAXLV || 4, 4), step = heat >= 80 ? 3 : heat >= 60 ? 2 : 1, nx = Math.min(Lk.lv + step, lvMax >= 2 ? 2 : lvMax);
       if (Lk.trioSex) {
         /* 三人の場面のあと：名残だけ */
         if (Lk.lingered) return;
         Lk.lingered = true;
         var sp0 = Lk.trioShape;
-        if (R && S.R18) ST.sayB(S, { actors: m, tag: '三人の名残', text: ST.fmt(pk(R.AFTER3), { t: sp0.t.name, m: sp0.m.name, u: sp0.u.name }), why: '三人の場面：媚薬はまだ効いていたが、三人とも体が先に限界だった（仲良し）' }, '三人は寄り添っていた');
+        if (R && S.R18) ST.sayB(S, { actors: m, tag: '三人の名残', text: ST.fmt(pk(sp0.hub && R.AFTER3H ? R.AFTER3H : R.AFTER3), { t: sp0.t.name, m: sp0.m.name, u: sp0.u.name, h: (sp0.h || sp0.m).name }), why: '三人の場面：媚薬はまだ効いていたが、三人とも体が先に限界だった（仲良し）' }, '三人は寄り添っていた');
         return;
       }
       if (nx <= Lk.lv && !(nx >= 2 && S.R18 && R)) return;
       Lk.trioIn = true; Lk.lv = Math.max(Lk.lv, nx); Lk.trioNames = [lead.name, others[0].name, others[1].name]; S.lewdNow = true;
       m.forEach(function (p) { p.cnt.accept++; }); lead.cnt.make++;
       if (nx < 2 || !(R && S.R18)) {
-        var k = nx >= 1 ? 'kiss' : 'touch';
-        ST.sayB(S, { actors: [lead].concat(others), tag: nx >= 1 ? '三人でキス' : '三人で寄り添う', text: ST.fmt(pk(CW.T3[k]), { a: lead.name, b: others[0].name, c: others[1].name }), why: '三人の場面：三人とも互いに想い合える組で、熱に浮かされて寄り添った（' + lead.name + 'から・仲良し）', mag: 20 }, '三人が' + (nx >= 1 ? '唇を重ねた' : '寄り添った'), Lk.lv === 0);
+        var k = nx >= 1 ? 'kiss' : 'touch', pl3 = trioPlan(S, m), hh = pl3 && !pl3.all && pl3.hub, ho = hh ? m.filter(function (p) { return p !== hh; }) : others;
+        /* 中心のある三人は、中心とだけ触れ合う文（CW.T3H） */
+        ST.sayB(S, { actors: [lead].concat(others), tag: nx >= 1 ? '三人でキス' : '三人で寄り添う', text: ST.fmt(pk((hh ? CW.T3H : CW.T3)[k]), { a: (hh || lead).name, b: ho[0].name, c: ho[1].name }), why: '三人の場面：三人とも互いに想い合える組で、熱に浮かされて寄り添った（' + lead.name + 'から・仲良し）', mag: 20 }, '三人が' + (nx >= 1 ? '唇を重ねた' : '寄り添った'), Lk.lv === 0);
         S.cw++; lead.cnt.warm++;
         return;
       }
       var sp = trioShape(S, m);
       if (!sp) return;
       Lk.trioSex = true; Lk.trioShape = sp; Lk.lv = 4; Lk.trioNow = true;
-      ST.key(S, ST.say(S, { actors: [sp.t, sp.m, sp.u], tag: '三人で', text: trioScene(S, sp), why: (sp.hub ? '三人の場面：同じロッカーの三人のうち、' + { oneTwo: sp.t.name, twoOne: sp.u.name, sandwich: sp.m.name }[sp.p] + 'が二人の両方と体の関係になれる組だった（中心のある三人。二人どうしは直接は繋がらない。受け攻め：' : '三人の場面：同じロッカーの三人とも、互いに体の関係になれる組だった（受け攻め：') + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: sp.t.name + '→' + sp.m.name + '→' + sp.u.name }[sp.p] + '・仲良し）' + (S.trioNight ? '／夜の性格：' + S.trioNight : ''), mag: 36, kind: 'climax' }), 'ロッカー' + Lk.n + 'の三人');
+      ST.key(S, ST.say(S, { actors: [sp.t, sp.m, sp.u], tag: '三人で', text: trioScene(S, sp), why: (sp.hub ? '三人の場面：同じロッカーの三人のうち、' + { oneTwo: sp.t.name, twoOne: sp.u.name, sandwich: sp.m.name }[sp.p] + 'が二人の両方と体の関係になれる組だった（中心のある三人。残りの二人は直接は触れ合わない。受け攻め：' : '三人の場面：同じロッカーの三人とも、互いに体の関係になれる組だった（受け攻め：') + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: sp.t.name + '→' + sp.m.name + '→' + sp.u.name }[sp.p] + '・仲良し）' + (S.trioNight ? '／夜の性格：' + S.trioNight : ''), mag: 36, kind: 'climax' }), 'ロッカー' + Lk.n + 'の三人');
       S.cw++;
       Lk.rest = 1;
       return;
     }
     /* 三人のうち二人だけが手を出し合える：キスまで。三人目の反応（嫉妬か、見守るか） */
-    var pairs = trioPairs(m).filter(function (pr) { return canAct(S, pr[0], pr[1]); }).filter(function (pr) { return pr.indexOf(lead) >= 0; });
+    var pairs = trioPairs(m).filter(function (pr) { return consentOk(S, pr[0], pr[1]); }).filter(function (pr) { return pr.indexOf(lead) >= 0; });
     if (!pairs.length) { var o = rng.pick(others); holdPair(S, lead, o, whyNot(S, lead, o)); return; }
     var pr = rng.pick(pairs), b = pr[0] === lead ? pr[1] : pr[0], c = m.filter(function (p) { return p !== lead && p !== b; })[0];
     /* 三人目がR18に参加しない・恋愛・R18にしない相手がいる狭い箱では、寄り添うだけ */
@@ -861,15 +953,17 @@
   }
   /* 三人の場面（R18）：はじめ→上下の形→二人ずつの最中→（男性向け）→一人ずつ果てる→結び */
   function trioScene(S, sp) {
-    var R = LK.CROWD_R18, pk = S.pk, r = { t: sp.t, m: sp.m, u: sp.u }, vv = { t: sp.t.name, m: sp.m.name, u: sp.u.name };
-    var out = ST.fmt(pk(R.OPEN3), vv) + ST.fmt(pk(R.SHAPE3[sp.p]), vv);
+    var R = LK.CROWD_R18, pk = S.pk, r = { t: sp.t, m: sp.m, u: sp.u }, vv = { t: sp.t.name, m: sp.m.name, u: sp.u.name, h: (sp.h || sp.m).name };
+    /* 中心のある三人（sp.hub）は、中心とだけ触れ合う表（R.OPEN3H・SHAPE3H・TPW・TRIO_ERO.softH・CL3H。残りの二人は見ている・声をかけるだけ） */
+    var H = !!(sp.hub && R.SHAPE3H);
+    var out = ST.fmt(pk(H ? R.OPEN3H : R.OPEN3), vv) + ST.fmt(pk((H ? R.SHAPE3H : R.SHAPE3)[sp.p]), vv);
     /* 二人ずつ：oneTwo は t→m・t→u、twoOne は t→u・m→u、sandwich は t→m・m→u。{c}＝残りの一人 */
     var prs = sp.p === 'oneTwo' ? [[sp.t, sp.m, sp.u], [sp.t, sp.u, sp.m]] : sp.p === 'twoOne' ? [[sp.t, sp.u, sp.m], [sp.m, sp.u, sp.t]] : [[sp.t, sp.m, sp.u], [sp.m, sp.u, sp.t]];
     /* 夜の性格（R18版のみ。locker-night.js）：二人ずつの最中（繋がっている）のあとに、攻め→受けの deep の一文。同じ人の同じ役（攻め／受け）は一度だけ */
     var nUsed = {}, nLab = [];
     S.trioNight = '';
     prs.forEach(function (z) {
-      out += ST.fmt(pk(R.TP[modeOf(z[0], z[1])]), { a: z[0].name, b: z[1].name, c: z[2].name });
+      out += ST.fmt(pk((H ? R.TPW : R.TP)[modeOf(z[0], z[1])]), { a: z[0].name, b: z[1].name, c: z[2].name });
       if (!LK.nightLine) return;
       var uT = nUsed['a' + z[0].i], uB = nUsed['b' + z[1].i];
       if (uT && uB) return;
@@ -882,7 +976,7 @@
       var tops = sp.p === 'oneTwo' ? [sp.t] : [sp.t, sp.m], bots = sp.p === 'oneTwo' ? [sp.m, sp.u] : sp.p === 'twoOne' ? [sp.u] : [sp.m, sp.u];
       var pen = tops.every(function (c) { return !isF(c); }) && R.TRIO_ERO.pen[sp.p];
       /* 二人の攻めが一人を（twoOne）・中心のある三人は、指と舌の文のうち、受ける人に向かう文だけ（R.TRIO_ERO.softU）。攻めどうし・繋がらない二人が責め合う文にしない */
-      var soft = (sp.p === 'twoOne' || sp.hub) && R.TRIO_ERO.softU ? R.TRIO_ERO.softU[sp.p] || R.TRIO_ERO.soft : R.TRIO_ERO.soft;
+      var soft = H && R.TRIO_ERO.softH ? R.TRIO_ERO.softH[sp.p] : (sp.p === 'twoOne' || sp.hub) && R.TRIO_ERO.softU ? R.TRIO_ERO.softU[sp.p] || R.TRIO_ERO.soft : R.TRIO_ERO.soft;
       out += HK.ThickEro.trioFill(S, ST.fmt(pk(pen || soft), vv), r);
     }
     /* 果てる：受ける人から順に（真ん中の sandwich は受ける側として） */
@@ -890,7 +984,7 @@
     var tops2 = sp.p === 'oneTwo' ? [[sp.t, sp.m]] : sp.p === 'twoOne' ? [[sp.t, sp.u], [sp.m, sp.u]] : [[sp.t, sp.m]];
     recv.forEach(function (z) { out += moan(S, z[0], false, modeOf(z[1], z[0]), true) + climaxBy(S, z[0], z[1], false); bumpClimax(z[0]); });
     tops2.forEach(function (z) { out += moan(S, z[0], true, modeOf(z[0], z[1]), true) + climaxBy(S, z[0], z[1], true); bumpClimax(z[0]); });
-    out += ST.fmt(pk(R.CL3), vv);
+    out += ST.fmt(pk(H ? R.CL3H : R.CL3), vv);
     return out;
   }
 
@@ -953,5 +1047,7 @@
     }
   }
 
+  /* R18専用の locker-trio-bed.js（ベッドの場面）に渡す判定の部品 */
+  var CROWD_API = { canAct: canAct, consentOk: consentOk, forceOnly: forceOnly, trioOk: trioOk, trioShape: trioShape, hubShape: hubShape, modeOf: modeOf, isF: isF, hardTop: hardTop, climaxBy: climaxBy, bumpClimax: bumpClimax, names: names, lhHas: lhHas, relW: relW, tiesOf: tiesOf, interest: interest, okLove: okLove };
   LK.crowd = function (input) { return input.chars.length <= 1 ? soloRun(input) : groupRun(input); };
 })();

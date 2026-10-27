@@ -183,9 +183,11 @@
     var others = F.filter(function (x) { return x !== a && x !== b; });
     var c = null, mode = '';
     if (others.length) {
-      /* 加わるのは、三人のどの組も体の関係の点検を通り、受け攻めの向きが成り立つときだけ */
+      /* 加わるのは、三人のどの組も体の関係の点検を通り、受け攻めの向きが成り立つときだけ。
+         住人の設定「三人の場面（3P）：しない」の人が三人のうちにいれば加わらない（pos.js の HK.Pos.trioOptOut。2026-10-27 担当HN） */
+      var t3no = function (x) { return !!(P() && P().trioOptOut && [a, b, x].some(P().trioOptOut)); };
       var joiners = others.filter(function (x) {
-        return HK.State.r18ok(x) && sexOk(x, a) && sexOk(x, b) && (x.corrupt / 100 + x.tr.fc * 0.3 + x.pleasure / 150) > 0.45;
+        return HK.State.r18ok(x) && sexOk(x, a) && sexOk(x, b) && !t3no(x) && (x.corrupt / 100 + x.tr.fc * 0.3 + x.pleasure / 150) > 0.45;
       });
       var stoppers = others.filter(function (x) { return !(HK.ngPair && (HK.ngPair(x, a) || HK.ngPair(x, b))) && x.corrupt < 50 && x.tr.cp + x.tr.np * 0.5 + x.reason / 200 > 0.9; });
       var j = joiners.length && rng() < 0.4 ? joiners[rng.int(joiners.length)] : null;

@@ -19,9 +19,9 @@
 <title>箱庭シミュレーター</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <script>
-/* 表示の切り替え（色の量 data-palette：mono 藍のみ／chars キャラ色／full フル、白黒 data-theme：auto 端末に合わせる／light／dark。ヘッダーの半月のボタンで 自動→白→黒 と巡る）。見た目だけで結果には影響しない。鍵：hakoniwa-z:palette・hakoniwa-z:theme（描く前に付けて、ちらつかないように） */
+/* 表示の切り替え（色の量 data-palette：mono 藍のみ／chars キャラ色／full フル、白黒 data-theme：auto 端末に合わせる／light／gray／dark。ヘッダーの半月のボタンで 自動→白→グレー→黒 と巡る）。見た目だけで結果には影響しない。鍵：hakoniwa-z:palette・hakoniwa-z:theme（描く前に付けて、ちらつかないように） */
 (function () {
-  var P = 'hakoniwa-z:', R = document.documentElement, PAL = ['mono', 'chars', 'full'], THM = ['auto', 'light', 'dark'];
+  var P = 'hakoniwa-z:', R = document.documentElement, PAL = ['mono', 'chars', 'full'], THM = ['auto', 'light', 'gray', 'dark'];
   function get(k, ok, d) { try { var v = window.localStorage.getItem(P + k); return ok.indexOf(v) >= 0 ? v : d; } catch (e) { return d; } }
   function put(k, v) { try { window.localStorage.setItem(P + k, v); } catch (e) { /* 保存できない環境では、このページを開いているあいだだけ */ } }
   var pal = get('palette', PAL, 'full'), thm = get('theme', THM, 'auto');
@@ -30,8 +30,8 @@
     if (thm === 'auto') R.removeAttribute('data-theme'); else R.setAttribute('data-theme', thm);
     var bs = document.querySelectorAll('[data-pal],[data-thm]');
     for (var i = 0; i < bs.length; i++) { var b = bs[i], on = b.hasAttribute('data-pal') ? b.getAttribute('data-pal') === pal : b.getAttribute('data-thm') === thm; b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
-    var T = { auto: '自動（端末に合わせる）', light: '白', dark: '黒' }, tb = document.querySelectorAll('[data-thmcycle]');
-    for (var j = 0; j < tb.length; j++) { tb[j].title = '白／黒：' + T[thm] + '。押すと 自動→白→黒 の順に切り替え'; tb[j].setAttribute('aria-label', '白／黒の切り替え（いま：' + T[thm] + '）'); tb[j].setAttribute('data-now', thm); }
+    var T = { auto: '自動（端末に合わせる）', light: '白', gray: 'グレー', dark: '黒' }, tb = document.querySelectorAll('[data-thmcycle]');
+    for (var j = 0; j < tb.length; j++) { tb[j].title = '白／グレー／黒：' + T[thm] + '。押すと 自動→白→グレー→黒 の順に切り替え'; tb[j].setAttribute('aria-label', '白／グレー／黒の切り替え（いま：' + T[thm] + '）'); tb[j].setAttribute('data-now', thm); }
   }
   apply();
   document.addEventListener('DOMContentLoaded', apply);
@@ -77,7 +77,7 @@
   --sel-arrow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%2316233B' stroke-width='1.5'/></svg>");
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme="light"], [data-theme="gray"]) {
     --ai: #C9D4EC; --paper: #0A0B0F;
     --k-muted2: 76%; --k-muted: 66%; --k-mid: 62%; --k-line2: 30%; --k-line: 16%; --k-soft: 12%; --k-bg1: 5%;
     --hot: #FF5C7A;
@@ -102,6 +102,13 @@
   --sel-arrow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23C9D4EC' stroke-width='1.5'/></svg>");
   color-scheme: dark;
 }
+/* グレー（data-theme="gray"）：端末が暗い設定でも「自動」の黒にしない（上の :not(…, [data-theme="gray"])。:not に並べて書くのは、詳しさを上げて「藍のみ」の規則に勝たないように）。以前の版に近い落ち着いたグレーの紙。文字は藍のまま、面・罫線は紙に藍を混ぜて少し暗いグレー。まぶしさを抑える（本文・補助の文字は 4.5:1 以上） */
+:root[data-theme="gray"] {
+  --paper: #E9EBEE;
+  --k-muted2: 80%; --k-muted: 74%; --k-mid: 72%; --k-line2: 30%; --k-line: 16%; --k-soft: 9%; --k-bg1: 4%;
+  --hot: #C11F38;
+  color-scheme: light;
+}
 /* 藍と紙から段階の色を作る（対応していないブラウザでは上の同じ色のまま。黒版の同じ色は下の @supports not） */
 @supports (color: color-mix(in srgb, red 50%, blue)) {
   :root {
@@ -112,8 +119,9 @@
   }
 }
 @supports not (color: color-mix(in srgb, red 50%, blue)) {
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --muted2: #9BA4B7; --muted: #8890A1; --mid: #808898; --line2: #434751; --line: #292B32; --accent-soft: #21232A; --bg1: #14151A; } }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"], [data-theme="gray"]) { --muted2: #9BA4B7; --muted: #8890A1; --mid: #808898; --line2: #434751; --line: #292B32; --accent-soft: #21232A; --bg1: #14151A; } }
   :root[data-theme="dark"] { --muted2: #9BA4B7; --muted: #8890A1; --mid: #808898; --line2: #434751; --line: #292B32; --accent-soft: #21232A; --bg1: #14151A; }
+  :root[data-theme="gray"] { --muted2: #404B5F; --muted: #4D576A; --mid: #515B6D; --line2: #AAAFB8; --line: #C7CBD1; --accent-soft: #D6D9DE; --bg1: #E1E3E7; }
 }
 /* 色の量：藍のみ（イメカラ・関係・出来事も藍）／キャラ色（イメカラだけ） */
 :root[data-palette="mono"], :root[data-palette="chars"] {
@@ -346,9 +354,30 @@ table.per td:nth-child(1), table.per td:nth-child(2) { background: var(--paper);
 table.per thead th:nth-child(1), table.per thead th:nth-child(2) { z-index: 3; background: var(--bg1); }
 table.per tr.off td:nth-child(2) { opacity: 1; color: var(--muted); }
 table.per td:nth-child(2) b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 140px; vertical-align: middle; }
-/* 箱庭タブの参加表：先頭の列は参加のスイッチ（34px）が入る幅に。固定の2列目の位置も同じだけずらす */
-#view-box table.per th:nth-child(1), #view-box table.per td:nth-child(1) { width: 56px; min-width: 56px; max-width: 56px; padding-left: 10px; padding-right: 10px; }
-#view-box table.per th:nth-child(2), #view-box table.per td:nth-child(2) { left: 56px; }
+/* 箱庭タブの参加表：先頭の列は参加のスイッチ（34px）が入る幅に。固定の2列目の位置も同じだけずらす。
+   横スクロールを減らす（2026-10-27）：セルの余白は 6px 8px、選択欄は高さ 30px・12.5px で、列の幅に合わせて縮む（最小 6.5em。長い選択肢は欄の中で切れ、開けば全文）。
+   能力値（ランダム／1〜5）の欄は内容の幅のまま、見出しは折り返してよい。よくある列数（〜9列）は PC（1024px 以上）で横スクロールなし、列が本当に多い箱庭だけ横スクロール */
+#view-box table.per th, #view-box table.per td { padding: 6px 8px; }
+#view-box table.per th { white-space: normal; line-height: 1.35; }
+#view-box table.per th:nth-child(1), #view-box table.per td:nth-child(1) { width: 50px; min-width: 50px; max-width: 50px; padding-left: 8px; padding-right: 8px; }
+#view-box table.per th:nth-child(2), #view-box table.per td:nth-child(2) { left: 50px; min-width: 96px; }
+#view-box table.per td:nth-child(2) .grptag { display: inline-block; max-width: 7em; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+#view-box table.per td select, #view-box table.per td input[type="text"] { width: 100%; max-width: 220px; min-height: 30px; padding-top: 3px; padding-bottom: 3px; font-size: 12.5px; }
+#view-box table.per td select { min-width: 6.5em; padding-left: 8px; padding-right: 22px; background-position: right 8px center; text-overflow: ellipsis; }
+#view-box table.per td select[data-f="stat"] { width: auto; min-width: 0; }
+#view-box table.per td input[type="text"] { min-width: 8em !important; padding-left: 8px; padding-right: 8px; }
+/* スマホ（〜760px）：表のまま横スクロール（先頭2列と見出しは固定）。余白を詰め、選択欄は内容の幅（最大 168px）、文字 13px、行の高さを抑える */
+@media (max-width: 760px) {
+  #view-box table.per { min-width: 0; }
+  #view-box table.per th, #view-box table.per td { padding: 4px 6px; }
+  #view-box table.per th { white-space: nowrap; letter-spacing: 0.04em; }
+  #view-box table.per th:nth-child(1), #view-box table.per td:nth-child(1) { width: 46px; min-width: 46px; max-width: 46px; padding-left: 6px; padding-right: 6px; }
+  #view-box table.per th:nth-child(2), #view-box table.per td:nth-child(2) { left: 46px; min-width: 84px; max-width: 128px; }
+  #view-box table.per td:nth-child(2) b { max-width: 100px; }
+  #view-box table.per td select, #view-box table.per td input[type="text"] { width: auto; min-width: 0; max-width: 168px; min-height: 32px; padding-top: 2px; padding-bottom: 2px; font-size: 13px; }
+  #view-box table.per td select { padding-left: 6px; padding-right: 20px; background-position: right 6px center; }
+  #view-box table.per td input[type="text"] { width: 9em; min-width: 9em !important; }
+}
 /* 「箱庭を動かす」の帯：藍の面に紙の文字（反転） */
 .runbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 28px; padding: 16px 20px; background: var(--ink); color: var(--paper); border-radius: var(--r-card); }
 .runbar label { font-size: 13px; }
@@ -468,7 +497,7 @@ table.per td:nth-child(2) b { white-space: nowrap; overflow: hidden; text-overfl
 /* 時系列（仕様 6）：左 88px にターン番号（Mono 14px／600）と局面名（11px 藍 68%）、右に1本の細いレール（左罫線）と出来事ごとの 7px の点。
    通常の出来事は藍の単色、種類の札（.c）は Mono 10px の藍 26% の枠だけで色を付けない。会話は吹き出しにせず「」の引用（.q 500）と小さなアバター。
    転機・情事・死亡だけ --hot：view.js が .hot を付ける（ひとり用の記録 #dgtl・#sttl は 転機 .key・絶頂 .climax・死 .death）。
-   点は 11px の赤丸＋薄い赤の輪、ターン番号・本文（700）・札（赤の塗り＋紙の文字）を赤に。補足（.why）は藍 68% のまま。死亡は本文の前に †。「藍のみ」では --hot が藍 */
+   点は 11px の赤丸＋薄い赤の輪、ターン番号・札（赤の塗り＋紙の文字）・死亡の † を赤に。本文は藍の 700（赤くしない。名前はふだんの色のまま）。補足（.why）は藍 68% のまま。「藍のみ」では --hot が藍 */
 .tlbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
 .tlbar .chip .hotdot { margin-right: 2px; }
 .tlsep { flex: none; width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
@@ -494,15 +523,14 @@ h2.sec .hotleg { display: inline-flex; align-items: center; gap: 6px; margin-lef
 .ev.phase { font-size: 13px; color: var(--muted); font-style: normal; }
 .ev.talk .q { font-weight: 500; }
 .ev.hot.talk .q { font-weight: inherit; }
-.ev.hot .evb, #dgtl .ev.key .evb, #dgtl .ev.climax .evb, #dgtl .ev.death .evb, #sttl .ev.key .evb, #sttl .ev.climax .evb, #sttl .ev.death .evb { color: var(--hot); font-weight: 700; }
-.ev.hot .evb .name, #dgtl .ev.key .evb .name, #dgtl .ev.climax .evb .name, #dgtl .ev.death .evb .name, #sttl .ev.key .evb .name, #sttl .ev.climax .evb .name, #sttl .ev.death .evb .name { color: inherit !important; }
+.ev.hot .evb, #dgtl .ev.key .evb, #dgtl .ev.climax .evb, #dgtl .ev.death .evb, #sttl .ev.key .evb, #sttl .ev.climax .evb, #sttl .ev.death .evb { color: var(--ink); font-weight: 700; }
 .ev.hot .why, #dgtl .ev.key .why, #dgtl .ev.climax .why, #dgtl .ev.death .why, #sttl .ev.key .why, #sttl .ev.climax .why, #sttl .ev.death .why, .ev.hot .nums, #dgtl .ev.key .nums, #dgtl .ev.climax .nums, #dgtl .ev.death .nums, #sttl .ev.key .nums, #sttl .ev.climax .nums, #sttl .ev.death .nums, .ev.hot .rn, #dgtl .ev.key .rn, #dgtl .ev.climax .rn, #dgtl .ev.death .rn, #sttl .ev.key .rn, #sttl .ev.climax .rn, #sttl .ev.death .rn { color: var(--muted); font-weight: 400; }
 .ev.hot .c, #dgtl .ev.key .c, #dgtl .ev.climax .c, #dgtl .ev.death .c, #sttl .ev.key .c, #sttl .ev.climax .c, #sttl .ev.death .c, .ev.hot .markb, #dgtl .ev.key .markb, #dgtl .ev.climax .markb, #dgtl .ev.death .markb, #sttl .ev.key .markb, #sttl .ev.climax .markb, #sttl .ev.death .markb, .ev.hot .goalb, #dgtl .ev.key .goalb, #dgtl .ev.climax .goalb, #dgtl .ev.death .goalb, #sttl .ev.key .goalb, #sttl .ev.climax .goalb, #sttl .ev.death .goalb { color: var(--paper); background: var(--hot); border: 1px solid var(--hot); }
 .ev.death .evb::before { content: "\2020"; font-family: var(--f-num); font-weight: 700; color: var(--hot); margin-right: 6px; }
 /* トラブル（故障・危機・感染など。e.trouble）：Mono の藍の枠の札に、三角の注意の印（線画の SVG。絵文字は使わない）。赤は使わない（重要の赤は転機・情事・死亡だけ） */
 .ev.trouble { --trouble-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M6 1.4L11 10.3H1z' fill='none' stroke='%2316233B' stroke-width='1.3' stroke-linejoin='round'/><path d='M6 4.7v2.6' fill='none' stroke='%2316233B' stroke-width='1.3' stroke-linecap='round'/><circle cx='6' cy='8.8' r='.75' fill='%2316233B'/></svg>"); }
 :root[data-theme="dark"] .ev.trouble { --trouble-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M6 1.4L11 10.3H1z' fill='none' stroke='%23C9D4EC' stroke-width='1.3' stroke-linejoin='round'/><path d='M6 4.7v2.6' fill='none' stroke='%23C9D4EC' stroke-width='1.3' stroke-linecap='round'/><circle cx='6' cy='8.8' r='.75' fill='%23C9D4EC'/></svg>"); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ev.trouble { --trouble-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M6 1.4L11 10.3H1z' fill='none' stroke='%23C9D4EC' stroke-width='1.3' stroke-linejoin='round'/><path d='M6 4.7v2.6' fill='none' stroke='%23C9D4EC' stroke-width='1.3' stroke-linecap='round'/><circle cx='6' cy='8.8' r='.75' fill='%23C9D4EC'/></svg>"); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"], [data-theme="gray"]) .ev.trouble { --trouble-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M6 1.4L11 10.3H1z' fill='none' stroke='%23C9D4EC' stroke-width='1.3' stroke-linejoin='round'/><path d='M6 4.7v2.6' fill='none' stroke='%23C9D4EC' stroke-width='1.3' stroke-linecap='round'/><circle cx='6' cy='8.8' r='.75' fill='%23C9D4EC'/></svg>"); } }
 .ev.trouble:not(.death) .evb::before { content: "トラブル"; display: inline-block; font-family: var(--f-num); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; line-height: 1.6; color: var(--ink); border: 1px solid var(--ink); border-radius: 2px; padding: 0 5px 0 19px; background: var(--trouble-ic) no-repeat 5px 50% / 11px 11px; margin-right: 8px; vertical-align: 2px; }
 .ev .oddb { font-family: var(--f-num); font-size: 10px; font-weight: 600; letter-spacing: 0.1em; color: var(--odd); border: 1px dashed var(--odd); border-radius: 2px; padding: 0 5px; margin-left: 6px; }
 .name { font-weight: 700; }
@@ -716,7 +744,7 @@ details.zmap > summary:hover { background: var(--bg1); }
         <a class="chip-link" href="https://docs.google.com/document/d/1o6UgdEEMXhUEZeODa3pWeVgMBlIEBi-cyktbtUmSNe0/edit?tab=t.0" target="_blank" rel="noopener">更新履歴</a>
         <button type="button" class="chip-link" data-act="notice-open" aria-haspopup="dialog" aria-controls="notice">注意事項</button>
         <span class="navsep" aria-hidden="true"></span>
-        <div class="uiseg" role="group" aria-label="色の量"><button type="button" data-pal="mono" aria-pressed="false">藍のみ</button><button type="button" data-pal="chars" aria-pressed="false">キャラ色</button><button type="button" data-pal="full" aria-pressed="true">フル</button></div><button type="button" class="btn icon thmbtn" data-thmcycle title="白／黒：自動（端末に合わせる）。押すと 自動→白→黒 の順に切り替え" aria-label="白／黒の切り替え（いま：自動）"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75v12.5A6.25 6.25 0 0 0 8 1.75z" fill="currentColor"/></svg></button>
+        <div class="uiseg" role="group" aria-label="色の量"><button type="button" data-pal="mono" aria-pressed="false">藍のみ</button><button type="button" data-pal="chars" aria-pressed="false">キャラ色</button><button type="button" data-pal="full" aria-pressed="true">フル</button></div><button type="button" class="btn icon thmbtn" data-thmcycle title="白／グレー／黒：自動（端末に合わせる）。押すと 自動→白→グレー→黒 の順に切り替え" aria-label="白／グレー／黒の切り替え（いま：自動）"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75v12.5A6.25 6.25 0 0 0 8 1.75z" fill="currentColor"/></svg></button>
       </nav>
     </div>
     <div class="row" id="topmeta"></div>
@@ -760,63 +788,63 @@ details.zmap > summary:hover { background: var(--bg1); }
 
 <script>window.HK_SAFE_BUILD = 1;</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"ff3f895a20","api":1,"build":"zenrei","core":"js/c/core.cfda9bfe1c.js",
+<script>window.HK_MANIFEST={"v":"c7c7e77600","api":1,"build":"zenrei","core":"js/c/core.ab8ba644e1.js",
 "chunks":{
-  "late":{"src":"js/c/late.01af5ab5ab.js","br":73314,"deps":[]},
-  "pack-rel":{"src":"js/c/pack-rel.2a84b237e0.js","br":176615,"deps":[]},
-  "scen-goukon":{"src":"js/c/scen-goukon.6aa0f8edd0.js","br":71781,"deps":["pack-rel"]},
-  "scen-classroom":{"src":"js/c/scen-classroom.fb9c3287e0.js","br":61165,"deps":["pack-rel"]},
-  "scen-island":{"src":"js/c/scen-island.e73f1f7e56.js","br":82955,"deps":["pack-rel"]},
-  "scen-br":{"src":"js/c/scen-br.8f34658c6c.js","br":37081,"deps":["pack-rel"]},
-  "scen-whiteroom":{"src":"js/c/scen-whiteroom.25abfd5242.js","br":143221,"deps":["pack-rel"]},
+  "late":{"src":"js/c/late.ddec38aeed.js","br":73315,"deps":[]},
+  "pack-rel":{"src":"js/c/pack-rel.7350da939f.js","br":176618,"deps":[]},
+  "scen-goukon":{"src":"js/c/scen-goukon.ab23cbd53f.js","br":71780,"deps":["pack-rel"]},
+  "scen-classroom":{"src":"js/c/scen-classroom.7060eb37e8.js","br":61165,"deps":["pack-rel"]},
+  "scen-island":{"src":"js/c/scen-island.9f7b4ef3e0.js","br":82955,"deps":["pack-rel"]},
+  "scen-br":{"src":"js/c/scen-br.49c9531ea3.js","br":37081,"deps":["pack-rel"]},
+  "scen-whiteroom":{"src":"js/c/scen-whiteroom.082e1fffb3.js","br":144137,"deps":["pack-rel"]},
   "scen-trial":{"src":"js/c/scen-trial.8d7b41b9ff.js","br":53489,"deps":["pack-rel"]},
-  "scen-omega":{"src":"js/c/scen-omega.64ea07cd14.js","br":133569,"deps":["pack-rel"]},
-  "scen-massage":{"src":"js/c/scen-massage.36a4f20125.js","br":41412,"deps":[]},
-  "scen-zombie":{"src":"js/c/scen-zombie.0b22a8f405.js","br":134689,"deps":["pack-rel"]},
-  "scen-rpg":{"src":"js/c/scen-rpg.e70c7457b9.js","br":27141,"deps":["pack-story"]},
-  "scen-saimin":{"src":"js/c/scen-saimin.ed0259f806.js","br":36931,"deps":[]},
-  "scen-locker":{"src":"js/c/scen-locker.a8c89cbd74.js","br":66415,"deps":[]},
-  "scen-jashin":{"src":"js/c/scen-jashin.aec7dfdb2c.js","br":231168,"deps":["pack-story"]},
-  "scen-yakata":{"src":"js/c/scen-yakata.06807beb3d.js","br":82891,"deps":["pack-story"]},
-  "scen-ship":{"src":"js/c/scen-ship.6298f72261.js","br":105256,"deps":["pack-story"]},
-  "scen-jinro":{"src":"js/c/scen-jinro.bace9aecd4.js","br":56960,"deps":["pack-story"]},
-  "pack-story":{"src":"js/c/pack-story.9f937f8a43.js","br":2912,"deps":["pack-rel"]},
-  "tone-base":{"src":"js/c/tone-base.5d11bb8018.js","br":49000,"deps":[]},
-  "tone-ane":{"src":"js/c/tone-ane.7db5606be0.js","br":7531,"deps":[]},
-  "tone-boku-n":{"src":"js/c/tone-boku-n.04a4f09ee9.js","br":418,"deps":[]},
-  "tone-calm":{"src":"js/c/tone-calm.9178d6a906.js","br":7920,"deps":[]},
-  "tone-chara":{"src":"js/c/tone-chara.e3bdf0c4a9.js","br":14156,"deps":[]},
-  "tone-chara-down":{"src":"js/c/tone-chara-down.f6cef46e61.js","br":869,"deps":[]},
-  "tone-cool-soft":{"src":"js/c/tone-cool-soft.7f93918187.js","br":631,"deps":[]},
-  "tone-darui":{"src":"js/c/tone-darui.8faa544cea.js","br":6896,"deps":[]},
-  "tone-darui-lite":{"src":"js/c/tone-darui-lite.2ee7c08ce8.js","br":566,"deps":[]},
-  "tone-devoted-p":{"src":"js/c/tone-devoted-p.dcc5fdedd5.js","br":5231,"deps":[]},
-  "tone-flat-plain":{"src":"js/c/tone-flat-plain.1344a38a12.js","br":168,"deps":[]},
-  "tone-genki":{"src":"js/c/tone-genki.d5143e2771.js","br":4048,"deps":[]},
-  "tone-gentle-n":{"src":"js/c/tone-gentle-n.d388cfcf89.js","br":5569,"deps":[]},
-  "tone-gentleman":{"src":"js/c/tone-gentleman.c99490835f.js","br":11106,"deps":[]},
-  "tone-god":{"src":"js/c/tone-god.6451adb5a0.js","br":2987,"deps":[]},
-  "tone-gyaru":{"src":"js/c/tone-gyaru.302a35dcf1.js","br":16620,"deps":[]},
-  "tone-hero":{"src":"js/c/tone-hero.29a4599b34.js","br":7700,"deps":[]},
-  "tone-kansai":{"src":"js/c/tone-kansai.b10232f0ec.js","br":15883,"deps":[]},
-  "tone-keigo-bossy":{"src":"js/c/tone-keigo-bossy.e22c29f6f4.js","br":904,"deps":[]},
-  "tone-keigo-flat":{"src":"js/c/tone-keigo-flat.2c95e88468.js","br":744,"deps":[]},
-  "tone-keigo-sarc":{"src":"js/c/tone-keigo-sarc.cdc1d800fd.js","br":1112,"deps":[]},
-  "tone-keigo-twist":{"src":"js/c/tone-keigo-twist.d253cb85f4.js","br":348,"deps":[]},
-  "tone-kohai":{"src":"js/c/tone-kohai.d4febd466d.js","br":8826,"deps":[]},
-  "tone-mixed":{"src":"js/c/tone-mixed.ed99b48740.js","br":21630,"deps":[]},
-  "tone-mukuchi":{"src":"js/c/tone-mukuchi.7310e37e26.js","br":13309,"deps":[]},
-  "tone-mukuchi-ne":{"src":"js/c/tone-mukuchi-ne.929e359b5c.js","br":344,"deps":[]},
-  "tone-mystic":{"src":"js/c/tone-mystic.94033df7db.js","br":9874,"deps":[]},
-  "tone-noja":{"src":"js/c/tone-noja.e15c4db288.js","br":17548,"deps":[]},
-  "tone-ojou":{"src":"js/c/tone-ojou.28012fdcfe.js","br":6088,"deps":[]},
-  "tone-otaku":{"src":"js/c/tone-otaku.fa79cd789d.js","br":258,"deps":[]},
-  "tone-ronkyaku":{"src":"js/c/tone-ronkyaku.d597a3edeb.js","br":3303,"deps":[]},
-  "tone-sondai":{"src":"js/c/tone-sondai.c8ffa2ba56.js","br":7466,"deps":[]},
-  "tone-tame":{"src":"js/c/tone-tame.b718656fdc.js","br":392,"deps":[]},
-  "tone-tsun-n":{"src":"js/c/tone-tsun-n.d522e7604e.js","br":5499,"deps":[]},
-  "tone-usan":{"src":"js/c/tone-usan.f41b88c7aa.js","br":8814,"deps":[]},
-  "tone-yankee":{"src":"js/c/tone-yankee.c9f00ac821.js","br":12561,"deps":[]}},
+  "scen-omega":{"src":"js/c/scen-omega.fb6c030371.js","br":133572,"deps":["pack-rel"]},
+  "scen-massage":{"src":"js/c/scen-massage.f554f4b23d.js","br":41552,"deps":[]},
+  "scen-zombie":{"src":"js/c/scen-zombie.0caa9ad49a.js","br":134658,"deps":["pack-rel"]},
+  "scen-rpg":{"src":"js/c/scen-rpg.c7006400cd.js","br":27140,"deps":["pack-story"]},
+  "scen-saimin":{"src":"js/c/scen-saimin.31f30a91c5.js","br":36974,"deps":[]},
+  "scen-locker":{"src":"js/c/scen-locker.7d4fe87e5b.js","br":67941,"deps":[]},
+  "scen-jashin":{"src":"js/c/scen-jashin.3d6c2189f3.js","br":231193,"deps":["pack-story"]},
+  "scen-yakata":{"src":"js/c/scen-yakata.5b32153c78.js","br":82890,"deps":["pack-story"]},
+  "scen-ship":{"src":"js/c/scen-ship.44c7319efd.js","br":105256,"deps":["pack-story"]},
+  "scen-jinro":{"src":"js/c/scen-jinro.1481fd12b4.js","br":56961,"deps":["pack-story"]},
+  "pack-story":{"src":"js/c/pack-story.7f1b22afb1.js","br":2910,"deps":["pack-rel"]},
+  "tone-base":{"src":"js/c/tone-base.abccb6a20b.js","br":49001,"deps":[]},
+  "tone-ane":{"src":"js/c/tone-ane.1ebf930aec.js","br":7532,"deps":[]},
+  "tone-boku-n":{"src":"js/c/tone-boku-n.385ecb152d.js","br":418,"deps":[]},
+  "tone-calm":{"src":"js/c/tone-calm.9ffcc57ab2.js","br":7921,"deps":[]},
+  "tone-chara":{"src":"js/c/tone-chara.4d74b361c6.js","br":14156,"deps":[]},
+  "tone-chara-down":{"src":"js/c/tone-chara-down.118e2e4997.js","br":868,"deps":[]},
+  "tone-cool-soft":{"src":"js/c/tone-cool-soft.04da7c5cbd.js","br":631,"deps":[]},
+  "tone-darui":{"src":"js/c/tone-darui.7d6dc48c04.js","br":6896,"deps":[]},
+  "tone-darui-lite":{"src":"js/c/tone-darui-lite.a124f40e28.js","br":563,"deps":[]},
+  "tone-devoted-p":{"src":"js/c/tone-devoted-p.a85394d975.js","br":5231,"deps":[]},
+  "tone-flat-plain":{"src":"js/c/tone-flat-plain.adec0000ae.js","br":170,"deps":[]},
+  "tone-genki":{"src":"js/c/tone-genki.0b9891dca1.js","br":4049,"deps":[]},
+  "tone-gentle-n":{"src":"js/c/tone-gentle-n.c7da79ff8e.js","br":5569,"deps":[]},
+  "tone-gentleman":{"src":"js/c/tone-gentleman.f6b5df170a.js","br":11106,"deps":[]},
+  "tone-god":{"src":"js/c/tone-god.7090dba991.js","br":2987,"deps":[]},
+  "tone-gyaru":{"src":"js/c/tone-gyaru.451848ea19.js","br":16619,"deps":[]},
+  "tone-hero":{"src":"js/c/tone-hero.235a8fea91.js","br":7700,"deps":[]},
+  "tone-kansai":{"src":"js/c/tone-kansai.9997882cf4.js","br":15883,"deps":[]},
+  "tone-keigo-bossy":{"src":"js/c/tone-keigo-bossy.99b920ea7c.js","br":904,"deps":[]},
+  "tone-keigo-flat":{"src":"js/c/tone-keigo-flat.5798c6e1a2.js","br":744,"deps":[]},
+  "tone-keigo-sarc":{"src":"js/c/tone-keigo-sarc.8639876290.js","br":1110,"deps":[]},
+  "tone-keigo-twist":{"src":"js/c/tone-keigo-twist.62392a0415.js","br":348,"deps":[]},
+  "tone-kohai":{"src":"js/c/tone-kohai.ee2f709fec.js","br":8826,"deps":[]},
+  "tone-mixed":{"src":"js/c/tone-mixed.c3b4a3fcca.js","br":21630,"deps":[]},
+  "tone-mukuchi":{"src":"js/c/tone-mukuchi.618faa87ee.js","br":13308,"deps":[]},
+  "tone-mukuchi-ne":{"src":"js/c/tone-mukuchi-ne.209e02c8bc.js","br":344,"deps":[]},
+  "tone-mystic":{"src":"js/c/tone-mystic.3297c0863c.js","br":9873,"deps":[]},
+  "tone-noja":{"src":"js/c/tone-noja.5274eb9164.js","br":17549,"deps":[]},
+  "tone-ojou":{"src":"js/c/tone-ojou.eecaa37837.js","br":6088,"deps":[]},
+  "tone-otaku":{"src":"js/c/tone-otaku.0c35024913.js","br":258,"deps":[]},
+  "tone-ronkyaku":{"src":"js/c/tone-ronkyaku.f386b5f0e8.js","br":3303,"deps":[]},
+  "tone-sondai":{"src":"js/c/tone-sondai.d8a8c3920f.js","br":7466,"deps":[]},
+  "tone-tame":{"src":"js/c/tone-tame.59fa1ed388.js","br":392,"deps":[]},
+  "tone-tsun-n":{"src":"js/c/tone-tsun-n.0d13a73d3a.js","br":5498,"deps":[]},
+  "tone-usan":{"src":"js/c/tone-usan.c464d147a5.js","br":8814,"deps":[]},
+  "tone-yankee":{"src":"js/c/tone-yankee.c3c13beae0.js","br":12560,"deps":[]}},
 "order":["goukon","whiteroom","classroom","island","ship","br","trial","zombie","jashin","yakata","omega","massage","saimin","locker","rpg","jinro"],
 "scen":{
   "goukon":{"id":"goukon","name":"合コン","kicker":"恋愛・社交","desc":"居酒屋の個室で一晩。酒が回るほど本音と衝動が出る。最後に誰と帰ったかで決着。","unit":"時刻","preRel":0,"lethal":false,"env":[{"id":"alcohol","label":"酒の進み"},{"id":"mood","label":"場の空気"},{"id":"second","label":"二次会"},{"id":"kingsgame","label":"王様ゲーム"},{"id":"mobs","label":"モブの参加者"},{"id":"rel","label":"住人どうしの関係"},{"id":"lewd","label":"描写の有無"}],"stats":[{"id":"drink","label":"酒の強さ"},{"id":"looks","label":"見た目の自信"}],"card":{"desc":"居酒屋の個室で一晩、最後に誰と一緒に帰るか。","descLong":"居酒屋の個室で一晩の合コン。酒が回るほど本音と衝動があふれ出す。最後に誰と誰が一緒に帰ったかで決着がつく。"},"tags":["relCore","night","race","food","drink","mob","romance"],"chunks":["scen-goukon"]},
@@ -836,7 +864,7 @@ details.zmap > summary:hover { background: var(--bg1); }
   "rpg":{"id":"rpg","name":"ダンジョンRPG","kicker":"パーティ・冒険","desc":"パーティを組んでダンジョンへ。階ごとにランダムな戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、誰が宝箱に手を伸ばし、どこで引き返すのか。地下30階の主を倒せば踏破、引き返せば帰還、全員倒れれば全滅。","solo":true,"minCast":1,"maxCast":6,"unit":"階","castHint":"1〜6人のパーティで潜ります。職業は「おまかせ」ならエゴグラムから決まります。前に出るか、宝箱を開けるか、引き返すかは気質の数値で決まります。踏破できるのは一割ほど。多くは途中で引き返します。","env":[{"id":"floors","label":"目標の階層"},{"id":"danger","label":"魔物の強さ"},{"id":"loot","label":"お宝の多さ"},{"id":"retreat","label":"撤退"}],"stats":[{"id":"str","label":"腕っぷし"},{"id":"luck","label":"運"},{"id":"int","label":"知能"}],"perFields":[{"id":"job","label":"職業","auto":"おまかせ（エゴグラムから）","options":[{"id":"warrior","label":"戦士"},{"id":"mage","label":"魔法使い"},{"id":"priest","label":"僧侶"},{"id":"thief","label":"盗賊"},{"id":"hunter","label":"狩人"},{"id":"bard","label":"吟遊詩人"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"パーティでダンジョンに潜り、いくら持ち帰れるか。","descLong":"パーティを組んでダンジョンへ。階ごとに戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、どこで引き返し、いくら持ち帰れるか。"},"tags":["relSome","race","job","undead","death"],"chunks":["scen-rpg"]},
   "jinro":{"id":"jinro","name":"人狼","kicker":"ゲーム・推理","desc":"住人どうしで人狼ゲーム。配役は人狼・狩人・占い師・霊媒師・村人からランダム。人狼は性格で戦法（騙り・潜伏・仲間切り・庇い合い）を選び、村は仕切り役しだいで方針（ローラー・真贋の見極め・グレー吊り）が変わる。信頼と協力、そして裏切り。知能は性格とは別に決まる。","solo":true,"minCast":4,"maxCast":15,"unit":"日","castHint":"4〜15人。配役の数は環境値で決めます（人狼は全体の半分未満に自動で調整）。ゲームなので、襲う相手や投票先は既存の関係と関係なく、推理と立ち回りで決まります。","env":[{"id":"wolves","label":"人狼の数"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"lovemode","label":"好意モード"},{"id":"prize","label":"賞品"},{"id":"prizeText","label":"賞品（自由に書く）"}],"stats":[{"id":"int","label":"知能"},{"id":"poker","label":"ポーカーフェイス"}],"perFields":[{"id":"role","label":"配役","auto":"ランダム","options":[{"id":"wolf","label":"人狼"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"vill","label":"村人"}]}],"card":{"desc":"住人どうしの人狼ゲーム、騙りと推理と裏切り。","descLong":"住人どうしで人狼ゲーム。人狼は性格で騙りや潜伏を選び、村は仕切り役しだいで方針が変わる。信頼と協力、そして裏切り。"},"tags":["relSome","night","race","death"],"chunks":["scen-jinro"]}},
 "tones":{"auto":["aniki","proud","stern","tsun","gentle","devoted","cool","free","shy","polite"],"pack":{"mixed":"tone-mixed","noja":"tone-noja","kansai":"tone-kansai","mukuchi":"tone-mukuchi","gentleman":"tone-gentleman","ane":"tone-ane","calm":"tone-calm","chara":"tone-chara","darui":"tone-darui","devoted_p":"tone-devoted-p","genki":"tone-genki","gentle_n":"tone-gentle-n","gyaru":"tone-gyaru","hero":"tone-hero","kohai":"tone-kohai","mystic":"tone-mystic","ojou":"tone-ojou","tsun_n":"tone-tsun-n","usan":"tone-usan","yankee":"tone-yankee","sondai":"tone-sondai","cool_soft":"tone-cool-soft","boku_n":"tone-boku-n","god":"tone-god","darui_lite":"tone-darui-lite","keigo_sarc":"tone-keigo-sarc","keigo_bossy":"tone-keigo-bossy","keigo_flat":"tone-keigo-flat","keigo_twist":"tone-keigo-twist","mukuchi_ne":"tone-mukuchi-ne","otaku":"tone-otaku","ronkyaku":"tone-ronkyaku","chara_down":"tone-chara-down","flat_plain":"tone-flat-plain","tame":"tone-tame"}}};</script>
-<script src="js/c/core.cfda9bfe1c.js"></script>
+<script src="js/c/core.ab8ba644e1.js"></script>
 <!-- scripts:end -->
 
 </body></html>

@@ -16,6 +16,7 @@
      maso は受け攻めを変えない（攻め指定が優先。受けに回ったときの崩れ方だけを変える）。全年齢では無視する
    ・sexLikes 体の関係の相手（R18版だけ。恋愛対象「なし」の人だけ画面に出す）：''（おまかせ＝相手に合わせる）／m／f／both／none（体の関係にもならない）。
      libido 性欲の強さ（R18版だけ。全住人）：''（ふつう）／none なし／low 弱い／high 強い。判定は pos.js（HK.Pos.sexLikeOf・HK.Pos.libMul）。全年齢では保存だけ
+     trio 三人の場面（3P）（R18版だけ。全住人）：''（する）／no しない。判定は pos.js（HK.Pos.trioOptOut・trioPlan）。全年齢では保存だけ
    ・will 心の強さ：''／weak 弱い／avg ふつう／strong 強い。快楽堕ち・催眠・常識改変・遮断穴の「堕ちる」判定に掛ける（HK.Attr.willK）。
      strong は体が堕ちても心は折れない文を添える（HK.Attr.hold）
    ・same 同一人物：相手の番号。「鏡を見るような」共通の場面 3 本と、結果の関係名「もう一人の自分」。恋愛・体の関係は縛らない
@@ -62,6 +63,9 @@
   /* 体の関係の相手（恋愛対象「なし」の人だけ）・性欲の強さ（全住人）。R18版だけの欄（全年齢版では保存だけ）。判定は pos.js（HK.Pos.sexLikeOf・HK.Pos.libMul）。2026-10-27 担当HG */
   A.SEXLIKES = [['', 'おまかせ'], ['m', '男性'], ['f', '女性'], ['both', '男女両方'], ['none', 'なし']];
   A.LIBIDO = [['', ''], ['none', 'なし'], ['low', '弱い'], ['high', '強い']];
+  /* 三人の場面（3P）：''＝する（既定）／'no'＝しない。R18版だけの欄（全年齢版では保存だけ）。判定は pos.js の HK.Pos.trioOptOut・trioPlan。
+     古い保存の「固定した相手が中心なら参加する」（trioHub）は読まない（ui.js の normChar で捨てる）。2026-10-27 担当HN */
+  A.TRIO = [['', 'する'], ['no', 'しない']];
   /* r18:begin */
   A.SEXLIKES[0][1] = 'おまかせ（相手に合わせる）'; A.SEXLIKES[4][1] = 'なし（体の関係にもならない）';
   A.LIBIDO[0][1] = 'ふつう';
@@ -72,8 +76,8 @@
   function val(list, v) { v = v == null ? '' : String(v); return has(list, v) ? v : ''; }
   function lab(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return list[i][1]; return ''; }
   function note(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>]/g, '').trim().slice(0, 12) : ''; }
-  A.label = function (k, v) { return lab({ build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL, topLv: A.TOPLV, lead: A.LEAD, sexLikes: A.SEXLIKES, libido: A.LIBIDO }[k] || [], v); };
-  var SIMPLE = ['build', 'bust', 'race', 'night', 'will', 'genital', 'topLv', 'lead', 'sexLikes', 'libido'];
+  A.label = function (k, v) { return lab({ build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL, topLv: A.TOPLV, lead: A.LEAD, sexLikes: A.SEXLIKES, libido: A.LIBIDO, trio: A.TRIO }[k] || [], v); };
+  var SIMPLE = ['build', 'bust', 'race', 'night', 'will', 'genital', 'topLv', 'lead', 'sexLikes', 'libido', 'trio'];
   /* 相手ごとの二人称・一人称（VF：欄の名前） */
   var VF = ['youFor', 'fpFor'];
   A.YOU_OPTS = ['あなた', 'きみ', 'おまえ', 'あんた', 'そっち'];
@@ -87,7 +91,7 @@
   A.POSFOR = [['', 'おまかせ（全体に従う）'], ['top', '攻め'], ['bottom', '受け'], ['riba', 'リバ']];
   function posv(v) { return v === 'top' || v === 'bottom' || v === 'riba' ? v : ''; }
   function pmap(m, keyOk) { var o = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { var v = posv(m[k]); if (v && (!keyOk || keyOk(k))) o[k] = v; }); return o; }
-  function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL, topLv: A.TOPLV, lead: A.LEAD, sexLikes: A.SEXLIKES, libido: A.LIBIDO }[k]; }
+  function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL, topLv: A.TOPLV, lead: A.LEAD, sexLikes: A.SEXLIKES, libido: A.LIBIDO, trio: A.TRIO }[k]; }
   /* 好きな食べ物・嫌いな食べ物（自由記入）と好きな味・苦手な味（決まった7つから複数）。画面と書き出しは読点区切りの文字列、実行時は配列 */
   A.TASTES = ['甘い', 'しょっぱい', '辛い', '酸っぱい', '苦い', 'あっさり', 'こってり'];
   var FOODK = ['foodLike', 'foodHate'];
@@ -289,16 +293,7 @@
      R18版だけの欄（胸・性器）は SAFE_ON で隠す。夜の性格は「恋愛と夜」の節（A.nightHtml）と、相手ごとの設定の行（A.forHtml）に置く */
   A.gearHtml = function (c, others, h) {
     var esc = h.esc, sel = function (k) { return h.selOf('at_' + k, listOf(k), c[k] || ''); };
-    var lw = HK.SAFE_ON ? '恋愛' : '恋愛・R18';
-    /* 住人が多いとき（61人以上）は、選んでいる人だけで描き、触れたときに全員を入れる（ui-cast-pages.js の lazyAttr。住人1000人で ⚙️ 設定を開くのが重かった） */
-    var sameOpts = function () {
-      var all = '<option value="">なし</option>' + others.map(function (o) { return h.opt(o.id, o.name, c.same || ''); }).join(''), CPg = HK.CastPages;
-      if (!(CPg && CPg.lazyAttr && others.length > CPg.LAZY_MIN)) return '>' + all;
-      var cur = others.filter(function (o) { return o.id === c.same; })[0];
-      return CPg.lazyAttr(all) + '>' + (cur ? h.opt(cur.id, cur.name, cur.id) : '<option value="" selected>なし</option>');
-    };
-    var same = others.length ? '<label title="別の世界・別の時間の同じ人のように扱います。鏡を見るような場面が起きます。' + lw + 'も、ほかの二人と同じように起こりえます（避けたいときは「' + lw + 'にしない相手」に印を付けます）">同一人物 <select data-gf="at_same" aria-label="同一人物"' + sameOpts() + '</select></label>' +
-      (c.same ? '<label title="同一人物の相手を苛む、闇に堕ちた自分。エゴグラムの欠点が際立ち、愛憎より悪質に振る舞います。いまは出られない部屋だけで効きます"><input type="checkbox" data-gf="at_sameDark"' + (c.sameDark ? ' checked' : '') + '> 闇堕ちVer</label>' : '') : '';
+    /* 同一人物・闇堕ちVer は「相手ごとの設定」の行（A.sameForHtml）に移した（2026-10-27 担当HK。値 c.same・c.sameDark と保存の形は同じ） */
     return '<div class="gearrow"><label title="二人の体格の差で、見上げる・抱き上げるといった文が変わります">体格 ' + sel('build') + '</label>' +
       /* r18:begin */
       (!HK.SAFE_ON && c.gender === 'f' ? '<label title="R18の場面の地の文で、胸の書き方が変わります">胸 ' + sel('bust') + '</label>' : '') +
@@ -312,26 +307,62 @@
       /* r18:begin */
       (!HK.SAFE_ON ? '<label title="快楽堕ち・催眠・常識改変・感覚遮断穴などで、堕ちやすさが変わります。強いと、体は流されても心は折れにくくなります（感覚遮断穴では、強くても1割ほどは堕ちます）">心の強さ ' + sel('will') + '</label>' : '') +
       /* r18:end */
-      (HK.SAFE_ON ? '<label title="催眠の箱庭で、暗示のかかりやすさが変わります。強いと、流されても心は折れません">心の強さ ' + sel('will') + '</label>' : '') + same + '</div>' + feats(c, esc) + food(c, esc);
+      (HK.SAFE_ON ? '<label title="催眠の箱庭で、暗示のかかりやすさが変わります。強いと、流されても心は折れません">心の強さ ' + sel('will') + '</label>' : '') + '</div>' + feats(c, esc) + food(c, esc);
   };
   /* 「恋愛と夜」の節に置く、全体の夜の性格（R18版だけ。相手ごとに決めていない相手・モブが相手のとき） */
   A.nightHtml = function (c, h) {
-    var out = '';
+    var out = '', ld = A.libDim(c), tl = A.topLvState(c, h.byId);
     /* r18:begin */
-    if (!HK.SAFE_ON) out = '<label title="R18の場面での振る舞い。作風（山場の書き方）より優先します。相手ごとの設定で決めた相手には、そちらを優先します。マゾは受け攻めを変えません（攻めを選んだ人は攻めのまま）。相手に合わせるは、相手の夜の性格から決めます（サドの相手にはマゾ、マゾの相手にはサド、意地悪の相手には恥じらい、恥じらいの相手には意地悪、甘々の相手には甘々。相手が表と同じ・おまかせ・相手に合わせるなら気質から）">夜の性格（全体） ' + h.selOf('at_night', A.NIGHT, c.night || '') + '</label>' +
-      '<label title="受け攻めは変えずに、夜の場面でどちらが主導するかを決めます。受けが主導（誘い受け）は受けが自分から誘い、受けが主導（襲い受け）は受けが押し倒して跨ります（自分で攻めを選んだ相手は押し倒さず、跨るだけ）。挿れる側・挿れられる側は受け攻めのままです。二人のうち受けの人の設定を先に見ます">夜の主導 ' + h.selOf('at_lead', A.LEAD, c.lead || '') + '</label>';
+    if (!HK.SAFE_ON) out = '<label' + ld + ' title="R18の場面での振る舞い。作風（山場の書き方）より優先します。相手ごとの設定で決めた相手には、そちらを優先します。マゾは受け攻めを変えません（攻めを選んだ人は攻めのまま）。相手に合わせるは、相手の夜の性格から決めます（サドの相手にはマゾ、マゾの相手にはサド、意地悪の相手には恥じらい、恥じらいの相手には意地悪、甘々の相手には甘々。相手が表と同じ・おまかせ・相手に合わせるなら気質から）">夜の性格（全体） ' + h.selOf('at_night', A.NIGHT, c.night || '') + '</label>' +
+      '<label' + ld + ' title="受け攻めは変えずに、夜の場面でどちらが主導するかを決めます。受けが主導（誘い受け）は受けが自分から誘い、受けが主導（襲い受け）は受けが押し倒して跨ります（自分で攻めを選んだ相手は押し倒さず、跨るだけ）。挿れる側・挿れられる側は受け攻めのままです。二人のうち受けの人の設定を先に見ます">夜の主導 ' + h.selOf('at_lead', A.LEAD, c.lead || '') + '</label>';
     /* r18:end */
-    out += '<label title="向きがどちらにもなりうる組（リバどうし・おまかせどうし・受けどうしなど）で、数字の高い方が攻めに回ります。自分で選んだ攻め・受けは変えません。相手ごとの受け攻めを決めた相手には、そちらを優先します。同じ数字なら、これまでどおり気質で決まります">攻め度 ' + h.selOf('at_topLv', A.TOPLV, c.topLv || '') + '</label>';
+    /* 攻め度：受け攻めが「おまかせ」「リバ」のときだけ選べる（攻め・受けを選んだ人は薄くして選べなくする。値は消さない）。2026-10-27 担当HK */
+    out += '<label' + (tl.on ? '' : ' class="gdis"') + ' title="受け攻めが「おまかせ」か「リバ」の人どうしのように、向きがどちらにもなりうる組で、数字の高い方が攻めに回ります。攻め・受けを自分で選んだ人には効きません（相手ごとに攻め・受けを決めた相手にも効きません）。同じ数字なら、これまでどおり気質で決まります">攻め度 ' + h.selOf('at_topLv', A.TOPLV, c.topLv || '', tl.on ? '' : ' disabled aria-disabled="true"') + '</label>' +
+      (tl.note ? '<span class="gearhint gnote" data-note="topLv">' + h.esc(tl.note) + '</span>' : '');
     return out;
   };
+  /* 攻め度が効くか（2026-10-27 担当HK）：全体の受け攻めが「おまかせ」「リバ」のときだけ効く。相手ごとに攻め・受けを決めた相手には効かず、
+     相手ごとに「リバ」にした相手には（全体が攻め・受けでも）効く。{ on: 選べるか, note: 欄に添える注記（なければ ''） } */
+  A.topLvState = function (c, byId) {
+    var fixed = [], riba = [], pf = (c && c.posFor) || {};
+    Object.keys(pf).forEach(function (id) {
+      var v = posv(pf[id]), o = byId ? byId(id) : null;
+      if (byId && !o) return;
+      if (v === 'top' || v === 'bottom') fixed.push(o ? o.name : ''); else if (v === 'riba') riba.push(o ? o.name : '');
+    });
+    var nm = function (l, d) { l = l.filter(Boolean); return l.length ? l.join('・') : d; };
+    if (c && c.pos && c.pos !== 'riba') {
+      if (!riba.length) return { on: false, note: '攻め・受けを自分で選んだ人には効きません（受け攻めを「おまかせ」か「リバ」にすると選べます）' };
+      return { on: true, note: '全体では' + PLAB[c.pos] + 'なので、相手ごとに「リバ」にした' + nm(riba, '相手') + 'との組にだけ効きます' };
+    }
+    return { on: true, note: fixed.length ? '相手ごとに攻め・受けを決めた' + nm(fixed, '相手') + 'には効きません' : '' };
+  };
+  /* 性欲の強さ「なし」（R18版）のとき、合意のある夜に効く欄を暗くする（値は消さず、操作もできる。合意のない展開の場面には効くため）。2026-10-27 担当HK */
+  A.libDim = function (c) { return !HK.SAFE_ON && c && c.libido === 'none' ? ' class="gdim"' : ''; };
   /* 「相手ごとの設定」の行に並べる欄（ui-gear.js）：この相手への受け攻め（posFor）と、R18版だけ夜の性格（nightFor） */
   A.forHtml = function (c, o, h) {
     var esc = h.esc, pv = (c.posFor || {})[o.id] || '';
     var out = '<label title="この相手との恋愛・夜の場面での向きだけを変えます。おまかせなら、恋愛と夜の節の受け攻めに従います（ほかの相手・モブには全体の受け攻めのまま）">受け攻め <select data-gf="at_pf" data-o="' + esc(o.id) + '" aria-label="' + esc(o.name) + 'への受け攻め">' + A.POSFOR.map(function (x) { return h.opt(x[0], x[1], pv); }).join('') + '</select></label>';
     /* r18:begin */
-    if (!HK.SAFE_ON) out += '<label title="この相手との夜の場面での振る舞い。「全体と同じ」なら、恋愛と夜の節の夜の性格のまま">夜の性格 <select data-gf="at_nf" data-o="' + esc(o.id) + '" aria-label="' + esc(o.name) + 'への夜の性格">' + A.NIGHT.map(function (x) { return h.opt(x[0], x[0] ? x[1] : '全体と同じ', (c.nightFor || {})[o.id] || ''); }).join('') + '</select></label>';
+    if (!HK.SAFE_ON) out += '<label' + A.libDim(c) + ' title="この相手との夜の場面での振る舞い。「全体と同じ」なら、恋愛と夜の節の夜の性格のまま">夜の性格 <select data-gf="at_nf" data-o="' + esc(o.id) + '" aria-label="' + esc(o.name) + 'への夜の性格">' + A.NIGHT.map(function (x) { return h.opt(x[0], x[0] ? x[1] : '全体と同じ', (c.nightFor || {})[o.id] || ''); }).join('') + '</select></label>';
     /* r18:end */
     return out;
+  };
+  /* 「相手ごとの設定」の行の同一人物・闇堕ちVer（2026-10-27 担当HK。以前は「体と設定」の選択欄。値は c.same＝相手の id・c.sameDark のまま）。
+     同一人物は一人だけ：別の相手に印を付けると、前の相手から外す（A.gearField の same） */
+  var SAME_TIP = '別の世界・別の時間の同じ人として扱います。鏡を見るような場面が起き、恋人などにならなければ、結果の関係名は「もう一人の自分」になります。恋愛対象・受け攻めが合えば、恋愛もありえます（避けるなら「恋愛・R18にしない相手」に印を付けます）';
+  var DARK_TIP = '同一人物の相手を苛む、闇に堕ちた自分。エゴグラムの欠点が際立ち、愛憎より悪質に振る舞います。いまは出られない部屋だけで効きます';
+  A.sameForHtml = function (c, o, h) {
+    var esc = h.esc, on = c.same === o.id, tip = HK.SAFE_ON ? SAME_TIP.replace('恋愛・R18にしない相手', '恋愛にしない相手') : SAME_TIP;
+    var out = '<label title="' + esc(tip) + '"><input type="checkbox" data-gf="at_sameC" data-o="' + esc(o.id) + '"' + (on ? ' checked' : '') + '> 同一人物（別の世界・別の時間の自分）</label>';
+    if (on) out += '<label title="' + esc(DARK_TIP) + '"><input type="checkbox" data-gf="at_sameDark"' + (c.sameDark ? ' checked' : '') + '> ' + esc(c.name) + 'が闇堕ちVer</label>';
+    return out;
+  };
+  /* 同一人物の行の説明（印を付けた相手・相手の側だけが付けている相手）。なければ '' */
+  A.sameNote = function (c, o) {
+    if (c.same === o.id) return '同一人物：' + (HK.SAFE_ON ? SAME_TIP.replace('恋愛・R18にしない相手', '恋愛にしない相手') : SAME_TIP) + '。闇堕ちVer：' + DARK_TIP + '。';
+    if (o.same === c.id) return o.name + 'の設定では、' + c.name + 'と同一人物になっています（' + c.name + 'の側は' + (c.same ? '別の人と同一人物' : '付けていません') + '）';
+    return '';
   };
   /* 相手ごとの受け攻めの注意（全体の指定と食い違うとき・二人の向きが決まらないとき）。何もなければ '' */
   var PLAB = { top: '攻め', bottom: '受け', riba: 'リバ' };
@@ -401,13 +432,15 @@
     if (k === 'pf') { c.posFor = c.posFor || {}; var pv = posv(t.value); if (pv) c.posFor[t.dataset.o] = pv; else delete c.posFor[t.dataset.o]; changed(true); return true; }
     if (k === 'sameDark') { c.sameDark = !!(t.checked && c.same); changed(true); return true; }
     if (k === 'nf') { c.nightFor = c.nightFor || {}; var v = val(A.NIGHT, t.value); if (v) c.nightFor[t.dataset.o] = v; else delete c.nightFor[t.dataset.o]; changed(false); return true; }
-    if (k === 'same') {
-      var old = c.same && byId(c.same), o = t.value && byId(t.value);
+    if (k === 'same' || k === 'sameC') {
+      /* sameC：相手ごとの設定の行のチェック（印を外したら、その相手と同一人物でなくする） */
+      var sv = k === 'same' ? t.value : t.checked ? t.dataset.o : c.same === t.dataset.o ? '' : c.same;
+      var old = c.same && byId(c.same), o = sv && byId(sv);
       if (old && old.same === c.id && old !== o) { old.same = ''; old.sameDark = false; }
       if (o && o.same && o.same !== c.id) { var o2 = byId(o.same); if (o2 && o2.same === o.id) { o2.same = ''; o2.sameDark = false; } }
       c.same = o ? o.id : '';
       if (!o) c.sameDark = false;
-      if (o) o.same = c.id;
+      if (o && o !== c) o.same = c.id;
       changed(true); return true;
     }
     return true;
@@ -427,7 +460,7 @@
       '<label title="恋人・夫婦がいる間の台詞の一人称。恋人になった時点から変わり、別れたら元に戻ります。空なら変えません。怒ったときの一人称・相手ごとの一人称が優先します">恋人になってからの一人称 <input type="text" data-gf="at_fpLover" value="' + esc(word(c.fpLover)) + '" maxlength="8" list="hk-fp-opts" placeholder="変えない" aria-label="恋人になってからの一人称" style="width:5em"></label></div>';
   };
   /* 相手ごとの二人称・一人称・受け攻め・夜の性格を決めてある相手か（関係がなくても、相手の行を出す） */
-  A.hasVoiceFor = function (c, id) { return !!((c.youFor && c.youFor[id]) || (c.fpFor && c.fpFor[id]) || (c.posFor && c.posFor[id]) || (c.nightFor && c.nightFor[id])); };
+  A.hasVoiceFor = function (c, id) { return !!(c.same === id || (c.youFor && c.youFor[id]) || (c.fpFor && c.fpFor[id]) || (c.posFor && c.posFor[id]) || (c.nightFor && c.nightFor[id])); };
   function lists() {
     if (typeof document === 'undefined' || !document.body) return;
     [['hk-you-opts', A.YOU_OPTS], ['hk-fp-opts', A.FP_OPTS]].forEach(function (x) {

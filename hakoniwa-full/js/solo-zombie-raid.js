@@ -1,5 +1,6 @@
 /* 箱庭シミュレーター: ゾンビの街（R18版のみ）― 略奪者に襲われて犯される／周りの反応
-   ・略奪者と出くわしたとき、まれに一人が犯される展開になる（襲われる人が「攻め」指定でないとき・「恋人たちの夜」が描かないでないとき）
+   ・略奪者と出くわしたとき（一度出会った略奪者が戻ってきたときも）、一人が犯される展開になることがある（襲われる人が Z.Cover.inv の人・夜の描写が描かないでないとき。
+     起きやすさは環境値 zraid（なし／ふつう／多い）。Z.raidTry。2026-10-27：1回の箱庭で1件も見られないことが多かったのを、ふつうで1件ほどに）
    ・分かれ方はゾンビに襲われたとき（zombie-assault.js）とそろえる：
        一人きり … 略奪者は群れの気配に逃げていく（身分証や写真を奪っていく）／口封じに殺される
        仲間がいる … 助け出す（略奪者は身分証や写真を奪って逃げる）／助けに入った人が撃たれ・殴られる／銃口の前で見ているしかない
@@ -18,8 +19,9 @@
   /* 略奪者に襲われる出来事・ゾンビの性欲（R18版だけの設定。どちらも内容のスイッチ「合意のない展開」が入のときだけ起きる）
      ※ Z.Cover（下）は solo-zombie-love.js・zombie-assault.js から実行時に呼ぶ */
   if (!HK.SAFE_ON && !Z.scen.env.some(function (e) { return e.id === 'zraid'; })) {
-    Z.scen.env.push({ id: 'zraid', label: '略奪者に襲われる出来事', type: 'select', def: 'on', options: [{ v: 'on', label: 'あり' }, { v: 'off', label: 'なし' }], desc: '略奪者に性的に襲われる展開（内容のスイッチの「合意のない展開」も入にしたときだけ）。居合わせた仲間が庇いに入ると、殴られる・身代わりを申し出る・巻き込まれる・縛られて見せられる、に分かれる（巻き込まれるのは「攻め」指定・性行為の相手の固定・R18に参加しない人以外）' });
-    Z.scen.env.push({ id: 'zlust', label: 'ゾンビの性欲', min: 0, max: 100, def: 50, lo: '襲うだけ', hi: '飢えている', desc: 'ゾンビに性的に襲われる展開の起きやすさ（内容のスイッチの「合意のない展開」も入にしたときだけ）' });
+    /* zraid は 3段階（2026-10-27）：off なし／on ふつう（既定。前の「あり」と同じ値なので、保存した設定はそのまま「ふつう」になる）／many 多い */
+    Z.scen.env.push({ id: 'zraid', label: '略奪者に襲われる出来事', type: 'select', def: 'on', options: [{ v: 'off', label: 'なし' }, { v: 'on', label: 'ふつう（1回の箱庭で1件ほど）' }, { v: 'many', label: '多い（略奪者が何度も現れる）' }], desc: '略奪者に性的に襲われる展開（内容のスイッチの「合意のない展開」も入にしたときだけ）。略奪者は一度出会ったあとも、ときどき戻ってきて仲間を襲う（「多い」なら出没そのものも増える）。居合わせた仲間が庇いに入ると、殴られる・身代わりを申し出る・巻き込まれる・縛られて見せられる、に分かれる（巻き込まれるのは「攻め」指定・性行為の相手の固定・R18に参加しない人以外）。見やすくするには、「多い」・展開の重さ「重い」・受けに回れる人（受け・おまかせ。モブ相手の受け攻めを受けに）を増やす' });
+    Z.scen.env.push({ id: 'zlust', label: 'ゾンビの性欲', min: 0, max: 100, def: 50, lo: '襲うだけ（起きない）', hi: '飢えている', desc: 'ゾンビの群れに性的に襲われる展開の起きやすさ（内容のスイッチの「合意のない展開」も入にしたときだけ）。0 なら起きず、50（既定）で1回の箱庭に1〜2件、100 で2〜3件ほど。展開の重さ「重い」でさらに増える。襲われるのは「攻め」指定・性行為の相手の固定・R18に参加しない人以外で、同じ人ばかりにならないよう回る' });
   }
   function L(s) { return s.split('|'); }
   /* 「＠……」は住人以外（略奪者）の台詞。口調を変えないよう、見えない印（U+2060）に置き換える */
@@ -436,10 +438,10 @@
       if (rng() < 0.78 + ctx.stat(v, 'luck') * 0.02) {
         drain(8);
         var tt = t + body() + photo() + fill(ctx.pick(RT.flee), m) + fill(ctx.pick(RT.after), m) + TL.line(v, 'RAID_SELF');
-        if (v.hp <= 0) { ctx.kill(v, null, n.label + 'たちに犯され、そのまま動けなくなって'); return { with: actors, text: tt, why: why + '――体がもたなかった', mag: 56 }; }
+        if (v.hp <= 0) { ctx.kill(v, null, n.label + 'たちに襲われ、そのまま動けなくなって'); return { with: actors, text: tt, why: why + '――体がもたなかった', mag: 56 }; }
         return { with: actors, text: tt, why: why + '――略奪者たちは、群れの気配に逃げていった。' + v.name + 'の体力と心が、大きくすり減った' + (v.flags.raidPhoto ? '（身分証や写真を奪われた）' : ''), mag: 50 };
       }
-      ctx.kill(v, null, n.label + 'たちに犯され、口封じに殺された');
+      ctx.kill(v, null, n.label + 'たちに襲われ、口封じに殺された');
       return { with: actors, text: t + body() + fill(ctx.pick(RT.kill), m), why: why + '（その場に、誰もいなかった）――口封じに殺された', mag: 58 };
     }
     var shock = Z.loverShock ? Z.loverShock(ctx, v, L0, here, true) : '';
@@ -470,16 +472,64 @@
     drain(10);
     mates.forEach(function (x) { if (!hate(ctx, x, v)) { ctx.stress(x, 25); x.flags.guilt = v.i; } });
     if (rng() < 0.18 + (n.gun ? 0.08 : 0)) {
-      ctx.kill(v, null, n.label + 'たちに、仲間の前で犯され、口封じに殺された');
+      ctx.kill(v, null, n.label + 'たちに、仲間の前で襲われ、口封じに殺された');
       return { with: sa, text: t + shock + fill(ctx.pick(RT.abandon), m) + body() + fill(ctx.pick(RT.kill), m), why: why + '――仲間は、銃口の前で動けなかった' + (here ? '（恋人の' + L0.name + 'の目の前で）' : ''), mag: 60 };
     }
     return { with: sa, text: t + shock + fill(ctx.pick(RT.abandon), m) + body() + photo() + fill(ctx.pick(RT.flee), m) + tail(), why: why + '――仲間は、銃口の前で見ているしかなかった' + (here ? '（恋人の' + L0.name + 'の目の前で）' : '') + '。' + v.name + 'の体力と心が、大きくすり減った', mag: 56 };
   };
 
+  /* ---------- 略奪者の出没（2026-10-27：1回の箱庭で1件も見られないことが多かったのを直す） ----------
+     ・Z.raidLv：環境値 zraid の段階（0 なし／1 ふつう（既定。前の「あり」）／2 多い）
+     ・Z.raidOk：起きてよいか（全年齢モードでない・zraid がなしでない・夜の描写が描かないでない・内容のスイッチ「合意のない展開」が入）。偽なら乱数を引かない
+     ・Z.raidTry：略奪者 n と居合わせた P のうち一人が襲われる（出会ったとき zombie-npc.js の looter.meet と、戻ってきたとき下の after から呼ぶ）。
+       襲われるのは CV.inv の人（「攻め」指定・性行為の相手の固定・R18に参加しない人・モブとの場面に出ない人・性器なしの人以外）。
+       同じ人ばかりにならないよう、襲われた回数で重みを下げ、襲われてから4区切りは外す。起きたら真 */
+  Z.raidLv = function (ctx) { var v = ctx.env.zraid; return v === 'off' ? 0 : v === 'many' ? 2 : 1; };
+  Z.raidOk = function (ctx) { return !HK.SAFE_ON && Z.raidLv(ctx) > 0 && Z.loveLv(ctx) !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')); };
+  var RAID_P = [0, 0.65, 0.85];
+  Z.raidTry = function (ctx, n, P, lead) {
+    var rng = ctx.rng;
+    if (!Z.raidOk(ctx) || !(rng() < Math.min(0.95, RAID_P[Z.raidLv(ctx)] * HK.Dark.pick(ctx, 1, 1, 1.35)))) return false;
+    var vs = P.filter(function (c) { return alive(c) && CV.inv(c) && !(c.z.raidAt != null && ctx.stepIndex - c.z.raidAt < 4); });
+    if (!vs.length) return false;
+    var v = HK.weighted(rng, vs, function (c) { return (1 + (1 - c.tr.cp) * 0.6 + (c.hp < 50 ? 0.4 : 0)) / (1 + (c.z.raidN || 0) * 1.5); });
+    v.z.raidN = (v.z.raidN || 0) + 1;
+    P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 1); });
+    v.flags.mobHit = { at: ctx.stepIndex, by: n.label || '略奪者' };
+    var ra = Z.raiderAssault(ctx, v, P.filter(function (c) { return c !== v; }), n);
+    ctx.act2({ actors: ra.with, cat: 'betray', text: (lead || '') + ra.text, why: (lead ? '一度出会った' + n.label + 'たちが、戻ってきた――' : '') + ra.why, mag: ra.mag, lewd: true });
+    return true;
+  };
+  /* 戻ってくる略奪者：出会ったあとも、区切りごとにときどき、住人のいるエリアに現れる（ふつう 2割・3回まで／多い 3割・4回まで）。
+     襲う展開にならなければ、食料を奪って去る。生きている略奪者がいないときは、新しい略奪者も現れる（ふつう 12%・2日目から／多い 25%・初日の夕方から） */
+  var BACK = L('{n}たちが、また現れた。男たちの目が、品定めするように{m}を見回した。|聞き覚えのある笑い声がした。前に出くわした{n}たちが、{area}の物陰から姿を見せた。|「＠よう、また会ったな」――{n}たちが、{area}の出口を塞ぐように立っていた。');
+  var ROB = L('{n}たちは{m}の荷物をひっくり返し、食料を奪って去っていった。「＠次は、これじゃ済まねえぞ」|{n}たちは、睨みつける{m}を鼻で笑い、缶詰を抱えて引き上げていった。');
+  function raidBack(ctx) {
+    var zb = ctx.zb, rng = ctx.rng, lvR = Z.raidLv(ctx);
+    zb.npcs.forEach(function (n) {
+      if (n.type !== 'looter' || !n.alive || !n.met || (n.back || 0) >= (lvR === 2 ? 4 : 3)) return;
+      if (rng() >= (lvR === 2 ? 0.3 : 0.2)) return;
+      var who = ctx.present().filter(function (c) { return alive(c) && !c.z.alone; });
+      if (!who.length) return;
+      var area = rng.pick(who).z.area, P = Z.inArea(ctx, area);
+      if (!P.length) return;
+      n.back = (n.back || 0) + 1; n.area = area;
+      var mp = { n: n.label, m: Z.names(P), area: Z.an(ctx, area) };
+      if (Z.raidTry(ctx, n, P, fill(ctx.pick(BACK), mp))) return;
+      P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 1); ctx.stress(c, 8); });
+      ctx.act2({ actors: P, cat: 'conflict', text: fill(ctx.pick(BACK), mp) + fill(ctx.pick(ROB), mp), why: '一度出会った' + n.label + 'たちが、戻ってきた（略奪者に襲われる出来事：' + (lvR === 2 ? '多い' : 'ふつう') + '）', mag: 18 });
+    });
+    if (ctx.stepIndex >= (lvR === 2 ? 2 : 4) && Z.spawnNPCAt && !zb.npcs.some(function (n) { return n.type === 'looter' && n.alive; }) && rng() < (lvR === 2 ? 0.25 : 0.12)) {
+      var occ = ctx.present().filter(function (c) { return alive(c); });
+      if (occ.length) Z.spawnNPCAt(ctx, 'looter', rng.pick(occ).z.area);
+    }
+  }
+
   /* 写真や身分証を奪われた人は、あとでそれを思い知らされる（2日ほどあと、一度だけ） */
   var after0 = Z.scen.after;
   Z.scen.after = function (ctx, s, n) {
     if (after0) after0.apply(this, arguments);
+    if (ctx.zb && Z.raidOk(ctx)) raidBack(ctx);
     ctx.present().forEach(function (c) {
       if (!c.flags.raidPhoto || c.flags.raidLater || ctx.stepIndex - (c.z.raidAt || 0) < 8 || ctx.rng() > 0.35) return;
       c.flags.raidLater = true;

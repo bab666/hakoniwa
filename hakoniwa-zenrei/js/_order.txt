@@ -182,6 +182,7 @@ js/pair-name.js @scen:whiteroom
 js/pos.js
 js/attr.js
 js/attr-height.js
+js/attr-yomi.js
 js/food.js
 js/special.js
 js/zombie-special.js @scen:zombie

@@ -285,7 +285,13 @@
       if ((alpha || top) && !(Q && Q.genSet && Q.genSet(p) && !hasM(p))) p.omA = true;
     });
     var base = function (here) { return { env: env, people: people, here: here, used: used, scen: scen }; };
+    /* 性器の呼び方を「直接的」「医学的」・自由記入にした人：性的な場面の地の文で、印でなく直に書いた婉曲の語（「名前のもの」「名前の昂り」など）も
+       その人の {男性器} の印に直して、選んだ呼び方にする（2026-10-27 担当HM。持ち物の言い方「名前のものになった」「名前のものだ」は除く） */
+    var rawM = people.filter(function (p) { return p.name && hasM(p) && (p.partWords === 'direct' || p.partWords === 'medical' || p.partM); }).map(function (p) {
+      return new RegExp('(' + esc(p.name) + ')の(?:もの|モノ|昂り|昂ぶり|熱いもの)(?=が|を|は|で(?!は|す)|も|の先|に(?!な|し|す))', 'g');
+    });
     (res.log || []).forEach(function (e) {
+      if (rawM.length && e && e.lewd === true && typeof e.text === 'string') rawM.forEach(function (re) { re.lastIndex = 0; e.text = e.text.replace(re, '$1の{男性器}'); });
       if (!e || typeof e.text !== 'string' || e.text.indexOf('{') < 0) return;
       /* 持ち主の推し量りに使う：相手のモブの体（e.npcG）・本文・台詞の区分（e._sq） */
       var cx = base(hereOf(e, people));

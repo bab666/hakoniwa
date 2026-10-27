@@ -214,7 +214,7 @@
       /* ときどき、襲われてから喰い殺されるまでを一続きで書いた文（R18版の solo-zombie-love.js の CURE_R18・CURE_R18_FADE） */
       var whole = sexual && Z.CURE_R18 && rng() < 0.35 ? (lv === 'high' ? Z.CURE_R18 : Z.CURE_R18_FADE) : null;
       ctx.act2({ actors: [c, o], cat: 'death', text: head + (whole ? fill(ctx.pick(T.grab), mm) + fill(ctx.pick(whole), mm) : body + fill(ctx.pick(sexual ? (lv === 'high' ? T.dieSex : T.dieFade) : T.eaten), mm)), why: whyH + '（その場に、誰もいなかった）', mag: 60, lewd: sexual });
-      ctx.kill(c, null, sexual ? '治療薬で怪物になった' + o.name + 'に、犯されながら喰い殺された' : '治療薬で怪物になった' + o.name + 'に喰われた');
+      ctx.kill(c, null, sexual ? '治療薬で怪物になった' + o.name + 'に襲われ、喰い殺された' : '治療薬で怪物になった' + o.name + 'に喰われた');
       return;
     }
     var actors = [c, o].concat(mates);
@@ -237,7 +237,7 @@
       var vic = ctx.most(mates, function (x) { return x.tr.np + x.tr.impulse * 0.5; });
       var body2 = sexual && sexOK(vic) ? Z.cureAssault(ctx, vic, o, mates.filter(function (x) { return x !== vic; }).concat([]), lv, { second: true, first: c }) : '';
       ctx.act2({ actors: actors, cat: 'death', text: head + body + fill(ctx.pick(T.caught), { a: c.name, b: o.name, m: vic.name }) + body2 + fill(ctx.pick(sexual ? (lv === 'high' ? T.dieSex : T.dieFade) : T.eaten), mm), why: whyH + '――助けに入った' + vic.name + 'も巻き込まれた', mag: 64, lewd: sexual });
-      ctx.kill(c, null, sexual ? '治療薬で怪物になった' + o.name + 'に、仲間の前で犯されながら喰い殺された' : '治療薬で怪物になった' + o.name + 'に喰われた');
+      ctx.kill(c, null, sexual ? '治療薬で怪物になった' + o.name + 'に、仲間の前で襲われ、喰い殺された' : '治療薬で怪物になった' + o.name + 'に喰われた');
       vic.hp -= 45 + rng.int(30); ctx.stress(vic, 40);
       if (vic.hp <= 0 || rng() < 0.5) ctx.kill(vic, null, c.name + 'を助けに入り、怪物になった' + o.name + 'に' + (sexual ? '捕まって' : '') + '喰われた');
       return;
@@ -245,7 +245,7 @@
     /* 仲間は逃げるしかなかった */
     mates.forEach(function (x) { ctx.stress(x, 30); x.flags.grief = c.i; });
     ctx.act2({ actors: actors, cat: 'death', text: head + body + fill(ctx.pick(T.abandon), mm) + fill(ctx.pick(sexual ? (lv === 'high' ? T.dieSex : T.dieFade) : T.eaten), mm), why: whyH + '――仲間は、助けられなかった', mag: 62, lewd: sexual });
-    ctx.kill(c, null, sexual ? '治療薬で怪物になった' + o.name + 'に、仲間の前で犯されながら喰い殺された' : '治療薬で怪物になった' + o.name + 'に、仲間の前で喰われた');
+    ctx.kill(c, null, sexual ? '治療薬で怪物になった' + o.name + 'に、仲間の前で襲われ、喰い殺された' : '治療薬で怪物になった' + o.name + 'に、仲間の前で喰われた');
     mates.forEach(function (x) { var na = rng.pick(Z.adj(x.z.area)); x.z.area = na; x.z.path.push(na); });
   }
 

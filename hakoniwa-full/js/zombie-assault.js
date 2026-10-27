@@ -44,25 +44,31 @@
     });
   }
 
-  /* ゾンビに襲われ、犯される。z_trouble の「咬まれる」かわりに、まれに起きる。返り値は出来事の結果 */
-  Z.zombieAssault = function (ctx, v, mates, A) {
+  /* ゾンビに襲われ、犯される。z_trouble の「咬まれる」かわりに、まれに起きる。返り値は出来事の結果
+     o（省略可。ゾンビの性欲の出来事 z_lust から）：live＝助かる見込みに足す値、sated＝一人きりのとき、咬まれずに群れが離れていく文（live の確率） */
+  Z.zombieAssault = function (ctx, v, mates, A, o) {
     var rng = ctx.rng, X = Z.ZA_TEXT, lv = Z.loveLv(ctx) === 'high' ? 'high' : 'fade';
     var L0 = Z.loverOf(ctx, v, null, mates), here = L0 && mates.indexOf(L0) >= 0;
     var pow = mates.reduce(function (s0, x) { return s0 + (x.weapon ? x.weapon.pow : 0); }, 0);
     var brave = mates.reduce(function (s0, x) { return Math.max(s0, x.tr.np * 0.5 + x.tr.cp * 0.3 + x.tr.aggr * 0.3); }, 0);
     var save = Math.min(0.85, 0.1 + ctx.stat(v, 'luck') * 0.03 + mates.length * 0.17 + pow * 0.02 + brave * 0.2 + (here ? 0.15 : 0));
+    if (o && o.live) save = Math.min(0.9, save + o.live);
     var m = { a: v.name, area: A.name, m: mates.length ? Z.names(mates.slice(0, 2)) : '', L: L0 ? L0.name : '' };
     var t = X.body(ctx, v, mates, lv, L0) + Z.loverShock(ctx, v, L0, here, true);
     var why = A.name + 'で、ゾンビの群れに押し倒された（' + v.name + 'は攻め指定ではない）';
     var actors = [v].concat(mates);
     ctx.stress(v, 40);
     if (!mates.length) {
+      if (o && o.sated && rng() < o.live) {
+        v.hp = Math.max(1, v.hp - 15);
+        return { with: actors, text: t + fill(ctx.pick(o.sated), m), why: why + '――一人きりだったが、群れは興味を失ったように離れていった（咬まれずに済んだ）', mag: 50 };
+      }
       if (rng() < 0.3 + ctx.stat(v, 'luck') * 0.03) {
         v.hp -= 30; Z.infect(ctx, v, null, true);
         loverNews(ctx, v, null, true);
         return { with: actors, text: t + fill(ctx.pick(X.crawl), m), why: why + '――一人きりで、どうにか這い出した。だが、咬まれていた', mag: 50 };
       }
-      ctx.kill(v, null, 'ゾンビの群れに、犯されながら喰い殺された');
+      ctx.kill(v, null, 'ゾンビの群れに押し倒され、喰い殺された');
       Z.loversOf(ctx, v).forEach(function (o) { loverNews(ctx, v, o, false); });
       return { with: actors, text: t + fill(ctx.pick(lv === 'high' ? X.die : X.dieFade), m), why: why + '（その場に、誰もいなかった）', mag: 58 };
     }
@@ -84,14 +90,43 @@
       /* 助けに入った人を押さえつけるのは、巻き込まれてよい人だけ（「攻め」指定・性行為の相手の固定・R18に参加しない人は、殴り倒して下がるが咬まれる） */
       var top = !!X.caughtTop && (X.inv ? !X.inv(vic) : !!(HK.Pos && HK.Pos.hardTopNpc(vic)));
       var t2 = t + fill(ctx.pick(top ? X.caughtTop : X.caught), { a: v.name, m: vic.name }) + fill(ctx.pick(lv === 'high' ? X.die : X.dieFade), m);
-      ctx.kill(v, null, 'ゾンビの群れに、仲間の前で犯されながら喰い殺された');
+      ctx.kill(v, null, 'ゾンビの群れに押し倒され、仲間の前で喰い殺された');
       vic.hp -= 40 + rng.int(25); ctx.stress(vic, 40);
       if (vic.hp <= 0) ctx.kill(vic, null, v.name + 'を助けに入り、ゾンビの群れに喰われた');
       else Z.infect(ctx, vic, null, true);
       return { with: actors, text: t2, why: why + '――助けに入った' + vic.name + 'も巻き込まれた', mag: 60 };
     }
     mates.forEach(function (x) { ctx.stress(x, 30); x.flags.grief = v.i; var na = rng.pick(Z.adj(x.z.area)); x.z.area = na; x.z.path.push(na); });
-    ctx.kill(v, null, 'ゾンビの群れに、仲間の前で犯されながら喰い殺された');
+    ctx.kill(v, null, 'ゾンビの群れに押し倒され、仲間の前で喰い殺された');
     return { with: actors, text: t + fill(ctx.pick(X.abandon), m) + fill(ctx.pick(lv === 'high' ? X.die : X.dieFade), m), why: why + '――仲間は、助けられなかった' + (here ? '（恋人の' + L0.name + 'の目の前で）' : ''), mag: 60 };
   };
+
+  /* r18:begin */
+  /* ゾンビの性欲（環境値 zlust。R18版の solo-zombie-raid.js が足す）：日常の遭遇で、群れに押し倒される（2026-10-27）。
+     z_trouble の「咬まれる」かわりの分かれ（まれ）とは別に、性欲の高さに比例して起きる（0 なら起きない。50 で1回の箱庭に1〜2件、100 で2〜3件ほど）。
+     起きるのは、内容のスイッチ「合意のない展開」が入・夜の描写が「描かない」でない・襲われる人が Z.Cover.inv（「攻め」指定・性行為の相手の固定・R18に参加しない人・モブとの場面に出ない人・性器なしの人以外）のとき。
+     同じ人ばかりにならないよう、襲われた回数で重みを下げ、襲われてから6区切りは外す。群れが「襲うより先に欲を満たす」ので、ふだんの分かれより助かりやすい（live） */
+  var LUST = {
+    lead: L('{area}の路地で、{a}は腐臭に気づくのが遅れた。振り向いたときには、もう何本もの腕に服を掴まれていた。|{a}が{area}の物陰で息を整えていると、暗がりから呻き声の群れが這い寄ってきた。いつもの群れとは、どこか様子が違った。|{area}を抜ける途中、{a}は瓦礫に足を取られて転んだ。群れは、喰らいつくより先に、{a}の体にのしかかってきた。|{area}で、ゾンビたちは{a}を取り囲んだまま、なぜかすぐには咬みつかなかった。濁った目が、{a}の体を舐めるように見ていた。'),
+    leadM: L('{area}で、群れが一行の列に割り込んできた。{m}が武器を構えるより早く、{a}だけが群れの中へ引きずり込まれた。|{area}の暗がりで、{a}は{m}から数歩だけ離れた。その数歩のあいだに、群れの腕が{a}の足首を掴んでいた。|{area}を走って抜ける途中、{a}が一人だけ遅れた。群れは、遅れた{a}に一斉に群がった。'),
+    sated: L('――群れは、満ち足りたように動きを緩め、一体、また一体と{a}から離れていった。{a}は咬み跡のない自分の腕を、信じられない思いで見つめた。|――どれくらい経ったのか分からない。群れは興味を失ったように、呻き声を引きずって去っていった。{a}は這って物陰に転がり込み、朝まで震えていた。|――遠くでガラスの割れる音がした。群れは一斉にそちらへ顔を向け、{a}を置き去りにして流れていった。{a}は、どこも咬まれてはいなかった。')
+  };
+  function lustOf(ctx) { var v = ctx.env.zlust; return v == null || v === '' ? 50 : +v; }
+  HK.addTo(Z.scen.events, {
+    id: 'z_lust', cat: 'combat', scope: 'solo', dk: 'harm', noOdd: true,
+    when: function (ctx, a) {
+      return !!(Z.ZA_TEXT && Z.Cover && ctx.zb) && lustOf(ctx) > 0 && !a.out && !a.z.alone && ctx.zb.A[a.z.area].z > 8 && Z.loveLv(ctx) !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) &&
+        Z.Cover.inv(a) && !(a.z.zaAt != null && ctx.stepIndex - a.z.zaAt < 6);
+    },
+    w: function (ctx, a) { var A = ctx.zb.A[a.z.area]; return 0.8 * Math.pow(lustOf(ctx) / 50, 1.4) * (0.5 + A.z / 100) / (1 + (a.z.zaN || 0) * 1.5); },
+    run: function (ctx, a) {
+      var A = ctx.zb.A[a.z.area], mates = Z.here(ctx, a).filter(function (o) { return o.alive && !o.out; });
+      a.z.zaAt = ctx.stepIndex; a.z.zaN = (a.z.zaN || 0) + 1; a.z.zassault = true;
+      a.flags.mobHit = { at: ctx.stepIndex, by: 'ゾンビ' };
+      var t = fill(ctx.pick(mates.length ? LUST.leadM : LUST.lead), { a: a.name, area: A.name, m: mates.length ? Z.names(mates.slice(0, 2)) : '' });
+      var ra = Z.zombieAssault(ctx, a, mates, A, { live: 0.25, sated: LUST.sated });
+      return { with: ra.with, text: t + ra.text, why: 'ゾンビの性欲（' + lustOf(ctx) + '）／' + ra.why, mag: ra.mag, lewd: true };
+    }
+  });
+  /* r18:end */
 })();

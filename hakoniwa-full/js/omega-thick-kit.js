@@ -622,7 +622,8 @@
       /* 体の組み合わせの一文：住人の体格・種族（attr.js。何も決めていなければ空） */
       var paras = [p0];
       if (o.fore) { var fpl = Array.isArray(o.fore) ? o.fore : forePool(T, U, kd, o); if (fpl && fpl.length) { var ftx = fresh(fpl); paras.push(ftx + foreBridge(ftx, kd, mid)); } }
-      paras.push(mid + (HK.Attr ? HK.Attr.pairLine(T, U, 'hold', pk) : '') + (tp.mid && !TQ.test(mid) ? '\n\n' + tp.mid : ''));
+      /* 抱き方の一文（体格・身長の差・体の特徴）。それが無ければ胸の一文（attr-r18.js の bustLine。決めていなければ乱数を使わずに ''。2026-10-27 担当HM） */
+      paras.push(mid + (HK.Attr ? HK.Attr.pairLine(T, U, 'hold', pk) || (HK.Attr.bustLine ? HK.Attr.bustLine(T, U, pk) : '') : '') + (tp.mid && !TQ.test(mid) ? '\n\n' + tp.mid : ''));
       var mi = paras.length - 1;
       (o.extra || []).forEach(function (x) { if (x) paras.push(x); });
       if (dp >= 3) {

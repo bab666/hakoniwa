@@ -270,7 +270,8 @@
     var blank = !/\S/.test(open0);
     out.push(blank ? open0 : open0 + (sl.start ? tsay('start') : ''));
     /* 前戯で挿れた指を抜いてから繋がる（thick-sex.js の T.fingerOut。2026-10-26 順146） */
-    out.push((blank && sl.start ? tsay('start') : '') + fore + (sl.fore ? tsay('fore') : '') + (TS && TS.fingerOut ? TS.fingerOut(fore, body, mode, true) : ''));
+    /* 体格・身長の差・胸・体の特徴の一文（attr.js の pairLine。thick-sex.js の体の感触の段と同じ。何も決めていなければ乱数を使わずに ''。2026-10-27 担当HM） */
+    out.push((blank && sl.start ? tsay('start') : '') + fore + (sl.fore ? tsay('fore') : '') + (TS && TS.fingerOut ? TS.fingerOut(fore, body, mode, true) : '') + (HK.Attr && HK.Attr.pairLine ? HK.Attr.pairLine(a, b, 'touch', pick, opt.S) : ''));
     out.push((sl.in ? tsay('in') : '') + body);
     out.push(ntx + fea);
     out.push((sl.peak ? tsay('peak') : '') + cl + (sl.after ? '\n\n' + tsay('after') : ''));

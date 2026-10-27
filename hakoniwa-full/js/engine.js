@@ -81,8 +81,8 @@
     /* モブ・魔物との場面：「固定した相手だけ」なら出さない（noMob）。合コンのモブ参加者など、写し先がもともと noMob を持つときはそのまま */
     dst.sexMob = !!(SL.locks && SL.mob);
     dst.noMob = !!dst.noMob || (!HK.SAFE_ON && !!(SL.locks && !SL.mob));
-    /* 三人の場面：固定した相手が中心なら、固定していない人が一緒でも参加する（その人とは直接触れ合わない。room-trio.js）。R18版だけ */
-    dst.trioHub = !!src.trioHub && !HK.SAFE_ON;
+    /* 三人の場面（3P）：'no'＝しない（pos.js の HK.Pos.trioOptOut・trioPlan が見る）。未設定・ほかの値は「する」（2026-10-27 担当HL） */
+    dst.trio = src.trio === 'no' ? 'no' : '';
     /* モブ相手の受け攻め（住人と同じ＝''／攻め／受け／リバ。pos.js の P.npc） */
     dst.posNpc = HK.Pos && HK.Pos.npcValid ? HK.Pos.npcValid(src.posNpc) : src.posNpc === 'bottom' ? 'bottom' : '';
     /* 酒の強さ（1 弱い〜5 ザル。空ならおまかせ＝気質から） */
@@ -384,7 +384,8 @@
   }
   /* 体の関係の出来事か（出来事の定義の印 sex:true）。say・act2 に渡された印がなければ、いま act() が起こしている出来事（ctx._ev）の印を見る */
   /* force：合意のない展開の切羽詰まった場面の印（pos.js の HK.Pos.forceOpen。恋愛対象「なし」の人も体の場面に入れる） */
-  function sexEv(ctx, o) { return { sex: o && o.sex != null ? !!o.sex : !!(ctx._ev && ctx._ev.sex), force: !!(o && o.force != null ? o.force : ctx._ev && ctx._ev.force) }; }
+  /* trioPairs：三人以上の場面（3P）で直接の行為をする組（room-trio.js など。romanceOk がその組だけを体の関係として見る。2026-10-27 担当HN） */
+  function sexEv(ctx, o) { return { sex: o && o.sex != null ? !!o.sex : !!(ctx._ev && ctx._ev.sex), force: !!(o && o.force != null ? o.force : ctx._ev && ctx._ev.force), trioPairs: o && o.trioPairs || null }; }
   HK.sexEv = sexEv;
   Ctx.prototype.say = function (o) {
     if (o.actors && o.actors.length >= 2 && this.chars && this.chars.some(function (c) { return HK.lockAny(c); })) sexOnlyFix(this, o.actors);
@@ -423,10 +424,18 @@
     /* 恋愛・R18にしない組（キャラの設定）が一組でも入っていれば、どの箱庭でも起こさない */
     /* ただし「恋愛はしないが体の関係は許されている組」（HK.lockSexOnly）は、体の関係の出来事（ev.sex）だけ通す。
        出来事（ev）を渡されたのに体の出来事でなければ、恋愛の出来事として止める（渡されないときは通す。起きたあとは Ctx.say で恋愛に進まないように補正する） */
-    for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) if (HK.ngPair(L[i], L[j]) && (!HK.lockSexOnly(L[i], L[j]) || (ev && !ev.sex))) return false;
+    /* 三人以上の場面（3P）で直接の行為をする組（ev.trioPairs）を渡されたら、恋愛・体の関係の判定はその組だけで見る。
+       ほかの組は同じ場にいても触れ合わない（見ている・声をかけるだけ）ので、恋愛・R18にしない相手（HK.ngExplicit）だけを止める（2026-10-27 担当HN） */
+    var TP = ev && ev.trioPairs && ev.trioPairs.length ? ev.trioPairs : null;
+    var direct = function (x, y) { return !TP || TP.some(function (p) { return (p[0] === x && p[1] === y) || (p[0] === y && p[1] === x); }); };
+    if (TP) { a = TP[0][0]; b = TP[0][1]; }
+    for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) {
+      if (!direct(L[i], L[j])) { if (HK.ngExplicit(L[i], L[j])) return false; continue; }
+      if (HK.ngPair(L[i], L[j]) && (!HK.lockSexOnly(L[i], L[j]) || (ev && !ev.sex))) return false;
+    }
     /* 体の関係の出来事（ev.sex）は、R18に参加しない人・体の関係にならない組（HK.sexBlocked：性行為の相手の固定など）では起こさない。
        恋愛は止めない（pos.js の HK.Pos.okLove）ので、恋人どうしの夜・恋愛が中心の箱庭の体の場面はここで止める */
-    if (ev && ev.sex) { for (var s0 = 0; s0 < L.length; s0++) { if (L[s0].noR18) return false; for (var s1 = s0 + 1; s1 < L.length; s1++) if (HK.sexBlocked(L[s0], L[s1])) return false; } }
+    if (ev && ev.sex) { for (var s0 = 0; s0 < L.length; s0++) { if (L[s0].noR18) return false; for (var s1 = s0 + 1; s1 < L.length; s1++) if (direct(L[s0], L[s1]) && HK.sexBlocked(L[s0], L[s1])) return false; } }
     /* 恋愛なしの家族は、恋愛が中心の箱庭（romanceCore）でも恋愛の出来事を起こさない */
     if (a && b && this.pair(a, b).kin) return false;
     /* 歪んだ関係から離れる決心をした二人（tie-abuse.js の abFree）は、もう恋愛の出来事を起こさない。
@@ -849,13 +858,13 @@
     var sex = res.sex != null ? !!res.sex : !!pick.e.sex;
     /* 出来事の側で恋愛に変わったときも、恋愛が起きない組なら書かない */
     var force = res.force != null ? !!res.force : !!pick.e.force;
-    if (cat === 'romance' && !ctx.romanceOk(pick.b ? [a, pick.b] : [a], { sex: sex, force: force })) return;
+    if (cat === 'romance' && !ctx.romanceOk(pick.b ? [a, pick.b] : [a], { sex: sex, force: force, trioPairs: res.trioPairs || null })) return;
     if (pick.b && ctx._apathy && HK.Ties.apathyBlock(ctx, a, pick.b, { cat: cat, id: pick.e.id, why: typeof res.why === 'string' ? res.why : '' })) return;
     var actors = [a];
     if (pick.b) actors.push(pick.b);
     if (res.with) res.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
     if (res.odd) odd = true;
-    var e = ctx.say({ kind: 'event', cat: cat, actors: actors, text: res.text, why: res.why, odd: odd, mag: ctx._mag + (res.mag || 0), cageOk: /^ob_/.test(pick.e.id || ''), sex: sex, force: force, lewd: eroOf(res, pick.e) });
+    var e = ctx.say({ kind: 'event', cat: cat, actors: actors, text: res.text, why: res.why, odd: odd, mag: ctx._mag + (res.mag || 0), cageOk: /^ob_/.test(pick.e.id || ''), sex: sex, force: force, trioPairs: res.trioPairs || null, lewd: eroOf(res, pick.e) });
     if (e.skipped) return;
     a.cats[cat] = (a.cats[cat] || 0) + 1;
     if (odd) a.odd.push(e.n);

@@ -194,7 +194,10 @@
       /* 合意のない展開が切：恨み・ストーカーは性的な暗示をかけない（いたずらだけ）。ほかは、始める前に同意を取った催眠プレイ */
       p.noForce = S.gate && (ty === 'grudge' || ty === 'stalker');
       p.consent = S.gate && !p.noForce;
-      p.noSex = !!(Pz && HY && !Pz.okSex(HY, p)) || kinNo || mobNo || resNo || p.noForce;
+      /* 性欲「なし」（pos.js の HK.Pos.libOf）：同意を取った催眠プレイ（合意のない展開が切）では、かけられる人・住人のかけ手のどちらかが「なし」なら性的な暗示をかけない。
+         合意のない展開が入（同意のない催眠）は、内容のスイッチどおり（2026-10-27 担当HM） */
+      var libNo = !!(S.gate && Pz && Pz.libOf && (Pz.libOf(p) === 'none' || (HY && Pz.libOf(HY) === 'none')));
+      p.noSex = !!(Pz && HY && !Pz.okSex(HY, p)) || kinNo || mobNo || resNo || p.noForce || libNo;
       p.aTop = !!(Pz && !p.noSex && (HY ? Pz.order(HY, p, [HY, p])[0] === p : Pz.vsNpc(p, '') === 'top'));
       p.ff = !!(Pz && (HY ? Pz.ff(HY, p) : p.hf && Pz.isF(p)));
       /* かける側が女性で、男性（女性でない人）を導く組（女攻め×男）：{h} が跨る・導く専用の文（fm）を使う。男性の体で書いた {h} の文は使わない。

@@ -609,7 +609,16 @@
       var uP = S._fu = S._fu || [];
       pool = pool.filter(function (p) { return uP.indexOf(p.t) < 0; }).concat(pool.filter(function (p) { return uP.indexOf(p.t) >= 0; })).slice(0, nPos);
       pool.forEach(function (p) { uP.push(p.t); });
-      var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])), why: '快楽に負けた（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
+      /* 住人の施術者と客の組：夜の性格（attr-r18.js の HK.Attr.nightText。サド・マゾ・意地悪・甘々・恥じらい）の一文を陥落の段に足す。
+         決めていない二人には乱数を使わずに ''。向きは、客が主導する組（cTop）なら客が攻め（2026-10-27 担当HM） */
+      var nightIn = '';
+      if (TR && !dark && lwOn() && HK.Attr && HK.Attr.nightText) {
+        var nT = cTop() ? h : TR, nU = nT === h ? TR : h;
+        var nMode = ff ? 'ff' : HK.Pos && HK.Pos.isF(nT) && !HK.Pos.isF(nU) ? 'fm' : 'mf';
+        nightIn = HK.Attr.nightText(nT, nU, nMode, function (l) { return K.pick(S, l); }, eroOn);
+        if (nightIn) nightIn = ' ' + nightIn.replace(/\{a\}/g, nT.name).replace(/\{b\}/g, nU.name);
+      }
+      var head = K.say(S, { kind: 'sys', tag: '陥落', text: (wrong && M.WRONG_FALL ? fw(M.WRONG_FALL) : '') + K.fmt(S, K.pick(S, ['{a}の体は、もう{m}の言葉にしか従わなかった。{m}「では、本当の施術を始めましょう」', '{a}は施術台の上で、自分から脚の力を抜いた。{m}は満足そうに微笑んだ。', '{m}「今日はサービスです。最後まで、ゆっくり」――{a}には、断る理由がもう見つからなかった。'])) + nightIn, why: '快楽に負けた（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・理性 ' + Math.round(Math.max(0, h.reason)) + '）' });
       K.key(S, head, '快楽に負けた');
       /* 陥落の文が変わり目を兼ねるので、ここからは段階を上げるだけ（一文は足さない） */
       ph = Math.max(ph, fell ? 3 : 2);

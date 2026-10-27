@@ -765,6 +765,9 @@
             if (V.genderEnd && !nounQ && !kg) q = V.genderEnd(q, who);
             /* 男性の喘ぎ・短い声：態度の表の女性的な語尾（「だめ、よ」「上手、ね」「いいわ」）を外す */
             if ((mq || (!eb0 && !nounQ && V.shortVoice(q0))) && who.gender === 'm') q = V.unfem(q, who);
+            /* 喘ぎ・山場の声（V.moanLike）：口調・性別に合わない語尾を整える（R18版の moan-engine.js の HK.Moan.fit。利用者の喘ぎの辞書の行は直さない。全年齢では何もしない）。
+               小さい母音・♡のない、山場・寸前の声の表にもない台詞は light（「いや……」のためらいは直さない） */
+            if (mq && HK.Moan && HK.Moan.fit && !HK.Moan.isUser(q0)) q = HK.Moan.fit(q, who, !(voiceRow(q0) || /[ぁぃぅぇぉ♡゛]/.test(q0)));
             /* 住人ごとの語尾の付け替え（設定の toneCustom。tone-new2.js の V.applyToneCustom）：口調の仕上げのいちばん最後に */
             if (who.toneCustom && V.applyToneCustom && !HK.TONE_CUSTOM_OFF && !nounQ) q = V.applyToneCustom(q, who.toneCustom);
             /* 二人称の設定（敬語の相手への台詞は除く）。設定が空なら、口調と性別の既定（tone-registry.js の HK.TONE_YOU）でそろえる */

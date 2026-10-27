@@ -3,7 +3,8 @@
 'use strict';
 const fs = require('fs');
 const [file, only, show] = process.argv.slice(2);
-const d = JSON.parse(fs.readFileSync(file));
+/* moan-audit.js から規則（MOAN_RULES）だけを読むときは、ファイルを読まない */
+const d = require.main === module ? JSON.parse(fs.readFileSync(file)) : null;
 const POL = /(です|ます|ました|ません|でした|でしょう|ください|ございます|ましょう)/;
 const E = '(?=[。！？!?…、」♡〜ー]|$)', R = s => new RegExp(s + E);
 const RULES = {
@@ -68,6 +69,59 @@ function femCheck(r, x) {
   if (!ks.length) return;
   (femHits[x.tone] = femHits[x.tone] || []).push(r.id + '：' + ks.join('・') + '｜' + (x.raw || '') + '　→　' + x.out);
 }
+/* ---------- 喘ぎ用の規則（moan-audit.js が使う。2026-10-27） ----------
+   喘ぎ・山場の声・寸前の声・キス中・口での声に当てる。咄嗟の声（言葉のない声・「だめ」「むり」など）は口調を問わないので数えず、
+   その口調・性別では出ないはずの語尾・語だけを数える */
+const ME_ = '(?=[…‥。！？!?、」♡〜ー　\\sっッ]|$)', ME = s => new RegExp('(?:' + s + ')' + ME_);
+const MG = {
+  /* 敬語の口調（喘ぎは敬語を崩してよいが、荒い常体にはしない） */
+  polite: 'polite devoted ojou kohai genki keigo_sarc keigo_bossy keigo_flat otaku keigo_twist chara_down',
+  /* はっきりした口調（弱々しいお願いの拒み・泣き声・女性的な語尾にしない） */
+  /* 意地っ張り（中性的）は、崩れたときの「いや」「やめて」がその口調の味なので数えない（女性的な語尾は「女性的」の規則で見ない） */
+  firm: 'proud aniki stern cool calm gentleman noja sondai god ronkyaku flat_plain yankee',
+  /* やわらかい口調（荒い語尾・命令・「お前」にしない） */
+  soft: 'gentle gentle_n gentle_m devoted devoted_p shy honwaka boku_n tsun_soft mukuchi_ne',
+  /* 古風・尊大な口調（くだけすぎた語尾にしない） */
+  grand: 'gentleman sondai god',
+  /* 男性的な語尾が個性の口調（女性でも男性的な語尾を数えない）：lint の MASC_TONES ＋ 強気 */
+  masc: 'yankee aniki hero chara noja gentleman sondai god otaku ronkyaku flat_plain proud',
+  /* 女性的な語尾が個性の口調（男性でも数えない） */
+  fem: 'ane ojou'
+};
+Object.keys(MG).forEach(k => { const o = {}; MG[k].split(' ').forEach(t => { o[t] = 1; }); MG[k] = o; });
+const M_IMP = new RegExp('(?:やめろ|止めろ|とめろ|止まれ|とまれ|離せ|離れろ|来い|寄越せ|入れろ|鳴け|締めろ|(?<![っまおもうぁ-ゖ一-鿿])しろ|動け|黙れ|見るな|触るな|触んな|さわんな|ふざけんな|ざけんな|調子に乗んな|もったいぶんな|殺す|ばか野郎)' + ME_ + '|じらしてんじゃ|(?:^|[、…‥「\\s　♡！!っ])(?:くそ|クソ)');
+const M_ZO = ME('(?<=[ぁ-ゖ一-鿿])(?<![どなうーそ])ぞ');
+const M_ROUGH = ME('(?<!(?:何|なに|なん|どう|なぜ|どこ|いつ|誰|どれ)[^。！？!?]{0,12})だろ|だろう?が|(?<=[ぁ-ゖ一-鿿])(?<![なせ])ぜ|かよ|じゃねえ|ねえよ|やがれ|しろよ|(?:だめ|むり|無理)だ(?!って)|もたねえ|足りねえ|(?<=[らまわがばきみりえけせてめれげべ])ねえ|よな');
+/* 女性的な「〜わ」（「いいわ」「イくわ」）。「うわ」「わ、わし」「くれるわ」（のじゃ・尊大の言い切り）は数えない */
+const M_WA = '(?<=[ぁ-ゖ一-鿿々ー][ぁ-ゖ])(?<![うたけふじぞざほぽっ])(?<!しあ)わ(?!、わ)';
+/* 拒みの左の区切り（「受け止めて」の「止めて」を拾わない）・後ろが頼みの形（〜てくれ・〜てほしい・〜てたも・お願いだ）なら数えない */
+const M_L = '(?:^|[、。…‥「\\s　♡！!？?っ゛])', M_REQ = '(?![、…‥っ]*(?:くれ|くん|ほし|欲し|もら|おくれ|たも|おらぬ|やる|だ(?!め)))';
+/* 泣き声の拒み：「いや……何でもない」のような言い直しは数えない（後ろが声・区切りで終わるものだけ） */
+const M_CRY = '(?=[っッぁあー！!♡]|[…‥]+(?:[っッ♡！!」]|$)|$)';
+const M_YOU = /(?:お前|おまえ|てめえ|てめぇ|貴様|きさま)/;
+const MOAN_RULES = {
+  list: [
+    ['敬語の口調に荒い常体', (q, t) => MG.polite[t] && (M_ROUGH.test(q) || (t !== 'otaku' && M_ZO.test(q)) || M_IMP.test(q) || M_YOU.test(q))],
+    ['はっきりした口調に弱いお願いの拒み', (q, t) => MG.firm[t] && new RegExp(M_L + '(?:離して|やめて|見ないで|触らないで|許して|待って|まって|抜いて|止めて|とめて|止まって|とまって|動かないで|来ないで|入れないで|お願い|おねがい)' + M_REQ + '(?=[…‥。！？!?、」♡〜ーっ　\\s]|$)').test(q)],
+    ['はっきりした口調に泣き声の拒み', (q, t) => MG.firm[t] && new RegExp('(?:^|[、…‥「\\s　])(?:いや|やだ|いやぁ|やぁ|やだぁ|いやっ|やっ)' + M_CRY).test(q)],
+    ['はっきりした口調に女性的な語尾', (q, t) => MG.firm[t] && ME((MG.grand[t] || t === 'noja' ? '' : M_WA + '|') + 'のよ|かしら|わね|わよ|なのね').test(q)],
+    ['やわらかい口調に荒い語尾・命令', (q, t) => MG.soft[t] && (M_ROUGH.test(q) || (t !== 'otaku' && M_ZO.test(q)) || M_IMP.test(q))],
+    /* 無口（……だね）の男性は、口調の既定の二人称が「お前」（tone-registry.js の HK.TONE_YOU） */
+    ['やわらかい口調に「お前」', (q, t, g) => MG.soft[t] && !(t === 'mukuchi_ne' && g !== 'f') && M_YOU.test(q)],
+    ['のじゃに標準語の語尾', (q, t) => t === 'noja' && (ME('だよ|だね|でしょ|じゃん|わね|わよ|のよ|かしら|っす|です|ます|ません|ください|だもん').test(q) || /あらあら/.test(q))],
+    ['関西弁に標準語の語尾', (q, t) => t === 'kansai' && ME('じゃん|だよ|だね|でしょ|じゃない|です|ます|ません|ください|とまらない|止まらない|もたない|足りない|わからない|できない|られない|いけない|じゃないか').test(q)],
+    ['古風・尊大な口調にくだけすぎた語尾', (q, t) => MG.grand[t] && (ME('(?<![なせ])ぜ|じゃん|っす|わね|わよ|のよ|かしら|だわ|ちゃう|ちゃった|だもん|でしょ').test(q) || /(?:あんた|てめえ)/.test(q))],
+    ['男性に女性的な語尾', (q, t, g) => g === 'm' && !MG.fem[t] && (ME((t === 'kansai' || MG.masc[t] ? '' : M_WA + '|') + 'のよ|かしら|わね|わよ|なのね|(?:だめ|ダメ|すき|好き|そう|ほんと|じょうず|上手|いい子)、?[よね]').test(q) || /(?:^|[「、…‥\s　])あら(?:あら|まあ)?(?=[…‥、。！!？?っ]|$)/.test(q))],
+    /* 「〜だがねえ」「〜たねえ」（胡散臭い・ほんわかの詠嘆）は打ち消しではない */
+    ['女性に男性的な語尾', (q, t, g) => g === 'f' && !MG.masc[t] && t !== 'kansai' && FEM_M.some(([, re]) => re.test(q.replace(/(?:[だん]が|た|だ)ねえ/g, '')))],
+    ['女性に男性の一人称', (q, t, g) => g === 'f' && !MG.masc[t] && /(?:^|[^ぁ-ゖ])(?:俺|オレ)(?=[はがもをにのとで、。！？…」っ]|$)/.test(q)]
+  ],
+  /* 喘ぎ q（「」の中身）・口調・性別 → 当たった規則の名前の配列 */
+  check(q, t, g) { return this.list.filter(([, f]) => f(q, t, g)).map(([nm]) => nm); },
+  GROUPS: MG
+};
+module.exports = { MOAN_RULES };
+if (require.main !== module) return;
 const FP = /(俺様|オレ様|俺|僕|ぼく|オレ|ボク|わたくし|ワタクシ|あたくし|あたし|アタシ|わたし|ワタシ|私|拙者|わし|わらわ)(?=[はがもをにのとで、。！？…」っ])/g;
 const hits = {};
 for (const r of d.results) for (const x of r.recs) {

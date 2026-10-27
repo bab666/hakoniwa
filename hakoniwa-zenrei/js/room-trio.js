@@ -117,48 +117,51 @@
   function isLove(kind) { return kind === 'love' || kind === 'lovehub'; }
   /* 恋人どうしの三人（円満・取り合い）：決め事の説得・拒みのきっかけを使わない */
   function isLoveAny(kind) { return isLove(kind) || kind === 'loveclash'; }
-  /* 中心のある円満な三人：中心の人が二人の両方と交われるなら、中心だけが二人と繋がる形 */
+  /* ---------- 三人の場面（3P）の組み方（2026-10-27 担当HN。利用者の決まり） ----------
+     判定は pos.js の HK.Pos.trioPlan（ロッカーと同じ）：
+     ・住人の設定「三人の場面（3P）：しない」の人がいれば三人にしない
+     ・直接の行為をしてよい組（HK.State.pairSex：その場にいる・R18に参加する・受け攻め・恋愛対象・恋愛やR18にしない相手・
+       性行為の相手の固定（固定した人は固定した相手とだけ）・性欲「なし」）。この部屋では、恋愛にしない関係の組（HK.roomWsNoSex）も外す
+     ・三組ともできれば三人とも触れ合う形（all）。二組なら、両方の組に入る人（中心 hub）とだけ触れ合い、残りの一組（watch）は
+       同じ場にいても見ている・声をかける程度（文は room-trio-lines.js の X.WATCH）。一組以下なら三人にしない（二人の場面に落とす）
+     ・触れ合わない組でも、恋愛・R18にしない相手（HK.ngExplicit）・家族（恋愛：なし）の二人は、同じ三人の場面に入れない（これまでどおり）
+     全年齢版・全年齢モードでは HK.Pos.trioPlan が使えない（常に null）ので、同じ決まりを HK.Pos.okSex で組む（場面は暗転の一文） */
+  function wsOk(x, y) { return !(HK.roomWsNoSex && HK.roomWsNoSex(HK._curCtx, x, y)); }
+  function plan3(g) {
+    var P = HK.Pos;
+    if (!g || g.length !== 3 || !P) return null;
+    var pl;
+    if (!HK.SAFE_ON && P.trioPlan) pl = P.trioPlan(g[0], g[1], g[2], { ok: wsOk });
+    else {
+      if (P.trioOptOut && g.some(P.trioOptOut)) return null;
+      var all = pairsOf(g), prs = all.filter(function (p) { return okSex(p[0], p[1]); });
+      if (prs.length === 3) pl = { pairs: prs, hub: null, all: true, watch: [] };
+      else if (prs.length === 2) pl = { pairs: prs, hub: g.filter(function (x) { return prs[0].indexOf(x) >= 0 && prs[1].indexOf(x) >= 0; })[0], all: false, watch: all.filter(function (p) { return prs.indexOf(p) < 0; }) };
+      else pl = null;
+    }
+    if (pl && pl.watch.some(function (p) { return (HK.ngExplicit && HK.ngExplicit(p[0], p[1])) || p[0].noR18 || p[1].noR18; })) return null;
+    return pl;
+  }
+  T.plan3 = plan3;
+  /* 中心のある円満な三人・取り合い：中心（取り合われる人）とだけ繋がる形。中心が二人の両方と直接できなければ成り立たない */
   function loveShape(ctx, g) {
     var hm = harmonyOf(ctx, g), cl = hm && clashOf(ctx, g);
     if (!hm || (hm.full && !cl)) return null;
     /* 取り合いは、取り合われる人を中心に（執着している二人どうしは直接は交わらない） */
     var h = cl ? cl.w : hm.hub, o = g.filter(function (c) { return c !== h; });
-    if (hubOut(g, h)) return null;
-    if (blocked(h, o[0]) || blocked(h, o[1])) return null;
-    return okSex(h, o[0]) && okSex(h, o[1]) ? { sg: [h].concat(o), hubOnly: true } : null;
+    var pl = plan3(g);
+    if (!pl || (!pl.all && pl.hub !== h)) return null;
+    return { sg: [h].concat(o), hubOnly: true, plan: pl };
   }
   T.harmony = harmony; T.harmonyOf = harmonyOf;
-  /* 体の関係の形：三人の全組が体の関係を持てるなら全員で、そうでなければ二人の両方と持てる一人を中心に（つながらない二人は直接は触れ合わない）。どれも無理なら null */
-  /* 性行為の相手を固定している人（engine.js の sexLock）は、決めた相手以外の人がいる三人の場面に入らない（直接は触れ合わない形でも）。
-     ただし二人とも「三人の場面：固定した相手が中心なら参加する」（住人の設定 trioHub）なら、固定の食い違い・同じ人の恋人どうし（coNG）だけで
-     止まっている組は、その二人が直接は触れ合わない形（固定した相手を中心にした形）でだけ通す。苦手な組（恋愛・R18にしない相手）・R18に参加しない人は通さない */
-  function blocked(x, y) { return !!((HK.sexNG && HK.sexNG(x, y)) || (HK.ngPair && HK.ngPair(x, y))); }
-  function soft(x, y) { return !!(x.trioHub && y.trioHub) && !(HK.ngExplicit && HK.ngExplicit(x, y)) && !x.noR18 && !y.noR18; }
-  function sexLockOut(g) { return g.some(function (x) { return g.some(function (y) { return y !== x && blocked(x, y) && !soft(x, y); }); }); }
-  /* 中心のある円満な三人（loveShape）：中心 h の恋人どうしの二人は「同じ人の恋人どうし」（coNG）なので、二人の間だけは coNG を見ない
-     （二人は直接は触れ合わない形）。二人の間でも、性行為の相手の固定（HK.sexNG）と苦手な組（HK.ngExplicit）は止める（trioHub の soft は同じに通す）。
-     併合（2026-10-26）で sexLockOut が ngPair（coNG を含む）も見るようになり、恋人二人の中心の三人が起きなくなっていたのを直す */
-  function hubOut(g, h) {
-    return g.some(function (x) { return g.some(function (y) {
-      if (y === x) return false;
-      var b = x !== h && y !== h ? !!((HK.sexNG && HK.sexNG(x, y)) || (HK.ngExplicit && HK.ngExplicit(x, y))) : blocked(x, y);
-      return b && !soft(x, y);
-    }); });
-  }
+  /* 体の関係の形：三組とも直接できれば全員で（hubOnly を求められたら先頭の人を中心に）、二組なら中心のある形。どれも無理なら null */
   function sexShape(g, hubOnly) {
-    if (sexLockOut(g)) return null;
-    /* 固定の食い違いだけで止まっている組（soft）があれば、その二人を中心にはしない（中心は残りの一人） */
-    var softPair = null;
-    for (var i = 0; i < 3; i++) for (var j = i + 1; j < 3; j++) if (blocked(g[i], g[j])) softPair = softPair || [g[i], g[j]];
-    if (!softPair && !hubOnly && okSex(g[0], g[1]) && okSex(g[0], g[2]) && okSex(g[1], g[2])) return { sg: g, hubOnly: false };
-    for (var k = 0; k < 3; k++) {
-      var h = g[k], r = g.filter(function (c) { return c !== h; });
-      if (softPair && softPair.indexOf(h) >= 0) continue;
-      if (!blocked(h, r[0]) && !blocked(h, r[1]) && okSex(h, r[0]) && okSex(h, r[1])) return { sg: [h].concat(r), hubOnly: true };
-    }
-    return null;
+    var pl = plan3(g);
+    if (!pl) return null;
+    if (pl.all && !hubOnly) return { sg: g, hubOnly: false, plan: pl };
+    var h = pl.all ? g[0] : pl.hub;
+    return { sg: [h].concat(g.filter(function (c) { return c !== h; })), hubOnly: true, plan: pl };
   }
-  T.soft = soft;
   /* きっかけごとの形。取り合われた人・誘われた人が中心のきっかけでは、その人が中心になれなければ成り立たない */
   function shapeFor(ctx, g, kind) {
     if (kind === 'lovehub' || kind === 'loveclash') return loveShape(ctx, g);
@@ -306,6 +309,7 @@
     return { p: ctx.rng.pick(pool), t: Tn, m: M, u: Bn };
   }
   /* {t}=上 {m}=真ん中 {u}=下。oneTwo：{t}が{m}と{u}を抱く／twoOne：{t}と{m}が{u}を抱く／sandwich：{t}が{m}を、{m}が{u}を／ring：{t}→{m}→{u}→{t} */
+  var SEX0 = {};   /* 形の文（R18版だけ。全年齢版は空） */
   /* r18:begin */
   var SEX = {
     sandwich: L('{m}は{u}の奥まで沈みながら、後ろから{t}に貫かれた。前と後ろから同時に押し寄せる熱に、{m}の声が途切れ途切れになった。|{u}を組み敷いた{m}の腰を、{t}が後ろから掴んで引き寄せた。{m}が{u}を突き上げるたびに、{t}も{m}の奥を突いた。三人の動きは、いつの間にか一つのリズムになっていた。|{t}に後ろから抱かれた{m}は、そのまま{u}の中に入っていった。一番声を上げていたのは、挟まれた{m}だった。'),
@@ -313,6 +317,7 @@
     oneTwo: L('{t}は{m}と{u}を並べて寝かせ、交互に抱いた。自分の番を待つ間、{m}と{u}は互いの手を握り合っていた。|{t}が{m}の奥を突いている間、{u}は{t}の背中に口づけを落とし続けた。それから{t}は、待ちきれずに腰を揺らしていた{u}の中に入っていった。|{t}は{m}を抱き、{u}を抱き、また{m}に戻った。二人分の甘い声が、白い部屋の中で重なり合った。'),
     ring: L('三人は、輪のように繋がった。{t}が{m}を抱き、{m}が{u}を抱き、そして{u}が{t}を抱いた。誰が誰を抱いているのか、途中から誰にも分からなくなった。|{t}は{m}の中に、{m}は{u}の中に、{u}は{t}の中に――三人は順番に組み合わせを変えながら、何度も互いを求め合った。')
   };
+  SEX0 = SEX;
   /* r18:end */
   var SOFT = {
     kiss: L('三人は額を寄せ合い、順番に唇を重ねた。{a}と{b}、{b}と{c}、{c}と{a}――最後の一回は、三人同時に唇を寄せようとして、鼻がぶつかって笑ってしまった。|{a}は{b}に、{b}は{c}に、{c}は{a}に。三人は輪になって、一周ずつキスを回した。'),
@@ -322,6 +327,13 @@
     love: L('三人は向かい合って、順番に「好き｜好きだ｜好きです」と言い合った。{a}から{b}へ、{b}から{c}へ、{c}から{a}へ。言い終わったあと、三人とも照れて目を逸らした。'),
     honne: L('三人は輪になって座り、一人ずつ本音を打ち明けた。誰か一人を選べなかったこと、それでいいと思えたこと。'),
     praise: L('三人は順番に、残りの二人のいいところを言い合った。言われるたびに、誰かが顔を覆った。')
+  };
+  /* 中心のある三人（直接は繋がらない二人がいる）：{a}＝中心、{b}{c}＝中心とだけ触れ合う二人（2026-10-27 担当HN） */
+  var SOFT_HUB = {
+    kiss: L('{a}は{b}と{c}に、順番に唇を重ねた。{b}と{c}は、自分の番が来るのを黙って待った。|{a}は右の{b}に、それから左の{c}に口づけた。二人は{a}越しに、ちらりと目を合わせただけだった。'),
+    hug: L('{a}は{b}と{c}を、片腕ずつで抱き寄せた。二人は{a}の肩越しに、ちらりと目を合わせただけだった。|{a}は{b}を抱きしめ、それから{c}を抱きしめた。順番を待つあいだ、二人は黙って{a}の背中を見ていた。'),
+    hand: L('{a}は右手で{b}と、左手で{c}と手を繋いだ。真ん中の{a}だけが、二人の両方と繋がっていた。|{a}を真ん中に、三人は並んで座った。{a}の右手は{b}と、左手は{c}と繋がっていた。'),
+    lap: L('{a}は{b}の膝に頭を乗せ、{c}の膝に脚を預けた。三人は、そのまましばらく黙っていた。')
   };
   var OPEN = {
     /* 二人の恋人が、同じ一人（{h}）にそろって執着している：取り合い */
@@ -340,6 +352,30 @@
   var CLIMAX3 = L('三人はほとんど同時に果てて、そのまま折り重なるようにベッドに沈んだ。|最後に誰が果てたのか、三人とも覚えていなかった。乱れたシーツの上で、三人分の荒い息だけが聞こえていた。|終わったあと、三人は川の字になって寝転がった。真ん中の誰かが、両側の手を握っていた。');
   /* r18:end */
 
+  /* ---------- 直接は繋がらない二人を触れ合わせない（2026-10-27 担当HN） ----------
+     touchOK(l, rr, g, apart)：文 l（役の印 {a}{h}{t} など。rr は役→人）が、apart の二人（直接の行為ができない組）を触れ合わせていなければ真。
+     その二人が同じ文（読点で区切った節も）に出て、三人目が出ず触れ合いの語がある文・「互いの」「〜合う」・三人そろって触れ合う書き方は使わない */
+  var TOUCH = /口づけ|唇|キス|舐|抱|撫で|触れ|吸い|指|舌|繋が|挿|貫|重な|重ね|絡|しゃぶ|咥|胸|奥|しがみつ|拭|握|支え|もたれ|寄りかか|寄り添|頬を寄せ|手を引/;
+  var MUTUAL3 = /互いの|互いに|抱きしめ合|抱き合|触れ合|重ね合|口づけ合|求め合|絡み合|絡め合|確かめ合|擦り合|握り合|寄せ合|重なり合|下の二人|残りの二人が|重ねて寝かせ|を重ねて|の重みと|手が伸びてきた/;
+  var ALL3 = /三人(?:は|とも|で|が|の体)[^。]*(?:手を繋|手を重ね|指を絡|抱き合|身を寄せ|絡み合|絡ま|重なり合|折り重な|肌を寄せ|額を寄せ|しがみつ|一つに)/;
+  function touchOK(l, rr, g, apart) {
+    if (!apart || !apart.length) return true;
+    if (MUTUAL3.test(l) || ALL3.test(l)) return false;
+    /* 中心（直接は繋がらない二人のどちらでもない人） */
+    var hb = g.filter(function (c) { return apart.every(function (p) { return p.indexOf(c) < 0; }); })[0] || null;
+    /* 文ごとに見る。「{t}が{m}を抱いている間、{u}は{m}の…」「{x}が{h}の唇を、{y}が{x}の胸を」のように、読点で区切った節に
+       直接は繋がらない二人だけが出て触れ合う書き方もあるので、読点で区切った節ごとにも見る（節に中心が出ていれば通す） */
+    var parts = [];
+    String(l).split(/[。\n]/).forEach(function (x) { parts.push(x); var sub = x.split(/、/); if (sub.length > 1) parts = parts.concat(sub); });
+    return parts.every(function (x) {
+      if (!TOUCH.test(x)) return true;
+      var who = (x.match(/\{[a-z]\}/g) || []).map(function (k) { return rr[k.charAt(1)]; }).filter(Boolean);
+      /* 「二人は{x}を抱き寄せた」のように、名前の出る一人が直接は繋がらない二人の片方なら、「二人」にもう片方が入る */
+      if (/二人/.test(x) && who.length && who.every(function (c) { return c === who[0]; }) && who[0] !== hb && apart.some(function (p) { return p.indexOf(who[0]) >= 0; })) return false;
+      return !apart.some(function (p) { return who.indexOf(p[0]) >= 0 && who.indexOf(p[1]) >= 0 && !g.some(function (c) { return c !== p[0] && c !== p[1] && who.indexOf(c) >= 0; }); });
+    });
+  }
+  function apartOf(g) { return pairsOf(g).filter(function (p) { return !okSex(p[0], p[1]); }); }
   /* ---------- 三人の場面 ---------- */
   /* 三人のエッチ：前戯→本番→見所→絶頂→余韻（文は room-trio-lines.js） */
   function sexScene(ctx, g, kind, sp, hubOnly, first) {
@@ -394,23 +430,12 @@
     var ribaOK = function (o) { var pr = { tm: [sp.t, sp.m], mu: [sp.m, sp.u], tu: [sp.t, sp.u] }[o.riba]; return o.riba === 'all' ? allRiba : !!pr && bothRiba(pr[0], pr[1]); };
     var swapOK = function (l) { return allRiba || !/入れ替わ|どちらの顔も/.test(l); };
     var toyOK = function (l) { return !/双頭/.test(l) || bothRiba(sp.t, sp.m); };
-    /* 直接は繋がらない二人（中心のある三人）のうち、恋愛対象が合わない二人（apart）は、文の中で触れ合わせない：
+    /* 直接は繋がらない二人（中心のある三人の、中心でない二人＝plan3 の watch）は、文の中で触れ合わせない（2026-10-27 担当HN。利用者の決まり
+       「直接の行為ができる組だけが触れ合い、それ以外の組は同じ場にいても見ている・声をかける程度」）：
        その二人を指す役（{m}{u} など）が同じ文に出て、三人目が出ない文に触れ合いの語がある文・「互いの」「〜合う」のように三人が触れ合う文は使わない。
-       受け攻めの向きが合わないだけ（受けどうし・攻めどうし）で、恋愛対象の合う二人は、触れ合ってよい */
-    /* （HK.canLove は受け攻めの向きも見るので使わない。恋愛対象 genderOK と、恋愛・R18にしない相手 ngPair だけで見る） */
-    var apart = pairsOf(g).filter(function (p) { return !okSex(p[0], p[1]) && !(HK.Pos && HK.Pos.genderOK && HK.Pos.genderOK(p[0], p[1]) && !(HK.ngPair && HK.ngPair(p[0], p[1]))); });
-    var TOUCH = /口づけ|唇|キス|舐|抱|撫で|触れ|吸い|指|舌|繋が|挿|貫|重な|絡|しゃぶ|咥|胸|奥|しがみつ/;
-    var MUTUAL3 = /互いの|互いに|抱きしめ合|触れ合|重ね合|口づけ合|求め合|絡み合|確かめ合|擦り合|下の二人|残りの二人が/;
-    var apartOK = function (l, rr) {
-      if (!apart.length) return true;
-      rr = rr || r;
-      if (MUTUAL3.test(l)) return false;
-      return String(l).split(/[。\n]/).every(function (x) {
-        if (!TOUCH.test(x)) return true;
-        var who = (x.match(/\{[a-z]\}/g) || []).map(function (k) { return rr[k.charAt(1)]; }).filter(Boolean);
-        return !apart.some(function (p) { return who.indexOf(p[0]) >= 0 && who.indexOf(p[1]) >= 0 && !g.some(function (c) { return c !== p[0] && c !== p[1] && who.indexOf(c) >= 0; }); });
-      });
-    };
+       以前は受け攻めの向きが合わないだけの二人（攻めどうしなど）は触れ合ってよかったが、いまは直接できない組はすべて触れ合わない */
+    var apart = pairsOf(g).filter(function (p) { return !okSex(p[0], p[1]) || !wsOk(p[0], p[1]); });
+    var apartOK = function (l, rr) { return touchOK(l, rr || r, g, apart); };
     /* 「役を入れ替え」のような、抱く側と抱かれる側が入れ替わる文は、自分で攻めを選んだ人がいる三人では使わない */
     var roleSwapOK = function (l) { return !/役を入れ替え|入れ替わ|入れ替え/.test(l) || !g.some(function (c) { return HK.Pos && HK.Pos.hardTopIn(c, g); }); };
     /* 文の候補から、触れ合わせない二人・役の入れ替わりの文を除く（残らなければ null） */
@@ -459,7 +484,15 @@
     /* 本番 */
     var ml = ffE && X.MAIN_FF ? X.MAIN_FF[sp.p].filter(swapOK).concat(ctx.flags.toolbox ? (X.TOY_FF[sp.p] || []).filter(toyOK).filter(swapOK) : []).filter(function (l) { return apartOK(l); }) : X.MAIN[sp.p].filter(noHub).filter(swapOK).filter(function (l) { return apartOK(l); });
     var ml0 = X.MAIN[sp.p].filter(swapOK), ml1 = ml0.filter(function (l) { return apartOK(l); });
-    out.push(X.fill(fpk(ml.length ? ml : ml1.length ? ml1 : ml0), r));
+    /* 直接は繋がらない二人がいるときは、触れ合う文に戻さない（ml1 も空なら、形の文 SEX のうち触れ合わない文） */
+    var mlA = ml.length ? ml : ml1.length ? ml1 : apart.length ? (SEX0[sp.p] || []).filter(function (l) { return apartOK(l); }) : ml0;
+    out.push(X.fill(fpk(mlA.length ? mlA : ml0), r));
+    /* 中心のある三人：直接は繋がらない二人（apart）は、同じ場にいても見ている・声をかけるだけ（態度9種。room-trio-lines.js の X.WATCH。2026-10-27 担当HN） */
+    if (apart.length && X.WATCH) {
+      var wp = apart[0], wa = ctx.rng() < 0.5 ? wp : [wp[1], wp[0]], wh = g.filter(function (c) { return wp.indexOf(c) < 0; })[0];
+      var wl = (X.WATCH[wa[0].persona] || X.WATCH.gentle || []).filter(function (l) { return apartOK(l, { a: wa[0], b: wa[1], h: wh }); });
+      if (wl.length && wh) out.push(X.fill(fpk(wl), { a: wa[0], b: wa[1], h: wh }));
+    }
     /* 夜の性格の一文（attr-r18.js）：攻め→受けの組ごとに、二つまで（サド二人×マゾ一人なら、攻めの振る舞いと受けの崩れ方） */
     if (HK.Attr && HK.Attr.nightText) {
       var NP = { oneTwo: [[sp.t, sp.m], [sp.t, sp.u]], twoOne: [[sp.t, sp.u], [sp.m, sp.u]], sandwich: [[sp.t, sp.m], [sp.m, sp.u]], ring: [[sp.t, sp.m], [sp.m, sp.u]] }[sp.p] || [[sp.t, sp.u]];
@@ -559,17 +592,30 @@
   /* pre：形を先に決めてあるとき { sg, hubOnly, sp }（三人ちょうどの自動のきっかけ）。force：条件にエッチがなくても体の場面を書く（媚薬の部屋） */
   function scene(ctx, g, kind, first, nPresent, pre, force) {
     var h = g[0], x = g[1], y = g[2], V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
-    var op = (OPEN[kind] || OPEN.warm).filter(function (l) { return nPresent === 3 || !/一人きり/.test(l); });
-    var txt = first ? ctx.t(ctx.pick(op).replace(/\{h\}/g, '\u0001').replace(/\{x\}/g, '\u0002').replace(/\{y\}/g, '\u0003'), h, x, y).replace(/\u0001/g, h.name).replace(/\u0002/g, x.name).replace(/\u0003/g, y.name)
-      : (HK.TrioLines ? HK.TrioLines.fill(ctx.pick(HK.TrioLines.ROUND2), { h: h, x: x, y: y }) : ctx.t('三人は、もう一度身を寄せ合った。', h, x, y));
     var rk = pairRules(ctx), sex = force || rk.some(function (r) { return r.k === 'h'; });
+    /* 体の関係を持てない二人（攻め×攻め・性行為の相手の固定など）は直接は繋がらない：両方と持てる一人を中心にする */
+    var sh = sex ? pre || shapeFor(ctx, g, kind) : null;
+    /* 中心のある三人の場面：導入・二回目の書き出し・ほかの条件（キス・ハグなど）の文でも、直接は繋がらない二人（ap）を触れ合わせない（2026-10-27 担当HN） */
+    var ap = sh ? apartOf(g) : [], rr0 = { h: h, x: x, y: y }, okL = function (l, rr) { return touchOK(l, rr || rr0, g, ap); };
+    /* 直接の行為をした組（engine.js の romanceOk・記録の点検は、この組だけを体の関係として見る。下の trioPairs の包み） */
+    if (sh) ctx.flags.lastTrioPairs = pairsOf(g).filter(function (p) { return okSex(p[0], p[1]); });
+    var op = (OPEN[kind] || OPEN.warm).filter(function (l) { return (nPresent === 3 || !/一人きり/.test(l)) && okL(l); });
+    if (!op.length) op = OPEN.warm.filter(function (l) { return (nPresent === 3 || !/一人きり/.test(l)) && okL(l); });
+    if (!op.length) op = ['{h}が但し書きを指さすと、残りの二人は顔を見合わせて、小さく頷いた。'];
+    var r2 = HK.TrioLines ? HK.TrioLines.ROUND2.filter(function (l) { return okL(l); }) : [];
+    var txt = first ? ctx.t(ctx.pick(op).replace(/\{h\}/g, '\u0001').replace(/\{x\}/g, '\u0002').replace(/\{y\}/g, '\u0003'), h, x, y).replace(/\u0001/g, h.name).replace(/\u0002/g, x.name).replace(/\u0003/g, y.name)
+      : (HK.TrioLines && r2.length ? HK.TrioLines.fill(ctx.pick(r2), rr0) : ap.length ? ctx.t('三人は、もう一度向き合った。', h, x, y) : ctx.t('三人は、もう一度身を寄せ合った。', h, x, y));
     if (sex) {
-      /* 体の関係を持てない二人（攻め×攻めなど）は直接は繋がらない：両方と持てる一人を中心にする */
-      var sh = pre || shapeFor(ctx, g, kind);
       if (sh) txt += sexScene(ctx, sh.sg, kind, sh.sp || shape(ctx, sh.sg, sh.hubOnly), sh.hubOnly, first, nPresent);
       else txt += '三人は身を寄せ合ったが、それ以上は進まなかった。';
     }
-    rk.forEach(function (r) { if (r.k !== 'h' && SOFT[r.k]) txt += ctx.t(ctx.pick(SOFT[r.k]), h, x, y); });
+    var hb = ap.length ? g.filter(function (c) { return ap.every(function (p) { return p.indexOf(c) < 0; }); })[0] : null, ob = hb ? g.filter(function (c) { return c !== hb; }) : null;
+    rk.forEach(function (r) {
+      if (r.k === 'h' || !SOFT[r.k]) return;
+      var ls = SOFT[r.k].filter(function (l) { return okL(l, { a: h, b: x, c: y }); });
+      if (ls.length) txt += ctx.t(ctx.pick(ls), h, x, y);
+      else if (hb && SOFT_HUB[r.k]) txt += ctx.t(ctx.pick(SOFT_HUB[r.k]), hb, ob[0], ob[1]);
+    });
     return txt;
   }
   /* 進み具合：三人の組み合わせ全部に、同じだけ数える */
@@ -654,20 +700,17 @@
     var al = A.bringAlong ? A.bringAlong(ctx, g) : '';
     return { cat: 'escape', mag: 40, text: text + '扉の鍵が外れる音がした。' + nm3(g) + 'は、' + kn(g.length) + 'そろって部屋を出た。' + al, why: why + (al ? '／条件を満たした人と一緒に、ほかの全員も出られる部屋' : ''), with: g, lewd: night ? true : undefined };
   };
-  /* 条件「三人で」（room-games.js）の三人の場面：三組とも体の関係を持てる三人（形が中心だけにならない）なら、円満な三人の場面（kind は恋人どうしの三人なら love など、ほかは warm）。
+  /* 条件「三人で」（room-games.js）の三人の場面：三人の場面（3P）の判定（plan3＝HK.Pos.trioPlan）が通る三人なら、
+     三組とも直接できれば三人とも、二組なら中心とだけ触れ合う形で（kind は恋人どうしの三人なら love など、ほかは warm）。
      書けないときは null（呼ぶ側が抱き合う版に落とす） */
-  T.sexOk3 = function (g) {
-    if (g.length !== 3 || !pairsOf(g).every(function (p) { return okSex(p[0], p[1]); })) return false;
-    var sh = sexShape(g, false);
-    return !!sh && !sh.hubOnly;
-  };
+  T.sexOk3 = function (g) { return g.length === 3 && !!sexShape(g, false); };
   T.condScene = function (ctx, g, first) {
     if (!T.sexOk3(g)) return null;
     var sh = sexShape(g, false);
-    var sp = shape(ctx, sh.sg, false), kind = harmony(ctx, g) ? loveKind(ctx, g) || 'warm' : 'warm';
+    var sp = shape(ctx, sh.sg, sh.hubOnly), kind = harmony(ctx, g) ? loveKind(ctx, g) || 'warm' : 'warm';
     if (kind === 'lovehub' || kind === 'loveclash') kind = 'warm';
     var go = orderG(ctx, g, sh, sp, kind);
-    var text = scene(ctx, go, kind, first, ctx.present().length, { sg: go, hubOnly: false, sp: sp }, true);
+    var text = scene(ctx, go, kind, first, ctx.present().length, { sg: go, hubOnly: sh.hubOnly, sp: sp }, true);
     var why = (KIND_WHY[kind] || '') + infoWhy(ctx, sh);
     if (ctx.flags.lastTrioTags && ctx.flags.lastTrioTags.length) { why += '／見所：' + ctx.flags.lastTrioTags.join('・'); ctx.flags.lastTrioTags = null; }
     return { text: text, why: why, kind: kind };
@@ -944,6 +987,22 @@
       if (done3(ctx, g)) { ctx.flags.trioCur = null; return T.exitGroup(ctx, g, text, '三人で、条件の回数を重ねきった', hasH(ctx), c.kind); }
       return { text: text + progText(ctx, g), why: '三人で条件を重ねていく', mag: 12, with: g.filter(function (x) { return x !== a; }) };
     }
+  });
+
+  /* 三人の場面の結果に、直接の行為をした組（trioPairs）を付ける（engine.js の actRun が romanceOk・Ctx.say に渡す）。
+     中心のある三人では、直接は繋がらない二人（性行為の相手の固定など）を体の関係として見ないので、記録が止められない（2026-10-27 担当HN） */
+  ['trio', 'trio_auto', 'trio_heat', 'trio_more'].forEach(function (id) {
+    var e = EV.filter(function (x) { return x.id === id; })[0];
+    if (!e || e._tp) return;
+    var run0 = e.run;
+    e._tp = true;
+    e.run = function (ctx) {
+      ctx.flags.lastTrioPairs = null;
+      var r = run0.apply(this, arguments);
+      if (r && typeof r === 'object' && ctx.flags.lastTrioPairs) r.trioPairs = ctx.flags.lastTrioPairs;
+      ctx.flags.lastTrioPairs = null;
+      return r;
+    };
   });
 
   /* ---------- 部屋を出たあとの三人 ---------- */

@@ -86,6 +86,29 @@ node orient-audit.js ../../hakoniwa-zenrei 40 '' --why
 
 恋愛対象（男性／女性／なし）に合わない相手と、恋人・夜・片想いの結末（O1）、二人だけの性的な場面（O2）、告白（O3）になっていないかを全箱庭で数える。O2・O3 は文から拾うので、--why の例を目で確かめる。受け攻めは pos-audit.js で見る。
 
+## moan-audit.js（喘ぎ声の点検）
+
+`node moan-audit.js ../../hakoniwa-full 8 r18 --why`（口調を1つずつ全員に固定し、男女・小説調／男性向け・ほどほど／濃いを回して、喘ぎ・山場の声の (a) 口調・性別に合わない語尾〈規則は lint.js の MOAN_RULES〉／(b) 同じ場面で同じ喘ぎ／(c) 口調の語尾つきが3割超え を数える。`safe`・全年齢版では (d) 喘ぎの混入。`--night=sadist,maso,mean,sweet,shy,match,none`・`--moantone=noja` で夜の性格・喘ぎの口調の効き、`--from=前の --json` で規則だけ当て直し）
+
+## setting-audit.js（性行為に関わる設定が場面に反映されているかの点検。2026-10-27）
+
+R18 の性行為に関わる設定（住人の⚙設定「恋愛と夜」「体と設定」「相手ごとの設定」、全体の設定、箱庭の R18 の環境値）を一つずつ
+「分かる値」にして全箱庭を各 N 回回し、性的な記録（e.lewd）の本文・理由（e.why）・点検用の記録（夜の性格の文 HK.Attr.log、
+夜の主導の文 HK.PosLead.log、体の特徴の文 HK.Attr.raceLog／featLog、受け攻めの向き HK.Pos.order、喘ぎの呼び出し HK.Attr.moanLog）から、
+その設定が効いた回を数える。対象の住人は 0 番（アキラ）、相手は 1 番（ミナト）。
+
+```sh
+node setting-audit.js ../../hakoniwa-full 6                       # 全設定×全箱庭の表（3分ほど）
+node setting-audit.js ../../hakoniwa-full 8 room,omega --probe=night --why   # 箱庭と設定を絞る。--why で効いていない回の例
+node setting-audit.js ../../hakoniwa-full 1 --probe=body.genM --dump=island#3  # その回の性的な記録の全文
+node setting-audit.js ../../hakoniwa-full --list                  # 設定の一覧
+```
+
+- 表のマス：dir（効いている回／効くはずの回。「(なし x/y)」は設定なしで同じ印が出た回）・excl（設定なしで起きた場面が、設定ありで 0 になった回）・
+  rate（設定あり：なし の数。◯ は期待どおりの向き）・cnt（件数の割合）。◯ は 8 割以上、△ は 2 割以上、✕ はそれ未満、－ はその箱庭で起きない
+- 性器（男性器・両方・ふたなり・女性器）は語か挿入の書き方で見る。小説調には体の語を書かない文も多いので、出ない回は「食い違い」ではない（食い違いは pos-audit の V7・V8）
+- 体の語の印は、性器の呼び方を見る設定だけふつうの列、ほかは「直接」の列で語にする
+
 ## seg-audit.js（台詞・地の文・引用の区分の点検）
 
 ```

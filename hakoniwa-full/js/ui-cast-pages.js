@@ -376,7 +376,7 @@
     t.value = v;
   }
   if (typeof document !== 'undefined' && document.addEventListener) ['focusin', 'mousedown', 'touchstart', 'keydown'].forEach(function (k) { document.addEventListener(k, typeFill, true); document.addEventListener(k, lazyFill, true); });
-  /* 住人を全員並べるセレクト（⚙️ 設定の「相手」「同一人物」）：選んでいる人だけで描き（data-cplazy）、触れたときに全員の選択肢を入れる。
+  /* 住人を全員並べるセレクト（⚙️ 設定の「相手」）：選んでいる人だけで描き（data-cplazy）、触れたときに全員の選択肢を入れる。
      住人1000人だと1つで数十msかかり、窓を開くのが重かった。lazyAttr(全部の選択肢の HTML) が属性を返す（最近の 30 個だけ覚える） */
   var lazyMap = {}, lazyIds = [], lazyN = 0;
   function lazyAttr(full) {

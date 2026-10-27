@@ -394,6 +394,29 @@
     if (HK.TieRel.pairText) HK.wrap(HK.TieRel, 'pairText', function (orig) { return function (ctx, A, B, cl) { return cl && cl.id === 'forced' && FORCED ? FORCED.text : orig.apply(this, arguments); }; });
   }
 
+  /* ---------- 三人の場面（3P）の組み方（2026-10-27 担当HL。利用者の決まり） ----------
+     HK.Pos.trioPlan(a, b, c, opt) → null、または { pairs: [[x, y], …], hub: 人|null, all: 真偽, watch: [[x, y], …] }
+     ・住人の設定「三人の場面（3P）」（c.trio）が 'no' の人がいれば null（未設定・ほかの値は「する」。古い「固定した相手が中心なら参加する」の値は読まない）
+     ・pairs：直接の行為をしてよい組。HK.State.pairSex（その場にいる・R18に参加する・受け攻めと恋愛対象（体の関係）・恋愛やR18にしない相手・
+       性行為の相手の固定（固定した人は固定した相手とだけ）・性欲「なし」）＋ opt.ok(x, y)（箱庭ごとの条件：恋愛・体だけの関係・合意など）
+     ・三組とも直接できれば all（hub は null）。二組なら、両方の組に入る人が中心（hub）。残りの一組（watch）は同じ場にいても触れ合わない（見ている・声をかける程度）
+     ・直接できる組が一つ以下なら null（3P にせず、二人の場面に落とす）。全年齢版・全年齢モードでは常に null
+     ・形（誰が誰を抱くか）は呼ぶ側が pairs の向き（HK.Pos.order）で決め、作れなければ 3P にしない */
+  P.trioOptOut = function (c) { return src(c, 'trio') === 'no'; };
+  P.trioPlan = function (a, b, c, opt) {
+    var m = [a, b, c];
+    if (HK.SAFE_ON || !a || !b || !c || a === b || b === c || a === c) return null;
+    if (m.some(P.trioOptOut)) return null;
+    /* 恋愛・R18にしない相手どうしは、触れ合わない組でも同じ三人に入れない（出られない部屋と同じ扱い。2026-10-27） */
+    if (HK.ngExplicit && (HK.ngExplicit(a, b) || HK.ngExplicit(a, c) || HK.ngExplicit(b, c))) return null;
+    var ok = function (x, y) { return !!(HK.State && HK.State.pairSex ? HK.State.pairSex(x, y) : P.okSex(x, y)) && (!opt || !opt.ok || !!opt.ok(x, y)); };
+    var all = [[a, b], [a, c], [b, c]], pairs = all.filter(function (pr) { return ok(pr[0], pr[1]); });
+    if (pairs.length === 3) return { pairs: pairs, hub: null, all: true, watch: [] };
+    if (pairs.length < 2) return null;
+    var hub = m.filter(function (x) { return pairs[0].indexOf(x) >= 0 && pairs[1].indexOf(x) >= 0; })[0];
+    return { pairs: pairs, hub: hub, all: false, watch: all.filter(function (pr) { return pairs.indexOf(pr) < 0; }) };
+  };
+
   /* 恋愛対象（受け攻め）を、恋愛できる相手の判定に加える */
   if (HK.canLove && !HK.canLove._pos) {
     var cl0 = HK.canLove;

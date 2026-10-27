@@ -81,20 +81,42 @@
   E.MOAN = M; E.DOM = DOM;
   /* 一つの場面（一つの記録）の中では、同じ喘ぎを二度使わない（2026-10-26）。
      表（tag）ごとの覚えだけだと、同じ行を持つ別の表（態度の表と口調の表・別の鍵）から同じ喘ぎが重なることがあるので、
-     記録の数（S.log の長さ）が変わるまでに使った喘ぎを、表をまたいで覚える。S が記録を持たない（乱数だけ）なら何もしない。
+     記録の数（S.log の長さ）が変わるまでに使った喘ぎを、表をまたいで覚える（S が記録を持たないときは下の lastS・pend）。
      候補がすべてこの場面で使用済みなら絞らない（乱数の引き方は変えない：候補を絞るだけ） */
+  /* 記録を持たない S（乱数だけ・{ rng } だけを渡す呼び方。厚い山場の {vb1} など）は、いちばん最近に喘ぎを覚えた記録つきの S の場面に数える
+     （同じ記録の文を組み立てている途中なので。記録が一つ進んでいれば新しい場面として覚え直す）。2026-10-27：同じ場面で同じ喘ぎが2回出たのを直す */
+  var lastS = null, pend = null;
+  /* その場面で使った喘ぎの配列（まだ記録つきの S が一度も喘いでいなければ、記録なしの呼び出しの分を pend に預けておき、最初の場面に引き継ぐ） */
+  function usedOf(S) {
+    S = S && S.log ? S : lastS;
+    if (!S) return pend;
+    var m = S._eroScene;
+    return m && m.at === S.log.length ? m.used : pend;
+  }
   E.sceneAvoid = function (S, list) {
-    var log = S && S.log, m = S && S._eroScene;
-    if (!log || !list || list.length < 2 || !m || m.at !== log.length) return list;
-    var f = list.filter(function (x) { return m.used.indexOf(x) < 0; });
+    var u = usedOf(S);
+    if (!u || !u.length || !list || list.length < 2) return list;
+    var f = list.filter(function (x) { return u.indexOf(x) < 0; });
     return f.length ? f : list;
   };
+  /* その場面でもう使った喘ぎか（候補が1つしかない表で、二度目を避けて別の鍵に回すときに使う。moan-engine.js） */
+  E.sceneUsed = function (S, x) { var u = usedOf(S); return !!(u && u.indexOf(x) >= 0); };
   E.sceneMark = function (S, x) {
-    var log = S && S.log; if (!log || x == null || x === '') return x;
-    var m = S._eroScene; if (!m || m.at !== log.length) m = S._eroScene = { at: log.length, used: [] };
+    if (x == null || x === '') return x;
+    var S2 = S && S.log ? S : lastS;
+    if (!S2) { (pend = pend || []).push(x); return x; }
+    lastS = S2;
+    var m = S2._eroScene; if (!m || m.at !== S2.log.length) { m = S2._eroScene = { at: S2.log.length, used: pend || [] }; pend = null; }
     m.used.push(x);
     return x;
   };
+  /* 箱庭を回し始めるたびに忘れる（前の回の S を使わない） */
+  if (HK.simulate && !HK.simulate._sceneS && HK.wrap) HK.wrap(HK, 'simulate', function (sim0) {
+    var f = function () { lastS = null; pend = null; return sim0.apply(this, arguments); };
+    for (var ks in sim0) if (Object.prototype.hasOwnProperty.call(sim0, ks)) f[ks] = sim0[ks];
+    f._sceneS = true;
+    return f;
+  });
   /* 一回の結果の中では、同じ喘ぎをなるべく繰り返さない */
   /* 使い切ったら、いちばん前に使ったものから戻す（直前に使った文はすぐには戻らない） */
   function pickFresh(S, list, tag) {

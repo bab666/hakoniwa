@@ -10,7 +10,7 @@
        区切りだけ color-scheme を「only」にして自動の塗り替えを断る（ダークのテーマのときは dark only）
      ・重要な出来事のある区切りの赤（.when.hot など）は index.html の規則のほうが強いので、ここでは色を上書きしない */
   var css = 'html body .stepblk .when{color:#16233B;color:var(--ink,#16233B);-webkit-text-fill-color:currentColor;background:#fff;background:var(--paper,#fff);color-scheme:light only;opacity:1;mix-blend-mode:normal}' +
-    '@media (prefers-color-scheme: dark){html:not([data-theme="light"]) body .stepblk .when{color-scheme:dark only}}' +
+    '@media (prefers-color-scheme: dark){html:not([data-theme="light"], [data-theme="gray"]) body .stepblk .when{color-scheme:dark only}}' +
     'html[data-theme="dark"] body .stepblk .when{color-scheme:dark only}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 })();

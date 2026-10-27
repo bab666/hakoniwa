@@ -509,7 +509,9 @@
             '|{a}「大丈夫？｜大丈夫か｜大丈夫ですか？」{b}「大丈夫？｜大丈夫か｜大丈夫ですか？」――左右から同じ声で同じことを訊かれて、{c}は思わず吹き出した。' +
             '|真ん中の{c}を挟んで、{a}と{b}は同じ仕草で肩をすくめた。{c}は、合わせ鏡の中に閉じ込められたような気がした。');
           var R = SS.R18.locker, PS = HK.State && HK.State.pairSex;
-          return R && R.trio && lockerR18(S) && PS && PS(c, a) && PS(c, b) ? l.concat(R.trio) : l;
+          /* 三人の場面（3P）の決まり（pos.js の HK.Pos.trioPlan）：{c} が二人の両方と直接できる形のときだけ。「3P しない」の人がいれば足さない（2026-10-27 担当HN） */
+          var T3 = HK.Pos && HK.Pos.trioPlan ? HK.Pos.trioPlan(c, a, b) : null;
+          return R && R.trio && lockerR18(S) && PS && PS(c, a) && PS(c, b) && T3 && (T3.all || T3.hub === c) ? l.concat(R.trio) : l;
         }
       },
       wall: {

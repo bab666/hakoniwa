@@ -45,7 +45,7 @@
     if (sl.length) bits.push('体の関係：' + sl.join('・') + (c.sexLock === 'pickMob' ? '＋モブ' : 'だけ'));
     else if (!HK.SAFE_ON && c.sexLock === 'any' && lk.length) bits.push('体の関係：誰とでも');
     if (!HK.SAFE_ON && c.noR18) bits.push('R18に参加しない');
-    if (!HK.SAFE_ON && c.trioHub) bits.push('三人の場面：固定の相手が中心なら');
+    if (!HK.SAFE_ON && c.trio === 'no') bits.push('三人の場面（3P）：しない');
     /* 体の関係の相手（恋愛対象「なし」の人だけ）・性欲の強さ（attr.js の A.SEXLIKES・A.LIBIDO。判定は pos.js） */
     if (!HK.SAFE_ON && c.likes === 'none' && c.sexLikes && HK.Attr) bits.push('体の関係の相手：' + HK.Attr.label('sexLikes', c.sexLikes));
     if (!HK.SAFE_ON && c.libido && HK.Attr) bits.push('性欲：' + HK.Attr.label('libido', c.libido));
@@ -97,7 +97,9 @@
     '.gtie .one{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.gtie input[type=text]{width:12em}' +
     'details.gkeigo,details.gdet{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r-card,6px);padding:6px 10px}details.gkeigo summary,details.gdet summary{cursor:pointer;font-size:13px;color:var(--muted)}details.gkeigo .gkn,details.gdet .gkn{font-size:12px;margin-left:4px;color:var(--ink)}details.gkeigo[open] summary,details.gdet[open] summary{margin-bottom:4px}' +
     '.gscope{margin:-2px 0 8px;padding:4px 8px;border-left:2px solid var(--line2,var(--line));background:var(--bg1,transparent);border-radius:0 4px 4px 0}.gforh{font-size:12px;color:var(--muted);margin-left:4px}.gfnote{color:var(--accent)}' +
-    '@media (max-width:520px){.gearbox{padding:12px}.gtie input[type=text]{width:100%}}';
+    '@media (max-width:520px){.gearbox{padding:12px}.gtie input[type=text]{width:100%}}' +
+    /* 暗くした欄（性欲「なし」のときの夜の欄：.gdim。値は消さず操作もできる）と、効かない欄（攻め・受けを選んだ人の攻め度：.gdis。選べない）。2026-10-27 担当HK */
+    '.gdim{opacity:.45}.gdim:hover,.gdim:focus-within{opacity:.75}.gdis{opacity:.5}.gdis select{cursor:not-allowed}.gearrow .gnote{flex:1 1 100%;margin:0}.glibnote{border-left:2px solid var(--line2,var(--line));padding-left:8px}';
   /* この住人の傾向（エゴグラムの説明）と、住人一覧の態度の一語 */
   css += 'details.gego{margin:10px 0 0;border:1px solid var(--line);border-radius:var(--r-card,6px);padding:6px 10px;background:var(--bg1,transparent)}details.gego summary{cursor:pointer;font-size:14px;font-weight:600}details.gego .gegc{font-size:12px;font-weight:400;color:var(--muted);margin-left:6px}details.gego ul{margin:6px 0 2px;padding-left:1.2em;font-size:13px;line-height:1.7}details.gego li{margin:2px 0}' +
     '.egatt{display:inline-block;font-size:11px;line-height:1.5;color:var(--muted2,var(--muted));border:1px solid var(--line);border-radius:999px;padding:0 6px;margin-left:6px;white-space:nowrap;vertical-align:1px}';
@@ -202,10 +204,12 @@
     var toneSel = '<select data-gf="tone" aria-label="口調">' + opt('', 'おまかせ（' + toneLabel(autoK) + '）', c.tone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.tone || '', t.desc); }).join('') + '</select>';
     var tInfo = HK.toneInfo ? HK.toneInfo(c.tone || autoK) : HK.PERSONA[c.tone || autoK];
     /* 喘ぎの口調（R18版だけ。moan-engine.js が喘ぎを作るときにいつもの口調の代わりに使う）：口調の欄のすぐ下 */
-    var moanRow = '';
+    var moanRow = '', ld = '';
     /* r18:begin */
-    if (!HK.SAFE_ON) moanRow = '<div class="gearrow"><label>喘ぎの口調 <select data-gf="moanTone" aria-label="喘ぎの口調">' + opt('', 'いつもの口調と同じ', c.moanTone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.moanTone || '', t.desc); }).join('') + '</select></label></div>' +
-      '<p class="gearhint">喘ぎ声・夜の場面の声だけ、この口調で出します（普段は作った口調で話す人の、素の声が出る様子に）。</p>';
+    /* 性欲の強さ「なし」：合意のある夜に効く欄を暗くする（attr.js の A.libDim。値は消さない） */
+    ld = HK.Attr && HK.Attr.libDim ? HK.Attr.libDim(c) : '';
+    if (!HK.SAFE_ON) moanRow = '<div' + ld + '><div class="gearrow"><label>喘ぎの口調 <select data-gf="moanTone" aria-label="喘ぎの口調">' + opt('', 'いつもの口調と同じ', c.moanTone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.moanTone || '', t.desc); }).join('') + '</select></label></div>' +
+      '<p class="gearhint">喘ぎ声・夜の場面の声だけ、この口調で出します（普段は作った口調で話す人の、素の声が出る様子に）。</p></div>';
     /* r18:end */
     var callSel = '<select data-gf="call" aria-label="基本の呼び方">' + (HK.CALL_STYLES || [{ v: '', label: 'おまかせ' }]).map(function (o) { return opt(o.v, o.label, c.call || ''); }).join('') + '</select>';
     /* 相手の性別で分けるとき：男性・女性・その他ごとの敬称 */
@@ -221,29 +225,31 @@
     /* r18:begin */
     /* 性行為の相手の固定（R18版のみ）：恋愛は縛らず、体の関係（夜・R18の場面）だけをこの相手に限る */
     if (!HK.SAFE_ON) {
-      sexSel = '<label title="固定した相手だけ：住人では選んだ相手とだけ体の関係になり、モブ・魔物など住人でない相手ともなりません（マッサージはふつうの施術、感覚遮断穴は壁の向こうの手を追い払います）。固定した相手＋モブ：住人では選んだ相手とだけ、モブとの場面はふつうに起きます">性行為の相手を固定 <select data-gf="sexlock" aria-label="性行為の相手の固定"><option value="">恋愛相手の固定に合わせる</option>' + opt('any', '誰とでも可（恋愛は固定のまま）', c.sexLock || '') + (others.length ? opt('pick', '固定した相手だけ', c.sexLock || '') + opt('pickMob', '固定した相手＋モブ', c.sexLock || '') : '') + '</select></label>';
-      if ((c.sexLock === 'pick' || c.sexLock === 'pickMob') && others.length) sexBox = det('sex', '性行為の相手', sumOf(c.sexLocks, 'まだ選んでいません'), cbs('sexlockc', c.sexLocks));
+      sexSel = '<label' + ld + ' title="固定した相手だけ：住人では選んだ相手とだけ体の関係になり、モブ・魔物など住人でない相手ともなりません（マッサージはふつうの施術、感覚遮断穴は壁の向こうの手を追い払います）。固定した相手＋モブ：住人では選んだ相手とだけ、モブとの場面はふつうに起きます">性行為の相手を固定 <select data-gf="sexlock" aria-label="性行為の相手の固定"><option value="">恋愛相手の固定に合わせる</option>' + opt('any', '誰とでも可（恋愛は固定のまま）', c.sexLock || '') + (others.length ? opt('pick', '固定した相手だけ', c.sexLock || '') + opt('pickMob', '固定した相手＋モブ', c.sexLock || '') : '') + '</select></label>';
+      if ((c.sexLock === 'pick' || c.sexLock === 'pickMob') && others.length) sexBox = '<div' + ld + '>' + det('sex', '性行為の相手', sumOf(c.sexLocks, 'まだ選んでいません'), cbs('sexlockc', c.sexLocks)) + '</div>';
     }
     /* r18:end */
     /* R18版だけの欄：体と設定の「性器の呼び方」、恋愛と夜の「ふたなり・モブには・R18に参加しない・濁点喘ぎ」 */
     var partRow = '', r18Row = '';
     /* r18:begin */
     if (!HK.SAFE_ON) {
-      partRow = '<div class="gearrow"><label title="R18の場面で、性器をどう呼ぶか。台詞はその人の言葉づかい、地の文はその人の体の描写に使います（名前の書かれていない文は、その場の様子から誰の体か一人に決まるときだけ変えます。自由記入の語は、その人の体にだけ使います）">性器の呼び方 ' + selOf('partWords', [['', 'おまかせ（文のまま）'], ['soft', 'ぼかす'], ['direct', '直接的'], ['medical', '医学的']], c.partWords || '') + '</label>' +
+      partRow = '<div class="gearrow' + (ld ? ' gdim' : '') + '"><label title="R18の場面で、性器をどう呼ぶか。台詞はその人の言葉づかい、地の文はその人の体の描写に使います（名前の書かれていない文は、その場の様子から誰の体か一人に決まるときだけ変えます。自由記入の語は、その人の体にだけ使います）">性器の呼び方 ' + selOf('partWords', [['', 'おまかせ（文のまま）'], ['soft', 'ぼかす'], ['direct', '直接的'], ['medical', '医学的']], c.partWords || '') + '</label>' +
         '<label title="空なら上の作風のまま。決めると、作風より優先します">男性器 <input type="text" data-gf="partM" value="' + esc(c.partM || '') + '" maxlength="10" placeholder="自由に" style="width:6em"></label>' +
         '<label title="空なら上の作風のまま。決めると、作風より優先します">女性器 <input type="text" data-gf="partF" value="' + esc(c.partF || '') + '" maxlength="10" placeholder="自由に" style="width:6em"></label></div>';
-      r18Row = (c.gender === 'f' && (c.pos === 'top' || c.pos === 'riba') ? '<label title="攻めに回る場面を、男性の体を前提にした描写で書きます。オメガバースでは使いません"><input type="checkbox" data-gf="futa"' + (c.futa ? ' checked' : '') + '> ふたなり（攻めのとき）</label>' : '') +
-        '<label title="モブ・魔物・村人・略奪者・罠・星の生命体など、住人でない相手との場面だけの受け攻めです（住人どうしは上の受け攻めのまま）。住人と同じなら上の受け攻めに従います。受け・リバを選ぶと、住人には攻めの人でもモブには受けます。攻めを選ぶと、住人には受けの人でもモブには受けません">モブ相手の受け攻め <select data-gf="posNpc" aria-label="モブ・魔物が相手のときの受け攻め">' + (HK.Pos ? HK.Pos.NPC_OPTS : [['', '住人と同じ']]).map(function (x) { return opt(x[0], x[1], (HK.Pos ? HK.Pos.npcValid(c.posNpc) : '')); }).join('') + '</select></label>' +
+      r18Row = (c.gender === 'f' && (c.pos === 'top' || c.pos === 'riba') ? '<label' + ld + ' title="攻めに回る場面を、男性の体を前提にした描写で書きます。オメガバースでは使いません"><input type="checkbox" data-gf="futa"' + (c.futa ? ' checked' : '') + '> ふたなり（攻めのとき）</label>' : '') +
+        '<label' + ld + ' title="モブ・魔物・村人・略奪者・罠・星の生命体など、住人でない相手との場面だけの受け攻めです（住人どうしは上の受け攻めのまま）。住人と同じなら上の受け攻めに従います。受け・リバを選ぶと、住人には攻めの人でもモブには受けます。攻めを選ぶと、住人には受けの人でもモブには受けません">モブ相手の受け攻め <select data-gf="posNpc" aria-label="モブ・魔物が相手のときの受け攻め">' + (HK.Pos ? HK.Pos.NPC_OPTS : [['', '住人と同じ']]).map(function (x) { return opt(x[0], x[1], (HK.Pos ? HK.Pos.npcValid(c.posNpc) : '')); }).join('') + '</select></label>' +
         '<label title="受けも攻めもせず、住人どうしの夜・モブや魔物に襲われる場面・執着の監禁の夜に出ません。殺し合いなどほかの出来事にはふつうに出ます。R18が中心の箱庭（エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ・マッサージ）では効きません"><input type="checkbox" data-gf="noR18"' + (c.noR18 ? ' checked' : '') + '> R18に参加しない</label>' +
-        '<label title="出られない部屋の三人の場面で、固定した相手（恋愛相手・性行為の相手）が中心にいれば、固定していない人が一緒でも参加します。その人とは直接触れ合わず、恋愛にもなりません。苦手な組み合わせの人とは一緒になりません"><input type="checkbox" data-gf="trioHub"' + (c.trioHub ? ' checked' : '') + '> 三人の場面：固定した相手が中心なら参加する</label>' +
-        (c.pos !== 'top' ? '<label title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"' + (c.daku ? ' checked' : '') + '> 濁点喘ぎ（男性向け）</label>' : '') +
+        /* 三人の場面（3P）：する／しない（attr.js の A.TRIO。判定は pos.js の HK.Pos.trioOptOut・trioPlan。2026-10-27 担当HN） */
+        (HK.Attr && HK.Attr.TRIO ? '<label' + ld + ' title="出られない部屋・ロッカー・吹雪の館・エロトラップダンジョンなどの三人以上の場面（3P）に加わるかです。する（既定）でも、性行為の相手を固定している人は固定した相手とだけ触れ合います（受けなら固定した相手からだけ受けます）。直接触れ合えない二人は、同じ場にいても見ている・声をかける程度です。直接触れ合える組が一つしかないときは、三人の場面にならず二人の場面になります。しないにすると、三人以上の場面には加わりません">三人の場面（3P） ' + selOf('trio', HK.Attr.TRIO, c.trio || '') + '</label>' : '') +
+        (c.pos !== 'top' ? '<label' + ld + ' title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"' + (c.daku ? ' checked' : '') + '> 濁点喘ぎ（男性向け）</label>' : '') +
         /* 性欲の強さ（全住人）・体の関係の相手（恋愛対象「なし」の人だけ）。attr.js の A.LIBIDO・A.SEXLIKES、判定は pos.js（2026-10-27 担当HG） */
         (HK.Attr && HK.Attr.LIBIDO ? '<label title="恋人の夜・勢いの夜・一夜・セフレ・出られない部屋の条件のエッチ・発情の相手を受け入れる・危機の夜・お持ち帰りなど、合意のある体の場面の起こりやすさが変わります（弱いは半分ほど、強いは1.6倍ほど。二人とも強いともっと起きやすい）。なしにすると、合意のある体の場面には乗りません（恋愛はふつうに起きます）。内容のスイッチ「合意のない展開」の場面は、この欄に関係なく起きます">性欲の強さ ' + selOf('libido', HK.Attr.LIBIDO, c.libido || '') + '</label>' : '') +
-        (c.likes === 'none' && HK.Attr && HK.Attr.SEXLIKES ? '<label title="恋愛対象「なし」の人は恋愛（告白・恋人・片想い）にはなりませんが、体だけの関係（セフレ・一夜・勢いの夜・危機の夜・部屋の条件など）にはなれます。その相手の性別を選びます。おまかせは相手の恋愛対象・受け攻めに合わせます。なしにすると、体の関係にもなりません（合意のない展開の場面でも）">体の関係の相手 ' + selOf('sexLikes', HK.Attr.SEXLIKES, c.sexLikes || '') + '</label>' : '');
-      if (r18Row) r18Row = '<div class="gearrow">' + r18Row + '</div>';
+        (c.likes === 'none' && HK.Attr && HK.Attr.SEXLIKES ? '<label' + ld + ' title="恋愛対象「なし」の人は恋愛（告白・恋人・片想い）にはなりませんが、体だけの関係（セフレ・一夜・勢いの夜・危機の夜・部屋の条件など）にはなれます。その相手の性別を選びます。おまかせは相手の恋愛対象・受け攻めに合わせます。なしにすると、体の関係にもなりません（合意のない展開の場面でも）">体の関係の相手 ' + selOf('sexLikes', HK.Attr.SEXLIKES, c.sexLikes || '') + '</label>' : '');
+      if (r18Row) r18Row = '<div class="gearrow">' + r18Row + '</div>' +
+        (ld ? '<p class="gearhint glibnote" data-note="libido">性欲が「なし」なので、合意のある夜の出来事は起きません（恋愛は起きます。内容のスイッチ「合意のない展開」の場面はスイッチどおり）。暗くした欄の値は残してあり、性欲を戻すと元どおり効きます（合意のない展開の場面には、いまも効きます）。</p>' : '');
     }
     /* r18:end */
-    var nightRow = HK.Attr && HK.Attr.nightHtml ? HK.Attr.nightHtml(c, { esc: esc, opt: opt, selOf: selOf }) : '';
+    var nightRow = HK.Attr && HK.Attr.nightHtml ? HK.Attr.nightHtml(c, { esc: esc, opt: opt, selOf: selOf, byId: byId }) : '';
     /* 相手ごとの設定（関係・呼び方・二人称/一人称・受け攻め・夜の性格） */
     var ties = s.ties || [], groups = {};
     ties.forEach(function (t, k) {
@@ -253,14 +259,17 @@
     });
     var calls = c.calls || {};
     var ex = extraOf(c);
-    var rel = others.filter(function (o) { return groups[o.id] || calls[o.id] || ex[o.id] || (HK.Attr && HK.Attr.hasVoiceFor(c, o.id)); }).map(function (o) {
+    var rel = others.filter(function (o) { return groups[o.id] || calls[o.id] || ex[o.id] || (HK.Attr && HK.Attr.hasVoiceFor(c, o.id)) || o.same === c.id; }).map(function (o) {
       var note = HK.Attr && HK.Attr.forNote ? HK.Attr.forNote(c, o) : '';
+      /* 同一人物・闇堕ちVer（以前は「体と設定」。attr.js の A.sameForHtml・A.sameNote。2026-10-27 担当HK） */
+      var sameH = HK.Attr && HK.Attr.sameForHtml ? '<div class="one">' + HK.Attr.sameForHtml(c, o, { esc: esc }) + '</div>' : '', sameN = HK.Attr && HK.Attr.sameNote ? HK.Attr.sameNote(c, o) : '';
       var i = s.chars.indexOf(o);
       return '<div class="gtie"><div class="who">' + HK.Icons.html(o.name, i, 22) + esc(o.name) + '</div>' +
         (groups[o.id] || []).map(function (x) { return tieRow(c, o, x[0], x[1]); }).join('') +
         '<div class="one"><label>' + esc(c.name) + 'からの呼び方 <input type="text" data-gf="callone" data-o="' + o.id + '" value="' + esc(calls[o.id] || '') + '" maxlength="16" placeholder="' + esc(o.name + ({ name: '', san: 'さん', kun: 'くん', chan: 'ちゃん', sama: '様', senpai: '先輩', sensei: '先生' }[c.call] || '')) + '"></label>' + (HK.Attr && HK.Attr.voiceForHtml ? HK.Attr.voiceForHtml(c, o, esc) : '') +
         (HK.Attr && HK.Attr.forHtml ? '<span class="gforh">この人には：</span>' + HK.Attr.forHtml(c, o, { esc: esc, opt: opt }) : '') +
-        '<button type="button" class="btn ghost small" data-gact="tadd" data-o="' + o.id + '">関係を重ねる</button></div>' + (note ? '<p class="gearhint gfnote">' + esc(note) + '</p>' : '') + '</div>';
+        '<button type="button" class="btn ghost small" data-gact="tadd" data-o="' + o.id + '">関係を重ねる</button></div>' + (note ? '<p class="gearhint gfnote">' + esc(note) + '</p>' : '') +
+        sameH + (sameN ? '<p class="gearhint gsame">' + esc(sameN) + '</p>' : '') + '</div>';
     }).join('');
     /* 憎悪を持っても殺さない相手（どちらに付けても、二人のあいだでは殺す場面が思いとどまる場面になる。attr.js の HK.Attr.noKillPair） */
     /* 憎悪を持っても殺さない相手：折りたたみ（基本は閉じる）。説明は TIPS の「相手ごとの設定」に */
@@ -268,7 +277,7 @@
     /* 住人が多いときは、相手の欄を最初の人だけで描き、触れたときに全員を入れる（ui-cast-pages.js の lazyAttr） */
     var newoAll = others.map(function (o) { return opt(o.id, o.name, ''); }).join(''), newoLz = others.length && lazyMany && HK.CastPages && HK.CastPages.lazyAttr;
     var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手"' + (newoLz ? HK.CastPages.lazyAttr(newoAll) + '>' + opt(others[0].id, others[0].name, '') : '>' + newoAll) + '</select></label>' +
-      '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + opt('', '（関係は付けずに相手ごとの設定だけ）', 'friend') + '</select></label>' + (function () { var gm = groupMates(c); return gm.length ? '<label title="' + esc('同じグループ（' + grpsOf(c).join('・') + '）の全員に、選んだ関係を付けます：' + gm.map(function (o) { return o.name; }).join('・') + '。向きのある関係は、' + c.name + 'が左（上司・先輩・師匠など）になります') + '"><input type="checkbox" data-gf="newgrp"> グループの全員と（' + gm.length + '人）</label>' : ''; })() + '<button type="button" class="btn small" data-gact="tnew">追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
+      '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + opt('', '（関係は付けずに相手ごとの設定だけ）', 'friend') + (HK.Attr && HK.Attr.sameForHtml ? opt('__same', '同一人物（別の世界・別の時間の自分）', 'friend') : '') + '</select></label>' + (function () { var gm = groupMates(c); return gm.length ? '<label title="' + esc('同じグループ（' + grpsOf(c).join('・') + '）の全員に、選んだ関係を付けます：' + gm.map(function (o) { return o.name; }).join('・') + '。向きのある関係は、' + c.name + 'が左（上司・先輩・師匠など）になります') + '"><input type="checkbox" data-gf="newgrp"> グループの全員と（' + gm.length + '人）</label>' : ''; })() + '<button type="button" class="btn small" data-gact="tnew">追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
       /* 固定の説明は各節の ？（TIPS）に置き、ここには選んだものによって変わる説明（口調・関係・この住人の傾向）だけを出す */
       (HK.egoDesc ? '<details class="gego"' + (egoOpen ? ' open' : '') + '><summary>この住人の傾向<span class="gegc">' + esc(HK.toCode(c.eg)) + '・' + esc(HK.egoAttWord(c)) + '</span></summary><ul id="egodesc">' + HK.egoDesc(c).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul></details>' : '') +
@@ -289,7 +298,7 @@
         '<label>年齢 <input type="number" data-gf="age" min="1" max="150" value="' + esc(c.age || '') + '" placeholder="決めない" style="width:5em"></label>' +
         '<label title="酒の強さ。合コン・出られない部屋の酒・オメガバースの飲みの場面・邪神村の歓迎の宴や御神酒などで、酔いやすさや振る舞いが変わります。おまかせは気質から決まります">お酒 ' + selOf('alcohol', [['', 'おまかせ'], ['1', '弱い'], ['2', 'やや弱い'], ['3', 'ふつう'], ['4', '強い'], ['5', 'ザル']], c.alcohol || '') + '</label></div>' +
       '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
-      /* ③体と設定：体格・種族・心の強さ・同一人物・好物（R18版：胸・性器・性器の呼び方） */
+      /* ③体と設定：体格・種族・心の強さ・好物（R18版：胸・性器・性器の呼び方）。同一人物は⑤相手ごとの設定の行に */
       '<div class="gearsec"><h3>体と設定' + (HK.Tips ? HK.Tips.btn('gear-body') : '') + '</h3>' + (HK.Attr ? HK.Attr.gearHtml(c, others, { esc: esc, opt: opt, selOf: selOf }) : '') + partRow + '</div>' +
       /* ③'箱庭の能力：箱庭をまたいで共通の能力値・欄（体力・運・推理力・特殊役職 など。shared-stats.js） */
       (HK.Shared && HK.Shared.shown().length ? '<div class="gearsec"><h3>箱庭の能力' + (HK.Tips ? HK.Tips.btn('gear-ab') : '') + '</h3>' + HK.Shared.gearHtml(c, { esc: esc, opt: opt }) + '</div>' : '') +
@@ -299,7 +308,7 @@
         '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label>' + nightRow + '</div>' +
       '<div class="gearrow">' + sexSel + '<label title="恋人ができたら、その恋人がいる間は、ほかの人と恋愛・夜の場面になりません（浮気しない）。恋人がいないうちは、ふつうに恋をします"><input type="checkbox" data-gf="faithful"' + (c.faithful ? ' checked' : '') + '> 一途（恋人ができたら、ほかの人に惹かれない・浮気しない）</label></div>' + r18Row +
       lockBox + sexBox + ngRow + '</div>' +
-      /* ⑤相手ごとの設定：関係・呼び方・二人称/一人称・受け攻め・夜の性格 */
+      /* ⑤相手ごとの設定：関係・呼び方・二人称/一人称・受け攻め・夜の性格・同一人物（闇堕ちVer） */
       '<div class="gearsec"><h3>相手ごとの設定' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + nkRow + (rel || '<p class="gearhint">まだ相手ごとの設定はありません。下の「相手」と「関係」を選んで追加してください（関係を付けずに、受け攻めや呼び方だけを決めることもできます）。</p>') + addable + '</div>';
   }
   function render() {
@@ -364,6 +373,14 @@
       var ty = act === 'tadd' ? 'friend' : (ov.querySelector('[data-gf="newt"]') || {}).value;
       if (ty == null) ty = 'friend';
       /* 「関係は付けずに相手ごとの設定だけ」：行だけ出す（グループの全員にも） */
+      /* 「同一人物」：関係ではなく、住人の同一人物（c.same）にする。行の「同一人物」のチェックと同じ（attr.js の A.gearField） */
+      if (act === 'tnew' && ty === '__same') {
+        if (!oid || !byId(oid)) return;
+        (extra[c.id] = extra[c.id] || {})[oid] = 1;
+        HK.Attr.gearField(c, 'at_sameC', { checked: true, dataset: { o: oid } }, false, changed, byId);
+        UI.toast('「' + c.name + '」を「' + byId(oid).name + '」と同一人物にしました');
+        return;
+      }
       if (act === 'tnew' && ty === '') {
         var ids = (ov.querySelector('[data-gf="newgrp"]') || {}).checked ? groupMates(c).map(function (o) { return o.id; }) : [oid];
         ids.forEach(function (id) { if (byId(id)) (extra[c.id] = extra[c.id] || {})[id] = 1; });
@@ -402,6 +419,8 @@
     if (!c) return;
     var tie = t.dataset.k != null ? (s.ties || [])[+t.dataset.k] : null;
     var isInput = ev.type === 'input';
+    /* 同一人物のチェックを外しても、窓を開いているあいだは相手の行を残す */
+    if (f === 'at_sameC' && t.dataset.o) (extra[c.id] = extra[c.id] || {})[t.dataset.o] = 1;
     if (HK.Attr && HK.Attr.gearField(c, f, t, isInput, changed, byId)) return;
     if (HK.Shared && HK.Shared.gearField(c, f, t, isInput, changed)) return;
     if (HK.Ending && HK.Ending.gearField(c, f, t, isInput, changed, sampleRefresh, s.chars.filter(function (x) { return x !== c; })[0])) return;
@@ -416,7 +435,7 @@
       case 'callG': if (isInput) return; c.callG = c.callG || {}; c.callG[t.dataset.g] = t.value; changed(false); sampleRefresh(); break;
       case 'gender': case 'likes': if (isInput) return; c[f] = t.value; changed(false); if (f === 'gender') { sampleRefresh(); render(); } else if (!HK.SAFE_ON) render(); break;
       /* 体の関係の相手・性欲の強さ（R18版。attr.js の値の一覧で確かめる） */
-      case 'sexLikes': case 'libido': if (isInput) return; c[f] = HK.Attr && HK.Attr.label(f, t.value) && t.value ? t.value : ''; changed(false); break;
+      case 'sexLikes': case 'libido': if (isInput) return; c[f] = HK.Attr && HK.Attr.label(f, t.value) && t.value ? t.value : ''; changed(f === 'libido'); break;
       case 'bmonth': if (isInput) return; c.bmonth = t.value; changed(false); break;
       case 'age': c.age = +t.value >= 1 && +t.value <= 150 ? String(Math.floor(+t.value)) : ''; changed(false); break;
       case 'keigoOlder': if (isInput) return; c.keigoOlder = t.checked; changed(false); sampleRefresh(); break;
@@ -425,7 +444,7 @@
       case 'daku': if (isInput) return; c.daku = t.checked; changed(false); break;
       case 'faithful': if (isInput) return; c.faithful = t.checked; changed(false); break;
       case 'noR18': if (isInput) return; c.noR18 = t.checked; changed(true); break;
-      case 'trioHub': if (isInput) return; c.trioHub = t.checked; changed(false); break;
+      case 'trio': if (isInput) return; c.trio = t.value === 'no' ? 'no' : ''; changed(false); break;
       case 'partWords': if (isInput) return; c.partWords = ['soft', 'direct', 'medical'].indexOf(t.value) >= 0 ? t.value : ''; changed(true); break;
       case 'partM': c.partM = t.value.replace(/[「」『』{}]/g, '').trim().slice(0, 10); changed(false); break;
       case 'partF': c.partF = t.value.replace(/[「」『』{}]/g, '').trim().slice(0, 10); changed(false); break;

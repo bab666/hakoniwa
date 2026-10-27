@@ -149,7 +149,20 @@
     return { sl: ET.slots(S, have, { after: true, n: n, target: S.rng() < 0.6 ? 2 : 3 }), T: function (stg) { return ET.say(S, x, y, stg, eo); } };
   }
   /* 種族のプレイの一文（attr-race-r18.js。二人とも種族がなければ何もしない）。idx は段落の番号（空の段落には足さない） */
-  function RW(S, x, y, arr, idx, kind) { if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(arr, x, y, function (l) { return pick(S, l); }, idx, { mode: kind }); return arr; }
+  function RW(S, x, y, arr, idx, kind) {
+    if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(arr, x, y, function (l) { return pick(S, l); }, idx, { mode: kind });
+    /* 体格・身長の差・胸・体の特徴の一文（attr.js の pairLine。thick-sex.js と同じ touch。何も決めていなければ乱数を使わずに ''）を、前戯の段に足す（2026-10-27 担当HM） */
+    if (HK.Attr && HK.Attr.pairLine) {
+      var pl = HK.Attr.pairLine(x, y, 'touch', function (l) { return pick(S, l); }, S);
+      if (pl) {
+        var ks = [].concat(idx && idx.fore != null ? idx.fore : [], idx && idx.mid != null ? idx.mid : []), j = -1;
+        for (var q = 0; q < ks.length; q++) if (ks[q] >= 0 && ks[q] < arr.length && typeof arr[ks[q]] === 'string' && arr[ks[q]].trim()) { j = ks[q]; break; }
+        if (j < 0) for (var q2 = 0; q2 < arr.length; q2++) if (typeof arr[q2] === 'string' && arr[q2].trim()) { j = q2; break; }
+        if (j >= 0) arr[j] += pl;
+      }
+    }
+    return arr;
+  }
   var RW_HARD = { fore: [0, 1], mid: 3, climax: 6, after: 7 }, RW_MAIN = { fore: [0, 1], mid: 3, climax: 5, after: 6 };
 
   /* x=攻め（男性器のある側）・y=受け */

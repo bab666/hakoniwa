@@ -238,6 +238,7 @@ js/zombie-map.js @scen:zombie
 js/pos.js
 js/attr.js
 js/attr-height.js
+js/attr-yomi.js
 js/food.js
 js/special.js
 js/special-r18.js
@@ -290,6 +291,7 @@ js/locker-ties.js @scen:locker
 js/locker-ties-r18.js @scen:locker
 js/locker-crowd.js @scen:locker
 js/locker-crowd-r18.js @scen:locker
+js/locker-trio-bed.js @scen:locker
 js/locker-night-top.js @scen:locker
 js/locker-night-bot.js @scen:locker
 js/locker-night.js @scen:locker

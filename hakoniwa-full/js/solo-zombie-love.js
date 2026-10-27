@@ -254,7 +254,7 @@
       [v, h].forEach(function (x) { x.hp -= 22 + rng.int(12); ctx.stress(x, 30); if (rng() < 0.35) { Z.infect(ctx, x, null, true); bit.push(x); } });
       bit.forEach(function (x) { s += fill(ctx.pick(ZT.bitAfter), { a: x.name }); });
       var dead = [v, h].filter(function (x) { return x.hp <= 0; });
-      dead.forEach(function (x) { ctx.kill(x, null, x === v ? 'ゾンビの群れに犯され、助け出されたが、傷が深すぎて' : v.name + 'を庇ってゾンビの群れに押し倒され、傷が深すぎて'); });
+      dead.forEach(function (x) { ctx.kill(x, null, x === v ? 'ゾンビの群れに襲われ、助け出されたが、傷が深すぎて' : v.name + 'を庇ってゾンビの群れに押し倒され、傷が深すぎて'); });
       if (!dead.length) s += C.after(ctx, h, v, 'fail');
       return { with: [v].concat(mates), text: s, why: why + '――' + h.name + 'が引き剥がそうとして、一緒に押し倒された（' + h.name + 'は攻め指定・性行為の相手の固定・R18不参加ではない）。' + (others.length ? others[0].name + 'が二人を助け出した' : '二人は群れの下から這い出した') + (bit.length ? '。' + bit.map(function (x) { return x.name; }).join('と') + 'は咬まれていた' : ''), mag: 58 };
     }

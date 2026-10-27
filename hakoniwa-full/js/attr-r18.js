@@ -8,7 +8,15 @@
        R18M.sex では、maso の受けを「気が強い」扱いにしない（すぐに崩れる書き方）
    ■ 心の強さ（strong）の「体は堕ちても心は折れない」文：常識改変・感覚遮断穴・エロトラップダンジョン
    ■ 胸（bust）の差し替え語の一文（HK.Attr.bustLine。体の感触の段に、体格・種族の一文と並べて候補にする）
-   ■ 点検用：HK.Attr.log に配列を入れると、差し込んだ夜の性格を { who, role: 'a'|'b', night, a, b } で記録する（pos-audit の V5）
+   ■ 夜の性格を喘ぎの呼び出しに渡す（2026-10-27 担当HM）：HK.Moan.say・HK.Moan.pick（moan-engine.js）・HK.Ero.moan（ero-kit.js）を呼ぶとき、
+     話し手の夜の性格（A.nightOf(話し手, 相手)）を o.night／ctx.night に入れる。相手は o.top／ctx.top か、いま組み立てている山場の二人
+     （thick-sex.js・thick-sex-ero.js の scene、r18-thick.js の R18M.sex、omega-thick.js の TKC.body の包みで覚える）。
+     夜の性格を決めていない人には何も足さない（乱数も使わない）。喘ぎの選び方に夜の性格を効かせる受け口は moan-engine.js 側（night を見て鍵を選ぶ）
+   ■ 物語型・一人用の箱庭（HK.Story.say を通る記録）で、住人二人の性的な場面に夜の性格の文が入っていなければ、一文を足す（PAIR_NET。2026-10-27 担当HM）。
+     催眠・常識改変・サキュバスなど、山場を自前で組む箱庭では、体格・身長の差・胸・体の特徴の一文（A.pairLine）も足す（FEAT_NET）。
+     感覚遮断穴（本人は壁の向こうで相手を知らない）・媚薬ロッカー（solo-locker-bed.js が自分で入れる）には足さない
+   ■ 点検用：HK.Attr.log に配列を入れると、差し込んだ夜の性格を { who, role: 'a'|'b', night, a, b } で記録する（pos-audit の V5）。
+     HK.Attr.moanLog に配列を入れると、喘ぎの呼び出しごとに { who, night } を記録する（setting-audit.js の night.moan）
    登場人物はすべて成人として扱う */
 (function () {
   'use strict';
@@ -132,6 +140,8 @@
   var NAME = {}; A.NIGHT.forEach(function (x) { NAME[x[0]] = x[1]; });
   var STYLE_JP = { rough: '荒い', tease: '焦らす', gentle: '優しい', clumsy: '不慣れ' };
   var marks = [];
+  /* いま組み立てている山場の二人（喘ぎの呼び出しに渡す夜の性格の相手を引くため） */
+  var pairNow = null;
   function mark(text, labels) {
     var frag = text.split(/\{[a-zA-Z]+\}|\n/).filter(function (x) { return x.length >= 8; }).sort(function (x, y) { return y.length - x.length; })[0];
     if (!frag) return;
@@ -153,7 +163,13 @@
   }
   /* HK.Story.say・R18M.sex・TKC.body の包み直しは HK.wrap（物語型の箱庭のかたまりが後から届いても、包む順は元のファイルの順） */
   if (HK.Story && HK.Story.say && !HK.Story.say._attrNight) HK.wrap(HK.Story, 'say', function (ss0) {
-    var f = function (S, o) { tag(o); return ss0.apply(this, arguments); };
+    var f = function (S, o) { netFill(S, o); tag(o); return ss0.apply(this, arguments); };
+    f._attrNight = true;
+    return f;
+  });
+  /* 一人用の箱庭の記録（solo-kit.js の HK.SoloKit.say：マッサージ・感覚遮断穴）にも、夜の性格の印を理由書きに足す（2026-10-27 担当HM） */
+  if (HK.SoloKit && HK.SoloKit.say && !HK.SoloKit.say._attrNight) HK.wrap(HK.SoloKit, 'say', function (ks0) {
+    var f = function (S, o) { tag(o); return ks0.apply(this, arguments); };
     f._attrNight = true;
     return f;
   });
@@ -177,7 +193,9 @@
       if (!nt && !nb) return sc0.apply(this, arguments);
       var o = {}; Object.keys(opt).forEach(function (k) { o[k] = opt[k]; });
       o.style = A.styleFor(nt, opt.style);
-      var r = sc0.call(this, o);
+      var pn0 = pairNow, r;
+      pairNow = [opt.a, opt.b];
+      try { r = sc0.call(this, o); } finally { pairNow = pn0; }
       if (!r || typeof r.text !== 'string') return r;
       var pk = ero ? fresh(o.S, o.pick) : fresh(o.rng, o.pick);
       r.text = after1(r.text, A.nightText(o.a, o.b, r.mode, pk, ero));
@@ -209,9 +227,9 @@
       var o = {}; Object.keys(opt || {}).forEach(function (k) { o[k] = opt[k]; });
       /* 甘々の攻め：その場の勢いの夜は、恋人の夜の書き方に */
       if (nt === 'sweet' && (!o.mood || o.mood === 'plain')) o.mood = 'love';
-      var prev = cur, r;
-      cur = [T, U];
-      try { r = sx0.call(this, S, x, y, o); } finally { cur = prev; }
+      var prev = cur, pn0 = pairNow, r;
+      cur = [T, U]; pairNow = [T, U];
+      try { r = sx0.call(this, S, x, y, o); } finally { cur = prev; pairNow = pn0; }
       if (typeof r !== 'string' || o.short) return r;
       var P0 = HK.Pos, mode = P0 && P0.isF(T) && P0.isF(U) ? 'ff' : P0 && P0.isF(T) && (U.gender || (U.src && U.src.gender)) === 'm' ? 'fm' : 'mf';
       var ero = !!(HK.Ero && HK.Ero.on && HK.Ero.on(S));
@@ -230,7 +248,9 @@
       var kd = TK.kind(T, U, o.flav), o2 = {};
       Object.keys(o).forEach(function (k) { o2[k] = o[k]; });
       if (nt === 'sadist' && kd !== 'ff' && kd !== 'ride') o2.rough = true;
-      var r = tb0.call(this, T, U, o2);
+      var pn0 = pairNow, r;
+      pairNow = [T, U];
+      try { r = tb0.call(this, T, U, o2); } finally { pairNow = pn0; }
       if (typeof r !== 'string') return r;
       var t = A.nightText(T, U, kd === 'ff' ? 'ff' : kd === 'ride' ? 'fm' : 'mf', fresh(o.rng, o.pick), false);
       return after1(r, t.replace(/\{a\}/g, '{T}').replace(/\{b\}/g, '{U}'));
@@ -238,4 +258,97 @@
     f._attr = true;
     return f;
   });
+
+  /* ---------- 夜の性格を喘ぎの呼び出しに渡す（2026-10-27 担当HM） ----------
+     相手：o.top／ctx.top（moan-engine.js の HK.Moan.say の o.top と同じ人）か、いま組み立てている山場の二人（pairNow）のもう一人。
+     渡すのは写し（呼ぶ側の o・ctx は書き換えない）。夜の性格を決めていない人（nightOf が ''）は、そのまま渡す */
+  A.moanLog = null;
+  function partnerOf(who, o) {
+    var t = o && typeof o === 'object' ? o.top : null;
+    if (t && t !== who && t.name !== who.name) return t;
+    if (pairNow) { if (pairNow[0] === who || (pairNow[0] && pairNow[0].name === who.name)) return pairNow[1]; if (pairNow[1] === who || (pairNow[1] && pairNow[1].name === who.name)) return pairNow[0]; }
+    return null;
+  }
+  function withNight(who, o, log) {
+    if (!who || !who.name || HK.SAFE_ON) return o;
+    var nt = (o && typeof o === 'object' && o.night) || A.nightOf(who, partnerOf(who, o));
+    if (log && A.moanLog) A.moanLog.push({ who: who.name, night: nt || '' });
+    if (!nt || (o && typeof o === 'object' && o.night === nt)) return o;
+    var c = {};
+    if (o && typeof o === 'object') { for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) c[k] = o[k]; }
+    else if (o) c.deep = true;
+    c.night = nt;
+    return c;
+  }
+  var MN = HK.Moan;
+  /* 点検の記録（A.moanLog）は、喘ぎのエンジンに届く最後の呼び出し（HK.Moan.pick）でだけ取る */
+  if (MN && MN.pick && !MN.pick._night) HK.wrap(MN, 'pick', function (pk0) { var f = function (S, who, key, ctx) { return pk0.call(this, S, who, key, withNight(who, ctx, true)); }; f._night = true; return f; });
+  /* HK.Moan.say の o を写しても、その中の HK.Moan.pick の ctx（moan-engine.js が o から組み直す）には night が入らないので、pick の包みがもう一度入れる */
+  if (MN && MN.say && !MN.say._night) HK.wrap(MN, 'say', function (sy0) { var f = function (S, who, kind, o, old) { return sy0.call(this, S, who, kind, withNight(who, o), old); }; f._night = true; return f; });
+  if (HK.Ero && HK.Ero.moan && !HK.Ero.moan._night) HK.wrap(HK.Ero, 'moan', function (em0) { var f = function (S, who, st, ctx) { return em0.call(this, S, who, st, withNight(who, ctx)); }; f._night = true; return f; });
+
+  /* ---------- 物語型・一人用の箱庭の住人二人の性的な場面（PAIR_NET・FEAT_NET。2026-10-27 担当HM） ----------
+     HK.Story.say を通る記録のうち、性的な場面の印があり（o.lewd・HK.EroScene.hit）、登場人物が住人ちょうど二人で、
+     二人の名前が並ぶ性的な文がある記録に、夜の性格の一文（A.nightText）が入っていなければ足す。向きは HK.Pos.order（{a}＝攻め・{b}＝受け）。
+     FEAT_NET の箱庭では、体格・身長の差・胸・体の特徴の一文（A.pairLine の touch）も足す（どれも決めていなければ乱数を使わずに ''）。
+     段落があれば最初の段落のあと、なければ二人の名前が並ぶ最初の性的な文のあと（「」の外）に置く */
+  var NET_SKIP = { hole: 1, locker: 1 }, leadFr = null;
+  var FEAT_NET = { saimin: 1, kaihen: 1, succubus: 1, variety: 1 };
+  var NET_SEX = /抱き潰|エッチ|イカせ|イかせ|イった|イっ|果て|喘|挿れ|挿入|舐め|愛撫|達し|体を重ね|肌を重ね|腰を(?:振|沈|打ち|揺|落と|突き|使)|跨[っがりるら]|繋がっ|繋がり|奥まで|最奥|射精|白濁|中に出|交わ|抱いた|抱かれ|貫/;
+  function netWho(S, a) { return typeof a === 'number' ? (S.P || [])[a] : a; }
+  function netPair(S, o) {
+    if (!o || typeof o.text !== 'string' || HK.SAFE_ON || o.kind === 'step' || o.kind === 'phase') return null;
+    var id = S && S.scen && S.scen.id;
+    if (!id || NET_SKIP[id] || !Array.isArray(S.P)) return null;
+    if (!(o.lewd === true || (HK.EroScene && HK.EroScene.hit(S, o)))) return null;
+    var acts = (o.actors || []).map(function (a) { return netWho(S, a); }).filter(function (c, i, l) { return c && c.name && S.P.indexOf(c) >= 0 && l.indexOf(c) === i; });
+    if (acts.length !== 2 || (o.actors || []).length !== 2) return null;
+    var a = acts[0], b = acts[1];
+    if (HK.State && (!HK.State.r18ok(a) || !HK.State.r18ok(b))) return null;
+    var both = o.text.replace(/「[^」]*」/g, '「」').split(/[。！？\n]/).some(function (x) { return x.indexOf(a.name) >= 0 && x.indexOf(b.name) >= 0 && NET_SEX.test(x); });
+    return both ? [a, b] : null;
+  }
+  /* 差し込む位置：段落があれば最初の段落のあと。なければ、二人の名前が並ぶ最初の性的な文の終わり（「」の外の 。） */
+  function netInsert(text, ins, a, b) {
+    if (!ins) return text;
+    if (text.indexOf('\n\n') >= 0) return after1(text, ins);
+    var depth = 0, st = 0;
+    for (var i = 0; i < text.length; i++) {
+      var ch = text[i];
+      if (ch === '「') depth++;
+      else if (ch === '」' && depth > 0) depth--;
+      else if (depth === 0 && /[。！？]/.test(ch)) {
+        var sen = text.slice(st, i + 1);
+        if (sen.indexOf(a.name) >= 0 && sen.indexOf(b.name) >= 0 && NET_SEX.test(sen)) return text.slice(0, i + 1) + ins + text.slice(i + 1);
+        st = i + 1;
+      }
+    }
+    return text + ins;
+  }
+  function netFill(S, o) {
+    var pr = netPair(S, o);
+    if (!pr) return;
+    var P0 = HK.Pos, od = P0 ? P0.order(pr[0], pr[1], pr) : pr, T = od[0], U = od[1];
+    if (P0 && P0.okSex && !P0.okSex(T, U)) return;
+    var id = S.scen.id, pk = fresh(S, null), add = '';
+    /* 夜の性格：記録の文に、もう夜の性格の一文（山場の組み立ての包みが入れたもの）があれば足さない */
+    var has = marks.some(function (m) { return o.text.indexOf(m.frag) >= 0; });
+    if (!has && (A.nightOf(T, U) || A.nightOf(U, T))) {
+      var mode = P0 && P0.isF(T) && P0.isF(U) ? 'ff' : P0 && P0.isF(T) && (U.gender || (U.src && U.src.gender)) === 'm' ? 'fm' : 'mf';
+      var ero = !!(HK.Ero && HK.Ero.on && HK.Ero.on(S));
+      add += names(A.nightText(T, U, mode, pk, ero), T, U);
+    }
+    if (FEAT_NET[id] && A.pairLine) add += A.pairLine(T, U, 'touch', pk, S) || '';
+    /* 夜の主導（pos-lead-r18.js の HK.PosLead.text。誘い受け・襲い受け）：合意のない展開の記録には足さない。主導の文がもう入っていれば足さない */
+    var PL = HK.PosLead;
+    if (P0 && PL && PL.text && PL.NARR && PL.of && PL.of(T, U) && String(o.why || '').indexOf(P0.FORCE_MARK || '〔合意のない展開〕') < 0) {
+      if (!leadFr) { leadFr = []; var walk = function (v) { if (typeof v === 'string') { var f = v.split(/\{[^}]*\}/).filter(function (x) { return x.length >= 8; })[0]; if (f) leadFr.push(f.slice(0, 16)); } else if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === 'object') Object.keys(v).forEach(function (k) { walk(v[k]); }); }; walk(PL.NARR); }
+      if (!leadFr.some(function (f) { return o.text.indexOf(f) >= 0; })) {
+        var lmode = P0.isF(T) && P0.isF(U) ? 'ff' : P0.isF(T) && (U.gender || (U.src && U.src.gender)) === 'm' ? 'fm' : 'mf';
+        add = names(PL.text(T, U, lmode, pk), T, U) + add;
+      }
+    }
+    if (add) o.text = netInsert(o.text, add, T, U);
+  }
+  A.netFill = netFill;
 })();
