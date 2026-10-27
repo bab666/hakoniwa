@@ -85311,9 +85311,43 @@
      導入 → 抵抗（R18M.resist）→ 行為（組ごと：Y.R18T.asl の mf・mm・ff・fm）→ 抗う様子（態度9種の force）・耐える声 →
      山場（受ける側の態度9種の peak）→ 喘ぎ（気の強い人は耐える声）→ 犯人の果て（組ごと）→（描写の有無「濃い」：もう一度）。結末の文は呼ぶ側で足す。
      向きは呼ぶ側で HK.Pos.order（犯人が攻めの組だけ）。性器なしの人がいる組（pos-nogen.js）は、組を問わない以前の文。
-     描写の作風「男性向け」は、合意のない場面には使わない（tips の決まりどおり） */
+     描写の作風「男性向け」のときは、同じ段を Y.R18T.aslEro の文で組む（aslEroBody）。性器なしの人がいる組は、作風を問わず以前の文 */
   function aslKind(c, v) { return HK.NoGen && HK.NoGen.on(c, v) ? '' : mBody(c) ? (mBody(v) ? 'mm' : 'mf') : (mBody(v) ? 'fm' : 'ff'); }
+  /* 男性向けの文で組むか（作風「男性向け」・表がある・性器なしの人がいない組） */
+  function aslEro(S, c, v) { return !!(Y.R18T && Y.R18T.aslEro && lwEro(S) && aslKind(c, v)); }
+  /* 襲われる人の喘ぎ（moan-engine.js の嫌がる喘ぎ。気の強い人は声を抑える喘ぎ）。kind: start／mid／climax。
+     late＝山場から先（嫌がる喘ぎが甘く崩れはじめる段階） */
+  function aslMoan(S, v, kind, strong, late) {
+    if (HK.Moan && HK.Moan.say) return HK.Moan.say(S, v, kind, { force: true, hush: strong, late: !!late });
+    return HK.Ero.moan(S, v, { start: 0, mid: 1, climax: 2 }[kind] || 0, { force: true });
+  }
+  /* 犯人の声（男性の体なら果てる声、女性の犯人は果てる言葉を使わない最中の声） */
+  function aslTopMoan(S, c, k) {
+    var m = HK.Moan && HK.Moan.say ? HK.Moan.say(S, c, k === 'mf' || k === 'mm' ? 'top' : 'topmid', {}) : HK.Ero.moan(S, c, 1);
+    return c.name + '「' + m + '」';
+  }
+  /* 作風「男性向け」の凌辱・脅迫：段は assaultBody と同じ（導入 → 抵抗 → 行為 → 抗う様子 → 山場 → 喘ぎ → 犯人の果て →（濃い）もう一度） */
+  function aslEroBody(S, c, v, intro, skipIntro) {
+    var AE = Y.R18T.aslEro, M = HK.R18M, mv = { c: c.name, v: v.name };
+    var sep = HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '', k = aslKind(c, v), P = AE.peak || {};
+    var per = (HK.personaOf ? HK.personaOf(v) : v.persona) || 'gentle', strong = !!(M && M.isStrong(v));
+    var VK = ['start', 'mid', 'climax'];
+    function fill(t, late) {
+      return F(t, mv).replace(/\{s:(\w+)\}/g, function (m, x) { return HK.Ero.sfx(S, x); })
+        .replace(/\{v([012])\}/g, function (m, n) { return aslMoan(S, v, VK[+n], strong, late); })
+        .replace(/\{cm\}/g, function () { return aslTopMoan(S, c, k); });
+    }
+    var t = (skipIntro || !intro || !intro.length ? '' : fill(fp(S, intro))) + (M ? M.resist(S, c, v, { endure: false }) : '');
+    t += sep + fill(fp(S, AE[k]));
+    if (!lwShort(S)) t += pz(S, v, 'force') + fill(fp(S, AE.mid));
+    t += sep + fill(fp(S, P[per] || P.gentle), true);
+    t += v.name + '「' + aslMoan(S, v, 'climax', strong, true) + '」';
+    if (AE.fin && AE.fin[k]) t += fill(fp(S, AE.fin[k]), true);
+    if (lwHi(S) && AE.again) t += sep + fill(fp(S, AE.again), true);
+    return t;
+  }
   function assaultBody(S, c, v, intro, skipIntro) {
+    if (aslEro(S, c, v)) return aslEroBody(S, c, v, intro, skipIntro);
     var T = Y.R18T || {}, A = T.asl || {}, M = HK.R18M, mv = { c: c.name, v: v.name };
     var sep = HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '', k = aslKind(c, v), P = A.peak || {};
     var per = (HK.personaOf ? HK.personaOf(v) : v.persona) || 'gentle', strong = !!(M && M.isStrong(v));
@@ -85353,9 +85387,11 @@
         var kill = S.kills.length < 5 && day <= S.env.days && rng() < 0.4 + c.tr.cold * 0.2;
         var mv = { c: c.name, v: v.name }, M = HK.R18M;
         /* たまに長い版（jashin-dark-thick.js）。結末（殺す／口をつぐむ）の文はそのまま続ける */
-        var aLong = HK.JDark && HK.JDark.roll(S, v) ? HK.JDark.text(S, 'assault', v, c) + '\n\n' : '';
+        /* 作風「男性向け」（Y.R18T.aslEro）のときは長い版を使わず、導入と、殺さないときの結末も男性向けの文で */
+        var ero = aslEro(S, c, v), AE = T.aslEro || {};
+        var aLong = !ero && HK.JDark && HK.JDark.roll(S, v) ? HK.JDark.text(S, 'assault', v, c) + '\n\n' : '';
         var A = T.asl || {}, sep = HK.R18Thick && HK.R18Thick.on(S) ? '\n\n' : '';
-        var t = (aLong || assaultBody(S, c, v, (T.assault_in || []).concat(A.inn || []))) + (aLong ? '' : sep) + F(fp(S, kill ? T.assault_kill.concat(A.kill || []) : T.assault_live.concat(A.live || [])), { c: c.name, v: v.name });
+        var t = (aLong || assaultBody(S, c, v, ero ? AE.inn : (T.assault_in || []).concat(A.inn || []))) + (aLong ? '' : sep) + F(fp(S, kill ? T.assault_kill.concat(A.kill || []) : ero ? AE.live : T.assault_live.concat(A.live || [])), { c: c.name, v: v.name });
         ST.say(S, { actors: [c, v], tag: '凌辱', kind: 'climax', text: t, why: '快楽殺人の犯人' + c.name + 'が、' + v.name + 'を無理やり犯した（冷酷さ・衝動）。' + (kill ? 'そのまま殺した' : v.name + 'は恐怖で口をつぐんだ'), mag: 46 });
         Y.setRel(S, c, v, -0.8, '凌辱', c);
         if (kill) { S.forceTgt = v; S.forceWhy = '快楽殺人：' + v.name + 'を犯したあと、殺した'; }
@@ -85368,7 +85404,7 @@
       if (hs.length) EV.push({ w: 1 + c.tr.cold + (S.mot.id === 'pleasure' ? 1 : 0), f: function () {
         var v = hs.sort(function (a, b) { return b.cnt.clue - a.cnt.clue; })[0];
         /* 脅しの書き出し（気の強い人は食ってかかって黙らされる）のあとは、凌辱と同じ組み立て（assaultBody） */
-        ST.say(S, { actors: [c, v], tag: '脅迫', kind: 'climax', text: assaultBody(S, c, v, T.blackmail, HK.R18M && HK.R18M.isStrong(v)), why:c.name + 'は、秘密に近づいた' + v.name + 'を脅し、体で黙らせた（' + v.name + 'は手がかりを口にできなくなる）', mag: 38 });
+        ST.say(S, { actors: [c, v], tag: '脅迫', kind: 'climax', text: assaultBody(S, c, v, aslEro(S, c, v) ? T.aslEro.bm : T.blackmail, HK.R18M && HK.R18M.isStrong(v)), why:c.name + 'は、秘密に近づいた' + v.name + 'を脅し、体で黙らせた（' + v.name + 'は手がかりを口にできなくなる）', mag: 38 });
         v.approached = false; v.cnt.clue = Math.max(0, v.cnt.clue - 1); v.m.fear = Math.min(100, v.m.fear + 20);
         Y.setRel(S, c, v, -0.5, '脅迫', c);
       } });
