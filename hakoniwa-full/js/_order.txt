@@ -154,6 +154,7 @@ js/omega-jobs-pair2.js
 js/scenario-omega.js
 js/omega-passion.js
 js/omega-mob.js
+late js/omega-mob-r18.js
 js/omega-love.js
 js/omega-guard.js
 js/omega-after.js

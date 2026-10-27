@@ -589,28 +589,29 @@
         var rr = K.stim(S, 34 + j * 6, { part: 'all', mult: 1.3, defer: true });
         if (dark) darkN += rr.climaxes.length;
         else {
-          /* 男性向け：客が自分から求めた（おねだり）か、客が主導するときだけ。最初と最後の体位に段落を足す */
-          var ex = '';
-          if (eroOn && (asked || custTop) && (j === 0 || j === pool.length - 1)) {
-            var EK = HK.MassageThick.ERO, ek = custTop ? 'top' : ff ? 'ff' : staff.g === 'f' && !noP(h) ? 'lady' : 'recv', d0 = h.eroDom;
-            h.eroDom = custTop;
-            ex = (p.thick ? '\n\n' : '') + K.fmt(S, HK.Ero.fill(S, K.pick(S, EK[ek]), h));
-            h.eroDom = d0;
-          }
           /* 厚く：二つめ以降の体位は盛り上がっていく段落、最後の体位は果てるまでの段落（濃いなら、もう一度）を足す */
           var lw = '', lk = custTop ? kindT : kindR;
           if (j === pool.length - 1) { if (lwOn()) lw = ML.peak(lwc(custTop), lk, highOn); }
           else if (j >= 1 && lwOn()) lw = ML.mid(lwc(custTop), lk);
+          /* 男性向け：最初と最後の体位に段落を足す。客が自分から求めた（おねだり）・客が主導するときは ERO、
+             流されたときは ERO_SWEPT（R18版の solo-massage-thick.js）。流されたときは、厚い段落を足した体位には重ねない（数行で短くでも男性向けになる） */
+          var ex = '', swept = !(asked || custTop);
+          if (eroOn && (j === 0 || j === pool.length - 1) && !(swept && (lw || !HK.MassageThick.ERO_SWEPT))) {
+            var EK = swept ? HK.MassageThick.ERO_SWEPT : HK.MassageThick.ERO, ek = custTop ? 'top' : ff ? 'ff' : staff.g === 'f' && !noP(h) ? 'lady' : 'recv', d0 = h.eroDom;
+            h.eroDom = custTop;
+            ex = (p.thick ? '\n\n' : '') + K.fmt(S, HK.Ero.fill(S, K.pick(S, EK[ek]), h));
+            h.eroDom = d0;
+          }
           K.say(S, { kind: 'ev', tag: p.n, lewd: true, text: K.fmt(S, p.t) + ex + lw + (function (tl) { return lw ? '' : tl; })(rr.climaxes.length || p.thick ? '' : tail(0.8)), why: '体位の指定：' + p.n });
           K.logClimax(S, rr.climaxes);
         }
-        /* 落ちすぎた客は、行為の最中に新人の練習台に誘われる（断れない） */
+        /* 落ちすぎた客は、行為の最中に新人の練習台に誘われる（断れない）。返事の声の♡は、描写の作風が「男性向け」のときだけ（_ERO） */
         if ((M.TRAINEE_ASK || (dark && MD.traineeAsk)) && !TR && !S.flags.trainee && j >= 1 && h.corrupt >= 100 && h.climax >= 6 && rng() < 0.55) {
           S.flags.trainee = true;
           var hesi = ['proud', 'stern', 'tsun', 'cool', 'shy', 'polite'].indexOf(h.persona) >= 0 ? rng() < 0.8 : rng() < 0.3;
           var tt = K.fmt(S, K.pick(S, dark ? MD.traineeAsk : ff ? M.TRAINEE_ASK_FF : M.TRAINEE_ASK)) + ' ';
-          if (hesi) tt += K.fmt(S, K.pick(S, M.TRAINEE_HESITATE[h.persona] || M.TRAINEE_HESITATE.gentle)) + ' ' + K.fmt(S, K.pick(S, dark ? MD.traineePress : custTop ? M.TRAINEE_PRESS_TOP : ff ? M.TRAINEE_PRESS_FF : M.TRAINEE_PRESS));
-          else tt += K.fmt(S, K.pick(S, M.TRAINEE_YES[h.persona] || M.TRAINEE_YES.gentle));
+          if (hesi) tt += K.fmt(S, K.pick(S, M.TRAINEE_HESITATE[h.persona] || M.TRAINEE_HESITATE.gentle)) + ' ' + K.fmt(S, K.pick(S, dark ? MD.traineePress : custTop ? (eroOn && M.TRAINEE_PRESS_TOP_ERO || M.TRAINEE_PRESS_TOP) : ff ? (eroOn && M.TRAINEE_PRESS_FF_ERO || M.TRAINEE_PRESS_FF) : (eroOn && M.TRAINEE_PRESS_ERO || M.TRAINEE_PRESS)));
+          else tt += K.fmt(S, K.pick(S, (eroOn && M.TRAINEE_YES_ERO && M.TRAINEE_YES_ERO[h.persona]) || M.TRAINEE_YES[h.persona] || M.TRAINEE_YES.gentle));
           h.pleasure += 40; while (h.pleasure >= 100) K.climax(S);
           var otr = K.say(S, { kind: 'sys', tag: '練習台の約束', lewd: true, text: tt, why: '快楽に落ちきった（堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・' + K.W_CL + ' ' + h.climax + '回）／もう断れなかった' + (hesi ? '（性格上、返事を渋った）' : '') });
           K.key(S, otr, '新人の練習台になると約束した');

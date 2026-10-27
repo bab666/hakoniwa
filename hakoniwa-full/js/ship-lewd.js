@@ -1,7 +1,9 @@
 /* 箱庭シミュレーター（R18版のみ）: 宇宙船漂流記 ― R18の描写の設定（lewd-unify.js）に合わせた文
    ・ほのめかす：船員どうしの夜・看病の夜・異星の生き物との場面を、ぼかした一文にする（fade・nurseFade・xFade）
    ・男性向け：船員どうしの夜・看病の夜は thick-sex-ero.js の山場（始まりは ship-thick.js の LEAD）、
-     異星の生き物は、自分で攻めを選んだ人が生き物を責める場面だけ、男性向けの段落を足す（xEroTop。襲われる場面は合意がないので足さない）
+     異星の生き物は、自分で攻めを選んだ人が生き物を責める場面に男性向けの段落を足す（xEroTop）。
+     襲われる場面（星の生命体・異種族の誘い・異星の生き物）と文明の研究も、男性向けの段で組む（2026-10-27 担当BN：R.xEroBuild・R.labEro）。
+     庇い展開（仲間が助けに入る）もこのファイル（R.coverPlan・R.coverRun。文は ship-r18-xeno.js の SH.X.cov）
    ・濃い：もう一度の段落・一文（again・xAgain）
    {t}＝攻め、{u}＝受け、{a}＝生き物と出会った船員、{x}＝生き物。登場人物はすべて成人として扱う */
 (function () {
@@ -73,64 +75,249 @@
     else return '';
     return short ? x : x + '\n\n';
   };
-  /* ---------- 書き足し用の型（作者が書く欄。空のあいだは何も出ない） ----------
-     描写の作風「男性向け」で、生き物に襲われる側（自分で攻めを選んでいない人）の場面のあとに足す段落。
-     ・場面の種類ごとの欄：lure（誘われていると分からなかった）／force（強引に迫られた）／take（攫われた）／probe（体を調べられた）／
-       invade（体の中に入り込まれた）／civ（文明の住人の誘い）／alien（そのほかの異星の生き物）。any はどの種類にも使う
-     ・一つの欄に何文でも入れられる（そのたびに一つを選ぶ）。文は '…' で囲んで , で区切る
-     ・使える差し込み：{a}＝襲われた船員の名前、{x}＝生き物の名前、{b}＝その船員といちばん近しい仲間の名前、
-       {m0}{m1}{m2}＝{a} の喘ぎ（0 こらえる／1 とろける／2 崩れる。態度9種で ero-kit.js が選ぶ。「{a}「{m1}」」のように台詞の中に置く）、
-       {s:wet}{s:hit}{s:cum}{s:suck}＝擬音
-     ・段落の区切りは \n\n。登場人物はすべて成人として扱うこと
-     xEroAgainV：描写の有無「濃い」のとき、上の段落のあとに足すもう一段（空なら小説調の xAgain を使う） */
+  /* ---------- 描写の作風「男性向け」：生き物に襲われる側（自分で攻めを選んでいない人）の段（2026-10-27 担当BN で組み直し） ----------
+     段の順：始まり（R.xEroV：場面の種類ごと）→ 行為（SH.X.ero.body：受ける体 f／m ごと）→ 体が先に応える（mid）→
+     山場（peak：受ける人の態度9種）→ 果てる声 → 生き物が果てる（fin）→（濃い）もう一度（again：体ごと）。数行で短くは「始まり＋行為＋山場」だけ。
+     組み立ては下の R.xEroBuild。段落は、ship.js が場面のあとに足したものを、記録に書く前に「そのあと」の文の前へ移す（R.relocate）
+     ・場面の種類：lure（誘われていると分からなかった）／force（強引に迫られた）／take（攫われた）／probe（体を調べられた）／
+       invade（体の中に入り込まれた）／civ（文明の住人の誘い）／alien（そのほかの異星の生き物）
+     ・差し込み：{a}＝襲われた船員、{x}＝生き物、{v0}＝{a} の嫌がる喘ぎ（はじめ）、{s:wet}{s:hit}{s:cum}{s:suck}＝擬音。人間の体は性別を問わない書き方
+     ・登場人物はすべて成人として扱うこと */
   R.xEroV = {
     lure: [
-      '{x}が甘い香を漂わせながら{a}にゆっくりと近づき、柔らかな触手が足首を撫で上げた。{a}は抵抗する前に体が熱くなり、脚ががくがくと震え出す。{s:wet}。{a}「{m0}」\n\n触手が{股間}を包み込み、ぐちゅぐちゅと敏感な部分を締め付け、先端を執拗に刺激する。ぬちゃ、ぬぽっ、と水音が立ち、{a}「{m1}」――腰が勝手に浮き、先走りが糸を引いて飛び散った。\n\n{x}がさらに深く絡みつき、内部を激しく抉り上げる。ずぶっずぶっ！　と突き上げられ、{s:cum}。{a}「{m2}」――視界が白く染まり、何度も痙攣しながら果てた。',
-      '{x}の甘い匂いが{a}の意識を溶かし、気づいたときには体中にぬるぬるした感触が這い回っていた。{a}は最初は「なにこれ…」と呟くだけだった。{s:wet}。{a}「{m0}」\n\n触手が胸と{股間}を同時に責め、{乳首}と先端を交互に吸い上げる。{s:suck}。ぬちゃぬちゃと音を立て、{a}「{m1}」――体が熱く火照り、腰がくねくねと揺れてしまう。\n\n一気に奥まで入り込まれ、ぐぽっぐぽっと激しく動かされる。{s:cum}。{a}「{m2}」――甘い絶頂が何度も襲い、動けなくなった。'
+      '{x}が甘い香を漂わせながら{a}にゆっくりと近づき、柔らかな触手が足首を撫で上げた。抵抗しようと思う前に体が熱くなり、脚ががくがくと震え出す。{s:wet}。{a}「{v0}」',
+      '{x}の甘い匂いが{a}の意識を溶かし、気づいたときには体じゅうにぬるぬるした感触が這い回っていた。挨拶の続きだと思っていた{a}は、服の内側に潜り込んだものの動きに、ようやく息を呑んだ。{s:wet}。{a}「{v0}」',
+      '求愛の踊りは、まだ続いていた。{x}は{a}の腰に絡みつき、作業着の留め具をひとつずつ器用に外していく。慌てて押さえた{a}の手ごと、ぬめる腕が{股間}へ滑り込んだ。{s:wet}。{a}「{v0}」'
     ],
     force: [
-      '{x}が一気に{a}を押し倒し、硬い地面に背中を押しつけた。逃げようとする腕を触手で固定し、股を強制的に開かれる。{a}「{m0}」――息が詰まり、体が強張る。\n\n容赦なく敏感な部分を握り潰すようにしごき上げ、ぐちゅぐちゅと音を立てる。{s:hit}。ぬぽっ、ぬちゃっ、と激しい水音が響き、{a}「{m1}」と声を裏返らせた。\n\nずぶっ！　と奥まで一気に突き入れられ、激しく腰を打ち付けられる。ぱんぱんぱん！　と肉の音が連続し、{a}「{m2}」――意識が飛ぶほど何度も絶頂させられた。',
-      '{x}の触手が{a}の体を容赦なく締め上げ、逃げ場を奪った。顔の前に熱い先端が押しつけられ、強制的に口を開かされる。{a}「{m0}」――涎が糸を引く。\n\n同時に下半身を激しく抉られ、ぐちゅぐちゅ、ずぽっずぽっと水音が止まない。{s:hit}。{a}「{m1}」と涙目で喘ぎ、腰が勝手に跳ねる。\n\n限界を超えて中を抉られ続け、熱い体液を注ぎ込まれる。{s:cum}。{a}「{m2}」――体がびくびくと痙攣し、完全に力が抜けた。'
+      '{x}が一気に{a}を押し倒し、硬い地面に背中を押しつけた。逃げようとする腕を触手で押さえ込み、閉じようとする脚を力ずくで割り開く。{a}「{v0}」――息が詰まり、体が強張る。',
+      '{x}の触手が{a}の体に幾重にも巻きつき、逃げ場を奪った。顔の前に熱い先端が押しつけられ、無理やり口をこじ開けられる。{a}「{v0}」――涎が糸を引いた。',
+      '{x}は背後から{a}にのしかかり、地面に這いつくばらせた。重い体に押し潰されて、腕一本動かせない。腰だけを高く持ち上げられ、作業着の下が{x}の熱い体温に晒された。{a}「{v0}」'
     ],
     take: [
-      '{a}は気づいたときには岩陰の奥、湿った暗い場所に運ばれていた。{x}の触手が全身を固定し、動けない。{a}「{m0}」\n\n熱い先端が{股間}を押し開き、ぐちゅっ、と一気に奥まで侵入してくる。{s:wet}。ぬちゃぬちゃと激しく動き出し、{a}「{m1}」――腹の奥が熱く疼き、先がびくびくと跳ねた。\n\n容赦なく子宮口を突き上げられ、何度も絶頂を強いられる。{s:cum}。{a}「{m2}」――{b}の顔がちらついても、もう声にならなかった。',
-      '運ばれた先は粘液にまみれた巣のような空間だった。{x}が{a}を優しく、しかし確実に固定し、敏感な部分を舌のような器官で舐め回す。{a}「{m0}」\n\nぐちゅぐちゅ、ぬぽぬぽと音を立てながら内部を広げられ、熱いものが何本も這い入ってくる。{s:wet}。{a}「{m1}」――体が熱く溶け、腰がくねってしまう。\n\n一気に奥を抉られ、視界が白く染まる。{s:cum}。{a}「{m2}」――{b}のことを思い浮かべる余裕さえ失った。'
+      '{a}が気づいたときには、岩陰の奥の湿った暗がりに運ばれていた。{x}の腕が全身に絡みつき、指一本動かせない。{a}「{v0}」',
+      '運ばれた先は、粘液にまみれた巣のような空間だった。{x}は{a}を柔らかな床に押さえ込み、舌のような器官で肌を端から舐め回していく。{a}「{v0}」',
+      '巣の奥には、乾いた古い繭がいくつも転がっていた。{x}は{a}をその隣に横たえ、逃げ出そうとするたびに引き戻した。何度目かに引き戻されたとき、服はもう半分も残っていなかった。{a}「{v0}」'
     ],
     probe: [
-      '{x}が{a}の体を丁寧に、しかし容赦なく調べ始めた。触手が服の下に滑り込み、敏感な部位を一つ一つ確認するように撫でる。{a}「{m0}」\n\n先端を舌のような器官で吸い上げ、ぐちゅぐちゅと音を立ててしごく。{s:suck}。ぬちゃ、ぬぽっ、と先走りが飛び散り、{a}「{m1}」――腰が浮き、体が熱く火照る。\n\n内部まで深く探られ、激しく抉られる。{s:cum}。{a}「{m2}」――調べられるだけで何度も果ててしまった。',
-      '{x}の細長い触手が{a}の口と{股間}を同時に侵し、奥まで丁寧に探るように動く。{a}「{m0}」\n\nぬるぬると内壁をなぞり、敏感な点を執拗に刺激する。{s:suck}。ぐぽっぐぽっと水音が立ち、{a}「{m1}」と声を裏返らせた。\n\n限界まで広げられ、熱い体液を注がれる。{s:cum}。{a}「{m2}」――体がびくびくと痙攣し、力が完全に抜けた。'
+      '{x}が{a}の体を丁寧に、しかし容赦なく調べはじめた。細い触手が服の下に滑り込み、敏感なところを一つ一つ確かめるように撫でていく。{a}「{v0}」',
+      '{x}の細長い触手が、{a}の口と{股間}を同時に探りはじめた。奥の形を確かめるように、ゆっくりと、何度も出入りを繰り返す。{a}「{v0}」',
+      '{x}は{a}の体を裏返し、また表に返した。声が上がった場所に印をつけるように粘液を垂らし、印のついた場所ばかりを繰り返しなぞる。{s:wet}。{a}「{v0}」'
     ],
     invade: [
-      '{x}の熱い先端が{a}の入口を押し開き、ずぶっ、と一気に根元まで入り込んだ。内壁が無理矢理広げられ、熱さが奥まで伝わる。{a}「{m0}」――息が止まり、体が強張る。\n\nすぐに激しい抽送が始まり、ぐちゅぐちゅ、ぬちゃぬちゃと淫らな水音が響き渡る。{s:wet}。{a}「{m1}」と腰を跳ねさせ、先がびくびくと跳ねた。\n\n容赦なく最奥を抉られ続け、熱い精のようなものを何度も注ぎ込まれる。{s:cum}。{a}「{m2}」――意識が飛びそうになりながら、何度も絶頂した。',
-      '{x}が複数の触手を同時に{a}の体に侵入させた。口と下半身を同時に塞がれ、逃げ場がない。{a}「{m0}」――涎と{愛液}が糸を引く。\n\nずぽっずぽっ、ぐぽっぐぽっと激しく動かされ、内壁をかき回される。{s:wet}。{a}「{m1}」と涙を浮かべて喘ぎ、腰が勝手に動く。\n\n限界を超えて中を埋め尽くされ、熱いものが溢れ出す。{s:cum}。{a}「{m2}」――体ががくがくと痙攣し、完全に堕ちた。'
+      '{x}の熱い先端が{a}の入口を押し開き、ずぶっ、と一気に深く入り込んだ。無理やり広げられた内側に、熱さが奥まで伝わる。{a}「{v0}」――息が止まり、体が強張る。',
+      '{x}が何本もの細い腕を、同時に{a}の体へ潜り込ませた。口も、下も塞がれて、逃げ場がない。{a}「{v0}」――涎が糸を引いた。',
+      '{x}は皮膚の上から{a}の中へ、溶けるように沈み込んでいった。痛みはない。代わりに、体の内側の、触れられるはずのない場所を直接撫でられる感覚が来た。{s:wet}。{a}「{v0}」'
     ],
     civ: [
-      '文明の住人たちが儀式のように{a}を囲み、甘い香の油を体に塗りたくり始めた。抵抗する言葉は優しく遮られ、体が熱く火照る。{a}「{m0}」\n\n複数の手が{股間}を愛撫し、ぐちゅぐちゅと音を立てて刺激する。{s:hit}。ぬちゃぬちゃと水音が立ち、{a}「{m1}」――腰がくねり、先が跳ねる。\n\n儀式の頂点で奥まで結合され、激しく腰を打ち付けられる。{s:cum}。{a}「{m2}」――何度も果て、意識が遠のいた。',
-      '住人たちの柔らかな触手が{a}を優しく、しかし確実に拘束した。「受け入れれば楽になる」と囁かれ、体がびくりと反応した。{a}「{m0}」\n\n敏感な部分を執拗に責められ、ぬぽぬぽといやらしい音が響く。{s:hit}。{a}「{m1}」と声を上げ、腰が浮いた。\n\nすると、一気に奥まで入り込まれ、熱いものを注がれる。{s:cum}。{a}「{m2}」――体がびくびくと痙攣し、力が抜け落ちた。'
+      '文明の住人たちが儀式のように{a}を囲み、甘い香の油を体に塗りはじめた。抵抗する言葉は優しく遮られ、塗られたところから熱が広がっていく。{a}「{v0}」',
+      '住人たちの柔らかな腕が、{a}を優しく、しかし確実に押さえ込んだ。言葉は分からないのに、受け入れれば楽になると囁かれているのだけは分かった。体がびくりと反応する。{a}「{v0}」',
+      '祭りの夜、{a}は花で飾られた寝台に横たえられた。何本もの手に手首と足首を押さえられ、服を一枚ずつ剥がれていく。祝福の歌が高まるにつれ、指先が{胸}から{股間}へと降りていった。{a}「{v0}」'
     ],
     alien: [
-      '{x}の異形の体が{a}に覆い被さり、ぬるぬるした皮膚が全身に密着した。熱い息がかかり、体が熱く疼き出す。{a}「{m0}」\n\n奇妙な形状の器官が{股間}を押し開き、ぐちゅぐちゅと音を立てて侵入してくる。{s:wet}。ぬちゃ、ぬぽっ、と水音が響き、{a}「{m1}」――腰が跳ね、先がびくびくする。\n\n容赦なく最奥を抉られ、熱い体液を何度も注ぎ込まれる。{s:cum}。{a}「{m2}」――視界が白く染まり、何度も絶頂した。',
-      '{x}の触手が予測できない動きで{a}の体を責め立てる。どこを刺激されるかわからず、体が敏感に反応してしまう。{a}「{m0}」\n\n突然奥まで一気に突き入れられ、ぐぽっぐぽっと激しく動かされる。{s:wet}。{a}「{m1}」と声を裏返らせ、涙が浮かぶ。\n\n限界を超えて中を埋め尽くされ、熱いものが溢れ出す。{s:cum}。{a}「{m2}」――体ががくがくと痙攣し、動けなくなった。'
-    ],
-    any: [
-      '{x}の熱い感触が{a}の体に絡みつき、逃げられない。敏感な部分を直接握られ、ぐちゅぐちゅとしごき上げられる。{a}「{m0}」\n\nぬちゃぬちゃと水音を立てながら内部を抉られ、腰が勝手に動く。{s:wet}。{a}「{m1}」――先走りが飛び散り、体が熱く火照る。\n\n一気に奥まで突き上げられ、熱いものを注がれる。{s:cum}。{a}「{m2}」――何度も痙攣しながら果てた。',
-      '{x}が{a}を押し倒し、容赦なく結合した。ずぶっ！　と根元まで入り、激しい抽送が始まる。{a}「{m0}」\n\nぐちゅぐちゅ、ぬぽぬぽと淫らな水音が響き、内壁をかき回される。{s:wet}。{a}「{m1}」と喘ぎ、腰が跳ねる。\n\n限界を超えて絶頂を強いられ、熱い精を注ぎ込まれる。{s:cum}。{a}「{m2}」――意識が飛びそうになりながら、体ががくがくと痙攣した。'
+      '{x}の異形の体が{a}に覆いかぶさり、ぬるぬるした皮膚が全身に密着した。熱い息がかかり、体の芯が疼き出す。{a}「{v0}」',
+      '{x}の触手は、予測できない動きで{a}の体を責め立てた。どこを触られるか分からないぶん、体が過敏に跳ねてしまう。{a}「{v0}」',
+      '{x}は{a}を押し倒し、ためらいもなく体を重ねてきた。人のものではない重みと熱に、{a}の背中が地面に縫い止められる。{a}「{v0}」'
     ]
   };
-  R.xEroAgainV = [
-    '一度では終わらなかった。{x}はまだ熱い体に再び絡みつき、ぐちゅぐちゅと音を立てて敏感な部分を責め始めた。{a}「{m1}」――すでに敏感になった体がすぐに反応し、腰がくねる。{s:wet}。\n\nずぶっ、と再び奥まで入り込まれ、激しく突き上げられる。ぬちゃぬちゃ、ぐぽっぐぽっと水音が止まない。{a}「{m2}」――二度目の絶頂が、一度目より深く長く襲ってきた。',
-    '少し休んだはずなのに、{x}はすぐに{a}の体に覆い被さった。熱い先端が再び入口を押し開き、ずぽっ、と深く沈む。{a}「{m1}」――敏感になった内壁が締め付け、激しい刺激が走る。{s:wet}。\n\n容赦なく腰を打ち付けられ、ぱんぱんぱん！　と肉の音が響く。{a}「{m2}」――何度も果てた体が、またびくびくと痙攣した。',
-    '{x}は満足しなかった。{a}の汗だくの体を抱き寄せ、再び敏感な部分を舌のような器官で舐め上げる。{s:suck}。{a}「{m1}」――すぐに硬く反応し、先走りが糸を引く。\n\nぐちゅぐちゅと音を立てて奥まで侵入し、激しく動かす。{s:wet}。{a}「{m2}」――二度目は一度目より長く、容赦なく続けられた。'
-  ];
-  /* 書いた文の欄を選ぶ（空の欄は飛ばす） */
-  R.xEroPool = function (kind) { var V = R.xEroV || {}; return (V[kind] || []).concat(V.any || []).filter(function (t) { return t && String(t).trim(); }); };
+  /* 始まりの段の候補（空の欄は飛ばす） */
+  R.xEroOpen = function (kind) { var V = R.xEroV || {}; return (V[kind] || V.alien || []).filter(function (t) { return t && String(t).trim(); }); };
 
-  /* 生き物の場面の喘ぎ・擬音を埋める */
+  /* ---------- 男性向けの段の組み立て・段落の並べ替え・文明の研究・庇い展開（2026-10-27 担当BN） ----------
+     ship.js（両ビルド共通）は変えない。ship.js の xLewd が R.xEroPool・R.xEroAgainV・R.xFill を呼ぶので、そこで印を渡して組み立て、
+     記録に書く直前（HK.Story.say を包む）に段落を並べ替える。
+     ・印：\u0001…\u0002＝男性向けの段（「そのあと」の文の前へ移す）、\u0003＝「そのあと」の文の頭（X2.AFTER・X.lureAfter に付ける）。印は記録に残さない
+     ・小説調で庇い展開が起きない回は、文も乱数の引き方も変えない（庇い展開の抽選は、その回の記録から作った別の乱数で引く） */
+  var XV = '\u0001XV:', XA = '\u0001XA', AF = '\u0003';
+  function XE() { return SH.X && SH.X.ero; }
+  function markAfter(list) { return (list || []).map(function (t) { return String(t).charAt(0) === AF ? t : AF + t; }); }
+  if (SH.X2 && SH.X2.AFTER) Object.keys(SH.X2.AFTER).forEach(function (k) { SH.X2.AFTER[k] = markAfter(SH.X2.AFTER[k]); });
+  if (SH.X && SH.X.lureAfter) SH.X.lureAfter = markAfter(SH.X.lureAfter);
+  /* 男性向けの段は印で受け取る（xLewd は男性向けのときだけこれを呼ぶ） */
+  R.xEroPool = function (kind) { return [XV + (kind || 'alien')]; };
+  R.xEroAgainV = [XA];
+  function pkL(S, arr) { return E && E.fresh ? E.fresh(S, arr, function (l) { return S.rng.pick(l); }) : S.rng.pick(arr); }
+  function lwOf(S) { var X = HK.Lewd; if (!X || !X.conf('ship')) return { lv: 'mid', ero: false, high: false }; return { lv: X.lv(S.env), ero: X.ero(S.env), high: X.high(S.env) }; }
+  function shortOf(S) { return !!(HK.Lewd && HK.Lewd.conf('ship') && HK.Lewd.short(S.env, S.rng)); }
+  function bodyKey(c) { return HK.Pos && HK.Pos.isF(c) ? 'f' : 'm'; }
+  function persOf(c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || 'gentle'; }
+  /* 襲われる人の嫌がる喘ぎ（moan-engine.js。気の強い人は声を抑える。late＝山場から先。小説調は♡を落とす） */
+  function vMoan(S, v, k, late, novel) {
+    var M = HK.R18M, o = { force: true, hush: !!(M && M.isStrong && M.isStrong(v)), late: !!late };
+    if (novel) o.novel = true;
+    if (HK.Moan && HK.Moan.say) return HK.Moan.say(S, v, k, o);
+    return E && E.moan ? E.moan(S, v, { start: 0, mid: 1, climax: 2 }[k] || 0, { force: true }) : '……っ';
+  }
+  /* 文を埋める：{v}＝その段で襲われる人、{a}{b}{c}{x}＝m の名前（m がなければ ship.js が埋める）、{v0}{v1}{v2}＝喘ぎ、{s:…}＝擬音（小説調は落とす） */
+  function fx(S, t, v, m, late, novel) {
+    var s = String(t).replace(/\{([abcx])\}/g, function (q, k) { return m && m[k] != null ? m[k] : q; }).replace(/\{v\}/g, v.name);
+    s = novel ? s.replace(/\{s:\w+\}。?/g, '') : s.replace(/\{s:(\w+)\}/g, function (q, k) { return E && E.sfx ? E.sfx(S, k) : ''; });
+    return s.replace(/\{v([012])\}/g, function (q, n) { return vMoan(S, v, ['start', 'mid', 'climax'][+n], late || n === '2', novel); });
+  }
+  function climaxOf(S, v, novel) { return v.name + '「' + vMoan(S, v, 'climax', true, novel) + '」'; }
+  /* 星の生命体・異種族の誘い・異星の生き物（男性向け）：始まり → 行為（体ごと）→ 体が先に応える → 山場（態度9種）→ 果てる声 → 生き物が果てる。
+     数行で短くは「始まり＋行為＋山場」 */
+  R.xEroBuild = function (S, a, kind) {
+    var X = XE(); if (!X) return '';
+    var sh = shortOf(S), sep = sh ? '' : '\n\n', op = R.xEroOpen(kind);
+    var t = (op.length ? fx(S, pkL(S, op), a) + sep : '') + fx(S, pkL(S, X.body[bodyKey(a)]), a);
+    if (!sh) t += fx(S, pkL(S, X.mid), a);
+    t += sep + fx(S, pkL(S, X.peak[persOf(a)] || X.peak.gentle), a, null, true) + climaxOf(S, a);
+    if (!sh) t += fx(S, pkL(S, X.fin), a, null, true);
+    return t;
+  };
+
+  /* 生き物の場面の喘ぎ・擬音を埋める（男性向けの段の印なら、ここで組み立てる） */
   R.xFill = function (S, text, a, top) {
+    var s0 = String(text);
+    if (s0.indexOf(XV) === 0) return '\u0001' + R.xEroBuild(S, a, s0.slice(XV.length)) + '\u0002';
+    if (s0 === XA) { var X0 = XE(); return X0 ? '\u0001' + fx(S, pkL(S, X0.again[bodyKey(a)]), a, null, true) + '\u0002' : ''; }
     if (!E) return text;
     var d = a.eroDom; if (top) a.eroDom = true;
     var r = E.fill(S, text, a);
     a.eroDom = d;
+    return r;
+  };
+
+  /* 段落の並べ替え：男性向けの段（\u0001…\u0002）を「そのあと」の文（\u0003）の前へ移す。cut なら「そのあと」から先を落とす（庇い展開が続く回）。
+     印のない文・男性向けの段がなく cut でもない文は、印を消すだけ（小説調の文は変えない） */
+  R.relocate = function (t, cut) {
+    if (!/[\u0001-\u0003]/.test(t)) return t;
+    var bl = [];
+    var s = t.replace(/\u0001([\s\S]*?)\u0002/g, function (m, x) { bl.push(x); return ''; }).replace(/[\u0001\u0002]/g, '');
+    if (!bl.length && !cut) return s.replace(/\u0003/g, '');
+    var i = s.indexOf(AF), pre = (i >= 0 ? s.slice(0, i) : s).replace(/\u0003/g, '').replace(/\s+$/, '');
+    var post = i >= 0 ? s.slice(i + 1).replace(/\u0003/g, '').replace(/^\s+|\s+$/g, '') : '';
+    var sep = /\n\n/.test(s) || bl.some(function (x) { return /\n\n/.test(x); }) ? '\n\n' : '';
+    var out = pre;
+    bl.forEach(function (x) { if (x) out += sep + x; });
+    if (post && !cut) out += sep + post;
+    return out;
+  };
+
+  /* 文明の研究（男性向け）：元の一文 → 器具の責め（体ごと）→ 測られる羞恥 → 山場（態度9種）→ 果てる声 → 記録の終わり →（濃い）もう一度 */
+  R.labOn = function (S) { var w = lwOf(S); return !HK.SAFE_ON && w.ero && w.lv !== 'low' && !!(XE() && XE().lab); };
+  R.labEro = function (S, a, intro) {
+    var X = XE(), L = X.lab, sh = shortOf(S), sep = sh ? '' : '\n\n';
+    var civ = S.planet && S.planet.civ && S.planet.civ.d && S.planet.civ.d.name, m = { a: a.name, x: civ || '異星の者' };
+    var t = intro + sep + fx(S, pkL(S, L[bodyKey(a)]), a, m);
+    if (!sh) t += fx(S, pkL(S, L.mid), a, m);
+    t += sep + fx(S, pkL(S, X.peak[persOf(a)] || X.peak.gentle), a, m, true) + climaxOf(S, a) + fx(S, pkL(S, L.fin), a, m, true);
+    if (lwOf(S).high) t += sep + fx(S, pkL(S, L.again), a, m, true);
+    return t;
+  };
+
+  /* ---------- 庇い展開：生き物に捕まった仲間を、ほかの船員が助けに入る ----------
+     起きるのは、星の生命体（xeno）・異種族の誘い・異星の生き物の場面で、捕まった人が受ける側のとき（自分で攻めを選んだ人が生き物を責める場面は除く）。
+     一回の遊びで2回まで、場面ごとに3割ほど。助けに入る人は、その場にいる生きた船員から、関係の近さで選ぶ。
+     分岐：殴られる（触手に弾かれる）／身代わりを申し出る（巻き込まれない人は申し出が届かず弾かれる）／二人とも引きずり込まれる／絡め取られて見せつけられる。
+     ・巻き込まれる（身代わり・二人とも）＝モブとの場面に出てよく（HK.State.mobSexOk）、モブ相手に受けになれて（HK.Pos.canReceive）、
+       性行為の相手を固定していない人。家族・「恋愛・R18にしない相手」の組は除く
+     ・見せつけられて興奮＝R18に参加する人（攻め指定・固定の人も可。体の関係にはならず、自慰もしない。固定の人は相手を思い浮かべて恥じる）。
+       {b} の恋愛対象の性別に {a} が合い、家族・「恋愛・R18にしない相手」の組でないとき
+     ・殴られる・申し出（届かない）＝誰でも（R18に参加しない人も。性的な文には出ない）。描写の有無「ほのめかす」ではこの二つだけ
+     記録は三つに分ける：駆けつける（{b}・{a}。性的な語なし）→ 場面（巻き込まれた {b}、または見せつけられる {a} の記録）→ そのあと（{b}・{a}。性的な語なし） */
+  R.COVER_RATE = 0.3;
+  var REL_JP = { lover: '恋人', fixed: '性行為の相手を固定した相手', crush: '片想いの相手', friend: '仲間', enemy: '反目している相手', cold: 'ほとんど関わりのない相手' };
+  function lockList(c) { var L = c && c.sexLocks; return L && L.length ? L : (c && c.sexLock != null && c.sexLock !== 'any' && c.sexLock !== '' ? [c.sexLock] : []); }
+  function fixedTo(b, a) { return lockList(b).indexOf(a.i) >= 0; }
+  function likesG(p, q) { if (!p.likes || p.likes === 'both') return true; if (p.likes === 'none') return false; if (!q.gender || q.gender === 'x') return true; return p.likes === q.gender; }
+  function relOf(S, b, a) {
+    var A = SH.API, T = A.ties(S, a, b);
+    if (A.lover(S, a, b) || T.some(function (t) { return /^(spouse|mate|fated|lover)$/.test(t.type); })) return 'lover';
+    if (fixedTo(b, a)) return 'fixed';
+    if (T.some(function (t) { return t.type === 'almost' || t.type === 'honmei' || ((t.type === 'crush' || t.type === 'yan' || t.type === 'worship') && t.a === b.i); })) return 'crush';
+    if (T.some(function (t) { return /^(enemy|rival|bad|sibbad|abuse)$/.test(t.type); }) || A.bond(S, b, a) < -0.1) return 'enemy';
+    if (A.bond(S, b, a) >= 0.2 || T.length) return 'friend';
+    return 'cold';
+  }
+  /* その回の記録から作る乱数の種（S.rng を引かない） */
+  function seedOf(S, a) {
+    var lt = S.log && S.log.length ? String(S.log[S.log.length - 1].text || '').slice(-48) : '';
+    var s = (S.log ? S.log.length : 0) + '|' + (S.m || 0) + '|' + a.name + '|' + lt, h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  /* 襲っている相手の名前（記録の理由の欄から）。文明の住人の誘いで襲うのは「巨体」（X.huge・X.hugeAct の文と同じ） */
+  function xName(S, o) {
+    var w = String(o.why || ''); if (/^まだ正体に気づいていない/.test(w)) return '正体の分からない何か';
+    var m = w.match(/^(.+?)(?:の誘い。|（)/), x = m ? m[1] : '異星の生き物', civ = S.planet && S.planet.civ && S.planet.civ.d && S.planet.civ.d.name;
+    return civ && x === civ ? '巨体' : x;
+  }
+  R.coverPlan = function (S, a, o) {
+    var A = SH.API, C = SH.X && SH.X.cov, St = HK.State, P = HK.Pos;
+    if (!A || !C || !XE() || HK.SAFE_ON || !St || !P || !HK.rng || (S._shieldN || 0) >= 2) return null;
+    var g = HK.rng(seedOf(S, a));
+    if (g() >= R.COVER_RATE) return null;
+    var L = A.live(S).filter(function (q) { return q !== a && St.here(q); });
+    if (!L.length) return null;
+    var b = HK.weighted(g, L, function (q) { return 0.3 + Math.max(0, A.bond(S, q, a)) * 1.5 + (A.lover(S, a, q) ? 2 : 0) + (fixedTo(q, a) ? 2 : 0); });
+    var w = lwOf(S), low = w.lv === 'low', fam = A.family(S, a, b), ng = !!(HK.ngExplicit && HK.ngExplicit(a, b));
+    var drag = !low && !fam && !ng && St.mobSexOk(b) && P.canReceive(b) && !lockList(b).length && (!HK.Content || HK.Content.ok(S, 'force'));
+    var watch = !low && !fam && !ng && St.r18ok(b) && !b.noR18 && likesG(b, a);
+    var br = HK.weighted(g, [['hit', drag || watch ? 0.6 : 1], ['offer', 0.8], ['both', drag ? 1 : 0], ['watch', watch ? 1.2 : 0]].filter(function (x) { return x[1] > 0; }), function (x) { return x[1]; })[0];
+    if (br === 'offer') br = drag ? 'swap' : 'offerNo';
+    var c = null;
+    if (br === 'watch') { var cl = lockList(b).filter(function (i) { return i !== a.i; }); if (cl.length) c = S.P.filter(function (p) { return p.i === cl[0]; })[0] || null; }
+    return { a: a, b: b, g: g, br: br, rel: relOf(S, b, a), x: xName(S, o), c: c };
+  };
+  R.coverRun = function (S, cv) {
+    var r0 = S.rng; S.rng = cv.g;
+    try { coverBody(S, cv); } finally { S.rng = r0; }
+  };
+  function coverBody(S, cv) {
+    var C = SH.X.cov, X = XE(), A = SH.API, ST2 = HK.Story, a = cv.a, b = cv.b, br = cv.br;
+    var w = lwOf(S), novel = !w.ero, sh = shortOf(S), sep = sh ? '' : '\n\n';
+    var m = { a: a.name, b: b.name, x: cv.x, c: cv.c ? cv.c.name : '' };
+    var f = function (arr, v, late) { return fx(S, pkL(S, arr), v || a, m, late, novel); };
+    var peak = function (v) { return f(X.peak[persOf(v)] || X.peak.gentle, v, true) + climaxOf(S, v, novel); };
+    var take = function (v) { return novel ? f(C.novel, v) : f(X.body[bodyKey(v)], v) + (sh ? '' : f(X.mid, v)); };
+    var fin = function (v) { return novel || sh ? '' : f(X.fin, v, true); };
+    S._shieldN = (S._shieldN || 0) + 1;
+    var rj = REL_JP[cv.rel] || '仲間', t1 = f(C.motive[cv.rel] || C.motive.friend), t2 = '', tag2 = '', act2 = [b], t3 = '', why1 = b.name + 'が、捕まった' + a.name + '（' + rj + '）を助けに入った';
+    if (br === 'hit' || br === 'offerNo') {
+      if (br === 'offerNo') { t1 += f(C.offer) + f(C.offerNo); why1 += '。身代わりを申し出たが、届かなかった' + (b.noR18 ? '（R18に参加しないので、巻き込まれない）' : ''); }
+      else why1 += '。触手に弾かれた' + (b.noR18 ? '（R18に参加しないので、巻き込まれない）' : '');
+      t1 += sep + f(C.hit) + f(C.hitEnd);
+      b.m.hp = Math.max(1, (b.m.hp || 0) - 8); A.stress(b, 6);
+    } else if (br === 'swap') {
+      t1 += f(C.offer); why1 += '。自分を身代わりに差し出した';
+      tag2 = '庇い：身代わり'; t2 = f(C.swap) + sep + take(b) + sep + peak(b) + fin(b); t3 = f(C.swapEnd);
+    } else if (br === 'both') {
+      why1 += '。二人とも引きずり込まれた';
+      tag2 = '庇い：二人とも'; t2 = f(C.both) + sep + take(b) + f(C.bothMid) + sep + peak(b) + climaxOf(S, a, novel) + fin(b); t3 = f(C.bothEnd);
+    } else {
+      why1 += '。触手に絡め取られ、見せつけられた' + (cv.c ? '（性行為の相手を固定しているので、体の関係にはならない）' : '');
+      tag2 = '庇い：見せつけられて'; act2 = [a];
+      t2 = f(C.watch) + sep + (novel ? f(C.watchA) : f(C.watchAEro)) + sep + f(novel ? C.watchB : C.watchBEro) + (cv.c ? f(C.watchFix) : '') + sep + peak(a) + fin(a);
+      t3 = f(C.watchEnd) + f(C.shame);
+    }
+    var o1 = ST2.say(S, { actors: [b, a], tag: '庇い', kind: 'climax', text: t1, why: why1, mag: 28 });
+    if (!S._bnCovKey) { S._bnCovKey = true; ST2.key(S, o1, b.name + 'が' + a.name + 'を庇った'); }
+    if (t2) {
+      if (br !== 'watch') { b.cnt.r18 = (b.cnt.r18 || 0) + 1; A.stress(b, 10); } else A.stress(b, 8);
+      if (HK.EroScene) HK.EroScene.touch(S);
+      ST2.say(S, { actors: act2, tag: tag2, kind: 'climax', text: t2, why: br === 'watch' ? a.name + 'は、助けに来た' + b.name + 'の目の前で' + cv.x + 'に襲われた。' + b.name + 'は見せつけられ、体が熱くなるのを止められなかった' : b.name + 'は' + cv.x + 'に襲われた（' + a.name + 'を庇って巻き込まれた）', mag: 30 });
+    }
+    A.setRel(S, a, b, cv.rel === 'enemy' ? 0.12 : 0.18);
+    ST2.say(S, { actors: [b, a], tag: '庇いのあと', text: (t3 ? t3 + sep : '') + f(C.after[cv.rel] || C.after.friend), why: b.name + 'と' + a.name + '（' + rj + '）のそのあと', mag: 18 });
+  }
+
+  /* 記録に書く直前：宇宙船の場面の印を片づけ、研究（男性向け）を組み、庇い展開を続ける */
+  var STY = HK.Story, say0 = STY && STY.say;
+  function isShip(S) { return !!(S && S.ship && S.scen && S.scen.id === 'ship'); }
+  function covTag(tag) {
+    if (tag === '異星の生き物' || tag === '異種族の誘い') return true;
+    var T = SH.X2 && SH.X2.TAG; return !!(tag && T && Object.keys(T).some(function (k) { return T[k] === tag; }));
+  }
+  if (say0) STY.say = function (S, o) {
+    if (!o || typeof o.text !== 'string' || !isShip(S)) return say0.apply(this, arguments);
+    var a = o.actors && o.actors.length === 1 && o.actors[0] && typeof o.actors[0] === 'object' ? o.actors[0] : null, cv = null;
+    if (a && covTag(o.tag) && !/自分で攻めを選んで/.test(o.why || '')) cv = R.coverPlan(S, a, o);
+    o.text = R.relocate(o.text, !!cv);
+    if (a && o.tag === '研究' && R.labOn(S)) o.text = R.labEro(S, a, o.text);
+    var r = say0.apply(this, arguments);
+    if (cv) R.coverRun(S, cv);
     return r;
   };
 })();

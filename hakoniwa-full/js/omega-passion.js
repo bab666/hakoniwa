@@ -206,7 +206,7 @@
       var HS = !HK.SAFE_ON && HK.HateSex;
       if (HS) {
         var hs = HS.scene(ctx, a, b, {}), ob = HS.order(ctx, a, b);
-        return { text: fill(ctx, hs + ctx.pick(HN.end), ob[0], ob[1]), why: (HS.hostile(ctx, a, b) ? HS.why(ctx, a, b) : '愛憎（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性'), mag: 28 };
+        return { text: fill(ctx, hs + ctx.pick(HN.end), ob[0], ob[1]), why: (HS.hostile(ctx, a, b) ? HS.why(ctx, a, b) : '愛憎（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性') + (HS.shieldWhy ? HS.shieldWhy(HS.lastShield) : ''), mag: 28 };
       }
       var t = ctx.pick(HN.open) + ctx.pick(lewd(ctx) === 'low' || !HN.mid ? HN.low : HN.mid) + ctx.pick(HN.end);
       /* 受け攻め：抱く側を {a} に */

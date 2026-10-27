@@ -95,7 +95,10 @@
   function pk(S, arr) { return arr[S.rng.int(arr.length)]; }
   /* ship.js の xeno から呼ぶ。返り値は {a}{b}{x} 入りの段落つき本文（使わない回は null） */
   X2.thick = function (S, d, m, a, top, body, ft, always) {
-    if (HK.SAFE_ON || !body || (!always && S.rng() > 1 / 3)) return null;
+    if (HK.SAFE_ON || !body) return null;
+    /* 描写の作風「男性向け」で襲われる側の回は、長い版を使わない（男性向けの段は ship-lewd.js が組む。吹雪の館と同じ扱い。2026-10-27 担当BN） */
+    if (!top && HK.Lewd && HK.Lewd.conf('ship') && HK.Lewd.ero(S.env) && HK.Lewd.lv(S.env) !== 'low') return null;
+    if (!always && S.rng() > 1 / 3) return null;
     ft = RESIST[ft] ? ft : 'NP';
     /* 元の文がもう翌朝まで語り終えているときは、長い版にしない（時間が前後しないように） */
     if (top) return /翌朝|それ以来|その夜|次の日/.test(body) ? null : [body, pk(S, TOP_MID), pk(S, TOP_LINE[ft]), pk(S, TOP_PEAK), pk(S, TOP_LAST[ft]), pk(S, TOP_AFTER)].join('\n\n');

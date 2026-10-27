@@ -42,6 +42,8 @@
     reef: L('潮だまりから這い上がった深きものが、{a}を岩の上に押さえつけた。ぬめる鱗の腰が打ちつけられ、{a}の中に、冷たい卵のようなものが注ぎ込まれた。|満ち潮とともに、深きものの群れが{a}を岩場に引きずり上げた。冷たい水かきの手に体じゅうを撫で回され、{a}は波音の中で喘いだ。|岩礁の潮だまりに沈められた{a}の体に、ぬめる腕が何本も絡みついた。息継ぎのたびに、{a}の声は甘く崩れていった。'),
     temple: L('神殿の壁画から抜け出した触手が、{a}の手足を絡め取った。狂った角度の石段の上で、{a}は宙吊りのまま、奥の奥まで犯された。|狂った角度の回廊を逃げるうちに、{a}は同じ場所に戻されていた。壁から伸びた触手に絡め取られ、{a}は石の祭壇の上に横たえられた。|神殿の柱に刻まれた紋様が、{a}の肌に浮かび上がった。紋様が光るたびに、{a}の体は見えない何かに奥まで暴かれた。')
   };
+  /* 人の形の相手が襲う場所（作風「男性向け」の行為は crowd の文。[行為の文の呼び方, 庇い展開の文の呼び方]）。ほかの場所は触手・眷属の文（cave） */
+  var PLACE_MAN = { wedding: ['婿', '婿の一族'], feast: ['村人たち', '村人たち'], theater: ['役者たち', '役者たち'] };
   /* 竹林の無音堂（声を漏らせば消える） */
   var BAMBOO = L('竹林の闇から伸びた冷たい指が、{a}の服の下に滑り込んだ。声を出せば、消える。{a}は唇を噛み、奥まで探られるままに耐えた。|無音堂の床板が軋む音さえ、ここでは鳴らなかった。音のない闇の中で、何本もの指が{a}の体を開き、{a}は袖を噛んで息を殺した。|口を縫われた白い影が、{a}の背後から覆いかぶさってきた。耳元に吐息だけを感じながら、{a}は声を飲み込み、体の奥を探られ続けた。');
   var cave0 = JS.R18.cave;
@@ -58,6 +60,8 @@
     /* 無音堂：声を漏らせば消える */
     if (PL.id === 'bamboo') {
       var t = ST.fmt(fp(S, BAMBOO), { a: p.name });
+      /* 作風「男性向け」：触手に弄ばれる段を足す（声を抑えた喘ぎ） */
+      if (JS.R18.lwEro && JS.R18.lwEro(S)) t += JS.R18.lwSep(S) + JS.R18.eroBody(S, p, 'cave', true) + JS.R18.lwSep(S);
       if (rng() < 0.3 + (p.aphro ? 0.2 : 0) - p.tr.cp * 0.2) {
         JS.core.die(S, p, '無音堂で、声を漏らして', [t + (R ? R.say(S, p, 'climax') : '') + 'その声が、{a}の最後の声になった。']);
         return;
@@ -65,8 +69,16 @@
       ST.say(S, { actors: [p], tag: PL.name, kind: 'climax', text: t + p.name + 'は、最後まで声を漏らさなかった。指が去ったあと、' + p.name + 'の唇には血が滲んでいた。', why: '無音堂の何かに弄ばれた。声を出さずに耐えた（CP）', mag: 28 });
       return;
     }
+    /* 庇い展開（solo-jashin-r18.js の JS.R18.cover。身代わりが聞き入れられたら、襲われるのは庇った人） */
+    var C = JS.R18.cover, man = !!PLACE_MAN[PL.id], cv = C ? C.tryIt(S, p, 'cave', man ? 'man' : 'kin', man ? PLACE_MAN[PL.id][1] : '眷属') : null, p0 = p;
+    if (cv) C.pre(S, cv);
+    if (cv && cv.eff === 'sub') { p = cv.r; p.cnt.r18 = (p.cnt.r18 || 0) + 1; p0.cnt.r18 = Math.max(0, p0.cnt.r18 - 1); }
     if ((!HK.Content || HK.Content.ok(S, 'preg')) && rng() < lv * 0.4) p.preg = true;
-    ST.say(S, { actors: [p], tag: PL.name, kind: 'climax', text: (R ? R.resist(S, 'god', p, { endure: false }) : '') + ST.fmt(fp(S, PLACE[PL.id]), { a: p.name, g: S.G.call }) + (R ? R.moans(S, p, ['mid', 'climax']) + R.npc(S, 'god', p) : '') + (p.preg ? '下腹に、熱いものが宿った感覚があった。' : ''), why: PL.name + 'の眷属に襲われた' + (p.preg ? '（疑似妊娠）' : ''), mag: 26 });
+    /* 作風「男性向け」：場所の文を導入にして、眷属（人の形の相手は crowd）に犯される段を組む */
+    var ero = JS.R18.lwEro && JS.R18.lwEro(S);
+    var body = ero ? JS.R18.eroMob(S, p, man ? 'crowd' : 'cave', ST.fmt(fp(S, PLACE[PL.id]), { a: p.name, g: S.G.call }), man ? PLACE_MAN[PL.id][0] : null) : (R ? R.resist(S, 'god', p, { endure: false }) : '') + ST.fmt(fp(S, PLACE[PL.id]), { a: p.name, g: S.G.call }) + (R ? R.moans(S, p, ['mid', 'climax']) + R.npc(S, 'god', p) : '');
+    ST.say(S, { actors: [p], tag: PL.name, kind: 'climax', text: body + (cv ? C.watch(S, cv) : '') + (p.preg ? (ero ? JS.R18.lwSep(S) : '') + '下腹に、熱いものが宿った感覚があった。' : ''), why: PL.name + 'の眷属に襲われた' + (p !== p0 ? '（' + p0.name + 'の身代わりになった）' : '') + (p.preg ? '（疑似妊娠）' : ''), mag: 26 });
+    if (cv) { C.both(S, cv, PL.name, man ? 'crowd' : 'cave'); C.after(S, cv); }
   };
   /* 一回の中の性的な夜の上限（solo-jashin-r18.js の room）：眷属に襲われるのも、まだ余裕のある人だけ */
   var cave1 = JS.R18.cave;

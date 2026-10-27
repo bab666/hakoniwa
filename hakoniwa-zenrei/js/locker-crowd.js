@@ -402,7 +402,8 @@
       } else if (want <= 0.55 && force && side === 'bottom' && !(Pos && Pos.hardTopNpc(A)) && rng() < 0.45 * HK.Dark.f(S, 'assault')) {
         var mdF = modeOf(m, A), vF = { a: m.name, b: A.name };
         t += ST.fmt(pk(R.FORCE[mdF]), vF) + ST.fmt(pk(R.FREACT[A.persona] || R.FREACT.gentle), { a: A.name, m: m.name });
-        if (S.eroOn) t += HK.ThickEro.fill(S, ST.fmt(pk(R.FORCE_ERO[mdF]), vF), m, A);
+        /* 男性向け：行為の段（組ごと）と、襲われた住人の態度ごとの山場（R.FREACT_ERO。locker-crowd-r18.js） */
+        if (S.eroOn) t += HK.ThickEro.fill(S, ST.fmt(pk(R.FORCE_ERO[mdF]), vF) + (R.FREACT_ERO ? ' ' + ST.fmt(pk(R.FREACT_ERO[A.persona] || R.FREACT_ERO.gentle), vF) : ''), m, A);
         t += moan(S, A, false, mdF, false, { force: true }) + climaxBy(S, A, m, false) + ST.fmt(pk(R.FORCE_AFTER), v);
         bumpClimax(A); outcome = 'forced'; tag = '強引に'; kind = 'climax'; mag = 34; tags = ['force'];
         why = m.name + 'が、動けない' + A.name + 'に無理やり手を出した（合意のない展開：内容のスイッチが入）';

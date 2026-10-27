@@ -74,7 +74,12 @@
     }
     if (r < save + (1 - save) * 0.4) {
       var vic = here && rng() < 0.5 ? L0 : ctx.most(mates, function (x) { return x.tr.np + x.tr.impulse * 0.5; });
-      var t2 = t + fill(ctx.pick(X.caughtTop && HK.Pos && HK.Pos.hardTopNpc(vic) ? X.caughtTop : X.caught), { a: v.name, m: vic.name }) + fill(ctx.pick(lv === 'high' ? X.die : X.dieFade), m);
+      /* 庇い展開（R18版の ZA_TEXT.cover）：群れを引き剥がそうとして一緒に押し倒され、二人とも這い出す／助け出される → 事後。1回の箱庭で2回まで */
+      var cv = X.cover ? X.cover(ctx, v, vic, mates, lv, t, why) : null;
+      if (cv) return cv;
+      /* 助けに入った人を押さえつけるのは、巻き込まれてよい人だけ（「攻め」指定・性行為の相手の固定・R18に参加しない人は、殴り倒して下がるが咬まれる） */
+      var top = !!X.caughtTop && (X.inv ? !X.inv(vic) : !!(HK.Pos && HK.Pos.hardTopNpc(vic)));
+      var t2 = t + fill(ctx.pick(top ? X.caughtTop : X.caught), { a: v.name, m: vic.name }) + fill(ctx.pick(lv === 'high' ? X.die : X.dieFade), m);
       ctx.kill(v, null, 'ゾンビの群れに、仲間の前で犯されながら喰い殺された');
       vic.hp -= 40 + rng.int(25); ctx.stress(vic, 40);
       if (vic.hp <= 0) ctx.kill(vic, null, v.name + 'を助けに入り、ゾンビの群れに喰われた');

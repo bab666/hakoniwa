@@ -77,6 +77,8 @@
         if (r.saved === 2) pn(S, w.name + 'は何度も' + tgt.name + 'を助けた。');
       } else {
         var ev = S.lastEv;
+        /* 庇い展開（dungeon-lewd.js の DG.kabai）：一緒に掛かる／身代わり／見せつけられて興奮／弾き飛ばされる。1回の探索で2回まで */
+        if (!isTop(tgt) && DG.kabai && DG.kabai(S, w, tgt, r, ev, sayAs)) return true;
         sayAs(S, w, { kind: 'ev', tag: '救援', text: t2(S, pk(S, isTop(w) ? ['{a}は{b}を助けようと飛び込んだが、仕掛けの吐いた甘い霧を正面から浴びてしまった。', '{a}は{b}のもとへ駆け寄り、伸びてきたものを叩き落とした。飛び散った媚薬の飛沫が、肌を火照らせた。'] : isTop(tgt) ? ['{a}は{b}に加勢しようと飛び込み、足首を何かに絡め取られた。', '{a}は{b}のもとへ駆け寄る途中で、別の仕掛けに捕まった。'] : ['{a}は{b}を助けようと飛び込み、一緒に絡め取られた。', '{a}の手が{b}に届く寸前で、{a}の足首にも何かが巻きついた。']), w, tgt), why: w.name + 'のNP（助けに入ったが、届かなかった）' });
         if (ev && ev.power) { var prev2 = S.h; S.h = w; DG.stim(S, ev, 0.6); S.h = prev2; }
       }
@@ -125,7 +127,7 @@
     } else {
       var ev = { id: 'mate', name: a.name, kind: 'mate', part: 'any', power: 22, o: { hold: 0 }, texts: [] };
       var prev = S.h; S.h = b; DG.stim(S, ev, 1);
-      sayAs(S, a, { kind: 'ev', tag: '仲間の暴走', text: t2(S, pk(S, ['迷宮の熱に呑まれた{a}が、{b}に覆いかぶさった。「ごめん、もう、止まらない」――', '{a}の目はもう、仲間を見る目ではなかった。{b}は壁際に追い詰められた。――', '{a}は{b}の名前を何度も呼びながら、その体をまさぐった。――']), a, b) + DG.react(S, true), why: a.name + 'の堕ち度 ' + Math.round(a.corrupt) + '・衝動。誰も止められなかった' });
+      sayAs(S, a, { kind: 'ev', tag: '仲間の暴走', text: t2(S, pk(S, ['迷宮の熱に呑まれた{a}が、{b}に覆いかぶさった。「ごめん、もう、止まらない」――', '{a}の目はもう、仲間を見る目ではなかった。{b}は壁際に追い詰められた。――', '{a}は{b}の名前を何度も呼びながら、その体をまさぐった。――']), a, b) + DG.react(S, true) + (DG.mateEro ? DG.mateEro(S, a, b) : ''), why: a.name + 'の堕ち度 ' + Math.round(a.corrupt) + '・衝動。誰も止められなかった' });
       S.h = prev;
       a.corrupt += 4;
       pn(S, a.name + 'は迷宮の熱に呑まれ、' + b.name + 'を襲った。');

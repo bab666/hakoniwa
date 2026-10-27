@@ -187,7 +187,14 @@
     /* 犯される描写は、怪物になった側が「受け」でなく、襲われる側が「攻め」でないときだけ */
     /* 襲われる側が「攻め」指定なら、犯される展開にはしない（喰われる・助け出されるだけ） */
     /* 怪物になった o が c を襲う向き（HK.Pos.order の先頭が o）で、二人の向きが決まる組（okSex）のときだけ */
-    function sexOK(x) { var P = HK.Pos; return !P || (P.canReceive(x) && P.okSex(o, x) && P.order(o, x, [o, x])[0] === o); }
+    /* 内容のスイッチ「合意のない展開」が入で、R18に参加する人どうし・モブとの場面に出てよい人（性行為の相手を固定した人は、相手が怪物になった本人のときだけ）に限る */
+    var forceOk = !HK.Content || HK.Content.ok(ctx, 'force');
+    function sexOK(x) {
+      var P = HK.Pos, S = HK.State;
+      if (!forceOk || (S && (!S.r18ok(x) || !S.r18ok(o) || (!S.mobSexOk(x) && (x.sexLocks || []).indexOf(o.i) < 0)))) return false;
+      if (x.sexLocks && x.sexLocks.length && x.sexLocks.indexOf(o.i) < 0) return false;
+      return !P || (P.canReceive(x) && P.okSex(o, x) && P.order(o, x, [o, x])[0] === o);
+    }
     var sexual = lv !== 'off' && sexOK(c) && rng() < 0.6;
     var lvr = Z.loverOf ? Z.loverOf(ctx, c, o) : null, lvHere = lvr && mates.indexOf(lvr) >= 0;
     var pow = mates.reduce(function (s0, x) { return s0 + (x.weapon ? x.weapon.pow : 0); }, 0);

@@ -683,7 +683,7 @@
         ctx.mod2(a, b, { att: 10, aff: 4, ten: -4 }, { att: 12, aff: 5, ten: -6 });
         a.stress = Math.max(0, a.stress - 10); b.stress = Math.max(0, b.stress - 10);
         var place = fill(fp(ctx, ZH_PLACE), { a: o[0].name, b: o[1].name });
-        return { cat: 'romance', text: HS.scene(ctx, a, b, { place: place, low: Z.loveLv(ctx) === 'fade' }), why: HS.why(ctx, a, b) + '・' + Z.day(ctx) + '日目', mag: 26 };
+        return { cat: 'romance', text: HS.scene(ctx, a, b, { place: place, low: Z.loveLv(ctx) === 'fade' }), why: HS.why(ctx, a, b) + '・' + Z.day(ctx) + '日目' + (HS.shieldWhy ? HS.shieldWhy(HS.lastShield) : ''), mag: 26 };
       }
     });
   }

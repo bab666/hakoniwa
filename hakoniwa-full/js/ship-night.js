@@ -346,7 +346,13 @@
     /* 夜の種類ごとの段落：厚く＝この段落を一度目として、ship.js の厚い山場をその続きに。数行で短く＝この段落を本文にする（一文の本文は使わない） */
     var mid = '';
     if (L.lv !== 'low') {
-      var kd = pairKind(t, u), cs = L.ero ? fillEro(S, A.pk(S, T.coreEro[tier][kd]), t, u) : A.pk(S, T.core[tier][kd]);
+      var kd = pairKind(t, u), ngk = HK.NoGen && HK.NoGen.kind ? HK.NoGen.kind(t, u) : '', NGP = ngk && HK.NoGen.POOLS, cs;
+      /* 性器なしの人の組：受けが none なら口、攻めが none なら指と玩具の段落（pos-nogen.js の文を {t}{u} で。挿入の文は使わない） */
+      if (NGP) {
+        var ngl = ngk === 'oral' ? (L.ero ? NGP.E_BODY_O : NGP.BODY_O) : (L.ero ? NGP.E_BODY_H : NGP.BODY_H), ngb = HK.NoGen.bodyOf(ngk === 'oral' ? t : u);
+        cs = A.pk(S, ngl[ngb] || ngl.x).replace(/\{a\}/g, '{t}').replace(/\{b\}/g, '{u}');
+        if (L.ero) cs = fillEro(S, cs.replace(/\{mb\}/g, '{mu1}'), t, u);
+      } else cs = L.ero ? fillEro(S, A.pk(S, T.coreEro[tier][kd]), t, u) : A.pk(S, T.core[tier][kd]);
       mid = '\n\n' + A.F(cs, nm) + (Pz.hardTop(u, t) ? '' : ' ' + A.F(A.pk(S, att(u, T.att[tier])), nm));
       if (L.short) { body = ''; mid += '\n\n'; }
       else mid += '\n\n' + A.F(A.pk(S, T.bridge[tier]), nm);

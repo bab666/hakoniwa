@@ -146,7 +146,7 @@
       pf.ctHate = true; pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.hateSex = (pf.hateSex || 0) + 1; pf.hateSexAt = ctx.stepIndex;
       ctx.mod2(a, b, { att: 10, aff: 3, ten: -2 }, { att: 10, aff: 3, ten: -2 });
       var text = HS.scene(ctx, a, b, { place: ctx.t(pk(ctx, T.GOUKON_HATE), o[0], o[1]) });
-      return { cat: 'romance', sex: true, text: text, why: HS.why(ctx, a, b) + '／合コンの帰り道／〔合意のない展開〕内容のスイッチ「合意のない展開」・展開：重い', mag: 28 };
+      return { cat: 'romance', sex: true, text: text, why: HS.why(ctx, a, b) + HS.shieldWhy(HS.lastShield) + '／合コンの帰り道／〔合意のない展開〕内容のスイッチ「合意のない展開」・展開：重い', mag: 28 };
     }
   });
 
@@ -212,9 +212,30 @@
       if (k === 'night') {
         var bk = kindOf(D, V);
         vio = on(ctx, 'violence');
-        text = ctx.t(pk(ctx, T.DV_NIGHT[bk]) + (vio ? pk(ctx, T.DV_NIGHT_V[bk]) : ''), D, V);
+        /* 2026-10-27（担当BM）：描写の作風「男性向け」なら段に分けて男性向けで書く。第三者が割って入る庇い展開（HK.HateSex.shield）もここで */
+        var HF = HS && HS.Force, LW = HK.Lewd, lowN = LW && LW.low(ctx.env), sub = HF ? HF.subOf(D, V, bk) : '';
+        var eroN = !!(HF && LW && LW.ero(ctx.env) && !lowN && sub), shortN = eroN && LW.short(ctx.env, ctx.rng);
+        var shN = HS && HS.shield && !lowN ? HS.shield(ctx, D, V, { ero: eroN, short: shortN }) : null;
+        if (!eroN && !shN) text = ctx.t(pk(ctx, T.DV_NIGHT[bk]) + (vio ? pk(ctx, T.DV_NIGHT_V[bk]) : ''), D, V);
+        else {
+          var ps = [pk(ctx, T.DV_OPEN)];
+          if (vio) ps.push(pk(ctx, T.DV_NIGHT_V[bk]));
+          if (shN) ps.push(shN.open + shN.both);
+          if (eroN) {
+            ps.push(HF.pick(ctx, T.DV_ERO[sub]));
+            if (shN) ps.push(shN.watch);
+            ps.push(HF.pick(ctx, HF.PEAK[HF.ps(V)]) + '{b}「{m2}」');
+            if (!shortN) {
+              ps.push(HF.pick(ctx, HF.FIN[sub]));
+              if (LW.high(ctx.env)) ps.push(HF.pick(ctx, HF.AGAIN));
+              ps.push(pk(ctx, T.DV_AFTER_E));
+            }
+          } else { ps.push(pk(ctx, T.DV_BODY[bk])); ps.push(shN.watch); }
+          if (shN) ps.push(shN.after);
+          text = HF.fill(ctx, ps.join(''), D, V, eroN);
+        }
         sex = true;
-        extra = '／〔合意のない展開〕' + (vio ? '〔暴力をともなう性描写〕' : '');
+        extra = '／〔合意のない展開〕' + (vio ? '〔暴力をともなう性描写〕' : '') + (shN ? HS.shieldWhy(shN) : '');
       } else text = ctx.t(pk(ctx, T.DV[k]).replace(/\{c\}/g, C ? C.name : '周りの人'), D, V);
       if (k === 'control') { ctx.mod2(D, V, { att: 2 }, { ten: 5, trust: -3 }); ctx.stress(V, 6); }
       else if (k === 'verbal') { ctx.mod2(D, V, { ten: 2 }, { aff: -4, ten: 6 }); ctx.stress(V, 8); }
