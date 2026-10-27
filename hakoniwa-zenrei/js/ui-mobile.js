@@ -19,7 +19,7 @@
     'html body #view-result table.per td{display:block;position:static!important;border:0!important;padding:0!important;box-shadow:none!important;background:none!important;min-width:0!important;max-width:none!important;width:auto!important;flex:1 1 calc(50% - 10px);text-align:left!important}' +
     'html body #view-result table.per td:nth-child(1){flex:0 0 auto;align-self:center}html body #view-result table.per td:nth-child(2){flex:1 1 100%;align-self:center;font-size:14px}' +
     'html body #view-result table.per td:nth-child(2) b{max-width:none}' +
-    'html body #view-result table.per td[data-label]:nth-child(n+3)::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted);margin-bottom:2px}' +
+    'html body #view-result table.per td[data-label]:nth-child(n+3)::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted2,var(--muted));margin-bottom:2px}' +
     'html body #view-result table.per td:nth-child(n+3){flex:1 1 calc(33% - 10px);font-size:15px}' +
     'html body #view-result table.per td:last-child{flex-basis:100%;font-size:13px}' +
     'html body #view-result table.per td select,html body #view-result table.per td input[type=text]{width:100%;max-width:none!important;min-width:0!important}' +

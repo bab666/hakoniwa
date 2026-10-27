@@ -34,13 +34,13 @@
       '.cptools input[type=search]{flex:0 1 15em;min-width:9em;max-width:100%}.cptools .hint{margin:0}' +
       '.cppager{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;margin:8px 0}' +
       '.cppager .cprange{font-size:13px;color:var(--muted);margin-right:4px}' +
-      '.cppager button{min-width:36px;min-height:34px;padding:3px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;cursor:pointer}' +
+      '.cppager button{min-width:36px;min-height:36px;padding:3px 9px;border:1px solid var(--line2,var(--line));border-radius:var(--r,4px);background:var(--paper,var(--surface));color:var(--ink);font:inherit;font-family:var(--f-num);font-size:13px;cursor:pointer}' +
       '.cppager button[aria-current=page]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}' +
       '.cppager button:disabled{opacity:.4;cursor:default}.cppager .cpgap{color:var(--muted);padding:0 2px}' +
-      '.cgrp{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;padding:4px 10px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:6px;min-width:0}' +
+      '.cgrp{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;padding:6px 12px;border-left:2px solid var(--ink);background:var(--bg1,var(--accent-soft));border-radius:0 4px 4px 0;min-width:0;margin-top:10px}' +
       '.cgrp .cgfold,.bxgin .cgfold{font:inherit;font-weight:700;background:none;border:0;padding:4px 2px;cursor:pointer;color:var(--ink);text-align:left;max-width:100%;overflow-wrap:anywhere}' +
       '.cgrp .cgn,.bxgin .cgn{font-size:13px}.cgrp .cgnote,.bxgin .cgnote{font-size:12px;color:var(--muted)}.cgrp .cgsp{flex:1 1 auto}' +
-      'table.per tr.bxg td,table.per tr.bxmore td{position:static;max-width:none;width:auto;min-width:0;text-align:left;background:var(--accent-soft);padding:4px 10px;box-shadow:none}' +
+      'table.per tr.bxg td,table.per tr.bxmore td{position:static;max-width:none;width:auto;min-width:0;text-align:left;background:var(--bg1,var(--accent-soft));padding:4px 10px;box-shadow:none}' +
       'table.per tr.bxmore td{background:var(--bg)}' +
       '.bxgin{position:sticky;left:10px;display:inline-flex;flex-wrap:wrap;gap:4px 10px;align-items:center;max-width:calc(100vw - 60px)}' +
       '.res .memo input.tags{flex:0 1 150px}.cptags .chip{cursor:pointer}' +

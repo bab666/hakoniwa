@@ -401,8 +401,8 @@
   });
 
   /* ---------- 画面の欄（ui-gear.js の話し方の節から） ---------- */
-  var css = '.gend{margin:10px 0 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px}.gend summary{cursor:pointer;font-size:13px;color:var(--muted)}.gend summary b{color:var(--ink);font-weight:600}.gend .gendon{font-size:12px;margin-left:6px;color:var(--accent)}' +
-    '.gend .gearrow input[type=text]{width:11em}.gend .enderr{color:#c0392b;font-size:12px;line-height:1.6;margin:4px 0 0}.gend .endsample .tsl{display:block}.gendb{font-size:11px;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:0 6px;white-space:nowrap}';
+  var css = '.gend{margin:10px 0 0;border:1px solid var(--line);border-radius:var(--r-card,6px);padding:6px 10px}.gend summary{cursor:pointer;font-size:13px;color:var(--muted)}.gend summary b{color:var(--ink);font-weight:600}.gend .gendon{font-size:12px;margin-left:6px;color:var(--accent)}' +
+    '.gend .gearrow input[type=text]{width:11em}.gend .enderr{color:#D7263D;color:var(--hot,#D7263D);font-size:12px;line-height:1.6;margin:4px 0 0}.gend .endsample .tsl{display:block}.gendb{font-size:11px;color:var(--ink);border:1px solid var(--ink);border-radius:3px;padding:0 6px;white-space:nowrap}';
   if (typeof document !== 'undefined' && document.head) { var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); }
   function escH(s) { return (HK.escape || function (x) { return String(x); })(s); }
   function sampleHtml(c, o) {

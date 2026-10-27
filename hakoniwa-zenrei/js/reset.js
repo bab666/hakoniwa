@@ -29,8 +29,8 @@
     var host = document.querySelector('.foot-body');
     if (!host || document.getElementById('resetbox')) return;
     var st = document.createElement('style');
-    st.textContent = '.resetbox{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.btn.danger{background:#b3261e;border-color:#b3261e;color:#fff;font-weight:600}.btn.danger:hover{background:#8c1d18;border-color:#8c1d18}.btn.danger:disabled{opacity:.45;cursor:not-allowed}' +
-      '.resetstep{margin-top:8px;padding:10px 12px;border:1px solid #b3261e;border-radius:8px;background:color-mix(in srgb,#b3261e 7%,var(--surface))}.resetstep[hidden]{display:none}.resetstep input{width:9em}.resetrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}';
+    st.textContent = '.resetbox{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.btn.danger{background:#D7263D;background:var(--hot,#D7263D);border-color:#D7263D;border-color:var(--hot,#D7263D);color:#fff;color:var(--paper,#fff);font-weight:700}.btn.danger:hover{background:var(--ink);border-color:var(--ink)}.btn.danger:disabled{opacity:.45;cursor:not-allowed}' +
+      '.resetstep{margin-top:8px;padding:10px 12px;border:1px solid #D7263D;border:1px solid var(--hot,#D7263D);border-left-width:3px;border-radius:6px;background:var(--paper,var(--surface))}.resetstep[hidden]{display:none}.resetstep input{width:9em}.resetrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}';
     document.head.appendChild(st);
     var box = document.createElement('div');
     box.className = 'resetbox'; box.id = 'resetbox';

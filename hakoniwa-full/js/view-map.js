@@ -15,7 +15,8 @@
   /* 絞り込み中は、元の結果（res._base）を鍵にする（絞った結果は描くたびに作り直すので） */
   function S(res) { var b = res._base || res; if (st.res !== b) st = { res: b, mode: 'auto', inner: few(b), stat: null, sub: 'all' }; return st; }
   /* 派閥の色（住人の色と別にして、派閥どうしを見分けやすく） */
-  var FCOL = ['#e8590c', '#1c7ed6', '#2b8a3e', '#ae3ec9', '#c92a2a', '#0c8599'];
+  /* 色は index.html の --fc0〜--fc5（白黒それぞれ。色の量が「藍のみ／キャラ色」なら藍） */
+  var FCOL = ['var(--fc0,#e8590c)', 'var(--fc1,#1c7ed6)', 'var(--fc2,#2b8a3e)', 'var(--fc3,#ae3ec9)', 'var(--fc4,#c92a2a)', 'var(--fc5,#0c8599)'];
   function fcol(res, g) { var k = M.groups(res).indexOf(g); return FCOL[(k < 0 ? 0 : k) % FCOL.length]; }
   var cache = typeof WeakMap === 'function' ? new WeakMap() : null;
   function memo(res, key, fn) {
@@ -339,7 +340,7 @@
       under += '<circle class="fhull" cx="' + X.toFixed(1) + '" cy="' + Y.toFixed(1) + '" r="' + c.r.toFixed(1) + '" style="--c:' + col + ';stroke:' + col + '"' + (c.g.kind === 'ring' ? ' stroke-dasharray="7 5"' : '') + '/>';
       over += '<text class="fhlab" x="' + X.toFixed(1) + '" y="' + (Y - c.r - 8).toFixed(1) + '" text-anchor="middle" style="fill:' + col + '">' + esc(h.txt) + '</text>';
       var L0 = pos[c.g.leader];
-      over += '<g aria-hidden="true"><circle cx="' + (L0.x + NR * 0.78).toFixed(1) + '" cy="' + (L0.y - NR * 0.78).toFixed(1) + '" r="7.5" style="fill:' + col + ';stroke:var(--sand);stroke-width:1.5"/><text x="' + (L0.x + NR * 0.78).toFixed(1) + '" y="' + (L0.y - NR * 0.78 + 3.6).toFixed(1) + '" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">★</text></g>';
+      over += '<g aria-hidden="true"><circle cx="' + (L0.x + NR * 0.78).toFixed(1) + '" cy="' + (L0.y - NR * 0.78).toFixed(1) + '" r="7.5" style="fill:' + col + ';stroke:var(--sand);stroke-width:1.5"/><text x="' + (L0.x + NR * 0.78).toFixed(1) + '" y="' + (L0.y - NR * 0.78 + 3.6).toFixed(1) + '" text-anchor="middle" style="fill:var(--paper,#fff);font-size:10px;font-weight:700">★</text></g>';
     });
     return { W: W, H: H, NR: NR, below: below, lw: lw, pos: pos, under: under, over: over, taken: taken, groups: G };
   };
@@ -476,17 +477,17 @@
     '.mapbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px}.mapnote{margin:0 0 6px;font-size:11px}' +
     '.mapsub{display:inline-flex;align-items:center;gap:6px;max-width:100%}.mapsub select{max-width:min(100%,320px);font-size:13px;padding:4px 6px}' +
     '.kpanel{padding:12px}.kframes{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}' +
-    '.kgrade{border:1px solid var(--line);border-radius:var(--r,6px);background:var(--bg);padding:8px 10px;min-width:0}.kgrade h3{margin:0 0 6px;font-size:14px}' +
+    '.kgrade{border:1px solid var(--line);border-radius:var(--r-card,6px);background:var(--bg1,var(--bg));padding:8px 10px;min-width:0}.kgrade h3{margin:0 0 6px;font-size:14px}' +
     '.kroom+.kroom{margin-top:8px}.khd{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap}.khd .kn{margin-left:auto}.khd .kt{color:var(--ink);font-weight:600}' +
     '.kgrid{list-style:none;margin:0;padding:0;display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(82px,1fr))}' +
-    '.kcell{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 3px 5px;border-radius:8px;background:var(--surface);border:1px solid var(--line);text-align:center;min-width:0}' +
+    '.kcell{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 3px 5px;border-radius:var(--r,4px);background:var(--paper,var(--surface));border:1px solid var(--line);text-align:center;min-width:0}' +
     '.kcell.inf{border-color:var(--fc);box-shadow:inset 0 0 0 1.5px var(--fc)}' +
     '.kav{position:relative;display:inline-flex;border-radius:50%}.kav.lv{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--love)}' +
-    '.kstar{position:absolute;right:-5px;top:-5px;width:15px;height:15px;border-radius:50%;color:#fff;font-size:9px;font-style:normal;line-height:15px;text-align:center}' +
+    '.kstar{position:absolute;right:-5px;top:-5px;width:15px;height:15px;border-radius:50%;color:var(--paper,#fff);font-size:9px;font-style:normal;line-height:15px;text-align:center}' +
     '.kname{font-size:12px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kcell .fate{font-size:10px;padding:0 5px}' +
-    '.ksub{font-size:10px;color:var(--muted)}.klv{font-size:10px;color:var(--love);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '.ksub{font-size:10px;color:var(--muted2,var(--muted))}.klv{font-size:10px;color:var(--love);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
     '.kteach{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;color:var(--muted);margin:0 0 8px}.kteach span{display:inline-flex;align-items:center;gap:4px;color:var(--ink);font-weight:600}' +
-    '.klegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:11px;color:var(--muted)}.kleg{display:inline-flex;align-items:center;gap:4px}' +
+    '.klegend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:11px;color:var(--muted2,var(--muted))}.kleg{display:inline-flex;align-items:center;gap:4px}' +
     '.kleg i{display:inline-block;width:12px;height:12px;border-radius:3px;border:2px solid}.klvm{color:var(--love)}';
   function addCss() {
     if (document.getElementById('hk-view-map-css')) return;

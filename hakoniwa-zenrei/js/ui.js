@@ -23,17 +23,19 @@
       L.push('--p' + i + ':hsl(' + h + ' 55% 38%)');
       D.push('--p' + i + ':hsl(' + h + ' 65% 70%)');
     }
-    var css = ':root{' + L.join(';') + '}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){' + D.join(';') + '}}:root[data-theme="dark"]{' + D.join(';') + '}' +
+    /* 色の量が「藍のみ」のときは住人の色も藍に（index.html の :root[data-palette="mono"] は --p0〜--p11。図や札は 30 色で回すので --p29 まで） */
+    var M = []; for (var j = 12; j < 30; j++) M.push('--p' + j + ':var(--ai)!important');
+    var css = ':root{' + L.join(';') + '}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){' + D.join(';') + '}}:root[data-theme="dark"]{' + D.join(';') + '}:root[data-palette="mono"]{' + M.join(';') + '}' +
       /* 住人が多いとき（最大 MAX 人）の一覧：画面の外の行は描画を後回しにする（対応していないブラウザでは何もしない） */
       '#castlist .res{content-visibility:auto;contain-intrinsic-size:auto 132px}' +
       /* 関係の行も同じ（住人1000人・関係300本で、住人タブの描画が 3秒台 → 1秒ほど）。min-width:0 は、スマホの幅で欄が折り返さずに横にはみ出していたのを直す */
       '#view-cast .tierow{content-visibility:auto;contain-intrinsic-size:auto 96px;min-width:0}' +
       /* 箱庭のデータを読み込み中・失敗の印（load.js）：カードの高さを変えないように右上に重ねる。設定欄の仮表示は高さを確保して、読み終えたときのずれを小さく */
-      '.scen .scload{position:absolute;top:-9px;right:8px;z-index:1;font-size:11px;line-height:1.5;padding:0 6px;border:1px solid var(--accent);border-radius:8px;background:var(--accent-soft);color:var(--accent);pointer-events:none;white-space:nowrap}' +
-      '.scen .scload.ng{background:var(--surface);color:var(--warn);border-color:var(--warn-line);pointer-events:auto}.scen .scload.ng button{font:inherit;color:inherit;background:none;border:0;padding:0 0 0 4px;text-decoration:underline;cursor:pointer}' +
+      '.scen .scload{position:absolute;top:-9px;right:8px;z-index:1;font-family:var(--f-num);font-size:10.5px;letter-spacing:.06em;line-height:1.5;padding:0 6px;border:1px solid var(--ink);border-radius:3px;background:var(--paper);color:var(--ink);pointer-events:none;white-space:nowrap}' +
+      '.scen .scload.ng{background:var(--paper);color:var(--ink);border-style:dashed;pointer-events:auto}.scen .scload.ng button{font:inherit;color:inherit;background:none;border:0;padding:0 0 0 4px;text-decoration:underline;cursor:pointer}' +
       '.boxwait{min-height:420px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;margin:16px 0;padding:16px;border:1px dashed var(--line);border-radius:var(--r);color:var(--muted);text-align:center}' +
       '.boxwait p{margin:0}.prefrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:8px 0 0}.prefrow select{max-width:100%}' +
-      '#loadfail{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:62px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;gap:8px 10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--warn-line);border-radius:var(--r);background:var(--surface);color:var(--ink);box-shadow:0 2px 10px rgba(0,0,0,.2);font-size:14px}' +
+      '#loadfail{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:62px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;gap:8px 10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--ink);border-radius:var(--r-card,6px);background:var(--paper,#fff);color:var(--ink);font-size:14px}' +
       '@media (min-width:700px){#loadfail{left:50%;right:auto;transform:translateX(-50%);max-width:640px}}';
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   })();
@@ -403,7 +405,7 @@
   function rescueNotice() {
     var box = document.createElement('div');
     box.id = 'rescuenote'; box.setAttribute('role', 'alert');
-    box.style.cssText = 'margin:8px 0 12px;padding:10px 12px;border:1px solid #c0392b;border-radius:8px;background:#fde8e6;color:#3a0d08;line-height:1.6';
+    box.style.cssText = 'margin:8px 0 12px;padding:10px 12px;border:1px solid #16233B;border:1px solid var(--ink);border-left-width:3px;border-radius:6px;background:#fff;background:var(--paper);color:#16233B;color:var(--ink);line-height:1.6';
     box.innerHTML = '保存していた住人・関係を読み込む途中でエラーが起きました（住人' + rescue.chars + '人ぶんの保存）。読めた' + (S.sample ? '住人はいませんでした（いまはサンプルの住人です）' : '住人' + S.chars.length + '人・関係' + (S.ties || []).length + '本を表示しています') + '。' +
       (rescueHold ? '<b>ブラウザの保存領域がいっぱいで元の保存を退避できなかったため、このページでの住人の変更は保存しません。</b>先に元の保存を書き出してください。' : '元の保存はそのまま退避してあります。') +
       '<div class="row" style="margin-top:6px;flex-wrap:wrap;gap:6px;align-items:center"><button type="button" class="btn small" id="rescue-out">元の保存をJSONで書き出す</button>' +
@@ -430,7 +432,7 @@
     if (!f || !Array.isArray(f.fail) || f.fail.indexOf('hakoniwa:state') < 0 || f.failSeen) return;
     var box = document.createElement('div');
     box.id = 'mignote'; box.setAttribute('role', 'alert');
-    box.style.cssText = 'margin:8px 0 12px;padding:10px 12px;border:1px solid #d9a400;border-radius:8px;background:#fff4c2;color:#3a2e00;line-height:1.6';
+    box.style.cssText = 'margin:8px 0 12px;padding:10px 12px;border:1px solid #16233B;border:1px solid var(--ink);border-radius:6px;background:#F6F6F7;background:var(--bg1);color:#16233B;color:var(--ink);line-height:1.6';
     box.innerHTML = '保存の場所を版ごとに分けたときに、以前の住人・関係をこの全年齢版へ写しきれませんでした（ブラウザの保存領域がいっぱいでした）。以前の住人はもう一方の版にそのまま残っています。' +
       'そちらの「まるごと書き出し」と、この版の「まるごと読み込む」（住人タブの「別の端末へ移す」）で移せます。' +
       '<div class="row" style="margin-top:6px"><button type="button" class="btn small ghost" id="mig-ok">閉じる</button></div>';
@@ -446,7 +448,7 @@
     var b = bkHold, d = new Date(b.at), p2 = function (n) { return ('0' + n).slice(-2); };
     var box = document.createElement('div');
     box.id = 'bknote'; box.setAttribute('role', 'alert');
-    box.style.cssText = 'margin:8px 0 12px;padding:10px 12px;border:1px solid #d9a400;border-radius:8px;background:#fff4c2;color:#3a2e00;line-height:1.6';
+    box.style.cssText = 'margin:8px 0 12px;padding:10px 12px;border:1px solid #16233B;border:1px solid var(--ink);border-radius:6px;background:#F6F6F7;background:var(--bg1);color:#16233B;color:var(--ink);line-height:1.6';
     /* 控えにあって今の住人にいない人・関係の数（旧版が読めずにサンプルの住人で上書きしたときなど、丸ごと入れ替わっていれば大きい） */
     var have = {}, tk = function (t) { return t ? [t.a, t.b, t.type].join('|') : ''; }, haveT = (S.ties || []).map(tk);
     S.chars.forEach(function (c) { have[c.id] = 1; });
@@ -1966,8 +1968,8 @@
     if (document.getElementById('pagejump')) return;
     var st = document.createElement('style');
     st.textContent = '#pagejump{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px;z-index:50}' +
-      '#pagejump button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--accent);font-size:18px;line-height:1;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.15);opacity:.88}' +
-      '#pagejump button:hover{opacity:1;border-color:var(--accent)}@media print{#pagejump{display:none}}';
+      '#pagejump button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line2,var(--line));background:var(--paper,var(--surface));color:var(--ink);font-size:18px;line-height:1;cursor:pointer;opacity:.92}' +
+      '#pagejump button:hover{opacity:1;border-color:var(--ink)}@media print{#pagejump{display:none}}';
     document.head.appendChild(st);
     var d = document.createElement('div');
     d.id = 'pagejump';

@@ -385,7 +385,7 @@
       var d = document.createElement('div');
       d.id = 'hkstale'; d.setAttribute('role', 'alert');
       d.style.cssText = 'position:fixed;left:50%;top:max(8px,env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:100;max-width:calc(100vw - 24px);box-sizing:border-box;' +
-        'padding:10px 14px;border:1px solid var(--warn-line,#d9b25a);border-radius:10px;background:var(--surface,#fff);color:var(--ink,#222);box-shadow:0 2px 10px rgba(0,0,0,.2);' +
+        'padding:10px 14px;border:1px solid var(--ink,#16233B);border-radius:6px;background:var(--paper,#fff);color:var(--ink,#16233B);' +
         'display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px';
       d.innerHTML = '<span>新しい版があります。ページを読み込み直してください</span><button type="button" class="btn small primary">読み込み直す</button><button type="button" class="btn small ghost" aria-label="閉じる">×</button>';
       var bs = d.querySelectorAll('button');

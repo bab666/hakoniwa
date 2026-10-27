@@ -380,7 +380,7 @@
     var pk = c.moodPeak ? 'いちばん強かった気分：' + c.moodPeak.name + (c.moodPeak.label ? '（' + c.moodPeak.label + '）' : '') : '最後まで、大きく心が揺れることはなかった';
     return '<div class="emo" data-face="' + fc + '" style="display:flex;align-items:center;gap:10px;margin:6px 0 2px">' +
       '<span class="emoface" data-face="' + fc + '" title="' + esc('いまの気分：' + NAME[m]) + '" style="font-size:13px;white-space:nowrap;color:var(--muted)">' + FACE_SYM[fc] + '</span>' +
-      '<span style="flex:1;display:grid;grid-template-columns:auto 1fr;gap:3px 8px;align-items:center;font-size:11px;color:var(--muted);max-width:260px" aria-label="気分の終わりの値">' + bars + '</span></div>' +
+      '<span style="flex:1;display:grid;grid-template-columns:auto 1fr;gap:3px 8px;align-items:center;font-size:11px;color:var(--muted2,var(--muted));max-width:260px" aria-label="気分の終わりの値">' + bars + '</span></div>' +
       '<div class="sub">' + esc('気分：' + NAME[m] + '　' + pk) + '</div>';
   };
 
