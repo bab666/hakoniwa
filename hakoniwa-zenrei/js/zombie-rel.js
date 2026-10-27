@@ -7,7 +7,7 @@
   var EV = Z.scen.events, L = RK.L, fill = RK.fill;
   function m2(a, b, ctx) { return { a: a.name, b: b.name, area: ctx.zb.A[a.z.area].name, w: a.weapon ? a.weapon.name : '素手' }; }
   function danger(ctx, c) { return ctx.zb.A[c.z.area].z; }
-  function add(o) { EV.push(o); }
+  function add(o) { HK.addTo(EV, o); }   /* 足す順は HK.addTo で元のファイルの順に保つ（敵視・執着・喪失の組み込みが、分割読み込みでは後から足すため） */
 
   var T = {
     /* 教師と生徒 */

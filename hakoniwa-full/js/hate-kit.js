@@ -304,14 +304,15 @@
       return H.stance(ctx, b, a) === 'love' || hasT(ctx, a, b, LOVE_T);
     }
     /* 最初に顔を合わせたとき（ゾンビは、同じエリアで出会ったとき：zombie-core.js から H.meet を呼ぶ） */
-    if (opt.meet !== false) scen.events.push({
+    /* 出来事の表への追加は HK.addTo（分割読み込みで、組み込みが箱庭の本体より後になっても、元のファイルの順に並ぶ） */
+    if (opt.meet !== false) HK.addTo(scen.events, {
       id: 'hk_meet', cat: 'conflict', scope: 'pair',
       when: function (ctx, a, b) { var pf = ctx.pair(a, b); return !(pf.hkMet && pf.hkMet[a.i]) && H.level(ctx, a, b) >= 35 && okKinds(ctx, a, b); },
       w: function (ctx, a, b) { return 6 * W * H.drive(a, 'hater'); },
       run: function (ctx, a, b) { var pf = ctx.pair(a, b); (pf.hkMet = pf.hkMet || {})[a.i] = 1; var r = H.meet(ctx, a, b, opt.place ? opt.place(ctx, a) : ''); return { text: r.text, why: r.why, mag: r.mag, cat: r.cat, with: r.with }; }
     });
     /* 敵視する側から */
-    scen.events.push({
+    HK.addTo(scen.events, {
       id: 'hk_hater', cat: 'conflict', scope: 'pair',
       when: function (ctx, a, b) { return H.level(ctx, a, b) >= 35 && okKinds(ctx, a, b) && (ctx.pair(a, b).hkAt == null || ctx.stepIndex - ctx.pair(a, b).hkAt >= 2); },
       w: function (ctx, a, b) { return 1.6 * W * H.drive(a, 'hater') * (0.7 + H.level(ctx, a, b) / 100); },
@@ -322,7 +323,7 @@
       }
     });
     /* 敵視されている相手から（友人だと思っている・愛している・気づかずに話しかける） */
-    scen.events.push({
+    HK.addTo(scen.events, {
       id: 'hk_receiver', cat: 'bond', scope: 'pair',
       when: function (ctx, b, a) { var st = H.stance(ctx, b, a); return H.level(ctx, a, b) >= 35 && st !== 'hate' && st !== 'avoid' && okKinds(ctx, a, b) && (ctx.pair(a, b).hkAt == null || ctx.stepIndex - ctx.pair(a, b).hkAt >= 2); },
       w: function (ctx, b, a) { var st = H.stance(ctx, b, a); return 1.4 * W * H.drive(b, 'receiver') * (st === 'love' ? 1.6 : st === 'friend' ? 1.3 : 0.6); },

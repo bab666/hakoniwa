@@ -1,7 +1,8 @@
 /* 箱庭シミュレーター: 執着（ヤンデレ）を、関係の値で動く箱庭に組み込む（obsess-kit.js の O.install）
    ・クラスメイト・ゾンビの街・合コン・出られない部屋：場面に合わせた文を足す（共通の文も混ざる）
    ・オメガバース：obsess-omega.js（匂い・巣・うなじ・発情期を使った、より重い文と結末）
-   合コンは一晩なので、心中と死には至らない。出られない部屋の「監禁」は、扉の鍵を隠して部屋から出さないこと */
+   合コンは一晩なので、心中と死には至らない。出られない部屋の「監禁」は、扉の鍵を隠して部屋から出さないこと
+   2026-10-27（分割読み込みの第3段）：箱庭の本体は箱庭のかたまり（scen-<id>）で後から届くので、HK.atScen で「有れば今、無ければ届いたとき」に組み込む */
 (function () {
   'use strict';
   var HK = window.HK, O = HK.Obsess, SC = HK.SCENARIOS;
@@ -152,13 +153,13 @@
     harm_s: L('{a}は{c}を呼び出して、低い声で「{b}に近づいたら、次の裁判であなたを指名する｜＝｜{b}に近づいたら、次の裁判であなたを指名します」と告げた。'),
     shinju_s: L('{a}は{b}の肩にもたれて、「ここから二人で消えちゃえたらいいのに｜ここから二人で消えてしまえたらいいのだが｜ここから二人で消えてしまえたらいいのに、と思います」と呟いた。')
   };
-  if (SC.island) O.install(SC.island, { w: 1.3, pace: 1.6, cool: 1 });
-  if (SC.br) O.install(SC.br, { w: 1.2, pace: 2.4, cool: 1 });
+  HK.atScen('island', function (s) { O.install(s, { w: 1.3, pace: 1.6, cool: 1 }); });
+  HK.atScen('br', function (s) { O.install(s, { w: 1.2, pace: 2.4, cool: 1 }); });
   /* 裁判は殺人に推理の仕組みがあるので、執着で人は死なない */
-  if (SC.trial) O.install(SC.trial, { w: 1.2, pace: 2, cool: 1, lethal: false, shinju: false });
+  HK.atScen('trial', function (s) { O.install(s, { w: 1.2, pace: 2, cool: 1, lethal: false, shinju: false }); });
 
   /* pace：執着の積もる速さ／cool：執着の出来事どうしの間（区切りの数） */
-  if (SC.classroom) O.install(SC.classroom, { w: 1.4, pace: 2.2, cool: 1 });
+  HK.atScen('classroom', function (s) { O.install(s, { w: 1.4, pace: 2.2, cool: 1 }); });
   /* ゾンビの街：執着の相手が別のエリアにいると、目標が「〇〇と会う」に変わる。
      噂を聞き回って居場所の見当をつけ（情報の錯綜が高いほど外れやすい）、群れを離れてでもそこへ向かう。会えたら「大切な人を守る」になる */
   var Z = HK.ZB;
@@ -263,8 +264,8 @@
       return { with: [], cat: 'solo', text: ctx.t(T.alive ? '{a}は、{b}がもう街を出たと知った。{a}はしばらく、その場から動けなかった。' : '{a}は、{b}がもうこの世にいないと知った。{a}の中で、何かが音を立てて崩れた。', a, T) + a.name + 'の目標が変わった：「' + from + '」→「' + a.goal.label + '」', why: '探していた' + T.name + 'に、もう会えない', mag: 20 };
     }
   });
-  if (SC.zombie) O.install(SC.zombie, { w: 1.4, pace: 2.4, cool: 1, extra: SEEK_EV, after: seekAfter });
-  if (SC.goukon) O.install(SC.goukon, { w: 1.8, pace: 3.2, cool: 0, shinju: false, lethal: false });
+  HK.atScen('zombie', function (s) { O.install(s, { w: 1.4, pace: 2.4, cool: 1, extra: SEEK_EV, after: seekAfter }); });
+  HK.atScen('goukon', function (s) { O.install(s, { w: 1.8, pace: 3.2, cool: 0, shinju: false, lethal: false }); });
   /* 出られない部屋：閉じた部屋で暴走は起きやすいが、心中は起きにくく（監禁・引き止めのほうに寄せる） */
-  if (SC.whiteroom) O.install(SC.whiteroom, { w: 1.6, pace: 3, cool: 0, shinjuW: 0.35 });
+  HK.atScen('whiteroom', function (s) { O.install(s, { w: 1.6, pace: 3, cool: 0, shinjuW: 0.35 }); });
 })();

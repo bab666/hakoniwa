@@ -216,6 +216,8 @@
 
   ['goukon', 'classroom', 'island', 'whiteroom'].forEach(function (id) { HK.addMini(id, LIST); });
   /* ゾンビの街：同じエリアにいる者どうしの出来事として足す */
-  var Z = HK.ZB;
-  if (Z && Z.scen) LIST.forEach(function (e) { var e2 = {}; for (var k in e) e2[k] = e[k]; e2.mini = false; e2.w = (function (w0) { return function (ctx, a, b) { return w0(ctx, a, b) * 0.8; }; })(e.w); Z.scen.events.push(e2); });
+  /* ゾンビの街にも混ぜる。写しは今（元の順の位置で）作り、足すのはゾンビの街の本体（scen-zombie）が有るとき（HK.atScen。分割読み込みでは後から届く）。
+     足す位置は HK.addTo で元のファイルの順に保つ */
+  var ZC = LIST.map(function (e) { var e2 = {}; for (var k in e) e2[k] = e[k]; e2.mini = false; e2.w = (function (w0) { return function (ctx, a, b) { return w0(ctx, a, b) * 0.8; }; })(e.w); return e2; });
+  HK.atScen('zombie', function () { var Z = HK.ZB; if (Z && Z.scen) HK.addTo(Z.scen.events, ZC); });
 })();

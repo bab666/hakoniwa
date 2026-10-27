@@ -258,8 +258,10 @@
     };
   };
 
-  /* 登録（ファイルごとに HK.addMini('goukon', [...]) ） */
+  /* 登録（ファイルごとに HK.addMini('goukon', [...]) ）。足す順は HK.addTo で元のファイルの順に固定する
+     （分割読み込みで、箱庭のかたまり scen-<id> が族のかたまり pack-<族> より後に届いても、全部を元の順で読んだときと同じ並びになる） */
   HK.addMini = function (scenId, list) {
-    HK.MINI[scenId] = (HK.MINI[scenId] || []).concat(list);
+    var L = HK.MINI[scenId] || (HK.MINI[scenId] = []);
+    if (HK.addTo) HK.addTo(L, list); else HK.MINI[scenId] = L.concat(list);
   };
 })();

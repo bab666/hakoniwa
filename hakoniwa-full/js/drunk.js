@@ -101,76 +101,10 @@
     return k;
   }
 
-  /* ---------- 合コン ---------- */
-  var GK = HK.SCENARIOS && HK.SCENARIOS.goukon;
-  if (GK) {
-    GK.events.push({
-      id: 'dk_style', cat: 'solo', scope: 'solo',
-      when: function (ctx, a) { return (a.flags.drunk > 45 || ctx.stat(a, 'drink') >= 5 && ctx.stepIndex >= 2) && !a.flags.dkShown; },
-      w: function (ctx, a) { return 1.2 + (a.flags.drunk || 0) / 80; }, pri: true,
-      run: function (ctx, a) {
-        a.flags.dkShown = true;
-        var k = ctx.stat(a, 'drink') >= 5 ? 'zaru' : D.type(a);
-        return { text: fill(ctx, ctx.pick(SHOW[k]), a, null), why: why(ctx, a), mag: 10 };
-      }
-    });
-    GK.events.push({
-      id: 'dk_to', cat: 'romance', scope: 'pair',
-      when: function (ctx, a, b) { return a.flags.dkShown && (a.flags.drunk > 50 || ctx.stat(a, 'drink') >= 5) && (ctx.pair(a, b).dk || 0) < 2; },
-      w: function (ctx, a, b) { return 0.9 + ctx.R(a, b).att / 60 + (a.flags.drunk || 0) / 100; },
-      run: function (ctx, a, b) {
-        var pf = ctx.pair(a, b); pf.dk = (pf.dk || 0) + 1;
-        var k = behave(ctx, a, b);
-        return { cat: k === 'sekkyo' ? 'bond' : k === 'zaru' ? 'help' : 'romance', text: fill(ctx, ctx.pick(TO[k]), a, b) + react(ctx, a, b), why: why(ctx, a) + '／' + b.name + 'の反応は' + top(b) + '（いちばん強い因子）', mag: 14 };
-      }
-    });
-    GK.events.push({
-      id: 'dk_care', cat: 'help', scope: 'pair',
-      when: function (ctx, a, b) { return b.flags.drunk > 75 && (a.flags.drunk || 0) < 50 && !b.flags.dkCared && ctx.stepIndex >= 4; },
-      w: function (ctx, a, b) { return 0.6 + a.tr.np + ctx.R(a, b).att / 60; },
-      run: function (ctx, a, b) {
-        b.flags.dkCared = true;
-        ctx.mod2(a, b, { aff: 4, att: 3 }, { trust: 10, aff: 8, att: 5 });
-        return { text: fill(ctx, ctx.pick(CARE), b, a), why: a.name + 'の面倒見（NP ' + Math.round(a.eg.NP) + '）と、' + b.name + 'の酔い（' + Math.round(b.flags.drunk) + '）', mag: 16 };
-      }
-    });
-  }
-
   /* 酒に弱い人（1）が、少しで酔いが回るときの前置き */
   var WEAK = L('{a}は、グラス半分で頬が真っ赤になった。|{a}は一杯目の途中で、もう目がとろんとしていた。|{a}は「弱いの、知ってるでしょ｜弱いのは、知っているだろう｜弱いの、知っているでしょう」と言いながら、二口目で耳まで赤くなった。|{a}は、乾杯の一口でもう首まで赤かった。');
-  /* ---------- オメガバース ---------- */
-  var OMS = HK.SCENARIOS && HK.SCENARIOS.omega;
-  if (OMS) {
-    OMS.events.push({
-      id: 'om_drink', cat: 'romance', scope: 'pair',
-      when: function (ctx, a, b) { var pf = ctx.pair(a, b); var mk = a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; return ctx.om && ctx.om.met && (ctx.om.met[mk] || ctx.R(a, b).aff > 5 || pf.couple) && (pf.dkAt == null || ctx.stepIndex - pf.dkAt >= 4); },
-      w: function (ctx, a, b) { return (0.35 + a.tr.fc * 0.3 + ctx.R(a, b).aff / 150 + (ctx.pair(a, b).couple ? 0.2 : 0)) * [1, 1.3, 1.15, 1, 0.85, 0.7][D.strong(ctx, a)]; },
-      run: function (ctx, a, b) {
-        var pf = ctx.pair(a, b); pf.dkAt = ctx.stepIndex;
-        var k = behave(ctx, a, b), sx = a.om && a.om.sex, st = D.strong(ctx, a);
-        /* 酒に強い人（4）は、半分くらいは顔に出ない */
-        if (st === 4 && k !== 'zaru' && ctx.rng() < 0.5) k = 'zaru';
-        var t = fill(ctx, ctx.pick(OCC), a, b) + (st <= 1 && k !== 'zaru' ? fill(ctx, ctx.pick(WEAK), a, b) : '') + fill(ctx, ctx.pick(SHOW[k]), a, b) + fill(ctx, ctx.pick(TO[k]), a, b);
-        if (sx && OM_EX[sx] && (sx !== 'b' || k === 'zaru') && ctx.rng() < 0.5) {
-          t += fill(ctx, ctx.pick(OM_EX[sx]), a, b);
-          if (sx === 'o' && b.om && b.om.sex === 'a') { t += fill(ctx, ctx.pick(OM_AB), a, b); ctx.mod2(a, b, { trust: 4 }, { att: 5 }); }
-        }
-        t += react(ctx, a, b);
-        if (k !== 'zaru' && D.strong(ctx, b) >= 3 && ctx.rng() < 0.45) { t += fill(ctx, ctx.pick(CARE), a, b); ctx.mod(a, b, { trust: 6, aff: 4 }); }
-        pf.dkMorning = ctx.stepIndex;
-        return { cat: k === 'sekkyo' ? 'bond' : 'romance', text: t, why: why(ctx, a) + '／' + b.name + 'の反応は' + top(b) + '（いちばん強い因子）', mag: 16 };
-      }
-    });
-    OMS.events.push({
-      id: 'om_drink_morning', cat: 'romance', scope: 'pair',
-      when: function (ctx, a, b) { var pf = ctx.pair(a, b); return pf.dkMorning != null && ctx.stepIndex - pf.dkMorning === 1; },
-      w: function () { return 1.5; },
-      run: function (ctx, a, b) {
-        var pf = ctx.pair(a, b); pf.dkMorning = null;
-        var drunkOne = D.strong(ctx, a) <= D.strong(ctx, b) ? a : b, other = drunkOne === a ? b : a;
-        var rem = drunkOne.tr.a + drunkOne.tr.caution > 1 ? 'remember' : 'forget';
-        return { text: fill(ctx, ctx.pick(MORN[rem]), drunkOne, other), why: drunkOne.name + 'の翌朝（' + (rem === 'remember' ? '覚えている：A・慎重さが高い' : '覚えていない') + '）', mag: 6 };
-      }
-    });
-  }
+  /* ---------- 箱庭への組み込み ----------
+     2026-10-27（分割読み込みの第3段）：合コンの出来事は drunk-goukon.js（scen-goukon）、オメガバースの出来事は drunk-omega.js（scen-omega）に分けた。
+     どちらもこのファイルのすぐ後に読む（出来事を足す順は元のまま）。共通の部品と文はここに置き、HK.Drunk._k で渡す */
+  D._k = { top: top, fill: fill, react: react, why: why, behave: behave, SHOW: SHOW, TO: TO, CARE: CARE, MORN: MORN, OM_EX: OM_EX, OM_AB: OM_AB, OCC: OCC, WEAK: WEAK };
 })();

@@ -2,25 +2,23 @@
 # 注記：なし＝中核（core。起動時に読む）／「late 」＝画面が出たあと裏で読む（late の行は下の区切りより後ろに置く）／「 @pack:<族>」＝族のかたまり pack-<族>（その族の箱庭を選んだときに読む）
 # @chunk <かたまり> deps=<先に要るかたまり>／@need <箱庭> <かたまり>（登録するかたまりのほかに、動かすのに要るかたまり）
 @chunk pack-story deps=pack-rel
-@need goukon pack-rel
-@need whiteroom pack-rel
-@need classroom pack-rel
-@need island pack-rel
-@need zombie pack-rel
-@need omega pack-rel
+@chunk scen-ship deps=pack-story
+@chunk scen-jashin deps=pack-story
+@chunk scen-yakata deps=pack-story
+@chunk scen-rpg deps=pack-story
+@chunk scen-jinro deps=pack-story
+@chunk scen-br deps=pack-rel
+@chunk scen-trial deps=pack-rel
+@chunk scen-goukon deps=pack-rel
+@chunk scen-whiteroom deps=pack-rel
+@chunk scen-classroom deps=pack-rel
+@chunk scen-island deps=pack-rel
+@chunk scen-zombie deps=pack-rel
+@chunk scen-omega deps=pack-rel
 @need futari pack-rel
-@need ship pack-rel,pack-story
-@need jashin pack-rel,pack-story
-@need yakata pack-rel,pack-story
-@need rpg pack-rel,pack-story
-@need jinro pack-rel,pack-story
-@need br pack-rel
-@need trial pack-rel
-@need massage pack-solo
-@need saimin pack-solo
-@need locker pack-solo
 js/load.js
 js/load-order.js
+js/scenarios-init.js
 js/core.js
 js/ego-desc.js
 js/ties.js
@@ -28,6 +26,7 @@ js/poly.js
 js/events-common.js
 js/persona.js
 js/tie-rel.js
+js/rel-at.js @pack:rel
 js/tie-new.js @pack:rel
 js/daily-kit.js
 js/rel-group.js @pack:rel
@@ -74,112 +73,120 @@ js/mood-dial.js
 js/mob.js
 js/fwb.js @pack:rel
 js/free-sex.js
-js/scenarios-a.js
+js/scenarios-a.js @scen:goukon
+js/scenario-classroom.js @scen:classroom
 js/mini.js
 js/mini-tails.js @pack:rel
-js/scenarios-b.js @pack:rel
+js/scenarios-b.js @scen:island
 js/deathgame-kit.js
-js/scenario-br.js @pack:rel
+js/scenario-br.js @scen:br
 js/room-lewd.js
-js/room-lewd-more.js @pack:rel
-js/room-lewd-x.js @pack:rel
-js/scenario-room.js @pack:rel
-js/room-reluct.js @pack:rel
-js/room-trio-lines.js @pack:rel
-js/room-trio.js @pack:rel
-js/room-left.js @pack:rel
-js/room-cheer.js @pack:rel
-js/room-know.js @pack:rel
-js/room-tie.js @pack:rel
-js/room-same.js @pack:rel
-js/room-games.js @pack:rel
-js/scenario-trial.js @pack:rel
+js/room-lewd-more.js @scen:whiteroom
+js/room-lewd-x.js @scen:whiteroom
+js/scenario-room.js @scen:whiteroom
+js/room-reluct.js @scen:whiteroom
+js/room-trio-lines.js @scen:whiteroom
+js/room-trio.js @scen:whiteroom
+js/room-left.js @scen:whiteroom
+js/room-cheer.js @scen:whiteroom
+js/room-know.js @scen:whiteroom
+js/room-tie.js @scen:whiteroom
+js/room-same.js @scen:whiteroom
+js/room-games.js @scen:whiteroom
+js/scenario-trial.js @scen:trial
 js/ego-image.js
 js/omega-data.js
-js/omega-jobs.js @pack:rel
-js/omega-heat.js @pack:rel
+js/omega-jobs.js @scen:omega
+js/omega-heat.js @scen:omega
 js/omega-detective.js
-js/omega-bond.js @pack:rel
-js/omega-status.js @pack:rel
-js/omega-jobs-extra.js @pack:rel
-js/omega-jobs-each-a.js @pack:rel
-js/omega-jobs-each-b.js @pack:rel
-js/omega-jobs-pair.js @pack:rel
-js/omega-jobs-pair2.js @pack:rel
-js/scenario-omega.js @pack:rel
-js/omega-passion.js @pack:rel
-js/omega-mob.js @pack:rel
-js/omega-love.js @pack:rel
-js/omega-guard.js @pack:rel
-js/omega-after.js @pack:rel
-js/omega-ties.js @pack:rel
-js/omega-secret.js @pack:rel
-js/island-cook.js @pack:rel
-js/island-life.js @pack:rel
-js/island-hazard.js @pack:rel
-js/mini-goukon.js @pack:rel
-js/goukon-rel.js
-js/goukon-talk.js @pack:rel
+js/omega-bond.js @scen:omega
+js/omega-status.js @scen:omega
+js/omega-jobs-extra.js @scen:omega
+js/omega-jobs-each-a.js @scen:omega
+js/omega-jobs-each-b.js @scen:omega
+js/omega-jobs-pair.js @scen:omega
+js/omega-jobs-pair2.js @scen:omega
+js/scenario-omega.js @scen:omega
+js/omega-passion.js @scen:omega
+js/omega-mob.js @scen:omega
+js/omega-love-kit.js @pack:rel
+js/omega-love.js @scen:omega
+js/omega-guard.js @scen:omega
+js/omega-after.js @scen:omega
+js/omega-ties.js @scen:omega
+js/omega-secret.js @scen:omega
+js/island-cook.js @scen:island
+js/island-life.js @scen:island
+js/island-hazard.js @scen:island
+js/mini-goukon.js @scen:goukon
+js/goukon-rel.js @scen:goukon
+js/goukon-fresh.js
+js/goukon-talk.js @scen:goukon
 js/drunk.js @pack:rel
-js/goukon-mob.js @pack:rel
-js/mini-room.js @pack:rel
-js/mini-room-cute.js @pack:rel
-js/mini-classroom.js @pack:rel
-js/mini-island.js @pack:rel
-js/mini-br.js @pack:rel
-js/mini-trial.js @pack:rel
-js/mini-extra-a.js @pack:rel
-js/mini-extra-b.js @pack:rel
-js/mini-extra-c.js @pack:rel
+js/drunk-goukon.js @scen:goukon
+js/drunk-omega.js @scen:omega
+js/goukon-mob.js @scen:goukon
+js/mini-room.js @scen:whiteroom
+js/mini-room-cute.js @scen:whiteroom
+js/mini-classroom.js @scen:classroom
+js/mini-island.js @scen:island
+js/mini-br.js @scen:br
+js/mini-trial.js @scen:trial
+js/mini-extra-a.js @scen:goukon
+js/mini-extra-a-classroom.js @scen:classroom
+js/mini-extra-a-room.js @scen:whiteroom
+js/mini-extra-b.js @scen:island
+js/mini-extra-b-br.js @scen:br
+js/mini-extra-c.js @scen:trial
 js/mini-serifu.js @pack:rel
 js/dungeon-lite.js
 js/solo-kit.js
-js/solo-massage-cast.js @pack:solo
-js/solo-massage.js @pack:solo
+js/solo-massage-cast.js @scen:massage
+js/solo-massage.js @scen:massage
 js/factions.js @pack:rel
-js/classroom-teacher.js @pack:rel
-js/classroom-cheer.js @pack:rel
+js/classroom-teacher.js @scen:classroom
+js/classroom-cheer.js @scen:classroom
 js/endings.js
 js/epilogue.js
 js/scenario-futari.js
-js/island-after.js @pack:rel
+js/island-after.js @scen:island
 js/zombie-data.js
-js/zombie-core.js @pack:rel
-js/zombie-opening.js @pack:rel
-js/zombie-events.js @pack:rel
-js/zombie-bite.js @pack:rel
-js/zombie-love.js @pack:rel
-js/zombie-together.js @pack:rel
-js/zombie-solo.js @pack:rel
-js/zombie-letter.js @pack:rel
-js/zombie-seek.js @pack:rel
+js/zombie-core.js @scen:zombie
+js/zombie-opening.js @scen:zombie
+js/zombie-events.js @scen:zombie
+js/zombie-bite.js @scen:zombie
+js/zombie-love.js @scen:zombie
+js/zombie-together.js @scen:zombie
+js/zombie-solo.js @scen:zombie
+js/zombie-letter.js @scen:zombie
+js/zombie-seek.js @scen:zombie
 js/rel-kit.js
-js/zombie-bonds.js @pack:rel
-js/island-rel.js @pack:rel
-js/island-escape.js @pack:rel
-js/island-stay.js @pack:rel
-js/island-corpse.js @pack:rel
-js/island-sea.js @pack:rel
-js/island-love.js @pack:rel
-js/island-cheer.js @pack:rel
+js/zombie-bonds.js @scen:zombie
+js/island-rel.js @scen:island
+js/island-escape.js @scen:island
+js/island-stay.js @scen:island
+js/island-corpse.js @scen:island
+js/island-sea.js @scen:island
+js/island-love.js @scen:island
+js/island-cheer.js @scen:island
 js/unreq.js @pack:rel
 js/fwbcrush.js @pack:rel
 js/pining-core.js
 js/pining.js @pack:rel
 js/heartbreak.js @pack:rel
-js/zombie-cure.js @pack:rel
-js/zombie-assault.js @pack:rel
-js/zombie-map.js @pack:rel
+js/zombie-cure.js @scen:zombie
+js/zombie-assault.js @scen:zombie
+js/zombie-map.js @scen:zombie
 js/persona-final.js
-js/pair-name.js @pack:rel
+js/pair-name.js @scen:whiteroom
 js/pos.js
 js/attr.js
 js/attr-height.js
 js/food.js
 js/special.js
-js/zombie-special.js @pack:rel
+js/zombie-special.js @scen:zombie
 js/pair-react.js @pack:rel
-js/rpg-special.js @pack:story
+js/rpg-special.js @scen:rpg
 js/pos-fm-tease.js @pack:rel
 js/icons.js
 js/view.js
@@ -190,68 +197,68 @@ js/attr-look.js
 js/attr-race.js
 js/attr-meet.js
 js/fam-kin.js
-js/solo-saimin-data.js
-js/solo-saimin.js @pack:solo
+js/solo-saimin-data.js @scen:saimin
+js/solo-saimin.js @scen:saimin
 js/solo-locker-data.js
-js/solo-locker-more.js @pack:solo
-js/solo-locker-bed.js @pack:solo
-js/locker-ties.js @pack:solo
-js/locker-crowd.js @pack:solo
-js/solo-locker.js @pack:solo
-js/rpg-data.js @pack:story
-js/scenario-rpg.js @pack:story
-js/jashin-data.js
-js/jashin-jobs.js @pack:story
-js/jashin-jobs-pair.js @pack:story
-js/jashin-gods.js
-js/jashin-fx-a.js @pack:story
-js/jashin-gods-rev.js @pack:story
-js/jashin-more.js
-js/jashin-rel-text.js @pack:story
-js/jashin-rel.js @pack:story
-js/jashin-drama.js @pack:story
-js/jashin.js @pack:story
-js/jashin-muno.js @pack:story
-js/jashin-special.js @pack:story
-js/jashin-duo-data.js @pack:story
-js/jashin-duo.js @pack:story
-js/jashin-cave.js @pack:story
-js/jashin-loop.js @pack:story
-js/jashin-feast.js
-js/jashin-mage.js @pack:story
-js/jashin-goals-text.js @pack:story
-js/jashin-goals.js @pack:story
-js/jashin-love.js @pack:story
-js/jashin-npc-text.js @pack:story
-js/jashin-npc.js @pack:story
-js/jashin-godev.js @pack:story
-js/jashin-godev-data-a.js @pack:story
-js/jashin-godev-data-b.js @pack:story
-js/jashin-godev-sp-a.js @pack:story
-js/jashin-godev-sp-b.js @pack:story
-js/jashin-place-lines.js @pack:story
-js/jashin-feud.js @pack:story
-js/yakata-data.js
-js/yakata-jobs.js @pack:story
-js/yakata-jobs-pair.js @pack:story
-js/yakata-tricks-a.js @pack:story
-js/yakata-tricks-b.js @pack:story
-js/yakata.js @pack:story
-js/yakata-special.js @pack:story
-js/ship-res.js
-js/ship-life.js
-js/ship-life2.js @pack:story
-js/ship-civ.js
-js/ship-text.js
-js/ship-bond.js @pack:story
-js/ship-crisis.js @pack:story
-js/ship.js @pack:story
-js/ship-special.js @pack:story
-js/ship-after.js @pack:story
-js/yakata-frame.js @pack:story
-js/yakata-feud.js @pack:story
-js/scenario-jinro.js @pack:story
-js/jinro-love.js @pack:story
+js/solo-locker-more.js @scen:locker
+js/solo-locker-bed.js @scen:locker
+js/locker-ties.js @scen:locker
+js/locker-crowd.js @scen:locker
+js/solo-locker.js @scen:locker
+js/rpg-data.js @scen:rpg
+js/scenario-rpg.js @scen:rpg
+js/jashin-data.js @scen:jashin
+js/jashin-jobs.js @scen:jashin
+js/jashin-jobs-pair.js @scen:jashin
+js/jashin-gods.js @scen:jashin
+js/jashin-fx-a.js @scen:jashin
+js/jashin-gods-rev.js @scen:jashin
+js/jashin-more.js @scen:jashin
+js/jashin-rel-text.js @scen:jashin
+js/jashin-rel.js @scen:jashin
+js/jashin-drama.js @scen:jashin
+js/jashin.js @scen:jashin
+js/jashin-muno.js @scen:jashin
+js/jashin-special.js @scen:jashin
+js/jashin-duo-data.js @scen:jashin
+js/jashin-duo.js @scen:jashin
+js/jashin-cave.js @scen:jashin
+js/jashin-loop.js @scen:jashin
+js/jashin-feast.js @scen:jashin
+js/jashin-mage.js @scen:jashin
+js/jashin-goals-text.js @scen:jashin
+js/jashin-goals.js @scen:jashin
+js/jashin-love.js @scen:jashin
+js/jashin-npc-text.js @scen:jashin
+js/jashin-npc.js @scen:jashin
+js/jashin-godev.js @scen:jashin
+js/jashin-godev-data-a.js @scen:jashin
+js/jashin-godev-data-b.js @scen:jashin
+js/jashin-godev-sp-a.js @scen:jashin
+js/jashin-godev-sp-b.js @scen:jashin
+js/jashin-place-lines.js @scen:jashin
+js/jashin-feud.js @scen:jashin
+js/yakata-data.js @scen:yakata
+js/yakata-jobs.js @scen:yakata
+js/yakata-jobs-pair.js @scen:yakata
+js/yakata-tricks-a.js @scen:yakata
+js/yakata-tricks-b.js @scen:yakata
+js/yakata.js @scen:yakata
+js/yakata-special.js @scen:yakata
+js/ship-res.js @scen:ship
+js/ship-life.js @scen:ship
+js/ship-life2.js @scen:ship
+js/ship-civ.js @scen:ship
+js/ship-text.js @scen:ship
+js/ship-bond.js @scen:ship
+js/ship-crisis.js @scen:ship
+js/ship.js @scen:ship
+js/ship-special.js @scen:ship
+js/ship-after.js @scen:ship
+js/yakata-frame.js @scen:yakata
+js/yakata-feud.js @scen:yakata
+js/scenario-jinro.js @scen:jinro
+js/jinro-love.js @scen:jinro
 js/same-story.js
 js/safe.js
 js/safe-room.js
@@ -276,7 +283,7 @@ js/hate-install.js @pack:rel
 js/obsess-kit.js
 js/obsess-story.js @pack:story
 js/obsess-install.js @pack:rel
-js/obsess-omega.js @pack:rel
+js/obsess-omega.js @scen:omega
 js/grief-kit.js @pack:rel
 js/lewd-unify.js
 js/lewd-mark.js
@@ -314,19 +321,25 @@ late js/tone-fix-g7f.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/incidents-social.js @pack:rel
-js/incidents-survival.js @pack:rel
+js/incidents-goukon.js @scen:goukon
+js/incidents-room.js @scen:whiteroom
+js/incidents-classroom.js @scen:classroom
+js/incidents-survival.js @scen:island
+js/incidents-br.js @scen:br
 js/incidents-extra.js @pack:rel
-js/solo-massage-data.js @pack:solo
-js/birthday.js @pack:rel
-js/classroom-life.js @pack:rel
-js/zombie-npc.js @pack:rel
-js/zombie-reunion.js @pack:rel
-js/zombie-rel.js @pack:rel
+js/incidents-zombie.js @scen:zombie
+js/incidents-omega.js @scen:omega
+js/solo-massage-data.js @scen:massage
+js/birthday.js @scen:classroom
+js/classroom-life.js @scen:classroom
+js/zombie-npc.js @scen:zombie
+js/zombie-reunion.js @scen:zombie
+js/zombie-rel.js @scen:zombie
 js/rel-bad-engine.js @pack:rel
-js/jashin-fx-b.js @pack:story
-js/jashin-place.js @pack:story
-js/jinro-data.js @pack:story
-js/jinro-after.js @pack:story
+js/jashin-fx-b.js @scen:jashin
+js/jashin-place.js @scen:jashin
+js/jinro-data.js @scen:jinro
+js/jinro-after.js @scen:jinro
 js/rel-bad-story.js
 late js/tie-new-story.js
 late js/tips-scen-a.js

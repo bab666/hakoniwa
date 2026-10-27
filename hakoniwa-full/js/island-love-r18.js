@@ -104,9 +104,14 @@
     }
     return out;
   }
+  /* 包む出来事は solo-rel-r18.js（ir18_night）・solo-sit-night-r18.js（ir18_sit）が足す。分割読み込みでは、このファイル（scen-island）より後に
+     足される（HK.atScen）ので、HK.atEvent で「有れば今、無ければ足されたとき」に包む */
   function wrap(id) {
-    var ev = isl.events.filter(function (e) { return e.id === id; })[0];
-    if (!ev) return;
+    if (HK.atEvent) { HK.atEvent(isl, id, wrapEv); return; }
+    var e0 = isl.events.filter(function (e) { return e.id === id; })[0];
+    if (e0) wrapEv(e0);
+  }
+  function wrapEv(ev) {
     var when0 = ev.when, run0 = ev.run;
     /* 過ちと考えた人がいる組：好意が深くなるまで（そして一晩おいてから）、二度目は起きない */
     ev.when = function (ctx, a, b) {
@@ -148,7 +153,8 @@
     }
     return null;
   }
-  isl.events.push({
+  /* 足す順は HK.addTo で元のファイルの順に保つ（状況ごとの夜などが、分割読み込みでは後から足すため） */
+  HK.addTo(isl.events, {
     id: 'il18_refuse', cat: 'romance', scope: 'self', r18: true,
     when: function (ctx, a) { return !!refTgt(ctx, a); },
     w: function (ctx, a) { var b = refTgt(ctx, a); return b ? 0.8 + R(ctx, a, b).att / 60 + a.tr.impulse * 0.4 : 0; },

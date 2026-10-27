@@ -269,8 +269,8 @@
     });
     ctx.flush();
   };
-  /* 噂を人に伝える：知っている人から、同じ場所の人へ */
-  EV.push({
+  /* 噂を人に伝える：知っている人から、同じ場所の人へ（足す順は HK.addTo で元のファイルの順に保つ。片想い・失恋などの出来事が後から足されるため） */
+  HK.addTo(EV, {
     id: 'z_cure_tell', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return a.z.know.cure && !b.z.know.cure && !!ctx.zb.cure; },
     w: function (ctx, a, b) { return 0.6 + (targetOf(ctx, b) ? 1.5 : 0); },

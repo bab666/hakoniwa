@@ -619,9 +619,9 @@
   }
 
   /* ======================= 無人島 ======================= */
-  var isl = HK.SCENARIOS.island;
-  if (isl && RN.I) {
-    isl.events.push({
+  /* 2026-10-27（分割読み込みの第3段）：箱庭に足すのは、その箱庭の本体（scen-island・scen-zombie）が有るとき（HK.atScen）。足す順は HK.addTo で元のファイルの順に保つ */
+  if (RN.I) HK.atScen('island', function (isl) {
+    HK.addTo(isl.events, {
       id: 'ir18_sit', cat: 'romance', sex: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (!baseOk(ctx, a, b, 2)) return false;
@@ -637,12 +637,14 @@
         return { text: compose(ctx, 'island', st, r, lv), why: (r.k === 'bridge' ? '吊り橋：' : '島の夜：') + why(ctx, st, r, '', 'island'), mag: CRISIS[st.id] ? 28 : 22 };
       }
     });
-  }
+    if (HK.eventAdded) HK.eventAdded(isl, isl.events.filter(function (e) { return e.id === 'ir18_sit'; })[0]);
+  });
 
   /* ======================= ゾンビの街 ======================= */
   var Z = HK.ZB;
-  if (Z && Z.scen && Z.loveLv && RN.ZT) {
-    Z.scen.events.push({
+  if (RN.ZT) HK.atScen('zombie', function () {
+    if (!(Z && Z.scen && Z.loveLv)) return;
+    HK.addTo(Z.scen.events, {
       id: 'zr18_sit', cat: 'romance', sex: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (Z.loveLv(ctx) === 'off' || !baseOk(ctx, a, b, 4)) return false;
@@ -659,14 +661,15 @@
         return { text: compose(ctx, 'zombie', st, r, Z.loveLv(ctx)), why: (r.k === 'bridge' ? '吊り橋：' : '') + why(ctx, st, r, '・' + Z.day(ctx) + '日目'), mag: CRISIS[st.id] ? 30 : 24 };
       }
     });
-  }
+  });
 
   /* ---------- ゾンビの街：敵対している二人の、強引な夜（hate-sex-r18.js） ----------
      関係がライバル・不仲・敵対（または嫌悪レベル35以上）の二人が、隠れ家で言い争ったはずみに。攻めの側から強引に始まり、受けは口では嫌がるがまんざらではない。
      「恋人たちの夜（R18）」の設定に従う（描かない＝起きない／ほのめかす＝暗転）。恋人のいる人・咬まれた人・はぐれた人には起きない */
   var ZH_PLACE = L('バリケードの奥の部屋で、見張りの順番をめぐって二人は言い争っていた。外の呻き声が、互いの怒鳴り声にかき消される。どちらが先に手を出したのかは、もう分からなかった。|物資の分け方で、二人はまた揉めていた。「お前のせいで死にかけた」「こっちの台詞だ」――胸ぐらを掴み合った手が、いつの間にか別の意味を持ち始めた。|群れをやり過ごした直後の、息の上がった倉庫の中だった。助けられたことが、かえって腹立たしかった。言い返そうと振り向いた{b}の肩を、{a}が乱暴に掴んだ。');
-  if (Z && Z.scen && Z.loveLv) {
-    Z.scen.events.push({
+  HK.atScen('zombie', function () {
+    if (!(Z && Z.scen && Z.loveLv)) return;
+    HK.addTo(Z.scen.events, {
       /* 選ばれやすさは敵対の重み（conflict）で決め、記録には恋愛（romance）として残す（hate-sex-r18.js の出られない部屋と同じ） */
       id: 'zr18_hate', cat: 'conflict', sex: true, scope: 'pair', pri: true, r18: true,
       when: function (ctx, a, b) {
@@ -686,7 +689,7 @@
         return { cat: 'romance', text: HS.scene(ctx, a, b, { place: place, low: Z.loveLv(ctx) === 'fade' }), why: HS.why(ctx, a, b) + '・' + Z.day(ctx) + '日目' + (HS.shieldWhy ? HS.shieldWhy(HS.lastShield) : ''), mag: 26 };
       }
     });
-  }
+  });
 
   /* 点検用（数え直し・試し引き） */
   HK.SitNight = { REL: REL, NOW: NOW, REACT: REACT, S: S, SZ: SZ, SI: SI, GROUP: GROUP, relOf: relOf, detectZ: detectZ, detectI: detectI, compose: compose };

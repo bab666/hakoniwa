@@ -542,14 +542,15 @@
     var ph0 = scen.phase, af0 = scen.after;
     scen.phase = function (ctx, s, n) { var r = ph0 ? ph0.apply(this, arguments) : undefined; ctx.flush(); scan(ctx, s, n, opt); return r; };
     scen.after = function (ctx, s, n) { var r = af0 ? af0.apply(this, arguments) : undefined; ctx.flush(); scan(ctx, s, n, opt); tick(ctx, s, n, opt); return r; };
-    var n0 = scen.events.length;
-    scen.events.push({
+    /* 足す出来事は mine に集めて HK.addTo で足す（分割読み込みで組み込みが箱庭の本体より後になっても、元のファイルの順に並ぶ） */
+    var mine = [];
+    mine.push({
       id: 'gf_think', cat: 'solo', scope: 'solo', noOdd: true,
       when: function (ctx, a) { var l = lossOf(a); return !!l && l.lv >= 15 && ctx.stepIndex - l.last >= (heavy(l) ? 1 : 2); },
       w: function (ctx, a) { var l = lossOf(a); return (0.4 + l.lv / 30) * (heavy(l) ? 1.4 : 1) * (opt.w || 1); },
       run: function (ctx, a) { return beat(ctx, a, lossOf(a), opt); }
     });
-    scen.events.push({
+    mine.push({
       id: 'gf_reckless', cat: 'solo', scope: 'solo', noOdd: true,
       when: function (ctx, a) { var l = lossOf(a); return !!l && l.lv >= 50 && !l.calm && l.reckless < 2 && l.type !== 'flat' && ctx.stepIndex - l.at >= 1; },
       w: function (ctx, a) { var l = lossOf(a); return (0.2 + a.tr.impulse * 0.8 + (l.type === 'blame' || l.type === 'bright' ? 0.4 : 0)) * (opt.w || 1) * HK.Dark.f(ctx, 'harm'); },
@@ -563,7 +564,7 @@
       }
     });
     /* 執着・信仰する側：壊れる（一度だけ） */
-    scen.events.push({
+    mine.push({
       id: 'gf_broken', cat: 'solo', scope: 'solo', noOdd: true,
       when: function (ctx, a) { var l = lossOf(a); return !!l && !!l.dev && !l.calm && !l.brokenDev && l.lv >= 50 && ctx.stepIndex - l.at >= 1; },
       w: function (ctx, a) { return (0.8 + lossOf(a).lv / 60) * (opt.w || 1); },
@@ -574,7 +575,7 @@
       }
     });
     /* 執着・信仰する側：後追い（深さが深いほど何度も。止める人がいれば止まる） */
-    scen.events.push({
+    mine.push({
       id: 'gf_follow', cat: 'solo', scope: 'solo', noOdd: true,
       when: function (ctx, a) { var l = lossOf(a); return !!l && !!l.dev && !l.calm && l.lv >= 60 && (l.follow || 0) < (l.d >= 120 ? 2 : 1) && ctx.stepIndex - l.at >= 1 && ctx.stepIndex - (l.followAt || -9) >= 3; },
       w: function (ctx, a) { var l = lossOf(a); return (0.5 + a.tr.impulse * 0.5 + a.tr.ac * 0.4 + (l.type === 'blame' || l.type === 'sink' ? 0.4 : 0)) * (opt.w || 1); },
@@ -592,7 +593,7 @@
         return { text: t, why: w + '／止める人はいなかった', mag: 26 };
       }
     });
-    scen.events.push({
+    mine.push({
       id: 'gf_comfort', cat: 'help', scope: 'pair', noOdd: true,
       when: function (ctx, a, b) {
         var l = lossOf(b);
@@ -603,13 +604,15 @@
       w: function (ctx, a, b) { return (0.3 + a.tr.np * 0.9 + Math.max(0, ctx.R(a, b).aff) / 100) * (lossOf(b).lv / 70) * (opt.w || 1); },
       run: function (ctx, a, b) { return comfort(ctx, a, b, opt); }
     });
-    MINE = MINE.concat(scen.events.slice(n0));
+    HK.addTo(scen.events, mine);
+    MINE = MINE.concat(mine);
   };
 
   /* ======================= 箱庭ごとの組み込み ======================= */
+  /* 2026-10-27（分割読み込みの第3段）：箱庭の本体は箱庭のかたまり（scen-<id>）で後から届くので、HK.atScen で「有れば今、無ければ届いたとき」に組み込む */
   var SURVIVE = L('{a}は誰にも告げずに、一番危ない役目を引き受けた。{a}「どうなってもいい。今はそれでいい｜＝｜どうなってもいいです。今はそれでいいんです」――そのつぶやきを聞いた者は、背筋が冷たくなった。{a}は無事に戻ったが、その顔には何の色も浮かんでいなかった。');
   /* ゾンビの街は一日が四つの区切り（朝・昼・夕方・夜）なので、A の人が崩れるのは一日あまりあと */
-  G.install(SC.zombie, {
+  HK.atScen('zombie', function (s) { G.install(s, {
     crash: 5, span: 20,
     /* 後追い：止める人がいなければ、群れに近づきすぎて咬まれることも、そのまま呑まれることもある */
     follow: function (ctx, a, l, m) {
@@ -621,38 +624,38 @@
     items: L('{b}が使っていた懐中電灯|{b}の上着|{b}の腕時計|{b}が最後まで持っていた鞄'),
     spots: L('バリケードの陰|見張り台|隠れ家の屋上|崩れた非常階段'),
     reckless: SURVIVE.concat(L('{a}は武器も持たずに、{b}を失った場所へ一人で向かおうとした。{a}「{b}を、置いてきたままにできない｜{b}を、置いてきたままにはできない｜{b}を、置いてきたままにはできません」――外にはまだ、呻き声がいくつも響いていた。{a}の足は、それでも止まらなかった。|{a}はわざと物音を立てて、ゾンビの群れのほうへ歩いていった。まるで、自分から見つかろうとしているようだった。寸前で引き返したのは、ほとんど偶然だった。|{a}は見張りの番を、何日も続けて誰にも譲らなかった。眠らずに暗がりを見つめる目は、どこか焦点が合っていなかった。{a}「来るなら来ればいい。私が全部、相手をする｜＝｜来るなら来ればいいです。私が全部、相手をします」'))
-  });
-  G.install(SC.island, {
+  }); });
+  HK.atScen('island', function (s) { G.install(s, {
     funeral: false,   /* 亡骸の扱いと弔いは island-corpse.js */
     items: L('{b}が編んだ籠|{b}の上着|{b}が拾った貝殻|{b}の靴'),
     spots: L('浜辺|焚き火のそば|岩場|見晴らしのいい丘'),
     reckless: SURVIVE.concat(L('{a}は荒れた海に、一人で漁に出ようとした。{a}「じっとしていると、{b}のことばかり考える｜＝｜じっとしていると、{b}のことばかり考えてしまいます」――波は、岩場を白く洗っていた。引き止められなければ、{a}は本当に沖へ出ていた。|{a}は誰も行かない崖の上まで、食べ物を探しに登っていった。足場の悪い斜面を、{a}はほとんど確かめもせずに進んだ。戻ってきた{a}の腕は、擦り傷だらけだった。|{a}は{b}が最後に向かった森の奥へ、何度も一人で入っていった。何かを探しているようでもあり、何かから逃げているようでもあった。{a}は夕暮れまで戻らなかった。'))
-  });
-  G.install(SC.classroom, {
+  }); });
+  HK.atScen('classroom', function (s) { G.install(s, {
     mate: 'クラスメイト', span: 6,
     items: L('{b}に借りたままのノート|{b}の机に置かれた花|{b}と撮った写真|{b}のシャープペン'),
     spots: L('教室の窓際|屋上|いつもの帰り道|{b}の空いた席の前')
-  });
-  G.install(SC.whiteroom, {
+  }); });
+  HK.atScen('whiteroom', function (s) { G.install(s, {
     span: 24,
     items: L('{b}の上着|{b}が壁に刻んだ印|{b}の靴'),
     spots: L('部屋の隅|白い壁の前|ベッドの端|扉の前')
-  });
+  }); });
   /* オメガバースは半月ごとの区切りで長いので、半年ほどで薄れる */
-  G.install(SC.omega, {
+  HK.atScen('omega', function (s) { G.install(s, {
     span: 12,
     items: L('{b}の匂いが残る服|{b}の上着|{b}と撮った写真|{b}のマグカップ'),
     spots: L('窓辺|部屋の隅|二人でよく座ったベンチ|ベランダ')
-  });
+  }); });
   /* 全年齢版だけの箱庭（R18版にはない） */
-  G.install(SC.br, {
+  HK.atScen('br', function (s) { G.install(s, {
     items: L('{b}の上着|{b}が持っていた地図|{b}の水筒'),
     spots: L('岩陰|廃屋の陰|茂みの奥|崖の上'),
     reckless: SURVIVE, reactMax: 2
-  });
-  G.install(SC.trial, {
+  }); });
+  HK.atScen('trial', function (s) { G.install(s, {
     items: L('{b}の上着|{b}の部屋の鍵|{b}が使っていたペン'),
     spots: L('ホテルの廊下|{b}の部屋の前|食堂の隅|ロビーのソファ'),
     reactMax: 2
-  });
+  }); });
 })();

@@ -1016,6 +1016,13 @@
   var FUTARI_ON = (function () { try { return /(^|[#&])futari(&|$)/.test(location.hash || '') || window.localStorage.getItem('hakoniwa-futari') === '1'; } catch (e) { return /futari/.test(location.hash || ''); } })();
   if (!FUTARI_ON) { HK.SCENARIOS_HIDDEN = HK.SCENARIOS_HIDDEN || {}; HK.SCENARIOS_HIDDEN.futari = scen; return; }
   HK.SCENARIOS.futari = scen;
+  /* 分割読み込み：この箱庭は目録（HK_MANIFEST）に載らない（隠した箱庭）ので、選んだときに読むかたまり（恋愛系の共有 pack-rel と、R18版の夜 scen-futari）を
+     ここで目録に教える（HK.Load.ensure('futari') がそれを読む。有るかたまりだけ） */
+  var LM = HK.Load && HK.Load.manifest;
+  if (LM && LM.scen && LM.chunks && !LM.scen.futari) {
+    var need = ['pack-rel', 'scen-futari'].filter(function (c) { return !!LM.chunks[c]; });
+    if (need.length) LM.scen.futari = { chunks: need };
+  }
   if (HK.SCEN_ORDER.indexOf('futari') < 0) { var wi = HK.SCEN_ORDER.indexOf('whiteroom'); if (wi >= 0) HK.SCEN_ORDER.splice(wi + 1, 0, 'futari'); else HK.SCEN_ORDER.push('futari'); }
 
   /* ---------- TIPS（tips.js） ---------- */

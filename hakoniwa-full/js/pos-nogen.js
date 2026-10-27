@@ -232,10 +232,13 @@
   /* 住人でない相手（モブ・魔物など）の呼び方を文から拾う */
   var MOB_W = /巨体|触手|スライム|生命体|オーク|ゴブリン|魔物|獲物|客たち|客|男たち|男|村人たち|村人|神|インキュバス|サキュバス|淫魔|悪魔|看守|施術師|マッサージ師|スタッフ|相手/;
   /* 箱庭が用意した相手（宇宙船の星の生命体・サキュバスの獲物・常識改変の客）の名前 */
-  var MOBN = null;
+  /* 分割読み込みでは箱庭のかたまりが後から届くので、作ったときの HK.Load.gen を覚え、かたまりが増えていたら作り直す
+     （HK.Load が無い開発中は、今までどおり最初の一回だけ作る） */
+  var MOBN = null, MOBN_GEN = null;
   function mobNames() {
-    if (MOBN) return MOBN;
-    MOBN = [];
+    var gen = HK.Load ? HK.Load.gen : null;
+    if (MOBN && MOBN_GEN === gen) return MOBN;
+    MOBN = []; MOBN_GEN = gen;
     try { var SB = HK.SUCCUBUS; if (SB && SB.PREY) Object.keys(SB.PREY).forEach(function (k) { if (SB.PREY[k] && SB.PREY[k].name) MOBN.push(SB.PREY[k].name); }); } catch (e) { }
     try { var KH = HK.KAIHEN; if (KH && KH.SIT) Object.keys(KH.SIT).forEach(function (k) { (KH.SIT[k].npc || []).forEach(function (nm) { if (nm) MOBN.push(nm); }); }); } catch (e) { }
     try { var SH = HK.SHIP; if (SH && SH.LIFE) SH.LIFE.forEach(function (x) { if (x && x.name) MOBN.push(x.name); }); } catch (e) { }

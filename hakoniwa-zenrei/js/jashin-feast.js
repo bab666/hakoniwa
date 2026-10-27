@@ -27,14 +27,14 @@
   };
   /* 未成年の職業（全年齢版の高校生・令嬢・幼子）が出る邪神村の記録では、酒を飲む言い回しを果汁・ジュースに言い換える（収穫祭の宴・死の場面など） */
   var MINOR_SUB = [[/新酒の葡萄酒/g, '搾りたての葡萄のジュース'], [/葡萄酒/g, '葡萄のジュース'], [/御神酒/g, '甘酒'], [/杯を重ねた/g, '杯を何度もおかわりした'], [/酔わせた/g, '眠らせた'], [/酔わされ/g, '眠らされ'], [/酔った/g, 'ぼんやりした'], [/酔いが回/g, '眠気が回']];
-  var say0 = ST.say;
-  ST.say = function (S, o) {
+  /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。このファイルは箱庭のかたまり scen-jashin にあり、中核の包みより後に届く） */
+  HK.wrap(ST, 'say', function (say0) { return function (S, o) {
     if (S && S.scen && S.scen.id === 'jashin' && o && typeof o.text === 'string' && /酒|酔/.test(o.text)) {
       var minor = (o.actors || []).some(function (a) { var p = typeof a === 'number' ? S.P[a] : a; return p && p.minor; });
       if (minor) MINOR_SUB.forEach(function (w) { o.text = o.text.replace(w[0], w[1]); });
     }
     return say0.apply(this, arguments);
-  };
+  }; });
   var F_ = JS.FEAST = {
     tick: function (S, live, h) {
       if (S.feastDone || !live.length || h >= S.deadline - 4) return;

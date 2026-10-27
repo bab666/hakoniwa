@@ -164,7 +164,7 @@
     if (!S || !T || !S.events) return;
     Object.keys(TPL).forEach(function (k) {
       var D = TPL[k], pool = L(T[k]), eid = 'rb_' + id + '_' + k;
-      S.events.push({
+      HK.addTo(S.events, {
         id: eid, cat: D.cat, scope: 'pair',
         when: function (ctx, a, b) {
           if (!b || !is(D.k)(ctx, a, b) || !RK.cool(ctx, a, b, k, D.gap)) return false;
@@ -189,7 +189,9 @@
       });
     });
   }
-  ['goukon', 'whiteroom', 'classroom', 'island', 'zombie', 'omega', 'br', 'trial'].forEach(install);
+  /* 2026-10-27（分割読み込みの第3段）：箱庭の本体は箱庭のかたまり（scen-<id>）で後から届くので、HK.atScen で「有れば今、無ければ届いたとき」に組み込む。
+     出来事の表への追加は HK.addTo（元のファイルの順に並ぶ） */
+  ['goukon', 'whiteroom', 'classroom', 'island', 'zombie', 'omega', 'br', 'trial'].forEach(function (id) { HK.atScen(id, function () { install(id); }); });
   HK.RelBad = HK.RelBad || {};
   HK.RelBad.engineTX = TX;
 })();

@@ -108,10 +108,8 @@
   };
 
   /* ======================= 無人島 ======================= */
-  var isl = HK.SCENARIOS.island;
-  if (isl) {
-    /* 描写の設定は lewd-unify.js（古い「島の夜（R18）」はそこで外して読み替える） */
-    isl.env.push({ id: 'ilewd', label: '島の夜（R18）', type: 'select', def: 'fade', options: [{ v: 'off', label: '描かない' }, { v: 'fade', label: 'ほのめかす' }, { v: 'high', label: '描写する' }], desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜。恋愛なしの家族と、教師と生徒の組では起きません' });
+  /* 2026-10-27（分割読み込みの第3段）：文の表（RN.I・RN.ZT）は今作り、箱庭に足す出来事・設定・包みは、その箱庭の本体（scen-island・scen-zombie）が有るとき（HK.atScen）に。
+     出来事を足す順は HK.addTo で元のファイルの順に保つ */
     var I = {
       ask: {
         lover: L('焚き火が小さくなった頃、{a}は{b}の手を引いて、岩陰の寝床へ連れていった。|{a}は{b}の耳元で囁いた。「……今夜は、二人で寝よう」|満月の浜辺で、{a}は{b}を後ろから抱きしめた。'),
@@ -153,7 +151,10 @@
       }
     };
     RN.I = I;
-    isl.events.push({
+  HK.atScen('island', function (isl) {
+    /* 描写の設定は lewd-unify.js（古い「島の夜（R18）」はそこで外して読み替える） */
+    isl.env.push({ id: 'ilewd', label: '島の夜（R18）', type: 'select', def: 'fade', options: [{ v: 'off', label: '描かない' }, { v: 'fade', label: 'ほのめかす' }, { v: 'high', label: '描写する' }], desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜。恋愛なしの家族と、教師と生徒の組では起きません' });
+    HK.addTo(isl.events, {
       id: 'ir18_night', cat: 'romance', sex: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (!okPair(ctx, a, b)) return false;
@@ -181,11 +182,11 @@
         return { text: t, why: '島の夜（' + ({ lock: a.name + 'が想い続けた相手', mentor: '師弟の一線', fwb: 'セフレ', lover: '恋人', new: '惹かれ合った二人' })[k] + '／惹かれ ' + Math.round(ctx.R(a, b).att) + '・' + Math.round(ctx.R(b, a).att) + '）', mag: 24 };
       }
     });
-  }
+    if (HK.eventAdded) HK.eventAdded(isl, isl.events.filter(function (e) { return e.id === 'ir18_night'; })[0]);
+  });
 
   /* ======================= ゾンビの街 ======================= */
   var Z = HK.ZB;
-  if (Z && Z.scen && Z.loveLv) {
     var ZT = {
       ask: {
         lock: L('{a}は{b}の手を握った。「いつ死ぬか分からないなら、言っておく。……ずっと、あなただけだった」|崩れかけた部屋で、{a}は{b}に想いを打ち明けた。答えの代わりに、{b}は{a}を抱きしめた。|{a}はバリケードの陰で、{b}の手をそっと握った。「……今夜くらい、そばにいて」'),
@@ -219,7 +220,9 @@
       }
     };
     RN.ZT = ZT;
-    Z.scen.events.push({
+  HK.atScen('zombie', function () {
+    if (!(Z && Z.scen && Z.loveLv)) return;
+    HK.addTo(Z.scen.events, {
       id: 'zr18_night', cat: 'romance', sex: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (Z.loveLv(ctx) === 'off' || !okPair(ctx, a, b) || (Z.isLover && Z.isLover(ctx, a, b))) return false;
@@ -253,5 +256,5 @@
         return t;
       };
     }
-  }
+  });
 })();

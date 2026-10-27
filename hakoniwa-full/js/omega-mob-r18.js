@@ -411,7 +411,8 @@
     return { cat: 'conflict', sex: true, lewd: !low, with: p && withOk(v, p) ? [p] : [], text: J(parts), why: why, mag: p ? 55 : 48 };
   }
 
-  EV.push({
+  /* 足す順は HK.addTo で元のファイルの順に保つ（敵視・喪失の組み込みが、分割読み込みでは後から足すため） */
+  HK.addTo(EV, {
     id: 'om_mobr', cat: 'conflict', scope: 'solo', sex: true, r18: true, noOdd: true,
     when: function (ctx, v) { var s = ctx.om.mobR; return !(s && (s.n >= 2 || s.by[v.i] != null)) && victimOk(ctx, v); },
     w: function (ctx, v) {
