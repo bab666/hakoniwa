@@ -621,6 +621,8 @@
     var P = inArea(ctx, zp.area);
     if (!P.length) return;
     var T = zp.target != null && P.indexOf(ctx.chars[zp.target]) >= 0 ? ctx.chars[zp.target] : HK.weighted(rng, P, function (o) { return 1 + ctx.R(c, o).aff / 60; });
+    /* 全員への好意が -60 以下だと重みがすべて 0 になり null が返るので、そのときはその場の誰かを襲う */
+    if (!T) T = rng.pick(P);
     /* 恋人がその場にいれば、恋人の前に現れる。恋人の気質で態度が変わる */
     if (Z.loverZombie && !zp.loveDone) {
       var lv0 = P.filter(function (o) { return Z.isLover(ctx, o, c); })[0];

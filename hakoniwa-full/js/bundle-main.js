@@ -6793,10 +6793,16 @@ try{
 out=pr0(res,input);
 if(HK.Mob&&HK.Mob._used){HK.Mob._used=false;HK.Mob.unmark(out,V._mobYou==='name');}
 }finally{V._mobYou='';if(HK.Mob&&HK.Mob._made)HK.Mob._made.length=0;}
-if(calmNames.length){
-var re=new RegExp(calmNames.map(esc).join('|'));
-var f=function(t){return typeof t==='string'?t.replace(/[^。！？]*[。！？]?/g,function(sen){return re.test(sen)?calmText(sen):sen;}):t;};
-(out.log||[]).forEach(function(e){if(e&&typeof e.text==='string')e.text=f(e.text);});
+if(calmNames.length&&HK.Seg&&HK.Seg.quotes){
+var calmIdx={};
+input.chars.forEach(function(c,i){if(HK.toneOf(c)==='calm')calmIdx[i]=1;});
+(out.log||[]).forEach(function(e){
+if(!e||typeof e.text!=='string'|| !e._sq)return;
+var t=e.text,Q=HK.Seg.quotes(t),sq=e._sq,r='',p=0;
+if(Q.length!==sq.length)return;
+Q.forEach(function(x,k){if(sq[k]&&sq[k].k==='s'&&calmIdx[sq[k].w]){r+=t.slice(p,x.a+1)+calmText(t.slice(x.a+1,x.b));p=x.b;if(typeof sq[k].s==='string')sq[k].s=calmText(sq[k].s);}});
+if(p)e.text=r+t.slice(p);
+});
 }
 return out;
 };
@@ -7102,6 +7108,7 @@ var m=core.match(/(な)?のだ(?:ぞ|よ|な)?$/);
 if(!m)return body;
 var head=core.slice(0,core.length-m[0].length);
 if(!head|| /[、\s　]$/.test(head))return body;
+if(!m[1]&& /も$/.test(head))return body;
 return head+(m[1]?'だ':'')+st[1];
 }
 function addsExpl(from,c){
@@ -40504,6 +40511,7 @@ var rng=ctx.rng,zb=ctx.zb,c=ctx.chars[zp.i];
 var P=inArea(ctx,zp.area);
 if(!P.length)return;
 var T=zp.target!=null&&P.indexOf(ctx.chars[zp.target])>=0?ctx.chars[zp.target]:HK.weighted(rng,P,function(o){return 1+ctx.R(c,o).aff/60;});
+if(!T)T=rng.pick(P);
 if(Z.loverZombie&& !zp.loveDone){
 var lv0=P.filter(function(o){return Z.isLover(ctx,o,c);})[0];
 if(lv0){T=lv0;if(Z.loverZombie(ctx,zp,T,P))return;}
@@ -58314,6 +58322,7 @@ var rel=o.rel==='master'?(o.master===x?'master':'serve'):REL_ET[o.rel]||'casual'
 return HK.EroT3.topSay(S,x,y,stage,TOP,Object.assign({rel:rel},op||{}));
 }
 function vv(x,y){return{a:x.name,b:y.name};}
+var NG_LOW=L('{a}の指と唇に追い詰められて、{b}は何度も小さく震えた。媚薬が切れるまで、二人は肌を離さなかった。|{b}は{a}の腕の中で、声を殺して長く震えた。熱が引いたのは、窓の外が白み始めたころだった。|{a}に口づけられ、肌を撫でられ続けて、{b}はとうとうこらえきれずに果てた。二人はそのまま、重なり合って眠った。');
 function pickMid(S,c,n){
 var rng=S.rng,out=[],pool=MID.filter(function(m){return(!m.riba||c.riba)&&(!c.ff||FF.mid[m.id])&&(!c.fm||FM.mid[m.id]);});
 for(var k=0;k<n&&pool.length;k++){
@@ -58347,9 +58356,19 @@ var whyInv={quietTop:'ロッカーの中でいちばんおとなしかった'+q.
 var o3=ST.say(S,{actors:[A,B],tag:'ベッドへ',text:t1,why:whyInv+'／発情 '+Math.round(A.m.heat)+'・'+Math.round(B.m.heat)+(o.pair.sexIn?'／ロッカーの中では焦らされるだけだった':''),mag:40});
 ST.key(S,o3,kind==='quietTop'||kind==='quietBottom'?'おとなしかった'+q.name+'からベッドへ誘った':'部屋から出ずにベッドへ');
 labels.push({quietTop:'おとなしかった方から誘う',quietBottom:'おとなしかった方から誘う',nori:'受けがノリノリで誘う',eager:'待ちきれずに',stop:'帰ろうとして引き戻される',order:'主の命令'}[kind]);
+var ngOn= !!(HK.NoGen&&HK.NoGen.on&&HK.NoGen.on(x,y));
 if(lew==='low'){
 ST.say(S,{actors:[A,B],tag:'激しいセックス',text:'――そこから先は、二人だけの秘密になった。',why:'関係：'+o.REL_LABEL[o.rel],mag:45,kind:'climax'});
-ST.say(S,{actors:[A,B],tag:'絶頂',text:ST.fmt(pick(S,ff?FF.climax:fm?FM.climax:LK.BED.climax),vv(x,y)).replace(/。.*/,'。'),why:'媚薬が切れるまで',mag:45,kind:'climax'});
+ST.say(S,{actors:[A,B],tag:'絶頂',text:ngOn?ST.fmt(pick(S,NG_LOW),vv(x,y)):ST.fmt(pick(S,ff?FF.climax:fm?FM.climax:LK.BED.climax),vv(x,y)).replace(/。.*/,'。'),why:'媚薬が切れるまで',mag:45,kind:'climax'});
+return labels;
+}
+if(ngOn){
+var ngK=HK.NoGen.kind(x,y)||'oral';
+var ngT=HK.NoGen.text(S,x,y,{});
+if(!o.plotter&&END_REL[o.rel]&&rng()<0.55)ngT+='\n\n'+ST.fmt(pick(S,END_REL[o.rel]),vv(x,y));
+if(o.plotter)ngT+='\n\n'+ST.fmt(pick(S,LK.AFTER.plotwin),{a:o.plotter.name,b:o.plotter.o.name});
+labels.push(ngK==='oral'?'口だけで':'指と玩具で');
+ST.say(S,{actors:[A,B],tag:ngK==='oral'?'口だけで':'指と玩具で',text:ngT,why:'関係：'+o.REL_LABEL[o.rel]+'／性器なしの人がいる組なので、'+(ngK==='oral'?'受けは口まで':'攻めは指と玩具だけ'),mag:45,kind:'climax'});
 return labels;
 }
 var fmOwn=fm&& !o.thick;
@@ -76438,6 +76457,10 @@ function run(input){
 var ST=HK.Story,J=HK.JinroText,S=ST.state(input,'jinro'),rng=S.rng,env=S.env,P=S.P,n=P.length;
 var SSK=HK.SameStory&&HK.SameStory.nk?HK.SameStory:null;
 var prize=String(env.prizeText||'').trim().slice(0,30)||PRIZE[env.prize]||'';
+var pTxt=String(env.prizeText||'').trim(),pPun=pTxt? /罰/.test(pTxt):env.prize==='punish',pWish= !pTxt&&env.prize==='wish';
+var pSent=pTxt? /[はがを]|[うくすつぬふむゆるぐぶ]$/.test(pTxt):pWish;
+var prizeHotN= !prize?'':pPun?'罰ゲーム回避':pWish?'勝者の命令権':pSent?'賞品':prize;
+var prizeWinN= !prize?'':pPun?'勝利':pWish?'勝者の命令権':pSent?'勝利':prize;
 function pk(a){return ST.pick(S,a);}
 function F(t,m){return fill(t,m);}
 function say(o){return ST.say(S,o);}
@@ -76498,7 +76521,7 @@ function check(){var w=alive().filter(isW).length,v=alive().length-w;if(!w)retur
 function bump(q,x,v){if(q===x|| !q.alive)return;if(isW(q))return;q.sus[x.i]=clamp((q.sus[x.i]||50)+v,0,100);}
 function cred(q,sp){return clamp(1-(q.sus[sp.i]||50)/100+(sp.like-0.5)*0.3,0.05,1);}
 say({kind:'phase',actors:P.map(function(p){return p.i;}),text:n+'人で人狼ゲームが始まった。配役は人狼'+nW+'・'+[env.seer==='1'?'占い師':'',env.medium==='1'?'霊媒師':'',env.hunter==='1'?'狩人':''].filter(Boolean).join('・')+(roles.filter(function(r){return r==='vill';}).length?'・村人'+roles.filter(function(r){return r==='vill';}).length:'')+'。'+(prize?'賞品は「'+prize+'」。':''),why:'配役はランダム（指定があればそれを優先）'});
-if(prize){var hot=P.slice().sort(function(a,b){return b.want-a.want;})[0];say({actors:[hot.i],tag:'賞品',text:F(pk(J.prizeHot),{a:hot.name,p:prize}),why:hot.name+'の勝ちたい気持ち（FC・衝動性・負けず嫌い）'});}
+if(prize){var hot=P.slice().sort(function(a,b){return b.want-a.want;})[0];say({actors:[hot.i],tag:'賞品',text:F(pk(J.prizeHot),{a:hot.name,p:prizeHotN}),why:hot.name+'の勝ちたい気持ち（FC・衝動性・負けず嫌い）'});}
 function divine(){
 if(!seer|| !seer.alive)return;
 var cand=alive().filter(function(q){return q!==seer&& !seer.known[q.i];});
@@ -76788,7 +76811,7 @@ winner=check();
 }
 winner=winner||check()||'wolf';
 var winners=P.filter(function(p){return winner==='wolf'?isW(p): !isW(p);}),losers=P.filter(function(p){return winners.indexOf(p)<0;});
-var pz=prize||'勝利';
+var pz=prizeWinN||'勝利';
 var hotW=winners.slice().sort(function(a,b){return b.want-a.want;})[0],hotL=losers.slice().sort(function(a,b){return b.want-a.want;})[0];
 if(hotW)say({actors:[hotW.i],tag:'勝利',text:F(pk(J.win[winner]),{a:hotW.name,p:pz}),why:hotW.name+'の勝ちたい気持ち（'+Math.round(hotW.want*100)+'）'});
 if(hotL)say({actors:[hotL.i],tag:'敗北',text:F(pk(hotL.want>0.6?J.loseHot:J.loseCalm),{a:hotL.name,p:pz}),why:hotL.name+(hotL.want>0.6?'は本気で勝ちたかった':'は楽しめればよかった')});
@@ -76807,7 +76830,9 @@ lines.push('人狼陣営の戦法：'+planText+'。');
 if(policyLog.length)lines.push('村の方針：'+policyLog.filter(function(x,k,a){return a.indexOf(x)===k;}).join('→')+'。');
 if(moments.length)lines.push('盤面の転機：'+moments.slice(0,4).join('／')+'。');
 if(sharp)lines.push('いちばん鋭かったのは'+sharp.name+'（人狼に投票 '+sharp.cnt.right+'／'+sharp.cnt.votes+'）。');
-if(prize)lines.push('賞品の「'+prize+'」は、'+(winner==='wolf'?'人狼陣営':'村人陣営')+'のものになった。');
+if(prize)lines.push(pPun?'「'+prize+'」の約束どおり、負けた'+(winner==='wolf'?'村人陣営':'人狼陣営')+'が罰ゲームを受けることになった。'
+:pSent?'「'+prize+'」の約束どおり、勝ったのは'+(winner==='wolf'?'人狼陣営':'村人陣営')+'だった。'
+:'賞品の「'+prize+'」は、'+(winner==='wolf'?'人狼陣営':'村人陣営')+'のものになった。');
 return ST.result(S,input,{
 ending:{title:title,kind:'ok',lines:lines},
 estats:[['日数',played+'日'],['処刑',executed.length+'人'],['襲撃',killed.length+'人'],['護衛成功',guardOK+'回'],['人狼の戦法',planText]],

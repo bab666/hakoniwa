@@ -436,10 +436,19 @@
       /* 話し手が分からなかった台詞に残ったモブへの呼びかけの印（mob.js） */
       if (HK.Mob && HK.Mob._used) { HK.Mob._used = false; HK.Mob.unmark(out, V._mobYou === 'name'); }
     } finally { V._mobYou = ''; if (HK.Mob && HK.Mob._made) HK.Mob._made.length = 0; }
-    if (calmNames.length) {
-      var re = new RegExp(calmNames.map(esc).join('|'));
-      var f = function (t) { return typeof t === 'string' ? t.replace(/[^。！？]*[。！？]?/g, function (sen) { return re.test(sen) ? calmText(sen) : sen; }) : t; };
-      (out.log || []).forEach(function (e) { if (e && typeof e.text === 'string') e.text = f(e.text); });
+    /* 冷静（落ち着き）の人の台詞（区分 s＝台詞行 l・埋め込みの発話 q）だけを言い換える。
+       地の文・ほかの人の台詞は、その人の名前が出ても変えない（「観察しようとした」→「様子見しようとした」にしない）。
+       台詞の区分と話し手は voice.js が記録に隠して持たせた _sq（voice-seg.js の HK.Seg.keep）から読む。「」の数が合わない記録は触らない */
+    if (calmNames.length && HK.Seg && HK.Seg.quotes) {
+      var calmIdx = {};
+      input.chars.forEach(function (c, i) { if (HK.toneOf(c) === 'calm') calmIdx[i] = 1; });
+      (out.log || []).forEach(function (e) {
+        if (!e || typeof e.text !== 'string' || !e._sq) return;
+        var t = e.text, Q = HK.Seg.quotes(t), sq = e._sq, r = '', p = 0;
+        if (Q.length !== sq.length) return;
+        Q.forEach(function (x, k) { if (sq[k] && sq[k].k === 's' && calmIdx[sq[k].w]) { r += t.slice(p, x.a + 1) + calmText(t.slice(x.a + 1, x.b)); p = x.b; if (typeof sq[k].s === 'string') sq[k].s = calmText(sq[k].s); } });
+        if (p) e.text = r + t.slice(p);
+      });
     }
     return out;
   };

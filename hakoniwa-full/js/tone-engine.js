@@ -401,6 +401,8 @@
     if (!m) return body;
     var head = core.slice(0, core.length - m[0].length);
     if (!head || /[、\s　]$/.test(head)) return body;
+    /* 「〜のものだ！」の「もの」は名詞で、説明の「のだ」ではない（「勝利は村人陣営のも！」にしない） */
+    if (!m[1] && /も$/.test(head)) return body;
     return head + (m[1] ? 'だ' : '') + st[1];
   }
   function addsExpl(from, c) {

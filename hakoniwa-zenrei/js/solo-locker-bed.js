@@ -245,6 +245,8 @@
   }
 
   function vv(x, y) { return { a: x.name, b: y.name }; }
+  /* 性器なしの人がいる組の、描写の濃さ「低」の結び（挿れる・腰を沈める語を使わない） */
+  var NG_LOW = L('{a}の指と唇に追い詰められて、{b}は何度も小さく震えた。媚薬が切れるまで、二人は肌を離さなかった。|{b}は{a}の腕の中で、声を殺して長く震えた。熱が引いたのは、窓の外が白み始めたころだった。|{a}に口づけられ、肌を撫でられ続けて、{b}はとうとうこらえきれずに果てた。二人はそのまま、重なり合って眠った。');
   function pickMid(S, c, n) {
     var rng = S.rng, out = [], pool = MID.filter(function (m) { return (!m.riba || c.riba) && (!c.ff || FF.mid[m.id]) && (!c.fm || FM.mid[m.id]); });
     for (var k = 0; k < n && pool.length; k++) {
@@ -287,9 +289,21 @@
     ST.key(S, o3, kind === 'quietTop' || kind === 'quietBottom' ? 'おとなしかった' + q.name + 'からベッドへ誘った' : '部屋から出ずにベッドへ');
     labels.push({ quietTop: 'おとなしかった方から誘う', quietBottom: 'おとなしかった方から誘う', nori: '受けがノリノリで誘う', eager: '待ちきれずに', stop: '帰ろうとして引き戻される', order: '主の命令' }[kind]);
 
+    /* 性器なしの人がいる組（pos-nogen.js の HK.NoGen）：挿れる・跨って腰を沈める段は使わず、口・指と玩具の場面に退避する
+       （見直しの HK.NoGen.review は「喉から声が漏れた」の「喉」を口の文と取り違えて見逃すことがあるので、組み立ての段階で分ける） */
+    var ngOn = !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(x, y));
     if (lew === 'low') {
       ST.say(S, { actors: [A, B], tag: '激しいセックス', text: '――そこから先は、二人だけの秘密になった。', why: '関係：' + o.REL_LABEL[o.rel], mag: 45, kind: 'climax' });
-      ST.say(S, { actors: [A, B], tag: '絶頂', text: ST.fmt(pick(S, ff ? FF.climax : fm ? FM.climax : LK.BED.climax), vv(x, y)).replace(/。.*/, '。'), why: '媚薬が切れるまで', mag: 45, kind: 'climax' });
+      ST.say(S, { actors: [A, B], tag: '絶頂', text: ngOn ? ST.fmt(pick(S, NG_LOW), vv(x, y)) : ST.fmt(pick(S, ff ? FF.climax : fm ? FM.climax : LK.BED.climax), vv(x, y)).replace(/。.*/, '。'), why: '媚薬が切れるまで', mag: 45, kind: 'climax' });
+      return labels;
+    }
+    if (ngOn) {
+      var ngK = HK.NoGen.kind(x, y) || 'oral';
+      var ngT = HK.NoGen.text(S, x, y, {});
+      if (!o.plotter && END_REL[o.rel] && rng() < 0.55) ngT += '\n\n' + ST.fmt(pick(S, END_REL[o.rel]), vv(x, y));
+      if (o.plotter) ngT += '\n\n' + ST.fmt(pick(S, LK.AFTER.plotwin), { a: o.plotter.name, b: o.plotter.o.name });
+      labels.push(ngK === 'oral' ? '口だけで' : '指と玩具で');
+      ST.say(S, { actors: [A, B], tag: ngK === 'oral' ? '口だけで' : '指と玩具で', text: ngT, why: '関係：' + o.REL_LABEL[o.rel] + '／性器なしの人がいる組なので、' + (ngK === 'oral' ? '受けは口まで' : '攻めは指と玩具だけ'), mag: 45, kind: 'climax' });
       return labels;
     }
 

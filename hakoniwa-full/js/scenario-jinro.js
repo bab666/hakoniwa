@@ -62,6 +62,13 @@
     /* 殺さない（attr.js の HK.Attr.noKillPair）の共通部品（same-story.js） */
     var SSK = HK.SameStory && HK.SameStory.nk ? HK.SameStory : null;
     var prize = String(env.prizeText || '').trim().slice(0, 30) || PRIZE[env.prize] || '';
+    /* 台詞の {p} に入れる名詞の形。「負けた陣営は罰ゲーム」「勝者の言うことを一つ聞く」のような文の賞品をそのまま差し込むと
+       「負けた陣営は罰ゲームは村人陣営のもの」と崩れるので、罰ゲームは「罰ゲーム回避」（勝ち負けの台詞は「勝利」）、
+       言うことを聞くは「勝者の命令権」、自由に書いた文（は・が・を を含む・動詞で終わる）は「賞品」（勝ち負けの台詞は「勝利」）にする */
+    var pTxt = String(env.prizeText || '').trim(), pPun = pTxt ? /罰/.test(pTxt) : env.prize === 'punish', pWish = !pTxt && env.prize === 'wish';
+    var pSent = pTxt ? /[はがを]|[うくすつぬふむゆるぐぶ]$/.test(pTxt) : pWish;
+    var prizeHotN = !prize ? '' : pPun ? '罰ゲーム回避' : pWish ? '勝者の命令権' : pSent ? '賞品' : prize;
+    var prizeWinN = !prize ? '' : pPun ? '勝利' : pWish ? '勝者の命令権' : pSent ? '勝利' : prize;
     function pk(a) { return ST.pick(S, a); }
     function F(t, m) { return fill(t, m); }
     function say(o) { return ST.say(S, o); }
@@ -136,7 +143,7 @@
     function cred(q, sp) { return clamp(1 - (q.sus[sp.i] || 50) / 100 + (sp.like - 0.5) * 0.3, 0.05, 1); }
 
     say({ kind: 'phase', actors: P.map(function (p) { return p.i; }), text: n + '人で人狼ゲームが始まった。配役は人狼' + nW + '・' + [env.seer === '1' ? '占い師' : '', env.medium === '1' ? '霊媒師' : '', env.hunter === '1' ? '狩人' : ''].filter(Boolean).join('・') + (roles.filter(function (r) { return r === 'vill'; }).length ? '・村人' + roles.filter(function (r) { return r === 'vill'; }).length : '') + '。' + (prize ? '賞品は「' + prize + '」。' : ''), why: '配役はランダム（指定があればそれを優先）' });
-    if (prize) { var hot = P.slice().sort(function (a, b) { return b.want - a.want; })[0]; say({ actors: [hot.i], tag: '賞品', text: F(pk(J.prizeHot), { a: hot.name, p: prize }), why: hot.name + 'の勝ちたい気持ち（FC・衝動性・負けず嫌い）' }); }
+    if (prize) { var hot = P.slice().sort(function (a, b) { return b.want - a.want; })[0]; say({ actors: [hot.i], tag: '賞品', text: F(pk(J.prizeHot), { a: hot.name, p: prizeHotN }), why: hot.name + 'の勝ちたい気持ち（FC・衝動性・負けず嫌い）' }); }
 
     function divine() {
       if (!seer || !seer.alive) return;
@@ -460,7 +467,7 @@
 
     /* ---------- 結果と賞品 ---------- */
     var winners = P.filter(function (p) { return winner === 'wolf' ? isW(p) : !isW(p); }), losers = P.filter(function (p) { return winners.indexOf(p) < 0; });
-    var pz = prize || '勝利';
+    var pz = prizeWinN || '勝利';
     var hotW = winners.slice().sort(function (a, b) { return b.want - a.want; })[0], hotL = losers.slice().sort(function (a, b) { return b.want - a.want; })[0];
     if (hotW) say({ actors: [hotW.i], tag: '勝利', text: F(pk(J.win[winner]), { a: hotW.name, p: pz }), why: hotW.name + 'の勝ちたい気持ち（' + Math.round(hotW.want * 100) + '）' });
     if (hotL) say({ actors: [hotL.i], tag: '敗北', text: F(pk(hotL.want > 0.6 ? J.loseHot : J.loseCalm), { a: hotL.name, p: pz }), why: hotL.name + (hotL.want > 0.6 ? 'は本気で勝ちたかった' : 'は楽しめればよかった') });
@@ -480,7 +487,9 @@
     if (policyLog.length) lines.push('村の方針：' + policyLog.filter(function (x, k, a) { return a.indexOf(x) === k; }).join('→') + '。');
     if (moments.length) lines.push('盤面の転機：' + moments.slice(0, 4).join('／') + '。');
     if (sharp) lines.push('いちばん鋭かったのは' + sharp.name + '（人狼に投票 ' + sharp.cnt.right + '／' + sharp.cnt.votes + '）。');
-    if (prize) lines.push('賞品の「' + prize + '」は、' + (winner === 'wolf' ? '人狼陣営' : '村人陣営') + 'のものになった。');
+    if (prize) lines.push(pPun ? '「' + prize + '」の約束どおり、負けた' + (winner === 'wolf' ? '村人陣営' : '人狼陣営') + 'が罰ゲームを受けることになった。'
+      : pSent ? '「' + prize + '」の約束どおり、勝ったのは' + (winner === 'wolf' ? '人狼陣営' : '村人陣営') + 'だった。'
+      : '賞品の「' + prize + '」は、' + (winner === 'wolf' ? '人狼陣営' : '村人陣営') + 'のものになった。');
     return ST.result(S, input, {
       ending: { title: title, kind: 'ok', lines: lines },
       estats: [['日数', played + '日'], ['処刑', executed.length + '人'], ['襲撃', killed.length + '人'], ['護衛成功', guardOK + '回'], ['人狼の戦法', planText]],
