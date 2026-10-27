@@ -22,7 +22,7 @@
        （js/ のソースは R18版とバイト一致のまま。全年齢版の index.html が読むのはかたまりだけ）。
        抜いたあとのかたまりを acorn で字句に分け、文字列リテラルに性的な語（EXPLICIT）が残っていればエラーにしてビルドを止める。目録の文字列も同じく調べる
        （コメント・正規表現は見ない。全年齢版で使ってよい語の行は、その行に「/＊ r18:ok ＊/」（半角）を書く）。
-       --no-guard を付けると、エラーでも止めない（移行作業の途中だけ）。--all で残りを全部、--soft で二段目（HARD）の一覧も出す
+       --no-guard を付けると、エラーでも止めない（移行作業の途中だけ）。--all で残りを全部、--soft で二段目（HARD。文脈しだいの語。ふだんは出さない）の一覧も出す
    ・軽量化（両ビルド。全年齢版の検査のあと。かたまりごと）：コメント・字下げ・空行を落とす（字句は変えない。build-min.js）。--no-min で軽量化しない
    ・事前圧縮：かたまりごとに .gz／.br も作る（サーバが Accept-Encoding を見て返す。.htaccess）。中身が同じなら作り直さない。
        .br はふだん品質9、公開の前は --best で品質11（1割ほど小さくなるが、作るのに1分ほどかかる） */
@@ -145,10 +145,12 @@ if (topBad.length) {
   process.exit(1);
 }
 if (STRIP) {
-  if (soft.length) {
+  /* 二段目（HARD）は --soft のときだけ出す。「奥に」「果て」「押し倒」のような、文脈しだいの語を含む普通の文（約300件）が当たるので、ふだんは知らせない
+     （厳しい検査 EXPLICIT は上で止めている。印の付け忘れの当たりをつけたいときに --soft で一覧を見る） */
+  if (soft.length && flag('--soft')) {
     const per = {}; soft.forEach(x => { const f = x.split(':')[0]; per[f] = (per[f] || 0) + 1; });
-    console.warn('※ 注意（止めません）：文脈しだいで性的な語（safe.js の HARD）を含む12文字以上の文字列が ' + soft.length + ' 件。印の付け忘れがないか見てください：' + Object.keys(per).sort((a, b) => per[b] - per[a]).map(f => f.replace('js/', '') + ' ' + per[f]).join('、'));
-    if (flag('--soft')) soft.forEach(x => console.warn('  ' + x));
+    console.warn('※ 参考（止めません）：文脈しだいで性的な語（safe.js の HARD）を含む12文字以上の文字列が ' + soft.length + ' 件：' + Object.keys(per).sort((a, b) => per[b] - per[a]).map(f => f.replace('js/', '') + ' ' + per[f]).join('、'));
+    soft.forEach(x => console.warn('  ' + x));
   }
 }
 const reportBad = (bad, what) => {
