@@ -388,8 +388,9 @@
         parts.push(body(ctx, v, mob, type, { w: w }));
         var px = P(pk(ctx, HK.Pos && HK.Pos.hasM(p) ? T.pxM : T.pxF));
         var rz = P(pk(ctx, isA ? T.rouseA.concat(T.rouse) : T.rouse)).replace('{px}', px);
-        var xs = p.sexLocks && p.sexLocks.length ? ctx.chars[p.sexLocks[0]] : null;
-        if (xs && xs !== v && xs !== p) rz += fill(ctx, pk(ctx, T.shame), { p: p.name, x: xs.name });
+        /* 固定した相手が二人以上なら、その中から（2026-10-27：住人欄のいちばん上の一人だけになっていたのを直す） */
+        var xss = (p.sexLocks || []).map(function (i) { return ctx.chars[i]; }).filter(function (x) { return x && x !== v && x !== p; }), xs = xss.length > 1 ? xss[Math.floor(ctx.rng() * xss.length)] : xss[0];
+        if (xs) rz += fill(ctx, pk(ctx, T.shame), { p: p.name, x: xs.name });
         parts.push(rz + P(pk(ctx, T.watchEnd)));
       }
       parts.push(P(pk(ctx, T.afterBr[br])) + P(pk(ctx, T.afterRel[fate][rel])));

@@ -15,7 +15,8 @@
   function setRel(S, a, b, d, lab, from) { if (JS.DRAMA) JS.DRAMA.setRel(S, a, b, d, lab, from); }
   function edge(S, a, b, lab, cls, from) { if (JS.DRAMA) JS.DRAMA.edge(S, a, b, lab, cls, from); }
   function hasTie(S, a, b, list) { return (S.ties || []).some(function (t) { return ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)) && list.split(',').indexOf(t.type) >= 0; }); }
-  function loverOf(S, b) { return S.P.filter(function (c) { return c !== b && al(c) && hasTie(S, c, b, 'lover,mate,fated'); })[0] || null; }
+  /* b の恋人（not は除く。2026-10-27：複数の恋人がいる b を狙う人が自分も恋人の一人のとき、自分を「ほかの恋人」と数えていたのを直す） */
+  function loverOf(S, b, not) { return S.P.filter(function (c) { return c !== b && c !== not && al(c) && hasTie(S, c, b, 'lover,mate,fated'); })[0] || null; }
 
   /* ---------- 恋人を作る：狙った相手と過ごす場面 ---------- */
   /* when(S,p,b,h)：その場面が起きる状況。y／n：相手の反応（通じた／通じない） */
@@ -86,7 +87,7 @@
     if (!pool.length) return false;
     var x = pool[rng.int(pool.length)];
     (L0.seen = L0.seen || []).push(x.id);
-    var lv = loverOf(S, b), m = { a: p.name, b: b.name };
+    var lv = loverOf(S, b, p), m = { a: p.name, b: b.name };
     var yes = rng() < 0.42 + bond(S, b, p) * 0.4 + b.tr.warmth * 0.2 + x.bonus - (lv ? 0.35 : 0) - b.tr.cp * 0.1;
     if (yes) { L0.pt++; setRel(S, p, b, 0.14, 'いい雰囲気', p); b.m.fear = clamp(b.m.fear - 4, 0, 100); }
     else setRel(S, p, b, -0.02, null);
@@ -128,7 +129,7 @@
     if (!b || !al(b)) b = L0.t = pickTarget(S, p, live);
     if (!b || b.bound) return false;
     /* 狙った相手に、ほかの恋人ができた */
-    var lv = loverOf(S, b);
+    var lv = hasTie(S, p, b, 'lover,mate,fated') ? null : loverOf(S, b, p);
     if (lv && lv !== p) {
       if (rng() > 0.6) return false;
       (L0.no = L0.no || []).push(b.i); L0.t = null; L0.pt = 0;

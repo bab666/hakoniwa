@@ -466,7 +466,9 @@
   function decide(ctx, c) {
     var rng = ctx.rng, mates = here(ctx, c), z = c.z;
     var close = mates.slice().sort(function (x, y) { return (ctx.R(c, y).aff + ctx.R(y, c).aff) - (ctx.R(c, x).aff + ctx.R(x, c).aff); })[0];
-    var lover = mates.filter(function (o) { var pf = ctx.pair(c, o); return (pf.couple || tieT(ctx, c, o) === 'lover' || (ctx.R(c, o).att > 55 && ctx.R(o, c).att > 55)) && ctx.R(o, c).aff > 55; })[0];
+    /* 恋人が二人以上そばにいれば、いちばん想ってくれている人（2026-10-27：住人欄のいちばん上の一人だけになっていたのを直す） */
+    var lovers = mates.filter(function (o) { var pf = ctx.pair(c, o); return (pf.couple || tieT(ctx, c, o) === 'lover' || (ctx.R(c, o).att > 55 && ctx.R(o, c).att > 55)) && ctx.R(o, c).aff > 55; });
+    var lover = lovers.length > 1 ? ctx.most(lovers, function (o) { return ctx.R(o, c).aff; }) : lovers[0];
     var opts = [];
     if (mates.length) {
       opts.push(['hide', (1 - c.tr.honesty) * 0.9 + c.tr.cold * 0.3 + (c.goal.id === 'chaos' ? 0.4 : 0)]);
@@ -626,7 +628,7 @@
     if (!T) T = rng.pick(P);
     /* 恋人がその場にいれば、恋人の前に現れる。恋人の気質で態度が変わる */
     if (Z.loverZombie && !zp.loveDone) {
-      var lv0 = P.filter(function (o) { return Z.isLover(ctx, o, c); })[0];
+      var lvs = P.filter(function (o) { return Z.isLover(ctx, o, c); }), lv0 = lvs.length > 1 ? ctx.most(lvs, function (o) { return ctx.R(c, o).aff; }) : lvs[0];
       if (lv0) { T = lv0; if (Z.loverZombie(ctx, zp, T, P)) return; }
     }
     if (Z.crushZombie && Z.crushZombie(ctx, zp, P)) return;

@@ -22,18 +22,23 @@
   /* b の心が向いている相手（a 以外）。設定された関係（恋人・b からの片想い・セフレ）を最優先する */
   U.heartOf = function (ctx, b, a) {
     /* 恋愛相手を固定している人の心は、その相手にある */
-    if (HK.lockOut(b, a)) { var lp = HK.lockPeople(ctx.chars, b).filter(function (x) { return x.alive !== false; })[0]; if (lp) return lp; }
+    /* 固定した相手が複数なら、その中で心がいちばん向いている人（恋人・片想い・惹かれの順。2026-10-27：住人欄のいちばん上の一人だけになっていたのを直す） */
+    if (HK.lockOut(b, a)) { var lps = HK.lockPeople(ctx.chars, b).filter(function (x) { return x.alive !== false; }); if (lps.length > 1) lps.sort(function (x, y) { return heartV(ctx, b, y) - heartV(ctx, b, x); }); if (lps[0]) return lps[0]; }
     var best = null, bv = 45;
     ctx.chars.forEach(function (o) {
       if (o === b || o === a) return;
-      var v = ctx.R(b, o).att, cr = HK.Ties && HK.Ties.from(ctx, b, o, 'crush');
-      if (couple(ctx, b, o)) v += 400;
-      if (cr) v += 300;
-      if (has(ctx, b, o, 'fwb') || has(ctx, b, o, 'almost') || has(ctx, b, o, 'ex')) v += 150;
+      var v = heartV(ctx, b, o);
       if (v > bv) { bv = v; best = o; }
     });
     return best;
   };
+  function heartV(ctx, b, o) {
+    var v = ctx.R(b, o).att, cr = HK.Ties && HK.Ties.from(ctx, b, o, 'crush');
+    if (couple(ctx, b, o)) v += 400;
+    if (cr) v += 300;
+    if (has(ctx, b, o, 'fwb') || has(ctx, b, o, 'almost') || has(ctx, b, o, 'ex')) v += 150;
+    return v;
+  }
   /* b が a を相手にしていない理由（していなければ ''） */
   U.cold = function (ctx, a, b) {
     var t = HK.Ties && HK.Ties.from(ctx, a, b, 'crush');

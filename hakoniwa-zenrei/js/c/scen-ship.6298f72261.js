@@ -2713,10 +2713,12 @@ else if(up.length>=2)ST.say(S,{actors:up,tag:'共同作業',text:F(pk(S,T.keep2)
 if(up.length){sp.hull=clamp(sp.hull+4,0,100);sp.power=clamp(sp.power+2,0,100);}
 L0.forEach(function(p){
 if(p.spec!=='vampire'||p.pod)return;
-var dn=L0.filter(function(q){return q!==p&&q.spec!=='vampire'&& !q.pod;})[0];
+var dns=L0.filter(function(q){return q!==p&&q.spec!=='vampire'&& !q.pod&&(!HK.lockAny(p)||HK.lockTo(p,q));});
+var dlv=dns.filter(function(q){return isLover(S,p,q);});if(dlv.length)dns=dlv;
+var dn=dns.length>1?dns.filter(function(q){return!p.vamp||q.i!==p.vamp.last;})[0]||dns[0]:dns[0];
 if(dn){
 if(AF.k%2===0)return;
-if(p.vamp)p.vamp.fed++;
+if(p.vamp){p.vamp.fed++;p.vamp.last=dn.i;}
 ST.say(S,{actors:[p,dn],tag:'吸血',text:F(pk(S,T.share),{a:p.name,b:dn.name}),why:'吸血鬼の渇き。死なない体の'+dn.name+'が、血を分けた',mag:20});
 return;
 }
@@ -3074,4 +3076,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 HK.Load.toneData("chara_down",{"F":[
 ["一年、よく持ちこたえましたね。私の自慢の船員たちです","一年、よく持ちこたえましたねー。私の自慢の船員たちですよ、ほんと",1]]});
 });
-HK.Load.done('scen-ship', 'e31bdb7ce7', 1);
+HK.Load.done('scen-ship', '6298f72261', 1);

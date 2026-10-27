@@ -10,10 +10,11 @@
   var scen = HK.SCENARIOS.omega, EV = scen.events;
   function sx(c) { return c.om.sex; }
   function key(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
+  /* その場にいる恋人。二人以上いれば、区切りごとに順に回す（同じ区切りの中では同じ人。2026-10-27：いつも住人欄のいちばん下の一人になっていたのを直す） */
+  function partnersOf(ctx, a) { return ctx.present().filter(function (o) { return o !== a && ctx.pair(a, o).couple; }); }
   function partnerOf(ctx, a) {
-    var p = null;
-    ctx.present().forEach(function (o) { if (o !== a && ctx.pair(a, o).couple) p = o; });
-    return p;
+    var ps = partnersOf(ctx, a);
+    return ps.length > 1 ? ps[((ctx.stepIndex || 0) + a.i) % ps.length] : ps[0] || null;
   }
   function tieType(ctx, a, b) { var t = HK.Ties && HK.Ties.get(ctx, a, b); return t ? (t.like || t.type) : ''; }
   function L(s) { return s.split('|'); }

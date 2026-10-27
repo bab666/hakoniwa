@@ -11,11 +11,15 @@
   function fill(t, m) { return t.replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
   function alive(c) { return c && c.alive && !c.out; }
 
-  /* v の恋人（except は除く。生きている人だけ） */
-  Z.loverOf = function (ctx, v, except) {
-    var hit = null;
-    ctx.chars.forEach(function (o) { if (!hit && o !== v && o !== except && alive(o) && Z.isLover && Z.isLover(ctx, v, o)) hit = o; });
-    return hit;
+  /* v の恋人（except は除く。生きている人だけ）。Z.loversOf は全員。
+     among（居合わせた人）を渡せば、恋人が二人以上いるとき、その場にいる恋人（いちばん好意の高い人）を先に（2026-10-27：住人欄のいちばん上の一人だけになっていたのを直す） */
+  Z.loversOf = function (ctx, v, except) {
+    return ctx.chars.filter(function (o) { return o !== v && o !== except && alive(o) && Z.isLover && Z.isLover(ctx, v, o); });
+  };
+  Z.loverOf = function (ctx, v, except, among) {
+    var L = Z.loversOf(ctx, v, except);
+    if (among && L.length > 1) { var h = L.filter(function (o) { return among.indexOf(o) >= 0; }); if (h.length) return h.length > 1 ? ctx.most(h, function (o) { return ctx.R(o, v).aff; }) : h[0]; }
+    return L[0] || null;
   };
   var SHOCK = {
     here: L('{L}の絶叫が響いた。「{a}に触るな――っ！」|{L}は、恋人が目の前で汚されていくのを見ていた。膝が、言うことを聞かなかった。|{L}は{a}の名前を呼んだ。何度も。喉が裂けるほど。'),
@@ -43,7 +47,7 @@
   /* ゾンビに襲われ、犯される。z_trouble の「咬まれる」かわりに、まれに起きる。返り値は出来事の結果 */
   Z.zombieAssault = function (ctx, v, mates, A) {
     var rng = ctx.rng, X = Z.ZA_TEXT, lv = Z.loveLv(ctx) === 'high' ? 'high' : 'fade';
-    var L0 = Z.loverOf(ctx, v), here = L0 && mates.indexOf(L0) >= 0;
+    var L0 = Z.loverOf(ctx, v, null, mates), here = L0 && mates.indexOf(L0) >= 0;
     var pow = mates.reduce(function (s0, x) { return s0 + (x.weapon ? x.weapon.pow : 0); }, 0);
     var brave = mates.reduce(function (s0, x) { return Math.max(s0, x.tr.np * 0.5 + x.tr.cp * 0.3 + x.tr.aggr * 0.3); }, 0);
     var save = Math.min(0.85, 0.1 + ctx.stat(v, 'luck') * 0.03 + mates.length * 0.17 + pow * 0.02 + brave * 0.2 + (here ? 0.15 : 0));
@@ -59,7 +63,7 @@
         return { with: actors, text: t + fill(ctx.pick(X.crawl), m), why: why + '――一人きりで、どうにか這い出した。だが、咬まれていた', mag: 50 };
       }
       ctx.kill(v, null, 'ゾンビの群れに、犯されながら喰い殺された');
-      loverNews(ctx, v, L0, false);
+      Z.loversOf(ctx, v).forEach(function (o) { loverNews(ctx, v, o, false); });
       return { with: actors, text: t + fill(ctx.pick(lv === 'high' ? X.die : X.dieFade), m), why: why + '（その場に、誰もいなかった）', mag: 58 };
     }
     var r = rng();

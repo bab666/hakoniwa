@@ -997,11 +997,20 @@
   CT_MORE = '展開の重さを「重い」にすると、妊娠・暴力・DVの場面が、合コン・出られない部屋・オメガバース・催眠などふつうの箱庭でも起きます（起きやすい関係・気質は、環境値のTIPSの「内容のスイッチ」に）。';
   /* r18:end */
   function ctOn() { var m = (S.glob && S.glob.ct) || {}; return (HK.Content ? HK.Content.TAGS : []).filter(function (t) { return m[t.id]; }).map(function (t) { return t.id; }); }
+  /* 欄ごとに、この箱庭・この顔ぶれで起きないなら薄くして理由を添える（判定は content-events-r18.js の HK.Content.why。参加者だけを見る） */
+  function ctItems() {
+    var m = (S.glob && S.glob.ct) || {}, hv = (HK.GLOBAL_ENV || []).filter(function (e) { return e.id === 'heavy'; })[0];
+    var cx = { scenId: S.scenId, chars: joined(S.scenId), env: { heavy: hv ? envVal(hv, S.scenId) : '' }, pickOf: function (c) { var p = S.per && S.per[c.id] && S.per[c.id][S.scenId]; return p && p.pick; } };
+    return HK.Content.TAGS.map(function (t) {
+      var w = ''; try { w = HK.Content.why ? HK.Content.why(t.id, cx) || '' : ''; } catch (e) { w = ''; }
+      return '<label title="' + esc(t.desc) + '"><input type="checkbox" data-f="ct" data-k="' + t.id + '"' + (m[t.id] ? ' checked' : '') + (w ? ' style="opacity:.45"' : '') + '> <span' + (w ? ' style="opacity:.45"' : '') + '>' + esc(t.label) + '</span>' +
+        (w ? '<span class="desc" style="display:inline;margin-left:6px">' + (/^展開の重さ/.test(w) ? 'いまの設定では起きません：' : 'この箱庭・この顔ぶれでは起きません：') + esc(w) + '</span>' : '') + '</label>';
+    }).join('');
+  }
+  function updCtWhy() { var b = document.querySelector('#view-box .ctbox'); if (b && HK.Content && !HK.SAFE_ON) { var h = ctItems(); if (b.innerHTML !== h) b.innerHTML = h; } }
   function contentBox() {
     if (!HK.Content || HK.SAFE_ON) return '';
-    var m = (S.glob && S.glob.ct) || {};
-    return '<div class="envitem wide"><div class="lab"><span>内容のスイッチ（全箱庭で共通・初期はすべて切）</span></div><div class="ctbox">' +
-      HK.Content.TAGS.map(function (t) { return '<label title="' + esc(t.desc) + '"><input type="checkbox" data-f="ct" data-k="' + t.id + '"' + (m[t.id] ? ' checked' : '') + '> ' + esc(t.label) + '</label>'; }).join('') +
+    return '<div class="envitem wide"><div class="lab"><span>内容のスイッチ（全箱庭で共通・初期はすべて切）</span></div><div class="ctbox">' + ctItems() +
       '</div><div class="desc">入れたものだけが起きます。切のときは、その場面を起こさないか、やわらかい分岐に替えます。エロトラップダンジョンなどR18が中心の箱庭では「合意のない展開」は常に入です。' + CT_MORE + '</div></div>';
   }
   function envItem(e, scenId) {
@@ -1824,6 +1833,8 @@
     else if (f === 'randfrom') { S.randFrom = t.value; save(); renderBox(); return; }
     else if (f === 'randstyle') { randStyle = t.value; Array.prototype.forEach.call(document.querySelectorAll('select[data-f="randstyle"]'), function (x) { if (x !== t) x.value = t.value; }); return; }
     else if (f === 'randn') S.randN = parseInt(t.value, 10) || '';
+    /* 内容のスイッチの注記（参加者・展開の重さ・第二性・性別・恋愛対象で変わる） */
+    if (f === 'join' || f === 'pf' || f === 'gender' || f === 'likes' || (f === 'env' && t.dataset.k === 'heavy')) updCtWhy();
     save();
   }
   /* 一部の住人だけ書き出す：チェックの切り替え */

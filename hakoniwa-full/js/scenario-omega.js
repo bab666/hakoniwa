@@ -42,10 +42,11 @@
   function fated(ctx, a, b) { var t = HK.Ties && HK.Ties.get(ctx, a, b); return !!(t && t.type === 'fated') || !!(ctx.om && ctx.om.fatedKnown && ctx.om.fatedKnown[key(a, b)]); }
   OM.isFated = fated;
   function met(ctx, a, b) { return !fated(ctx, a, b) || ctx.om.met[key(a, b)]; }
+  /* その場にいる恋人。二人以上いれば、区切りごとに順に回す（同じ区切りの中では同じ人。2026-10-27：いつも住人欄のいちばん下の一人になっていたのを直す） */
+  function partnersOf(ctx, a) { return ctx.present().filter(function (o) { return o !== a && ctx.pair(a, o).couple; }); }
   function partnerOf(ctx, a) {
-    var p = null;
-    ctx.present().forEach(function (o) { if (o !== a && ctx.pair(a, o).couple) p = o; });
-    return p;
+    var ps = partnersOf(ctx, a);
+    return ps.length > 1 ? ps[((ctx.stepIndex || 0) + a.i) % ps.length] : ps[0] || null;
   }
   function addFx(ctx, a, b, fx) {
     if (fx.ab && b) ctx.mod(a, b, fx.ab);
@@ -250,9 +251,10 @@
         a.name + 'は' + where + 'で、知らない匂いに足を止めた。その先に' + b.name + 'がいた。'
       ]);
       ctx.say({ kind: 'event', cat: 'romance', actors: [a, b], text: t + a.name + 'からは' + short(a) + '、' + b.name + 'からは' + short(b) + 'の匂いがした。' + (d < 0.3 ? '――それが運命の番の匂いだと、二人はまだ知らなかった。' : '運命の番だった。') + (HK.Attr && HK.Attr.meetLine ? HK.Attr.meetLine(a, b, ctx) || HK.Attr.meetLine(b, a, ctx) : ''), why: '運命の番の出会い（遺伝子レベルの惹かれ）／運命の抗えなさ ' + Math.round(d * 100) + (d < 0.3 ? '：出会っても気づくのに時間がかかる' : d > 0.7 ? '：一目で落ちる' : ''), mag: 40 });
+      /* 恋人が二人以上いれば、恋人ごとに（2026-10-27） */
       [a, b].forEach(function (x) {
-        var y = x === a ? b : a, p = partnerOf(ctx, x);
-        if (p && p !== y) { ctx.pair(x, p).fatedPending = true; ctx.say({ kind: 'event', cat: 'romance', actors: [x, p], text: x.name + 'には、' + p.name + 'という恋人がいる。' + x.name + 'はその夜、' + p.name + 'からの連絡に返事ができなかった。', why: '運命の番と、今の恋人', mag: 15 }); }
+        var y = x === a ? b : a;
+        partnersOf(ctx, x).forEach(function (p) { if (p !== y) { ctx.pair(x, p).fatedPending = true; ctx.say({ kind: 'event', cat: 'romance', actors: [x, p], text: x.name + 'には、' + p.name + 'という恋人がいる。' + x.name + 'はその夜、' + p.name + 'からの連絡に返事ができなかった。', why: '運命の番と、今の恋人', mag: 15 }); } });
       });
     });
     /* スイッチ */
@@ -310,8 +312,8 @@
     ctx.stress(c, quit ? 40 : 20);
     if (to === 'o') { c.om.heatAt = ctx.stepIndex + 2; }
     /* 恋人の反応と、関係の組み替え */
-    var p = partnerOf(ctx, c);
-    if (p) {
+    /* 恋人が二人以上いれば、恋人ごとに（2026-10-27） */
+    partnersOf(ctx, c).forEach(function (p) {
       var r = ctx.R(p, c), was = from + sx(p), now = to + sx(p);
       if (r.aff + r.trust > 90 || p.tr.np > 0.65) {
         ctx.mod2(p, c, { aff: 6, trust: 8 }, { aff: 10, trust: 12 });
@@ -323,7 +325,7 @@
         ctx.say({ kind: 'event', cat: 'conflict', actors: [p, c], text: p.name + 'は、' + c.name + 'の新しい匂いに戸惑っていた。「……ごめん、少し時間がほしい｜……すまない、少し時間がほしい｜……すみません、少し時間がほしいです」', why: '第二性の組み合わせが変わった', mag: 18 });
       }
       if (om.bonded[key(c, p)] && from === 'o') { delete om.bonded[key(c, p)]; delete om.bondOf[c.i]; c.om.bondLost = true; ctx.say({ kind: 'event', cat: 'romance', actors: [c, p], text: c.name + 'のうなじの番の印が、日ごとに薄れていった。' + p.name + 'はそれを、何も言えずに見ていた。', why: 'Ωでなくなると番は解ける', mag: 25 }); }
-    }
+    });
     if (OM.onSwitch) OM.onSwitch(ctx, c);
     /* α同士でためらっていた二人に、道が開ける */
     ctx.present().forEach(function (o) {
@@ -637,7 +639,8 @@
       ctx.om.rival[k] = o.i;
       if (HK.Obsess) HK.Obsess.feed(ctx, a, o, 8);
       ctx.mod2(a, b, { ten: 12, aff: -6 }, { ten: 12, aff: -6 });
-      var won = partnerOf(ctx, o);
+      /* o の恋人が a・b のどちらかか（恋人が二人以上でも見る。2026-10-27） */
+      var ops = partnersOf(ctx, o), won = ops.indexOf(a) >= 0 ? a : ops.indexOf(b) >= 0 ? b : null;
       var t = won ? ctx.t(won === a ? '{b}は、{c}の隣に立つ{a}を睨みつけた。αの威圧がぶつかり、店のグラスが鳴った。' : '{a}は{c}の恋人である{b}に、真正面から言った。「譲る気はないよ｜譲る気はない｜譲る気はありません」', a, b, o)
         : ctx.t(ctx.pick(['{a}と{b}は、{c}を挟んで笑顔で牽制し合った。目は笑っていなかった。', '{c}をめぐって、{a}と{b}のαの匂いがぶつかった。周りの人が数歩下がった。', '{a}は{b}に「{c}に近づかないで｜{c}に近づくな｜{c}さんに近づかないでください」と言った。{b}は「それを決めるのは{c}だよ｜それを決めるのは{c}だ｜それを決めるのは{c}さんです」と返した。']), a, b, o);
       return { text: t, why: '二人のαが同じΩ（' + o.name + '）に惹かれている', with: [o], mag: 15 };

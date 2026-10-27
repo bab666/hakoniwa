@@ -626,7 +626,9 @@
   function coverWatch(S, cv) {
     if (!cv || cv.eff !== 'watch') return '';
     var r = cv.r, t = cvF(S, lwEro(S) ? CV_SEE_ERO[HK.Pos && HK.Pos.isF(r) ? 'f' : 'm'] : CV_SEE, cv);
-    var L0 = Array.isArray(r.sexLocks) ? r.sexLocks : [], fx = L0.length ? S.P[L0[0]] : null;
+    /* 固定した相手が二人以上なら、見せつけられている人がその一人ならその人、ほかはその中から（2026-10-27：住人欄のいちばん上の一人だけになっていたのを直す） */
+    var L0 = Array.isArray(r.sexLocks) ? r.sexLocks : [], fxs = L0.map(function (i) { return S.P[i]; }).filter(function (x) { return x && x !== r; });
+    var fx = fxs.indexOf(cv.v) >= 0 ? cv.v : fxs.length > 1 ? fxs[Math.floor(S.rng() * fxs.length)] : fxs[0] || null;
     if (fx && fx !== r) t += cvF(S, fx === cv.v ? CV_FIX_SAME : CV_FIX, cv, { f: fx.name });
     return lwSep(S) + t;
   }

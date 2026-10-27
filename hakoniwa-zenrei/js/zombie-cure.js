@@ -196,7 +196,7 @@
       return !P || (P.canReceive(x) && P.okSex(o, x) && P.order(o, x, [o, x])[0] === o);
     }
     var sexual = lv !== 'off' && sexOK(c) && rng() < 0.6;
-    var lvr = Z.loverOf ? Z.loverOf(ctx, c, o) : null, lvHere = lvr && mates.indexOf(lvr) >= 0;
+    var lvr = Z.loverOf ? Z.loverOf(ctx, c, o, mates) : null, lvHere = lvr && mates.indexOf(lvr) >= 0;
     var pow = mates.reduce(function (s0, x) { return s0 + (x.weapon ? x.weapon.pow : 0); }, 0);
     var brave = mates.reduce(function (s0, x) { return Math.max(s0, x.tr.np * 0.5 + x.tr.cp * 0.3 + x.tr.aggr * 0.3); }, 0);
     var save = Math.min(0.85, 0.1 + ctx.stat(c, 'luck') * 0.03 + mates.length * 0.17 + pow * 0.02 + brave * 0.2 + (lvHere ? 0.15 : 0));

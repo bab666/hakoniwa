@@ -297,7 +297,8 @@
     var br = HK.weighted(g, [['hit', drag || watch ? 0.6 : 1], ['offer', 0.8], ['both', drag ? 1 : 0], ['watch', watch ? 1.2 : 0]].filter(function (x) { return x[1] > 0; }), function (x) { return x[1]; })[0];
     if (br === 'offer') br = drag ? 'swap' : 'offerNo';
     var c = null;
-    if (br === 'watch') { var cl = lockList(b).filter(function (i) { return i !== a.i; }); if (cl.length) c = S.P.filter(function (p) { return p.i === cl[0]; })[0] || null; }
+    /* 思い浮かべる固定した相手：二人以上なら、その中から（2026-10-27：住人欄のいちばん上の一人だけになっていたのを直す） */
+    if (br === 'watch') { var cl = S.P.filter(function (p) { return p.i !== a.i && lockList(b).indexOf(p.i) >= 0; }); if (cl.length) c = cl.length > 1 ? cl[Math.floor(g() * cl.length)] : cl[0]; }
     return { a: a, b: b, g: g, br: br, rel: relOf(S, b, a), x: xName(S, o), c: c };
   };
   R.coverRun = function (S, cv) {

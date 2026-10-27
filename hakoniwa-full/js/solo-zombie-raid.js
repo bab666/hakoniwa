@@ -287,7 +287,8 @@
     var k = P && P.hasM(h) ? 'm' : 'f', ero = CV.ero(ctx, h);
     var t = ero ? CV.efill(ctx, CV.pick(ctx, HOT_ERO[k]), h, mh) : fill(CV.pick(ctx, HOT[k]), mh);
     t += fill(CV.pick(ctx, HOT_SAY), mh);
-    var lp = (h.sexLocks || []).map(function (i) { return ctx.chars[i]; }).filter(function (c) { return c && c !== h; })[0];
+    /* 固定した相手が二人以上なら、その中から（2026-10-27：住人欄のいちばん上の一人だけになっていたのを直す） */
+    var lps = (h.sexLocks || []).map(function (i) { return ctx.chars[i]; }).filter(function (c) { return c && c !== h; }), lp = lps.length > 1 ? lps[Math.floor(ctx.rng() * lps.length)] : lps[0];
     if (lp) t += fill(CV.pick(ctx, HOT_LOCK), { h: h.name, p: lp.name });
     h.flags.watchHot = (h.flags.watchHot || 0) + 1; ctx.stress(h, 14);
     return { t: t, hot: true };
@@ -338,7 +339,7 @@
   /* 略奪者に襲われ、犯される。v=襲われる人、mates=居合わせた仲間、n=略奪者（NPC） */
   Z.raiderAssault = function (ctx, v, mates, n) {
     var rng = ctx.rng, lv = Z.loveLv(ctx) === 'high' ? 'high' : 'fade';
-    var L0 = Z.loverOf ? Z.loverOf(ctx, v) : null, here = L0 && mates.indexOf(L0) >= 0;
+    var L0 = Z.loverOf ? Z.loverOf(ctx, v, null, mates) : null, here = L0 && mates.indexOf(L0) >= 0;
     var m = { a: v.name, n: n.label, m: mates.length ? Z.names(mates.slice(0, 2)) : '', L: L0 ? L0.name : '' };
     var t = fill(ctx.pick(mates.length ? RT.openM : RT.open), m) + TL.line(v, 'RAID_BEG');
     if (mates.length) {

@@ -17,8 +17,10 @@
   function loveOk(a, b) { return !!(a && b && a !== b && HK.canLove(a, b) && HK.canLove(b, a) && !(HK.ngPair && HK.ngPair(a, b))); }
   function here(ctx) { return ctx.present ? ctx.present() : ctx.chars; }
   function friendly(ctx, a, b) { return R(ctx, a, b).aff > 15 && R(ctx, a, b).ten < 35; }
-  /* 恋人（複数の恋人がいる人は、その場にいる最初の一人。poly.js の HK.Poly.lovers） */
-  function loverOf(ctx, b, not) { var ls = HK.Poly && HK.Poly.lovers ? HK.Poly.lovers(ctx, b) : here(ctx).filter(function (c) { return c !== b && couple(ctx, b, c); }); var hs = here(ctx); return ls.filter(function (c) { return c !== not && hs.indexOf(c) >= 0; })[0] || null; }
+  /* 恋人（poly.js の HK.Poly.lovers）。複数の恋人がその場にいる人は、区切りごとに順に回す（同じ区切りの中では同じ人なので、when と run がそろう。
+     2026-10-27：いつも最初の一人になっていたのを直す）。ok を渡せば、それを通る恋人だけから選ぶ */
+  function rot(ctx, b, n) { return ((ctx.stepIndex || 0) + (b ? b.i : 0)) % n; }
+  function loverOf(ctx, b, not, ok) { var ls = HK.Poly && HK.Poly.lovers ? HK.Poly.lovers(ctx, b) : here(ctx).filter(function (c) { return c !== b && couple(ctx, b, c); }); var hs = here(ctx); ls = ls.filter(function (c) { return c !== not && hs.indexOf(c) >= 0 && (!ok || ok(c)); }); return ls.length > 1 ? ls[rot(ctx, b, ls.length)] : ls[0] || null; }
   function d4(t, d) { return t.replace(/\{d\}/g, d ? d.name : ''); }
   var TX = {
     cheer: L('{a}は、{b}と{c}が並んでいるのを見て、わざとらしく咳払いした。「はいはい、仲がよろしいことで｜やれやれ、仲がよろしいことだ｜はいはい、仲がよろしいことですね」――{b}は赤くなり、{c}は笑って{b}の肩を抱き寄せた。|{a}「{b}、{c}のこと、ちゃんと大事にしなよ｜{b}、{c}のことを、ちゃんと大事にしろ｜{b}さん、{c}さんのこと、ちゃんと大事にしてくださいね」――{b}は照れくさそうに頷いた。{c}は聞こえないふりをしていたが、耳まで赤かった。|{a}は{b}と{c}のために、こっそり二人分の飲み物を用意しておいた。「たまには二人でゆっくりしなよ｜たまには二人でゆっくりしろ｜たまには二人でゆっくりしてください」|{a}は{b}と{c}をからかいながら、二人の間の席をそっと空けてやった。{b}と{c}は顔を見合わせて、少しだけ肩を寄せた。'),
@@ -190,7 +192,7 @@
     }).sort(function (x, y) { return R(ctx, b, y).att - R(ctx, b, x).att; })[0] || null;
   };
   /* 恋人（その場にいて、恋の二人として扱ってよい人） */
-  G.partnerOf = function (ctx, b, not) { var c = loverOf(ctx, b, not); return c && G.pairOk(ctx, b, c) ? c : null; };
+  G.partnerOf = function (ctx, b, not) { return loverOf(ctx, b, not, function (c) { return G.pairOk(ctx, b, c); }); };
   /* b の恋の相手：恋人がいれば恋人、いなければ想い合っている相手 */
   G.loveOf = function (ctx, b, not) { return G.partnerOf(ctx, b, not) || G.mutualOf(ctx, b, not); };
   /* 応援する第三者として出てよいか：二人のどちらとも恋人でも恋敵でもなく、b と仲がよく、c とも張りつめていない */

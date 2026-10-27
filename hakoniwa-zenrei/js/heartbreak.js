@@ -25,15 +25,17 @@
     if (!HK.canLove(a, b0)) return false;
     return !!(HK.Ties && HK.Ties.from(ctx, a, b, 'crush')) || ctx.R(a, b).att >= 50;
   }
-  /* b の心が決まっている相手（恋人、または b が恋愛相手を固定した人）。a 以外 */
-  function rivalOf(ctx, a, b) {
-    var best = null;
-    ctx.chars.forEach(function (c) {
-      if (best || c === a || c === b || !alive(c)) return;
-      if (couple(ctx, b, c) || HK.lockTo(b, c)) best = c;
-    });
-    return best;
+  /* b の心が決まっている相手（恋人、または b が恋愛相手を固定した人）。a 以外。ok を渡せば、それを通る人だけ。
+     二人以上いれば恋人を先に、区切りごとに順に回す（2026-10-27：いつも住人欄のいちばん上の一人になっていたのを直す） */
+  function rivalOf(ctx, a, b, ok) {
+    var cs = ctx.chars.filter(function (c) { return c !== a && c !== b && alive(c) && (couple(ctx, b, c) || HK.lockTo(b, c)) && (!ok || ok(c)); });
+    if (cs.length < 2) return cs[0] || null;
+    var cp = cs.filter(function (c) { return couple(ctx, b, c); });
+    if (cp.length) cs = cp;
+    return cs[((ctx.stepIndex || 0) + a.i) % cs.length];
   }
+  /* 文の {c}：恋愛相手を複数固定している人なら、固定した相手（生きている人）を全員の名前で */
+  function lockNm(ctx, b, c) { var L = HK.lockPeople(ctx.chars, b).filter(alive); return L.length > 1 && L.indexOf(c) >= 0 ? L.map(function (x) { return x.name; }).join('・') : c.name; }
   /* 告白して断られたか（unreq.js の告白：pf.uconf、実らなかった） */
   function rejected(ctx, a, b) { var pf = ctx.pair(a, b); return !!pf.uconf && !pf.couple; }
   function forceful(a) { var t = a.tr; return t.aggr > 0.55 || (t.cp > 0.6 && t.impulse > 0.5) || (t.impulse > 0.65 && t.ac < 0.4); }
@@ -87,11 +89,11 @@
     mk('hb_news', 'solo', function () { return 4; },
       function (ctx, a, b) { return longs(ctx, a, b) && !ctx.pair(a, b).hbNews && !couple(ctx, a, b) && !!rivalOf(ctx, a, b); },
       function (ctx, a, b) {
-        var pf = ctx.pair(a, b), c = rivalOf(ctx, a, b), lock = !couple(ctx, b, c) && HK.lockTo(b, c), m = { a: a.name, b: b.name, c: c.name };
+        var pf = ctx.pair(a, b), c = rivalOf(ctx, a, b), lock = !couple(ctx, b, c) && HK.lockTo(b, c), m = { a: a.name, b: b.name, c: lock ? lockNm(ctx, b, c) : c.name };
         pf.hbNews = ctx.stepIndex; pf.hbBy = c.i;
         if (HK.Emo) HK.Emo.bump(ctx, a, { grief: 30, shame: 12 }, '失恋');   /* 気分（emotion.js） */
         ctx.stress(a, 18); ctx.mod2(a, b, { att: -8 }, {}); ctx.mod(a, c, { ten: 8 });
-        return { text: fill(ctx.pick(lock ? D.lockNews : sc(ctx, D.news)), m), why: a.name + 'は' + b.name + 'を想っていた（惹かれ ' + Math.round(ctx.R(a, b).att + 8) + '）。' + (lock ? b.name + 'の心は、' + c.name + 'にしか向いていない（恋愛相手の固定）' : b.name + 'は' + c.name + 'と恋人になった') + '――失恋', mag: 30, with: [b, c] };
+        return { text: fill(ctx.pick(lock ? D.lockNews : sc(ctx, D.news)), m), why: a.name + 'は' + b.name + 'を想っていた（惹かれ ' + Math.round(ctx.R(a, b).att + 8) + '）。' + (lock ? b.name + 'の心は、' + m.c + 'にしか向いていない（恋愛相手の固定）' : b.name + 'は' + c.name + 'と恋人になった') + '――失恋', mag: 30, with: [b, c] };
       }),
     /* ふられたあと：ひとりで受け止める */
     mk('hb_alone', 'solo', function () { return 3; },
@@ -114,11 +116,11 @@
       function (ctx, a, b) {
         var pf = ctx.pair(a, b);
         if (pf.hbForce || pf.hbNews == null || !forceful(a) || !alive(b)) return false;
-        var c = rivalOf(ctx, a, b);
-        return !!c && alive(c) && ctx.others(a).indexOf(c) >= 0 && ctx.R(a, b).att >= 30;
+        var c = rivalOf(ctx, a, b, function (x) { return ctx.others(a).indexOf(x) >= 0; });
+        return !!c && alive(c) && ctx.R(a, b).att >= 30;
       },
       function (ctx, a, b) {
-        var pf = ctx.pair(a, b), c = rivalOf(ctx, a, b), m = { a: a.name, b: b.name, c: c.name };
+        var pf = ctx.pair(a, b), c = rivalOf(ctx, a, b, function (x) { return ctx.others(a).indexOf(x) >= 0; }), m = { a: a.name, b: b.name, c: c.name };
         pf.hbForce = true;
         ctx.mod2(a, b, { att: -6 }, { trust: -18, aff: -12, ten: 14 });
         ctx.mod2(a, c, { ten: 20 }, { ten: 22, aff: -10 });

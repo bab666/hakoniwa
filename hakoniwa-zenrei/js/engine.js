@@ -728,7 +728,8 @@
   function markRel(ctx, pre, logStart) {
     if (!pre) return;
     var C = ctx.chars, now = relState(ctx);
-    function partnerPre(i, notJ) { for (var k = 0; k < C.length; k++) { if (k === i || k === notJ) continue; var key = Math.min(i, k) + '-' + Math.max(i, k); if (pre[key] && pre[key].couple) return k; } return -1; }
+    /* 段階の始めの恋人（notJ は除く）の全員。恋人が二人以上いる人は、どの恋人も見る（2026-10-27：最初の一人だけを見ていたのを直す） */
+    function partnersPre(i, notJ) { var out = []; for (var k = 0; k < C.length; k++) { if (k === i || k === notJ) continue; var key = Math.min(i, k) + '-' + Math.max(i, k); if (pre[key] && pre[key].couple) out.push(k); } return out; }
     function find(i, j) {
       var e = null, any = null;
       for (var n = ctx.log.length - 1; n >= logStart; n--) {
@@ -751,13 +752,13 @@
       if (!a.propose && b.propose) put(i, j, 'propose');
       /* 浮気：この段階で初めて夜を過ごした二人のどちらかに、段階の始めに別の恋人がいた */
       if ((!a.night && b.night) || b.nights > a.nights) {
-        var pi = partnerPre(i, j), pj = partnerPre(j, i), ev = find(i, j);
+        var pis = partnersPre(i, j), pjs = partnersPre(j, i), ev = find(i, j), inEv = function (L) { return L.some(function (k) { return ev.actors.indexOf(k) >= 0; }); };
         /* 恋人も一緒の場面（三人で）は浮気ではない。無理やりの場面（争い・裏切り）は「浮気」とは呼ばない */
         /* 段階の始めから恋人どうしだった二人の夜は、どちらかにもう一人恋人がいても浮気ではない（恋人が二人いる人） */
-        if (ev && !a.couple && (pi >= 0 || pj >= 0) && !(pi >= 0 && ev.actors.indexOf(pi) >= 0) && !(pj >= 0 && ev.actors.indexOf(pj) >= 0))
+        if (ev && !a.couple && (pis.length || pjs.length) && !inEv(pis) && !inEv(pjs))
           put(i, j, /^(?:conflict|betray|combat)$/.test(ev.cat) ? 'affair' : 'cheat', ev);
         /* 複数の恋人「秘密」：恋人どうしの夜でも、知らされていないもう一人の恋人から見れば浮気（poly.js） */
-        if (ev && a.couple && HK.Poly && HK.Poly.secretCheat(ctx, i, j, pi, pj, ev)) put(i, j, 'cheat', ev);
+        if (ev && a.couple && HK.Poly && (pis.some(function (k) { return HK.Poly.secretCheat(ctx, i, j, k, -1, ev); }) || pjs.some(function (k) { return HK.Poly.secretCheat(ctx, i, j, -1, k, ev); }))) put(i, j, 'cheat', ev);
       }
     }
   }

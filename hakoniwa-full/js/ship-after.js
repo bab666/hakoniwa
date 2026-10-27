@@ -382,10 +382,13 @@
       /* 吸血鬼の渇き：血を分けられる人がいれば分けてもらい、いなければ弱って眠りの箱へ（死にはしない） */
       L0.forEach(function (p) {
         if (p.spec !== 'vampire' || p.pod) return;
-        var dn = L0.filter(function (q) { return q !== p && q.spec !== 'vampire' && !q.pod; })[0];
+        /* 恋愛相手を固定している吸血鬼は、固定した相手の中から。恋人がいれば恋人を先に、二人以上なら前回と別の人へ（2026-10-27：いつも住人欄のいちばん上の一人で、固定も見ていなかったのを直す） */
+        var dns = L0.filter(function (q) { return q !== p && q.spec !== 'vampire' && !q.pod && (!HK.lockAny(p) || HK.lockTo(p, q)); });
+        var dlv = dns.filter(function (q) { return isLover(S, p, q); }); if (dlv.length) dns = dlv;
+        var dn = dns.length > 1 ? dns.filter(function (q) { return !p.vamp || q.i !== p.vamp.last; })[0] || dns[0] : dns[0];
         if (dn) {
           if (AF.k % 2 === 0) return;
-          if (p.vamp) p.vamp.fed++;
+          if (p.vamp) { p.vamp.fed++; p.vamp.last = dn.i; }
           ST.say(S, { actors: [p, dn], tag: '吸血', text: F(pk(S, T.share), { a: p.name, b: dn.name }), why: '吸血鬼の渇き。死なない体の' + dn.name + 'が、血を分けた', mag: 20 });
           return;
         }

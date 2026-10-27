@@ -3710,7 +3710,7 @@ function bond(S,a,b){return JS.REL?JS.REL.bond(S,a,b):0;}
 function setRel(S,a,b,d,lab,from){if(JS.DRAMA)JS.DRAMA.setRel(S,a,b,d,lab,from);}
 function edge(S,a,b,lab,cls,from){if(JS.DRAMA)JS.DRAMA.edge(S,a,b,lab,cls,from);}
 function hasTie(S,a,b,list){return(S.ties||[]).some(function(t){return((t.a===a.i&&t.b===b.i)||(t.a===b.i&&t.b===a.i))&&list.split(',').indexOf(t.type)>=0;});}
-function loverOf(S,b){return S.P.filter(function(c){return c!==b&&al(c)&&hasTie(S,c,b,'lover,mate,fated');})[0]||null;}
+function loverOf(S,b,not){return S.P.filter(function(c){return c!==b&&c!==not&&al(c)&&hasTie(S,c,b,'lover,mate,fated');})[0]||null;}
 var MOMENT=[
 {id:'fear',why:'吊り橋効果（怖さを分け合うと、惹かれやすい）',bonus:0.15,
 when:function(S,p,b){return b.m.fear>50||(S.tension||0)>45;},
@@ -3774,7 +3774,7 @@ if(!pool.length){L0.seen=[];pool=MOMENT.filter(function(x){return x.when(S,p,b,h
 if(!pool.length)return false;
 var x=pool[rng.int(pool.length)];
 (L0.seen=L0.seen||[]).push(x.id);
-var lv=loverOf(S,b),m={a:p.name,b:b.name};
+var lv=loverOf(S,b,p),m={a:p.name,b:b.name};
 var yes=rng()<0.42+bond(S,b,p)*0.4+b.tr.warmth*0.2+x.bonus-(lv?0.35:0)-b.tr.cp*0.1;
 if(yes){L0.pt++;setRel(S,p,b,0.14,'いい雰囲気',p);b.m.fear=clamp(b.m.fear-4,0,100);}
 else setRel(S,p,b,-0.02,null);
@@ -3810,7 +3810,7 @@ if(ST.romK&&ST.romK(S)<1&&rng()>ST.romK(S))return false;
 var b=L0.t;
 if(!b|| !al(b))b=L0.t=pickTarget(S,p,live);
 if(!b||b.bound)return false;
-var lv=loverOf(S,b);
+var lv=hasTie(S,p,b,'lover,mate,fated')?null:loverOf(S,b,p);
 if(lv&&lv!==p){
 if(rng()>0.6)return false;
 (L0.no=L0.no||[]).push(b.i);L0.t=null;L0.pt=0;
@@ -6100,7 +6100,8 @@ ST.say(S,{actors:[cv.r,cv.v],tag:'庇う',text:t,why:cv.r.name+'は'+cv.v.name+'
 function coverWatch(S,cv){
 if(!cv||cv.eff!=='watch')return'';
 var r=cv.r,t=cvF(S,lwEro(S)?CV_SEE_ERO[HK.Pos&&HK.Pos.isF(r)?'f':'m']:CV_SEE,cv);
-var L0=Array.isArray(r.sexLocks)?r.sexLocks:[],fx=L0.length?S.P[L0[0]]:null;
+var L0=Array.isArray(r.sexLocks)?r.sexLocks:[],fxs=L0.map(function(i){return S.P[i];}).filter(function(x){return x&&x!==r;});
+var fx=fxs.indexOf(cv.v)>=0?cv.v:fxs.length>1?fxs[Math.floor(S.rng()*fxs.length)]:fxs[0]||null;
 if(fx&&fx!==r)t+=cvF(S,fx===cv.v?CV_FIX_SAME:CV_FIX,cv,{f:fx.name});
 return lwSep(S)+t;
 }
@@ -7434,7 +7435,7 @@ for(var i=0;i<ws.length;i++){r-=ws[i][1];if(r<0){br=ws[i][0];break;}}
 var offer=false;
 if(br==='offer'){offer=true;br=recv?'sub':watch&&kRand(S,v,h,4)<0.5?'watch':'no';}
 var l='';
-if(br==='watch'&&Array.isArray(k.sexLocks)&&k.sexLocks.length){var lp=(S.P||[]).filter(function(q){return q!==v&&q!==k&&k.sexLocks.indexOf(q.i)>=0;})[0];if(lp)l=lp.name;}
+if(br==='watch'&&Array.isArray(k.sexLocks)&&k.sexLocks.length){var lps=(S.P||[]).filter(function(q){return q!==v&&q!==k&&k.sexLocks.indexOf(q.i)>=0;}),lp=lps.length>1?lps[Math.floor(kRand(S,v,h,5)*lps.length)]:lps[0];if(lp)l=lp.name;}
 S._shieldN=(S._shieldN||0)+1;
 return{k:k,v:v,br:br,offer:offer,kind:kind,rel:relOf(S,k,v),vrel:relOf(S,v,k),l:l};
 }
@@ -9106,4 +9107,4 @@ HK.Load.toneData("keigo_sarc",{"F":[
 HK.Load.toneData("keigo_flat",{"F":[
 ["……足りませんね","……不足しています",1]]});
 });
-HK.Load.done('scen-jashin', 'f2687fbcd7', 1);
+HK.Load.done('scen-jashin', '80db965f1e', 1);

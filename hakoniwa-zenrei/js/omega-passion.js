@@ -11,10 +11,11 @@
   function ao(a, b) { return (sx(a) === 'a' && sx(b) === 'o') || (sx(a) === 'o' && sx(b) === 'a'); }
   function alphaOf(a, b) { return sx(a) === 'a' ? a : b; }
   function omegaOf(a, b) { return sx(a) === 'o' ? a : b; }
+  /* その場にいる恋人。二人以上いれば、区切りごとに順に回す（同じ区切りの中では同じ人。2026-10-27：いつも住人欄のいちばん下の一人になっていたのを直す） */
+  function partnersOf(ctx, a) { return ctx.present().filter(function (o) { return o !== a && ctx.pair(a, o).couple; }); }
   function partnerOf(ctx, a) {
-    var p = null;
-    ctx.present().forEach(function (o) { if (o !== a && ctx.pair(a, o).couple) p = o; });
-    return p;
+    var ps = partnersOf(ctx, a);
+    return ps.length > 1 ? ps[((ctx.stepIndex || 0) + a.i) % ps.length] : ps[0] || null;
   }
   function tieType(ctx, a, b) { var t = HK.Ties && HK.Ties.get(ctx, a, b); return t ? (t.like || t.type) : ''; }
   function fill(ctx, t, a, b, c) { return OM.sc(OM.fill(ctx, ctx.t(t, a, b, c), a, b), a, b); }
@@ -91,12 +92,14 @@
     if (pf.couple) t += '恋人として過ごしてきた日々の意味が、その日から少しだけ変わった。';
     ctx.say({ kind: 'event', cat: 'romance', actors: [a, b], text: t, why: why, mag: 42 });
     /* それぞれに恋人がいれば、その恋人との仲が揺らぐ */
+    /* 恋人が二人以上いれば、恋人ごとに（2026-10-27） */
     [a, b].forEach(function (x) {
-      var y = x === a ? b : a, p = partnerOf(ctx, x);
-      if (p && p !== y && !late) {
+      var y = x === a ? b : a;
+      partnersOf(ctx, x).forEach(function (p) {
+        if (p === y || late) return;
         ctx.pair(x, p).fatedPending = true;
         ctx.say({ kind: 'event', cat: 'romance', actors: [x, p], text: x.name + 'には、' + p.name + 'という恋人がいる。その夜、' + x.name + 'は' + p.name + 'の顔をまっすぐ見られなかった。', why: '運命の番と、今の恋人', mag: 15 });
-      }
+      });
     });
     return true;
   }

@@ -619,7 +619,8 @@ button:where(:not([class])):focus-visible { outline: 2px solid var(--ink); outli
 .scen .ftag:hover, .scen .ftag:focus-visible { border-color: var(--ink); color: var(--ink); outline: none; }
 .scen.adult { background: var(--adult-bg); border-color: var(--adult-line); }
 .scen.adult.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--bg1); }
-.r18tag { display: inline-block; padding: 0 5px; margin-left: 2px; border: 1px solid var(--ink); border-radius: 2px; background: none; color: var(--ink); font-family: var(--f-num); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; line-height: 1.5; }
+/* 箱庭カードの R18 の札：重要の赤（--hot。黒版は #FF5C7A、色の量「藍のみ」では藍に落ちる）。文字と細い枠を赤に */
+.r18tag { display: inline-block; padding: 0 5px; margin-left: 2px; border: 1px solid var(--hot); border-radius: 2px; background: none; color: var(--hot); font-family: var(--f-num); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; line-height: 1.5; }
 .site-foot .updated { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
 .scen.r18link { color: inherit; text-decoration: none; border-style: dashed; cursor: default; }
 .scen.r18link .k { white-space: normal; }
@@ -762,30 +763,30 @@ details.zmap > summary:hover { background: var(--bg1); }
 <div class="toast" id="toast" hidden></div>
 
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"c520c3826a","api":1,"build":"full","core":"js/c/core.8bd5d3db65.js",
+<script>window.HK_MANIFEST={"v":"67ebe6fd31","api":1,"build":"full","core":"js/c/core.c860785331.js",
 "chunks":{
   "late":{"src":"js/c/late.39998d6f03.js","br":112023,"deps":[]},
-  "pack-rel":{"src":"js/c/pack-rel.e792401bf4.js","br":245920,"deps":[]},
+  "pack-rel":{"src":"js/c/pack-rel.69946faa63.js","br":246090,"deps":[]},
   "scen-goukon":{"src":"js/c/scen-goukon.dc25ee601d.js","br":86053,"deps":["pack-rel"]},
   "scen-classroom":{"src":"js/c/scen-classroom.d0a0275dfc.js","br":61164,"deps":["pack-rel"]},
   "scen-island":{"src":"js/c/scen-island.a9968a90fd.js","br":87034,"deps":["pack-rel"]},
   "scen-whiteroom":{"src":"js/c/scen-whiteroom.fc67428ee5.js","br":215342,"deps":["pack-rel"]},
-  "scen-omega":{"src":"js/c/scen-omega.c0d2e30bac.js","br":155312,"deps":["pack-rel"]},
+  "scen-omega":{"src":"js/c/scen-omega.f94c282f43.js","br":155401,"deps":["pack-rel"]},
   "scen-br":{"src":"js/c/scen-br.ca5033e50a.js","br":12386,"deps":["pack-rel"]},
   "scen-trial":{"src":"js/c/scen-trial.199fa6d34d.js","br":9422,"deps":["pack-rel"]},
   "scen-dungeon":{"src":"js/c/scen-dungeon.6754409f6b.js","br":117630,"deps":["pack-story"]},
   "scen-massage":{"src":"js/c/scen-massage.6b2e58aaa2.js","br":79296,"deps":["pack-solo"]},
   "scen-hole":{"src":"js/c/scen-hole.b792eb1ae1.js","br":90461,"deps":["pack-solo"]},
-  "scen-zombie":{"src":"js/c/scen-zombie.63088e4b65.js","br":161632,"deps":["pack-rel"]},
+  "scen-zombie":{"src":"js/c/scen-zombie.562423e8e5.js","br":161807,"deps":["pack-rel"]},
   "scen-rpg":{"src":"js/c/scen-rpg.786305d350.js","br":27062,"deps":["pack-story"]},
   "scen-kaihen":{"src":"js/c/scen-kaihen.c3b1d12919.js","br":131117,"deps":["pack-rel","pack-solo"]},
   "scen-succubus":{"src":"js/c/scen-succubus.cb00f953b7.js","br":95455,"deps":["pack-rel","pack-solo"]},
   "scen-saimin":{"src":"js/c/scen-saimin.812ceb60b8.js","br":112736,"deps":["pack-rel","pack-solo"]},
   "scen-variety":{"src":"js/c/scen-variety.bd9f3986c7.js","br":84079,"deps":["pack-rel","pack-solo"]},
   "scen-locker":{"src":"js/c/scen-locker.964e33168c.js","br":129609,"deps":["pack-rel","pack-solo"]},
-  "scen-jashin":{"src":"js/c/scen-jashin.f2687fbcd7.js","br":326018,"deps":["pack-story"]},
+  "scen-jashin":{"src":"js/c/scen-jashin.80db965f1e.js","br":326139,"deps":["pack-story"]},
   "scen-yakata":{"src":"js/c/scen-yakata.2745d7ee33.js","br":118435,"deps":["pack-story"]},
-  "scen-ship":{"src":"js/c/scen-ship.910d39dd7f.js","br":223147,"deps":["pack-story"]},
+  "scen-ship":{"src":"js/c/scen-ship.cdc5c0f046.js","br":223242,"deps":["pack-story"]},
   "pack-story":{"src":"js/c/pack-story.05a89844cb.js","br":23522,"deps":["pack-rel"]},
   "scen-jinro":{"src":"js/c/scen-jinro.cb4d0dcc16.js","br":66224,"deps":["pack-story"]},
   "scen-futari":{"src":"js/c/scen-futari.923ee479bb.js","br":11824,"deps":["pack-rel"]},
@@ -848,7 +849,7 @@ details.zmap > summary:hover { background: var(--bg1); }
   "rpg":{"id":"rpg","name":"ダンジョンRPG","kicker":"パーティ・冒険","desc":"パーティを組んでダンジョンへ。階ごとにランダムな戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、誰が宝箱に手を伸ばし、どこで引き返すのか。地下30階の主を倒せば踏破、引き返せば帰還、全員倒れれば全滅。","solo":true,"minCast":1,"maxCast":6,"unit":"階","castHint":"1〜6人のパーティで潜ります。職業は「おまかせ」ならエゴグラムから決まります。前に出るか、宝箱を開けるか、引き返すかは気質の数値で決まります。踏破できるのは一割ほど。多くは途中で引き返します。","env":[{"id":"floors","label":"目標の階層"},{"id":"danger","label":"魔物の強さ"},{"id":"loot","label":"お宝の多さ"},{"id":"retreat","label":"撤退"}],"stats":[{"id":"str","label":"腕っぷし"},{"id":"luck","label":"運"},{"id":"int","label":"知能"}],"perFields":[{"id":"job","label":"職業","auto":"おまかせ（エゴグラムから）","options":[{"id":"warrior","label":"戦士"},{"id":"mage","label":"魔法使い"},{"id":"priest","label":"僧侶"},{"id":"thief","label":"盗賊"},{"id":"hunter","label":"狩人"},{"id":"bard","label":"吟遊詩人"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"パーティでダンジョンに潜り、いくら持ち帰れるか。","descLong":"パーティを組んでダンジョンへ。階ごとに戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、どこで引き返し、いくら持ち帰れるか。"},"tags":["relSome","race","job","undead","death"],"chunks":["scen-rpg"]},
   "jinro":{"id":"jinro","name":"人狼","kicker":"ゲーム・推理","desc":"住人どうしで人狼ゲーム。配役は人狼・狩人・占い師・霊媒師・村人からランダム。人狼は性格で戦法（騙り・潜伏・仲間切り・庇い合い）を選び、村は仕切り役しだいで方針（ローラー・真贋の見極め・グレー吊り）が変わる。信頼と協力、そして裏切り。知能は性格とは別に決まる。","solo":true,"minCast":4,"maxCast":15,"unit":"日","castHint":"4〜15人。配役の数は環境値で決めます（人狼は全体の半分未満に自動で調整）。ゲームなので、襲う相手や投票先は既存の関係と関係なく、推理と立ち回りで決まります。","env":[{"id":"wolves","label":"人狼の数"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"lovemode","label":"好意モード"},{"id":"prize","label":"賞品"},{"id":"prizeText","label":"賞品（自由に書く）"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"},{"id":"wolfnight","label":"人狼の勝利の夜"}],"stats":[{"id":"int","label":"知能"},{"id":"poker","label":"ポーカーフェイス"}],"perFields":[{"id":"role","label":"配役","auto":"ランダム","options":[{"id":"wolf","label":"人狼"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"vill","label":"村人"}]}],"card":{"desc":"住人どうしの人狼ゲーム、騙りと推理と裏切り。","descLong":"住人どうしで人狼ゲーム。人狼は性格で騙りや潜伏を選び、村は仕切り役しだいで方針が変わる。信頼と協力、そして裏切り。"},"tags":["relSome","night","race","death"],"chunks":["scen-jinro"]}},
 "tones":{"auto":["aniki","proud","stern","tsun","gentle","devoted","cool","free","shy","polite"],"pack":{"mixed":"tone-mixed","noja":"tone-noja","kansai":"tone-kansai","mukuchi":"tone-mukuchi","gentleman":"tone-gentleman","yankee":"tone-yankee","tsun_n":"tone-tsun-n","gentle_n":"tone-gentle-n","ane":"tone-ane","devoted_p":"tone-devoted-p","kohai":"tone-kohai","calm":"tone-calm","usan":"tone-usan","ojou":"tone-ojou","hero":"tone-hero","gyaru":"tone-gyaru","chara":"tone-chara","mystic":"tone-mystic","genki":"tone-genki","darui":"tone-darui","sondai":"tone-sondai","cool_soft":"tone-cool-soft","boku_n":"tone-boku-n","god":"tone-god","darui_lite":"tone-darui-lite","keigo_sarc":"tone-keigo-sarc","keigo_bossy":"tone-keigo-bossy","keigo_flat":"tone-keigo-flat","keigo_twist":"tone-keigo-twist","mukuchi_ne":"tone-mukuchi-ne","otaku":"tone-otaku","ronkyaku":"tone-ronkyaku","chara_down":"tone-chara-down","flat_plain":"tone-flat-plain","tame":"tone-tame"}}};</script>
-<script src="js/c/core.8bd5d3db65.js"></script>
+<script src="js/c/core.c860785331.js"></script>
 <!-- scripts:end -->
 
 </body></html>

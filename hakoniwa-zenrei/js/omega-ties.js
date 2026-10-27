@@ -17,7 +17,8 @@
   function ao(a, b) { return (sx(a) === 'a' && sx(b) === 'o') || (sx(a) === 'o' && sx(b) === 'a'); }
   function inHeat(c) { return sx(c) === 'o' && c.om.heat > 0; }
   function inRut(c) { return sx(c) === 'a' && c.om.rut > 0; }
-  function partnerOf(ctx, a) { var p = null; ctx.present().forEach(function (o) { if (o !== a && ctx.pair(a, o).couple) p = o; }); return p; }
+  /* a に、x 以外の恋人がその場にいるか（恋人が二人以上でも、誰か一人でもいれば真。2026-10-27：その場の恋人を一人だけ見ていたのを直す） */
+  function otherP(ctx, a, x) { return ctx.present().some(function (o) { return o !== a && o !== x && ctx.pair(a, o).couple; }); }
   function nonWorker(c) { return OM.nonWorker ? OM.nonWorker(c) : false; }
   function fill(ctx, t, a, b) { var s = OM.fill ? OM.fill(ctx, t, a, b) : ctx.t(t, a, b); return OM.sc ? OM.sc(s, a, b) : s; }
   function soc(ctx) { return ctx.env.society == null ? 60 : ctx.env.society; }
@@ -209,8 +210,7 @@
     if (HK.TIES[t.type] && HK.TIES[t.type].family && t.love !== 'ok') return false;
     if (!ctx.romanceOk([A, B])) return false;
     if (ctx.pair(A, B).kin) return false;
-    var pa = partnerOf(ctx, A), pb = partnerOf(ctx, B);
-    if ((pa && pa !== B) || (pb && pb !== A)) return false;
+    if (otherP(ctx, A, B) || otherP(ctx, B, A)) return false;
     var mA = mateOf(ctx, A), mB = mateOf(ctx, B);
     if ((mA && mA !== B) || (mB && mB !== A)) return false;
     return true;
@@ -262,7 +262,7 @@
     /* 信仰：嫌われても・裏切られても想いを捨てない */
     if (type === 'worship') {
       var rb = ctx.R(B, A), cold = t.cold;
-      if ((rb.aff < 0 || rb.ten > 30 || cold === 'confused' || (partnerOf(ctx, B) && partnerOf(ctx, B) !== A)) && ctx.rng() < 0.4) {
+      if ((rb.aff < 0 || rb.ten > 30 || cold === 'confused' || otherP(ctx, B, A)) && ctx.rng() < 0.4) {
         ctx.mod(A, B, { aff: 2, trust: 2 });
         return res(ctx, pick(ctx, X.unwaver), A, B, 'bond', A.name + 'は' + B.name + 'を信仰している。想いは揺らがない（相手が' + (rb.aff < 0 ? '冷たくても' : cold === 'confused' ? '戸惑っていても' : 'ほかを見ていても') + '）', 6);
       }

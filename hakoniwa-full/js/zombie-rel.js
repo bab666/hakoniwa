@@ -125,11 +125,12 @@
     w: function (ctx, a, b) { return 0.8 + a.tr.np * 0.4 + a.tr.ac * 0.3 + ctx.R(a, b).att / 80; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'ldev'); ctx.mod(a, b, { att: 6, aff: 4 }); ctx.mod(b, a, { aff: 6, att: 3 }); return { text: fill(ctx.pick(T.lockDevote), { a: a.name, b: b.name }), why: a.name + 'の想う相手は、' + (HK.locks(a).length > 1 ? b.name + 'たち（決めた人）' : b.name + 'ただ一人') }; } });
   /* 固定した相手（複数なら順に）のうち、生きていて別の場所にいる人 */
-  function lseekTo(ctx, a) { return HK.lockPeople(ctx.chars, a).filter(function (t) { return t.alive && !t.out && t.z && a.z && t.z.area !== a.z.area; })[0] || null; }
+  /* 二人以上なら、想うたびに順に回す（2026-10-27：住人欄のいちばん上の一人だけになっていたのを直す） */
+  function lseekTo(ctx, a) { var L = HK.lockPeople(ctx.chars, a).filter(function (t) { return t.alive && !t.out && t.z && a.z && t.z.area !== a.z.area; }); return L.length > 1 ? L[(a.flags.lseekN || 0) % L.length] : L[0] || null; }
   add({ id: 'zr_lseek', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { if (!RK.locked(a)) return false; var t = lseekTo(ctx, a); if (!t) return false; return a.flags.lseekAt == null || ctx.stepIndex - a.flags.lseekAt > 6; },
     w: function (ctx, a) { return 0.7 + a.tr.ac * 0.4 + a.tr.np * 0.3; },
-    run: function (ctx, a) { a.flags.lseekAt = ctx.stepIndex; var t = lseekTo(ctx, a); if (a.tr.np + a.tr.impulse > 0.9) { a.focus = t; } return { text: fill(ctx.pick(T.lockSeek), { a: a.name, b: t.name }), why: a.name + 'は、離れた場所にいる' + t.name + 'を想っている' + (a.focus === t ? '（探しに行くと決めた）' : '') }; } });
+    run: function (ctx, a) { a.flags.lseekAt = ctx.stepIndex; var t = lseekTo(ctx, a); a.flags.lseekN = (a.flags.lseekN || 0) + 1; if (a.tr.np + a.tr.impulse > 0.9) { a.focus = t; } return { text: fill(ctx.pick(T.lockSeek), { a: a.name, b: t.name }), why: a.name + 'は、離れた場所にいる' + t.name + 'を想っている' + (a.focus === t ? '（探しに行くと決めた）' : '') }; } });
 
   /* ---------- 兄貴・姉貴分／関西弁 ---------- */
   add({ id: 'zr_aniki', cat: 'help', scope: 'pair',

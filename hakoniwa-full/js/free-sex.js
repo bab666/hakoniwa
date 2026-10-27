@@ -51,14 +51,16 @@
 
   var F = HK.FreeSex = {};
   /* 固定した恋人（その場にいる人）。いなければ null */
-  /* 恋愛相手の固定は複数人を持てる（HK.locks）。notI がその中にいれば固定外ではないので null。いれば、その場にいる最初の一人 */
-  F.loverOf = function (ctx, x, notI) {
-    if (!x || !HK.lockAny(x)) return null;
-    var L = HK.locks(x), P = people(ctx);
-    if (L.indexOf(notI) >= 0) return null;
-    for (var k = 0; k < L.length; k++) { var y = P[L[k]]; if (y && y !== x && HK.State.here(y)) return y; }
-    return null;
+  /* 恋愛相手の固定は複数人を持てる（HK.locks）。notI がその中にいれば固定外ではないので null。いれば、その場にいる最初の一人。
+     F.loversOf はその場にいる全員（固定の順。嫉妬は該当者ごと：2026-10-27） */
+  F.loversOf = function (ctx, x, notI) {
+    if (!x || !HK.lockAny(x)) return [];
+    var L = HK.locks(x), P = people(ctx), out = [];
+    if (L.indexOf(notI) >= 0) return [];
+    for (var k = 0; k < L.length; k++) { var y = P[L[k]]; if (y && y !== x && HK.State.here(y) && out.indexOf(y) < 0) out.push(y); }
+    return out;
   };
+  F.loverOf = function (ctx, x, notI) { return F.loversOf(ctx, x, notI)[0] || null; };
   /* 起こりやすさの倍率：固定した恋人がその場にいれば 0.3。性欲の強さ（HK.Pos.libMul：弱い ×0.5・強い ×1.6。既定は 1）も掛ける。
      noLib が真なら性欲を掛けない（エンジンの出来事の重み。engine.js の act が sex の出来事に性欲を掛けるので、二重にしない） */
   F.factor = function (ctx, a, b, noLib) {
@@ -125,9 +127,13 @@
   /* r18:begin */
   /* 固定した恋人が気づく（{a}＝恋人、{b}＝固定外の相手と夜を過ごした人、{c}＝その相手） */
   F.JEAL = L('{a}は、{b}が{c}と夜を過ごしたことに気づいた。体だけのことだと分かっていても、胸の奥がざらついた。|{b}の首筋に残った痕を、{a}は見逃さなかった。{a}は何も言わずに、{c}のほうを一度だけ見た。|「……{c}と、だよね｜……{c}と、なのか｜……{c}と、ですよね」――{a}の問いに、{b}は隠さずに頷いた。決まりの上では許していても、{a}の顔は笑っていなかった。|{a}は、{c}の隣に座る{b}を見ないようにした。それでも、目が勝手にそちらへ行った。|{b}の言い分は分かっていた。気持ちは自分のところにある、と。{a}はそれでも、{c}への苛立ちを飲み込めなかった。');
+  /* 固定した相手が複数いれば、その場にいる一人ずつが気づくかを見る（2026-10-27：住人欄のいちばん上の一人だけになっていたのを直す） */
   F.jealous = function (ctx, a, b) {
-    var x = freeOne(a, b), z = x === a ? b : a, y = F.loverOf(ctx, x, z.i);
-    if (!y || y === z) return null;
+    var x = freeOne(a, b), z = x === a ? b : a, last = null;
+    F.loversOf(ctx, x, z.i).forEach(function (y) { if (y !== z) last = jealous1(ctx, x, y, z) || last; });
+    return last;
+  };
+  function jealous1(ctx, x, y, z) {
     var jl = y.tr && y.tr.jealous != null ? y.tr.jealous : 0.4;
     if (rnd(ctx) > 0.15 + jl * 0.5) return null;
     var text = pick(ctx, F.JEAL).replace(/\{a\}/g, y.name).replace(/\{b\}/g, x.name).replace(/\{c\}/g, z.name);
@@ -145,6 +151,6 @@
     }
     if (HK.Story && HK.Story.say) return HK.Story.say(ctx, { actors: [y.i, x.i, z.i], tag: '嫉妬', text: text, why: why });
     return null;
-  };
+  }
   /* r18:end */
 })();

@@ -2526,7 +2526,7 @@ var watch= !low&& !fam&& !ng&&St.r18ok(b)&& !b.noR18&&likesG(b,a);
 var br=HK.weighted(g,[['hit',drag||watch?0.6:1],['offer',0.8],['both',drag?1:0],['watch',watch?1.2:0]].filter(function(x){return x[1]>0;}),function(x){return x[1];})[0];
 if(br==='offer')br=drag?'swap':'offerNo';
 var c=null;
-if(br==='watch'){var cl=lockList(b).filter(function(i){return i!==a.i;});if(cl.length)c=S.P.filter(function(p){return p.i===cl[0];})[0]||null;}
+if(br==='watch'){var cl=S.P.filter(function(p){return p.i!==a.i&&lockList(b).indexOf(p.i)>=0;});if(cl.length)c=cl.length>1?cl[Math.floor(g()*cl.length)]:cl[0];}
 return{a:a,b:b,g:g,br:br,rel:relOf(S,b,a),x:xName(S,o),c:c};
 };
 R.coverRun=function(S,cv){
@@ -4951,10 +4951,12 @@ else if(up.length>=2)ST.say(S,{actors:up,tag:'共同作業',text:F(pk(S,T.keep2)
 if(up.length){sp.hull=clamp(sp.hull+4,0,100);sp.power=clamp(sp.power+2,0,100);}
 L0.forEach(function(p){
 if(p.spec!=='vampire'||p.pod)return;
-var dn=L0.filter(function(q){return q!==p&&q.spec!=='vampire'&& !q.pod;})[0];
+var dns=L0.filter(function(q){return q!==p&&q.spec!=='vampire'&& !q.pod&&(!HK.lockAny(p)||HK.lockTo(p,q));});
+var dlv=dns.filter(function(q){return isLover(S,p,q);});if(dlv.length)dns=dlv;
+var dn=dns.length>1?dns.filter(function(q){return!p.vamp||q.i!==p.vamp.last;})[0]||dns[0]:dns[0];
 if(dn){
 if(AF.k%2===0)return;
-if(p.vamp)p.vamp.fed++;
+if(p.vamp){p.vamp.fed++;p.vamp.last=dn.i;}
 ST.say(S,{actors:[p,dn],tag:'吸血',text:F(pk(S,T.share),{a:p.name,b:dn.name}),why:'吸血鬼の渇き。死なない体の'+dn.name+'が、血を分けた',mag:20});
 return;
 }
@@ -5513,4 +5515,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 HK.Load.toneData("chara_down",{"F":[
 ["一年、よく持ちこたえましたね。私の自慢の船員たちです","一年、よく持ちこたえましたねー。私の自慢の船員たちですよ、ほんと",1]]});
 });
-HK.Load.done('scen-ship', '910d39dd7f', 1);
+HK.Load.done('scen-ship', 'cdc5c0f046', 1);

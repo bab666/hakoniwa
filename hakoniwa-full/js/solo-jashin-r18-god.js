@@ -295,7 +295,8 @@
     if (br === 'offer') { offer = true; br = recv ? 'sub' : watch && kRand(S, v, h, 4) < 0.5 ? 'watch' : 'no'; }
     /* 固定の人が見せつけられたとき、思い浮かべる相手（受ける人とは別の、固定した相手） */
     var l = '';
-    if (br === 'watch' && Array.isArray(k.sexLocks) && k.sexLocks.length) { var lp = (S.P || []).filter(function (q) { return q !== v && q !== k && k.sexLocks.indexOf(q.i) >= 0; })[0]; if (lp) l = lp.name; }
+    /* 固定した相手が二人以上なら、その中から（2026-10-27：住人欄のいちばん上の一人だけになっていたのを直す） */
+    if (br === 'watch' && Array.isArray(k.sexLocks) && k.sexLocks.length) { var lps = (S.P || []).filter(function (q) { return q !== v && q !== k && k.sexLocks.indexOf(q.i) >= 0; }), lp = lps.length > 1 ? lps[Math.floor(kRand(S, v, h, 5) * lps.length)] : lps[0]; if (lp) l = lp.name; }
     S._shieldN = (S._shieldN || 0) + 1;
     return { k: k, v: v, br: br, offer: offer, kind: kind, rel: relOf(S, k, v), vrel: relOf(S, v, k), l: l };
   }

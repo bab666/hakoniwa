@@ -19,10 +19,11 @@
   function here(c) { return !!c && (HK.State ? HK.State.here(c) : c.alive !== false); }
   function nose(c) { return sx(c) === 'a' || sx(c) === 'o'; }
   function safe() { return !!HK.SAFE_ON; }
+  /* その場にいる恋人。二人以上いれば、区切りごとに順に回す（同じ区切りの中では同じ人。2026-10-27：いつも住人欄のいちばん下の一人になっていたのを直す） */
+  function partnersOf(ctx, a) { return ctx.present().filter(function (o) { return o !== a && ctx.pair(a, o).couple; }); }
   function partnerOf(ctx, a) {
-    var p = null;
-    ctx.present().forEach(function (o) { if (o !== a && ctx.pair(a, o).couple) p = o; });
-    return p;
+    var ps = partnersOf(ctx, a);
+    return ps.length > 1 ? ps[((ctx.stepIndex || 0) + a.i) % ps.length] : ps[0] || null;
   }
   function fill(ctx, t, a, b, x) {
     x = x || {};

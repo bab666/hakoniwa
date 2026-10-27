@@ -5,7 +5,8 @@
      吸血鬼で体の特徴から不死を外した人は、血を吸うが蘇らない（p.spNoRev）。人間に不死を付けた人は特殊役職「不死」と同じ（両方で決めても一人分）
    ・精神が摩耗しすぎると発狂して動けなくなる。仲の良い人が落ち着かせるまで戻らず、そのあいだは死の出来事を引きやすい
    ・吸血鬼は三日に一度、人の血を吸う（ゾンビ・感染した人の血は吸えない）。好意のある相手を襲うか、同意を得て吸う。
-     恋愛相手を固定している吸血鬼は、その人からしか吸えない。吸える相手がいない環境では、例外的に死ぬ
+     恋愛相手を固定している吸血鬼は、固定した相手の中から吸う（固定が複数なら全員が候補。恋仲を優先し、前回吸った人は少し下げて回す）。
+     固定した相手がこの箱庭に一人もいない・全員に二度と会えない環境では、例外的に死ぬ
    ・吸血鬼に目を見つめられた人は催眠状態になり、言いなりになる。警戒心の強い人は目を逸らして逃れられる
    ・邪神村では、特殊役職でなくても全員が発狂しうる（jashin.js）
    箱庭ごとの違いは「アダプター」A で受け取る（各箱庭の組み込み側で作る）：
@@ -214,6 +215,7 @@
     after: L('{b}はふらつきながら、首筋の小さな二つの傷を押さえた。|{b}の顔色は、紙のように白くなっていた。|{b}はしばらく立ち上がれなかった。'),
     afterHypno: L('我に返った{b}は、何があったのか思い出せなかった。首筋の二つの傷だけが、熱を持っていた。|{b}が正気を取り戻したとき、{a}はもういなかった。'),
     noLock: L('{a}は、たった一人の血しか受けつけない体だった。けれど、その人はここにいない。|{a}は、決めた相手以外の血を吸うことはできなかった。'),
+    noLocks: L('{a}は、決めた相手の血しか受けつけない体だった。けれど、その誰も、もうここにはいない。|{a}は、決めた人たち以外の血を吸うことはできなかった。'),
     starve: L('三日目の夜が明けても、{a}の渇きは癒えなかった。{a}の体は朝日の中で灰のように崩れ、風にさらわれていった。|渇きに耐えきれず、{a}は自分の喉をかきむしった。やがて{a}は、乾いた砂のように崩れ落ちた。――二度と、起き上がらなかった。'),
     weak: L('{a}は渇きでふらついていた。顔色は死人のようだった。|{a}は誰の首筋も見ないように、目を閉じてうずくまっていた。'),
     zombieNo: L('{a}は{b}に牙を立てかけて、顔をしかめて離れた。腐った血の臭いがした。')
@@ -227,15 +229,16 @@
   SP.vampTurn = function (A, p) {
     if (!vampDue(A, p) || !A.alive(p) || p.mad) return false;
     var vp = p.vamp, over = A.nowH - vp.due;
-    var lockP = !HK.lockAny(p) ? null : p.lock < 0 ? 'absent' : A.all.filter(function (q) { return HK.lockTo(p, q); })[0] || 'absent';
+    /* 恋愛相手の固定は複数人を持てる（HK.locks）。固定した相手の全員が候補（2026-10-27：住人欄のいちばん上の一人だけになっていたのを直す） */
+    var lockP = HK.lockAny(p), lockPs = lockP ? A.all.filter(function (q) { return q !== p && HK.lockTo(p, q); }) : [];
     var cand = donors(A, p);
-    if (lockP) cand = lockP === 'absent' ? [] : cand.filter(function (q) { return q === lockP; });
-    /* 吸える相手がいない環境：決めた相手が来ていない・二度と会えない・人間が誰も残っていない */
-    var never = lockP === 'absent' || (lockP && (lockP.spNoRev || lockP.spGone || (!A.alive(lockP) && !lockP.spec) || lockP.out)) || !donors(A, p).length && !A.all.some(function (q) { return q !== p && q.spec !== 'vampire' && (A.alive(q) || (q.spec && !q.spGone)); });
+    if (lockP) cand = cand.filter(function (q) { return lockPs.indexOf(q) >= 0; });
+    /* 吸える相手がいない環境：決めた相手が誰も来ていない・全員に二度と会えない・人間が誰も残っていない */
+    var never = (lockP && lockPs.every(function (q) { return q.spNoRev || q.spGone || (!A.alive(q) && !q.spec) || q.out; })) || !donors(A, p).length && !A.all.some(function (q) { return q !== p && q.spec !== 'vampire' && (A.alive(q) || (q.spec && !q.spGone)); });
     if (!cand.length) {
       if (never) {
         p.spNoRev = true;
-        A.kill(p, '渇きで', (lockP ? fmt(pick(A, V.noLock), { a: p.name }) : '') + fmt(pick(A, V.starve), { a: p.name }));
+        A.kill(p, '渇きで', (lockP ? fmt(pick(A, lockPs.length > 1 ? V.noLocks : V.noLock), { a: p.name }) : '') + fmt(pick(A, V.starve), { a: p.name }));
         return true;
       }
       /* 吸える相手がそばにいないまま一日が過ぎると、弱っていく（死ぬのは、吸える相手がこの世界にいないときだけ） */
@@ -243,9 +246,10 @@
       if (!vp.warn) { vp.warn = true; A.setHp(p, A.hp(p) - 10); A.say({ actors: [p], tag: '渇き', text: fmt(pick(A, V.thirst), { a: p.name }) + fmt(pick(A, V.weak), { a: p.name }), why: '吸血鬼：三日に一度、人の血を吸わなければならない' + (lockP ? '（決めた相手からしか吸えない）' : '') + '。吸えないと弱っていき、吸える相手がどこにもいなければ灰になる', mag: 20 }); return true; }
       return false;
     }
-    /* 誰から吸うか：恋仲を最優先、次に好感度の高い人（好意が高いほど強く偏る。好意のない相手を襲うのは、ほかに誰もいないときくらい） */
-    var lv = cand.filter(function (q) { return A.rel(p, q).love; });
-    var b = wpick(A, lv.length ? lv : cand, function (q) { var w = A.rel(p, q).w; return Math.pow(Math.max(0.02, w + 0.25), 4); }) || cand[0];
+    /* 誰から吸うか：恋仲を最優先、次に好感度の高い人（好意が高いほど強く偏る。好意のない相手を襲うのは、ほかに誰もいないときくらい）。
+       候補が二人以上なら、前回吸った人は下げて回す（恋仲が複数ならほぼ交互に） */
+    var lv = cand.filter(function (q) { return A.rel(p, q).love; }), pool = lv.length ? lv : cand;
+    var b = wpick(A, pool, function (q) { var w = A.rel(p, q).w; return Math.pow(Math.max(0.02, w + 0.25), 4) * (pool.length > 1 && q.i === vp.last ? (lv.length ? 0.15 : 0.4) : 1); }) || cand[0];
     var rb = A.rel(b, p), t = fmt(pick(A, V.thirst), { a: p.name }), how = '', hp = 12 + Math.floor(A.rng() * 10), stress = 10, sex = null;
     var wary = (b.tr && (b.tr.caution || 0) > 0.62) || (b.tr && (b.tr.ac || 0) < 0.25 && (b.tr.cp || 0) > 0.6);
     if (rb.love && A.rng() < 0.95) { t += fmt(pick(A, V.consentLove), { a: p.name, b: b.name }); how = '同意（恋仲）'; stress = 0; }
@@ -282,7 +286,7 @@
     t += fmt(pick(A, how === '催眠' ? V.afterHypno : V.after), { a: p.name, b: b.name });
     A.setHp(b, A.hp(b) - hp); A.addStress(b, stress);
     if (A.relMod) A.relMod(b, p, how);
-    vp.due = A.nowH + 72; vp.fed++; vp.warn = false; b.hypno = false;
+    vp.due = A.nowH + 72; vp.fed++; vp.warn = false; vp.last = b.i; b.hypno = false;
     A.setHp(p, A.full(p));
     A.say({ actors: [p, b], tag: '吸血', text: t, why: '吸血鬼：三日に一度、人の血が要る（' + how + '）' + (lockP ? '・決めた相手からしか吸えない' : '') + '／' + b.name + 'の体力 -' + hp, mag: sex ? 34 : 26, key: vp.fed === 1 ? p.name + 'が' + b.name + 'の血を吸った' : '' });
     return true;

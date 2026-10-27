@@ -4,8 +4,9 @@
    性行為の相手の固定（HK.State.pairSex・HK.sexBlocked）・恋愛の起こりやすさ0（ctx.romanceOk）を守る。
    ・妊娠・孕む描写（preg）
        エンジン型の箱庭（合コン・無人島・出られない部屋・オメガバース・ゾンビの街）：住人二人の体の関係の出来事のあと、
-       攻めに男性器があり受けが女性器だけ（HK.Pos.gen＝'f'。ふたなり・男性の受けは除く）なら、ときどき「孕んだかもしれない」の段を足す
-       （オメガバースの発情期のα×Ω・番は起きやすい。男性の体（男性器だけ）の受けのΩには、孕むはずのない体の疑似の気配だけ）。
+       攻めに男性器があり受けが女性器だけ（HK.Pos.gen＝'f'。ふたなり・男性の受けは除く）なら、ときどき「孕んだかもしれない」の段を足す。
+       オメガバースのα（男性器のある人）×Ωは、Ωの性別・性器によらず孕む（男性の体のΩも。性器「なし」の人は除く。発情期・番で起きやすい。
+       男性の体のΩの文は PREG_OMM・NEWS_OMM。2026-10-27 利用者の指示：同性でもオメガバースでは妊娠可）。
        のちの区切りで「妊娠が分かる」（ct_preg_news。二人の間柄で文が変わる）、結末の「その後」に妊娠・出産の一行。
        催眠（物語型）：性的な暗示を受けた女性器だけの人で、かける側に男性器があれば、結末に妊娠に気づく段。
    ・暴力をともなう性描写（violence）：敵対する二人の強引なエッチ（hate-sex-r18.js の HK.HateSex.scene。出られない部屋・オメガバース・ゾンビの街・合コン）に、
@@ -44,6 +45,8 @@
   function join(t, add) { return t + (/\n/.test(t) ? '\n\n' : '') + add; }
 
   /* ================= 妊娠・孕む描写 ================= */
+  /* 男性の体のΩ：女性の体を前提にした文（月のもの・危ない日・母になる）を外す（全部外れたら元のまま） */
+  function forBody(list) { var o = list.filter(function (t) { return !/月のもの|危ない日|母に/.test(t); }); return o.length ? o : list; }
   /* 二人の間柄（文の選び分け）：執着（どちらが執着する側か）・強引（敵対・強引な場面）・恋人・その場かぎり */
   function relKind(ctx, Tp, B, why) {
     var ts = tiesOf(ctx, Tp, B), pf = ctx.pair(Tp, B);
@@ -61,21 +64,23 @@
     var ord = P.order(acts[0], acts[1], [acts[0], acts[1]]), Tp = ord[0], B = ord[1];
     if (B._ctPreg || !P.okSex(Tp, B) || !P.hasM(Tp) || (ctx._ct && ctx._ct.preg.length >= 2)) return;
     var om = scenOf(ctx) === 'omega' && Tp.om && B.om, ao = om && Tp.om.sex === 'a' && B.om.sex === 'o';
-    var g = P.gen(B), pseudo = false;
-    if (g !== 'f') { if (ao && g === 'm') pseudo = true; else return; }
+    /* α×Ω は Ωの性器によらず（なしは除く）、ほかは女性器だけの受け */
+    var g = P.gen(B);
+    if (ao ? g === 'none' : g !== 'f') return;
+    var mb = !!ao && !P.isFBody(B);   /* 男性の体のΩ */
     var heat = ao && (B.om.heat > 0 || Tp.om.rut > 0);
     var bond = ao && HK.OMEGA && HK.OMEGA.B && HK.OMEGA.B.mateOf && HK.OMEGA.B.mateOf(ctx, B) === Tp;
     /* オメガバースは数か月〜二年で夜が多いので、一回ごとの確率を低く（発情期・番で上がる） */
-    var p = pseudo ? 0.12 : om ? 0.03 + (heat ? 0.04 : 0) + (bond ? 0.06 : 0) : 0.22 + (scenOf(ctx) === 'goukon' ? 0.06 : 0);
+    var p = om ? 0.03 + (heat ? 0.04 : 0) + (bond ? 0.06 : 0) : 0.22 + (scenOf(ctx) === 'goukon' ? 0.06 : 0);
     if (ctx.rng() >= p) return;
     var lw = HK.Lewd, low = lw && lw.lv(ctx.env) === 'low';
-    var list = pseudo ? T.PREG_PSEUDO : bond ? T.PREG_BOND : heat ? T.PREG_HEAT : !low && lw && lw.ero(ctx.env) ? T.PREG_HINT_ERO : T.PREG_HINT;
+    var list = mb ? T.PREG_OMM[bond ? 'bond' : heat ? 'heat' : 'hint'] : bond ? T.PREG_BOND : heat ? T.PREG_HEAT : !low && lw && lw.ero(ctx.env) ? T.PREG_HINT_ERO : T.PREG_HINT;
     var kind = relKind(ctx, Tp, B, e.why);
-    B._ctPreg = { by: Tp.i, at: ctx.stepIndex, kind: kind, pseudo: pseudo, omega: !!om, known: false };
+    B._ctPreg = { by: Tp.i, at: ctx.stepIndex, kind: kind, mb: mb, omega: !!om, known: false };
     book(ctx).preg.push(B.i);
     /* 行為の記録のすぐあとに、一つの記録として足す（行為の文の最後に、部屋を出る文などが続くことがあるため） */
     ctx.say({ kind: 'event', cat: 'solo', actors: [B, Tp], sex: true, mag: 14, text: ctx.t(pk(ctx, list), Tp, B),
-      why: '〔妊娠〕' + (pseudo ? B.name + 'の体が、孕むはずのない熱を宿したがった（疑似）' : B.name + 'は' + Tp.name + 'の子を孕んだかもしれない' + (heat ? '（発情期のα×Ω）' : bond ? '（番）' : '')) + '／内容のスイッチ「妊娠・孕む描写」・展開：重い' });
+      why: '〔妊娠〕' + B.name + 'は' + Tp.name + 'の子を孕んだかもしれない' + (heat ? '（発情期のα×Ω）' : bond ? '（番）' : '') + (mb ? '（男性の体のΩ）' : '') + '／内容のスイッチ「妊娠・孕む描写」・展開：重い' });
   }
   /* 体の関係の出来事を記録したあとに見る（エンジン型の箱庭）。暴力の段を差し込んだ場面が、厚い版の差し替え（omega-thick.js など）で落ちていたら、最初の段落のあとに戻す */
   var say0 = HK.Ctx.prototype.say;
@@ -93,7 +98,7 @@
     id: 'ct_preg_news', cat: 'solo', scope: 'solo', pri: true, noOdd: true, r18: true,
     when: function (ctx, a) {
       var p = a._ctPreg;
-      if (!p || p.known || p.pseudo || ctx.stepIndex - p.at < 1 || !on(ctx, 'preg')) return false;
+      if (!p || p.known || ctx.stepIndex - p.at < 1 || !on(ctx, 'preg')) return false;
       var F = ctx.chars[p.by];
       return !!F && HK.State.here(F) && HK.State.here(a);
     },
@@ -107,9 +112,51 @@
       else if (k === 'yanB') ctx.mod2(a, F, { att: 8 }, { ten: 8 });
       else ctx.stress(a, 6);
       var lab = { couple: '恋人の子', casual: 'その場かぎりの相手の子', forced: '強引に抱かれた相手の子', yanT: '執着する相手の子', yanB: '執着する相手の子（' + a.name + 'が執着する側）' }[k];
-      return { cat: k === 'couple' ? 'bond' : k === 'casual' ? 'solo' : 'conflict', with: [F], text: ctx.t(pk(ctx, T.NEWS[k]), a, F), why: a.name + 'の妊娠が分かった（' + F.name + 'との、' + lab + '）／〔妊娠〕内容のスイッチ「妊娠・孕む描写」・展開：重い', mag: 30 };
+      return { cat: k === 'couple' ? 'bond' : k === 'casual' ? 'solo' : 'conflict', with: [F], text: ctx.t(pk(ctx, p.mb ? forBody(T.NEWS[k]).concat(T.NEWS_OMM[k] || []) : T.NEWS[k]), a, F), why: a.name + 'の妊娠が分かった（' + F.name + 'との、' + lab + '）／〔妊娠〕内容のスイッチ「妊娠・孕む描写」・展開：重い', mag: 30 };
     }
   });
+
+  /* ---------- 内容のスイッチの欄の注記（ui.js の contentBox が呼ぶ）：この箱庭・この顔ぶれで起きないなら理由（起きうるなら ''） ----------
+     o：{ scenId, chars（参加する住人だけ。画面の住人でも input.chars でもよい）, env（heavy を見る）, pickOf(c)（箱庭ごとの欄。オメガバースの第二性） }。
+     参加者の組だけを見る（住人が多くても重くしない）。起きる条件は上の pregHook・saiminHook と、邪神村（solo-jashin-r18*.js。性別・性器によらず疑似妊娠・巫女） */
+  var PREG_STORY = { jashin: 'any', saimin: 'dark' };
+  function infoOf(id) { return HK.Load && HK.Load.info ? HK.Load.info(id) : HK.SCENARIOS && HK.SCENARIOS[id]; }
+  HK.Content.pregWhy = function (o) {
+    o = o || {};
+    var id = o.scenId, P = HK.Pos, st = PREG_STORY[id], sc = infoOf(id);
+    if (HK.SAFE_ON || st === 'any') return '';
+    if (NO_SCEN[id] || (!st && sc && sc.solo)) return 'この箱庭には妊娠の場面がありません';
+    if (!P) return '';
+    var cs = (o.chars || []).filter(function (c) { return c && !c.noR18; }), why = '';
+    if (st === 'dark') {
+      /* 催眠：かけられる側が女性器だけの人（自分で攻めを選んだ人は除く）。かける側は住人でも、男性のモブでもよい */
+      if (!cs.some(function (c) { return P.gen(c) === 'f' && !P.hardTop(c); })) why = '女性器だけの人（受けに回れる人）が参加していません';
+    } else {
+      var om = id === 'omega', pk = function (c) { return (o.pickOf && o.pickOf(c)) || c.pick || {}; };
+      /* 第二性（おまかせ・スイッチで変わりうるものも、なりうるなら可） */
+      var canA = function (c) { var x = pk(c); return !x.sex || x.sex === 'a' || (x.sex === 'o' && x.sw !== 'no'); };
+      var canO = function (c) { var x = pk(c); return !x.sex || x.sex === 'o' || (x.sex === 'a' && x.sw !== 'no') || (x.sex === 'b' && x.sw === 'yes'); };
+      var ok = cs.some(function (A) {
+        if (!P.hasM(A) || !P.canTop(A)) return false;
+        return cs.some(function (B) {
+          if (B === A || !P.canBottom(B) || !P.genderOK(A, B, true)) return false;
+          var g = P.gen(B);
+          return g === 'f' || (om && g !== 'none' && canA(A) && canO(B));
+        });
+      });
+      if (!ok) why = om ? '恋愛対象と受け攻めの合う「α（男性器のある人）×Ω」の組も、「男性器のある人×女性器だけの人」の組もありません' : '恋愛対象と受け攻めの合う「男性器のある人×女性器だけの人」の組がありません';
+    }
+    if (!why && !(HK.Dark && HK.Dark.on(o.env || {}) === 'dark')) why = '展開の重さが「重い」のときだけ起きます';
+    return why;
+  };
+  /* スイッチごと（妊娠のほかは、穏やかで切になるもの：mood-dial.js の OFF_MILD。R18が中心の箱庭は除く） */
+  HK.Content.why = function (tag, o) {
+    o = o || {};
+    if (tag === 'preg') return HK.Content.pregWhy(o);
+    var D = HK.Dark;
+    if (D && D.OFF_MILD && D.OFF_MILD[tag] && D.on(o.env || {}) === 'mild' && !(HK.Content.CORE && HK.Content.CORE[o.scenId])) return '展開の重さが「穏やか」のときは切として扱います';
+    return '';
+  };
 
   /* ================= 暴力をともなう性描写：敵対する二人の強引なエッチに差し込む段 ================= */
   var HS = HK.HateSex;
@@ -317,8 +364,8 @@
       if (!p || B.alive === false) return;
       var F = ctx.chars[p.by], E = T.END;
       var bonded = p.omega && F && HK.OMEGA && HK.OMEGA.B && HK.OMEGA.B.mateOf && HK.OMEGA.B.mateOf(ctx, B) === F;
-      var list = p.pseudo ? E.pseudo : !F || F.alive === false ? E.lost : bonded && (p.kind === 'couple' || p.kind === 'casual') ? E.omega : E[p.kind] || E.casual;
-      var tx = ctx.t(pk(ctx, list), F, B);
+      var list = !F || F.alive === false ? E.lost : bonded && (p.kind === 'couple' || p.kind === 'casual') ? E.omega : E[p.kind] || E.casual;
+      var tx = ctx.t(pk(ctx, p.mb ? forBody(list) : list), F, B);
       notes.push(/^その後/.test(tx) ? tx : 'その後：' + tx);
     });
     cs.dv.forEach(function (pf) {

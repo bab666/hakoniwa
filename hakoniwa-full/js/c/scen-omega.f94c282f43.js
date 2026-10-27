@@ -1,6 +1,6 @@
 ;
 /* ==== js/omega-jobs.js ==== */
-HK.Load.def(81,'js/omega-jobs.js',function(){
+HK.Load.def(103,'js/omega-jobs.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA;
@@ -130,95 +130,8 @@ J('p','help','b','{a}は「βだから狙われない｜＝｜βだから狙わ�
 })();
 });
 ;
-/* ==== js/omega-heat.js ==== */
-HK.Load.def(82,'js/omega-heat.js',function(){
-(function(){
-'use strict';
-var HK=window.HK,OM=HK.OMEGA;
-function fp(ctx,arr){return HK.Ero&&HK.Ero.fresh?HK.Ero.fresh(ctx,arr,function(l){return ctx.pick(l);}):ctx.pick(arr);}
-var H=OM.HEAT={};
-function L(s){return s.split('|');}
-OM.alphaTop=function(T,U){return!!(T&&U&&T.om&&U.om&&T.om.sex==='a'&&U.om.sex!=='a');};
-OM.bodyKind=function(T,U){
-var P=HK.Pos,fb=function(c){return P&&P.isFBody?P.isFBody(c): !!(c&&c.gender==='f');};
-var aT=OM.alphaTop(T,U)&& !(P&&P.genSet&&P.genSet(T)&& !P.hasM(T)),fT=fb(T)&& !aT,fU=fb(U);
-if(aT&&fb(T)&&P&&P.maleTop&&T.name&&U.name)P.maleTop[T.name+'\u0001'+U.name]=1;
-return fT&&fU?'ff':fT?'ride':fU?'mf':'mm';
-};
-OM.ffTU=function(T,U){return OM.bodyKind(T,U)==='ff';};
-H.COME={
-CP:L('「鍵、開けて。私だよ｜鍵を開けろ。私だ｜鍵、開けてください。私です」{a}の声はいつもより低かった。扉が開いた瞬間、{a}は{b}を抱き上げて寝室へ運んだ。|{a}は玄関で靴を揃え、抑制剤と水とタオルを並べてから、ようやく{b}の前に膝をついた。「待たせた｜待たせたな｜お待たせしました」|{a}は仕事を途中で切り上げ、スーツのまま駆けつけた。ネクタイを緩める指が、珍しく震えていた。|「こんな状態で一人でいないで｜こんな状態で一人でいるな｜こんな状態で一人でいないでください」{a}は叱るように言って、それから{b}をきつく抱きしめた。'),
-NP:L('{a}は温かいスープと着替えを抱えてやって来た。「大丈夫、大丈夫。全部やるから｜大丈夫、大丈夫だ。全部やる｜大丈夫、大丈夫ですよ。全部やりますから」|{a}は{b}の額に手を当てて、「熱いね。よく頑張った｜熱いな。よく頑張った｜熱いですね。よく頑張りました」と囁いた。それだけで{b}の目が潤んだ。|{a}は扉を開けるなり、汗で張りついた{b}の前髪をそっと払った。「呼んでくれて、ありがとう｜呼んでくれて、感謝する｜呼んでくださって、ありがとうございます」|{a}は{b}が好きな果物を剥いて、一切れずつ口元に運んだ。食べる余裕は、すぐになくなった。'),
-A:L('{a}は周期をカレンダーに記録していた。「予定通りだね。準備はしてある｜予定通りだな。準備はしてある｜予定通りですね。準備はしてあります」――言いながら、{a}の喉が鳴った。|{a}はまず換気をして、室温を整え、それから自分の理性が持つ時間を冷静に計算した。答えは「あまり持たない」だった。|{a}は{b}のフェロモンの濃さを一嗅ぎで測り、「今回は重いな｜今回は重い｜今回は重いですね」と呟いた。白衣を脱ぐみたいに、眼鏡を外した。|{a}は「同意の確認をする｜＝｜同意の確認をします」と真面目な顔で言った。{b}は笑って、それから「はやく｜早くしろ｜早くしてください」と答えた。'),
-FC:L('{a}は「お待たせ！｜待たせたな！｜お待たせしました！」と勢いよく扉を開け、そのまま{b}の匂いに当てられて玄関で膝から崩れた。|{a}は両手いっぱいにお菓子とゼリーを抱えてきた。「籠城の準備！｜籠城の準備だ！｜籠城の準備です！」――その籠城は三日続いた。|{a}は{b}を見るなり「うわ、かわいい｜ああ、かわいい｜わあ、かわいいです」と言ってしまって、自分で真っ赤になった。|{a}は窓から入ってきた。「玄関まで待てなかった｜＝｜玄関まで待てませんでした」'),
-AC:L('{a}は扉の前で三回深呼吸をして、四回目でようやくノックした。「入って、いい……？｜入っても、いいか……？｜入っても、いいですか……？」|{a}は「迷惑じゃなかった？｜迷惑ではなかったか？｜迷惑じゃなかったですか？」と何度も確認した。{b}は返事の代わりに、{a}の袖を掴んで引き込んだ。|{a}は自分の匂いが{b}を苦しめていないか心配して、少し離れた場所に座った。三分ももたなかった。|{a}は持ってきた差し入れを玄関に置いて帰ろうとした。{b}の「行かないで｜行くな｜行かないでください」が、背中に刺さった。')
-};
-H.STATE={
-CP:L('{b}は「私は一人で平気｜私は一人で平気だ｜私は一人で平気です」と言い張っていたが、布団の中で{a}のシャツを握りしめていた。|{b}は熱に浮かされながらも、「勘違いしないで、これは生理現象だから｜勘違いするな、これは生理現象だ｜勘違いしないでください、これは生理現象です」と言った。言いながら、{a}の首に腕を回していた。|{b}は唇を噛んで声を殺していた。{a}がその唇を親指でほどくと、堪えていた吐息があふれた。|{b}は最後まで強がって、「見ないで｜見るな｜見ないでください」と命令した。命令の声が、甘く崩れていた。'),
-NP:L('{b}は朦朧としながらも、「来てくれてありがとう。仕事、大丈夫だった？｜来てくれて感謝する。仕事は、大丈夫だったか？｜来てくださってありがとうございます。お仕事、大丈夫でしたか？」と{a}の心配をしていた。|{b}は{a}を巣の中に招き入れ、「ここ、{a}の場所｜ここは、{a}の場所だ｜ここ、{a}の場所です」と隣を叩いた。|{b}は熱い手で{a}の頬を包み、「我慢しなくていいよ｜我慢しなくていい｜我慢しなくていいですよ」と囁いた。|{b}は{a}の汗を自分の袖で拭いてやりながら、自分の方が汗だくだった。'),
-A:L('{b}は自分の症状を淡々と説明しようとしたが、三つ目の項目で言葉が続かなくなった。|{b}は「データ上、この状態は」と言いかけて、諦めて{a}にしがみついた。|{b}は抑制剤の効かなさを冷静に分析し、「だから、あなたが必要｜だから、あなたが必要だ｜だから、あなたが必要です」と結論づけた。|{b}は理屈を手放すのに時間がかかったが、手放した後はひどく素直だった。'),
-FC:L('{b}は「あつい、あつい」と子どもみたいにぐずって、{a}に全身でくっついた。|{b}は{a}の匂いを嗅いで「すき」と言った。匂いのことか、{a}のことか、本人にも分かっていなかった。|{b}は{a}の上着を奪い取って頭からかぶり、「いいにおい」と幸せそうに転がった。|{b}は甘えた声で何度も{a}の名前を呼び、呼ぶたびに笑った。'),
-AC:L('{b}は「ごめん、私、こんな姿……｜すまない、私は、こんな姿で……｜ごめんなさい、私、こんな姿……」と顔を隠して泣いていた。{a}が手をどけると、真っ赤な顔で目を逸らした。|{b}は{a}を困らせたくなくて、ずっと我慢していた。我慢の限界は、{a}が触れた瞬間に来た。|{b}は小さな声で「……さわって、ほしい｜……触って、ほしい｜……触って、ほしいです」と言った。それを言うのに、ずいぶん勇気が要ったようだった。|{b}は{a}の服の裾を指先でつまんで、離さなかった。')
-};
-H.MOE=L('部屋じゅうに{b}の{sb}の匂いが満ちていて、{a}は扉を閉めた瞬間に眩暈がした。|{b}は{a}の首筋に鼻を埋めて、「{sa}の匂い……落ち着く｜{sa}の匂いは……落ち着く｜{sa}の匂い……落ち着きます」と呟いた。|{sa}と{sb}の匂いが混ざり合って、二人だけの匂いになった。|{a}は{b}の{sb}の匂いを胸いっぱいに吸い込んで、目を閉じた。|{b}は{a}の服に残る{sa}の匂いを嗅いで、とろんとした目になった。|巣の真ん中に、{a}が失くしたと思っていたパーカーが鎮座していた。|{b}のうなじの匂いを嗅いだ{a}の目が、獣みたいに細くなった。|{b}は{a}の手のひらに頬をすり寄せて、猫のように目を細めた。|「いい匂い｜いい匂いだ｜いい匂いです」と言い合って、二人して照れた。|{a}が首筋に鼻先を寄せると、{b}の肩がびくりと跳ねて、それから力が抜けた。|{b}の巣は、{a}の服で作られていた。気づかれた{b}は、枕に顔を埋めて動かなくなった。|{a}は{b}の指を一本ずつ絡め取って、最後にぎゅっと握った。|{b}は{a}の喉仏に唇を寄せて、「ここ、好き｜ここが、好きだ｜ここ、好きです」と囁いた。|{a}の低い声で名前を呼ばれるたび、{b}の匂いが一段甘くなった。|{b}は{a}の心臓の音を聞きたがって、胸に耳を押し当てた。|{a}は{b}の額に自分の額を押し当てて、「熱、うつしていいよ｜熱を、うつしていい｜熱、うつしていいですよ」と笑った。|{b}は{a}のシャツのボタンを外そうとして、指が震えてうまくいかなかった。{a}が手を重ねて、一緒に外した。|{a}は{b}の汗ばんだ鎖骨に、そっと唇を落とした。|{b}は{a}の首に腕を回して、耳元で「もっと、近く｜もっと、近くに来い｜もっと、近くに来てください」と言った。|{a}と{b}の匂いが混ざって、部屋の空気が甘く重くなった。|{a}は{b}の涙を舌ですくった。「しょっぱい｜＝｜しょっぱいです」「……ばか」|{b}は{a}の背中に爪を立ててから、慌てて「ごめん｜すまない｜ごめんなさい」と言った。{a}は「もっとつけていい｜＝｜もっとつけていいですよ」と答えた。|{a}は{b}のうなじにかかる髪を、そっと指でよけた。噛まない。まだ。|{b}は「私を{a}の匂いで、いっぱいにして｜私を{a}の匂いで、いっぱいにしてくれ｜私を{a}の匂いで、いっぱいにしてください」と言った。{a}の理性が、音を立てて外れた。|{a}が{b}の名前を、聞いたことのない声で呼んだ。');
-H.AFTER={
-CP:L('熱が引いたあと、{b}は「……今回だけだからな｜……今回だけだ｜……今回だけですからね」と言った。{a}の腕の中から出ていく気配はなかった。|{b}は乱れたシーツを見て「片づけは{a}がやって｜片づけは{a}がやれ｜片づけは{a}がやってください」と命じた。耳まで赤かった。|{b}は{a}の首筋に残した自分の歯形を見つけて、黙って絆創膏を貼った。'),
-NP:L('{b}は{a}の髪を撫でながら、「付き合ってくれてありがとう｜付き合ってくれて感謝する｜付き合ってくださってありがとうございます」と言った。{a}は「こっちの台詞｜こちらの台詞だ｜こちらの台詞です」と答えた。|{b}は{a}のためにお茶を淹れようとして立ち上がり、腰が抜けてまたベッドに戻された。|{b}は眠った{a}の顔を眺めて、そっと毛布をかけ直した。'),
-A:L('{b}は天井を見上げて、「次の周期まで、あと何日だっけ｜次の周期まで、あと何日だったか｜次の周期まで、あと何日でしたっけ」と呟いた。{a}は「数えなくていい｜＝｜数えなくていいですよ」と答えた。|{b}は今回のことを冷静に振り返ろうとして、恥ずかしさで布団に潜り込んだ。|{b}は{a}の腕枕の位置を三回調整してから、ようやく落ち着いた。'),
-FC:L('{b}は「おなかすいた！｜腹が減った！｜おなかがすきました！」と叫び、{a}が作ったおにぎりを三つ平らげた。|{b}は{a}の背中の引っかき傷を数えて、「勲章だね｜勲章だな｜勲章ですね」と笑った。|{b}は{a}にくっついたまま、「また来てね、絶対ね｜また来い、絶対だぞ｜また来てくださいね、絶対ですよ」と五回言った。'),
-AC:L('{b}は「私、迷惑かけて、ごめん｜私が迷惑をかけて、すまない｜私、迷惑かけて、ごめんなさい」と言いかけて、{a}の人差し指で唇を塞がれた。|{b}は{a}の匂いが残ったシャツを、こっそり巣に戻した。|{b}は{a}の寝顔を見ながら、「好き｜好きだ｜好きです」と声に出さずに唇だけ動かした。')
-};
-H.LOW=L('――カーテンの隙間から朝日が差すまで、部屋の明かりは消えなかった。|――そのあとのことは、二人だけが知っている。|――三日後、二人はようやく揃って玄関から出てきた。');
-function top(c){return HK.voiceTop(c);}
-H.scene=function(ctx,a,b,opt){
-opt=opt||{};
-var pk=function(arr){return fp(ctx,arr);},ta=top(a),tb=top(b),lew=ctx.env.lewd||'mid';
-if(!H.ACT)lew='low';
-var o0=HK.Pos?HK.Pos.order(a,b,[a,b]):[a,b],rev= !!HK.Pos&&o0[0]===b,ff= !!HK.Pos&&OM.ffTU(o0[0],o0[1]);
-var noRecv=function(arr,re){if(!rev)return arr;var f=arr.filter(function(l){return!re.test(l);});return f.length?f:arr;};
-var moe=H.MOE.filter(function(l){return!((ff||(HK.Pos&&HK.Pos.isFBody(a)))&& /喉仏/.test(l));});
-var out=[pk(H.COME[ta]),pk(noRecv(H.STATE[tb],/触れた瞬間|さわって|ほどくと/)),pk(noRecv(moe,/いっぱいにして|噛まない|肩がびくりと/))];
-if(lew==='low')out.push(pk(H.LOW));
-else if(ff){
-out.push(rev?pk(H.ACT_FF[lew==='high'?'high':'mid']).replace(/\{a\}/g,'\u0001').replace(/\{b\}/g,'{a}').replace(/\u0001/g,'{b}').replace(/\{sa\}/g,'\u0002').replace(/\{sb\}/g,'{sa}').replace(/\u0002/g,'{sb}'):pk(H.ACT_FF[lew==='high'?'high':'mid']));
-if(ctx.rng()<0.5)out.push(pk(H.AFTERGLOW_FF));
-}
-else if(rev){
-out.push(pk(H.ACT_R[lew==='high'?'high':'mid'][tb]));
-if(ctx.rng()<(lew==='high'?0.7:0.4))out.push(pk(H.KNOT_R));
-}else{
-var nori=H.NORI?H.NORI.filter(function(l){return!(HK.Pos&&HK.Pos.hardTop(a,b)&& /押し倒/.test(l));}):[];
-out.push(nori.length&&HK.Pos&&HK.Pos.nori(b)&&ctx.rng()<0.45?pk(nori):pk(H.ACT[lew==='high'?'high':'mid'][ta]));
-if(opt.beta)out.push(pk(H.BETA));
-else if(ctx.rng()<(lew==='high'?0.8:0.5))out.push(pk(H.KNOT));
-}
-var extraPlay=lew!=='low'&& !ff&&OM.lovePlay&&ctx.rng()<0.55?(rev?OM.lovePlay(ctx,b,a).replace(/\{a\}/g,'\u0001').replace(/\{b\}/g,'{a}').replace(/\u0001/g,'{b}'):OM.lovePlay(ctx,a,b)):null;
-if(extraPlay)out.splice(out.length-(rev|| !opt.beta?1:1),0,extraPlay);
-var V=HK.Voice,pf=function(arr){return fp(ctx,arr);};
-if(V&&lew!=='low'){
-var rc=rev?a:b,rk=rev?'a':'b',gv=rev?b:a,gk=rev?'b':'a';
-if(ctx.rng()<0.35)out.splice(out.length-1,0,V.line(pf,rc.persona,'edge',rk));
-out.push(V.line(pf,rc.persona,'climax',rk));
-if(ctx.rng()<0.3)out.push(V.line(pf,gv.persona,'climax',gk));
-}
-var sc=OM.sc||function(t){return t;};
-var txt=out.map(function(s){return sc(ctx.t(s,a,b),a,b);}).join('');
-var res=txt+(opt.insert||'')+sc(ctx.t(pk(noRecv(H.AFTER[tb],/腰が抜け/)),a,b),a,b)+(V&&ctx.rng()<0.35?ctx.t(V.line(pf,b.persona,'after','b'),a,b):'');
-if(ff&&HK.FF){var o2=HK.Pos.order(a,b,[a,b]);res=HK.FF.fix(ctx,res,o2[0],o2[1],{tools:true});}
-return res;
-};
-H.count=function(){
-var n=H.MOE.length+(H.KNOT?H.KNOT.length+H.BETA.length:0)+H.LOW.length;
-['COME','STATE','AFTER'].forEach(function(k){Object.keys(H[k]).forEach(function(f){n+=H[k][f].length;});});
-if(H.ACT)['mid','high'].forEach(function(k){Object.keys(H.ACT[k]).forEach(function(f){n+=H.ACT[k][f].length+H.ACT_R[k][f].length;});});
-n+=H.KNOT_R?H.KNOT_R.length:0;
-return n;
-};
-})();
-});
-;
 /* ==== js/omega-bond.js ==== */
-HK.Load.def(84,'js/omega-bond.js',function(){
+HK.Load.def(106,'js/omega-bond.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA;
@@ -406,7 +319,7 @@ return c.name+'は誰とも結ばれず、自分の暮らしを続けている�
 });
 ;
 /* ==== js/omega-status.js ==== */
-HK.Load.def(85,'js/omega-status.js',function(){
+HK.Load.def(107,'js/omega-status.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA;
@@ -496,7 +409,7 @@ ST.BETA=L('{a}はαとΩの揉めごとを、βらしく少し離れたところ
 });
 ;
 /* ==== js/omega-jobs-extra.js ==== */
-HK.Load.def(86,'js/omega-jobs-extra.js',function(){
+HK.Load.def(108,'js/omega-jobs-extra.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA,ST=OM.STATUS;
@@ -642,7 +555,7 @@ return{cat:cat,text:wfill(ctx,ctx.pick(BOSS[k]).replace(/\{shop\}/g,B.om.shop||'
 });
 ;
 /* ==== js/omega-jobs-each-a.js ==== */
-HK.Load.def(87,'js/omega-jobs-each-a.js',function(){
+HK.Load.def(109,'js/omega-jobs-each-a.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA;
@@ -823,7 +736,7 @@ J('p','conflict','','{a}は{b}との会話を、うっかり配信で話して�
 });
 ;
 /* ==== js/omega-jobs-each-b.js ==== */
-HK.Load.def(88,'js/omega-jobs-each-b.js',function(){
+HK.Load.def(110,'js/omega-jobs-each-b.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA;
@@ -1085,7 +998,7 @@ if(/残業から帰った深夜、/.test(e.text)&&e.actors&&e.actors.length>=2&&
 });
 ;
 /* ==== js/omega-jobs-pair.js ==== */
-HK.Load.def(89,'js/omega-jobs-pair.js',function(){
+HK.Load.def(111,'js/omega-jobs-pair.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA;
@@ -1285,7 +1198,7 @@ return{cat:cat,text:t,why:D.label+'（'+x.name+'・'+OM.jobName(x)+'／'+y.name+
 });
 ;
 /* ==== js/omega-jobs-pair2.js ==== */
-HK.Load.def(90,'js/omega-jobs-pair2.js',function(){
+HK.Load.def(112,'js/omega-jobs-pair2.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA;
@@ -1493,7 +1406,7 @@ return c.om.field;
 });
 ;
 /* ==== js/scenario-omega.js ==== */
-HK.Load.def(91,'js/scenario-omega.js',function(){
+HK.Load.def(113,'js/scenario-omega.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA;
@@ -1530,10 +1443,10 @@ return slash(ctx,ctx.t(t,a,b)).replace(/\{jobraw\}/g,a?job(a).name:'').replace(/
 function fated(ctx,a,b){var t=HK.Ties&&HK.Ties.get(ctx,a,b);return!!(t&&t.type==='fated')|| !!(ctx.om&&ctx.om.fatedKnown&&ctx.om.fatedKnown[key(a,b)]);}
 OM.isFated=fated;
 function met(ctx,a,b){return!fated(ctx,a,b)||ctx.om.met[key(a,b)];}
+function partnersOf(ctx,a){return ctx.present().filter(function(o){return o!==a&&ctx.pair(a,o).couple;});}
 function partnerOf(ctx,a){
-var p=null;
-ctx.present().forEach(function(o){if(o!==a&&ctx.pair(a,o).couple)p=o;});
-return p;
+var ps=partnersOf(ctx,a);
+return ps.length>1?ps[((ctx.stepIndex||0)+a.i)%ps.length]:ps[0]||null;
 }
 function addFx(ctx,a,b,fx){
 if(fx.ab&&b)ctx.mod(a,b,fx.ab);
@@ -1719,8 +1632,8 @@ a.name+'は'+where+'で、知らない匂いに足を止めた。その先に'+b
 ]);
 ctx.say({kind:'event',cat:'romance',actors:[a,b],text:t+a.name+'からは'+short(a)+'、'+b.name+'からは'+short(b)+'の匂いがした。'+(d<0.3?'――それが運命の番の匂いだと、二人はまだ知らなかった。':'運命の番だった。')+(HK.Attr&&HK.Attr.meetLine?HK.Attr.meetLine(a,b,ctx)||HK.Attr.meetLine(b,a,ctx):''),why:'運命の番の出会い（遺伝子レベルの惹かれ）／運命の抗えなさ '+Math.round(d*100)+(d<0.3?'：出会っても気づくのに時間がかかる':d>0.7?'：一目で落ちる':''),mag:40});
 [a,b].forEach(function(x){
-var y=x===a?b:a,p=partnerOf(ctx,x);
-if(p&&p!==y){ctx.pair(x,p).fatedPending=true;ctx.say({kind:'event',cat:'romance',actors:[x,p],text:x.name+'には、'+p.name+'という恋人がいる。'+x.name+'はその夜、'+p.name+'からの連絡に返事ができなかった。',why:'運命の番と、今の恋人',mag:15});}
+var y=x===a?b:a;
+partnersOf(ctx,x).forEach(function(p){if(p!==y){ctx.pair(x,p).fatedPending=true;ctx.say({kind:'event',cat:'romance',actors:[x,p],text:x.name+'には、'+p.name+'という恋人がいる。'+x.name+'はその夜、'+p.name+'からの連絡に返事ができなかった。',why:'運命の番と、今の恋人',mag:15});}});
 });
 });
 P.forEach(function(c){
@@ -1771,8 +1684,7 @@ else txt+='鏡に映る自分の目つきが、少しだけ鋭くなった気が
 ctx.say({kind:'event',cat:'solo',actors:[c],text:txt,why:'スイッチする体質'+(quit?'／世間の偏見（'+ctx.env.society+'）と職業':''),mag:35});
 ctx.stress(c,quit?40:20);
 if(to==='o'){c.om.heatAt=ctx.stepIndex+2;}
-var p=partnerOf(ctx,c);
-if(p){
+partnersOf(ctx,c).forEach(function(p){
 var r=ctx.R(p,c),was=from+sx(p),now=to+sx(p);
 if(r.aff+r.trust>90||p.tr.np>0.65){
 ctx.mod2(p,c,{aff:6,trust:8},{aff:10,trust:12});
@@ -1784,7 +1696,7 @@ ctx.pair(p,c).switchStrain=true;
 ctx.say({kind:'event',cat:'conflict',actors:[p,c],text:p.name+'は、'+c.name+'の新しい匂いに戸惑っていた。「……ごめん、少し時間がほしい｜……すまない、少し時間がほしい｜……すみません、少し時間がほしいです」',why:'第二性の組み合わせが変わった',mag:18});
 }
 if(om.bonded[key(c,p)]&&from==='o'){delete om.bonded[key(c,p)];delete om.bondOf[c.i];c.om.bondLost=true;ctx.say({kind:'event',cat:'romance',actors:[c,p],text:c.name+'のうなじの番の印が、日ごとに薄れていった。'+p.name+'はそれを、何も言えずに見ていた。',why:'Ωでなくなると番は解ける',mag:25});}
-}
+});
 if(OM.onSwitch)OM.onSwitch(ctx,c);
 ctx.present().forEach(function(o){
 if(o===c)return;
@@ -1947,6 +1859,7 @@ var willBite=BD.canBite(ctx,X,O)&&(pf.couple||isF)&&rX.trust>need&&rO.trust>need
 var oLead=HK.Pos&&HK.Pos.order(X,O,[X,O])[0]===O;
 var instinct= !willBite&& !oLead&&BD.canBite(ctx,X,O)&&isF&&d>0.6&& !(HK.Obsess&&ctx.pair(X,O).ob&&ctx.pair(X,O).ob[X.i]&&ctx.pair(X,O).ob[X.i].lv>=40)&&ctx.rng()<(d-0.6)*1.2;
 var biteL=['{b}は自分から髪をかき上げて、うなじを差し出した。「噛んで｜噛め｜噛んでください」――{a}の歯が沈んだ瞬間、二人は番になった。','「いいの？一生だよ｜いいのか。一生だぞ｜いいんですか？一生ですよ」{a}の問いに、{b}は頷いた。{a}はうなじに深く歯を立てた。'];
+if(!oLead)biteL.push('果てる寸前、{a}は{b}のうなじに深く歯を立てた。{b}は痛みと熱の中で、自分が{a}のものになったのを感じた。');
 var instL=['「待って、まだ――｜待て、まだ――｜待ってください、まだ――」{b}の声が終わる前に、{a}の歯はうなじに沈んでいた。運命の匂いの前では、約束も順番も意味をなさなかった。','噛まないつもりだった。{a}はそう思っていた。気づいたときには口の中に血の味があり、{b}のうなじに自分の歯形があった。{b}は泣きながら、{a}の背中に腕を回した。'];
 var biteT=willBite?ctx.t(ctx.pick(biteL),X,O):instinct?ctx.t(ctx.pick(instL),X,O):'';
 var t=heatLine.scene(ctx,X,O,{beta:sx(X)==='b',insert:biteT});
@@ -2061,7 +1974,7 @@ var o=rivalTarget(ctx,a,b),k=key(a,b);
 ctx.om.rival[k]=o.i;
 if(HK.Obsess)HK.Obsess.feed(ctx,a,o,8);
 ctx.mod2(a,b,{ten:12,aff: -6},{ten:12,aff: -6});
-var won=partnerOf(ctx,o);
+var ops=partnersOf(ctx,o),won=ops.indexOf(a)>=0?a:ops.indexOf(b)>=0?b:null;
 var t=won?ctx.t(won===a?'{b}は、{c}の隣に立つ{a}を睨みつけた。αの威圧がぶつかり、店のグラスが鳴った。':'{a}は{c}の恋人である{b}に、真正面から言った。「譲る気はないよ｜譲る気はない｜譲る気はありません」',a,b,o)
 :ctx.t(ctx.pick(['{a}と{b}は、{c}を挟んで笑顔で牽制し合った。目は笑っていなかった。','{c}をめぐって、{a}と{b}のαの匂いがぶつかった。周りの人が数歩下がった。','{a}は{b}に「{c}に近づかないで｜{c}に近づくな｜{c}さんに近づかないでください」と言った。{b}は「それを決めるのは{c}だよ｜それを決めるのは{c}だ｜それを決めるのは{c}さんです」と返した。']),a,b,o);
 return{text:t,why:'二人のαが同じΩ（'+o.name+'）に惹かれている',with:[o],mag:15};
@@ -2414,7 +2327,7 @@ if(HK.SCEN_ORDER.indexOf('omega')<0)HK.SCEN_ORDER.push('omega');
 });
 ;
 /* ==== js/omega-passion.js ==== */
-HK.Load.def(92,'js/omega-passion.js',function(){
+HK.Load.def(114,'js/omega-passion.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA,BD=OM.B,SX=OM.SEX;
@@ -2424,10 +2337,10 @@ function key(a,b){return a.i<b.i?a.i+'-'+b.i:b.i+'-'+a.i;}
 function ao(a,b){return(sx(a)==='a'&&sx(b)==='o')||(sx(a)==='o'&&sx(b)==='a');}
 function alphaOf(a,b){return sx(a)==='a'?a:b;}
 function omegaOf(a,b){return sx(a)==='o'?a:b;}
+function partnersOf(ctx,a){return ctx.present().filter(function(o){return o!==a&&ctx.pair(a,o).couple;});}
 function partnerOf(ctx,a){
-var p=null;
-ctx.present().forEach(function(o){if(o!==a&&ctx.pair(a,o).couple)p=o;});
-return p;
+var ps=partnersOf(ctx,a);
+return ps.length>1?ps[((ctx.stepIndex||0)+a.i)%ps.length]:ps[0]||null;
 }
 function tieType(ctx,a,b){var t=HK.Ties&&HK.Ties.get(ctx,a,b);return t?(t.like||t.type):'';}
 function fill(ctx,t,a,b,c){return OM.sc(OM.fill(ctx,ctx.t(t,a,b,c),a,b),a,b);}
@@ -2494,11 +2407,12 @@ why+='／'+O.name+'にはもう番（'+mate.name+'）がいる';
 if(pf.couple)t+='恋人として過ごしてきた日々の意味が、その日から少しだけ変わった。';
 ctx.say({kind:'event',cat:'romance',actors:[a,b],text:t,why:why,mag:42});
 [a,b].forEach(function(x){
-var y=x===a?b:a,p=partnerOf(ctx,x);
-if(p&&p!==y&& !late){
+var y=x===a?b:a;
+partnersOf(ctx,x).forEach(function(p){
+if(p===y||late)return;
 ctx.pair(x,p).fatedPending=true;
 ctx.say({kind:'event',cat:'romance',actors:[x,p],text:x.name+'には、'+p.name+'という恋人がいる。その夜、'+x.name+'は'+p.name+'の顔をまっすぐ見られなかった。',why:'運命の番と、今の恋人',mag:15});
-}
+});
 });
 return true;
 }
@@ -2571,6 +2485,7 @@ return{text:fill(ctx,t,a,b,p),why:why,with:w,mag:24};
 });
 var HN={
 open:L('「あなたなんか嫌いだ｜＝｜あなたなんか嫌いです」と{a}が言った。「知ってる｜知っている｜知っています」と{b}が言った。それが合図だった。|言い争いは、いつの間にか服の掴み合いになり、ベッドの上で終わった。|{a}と{b}は、互いの悪口を言い合いながら、ホテルの部屋の鍵を開けた。|殴り合いの寸前で、{a}は{b}の手首を掴み、そのまま壁に縫いとめた。'),
+mid:L('優しさはひとつもなかった。爪と歯の痕だけが、互いの肌に残った。――|{b}は{a}の肩に噛みつき、{a}は{b}の名前を罵るように呼んだ。どちらも、相手を離さなかった。――|「嫌い｜嫌いだ｜嫌いです」と言うたびに、{a}は{b}を深く抱いた。{b}は泣きながら、それでも{a}の背中にしがみついた。――'),
 low:L('――その夜、二人が何をしたかは、乱れたシーツだけが知っている。――|――翌朝、{b}の首筋には、隠しきれない痕が残っていた。――'),
 end:L('朝、二人は目を合わせずに服を着た。「今のは、なかったことにしろ｜＝｜今のは、なかったことにしてください」「言われなくても｜言われなくても、そうする｜言われなくても、そうします」|{a}は眠る{b}の顔を、憎らしそうに、それでいて名残惜しそうに見つめていた。|{b}が先に部屋を出た。ドアが閉まる直前、「次はない｜＝｜次はありません」と言った。次は、たぶんある。')
 };
@@ -2606,6 +2521,7 @@ var NT={
 steal:L('{a}は、{b}に恋人がいるのを知っていた。知っていて、{b}を自分の部屋に誘った。{b}は断らなかった。|「{c}には黙っておけばいい｜＝｜{c}には黙っておけばいいんです」――{a}の囁きに、{b}は小さく頷いた。|{a}は{c}と{b}が待ち合わせていた店に先回りし、{b}だけを連れ出した。その夜、{b}は帰らなかった。|{b}の恋人が出張でいない夜だった。{a}からの「今から会える？｜今から会えるか？｜今から会えますか？」に、{b}は五分で返事をした。'),
 rival:L('{a}は{c}が憎かった。だから{c}のいちばん大事なものを奪うことにした。――{b}は、{a}の腕の中で{c}の名前を一度も呼ばなかった。|{a}は{b}の首筋に、わざと見える位置に痕をつけた。「{c}に見せてやれよ｜{c}に見せてやれ｜{c}に見せてあげてください」'),
 cheat:L('恋人の{c}の顔が浮かんだ。それでも{a}は、{b}の手を離さなかった。|{a}は{c}からの着信を無視して、{b}の上着を脱がせた。|{a}は{c}に「残業」と送ってから、{b}の待つホテルに向かった。'),
+scene:L('――言い訳を探すより先に、体が動いた。|――{sa}と{sb}の匂いが混ざり合い、もう引き返せなかった。|――シーツの上で、{b}は罪悪感と快感の区別がつかなくなっていた。'),
 low:L('――その先は、二人だけの秘密になった。|――朝まで、二人の部屋の明かりは消えなかった。'),
 after:L('帰り道、{b}はシャワーを二回浴びたのに、まだ{a}の匂いが消えない気がしていた。|翌朝、{b}は{c}に「おはよう｜＝｜おはようございます」と送った。指が少し震えていた。|{a}は満足げに煙草に火をつけ、{b}は黙って背を向けた。'),
 refuseSelf:L('{a}は{b}に手を伸ばしかけて、やめた。恋人の{c}の顔が浮かんだ。|{a}は{b}からの「今夜会える？｜今夜会えるか？｜今夜会えますか？」に、長いこと返信を打っては消して、結局「ごめん｜すまない｜すみません」とだけ送った。|{b}の部屋の前まで来て、{a}は引き返した。ポケットの中で、{c}からもらった鍵が冷たかった。'),
@@ -2783,17 +2699,17 @@ return null;
 });
 ;
 /* ==== js/omega-mob.js ==== */
-HK.Load.def(93,'js/omega-mob.js',function(){
+HK.Load.def(115,'js/omega-mob.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA,BD=OM.B,SX=OM.SEX;
 var scen=HK.SCENARIOS.omega,EV=scen.events;
 function sx(c){return c.om.sex;}
 function key(a,b){return a.i<b.i?a.i+'-'+b.i:b.i+'-'+a.i;}
+function partnersOf(ctx,a){return ctx.present().filter(function(o){return o!==a&&ctx.pair(a,o).couple;});}
 function partnerOf(ctx,a){
-var p=null;
-ctx.present().forEach(function(o){if(o!==a&&ctx.pair(a,o).couple)p=o;});
-return p;
+var ps=partnersOf(ctx,a);
+return ps.length>1?ps[((ctx.stepIndex||0)+a.i)%ps.length]:ps[0]||null;
 }
 function tieType(ctx,a,b){var t=HK.Ties&&HK.Ties.get(ctx,a,b);return t?(t.like||t.type):'';}
 function L(s){return s.split('|');}
@@ -3052,7 +2968,7 @@ OM.MOB={names:NAMES,of:mobOf};
 });
 ;
 /* ==== js/omega-love.js ==== */
-HK.Load.def(95,'js/omega-love.js',function(){
+HK.Load.def(117,'js/omega-love.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA,scen=HK.SCENARIOS&&HK.SCENARIOS.omega,K=OM&&OM._love;
@@ -3104,7 +3020,7 @@ return r;
 });
 ;
 /* ==== js/omega-guard.js ==== */
-HK.Load.def(96,'js/omega-guard.js',function(){
+HK.Load.def(118,'js/omega-guard.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA,scen=HK.SCENARIOS&&HK.SCENARIOS.omega;
@@ -3220,7 +3136,7 @@ return r;
 });
 ;
 /* ==== js/omega-after.js ==== */
-HK.Load.def(97,'js/omega-after.js',function(){
+HK.Load.def(119,'js/omega-after.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA;
@@ -3244,7 +3160,7 @@ ctx.say({kind:'event',cat:'romance',actors:[A,O],text:'――番になって、�
 });
 ;
 /* ==== js/omega-ties.js ==== */
-HK.Load.def(98,'js/omega-ties.js',function(){
+HK.Load.def(120,'js/omega-ties.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA,scen=HK.SCENARIOS&&HK.SCENARIOS.omega;
@@ -3254,7 +3170,7 @@ function sx(c){return c&&c.om&&c.om.sex;}
 function ao(a,b){return(sx(a)==='a'&&sx(b)==='o')||(sx(a)==='o'&&sx(b)==='a');}
 function inHeat(c){return sx(c)==='o'&&c.om.heat>0;}
 function inRut(c){return sx(c)==='a'&&c.om.rut>0;}
-function partnerOf(ctx,a){var p=null;ctx.present().forEach(function(o){if(o!==a&&ctx.pair(a,o).couple)p=o;});return p;}
+function otherP(ctx,a,x){return ctx.present().some(function(o){return o!==a&&o!==x&&ctx.pair(a,o).couple;});}
 function nonWorker(c){return OM.nonWorker?OM.nonWorker(c):false;}
 function fill(ctx,t,a,b){var s=OM.fill?OM.fill(ctx,t,a,b):ctx.t(t,a,b);return OM.sc?OM.sc(s,a,b):s;}
 function soc(ctx){return ctx.env.society==null?60:ctx.env.society;}
@@ -3413,8 +3329,7 @@ if(HK.tieNoLove&&HK.tieNoLove(t))return false;
 if(HK.TIES[t.type]&&HK.TIES[t.type].family&&t.love!=='ok')return false;
 if(!ctx.romanceOk([A,B]))return false;
 if(ctx.pair(A,B).kin)return false;
-var pa=partnerOf(ctx,A),pb=partnerOf(ctx,B);
-if((pa&&pa!==B)||(pb&&pb!==A))return false;
+if(otherP(ctx,A,B)||otherP(ctx,B,A))return false;
 var mA=mateOf(ctx,A),mB=mateOf(ctx,B);
 if((mA&&mA!==B)||(mB&&mB!==A))return false;
 return true;
@@ -3458,7 +3373,7 @@ return res(ctx,pick(ctx,X.dom[dk]),A,B,'conflict',B.name+'は'+A.name+'の信仰
 }
 if(type==='worship'){
 var rb=ctx.R(B,A),cold=t.cold;
-if((rb.aff<0||rb.ten>30||cold==='confused'||(partnerOf(ctx,B)&&partnerOf(ctx,B)!==A))&&ctx.rng()<0.4){
+if((rb.aff<0||rb.ten>30||cold==='confused'||otherP(ctx,B,A))&&ctx.rng()<0.4){
 ctx.mod(A,B,{aff:2,trust:2});
 return res(ctx,pick(ctx,X.unwaver),A,B,'bond',A.name+'は'+B.name+'を信仰している。想いは揺らがない（相手が'+(rb.aff<0?'冷たくても':cold==='confused'?'戸惑っていても':'ほかを見ていても')+'）',6);
 }
@@ -3590,7 +3505,7 @@ e.when=function(ctx,a,b){if(b&&OM.worshipNoNight(ctx,a,b))return false;return w0
 });
 ;
 /* ==== js/omega-secret.js ==== */
-HK.Load.def(99,'js/omega-secret.js',function(){
+HK.Load.def(121,'js/omega-secret.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA,scen=HK.SCENARIOS&&HK.SCENARIOS.omega;
@@ -3603,10 +3518,10 @@ function top(c){return HK.voiceTop?HK.voiceTop(c):'NP';}
 function here(c){return!!c&&(HK.State?HK.State.here(c):c.alive!==false);}
 function nose(c){return sx(c)==='a'||sx(c)==='o';}
 function safe(){return!!HK.SAFE_ON;}
+function partnersOf(ctx,a){return ctx.present().filter(function(o){return o!==a&&ctx.pair(a,o).couple;});}
 function partnerOf(ctx,a){
-var p=null;
-ctx.present().forEach(function(o){if(o!==a&&ctx.pair(a,o).couple)p=o;});
-return p;
+var ps=partnersOf(ctx,a);
+return ps.length>1?ps[((ctx.stepIndex||0)+a.i)%ps.length]:ps[0]||null;
 }
 function fill(ctx,t,a,b,x){
 x=x||{};
@@ -3976,8 +3891,270 @@ return txt0(ctx,A,B,cl);
 })();
 });
 ;
+/* ==== js/omega-thick-scen.js ==== */
+HK.Load.def(124,'js/omega-thick-scen.js',function(){
+(function(){
+'use strict';
+var HK=window.HK,OM=HK&&HK.OMEGA,K=OM&&OM._thk;
+if(!K)return;
+function L(s){return s.split('|');}
+var TK=HK.TKC;
+var fp=K.fp,cbKnot=K.cbKnot,cbPlay=K.cbPlay,eroScene=K.eroScene,faF=K.faF,ffOk=K.ffOk,lw=K.lw,omTop=K.omTop,omTops=K.omTops,toTU=K.toTU,weaveShort=K.weaveShort;
+var BOND_LEAD=L('{U}のうなじの噛み跡に、{T}がそっと唇を寄せた。そこに触れられるだけで、{U}の体から力が抜けていく。|番の匂いが混ざり合って、どちらの熱なのか分からなくなっていた。|');
+var l0=OM.loveScene;
+if(l0)OM.loveScene=function(ctx,x,y,bond){
+var s=l0.apply(this,arguments);
+var lew=ctx.env.lewd||'mid';
+if(!TK.on(lew)|| !HK.Pos|| !HK.Voice|| !s|| !s.A)return s;
+var A=s.A,B=s.B,LV=OM.LOVE;
+if(!TK.ok(A,B))return s;
+var L2=lw.last=lw(ctx);
+if(L2.short&& !L2.ero){s.text=weaveShort(ctx,s.text,A,B,bond?'bond':'love',0.7);return s;}
+if(L2.ero){s.text=(s.text.match(/^[^。]*。/)||[''])[0]+(L2.short?'':'\n\n')+eroScene(ctx,A,B,'','',TK.kind(A,B,'omega'));return s;}
+var kd=TK.kind(A,B,'omega'),pk=function(arr){return fp(ctx,arr);},ff=kd==='ff',hi=lew==='high';
+var riba=HK.Pos.bothRiba&&HK.Pos.bothRiba(A,B);
+var cp=cbPlay(pk,A,B,kd,riba),extra=[cp.play];
+if(hi&&LV){
+if(kd==='ff'){var pf2=LV.T.playFF.filter(ffOk(riba));if(pf2.length)extra.push('それから、'+toTU(pk(pf2),true,A,B));}
+else if(kd!=='ride'){var ab=[];LV.T.play.forEach(function(p){ab=ab.concat(p.base);});extra.push('それから、'+toTU(pk(faF(A,kd,ab)),true,A,B));}
+}
+var lead=(bond&& !ff?pk(BOND_LEAD):'')+(LV&&kd!=='ride'&&ctx.rng()<0.6?toTU(pk(faF(A,kd,LV.T.lead[HK.voiceTop(A)]||LV.T.lead.NP)),true,A,B):'');
+var fin=hi||ctx.rng()<0.7?cbKnot(pk,A,B,kd,cp.cb):'';
+var aft=LV&&ctx.rng()<0.7?toTU(pk(bond&&ctx.rng()<0.5?LV.T.bondAfter:LV.T.after[HK.voiceTop(B)]||LV.T.after.NP),true,A,B):null;
+var body=TK.body(A,B,{flav:'omega',pick:pk,rng:ctx.rng,bed:'シーツ',depth:hi?3:1,lead:lead,extra:extra,finish:fin,after:aft,fore:true,top:omTops(ctx,A,B,bond?'bond':'love')});
+var sc=OM.sc||function(t){return t;};
+var text=sc(ctx.t(TK.map(body.replace(/\{sT\}/g,'{sa}').replace(/\{sU\}/g,'{sb}'),'a','b'),A,B),A,B);
+if(ff&&HK.FF)text=HK.FF.fix(ctx,text,A,B,{tools:true});
+var first=(s.text.match(/^[^。]*。/)||[''])[0];
+s.text=first+'\n\n'+text;
+return s;
+};
+var HATE_LEAD=L('憎まれ口の応酬は、いつの間にか口づけに変わっていた。|「嫌いだ」と言いながら、{T}は{U}の服を引き裂くように脱がせた。|睨み合ったまま、どちらからともなく唇を奪い合った。|');
+var HATE_END=L('終わったあと、二人は目を合わせずに服を着た。|{U}は{T}の背中に爪痕を残したまま、黙って部屋を出ていった。|「次はない」――そう言った{T}の声は、少しも説得力がなかった。');
+var SCN=HK.SCENARIOS&&HK.SCENARIOS.omega;
+(SCN&&SCN.events||[]).forEach(function(e){
+if(e.id!=='om_night'&&e.id!=='om_hatenight')return;
+var r0=e.run,hate=e.id==='om_hatenight';
+e.run=function(ctx,a,b){
+var res=r0.apply(this,arguments);
+var lew=ctx.env.lewd||'mid';
+if(!res||typeof res.text!=='string'|| !TK.on(lew)|| !HK.Pos|| !HK.Voice)return res;
+var X=HK.Lewd,cf=X&&X.conf('omega'),L3=lw.last=lw(ctx);
+var o=HK.Pos.order(a,b,[a,b]),T=o[0],U=o[1];
+if(cf?(L3.short&& !L3.ero):ctx.rng()>0.5){
+if(!hate&&TK.ok(T,U)&&cf&&lew!=='low'){var ld0=res.lead&&res.text.indexOf(res.lead)===0?res.lead:'';res.text=ld0+weaveShort(ctx,res.text.slice(ld0.length),T,U,'night',0.5);}
+return res;
+}
+if(!TK.ok(T,U))return res;
+var ld=res.lead&&res.text.indexOf(res.lead)===0?res.lead:'',rest=res.text.slice(ld.length);
+if(L3.ero){res.text=ld+(rest.match(/^[^。]*。/)||[''])[0]+(L3.short?'':'\n\n')+eroScene(ctx,T,U,'','',TK.kind(T,U,'omega'));return res;}
+var pk=function(arr){return fp(ctx,arr);},ff=TK.kind(T,U,'omega')==='ff';
+var body=TK.body(T,U,{flav:'omega',pick:pk,rng:ctx.rng,bed:'シーツ',depth:lew==='high'?3:1,rough:hate,lead:hate?pk(HATE_LEAD):'',after:hate?pk(HATE_END):null,fore:true,top:omTops(ctx,T,U,hate?'hate':'night')});
+var sc=OM.sc||function(t){return t;};
+var text=sc(ctx.t(TK.map(body,'a','b'),T,U),T,U);
+if(ff&&HK.FF)text=HK.FF.fix(ctx,text,T,U,{tools:true});
+var first=(rest.match(/^[^。]*。/)||[''])[0];
+res.text=ld+first+'\n\n'+text;
+return res;
+};
+});
+var AFF_LEAD=L('「誰にも言わない」――それが、二人の最初の約束だった。|伏せたスマホが一度だけ震えて、すぐに静かになった。|知らない部屋の、知らないシーツの匂いがした。|');
+var AFF_END=L('終わったあと、二人ともしばらく何も言わなかった。窓の外が白みはじめるまで、どちらもスマホに触れなかった。|'+
+'{U}は天井を見上げたまま、帰る場所のことを考えないようにしていた。{T}の腕は、まだ{U}の腰に回ったままだった。|'+
+'シャワーの音だけが、狭い部屋に長く響いていた。混ざり合った二人の匂いは、湯を浴びても簡単には落ちなかった。');
+OM.affairScene=function(ctx,a,b){
+var lew=ctx.env.lewd||'mid';
+if(!TK.on(lew)|| !HK.Pos|| !HK.Voice)return null;
+var o=HK.Pos.order(a,b,[a,b]),T=o[0],U=o[1];
+if(!TK.ok(T,U))return null;
+var L4=lw.last=lw(ctx);
+if(L4.short&& !L4.ero)return null;
+var sc=OM.sc||function(t){return t;},pk=function(arr){return fp(ctx,arr);};
+if(L4.ero)return eroScene(ctx,T,U,'',sc(TK.names(pk(AFF_END),T,U),T,U),TK.kind(T,U,'omega'));
+var kd=TK.kind(T,U,'omega'),ff=kd==='ff',riba=HK.Pos.bothRiba&&HK.Pos.bothRiba(T,U);
+var cp=cbPlay(pk,T,U,kd,riba);
+var fin=lew==='high'||ctx.rng()<0.5?cbKnot(pk,T,U,kd,cp.cb):'';
+var body=TK.body(T,U,{flav:'omega',pick:pk,rng:ctx.rng,bed:'シーツ',depth:lew==='high'?3:1,lead:pk(AFF_LEAD),extra:[cp.play],finish:fin,after:pk(AFF_END),fore:true,top:omTops(ctx,T,U,'affair')});
+var text=sc(ctx.t(TK.map(body.replace(/\{sT\}/g,'{sa}').replace(/\{sU\}/g,'{sb}'),'a','b'),T,U),T,U);
+if(ff&&HK.FF)text=HK.FF.fix(ctx,text,T,U,{tools:true});
+return text;
+};
+OM.affairShort=function(ctx,a,b){
+if(HK.SAFE_ON|| !HK.Pos)return null;
+var o=HK.Pos.order(a,b,[a,b]),T=o[0],U=o[1];
+if(!TK.ok(T,U)||(ctx.env.lewd||'mid')==='low')return null;
+var sc=OM.sc||function(t){return t;},kd=TK.kind(T,U,'omega');
+var foreS=HK.NoGen&&HK.NoGen.on&&HK.NoGen.on(T,U)?'':fp(ctx,TK.forePool(T,U,kd,{},true));
+var fill=function(t){return t?sc(TK.names(t,T,U),T,U):'';};
+return{pre:fill(omTop(ctx,T,U,'start','affair',0.85)+foreS),post:fill(omTop(ctx,T,U,'after','affair',0.7))};
+};
+})();
+});
+;
+/* ==== js/omega-ties-r18.js ==== */
+HK.Load.def(125,'js/omega-ties-r18.js',function(){
+(function(){
+'use strict';
+var HK=window.HK,OM=HK&&HK.OMEGA;
+if(!OM|| !OM.HEAT|| !HK.Ties)return;
+function L(s){return s.split('|');}
+var PS=['proud','stern','tsun','gentle','devoted','cool','free','shy','polite'];
+function ps(c){var p=HK.personaOf?HK.personaOf(c):c.persona;return PS.indexOf(p)>=0?p:'gentle';}
+function isF(c){return!!(HK.Pos&&HK.Pos.isF(c));}
+function kindOf(T,U){
+if(OM.bodyKind){var k=OM.bodyKind(T,U);return k==='ff'?'ff':k==='ride'?'fm':'m';}
+return isF(T)?(isF(U)?'ff':'fm'):'m';
+}
+var INTRO={
+colleague:{x:{
+m:L('{X}が{O}の部屋を訪ねたのは、職場に置き忘れた抑制剤を届けるためだった。扉が開いた瞬間、{sO}の匂いが廊下まで溢れ出し、同僚として保ってきた距離が一息で消えた。{T}は{U}の手首を掴んで部屋の中へ引き入れ、玄関の壁に押しつけたまま唇を奪った。|発情期の{O}を家まで送ったのは、隣の席の{X}だった。玄関で「明日の仕事は私が回す」と言いかけた{X}の襟元を、{O}の熱い指が掴んで引き寄せた。{T}は{U}をソファに押し倒し、硬くなったものを服越しに押しつけながら、何年も並んで仕事をしてきた相手の匂いを深く吸い込んだ。|「同僚なのに」と{X}は言った。言いながら、{O}の首筋から立ちのぼる{sO}の匂いから顔を離せなかった。{T}は{U}のシャツのボタンを外す手を止められず、熱に濡れた肌に唇を落としていった。'),
+ff:L('{X}が{O}の部屋を訪ねたのは、職場に置き忘れた抑制剤を届けるためだった。扉が開くと、{sO}の甘い匂いがふわりと溢れ、同僚の顔をしていられなくなった。{T}は{U}の頬を両手で包み、柔らかな唇を重ねたまま、ゆっくりとベッドのほうへ導いた。|毎日同じ職場で顔を合わせてきた{X}の指が、今夜は{O}の熱い肌をなぞっていた。{T}は{U}のブラウスのボタンを一つずつ外し、ふくらみの先に口づけを落とした。{U}は「仕事のときと全然違う」と震える声で笑った。|発情期の熱で潤んだ{O}の目を見て、{X}は同僚として引くべき線を越えることにした。{T}は{U}をシーツに寝かせ、脚のあいだへそっと指を滑らせた。そこはもう、触れる前から熱く濡れていた。'),
+fm:L('{X}が{O}の部屋を訪ねたのは、職場に置き忘れた抑制剤を届けるためだった。扉が開いた瞬間、{sO}の匂いに膝が揺れ、同僚の顔はどこかへ消えた。{T}は{U}の胸を押してベッドに倒し、その腰の上に跨って見下ろした。|毎日隣の席で仕事をしてきた相手を、{T}は今夜、上から見下ろしていた。{T}は{U}のベルトを外し、硬くなったものを手で確かめてから、ゆっくりと腰を沈める位置を探った。{U}は息を呑んで、{T}の太腿を掴んだ。|「仕事中は、こんな顔しないくせに」と{T}は笑った。熱に浮かされた{O}の匂いに、二人とも同僚の距離を忘れていた。{T}は{U}の両手をシーツに縫いとめ、跨ったまま唇を重ねた。')
+}},
+classmate:{x:{
+m:L('学生のころ、{O}の発情期には絶対に近づかないと{X}は約束していた。その約束が、今夜{sO}の匂いの前で音を立てて崩れた。{T}は{U}を抱き寄せ、同じクラスだったころには触れられなかった首筋に、熱い唇を押しあてた。|同窓会の帰り、{O}の発情期が予定より早く来た。介抱するつもりで部屋に入った{X}は、昔と変わらない匂いに理性を失った。{T}は{U}をベッドに押し倒し、硬くなったものを押しつけながら、学生のころの呼び名で{U}を呼んだ。|{X}「学生のころから、ずっとこうしたかった」――{O}は熱に潤んだ目で、それを聞いた。{T}は{U}の服を一枚ずつ剥ぎ、昔は見ることさえできなかった肌に手のひらを這わせた。{U}の肌は、発情の熱で驚くほど熱かった。'),
+ff:L('学生のころ、{O}の発情期には絶対に近づかないと{X}は約束していた。その約束は、今夜{sO}の匂いの前で静かにほどけた。{T}は{U}の髪を指で梳き、同じクラスだったころには触れられなかった唇に、そっと自分の唇を重ねた。|昔、体育の授業で並んだ肩が、今夜はシーツの上で触れ合っていた。{T}は{U}の胸のふくらみを手のひらで包み、先端を指先で転がした。{U}は「昔はこんなこと、考えもしなかった」と、熱に浮かされた声で笑った。|同窓会の帰り、発情期の熱に倒れた{O}を、{X}は自分の部屋に連れ帰った。{T}は{U}の服を脱がせ、脚のあいだへ指を沈めていった。学生のころから知っている声が、知らない甘さで漏れた。'),
+fm:L('学生のころ、{O}の発情期には絶対に近づかないと{X}は約束していた。その約束を最初に破ったのは、熱に浮かされた{T}のほうだった。{T}は{U}を仰向けに押し倒し、その腰に跨って、昔のあだ名で{U}を呼んだ。|同窓会の帰り道、{T}は{U}の手を引いて自分の部屋の鍵を開けた。{T}は{U}のシャツをはだけさせ、硬くなったものを手で包んで確かめてから、ゆっくりと腰を沈めた。{U}は同じクラスだった相手の重みに、息を詰めた。|{T}「学生のころは、こんなふうに見下ろせるなんて思わなかった」――{T}は{U}の上で笑い、髪をかき上げた。{sO}の匂いが二人のあいだで甘く膨らみ、{U}は{T}の腰を掴んで引き寄せた。{T}は{U}のものを手で確かめ、ゆっくりと腰を沈めた。')
+}},
+relative:{x:{
+m:L('親戚の集まりのあと、発情期の{O}を部屋まで送ったのは{X}だった。子どものころから知っている匂いが、今夜は知らない甘さで{X}を呼んでいた。{T}は{U}を抱き寄せ、家族の前では決して見せない顔で唇を奪った。|{X}「親戚に何て言われてもいい」――{X}はそう言って、{O}の部屋の扉を閉めた。{T}は{U}をベッドに押し倒し、硬くなったものを押しあてながら、震える体を逃がさないように抱きすくめた。{U}は家族だった相手の背中に、熱い指を回した。|発情期の{O}の匂いは、法事の席でも隠しきれないほど濃くなっていた。{X}は{O}を連れて親戚の家を抜け出し、空いている客間に入った。{T}は{U}の服を乱暴に脱がせ、熱く濡れた肌に唇を落とした。'),
+ff:L('親戚の集まりのあと、発情期の{O}を部屋まで送ったのは{X}だった。子どものころ同じ布団で眠った相手の肌が、今夜は熱く甘い匂いを放っていた。{T}は{U}の頬に口づけ、そのまま柔らかな唇を重ねた。|{T}は{U}の胸に手を這わせ、家族として見ていたはずの体の柔らかさに息を呑んだ。{U}は「親戚なのに」と言いかけて、{T}の指が脚のあいだに触れた瞬間に言葉をなくした。そこはもう、熱く溶けていた。|法事の帰り、{X}は発情期の{O}を客間に連れ込み、内側から鍵をかけた。{T}は{U}の着物の合わせを緩め、白い肌に唇を這わせていった。親戚の話し声が、襖一枚向こうでかすかに聞こえていた。'),
+fm:L('親戚の集まりのあと、{T}は{U}の手を引いて空いている客間に入った。子どものころから知っている顔を、こんなふうに見下ろすのは初めてだった。{T}は{U}を畳に押し倒し、その腰の上に跨った。|{T}は{U}のものを手のひらで包み、硬くなっているのを確かめて小さく笑った。{T}「親戚なのに、こんなになってる」――{U}は顔を背けたが、腰は正直に{T}を求めていた。{T}はそのまま、ゆっくりと腰を沈めた。|発情期の{sO}の匂いが、客間の空気を甘く満たしていた。{T}は{U}のシャツをはだけさせ、跨ったまま胸に手をついた。襖の向こうの親戚の気配が、二人の息をいっそう浅くした。')
+}},
+boss:{
+a:{
+m:L('抑制剤の切れた上司の{O}を家まで送ったのは、部下の{X}だった。玄関で頭を下げて帰ろうとした{X}の手首を、{O}が掴んだ。{T}は{U}を壁に押しつけ、職場では一度も見せたことのない顔で、硬くなったものを押しあてた。|{X}「上司の{O}さんに、こんなこと」――{X}の声はかすれていた。それでも{sO}の匂いが、部下の遠慮を端から溶かしていった。{T}は{U}をベッドに押し倒し、乱れたシャツの奥の熱い肌に唇を落とした。|発情期の上司の部屋で、{X}は職場の上下を忘れた。{T}は{U}の服を一枚ずつ剥ぎ、仕事中には決して触れられない場所に指を這わせた。{U}は息を乱しながら、職場で呼ぶのと同じ呼び方で相手の名前を呼んだ。'),
+ff:L('抑制剤の切れた上司の{O}を家まで送ったのは、部下の{X}だった。玄関で帰ろうとした{X}の袖を、{O}が熱い指で掴んで離さなかった。{T}は{U}を抱き寄せ、職場では決して触れない唇に、そっと自分の唇を重ねた。|{T}は{U}のブラウスのボタンを外し、ふくらみの先を口に含んだ。仕事中のきびしい声が、甘く崩れていく。{U}は「職場の誰にも、言わないで」と囁き、{T}の指を脚のあいだへ導いた。|発情期の上司の部屋で、{X}は職場の上下を忘れた。{T}は{U}をシーツに寝かせ、熱く濡れたところへゆっくりと指を沈めた。上司と部下の距離は、指一本ぶんもなくなっていた。'),
+fm:L('抑制剤の切れた上司の{O}を家まで送ったのは、部下の{X}だった。玄関で頭を下げた{X}を、{O}は熱に浮かされた目で見つめた。次の瞬間、{T}は{U}をベッドに突き倒し、その腰の上に跨っていた。|@TO {T}「部下に見られたくなかった顔、全部見せてあげる」――{T}は{U}のベルトを外し、硬くなったものを手で確かめた。{U}は上司の重みを腰に受けながら、息を詰めた。{T}はゆっくりと腰を沈めはじめた。|@TO 職場では毎日指示を出していた相手を、{T}は今夜、跨ったまま見下ろしていた。{sO}の匂いに酔った{U}は、上司の腰を掴むことしかできなかった。{T}は{U}の両手を胸の上で押さえ、主導権を最後まで渡さなかった。|@TX 部下の{T}は、熱に浮かされた上司の{U}をベッドに押し倒し、その腰の上に跨った。{T}「今夜だけは、私が上」――{T}は{U}のものを手で確かめ、ゆっくりと腰を沈めた。{U}は部下に見下ろされながら、発情の熱に喉を鳴らした。')
+},
+b:{
+m:L('部下の{O}の発情期が仕事中に来た。家まで送り届けた上司の{X}は、扉の前で引き返すつもりだった。{T}は{U}の熱い体を抱きとめ、硬くなったものを押しつけながら、職場の上下を投げ捨てるように唇を奪った。|{O}「上司なのに、ずるい」――熱に潤んだ目でそう言われて、{X}は理性の最後の糸を手放した。{T}は{U}をベッドに押し倒し、乱れた服の奥の肌に唇を落としていった。硬くなったものが服越しに触れると、{U}は小さく息を呑んだ。|上司の{X}は、発情期の部下の部屋で長いあいだ立ち尽くしていた。{sO}の匂いが、守るべき部下という言葉を少しずつ溶かしていく。{T}は{U}の服を脱がせ、震える体に覆いかぶさった。'),
+ff:L('部下の{O}の発情期が仕事中に来た。家まで送り届けた上司の{X}は、玄関で{O}の熱い指に袖を掴まれた。{T}は{U}の頬に手を添え、職場では決して見せない顔で唇を重ねた。|{T}は{U}の服を脱がせ、ふくらみに唇を這わせた。部下の甘い声が、上司の{X}の耳を熱くした。{T}の指が脚のあいだに滑り込むと、そこはもう熱く濡れて震えていた。|{X}「上司としては、止めなきゃいけないのに」――{X}はそう言いながら、{O}の熱から手を離せなかった。{T}は{U}をシーツに寝かせ、ゆっくりと指を沈めた。部下の声が、知らない甘さで崩れた。'),
+fm:L('部下の{O}の発情期が仕事中に来た。家まで送ってくれた上司の{X}を、{O}は玄関で引き止めた。{T}は{U}をベッドに押し倒し、その腰の上に跨った。|@TO {T}「職場では、ずっと上司の言うことを聞いてきた。今夜は私の番」――{T}は{U}のものを手で包み、硬くなったのを確かめて腰を沈めた。上司の{U}は、部下の重みに息を詰めた。{O}の匂いが、上司と部下の境目を甘く溶かしていった。|@TO {sO}の匂いを撒き散らしながら、{T}は{U}の上で腰を揺らした。いつも冷静な上司の顔が、少しずつ崩れていく。{T}はその顔を見下ろして、満足そうに笑った。|@TX 上司の{T}は、発情期の熱に震える部下の{U}を仰向けに寝かせ、その腰に跨った。{T}「今夜は、上司命令は出さない」――{T}は{U}のものを手で包み、硬くなったのを確かめてから腰を沈めた。{U}は上司の重みに、熱い息を漏らした。')
+}
+},
+benefactor:{
+a:{
+m:L('昔助けてくれた恩人の{O}が、発情期の熱にうずくまっていた。今度は自分が助ける番だと思っていた{X}は、{sO}の匂いの前で動けなくなった。{T}は{U}を抱き寄せ、恩も遠慮も呑み込むように唇を奪った。|{X}「恩返しのつもりだった。こんなこと、するつもりじゃなかった」――そう言いながら、{X}の手は{O}を離さなかった。{T}は{U}をベッドに押し倒し、硬くなったものを押しあてながら、熱い肌に唇を落とした。{U}の指が、{T}の背中にすがるように食い込んだ。'),
+ff:L('昔助けてくれた恩人の{O}が、発情期の熱にうずくまっていた。看病に来た{X}の手を、{O}は熱い指で握って離さなかった。{T}は{U}の頬に口づけ、柔らかな唇を重ねた。|発情期の{sO}の匂いが、恩人と恩を受けた側の距離を少しずつ溶かしていった。{T}は{U}をシーツに横たえ、胸のふくらみに唇を寄せた。指が脚のあいだに沈むと、{U}の口から甘い声がこぼれた。|@TX {T}は{U}の胸のふくらみに唇を寄せ、恩人の甘い声を初めて聞いた。{U}は「こんなつもりで助けたんじゃない」と笑いかけて、{T}の指が脚のあいだに触れた瞬間に言葉をなくした。そこはもう、熱く濡れて震えていた。'),
+fm:L('昔助けてくれた恩人の{O}が、看病に来た{X}を熱に浮かされた目で見上げた。次の瞬間、{T}は{U}をベッドに押し倒し、その腰に跨っていた。{T}は{U}のものを手で確かめ、ゆっくりと腰を沈めた。|@TO {T}「恩を返したいなら、今夜は私の好きにさせて」――{T}は{U}の上で髪をかき上げた。恩を受けた{U}は、恩人の重みを受け止めながら、息を詰めた。{T}はそのまま、ゆっくりと腰を沈めた。|@TX 恩を受けた{T}は、熱に震える恩人の{U}をベッドに横たえ、その腰に跨った。{T}「今度は私が、{U}を楽にする番」――{T}は{U}のものを手で確かめ、ゆっくりと腰を沈めた。{U}は恩人の熱に、言葉もなく喉を鳴らした。')
+},
+b:{
+m:L('@TX {O}の発情期の夜、駆けつけたのは昔と同じ恩人の{X}だった。扉の外で待つつもりだった{X}を、{O}は自分から部屋に引き入れた。{T}は{U}を抱きすくめ、昔守ってくれた腕で今夜は強く引き寄せた。|{O}「ずっと、{X}さんにこうしてほしかった」――熱に潤んだ声に、恩人の{X}は理性を手放した。{T}は{U}をベッドに押し倒し、硬くなったものを押しあてながら、熱く濡れた肌に唇を落とした。{U}は昔と同じ腕の中で、昔とは違う声を漏らした。|{O}の発情期の匂いが、恩人の{X}の記憶の中のどの夜より甘く部屋に満ちていた。{T}は{U}をベッドに押し倒し、硬くなったものを押しあてた。昔の恩も今夜の熱も、二人の吐息に溶けていった。'),
+ff:L('{O}の発情期の夜、駆けつけたのは昔と同じ恩人の{X}だった。抑制剤を差し出した{X}の手を、{O}は自分の頬に押しあてた。{T}は{U}の唇を、そっと自分の唇で塞いだ。|{T}は{U}の服をゆっくりと脱がせ、熱を持った肌に唇を這わせた。昔助けた相手の甘い匂いが、恩人の{X}の胸を締めつけた。{T}の指が脚のあいだに沈むと、{U}は小さく名前を呼んだ。'),
+fm:L('@TO {O}の発情期の夜、駆けつけた恩人の{X}を、{O}は熱に浮かされた目で見上げた。{T}は{U}をベッドに押し倒し、その腰に跨った。{T}「今度は私が、{U}さんを助けたい」{U}は驚いた顔のまま、{T}の腰に手を添えた。|@TO {T}は{U}のものを手で包み、硬くなったのを確かめてから、ゆっくりと腰を沈めた。恩人の{U}は、昔助けた相手の熱に、息を詰めて耐えていた。{T}は{U}の胸に手をつき、腰を揺らしはじめた。|@TX 恩人の{T}は、発情期の熱に震える{U}を仰向けにさせ、その腰に跨った。{T}「昔みたいに、全部預けて」――{T}は{U}のものを手で包み、硬くなったのを確かめてから、ゆっくりと腰を沈めた。{U}は熱に浮かされたまま、恩人の腰に縋った。|発情期の{sO}の匂いが、二人の昔の記憶を甘く塗り替えていった。{T}は{U}をシーツに押し倒し、その腰の上に跨った。{T}は{U}のものを手で確かめ、迷いを振り切るように腰を沈めた。')
+}
+},
+worship:{
+a:{
+m:L('発情期の熱の中で、{O}は崇めてきた{X}の名前を呼び続けていた。部屋に来てくれた{X}を見た瞬間、{O}の目から涙がこぼれた。{T}は{U}を抱き寄せ、震える体をベッドに押し倒して、硬くなったものを押しあてた。|{O}「{X}に触れてもらえるなら、この熱だって祈りになる」――{O}はそう言って、自分から服の前を開いた。{T}は{U}の熱い肌に唇を落とし、何も言わずにその体を抱きしめた。硬くなったものが触れると、{U}は祈るように目を閉じた。'),
+ff:L('発情期の熱の中で、{O}は崇めてきた{X}の名前を呼び続けていた。部屋に来てくれた{X}の手を、{O}は祈るように両手で包んだ。{T}は{U}の頬に口づけ、そのまま柔らかな唇を重ねた。|発情期の熱で、{O}の肌はどこに触れても震えた。{T}は{U}の胸に口づけ、ゆっくりと脚のあいだへ指を滑らせた。崇めてきた者と崇められてきた者の境目が、熱の中で溶けていった。|@TX {T}は{U}の胸に唇を這わせ、震える体を指先でなぞった。崇める相手に触れられて、{U}は泣きながら笑った。{T}の指が脚のあいだに沈むと、そこはもう熱く溶けていた。'),
+fm:L('@TO 発情期の熱の中で、{O}は崇めてきた{X}の名前を呼んでいた。部屋に来てくれた{X}を、{O}は震える手でベッドに導いた。{T}は{U}の腰に跨り、崇める相手を見下ろすことの畏れに体を震わせた。|@TO {T}は{U}のものを手で包み、祈るように確かめてから腰を沈めた。{T}「{U}を、私の熱で汚してしまう」――そう言いながら、{T}はもう止まれなかった。{U}は崇められる者の静かな目で、{T}を見上げていた。|@TX 崇められてきた{T}は、熱に震える{U}を仰向けに寝かせ、その腰に跨った。{T}「そんなに欲しかったなら、あげる」――{T}は{U}のものを手で確かめ、ゆっくりと腰を沈めた。{U}は崇める相手の重みに、祈るように目を閉じた。|{sO}の匂いが、祈りと欲の境目を溶かしていった。{T}は{U}をシーツに押し倒し、その腰に跨った。{T}は{U}のものを手で包み、確かめるように腰を沈めた。')
+},
+b:{
+m:L('{sO}の匂いが、信仰と欲の区別を奪っていった。{T}は{U}をベッドに押し倒し、硬くなったものを熱い肌に押しあてた。崇める者と崇められる者は、熱の中でただの二人になった。|@TX {O}の発情期の匂いに、信仰を捧げてきた{X}は膝をついた。触れてはいけないと思っていた相手が、熱に潤んだ目で{X}を呼んでいた。{T}は{U}を抱き寄せ、震える手で服を脱がせながら、硬くなったものを押しあてた。|@TO {O}は熱に浮かされた目で、ひざまずく{X}を見下ろした。{T}は{U}をベッドに押し倒し、硬くなったものを押しあてた。{U}は崇めてきた相手に求められて、震える息を漏らした。|@TX {O}「来て」――その一言だけで、{X}の世界のすべてが決まった。{T}は{U}をベッドに横たえ、祈るように肌のひとつひとつに唇を落としていった。硬くなったものを押しあてると、{U}は甘く息を漏らした。'),
+ff:L('@TX {O}の発情期の匂いに、信仰を捧げてきた{X}は膝をついた。{O}は熱に潤んだ目で、{X}の手を自分の胸元に引き寄せた。{T}は{U}の唇に、畏れるようにそっと自分の唇を重ねた。|@TO {O}は熱に潤んだ目で、ひざまずく{X}の顎を持ち上げた。{T}は{U}をシーツに横たえ、その胸のふくらみに唇を這わせた。崇めてきた相手の指が脚のあいだに沈むと、{U}は祈るような声を漏らした。|{sO}の甘い匂いの中で、二人の指が絡み合った。{T}は{U}の胸に唇を寄せ、熱を持った肌をゆっくりとなぞった。{U}の甘い声が、祈りのように部屋に満ちた。|@TX {T}は{U}の胸のふくらみに口づけ、崇めてきた肌の熱を確かめた。{U}の甘い声が漏れるたびに、{T}の指先が震えた。{T}はそのまま、ゆっくりと脚のあいだへ指を沈めた。'),
+fm:L('@TO {O}の発情期の匂いに、信仰を捧げてきた{X}は膝をついた。{O}は{X}を仰向けに押し倒し、その腰の上に跨った。{T}「欲しいなら、じっとしていて」{U}は崇める相手の重みに、身動きひとつできなかった。|@TO {T}は{U}のものを手で包み、硬くなったのを確かめてから、ゆっくりと腰を沈めた。崇める相手の重みを受けて、{U}は祈るように目を閉じた。{T}は{U}の胸に手をつき、熱に任せて腰を揺らした。|@TX 信仰を捧げてきた{T}は、熱に震える{U}を畏れるように仰向けに寝かせ、その腰に跨った。{T}は{U}のものを手で包み、祈るようにゆっくりと腰を沈めた。{U}の熱い吐息が、{T}の信仰をいっそう深くした。|{sO}の匂いが部屋を満たし、崇める者と崇められる者の境目を曖昧にした。{T}は{U}を仰向けにさせ、その腰の上に跨った。{T}は{U}のものを手で確かめ、ゆっくりと腰を沈めた。')
+},
+dom:{
+m:L('{T}が命じるように名前を呼ぶと、{U}は熱に浮かされたまま膝をついた。{T}のフェロモンが、{U}の信仰をさらに深く縛っていく。{T}は{U}の顎を指で持ち上げ、ベッドに押し倒して、硬くなったものを押しあてた。|{T}「欲しいなら、自分で言って」――{U}は崇める相手の命令に、熱に震えながら従った。{T}は満足そうに笑い、{U}の服を剥いでいった。{U}の肌は、命令を待つあいだにも熱を増していった。|{T}は{U}をベッドの端に座らせ、自分の前で服を脱ぐように命じた。{U}は崇める相手の言葉に、震える指で従った。{T}は満足そうに{U}を押し倒し、硬くなったものを押しつけた。'),
+ff:L('{T}が命じるように名前を呼ぶと、{U}は熱に浮かされたまま膝をついた。{T}は{U}の顎を指で持ち上げ、ご褒美のように唇を重ねた。{U}は崇める相手の口づけに、それだけで腰を震わせた。|{T}「脚を開いて。私が見たいから」――{U}は崇める相手の言葉に、震えながら従った。{T}は濡れたところに指を這わせ、{U}が何度ねだっても焦らし続けた。{U}の腰が、命令を待ちきれずに揺れた。|{T}は{U}をシーツに横たえ、自分の許しがあるまで声を出すなと命じた。{U}は唇を噛んで頷いた。{T}の指が胸の先をつまむと、{U}の体は命令に逆らうように跳ねた。'),
+fm:L('{T}が命じるように名前を呼ぶと、{U}は熱に浮かされたまま仰向けになった。{T}は{U}の腰に跨り、崇められる者の顔で見下ろした。{T}「動いていいとは言ってない」{U}は唇を噛んで、命令に従った。|{T}は{U}のものを手で確かめ、じらすようにゆっくりと腰を沈めた。{U}は信仰する相手の重みの下で、命令が下るのをただ待っていた。{T}はその従順さに、満足そうに目を細めた。|{T}は{U}の両手首を頭の上でまとめ、「私が許すまで、出したらだめ」と囁いた。{U}は崇める相手の言葉に、喉を鳴らして頷いた。{T}はその上で、焦らすように腰を揺らしはじめた。')
+}
+}
+};
+var INTRO_ANY={
+colleague:{x:L('{O}の発情期の匂いは、職場で毎日嗅いでいた匂いとはまるで違った。同僚の{X}は、自分がどれほど長いあいだそれを我慢していたのかを、そのとき初めて知った。二人は言葉もなく、互いの服に手をかけた。')},
+classmate:{x:L('同じクラスだったころの{O}の匂いを、{X}は今もはっきり覚えていた。発情期の熱でその匂いが甘く変わったとき、{X}の中で何年分もの想いが溢れ出した。二人は学生のころの呼び名で呼び合いながら、互いを引き寄せた。')},
+relative:{x:L('親戚だから、と何度も自分に言い聞かせてきた。けれど発情期の{O}の匂いの前では、その言葉は何の役にも立たなかった。{X}は{O}の手を取り、家族の誰も知らない夜へ踏み出した。')},
+boss:{a:L('職場では上司と部下だった。発情期の熱の前では、その上下はあっけなく崩れた。二人は互いの名前を、さん付けを外して呼んだ。'),b:L('職場では上司と部下だった。発情期の熱の前では、その上下はあっけなく崩れた。二人は互いの名前を、さん付けを外して呼んだ。')},
+benefactor:{a:L('恩人と恩を受けた側――その関係が、発情期の匂いの中で静かに形を変えた。{X}は、いつか返したいと思っていたものの代わりに、自分自身を差し出した。{O}はそれを、熱に震える腕で受け取った。'),b:L('昔、{O}を救ったのは{X}だった。今夜、{O}は救われるのではなく、求めることを選んだ。{X}は恩人の顔を脱ぎ捨てて、その想いに応えた。')},
+worship:{a:L('崇めることしかできなかった相手が、目の前にいた。{O}は発情期の熱に震えながら、{X}の足元にひざまずいた。{X}はその頭をそっと撫で、立たせて抱き寄せた。'),b:L('信仰を捧げてきた相手が、熱に潤んだ目で{X}を見ていた。{X}にとって、それは祈りが届いた瞬間だった。{X}は震える手で、{O}の熱い肌に触れた。')}
+};
+var PEAK={
+proud:L('頂に押し上げられる瞬間まで、{U}は{rel}の{T}に弱みを見せまいとした。それでも発情の熱は意地を溶かし、{U}は{T}の背中に爪を立てて果てた。{U}「{mb2}……っ、{T}なんかに……」――悔しげな声とは裏腹に、{U}は{T}を離さなかった。|{U}は最後まで「誰が」と言い張った。けれど{T}に奥を満たされた瞬間、その強がりは甘い悲鳴に変わった。{U}は{rel}の{T}の肩に顔をうずめ、震えが止まるまで黙っていた。|{U}は{rel}の{T}を睨みつけたまま、頂へ押し上げられた。睨む目の端から、涙がひとすじこぼれた。{U}「{mb2}……覚えてろ、っ……」'),
+stern:L('{U}は唇を引き結び、{rel}の{T}の前で声を殺そうとした。けれど頂の波は容赦なく、固い表情ごと{U}を押し流した。{U}「{mb2}」――乱れた声を恥じるように、{U}は{T}の胸に額を押しつけた。|果てる瞬間、{U}は{rel}の{T}の名前を、いつもより低い声で呼んだ。それは命令でも叱責でもなく、縋る声だった。{T}はそれを聞いて、{U}をいっそう強く抱きしめた。|{U}は果てる直前まで、{rel}の{T}の腕を掴んで離さなかった。押し返すためではなく、縋るためだった。{U}「{mb2}」――乱れた息のあと、{U}は「……誰にも言うな」とだけ言った。'),
+tsun:L('{U}「べ、別に、{T}だからじゃないし……っ」――言い終わる前に、頂が{U}をさらった。{U}は{rel}の{T}にしがみついて果て、真っ赤な顔を腕で隠した。{U}「{mb2}……見るな、ばか……」|{U}は「全然よくない」と言い張りながら、{rel}の{T}の腰に脚を絡めて離さなかった。果てた瞬間、その強がりは甘い声にほどけた。{U}は悔しそうに、{T}の肩を弱く叩いた。|{U}「も、もう無理……{T}のせいだからな……っ」――頂に達した瞬間、{U}は{rel}の{T}の首にしがみついた。{U}「{mb2}」――しばらくして、{U}は小さく「……よかった」と呟いた。'),
+gentle:L('頂が近づくと、{U}は{rel}の{T}の頬を両手で包んだ。{U}「大丈夫、ちゃんとここにいるから……っ」――そう囁いた声が、次の瞬間に甘く崩れた。{U}は{T}を抱きしめたまま果て、その髪を何度も撫でた。|{U}は{rel}の{T}を受け止めるように、腕を広げて抱き寄せた。果てる瞬間も、{U}は{T}の名前を優しく呼び続けた。{U}「{mb2}……いいよ、全部……」|{U}は果てる瞬間、{rel}の{T}の額にそっと口づけた。熱に溶けた声で、{U}は何度も{T}の名前を呼んだ。{U}「{mb2}……ありがとう……」'),
+devoted:L('{U}「{T}さん、{T}さん……っ」――{U}は{rel}の{T}の名前を、祈るように繰り返した。頂に押し上げられた瞬間、{U}は涙をこぼしながら果てた。{U}「{mb2}……嬉しい……」|{U}は果てる瞬間まで、{rel}の{T}が気持ちよくなれているかを気にしていた。{T}がそれに気づいて口づけると、{U}は安心したように、甘い声を上げて達した。{U}は{T}の胸で、幸せそうに目を閉じた。|{U}は{rel}の{T}にしがみついて、離れないでと何度も懇願した。頂に押し上げられた瞬間、その願いは甘い声に変わった。{U}「{mb2}……ずっと、こうしていたい……」'),
+cool:L('{U}は最後まで、自分の呼吸を整えようとしていた。けれど{rel}の{T}の熱に奥を満たされた瞬間、冷静な声はどこにも残らなかった。{U}「{mb2}……計算、外れた……」|果てる瞬間、{U}の理屈はすべて止まった。{U}は{rel}の{T}の肩を掴み、言葉にならない声を漏らした。しばらくして、{U}は「……悪くない」とだけ呟いた。|{U}は{rel}の{T}の顔をまっすぐ見つめたまま果てた。平静を装った目が、最後の瞬間だけ大きく揺れた。{U}「{mb2}」――{U}は小さく息をつき、「……想定外だ」と言った。'),
+free:L('{U}「すご、っ、{T}、すごい……っ」――{U}は{rel}の{T}にしがみつき、思ったことを全部口に出しながら果てた。笑いと喘ぎが混ざった声が、部屋に響いた。{U}「{mb2}……もっかい、しよ？」|{U}は頂の直前、{rel}の{T}の顔を見て笑った。{U}「こんな顔、職場でも学校でも見たことない」――次の瞬間、その笑い声は甘い悲鳴に変わった。{U}は{T}の背中に腕を回したまま、何度も体を震わせた。|{U}は{rel}の{T}の上で、くすぐったそうに笑いながら頂に駆け上がった。笑い声は途中から、甘くかすれた悲鳴になった。{U}「{mb2}……ねえ、今のすごくなかった？」'),
+shy:L('{U}は顔を覆った指の隙間から、{rel}の{T}を見上げていた。頂が来ると、{U}は小さく首を振りながら果てた。{U}「{mb2}……み、見ないで……」|{U}は声を出すまいと、{rel}の{T}の肩に口を押しあてた。それでも果てる瞬間、こらえきれない甘い声が漏れた。{U}は耳まで真っ赤になって、{T}の胸に顔をうずめた。|{U}は{rel}の{T}の名前を、消え入りそうな声で呼んだ。頂が来ると、{U}は{T}の胸に顔を押しつけて震えた。{U}「{mb2}……は、恥ずかしい……」'),
+polite:L('{U}「{T}さま、もう……っ、失礼、いたします……っ」――丁寧な言葉は、頂の波の中でほどけていった。{U}は{rel}の{T}の腕に縋って果てた。{U}「{mb2}」|{U}は果てる瞬間まで、{rel}の{T}への言葉遣いを崩さなかった。けれどその声は甘く震え、言葉の端が溶けていた。{U}は息を整えると、「……申し訳ございません、はしたなくて」と小さく言った。|{U}「{T}さま……っ、どうか、このまま……っ」――{U}は{rel}の{T}の手を握りしめて果てた。乱れた呼吸の合間に、{U}は小さく礼を言った。{U}「{mb2}」')
+};
+var PEAK_W={
+U_believer:L('{U}は果てたあとも、{T}の手を両手で包んで離さなかった。崇めてきた相手に満たされたことが、まだ信じられなかった。{U}の頬を、静かに涙が伝った。|{U}は震える声で、{T}の名前を祈りのように呼んだ。体の奥に残る熱が、何よりも尊いものに思えた。{U}は{T}の胸に額を押しつけ、目を閉じた。|{U}は{T}の汗ばんだ肌に口づけた。触れることさえ畏れ多いと思っていた相手だった。{U}の体はまだ震えていたが、心は不思議なほど静かだった。'),
+U_worshipped:L('{T}は果てたあとも、{U}の体から離れようとしなかった。崇めてきた相手を抱いたことが、まだ夢のようだった。{T}は{U}の手の甲に、祈るように口づけた。|{T}は{U}の汗ばんだ額に、そっと唇を寄せた。この人に触れていいのは、世界で自分だけでありたかった。{U}はそれに気づかないふりをして、{T}の髪を撫でた。|{T}は{U}の胸に耳を当て、その鼓動を聞いていた。信仰してきた人の音だった。{T}の目から、ひとすじ涙がこぼれた。')
+};
+var ERO_PEAK={
+m:L('{s:hit}――{T}が奥を突き上げるたびに、{sO}の甘い匂いが部屋に溢れた。{U}「{mb2}」――{rel}の{T}に貫かれて、{U}はとろけた顔で何度もイった。{s:cum}――{T}は{U}の一番奥に、熱をたっぷりと注ぎ込んだ。|「{rel}なのに、こんな……っ♡」――{U}は自分の言葉に煽られるように、{T}のものをきゅうきゅうと締めつけた。{s:hit}{s:hit}――{T}は容赦なく腰を打ちつけた。{U}「{mb2}」――{s:cum}、奥で脈打つ熱に、{U}は舌を出したまま震えた。|{T}は{U}の腰を抱え直して、発情でとろとろになった{ナカ}を深く抉った。{s:wet}――溢れた蜜が太腿を伝う。{U}「{mb2}」――{s:cum}、{rel}の熱を注がれて、{U}はうなじを震わせながらイき続けた。'),
+ff:L('{s:wet}――{T}の指が{U}の{ナカ}を掻き回すたびに、発情の蜜がとめどなく溢れた。{U}「{mb2}」――{rel}の{T}に一番弱いところを擦り上げられて、{U}は背中を反らせて何度もイった。{U}の太腿が、{T}の手首をぎゅっと挟み込んだ。|「{rel}の指で、こんなに……っ♡」――{U}は自分の言葉に真っ赤になりながら、腰を{T}の指に擦りつけた。{s:wet}{s:wet}――{T}がわざと音を立てて舐め上げると、{U}は甘く鳴いた。{U}「{mb2}」――{U}は痙攣しながら、{T}の髪を掴んで離さなかった。|{T}は{U}の花芯を舌で転がしながら、指を二本、奥まで沈めた。{s:wet}――{sO}の匂いが濃くなっていく。{U}「{mb2}」――{U}はびくびくと腰を跳ねさせて、{rel}の{T}の名前を呼びながらイった。'),
+fm:L('{s:hit}――{T}は{U}の上で激しく腰を振り、{sO}の匂いを撒き散らした。{U}「{mb2}」――{rel}の{T}に搾り取られるように締めつけられて、{U}は堪えきれずに果てた。{s:cum}――{T}も{U}の上で背中を反らせて、甘い声を上げた。|「{rel}の上で、こんなに……っ♡」――{T}は{U}を見下ろしながら、根元まで咥え込んだ腰をぐりぐりと押しつけた。{s:wet}――繋がったところから、いやらしい音が響く。{U}「{mb2}」――{s:cum}、{U}は{T}の腰を掴んだまま、奥に何度も吐き出した。|{T}はわざと浅いところで腰を止め、{U}が自分から突き上げるのを待った。我慢できなくなった{U}が腰を跳ね上げると、{T}は♡の混じった声で笑った。{s:hit}――{U}「{mb2}」――{s:cum}、{U}は{rel}の{T}の中で果て、{T}もその熱に震えながらイった。')
+};
+var AFTER={
+colleague:L('朝、{X}と{O}は同じ時間に目を覚ました。今日も職場で顔を合わせる。二人は「おはよう」の言い方を、いつもと少しだけ変えて練習した。|熱が引いたあと、{O}は{X}の腕の中で小さく笑った。{O}「明日、職場でどんな顔をすればいいの」{X}「いつもの顔でいい。私だけが知ってればいい」|{X}は{O}の首筋に残った自分の匂いを、指でそっとなぞった。月曜の職場で、誰かに気づかれるかもしれない。それでもかまわないと、{X}は思った。'),
+classmate:L('熱が引いたあと、{X}と{O}は並んで天井を見上げた。{O}「学生のころの私に言っても、絶対に信じない」{X}「私も」――二人は顔を見合わせて笑った。|朝、{O}は{X}の寝顔を見ながら、同じクラスだったころの{X}を思い出していた。あのころ言えなかったことを、今夜は全部言えた気がした。{O}は{X}の髪を、そっと撫でた。|{X}は{O}の首筋に残る自分の匂いを確かめて、小さく息をついた。同窓会で会う誰も、二人のこの夜を知らない。それが少しだけ、誇らしかった。'),
+relative:L('朝、{X}と{O}は親戚からの連絡に、どちらも返事をしなかった。家族の誰にも言えない夜だった。それでも二人は、繋いだ手を離さなかった。|熱が引いたあと、{O}は{X}の胸で小さく呟いた。{O}「次の親戚の集まり、どんな顔で行けばいいんだろう」{X}「いつもどおり。隣に座ればいい」|{X}は{O}の首筋に残った自分の匂いを、そっと指で隠した。親戚の誰かに気づかれたら、そのときは二人で受け止めればいい。{X}は{O}の額に口づけた。'),
+boss:L('朝、{X}と{O}は別々の時間に家を出ることにした。職場では、上司と部下の顔に戻らなければならない。玄関で、二人は一度だけ長く口づけた。|熱が引いたあと、{O}は{X}の腕の中で言った。{O}「職場では、今までどおりでいて」{X}「無理だ」――{X}は笑って、{O}の髪に顔をうずめた。|週明けの職場で、{X}と{O}は何事もなかったように挨拶を交わした。けれど書類を受け渡す指先が、ほんの少しだけ長く触れていた。誰も気づかなかった。'),
+benefactor:L('熱が引いたあと、{X}と{O}はしばらく黙って抱き合っていた。恩人と、恩を受けた側。その言葉はもう、二人のどちらにも似合わなかった。|朝、{O}は{X}の寝顔を見ながら、初めて会った日のことを思い出していた。あの日救われたものが、今夜ようやく形になった気がした。{O}は{X}の手を、そっと握った。|{X}は{O}の首筋に残った匂いを、指でなぞった。{X}「恩返しなんて、もういらない」――{O}は笑って、{X}の胸に顔をうずめた。'),
+worship:L('熱が引いたあと、{X}と{O}は同じ毛布にくるまっていた。崇める者と崇められる者の距離は、今夜だけはどこにもなかった。祈りのような沈黙が、部屋を満たしていた。|朝、信仰を捧げてきた側は、相手の寝顔から目を離せなかった。夢ではないことを、何度も確かめた。触れた指先が、まだ震えていた。|{X}は{O}の首筋に残る匂いを、宝物のようにそっとなぞった。この夜のことは、一生忘れない。{X}はそれを、言葉にせずに胸にしまった。')
+};
+var PRIO=['worship','boss','benefactor','relative','classmate','colleague'];
+function tieOf(ctx,a,b){
+for(var i=0;i<PRIO.length;i++){var t=HK.Ties.has(ctx,a,b,PRIO[i]);if(t)return t;}
+return null;
+}
+function relWord(t,T){
+var isA=T.i===t.a;
+return{colleague:'同僚',classmate:'同級生',relative:'親戚',boss:isA?'上司':'部下',benefactor:isA?'恩人':'昔助けた相手',worship:isA?'自分を崇めてきた相手':'崇めてきた相手'}[t.type];
+}
+function pk(ctx,arr){var r=function(l){return l[Math.floor(ctx.rng()*l.length)];};return HK.Ero&&HK.Ero.fresh?HK.Ero.fresh(ctx,arr,r):r(arr);}
+function fillT(ctx,s,m){
+var t=String(s).replace(/\{sO\}/g,'{sb}').replace(/\{sX\}/g,'{sa}')
+.replace(/\{rel\}/g,m.rel).replace(/\{T\}/g,m.T.name).replace(/\{U\}/g,m.U.name).replace(/\{O\}/g,m.O.name).replace(/\{X\}/g,m.X.name);
+if(HK.ThickEro&&HK.ThickEro.fill)t=HK.ThickEro.fill(ctx,t,m.T,m.U);
+else if(HK.Ero&&HK.Ero.fill)t=HK.Ero.fill(ctx,t,m.U);
+return OM.sc?OM.sc(t,m.X,m.O):t;
+}
+var h0=OM.HEAT.scene;
+OM.HEAT.scene=function(ctx,a,b,opt){
+opt=opt||{};
+var t=a&&b&&tieOf(ctx,a,b);
+if(!t|| !HK.Pos||(HK.tieNoLove&&HK.tieNoLove(t))||(HK.sexBlocked&&HK.sexBlocked(a,b)))return h0.apply(this,arguments);
+var o=HK.Pos.order(a,b,[a,b]),T=o[0],U=o[1];
+var m={T:T,U:U,O:b,X:a,rel:relWord(t,T)};
+var lew=HK.Lewd?HK.Lewd.lv(ctx.env):(ctx.env.lewd||'mid');
+var after=fillT(ctx,pk(ctx,AFTER[t.type]),m);
+if(lew==='low'){var r0=h0.apply(this,arguments);return r0+after;}
+var ero= !!(HK.Lewd&&HK.Lewd.conf&&HK.Lewd.conf('omega')&&HK.Lewd.ero(ctx.env));
+var kd=kindOf(T,U),D0=HK.TIES[t.type],dk=D0&&D0.dir?(b.i===t.a?'a':'b'):'x';
+var IN=INTRO[t.type],pool;
+if(t.type==='worship'&&t.cold==='dominate'&&T.i===t.b)pool=IN.dom[kd];
+else pool=IN[dk][kd].concat(INTRO_ANY[t.type][dk]||[]);
+var tO=T===b;
+pool=pool.filter(function(x){return!/^@T[OX] /.test(x)||(x.slice(0,4)===(tO?'@TO ':'@TX '));}).map(function(x){return x.replace(/^@T[OX] /,'');});
+var intro=fillT(ctx,pk(ctx,pool),m);
+var peak=fillT(ctx,pk(ctx,ero?ERO_PEAK[kd]:PEAK[ps(U)]),m);
+if(!ero&&t.type==='worship')peak+=fillT(ctx,pk(ctx,PEAK_W[U.i===t.a?'U_believer':'U_worshipped']),m);
+var thick=HK.Lewd? !(HK.Lewd.short(ctx.env,function(){return 0.99;})):true;
+var br=thick?'\n\n':'';
+var o2={};for(var k in opt)o2[k]=opt[k];
+if(!ero)o2.insert=(opt.insert?opt.insert+br:'')+peak;
+var s=h0.call(this,ctx,a,b,o2);
+if(typeof s!=='string')return s;
+if(ero){
+var parts=s.split('\n\n');
+if(parts.length>=3){parts.splice(parts.length-1,0,peak);s=parts.join('\n\n');}
+else s+=br+peak;
+}
+return intro+br+s+br+after;
+};
+OM.TIE_R18={INTRO:INTRO,INTRO_ANY:INTRO_ANY,PEAK:PEAK,PEAK_W:PEAK_W,ERO_PEAK:ERO_PEAK,AFTER:AFTER};
+})();
+});
+;
 /* ==== js/drunk-omega.js ==== */
-HK.Load.def(109,'js/drunk-omega.js',function(){
+HK.Load.def(135,'js/drunk-omega.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,D=HK.Drunk,K=D&&D._k;
@@ -4020,7 +4197,7 @@ return{text:fill(ctx,ctx.pick(MORN[rem]),drunkOne,other),why:drunkOne.name+'の�
 });
 ;
 /* ==== js/obsess-omega.js ==== */
-HK.Load.def(275,'js/obsess-omega.js',function(){
+HK.Load.def(375,'js/obsess-omega.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,O=HK.Obsess,OM=HK.OMEGA,SC=HK.SCENARIOS;
@@ -4060,11 +4237,44 @@ harmKill:L('{a}は{c}を呼び出し、二度と戻らせなかった。{b}の�
 shinju:L('{a}は{b}のうなじに唇を寄せて、「来世では、最初に私が噛むから｜来世では、最初に私が噛む｜来世では、最初に私が噛みますから」と囁いた。二人分の薬が、静かに空になった。|番になれないなら、せめて同じ場所で。{a}は{b}の手を握ったまま、冬の海へ歩いていった。'),
 shinjuFail:L('{a}は二人分の薬を差し出した。{b}はそれを払い落として、{a}を抱きしめた。「生きて。……{a}の匂いが、この世界からなくなるのは嫌だ｜生きてくれ。……{a}の匂いが、この世界からなくなるのは嫌だ｜生きてください。……{a}の匂いが、この世界からなくなるのは嫌です」'),
 shinju_s:L('{a}は{b}の首筋に顔をうずめて、「このまま、二人の匂いだけの世界に行けたらいいのに｜このまま、二人の匂いだけの世界に行けたらいいのだが｜このまま、二人の匂いだけの世界に行けたらいいのにと思います」と呟いた。{b}は黙って、{a}の背中を撫でた。'),
+top:L('{a}は巣の中で、何度も{b}を抱いた。「誰の匂いがする？　言って｜誰の匂いがする？　言え｜誰の匂いがしますか？　言ってください」――{b}が{a}の名前を呼ぶまで、夜は終わらなかった。|{a}は{b}の体じゅうに自分の{sa}の匂いを刻み込むように、夜通し{b}を抱いた。'),
+bottom:L('{a}は自分の匂いで{b}の理性を溶かし、自分から{b}を受け入れた。「私の匂いしか、分からなくしてあげる｜私の匂いしか、分からなくしてやる｜私の匂いしか、分からなくしてあげます」|{a}は動けない{b}の上に跨り、ゆっくりと腰を落とした。部屋じゅうの{sa}の匂いが、{b}の逃げ場を奪っていた。')
 };
+var FORCE=L('発情期の匂いが満ちた部屋で、{a}は{b}のうなじに歯を立てた。{b}の拒む声は、{a}には届かなかった。噛み跡が残った瞬間、{b}の体は{a}を番として覚えてしまった。|{a}は{b}を壁に押しつけ、うなじに深く歯を沈めた。「これで、誰にも取られない｜＝｜これで、誰にも取られません」――{b}の膝から、力が抜けていった。|{a}は{b}の抑制剤をすり替え、発情期を待った。熱に浮かされた{b}を抱きながら、{a}は迷わずうなじを噛んだ。');
+var GIVEN=L('{b}は{a}に背を向け、自分から髪をかき上げた。「……噛んで。{a}のものにして｜……噛んでくれ。{a}のものにしてくれ｜……噛んでください。{a}のものにしてください」――{a}は震えながら、うなじに歯を立てた。|「逃げないよ。だから、噛んで｜逃げない。だから、噛んでくれ｜逃げません。だから、噛んでください」{b}の囁きに、{a}は泣きながらうなじを噛んだ。二人は番になった。');
+var TRAP=L('{a}は抑制剤を断ち、発情期の匂いをまとって{b}を自分の部屋に呼び出した。扉が閉まった瞬間、{b}の理性は{a}の{sa}の匂いに溶けた。|{a}は{b}の飲み物に誘発剤を混ぜ、自分の発情期に合わせて{b}を巣へ誘い込んだ。');
+var TRAP_X={
+alphaTop:L('{a}は熱に呑まれた{b}を組み敷き、本能のままに抱いた。|{a}は{b}をベッドに押し倒し、夜が明けるまで離さなかった。'),
+omegaTop:L('{a}は熱に浮かされた{b}を押し倒し、そのまま{b}を抱いた。|{a}は理性を失った{b}の上にのしかかり、夜が明けるまで{b}を離さなかった。')
+};
+var TRAP_BITE=L('我に返ったとき、{a}のうなじには{b}の噛み跡が残っていた。{a}はそれを指でなぞり、幸せそうに笑った。|朝、{b}は自分の口の中に残る血の味で、何をしたのかを悟った。{a}のうなじには、くっきりと噛み跡があった。');
 function fill(ctx,t,a,b,c){return OM.fill(ctx,OM.sc(ctx.t(t,a,b,c),a,b),a,b);}
 function more(ctx,a,b,s,ty,c,isSafe){
 if(isSafe)return[];
 var out=[],om=ctx.om,stn=O.stance(ctx,b,a);
+if(sx(a)==='a'&&sx(b)==='o'&&BD.canBite(ctx,a,b)&&okSex(a,b)&&order(a,b)[0]===a&&(stn==='mutual'||stn==='accept'||(!HK.Content||HK.Content.ok(ctx,'force'))))
+out.push(['forceBite',(ty==='bind'||ty==='purge'?3.2:2)*(OM.destiny?0.6+OM.destiny(ctx)*0.8:1),function(){
+var given=stn==='mutual'||stn==='accept';
+BD.bite(ctx,a,b,given?'yan':'force');
+om.obBite=om.obBite||{};om.obBite[key(a,b)]={by:a.i,kind:given?'given':'force',at:ctx.stepIndex};
+ctx.pair(a,b).night=true;ctx.pair(a,b).nights=(ctx.pair(a,b).nights||0)+1;
+if(given){ctx.pair(a,b).couple=true;ctx.pair(a,b).since=ctx.stepIndex;ctx.mod2(a,b,{att:10,aff:6},{att:10,aff:4,ten:6});}
+else{ctx.mod(b,a,{ten:35,trust: -35,aff: -15});ctx.stress(b,40);}
+ctx.mod(a,b,{att:8});
+s.lv=Math.min(100,s.lv+5);
+return{with:[b],cat:given?'romance':'conflict',sex:true,text:fill(ctx,ctx.pick(given?GIVEN:FORCE),a,b),why:O.why(ctx,a,b)+(given?'。'+b.name+'はそれを受け入れ、自分から噛ませた':'。執着が暴走し、'+b.name+'の意思を待たずに番にした')+(OM.destinyWhy?OM.destinyWhy(ctx):''),mag:55};
+}]);
+if(sx(a)==='o'&&sx(b)==='a'&&okSex(a,b)&&ctx.romanceOk([a,b]))
+out.push(['heatTrap',ty==='depend'||ty==='devote'?3:1.8,function(){
+var ord=order(a,b),top=ord[0],bot=ord[1];
+var t=fill(ctx,ctx.pick(TRAP),a,b)+fill(ctx,ctx.pick(top===b?TRAP_X.alphaTop:TRAP_X.omegaTop),top,bot);
+var bit=BD.canBite(ctx,b,a)&&ctx.rng()<0.75;
+if(bit){BD.bite(ctx,b,a,'trap');t+=fill(ctx,ctx.pick(TRAP_BITE),a,b);}
+om.obTrap=om.obTrap||{};om.obTrap[key(a,b)]={by:a.i,bit:bit,at:ctx.stepIndex};
+ctx.pair(a,b).night=true;ctx.pair(a,b).nights=(ctx.pair(a,b).nights||0)+1;
+ctx.mod2(a,b,{att:10},{att:8,ten:18,trust: -15});ctx.stress(b,25);
+return{with:[b],cat:'romance',sex:true,text:t,why:O.why(ctx,a,b)+'。抑制剤を断ち、発情期で'+b.name+'を絡め取った'+(bit?'（'+b.name+'はうなじを噛んでしまった）':''),mag:55};
+}]);
 return out;
 }
 O.install(SC.omega,{w:1.5,tick:0.3,more:more,fill:function(ctx,s,a,b){return OM.fill(ctx,OM.sc(s,a,b),a,b);}});
@@ -4110,8 +4320,382 @@ return h||(hit0?hit0(ctx,s):null);
 })();
 });
 ;
+/* ==== js/omega-mob-r18.js ==== */
+HK.Load.def(386,'js/omega-mob-r18.js',function(){
+(function(){
+'use strict';
+var HK=window.HK,OM=HK&&HK.OMEGA,SC=HK&&HK.SCENARIOS;
+if(!HK||HK.SAFE_ON|| !OM|| !SC|| !SC.omega)return;
+var scen=SC.omega,EV=scen.events,BD=OM.B;
+function L(s){return s.split('|');}
+function sx(c){return c.om?c.om.sex:'';}
+function pk(ctx,l){return HK.Ero&&HK.Ero.fresh?HK.Ero.fresh(ctx,l,function(x){return ctx.pick(x);}):ctx.pick(l);}
+function J(a){return a.filter(Boolean).join('\n\n');}
+function psOf(c){return(HK.personaOf?HK.personaOf(c):c.persona)||'gentle';}
+var WHERE={
+prey:L('雑居ビルの非常階段|駅の裏手の多目的トイレ|公園の公衆トイレ|閉店後の店の裏の倉庫|ビルの地下駐車場|ホテルの非常階段'),
+lose:L('終電間際の駅の多目的トイレ|職場の資料室|取引先の会議室|止まったエレベーターの中|帰りの電車を降りたホームの端の倉庫|深夜のコインランドリー')
+};
+var T={
+open:{
+prey:L('抑制剤が効ききらないまま、{v}は{w}へ急いでいた。背後から、いくつもの足音がついてくる。振り返ったときには、{Ms}がもう{v}を取り囲んでいた。発情の匂いを嗅ぎつけて、ずっと後をつけてきたのだ。|'+
+'{w}の手前で、{v}は不意に腕を掴まれた。{Ms}が、獣じみた目で{v}の首筋を嗅いでいた。{Ms}は{v}を{w}へ引きずり込み、出口を塞いだ。|'+
+'{v}の発情の匂いは、夜の街に隠しようもなく漂っていた。{w}に逃げ込んだところで、待ち伏せていた{Ms}が{v}の行く手を塞いだ。逃げようとした{v}の背中を、乱暴な手が壁に押しつけた。'),
+lose:L('{w}で、そばにいた{M}の様子が急に変わった。荒い息、血走った目――{v}の発情の匂いに当てられて、理性が焼き切れかけていた。{v}が身を引くより早く、{M}の腕が{v}を捕らえた。|'+
+'{w}で、{v}は見知らぬ{M}と二人きりになった。{M}の喉が、ごくりと鳴った。振り返ったその目からは、もう理性の色が消えていた。|'+
+'{w}の狭い空間に、{v}の発情の匂いがこもっていた。同じ空間にいた{M}が、苦しげに喉を鳴らした。{M}「＠……悪い。止まれ、ない」――次の瞬間、{v}は床に押し倒されていた。')
+},
+eAct:{
+mv:L('{M}は{v}の下着を引き裂き、発情でとろとろに濡れた{女性器}に指を突っ込んだ。{s:wet}。{mt}――{v}「{vm0}」――{M}はベルトを外すと、反り返った{男性器}を一息に根元までねじ込んだ。{s:hit}。|'+
+'{M}は{v}を壁に押しつけて片脚を抱え上げ、下から{男性器}を突き上げた。{s:hit}。発情した{ナカ}は拒む{v}の意思を裏切り、男のものをきゅうきゅうと締めつけた。{v}「{vm1}」|'+
+'{M}は{v}を四つん這いにさせ、腰を掴んで後ろから乱暴に打ちつけた。{s:hit}。{mm}――男の根元が膨らみはじめ、{v}の{女性器}の入り口をぎちぎちと押し広げた。{v}「{vm1}」'),
+ma:L('{M}は{v}のズボンを引きずり下ろし、発情で濡れた{後ろ}に指を二本ねじ込んだ。{s:wet}。{mt}――{v}「{vm0}」――指が抜かれた次の瞬間、男の熱く硬い{男性器}が一息に押し入ってきた。{s:hit}。|'+
+'{M}は{v}を床にうつ伏せに押さえつけ、背中に体重をかけて腰を打ちつけた。{s:hit}。前に回った男の手が、{v}の{男性器}を乱暴に扱き上げる。{v}「{vm1}」――意思とは裏腹に、{v}の体は男の手の中で硬く張りつめていった。|'+
+'{M}は{v}の両脚を肩に担ぎ、真上から{後ろ}を抉るように突き下ろした。{s:hit}。{mm}――男の根元が膨らみ、{v}の{後ろ}の入り口をぎちぎちと塞いだ。{v}「{vm1}」'),
+ff:L('{M}は獲物を品定めするように、{v}の服を一枚ずつ剥いでいった。濡れそぼった{女性器}に指を這わせ、{M}は喉の奥で笑った。{s:wet}。{v}「{vm0}」――{M}は二本の指を{ナカ}にずぶりと沈め、乱暴に掻き回した。|'+
+'{M}は{v}の{胸}を鷲掴みにし、{乳首}に歯を立てた。{s:suck}。{v}「{vm1}」――そのあいだも、{M}の指は獲物の{ナカ}の弱いところを執拗に抉り続けた。|'+
+'{M}は{v}の脚を大きく開かせ、{陰核}に吸いついた。{s:suck}。発情した体は、見知らぬ女の舌にさえ蜜を溢れさせた。{v}「{vm1}」――{M}は獲物の反応を楽しむように、指を三本に増やした。'),
+fm:L('{M}は{v}を床に押し倒して跨り、{v}の{男性器}を握って乱暴に扱き上げた。{s:wet}。{v}「{vm0}」――無理やり硬くさせられたそれを、{M}は自分の{女性器}にあてがい、一息に腰を落とした。獲物を見下ろす目は、もう理性の色をなくしていた。|'+
+'{M}は{v}に跨ったまま、濡れた{後ろ}に指を押し込んだ。{s:wet}。前と後ろを同時に責め立てられて、{v}の腰ががくがくと跳ねた。{v}「{vm1}」――{M}は獲物の顔を覗き込み、満足げに舌なめずりをした。|'+
+'{M}は{v}の胸に爪を立て、好きな速さで腰を打ち下ろした。{s:hit}。{mt}――{v}「{vm1}」――{M}の{ナカ}が締めつけるたびに、獲物の腰は意思に逆らって跳ね上がった。')
+},
+eMid:L('{v}は爪を立てて押し返そうとした。けれど、発情の熱に溶けた腕には力が入らない。{s:wet}。{v}「{vm1}」――拒むはずの体が、知らない相手の動きに合わせて勝手に揺れていた。|'+
+'{mt}――{M}は{v}の首筋に鼻を押しつけ、匂いを貪りながら動きを速めた。{s:hit}。{v}は悔しさに唇を噛んだが、噛んだ唇の隙間から甘い息が漏れ続けた。{v}「{vm1}」|'+
+'人の気配が近づくたびに、{M}は{v}の口を手のひらで塞いだ。{s:wet}。くぐもった声が、{M}の指の隙間から漏れた。{v}の体は、恐怖とは別の震えに、少しずつ侵されていった。'),
+ePeak:{
+proud:L('{v}は最後まで{M}を睨みつけていた。{s:hit}。けれど発情した体を揺さぶられるうちに、その目はとろりと焦点を失っていく。悔しさに歯を鳴らしながら、{v}の体はびくんびくんと大きく跳ねた。|'+
+'{v}「{vm1}」――罵る声は途中で途切れ、喉の奥で掠れた喘ぎに変わった。{mt}――{s:hit}。{v}は見知らぬ相手を睨んだまま、屈辱の絶頂に突き落とされた。'),
+stern:L('{v}は唇を固く結び、一言も漏らすまいと耐えていた。{s:hit}。押さえ込むほど、発情の熱ははっきりと形を持っていく。{v}の喉から押し殺した声が一度だけ漏れ、そのまま全身が硬直した。|'+
+'{v}は{M}の顔と声を記憶に刻みつけようとしていた。その意志とは裏腹に、体は{M}の動きに合わせてびくびくと跳ねる。{s:hit}。{v}は短く息を詰め、自分の体を呪いながら果てた。'),
+tsun:L('{v}は涙をこぼしながら、こんなの感じてないと首を振った。{s:hit}。首を振っても、体の震えは少しも止まらない。とうとうイかされた{v}は、悔しさに顔を真っ赤にした。|'+
+'{v}は意地でも声を出すまいと、自分の腕に顔を押しつけた。{s:wet}。くぐもった喘ぎは、もう隠しようもなかった。{mt}――{v}の背中が大きく跳ね、それきりくたりと力が抜けた。'),
+gentle:L('{v}は涙を浮かべたまま、声を殺して耐え続けた。{s:hit}。それでも揺さぶられるうちに、こらえきれない震えが背中を駆け上がっていく。果てた瞬間、{v}は自分を責めるように顔を覆った。|'+
+'{v}は、お願いだからやめてと何度も繰り返した。{M}は聞く耳を持たなかった。{s:hit}。最後の波に呑まれて腰がびくびくと跳ね、{v}の目から涙が溢れた。'),
+devoted:L('{v}は、我慢すれば終わると自分に言い聞かせて、歯を食いしばった。{s:hit}。言い聞かせる声も、発情の熱に溶かされて遠のいていく。{v}の体は、細く長く痙攣して果てた。|'+
+'{v}は誰に謝っているのかも分からないまま、ごめんなさいと繰り返していた。{s:wet}。謝る声がほどけて喘ぎに変わり、{v}の体はびくびくと波打って果てた。'),
+cool:L('{v}は、これは発情期の体の反応にすぎないと、頭の中で繰り返した。{s:hit}。理屈を並べるはずの頭が、波が来るたびに白く途切れる。最後の一度で、{v}の無表情はとうとうぐずぐずに崩れた。|'+
+'{v}は表情一つ変えまいとしていた。紅潮した頬と乱れた息が、その無表情を裏切っていた。{mt}――体が勝手にびくびくと痙攣したとき、{v}は初めて悔しそうに唇を噛んだ。'),
+free:L('{v}は最初こそ、強がって笑ってみせた。{s:hit}。笑い声はすぐに途切れ、喉の奥で引きつった喘ぎに変わる。何度も揺さぶられた末に、{v}は泣き笑いのような顔で果てた。|'+
+'{v}は誰か来てと叫んだ。返ってきたのは、遠い車の音だけだった。{s:hit}。叫び声がいつのまにか甘い悲鳴に変わり、{v}の体は大きく波打って果てた。'),
+shy:L('{v}は声も出せずに、ただ{M}の服の端を握りしめていた。{s:hit}。揺さぶられるたびに、握る指に力がこもる。果てた瞬間、{v}は小さく息を呑み、そのまま顔を両手で覆った。|'+
+'{v}は耳まで真っ赤にして、漏れる声を必死に押し殺していた。{mt}――{s:wet}。か細い声が一度だけ高く跳ね、{v}は体を丸めるようにして果てた。'),
+polite:L('{v}は最後まで丁寧な言葉で、どうかおやめくださいと願い続けた。{s:hit}。その言葉は途中から形を失い、ただの喘ぎになる。果てた{v}は、乱れた髪を直すこともできずに、虚ろに宙を見つめていた。|'+
+'{v}は震える声で、何度も許しを乞うた。{M}はそのたびに、わざと動きを強めた。{s:hit}。最後の一度で、{v}の声は細い悲鳴になって途切れた。')
+},
+eFin:{
+mv:L('{M}の腰の動きが、獣じみた速さになっていく。{s:hit}。{mm}――男は{v}の一番奥に{男性器}を押しつけたまま、根元を膨らませて動きを止めた。{s:cum}。どくどくと注ぎ込まれる熱に、{v}は唇を噛んで目を閉じた。|'+
+'{M}は果てる寸前に{v}の髪を掴んで顔を上げさせ、その表情を眺めながら最後の数回を叩きつけた。{s:cum}。{mt}――引き抜かれた{女性器}から、男の白いものがとろりと溢れ出した。'),
+ma:L('{M}の突き上げが荒く、速くなっていく。{s:hit}。{mm}――男は{v}の腰を強く引き寄せ、{ナカ}の一番奥で熱を吐き出した。{s:cum}。注ぎ込まれる感触に、{v}は床に額を押しつけて震えた。|'+
+'{M}は{v}の{男性器}を扱きながら、奥に{精液}を吐き出した。{s:cum}。前と後ろを同時に責められて、{v}も男の手の中で無理やり果てさせられた。{mt}'),
+ff:L('{M}は{v}が果てそうになるたびに指を止め、焦らしては責めることを繰り返した。{s:wet}。三度目に、{v}の太腿ががくがくと震えてとうとう果てた。{M}は獲物の{愛液}に濡れた指を、見せつけるように舐め取った。|'+
+'{M}は{v}の{ナカ}を指で押し上げたまま、{陰核}にしゃぶりついた。{s:suck}。{mm}――{v}の腰が跳ね上がって潮を噴いても、{M}は獲物からしばらく指を抜こうとしなかった。'),
+fm:L('{M}は{v}の胸に手をつき、{ナカ}をぎゅうっと締めつけながら腰を速めた。{s:wet}。{mm}――{v}がこらえきれずに果てると、{M}は獲物の{精液}を一滴残らず搾り取るまで腰を揺らし続けた。{s:cum}。|'+
+'{M}は{v}が果てそうになるたびに根元をきつく握って焦らした。{mt}――三度目に手を離されて、獲物は{M}の中で無理やり果てさせられた。{s:cum}。')
+},
+eAgain:{
+prey:L('果てたばかりの{v}の体を、{Ms}は休ませなかった。{s:hit}。{v}「{vm1}」――敏感になった体を再び揺さぶられて、{v}は声にならない悲鳴を上げた。|'+
+'{mt}――一人が終わると、すぐに別の手が{v}の腰を掴んだ。{s:hit}。発情の熱は、何度果てても少しも引かなかった。|'+
+'夜明けが近づいても、{v}は解放されなかった。{s:wet}。何度目かも分からない絶頂に押し上げられ、{v}の目から光が抜けていった。'),
+lose:L('果てたばかりの{v}の体を、{M}は休ませなかった。{s:hit}。{v}「{vm1}」――敏感になった体を再び揺さぶられて、{v}は声にならない悲鳴を上げた。|'+
+'{M}は果ててもなお、{v}を離さなかった。{s:hit}。二度目は、一度目よりもずっと長く続いた。|'+
+'夜明けが近づいても、{v}は解放されなかった。{s:wet}。何度目かも分からない絶頂に押し上げられ、{v}の目から光が抜けていった。')
+},
+nAct:{
+mv:L('{M}は{v}を床に押し倒し、服を力任せに引き裂いた。発情の熱に濡れた{女性器}は、{v}の意思を裏切って、男の{男性器}を受け入れてしまった。押し入られた瞬間、{v}の喉から声にならない悲鳴が漏れた。|'+
+'{M}は{v}を壁に押しつけ、片脚を抱え上げて下から貫いた。{v}の体は、嫌悪とは裏腹に熱く疼いていた。男が動くたびに、{v}は唇を噛んで声をこらえた。|'+
+'{M}は{v}を四つん這いにさせ、後ろから乱暴に腰を打ちつけた。男の根元が膨らみはじめ、{v}は逃げることもできなくなった。{v}は冷たい床に爪を立て、ただ終わるのを待った。'),
+ma:L('{M}は{v}を床にうつ伏せに押さえつけ、発情で濡れた{後ろ}に男の{男性器}を押し当てた。拒む声は、押し入られた瞬間に途切れた。{v}は床に頬を押しつけたまま、内側から押し広げられる圧迫に喘いだ。|'+
+'{M}は{v}の腰を掴んで引き寄せ、休みなく突き上げた。前に回った男の手が、{v}の{男性器}を握り込む。意思とは裏腹に昂っていく体が、{v}には何より恐ろしかった。|'+
+'{M}は{v}の両脚を抱え上げ、真上からのしかかった。男の根元が膨らみ、{v}の{後ろ}を塞いでいく。{v}は顔を背け、天井の染みだけを見つめていた。'),
+ff:L('{M}は獲物を品定めするように{v}の服を剥ぎ、脚のあいだに指を這わせた。発情した{女性器}は、見知らぬ女の指を拒めなかった。{v}は唇を噛み、声を漏らすまいとした。|'+
+'{M}は{v}の{胸}に唇を寄せながら、{ナカ}に沈めた指をゆっくりと動かした。{v}の体は、{v}の意思とは関係なく熱を持っていった。{M}は獲物の反応を、楽しむように見下ろしていた。|'+
+'{M}は{v}の脚を開かせ、{陰核}に舌を這わせた。逃げようとする腰は、獲物を押さえ込む女の手に阻まれて動かなかった。{v}は顔を覆い、ただ時間が過ぎるのを待った。'),
+fm:L('{M}は{v}を床に押し倒して跨り、{v}の{男性器}を手で昂らせた。{v}の体は、{v}の意思を裏切って応えてしまった。{M}はそれを自分の{女性器}に導き、ゆっくりと腰を沈めた。獲物を見下ろす目には、もう理性の色がなかった。|'+
+'{M}は{v}の胸に手をつき、好きな速さで腰を揺らした。{v}は顔を背けて耐えたが、跳ねる腰は止められなかった。{M}は獲物の反応を見下ろして、満足げに目を細めた。|'+
+'{M}は{v}の手首を床に押さえつけたまま、腰を前後に揺すった。拒む言葉は、獲物を見下ろす{M}の唇に塞がれた。{v}は唇を噛みしめ、意思に逆らう自分の体を呪った。')
+},
+nMid:L('{v}は押し返そうとしたが、発情の熱に溶けた腕には力が入らなかった。拒むはずの体が、知らない相手の動きに合わせて揺れている。{v}はそのことが、何よりも恐ろしかった。|'+
+'人の気配が近づくたびに、{M}は{v}の口を手のひらで塞いだ。誰かに気づいてほしいのか、気づかれたくないのか、{v}にはもう分からなかった。{v}は、ただ震えていた。'),
+nPeak:{
+proud:L('{v}は最後まで{M}を睨みつけていた。けれど発情した体は、その意志を置き去りにして昂っていく。屈辱に歯を食いしばったまま、{v}の体は大きく震えて果てた。|'+
+'{v}は罵る言葉を何度も吐き捨てた。その声が途中で途切れ、掠れた吐息に変わる。果てたあとも、{v}は見知らぬ相手から目を逸らさなかった。'),
+stern:L('{v}は一言も漏らすまいと、唇を固く結んでいた。押さえ込むほど、体の奥の熱ははっきりと形を持っていく。{v}は声を殺したまま、全身を硬直させて果てた。|'+
+'{v}は{M}の顔を、記憶に刻みつけようとしていた。その意志とは裏腹に、体は熱に押し上げられていく。{v}は短く息を詰め、自分の体を呪いながら果てた。'),
+tsun:L('{v}は涙をこぼしながら首を振った。首を振っても、体の震えは止まらなかった。果てた{v}は、悔しさに顔を真っ赤にしてしゃくり上げた。|'+
+'{v}は意地でも声を出すまいと、自分の腕を噛んだ。それでも漏れる声を、{v}は止められなかった。{v}の背中が大きく跳ね、それきりくたりと力が抜けた。'),
+gentle:L('{v}は涙を浮かべたまま、声を殺して耐え続けた。それでも揺さぶられるうちに、こらえきれない震えが背中を駆け上がる。果てた瞬間、{v}は自分を責めるように目をきつく閉じた。|'+
+'{v}は、やめてと何度も小さく繰り返していた。その声は、誰にも届かなかった。最後の波に呑まれて、{v}の目から涙が溢れた。'),
+devoted:L('{v}は、我慢すれば終わると自分に言い聞かせていた。言い聞かせる声も、熱に溶かされて遠のいていく。{v}の体は、細く長く震えて果てた。|'+
+'{v}は誰に謝っているのかも分からないまま、ごめんなさいと繰り返していた。謝る声がほどけて、ただの吐息になる。{v}の体は、静かに果てた。'),
+cool:L('{v}は、これは発情期の体の反応にすぎないと、頭の中で繰り返した。その理屈も、熱に押し流されていく。最後の一度で、{v}の無表情はとうとう崩れた。|'+
+'{v}は呼吸を数えて、意識を切り離そうとした。数える間隔が乱れ、やがて数えることも忘れた。{v}は短く息を詰めて果てた。'),
+free:L('{v}は最初こそ、強がって笑ってみせた。その笑い声はすぐに途切れ、引きつった息に変わった。何度も揺さぶられた末に、{v}は泣き笑いのような顔で果てた。|'+
+'{v}は誰か来てと叫んだ。返ってきたのは、遠くを走る車の音だけだった。叫び声がいつしか細い悲鳴に変わり、{v}の体は大きく震えて果てた。'),
+shy:L('{v}は声も出せずに、ただ服の端を握りしめていた。揺さぶられるたびに、握る指に力がこもる。果てた瞬間、{v}は小さく息を呑み、顔を両手で覆った。|'+
+'{v}は耳まで真っ赤にして、漏れる声を押し殺していた。か細い声が一度だけ高く跳ねた。{v}は体を丸めるようにして果てた。'),
+polite:L('{v}は最後まで、どうかおやめくださいと丁寧に願い続けた。その言葉は途中から形を失い、ただの吐息になった。果てた{v}は、乱れた髪を直すこともできずに宙を見つめていた。|'+
+'{v}は震える声で、何度も許しを乞うた。{M}は聞き入れなかった。最後の一度で、{v}の声は細い悲鳴になって途切れた。')
+},
+nFin:{
+mv:L('{M}の動きが荒く、速くなっていった。男は{v}の一番奥で動きを止め、根元を膨らませたまま熱を注ぎ込んだ。{v}は唇を噛んで、その熱が引くのを待った。|'+
+'男は果てると、{v}の体を乱暴に突き放した。引き抜かれたあとも、{v}の脚のあいだからは白いものが溢れ続けた。{v}はしばらく、脚を閉じることもできなかった。'),
+ma:L('{M}の突き上げが荒くなり、やがて{v}の奥で止まった。注ぎ込まれる熱に、{v}は床に額を押しつけて震えた。男の根元が引くまで、{v}は身動き一つ取れなかった。|'+
+'男は{v}の{男性器}を扱きながら果てた。前と後ろを同時に責められて、{v}もまた、男の手の中で果てさせられた。{v}はその事実から、目を逸らすことができなかった。'),
+ff:L('{M}は{v}が果てるまで、指を止めなかった。果てたあとも、獲物の反応を確かめるように何度も責め立てた。{v}は濡れた太腿を閉じることもできずにいた。|'+
+'{M}は{v}が果てる様子を、最後まで楽しげに見下ろしていた。{M}は濡れた指で獲物の頬をなぞってから、ようやく体を離した。{v}は顔を背けたまま、動けなかった。'),
+fm:L('{M}は{v}の上で腰を速め、{v}を果てさせた。最後の一滴まで搾り取るように、{M}はしばらく腰を揺らし続けた。{v}は顔を背けたまま、荒い息を吐いていた。|'+
+'{M}は{v}が果てそうになるたびに動きを止め、焦らしては責めた。三度目に、{v}はとうとう{M}の中で果てさせられた。{M}は獲物を見下ろして、満足げに笑った。')
+},
+nAgain:L('果てたばかりの{v}の体を、{M}は休ませなかった。敏感になった体を再び揺さぶられて、{v}は声にならない悲鳴を上げた。夜明けまで、{v}は解放されなかった。|'+
+'一度では終わらなかった。発情の熱は、何度果てても少しも引かなかった。{v}が解放されたのは、空が白みはじめたころだった。'),
+veil:L('――その先のことを、{v}は思い出したくなかった。発情の熱だけが、いつまでも体に残っていた。気づいたときには、{v}はひとりで冷たい床に座り込んでいた。|'+
+'――{v}がそこから出られたのは、ずいぶん時間が経ってからだった。何があったのか、{v}は誰にも話さなかった。抑制剤の瓶を握る手だけが、いつまでも震えていた。'),
+after:L('{Ms}が去ったあとも、{v}はしばらく動けなかった。発情の熱だけが、まだ体の芯にしつこく残っていた。{v}は震える指で、乱れた服をかき寄せた。|'+
+'{v}は這うようにして、明かりのある通りまで出た。抑制剤の瓶を握る手が、いつまでも震えていた。誰にも会わないように、{v}は遠回りをして帰った。|'+
+'翌朝、{v}は首筋を何度も鏡で確かめた。噛まれてはいなかった。それだけが、たったひとつの救いだった。'),
+come:{
+mate:L('{v}の匂いが、助けを求めるように乱れていた。番の異変を、{p}の体は誰よりも早く嗅ぎ取っていた。{p}は人をかき分けて駆けつけた。{p}「{v}に触らないで！　その人は私の番だ｜{v}に触るな！　その人は私の番だ｜{v}に触らないでください！　その人は私の番です」|'+
+'番の噛み跡が疼いた。{p}は理由も分からないまま走り出し、{w}で{v}を見つけた。{p}「離れて。……その人から、離れて｜離れろ。……その人から、離れろ｜離れてください。……その人から、離れてください」'),
+lover:L('{p}は{v}の帰りが遅いのを気にして、迎えに出ていた。物陰から聞こえた声に、{p}は考えるより先に飛び込んでいた。{p}「やめて！　私の恋人に何するの！｜やめろ！　私の恋人に何をする！｜やめてください！　私の恋人に何をするんですか！」|'+
+'{p}は、{Ms}に捕まった{v}を見た瞬間、持っていた荷物を放り出した。{p}「{v}から手を離して！｜{v}から手を離せ！｜{v}から手を離してください！」'),
+fixed:L('{v}が体を許す相手は、{p}だけのはずだった。{p}はその約束を思い出すより先に、{Ms}のあいだに割って入っていた。{p}「その人に触れていいのは、私だけ｜その人に触れていいのは、私だけだ｜その人に触れていいのは、私だけです」|'+
+'{p}「……どいて。その人は、私の相手だから｜……どけ。その人は、私の相手だ｜……どいてください。その人は、私の相手ですから」――{p}の声は低く震えていた。{p}は{v}の腕を掴んで、自分の背中に引き寄せた。'),
+kin:L('{p}は、{v}の家族だった。{v}の悲鳴を聞き分けた瞬間、{p}の体は勝手に動いていた。{p}「{v}に何してるの！　離れて！｜{v}に何をしている！　離れろ！｜{v}に何をしているんですか！　離れてください！」|'+
+'家族の声を、{p}が聞き間違えるはずがなかった。{p}は{w}に駆け込み、{v}の前に立ちはだかった。{p}「……私の家族に、触らないで｜……私の家族に、触るな｜……私の家族に、触らないでください」'),
+crush:L('{p}は、ずっと{v}を目で追っていた。だから、{v}の異変にもすぐに気づいた。{p}「……やめて。その人に、触らないで｜……やめろ。その人に、触るな｜……やめてください。その人に、触らないでください」――{p}の声は震えていたが、足は止まらなかった。|'+
+'{p}は、自分の気持ちを{v}に伝えたこともなかった。それでも、目の前の光景を見過ごすことだけはできなかった。{p}「{v}、こっちに来て！｜{v}、こっちに来い！｜{v}、こちらに来てください！」'),
+friend:L('{p}は、{v}の様子がおかしいことに気づいて後を追ってきた。{p}「何してるの！　その人、私の友達なんだけど！｜何をしている！　その人は私の友人だ！｜何をしているんですか！　その人は私の友人です！」|'+
+'{p}は仕事の帰り道で、見覚えのある背中が引きずられていくのを見た。{v}だった。{p}「やめて！　人を呼ぶよ！｜やめろ！　人を呼ぶぞ！｜やめてください！　人を呼びますよ！」'),
+enemy:L('{p}は{v}のことが嫌いだった。それでも、目の前で起きていることを黙って見ていられるほどではなかった。{p}「……そういうやり方は、気に入らない｜……そういうやり方は、気に入らないな｜……そういうやり方は、気に入りません」|'+
+'{p}は舌打ちをして、{Ms}の前に立ちはだかった。{p}「勘違いしないで。{v}のためじゃない｜勘違いするな。{v}のためではない｜勘違いしないでください。{v}のためではありません」'),
+apathy:L('{p}は、{v}に特に関心があるわけではなかった。ただ、通りがかった{w}で起きていることが、どうしようもなく目障りだった。{p}「……うるさい。よそでやって｜……うるさい。よそでやれ｜……うるさいです。よそでやってください」|'+
+'{p}は足を止めた。止めるつもりはなかったのに、気づけば{Ms}に声をかけていた。{p}「……そこ、通りたいんだけど｜……そこを通りたいのだが｜……そこ、通りたいんですけど」')
+},
+hit:L('{p}は{M}の腕に掴みかかった。次の瞬間、拳が{p}の頬を打ち抜いた。床に倒れた{p}の腹に、容赦のない蹴りが何度もめり込んだ。|'+
+'{p}は{v}を背中に庇って立ちはだかった。{M}は鼻で笑い、{p}の胸ぐらを掴んで壁に叩きつけた。{p}は額から血を流しながら、それでも起き上がろうとした。|'+
+'{p}の体当たりで、{M}がよろめいた。けれど、発情の匂いに呑まれた{M}の力は尋常ではなかった。{p}は床に叩き伏せられ、身動きひとつ取れなくなった。'),
+hitA:L('{p}は威圧の匂いを全力でぶつけた。{M}はわずかに怯んだが、発情の匂いに煽られた目はもう引かなかった。逆に浴びせ返された威圧に膝が折れ、{p}はその場に崩れ落ちた。|'+
+'{p}と{M}の威圧の匂いがぶつかり合い、空気がびりびりと震えた。押し負けたのは{p}だった。{p}は殴り倒され、床に頬を擦りつけたまま、動けなくなった。'),
+hitSee:L('{p}は霞む目で、それを見ていることしかできなかった。|{p}は床に爪を立て、何度も立ち上がろうとしては崩れ落ちた。|{p}の叫び声は、壁に跳ね返って消えた。'),
+offer:L('{p}は{v}の前に立ちはだかり、震える手で上着を脱ぎ捨てた。{p}「……私が代わる。だから、その人は見逃して｜……私が代わる。だから、その人は見逃せ｜……私が代わります。だから、その人は見逃してください」|'+
+'{p}は{Ms}の前に膝をついた。{p}「相手なら、私がする。……その人にだけは、手を出さないで｜相手なら、私がする。……その人にだけは、手を出すな｜相手なら、私がします。……その人にだけは、手を出さないでください」'),
+offerA:L('{p}は威圧の匂いを引っ込め、自分から{M}の前に進み出た。{p}「αでよければ、私が相手になる。その人を放して｜αでよければ、私が相手になる。その人を放せ｜αでよければ、私が相手になります。その人を放してください」'),
+offerYes:{
+prey:L('{M}は値踏みするように{p}を眺め、口の端を吊り上げた。突き放された{v}は、壁際で別の手に押さえつけられた。|'+
+'{Ms}の視線が、ゆっくりと{p}に移った。{v}の手首を掴んでいた指が離れ、代わりに{p}の襟首が掴まれた。'),
+lose:L('{M}は値踏みするように{p}を眺め、口の端を吊り上げた。突き放された{v}は、壁際にへたり込んだまま動けなかった。|'+
+'{M}の血走った目が、ゆっくりと{p}に移った。{v}の手首を掴んでいた指が離れ、代わりに{p}の襟首が掴まれた。')
+},
+offerSee:L('{v}は壁際にうずくまったまま、目を逸らすこともできなかった。|{v}の喉から、声にならない叫びが漏れた。|{v}は何度も{p}の名前を呼んだ。その声は、誰にも届かなかった。'),
+offerNo:L('{M}は鼻で笑い、{p}の差し出した手を払いのけた。次の瞬間、{p}の顔に拳がめり込んだ。|'+
+'{M}は{p}を一瞥しただけだった。用があるのは発情の匂いをまとった{v}のほうだと、その目が言っていた。{p}は突き飛ばされ、壁に頭を打ちつけた。'),
+both:L('{p}が{v}を引き剥がそうとした瞬間、別の手が{p}の腕をねじり上げた。{p}は{v}の隣の床に引き倒され、服の襟を力任せに引き裂かれた。|'+
+'{Ms}の一人が、{p}の首筋に鼻を寄せて笑った。発情の匂いは、もう{p}の服にも移っていた。{p}も{v}と並べて押さえつけられ、逃げ場を失った。|'+
+'{p}は抵抗した。けれど二人がかりで床に押しつけられ、{v}と同じように服をはぎ取られていった。'),
+bind:L('{p}は後ろ手に括られ、{v}から数歩離れた場所に座らされた。{M}は{p}の顎を掴んで、顔を{v}のほうへ向けさせた。|'+
+'{p}は羽交い締めにされたまま、{v}の正面に引きずり出された。目を閉じようとするたびに、髪を掴まれて顔を上げさせられた。|'+
+'{p}の両腕は背中でねじり上げられ、身動きひとつ取れなかった。{M}が、見ていろと言うように顎をしゃくった。'),
+rouse:L('漂ってくる発情の匂いが、{p}の鼻の奥にまで流れ込んできた。{px}。助けに来たはずなのに――{p}は唇を噛んで、自分の体を呪った。|'+
+'{p}は目を逸らそうとした。けれど、耳を塞ぐことはできなかった。{px}。{p}「……私、最低だ｜……私は、最低だ｜……私、最低です」|'+
+'匂いに当てられたのか、それとも――。{p}は荒くなる息を必死に押し殺した。{px}。そのことを誰にも気づかれたくなくて、{p}は身を丸めた。'),
+rouseA:L('{p}はαだった。発情したΩの匂いに、体が勝手に応えてしまう。{px}。{p}は、自分も目の前の獣と同じなのだと思い知らされた。|'+
+'αの本能が、{p}の理性を内側から引っかいていた。{px}。助けに来たはずの自分が一番浅ましいのだと、{p}は歯を食いしばった。'),
+pxM:L('{p}の{股間}は、いつのまにか痛いほど張りつめていた|{p}の{股間}は、浅ましく熱を持って硬くなっていた'),
+pxF:L('{p}の脚のあいだは、じっとりと熱く濡れはじめていた|{p}の下腹の奥が、じくじくと熱く疼いていた'),
+shame:L('{p}の脳裏に、{x}の顔が浮かんだ。{x}以外に体が応えてしまったことが、{p}には何よりも恥ずかしかった。|'+
+'{p}は、{x}の顔を思い浮かべてしまった。そのせいで、自分の体の浅ましさがいっそう際立って感じられた。'),
+watchEnd:L('{p}は最後まで、目を逸らすことを許されなかった。|{p}は、自分の荒い息が{v}に聞こえていないことだけを祈った。'),
+afterBr:{
+hit:L('{Ms}が去ったあと、{p}は這うようにして{v}のそばへ行った。腫れ上がった顔で、{p}は何度も{v}の名前を呼んだ。|'+
+'{p}は痛む体を引きずって、{v}のそばに膝をついた。二人とも、しばらく何も言えなかった。'),
+offer:L('{Ms}が去ったあと、{v}は震える手で{p}の肩に上着をかけた。{p}は{v}の無事を確かめるように、その指先をそっと握った。|'+
+'{v}は、傷だらけの{p}から目を離せなかった。自分の代わりに、と思うたびに、喉の奥が詰まった。'),
+both:L('{Ms}の足音が遠ざかっても、二人はしばらく動けなかった。冷たい床の上で、{p}と{v}の指先が、かすかに触れ合った。|'+
+'{p}と{v}は、互いの顔を見ることができなかった。それでも、どちらからともなく手を伸ばして、乱れた服を直し合った。'),
+watch:L('{p}が自由になったのは、{Ms}が去ったあとだった。{p}は{v}の顔を、まともに見られなかった。|'+
+'{p}は{v}に駆け寄ろうとして、足を止めた。今の自分に、{v}に触れる資格があるとは思えなかった。')
+},
+afterRel:{
+hurt:{
+mate:L('{p}は{v}を抱き寄せ、うなじの噛み跡に額を押し当てた。{p}「……ごめん。番なのに、守れなかった｜……すまない。番なのに、守れなかった｜……ごめんなさい。番なのに、守れませんでした」――{v}は答える代わりに、{p}の服の裾を強く握った。|'+
+'{v}は{p}の匂いに包まれて、ようやく震えを止めた。{v}「……来てくれた。それだけで、いい｜……来てくれた。それだけでいい｜……来てくれました。それだけで、いいんです」――{p}は何も言えずに、{v}の背中を撫で続けた。'),
+lover:L('{p}は{v}の肩に上着をかけ、そのまま強く抱きしめた。{p}「ごめん。……もっと早く来ていれば｜すまない。……もっと早く来ていれば｜ごめんなさい。……もっと早く、来るべきでした」――{v}は{p}の腕の中で、声を殺して泣いた。|'+
+'{v}は{p}の胸に顔を埋めたまま、しばらく顔を上げなかった。{v}「……見ないで。今の私、見ないで｜……見るな。今の私を、見るな｜……見ないでください。今の私を、見ないでください」――{p}は黙って、{v}の髪を撫で続けた。'),
+fixed:L('{p}は{v}の手を取り、指を一本ずつ確かめるように握った。{p}「……あなたに触れていいのは、私だけだったのに｜……あなたに触れていいのは、私だけだったのに｜……あなたに触れていいのは、私だけだったはずです」――{v}は唇を噛んで、うつむいた。|'+
+'{v}は{p}の顔を見られずにいた。{v}「……ごめん。約束、守れなかった｜……すまない。約束を、守れなかった｜……ごめんなさい。約束、守れませんでした」――{p}は首を振って、{v}の額に自分の額を押し当てた。'),
+kin:L('{p}は{v}を抱きしめて、子どもの頃のように背中をさすった。{p}「……大丈夫。もう大丈夫だから｜……大丈夫だ。もう大丈夫だ｜……大丈夫です。もう、大丈夫ですから」――{v}は{p}の肩に顔を埋めて、声を上げて泣いた。|'+
+'{v}は{p}の腫れた頬を見て、唇を噛んだ。{v}「……家のみんなには、言わないで｜……家の者には、言うな｜……家のみんなには、言わないでください」――{p}は少し迷ってから、黙ってうなずいた。'),
+crush:L('{p}は{v}に何と声をかければいいのか分からず、ただ隣に座っていた。{p}「……私じゃ、頼りないよね。でも、そばにいさせて｜……私では、頼りないだろう。だが、そばにいさせてくれ｜……私では、頼りないですよね。でも、そばにいさせてください」――{v}は小さくうなずいた。|'+
+'{v}「……どうして、そこまでしてくれたの｜……どうして、そこまでしてくれた｜……どうして、そこまでしてくれたんですか」――{p}は答えられなかった。答えたら、ずっと隠してきた気持ちまで零れてしまいそうだった。'),
+friend:L('{p}は自分の上着を{v}に被せ、肩を貸して立ち上がらせた。{p}「帰ろう。……今夜は、ずっとそばにいるから｜帰ろう。……今夜は、ずっとそばにいる｜帰りましょう。……今夜は、ずっとそばにいますから」――{v}は{p}の腕にすがって、ようやく歩き出した。|'+
+'{v}は{p}の腕にすがったまま、何度もありがとうと繰り返した。{p}「お礼なんか、いらない。……友達でしょう｜礼などいらない。……友人だろう｜お礼なんて、いりません。……友人でしょう」――{p}の声も、かすかに震えていた。'),
+enemy:L('{p}は口の端の血を拭い、{v}から目を逸らした。{p}「……勘違いしないで。見ていられなかっただけ｜……勘違いするな。見ていられなかっただけだ｜……勘違いしないでください。見ていられなかっただけです」――{v}は何か言いかけて、結局黙り込んだ。|'+
+'{v}は、ぼろぼろになった{p}を見上げた。{v}「……あなたに、借りができた｜……あなたに、借りができたな｜……あなたに、借りができましたね」――{p}は鼻を鳴らしたが、その目はいつもより少しだけ柔らかかった。'),
+apathy:L('{p}は乱れた服を直しながら、気まずそうに視線を泳がせた。{v}も何も言わなかった。二人のあいだに、重い沈黙だけが落ちた。|'+
+'{p}「……別に。目障りだっただけ｜……別に。目障りだっただけだ｜……別に。目障りだっただけです」――{p}はそれだけ言うと、{v}に背を向けた。けれど、{v}が立ち上がるまで、その場を離れなかった。')
+},
+spared:{
+mate:L('{v}は傷だらけの{p}を抱きしめ、自分のうなじを押しつけた。{v}「……どうして、あなたが代わりになんかなったの｜……どうして、あなたが代わりになった｜……どうして、あなたが代わりになったんですか」――{v}の声は涙で滲んでいた。|'+
+'{p}は腫れた唇で、それでも笑ってみせた。{p}「番を守るのは、当たり前でしょう｜番を守るのは、当たり前だ｜番を守るのは、当たり前でしょう」――{v}は声を上げて泣いた。'),
+lover:L('{v}は{p}の手を握り、涙をこぼした。{v}「ごめん。……私のせいで、あなたがこんな目に｜すまない。……私のせいで、あなたがこんな目に｜ごめんなさい。……私のせいで、あなたがこんな目に遭いました」――{p}は首を振って、{v}の涙を指で拭った。|'+
+'{p}「あなたが無事なら、それでいい｜あなたが無事なら、それでいい｜あなたが無事なら、それでいいんです」――{p}はそう言って、震える{v}の背中を撫でた。その手もまた、かすかに震えていた。'),
+fixed:L('{v}は{p}の体に残った痕を、震える指でなぞった。{v}「……私の代わりになるなんて、ばか｜……私の代わりになるなど、ばかだ｜……私の代わりになるなんて、ばかです」――{p}は困ったように笑った。|'+
+'{p}は首を振った。{p}「あなたに触れさせるくらいなら、こっちのほうがいい｜あなたに触れさせるくらいなら、こちらのほうがいい｜あなたに触れさせるくらいなら、こちらのほうがいいんです」――{v}は何も言えずに、{p}の肩に額を預けた。'),
+kin:L('{v}は{p}にすがりついて泣いた。{v}「家族だからって、どうしてあなたがそこまで｜家族だからといって、なぜあなたがそこまで｜家族だからといって、どうしてあなたがそこまでしてくださるんですか」――{p}は困ったように笑った。|'+
+'{p}は{v}の頭を、昔のようにくしゃりと撫でた。{p}「家族を守るのに、理由なんかいらない｜家族を守るのに、理由などいらない｜家族を守るのに、理由なんていりません」――{v}はその手に、額を押しつけた。'),
+crush:L('{v}は{p}の手当てをしながら、何度も唇を噛んだ。{v}「……どうして、私なんかのために｜……どうして、私などのために｜……どうして、私なんかのために、そこまでしてくれたんですか」――{p}は答えずに、窓の外を見ていた。|'+
+'{p}は顔を背けて、小さく笑った。{p}「……さあ。どうしてだろうね｜……さあ。どうしてだろうな｜……さあ。どうしてでしょうね」――{p}の耳は、赤く染まっていた。'),
+friend:L('{v}は{p}の腕にしがみついて、何度も謝った。{p}「謝らないで。……友達を見捨てるほうが、ずっと嫌だった｜謝るな。……友人を見捨てるほうが、ずっと嫌だった｜謝らないでください。……友人を見捨てるほうが、ずっと嫌でした」――{v}は涙を拭って、うなずいた。|'+
+'{p}は{v}に肩を借りて、ゆっくりと歩き出した。{p}「今日のことは、二人だけの秘密にしよう｜今日のことは、二人だけの秘密にしよう｜今日のことは、二人だけの秘密にしましょう」――{v}はうなずいて、{p}の手を強く握った。'),
+enemy:L('{v}は信じられないものを見るように、{p}を見つめた。{v}「……どうして、あなたが私を｜……なぜ、あなたが私を｜……どうして、あなたが私を庇ったんですか」――{p}は答えずに、口の端の血を拭った。|'+
+'{p}は乱れた服を直し、吐き捨てるように言った。{p}「あなたに借りを作られるのは、もっと嫌だから｜あなたに借りを作られるのは、もっと嫌だからだ｜あなたに借りを作られるのは、もっと嫌ですから」――{v}は、何も言い返せなかった。'),
+apathy:L('{v}は何か言おうとしたが、{p}はもう背を向けていた。{p}「……別に、あなたのためじゃない｜……別に、あなたのためではない｜……別に、あなたのためではありません」――その背中は、少しだけふらついていた。|'+
+'二人は並んで夜道を歩いた。どちらも口を開かなかった。それでも{p}は、{v}の家の前まで黙ってついてきた。')
+}
+}
+};
+var TAUNT={
+m:L('「＠暴れんなよ。匂いでバレバレなんだよ、欲しがってんのは」|「＠ほら、もっと締めろよ」|「＠Ωなんて、どうせ誰のでもいいんだろ」|「＠すげえ匂い……頭おかしくなりそうだ」|「＠声出すなって。人が来たら困るのはそっちだろ」|「＠抑制剤も飲まずに出歩くほうが悪いんだよ」'),
+f:L('「＠可愛い声。もっと鳴いて」|「＠抑制剤も飲まずに出歩くから、こうなるの」|「＠いい匂い……頭がくらくらする」|「＠ほら、腰が動いてる」|「＠暴れないの。痛くされたいの？」|「＠声、我慢しなくていいのよ」')
+};
+function canRape(p){var P=HK.Pos;return!!(HK.State.mobSexOk(p)&&(!P||P.canReceive(p))&& !(P&&P.noGen&&P.noGen(p)));}
+function victimOk(ctx,v){
+return sx(v)==='o'&&v.om.heat>0&&HK.State.canAct(v)&&canRape(v)&&(!HK.Content||HK.Content.ok(ctx,'force'));
+}
+function st(ctx){return ctx.om.mobR||(ctx.om.mobR={n:0,prot:0,by:{}});}
+function relOf(ctx,p,v){
+var Ti=HK.Ties,r=ctx.R(p,v);
+if((BD&&BD.bonded&&BD.bonded(ctx,p,v))||(Ti&&(Ti.has(ctx,p,v,'mate')||Ti.has(ctx,p,v,'fated'))))return'mate';
+if(ctx.pair(p,v).couple||(Ti&&Ti.has(ctx,p,v,'lover')))return'lover';
+if((v.sexLocks&&v.sexLocks.indexOf(p.i)>=0)||(p.sexLocks&&p.sexLocks.indexOf(v.i)>=0))return'fixed';
+if(Ti&&HK.TIES&&Ti.all(ctx,p,v).some(function(t){var D=HK.TIES[t.type];return D&&D.family;}))return'kin';
+if((Ti&&Ti.hostile&&Ti.hostile(ctx,p,v))||r.aff< -20)return'enemy';
+if(Ti&&Ti.apathy&&Ti.apathy(ctx,p,v))return'apathy';
+if((Ti&&Ti.has(ctx,p,v,'crush'))||r.att>45)return'crush';
+if((Ti&&(Ti.has(ctx,p,v,'friend')||Ti.has(ctx,p,v,'colleague')))||r.aff>15||r.trust>20)return'friend';
+return'';
+}
+var REL_P={mate:0.6,lover:0.55,fixed:0.5,kin:0.45,crush:0.3,friend:0.15,enemy:0.12,apathy:0.08};
+var REL_NAME={mate:'番',lover:'恋人',fixed:'性行為の相手を固定した相手',kin:'家族',crush:'片想い',friend:'友人',enemy:'敵対',apathy:'無関心'};
+function protOf(ctx,v){
+var s=st(ctx);
+if((ctx._shieldN||0)>=2)return null;
+var best=null,bp=0;
+ctx.chars.forEach(function(p){
+if(p===v|| !HK.State.canAct(p))return;
+var rel=relOf(ctx,p,v),w=REL_P[rel]||0;
+if(!w)return;
+var q=ctx.rng()*w;
+if(q>bp&&ctx.rng()<w){bp=q;best={p:p,rel:rel};}
+});
+return best;
+}
+function withOk(a,b){return!!(HK.Pos&&HK.Pos.okSex&&HK.Pos.okSex(a,b)&& !(HK.sexBlocked&&HK.sexBlocked(a,b)));}
+function mobOf(ctx,v,type,g0){
+var g=v.likes==='m'||v.likes==='f'?v.likes:g0||(ctx.rng()<0.75?'m':'f');
+var one=g==='m'?'αの男':'αの女',many=type==='prey'?(g==='m'?'αの男たち':'αの女たち'):one;
+return{g:g,M:one,Ms:many,who:{mob:true,mobRole:'street',mobTop:true,gender:g,name:one}};
+}
+function kindOf(mob,who){var f=HK.Pos&&HK.Pos.isFBody?HK.Pos.isFBody(who):who.gender==='f';return mob.g==='m'?(f?'mv':'ma'):(f?'ff':'fm');}
+function fill(ctx,t,m){
+return t.replace(/\{(\w+)\}/g,function(x,k){return m[k]!=null?m[k]:x;}).replace(/「＠/g,'「⁠');
+}
+function body(ctx,who,mob,type,o){
+var ero= !!(HK.Ero&&HK.Ero.on&&HK.Ero.on(ctx)),X=HK.Lewd,env=ctx.env||{};
+var short=o.brief||(X&&X.short?X.short(env,ctx.rng):false),high= !o.brief&&X&&X.high&&X.high(env);
+var k=kindOf(mob,who),ps=psOf(who),strong= !!(HK.R18M&&HK.R18M.isStrong&&HK.R18M.isStrong(who));
+var M=HK.Moan;
+function vm(n){return M&&M.say?M.say(ctx,who,['start','mid','climax'][n],{force:true,hush:strong,late:n===2,novel: !ero}):HK.Ero.moan(ctx,who,n,{force:true});}
+function mm(n){var s=HK.Ero.moan(ctx,mob.who,n);return'「'+(ero?s:M&&M.plain?M.plain(s):s)+'」';}
+var mp={v:who.name,M:mob.M,Ms:mob.Ms,w:o.w};
+function F(t){
+return fill(ctx,t,mp).replace(/\{s:(\w+)\}/g,function(x,s){return HK.Ero.sfx(ctx,k==='ff'&&s==='hit'?'wet':s);})
+.replace(/\{vm([012])\}/g,function(x,n){return vm(+n);})
+.replace(/\{mm\}/g,function(){return mm(2);})
+.replace(/\{mt\}/g,function(){return fill(ctx,pk(ctx,TAUNT[mob.g]),mp);});
+}
+var climax=who.name+'「'+vm(2)+'」';
+if(ero){
+if(short)return F(pk(ctx,T.eAct[k]))+F(pk(ctx,T.ePeak[ps]||T.ePeak.gentle))+climax;
+return J([F(pk(ctx,T.eAct[k]))+F(pk(ctx,T.eMid)),F(pk(ctx,T.ePeak[ps]||T.ePeak.gentle))+climax,F(pk(ctx,T.eFin[k])),high?F(pk(ctx,T.eAgain[type])):'']);
+}
+var cl=ctx.rng()<0.5?climax:'';
+if(short)return F(pk(ctx,T.nAct[k]))+F(pk(ctx,T.nPeak[ps]||T.nPeak.gentle))+cl;
+return J([F(pk(ctx,T.nAct[k]))+F(pk(ctx,T.nMid)),F(pk(ctx,T.nPeak[ps]||T.nPeak.gentle))+cl,F(pk(ctx,T.nFin[k])),high?F(pk(ctx,T.nAgain)):'']);
+}
+function run(ctx,v){
+var s=st(ctx),rng=ctx.rng,heat=(ctx.env.heat==null?50:ctx.env.heat);
+var bonded= !!(BD&&BD.mateOf&&BD.mateOf(ctx,v));
+var pr=protOf(ctx,v),br='',p=null,rel='',fate='hurt';
+var type= !bonded&&rng()<(pr?0.3:0.5)?'lose':'prey';
+var mob=mobOf(ctx,v,type),w=pk(ctx,WHERE[type]);
+var low= !!(HK.Lewd&&HK.Lewd.lv&&HK.Lewd.lv(ctx.env)==='low');
+var mp={v:v.name,M:mob.M,Ms:mob.Ms,w:w};
+var R=HK.DarkThick&&HK.DarkThick.resist?HK.DarkThick.resist(rng,v).replace(/\{v\}/g,v.name):'';
+var parts=[fill(ctx,pk(ctx,T.open[type]),mp)+R];
+s.n++;s.by[v.i]=ctx.stepIndex;
+if(pr){
+p=pr.p;rel=pr.rel;ctx._shieldN=(ctx._shieldN||0)+1;
+var pm={v:v.name,p:p.name,M:mob.M,Ms:mob.Ms,w:w};
+var P=function(t){return fill(ctx,t,pm);};
+var isA=sx(p)==='a',opts=[['hit',1],['offer',1]];
+if(!low&&type==='prey'&&rel!=='kin'&&canRape(p))opts.push(['both',1.2]);
+if(!low&&type==='prey'&&rel!=='kin'&& !p.noR18)opts.push(['watch',1.2]);
+br=HK.weighted(rng,opts,function(o){return o[1];})[0];
+parts.push(P(pk(ctx,T.come[rel])));
+if(br==='offer'){
+var yes=canRape(p)&& !low;
+parts.push(P(pk(ctx,isA?T.offerA.concat(T.offer):T.offer))+P(pk(ctx,yes?T.offerYes[type]:T.offerNo)));
+if(yes){fate='spared';parts.push(body(ctx,p,mobOf(ctx,p,type,mob.g),type,{w:w}));parts.push(P(pk(ctx,T.offerSee)));}
+else{br='hit';parts.push(low?P(pk(ctx,T.veil)):body(ctx,v,mob,type,{w:w}));parts.push(P(pk(ctx,T.hitSee)));}
+}else if(br==='hit'){
+parts.push(P(pk(ctx,isA?T.hitA.concat(T.hit):T.hit)));
+parts.push(low?fill(ctx,pk(ctx,T.veil),mp):body(ctx,v,mob,type,{w:w}));
+parts.push(P(pk(ctx,T.hitSee)));
+}else if(br==='both'){
+parts.push(P(pk(ctx,T.both)));
+parts.push(body(ctx,v,mob,type,{w:w}));
+parts.push(body(ctx,p,mobOf(ctx,p,type,mob.g),type,{w:w,brief:true}));
+}else{
+parts.push(P(pk(ctx,T.bind)));
+parts.push(body(ctx,v,mob,type,{w:w}));
+var px=P(pk(ctx,HK.Pos&&HK.Pos.hasM(p)?T.pxM:T.pxF));
+var rz=P(pk(ctx,isA?T.rouseA.concat(T.rouse):T.rouse)).replace('{px}',px);
+var xss=(p.sexLocks||[]).map(function(i){return ctx.chars[i];}).filter(function(x){return x&&x!==v&&x!==p;}),xs=xss.length>1?xss[Math.floor(ctx.rng()*xss.length)]:xss[0];
+if(xs)rz+=fill(ctx,pk(ctx,T.shame),{p:p.name,x:xs.name});
+parts.push(rz+P(pk(ctx,T.watchEnd)));
+}
+parts.push(P(pk(ctx,T.afterBr[br]))+P(pk(ctx,T.afterRel[fate][rel])));
+ctx.stress(p,br==='watch'?30:25);
+if(br==='hit'||br==='offer')p.hp=Math.max(1,(p.hp||100)-25);
+ctx.mod(v,p,{trust:rel==='enemy'||rel==='apathy'?10:15,aff:rel==='enemy'?6:10});
+if(br==='watch')ctx.mod(p,v,{ten:8});
+if(HK.Emo)HK.Emo.bump(ctx,p,br==='watch'?{fear:15,anger:15}:{anger:25,fear:15});
+}else{
+parts.push(low?fill(ctx,pk(ctx,T.veil),mp):body(ctx,v,mob,type,{w:w}));
+}
+if(fate==='hurt'){ctx.stress(v,40);}
+else ctx.stress(v,25);
+if(!p)parts.push(fill(ctx,pk(ctx,T.after),mp));
+if(HK.Emo)HK.Emo.bump(ctx,v,{fear:fate==='hurt'?45:30},'街のα');
+var why=v.name+'の発情期の匂いに、'+(type==='prey'?'街のα（モブ）が群がり、無理やり襲われた':'居合わせたα（モブ）が理性を失い、無理やり襲いかかった')+'（発情期の重さ '+heat+(bonded?'・番がいても':'')+'）';
+if(p)why+='。'+p.name+'（'+REL_NAME[rel]+'）が割って入った――'+{hit:'庇って殴られた',offer:'身代わりを申し出て、代わりに犯された',both:'二人とも犯された',watch:'縛られて見せつけられ、匂いに当てられて興奮してしまった'}[br];
+return{cat:'conflict',sex:true,lewd: !low,with:p&&withOk(v,p)?[p]:[],text:J(parts),why:why,mag:p?55:48};
+}
+HK.addTo(EV,{
+id:'om_mobr',cat:'conflict',scope:'solo',sex:true,r18:true,noOdd:true,
+when:function(ctx,v){var s=ctx.om.mobR;return!(s&&(s.n>=2||s.by[v.i]!=null))&&victimOk(ctx,v);},
+w:function(ctx,v){
+var heat=(ctx.env.heat==null?50:ctx.env.heat)/100,bonded= !!(BD&&BD.mateOf&&BD.mateOf(ctx,v));
+return(0.3+heat*0.7)*(v.om.supp?0.35:1)*(bonded?0.35:1);
+},
+run:run
+});
+})();
+});
+;
 /* ==== js/incidents-omega.js ==== */
-HK.Load.def(292,'js/incidents-omega.js',function(){
+HK.Load.def(395,'js/incidents-omega.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,K=HK.IncExtra;
@@ -4193,7 +4777,7 @@ spaced(HK.INCIDENTS.omega,6);
 })();
 });
 ;
-HK.Load.def(292.5,'tone:scen-omega',function(){
+HK.Load.def(395.5,'tone:scen-omega',function(){
 HK.Load.toneData("mixed",{"F":[
 ["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉さんに捨てられたら、もう誰の匂いも分からなくなります。……ねえ、それでもいいの？",1],
 ["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許しませんから。……絶対だよ",1],
@@ -4202,10 +4786,9 @@ HK.Load.toneData("mixed",{"F":[
 ["それは立派な犯罪だ","それは立派な犯罪ですよ",1],
 ["ここでは、飲まなくていいよ","ここでは、飲まなくていいですよ",1],
 ["混ざれば分からない","混ざれば分からないですよ",1],
-["勘違いするな、これは生理現象だ","勘違いしないでください、これは生理現象だから",1],
 ["今、星がきれい","今、星がきれいですよ",1],
-["私を〈〉の匂いで、いっぱいにして","私を〈〉さんの匂いで、いっぱいにしてください",1],
 ["今の、もう一回言ってみろ","今の、もう一回言ってみてくださいよ",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外では何があるか分かりませんから。……苦しくないやつ、選んだつもりだよ",1],
 ["そういうことじゃありません","……そういうことじゃない",1]],
 "O":{
 "保証人はαの方で":"保証人はαの方で。お願いね",
@@ -4214,7 +4797,6 @@ HK.Load.toneData("mixed",{"F":[
 "恋人にはなれないけど、これくらいなら":"恋人にはなれないですけど、これくらいなら、ね",
 "それを決めるのは〈〉だ":"それを決めるのは〈〉さんです。私じゃないよ",
 "よく分かってる":"よく分かってますね。さすがじゃん",
-"譲る気はない":"譲る気はないです。悪いけどね",
 "もう少しだけ待ってほしい":"もう少しだけ待ってください。お願いだから",
 "半分は寝かせて、半分は自分に使え":"半分は寝かせて、半分は自分に使ってください。無理しすぎだよ"}});
 HK.Load.toneData("noja",{"F":[
@@ -4232,8 +4814,6 @@ HK.Load.toneData("noja",{"F":[
 ["これ、毎朝飲んでる","これは、毎朝飲んでおるのじゃ",1],
 ["……いいよ。〈〉の匂いなら、怖くない","……よいぞ。〈〉の匂いなら、怖くはない",1],
 ["声が聞きたくて","声が聞きとうてな",1],
-["付き合ってくれてありがとう","付き合うてくれて、礼を言うぞ",1],
-["来てくれてありがとう。仕事、大丈夫だった？","来てくれて礼を言うぞ。仕事は、大事なかったか？",1],
 ["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さぬぞ",1],
 ["ツケはもうきかない","ツケはもうきかぬ",1],
 ["仕事では言えないけど","仕事では言えぬが",1],
@@ -4243,7 +4823,11 @@ HK.Load.toneData("noja",{"F":[
 ["Ωだと知っていたら採らなかった","Ωと知っておったら、採らなんだ",1],
 ["べ、別に騙すつもりじゃなかったし","べ、別に騙すつもりではなかったのじゃ",1],
 ["Ωが現場に出るのは危ない","Ωが現場に出るのは危ないぞ",1],
-["いいにおい","よい匂いじゃ",1],
+["次の発情期は、ここで過ごそうね","次の発情期は、ここで過ごそうぞ",1],
+["全部、使っていいからね","全部、使ってよいからのう",1],
+["あなたは、私に嘘をつけますか","おぬしは、私に嘘をつけるか？",1],
+["前の秘書は、半年気づかなかった","……前の秘書は、半年気づかなんだ",1],
+["本能に負けるとは","本能に負けるとはのう",1],
 ["巣にするなら、いちばん日当たりのいい部屋にしよう","巣にするなら、いちばん日当たりのよい部屋にしようぞ",1]],
 "O":{
 "保証人はαの方で":"保証人はαの方じゃ",
@@ -4252,7 +4836,6 @@ HK.Load.toneData("noja",{"F":[
 "恋人にはなれないけど、これくらいなら":"恋仲にはなれぬが、これくらいならよい",
 "それを決めるのは〈〉だ":"それを決めるのは〈〉じゃ",
 "よく分かってる":"よう分かっておる",
-"譲る気はない":"譲る気はない",
 "もう少しだけ待ってほしい":"もう少しだけ待ってたもれ",
 "半分は寝かせて、半分は自分に使え":"半分は寝かせ、半分は己のために使え"}});
 HK.Load.toneData("kansai",{"F":[
@@ -4267,8 +4850,6 @@ HK.Load.toneData("kansai",{"F":[
 ["〈〉の匂いがしないと、眠れないの","〈〉の匂いがせえへんと、眠られへんねん",1],
 ["ここでは、飲まなくていいよ","ここでは、飲まんでええよ",1],
 ["知り合いに頼んで","知り合いに頼んどいて",1],
-["こんな状態で一人でいるな","こんな状態で、一人でおったらあかん",1],
-["玄関まで待てなかった","玄関まで待たれへんかった",1],
 ["声が聞きたくて","声、聞きたなって",1],
 ["噛み跡、まだ痛むだろ。人に見られるのも嫌かと思って","噛み跡、まだ痛むやろ。人に見られるのも嫌かと思て",1],
 ["見た目しか見てないんでしょ","見た目しか見てへんのやろ",1],
@@ -4276,8 +4857,9 @@ HK.Load.toneData("kansai",{"F":[
 ["つけないなら、外には出さない","つけへんのやったら、外には出さへん",1],
 ["早く噛ませて。……誰かに取られる前に","はよ噛ませて。……誰かに取られる前に",1],
 ["ありがとう。大事にするね","おおきに。大事にするな",1],
-["迷惑じゃなかった？","迷惑やなかった？",1],
-["ホテルの人間に、私生活を詮索されたくない","ホテルの人間に、私生活を詮索されたない",1]],
+["ホテルの人間に、私生活を詮索されたくない","ホテルの人間に、私生活を詮索されたない",1],
+["次はもっとうまく逃げる","次はもっとうまく逃げたる",1],
+["上手にできたね","上手にできたな",1]],
 "O":{
 "保証人はαの方で":"保証人はαの方でお願いな",
 "食べちゃいたい":"食べてしまいたいわ",
@@ -4285,7 +4867,6 @@ HK.Load.toneData("kansai",{"F":[
 "恋人にはなれないけど、これくらいなら":"恋人にはなられへんけど、これくらいなら",
 "それを決めるのは〈〉だ":"それ決めるんは〈〉や",
 "よく分かってる":"よう分かっとるやん",
-"譲る気はない":"譲る気あらへん",
 "もう少しだけ待ってほしい":"もうちょっとだけ待ってほしいねん",
 "半分は寝かせて、半分は自分に使え":"半分は寝かせて、半分は自分に使い"}});
 HK.Load.toneData("mukuchi",{"F":[
@@ -4299,10 +4880,11 @@ HK.Load.toneData("mukuchi",{"F":[
 ["〈〉に、あなたの匂いを二度とつけないで","……〈〉に、きみの匂い、つけないで",1],
 ["ここにも、きみが好きそうな星空がある","……ここにも、きみの好きそうな星空",1],
 ["私以外の匂いがしたら、許さないから","……私以外の匂い、したら、許さない",1],
-["また来てね、絶対ね","……また来て。絶対",1],
 ["お前のためなら足を洗ってもいい","……きみのためなら、足を洗う",1],
 ["……いいよ。〈〉の匂いなら、怖くない","……いい。〈〉の匂いなら、怖くない",1],
-["〈〉の匂いがしないと、眠れないの","……〈〉の匂いがないと、眠れない",1]],
+["〈〉の匂いがしないと、眠れないの","……〈〉の匂いがないと、眠れない",1],
+["仕事、辞めてもいいよ。養うから","……仕事、辞めていい。養う",1],
+["逃げないよ。だから、噛んで","……逃げない。だから、噛んで",1]],
 "O":{
 "保証人はαの方で":"……保証人、α",
 "食べちゃいたい":"……食べたい",
@@ -4310,7 +4892,6 @@ HK.Load.toneData("mukuchi",{"F":[
 "恋人にはなれないけど、これくらいなら":"……恋人は、無理。これくらいなら",
 "それを決めるのは〈〉だ":"……決めるのは、〈〉",
 "よく分かってる":"……よく、わかってる",
-"譲る気はない":"……譲らない",
 "もう少しだけ待ってほしい":"……もう少し、待って",
 "半分は寝かせて、半分は自分に使え":"……半分は寝かせて、半分は自分に"}});
 HK.Load.toneData("polite",{"F":[
@@ -4329,7 +4910,6 @@ HK.Load.toneData("polite",{"F":[
 "恋人にはなれないけど、これくらいなら":"恋人にはなれませんけど、これくらいなら",
 "それを決めるのは〈〉だ":"それを決めるのは〈〉さんです",
 "よく分かってる":"よく分かっていらっしゃいますね",
-"譲る気はない":"譲るつもりはありません",
 "もう少しだけ待ってほしい":"もう少しだけ待っていただけますか",
 "半分は寝かせて、半分は自分に使え":"半分は寝かせて、半分はご自分のために使ってください"}});
 HK.Load.toneData("gentleman",{"F":[
@@ -4346,12 +4926,16 @@ HK.Load.toneData("gentleman",{"F":[
 ["Ωの子がいると、αのお客さんが喜ぶ","Ωの子がいると、αのお客さんが喜ぶのだよ",1],
 ["ここにも、きみが好きそうな星空がある","ここにも、君が好きそうな星空があるよ",1],
 ["……いいよ。〈〉の匂いなら、怖くない","……いいとも。〈〉の匂いなら、怖くないよ",1],
-["今回は重いな","今回は重いね",1],
 ["これで、知らない誰かに怯えなくていい。外すのは、俺の前だけでいいから","これで、知らない誰かに怯えなくていい。外すのは、私の前だけでいいのだよ",1],
 ["……今日、誰と会ってた？","……今日は、誰と会っていたんだい？",1],
 ["αだからって、私が黙ると思った？","αだからといって、私が黙ると思ったかね？",1],
 ["いいよ、厄払い代だ","構わないよ、厄払い代だ",1],
-["熱、うつしていいよ","熱は、うつしてくれて構わないよ",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外では何があるか分からないからね。……苦しくないものを選んだつもりだよ",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いも分からなくなるのさ。……それでもいいのかい？",1],
+["このまま、二人の匂いだけの世界に行けたらいいのに","このまま、二人の匂いだけの世界に行けたらいいのにね",1],
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さないよ",1],
+["あなたは、私に嘘をつけますか","君は、私に嘘をつけるのかい？",1],
+["今日はもう、上司と部下じゃなくていい","今日はもう、上司と部下でなくていいのだよ",1],
 ["これで、知らない誰かに怯えなくていい。外すのは、私の前だけでいい","これで、知らない誰かに怯えずに済む。外すのは、私の前だけでいいのだよ",1],
 ["あの人は誰だ","あの人は、誰だね",1]],
 "O":{
@@ -4361,78 +4945,137 @@ HK.Load.toneData("gentleman",{"F":[
 "恋人にはなれないけど、これくらいなら":"恋人にはなれないが、これくらいならね",
 "それを決めるのは〈〉だ":"それを決めるのは〈〉だよ",
 "よく分かってる":"よく分かっているね",
-"譲る気はない":"譲るつもりはないよ",
 "もう少しだけ待ってほしい":"もう少しだけ待ってくれたまえ",
 "半分は寝かせて、半分は自分に使え":"半分は寝かせて、半分は自分のために使いたまえ"}});
+HK.Load.toneData("proud",{"F":[
+["私以外の匂いがしたら、許さないから","私のじゃねえ匂いをさせてみろ。許さねえ。……覚えとけ",1],
+["恋人にはなれないけど、これくらいなら","恋人にはなってやれねえ。……これくらいなら、いい",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわからなくなる。……それでもいいのか",1],
+["αだからって、私が黙ると思った？","αだからって、私が黙ると思ったか？",1],
+["〈〉に、あなたの匂いを二度とつけないで","〈〉に、お前の匂いを二度とつけるな",1],
+["Ωなのにすごいね","Ωのくせにやるじゃねえか",1],
+["あなたのためなら足を洗ってもいい","お前のためなら……足を洗ってやってもいい",1]]});
+HK.Load.toneData("aniki",{"F":[
+["私以外の匂いがしたら、許さないから","私のじゃない匂いなんかさせてきたら、ただじゃおかないからな。……わかってるな？",1],
+["恋人にはなれないけど、これくらいなら","恋人にはなれねえけどさ、これくらいならいいぜ",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわかんなくなる。……それでもいいのかよ",1],
+["……ごめん。怖がらせた","……悪い。怖がらせたな",1],
+["ありがとう。大事にするね","ありがとな！　大事にするよ",1],
+["発情期の予定を共有して","発情期の予定、共有してくれ",1],
+["ファンの子に見られたらどうするの","ファンの子に見られたらどうすんだよ",1],
+["次の発情期は、ここで過ごそうね","次の発情期は、ここで過ごそうな",1]]});
+HK.Load.toneData("yankee",{"F":[
+["α同伴でないと","α同伴じゃねえと"],
+["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃねえとこ、見せんのは初めてかもな"],
+["君は、今まででいちばん割に合わない投資先だ","お前は、今まででいちばん割に合わねえ投資先だ"],
+["肌に合うか試して","肌に合うか試してみろよ"],
+["見て見て、すごくない？最高傑作！","見て見て、すげえだろ？最高傑作！"],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわかんなくなんだよ。……それでもいいのかよ",1],
+["べ、別に嬉しくなんかないけど！……そのシャツ、気に入ってたやつだし","べ、別に嬉しかねえし！……そのシャツ、気に入ってたやつってだけだ",1],
+["私以外の匂いがしたら、許さないから","私のじゃねえ匂いさせてきたら、ぜってえ許さねえからな",1],
+["〈〉の匂いがしないと、眠れないの","〈〉の匂いがしねえと、眠れねえんだよ",1],
+["食べちゃいたい","食っちまいてえ",1],
+["いいの？一生だよ","いいのか？　一生だぞ",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になったって、外じゃ何があるかわかんねえだろ。……苦しくねえやつ、選んだつもりだ",1]]});
+HK.Load.toneData("stern",{"F":[
+["Ω同士で、何やってんだろ","Ω同士で、何をやっているのだろうな"],
+["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも本当だ。……誰にも触らせたくないのも、本当だ",1],
+["仕事の顔じゃないところ、見せるのは初めてかも","務めの顔ではないところを見せるのは、初めてかもしれん",1],
+["君は、今まででいちばん割に合わない投資先だ","お前は、これまでで最も割に合わん投資先だ",1],
+["昔の人も、好きな人の名前を壁に書いてたんだ","昔の人間も、好いた相手の名を壁に書いていたのだ",1],
+["恋人にはなれないけど、これくらいなら","恋仲にはなれん。だが、これくらいなら",1],
+["それは研究室の学生と同じ顔だ","それは研究室の学生と同じ顔だ。迷っている者の顔だな",1],
+["〈〉に、あなたの匂いを二度とつけないで","〈〉に、あなたの匂いを二度とつけるな",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外では何があるか分からん。……苦しくないものを選んだつもりだ",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでも構わんのか",1],
+["このまま、二人の匂いだけの世界に行けたらいいのに","このまま、二人の匂いだけの世界に行けたらいいものを",1],
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さん",1]]});
+HK.Load.toneData("tsun",{"F":[
+["〈〉に、あなたの匂いを二度とつけないで","〈〉に、あんたの匂いを二度とつけないでよね",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわからなくなる。……それでも、いいの？",1],
+["〈〉はインフルエンザらしいですよ","〈〉はインフルエンザらしいわよ",1],
+["お前のためなら足を洗ってもいい","あんたのためなら……足を洗ってあげてもいいわよ",1],
+["ここにも、きみが好きそうな星空がある","ここにも、あんたが好きそうな星空があるわよ。……べ、別に探したわけじゃないから",1],
+["このまま、二人の匂いだけの世界に行けたらいいのに","このまま……二人の匂いだけの世界に行けたらいいのに。……な、なんでもない",1],
+["それは研究室の学生と同じ顔だ","それ、研究室の学生と同じ顔よ",1],
+["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃないとこ、見せるのは初めてかも。……べ、別に特別とかじゃないから",1],
+["君は、今まででいちばん割に合わない投資先だ","あんたは、今までで一番割に合わない投資先よ。……べ、別に後悔はしてないけど",1],
+["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも本当。……誰にも触らせたくないのも、本当。……な、なによ、悪い？",1],
+["恋人にはなれないけど、これくらいなら","恋人にはなれないけど……これくらいなら、してあげてもいいわよ",1],
+["早く噛ませて。……誰かに取られる前に","早く噛ませなさいよ。……誰かに取られる前に",1],
+["昔の人も、好きな人の名前を壁に書いてたんだ","昔の人も、好きな人の名前を壁に書いてたのよ。……べ、別に私も書きたいとかじゃないから",1],
+["番になってほしい。順番、逆かもしれないけど","番になってほしいの。……順番、逆かもしれないけど",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外じゃ何があるか分からないから。……苦しくないもの、選んだつもりよ",1],
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さないんだから。……絶対だからね",1],
+["Ωの子がいると、αのお客さんが喜ぶ","Ωの子がいると、αのお客さんが喜ぶのよ",1]]});
+HK.Load.toneData("tsun_n",{"F":[
+["〈〉に、あなたの匂いを二度とつけないで","〈〉に、お前の匂いを二度とつけるな",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわからなくなる。……それでもいいのか？",1],
+["〈〉はインフルエンザらしいですよ","〈〉はインフルエンザらしい",1],
+["お前のためなら足を洗ってもいい","お前のためなら、足を洗ってもいい",1],
+["ここにも、きみが好きそうな星空がある","ここにも、お前が好きそうな星空がある",1],
+["このまま、二人の匂いだけの世界に行けたらいいのに","このまま、二人の匂いだけの世界に行けたらいいのに",1],
+["それは研究室の学生と同じ顔だ","それは研究室の学生と同じ顔だ",1],
+["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃないところを見せるのは、初めてかもしれない",1],
+["君は、今まででいちばん割に合わない投資先だ","お前は、今までで一番割に合わない投資先だ",1],
+["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも本当だ。……誰にも触らせたくないのも、本当だ",1],
+["恋人にはなれないけど、これくらいなら","恋人にはなれない。……でも、これくらいなら",1],
+["早く噛ませて。……誰かに取られる前に","早く噛ませろ。……誰かに取られる前に",1],
+["昔の人も、好きな人の名前を壁に書いてたんだ","昔の人も、好きな人の名前を壁に書いていたらしい",1],
+["番になってほしい。順番、逆かもしれないけど","番になってほしい。順番、逆かもしれないが",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外では何があるか分からない。……苦しくないものを選んだつもりだ",1],
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さないからな",1],
+["Ωの子がいると、αのお客さんが喜ぶ","Ωの子がいると、αの客が喜ぶ",1]]});
+HK.Load.toneData("gentle",{"F":[
+["Ω同士で、何やってんだろ","Ω同士で、何やってるんだろうね"],
+["今の、もう一回言ってみろ","今の、もう一回言ってみて？"],
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら……許してあげられないかも",1]]});
+HK.Load.toneData("gentle_n",{"F":[
+["Ω同士で、何やってんだろ","Ω同士で、何やってるんだろうね"],
+["今の、もう一回言ってみろ","今の、もう一回言ってみて？"]]});
 HK.Load.toneData("ane",{"F":[
 ["Ωなら、番を見つければ食いっぱぐれない","Ωなら、番を見つければ食べるのに困らないわ"],
 ["αなら食えない仕事なんかするな","αなら食べていけない仕事なんかしないで"],
 ["……ごめん。怖がらせた","……ごめんね。怖がらせちゃったわね"],
 ["……で、それが仕事に何か関係あるか","……で、それが仕事に何か関係あるの？"],
-["熱いね。よく頑張った","熱いね。よく頑張ったわね"],
 ["私以外の匂いがしたら、許さないから","私以外の匂いをさせてきたら、許さないわよ",1],
 ["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、私、もう誰の匂いも分からなくなるわ。……それでもいいの？",1],
 ["αなのに、雇われなんだ","αなのに、雇われなのね",1]]});
-HK.Load.toneData("aniki",{"F":[
-["私以外の匂いがしたら、許さないから","私のじゃない匂いなんかさせてきたら、ただじゃおかないからな。……わかってるな？",1],
-["恋人にはなれないけど、これくらいなら","恋人にはなれねえけどさ、これくらいならいいぜ",1],
-["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわかんなくなる。……それでもいいのかよ",1],
-["来てくれてありがとう。仕事、大丈夫だった？","来てくれてありがとな。仕事、大丈夫だったか？",1],
-["……ごめん。怖がらせた","……悪い。怖がらせたな",1],
-["ありがとう。大事にするね","ありがとな！　大事にするよ",1],
-["発情期の予定を共有して","発情期の予定、共有してくれ",1],
-["ファンの子に見られたらどうするの","ファンの子に見られたらどうすんだよ",1]]});
-HK.Load.toneData("calm",{"F":[
-["いずれこうなる確率は計算していた","いずれこうなることは、わかっていた"],
-["データ上、この状態は","見たところ、この状態は"],
-["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも本当だ。……誰にも触らせたくないのも、本当だ",1],
-["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃないところを見せるのは、初めてかもしれない",1],
-["君は、今まででいちばん割に合わない投資先だ","君は、今まででいちばん割に合わない投資先だ",1],
-["昔の人も、好きな人の名前を壁に書いてたんだ","昔の人も、好きな人の名前を壁に書いていたんだ",1],
-["恋人にはなれないけど、これくらいなら","恋人にはなれないけど、これくらいなら",1],
-["それは研究室の学生と同じ顔だ","研究室の学生と同じ顔をしているね。何か考えているのかな",1],
-["カウンセリングしないで","カウンセリングはしないでくれ",1],
-["Ωの営巣行動。番の不在によるストレス反応","……巣を作っていたのか。番がいなくて、心細かったんだろう",1]]});
-HK.Load.toneData("chara",{"F":[
-["私以外の匂いがしたら、許さないから","私のじゃない匂いとかしたら、マジ許さないから",1],
-["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわかんなくなる。……それでもいいの？",1],
-["Ω同士で、何やってんだろ","Ω同士で何やってんだろ、ウケる",1],
-["恋人にはなれないけど、これくらいなら","恋人にはなれないけど、これくらいならいいよ",1],
-["今の、もう一回言ってみろ","今の、もう一回言ってみ？",1],
-["隠していましたが、私はΩです","隠してたけど、私、Ωなんだよね",1],
-["このまま、二人の匂いだけの世界に行けたらいいのに","このまま、二人の匂いだけの世界に行けたらいいのにね〜"],
-["えっ、かわいすぎない！？","えっ、かわいすぎね！？"],
-["これで、知らない誰かに怯えなくていい。外すのは、俺の前だけでいいから","これで、知らない誰かにビビらなくていいっしょ。外すのは、私の前だけでいいから"],
-["お前のためなら足を洗ってもいい","あんたのためなら、足洗ってもいいわ"],
-["噛み跡、まだ痛むだろ。人に見られるのも嫌かと思って","噛み跡、まだ痛むっしょ。人に見られんのも嫌かなって思って"],
-["Ωの子がいると、αのお客さんが喜ぶ","Ωの子いると、αのお客さん喜ぶんだよね"],
-["君は、今まででいちばん割に合わない投資先だ","あんたは、今までで一番割に合わない投資先だわ"],
-["それを決めるのは〈〉だ","それ決めんのは〈〉っしょ"],
-["雇われは気楽でいいね","雇われは気楽でいいね〜"],
-["その服は撮られたら困る","その服、撮られたらヤバいって"],
-["それ、俺が昔使ってた手だ","それ、私が昔使ってた手じゃん"],
-["譲る気はない","譲る気はねーよ"],
-["静かに考えたいときは、使っていい","静かに考えたいときは、使っていいって"],
-["もう少しだけ待ってほしい","もうちょいだけ待ってほしいんだけど"],
-["それは立派な犯罪だ","それ、立派な犯罪じゃね？"],
-["明日、うちの外来に来て","明日、うちの外来来てよ"],
-["運命でも、私が選んできたのは〈〉だ","運命でも、私が選んできたのは〈〉だから"],
-["ファンの子に見られたらどうするの","ファンの子に見られたらどうすんの"],
-["Ωだと知っていたら採らなかった","Ωだって知ってたら採らなかったわ"],
-["帰ったら言いたいことがある","帰ったら言いたいことあんだよね"],
-["Ωが現場に出るのは危ない","Ωが現場出るのはヤバいって"],
-["〈〉には黙っておけばいい","〈〉には黙っとけばいいって"],
-["Ωなのに目利きがいい","Ωなのに目利きいいじゃん"],
-["Ωなら、番を見つければ食いっぱぐれない","Ωなら、番見つけりゃ食いっぱぐれないっしょ"],
-["混ざれば分からない","混ざったら分かんねーって"],
-["どこにいても、俺の匂いがするように","どこにいても、私の匂いがするように"],
-["外したくなったら、俺に頼めばいい","外したくなったら、私に頼めばいいって"],
-["番の資産で投資しているんだろう","番の資産で投資してんでしょ"],
-["私、初めて会った気がしない","私、初めて会った気がしないんだよね"],
-["前職を辞めた理由は？","前の仕事辞めた理由は？"],
-["いい一行だ","いい一行じゃん！"],
-["言うべきか、ずっと考えてた。この前、〈〉が〈〉と一緒にいるのを見た","言うべきか、ずっと考えてたんだけどさ。この前、〈〉が〈〉と一緒にいるの見ちゃったんだよね",1],
-["星座みたい","星座っぽくね？",1]]});
+HK.Load.toneData("devoted",{"F":[
+["Ω同士で、何やってんだろ","Ω同士で、何やってるんでしょう"],
+["こんなに、待っててくれたんだ……","こんなに、待っててくれたんですね……"],
+["今の、もう一回言ってみろ","今の、もう一回言ってみてください"],
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら……許せないかもしれません",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉さんに捨てられたら、もう誰の匂いも分からなくなります。……それでも、いいんですか？",1],
+["αなのに、雇われなんだ","αなのに、雇われなんですね",1],
+["生きて。……〈〉の匂いが、この世界からなくなるのは嫌だ","生きてください。……〈〉さんの匂いが、この世界からなくなるのは嫌です",1]]});
+HK.Load.toneData("devoted_p",{"F":[
+["Ω同士で、何やってんだろ","Ω同士で、何やってるんだろ"],
+["今の、もう一回言ってみろ","今の、もう一回言ってみて"],
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さないんだからね",1]]});
+HK.Load.toneData("kohai",{"F":[
+["Ω同士で、何やってんだろ","Ω同士で、何やってるんすかね"],
+["αなのに、雇われなんだ","αなのに、雇われなんすね"],
+["お邪魔してもよろしいですか","お邪魔してもいいっすか"],
+["それを決めるのは〈〉だ","それを決めるのは〈〉さんっす"],
+["今の、もう一回言ってみろ","今の、もう一回言ってみてくださいっす"],
+["保証人はαの方で","保証人はαの人でお願いするっす"],
+["大変申し訳ございませんでした","ほんと、すんませんでしたっす"],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉さんに捨てられたら、もう誰の匂いも分かんなくなるっす。……それでもいいんすか？",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外じゃ何があるか分かんないっすから。……苦しくないやつを選んだつもりっす",1],
+["ここにも、きみが好きそうな星空がある","ここにも、好きそうな星空があるっすよ",1],
+["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃないとこ見せるの、初めてかもしれないっす",1],
+["〈〉の匂いがしないと、眠れないの","〈〉さんの匂いがしないと、眠れないんす",1],
+["……いいよ。〈〉の匂いなら、怖くない","……いいっすよ。〈〉さんの匂いなら、怖くないっす",1],
+["ありがとうございます。とても、嬉しいです","あざっす。めっちゃ嬉しいっす",1],
+["〈〉には黙っておけばいい","〈〉さんには、黙っておけばいいっす",1],
+["αでもΩでも、〈〉は〈〉だろ","αでもΩでも、〈〉さんは〈〉さんっしょ",1],
+["それ、俺が昔使ってた手だ","それ、私が昔使ってた手っす",1],
+["〈〉に、あなたの匂いを二度とつけないで","〈〉さんに、あなたの匂いを二度とつけないでほしいっす",1],
+["生きて。……〈〉の匂いが、この世界からなくなるのは嫌だ","生きてくださいっす。……〈〉さんの匂いが、この世界からなくなるのは嫌っす",1],
+["仕事、辞めてもいいよ。養うから","仕事、辞めてもいいっすよ。私が養うっす",1],
+["どこにいても、俺の匂いがするように","どこにいても、俺の匂いがするようにしとくっす",1],
+["今回はゆっくり休みましょう","今回はゆっくり休むっすよ",1]]});
 HK.Load.toneData("cool",{"F":[
 ["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも事実だ。……誰にも触らせたくないのも、事実だ",1],
 ["仕事の顔じゃないところ、見せるのは初めてかも","仕事以外の顔を見せるのは、初めてかもしれない",1],
@@ -4442,42 +5085,29 @@ HK.Load.toneData("cool",{"F":[
 ["それは研究室の学生と同じ顔だ","研究室の学生と同じ表情だ。答えに辿り着く直前の顔だな",1],
 ["αだからって、私が黙ると思った？","αだからといって、私が黙ると思ったか？",1],
 ["Ω同士で、何やってんだろ","Ω同士で、何をやっているんだろうな",1],
-["予定通りだね。準備はしてある","予定通りだ。準備はしてある",1],
 ["……いいよ。〈〉の匂いなら、怖くない","……いい。〈〉の匂いなら、怖くない",1],
 ["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さない",1],
 ["βなのに、なんで目立つ仕事を","βなのに、なぜ目立つ仕事を",1],
 ["その服は撮られたら困る","その服を撮られたら困る",1],
-["声が聞きたくて","声が聞きたくてな",1]]});
-HK.Load.toneData("darui",{"F":[
-["Ω同士で、何やってんだろ","……Ω同士で……何やってんだろ"],
-["いい一行だ","……いい一行"],
-["αなら食えない仕事なんかするな","……αなら、食えない仕事とか、しなくていい",1],
-["〈〉に、あなたの匂いを二度とつけないで","……〈〉に、あんたの匂い。……二度とつけないで",1],
-["〈〉はインフルエンザらしいですよ","……〈〉、インフルらしい",1],
-["お前のためなら足を洗ってもいい","……あんたのためなら、足、洗ってもいい",1],
-["ここにも、きみが好きそうな星空がある","……ここにも。……きみの好きそうな星空、ある",1],
-["このまま、二人の匂いだけの世界に行けたらいいのに","……このまま、二人の匂いだけの世界にいたい。……動かなくていいし",1],
-["それは研究室の学生と同じ顔だ","……それ、研究室の学生と同じ顔",1],
-["仕事の顔じゃないところ、見せるのは初めてかも","……仕事の顔じゃないとこ、見せるの。……はじめてかも",1],
-["君は、今まででいちばん割に合わない投資先だ","……あんた、今までで一番割に合わない投資先",1],
-["恋人にはなれないけど、これくらいなら","……恋人にはなれない。……これくらいなら、いいけど",1],
-["早く噛ませて。……誰かに取られる前に","……はやく噛ませて。……取られる前に",1],
-["昔の人も、好きな人の名前を壁に書いてたんだ","……昔の人も、好きな人の名前、壁に書いてた。……へえ",1],
-["番になってほしい。順番、逆かもしれないけど","……番になって。……順番、逆かもだけど",1],
-["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","……番になっても、外は何があるかわかんない。……苦しくないの、選んだ",1],
-["私以外の匂いがしたら、許さないから","……私以外の匂いがしたら、許さない。……それだけは、めんどくてもやる",1],
-["譲る気はないよ","……譲る気は、ないよ",1]]});
-HK.Load.toneData("devoted",{"F":[
-["Ω同士で、何やってんだろ","Ω同士で、何やってるんでしょう"],
-["こんなに、待っててくれたんだ……","こんなに、待っててくれたんですね……"],
-["今の、もう一回言ってみろ","今の、もう一回言ってみてください"],
-["私以外の匂いがしたら、許さないから","私以外の匂いがしたら……許せないかもしれません",1],
-["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉さんに捨てられたら、もう誰の匂いも分からなくなります。……それでも、いいんですか？",1],
-["αなのに、雇われなんだ","αなのに、雇われなんですね",1]]});
-HK.Load.toneData("devoted_p",{"F":[
-["Ω同士で、何やってんだろ","Ω同士で、何やってるんだろ"],
-["今の、もう一回言ってみろ","今の、もう一回言ってみて"],
-["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さないんだからね",1]]});
+["声が聞きたくて","声が聞きたくてな",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外でのリスクはゼロにならない。……負担の少ないものを選んだつもりだ",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いも識別できなくなる。……それでもいいのか",1],
+["このまま、二人の匂いだけの世界に行けたらいいのに","このまま、二人の匂いしかない世界に行けたら、それが最適解なんだが",1],
+["これ、君に似てると思って","これ、君に似ていると思って",1]]});
+HK.Load.toneData("calm",{"F":[
+["いずれこうなる確率は計算していた","いずれこうなることは、わかっていた"],
+["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも本当だ。……誰にも触らせたくないのも、本当だ",1],
+["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃないところを見せるのは、初めてかもしれない",1],
+["君は、今まででいちばん割に合わない投資先だ","君は、今まででいちばん割に合わない投資先だ",1],
+["昔の人も、好きな人の名前を壁に書いてたんだ","昔の人も、好きな人の名前を壁に書いていたんだ",1],
+["恋人にはなれないけど、これくらいなら","恋人にはなれないけど、これくらいなら",1],
+["それは研究室の学生と同じ顔だ","研究室の学生と同じ顔をしているね。何か考えているのかな",1],
+["カウンセリングしないで","カウンセリングはしないでくれ",1],
+["Ωの営巣行動。番の不在によるストレス反応","……巣を作っていたのか。番がいなくて、心細かったんだろう",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外では何があるか分からないから。……苦しくないものを選んだつもりだ",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいのか",1],
+["このまま、二人の匂いだけの世界に行けたらいいのに","このまま、二人の匂いだけの世界に行けたらいいのに",1],
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さない",1]]});
 HK.Load.toneData("free",{"F":[
 ["……ごめん。怖がらせた","……ごめん。怖がらせちゃった"],
 ["αなら食えない仕事なんかするな","αなら、食べられない仕事なんかしないで！",1],
@@ -4496,18 +5126,64 @@ HK.Load.toneData("free",{"F":[
 ["昔の人も、好きな人の名前を壁に書いてたんだ","昔の人も、好きな人の名前を壁に書いてたんだって！",1],
 ["番になってほしい。順番、逆かもしれないけど","番になってほしい！　順番、逆かもしれないけど",1],
 ["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外では何があるか分からないから。……苦しくないもの、選んだつもり",1],
-["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さないからね！",1]]});
-HK.Load.toneData("genki",{"F":[
-["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許しませんからね？",1],
-["いいにおい","いいにおいです！",1],
-["静かに考えたいときは、使っていい","静かに考えたいときは、使っていいですよ！",1]]});
-HK.Load.toneData("gentle",{"F":[
-["Ω同士で、何やってんだろ","Ω同士で、何やってるんだろうね"],
-["今の、もう一回言ってみろ","今の、もう一回言ってみて？"],
-["私以外の匂いがしたら、許さないから","私以外の匂いがしたら……許してあげられないかも",1]]});
-HK.Load.toneData("gentle_n",{"F":[
-["Ω同士で、何やってんだろ","Ω同士で、何やってるんだろうね"],
-["今の、もう一回言ってみろ","今の、もう一回言ってみて？"]]});
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さないからね！",1],
+["Ωの子がいると、αのお客さんが喜ぶ","Ωの子がいると、αのお客さんが喜ぶんだ",1]]});
+HK.Load.toneData("usan",{"F":[
+["……ごめん。怖がらせた","……ごめん。怖がらせたねえ"],
+["いいの？一生だよ","いいのかい？一生だよ"],
+["ばれちゃったわね","ばれちゃったねえ"],
+["今の、もう一回言ってみろ","今の、もう一回言ってみなよ"],
+["早く帰ってこないかしら","早く帰ってこないかねえ"],
+["静かに考えたいときは、使っていい","静かに考えたいときは、使っていいよ"],
+["αなら食えない仕事なんかするな","αなら、食えない仕事なんかするもんじゃないよ",1],
+["〈〉に、あなたの匂いを二度とつけないで","〈〉に、あんたの匂いを二度とつけないでおくれ",1],
+["〈〉はインフルエンザらしいですよ","〈〉はインフルエンザらしいよ",1],
+["お前のためなら足を洗ってもいい","あんたのためなら、足を洗ってもいいさ",1],
+["ここにも、きみが好きそうな星空がある","ここにもねえ、きみが好きそうな星空があるのさ",1],
+["このまま、二人の匂いだけの世界に行けたらいいのに","このまま二人の匂いだけの世界に行けたら、いいのにねえ",1],
+["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃないところを見せるのは、初めてかもねえ",1],
+["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも本当さ。……誰にも触らせたくないのも、本当でねえ",1],
+["恋人にはなれないけど、これくらいなら","恋人にはなれないけどねえ。これくらいなら、まあ",1],
+["早く噛ませて。……誰かに取られる前に","早く噛ませておくれよ。……誰かに取られる前にさ",1],
+["昔の人も、好きな人の名前を壁に書いてたんだ","昔の人もねえ、好きな人の名前を壁に書いてたんだよ",1],
+["番になってほしい。順番、逆かもしれないけど","番になってほしいんだよねえ。順番、逆かもしれないけどさ",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になってもねえ、外では何があるか分からないからさ。……苦しくないものを選んだつもりだよ",1],
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら……ねえ、許さないよ？",1],
+["Ωの子がいると、αのお客さんが喜ぶ","Ωの子がいるとねえ、αのお客さんが喜ぶのさ",1]]});
+HK.Load.toneData("shy",{"F":[
+["Ω同士で、何やってんだろ","Ω同士で、な、何やってるんだろ……"],
+["今の、もう一回言ってみろ","……い、今の、もう一回、言ってみて……"],
+["私以外の匂いがしたら、許さないから","わ、私以外の匂い、したら……ゆ、許さない、です……",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉さんに、す、捨てられたら……も、もう誰の匂いも、分からなく……そ、それでも、いいんですか……？",1]]});
+HK.Load.toneData("ojou",{"F":[
+["私、本当はΩなんだ","私、本当はΩなのですわ"],
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許しませんわよ",1],
+["このまま、二人の匂いだけの世界に行けたらいいのに","このまま、二人の匂いだけの世界に行けたら、よろしいのに",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉さんに捨てられたら、もう誰の匂いも分からなくなりますわ。……それでも、よろしくて？",1],
+["君は、今まででいちばん割に合わない投資先だ","あなたは、今まででいちばん割に合わない投資先ですわね",1],
+["守りたいのも本当。……誰にも触らせたくないのも、本当","お守りしたいのも本当ですわ。……どなたにも触れさせたくないのも、本当ですの",1],
+["噛み跡、まだ痛むだろ。人に見られるのも嫌かと思って","噛み跡、まだ痛むでしょう。人に見られるのもお嫌かと思いまして",1],
+["これで、知らない誰かに怯えなくていい。外すのは、俺の前だけでいいから","これで、知らない誰かに怯えなくてよろしいのよ。外すのは、わたくしの前だけで構いませんわ",1],
+["いいの？一生だよ","よろしいの？　一生ですわよ",1],
+["……いいよ。〈〉の匂いなら、怖くない","……よろしいですわ。〈〉さんの匂いなら、怖くありませんもの",1],
+["それを決めるのは〈〉だ","それを決めるのは、〈〉さんですわ",1],
+["ファンの子に見られたらどうするの","ファンの子に見られたら、どうなさいますの？",1],
+["……ごめん。怖がらせた","……ごめんなさい。怖がらせてしまいましたわね",1],
+["外したくなったら、俺に頼めばいい","外したくなったら、わたくしにお頼みになればよろしいのよ",1],
+["仕事、辞めてもいいよ。養うから","お仕事、辞めてもよろしくてよ。私が養って差し上げますわ",1],
+["今回はゆっくり休みましょう","今回はゆっくり休みましょう。よろしくて？",1],
+["足りなくなったら、また探しますから","足りなくなりましたら、また探しますわ",1],
+["重い荷物はαに任せてください","重い荷物は、αにお任せなさいな",1],
+["私の人生ですから","私の人生ですもの",1]]});
+HK.Load.toneData("hero",{"F":[
+["私以外の匂いがしたら、許さないから","私のじゃねえ匂いがしたら、絶対に許さねえからな！",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわからなくなる。……それでもいいのか？",1],
+["Ω同士で、何やってんだろ","Ω同士で、何やってんだろうな",1],
+["恋人にはなれないけど、これくらいなら","恋人にはなれねえけど、これくらいなら……",1],
+["見て見て、すごくない？最高傑作！","見てくれ、すごくないか？　最高傑作だ！",1],
+["〈〉の匂いがしないと、眠れないの","〈〉の匂いがしないと、眠れないんだ",1],
+["〈〉に、あなたの匂いを二度とつけないで","〈〉に、お前の匂いを二度とつけるな！",1],
+["いつまでそうしている気だ","いつまでそうしてる気だ！　立て！",1]]});
 HK.Load.toneData("gyaru",{"F":[
 ["αなら食えない仕事なんかするな","αなら、食えない仕事とかしないでよ",1],
 ["〈〉に、あなたの匂いを二度とつけないで","〈〉に、あんたの匂い二度とつけないで",1],
@@ -4527,6 +5203,7 @@ HK.Load.toneData("gyaru",{"F":[
 ["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外じゃ何あるか分かんないし。……苦しくないの選んだつもり",1],
 ["私以外の匂いがしたら、許さないから","私以外の匂いしたら、マジで許さないし",1],
 ["今の、もう一回言ってみろ","今の、もっかい言ってみ？",1],
+["Ωの子がいると、αのお客さんが喜ぶ","Ωの子いると、αのお客さん喜ぶんだよね〜",1],
 ["保証人はαの方で","保証人はαの方でよろ〜"],
 ["これで、知らない誰かに怯えなくていい。外すのは、俺の前だけでいいから","これで、知らない誰かに怯えなくていいじゃん。外すのは、私の前だけでいいから"],
 ["噛み跡、まだ痛むだろ。人に見られるのも嫌かと思って","噛み跡、まだ痛むでしょ。人に見られるのも嫌かなって思って"],
@@ -4536,7 +5213,6 @@ HK.Load.toneData("gyaru",{"F":[
 ["その服は撮られたら困る","その服、撮られたら困るんだけど"],
 ["Ωは昇進しても、どうせ番ができたら辞める","Ωって昇進しても、どうせ番できたら辞めるじゃん"],
 ["それ、俺が昔使ってた手だ","それ、私が昔使ってた手じゃん"],
-["譲る気はない","譲る気とかないし"],
 ["カウンセリングしないで","カウンセリングとかしないで"],
 ["それは立派な犯罪だ","それ、フツーに犯罪じゃん"],
 ["運命でも、私が選んできたのは〈〉だ","運命でも、私が選んできたのは〈〉だし"],
@@ -4567,36 +5243,48 @@ HK.Load.toneData("gyaru",{"F":[
 ["仕事では言えないけど","仕事じゃ言えないけどさ"],
 ["私、本当はΩなんだ","私、ホントはΩなんだ"],
 ["学生じゃない","学生じゃないし"],
+["だめ……私には、番がいる","だめ……私には、番がいるの"],
 ["言うべきか、ずっと考えてた。この前、〈〉が〈〉と一緒にいるのを見た","言うべきか、ずっと考えてたんだけど。この前、〈〉が〈〉と一緒にいるの見ちゃった",1]]});
-HK.Load.toneData("hero",{"F":[
-["私以外の匂いがしたら、許さないから","私のじゃねえ匂いがしたら、絶対に許さねえからな！",1],
-["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわからなくなる。……それでもいいのか？",1],
-["Ω同士で、何やってんだろ","Ω同士で、何やってんだろうな",1],
-["恋人にはなれないけど、これくらいなら","恋人にはなれねえけど、これくらいなら……",1],
-["見て見て、すごくない？最高傑作！","見てくれ、すごくないか？　最高傑作だ！",1],
-["〈〉の匂いがしないと、眠れないの","〈〉の匂いがしないと、眠れないんだ",1],
-["〈〉に、あなたの匂いを二度とつけないで","〈〉に、お前の匂いを二度とつけるな！",1],
-["いつまでそうしている気だ","いつまでそうしてる気だ！　立て！",1]]});
-HK.Load.toneData("kohai",{"F":[
-["Ω同士で、何やってんだろ","Ω同士で、何やってるんすかね"],
-["αなのに、雇われなんだ","αなのに、雇われなんすね"],
-["お邪魔してもよろしいですか","お邪魔してもいいっすか"],
-["それを決めるのは〈〉だ","それを決めるのは〈〉さんっす"],
-["今の、もう一回言ってみろ","今の、もう一回言ってみてくださいっす"],
-["保証人はαの方で","保証人はαの人でお願いするっす"],
-["大変申し訳ございませんでした","ほんと、すんませんでしたっす"],
-["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉さんに捨てられたら、もう誰の匂いも分かんなくなるっす。……それでもいいんすか？",1],
-["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外じゃ何があるか分かんないっすから。……苦しくないやつを選んだつもりっす",1],
-["ここにも、きみが好きそうな星空がある","ここにも、好きそうな星空があるっすよ",1],
-["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃないとこ見せるの、初めてかもしれないっす",1],
-["〈〉の匂いがしないと、眠れないの","〈〉さんの匂いがしないと、眠れないんす",1],
-["……いいよ。〈〉の匂いなら、怖くない","……いいっすよ。〈〉さんの匂いなら、怖くないっす",1],
-["ありがとうございます。とても、嬉しいです","あざっす。めっちゃ嬉しいっす",1],
-["私、迷惑かけて、ごめんなさい","私、迷惑かけて、すんません",1],
-["〈〉には黙っておけばいい","〈〉さんには、黙っておけばいいっす",1],
-["αでもΩでも、〈〉は〈〉だろ","αでもΩでも、〈〉さんは〈〉さんっしょ",1],
-["それ、俺が昔使ってた手だ","それ、私が昔使ってた手っす",1],
-["今回はゆっくり休みましょう","今回はゆっくり休むっすよ",1]]});
+HK.Load.toneData("chara",{"F":[
+["私以外の匂いがしたら、許さないから","私のじゃない匂いとかしたら、マジ許さないから",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわかんなくなる。……それでもいいの？",1],
+["Ω同士で、何やってんだろ","Ω同士で何やってんだろ、ウケる",1],
+["恋人にはなれないけど、これくらいなら","恋人にはなれないけど、これくらいならいいよ",1],
+["今の、もう一回言ってみろ","今の、もう一回言ってみ？",1],
+["隠していましたが、私はΩです","隠してたけど、私、Ωなんだよね",1],
+["このまま、二人の匂いだけの世界に行けたらいいのに","このまま、二人の匂いだけの世界に行けたらいいのにね〜"],
+["えっ、かわいすぎない！？","えっ、かわいすぎね！？"],
+["これで、知らない誰かに怯えなくていい。外すのは、俺の前だけでいいから","これで、知らない誰かにビビらなくていいっしょ。外すのは、私の前だけでいいから"],
+["お前のためなら足を洗ってもいい","あんたのためなら、足洗ってもいいわ"],
+["噛み跡、まだ痛むだろ。人に見られるのも嫌かと思って","噛み跡、まだ痛むっしょ。人に見られんのも嫌かなって思って"],
+["Ωの子がいると、αのお客さんが喜ぶ","Ωの子いると、αのお客さん喜ぶんだよね"],
+["君は、今まででいちばん割に合わない投資先だ","あんたは、今までで一番割に合わない投資先だわ"],
+["それを決めるのは〈〉だ","それ決めんのは〈〉っしょ"],
+["雇われは気楽でいいね","雇われは気楽でいいね〜"],
+["その服は撮られたら困る","その服、撮られたらヤバいって"],
+["それ、俺が昔使ってた手だ","それ、私が昔使ってた手じゃん"],
+["静かに考えたいときは、使っていい","静かに考えたいときは、使っていいって"],
+["もう少しだけ待ってほしい","もうちょいだけ待ってほしいんだけど"],
+["それは立派な犯罪だ","それ、立派な犯罪じゃね？"],
+["明日、うちの外来に来て","明日、うちの外来来てよ"],
+["運命でも、私が選んできたのは〈〉だ","運命でも、私が選んできたのは〈〉だから"],
+["ファンの子に見られたらどうするの","ファンの子に見られたらどうすんの"],
+["Ωだと知っていたら採らなかった","Ωだって知ってたら採らなかったわ"],
+["帰ったら言いたいことがある","帰ったら言いたいことあんだよね"],
+["Ωが現場に出るのは危ない","Ωが現場出るのはヤバいって"],
+["〈〉には黙っておけばいい","〈〉には黙っとけばいいって"],
+["Ωなのに目利きがいい","Ωなのに目利きいいじゃん"],
+["Ωなら、番を見つければ食いっぱぐれない","Ωなら、番見つけりゃ食いっぱぐれないっしょ"],
+["混ざれば分からない","混ざったら分かんねーって"],
+["どこにいても、俺の匂いがするように","どこにいても、私の匂いがするように"],
+["外したくなったら、俺に頼めばいい","外したくなったら、私に頼めばいいって"],
+["番の資産で投資しているんだろう","番の資産で投資してんでしょ"],
+["私、初めて会った気がしない","私、初めて会った気がしないんだよね"],
+["前職を辞めた理由は？","前の仕事辞めた理由は？"],
+["いい一行だ","いい一行じゃん！"],
+["だめ……私には、番がいる","だめ……私には、番がいるの"],
+["言うべきか、ずっと考えてた。この前、〈〉が〈〉と一緒にいるのを見た","言うべきか、ずっと考えてたんだけどさ。この前、〈〉が〈〉と一緒にいるの見ちゃったんだよね",1],
+["星座みたい","星座っぽくね？",1]]});
 HK.Load.toneData("mystic",{"F":[
 ["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも本当だよ。……誰にも触らせたくないのも、本当なんだ",1],
 ["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃないところ、見せるのは初めてかもしれないんだ",1],
@@ -4604,123 +5292,36 @@ HK.Load.toneData("mystic",{"F":[
 ["昔の人も、好きな人の名前を壁に書いてたんだ","昔の人も、好きな人の名前を壁に書いていたんだ",1],
 ["恋人にはなれないけど、これくらいなら","恋人にはなれないけどね、これくらいなら",1],
 ["それは研究室の学生と同じ顔だ","研究室の学生と同じ顔だ。何か見つけかけているんだ",1],
-["データ上、この状態は","見たところ、この状態はね",1],
 ["いずれこうなる確率は計算していた","いずれこうなるって、わかっていたんだ",1],
-["声が聞きたくて","声が聞きたくてね",1]]});
-HK.Load.toneData("ojou",{"F":[
-["私、本当はΩなんだ","私、本当はΩなのですわ"],
-["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許しませんわよ",1],
-["このまま、二人の匂いだけの世界に行けたらいいのに","このまま、二人の匂いだけの世界に行けたら、よろしいのに",1],
-["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉さんに捨てられたら、もう誰の匂いも分からなくなりますわ。……それでも、よろしくて？",1],
-["君は、今まででいちばん割に合わない投資先だ","あなたは、今まででいちばん割に合わない投資先ですわね",1],
-["守りたいのも本当。……誰にも触らせたくないのも、本当","お守りしたいのも本当ですわ。……どなたにも触れさせたくないのも、本当ですの",1],
-["噛み跡、まだ痛むだろ。人に見られるのも嫌かと思って","噛み跡、まだ痛むでしょう。人に見られるのもお嫌かと思いまして",1],
-["これで、知らない誰かに怯えなくていい。外すのは、俺の前だけでいいから","これで、知らない誰かに怯えなくてよろしいのよ。外すのは、わたくしの前だけで構いませんわ",1],
-["いいの？一生だよ","よろしいの？　一生ですわよ",1],
-["……いいよ。〈〉の匂いなら、怖くない","……よろしいですわ。〈〉さんの匂いなら、怖くありませんもの",1],
-["それを決めるのは〈〉だ","それを決めるのは、〈〉さんですわ",1],
-["ファンの子に見られたらどうするの","ファンの子に見られたら、どうなさいますの？",1],
-["勘違いするな、これは生理現象だ","勘違いなさらないで。これは生理現象ですわ",1],
-["……ごめん。怖がらせた","……ごめんなさい。怖がらせてしまいましたわね",1],
-["外したくなったら、俺に頼めばいい","外したくなったら、わたくしにお頼みになればよろしいのよ",1],
-["今回はゆっくり休みましょう","今回はゆっくり休みましょう。よろしくて？",1],
-["足りなくなったら、また探しますから","足りなくなりましたら、また探しますわ",1],
-["重い荷物はαに任せてください","重い荷物は、αにお任せなさいな",1],
-["私の人生ですから","私の人生ですもの",1]]});
-HK.Load.toneData("proud",{"F":[
-["私以外の匂いがしたら、許さないから","私のじゃねえ匂いをさせてみろ。許さねえ。……覚えとけ",1],
-["恋人にはなれないけど、これくらいなら","恋人にはなってやれねえ。……これくらいなら、いい",1],
-["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわからなくなる。……それでもいいのか",1],
-["αだからって、私が黙ると思った？","αだからって、私が黙ると思ったか？",1],
-["〈〉に、あなたの匂いを二度とつけないで","〈〉に、お前の匂いを二度とつけるな",1],
-["Ωなのにすごいね","Ωのくせにやるじゃねえか",1],
-["あなたのためなら足を洗ってもいい","お前のためなら……足を洗ってやってもいい",1]]});
-HK.Load.toneData("shy",{"F":[
-["Ω同士で、何やってんだろ","Ω同士で、な、何やってるんだろ……"],
-["今の、もう一回言ってみろ","……い、今の、もう一回、言ってみて……"],
-["譲る気はない","ご、ごめん……これは、譲れない……"],
-["私以外の匂いがしたら、許さないから","わ、私以外の匂い、したら……ゆ、許さない、です……",1],
-["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉さんに、す、捨てられたら……も、もう誰の匂いも、分からなく……そ、それでも、いいんですか……？",1]]});
-HK.Load.toneData("stern",{"F":[
-["Ω同士で、何やってんだろ","Ω同士で、何をやっているのだろうな"],
-["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも本当だ。……誰にも触らせたくないのも、本当だ",1],
-["仕事の顔じゃないところ、見せるのは初めてかも","務めの顔ではないところを見せるのは、初めてかもしれん",1],
-["君は、今まででいちばん割に合わない投資先だ","お前は、これまでで最も割に合わん投資先だ",1],
-["昔の人も、好きな人の名前を壁に書いてたんだ","昔の人間も、好いた相手の名を壁に書いていたのだ",1],
-["恋人にはなれないけど、これくらいなら","恋仲にはなれん。だが、これくらいなら",1],
-["それは研究室の学生と同じ顔だ","それは研究室の学生と同じ顔だ。迷っている者の顔だな",1],
-["〈〉に、あなたの匂いを二度とつけないで","〈〉に、あなたの匂いを二度とつけるな",1]]});
-HK.Load.toneData("tsun",{"F":[
-["〈〉に、あなたの匂いを二度とつけないで","〈〉に、あんたの匂いを二度とつけないでよね",1],
-["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわからなくなる。……それでも、いいの？",1],
-["〈〉はインフルエンザらしいですよ","〈〉はインフルエンザらしいわよ",1],
-["お前のためなら足を洗ってもいい","あんたのためなら……足を洗ってあげてもいいわよ",1],
-["ここにも、きみが好きそうな星空がある","ここにも、あんたが好きそうな星空があるわよ。……べ、別に探したわけじゃないから",1],
-["このまま、二人の匂いだけの世界に行けたらいいのに","このまま……二人の匂いだけの世界に行けたらいいのに。……な、なんでもない",1],
-["それは研究室の学生と同じ顔だ","それ、研究室の学生と同じ顔よ",1],
-["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃないとこ、見せるのは初めてかも。……べ、別に特別とかじゃないから",1],
-["君は、今まででいちばん割に合わない投資先だ","あんたは、今までで一番割に合わない投資先よ。……べ、別に後悔はしてないけど",1],
-["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも本当。……誰にも触らせたくないのも、本当。……な、なによ、悪い？",1],
-["恋人にはなれないけど、これくらいなら","恋人にはなれないけど……これくらいなら、してあげてもいいわよ",1],
-["早く噛ませて。……誰かに取られる前に","早く噛ませなさいよ。……誰かに取られる前に",1],
-["昔の人も、好きな人の名前を壁に書いてたんだ","昔の人も、好きな人の名前を壁に書いてたのよ。……べ、別に私も書きたいとかじゃないから",1],
-["番になってほしい。順番、逆かもしれないけど","番になってほしいの。……順番、逆かもしれないけど",1],
-["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外じゃ何があるか分からないから。……苦しくないもの、選んだつもりよ",1],
-["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さないんだから。……絶対だからね",1]]});
-HK.Load.toneData("tsun_n",{"F":[
-["〈〉に、あなたの匂いを二度とつけないで","〈〉に、お前の匂いを二度とつけるな",1],
-["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわからなくなる。……それでもいいのか？",1],
-["〈〉はインフルエンザらしいですよ","〈〉はインフルエンザらしい",1],
-["お前のためなら足を洗ってもいい","お前のためなら、足を洗ってもいい",1],
-["ここにも、きみが好きそうな星空がある","ここにも、お前が好きそうな星空がある",1],
-["このまま、二人の匂いだけの世界に行けたらいいのに","このまま、二人の匂いだけの世界に行けたらいいのに",1],
-["それは研究室の学生と同じ顔だ","それは研究室の学生と同じ顔だ",1],
-["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃないところを見せるのは、初めてかもしれない",1],
-["君は、今まででいちばん割に合わない投資先だ","お前は、今までで一番割に合わない投資先だ",1],
-["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも本当だ。……誰にも触らせたくないのも、本当だ",1],
-["恋人にはなれないけど、これくらいなら","恋人にはなれない。……でも、これくらいなら",1],
-["早く噛ませて。……誰かに取られる前に","早く噛ませろ。……誰かに取られる前に",1],
-["昔の人も、好きな人の名前を壁に書いてたんだ","昔の人も、好きな人の名前を壁に書いていたらしい",1],
-["番になってほしい。順番、逆かもしれないけど","番になってほしい。順番、逆かもしれないが",1],
-["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外では何があるか分からない。……苦しくないものを選んだつもりだ",1],
-["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さないからな",1]]});
-HK.Load.toneData("usan",{"F":[
-["……ごめん。怖がらせた","……ごめん。怖がらせたねえ"],
-["いいにおい","いいにおいだねえ"],
-["いいの？一生だよ","いいのかい？一生だよ"],
-["ばれちゃったわね","ばれちゃったねえ"],
-["もっとつけていい","もっとつけていいよ"],
-["今の、もう一回言ってみろ","今の、もう一回言ってみなよ"],
-["早く帰ってこないかしら","早く帰ってこないかねえ"],
-["静かに考えたいときは、使っていい","静かに考えたいときは、使っていいよ"],
-["αなら食えない仕事なんかするな","αなら、食えない仕事なんかするもんじゃないよ",1],
-["〈〉に、あなたの匂いを二度とつけないで","〈〉に、あんたの匂いを二度とつけないでおくれ",1],
-["〈〉はインフルエンザらしいですよ","〈〉はインフルエンザらしいよ",1],
-["お前のためなら足を洗ってもいい","あんたのためなら、足を洗ってもいいさ",1],
-["ここにも、きみが好きそうな星空がある","ここにもねえ、きみが好きそうな星空があるのさ",1],
-["このまま、二人の匂いだけの世界に行けたらいいのに","このまま二人の匂いだけの世界に行けたら、いいのにねえ",1],
-["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃないところを見せるのは、初めてかもねえ",1],
-["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも本当さ。……誰にも触らせたくないのも、本当でねえ",1],
-["恋人にはなれないけど、これくらいなら","恋人にはなれないけどねえ。これくらいなら、まあ",1],
-["早く噛ませて。……誰かに取られる前に","早く噛ませておくれよ。……誰かに取られる前にさ",1],
-["昔の人も、好きな人の名前を壁に書いてたんだ","昔の人もねえ、好きな人の名前を壁に書いてたんだよ",1],
-["番になってほしい。順番、逆かもしれないけど","番になってほしいんだよねえ。順番、逆かもしれないけどさ",1],
-["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になってもねえ、外では何があるか分からないからさ。……苦しくないものを選んだつもりだよ",1],
-["私以外の匂いがしたら、許さないから","私以外の匂いがしたら……ねえ、許さないよ？",1]]});
-HK.Load.toneData("yankee",{"F":[
-["α同伴でないと","α同伴じゃねえと"],
-["また来てね、絶対ね","また来いよ、絶対な"],
-["今なにしてる？","今なにしてんだ？"],
-["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔じゃねえとこ、見せんのは初めてかもな"],
-["君は、今まででいちばん割に合わない投資先だ","お前は、今まででいちばん割に合わねえ投資先だ"],
-["肌に合うか試して","肌に合うか試してみろよ"],
-["見て見て、すごくない？最高傑作！","見て見て、すげえだろ？最高傑作！"],
-["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いもわかんなくなんだよ。……それでもいいのかよ",1],
-["べ、別に嬉しくなんかないけど！……そのシャツ、気に入ってたやつだし","べ、別に嬉しかねえし！……そのシャツ、気に入ってたやつってだけだ",1],
-["私以外の匂いがしたら、許さないから","私のじゃねえ匂いさせてきたら、ぜってえ許さねえからな",1],
-["〈〉の匂いがしないと、眠れないの","〈〉の匂いがしねえと、眠れねえんだよ",1],
-["食べちゃいたい","食っちまいてえ",1],
-["いいの？一生だよ","いいのか？　一生だぞ",1]]});
+["声が聞きたくて","声が聞きたくてね",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外では何があるか分からないからね。……苦しくないものを選んだつもりなんだよ",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いも分からなくなるんだ。……それでもいいのかい？",1],
+["このまま、二人の匂いだけの世界に行けたらいいのに","このまま、二人の匂いだけの世界に行けたらいいのにね",1],
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さないんだ",1]]});
+HK.Load.toneData("genki",{"F":[
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許しませんからね？",1],
+["静かに考えたいときは、使っていい","静かに考えたいときは、使っていいですよ！",1],
+["番になっても、外では何があるか分かりませんから。……苦しくないものを選んだつもりです","番になっても、外では何があるか分かりませんから。……苦しくないもの、選んだつもりです",1]]});
+HK.Load.toneData("darui",{"F":[
+["Ω同士で、何やってんだろ","……Ω同士で……何やってんだろ"],
+["いい一行だ","……いい一行"],
+["αなら食えない仕事なんかするな","……αなら、食えない仕事とか、しなくていい",1],
+["〈〉に、あなたの匂いを二度とつけないで","……〈〉に、あんたの匂い。……二度とつけないで",1],
+["〈〉はインフルエンザらしいですよ","……〈〉、インフルらしい",1],
+["お前のためなら足を洗ってもいい","……あんたのためなら、足、洗ってもいい",1],
+["ここにも、きみが好きそうな星空がある","……ここにも。……きみの好きそうな星空、ある",1],
+["このまま、二人の匂いだけの世界に行けたらいいのに","……このまま、二人の匂いだけの世界にいたい。……動かなくていいし",1],
+["それは研究室の学生と同じ顔だ","……それ、研究室の学生と同じ顔",1],
+["仕事の顔じゃないところ、見せるのは初めてかも","……仕事の顔じゃないとこ、見せるの。……はじめてかも",1],
+["君は、今まででいちばん割に合わない投資先だ","……あんた、今までで一番割に合わない投資先",1],
+["恋人にはなれないけど、これくらいなら","……恋人にはなれない。……これくらいなら、いいけど",1],
+["早く噛ませて。……誰かに取られる前に","……はやく噛ませて。……取られる前に",1],
+["昔の人も、好きな人の名前を壁に書いてたんだ","……昔の人も、好きな人の名前、壁に書いてた。……へえ",1],
+["番になってほしい。順番、逆かもしれないけど","……番になって。……順番、逆かもだけど",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","……番になっても、外は何があるかわかんない。……苦しくないの、選んだ",1],
+["私以外の匂いがしたら、許さないから","……私以外の匂いがしたら、許さない。……それだけは、めんどくてもやる",1],
+["Ωの子がいると、αのお客さんが喜ぶ","……Ωの子がいると、αの客が喜ぶ",1],
+["譲る気はないよ","……譲る気は、ないよ",1]]});
 HK.Load.toneData("sondai",{"F":[
 ["守りたいのも本当。……誰にも触らせたくないのも、本当","守りたいのも本当だよ。……誰にも触らせたくないのも、本当なのだがね",1],
 ["仕事の顔じゃないところ、見せるのは初めてかも","仕事の顔でないところを見せるのは、初めてかもしれんね",1],
@@ -4737,15 +5338,19 @@ HK.Load.toneData("sondai",{"F":[
 ["いつまでそうしてるの","いつまでそうしているのかね",1],
 ["ツケはもうきかない","ツケは、もうきかんよ",1],
 ["ここにも、きみが好きそうな星空がある","ここにも、君が好きそうな星空があるよ",1],
-["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になっても、外では何があるか分からんからね。……苦しくないものを選んだつもりだよ",1],
+["番になっても、外では何があるか分からないから。……苦しくないものを選んだつもり","番になったとて、外では何があるか分からんからね。……苦しくないものを選んだつもりだよ",1],
+["〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいの？","〈〉に捨てられたら、もう誰の匂いも分からなくなる。……それでもいいのかね？",1],
+["このまま、二人の匂いだけの世界に行けたらいいのに","このまま、二人の匂いだけの世界に行けたらよいのだがね",1],
+["私以外の匂いがしたら、許さないから","私以外の匂いがしたら、許さんよ",1],
 ["本能に負けるとは","……本能に負けるとは。私としたことが",1],
 ["雇われは気楽でいいな","雇われの身は気楽でいいものだな",1]]});
 HK.Load.toneData("keigo_sarc",{"F":[
 ["計算済みです","計算済みです。……何か？",1],
 ["Ωなのにすごいですね","Ωなのにすごいですね。意外でした",1]]});
 HK.Load.toneData("keigo_bossy",{"F":[
-["足りなくなったら、また探しますから","足りなくなったら、また探してあげます。遠慮せず言いなさい",1]]});
+["足りなくなったら、また探しますから","足りなくなったら、また探してあげます。遠慮せず言いなさい",1],
+["Ωが現場に出るのは危ない","Ωが現場に出るのは危険です。内勤になさい",1]]});
 HK.Load.toneData("ronkyaku",{"F":[
 ["生きてくれ。……〈〉の匂いが、この世界からなくなるのは嫌だ","生きてくれたまえ。……〈〉の匂いがこの世界から消えるのは、耐えがたいのだよ",1]]});
 });
-HK.Load.done('scen-omega', '88075bef70', 1);
+HK.Load.done('scen-omega', 'f94c282f43', 1);
