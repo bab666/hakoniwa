@@ -116,47 +116,136 @@
     }
   });
 
-  /* ---------- 内容のスイッチの欄の注記（ui.js の contentBox が呼ぶ）：この箱庭・この顔ぶれで起きないなら理由（起きうるなら ''） ----------
-     o：{ scenId, chars（参加する住人だけ。画面の住人でも input.chars でもよい）, env（heavy を見る）, pickOf(c)（箱庭ごとの欄。オメガバースの第二性） }。
-     参加者の組だけを見る（住人が多くても重くしない）。起きる条件は上の pregHook・saiminHook と、邪神村（solo-jashin-r18*.js。性別・性器によらず疑似妊娠・巫女） */
+  /* ---------- 内容のスイッチの欄の判定（ui.js の contentBox が呼ぶ）：この箱庭・この顔ぶれ・この設定で起きうるか ----------
+     HK.Content.judge(tag, o) → { s: 'yes'（起きうる。t に根拠）／'maybe'（条件しだい。t に条件）／'no'（起きない。t に理由）, t }。
+     o：{ scenId, chars（参加する住人だけ。画面の住人でも input.chars でもよい）, ties（関係。a・b は住人の id か番号）,
+          env（heavy と箱庭の環境値）, ct（入れているスイッチ { id: 1 }）, pickOf(c)（箱庭ごとの欄。オメガバースの第二性） }。
+     参加者の組だけを見る（住人が多くても重くしない）。起きる経路は tips.js の「内容のスイッチ（R18版）：起きやすい条件」と content.js の説明、
+     各出来事の when（この下の pregHook・ct_goukon_hate・ct_dv・ct_abuse_night、hate-sex*・obsess-kit・tie-master-r18・tie-abuse・
+     omega-mob-r18・zombie-npc／zombie-bite・solo-jashin-r18*・ship・solo-yakata-r18・locker-crowd・jinro-wolfnight・solo-saimin）から写した表。
+     関係の値（嫌悪・執着度）や気質で決まる経路は、断言できないので「条件しだい」にする */
   var PREG_STORY = { jashin: 'any', saimin: 'dark' };
+  var ENG = { goukon: 1, classroom: 1, island: 1, whiteroom: 1, omega: 1, zombie: 1 };
+  /* 合意のない展開：モブ・魔物・神などが一人を襲う箱庭（物語型）と、その相手 */
+  var MOBF = { jashin: '村人・神・眷属', ship: '星の生命体', yakata: '使用人・犯人', locker: '群衆' };
+  /* 敵対する二人の強引なエッチが起きる箱庭（hate-sex*。合コンは重いときだけ ct_goukon_hate）・執着の監禁の夜（obsess-install.js） */
+  var HATE = { whiteroom: 1, omega: 1, zombie: 1, goukon: 'dark' }, OBS = { classroom: 1, goukon: 1, whiteroom: 1, omega: 1, zombie: 1 };
   function infoOf(id) { return HK.Load && HK.Load.info ? HK.Load.info(id) : HK.SCENARIOS && HK.SCENARIOS[id]; }
-  HK.Content.pregWhy = function (o) {
-    o = o || {};
-    var id = o.scenId, P = HK.Pos, st = PREG_STORY[id], sc = infoOf(id);
-    if (HK.SAFE_ON || st === 'any') return '';
-    if (NO_SCEN[id] || (!st && sc && sc.solo)) return 'この箱庭には妊娠の場面がありません';
-    if (!P) return '';
-    var cs = (o.chars || []).filter(function (c) { return c && !c.noR18; }), why = '';
+  function J(s, t) { return { s: s, t: t || '' }; }
+  function nm(c) { return c && c.name || '?'; }
+  function few(list) { return list.slice(0, 3).join('／') + (list.length > 3 ? ' ほか' : ''); }
+  /* 判定の材料（参加者・関係・組の可否） */
+  function base(o) {
+    var P = HK.Pos, cs = (o.chars || []).filter(Boolean), r18 = cs.filter(function (c) { return !c.noR18; });
+    var byKey = function (k) { for (var i = 0; i < cs.length; i++) if (cs[i].id === k || (cs[i].id == null && i === k)) return cs[i]; return null; };
+    var ties = (o.ties || []).map(function (t) { var a = byKey(t.a), b = byKey(t.b); return a && b && a !== b ? { a: a, b: b, type: t.type, t: t } : null; }).filter(Boolean);
+    /* T が攻め・B が受けで体の関係になれる組（恋愛対象は体の関係の判定。恋愛対象「なし」は「体の関係の相手」で見る） */
+    var sexTB = function (T, B) { return !!(P && T !== B && !T.noR18 && !B.noR18 && P.canTop(T) && P.canBottom(B) && P.genderOK(T, B, true)); };
+    var sexAny = function (a, b) { return sexTB(a, b) || sexTB(b, a); };
+    var mobOk = function (c) { if (c.noR18) return false; var L = HK.sexLockRead ? HK.sexLockRead(c) : null; return !(L && L.locks && !L.mob); };
+    var recv = function (c) { return mobOk(c) && (!P || (P.canReceive(c) && !P.noGen(c))); };
+    var D = HK.Dark, heavy = D ? D.on(o.env || {}) : 'normal';
+    return { P: P, cs: cs, r18: r18, ties: ties, sexTB: sexTB, sexAny: sexAny, recv: recv, heavy: heavy, ct: o.ct || {}, id: o.scenId, sc: infoOf(o.scenId) };
+  }
+  function tiesOfType(B, re) { return B.ties.filter(function (t) { return re.test(t.type); }); }
+  function anyPair(B, fn) { for (var i = 0; i < B.r18.length; i++) for (var j = 0; j < B.r18.length; j++) if (i !== j && fn(B.r18[i], B.r18[j])) return [B.r18[i], B.r18[j]]; return null; }
+  /* 妊娠・孕む描写 */
+  function jPreg(o, B) {
+    var id = B.id, P = B.P, st = PREG_STORY[id];
+    if (st === 'any') return J('yes', '疑似妊娠・巫女（神の仕業なので、性別・性器によらず受けた人に）');
+    if (NO_SCEN[id] || (!st && B.sc && B.sc.solo)) return J('no', 'この箱庭には妊娠の場面がありません');
+    if (!P) return J('yes', '');
+    var hit = null, ev = '';
     if (st === 'dark') {
-      /* 催眠：かけられる側が女性器だけの人（自分で攻めを選んだ人は除く）。かける側は住人でも、男性のモブでもよい */
-      if (!cs.some(function (c) { return P.gen(c) === 'f' && !P.hardTop(c); })) why = '女性器だけの人（受けに回れる人）が参加していません';
+      hit = B.r18.filter(function (c) { return P.gen(c) === 'f' && !P.hardTop(c); });
+      if (!hit.length) return J('no', '女性器だけの人（受けに回れる人）が参加していません');
+      ev = '催眠をかけられた' + few(hit.map(nm)) + '（女性器だけの人）';
     } else {
       var om = id === 'omega', pk = function (c) { return (o.pickOf && o.pickOf(c)) || c.pick || {}; };
       /* 第二性（おまかせ・スイッチで変わりうるものも、なりうるなら可） */
       var canA = function (c) { var x = pk(c); return !x.sex || x.sex === 'a' || (x.sex === 'o' && x.sw !== 'no'); };
       var canO = function (c) { var x = pk(c); return !x.sex || x.sex === 'o' || (x.sex === 'a' && x.sw !== 'no') || (x.sex === 'b' && x.sw === 'yes'); };
-      var ok = cs.some(function (A) {
-        if (!P.hasM(A) || !P.canTop(A)) return false;
-        return cs.some(function (B) {
-          if (B === A || !P.canBottom(B) || !P.genderOK(A, B, true)) return false;
-          var g = P.gen(B);
-          return g === 'f' || (om && g !== 'none' && canA(A) && canO(B));
-        });
-      });
-      if (!ok) why = om ? '恋愛対象と受け攻めの合う「α（男性器のある人）×Ω」の組も、「男性器のある人×女性器だけの人」の組もありません' : '恋愛対象と受け攻めの合う「男性器のある人×女性器だけの人」の組がありません';
+      var gp = anyPair(B, function (A, C) { return P.hasM(A) && P.gen(C) === 'f' && B.sexTB(A, C); });
+      var ap = om ? anyPair(B, function (A, C) { var g = P.gen(C); return P.hasM(A) && g !== 'none' && canA(A) && canO(C) && B.sexTB(A, C); }) : null;
+      if (!gp && !ap) return J('no', om ? '恋愛対象と受け攻めの合う「α（男性器のある人）×Ω」の組も、「男性器のある人×女性器だけの人」の組もありません' : '恋愛対象と受け攻めの合う「男性器のある人×女性器だけの人」の組がありません');
+      ev = ap && !gp ? 'α×Ωの組（' + nm(ap[0]) + '×' + nm(ap[1]) + '）' : '男性器×女性器の組（' + nm(gp[0]) + '×' + nm(gp[1]) + '）' + (ap && ap !== gp ? '・α×Ωの組' : '');
     }
-    if (!why && !(HK.Dark && HK.Dark.on(o.env || {}) === 'dark')) why = '展開の重さが「重い」のときだけ起きます';
-    return why;
-  };
-  /* スイッチごと（妊娠のほかは、穏やかで切になるもの：mood-dial.js の OFF_MILD。R18が中心の箱庭は除く） */
-  HK.Content.why = function (tag, o) {
+    if (B.heavy !== 'dark') return J('no', '展開の重さが「重い」のときだけ起きます');
+    return J('yes', ev);
+  }
+  /* 合意のない展開 */
+  function jForce(o, B) {
+    var id = B.id, P = B.P;
+    if (HK.Content.CORE[id]) return J('yes', 'この箱庭の題材なので、いつも入として扱います');
+    if (B.heavy === 'mild') return J('no', '展開の重さが「穏やか」のときは切として扱います');
+    if (!P) return J('yes', '');
+    var rc = B.r18.filter(B.recv), rcT = rc.length ? '（受けに回れる人：' + few(rc.map(nm)) + '）' : '';
+    var noRecv = 'モブ相手に受けに回れる人がいません（モブ相手の受け攻め・R18に参加しない・性行為の相手を「固定した相手だけ」・性器なし）';
+    if (id === 'saimin') return B.r18.length ? J('yes', '催眠が、同意のない催眠になります') : J('no', 'R18に参加する人がいません');
+    if (MOBF[id]) return rc.length ? J('yes', MOBF[id] + 'に襲われる場面' + rcT) : J('no', noRecv);
+    if (id === 'jinro') return anyPair(B, B.sexTB) ? J('maybe', '人狼が勝ったとき、人狼が生き残りを襲う') : J('no', '恋愛対象と受け攻めの合う組がありません');
+    if (!ENG[id]) return J('no', 'この箱庭には合意のない展開の場面がありません');
+    var ev = [], dark = B.heavy === 'dark';
+    var hostile = tiesOfType(B, /^(enemy|rival|bad)$/).filter(function (t) { return B.sexAny(t.a, t.b); });
+    if (HATE[id] && (HATE[id] !== 'dark' || dark) && hostile.length) ev.push('敵対の組（' + hostile.map(function (t) { return nm(t.a) + '×' + nm(t.b); }).slice(0, 2).join('・') + '）');
+    var yan = OBS[id] ? tiesOfType(B, /^yan$/).filter(function (t) { return B.sexAny(t.a, t.b); }) : [];
+    if (yan.length) ev.push('執着（' + yan.map(function (t) { return nm(t.a) + '→' + nm(t.b); }).slice(0, 2).join('・') + '）の監禁の夜');
+    var ms = id !== 'classroom' ? tiesOfType(B, /^master$/).filter(function (t) { return B.sexTB(t.b, t.a); }) : [];
+    if (ms.length) ev.push('主従（' + ms.map(function (t) { return nm(t.b) + 'が主の' + nm(t.a) + 'を'; }).slice(0, 2).join('・') + '襲う）');
+    var ab = id !== 'classroom' ? tiesOfType(B, /^abuse$/).filter(function (t) { return B.sexTB(t.a, t.b); }) : [];
+    if (ab.length) ev.push('歪んだ関係の拒めない夜（' + ab.map(function (t) { return nm(t.a) + '→' + nm(t.b); }).slice(0, 2).join('・') + '）');
+    if (id === 'omega' && rc.length) ev.push('発情期のΩが街のαに襲われる' + rcT);
+    if (id === 'zombie' && rc.length) ev.push('略奪者・ゾンビに襲われる' + rcT);
+    if (ev.length) return J('yes', ev.join('／'));
+    var pair = anyPair(B, B.sexTB);
+    if (!pair) return J('no', '恋愛対象と受け攻めの合う組がなく、モブに襲われる場面もありません');
+    if ((HATE[id] && (HATE[id] !== 'dark' || dark)) || OBS[id]) return J('maybe', '二人の仲が険悪になる（嫌悪が強まる）か、執着が芽生えれば。関係を敵対・ライバル・不仲・執着・主従・歪んだ関係にすると起きやすい');
+    return J('no', HATE[id] === 'dark' ? '敵対の組がありません（合コンは、展開の重さが「重い」なら、険悪になった二人の帰り道でも）' : '敵対・執着・主従・歪んだ関係の組がありません');
+  }
+  /* 暴力をともなう性描写 */
+  function jViolence(o, B) {
+    var id = B.id;
+    if (B.heavy === 'mild') return J('no', '展開の重さが「穏やか」のときは切として扱います');
+    if (id === 'yakata') { var yp = o.env && o.env.ypleasure; return yp === 0 || yp === '0' ? J('no', '環境値「快楽殺人の起きやすさ」が0です') : J('maybe', '犯人の動機が「快楽殺人」になったとき（重さによらず）'); }
+    if (!ENG[id] || id === 'classroom') return J('no', 'この箱庭には暴力をともなう性描写の場面がありません');
+    if (B.heavy !== 'dark') return J('no', '展開の重さが「重い」のときだけ起きます（吹雪の館の快楽殺人を除く）');
+    var force = !!B.ct.force, ev = [];
+    var hostile = HATE[id] ? tiesOfType(B, /^(enemy|rival|bad)$/).filter(function (t) { return B.sexAny(t.a, t.b); }) : [];
+    /* 出られない部屋の条件のエッチは「合意のない展開」に関わらず起きるので、暴力の段もこのスイッチだけで決まる */
+    if (hostile.length && (force || id === 'whiteroom')) ev.push('敵対の組の強引なエッチ（' + hostile.map(function (t) { return nm(t.a) + '×' + nm(t.b); }).slice(0, 2).join('・') + '）');
+    var ab = force ? tiesOfType(B, /^abuse$/).filter(function (t) { return B.sexTB(t.a, t.b); }) : [];
+    if (ab.length) ev.push('歪んだ関係の拒めない夜（' + ab.map(function (t) { return nm(t.a) + '→' + nm(t.b); }).slice(0, 2).join('・') + '）');
+    if (ev.length) return J('yes', ev.join('／'));
+    if (!anyPair(B, B.sexTB)) return J('no', '恋愛対象と受け攻めの合う組がありません');
+    if (!force && id !== 'whiteroom') return J('no', '「合意のない展開」も入にすると、敵対する二人の強引なエッチに暴力の段が入ります');
+    if (HATE[id]) return J('maybe', '二人の仲が険悪になれば（関係を敵対・ライバル・不仲にすると起きやすい）');
+    return J('no', '関係「歪んだ関係」の組がありません（この箱庭には敵対する二人の強引なエッチがありません）');
+  }
+  /* DVなど歪んだ関係 */
+  function jAbuse(o, B) {
+    var id = B.id;
+    if (B.heavy === 'mild') return J('no', '展開の重さが「穏やか」のときは切として扱います');
+    if (id === 'saimin') return B.heavy === 'dark' ? J('maybe', 'かける側が恋人・ストーカーのとき、暗示で縛り続ける') : J('no', '展開の重さが「重い」のときだけ起きます');
+    var ab = tiesOfType(B, /^abuse$/);
+    if (!ENG[id]) return J('no', ab.length ? 'この箱庭には、このスイッチで足す場面がありません（関係「歪んだ関係」は、スイッチによらず関係として出ます）' : 'この箱庭には歪んだ関係の場面がありません');
+    if (ab.length) return J('yes', '歪んだ関係（' + ab.map(function (t) { return nm(t.a) + '→' + nm(t.b); }).slice(0, 2).join('・') + '）');
+    if (id === 'classroom') return J('no', '関係「歪んだ関係」の組がありません（クラスメイトには、重いときに足す場面もありません）');
+    if (B.heavy !== 'dark') return J('no', '関係「歪んだ関係」の組がありません（展開の重さが「重い」なら、恋人・夫婦・執着の組でも起きます）');
+    var P = B.P, lv = function (a, b) { return !P || P.genderOK(a, b); };
+    var dv = tiesOfType(B, /^(lover|spouse|fiance|mate|fated|yan)$/).filter(function (t) { return lv(t.a, t.b); });
+    if (dv.length) return J('maybe', '恋人・夫婦・執着の組（' + dv.map(function (t) { return nm(t.a) + '×' + nm(t.b); }).slice(0, 2).join('・') + '）に、支配的な気質（CP・ドライさ・攻撃性が高い）の人がいれば');
+    if (anyPair(B, function (a, b) { return lv(a, b); })) return J('maybe', '恋人になった二人に、支配的な気質（CP・ドライさ・攻撃性が高い）の人がいれば');
+    return J('no', '恋人・夫婦・執着になれる組がありません（恋愛対象が合いません）');
+  }
+  HK.Content.judge = function (tag, o) {
     o = o || {};
-    if (tag === 'preg') return HK.Content.pregWhy(o);
-    var D = HK.Dark;
-    if (D && D.OFF_MILD && D.OFF_MILD[tag] && D.on(o.env || {}) === 'mild' && !(HK.Content.CORE && HK.Content.CORE[o.scenId])) return '展開の重さが「穏やか」のときは切として扱います';
-    return '';
+    if (HK.SAFE_ON) return J('no', '');
+    var B = base(o);
+    return tag === 'preg' ? jPreg(o, B) : tag === 'force' ? jForce(o, B) : tag === 'violence' ? jViolence(o, B) : tag === 'abuse' ? jAbuse(o, B) : J('yes', '');
   };
+  /* 起きないときの理由だけ（起きうるなら ''） */
+  HK.Content.why = function (tag, o) { var r = HK.Content.judge(tag, o); return r.s === 'no' ? r.t : ''; };
+  HK.Content.pregWhy = function (o) { return HK.Content.why('preg', o); };
 
   /* ================= 暴力をともなう性描写：敵対する二人の強引なエッチに差し込む段 ================= */
   var HS = HK.HateSex;
