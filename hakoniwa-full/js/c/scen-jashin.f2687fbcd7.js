@@ -6182,7 +6182,7 @@ if(rest.length&&rng()<0.35+lv*0.4)dose(S,live,rest[Math.floor(rng()*rest.length)
 if(p.lastNight!=null&&h-p.lastNight<10)return false;
 if(rng()>lv*(p.aphro?0.32:0.12))return false;
 p.lastNight=h;p.cnt.r18=(p.cnt.r18||0)+1;
-var mates=pc<=0?[]:live.filter(function(q){return q!==p&&(q.lastNight==null||h-q.lastNight>=10)&&((HK.canLove?HK.canLove(p,q)&&HK.canLove(q,p):true)|| !!(HK.State.freeSex&&HK.State.freeSex(S,p,q)))&&okPair(p,q);});
+var mates=pc<=0?[]:live.filter(function(q){return q!==p&&(q.lastNight==null||h-q.lastNight>=10)&&((HK.canLove?HK.canLove(p,q)&&HK.canLove(q,p):true)|| !!(HK.State.freeSex&&HK.State.freeSex(S,p,q)))&&okPair(p,q)&&(!HK.Pos|| !HK.Pos.libOK||HK.Pos.libOK([p,q]));});
 var top=HK.Pos&&HK.Pos.hardTopNpc?HK.Pos.hardTopNpc(p):hardTop(p);
 var r0=rng();
 var frc= !HK.Content||HK.Content.ok(S,'force');
@@ -9106,4 +9106,4 @@ HK.Load.toneData("keigo_sarc",{"F":[
 HK.Load.toneData("keigo_flat",{"F":[
 ["……足りませんね","……不足しています",1]]});
 });
-HK.Load.done('scen-jashin', '4b98b49947', 1);
+HK.Load.done('scen-jashin', 'f2687fbcd7', 1);

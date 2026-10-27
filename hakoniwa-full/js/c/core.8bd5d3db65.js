@@ -11231,6 +11231,7 @@ w*=ctx.bias(a,e.cat);
 if(e.cat==='combat'||e.cat==='kill'||e.cat==='betray')w*=HK.Dark.f(ctx,e.dk||(e.cat==='betray'?'spite':'kill'));
 if(bb&&HK.Ties)w*=HK.Ties.bias(ctx,a,bb,e.cat);
 if(bb&&e.cat==='romance'&&(a.honmei!=null||bb.honmei!=null))w*=HK.honmeiFactor(ctx,a,bb);
+if(e.sex&& !e.force&&HK.Pos&&HK.Pos.libMul)w*=HK.Pos.libMul(bb?[a,bb]:[a]);
 if(HK.Emo)w*=HK.Emo.weight(ctx,a,e);
 if(bb&&e.cat==='romance'&&HK.Dark.on(ctx)!=='normal'&&HK.Dark.cheat(ctx,a,bb))w*=HK.Dark.f(ctx,'cheat');
 if(w<=0)return;
@@ -12193,7 +12194,7 @@ var HK=window.HK;
 if(!HK)return;
 var C=HK.Content={
 TAGS:[
-{id:'force',label:'合意のない展開',desc:'夜這い・略奪者やゾンビに襲われる・神や眷属の夜・生贄の儀式・執着の監禁の夜・敵対する二人の強引なエッチ（オメガバース・ゾンビの街、展開が重いなら合コンの帰り道も。出られない部屋の条件「エッチ」で敵対する二人が仕方なく満たす場面は部屋の仕掛けなので、このスイッチに関わらず起きる）・星の生命体に攫われる・オメガバースの、発情期に街のαに襲われる場面・襲われている人を庇った住人が巻き込まれる庇い展開（巻き込まれ）・同意のない催眠（切なら、催眠は同意の上の催眠プレイに） など。起きやすいのは、関係を敵対・ライバル・不仲・執着にした二人'},
+{id:'force',label:'合意のない展開',desc:'夜這い・略奪者やゾンビに襲われる・神や眷属の夜・生贄の儀式・執着の監禁の夜・敵対する二人の強引なエッチ（オメガバース・ゾンビの街、展開が重いなら合コンの帰り道も。出られない部屋の条件「エッチ」で敵対する二人が仕方なく満たす場面は部屋の仕掛けなので、このスイッチに関わらず起きる）・星の生命体に攫われる・オメガバースの、発情期に街のαに襲われる場面・襲われている人を庇った住人が巻き込まれる庇い展開（巻き込まれ）・同意のない催眠（切なら、催眠は同意の上の催眠プレイに）・歪んだ関係の拒めない夜（支配する側が攻めのとき。展開の重さが「ふつう」でも） など。起きやすいのは、関係を敵対・ライバル・不仲・執着・歪んだ関係にした二人。入のときは、恋愛対象を「なし」にした人も、切羽詰まった場面（執着の監禁の夜・歪んだ関係の拒めない夜・敵対する二人の強引なエッチ・出られない部屋の条件のエッチ）で体の関係になることがある（恋愛にはならない）'},
 {id:'preg',label:'妊娠・孕む描写',desc:'邪神村の疑似妊娠・巫女、行為のあとに孕む描写。展開の重さが「重い」なら、合コン・無人島・出られない部屋・オメガバース（発情期のα×Ω・番で起きやすい）・ゾンビの街・催眠でも、男性器のある攻めと女性器の受けの夜のあとに「孕んだかもしれない」、のちに妊娠が分かる場面、結末の「その後」の出産'},
 {id:'violence',label:'暴力をともなう性描写',desc:'吹雪の館の快楽殺人・ゾンビの群れなど、暴力と性が結びつく場面。展開の重さが「重い」なら、敵対する二人の強引なエッチ（合意のない展開も入のとき）に殴る・押さえつける・首に手をかける段、歪んだ関係の拒めない夜にも'},
 {id:'abuse',label:'DVなど歪んだ関係',desc:'関係「歪んだ関係」の支配・暴言・暴力の場面。展開の重さが「重い」なら、関係がなくても、恋人・夫婦・執着の二人で、支配的な気質（CP・ドライさ・攻撃性が高い）の人が、束縛・暴言・暴力・謝罪を繰り返す（周りが気づく・別れる・歪んだまま）。催眠では、恋人・ストーカーのかける側が暗示で縛り続ける'}
@@ -15006,10 +15007,15 @@ if(HK.Story&&HK.Story.pick&&ctx&&ctx.recent)return HK.Story.pick(ctx,arr);
 return arr[Math.floor(rnd(ctx)*arr.length)];
 }
 function fill(t,a,b){return String(t).replace(/\{a\}/g,a.name).replace(/\{b\}/g,b.name);}
-function freeOne(a,b){return HK.lockOut(a,b)?a:b;}
+function noneOf(a,b){return a&&a.likes==='none'?a:b&&b.likes==='none'?b:null;}
+function freeOne(a,b){return noneOf(a,b)||(HK.lockOut(a,b)?a:b);}
+function noneFree(a,b){
+if(!HK.Pos|| !HK.Pos.sexLikeOf|| !noneOf(a,b))return false;
+return!(HK.ngPair&&HK.ngPair(a,b))|| !!(HK.lockSexOnly&&HK.lockSexOnly(a,b));
+}
 HK.State.freeSex=function(ctx,a,b){
 if(!a|| !b||a===b||HK.SAFE_ON)return false;
-if(!(HK.lockSexOnly&&HK.lockSexOnly(a,b)))return false;
+if(!(HK.lockSexOnly&&HK.lockSexOnly(a,b))&& !noneFree(a,b))return false;
 if(!HK.State.pairSex(a,b))return false;
 if(HK.sexBlocked&&HK.sexBlocked(a,b))return false;
 if(a.role==='teacher'||b.role==='teacher'||a.minor||b.minor)return false;
@@ -15025,8 +15031,8 @@ if(L.indexOf(notI)>=0)return null;
 for(var k=0;k<L.length;k++){var y=P[L[k]];if(y&&y!==x&&HK.State.here(y))return y;}
 return null;
 };
-F.factor=function(ctx,a,b){
-return F.loverOf(ctx,a,b.i)||F.loverOf(ctx,b,a.i)?0.3:1;
+F.factor=function(ctx,a,b,noLib){
+return(F.loverOf(ctx,a,b.i)||F.loverOf(ctx,b,a.i)?0.3:1)*(!noLib&&HK.Pos&&HK.Pos.libMul?HK.Pos.libMul([a,b]):1);
 };
 F.LEAD={
 proud:L('{a}は「勘違いしないで。気持ちは別のところにある」と先に言い切った。{b}は肩をすくめて、それで構わないと答えた。|{a}にとって、心を預ける相手はひとりだけだった。体のほうは、また別の話だと割り切っていた。|「惚れたわけじゃない。今夜はそういう気分なだけ」――{a}の言葉に、{b}は笑って頷いた。|{a}は本気の相手の顔を一瞬だけ思い浮かべて、すぐに追い払った。これは、そういうことではない。'),
@@ -15039,16 +15045,32 @@ free:L('「好きな人は別にいるけど、それはそれ！」――{a}は
 shy:L('{a}の好きな人は、ひとりだけだった。恋ではないことだけは、{a}にもはっきり分かっていた。それでも今夜は、{b}の熱から離れられなかった。|「あの、気持ちは……別のところに、あって……」――消え入りそうな{a}の声に、{b}は「分かってる」と答えた。|{a}は真っ赤になりながら、これは恋じゃない、と心の中で何度も繰り返した。'),
 polite:L('「心に決めた方がおりますので、今夜のことはどうかお気になさらず」――{a}の丁寧な前置きに、{b}は小さく笑った。|{a}は礼儀正しく線を引いた。お慕いしている方はひとり。これは、それとは別のことだった。|「恋ではございません。それでもよろしければ」――{a}はそう言って、{b}の手に指を重ねた。')
 };
+F.LEAD_NONE={
+proud:L('「勘違いしないで。恋だの愛だのには興味がない。今夜はただ、そういう気分なだけ｜勘違いするな。恋だの愛だのに興味はない。今夜はただ、そういう気分なだけだ｜勘違いしないでください。恋だの愛だのには興味がありません。今夜はただ、そういう気分なだけです」――{a}がそう言い切ると、{b}は肩をすくめて頷いた。|{a}にとって、恋愛は最初から関心の外にあった。けれど、体の熱だけは別の話だった。|{a}は{b}の顎を持ち上げて、「心はやらない。体だけなら、相手をしてもいい｜心はやらない。体だけなら、相手をしてやってもいい｜心は差し上げません。体だけなら、お相手してもいいですよ」と告げた。'),
+stern:L('{a}は誰かを好きになったことがない。それでいいと思っていた。ただ、体が人の温度を欲しがる夜があることも、{a}は知っていた。|「恋愛はしない。それでも構わないなら｜＝｜恋愛はいたしません。それでも構わないのでしたら」――{a}は{b}の目をまっすぐ見て、短くそう告げた。|恋ではない。{a}はそれを確かめるように一度目を閉じてから、{b}の肩に手を置いた。'),
+tsun:L('「べ、別にあなたが好きとかじゃないから。そういうの、興味ないし｜別にあなたが好きなわけじゃない。そういうのには興味がない｜べ、別にあなたが好きとかではありませんから。そういうのには興味がないんです」――{a}は早口で言って、目を逸らしたまま{b}の袖を引いた。|{a}は恋をしない。自分でもそう分かっている。それとこれとは別だと、{a}は自分に言い聞かせた。|「今夜だけだから。勘違いしないでよね｜今夜だけだ。勘違いするな｜今夜だけですから。勘違いしないでくださいね」――{b}は笑って、{a}の髪を撫でた。'),
+gentle:L('「私ね、誰かに恋をすることがないの。それでも、今夜はそばにいてほしい｜私は、誰かに恋をすることがない。それでも、今夜はそばにいてほしい｜私、誰かに恋をすることがないんです。それでも、今夜はそばにいてほしいんです」――{a}が穏やかに言うと、{b}は黙って頷いた。|恋とは違う、と{a}は思った。それでも、誰かの体温がほしい夜はある。|{a}は恋愛に縁がないことを、{b}にも隠さなかった。{b}もそれを分かった上で、今夜の熱だけを分け合うことにした。'),
+devoted:L('「恋はできない。……それでも、こうしていたい｜＝｜恋はできません。……それでも、こうしていたいんです」――{a}の小さな声に、{b}は黙って頷いた。|{a}の心は、誰にも向かない。それでも、触れられることまで拒みたいとは思わなかった。|{a}は恋の気持ちを知らないまま、{b}の手を自分の胸元に導いた。'),
+cool:L('{a}は冷静だった。恋愛には興味がない。これは欲の処理で、それ以上でも以下でもない。|「感情は持ち込まない。それでいいなら｜＝｜感情は持ち込みません。それでよければ」――{a}の淡々とした声に、{b}は短く頷いた。|{a}にとって、恋は最初から棚の外にあった。今夜使うのは、体のほうだけだった。'),
+free:L('「恋愛？　ないない。でも、気持ちいいことは好き！｜恋愛？　それはない。だが、気持ちいいことは嫌いじゃない｜恋愛ですか？　ないですね。でも、気持ちいいことは好きですよ」――{a}はあっけらかんと笑って、{b}の腕を引いた。|{a}にとって、恋と体はまったく別のものだった。{b}も、そういう軽さが嫌いではなかった。|「恋人とかは無理だけど、今夜楽しむのはありでしょ？｜恋人は無理だが、今夜楽しむのはありだろう？｜恋人は無理ですけど、今夜楽しむのはありでしょう？」――{a}の言葉に、{b}は吹き出した。'),
+shy:L('{a}は、誰かを好きになる気持ちがよく分からなかった。それでも今夜は、{b}の熱から離れられなかった。|「あの、恋とかは……できなくて。それでも、いいなら｜その、恋というのは……できない。それでも、いいなら｜あの、恋とかは……できなくて。それでも、よければ」――消え入りそうな{a}の声に、{b}は黙って頷いた。|{a}は真っ赤になりながら、これは恋じゃない、と心の中で何度も繰り返した。'),
+polite:L('「恋っていうのには縁がないんだ。それでもいいなら｜恋というものには縁がない。それでもいいなら｜あいにく、恋というものには縁がございません。それでもよろしければ」――{a}はそう言って、{b}の手に指を重ねた。|{a}は礼儀正しく線を引いた。恋愛はしない。これは、体だけのことだった。|「気にしないで｜気にするな｜お気になさらないでください」――{a}は微笑んだ。恋にはならない夜だと、{a}がいちばんよく分かっていた。')
+};
 F.persona=function(c){
 var k=(c&&c.persona)||(HK.personaOf&&HK.personaOf(c))||'gentle';
 return F.LEAD[k]?k:'gentle';
 };
 F.lead=function(ctx,a,b){
 var x=freeOne(a,b),y=x===a?b:a;
-return fill(pick(ctx,F.LEAD[F.persona(x)]),x,y);
+return fill(pick(ctx,(x.likes==='none'?F.LEAD_NONE:F.LEAD)[F.persona(x)]),x,y);
 };
+var SL_JA={m:'男性',f:'女性',both:'男女両方'},LIB_JA={low:'弱い',high:'強い'};
 F.why=function(a,b){
 var x=freeOne(a,b);
+if(x.likes==='none'){
+var sl=HK.Pos&&HK.Pos.sexLikeOf?HK.Pos.sexLikeOf(x):'',lb=HK.Pos&&HK.Pos.libOf?HK.Pos.libOf(x):'';
+return x.name+'は恋愛対象が「なし」（恋愛はしない）で、体の関係の相手は'+(SL_JA[sl]||'おまかせ')+(LIB_JA[lb]?'・性欲は'+LIB_JA[lb]:'')+'（体だけの関係）';
+}
 return x.name+'は性行為の相手を「誰とでも可」にしている（恋愛は固定のまま。体だけの関係）';
 };
 F.mark=function(ctx,a,b){
@@ -19872,17 +19894,18 @@ if(p==='top')return r==='top';
 return r==='bottom'||(P.of(partner,c)==='bottom'&&explicit(partner,c));
 }
 function kindAs(c,r,partner){return explicit(c,partner)?P.of(c,partner):r;}
-function likesOne(a,b){
-if(!a.likes||a.likes==='both')return true;
-if(a.likes==='none')return false;
+function likesOne(a,b,sex){
+var v=a.likes;
+if(v==='none'){if(!sex)return false;v=P.sexLikeOf(a);if(v==='none')return false;}
+if(!v||v==='both')return true;
 if(!b.gender||b.gender==='x')return true;
-return a.likes===b.gender;
+return v===b.gender;
 }
-P.genderOK=function(a,b){return!!(a&&b)&&likesOne(a,b)&&likesOne(b,a);};
+P.genderOK=function(a,b,sex){return!!(a&&b)&&likesOne(a,b,sex)&&likesOne(b,a,sex);};
 P.orients=function(a,b,love){
 if(!a|| !b||a===b)return[];
 if(love?(HK.ngPair&&HK.ngPair(a,b)):HK.sexBlocked?HK.sexBlocked(a,b):(HK.ngPair&&HK.ngPair(a,b)))return[];
-if(!P.genderOK(a,b))return[];
+if(!P.genderOK(a,b,!love))return[];
 var out=[];
 [[a,b],[b,a]].forEach(function(o){
 var t=o[0],u=o[1];
@@ -19968,6 +19991,16 @@ P.fbFor=function(a,b){return P.nori(a)&&P.of(a,b)!=='top'&&P.of(b,a)!=='bottom'?
 P.MALE_RE= /ちんぽ|ちんこ|ペニス|陰茎|肉棒|いちもつ|一物|男根|亀頭|勃起|射精|精液|白濁|種付け|孕ませ|中に出|中出し|子種|睾丸|カリ首|フェラ|裏筋|鈴口|先走り|怒張|剛直|屹立|\{(?:男性器|亀頭|精液)\}/;
 P.FORCE_MARK='〔合意のない展開〕';
 P.forceOn=function(x){return!!(x&& !HK.SAFE_ON&&HK.Content&&HK.Content.ok(x,'force'));};
+var SEXLIKE_V={m:1,f:1,both:1,none:1};
+P.sexLikeOf=function(c){if(!c||HK.SAFE_ON)return'none';var v=src(c,'sexLikes');return SEXLIKE_V[v]?v:'';};
+P.LIB_K={none:0,low:0.5,high:1.6};
+P.libOf=function(c){if(!c||HK.SAFE_ON)return'';var v=src(c,'libido');return P.LIB_K[v]!=null?v:'';};
+P.libK=function(c){var v=P.libOf(c);return v?P.LIB_K[v]:1;};
+P.libMul=function(list){var m=1;(list||[]).forEach(function(c,i,a){if(c&&a.indexOf(c)===i)m*=P.libK(c);});return m;};
+P.libNone=function(list){return(list||[]).some(function(c){return P.libOf(c)==='none';});};
+var forcing=0;
+P.forcing=function(){return forcing>0;};
+P.libOK=function(list){return forcing>0|| !P.libNone(list);};
 P.noneIn=function(list){return(list||[]).some(function(c){return c&&c.likes==='none';});};
 P.noneWhy=function(x,list,bare){
 var L=(list||[]).filter(function(c){return c&&c.likes==='none';});
@@ -19975,33 +20008,57 @@ if(!L.length|| !P.forceOn(x))return'';
 return'／'+(bare?'':P.FORCE_MARK)+'恋愛対象「なし」の'+L.map(function(c){return c.name;}).join('・')+'も、切羽詰まった場面で体の関係になった（恋愛にはならない）';
 };
 function openNone(list,fn){
-var L=(list||[]).filter(function(c,i,a){return c&&c.likes==='none'&&a.indexOf(c)===i;});
+var L=(list||[]).filter(function(c,i,a){return c&&c.likes==='none'&&a.indexOf(c)===i&&P.sexLikeOf(c)!=='none';});
 if(!L.length)return fn();
-L.forEach(function(c){c.likes='';});
+L.forEach(function(c){c.likes=P.sexLikeOf(c);});
 try{return fn();}finally{L.forEach(function(c){c.likes='none';});}
 }
-P.forceOpen=function(x,list,fn){return P.forceOn(x)?openNone(list,fn):fn();};
+P.openNone=openNone;
+P.forceOpen=function(x,list,fn){
+if(!P.forceOn(x))return fn();
+forcing++;
+try{return openNone(list,fn);}finally{forcing--;}
+};
 P.okForce=function(x,a,b){return P.forceOpen(x,[a,b],function(){return!!(HK.State&&HK.State.pairSex?HK.State.pairSex(a,b):P.okSex(a,b));});};
 if(HK.Ctx&&HK.wrap&& !HK.Ctx.prototype.romanceOk._force){
 HK.wrap(HK.Ctx.prototype,'romanceOk',function(orig){
 var f=function(actors,ev){
-if(!(ev&&ev.force&&ev.sex))return orig.apply(this,arguments);
+if(!(ev&&ev.sex)||HK.SAFE_ON)return orig.apply(this,arguments);
 var self=this,args=arguments;
-return P.forceOpen(this,actors,function(){return orig.apply(self,args);});
+if(ev.force)return P.forceOpen(this,actors,function(){return orig.apply(self,args);});
+if(!P.libOK(actors))return false;
+return P.noneIn(actors)?openNone(actors,function(){return orig.apply(self,args);}):orig.apply(this,arguments);
 };
 f._force=true;
 return f;
 });
 }
+if(HK.State&&HK.State.pairSex&&HK.wrap&& !HK.State.pairSex._lib){
+HK.wrap(HK.State,'pairSex',function(orig){var f=function(a,b){return orig.apply(this,arguments)&&P.libOK([a,b]);};f._lib=true;return f;});
+}
 var FORCED=null;
 FORCED={name:'強いられた夜',text:'恋愛にはならないまま、拒めなかった夜の記憶だけが残った。'};
 var NONE_CLS={love:1,pine:1,night:1};
+function nightKinds(ctx,A,B){
+var o={con:0,force:0};
+(ctx.log||[]).forEach(function(e){
+if(!e|| !e.lewd|| !e.actors||e.actors.indexOf(A.i)<0||e.actors.indexOf(B.i)<0)return;
+if(String(e.why||'').indexOf(P.FORCE_MARK)>=0)o.force++;else o.con++;
+});
+return o;
+}
+P.nightKinds=nightKinds;
 if(HK.TieRel&&HK.TieRel.refine&&HK.wrap&& !HK.TieRel.refine._none){
 HK.wrap(HK.TieRel,'refine',function(orig){
 var f=function(ctx,A,B,pf,cl){
 var r=orig.apply(this,arguments),c=r||cl,L=c&&HK.LABELS&&HK.LABELS[c.id];
 if(!c|| !L|| !NONE_CLS[L.cls]|| !pf||pf.couple|| !P.noneIn([A,B]))return r;
-if(pf.night&&FORCED&& !HK.SAFE_ON){if(!HK.LABELS.forced)HK.LABELS.forced={name:FORCED.name,cls:'obsess',pol: -1};return{id:'forced'};}
+if(pf.night&& !HK.SAFE_ON){
+var k=nightKinds(ctx,A,B);
+if(k.con>0||pf.fwb|| !k.force|| !FORCED)return{id:pf.fwb||k.con>=2||(pf.nights||0)>=2?'fwbsettle':'night'};
+if(!HK.LABELS.forced)HK.LABELS.forced={name:FORCED.name,cls:'obsess',pol: -1};
+return{id:'forced'};
+}
 var ab=ctx.R(A,B),ba=ctx.R(B,A);
 return{id:ab.aff>24&&ba.aff>24?'friends':(ab.ten+ba.ten)/2>34?'awkward':'strangers'};
 };
@@ -20042,14 +20099,18 @@ A.TOPLV=[['','おまかせ（ふつう）'],['1','1（受けに回りやすい�
 A.LEAD=[['','おまかせ'],['top','攻めが主導'],['sasoi',''],['osoi','']];
 A.WILL=[['','おまかせ'],['weak','弱い'],['avg','ふつう'],['strong','強い']];
 A.GENITAL=[['','おまかせ（性別どおり）'],['m',''],['f',''],['mf','両方'],['none','なし']];
+A.SEXLIKES=[['','おまかせ'],['m','男性'],['f','女性'],['both','男女両方'],['none','なし']];
+A.LIBIDO=[['',''],['none','なし'],['low','弱い'],['high','強い']];
+A.SEXLIKES[0][1]='おまかせ（相手に合わせる）';A.SEXLIKES[4][1]='なし（体の関係にもならない）';
+A.LIBIDO[0][1]='ふつう';
 A.GENITAL[1][1]='男性器';A.GENITAL[2][1]='女性器';
 A.LEAD[2][1]='受けが主導（誘い受け）';A.LEAD[3][1]='受けが主導（襲い受け）';
 function has(list,v){for(var i=0;i<list.length;i++)if(list[i][0]===v)return true;return false;}
 function val(list,v){v=v==null?'':String(v);return has(list,v)?v:'';}
 function lab(list,v){for(var i=0;i<list.length;i++)if(list[i][0]===v)return list[i][1];return'';}
 function note(v){return typeof v==='string'?v.replace(/[「」『』{}<>]/g,'').trim().slice(0,12):'';}
-A.label=function(k,v){return lab({build:A.BUILD,bust:A.BUST,race:A.RACE,night:A.NIGHT,will:A.WILL,genital:A.GENITAL,topLv:A.TOPLV,lead:A.LEAD}[k]||[],v);};
-var SIMPLE=['build','bust','race','night','will','genital','topLv','lead'];
+A.label=function(k,v){return lab({build:A.BUILD,bust:A.BUST,race:A.RACE,night:A.NIGHT,will:A.WILL,genital:A.GENITAL,topLv:A.TOPLV,lead:A.LEAD,sexLikes:A.SEXLIKES,libido:A.LIBIDO}[k]||[],v);};
+var SIMPLE=['build','bust','race','night','will','genital','topLv','lead','sexLikes','libido'];
 var VF=['youFor','fpFor'];
 A.YOU_OPTS=['あなた','きみ','おまえ','あんた','そっち'];
 A.FP_OPTS=['私','俺','僕','あたし'];
@@ -20059,7 +20120,7 @@ function wmap(m,keyOk){var o={};if(m&&typeof m==='object')Object.keys(m).forEach
 A.POSFOR=[['','おまかせ（全体に従う）'],['top','攻め'],['bottom','受け'],['riba','リバ']];
 function posv(v){return v==='top'||v==='bottom'||v==='riba'?v:'';}
 function pmap(m,keyOk){var o={};if(m&&typeof m==='object')Object.keys(m).forEach(function(k){var v=posv(m[k]);if(v&&(!keyOk||keyOk(k)))o[k]=v;});return o;}
-function listOf(k){return{build:A.BUILD,bust:A.BUST,race:A.RACE,night:A.NIGHT,will:A.WILL,genital:A.GENITAL,topLv:A.TOPLV,lead:A.LEAD}[k];}
+function listOf(k){return{build:A.BUILD,bust:A.BUST,race:A.RACE,night:A.NIGHT,will:A.WILL,genital:A.GENITAL,topLv:A.TOPLV,lead:A.LEAD,sexLikes:A.SEXLIKES,libido:A.LIBIDO}[k];}
 A.TASTES=['甘い','しょっぱい','辛い','酸っぱい','苦い','あっさり','こってり'];
 var FOODK=['foodLike','foodHate'];
 A.foodWords=function(v){
@@ -20391,6 +20452,9 @@ if(gn)dst.genital=gn;
 if(nt)dst.night=nt;
 var ld=val(A.LEAD,src.lead);
 if(ld)dst.lead=ld;
+var sl=val(A.SEXLIKES,src.sexLikes),lb=val(A.LIBIDO,src.libido);
+if(sl)dst.sexLikes=sl;
+if(lb)dst.libido=lb;
 if(src.nightFor&&typeof src.nightFor==='object'){
 var nf=null;
 Object.keys(src.nightFor).forEach(function(k){var v=val(A.NIGHT,src.nightFor[k]);if(v&& /^\d+$/.test(k))(nf=nf||{})[+k]=v;});
@@ -28973,7 +29037,7 @@ sections:[
 ]},
 {h:'内容のスイッチ（R18版）：起きやすい条件',items:[
 'どのスイッチも、入れただけでは起きない場面が多くあります。**展開の重さを「重い」**にすると、ふつうの箱庭（合コン・無人島・出られない部屋・オメガバース・ゾンビの街・催眠）でも、下の場面が起きるようになります（「穏やか」「ふつう」では足されません。クラスメイトには足しません）。記録の理由の欄に〔妊娠〕〔暴力をともなう性描写〕〔DVなど歪んだ関係〕〔合意のない展開〕の印が付きます。',
-'**合意のない展開** … 関係を**敵対・ライバル・不仲**（または嫌悪が強い二人）にすると、出られない部屋・オメガバース・ゾンビの街で強引なエッチが起きやすくなります（重いなら合コンの帰り道でも）。**執着（ヤンデレ）**は監禁の夜、**主従**は主の命令の夜、ゾンビの街は略奪者・ゾンビに襲われる場面。催眠では、入にすると催眠そのものが同意のない催眠になります（恨み・ストーカーも性的な暗示をかけます）。二人の受け攻め・恋愛対象が合わない組、恋人のいる人には起きません。',
+'**合意のない展開** … 関係を**敵対・ライバル・不仲**（または嫌悪が強い二人）にすると、出られない部屋・オメガバース・ゾンビの街で強引なエッチが起きやすくなります（重いなら合コンの帰り道でも）。**執着（ヤンデレ）**は監禁の夜、**主従**は主の命令の夜、ゾンビの街は略奪者・ゾンビに襲われる場面。催眠では、入にすると催眠そのものが同意のない催眠になります（恨み・ストーカーも性的な暗示をかけます）。二人の受け攻め・恋愛対象が合わない組、恋人のいる人には起きません。恋愛対象を「なし」にした人も、切羽詰まった場面（執着の監禁の夜・歪んだ関係の拒めない夜・敵対する二人の強引なエッチ・出られない部屋の条件のエッチ）では体の関係になることがあります（恋愛にはなりません。相手の性別は「体の関係の相手」の欄で決まり、「なし」なら起きません）。住人の「性欲の強さ」に関係なく、このスイッチどおりに起きます。関係「歪んだ関係」の二人は、展開の重さが「ふつう」でも、支配する側が攻めなら拒めない夜が起きます。',
 '**妊娠・孕む描写** … 攻めに男性器があり、受けが女性器だけ（性器の欄が「女性器」か、おまかせの女性）の二人の夜のあと、ときどき「孕んだかもしれない」が付き、のちの区切りで妊娠が分かり、結末の「その後」に出産が書かれます。**オメガバースの発情期のα×Ω・番**はとくに起きやすく、合コン（一夜の相手）・恋人・夫婦も起きやすい二人です。男性の体（男性器だけ）のΩの受けには、孕むはずのない体の気配だけ。邪神村では疑似妊娠・巫女（重さに関係なく）。催眠では、かける側が男性の体で、かけられる人が女性器だけのとき、結末に妊娠に気づく段。',
 '**暴力をともなう性描写** … 「合意のない展開」も入にして、関係を**敵対・ライバル・不仲**にすると、強引なエッチ（出られない部屋・オメガバース・ゾンビの街・合コン）に、攻めが頬を張る・押さえつける・首に手をかける段が入ります。受けの反応は態度ごとに変わります。歪んだ関係の「拒めない夜」にも。吹雪の館（動機が快楽殺人）・ゾンビの群れは、重さに関係なく。',
 '**DVなど歪んだ関係** … 関係「歪んだ関係」なら、どの重さでも支配・暴言・暴力・周りが気づく・離れる決心が起きます。重いなら、関係がなくても、**恋人・夫婦・許嫁・番・執着**の二人で、**CP（支配）が高い・ドライ・攻撃的**な人（執着は執着する側）が、束縛→暴言→暴力→謝って優しくなる、を繰り返します。相手は気質で、耐える（AC・NPが高い）・言い返す（CP）・逃げ出したい（慎重・A）に分かれ、周りの人が気づいて間に入ったり、別れたりします。結末に行く末（歪んだまま・別れた・周りが引き離した）。催眠では、恋人・ストーカーのかける側が暗示で縛り続ける段。',
@@ -29061,6 +29125,7 @@ lead:'恋愛の相手選びと、一部の箱庭の進み方に使います。�
 sections:[
 {h:'性別・恋愛対象',items:[
 '「おまかせ」なら制限なし。決めると、対象外の相手とは恋愛にほぼ発展しません（全箱庭）。'
+,'恋愛対象を「なし」にした人は、恋愛（告白・恋人・片想い・本命）にはなりません。体だけの関係（セフレ・一夜・勢いの夜・危機の夜・出られない部屋の条件のエッチ・オメガバースの発情の夜・合コンのお持ち帰りなど）にはなれます。その相手の性別は「恋愛と夜」の「体の関係の相手」（恋愛対象を「なし」にしたときだけ出ます）で選びます。「おまかせ」は相手の恋愛対象・受け攻めに合わせ、「なし」にすると体の関係にもなりません。結末では「セフレ」「一夜の関係」になり、恋人にはなりません。内容のスイッチ「合意のない展開」が入のときは、切羽詰まった場面（執着の監禁の夜・歪んだ関係の拒めない夜・敵対する二人の強引なエッチ）でも体の関係になることがあります。受け攻め・R18に参加しない・恋愛やR18にしない相手・性行為の相手の固定は守られます。'
 ]},
 {h:'お酒',items:[
 '酒の強さを「弱い・やや弱い・ふつう・強い・ザル」から選べます。「おまかせ」なら気質から決まります。',
@@ -29160,6 +29225,11 @@ sections:[
 'ここで決めるのは全体の夜の性格（相手を決めていないとき・モブが相手のとき）です。相手ごとに変えたいときは「相手ごとの設定」の行で決めます。',
 'マゾは受け攻めを変えません（攻めを選んだ人は攻めのまま、受けに回ったときの崩れ方だけが変わります）。',
 '「相手に合わせる」は、相手の夜の性格から決めます（サドの相手にはマゾ、マゾの相手にはサド、意地悪の相手には恥じらい、恥じらいの相手には意地悪、甘々の相手には甘々）。相手が表と同じ・おまかせ・相手に合わせるなら、気質から決めます。'
+]},
+{h:'性欲の強さ・体の関係の相手（R18版）',items:[
+'「性欲の強さ」（ふつう・なし・弱い・強い）は、どの住人にも決められます。恋人の夜・勢いの夜・一夜・セフレ・「誰とでも可」の人の体だけの場面・出られない部屋の条件のエッチ・オメガバースの発情の相手を受け入れる・ゾンビの街や無人島の危機の夜・合コンのお持ち帰りなど、合意のある体の場面の起こりやすさに、二人の強さを掛けます（弱いは半分ほど、強いは1.6倍ほど。二人とも強いと、さらに起きやすくなります）。',
+'「なし」にすると、合意のある体の場面には乗りません（恋人どうしでも夜は起きません）。恋愛・告白・恋人になるのは、これまでどおり起きます。内容のスイッチ「合意のない展開」の場面は、この欄に関係なく、スイッチどおりに起きます。',
+'「体の関係の相手」は、恋愛対象を「なし」にした人だけに出ます。恋愛はしないまま、体だけの関係（セフレ・一夜）になる相手の性別を選びます（おまかせ・男性・女性・男女両方・なし）。「なし」にすると、体の関係にもなりません。性欲を「強い」にすると、恋愛をせずにセフレ・一夜を重ねる住人になります。'
 ]},
 {h:'夜の主導（R18版）',items:[
 '受け攻めは変えずに、夜の場面でどちらが主導するかを決めます。挿れる側・挿れられる側は受け攻めのままです。',
@@ -32646,6 +32716,8 @@ if(sl.length)bits.push('体の関係：'+sl.join('・')+(c.sexLock==='pickMob'?'
 else if(!HK.SAFE_ON&&c.sexLock==='any'&&lk.length)bits.push('体の関係：誰とでも');
 if(!HK.SAFE_ON&&c.noR18)bits.push('R18に参加しない');
 if(!HK.SAFE_ON&&c.trioHub)bits.push('三人の場面：固定の相手が中心なら');
+if(!HK.SAFE_ON&&c.likes==='none'&&c.sexLikes&&HK.Attr)bits.push('体の関係の相手：'+HK.Attr.label('sexLikes',c.sexLikes));
+if(!HK.SAFE_ON&&c.libido&&HK.Attr)bits.push('性欲：'+HK.Attr.label('libido',c.libido));
 if(c.alcohol&&HK.ALC_LABEL)bits.push('お酒：'+HK.ALC_LABEL[c.alcohol]);
 if(!HK.SAFE_ON&&(c.partWords||c.partM||c.partF))bits.push('性器の呼び方：'+([c.partM,c.partF].filter(Boolean).join('・')||{soft:'ぼかす',direct:'直接的',medical:'医学的'}[c.partWords]));
 if(!HK.SAFE_ON&&HK.Pos&&HK.Pos.npcValid(c.posNpc))bits.push('モブには'+({top:'攻め',bottom:'受け',riba:'リバ'})[c.posNpc]);
@@ -32795,7 +32867,9 @@ r18Row=(c.gender==='f'&&(c.pos==='top'||c.pos==='riba')?'<label title="攻めに
 '<label title="モブ・魔物・村人・略奪者・罠・星の生命体など、住人でない相手との場面だけの受け攻めです（住人どうしは上の受け攻めのまま）。住人と同じなら上の受け攻めに従います。受け・リバを選ぶと、住人には攻めの人でもモブには受けます。攻めを選ぶと、住人には受けの人でもモブには受けません">モブ相手の受け攻め <select data-gf="posNpc" aria-label="モブ・魔物が相手のときの受け攻め">'+(HK.Pos?HK.Pos.NPC_OPTS:[['','住人と同じ']]).map(function(x){return opt(x[0],x[1],(HK.Pos?HK.Pos.npcValid(c.posNpc):''));}).join('')+'</select></label>'+
 '<label title="受けも攻めもせず、住人どうしの夜・モブや魔物に襲われる場面・執着の監禁の夜に出ません。殺し合いなどほかの出来事にはふつうに出ます。R18が中心の箱庭（エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ・マッサージ）では効きません"><input type="checkbox" data-gf="noR18"'+(c.noR18?' checked':'')+'> R18に参加しない</label>'+
 '<label title="出られない部屋の三人の場面で、固定した相手（恋愛相手・性行為の相手）が中心にいれば、固定していない人が一緒でも参加します。その人とは直接触れ合わず、恋愛にもなりません。苦手な組み合わせの人とは一緒になりません"><input type="checkbox" data-gf="trioHub"'+(c.trioHub?' checked':'')+'> 三人の場面：固定した相手が中心なら参加する</label>'+
-(c.pos!=='top'?'<label title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"'+(c.daku?' checked':'')+'> 濁点喘ぎ（男性向け）</label>':'');
+(c.pos!=='top'?'<label title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"'+(c.daku?' checked':'')+'> 濁点喘ぎ（男性向け）</label>':'')+
+(HK.Attr&&HK.Attr.LIBIDO?'<label title="恋人の夜・勢いの夜・一夜・セフレ・出られない部屋の条件のエッチ・発情の相手を受け入れる・危機の夜・お持ち帰りなど、合意のある体の場面の起こりやすさが変わります（弱いは半分ほど、強いは1.6倍ほど。二人とも強いともっと起きやすい）。なしにすると、合意のある体の場面には乗りません（恋愛はふつうに起きます）。内容のスイッチ「合意のない展開」の場面は、この欄に関係なく起きます">性欲の強さ '+selOf('libido',HK.Attr.LIBIDO,c.libido||'')+'</label>':'')+
+(c.likes==='none'&&HK.Attr&&HK.Attr.SEXLIKES?'<label title="恋愛対象「なし」の人は恋愛（告白・恋人・片想い）にはなりませんが、体だけの関係（セフレ・一夜・勢いの夜・危機の夜・部屋の条件など）にはなれます。その相手の性別を選びます。おまかせは相手の恋愛対象・受け攻めに合わせます。なしにすると、体の関係にもなりません（合意のない展開の場面でも）">体の関係の相手 '+selOf('sexLikes',HK.Attr.SEXLIKES,c.sexLikes||'')+'</label>':'');
 if(r18Row)r18Row='<div class="gearrow">'+r18Row+'</div>';
 }
 var nightRow=HK.Attr&&HK.Attr.nightHtml?HK.Attr.nightHtml(c,{esc:esc,opt:opt,selOf:selOf}):'';
@@ -32952,7 +33026,8 @@ case'marks':c.marks=t.value.trim().slice(0,30);changed(false);sampleRefresh();br
 case'toneCustom':c.toneCustom=String(t.value).slice(0,120);if(!isInput)c.toneCustom=HK.normToneCustom?HK.normToneCustom(c.toneCustom):'';changed(false);sampleRefresh();break;
 case'call':if(isInput)return;c.call=t.value;changed(true);break;
 case'callG':if(isInput)return;c.callG=c.callG||{};c.callG[t.dataset.g]=t.value;changed(false);sampleRefresh();break;
-case'gender':case'likes':if(isInput)return;c[f]=t.value;changed(false);if(f==='gender'){sampleRefresh();render();}break;
+case'gender':case'likes':if(isInput)return;c[f]=t.value;changed(false);if(f==='gender'){sampleRefresh();render();}else if(!HK.SAFE_ON)render();break;
+case'sexLikes':case'libido':if(isInput)return;c[f]=HK.Attr&&HK.Attr.label(f,t.value)&&t.value?t.value:'';changed(false);break;
 case'bmonth':if(isInput)return;c.bmonth=t.value;changed(false);break;
 case'age':c.age= +t.value>=1&& +t.value<=150?String(Math.floor(+t.value)):'';changed(false);break;
 case'keigoOlder':if(isInput)return;c.keigoOlder=t.checked;changed(false);sampleRefresh();break;
@@ -34449,4 +34524,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '0991ff7c39', 1);
+HK.Load.done('core', '8bd5d3db65', 1);

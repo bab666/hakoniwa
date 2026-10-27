@@ -76,7 +76,8 @@
     var late = mate && mate !== A;
     var vk = late ? 'late' : via;
     /* R18に参加しない人・体の関係にならない組（HK.sexBlocked）で、まだ夜を過ごしていない二人には「肌を重ねたその夜」の一文を使わない */
-    var t = ctx.pick(vk === 'kiss' && !pf.night && HK.sexBlocked && HK.sexBlocked(a, b) ? REALIZE.kiss.filter(function (x) { return !/肌を重ね/.test(x); }) : REALIZE[vk]);
+    /* 性欲「なし」の人（pos.js の HK.Pos.libOK）がいる組も同じ */
+    var t = ctx.pick(vk === 'kiss' && !pf.night && ((HK.sexBlocked && HK.sexBlocked(a, b)) || (HK.Pos && HK.Pos.libOK && !HK.Pos.libOK([a, b]))) ? REALIZE.kiss.filter(function (x) { return !/肌を重ね/.test(x); }) : REALIZE[vk]);
     var c = via === 'sw' ? (a.om.switched && ctx.stepIndex === a.om.switchAt ? a : b.om.switched ? b : a) : a, d = c === a ? b : a;
     t = t.replace(/\{o\}/g, O.name).replace(/\{x\}/g, A.name).replace(/\{so\}/g, OM.shortScent(O)).replace(/\{m\}/g, mate ? mate.name : '')
       .replace(/\{c\}/g, c.name).replace(/\{d\}/g, d.name).replace(/\{sd\}/g, OM.shortScent(d)).replace(/\{x2\}/g, I(a) === '俺' ? '俺' : '私');

@@ -1940,8 +1940,8 @@ if(!a|| !b.alive)return;
 var w0=bond(S,a,b);
 b.m.hp=clamp(b.m.hp+8,0,100);stress(b,-5);setRel(S,a,b,0.28);mark(S,a,b,'nurse');
 ST.sayB(S,{actors:[a,b],tag:'看病',text:F(pk(S,BP(S,'NURSE')),{a:a.name,b:b.name}),why:'弱っているところを支えた（体力 +8）（関係 '+Math.round(w0*100)+'→'+Math.round(bond(S,a,b)*100)+'）'},a.name+'が'+b.name+'を看病した');
-if(!r18on(S)|| !R|| !R.nurseTop|| !Pz|| !Pz.okSex(a,b)||family(S,a,b)|| !sxRoom(S,[a,b]))return;
-if(rng()>S.env.slewd/100*(amour(S,a,b)?0.7:bond(S,a,b)>0.3?0.45:0.15))return;
+if(!r18on(S)|| !R|| !R.nurseTop|| !Pz|| !Pz.okSex(a,b)||(Pz.libOK&& !Pz.libOK([a,b]))||family(S,a,b)|| !sxRoom(S,[a,b]))return;
+if(rng()>S.env.slewd/100*(amour(S,a,b)?0.7:bond(S,a,b)>0.3?0.45:0.15)*(Pz.libMul?Pz.libMul([a,b]):1))return;
 var o=Pz.order(a,b,[a,b]),t=o[0],u=o[1];
 if(Pz.hardTop(u,t))return;
 var body=bodyOf(S,t,u,'nurse');
@@ -3074,4 +3074,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 HK.Load.toneData("chara_down",{"F":[
 ["一年、よく持ちこたえましたね。私の自慢の船員たちです","一年、よく持ちこたえましたねー。私の自慢の船員たちですよ、ほんと",1]]});
 });
-HK.Load.done('scen-ship', '71e7a9d063', 1);
+HK.Load.done('scen-ship', 'e31bdb7ce7', 1);

@@ -556,7 +556,7 @@
     id: 'om_night', cat: 'romance', sex: true, scope: 'pair',
     /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex）は、恋愛の条件（HK.canLove・惹かれ・恋人のいない人どうし）を外す（番のいる人は除く） */
     when: function (ctx, a, b) { var pf = ctx.pair(a, b); if (pf.couple || pf.night || !met(ctx, a, b) || BD.mateOf(ctx, a) || BD.mateOf(ctx, b)) return false; return HK.State.freeSex(ctx, a, b) || (HK.canLove(a, b) && HK.canLove(b, a) && ctx.R(a, b).att > 28 && ctx.R(b, a).att > 24 && !partnerOf(ctx, a) && !partnerOf(ctx, b)); },
-    w: function (ctx, a, b) { var h = ctx.om.hesitate[key(a, b)] ? 1 : 0, fs = HK.State.freeSex(ctx, a, b); return ((HK.FWB.lean(a) + HK.FWB.lean(b)) * 1.4 + h * 0.8 + (a.goal.id === 'free' ? 0.6 : 0) + (fs ? 0.5 : 0)) * (fs ? HK.FreeSex.factor(ctx, a, b) : 1); },
+    w: function (ctx, a, b) { var h = ctx.om.hesitate[key(a, b)] ? 1 : 0, fs = HK.State.freeSex(ctx, a, b); return ((HK.FWB.lean(a) + HK.FWB.lean(b)) * 1.4 + h * 0.8 + (a.goal.id === 'free' ? 0.6 : 0) + (fs ? 0.5 : 0)) * (fs ? HK.FreeSex.factor(ctx, a, b, true) : 1); },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b); pf.night = true; pf.nights = (pf.nights || 0) + 1;
       var fs = HK.State.freeSex(ctx, a, b);

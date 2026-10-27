@@ -733,6 +733,7 @@ var blocks=[];
 var marked=fromSeg?line:HK.fmtMarkLine(line,R,TK);
 marked.split(TK).forEach(function(seg,k){
 seg=seg.replace(/^\s+|\s+$/g,'');
+if(k%2===0&&blocks.length&&blocks[blocks.length-1].sp)seg=seg.replace(/^[。、]+\s*/,'');
 if(!seg)return;
 blocks.push({sp:k%2===1,t:seg});
 });
@@ -759,6 +760,14 @@ return(b.sp||prev.sp?'\n\n':'\n')+b.t;
 }).join('');
 });
 return out.filter(function(x,i,arr){return x||(i>0&&i<arr.length-1);}).join(hadNL?'\n\n':'\n').replace(/\n{3,}/g,'\n\n');
+};
+HK.punctFix=function(text,names){
+if(typeof text!=='string'|| !/[。、]/.test(text))return text;
+var s=text.replace(/(^|\n|[「『])[。、]+/g,'$1').replace(/[。、]*。[。、]*/g,'。').replace(/、{2,}/g,'、');
+if(s.indexOf('」。')<0)return s;
+var nm=(names||[]).filter(Boolean).map(String).sort(function(a,b){return b.length-a.length;}).map(HK.reEsc||function(x){return x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');});
+var re=new RegExp('(?<=^|[。！？）\\s―…])('+(nm.length?'(?:'+nm.join('|')+')[\\u2060-\\u2064]*':'')+')?((?:「[^「」\\n]*」)+)。','g');
+return s.replace(re,function(m,who,q){return(who||'')+q;});
 };
 HK.reEsc=function(s){return String(s==null?'':s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');};
 var NS=HK.NameSafe={BASE:0xE200,MAX:0x100};
@@ -11022,6 +11031,7 @@ w*=ctx.bias(a,e.cat);
 if(e.cat==='combat'||e.cat==='kill'||e.cat==='betray')w*=HK.Dark.f(ctx,e.dk||(e.cat==='betray'?'spite':'kill'));
 if(bb&&HK.Ties)w*=HK.Ties.bias(ctx,a,bb,e.cat);
 if(bb&&e.cat==='romance'&&(a.honmei!=null||bb.honmei!=null))w*=HK.honmeiFactor(ctx,a,bb);
+if(e.sex&& !e.force&&HK.Pos&&HK.Pos.libMul)w*=HK.Pos.libMul(bb?[a,bb]:[a]);
 if(HK.Emo)w*=HK.Emo.weight(ctx,a,e);
 if(bb&&e.cat==='romance'&&HK.Dark.on(ctx)!=='normal'&&HK.Dark.cheat(ctx,a,bb))w*=HK.Dark.f(ctx,'cheat');
 if(w<=0)return;
@@ -12186,10 +12196,15 @@ if(HK.Story&&HK.Story.pick&&ctx&&ctx.recent)return HK.Story.pick(ctx,arr);
 return arr[Math.floor(rnd(ctx)*arr.length)];
 }
 function fill(t,a,b){return String(t).replace(/\{a\}/g,a.name).replace(/\{b\}/g,b.name);}
-function freeOne(a,b){return HK.lockOut(a,b)?a:b;}
+function noneOf(a,b){return a&&a.likes==='none'?a:b&&b.likes==='none'?b:null;}
+function freeOne(a,b){return noneOf(a,b)||(HK.lockOut(a,b)?a:b);}
+function noneFree(a,b){
+if(!HK.Pos|| !HK.Pos.sexLikeOf|| !noneOf(a,b))return false;
+return!(HK.ngPair&&HK.ngPair(a,b))|| !!(HK.lockSexOnly&&HK.lockSexOnly(a,b));
+}
 HK.State.freeSex=function(ctx,a,b){
 if(!a|| !b||a===b||HK.SAFE_ON)return false;
-if(!(HK.lockSexOnly&&HK.lockSexOnly(a,b)))return false;
+if(!(HK.lockSexOnly&&HK.lockSexOnly(a,b))&& !noneFree(a,b))return false;
 if(!HK.State.pairSex(a,b))return false;
 if(HK.sexBlocked&&HK.sexBlocked(a,b))return false;
 if(a.role==='teacher'||b.role==='teacher'||a.minor||b.minor)return false;
@@ -12205,8 +12220,8 @@ if(L.indexOf(notI)>=0)return null;
 for(var k=0;k<L.length;k++){var y=P[L[k]];if(y&&y!==x&&HK.State.here(y))return y;}
 return null;
 };
-F.factor=function(ctx,a,b){
-return F.loverOf(ctx,a,b.i)||F.loverOf(ctx,b,a.i)?0.3:1;
+F.factor=function(ctx,a,b,noLib){
+return(F.loverOf(ctx,a,b.i)||F.loverOf(ctx,b,a.i)?0.3:1)*(!noLib&&HK.Pos&&HK.Pos.libMul?HK.Pos.libMul([a,b]):1);
 };
 F.mark=function(ctx,a,b){
 if(eng(ctx)){
@@ -15267,17 +15282,18 @@ if(p==='top')return r==='top';
 return r==='bottom'||(P.of(partner,c)==='bottom'&&explicit(partner,c));
 }
 function kindAs(c,r,partner){return explicit(c,partner)?P.of(c,partner):r;}
-function likesOne(a,b){
-if(!a.likes||a.likes==='both')return true;
-if(a.likes==='none')return false;
+function likesOne(a,b,sex){
+var v=a.likes;
+if(v==='none'){if(!sex)return false;v=P.sexLikeOf(a);if(v==='none')return false;}
+if(!v||v==='both')return true;
 if(!b.gender||b.gender==='x')return true;
-return a.likes===b.gender;
+return v===b.gender;
 }
-P.genderOK=function(a,b){return!!(a&&b)&&likesOne(a,b)&&likesOne(b,a);};
+P.genderOK=function(a,b,sex){return!!(a&&b)&&likesOne(a,b,sex)&&likesOne(b,a,sex);};
 P.orients=function(a,b,love){
 if(!a|| !b||a===b)return[];
 if(love?(HK.ngPair&&HK.ngPair(a,b)):HK.sexBlocked?HK.sexBlocked(a,b):(HK.ngPair&&HK.ngPair(a,b)))return[];
-if(!P.genderOK(a,b))return[];
+if(!P.genderOK(a,b,!love))return[];
 var out=[];
 [[a,b],[b,a]].forEach(function(o){
 var t=o[0],u=o[1];
@@ -15363,6 +15379,16 @@ P.fbFor=function(a,b){return P.nori(a)&&P.of(a,b)!=='top'&&P.of(b,a)!=='bottom'?
 P.MALE_RE= /ちんぽ|ちんこ|ペニス|陰茎|肉棒|いちもつ|一物|男根|亀頭|勃起|射精|精液|白濁|種付け|孕ませ|中に出|中出し|子種|睾丸|カリ首|フェラ|裏筋|鈴口|先走り|怒張|剛直|屹立|\{(?:男性器|亀頭|精液)\}/;
 P.FORCE_MARK='〔合意のない展開〕';
 P.forceOn=function(x){return!!(x&& !HK.SAFE_ON&&HK.Content&&HK.Content.ok(x,'force'));};
+var SEXLIKE_V={m:1,f:1,both:1,none:1};
+P.sexLikeOf=function(c){if(!c||HK.SAFE_ON)return'none';var v=src(c,'sexLikes');return SEXLIKE_V[v]?v:'';};
+P.LIB_K={none:0,low:0.5,high:1.6};
+P.libOf=function(c){if(!c||HK.SAFE_ON)return'';var v=src(c,'libido');return P.LIB_K[v]!=null?v:'';};
+P.libK=function(c){var v=P.libOf(c);return v?P.LIB_K[v]:1;};
+P.libMul=function(list){var m=1;(list||[]).forEach(function(c,i,a){if(c&&a.indexOf(c)===i)m*=P.libK(c);});return m;};
+P.libNone=function(list){return(list||[]).some(function(c){return P.libOf(c)==='none';});};
+var forcing=0;
+P.forcing=function(){return forcing>0;};
+P.libOK=function(list){return forcing>0|| !P.libNone(list);};
 P.noneIn=function(list){return(list||[]).some(function(c){return c&&c.likes==='none';});};
 P.noneWhy=function(x,list,bare){
 var L=(list||[]).filter(function(c){return c&&c.likes==='none';});
@@ -15370,32 +15396,56 @@ if(!L.length|| !P.forceOn(x))return'';
 return'／'+(bare?'':P.FORCE_MARK)+'恋愛対象「なし」の'+L.map(function(c){return c.name;}).join('・')+'も、切羽詰まった場面で体の関係になった（恋愛にはならない）';
 };
 function openNone(list,fn){
-var L=(list||[]).filter(function(c,i,a){return c&&c.likes==='none'&&a.indexOf(c)===i;});
+var L=(list||[]).filter(function(c,i,a){return c&&c.likes==='none'&&a.indexOf(c)===i&&P.sexLikeOf(c)!=='none';});
 if(!L.length)return fn();
-L.forEach(function(c){c.likes='';});
+L.forEach(function(c){c.likes=P.sexLikeOf(c);});
 try{return fn();}finally{L.forEach(function(c){c.likes='none';});}
 }
-P.forceOpen=function(x,list,fn){return P.forceOn(x)?openNone(list,fn):fn();};
+P.openNone=openNone;
+P.forceOpen=function(x,list,fn){
+if(!P.forceOn(x))return fn();
+forcing++;
+try{return openNone(list,fn);}finally{forcing--;}
+};
 P.okForce=function(x,a,b){return P.forceOpen(x,[a,b],function(){return!!(HK.State&&HK.State.pairSex?HK.State.pairSex(a,b):P.okSex(a,b));});};
 if(HK.Ctx&&HK.wrap&& !HK.Ctx.prototype.romanceOk._force){
 HK.wrap(HK.Ctx.prototype,'romanceOk',function(orig){
 var f=function(actors,ev){
-if(!(ev&&ev.force&&ev.sex))return orig.apply(this,arguments);
+if(!(ev&&ev.sex)||HK.SAFE_ON)return orig.apply(this,arguments);
 var self=this,args=arguments;
-return P.forceOpen(this,actors,function(){return orig.apply(self,args);});
+if(ev.force)return P.forceOpen(this,actors,function(){return orig.apply(self,args);});
+if(!P.libOK(actors))return false;
+return P.noneIn(actors)?openNone(actors,function(){return orig.apply(self,args);}):orig.apply(this,arguments);
 };
 f._force=true;
 return f;
 });
 }
+if(HK.State&&HK.State.pairSex&&HK.wrap&& !HK.State.pairSex._lib){
+HK.wrap(HK.State,'pairSex',function(orig){var f=function(a,b){return orig.apply(this,arguments)&&P.libOK([a,b]);};f._lib=true;return f;});
+}
 var FORCED=null;
 var NONE_CLS={love:1,pine:1,night:1};
+function nightKinds(ctx,A,B){
+var o={con:0,force:0};
+(ctx.log||[]).forEach(function(e){
+if(!e|| !e.lewd|| !e.actors||e.actors.indexOf(A.i)<0||e.actors.indexOf(B.i)<0)return;
+if(String(e.why||'').indexOf(P.FORCE_MARK)>=0)o.force++;else o.con++;
+});
+return o;
+}
+P.nightKinds=nightKinds;
 if(HK.TieRel&&HK.TieRel.refine&&HK.wrap&& !HK.TieRel.refine._none){
 HK.wrap(HK.TieRel,'refine',function(orig){
 var f=function(ctx,A,B,pf,cl){
 var r=orig.apply(this,arguments),c=r||cl,L=c&&HK.LABELS&&HK.LABELS[c.id];
 if(!c|| !L|| !NONE_CLS[L.cls]|| !pf||pf.couple|| !P.noneIn([A,B]))return r;
-if(pf.night&&FORCED&& !HK.SAFE_ON){if(!HK.LABELS.forced)HK.LABELS.forced={name:FORCED.name,cls:'obsess',pol: -1};return{id:'forced'};}
+if(pf.night&& !HK.SAFE_ON){
+var k=nightKinds(ctx,A,B);
+if(k.con>0||pf.fwb|| !k.force|| !FORCED)return{id:pf.fwb||k.con>=2||(pf.nights||0)>=2?'fwbsettle':'night'};
+if(!HK.LABELS.forced)HK.LABELS.forced={name:FORCED.name,cls:'obsess',pol: -1};
+return{id:'forced'};
+}
 var ab=ctx.R(A,B),ba=ctx.R(B,A);
 return{id:ab.aff>24&&ba.aff>24?'friends':(ab.ten+ba.ten)/2>34?'awkward':'strangers'};
 };
@@ -15436,12 +15486,14 @@ A.TOPLV=[['','おまかせ（ふつう）'],['1','1（受けに回りやすい�
 A.LEAD=[['','おまかせ'],['top','攻めが主導'],['sasoi',''],['osoi','']];
 A.WILL=[['','おまかせ'],['weak','弱い'],['avg','ふつう'],['strong','強い']];
 A.GENITAL=[['','おまかせ（性別どおり）'],['m',''],['f',''],['mf','両方'],['none','なし']];
+A.SEXLIKES=[['','おまかせ'],['m','男性'],['f','女性'],['both','男女両方'],['none','なし']];
+A.LIBIDO=[['',''],['none','なし'],['low','弱い'],['high','強い']];
 function has(list,v){for(var i=0;i<list.length;i++)if(list[i][0]===v)return true;return false;}
 function val(list,v){v=v==null?'':String(v);return has(list,v)?v:'';}
 function lab(list,v){for(var i=0;i<list.length;i++)if(list[i][0]===v)return list[i][1];return'';}
 function note(v){return typeof v==='string'?v.replace(/[「」『』{}<>]/g,'').trim().slice(0,12):'';}
-A.label=function(k,v){return lab({build:A.BUILD,bust:A.BUST,race:A.RACE,night:A.NIGHT,will:A.WILL,genital:A.GENITAL,topLv:A.TOPLV,lead:A.LEAD}[k]||[],v);};
-var SIMPLE=['build','bust','race','night','will','genital','topLv','lead'];
+A.label=function(k,v){return lab({build:A.BUILD,bust:A.BUST,race:A.RACE,night:A.NIGHT,will:A.WILL,genital:A.GENITAL,topLv:A.TOPLV,lead:A.LEAD,sexLikes:A.SEXLIKES,libido:A.LIBIDO}[k]||[],v);};
+var SIMPLE=['build','bust','race','night','will','genital','topLv','lead','sexLikes','libido'];
 var VF=['youFor','fpFor'];
 A.YOU_OPTS=['あなた','きみ','おまえ','あんた','そっち'];
 A.FP_OPTS=['私','俺','僕','あたし'];
@@ -15451,7 +15503,7 @@ function wmap(m,keyOk){var o={};if(m&&typeof m==='object')Object.keys(m).forEach
 A.POSFOR=[['','おまかせ（全体に従う）'],['top','攻め'],['bottom','受け'],['riba','リバ']];
 function posv(v){return v==='top'||v==='bottom'||v==='riba'?v:'';}
 function pmap(m,keyOk){var o={};if(m&&typeof m==='object')Object.keys(m).forEach(function(k){var v=posv(m[k]);if(v&&(!keyOk||keyOk(k)))o[k]=v;});return o;}
-function listOf(k){return{build:A.BUILD,bust:A.BUST,race:A.RACE,night:A.NIGHT,will:A.WILL,genital:A.GENITAL,topLv:A.TOPLV,lead:A.LEAD}[k];}
+function listOf(k){return{build:A.BUILD,bust:A.BUST,race:A.RACE,night:A.NIGHT,will:A.WILL,genital:A.GENITAL,topLv:A.TOPLV,lead:A.LEAD,sexLikes:A.SEXLIKES,libido:A.LIBIDO}[k];}
 A.TASTES=['甘い','しょっぱい','辛い','酸っぱい','苦い','あっさり','こってり'];
 var FOODK=['foodLike','foodHate'];
 A.foodWords=function(v){
@@ -15773,6 +15825,9 @@ if(gn)dst.genital=gn;
 if(nt)dst.night=nt;
 var ld=val(A.LEAD,src.lead);
 if(ld)dst.lead=ld;
+var sl=val(A.SEXLIKES,src.sexLikes),lb=val(A.LIBIDO,src.libido);
+if(sl)dst.sexLikes=sl;
+if(lb)dst.libido=lb;
 if(src.nightFor&&typeof src.nightFor==='object'){
 var nf=null;
 Object.keys(src.nightFor).forEach(function(k){var v=val(A.NIGHT,src.nightFor[k]);if(v&& /^\d+$/.test(k))(nf=nf||{})[+k]=v;});
@@ -19712,12 +19767,14 @@ if(strong>=3&&kanji<=2&&rest.length<=14)return true;
 return/そこ|もっと|奥|中/.test(q)&&strong>=1&&q.length<40&&kanji<=2;
 }
 function sentences(t){
-var out=[],cur='',d=0;
+var out=[],cur='',d=0,p=0;
 for(var i=0;i<t.length;i++){
 var ch=t[i];cur+=ch;
-if(ch==='「')d++;
-else if(ch==='」'){d=Math.max(0,d-1);if(d===0&& !/[とっ、。をがのにはもや]/.test(t[i+1]||'')){out.push(cur);cur='';}}
-else if(d===0&& /[。！？!?]/.test(ch)){out.push(cur);cur='';}
+if(ch==='「'||ch==='『')d++;
+else if(ch==='（')p++;
+else if(ch==='）')p=Math.max(0,p-1);
+else if(ch==='」'||ch==='』'){d=Math.max(0,d-1);if(d===0&&p===0&& !/[とっ、。をがのにはもや]/.test(t[i+1]||'')){out.push(cur);cur='';}}
+else if(d===0&&p===0&& /[。！？!?]/.test(ch)){out.push(cur);cur='';}
 }
 if(cur)out.push(cur);
 return out;
@@ -27449,6 +27506,7 @@ if(r&&Array.isArray(r.log)){
 var names=namesOf(input&&input.chars&&input.chars.length?input.chars:r);
 r.log.forEach(function(e){
 if(!e||typeof e!=='object')return;
+if(typeof e.text==='string'&&HK.punctFix){try{e.text=HK.punctFix(e.text,names);}catch(err){}}
 try{if(typeof e.text==='string')hide(e,'seg',S.build(e.text,names,e._sq));}catch(err){}
 if(e._sq)delete e._sq;
 });
@@ -27717,4 +27775,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '07edccd6b9', 1);
+HK.Load.done('core', '3115196e11', 1);

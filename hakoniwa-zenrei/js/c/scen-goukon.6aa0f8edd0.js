@@ -498,8 +498,8 @@ if(ctx.pair(c.a,c.b).gSour)return;
 if(so&& !(HK.Pos&&HK.Pos.okSex(c.a,c.b)))return;
 used[c.a.i]=used[c.b.i]=1;
 var imp=(c.a.tr.impulse+c.b.tr.impulse)/2;
-var night=so||fs||(imp>0.55&&rng()<imp*0.9);
-if(night&&HK.sexBlocked&&HK.sexBlocked(c.a,c.b))night=false;
+var night=so||fs||(imp>0.55&&rng()<imp*0.9*(HK.Pos&&HK.Pos.libMul?HK.Pos.libMul([c.a,c.b]):1));
+if(night&&((HK.sexBlocked&&HK.sexBlocked(c.a,c.b))||(HK.Pos&&HK.Pos.libOK&& !HK.Pos.libOK([c.a,c.b]))))night=false;
 if(night)ctx.pair(c.a,c.b).night=true;
 c.a.fate=c.b.fate=night?'お持ち帰り':'一緒に帰った';
 var tg={a:c.a.i,b:c.b.i,night:night};
@@ -2657,4 +2657,4 @@ HK.Load.toneData("chara_down",{"F":[
 ["おじいちゃん・おばあちゃんになったらどうしていたいですか？","おじいちゃん・おばあちゃんになったら、どうしてたいです？",1],
 ["貯金する派ですか？使う派ですか？","貯金する派です？　使う派です？",1]]});
 });
-HK.Load.done('scen-goukon', '8fdbc6c5ac', 1);
+HK.Load.done('scen-goukon', '6aa0f8edd0', 1);

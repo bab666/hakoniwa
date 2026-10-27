@@ -14,6 +14,8 @@
    ・night 夜の性格（R18版だけ）：''（おまかせ＝気質から）／sadist サド／maso マゾ／mean 意地悪／sweet 甘々／shy 恥じらい／none 表と同じ。
      nightFor { 相手の番号: night } があれば、その相手にはそちらを優先する。R18 の山場の型（style）より優先する（attr-r18.js）。
      maso は受け攻めを変えない（攻め指定が優先。受けに回ったときの崩れ方だけを変える）。全年齢では無視する
+   ・sexLikes 体の関係の相手（R18版だけ。恋愛対象「なし」の人だけ画面に出す）：''（おまかせ＝相手に合わせる）／m／f／both／none（体の関係にもならない）。
+     libido 性欲の強さ（R18版だけ。全住人）：''（ふつう）／none なし／low 弱い／high 強い。判定は pos.js（HK.Pos.sexLikeOf・HK.Pos.libMul）。全年齢では保存だけ
    ・will 心の強さ：''／weak 弱い／avg ふつう／strong 強い。快楽堕ち・催眠・常識改変・遮断穴の「堕ちる」判定に掛ける（HK.Attr.willK）。
      strong は体が堕ちても心は折れない文を添える（HK.Attr.hold）
    ・same 同一人物：相手の番号。「鏡を見るような」共通の場面 3 本と、結果の関係名「もう一人の自分」。恋愛・体の関係は縛らない
@@ -57,7 +59,12 @@
   A.WILL = [['', 'おまかせ'], ['weak', '弱い'], ['avg', 'ふつう'], ['strong', '強い']];
   /* 性器（値は全年齢版でも保存・読み込みのために残す。見出しの語は R18版だけ） */
   A.GENITAL = [['', 'おまかせ（性別どおり）'], ['m', ''], ['f', ''], ['mf', '両方'], ['none', 'なし']];
+  /* 体の関係の相手（恋愛対象「なし」の人だけ）・性欲の強さ（全住人）。R18版だけの欄（全年齢版では保存だけ）。判定は pos.js（HK.Pos.sexLikeOf・HK.Pos.libMul）。2026-10-27 担当HG */
+  A.SEXLIKES = [['', 'おまかせ'], ['m', '男性'], ['f', '女性'], ['both', '男女両方'], ['none', 'なし']];
+  A.LIBIDO = [['', ''], ['none', 'なし'], ['low', '弱い'], ['high', '強い']];
   /* r18:begin */
+  A.SEXLIKES[0][1] = 'おまかせ（相手に合わせる）'; A.SEXLIKES[4][1] = 'なし（体の関係にもならない）';
+  A.LIBIDO[0][1] = 'ふつう';
   A.GENITAL[1][1] = '男性器'; A.GENITAL[2][1] = '女性器';
   A.LEAD[2][1] = '受けが主導（誘い受け）'; A.LEAD[3][1] = '受けが主導（襲い受け）';
   /* r18:end */
@@ -65,8 +72,8 @@
   function val(list, v) { v = v == null ? '' : String(v); return has(list, v) ? v : ''; }
   function lab(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return list[i][1]; return ''; }
   function note(v) { return typeof v === 'string' ? v.replace(/[「」『』{}<>]/g, '').trim().slice(0, 12) : ''; }
-  A.label = function (k, v) { return lab({ build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL, topLv: A.TOPLV, lead: A.LEAD }[k] || [], v); };
-  var SIMPLE = ['build', 'bust', 'race', 'night', 'will', 'genital', 'topLv', 'lead'];
+  A.label = function (k, v) { return lab({ build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL, topLv: A.TOPLV, lead: A.LEAD, sexLikes: A.SEXLIKES, libido: A.LIBIDO }[k] || [], v); };
+  var SIMPLE = ['build', 'bust', 'race', 'night', 'will', 'genital', 'topLv', 'lead', 'sexLikes', 'libido'];
   /* 相手ごとの二人称・一人称（VF：欄の名前） */
   var VF = ['youFor', 'fpFor'];
   A.YOU_OPTS = ['あなた', 'きみ', 'おまえ', 'あんた', 'そっち'];
@@ -80,7 +87,7 @@
   A.POSFOR = [['', 'おまかせ（全体に従う）'], ['top', '攻め'], ['bottom', '受け'], ['riba', 'リバ']];
   function posv(v) { return v === 'top' || v === 'bottom' || v === 'riba' ? v : ''; }
   function pmap(m, keyOk) { var o = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { var v = posv(m[k]); if (v && (!keyOk || keyOk(k))) o[k] = v; }); return o; }
-  function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL, topLv: A.TOPLV, lead: A.LEAD }[k]; }
+  function listOf(k) { return { build: A.BUILD, bust: A.BUST, race: A.RACE, night: A.NIGHT, will: A.WILL, genital: A.GENITAL, topLv: A.TOPLV, lead: A.LEAD, sexLikes: A.SEXLIKES, libido: A.LIBIDO }[k]; }
   /* 好きな食べ物・嫌いな食べ物（自由記入）と好きな味・苦手な味（決まった7つから複数）。画面と書き出しは読点区切りの文字列、実行時は配列 */
   A.TASTES = ['甘い', 'しょっぱい', '辛い', '酸っぱい', '苦い', 'あっさり', 'こってり'];
   var FOODK = ['foodLike', 'foodHate'];
@@ -471,6 +478,10 @@
       if (nt) dst.night = nt;
       var ld = val(A.LEAD, src.lead);
       if (ld) dst.lead = ld;
+      /* 体の関係の相手（恋愛対象「なし」の人だけ意味を持つ）・性欲の強さ（pos.js） */
+      var sl = val(A.SEXLIKES, src.sexLikes), lb = val(A.LIBIDO, src.libido);
+      if (sl) dst.sexLikes = sl;
+      if (lb) dst.libido = lb;
       if (src.nightFor && typeof src.nightFor === 'object') {
         var nf = null;
         Object.keys(src.nightFor).forEach(function (k) { var v = val(A.NIGHT, src.nightFor[k]); if (v && /^\d+$/.test(k)) (nf = nf || {})[+k] = v; });

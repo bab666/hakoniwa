@@ -137,13 +137,16 @@
   function kindAs(c, r, partner) { return explicit(c, partner) ? P.of(c, partner) : r; }
   /* 成り立つ向き（[攻め, 受け] の並び）の一覧 */
   /* 恋愛対象（c.likes：''＝おまかせ／m／f／both／none）が相手の性別に合うか。両方向で見る。性別がおまかせ・その他の相手は制限しない */
-  function likesOne(a, b) {
-    if (!a.likes || a.likes === 'both') return true;
-    if (a.likes === 'none') return false;
+  /* sex が真なら体の関係の判定：恋愛対象「なし」の人は「体の関係の相手」（P.sexLikeOf。R18版だけ）で見る（2026-10-27 担当HG） */
+  function likesOne(a, b, sex) {
+    var v = a.likes;
+    if (v === 'none') { if (!sex) return false; v = P.sexLikeOf(a); if (v === 'none') return false; }
+    if (!v || v === 'both') return true;
     if (!b.gender || b.gender === 'x') return true;
-    return a.likes === b.gender;
+    return v === b.gender;
   }
-  P.genderOK = function (a, b) { return !!(a && b) && likesOne(a, b) && likesOne(b, a); };
+  /* sex を渡さなければ恋愛の判定（恋愛対象「なし」は誰とも合わない）。sex が真なら体の関係の判定 */
+  P.genderOK = function (a, b, sex) { return !!(a && b) && likesOne(a, b, sex) && likesOne(b, a, sex); };
   /* love が真のときは恋愛の判定（P.okLove）として見る：体の関係だけを止める設定（R18に参加しない・性行為の相手の固定・一途の体の縛り）は見ず、
      恋愛・R18にしない組（engine.js の HK.ngPair：恋愛・R18にしない相手・恋愛相手の固定・同じ人の恋人どうし・無関心／恐怖）だけで止める */
   P.orients = function (a, b, love) {
@@ -153,7 +156,7 @@
        恋愛相手の固定が食い違うだけの組は、性行為の相手の固定で「誰とでも可」などにしていれば体の関係になれる（恋愛には進まない） */
     if (love ? (HK.ngPair && HK.ngPair(a, b)) : HK.sexBlocked ? HK.sexBlocked(a, b) : (HK.ngPair && HK.ngPair(a, b))) return [];
     /* 恋愛対象（キャラの設定の性別）が合わない組：どちらの向きでも成り立たない（恋愛にも体の関係にもしない） */
-    if (!P.genderOK(a, b)) return [];
+    if (!P.genderOK(a, b, !love)) return [];
     var out = [];
     [[a, b], [b, a]].forEach(function (o) {
       var t = o[0], u = o[1];
@@ -203,7 +206,8 @@
     if (!a || !b || a === b) return fb || [a, b];
     fb = fb && fb.length === 2 ? fb : [a, b];
     var os = P.orients(a, b), r;
-    /* 恋愛対象「なし」の人が入る組（合意のない展開の切羽詰まった場面だけが、ここまで来る。HK.Pos.forceOpen）：「おまかせ」として向きを決める（受け攻めの指定どおりに） */
+    /* 恋愛対象「なし」の人が入る組：体の関係の判定（P.orients の love でないとき）は「体の関係の相手」で見るので、ふつうはここで向きが決まる。
+       決まらないときの念のため、体の関係の相手として開いて向きを決める（受け攻めの指定どおりに。openNone） */
     if (!os.length && P.noneIn([a, b])) os = openNone([a, b], function () { return P.orients(a, b); });
     if (!os.length) return P.hardTop(b, a) && !P.hardTop(a, b) ? [b, a] : P.hardTop(a, b) ? [a, b] : fb;
     if (os.length === 1) return os[0];
@@ -271,15 +275,41 @@
   /* 男性の体を前提にした言葉（女性どうしの場面で使ってはいけない）。点検にも使う */
   P.MALE_RE = /ちんぽ|ちんこ|ペニス|陰茎|肉棒|いちもつ|一物|男根|亀頭|勃起|射精|精液|白濁|種付け|孕ませ|中に出|中出し|子種|睾丸|カリ首|フェラ|裏筋|鈴口|先走り|怒張|剛直|屹立|\{(?:男性器|亀頭|精液)\}/;
 
-  /* ---------- 合意のない展開の、切羽詰まった場面（2026-10-27 担当HC） ----------
-     恋愛対象「なし」は「恋愛にならない」の意味に留める。内容のスイッチ「合意のない展開」が入のとき（展開の重さが穏やかなら切。mood-dial.js）、
+  /* ---------- 恋愛対象「なし」の人の体の関係と、性欲の強さ（2026-10-27 担当HC・HG） ----------
+     恋愛対象「なし」は「恋愛（告白・恋人・片想い・本命）にならない」の意味に留める（HK.canLove・P.okLove は引き続き不可）。
+     体の関係（セフレ・一夜・勢いの夜・部屋の条件・執着の監禁・拒めない夜・強引なエッチ）は、R18版だけの欄「体の関係の相手」（sexLikes）で見る：
+       ''（おまかせ）＝相手の恋愛対象・受け攻めに合わせる／m 男性／f 女性／both 男女両方／none なし（体の関係にもならない。合意のない展開でも）。
+     体の関係の判定（P.orients の love でないとき＝P.okSex・HK.State.pairSex）は、恋愛対象「なし」の人をこの欄の性別で見る（likesOne の sex）。
+     恋愛の判定（HK.canLove・ctx.romanceOk の恋愛の出来事）は、体の出来事（ev.sex）のときだけ、この欄で開いて見る（openNone）。
+     体の関係になっても恋愛には進まない（惹かれは engine.js の mod が恋愛できない組として育てない。結末は下の TieRel.refine の包みで「セフレ」「一夜の関係」）。
+     性欲の強さ（libido。R18版だけ。全住人）：''（ふつう）／none なし／low 弱い／high 強い。
+       合意ありの性的な出来事の起こりやすさに、二人の倍率を掛ける（P.libMul：弱い ×0.5・ふつう ×1・強い ×1.6。二人とも強ければ ×2.56）。
+       「なし」の人は合意ありの性的な出来事に乗らない（ctx.romanceOk の体の出来事・HK.State.pairSex が偽。恋愛は止めない）。
+       合意のない展開の経路（P.forceOpen の中・ev.force の出来事）は、性欲に関係なく内容のスイッチどおり。
+       既定（ふつう）の人だけの回は倍率が 1 で、乱数の消費も変えない（倍率は確率・重みの計算にだけ掛ける）
+     合意のない展開の、切羽詰まった場面（担当HC）：内容のスイッチ「合意のない展開」が入のとき（展開の重さが穏やかなら切。mood-dial.js）、
      執着の暴走（監禁の夜）・歪んだ関係の拒めない夜・敵対する二人の強引なエッチ・出られない部屋の条件のエッチ では、恋愛対象「なし」の人も
-     受け手・攻め手になれる（P.forceOpen の中だけ、恋愛対象「なし」を「おまかせ」として判定する）。
+     受け手・攻め手になれる（P.forceOpen の中だけ、恋愛対象「なし」を「体の関係の相手」として判定する）。
      恋愛対象（男性／女性）が相手の性別に合わない組・受け攻めの指定（攻めを選んだ人は受けにしない）・恋愛やR18にしない相手・R18に参加しない・
      性行為の相手の固定・無関心／恐怖・血縁は、これまでどおり越えない。恋愛（告白・恋人になる）にもならない（恋愛の出来事は ev.force を持たない）。
      使う側は、出来事の定義か結果に force: true を付け（engine.js の ctx.romanceOk が下の包みで開く）、理由（why）に P.FORCE_MARK を書く（orient-audit.js が見る） */
   P.FORCE_MARK = '〔合意のない展開〕';
   P.forceOn = function (x) { return !!(x && !HK.SAFE_ON && HK.Content && HK.Content.ok(x, 'force')); };
+  /* 体の関係の相手（恋愛対象「なし」の人だけが使う）：''／m／f／both／none。全年齢版・全年齢モードでは 'none'（体の関係にならない） */
+  var SEXLIKE_V = { m: 1, f: 1, both: 1, none: 1 };
+  P.sexLikeOf = function (c) { if (!c || HK.SAFE_ON) return 'none'; var v = src(c, 'sexLikes'); return SEXLIKE_V[v] ? v : ''; };
+  /* 性欲の強さ：''（ふつう）／none／low／high。全年齢版・全年齢モードでは ''（倍率 1） */
+  P.LIB_K = { none: 0, low: 0.5, high: 1.6 };
+  P.libOf = function (c) { if (!c || HK.SAFE_ON) return ''; var v = src(c, 'libido'); return P.LIB_K[v] != null ? v : ''; };
+  P.libK = function (c) { var v = P.libOf(c); return v ? P.LIB_K[v] : 1; };
+  /* 合意ありの性的な出来事の倍率（その場の二人・一人。同じ人は一度だけ数える） */
+  P.libMul = function (list) { var m = 1; (list || []).forEach(function (c, i, a) { if (c && a.indexOf(c) === i) m *= P.libK(c); }); return m; };
+  P.libNone = function (list) { return (list || []).some(function (c) { return P.libOf(c) === 'none'; }); };
+  /* 合意のない展開の判定の中か（P.forceOpen の中。性欲「なし」でも止めない） */
+  var forcing = 0;
+  P.forcing = function () { return forcing > 0; };
+  /* 合意ありの性的な出来事に乗れる組か（性欲「なし」の人がいれば偽。合意のない展開の判定の中では真） */
+  P.libOK = function (list) { return forcing > 0 || !P.libNone(list); };
   /* 恋愛対象「なし」の人が入っている組か（理由の書き分け・点検用） */
   P.noneIn = function (list) { return (list || []).some(function (c) { return c && c.likes === 'none'; }); };
   /* 理由（why）に足す一文：恋愛対象「なし」の人が入っていて、合意のない展開が入のときだけ「／〔合意のない展開〕恋愛対象「なし」の○○も、…」（bare なら印を付けない。印をもう書いた理由に足すとき）。それ以外は '' */
@@ -288,43 +318,73 @@
     if (!L.length || !P.forceOn(x)) return '';
     return '／' + (bare ? '' : P.FORCE_MARK) + '恋愛対象「なし」の' + L.map(function (c) { return c.name; }).join('・') + 'も、切羽詰まった場面で体の関係になった（恋愛にはならない）';
   };
-  /* fn() を、list の恋愛対象「なし」の人を「おまかせ」として判定する（合意のない展開が入のときだけ。切なら fn() そのまま） */
+  /* fn() を、list の恋愛対象「なし」の人を「体の関係の相手」の性別で判定する（体の関係の相手が「なし」の人は開かない） */
   function openNone(list, fn) {
-    var L = (list || []).filter(function (c, i, a) { return c && c.likes === 'none' && a.indexOf(c) === i; });
+    var L = (list || []).filter(function (c, i, a) { return c && c.likes === 'none' && a.indexOf(c) === i && P.sexLikeOf(c) !== 'none'; });
     if (!L.length) return fn();
-    L.forEach(function (c) { c.likes = ''; });
+    L.forEach(function (c) { c.likes = P.sexLikeOf(c); });
     try { return fn(); } finally { L.forEach(function (c) { c.likes = 'none'; }); }
   }
-  P.forceOpen = function (x, list, fn) { return P.forceOn(x) ? openNone(list, fn) : fn(); };
+  P.openNone = openNone;
+  /* 合意のない展開の判定：入なら、恋愛対象「なし」を開き、性欲「なし」でも止めない（切なら fn() そのまま） */
+  P.forceOpen = function (x, list, fn) {
+    if (!P.forceOn(x)) return fn();
+    forcing++;
+    try { return openNone(list, fn); } finally { forcing--; }
+  };
   /* 切羽詰まった場面の体の関係の組か（HK.State.pairSex＝その場にいる・R18に参加する・受け攻めと恋愛対象が合う、を開いて見る） */
   P.okForce = function (x, a, b) { return P.forceOpen(x, [a, b], function () { return !!(HK.State && HK.State.pairSex ? HK.State.pairSex(a, b) : P.okSex(a, b)); }); };
-  /* 恋愛の出来事を起こしてよいか（engine.js の ctx.romanceOk）：切羽詰まった体の場面（ev.force かつ ev.sex）だけ、恋愛対象「なし」を開いて見る */
+  /* 恋愛の出来事を起こしてよいか（engine.js の ctx.romanceOk）：
+     ・合意ありの体の出来事（ev.sex で ev.force でない）：性欲「なし」の人がいれば起こさない。恋愛対象「なし」の人は「体の関係の相手」で開いて見る
+     ・切羽詰まった体の場面（ev.force かつ ev.sex）：恋愛対象「なし」を開き、性欲は見ない（合意のない展開が入のとき） */
   if (HK.Ctx && HK.wrap && !HK.Ctx.prototype.romanceOk._force) {
     HK.wrap(HK.Ctx.prototype, 'romanceOk', function (orig) {
       var f = function (actors, ev) {
-        if (!(ev && ev.force && ev.sex)) return orig.apply(this, arguments);
+        if (!(ev && ev.sex) || HK.SAFE_ON) return orig.apply(this, arguments);
         var self = this, args = arguments;
-        return P.forceOpen(this, actors, function () { return orig.apply(self, args); });
+        if (ev.force) return P.forceOpen(this, actors, function () { return orig.apply(self, args); });
+        if (!P.libOK(actors)) return false;
+        return P.noneIn(actors) ? openNone(actors, function () { return orig.apply(self, args); }) : orig.apply(this, arguments);
       };
       f._force = true;
       return f;
     });
   }
+  /* 住人どうしの体の関係（engine.js の HK.State.pairSex）：性欲「なし」の人は、合意のない展開の判定の中でなければ偽 */
+  if (HK.State && HK.State.pairSex && HK.wrap && !HK.State.pairSex._lib) {
+    HK.wrap(HK.State, 'pairSex', function (orig) { var f = function (a, b) { return orig.apply(this, arguments) && P.libOK([a, b]); }; f._lib = true; return f; });
+  }
 
-  /* 恋愛対象「なし」の人が入る組の結末（2026-10-27 担当HC）：恋人・両片想い・片想い・夜の関係（関係図の分類 love／pine／night）にはしない。
-     恋人になっている組（歪んだ関係など、遊ぶ人が決めた関係）はそのまま。切羽詰まった場面で体の関係になった組は「強いられた夜」（R18版だけ）、
-     それ以外は仲のよさ・緊張から「友人」「気まずい」「他人のまま」に（engine.js の結末の分類の最後に通る HK.TieRel.refine を包む） */
+  /* 恋愛対象「なし」の人が入る組の結末（2026-10-27 担当HC・HG）：恋人・両片想い・片想い（関係図の分類 love／pine）にはしない。
+     恋人になっている組（歪んだ関係など、遊ぶ人が決めた関係）はそのまま。夜のある組（分類 night・love）は、
+     合意ありの体の場面があれば「セフレ」（体だけの関係の印 pf.fwb か、二度以上）か「一夜の関係」、切羽詰まった場面だけなら「強いられた夜」（R18版だけ）。
+     夜のない組は仲のよさ・緊張から「友人」「気まずい」「他人のまま」に（engine.js の結末の分類の最後に通る HK.TieRel.refine を包む） */
   var FORCED = null;
   /* r18:begin */
   FORCED = { name: '強いられた夜', text: '恋愛にはならないまま、拒めなかった夜の記憶だけが残った。' };
   /* r18:end */
   var NONE_CLS = { love: 1, pine: 1, night: 1 };
+  /* 二人の性的な場面の数（合意あり／切羽詰まった場面＝理由に P.FORCE_MARK） */
+  function nightKinds(ctx, A, B) {
+    var o = { con: 0, force: 0 };
+    (ctx.log || []).forEach(function (e) {
+      if (!e || !e.lewd || !e.actors || e.actors.indexOf(A.i) < 0 || e.actors.indexOf(B.i) < 0) return;
+      if (String(e.why || '').indexOf(P.FORCE_MARK) >= 0) o.force++; else o.con++;
+    });
+    return o;
+  }
+  P.nightKinds = nightKinds;
   if (HK.TieRel && HK.TieRel.refine && HK.wrap && !HK.TieRel.refine._none) {
     HK.wrap(HK.TieRel, 'refine', function (orig) {
       var f = function (ctx, A, B, pf, cl) {
         var r = orig.apply(this, arguments), c = r || cl, L = c && HK.LABELS && HK.LABELS[c.id];
         if (!c || !L || !NONE_CLS[L.cls] || !pf || pf.couple || !P.noneIn([A, B])) return r;
-        if (pf.night && FORCED && !HK.SAFE_ON) { if (!HK.LABELS.forced) HK.LABELS.forced = { name: FORCED.name, cls: 'obsess', pol: -1 }; return { id: 'forced' }; }
+        if (pf.night && !HK.SAFE_ON) {
+          var k = nightKinds(ctx, A, B);
+          if (k.con > 0 || pf.fwb || !k.force || !FORCED) return { id: pf.fwb || k.con >= 2 || (pf.nights || 0) >= 2 ? 'fwbsettle' : 'night' };
+          if (!HK.LABELS.forced) HK.LABELS.forced = { name: FORCED.name, cls: 'obsess', pol: -1 };
+          return { id: 'forced' };
+        }
         var ab = ctx.R(A, B), ba = ctx.R(B, A);
         return { id: ab.aff > 24 && ba.aff > 24 ? 'friends' : (ab.ten + ba.ten) / 2 > 34 ? 'awkward' : 'strangers' };
       };

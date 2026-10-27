@@ -1057,7 +1057,7 @@ return{enemy:20,rival:12,ex:6,lover: -30,fwb: -35,almost: -15,crush: -8,best: -4
 }
 function posClash(a,b){return!!(HK.Pos&&HK.Pos.clash&&HK.Pos.clash(a,b));}
 function clashH(ctx,a,b){return posClash(a,b)&&ctx.rules.some(function(r){return r.k==='h';});}
-function okSex(a,b){return(!HK.Pos||HK.Pos.okSex(a,b))&& !wsNoSex(HK._curCtx,a,b);}
+function okSex(a,b){return(!HK.Pos||(HK.Pos.okSex(a,b)&&(!HK.Pos.libOK||HK.Pos.libOK([a,b]))))&& !wsNoSex(HK._curCtx,a,b);}
 function canLead(a,b){return!HK.Pos||HK.Pos.orients(a,b).some(function(o){return o[0]===a;});}
 function bothBottom(a,b){var P=HK.Pos;return!!(P&&P.explicit(a,b)&&P.explicit(b,a)&&P.isBottom(a,b)&&P.isBottom(b,a)&&P.okSex(a,b));}
 var CLASH_BOTTOM={
@@ -1302,6 +1302,7 @@ function willing(ctx,a,b,lvl){
 if(lvl>=5&&HK.RoomReluct&&HK.RoomReluct.blocks(ctx,a,b))return false;
 if(lvl>=5&& !okSex(a,b))return false;
 var exp=(ctx.stat(a,'exp')+ctx.stat(b,'exp')-6)*3+(ctx.present().length===2?4:0)-tieWall(ctx,a,b,lvl);
+if(lvl>=5&&HK.Pos&&HK.Pos.libMul)exp+=(HK.Pos.libMul([a,b])-1)*12;
 var ab=R(ctx,a,b),ba=R(ctx,b,a);
 return ab.att+exp>LVL_ATT[lvl]&&ba.att+exp>LVL_ATT[lvl]&&ab.trust>LVL_TRUST[lvl]&&ba.trust>LVL_TRUST[lvl]&&ab.ten<55&&ba.ten<55;
 }
@@ -2180,7 +2181,7 @@ function free(c){return c&&c.alive!==false&& !c.out&& !c.flags.down&&c.flags.cag
 function pairsOf(g){var o=[];for(var i=0;i<g.length;i++)for(var j=i+1;j<g.length;j++)o.push([g[i],g[j]]);return o;}
 function done3(ctx,g){return pairsOf(g).every(function(p){return A.pairDone(ctx,p[0],p[1]);});}
 function family(ctx,a,b){return A.tieWall(ctx,a,b,3)>=999;}
-function okSex(a,b){return(!HK.Pos||HK.Pos.okSex(a,b))&& !(HK.roomWsNoSex&&HK.roomWsNoSex(HK._curCtx,a,b));}
+function okSex(a,b){return(!HK.Pos||(HK.Pos.okSex(a,b)&&(!HK.Pos.libOK||HK.Pos.libOK([a,b]))))&& !(HK.roomWsNoSex&&HK.roomWsNoSex(HK._curCtx,a,b));}
 function loveTie(ctx,a,b){var T0=HK.Ties;return ctx.pair(a,b).couple|| !!(T0&&T0.has&&(T0.has(ctx,a,b,'lover')||T0.has(ctx,a,b,'mate')||T0.has(ctx,a,b,'fated')));}
 function hubTie(ctx,a,b){var T0=HK.Ties;return loveTie(ctx,a,b)|| !!(T0&&T0.has&&T0.has(ctx,a,b,'almost'));}
 function friendTie(ctx,a,b){
@@ -7100,4 +7101,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 ["止まった。もう止まっている","止まった。……もう、止まっているのだよ",1],
 ["この紙、誤字っていないか","この紙、誤字があるのではないかね",1]]});
 });
-HK.Load.done('scen-whiteroom', '4494332f0a', 1);
+HK.Load.done('scen-whiteroom', 'fc67428ee5', 1);

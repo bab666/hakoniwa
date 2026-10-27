@@ -118,6 +118,12 @@ const { openBuild } = require('./lib.js');
           /* お互いに食い違う相手ごとの指定（攻め×攻め・受け×受け）も混ぜる */
           if (n >= 2 && R() < 0.5) { const v = pk(['top', 'bottom']); chars[0].posFor = Object.assign(chars[0].posFor || {}, { 1: v }); chars[1].posFor = Object.assign(chars[1].posFor || {}, { 0: v }); }
         }
+        /* 4回に1回（2026-10-27 担当HG）：恋愛対象「なし」の人（体の関係の相手：おまかせ／男性／女性／男女両方）と、全員の性欲の強さ（ふつう／なし／弱い／強い）を混ぜる。
+           恋愛対象「なし」の人も体だけの関係（セフレ・一夜など）にはなるので、その場面でも攻めを選んだ人が受けにならないかを見る */
+        if (s % 4 === 3) chars.forEach((c, i) => {
+          if ((i + (s >> 2)) % 3 === 0) { c.likes = 'none'; c.sexLikes = ['', 'm', 'f', 'both'][(i + (s >> 2)) % 4]; }
+          c.libido = ['', 'none', 'low', 'high'][(i * 3 + (s >> 2)) % 4];
+        });
         const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
         /* 選択肢のある設定は回ごとにずらして、いろいろな条件を通す */
         (scen.env || []).forEach((e, k) => { if (e.options && e.options.length > 1 && (s + k) % 3 === 0) env[e.id] = e.options[(s + k) % e.options.length].v; });

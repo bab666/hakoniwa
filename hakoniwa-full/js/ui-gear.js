@@ -46,6 +46,9 @@
     else if (!HK.SAFE_ON && c.sexLock === 'any' && lk.length) bits.push('体の関係：誰とでも');
     if (!HK.SAFE_ON && c.noR18) bits.push('R18に参加しない');
     if (!HK.SAFE_ON && c.trioHub) bits.push('三人の場面：固定の相手が中心なら');
+    /* 体の関係の相手（恋愛対象「なし」の人だけ）・性欲の強さ（attr.js の A.SEXLIKES・A.LIBIDO。判定は pos.js） */
+    if (!HK.SAFE_ON && c.likes === 'none' && c.sexLikes && HK.Attr) bits.push('体の関係の相手：' + HK.Attr.label('sexLikes', c.sexLikes));
+    if (!HK.SAFE_ON && c.libido && HK.Attr) bits.push('性欲：' + HK.Attr.label('libido', c.libido));
     /* r18:end */
     if (c.alcohol && HK.ALC_LABEL) bits.push('お酒：' + HK.ALC_LABEL[c.alcohol]);
     /* r18:begin */
@@ -233,7 +236,10 @@
         '<label title="モブ・魔物・村人・略奪者・罠・星の生命体など、住人でない相手との場面だけの受け攻めです（住人どうしは上の受け攻めのまま）。住人と同じなら上の受け攻めに従います。受け・リバを選ぶと、住人には攻めの人でもモブには受けます。攻めを選ぶと、住人には受けの人でもモブには受けません">モブ相手の受け攻め <select data-gf="posNpc" aria-label="モブ・魔物が相手のときの受け攻め">' + (HK.Pos ? HK.Pos.NPC_OPTS : [['', '住人と同じ']]).map(function (x) { return opt(x[0], x[1], (HK.Pos ? HK.Pos.npcValid(c.posNpc) : '')); }).join('') + '</select></label>' +
         '<label title="受けも攻めもせず、住人どうしの夜・モブや魔物に襲われる場面・執着の監禁の夜に出ません。殺し合いなどほかの出来事にはふつうに出ます。R18が中心の箱庭（エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ・マッサージ）では効きません"><input type="checkbox" data-gf="noR18"' + (c.noR18 ? ' checked' : '') + '> R18に参加しない</label>' +
         '<label title="出られない部屋の三人の場面で、固定した相手（恋愛相手・性行為の相手）が中心にいれば、固定していない人が一緒でも参加します。その人とは直接触れ合わず、恋愛にもなりません。苦手な組み合わせの人とは一緒になりません"><input type="checkbox" data-gf="trioHub"' + (c.trioHub ? ' checked' : '') + '> 三人の場面：固定した相手が中心なら参加する</label>' +
-        (c.pos !== 'top' ? '<label title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"' + (c.daku ? ' checked' : '') + '> 濁点喘ぎ（男性向け）</label>' : '');
+        (c.pos !== 'top' ? '<label title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"' + (c.daku ? ' checked' : '') + '> 濁点喘ぎ（男性向け）</label>' : '') +
+        /* 性欲の強さ（全住人）・体の関係の相手（恋愛対象「なし」の人だけ）。attr.js の A.LIBIDO・A.SEXLIKES、判定は pos.js（2026-10-27 担当HG） */
+        (HK.Attr && HK.Attr.LIBIDO ? '<label title="恋人の夜・勢いの夜・一夜・セフレ・出られない部屋の条件のエッチ・発情の相手を受け入れる・危機の夜・お持ち帰りなど、合意のある体の場面の起こりやすさが変わります（弱いは半分ほど、強いは1.6倍ほど。二人とも強いともっと起きやすい）。なしにすると、合意のある体の場面には乗りません（恋愛はふつうに起きます）。内容のスイッチ「合意のない展開」の場面は、この欄に関係なく起きます">性欲の強さ ' + selOf('libido', HK.Attr.LIBIDO, c.libido || '') + '</label>' : '') +
+        (c.likes === 'none' && HK.Attr && HK.Attr.SEXLIKES ? '<label title="恋愛対象「なし」の人は恋愛（告白・恋人・片想い）にはなりませんが、体だけの関係（セフレ・一夜・勢いの夜・危機の夜・部屋の条件など）にはなれます。その相手の性別を選びます。おまかせは相手の恋愛対象・受け攻めに合わせます。なしにすると、体の関係にもなりません（合意のない展開の場面でも）">体の関係の相手 ' + selOf('sexLikes', HK.Attr.SEXLIKES, c.sexLikes || '') + '</label>' : '');
       if (r18Row) r18Row = '<div class="gearrow">' + r18Row + '</div>';
     }
     /* r18:end */
@@ -408,7 +414,9 @@
       case 'toneCustom': c.toneCustom = String(t.value).slice(0, 120); if (!isInput) c.toneCustom = HK.normToneCustom ? HK.normToneCustom(c.toneCustom) : ''; changed(false); sampleRefresh(); break;
       case 'call': if (isInput) return; c.call = t.value; changed(true); break;
       case 'callG': if (isInput) return; c.callG = c.callG || {}; c.callG[t.dataset.g] = t.value; changed(false); sampleRefresh(); break;
-      case 'gender': case 'likes': if (isInput) return; c[f] = t.value; changed(false); if (f === 'gender') { sampleRefresh(); render(); } break;
+      case 'gender': case 'likes': if (isInput) return; c[f] = t.value; changed(false); if (f === 'gender') { sampleRefresh(); render(); } else if (!HK.SAFE_ON) render(); break;
+      /* 体の関係の相手・性欲の強さ（R18版。attr.js の値の一覧で確かめる） */
+      case 'sexLikes': case 'libido': if (isInput) return; c[f] = HK.Attr && HK.Attr.label(f, t.value) && t.value ? t.value : ''; changed(false); break;
       case 'bmonth': if (isInput) return; c.bmonth = t.value; changed(false); break;
       case 'age': c.age = +t.value >= 1 && +t.value <= 150 ? String(Math.floor(+t.value)) : ''; changed(false); break;
       case 'keigoOlder': if (isInput) return; c.keigoOlder = t.checked; changed(false); sampleRefresh(); break;

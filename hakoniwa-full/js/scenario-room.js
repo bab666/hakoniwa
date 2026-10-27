@@ -551,7 +551,8 @@
   function posClash(a, b) { return !!(HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b)); }
   function clashH(ctx, a, b) { return posClash(a, b) && ctx.rules.some(function (r) { return r.k === 'h'; }); }
   /* 体の関係を持ってよい組か（受け攻めの指定と恋愛対象から。攻め×攻めなどは、恋人でも、焦りが限界でも、媚薬でも、しない） */
-  function okSex(a, b) { return (!HK.Pos || HK.Pos.okSex(a, b)) && !wsNoSex(HK._curCtx, a, b); }
+  /* 性欲「なし」の人は、合意のない展開の判定の中（HK.Pos.forceOpen）でなければ体の関係にならない（pos.js の HK.Pos.libOK。2026-10-27 担当HG） */
+  function okSex(a, b) { return (!HK.Pos || (HK.Pos.okSex(a, b) && (!HK.Pos.libOK || HK.Pos.libOK([a, b])))) && !wsNoSex(HK._curCtx, a, b); }
   /* a が b に対して攻め（動く側）に回れる向きがあるか（向きの記憶は動かさずに確かめる） */
   function canLead(a, b) { return !HK.Pos || HK.Pos.orients(a, b).some(function (o) { return o[0] === a; }); }
   /* 自分で「受け」を選んだ二人（受けとリバも好む設定などで、組として成り立つとき）：どちらが動くか（{a}=覚悟を決めて動く側） */
@@ -824,6 +825,8 @@
     if (lvl >= 5 && HK.RoomReluct && HK.RoomReluct.blocks(ctx, a, b)) return false;   /* 恋人でも場所を渋っている（room-reluct.js） */
     if (lvl >= 5 && !okSex(a, b)) return false;   /* 攻め×攻めなど向きの決まらない組は、エッチをしない */
     var exp = (ctx.stat(a, 'exp') + ctx.stat(b, 'exp') - 6) * 3 + (ctx.present().length === 2 ? 4 : 0) - tieWall(ctx, a, b, lvl);
+    /* 性欲の強さ（HK.Pos.libMul。既定は 1 で変わらない）：エッチの条件に乗るまでの惹かれの壁を上下させる */
+    if (lvl >= 5 && HK.Pos && HK.Pos.libMul) exp += (HK.Pos.libMul([a, b]) - 1) * 12;
     var ab = R(ctx, a, b), ba = R(ctx, b, a);
     return ab.att + exp > LVL_ATT[lvl] && ba.att + exp > LVL_ATT[lvl] && ab.trust > LVL_TRUST[lvl] && ba.trust > LVL_TRUST[lvl] && ab.ten < 55 && ba.ten < 55;
   }

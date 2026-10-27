@@ -1989,7 +1989,7 @@ return{cat:'help',text:ctx.t(ctx.pick(['{a}は自分の抑制剤を半分、{b}�
 EV.push({
 id:'om_night',cat:'romance',sex:true,scope:'pair',
 when:function(ctx,a,b){var pf=ctx.pair(a,b);if(pf.couple||pf.night|| !met(ctx,a,b)||BD.mateOf(ctx,a)||BD.mateOf(ctx,b))return false;return HK.State.freeSex(ctx,a,b)||(HK.canLove(a,b)&&HK.canLove(b,a)&&ctx.R(a,b).att>28&&ctx.R(b,a).att>24&& !partnerOf(ctx,a)&& !partnerOf(ctx,b));},
-w:function(ctx,a,b){var h=ctx.om.hesitate[key(a,b)]?1:0,fs=HK.State.freeSex(ctx,a,b);return((HK.FWB.lean(a)+HK.FWB.lean(b))*1.4+h*0.8+(a.goal.id==='free'?0.6:0)+(fs?0.5:0))*(fs?HK.FreeSex.factor(ctx,a,b):1);},
+w:function(ctx,a,b){var h=ctx.om.hesitate[key(a,b)]?1:0,fs=HK.State.freeSex(ctx,a,b);return((HK.FWB.lean(a)+HK.FWB.lean(b))*1.4+h*0.8+(a.goal.id==='free'?0.6:0)+(fs?0.5:0))*(fs?HK.FreeSex.factor(ctx,a,b,true):1);},
 run:function(ctx,a,b){
 var pf=ctx.pair(a,b);pf.night=true;pf.nights=(pf.nights||0)+1;
 var fs=HK.State.freeSex(ctx,a,b);
@@ -2480,7 +2480,7 @@ var A=alphaOf(a,b),O=omegaOf(a,b),mate=BD.mateOf(ctx,O),d=OM.destiny?OM.destiny(
 [[a,b],[b,a]].forEach(function(x){var r=ctx.R(x[0],x[1]);r.att=HK.clamp(r.att+12+d*32,0,100);r.aff=HK.clamp(r.aff+4+d*8,-100,100);});
 var late=mate&&mate!==A;
 var vk=late?'late':via;
-var t=ctx.pick(vk==='kiss'&& !pf.night&&HK.sexBlocked&&HK.sexBlocked(a,b)?REALIZE.kiss.filter(function(x){return!/肌を重ね/.test(x);}):REALIZE[vk]);
+var t=ctx.pick(vk==='kiss'&& !pf.night&&((HK.sexBlocked&&HK.sexBlocked(a,b))||(HK.Pos&&HK.Pos.libOK&& !HK.Pos.libOK([a,b])))?REALIZE.kiss.filter(function(x){return!/肌を重ね/.test(x);}):REALIZE[vk]);
 var c=via==='sw'?(a.om.switched&&ctx.stepIndex===a.om.switchAt?a:b.om.switched?b:a):a,d=c===a?b:a;
 t=t.replace(/\{o\}/g,O.name).replace(/\{x\}/g,A.name).replace(/\{so\}/g,OM.shortScent(O)).replace(/\{m\}/g,mate?mate.name:'')
 .replace(/\{c\}/g,c.name).replace(/\{d\}/g,d.name).replace(/\{sd\}/g,OM.shortScent(d)).replace(/\{x2\}/g,I(a)==='俺'?'俺':'私');
@@ -4748,4 +4748,4 @@ HK.Load.toneData("keigo_bossy",{"F":[
 HK.Load.toneData("ronkyaku",{"F":[
 ["生きてくれ。……〈〉の匂いが、この世界からなくなるのは嫌だ","生きてくれたまえ。……〈〉の匂いがこの世界から消えるのは、耐えがたいのだよ",1]]});
 });
-HK.Load.done('scen-omega', 'f482b50d8b', 1);
+HK.Load.done('scen-omega', '88075bef70', 1);

@@ -15,6 +15,13 @@
         恋愛（告白 O3・結末の恋人／両片想い／片想い O1）は、恋愛対象「なし」の人ではこれまでどおりエラー。
         8回に1回（FT の回）、0〜2 を恋愛対象「なし」にして、1→0 歪んだ関係（怯えている）・2→0 執着（困惑）・0-2 と 1-2 敵対（愛憎 双方）を付け、
         この回は執着の組も点検する（歪んだ関係は恋人どうしの関係なので、ユーザーの指定として点検しない）
+     （2026-10-27 担当HG）恋愛対象「なし」の人の体の関係は、R18版だけの欄「体の関係の相手」（sexLikes：おまかせ／男性／女性／男女両方／なし）で見る。
+        合意ありの体の場面（セフレ・一夜・勢いの夜など。理由に印がない）も、体の関係の相手の性別に合えば O2 に数えない（許した数を「F合意」に、
+        切羽詰まった場面は「F非合意」に出す）。体の関係の相手が「なし」の人・全年齢モード・全年齢版はこれまでどおりエラー。
+        結末の「セフレ」「一夜の関係」（分類 night）も、体の関係の相手の性別に合えば O1 に数えない（恋人・両片想い・片想いはエラー）。
+        配役：恋愛対象「なし」の人に体の関係の相手を順に（おまかせ／男性／女性／男女両方／なし）、奇数回は全員に性欲の強さ（ふつう／なし／弱い／強い）を付ける。
+     O6 性欲「なし」の人が、合意ありの二人の性的な場面（理由に〔合意のない展開〕の印がない）に出た（R18版。2026-10-27 担当HG）。
+        R18が中心の箱庭（HK.State.R18_CORE：ダンジョン・遮断穴・常識改変・サキュバス・バラエティ・マッサージ）と催眠は、箱庭の仕掛けそのものが相手の場面なので数えない
    ・O2・O3 は文から拾うので誤判定がありうる。--why で例を出すので目で確かめる */
 const { openBuild } = require('./lib');
 (async () => {
@@ -31,8 +38,9 @@ const { openBuild } = require('./lib');
     const LOVE_T = /^(lover|fwb|mate|fated|crush|almost|ex|yan|worship)$/;
     function one(a, b) { if (!a.likes || a.likes === 'both') return true; if (a.likes === 'none') return false; if (!b.gender || b.gender === 'x') return true; return a.likes === b.gender; }
     function ok(a, b) { return one(a, b) && one(b, a); }
-    /* 恋愛対象「なし」を「おまかせ」と見たときに合うか（合意のない展開の切羽詰まった場面で許す組） */
-    function okN(a, b) { const x = Object.assign({}, a, { likes: a.likes === 'none' ? '' : a.likes }), y = Object.assign({}, b, { likes: b.likes === 'none' ? '' : b.likes }); return ok(x, y); }
+    /* 体の関係として合うか：恋愛対象「なし」の人は「体の関係の相手」（sexLikes）で見る（全年齢モード・全年齢版では体の関係にならない） */
+    function oneS(a, b) { let v = a.likes; if (v === 'none') { if (SAFE) return false; v = a.sexLikes || ''; if (v === 'none') return false; } if (!v || v === 'both') return true; if (!b.gender || b.gender === 'x') return true; return v === b.gender; }
+    function okS(a, b) { return oneS(a, b) && oneS(b, a); }
     const FORCE_RE = /〔合意のない展開〕/;
     const NAMES = ['アキラ', 'ユキノ', 'ミナト', 'ソラ', 'カエデ', 'ヒカル', 'レンジ', 'カオル'];
     /* 配役の型：het＝異性だけ、homo＝同性だけ、mix＝ばらばら */
@@ -41,7 +49,8 @@ const { openBuild } = require('./lib');
       for (let i = 0; i < n; i++) {
         const g = (i + s) % 2 ? 'f' : 'm';
         let likes = type === 'het' ? (g === 'm' ? 'f' : 'm') : type === 'homo' ? g : ['m', 'f', 'both', 'none', '', g === 'm' ? 'f' : 'm'][(i * 3 + s) % 6];
-        out.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, gender: g, likes: likes, pos: ['', 'top', 'bottom', 'riba'][(i + s) % 4], tone: '', fp: '', calls: {}, memo: '' });
+        out.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, gender: g, likes: likes, pos: ['', 'top', 'bottom', 'riba'][(i + s) % 4], tone: '', fp: '', calls: {}, memo: '',
+          sexLikes: likes === 'none' ? ['', 'm', 'f', 'both', 'none'][(i + (s >> 1)) % 5] : '', libido: s % 2 ? ['', 'none', 'low', 'high'][(i * 3 + (s >> 1)) % 4] : '' });
       }
       return out;
     }
@@ -55,8 +64,9 @@ const { openBuild } = require('./lib');
     const SEX4 = /挿れ|挿入|射精|精液|腰を(?:振|打ちつけ|沈め|揺ら|落と)|跨[っが]|喘(?:ぎ|い)|絶頂|イかせ|イカせ|イった|イっちゃ|果て(?:た|て)|体を重ね|肌を重ね|繋がっ|中に出|愛撫|抱かれ|抱いた(?!まま)|口づけ|キス|唇を(?:重ね|奪)|告白し|付き合(?:って|おう|い始)|恋人(?:に|どうし|同士)にな|両想いにな/;
     const SAFE5 = /挿れ|挿入|射精|精液|腰を(?:振|打ちつけ|沈め|揺ら)|跨って腰|喘ぎ|絶頂|♡|中に出|イかせ|イカせ|イっ(?:た|ちゃ)|ちんぽ|秘所|愛液|抱き潰/;
     const SAFE = !!HK.SAFE_ON;
+    const LIB_SKIP = Object.assign({ saimin: 1 }, (HK.State && HK.State.R18_CORE) || {});
     ids.forEach(id => {
-      const sc = HK.SCENARIOS[id], o = res0[id] = { runs: 0, err: 0, O1: 0, O2: 0, O3: 0, O4: 0, O5: 0, F: 0, ex: [] };
+      const sc = HK.SCENARIOS[id], o = res0[id] = { runs: 0, err: 0, O1: 0, O2: 0, O3: 0, O4: 0, O5: 0, O6: 0, F: 0, Fc: 0, ex: [] };
       for (let s = 0; s < N; s++) {
         const type = ['het', 'homo', 'mix'][s % 3];
         const n = Math.max(sc.minCast || 2, Math.min(sc.maxCast || 6, 2 + (s % 5)));
@@ -90,17 +100,18 @@ const { openBuild } = require('./lib');
         try { res = HK.simulate({ scenId: id, seed: 4000 + s * 17, env, chars, perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })), ties }); }
         catch (e) { o.err++; continue; }
         o.runs++;
-        const C = (res.chars && res.chars.length ? res.chars : chars).map((c, i) => ({ name: c.name, gender: chars[i] ? chars[i].gender : c.gender, likes: chars[i] ? chars[i].likes : c.likes }));
+        const C = (res.chars && res.chars.length ? res.chars : chars).map((c, i) => ({ name: c.name, gender: chars[i] ? chars[i].gender : c.gender, likes: chars[i] ? chars[i].likes : c.likes, sexLikes: chars[i] ? chars[i].sexLikes : '', libido: chars[i] ? chars[i].libido : '' }));
         /* FT の回：執着（yan）は恋愛の関係として外さない（恋愛対象「なし」の人が、執着から恋人・告白に進まないかを見る）。歪んだ関係（abuse）は恋人どうしの関係なので、ユーザーの指定として外す */
         const tieLove = (a, b) => ties.some(t => (FT ? t.type === 'abuse' || (LOVE_T.test(t.type) && t.type !== 'yan') : LOVE_T.test(t.type)) && ((t.a === a && t.b === b) || (t.a === b && t.b === a)));
         const forceOn = !SAFE && HK.Content && HK.Content.on(env, 'force', id);
         const note = (k, msg) => { o[k]++; if (WHY && o.ex.length < 6) o.ex.push(k + ' [' + type + '] ' + msg); };
-        const who = i => C[i] ? C[i].name + '(' + C[i].gender + '→' + (C[i].likes || '任') + ')' : '?';
+        const who = i => C[i] ? C[i].name + '(' + C[i].gender + '→' + (C[i].likes || '任') + (C[i].likes === 'none' ? '・体' + (C[i].sexLikes || '任') : '') + (C[i].libido ? '・欲' + C[i].libido : '') + ')' : '?';
         /* O1：結末の関係 */
         const edges = (res.pairs || []).map(p => ({ a: p.a, b: p.b, cls: p.cls, dir: p.dir, name: p.name || p.label })).concat(res.relmap && res.relmap.edges ? res.relmap.edges.map(e => ({ a: e.a, b: e.b, cls: e.cls, dir: e.dir, name: e.label })) : []);
         edges.forEach(e => {
           if (!C[e.a] || !C[e.b] || tieLove(e.a, e.b)) return;
-          if (e.cls === 'love' || e.cls === 'night') { if (!ok(C[e.a], C[e.b])) note('O1', who(e.a) + '×' + who(e.b) + '＝' + e.name); }
+          if (e.cls === 'love') { if (!ok(C[e.a], C[e.b])) note('O1', who(e.a) + '×' + who(e.b) + '＝' + e.name); }
+          else if (e.cls === 'night') { if (!okS(C[e.a], C[e.b])) note('O1', who(e.a) + '×' + who(e.b) + '＝' + e.name); }
           else if (e.cls === 'pine') { const d = e.dir != null ? e.dir : e.a, x = d === e.a ? e.b : e.a; if (!one(C[d], C[x])) note('O1', who(d) + '→' + who(x) + '＝' + e.name); }
         });
         /* O2・O3：二人だけの出来事 */
@@ -113,7 +124,11 @@ const { openBuild } = require('./lib');
           if (tieLove(a, b) && !noneP) return;
           const t = e.text.replace(NOTSEX, '');
           var mm = t.match(SEX);
-          if (mm && !ok(C[a], C[b]) && forceOn && okN(C[a], C[b]) && FORCE_RE.test(e.why || '')) o.F++;
+          const fm = FORCE_RE.test(e.why || '');
+          /* O6：性欲「なし」の人の、合意ありの二人の性的な場面（R18版） */
+          if (mm && !SAFE && !fm && !LIB_SKIP[id] && (C[a].libido === 'none' || C[b].libido === 'none')) note('O6', who(a) + '×' + who(b) + ' ｜ ' + (e.tag || e.label || '') + ' ｜「' + mm[0] + '」 ' + t.slice(Math.max(0, mm.index - 50), mm.index + 40) + (WHY ? ' ｜ why: ' + String(e.why || '').slice(0, 80) : ''));
+          if (mm && !ok(C[a], C[b]) && fm && forceOn && okS(C[a], C[b])) o.F++;
+          else if (mm && !ok(C[a], C[b]) && !fm && okS(C[a], C[b])) o.Fc++;
           else if (mm && !ok(C[a], C[b])) note('O2', who(a) + '×' + who(b) + ' ｜ ' + (e.tag || e.label || '') + ' ｜「' + mm[0] + '」 ' + t.slice(Math.max(0, mm.index - 50), mm.index + 40) + (WHY ? ' ｜ why: ' + String(e.why || '').slice(0, 80) : ''));
           else if (!mm && !tieLove(a, b) && CONF.test(t) && !ROOM_LOVE_COND.test(t) && !one(C[a], C[b]) && !ok(C[a], C[b])) note('O3', who(a) + '→' + who(b) + ' ｜ ' + (e.tag || e.label || '') + ' ｜ ' + e.text.slice(0, 120));
         });
@@ -135,10 +150,10 @@ const { openBuild } = require('./lib');
     });
     return res0;
   }, { N, WHY, ENVSET });
-  const tot = { O1: 0, O2: 0, O3: 0, O4: 0, O5: 0 };
-  let totF = 0;
-  for (const id in r) { const o = r[id]; totF += o.F; ['O1', 'O2', 'O3', 'O4', 'O5'].forEach(k => { tot[k] += o[k]; }); console.log(id.padEnd(10), 'runs', o.runs, 'err', o.err, 'O1', o.O1, 'O2', o.O2, 'O3', o.O3, 'O4', o.O4, 'O5', o.O5, 'F', o.F); o.ex.forEach(x => console.log('    ' + x.replace(/\n/g, ' '))); }
-  console.log('合計', JSON.stringify(tot), '（F＝合意のない展開の切羽詰まった場面で、恋愛対象「なし」の人が体の関係になった数。エラーではない）', totF);
+  const tot = { O1: 0, O2: 0, O3: 0, O4: 0, O5: 0, O6: 0 };
+  let totF = 0, totFc = 0;
+  for (const id in r) { const o = r[id]; totF += o.F; totFc += o.Fc; ['O1', 'O2', 'O3', 'O4', 'O5', 'O6'].forEach(k => { tot[k] += o[k]; }); console.log(id.padEnd(10), 'runs', o.runs, 'err', o.err, 'O1', o.O1, 'O2', o.O2, 'O3', o.O3, 'O4', o.O4, 'O5', o.O5, 'O6', o.O6, 'F非合意', o.F, 'F合意', o.Fc); o.ex.forEach(x => console.log('    ' + x.replace(/\n/g, ' '))); }
+  console.log('合計', JSON.stringify(tot), '（F＝恋愛対象「なし」の人が、体の関係の相手の性別に合う相手と体の関係になった数。エラーではない）非合意', totF, '・合意', totFc);
   console.log('pageerr', errors.slice(0, 3));
   await browser.close();
 })();

@@ -308,7 +308,8 @@
     var cand = [];
     L0.forEach(function (a) {
       L0.forEach(function (b) {
-        if (a.i >= b.i || !HK.Pos.okSex(a, b) || A.family(S, a, b) || (A.room && !A.room(S, [a, b]))) return;
+        /* 性欲「なし」の人は夜に乗らない（pos.js の HK.Pos.libOK。2026-10-27 担当HG） */
+        if (a.i >= b.i || !HK.Pos.okSex(a, b) || (HK.Pos.libOK && !HK.Pos.libOK([a, b])) || A.family(S, a, b) || (A.room && !A.room(S, [a, b]))) return;
         var w = A.bond(S, a, b), lv = A.lover(S, a, b), x = (S.nt || {})[A.rk(a, b)];
         /* 恋人の夜は、恋人の記録（S.lovers）にある二人だけ。恋人でない深い仲の二人の初めての夜は、勢いの夜の文が合わないので起こさない */
         var tier = lv ? 'love' : x && x.n >= 1 ? 'again' : 'casual';
@@ -319,8 +320,9 @@
       });
     });
     if (!cand.length) return;
-    /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：体だけの夜。固定した恋人が船にいれば ×0.3 */
-    var c = HK.weighted(rng, cand, function (o) { return (o.tier === 'love' ? 1.3 + o.w : o.tier === 'again' ? 1.5 + Math.max(0, o.w) * 0.5 : 0.3 + Math.max(0, o.w) * 0.6) * (HK.State.freeSex && HK.State.freeSex(S, o.a, o.b) ? HK.FreeSex.factor(S, o.a, o.b) : 1); });
+    /* 「誰とでも可」の人と固定外の相手・恋愛対象「なし」の人（HK.State.freeSex。free-sex.js）：体だけの夜。固定した恋人が船にいれば ×0.3。
+       性欲の強さ（HK.Pos.libMul。既定は 1）は、どの組の重みにも掛ける */
+    var c = HK.weighted(rng, cand, function (o) { return (o.tier === 'love' ? 1.3 + o.w : o.tier === 'again' ? 1.5 + Math.max(0, o.w) * 0.5 : 0.3 + Math.max(0, o.w) * 0.6) * (HK.State.freeSex && HK.State.freeSex(S, o.a, o.b) ? HK.FreeSex.factor(S, o.a, o.b, true) : 1) * (HK.Pos.libMul ? HK.Pos.libMul([o.a, o.b]) : 1); });
     var a = c.a, b = c.b, tier = c.tier, x = c.x;
     var free = tier !== 'love' && !!(HK.State.freeSex && HK.State.freeSex(S, a, b));
     /* 誘う側：過ちだと考えていない人、FC の高い人 */

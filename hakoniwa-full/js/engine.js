@@ -805,6 +805,8 @@
       if (e.cat === 'combat' || e.cat === 'kill' || e.cat === 'betray') w *= HK.Dark.f(ctx, e.dk || (e.cat === 'betray' ? 'spite' : 'kill'));   /* 展開の重さ（mood-dial.js） */
       if (bb && HK.Ties) w *= HK.Ties.bias(ctx, a, bb, e.cat);
       if (bb && e.cat === 'romance' && (a.honmei != null || bb.honmei != null)) w *= HK.honmeiFactor(ctx, a, bb);
+      /* 性欲の強さ（pos.js の HK.Pos.libMul。R18版）：合意ありの体の出来事の重みに二人の倍率（既定は 1） */
+      if (e.sex && !e.force && HK.Pos && HK.Pos.libMul) w *= HK.Pos.libMul(bb ? [a, bb] : [a]);
       if (HK.Emo) w *= HK.Emo.weight(ctx, a, e);   /* 気分（emotion.js）：悲しみ→恋愛を控える、怒り→対立など */
       if (bb && e.cat === 'romance' && HK.Dark.on(ctx) !== 'normal' && HK.Dark.cheat(ctx, a, bb)) w *= HK.Dark.f(ctx, 'cheat');   /* 展開の重さ：恋人のいる人の、ほかの人との恋愛・夜 */
       if (w <= 0) return;

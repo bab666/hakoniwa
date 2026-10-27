@@ -2855,7 +2855,7 @@ var lowP=clamp((sl-0.35)/0.65,0,1)*0.6+0.02;
 var cand=[];
 L0.forEach(function(a){
 L0.forEach(function(b){
-if(a.i>=b.i|| !HK.Pos.okSex(a,b)||A.family(S,a,b)||(A.room&& !A.room(S,[a,b])))return;
+if(a.i>=b.i|| !HK.Pos.okSex(a,b)||(HK.Pos.libOK&& !HK.Pos.libOK([a,b]))||A.family(S,a,b)||(A.room&& !A.room(S,[a,b])))return;
 var w=A.bond(S,a,b),lv=A.lover(S,a,b),x=(S.nt||{})[A.rk(a,b)];
 var tier=lv?'love':x&&x.n>=1?'again':'casual';
 if(tier==='casual'&&w>=0.6)return;
@@ -2865,7 +2865,7 @@ cand.push({a:a,b:b,w:w,tier:tier,x:x});
 });
 });
 if(!cand.length)return;
-var c=HK.weighted(rng,cand,function(o){return(o.tier==='love'?1.3+o.w:o.tier==='again'?1.5+Math.max(0,o.w)*0.5:0.3+Math.max(0,o.w)*0.6)*(HK.State.freeSex&&HK.State.freeSex(S,o.a,o.b)?HK.FreeSex.factor(S,o.a,o.b):1);});
+var c=HK.weighted(rng,cand,function(o){return(o.tier==='love'?1.3+o.w:o.tier==='again'?1.5+Math.max(0,o.w)*0.5:0.3+Math.max(0,o.w)*0.6)*(HK.State.freeSex&&HK.State.freeSex(S,o.a,o.b)?HK.FreeSex.factor(S,o.a,o.b,true):1)*(HK.Pos.libMul?HK.Pos.libMul([o.a,o.b]):1);});
 var a=c.a,b=c.b,tier=c.tier,x=c.x;
 var free=tier!=='love'&& !!(HK.State.freeSex&&HK.State.freeSex(S,a,b));
 if(x&&(x.mis[a.i]&& !x.mis[b.i]||(!x.mis[b.i]&&tr(b,'fc')>tr(a,'fc')))){var tmp=a;a=b;b=tmp;}
@@ -4178,8 +4178,8 @@ if(!a|| !b.alive)return;
 var w0=bond(S,a,b);
 b.m.hp=clamp(b.m.hp+8,0,100);stress(b,-5);setRel(S,a,b,0.28);mark(S,a,b,'nurse');
 ST.sayB(S,{actors:[a,b],tag:'看病',text:F(pk(S,BP(S,'NURSE')),{a:a.name,b:b.name}),why:'弱っているところを支えた（体力 +8）（関係 '+Math.round(w0*100)+'→'+Math.round(bond(S,a,b)*100)+'）'},a.name+'が'+b.name+'を看病した');
-if(!r18on(S)|| !R|| !R.nurseTop|| !Pz|| !Pz.okSex(a,b)||family(S,a,b)|| !sxRoom(S,[a,b]))return;
-if(rng()>S.env.slewd/100*(amour(S,a,b)?0.7:bond(S,a,b)>0.3?0.45:0.15))return;
+if(!r18on(S)|| !R|| !R.nurseTop|| !Pz|| !Pz.okSex(a,b)||(Pz.libOK&& !Pz.libOK([a,b]))||family(S,a,b)|| !sxRoom(S,[a,b]))return;
+if(rng()>S.env.slewd/100*(amour(S,a,b)?0.7:bond(S,a,b)>0.3?0.45:0.15)*(Pz.libMul?Pz.libMul([a,b]):1))return;
 var o=Pz.order(a,b,[a,b]),t=o[0],u=o[1];
 if(Pz.hardTop(u,t))return;
 var body=bodyOf(S,t,u,'nurse');
@@ -5513,4 +5513,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 HK.Load.toneData("chara_down",{"F":[
 ["一年、よく持ちこたえましたね。私の自慢の船員たちです","一年、よく持ちこたえましたねー。私の自慢の船員たちですよ、ほんと",1]]});
 });
-HK.Load.done('scen-ship', '1c4dfec5e6', 1);
+HK.Load.done('scen-ship', '910d39dd7f', 1);

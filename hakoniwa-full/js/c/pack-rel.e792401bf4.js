@@ -4353,6 +4353,7 @@ if(!RK)return;
 var L=RK.L,fill=RK.fill;
 function order(a,b){return HK.Pos?HK.Pos.order(a,b,[a,b]):[a,b];}
 function okPair(ctx,a,b){
+if((a.likes==='none'||b.likes==='none')&&HK.State.freeSex&&HK.State.freeSex(ctx,a,b))return!RK.noRomance(ctx,a,b);
 if(HK.lockSexOnly&&HK.lockSexOnly(a,b)){var a0=Object.assign({},a,{lock:null,locks:null}),b0=Object.assign({},b,{lock:null,locks:null});return HK.canLove(a0,b0)&&HK.canLove(b0,a0)&& !RK.noRomance(ctx,a,b);}
 return HK.canLove(a,b)&&HK.canLove(b,a)&& !RK.noRomance(ctx,a,b)&& !HK.lockBlocks(a,b);
 }
@@ -4620,7 +4621,7 @@ free:L('朝、{a}は先に起きて身支度を整えた。{b}も、昨夜のこ
 new:L('翌朝、{a}と{b}は互いの顔をまともに見られなかった。それでも、隣に座る距離は昨日より近かった。|朝、{b}は「……昨夜のこと、なかったことにはしないから」と言った。{a}は、黙って頷いた。|{a}は水を汲みながら、何度も{b}の方を振り返った。{b}が小さく手を振ると、{a}は慌てて目を逸らした。')
 }
 };
-var REL_NAME={free:'体だけの関係（恋愛相手は別の人に固定・性行為の相手は「誰とでも可」）',lover:'恋人',fwb:'セフレ',lock:'{a}が想い続けた相手',yan:'{a}の執着（相手も受け入れている）',ex:'元恋人との再燃',crush:'{a}の片想いが報われた',pining:'両片想いが通じた',bridge:'吊り橋（恐怖を、恋と取り違えた夜）',rival:'張り合ってきた二人の吊り橋',mentor:'師弟の一線',osana:'幼馴染',new:'惹かれ合った二人'};
+var REL_NAME={free:'体だけの関係（恋愛相手は別の人に固定・性行為の相手は「誰とでも可」）',freeNone:'体だけの関係（恋愛対象「なし」の人。恋愛にはならない）',lover:'恋人',fwb:'セフレ',lock:'{a}が想い続けた相手',yan:'{a}の執着（相手も受け入れている）',ex:'元恋人との再燃',crush:'{a}の片想いが報われた',pining:'両片想いが通じた',bridge:'吊り橋（恐怖を、恋と取り違えた夜）',rival:'張り合ってきた二人の吊り橋',mentor:'師弟の一線',osana:'幼馴染',new:'惹かれ合った二人'};
 var NOW={
 proud:L('「明日、どっちが生きてるかなんて分からない。……だから、今だ」{a}は目を逸らさずに言った。|{a}は唇を噛んだ。「後悔しながら死ぬのだけは、ごめんだ」|「……今さら遠慮するな。今夜を逃したら、次はないかもしれない」{a}の声は低く、少しだけ震えていた。'),
 stern:L('「冷静に考えた。……明日の保証はない。だから、今夜は君と過ごしたい」{a}はそう言った。|{a}は長く黙ったあとで、ようやく口を開いた。「先延ばしにする理由が、もう見つからない」|「規律も段取りも、今夜は要らない」{a}はそう言って、{b}の手を握った。'),
@@ -5114,7 +5115,7 @@ return pf._sitC;
 function why(ctx,st,r,extra,sc){
 r={a:r.a,b:r.b,k:r.k,sc:sc};
 var v={a:r.a.name,b:r.b.name,d:st.d?st.d.name:'',h:st.h?st.h.name:''};
-return fill((r.sc==='island'&&SIT_NAME_I[st.id])||SIT_NAME[st.id],v)+'（'+fill(REL_NAME[r.k],v)+'／惹かれ '+Math.round(ctx.R(r.a,r.b).att)+'・'+Math.round(ctx.R(r.b,r.a).att)+'／焦り '+Math.round(r.a.stress)+'・'+Math.round(r.b.stress)+(extra||'')+'）';
+return fill((r.sc==='island'&&SIT_NAME_I[st.id])||SIT_NAME[st.id],v)+'（'+fill(REL_NAME[r.k==='free'&&(r.a.likes==='none'||r.b.likes==='none')?'freeNone':r.k],v)+'／惹かれ '+Math.round(ctx.R(r.a,r.b).att)+'・'+Math.round(ctx.R(r.b,r.a).att)+'／焦り '+Math.round(r.a.stress)+'・'+Math.round(r.b.stress)+(extra||'')+'）';
 }
 if(RN.I)HK.atScen('island',function(isl){
 HK.addTo(isl.events,{
@@ -5125,7 +5126,7 @@ return cands(ctx,a,b,'island').list.length>0;
 },
 w:function(ctx,a,b){
 var C=cands(ctx,a,b,'island'),cr=C.list.some(function(s){return CRISIS[s.id];});
-return((cr?1.1:0.3)+(C.r.k==='bridge'?0.8:0)+(ctx.R(a,b).att+ctx.R(b,a).att)/160+(a.stress+b.stress)/200)*(C.r.k==='free'?2.5*HK.FreeSex.factor(ctx,a,b):1);
+return((cr?1.1:0.3)+(C.r.k==='bridge'?0.8:0)+(ctx.R(a,b).att+ctx.R(b,a).att)/160+(a.stress+b.stress)/200)*(C.r.k==='free'?2.5*HK.FreeSex.factor(ctx,a,b,true):1);
 },
 run:function(ctx,a,b){
 var C=cands(ctx,a,b,'island'),st=chooseSit(ctx,C.list),r=C.r,lv=RN.lv(ctx)==='low'?'fade':'high';
@@ -5147,7 +5148,7 @@ return cands(ctx,a,b,'zombie').list.length>0;
 },
 w:function(ctx,a,b){
 var C=cands(ctx,a,b,'zombie'),cr=C.list.some(function(s){return CRISIS[s.id];});
-return((cr?1.2:0.3)+(ctx.R(a,b).att+ctx.R(b,a).att)/160+(a.stress+b.stress)/160)*(C.r.k==='free'?2.5*HK.FreeSex.factor(ctx,a,b):1);
+return((cr?1.2:0.3)+(ctx.R(a,b).att+ctx.R(b,a).att)/160+(a.stress+b.stress)/160)*(C.r.k==='free'?2.5*HK.FreeSex.factor(ctx,a,b,true):1);
 },
 run:function(ctx,a,b){
 var C=cands(ctx,a,b,'zombie'),st=chooseSit(ctx,C.list),r=C.r;
@@ -7223,4 +7224,4 @@ HK.RelBad=HK.RelBad||{};
 HK.RelBad.engineTX=TX;
 })();
 });
-HK.Load.done('pack-rel', '04104fc1c4', 1);
+HK.Load.done('pack-rel', 'e792401bf4', 1);
