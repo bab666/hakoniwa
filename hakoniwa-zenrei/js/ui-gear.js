@@ -1,7 +1,9 @@
 /* 箱庭シミュレーター ui: 住人ごとの設定（⚙️）
-   節は ①話し方 ②プロフィール ③体と設定 ④恋愛（R18版は恋愛と夜） ⑤相手ごとの設定（殺さない相手・関係・呼び方・二人称/一人称・受け攻め・夜の性格）。
+   節は ①口調 ②プロフィール ③体と設定 ④恋愛（R18版は恋愛と夜） ⑤相手ごとの設定（殺さない相手・関係・呼び方・二人称/一人称・受け攻め・夜の性格）。
    ①話し方の欄（口調・一人称・語尾・辞書・呼び方・敬語・喘ぎ など）は 2026-10-28（担当LA）に住人タブの「口調・喘ぎの設定」の節（ui-voice.js）へ移した。
    ここには要約と「口調・喘ぎをより細かく設定する」のボタンだけを置く（押すと窓を閉じて、その節をこの住人にして開く）。
+   2026-10-28（担当LI）：利用者の要望で、口調〜語尾の設定（かんたん）の欄（口調・一人称・二人称・怒ったとき／恋人になってからの一人称・名前の読み・語尾の記号・説明・台詞の見本）を
+   ①口調に戻した。描画と入力は ui-voice.js の HK.VoiceSet.basicHtml・basicField を「口調・喘ぎの設定」と共用する（保存先は同じ c.*）。辞書・呼び方・敬語・喘ぎはボタンの先だけ。
    固定の説明は各節の ？（TIPS）に置く。欄の data-gf は保存との互換のため変えない。
    ※口調や関係は台詞・文面と関係の初期値に効く。行動の判断はエゴグラムの数値で決まる */
 (function () {
@@ -104,7 +106,8 @@
     '.gtie .one{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.gtie input[type=text]{width:12em}' +
     'details.gkeigo,details.gdet{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r-card,6px);padding:6px 10px}details.gkeigo summary,details.gdet summary{cursor:pointer;font-size:13px;color:var(--muted)}details.gkeigo .gkn,details.gdet .gkn{font-size:12px;margin-left:4px;color:var(--ink)}details.gkeigo[open] summary,details.gdet[open] summary{margin-bottom:4px}' +
     '.gscope{margin:-2px 0 8px;padding:4px 8px;border-left:2px solid var(--line2,var(--line));background:var(--bg1,transparent);border-radius:0 4px 4px 0}.gforh{font-size:12px;color:var(--muted);margin-left:4px}.gfnote{color:var(--accent)}' +
-    '@media (max-width:520px){.gearbox{padding:12px}.gtie input[type=text]{width:100%}}' +
+    '.gearrow label{min-width:0;max-width:100%}' +
+    '@media (max-width:520px){.gearbox{padding:12px}.gtie input[type=text]{width:100%}.gearsec[data-vroot] .gearrow input[type=text]{max-width:100%;width:100%!important}}' +
     /* 暗くした欄（性欲「なし」のときの夜の欄：.gdim。値は消さず操作もできる）と、効かない欄（攻め・受けを選んだ人の攻め度：.gdis。選べない）。2026-10-27 担当HK */
     '.gdim{opacity:.45}.gdim:hover,.gdim:focus-within{opacity:.75}.gdis{opacity:.5}.gdis select{cursor:not-allowed}.gearrow .gnote{flex:1 1 100%;margin:0}.glibnote{border-left:2px solid var(--line2,var(--line));padding-left:8px}';
   /* この住人の傾向（エゴグラムの説明）と、住人一覧の態度の一語 */
@@ -230,10 +233,13 @@
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
       /* 固定の説明は各節の ？（TIPS）に置き、ここには選んだものによって変わる説明（口調・関係・この住人の傾向）だけを出す */
       (HK.egoDesc ? '<details class="gego"' + (egoOpen ? ' open' : '') + '><summary>この住人の傾向<span class="gegc">' + esc(HK.toCode(c.eg)) + '・' + esc(HK.egoAttWord(c)) + '</span></summary><ul id="egodesc">' + HK.egoDesc(c).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul></details>' : '') +
-      /* ①話し方：要約と、住人タブの「口調・喘ぎの設定」へのボタン（欄は ui-voice.js） */
-      '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3>' +
-        '<p class="gearhint" style="margin:0 0 6px">' + esc(HK.VoiceSet ? HK.VoiceSet.sumLine(c) : '') + '</p>' +
-        '<div class="gearrow"><button type="button" class="btn small" data-gact="tovoice">' + esc(HK.VoiceSet ? HK.VoiceSet.MORE : '口調をより細かく設定する') + '</button></div></div>' +
+      /* ①口調：口調〜語尾の設定（かんたん）の欄（ui-voice.js の VS.basicHtml を「口調・喘ぎの設定」と共用）と、そこでだけ決める欄の要約・「口調・喘ぎをより細かく設定する」のボタン */
+      (function () {
+        var VS = HK.VoiceSet, ms = VS && VS.moreSum ? VS.moreSum(c) : '';
+        return '<div class="gearsec" data-vroot><h3>口調' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3>' + (VS && VS.basicHtml ? VS.basicHtml(c) : '') +
+          '<p class="gearhint">口調の辞書・呼び方・敬語などのほかの欄は「' + esc(VS ? VS.LABEL : '口調の設定') + '」で決めます' + (ms ? '（いま：' + esc(ms) + '）' : '') + '。</p>' +
+          '<div class="gearrow"><button type="button" class="btn small" data-gact="tovoice">' + esc(VS ? VS.MORE : '口調をより細かく設定する') + '</button></div></div>';
+      })() +
       /* ②プロフィール：性別・誕生月・年齢・お酒・恋愛対象・色 */
       '<div class="gearsec"><h3>プロフィール' + (HK.Tips ? HK.Tips.btn('gear-profile') : '') + '</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
         '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label>' +
@@ -261,6 +267,8 @@
     box.innerHTML = body(c);
     /* 住人が多いとき（61人以上）：住人を選ぶ欄に「名前で探す」、住人を並べたチェックの一覧に「名前で絞り込む」を添える（ui-cast-pages.js） */
     if (HK.CastPages) HK.CastPages.after(box);
+    /* ①口調の台詞の見本を切り替える（ui-voice.js） */
+    if (HK.VoiceSet && HK.VoiceSet.sampleTick) HK.VoiceSet.sampleTick();
     ov.scrollTop = y;
   }
   function open(id, from) {
@@ -364,6 +372,8 @@
     var isInput = ev.type === 'input';
     /* 同一人物のチェックを外しても、窓を開いているあいだは相手の行を残す */
     if (f === 'at_sameC' && t.dataset.o) (extra[c.id] = extra[c.id] || {})[t.dataset.o] = 1;
+    /* ①口調の欄（口調・一人称・二人称・語尾の記号・語尾の設定（かんたん））は「口調・喘ぎの設定」と同じ処理（ui-voice.js）。怒ったとき／恋人になってからの一人称・名前の読みは下の HK.Attr */
+    if (HK.VoiceSet && HK.VoiceSet.basicField && HK.VoiceSet.basicField(c, f, t, isInput, changed)) return;
     if (HK.Attr && HK.Attr.gearField(c, f, t, isInput, changed, byId)) return;
     if (HK.Shared && HK.Shared.gearField(c, f, t, isInput, changed)) return;
     switch (f) {

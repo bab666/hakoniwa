@@ -10,6 +10,8 @@
        act(act, c, el), sum(c), after(c|null), toChar(c, mode, dry), fromChar(c, mode, dry), mergeAdv(id, cur, inc) }
    ・コピー・全体⇄住人・文字列で書き出す／読み込む・初期化は ui-voice-copy.js（VS.tools と VS.onTool）
    ・⚙設定の「口調・喘ぎをより細かく設定する」は VS.open(住人の id)：その住人を選んで節を開き、節の頭へ動かす
+   ・口調の基本の欄（口調〜語尾の設定（かんたん））は VS.basicHtml(c)・VS.basicField(…) を、この節の「口調」と ⚙設定の「口調」（ui-gear.js）の両方から呼ぶ（2026-10-28 担当LI）。
+     台詞の見本の箱は .vs-ts（data-cid の住人で描く）で、VS.sampleRefresh が両方を描き直す。語尾の設定の欄は [data-vroot] の中だけを書き換える（tone-ending.js）
    ui.js の renderCast が VS.html() を住人の一覧の下に差し込み、描いたあとに VS.after() を呼ぶ */
 (function () {
   'use strict';
@@ -75,8 +77,7 @@
     if (!V || !V.processText) return '';
     if (HK.Load && HK.Load.tonesReady && !HK.Load.tonesReady([c])) {
       HK.Load.ensureTones([c]).then(function () { VS.sampleRefresh(); }, function () {
-        var b = document.getElementById('vs-tonesample');
-        if (b) b.innerHTML = '<span class="tsh">台詞の見本</span><span class="tsl on">口調のデータを読み込めませんでした。対象を選び直すと、もう一度読み込みます</span>';
+        boxes().forEach(function (b) { if ((b.getAttribute('data-cid') || '') === (c.id || '')) b.innerHTML = '<span class="tsh">台詞の見本</span><span class="tsl on">口調のデータを読み込めませんでした。対象を選び直すと、もう一度読み込みます</span>'; });
       });
       return '<span class="tsh">台詞の見本</span><span class="tsl on">読み込んでいます…</span>';
     }
@@ -98,45 +99,75 @@
   /* 全体の見本で選んでいる口調・性別（このページを開いているあいだだけ） */
   var GS = { tone: 'gentle', g: 'f' };
   function demoChar() { return { id: '', name: '見本', tone: GS.tone, gender: GS.g, eg: { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 } }; }
+  /* 見本の箱（この節と ⚙設定の両方に出る。data-cid の住人で描き、空なら全体の見本） */
+  function sampleBox(c, others) { return '<div class="tonesample anim vs-ts" data-cid="' + esc(c.id || '') + '" aria-live="polite">' + sampleLines(c, others) + '</div>'; }
+  function boxes() { return Array.prototype.slice.call(document.querySelectorAll('.vs-ts')); }
   VS.sampleRefresh = function () {
-    var box = document.getElementById('vs-tonesample'), c = cur();
-    if (!box) return;
-    box.innerHTML = c ? sampleLines(c, S().chars.filter(function (x) { return x !== c; })) : sampleLines(demoChar(), []);
+    boxes().forEach(function (box) {
+      var id = box.getAttribute('data-cid'), c = id ? byId(id) : null;
+      if (id && !c) return;
+      box.innerHTML = c ? sampleLines(c, S().chars.filter(function (x) { return x !== c; })) : sampleLines(demoChar(), []);
+    });
   };
   var tsTimer = null;
   function sampleTick() {
     if (tsTimer) clearInterval(tsTimer);
     tsTimer = setInterval(function () {
-      var box = document.getElementById('vs-tonesample');
-      if (!box || !box.offsetParent) { if (!box) { clearInterval(tsTimer); tsTimer = null; } return; }
-      var ls = box.querySelectorAll('.tsl'); if (ls.length < 2) return;
-      var k = 0; ls.forEach(function (x, i) { if (x.classList.contains('on')) k = i; });
-      ls[k].classList.remove('on'); ls[(k + 1) % ls.length].classList.add('on');
+      var bs = boxes();
+      if (!bs.length) { clearInterval(tsTimer); tsTimer = null; return; }
+      bs.forEach(function (box) {
+        if (!box.offsetParent) return;
+        var ls = box.querySelectorAll('.tsl'); if (ls.length < 2) return;
+        var k = 0; ls.forEach(function (x, i) { if (x.classList.contains('on')) k = i; });
+        ls[k].classList.remove('on'); ls[(k + 1) % ls.length].classList.add('on');
+      });
     }, 2600);
   }
+  VS.sampleTick = sampleTick;
 
   /* ---------- 部品「口調」 ---------- */
   /* コピー・文字列にする欄（名前の読み c.yomi は本人の名前のことなので写さない。敬語で話す相手 c.keigo はほかの住人を指すので写さない） */
   var TONE_KEYS = ['tone', 'fp', 'you', 'fpAngry', 'fpLover', 'marks', 'toneCustom', 'ending', 'toneDict', 'call', 'callG', 'keigoOlder'];
   var keigoOpen = false;
-  function toneCharHtml(c) {
-    var s = S(), others = s.chars.filter(function (x) { return x !== c; }), autoK = autoKey(c);
-    var keys = HK.TONE_KEYS || HK.PERSONA_KEYS;
+  /* 口調の基本の欄（⚙設定の「口調」と、この節の住人の「口調」の前半で同じものを描く。2026-10-28 担当LI）：
+     口調・一人称・二人称・怒ったとき／恋人になってからの一人称・名前の読み・語尾の記号（・語尾の付け替え）・口調の説明・台詞の見本・語尾の設定（かんたん）。
+     保存先はどちらも住人の c.*（data-gf も同じ）。入力は basicField（この節は toneField から、⚙設定は ui-gear.js の onField から） */
+  function basicHtml(c, others) {
+    var autoK = autoKey(c), keys = HK.TONE_KEYS || HK.PERSONA_KEYS;
     var toneSel = '<select data-gf="tone" aria-label="口調">' + opt('', 'おまかせ（' + toneLabel(autoK) + '）', c.tone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.tone || '', t.desc); }).join('') + '</select>';
     var tInfo = HK.toneInfo ? HK.toneInfo(c.tone || autoK) : HK.PERSONA[c.tone || autoK];
+    return '<div class="gearrow"><label>口調 ' + toneSel + '</label>' + (HK.Ending ? HK.Ending.badge(c) : '') + '<label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
+      (HK.Attr && HK.Attr.fpMoreHtml ? HK.Attr.fpMoreHtml(c, esc) : '') +
+      '<div class="gearrow"><label title="文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます">語尾の記号 <input type="text" data-gf="marks" value="' + esc(c.marks || '') + '" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label>' +
+      (HK.TONE_CUSTOM_OFF ? '' : '<label title="口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで">語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label>') + '</div>' +
+      '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
+      sampleBox(c, others) +
+      (HK.Ending ? HK.Ending.gearHtml(c, others[0], { esc: esc, opt: opt, part: 'easy' }) : '');
+  }
+  VS.basicHtml = function (c) { return basicHtml(c, S().chars.filter(function (x) { return x !== c; })); };
+  /* 基本の欄の入力：扱った欄なら true。changed(rerender) は呼んだ側の保存と描き直し */
+  function basicField(c, f, t, isInput, changed) {
+    if (/^end:/.test(f) && HK.Ending) return HK.Ending.gearField(c, f, t, isInput, changed, VS.sampleRefresh, S().chars.filter(function (x) { return x !== c; })[0]);
+    switch (f) {
+      case 'tone': if (isInput) return true; c.tone = HK.toneValid && HK.toneValid(t.value) ? t.value : ''; if (HK.Load && HK.Load.ensureTones) HK.Load.ensureTones([c]).then(null, function () { /* 動かすときに知らせる */ }); changed(true); return true;
+      case 'fp': c.fp = t.value.trim().slice(0, 8); changed(false); VS.sampleRefresh(); return true;
+      case 'you': c.you = t.value.trim().slice(0, 8); changed(false); VS.sampleRefresh(); return true;
+      case 'marks': c.marks = t.value.trim().slice(0, 30); changed(false); VS.sampleRefresh(); return true;
+      case 'toneCustom': c.toneCustom = String(t.value).slice(0, 120); if (!isInput) c.toneCustom = HK.normToneCustom ? HK.normToneCustom(c.toneCustom) : ''; changed(false); VS.sampleRefresh(); return true;
+    }
+    return false;
+  }
+  VS.basicField = basicField;
+  function toneCharHtml(c) {
+    var s = S(), others = s.chars.filter(function (x) { return x !== c; }), autoK = autoKey(c);
     var callSel = '<select data-gf="call" aria-label="基本の呼び方">' + (HK.CALL_STYLES || [{ v: '', label: 'おまかせ' }]).map(function (o) { return opt(o.v, o.label, c.call || ''); }).join('') + '</select>';
     var SUF = (HK.CALL_STYLES || []).filter(function (o) { return o.v && o.v !== 'gender'; }), CGD = { m: 'kun', f: 'chan', x: 'san' };
     if (c.call === 'gender') callSel += [['m', '男性'], ['f', '女性'], ['x', 'その他']].map(function (g) { return '<label>' + g[1] + 'には <select data-gf="callG" data-g="' + g[0] + '" aria-label="' + g[1] + 'の呼び方">' + SUF.map(function (o) { return opt(o.v, o.label, (c.callG && c.callG[g[0]]) || CGD[g[0]]); }).join('') + '</select></label>'; }).join('');
     /* 敬語で話す相手：住人が多いとき（61人以上）は、閉じているあいだ一覧を作らない（開いたときに入れる） */
     var many = others.length > 60, kn = others.filter(function (o) { return c.keigo && c.keigo[o.id]; }).length;
     var kList = function () { return others.map(function (o) { return '<label><input type="checkbox" data-gf="keigo" data-o="' + esc(o.id) + '"' + (c.keigo && c.keigo[o.id] ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join(''); };
-    return '<div class="gearrow"><label>口調 ' + toneSel + '</label>' + (HK.Ending ? HK.Ending.badge(c) : '') + '<label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' +
-      (HK.Attr && HK.Attr.fpMoreHtml ? HK.Attr.fpMoreHtml(c, esc) : '') +
-      '<div class="gearrow"><label title="文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます">語尾の記号 <input type="text" data-gf="marks" value="' + esc(c.marks || '') + '" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label>' +
-      (HK.TONE_CUSTOM_OFF ? '' : '<label title="口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで">語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label>') + '</div>' +
-      '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
-      '<div class="tonesample anim" id="vs-tonesample" aria-live="polite">' + sampleLines(c, others) + '</div>' +
-      (HK.Ending ? HK.Ending.gearHtml(c, others[0], { esc: esc, opt: opt }) : '') +
+    return basicHtml(c, others) +
+      (HK.Ending ? HK.Ending.gearHtml(c, others[0], { esc: esc, opt: opt, part: 'dict' }) : '') +
       '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label><label><input type="checkbox" data-gf="keigoOlder"' + (c.keigoOlder ? ' checked' : '') + '> 年上の相手には敬語（年齢を決めた人どうし）</label></div>' +
       (others.length ? '<details class="gkeigo" id="vs-keigo"' + (keigoOpen ? ' open' : '') + '><summary>敬語で話す相手 <span class="gkn" id="vs-kn">' + (kn ? kn + '人' : 'なし') + '</span></summary><div class="gearrow">' + (keigoOpen || !many ? kList() : '') + '</div>' +
         ((c.tone || autoK) === 'polite' ? '<p class="gearhint">いまの口調は敬語なので、誰にでも敬語で話します。</p>' : '') + '</details>' : '') +
@@ -162,7 +193,7 @@
       '<p class="gearhint">口調が「おまかせ」の住人は、エゴグラムから口調を選びます（同じ口調でも、気質によって荒さや優しさが変わります）。女性の住人の男性的な言い方は、口調に合わせて整えます。</p>' +
       '<div class="gearrow"><label>見本の口調 <select data-vf="gtone" aria-label="見本の口調">' + keys.map(function (k) { return opt(k, toneLabel(k), GS.tone); }).join('') + '</select></label>' +
       '<label>性別 <select data-vf="gsex" aria-label="見本の性別">' + opt('f', '女性', GS.g) + opt('m', '男性', GS.g) + opt('', 'その他', GS.g) + '</select></label></div>' +
-      '<div class="tonesample anim" id="vs-tonesample" aria-live="polite">' + sampleLines(demoChar(), []) + '</div>' +
+      sampleBox(demoChar(), []) +
       '<p class="gearhint" style="margin-top:10px">口調か語尾の設定を決めている住人：' + (who.length ? who.length + '人' : 'いません（全員おまかせ）') + '</p>' +
       (who.length ? '<div class="vs-who">' + who.slice(0, 40).map(chip).join('') + (who.length > 40 ? '<span class="gearhint" style="margin:0">ほか ' + (who.length - 40) + '人</span>' : '') + '</div>' : '');
   }
@@ -176,13 +207,8 @@
   }
   function toneField(c, f, t, isInput, changed) {
     if (/^at_/.test(f) && HK.Attr) return HK.Attr.gearField(c, f, t, isInput, changed, byId);
-    if (/^end:/.test(f) && HK.Ending) return HK.Ending.gearField(c, f, t, isInput, changed, VS.sampleRefresh, S().chars.filter(function (x) { return x !== c; })[0]);
+    if (basicField(c, f, t, isInput, changed)) return true;
     switch (f) {
-      case 'tone': if (isInput) return true; c.tone = HK.toneValid && HK.toneValid(t.value) ? t.value : ''; if (HK.Load && HK.Load.ensureTones) HK.Load.ensureTones([c]).then(null, function () { /* 動かすときに知らせる */ }); changed(true); return true;
-      case 'fp': c.fp = t.value.trim().slice(0, 8); changed(false); VS.sampleRefresh(); return true;
-      case 'you': c.you = t.value.trim().slice(0, 8); changed(false); VS.sampleRefresh(); return true;
-      case 'marks': c.marks = t.value.trim().slice(0, 30); changed(false); VS.sampleRefresh(); return true;
-      case 'toneCustom': c.toneCustom = String(t.value).slice(0, 120); if (!isInput) c.toneCustom = HK.normToneCustom ? HK.normToneCustom(c.toneCustom) : ''; changed(false); VS.sampleRefresh(); return true;
       case 'call': if (isInput) return true; c.call = t.value; changed(true); return true;
       case 'callG': if (isInput) return true; c.callG = c.callG || {}; c.callG[t.dataset.g] = t.value; changed(false); VS.sampleRefresh(); return true;
       case 'keigoOlder': if (isInput) return true; c.keigoOlder = t.checked; changed(false); VS.sampleRefresh(); return true;
@@ -219,7 +245,7 @@
   function panelHtml() {
     var c = cur(), chars = S().chars, i = c ? chars.indexOf(c) : -1;
     var lead = c ? esc(c.name) + 'だけの設定です。保存先はこの住人（住人のJSON・セーブの住人にも入ります）。' : '全員に効く既定です。保存先はこのブラウザの全体の設定（全員のJSONの書き出し・セーブと履歴の写しにも入ります）。';
-    return '<div class="panel" id="vs-panel"><div class="vs-head"><label for="vs-target">対象 ' + targetSel(c) + '</label>' +
+    return '<div class="panel" id="vs-panel" data-vroot><div class="vs-head"><label for="vs-target">対象 ' + targetSel(c) + '</label>' +
       (chars.length ? '<span class="vs-nav" style="display:inline-flex;gap:6px"><button type="button" class="btn small ghost" data-vact="prev" aria-label="前の住人">← 前</button><button type="button" class="btn small ghost" data-vact="next" aria-label="次の住人">次 →</button></span>' : '') + '</div>' +
       '<p class="hint vs-lead">' + lead + '</p>' +
       (function () { var t = VS.tools ? VS.tools(c) : ''; return t ? '<div class="vs-tools">' + t + '</div>' : ''; })() +
@@ -235,7 +261,7 @@
     var c = cur();
     if (HK.CastPages) HK.CastPages.after(p);
     VS.parts.forEach(function (x) { if (x.after) x.after(c); });
-    if (document.getElementById('vs-tonesample')) sampleTick();
+    if (p.querySelector('.vs-ts')) sampleTick();
   };
   /* 節だけを描き直す（入力中の欄にフォーカスを戻す） */
   VS.refresh = function () {
@@ -254,8 +280,17 @@
     if (row && UI.summary) row.innerHTML = UI.summary(c);
     Array.prototype.forEach.call(document.querySelectorAll('#vs-panel [data-vsum]'), function (el) { var p = VS.part(el.getAttribute('data-vsum')); if (p && p.sum && c) el.textContent = p.sum(c); });
   };
-  /* ⚙設定の①話し方の要約（ui-gear.js） */
-  VS.sumLine = function (c) { return VS.parts.map(function (p) { return p.sum ? p.sum(c) : ''; }).filter(Boolean).join('・'); };
+  /* ⚙設定の「口調」の節の下に出す、この節でだけ決める欄の要約（口調の辞書・呼び方・敬語と、ほかの部品。ui-gear.js） */
+  VS.moreSum = function (c) {
+    var b = [], kn = Object.keys(c.keigo || {}).filter(function (k) { return c.keigo[k] && byId(k); }).length;
+    var cl = (HK.CALL_STYLES || []).filter(function (o) { return o.v && o.v === c.call; })[0];
+    if (typeof c.toneDict === 'string' && c.toneDict.trim()) b.push('口調の辞書：あり');
+    if (cl) b.push('呼び方：' + cl.label);
+    if (kn) b.push('敬語の相手：' + kn + '人');
+    if (c.keigoOlder) b.push('年上には敬語');
+    VS.parts.forEach(function (p) { var s = p.id !== 'tone' && p.sum ? p.sum(c) : ''; if (s) b.push(s); });
+    return b.join('・');
+  };
   /* 節の頭へ（見えていなければ） */
   function toHead(force) {
     var d = document.getElementById('fold-voiceset') || document.getElementById('voiceset');
