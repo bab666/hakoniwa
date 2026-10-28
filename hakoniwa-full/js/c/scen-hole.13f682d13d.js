@@ -1312,7 +1312,7 @@ function names(l){return l.map(function(b){return b.name;}).join(l.length>2?'・
 function kindOf(S,b,h){
 var Pz=HK.Pos;
 if(!Pz|| !Pz.okSex(b,h))return null;
-if((HK.ngPair&&HK.ngPair(b,h))||(HK.sexBlocked&&HK.sexBlocked(b,h)))return null;
+if((HK.ngSexPair&&HK.ngSexPair(b,h))||(HK.sexBlocked&&HK.sexBlocked(b,h)))return null;
 var o=Pz.order(b,h,[b,h]);
 if(o[0]===b)return Pz.hardTop(h,b)?null:Pz.isF(b)?'finger':'pen';
 if(Pz.hasM&& !Pz.hasM(h))return'tease';
@@ -1433,7 +1433,7 @@ return b.name+'が手を出した：'+k+(b.punish?'／嫉妬深く、恋人（�
 }
 BH.rescueEnd=function(S,input,st,res){
 var h=S.h,b=res.rescued,F=function(t){return K.fmt(S,t,{b:b.name});};
-var ng= !!(HK.ngPair&&HK.ngPair(h,b))|| !!(HK.sexBlocked&&HK.sexBlocked(h,b))|| !!(HK.Pos&& !HK.Pos.okSex(h,b));
+var ng= !!(HK.ngSexPair&&HK.ngSexPair(h,b))|| !!(HK.sexBlocked&&HK.sexBlocked(h,b))|| !!(HK.Pos&& !HK.Pos.okSex(h,b));
 if(st.hardTop)K.say(S,{kind:'sys',tag:'解放',text:F(P(S,T.rescuedTop)),why:st.guard?'性行為の相手を固定した相手だけにしているので、壁の向こうの手を追い払い、何も溜まっていなかった':'自分で攻めを選んでいるので、何も溜まっていなかった'});
 else if(st.live||st.stored<20)K.say(S,{kind:'sys',tag:'解放',text:F(P(S,ng?T.rescuedLiveNG:T.rescuedLive)),why:ng?'恋愛・R18にしない相手（または体の関係にならない相手）なので、縋らない':''});
 else{
@@ -2599,4 +2599,4 @@ HK.Load.toneData("sondai",{"F":[
 ["意外と平気かも","意外と平気かもしれんね",1],
 ["晩ご飯、何にしよう","晩ご飯は、何にしようかね",1]]});
 });
-HK.Load.done('scen-hole', 'a26ab9cd15', 1);
+HK.Load.done('scen-hole', '13f682d13d', 1);

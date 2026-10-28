@@ -10669,6 +10669,7 @@ return HK.lockOut(x,y);
 HK.sexNG=function(a,b){if(!a|| !b||a===b)return false;return sexOne(a,b)||sexOne(b,a);};
 HK.sexBlocked=function(a,b){if(!a|| !b||a===b)return false;return!!(a.noR18||b.noR18)||HK.ngExplicit(a,b)||coNG(a,b)||HK.sexNG(a,b);};
 HK.lockSexOnly=function(a,b){return!!(a&&b&&a!==b&&HK.lockConflict(a,b)&& !HK.ngExplicit(a,b)&& !coNG(a,b)&& !HK.sexNG(a,b));};
+HK.ngSexPair=function(a,b){return HK.ngPair(a,b)&& !HK.lockSexOnly(a,b);};
 HK.State={
 here:function(c){return!!c&&c.alive!==false&& !c.out&& !c.gone&& !c.taken&& !(c.flags&&(c.flags.caged!=null||c.flags.knocked));},
 canAct:function(c){return HK.State.here(c)&& !(c.flags&&c.flags.down)&& !c.bound;},
@@ -29233,4 +29234,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '53a5723c02', 1);
+HK.Load.done('core', '4834e5dd0b', 1);

@@ -201,8 +201,9 @@
       var Pz = HK.Pos;
       /* モブが相手：モブとの場面に出してよい人（HK.State.mobSexOk。性行為の相手を「固定した相手だけ」にした人は、恋人の種類のモブでも不可）で、恋愛対象がかける側の性別に合うときだけ */
       var mobNo = !HY && !HK.SAFE_ON && (!!(HK.State && !HK.State.mobSexOk(p)) || !!(Pz && !Pz.genderOK(p, p.hm)));
-      /* 住人が相手：恋愛・R18にしない組・性行為の相手の固定（固定の外の相手）・同じ人の恋人どうし（HK.ngPair・HK.sexBlocked）なら、性的な暗示をかけない */
-      var resNo = !!HY && !HK.SAFE_ON && (!!(HK.ngPair && HK.ngPair(HY, p)) || !!(HK.sexBlocked && HK.sexBlocked(HY, p)));
+      /* 住人が相手：恋愛・R18にしない組・性行為の相手の固定（固定の外の相手）・同じ人の恋人どうし（HK.ngSexPair・HK.sexBlocked）なら、性的な暗示をかけない
+         （恋愛相手の固定が食い違うだけで、性行為の相手の固定で許されている組は、かける。HK.ngSexPair） */
+      var resNo = !!HY && !HK.SAFE_ON && (!!(HK.ngSexPair && HK.ngSexPair(HY, p)) || !!(HK.sexBlocked && HK.sexBlocked(HY, p)));
       /* 合意のない展開が切：恨み・ストーカーは性的な暗示をかけない（いたずらだけ）。ほかは、始める前に同意を取った催眠プレイ */
       p.noForce = S.gate && (ty === 'grudge' || ty === 'stalker');
       p.consent = S.gate && !p.noForce;

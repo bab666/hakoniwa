@@ -1363,7 +1363,7 @@ function pn(S,s){(S.partyNotes=S.partyNotes||[]).push(s);}
 function sayAs(S,h,o){var prev=S.h;S.h=h;var e=DG.say(S,o);S.h=prev;return e;}
 function sexOk(a,b){
 if(!a|| !b||a===b)return false;
-if(HK.ngPair&&HK.ngPair(a,b))return false;
+if(HK.ngSexPair&&HK.ngSexPair(a,b))return false;
 if(HK.sexBlocked&&HK.sexBlocked(a,b))return false;
 if(HK.State&&HK.State.pairSex)return HK.State.pairSex(a,b);
 return!!(P()&&P().okSex(a,b));
@@ -1750,7 +1750,7 @@ function rel(S,a,b){return(S.rel&&S.rel[k2(a,b)])||{trust:15,att:0,ten:0};}
 function free(S){return S.party.filter(function(x){return!x.fallen&& !x.captor&&x.corrupt<100&&x.reason>0;});}
 function sexOk(a,b){
 if(!a|| !b||a===b)return false;
-if(HK.ngPair&&HK.ngPair(a,b))return false;
+if(HK.ngSexPair&&HK.ngSexPair(a,b))return false;
 if(HK.sexBlocked&&HK.sexBlocked(a,b))return false;
 if(HK.State&&HK.State.pairSex)return HK.State.pairSex(a,b);
 return!!(P()&&P().okSex(a,b));
@@ -3436,4 +3436,4 @@ HK.Load.toneData("sondai",{"F":[
 ["噛んで。苦いけど、効くから","噛みたまえ。苦いが、効くのだよ",1],
 ["〈〉も、おいでよ。気持ちいいよ","〈〉も、来たまえ。気持ちいいぞ",1]]});
 });
-HK.Load.done('scen-dungeon', '2b2858ffe0', 1);
+HK.Load.done('scen-dungeon', '16864e0c8d', 1);

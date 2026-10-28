@@ -798,7 +798,7 @@ ST.snap(S,keys);
 }
 return finish(S,input,SIT,place,sid);
 }
-function okPair(a,b){return(!HK.Pos||HK.Pos.okSex(a,b))&& !(HK.ngPair&&HK.ngPair(a,b))&& !(HK.sexBlocked&&HK.sexBlocked(a,b));}
+function okPair(a,b){return(!HK.Pos||HK.Pos.okSex(a,b))&& !(HK.ngSexPair&&HK.ngSexPair(a,b))&& !(HK.sexBlocked&&HK.sexBlocked(a,b));}
 function topL(p,list){return HK.R18M&&HK.R18M.topLines?HK.R18M.topLines(p,list):list;}
 function nClimax(S,who){
 var l=topL(who,HK.Voice.CLIMAX[who.persona]),old=function(){return pkF(S,l);};
@@ -1337,6 +1337,16 @@ var topG=G.slice().sort(function(a,b){return b.m.sem-a.m.sem;})[0];
 var title=(sid==='stage'?'「'+place+'」の公演は、今日も満員だった。':'「'+place+'」は今日も平常運転。')+(S.wear?'――けれど営業のあと、改変は解けた。':woke.length?names(woke)+'だけが、おかしさに気づいて正気に戻った。':noticed.length?names(noticed)+'は違和感に触れたが、世界は何も変わらなかった。':'誰ひとり、違和感に気づかなかった。')+afterTitle(S,aft);
 var lines=P.map(function(p){return p.name+'（'+p.roleLabel+'）：'+p.fate;});
 if(topG)lines.push('いちばん搾ったのは'+topG.name+'（'+Math.round(topG.m.sem)+'ml）');
+var ngL=[];
+P.forEach(function(g){
+if(g.role!=='giver')return;
+P.forEach(function(x){
+if(x===g||x.role==='giver'||okPair(g,x))return;
+var d=HK.Pos&&HK.Pos.noSexInfo?HK.Pos.noSexInfo(g,x,{room:false,lib:false,ties:input.ties}):null;
+ngL.push(g.name+'と'+x.name+'（'+(d?d.t+(d.fix?'。直し方：'+d.fix:''):'体の関係にならない組')+'）');
+});
+});
+if(ngL.length)lines.push('住人どうしの施術にならない組：'+ngL.slice(0,3).join('、')+(ngL.length>3?'、ほか'+(ngL.length-3)+'組':'')+'。');
 var total=G.reduce(function(s,g){return s+g.cnt.served;},0),sem=G.reduce(function(s,g){return s+g.m.sem;},0);
 closeDay(S,SIT,place,sid,woke,noticed,total);
 var rows=P.slice().sort(function(a,b){return(b.role==='giver')-(a.role==='giver')||b.m.sem-a.m.sem;}).map(function(p,k){
@@ -4835,4 +4845,4 @@ HK.Load.toneData("chara_down",{"F":[
 ["かしこまりました。お願いいたします","はーい。じゃ、お願いしますー",1],
 ["たいへん結構なお手前でした","いやー、けっこうなお手前でしたよー",1]]});
 });
-HK.Load.done('scen-kaihen', 'cfc9101882', 1);
+HK.Load.done('scen-kaihen', '4a78031ee5', 1);

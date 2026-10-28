@@ -253,7 +253,7 @@
     /* 住人どうし：体の関係になれる組（HK.Pos.okSex・両方 HK.State.r18ok・HK.ngPair でも HK.sexBlocked でもない）だけ際どい施術にする。
        向きは HK.Pos.order：施術者が攻めなら今までどおり、客が攻めなら際どい施術の手前で客が手を止めさせる（客を受ける側にしない）。
        なれない組は普通のマッサージのまま（plain） */
-    var pairWhy = TR ? MC.pairWhy(TR, CR) : '', pairOK = !!TR && !pairWhy;
+    var pairWhy = TR ? MC.pairWhy(TR, CR, input.ties) : '', pairOK = !!TR && !pairWhy, pairFix = TR && pairWhy && MC.pairFix || '';
     /* モブの施術者で、客が性行為の相手を「固定した相手だけ」にしている（モブとの場面に出ない：engine.js の noMob）：普通のマッサージのまま */
     var mobNG = !TR && !HK.SAFE_ON && !!h.noMob;
     /* その理由の書き方（R18版だけ。全年齢では mobNG にならない）：[来店の理由, 結末の理由の札, 結末の説明] */
@@ -344,7 +344,7 @@
 
     var introT = TR ? K.fmt(S, K.pick(S, MC.RES_INTRO)) + ' ' + K.fmt(S, K.pick(S, MC.RES_GREET[TR.persona] || MC.RES_GREET.gentle))
       : K.fmt(S, K.pick(S, ['{a}は雑居ビルの三階、「癒しの手」と書かれた扉を押した。受付には{m}が一人。「お待ちしておりました」', '{a}はポイントカードを握りしめて、駅裏のマッサージ店に入った。迎えたのは{m}だった。', '{a}は口コミサイトで星4.8の店を予約した。レビューの八割が「また来ます」だったのが、少しだけ気になった。']));
-    var whyP = mobNG ? mobNgW[0] : plain ? '住人どうしの施術（' + pairWhy + '）：際どい施術にはならず、普通のマッサージのまま' : '';
+    var whyP = mobNG ? mobNgW[0] : plain ? '住人どうしの施術（' + pairWhy + '）：際どい施術にはならず、普通のマッサージのまま' + (pairFix ? '。直し方：' + pairFix : '') : '';
     K.say(S, { kind: 'sys', tag: '来店', text: introT, why: '目標：' + h.goal.label + '／' + h.action.label + (TR ? '／施術者は住人の' + TR.name + (o.picked ? '（住人の欄で選んだ）' : '（住人から）') + (plain ? '。' + whyP : hardTop ? '。受け攻めでは客の' + h.name + 'が主導する側' : '') : mobNG ? '／' + whyP : '') });
     K.snap(S, { s: 0 });
     if (plain) return plainRun();
@@ -373,7 +373,7 @@
       if (h.goal.id === 'heal') E.lines.push(h.name + 'の肩こりは、本当にきれいに治っていた。');
       if (h.goal.id === 'suspect') E.lines.push('噂の店は、少なくとも' + staff.n + 'の施術に限っては、まっとうな店だった。');
       var plainWhy = mobNG ? mobNgW[1] : pairWhy;
-      return done(K.finish(S, input, E, [mobNG ? 'モブの施術者で、' + h.name + mobNgW[2] : '住人どうしの施術で、体の関係にならない組（' + pairWhy + '）なので、最後まで普通のマッサージだった。'], { meta: staff.n + (TR ? '（住人）' : '') + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['施術者', staff.n], ['施術', '普通のマッサージ'], ['理由', plainWhy]], label3: '施術' }));
+      return done(K.finish(S, input, E, [mobNG ? 'モブの施術者で、' + h.name + mobNgW[2] : '住人どうしの施術で、体の関係にならない組（' + pairWhy + '）なので、最後まで普通のマッサージだった。'], { meta: staff.n + (TR ? '（住人）' : '') + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別コース' })[course] + 'コース', estats: [['施術者', staff.n], ['施術', '普通のマッサージ'], ['理由', plainWhy]].concat(!mobNG && pairFix ? [['直し方', pairFix]] : []), label3: '施術' }));
     }
     /* 結果の仕上げ：客の番号、住人の施術者（記録の登場人物・名前の色） */
     function done(res) {

@@ -10869,6 +10869,7 @@ return HK.lockOut(x,y);
 HK.sexNG=function(a,b){if(!a|| !b||a===b)return false;return sexOne(a,b)||sexOne(b,a);};
 HK.sexBlocked=function(a,b){if(!a|| !b||a===b)return false;return!!(a.noR18||b.noR18)||HK.ngExplicit(a,b)||coNG(a,b)||HK.sexNG(a,b);};
 HK.lockSexOnly=function(a,b){return!!(a&&b&&a!==b&&HK.lockConflict(a,b)&& !HK.ngExplicit(a,b)&& !coNG(a,b)&& !HK.sexNG(a,b));};
+HK.ngSexPair=function(a,b){return HK.ngPair(a,b)&& !HK.lockSexOnly(a,b);};
 HK.State={
 here:function(c){return!!c&&c.alive!==false&& !c.out&& !c.gone&& !c.taken&& !(c.flags&&(c.flags.caged!=null||c.flags.knocked));},
 canAct:function(c){return HK.State.here(c)&& !(c.flags&&c.flags.down)&& !c.bound;},
@@ -17807,7 +17808,7 @@ OPEN:OPEN,BODY:BODY,STRIP:STRIP,FORE:FORE,ERO_FORE:ERO_FORE,INSERT:INSERT,ERO_IN
 hostile:function(x,a,b,opt){
 if(!a|| !b||a===b||HK.SAFE_ON)return false;
 if(!(opt&&opt.room)&&HK.Content&& !HK.Content.ok(x,'force'))return false;
-if(HK.ngPair&&HK.ngPair(a,b))return false;
+if(HK.ngSexPair&&HK.ngSexPair(a,b))return false;
 if(x.pair&&x.pair(a,b).kin)return false;
 var okP=function(){return(!HK.Pos||HK.Pos.okSex(a,b))&&(!HK.canLove||(HK.canLove(a,b)&&HK.canLove(b,a)));};
 if(!(HK.Pos&&HK.Pos.forceOpen?HK.Pos.forceOpen(x,[a,b],okP):okP()))return false;
@@ -17926,7 +17927,7 @@ var SH_W={lover:1,fixed:1,crush:0.85,friend:0.65,enemy:0.2,none:0.12};
 function bothOk(x,T,C){
 var P=HK.Pos,St=HK.State;
 if(!P|| !St|| !St.mobSexOk(C)|| !P.canReceive(C)|| !St.pairSex(T,C))return false;
-if((HK.sexBlocked&&HK.sexBlocked(T,C))||(HK.ngPair&&HK.ngPair(T,C))||kin(x,T,C)||(HK.lockAny&&HK.lockAny(C)))return false;
+if((HK.sexBlocked&&HK.sexBlocked(T,C))||(HK.ngSexPair&&HK.ngSexPair(T,C))||kin(x,T,C)||(HK.lockAny&&HK.lockAny(C)))return false;
 if(HK.NoGen&&HK.NoGen.on&&HK.NoGen.on(T,C))return false;
 return!P.hardTop(C,T)&&P.order(T,C,[T,C])[0]===T;
 }
@@ -22436,7 +22437,7 @@ var ctx=opt.ctx||HK._curCtx,C=ctx&&ctx.chars,pr=[[a,b],[b,a]],i,x,y;
 var nameOf=function(k){var c=C&&k>=0?C[k]:null;return c?c.name:'この箱庭にいない人';};
 var gen=function(c){return GEN_JA[c.gender]?'（'+GEN_JA[c.gender]+'）':'';};
 for(i=0;i<2;i++){x=pr[i][0];if(x.noR18)return{k:'noR18',t:x.name+'が「R18に参加しない」',fix:x.name+'の「R18に参加しない」を外す'};}
-for(i=0;i<2;i++){x=pr[i][0];if(!P.libOK([x]))return{k:'lib',t:x.name+'の性欲の強さが「なし」',fix:x.name+'の「性欲の強さ」を「ふつう」などにする'};}
+for(i=0;i<2&&opt.lib!==false;i++){x=pr[i][0];if(!P.libOK([x]))return{k:'lib',t:x.name+'の性欲の強さが「なし」',fix:x.name+'の「性欲の強さ」を「ふつう」などにする'};}
 for(i=0;i<2;i++){
 x=pr[i][0];y=pr[i][1];
 if(likesOne(x,y,true))continue;
@@ -24321,7 +24322,7 @@ var P=HK.Pos,cs=P.withIdx((input&&input.chars)||[]);
 var Fs=cs.filter(function(c){return P.isFBody?P.isFBody(c):P.isF(c);});
 if(Fs.length<2|| !res)return res;
 var pairs=[];
-for(var i=0;i<Fs.length;i++)for(var j=i+1;j<Fs.length;j++)if(!(P.bothRiba&&P.bothRiba(Fs[i],Fs[j]))&&P.okSex(Fs[i],Fs[j])&& !(HK.ngPair&&HK.ngPair(Fs[i],Fs[j]))&& !(HK.sexBlocked&&HK.sexBlocked(Fs[i],Fs[j]))&& !(P.isMaleTop&&(P.isMaleTop(Fs[i],Fs[j])||P.isMaleTop(Fs[j],Fs[i]))))pairs.push([Fs[i],Fs[j]]);
+for(var i=0;i<Fs.length;i++)for(var j=i+1;j<Fs.length;j++)if(!(P.bothRiba&&P.bothRiba(Fs[i],Fs[j]))&&P.okSex(Fs[i],Fs[j])&& !(HK.ngSexPair&&HK.ngSexPair(Fs[i],Fs[j]))&& !(HK.sexBlocked&&HK.sexBlocked(Fs[i],Fs[j]))&& !(P.isMaleTop&&(P.isMaleTop(Fs[i],Fs[j])||P.isMaleTop(Fs[j],Fs[i]))))pairs.push([Fs[i],Fs[j]]);
 if(!pairs.length)return res;
 var rng=HK.rng?HK.rng(((input.seed||1)*6007+29)>>>0):null;
 var ctx={pick:function(a){return a[rng?rng.int(a.length):Math.floor(Math.random()*a.length)];}};
@@ -39535,4 +39536,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', 'cde246e935', 1);
+HK.Load.done('core', '1dcd057d6c', 1);

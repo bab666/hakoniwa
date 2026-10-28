@@ -200,6 +200,10 @@
   HK.sexBlocked = function (a, b) { if (!a || !b || a === b) return false; return !!(a.noR18 || b.noR18) || HK.ngExplicit(a, b) || coNG(a, b) || HK.sexNG(a, b); };
   /* 恋愛はしない（恋愛相手の固定が食い違う）が、体の関係は許されている組。体の関係があっても、恋愛には進まないように補正する（Ctx.say） */
   HK.lockSexOnly = function (a, b) { return !!(a && b && a !== b && HK.lockConflict(a, b) && !HK.ngExplicit(a, b) && !coNG(a, b) && !HK.sexNG(a, b)); };
+  /* 恋愛を伴わない体の関係の場面（常識改変・マッサージ・サキュバス・催眠・バラエティ・ダンジョン・遮断穴など）で見る「恋愛・R18にしない組」。
+     HK.ngPair から、性行為の相手の固定で許された恋愛相手の固定の食い違い（HK.lockSexOnly：「誰とでも可」や「固定した相手だけ」で相手が入っている）を除いたもの。
+     恋愛相手を別の人（この箱庭にいない人を含む）に固定し、性行為の相手を「誰とでも可」にした人が、二人きりの箱庭で相手にならなかった（2026-10-28 の利用者の問い合わせ） */
+  HK.ngSexPair = function (a, b) { return HK.ngPair(a, b) && !HK.lockSexOnly(a, b); };
   /* 住人の状態の共通チェック（箱庭ごとの人選びはこれを通す）
      here：その場にいる（生きている・場を離れていない・監禁されていない。物語型は gone/taken/bound も見る）
      r18ok：R18の場面に出してよい（全年齢モードでは常に不可）

@@ -1220,8 +1220,8 @@ need.sort(function(a,b){return a.m.ml-b.m.ml;});
 var c=need[0],spot=rng.pick(T.spots),lew=S.env.lewd||'mid';
 var givers=H.filter(function(g){return g!==c&&live(g)&& !g.skip&&g.m.ml>=40;});
 if(sen&&live(sen))givers.push(sen);
-givers=givers.filter(function(g){return!(HK.ngPair&&HK.ngPair(g,c))&& !(HK.ngExplicit&&HK.ngExplicit(g,c));});
-var pairOK=function(g){return lew!=='low'&& !!(HK.State&&HK.State.pairSex(g,c))&& !(HK.ngPair&&HK.ngPair(g,c))&& !(HK.sexBlocked&&HK.sexBlocked(g,c));};
+givers=givers.filter(function(g){return!(HK.ngSexPair&&HK.ngSexPair(g,c))&& !(HK.ngExplicit&&HK.ngExplicit(g,c));});
+var pairOK=function(g){return lew!=='low'&& !!(HK.State&&HK.State.pairSex(g,c))&& !(HK.ngSexPair&&HK.ngSexPair(g,c))&& !(HK.sexBlocked&&HK.sexBlocked(g,c));};
 var wRes=givers.length?1:0,wRv=R.met||R.many?(R.truce?1.2:0.6):0;
 if(!wRes&& !wRv)return;
 var useRv=rng()*(wRes+wRv)>=wRes;
@@ -1313,13 +1313,13 @@ var St=function(){return HK.State;};
 function here(c){return!St()||St().here(c);}
 function okPair(a,b){
 return!!(a&&b&&a!==b)&& !!(St()?St().pairSex(a,b):HK.Pos&&HK.Pos.okSex(a,b))&& !!(!HK.Pos||HK.Pos.okSex(a,b))&&
-!(St()&& !(St().r18ok(a)&&St().r18ok(b)))&& !(HK.ngPair&&HK.ngPair(a,b))&& !(HK.sexBlocked&&HK.sexBlocked(a,b));
+!(St()&& !(St().r18ok(a)&&St().r18ok(b)))&& !(HK.ngSexPair&&HK.ngSexPair(a,b))&& !(HK.sexBlocked&&HK.sexBlocked(a,b));
 }
 function loveOK(a,b){return!!(HK.canLove&&HK.canLove(a,b)&&HK.canLove(b,a))&& !(HK.ngPair&&HK.ngPair(a,b));}
 function whyNot(a,b){
 if(St()&& !St().r18ok(b))return b.name+'はR18に参加しない';
 if(St()&& !St().r18ok(a))return a.name+'はR18に参加しない';
-if(HK.ngPair&&HK.ngPair(a,b))return'恋愛・R18にしない組';
+if(HK.ngSexPair&&HK.ngSexPair(a,b))return'恋愛・R18にしない組';
 if(HK.Pos&& !HK.Pos.okSex(a,b))return'恋愛対象・受け攻めの指定が合わない組';
 return'体の関係にしない組';
 }
@@ -3209,4 +3209,4 @@ HK.Load.toneData("keigo_bossy",{"F":[
 HK.Load.toneData("chara_down",{"F":[
 ["もうお果てになりますか？","あれ、もうイっちゃいます？",1]]});
 });
-HK.Load.done('scen-succubus', '890910b1cf', 1);
+HK.Load.done('scen-succubus', 'ca98749896', 1);

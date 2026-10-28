@@ -107,7 +107,7 @@
   /* 住人どうしの体の関係：受け攻め・恋愛対象・R18に参加しない・性行為の相手の固定（pairSex）と、恋愛・R18にしない相手（ngPair） */
   function sexOk(a, b) {
     if (!a || !b || a === b) return false;
-    if (HK.ngPair && HK.ngPair(a, b)) return false;
+    if (HK.ngSexPair && HK.ngSexPair(a, b)) return false;
     if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
     if (HK.State && HK.State.pairSex) return HK.State.pairSex(a, b);
     return !!(P() && P().okSex(a, b));

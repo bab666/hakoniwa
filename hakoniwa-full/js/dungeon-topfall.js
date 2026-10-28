@@ -260,7 +260,7 @@
   function free(S) { return S.party.filter(function (x) { return !x.fallen && !x.captor && x.corrupt < 100 && x.reason > 0; }); }
   function sexOk(a, b) {
     if (!a || !b || a === b) return false;
-    if (HK.ngPair && HK.ngPair(a, b)) return false;
+    if (HK.ngSexPair && HK.ngSexPair(a, b)) return false;
     if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
     if (HK.State && HK.State.pairSex) return HK.State.pairSex(a, b);
     return !!(P() && P().okSex(a, b));

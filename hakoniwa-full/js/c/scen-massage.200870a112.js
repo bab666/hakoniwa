@@ -226,14 +226,18 @@ p.persona=HK.personaOf(p);
 (input.ties||[]).forEach(function(t){if(t&& /^(lover|mate|fated)$/.test(t.type)&&(t.a===i||t.b===i))(p.loveSet=p.loveSet||[]).push(t.a===i?t.b:t.a);});
 return p;
 };
-C.pairWhy=function(T,Cc){
+C.pairWhy=function(T,Cc,ties){
 var P=HK.Pos,ST=HK.State;
+C.pairFix='';
 if(HK.SAFE_ON|| !P|| !ST)return'全年齢';
-if(T.rawNoR18||Cc.rawNoR18|| !ST.r18ok(T)|| !ST.r18ok(Cc))return'R18に参加しない人がいる';
-if((HK.ngPair&&HK.ngPair(T,Cc))||(HK.sexBlocked&&HK.sexBlocked(T,Cc)))return'恋愛・R18にしない組';
-if(!P.genderOK(T,Cc))return'恋愛対象が合わない';
-if(!P.okSex(T,Cc))return'受け攻めの指定が合わない';
-return'';
+if(T.rawNoR18||Cc.rawNoR18|| !ST.r18ok(T)|| !ST.r18ok(Cc)){var nr=[T,Cc].filter(function(x){return x.rawNoR18|| !ST.r18ok(x);}).map(function(x){return x.name;});C.pairFix=nr.join('・')+'の「R18に参加しない」を外す';return nr.join('・')+'が「R18に参加しない」';}
+var base=(HK.ngSexPair&&HK.ngSexPair(T,Cc))||(HK.sexBlocked&&HK.sexBlocked(T,Cc))?'恋愛・R18にしない組': !P.genderOK(T,Cc)?'恋愛対象が合わない': !P.okSex(T,Cc)?'受け攻めの指定が合わない':'';
+if(!base)return'';
+var d=P.noSexInfo?P.noSexInfo(T,Cc,{room:false,lib:false,ties:ties}):null;
+var none= !d&&base==='恋愛対象が合わない'?[T,Cc].filter(function(x){return x.likes==='none';})[0]:null;
+if(none)d={t:none.name+'の恋愛対象が「なし」（住人どうしの施術は、恋愛対象で決まる）',fix:none.name+'の「恋愛対象」を選ぶ'};
+if(d)C.pairFix=d.fix||'';
+return d?d.t:base;
 };
 C.cast=function(input){
 var n=Math.min(2,(input.chars||[]).length);
@@ -556,7 +560,7 @@ if(TR&&sk==='gentle'&&HK.Pos&&HK.Pos.isF(TR))sk='lady';
 if(!STAFF[sk])sk='gentle';
 var staff=TR?{n:TR.name,g:HK.Pos?(HK.Pos.isF(TR)?'f':'m'):TR.gender==='f'?'f':'m',desc:'',dec:STAFF[sk].dec,res:true}:STAFF[sk];
 S.vars={m:staff.n,you:TR|| !HK.Mob?'あなた':HK.Mob.addr(staff.n,'さん')};
-var pairWhy=TR?MC.pairWhy(TR,CR):'',pairOK= !!TR&& !pairWhy;
+var pairWhy=TR?MC.pairWhy(TR,CR,input.ties):'',pairOK= !!TR&& !pairWhy,pairFix=TR&&pairWhy&&MC.pairFix||'';
 var mobNG= !TR&& !HK.SAFE_ON&& !!h.noMob;
 var mobNgW=['','',''];
 mobNgW=['性行為の相手を「固定した相手だけ」にしているので、モブの施術者とは際どい施術にならず、普通のマッサージのまま','性行為の相手を固定した相手だけにしている','は性行為の相手を「固定した相手だけ」にしているので、最後まで普通のマッサージだった。'];
@@ -627,7 +631,7 @@ if(f.extra)extended=true;
 }
 var introT=TR?K.fmt(S,K.pick(S,MC.RES_INTRO))+' '+K.fmt(S,K.pick(S,MC.RES_GREET[TR.persona]||MC.RES_GREET.gentle))
 :K.fmt(S,K.pick(S,['{a}は雑居ビルの三階、「癒しの手」と書かれた扉を押した。受付には{m}が一人。「お待ちしておりました」','{a}はポイントカードを握りしめて、駅裏のマッサージ店に入った。迎えたのは{m}だった。','{a}は口コミサイトで星4.8の店を予約した。レビューの八割が「また来ます」だったのが、少しだけ気になった。']));
-var whyP=mobNG?mobNgW[0]:plain?'住人どうしの施術（'+pairWhy+'）：際どい施術にはならず、普通のマッサージのまま':'';
+var whyP=mobNG?mobNgW[0]:plain?'住人どうしの施術（'+pairWhy+'）：際どい施術にはならず、普通のマッサージのまま'+(pairFix?'。直し方：'+pairFix:''):'';
 K.say(S,{kind:'sys',tag:'来店',text:introT,why:'目標：'+h.goal.label+'／'+h.action.label+(TR?'／施術者は住人の'+TR.name+(o.picked?'（住人の欄で選んだ）':'（住人から）')+(plain?'。'+whyP:hardTop?'。受け攻めでは客の'+h.name+'が主導する側':''):mobNG?'／'+whyP:'')});
 K.snap(S,{s:0});
 if(plain)return plainRun();
@@ -651,7 +655,7 @@ E.lines.push(K.fmt(S,K.pick(S,PM?PM.end:MC.PLAIN_END)),K.fmt(S,K.pick(S,PM?PM.en
 if(h.goal.id==='heal')E.lines.push(h.name+'の肩こりは、本当にきれいに治っていた。');
 if(h.goal.id==='suspect')E.lines.push('噂の店は、少なくとも'+staff.n+'の施術に限っては、まっとうな店だった。');
 var plainWhy=mobNG?mobNgW[1]:pairWhy;
-return done(K.finish(S,input,E,[mobNG?'モブの施術者で、'+h.name+mobNgW[2]:'住人どうしの施術で、体の関係にならない組（'+pairWhy+'）なので、最後まで普通のマッサージだった。'],{meta:staff.n+(TR?'（住人）':'')+'・'+({normal:'整体',oil:'アロマオイル',lymph:'全身リンパ',special:'特別コース'})[course]+'コース',estats:[['施術者',staff.n],['施術','普通のマッサージ'],['理由',plainWhy]],label3:'施術'}));
+return done(K.finish(S,input,E,[mobNG?'モブの施術者で、'+h.name+mobNgW[2]:'住人どうしの施術で、体の関係にならない組（'+pairWhy+'）なので、最後まで普通のマッサージだった。'],{meta:staff.n+(TR?'（住人）':'')+'・'+({normal:'整体',oil:'アロマオイル',lymph:'全身リンパ',special:'特別コース'})[course]+'コース',estats:[['施術者',staff.n],['施術','普通のマッサージ'],['理由',plainWhy]].concat(!mobNG&&pairFix?[['直し方',pairFix]]:[]),label3:'施術'}));
 }
 function done(res){
 res.hero.i=h.i;res.staffName=staff.n;
@@ -1979,4 +1983,4 @@ HK.Load.toneData("chara_down",{"F":[
 ["念のため伺います。ただいまの施術は、コースに含まれておりますか","一応聞きますけど。今のって、コースに入ってるやつですー？",1],
 ["……ちょっと待ってください。今の、何ですか","……ちょっと待ってください。今の、何です？",1]]});
 });
-HK.Load.done('scen-massage', 'fe5f54aa81', 1);
+HK.Load.done('scen-massage', '200870a112', 1);

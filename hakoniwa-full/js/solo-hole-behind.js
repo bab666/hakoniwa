@@ -128,7 +128,7 @@
     var Pz = HK.Pos;
     if (!Pz || !Pz.okSex(b, h)) return null;
     /* 恋愛・R18にしない組・性行為の相手の固定（「固定した相手だけ」「固定した相手＋モブ」で、相手が固定の外）・同じ人の恋人どうし：手を出さない（HK.sexBlocked） */
-    if ((HK.ngPair && HK.ngPair(b, h)) || (HK.sexBlocked && HK.sexBlocked(b, h))) return null;
+    if ((HK.ngSexPair && HK.ngSexPair(b, h)) || (HK.sexBlocked && HK.sexBlocked(b, h))) return null;
     var o = Pz.order(b, h, [b, h]);
     if (o[0] === b) return Pz.hardTop(h, b) ? null : Pz.isF(b) ? 'finger' : 'pen';
     /* 手を出す側が受け：挿入はしない。はまっている人が自分で攻めを選んでいれば、跨るだけ */
@@ -269,7 +269,7 @@
     var h = S.h, b = res.rescued, F = function (t) { return K.fmt(S, t, { b: b.name }); };
     /* 恋愛・R18にしない組（HK.ngPair）なら、助けた人に縋らない */
     /* 恋愛・R18にしない組・性行為の相手を固定した人（固定した相手だけ・固定した相手＋モブ。HK.sexBlocked）・受け攻めの合わない組なら、助けた人に縋らない（ひとりで受け止める文） */
-    var ng = !!(HK.ngPair && HK.ngPair(h, b)) || !!(HK.sexBlocked && HK.sexBlocked(h, b)) || !!(HK.Pos && !HK.Pos.okSex(h, b));
+    var ng = !!(HK.ngSexPair && HK.ngSexPair(h, b)) || !!(HK.sexBlocked && HK.sexBlocked(h, b)) || !!(HK.Pos && !HK.Pos.okSex(h, b));
     if (st.hardTop) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, T.rescuedTop)), why: st.guard ? '性行為の相手を固定した相手だけにしているので、壁の向こうの手を追い払い、何も溜まっていなかった' : '自分で攻めを選んでいるので、何も溜まっていなかった' });
     else if (st.live || st.stored < 20) K.say(S, { kind: 'sys', tag: '解放', text: F(P(S, ng ? T.rescuedLiveNG : T.rescuedLive)), why: ng ? '恋愛・R18にしない相手（または体の関係にならない相手）なので、縋らない' : '' });
     else {

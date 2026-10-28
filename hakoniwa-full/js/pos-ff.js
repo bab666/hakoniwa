@@ -154,7 +154,7 @@
       var Fs = cs.filter(function (c) { return P.isFBody ? P.isFBody(c) : P.isF(c); });
       if (Fs.length < 2 || !res) return res;
       var pairs = [];
-      for (var i = 0; i < Fs.length; i++) for (var j = i + 1; j < Fs.length; j++) if (!(P.bothRiba && P.bothRiba(Fs[i], Fs[j])) && P.okSex(Fs[i], Fs[j]) && !(HK.ngPair && HK.ngPair(Fs[i], Fs[j])) && !(HK.sexBlocked && HK.sexBlocked(Fs[i], Fs[j])) && !(P.isMaleTop && (P.isMaleTop(Fs[i], Fs[j]) || P.isMaleTop(Fs[j], Fs[i])))) pairs.push([Fs[i], Fs[j]]);
+      for (var i = 0; i < Fs.length; i++) for (var j = i + 1; j < Fs.length; j++) if (!(P.bothRiba && P.bothRiba(Fs[i], Fs[j])) && P.okSex(Fs[i], Fs[j]) && !(HK.ngSexPair && HK.ngSexPair(Fs[i], Fs[j])) && !(HK.sexBlocked && HK.sexBlocked(Fs[i], Fs[j])) && !(P.isMaleTop && (P.isMaleTop(Fs[i], Fs[j]) || P.isMaleTop(Fs[j], Fs[i])))) pairs.push([Fs[i], Fs[j]]);
       if (!pairs.length) return res;
       var rng = HK.rng ? HK.rng(((input.seed || 1) * 6007 + 29) >>> 0) : null;
       var ctx = { pick: function (a) { return a[rng ? rng.int(a.length) : Math.floor(Math.random() * a.length)]; } };

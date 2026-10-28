@@ -123,7 +123,7 @@
   };
   function forceOk(ctx, a, b) {
     if (HK.SAFE_ON || !HK.Content || !HK.Content.on(ctx.env, 'force', ctx.scen && ctx.scen.id) || HK.Dark.on(ctx) === 'mild') return false;
-    if (!HK.State.r18ok(a) || !HK.State.r18ok(b) || HK.ngPair(a, b) || (HK.sexBlocked && HK.sexBlocked(a, b))) return false;
+    if (!HK.State.r18ok(a) || !HK.State.r18ok(b) || HK.ngSexPair(a, b) || (HK.sexBlocked && HK.sexBlocked(a, b))) return false;
     var P = HK.Pos;
     if (!P || P.hardTop(b, a)) return false;
     return P.orients(a, b).some(function (o) { return o[0] === a; });

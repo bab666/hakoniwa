@@ -401,9 +401,9 @@
     var givers = H.filter(function (g) { return g !== c && live(g) && !g.skip && g.m.ml >= 40; });
     if (sen && live(sen)) givers.push(sen);
     /* 恋愛・R18にしない相手どうしは、手を重ねるだけの分け方でも組ませない */
-    givers = givers.filter(function (g) { return !(HK.ngPair && HK.ngPair(g, c)) && !(HK.ngExplicit && HK.ngExplicit(g, c)); });
+    givers = givers.filter(function (g) { return !(HK.ngSexPair && HK.ngSexPair(g, c)) && !(HK.ngExplicit && HK.ngExplicit(g, c)); });
     /* 住人どうしで体の関係になれる組（恋愛対象・受け攻め・縛り・R18参加・恋愛やR18にしない相手） */
-    var pairOK = function (g) { return lew !== 'low' && !!(HK.State && HK.State.pairSex(g, c)) && !(HK.ngPair && HK.ngPair(g, c)) && !(HK.sexBlocked && HK.sexBlocked(g, c)); };
+    var pairOK = function (g) { return lew !== 'low' && !!(HK.State && HK.State.pairSex(g, c)) && !(HK.ngSexPair && HK.ngSexPair(g, c)) && !(HK.sexBlocked && HK.sexBlocked(g, c)); };
     var wRes = givers.length ? 1 : 0, wRv = R.met || R.many ? (R.truce ? 1.2 : 0.6) : 0;
     if (!wRes && !wRv) return;
     var useRv = rng() * (wRes + wRv) >= wRes;

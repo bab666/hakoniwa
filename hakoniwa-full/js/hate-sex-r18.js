@@ -459,7 +459,7 @@
       /* 敵対する二人の強引なエッチは「合意のない展開」（内容のスイッチ）。
          ただし出られない部屋の条件「エッチ」（opt.room）は部屋の仕掛けなので、スイッチに関わらず起きる（2026-10-26。暴力の段だけは「暴力をともなう性描写」に従う） */
       if (!(opt && opt.room) && HK.Content && !HK.Content.ok(x, 'force')) return false;
-      if (HK.ngPair && HK.ngPair(a, b)) return false;
+      if (HK.ngSexPair && HK.ngSexPair(a, b)) return false;
       if (x.pair && x.pair(a, b).kin) return false;
       /* 合意のない展開が入なら、恋愛対象「なし」の人も（HK.Pos.forceOpen。恋愛対象の性別・受け攻めの指定はこれまでどおり。2026-10-27 担当HC） */
       var okP = function () { return (!HK.Pos || HK.Pos.okSex(a, b)) && (!HK.canLove || (HK.canLove(a, b) && HK.canLove(b, a))); };
@@ -617,7 +617,7 @@
   function bothOk(x, T, C) {
     var P = HK.Pos, St = HK.State;
     if (!P || !St || !St.mobSexOk(C) || !P.canReceive(C) || !St.pairSex(T, C)) return false;
-    if ((HK.sexBlocked && HK.sexBlocked(T, C)) || (HK.ngPair && HK.ngPair(T, C)) || kin(x, T, C) || (HK.lockAny && HK.lockAny(C))) return false;
+    if ((HK.sexBlocked && HK.sexBlocked(T, C)) || (HK.ngSexPair && HK.ngSexPair(T, C)) || kin(x, T, C) || (HK.lockAny && HK.lockAny(C))) return false;
     if (HK.NoGen && HK.NoGen.on && HK.NoGen.on(T, C)) return false;
     return !P.hardTop(C, T) && P.order(T, C, [T, C])[0] === T;
   }

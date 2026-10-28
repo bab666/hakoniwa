@@ -317,11 +317,11 @@
         if (!y) { drunk.shift(); continue; }
         /* 乱交には、自分で攻めを選んだ人を入れない（誰に何をされるか分からない場面のため） */
         var gp = drunk.filter(function (q) { return !(HK.Pos && HK.Pos.hardTopIn(q, drunk)) && !(HK.State && !HK.State.r18ok(q)) && libOk(q, q); });
-        /* 恋愛・R18にしない組（HK.ngPair）は、同じ乱交の輪に入れない（入れる人が三人に満たなければ、二人の場面にする）。
+        /* 恋愛・R18にしない組（HK.ngSexPair）は、同じ乱交の輪に入れない（入れる人が三人に満たなければ、二人の場面にする）。
            輪の中は誰とでも触れ合うので、三人以上の場面（3P）の決まりどおり、輪の全員の組が直接の行為をできる（受け攻め・恋愛対象・
            性行為の相手の固定＝okP）ときだけ。住人の設定「三人の場面（3P）：しない」の人は輪に入れない（pos.js の HK.Pos.trioOptOut。2026-10-27 担当HN） */
         gp = gp.filter(function (q) { return !(HK.Pos && HK.Pos.trioOptOut && HK.Pos.trioOptOut(q)); });
-        var gq = []; gp.forEach(function (q) { if (gq.every(function (z) { return !HK.ngPair(z, q) && okP(z, q); })) gq.push(q); }); gp = gq;
+        var gq = []; gp.forEach(function (q) { if (gq.every(function (z) { return !HK.ngSexPair(z, q) && okP(z, q); })) gq.push(q); }); gp = gq;
         if (gp.length >= 3 && rng() < lv * 0.5) { var g = gp.slice(0, Math.min(gp.length, 3 + Math.floor(rng() * 2))); ST.say(S, { actors: g, tag: '媚薬の夜', kind: 'climax', text: grpText(g, F(fp(S, g.every(function (q) { return HK.Pos && HK.Pos.isF(q); }) && Y.R18T && Y.R18T.ff ? Y.R18T.ff.group : PL('group', SC.group)), { p: P }), lwEro(S) ? groupEro(S, g, P) : HK.R18M ? HK.R18M.group(S, g) : ''), why: '媚薬の熱で、' + g.map(function (q) { return q.name; }).join('・') + 'が絡み合った', mag: 34 }); g.forEach(function (q) { drunk.splice(drunk.indexOf(q), 1); }); scenes++; continue; }
         pairScene('casual', x, y, null, '媚薬の熱（' + (Y.relLabel(S, x, y) || '関係なし') + '）');
       }

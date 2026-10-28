@@ -178,8 +178,9 @@
   }
 
   /* ---------- 施術 ---------- */
-  /* 住人どうしの施術：向きの決まる組（HK.Pos.okSex）で、恋愛・R18にしない組・性行為の相手の固定の外・同じ人の恋人どうし（HK.ngPair・HK.sexBlocked）でないこと */
-  function okPair(a, b) { return (!HK.Pos || HK.Pos.okSex(a, b)) && !(HK.ngPair && HK.ngPair(a, b)) && !(HK.sexBlocked && HK.sexBlocked(a, b)); }
+  /* 住人どうしの施術：向きの決まる組（HK.Pos.okSex）で、恋愛・R18にしない組・性行為の相手の固定の外・同じ人の恋人どうし（HK.ngSexPair・HK.sexBlocked）でないこと。
+     恋愛相手の固定が食い違うだけの組は、性行為の相手の固定で「誰とでも可」などにしていれば施術の相手になれる（HK.ngSexPair。恋愛には進まない） */
+  function okPair(a, b) { return (!HK.Pos || HK.Pos.okSex(a, b)) && !(HK.ngSexPair && HK.ngSexPair(a, b)) && !(HK.sexBlocked && HK.sexBlocked(a, b)); }
   /* 自分で攻めを選んだ人の喘ぎ・絶頂の声から、受け身の台詞を外す */
   function topL(p, list) { return HK.R18M && HK.R18M.topLines ? HK.R18M.topLines(p, list) : list; }
   /* 小説調の果てる声：喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）から。元の表（Voice.CLIMAX。攻めを選んだ人は受け身の台詞を外したもの）も4割ほど残る */
@@ -798,6 +799,18 @@
     var title = (sid === 'stage' ? '「' + place + '」の公演は、今日も満員だった。' : '「' + place + '」は今日も平常運転。') + (S.wear ? '――けれど営業のあと、改変は解けた。' : woke.length ? names(woke) + 'だけが、おかしさに気づいて正気に戻った。' : noticed.length ? names(noticed) + 'は違和感に触れたが、世界は何も変わらなかった。' : '誰ひとり、違和感に気づかなかった。') + afterTitle(S, aft);
     var lines = P.map(function (p) { return p.name + '（' + p.roleLabel + '）：' + p.fate; });
     if (topG) lines.push('いちばん搾ったのは' + topG.name + '（' + Math.round(topG.m.sem) + 'ml）');
+    /* 住人どうしで施術の相手にならない組（施す側×受ける側・正気の人）：理由と直し方を結末に一行（HK.Pos.noSexInfo。性欲・部屋の関係は見ない）。
+       2026-10-28 の利用者の問い合わせ「二人きりでも相手にならない」：どの設定が止めているかを画面で分かるように */
+    var ngL = [];
+    P.forEach(function (g) {
+      if (g.role !== 'giver') return;
+      P.forEach(function (x) {
+        if (x === g || x.role === 'giver' || okPair(g, x)) return;
+        var d = HK.Pos && HK.Pos.noSexInfo ? HK.Pos.noSexInfo(g, x, { room: false, lib: false, ties: input.ties }) : null;
+        ngL.push(g.name + 'と' + x.name + '（' + (d ? d.t + (d.fix ? '。直し方：' + d.fix : '') : '体の関係にならない組') + '）');
+      });
+    });
+    if (ngL.length) lines.push('住人どうしの施術にならない組：' + ngL.slice(0, 3).join('、') + (ngL.length > 3 ? '、ほか' + (ngL.length - 3) + '組' : '') + '。');
     var total = G.reduce(function (s, g) { return s + g.cnt.served; }, 0), sem = G.reduce(function (s, g) { return s + g.m.sem; }, 0);
     closeDay(S, SIT, place, sid, woke, noticed, total);
     var rows = P.slice().sort(function (a, b) { return (b.role === 'giver') - (a.role === 'giver') || b.m.sem - a.m.sem; }).map(function (p, k) {

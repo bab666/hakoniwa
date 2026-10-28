@@ -5397,7 +5397,7 @@ fm:L('{a}は{b}を仰向けに押さえつけて跨り、{b}の{男性器}を握
 };
 function forceOk(ctx,a,b){
 if(HK.SAFE_ON|| !HK.Content|| !HK.Content.on(ctx.env,'force',ctx.scen&&ctx.scen.id)||HK.Dark.on(ctx)==='mild')return false;
-if(!HK.State.r18ok(a)|| !HK.State.r18ok(b)||HK.ngPair(a,b)||(HK.sexBlocked&&HK.sexBlocked(a,b)))return false;
+if(!HK.State.r18ok(a)|| !HK.State.r18ok(b)||HK.ngSexPair(a,b)||(HK.sexBlocked&&HK.sexBlocked(a,b)))return false;
 var P=HK.Pos;
 if(!P||P.hardTop(b,a))return false;
 return P.orients(a,b).some(function(o){return o[0]===a;});
@@ -7992,4 +7992,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 ["止まった。もう止まっている","止まった。……もう、止まっているのだよ",1],
 ["この紙、誤字っていないか","この紙、誤字があるのではないかね",1]]});
 });
-HK.Load.done('scen-whiteroom', '624d2845cc', 1);
+HK.Load.done('scen-whiteroom', 'e1f796fce9', 1);

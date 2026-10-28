@@ -47,14 +47,14 @@
   /* 住人どうしで体の関係になれる組（恋愛対象・受け攻め・R18に参加・恋愛やR18にしない相手・性行為の相手の固定） */
   function okPair(a, b) {
     return !!(a && b && a !== b) && !!(St() ? St().pairSex(a, b) : HK.Pos && HK.Pos.okSex(a, b)) && !!(!HK.Pos || HK.Pos.okSex(a, b)) &&
-      !(St() && !(St().r18ok(a) && St().r18ok(b))) && !(HK.ngPair && HK.ngPair(a, b)) && !(HK.sexBlocked && HK.sexBlocked(a, b));
+      !(St() && !(St().r18ok(a) && St().r18ok(b))) && !(HK.ngSexPair && HK.ngSexPair(a, b)) && !(HK.sexBlocked && HK.sexBlocked(a, b));
   }
   function loveOK(a, b) { return !!(HK.canLove && HK.canLove(a, b) && HK.canLove(b, a)) && !(HK.ngPair && HK.ngPair(a, b)); }
   /* 体の関係にしない理由（理由の欄に出す） */
   function whyNot(a, b) {
     if (St() && !St().r18ok(b)) return b.name + 'はR18に参加しない';
     if (St() && !St().r18ok(a)) return a.name + 'はR18に参加しない';
-    if (HK.ngPair && HK.ngPair(a, b)) return '恋愛・R18にしない組';
+    if (HK.ngSexPair && HK.ngSexPair(a, b)) return '恋愛・R18にしない組';
     if (HK.Pos && !HK.Pos.okSex(a, b)) return '恋愛対象・受け攻めの指定が合わない組';
     return '体の関係にしない組';
   }

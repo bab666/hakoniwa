@@ -396,7 +396,7 @@
      同じものを、利用者に伝える順に見る：R18に参加しない／性欲の強さ「なし」／恋愛対象が合わない／体の関係の相手「なし」／恋愛・R18にしない相手／
      同じ人の恋人どうし／性行為の相手の固定（恋愛相手の固定に合わせている場合を含む）／一途／関係「無関心」「恐怖」・恋愛なしの家族／
      部屋の恋愛にしない関係／受け攻め。どれにも当たらないのに持てない組は、受け攻めの理由にまとめる（okSex と食い違わない）。
-     opt.ctx（無ければ HK._curCtx）：名前を引く住人の並び・関係。opt.room が偽なら部屋の恋愛にしない関係を見ない。R18版だけ（全年齢版には無いので、呼ぶ側は HK.Pos.whyNoSex があるときだけ使う） */
+     opt.ctx（無ければ HK._curCtx）：名前を引く住人の並び・関係。opt.room が偽なら部屋の恋愛にしない関係を、opt.lib が偽なら性欲の強さを見ない（性欲を見ない R18 が中心の箱庭）。opt.ties：入力の関係（物語型・一人用の箱庭で、関係から入った ng を関係の理由で書く）。R18版だけ（全年齢版には無いので、呼ぶ側は HK.Pos.whyNoSex があるときだけ使う） */
   var LIKE_JA = { m: '男性', f: '女性', both: '男女両方', none: 'なし' }, GEN_JA = { m: '男性', f: '女性' };
   var POS_JA = { top: '攻め', bottom: '受け', riba: 'リバ' };
   P.noSexInfo = function (a, b, opt) {
@@ -406,7 +406,7 @@
     var nameOf = function (k) { var c = C && k >= 0 ? C[k] : null; return c ? c.name : 'この箱庭にいない人'; };
     var gen = function (c) { return GEN_JA[c.gender] ? '（' + GEN_JA[c.gender] + '）' : ''; };
     for (i = 0; i < 2; i++) { x = pr[i][0]; if (x.noR18) return { k: 'noR18', t: x.name + 'が「R18に参加しない」', fix: x.name + 'の「R18に参加しない」を外す' }; }
-    for (i = 0; i < 2; i++) { x = pr[i][0]; if (!P.libOK([x])) return { k: 'lib', t: x.name + 'の性欲の強さが「なし」', fix: x.name + 'の「性欲の強さ」を「ふつう」などにする' }; }
+    for (i = 0; i < 2 && opt.lib !== false; i++) { x = pr[i][0]; if (!P.libOK([x])) return { k: 'lib', t: x.name + 'の性欲の強さが「なし」', fix: x.name + 'の「性欲の強さ」を「ふつう」などにする' }; }
     for (i = 0; i < 2; i++) {
       x = pr[i][0]; y = pr[i][1];
       if (likesOne(x, y, true)) continue;
@@ -417,7 +417,18 @@
       }
       return { k: 'likes', t: x.name + 'の恋愛対象「' + (LIKE_JA[x.likes] || x.likes) + '」に、' + y.name + gen(y) + 'が合わない', fix: x.name + 'の「恋愛対象」を変える' };
     }
-    for (i = 0; i < 2; i++) { x = pr[i][0]; y = pr[i][1]; if (x.ng && x.ng.indexOf(y.i) >= 0) return { k: 'ng', t: x.name + 'が' + y.name + 'を「恋愛・R18にしない相手」にしている', fix: x.name + 'の「恋愛・R18にしない相手」から' + y.name + 'を外す' }; }
+    /* 物語型・一人用の箱庭は、関係「無関心」「恐怖」・「恋愛：なし」の家族を ng（恋愛・R18にしない相手）に入れて止める（engine.js の HK.fearInput・fam-kin.js の HK.kinNG）。
+       opt.ties（入力の関係）を渡されたら、その関係がある組は関係の理由で書く（「恋愛・R18にしない相手」と書くと、利用者は設定を探しても見つからないため） */
+    var tieNo = function (x, y) {
+      return (opt.ties || []).filter(function (t) { return t && ((t.a === x.i && t.b === y.i) || (t.a === y.i && t.b === x.i)) && (t.type === 'apathy' || t.type === 'fear' || (HK.tieNoLove && HK.tieNoLove(t))); })[0] || null;
+    };
+    for (i = 0; i < 2; i++) {
+      x = pr[i][0]; y = pr[i][1];
+      if (!(x.ng && x.ng.indexOf(y.i) >= 0)) continue;
+      var tn = tieNo(x, y);
+      if (tn) return { k: 'noLove', t: a.name + 'と' + b.name + 'は' + (tn.type === 'apathy' ? '関係「無関心」' : tn.type === 'fear' ? '関係「恐怖」' : '「恋愛：なし」の家族（' + ((HK.TIES && HK.TIES[tn.type] && HK.TIES[tn.type].label) || tn.type) + '）') + 'の二人', fix: '二人の関係を変える（家族なら関係の「恋愛」を「あり」にする）' };
+      return { k: 'ng', t: x.name + 'が' + y.name + 'を「恋愛・R18にしない相手」にしている', fix: x.name + 'の「恋愛・R18にしない相手」から' + y.name + 'を外す' };
+    }
     if ((a.coNG && a.coNG.indexOf(b.i) >= 0) || (b.coNG && b.coNG.indexOf(a.i) >= 0)) return { k: 'coNG', t: a.name + 'と' + b.name + 'は同じ人の恋人どうし（恋人が複数いる人の恋人どうしは、体の関係にしない）', fix: a.name + 'と' + b.name + 'のあいだに恋愛の関係（恋人・セフレ など）を足すか、恋人の関係を見直す' };
     for (i = 0; i < 2; i++) {
       x = pr[i][0]; y = pr[i][1];

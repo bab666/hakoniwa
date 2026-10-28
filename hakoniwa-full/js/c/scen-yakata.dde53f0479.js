@@ -2588,7 +2588,7 @@ var x=drunk[0],y=drunk.slice(1).filter(function(q){return can(x,q)||canFree(x,q)
 if(!y){drunk.shift();continue;}
 var gp=drunk.filter(function(q){return!(HK.Pos&&HK.Pos.hardTopIn(q,drunk))&& !(HK.State&& !HK.State.r18ok(q))&&libOk(q,q);});
 gp=gp.filter(function(q){return!(HK.Pos&&HK.Pos.trioOptOut&&HK.Pos.trioOptOut(q));});
-var gq=[];gp.forEach(function(q){if(gq.every(function(z){return!HK.ngPair(z,q)&&okP(z,q);}))gq.push(q);});gp=gq;
+var gq=[];gp.forEach(function(q){if(gq.every(function(z){return!HK.ngSexPair(z,q)&&okP(z,q);}))gq.push(q);});gp=gq;
 if(gp.length>=3&&rng()<lv*0.5){var g=gp.slice(0,Math.min(gp.length,3+Math.floor(rng()*2)));ST.say(S,{actors:g,tag:'媚薬の夜',kind:'climax',text:grpText(g,F(fp(S,g.every(function(q){return HK.Pos&&HK.Pos.isF(q);})&&Y.R18T&&Y.R18T.ff?Y.R18T.ff.group:PL('group',SC.group)),{p:P}),lwEro(S)?groupEro(S,g,P):HK.R18M?HK.R18M.group(S,g):''),why:'媚薬の熱で、'+g.map(function(q){return q.name;}).join('・')+'が絡み合った',mag:34});g.forEach(function(q){drunk.splice(drunk.indexOf(q),1);});scenes++;continue;}
 pairScene('casual',x,y,null,'媚薬の熱（'+(Y.relLabel(S,x,y)||'関係なし')+'）');
 }
@@ -3492,4 +3492,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 ["さて――皆。この事件の真相が分かった","さて――諸君。この事件の真相が分かったのだよ",1],
 ["少しいいか？　昨夜のことで、聞きたいことがある","少しいいかね？　昨夜のことで、聞きたいことがあるのだよ",1]]});
 });
-HK.Load.done('scen-yakata', '3af3e3071e', 1);
+HK.Load.done('scen-yakata', 'dde53f0479', 1);

@@ -961,7 +961,7 @@ p.M=SM.METHODS[p.mk];
 p.bad=ty==='grudge'||ty==='stalker';
 var Pz=HK.Pos;
 var mobNo= !HY&& !HK.SAFE_ON&&(!!(HK.State&& !HK.State.mobSexOk(p))|| !!(Pz&& !Pz.genderOK(p,p.hm)));
-var resNo= !!HY&& !HK.SAFE_ON&&(!!(HK.ngPair&&HK.ngPair(HY,p))|| !!(HK.sexBlocked&&HK.sexBlocked(HY,p)));
+var resNo= !!HY&& !HK.SAFE_ON&&(!!(HK.ngSexPair&&HK.ngSexPair(HY,p))|| !!(HK.sexBlocked&&HK.sexBlocked(HY,p)));
 p.noForce=S.gate&&(ty==='grudge'||ty==='stalker');
 p.consent=S.gate&& !p.noForce;
 var libNo= !!(S.gate&&Pz&&Pz.libOf&&(Pz.libOf(p)==='none'||(HY&&Pz.libOf(HY)==='none')));
@@ -3509,4 +3509,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 ["……その、また、かけてくれないか？","……その、また、かけてくれないか？",1],
 ["すまない、無理だ。笑ってしまう","すまない、無理だ。……フッ、笑ってしまう",1]]});
 });
-HK.Load.done('scen-saimin', '78d41ae7a1', 1);
+HK.Load.done('scen-saimin', '8c24110280', 1);

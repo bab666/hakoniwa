@@ -1,7 +1,7 @@
 /* 箱庭シミュレーター: マッサージの配役（施術者を住人かモブで・2人で受ける「カーテン越し」）。全年齢版と同じ内容
    ・役割「施術者」（HK.Roles。env role_therapist：おまかせ＝モブ／住人から／モブ）。1人のときは、施術者はいつもモブ
    ・住人が施術者：もう一人の住人が客。施術者の言い訳と一言は気質から（STAFF_OF で店の施術者の型に当てる・RES_EXCUSE）。
-     体に触れる際どい施術は、二人が体の関係になれる組（HK.Pos.okSex・HK.State.r18ok の両方・HK.ngPair でも HK.sexBlocked でもない）だけ。
+     体に触れる際どい施術は、二人が体の関係になれる組（HK.Pos.okSex・HK.State.r18ok の両方・HK.ngSexPair でも HK.sexBlocked でもない）だけ。
      なれない組は、普通のマッサージのまま（PLAIN_*。全年齢と同じ書き方）
    ・モブが施術者で住人が2人：二人とも客になり、薄いカーテン一枚を隔てた隣の施術台で受ける（CUR_*・merge）。
      二人の施術はそれぞれ別に進み、カーテン越しに聞こえる音だけが行き来する（数値には効かない）
@@ -140,15 +140,22 @@
     (input.ties || []).forEach(function (t) { if (t && /^(lover|mate|fated)$/.test(t.type) && (t.a === i || t.b === i)) (p.loveSet = p.loveSet || []).push(t.a === i ? t.b : t.a); });
     return p;
   };
-  /* 住人どうしの施術で、際どい施術（体の関係）にしてよいか。だめなら理由 */
-  C.pairWhy = function (T, Cc) {
+  /* 住人どうしの施術で、際どい施術（体の関係）にしてよいか。だめなら理由。
+     恋愛相手の固定が食い違うだけの組は、性行為の相手の固定で「誰とでも可」などにしていれば際どい施術になる（HK.ngSexPair。2026-10-28 の利用者の問い合わせ）。
+     理由は HK.Pos.whyNoSex（R18版だけ。性欲・部屋の関係は見ない）があれば、誰のどの設定かと直し方まで書く（C.pairFix に直し方） */
+  C.pairWhy = function (T, Cc, ties) {
     var P = HK.Pos, ST = HK.State;
+    C.pairFix = '';
     if (HK.SAFE_ON || !P || !ST) return '全年齢';
-    if (T.rawNoR18 || Cc.rawNoR18 || !ST.r18ok(T) || !ST.r18ok(Cc)) return 'R18に参加しない人がいる';
-    if ((HK.ngPair && HK.ngPair(T, Cc)) || (HK.sexBlocked && HK.sexBlocked(T, Cc))) return '恋愛・R18にしない組';
-    if (!P.genderOK(T, Cc)) return '恋愛対象が合わない';
-    if (!P.okSex(T, Cc)) return '受け攻めの指定が合わない';
-    return '';
+    if (T.rawNoR18 || Cc.rawNoR18 || !ST.r18ok(T) || !ST.r18ok(Cc)) { var nr = [T, Cc].filter(function (x) { return x.rawNoR18 || !ST.r18ok(x); }).map(function (x) { return x.name; }); C.pairFix = nr.join('・') + 'の「R18に参加しない」を外す'; return nr.join('・') + 'が「R18に参加しない」'; }
+    var base = (HK.ngSexPair && HK.ngSexPair(T, Cc)) || (HK.sexBlocked && HK.sexBlocked(T, Cc)) ? '恋愛・R18にしない組' : !P.genderOK(T, Cc) ? '恋愛対象が合わない' : !P.okSex(T, Cc) ? '受け攻めの指定が合わない' : '';
+    if (!base) return '';
+    var d = P.noSexInfo ? P.noSexInfo(T, Cc, { room: false, lib: false, ties: ties }) : null;
+    /* 恋愛対象「なし」の人：住人どうしの施術は恋愛対象で見る（体の関係の相手では開かない）ので、HK.Pos.noSexInfo では理由にならない */
+    var none = !d && base === '恋愛対象が合わない' ? [T, Cc].filter(function (x) { return x.likes === 'none'; })[0] : null;
+    if (none) d = { t: none.name + 'の恋愛対象が「なし」（住人どうしの施術は、恋愛対象で決まる）', fix: none.name + 'の「恋愛対象」を選ぶ' };
+    if (d) C.pairFix = d.fix || '';
+    return d ? d.t : base;
   };
   /* 配役：{ mode: 'mob'（住人1人）|'res'（住人が施術者）|'curtain'（2人とも客）, ci: 客の番号, ti: 施術者の番号, P: 住人の写し } */
   C.cast = function (input) {

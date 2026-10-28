@@ -527,7 +527,7 @@ function hTop(p){return!!(PO&&PO.hardTop(p));}
 function hTopN(p){return!!(PO&&(PO.hardTopNpc?PO.hardTopNpc(p):PO.hardTop(p)));}
 function kinTie(a,b){var L0=(input.ties||[]).filter(function(x){return(x.a===a.i&&x.b===b.i)||(x.a===b.i&&x.b===a.i);});for(var i=0;i<L0.length;i++){var D=HK.TIES&&HK.TIES[L0[i].type];if(D&&D.family)return L0[i];}return null;}
 function kinBlock(a,b){var t=kinTie(a,b),D=t&&HK.TIES[t.type];return!!(t&& !D.loveOK&& !(HK.tieFamLove&&HK.tieFamLove(t)));}
-function okS(a,b){return!kinBlock(a,b)&&(!PO||PO.okSex(a,b))&& !(HK.ngPair&&HK.ngPair(a,b))&& !(HK.sexBlocked&&HK.sexBlocked(a,b));}
+function okS(a,b){return!kinBlock(a,b)&&(!PO||PO.okSex(a,b))&& !(HK.ngSexPair&&HK.ngSexPair(a,b))&& !(HK.sexBlocked&&HK.sexBlocked(a,b));}
 function ord(a,b){return PO?PO.order(a,b,[a,b]):[a,b];}
 function hasP(p){return PO?(PO.hasM?PO.hasM(p): !PO.isF(p)):p.gender==='m';}
 function assist(p,K){
@@ -2629,4 +2629,4 @@ HK.Load.toneData("sondai",{"F":[
 ["せっかくだし、もっと派手にやりましょうよ！","せっかくだ、もっと派手にやろうではないか！",1],
 ["待って、せめてマイク外させて","待ちたまえ、せめてマイクを外させてくれたまえ",1]]});
 });
-HK.Load.done('scen-variety', 'b7297d6a77', 1);
+HK.Load.done('scen-variety', '532cb9fddb', 1);
