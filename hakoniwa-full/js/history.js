@@ -1,11 +1,12 @@
 /* 箱庭シミュレーター: 「これまでの箱庭」（履歴）の結果の置き場
    ・履歴の一覧（日時・箱庭・住人名・シード・短い要約・入力）は、これまでどおり localStorage の history（ui.js）。軽いまま残す
    ・結果そのもの（経過・結末・関係図。セーブと同じく JSON にしたもの）は、ここで IndexedDB に置く。開くときはこれをそのまま表示し、回し直さない
+     （2026-10-28：結果の無い履歴＝以前の形式・置けなかったもの・見つからないものは、回し直さずに「開けません」とする。ui.js の histOpen）
      （版の更新・R18／全年齢の切り替え・辞書や口調の変更で、開くたびに内容が変わらないように）
    ・置き場の名前は版ごと（safe.js の HK.STORE）：R18版は hakoniwa-history、全年齢版は hakoniwa-z-history。セーブの DB（hakoniwa-saves）とは別にする
      （セーブの DB の版を上げると、古い版のページがセーブの DB を開けなくなるため）
    ・IndexedDB が使えない環境は localStorage の history:res（{ id: 記録 }）に置く。容量が限られる（住人の保存と分け合う）ので、新しいものから RES_LS 件・合わせて LS_BUDGET 文字まで。
-     はみ出した履歴は、開くと今の版で回し直す
+     はみ出した履歴は結果が無くなるので開けない（一覧に「結果なし」と出す）
    ・結果の大きさの目安（住人10人）：合コン 130KB・ゾンビの街 320KB・オメガバース 450KB、一人用は 10〜30KB。IndexedDB では一覧の上限（12件。ui.js の HIST_MAX）まで置く
    ・記録の形：{ id, at, r18, v: 1, result }。r18 は R18モードで動かした結果か（全年齢モード・全年齢版では表示しない。全年齢版の移行・読み込みでも写さない）
    ・全年齢版の初回の移行：safe.js の印の hdb が 'wait' のあいだに、R18版の置き場（hakoniwa-history）から r18 でない記録を一度だけ写す */
@@ -91,16 +92,21 @@
 
   /* ---------- 結果の記録を作る ---------- */
   function make(id, res) {
-    return { id: id, at: Date.now(), v: 1, r18: !HK.SAFE_ON, result: JSON.parse(JSON.stringify(res)) };
+    /* ver：動かしたときの版の印（saves.js の HK.VerMark。ui.js の simulate が res.ver に入れる） */
+    var data = JSON.parse(JSON.stringify(res));
+    if (!data.ver && HK.VerMark) data.ver = HK.VerMark.now();
+    return { id: id, at: Date.now(), v: 1, r18: !HK.SAFE_ON, ver: data.ver || null, result: data };
   }
-  /* 置く。入りきらなければ false（呼ぶ側が「一覧だけ」と知らせる） */
+  /* 置く（新しく足すだけ。同じ id の結果がすでにあれば書き換えずに残す＝保存した結果は保存後に書き換えない。2026-10-28 の決まり）。
+     入りきらなければ false（呼ぶ側が「残せなかった」と知らせる） */
   function put(rec) {
     if (!rec || !rec.id || !rec.result) return Promise.resolve(false);
-    return tx('readwrite', function (os) { os.put(rec); }).then(function (r) {
+    return tx('readwrite', function (os) { var c = os.count(rec.id); c.onsuccess = function () { if (!c.result) os.put(rec); }; }).then(function (r) {
       if (r !== null) return !!r;
       /* IndexedDB が使えない：localStorage に、新しいものから RES_LS 件まで・合わせて LS_BUDGET 文字まで（住人の保存の場所を残す）。
          入らなければ古いものから落とす。1件だけで超えるなら置かない */
       var o = lsGet(), sz = function (k) { return JSON.stringify(o[k]).length; };
+      if (o[rec.id] && o[rec.id].result) return true;
       o[rec.id] = rec;
       if (sz(rec.id) > LS_BUDGET) { delete o[rec.id]; return false; }
       var ids = Object.keys(o).sort(function (a, b) { return (o[b].at || 0) - (o[a].at || 0); }), tot = 0;

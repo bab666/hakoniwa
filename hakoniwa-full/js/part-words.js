@@ -98,7 +98,12 @@
     if (HK.SAFE_ON || !res || !input || !input.chars) return r;
     var people = input.chars.map(function (c) { return { name: c.name, gender: c.gender || '', pos: c.pos || '', futa: !!c.futa, genital: c.genital || '', partWords: STYLE[c.partWords] ? c.partWords : '', partM: (c.partM || '').trim(), partF: (c.partF || '').trim() }; });
     if (!people.some(used)) return r;
-    (res.log || []).forEach(function (e) { if (e && typeof e.text === 'string') e.text = HK.PartWords.apply(e.text, people); });
+    /* 住人の名前・呼び名は言い換えない（「剛直」さんの名前を「モノ」にしない。voice.js の HK.NameGuard で伏せてから通す） */
+    var NG = HK.NameGuard;
+    (res.log || []).forEach(function (e) {
+      if (!e || typeof e.text !== 'string') return;
+      e.text = NG ? NG.guard(e.text, input.chars, function (t, g) { return HK.PartWords.apply(t, g ? people.map(function (c) { return Object.assign({}, c, { name: g.enc(c.name) }); }) : people); }) : HK.PartWords.apply(e.text, people);
+    });
     return r;
   };
 })();

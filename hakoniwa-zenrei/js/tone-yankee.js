@@ -38,7 +38,7 @@
   function rough(q, who) {
     q = calm(q);
     var hard = who && ROUGH[who.persona];
-    var h = hash(q + (who && who.name || ''));
+    var h = hash(HK.NameGuard && HK.NameGuard.stack.length ? HK.NameGuard.decAll(q + (who && who.name || '')) : q + (who && who.name || ''));   /* 名前の伏せ字の中では元の名前で */
     /* 女性的な語尾・丁寧なやわらかさを外す */
     q = q.replace(/([たいるうくすつむぬぐぶ])わよ(?=[。！？!?…‥、」]|$)/g, '$1よ').replace(/([たいるうくすつむぬぐぶ])わね(?=[。！？!?…‥、」]|$)/g, '$1な').replace(/([一-鿿ァ-ヶー])ね(?=[。！？!?…‥」]|$)/g, '$1だな')
       .replace(/(?<!ん)のよ(?=[。！？!?…‥、」]|$)/g, 'んだよ').replace(/かしら(?=[。！？!?…‥、」]|$)/g, 'かな').replace(/だわ(?=[。！？!?…‥、」]|$)/g, 'だ').replace(/あらあら|あらまあ|おやおや/g, 'おいおい').replace(/(^|[、…\s])あら(?=、)/g, '$1お').replace(/(^|[、…\s])あら(?=…)/g, '$1あ')

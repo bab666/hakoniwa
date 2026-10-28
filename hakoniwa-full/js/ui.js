@@ -366,9 +366,10 @@
     }
     if (!bkHold && !rescue) save(); else HK.IconStore.sync(S.chars, null);
   });
-  /* 「これまでの箱庭」（履歴）：一覧は localStorage の history（id・日時・箱庭・住人名・シード・要約・入力。r は結果を置いた印、r18 は R18モードで動かしたか）。
+  /* 「これまでの箱庭」（履歴）：一覧は localStorage の history（id・日時・箱庭・住人名・シード・要約・入力。r は結果を置いた印、r18 は R18モードで動かしたか、ver は版の印）。
      結果そのものは history.js（HK.History）に id で置き、開くときはそれをそのまま表示する。id や r の無い古い形の履歴・置けなかった結果は、
-     開いたときに今の版で回し直して表示し、結果を置いて以後は固定にする */
+     回し直さずに「結果が残っていないため開けません」とする（2026-10-28。版が変わると同じシードでも結果が変わり、以前は回し直した結果で
+     履歴を上書きしていたため、保存時と別の組・別の展開に書き換わって見えた）。条件とシードは「箱庭タブに写す」だけできる（自動では動かさない） */
   var HIST_MAX = 12;
   var histRaw = HK.store.get('history', []);
   if (!Array.isArray(histRaw)) histRaw = [];
@@ -377,6 +378,7 @@
   /* この画面で出せない箱庭（全年齢モードで隠す R18 の箱庭など）の履歴は、表示しないが消さない（書き戻すときに足す） */
   var histHid = histRaw.filter(function (h) { return !scenKnown(h.input.scenId); });
   var histNote = '', histCur = null, histPend = [];   /* histPend：結果を置いている途中の履歴（一覧に「未保存」の印を出さない） */
+  var opened = null, shownRes = null, histGone = [];   /* histGone：開こうとして結果が見つからなかった履歴（記録は書き換えず、印だけ）。 セーブ・履歴から開いた結果のとき { from: 'save'｜'hist', at }（開いた画面に「保存時の版」を出す。saves.js の make が版の印を付け替えない） */
   var tab = 'cast', result = null, showAll = false;
 
   function bkKey() { return (HK.STORE ? HK.STORE.prefix : 'hakoniwa:') + 'state:backup'; }
@@ -1376,11 +1378,13 @@
     try { res = HK.simulate(input); }
     catch (err) { toast('シミュレーション中にエラーが起きました：' + err.message); if (window.console) console.error(err); return null; }
     res.input = input;
-    result = res; showAll = false;
+    /* 版の印（saves.js の HK.VerMark）：セーブ・履歴に残し、開いたときに「保存時の版」として出す */
+    if (HK.VerMark && !res.ver) res.ver = HK.VerMark.now();
+    result = res; showAll = false; opened = null;
     V.resetFilter();
     if (record) {
       histNote = ''; histCur = null;
-      var h = { id: histId(), t: Date.now(), scenName: HK.SCENARIOS[input.scenId].name, names: input.chars.map(function (c) { return c.name; }).join('・'), seed: input.seed, summary: summarize(res), input: input };
+      var h = { id: histId(), t: Date.now(), scenName: HK.SCENARIOS[input.scenId].name, names: input.chars.map(function (c) { return c.name; }).join('・'), seed: input.seed, summary: summarize(res), input: input, ver: res.ver || null };
       hist.unshift(h);
       histSave();
       histKeep(h, res);
@@ -1421,66 +1425,63 @@
       if (hist.indexOf(h) < 0) return;
       if (ok) { h.r = 1; h.r18 = rec.r18; histSave(); return; }
       delete h.r; delete h.r18; histSave();
-      toast('ブラウザの保存領域が足りないため、この結果は「これまでの箱庭」に一覧だけ残しました（開くと、今の版で回し直して表示します）');
+      toast('ブラウザの保存領域が足りないため、この結果を「これまでの箱庭」に残せませんでした（一覧からは開けません）。残したいときは「この結果をセーブ」か「JSONで書き出す」を使ってください');
     });
   }
-  var HIST_MSG = {
-    kept: '「これまでの箱庭」に残した結果を、動かしたときの内容のまま表示しています。',
-    old: 'この履歴は以前の形式（条件とシードだけ）だったので、今の版で回し直して表示しました。版が変わると内容が変わることがあります。この結果を履歴に残したので、次からはこの内容のまま開きます。',
-    lost: '履歴に残した結果が見つからなかったので（保存しきれなかった・ブラウザが整理したなど）、今の版で回し直して表示しました。以前と内容が違うことがあります。この結果を履歴に残し直しました。',
-    r18: 'この履歴はR18モードで動かした結果なので、全年齢モードでは今の版で回し直して表示しています（R18モードでは、残した内容のまま開きます）。',
-    z18: 'この履歴はR18版で動かした結果なので、全年齢版では今の版で回し直して表示しました。この結果を履歴に残したので、次からはこの内容のまま開きます。'
-  };
+  var HIST_MSG = { kept: '「これまでの箱庭」に残した結果を、動かしたときの内容のまま表示しています。', none: 'この履歴は結果が残っていないため開けません（保存時の版でのみ再現できます。以前の形式の履歴と、保存しきれなかった結果は開けません）。',
+    r18: 'この履歴はR18モードで動かした結果なので、全年齢モードでは開けません（R18モードにすると開けます）。', z18: 'この履歴はR18版で動かした結果なので、全年齢版では開けません。' };
+  /* 開けない履歴：知らせて、条件とシードを箱庭タブに写すかだけ聞く（写しても自動では動かさない） */
+  function histNo(it, why) {
+    if (!(it && it.input && Array.isArray(it.input.chars) && scenOf(it.input.scenId) && why === 'none')) toast(HIST_MSG[why]);
+    else if (window.confirm(HIST_MSG[why] + '\n\n条件とシードを箱庭タブに写しますか？（写しても自動では動かしません。今の版で動かすと、保存時と結果が変わることがあります）')) copyCond(it.input);
+  }
   function histOpen(it) {
     if (!it) return;
+    /* R18モードで動かした結果は、全年齢モードでは出さない（開けない） */
+    var lock = HK.SAFE_ON && it.r18;
+    if (lock) { histNo(it, HK.SAFE_BUILD ? 'z18' : 'r18'); return; }
+    /* 結果を置いていない履歴（以前の形式・置けなかったもの）は開けない。回し直さない */
+    if (!(it.id && it.r && HK.History)) { histNo(it, 'none'); return; }
     /* 表示（結末の組み立て・一人用の表示）に箱庭のかたまりが要るので、読んでから開く */
     var hsid = it.input && it.input.scenId;
     if (!ready(hsid, true)) { whenReady(hsid, function () { histOpen(it); }, 'この箱庭のデータを読み込んでいます…', true); return; }
-    /* R18モードで動かした結果は、全年齢モードでは出さない（回し直して表示し、残した結果は書き換えない） */
-    var lock = HK.SAFE_ON && it.r18;
-    if (it.id && it.r && !lock && HK.History) {
-      HK.History.get(it.id).then(function (rec) {
-        if (rec && rec.result && HK.SAFE_ON && rec.r18) { histRerun(it, HK.SAFE_BUILD ? 'z18' : 'r18'); return; }
-        if (!(rec && rec.result)) { histRerun(it, 'lost'); return; }
-        result = rec.result;
-        if (!result.input) result.input = it.input;
-        showAll = false; V.resetFilter();
-        histNote = HIST_MSG.kept; histCur = it;
-        setTab('result');
-      });
-      return;
-    }
-    /* 全年齢版（移行や読み込みで写った R18版の履歴）は、回し直した結果をこの版の履歴として残す */
-    histRerun(it, lock ? (HK.SAFE_BUILD ? 'z18' : 'r18') : it.id ? 'lost' : 'old');
-  }
-  function histRerun(it, why) {
-    /* 回し直しは口調の書き下ろし（late・tone-base・配役の口調）も要る。読み終えてから、知らせを決めて回す */
-    if (!ready(it.input.scenId, false, it.input)) { whenReady(it.input.scenId, function () { histRerun(it, why); }, null, false, it.input); return; }
-    /* 知らせは先に決めておき、simulate の中の描画（setTab）で一度だけ出す */
-    var n0 = histNote, c0 = histCur;
-    histNote = HIST_MSG[why]; histCur = it;
-    var res = simulate(it.input, false, function (r) {
-      if (why === 'r18' || hist.indexOf(it) < 0) return;
-      if (!it.id) it.id = histId();
-      delete it.r;
-      histKeep(it, r);
+    HK.History.get(it.id).then(function (rec) {
+      if (rec && rec.result && HK.SAFE_ON && rec.r18) { histNo(it, HK.SAFE_BUILD ? 'z18' : 'r18'); return; }
+      if (!(rec && rec.result)) {
+        /* 結果が見つからない（ブラウザが整理した・入りきらず落ちたなど）：一覧の記録は書き換えず、この画面でだけ「結果なし」の印を出す */
+        if (histGone.indexOf(it) < 0) histGone.push(it); if (tab === 'result') renderResult();
+        histNo(it, 'none');
+        return;
+      }
+      result = rec.result;
+      if (!result.input) result.input = it.input;
+      if (!result.ver && (rec.ver || it.ver)) result.ver = rec.ver || it.ver;
+      showAll = false; V.resetFilter();
+      histNote = HIST_MSG.kept; histCur = it; opened = { from: 'hist', at: it.t };
+      setTab('result');
     });
-    if (!res) { histNote = n0; histCur = c0; }
   }
-  /* 結果の画面：履歴から開いたときの知らせ（「同じ条件でもう一度」つき）と、履歴の一覧の説明・印（view.js の historyBlock に足す） */
+  /* 結果の画面：履歴から開いたときの知らせ・保存時の版と、履歴の一覧の説明・印（結果なし・版。view.js の historyBlock に足す） */
   function histDeco(host) {
     if (result && histNote && !host.querySelector('#histnote')) {
-      var html = '<p class="hint" id="histnote" role="status">' + esc(histNote) + (histCur ? ' <button type="button" class="btn small ghost" data-act="histrerun" title="同じ住人・環境・シードで、今の版でもう一度回し、新しい履歴として残す">同じ条件でもう一度</button>' : '') + '</p>';
+      var html = '<p class="hint" id="histnote" role="status">' + esc(histNote) + '</p>';
       var hd = host.querySelector('.resulthead');
       if (hd) hd.insertAdjacentHTML('afterend', html); else host.insertAdjacentHTML('afterbegin', html);
+    }
+    /* セーブ・履歴から開いた結果：保存時の版を小さく出す（今の版と違えば、今の版で動かすと変わることがある旨も） */
+    if (result && opened && HK.VerMark && !host.querySelector('#vernote')) {
+      var vh = '<p class="hint small" id="vernote" style="margin:4px 0 0">保存時の版：' + esc(HK.VerMark.label(result.ver, opened.at)) + (HK.VerMark.same(result.ver) ? '' : '。保存した内容のまま表示しています（今の版で同じ条件を動かすと、結果が変わることがあります）') + '</p>', anchor = host.querySelector('#histnote') || host.querySelector('.resulthead');
+      if (anchor) anchor.insertAdjacentHTML('afterend', vh); else host.insertAdjacentHTML('afterbegin', vh);
     }
     var box = host.querySelector('.hist');
     if (!box) return;
     var p = box.previousElementSibling;
-    if (p && p.classList.contains('hint')) p.textContent = '開くと、動かしたときの結果をそのまま表示します（以前の形式の履歴と、保存しきれなかった結果は、今の版で回し直して表示します）。名簿は書き換えません。';
+    if (p && p.classList.contains('hint')) p.textContent = '開くと、動かしたときの結果をそのまま表示します（回し直しはしません）。結果が残っていない履歴（以前の形式・保存しきれなかったもの）は開けません。名簿は書き換えません。';
     Array.prototype.forEach.call(box.querySelectorAll('[data-act="hist"]'), function (b) {
       var it = hist[+b.dataset.k];
-      if (it && !(it.id && it.r) && histPend.indexOf(it) < 0) b.insertAdjacentHTML('beforeend', '<span class="nums">' + (it.id ? '結果は未保存' : '以前の形式') + '（開くと回し直します）</span>');
+      if (!it) return;
+      if ((!(it.id && it.r) || histGone.indexOf(it) >= 0) && histPend.indexOf(it) < 0) b.insertAdjacentHTML('beforeend', '<span class="nums">結果なし（開けません）</span>');
+      else if (HK.VerMark && histPend.indexOf(it) < 0) b.insertAdjacentHTML('beforeend', '<span class="nums">' + esc(HK.VerMark.label(it.ver, it.t)) + '</span>');
     });
   }
 
@@ -1503,7 +1504,7 @@
 
   function renderResult() {
     var host = $('#view-result');
-    V.render(host, result, { history: hist, showAll: showAll });
+    V.render(host, result, { history: hist, showAll: showAll }); shownRes = result;   /* 描けた結果（「この結果をセーブ」はこれを残す。HK.UIres.shown） */
     if (result && HK.Share) { var hd = host.querySelector('.resulthead'); if (hd && !host.querySelector('#sharebar')) hd.insertAdjacentHTML('afterend', HK.Share.bar()); }
     /* 結果のセーブ（saves.js） */
     if (result && HK.Saves && !host.querySelector('#savebtn')) { var sb = host.querySelector('#sharebar') || host.querySelector('.resulthead'); if (sb) sb.insertAdjacentHTML('afterend', HK.Saves.button()); }
@@ -1511,14 +1512,28 @@
     histDeco(host);
   }
   /* セーブデータから結果を開く・同じ条件で回し直す */
+  /* 条件（住人・環境・シード）を箱庭タブに写す。自動では動かさない。住人は名前で探し、見つからない人がいれば参加者は変えない */
+  function copyCond(input) {
+    if (!input || !scenOf(input.scenId)) { toast('この箱庭は今の版にありません'); return; }
+    var sid = input.scenId, ids = [], miss = [], gIds = {};
+    (input.chars || []).forEach(function (c) { var m = S.chars.filter(function (x) { return x.name === c.name; })[0]; if (m) ids.push(m.id); else miss.push(c.name); });
+    (HK.GLOBAL_ENV || []).forEach(function (e) { gIds[e.id] = 1; });
+    S.scenId = sid; S.seed = input.seed != null ? String(input.seed) : ''; S.env[sid] = S.env[sid] || {}; S.glob = S.glob || {};
+    Object.keys(input.env || {}).forEach(function (k) { if (k !== 'ct') (gIds[k] ? S.glob : S.env[sid])[k] = input.env[k]; });
+    if (!miss.length && ids.length) { S.join = S.join || {}; S.join[sid] = ids; }
+    save(); setTab('box');
+    toast('条件とシードを箱庭タブに写しました（自動では動かしません）。' + (miss.length ? '住人「' + miss.slice(0, 3).join('・') + '」が見つからないので、参加者はそのままです。' : '') + '住人の設定や版が保存時と違うと、同じ結果にはなりません');
+  }
+  /* セーブから結果を開く（保存した結果だけを表示する。回し直しはしない）・条件を写す */
   HK.UIres = {
     get: function () { return result; },
-    show: function (res) {
-      /* セーブ・共有から開くときも、箱庭のかたまりを読んでから表示する（saves.js の「開く」） */
+    opened: function () { return opened; }, shown: function () { return shownRes; },
+    show: function (res, meta) {
+      /* セーブから開くときも、箱庭のかたまりを読んでから表示する（saves.js の「開く」） */
       var sid = res && (res.scenId || (res.input && res.input.scenId));
-      whenReady(sid, function () { result = res; showAll = false; histNote = ''; histCur = null; V.resetFilter(); setTab('result'); }, 'この箱庭のデータを読み込んでいます…', true);
+      whenReady(sid, function () { result = res; showAll = false; histNote = ''; histCur = null; opened = meta || { from: 'save' }; V.resetFilter(); setTab('result'); }, 'この箱庭のデータを読み込んでいます…', true);
     },
-    rerun: function (input) { if (input && scenOf(input.scenId)) simulate(input, true); }
+    copyCond: copyCond
   };
   /* 25問のエゴグラム診断から住人を追加・書き換え */
   if (HK.EgoQuiz) {
@@ -1706,8 +1721,6 @@
       case 'copytext': if (result) copy(V.toText(result), '結果をコピーしました'); break;
       case 'showall': showAll = true; renderResult(); break;
       case 'hist': histOpen(hist[+t.dataset.k]); break;
-      /* 履歴から開いた結果を、同じ条件で今の版で回し直す（新しい履歴として残す） */
-      case 'histrerun': if (histCur && histCur.input && scenOf(histCur.input.scenId)) simulate(JSON.parse(JSON.stringify(histCur.input)), true); break;
       case 'node': V.toggleWho(+t.dataset.i); break;
       case 'who': V.toggleWho(+t.dataset.i); break;
       case 'whoclear': V.setWho([]); break;

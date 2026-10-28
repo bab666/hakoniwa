@@ -105,7 +105,7 @@
   function stateOf(data) { var s = data.localStorage && data.localStorage[K('hakoniwa:state')]; return s && typeof s === 'object' ? s : null; }
   function histOf(data) { var h = data.localStorage && data.localStorage[K('hakoniwa:history')]; return Array.isArray(h) ? h : []; }
   /* ファイルの中の履歴の結果（history.js：IndexedDB の hakoniwa-history と、IndexedDB が使えない環境の localStorage の history:res）を id ごとに。
-     全年齢版では R18モードで動かした結果は入れない（一覧の履歴は入るので、開くと全年齢版で回し直す） */
+     全年齢版では R18モードで動かした結果は入れない（一覧の履歴は入るが、結果が無いので開けない。回し直しはしない） */
   function histResOf(data) {
     var out = {}, HDB = HK.History ? HK.History.DB : K('hakoniwa-history'), HST = HK.History ? HK.History.STORE : 'results', HLS = HK.History ? HK.History.LS : K('hakoniwa:history:res');
     var add = function (r) { if (r && r.id && r.result && typeof r.result === 'object' && !(HK.SAFE_BUILD && r.r18) && !out[r.id]) out[r.id] = r; };
@@ -119,7 +119,7 @@
     if (!HK.History) return Promise.resolve(0);
     return Promise.all(list.map(function (h) {
       var r = h && h.id && res[h.id];
-      /* 全年齢版で R18モードの結果を入れなかった履歴は、印を残す（開くと「R18版で動かした結果なので回し直した」と知らせる。ui.js の histOpen） */
+      /* 全年齢版で R18モードの結果を入れなかった履歴は、印を残す（開くと「R18版で動かした結果なので開けません」と知らせる。ui.js の histOpen） */
       if (!r) { if (h && !(HK.SAFE_BUILD && h.r18)) delete h.r; return Promise.resolve(false); }
       return HK.History.put(r).then(function (ok) { if (ok) { h.r = 1; h.r18 = !!r.r18; } else delete h.r; return ok; });
     })).then(function (rs) { return rs.filter(Boolean).length; });
@@ -483,7 +483,7 @@
     if (arr) {
       /* セーブの JSON（saves.js の書き出し）：saves.js の読み込みと同じ形に整える */
       var sv = safeSaves(arr.filter(isSaveRec).map(function (x) {
-        return { id: x.id || sid(), at: x.at || Date.now(), v: 1, app: 'hakoniwa', name: x.name || '', scenId: x.scenId || (x.result.input || {}).scenId, scenName: x.scenName || '', names: x.names || '', seed: x.seed, title: x.title || '', memo: x.memo || '', r18: x.r18 !== false, result: x.result };
+        return { id: x.id || sid(), at: x.at || Date.now(), v: 1, app: 'hakoniwa', name: x.name || '', scenId: x.scenId || (x.result.input || {}).scenId, scenName: x.scenName || '', names: x.names || '', seed: x.seed, title: x.title || '', memo: x.memo || '', r18: x.r18 !== false, ver: x.ver || (x.result && x.result.ver) || null, savedVer: x.savedVer || null, result: x.result };
       }));
       ctx.drop += arr.filter(isSaveRec).length - sv.length;
       sv.forEach(function (x) { if (ctx.sid[x.id]) return; ctx.sid[x.id] = 1; ctx.saves.push(x); });

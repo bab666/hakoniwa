@@ -791,6 +791,142 @@
     }
     return (out + text.slice(last)).replace(/\u2062/g, '');
   };
+  /* ---------- 名前の伏せ字（HK.NameGuard）：住人の名前・呼び名を、言い換えから守る（2026-10-28 担当HV） ----------
+     名前の中の字が言い換えの語と重なると、名前が壊れていた（「飯塚」→「ご飯塚」（やわらかい口調の 飯→ご飯）、「君島」→「あなた島」（二人称）、
+     「私市」→「俺市」（一人称）など）。言い換えの前に、その場の住人の名前・呼び名の字を一字ずつ伏せ字に置き換え、言い換えが終わったら戻す。
+     ・伏せ字は、日本語の文に出てこない漢字（U+9FA6〜U+9FFE。CJK統合漢字の末尾）。漢字なので [一-鿿] などの文字類では名前（名詞）として扱われ、
+       名前の前後の判定（「名前の」「名前は」の助詞・呼びかけの「、」・「名前君」の君を二人称にしない など）はこれまでどおり効き、言い換えの語（飯・君・私…）には当たらない。
+       足りなければ私用領域（U+E100〜U+E1FF）を使う。ほかの印（tone-engine.js の語の印 U+E061、名前の記号の置き換え U+E200〜U+E2FF（core.js の HK.NameSafe）、
+       名前の印 U+2060〜U+2064）とは重ならない。名前の印は伏せずに残す（呼び方・話し手の判定が印を見る）
+     ・文の中で伏せるのは住人の名前（印つきならその形のまま）。住人の設定の呼び名（相手ごとの呼び方「飯ちゃん」・名前を使った一人称・二人称（fp・you・相手ごと））は、
+       住人の写しの値だけを伏せ字にする（言い換えの途中で差し込まれてから戻るまで守られる。文の中の同じ言葉（「本当に」など）は伏せない）
+     ・字の割り当ては呼び出しごとに、伏せる語の並び（長い順）から決める（同じ顔ぶれなら同じ字。前の回や見本の影響を受けない）。文に元からある字は使わない。
+       長い名前から伏せる（「飯塚太郎」と「飯塚」の両方がいても、長いほうがまるごと伏せられる）。一字ずつなので長さは変わらない
+     ・使う所：V.processText（台詞の言い換えのすべて。書き下ろし・辞書・敬語化・語尾・方言・HK.Moan.fit もこの中）、tone-plus.js の冷静の言い換え、
+       part-words.js の性器の呼び方、safe.js の全年齢の言い換え。どこも出口で必ず戻す（例外のときも、戻した文しか外に出ない）
+     ・点検：hakoniwa-tools/tone-check/name-audit.js（名前が壊れた回数と、伏せ字の残り） */
+  var NG = HK.NameGuard = { POOL: [[0x9FA6, 0x9FAE], [0x9FB0, 0x9FFE], [0xE100, 0xE1FF]], stack: [] };
+  NG.RE = /[龦-鿾-]/g;
+  var NG_SKIP = /[⁠-⁤]/, NG_YOU = /^(?:あなた|あんた|お前|おまえ|てめえ|貴様|おぬし|そなた|お主|きみ|君|貴方|貴女|お前さん|あなたさん)$/;
+  function ngBare(s) { return String(s || '').replace(/[⁠-⁤]/g, ''); }
+  /* 伏せ字の表を作る。words：文の中で伏せる語（名前）、text：その呼び出しで扱う文（文に元からある字は伏せ字に使わない）、
+     vals：住人の写しの値だけを伏せる語（呼び名・名前を使った一人称）。伏せる語がなければ null */
+  NG.make = function (words, text, vals) {
+    var list = [], vl = [];
+    (words || []).forEach(function (w) { if (typeof w === 'string' && ngBare(w) && list.indexOf(w) < 0) list.push(w); });
+    (vals || []).forEach(function (w) { if (typeof w === 'string' && ngBare(w) && list.indexOf(w) < 0 && vl.indexOf(w) < 0) vl.push(w); });
+    if (!list.length && !vl.length) return null;
+    list.sort(function (a, b) { return b.length - a.length; });
+    vl.sort(function (a, b) { return b.length - a.length; });
+    var fwd = Object.create(null), rev = Object.create(null), taken = Object.create(null);
+    NG.stack.forEach(function (g) { Object.keys(g.rev).forEach(function (c) { taken[c] = 1; }); });
+    var src = String(text || '') + list.join('') + vl.join('');
+    for (var i = 0; i < src.length; i++) { var cc = src.charCodeAt(i); if ((cc >= 0x9FA6 && cc <= 0x9FFE) || (cc >= 0xE100 && cc <= 0xE1FF)) taken[src[i]] = 1; }
+    var pi = 0, cur = NG.POOL[0][0];
+    function next() {
+      while (pi < NG.POOL.length) {
+        if (cur > NG.POOL[pi][1]) { pi++; if (pi < NG.POOL.length) cur = NG.POOL[pi][0]; continue; }
+        var c = String.fromCharCode(cur++);
+        if (!taken[c]) return c;
+      }
+      return null;
+    }
+    var ok = [], okV = [], full = false;
+    var alloc = function (w) {
+      if (full) return false;
+      var add = [];
+      for (var k = 0; k < w.length; k++) { var ch = w[k]; if (!NG_SKIP.test(ch) && !fwd[ch] && add.indexOf(ch) < 0) add.push(ch); }
+      var codes = [];
+      for (var j = 0; j < add.length; j++) { var c = next(); if (!c) { full = true; return false; } codes.push(c); }
+      add.forEach(function (ch, j) { fwd[ch] = codes[j]; rev[codes[j]] = ch; });
+      return true;
+    };
+    list.forEach(function (w) { if (alloc(w)) ok.push(w); });
+    vl.forEach(function (w) { if (alloc(w)) okV.push(w); });
+    if (!ok.length && !okV.length) return null;
+    var encW = function (w) { var o = ''; for (var k = 0; k < w.length; k++) o += fwd[w[k]] && !NG_SKIP.test(w[k]) ? fwd[w[k]] : w[k]; return o; };
+    var EW = ok.map(encW);
+    var g = { fwd: fwd, rev: rev, words: ok, vals: okV };
+    /* 住人の写しの値（呼び名・一人称など）：名前か、値だけを伏せる語なら伏せ字に。それ以外（ふつうの一人称・二人称）はそのまま */
+    g.encV = function (v) { return typeof v === 'string' && (okV.indexOf(v) >= 0 || okV.indexOf(v.trim()) >= 0) ? encW(v) : g.enc(v); };
+    g.enc = function (s) {
+      if (typeof s !== 'string' || !s) return s;
+      for (var k = 0; k < ok.length; k++) if (s.indexOf(ok[k]) >= 0) s = s.split(ok[k]).join(EW[k]);
+      return s;
+    };
+    g.dec = function (s) { return typeof s === 'string' && s.search(NG.RE) >= 0 ? s.replace(NG.RE, function (c) { return rev[c] || c; }) : s; };
+    /* 住人（台詞の話し手の作り。voice.js の processResult の people）を、伏せた名前の写しにする */
+    g.person = function (p) {
+      if (!p || typeof p !== 'object') return p;
+      var o = Object.assign({}, p);
+      if (typeof p.name === 'string') o.name = g.enc(p.name);
+      ['calls', 'keigo', 'youFor', 'fpFor'].forEach(function (k) {
+        var m = p[k];
+        if (!m || typeof m !== 'object' || Array.isArray(m)) return;
+        var m2 = {};
+        Object.keys(m).forEach(function (key) { m2[g.enc(key)] = typeof m[key] === 'string' ? g.encV(m[key]) : m[key]; });
+        o[k] = m2;
+      });
+      if (typeof p.fp === 'string') o.fp = g.encV(p.fp);
+      if (typeof p.you === 'string') o.you = g.encV(p.you);
+      return o;
+    };
+    return g;
+  };
+  /* 文の中で伏せる語（住人の名前）の一覧 */
+  NG.wordsOf = function (people) {
+    var out = [];
+    (people || []).forEach(function (p) { if (p && typeof p.name === 'string' && ngBare(p.name)) out.push(p.name); });
+    return out;
+  };
+  /* 住人の写しの値だけを伏せる語（people：住人。calls・fp・you・youFor・fpFor を見る） */
+  NG.valsOf = function (people) {
+    var out = [], bare = [];
+    (people || []).forEach(function (p) { if (p && typeof p.name === 'string' && ngBare(p.name)) bare.push(ngBare(p.name)); });
+    /* 名前を使った一人称・二人称：住人の名前（印なし）を含む語。二人称の代名詞そのものは伏せない */
+    var nameLike = function (v) { v = ngBare(v); return !!v && !NG_YOU.test(v) && bare.some(function (b) { return v.indexOf(b) >= 0 || (v.length >= 2 && b.indexOf(v) >= 0); }); };
+    (people || []).forEach(function (p) {
+      if (!p || typeof p !== 'object') return;
+      /* 相手ごとの呼び方（「飯ちゃん」「ご主人様」）。代名詞（お前・あなた）は伏せない */
+      if (p.calls && typeof p.calls === 'object') Object.keys(p.calls).forEach(function (k) {
+        var v = p.calls[k];
+        if (typeof v === 'string' && v.trim() && !NG_YOU.test(v.trim())) out.push(v.trim().slice(0, 16));
+      });
+      [p.fp, p.you].forEach(function (v) { if (typeof v === 'string' && nameLike(v)) out.push(v); });
+      ['youFor', 'fpFor'].forEach(function (k) { var m = p[k]; if (m && typeof m === 'object') Object.keys(m).forEach(function (key) { if (typeof m[key] === 'string' && nameLike(m[key])) out.push(m[key]); }); });
+    });
+    return out;
+  };
+  /* 伏せ字の中で fn を呼ぶ（入れ子の伏せ字は外側の字を使わない）。fn の結果の文字列は呼ぶ側が g.dec で戻す */
+  NG.within = function (g, fn) { NG.stack.push(g); try { return fn(); } finally { NG.stack.splice(NG.stack.lastIndexOf(g), 1); } };
+  /* 文 text を、住人 people の名前を伏せて fn(伏せた文, 伏せ字の表) に通し、戻して返す（地の文・台詞のまとまりの言い換え用）。
+     fn の中で名前を見るときは g.enc(名前)（伏せる語がなければ g は null） */
+  NG.guard = function (text, people, fn) {
+    if (typeof text !== 'string' || !text) return fn(text, null);
+    var g = NG.make(NG.wordsOf(people), text);
+    if (!g) return fn(text, null);
+    return g.dec(NG.within(g, function () { return fn(g.enc(text), g); }));
+  };
+  /* いま伏せている名前を全部戻す（点検の道具が言い換えの途中を記録するとき。core.js の HK.NameSafe.dec からも戻す） */
+  NG.decAll = function (s) { for (var i = NG.stack.length - 1; i >= 0; i--) s = NG.stack[i].dec(s); return s; };
+  if (HK.NameSafe && HK.NameSafe.dec && !HK.NameSafe.dec._ng) {
+    var nsDec0 = HK.NameSafe.dec;
+    HK.NameSafe.dec = function (s) { return nsDec0.call(this, NG.stack.length && typeof s === 'string' ? NG.decAll(s) : s); };
+    HK.NameSafe.dec._ng = true;
+  }
+  /* 台詞の言い換え（V.processText）の入口で名前を伏せ、出口で戻す。話し手の判定・呼び方・書き下ろしの〈〉も、伏せた名前の住人の写しで行う */
+  (function () {
+    var pt0 = V.processText;
+    V.processText = function (text, people, actors) {
+      if (typeof text !== 'string' || !Array.isArray(people) || !people.length || (text.indexOf('「') < 0 && text.indexOf('（') < 0)) return pt0.apply(this, arguments);
+      var g = NG.make(NG.wordsOf(people), text, NG.valsOf(people));
+      if (!g) return pt0.apply(this, arguments);
+      var P2 = people.map(g.person);
+      var A2 = Array.isArray(actors) ? actors.map(function (x) { return x && typeof x === 'object' && typeof x.name === 'string' ? Object.assign({}, x, { name: g.enc(x.name) }) : x; }) : actors;
+      var self = this;
+      return g.dec(NG.within(g, function () { return pt0.call(self, g.enc(text), P2, A2); }));
+    };
+  })();
   /* 名前に記号（！。？（）など）のある住人：箱庭の外から直接呼ばれたとき（設定の画面の見本など）は、ここで名前の記号を私用領域の文字に置き換えてから整え、最後に戻す（core.js の HK.NameSafe）。
      箱庭の中では voice-seg.js の包みが先に置き換えているので、ここは素通りする */
   (function () {

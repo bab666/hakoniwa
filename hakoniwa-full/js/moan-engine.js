@@ -76,7 +76,9 @@
      住人の写しに moanTone を持たない箱庭もあるので、HK.simulate の入口で名前→口調の対応表（M.map）を作り、who.moanTone → 対応表 の順に見る。全年齢モードでは何もしない */
   function moanToneOf(who) {
     if (!who || HK.SAFE_ON) return '';
-    var t = who.moanTone || (M.map && who.name && M.map[who.name]) || '';
+    /* 名前の伏せ字（voice.js の HK.NameGuard）の中では、元の名前で表を引く */
+    var nm = who.name && HK.NameGuard && HK.NameGuard.stack.length ? HK.NameGuard.decAll(who.name) : who.name;
+    var t = who.moanTone || (M.map && nm && M.map[nm]) || '';
     return t && (!HK.toneValid || HK.toneValid(t)) ? t : '';
   }
   /* ---------- 夜の性格（attr.js の HK.Attr.nightOf。2026-10-27） ----------
@@ -97,7 +99,8 @@
     if (!who || HK.SAFE_ON) return '';
     var A = HK.Attr, NM = HK.NovelMoan, v = ctx && typeof ctx === 'object' && ctx.night ? String(ctx.night) : '';
     var p = (ctx && typeof ctx === 'object' && (ctx.partner || ctx.top)) || (NM && NM.top && NM.top !== who ? NM.top : null);
-    var C = M.nmap, cw = C && who.name ? C[who.name] : null, cp = C && p && p.name ? C[p.name] : null;
+    var NG = HK.NameGuard, pl = function (n) { return n && NG && NG.stack.length ? NG.decAll(n) : n; };
+    var C = M.nmap, cw = C && who.name ? C[pl(who.name)] : null, cp = C && p && p.name ? C[pl(p.name)] : null;
     /* 住人の写しに夜の性格を持たない箱庭もあるので、入力の住人（M.nmap）からも引く */
     function raw(c, o) { return c ? ((o && c.nightFor && c.nightFor[o.i]) || c.night || '') : ''; }
     if (!v) { v = A && A.nightOf ? A.nightOf(who, p) : ''; if (!v && cw) v = raw(cw, cp); }

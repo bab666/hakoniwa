@@ -521,3 +521,4 @@ late js/tips-scen-c.js
 late js/tips-scen-d.js
 late js/attr-r18.js
 late js/attr-race-r18.js
+late js/export-out.js

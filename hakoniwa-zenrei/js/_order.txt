@@ -354,3 +354,4 @@ late js/tips-scen-a.js
 late js/tips-scen-b.js
 late js/tips-scen-c.js
 late js/tips-scen-d.js
+late js/export-out.js

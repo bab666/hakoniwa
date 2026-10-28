@@ -22,7 +22,8 @@ const { openBuild } = require('./lib');
     const rf = V.replaceFP; V.replaceFP = function (q, who) { const ov = !!(ovs && ovs.r != null && ovs.r === q); cur = { who, raw: ov ? ovs.q : q, ov }; ovs = null; return rf.apply(this, arguments); };
     const ac = V.applyCalls; V.applyCalls = function (q, who) {
       const o = ac.apply(this, arguments);
-      const i = cur && cur.raw ? curText.indexOf(cur.raw) : -1;
+      /* 台詞の中の住人の名前は、言い換えのあいだ伏せ字になっている（voice.js の HK.NameGuard）ので、戻してから文の中を探す */
+      const i = cur && cur.raw ? curText.indexOf(HK.NameGuard ? HK.NameGuard.decAll(cur.raw) : cur.raw) : -1;
       /* 名詞の引用か（台詞の区分 seg の c。voice.js の processText が決めた区分 V._qKind をそのまま使う） */
       /* 名前に記号のある住人（NAMES で指定）は、箱庭の中では記号を私用領域の文字にした名前で動くので、集めた文では元に戻す（core.js の HK.NameSafe） */
       const D = x => (typeof x === 'string' && HK.NameSafe ? HK.NameSafe.dec(x) : x);

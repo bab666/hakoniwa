@@ -17,6 +17,31 @@
   function fmtDate(t) { var d = new Date(t); return d.getFullYear() + '/' + pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
   function uid() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+  /* ---------- 版の印（HK.VerMark。セーブ・履歴・結果に入れ、一覧と開いた画面に「保存時の版」として出す）----------
+     { v：目録の版（index.html の HK_MANIFEST.v。build ごとに変わる）, d：ページの「最終更新」の日付, b：full／zenrei }。
+     2026-10-28 より前のセーブ・履歴には印が無い（保存日だけ出す）。版が変わると同じシードでも結果が変わることがあるので、
+     開くときは保存した結果だけを表示し、回し直さない（結果の無いものは開けない） */
+  var VM = HK.VerMark = {
+    now: function () {
+      var M = HK.Load && HK.Load.manifest, d = '';
+      try { var t = document.querySelector('.site-foot .updated time[datetime]'); d = t ? String(t.getAttribute('datetime') || '') : ''; } catch (e) { d = ''; }
+      return { v: M && M.v ? String(M.v) : '', d: d, b: HK.SAFE_BUILD ? 'zenrei' : 'full' };
+    },
+    /* 表示用の短い名前（「10/27の版（fdbbb5）」／印なし：「版の印なし（10/26 に保存）」） */
+    label: function (m, at) {
+      if (m && typeof m === 'object' && (m.d || m.v)) {
+        var p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(m.d || '');
+        return (p ? +p[2] + '/' + +p[3] + 'の版' : '版') + (m.v ? '（' + String(m.v).slice(0, 6) + '）' : '');
+      }
+      var d = at ? new Date(at) : null;
+      return '版の印なし' + (d && !isNaN(d) ? '（' + (d.getMonth() + 1) + '/' + d.getDate() + ' に保存）' : '（10/28 より前の版）');
+    },
+    /* 今の版と同じか（印の無いものは「違う」扱い） */
+    same: function (m) { var n = VM.now(); return !!(m && m.v && n.v && m.v === n.v); }
+  };
+  /* 開ける結果か（経過か結末がある） */
+  function hasRes(res) { return !!(res && typeof res === 'object' && ((Array.isArray(res.log) && res.log.length) || res.ending || res.end)); }
+
   /* ---------- 保存先（IndexedDB → だめならlocalStorage） ---------- */
   var idb = null;
   function open() {
@@ -72,12 +97,31 @@
       });
     }).then(function (list) { list.sort(function (a, b) { return b.at - a.at; }); cache = list; return list; });
   }
-  function put(rec) {
+  /* セーブの記録を書くのは「新しく足す（addNew）」「名前だけを変える（rename）」「消す（del・clear）」の3つだけ（2026-10-28 の決まり）。
+     保存した記録（seed・result・memo）は保存後に書き換えない。同じ id の記録がすでにあれば、足さずにそのまま残す */
+  function addNew(rec) {
+    if (!rec || !rec.id) return Promise.resolve(false);
     return open().then(function (d) {
-      if (!d) { var l = lsAll().filter(function (x) { return x.id !== rec.id; }); l.push(rec); return lsPut(l); }
+      if (!d) { var l = lsAll(); if (l.some(function (x) { return x && x.id === rec.id; })) return true; l.push(rec); return lsPut(l); }
       return new Promise(function (ok) {
-        try { var tx = d.transaction(ST, 'readwrite'); tx.objectStore(ST).put(rec); tx.oncomplete = function () { ok(true); }; tx.onerror = function () { ok(false); }; tx.onabort = function () { ok(false); }; }
-        catch (e) { ok(false); }
+        try {
+          var tx = d.transaction(ST, 'readwrite'), os = tx.objectStore(ST), c = os.count(rec.id);
+          c.onsuccess = function () { if (!c.result) os.put(rec); };
+          tx.oncomplete = function () { ok(true); }; tx.onerror = function () { ok(false); }; tx.onabort = function () { ok(false); };
+        } catch (e) { ok(false); }
+      });
+    });
+  }
+  /* 名前（利用者が書く欄）だけを変える。同じ書き込みの中で読み直し、名前のほかは触らない */
+  function rename(id, name) {
+    return open().then(function (d) {
+      if (!d) { var l = lsAll(), x = l.filter(function (r) { return r && r.id === id; })[0]; if (!x) return false; x.name = name; return lsPut(l); }
+      return new Promise(function (ok) {
+        try {
+          var tx = d.transaction(ST, 'readwrite'), os = tx.objectStore(ST), g = os.get(id), hit = false;
+          g.onsuccess = function () { var r = g.result; if (r) { hit = true; r.name = name; os.put(r); } };
+          tx.oncomplete = function () { ok(hit); }; tx.onerror = function () { ok(false); }; tx.onabort = function () { ok(false); };
+        } catch (e) { ok(false); }
       });
     });
   }
@@ -102,19 +146,25 @@
   function make(res) {
     var input = res.input || {}, sc = HK.SCENARIOS[input.scenId] || {};
     var data = JSON.parse(JSON.stringify(res));   /* 関数などを落として、まるごと写す */
+    /* 版の印：動かしたときの印（ui.js の simulate が res.ver に入れる）を引き継ぐ。履歴から開いた古い結果を今セーブしても、今の版の印にはしない */
+    var opened = HK.UIres && HK.UIres.opened && (HK.UIres.shown ? HK.UIres.shown() : HK.UIres.get()) === res ? HK.UIres.opened() : null;
+    var ver = data.ver || (opened ? null : VM.now());
+    if (ver) data.ver = ver;
     return {
       id: uid(), at: Date.now(), v: 1, app: 'hakoniwa',
       name: '', scenId: input.scenId, scenName: sc.name || input.scenId || '',
       names: (input.chars || []).map(function (c) { return c.name; }).join('・'),
-      seed: input.seed, title: titleOf(res), memo: '', r18: !HK.SAFE_ON, result: data
+      seed: input.seed != null ? input.seed : data.seed, title: titleOf(res), memo: '', r18: !HK.SAFE_ON, ver: ver || null, savedVer: VM.now(), result: data
     };
   }
   function save(res) {
     if (!res) { toast('セーブする結果がありません'); return; }
     var rec;
     try { rec = make(res); } catch (e) { toast('この結果はセーブできませんでした'); return; }
-    put(rec).then(function (ok) {
-      if (!ok) { toast('保存できませんでした（ブラウザの保存領域がいっぱいかもしれません。古いセーブを消すか、JSONで書き出してください）'); return; }
+    if (!hasRes(rec.result)) { toast('この結果はセーブできませんでした（経過が空です）'); return; }
+    /* 置いたあと読み直して、結果まで残ったかを確かめる（入りきらずに結果が落ちたセーブを作らない） */
+    addNew(rec).then(function (ok) { return ok ? all().then(function (l) { var x = l.filter(function (r) { return r.id === rec.id; })[0]; return !!(x && hasRes(x.result)); }) : false; }).then(function (ok) {
+      if (!ok) { toast('保存できませんでした（ブラウザの保存領域がいっぱいかもしれません。結果を残せていません。古いセーブを消すか、「JSONで書き出す」でファイルに残してください）'); del(rec.id); return; }
       cache = null;
       toast('セーブしました（「セーブ」タブで見られます）');
       var b = document.getElementById('savebtn'); if (b) { b.innerHTML = IC_DONE + 'セーブ済み'; b.disabled = true; }
@@ -143,17 +193,21 @@
     var data;
     try { data = JSON.parse(text); } catch (e) { toast('JSONとして読めませんでした'); return; }
     var arr = Array.isArray(data) ? data : data && Array.isArray(data.saves) ? data.saves : [data];
-    var ok = arr.filter(function (r) { return r && r.result && (r.result.log || r.result.ending); });
+    var ok = arr.filter(function (r) { return r && hasRes(r.result); });
     if (!ok.length) {
       if (data && (Array.isArray(data.chars) || Array.isArray(data))) toast('これは住人の名簿のJSONです。「住人」タブの「JSONを読み込む」から読み込んでください');
       else toast('セーブデータが見つかりませんでした');
       return;
     }
-    var have = (cache || []).map(function (x) { return x.id; });
+    /* 今あるセーブは書き換えない：同じ id のセーブがあれば読み込まない（省略）。一覧（cache）をまだ読んでいなくても、先に読んでから比べる */
+    all().then(function (cur) {
+    var have = cur.map(function (x) { return x.id; }), skip = 0;
+    ok = ok.filter(function (r) { if (r.id && have.indexOf(r.id) >= 0) { skip++; return false; } return true; });
     Promise.all(ok.map(function (r) {
-      var rec = { id: r.id && have.indexOf(r.id) < 0 ? r.id : uid(), at: r.at || Date.now(), v: 1, app: 'hakoniwa', name: r.name || '', scenId: r.scenId || (r.result.input || {}).scenId, scenName: r.scenName || '', names: r.names || '', seed: r.seed, title: r.title || titleOf(r.result), memo: r.memo || '', r18: r.r18 !== false, result: r.result };
-      return put(rec);
-    })).then(function (rs) { var n = rs.filter(Boolean).length; cache = null; toast(n + '件のセーブデータを読み込みました'); render(); });
+      var rec = { id: r.id || uid(), at: r.at || Date.now(), v: 1, app: 'hakoniwa', name: r.name || '', scenId: r.scenId || (r.result.input || {}).scenId, scenName: r.scenName || '', names: r.names || '', seed: r.seed, title: r.title || titleOf(r.result), memo: r.memo || '', r18: r.r18 !== false, ver: r.ver || (r.result && r.result.ver) || null, savedVer: r.savedVer || null, result: r.result };
+      return addNew(rec);
+    })).then(function (rs) { var n = rs.filter(Boolean).length; cache = null; toast(n + '件のセーブデータを読み込みました' + (skip ? '（同じセーブ' + skip + '件は今あるものを残して省略）' : '')); render(); });
+    });
   }
 
   /* ---------- セーブタブ ---------- */
@@ -178,35 +232,47 @@
         (shown.length ? '<ul class="savelist">' + shown.map(item).join('') + '</ul>' : '<p class="empty">まだセーブデータはありません。</p>') +
         (HK.SAFE_BUILD ? '<p class="hint small">保存は版ごとに別になりました（全年齢版とR18版のセーブ・住人・履歴は、同じブラウザでも別々に残ります）。R18版のセーブを全年齢版で使うには、R18版の「まるごと書き出し」と全年齢版の「まるごと読み込む」（住人タブの「別の端末へ移す」）で移せます（R18モードで保存したものは移りません）。' + (hid ? 'R18モードで保存した' + hid + '件は、全年齢版では表示しません。' : '') + '</p>' :
           hid ? '<p class="hint small">R18モードで保存した' + hid + '件は、R18モードのときだけ表示します。</p>' : '') +
-        '<p class="hint small">※ 保存した結果は、そのときの内容のまま開けます。「同じ条件でもう一度」は、今のバージョンで回し直すので、結果が変わることがあります。</p>';
+        '<p class="hint small">※ 保存した結果は、そのときの内容のまま開きます（回し直しはしません）。版が変わると、同じ住人・シードで動かしても結果が変わることがあります。結果が残っていないセーブは開けません（保存時の版でのみ再現できます）。</p>';
     });
   }
   function item(r) {
-    var res = r.result || {}, inp = res.input || {};
-    return '<li class="saveitem" data-id="' + esc(r.id) + '">' +
+    var res = r.result || {}, inp = res.input || {}, okr = hasRes(r.result);
+    return '<li class="saveitem' + (okr ? '' : ' noresult') + '" data-id="' + esc(r.id) + '">' +
       '<div class="savemain"><div class="savetop"><span class="savescen">' + esc(r.scenName) + '</span><span class="savedate">' + esc(fmtDate(r.at)) + '</span></div>' +
       '<input type="text" class="savename" data-sv="name" value="' + esc(r.name) + '" placeholder="名前を付ける（任意）" maxlength="40" aria-label="セーブデータの名前">' +
       '<p class="savetitle">' + esc(r.title) + '</p>' +
-      '<p class="savecast">' + esc(r.names) + (r.seed != null ? '　<span class="saveseed">シード ' + esc(r.seed) + '</span>' : '') + '</p></div>' +
+      '<p class="savecast">' + esc(r.names) + (seedOf(r) != null ? '　<span class="saveseed">シード ' + esc(seedOf(r)) + '</span>' : '') + '</p>' +
+      '<p class="savever hint small" style="margin:2px 0 0">保存時の版：' + esc(VM.label(r.ver || res.ver, r.at)) + '</p>' +
+      (okr ? '' : '<p class="savelost hint small" style="margin:2px 0 0;color:var(--hot,#B4232A)">結果が残っていないため開けません（保存時の版でのみ再現できます）</p>') + '</div>' +
       '<div class="saveact">' +
-      '<button class="btn small" data-sv="open">開く</button>' +
-      (inp.scenId && (HK.SCENARIOS[inp.scenId] || (HK.Load && HK.Load.info && HK.Load.info(inp.scenId))) ? '<button class="btn small ghost" data-sv="rerun" title="同じ住人・環境・シードで、今のバージョンでもう一度回す">同じ条件でもう一度</button>' : '') +
+      (okr ? '<button class="btn small" data-sv="open">開く</button>' : '') +
+      (!okr && inp.scenId && Array.isArray(inp.chars) && (HK.SCENARIOS[inp.scenId] || (HK.Load && HK.Load.info && HK.Load.info(inp.scenId))) ? '<button class="btn small ghost" data-sv="copycond" title="住人・環境・シードを箱庭タブに写す（自動では動かしません）">条件を箱庭タブに写す</button>' : '') +
       '<button class="btn small ghost" data-sv="export">JSON</button>' +
       '<button class="btn small ghost" data-sv="del" aria-label="削除">削除</button></div></li>';
   }
+  /* 表示するシード：保存した結果の入力のシード（無ければ記録の seed） */
+  function seedOf(r) { var i = r && r.result && r.result.input; return i && i.seed != null && i.seed !== '' ? i.seed : r && r.seed != null && r.seed !== '' ? r.seed : null; }
   function rec(id) { return (cache || []).filter(function (r) { return r.id === id; })[0]; }
 
   document.addEventListener('click', function (ev) {
     var t = ev.target.closest('[data-act="saveres"],[data-act="saveresjson"],[data-sv]');
     if (!t) return;
-    if (t.dataset.act === 'saveres') { save(HK.UIres && HK.UIres.get()); return; }
-    if (t.dataset.act === 'saveresjson') { var cur = HK.UIres && HK.UIres.get(); if (cur) { try { exportRecs([make(cur)], 'hakoniwa-save'); } catch (e) { toast('書き出せませんでした'); } } return; }
+    /* 画面に出ている結果（最後に描けた結果。HK.UIres.shown）をセーブする。描画の途中で失敗して、画面と中身が食い違ったときに別の結果を残さない */
+    if (t.dataset.act === 'saveres') { save(HK.UIres && (HK.UIres.shown ? HK.UIres.shown() : HK.UIres.get())); return; }
+    if (t.dataset.act === 'saveresjson') { var cur = HK.UIres && (HK.UIres.shown ? HK.UIres.shown() : HK.UIres.get()); if (cur) { try { exportRecs([make(cur)], 'hakoniwa-save'); } catch (e) { toast('書き出せませんでした'); } } return; }
     var k = t.dataset.sv, li = t.closest('.saveitem'), r = li ? rec(li.dataset.id) : null;
     if (k === 'importfile') { var f = document.getElementById('savefile'); if (f) { f.value = ''; f.click(); } return; }
     if (k === 'exportall') { all().then(function (l) { exportRecs(HK.SAFE_ON ? l.filter(function (r) { return !r.r18; }) : l, 'hakoniwa-saves'); }); return; }
     if (!r) return;
-    if (k === 'open') { if (HK.UIres) HK.UIres.show(JSON.parse(JSON.stringify(r.result))); return; }
-    if (k === 'rerun') { if (HK.UIres) HK.UIres.rerun(r.result.input); return; }
+    /* 開く：保存した結果だけを表示する（回し直さない）。結果の無いセーブは開かない */
+    if (k === 'open') {
+      if (!hasRes(r.result)) { toast('このセーブは結果が残っていないため開けません（保存時の版でのみ再現できます）'); return; }
+      var shown = JSON.parse(JSON.stringify(r.result));
+      if (!shown.ver && r.ver) shown.ver = r.ver;
+      if (HK.UIres) HK.UIres.show(shown, { from: 'save', at: r.at });
+      return;
+    }
+    if (k === 'copycond') { if (HK.UIres && HK.UIres.copyCond && r.result && r.result.input) HK.UIres.copyCond(r.result.input); return; }
     if (k === 'export') { exportRecs([r], 'hakoniwa-save'); return; }
     if (k === 'del') {
       if (!window.confirm('「' + (r.name || r.title || r.scenName) + '」を削除しますか？（元に戻せません）')) return;
@@ -223,8 +289,9 @@
     }
     if (t.id === 'savefilter') { filter = t.value; render(); return; }
     if (t.dataset && t.dataset.sv === 'name') {
-      var li = t.closest('.saveitem'), r = li && rec(li.dataset.id);
-      if (r) { r.name = t.value.trim().slice(0, 40); put(r).then(function () { toast('名前を付けました'); }); }
+      /* 名前だけを書き換える（保存した結果・シードには触れない。rename） */
+      var li = t.closest('.saveitem'), id = li && li.dataset.id, nm = t.value.trim().slice(0, 40);
+      if (id) rename(id, nm).then(function (ok) { cache = null; toast(ok ? '名前を付けました' : '名前を保存できませんでした'); });
     }
   });
 
@@ -233,7 +300,8 @@
   var IC_DONE = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function button() { return '<div class="row savebar"><button class="btn" id="savebtn" data-act="saveres">' + IC_SAVE + 'この結果をセーブ</button><button class="btn ghost small" data-act="saveresjson" title="ブラウザに保存せず、この結果をそのままJSONファイルに書き出す">JSONで書き出す</button><button class="btn ghost small" data-tab="saves">セーブデータを見る</button></div>'; }
 
-  HK.Saves = { render: render, button: button, save: save, all: all, importText: importText, put: put, clear: clear, DB: DB, STORE: ST, LS: LS };
+  /* put は「新しく足す」だけ（同じ id があれば残す）。portable.js・save-folder.js もこれを使う */
+  HK.Saves = { render: render, button: button, save: save, all: all, importText: importText, put: addNew, rename: rename, clear: clear, hasRes: hasRes, DB: DB, STORE: ST, LS: LS };
 
   /* ---------- 住人のアイコン（画像）の置き場（HK.IconStore）----------
      住人の上限を 200 人にしたので、アイコン（1枚 10〜15KB の data URL）を住人の保存（localStorage の state。控えと合わせて2倍）に入れると、

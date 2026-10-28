@@ -413,6 +413,8 @@
     var tone = who && who.tone, T = OVR[tone];
     if (!T && !INTENT.some(function (x) { return x[tone]; })) return null;
     var nq = normalize(q, people || []), seed = q + (who.name || '');
+    /* 名前の伏せ字（voice.js の HK.NameGuard）の中では、元の名前でくじを引く（伏せる前と同じ書き下ろしを選ぶ） */
+    if (HK.NameGuard && HK.NameGuard.stack.length) seed = HK.NameGuard.decAll(seed);
     if (T) {
       var v = T[nq.key];
       if (v == null) {

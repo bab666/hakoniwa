@@ -375,7 +375,8 @@
     if (!mode || mode === 'polite') return q;
     /* 敬語を使わない口調：文の途中の「〜ですから、」「〜ますが、」も外す（文末は下の一文ごとの整形で） */
     if (/^(proud|tsun|free|stern)$/.test(mode)) q = V.casualQuote(q, true);
-    var h = hash(q + (who.name || ''));
+    /* 名前の伏せ字（voice.js の HK.NameGuard）の中では、元の名前でくじを引く */
+    var h = hash(HK.NameGuard && HK.NameGuard.stack.length ? HK.NameGuard.decAll(q + (who.name || '')) : q + (who.name || ''));
     var you = YOU_FOR[mode];
     if (you) q = q.replace(/(お前ら|おまえら|あんたら|てめえら|お前たち|あんたたち|君たち|きみたち|あなたたち)/g, { proud: 'お前ら', tsun: 'あんたたち', gentle: 'きみたち', devoted: 'みなさん', shy: 'みなさん' }[mode]).replace(/みなさんたち/g, 'みなさん');
     if (you) q = q.replace(YOU, function (m) { if ((m === '君' || m === 'きみ') && mode === 'stern') return m; return you; });

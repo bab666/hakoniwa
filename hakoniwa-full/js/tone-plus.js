@@ -127,7 +127,8 @@
   }
   function aniki(q, who) {
     var f = who.gender === 'f';
-    q = q.replace(/(あなた|きみ|君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|$|さ|ね|よ|なら|だけ))/g, f ? 'あんた' : 'お前');
+    /* 「〈名前〉君」の敬称の君は二人称にしない（「飯塚お前」にしない。voice.js の YOU_RE と同じ見分け方） */
+    q = q.replace(/(あなた|きみ|(?<![大姫主父母諸細若暴ァ-ヶー一-鿿A-Za-z])君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|$|さ|ね|よ|なら|だけ))/g, f ? 'あんた' : 'お前');
     q = q.replace(/^(ありがとう|ありがと)(?=[。！…]|$)/, f ? 'ありがとね' : 'ありがとな').replace(/^(ごめん(なさい)?|すみません)(?=[。！…]|$)/, f ? '悪いね' : '悪いな').replace(/お願い(?=[。！…]|$)/, '頼む');
     /* 兄貴・姉貴分は性別に関係なく、さっぱりした語尾。「〜のよ」「〜わよ」「〜かしら」は外す */
     q = HK.thinIntj(q, { 'あらあら': 'まあまあ', 'あらまあ': 'へえ', 'あら': 'お' }).replace(endRe('([一-鿿ァ-ヶー]|大丈夫|平気|きれい|綺麗|素敵|すてき)よ'), '$1だよ').replace(endRe('かしら'), 'かな').replace(endRe('(だ|た|い)わよ'), '$1よ').replace(endRe('([^ぁ-ん])わよ'), '$1だよ')
@@ -341,6 +342,9 @@
   var KJ = /[一-鿿々]/, KT = /[ァ-ヶー]/, HR = /[ぁ-ゖ]/;
   var NEXT_OK = /^(?:[、。！？!?…‥」』）)\s〜ー♡っ]|$|は|が|を|に|と|も|の|って|なら|だけ|まで|から|より|へ|さ(?![ぁ-ゖ])|ね|よ|こそ|しか|たち|ら(?![ぁ-ゖ])|ってば|ってさ|か(?=[？?、。」]|$)|だ|です|じゃ)/;
   function nameHere(name, prev, next) {
+    /* 名前の伏せ字（voice.js の HK.NameGuard）の中で呼ばれるときは、元の字で前後を見る（カタカナの名前の前後のカタカナなど） */
+    var NG = HK.NameGuard;
+    if (NG && NG.stack.length) { name = NG.decAll(name); prev = NG.decAll(prev || ''); next = NG.decAll(next); }
     var first = name.charAt(0), last = name.charAt(name.length - 1);
     if (KJ.test(first) && KJ.test(prev || '')) return false;
     if (KT.test(first) && KT.test(prev || '')) return false;
@@ -434,7 +438,7 @@
     if (/^[…‥\s]*(?:先生|師匠|先輩|兄さん|姉さん|兄ちゃん|姉ちゃん|母さん|父さん|お母さん|お父さん|隊長|団長|社長|部長|課長|店長|博士|教授|閣下|殿下|陛下|お嬢様|坊ちゃん|旦那|親方|隊員|諸君|みんな|皆|お前ら|お前たち|君たち|あなたたち)[、。！？!?…]/.test(q)) return q;
     /* 息づかい（は、ぁ・っ、・小さい母音）の混じる台詞と、問いへの短い答え（「〜こと」「〜とか」で終わる）には足さない */
     if (/[ぁぃぅぇぉ]|っ、|ッ、/.test(q) || /(?:こと|もの|とか|かな)[。…]*$/.test(q)) return q;
-    if (/♡/.test(q) || body.length < 7 || /^[ぁ-ゖァ-ヶ]{0,4}[ッっ]?$/.test(body) || hashS(String(raw || q) + who.name) % 3) return q;
+    if (/♡/.test(q) || body.length < 7 || /^[ぁ-ゖァ-ヶ]{0,4}[ッっ]?$/.test(body) || hashS(HK.NameGuard && HK.NameGuard.stack.length ? HK.NameGuard.decAll(String(raw || q) + who.name) : String(raw || q) + who.name) % 3) return q;
     var m = q.match(/^([…‥\s]*)/);
     return m[1] + c + '、' + q.slice(m[1].length);
   };
@@ -459,11 +463,13 @@
     if (calmNames.length && HK.Seg && HK.Seg.quotes) {
       var calmIdx = {};
       input.chars.forEach(function (c, i) { if (HK.toneOf(c) === 'calm') calmIdx[i] = 1; });
+      /* 住人の名前・呼び名は言い換えない（voice.js の HK.NameGuard で伏せてから通す） */
+      var calmG = function (s) { return HK.NameGuard ? HK.NameGuard.guard(s, input.chars, calmText) : calmText(s); };
       (out.log || []).forEach(function (e) {
         if (!e || typeof e.text !== 'string' || !e._sq) return;
         var t = e.text, Q = HK.Seg.quotes(t), sq = e._sq, r = '', p = 0;
         if (Q.length !== sq.length) return;
-        Q.forEach(function (x, k) { if (sq[k] && sq[k].k === 's' && calmIdx[sq[k].w]) { r += t.slice(p, x.a + 1) + calmText(t.slice(x.a + 1, x.b)); p = x.b; if (typeof sq[k].s === 'string') sq[k].s = calmText(sq[k].s); } });
+        Q.forEach(function (x, k) { if (sq[k] && sq[k].k === 's' && calmIdx[sq[k].w]) { r += t.slice(p, x.a + 1) + calmG(t.slice(x.a + 1, x.b)); p = x.b; if (typeof sq[k].s === 'string') sq[k].s = calmG(sq[k].s); } });
         if (p) e.text = r + t.slice(p);
       });
     }

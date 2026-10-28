@@ -365,7 +365,7 @@
       else if (cr && used[cr.i]) { k = 'jilt'; b = cr; }
       else if (c.goal && c.goal.id === 'leave') k = 'leave';
       else k = 'alone';
-      ctx.say({ text: ctx.t(ctx.pick(GC_SOLO[k]), c, b), actors: [c], mag: 25, why: '結末：一人で帰った（' + { crash: '酔いつぶれた', jilt: (b ? b.name : '') + 'はほかの人と帰った', leave: '目標「早く帰りたい｜＝｜早く帰りたいです」', alone: '誰とも帰らなかった' }[k] + '）' });
+      ctx.say({ text: ctx.t(ctx.pick(GC_SOLO[k]), c, b), actors: [c], mag: 25, why: '結末：一人で帰った（' + { crash: '酔いつぶれた', jilt: (b ? b.name : '') + 'はほかの人と帰った', leave: '目標「早く帰りたい」', alone: '誰とも帰らなかった' }[k] + '）' });
     });
     if (rest.length) ctx.say({ text: names(rest) + 'も、それぞれの電車で帰っていった。誰の手にも、今夜交換した連絡先が少しずつ残っていた。', actors: rest, mag: 25 });
     var lk = loves ? 'love' : T.length ? 'pair' : 'none';

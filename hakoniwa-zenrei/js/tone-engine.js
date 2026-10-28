@@ -193,10 +193,11 @@
     return body.replace(/(?:^|[^ん])だ(よ|ね|な|ぞ|ぜ|わ|もん|っけ)?(?=[っッ…‥〜～ー♡、\s　]*$)/, function (m, p) { return m.slice(0, m.length - 1 - (p || '').length) + to + (p || ''); }).replace(/んだ(よ|ね|な|ぞ)?(?=[っッ…‥〜～ー♡、\s　]*$)/, 'ん' + to + '$1');
   }
   /* 助詞を落とした後ろが、名詞＋助詞・断定（「〈名前〉が〈名前〉と」「弱点は右脚だ」）なら落とさない（名詞が並んで読めなくなる） */
-  var DROP_NOUN = /^[一-鿿々ァ-ヶー\uE061]+(?:が|は|を|に|と|の|も|へ|で|だ|じゃ|です|、|。|！|？|$)/;
+  /* 住人の名前の伏せ字（voice.js の HK.NameGuard）：ふつうは漢字の範囲（U+9FA6〜）なので名詞として扱われる。足りないときの私用領域（U+E100〜U+E1FF）も名詞に数える */
+  var DROP_NOUN = /^[一-鿿々ァ-ヶー\uE061\uE100-\uE1FF]+(?:が|は|を|に|と|の|も|へ|で|だ|じゃ|です|、|。|！|？|$)/;
   function ruleDrop(body, rate, seed) {
     var k = 0;
-    return body.replace(/([一-鿿々ァ-ヶー]{1,6})(が|は|を)(?=[一-鿿々ぁ-ゖァ-ヶ])/g, function (m, n, p, at, all) {
+    return body.replace(/([一-鿿々ァ-ヶー\uE100-\uE1FF]{1,6})(が|は|を)(?=[一-鿿々ぁ-ゖァ-ヶ\uE100-\uE1FF])/g, function (m, n, p, at, all) {
       k++;
       if (DROP_NOUN.test(all.slice(at + m.length))) return m;
       return (hash(seed + '#drop' + k) % 100) < rate * 100 ? n : m;
@@ -529,6 +530,8 @@
   T.apply = function (q, d, who) {
     if (!q || !d) return q;
     var seed = q + '#' + ((who && who.name) || '');
+    /* 名前の伏せ字（voice.js の HK.NameGuard）の中では、元の名前でくじを引く（伏せる前と同じ言い回しを選ぶ） */
+    if (HK.NameGuard && HK.NameGuard.stack.length) seed = HK.NameGuard.decAll(seed);
     var q0 = q, dots0 = (q.match(/[…‥]+/g) || []).reduce(function (n, x) { return Math.max(n, x.length); }, 0);
     var r = d.rules || {}, fx = d.effects || {};
     /* 重い台詞（死別・別れ・しんみりした思い出の言い切り）：勢いの「！」「よっしゃ」を足さない（熱血など） */

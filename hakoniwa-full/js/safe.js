@@ -300,8 +300,10 @@
     }
     if (e.tag && FADE.indexOf(t) >= 0 && !/秘密|一線|ベッド|その先/.test(e.tag)) e.text = MILD[fi++ % MILD.length];
   }
+  /* 住人の名前・呼び名は言い換えない（名前の字が「快楽」「絶頂」などの語と重なっても、名前のまま。voice.js の HK.NameGuard。箱庭を回すあいだだけ walkG に表を持つ） */
+  var walkG = null;
   function walk(o, key) {
-    if (typeof o === 'string') return key === 'tag' || key === 'label' ? softTag(o) : softText(o);
+    if (typeof o === 'string') { var g = walkG, o2 = g ? g.enc(o) : o, r2 = key === 'tag' || key === 'label' ? softTag(o2) : softText(o2); return g ? g.dec(r2) : r2; }
     if (Array.isArray(o)) { for (var i = 0; i < o.length; i++) o[i] = walk(o[i], key); return o; }
     if (o && typeof o === 'object') { for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k) && k !== 'id' && k !== 'kind' && k !== 'type' && k !== 'color') o[k] = walk(o[k], k); return o; }
     return o;
@@ -313,7 +315,7 @@
     var DV = HK.DView, r1 = DV.render, t1 = DV.toText;
     function lab(h) { return h.replace(/決め手と絶頂だけ/g, '決め手だけ').replace(/快楽堕ち/g, 'ハマり度').replace(/絶頂/g, '高鳴り').replace(/快感/g, '高鳴り').replace(/発情/g, '火照り').replace(/堕ち度/g, '揺らぎ').replace(/堕ち/g, '揺らぎ').replace(/快楽/g, '誘惑').replace(/感度 ×/g, 'ほぐれ ×').replace(/開発度/g, 'ほぐれ具合'); }
     DV.render = function (host, res) { var r = r1.apply(this, arguments); if (res && SOFT_IDS[res.scenId]) host.innerHTML = lab(host.innerHTML); return r; };
-    DV.toText = function (res) { var t = t1.apply(this, arguments); return res && SOFT_IDS[res.scenId] ? lab(softText(t)) : t; };
+    DV.toText = function (res) { var t = t1.apply(this, arguments); return res && SOFT_IDS[res.scenId] ? lab(HK.NameGuard ? HK.NameGuard.guard(t, res.chars || [], softText) : softText(t)) : t; };
   })();
   /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包み（safe-room.js など）も元の順に並ぶ） */
   HK.wrap(HK, 'simulate', function (sim0) {
@@ -328,7 +330,13 @@
       if (id === 'saimin' && input.env.mode === 'lewd') input.env.mode = 'mix';
     }
     var r = id === 'massage' ? withPools(function () { return sim0.apply(self, args); }) : sim0.apply(this, arguments);
-    if (soft && r) { fi = 0; curId = id; walk(r, ''); (r.log || []).forEach(function (e) { fixEvent(e, r); }); }
+    if (soft && r) {
+      fi = 0; curId = id;
+      var NG = HK.NameGuard;
+      walkG = NG && input && Array.isArray(input.chars) ? NG.make(NG.wordsOf(input.chars), '') : null;
+      try { walk(r, ''); } finally { walkG = null; }
+      (r.log || []).forEach(function (e) { fixEvent(e, r); });
+    }
     return r;
   };
   for (var k in sim0) if (Object.prototype.hasOwnProperty.call(sim0, k)) sim[k] = sim0[k];
