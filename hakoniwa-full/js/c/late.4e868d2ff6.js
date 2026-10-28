@@ -1,6 +1,6 @@
 ;
 /* ==== js/tone-darui.js ==== */
-HK.Load.def(462,'js/tone-darui.js',function(){
+HK.Load.def(464,'js/tone-darui.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK.Voice,EX=HK.TONE_EXTRA;
@@ -359,7 +359,7 @@ wow:['……へえ','……ふーん'],yay:['……よかったんじゃない',
 });
 ;
 /* ==== js/tone-fix-loose.js ==== */
-HK.Load.def(487,'js/tone-fix-loose.js',function(){
+HK.Load.def(489,'js/tone-fix-loose.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -416,7 +416,7 @@ return v.replace(/〈〉/g,function(){var n=names[Math.min(i,names.length-1)];i+
 });
 ;
 /* ==== js/tone-hero.js ==== */
-HK.Load.def(500,'js/tone-hero.js',function(){
+HK.Load.def(502,'js/tone-hero.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -613,7 +613,7 @@ HK.toneFinish('hero',hero);
 });
 ;
 /* ==== js/tone-genki.js ==== */
-HK.Load.def(501,'js/tone-genki.js',function(){
+HK.Load.def(503,'js/tone-genki.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -792,7 +792,7 @@ HK.toneFinish('genki',conv);
 });
 ;
 /* ==== js/story-lewd.js ==== */
-HK.Load.def(502,'js/story-lewd.js',function(){
+HK.Load.def(504,'js/story-lewd.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,X=HK.Lewd,E=HK.Ero,TE=HK.ThickEro,R=HK.R18M;
@@ -1017,7 +1017,7 @@ return sayEv.apply(this,arguments);
 });
 ;
 /* ==== js/tie-new-story.js ==== */
-HK.Load.def(503,'js/tie-new-story.js',function(){
+HK.Load.def(505,'js/tie-new-story.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -1529,7 +1529,7 @@ cm2:'{a}は、{b}が仕事で無理をしていないか気づかった。「仲
 });
 ;
 /* ==== js/tips-scen-a.js ==== */
-HK.Load.def(504,'js/tips-scen-a.js',function(){
+HK.Load.def(506,'js/tips-scen-a.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,T=HK.TIPS_SCEN=HK.TIPS_SCEN||{};
@@ -1668,20 +1668,27 @@ sections:[
 '負担（ストレス）が限界を越えると学校に来なくなります。親しい人や優しさの高い人が様子を見に行き、負担が下がれば戻ってきます。',
 '嫉妬・執着が強い人は、雰囲気が悪いクラスで噂を流しがちです。',
 '関係「執着（ヤンデレ）」の人や、好きな相手が誰かと親しくするのを見続けて執着が芽生えた人は、執着の段階に応じて、相手に尽くす・束縛する・恋敵を遠ざける・すがるといった行動をとり、極まると暴走することがあります（型や段階は「住人どうしの既存の関係」のTIPSを参照）。',
-'一年間かけて進むため、執着は月を追うごとに重くなっていきます。'
+'一年間かけて進むため、執着は月を追うごとに重くなっていきます。',
+'先生は、負担の大きい生徒・遅刻や保健室が続く生徒・いじめの標的・成績の落ちた生徒に声をかけます（廊下で呼び止める・保健室・家庭訪問・親に連絡）。届けば負担が下がって不登校になりにくくなり、届かないと反発されます。接し方は先生の気質で変わります。',
+'受け持ちの生徒が亡くなる・心中を図る・長く学校に来なくなる・いじめが何か月も続くと、担任は大きな負担を抱えて自分を責め、態度が変わります（厳しくなる・一人で抱え込む・崩れかける など）。重なると休職し、副担任か代わりの先生がクラスを受け持ちます。「死ネタの重さ」が穏やかなら、休職まではいきません。',
+'先生が二人以上いると、月に一度ほど職員室の場面（生徒の相談・方針の違い・愚痴と励まし・3年生の進路会議・行事の分担・ベテランと新任・負担を抱えた先生を支える／責める）が起きます。'
 ]},
 {h:'設定のコツ',items:[
 '「クラスの雰囲気」が低いほど、最初から緊張があり、負担も溜まりやすく、いじめや陰口が増えます。',
 '「いじめ」を「なし」にすると、いじめも陰口・仲間外れなどの小さな出来事も起きません。「起きやすい」にすると、始まりやすくなります。',
 '「学年」を「学園全体」にすると、住人ごとに1〜3年生を選べます。学年の違う二人は自動で先輩と後輩になり、先輩後輩ならではの出来事が起きます。',
-'「担任の先生」を一人選ぶと、その人は生徒の輪（派閥・いじめ・テスト）に入らず、毎月生徒と関わります。先生の接し方は気質で変わり、先生と生徒の間に恋愛は起きません（環境値「先生との恋愛」を「あり」にしたときを除く）。',
-'環境値「先生との恋愛」を「あり」にすると、担任の先生と生徒のあいだにも恋が生まれることがあります。放課後の教室・進路相談のあと・補習・帰り道・連絡先を渡す・「先生」と呼ぶ距離感といった場面で少しずつ近づき、告白は生徒からも先生からも起きます。恋愛対象は両方向で確かめます。生徒どうしより起こりにくく、先生は厳しさ（CP）が高いほど踏みとどまり、遠慮（AC）が高いほど流されます。',
+'「担任の先生」で選んだ人と、参加表の「先生（受け持ち）」を選んだ人は先生になり、生徒の輪（派閥・いじめ・テスト）に入らず、毎月受け持ちの生徒と関わります。先生の接し方は気質で変わり、先生と生徒の間に恋愛は起きません（環境値「先生との恋愛」を「あり」にしたときを除く）。',
+'先生は何人でも置けます。学年が一つのときは、「担任の先生」で選んだ人（いなければ参加表の上の人）が担任、ほかは副担任になります。副担任は、担任より控えめに生徒と関わります。',
+'「学園全体」では、先生ごとに受け持つ学年（1〜3年）を「先生（受け持ち）」で選べます。おまかせなら、生徒がいて先生のいない学年を受け持ちます。先生は受け持ちの学年の生徒と関わり、先生のいない学年の担任は名前の出ない先生（モブ）になります。',
+'先生の設定（住人タブ）に年齢を入れておくと、年の差のある先生どうしに「ベテランと新任」の場面が起きます。',
+'環境値「先生との恋愛」を「あり」にすると、先生と受け持ちの生徒のあいだにも恋が生まれることがあります。放課後の教室・進路相談のあと・補習・帰り道・連絡先を渡す・「先生」と呼ぶ距離感といった場面で少しずつ近づき、告白は生徒からも先生からも起きます。恋愛対象は両方向で確かめます。生徒どうしより起こりにくく、先生は厳しさ（CP）が高いほど踏みとどまり、遠慮（AC）が高いほど流されます。',
 '「隠れて付き合う」では、恋人になっても周りには秘密です（関係図の札は「恋人（秘密）」）。人目を避けて会ううちに、ほかの生徒に見られる・噂になる・バレかけることがあり、バレかけると先生は処分の危機に立たされて、しばらく会わずに身を潜めるか、先生から別れを告げます。秘密を知った人だけが嫉妬したり、秘密を守ってくれたりします。「公にすることもある」では、公にする選択と、周りの反応・保護者の場面もあります。',
-'最大30人まで参加できます。'
+'最大35人まで参加できます（先生も人数に入ります）。'
 ]},
 {h:'結末',items:[
 '一年の終わりに、恋人になった組、犬猿の仲、言えなかった想い、クラスの最終的な体制（派閥の形）がまとめられます。',
 '3年生は卒業、それ以外は進級します。負担が大きいまま終わった人は「休みがち」になります。',
+'3年生は、出席日数（長い不登校）・成績（学力が低く、テストの最下位が続く）・問題行動（いじめの加害で停学）が重なると、9月ごろから担任に「このままだと卒業できない」と声をかけられます。補習や面談に応えれば持ち直しますが、応えないままだと2月の判定で卒業できないことがあります（一クラスで多くて一人）。卒業式では送り出されず、結末にもそれが書かれます。',
 '3年生が先生と付き合ったまま年度末を迎えると、卒業式のあとの場面と「その後」（卒業してからも続く・自然消滅・別れる・数年後に再会）が書かれます。気質と、二人の信頼・好意で決まります。1・2年生なら、来年も関係を続けます。告白に「卒業するまで待って」と答えた先生は、卒業式のあとに答えを返します。',
 'クラスメイトでは、恋人にはなりますが、恋人ではない体の関係や夜の出来事には進みません。'
 ]}
@@ -1791,7 +1798,7 @@ safe:[
 });
 ;
 /* ==== js/tips-scen-b.js ==== */
-HK.Load.def(505,'js/tips-scen-b.js',function(){
+HK.Load.def(507,'js/tips-scen-b.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,T=HK.TIPS_SCEN=HK.TIPS_SCEN||{};
@@ -2086,7 +2093,7 @@ safe:[]
 });
 ;
 /* ==== js/tips-scen-c.js ==== */
-HK.Load.def(506,'js/tips-scen-c.js',function(){
+HK.Load.def(508,'js/tips-scen-c.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,T=HK.TIPS_SCEN=HK.TIPS_SCEN||{};
@@ -2285,7 +2292,7 @@ safe:[]
 });
 ;
 /* ==== js/tips-scen-d.js ==== */
-HK.Load.def(507,'js/tips-scen-d.js',function(){
+HK.Load.def(509,'js/tips-scen-d.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,T=HK.TIPS_SCEN=HK.TIPS_SCEN||{};
@@ -2532,7 +2539,7 @@ sections:[
 });
 ;
 /* ==== js/attr-r18.js ==== */
-HK.Load.def(508,'js/attr-r18.js',function(){
+HK.Load.def(510,'js/attr-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -2590,7 +2597,7 @@ ff:L('{b}は{a}の背中に腕を回し、子猫のように胸元へ頬をす�
 };
 var TOP_E={
 sadist:{
-mf:L('{a}は{b}の髪をわし掴みにして顔を上げさせ、とろけかけた顔をじっくり眺めた。{a}「ほら、もうこんな顔して。……どこまで崩れるか、試してやるよ」|{a}は{b}の両手首を片手でまとめて押さえつけ、空いた手で尻をぱしんと叩いた。跳ねた腰を、{a}は逃がさず引き戻した。{a}「いい音。もう一回、鳴らしてやろうか」'),
+mf:L('{a}は{b}の髪をわし掴みにして顔を上げさせ、とろけかけた顔をじっくり眺めた。{a}「ほら、もうこんな顔になってる。……どこまで崩れるか、試してやるよ｜ほら、もうこんな顔だ。……どこまで崩れるか、試してやる｜ほら、もうこんなお顔ですね。……どこまで崩れるか、試してさしあげます」|{a}は{b}の両手首を片手でまとめて押さえつけ、空いた手で尻をぱしんと叩いた。跳ねた腰を、{a}は逃がさず引き戻した。{a}「いい音。もう一回、鳴らしてやろうか」'),
 fm:L('{a}は{b}の胸板に爪を立て、赤い線を引きながら見下ろした。{a}「ねえ、もう我慢できないって顔。……許すまで、絶対にイっちゃだめよ」|{a}は{b}の顎を掴んで上を向かせ、唾液の糸を引くほど深く口づけた。{a}「情けない顔。もっと見せて、ほら♡」'),
 ff:L('{a}は{b}の髪を引いて喉をそらさせ、首筋にちゅうっと吸いついて赤い痕を刻んだ。{a}「ほら、印。これでもう、私のもの♡」|{a}は{b}の両手首をまとめて押さえ、濡れた指先で胸の先をきゅっとつまみ上げた。{a}「声、我慢しなくていいよ。……我慢できないんでしょ？」')
 },
@@ -2831,7 +2838,7 @@ A.netFill=netFill;
 });
 ;
 /* ==== js/attr-race-r18.js ==== */
-HK.Load.def(509,'js/attr-race-r18.js',function(){
+HK.Load.def(511,'js/attr-race-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -3363,7 +3370,7 @@ return s;
 });
 ;
 /* ==== js/export-out.js ==== */
-HK.Load.def(510,'js/export-out.js',function(){
+HK.Load.def(512,'js/export-out.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -3793,7 +3800,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/ui-perzoom.js ==== */
-HK.Load.def(511,'js/ui-perzoom.js',function(){
+HK.Load.def(513,'js/ui-perzoom.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -3915,7 +3922,7 @@ var S=HK.UI&&HK.UI.state?HK.UI.state():null;
 if(!S)return'';
 var sc= !S.scenId?null:HK.Load&&HK.Load.info?HK.Load.info(S.scenId):HK.SCENARIOS&&HK.SCENARIOS[S.scenId];
 if(!sc)return'箱庭を選んでください';
-var mn=sc.minCast||2,mx=Math.min(sc.maxCast||12,30),list=S.join&&S.join[S.scenId],chars=S.chars||[];
+var mn=sc.minCast||2,mx=Math.min(sc.maxCast||12,35),list=S.join&&S.join[S.scenId],chars=S.chars||[];
 var n=list?chars.filter(function(c){return list.indexOf(c.id)>=0;}).length:Math.min(chars.length,mx);
 if(n<mn)return mn===1?'挑戦する住人を1人選んでください':'参加する住人を'+mn+'人以上選んでください';
 return'';
@@ -3975,4 +3982,4 @@ HK.PerZoom={state:function(){return{z:st.z,fit:st.fit,form:form()};},act:functio
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 });
-HK.Load.done('late', '7f8774f0af', 1);
+HK.Load.done('late', '4e868d2ff6', 1);

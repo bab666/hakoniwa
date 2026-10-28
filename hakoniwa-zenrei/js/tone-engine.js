@@ -222,6 +222,7 @@
 
   /* ---------- 語尾の設定の規則（前置き・驚き・笑い・言い切り・動揺）。どれも辞書に書いたときだけ効く ---------- */
   /* 死別・別れの台詞、「〜だった。」で終わるしんみりした言い切り：勢いの「！」「よっしゃ」を足さない（熱血など） */
+  var WARM = /好きです|好きだ(?!ろ)|お好き|かわいい|可愛い|ありがと|よかった(?!ら)|良かった(?!ら)|一緒|嬉し|うれし|幸せ|お慕い|想い/;
   var GRIEF = /死|亡くな|さよなら|さようなら|葬|墓|形見|お別れ|最期|逝っ|逝く|帰ってこな|もういない|もう会えな|だった(?:[。…‥]|$)/;
   /* 前置き（やれやれ・フッ……）を付けない台詞：死別・謝り・お礼 */
   var NO_LEAD = /死|亡くな|さよなら|さようなら|葬|墓|形見|お別れ|最期|逝っ|逝く|すまな|すみません|ごめん|申し訳|悪かった|許して|ありがと|感謝/;
@@ -443,7 +444,10 @@
   /* 決まり文句（おはよう・ありがとう・ごちそうさまでした・すみませんでした など）の中の語尾は活用させない（「おはましょう」「おはようぜ」「ごちそうさまだったっす」にしない）。
      記号（！・？・〜）を足すだけの候補はよい。「〜でした」「〜ました」の決まり文句は、終助詞を一つ足すだけの候補もよい（ありがとうございましたわ・お疲れさまでしたぞ） */
   var GREET = /(?:おはよう|ありがとう|おめでとう|ごちそうさまでした|ごちそうさま|お粗末さまでした|お粗末さま|お疲れさまでした|おつかれさまでした|すみませんでした|申し訳ありませんでした|申し訳ございませんでした|ありがとうございました|ごめんなさい)$/;
-  function applyEnds(body, punct, ends, seed, i, strict, strong, avoid, once, grave) {
+  /* hot：2＝息の詰まる声（「……っ」を含む・「……！」で終わる。山場の声・崩れ・懇願など）、1＝「！」で終わる台詞・想いを告げる台詞や文（T.apply の WARM）。
+     どちらも皮肉・濁し・問い返しの語尾（〜が・〜けど（ね）・〜よ？・〜か）と、文を足す候補を使わない。2 は語尾を伸ばす（〜ですよー）のも足さない
+     （2026-10-28 担当KG：無愛想・ひねくれの敬語の攻めが、山場で「好きですが。」「まとまりませんが。」「一緒にいきましょうか……！」と冷めた・問い返す形になっていた） */
+  function applyEnds(body, punct, ends, seed, i, strict, strong, avoid, once, grave, hot) {
     if (!ends || !ends.length) return { body: body, punct: punct };
     var st = splitTail(body), core = st[0];
     if (core.slice(-1) === MARK) return { body: body, punct: punct };
@@ -467,6 +471,17 @@
           /* 新しい規則を使う辞書：問いの形を足す候補（「ですよ？」）は「！」の文・読点で続く文に、「が」で濁す候補（「ませんが」）は「！」の文に当てない */
           if (strict && c !== from && /[？?]$/.test(c) && !/[？?]$/.test(from) && /^[！!、，]/.test(punct)) return false;
           if (strict && c !== from && /が$/.test(c) && !/が$/.test(from) && /^[！!]/.test(punct)) return false;
+          if (hot && c !== from) {
+            var cx = c.replace(/[〜ー～…‥っッ♡！!]+$/, ''), fx0 = from.replace(/[？?]$/, '');
+            /* 問いの「か」「の」に付ける「？」（明るい敬語の「ですか？」）はよい。言い切りに足す「〜よ？」は足さない */
+            if (/(?:が|けど|けれど|けどね|けれどね)$/.test(cx) && !/(?:が|けど|けれど)$/.test(fx0)) return false;
+            if (!qm && /[？?]$/.test(cx) && !/[？?]$/.test(from) && !/[かの]$/.test(fx0)) return false;
+            if (hot === 2 && cx.indexOf(fx0) === 0 && /^(?:か|かね)$/.test(cx.slice(fx0.length))) return false;
+            /* 文を足す候補（「〜ください。……まあ、一応」）も足さない */
+            if (/[。、]/.test(c.replace(/^[…‥、]+/, '')) && !/[。、]/.test(from)) return false;
+            /* 語尾を伸ばす（〜ですよー）のも、強い台詞では足さない（山場の声が間延びしないように） */
+            if (hot === 2 && /[ー〜～]$/.test(c) && !/[ー〜～]$/.test(from)) return false;
+          }
           if (strong && c !== from && addsExpl(from, c)) return false;
           /* 新しい規則を使う辞書：問いには、問いの形（か・の・かな・かね など）でない付け足し（「たよぉ？」「でしょ、たぶん？」）を当てない */
           if (ask && c !== from && (!/(?:か|の|かな|かい|かね|だい)[〜ー～ぁあ]*$/.test(c) || /[。、]/.test(c.replace(/^[…‥、]+/, '')))) return false;
@@ -589,6 +604,13 @@
     if (r.laugh) q = ruleLaugh(q, r.laugh, seed);
     if (r.emph && r.emph.length) q = ruleEmph(q, r.emph, seed, r.emphRate);
     /* 文ごと */
+    /* 強い台詞（hot）と、想いを告げる台詞（愛してる・大好き）・どもって始まる台詞（「お、おやめください」）は、皮肉・濁しの語尾を足さない。
+       好き・かわいい・ありがとう・よかった・一緒・嬉しい・幸せ・お慕い・想い を含む文も、その文だけ足さない（WARM）。
+       敬語のベース（P）から作る口調だけ（無愛想・ひねくれ・ダウナー系チャラ男などの、敬語に付けた皮肉・間延びの語尾。くだけた口調の「〜！」「〜っしょ」は口調の味なので触らない） */
+    var dP = (d.base || T.BASE[d.key]) === 'P';
+    /* 2：息の詰まる声（「……っ」を含む・「……！」で終わる）＝山場の声・崩れ。1：「！」で終わる台詞・想いを告げる台詞・どもって始まる台詞 */
+    var q0t = q0.replace(/[\s　」]+$/, '');
+    var hot = !dP ? 0 : /[…‥]っ/.test(q0) || /[…‥][！!]+$/.test(q0t) ? 2 : /[！!]$/.test(q0t) || /愛して|大好き|^[…‥]*([ぁ-ゖ])、\1/.test(q0) ? 1 : 0;
     var ss = segs(q), prevTail = '', once = r.once && r.once.length ? { list: r.once, used: r.once.filter(function (w) { return w && q.indexOf(w) >= 0; }), cur: false } : null, lastI = -1;
     ss.forEach(function (s, i) { if (s.body.replace(/[…‥、〜ー～っッ♡\s　]/g, '')) lastI = i; });
     ss = ss.map(function (s, i) {
@@ -606,7 +628,7 @@
       var strong = /^[！!]/.test(punct) && r.strongExpl !== '残す';
       if (strong) body = strongCut(body);
       if (once) once.cur = i === lastI;
-      var ap = applyEnds(body, punct, sc ? CASUAL_ENDS : d.ends, seed, i, newRules(r), strong, prevTail, sc ? null : once, grave);
+      var ap = applyEnds(body, punct, sc ? CASUAL_ENDS : d.ends, seed, i, newRules(r), strong, prevTail, sc ? null : once, grave, hot || (dP && WARM.test(core0) ? 1 : 0));
       /* 「〜んだ」「〜なんだ」で終わった文の次の文には、「〜んだ」を足す候補を選ばない（「止まったんだ。もう止まっているんだ」にしない。2026-10-26 順151） */
       prevTail = ap.tail || (/[んの]だ$/.test(splitTail(ap.body.replace(new RegExp(MARK, 'g'), ''))[0]) ? 'んだ' : '');
       return { body: ap.body.replace(new RegExp(MARK, 'g'), ''), punct: ap.punct };
