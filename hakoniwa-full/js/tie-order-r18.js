@@ -341,7 +341,8 @@
   var FAM = { parent: 'par', pparent: 'par', sibprot: 'sib', sibling: 'sib', sibclose: 'sib', sibbad: 'sib', relative: 'rel' };
   var SHY_T = /^(lover|mate|fated|fiance|honmei)$/;
   /* 家族で恋愛に進んでよい関係（「恋愛：あり」か、擬似親子のようにもともと恋愛に進める関係） */
-  function famOk(t) { var D = t && HK.TIES[t.type]; return !!(D && D.family && FAM[t.type] && (D.loveOK || t.love === 'ok' || (HK.tieFamLove && HK.tieFamLove(t)))); }
+  /* 家族で恋愛できる関係（擬似親子は自動であり、ほかは「恋愛：あり」。どれも「恋愛：なし」を選べば外れる：ties.js の HK.tieLoveOK） */
+  function famOk(t) { var D = t && HK.TIES[t.type]; return !!(D && D.family && FAM[t.type] && HK.tieLoveOK(t)); }
   function famSub(t) { return t.type === 'relative' && t.step ? 'sib' : FAM[t.type]; }
   TO.famOk = famOk;
   /* 向きのない家族の上下：きょうだいは sib-word.js（上下の欄・年齢）、それ以外は年齢。決まらなければ a を上に */

@@ -21,7 +21,7 @@
     if (!a || !b || a === b) return true;
     var L0 = ties(S, a, b);
     if (L0.some(function (t) { return HK.TIES[t.type] && HK.TIES[t.type].noObsess; })) return true;
-    if (L0.some(function (t) { var D = HK.TIES[t.type]; return D && D.family && !D.loveOK && !(HK.tieFamLove && HK.tieFamLove(t)); })) return true;
+    if (L0.some(function (t) { return HK.tieNoLove(t); })) return true;
     if (HK.Pos && HK.Pos.clash && HK.Pos.clash(a, b)) return true;
     if (HK.canLove && !HK.canLove(a, b) && !yanT(S, a, b)) return true;
     return false;

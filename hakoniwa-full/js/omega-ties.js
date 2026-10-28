@@ -207,7 +207,6 @@
     if (HK.ngPair && HK.ngPair(A, B)) return false;
     if (HK.tieOptNoLove && HK.tieOptNoLove(t)) return false;
     if (HK.tieNoLove && HK.tieNoLove(t)) return false;
-    if (HK.TIES[t.type] && HK.TIES[t.type].family && t.love !== 'ok') return false;
     if (!ctx.romanceOk([A, B])) return false;
     if (ctx.pair(A, B).kin) return false;
     if (otherP(ctx, A, B) || otherP(ctx, B, A)) return false;

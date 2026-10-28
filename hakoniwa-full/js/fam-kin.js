@@ -2,6 +2,7 @@
    ・「恋愛：なし」（ties.js の HK.tieNoLove）の二人は、恋愛・R18にしない相手（キャラの設定 loveNG と同じ ng）として扱う。
      これで HK.ngPair・HK.canLove・HK.sexBlocked・HK.Pos.okSex を通る判定（告白・夜・R18の場面・恋人の結末）に、どの箱庭でも乗らない
    ・「恋愛：あり」の家族・擬似親子（loveOK）は、ほかの組と同じ条件で恋愛・夜・R18・恋人の結末に進む
+   ・どの関係でも「恋愛：なし」（自動の既定を含む。ties.js の HK.tiesLove）の二人は、互いの loveOff に入れる（恋愛だけを止める。R18 は止めない）
    ・エンジン型の箱庭（engine.js）は ctx.pair(a, b).kin で見るので、ここでは触らない */
 (function () {
   'use strict';
@@ -18,6 +19,8 @@
       if (a.ng.indexOf(b.i) < 0) a.ng.push(b.i);
       if (b.ng.indexOf(a.i) < 0) b.ng.push(a.i);
     });
+    /* 関係の「恋愛：なし」（自動の既定を含む。ties.js の HK.tiesLove）の二人は、互いの loveOff に入れる（恋愛だけを止める：engine.js の HK.canLove） */
+    if (HK.loveOffMark) HK.loveOffMark(P, ties);
   };
   /* 関係「無関心」「恐怖」の二人は、互いの noLove に入れる（engine.js の HK.noLovePair：恋愛にも体の関係にもならない。エンジン型は ties.js の HK.Ties.after） */
   HK.fearNG = function (P, ties) {
@@ -26,7 +29,9 @@
       if (!t || t.a === t.b || (t.type !== 'apathy' && t.type !== 'fear')) return;
       var a = P[t.a], b = P[t.b];
       if (!a || !b || a === b) return;
-      [[a, b], [b, a]].forEach(function (q) { var l = q[0].noLove = Array.isArray(q[0].noLove) ? q[0].noLove : []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); });
+      /* 「恋愛：あり」にした無関心・恐怖（ties.js の HK.tieLoveOK）は、恋愛は止めず、体の関係だけを止める（noSex：engine.js の HK.sexBlocked） */
+      var f = HK.tieLoveOK && HK.tieLoveOK(t) ? 'noSex' : 'noLove';
+      [[a, b], [b, a]].forEach(function (q) { var l = q[0][f] = Array.isArray(q[0][f]) ? q[0][f] : []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); });
     });
   };
   var ST = HK.Story;

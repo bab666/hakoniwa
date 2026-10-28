@@ -554,7 +554,7 @@
     if (pf.abandoned != null) return { id: 'zabandon', dir: d(pf.abandoned) };
     /* 想い合っていたのに、どちらかが死んだ・ゾンビになった */
     var lov = function (x, y) { var r = ctx.R(x, y); return r.aff > 35 && r.att > 38; };
-    if ((!A.alive || !B.alive) && (pf.couple || tieT(ctx, A, B) === 'lover' || (lov(A, B) && lov(B, A)))) return { id: 'zparted' };
+    if ((!A.alive || !B.alive) && (pf.couple || (tieT(ctx, A, B) === 'lover' && !(HK.tieLoveNoPair && HK.tieLoveNoPair(ctx, A, B))) || (lov(A, B) && lov(B, A)))) return { id: 'zparted' };
     return null;
   };
   scen.pairText = function (ctx, A, B, cl) {

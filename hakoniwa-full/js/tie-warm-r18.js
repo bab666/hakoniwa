@@ -289,7 +289,8 @@
   var BOND = ['mentor', 'boss', 'senpai', 'benefactor', 'childhood', 'buddy'];
   var LOVE_T = /^(lover|mate|fated|almost|fwb)$/;
   /* 家族で、恋愛に進んでよい関係（「恋愛：あり」か、擬似親子のようにもともと恋愛に進める関係） */
-  function famOk(t) { var D = t && HK.TIES[t.type]; return !!(D && D.family && FAM[t.type] && (D.loveOK || (HK.tieFamLove && HK.tieFamLove(t)))); }
+  /* 家族で恋愛できる関係（擬似親子は自動であり、ほかは「恋愛：あり」。「恋愛：なし」を選べば外れる：ties.js の HK.tieLoveOK） */
+  function famOk(t) { var D = t && HK.TIES[t.type]; return !!(D && D.family && FAM[t.type] && HK.tieLoveOK(t)); }
   function famSub(t) { return t.type === 'relative' && t.step ? 'sib' : FAM[t.type]; }
   /* 恋人・友達以上・セフレ・番の組か、箱庭の中で恋人になった組 */
   function lovePair(ctx, a, b) { return !!ctx.pair(a, b).couple || HK.Ties.all(ctx, a, b).some(function (t) { return LOVE_T.test(t.type); }); }

@@ -197,9 +197,11 @@
   }
   HK.sexNG = function (a, b) { if (!a || !b || a === b) return false; return sexOne(a, b) || sexOne(b, a); };
   /* 体の関係にならない組：恋愛・R18にしない相手・同じ人の恋人どうし・性行為の相手の固定 */
-  HK.sexBlocked = function (a, b) { if (!a || !b || a === b) return false; return !!(a.noR18 || b.noR18) || HK.ngExplicit(a, b) || coNG(a, b) || HK.sexNG(a, b); };
+  /* 「恋愛：あり」にした無関心・恐怖の二人（ties.js の HK.Ties.after・fam-kin.js の HK.fearNG）：恋愛はできるが、体の関係・夜は今までどおりにしない */
+  HK.noSexPair = function (a, b) { return !!(a && b && a !== b && ((a.noSex && a.noSex.indexOf(b.i) >= 0) || (b.noSex && b.noSex.indexOf(a.i) >= 0))); };
+  HK.sexBlocked = function (a, b) { if (!a || !b || a === b) return false; return !!(a.noR18 || b.noR18) || HK.ngExplicit(a, b) || coNG(a, b) || HK.sexNG(a, b) || HK.noSexPair(a, b); };
   /* 恋愛はしない（恋愛相手の固定が食い違う）が、体の関係は許されている組。体の関係があっても、恋愛には進まないように補正する（Ctx.say） */
-  HK.lockSexOnly = function (a, b) { return !!(a && b && a !== b && HK.lockConflict(a, b) && !HK.ngExplicit(a, b) && !coNG(a, b) && !HK.sexNG(a, b)); };
+  HK.lockSexOnly = function (a, b) { return !!(a && b && a !== b && HK.lockConflict(a, b) && !HK.ngExplicit(a, b) && !coNG(a, b) && !HK.sexNG(a, b) && !HK.noSexPair(a, b)); };
   /* 恋愛を伴わない体の関係の場面（常識改変・マッサージ・サキュバス・催眠・バラエティ・ダンジョン・遮断穴など）で見る「恋愛・R18にしない組」。
      HK.ngPair から、性行為の相手の固定で許された恋愛相手の固定の食い違い（HK.lockSexOnly：「誰とでも可」や「固定した相手だけ」で相手が入っている）を除いたもの。
      恋愛相手を別の人（この箱庭にいない人を含む）に固定し、性行為の相手を「誰とでも可」にした人が、二人きりの箱庭で相手にならなかった（2026-10-28 の利用者の問い合わせ） */
@@ -248,11 +250,31 @@
     /* R18 が箱庭の中心で、R18に参加しない設定を効かせない箱庭（全員が不参加だと遊べないため。設定画面にも書く） */
     R18_CORE: { dungeon: 1, hole: 1, kaihen: 1, succubus: 1, variety: 1, massage: 1 }
   };
-  HK.canLove = function (a, b) {
+  /* 二人のあいだの関係の「恋愛：自動／あり／なし」で見た恋愛の可否（ties.js の HK.tiesLove。2026-10-28 担当MB）。
+     ctx：エンジン型の ctx（省略時は回している ctx。住人が ctx の住人そのものなら、その関係の並び）か、物語型の S（関係の並び S.ties）。
+     どちらでもなければ、住人の写しに付けた印 loveOff（ties.js の HK.Ties.after・HK.loveOffMark）で見る */
+  HK.tieLovePair = function (a, b, ctx) {
+    if (!a || !b || a === b || !HK.tiesLove) return true;
+    var c0 = ctx && typeof ctx === 'object' ? ctx : HK._curCtx;
+    if (c0 && c0.tiesAll && c0.chars && c0.chars[a.i] === a) return HK.tiesLove(c0.tiesAll[key(a, b)]);
+    if (ctx && typeof ctx === 'object' && Array.isArray(ctx.ties)) return HK.tiesLove(HK.tiesBetween(ctx.ties, a, b));
+    return !((a.loveOff && a.loveOff.indexOf(b.i) >= 0) || (b.loveOff && b.loveOff.indexOf(a.i) >= 0));
+  };
+  /* 関係で見て恋愛しない二人（「恋愛：なし」を選んだ関係と、自動の既定が「なし」の関係（無関心・恐怖・家族・信仰など）。HK.tiesLove が偽）。
+     惹かれを育てない（Ctx.mod）・恋愛の出来事を起こさない（Ctx.romanceOk）・結末で恋人・片想いにしない（classify0）。
+     クラスメイトの先生との恋愛の場面の中（ctx._tlScope。classroom-teacher-love.js）は、教師と生徒などの自動の「なし」（loveSoft）を止めない */
+  HK.tieLoveNoPair = function (ctx, a, b) {
+    var l = ctx && ctx.tiesAll && a && b && a !== b ? ctx.tiesAll[key(a, b)] : null;
+    if (!l || !l.length) return false;
+    if (l.some(function (t) { return t.love === 'no'; })) return true;
+    if (!HK.tiesLove) return false;
+    var s0 = HK._softLove; if (ctx._tlScope) HK._softLove = true;
+    try { return !HK.tiesLove(l); } finally { HK._softLove = s0; }
+  };
+  HK.canLove = function (a, b, ctx) {
     if (HK.ngPair(a, b)) return false;
-    /* 執着（信仰）で「恋愛に発展：しない」組（信仰される側が支配していない）：恋愛にしない */
-    var c0 = HK._curCtx;
-    if (c0 && c0.ties && HK.Ties && HK.tieOptNoLove && a && b && c0.chars && c0.chars[a.i] === a && HK.Ties.all(c0, a, b).some(function (t) { return t.type === 'worship' && HK.tieOptNoLove(t) && t.cold !== 'dominate'; })) return false;
+    /* 関係の「恋愛」の欄（どの関係・気持ちでも。自動は関係の型の既定：家族・執着（信仰。支配していないとき）・教師と生徒などは「なし」） */
+    if (a && b && !HK.tieLovePair(a, b, ctx)) return false;
     /* 恋愛相手を決めた人は、その相手以外とは恋愛しない（相手が箱庭にいなければ誰とも） */
     if (a && b && HK.lockOut(a, b)) return false;
     /* クラスメイトの先生と生徒は恋愛しない（先生どうしは、ふつうの住人どうしと同じ。2026-10-28 先生を複数に） */
@@ -314,7 +336,8 @@
       if (f === 'att' && d[f] > 0 && this.env && this.env.romance != null) m *= 0.5 + this.env.romance / 100;
       if (f === 'ten' && d[f] > 0 && this.env && this.env.strife != null) m *= 0.5 + this.env.strife / 100;
       if (d[f] > 0 && HK.Ties && this.ties) m *= HK.Ties.mult(this, a, b, f);
-      if (f === 'att' && d[f] > 0 && !HK.canLove(a, b)) m *= HK.lockOut(a, b) ? 0 : 0.08;
+      /* 恋愛相手の固定の外の相手・関係で恋愛しない相手（「恋愛：なし」・自動で「なし」。HK.tieLoveNoPair）には、惹かれが育たない */
+      if (f === 'att' && d[f] > 0 && !HK.canLove(a, b)) m *= HK.lockOut(a, b) || HK.tieLoveNoPair(this, a, b) ? 0 : 0.08;
       /* 血のつながった家族：惹かれは育たず、信頼は減りにくく底がある */
       if (pf.kin && f === 'att' && d[f] > 0) m = 0;
       if (pf.kin && f === 'trust' && d[f] < 0) m *= 0.25;
@@ -443,6 +466,8 @@
     if (ev && ev.sex) { for (var s0 = 0; s0 < L.length; s0++) { if (L[s0].noR18) return false; for (var s1 = s0 + 1; s1 < L.length; s1++) if (direct(L[s0], L[s1]) && HK.sexBlocked(L[s0], L[s1])) return false; } }
     /* 恋愛なしの家族は、恋愛が中心の箱庭（romanceCore）でも恋愛の出来事を起こさない */
     if (a && b && this.pair(a, b).kin) return false;
+    /* 関係で恋愛しない二人（「恋愛：なし」・自動で「なし」。ties.js の HK.tiesLove）も、恋愛が中心の箱庭・恋人の関係でも恋愛の出来事を起こさない */
+    if (a && b && HK.tieLoveNoPair(this, a, b)) return false;
     /* 歪んだ関係から離れる決心をした二人（tie-abuse.js の abFree）は、もう恋愛の出来事を起こさない。
        別れたばかりの二人（brokeAt）も、しばらく（8回）は恋愛の出来事を起こさない（すぐに元に戻らないように） */
     if (a && b) { var pfr = this.pair(a, b); if (pfr.abFree) return false; if (pfr.brokeAt != null && this.stepIndex - pfr.brokeAt < 8) return false; if (pfr.fiBroken != null) return false; }
@@ -566,7 +591,8 @@
      二人のあいだの恋愛の関係を外す（ties.js の HK.fearTies）。どの箱庭の住人の写しも loveNG から ng を作るので、恋愛・夜・体の関係の判定がすべて偽になる。
      該当する関係がなければ、渡された input をそのまま使う */
   HK.fearInput = function (input) {
-    var ts = (input && input.ties) || [], fl = ts.filter(function (t) { return t && (t.type === 'apathy' || t.type === 'fear') && t.a !== t.b; });
+    /* 「恋愛：あり」にした無関心・恐怖（ties.js の HK.tieLoveOK）は、恋愛・R18にしない相手に入れない（体の関係は fam-kin.js の HK.fearNG が noSex で止める） */
+    var ts = (input && input.ties) || [], fl = ts.filter(function (t) { return t && (t.type === 'apathy' || t.type === 'fear') && t.a !== t.b && !(HK.tieLoveOK && HK.tieLoveOK(t)); });
     if (!fl.length) return input;
     var o = {}; for (var k in input) o[k] = input[k];
     o.chars = (input.chars || []).map(function (c) { var x = {}; for (var k2 in c) x[k2] = c[k2]; x.loveNG = Array.isArray(c.loveNG) ? c.loveNG.slice() : []; return x; });
@@ -622,7 +648,7 @@
     /* 箱庭が自動で足す関係（学園全体の先輩後輩など）。ユーザーが決めた関係のある組には足さない */
     /* 関係の恋人（恋人・番・運命の番）の一覧（一途の判定 poly.js の faithNG で使う） */
     /* 恋愛・R18にしない組（HK.ngPair：恋愛相手を別の人に固定した組など）は、関係で恋人にしても恋人の一覧に入れない（ties.js も恋人の関係を当てない） */
-    (input.ties || []).forEach(function (t) { if (/^(lover|mate|fated)$/.test(t.type) && ctx.chars[t.a] && ctx.chars[t.b] && t.a !== t.b && !(HK.ngPair && HK.ngPair(ctx.chars[t.a], ctx.chars[t.b]))) { (ctx.chars[t.a].loveSet = ctx.chars[t.a].loveSet || []).push(t.b); (ctx.chars[t.b].loveSet = ctx.chars[t.b].loveSet || []).push(t.a); } });
+    (input.ties || []).forEach(function (t) { if (/^(lover|mate|fated)$/.test(t.type) && t.love !== 'no' && ctx.chars[t.a] && ctx.chars[t.b] && t.a !== t.b && !(HK.ngPair && HK.ngPair(ctx.chars[t.a], ctx.chars[t.b]))) { (ctx.chars[t.a].loveSet = ctx.chars[t.a].loveSet || []).push(t.b); (ctx.chars[t.b].loveSet = ctx.chars[t.b].loveSet || []).push(t.a); } });
     if (HK.Ties) HK.Ties.apply(ctx, (input.ties || []).concat(scen.extraTies ? scen.extraTies(ctx, input) || [] : []));
     /* 恋人が複数いる人の恋人どうし（関係の設定で、同じ人を恋人・番にしている二人）は、互いを恋愛・R18の相手にしない（coNG）。
        二人のあいだに恋愛の関係（恋人・セフレ・友達以上恋人未満・片想い・執着・元恋人など）を設定していれば除く */
@@ -913,7 +939,9 @@
   }
   function classify0(ctx, A, B, pf) {
     var ab = ctx.R(A, B), ba = ctx.R(B, A);
-    var love = function (r) { return r.aff > 38 && r.att > 42; };
+    /* 関係で恋愛しない二人（HK.tieLoveNoPair：「恋愛：なし」・自動で「なし」の無関心・恐怖など）は、値がどうでも恋人・両片想い・片想いにしない */
+    var noL = HK.tieLoveNoPair(ctx, A, B);
+    var love = function (r) { return !noL && r.aff > 38 && r.att > 42; };
     var dir = null;
     if (ctx.scen.classifyFirst) { var sf = ctx.scen.classifyFirst(ctx, A, B, pf); if (sf) return sf; }
     /* 執着（obsess-kit.js）：心中は殺害より先に、監禁・執着・共依存は殺害のない組だけ */
@@ -926,7 +954,7 @@
     if (ctx.scen.classify) { var sc = ctx.scen.classify(ctx, A, B, pf); if (sc) return sc; }
     var tie = HK.Ties ? HK.Ties.get(ctx, A, B) : null, TD = tie ? HK.TIES[tie.type] : null;
     /* 家族の関係でも「恋愛：あり」（HK.tieFamLove）なら、惹かれ合っていれば恋人などの結末に進める */
-    var famLove = TD && TD.family && (TD.loveOK || HK.tieFamLove(tie));
+    var famLove = TD && TD.family && HK.tieLoveOK(tie);
     if (TD && TD.family && !(famLove && ab.att > 28 && ba.att > 28)) {
       var tenF = (ab.ten + ba.ten) / 2;
       if ((tenF > 55 && (ab.aff + ba.aff) / 2 < 30) || ab.aff < -10 || ba.aff < -10) return { id: 'kinfeud' };

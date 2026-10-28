@@ -134,7 +134,7 @@
     function hTopN(p) { return !!(PO && (PO.hardTopNpc ? PO.hardTopNpc(p) : PO.hardTop(p))); }
     /* 血縁（恋愛：なし）の二人は、性的な企画で組まない（関係で「恋愛：あり」にした組と、擬似親子は別） */
     function kinTie(a, b) { var L0 = (input.ties || []).filter(function (x) { return (x.a === a.i && x.b === b.i) || (x.a === b.i && x.b === a.i); }); for (var i = 0; i < L0.length; i++) { var D = HK.TIES && HK.TIES[L0[i].type]; if (D && D.family) return L0[i]; } return null; }
-    function kinBlock(a, b) { var t = kinTie(a, b), D = t && HK.TIES[t.type]; return !!(t && !D.loveOK && !(HK.tieFamLove && HK.tieFamLove(t))); }
+    function kinBlock(a, b) { var t = kinTie(a, b); return !!(t && HK.tieNoLove(t)); }
     /* 住人どうしの組：受け攻め・恋愛対象（okSex）、恋愛やR18にしない組、性行為の相手の固定（固定した相手だけ・固定した相手＋モブ。HK.sexBlocked） */
     function okS(a, b) { return !kinBlock(a, b) && (!PO || PO.okSex(a, b)) && !(HK.ngSexPair && HK.ngSexPair(a, b)) && !(HK.sexBlocked && HK.sexBlocked(a, b)); }
     function ord(a, b) { return PO ? PO.order(a, b, [a, b]) : [a, b]; }

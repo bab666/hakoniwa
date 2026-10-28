@@ -1391,7 +1391,7 @@ if(pf.putdown!=null)return{id:'putdown',dir:d(pf.putdown)};
 if(pf.sacrifice!=null)return{id:'sacrifice',dir:d(pf.sacrifice)};
 if(pf.abandoned!=null)return{id:'zabandon',dir:d(pf.abandoned)};
 var lov=function(x,y){var r=ctx.R(x,y);return r.aff>35&&r.att>38;};
-if((!A.alive|| !B.alive)&&(pf.couple||tieT(ctx,A,B)==='lover'||(lov(A,B)&&lov(B,A))))return{id:'zparted'};
+if((!A.alive|| !B.alive)&&(pf.couple||(tieT(ctx,A,B)==='lover'&& !(HK.tieLoveNoPair&&HK.tieLoveNoPair(ctx,A,B)))||(lov(A,B)&&lov(B,A))))return{id:'zparted'};
 return null;
 };
 scen.pairText=function(ctx,A,B,cl){
@@ -4862,4 +4862,4 @@ HK.Load.toneData("chara_down",{"F":[
 ["ご無事で、何よりでございます","無事でよかったですよー。ほんとに",1],
 ["まだ、誰かが動いているんですね","……まだ、誰か動いてるんですね",1]]});
 });
-HK.Load.done('scen-zombie', 'a73f63efd1', 1);
+HK.Load.done('scen-zombie', 'bc2e71cd0b', 1);

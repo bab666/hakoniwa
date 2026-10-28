@@ -22,10 +22,10 @@
     return null;
   };
   RK.tone = function (c) { return HK.toneOf ? HK.toneOf(c) : ''; };
-  /* 家族・教師と生徒（恋愛・性的な展開にしない組） */
+  /* 家族・教師と生徒（恋愛・性的な展開にしない組）。教師と生徒は「恋愛：あり」にしたか、恋人などの関係を重ねていれば外す（ties.js の HK.tiesLove） */
   RK.noRomance = function (ctx, a, b) {
     var l = HK.Ties ? HK.Ties.all(ctx, a, b) : [];
-    return l.some(function (t) { return t.type === 'teacher' || HK.tieNoLove(t); });
+    return l.some(function (t) { return HK.tieNoLove(t); }) || (l.some(function (t) { return t.type === 'teacher'; }) && !HK.tiesLove(l));
   };
   RK.locked = function (a) { return a && HK.lockAny(a); };
   RK.lockedTo = function (a, b) { return a && b && HK.lockTo(a, b); };

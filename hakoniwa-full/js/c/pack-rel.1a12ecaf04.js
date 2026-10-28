@@ -2702,7 +2702,7 @@ polite:L('「やめて……{myrole}に、こんなこと……｜やめてく�
 var FAM={parent:'par',pparent:'par',sibling:'sib',sibprot:'sib',sibclose:'sib',sibbad:'sib',relative:'rel'};
 var BOND=['mentor','boss','senpai','benefactor','childhood','buddy'];
 var LOVE_T= /^(lover|mate|fated|almost|fwb)$/;
-function famOk(t){var D=t&&HK.TIES[t.type];return!!(D&&D.family&&FAM[t.type]&&(D.loveOK||(HK.tieFamLove&&HK.tieFamLove(t))));}
+function famOk(t){var D=t&&HK.TIES[t.type];return!!(D&&D.family&&FAM[t.type]&&HK.tieLoveOK(t));}
 function famSub(t){return t.type==='relative'&&t.step?'sib':FAM[t.type];}
 function lovePair(ctx,a,b){return!!ctx.pair(a,b).couple||HK.Ties.all(ctx,a,b).some(function(t){return LOVE_T.test(t.type);});}
 function loveLabel(ctx,a,b){
@@ -3211,7 +3211,7 @@ return null;
 }
 var FAM={parent:'par',pparent:'par',sibprot:'sib',sibling:'sib',sibclose:'sib',sibbad:'sib',relative:'rel'};
 var SHY_T= /^(lover|mate|fated|fiance|honmei)$/;
-function famOk(t){var D=t&&HK.TIES[t.type];return!!(D&&D.family&&FAM[t.type]&&(D.loveOK||t.love==='ok'||(HK.tieFamLove&&HK.tieFamLove(t))));}
+function famOk(t){var D=t&&HK.TIES[t.type];return!!(D&&D.family&&FAM[t.type]&&HK.tieLoveOK(t));}
 function famSub(t){return t.type==='relative'&&t.step?'sib':FAM[t.type];}
 TO.famOk=famOk;
 function elderOf(X0,t,a,b){
@@ -8516,4 +8516,4 @@ HK.RelBad=HK.RelBad||{};
 HK.RelBad.engineTX=TX;
 })();
 });
-HK.Load.done('pack-rel', 'c1f2bcceed', 1);
+HK.Load.done('pack-rel', '1a12ecaf04', 1);

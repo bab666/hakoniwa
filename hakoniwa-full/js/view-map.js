@@ -267,7 +267,7 @@
   /* 数値（[a→b 好意, b→a 好意, 険悪さ, a→b 惹かれ, b→a 惹かれ]）から、engine.js の classify0 と同じしきい値で（信頼の要る相棒・庇護は数値に無いので出さない） */
   function basic(p, s) {
     var aff = (s[0] + s[1]) / 2, ten = s[2], D = p.tie && HK.TIES ? HK.TIES[p.tie.type] : null;
-    var famLove = D && D.family && (D.loveOK || (HK.tieFamLove && HK.tieFamLove(p.tie)));
+    var famLove = D && D.family && (HK.tieLoveOK ? HK.tieLoveOK(p.tie) : D.loveOK);
     if (D && D.family && !(famLove && s[3] > 28 && s[4] > 28)) {
       if ((ten > 55 && aff < 30) || s[0] < -10 || s[1] < -10) return lab('kinfeud');
       if (s[0] > 22 && s[1] > 22) return lab('kinbond');

@@ -445,6 +445,8 @@
       if (s === 3 && P.length > 2) {
         var sh = rng.shuffle(P);
         for (var i = 0; i + 1 < sh.length; i += 2) {
+          /* 恋愛なしの家族・「恋愛：なし」を選んだ関係の二人（ties.js の HK.tiesLove）は、隣になっても惹かれない */
+          if (ctx.pair(sh[i], sh[i + 1]).kin || (HK.tieLoveNoPair && HK.tieLoveNoPair(ctx, sh[i], sh[i + 1]))) continue;
           ctx.R(sh[i], sh[i + 1]).att += 4; ctx.R(sh[i + 1], sh[i]).att += 4;
         }
         ctx.say({ text: '席替え。' + sh.map(function (c) { return c.name; }).join('、') + 'の順に座り直した。' });

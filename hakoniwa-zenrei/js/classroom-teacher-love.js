@@ -58,9 +58,10 @@
     return function (a, b) {
       var c0 = HK._curCtx;
       if (a && b && c0 && c0._tlScope && isT(a) !== isT(b) && on(c0)) {
-        var t = isT(a) ? a : b, r0 = t.role;
-        t.role = 'teacher-love';
-        try { return prev.apply(this, arguments); } finally { t.role = r0; }
+        /* 関係「教師と生徒」の恋愛：自動（既定は「なし」。ties.js の HK.tiesLove の loveSoft）も、この場面の中では止めない（「恋愛：なし」を選んでいれば止める） */
+        var t = isT(a) ? a : b, r0 = t.role, s0 = HK._softLove;
+        t.role = 'teacher-love'; HK._softLove = true;
+        try { return prev.apply(this, arguments); } finally { t.role = r0; HK._softLove = s0; }
       }
       return prev.apply(this, arguments);
     };

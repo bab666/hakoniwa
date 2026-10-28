@@ -97,7 +97,7 @@ function blocked(S,a,b){
 if(!a|| !b||a===b)return true;
 var L0=ties(S,a,b);
 if(L0.some(function(t){return HK.TIES[t.type]&&HK.TIES[t.type].noObsess;}))return true;
-if(L0.some(function(t){var D=HK.TIES[t.type];return D&&D.family&& !D.loveOK&& !(HK.tieFamLove&&HK.tieFamLove(t));}))return true;
+if(L0.some(function(t){return HK.tieNoLove(t);}))return true;
 if(HK.Pos&&HK.Pos.clash&&HK.Pos.clash(a,b))return true;
 if(HK.canLove&& !HK.canLove(a,b)&& !yanT(S,a,b))return true;
 return false;
@@ -547,4 +547,4 @@ HK.R18Thick={on:on,log:null,ff:function(S,x,y,opt){count(S,x,y);if(HK.R18Thick.l
 POOLS:{ENTER:ENTER,MID_STRONG:MID_STRONG,MID_SOFT:MID_SOFT,PEAK:PEAK,AFTER:AFTER,PLEASE:PLEASE,SOFT_MID:SOFT_MID,SOFT_AFTER:SOFT_AFTER,SOFT_PLEASE:SOFT_PLEASE,SOFT_ENTER:SOFT_ENTER,SOFT_STRONG:SOFT_STRONG,SOFT_WEAK:SOFT_WEAK,SOFT_PLEASE_M:SOFT_PLEASE_M,SOFT_AFTER_M:SOFT_AFTER_M,ROUGH_SADIST:ROUGH_SADIST,JEALOUS_CHOKE:JEALOUS_CHOKE,ROUGH_SOFT:ROUGH_SOFT,JEALOUS_SOFT:JEALOUS_SOFT}};
 })();
 });
-HK.Load.done('pack-story', '2d03bb8a9b', 1);
+HK.Load.done('pack-story', '4f6eddea95', 1);
