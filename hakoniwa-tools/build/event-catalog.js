@@ -582,7 +582,7 @@ function toMd(data) {
     data.ties.map(x => x[0]).concat(['-']).forEach(k => {
       const l = rows[k];
       if (!l) return;
-      L.push('| ' + (k === '-' ? '関係を問わない' : esc(T[k])) + ' | ' + l.length + ' | ' + l.slice(0, 4).map(e => esc(e.i) + (e.m !== '-' ? '〔' + e.m + '〕' : '')).join('、') + (l.length > 4 ? ' ほか' : '') + ' |');
+      L.push('| ' + (k === '-' ? '関係を問わない' : esc(T[k])) + ' | ' + l.length + ' | ' + l.slice(0, 4).map(e => esc(e.n || e.i) + (e.n ? '（' + esc(e.i) + '）' : '') + (e.m !== '-' ? '〔' + e.m + '〕' : '')).join('、') + (l.length > 4 ? ' ほか' : '') + ' |');
     });
     L.push('');
     const cats = {};
