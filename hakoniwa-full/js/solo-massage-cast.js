@@ -148,12 +148,10 @@
     C.pairFix = '';
     if (HK.SAFE_ON || !P || !ST) return '全年齢';
     if (T.rawNoR18 || Cc.rawNoR18 || !ST.r18ok(T) || !ST.r18ok(Cc)) { var nr = [T, Cc].filter(function (x) { return x.rawNoR18 || !ST.r18ok(x); }).map(function (x) { return x.name; }); C.pairFix = nr.join('・') + 'の「R18に参加しない」を外す'; return nr.join('・') + 'が「R18に参加しない」'; }
-    var base = (HK.ngSexPair && HK.ngSexPair(T, Cc)) || (HK.sexBlocked && HK.sexBlocked(T, Cc)) ? '恋愛・R18にしない組' : !P.genderOK(T, Cc) ? '恋愛対象が合わない' : !P.okSex(T, Cc) ? '受け攻めの指定が合わない' : '';
+    var base = (HK.ngSexPair && HK.ngSexPair(T, Cc)) || (HK.sexBlocked && HK.sexBlocked(T, Cc)) ? '恋愛・R18にしない組' : !P.genderOK(T, Cc, true) ? '恋愛対象が合わない' : !P.okSex(T, Cc) ? '受け攻めの指定が合わない' : '';
     if (!base) return '';
     var d = P.noSexInfo ? P.noSexInfo(T, Cc, { room: false, lib: false, ties: ties }) : null;
-    /* 恋愛対象「なし」の人：住人どうしの施術は恋愛対象で見る（体の関係の相手では開かない）ので、HK.Pos.noSexInfo では理由にならない */
-    var none = !d && base === '恋愛対象が合わない' ? [T, Cc].filter(function (x) { return x.likes === 'none'; })[0] : null;
-    if (none) d = { t: none.name + 'の恋愛対象が「なし」（住人どうしの施術は、恋愛対象で決まる）', fix: none.name + 'の「恋愛対象」を選ぶ' };
+    /* 恋愛対象「なし」の人は「体の関係の相手」で見る（genderOK の sex＝true。2026-10-28 の利用者の指示：マッサージは恋愛対象で見ない）。理由は noSexInfo の sexLikes の文で出る */
     if (d) C.pairFix = d.fix || '';
     return d ? d.t : base;
   };

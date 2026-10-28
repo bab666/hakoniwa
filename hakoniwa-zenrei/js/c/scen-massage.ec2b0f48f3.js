@@ -98,14 +98,14 @@ p.persona=HK.personaOf(p);
 (input.ties||[]).forEach(function(t){if(t&& /^(lover|mate|fated)$/.test(t.type)&&(t.a===i||t.b===i))(p.loveSet=p.loveSet||[]).push(t.a===i?t.b:t.a);});
 return p;
 };
-C.pairWhy=function(T,Cc){
+C.pairWhy=function(T,Cc,ties){
 var P=HK.Pos,ST=HK.State;
 C.pairFix='';
 if(HK.SAFE_ON|| !P|| !ST)return'全年齢';
 if(T.rawNoR18||Cc.rawNoR18|| !ST.r18ok(T)|| !ST.r18ok(Cc)){var nr=[T,Cc].filter(function(x){return x.rawNoR18|| !ST.r18ok(x);}).map(function(x){return x.name;});C.pairFix=nr.join('・')+'の「R18に参加しない」を外す';return nr.join('・')+'が「R18に参加しない」';}
-var base=(HK.ngSexPair&&HK.ngSexPair(T,Cc))||(HK.sexBlocked&&HK.sexBlocked(T,Cc))?'恋愛・R18にしない組': !P.genderOK(T,Cc)?'恋愛対象が合わない': !P.okSex(T,Cc)?'受け攻めの指定が合わない':'';
+var base=(HK.ngSexPair&&HK.ngSexPair(T,Cc))||(HK.sexBlocked&&HK.sexBlocked(T,Cc))?'恋愛・R18にしない組': !P.genderOK(T,Cc,true)?'恋愛対象が合わない': !P.okSex(T,Cc)?'受け攻めの指定が合わない':'';
 if(!base)return'';
-var d=P.noSexInfo?P.noSexInfo(T,Cc,{room:false,lib:false}):null;
+var d=P.noSexInfo?P.noSexInfo(T,Cc,{room:false,lib:false,ties:ties}):null;
 if(d)C.pairFix=d.fix||'';
 return d?d.t:base;
 };
@@ -381,7 +381,7 @@ if(TR&&sk==='gentle'&&HK.Pos&&HK.Pos.isF(TR))sk='lady';
 if(!STAFF[sk])sk='gentle';
 var staff=TR?{n:TR.name,g:HK.Pos?(HK.Pos.isF(TR)?'f':'m'):TR.gender==='f'?'f':'m',desc:'',dec:STAFF[sk].dec,res:true}:STAFF[sk];
 S.vars={m:staff.n,you:TR|| !HK.Mob?'あなた':HK.Mob.addr(staff.n,'さん')};
-var pairWhy=TR?MC.pairWhy(TR,CR):'',pairOK= !!TR&& !pairWhy,pairFix=TR&&pairWhy&&MC.pairFix||'';
+var pairWhy=TR?MC.pairWhy(TR,CR,input.ties):'',pairOK= !!TR&& !pairWhy,pairFix=TR&&pairWhy&&MC.pairFix||'';
 var mobNG= !TR&& !HK.SAFE_ON&& !!h.noMob;
 var mobNgW=['','',''];
 var tTop= !pairOK||HK.Pos.order(TR,CR,[TR,CR])[0]===TR,plain=(!!TR&& !pairOK)||mobNG;
@@ -1185,4 +1185,4 @@ HK.Load.toneData("chara_down",{"F":[
 ["念のため伺います。ただいまの施術は、コースに含まれておりますか","一応聞きますけど。今のって、コースに入ってるやつですー？",1],
 ["……ちょっと待ってください。今の、何ですか","……ちょっと待ってください。今の、何です？",1]]});
 });
-HK.Load.done('scen-massage', '2edcc58db2', 1);
+HK.Load.done('scen-massage', 'ec2b0f48f3', 1);
