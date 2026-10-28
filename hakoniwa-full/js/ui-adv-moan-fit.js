@@ -4,6 +4,7 @@
    JSON の書き出し（全員）・まるごと書き出し・設定を文字列で（portable.js）にもそのまま乗る。既定と同じ値は持たない（全部既定なら空）。
    変えた値は次に箱庭を動かしたときから効く（保存した結果は変わらない）。
    見本：口調 × 性別 × 夜の性格 × 場面（鍵）で、箱庭と同じ HK.Moan.pick を通して出す（HK.Moan.demo）。
+     台詞の鍵（言葉責め・焦らし・攻めの崩れ・言い返し。moan-cut.js）は、口調の言い換えを通した台詞を「崩れ：なし／少し／遮られる／決壊」で崩して出す（2026-10-28 担当M1）
    各行に、どの表から来たか（素の言葉／口調の喘ぎ／共通／利用者の辞書）と、区分で直った行は「直す前 → 直した後（区分）」を添える。
    登場人物はすべて成人として扱う。全年齢版にはこのファイルを置かない */
 (function () {
@@ -82,6 +83,7 @@
       '<label>夜の性格 ' + sel('id="adv-mf-night" aria-label="見本の夜の性格"', [['', 'おまかせ']].concat(nightList().map(function (x) { return [x[0], x[1]]; })), '') + '</label>' +
       '<label>作風 ' + sel('id="adv-mf-style" data-f="adv" data-k="' + ID + '" data-m="style" aria-label="見本の作風"', [['ero', '男性向け'], ['novel', '小説調']], 'ero') + '</label>' +
       '<label>場面 <select id="adv-mf-key" aria-label="見本の場面">' + keyOpts('w1', 'ero') + '</select></label>' +
+      '<label title="言葉責め・焦らし・攻めの崩れ・言い返しの台詞を、快感で遮られた形にして出します（ほかの場面には効きません）">崩れ ' + sel('id="adv-mf-cut" aria-label="見本の崩れ"', (M.CUT_LABEL || ['なし']).map(function (l, i) { return [String(i), l]; }), '0') + '</label>' +
       '<button type="button" class="mini" data-act="adv:mf-demo">出してみる</button><button type="button" class="mini" data-act="adv:mf-all">全場面を一気に</button></div>' +
       '<div class="mf-demo" id="adv-mf-demo" aria-live="polite"></div>';
   }
@@ -152,12 +154,15 @@
     if (!out || !ts) return;
     if (!again) DEMO.n++;
     var st = document.getElementById('adv-mf-style'), novel = !!(st && st.value === 'novel');
-    var seed = 12345 + DEMO.n * 7919, o = { tone: ts.value, gender: gs ? gs.value : 'f', night: ns ? ns.value : '', detail: true, style: novel ? 'novel' : '' };
+    var cs = document.getElementById('adv-mf-cut');
+    var seed = 12345 + DEMO.n * 7919, o = { tone: ts.value, gender: gs ? gs.value : 'f', night: ns ? ns.value : '', detail: true, style: novel ? 'novel' : '', cut: cs ? +cs.value || 0 : 0 };
     DEMO.last = { all: all };
-    var SRC = { base: '素の言葉', tone: '口調の喘ぎ', shared: '共通', user: '利用者の辞書', ntone: '小説調の口調の表', nbase: '小説調の態度の表' };
+    var SRC = { base: '素の言葉', tone: '口調の喘ぎ', shared: '共通', user: '利用者の辞書', ntone: '小説調の口調の表', nbase: '小説調の態度の表', line: '台詞の表（口調の言い換えあり）' };
     var line = function (r) {
       var fx = r.fixed ? '<span class="mf-src">（直す前「' + esc(r.raw) + '」 → ' + esc(M.KIND_LABEL[r.kind] && r.kind !== 'none' ? M.KIND_LABEL[r.kind] : '性別の整え') + '）</span>' : '';
-      return '「' + esc(r.s) + '」<span class="mf-src">' + esc(SRC[r.src] || r.src || '') + (r.ends ? '＋口調の語尾' : '') + '</span>' + fx;
+      /* 台詞の鍵を崩したときは、崩す前（口調の言い換えのあと）も添える */
+      var cx = r.cut ? '<span class="mf-src">（崩す前「' + esc(r.raw) + '」）</span>' : '';
+      return '「' + esc(r.s) + '」<span class="mf-src">' + esc(SRC[r.src] || r.src || '') + (r.ends ? '＋口調の語尾' : '') + '</span>' + fx + cx;
     };
     var allK = novel ? (M.NOVEL_KEYS || []) : M.keys(), keys = all ? allK : allK.filter(function (k) { return k.key === (ks ? ks.value : 'w1'); });
     if (!keys.length) keys = allK.slice(0, 1);

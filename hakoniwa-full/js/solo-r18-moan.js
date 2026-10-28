@@ -27,6 +27,11 @@
     return f.length ? f : TOP_OK;
   }
   function L(s) { return s.split('|'); }
+  /* 最中の攻めの台詞：言葉責め・焦らし（＋受けの言い返し）・攻めの崩れ（moan-cut.js の HK.Moan.topSay。最中の段 mid）を先に試し、無ければこの口調の表（2026-10-28 担当M1） */
+  function topMid(S, x, y, kind) {
+    var t = HK.Moan && HK.Moan.topSay && HK.EroTop && !HK.SAFE_ON ? HK.Moan.topSay(S, x, y, 'mid', { kind: kind, noPlain: true }) : '';
+    return t || say(S, x, 'top');
+  }
   function say(S, p, kind) {
     var t = toneKey(p);
     if (kind === 'endure') return p.name + '「' + pick(S, D.ENDURE[t] || D.ENDURE.gentle) + '」';
@@ -132,7 +137,7 @@
     out.push(say(S, y, 'start'));
     if (!opt.short) {
       out.push(F(f(pick(S, midPool('ff', mid, st, body, riba))), m));
-      out.push(say(S, x, 'top'));
+      out.push(topMid(S, x, y, 'ff'));
       out.push(say(S, y, 'mid'));
     }
     out.push(say(S, y, 'climax'));
@@ -158,7 +163,7 @@
     out.push(say(S, y, 'start'));
     if (!opt.short) {
       out.push(fill(pick(S, midPool('fm', mid, st, body, false))));
-      out.push(say(S, x, 'top'));
+      out.push(topMid(S, x, y, 'fm'));
       out.push(say(S, y, 'mid'));
     }
     out.push(say(S, y, 'climax'));
@@ -230,7 +235,7 @@
         out.push(say(S, y, 'start'));
         if (!opt.short) {
           out.push(F(pick(S, D.MID[mid]), m));
-          out.push(say(S, x, 'top'));
+          out.push(topMid(S, x, y, 'm'));
           out.push(say(S, y, 'mid'));
         }
         out.push(say(S, y, 'climax'));

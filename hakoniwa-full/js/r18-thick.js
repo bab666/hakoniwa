@@ -147,7 +147,8 @@
     /* 夜の性格を決めた攻めは、attr-r18.js の夜の性格の一文で一本喋ることがあるので、始まりの一本として数える */
     if (HK.Attr && HK.Attr.nightOf && HK.Attr.nightOf(x, y)) have.start = true;
     var n = 0; Object.keys(have).forEach(function (k) { if (have[k]) n++; });
-    return { sl: ET.slots(S, have, { after: true, n: n, target: S.rng() < 0.6 ? 2 : 3 }), T: function (stg) { return ET.say(S, x, y, stg, eo); } };
+    /* 攻め・受け・関係を渡すと、言葉責め・焦らしの回数に合わせて段を足す（moan-cut.js の HK.Moan.slotsFix。最中の段 mid は呼ぶ側が置く） */
+    return { sl: ET.slots(S, have, { after: true, n: n, target: S.rng() < 0.6 ? 2 : 3, top: x, bot: y, rel: eo.rel }), T: function (stg) { return ET.say(S, x, y, stg, eo); } };
   }
   /* 種族のプレイの一文（attr-race-r18.js。二人とも種族がなければ何もしない）。idx は段落の番号（空の段落には足さない） */
   function RW(S, x, y, arr, idx, kind) {
@@ -214,7 +215,7 @@
       (sl.start && !fore ? ts.T('start') : '') + F(pick(S, pos.t), m) + F(pick(S, ENTER[mood]), m),
       R.say(S, x, 'top'),
       sayOk(S, y, 'start', mood) + turn + F(pick(S, byMid(strong ? MID_STRONG : MID_SOFT, mid, mood)), m),
-      moan(S, y, 0) + F(pick(S, byMid(PLEASE, mid, mood)), m),
+      moan(S, y, 0) + F(pick(S, byMid(PLEASE, mid, mood)), m) + (sl.mid ? ts.T('mid') : ''),
       (sl.peak ? ts.T('peak') : '') + (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (!sl.peak && rng() < 0.35 ? R.say(S, x, 'topc') : '') + F(pick(S, byMid(PEAK, mid, mood)), m),
       flav(S) + F(pick(S, AFTER[mood]), m) + aftSay
     ], RW_MAIN, 'mf'));
@@ -392,7 +393,7 @@
       bodyT + F(enter, m),
       R.say(S, x, 'top'),
       sayOk(S, y, 'start', mood) + turn + midF + F(apart(react, seen2 + midT), m),
-      moan(S, y, 0) + ma0 + F(apart(SOFT_PLEASE[kind].concat(SOFT_PLEASE_M[kind][mid] || []), seen2 + midT), m),
+      moan(S, y, 0) + ma0 + F(apart(SOFT_PLEASE[kind].concat(SOFT_PLEASE_M[kind][mid] || []), seen2 + midT), m) + (sl.mid ? ts.T('mid') : ''),
       (sl.peak ? ts.T('peak') : '') + (rng() < 0.5 ? moan(S, y, 1) : R.say(S, y, 'climax')) + (!sl.peak && R.topcF && rng() < 0.3 ? R.topcF(S, x) : '') + peak,
       flav(S) + aft + (sl.after ? ts.T('after') : rng() < 0.5 ? R.say(S, y, 'after') : '')
     ], RW_MAIN, kind));

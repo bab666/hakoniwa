@@ -4,6 +4,32 @@
   var HK = window.HK;
   function R(ctx, a, b) { return ctx.R(a, b); }
   function names(list) { return list.map(function (c) { return c.name; }).join('・'); }
+  /* 少人数で倒れたとき（2026-10-28 担当JA）：住人が少ないほど（mood-dial.js の HK.Dark.few）、死ぬ代わりに倒れて寝込む。
+     一人欠ければ見張りも水汲みも回らない、という理屈で、ほかの住人が看病する（いなければ一人で持ちこたえる）。
+     kind：hunger 飢え／venom 毒／beast 獣／sea 海。助かったら真（呼ぶ側は ctx.kill しない）。6人以上は乱数を引かずに偽 */
+  var DOWN = {
+    hunger: '{b}は空腹と疲れで、砂の上に崩れ落ちた。',
+    venom: '{b}の体に毒が回り、唇が紫色になっていた。',
+    beast: '{b}は深手を負って、血の気の引いた顔で倒れ込んだ。',
+    sea: '{b}は浜に這い上がったところで、意識を失った。',
+    nurse: ['{a}は{b}を日陰へ運び、一晩じゅう付き添った。この人数では、一人欠けただけで見張りも水汲みも回らない。{a}「起きて。あなたがいないと困るんだから｜起きろ。あなたがいないと困る｜起きてください。あなたがいないと困るんです」――明け方、{b}はかすかに目を開けた。数日は寝込むことになりそうだった。',
+      '{a}はなけなしの水と食べ物を、少しずつ{b}の口に運んだ。たった{n}人の島で、誰かを失う余裕はなかった。{b}は丸一日うなされ続けたが、どうにか持ちこたえた。',
+      '{a}は{b}の額の汗を拭い、火を絶やさずに夜を明かした。{b}がいなくなれば、次に倒れるのは自分だ――{a}にはそれが分かっていた。朝になって、{b}の呼吸はようやく落ち着いた。'],
+    alone: ['{b}はそのまま丸一日、起き上がれなかった。それでも、息は止まらなかった。目を開けたとき、{b}は自分がまだ生きていることに驚いた。',
+      '{b}は浅い息のまま、日が二度昇るのを見た。三度目の朝、{b}は這うようにして水場へ向かった。']
+  };
+  function down(ctx, c, kind) {
+    var k = HK.Dark && HK.Dark.few ? HK.Dark.few(ctx) : 1;
+    if (!(k < 1) || !c.alive || ctx.rng() < k) return false;
+    c.hp = 8; c.flags.laid = ctx.stepIndex; ctx.stress(c, 12);
+    var nu = ctx.most(ctx.others(c), function (o) { return o.tr.np + ctx.R(o, c).aff / 100; });
+    var t = (DOWN[kind] || DOWN.hunger) + ctx.pick(nu ? DOWN.nurse : DOWN.alone);
+    ctx.act2({ actors: nu ? [nu, c] : [c], cat: nu ? 'help' : 'solo', fx: function () { if (nu) ctx.mod2(nu, c, { aff: 4 }, { aff: 10, trust: 12 }); },
+      text: ctx.t(t.replace(/\{n\}/g, String(ctx.chars.length)), nu || c, c),
+      why: c.name + 'は倒れたが、命は取り留めた（少人数：' + ctx.chars.length + '人。一人欠ければ島の暮らしが立ち行かない）', mag: 22 });
+    return true;
+  }
+  HK.IslandDown = down;
   /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
   function add(s) { HK.SCENARIOS[s.id] = s; if (HK.SCEN_ORDER.indexOf(s.id) < 0) HK.SCEN_ORDER.push(s.id); }
 
@@ -59,9 +85,10 @@
         var short = 1 - ctx.food / need; ctx.food = 0;
         P.forEach(function (c) {
           if (c.flags.stash > 0) { c.flags.stash -= 6; return; }
-          c.hp -= short * (10 + (5 - ctx.stat(c, 'hp')) * 3);
+          /* 少人数ほど、乏しい食料でも分け合ってしのげる（mood-dial.js の HK.Dark.few。6人以上は前と同じ） */
+          c.hp -= short * (10 + (5 - ctx.stat(c, 'hp')) * 3) * HK.Dark.few(ctx);
           c.stress = HK.clamp(c.stress + short * 15, 0, 100);
-          if (c.hp <= 0) ctx.kill(c, null, '飢えと疲労で倒れた');
+          if (c.hp <= 0 && !down(ctx, c, 'hunger')) ctx.kill(c, null, '飢えと疲労で倒れた');
         });
       }
       if (ctx.flags.raft >= 100 && !ctx.flags.raftDone) {
@@ -162,7 +189,8 @@
         when: function (ctx, a, b) { return ctx.food < 15 && (R(ctx, a, b).ten > 30 || a.stress > 60); },
         w: function (ctx, a) { return a.tr.aggr * 0.9 - 0.2; },
         run: function (ctx, a, b) {
-          var r = ctx.fight(a, b, { lethality: 0.55, noEvade: true });
+          /* 少人数ほど手加減する（mood-dial.js の HK.Dark.few。6人以上は前と同じ） */
+          var r = ctx.fight(a, b, { lethality: 0.55 * HK.Dark.few(ctx), noEvade: true });
           return { text: ctx.t('最後の干し魚を巡って、{a}が{b}に掴みかかった。', a, b) + r.text, why: '飢え・緊張と' + a.name + 'の攻撃性。' + r.why };
         }
       },

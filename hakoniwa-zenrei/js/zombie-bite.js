@@ -84,7 +84,8 @@
       var actors = [v].concat(mates.filter(function (o) { return o !== v; })).concat(v !== a ? [a] : []);
       actors = actors.filter(function (c, i) { return actors.indexOf(c) === i; });
       ctx.stress(v, 10);
-      var gap = skill - danger * HK.Dark.pick(ctx, 0.8, 1, 1.6, 'kill');   /* 展開の重さ（mood-dial.js） */
+      /* 展開の重さ（mood-dial.js）。少人数（HK.Dark.few）ほど危なさを下げる（6人以上は前と同じ） */
+      var gap = skill - danger * HK.Dark.pick(ctx, 0.8, 1, 1.6, 'kill') * (0.5 + 0.5 * HK.Dark.few(ctx));
       if (gap > 0.12) {
         var fight = v.tr.aggr + (v.weapon ? v.weapon.pow * 0.06 : 0) > 0.55 && rng() < 0.7;
         t += fill(ctx.pick(fight ? OUT.fight : OUT.escape), m);
@@ -109,7 +110,7 @@
         var ra = Z.zombieAssault(ctx, v, [a].concat(mates).filter(function (o, i, arr) { return o !== v && arr.indexOf(o) === i; }), A);
         ra.with.forEach(function (x) { if (actors.indexOf(x) < 0) actors.push(x); });
         /* エロシーンの印（ero-scene.js）：場所によらず、群れに押し倒された場面は性的な場面として記録する */
-        return { with: actors, text: t + ra.text, why: why + '／' + ra.why, mag: ra.mag, lewd: true };
+        return { with: actors, text: t + ra.text, why: ((HK.Pos && HK.Pos.FORCE_MARK) || '〔合意のない展開〕') + why + '／' + ra.why, mag: ra.mag, lewd: true };
       }
       /* 咬まれる（身代わり・見捨てる・囮などは群れのときと同じ判定） */
       var res = Z.victim(ctx, [v].concat(mates.filter(function (o) { return o !== v; })), v, A);

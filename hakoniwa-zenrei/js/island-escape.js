@@ -88,7 +88,7 @@
   function sail(ctx, a, crew, how) {
     var ok = seaOK(ctx, a);
     if (!ok) {
-      if (ctx.rng() < 0.3) { crew.forEach(function (c) { c.out = false; ctx.kill(c, null, '一人で漕ぎ出した海で消息を絶った'); }); ctx.say({ kind: 'event', cat: 'death', actors: crew, text: fill(pick(ctx, T.lostSea), mm(a)), why: '海は荒れていた（天候 ' + ctx.env.storm + '・運 ' + luck(ctx, a) + '）', mag: 30 }); return 'lost'; }
+      if (ctx.rng() < 0.3 * HK.Dark.few(ctx)) { crew.forEach(function (c) { c.out = false; ctx.kill(c, null, '一人で漕ぎ出した海で消息を絶った'); }); ctx.say({ kind: 'event', cat: 'death', actors: crew, text: fill(pick(ctx, T.lostSea), mm(a)), why: '海は荒れていた（天候 ' + ctx.env.storm + '・運 ' + luck(ctx, a) + '）', mag: 30 }); return 'lost'; }
       crew.forEach(function (c) { c.out = false; c.hp -= 20; ctx.stress(c, 25); c.flags.sraft = 0; });
       ctx.say({ kind: 'event', cat: 'escape', actors: crew, text: fill(pick(ctx, T.back), mm(a)), why: '一人では海を越えられなかった（知識 ' + ctx.stat(a, 'know') + '・運 ' + luck(ctx, a) + '）', mag: 20 });
       return 'back';

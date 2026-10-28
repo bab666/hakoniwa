@@ -790,7 +790,7 @@
         var w = 1 + (Math.abs(r.aff) + r.ten + r.att) / 55;
         if (a.focus === o) w += 2.5;
         if (a.flags.revenge === o.i) w += 3 * HK.Dark.f(ctx, 'grudge');
-        if (ctx.fac && ctx.fac.of[a.i] != null && ctx.fac.of[a.i] === ctx.fac.of[o.i]) w += 1;
+        if (ctx.fac && ctx.fac.of[a.i] != null && ctx.fac.of[a.i] === ctx.fac.of[o.i]) w += 1; else if (ctx._ring && ctx._ring[a.i] != null && ctx._ring[a.i] === ctx._ring[o.i]) w += 1;   /* 派閥なしの設定では仲の良い輪（factions.js の ring） */
         if (HK.Ties) w += HK.Ties.pull(ctx, a, o);
         /* 恐怖：恐れる側は、恐れている相手のそばに寄らない（関係のない回では何もしない） */
         if (ctx._fear && ctx._fear[a.i + '>' + o.i]) w *= 0.3;

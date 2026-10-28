@@ -200,6 +200,11 @@
       /* R18版：関係で敵対している二人（ライバル・不仲・敵対／嫌悪レベル35以上）は、攻めの側から強引に（hate-sex-r18.js） */
       var HS = !HK.SAFE_ON && HK.HateSex;
       if (HS && HS.order(ctx, a, b)[0] === a && HS.hostile(ctx, a, b)) return true;
+      /* 受けになる人が相手を想っていて嫌っていない（片想い・執着の側）・攻めになる人が相手を苦手で避けているなら、憎みながらの夜にしない
+         （嫌悪からの流されの文が当たる・避けている人は自分から押し倒さない。2026-10-28 担当JD） */
+      if (HS && HS.loves && (function (o) { return (HS.loves(ctx, o[1], o[0]) && !HS.hates(ctx, o[1], o[0])) || HS.avoids(ctx, o[0], o[1]); })(HS.order(ctx, a, b))) return false;
+      /* 敵対の強引な場面でない愛憎の夜は、合意ありの夜なので、性欲「なし」の人は出さない（pos.js の HK.Pos.libNone。2026-10-28 担当JA） */
+      if (HK.Pos && HK.Pos.libNone && HK.Pos.libNone([a, b])) return false;
       return hateLove(ctx, a, b) && (hateLove(ctx, b, a) || ctx.R(b, a).att > 40) && (pf.hateKiss || 0) >= 1;
     },
     /* 愛憎の組（hate-love.js）は起きやすい（R18版。HK.LoveHate.k） */
@@ -211,8 +216,12 @@
       /* R18版：攻めが強引に始め、受けは口では嫌がるがまんざらではない（hate-sex-r18.js。描写の設定もそちらで） */
       var HS = !HK.SAFE_ON && HK.HateSex;
       if (HS) {
-        var hs = HS.scene(ctx, a, b, {}), ob = HS.order(ctx, a, b);
-        return { text: fill(ctx, hs + ctx.pick(HN.end), ob[0], ob[1]), why: (HS.hostile(ctx, a, b) ? HS.why(ctx, a, b) : '愛憎（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性') + (HS.shieldWhy ? HS.shieldWhy(HS.lastShield) : ''), mag: 28 };
+        var hs = HS.scene(ctx, a, b, {}), ob = HS.order(ctx, a, b), host = HS.hostile(ctx, a, b);
+        /* 敵対の強引な場面は合意のない展開：理由に印（HK.Pos.FORCE_MARK）を付ける（性欲「なし」の人もこの場面には出るため。orient-audit.js の O6 が見る。2026-10-28 担当JA）。
+           恋愛対象「なし」の人の印（HS.why の中の HK.Pos.noneWhy）がもう付いていれば足さない */
+        var hw = host ? HS.why(ctx, a, b) : '愛憎（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性', FMK = HK.Pos && HK.Pos.FORCE_MARK;
+        if (host && FMK && hw.indexOf(FMK) < 0 && HK.Pos.forceOn && HK.Pos.forceOn(ctx)) hw += '／' + FMK + '内容のスイッチ「合意のない展開」';
+        return { text: fill(ctx, hs + ctx.pick(HN.end), ob[0], ob[1]), why: hw + (HS.shieldWhy ? HS.shieldWhy(HS.lastShield) : ''), mag: 28 };
       }
       var t = ctx.pick(HN.open) + ctx.pick(lewd(ctx) === 'low' || !HN.mid ? HN.low : HN.mid) + ctx.pick(HN.end);
       /* 受け攻め：抱く側を {a} に */

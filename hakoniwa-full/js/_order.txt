@@ -97,6 +97,7 @@ js/moan-tease-r18.js
 js/moan-top-said.js
 js/moan-said-more.js
 js/moan-engine.js
+js/moan-cut.js
 js/moan-mob.js
 js/thick-sex.js
 js/thick-sex-ero.js
@@ -527,3 +528,4 @@ late js/tips-scen-d.js
 late js/attr-r18.js
 late js/attr-race-r18.js
 late js/export-out.js
+late js/ui-perzoom.js

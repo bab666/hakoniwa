@@ -21,7 +21,11 @@
   if (!HK.SAFE_ON && !Z.scen.env.some(function (e) { return e.id === 'zraid'; })) {
     /* zraid は 3段階（2026-10-27）：off なし／on ふつう（既定。前の「あり」と同じ値なので、保存した設定はそのまま「ふつう」になる）／many 多い */
     Z.scen.env.push({ id: 'zraid', label: '略奪者に襲われる出来事', type: 'select', def: 'on', options: [{ v: 'off', label: 'なし' }, { v: 'on', label: 'ふつう（1回の箱庭で1件ほど）' }, { v: 'many', label: '多い（略奪者が何度も現れる）' }], desc: '略奪者に性的に襲われる展開（内容のスイッチの「合意のない展開」も入にしたときだけ）。略奪者は一度出会ったあとも、ときどき戻ってきて仲間を襲う（「多い」なら出没そのものも増える）。居合わせた仲間が庇いに入ると、殴られる・身代わりを申し出る・巻き込まれる・縛られて見せられる、に分かれる（巻き込まれるのは「攻め」指定・性行為の相手の固定・R18に参加しない人以外）。見やすくするには、「多い」・展開の重さ「重い」・受けに回れる人（受け・おまかせ。モブ相手の受け攻めを受けに）を増やす' });
-    Z.scen.env.push({ id: 'zlust', label: 'ゾンビの性欲', min: 0, max: 100, def: 50, lo: '襲うだけ（起きない）', hi: '飢えている', desc: 'ゾンビの群れに性的に襲われる展開の起きやすさ（内容のスイッチの「合意のない展開」も入にしたときだけ）。0 なら起きず、50（既定）で1回の箱庭に1〜2件、100 で2〜3件ほど。展開の重さ「重い」でさらに増える。襲われるのは「攻め」指定・性行為の相手の固定・R18に参加しない人以外で、同じ人ばかりにならないよう回る' });
+    Z.scen.env.push({ id: 'zlust', label: 'ゾンビの性欲', min: 0, max: 100, def: 50, lo: '襲うだけ（起きない）', hi: '飢えている', desc: 'ゾンビの群れに性的に襲われる展開の起きやすさ（内容のスイッチの「合意のない展開」も入にしたときだけ）。0 なら起きず、50（既定）で1回の箱庭に1〜2件、100 で2〜3件ほど。70 以上なら、1回の箱庭で少なくとも一度は起きる。展開の重さ「重い」でさらに増える。襲われるのは「攻め」指定・性行為の相手の固定・R18に参加しない人以外で、同じ人ばかりにならないよう回る' });
+  }
+  /* 関係のある二人の遭遇（2026-10-28 担当JA。zombie-assault.js の Z.pairLv・z_pair・ゾンビの性欲の重み、下の Z.raidTry・raidBack が見る） */
+  if (!HK.SAFE_ON && !Z.scen.env.some(function (e) { return e.id === 'zpair'; })) {
+    Z.scen.env.push({ id: 'zpair', label: '関係のある二人の遭遇', type: 'select', def: 'on', options: [{ v: 'off', label: 'なし（二人きりの組は襲われない）' }, { v: 'on', label: 'ふつう' }, { v: 'many', label: '多い（二人きりのところを襲われやすい）' }], desc: '恋人・夫婦・相棒・親友・体の関係の相手・愛憎の二人が、二人きりで行動しているときに、ゾンビの群れや略奪者に性的に襲われる場面の起きやすさ（内容のスイッチの「合意のない展開」も入にしたときだけ）。「多い」では二人で見回りに出たところを襲われる場面も起き、一人が襲われ、もう一人は助けに入る・庇って巻き込まれる・見ているしかない、に分かれる。「なし」では、二人きりの組は襲われない。襲われるのは「攻め」指定・性行為の相手の固定・R18に参加しない人・性欲「なし」の人以外。恋愛対象・受け攻めの合わない二人は「多い」でも選ばれやすくはならない' });
   }
   function L(s) { return s.split('|'); }
   /* 「＠……」は住人以外（略奪者）の台詞。口調を変えないよう、見えない印（U+2060）に置き換える */
@@ -489,7 +493,10 @@
   var RAID_P = [0, 0.65, 0.85];
   Z.raidTry = function (ctx, n, P, lead) {
     var rng = ctx.rng;
-    if (!Z.raidOk(ctx) || !(rng() < Math.min(0.95, RAID_P[Z.raidLv(ctx)] * HK.Dark.pick(ctx, 1, 1, 1.35)))) return false;
+    /* 関係のある二人の遭遇（zombie-assault.js の Z.pairLv）：二人きりの関係のある組は、多いなら襲われやすく、なしなら襲われない（ふつうは前と同じ） */
+    var plv = Z.pairLv ? Z.pairLv(ctx) : 1, pr = plv !== 1 && P.length === 2 && Z.pairTie(ctx, P[0], P[1]) ? (plv === 0 || Z.pairOk(ctx, P[0], P[1])) : false;
+    if (!Z.raidOk(ctx) || !(rng() < Math.min(0.95, RAID_P[Z.raidLv(ctx)] * HK.Dark.pick(ctx, 1, 1, 1.35) * (pr && plv === 2 ? 1.4 : 1)))) return false;
+    if (pr && plv === 0) return false;
     var vs = P.filter(function (c) { return alive(c) && CV.inv(c) && !(c.z.raidAt != null && ctx.stepIndex - c.z.raidAt < 4); });
     if (!vs.length) return false;
     var v = HK.weighted(rng, vs, function (c) { return (1 + (1 - c.tr.cp) * 0.6 + (c.hp < 50 ? 0.4 : 0)) / (1 + (c.z.raidN || 0) * 1.5); });
@@ -497,7 +504,8 @@
     P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 1); });
     v.flags.mobHit = { at: ctx.stepIndex, by: n.label || '略奪者' };
     var ra = Z.raiderAssault(ctx, v, P.filter(function (c) { return c !== v; }), n);
-    ctx.act2({ actors: ra.with, cat: 'betray', text: (lead || '') + ra.text, why: (lead ? '一度出会った' + n.label + 'たちが、戻ってきた――' : '') + ra.why, mag: ra.mag, lewd: true });
+    var pw = pr && plv === 2 ? '／関係のある二人の遭遇：多い（' + P[0].name + 'と' + P[1].name + 'は' + Z.PAIR_LBL[Z.pairTie(ctx, P[0], P[1])] + '。二人きりだった）' : '';
+    ctx.act2({ actors: ra.with, cat: 'betray', text: (lead || '') + ra.text, why: ((HK.Pos && HK.Pos.FORCE_MARK) || '〔合意のない展開〕') + (lead ? '一度出会った' + n.label + 'たちが、戻ってきた――' : '') + ra.why + pw, mag: ra.mag, lewd: true });
     return true;
   };
   /* 戻ってくる略奪者：出会ったあとも、区切りごとにときどき、住人のいるエリアに現れる（ふつう 2割・3回まで／多い 3割・4回まで）。
@@ -506,12 +514,16 @@
   var ROB = L('{n}たちは{m}の荷物をひっくり返し、食料を奪って去っていった。「＠次は、これじゃ済まねえぞ」|{n}たちは、睨みつける{m}を鼻で笑い、缶詰を抱えて引き上げていった。');
   function raidBack(ctx) {
     var zb = ctx.zb, rng = ctx.rng, lvR = Z.raidLv(ctx);
+    /* 関係のある二人の遭遇が多く、二人きりの関係のある組がいれば、戻ってきやすい（+15%） */
+    var pk2 = Z.pairLv && Z.pairLv(ctx) === 2 && ctx.present().some(function (c) { return Z.pairAlone(ctx, c, true); }) ? 0.15 : 0;
     zb.npcs.forEach(function (n) {
       if (n.type !== 'looter' || !n.alive || !n.met || (n.back || 0) >= (lvR === 2 ? 4 : 3)) return;
-      if (rng() >= (lvR === 2 ? 0.3 : 0.2)) return;
+      if (rng() >= (lvR === 2 ? 0.3 : 0.2) + pk2) return;
       var who = ctx.present().filter(function (c) { return alive(c) && !c.z.alone; });
       if (!who.length) return;
-      var area = rng.pick(who).z.area, P = Z.inArea(ctx, area);
+      /* 関係のある二人の遭遇が多いなら、二人きりの関係のある組のいる場所に現れる（乱数の引き方は前と同じ） */
+      var pw = Z.pairLv && Z.pairLv(ctx) === 2 ? who.filter(function (c) { return Z.pairAlone(ctx, c, true); }) : [];
+      var area = rng.pick(pw.length ? pw : who).z.area, P = Z.inArea(ctx, area);
       if (!P.length) return;
       n.back = (n.back || 0) + 1; n.area = area;
       var mp = { n: n.label, m: Z.names(P), area: Z.an(ctx, area) };

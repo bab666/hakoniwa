@@ -265,7 +265,7 @@
     /* 攻めの声：ほかの段ですでに攻めが3本以上喋っていれば、声のない一文（thick-sex.js の攻めの快感の文）にする */
     var faL = pre >= 3 && TS && TS.FEEL_A && TS.FEEL_A[mode] ? TS.FEEL_A[mode].filter(function (l) { return !/「/.test(l); }) : [];
     var fea = pick(feelL.length ? feelL : X.FEEL[mode]) + (pl ? pl : '') + pick(faL.length ? faL : X.FEEL_A[mode]);
-    var sl = ET ? ET.slots(R0, { start: cnt(open0) > 0 || nt0, in: cnt(body) > 0, mid: cnt(fea) + cnt(ntx) > 0, peak: cnt(cl) > 0, after: cAf > 0 }, { after: !!(opt.after || opt.again), n: pre + cnt(fea), target: R0 && (typeof R0 === 'function' ? R0 : R0.rng) && (typeof R0 === 'function' ? R0 : R0.rng)() < 0.6 ? 2 : 3 }) : {};
+    var sl = ET ? ET.slots(R0, { start: cnt(open0) > 0 || nt0, in: cnt(body) > 0, mid: cnt(fea) + cnt(ntx) > 0, peak: cnt(cl) > 0, after: cAf > 0 }, { after: !!(opt.after || opt.again), n: pre + cnt(fea), top: a, bot: b, rel: eo.rel, target: R0 && (typeof R0 === 'function' ? R0 : R0.rng) && (typeof R0 === 'function' ? R0 : R0.rng)() < 0.6 ? 2 : 3 }) : {};
     /* 始まりが空（物語型の ' '）なら、始まりの一言は前戯の頭に置く */
     var blank = !/\S/.test(open0);
     out.push(blank ? open0 : open0 + (sl.start ? tsay('start') : ''));
@@ -273,8 +273,11 @@
     /* 体格・身長の差・胸・体の特徴の一文（attr.js の pairLine。thick-sex.js の体の感触の段と同じ。何も決めていなければ乱数を使わずに ''。2026-10-27 担当HM） */
     out.push((blank && sl.start ? tsay('start') : '') + fore + (sl.fore ? tsay('fore') : '') + (TS && TS.fingerOut ? TS.fingerOut(fore, body, mode, true) : '') + (HK.Attr && HK.Attr.pairLine ? HK.Attr.pairLine(a, b, 'touch', pick, opt.S) : ''));
     out.push((sl.in ? tsay('in') : '') + body);
-    out.push(ntx + fea);
-    out.push((sl.peak ? tsay('peak') : '') + cl + (sl.after ? '\n\n' + tsay('after') : ''));
+    /* 最中の一言（言葉責め・焦らし・攻めの崩れが足した段。moan-cut.js の HK.Moan.slotsFix） */
+    out.push(ntx + fea + (sl.mid ? tsay('mid') : ''));
+    /* 果てたあとの受けの余韻の声（moan-engine.js の HK.Moan.say の after＝e0。呼ぶ側の事後の文・もう一度の段落がないときに 3 割5分。2026-10-28 担当M1） */
+    var rr0 = R0 && (typeof R0 === 'function' ? R0 : R0.rng), e0 = !opt.after && !agT && rr0 && HK.Moan && HK.Moan.say && !HK.SAFE_ON && rr0() < 0.35 ? HK.Moan.say(R0, b, 'after', { top: a }, null) : '';
+    out.push((sl.peak ? tsay('peak') : '') + cl + (e0 ? '{b}「' + e0 + '」' : '') + (sl.after ? '\n\n' + tsay('after') : ''));
     var ci = out.length - 1;
     if (agT) out.push(agT);
     if (opt.after) out.push(opt.after);

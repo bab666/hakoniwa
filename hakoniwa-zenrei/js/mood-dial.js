@@ -66,7 +66,13 @@
       if (!ctx || !ctx.chars || !ctx.pair || !a || !b || ctx.pair(a, b).couple) return false;
       return ctx.chars.some(function (c) { return c !== a && c !== b && c.alive !== false && (ctx.pair(a, c).couple || ctx.pair(b, c).couple); });
     },
-    OFF_MILD: { force: 1, violence: 1, abuse: 1 }
+    OFF_MILD: { force: 1, violence: 1, abuse: 1 },
+    /* 少人数の係数（2026-10-28 担当JA。サバイバル系：ゾンビの街・無人島）：住人が少ないとき、死の判定の確率に掛けて下げる
+       （4人以下 0.3・5人 0.5・6人以上 1）。ゾンビの街で「一人以上死ぬ回」が4人以下で5割前後・全滅が1割以下になるように合わせた値
+       （直す前は2〜4人で9割以上が死に、2人では7割が全滅していた。人が多いほど誰かが死ぬ回は増えるので、4人以下は同じ値にしている）。
+       6人以上は 1 なので、呼ぶ側は乱数を引かずに前と同じ結果になる。展開の重さ・死ネタの重さの倍率（f・live）とは別に掛ける（穏やか・重いの差はそのまま効く） */
+    FEW: [0.3, 0.3, 0.3, 0.3, 0.3, 0.5],
+    few: function (ctx) { var n = ctx && ctx.chars ? ctx.chars.length : 99; return n < D.FEW.length ? D.FEW[n] : 1; }
   };
   /* 全体の環境値（events-common.js の HK.GLOBAL_ENV）に足す。all：物語型の箱庭にも出す */
   if (HK.GLOBAL_ENV && !HK.GLOBAL_ENV.some(function (e) { return e.id === 'heavy'; })) {

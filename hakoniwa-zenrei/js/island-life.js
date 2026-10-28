@@ -168,7 +168,8 @@
     var b = ctx.most(ctx.others(a), function (c) { return R(ctx, a, c).ten / 50 - R(ctx, a, c).aff / 60 + (c.hp < 40 ? 0.5 : 0); });
     var dark = ctx.env.dark !== 'mild';
     var lvl = I.hungry + (a.stress > 75 ? 1 : 0) + (a.tr.cold > 0.65 ? 1 : 0);
-    if (dark && lvl >= 4 && R(ctx, a, b).aff < 10 && rng() < 0.45) {
+    /* 少人数ほど、殺し合いには踏み込みにくい（mood-dial.js の HK.Dark.few。6人以上は前と同じ） */
+    if (dark && lvl >= 4 && R(ctx, a, b).aff < 10 && rng() < 0.45 * HK.Dark.few(ctx)) {
       var r = ctx.fight(a, b, { lethality: 1.3, ambush: true, canSpare: R(ctx, a, b).aff > 0 });
       ctx.act2({ actors: [a, b], cat: 'combat', text: '飢えが' + a.name + 'の中の何かを壊した。' + a.name + '「…ごめん。でも、もう無理なんだ｜…すまない。だが、もう無理なんだ｜…ごめんなさい。でも、もう無理なんです」' + r.text, why: '飢え' + I.hungry + '日目・' + a.name + 'の攻撃性とドライさ。' + r.why });
       ctx.flush();

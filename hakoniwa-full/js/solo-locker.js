@@ -420,8 +420,9 @@
         if (noriAct) actPool = noriAct;
         var vA = { a: ax.name, b: bx.name }, vT = { a: a.name, b: b.name };
         var t = swap ? ST.fmt(pk(LK.TEMPT), vT) : ST.fmt(pk(actPool), vA);
-        /* 敵対している二人で、攻めの側から仕掛けたとき：受けは口では嫌がるが、拒みきらない */
-        var hateNow = hateP && !swap && aTop && (libForce || (resp !== 'accept' && b.m.heat >= 15));
+        /* 敵対している二人で、攻めの側から仕掛けたとき：受けは口では嫌がるが、拒みきらない。
+           強引な側は HateSex.order（嫌悪が片方向なら、受け＝嫌っている側。2026-10-28 担当JD）。嫌っていない側に「嫌がる」応じ方を当てない */
+        var hateNow = hateP && !swap && aTop && HSX.order(S, a, b)[0] === a && (libForce || (resp !== 'accept' && b.m.heat >= 15));
         /* 性欲「なし」の人がいる二人は、強引な側が攻めとして仕掛けるときだけ（合意の場面にしない） */
         if (libForce && !hateNow) { a.cnt.make--; continue; }
         if (hateNow) resp = 'passive';

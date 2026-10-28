@@ -3,10 +3,11 @@
    見本のボタン（data-gact="moandemo"）はクリックの処理から HK.GearMoan.act に届く。
    保存する欄（住人）：
      c.moanDict  … 喘ぎの辞書（受けのとき）。書式は高度設定の「喘ぎの辞書」と同じで、範囲は書かない（[乗り気 1]・[喘ぎ 乗り気 1]・[小説 最中] も読む）。上限 4000 字
-     c.moanDictT … 喘ぎの辞書（攻めのとき）。攻めの場面（M.MODES の top。いまは「攻め」t）の行
+     c.moanDictT … 喘ぎの辞書（攻めのとき）。攻めの場面（M.MODES の top：攻め t・言葉責め z・焦らし j・攻めの崩れ u）の行
      c.moanFit   … 声の区分 { kind: firm|soft|grand|none|off, masc: 真偽 }（既定のままなら持たない）
      c.moanOpt   … { tease: 攻めのときの言葉責め・焦らしの多さ, retort: 受けのときの言い返しの多さ }（off|less|normal|more。normal は持たない）。
-                   言葉責め・言い返しの文は次の更新で入る（いまはエンジンが読まない。保存・書き出し・複製の土台だけ）
+                   moan-cut.js（HK.Moan.tease）が読む：言葉責め・焦らし off 0／less 半分／normal 表どおり／more 1.5倍（一場面 3 回まで）、
+                   言い返し off 0／less 1割5分／normal 3割／more 6割（一場面 2 回まで）。2026-10-28 担当M1
    ここで決めた辞書は高度設定の 住人= よりも優先し、区分は高度設定の口調ごとの区分より優先する（moan-engine.js の HK.Moan.ownOf・fit）。
    見本「この住人の声を出してみる」は、その住人の口調・喘ぎの口調・性別・夜の性格・辞書・区分をそのまま使い、箱庭と同じ HK.Moan.pick／say を通す（HK.Moan.demo の who）。
    全年齢モードでは何も出さない。登場人物はすべて成人として扱う。全年齢版にはこのファイルを置かない */
@@ -18,7 +19,7 @@
   var KIND_OPT = [['', '既定（口調の区分のまま）'], ['firm', 'はっきり（言い切り）'], ['soft', 'やわらかい'], ['grand', '古風・尊大'], ['none', '区分なし（性別だけ）'], ['off', '整えない']];
   var KIND_LABEL = { firm: 'はっきり', soft: 'やわらかい', grand: '古風・尊大', none: '区分なし', off: '整えない' };
   var AMOUNT = [['off', 'なし'], ['less', '少なめ'], ['normal', 'ふつう'], ['more', '多め']];
-  var SRC = { base: '素の言葉', tone: '口調の喘ぎ', shared: '共通', user: '辞書', ntone: '小説調の口調の表', nbase: '小説調の態度の表' };
+  var SRC = { base: '素の言葉', tone: '口調の喘ぎ', shared: '共通', user: '辞書', ntone: '小説調の口調の表', nbase: '小説調の態度の表', line: '台詞の表（口調の言い換えあり）' };
   var seedN = 0;
   function opt(v, label, cur) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; }
   function toneOfC(c) { return M.toneOf ? M.toneOf(c) : c.tone; }
@@ -73,16 +74,17 @@
       ta('moanDict', c.moanDict, '[乗り気 1]\nん……っ|は、ぁ……\n[懇願 1]\nもっと……おねがい……\n[小説 最中]\nあ……っ、そこ……') +
       '<p class="gearhint" id="gm-err-r" style="color:var(--warn,#b00)">' + esc(errText(c.moanDict) || sideNote(c.moanDict, false)) + '</p>' +
       '<p class="gearhint">見出し [場面 段階] の下に1行1つ（「|」区切りでも可）。末尾に「追加」で、組み込みの声と半々で混ぜます。場面と段階：' + esc(M.modeList ? M.modeList(false) : '') + '／小説調 始まり 最中 果てる</p>' +
-      '<div class="gearrow">' + amt('moanOptRetort', o.retort, '言い返しの多さ', '受けのときに、相手の言葉責めに言い返す（「うるさい……っ」など）多さです。言い返しの文は次の更新で入ります') + '</div>' +
+      '<div class="gearrow">' + amt('moanOptRetort', o.retort, '言い返しの多さ', '受けのときに、相手の言葉責め・焦らしに言い返す（「うるさい……っ」「全部、あなたのせいです……あっ！」など）多さです。なし／少なめ（1割5分）／ふつう（3割）／多め（6割）') + '</div>' +
       '<h4 style="margin:10px 0 2px;font-size:13px">攻めのとき</h4>' +
       ta('moanDictT', c.moanDictT, '[攻め 1]\nっ……は、ぁ……\n[攻め 4]\nかわいい……もっと、声、聞かせて') +
       '<p class="gearhint" id="gm-err-t" style="color:var(--warn,#b00)">' + esc(errText(c.moanDictT) || sideNote(c.moanDictT, true)) + '</p>' +
       '<p class="gearhint">場面と段階：' + esc(M.modeList ? M.modeList(true) : '') + '</p>' +
-      '<div class="gearrow">' + amt('moanOptTease', o.tease, '言葉責め・焦らしの多さ', '攻めのときに、言葉責め・焦らす台詞を言う多さです。言葉責め・焦らしの文は次の更新で入ります') + '</div>' +
-      '<p class="gearhint">言葉責め・言い返しの文は次の更新で入ります（いまは設定を残しておくだけです）。辞書はこの住人だけに効き、高度設定の「喘ぎの辞書」の 住人= よりも優先します。書いた行は区分では直しません。</p>' +
+      '<div class="gearrow">' + amt('moanOptTease', o.tease, '言葉責め・焦らしの多さ', '攻めのときに、言葉責め・焦らす台詞を言う多さです（夜の性格で決まる割合にかけます）。なし／少なめ（半分）／ふつう／多め（1.5倍）') + '</div>' +
+      '<p class="gearhint">言葉責め・焦らしは主に夜の性格がサド・意地悪の人が使い、受けはたまに言い返します。辞書はこの住人だけに効き、高度設定の「喘ぎの辞書」の 住人= よりも優先します。書いた行は区分では直さず、崩しもしません（台詞の口調の言い換えは通ります）。</p>' +
       '<h4 style="margin:10px 0 2px;font-size:13px">この住人の声を出してみる</h4>' +
       '<div class="gearrow"><label>作風 <select data-gf="gmStyle" id="gm-style" aria-label="見本の作風">' + opt('ero', '男性向け', 'ero') + opt('novel', '小説調', 'ero') + '</select></label>' +
       '<label>場面 <select id="gm-key" aria-label="見本の場面">' + keyOpts('ero', c.pos === 'top' ? 't3' : 'w1') + '</select></label>' +
+      '<label title="言葉責め・焦らし・攻めの崩れ・言い返しの台詞を、快感で遮られた形にして出します">崩れ <select id="gm-cut" aria-label="見本の崩れ">' + (M.CUT_LABEL || ['なし']).map(function (l, i) { return opt(String(i), l, '0'); }).join('') + '</select></label>' +
       '<button type="button" class="btn small" data-gact="moandemo">出してみる</button></div>' +
       '<div class="tonesample" id="gm-demo" aria-live="polite"></div>' +
       '</div></details>';
@@ -149,10 +151,11 @@
     if (!out) return true;
     var style = st && st.value === 'novel' ? 'novel' : '', key = ks && ks.value ? ks.value : style ? 'n1' : 'w1';
     seedN++;
-    var rows = M.demo(key, { who: c, style: style, n: 5, detail: true, seed: 777 + seedN * 7919 });
+    var cs = document.getElementById('gm-cut');
+    var rows = M.demo(key, { who: c, style: style, n: 5, detail: true, seed: 777 + seedN * 7919, cut: cs ? +cs.value || 0 : 0 });
     var label = (style ? M.NOVEL_KEYS : M.keys()).filter(function (k) { return k.key === key; })[0];
     out.innerHTML = '<span class="tsh">' + esc((label ? label.label : key) + '（' + c.name + '・' + (style ? '小説調' : '男性向け') + '）') + '</span>' + rows.map(function (r) {
-      var fx = r.fixed ? '（直す前「' + r.raw + '」→ ' + (KIND_LABEL[r.kind] && r.kind !== 'none' ? KIND_LABEL[r.kind] : '性別の整え') + '）' : '';
+      var fx = r.fixed ? '（直す前「' + r.raw + '」→ ' + (KIND_LABEL[r.kind] && r.kind !== 'none' ? KIND_LABEL[r.kind] : '性別の整え') + '）' : r.cut ? '（崩す前「' + r.raw + '」）' : '';
       return '<span class="tsl">' + esc(c.name + '「' + r.s + '」') + ' <small style="color:var(--muted)">' + esc((SRC[r.src] || r.src || '') + (r.ends ? '＋口調の語尾' : '') + fx) + '</small></span>';
     }).join('');
     return true;

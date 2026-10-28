@@ -227,7 +227,7 @@
         if (f.tr.aggr + f.tr.cp * 0.5 > 0.75 && rng() < 0.6) {
           var lp = 45 + rng() * 35 + (n.gun ? 25 : 0), fp = power(f) + rng() * 35;
           if (fp > lp) { n.alive = false; n.note = f.name + 'たちに追い払われた'; return ctx.act2({ actors: P, cat: 'combat', text: fillN(ctx, '{n}たちが「食い物を出せ」と押し入ってきた。{a}は「{you}たちに渡す分はない｜＝｜{you}たちに渡す分はありません」と言い捨て、' + (f.weapon ? f.weapon.name : '拳') + 'で先頭の男を殴り倒した。残りは悲鳴を上げて逃げていった。', n, f), why: f.name + 'の攻撃性・CP（' + Math.round(fp) + '）', mag: 26 }); }
-          if (rng() < (n.gun ? 0.45 : 0.2) * HK.Dark.f(ctx, 'raid')) { ctx.act2({ actors: P, cat: 'death', text: fillN(ctx, '{n}たちに歯向かった{a}は、' + (n.gun ? '至近距離から撃たれた' : '数人がかりで殴り倒された') + '。', n, f), why: n.label + 'たちは容赦がなかった', mag: 42 }); ctx.kill(f, null, n.label + 'たちに襲われて'); P.forEach(function (c) { c.z.food = 0; }); return; }
+          if (rng() < (n.gun ? 0.45 : 0.2) * HK.Dark.f(ctx, 'raid') * HK.Dark.few(ctx)) { ctx.act2({ actors: P, cat: 'death', text: fillN(ctx, '{n}たちに歯向かった{a}は、' + (n.gun ? '至近距離から撃たれた' : '数人がかりで殴り倒された') + '。', n, f), why: n.label + 'たちは容赦がなかった', mag: 42 }); ctx.kill(f, null, n.label + 'たちに襲われて'); P.forEach(function (c) { c.z.food = 0; }); return; }
           f.hp -= 20; if (f.z.wound < 0) f.z.wound = ctx.stepIndex;
           if (f.hp <= 0) { ctx.act2({ actors: P, cat: 'death', text: fillN(ctx, '{n}たちに殴りかかった{a}は、袋叩きにされて動かなくなった。', n, f), why: '略奪者のほうが多かった', mag: 40 }); ctx.kill(f, null, n.label + 'たちに襲われて'); return; }
           P.forEach(function (c) { c.z.food = Math.max(0, c.z.food - 2); });

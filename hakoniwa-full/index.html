@@ -440,6 +440,52 @@ table.per td:nth-child(2) b { white-space: nowrap; overflow: hidden; text-overfl
 .runbar .btn.primary:hover { background: var(--bg1); }
 .runbar .btn:focus-visible { outline-color: var(--paper); }
 .runbar input { width: 110px; }
+/* ── 担当IA（2026-10-28）：参加表の縮尺と表の形（ui-perzoom.js）・PC の「箱庭を動かす」の浮いたボタン ──
+   参加表の上の「表示：縮尺 [−] 100% [＋] 全体を表示｜表の形：積む／並べる」。押している札は藍の塗り（藍のみでも塗りと輪郭で分かる）。
+   縮尺は表（table.per）だけに zoom（--pz）。zoom の無いブラウザは transform（.pz-tf。余白は JS が詰める）。
+   スマホ（〜760px・指で触る画面）は、触った・選んだ入力欄（.pz-focus。ui-perzoom.js）だけ文字を 16px ÷ 縮尺にして、実際の大きさを 16px 以上に（iOS の自動ズームを避ける。
+   ほかの欄は表といっしょに縮むので、全体を表示しても縮図のまま一覧できる）。
+   「積む」（.pz-stack）は住人ごとに欄を縦に積む形（列の見出しは各欄の上。data-label は ui-mobile.js）。 */
+.perzoom { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0 0 6px; font-size: 12px; color: var(--muted); }
+.perzoom .pz-k { font-weight: 700; color: var(--ink); }
+.perzoom .pz-g { display: inline-flex; align-items: center; gap: 4px; }
+.perzoom .pz-k2 { margin-right: 2px; }
+.perzoom button { min-width: 30px; min-height: 30px; padding: 0 9px; border: 1px solid var(--line2); border-radius: var(--r); background: var(--paper); color: var(--ink); font: inherit; font-size: 12px; line-height: 1; cursor: pointer; }
+.perzoom button:hover:not(:disabled) { border-color: var(--ink); }
+.perzoom button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.perzoom button:disabled { opacity: .4; cursor: default; }
+.perzoom button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.perzoom .pz-v { min-width: 3.4em; text-align: center; font-family: var(--f-num); font-size: 12px; color: var(--ink); }
+.perzoom .pz-fit { margin-left: 4px; }
+.perzoom .pz-seg { display: inline-flex; }
+.perzoom .pz-seg button:first-child { border-radius: var(--r) 0 0 var(--r); }
+.perzoom .pz-seg button + button { border-left-width: 0; border-radius: 0 var(--r) var(--r) 0; }
+.tblwrap.pz > table.per { zoom: var(--pz, 1); }
+.tblwrap.pz-tf > table.per { transform: scale(var(--pz, 1)); transform-origin: 0 0; }
+@media (max-width: 760px), (pointer: coarse) {
+  .perzoom button { min-height: 36px; min-width: 36px; }
+}
+#view-box .tblwrap.pz table.per td select.pz-focus, #view-box .tblwrap.pz table.per td input[type="text"].pz-focus { font-size: calc(16px / var(--pz, 1)); }
+html body #view-box .perzoom[data-form="stack"] + .tblhint, html body #view-box .perzoom[data-fit] + .tblhint { display: none; }
+#view-box .tblwrap.pz-stack { overflow: visible; max-height: none; border: 0; background: none; }
+#view-box .tblwrap.pz-stack table.per, #view-box .tblwrap.pz-stack table.per tbody { display: block; min-width: 0; width: 100%; }
+#view-box .tblwrap.pz-stack table.per thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+#view-box .tblwrap.pz-stack table.per tr { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: flex-end; padding: 8px 10px; margin-bottom: 6px; border: 1px solid var(--line); border-radius: var(--r); background: var(--paper); }
+#view-box .tblwrap.pz-stack table.per td { display: block; position: static; border: 0; padding: 0; box-shadow: none; background: none; min-width: 0; max-width: none; width: auto; flex: 1 1 calc(50% - 10px); }
+#view-box .tblwrap.pz-stack table.per td:nth-child(1) { flex: 0 0 auto; align-self: center; width: auto; min-width: 0; max-width: none; padding: 0; }
+#view-box .tblwrap.pz-stack table.per td:nth-child(2) { flex: 1 1 calc(100% - 60px); align-self: center; min-width: 0; max-width: none; font-size: 14px; }
+#view-box .tblwrap.pz-stack table.per td:nth-child(2) b { max-width: none; }
+#view-box .tblwrap.pz-stack table.per td[colspan] { flex-basis: 100%; }
+#view-box .tblwrap.pz-stack table.per td[data-label]:nth-child(n+3)::before { content: attr(data-label); display: block; margin-bottom: 2px; font-size: 11px; color: var(--muted2); }
+#view-box .tblwrap.pz-stack table.per td select, #view-box .tblwrap.pz-stack table.per td input[type="text"] { width: 100%; max-width: none; min-width: 0 !important; }
+/* PC（601px 以上）の浮いたボタン：上へ／下へ（#pagejump：右端 40px）の左。藍の塗り・紙の文字・紙の縁（下の藍の面の上でも縁が見える）。押せないときは紙の地・薄い文字・破線の枠（透けない）。600px 以下は下に固定した帯（ui-mobile.js）だけ */
+.runfab { position: fixed; right: calc(max(10px, env(safe-area-inset-right, 0px)) + 52px); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 49; height: 44px; padding: 0 20px; border: 1px solid var(--paper); border-radius: var(--r); background: var(--ink); color: var(--paper); font: inherit; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; box-shadow: none; }
+.runfab[hidden] { display: none; }
+.runfab:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 3px; }
+.runfab:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.runfab:disabled { background: var(--paper); color: var(--muted); border: 1px dashed var(--line2); cursor: not-allowed; text-decoration: none; }
+@media (max-width: 600px) { .runfab { display: none !important; } }
+@media print { .runfab, .perzoom { display: none !important; } }
 
 /* 結果 */
 .resulthead { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
@@ -1002,70 +1048,70 @@ details.zmap > summary:hover { background: var(--bg1); }
 <div class="toast" id="toast" hidden></div>
 
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"50e12f878c","api":1,"build":"full","core":"js/c/core.9858731bad.js",
+<script>window.HK_MANIFEST={"v":"cb579dd585","api":1,"build":"full","core":"js/c/core.0706cea666.js",
 "chunks":{
-  "late":{"src":"js/c/late.8a02b7ab6d.js","br":121618,"deps":[]},
-  "pack-rel":{"src":"js/c/pack-rel.83d9d3e9df.js","br":246097,"deps":[]},
-  "scen-goukon":{"src":"js/c/scen-goukon.4464afdb9e.js","br":86045,"deps":["pack-rel"]},
-  "scen-classroom":{"src":"js/c/scen-classroom.5ff782b57f.js","br":61166,"deps":["pack-rel"]},
-  "scen-island":{"src":"js/c/scen-island.ee8b9ee704.js","br":87035,"deps":["pack-rel"]},
-  "scen-whiteroom":{"src":"js/c/scen-whiteroom.87715fc00e.js","br":217157,"deps":["pack-rel"]},
-  "scen-omega":{"src":"js/c/scen-omega.1ed6b4d385.js","br":155404,"deps":["pack-rel"]},
-  "scen-br":{"src":"js/c/scen-br.35c8209f2f.js","br":12387,"deps":["pack-rel"]},
-  "scen-trial":{"src":"js/c/scen-trial.687fa3e1f4.js","br":9422,"deps":["pack-rel"]},
-  "scen-dungeon":{"src":"js/c/scen-dungeon.fbd00fb454.js","br":117677,"deps":["pack-story"]},
-  "scen-massage":{"src":"js/c/scen-massage.c42b215d61.js","br":79420,"deps":["pack-solo"]},
-  "scen-hole":{"src":"js/c/scen-hole.e90f8fc84c.js","br":90464,"deps":["pack-solo"]},
-  "scen-zombie":{"src":"js/c/scen-zombie.eb91f1f48b.js","br":163438,"deps":["pack-rel"]},
-  "scen-rpg":{"src":"js/c/scen-rpg.1b6eb67a75.js","br":27064,"deps":["pack-story"]},
-  "scen-kaihen":{"src":"js/c/scen-kaihen.26843f05d4.js","br":131124,"deps":["pack-rel","pack-solo"]},
-  "scen-succubus":{"src":"js/c/scen-succubus.d52c339b8d.js","br":95188,"deps":["pack-rel","pack-solo"]},
-  "scen-saimin":{"src":"js/c/scen-saimin.c3e7af0bec.js","br":112792,"deps":["pack-rel","pack-solo"]},
-  "scen-variety":{"src":"js/c/scen-variety.4c5b75e23a.js","br":84078,"deps":["pack-rel","pack-solo"]},
-  "scen-locker":{"src":"js/c/scen-locker.d819719546.js","br":139769,"deps":["pack-rel","pack-solo"]},
-  "scen-jashin":{"src":"js/c/scen-jashin.a1b3945eda.js","br":326118,"deps":["pack-story"]},
-  "scen-yakata":{"src":"js/c/scen-yakata.17d9b72a8f.js","br":118580,"deps":["pack-story"]},
-  "scen-ship":{"src":"js/c/scen-ship.ceaea00211.js","br":223248,"deps":["pack-story"]},
-  "pack-story":{"src":"js/c/pack-story.780e91f0a5.js","br":23721,"deps":["pack-rel"]},
-  "scen-jinro":{"src":"js/c/scen-jinro.be6dc049d2.js","br":66221,"deps":["pack-story"]},
-  "scen-futari":{"src":"js/c/scen-futari.52d6434af4.js","br":11825,"deps":["pack-rel"]},
-  "pack-solo":{"src":"js/c/pack-solo.b5661c7b36.js","br":20032,"deps":[]},
-  "tone-base":{"src":"js/c/tone-base.e52ae1938a.js","br":56064,"deps":[]},
-  "tone-ane":{"src":"js/c/tone-ane.d721fded5a.js","br":7514,"deps":[]},
-  "tone-boku-n":{"src":"js/c/tone-boku-n.43f0b5585c.js","br":418,"deps":[]},
-  "tone-calm":{"src":"js/c/tone-calm.dbd568e706.js","br":8298,"deps":[]},
-  "tone-chara":{"src":"js/c/tone-chara.cc5635086d.js","br":16492,"deps":[]},
-  "tone-chara-down":{"src":"js/c/tone-chara-down.39751ec33a.js","br":1117,"deps":[]},
-  "tone-cool-soft":{"src":"js/c/tone-cool-soft.5a59796ded.js","br":699,"deps":[]},
-  "tone-darui":{"src":"js/c/tone-darui.27c6b5ab59.js","br":8827,"deps":[]},
-  "tone-darui-lite":{"src":"js/c/tone-darui-lite.39e86d83af.js","br":738,"deps":[]},
-  "tone-devoted-p":{"src":"js/c/tone-devoted-p.7466cb0962.js","br":5861,"deps":[]},
-  "tone-flat-plain":{"src":"js/c/tone-flat-plain.6d6c149ad0.js","br":170,"deps":[]},
-  "tone-genki":{"src":"js/c/tone-genki.0d053215d2.js","br":5128,"deps":[]},
-  "tone-gentle-n":{"src":"js/c/tone-gentle-n.1dfbea5397.js","br":5513,"deps":[]},
-  "tone-gentleman":{"src":"js/c/tone-gentleman.52ce7f6394.js","br":18490,"deps":[]},
-  "tone-god":{"src":"js/c/tone-god.bda90889fc.js","br":3355,"deps":[]},
-  "tone-gyaru":{"src":"js/c/tone-gyaru.742fb4cb10.js","br":19774,"deps":[]},
-  "tone-hero":{"src":"js/c/tone-hero.71889d7b12.js","br":9057,"deps":[]},
-  "tone-kansai":{"src":"js/c/tone-kansai.66f991980f.js","br":23749,"deps":[]},
-  "tone-keigo-bossy":{"src":"js/c/tone-keigo-bossy.269e8a450b.js","br":937,"deps":[]},
-  "tone-keigo-flat":{"src":"js/c/tone-keigo-flat.57a7598bb3.js","br":928,"deps":[]},
-  "tone-keigo-sarc":{"src":"js/c/tone-keigo-sarc.eddb9c122e.js","br":1213,"deps":[]},
-  "tone-keigo-twist":{"src":"js/c/tone-keigo-twist.da6e6347d8.js","br":348,"deps":[]},
-  "tone-kohai":{"src":"js/c/tone-kohai.53a180168f.js","br":11270,"deps":[]},
-  "tone-mixed":{"src":"js/c/tone-mixed.f66530625c.js","br":36555,"deps":[]},
-  "tone-mukuchi":{"src":"js/c/tone-mukuchi.f3b657723d.js","br":19937,"deps":[]},
-  "tone-mukuchi-ne":{"src":"js/c/tone-mukuchi-ne.e982536514.js","br":344,"deps":[]},
-  "tone-mystic":{"src":"js/c/tone-mystic.2d72dd1eef.js","br":9617,"deps":[]},
-  "tone-noja":{"src":"js/c/tone-noja.070803a4c1.js","br":26355,"deps":[]},
-  "tone-ojou":{"src":"js/c/tone-ojou.824c6b62c6.js","br":7530,"deps":[]},
-  "tone-otaku":{"src":"js/c/tone-otaku.1a3eeea9ee.js","br":258,"deps":[]},
-  "tone-ronkyaku":{"src":"js/c/tone-ronkyaku.bcd2e11d9b.js","br":3316,"deps":[]},
-  "tone-sondai":{"src":"js/c/tone-sondai.cf3635c7b8.js","br":7787,"deps":[]},
-  "tone-tame":{"src":"js/c/tone-tame.5b65e274f0.js","br":392,"deps":[]},
-  "tone-tsun-n":{"src":"js/c/tone-tsun-n.eced75d279.js","br":6503,"deps":[]},
-  "tone-usan":{"src":"js/c/tone-usan.a2a06379d8.js","br":10837,"deps":[]},
-  "tone-yankee":{"src":"js/c/tone-yankee.aba652f5e5.js","br":16473,"deps":[]}},
+  "late":{"src":"js/c/late.70e83fd04f.js","br":124863,"deps":[]},
+  "pack-rel":{"src":"js/c/pack-rel.fd893a139f.js","br":250298,"deps":[]},
+  "scen-goukon":{"src":"js/c/scen-goukon.fa0aa0e8df.js","br":86042,"deps":["pack-rel"]},
+  "scen-classroom":{"src":"js/c/scen-classroom.13f3c2d1ae.js","br":61165,"deps":["pack-rel"]},
+  "scen-island":{"src":"js/c/scen-island.5c3084d576.js","br":87953,"deps":["pack-rel"]},
+  "scen-whiteroom":{"src":"js/c/scen-whiteroom.3a059abb9e.js","br":217160,"deps":["pack-rel"]},
+  "scen-omega":{"src":"js/c/scen-omega.eec9563c09.js","br":155569,"deps":["pack-rel"]},
+  "scen-br":{"src":"js/c/scen-br.fd608c5b9d.js","br":12386,"deps":["pack-rel"]},
+  "scen-trial":{"src":"js/c/scen-trial.7fa24edc20.js","br":9421,"deps":["pack-rel"]},
+  "scen-dungeon":{"src":"js/c/scen-dungeon.0bccf11ed9.js","br":117654,"deps":["pack-story"]},
+  "scen-massage":{"src":"js/c/scen-massage.a20968a73c.js","br":79424,"deps":["pack-solo"]},
+  "scen-hole":{"src":"js/c/scen-hole.acb5802a9c.js","br":90463,"deps":["pack-solo"]},
+  "scen-zombie":{"src":"js/c/scen-zombie.18f05a543e.js","br":165958,"deps":["pack-rel"]},
+  "scen-rpg":{"src":"js/c/scen-rpg.c19a8c4e2e.js","br":27062,"deps":["pack-story"]},
+  "scen-kaihen":{"src":"js/c/scen-kaihen.17a29f958a.js","br":131120,"deps":["pack-rel","pack-solo"]},
+  "scen-succubus":{"src":"js/c/scen-succubus.4363f8a048.js","br":95193,"deps":["pack-rel","pack-solo"]},
+  "scen-saimin":{"src":"js/c/scen-saimin.e6db2b2b19.js","br":112790,"deps":["pack-rel","pack-solo"]},
+  "scen-variety":{"src":"js/c/scen-variety.400850ee54.js","br":84080,"deps":["pack-rel","pack-solo"]},
+  "scen-locker":{"src":"js/c/scen-locker.09bcae298f.js","br":139780,"deps":["pack-rel","pack-solo"]},
+  "scen-jashin":{"src":"js/c/scen-jashin.2e016fcfb0.js","br":326119,"deps":["pack-story"]},
+  "scen-yakata":{"src":"js/c/scen-yakata.90f8924d3d.js","br":118579,"deps":["pack-story"]},
+  "scen-ship":{"src":"js/c/scen-ship.82a16a1ee2.js","br":223246,"deps":["pack-story"]},
+  "pack-story":{"src":"js/c/pack-story.f8204bc3c0.js","br":23745,"deps":["pack-rel"]},
+  "scen-jinro":{"src":"js/c/scen-jinro.13fe3b40e1.js","br":66224,"deps":["pack-story"]},
+  "scen-futari":{"src":"js/c/scen-futari.eb28689c98.js","br":11825,"deps":["pack-rel"]},
+  "pack-solo":{"src":"js/c/pack-solo.c857b74551.js","br":20033,"deps":[]},
+  "tone-base":{"src":"js/c/tone-base.e7a85c23eb.js","br":56063,"deps":[]},
+  "tone-ane":{"src":"js/c/tone-ane.b25759a890.js","br":7514,"deps":[]},
+  "tone-boku-n":{"src":"js/c/tone-boku-n.b095eb2c70.js","br":418,"deps":[]},
+  "tone-calm":{"src":"js/c/tone-calm.3e103c8228.js","br":8298,"deps":[]},
+  "tone-chara":{"src":"js/c/tone-chara.9128b1ab18.js","br":16495,"deps":[]},
+  "tone-chara-down":{"src":"js/c/tone-chara-down.adf789c742.js","br":1117,"deps":[]},
+  "tone-cool-soft":{"src":"js/c/tone-cool-soft.300cb21c07.js","br":699,"deps":[]},
+  "tone-darui":{"src":"js/c/tone-darui.67cd858560.js","br":8827,"deps":[]},
+  "tone-darui-lite":{"src":"js/c/tone-darui-lite.66938e9623.js","br":738,"deps":[]},
+  "tone-devoted-p":{"src":"js/c/tone-devoted-p.d8a54542a0.js","br":5861,"deps":[]},
+  "tone-flat-plain":{"src":"js/c/tone-flat-plain.2973dc41a9.js","br":170,"deps":[]},
+  "tone-genki":{"src":"js/c/tone-genki.cbb2c1c07b.js","br":5128,"deps":[]},
+  "tone-gentle-n":{"src":"js/c/tone-gentle-n.57434f2096.js","br":5511,"deps":[]},
+  "tone-gentleman":{"src":"js/c/tone-gentleman.8e810e83ff.js","br":18489,"deps":[]},
+  "tone-god":{"src":"js/c/tone-god.253c9a6643.js","br":3357,"deps":[]},
+  "tone-gyaru":{"src":"js/c/tone-gyaru.1fdcda3b23.js","br":19774,"deps":[]},
+  "tone-hero":{"src":"js/c/tone-hero.2a18ccf99c.js","br":9057,"deps":[]},
+  "tone-kansai":{"src":"js/c/tone-kansai.7ae79cc4c1.js","br":23748,"deps":[]},
+  "tone-keigo-bossy":{"src":"js/c/tone-keigo-bossy.7ccffe333f.js","br":937,"deps":[]},
+  "tone-keigo-flat":{"src":"js/c/tone-keigo-flat.543a9840b5.js","br":928,"deps":[]},
+  "tone-keigo-sarc":{"src":"js/c/tone-keigo-sarc.4ec9332453.js","br":1213,"deps":[]},
+  "tone-keigo-twist":{"src":"js/c/tone-keigo-twist.65e9e8b517.js","br":348,"deps":[]},
+  "tone-kohai":{"src":"js/c/tone-kohai.6fcf3805b3.js","br":11271,"deps":[]},
+  "tone-mixed":{"src":"js/c/tone-mixed.d53cfa3bf6.js","br":36555,"deps":[]},
+  "tone-mukuchi":{"src":"js/c/tone-mukuchi.365a33f9c6.js","br":19938,"deps":[]},
+  "tone-mukuchi-ne":{"src":"js/c/tone-mukuchi-ne.d6b67d0118.js","br":344,"deps":[]},
+  "tone-mystic":{"src":"js/c/tone-mystic.cb802d5916.js","br":9617,"deps":[]},
+  "tone-noja":{"src":"js/c/tone-noja.07364db446.js","br":26355,"deps":[]},
+  "tone-ojou":{"src":"js/c/tone-ojou.2fed2377f9.js","br":7530,"deps":[]},
+  "tone-otaku":{"src":"js/c/tone-otaku.f40f5dce3e.js","br":258,"deps":[]},
+  "tone-ronkyaku":{"src":"js/c/tone-ronkyaku.f87f387b11.js","br":3316,"deps":[]},
+  "tone-sondai":{"src":"js/c/tone-sondai.5df0fb77df.js","br":7787,"deps":[]},
+  "tone-tame":{"src":"js/c/tone-tame.d2d290648f.js","br":392,"deps":[]},
+  "tone-tsun-n":{"src":"js/c/tone-tsun-n.a64c41d57b.js","br":6502,"deps":[]},
+  "tone-usan":{"src":"js/c/tone-usan.bc88257c93.js","br":10836,"deps":[]},
+  "tone-yankee":{"src":"js/c/tone-yankee.c1d0f36f2a.js","br":16473,"deps":[]}},
 "order":["goukon","whiteroom","classroom","island","ship","zombie","jashin","yakata","omega","dungeon","massage","hole","kaihen","succubus","saimin","variety","locker","rpg","jinro"],
 "scen":{
   "goukon":{"id":"goukon","name":"合コン","kicker":"恋愛・社交","desc":"居酒屋の個室で一晩。酒が回るほど本音と衝動が出る。最後に誰と帰ったかで決着。","unit":"時刻","preRel":0,"lethal":false,"env":[{"id":"alcohol","label":"酒の進み"},{"id":"mood","label":"場の空気"},{"id":"second","label":"二次会"},{"id":"kingsgame","label":"王様ゲーム"},{"id":"mobs","label":"モブの参加者"},{"id":"rel","label":"住人どうしの関係"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"}],"stats":[{"id":"drink","label":"酒の強さ"},{"id":"looks","label":"見た目の自信"}],"card":{"desc":"居酒屋の個室で一晩、最後に誰と一緒に帰るか。","descLong":"居酒屋の個室で一晩の合コン。酒が回るほど本音と衝動があふれ出す。最後に誰と誰が一緒に帰ったかで決着がつく。","r18plot":"お持ち帰りの夜"},"tags":["relCore","night","race","food","drink","mob","romance"],"chunks":["scen-goukon"]},
@@ -1073,7 +1119,7 @@ details.zmap > summary:hover { background: var(--bg1); }
   "classroom":{"id":"classroom","name":"クラスメイト","kicker":"日常・一年間","desc":"同じクラスで過ごす一年。テスト、体育祭、文化祭、修学旅行。行事ごとに関係が動く。","unit":"月","preRel":4,"lethal":false,"factions":true,"maxCast":30,"env":[{"id":"grade","label":"学年"},{"id":"climate","label":"クラスの雰囲気"},{"id":"faction","label":"派閥が生まれる人数"},{"id":"bully","label":"いじめ"},{"id":"span","label":"期間"}],"stats":[{"id":"study","label":"学力"},{"id":"sport","label":"運動"}],"perFields":[{"id":"grade","label":"学年（学園全体のとき）","auto":"おまかせ（2年）","options":[{"id":"1","label":"1年生"},{"id":"2","label":"2年生"},{"id":"3","label":"3年生"}]}],"card":{"desc":"同じクラスで過ごす一年、行事ごとに関係が動く。","descLong":"同じクラスで過ごす一年間。テスト、体育祭、文化祭、修学旅行。行事のたびに、恋も友情も対立も少しずつ動いていく。"},"tags":["relCore","race","daily","birthday","food","romance"],"chunks":["scen-classroom"]},
   "island":{"id":"island","name":"無人島","kicker":"サバイバル・共同生活","desc":"漂着した島で救助を待つ日々。食料が尽きれば体力が削れ、人間関係も削れる。","unit":"日","preRel":0,"lethal":true,"factions":true,"env":[{"id":"days","label":"救助までの日数"},{"id":"res","label":"島の資源"},{"id":"storm","label":"天候の荒さ"},{"id":"faction","label":"派閥が生まれる人数"},{"id":"bugs","label":"虫を食べる描写"},{"id":"rescue","label":"救助"},{"id":"dark","label":"飢えの果て"},{"id":"danger","label":"危険な生き物"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"}],"stats":[{"id":"hp","label":"体力"},{"id":"know","label":"サバイバル知識"},{"id":"cook","label":"料理"},{"id":"fish","label":"釣り"},{"id":"hunt","label":"狩猟"},{"id":"build","label":"拠点づくり"},{"id":"luck","label":"運"}],"card":{"desc":"無人島で救助を待つ日々、飢えと疲れで仲も削れる。","descLong":"漂着した無人島で救助を待つ日々。食料が尽きれば体力が削れ、疲れと飢えで人間関係も削れていく。誰が最後まで残るか。"},"tags":["relCore","night","race","daily","food","death","romance"],"chunks":["scen-island"]},
   "ship":{"id":"ship","name":"宇宙船漂流記","kicker":"SF・サバイバル（2〜8人）","solo":true,"minCast":2,"maxCast":8,"desc":"故障した宇宙船で漂流する一年。閉ざされた船の中で役割を分け合い、新しい星を探す。星には資源・生命体・文明があり、探検するほど正体が明らかになる。辿り着けるのは、ただ一つの星だけ。","note":"※死の描写を含みます。","unit":"月","castHint":"2〜8人。「役割」で船長・エンジニア・航海士・船医・科学者・生物学者・通信士・保安員・料理人を決められます（決めなければ気質から）。","env":[{"id":"find","label":"星の見つかりやすさ"},{"id":"danger","label":"宇宙の過酷さ"},{"id":"supply","label":"積んでいる物資"},{"id":"contact","label":"未知との遭遇"},{"id":"romance","label":"恋愛の起こりやすさ"},{"id":"slewd","label":"夜の出来事の起こりやすさ"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"}],"stats":[{"id":"hp","label":"体力"},{"id":"tech","label":"技術"}],"perFields":[{"id":"role","label":"役割","auto":"おまかせ（気質から）","options":[{"id":"captain","label":"船長"},{"id":"engineer","label":"エンジニア"},{"id":"pilot","label":"航海士"},{"id":"doctor","label":"船医"},{"id":"scientist","label":"科学者"},{"id":"biologist","label":"生物学者"},{"id":"comms","label":"通信士"},{"id":"security","label":"保安員"},{"id":"cook","label":"料理人"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"故障した宇宙船で漂流する一年、辿り着ける星は一つ。","descLong":"故障した宇宙船で漂流する一年。役割を分け合いながら新しい星を探す。資源・生命体・文明のある星のうち、辿り着けるのはただ一つ。"},"tags":["relSome","night","race","undead","death","food","romance"],"chunks":["scen-ship"]},
-  "zombie":{"id":"zombie","name":"ゾンビの街","kicker":"サバイバル・パニック","desc":"ゾンビのはびこる街で7日間を生き延びる。開始地点はランダムで、街は9つのエリア。咬まれれば、いつかは向こう側へ。食料の奪い合い、錯綜する噂、狂人・宗教家・軍人・迷子の子。舞台は日本か、銃の出回る海外の街か。","note":"※死・自死・殺人の描写を含みます。","unit":"日","perUnit":4,"preRel":2,"lethal":true,"maxCast":20,"decay":0.97,"miniShare":0.9,"actRate":0.45,"env":[{"id":"region","label":"舞台"},{"id":"days","label":"生き延びる日数"},{"id":"outbreak","label":"ゾンビの多さ"},{"id":"turn","label":"発症までの早さ"},{"id":"rumor","label":"情報の錯綜"},{"id":"npc","label":"NPCの出現"},{"id":"end","label":"最終日"},{"id":"zraid","label":"略奪者に襲われる出来事"},{"id":"zlust","label":"ゾンビの性欲"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"}],"stats":[{"id":"hp","label":"体力"},{"id":"luck","label":"運"}],"perFields":[{"id":"fam","label":"家族","auto":"いない（設定しなければ）","options":[{"id":"none","label":"いない"},{"id":"in","label":"街のどこかにいる"},{"id":"out","label":"街の外にいる"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"ゾンビのはびこる街で、7日間を生き延びる。","descLong":"ゾンビのはびこる街で7日間を生き延びる。9つのエリアで食料を奪い合い、噂に惑わされ、咬まれればいつかは向こう側へ。"},"tags":["relCore","night","race","undead","death","mob","romance"],"chunks":["scen-zombie"]},
+  "zombie":{"id":"zombie","name":"ゾンビの街","kicker":"サバイバル・パニック","desc":"ゾンビのはびこる街で7日間を生き延びる。開始地点はランダムで、街は9つのエリア。咬まれれば、いつかは向こう側へ。食料の奪い合い、錯綜する噂、狂人・宗教家・軍人・迷子の子。舞台は日本か、銃の出回る海外の街か。","note":"※死・自死・殺人の描写を含みます。","unit":"日","perUnit":4,"preRel":2,"lethal":true,"maxCast":20,"decay":0.97,"miniShare":0.9,"actRate":0.45,"env":[{"id":"region","label":"舞台"},{"id":"days","label":"生き延びる日数"},{"id":"outbreak","label":"ゾンビの多さ"},{"id":"turn","label":"発症までの早さ"},{"id":"rumor","label":"情報の錯綜"},{"id":"npc","label":"NPCの出現"},{"id":"end","label":"最終日"},{"id":"zraid","label":"略奪者に襲われる出来事"},{"id":"zlust","label":"ゾンビの性欲"},{"id":"zpair","label":"関係のある二人の遭遇"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"}],"stats":[{"id":"hp","label":"体力"},{"id":"luck","label":"運"}],"perFields":[{"id":"fam","label":"家族","auto":"いない（設定しなければ）","options":[{"id":"none","label":"いない"},{"id":"in","label":"街のどこかにいる"},{"id":"out","label":"街の外にいる"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"ゾンビのはびこる街で、7日間を生き延びる。","descLong":"ゾンビのはびこる街で7日間を生き延びる。9つのエリアで食料を奪い合い、噂に惑わされ、咬まれればいつかは向こう側へ。"},"tags":["relCore","night","race","undead","death","mob","romance"],"chunks":["scen-zombie"]},
   "jashin":{"id":"jashin","name":"邪神村RTA","kicker":"ホラー・脱出（1〜6人）","solo":true,"maxCast":6,"minCast":1,"desc":"地図にない山奥の村に迷い込んだ住人たち。村には得体の知れない神が祀られ、祭りの夜が近づいている。神の正体を示す手がかりを集め、対抗策を突き止めて、生きて村を出られるか。何時間で脱出できたかを記録する。","note":"※ホラー表現（死・失踪）を含みます。登場人物はすべて成人として扱います。","unit":"時間","castHint":"1〜6人で挑みます（多すぎると雰囲気が出ないため6人まで）。「職業」で、手がかりの見つけやすさや、できることが変わります。「目標」（恋人を作る・借金返済のために盗む・誰かを殺す・村の儀式を乗っ取る・儀式で別の神を呼ぶ・事件を解決する など）と職業の組み合わせで、振る舞いや手口が変わります。おまかせなら気質と職業から抽選し、探偵はほとんど「事件を解決する」になります。仲間の失踪や死で緊迫感が高まると、生きて帰りたい人は自分の目標より脱出や村の秘密を優先します。","env":[{"id":"god","label":"祀られている神"},{"id":"hours","label":"儀式までの時間"},{"id":"hostile","label":"村人の敵意"},{"id":"ev","label":"怪異の頻度"},{"id":"romance","label":"恋愛の起こりやすさ"},{"id":"npc","label":"記者と警察官"},{"id":"amnesia","label":"記憶を失っている人"},{"id":"tour","label":"シークレットツアー"},{"id":"alien","label":"宇宙エンド"},{"id":"relic","label":"時を戻すアーティファクト"},{"id":"jlewd","label":"住人どうしの夜の起こりやすさ"},{"id":"jmob","label":"村人・神の夜の起こりやすさ"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"}],"stats":[{"id":"luck","label":"運"},{"id":"stamina","label":"体力"}],"perFields":[{"id":"job","label":"職業","auto":"おまかせ（気質から）","options":[{"id":"civ","label":"一般人"},{"id":"journalist","label":"記者"},{"id":"muno","label":"無能"},{"id":"celeb","label":"大物"},{"id":"writer","label":"作家"},{"id":"manager","label":"マネージャー"},{"id":"occult","label":"オカルト研究家"},{"id":"psychic","label":"霊能力者"},{"id":"seer","label":"占い師"},{"id":"prof","label":"教授"},{"id":"student","label":"生徒"},{"id":"ghost","label":"心霊研究家"},{"id":"musician","label":"ミュージシャン"},{"id":"police","label":"警察官"},{"id":"folk","label":"民俗学者"},{"id":"streamer","label":"配信者"},{"id":"doctor","label":"医師"},{"id":"sleuth","label":"名探偵"},{"id":"ponkotsu","label":"ポンコツ探偵"},{"id":"priest","label":"神職"},{"id":"lawyer","label":"弁護士"},{"id":"accountant","label":"経理"},{"id":"sales","label":"営業"},{"id":"nurse","label":"看護師"},{"id":"mechanic","label":"整備士"},{"id":"farmer","label":"農家"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"山奥の村の神の正体を暴き、祭りの夜までに脱出。","descLong":"地図にない山奥の村には、得体の知れない神が祀られている。祭りの夜までに神の正体と対抗策を突き止め、村から脱出せよ。"},"tags":["relSome","night","race","job","undead","death","food","drink","mob","romance"],"chunks":["scen-jashin"]},
   "yakata":{"id":"yakata","name":"吹雪の館の殺人","kicker":"ミステリー（2〜10人）","solo":true,"minCast":2,"maxCast":10,"desc":"吹雪の山で遭難した一行が辿り着いた、地図にない館。電話線は切れ、橋は落ちた。その夜、最初の死体が見つかる――。探偵役は推理で犯人を追い、犯人は痕跡を消して逃げ切ろうとする。犯人・動機・現場・トリックは毎回ちがう。","note":"※殺人の描写を含みます。登場人物はすべて成人として扱います。","unit":"日","castHint":"2人から遊べます。「役割」で探偵（ポンコツ探偵も可）を1〜4人決めてください。決めなければ、いちばん推理力の高い人が探偵になります。助手は探偵のバディになります。館の主を決めなければ、館の主は登場人物ではない人物で、最初の犠牲者になります。犯人と動機は毎回抽選です（探偵が犯人のことも）。","env":[{"id":"days","label":"吹雪が止むまで"},{"id":"serial","label":"連続殺人の起きやすさ"},{"id":"hard","label":"トリックの難しさ"},{"id":"acc","label":"共犯者"},{"id":"motive","label":"動機"},{"id":"ylewd","label":"夜の出来事の起こりやすさ"},{"id":"ypleasure","label":"快楽殺人の起きやすさ"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"}],"stats":[{"id":"wit","label":"推理力"},{"id":"nerve","label":"度胸"}],"perFields":[{"id":"role","label":"役割","auto":"おまかせ（ゲストの職業を気質から）","options":[{"id":"detective","label":"名探偵"},{"id":"ponkotsu","label":"ポンコツ探偵"},{"id":"assistant","label":"助手"},{"id":"host","label":"館の主"},{"id":"butler","label":"執事・メイド"},{"id":"heir","label":"館の主の親族"},{"id":"civ","label":"一般人"},{"id":"celeb","label":"芸能人"},{"id":"writer","label":"作家"},{"id":"manager","label":"マネージャー"},{"id":"occult","label":"オカルト研究家"},{"id":"psychic","label":"霊能力者"},{"id":"mage","label":"魔術師"},{"id":"seer","label":"占い師"},{"id":"prof","label":"教授"},{"id":"student","label":"学生"},{"id":"doctor","label":"医師"},{"id":"police","label":"警察官"},{"id":"streamer","label":"配信者"},{"id":"priest","label":"神職"},{"id":"lawyer","label":"弁護士"},{"id":"reporter","label":"記者"},{"id":"accountant","label":"経理"},{"id":"architect","label":"建築家・大工"},{"id":"mechanic","label":"整備士・エンジニア"},{"id":"nurse","label":"看護師"},{"id":"chef","label":"料理人・バーテンダー"},{"id":"stylist","label":"美容師"},{"id":"actor","label":"俳優"},{"id":"sales","label":"営業"}]},{"id":"motive","label":"犯人になったら（動機）","auto":"おまかせ（全体の設定・抽選）","options":[{"id":"inherit","label":"遺産"},{"id":"insurance","label":"保険金"},{"id":"revenge","label":"復讐"},{"id":"jealous","label":"嫉妬"},{"id":"lovekill","label":"片想いの人の恋人を"},{"id":"pleasure","label":"楽しかったから"},{"id":"impulse","label":"かっとなって"},{"id":"silence","label":"口封じ"},{"id":"blackmail","label":"強請られていた"},{"id":"defense","label":"殺される前に"},{"id":"exchange","label":"交換殺人"},{"id":"mercy","label":"楽にしてあげたかった"},{"id":"experiment","label":"儀式・実験"},{"id":"mistake","label":"人違い"},{"id":"fame","label":"名声のため"},{"id":"loyal","label":"命じられて"},{"id":"despair","label":"全部終わらせたかった"},{"id":"obsess","label":"歪んだ執着"},{"id":"accident","label":"事故の隠蔽"},{"id":"split","label":"もう一人の自分"},{"id":"framesuicide","label":"被害者の自作自演"}]},{"id":"know","label":"検死の知識","auto":"おまかせ（気質から）","options":[{"id":"none","label":"なし"},{"id":"some","label":"少しある（看護師・救急隊員・刑事など）"},{"id":"expert","label":"専門家（医師・監察医・鑑識）"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"吹雪に閉ざされた館の殺人、探偵と犯人の知恵比べ。","descLong":"吹雪の山で辿り着いた、地図にない館。橋は落ち、最初の死体が見つかる。探偵は推理で追い、犯人は痕跡を消して逃げ切る。"},"tags":["relSome","night","race","undead","death"],"chunks":["scen-yakata"]},
   "omega":{"id":"omega","name":"オメガバース","kicker":"恋愛・R18","desc":"α・β・Ωの第二性がある世界で、関係の結末（番・破局・片想いのまま…など43通り）が決まるまで見守る。複数人なら誰かが結ばれた時点で終わる。発情期、運命の番（気づく瞬間も）、スイッチ、職業の事情、探偵と助手のバディ、愛憎の寝取り、執着（ヤンデレ）も。※成人キャラクター向け","note":"※オメガバースの二次創作的な設定を下敷きにしたパロディです。","unit":"月","perUnit":2,"preRel":4,"lethal":false,"decay":0.985,"miniShare":0.6,"priBoost":2.6,"env":[{"id":"heat","label":"発情期の重さ"},{"id":"destiny","label":"運命の抗えなさ"},{"id":"fate","label":"運命の番の現れやすさ"},{"id":"fateFrom","label":"運命の番の相手"},{"id":"society","label":"α優位の社会（Ωへの偏見）"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"}],"stats":[{"id":"charm","label":"フェロモン"}],"perFields":[{"id":"sex","label":"第二性","auto":"おまかせ（ランダム）","options":[{"id":"a","label":"α"},{"id":"b","label":"β"},{"id":"o","label":"Ω"}]},{"id":"sw","label":"スイッチ","auto":"おまかせ","options":[{"id":"no","label":"しない"},{"id":"yes","label":"する体質"}]},{"id":"job","label":"職業","auto":"おまかせ（気質から）","options":[{"id":"prof","label":"大学教授"},{"id":"research","label":"研究者"},{"id":"archaeo","label":"考古学者"},{"id":"librarian","label":"図書館司書"},{"id":"teacher","label":"高校教師"},{"id":"doctor","label":"医師"},{"id":"nurse","label":"看護師"},{"id":"pharma","label":"薬剤師"},{"id":"counsel","label":"心理カウンセラー"},{"id":"carer","label":"介護士"},{"id":"police","label":"警察官"},{"id":"detective","label":"刑事"},{"id":"sdf","label":"自衛官"},{"id":"fire","label":"消防士"},{"id":"lawyer","label":"弁護士"},{"id":"pi","label":"探偵"},{"id":"assistant","label":"探偵助手"},{"id":"prosecutor","label":"検事"},{"id":"novelist","label":"小説家"},{"id":"manga","label":"漫画家"},{"id":"painter","label":"画家"},{"id":"musician","label":"ミュージシャン"},{"id":"designer","label":"デザイナー"},{"id":"photo","label":"カメラマン"},{"id":"editor","label":"編集者"},{"id":"actor","label":"俳優"},{"id":"idol","label":"アイドル"},{"id":"model","label":"モデル"},{"id":"reporter","label":"新聞記者"},{"id":"streamer","label":"配信者"},{"id":"manager","label":"マネージャー"},{"id":"office","label":"会社員"},{"id":"sales","label":"営業マン"},{"id":"ceo","label":"社長"},{"id":"secretary","label":"秘書"},{"id":"banker","label":"銀行員"},{"id":"hotelier","label":"ホテルオーナー"},{"id":"investor","label":"投資家"},{"id":"engineer","label":"エンジニア"},{"id":"programmer","label":"プログラマー"},{"id":"mechanic","label":"整備士"},{"id":"architect","label":"建築家"},{"id":"chef","label":"料理人"},{"id":"patissier","label":"パティシエ"},{"id":"bartender","label":"バーテンダー"},{"id":"cafe","label":"カフェ店員"},{"id":"stylist","label":"美容師"},{"id":"host","label":"ホスト"},{"id":"shopowner","label":"店主"},{"id":"staff","label":"従業員"},{"id":"carpenter","label":"大工"},{"id":"driver","label":"運送ドライバー"},{"id":"farmer","label":"農家"},{"id":"athlete","label":"スポーツ選手"},{"id":"yakuza","label":"ヤクザ"},{"id":"swindler","label":"詐欺師"},{"id":"student","label":"大学生"},{"id":"neet","label":"無職"}]},{"id":"jobst","label":"職歴","auto":"おまかせ","options":[{"id":"now","label":"現職"},{"id":"ex","label":"元〇〇（今は辞めている）"}]},{"id":"hide","label":"隠れΩ","auto":"おまかせ","options":[{"id":"yes","label":"第二性を隠して働く（Ωのとき）"},{"id":"no","label":"隠さない"}]},{"id":"scent","label":"フェロモンの匂い"}],"card":{"desc":"α・β・Ωの世界で、関係の結末（全37通り）を見守る。","descLong":"α・β・Ωの第二性がある世界。発情期や運命の番、職業の事情に揺れながら、関係の結末（全37通り）が決まるまで見守る。"},"tags":["relCore","night","race","job","daily","food","drink","mob","romance"],"chunks":["scen-omega"]},
@@ -1088,7 +1134,7 @@ details.zmap > summary:hover { background: var(--bg1); }
   "rpg":{"id":"rpg","name":"ダンジョンRPG","kicker":"パーティ・冒険","desc":"パーティを組んでダンジョンへ。階ごとにランダムな戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、誰が宝箱に手を伸ばし、どこで引き返すのか。地下30階の主を倒せば踏破、引き返せば帰還、全員倒れれば全滅。","solo":true,"minCast":1,"maxCast":6,"unit":"階","castHint":"1〜6人のパーティで潜ります。職業は「おまかせ」ならエゴグラムから決まります。前に出るか、宝箱を開けるか、引き返すかは気質の数値で決まります。踏破できるのは一割ほど。多くは途中で引き返します。","env":[{"id":"floors","label":"目標の階層"},{"id":"danger","label":"魔物の強さ"},{"id":"loot","label":"お宝の多さ"},{"id":"retreat","label":"撤退"}],"stats":[{"id":"str","label":"腕っぷし"},{"id":"luck","label":"運"},{"id":"int","label":"知能"}],"perFields":[{"id":"job","label":"職業","auto":"おまかせ（エゴグラムから）","options":[{"id":"warrior","label":"戦士"},{"id":"mage","label":"魔法使い"},{"id":"priest","label":"僧侶"},{"id":"thief","label":"盗賊"},{"id":"hunter","label":"狩人"},{"id":"bard","label":"吟遊詩人"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"パーティでダンジョンに潜り、いくら持ち帰れるか。","descLong":"パーティを組んでダンジョンへ。階ごとに戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、どこで引き返し、いくら持ち帰れるか。"},"tags":["relSome","race","job","undead","death"],"chunks":["scen-rpg"]},
   "jinro":{"id":"jinro","name":"人狼","kicker":"ゲーム・推理","desc":"住人どうしで人狼ゲーム。配役は人狼・狩人・占い師・霊媒師・村人からランダム。人狼は性格で戦法（騙り・潜伏・仲間切り・庇い合い）を選び、村は仕切り役しだいで方針（ローラー・真贋の見極め・グレー吊り）が変わる。信頼と協力、そして裏切り。知能は性格とは別に決まる。","solo":true,"minCast":4,"maxCast":15,"unit":"日","castHint":"4〜15人。配役の数は環境値で決めます（人狼は全体の半分未満に自動で調整）。ゲームなので、襲う相手や投票先は既存の関係と関係なく、推理と立ち回りで決まります。","env":[{"id":"wolves","label":"人狼の数"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"lovemode","label":"好意モード"},{"id":"prize","label":"賞品"},{"id":"prizeText","label":"賞品（自由に書く）"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"},{"id":"wolfnight","label":"人狼の勝利の夜"}],"stats":[{"id":"int","label":"知能"},{"id":"poker","label":"ポーカーフェイス"}],"perFields":[{"id":"role","label":"配役","auto":"ランダム","options":[{"id":"wolf","label":"人狼"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"vill","label":"村人"}]}],"card":{"desc":"住人どうしの人狼ゲーム、騙りと推理と裏切り。","descLong":"住人どうしで人狼ゲーム。人狼は性格で騙りや潜伏を選び、村は仕切り役しだいで方針が変わる。信頼と協力、そして裏切り。"},"tags":["relSome","night","race","death"],"chunks":["scen-jinro"]}},
 "tones":{"auto":["aniki","proud","stern","tsun","gentle","devoted","cool","free","shy","polite"],"pack":{"mixed":"tone-mixed","noja":"tone-noja","kansai":"tone-kansai","mukuchi":"tone-mukuchi","gentleman":"tone-gentleman","yankee":"tone-yankee","tsun_n":"tone-tsun-n","gentle_n":"tone-gentle-n","ane":"tone-ane","devoted_p":"tone-devoted-p","kohai":"tone-kohai","calm":"tone-calm","usan":"tone-usan","ojou":"tone-ojou","hero":"tone-hero","gyaru":"tone-gyaru","chara":"tone-chara","mystic":"tone-mystic","genki":"tone-genki","darui":"tone-darui","sondai":"tone-sondai","cool_soft":"tone-cool-soft","boku_n":"tone-boku-n","god":"tone-god","darui_lite":"tone-darui-lite","keigo_sarc":"tone-keigo-sarc","keigo_bossy":"tone-keigo-bossy","keigo_flat":"tone-keigo-flat","keigo_twist":"tone-keigo-twist","mukuchi_ne":"tone-mukuchi-ne","otaku":"tone-otaku","ronkyaku":"tone-ronkyaku","chara_down":"tone-chara-down","flat_plain":"tone-flat-plain","tame":"tone-tame"}}};</script>
-<script src="js/c/core.9858731bad.js"></script>
+<script src="js/c/core.0706cea666.js"></script>
 <!-- scripts:end -->
 
 </body></html>

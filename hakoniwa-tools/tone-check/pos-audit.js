@@ -293,6 +293,8 @@ const { openBuild } = require('./lib.js');
               if (m && /[、][^、。]{1,20}(?:は|が|も)[^、。]*$/.test(m[0]) && !new RegExp('[、]' + n0).test(m[0])) continue;
               /* 名前のあとに、ほかの住人が主語で出てくる（「ユキノが逃げようとするたびに、カオルは腰を掴んで…穿った」） */
               if (m && PC.some(c => c !== T && c.name.indexOf(n0) < 0 && new RegExp('、' + c.name + '(?:は|が|も)').test(m[0].slice(n0.length)))) continue;
+              /* 名前の直前（同じ文の中）に、ほかの住人が主語で立っている（「カオルはミナトが達しても止まらず…突き上げた」：突くのはカオル） */
+              if (m && PC.some(c => c !== T && c.name.indexOf(n0) < 0 && new RegExp(c.name + '(?:は|が|も)[^。「」、]{0,12}$').test(t.slice(Math.max(0, m.index - 30), m.index)))) continue;
               if (m) { const i0 = m.index; out.n.V4++; out.bySc[sc].V4++; if (out.V4.length < 400) out.V4.push(sc + '#' + s + ' | 攻め(女)=' + n0 + ' | …' + t.slice(Math.max(0, i0 - 10), i0 + m[0].length + 10) + '…'); break; }
             }
           }

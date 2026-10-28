@@ -356,7 +356,8 @@
       why += '／逃げるしかなかった';
     }
     /* 誰かが咬まれる・倒れる */
-    var risk = HK.clamp(A.z / 100 * 0.2 * (fight ? 0.8 : 1) * (part(ctx) === 3 ? 1.25 : 1), 0.03, 0.6);
+    /* 少人数ほど、誰かが捕まりにくい（mood-dial.js の HK.Dark.few。6人以上は 1） */
+    var risk = HK.clamp(A.z / 100 * 0.2 * (fight ? 0.8 : 1) * (part(ctx) === 3 ? 1.25 : 1), 0.03, 0.6) * HK.Dark.few(ctx);
     if (rng() < risk) {
       var v = HK.weighted(rng, g, function (c) { return 1.2 / (0.6 + luck(ctx, c) * 0.25 + (c.weapon ? c.weapon.pow : 0) * 0.04) * (c.hp < 50 ? 1.4 : 1) * (c.z.bitten ? 0.6 : 1); });
       var res = victim(ctx, g, v, A);
@@ -380,7 +381,11 @@
     eaten: L('――{v}は群れの中に引きずり込まれた。伸ばした手は、誰にも届かなかった。|――{v}は転んだ。起き上がる前に、群れが覆いかぶさった。'),
     save: L('――{s}は{v}の前に飛び出し、{v}の代わりに腕を咬まれた。「行って！｜行け！｜行ってください！」|――{s}は{v}を扉の内側へ突き飛ばし、自分は外に残った。扉の向こうで、{s}の叫び声が途切れた。'),
     shut: L('――{x}は、{v}がまだ外にいるのを見て、それでも扉を閉めて鍵をかけた。扉を叩く{v}の声が、すぐに悲鳴に変わった。|――{x}は{v}の手を振りほどいて、一人で非常口へ走った。'),
-    bait: L('――{x}は、すぐ後ろにいた{v}の背中を、群れの方へ突き飛ばした。そのあいだに、{x}は逃げ切った。|――{x}は{v}の足を引っかけた。倒れた{v}に群れが群がる隙に、{x}は姿を消した。')
+    bait: L('――{x}は、すぐ後ろにいた{v}の背中を、群れの方へ突き飛ばした。そのあいだに、{x}は逃げ切った。|――{x}は{v}の足を引っかけた。倒れた{v}に群れが群がる隙に、{x}は姿を消した。'),
+    /* 少人数で、呑まれかけたところを引き戻される（2026-10-28。{o}＝引き戻した人） */
+    drag: L('――{v}は群れの中に引きずり込まれかけた。{o}が{v}の腕を掴み、力ずくで引き戻した。この人数では、一人欠ければ残った者も長くはもたない。{v}の脚は深く裂かれ、しばらくは自分で歩けそうになかった。|' +
+      '――{v}は転んだ。覆いかぶさってくる群れの中から、{o}が{v}の襟首を掴んで引きずり出した。「＠{o}＠一人でも欠けたら終わりなんだから｜一人でも欠けたら終わりだ｜一人でも欠けたら終わりなんです」――{o}の声は震えていた。{v}は肩を深く裂かれ、その夜から熱を出して寝込んだ。'),
+    dragAlone: L('――{v}は群れの中に引きずり込まれかけたが、瓦礫の隙間に転がり込んで、どうにか難を逃れた。脚を深く裂かれ、しばらくは動けそうになかった。|――{v}は群れに押し倒されかけて、必死に這って逃げた。背中を深く引き裂かれ、物陰で丸一日、起き上がれなかった。')
   };
   function victim(ctx, g, v, A) {
     var rng = ctx.rng, out = { text: '', why: '', mag: 28, with: [] };
@@ -414,7 +419,18 @@
       ctx.mod(v, cold, { aff: -40, trust: -60, ten: 40 });
       out.mag = 45; return out;
     }
-    if (v.hp < 40 && rng() < 0.35 * HK.Dark.f(ctx, 'kill') || rng() < 0.06 * HK.Dark.f(ctx, 'kill')) {
+    /* 群れに呑まれる。少人数（HK.Dark.few）なら、そのうちの一部は重傷で引き戻される（乱数の引き方は前と同じ。6人以上は前と同じ結果） */
+    var dk = HK.Dark.f(ctx, 'kill'), e1 = 0.35 * dk, e2 = 0.06 * dk, r1 = v.hp < 40 ? rng() : 1, r2 = r1 < e1 ? 1 : rng();
+    var near = r1 < e1 ? r1 / e1 : r2 < e2 ? r2 / e2 : 1;
+    if (near < 1 && near >= HK.Dark.few(ctx)) {
+      var dr = others.filter(function (o) { return o.alive; }).sort(function (x, y) { return ctx.R(y, v).aff - ctx.R(x, v).aff; })[0];
+      v.hp = Math.max(6, v.hp - 25); if (v.z.wound < 0) v.z.wound = ctx.stepIndex; ctx.stress(v, 20);
+      out.text = ctx.pick(dr ? VIC.drag : VIC.dragAlone).replace(/\{v\}/g, v.name).replace(/\{o\}/g, dr ? dr.name : '');
+      out.why = v.name + 'は群れに呑まれかけたが、重傷で済んだ（少人数：' + ctx.chars.length + '人。一人欠ければ残りも危うい）';
+      if (dr) { ctx.mod(v, dr, { aff: 12, trust: 15 }); out.with = [dr]; }
+      out.mag = 34; return out;
+    }
+    if (near < 1) {
       out.text = ctx.pick(VIC.eaten).replace(/\{v\}/g, v.name);
       out.why = v.name + 'の体力の消耗（' + Math.max(0, Math.round(v.hp)) + '）と運';
       ctx.kill(v, null, A.name + 'でゾンビの群れに呑まれた');
@@ -450,12 +466,18 @@
     shinju: L('{a}は{b}に咬み跡を見せた。{b}は泣かなかった。「じゃあ、一緒に行こう｜では、一緒に行こう｜では、一緒に行きましょう」――二人は手を繋いだまま、屋上の縁に立った。|「あなたのいない世界で生き延びて、何になるの｜あなたのいない世界で生き延びて、何になる｜あなたのいない世界で生き延びて、何になるんですか」{b}はそう言って、{a}の手を握った。朝、二人は寄り添ったまま冷たくなっていた。|{a}と{b}は、最後の夜を二人きりで過ごした。残った薬を分け合って飲み、互いの名前を呼びながら眠った。'),
     cut: L('{a}は噂を信じた。ベルトで二の腕をきつく縛り、{w}を振り上げた。|「切り落とせば助かるかもしれない｜＝｜切り落とせば助かるかもしれません」――{a}は歯を食いしばり、自分の腕に{w}を当てた。')
   };
+  /* 少人数のとき、咬み傷が浅くて感染しない割合（(1 - few) に掛ける。2人で約5割・4人で約3割） */
+  var FEW_CLEAN = 1;
+  var FEW_CLEAN_T = L('{a}の咬み跡は赤く腫れたが、熱は出なかった。……どうやら、感染はしなかったらしい。|{a}は一晩じゅう、熱が出るのを待っていた。朝になっても、額は冷たいままだった。歯は、皮膚の奥までは届いていなかったらしい。');
   function infection(ctx) {
     var s = ctx.stepIndex;
     ctx.present().forEach(function (c) {
       var z = c.z;
       if (!z.bitten || !c.alive || c.out) return;
-      if (z.dkAt !== z.bitten.at) { z.dkAt = z.bitten.at; if (HK.Dark.on(ctx, 'kill') === 'mild' && ctx.rng() < 0.75) { z.bitten = null; z.turnAt = -1; if (z.aware) ctx.act2({ actors: [c], cat: 'solo', text: ctx.t('{a}の咬み跡は赤く腫れたが、熱は出なかった。……どうやら、感染はしなかったらしい。', c), why: '傷が浅かった（' + HK.Dark.tag(ctx, 'kill') + '）', mag: 18 }); return; } }   /* 展開の重さ（mood-dial.js） */
+      if (z.dkAt !== z.bitten.at) { z.dkAt = z.bitten.at; if (HK.Dark.on(ctx, 'kill') === 'mild' && ctx.rng() < 0.75) { z.bitten = null; z.turnAt = -1; if (z.aware) ctx.act2({ actors: [c], cat: 'solo', text: ctx.t('{a}の咬み跡は赤く腫れたが、熱は出なかった。……どうやら、感染はしなかったらしい。', c), why: '傷が浅かった（' + HK.Dark.tag(ctx, 'kill') + '）', mag: 18 }); return; }   /* 展開の重さ（mood-dial.js） */
+        /* 少人数（HK.Dark.few）：傷が浅く、感染しないことがある（6人以上は乱数を引かない） */
+        var fw = HK.Dark.few(ctx);
+        if (fw < 1 && ctx.rng() < (1 - fw) * FEW_CLEAN) { z.bitten = null; z.turnAt = -1; if (z.aware) ctx.act2({ actors: [c], cat: 'solo', text: ctx.t(ctx.pick(FEW_CLEAN_T), c), why: '傷が浅かった（運がよかった）', mag: 18 }); return; } }
       if (!z.aware && s >= z.turnAt - 1) { z.aware = true; ctx.act2({ actors: [c], cat: 'solo', text: ctx.t(ctx.pick(BITE.fever), c), why: '気づかないうちに感染していた（引っかき傷）', mag: 20 }); }
       if (z.aware && !z.decided && s > z.bitten.at - 1) { z.decided = true; decide(ctx, c); }
       if (Z.shinjuCheck && c.alive && !c.out && Z.shinjuCheck(ctx, c)) return;
@@ -649,11 +671,13 @@
     var hes = ctx.R(T, c).aff > 45, t2 = hes ? zfill(ctx.pick(ZA.hesitate), { v: T.name, z: c.name }) : '';
     var r = rng() - (hes ? 0.15 : 0) + (T.weapon ? T.weapon.pow * 0.02 : 0) + luck(ctx, T) * 0.03;
     var why = (zp.type === 'bond' && zp.target === T.i ? 'ゾンビになった' + c.name + 'は、' + T.name + 'だけを追ってきた' : 'ゾンビになった' + c.name + 'は、目の前にいた' + T.name + 'を襲った') + (hes ? '／' + T.name + 'の迷い（好意 ' + Math.round(ctx.R(T, c).aff) + '）' : '');
-    if (r < 0.22 && Z.riseTogether && rng() < Z.riseChance(ctx, zp, T)) {
+    /* 少人数（HK.Dark.few）：喰われる分かれを狭め、その分は咬まれるだけに */
+    var eatP = 0.22 * HK.Dark.few(ctx);
+    if (r < eatP && Z.riseTogether && rng() < Z.riseChance(ctx, zp, T)) {
       /* 喰われるかわりに、その場でゾンビになって一緒にさまよう */
       ctx.pair(T, c).zbite = c.i;
       Z.riseTogether(ctx, zp, T, { pre: t2 });
-    } else if (r < 0.22) {
+    } else if (r < eatP) {
       ctx.pair(T, c).zkill = c.i;
       ctx.act2({ actors: actors, cat: 'death', text: t2 + zfill(ctx.pick(ZA.eat), { v: T.name, z: c.name }), why: why, mag: 50 });
       ctx.kill(T, c, 'ゾンビになった' + c.name + 'に喰い殺された');
@@ -677,7 +701,7 @@
       if (z.wound < 0 || z.bitten) return;
       var age = ctx.stepIndex - z.wound;
       if (age >= 2 && !z.fever && ctx.rng() < 0.1 + ctx.stat(c, 'hp') * 0.03) { z.wound = -1; return; }
-      if (age >= 4 && ctx.rng() < 0.3 * HK.Dark.f(ctx, 'kill')) {
+      if (age >= 4 && ctx.rng() < 0.3 * HK.Dark.f(ctx, 'kill') * HK.Dark.few(ctx)) {
         c.hp -= 4 + ctx.rng.int(6); ctx.stress(c, 5);
         if (!z.fever) { z.fever = true; ctx.act2({ actors: [c], cat: 'solo', text: ctx.t(ctx.pick(Z.FESTER || ['{a}の傷口が赤く腫れ、熱を持ち始めた。']), c), why: '負傷から ' + age + ' 区切り、手当てができていない', mag: 15 }); }
         if (c.hp <= 0) ctx.kill(c, null, '傷口からの感染症で、高熱にうなされたまま');
@@ -690,7 +714,7 @@
       var z = c.z;
       if (z.food > 0) { z.food--; z.hunger = Math.max(0, z.hunger - 1); return; }
       z.hunger++;
-      c.hp -= (5 + z.hunger * 5 - ctx.stat(c, 'hp')) * HK.Dark.f(ctx, 'wipe');
+      c.hp -= (5 + z.hunger * 5 - ctx.stat(c, 'hp')) * HK.Dark.f(ctx, 'wipe') * HK.Dark.few(ctx);
       ctx.stress(c, 6 + z.hunger * 3);
       if (z.hunger === 2 || (z.hunger >= 3 && rng() < 0.4)) ctx.act2({ actors: [c], cat: 'solo', text: ctx.t(rng.pick(Z.HUNGER || ['{a}の手持ちの食料は、もう何もない。水だけで、また一日が終わった。']), c), why: '食料が尽きて ' + z.hunger + ' 日目', mag: 10 });
       if (c.hp <= 0) ctx.kill(c, null, '飢えと渇きで倒れた');
@@ -710,7 +734,7 @@
       var mates = here(ctx, c), grief = c.flags.grief != null;
       var risk = (c.stress - 76) / 100 + (c.z.bitten && c.z.aware ? 0.06 : 0) + (grief ? 0.05 : 0) + (c.z.family && c.z.family.heard ? 0.04 : 0) - c.tr.fc * 0.06 - c.tr.np * 0.03 - c.tr.cp * 0.03;
       if (!mates.length) risk *= 1.4;
-      if (risk <= 0 || rng() > risk * 0.35 * HK.Dark.f(ctx, 'kill')) return;
+      if (risk <= 0 || rng() > risk * 0.35 * HK.Dark.f(ctx, 'kill') * HK.Dark.few(ctx)) return;
       /* 一人では置いていけない */
       var dep = mates.filter(function (o) { return ctx.R(c, o).aff > 45 && (o.stress > 40 || (o.z.bitten && o.z.aware) || tieT(ctx, c, o) === 'parent' || tieT(ctx, c, o) === 'lover'); })[0];
       if (dep && c.tr.ac + c.tr.np + c.tr.jealous > 1.2 && rng() < 0.7) {

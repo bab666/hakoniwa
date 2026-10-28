@@ -294,7 +294,8 @@
     /* 一場面のどの段で攻めに言わせるか（攻めの台詞が全部で2〜3本になるように）。
        have … すでに攻めの台詞がある段（{ start, in, mid, peak } を真に。始まり・繋がる段・最中・山場の文に攻めの台詞が書いてあるとき）、
        o.n … すでにある攻めの台詞の本数（省くと have の数）、o.after … 呼ぶ側が事後の文を続けるなら真（事後より山場で言わせやすくする）、o.target … 目標の本数（省くと 2〜3）。
-       足りない分を、終わり（山場か事後）→ 始まり → 途中（繋がる段か前戯）の順に足す。足りていても、始まりと終わりのどちらにもなければ一つ足す */
+       足りない分を、終わり（山場か事後）→ 始まり → 途中（繋がる段か前戯）の順に足す。足りていても、始まりと終わりのどちらにもなければ一つ足す。
+       o.top・o.bot（・o.rel）を渡すと、その場面の言葉責め・焦らしの回数を先に決め（moan-cut.js の HK.Moan.slotsFix）、足りない段（前戯・最中・繋がる段）を足す */
     slots: function (S, have, o) {
       have = have || {}; o = o || {};
       var r = rngOf(S), s = {}, n = o.n != null ? o.n : ['start', 'fore', 'in', 'mid', 'peak', 'after'].filter(function (k) { return have[k]; }).length;
@@ -303,10 +304,17 @@
       var order = [end, have.start ? '' : 'start', have.in || have.mid ? '' : r() < 0.5 ? 'in' : 'fore'].filter(Boolean);
       if (need < 1 && n < 3 && !have.start && !have.peak && !have.after) need = 1;
       order.slice(0, Math.max(0, need)).forEach(function (k) { s[k] = true; });
+      if (o.top && o.bot && HK.Moan && HK.Moan.slotsFix && !HK.SAFE_ON) HK.Moan.slotsFix(S, o.top, o.bot, have, s, o);
       return s;
     },
-    /* 名前「…」の形。opt.who があれば名前の代わりにそれを前に付ける */
+    /* 名前「…」の形。opt.who があれば名前の代わりにそれを前に付ける（受けの文字は opt.bwho。{a}→{b}・{x}→{y}・{T}→{U} は省ける）。
+       2026-10-28 担当M1：言葉責め・焦らし（＋受けの言い返し）・攻めの崩れ・快感の段の崩し（moan-cut.js の HK.Moan.topSay）を先に試す（'' なら下の表） */
     say: function (S, top, bot, stage, opt) {
+      if (top && bot && HK.Moan && HK.Moan.topSay && !HK.SAFE_ON) {
+        if (opt && opt.p != null) { if (rngOf(S)() >= opt.p) return ''; opt = Object.assign({}, opt); delete opt.p; }
+        var ms = HK.Moan.topSay(S, top, bot, stage, opt);
+        if (ms) return ms;
+      }
       var l = E.line(S, top, bot, stage, opt);
       return l ? ((opt && opt.who) || top.name) + l : '';
     }

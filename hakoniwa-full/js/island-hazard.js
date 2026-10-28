@@ -38,7 +38,7 @@
       if (!c.flags.venom) return;
       c.hp -= 6 + (c.flags.venom > 2 ? 4 : 0);
       c.flags.venom--;
-      if (c.hp <= 0) { ctx.kill(c, null, '毒が全身に回った'); return; }
+      if (c.hp <= 0) { if (HK.IslandDown && HK.IslandDown(ctx, c, 'venom')) { c.flags.venom = 0; return; } ctx.kill(c, null, '毒が全身に回った'); return; }
       var nurse = ctx.most(ctx.others(c), function (o) { return o.tr.np + sk(ctx, o, 'know') * 0.15 + R(ctx, o, c).aff / 100; });
       if (nurse && ctx.rng() < 0.35 + nurse.tr.np * 0.3 + sk(ctx, nurse, 'know') * 0.08) {
         c.flags.venom = 0; c.hp = Math.min(100, c.hp + 8);
@@ -68,7 +68,7 @@
       v.hp -= B.dmg + rng.int(8);
       if (B.venom) v.flags.venom = 3;
       ctx.act2({ actors: [v], cat: 'solo', fx: function () { P.forEach(function (c) { ctx.stress(c, 8); if (c !== v) ctx.mod(c, v, { aff: 3 }); }); }, text: ctx.t(pk(ctx, B.attack), v), why: B.name + 'の襲撃' + (B.venom ? '（毒）' : '') + '。' + v.name + 'の慎重さ ' + Math.round(v.tr.caution * 100) });
-      if (v.hp <= 0) { ctx.kill(v, null, B.name + 'に襲われた'); ctx.flush(); }
+      if (v.hp <= 0 && !(HK.IslandDown && HK.IslandDown(ctx, v, 'beast'))) { ctx.kill(v, null, B.name + 'に襲われた'); ctx.flush(); }
       H.stage = 'council'; H.attacks = (H.attacks || 0) + 1;
       return;
     }
@@ -126,7 +126,8 @@
         cat = 'conflict';
       }
       ctx.act2({ actors: party, cat: cat, fx: fx, text: text, why: why, mag: 20 });
-      party.forEach(function (c) { if (c.hp <= 0 && c.alive) ctx.kill(c, null, B.name + 'の討伐で命を落とした'); });
+      /* 少人数なら、倒れて寝込むことがある（scenarios-b.js の HK.IslandDown） */
+      party.forEach(function (c) { if (c.hp <= 0 && c.alive && !(HK.IslandDown && HK.IslandDown(ctx, c, 'beast'))) ctx.kill(c, null, B.name + 'の討伐で命を落とした'); });
       ctx.flush();
       if (H.stage === 'avoid') H.retry = (H.retry || 0) + 1;
       if (H.stage === 'avoid' && H.retry < 2 && rng() < 0.5) H.stage = 'arm';

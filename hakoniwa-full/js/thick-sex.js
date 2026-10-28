@@ -487,15 +487,18 @@
     var nt0 = HK.Attr && HK.Attr.nightOf ? !!HK.Attr.nightOf(a, b) : false;
     /* 呼ぶ側の事後の文（opt.after）に攻めの台詞があれば、事後の一言はそれに任せる */
     var cAf = cnt(opt.after || '');
-    var sl = ET ? ET.slots(opt.ctx || opt.rng, { start: TQ.test(open0) || nt0, in: TQ.test(body), mid: TQ.test(fa) || TQ.test(ntx), peak: TQ.test(cl) || /^「[^」]*」――/.test(cl), after: cAf > 0 }, { after: !!opt.after, n: cnt(open0) + cnt(body) + cnt(fa) + cnt(ntx) + cnt(cl) + cAf + (/^「[^」]*」――/.test(cl) ? 1 : 0) + (nt0 ? 1 : 0) }) : {};
+    var sl = ET ? ET.slots(opt.ctx || opt.rng, { start: TQ.test(open0) || nt0, in: TQ.test(body), mid: TQ.test(fa) || TQ.test(ntx), peak: TQ.test(cl) || /^「[^」]*」――/.test(cl), after: cAf > 0 }, { after: !!opt.after, n: cnt(open0) + cnt(body) + cnt(fa) + cnt(ntx) + cnt(cl) + cAf + (/^「[^」]*」――/.test(cl) ? 1 : 0) + (nt0 ? 1 : 0), top: a, bot: b, rel: eo.rel }) : {};
     /* 段の並び：始まり → 前戯 → 繋がる → 感じていく → 体の感触と崩れ方 → 果てる → 余韻（呼ぶ側の after） */
     out.push(open0 + (sl.start ? tsay('start') : ''));
     out.push(fore + (sl.fore ? tsay('fore') : '') + T.fingerOut(fore, body, mode, false));
     out.push((sl.in ? tsay('in') : '') + body);
-    out.push(ntx + feel);
+    /* 最中の一言（言葉責め・焦らし・攻めの崩れが足した段。moan-cut.js の HK.Moan.slotsFix） */
+    out.push(ntx + feel + (sl.mid ? tsay('mid') : ''));
     /* 体の感触の段：住人の体格・種族・胸の一文（attr.js。何も決めていなければ空） */
     out.push((pl ? pl : '') + fa + T.react(pick, b, nth >= 2) + (HK.Attr ? HK.Attr.pairLine(a, b, 'touch', pick) : ''));
-    out.push((sl.peak ? tsay('peak') : '') + '{b}「' + T.moan(pick, b, true, opt.rng) + '」' + cl + (sl.after ? '\n\n' + tsay('after') : ''));
+    /* 果てたあとの受けの余韻の声（moan-engine.js の HK.Moan.say の after＝e0。呼ぶ側の事後の文がないときに 3 割5分） */
+    var e0 = !opt.after && HK.Moan && HK.Moan.say && opt.rng && !HK.SAFE_ON && opt.rng() < 0.35 ? HK.Moan.say(opt.rng, b, 'after', { novel: true, top: a }, null) : '';
+    out.push((sl.peak ? tsay('peak') : '') + '{b}「' + T.moan(pick, b, true, opt.rng) + '」' + cl + (e0 ? '\n\n{b}「' + e0 + '」' : '') + (sl.after ? '\n\n' + tsay('after') : ''));
     if (opt.after) out.push(opt.after);
     /* 種族のプレイの一文（attr-race-r18.js。二人とも種族がなければ何もしない）：前戯＝始まりと前戯・最中＝繋がって揺れる・山場＝果てる・事後＝余韻 */
     if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(out, a, b, pick, { fore: [0, 1], mid: 2, climax: opt.after ? out.length - 2 : out.length - 1, after: opt.after ? out.length - 1 : -1 }, { mode: mode });
