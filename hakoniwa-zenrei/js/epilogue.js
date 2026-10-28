@@ -147,18 +147,21 @@
     return soften(q);
   }
   var X = HK.Epilogue = { LW: LW, LW_TO: LW_TO, LW_BETRAY: LW_BETRAY, kind: P_kind, hash: hash };
+  /* 蘇る人（不死・吸血鬼。special.js の HK.Special.canRevive）は遺言を残さない。代わりに蘇ったときの一言（SP.reviveLine）が記録に残る */
+  function revives(c) { return !!(HK.Special && HK.Special.canRevive && HK.Special.canRevive(c)); }
+  X.revives = revives;
   X.last = function (ctx, c, how, killer) {
     if (!ctx || !c) return null;
     var kind = P_kind(how, killer), ad = addressee(ctx, c), to = ad ? ad.c : null;
     var q = compose(c, kind, to, killer, (ctx.seed || 0) + '|' + c.name + '|' + (ctx.stepIndex || 0));
     return { q: q, kind: kind, to: to ? to.i : null, line: c.name + '「' + q + '」' };
   };
-  /* Ctx.kill を包む：最期の言葉を立て、死の記録に 60% で足す */
+  /* Ctx.kill を包む：最期の言葉を立て、死の記録に 60% で足す（蘇る人は立てない） */
   /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
   HK.wrap(Ctx.prototype, 'kill', function (kill1) { return function (v, killer, how) {
     var was = !!(v && v.alive);
     var r = kill1.apply(this, arguments);
-    if (was && v.alive === false && !v.lastWords) {
+    if (was && v.alive === false && !v.lastWords && !revives(v)) {
       var lw = null;
       try { lw = X.last(this, v, how, killer); } catch (e) { lw = null; }
       if (lw) {
@@ -176,7 +179,7 @@
   X.summary = function (ctx, chars) {
     (ctx.chars || []).forEach(function (c, k) {
       var s = chars[k];
-      if (!s || !c.lastWords) return;
+      if (!s || !c.lastWords || revives(c)) return;
       s.lastWords = c.lastWords; s.lastTo = c.lastTo; s.lastKind = c.lastKind;
       if (Array.isArray(s.notes)) s.notes.push('最期の言葉：' + c.lastWords);
     });
@@ -462,7 +465,8 @@
     if (!STORY_LW[S.scen.id] || !res.ending || !Array.isArray(res.ending.lines)) return;
     try {
       var P = S.P, key0 = P.map(function (p) { return p.name; }).join(',') + '|' + (input && input.seed);
-      var dead = P.filter(function (p) { return p && p.alive === false; });
+      /* 蘇る人（不死・吸血鬼）は、終わりの時点で倒れていても遺言を残さない（このあと起き上がる。「その後」は IMM_AFTER） */
+      var dead = P.filter(function (p) { return p && p.alive === false && !revives(p); });
       dead.sort(function (x, y) { return (x._emoDeathN == null ? 1e9 : x._emoDeathN) - (y._emoDeathN == null ? 1e9 : y._emoDeathN); });
       var lastL = [];
       dead.forEach(function (p) {
@@ -484,6 +488,12 @@
       order.forEach(function (p) {
         if (!p || done[p.i] || n >= MAXL) return;
         var c = { i: p.i, name: p.name, persona: p.persona, tone: p.tone, fate: p.fate || '', alive: p.alive !== false && !p.dead, emo: p.emo || null, caged: !!p.bound };
+        /* 蘇る人が終わりの時点で倒れている：亡くなった扱いにせず、起き上がったことと蘇った回数だけを書く */
+        if (!c.alive && revives(p)) {
+          res.ending.lines.push(c.name + 'のその後――' + fill(pickU(IMM_AFTER, String(input && input.seed) + '|' + c.name + '|imm', used), { a: c.name }) + 'これで' + ((p.spRev || 0) + 1) + '回蘇ったことになる。');
+          n++;
+          return;
+        }
         var fc = fateCat(c);
         if (!fc) return;
         var a = att(c), seed = String(fake.seed != null ? fake.seed : ''), pl = PLACE[fake.scenId] || 'あの場所', rel = storyRel(S, p, input);
@@ -499,9 +509,14 @@
       });
     } catch (e) { /* 後日談の組み立てに失敗しても、結末は出す */ }
   };
+  /* 蘇る人が、物語の終わりの時点で倒れていたときの「その後」（{a}）。亡くなった扱いにはしない */
+  var IMM_AFTER = L('{a}の体は、すべてが終わったあとで、静かに傷を塞いだ。{a}は目を開けると、何事もなかったように服の埃を払った。' +
+    '|{a}が倒れていた場所には、しばらくして、もう誰もいなかった。{a}はまた起き上がり、次の場所へ歩き出していた。' +
+    '|{a}は、物語が閉じたあとで息を吹き返した。止まっていた心臓は、何事もなかったように動き出した。');
+  X.IMM_AFTER = IMM_AFTER;
   /* 物語型の最期の言葉だけを、結末より前に引く（X.story と同じ選び方なので、結末の箇条書きと同じ言葉になる。宇宙船の ship-after.js の弔い） */
   X.storyWords = function (S, p, input) {
-    if (!S || !S.P || !p) return '';
+    if (!S || !S.P || !p || revives(p)) return '';
     var key0 = S.P.map(function (q) { return q.name; }).join(',') + '|' + (input && input.seed);
     return compose(p, P_kind((p.how || '') + ' ' + (p.fate || ''), null), storyAddressee(S, p, input), null, key0 + '|' + p.name);
   };

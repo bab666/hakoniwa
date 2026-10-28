@@ -560,6 +560,8 @@
     return f;
   });
   function darkLast(ctx, v, killer) {
+    /* 蘇る人（不死・吸血鬼。special.js）は遺言を残さない */
+    if (HK.Special && HK.Special.canRevive && HK.Special.canRevive(v)) return;
     var f = top(killer), pool = ctx.rng() < 0.3 ? DLW.any : DLW[f] || DLW.any;
     var q = q3(ctx.pick(pool));
     /* 住人の覚え書き・結末の最期の言葉は、言った人の口調に合うベースを一本選んでおく（記録の文は3本のまま、口調の仕上げで選ぶ） */

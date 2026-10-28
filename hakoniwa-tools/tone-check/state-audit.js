@@ -54,6 +54,9 @@
         迫る出来事：エンジン型は恋愛（cat:'romance'）・体の関係の印（sex）・執着の行動（ob_act）、物語型は迫る札（告白・誘い・口づけ・夜這い・押し倒す・監禁 など。APPROACH_TAG）と、
         住人二人だけの性的な場面の記録（lewd）。ふつうの回と、追加の「避けている関係」の配役（ACASTS）で NA 回（N/2、4 回以上）ずつ回して数える（その回の S1〜S18 も数える）。
         「参考」の s31 に、箱庭・札ごとの件数を出す
+   S32（2026-10-28 担当KA）: 蘇る人（特殊役職の不死・体の特徴の不死・吸血鬼。蘇らない吸血鬼 spNoRev・行方不明 spGone は除く。HK.Special.canRevive）の
+        最期の言葉（遺言）が、記録の文（「〇〇が最期に遺した言葉」）・住人の lastWords・結末の箇条書き・結末の「最期の言葉」（E.last）に出た。
+        蘇る人は遺言を残さず、蘇ったときの一言（special.js の SP.reviveLine）を残す。判定は回の終わりの住人（物語型 S.P・エンジン型 ctx.chars）で見る
    S19〜S21 は、ふつうの回（N 回）のあとに、追加の関係を使う配役（FCASTS）で NF 回（N/2、4 回以上）ずつ回して数える（その回の S1〜S18 も数える）。
    「参考」には、恐怖で避けた・無関心で受け流した・破談・仲間の出来事の数を出す
    「止めた」：出来事の記録の手前（Ctx.say の防波堤）で捨てられた件数。出所を直すと減る（0 でなくてよい）
@@ -74,7 +77,7 @@ const { openBuild } = require('./lib.js');
     const sents = t => String(t).replace(NONSEX, '＿').split(/[。！？\n」]/);
     const isSex = s => SEXCORE.test(s);
     const out = { n: {}, ex: {}, drop: {}, runs: 0, err: [], bySc: {}, anySex: {} };
-    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31'];
+    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32'];
     out.info = {};
     /* S31：避けている人が自分から迫った（2026-10-28 担当JE）。迫る札（物語型）と、迫らない札（断る・逃げる・助ける など） */
     const APPROACH_TAG = /告白|口づけ|キス|夜這い|誘|迫|押し倒|監禁|独占|一夜|セフレ|デート|求愛|口説|抱|愛撫|奉仕|夜|催眠|媚薬|襲|執着|甘え|膝枕|添い寝|手を(?:繋|握)|恋|想い|両想い/;
@@ -444,6 +447,23 @@ const { openBuild } = require('./lib.js');
           }
         });
       });
+      /* S32：蘇る人の遺言が、記録・住人の覚え書き・結末にある（2026-10-28 担当KA） */
+      {
+        const P1 = (dz.S && dz.S.P) || (dz.engine && dz.engine.chars) || [], SPc = HK.Special;
+        const canRev = p => !!p && (SPc && SPc.canRevive ? SPc.canRevive(p) : !!(p.spec && !p.spNoRev && !p.spGone));
+        let E32 = null;
+        if (!res.solo && HK.Endings) { try { E32 = HK.Endings.build(res); } catch (err) { E32 = null; } }
+        const L32 = (res.ending && Array.isArray(res.ending.lines) ? res.ending.lines : []).concat(E32 && E32.lines ? E32.lines : []);
+        P1.forEach((p, i) => {
+          if (!canRev(p) || !nm[i]) return;
+          const key = nm[i] + 'が最期に遺した言葉', lab = nm[i] + '（' + (p.spec === 'vampire' ? '吸血鬼' : '不死') + '・' + (p.spRev || 0) + '回蘇った）';
+          log.forEach(e => { if (e && typeof e.text === 'string' && e.text.indexOf(key) >= 0) hit('S32', lab + ' 記録 [' + (e.tag || e.cat || e.kind || '') + '] | ' + e.text.slice(Math.max(0, e.text.indexOf(key) - 40), e.text.indexOf(key) + 60)); });
+          if (res.chars && res.chars[i] && res.chars[i].lastWords) hit('S32', lab + ' 住人の lastWords | ' + res.chars[i].lastWords);
+          if (res.heroes && res.heroes[i] && res.heroes[i].lastWords) hit('S32', lab + ' heroes の lastWords | ' + res.heroes[i].lastWords);
+          L32.forEach(l => { if (typeof l === 'string' && l.indexOf(key) >= 0) hit('S32', lab + ' 結末 | ' + l.slice(0, 120)); });
+          ((E32 && E32.last) || []).forEach(x => { if (x && x.i === i) hit('S32', lab + ' 結末の最期の言葉 | ' + x.text); });
+        });
+      }
       /* S29：結末・行く末・その後・結末の文 */
       const fDead = i => (dz.S && dz.S.P && dz.S.P[i]) ? dz.S.P[i].alive === false : (dz.engine && dz.engine.chars[i]) ? dz.engine.chars[i].alive === false : !!(res.chars && res.chars[i] && res.chars[i].alive === false);
       chars.forEach((c, i) => {
@@ -742,6 +762,45 @@ const { openBuild } = require('./lib.js');
         out.runs++; out.bySc[sc].runs++; out.info.dzRuns = (out.info.dzRuns || 0) + 1;
       }
     }
+    /* S32（追加の回。2026-10-28 担当KA）：蘇る箱庭（HK.Special.SCENES）を、住人の大半が不死・吸血鬼の配役で NI 回（N/2、4 回以上）ずつ回す。
+       特殊役職の不死・体の特徴の不死・吸血鬼（不死あり）・吸血鬼（不死を外した＝蘇らない）を混ぜ、展開と死ネタの重さ「重い」・危険の設定を上げる。
+       蘇る人の遺言（S32）と、その回の S1〜S30 も数える */
+    const SPS = (HK.Special && HK.Special.SCENES) || [];
+    const NI = Math.max(4, Math.round(N / 2));
+    for (const sc of SPS) {
+      const scen = HK.SCENARIOS[sc]; if (!scen || (only && only.indexOf(sc) < 0)) continue;
+      out.bySc[sc] = out.bySc[sc] || { runs: 0 };
+      for (let s = 0; s < NI; s++) {
+        const n = Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 4 + (s % 3)));
+        const chars = [], perChar = [];
+        for (let i = 0; i < n; i++) {
+          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: (i + s) % 2 ? 'f' : 'm', likes: '', tone: '', fp: '', pos: ['top', 'bottom', '', 'riba'][(i + s) % 4], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: [], noR18: false, sexLock: '', faithful: false });
+          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
+          const k = (i + s) % 5;
+          if (k === 0) perChar[i].pick.special = 'immortal';
+          else if (k === 1) chars[i].race = 'vampire';
+          else if (k === 2) chars[i].feats = ['immortal'];
+          else if (k === 3 && s % 2) { chars[i].race = 'vampire'; chars[i].feats = ['fang', 'cold']; }
+        }
+        /* 口調の違い（疎む・当たり前・怯える・軽口が出るように） */
+        const TONES = ['darui', 'gentleman', 'gyaru', 'honwaka', 'mukuchi', 'chara', 'noja', ''];
+        chars.forEach((c, i) => { if ((i + s) % 3 === 0) c.tone = TONES[(i + s) % TONES.length]; });
+        const ties0 = [{ a: 0, b: 1, type: s % 2 === 0 ? 'lover' : 'yan' }];
+        const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
+        (scen.env || []).forEach(e => { if (e.max != null && /danger|hostile|serial|outbreak|turn|lewd|ev$/.test(e.id)) env[e.id] = e.max; });
+        env.heavy = 'dark'; env.death = 'dark';
+        if (HK.Content && HK.Content.TAGS) env.ct = s % 2 ? '' : HK.Content.TAGS.map(t => t.id).join(',');
+        cur = { sc, story: !!scen.solo, offTags: {}, feel: null };
+        dz = { snap: {}, deaths: [], rev: [], engine: null, S: null };
+        let res;
+        lastCtx = null; lastS = null;
+        try { res = HK.simulate({ scenId: sc, seed: 8000 + s, env, chars, perChar, ties: ties0 }); } catch (e) { out.err.push(sc + '（S32 の回）: ' + String(e && e.stack || e).slice(0, 300)); dz = null; cur = null; continue; }
+        try { dzCheck(res, chars, sc); } catch (e) { out.err.push(sc + ' dzCheck(S32): ' + String(e && e.stack || e).slice(0, 300)); }
+        (res.log || []).forEach(e => { if (e && e.tag === '蘇生') out.info.revive = (out.info.revive || 0) + 1; });
+        lastS = null; dz = null; cur = null;
+        out.runs++; out.bySc[sc].runs++; out.info.s32Runs = (out.info.s32Runs || 0) + 1;
+      }
+    }
     /* S22：グループの「仲間」（ui.js）。オンのグループの住人どうしにだけ、箱庭に渡す関係「仲間」が付く／オフでは付かない／
        ほかの関係はそのまま残る（仲間は重ねるだけ）／JSON にオン・オフが入る（古い JSON は「なし」として読める） */
     if (HK.UI && HK.UI.state && HK.UI.buildInput && HK.UI.normState) {
@@ -783,7 +842,7 @@ const { openBuild } = require('./lib.js');
   }, { N, only, WHY, HOT, mode, ENVSET });
   const ids = Object.keys(r.bySc);
   for (const sc of ids) {
-    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31'].map(k => k + ' ' + (b[k] || 0));
+    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32'].map(k => k + ' ' + (b[k] || 0));
     console.log(sc.padEnd(10), 'runs', b.runs, cells.join(' '), '誰とでも可の体の出来事', r.anySex[sc] || 0);
   }
   console.log('合計', JSON.stringify(r.n), '止めた', JSON.stringify(r.drop));
