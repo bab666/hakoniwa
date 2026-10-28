@@ -16,6 +16,11 @@
      繋がる in：遠慮がちな片想いが「誰かに取られるくらいなら」と割って入る。震える手・名前を呼ぶ・好きだと口走る（BURST）
      最中 mid：不仲の攻めが「勝手に盛り上がるな」と、奪い返すように激しく抱く（RETAKE）。受けは二人の温度差に挟まれる（BETWEEN）
      山場 peak・事後 after：二人の温度差のまま果てる（PEAK）・終わっても冷えた不仲と、離さない片想い（AFTER）
+   ■ 展開の幅（2026-10-28 担当LG2。利用者の要望「同じ組み合わせでもパターンがありえるよう展開を追加して」）：同じ三人でも回ごとに型を選ぶ（RV.apply。乱数＋性格・関係・何度目かの重み。
+     同じ回で二度目の場面からは、前に選んだ型を選びにくくする：ctx.flags.trioRV。初回でなくても当てはまる三人なら使う）
+     導入（RV.introW）：A1 受けが誘う／A2 片想いから／A3 不仲が受けに物申す／A4 不仲が片想いを巻き込む／A5 上の「あなたがやって」（文は room-trio-rival2-r18.js）
+     始まり方・体位・盛り上がり方・事後（文は room-trio-rival-sex-r18.js）：始まり方 8 種・体位 5 種（呼ぶ側の本番の一文と組み立ての体の位置の一文の代わり）・
+     盛り上がり方 4 種（上の RETAKE・PEAK は「不仲が奪い返す」の型。最中の段の攻めの一言の夜の色を型ごとに変える）・事後 5 種
    ■ 書式：台詞は3本「くだけた常体｜硬い常体｜敬語」（一人称「私」、二人称「あなた」）で、話し手の態度9種ごと。話し手は「名前「＠名前＠…」」で固定。
      体の語は印（{男性器} {女性器} {ナカ} {胸} {陰核} {精液}。印の前に持ち主の「名前の」）。地の文は組の体（HK.Trio3.edgeKind：m 男性の体の攻め／
      fm 女性の攻めが男性に／ff 女性どうし／n 性器の語を使わない）ごとに書き分ける。攻めどうし（{k} と {c}）は直接は触れ合わない（話す・睨むだけ）。
@@ -105,13 +110,13 @@
 
   /* ======================= 地の文（3文以上。組の体ごと） ======================= */
   /* PUSH の前：{k} は {c} に触れない（顎で促す・指さすだけ） */
-  RV.PUSH_N = L('{k}は{u}から一歩離れて、壁にもたれた。{u}の方を見ようともしなかった。顎で{c}を促して、{k}は口を開いた。|{k}はベッドの端に腰を下ろして、腕を組んだ。自分から動く気は、少しもないらしかった。{k}は{c}を見て、{u}の方を指さした。|{k}は但し書きを指で弾いて、{c}を振り返った。{u}とは、まだ目を合わせていなかった。{k}の声は、わざとらしいほど平らだった。');
+  RV.PUSH_N = L('{k}は{u}から一歩離れて、壁にもたれた。{u}の方を見ようともしなかった。顎で{c}を促して、{k}は口を開いた。|{k}はベッドの端に腰を下ろして、腕を組んだ。自分から動く気は、少しもないらしかった。{k}は{c}を見て、{u}の方を指さした。|{k}は但し書きを軽く弾いて、{c}を振り返った。{u}とは、まだ目を合わせていなかった。{k}の声は、わざとらしいほど平らだった。');
   /* FIDGET の前（{c} が踏み出せない） */
   RV.FIDGET_N = L('{c}は{u}の前で固まったまま、動けなかった。伸ばしかけた手が、宙で止まる。{u}と目が合うたびに、{c}の顔が赤くなった。|{c}は唇を噛んで、{u}の肩に触れかけてはやめた。何度も、同じことを繰り返した。好きな人に触れる最初の一回が、どうしても踏み出せなかった。|{c}は{u}の隣に座ったきり、膝の上で指を組んでいた。言いたいことは、喉のところで止まっていた。時間だけが、黙って過ぎていった。');
   /* GRAB のあと（{k} が {u} に手を出す。{k}→{u} の体） */
   RV.GRAB_N = {
     m: L('{k}は{c}の前を横切って、{u}の体をベッドに倒した。抗議しかけた{u}の唇を、{k}は自分の唇で塞いだ。{u}の脚のあいだに膝を割り込ませると、{k}の{男性器}が押し当てられた。|{k}は{u}の手首をまとめて掴み、シーツに縫いとめた。睨み返してくる{u}の目を、{k}は真正面から受け止めた。前置きもなく、{k}の指が{u}の{ナカ}へ沈んだ。'),
-    fm: L('{k}は{c}の前を横切って、{u}の胸に手をついた。そのまま{u}の腰に跨がり、上から見下ろした。{k}の{女性器}が、{u}の{男性器}の上でゆっくりと擦れた。|{k}は{u}の肩を押してベッドに倒し、上から押さえつけた。{u}が文句を言う前に、{k}の手が{u}の{男性器}を握り込んだ。{u}の言葉は、そこで途切れた。'),
+    fm: L('{k}は{c}の前を横切って、{u}の胸に手をついた。{k}はそのまま{u}の腰の上に乗り、上から見下ろした。{k}の{女性器}が、{u}の{男性器}の上でゆっくりと擦れた。|{k}は{u}の肩を押してベッドに倒し、上から押さえつけた。{u}が文句を言う前に、{k}の手が{u}の{男性器}を握り込んだ。{u}の言葉は、そこで途切れた。'),
     ff: L('{k}は{c}の前を横切って、{u}の体をベッドに倒した。{u}が睨み返すのも構わず、{k}は{u}の{胸}に唇を落とした。{k}の指が、ためらいもなく{u}の脚のあいだへ滑り込んだ。|{k}は{u}の手首をまとめて掴み、シーツに縫いとめた。{u}の首筋に歯を立てて、{k}はわざと痕を残した。空いた手が、{u}の{女性器}をなぞった。'),
     n: L('{k}は{c}の前を横切って、{u}の体をベッドに倒した。{u}が睨み返すのも構わず、{k}は{u}の首筋に唇を押し当てた。服の裾から、{k}の手が遠慮なく入り込んだ。|{k}は{u}の手首をまとめて掴み、シーツに縫いとめた。{u}の顔を見下ろして、{k}は鼻で笑った。それから、{u}の体の線を、ゆっくりと手でなぞっていった。')
   };
@@ -127,7 +132,7 @@
   /* RETAKE のあと（{k} が奪い返すように激しく抱く。{k}→{u} の体） */
   RV.RETAKE_N = {
     m: L('{k}は{u}の腰を掴んで、{c}から引き剥がすように自分の方へ引き寄せた。そのまま、{k}の{男性器}が{u}の{ナカ}を一息に貫いた。奪い返すような激しい抽送に、{u}の背中が大きくしなった。|{k}は{u}の顎を掴んで、自分の方を向かせた。返事も待たずに、{k}は{u}の奥まで腰を打ちつけた。{c}の甘い手つきとは正反対の乱暴さに、{u}の声が裏返った。'),
-    fm: L('{k}は{u}の顎を掴んで、自分の方を向かせた。それから{u}の{男性器}を自分の{ナカ}に深く沈め、容赦なく腰を揺すった。{c}の甘い手つきとは正反対の激しさに、{u}の声が裏返った。|{k}は{u}の胸を押さえつけて、上から見下ろした。{c}から奪い返すように、{k}は{u}の上で激しく腰を打ちつけた。{u}が逃げようとするたび、{k}はさらに深く沈んだ。'),
+    fm: L('{k}は{u}の顎を掴んで、自分の方を向かせた。それから{u}の{男性器}を自分の{ナカ}に深く沈め、容赦なく腰を揺すった。{c}の甘い手つきとは正反対の激しさに、{u}の声が裏返った。|{k}は{u}の胸を押さえつけて、上から見下ろした。{c}から奪い返すように、{k}は{u}の上で腰を激しく打ちつけた。{u}が逃げようとするたび、{k}はさらに深く沈んだ。'),
     ff: L('{k}は{u}の顎を掴んで、自分の方を向かせた。{u}の{女性器}に沈めた{k}の指が、奪い返すように激しく動いた。{c}の甘い手つきとは正反対の乱暴さに、{u}の声が裏返った。|{k}は{u}の脚を大きく開かせて、{c}から引き剥がすように自分の方へ引き寄せた。{k}の舌が、{u}の{陰核}を容赦なく責め立てた。{u}の腰が、逃げ場を失って跳ねた。'),
     n: L('{k}は{u}の顎を掴んで、自分の方を向かせた。{c}から奪い返すように、{k}は{u}の首筋に噛みつくような口づけを落とした。{c}の甘い手つきとは正反対の乱暴さに、{u}の息が乱れた。|{k}は{u}の手首を掴んで、シーツに押しつけた。{c}に向けていた{u}の顔を、無理やり自分の方へ向けさせた。荒い息のまま、{k}は{u}の体を隅々まで責め立てた。')
   };
@@ -138,8 +143,7 @@
     mm: L('{k}が{u}の奥で果てるのと同時に、{c}も震える声で{u}の名前を呼んで果てた。注がれた{精液}の熱に、{u}は長く震えた。最後まで、{k}は{u}の顔から目を逸らさなかった。|{c}が先に限界を迎えて、{u}にしがみついたまま果てた。{k}はそれを横目で見て、鼻で笑った。それから{u}の腰を引き寄せ、いちばん奥で{精液}を吐き出した。'),
     soft: L('{u}が達する瞬間、{c}は{u}の手を強く握り、{k}は{u}の首筋に歯を立てた。優しさと乱暴さに同時に挟まれて、{u}の体が大きく跳ねた。荒い息が、しばらく部屋に残った。|先に崩れたのは{u}だった。{c}の名前とも{k}の名前ともつかない声を上げて、{u}は長く震えた。{c}はその体を抱きとめ、{k}は黙って、震えが止まるまで{u}の腰から手を離さなかった。')
   };
-  /* AFTER：終わっても冷えた不仲と、離さない片想い */
-  RV.AFTER = L('終わったあと、{c}は{u}を毛布でくるんで、離そうとしなかった。{k}はベッドの端で背中を向けたまま、何も言わなかった。それでも、{u}の手首を掴んだ{k}の指だけは、なかなかほどけなかった。|{c}は真っ赤な顔で、{u}に小さく告げた。「＠{c}＠好きって言ったの、本気だから｜好きだと言ったのは、本気だ｜好きと言ったのは、本気ですから」{k}は聞こえないふりをして、天井を見上げていた。|{k}は息を整えると、{c}を睨んだ。{k}「＠{k}＠……次は、待たないから｜……次は、待たない｜……次は、待ちませんから」{c}は{u}を抱き寄せたまま、黙って睨み返した。');
+  /* 事後の文は room-trio-rival-sex-r18.js の RV.AF（不仲が背を向ける・片想いが抱えたまま・三人で黙る・受けが二人に一言・不仲の次は待たない宣言） */
 
   /* ======================= 判定と組み立て ======================= */
   function hostile(ctx, k, u) {
@@ -167,24 +171,239 @@
     }
     return null;
   };
-  function fill(s, m) { return String(s).replace(/\{([kcu])\}/g, function (x, key) { return m[key] ? m[key].name : x; }); }
-  function say(who, l, m) { return who.name + '「＠' + who.name + '＠' + fill(l, m) + '」'; }
-  /* 段に置く。put(段, 文, 重さ, 見出し)・pk(配列)＝同じ回で繰り返さない選び方・okL(文, 役)＝触れ合わせない二人の決まり（room-trio.js の apartOK）・short＝短く */
-  RV.apply = function (ctx, m, put, pk, okL, short) {
+
+
+  /* ======================= 型の選び方（2026-10-28 担当LG2。文は room-trio-rival2-r18.js・room-trio-rival-sex-r18.js） ======================= */
+  RV.INTRO_LABEL = { sasoi: '受けが誘う', kata: '片想いから', mono: '不仲が受けに物申す', hen: '不仲が片想いを巻き込む', push: '不仲が片想いに押しつける' };
+  function trOf(c) { return (c && c.tr) || {}; }
+  function inL(p, l) { return l.indexOf(p) >= 0; }
+  function hateLv(ctx, k, u) { var H = HK.HateKit; return H && H.level ? Math.max(H.level(ctx, k, u), H.level(ctx, u, k)) : 0; }
+  function lhOf(ctx, k, u) { var LH = HK.LoveHate; return !!(LH && LH.any && LH.any(ctx, k, u)); }
+  /* 重みの表から一つ（hist：この三人でこれまでに選んだ型。選んだ回数だけ軽く、直前の型はさらに軽く） */
+  function wpick(ctx, w, hist) {
+    hist = hist || [];
+    var ks = Object.keys(w).filter(function (x) { return w[x] > 0; });
+    if (!ks.length) return null;
+    return HK.weighted(ctx.rng, ks, function (x) {
+      var n = hist.filter(function (h) { return h === x; }).length;
+      return w[x] / (1 + n * 1.5) / (hist.length && hist[hist.length - 1] === x ? 2.5 : 1);
+    });
+  }
+  /* 導入の型の重み：受けの態度・主導性・夜の主導（誘い受け・襲い受け）・性欲／片想いの積極さ／不仲の態度・攻撃性・ドライさ・愛憎・嫌悪の強さ／何度目か（n：0 が初回） */
+  RV.introW = function (ctx, m, n) {
+    var k = m.k, c = m.c, u = m.u, pu = ps(u), pk0 = ps(k), tk = trOf(k), tc = trOf(c), tu = trOf(u), P = HK.Pos;
+    var lead = P && P.leadOf ? P.leadOf(u) : '', lb = P && P.libOf ? P.libOf(u) : '';
+    var w = {
+      /* 性欲が弱くても、奔放・強気・冷静（投げやり・割り切り）や健気（自己犠牲）な受けは自分から言い出す */
+      sasoi: 0.4 + (inL(pu, ['free', 'proud', 'cool']) ? 2.4 : pu === 'devoted' ? 1.2 : pu === 'stern' ? 0.8 : pu === 'shy' ? 0.1 : 0.4) + (tu.lead || 0) * 1.2 + ((tu.cp || 0) > 0.6 ? 0.5 : 0) + (lead === 'sasoi' || lead === 'osoi' ? 2 : 0) + (lb === 'high' ? 0.6 : 0),
+      kata: 0.6 + (m.shy ? 0.7 : 1.6) + (tc.impulse || 0) * 0.8 + (c.honmei === u.i ? 0.4 : 0),
+      mono: 0.5 + (inL(pk0, ['stern', 'proud', 'tsun']) ? 1 : 0.3) + (tk.aggr || 0) * 0.8 + (lhOf(ctx, k, u) ? 1.2 : 0) + (hateLv(ctx, k, u) >= 60 ? 0.5 : 0),
+      hen: 0.5 + (inL(pk0, ['cool', 'stern', 'polite', 'gentle']) ? 0.9 : 0.3) + (m.shy ? 0.8 : 0.3) + (tk.lead || 0) * 0.5,
+      push: 0.6 + (m.shy ? 1 : 0.4) + (tk.cold || 0) * 0.6
+    };
+    /* 二度目からは「あなたがやって」は少なく、受けが誘う・片想いから、が増える */
+    if (n > 0) { w.push *= 0.4; w.sasoi *= 1.4; w.kata *= 1.2; }
+    return w;
+  };
+  function libOf(c) { return HK.Pos && HK.Pos.libOf ? HK.Pos.libOf(c) : ''; }
+  /* 受けの体（玩具の表）：f 女性器がある／m 男性器だけ／n 性器の語を使わない組 */
+  function bodyOf(x, u) {
+    var P = HK.Pos;
+    if (!P || (HK.NoGen && HK.NoGen.on && HK.NoGen.on(x, u)) || (P.noGen && P.noGen(u))) return 'n';
+    return P.hasF && P.hasF(u) ? 'f' : P.hasM && P.hasM(u) ? 'm' : 'n';
+  }
+  /* 段に置く。put(段, 文, 重さ, 見出し)・pk(配列)＝同じ回で繰り返さない選び方・okL(文, 役)＝触れ合わせない二人の決まり（room-trio.js の apartOK）・short＝短く・
+     C＝HK.Trio3 の組み立て（台詞の重なりの確かめ C.seen／mark、体の位置の一文 C.gen1、受けの声 C.peakLine、段ごとの夜の色 C.o.flSt）・o＝{ first（三人の最初の場面）, tools（木箱がある） }
+     返り値：{ tag, why, noMain（体の位置の文を置いたので、呼ぶ側の本番の一文を省く）, types } */
+  RV.apply = function (ctx, m, put, pk, okL, short, C, o) {
+    o = o || {};
     var X = HK.Trio3, ek = function (a, b) { return X && X.edgeKind ? X.edgeKind(a, b) : 'n'; };
-    var fk = ek(m.k, m.u), fc = ek(m.c, m.u), rr = { k: m.k, c: m.c, u: m.u };
-    var nar = function (arr) { var l = (arr || []).filter(function (x) { return !okL || okL(x, rr); }); return l.length ? fill(pk(l), m) : ''; };
-    var line = function (who, T) { var a = T[ps(who)] || T.gentle; return say(who, pk(a), m); };
-    put('fore', nar(RV.PUSH_N) + line(m.k, RV.PUSH), 1, RV.TAG);
-    if (m.shy) {
-      put('fore', short ? line(m.c, RV.FIDGET) : nar(RV.FIDGET_N) + line(m.c, RV.FIDGET), 1);
-      put('fore', line(m.k, RV.GRAB) + nar(RV.GRAB_N[fk] || RV.GRAB_N.n), 1);
-      put('in', line(m.c, RV.BURST) + nar(RV.BURST_N[fc] || RV.BURST_N.n), 1);
-    } else put('fore', line(m.c, RV.JOIN) + nar(RV.JOIN_N), 1);
-    put('mid', line(m.k, RV.RETAKE) + nar(RV.RETAKE_N[fk] || RV.RETAKE_N.n), 1);
-    if (!short) put('mid', nar(RV.BETWEEN), 2);
-    put('peak', nar(RV.PEAK[fk === 'm' && fc === 'm' ? 'mm' : 'soft']), 1);
-    if (!short) put('after', nar(RV.AFTER), 2);
-    return { tag: RV.TAG, why: m.k.name + 'は' + m.u.name + 'と不仲、' + m.c.name + 'は' + m.u.name + 'に片想い' + (m.shy ? '（' + m.c.name + 'は遠慮がちで、' + m.k.name + 'が先に手を出し、' + m.c.name + 'が取られまいと割って入った）' : '（' + m.c.name + 'は最初から加わった）') };
+    var fk0 = ek(m.k, m.u), fc0 = ek(m.c, m.u), mixAny = fk0 !== fc0 && (fk0 === 'ff' || fc0 === 'ff' || fk0 === 'fm' || fc0 === 'fm');
+    /* 攻めの片方が女性で、もう片方が男性の体の三人：男性の体の攻めの文は性器の語のない文に（room-trio.js の HK.FF.fix は男性器の語のある文を女性どうしの文に、
+       HK.FM.fixWith は受けの体の中の語のある文を女性上位の文に差し替えるので、男性の攻めの文が女性の攻めの文に置き換わってしまう） */
+    var eff = function (kk) { return mixAny && kk === 'm' ? 'n' : kk; };
+    var fk = eff(fk0), fc = eff(fc0), rr = { k: m.k, c: m.c, u: m.u }, rng = ctx.rng, mm = fk0 === 'm' && fc0 === 'm';
+    /* この三人の何度目の場面か・これまでに選んだ型（同じ回の中で、二度目からは前と違う型を選びやすく） */
+    var stAll = ctx.flags.trioRV || (ctx.flags.trioRV = {}), key = m.k.i + '-' + m.c.i + '-' + m.u.i;
+    var H = stAll[key] || (stAll[key] = { n: 0, intro: [], start: [], pose: [], peak: [], after: [] });
+    var n = H.n++, first = n === 0 && o.first !== false, mix = !!(C && C.len === 'mix');
+    var box = o.tools ? '木箱' : 'ベッドの下の引き出し';
+    var fillM = function (s, map) { return String(s).replace(/\{([kcuxy])\}/g, function (z, kk) { return map[kk] ? map[kk].name : z; }).replace(/\{箱\}/g, box); };
+    var nar = function (arr, map) { map = map || rr; var l = (arr || []).filter(function (x) { return !okL || okL(x, map); }); return l.length ? fillM(pk(l), map) : ''; };
+    var seen = function (s) { return !!(C && C.seen && C.seen(s)); };
+    /* 台詞（3本。話し手の態度9種。idx で何番を使うか決める。同じ場面にもう出た台詞は引き直す） */
+    var line = function (who, T, idx, map) {
+      map = map || rr;
+      var a = T[ps(who)] || T.gentle, l = idx != null && a[idx] ? a[idx] : null;
+      if (!l) for (var i = 0; i < 3; i++) { l = pk(a); if (!seen(fillM(l, map))) break; }
+      var t = fillM(l, map);
+      if (C && C.mark) C.mark(t);
+      return who.name + '「＠' + who.name + '＠' + t + '」';
+    };
+    var tag = RV.TAG, pu = ps(m.u), pk0 = ps(m.k), pc = ps(m.c), lh = lhOf(ctx, m.k, m.u);
+
+    /* ---------- 導入（前戯の段） ---------- */
+    var intro = wpick(ctx, RV.introW(ctx, m, n), H.intro) || 'push';
+    H.intro.push(intro);
+    var grabPre = '', burst = false, kataLate = '', note = '';
+    if (intro === 'sasoi') {
+      /* 0 番＝投げやり・自己犠牲／1 番＝乗り気（性欲が強ければ 1、弱ければ 0） */
+      var lb = libOf(m.u), si = lb === 'high' ? 1 : lb === 'low' || lb === 'none' ? 0 : rng() < 0.5 ? 0 : 1;
+      put('fore', (short || mix ? '' : nar(RV.SASOI_N)) + line(m.u, RV.SASOI, si), 1, tag);
+      put('fore', line(m.k, RV.SASOI_K) + line(m.c, RV.SASOI_C) + (short ? '' : nar(RV.SASOI_N2)), 1);
+      note = m.u.name + 'が二人まとめてと言い出し、' + m.k.name + 'は苛立った';
+    } else if (intro === 'kata') {
+      /* 遠慮がちな片想いは初回だけ「この機会を逃したら」と決意して。不仲は途中から割り込む（0。始まり方のあと）／最初から並ぶ（1） */
+      var ci = m.shy && first ? 1 : 0, ki = rng() < 0.5 ? 0 : 1;
+      put('fore', (short ? '' : nar(RV.KATA_N[ci])) + line(m.c, RV.KATA, ci), 1, tag);
+      var kp = line(m.k, RV.KATA_K, ki) + (short ? '' : nar(RV.KATA_KN[ki]));
+      if (ki === 0) kataLate = kp; else put('fore', kp, 1);
+      note = m.c.name + 'が先に踏み出し、' + m.k.name + 'は' + (ki === 0 ? '途中から割り込んだ' : '最初から並んだ');
+    } else if (intro === 'mono') {
+      /* 受けは言い返す／黙る（内気・健気・穏やか・丁寧は黙りやすい） */
+      var mi = rng() < 0.5 ? 0 : 1, sil = inL(pu, ['shy', 'devoted', 'gentle', 'polite']) && rng() < 0.6;
+      put('fore', (short || mix ? '' : nar(RV.MONO_N)) + line(m.k, RV.MONO_K, mi) + (sil ? (short ? '' : nar(RV.MONO_SIL)) : line(m.u, RV.MONO_U)), 1, tag);
+      put('fore', line(m.c, RV.MONO_C) + (short ? '' : nar(RV.MONO_N2)), 1);
+      note = m.k.name + 'が' + m.u.name + 'に物申し、' + m.u.name + 'は' + (sil ? '黙った' : '言い返した') + '。' + m.c.name + 'が止めた';
+    } else if (intro === 'hen') {
+      var hk = rng() < 0.55 ? 0 : 1, hc = m.shy ? 0 : 1;
+      put('fore', (short || mix ? '' : nar(RV.HEN_N)) + line(m.k, RV.HEN_K, hk), 1, tag);
+      put('fore', line(m.c, RV.HEN_C, hc) + (short ? '' : nar(RV.HEN_N2[hc])), 1);
+      note = m.k.name + 'が、自分だけでは変だと' + m.c.name + 'を巻き込んだ';
+    } else {
+      put('fore', (short ? '' : nar(RV.PUSH_N)) + line(m.k, RV.PUSH), 1, tag);
+      if (m.shy && first) {
+        put('fore', short || mix ? line(m.c, RV.FIDGET) : nar(RV.FIDGET_N) + line(m.c, RV.FIDGET), 1);
+        grabPre = line(m.k, RV.GRAB); burst = true;
+        note = m.c.name + 'は遠慮がちで、' + m.k.name + 'が先に手を出し、' + m.c.name + 'が取られまいと割って入った';
+      } else {
+        put('fore', line(m.c, RV.JOIN) + (short ? '' : nar(RV.JOIN_N)), 1);
+        note = m.c.name + 'は最初から加わった';
+      }
+    }
+
+    /* ---------- 始まり方（前戯の段の終わり） ---------- */
+    var SW = { fella: 1, kiss: 1, mune: 1, ushiro: 1, toy: o.tools ? 1.2 : 0.5, strip: 0.9, self: 0, grab: 0 };
+    if (intro === 'sasoi') { SW.fella *= 2; SW.self = 2.2; SW.strip *= 0.6; }
+    else if (intro === 'kata') { SW.kiss *= 3; SW.mune *= 1.3; SW.ushiro *= 0.6; }
+    else if (intro === 'mono') { SW.ushiro *= 1.5; SW.strip *= 1.4; SW.kiss *= 0.7; }
+    else if (intro === 'hen') { SW.fella *= 1.5; SW.strip *= 1.3; }
+    else if (burst) { SW.kiss = 0; SW.grab = 2.5; SW.ushiro *= 1.5; }
+    else SW.kiss *= 1.5;
+    if (inL(pk0, ['proud', 'free', 'stern'])) SW.ushiro *= 1.2;
+    if (inL(pk0, ['cool', 'free'])) SW.toy *= 1.3;
+    var sT = wpick(ctx, SW, H.start) || 'mune';
+    H.start.push(sT);
+    /* 動く攻め {x}：「あなたがやって」で不仲が先に手を出す回は不仲、片想いから、の回は片想い。ほかは型ごとに */
+    var sx = burst ? m.k : intro === 'kata' ? (sT === 'toy' && rng() < 0.5 ? m.k : m.c) : sT === 'self' ? (rng() < 0.6 ? m.c : m.k) : intro === 'sasoi' ? (rng() < 0.5 ? m.c : m.k) : (rng() < 0.65 ? m.k : m.c);
+    var sy = sx === m.k ? m.c : m.k, smap = { k: m.k, c: m.c, u: m.u, x: sx, y: sy }, ex = eff(ek(sx, m.u)), S0 = RV.START, stx;
+    if (sT === 'fella') stx = nar(S0.fella[ex === 'm' ? 'm' : ex === 'fm' || ex === 'ff' ? 'f' : 'n'], smap);
+    else if (sT === 'toy') stx = nar(S0.toy[bodyOf(sx, m.u)], smap);
+    else if (sT === 'self') stx = nar(S0.self[ex] || S0.self.n, smap);
+    else if (sT === 'ushiro') stx = nar(S0.ushiro[fk] || S0.ushiro.n);
+    else if (sT === 'grab') stx = nar(RV.GRAB_N[fk] || RV.GRAB_N.n);
+    else stx = nar(S0[sT]);
+    put('fore', grabPre + stx, 1);
+    if (kataLate) put('fore', kataLate, 1);
+    /* 遠慮がちな片想いが「取られるくらいなら」と割って入る（台詞を先に置くのは、あとの文が女性上位の書き直し（pos-fm.js）で差し替えられても台詞が消えないように） */
+    if (burst) put('in', line(m.c, RV.BURST) + nar(RV.BURST_N[fc] || RV.BURST_N.n), 1);
+
+    /* ---------- 体位・形（繋がる段。呼ぶ側の本番の一文・組み立ての体の位置の一文の代わり） ---------- */
+    var pT = null, noMain = false;
+    if (!short) {
+      var PW = { fb: 1, turn: 1, ue: 1, show: 1, side: 0.8 };
+      /* 受けが上に：下になる攻めの組が m・ff・n のとき（女性の攻めが男性に跨る組では使わない） */
+      var ueOK = function (x) { var kx = eff(ek(x, m.u)); return kx === 'm' || kx === 'ff' || kx === 'n'; };
+      var ux = ueOK(m.c) && (!ueOK(m.k) || rng() < 0.6) ? m.c : ueOK(m.k) ? m.k : null;
+      if (!ux) PW.ue = 0; else if (intro === 'sasoi') PW.ue *= 1.5;
+      if (inL(pk0, ['proud', 'free', 'tsun'])) PW.show *= 1.4;
+      if (lh) PW.show *= 1.3;
+      if (intro === 'kata' || inL(pc, ['gentle', 'devoted'])) PW.side *= 1.3;
+      pT = wpick(ctx, PW, H.pose) || 'fb';
+      H.pose.push(pT);
+      var PO = RV.POSE[pT], ptx;
+      if (pT === 'ue') {
+        var uy = ux === m.k ? m.c : m.k, um = { k: m.k, c: m.c, u: m.u, x: ux, y: uy };
+        ptx = nar(PO.head, um) + nar(PO.x[eff(ek(ux, m.u))] || PO.x.n, um) + nar(PO.y[eff(ek(uy, m.u))] || PO.y.n, um);
+      } else ptx = nar(PO.head) + nar(PO.k[fk] || PO.k.n) + nar(Array.isArray(PO.c) ? PO.c : PO.c[fc] || PO.c.n);
+      if (ptx) {
+        noMain = true;
+        /* 組み立ての体の位置の一文（POSE）・形が変わる一文（SHIFT）を足さない（この文と食い違うので） */
+        if (C && C.gen1) { C.gen1('in', ptx, 1, 'post', null, 'pose'); C.o.noShift = true; } else put('in', ptx, 1);
+      }
+    }
+
+    /* ---------- 盛り上がり方（最中の段の一節＋山場） ---------- */
+    var KW = { retake: 1.2, sweet: 1, sync: 0.9, names: 0.9 };
+    if (intro === 'push') KW.retake *= 2;
+    if (inL(pc, ['shy', 'devoted', 'gentle'])) KW.sweet *= 1.4;
+    if (inL(pu, ['gentle', 'devoted', 'shy'])) KW.sweet *= 1.2;
+    if (C && (C.fl === 'dry' || C.fl === 'deal')) KW.sweet *= 0.5;
+    if (inL(pk0, ['cool', 'stern', 'polite'])) KW.sync *= 1.3;
+    if (lh) KW.names *= 1.3;
+    if (inL(pu, ['free', 'tsun'])) KW.names *= 1.2;
+    var kT = wpick(ctx, KW, H.peak) || 'retake';
+    H.peak.push(kT);
+    /* 最中の段の攻めの一言の色（奪い返す＝荒め／甘さ＝甘め／同時＝駆け引き） */
+    if (C && C.o && RV.PEAK_FL[kT]) C.o.flSt = { mid: RV.PEAK_FL[kT] };
+    /* 受けが名前を呼ぶ声（HK.Moan の w5）。二人目は、名前を除いて一人目と同じ形の声なら引き直す（3回まで） */
+    var esc = function (s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
+    var callPrev = '', nameRe = new RegExp([m.k.name, m.c.name, m.u.name].map(esc).join('|') + '|[\\u2060♡\\s　]', 'g');
+    var strip = function (v) { return String(v || '').replace(nameRe, ''); };
+    var call = function (top) {
+      if (!C || !C.peakLine) return '';
+      for (var i = 0; i < 3; i++) { var v = C.peakLine(m.u, top, 'w5'); if (!callPrev || strip(v) !== strip(callPrev)) break; }
+      callPrev = v;
+      return v;
+    };
+    /* 体位で、不仲がもう受けと繋がっているか（前後から・見せつけ・横向き・受けが不仲の上に）／片想いが繋がっているか（交代で・受けが片想いの上に・体位の文なし） */
+    var kIn = pT === 'fb' || pT === 'show' || pT === 'side' || (pT === 'ue' && ux === m.k);
+    var cIn = !pT || pT === 'turn' || (pT === 'ue' && ux === m.c);
+    if (kT === 'retake') {
+      /* 奪い返す一文：不仲がもう繋がっていれば「さらに激しく」の文、まだなら「引き剥がして繋がる」の文（RETAKE_N の m・fm は 0 番＝これから／1 番＝もう、ff は逆） */
+      var rk = RV.RETAKE_N[fk] || RV.RETAKE_N.n, ri = !pT || fk === 'n' ? -1 : fk === 'ff' ? (kIn ? 0 : 1) : (kIn ? 1 : 0);
+      put('mid', line(m.k, RV.RETAKE) + nar(ri >= 0 && rk[ri] ? [rk[ri]] : rk), 1);
+      if (!short) put('mid', nar(RV.BETWEEN), 2);
+      put('peak', nar(RV.PEAK[mm ? 'mm' : 'soft']) + (short ? '' : line(m.k, RV.PK_K)), 1);
+    } else if (kT === 'sweet') {
+      /* 体位で片想いが前にいて繋がっていない（前後から・見せつけ・横向き・受けが不仲の上に）なら、口づけと囁きの文に */
+      if (!short) put('mid', line(m.c, RV.SW_C) + (cIn ? nar(RV.SW_N[fc] || RV.SW_N.n) : nar(RV.SW_NF)), 1);
+      put('peak', nar(RV.SW_P[mm ? (cIn ? 'mm' : 'mmf') : 'soft']) + line(m.c, RV.SW_PC), 1);
+    } else if (kT === 'sync') {
+      var pen = (fk === 'm' || fk === 'fm') && (fc === 'm' || fc === 'fm');
+      if (!short) put('mid', line(m.k, RV.SY_K) + nar(RV.SY_N[pen ? 'pen' : 'soft']), 1);
+      /* 片想いが前にいて繋がっていない体位では「二人分の熱を受けとめて」の文だけ */
+      put('peak', nar(mm && !cIn ? RV.SY_P.mm.slice(1) : RV.SY_P[mm ? 'mm' : 'soft']), 1);
+    } else {
+      if (!short) put('mid', nar(RV.NM_N), 1);
+      put('peak', call(m.c) + nar(RV.NM_P[mm ? 'mm' : 'soft']) + (short ? '' : call(m.k)), 1);
+    }
+
+    /* ---------- 事後 ---------- */
+    var aT = null;
+    if (!short) {
+      var AW = { back: 1, hold: 1, quiet: 0.9, word: 1, next: 0.7 };
+      if (inL(pk0, ['tsun', 'proud'])) AW.back *= 1.3;
+      if (inL(pc, ['devoted', 'gentle'])) AW.hold *= 1.3;
+      if (kT === 'sweet') AW.hold *= 1.5;
+      if (intro === 'sasoi') AW.word *= 1.5;
+      if (inL(pu, ['proud', 'cool'])) AW.word *= 1.2;
+      if (kT === 'retake') AW.next *= 1.5;
+      aT = wpick(ctx, AW, H.after) || 'quiet';
+      H.after.push(aT);
+      var atx = nar(RV.AF[aT]);
+      if (aT === 'hold') atx += line(m.c, RV.AF_C);
+      else if (aT === 'word') atx += line(m.u, RV.AF_U);
+      else if (aT === 'next') { var s1 = atx.indexOf('。') + 1; atx = atx.slice(0, s1) + line(m.k, RV.AF_K) + atx.slice(s1); }
+      put('after', atx, 1);
+    }
+
+    var lbl = function (T, x) { return x && T && T[x] ? T[x] : ''; };
+    var parts = ['導入：' + RV.INTRO_LABEL[intro] + (n > 0 ? '（この三人の' + (n + 1) + '度目）' : '') + '（' + note + '）', '始まり：' + lbl(RV.START_LABEL, sT)];
+    if (pT) parts.push('形：' + lbl(RV.POSE_LABEL, pT));
+    parts.push('山場：' + lbl(RV.PEAK_LABEL, kT));
+    if (aT) parts.push('事後：' + lbl(RV.AFTER_LABEL, aT));
+    return { tag: tag, noMain: noMain, types: { intro: intro, start: sT, pose: pT, peak: kT, after: aT, n: n },
+      why: m.k.name + 'は' + m.u.name + 'と不仲、' + m.c.name + 'は' + m.u.name + 'に片想い。' + parts.join('・') };
   };
 })();

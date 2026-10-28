@@ -526,7 +526,9 @@
     if (!ET || !ET.say || !top || !bot) return '';
     var k = edgeKind(top, bot), opt = { rel: this.o.rel || undefined };
     if (k !== 'n') opt.kind = k;
-    if (this.fl) opt.flavor = this.fl;
+    /* o.flSt（{ 段: 色 }）：呼ぶ側が段ごとに夜の色を決めたとき（出られない部屋のこじれた三人の盛り上がり方。room-trio-rival-r18.js） */
+    var fl = (this.o.flSt && this.o.flSt[st]) || this.fl;
+    if (fl) opt.flavor = fl;
     /* 二人きりを前提にした台詞（「ここには私しかいない」など）は、三人の場面では引き直す（3回まで） */
     for (var i = 0; i < 3; i++) { var l = ET.say(this.S, top, bot, st, opt); if (!l || !SOLO2.test(l)) return l || ''; }
     return '';
@@ -549,12 +551,12 @@
     }
     return '';
   };
-  /* イく予告（w4）・名前を呼ぶ（w5） */
-  Comp.prototype.peakLine = function (bot, top) {
+  /* イく予告（w4）・名前を呼ぶ（w5）。key0 で鍵を決めて呼べる（受けが二人の名前を順に呼ぶ山場：room-trio-rival-r18.js） */
+  Comp.prototype.peakLine = function (bot, top, key0) {
     var Mo = M();
     if (!Mo || !Mo.pick || !bot) return '';
     for (var i = 0; i < 4; i++) {
-      var key = top && this.rand() < 0.45 ? 'w5' : 'w4', v = Mo.pick(this.S, bot, key, { top: top || null });
+      var key = key0 || (top && this.rand() < 0.45 ? 'w5' : 'w4'), v = Mo.pick(this.S, bot, key, { top: top || null });
       if (!v) continue;
       if (Mo.lastSrc !== 'user' && v.charAt(0) !== NOTONE) v = NOTONE + v;
       if (!this.ero && Mo.plain) v = Mo.plain(v);
@@ -675,7 +677,8 @@
     /* 最中：（体の位置が最中の場面は体の位置、ほかは形が変わる一文）→（呼ぶ側の見所）→ 擬音（小説調は息）→ 応酬 */
     if (len !== 'short') {
       if (o.posePost) pose('mid', 1, 'post');
-      else if ((this.sp.p !== 'sandwich' || this.rand() < 0.6) && !this.parts.some(function (p) { return SWAP.test(p.t); })) this.gen1('mid', this.shift(), 3, 'pre', null, 'pose');
+      /* o.noShift：呼ぶ側が体位の文を置いた（形が変わる一文と食い違う） */
+      else if (!o.noShift && (this.sp.p !== 'sandwich' || this.rand() < 0.6) && !this.parts.some(function (p) { return SWAP.test(p.t); })) this.gen1('mid', this.shift(), 3, 'pre', null, 'pose');
       sfx('mid', this.ero && !hasSfx ? 1 : this.ero ? 2 : 3, 'post');
       /* 一人が二人を：形が変わった（攻めが次の人へ移った）すぐあとに受け二人の掛け合い */
       x('mid', 1, this.sp.p === 'oneTwo' ? 'pre' : 'post');

@@ -494,8 +494,10 @@
     /* こじれた三人（R18版の room-trio-rival-r18.js の HK.TrioRival。2026-10-28 担当LG）：攻め二人×受けで、受けと不仲の積極的な攻めと、受けに片想いの攻めがいる初回は、
        「あなたがやって」と押しつける→（片想いが遠慮がちなら）待ちきれずに不仲が手を出す→片想いが取られまいと割って入る→不仲が奪い返す、の段取りで書く。
        ふつうの前戯と山場の文は使わない（段取りの文と重ならないように） */
-    var rvM = T3 && first && !isLoveAny(kind) && HK.TrioRival ? HK.TrioRival.match(ctx, sp) : null, rvR = null;
-    if (rvM) { rvR = HK.TrioRival.apply(ctx, rvM, put, fpk, function (l, rr) { return apartOK(l, rr); }, !!tShort); used.push(rvR.tag); }
+    /* 2026-10-28 担当LG2：導入・始まり方・体位・盛り上がり方・事後の型を回ごとに選ぶ。同じ三人の二度目の場面（first でない）にも使い、前と違う型を選びやすくする。
+       体位の文を置いたら（rvR.noMain）、本番の一文は置かない */
+    var rvM = T3 && !isLoveAny(kind) && HK.TrioRival ? HK.TrioRival.match(ctx, sp) : null, rvR = null;
+    if (rvM) { rvR = HK.TrioRival.apply(ctx, rvM, put, fpk, function (l, rr) { return apartOK(l, rr); }, !!tShort, T3, { first: first, tools: !!ctx.flags.toolbox }); used.push(rvR.tag); }
     ctx.flags.lastTrioRival = rvR ? rvR.why : null;
     /* 前戯（初回だけ）：嫉妬・開放度・きっかけに合う文を優先 */
     var ltW = ltOn && first && !tShort && ctx.rng() < 0.85 ? ltPick('warm') : null;
@@ -512,7 +514,7 @@
     var ml0 = X.MAIN[sp.p].filter(swapOK), ml1 = ml0.filter(function (l) { return apartOK(l); });
     /* 直接は繋がらない二人がいるときは、触れ合う文に戻さない（ml1 も空なら、形の文 SEX のうち触れ合わない文） */
     var mlA = ml.length ? ml : ml1.length ? ml1 : apart.length ? (SEX0[sp.p] || []).filter(function (l) { return apartOK(l); }) : ml0;
-    put('in', X.fill(fpk(mlA.length ? mlA : ml0), r), 1);
+    if (!(rvR && rvR.noMain)) put('in', X.fill(fpk(mlA.length ? mlA : ml0), r), 1);
     /* 中心のある三人：直接は繋がらない二人（apart）は、同じ場にいても見ている・声をかけるだけ（態度9種。room-trio-lines.js の X.WATCH。2026-10-27 担当HN） */
     if (apart.length && X.WATCH) {
       var wp = apart[0], wa = ctx.rng() < 0.5 ? wp : [wp[1], wp[0]], wh = g.filter(function (c) { return wp.indexOf(c) < 0; })[0];
@@ -608,9 +610,11 @@
     ctx.flags.lastTrioTags = used;
     ctx.flags.lastTrioInfo = { p: sp.p, jeal: J.jeal, open: op, j: J.j ? J.j.name : '', s: sB ? sB.name : '', after: after };
     if (ffE && HK.FF) txt3 = HK.FF.fix(ctx, txt3, ffE[0], ffE[1], { tools: !!ctx.flags.toolbox });
-    /* 女性の攻めが入れる側に書かれた文は、男性の相手ごとに女性上位の文へ（pos-fm.js） */
+    /* 女性の攻めが入れる側に書かれた文は、男性の相手ごとに女性上位の文へ（pos-fm.js）。直接は繋がらない二人（apart：攻めどうしなど）の組では直さない
+       （その二人の女性上位の文に差し替えると、触れ合わない二人が繋がってしまう。2026-10-28 担当LG2） */
+    var apartP = function (a, b) { return apart.some(function (p) { return p.indexOf(a) >= 0 && p.indexOf(b) >= 0; }); };
     if (HK.FM && HK.Pos) g.filter(function (c) { return HK.Pos.isF(c) && (HK.Pos.isTop(c) || HK.Pos.hasFor(c)); }).forEach(function (f) {
-      g.forEach(function (m) { if (m !== f && !HK.Pos.isF(m) && HK.Pos.isTop(f, m)) txt3 = HK.FM.fixWith(ctx, txt3, f, m.name); });
+      g.forEach(function (m) { if (m !== f && !HK.Pos.isF(m) && HK.Pos.isTop(f, m) && !apartP(f, m)) txt3 = HK.FM.fixWith(ctx, txt3, f, m.name); });
     });
     /* 形の上で女性が男性を抱く側に回った組（受け×受けで女性が動く側に回ったときなど、女性の指定が攻めでない組）も、同じく女性上位の文へ */
     if (HK.FM && HK.Pos && E) E.forEach(function (e) { var f = e[0], m = e[1]; if (f && m && f !== m && HK.Pos.isF(f, m) && !HK.Pos.isF(m, f) && !HK.Pos.isTop(f, m)) txt3 = HK.FM.fixWith(ctx, txt3, f, m.name); });
