@@ -253,6 +253,8 @@
       if (HK.tieHidden && HK.tieHidden(t.type)) return false;
       var CO = HK.coldOpts ? HK.coldOpts(t.type) : null;
       if (t.cold && !(CO && CO.map[t.cold])) delete t.cold;
+      /* 恋愛の欄（どの関係にもある）：'ok'＝あり・'no'＝なし。ほかの値は自動（欄なし）として読む */
+      if ('love' in t && t.love !== 'ok' && t.love !== 'no') delete t.love;
       if (HK.tieExtraNorm) HK.tieExtraNorm(t);
       return true;
     });
@@ -782,7 +784,7 @@
         if (R.per && R.per[c.id]) o.per = R.per[c.id];
         return o;
       }),
-      ties: (R.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok') o.love = 'ok'; HK.TIE_XF.forEach(function (f) { if (t[f]) o[f] = t[f]; }); return o; }),
+      ties: (R.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok' || t.love === 'no') o.love = t.love; HK.TIE_XF.forEach(function (f) { if (t[f]) o[f] = t[f]; }); return o; }),
       teacher: R.teacher && idx[R.teacher] != null ? idx[R.teacher] : null,
       /* グループごとの「仲間」（書き出す住人のグループだけ） */
       grpComrade: (function () { var m = {}, any = false; Object.keys(R.grpComrade || {}).forEach(function (g) { if (R.grpComrade[g] && R.chars.some(function (c) { return (only ? idx[c.id] != null : true) && inGrp(c, g); })) { m[g] = 1; any = true; } }); return any ? m : undefined; })(),
@@ -883,7 +885,7 @@
       S.ties = (S.ties || []).filter(function (x) { return !(x.type === t.type && ((x.a === a && x.b === b) || (x.a === b && x.b === a))); });
       var CO2 = HK.coldOpts ? HK.coldOpts(t.type) : null;
       var nt0 = t.cold && CO2 && CO2.map[t.cold] ? { a: a, b: b, type: t.type, cold: t.cold } : { a: a, b: b, type: t.type };
-      if (t.love === 'ok' && (HK.TIES[t.type].family || HK.TIES[t.type].loveOpt)) nt0.love = 'ok';
+      if (t.love === 'ok' || t.love === 'no') nt0.love = t.love;
       /* 追加の欄（型・度合い・気持ち・様子・愛憎）。古い JSON にはないので、ないときは今までどおり */
       HK.TIE_XF.forEach(function (f) { if (typeof t[f] === 'string' && t[f]) nt0[f] = t[f]; });
       if (HK.tieExtraNorm) HK.tieExtraNorm(nt0);
@@ -1257,7 +1259,7 @@
         cleanTies();
         var J = castFor(S.scenId).map(function (c) { return c.id; });
         var out = S.ties.filter(function (t) { return J.indexOf(t.a) >= 0 && J.indexOf(t.b) >= 0; }).map(function (t) {
-          var o = { a: J.indexOf(t.a), b: J.indexOf(t.b), type: t.type, cold: HK.coldOpts && HK.coldOpts(t.type) ? t.cold || '' : '', love: t.love === 'ok' ? 'ok' : '' };
+          var o = { a: J.indexOf(t.a), b: J.indexOf(t.b), type: t.type, cold: HK.coldOpts && HK.coldOpts(t.type) ? t.cold || '' : '', love: t.love === 'ok' || t.love === 'no' ? t.love : '' };
           /* 追加の欄（型・度合い・気持ち・様子）は、ある関係だけに付ける */
           (HK.tieExtra ? HK.tieExtra(t.type) : []).forEach(function (x) { if (t[x.f]) o[x.f] = t[x.f]; });
           return o;

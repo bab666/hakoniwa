@@ -62,6 +62,37 @@
   function keepFold() { try { if (HK.store) HK.store.set('tiefold', FOLD); } catch (e) { /* 保存できなくても表示は変えられる */ } }
   function query() { try { return HK.CastPages && HK.CastPages.state ? String(HK.CastPages.state().tq || '').trim() : ''; } catch (e) { return ''; } }
 
+  /* ---------- 恋愛の欄（どの関係にもある。t.love：''＝自動／'ok'＝あり／'no'＝なし。2026-10-28 担当MA） ----------
+     既定（自動のとき）は ties.js の HK.tieLoveDefault(t)。無い版では、血縁・執着（信仰）・教師と生徒を「なし」、ほかを「あり」とみなす。
+     「なし」は恋愛（告白・恋人・片想い）だけを止める（体の関係は止めない。止めるのは「恋愛・R18にしない相手」）。⚙️ 設定（ui-gear.js）とも共用 */
+  function loveVal(t) { return t && (t.love === 'ok' || t.love === 'no') ? t.love : ''; }
+  function loveDef(t) {
+    if (HK.tieLoveDefault) { try { return HK.tieLoveDefault(t) === 'no' ? 'no' : 'ok'; } catch (e) { /* 下の決まりで */ } }
+    var D = t && HK.TIES[t.type];
+    return D && ((D.family && !D.loveOK) || D.loveOpt || t.type === 'teacher') ? 'no' : 'ok';
+  }
+  function loveHelp(t) {
+    var h = '';
+    if (HK.tieLoveHelp) { try { h = String(HK.tieLoveHelp(t) || ''); } catch (e) { h = ''; } }
+    return h || '自動：この関係は恋愛' + (loveDef(t) === 'no' ? 'なし' : 'あり');
+  }
+  /* 選択肢（「自動」は今の既定が分かる形）。short：狭い欄（関係の一覧）向けの短い形「自動（あり）」 */
+  function loveOpts(t, short) {
+    var v = loveVal(t), o = function (id, label) { return '<option value="' + id + '"' + (v === id ? ' selected' : '') + '>' + esc(label) + '</option>'; }, d = loveDef(t) === 'no' ? 'なし' : 'あり';
+    return o('', '恋愛：自動（' + (short ? d : 'この関係は恋愛' + d) + '）') + o('ok', '恋愛：あり') + o('no', '恋愛：なし');
+  }
+  /* attr：欄の属性（id・data-* など）。title に自動のときの説明 */
+  function loveSel(t, attr, short) { return '<select ' + attr + ' aria-label="恋愛" title="' + esc(loveHelp(t)) + '">' + loveOpts(t, short) + '</select>'; }
+  /* 説明の行に添える文（自動のときは足さない。選択肢に既定が出ているため） */
+  function loveNote(t) {
+    var D = t && HK.TIES[t.type], v = loveVal(t), fam = !!(D && D.family && !D.loveOK);
+    if (!D || !v) return '';
+    if (v === 'ok') return D.loveOpt ? '恋愛：ありにしているので、想いが恋に変わることもある' : fam ? '恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : loveDef(t) === 'no' ? '恋愛：ありにしているので、この二人は恋愛に発展することがある' : '';
+    /* なし：血縁は自動と同じ（説明の「恋愛にはならない」のまま） */
+    if (D.loveOpt) return '恋愛：なしにしているので、想いは恋にならない';
+    return fam ? '' : '恋愛：なしにしているので、この二人のあいだでは恋愛（告白・恋人・片想い）にならない' + (HK.SAFE_ON ? '' : '（R18の場面は止めない。止めるときは「恋愛・R18にしない相手」）');
+  }
+
   /* ---------- 関係の行 ---------- */
   /* きょうだいの関係の行：二人の続柄（「美咲（姉）→ 健（弟）：兄弟（庇護）」）と注意（年齢が未設定・同じ年齢・庇護の向きと年齢が逆）を添える（sib-word.js） */
   function sibText(t, by) {
@@ -78,7 +109,7 @@
     var na = (by[t.a] || {}).name, nb = (by[t.b] || {}).name;
     var typeIn = lz && CP ? CP.typeOpt(t.type) : HK.tieOptions ? HK.tieOptions(t.type, { dir: true }) : HK.TIE_ORDER.map(function (id) { var d = HK.TIES[id]; return '<option value="' + id + '"' + (id === t.type ? ' selected' : '') + '>' + esc(d.label) + (d.dir ? '（' + d.roleA + '→' + d.roleB + '）' : '') + '</option>'; }).join('');
     var xs = '', past = '', ev = '';
-    if ((D.family && !D.loveOK) || D.loveOpt) xs += '<select id="tl-' + k + '" data-f="tie" data-k="' + k + '" data-p="love" aria-label="恋愛"><option value=""' + (t.love === 'ok' ? '' : ' selected') + '>' + (D.loveOpt ? '恋愛に発展：しない' : '恋愛：なし') + '</option><option value="ok"' + (t.love === 'ok' ? ' selected' : '') + '>' + (D.loveOpt ? '恋愛に発展：する' : '恋愛：あり') + '</option></select>';
+    xs += loveSel(t, 'id="tl-' + k + '" data-f="tie" data-k="' + k + '" data-p="love"', true);
     var CO = HK.coldOpts ? HK.coldOpts(t.type) : null;
     if (CO) xs += '<select id="tc-' + k + '" data-f="tie" data-k="' + k + '" data-p="cold" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return '<option value="' + id + '"' + ((t.cold || '') === id ? ' selected' : '') + '>' + esc(CO.map[id].label) + '</option>'; }).join('') + '</select>';
     /* 追加の欄（型・度合い・気持ち・様子。許嫁・元恋人は二人それぞれの気持ち）。hide の欄（敵対の度合い「憎悪」）は出さない（保存済みの値は残って効く）。
@@ -88,7 +119,7 @@
       var h = '<select id="tx' + x.f + '-' + k + '" data-f="tie" data-k="' + k + '" data-p="' + x.f + '" aria-label="' + esc(who ? who.name + 'の気持ち' : x.aria) + '">' + x.order.map(function (id) { return '<option value="' + id + '"' + (v === id ? ' selected' : '') + '>' + esc((who ? who.name + 'の気持ち：' : '') + (HK.tieExtraLabel ? HK.tieExtraLabel(x, id, na, nb) : x.map[id].label)) + '</option>'; }).join('') + '</select>';
       if (x.f === 'past') past = h; else if (x.f === 'noev') ev = h; else xs += h;
     });
-    var hint = sibText(t, by) + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (D.loveOpt ? (t.love === 'ok' ? '。恋愛に発展：するにしているので、想いが恋に変わることもある' : '。恋愛に発展：しないにしているので、想いは恋にならない') : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '');
+    var hint = sibText(t, by) + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (loveNote(t) ? '。' + esc(loveNote(t)) : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '');
     return '<div class="tierow" data-k="' + k + '">' +
       '<div class="tc tca"><select id="ta-' + k + '" data-f="tie" data-k="' + k + '" data-p="a"' + lz + ' aria-label="関係の起点">' + X.opts(t.a, by) + '</select></div>' +
       '<div class="tc tct"><select id="tt-' + k + '" data-f="tie" data-k="' + k + '" data-p="type"' + (lz && CP ? ' data-lazyt="1"' : '') + ' aria-label="関係の種類">' + typeIn + '</select></div>' +
@@ -97,7 +128,7 @@
       '<div class="tc tcd"><button class="btn ghost small" data-act="tiedel" data-k="' + k + '">削除</button></div>' +
       '<span class="tiehint" title="' + hint.replace(/<[^>]*>/g, '') + '">' + hint + '</span></div>';
   }
-  var HEAD = '<div class="tiehead" aria-hidden="true"><span style="grid-area:a">左の人</span><span style="grid-area:t">関係</span><span style="grid-area:b">右の人</span><span style="grid-area:x">気持ち・様子</span><span style="grid-area:p">過去</span><span style="grid-area:e">出来事</span></div>';
+  var HEAD = '<div class="tiehead" aria-hidden="true"><span style="grid-area:a">左の人</span><span style="grid-area:t">関係</span><span style="grid-area:b">右の人</span><span style="grid-area:x">恋愛・気持ち・様子</span><span style="grid-area:p">過去</span><span style="grid-area:e">出来事</span></div>';
 
   /* ---------- グループの見出し ---------- */
   /* 住人の表・グループの並び（名簿で最初に出てきた順） */
@@ -179,7 +210,7 @@
 
   /* ======================= 一括設定 ======================= */
   /* 画面の選択（このページを開いているあいだだけ覚える） */
-  var B = { open: false, op: 'tie', sc: '', tg: 'g', ts: 'gin', p: '', g1: '', g2: '', m: {}, ty: 'friend', dir: 'l', rep: false, mode: 'add', both: false, lk: '', tf: '', fv: 'noev:off', cp: { tie: 1, ng: 1, lock: 1, sex: 1, nk: 1 } };
+  var B = { open: false, op: 'tie', sc: '', tg: 'g', ts: 'gin', lv: 'no', p: '', g1: '', g2: '', m: {}, ty: 'friend', dir: 'l', rep: false, mode: 'add', both: false, lk: '', tf: '', fv: 'noev:off', cp: { tie: 1, ng: 1, lock: 1, sex: 1, nk: 1 } };
   var undo = null;
   var CAP_TIES = 3000, CAP_PAIRS = 30000;
   function ngLabel() { return HK.SAFE_ON ? '恋愛にしない相手' : '恋愛・R18にしない相手'; }
@@ -192,18 +223,20 @@
   function OPS() {
     var l = [['tie', '関係をまとめて付ける'], ['ng', ngLabel() + 'をまとめて付ける・外す'], ['lock', '恋愛相手の固定をまとめて足す・外す']];
     if (sexOn()) l.push(['sex', SEX.label + 'をまとめて足す・外す']);
-    return l.concat([['nk', '殺さない相手をまとめて付ける・外す'], ['fld', '関係の欄（出来事・過去）をまとめて変える'], ['del', '関係をまとめて削除する'], ['copy', 'ある人の関係・設定をほかの人に写す']]);
+    return l.concat([['nk', '殺さない相手をまとめて付ける・外す'], ['fld', '関係の欄（出来事・過去）をまとめて変える'], ['love', '関係の恋愛（自動・あり・なし）をまとめて変える'], ['del', '関係をまとめて削除する'], ['copy', 'ある人の関係・設定をほかの人に写す']]);
   }
   /* 範囲の選択肢（グループが無いときはグループを使うものを出さない） */
   var PAIR_SC = [['gg', 'グループの全員どうし', 1], ['pg', '選んだ人 × グループの全員', 1], ['pa', '選んだ人 × 全員', 0], ['pm', '選んだ人 × 選んだ住人たち', 0], ['g2', 'グループ × グループ', 2], ['mm', '選んだ住人たちどうし', 0]];
   var TG_SC = [['g', 'グループの全員', 1], ['m', '選んだ住人たち', 0], ['a', '全員', 0]];
   var CP_SC = [['m', '選んだ住人たち', 0], ['g', 'グループの全員', 1], ['a', '全員', 0]];
   var TIE_SC = [['all', 'すべての関係', 0], ['gin', 'グループの中の関係（二人ともそのグループ）', 1], ['gany', 'グループの人が関わる関係', 1], ['g2', 'グループとグループのあいだの関係', 2], ['p', '選んだ人の関係', 0], ['mm', '選んだ住人たちのあいだの関係', 0]];
+  /* 恋愛の欄の一括（t.love。''＝自動に戻す） */
+  var LV = [['no', '恋愛：なし'], ['ok', '恋愛：あり'], ['', '恋愛：自動に戻す']];
   var FV = [['noev:off', '出来事：起こさない（関係の色は残す）'], ['noev:', '出来事：起こす'], ['past:', '過去：なし'], ['past:friend', '過去：昔は仲が良かった'], ['past:foe', '過去：昔は敵だった']];
   function groups() { var g = [], seen = Object.create(null); S().chars.forEach(function (c) { gl(c).forEach(function (x) { if (!seen[x]) { seen[x] = 1; g.push(x); } }); }); return g; }
   function scList(L, ng) { return L.filter(function (x) { return x[2] <= ng; }); }
-  function scKey(op) { return op === 'tie' || op === 'ng' || op === 'nk' ? 'sc' : op === 'fld' || op === 'del' ? 'ts' : 'tg'; }
-  function scOpts(op) { return op === 'tie' || op === 'ng' || op === 'nk' ? PAIR_SC : op === 'fld' || op === 'del' ? TIE_SC : op === 'copy' ? CP_SC : TG_SC; }
+  function scKey(op) { return op === 'tie' || op === 'ng' || op === 'nk' ? 'sc' : op === 'fld' || op === 'del' || op === 'love' ? 'ts' : 'tg'; }
+  function scOpts(op) { return op === 'tie' || op === 'ng' || op === 'nk' ? PAIR_SC : op === 'fld' || op === 'del' || op === 'love' ? TIE_SC : op === 'copy' ? CP_SC : TG_SC; }
   /* 選択を今の住人・グループに合わせて直す */
   function fix() {
     var s = S(), gs = groups(), ng = Math.min(2, gs.length), ids = Object.create(null);
@@ -218,6 +251,7 @@
     Object.keys(B.m).forEach(function (id) { if (!ids[id]) delete B.m[id]; });
     if (!HK.TIES[B.ty] || (HK.tieHidden && HK.tieHidden(B.ty))) B.ty = 'friend';
     if (B.tf && !HK.TIES[B.tf]) B.tf = '';
+    if (B.lv !== 'ok' && B.lv !== 'no') B.lv = '';
   }
   function needs() {
     var k = scKey(B.op), v = B[k], r = { p: false, g1: false, g2: false, m: false };
@@ -329,7 +363,7 @@
           return P.name + 'の' + nm2 + (on2 ? 'に' : 'から') + L2.length + '人を' + (on2 ? '足しました' : '外しました');
         } };
     }
-    if (op === 'fld' || op === 'del') {
+    if (op === 'fld' || op === 'del' || op === 'love') {
       if (B.ts === 'p' && !P) return { n: 0, msg: '人を選んでください' };
       if (B.ts === 'mm' && picked().length < 2) return { n: 0, msg: '住人を二人以上選んでください（下の一覧）' };
       var hit = (s.ties || []).filter(function (t) { return tieHit(t, by); });
@@ -337,6 +371,13 @@
         var tx4 = '関係を' + hit.length + '本削除します';
         return { n: hit.length, msg: hit.length ? tx4 : '当てはまる関係はありません', ask: tx4 + '。よろしいですか？', label: '関係を' + hit.length + '本削除した',
           run: function () { var gone = hit.slice(); s.ties = (s.ties || []).filter(function (t) { return gone.indexOf(t) < 0; }); return '関係を' + gone.length + '本削除しました'; } };
+      }
+      if (op === 'love') {
+        var lv = B.lv, ll = (LV.filter(function (x) { return x[0] === lv; })[0] || ['', ''])[1];
+        var L4 = hit.filter(function (t) { return (t.love === 'ok' || t.love === 'no' ? t.love : '') !== lv; });
+        var tx7 = hit.length + '本のうち' + L4.length + '本を「' + ll + '」にします';
+        return { n: L4.length, msg: L4.length ? tx7 : '変わる関係はありません（' + hit.length + '本が当てはまり、すべてすでに「' + ll + '」です）', ask: tx7 + '。よろしいですか？', label: '関係' + L4.length + '本を「' + ll + '」にした',
+          run: function () { L4.forEach(function (t) { if (lv) t.love = lv; else delete t.love; }); return '関係' + L4.length + '本を「' + ll + '」にしました'; } };
       }
       var fv = B.fv.split(':'), ff = fv[0], val = fv[1] || '', fl = (FV.filter(function (x) { return x[0] === B.fv; })[0] || ['', ''])[1];
       var okF = function (t) { return (HK.tieExtra ? HK.tieExtra(t.type) : []).some(function (x) { return x.f === ff; }); };
@@ -451,10 +492,12 @@
     }
     if (op === 'lock' || op === 'sex') h += row('', '<label><input type="checkbox" data-tbf="both" id="tbx-both"' + (B.both ? ' checked' : '') + '> 相手の側にも、選んだ人を' + (B.mode === 'del' ? '外す' : '足す') + '（両方向）</label>');
     if (op === 'sex' && B.mode !== 'del') h += row('固定のしかた', sel('lk', opt('', '今の設定のまま（未設定なら「固定した相手だけ」）', B.lk) + opt('pick', '固定した相手だけ', B.lk) + opt('pickMob', '固定した相手＋モブ', B.lk), '固定のしかた'));
-    if (op === 'fld' || op === 'del') {
+    if (op === 'fld' || op === 'del' || op === 'love') {
       var present = Object.create(null); (S().ties || []).forEach(function (t) { present[t.type] = 1; });
       h += row('関係の種類', sel('tf', opt('', 'すべての種類', B.tf) + HK.TIE_ORDER.filter(function (id) { return present[id] && HK.TIES[id]; }).map(function (id) { return opt(id, HK.TIES[id].label, B.tf); }).join(''), '関係の種類で絞る'));
       if (op === 'fld') h += row('変える内容', sel('fv', FV.map(function (x) { return opt(x[0], x[1], B.fv); }).join(''), '変える内容'));
+      if (op === 'love') h += row('恋愛', sel('lv', LV.map(function (x) { return opt(x[0], x[1], B.lv); }).join(''), '恋愛のあり・なし')) +
+        '<p class="tbxnote">「自動」は関係ごとの決まり（血縁・執着（信仰）・教師と生徒などは恋愛なし、ほかは恋愛あり）に戻します。「なし」は恋愛（告白・恋人・片想い）だけを止めます' + (HK.SAFE_ON ? '' : '（R18の場面も止めるときは「' + ngLabel() + '」）') + '。</p>';
     }
     if (op === 'copy') {
       var cb = function (v, label) { return '<label><input type="checkbox" data-tbf="cp" data-v="' + v + '"' + (B.cp[v] ? ' checked' : '') + '> ' + label + '</label>'; };
@@ -544,6 +587,8 @@
 
   HK.TiesUI = {
     section: section, rowsHtml: rowsHtml, sortKs: sortKs, reveal: reveal,
+    /* 恋愛の欄（⚙️ 設定の相手ごとの関係の枠でも使う） */
+    love: { val: loveVal, def: loveDef, help: loveHelp, sel: loveSel, note: loveNote },
     /* 点検・試験用：一括設定の選択を変える（画面の欄と同じ）・計画・実行（確かめなし）・取り消し */
     bulk: {
       set: function (o) { Object.keys(o || {}).forEach(function (k) { B[k] = o[k]; }); fix(); return B; },
