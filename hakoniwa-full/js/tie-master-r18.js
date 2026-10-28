@@ -1,8 +1,10 @@
-/* 箱庭シミュレーター（R18版のみ）: 関係の段階の、合意のない場面（内容のスイッチ「無理矢理」が入のときだけ）
+/* 箱庭シミュレーター（R18版のみ）: 関係の段階の、合意のない場面（内容のスイッチ「合意のない展開」が入のときだけ。展開の重さが穏やかなら切）
    ・主従：従者が主人を襲う（恨み・抑えきれない執着）。tie_master_r18（関係ごとの場面なので id は tie_ で始める）
    ・下剋上（tie-stage.js の試練 tie_trial）：立場が入れ替わったその場で、下だった側が上だった側を組み敷く（HK.TieMasterR18.overturn）
-   起きる条件：R18版で、内容のスイッチの「無理矢理」が入・描写の設定がある箱庭（クラスメイトでは起きない）・二人とも R18 に出てよい（HK.State.pairSex：
-   その場にいる・恋愛対象と受け攻めが合う HK.Pos.okSex）・襲う側がその組で攻めに回れる（HK.Pos.order。自分で攻めを選んだ人を受ける側にしない）
+   起きる条件（MR.ok）：R18版で、内容のスイッチの「合意のない展開」が入・描写の設定がある箱庭（クラスメイトでは起きない）・二人とも R18 に出てよい
+   （HK.Pos.okForce：その場にいる・恋愛対象と受け攻めが合う。恋愛対象「なし」は体の関係の相手で）・恋愛対象は両方向（ctx.romanceOk）・
+   従者が主を避けていない（HK.Avoid。恨み＝敵視・不仲は避けているのとは別なので起きる）・従者が攻め・主が受けに回れる（MR.dirOk。自分で攻めを選んだ人を受ける側にしない）。
+   一回の箱庭で同じ組は一度まで。起きる見込みは MR.plan（一回の箱庭で、ふつう 5 割・重い 7 割ほど。強い動機があればもっと）。記録は性的な場面の印（e.lewd）と理由の〔合意のない展開〕
    甘く書かない：襲う側の歪んだ言い分、受ける側の抵抗・混乱（HK.DarkThick.resist の態度9種）、事後の空白。小説調では♡は使わない。
    最中は性別の組ごと（m＝攻めが男性の体／ff＝女性どうし／fm＝女性の攻めが男性に跨る）、山場は受ける側の態度9種。
    男性向けの作風（2026-10-27）：最中を体の組（mv／ma／ff／fm）の男性向けの文、山場を受ける側の態度9種（HK.HateSex.Force.PEAK）＋嫌がる喘ぎ（♡）、果ては組ごと。
@@ -21,20 +23,39 @@
   function J(a) { return a.filter(Boolean).join('\n\n'); }
   var MR = HK.TieMasterR18 = {};
 
-  /* 起きてよい組か（top＝襲う側、bot＝襲われる側） */
+  /* 起きてよい組か（top＝襲う側、bot＝襲われる側）
+     向き（2026-10-28 担当KD）：以前は HK.Pos.order（その組の向きの癖。おまかせの女性は受けに寄る）で従者が攻めのときだけだったので、
+     おまかせの女性の従者×おまかせの男性の主では起きなかった（表示は「あり」）。合意のない場面は襲う側が決まっているので、
+     受け攻めの指定で従者が攻め・主が受けに回れる向きがあれば（HK.Pos.orients。自分で攻めを選んだ主・受けを選んだ従者は不可）、
+     相手ごとの指定・攻め度で向きが決まる組（HK.Pos.prefer）はその向きどおりのときだけ起こす。
+     恋愛対象「なし」の人は「体の関係の相手」で見る（HK.Pos.okForce。合意のない展開の切羽詰まった場面と同じ）。
+     従者が主を避けている（HK.Avoid：苦手・避けている・恐怖・無関心・嫌悪と回避型の気質）なら起こさない（ctx.romanceOk の門） */
+  MR.dirOk = function (top, bot) {
+    var P = HK.Pos;
+    if (!P || !P.orients) return true;
+    if (!P.orients(top, bot).some(function (o) { return o[0] === top; })) return false;
+    var pr = P.prefer ? P.prefer(top, bot) : null;
+    return !pr || pr[0] === top;
+  };
   MR.ok = function (ctx, top, bot) {
     if (!ctx || !top || !bot || top === bot || HK.SAFE_ON) return false;
     if (!(HK.Content && HK.Content.ok(ctx, 'force'))) return false;
     if (!ctx.env || ctx.env.lewd == null || (ctx.scen && ctx.scen.id === 'classroom')) return false;
-    if (!(HK.State && HK.State.pairSex(top, bot))) return false;
+    if (top.flags && (top.flags.caged != null || top.flags.cagePair != null) || bot.flags && (bot.flags.caged != null || bot.flags.cagePair != null)) return false;
+    var P = HK.Pos;
+    if (!(P && P.okForce ? P.okForce(ctx, top, bot) : HK.State && HK.State.pairSex(top, bot))) return false;
     if (ctx.pair(top, bot).kin) return false;
-    return !HK.Pos || HK.Pos.order(top, bot, [top, bot])[0] === top;
+    if (ctx.romanceOk && !ctx.romanceOk([top, bot], { sex: true, force: true })) return false;
+    if (!P) return true;
+    return P.forceOpen ? P.forceOpen(ctx, [top, bot], function () { return MR.dirOk(top, bot); }) : MR.dirOk(top, bot);
   };
+  /* 一回の箱庭で同じ組は一度まで（主従の夜・下剋上の凌辱のどちらか）。下剋上で入れ替わった組も、もう起こさない */
+  MR.done = function (ctx, a, b) { var pf = ctx.pair(a, b); return !!(pf.mrDone || pf.mrFlip); };
 
   var X = {
     dim: L('――その夜、{a}と{b}のあいだで起きたことを、{b}は誰にも話さなかった。|扉が閉まる音がした。それから先のことは、{b}の記憶の中でも途切れ途切れだった。|灯りが消された。{b}が最後に見たのは、見たことのない顔をした{a}だった。'),
-    openResent: L('{a}は扉に鍵を掛けると、ゆっくりと振り返った。「ずっと、あなたの言いなりだった。……今夜くらい、私の好きにさせてもらう」――{b}が叱りつけようとした声は、{a}の手のひらに塞がれた。|{a}は{b}の手首を掴んで、壁に押しつけた。何年も頭を下げ続けてきた相手の顔が、すぐ目の前にあった。「命令して。いつもみたいに。……聞かないけど」|{b}が{a}の名前を呼んだ。いつもの、命じる声で。{a}は笑って、{b}を床に突き飛ばした。「その声も、今夜で聞き納めだ」'),
-    openDesire: L('{a}は{b}の背後に立ち、震える手でその肩を掴んだ。「ずっと我慢してきた。仕えるだけでいいと思ってた。……でも、もう無理」――{b}が振り払おうとしても、{a}の手は離れなかった。|{a}は{b}の足元にひざまずき、それから、ひざまずいたまま{b}の腰を引き寄せた。「あなたの全部が欲しい。従者の分際で、なんて言わないで」|{a}は{b}を押し倒し、その上に覆いかぶさった。崇めるように見下ろす目が、{b}にはいちばん恐ろしかった。「やっと、手が届いた」'),
+    openResent: L('{a}は扉に鍵を掛けると、ゆっくりと振り返った。「ずっと、あなたの言いなりだった。……今夜くらい、私の好きにさせてもらう」――{b}が叱りつけようとした声は、{a}の手のひらに塞がれた。|{a}は{b}の手首を掴んで、壁に押しつけた。何年も頭を下げ続けてきた相手の顔が、{a}のすぐ目の前にあった。「＠{a}＠命令して。いつもみたいに。……聞かないけど」|{b}が{a}の名前を呼んだ。いつもの、命じる声で。{a}は笑って、{b}を床に突き飛ばした。「その声も、今夜で聞き納めだ」'),
+    openDesire: L('{a}は{b}の背後に立ち、震える手でその肩を掴んだ。「ずっと我慢してきた。仕えるだけでいいと思ってた。……でも、もう無理」――{b}が振り払おうとしても、{a}の手は離れなかった。|{a}は{b}の足元にひざまずき、それから、ひざまずいたまま{b}の腰を引き寄せた。「あなたの全部が欲しい。従者の分際で、なんて言わないで」|{a}は{b}を押し倒し、その上に覆いかぶさった。崇めるように見下ろす目が、{b}にはいちばん恐ろしかった。「＠{a}＠やっと、手が届いた」'),
     openOver: L('立場が入れ替わったその場で、{a}は{b}の襟首を掴んで引き寄せた。「さっきまで偉そうにしてたのに。……今は、私の番だ」|{a}は膝をついた{b}を見下ろし、その顎を指で持ち上げた。「教わったことは全部返す。体でね」――{b}の顔から、血の気が引いた。|{a}は{b}を床に押し倒し、両手首をまとめて押さえつけた。「上も下も、もう決まった。黙って受け取れ」'),
     feel: L('掴まれた手首が軋んだ。{b}がどれだけもがいても、{a}の体重はびくともしなかった。|服の留め具が一つずつ外されていく。そのたびに、{b}の喉から押し殺した声が漏れた。|{a}の指が肌をなぞるたびに、{b}は身をよじった。逃げ場はどこにもなかった。'),
     body: {
@@ -92,29 +113,79 @@
     var txt = J(parts.map(function (p) { return fl(p, top, bot); }));
     return HF ? HF.fill(ctx, txt, top, bot, ero) : HK.Ero && HK.Ero.fill ? HK.Ero.fill(ctx, txt, bot) : txt;
   };
-  /* tie-stage.js の下剋上から（D＝下だった側、U＝上だった側）。条件が合わなければ null */
+  function mark() { return HK.Pos && HK.Pos.FORCE_MARK || '〔合意のない展開〕'; }
+  /* tie-stage.js の下剋上から（D＝下だった側、U＝上だった側）。条件が合わなければ null。
+     同じ組で主従の夜がもう起きていれば起こさない（一回の箱庭で一度まで）。記録は性的な場面の印（HK.EroScene.touch：次の記録＝下剋上の記録に e.lewd） */
   MR.overturn = function (ctx, D, U, t) {
-    if (!MR.ok(ctx, D, U) || ctx.rng() > 0.5) return null;
-    return { text: '\n\n' + MR.scene(ctx, D, U, 'over'), why: D.name + 'は立場が入れ替わったその場で、' + U.name + 'を無理やり組み敷いた（下剋上・無理やり。内容のスイッチ「無理矢理」が入）' };
+    /* 下剋上で主従が入れ替わった組（このあと tie-stage.js が t.a・t.b を入れ替える）には、主従の夜を起こさない
+       （元の主が従者として襲う向きは、内容のスイッチの欄に出した組の向きと逆になるため。凌辱の分岐はこの場の一度だけ） */
+    var pf = ctx.pair(D, U), done = MR.done(ctx, D, U);
+    if (t && t.type === 'master') pf.mrFlip = true;
+    if (done || !MR.ok(ctx, D, U) || ctx.rng() > 0.5) return null;
+    pf.mrDone = true;
+    var text = '\n\n' + MR.scene(ctx, D, U, 'over');
+    if (HK.EroScene && HK.EroScene.touch) HK.EroScene.touch(ctx);
+    return { text: text, why: D.name + 'は立場が入れ替わったその場で、' + U.name + 'を無理やり組み敷いた（下剋上）／' + mark() + '内容のスイッチ「合意のない展開」が入' + (HK.Pos && HK.Pos.noneWhy ? HK.Pos.noneWhy(ctx, [D, U], true) : '') };
   };
-  /* 主従：従者（{a}）が主人（{b}）を襲う */
+  /* 主従：従者（{a}）が主人（{b}）を襲う
+     起きる見込み（2026-10-28 担当KD。利用者の要望「表示している主従の夜がちゃんと発生するか」）：
+     以前は「従者から主への緊張 ten>40・惹かれ att>50・仲：険悪」のどれかが要り、主従の初期値（従→主は信頼55・好意30、緊張・惹かれ 0）では
+     ほとんど満たされず、満たしても重み 0.2〜0.5 で、一回の箱庭で 0〜1 割しか起きなかった。
+     いまは、組が初めて候補に上がったときに「この回、従者の鬱屈が溢れるか」を決める（展開の重さ ふつう 55%・重い 75%。二人が向き合わないまま終わる・亡くなる回があるので、一回の箱庭で起きるのは 5 割・7 割ほど）。
+     溢れる回は、箱庭の前半の区切り（MR.plan の at）から、従者と主が向き合った最初の機会に起きる（従者が動く番でも、主が従者を相手にした番でも）。
+     緊張・惹かれ・仲：険悪の強い動機があれば、決めた結果によらず起きうる（以前どおり。仲：険悪は見込みも 2 割上がる）。
+     一回の箱庭で同じ組は一度まで（下剋上の凌辱と合わせて）。言い分（恨み／執着）は、強い動機があればそれ、なければ従者の主への好意で決める */
+  MR.PROB = { normal: 0.55, dark: 0.75, bad: 0.2 };
+  function nSteps(ctx) {
+    if (ctx._mrN == null) { var n = 0; try { n = (ctx.scen && ctx.scen.steps ? ctx.scen.steps(ctx.env) : []).length; } catch (e) { n = 0; } ctx._mrN = n || 8; }
+    return ctx._mrN;
+  }
+  /* 従者 S・主 M の組の、この回の見込み（初めて候補に上がったときに一度だけ決める）。
+     at：溢れはじめる区切り（箱庭の前半。途中で終わる・亡くなる箱庭でも間に合うように 1〜3 割あたり）。仲：険悪なら見込みを 2 割足す */
+  MR.plan = function (ctx, S, M) {
+    var pf = ctx.pair(S, M);
+    if (pf.mrPlan) return pf.mrPlan;
+    var t = HK.Ties && HK.Ties.from(ctx, M, S, 'master');
+    var N = nSteps(ctx), p = (HK.Dark && HK.Dark.on(ctx) === 'dark' ? MR.PROB.dark : MR.PROB.normal) + (t && t.cold === 'bad' ? MR.PROB.bad : 0), aff = ctx.R(S, M).aff;
+    pf.mrPlan = { on: ctx.rng() < p, at: 1 + Math.floor(ctx.rng() * Math.max(1, N * 0.3)), kind: ctx.rng() < 0.3 + Math.max(0, aff) / 100 ? 'desire' : 'resent' };
+    return pf.mrPlan;
+  };
+  /* 出来事の二人（a が動く人、b が相手）から [従者, 主, 関係] を引く。従者が主に向き合ったときも、主が従者を呼びつけたときも起きうる */
+  function roles(ctx, a, b) {
+    if (!HK.Ties || !b) return null;
+    var t = HK.Ties.from(ctx, b, a, 'master');
+    if (t) return [a, b, t];
+    t = HK.Ties.from(ctx, a, b, 'master');
+    return t ? [b, a, t] : null;
+  }
+  /* 強い動機（見込みの外でも起きうる）：従者から主への緊張 55 超・惹かれ 65 超・仲：険悪。
+     以前の唯一の条件（緊張 40 超・惹かれ 50 超）は、見込みの仕組みができたので、上乗せの分として少し高くした（長い箱庭で上乗せが大きくなりすぎないように） */
+  function motive(ctx, S, M, t) { var r = ctx.R(S, M); return r.ten > 55 || r.att > 65 || t.cold === 'bad'; }
+  function due(ctx, S, M) { var pl = MR.plan(ctx, S, M); return pl.on && ctx.stepIndex >= pl.at; }
   HK.addTo(HK.COMMON, {
-    id: 'tie_master_r18', cat: 'conflict', scope: 'pair',
+    id: 'tie_master_r18', cat: 'conflict', sex: true, force: true, r18: true, pri: true, noOdd: true, scope: 'pair',
     when: function (ctx, a, b) {
-      var t = HK.Ties && HK.Ties.from(ctx, b, a, 'master');
-      if (!t || !MR.ok(ctx, a, b)) return false;
-      var pf = ctx.pair(a, b), r = ctx.R(a, b);
-      if (pf.mrAt != null && ctx.stepIndex - pf.mrAt < 4) return false;
-      return r.ten > 40 || r.att > 50 || t.cold === 'bad';
+      var x = roles(ctx, a, b);
+      if (!x || ctx.stepIndex < 1 || MR.done(ctx, x[0], x[1]) || !MR.ok(ctx, x[0], x[1])) return false;
+      return due(ctx, x[0], x[1]) || motive(ctx, x[0], x[1], x[2]);
     },
-    w: function (ctx, a, b) { var r = ctx.R(a, b); return 0.2 + a.tr.aggr * 0.3 + a.tr.impulse * 0.2 + Math.max(0, r.ten - 40) / 100 + Math.max(0, r.att - 50) / 100; },
+    /* 溢れる回（MR.plan）：二人が向き合った最初の機会にほぼ起きる重み。強い動機だけの回は小さな重み（長い箱庭ほど小さく。どちらも pri の倍率が掛かる） */
+    w: function (ctx, a, b) {
+      var x = roles(ctx, a, b); if (!x) return 0;
+      var S = x[0], M = x[1], r = ctx.R(S, M);
+      var k = S.tr.aggr * 0.3 + S.tr.impulse * 0.2 + Math.max(0, r.ten - 40) / 60 + Math.max(0, r.att - 50) / 60 + (x[2].cold === 'bad' ? 0.4 : 0);
+      return due(ctx, S, M) ? 60 + k : (0.4 + k) * Math.min(1, 12 / nSteps(ctx));
+    },
     run: function (ctx, a, b) {
-      var r = ctx.R(a, b), kind = r.att > 50 && r.att > r.ten ? 'desire' : 'resent', pf = ctx.pair(a, b);
-      pf.mrAt = ctx.stepIndex; pf.forced = (pf.forced || 0) + 1;
-      var text = MR.scene(ctx, a, b, kind);
-      ctx.mod2(a, b, { att: 4, ten: 6 }, { trust: -30, aff: -25, ten: 30 }); ctx.stress(b, 35); ctx.stress(a, 8);
-      var t = HK.Ties.from(ctx, b, a, 'master'); if (t) t.cold = 'bad';
-      return { text: text, mag: 40, why: a.name + '（従）が' + b.name + '（主）を無理やり襲った（主従・' + (kind === 'desire' ? '抑えきれない執着' : '積もった恨み') + '。内容のスイッチ「無理矢理」が入）' };
+      var x = roles(ctx, a, b); if (!x) return null;
+      var S = x[0], M = x[1], t0 = x[2], r = ctx.R(S, M), pf = ctx.pair(S, M), pl = MR.plan(ctx, S, M);
+      var kind = r.att > 50 && r.att > r.ten ? 'desire' : r.ten > 40 || t0.cold === 'bad' ? 'resent' : pl.kind;
+      pf.mrAt = ctx.stepIndex; pf.mrDone = true; pf.forced = (pf.forced || 0) + 1;
+      var text = MR.scene(ctx, S, M, kind);
+      ctx.mod2(S, M, { att: 4, ten: 6 }, { trust: -30, aff: -25, ten: 30 }); ctx.stress(M, 35); ctx.stress(S, 8);
+      t0.cold = 'bad';
+      return { text: text, mag: 40, lewd: true, sex: true, force: true,
+        why: S.name + '（従）が' + M.name + '（主）を無理やり襲った（主従・' + (kind === 'desire' ? '抑えきれない執着' : '積もった恨み') + '）／' + mark() + '内容のスイッチ「合意のない展開」が入' + (HK.Pos && HK.Pos.noneWhy ? HK.Pos.noneWhy(ctx, [S, M], true) : '') };
     }
   });
 })();

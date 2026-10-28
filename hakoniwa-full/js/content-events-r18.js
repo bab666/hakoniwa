@@ -147,6 +147,29 @@
     var D = HK.Dark, heavy = D ? D.on(o.env || {}) : 'normal';
     return { P: P, cs: cs, r18: r18, ties: ties, sexTB: sexTB, sexAny: sexAny, recv: recv, heavy: heavy, ct: o.ct || {}, id: o.scenId, sc: infoOf(o.scenId) };
   }
+  /* 主従で、従者 T が主 B を襲う向きになれない理由（なれるなら ''）。tie-master-r18.js の MR.ok・MR.dirOk と同じ決まりを、入力の住人で見る：
+     R18に参加する・恋愛対象（体の関係）が合う・T が B を避けていない・T が攻め・B が受けに回れる（自分で選んだ受け攻め・相手の指定の好み）・
+     どちらの向きにもなれる組は攻め度の高いほうが攻め（主の攻め度が高ければ主が攻めになるので起きない） */
+  function msWhy(Bs, T, Bt) {
+    var P = Bs.P;
+    if (!P) return '';
+    if (T.noR18 || Bt.noR18) return (T.noR18 ? nm(T) : nm(Bt)) + 'がR18に参加しない';
+    if (!P.genderOK(T, Bt, true)) return '恋愛対象（体の関係の相手）が合わない';
+    /* 従者が主を避けている（avoid-kit.js の HK.Avoid と同じ関係の読み方。恐怖・無関心はいつも、ほかは惹かれが強まらない限り起きない） */
+    var av = '';
+    Bs.ties.forEach(function (x) {
+      if (av) return;
+      var D = HK.TIES && HK.TIES[x.type], c = x.t && x.t.cold;
+      if (x.a === T && x.b === Bt && (x.type === 'fear' || x.type === 'apathy')) av = x.type === 'fear' ? '恐怖' : '無関心';
+      else if (x.a === Bt && x.b === T && ((D && D.hate && c === 'avoid') || (x.type === 'crush' && c === 'dislike') || (x.type === 'yan' && (c === 'afraid' || c === 'hate')) || (x.type === 'abuse' && (c === 'fear' || c === 'flee')))) av = '苦手・避けている';
+    });
+    if (av) return '従者の' + nm(T) + 'が主の' + nm(Bt) + 'を避けている（' + av + (av === '苦手・避けている' ? '。惹かれが強まらない限り' : '') + '）';
+    var kind = function (c, r) { return P.explicit(c) ? P.of(c) : r; };
+    var can = function (X, Y) { return P.canTop(X) && P.canBottom(Y) && !!P.likes(X)[kind(Y, 'bottom')] && !!P.likes(Y)[kind(X, 'top')]; };
+    if (!can(T, Bt)) return '受け攻めが合わない（' + (!P.canTop(T) ? '従者の' + nm(T) + 'が「受け」' : !P.canBottom(Bt) ? '主の' + nm(Bt) + 'が「攻め」' : '受け攻めの好み') + 'を選んでいて、従者が攻め・主が受けになれない）';
+    if (can(Bt, T) && P.lv && P.lv(Bt) > P.lv(T)) return '受け攻めが合わない（主の' + nm(Bt) + 'のほうが攻め度が高く、主が攻めに回る）';
+    return '';
+  }
   function tiesOfType(B, re) { return B.ties.filter(function (t) { return re.test(t.type); }); }
   function anyPair(B, fn) { for (var i = 0; i < B.r18.length; i++) for (var j = 0; j < B.r18.length; j++) if (i !== j && fn(B.r18[i], B.r18[j])) return [B.r18[i], B.r18[j]]; return null; }
   /* 妊娠・孕む描写 */
@@ -190,17 +213,23 @@
     if (HATE[id] && (HATE[id] !== 'dark' || dark) && hostile.length) ev.push('敵対の組（' + hostile.map(function (t) { return nm(t.a) + '×' + nm(t.b); }).slice(0, 2).join('・') + '）');
     var yan = OBS[id] ? tiesOfType(B, /^yan$/).filter(function (t) { return B.sexAny(t.a, t.b); }) : [];
     if (yan.length) ev.push('執着（' + yan.map(function (t) { return nm(t.a) + '→' + nm(t.b); }).slice(0, 2).join('・') + '）の監禁の夜');
-    var ms = id !== 'classroom' ? tiesOfType(B, /^master$/).filter(function (t) { return B.sexTB(t.b, t.a); }) : [];
+    /* 主従：従者（t.b）が主（t.a）を襲う向きになれる組だけ（tie-master-r18.js の MR.ok・MR.dirOk と同じ決まり）。なれない組は理由を添える */
+    var msAll = id !== 'classroom' ? tiesOfType(B, /^master$/) : [];
+    var ms = msAll.filter(function (t) { return !msWhy(B, t.b, t.a); });
+    var msNg = msAll.filter(function (t) { return !!msWhy(B, t.b, t.a); }).slice(0, 2).map(function (t) { return '主従（' + nm(t.b) + 'が主の' + nm(t.a) + 'を襲う）は、' + msWhy(B, t.b, t.a) + 'ので起きません'; });
+    var ng = msNg.length ? msNg.join('／') + '。' : '';
     if (ms.length) ev.push('主従（' + ms.map(function (t) { return nm(t.b) + 'が主の' + nm(t.a) + 'を'; }).slice(0, 2).join('・') + '襲う）');
     var ab = id !== 'classroom' ? tiesOfType(B, /^abuse$/).filter(function (t) { return B.sexTB(t.a, t.b); }) : [];
     if (ab.length) ev.push('歪んだ関係の拒めない夜（' + ab.map(function (t) { return nm(t.a) + '→' + nm(t.b); }).slice(0, 2).join('・') + '）');
     if (id === 'omega' && rc.length) ev.push('発情期のΩが街のαに襲われる' + rcT);
     if (id === 'zombie' && rc.length) ev.push('略奪者・ゾンビに襲われる' + rcT);
-    if (ev.length) return J('yes', ev.join('／'));
+    if (ev.length) return J('yes', ev.join('／') + (ng ? '（' + ng + '）' : ''));
     var pair = anyPair(B, B.sexTB);
-    if (!pair) return J('no', '恋愛対象と受け攻めの合う組がなく、モブに襲われる場面もありません');
-    if ((HATE[id] && (HATE[id] !== 'dark' || dark)) || OBS[id]) return J('maybe', '二人の仲が険悪になる（嫌悪が強まる）か、執着が芽生えれば。関係を敵対・ライバル・不仲・執着・主従・歪んだ関係にすると起きやすい');
-    return J('no', HATE[id] === 'dark' ? '敵対の組がありません（合コンは、展開の重さが「重い」なら、険悪になった二人の帰り道でも）' : '敵対・執着・主従・歪んだ関係の組がありません');
+    if (!pair) return J('no', ng + '恋愛対象と受け攻めの合う組がなく、モブに襲われる場面もありません');
+    /* クラスメイトには主従の夜・歪んだ関係の拒めない夜がない */
+    var kinds = id === 'classroom' ? '敵対・ライバル・不仲・執着' : '敵対・ライバル・不仲・執着・主従・歪んだ関係';
+    if ((HATE[id] && (HATE[id] !== 'dark' || dark)) || OBS[id]) return J('maybe', ng + '二人の仲が険悪になる（嫌悪が強まる）か、執着が芽生えれば。関係を' + kinds + 'にすると起きやすい');
+    return J('no', ng + (HATE[id] === 'dark' ? '敵対の組がありません（合コンは、展開の重さが「重い」なら、険悪になった二人の帰り道でも）' : '敵対・執着・主従・歪んだ関係の組がありません'));
   }
   /* 暴力をともなう性描写 */
   function jViolence(o, B) {

@@ -12328,7 +12328,7 @@ var HK=window.HK;
 if(!HK)return;
 var C=HK.Content={
 TAGS:[
-{id:'force',label:'合意のない展開',desc:'夜這い・略奪者やゾンビに襲われる・神や眷属の夜・生贄の儀式・執着の監禁の夜・敵対する二人の強引なエッチ（オメガバース・ゾンビの街、展開が重いなら合コンの帰り道も。出られない部屋の条件「エッチ」で敵対する二人が仕方なく満たす場面は部屋の仕掛けなので、このスイッチに関わらず起きる）・星の生命体に攫われる・オメガバースの、発情期に街のαに襲われる場面・襲われている人を庇った住人が巻き込まれる庇い展開（巻き込まれ）・同意のない催眠（切なら、催眠は同意の上の催眠プレイに）・歪んだ関係の拒めない夜（支配する側が攻めのとき。展開の重さが「ふつう」でも） など。起きやすいのは、関係を敵対・ライバル・不仲・執着・歪んだ関係にした二人。入のときは、恋愛対象を「なし」にした人も、切羽詰まった場面（執着の監禁の夜・歪んだ関係の拒めない夜・敵対する二人の強引なエッチ・出られない部屋の条件のエッチ）で体の関係になることがある（恋愛にはならない）'},
+{id:'force',label:'合意のない展開',desc:'夜這い・略奪者やゾンビに襲われる・神や眷属の夜・生贄の儀式・執着の監禁の夜・敵対する二人の強引なエッチ（オメガバース・ゾンビの街、展開が重いなら合コンの帰り道も。出られない部屋の条件「エッチ」で敵対する二人が仕方なく満たす場面は部屋の仕掛けなので、このスイッチに関わらず起きる）・星の生命体に攫われる・オメガバースの、発情期に街のαに襲われる場面・襲われている人を庇った住人が巻き込まれる庇い展開（巻き込まれ）・同意のない催眠（切なら、催眠は同意の上の催眠プレイに）・歪んだ関係の拒めない夜（支配する側が攻めのとき。展開の重さが「ふつう」でも）・主従の従者が主を襲う夜（従者が攻め・主が受けになれる組。クラスメイトを除く。一回の箱庭で、ふつうなら5割・重いなら7割ほど） など。起きやすいのは、関係を敵対・ライバル・不仲・執着・歪んだ関係・主従にした二人。入のときは、恋愛対象を「なし」にした人も、切羽詰まった場面（執着の監禁の夜・歪んだ関係の拒めない夜・敵対する二人の強引なエッチ・出られない部屋の条件のエッチ）で体の関係になることがある（恋愛にはならない）'},
 {id:'preg',label:'妊娠・孕む描写',desc:'邪神村の疑似妊娠・巫女（性別・性器によらず）、行為のあとに孕む描写。展開の重さが「重い」なら、合コン・無人島・出られない部屋・ゾンビの街・催眠でも、男性器のある攻めと女性器だけの受けの夜のあとに「孕んだかもしれない」、のちに妊娠が分かる場面、結末の「その後」の出産。オメガバースは、α（男性器のある人）×Ωなら Ωの性別・性器によらず（男性のΩも。発情期・番で起きやすい）。この箱庭・この顔ぶれで起きないときは、欄が薄くなり理由が出ます'},
 {id:'violence',label:'暴力をともなう性描写',desc:'吹雪の館の快楽殺人・ゾンビの群れなど、暴力と性が結びつく場面。展開の重さが「重い」なら、敵対する二人の強引なエッチ（合意のない展開も入のとき）に殴る・押さえつける・首に手をかける段、歪んだ関係の拒めない夜にも'},
 {id:'abuse',label:'DVなど歪んだ関係',desc:'関係「歪んだ関係」の支配・暴言・暴力の場面。展開の重さが「重い」なら、関係がなくても、恋人・夫婦・執着の二人で、支配的な気質（CP・ドライさ・攻撃性が高い）の人が、束縛・暴言・暴力・謝罪を繰り返す（周りが気づく・別れる・歪んだまま）。催眠では、恋人・ストーカーのかける側が暗示で縛り続ける'}
@@ -18129,6 +18129,25 @@ var recv=function(c){return mobOk(c)&&(!P||(P.canReceive(c)&& !P.noGen(c)));};
 var D=HK.Dark,heavy=D?D.on(o.env||{}):'normal';
 return{P:P,cs:cs,r18:r18,ties:ties,sexTB:sexTB,sexAny:sexAny,recv:recv,heavy:heavy,ct:o.ct||{},id:o.scenId,sc:infoOf(o.scenId)};
 }
+function msWhy(Bs,T,Bt){
+var P=Bs.P;
+if(!P)return'';
+if(T.noR18||Bt.noR18)return(T.noR18?nm(T):nm(Bt))+'がR18に参加しない';
+if(!P.genderOK(T,Bt,true))return'恋愛対象（体の関係の相手）が合わない';
+var av='';
+Bs.ties.forEach(function(x){
+if(av)return;
+var D=HK.TIES&&HK.TIES[x.type],c=x.t&&x.t.cold;
+if(x.a===T&&x.b===Bt&&(x.type==='fear'||x.type==='apathy'))av=x.type==='fear'?'恐怖':'無関心';
+else if(x.a===Bt&&x.b===T&&((D&&D.hate&&c==='avoid')||(x.type==='crush'&&c==='dislike')||(x.type==='yan'&&(c==='afraid'||c==='hate'))||(x.type==='abuse'&&(c==='fear'||c==='flee'))))av='苦手・避けている';
+});
+if(av)return'従者の'+nm(T)+'が主の'+nm(Bt)+'を避けている（'+av+(av==='苦手・避けている'?'。惹かれが強まらない限り':'')+'）';
+var kind=function(c,r){return P.explicit(c)?P.of(c):r;};
+var can=function(X,Y){return P.canTop(X)&&P.canBottom(Y)&& !!P.likes(X)[kind(Y,'bottom')]&& !!P.likes(Y)[kind(X,'top')];};
+if(!can(T,Bt))return'受け攻めが合わない（'+(!P.canTop(T)?'従者の'+nm(T)+'が「受け」': !P.canBottom(Bt)?'主の'+nm(Bt)+'が「攻め」':'受け攻めの好み')+'を選んでいて、従者が攻め・主が受けになれない）';
+if(can(Bt,T)&&P.lv&&P.lv(Bt)>P.lv(T))return'受け攻めが合わない（主の'+nm(Bt)+'のほうが攻め度が高く、主が攻めに回る）';
+return'';
+}
 function tiesOfType(B,re){return B.ties.filter(function(t){return re.test(t.type);});}
 function anyPair(B,fn){for(var i=0;i<B.r18.length;i++)for(var j=0;j<B.r18.length;j++)if(i!==j&&fn(B.r18[i],B.r18[j]))return[B.r18[i],B.r18[j]];return null;}
 function jPreg(o,B){
@@ -18169,17 +18188,21 @@ var hostile=tiesOfType(B,/^(enemy|rival|bad)$/).filter(function(t){return B.sexA
 if(HATE[id]&&(HATE[id]!=='dark'||dark)&&hostile.length)ev.push('敵対の組（'+hostile.map(function(t){return nm(t.a)+'×'+nm(t.b);}).slice(0,2).join('・')+'）');
 var yan=OBS[id]?tiesOfType(B,/^yan$/).filter(function(t){return B.sexAny(t.a,t.b);}):[];
 if(yan.length)ev.push('執着（'+yan.map(function(t){return nm(t.a)+'→'+nm(t.b);}).slice(0,2).join('・')+'）の監禁の夜');
-var ms=id!=='classroom'?tiesOfType(B,/^master$/).filter(function(t){return B.sexTB(t.b,t.a);}):[];
+var msAll=id!=='classroom'?tiesOfType(B,/^master$/):[];
+var ms=msAll.filter(function(t){return!msWhy(B,t.b,t.a);});
+var msNg=msAll.filter(function(t){return!!msWhy(B,t.b,t.a);}).slice(0,2).map(function(t){return'主従（'+nm(t.b)+'が主の'+nm(t.a)+'を襲う）は、'+msWhy(B,t.b,t.a)+'ので起きません';});
+var ng=msNg.length?msNg.join('／')+'。':'';
 if(ms.length)ev.push('主従（'+ms.map(function(t){return nm(t.b)+'が主の'+nm(t.a)+'を';}).slice(0,2).join('・')+'襲う）');
 var ab=id!=='classroom'?tiesOfType(B,/^abuse$/).filter(function(t){return B.sexTB(t.a,t.b);}):[];
 if(ab.length)ev.push('歪んだ関係の拒めない夜（'+ab.map(function(t){return nm(t.a)+'→'+nm(t.b);}).slice(0,2).join('・')+'）');
 if(id==='omega'&&rc.length)ev.push('発情期のΩが街のαに襲われる'+rcT);
 if(id==='zombie'&&rc.length)ev.push('略奪者・ゾンビに襲われる'+rcT);
-if(ev.length)return J('yes',ev.join('／'));
+if(ev.length)return J('yes',ev.join('／')+(ng?'（'+ng+'）':''));
 var pair=anyPair(B,B.sexTB);
-if(!pair)return J('no','恋愛対象と受け攻めの合う組がなく、モブに襲われる場面もありません');
-if((HATE[id]&&(HATE[id]!=='dark'||dark))||OBS[id])return J('maybe','二人の仲が険悪になる（嫌悪が強まる）か、執着が芽生えれば。関係を敵対・ライバル・不仲・執着・主従・歪んだ関係にすると起きやすい');
-return J('no',HATE[id]==='dark'?'敵対の組がありません（合コンは、展開の重さが「重い」なら、険悪になった二人の帰り道でも）':'敵対・執着・主従・歪んだ関係の組がありません');
+if(!pair)return J('no',ng+'恋愛対象と受け攻めの合う組がなく、モブに襲われる場面もありません');
+var kinds=id==='classroom'?'敵対・ライバル・不仲・執着':'敵対・ライバル・不仲・執着・主従・歪んだ関係';
+if((HATE[id]&&(HATE[id]!=='dark'||dark))||OBS[id])return J('maybe',ng+'二人の仲が険悪になる（嫌悪が強まる）か、執着が芽生えれば。関係を'+kinds+'にすると起きやすい');
+return J('no',ng+(HATE[id]==='dark'?'敵対の組がありません（合コンは、展開の重さが「重い」なら、険悪になった二人の帰り道でも）':'敵対・執着・主従・歪んだ関係の組がありません'));
 }
 function jViolence(o,B){
 var id=B.id;
@@ -20160,7 +20183,7 @@ L('{a}は品も礼儀も忘れて、何度目かの波に沈んで果てた。|{
 });
 ;
 /* ==== js/endings.js ==== */
-HK.Load.def(180,'js/endings.js',function(){
+HK.Load.def(181,'js/endings.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -20444,7 +20467,7 @@ lines:lines
 });
 ;
 /* ==== js/epilogue.js ==== */
-HK.Load.def(181,'js/epilogue.js',function(){
+HK.Load.def(182,'js/epilogue.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -20923,7 +20946,7 @@ return compose(p,P_kind((p.how||'')+' '+(p.fate||''),null),storyAddressee(S,p,in
 });
 ;
 /* ==== js/scenario-futari.js ==== */
-HK.Load.def(182,'js/scenario-futari.js',function(){
+HK.Load.def(183,'js/scenario-futari.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -21897,7 +21920,7 @@ safe:[
 });
 ;
 /* ==== js/zombie-data.js ==== */
-HK.Load.def(184,'js/zombie-data.js',function(){
+HK.Load.def(185,'js/zombie-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -21993,7 +22016,7 @@ bad:L('{f}からの最後のメッセージは「かまれた」の四文字だ�
 });
 ;
 /* ==== js/rel-kit.js ==== */
-HK.Load.def(194,'js/rel-kit.js',function(){
+HK.Load.def(195,'js/rel-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -22049,7 +22072,7 @@ return res;
 });
 ;
 /* ==== js/pining-core.js ==== */
-HK.Load.def(205,'js/pining-core.js',function(){
+HK.Load.def(206,'js/pining-core.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -22070,7 +22093,7 @@ HK.simulate._pining=true;
 });
 ;
 /* ==== js/pos.js ==== */
-HK.Load.def(218,'js/pos.js',function(){
+HK.Load.def(219,'js/pos.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -22401,7 +22424,7 @@ HK.simulate._pos=true;
 });
 ;
 /* ==== js/attr.js ==== */
-HK.Load.def(219,'js/attr.js',function(){
+HK.Load.def(220,'js/attr.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -23172,7 +23195,7 @@ return f;
 });
 ;
 /* ==== js/attr-height.js ==== */
-HK.Load.def(220,'js/attr-height.js',function(){
+HK.Load.def(221,'js/attr-height.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -23293,7 +23316,7 @@ return gf0.apply(this,arguments);
 });
 ;
 /* ==== js/attr-yomi.js ==== */
-HK.Load.def(221,'js/attr-yomi.js',function(){
+HK.Load.def(222,'js/attr-yomi.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -23332,7 +23355,7 @@ return r;
 });
 ;
 /* ==== js/food.js ==== */
-HK.Load.def(222,'js/food.js',function(){
+HK.Load.def(223,'js/food.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -23653,7 +23676,7 @@ Object.keys(F.HOOK).forEach(function(s){F.hookMini(s,F.HOOK[s]);});
 });
 ;
 /* ==== js/special.js ==== */
-HK.Load.def(223,'js/special.js',function(){
+HK.Load.def(224,'js/special.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -24023,7 +24046,7 @@ SP.thirsty=function(A,p){return vampDue(A,p);};
 });
 ;
 /* ==== js/special-r18.js ==== */
-HK.Load.def(224,'js/special-r18.js',function(){
+HK.Load.def(225,'js/special-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SP=HK.Special;
@@ -24093,7 +24116,7 @@ return fmt(h[Math.floor(A.rng()*h.length)],{v:v.name,w:w.name})+fmt(line,{v:v.na
 });
 ;
 /* ==== js/pos-ff.js ==== */
-HK.Load.def(229,'js/pos-ff.js',function(){
+HK.Load.def(230,'js/pos-ff.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -24244,7 +24267,7 @@ for(var k in sim0)if(Object.prototype.hasOwnProperty.call(sim0,k))HK.simulate[k]
 });
 ;
 /* ==== js/pos-lead-r18.js ==== */
-HK.Load.def(230,'js/pos-lead-r18.js',function(){
+HK.Load.def(231,'js/pos-lead-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -24388,7 +24411,7 @@ HK.simulate._lead=true;
 });
 ;
 /* ==== js/pos-fm.js ==== */
-HK.Load.def(231,'js/pos-fm.js',function(){
+HK.Load.def(232,'js/pos-fm.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -24542,7 +24565,7 @@ for(var k in sim0)if(Object.prototype.hasOwnProperty.call(sim0,k))HK.simulate[k]
 });
 ;
 /* ==== js/pos-nogen.js ==== */
-HK.Load.def(232,'js/pos-nogen.js',function(){
+HK.Load.def(233,'js/pos-nogen.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -24890,7 +24913,7 @@ for(var k in sim0)if(Object.prototype.hasOwnProperty.call(sim0,k))HK.simulate[k]
 });
 ;
 /* ==== js/persona-final.js ==== */
-HK.Load.def(233,'js/persona-final.js',function(){
+HK.Load.def(234,'js/persona-final.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,DG=HK.DG;
@@ -24937,7 +24960,7 @@ return res;
 });
 ;
 /* ==== js/pair-name.js ==== */
-HK.Load.def(234,'js/pair-name.js',function(){
+HK.Load.def(235,'js/pair-name.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -24999,7 +25022,7 @@ return((o[0]&&o[0].name)||'')+(sep==null?'×':sep)+((o[1]&&o[1].name)||'');
 });
 ;
 /* ==== js/icons.js ==== */
-HK.Load.def(235,'js/icons.js',function(){
+HK.Load.def(236,'js/icons.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape;
@@ -25066,7 +25089,7 @@ im.src=url;
 });
 ;
 /* ==== js/view.js ==== */
-HK.Load.def(236,'js/view.js',function(){
+HK.Load.def(237,'js/view.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape;
@@ -25646,7 +25669,7 @@ return L.join('\n');
 });
 ;
 /* ==== js/view-map.js ==== */
-HK.Load.def(237,'js/view-map.js',function(){
+HK.Load.def(238,'js/view-map.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape,V=HK.View;
@@ -26273,7 +26296,7 @@ if(document.head)addCss();else document.addEventListener('DOMContentLoaded',addC
 });
 ;
 /* ==== js/dungeon-view.js ==== */
-HK.Load.def(238,'js/dungeon-view.js',function(){
+HK.Load.def(239,'js/dungeon-view.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,DG=HK.DG,esc=HK.escape;
@@ -26465,7 +26488,7 @@ return L.join('\n');
 });
 ;
 /* ==== js/solo-story-kit.js ==== */
-HK.Load.def(239,'js/solo-story-kit.js',function(){
+HK.Load.def(240,'js/solo-story-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape;
@@ -26781,7 +26804,7 @@ hook();
 });
 ;
 /* ==== js/avoid-kit.js ==== */
-HK.Load.def(240,'js/avoid-kit.js',function(){
+HK.Load.def(241,'js/avoid-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -26966,7 +26989,7 @@ HK.Story.say._avoid=true;
 });
 ;
 /* ==== js/attr-look.js ==== */
-HK.Load.def(241,'js/attr-look.js',function(){
+HK.Load.def(242,'js/attr-look.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -27038,7 +27061,7 @@ HK.Story.say._attrLook=true;
 });
 ;
 /* ==== js/attr-race.js ==== */
-HK.Load.def(242,'js/attr-race.js',function(){
+HK.Load.def(243,'js/attr-race.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -27221,7 +27244,7 @@ return s;
 });
 ;
 /* ==== js/attr-meet.js ==== */
-HK.Load.def(243,'js/attr-meet.js',function(){
+HK.Load.def(244,'js/attr-meet.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -27528,7 +27551,7 @@ A.daily._meet=true;
 });
 ;
 /* ==== js/fam-kin.js ==== */
-HK.Load.def(244,'js/fam-kin.js',function(){
+HK.Load.def(245,'js/fam-kin.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -27568,7 +27591,7 @@ ST.state._kin=true;
 });
 ;
 /* ==== js/solo-variety-data.js ==== */
-HK.Load.def(259,'js/solo-variety-data.js',function(){
+HK.Load.def(260,'js/solo-variety-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -27831,7 +27854,7 @@ polite:L('「力及ばず、申し訳ございません」|「次の機会に挽
 });
 ;
 /* ==== js/solo-flow-omega.js ==== */
-HK.Load.def(265,'js/solo-flow-omega.js',function(){
+HK.Load.def(266,'js/solo-flow-omega.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -27843,7 +27866,7 @@ HK.OMEGA.HEAT.NORI=L('{b}は待ちきれずに{a}の首に腕を回して巣へ�
 });
 ;
 /* ==== js/solo-locker-data.js ==== */
-HK.Load.def(267,'js/solo-locker-data.js',function(){
+HK.Load.def(268,'js/solo-locker-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -28020,7 +28043,7 @@ endure:L('二人はベッドに背を向けて、床に背中合わせで座っ�
 });
 ;
 /* ==== js/solo-r18-moan-data.js ==== */
-HK.Load.def(341,'js/solo-r18-moan-data.js',function(){
+HK.Load.def(342,'js/solo-r18-moan-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -28389,7 +28412,7 @@ D.STRONG.cool_soft=1;D.STRONG.god=1;
 });
 ;
 /* ==== js/solo-r18-moan.js ==== */
-HK.Load.def(342,'js/solo-r18-moan.js',function(){
+HK.Load.def(343,'js/solo-r18-moan.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,D=HK.R18M_DATA;
@@ -28612,7 +28635,7 @@ npc:function(S,kind,a){return F(pick(S,D.NPC[kind]),{a:a?a.name:''}).replace(/�
 });
 ;
 /* ==== js/solo-feud-r18.js ==== */
-HK.Load.def(343,'js/solo-feud-r18.js',function(){
+HK.Load.def(344,'js/solo-feud-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,FD=HK.Feud;
@@ -28647,7 +28670,7 @@ return clash0.apply(this,arguments);
 });
 ;
 /* ==== js/same-story.js ==== */
-HK.Load.def(351,'js/same-story.js',function(){
+HK.Load.def(352,'js/same-story.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -29134,7 +29157,7 @@ t:L('隣のロッカーから聞こえる{b}の独り言は、{a}が今まさに
 });
 ;
 /* ==== js/same-story-r18.js ==== */
-HK.Load.def(352,'js/same-story-r18.js',function(){
+HK.Load.def(353,'js/same-story-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SS=HK&&HK.SameStory;
@@ -29152,7 +29175,7 @@ trio:L('媚薬で火照った{a}と{b}の体が、左右から{c}に押しつけ
 });
 ;
 /* ==== js/solo-rel-bad.js ==== */
-HK.Load.def(353,'js/solo-rel-bad.js',function(){
+HK.Load.def(354,'js/solo-rel-bad.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,RB=HK.RelBad;
@@ -29242,7 +29265,7 @@ return r;
 });
 ;
 /* ==== js/safe.js ==== */
-HK.Load.def(354,'js/safe.js',function(){
+HK.Load.def(355,'js/safe.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -29526,7 +29549,7 @@ return sim;
 });
 ;
 /* ==== js/share-card.js ==== */
-HK.Load.def(357,'js/share-card.js',function(){
+HK.Load.def(358,'js/share-card.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -29794,7 +29817,7 @@ return'<div class="sharebar" id="sharebar"><button class="btn" data-act="sharepn
 });
 ;
 /* ==== js/egoquiz.js ==== */
-HK.Load.def(358,'js/egoquiz.js',function(){
+HK.Load.def(359,'js/egoquiz.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape;
@@ -29911,7 +29934,7 @@ Z.ans[Z.i]=ANS[+ev.key-1][1];Z.i++;draw();
 });
 ;
 /* ==== js/saves.js ==== */
-HK.Load.def(359,'js/saves.js',function(){
+HK.Load.def(360,'js/saves.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -30373,7 +30396,7 @@ ok:function(){return!!ic.db;}
 });
 ;
 /* ==== js/history.js ==== */
-HK.Load.def(360,'js/history.js',function(){
+HK.Load.def(361,'js/history.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -30509,7 +30532,7 @@ HK.History={DB:DB,STORE:ST,LS:LSK,RES_LS:RES_LS,open:open,make:make,put:put,get:
 });
 ;
 /* ==== js/portable.js ==== */
-HK.Load.def(361,'js/portable.js',function(){
+HK.Load.def(362,'js/portable.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -31174,7 +31197,7 @@ toStr:toStr,fromStr:fromStr,importSettings:importSettings,settingsData:settingsD
 });
 ;
 /* ==== js/state-store.js ==== */
-HK.Load.def(362,'js/state-store.js',function(){
+HK.Load.def(363,'js/state-store.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -31472,7 +31495,7 @@ return{mode:mode,db:DB,lsFull:t!=null&& !markerOf(t),lsMarker: !!markerOf(t),byt
 });
 ;
 /* ==== js/save-folder.js ==== */
-HK.Load.def(363,'js/save-folder.js',function(){
+HK.Load.def(364,'js/save-folder.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -31888,7 +31911,7 @@ useHandle:function(h,ask){dir=h;dirName=h.name||'フォルダ';memOnly=false;if(
 });
 ;
 /* ==== js/tips.js ==== */
-HK.Load.def(364,'js/tips.js',function(){
+HK.Load.def(365,'js/tips.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -32436,7 +32459,7 @@ return'<button type="button" class="tipscen" data-tip="scen:'+esc(id)+'" aria-la
 });
 ;
 /* ==== js/scen-meta.js ==== */
-HK.Load.def(365,'js/scen-meta.js',function(){
+HK.Load.def(366,'js/scen-meta.js',function(){
 (function(){
 'use strict';
 var HK=window.HK=window.HK||{};
@@ -32504,7 +32527,7 @@ return o;
 });
 ;
 /* ==== js/scen-tags.js ==== */
-HK.Load.def(366,'js/scen-tags.js',function(){
+HK.Load.def(367,'js/scen-tags.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -32590,7 +32613,7 @@ return'<span class="ftag'+(t.warn?' warn':'')+(j>=fit?' tx':'')+'" data-act="fta
 });
 ;
 /* ==== js/shared-stats.js ==== */
-HK.Load.def(367,'js/shared-stats.js',function(){
+HK.Load.def(368,'js/shared-stats.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -32769,7 +32792,7 @@ SH.importFrom=function(c,o){if(o.ab&&typeof o.ab==='object')c.ab=JSON.parse(JSON
 });
 ;
 /* ==== js/ui-rand.js ==== */
-HK.Load.def(368,'js/ui-rand.js',function(){
+HK.Load.def(369,'js/ui-rand.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -32850,7 +32873,7 @@ return c;
 });
 ;
 /* ==== js/ui-cast-pages.js ==== */
-HK.Load.def(369,'js/ui-cast-pages.js',function(){
+HK.Load.def(370,'js/ui-cast-pages.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -33387,7 +33410,7 @@ SIZES:SIZES
 });
 ;
 /* ==== js/ui-cast-tools.js ==== */
-HK.Load.def(370,'js/ui-cast-tools.js',function(){
+HK.Load.def(371,'js/ui-cast-tools.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -33731,7 +33754,7 @@ open:openData,close:closeData,isOpen:isOpen,sortNow:sortNow
 });
 ;
 /* ==== js/ui-box-draw.js ==== */
-HK.Load.def(371,'js/ui-box-draw.js',function(){
+HK.Load.def(372,'js/ui-box-draw.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -33931,7 +33954,7 @@ if(stale){ev.stopImmediatePropagation();if(ev.type==='click'&&ev.cancelable)ev.p
 });
 ;
 /* ==== js/ui-import.js ==== */
-HK.Load.def(372,'js/ui-import.js',function(){
+HK.Load.def(373,'js/ui-import.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -34041,7 +34064,7 @@ clear:function(){text='';}
 });
 ;
 /* ==== js/ui.js ==== */
-HK.Load.def(373,'js/ui.js',function(){
+HK.Load.def(374,'js/ui.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape,V=HK.View;
@@ -35794,7 +35817,7 @@ bkNotice();
 });
 ;
 /* ==== js/ui-gear.js ==== */
-HK.Load.def(374,'js/ui-gear.js',function(){
+HK.Load.def(375,'js/ui-gear.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape;
@@ -36156,7 +36179,7 @@ if(UI.refresh)UI.refresh();
 });
 ;
 /* ==== js/ui-adv.js ==== */
-HK.Load.def(375,'js/ui-adv.js',function(){
+HK.Load.def(376,'js/ui-adv.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -36215,7 +36238,7 @@ A.afterRender=function(){A.secs.forEach(function(s){var r=s.apply&&data[s.id]?s.
 });
 ;
 /* ==== js/ui-adv-moan.js ==== */
-HK.Load.def(376,'js/ui-adv-moan.js',function(){
+HK.Load.def(377,'js/ui-adv-moan.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Adv,M=HK&&HK.Moan;
@@ -36241,7 +36264,7 @@ return'<div class="desc" style="font-size:12px;color:var(--muted);margin-top:4px
 });
 ;
 /* ==== js/ui-adv-moan-fit.js ==== */
-HK.Load.def(377,'js/ui-adv-moan-fit.js',function(){
+HK.Load.def(378,'js/ui-adv-moan-fit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Adv,M=HK&&HK.Moan;
@@ -36426,7 +36449,7 @@ if(HK.toast)HK.toast('喘ぎ声の調整を既定に戻しました');
 });
 ;
 /* ==== js/ui-gear-moan.js ==== */
-HK.Load.def(378,'js/ui-gear-moan.js',function(){
+HK.Load.def(379,'js/ui-gear-moan.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,M=HK&&HK.Moan;
@@ -36576,7 +36599,7 @@ return true;
 });
 ;
 /* ==== js/ui-voice.js ==== */
-HK.Load.def(379,'js/ui-voice.js',function(){
+HK.Load.def(380,'js/ui-voice.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,UI=HK&&HK.UI;
@@ -36870,7 +36893,7 @@ if(VS.onTool)VS.onTool(act,c,b);
 });
 ;
 /* ==== js/ui-voice-copy.js ==== */
-HK.Load.def(380,'js/ui-voice-copy.js',function(){
+HK.Load.def(381,'js/ui-voice-copy.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,VS=HK&&HK.VoiceSet,UI=HK&&HK.UI;
@@ -37120,7 +37143,7 @@ if(UI.refresh)UI.refresh();
 });
 ;
 /* ==== js/ui-voice-moan.js ==== */
-HK.Load.def(381,'js/ui-voice-moan.js',function(){
+HK.Load.def(382,'js/ui-voice-moan.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,VS=HK&&HK.VoiceSet,M=HK&&HK.Moan,A=HK&&HK.Adv;
@@ -37258,7 +37281,7 @@ if(HK.UI&&HK.UI.refresh)HK.UI.refresh();
 });
 ;
 /* ==== js/notice.js ==== */
-HK.Load.def(382,'js/notice.js',function(){
+HK.Load.def(383,'js/notice.js',function(){
 (function(){
 'use strict';
 var last=null;
@@ -37291,7 +37314,7 @@ window.HK.Notice={open:open,close:close};
 });
 ;
 /* ==== js/ui-fold.js ==== */
-HK.Load.def(383,'js/ui-fold.js',function(){
+HK.Load.def(384,'js/ui-fold.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -37343,7 +37366,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/ui-mobile.js ==== */
-HK.Load.def(384,'js/ui-mobile.js',function(){
+HK.Load.def(385,'js/ui-mobile.js',function(){
 (function(){
 'use strict';
 var css='@media (max-width:600px){'+
@@ -37415,7 +37438,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/ui-log.js ==== */
-HK.Load.def(385,'js/ui-log.js',function(){
+HK.Load.def(386,'js/ui-log.js',function(){
 (function(){
 'use strict';
 var css='html body .stepblk .when{color:#16233B;color:var(--ink,#16233B);-webkit-text-fill-color:currentColor;background:#fff;background:var(--paper,#fff);color-scheme:light only;opacity:1;mix-blend-mode:normal}'+
@@ -37426,7 +37449,7 @@ var st=document.createElement('style');st.textContent=css;document.head.appendCh
 });
 ;
 /* ==== js/ui-filter.js ==== */
-HK.Load.def(386,'js/ui-filter.js',function(){
+HK.Load.def(387,'js/ui-filter.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -37516,7 +37539,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/obsess-kit.js ==== */
-HK.Load.def(388,'js/obsess-kit.js',function(){
+HK.Load.def(389,'js/obsess-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -37896,7 +37919,7 @@ if(opt.extra)HK.addTo(scen.events,opt.extra.slice());
 });
 ;
 /* ==== js/lewd-unify.js ==== */
-HK.Load.def(394,'js/lewd-unify.js',function(){
+HK.Load.def(395,'js/lewd-unify.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -38037,7 +38060,7 @@ if(HK.Load&&HK.Load.onChunk)HK.Load.onChunk(function(){Object.keys(X.CONF).forEa
 });
 ;
 /* ==== js/lewd-mark.js ==== */
-HK.Load.def(395,'js/lewd-mark.js',function(){
+HK.Load.def(396,'js/lewd-mark.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -38085,7 +38108,7 @@ return sim;
 });
 ;
 /* ==== js/ero-scene.js ==== */
-HK.Load.def(396,'js/ero-scene.js',function(){
+HK.Load.def(397,'js/ero-scene.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -38141,7 +38164,7 @@ HK.wrap(HK,'simulate',function(sim0){var f=function(){return X.finish(sim0.apply
 });
 ;
 /* ==== js/reset.js ==== */
-HK.Load.def(398,'js/reset.js',function(){
+HK.Load.def(399,'js/reset.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -38196,7 +38219,7 @@ HK.resetStorage=wipe;
 });
 ;
 /* ==== js/voice-seg.js ==== */
-HK.Load.def(399,'js/voice-seg.js',function(){
+HK.Load.def(400,'js/voice-seg.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK.Voice||{};
@@ -38380,7 +38403,7 @@ return sim;
 });
 ;
 /* ==== js/voice-fp.js ==== */
-HK.Load.def(400,'js/voice-fp.js',function(){
+HK.Load.def(401,'js/voice-fp.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -38438,7 +38461,7 @@ return saved.length?function(){saved.forEach(function(s){s[0].fp=s[1];});}:null;
 });
 ;
 /* ==== js/rel-bad-story.js ==== */
-HK.Load.def(455,'js/rel-bad-story.js',function(){
+HK.Load.def(456,'js/rel-bad-story.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story;
@@ -38607,4 +38630,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '8efeac22df', 1);
+HK.Load.done('core', '5496ff4444', 1);

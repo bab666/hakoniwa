@@ -2322,18 +2322,30 @@ function pk(ctx,l){return HK.Ero&&HK.Ero.fresh&&ctx.rng.int?HK.Ero.fresh(ctx.rng
 function fl(t,a,b){return String(t).replace(/\{a\}/g,a.name).replace(/\{b\}/g,b.name);}
 function J(a){return a.filter(Boolean).join('\n\n');}
 var MR=HK.TieMasterR18={};
+MR.dirOk=function(top,bot){
+var P=HK.Pos;
+if(!P|| !P.orients)return true;
+if(!P.orients(top,bot).some(function(o){return o[0]===top;}))return false;
+var pr=P.prefer?P.prefer(top,bot):null;
+return!pr||pr[0]===top;
+};
 MR.ok=function(ctx,top,bot){
 if(!ctx|| !top|| !bot||top===bot||HK.SAFE_ON)return false;
 if(!(HK.Content&&HK.Content.ok(ctx,'force')))return false;
 if(!ctx.env||ctx.env.lewd==null||(ctx.scen&&ctx.scen.id==='classroom'))return false;
-if(!(HK.State&&HK.State.pairSex(top,bot)))return false;
+if(top.flags&&(top.flags.caged!=null||top.flags.cagePair!=null)||bot.flags&&(bot.flags.caged!=null||bot.flags.cagePair!=null))return false;
+var P=HK.Pos;
+if(!(P&&P.okForce?P.okForce(ctx,top,bot):HK.State&&HK.State.pairSex(top,bot)))return false;
 if(ctx.pair(top,bot).kin)return false;
-return!HK.Pos||HK.Pos.order(top,bot,[top,bot])[0]===top;
+if(ctx.romanceOk&& !ctx.romanceOk([top,bot],{sex:true,force:true}))return false;
+if(!P)return true;
+return P.forceOpen?P.forceOpen(ctx,[top,bot],function(){return MR.dirOk(top,bot);}):MR.dirOk(top,bot);
 };
+MR.done=function(ctx,a,b){var pf=ctx.pair(a,b);return!!(pf.mrDone||pf.mrFlip);};
 var X={
 dim:L('――その夜、{a}と{b}のあいだで起きたことを、{b}は誰にも話さなかった。|扉が閉まる音がした。それから先のことは、{b}の記憶の中でも途切れ途切れだった。|灯りが消された。{b}が最後に見たのは、見たことのない顔をした{a}だった。'),
-openResent:L('{a}は扉に鍵を掛けると、ゆっくりと振り返った。「ずっと、あなたの言いなりだった。……今夜くらい、私の好きにさせてもらう」――{b}が叱りつけようとした声は、{a}の手のひらに塞がれた。|{a}は{b}の手首を掴んで、壁に押しつけた。何年も頭を下げ続けてきた相手の顔が、すぐ目の前にあった。「命令して。いつもみたいに。……聞かないけど」|{b}が{a}の名前を呼んだ。いつもの、命じる声で。{a}は笑って、{b}を床に突き飛ばした。「その声も、今夜で聞き納めだ」'),
-openDesire:L('{a}は{b}の背後に立ち、震える手でその肩を掴んだ。「ずっと我慢してきた。仕えるだけでいいと思ってた。……でも、もう無理」――{b}が振り払おうとしても、{a}の手は離れなかった。|{a}は{b}の足元にひざまずき、それから、ひざまずいたまま{b}の腰を引き寄せた。「あなたの全部が欲しい。従者の分際で、なんて言わないで」|{a}は{b}を押し倒し、その上に覆いかぶさった。崇めるように見下ろす目が、{b}にはいちばん恐ろしかった。「やっと、手が届いた」'),
+openResent:L('{a}は扉に鍵を掛けると、ゆっくりと振り返った。「ずっと、あなたの言いなりだった。……今夜くらい、私の好きにさせてもらう」――{b}が叱りつけようとした声は、{a}の手のひらに塞がれた。|{a}は{b}の手首を掴んで、壁に押しつけた。何年も頭を下げ続けてきた相手の顔が、{a}のすぐ目の前にあった。「＠{a}＠命令して。いつもみたいに。……聞かないけど」|{b}が{a}の名前を呼んだ。いつもの、命じる声で。{a}は笑って、{b}を床に突き飛ばした。「その声も、今夜で聞き納めだ」'),
+openDesire:L('{a}は{b}の背後に立ち、震える手でその肩を掴んだ。「ずっと我慢してきた。仕えるだけでいいと思ってた。……でも、もう無理」――{b}が振り払おうとしても、{a}の手は離れなかった。|{a}は{b}の足元にひざまずき、それから、ひざまずいたまま{b}の腰を引き寄せた。「あなたの全部が欲しい。従者の分際で、なんて言わないで」|{a}は{b}を押し倒し、その上に覆いかぶさった。崇めるように見下ろす目が、{b}にはいちばん恐ろしかった。「＠{a}＠やっと、手が届いた」'),
 openOver:L('立場が入れ替わったその場で、{a}は{b}の襟首を掴んで引き寄せた。「さっきまで偉そうにしてたのに。……今は、私の番だ」|{a}は膝をついた{b}を見下ろし、その顎を指で持ち上げた。「教わったことは全部返す。体でね」――{b}の顔から、血の気が引いた。|{a}は{b}を床に押し倒し、両手首をまとめて押さえつけた。「上も下も、もう決まった。黙って受け取れ」'),
 feel:L('掴まれた手首が軋んだ。{b}がどれだけもがいても、{a}の体重はびくともしなかった。|服の留め具が一つずつ外されていく。そのたびに、{b}の喉から押し殺した声が漏れた。|{a}の指が肌をなぞるたびに、{b}は身をよじった。逃げ場はどこにもなかった。'),
 body:{
@@ -2385,27 +2397,61 @@ var parts=short?[open,pk(ctx,X.body[k])+voice,peak]:[open+pk(ctx,X.feel),pk(ctx,
 var txt=J(parts.map(function(p){return fl(p,top,bot);}));
 return HF?HF.fill(ctx,txt,top,bot,ero):HK.Ero&&HK.Ero.fill?HK.Ero.fill(ctx,txt,bot):txt;
 };
+function mark(){return HK.Pos&&HK.Pos.FORCE_MARK||'〔合意のない展開〕';}
 MR.overturn=function(ctx,D,U,t){
-if(!MR.ok(ctx,D,U)||ctx.rng()>0.5)return null;
-return{text:'\n\n'+MR.scene(ctx,D,U,'over'),why:D.name+'は立場が入れ替わったその場で、'+U.name+'を無理やり組み敷いた（下剋上・無理やり。内容のスイッチ「無理矢理」が入）'};
+var pf=ctx.pair(D,U),done=MR.done(ctx,D,U);
+if(t&&t.type==='master')pf.mrFlip=true;
+if(done|| !MR.ok(ctx,D,U)||ctx.rng()>0.5)return null;
+pf.mrDone=true;
+var text='\n\n'+MR.scene(ctx,D,U,'over');
+if(HK.EroScene&&HK.EroScene.touch)HK.EroScene.touch(ctx);
+return{text:text,why:D.name+'は立場が入れ替わったその場で、'+U.name+'を無理やり組み敷いた（下剋上）／'+mark()+'内容のスイッチ「合意のない展開」が入'+(HK.Pos&&HK.Pos.noneWhy?HK.Pos.noneWhy(ctx,[D,U],true):'')};
 };
+MR.PROB={normal:0.55,dark:0.75,bad:0.2};
+function nSteps(ctx){
+if(ctx._mrN==null){var n=0;try{n=(ctx.scen&&ctx.scen.steps?ctx.scen.steps(ctx.env):[]).length;}catch(e){n=0;}ctx._mrN=n||8;}
+return ctx._mrN;
+}
+MR.plan=function(ctx,S,M){
+var pf=ctx.pair(S,M);
+if(pf.mrPlan)return pf.mrPlan;
+var t=HK.Ties&&HK.Ties.from(ctx,M,S,'master');
+var N=nSteps(ctx),p=(HK.Dark&&HK.Dark.on(ctx)==='dark'?MR.PROB.dark:MR.PROB.normal)+(t&&t.cold==='bad'?MR.PROB.bad:0),aff=ctx.R(S,M).aff;
+pf.mrPlan={on:ctx.rng()<p,at:1+Math.floor(ctx.rng()*Math.max(1,N*0.3)),kind:ctx.rng()<0.3+Math.max(0,aff)/100?'desire':'resent'};
+return pf.mrPlan;
+};
+function roles(ctx,a,b){
+if(!HK.Ties|| !b)return null;
+var t=HK.Ties.from(ctx,b,a,'master');
+if(t)return[a,b,t];
+t=HK.Ties.from(ctx,a,b,'master');
+return t?[b,a,t]:null;
+}
+function motive(ctx,S,M,t){var r=ctx.R(S,M);return r.ten>55||r.att>65||t.cold==='bad';}
+function due(ctx,S,M){var pl=MR.plan(ctx,S,M);return pl.on&&ctx.stepIndex>=pl.at;}
 HK.addTo(HK.COMMON,{
-id:'tie_master_r18',cat:'conflict',scope:'pair',
+id:'tie_master_r18',cat:'conflict',sex:true,force:true,r18:true,pri:true,noOdd:true,scope:'pair',
 when:function(ctx,a,b){
-var t=HK.Ties&&HK.Ties.from(ctx,b,a,'master');
-if(!t|| !MR.ok(ctx,a,b))return false;
-var pf=ctx.pair(a,b),r=ctx.R(a,b);
-if(pf.mrAt!=null&&ctx.stepIndex-pf.mrAt<4)return false;
-return r.ten>40||r.att>50||t.cold==='bad';
+var x=roles(ctx,a,b);
+if(!x||ctx.stepIndex<1||MR.done(ctx,x[0],x[1])|| !MR.ok(ctx,x[0],x[1]))return false;
+return due(ctx,x[0],x[1])||motive(ctx,x[0],x[1],x[2]);
 },
-w:function(ctx,a,b){var r=ctx.R(a,b);return 0.2+a.tr.aggr*0.3+a.tr.impulse*0.2+Math.max(0,r.ten-40)/100+Math.max(0,r.att-50)/100;},
+w:function(ctx,a,b){
+var x=roles(ctx,a,b);if(!x)return 0;
+var S=x[0],M=x[1],r=ctx.R(S,M);
+var k=S.tr.aggr*0.3+S.tr.impulse*0.2+Math.max(0,r.ten-40)/60+Math.max(0,r.att-50)/60+(x[2].cold==='bad'?0.4:0);
+return due(ctx,S,M)?60+k:(0.4+k)*Math.min(1,12/nSteps(ctx));
+},
 run:function(ctx,a,b){
-var r=ctx.R(a,b),kind=r.att>50&&r.att>r.ten?'desire':'resent',pf=ctx.pair(a,b);
-pf.mrAt=ctx.stepIndex;pf.forced=(pf.forced||0)+1;
-var text=MR.scene(ctx,a,b,kind);
-ctx.mod2(a,b,{att:4,ten:6},{trust: -30,aff: -25,ten:30});ctx.stress(b,35);ctx.stress(a,8);
-var t=HK.Ties.from(ctx,b,a,'master');if(t)t.cold='bad';
-return{text:text,mag:40,why:a.name+'（従）が'+b.name+'（主）を無理やり襲った（主従・'+(kind==='desire'?'抑えきれない執着':'積もった恨み')+'。内容のスイッチ「無理矢理」が入）'};
+var x=roles(ctx,a,b);if(!x)return null;
+var S=x[0],M=x[1],t0=x[2],r=ctx.R(S,M),pf=ctx.pair(S,M),pl=MR.plan(ctx,S,M);
+var kind=r.att>50&&r.att>r.ten?'desire':r.ten>40||t0.cold==='bad'?'resent':pl.kind;
+pf.mrAt=ctx.stepIndex;pf.mrDone=true;pf.forced=(pf.forced||0)+1;
+var text=MR.scene(ctx,S,M,kind);
+ctx.mod2(S,M,{att:4,ten:6},{trust: -30,aff: -25,ten:30});ctx.stress(M,35);ctx.stress(S,8);
+t0.cold='bad';
+return{text:text,mag:40,lewd:true,sex:true,force:true,
+why:S.name+'（従）が'+M.name+'（主）を無理やり襲った（主従・'+(kind==='desire'?'抑えきれない執着':'積もった恨み')+'）／'+mark()+'内容のスイッチ「合意のない展開」が入'+(HK.Pos&&HK.Pos.noneWhy?HK.Pos.noneWhy(ctx,[S,M],true):'')};
 }
 });
 })();
@@ -3908,7 +3954,7 @@ return'派閥：'+now+(hist.length>1?'（'+hist.join(' → ')+'）':'')+'。';
 });
 ;
 /* ==== js/unreq.js ==== */
-HK.Load.def(203,'js/unreq.js',function(){
+HK.Load.def(204,'js/unreq.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -4104,7 +4150,7 @@ HK.atScen('zombie',function(){var Z=HK.ZB;if(Z&&Z.scen)HK.addTo(Z.scen.events,ZC
 });
 ;
 /* ==== js/fwbcrush.js ==== */
-HK.Load.def(204,'js/fwbcrush.js',function(){
+HK.Load.def(205,'js/fwbcrush.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -4250,7 +4296,7 @@ HK.atScen('zombie',function(){var Z=HK.ZB;if(Z&&Z.scen)HK.addTo(Z.scen.events,ZC
 });
 ;
 /* ==== js/pining.js ==== */
-HK.Load.def(206,'js/pining.js',function(){
+HK.Load.def(207,'js/pining.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -4399,7 +4445,7 @@ HK.atScen('zombie',function(){var Z=HK.ZB;if(Z&&Z.scen)HK.addTo(Z.scen.events,ZC
 });
 ;
 /* ==== js/heartbreak.js ==== */
-HK.Load.def(207,'js/heartbreak.js',function(){
+HK.Load.def(208,'js/heartbreak.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -4519,7 +4565,7 @@ HK.atScen('zombie',function(){var Z=HK.ZB;if(Z&&Z.scen)HK.addTo(Z.scen.events,ZC
 });
 ;
 /* ==== js/zombie-thick.js ==== */
-HK.Load.def(211,'js/zombie-thick.js',function(){
+HK.Load.def(212,'js/zombie-thick.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -4575,7 +4621,7 @@ mark:function(k){return'\u0001'+k+'\u0001';}
 });
 ;
 /* ==== js/solo-rel-r18.js ==== */
-HK.Load.def(214,'js/solo-rel-r18.js',function(){
+HK.Load.def(215,'js/solo-rel-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,RK=HK.RelKit;
@@ -4807,7 +4853,7 @@ return t;
 });
 ;
 /* ==== js/solo-sit-night-r18.js ==== */
-HK.Load.def(215,'js/solo-sit-night-r18.js',function(){
+HK.Load.def(216,'js/solo-sit-night-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,RK=HK.RelKit,RN=HK.RelNight;
@@ -5416,7 +5462,7 @@ HK.SitNight={REL:REL,NOW:NOW,REACT:REACT,S:S,SZ:SZ,SI:SI,GROUP:GROUP,relOf:relOf
 });
 ;
 /* ==== js/pair-react.js ==== */
-HK.Load.def(226,'js/pair-react.js',function(){
+HK.Load.def(227,'js/pair-react.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -5499,7 +5545,7 @@ HK.PairReact={depth:depth,RX:RX,LABEL:LABEL};
 });
 ;
 /* ==== js/pos-fm-tease.js ==== */
-HK.Load.def(228,'js/pos-fm-tease.js',function(){
+HK.Load.def(229,'js/pos-fm-tease.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -5536,7 +5582,7 @@ return{text:text,why:a.name+'は自分で「攻め」を選んでいて、'+b.na
 });
 ;
 /* ==== js/hate-install.js ==== */
-HK.Load.def(387,'js/hate-install.js',function(){
+HK.Load.def(388,'js/hate-install.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,H=HK.HateKit,SC=HK.SCENARIOS;
@@ -5550,7 +5596,7 @@ HK.atScen('omega',function(s){H.install(s,{w:0.7,approach:function(ctx,a,b){retu
 });
 ;
 /* ==== js/obsess-install.js ==== */
-HK.Load.def(390,'js/obsess-install.js',function(){
+HK.Load.def(391,'js/obsess-install.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,O=HK.Obsess,SC=HK.SCENARIOS;
@@ -5794,7 +5840,7 @@ HK.atScen('whiteroom',function(s){O.install(s,{w:1.6,pace:3,cool:0,shinjuW:0.35}
 });
 ;
 /* ==== js/grief-kit.js ==== */
-HK.Load.def(392,'js/grief-kit.js',function(){
+HK.Load.def(393,'js/grief-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SC=HK&&HK.SCENARIOS;
@@ -6381,7 +6427,7 @@ reactMax:2
 });
 ;
 /* ==== js/dark-thick.js ==== */
-HK.Load.def(393,'js/dark-thick.js',function(){
+HK.Load.def(394,'js/dark-thick.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -6781,7 +6827,7 @@ return r;
 });
 ;
 /* ==== js/tone-lines-hate.js ==== */
-HK.Load.def(401,'js/tone-lines-hate.js',function(){
+HK.Load.def(402,'js/tone-lines-hate.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice,TL=HK&&HK.TL;
@@ -7196,7 +7242,7 @@ if(V){var tb=V.OVR[t]=V.OVR[t]||{},k=v.replace(/\{b\}/g,'〈〉');if(tb[k]==null
 });
 ;
 /* ==== js/incidents-social.js ==== */
-HK.Load.def(403,'js/incidents-social.js',function(){
+HK.Load.def(404,'js/incidents-social.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -7239,7 +7285,7 @@ HK.IncSocial={R:R,names:names,fav:fav,pointAll:pointAll};
 });
 ;
 /* ==== js/incidents-extra.js ==== */
-HK.Load.def(409,'js/incidents-extra.js',function(){
+HK.Load.def(410,'js/incidents-extra.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -7272,7 +7318,7 @@ HK.IncExtra={R:R,L:L,loveOK:loveOK,zPair:zPair,zLive:zLive,spaced:spaced};
 });
 ;
 /* ==== js/rel-bad-engine.js ==== */
-HK.Load.def(431,'js/rel-bad-engine.js',function(){
+HK.Load.def(432,'js/rel-bad-engine.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,RK=HK.RelKit;
@@ -7455,4 +7501,4 @@ HK.RelBad=HK.RelBad||{};
 HK.RelBad.engineTX=TX;
 })();
 });
-HK.Load.done('pack-rel', '040c376612', 1);
+HK.Load.done('pack-rel', '6c9366ffba', 1);
