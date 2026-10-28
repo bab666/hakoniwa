@@ -46,6 +46,7 @@ js/tie-abuse.js @pack:rel
 js/tie-layer.js @pack:rel
 js/tie-master-r18.js @pack:rel
 js/tie-warm-r18.js @pack:rel
+js/tie-order-r18.js @pack:rel
 js/mob-after.js @pack:rel
 js/voice.js
 js/voice-tone.js
@@ -131,9 +132,12 @@ js/content-events-r18.js
 js/room-know.js @scen:whiteroom
 js/room-end.js @scen:whiteroom
 js/room-tie.js @scen:whiteroom
+js/room-tie-more.js @scen:whiteroom
+js/room-tie-more2.js @scen:whiteroom
 js/room-same.js @scen:whiteroom
 js/room-same-r18.js @scen:whiteroom
 js/room-tie-r18.js @scen:whiteroom
+js/room-tie-r18-more.js @scen:whiteroom
 js/room-games.js @scen:whiteroom
 js/room-trio-note.js @scen:whiteroom
 js/solo-room-jealous.js @scen:whiteroom

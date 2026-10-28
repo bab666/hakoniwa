@@ -92,6 +92,8 @@ js/room-cheer.js @scen:whiteroom
 js/room-know.js @scen:whiteroom
 js/room-end.js @scen:whiteroom
 js/room-tie.js @scen:whiteroom
+js/room-tie-more.js @scen:whiteroom
+js/room-tie-more2.js @scen:whiteroom
 js/room-same.js @scen:whiteroom
 js/room-games.js @scen:whiteroom
 js/room-trio-note.js @scen:whiteroom

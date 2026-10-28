@@ -37,6 +37,8 @@
         if (!ctx.rules.some(function (r) { return r.k === 'h' && (lhP || !A.ruleDone(ctx, r, a, b)); })) return false;
         if (pf.hateSexAt != null && ctx.stepIndex - pf.hateSexAt < (lhP ? 3 : 2)) return false;
         if (A.tieWall && A.tieWall(ctx, a, b, 3) >= 999) return false;
+        /* 性欲「なし」の人は、内容のスイッチ「合意のない展開」が入のときだけ（切羽詰まった場面として。理由に印を付ける。2026-10-28 担当LE：orient-audit の O6） */
+        if (HK.Pos && HK.Pos.libNone && HK.Pos.libNone([a, b]) && !(HK.Pos.forceOn && HK.Pos.forceOn(ctx))) return false;
         /* 条件のエッチがまだなら部屋の仕掛け（内容のスイッチ「合意のない展開」に関わらず起きる）。済ませたあとの腐れ縁の二度目はスイッチに従う */
         var condLeft = ctx.rules.some(function (r) { return r.k === 'h' && !A.ruleDone(ctx, r, a, b); });
         if (HS.order(ctx, a, b)[0] !== a || !HS.hostile(ctx, a, b, { room: condLeft }) || HS.taken(ctx, a, b)) return false;
@@ -57,6 +59,8 @@
         var rv = rivalOf(ctx, a, b);
         var text = HS.scene(ctx, a, b, { room: !done0 }), why = HS.why(ctx, a, b, { room: !done0 }) + (done0 ? '／条件はもう満たしていたのに、また（腐れ縁）' : '／条件のエッチ') + HS.shieldWhy(HS.lastShield) +
           (rv ? '／愛憎：' + rv.h.name + 'は、' + rv.o.name + 'を' + rv.z.name + 'に取られそうで焦った' : '');
+        var ln = [a, b].filter(function (c) { return HK.Pos && HK.Pos.libOf && HK.Pos.libOf(c) === 'none'; });
+        if (ln.length) why += '／' + ((HK.Pos && HK.Pos.FORCE_MARK) || '〔合意のない展開〕') + '性欲「なし」の' + ln.map(function (c) { return c.name; }).join('・') + 'も、部屋の条件の切羽詰まった場面で体の関係になった（内容のスイッチ「合意のない展開」が入）';
         if (!counted && A.waitNote) return { cat: 'romance', text: text + A.waitNote(ctx, r, a, b), why: why + '／条件の順番：条件1がまだなので数えない', mag: 30 };
         if (A.pairDone(ctx, a, b)) { var ex = A.exitPair(ctx, a, b, text, why, true); ex.cat = 'romance'; return ex; }
         return { cat: 'romance', text: text + (r && r.n > 1 && !done0 ? '（エッチ ' + p.act.h + '/' + r.n + '）' : '') + '扉はまだ開かない。', why: why, mag: 30 };
