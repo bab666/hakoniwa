@@ -165,7 +165,7 @@
 
   var EV = isl.events;
   /* 通りがかりの船（運） */
-  EV.push({ id: 'ie_ship', cat: 'escape', scope: 'solo',
+  EV.push({ id: 'ie_ship', label: '船影を見つけて一人で島を抜け出す', cat: 'escape', scope: 'solo',
     when: function (ctx) { return ctx.stepIndex >= 1 && (ctx.flags.ships || 0) < 2 && ctx.flags.helpAt == null; },
     w: function (ctx, a) { return (0.03 + luck(ctx, a) * 0.03) * (ctx.env.rescue === 'no' ? 1.6 : 1); },
     run: function (ctx, a) {
@@ -204,7 +204,7 @@
     } });
 
   /* こっそり自分用のイカダ */
-  EV.push({ id: 'ie_sraft', cat: 'solo', scope: 'solo',
+  EV.push({ id: 'ie_sraft', label: '自分用のイカダをこっそり作る', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { return ctx.present().length > 1 && selfish(ctx, a) > 0.42 && !ctx.flags.helpAt && (a.flags.sraft || 0) < 100; },
     w: function (ctx, a) { return (selfish(ctx, a) * 0.9 + (a.flags.ostra ? 0.4 : 0)) * (ctx.env.rescue === 'no' ? 1.5 : 0.8); },
     run: function (ctx, a) {
@@ -213,7 +213,7 @@
     } });
 
   /* 隠しイカダの発見 → 言い逃れ／村八分／一緒に逃げる取引 */
-  EV.push({ id: 'ie_found', cat: 'conflict', scope: 'pair',
+  EV.push({ id: 'ie_found', label: '隠していたイカダが見つかる', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { return (b.flags.sraft || 0) > (b.flags.sfound ? 60 : 20); },
     w: function (ctx, a, b) { return 0.6 + a.tr.a * 0.9 + a.tr.caution * 0.4 + a.tr.cp * 0.3 + b.flags.sraft / 120; },
     run: function (ctx, a, b) {
@@ -242,7 +242,7 @@
     var r = sail(ctx, a, [a], { fate: '助けを呼びに島を出た', note: ctx.label + '、「助けを呼んでくる」と一人でイカダを出した' });
     if (r === 'ok') { ctx.say({ kind: 'event', cat: 'escape', actors: [a], text: fill(pick(ctx, T.msgOk), mm(a)) }); a.flags.msgr = true; ctx.flags.msgr = a.i; callHelp(ctx, a, sincere); }
   }
-  EV.push({ id: 'ie_messenger', cat: 'escape', scope: 'solo',
+  EV.push({ id: 'ie_messenger', label: '助けを呼ぶ役に名乗り出る', cat: 'escape', scope: 'solo',
     when: function (ctx, a) { return (!ctx.flags.raftDone && (ctx.flags.raft || 0) >= 40 || (a.flags.sraft || 0) >= 55) && ctx.flags.msgr == null && ctx.flags.msgTry !== ctx.stepIndex && ctx.present().length >= 3 && !a.flags.ostra; },
     w: function (ctx, a) { var s = selfish(ctx, a); return Math.max(0, s) * talk(a) * 3 + ((a.flags.sraft || 0) >= 55 ? talk(a) : 0) + (conscience(a) > 0.6 ? a.tr.np * 0.5 : 0); },
     run: function (ctx, a) {
@@ -266,23 +266,23 @@
     } });
 
   /* 村八分の日々 */
-  EV.push({ id: 'ie_omeal', cat: 'conflict', scope: 'pair',
+  EV.push({ id: 'ie_omeal', label: '抜け駆けした人の食事を減らす', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { return b.flags.ostra && !a.flags.ostra; },
     w: function (ctx, a) { return 0.4 + a.tr.cp * 0.5 + a.tr.cold * 0.4 + a.tr.aggr * 0.3; },
     run: function (ctx, a, b) { b.hp -= 5; ctx.stress(b, 10); ctx.mod(b, a, { ten: 8, aff: -6 }); (a.flags.harm = a.flags.harm || {})[b.i] = (a.flags.harm[b.i] || 0) + 1; return { text: fill(pick(ctx, T.ostraMeal), mm(a, b)), why: a.name + 'のCP・ドライさ（抜け駆けを許さない）' }; } });
-  EV.push({ id: 'ie_oalone', cat: 'solo', scope: 'solo',
+  EV.push({ id: 'ie_oalone', label: '村八分にされてひとりで眠る', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { return a.flags.ostra; },
     w: function () { return 0.6; },
     run: function (ctx, a) { ctx.stress(a, 6); return { text: fill(pick(ctx, T.ostraAlone), mm(a)), why: a.name + 'は村八分のまま' }; } });
-  EV.push({ id: 'ie_oforgive', cat: 'help', scope: 'pair',
+  EV.push({ id: 'ie_oforgive', label: '村八分の人にこっそり食べ物を届ける', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return b.flags.ostra && !a.flags.ostra; },
     w: function (ctx, a, b) { return 0.3 + a.tr.np * 1.4 + R(ctx, a, b).aff / 120 + (tieOf(ctx, a, b) ? 0.6 : 0) - a.tr.cp * 0.3; },
     run: function (ctx, a, b) { (a.flags.forgave = a.flags.forgave || {})[b.i] = true; lift(ctx, b, 1); b.hp = Math.min(100, b.hp + 5); ctx.mod2(a, b, { trust: 5 }, { aff: 14, trust: 14 }); return { cat: 'help', text: fill(pick(ctx, T.ostraForgive), mm(a, b)), why: a.name + 'のNP（' + Math.round(a.eg.NP) + '）' + (b.flags.ostra ? '' : '。' + b.name + 'は輪に戻された') }; } });
-  EV.push({ id: 'ie_oapology', cat: 'help', scope: 'solo',
+  EV.push({ id: 'ie_oapology', label: '村八分の人が謝って許される', cat: 'help', scope: 'solo',
     when: function (ctx, a) { return a.flags.ostra; },
     w: function (ctx, a) { return 0.2 + a.tr.ac * 1.1 + a.tr.np * 0.4 - a.tr.cp * 0.3; },
     run: function (ctx, a) { lift(ctx, a, 1); ctx.others(a).forEach(function (o) { ctx.mod(o, a, { trust: 6, ten: -6 }); }); return { text: fill(pick(ctx, T.ostraApology), mm(a)), why: a.name + 'のAC（償いたい）' + (a.flags.ostra ? '' : '。皆は、少しずつ' + a.name + 'を許した') }; } });
-  EV.push({ id: 'ie_ospite', cat: 'betray', scope: 'solo',
+  EV.push({ id: 'ie_ospite', label: '村八分の人が開き直って盗む', cat: 'betray', scope: 'solo',
     when: function (ctx, a) { return a.flags.ostra; },
     w: function (ctx, a) { return a.tr.aggr * 0.8 + a.tr.fc * 0.3 - a.tr.ac * 0.4 + a.stress / 200; },
     run: function (ctx, a) { ctx.food = Math.max(0, (ctx.food || 0) - 4); ctx.flags.raft = Math.max(0, (ctx.flags.raft || 0) - 6); ctx.others(a).forEach(function (o) { ctx.mod(o, a, { ten: 8, trust: -6 }); }); return { text: fill(pick(ctx, T.ostraSpite), mm(a)), why: a.name + 'の攻撃性・FC（追い詰められて開き直った）' }; } });

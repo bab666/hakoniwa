@@ -155,7 +155,7 @@
   }
   /* 足す順は HK.addTo で元のファイルの順に保つ（状況ごとの夜などが、分割読み込みでは後から足すため） */
   HK.addTo(isl.events, {
-    id: 'il18_refuse', cat: 'romance', scope: 'self', r18: true,
+    id: 'il18_refuse', label: '好意が深まるまで二度目は断る', cat: 'romance', scope: 'self', r18: true,
     when: function (ctx, a) { return !!refTgt(ctx, a); },
     w: function (ctx, a) { var b = refTgt(ctx, a); return b ? 0.8 + R(ctx, a, b).att / 60 + a.tr.impulse * 0.4 : 0; },
     run: function (ctx, a) {

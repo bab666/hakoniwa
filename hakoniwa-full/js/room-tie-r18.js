@@ -235,7 +235,7 @@
 
   /* ---------- 出られない部屋：条件「エッチ」の部屋で、新しい関係の二人が ---------- */
   A.EV.push({
-    id: 'tie_sex', cat: 'romance', sex: true, scope: 'pair', pri: true, r18: true,
+    id: 'tie_sex', label: '関係のある二人が条件を満たす', cat: 'romance', sex: true, scope: 'pair', pri: true, r18: true,
     when: function (ctx, a, b) {
       if (HK.SAFE_ON || ctx.flags.isOne || ctx.flags.trioCur) return false;
       if (a.out || b.out || a.flags.down || b.flags.down || a.flags.cagePair != null || b.flags.cagePair != null) return false;

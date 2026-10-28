@@ -31,7 +31,7 @@
     lMake: L('{a}は気まずそうに{b}の隣に座り、「さっきは言いすぎた｜＝｜さっきは言いすぎました」と呟いた。{b}は少し迷ってから、{a}の手を握った。|{a}は{b}の好きな飲み物を黙って差し出した。仲直りの合図だと、{b}には分かった。|{b}「ちゃんと話そう。私の話も、最後まで聞いて｜ちゃんと話そう。私の話も、最後まで聞け｜ちゃんと話しましょう。私の話も、最後まで聞いてください」{a}は少し驚いて、それから小さく頷いた。')
   };
   HK.addTo(HK.COMMON, {
-    id: 'tie_abuse', cat: 'conflict', scope: 'pair',
+    id: 'tie_abuse', label: 'すれ違いの多い恋人の束縛と喧嘩', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { var t = tieOf(ctx, a, b); return !!t && !ctx.pair(a, b).abFree; },
     w: function (ctx) { return 1.4 * own(ctx); },
     run: function (ctx, a, b) {

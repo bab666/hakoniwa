@@ -407,3 +407,23 @@
     e.when = function (ctx, a, b) { if (b && OM.worshipNoNight(ctx, a, b)) return false; return w0 ? w0.apply(this, arguments) : true; };
   });
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   om_tie_colleague=同僚の職場の日常
+   om_tiekeep_colleague=同僚どうしで支え合う
+   om_tiegrow_colleague=同僚との距離が縮まる
+   om_tie_classmate=同級生との再会と日常
+   om_tiekeep_classmate=同級生どうしで支え合う
+   om_tiegrow_classmate=同級生と昔話から近づく
+   om_tie_boss=上司と部下の職場の日常
+   om_tiekeep_boss=上司と部下が支え合う
+   om_tiegrow_boss=上司と部下が職場の外で対等に
+   om_tie_worship=崇める相手への献身
+   om_tiekeep_worship=崇める相手を支え続ける
+   om_tiegrow_worship=崇める関係が深まる
+   om_tie_benefactor=恩人の気遣いと感謝
+   om_tiekeep_benefactor=恩人と恩を受けた人が支え合う
+   om_tiegrow_benefactor=恩を返す
+   om_tie_relative=親族どうしの日常
+   om_tiekeep_relative=親族どうしで支え合う
+   om_tiegrow_relative=親族が家族のような距離になる
+*/

@@ -50,7 +50,7 @@
   };
   OM.guard = function (ctx, c) { return !!(ctx.om && ctx.om.guard && ctx.om.guard[c.i]); };
   scen.events.push({
-    id: 'om_neckguard', cat: 'romance', scope: 'pair', pri: true,
+    id: 'om_neckguard', label: '番にネックガードを贈る', cat: 'romance', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (!ok(ctx, a, b)) return false;
       var at = ctx.om.bondAt && ctx.om.bondAt[key(a, b)];

@@ -99,7 +99,7 @@
 
   function lewdOff(ctx) { var e = ctx.env || {}; return e.ilewd === 'off' || e.zlewd === 'off'; }
   if (HK.COMMON) HK.addTo(HK.COMMON, {
-    id: 'tie_lh_lewd', cat: 'conflict', sex: true, scope: 'pair', r18: true,
+    id: 'tie_lh_lewd', label: '自分から挑発して構わせようとする', cat: 'conflict', sex: true, scope: 'pair', r18: true,
     when: function (ctx, a, b) {
       if (HK.SAFE_ON || !LH.has(ctx, a, b) || !LH.sexOk(ctx, a, b)) return false;
       if (ctx.scen && ctx.scen.id === 'classroom') return false;

@@ -127,7 +127,7 @@
   };
   OM.EXTRA_EV = OM.EXTRA_EV || [];
   OM.EXTRA_EV.push({
-    id: 'om_workplace', cat: 'bond', scope: 'pair',
+    id: 'om_workplace', label: '雇い主と従業員の店の日常', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var bs = ctx.om.boss || {}; return bs[b.i] === a.i || bs[a.i] === b.i; },
     w: function (ctx, a) { return 0.8 + (a.action.id === 'work' ? 0.4 : 0); },
     run: function (ctx, a, b) {

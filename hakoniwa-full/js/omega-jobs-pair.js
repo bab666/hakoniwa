@@ -195,7 +195,7 @@
   }
   OM.EXTRA_EV = OM.EXTRA_EV || [];
   OM.EXTRA_EV.push({
-    id: 'om_jobpair', cat: 'bond', scope: 'pair',
+    id: 'om_jobpair', label: '職業の組み合わせで関わる二人', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!rule(ctx, a, b); },
     w: function (ctx, a, b) { var st = ctx.pair(a, b).jp || {}; return (1.3 + (a.action.id === 'work' ? 0.3 : 0)) / (1 + (st.n || 0) * 0.35); },
     run: function (ctx, a, b) {

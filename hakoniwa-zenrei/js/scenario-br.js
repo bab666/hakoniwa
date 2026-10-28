@@ -612,7 +612,7 @@
         }
       },
       {
-        id: 'mourn', cat: 'solo', scope: 'solo',
+        id: 'mourn', label: '放送で呼ばれた名前を受け入れられない', cat: 'solo', scope: 'solo',
         when: function (ctx, a) { return a.flags.grief != null && !a.flags.mourned; },
         w: function () { return 2; },
         run: function (ctx, a) {
@@ -623,7 +623,7 @@
       },
       /* ---------- 順24：動機を思い出す（一日に一度まで） ---------- */
       {
-        id: 'br_motive', cat: 'solo', scope: 'solo', noOdd: true,
+        id: 'br_motive', label: '戦う理由を胸に思い返す', cat: 'solo', scope: 'solo', noOdd: true,
         when: function (ctx, a) { return !!a.motive && a.motive !== 'none' && !mad(a) && (a.flags.motDay == null || Math.floor(ctx.stepIndex / 4) > a.flags.motDay); },
         w: function () { return 0.45; },
         run: function (ctx, a) {
@@ -638,7 +638,7 @@
       },
       /* ---------- 順93：適当に歩く ---------- */
       {
-        id: 'br_stroll', cat: 'solo', scope: 'solo', noOdd: true,
+        id: 'br_stroll', label: 'あてもなく歩き回る', cat: 'solo', scope: 'solo', noOdd: true,
         when: function (ctx, a) { return a.action.id === 'wander' && !mad(a); },
         w: function () { return 1.1; },
         run: function (ctx, a) {
@@ -660,7 +660,7 @@
       },
       /* ---------- 順93：発狂・錯乱（襲う・幻を見る）／落ち着かせる ---------- */
       {
-        id: 'br_frenzy', cat: 'combat', scope: 'pair', dk: 'madness',
+        id: 'br_frenzy', label: '錯乱して周りに襲いかかる', cat: 'combat', scope: 'pair', dk: 'madness',
         when: function (ctx, a) { return mad(a); },
         w: function () { return 1.6; },
         run: function (ctx, a, b) {
@@ -672,7 +672,7 @@
         }
       },
       {
-        id: 'br_calm', cat: 'help', scope: 'pair', noOdd: true,
+        id: 'br_calm', label: '錯乱した仲間をなだめる', cat: 'help', scope: 'pair', noOdd: true,
         when: function (ctx, a, b) { return mad(b) && !mad(a) && (allied(ctx, a, b) || R(ctx, a, b).aff > 25 || a.flags.guardOf === b.i); },
         w: function (ctx, a, b) { return 0.5 + a.tr.np * 1.2 + Math.max(0, R(ctx, a, b).aff) / 50; },
         run: function (ctx, a, b) {
@@ -685,7 +685,7 @@
       },
       /* ---------- 順93：嫌いな人間を殺す・復讐（相手を探す。相手がいなければ、行き場のない殺気） ---------- */
       {
-        id: 'br_grudge', cat: 'solo', scope: 'solo', noOdd: true,
+        id: 'br_grudge', label: '恨む相手を追う', cat: 'solo', scope: 'solo', noOdd: true,
         when: function (ctx, a) {
           if (mad(a) || a.flags.grudgeLost) return false;
           var h = grudgeOf(ctx, a);
@@ -702,7 +702,7 @@
       },
       /* ---------- 順93：自分の命を度外視・諦め（武器を譲る・何もしない）／仲間の言葉で持ち直す ---------- */
       {
-        id: 'br_giveup', cat: 'solo', scope: 'solo', noOdd: true,
+        id: 'br_giveup', label: '絶望して生きるのを諦めかける', cat: 'solo', scope: 'solo', noOdd: true,
         when: function (ctx, a) { return despair(a) && !mad(a) && (ctx.stepIndex - (a.flags.guAt == null ? -9 : a.flags.guAt) >= 2); },
         w: function () { return 0.9; },
         run: function (ctx, a) {
@@ -721,7 +721,7 @@
         }
       },
       {
-        id: 'br_relive', cat: 'help', scope: 'pair', noOdd: true,
+        id: 'br_relive', label: '絶望した人に寄り添う', cat: 'help', scope: 'pair', noOdd: true,
         when: function (ctx, a, b) { return despair(b) && !mad(a) && !despair(a) && (allied(ctx, a, b) || R(ctx, a, b).aff > 30); },
         w: function (ctx, a, b) { return 0.3 + a.tr.np * 0.8 + Math.max(0, R(ctx, a, b).aff) / 60; },
         run: function (ctx, a, b) {

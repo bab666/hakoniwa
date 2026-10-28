@@ -10,7 +10,7 @@
   var GK = HK.SCENARIOS && HK.SCENARIOS.goukon;
   if (GK) {
     GK.events.push({
-      id: 'dk_style', cat: 'solo', scope: 'solo',
+      id: 'dk_style', label: '酔いが回って酒癖が出る', cat: 'solo', scope: 'solo',
       when: function (ctx, a) { return (a.flags.drunk > 45 || ctx.stat(a, 'drink') >= 5 && ctx.stepIndex >= 2) && !a.flags.dkShown; },
       w: function (ctx, a) { return 1.2 + (a.flags.drunk || 0) / 80; }, pri: true,
       run: function (ctx, a) {
@@ -20,7 +20,7 @@
       }
     });
     GK.events.push({
-      id: 'dk_to', cat: 'romance', scope: 'pair',
+      id: 'dk_to', label: '酔って気になる相手に絡む', cat: 'romance', scope: 'pair',
       when: function (ctx, a, b) { return a.flags.dkShown && (a.flags.drunk > 50 || ctx.stat(a, 'drink') >= 5) && (ctx.pair(a, b).dk || 0) < 2; },
       w: function (ctx, a, b) { return 0.9 + ctx.R(a, b).att / 60 + (a.flags.drunk || 0) / 100; },
       run: function (ctx, a, b) {
@@ -30,7 +30,7 @@
       }
     });
     GK.events.push({
-      id: 'dk_care', cat: 'help', scope: 'pair',
+      id: 'dk_care', label: '酔いつぶれた人を介抱する', cat: 'help', scope: 'pair',
       when: function (ctx, a, b) { return b.flags.drunk > 75 && (a.flags.drunk || 0) < 50 && !b.flags.dkCared && ctx.stepIndex >= 4; },
       w: function (ctx, a, b) { return 0.6 + a.tr.np + ctx.R(a, b).att / 60; },
       run: function (ctx, a, b) {

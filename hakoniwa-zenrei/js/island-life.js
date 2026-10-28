@@ -254,7 +254,7 @@
       }
     },
     {
-      id: 'quarrel_thief', cat: 'conflict', scope: 'pair',
+      id: 'quarrel_thief', label: '食料の盗み食いを責める', cat: 'conflict', scope: 'pair',
       when: function (ctx, a, b) { return b.flags.exposed && !b.flags.apologized && ctx.stepIndex - b.flags.exposed.at <= 2 && !b.flags.quarreled; },
       w: function (ctx, a, b) { return 0.6 + a.tr.cp * 0.8 + R(ctx, a, b).ten / 60; },
       run: function (ctx, a, b) {
@@ -265,7 +265,7 @@
       }
     },
     {
-      id: 'apology', cat: 'help', scope: 'pair',
+      id: 'apology', label: '盗み食いを謝って魚を差し出す', cat: 'help', scope: 'pair',
       when: function (ctx, a, b) { return a.flags.exposed && !a.flags.apologized && ctx.stepIndex - a.flags.exposed.at >= 1 && (b.i === a.flags.exposed.by || ctx.rng() < 0.3); },
       w: function (ctx, a) { return 0.4 + a.tr.ac * 0.8 + a.tr.np * 0.6 + a.tr.honesty * 0.3 - a.tr.cp * 0.3; },
       run: function (ctx, a, b) {
@@ -287,7 +287,7 @@
       }
     },
     {
-      id: 'campfire_talk', cat: 'bond', scope: 'pair',
+      id: 'campfire_talk', label: '食後の焚き火で語り合う', cat: 'bond', scope: 'pair',
       w: function (ctx, a, b) { return 0.3 + (ctx.isl && ctx.isl.lastMeal >= 2 ? 0.4 : 0) + a.tr.warmth * 0.3; },
       run: function (ctx, a, b) {
         ctx.mod2(a, b, { aff: 5, trust: 4 }, { aff: 5, trust: 4 });

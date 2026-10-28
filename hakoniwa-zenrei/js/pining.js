@@ -173,3 +173,13 @@
   var ZC = LIST.map(function (e) { var e2 = {}; for (var k in e) e2[k] = e[k]; e2.mini = false; return e2; });
   HK.atScen('zombie', function () { var Z = HK.ZB; if (Z && Z.scen) HK.addTo(Z.scen.events, ZC); });
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   pn_glance=両片想いの二人の目が合ってそらす
+   pn_almost=両片想いの二人があと一言を言えない
+   pn_misread=相手の優しさを別の人への好意と勘違い
+   pn_jealous=両片想いの相手が誰かと親しくて妬く
+   pn_consult=同じ人に恋の相談をする
+   pn_joke=本気の言葉が冗談として流れる
+   pn_rival=ほかの人が近づいて焦る
+   pn_confess=両片想いがついに告白で実る
+*/

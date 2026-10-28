@@ -80,7 +80,7 @@
 
   /* 場所を譲る（a＝残る人、b・c＝恋人どうし／想い合っている二人） */
   ev({
-    id: 'rm_space', cat: 'bond', scope: 'pair',
+    id: 'rm_space', label: '恋人たちに場所を譲る', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { if (!calm(ctx)) return false; var c = G.loveOf(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && G.once(ctx, 'space', [a, b, c]); },
     w: W(0.35),
     run: function (ctx, a, b) {
@@ -91,7 +91,7 @@
   });
   /* 背中を押す（a＝残る人、b＝迷っている人、c＝その相手） */
   ev({
-    id: 'rm_push', cat: 'bond', scope: 'pair',
+    id: 'rm_push', label: '迷う友人の背中を押す', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { if (!calm(ctx)) return false; var c = G.loveOf(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && G.once(ctx, 'push', [a, b]); },
     w: function (ctx, a, b) { return 0.3 + a.tr.np * 0.15 + a.tr.fc * 0.1 + b.stress / 300; },
     run: function (ctx, a, b) {
@@ -102,7 +102,7 @@
   });
   /* 差し入れ・毛布を譲る */
   ev({
-    id: 'rm_share', cat: 'bond', scope: 'pair',
+    id: 'rm_share', label: '恋人たちに自分の分を譲る', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { if (!calm(ctx)) return false; var c = G.loveOf(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && G.once(ctx, 'share', [a, b, c]); },
     w: W(0.26),
     run: function (ctx, a, b) {
@@ -113,7 +113,7 @@
   });
   /* 恋の相談（a＝聞く人、b＝想っている人、c＝想う相手） */
   ev({
-    id: 'rm_koibana', cat: 'bond', scope: 'pair',
+    id: 'rm_koibana', label: '部屋の隅で恋の相談', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { if (!calm(ctx)) return false; var c = G.mutualOf(ctx, b, a) || G.crushOf(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && G.friendly(ctx, b, a) && G.once(ctx, 'koibana', [a, b, c]); },
     w: function (ctx, a, b) { return 1.6 + b.tr.honesty * 0.5 + (G.rel(ctx, a, b) ? 0.5 : 0); },
     run: function (ctx, a, b) {
@@ -124,7 +124,7 @@
   });
   /* 冷やかす（恋人どうし） */
   ev({
-    id: 'rm_tease', cat: 'bond', scope: 'pair',
+    id: 'rm_tease', label: '恋人どうしを冷やかす', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { if (!calm(ctx)) return false; var c = G.partnerOf(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && G.once(ctx, 'tease', [a, b, c]); },
     w: function (ctx, a) { return 0.22 + a.tr.fc * 0.2; },
     run: function (ctx, a, b) {
@@ -135,7 +135,7 @@
   });
   /* 恋人どうし二組の軽い会話（a・b、c・d） */
   ev({
-    id: 'rm_double', cat: 'bond', scope: 'pair',
+    id: 'rm_double', label: '二組で笑い合う部屋の時間', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { if (!calm(ctx) || !G.couple(ctx, a, b) || !G.pairOk(ctx, a, b) || ctx.flags.rmDoubleAt === ctx.stepIndex) return false; var cd = G.otherCouple(ctx, a, b); return !!cd && G.pairOk(ctx, cd[0], cd[1]); },
     w: function () { return 0.4; },
     run: function (ctx, a, b) {
@@ -159,7 +159,7 @@
   }
   /* 先に出た二人が外で待っている（a＝残った人、b・c＝残った恋の二人） */
   ev({
-    id: 'rm_wait', cat: 'bond', scope: 'pair',
+    id: 'rm_wait', label: '先に出た二人が外で待つ', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { if (!calm(ctx) || !gonePair(ctx)) return false; var c = G.loveOf(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && G.once(ctx, 'wait', [a, b, c]); },
     w: W(0.9),
     run: function (ctx, a, b) {

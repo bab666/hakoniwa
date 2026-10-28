@@ -48,7 +48,7 @@
 
   D.events = [
     {
-      id: 'det_case', cat: 'bond', scope: 'pair', pri: true,
+      id: 'det_case', label: '探偵と助手で事件を追う', cat: 'bond', scope: 'pair', pri: true,
       when: function (ctx, a, b) {
         if (!D.buddyCtx(ctx, a, b)) return false;
         var st = ctx.om.det;
@@ -69,7 +69,7 @@
       }
     },
     {
-      id: 'det_banter', cat: 'bond', scope: 'pair',
+      id: 'det_banter', label: '探偵と助手の日常のかけあい', cat: 'bond', scope: 'pair',
       when: function (ctx, a, b) { return D.buddyCtx(ctx, a, b); },
       w: function () { return 1.1; },
       run: function (ctx, a, b) {
@@ -79,7 +79,7 @@
       }
     },
     {
-      id: 'det_solo', cat: 'solo', scope: 'solo',
+      id: 'det_solo', label: '助手のいない探偵のひとり仕事', cat: 'solo', scope: 'solo',
       when: function (ctx, a) { return isDet(a) && !ctx.present().some(function (o) { return isAsst(o); }); },
       w: function () { return 0.6; },
       run: function (ctx, a) { ctx.stress(a, 3); return { text: ctx.t(ctx.pick(SOLO), a), why: '助手のいない探偵' }; }

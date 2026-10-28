@@ -99,7 +99,7 @@
   var NOTICE = ['{b}は、まだ何も気づいていない。', '{b}は何かが変わったことに気づいていた。それが何かは、まだ分からなかった。', '{b}の中で、小さな疑いが形になりはじめていた。'];
 
   EV.push({
-    id: 'om_hide', cat: 'romance', scope: 'pair', pri: true,
+    id: 'om_hide', label: '番に隠しごとをする', cat: 'romance', scope: 'pair', pri: true,
     when: function (ctx, a, b) { var h = cur(ctx, a, b); return !!h && h.st === 'hide' && h.hides < 2 && ready(ctx, h) && here(a) && here(b); },
     w: function (ctx, a, b) { var h = ctx.pair(a, b).omHide; return 3.5 + (h.hides ? 0 : 2) + ctx.chars[h.by].tr.ac * 1.2; },
     run: function (ctx, a, b) {
@@ -138,7 +138,7 @@
   };
   var LIE_AGAIN = L('あの言い訳は、やはり嘘だった。{a}がそれを知ったのは、「信じて｜信じてくれ｜信じてください」と言われてから何週間も経ってからだった。|一度は信じたぶん、二度目の痛みは深かった。');
   EV.push({
-    id: 'om_hide_found', cat: 'conflict', scope: 'pair', pri: true,
+    id: 'om_hide_found', label: '隠しごとが発覚する', cat: 'conflict', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       var h = cur(ctx, a, b);
       if (!h || h.st !== 'hide' || !ready(ctx, h) || !here(a) || !here(b)) return false;
@@ -200,7 +200,7 @@
     AC: L('{b}は「そっか｜そうか｜そうですか」と小さく言って、笑おうとした。笑えなかった。')
   };
   EV.push({
-    id: 'om_hide_answer', cat: 'conflict', scope: 'pair', pri: true,
+    id: 'om_hide_answer', label: '隠しごとに言い訳か告白で答える', cat: 'conflict', scope: 'pair', pri: true,
     when: function (ctx, a, b) { var h = cur(ctx, a, b); return !!h && h.st === 'found' && ready(ctx, h) && here(a) && here(b); },
     w: function () { return 9; },
     run: function (ctx, a, b) {
@@ -311,7 +311,7 @@
   };
   var REBUILD_BOND = L('ある夜、{b}は自分から髪をかき上げて、うなじの噛み跡を{a}に見せた。{a}はそこにそっと額を当てて、長いこと動かなかった。噛み跡は、もう痛まなかった。');
   EV.push({
-    id: 'om_hide_rebuild', cat: 'romance', scope: 'pair', pri: true,
+    id: 'om_hide_rebuild', label: '隠しごとのあとでやり直す', cat: 'romance', scope: 'pair', pri: true,
     when: function (ctx, a, b) { var h = cur(ctx, a, b); return !!h && h.st === 'mend' && ready(ctx, h, 2) && here(a) && here(b) && HK.canLove(a, b) && HK.canLove(b, a); },
     w: function () { return 6; },
     run: function (ctx, a, b) {

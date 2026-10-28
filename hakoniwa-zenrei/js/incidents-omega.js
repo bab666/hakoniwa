@@ -44,7 +44,7 @@
       }
     },
     {
-      id: 'fullmoon', once: false, min: 2, from: 2,
+      id: 'fullmoon', label: '満月の夜にαとΩが惹かれ合う', once: false, min: 2, from: 2,
       run: function (ctx) {
         var P = ctx.present();
         ctx.incident('「⁠満月の夜は発情期が重なりやすい」という噂が、街で囁かれていた。その夜、空には大きな月が出ていた。');
@@ -56,7 +56,7 @@
       }
     },
     {
-      id: 'party', min: 2, from: 2,
+      id: 'party', label: '第二性を問わない交流パーティー', min: 2, from: 2,
       run: function (ctx) {
         var P = ctx.present(), free = P.filter(function (c) { return !P.some(function (o) { return o !== c && ctx.pair(c, o).couple; }); });
         if (free.length < 1) return;

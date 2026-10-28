@@ -47,7 +47,7 @@
     goSeen: ['{b}は気をきかせて、部屋の反対側で鼻歌を歌い始めた。', '{b}は両手で耳を塞いで、壁の方を向いた。{b}「何も聞こえない｜何も聞こえない｜何も聞こえません」', '{b}は戻ってきた{a}に、黙って新しいペットボトルを差し出した。{a}は、その手を軽くはたいた。']
   };
   EV.push({
-    id: 'water_need', cat: 'solo', scope: 'solo',
+    id: 'water_need', label: '水を飲みすぎてトイレを我慢する', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { return (a.flags.pee || 0) >= 4 && free(a); },
     w: function (ctx, a) { return (a.flags.pee || 0) / 2.5; },
     run: function (ctx, a) {

@@ -195,3 +195,17 @@
   HK.RelBad = HK.RelBad || {};
   HK.RelBad.engineTX = TX;
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   rb_*_sbSpat=不仲なきょうだいが顔を合わせて口喧嘩
+   rb_*_sbCompare=きょうだいと比べられてきた恨み
+   rb_*_sbGrudge=不仲なきょうだいを放っておけない
+   rb_*_sbDefend=悪く言われたきょうだいをかばう
+   rb_*_sbMemory=不仲なきょうだいと子どもの頃の思い出
+   rb_*_sbMakeup=不仲なきょうだいがようやく歩み寄る
+   rb_*_bdClash=反りの合わない二人が衝突する
+   rb_*_bdSnark=気に食わない相手に皮肉を言う
+   rb_*_bdForced=気に食わない相手としぶしぶ組む
+   rb_*_bdCredit=手柄と責任を押し付け合う
+   rb_*_bdThaw=不仲な相手の意外な一面を見る
+   rb_*_bdBlowup=溜まっていたものが爆発して大喧嘩
+*/

@@ -107,7 +107,7 @@
 
   /* ---------- 上司と部下 ---------- */
   EV.push({
-    id: 'zb_boss', cat: 'bond', scope: 'pair',
+    id: 'zb_boss', label: '上司が部下に指示を出して守る', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!tie(ctx, a, b, 'boss') && RK.cool(ctx, a, b, 'zb_boss', 2); },
     w: function (ctx, a, b) { return 1 + a.tr.cp * 0.3 + a.tr.np * 0.2; },
     run: function (ctx, a, b) {
@@ -130,7 +130,7 @@
 
   /* ---------- 執着（信仰） ---------- */
   EV.push({
-    id: 'zb_worship', cat: 'help', scope: 'pair',
+    id: 'zb_worship', label: '崇める相手のために食料を削る', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!tie(ctx, a, b, 'worship') && RK.cool(ctx, a, b, 'zb_worship', 2); },
     w: function (ctx, a, b) { var t = tie(ctx, a, b, 'worship'); return t.a === a.i ? 1.1 + a.tr.ac * 0.3 + a.tr.np * 0.2 : 0.6; },
     run: function (ctx, a, b) {
@@ -168,7 +168,7 @@
 
   /* ---------- 恩人 ---------- */
   EV.push({
-    id: 'zb_benefactor', cat: 'help', scope: 'pair',
+    id: 'zb_benefactor', label: '恩人が恩を受けた人を気にかける', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!tie(ctx, a, b, 'benefactor') && RK.cool(ctx, a, b, 'zb_bene', 2); },
     w: function (ctx, a, b) { var t = tie(ctx, a, b, 'benefactor'); return t.b === a.i ? 1 + a.tr.ac * 0.3 : 0.7 + a.tr.np * 0.3; },
     run: function (ctx, a, b) {
@@ -191,7 +191,7 @@
 
   /* ---------- 親族 ---------- */
   EV.push({
-    id: 'zb_relative', cat: 'bond', scope: 'pair',
+    id: 'zb_relative', label: '親族と家族の行方を語り合う', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!tie(ctx, a, b, 'relative') && RK.cool(ctx, a, b, 'zb_rel', 2); },
     w: function (ctx, a, b) { return 0.8 + a.tr.np * 0.3; },
     run: function (ctx, a, b) {
@@ -283,3 +283,7 @@
     return out;
   };
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   zb_classmate=同級生と見張りの合間に昔話
+   zb_colleague=同僚と街でいつもの分担
+*/

@@ -53,7 +53,7 @@
       }
     },
     {
-      id: 'dilemma', min: 2,
+      id: 'dilemma', label: '信じるか裏切るかのボタンを迫られる', min: 2,
       run: function (ctx) {
         var P = ctx.present(), rng = ctx.rng;
         var a = rng.pick(P), b = ctx.most(ctx.others(a), function (o) { return Math.abs(R(ctx, a, o).aff) + R(ctx, a, o).ten; });

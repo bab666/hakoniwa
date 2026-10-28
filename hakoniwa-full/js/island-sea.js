@@ -204,7 +204,7 @@
 
   isl.events = isl.events.concat([
     {
-      id: 'i_solo_find', cat: 'solo', scope: 'solo',
+      id: 'i_solo_find', label: 'ひとりの探索で湧き水を見つける', cat: 'solo', scope: 'solo',
       w: function (ctx, a) { return (aid(a) === 'explore' ? 0.9 : 0.12) + a.tr.fc * 0.2 + sk(ctx, a, 'know') * 0.03; },
       run: function (ctx, a) {
         var f = pk(ctx, SOLO_FIND);
@@ -213,7 +213,7 @@
       }
     },
     {
-      id: 'i_solo_funny', cat: 'bond', scope: 'pair',
+      id: 'i_solo_funny', label: 'ひとりの探索で珍事に遭う', cat: 'bond', scope: 'pair',
       w: function (ctx, a) { return (aid(a) === 'explore' ? 0.55 : 0.08) + a.tr.fc * 0.25 + a.tr.impulse * 0.15; },
       run: function (ctx, a, b) {
         ctx.mod2(a, b, { aff: 3 }, { aff: 4, ten: -3 }); ctx.stress(a, -4); ctx.stress(b, -5);
@@ -296,7 +296,7 @@
 
   isl.events = isl.events.concat([
     {
-      id: 'i_duo_explore', cat: 'bond', scope: 'pair',
+      id: 'i_duo_explore', label: '二人で島を探索する', cat: 'bond', scope: 'pair',
       when: function (ctx, a, b) { return a.hp > 20 && b.hp > 20; },
       w: function (ctx, a, b) {
         var e = (aid(a) === 'explore' || aid(a) === 'food' ? 0.5 : 0.1) + (aid(b) === 'explore' || aid(b) === 'food' ? 0.3 : 0);
@@ -312,7 +312,7 @@
       }
     },
     {
-      id: 'i_expedition', cat: 'bond', scope: 'solo',
+      id: 'i_expedition', label: '探検隊を結成して島を探る', cat: 'bond', scope: 'solo',
       when: function (ctx) { return ctx.present().length >= 3 && !(ctx.flags.expN >= 2); },
       w: function (ctx, a) { return (aid(a) === 'explore' || aid(a) === 'gather' ? 0.35 : 0.06) + a.tr.lead * 0.2 + a.tr.fc * 0.15; },
       run: function (ctx, a) {

@@ -94,3 +94,9 @@
   var FD = window.HK.Food;
   if (FD && FD.hookMini && FD.HOOK && FD.HOOK.classroom) FD.hookMini('classroom', FD.HOOK.classroom);
 })();
+
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   c_rumor_love=二人が好き合っていると噂になる
+   c_reconcile=喧嘩した友達と仲直りする
+   c_shy_greet=挨拶ひとつがうまく言えない
+*/

@@ -67,7 +67,7 @@
   };
 
   EV.push({
-    id: 'z_trouble', cat: 'combat', scope: 'solo',
+    id: 'z_trouble', label: '探索中にゾンビと鉢合わせる', cat: 'combat', scope: 'solo',
     when: function (ctx, a) { return !a.out && ctx.zb.A[a.z.area].z > 8; },
     w: function (ctx, a) { var A = ctx.zb.A[a.z.area]; return (0.8 + A.z / 100 * 2.6) * (Z.part(ctx) === 3 ? 1.3 : 1) * (1 - A.bar * 0.5) * (a.action.id === 'loot' || a.action.id === 'hunt' ? 1.3 : 1); },
     run: function (ctx, a) {

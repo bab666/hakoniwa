@@ -141,7 +141,7 @@
   TL.pastTouch = pastTouch;
   /* 回想の出来事（関係の出来事の少ない組でも、過去が顔を出すように） */
   push({
-    id: 'tie_ly_past', cat: 'bond',
+    id: 'tie_ly_past', label: '二人の過去がふと顔を出す', cat: 'bond',
     when: function (ctx, a, b) {
       if (!ctx._past || !b || !here(a) || !here(b)) return false;
       var t = pastTie(ctx, a, b);
@@ -223,7 +223,7 @@
   }
   function wtWhy(a, b, t, w, k) { return a.name + 'と' + b.name + 'は' + (t.type === 'honmei' ? a.name + 'の本命' : HK.tieLabel(t)) + '（気持ちの重さ：' + (w === 'heavy' ? '重い' : '軽い') + '）' + k; }
   push({
-    id: 'tie_ly_heavy', cat: 'romance',
+    id: 'tie_ly_heavy', label: '重い想いで相手を目で追う', cat: 'romance',
     when: function (ctx, a, b) { return !!wtRoles(ctx, a, b, 'heavy'); },
     w: function (ctx, a) { return 0.55 + a.tr.jealous * 0.3; },
     run: function (ctx, a, b) {
@@ -249,7 +249,7 @@
     }
   });
   push({
-    id: 'tie_ly_light', cat: 'bond',
+    id: 'tie_ly_light', label: '急がずに想い合う二人', cat: 'bond',
     when: function (ctx, a, b) { return !!wtRoles(ctx, a, b, 'light'); },
     w: function (ctx, a) { return 0.5 + a.tr.a * 0.2; },
     run: function (ctx, a, b) {
@@ -317,7 +317,7 @@
   }
   function kgWhy(r, k) { return r.A.name + 'と' + r.B.name + 'は' + HK.tieLabel(r.t) + '（' + HK.KIN_GRADE[r.t.kg].short + '）：' + k; }
   push({
-    id: 'tie_ly_kin', cat: 'conflict',
+    id: 'tie_ly_kin', label: '家族の仲のよさ・悪さが出る時間', cat: 'conflict',
     when: function (ctx, a, b) { return !!kgRoles(ctx, a, b); },
     w: function (ctx, a, b) { var r = kgRoles(ctx, a, b); return r && r.t.kg === 'bad' ? 0.6 + a.tr.cp * 0.2 + a.tr.fc * 0.1 : 0.5 + a.tr.np * 0.2; },
     run: function (ctx, a, b) {
@@ -360,7 +360,7 @@
   }
   function exShort(v) { return v ? HK.EX_FEEL[v].short : '気まずい'; }
   push({
-    id: 'tie_ly_ex', cat: 'bond',
+    id: 'tie_ly_ex', label: '元恋人と目が合って気まずくなる', cat: 'bond',
     when: function (ctx, a, b) { return !!exRoles(ctx, a, b); },
     w: function () { return 0.55; },
     run: function (ctx, a, b) {

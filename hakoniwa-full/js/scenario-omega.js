@@ -466,7 +466,7 @@
 
   /* 発情期・ラットのそばで */
   EV.push({
-    id: 'om_heat', cat: 'romance', sex: true, scope: 'pair', pri: true,
+    id: 'om_heat', label: '発情期の熱に浮かされる', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) { return (a.om.heat > 0 && sx(a) === 'o') || (b.om.heat > 0 && sx(b) === 'o') || (a.om.rut > 0 && sx(a) === 'a' && sx(b) === 'o'); },
     w: function (ctx, a, b) { return 1.5 + ctx.env.heat / 50 + Math.max(ctx.R(a, b).att, ctx.R(b, a).att) / 50; },
     run: function (ctx, a, b) { return heatScene(ctx, a, b); }
@@ -688,7 +688,7 @@
 
   /* 抗ったあとも、運命の抗えなさが高いと再び揺れる（揺れた末に、結局運命へ走ることもある） */
   EV.push({
-    id: 'om_fated_waver', cat: 'romance', scope: 'pair', pri: true,
+    id: 'om_fated_waver', label: '運命の番を前に心が揺れる', cat: 'romance', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b);
       if (!pf.couple || !pf.resisted || dest(ctx) <= 0.5) return false;
@@ -739,8 +739,8 @@
       return { cat: e.cat, text: fill(ctx, OM.btext ? OM.btext(ctx, e.texts, bb) : ctx.pick(e.texts), a, bb), why: fill(ctx, e.why || '{job}（' + OM.CATS[job(a).cat] + '）の日常', a, bb) };
     };
   }
-  EV.push({ id: 'om_job_s', cat: 'solo', scope: 'solo', w: function (ctx, a) { return 0.8 + (a.action.id === 'work' ? 0.8 : 0) + (a.goal.id === 'career' ? 0.5 : 0); }, run: jobRun('s') });
-  EV.push({ id: 'om_job_p', cat: 'bond', scope: 'pair', when: function (ctx, a, b) { return met(ctx, a, b); }, w: function (ctx, a) { return 1.2 + (a.action.id === 'work' ? 0.4 : 0); }, run: jobRun('p') });
+  EV.push({ id: 'om_job_s', label: '仕事のひとりの時間', cat: 'solo', scope: 'solo', w: function (ctx, a) { return 0.8 + (a.action.id === 'work' ? 0.8 : 0) + (a.goal.id === 'career' ? 0.5 : 0); }, run: jobRun('s') });
+  EV.push({ id: 'om_job_p', label: '仕事で関わる二人の場面', cat: 'bond', scope: 'pair', when: function (ctx, a, b) { return met(ctx, a, b); }, w: function (ctx, a) { return 1.2 + (a.action.id === 'work' ? 0.4 : 0); }, run: jobRun('p') });
 
   /* 恋人どうしの小さなすれ違い・甘い日常 */
   EV.push({
@@ -782,7 +782,7 @@
 
   /* 第二性への偏見と、それへの反応 */
   EV.push({
-    id: 'om_bias', cat: 'conflict', scope: 'pair',
+    id: 'om_bias', label: '第二性への偏見を向けられる', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { return sx(b) === 'o' && !b.om.hidden && sx(a) !== 'o' && ctx.env.society > 30; },
     w: function (ctx, a) { return 0.3 + ctx.env.society / 150; },
     run: function (ctx, a, b) {
@@ -799,7 +799,7 @@
   /* ---------- α優位の社会：αの特権・Ωの壁・威圧・反発・身分違い・β ---------- */
   var STX = OM.STATUS;
   EV.push({
-    id: 'om_alpha_rank', cat: 'solo', scope: 'solo',
+    id: 'om_alpha_rank', label: 'α優位の社会でのαの立場', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { return sx(a) === 'a'; },
     w: function (ctx) { return 0.25 + ctx.env.society / 180; },
     run: function (ctx, a) {
@@ -809,7 +809,7 @@
     }
   });
   EV.push({
-    id: 'om_omega_wall', cat: 'solo', scope: 'solo',
+    id: 'om_omega_wall', label: 'Ωが仕事で突き当たる壁', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { return sx(a) === 'o' && !a.om.hidden && ctx.env.society > 15; },
     w: function (ctx) { return 0.3 + ctx.env.society / 120; },
     run: function (ctx, a) {
@@ -824,7 +824,7 @@
     }
   });
   EV.push({
-    id: 'om_glare', cat: 'conflict', scope: 'pair',
+    id: 'om_glare', label: 'αの威圧がΩに向く', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { return sx(a) === 'a' && sx(b) === 'o' && met(ctx, a, b); },
     w: function (ctx, a, b) { return 0.3 + ctx.env.society / 250 + (ctx.R(a, b).ten > 25 ? 0.4 : 0); },
     run: function (ctx, a, b) {
@@ -836,7 +836,7 @@
     }
   });
   EV.push({
-    id: 'om_omega_push', cat: 'conflict', scope: 'pair',
+    id: 'om_omega_push', label: 'Ωがαに臆せず言い返す', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { return sx(a) === 'o' && sx(b) === 'a' && met(ctx, a, b) && a.tr.cp + a.tr.fc > 1.05; },
     w: function () { return 0.45; },
     run: function (ctx, a, b) {
@@ -855,7 +855,7 @@
     }
   });
   EV.push({
-    id: 'om_beta', cat: 'solo', scope: 'solo',
+    id: 'om_beta', label: 'βの立ち位置から見る世界', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { return sx(a) === 'b' && ctx.present().some(function (o) { return sx(o) !== 'b'; }); },
     w: function () { return 0.18; },
     run: function (ctx, a) { return { text: fill(ctx, OM.wpick(ctx, STX.BETA, [a]), a, null), why: 'βの立ち位置' }; }
@@ -885,7 +885,7 @@
     }
   });
   EV.push({
-    id: 'om_hidden_notice', cat: 'bond', scope: 'pair',
+    id: 'om_hidden_notice', label: '隠れΩの秘密に気づく', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return b.om.hidden && !b.om.hideKnown && sx(a) !== 'o' && met(ctx, a, b); },
     w: function (ctx, a, b) { return (sx(a) === 'a' ? 0.6 : 0.25) + (b.om.heat > 0 ? 0.8 : 0); },
     run: function (ctx, a, b) {
@@ -897,7 +897,7 @@
     }
   });
   EV.push({
-    id: 'om_hidden_come', cat: 'romance', scope: 'pair',
+    id: 'om_hidden_come', label: '隠れΩが秘密を打ち明ける', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { return a.om.hidden && met(ctx, a, b) && ctx.R(a, b).trust > 50 && ctx.R(a, b).aff > 40; },
     w: function (ctx, a) { return 0.15 + a.tr.honesty * 0.35 + (a.stress > 60 ? 0.3 : 0); },
     run: function (ctx, a, b) {
@@ -913,7 +913,7 @@
 
   /* ---------- 巣作り（番のいるΩの習性）と、それを見つけた番 ---------- */
   EV.push({
-    id: 'om_nest', cat: 'romance', scope: 'solo',
+    id: 'om_nest', label: '番に置いていかれたΩの巣作り', cat: 'romance', scope: 'solo',
     when: function (ctx, a) { return sx(a) === 'o' && ctx.om.everBonded[a.i] && !!BD.mateOf(ctx, a); },
     w: function (ctx, a) { return 0.55 + (a.om.heat > 0 ? 1.2 : 0) + a.stress / 120; },
     run: function (ctx, a) {

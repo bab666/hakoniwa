@@ -52,96 +52,96 @@
   };
 
   /* ---------- 教師と生徒 ---------- */
-  add({ id: 'zr_lesson', cat: 'help', scope: 'pair',
+  add({ id: 'zr_lesson', label: '先生が生徒に生き延びる術を教える', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'teacherA' && RK.cool(ctx, a, b, 'lesson', 5); },
     w: function (ctx, a, b) { return 0.6 + a.tr.np * 0.6 + a.tr.cp * 0.4 + b.stress / 120; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'lesson'); ctx.mod2(a, b, { trust: 4 }, { trust: 8, aff: 5 }); ctx.stress(b, -10); return { text: fill(ctx.pick(T.lesson), m2(a, b, ctx)), why: a.name + 'は' + b.name + 'の先生（NP・CP。教え導こうとする）' }; } });
-  add({ id: 'zr_shield', cat: 'help', scope: 'pair',
+  add({ id: 'zr_shield', label: '先生がゾンビから生徒をかばう', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'teacherA' && danger(ctx, a) > 35 && RK.cool(ctx, a, b, 'shield', 8); },
     w: function (ctx, a, b) { return 0.4 + a.tr.np * 0.7 + a.tr.cp * 0.3 - a.tr.caution * 0.2; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'shield'); a.hp -= 8 + ctx.rng.int(10); ctx.mod(b, a, { aff: 12, trust: 14 }); ctx.stress(b, 8); return { text: fill(ctx.pick(T.shield), m2(a, b, ctx)), why: a.name + 'は生徒の' + b.name + 'をかばった（NP' + Math.round(a.eg.NP) + '）', mag: 18 }; } });
-  add({ id: 'zr_grown', cat: 'help', scope: 'pair',
+  add({ id: 'zr_grown', label: '生徒が足を挫いた先生を背負う', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'teacherB' && (b.hp < 70 || b.stress > 40) && RK.cool(ctx, a, b, 'grown', 7); },
     w: function (ctx, a, b) { return 0.5 + a.tr.np * 0.6 + a.tr.fc * 0.2; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'grown'); ctx.mod2(a, b, { trust: 6 }, { aff: 10, trust: 12 }); ctx.stress(b, -8); return { text: fill(ctx.pick(T.grown), m2(a, b, ctx)), why: '生徒の' + a.name + 'が、先生の' + b.name + 'を支えた', mag: 16 }; } });
-  add({ id: 'zr_scold', cat: 'conflict', scope: 'pair',
+  add({ id: 'zr_scold', label: '勝手に外へ出る生徒を先生が止める', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { var k = RK.kind(ctx, a, b); return (k === 'teacherA' || k === 'teacherB') && RK.cool(ctx, a, b, 'scold', 8); },
     w: function (ctx, a, b) { var k = RK.kind(ctx, a, b); return k === 'teacherA' ? a.tr.cp * 0.6 * (b.tr.impulse + b.tr.fc) : a.tr.fc * 0.4 + a.tr.impulse * 0.4 + a.stress / 150; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'scold'); var k = RK.kind(ctx, a, b); ctx.mod2(a, b, { ten: 8 }, { ten: 10, aff: -3 }); return { text: fill(ctx.pick(k === 'teacherA' ? T.scold : T.rebelT), m2(a, b, ctx)), why: k === 'teacherA' ? a.name + '（先生）のCPと、' + b.name + 'の衝動性がぶつかった' : '生徒の' + a.name + 'が反発した（FC・衝動性）' }; } });
 
   /* ---------- 師弟 ---------- */
-  add({ id: 'zr_train', cat: 'bond', scope: 'pair',
+  add({ id: 'zr_train', label: '師匠が弟子に稽古をつける', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'mentorA' && RK.cool(ctx, a, b, 'train', 5); },
     w: function (ctx, a, b) { return 0.6 + a.tr.cp * 0.5 + a.tr.a * 0.3 + b.tr.ac * 0.2; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'train'); ctx.mod2(a, b, { trust: 5 }, { trust: 8, aff: 4 }); b.flags.trained = (b.flags.trained || 0) + 1; if (b.weapon && b.flags.trained === 2) b.weapon = Object.assign({}, b.weapon, { pow: b.weapon.pow + 2 }); return { text: fill(ctx.pick(T.train), m2(a, b, ctx)), why: '師の' + a.name + 'が、弟子の' + b.name + 'に稽古をつけた（CP・A）' + (b.flags.trained === 2 ? '。' + b.name + 'の腕が上がった（武器の威力＋2）' : '') }; } });
-  add({ id: 'zr_surpass', cat: 'help', scope: 'pair',
+  add({ id: 'zr_surpass', label: '弟子が囲まれた師匠を救う', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'mentorB' && (a.flags.trained || 0) >= 1 && danger(ctx, a) > 30 && RK.cool(ctx, a, b, 'surpass', 10); },
     w: function (ctx, a, b) { return 0.4 + a.tr.np * 0.4 + a.tr.aggr * 0.3 + (a.flags.trained || 0) * 0.2; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'surpass'); ctx.mod(b, a, { trust: 15, aff: 8 }); ctx.mod(a, b, { aff: 6 }); return { text: fill(ctx.pick(T.surpass), { a: a.name, b: b.name }), why: '弟子の' + a.name + 'が、師の' + b.name + 'を救った（稽古 ' + a.flags.trained + '回）', mag: 22 }; } });
-  add({ id: 'zr_mlast', cat: 'help', scope: 'pair',
+  add({ id: 'zr_mlast', label: '咬まれた師匠が最後の教えを遺す', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'mentorA' && a.z.bitten && a.z.aware && !a.flags.mlast; },
     w: function () { return 3; },
     run: function (ctx, a, b) { a.flags.mlast = true; if (a.weapon && (!b.weapon || a.weapon.pow > b.weapon.pow)) { var wp = b.weapon; b.weapon = a.weapon; a.weapon = wp; } ctx.mod(b, a, { trust: 10, aff: 8 }); ctx.stress(b, 15); return { text: fill(ctx.pick(T.mentorLast), m2(a, b, ctx)), why: '咬まれた師の' + a.name + 'が、弟子の' + b.name + 'に最後の教えを遺した', mag: 30 }; } });
 
   /* ---------- きょうだい（庇護） ---------- */
-  add({ id: 'zr_pfood', cat: 'help', scope: 'pair',
+  add({ id: 'zr_pfood', label: 'きょうだいに自分の食料を回す', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'protA' && a.z.food > 0 && b.z.food <= 1 && RK.cool(ctx, a, b, 'pfood', 4); },
     w: function (ctx, a, b) { return 0.8 + a.tr.np * 0.8; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'pfood'); a.z.food--; b.z.food++; a.hp -= 3; ctx.mod(b, a, { aff: 8, trust: 6 }); return { text: fill(ctx.pick(T.protFood), m2(a, b, ctx)), why: a.name + 'は{sib:a→b}の' + b.name + 'を我が子のように守る（NP' + Math.round(a.eg.NP) + '）' }; } });
-  add({ id: 'zr_pdecoy', cat: 'help', scope: 'pair',
+  add({ id: 'zr_pdecoy', label: 'きょうだいを隠して自分が囮になる', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'protA' && danger(ctx, a) > 50 && !a.flags.decoy; },
     w: function (ctx, a, b) { return 0.3 + a.tr.np * 0.6 + a.tr.cp * 0.2 - a.tr.caution * 0.3; },
     run: function (ctx, a, b) { a.flags.decoy = true; a.hp -= 15 + ctx.rng.int(15); ctx.mod(b, a, { aff: 14, trust: 10 }); ctx.stress(b, 25); if (a.hp <= 0) ctx.kill(a, null, (HK.Sib ? HK.Sib.word(a, b, 'plain', ctx) : '弟妹') + 'の' + b.name + 'を逃がすため、群れを引きつけて'); return { text: fill(ctx.pick(T.protDecoy), m2(a, b, ctx)), why: a.name + 'は{sib:a→b}の' + b.name + 'の囮になった（危険度 ' + Math.round(danger(ctx, a)) + '）', mag: 30 }; } });
-  add({ id: 'zr_prebel', cat: 'conflict', scope: 'pair',
+  add({ id: 'zr_prebel', label: '守られる側のきょうだいが反発する', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'protB' && RK.cool(ctx, a, b, 'prebel', 10); },
     w: function (ctx, a, b) { return a.tr.fc * 0.5 + a.tr.cp * 0.3 + a.tr.impulse * 0.3 - a.tr.ac * 0.3; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'prebel'); ctx.mod2(a, b, { ten: 8 }, { ten: 6 }); ctx.stress(b, 10); a.flags.grownUp = true; return { text: fill(ctx.pick(T.protRebel), m2(a, b, ctx)), why: '{sib:b→a}の' + a.name + 'が、' + b.name + 'の庇護に反発した（FC・CP）' }; } });
-  add({ id: 'zr_phide', cat: 'help', scope: 'pair',
+  add({ id: 'zr_phide', label: 'きょうだいの咬み跡を隠す', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'protA' && b.z.bitten && !b.flags.phid; },
     w: function (ctx, a, b) { return 1 + a.tr.np * 0.8 - a.tr.honesty * 0.4; },
     run: function (ctx, a, b) { b.flags.phid = true; ctx.pair(a, b).secret = true; ctx.stress(a, 25); ctx.mod(b, a, { trust: 12 }); return { text: fill(ctx.pick(T.protHide), m2(a, b, ctx)), why: a.name + 'は{sib:a→b}の' + b.name + 'が咬まれていると知り、かばった', mag: 26 }; } });
-  add({ id: 'zr_pcare', cat: 'help', scope: 'pair',
+  add({ id: 'zr_pcare', label: '眠れないきょうだいの世話を焼く', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'protA' && RK.cool(ctx, a, b, 'pcare', 4); },
     w: function (ctx, a, b) { return 0.5 + a.tr.np * 0.6 + b.stress / 100; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'pcare'); ctx.stress(b, -12); ctx.mod(b, a, { aff: 5 }); return { text: fill(ctx.pick(T.protCare), m2(a, b, ctx)), why: a.name + 'の、{sib:a→b}への世話焼き（NP）' }; } });
 
   /* ---------- きょうだい（親友のよう） ---------- */
-  add({ id: 'zr_csig', cat: 'bond', scope: 'pair',
+  add({ id: 'zr_csig', label: 'きょうだいで昔の家族旅行の話をする', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'sibclose' && RK.cool(ctx, a, b, 'csig', 6); },
     w: function (ctx, a, b) { return 0.6 + a.tr.fc * 0.4 + a.tr.a * 0.2; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'csig'); ctx.mod2(a, b, { trust: 8 }, { trust: 8 }); return { text: fill(ctx.pick(ctx.rng() < 0.5 ? T.closeSignal : T.closeMemory), m2(a, b, ctx)), why: '親友のような{sibs}' }; } });
-  add({ id: 'zr_cback', cat: 'help', scope: 'pair',
+  add({ id: 'zr_cback', label: 'きょうだいで背中合わせに戦う', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'sibclose' && danger(ctx, a) > 35 && RK.cool(ctx, a, b, 'cback', 6); },
     w: function (ctx, a, b) { return 0.5 + a.tr.aggr * 0.3 + a.tr.np * 0.3; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'cback'); ctx.mod2(a, b, { trust: 10, aff: 4 }, { trust: 10, aff: 4 }); ctx.stress(a, -6); ctx.stress(b, -6); return { text: fill(ctx.pick(T.closeBack), m2(a, b, ctx)), why: '親友のような{sibs}の連携（危険度 ' + Math.round(danger(ctx, a)) + '）', mag: 14 }; } });
 
   /* ---------- 恋愛相手の固定 ---------- */
-  add({ id: 'zr_lrefuse', cat: 'romance', scope: 'pair',
+  add({ id: 'zr_lrefuse', label: '決めた相手がいるので想いを断る', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { return RK.locked(a) && !RK.lockedTo(a, b) && ctx.R(b, a).att > 35 && !ctx.pair(a, b).lockRef; },
     w: function (ctx, a, b) { return 0.8 + ctx.R(b, a).att / 60; },
     run: function (ctx, a, b) { ctx.pair(a, b).lockRef = true; ctx.mod(b, a, { att: -10, ten: 6 }); ctx.stress(b, 12); var t = HK.lockNames(ctx.chars, a); return { text: fill(ctx.pick(T.lockRefuse), { a: a.name, b: b.name }), why: a.name + 'は恋愛の相手を' + (t ? t + 'と' : '') + '決めている。' + b.name + 'の想い（惹かれ ' + Math.round(ctx.R(b, a).att) + '）には応えない' }; } });
-  add({ id: 'zr_ldevote', cat: 'romance', scope: 'pair',
+  add({ id: 'zr_ldevote', label: '決めた相手に尽くす', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { return RK.lockedTo(a, b) && RK.cool(ctx, a, b, 'ldev', 5); },
     w: function (ctx, a, b) { return 0.8 + a.tr.np * 0.4 + a.tr.ac * 0.3 + ctx.R(a, b).att / 80; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'ldev'); ctx.mod(a, b, { att: 6, aff: 4 }); ctx.mod(b, a, { aff: 6, att: 3 }); return { text: fill(ctx.pick(T.lockDevote), { a: a.name, b: b.name }), why: a.name + 'の想う相手は、' + (HK.locks(a).length > 1 ? b.name + 'たち（決めた人）' : b.name + 'ただ一人') }; } });
   /* 固定した相手（複数なら順に）のうち、生きていて別の場所にいる人 */
   /* 二人以上なら、想うたびに順に回す（2026-10-27：住人欄のいちばん上の一人だけになっていたのを直す） */
   function lseekTo(ctx, a) { var L = HK.lockPeople(ctx.chars, a).filter(function (t) { return t.alive && !t.out && t.z && a.z && t.z.area !== a.z.area; }); return L.length > 1 ? L[(a.flags.lseekN || 0) % L.length] : L[0] || null; }
-  add({ id: 'zr_lseek', cat: 'solo', scope: 'solo',
+  add({ id: 'zr_lseek', label: '離れた場所にいる想い人を想う', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { if (!RK.locked(a)) return false; var t = lseekTo(ctx, a); if (!t) return false; return a.flags.lseekAt == null || ctx.stepIndex - a.flags.lseekAt > 6; },
     w: function (ctx, a) { return 0.7 + a.tr.ac * 0.4 + a.tr.np * 0.3; },
     run: function (ctx, a) { a.flags.lseekAt = ctx.stepIndex; var t = lseekTo(ctx, a); a.flags.lseekN = (a.flags.lseekN || 0) + 1; if (a.tr.np + a.tr.impulse > 0.9) { a.focus = t; } return { text: fill(ctx.pick(T.lockSeek), { a: a.name, b: t.name }), why: a.name + 'は、離れた場所にいる' + t.name + 'を想っている' + (a.focus === t ? '（探しに行くと決めた）' : '') }; } });
 
   /* ---------- 兄貴・姉貴分／関西弁 ---------- */
-  add({ id: 'zr_aniki', cat: 'help', scope: 'pair',
+  add({ id: 'zr_aniki', label: '兄貴分が皆を励ます', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.tone(a) === 'aniki' && RK.cool(ctx, a, b, 'aniki', 5); },
     w: function (ctx, a, b) { return 0.6 + a.tr.np * 0.5 + a.tr.lead * 0.4 + b.stress / 100; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'aniki'); Z.here(ctx, a).forEach(function (o) { ctx.stress(o, -6); ctx.mod(o, a, { trust: 4 }); }); return { text: fill(ctx.pick(T.anikiRally), { a: a.name, b: b.name }), why: a.name + 'の面倒見のよさ（NP・CP。兄貴・姉貴分）' }; } });
-  add({ id: 'zr_anikiAlone', cat: 'solo', scope: 'solo',
+  add({ id: 'zr_anikiAlone', label: '頼られる側がひとりで限界を抱える', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { return RK.tone(a) === 'aniki' && a.stress > 45 && !a.flags.anikiCry; },
     w: function (ctx, a) { return 0.6 + a.stress / 100; },
     run: function (ctx, a) { a.flags.anikiCry = true; ctx.stress(a, -15); return { text: fill(ctx.pick(T.anikiAlone), { a: a.name }), why: '頼られる側の' + a.name + 'にも、限界はある（ストレス ' + Math.round(a.stress) + '）' }; } });
-  add({ id: 'zr_kansai', cat: 'bond', scope: 'pair',
+  add({ id: 'zr_kansai', label: '関西弁の軽口で場を和ませる', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return RK.tone(a) === 'kansai' && RK.cool(ctx, a, b, 'kansai', 6); },
     w: function (ctx, a, b) { return 0.3 + a.tr.fc * 0.6 + b.stress / 120; },
     run: function (ctx, a, b) { RK.mark(ctx, a, b, 'kansai'); ctx.stress(b, -8); ctx.mod(b, a, { aff: 4 }); return { text: fill(ctx.pick(T.kansai), { a: a.name, b: b.name }), why: a.name + 'の軽口（FC）' }; } });
@@ -151,7 +151,7 @@
     help: L('{a}は{b}の様子がおかしいのに気づいて、黙って隣に座った。「顔に出てる。半分よこせ｜顔に出ている。半分よこせ｜顔に出ています。半分ください」――荷物の話なのか、気持ちの話なのか、{b}には分かっていた。|{a}は{b}の分の見張りを代わった。「次はあなたの番な｜次はあなたの番だ｜次はあなたの番です」|{a}はふらつく{b}に肩を貸した。「重い｜＝｜重いです」「うるさい｜＝｜うるさいです」――いつものやりとりだった。|{a}は{b}の手当てをしながら言った。「これで貸し一つ｜これで貸し一つだ｜これで貸し一つです」'),
     repay: L('今度は{a}が、弱った{b}に肩を貸した。「この前の借り。これでチャラな｜この前の借りだ。これで帳消しだ｜この前の借りです。これで帳消しですね」|{a}は{b}の分まで働いた。「貸し借りなしだろ｜貸し借りなしだろう｜貸し借りなしでしょう」――{b}は小さく笑った。|{a}は{b}の隣に座った。前に、{b}がそうしてくれたように。')
   };
-  add({ id: 'zr_cguard', cat: 'help', scope: 'pair',
+  add({ id: 'zr_cguard', label: '弱ったきょうだいに肩を貸す', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'sibclose' && (b.hp < 60 || b.stress > 50 || b.z.food <= 0) && RK.cool(ctx, a, b, 'cguard', 4); },
     w: function (ctx, a, b) { return 0.8 + a.tr.np * 0.4 + a.tr.fc * 0.2 + (ctx.pair(a, b).owe === a.i ? 2 : 0); },
     run: function (ctx, a, b) {
@@ -164,3 +164,6 @@
     } });
   RK.mourn(Z.scen, MOURN, 'zr');
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   zr_mourn=亡くなった人を悼む
+*/

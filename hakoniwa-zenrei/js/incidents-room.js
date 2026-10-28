@@ -53,7 +53,7 @@
       }
     },
     {
-      id: 'point', from: 1, min: 2,
+      id: 'point', label: '一番気になる人を同時に指さす', from: 1, min: 2,
       run: function (ctx) {
         ctx.incident('新しい紙が差し込まれた。「この部屋で一番好きな人を、同時に指させ」');
         pointAll(ctx, ctx.present().filter(function (c) { return c.flags.cagePair == null; }), '', '追加ルール');

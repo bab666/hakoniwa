@@ -201,7 +201,7 @@
   };
   var SEEK_EV = [{
     /* 目標が「〇〇と会う」に変わる */
-    id: 'ob_seekgoal', cat: 'solo', noOdd: true, pri: true,
+    id: 'ob_seekgoal', label: '離れた場所にいる執着の相手を想う', cat: 'solo', noOdd: true, pri: true,
     when: function (ctx, a) { return a.goal && a.goal.id !== 'obsess' && !!seekT(ctx, a); },
     w: function (ctx, a) { return 2 + O.level(ctx, a, seekT(ctx, a)) / 30; },
     run: function (ctx, a) {
@@ -212,7 +212,7 @@
     }
   }, {
     /* 噂を聞き回る */
-    id: 'ob_ask', cat: 'solo', noOdd: true, pri: true,
+    id: 'ob_ask', label: '執着の相手の噂を聞き回る', cat: 'solo', noOdd: true, pri: true,
     when: function (ctx, a) { var T = a.goal && a.goal.id === 'obsess' && ctx.chars[a.z.obT]; return !!(T && T.alive && !T.out && free(a) && T.z.area !== a.z.area && (a.z.obKnow == null || a.z.obKnow === a.z.area)); },
     w: function () { return 6; },
     run: function (ctx, a) {
@@ -229,7 +229,7 @@
     }
   }, {
     /* 会えた */
-    id: 'ob_found', cat: 'bond', noOdd: true, pri: true,
+    id: 'ob_found', label: '探し続けた相手にようやく会える', cat: 'bond', noOdd: true, pri: true,
     when: function (ctx, a) { var T = a.goal && a.goal.id === 'obsess' && ctx.chars[a.z.obT]; return !!(T && free(a) && T.alive && !T.out && T.z.area === a.z.area); },
     w: function () { return 9; },
     run: function (ctx, a) { return found(ctx, a); }

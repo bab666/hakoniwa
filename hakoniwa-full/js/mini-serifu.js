@@ -57,3 +57,35 @@
   ['whiteroom', 'br', 'trial', 'island'].forEach(function (id) { HK.addMini(id, OUT); });
   ['br', 'trial', 'island'].forEach(function (id) { HK.addMini(id, BREAK); });
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   sf_name=呼び名を決めて打ち解ける
+   sf_thanks=言いそびれたお礼を伝える
+   sf_tease=軽口でからかい合う
+   sf_secret=二人だけの秘密を打ち明ける
+   sf_future=全部終わったら何をしたいか話す
+   sf_quiet=黙って並んで過ごす
+   sf_snap=苛立ちが爆発して言い合う
+   sf_misread=笑われたと思い込んで突っかかる
+   sf_makeup=言いすぎたことを謝って仲直り
+   sf_pride=指図されたと感じて反発する
+   sf_heart=見つめていたのを気づかれる
+   sf_confess=好きだと言ったら困るかと訊く
+   sf_shy=言いかけた言葉を照れて飲み込む
+   sf_joke=冗談で場を和ませる
+   sf_lead=場をまとめて皆を動かす
+   sf_mutter=ひとりで弱音をこぼす
+   sf_cheer=疲れた相手を励ます
+   fw_night=セフレをいつもの夜に誘う
+   fw_morning=セフレと迎える翌朝
+   fw_rule=セフレの決まりを確かめ合う
+   fw_jealous=セフレがほかの人と話していて妬く
+   fw_slip=セフレに好きと言いかける
+   fw_upgrade=セフレから恋人になる
+   fw_end=セフレの関係を終わらせる
+   fw_want=目が合っていつもの夜が始まる
+   sf_future_out=ここを出たら会いに来てと約束する
+   al_crack=同盟相手を信じきれなくなる
+   al_break=同盟を破ってひとりで行く
+   al_hold=疑ったことを謝って同盟を保つ
+   al_last=最後の二人になった同盟の行方
+*/

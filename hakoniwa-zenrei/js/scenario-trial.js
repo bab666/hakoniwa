@@ -860,7 +860,7 @@
         }
       },
       {
-        id: 'pact', cat: 'bond', scope: 'pair',
+        id: 'pact', label: '誰も殺さずに出ようと誓い合う', cat: 'bond', scope: 'pair',
         when: function (ctx, a, b) { return R(ctx, a, b).trust > 25 && !ctx.pair(a, b).pact; },
         w: function (ctx, a) { return 0.4 + a.tr.honesty * 0.5 + a.tr.np * 0.3; },
         run: function (ctx, a, b) {
@@ -870,7 +870,7 @@
         }
       },
       {
-        id: 'brood', cat: 'solo', scope: 'solo',
+        id: 'brood', label: '動機を前にひとり考え込む', cat: 'solo', scope: 'solo',
         when: function (ctx) { return !!ctx.flags.motive; },
         w: function (ctx, a) { return ctx.flags.motive.fit(a.tr) * 0.8 + a.stress / 150; },
         run: function (ctx, a) {

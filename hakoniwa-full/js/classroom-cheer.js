@@ -50,7 +50,7 @@
 
   /* 告白の練習に付き合う（a＝友達、b＝想っている人、c＝想う相手） */
   ev({
-    id: 'cc_practice', cat: 'bond', scope: 'pair',
+    id: 'cc_practice', label: '告白の練習に付き合う', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = wish(ctx, b, a); return !!c && ok3(ctx, a, b, c) && G.once(ctx, 'practice', [a, b, c]); },
     w: W(2.4),
     run: function (ctx, a, b) {
@@ -61,7 +61,7 @@
   });
   /* 席替えで隣にする（4月・9月・1月の席替え。a＝友達、b・c＝想い合っている／片想い） */
   ev({
-    id: 'cc_seat', cat: 'bond', scope: 'pair',
+    id: 'cc_seat', label: '席替えで想い人の隣にしてあげる', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { if (!inMon(ctx, ['4月', '5月', '9月', '11月', '1月'])) return false; var c = wish(ctx, b, a); return !!c && ok3(ctx, a, b, c) && G.once(ctx, 'seat', [b, c]); },
     w: W(2.4),
     run: function (ctx, a, b) {
@@ -72,7 +72,7 @@
   });
   /* 文化祭でペアにする（9月・10月。恋人どうしでも、想い合っている二人でも） */
   ev({
-    id: 'cc_fest', cat: 'bond', scope: 'pair',
+    id: 'cc_fest', label: '文化祭で想い人と同じ係にする', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { if (!inMon(ctx, ['9月', '10月'])) return false; var c = lover(ctx, b, a) || wish(ctx, b, a); return !!c && ok3(ctx, a, b, c) && G.once(ctx, 'fest', [b, c]); },
     w: W(1.6),
     run: function (ctx, a, b) {
@@ -83,7 +83,7 @@
   });
   /* 二人きりにする（想い合っている二人） */
   ev({
-    id: 'cc_alone', cat: 'bond', scope: 'pair',
+    id: 'cc_alone', label: '想い合う二人を二人きりにする', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = G.mutualOf(ctx, b, a); return stu(c) && ok3(ctx, a, b, c) && G.once(ctx, 'alone', [a, b, c]); },
     w: W(2.4),
     run: function (ctx, a, b) {
@@ -94,7 +94,7 @@
   });
   /* バレンタインのチョコ作りを手伝う（2月） */
   ev({
-    id: 'cc_choco', cat: 'bond', scope: 'pair',
+    id: 'cc_choco', label: 'バレンタインのチョコ作りを手伝う', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { if (mon(ctx) !== '2月') return false; var c = lover(ctx, b, a) || wish(ctx, b, a); return !!c && ok3(ctx, a, b, c) && G.once(ctx, 'choco', [a, b]); },
     w: W(2.4),
     run: function (ctx, a, b) {
@@ -105,7 +105,7 @@
   });
   /* 恋の相談（a＝聞く友達、b＝想っている人、c＝想う相手） */
   ev({
-    id: 'cc_koibana', cat: 'bond', scope: 'pair',
+    id: 'cc_koibana', label: '帰り道の河川敷で恋の相談', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = wish(ctx, b, a); return !!c && ok3(ctx, a, b, c) && G.friendly(ctx, b, a) && G.once(ctx, 'koibana', [a, b, c]); },
     w: function (ctx, a, b) { return 2 + b.tr.honesty * 0.6 + (G.rel(ctx, a, b) === 'best' ? 0.8 : 0); },
     run: function (ctx, a, b) {
@@ -116,7 +116,7 @@
   });
   /* 付き合い始めた二人を冷やかして祝福する（恋人どうし） */
   ev({
-    id: 'cc_bless', cat: 'bond', scope: 'pair',
+    id: 'cc_bless', label: '恋人になった二人を祝福する', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = lover(ctx, b, a); return !!c && ok3(ctx, a, b, c) && G.once(ctx, 'bless', [a, b, c]); },
     w: W(0.08),
     run: function (ctx, a, b) {
@@ -127,7 +127,7 @@
   });
   /* 噂から守る・見守る（恋人どうし） */
   ev({
-    id: 'cc_guard', cat: 'bond', scope: 'pair',
+    id: 'cc_guard', label: '噂される恋人たちをそっと守る', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = lover(ctx, b, a); return !!c && ok3(ctx, a, b, c) && ctx.present().length >= 4 && G.once(ctx, 'guard', [b, c]); },
     w: W(0.06),
     run: function (ctx, a, b) {
@@ -139,7 +139,7 @@
   /* ダブルデート（a・b＝恋人どうし、c・d＝もう一組の恋人どうし。季節で場所を変える） */
   function other(ctx, a, b) { var cd = G.otherCouple(ctx, a, b); return cd && stu(cd[0]) && stu(cd[1]) && G.pairOk(ctx, cd[0], cd[1]) ? cd : null; }
   ev({
-    id: 'cc_double', cat: 'bond', scope: 'pair',
+    id: 'cc_double', label: '二組で放課後を過ごす', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return stu(a) && stu(b) && G.couple(ctx, a, b) && G.pairOk(ctx, a, b) && !!other(ctx, a, b) && ctx.flags.ccDoubleAt !== ctx.stepIndex; },
     w: function () { return 0.35; },
     run: function (ctx, a, b) {
@@ -154,7 +154,7 @@
   });
   /* 想いが届かなかった友達を励ます（a＝友達、b＝告げて断られた人。もう一人の友達 d がいれば三人で） */
   ev({
-    id: 'cc_comfort', cat: 'bond', scope: 'pair',
+    id: 'cc_comfort', label: '想いが届かなかった友人を励ます', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var x = G.turnedDown(ctx, b); return stu(a) && stu(b) && !!x && x !== a && !G.couple(ctx, a, b) && R(ctx, a, b).att < 40 && G.friendly(ctx, a, b) && G.once(ctx, 'comfort', [a, b]); },
     w: function (ctx, a, b) { return 2.5 + a.tr.np * 0.8 + b.stress / 100; },
     run: function (ctx, a, b) {

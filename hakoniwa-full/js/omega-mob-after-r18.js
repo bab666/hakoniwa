@@ -471,7 +471,7 @@
   }
 
   HK.addTo(EV, {
-    id: 'om_mobr_after', cat: 'help', scope: 'solo', r18: true, noOdd: true, pri: true,
+    id: 'om_mobr_after', label: '街のαに襲われたΩに駆けつける', cat: 'help', scope: 'solo', r18: true, noOdd: true, pri: true,
     when: function (ctx, v) { return !!due(ctx, v); },
     w: function () { return 60; },
     run: run

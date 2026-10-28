@@ -147,7 +147,7 @@
   };
   var FM = function () { return (HK.Pos && HK.Pos.FORCE_MARK) || '〔合意のない展開〕'; };
   var LUST_EV = {
-    id: 'z_lust', cat: 'combat', scope: 'solo', dk: 'harm', noOdd: true,
+    id: 'z_lust', label: 'ゾンビの群れに捕まって襲われる', cat: 'combat', scope: 'solo', dk: 'harm', noOdd: true,
     when: function (ctx, a) {
       return !!(Z.ZA_TEXT && Z.Cover && ctx.zb) && lustOf(ctx) > 0 && !a.out && !a.z.alone && ctx.zb.A[a.z.area].z > 8 && Z.loveLv(ctx) !== 'off' && (!HK.Content || HK.Content.ok(ctx, 'force')) &&
         Z.Cover.inv(a) && !(a.z.zaAt != null && ctx.stepIndex - a.z.zaAt < 6) && !(Z.pairLv(ctx) === 0 && Z.pairAlone(ctx, a));
@@ -217,7 +217,7 @@
     };
   });
   HK.addTo(Z.scen.events, {
-    id: 'z_pair', cat: 'combat', scope: 'pair', dk: 'harm', noOdd: true, r18: true,
+    id: 'z_pair', label: '二人でいるところをゾンビに襲われる', cat: 'combat', scope: 'pair', dk: 'harm', noOdd: true, r18: true,
     when: function (ctx, a, b) {
       if (!b || !ctx.zb || Z.pairLv(ctx) !== 2 || !Z.ZA_TEXT || !Z.Cover || Z.loveLv(ctx) === 'off' || (HK.Content && !HK.Content.ok(ctx, 'force'))) return false;
       if (a.out || b.out || !a.z || !b.z || a.z.alone || b.z.alone || a.z.area !== b.z.area || ctx.zb.A[a.z.area].z <= 8) return false;

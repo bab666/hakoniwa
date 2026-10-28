@@ -101,7 +101,7 @@
   };
   /* 妊娠が分かる（身ごもった人が動いたとき。相手と二人の出来事） */
   HK.addTo(HK.COMMON, {
-    id: 'ct_preg_news', cat: 'solo', scope: 'solo', pri: true, noOdd: true, r18: true,
+    id: 'ct_preg_news', label: '妊娠が分かる', cat: 'solo', scope: 'solo', pri: true, noOdd: true, r18: true,
     when: function (ctx, a) {
       var p = a._ctPreg;
       if (!p || p.known || ctx.stepIndex - p.at < 1 || !on(ctx, 'preg')) return false;
@@ -337,7 +337,7 @@
   /* ================= 合意のない展開：合コンの帰り道の、敵対する二人 ================= */
   HK.addTo(HK.COMMON, {
     /* force：恋愛対象「なし」の人も（pos.js の HK.Pos.forceOpen・HK.Pos.okForce。2026-10-27 担当HC） */
-    id: 'ct_goukon_hate', cat: 'romance', sex: true, force: true, scope: 'pair', pri: true, r18: true,
+    id: 'ct_goukon_hate', label: '合コンの帰り道に敵意ある相手に迫られる', cat: 'romance', sex: true, force: true, scope: 'pair', pri: true, r18: true,
     when: function (ctx, a, b) {
       if (!b || scenOf(ctx) !== 'goukon' || !HS || ctx.stepIndex < 3 || !on(ctx, 'force')) return false;
       var pf = ctx.pair(a, b);
@@ -415,7 +415,7 @@
     return { text: text, extra: '／〔合意のない展開〕' + (vio ? '〔暴力をともなう性描写〕' : '') + (shN ? HS.shieldWhy(shN) : '') + none };
   }
   HK.addTo(HK.COMMON, {
-    id: 'ct_dv', cat: 'conflict', scope: 'pair', pri: true, r18: true,
+    id: 'ct_dv', label: '恋人に手を上げる', cat: 'conflict', scope: 'pair', pri: true, r18: true,
     when: function (ctx, a, b) {
       if (!b || NO_SCEN[scenOf(ctx)] || !on(ctx, 'abuse')) return false;
       var pf = ctx.pair(a, b);
@@ -489,7 +489,7 @@
     return P.order(D, V, [D, V])[0] === D;
   }
   HK.addTo(HK.COMMON, {
-    id: 'ct_abuse_night', cat: 'conflict', sex: true, force: true, scope: 'pair', pri: true, r18: true,
+    id: 'ct_abuse_night', label: '歪んだ関係で拒めない夜', cat: 'conflict', sex: true, force: true, scope: 'pair', pri: true, r18: true,
     when: function (ctx, a, b) {
       if (!b || NO_SCEN[scenOf(ctx)] || HK.SAFE_ON || !HK.Ties || !HK.Ties.has) return false;
       var t = HK.Ties.has(ctx, a, b, 'abuse');

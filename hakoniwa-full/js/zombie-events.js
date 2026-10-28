@@ -33,7 +33,7 @@
   };
   /* 状況で目標が変わる（ひとりの出来事として） */
   EV.push({
-    id: 'z_goal', cat: 'solo', scope: 'solo',
+    id: 'z_goal', label: '状況が変わって目標が変わる', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { a.z.gr = goalReason(ctx, a); return !!a.z.gr; },
     w: function () { return 1.6; },
     run: function (ctx, a) {
@@ -67,7 +67,7 @@
 
   /* ======================= 家族の元へ ======================= */
   EV.push({
-    id: 'z_family_reach', cat: 'solo', scope: 'solo', pri: true,
+    id: 'z_family_reach', label: '家族のいるはずの場所にたどり着く', cat: 'solo', scope: 'solo', pri: true,
     when: function (ctx, a) { var f = a.z.family; return f && f.pc == null && f.inside && !f.found && a.z.area === f.area; },
     w: function () { return 6; },
     run: function (ctx, a) {
@@ -299,7 +299,7 @@
     }
   });
   EV.push({
-    id: 'z_hunt', cat: 'combat', scope: 'solo',
+    id: 'z_hunt', label: 'ゾンビを深追いして咬まれかける', cat: 'combat', scope: 'solo',
     when: function (ctx, a) { return a.action.id === 'hunt' || a.tr.aggr > 0.65; },
     w: function (ctx, a) { return a.tr.aggr * 1.2 + (a.action.id === 'hunt' ? 0.8 : 0); },
     run: function (ctx, a) {
@@ -357,7 +357,7 @@
   /* この混乱に乗じて、邪魔な相手を消す */
   var MURDER = L('{a}は、{b}を群れのいる路地へ誘い込んだ。「こっち｜こっちだ｜こちらです」――{a}だけが、引き返してきた。|{a}は、{b}と二人きりになるのを待っていた。屋上の縁で、{a}は{b}の背中を押した。|「ゾンビかと思った｜＝｜ゾンビかと思いました」――{a}はそう言うつもりで、{b}に' + '{wa}' + 'を向けた。|{a}は眠っている{b}の部屋の外から、そっと鍵をかけた。窓の外には、群れが集まり始めていた。');
   EV.push({
-    id: 'z_murder', cat: 'betray', dk: 'kill', scope: 'pair',
+    id: 'z_murder', label: '混乱に紛れて仲間を手にかけようとする', cat: 'betray', dk: 'kill', scope: 'pair',
     when: function (ctx, a, b) {
       var r = ctx.R(a, b), t = tieT(ctx, a, b);
       return (r.ten > 45 || t === 'enemy' || t === 'rival' || a.goal.id === 'chaos') && r.aff < 15 && a.tr.cold + a.tr.aggr > 1.0 && !ctx.pair(a, b).couple && !spare(ctx, b, a);
@@ -480,7 +480,7 @@
     }
   });
   EV.push({
-    id: 'z_plan', cat: 'conflict', scope: 'pair',
+    id: 'z_plan', label: 'これからの方針で意見が割れる', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { return a.goal.id !== b.goal.id && (a.goal.id === 'escape' || b.goal.id === 'escape' || a.goal.id === 'family'); },
     w: function (ctx, a) { return 0.35 + a.tr.lead * 0.6; },
     run: function (ctx, a, b) {
@@ -491,7 +491,7 @@
     }
   });
   EV.push({
-    id: 'z_weapon_give', cat: 'help', scope: 'pair',
+    id: 'z_weapon_give', label: '自分の武器を仲間に譲る', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return a.weapon && b.weapon && a.weapon.pow >= b.weapon.pow + 3; },
     w: function (ctx, a, b) { return a.tr.np * 0.6 + Math.max(0, ctx.R(a, b).aff) / 70; },
     run: function (ctx, a, b) {
@@ -610,3 +610,9 @@
     };
   };
 })();
+
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   z_m_joke=非常時の冗談で笑い合う
+   z_m_cover=迫るゾンビから相手をかばう
+   z_m_watchtrust=はぐれたときの集合場所を決める
+*/

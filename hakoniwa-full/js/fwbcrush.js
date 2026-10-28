@@ -172,3 +172,12 @@
   var ZC = LIST.map(function (e) { var e2 = {}; for (var k in e) e2[k] = e[k]; e2.mini = false; return e2; });
   HK.atScen('zombie', function () { var Z = HK.ZB; if (Z && Z.scen) HK.addTo(Z.scen.events, ZC); });
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   fc_night=割り切ったはずの関係の夜
+   fc_jealous=割り切った関係なのに妬く
+   fc_slip=割り切った関係で本音が漏れる
+   fc_rule=本気にならない決まりを確かめる
+   fc_end=傷つく前に自分から関係を終わらせる
+   fc_both=二人とも本気だったと気づく
+   fc_sp_*=その箱庭ならではの割り切った関係の場面
+*/

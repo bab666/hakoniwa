@@ -715,3 +715,6 @@
     return { text: prop.replace(/^\[[mden]+\]/, '') + t.replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name), spot: c.sid, label: s.label };
   };
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   daily_*=場所と時間帯ごとの日常のひととき
+*/

@@ -283,7 +283,7 @@
   }
   if (HK.COMMON) {
     HK.addTo(HK.COMMON, {
-      id: 'tie_lh_kamau', cat: 'conflict', scope: 'pair',
+      id: 'tie_lh_kamau', label: '好きの裏返しでわざと突っかかる', cat: 'conflict', scope: 'pair',
       when: function (ctx, a, b) {
         if (!LH.has(ctx, a, b) || !here(a) || !here(b)) return false;
         var pf = ctx.pair(a, b), at = pf.lhAt && pf.lhAt[a.i];
@@ -300,7 +300,7 @@
       }
     });
     HK.addTo(HK.COMMON, {
-      id: 'tie_lh_jeal', cat: 'conflict', scope: 'pair',
+      id: 'tie_lh_jeal', label: '愛憎の相手が誰かと親しくて妬く', cat: 'conflict', scope: 'pair',
       /* a＝愛憎を持つ人、b＝愛憎の相手（t）と親しくしていた人 */
       when: function (ctx, a, b) {
         if (!here(a) || !here(b) || !LH.targets(ctx, a).length) return false;

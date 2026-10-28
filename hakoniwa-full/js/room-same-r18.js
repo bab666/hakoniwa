@@ -129,7 +129,7 @@
     return P.orients(a, b).some(function (o) { return o[0] === a; });
   }
   API.EV.push({
-    id: 'rs_dk_force', cat: 'betray', sex: true, scope: 'pair', pri: true, r18: true,
+    id: 'rs_dk_force', label: '闇に堕ちた自分が力ずくで迫る', cat: 'betray', sex: true, scope: 'pair', pri: true, r18: true,
     when: function (ctx, a, b) {
       if (S.darkOf(a, b) !== a || !free(a) || !free(b) || ctx.stepIndex < 2) return false;
       if (ctx.pair(a, b).rsForce) return false;

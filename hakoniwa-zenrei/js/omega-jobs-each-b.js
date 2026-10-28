@@ -209,7 +209,7 @@
   };
   OM.EXTRA_EV = OM.EXTRA_EV || [];
   OM.EXTRA_EV.push({
-    id: 'om_investor', cat: 'bond', scope: 'pair',
+    id: 'om_investor', label: '投資家と経営者の駆け引き', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) {
       if (a.om.former || b.om.former) return false;
       return (a.om.job === 'investor' && OWNER[b.om.job]) || (b.om.job === 'investor' && OWNER[a.om.job]);

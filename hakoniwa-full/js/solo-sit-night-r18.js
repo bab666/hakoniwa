@@ -622,7 +622,7 @@
   /* 2026-10-27（分割読み込みの第3段）：箱庭に足すのは、その箱庭の本体（scen-island・scen-zombie）が有るとき（HK.atScen）。足す順は HK.addTo で元のファイルの順に保つ */
   if (RN.I) HK.atScen('island', function (isl) {
     HK.addTo(isl.events, {
-      id: 'ir18_sit', cat: 'romance', sex: true, scope: 'pair', r18: true,
+      id: 'ir18_sit', label: '吊り橋の気持ちで迎える島の夜', cat: 'romance', sex: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (!baseOk(ctx, a, b, 2)) return false;
         return cands(ctx, a, b, 'island').list.length > 0;
@@ -645,7 +645,7 @@
   if (RN.ZT) HK.atScen('zombie', function () {
     if (!(Z && Z.scen && Z.loveLv)) return;
     HK.addTo(Z.scen.events, {
-      id: 'zr18_sit', cat: 'romance', sex: true, scope: 'pair', r18: true,
+      id: 'zr18_sit', label: '極限の街で求め合う夜', cat: 'romance', sex: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (Z.loveLv(ctx) === 'off' || !baseOk(ctx, a, b, 4)) return false;
         if (a.z.bitten || b.z.bitten || a.z.alone || b.z.alone) return false;
@@ -672,7 +672,7 @@
     HK.addTo(Z.scen.events, {
       /* 選ばれやすさは敵対の重み（conflict）で決め、記録には恋愛（romance）として残す（hate-sex-r18.js の出られない部屋と同じ） */
       /* force：合意のない展開が入なら、恋愛対象「なし」の人も（pos.js の HK.Pos.forceOpen。2026-10-27 担当HC） */
-      id: 'zr18_hate', cat: 'conflict', sex: true, force: true, scope: 'pair', pri: true, r18: true,
+      id: 'zr18_hate', label: '憎み合う二人の言い争いの夜', cat: 'conflict', sex: true, force: true, scope: 'pair', pri: true, r18: true,
       when: function (ctx, a, b) {
         var HS = HK.HateSex;
         if (!HS || HK.SAFE_ON || Z.loveLv(ctx) === 'off') return false;

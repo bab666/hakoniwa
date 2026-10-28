@@ -32,7 +32,7 @@
   function ev(o) { HK.addTo(HK.COMMON, o); }
   /* 冷やかし・応援（a＝友達、b＝恋人の片方、c＝b の恋人） */
   ev({
-    id: 'grp_cheer', cat: 'bond', scope: 'pair',
+    id: 'grp_cheer', label: '恋人どうしを冷やかして応援する', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = loverOf(ctx, b, a); return !!c && !couple(ctx, a, b) && friendly(ctx, a, b) && friendly(ctx, a, c); },
     w: function () { return 0.2; },
     run: function (ctx, a, b) {
@@ -44,7 +44,7 @@
   /* 恋バナ（a＝想っている人、b＝友達、c＝a の想う相手） */
   function crushOf(ctx, a, not) { return here(ctx).filter(function (c) { return c !== a && c !== not && R(ctx, a, c).att > 35 && !couple(ctx, a, c) && loveOk(a, c); }).sort(function (x, y) { return R(ctx, a, y).att - R(ctx, a, x).att; })[0] || null; }
   ev({
-    id: 'grp_koibana', cat: 'bond', scope: 'pair',
+    id: 'grp_koibana', label: '友人に片想いを打ち明ける', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !couple(ctx, a, b) && friendly(ctx, a, b) && friendly(ctx, b, a) && !!crushOf(ctx, a, b); },
     w: function (ctx, a) { return 0.3 + a.tr.honesty * 0.2; },
     run: function (ctx, a, b) {
@@ -55,7 +55,7 @@
   });
   /* 二人きりに（a＝友達、b＝想っている人、c＝b の想う相手。c も b を悪く思っていない） */
   ev({
-    id: 'grp_match', cat: 'bond', scope: 'pair',
+    id: 'grp_match', label: '気になる二人を二人きりにする', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = crushOf(ctx, b, a); return !!c && R(ctx, c, b).att > 20 && friendly(ctx, a, b) && a.tr.np + a.tr.fc > 0.8; },
     w: function () { return 0.2; },
     run: function (ctx, a, b) {
@@ -74,7 +74,7 @@
     return null;
   }
   ev({
-    id: 'grp_double', cat: 'bond', scope: 'pair',
+    id: 'grp_double', label: '二組でダブルデート', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return couple(ctx, a, b) && !!otherCouple(ctx, a, b); },
     w: function () { return 0.2; },
     run: function (ctx, a, b) {
@@ -86,7 +86,7 @@
   });
   /* 祝福（a＝b を想っていた人、b＝想われていた人、c＝b の恋人） */
   ev({
-    id: 'grp_bless', cat: 'bond', scope: 'pair',
+    id: 'grp_bless', label: '想いをしまって二人を祝福する', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = loverOf(ctx, b, a); return !!c && R(ctx, a, b).att > 35 && !couple(ctx, a, b) && a.tr.np > 0.45 && !(a.flags && a.flags.blessed === b.i); },
     w: function (ctx, a) { return 0.3 + a.tr.np * 0.3; },
     run: function (ctx, a, b) {
@@ -116,7 +116,7 @@
     return { h: h, x: o[0], y: o[1], g: g };
   }
   ev({
-    id: 'grp_trio_day', cat: 'bond', scope: 'pair',
+    id: 'grp_trio_day', label: '三人の恋人の何気ない一日', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!trioOf(ctx, a, b) && ctx.flags.trioDayAt !== ctx.stepIndex; },
     w: function (ctx, a) { return 0.22 + a.tr.np * 0.15 + a.tr.fc * 0.1; },
     run: function (ctx, a, b) {
@@ -145,7 +145,7 @@
     }
   };
   ev({
-    id: 'grp_trio_pang', cat: 'bond', scope: 'pair',
+    id: 'grp_trio_pang', label: '三人の恋人の小さなやきもち', cat: 'bond', scope: 'pair',
     /* a＝やきもちを焼く人、b＝恋人たちの一人。残りの二人が仲よくしているのを見る */
     when: function (ctx, a, b) { return !!trioOf(ctx, a, b) && ctx.flags.trioPangAt !== ctx.stepIndex; },
     w: function (ctx, a) { return 0.26 + a.tr.jealous * 0.4; },

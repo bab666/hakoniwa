@@ -651,7 +651,7 @@
         }
       },
       {
-        id: 'outside', cat: 'romance', scope: 'pair',
+        id: 'outside', label: '二人で外の空気を吸いに抜け出す', cat: 'romance', scope: 'pair',
         when: function (ctx, a, b) { return R(ctx, a, b).att > 35 && R(ctx, b, a).att > 20; },
         w: function (ctx, a) { return 0.3 + a.tr.impulse * 0.9; },
         run: function (ctx, a, b) {
@@ -661,7 +661,7 @@
       },
       {
         /* 告白：通じれば、その場で恋人に */
-        id: 'g_confess', cat: 'romance', scope: 'pair',
+        id: 'g_confess', label: '合コンの席で想いを告げる', cat: 'romance', scope: 'pair',
         when: function (ctx, a, b) { var pf = ctx.pair(a, b); return ctx.stepIndex >= 2 && HK.canLove(a, b) && !pf.couple && !pf.gconf && !pf.kin && (!gTaken(ctx, a) || (HK.Poly && HK.Poly.mode(ctx) !== 'none')) && R(ctx, a, b).att > 44 - gRom(ctx) * 12; },
         w: function (ctx, a, b) { return (0.4 + a.tr.honesty * 0.7 + a.tr.impulse * 0.4 + R(ctx, a, b).att / 100) * (a.goal.id === 'lover' ? 1.8 : 1); },
         run: function (ctx, a, b) {
@@ -678,7 +678,7 @@
         /* 二股：同じ人（c）の恋人どうしになった a と b が、互いに嫉妬する（さや当て・取り合い・問い詰める・黙って耐える）。c は板挟みになる。
            二人とも関係の設定で c の恋人にしてある場合（恋人を複数にした円満な関係）は起きない */
         /* 相手（b）は場の誰でもよいわけではないので、一人で起こす出来事にして中で選ぶ */
-        id: 'g_two', cat: 'conflict', scope: 'solo', pri: true,
+        id: 'g_two', label: '同じ相手をめぐって恋敵とぶつかる', cat: 'conflict', scope: 'solo', pri: true,
         when: function (ctx, a) { return !!gRivalOf(ctx, a) && !(HK.Poly && HK.Poly.mode(ctx) === 'secret'); },
         w: function (ctx, a) { return 0.8 + a.tr.jealous * 1.8 + a.tr.cp * 0.6 + a.tr.impulse * 0.3; },
         run: function (ctx, a) {

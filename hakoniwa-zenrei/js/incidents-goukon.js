@@ -9,7 +9,7 @@
   /* ======================= 合コン ======================= */
   HK.INCIDENTS.goukon = [
     {
-      id: 'point', from: 2, min: 3,
+      id: 'point', label: '一番気になる人を同時に指さす', from: 2, min: 3,
       run: function (ctx) {
         ctx.incident('「じゃあ、せーので一番気になる人を指さそう｜では、せーので一番気になる者を指す｜では、せーので一番気になる人を指さしましょう」と誰かが言い出した。');
         pointAll(ctx, ctx.present().filter(function (c) { return c.flags.cagePair == null; }), 'せーの。', '同時指さし');
@@ -29,7 +29,7 @@
       }
     },
     {
-      id: 'drunkard', from: 2, min: 2,
+      id: 'drunkard', label: '隣の席の酔客に絡まれる', from: 2, min: 2,
       run: function (ctx) {
         var P = ctx.present(), t = ctx.most(P, function (c) { return R(ctx, P[0] === c ? P[1] : P[0], c).att / 100 + ctx.rng() * 0.5; });
         ctx.incident('隣の席の酔客が、' + t.name + 'に絡み始めた。');
@@ -78,7 +78,7 @@
       }
     },
     {
-      id: 'lastTrain',
+      id: 'lastTrain', label: '終電を逃す',
       when: function (ctx, s, n) { return s >= n - 2; },
       w: function () { return 2; },
       run: function (ctx) {

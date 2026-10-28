@@ -163,7 +163,7 @@
   function motive(ctx, S, M, t) { var r = ctx.R(S, M); return r.ten > 55 || r.att > 65 || t.cold === 'bad'; }
   function due(ctx, S, M) { var pl = MR.plan(ctx, S, M); return pl.on && ctx.stepIndex >= pl.at; }
   HK.addTo(HK.COMMON, {
-    id: 'tie_master_r18', cat: 'conflict', sex: true, force: true, r18: true, pri: true, noOdd: true, scope: 'pair',
+    id: 'tie_master_r18', label: '従う側が主に力ずくで迫る', cat: 'conflict', sex: true, force: true, r18: true, pri: true, noOdd: true, scope: 'pair',
     /* 出来事の一覧の印（夜・合意のない展開。条件は MR.ok の中にあり、when の文字列からは拾えないため。動きには使わない） */
     tags: ['night', 'force'],
     when: function (ctx, a, b) {

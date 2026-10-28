@@ -446,7 +446,7 @@
     };
   }
   P.EVENTS.push({
-    id: 'poly_rival_feud', cat: 'conflict', scope: 'pair',
+    id: 'poly_rival_feud', label: '同じ人の恋人どうしが鉢合わせて口論', cat: 'conflict', scope: 'pair',
     when: rivalWhen('feud'),
     w: function (ctx, a) { return 0.4 + a.tr.jealous * 0.4 + a.tr.cp * 0.2; },
     run: function (ctx, a, b) {
@@ -457,7 +457,7 @@
       return { with: [c], text: t, why: a.name + 'と' + b.name + 'は、どちらも' + c.name + 'の恋人。鉢合わせて口論になった（複数の恋人：恋人どうしは険悪・嫉妬）', mag: 14 };
     }
   }, {
-    id: 'poly_rival_warm', cat: 'bond', scope: 'pair',
+    id: 'poly_rival_warm', label: '同じ人の恋人どうしが打ち解ける', cat: 'bond', scope: 'pair',
     when: rivalWhen('warm'),
     w: function (ctx, a) { return 0.35 + a.tr.np * 0.3 + a.tr.fc * 0.1; },
     run: function (ctx, a, b) {

@@ -143,7 +143,7 @@
     love: L('{b}は{a}を呼び止めた。「先輩、私……ずっと、先輩としてじゃなく見てました」|{a}は{b}に「もう先輩って呼ばなくていい」と言った。{b}はしばらく、名前を呼べなかった。|{a}は{b}の頭を撫でようとして、手を止めた。もう、後輩として見られなくなっていた。')
   };
   if (HK.COMMON) HK.COMMON.push({
-    id: 'tie_senpai', cat: 'bond', scope: 'pair',
+    id: 'tie_senpai', label: '先輩の面倒見と後輩の憧れ', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!(HK.Ties && HK.Ties.has(ctx, a, b, 'senpai')); },
     w: function () { return 1; },
     run: function (ctx, a, b) {
@@ -162,7 +162,7 @@
   /* バディの小場面（全箱庭共通） */
   var BUDDY = L('{a}と{b}は目配せ一つで左右に分かれた。打ち合わせは要らなかった。|{a}は{b}の背後に回った気配に、振り返りもしなかった。そこにいるのが{b}だと分かっていた。|{a}「私が前、{b}は後ろ」{b}「いつも通りだな」|{a}は{b}の無茶を止めずに、その無茶が成功するよう黙って段取りを整えた。|{a}と{b}は、危ない場面のあとで拳を軽くぶつけ合った。|{a}は{b}の分の水を、言われる前に差し出した。{b}も同じことをしようとしていた。|{a}「{b}が隣にいると、私、失敗する気がしない」{b}「それは過信」|{a}と{b}は言い合いをしながらも、手だけは同じ目的に向かって動いていた。');
   if (HK.COMMON) HK.COMMON.push({
-    id: 'tie_buddy', cat: 'help', scope: 'pair',
+    id: 'tie_buddy', label: 'バディが目配せ一つで連携する', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!(HK.Ties && HK.Ties.has(ctx, a, b, 'buddy')); },
     w: function () { return 1; },
     run: function (ctx, a, b) {
@@ -173,7 +173,7 @@
   /* 同僚どうしの小場面（全箱庭共通） */
   var COLLEAGUE = L('{a}は{b}に「これ、月曜の会議より大変だな」と言った。{b}は「会議のほうがまし」と即答した。|{a}と{b}は、いつもの職場と同じ分担で自然に動いた。言葉はほとんどいらなかった。|{a}「{b}のそういう段取りの良さ、私、職場でもずっと助かってた」{b}「今さら？」|{a}と{b}は上司の口癖をまねして、二人だけで笑った。|{a}は{b}の仕事中の癖――考えるときにペンを回す――が、ここでも出ていることに気づいた。|{a}「無事に戻ったら、溜まった有給、全部使ってやる」{b}「そのときは私の分の仕事も置いていって」|{a}と{b}は、同期の誰が一番に出世するかで小さく言い合った。|{a}は、職場では見せない{b}の顔を初めて見た気がした。');
   if (HK.COMMON) HK.COMMON.push({
-    id: 'tie_colleague', cat: 'bond', scope: 'pair',
+    id: 'tie_colleague', label: '同僚どうしの軽口と分担', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!(HK.Ties && HK.Ties.has(ctx, a, b, 'colleague')); },
     w: function () { return 0.9; },
     run: function (ctx, a, b) {
@@ -182,7 +182,7 @@
     }
   });
   if (HK.COMMON) HK.COMMON.push({
-    id: 'sf_persona', cat: 'bond', scope: 'pair',
+    id: 'sf_persona', label: 'その人らしい口調がにじむ一言', cat: 'bond', scope: 'pair',
     when: function (ctx, a) { return !!(a.persona && V.TALK[a.persona]) && ctx.scen.id !== 'br'; },
     w: function () { return 0.55; },
     run: function (ctx, a, b) {

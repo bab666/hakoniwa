@@ -68,7 +68,7 @@
       }
     },
     {
-      id: 'lecture', cat: 'conflict', scope: 'pair',
+      id: 'lecture', label: '相手のやり方に口を出す', cat: 'conflict', scope: 'pair',
       w: function (ctx, a, b) { return a.tr.cp * (1 - a.tr.np * 0.5) * (0.6 + b.tr.fc * 0.6); },
       run: function (ctx, a, b) {
         if (b.tr.ac > b.tr.fc) {
@@ -119,7 +119,7 @@
       }
     },
     {
-      id: 'compliment', cat: 'romance', scope: 'pair',
+      id: 'compliment', label: '相手のよいところを褒める', cat: 'romance', scope: 'pair',
       w: function (ctx, a, b) { return (a.tr.np * 0.4 + a.tr.fc * 0.4) * (0.4 + R(ctx, a, b).att / 60); },
       run: function (ctx, a, b) {
         var shy = b.tr.ac > 0.6;
@@ -189,7 +189,7 @@
       }
     },
     {
-      id: 'apologize', cat: 'help', scope: 'pair',
+      id: 'apologize', label: '言い争いのあと先に謝る', cat: 'help', scope: 'pair',
       when: function (ctx, a, b) { return R(ctx, a, b).ten > 28; },
       w: function (ctx, a) { return a.tr.ac * 0.6 + a.tr.np * 0.4 + a.tr.a * 0.2; },
       run: function (ctx, a, b) {
@@ -268,7 +268,7 @@
       }
     },
     {
-      id: 'misread', cat: 'conflict', scope: 'pair', noOdd: true,
+      id: 'misread', label: '何気ない言葉を悪い意味に受け取る', cat: 'conflict', scope: 'pair', noOdd: true,
       w: function () { return 0.12; },
       run: function (ctx, a, b) {
         ctx.mod2(a, b, { ten: 9, aff: -5 }, { ten: 7, aff: -3 });

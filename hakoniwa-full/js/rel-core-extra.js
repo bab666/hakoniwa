@@ -58,11 +58,13 @@
   }
   var D = {};
   var RC = HK.RelCore = { D: D, find: find };
+  /* 出来事の一覧（event-catalog）の表示名：場面の理由書き（why）から、末尾の（すれ違い）などと続柄の印を外したもの */
+  function nameOf(w) { return String(w || '').replace(/（[^（）]*）$/, '').replace(/\{sibs?(?::[^}]*)?\}/g, 'きょうだい'); }
   /* 場面から出来事を作る */
   function make(sid, g, o) {
     var S = D[sid], id = 'tie_rc_' + sid + '_' + g + '_' + o.k;
     return {
-      id: id, cat: o.cat, scope: 'pair', noOdd: true,
+      id: id, label: o.label || nameOf(o.why), cat: o.cat, scope: 'pair', noOdd: true,
       when: function (ctx, a, b) {
         if (!b || !here(a) || !here(b)) return false;
         var r = find(ctx, a, b, g);

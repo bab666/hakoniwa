@@ -63,7 +63,7 @@
       }
     },
     {
-      id: 'airdrop', min: 1, from: 2,
+      id: 'airdrop', label: 'ヘリから物資の箱が落とされる', min: 1, from: 2,
       run: function (ctx) {
         var P = zLive(ctx);
         if (!P.length) return;

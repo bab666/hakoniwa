@@ -157,7 +157,7 @@
     /* 描写の設定は lewd-unify.js（古い「島の夜（R18）」はそこで外して読み替える） */
     isl.env.push({ id: 'ilewd', label: '島の夜（R18）', type: 'select', def: 'fade', options: [{ v: 'off', label: '描かない' }, { v: 'fade', label: 'ほのめかす' }, { v: 'high', label: '描写する' }], desc: '恋人・セフレ・恋愛相手を決めた相手・惹かれ合った二人の夜。恋愛なしの家族と、教師と生徒の組では起きません' });
     HK.addTo(isl.events, {
-      id: 'ir18_night', cat: 'romance', sex: true, scope: 'pair', r18: true,
+      id: 'ir18_night', label: '島の夜に恋人と結ばれる', cat: 'romance', sex: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (!okPair(ctx, a, b)) return false;
         var pf = ctx.pair(a, b);
@@ -225,7 +225,7 @@
   HK.atScen('zombie', function () {
     if (!(Z && Z.scen && Z.loveLv)) return;
     HK.addTo(Z.scen.events, {
-      id: 'zr18_night', cat: 'romance', sex: true, scope: 'pair', r18: true,
+      id: 'zr18_night', label: 'バリケードの奥で恋人と結ばれる', cat: 'romance', sex: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (Z.loveLv(ctx) === 'off' || !okPair(ctx, a, b) || (Z.isLover && Z.isLover(ctx, a, b))) return false;
         var k = kindOf(ctx, a, b);

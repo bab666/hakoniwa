@@ -100,7 +100,7 @@
     return ctx.rules.filter(function (r) { return K[r.k].type === 'task' && TASK[r.k] && A.globLeft(ctx, r) > 0 && (!TASK[r.k].when || TASK[r.k].when(ctx, a, r)); })[0];
   }
   EV.push({
-    id: 'room_task', cat: 'escape', scope: 'solo', pri: true,
+    id: 'room_task', label: '扉の条件の恥ずかしい課題をこなす', cat: 'escape', scope: 'solo', pri: true,
     when: function (ctx, a) { return free(a) && !!taskRule(ctx, a); },
     /* 時間の進みに対して、お題が遅れているほど起きやすい（扉の紙を見て焦る） */
     w: function (ctx, a) {
@@ -413,7 +413,7 @@
     done: ['三人が抱き合ったまま、扉の紙の文字が淡く光った。', '腕をほどいた三人は、顔を見合わせて小さく笑った。', '三人の輪がほどけると、部屋の空気が少しだけ温かくなっていた。']
   };
   EV.push({
-    id: 'cond_trio', cat: 'bond', scope: 'pair', pri: true,
+    id: 'cond_trio', label: '三人で条件を満たそうとする', cat: 'bond', scope: 'pair', pri: true,
     when: function (ctx, a, b) { return !!ctx.flags.trioRule && ctx.stepIndex >= 1 && free(a) && free(b) && !!pickTrio(ctx, a, b); },
     w: function (ctx, a) { return 1.6 + ctx.stepIndex / Math.max(4, ctx.stepsTotal) * 2 + A.eager(ctx, a); },
     run: function (ctx, a, b) {

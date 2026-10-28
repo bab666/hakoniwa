@@ -47,7 +47,7 @@
       }
     },
     {
-      id: 'chorus', min: 3,
+      id: 'chorus', label: '合唱コンクールの練習', min: 3,
       run: function (ctx) {
         var P = ctx.present();
         var cond = ctx.most(P, function (c) { return c.tr.lead; });
@@ -73,7 +73,7 @@
       }
     },
     {
-      id: 'birthday', min: 2,
+      id: 'birthday', label: '誕生日を覚えていてくれる', min: 2,
       run: function (ctx) {
         var P = ctx.present(), t = ctx.rng.pick(P);
         ctx.incident('今日は' + t.name + 'の誕生日だった。');

@@ -119,7 +119,7 @@
     });
   };
   EV.push({
-    id: 'om_fated_realize', cat: 'romance', scope: 'pair', pri: true,
+    id: 'om_fated_realize', label: '運命の番だと気づく', cat: 'romance', scope: 'pair', pri: true,
     when: function (ctx, a, b) { var om = ctx.om, k = key(a, b); return om.fatedLatent && om.fatedLatent[k] && !om.fatedKnown[k] && ao(a, b) && ctx.stepIndex >= 1; },
     w: function (ctx, a, b) {
       var pf = ctx.pair(a, b), heat = (sx(a) === 'o' && a.om.heat > 0) || (sx(b) === 'o' && b.om.heat > 0);
@@ -189,7 +189,7 @@
   };
   EV.push({
     /* force：敵対する二人の強引な夜は、合意のない展開が入なら恋愛対象「なし」の人も（pos.js の HK.Pos.forceOpen。2026-10-27 担当HC） */
-    id: 'om_hatenight', cat: 'romance', sex: true, force: true, scope: 'pair',
+    id: 'om_hatenight', label: '憎みながら惹かれ合う夜', cat: 'romance', sex: true, force: true, scope: 'pair',
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b), HS0 = !HK.SAFE_ON && HK.HateSex;
       var noneHost = function () { return !!(HS0 && HK.Pos && HK.Pos.noneIn && HK.Pos.noneIn([a, b]) && HS0.order(ctx, a, b)[0] === a && HS0.hostile(ctx, a, b)); };
@@ -244,7 +244,7 @@
     refuse: L('{a}は恋人のいる{b}に迫った。{b}は{a}の手を払いのけた。「私には{c}がいる｜＝｜私には{c}がいます」|{b}は{a}の誘いをきっぱり断り、その足で{c}に会いに行った。|{a}が{b}を抱き寄せようとした瞬間、{b}のスマホが鳴った。画面には{c}の名前があった。{b}はそれを理由に、{a}から離れた。')
   };
   EV.push({
-    id: 'om_steal', cat: 'romance', sex: true, scope: 'pair',
+    id: 'om_steal', label: '恋人のいる相手を奪う', cat: 'romance', sex: true, scope: 'pair',
     when: function (ctx, a, b) {
       var pf = ctx.pair(a, b), pb = partnerOf(ctx, b), pa = partnerOf(ctx, a);
       if (pf.couple || !HK.canLove(a, b) || !HK.canLove(b, a) || !(pb || pa) || pb === a) return false;

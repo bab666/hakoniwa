@@ -45,7 +45,7 @@
 
   /* 見張りを代わる（a＝仲間、b・c＝想い合っている二人／恋人どうし） */
   ev({
-    id: 'is_watch', cat: 'bond', scope: 'pair',
+    id: 'is_watch', label: '二人のために見張りを代わる', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = G.loveOf(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && G.once(ctx, 'watch', [a, b, c]); },
     w: W(0.45),
     run: function (ctx, a, b) {
@@ -56,7 +56,7 @@
   });
   /* 食べ物を多めに分ける */
   ev({
-    id: 'is_share', cat: 'bond', scope: 'pair',
+    id: 'is_share', label: '二人に食べ物を多めに分ける', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = G.loveOf(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && (a.hp == null || a.hp > 35) && G.once(ctx, 'share', [a, b, c]); },
     w: W(0.4),
     run: function (ctx, a, b) {
@@ -69,7 +69,7 @@
   });
   /* 焚き火で二人きりにする（想い合っている二人が中心。恋人どうしでも） */
   ev({
-    id: 'is_fire', cat: 'bond', scope: 'pair',
+    id: 'is_fire', label: '焚き火で二人きりにしてあげる', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = G.loveOf(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && ctx.present().length >= 3 && G.once(ctx, 'fire', [a, b, c]); },
     w: function (ctx, a, b) { var c = G.loveOf(ctx, b, a); return (c && !G.couple(ctx, b, c) ? 0.55 : 0.32) + a.tr.np * 0.12; },
     run: function (ctx, a, b) {
@@ -80,7 +80,7 @@
   });
   /* 同じ作業に組む（想い合っている二人） */
   ev({
-    id: 'is_work', cat: 'bond', scope: 'pair',
+    id: 'is_work', label: '二人を同じ作業に組む', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = G.mutualOf(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && G.once(ctx, 'work', [b, c]); },
     w: function (ctx, a) { return 2.2 + a.tr.lead * 0.6 + a.tr.np * 0.3; },
     run: function (ctx, a, b) {
@@ -92,7 +92,7 @@
   });
   /* 手作りの贈り物で祝福する（恋人どうし／結ばれた二人） */
   ev({
-    id: 'is_gift', cat: 'bond', scope: 'pair',
+    id: 'is_gift', label: '恋人たちに手作りの贈り物をする', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = G.partnerOf(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && G.once(ctx, 'gift', [b, c]); },
     w: W(0.5),
     run: function (ctx, a, b) {
@@ -104,7 +104,7 @@
   });
   /* 冷やかす（恋人どうし） */
   ev({
-    id: 'is_tease', cat: 'bond', scope: 'pair',
+    id: 'is_tease', label: '朝帰りの恋人たちを冷やかす', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = G.partnerOf(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && G.once(ctx, 'tease', [a, b, c]); },
     w: function (ctx, a) { return 0.3 + a.tr.fc * 0.2; },
     run: function (ctx, a, b) {
@@ -141,7 +141,7 @@
   outing('is_stars', 'stars', '星を見た', 0.5);
   /* 恋の相談（a＝聞く仲間、b＝想っている人、c＝想う相手） */
   ev({
-    id: 'is_soudan', cat: 'bond', scope: 'pair',
+    id: 'is_soudan', label: '釣りをしながら恋の相談', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var c = wish(ctx, b, a); return !!c && G.thirdOk(ctx, a, b, c) && G.friendly(ctx, b, a) && G.once(ctx, 'soudan', [a, b, c]); },
     w: function (ctx, a, b) { return 2 + b.tr.honesty * 0.6 + (G.rel(ctx, a, b) ? 0.6 : 0); },
     run: function (ctx, a, b) {
@@ -152,7 +152,7 @@
   });
   /* 想いが届かなかった仲間を励ます（a＝仲間、b＝告げて断られた人。もう一人の仲間 d がいれば三人で） */
   ev({
-    id: 'is_comfort', cat: 'bond', scope: 'pair',
+    id: 'is_comfort', label: '想いが届かなかった仲間を励ます', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { var x = G.turnedDown(ctx, b); return !!x && x !== a && !G.couple(ctx, a, b) && R(ctx, a, b).att < 40 && G.friendly(ctx, a, b) && G.once(ctx, 'comfort', [a, b]); },
     w: function (ctx, a, b) { return 2.5 + a.tr.np * 0.8 + b.stress / 100; },
     run: function (ctx, a, b) {
@@ -165,3 +165,7 @@
     }
   });
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   is_sea=恋人たちと一緒に海で遊ぶ
+   is_stars=恋人たちと一緒に星を見る
+*/

@@ -29,7 +29,7 @@
     love: L('{a}「学生のころ、私、{b}のことずっと見てた｜学生のころ、私は{b}のことをずっと見ていた｜学生のころ、私、{b}のことをずっと見ていました」{b}「……知らなかった｜＝｜……知りませんでした」{a}「言わなかったから｜言わなかったからな｜言いませんでしたから」――二人のあいだで、昔の教室の空気が少しだけ違う色に変わった。|{b}は{a}の手をとった。{b}「同じクラスだったころには、こんなふうになるなんて思わなかった｜同じクラスだったころには、こんなふうになるとは思わなかった｜同じクラスだったころには、こんなふうになるなんて思いませんでした」{a}は答えのかわりに、その手を握り返した。|{a}は{b}に、卒業式の日に言えなかった言葉があったと打ち明けた。{b}「今なら、聞ける｜＝｜今なら、聞けます」{a}は少し迷ってから、ずっとしまっていた気持ちを口にした。')
   };
   push({
-    id: 'tie_classmate', cat: 'bond', scope: 'pair',
+    id: 'tie_classmate', label: '同級生と昔話で笑い合う', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'classmate'); },
     w: function (ctx) { return 1 * own(ctx); },
     run: function (ctx, a, b) {
@@ -55,7 +55,7 @@
     love: L('{a}は{b}の横顔を見て、職場で隣にいたころにはなかった気持ちに気づいた。{a}「{b}、私……同僚のままでいるの、やめたいかもしれない｜{b}、私は……同僚のままでいるのを、やめたいのかもしれない｜{b}、私……同僚のままでいるのを、やめたいのかもしれません」|{b}は{a}の手に、自分の手を重ねた。仕事の話は、もう出てこなかった。{b}「職場では、{a}のこんな顔、見たことなかった｜職場では、{a}のこんな顔は見たことがなかった｜職場では、{a}のこんな顔、見たことがありませんでした」{a}「{b}の前だけ｜{b}の前だけだ｜{b}の前だけです」|{a}と{b}は、職場で交わしたどの言葉より短い言葉で、互いの気持ちを確かめた。同僚と呼ぶには、もう近すぎた。')
   };
   push({
-    id: 'tie_colleague2', cat: 'bond', scope: 'pair',
+    id: 'tie_colleague2', label: '同僚の連携と仕事の外の顔', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'colleague'); },
     w: function (ctx) { return 0.6 * own(ctx); },
     run: function (ctx, a, b) {
@@ -80,7 +80,7 @@
     love: L('{b}は{a}を見つめた。{b}「職場の外では、{a}を上司として見られない｜＝｜職場の外では、{a}を上司として見られません」{a}はしばらく黙って、{b}の名前を呼んだ。肩書きのない呼び方だった。|{a}は{b}の髪に触れかけて、手を止めた。{a}「部下にこんなことを思うなんて、上司失格だね｜部下にこんなことを思うとは、上司失格だ｜部下にこんなことを思うなんて、上司失格です」{b}「なら、今だけ上司をやめて｜なら、今だけ上司をやめろ｜なら、今だけ上司をやめてください」|{a}と{b}は、職場では決して見せない顔で向き合った。指示も報告もない言葉が、二人のあいだに初めて落ちた。')
   };
   push({
-    id: 'tie_boss', cat: 'help', scope: 'pair',
+    id: 'tie_boss', label: '上司の責任と部下の支え', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'boss'); },
     w: function (ctx) { return 1 * own(ctx); },
     run: function (ctx, a, b) {
@@ -120,7 +120,7 @@
   }
   TR.spouse = spouseTie;
   push({
-    id: 'tie_spouse', cat: 'bond', scope: 'pair',
+    id: 'tie_spouse', label: '連れ添った二人のいつもの時間', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!spouseTie(ctx, a, b); },
     w: function (ctx) { return 1.5 * own(ctx); },
     run: function (ctx, a, b) {
@@ -149,7 +149,7 @@
     love: L('{b}は{a}の手を握った。{b}「最初は恩返しのつもりだった。でも今は、ただ{a}のそばにいたい｜最初は恩返しのつもりだった。だが今は、ただ{a}のそばにいたい｜最初は恩返しのつもりでした。でも今は、ただ{a}のそばにいたいんです」{a}は目を伏せて、その手を離さなかった。|{a}は{b}を見て、助けたあの日にはなかった気持ちに気づいた。守る相手だった{b}が、いつの間にか隣に並んでいた。{a}「{b}、私……」その先は、{b}が先に言った。')
   };
   push({
-    id: 'tie_benefactor', cat: 'help', scope: 'pair',
+    id: 'tie_benefactor', label: '恩人の気遣いと消えない感謝', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'benefactor'); },
     w: function (ctx) { return 1 * own(ctx); },
     run: function (ctx, a, b) {
@@ -176,7 +176,7 @@
     love: L('{a}は{b}の手を握ったまま、離せなくなった。{a}「親族なのに、こんな気持ちになるなんて｜親族なのに、こんな気持ちになるとは｜親族なのに、こんな気持ちになるなんて、思いませんでした」{b}「……私も、同じ｜……私も、同じだ｜……私も、同じです」|{b}は{a}を見つめた。親戚の集まりで隣に座っていたころとは、もう違う目だった。{b}「{a}を、家族としてだけ見るのは無理かもしれない｜＝｜{a}を、家族としてだけ見るのは無理かもしれません」')
   };
   push({
-    id: 'tie_relative', cat: 'help', scope: 'pair',
+    id: 'tie_relative', label: '親族どうしの思い出と助け合い', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'relative'); },
     w: function (ctx) { return 1 * own(ctx); },
     run: function (ctx, a, b) {
@@ -221,7 +221,7 @@
     love: L('{b}は{a}の手を取った。{b}「崇められるより、隣にいてほしい｜＝｜崇められるより、隣にいてほしいです」{a}は震える声で、{b}の名前を呼んだ。祈るような想いが、恋という形を見つけた。|{a}は{b}に触れられて、息を止めた。ずっと遠くから仰いでいた人が、今は手の届くところにいた。{a}「{b}を、好きになってもいいの？｜{b}を、好きになってもいいのか｜{b}を、好きになってもいいですか」{b}「とっくに、なってる｜とっくに、なっている｜とっくに、なっていますよ」|{a}は{b}への想いが、崇めるだけのものではなくなっていることに気づいた。{a}「ごめん。{b}を、ひとりの人として好きになった｜すまない。{b}を、ひとりの人として好きになった｜ごめんなさい。{b}を、ひとりの人として好きになりました」{b}は少し驚いて、それから笑って{a}を引き寄せた。')
   };
   push({
-    id: 'tie_worship', cat: 'help', scope: 'pair',
+    id: 'tie_worship', label: '崇める相手に尽くす', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!has(ctx, a, b, 'worship'); },
     w: function (ctx) { return 1.15 * own(ctx); },
     run: function (ctx, a, b) {

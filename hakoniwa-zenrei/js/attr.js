@@ -960,3 +960,8 @@
     return f;
   });
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   attr_mirror_talk=同一人物と鏡のように話す
+   attr_mirror_habit=同一人物どうし癖まで同じ
+   attr_mirror_clash=同一人物に自分の嫌なところを見る
+*/

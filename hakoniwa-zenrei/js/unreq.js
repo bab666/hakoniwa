@@ -193,7 +193,7 @@
         return { text: fill(ctx.pick(D.help), m), why: a.name + 'は、' + b.name + 'の想う' + c.name + 'との仲を取り持った（NP・AC）', mag: 26, with: [c] };
       }),
     /* 恋敵に当たる（a と c の組で起きる） */
-    { id: 'u_rival', cat: 'conflict', scope: 'pair', mini: true, sig: true,
+    { id: 'u_rival', label: '片想いの相手の想い人に妬く', cat: 'conflict', scope: 'pair', mini: true, sig: true,
       when: function (ctx, a, c) { var b = rivalOf(ctx, a, c); return !!b && (ctx.pair(a, c).urival || 0) < 2 && (!HK.Obsess || HK.Obsess.jealOk(ctx, a, b)); },
       w: function (ctx, a) { return 0.4 + a.tr.jealous * 0.8 + a.tr.aggr * 0.3; },
       run: function (ctx, a, c) {
@@ -226,3 +226,11 @@
   var ZC = LIST.map(function (e) { var e2 = {}; for (var k in e) e2[k] = e[k]; e2.mini = false; e2.w = (function (w0) { return function (ctx, a, b) { return w0(ctx, a, b) * 0.8; }; })(e.w); return e2; });
   HK.atScen('zombie', function () { var Z = HK.ZB; if (Z && Z.scen) HK.addTo(Z.scen.events, ZC); });
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   u_serve=片想いの相手に尽くす
+   u_tri=片想いの相手がほかの人を見ている
+   u_protect=片想いの相手をかばう
+   u_confess=片想いの相手に想いを告げる
+   u_help=片想いの相手の恋を手伝う
+   u_loss=想い人を亡くした片想いの相手に寄り添う
+*/

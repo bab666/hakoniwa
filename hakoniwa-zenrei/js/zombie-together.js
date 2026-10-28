@@ -104,7 +104,7 @@
   };
   /* 計画した二人の、残された日々 */
   EV.push({
-    id: 'z_sj_days', cat: 'romance', scope: 'pair', pri: true,
+    id: 'z_sj_days', label: '心中を約束した二人の残された日々', cat: 'romance', scope: 'pair', pri: true,
     when: function (ctx, a, b) { var p = a.z.sj; return p && p === b.z.sj && p.by === a.i && p.days < 2 && ctx.stepIndex < p.at; },
     w: function () { return 4; },
     run: function (ctx, a, b) {

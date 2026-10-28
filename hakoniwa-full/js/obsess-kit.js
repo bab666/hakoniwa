@@ -469,13 +469,13 @@
     /* 出来事の表への追加は HK.addTo（分割読み込みで、組み込みが箱庭の本体より後になっても、元のファイルの順に並ぶ） */
     HK.addTo(scen.events, {
       /* 執着は箱庭の進行役のイベント（pri）と同じ扱い：設定した執着が、ほかの出来事に埋もれないように */
-      id: 'ob_act', cat: 'conflict', noOdd: true, pri: true,
+      id: 'ob_act', label: '執着が行動に出る', cat: 'conflict', noOdd: true, pri: true,
       when: function (ctx, a) { return !!O.target(ctx, a); },
       w: function (ctx, a) { var b = O.target(ctx, a), s = st(ctx, a, b); return W * (s.cage ? 4 : 1 + s.lv / 30) * (opt.wAct || 1); },
       run: function (ctx, a) { var r = O.act(ctx, a, opt); if (r && opt.decorate) r = opt.decorate(ctx, a, r) || r; return r; }
     });
     HK.addTo(scen.events, {
-      id: 'ob_react', cat: 'bond', noOdd: true,
+      id: 'ob_react', label: '執着された側が受け止める', cat: 'bond', noOdd: true,
       when: function (ctx, b) { return !!O.obsessorOf(ctx, b); },
       w: function () { return W * 1.6; },
       run: function (ctx, b) { return O.react(ctx, b); }

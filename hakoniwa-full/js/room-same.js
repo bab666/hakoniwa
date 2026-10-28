@@ -107,7 +107,7 @@
     return fn(ctx, a, s, bb) === bb ? { a: a, b: s, c: bb } : null;
   }
   EV.push({
-    id: 'rs_rival', cat: 'conflict', scope: 'pair', pri: true,
+    id: 'rs_rival', label: '同一人物の二人が同じ人を想う', cat: 'conflict', scope: 'pair', pri: true,
     when: function (ctx, a, bb) {
       if (!free(a) || !free(bb) || ctx.present().length < 3) return false;
       var st = setOf(ctx, a, bb, rivalOf);
@@ -139,7 +139,7 @@
     '|{a}は{b}の袖を引いて、部屋の隅まで連れていった。{a}「あの人が何をしたか、忘れたの？｜あの人が何をしたか、忘れたのか？｜あの人が何をしたか、忘れたんですか？」{b}「覚えてる。でも、ここではただの{c}だから｜覚えている。だが、ここではただの{c}だ｜覚えています。でも、ここではただの{c}ですから」{a}は、自分の口から出たとは思えないその答えに、言葉を失った。');
   function recoilOf(ctx, a, b, only) { return (only ? [only] : others(ctx, [a, b])).filter(function (c) { return free(c) && hostile(ctx, a, c) && friendly(ctx, b, c); })[0] || null; }
   EV.push({
-    id: 'rs_recoil', cat: 'conflict', scope: 'pair', pri: true,
+    id: 'rs_recoil', label: 'もう一人の自分が敵と笑い合う', cat: 'conflict', scope: 'pair', pri: true,
     when: function (ctx, a, bb) {
       if (!free(a) || !free(bb) || ctx.present().length < 3) return false;
       var st = setOf(ctx, a, bb, recoilOf);
@@ -184,7 +184,7 @@
     return 'before';
   }
   EV.push({
-    id: 'rs_duo', cat: 'bond', scope: 'pair', pri: true,
+    id: 'rs_duo', label: '同一人物の二人だけの部屋', cat: 'bond', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (!same(a, b) || darkOf(a, b) || ctx.present().length !== 2 || !free(a) || !free(b)) return false;
       if (HK.ngPair(a, b) || !HK.canLove(a, b) || !HK.canLove(b, a)) return false;
@@ -298,7 +298,7 @@
   function pleas(ctx) { return q3(ctx.pick(PLEAS)); }
   S.pleas = pleas;
   EV.push({
-    id: 'rs_dk_torment', cat: 'conflict', scope: 'pair', pri: true,
+    id: 'rs_dk_torment', label: '闇に堕ちた自分が自分を責め苛む', cat: 'conflict', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (darkOf(a, b) !== a || !free(a) || !free(b)) return false;
       var pf = ctx.pair(a, b);
@@ -372,7 +372,7 @@
     '|{c}「同じ顔でも、私には分かる｜同じ顔でも、私には分かる｜同じお顔でも、私には分かります」{c}にきっぱりと拒まれて、{a}は楽しそうに首をかしげた。{a}は、{c}の言葉を聞いて安堵する{b}の顔を、次はどう崩そうかと眺めていた。');
   function ntrTarget(ctx, a, b) { return others(ctx, [a, b]).filter(function (c) { return loveTie(ctx, b, c) && !loveTie(ctx, a, c); })[0] || null; }
   EV.push({
-    id: 'rs_dk_ntr', cat: 'betray', scope: 'pair', pri: true,
+    id: 'rs_dk_ntr', label: '闇に堕ちた自分が想い人を奪いに行く', cat: 'betray', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (darkOf(a, b) !== a || !free(a) || !free(b) || ctx.stepIndex < 1) return false;
       var pf = ctx.pair(a, b);
@@ -460,7 +460,7 @@
     return '決心が鈍った';
   }
   EV.push({
-    id: 'rs_dk_hold', cat: 'conflict', scope: 'pair', pri: true,
+    id: 'rs_dk_hold', label: '闇に堕ちた自分が脱出を引き留める', cat: 'conflict', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (darkOf(a, b) !== a || !free(a) || !free(b) || ctx.stepIndex < 1) return false;
       if ((ctx.flags.rsHold = ctx.flags.rsHold || {})[b.i]) return false;
@@ -500,7 +500,7 @@
     return ctx.chars.some(function (o) { return o !== a && yan(ctx, a, o); });
   }
   EV.push({
-    id: 'rs_dk_stay', cat: 'conflict', scope: 'pair', pri: true,
+    id: 'rs_dk_stay', label: '闇に堕ちた自分が部屋に残ろうと迫る', cat: 'conflict', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (darkOf(a, b) !== a || !free(a) || !free(b) || ctx.stepIndex < 1) return false;
       var pf = ctx.pair(a, b);

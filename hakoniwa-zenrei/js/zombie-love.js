@@ -104,7 +104,7 @@
 
   /* ======================= 恋人：最後かもしれない夜 ======================= */
   EV.push({
-    id: 'z_lv_night', cat: 'romance', sex: true, scope: 'pair',
+    id: 'z_lv_night', label: '恋人と過ごす最後かもしれない夜', cat: 'romance', sex: true, scope: 'pair',
     when: function (ctx, a, b) {
       if (Z.loveLv(ctx) === 'off' || !Z.isLover(ctx, a, b)) return false;
       /* 受け攻めの向きが決まらない組（攻め×攻めなど）は、恋人でも夜を過ごさない */
@@ -133,7 +133,7 @@
 
   /* ======================= 恋人：黙って消える（咬まれていないのに） ======================= */
   EV.push({
-    id: 'z_lv_vanish', cat: 'solo', scope: 'pair',
+    id: 'z_lv_vanish', label: '恋人のために黙って姿を消す', cat: 'solo', scope: 'pair',
     when: function (ctx, a, b) {
       if (!Z.isLover(ctx, a, b) || a.z.vanished || a.z.bitten || Z.day(ctx) < 2) return false;
       return (a.z.food <= 0 && b.z.food <= 1) || a.hp < 45 || ctx.zb.A[a.z.area].z > 55;
@@ -263,7 +263,7 @@
   };
   /* 閉じ込めたゾンビのもとへ通う */
   EV.push({
-    id: 'z_keep_visit', cat: 'solo', scope: 'solo',
+    id: 'z_keep_visit', label: '閉じ込めたゾンビのもとへ通う', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { return a.z.keep != null && (a.z.keepN || 0) < 3; },
     w: function () { return 4; }, pri: true,
     run: function (ctx, a) {
@@ -277,7 +277,7 @@
 
   /* ======================= 片想い ======================= */
   EV.push({
-    id: 'z_cr_feel', cat: 'romance', scope: 'pair',
+    id: 'z_cr_feel', label: '片想いの気持ちが極限であふれる', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { var pf = ctx.pair(a, b); return Z.isCrush(ctx, a, b) && !pf.zcr && !pf.zconf && (Z.day(ctx) >= 2 || a.stress > 40) && (!HK.Poly || HK.Poly.canTry(ctx, a, b)); },
     w: function (ctx, a, b) { return 0.8 + ctx.R(a, b).att / 70 + a.stress / 120; },
     run: function (ctx, a, b) {
@@ -334,7 +334,7 @@
   });
   /* 想いを隠したまま、黙って守る */
   EV.push({
-    id: 'z_cr_guard', cat: 'help', scope: 'pair',
+    id: 'z_cr_guard', label: '想いを隠したまま守り続ける', cat: 'help', scope: 'pair',
     /* 両片想いで黙っていた二人が恋人になったら、もう「想いを隠したまま」守る場面にはしない */
     when: function (ctx, a, b) { return a.z.vow === b.i && (ctx.pair(a, b).zgd || 0) < 3 && !(ctx.pair(a, b).couple && HK.Ties && HK.Ties.from(ctx, a, b, 'crush') && HK.Ties.from(ctx, b, a, 'crush')); },
     w: function () { return 2.2; },

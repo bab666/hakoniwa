@@ -176,7 +176,7 @@
     expel: L('{a}は{m}に、二度と来るなと告げた。{m}はしばらく{a}の家の前に立っていたが、やがて街を去った。|{a}は{m}の顔を見るたびに体が強張るようになった。周りに相談して、{m}は街を出ていくことになった。')
   };
   EV.push({
-    id: 'om_mob_court', cat: 'romance', scope: 'solo', pri: true,
+    id: 'om_mob_court', label: '街の外から来た運命の番に口説かれる', cat: 'romance', scope: 'solo', pri: true,
     when: function (ctx, a) { var m = mobOf(ctx, a); return !!m && m.state === 'met' && !partnerOf(ctx, a) && ctx.stepIndex - m.last >= 2; },
     w: function (ctx, a) { var f = fateV(ctx), d = dest(ctx); return 0.9 + f * 1.0 + d * 0.6 + (a.action.id === 'hunt' || a.goal.id === 'mate' ? 0.3 : 0); },
     run: function (ctx, a) {
@@ -243,7 +243,7 @@
   /* ======================= 結ばれたあと ======================= */
   var LF = L('{a}は休みの日を{m}と過ごすようになった。街の住人と会う時間は、少しずつ減っていった。|{a}の部屋に、{sm}の匂いが染みついてきた。{m}は週の半分を、この街で過ごしている。|{a}は{m}と、街の外へ小さな旅行に出た。帰ってきた{a}は、前より少し遠い顔をしていた。');
   EV.push({
-    id: 'om_mob_life', cat: 'romance', scope: 'solo',
+    id: 'om_mob_life', label: '街の外から来た運命の番と付き合う', cat: 'romance', scope: 'solo',
     when: function (ctx, a) { var m = mobOf(ctx, a); return !!m && m.state === 'bond' && !partnerOf(ctx, a) && ctx.stepIndex - m.last >= 3; },
     w: function () { return 0.5; },
     run: function (ctx, a) {

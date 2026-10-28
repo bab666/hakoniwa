@@ -45,7 +45,7 @@
   /* 出来事を一つ足す：roles(ctx, a, b) が役の組（なければ null）、run(ctx, r) が { text, why, cat?, with?, mag? } を返す */
   function add(o) {
     push({
-      id: o.id, cat: o.cat,
+      id: o.id, label: o.label, cat: o.cat,
       when: function (ctx, a, b) { return !!(b && here(a) && here(b) && o.roles(ctx, a, b)); },
       w: function (ctx, a, b) { var r = o.roles(ctx, a, b); return r ? (typeof o.w === 'function' ? o.w(ctx, r) : o.w || 1) : 0; },
       run: function (ctx, a, b) { var r = o.roles(ctx, a, b); return r ? o.run(ctx, r) : null; }
@@ -82,10 +82,10 @@
     })
   };
   function apWhy(r, k) { return r.K.name + 'の働きかけと、' + r.A.name + 'の無関心' + k + '（' + r.A.name + 'から' + r.K.name + 'への気持ちは動かない）'; }
-  add({ id: 'tie_nw_ap_talk', cat: 'bond', w: 1.4, roles: apR, run: function (ctx, r) { ctx.mod(r.K, r.A, { ten: 2, aff: -1 }); return { text: fill(pk(ctx, AP.talk), r.K, r.A) + fill(pk(ctx, AP.talkRe[per(r.A)]), r.K, r.A), why: apWhy(r, '：話しかけても響かない') }; } });
-  add({ id: 'tie_nw_ap_gift', cat: 'help', w: 0.9, roles: apR, run: function (ctx, r) { ctx.mod(r.K, r.A, { aff: 1, ten: 2 }); return { text: fill(pk(ctx, AP.gift), r.K, r.A) + fill(pk(ctx, AP.giftRe[per(r.A)]), r.K, r.A), why: apWhy(r, '：好意を受け流す') }; } });
+  add({ id: 'tie_nw_ap_talk', label: '無関心な相手に話しかけても響かない', cat: 'bond', w: 1.4, roles: apR, run: function (ctx, r) { ctx.mod(r.K, r.A, { ten: 2, aff: -1 }); return { text: fill(pk(ctx, AP.talk), r.K, r.A) + fill(pk(ctx, AP.talkRe[per(r.A)]), r.K, r.A), why: apWhy(r, '：話しかけても響かない') }; } });
+  add({ id: 'tie_nw_ap_gift', label: '無関心な相手に好意を受け流される', cat: 'help', w: 0.9, roles: apR, run: function (ctx, r) { ctx.mod(r.K, r.A, { aff: 1, ten: 2 }); return { text: fill(pk(ctx, AP.gift), r.K, r.A) + fill(pk(ctx, AP.giftRe[per(r.A)]), r.K, r.A), why: apWhy(r, '：好意を受け流す') }; } });
   add({
-    id: 'tie_nw_ap_other', cat: 'conflict', w: 0.9,
+    id: 'tie_nw_ap_other', label: '無関心な相手に素通りされる', cat: 'conflict', w: 0.9,
     roles: function (ctx, a, b) { var r = apR(ctx, a, b); return r && thirds(ctx, b, a).length ? r : null; },
     run: function (ctx, r) {
       var c = ctx.rng.pick(thirds(ctx, r.A, r.K)); if (!c) return null;
@@ -140,10 +140,10 @@
     })
   };
   function frWhy(r, k) { return r.F.name + 'は' + r.X.name + 'を恐れている' + k; }
-  add({ id: 'tie_nw_fr_avoid', cat: 'conflict', w: 0.9, roles: frR, run: function (ctx, r) { ctx.mod(r.F, r.X, { ten: 3 }); ctx.stress(r.F, 3); return { text: fill(pk(ctx, FR.avoid), r.F, r.X) + fill(pk(ctx, FR.avoidRe[per(r.F)]), r.F, r.X), why: frWhy(r, '：同じ場所にいたがらない') }; } });
-  add({ id: 'tie_nw_fr_freeze', cat: 'conflict', w: 0.8, roles: frR, run: function (ctx, r) { ctx.mod2(r.F, r.X, { ten: 4 }, { ten: 1 }); ctx.stress(r.F, 4); return { text: fill(pk(ctx, FR.freeze), r.F, r.X) + fill(pk(ctx, FR.freezeRe[per(r.F)]), r.F, r.X), why: frWhy(r, '：話しかけられると固まる') }; } });
+  add({ id: 'tie_nw_fr_avoid', label: '恐れる相手と同じ場所にいられない', cat: 'conflict', w: 0.9, roles: frR, run: function (ctx, r) { ctx.mod(r.F, r.X, { ten: 3 }); ctx.stress(r.F, 3); return { text: fill(pk(ctx, FR.avoid), r.F, r.X) + fill(pk(ctx, FR.avoidRe[per(r.F)]), r.F, r.X), why: frWhy(r, '：同じ場所にいたがらない') }; } });
+  add({ id: 'tie_nw_fr_freeze', label: '恐れる相手に話しかけられて固まる', cat: 'conflict', w: 0.8, roles: frR, run: function (ctx, r) { ctx.mod2(r.F, r.X, { ten: 4 }, { ten: 1 }); ctx.stress(r.F, 4); return { text: fill(pk(ctx, FR.freeze), r.F, r.X) + fill(pk(ctx, FR.freezeRe[per(r.F)]), r.F, r.X), why: frWhy(r, '：話しかけられると固まる') }; } });
   add({
-    id: 'tie_nw_fr_obey', cat: 'conflict', w: 0.8, roles: frR,
+    id: 'tie_nw_fr_obey', label: '恐れる相手に従わされる', cat: 'conflict', w: 0.8, roles: frR,
     run: function (ctx, r) {
       /* 従属の強要：恐れる側の怯えと、相手からの情の差が大きいほど（HK.Gap）、展開が重いほど起きやすい */
       var force = ctx.rng() < HK.clamp(0.2 * gapK(ctx, r.F, r.X), 0.05, 0.6);
@@ -152,7 +152,7 @@
     }
   });
   add({
-    id: 'tie_nw_fr_shelter', cat: 'help', w: 0.7,
+    id: 'tie_nw_fr_shelter', label: '怯える人が頼れる人に身を寄せる', cat: 'help', w: 0.7,
     roles: function (ctx, a, b) {
       var F0 = T() && T().fears; if (!F0 || F0(ctx, a, b) || F0(ctx, b, a) || T().apathy(ctx, b, a) || T().apathy(ctx, a, b)) return null;
       if (ctx.R(a, b).trust < 0 && ctx.R(a, b).aff < 10) return null;
@@ -165,7 +165,7 @@
       return { with: [X], text: fill(pk(ctx, FR.shelter), r.F, r.P, X) + fill(pk(ctx, FR.shelterRe[per(r.P)]), r.F, r.P, X), why: r.F.name + 'は' + X.name + 'を恐れて、' + r.P.name + 'に庇護を求めた' };
     }
   });
-  add({ id: 'tie_nw_fr_eyes', cat: 'conflict', w: 0.6, roles: frR, run: function (ctx, r) { ctx.mod2(r.F, r.X, { ten: 2 }, { ten: 2 }); return { text: fill(pk(ctx, FR.eyes), r.F, r.X) + fill(pk(ctx, FR.eyesRe[per(r.X)]), r.F, r.X), why: frWhy(r, '：目を合わせられない') }; } });
+  add({ id: 'tie_nw_fr_eyes', label: '恐れる相手と目を合わせられない', cat: 'conflict', w: 0.6, roles: frR, run: function (ctx, r) { ctx.mod2(r.F, r.X, { ten: 2 }, { ten: 2 }); return { text: fill(pk(ctx, FR.eyes), r.F, r.X) + fill(pk(ctx, FR.eyesRe[per(r.X)]), r.F, r.X), why: frWhy(r, '：目を合わせられない') }; } });
 
   /* ======================= 許嫁（向きなし。{a}＝動く側、{b}＝相手） ======================= */
   function fiT(ctx, a, b) { return has(ctx, a, b, 'fiance'); }
@@ -240,7 +240,7 @@
   function fiOpen(ctx, a, b) { var t = fiT(ctx, a, b); return t && !t.broken && ctx.pair(a, b).fiBroken == null ? t : null; }
   function fiWhy(t, a, b, k) { return a.name + 'と' + b.name + 'は許嫁（' + a.name + '：' + HK.FIANCE_FEEL[feelOf(t, a)].short + '・' + b.name + '：' + HK.FIANCE_FEEL[feelOf(t, b)].short + '）' + k; }
   add({
-    id: 'tie_nw_fi_eager', cat: 'bond', w: 0.8,
+    id: 'tie_nw_fi_eager', label: '乗り気の許嫁が歩み寄る', cat: 'bond', w: 0.8,
     roles: function (ctx, a, b) { var t = fiOpen(ctx, a, b); return t && feelOf(t, a) === 'eager' ? { a: a, b: b, t: t } : null; },
     run: function (ctx, r) {
       var a = r.a, b = r.b, t = r.t, fb = feelOf(t, b);
@@ -252,12 +252,12 @@
     }
   });
   add({
-    id: 'tie_nw_fi_unsure', cat: 'bond', w: 0.6,
+    id: 'tie_nw_fi_unsure', label: '決められた縁に戸惑う許嫁', cat: 'bond', w: 0.6,
     roles: function (ctx, a, b) { var t = fiOpen(ctx, a, b); return t && feelOf(t, a) === 'unsure' ? { a: a, b: b, t: t } : null; },
     run: function (ctx, r) { ctx.mod2(r.a, r.b, { ten: 1, aff: 1 }, { ten: 1 }); return { text: fill(pk(ctx, FI.unsure), r.a, r.b) + fill(pk(ctx, FI.unsureRe[per(r.a)]), r.a, r.b), why: fiWhy(r.t, r.a, r.b, '：決められた縁への戸惑い') }; }
   });
   add({
-    id: 'tie_nw_fi_refuse', cat: 'conflict', w: 0.7,
+    id: 'tie_nw_fi_refuse', label: '許嫁に断りたい気持ちを打ち明ける', cat: 'conflict', w: 0.7,
     roles: function (ctx, a, b) { var t = fiOpen(ctx, a, b); return t && feelOf(t, a) === 'refuse' ? { a: a, b: b, t: t } : null; },
     run: function (ctx, r) {
       var fb = feelOf(r.t, r.b);
@@ -266,7 +266,7 @@
     }
   });
   add({
-    id: 'tie_nw_fi_talk', cat: 'bond', w: 0.5,
+    id: 'tie_nw_fi_talk', label: '許嫁どうしで婚約について話す', cat: 'bond', w: 0.5,
     roles: function (ctx, a, b) { var t = fiT(ctx, a, b); return t ? { a: a, b: b, t: t } : null; },
     run: function (ctx, r) {
       if (r.t.broken || ctx.pair(r.a, r.b).fiBroken != null) { ctx.mod2(r.a, r.b, { ten: 2 }, { ten: 2 }); return { text: fill(pk(ctx, FI.after), r.a, r.b), why: r.a.name + 'と' + r.b.name + 'は元許嫁：破談のあとの気まずさ' }; }
@@ -276,7 +276,7 @@
   });
   /* 戸惑いから乗り気へ（恋愛対象・受け攻めが合う組だけ）。両方が乗り気になり、どちらにもほかの恋人がいなければ恋人と同じ扱いにする */
   add({
-    id: 'tie_nw_fi_warm', cat: 'romance', w: 0.6,
+    id: 'tie_nw_fi_warm', label: '決められた縁を自分で選び直す', cat: 'romance', w: 0.6,
     roles: function (ctx, a, b) {
       var t = fiOpen(ctx, a, b); if (!t || feelOf(t, a) !== 'unsure' || !fiLoveOk(a, b)) return null;
       var x = ctx.R(a, b), y = ctx.R(b, a);
@@ -294,7 +294,7 @@
   /* 破談：断りたい側が、ほかの人（恋愛が成り立つ相手）に惹かれている */
   function brkFor(ctx, a, b) { return thirds(ctx, a, b, function (c) { var r = ctx.R(a, c); return r.att >= 35 && r.aff >= 20 && both(a, c); }); }
   add({
-    id: 'tie_nw_fi_break', cat: 'conflict', w: 1.2,
+    id: 'tie_nw_fi_break', label: '許嫁がほかの人を好きになり破談', cat: 'conflict', w: 1.2,
     roles: function (ctx, a, b) { var t = fiOpen(ctx, a, b); return t && feelOf(t, a) === 'refuse' && brkFor(ctx, a, b).length ? { a: a, b: b, t: t } : null; },
     run: function (ctx, r) {
       var a = r.a, b = r.b, t = r.t, pf = ctx.pair(a, b), l = brkFor(ctx, a, b), c = null, bv = -1;
@@ -337,9 +337,9 @@
       return { cat: cat, text: fill(pk(ctx, DEP[key]), r.A, r.B) + fill(pk(ctx, cold ? DEP.reCold : DEP.re[per(r.B)]), r.A, r.B), why: obWhy(ctx, r, '依存型' + { search: '：離れると探す', check: '：何度も確かめる', cling: '：すがる', worry: '：気にしてばかりいる' }[key]) };
     };
   }
-  add({ id: 'tie_nw_dep_search', cat: 'conflict', w: 0.6, roles: yanR('dep'), run: depRun('search', 'conflict') });
-  add({ id: 'tie_nw_dep_check', cat: 'conflict', w: 0.5, roles: yanR('dep'), run: depRun('check', 'conflict') });
-  add({ id: 'tie_nw_dep_cling', cat: 'conflict', w: 0.5, roles: yanR('dep'), run: depRun('cling', 'conflict') });
+  add({ id: 'tie_nw_dep_search', label: '依存する相手の姿が見えず探し回る', cat: 'conflict', w: 0.6, roles: yanR('dep'), run: depRun('search', 'conflict') });
+  add({ id: 'tie_nw_dep_check', label: '依存する相手を何度も確かめる', cat: 'conflict', w: 0.5, roles: yanR('dep'), run: depRun('check', 'conflict') });
+  add({ id: 'tie_nw_dep_cling', label: '依存する相手にすがりつく', cat: 'conflict', w: 0.5, roles: yanR('dep'), run: depRun('cling', 'conflict') });
   add({ id: 'tie_nw_dep_worry', cat: 'bond', w: 0.5, roles: yanR('dep'), run: depRun('worry', 'bond') });
   var HL = {
     seek: L('{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つけた{b}に、{a}は怒鳴った。「勝手なことするな！｜勝手なことをするな！｜勝手なことをしないでください！」|{a}は{b}の姿を見つけるまで、一度も足を止めなかった。見つけてから、ようやく自分の息が切れていることに気づいた。|{a}は{b}を探し当てると、黙って隣に腰を下ろした。「……別に、心配したわけじゃない｜……別に、心配したわけではない｜……別に、心配したわけじゃありません」'),
@@ -366,20 +366,20 @@
       return { cat: hurt ? 'conflict' : 'help', text: fill(pk(ctx, HL[key]), r.A, r.B) + fill(pk(ctx, cold ? DEP.reCold : HL.re[per(r.B)]), r.A, r.B), why: obWhy(ctx, r, '愛憎型' + { seek: '：姿が見えないと探す', guard: '：憎みながら守る', test: '：責めて試す', wound: '：傷つける言葉' }[key]), mag: hurt ? 14 : 10 };
     };
   }
-  add({ id: 'tie_nw_hl_seek', cat: 'help', w: 0.5, roles: yanR('hatelove'), run: hlRun('seek') });
-  add({ id: 'tie_nw_hl_guard', cat: 'help', w: 0.5, roles: yanR('hatelove'), run: hlRun('guard') });
+  add({ id: 'tie_nw_hl_seek', label: '愛憎の相手が戻らず探しに出る', cat: 'help', w: 0.5, roles: yanR('hatelove'), run: hlRun('seek') });
+  add({ id: 'tie_nw_hl_guard', label: '愛憎の相手を危険からかばう', cat: 'help', w: 0.5, roles: yanR('hatelove'), run: hlRun('guard') });
   /* 責める・傷つける：想いの差が大きいほど起きやすい */
-  add({ id: 'tie_nw_hl_test', cat: 'conflict', w: function (ctx, r) { return 0.45 * gapK(ctx, r.A, r.B); }, roles: yanR('hatelove'), run: hlRun('test') });
-  add({ id: 'tie_nw_hl_wound', cat: 'conflict', w: function (ctx, r) { return 0.4 * gapK(ctx, r.A, r.B); }, roles: yanR('hatelove'), run: hlRun('wound') });
+  add({ id: 'tie_nw_hl_test', label: '愛憎の相手の気持ちを試す', cat: 'conflict', w: function (ctx, r) { return 0.45 * gapK(ctx, r.A, r.B); }, roles: yanR('hatelove'), run: hlRun('test') });
+  add({ id: 'tie_nw_hl_wound', label: '愛憎の相手に心ない言葉をぶつける', cat: 'conflict', w: function (ctx, r) { return 0.4 * gapK(ctx, r.A, r.B); }, roles: yanR('hatelove'), run: hlRun('wound') });
 
   /* ======================= 憎悪（{a}＝憎む側、{b}＝憎まれる側。文は feud-kit.js） ======================= */
   function hateR(ctx, a, b) { var Fd = HK.Feud; if (!Fd || !Fd.hateGrade || !Fd.HATE) return null; if (Fd.hateGrade(ctx, a, b)) return { A: a, B: b }; if (Fd.hateGrade(ctx, b, a)) return { A: b, B: a }; return null; }
   function hTxt(ctx, key, r, c) { var Fd = HK.Feud, re = Fd.HATE_RE[key] || Fd.HATE_RE.harm; return fill(pk(ctx, Fd.HATE[key]), r.A, r.B, c) + fill(pk(ctx, re[per(r.B)] || re.gentle), r.A, r.B, c); }
   function hWhy(ctx, r, k) { return r.A.name + 'は' + r.B.name + 'を憎んでいる（敵対・憎悪）' + k; }
-  add({ id: 'tie_nw_hate_demean', cat: 'conflict', w: 0.7, roles: hateR, run: function (ctx, r) { ctx.mod(r.B, r.A, { ten: 8, aff: -6 }); ctx.mod(r.A, r.B, { ten: 2 }); ctx.stress(r.B, 6); return { text: hTxt(ctx, 'demean', r), why: hWhy(ctx, r, '：貶める') }; } });
-  add({ id: 'tie_nw_hate_trap', cat: 'betray', w: 0.6, roles: hateR, run: function (ctx, r) { ctx.mod(r.B, r.A, { ten: 6, trust: -6 }); ctx.stress(r.B, 8); return { cat: 'conflict', text: hTxt(ctx, 'trap', r), why: hWhy(ctx, r, '：陥れる') }; } });
+  add({ id: 'tie_nw_hate_demean', label: '憎む相手を人前で貶める', cat: 'conflict', w: 0.7, roles: hateR, run: function (ctx, r) { ctx.mod(r.B, r.A, { ten: 8, aff: -6 }); ctx.mod(r.A, r.B, { ten: 2 }); ctx.stress(r.B, 6); return { text: hTxt(ctx, 'demean', r), why: hWhy(ctx, r, '：貶める') }; } });
+  add({ id: 'tie_nw_hate_trap', label: '憎む相手を陥れる', cat: 'betray', w: 0.6, roles: hateR, run: function (ctx, r) { ctx.mod(r.B, r.A, { ten: 6, trust: -6 }); ctx.stress(r.B, 8); return { cat: 'conflict', text: hTxt(ctx, 'trap', r), why: hWhy(ctx, r, '：陥れる') }; } });
   add({
-    id: 'tie_nw_hate_isolate', cat: 'conflict', w: 0.6,
+    id: 'tie_nw_hate_isolate', label: '憎む相手を孤立させる', cat: 'conflict', w: 0.6,
     roles: function (ctx, a, b) { var r = hateR(ctx, a, b); return r && thirds(ctx, r.A, r.B).length ? r : null; },
     run: function (ctx, r) {
       var c = ctx.rng.pick(thirds(ctx, r.A, r.B)); if (!c) return null;
@@ -389,7 +389,7 @@
   });
   /* 危害：想いの差（HK.Gap.k）と展開の重さ（harm）で重みが変わる。命に関わるのは死のある箱庭で、憎しみが極まっているときだけ */
   add({
-    id: 'tie_nw_hate_harm', cat: 'conflict', w: function (ctx, r) { return 0.35 * gapK(ctx, r.A, r.B) * (HK.Dark ? HK.Dark.f(ctx, 'harm') : 1); }, roles: hateR,
+    id: 'tie_nw_hate_harm', label: '憎しみが危害に変わる', cat: 'conflict', w: function (ctx, r) { return 0.35 * gapK(ctx, r.A, r.B) * (HK.Dark ? HK.Dark.f(ctx, 'harm') : 1); }, roles: hateR,
     run: function (ctx, r) {
       var A = r.A, B = r.B, safe = !!HK.SAFE_ON, lv = HK.HateKit ? HK.HateKit.level(ctx, A, B) : 80, gw = gapWhy(ctx, A, B);
       /* 憎悪を持っても殺さない相手（attr.js の HK.Attr.spare）なら、危害までで止める */
@@ -432,8 +432,8 @@
     })
   };
   function guWhy(r, k) { return r.K.name + 'は恩人の' + r.A.name + 'に負い目がある' + k; }
-  add({ id: 'tie_nw_gu_refuse', cat: 'help', w: 0.7, roles: guR, run: function (ctx, r) { ctx.mod2(r.A, r.K, { trust: 2 }, { trust: 2, ten: 2 }); ctx.stress(r.K, 3); return { text: fill(pk(ctx, GU.refuse), r.A, r.K) + fill(pk(ctx, GU.refuseRe[per(r.K)]), r.A, r.K), why: guWhy(r, '：頼みを断れない') }; } });
-  add({ id: 'tie_nw_gu_obey', cat: 'bond', w: 0.5, roles: guR, run: function (ctx, r) { ctx.mod(r.K, r.A, { ten: 3 }); ctx.stress(r.K, 4); return { text: fill(pk(ctx, GU.obey), r.A, r.K) + fill(pk(ctx, GU.obeyRe[per(r.K)]), r.A, r.K), why: guWhy(r, '：逆らえない') }; } });
+  add({ id: 'tie_nw_gu_refuse', label: '恩人の頼みを断れない', cat: 'help', w: 0.7, roles: guR, run: function (ctx, r) { ctx.mod2(r.A, r.K, { trust: 2 }, { trust: 2, ten: 2 }); ctx.stress(r.K, 3); return { text: fill(pk(ctx, GU.refuse), r.A, r.K) + fill(pk(ctx, GU.refuseRe[per(r.K)]), r.A, r.K), why: guWhy(r, '：頼みを断れない') }; } });
+  add({ id: 'tie_nw_gu_obey', label: '負い目から恩人に逆らえない', cat: 'bond', w: 0.5, roles: guR, run: function (ctx, r) { ctx.mod(r.K, r.A, { ten: 3 }); ctx.stress(r.K, 4); return { text: fill(pk(ctx, GU.obey), r.A, r.K) + fill(pk(ctx, GU.obeyRe[per(r.K)]), r.A, r.K), why: guWhy(r, '：逆らえない') }; } });
   add({ id: 'tie_nw_gu_guilt', cat: 'bond', w: 0.5, roles: guR, run: function (ctx, r) { ctx.mod(r.K, r.A, { trust: 2, ten: 1 }); ctx.stress(r.K, 2); return { text: fill(pk(ctx, GU.guilt), r.A, r.K) + fill(pk(ctx, GU.guiltRe[per(r.K)]), r.A, r.K), why: guWhy(r, '：罪悪感') }; } });
 
   /* ======================= 推し（一方的な好意・敬愛の様子「推し」。{a}＝推している側、{b}＝推し） ======================= */
@@ -473,10 +473,10 @@
     })
   };
   function osWhy(r, k) { return r.O.name + 'にとって' + r.S.name + 'は推し' + k; }
-  add({ id: 'tie_nw_os_cheer', cat: 'bond', w: 0.6, roles: osR, run: function (ctx, r) { ctx.mod2(r.O, r.S, { aff: 2 }, { aff: 1 }); return { text: fill(pk(ctx, OS.cheer), r.O, r.S) + fill(pk(ctx, OS.cheerRe[per(r.O)]), r.O, r.S), why: osWhy(r, '：応援する') }; } });
-  add({ id: 'tie_nw_os_gift', cat: 'help', w: 0.5, roles: osR, run: function (ctx, r) { ctx.mod2(r.O, r.S, { aff: 2 }, { aff: 3, trust: 2 }); return { text: fill(pk(ctx, OS.gift), r.O, r.S) + fill(pk(ctx, OS.giftRe[per(r.S)]), r.O, r.S), why: osWhy(r, '：差し入れ') }; } });
-  add({ id: 'tie_nw_os_watch', cat: 'bond', w: 0.5, roles: osR, run: function (ctx, r) { ctx.mod(r.O, r.S, { aff: 2 }); return { text: fill(pk(ctx, OS.watch), r.O, r.S) + fill(pk(ctx, OS.watchRe[per(r.O)]), r.O, r.S), why: osWhy(r, '：遠くから見守る') }; } });
-  add({ id: 'tie_nw_os_freeze', cat: 'bond', w: 0.5, roles: osR, run: function (ctx, r) { ctx.mod2(r.O, r.S, { aff: 3, ten: 1 }, { aff: 2 }); return { text: fill(pk(ctx, OS.freeze), r.O, r.S) + fill(pk(ctx, OS.freezeRe[per(r.O)]), r.O, r.S), why: osWhy(r, '：話しかけられて固まる') }; } });
+  add({ id: 'tie_nw_os_cheer', label: '推しを陰から応援する', cat: 'bond', w: 0.6, roles: osR, run: function (ctx, r) { ctx.mod2(r.O, r.S, { aff: 2 }, { aff: 1 }); return { text: fill(pk(ctx, OS.cheer), r.O, r.S) + fill(pk(ctx, OS.cheerRe[per(r.O)]), r.O, r.S), why: osWhy(r, '：応援する') }; } });
+  add({ id: 'tie_nw_os_gift', label: '推しに差し入れをする', cat: 'help', w: 0.5, roles: osR, run: function (ctx, r) { ctx.mod2(r.O, r.S, { aff: 2 }, { aff: 3, trust: 2 }); return { text: fill(pk(ctx, OS.gift), r.O, r.S) + fill(pk(ctx, OS.giftRe[per(r.S)]), r.O, r.S), why: osWhy(r, '：差し入れ') }; } });
+  add({ id: 'tie_nw_os_watch', label: '推しを遠くから見守る', cat: 'bond', w: 0.5, roles: osR, run: function (ctx, r) { ctx.mod(r.O, r.S, { aff: 2 }); return { text: fill(pk(ctx, OS.watch), r.O, r.S) + fill(pk(ctx, OS.watchRe[per(r.O)]), r.O, r.S), why: osWhy(r, '：遠くから見守る') }; } });
+  add({ id: 'tie_nw_os_freeze', label: '推しに話しかけられて固まる', cat: 'bond', w: 0.5, roles: osR, run: function (ctx, r) { ctx.mod2(r.O, r.S, { aff: 3, ten: 1 }, { aff: 2 }); return { text: fill(pk(ctx, OS.freeze), r.O, r.S) + fill(pk(ctx, OS.freezeRe[per(r.O)]), r.O, r.S), why: osWhy(r, '：話しかけられて固まる') }; } });
 
   /* ======================= 愛人（セフレの様子「愛人」。{a}＝愛人の側、{b}＝ほかに本命・夫婦がいる側） ======================= */
   var MAIN_T = /^(lover|mate|fated|honmei|spouse|fiance)$/;
@@ -529,9 +529,9 @@
     })
   };
   function miWhy(r, k) { return r.X.name + 'は' + r.Y.name + 'の愛人' + (r.M ? '（' + r.Y.name + 'の本命は' + r.M.name + '）' : '（' + r.Y.name + 'にはほかに本命がいる）') + k; }
-  add({ id: 'tie_nw_mi_secret', cat: 'bond', w: 0.6, roles: miR, run: function (ctx, r) { ctx.mod2(r.X, r.Y, { trust: 2 }, { trust: 2 }); return { text: fill(pk(ctx, MI.secret), r.X, r.Y) + fill(pk(ctx, MI.secretRe[per(r.X)]), r.X, r.Y), why: miWhy(r, '：秘密の関係') }; } });
+  add({ id: 'tie_nw_mi_secret', label: '愛人どうしの秘密の時間', cat: 'bond', w: 0.6, roles: miR, run: function (ctx, r) { ctx.mod2(r.X, r.Y, { trust: 2 }, { trust: 2 }); return { text: fill(pk(ctx, MI.secret), r.X, r.Y) + fill(pk(ctx, MI.secretRe[per(r.X)]), r.X, r.Y), why: miWhy(r, '：秘密の関係') }; } });
   add({
-    id: 'tie_nw_mi_found', cat: 'conflict', w: function (ctx) { return 0.5 * (HK.Dark ? HK.Dark.f(ctx, 'cheat') : 1); },
+    id: 'tie_nw_mi_found', label: '愛人との関係が見つかる', cat: 'conflict', w: function (ctx) { return 0.5 * (HK.Dark ? HK.Dark.f(ctx, 'cheat') : 1); },
     roles: function (ctx, a, b) { var r = miR(ctx, a, b); return r && !ctx.pair(a, b).miFound && thirds(ctx, a, b).length ? r : null; },
     run: function (ctx, r) {
       var l = thirds(ctx, r.X, r.Y), c = r.M && l.indexOf(r.M) >= 0 ? r.M : ctx.rng.pick(l); if (!c) return null;
@@ -540,7 +540,7 @@
       return { with: [c], text: fill(pk(ctx, MI.found), r.X, r.Y, c) + fill(pk(ctx, MI.foundRe[per(r.Y)]), r.X, r.Y, c), why: miWhy(r, '：' + c.name + 'に知られた'), mag: 24 };
     }
   });
-  add({ id: 'tie_nw_mi_cut', cat: 'conflict', w: 0.4, roles: miR, run: function (ctx, r) { ctx.pair(r.X, r.Y).miCut = ctx.stepIndex; ctx.mod2(r.X, r.Y, { ten: 10, att: -6 }, { ten: 6 }); return { text: fill(pk(ctx, MI.cut), r.X, r.Y) + fill(pk(ctx, MI.cutRe[per(r.X)]), r.X, r.Y), why: miWhy(r, '：手切れ'), mag: 22 }; } });
+  add({ id: 'tie_nw_mi_cut', label: '愛人に手切れを告げる', cat: 'conflict', w: 0.4, roles: miR, run: function (ctx, r) { ctx.pair(r.X, r.Y).miCut = ctx.stepIndex; ctx.mod2(r.X, r.Y, { ten: 10, att: -6 }, { ten: 6 }); return { text: fill(pk(ctx, MI.cut), r.X, r.Y) + fill(pk(ctx, MI.cutRe[per(r.X)]), r.X, r.Y), why: miWhy(r, '：手切れ'), mag: 22 }; } });
   add({ id: 'tie_nw_mi_noshow', cat: 'conflict', w: 0.5, roles: miR, run: function (ctx, r) { ctx.mod(r.X, r.Y, { ten: 5, aff: -2 }); ctx.stress(r.X, 6); return { text: fill(pk(ctx, MI.noshow), r.X, r.Y) + fill(pk(ctx, MI.noshowRe[per(r.X)]), r.X, r.Y), why: miWhy(r, '：会いに来ない夜') }; } });
 
   /* ======================= 仲間（{a}＝動く側、{b}＝相手） ======================= */
@@ -580,15 +580,15 @@
     })
   };
   function coWhy(a, b, k) { return a.name + 'と' + b.name + 'は同じグループの仲間' + k; }
-  add({ id: 'tie_nw_co_help', cat: 'help', w: 0.6, roles: coR, run: function (ctx, r) { ctx.mod2(r.a, r.b, { trust: 4, aff: 2 }, { trust: 5, aff: 3 }); return { text: fill(pk(ctx, CO.help), r.a, r.b) + fill(pk(ctx, CO.helpRe[per(r.b)]), r.a, r.b), why: coWhy(r.a, r.b, '：助け合い') }; } });
-  add({ id: 'tie_nw_co_cover', cat: 'help', w: 0.5, roles: coR, run: function (ctx, r) { ctx.mod2(r.a, r.b, { trust: 3 }, { trust: 7, aff: 4 }); return { text: fill(pk(ctx, CO.cover), r.a, r.b) + fill(pk(ctx, CO.coverRe[per(r.b)]), r.a, r.b), why: coWhy(r.a, r.b, '：庇う') }; } });
+  add({ id: 'tie_nw_co_help', label: '仲間どうしで助け合う', cat: 'help', w: 0.6, roles: coR, run: function (ctx, r) { ctx.mod2(r.a, r.b, { trust: 4, aff: 2 }, { trust: 5, aff: 3 }); return { text: fill(pk(ctx, CO.help), r.a, r.b) + fill(pk(ctx, CO.helpRe[per(r.b)]), r.a, r.b), why: coWhy(r.a, r.b, '：助け合い') }; } });
+  add({ id: 'tie_nw_co_cover', label: '仲間をかばう', cat: 'help', w: 0.5, roles: coR, run: function (ctx, r) { ctx.mod2(r.a, r.b, { trust: 3 }, { trust: 7, aff: 4 }); return { text: fill(pk(ctx, CO.cover), r.a, r.b) + fill(pk(ctx, CO.coverRe[per(r.b)]), r.a, r.b), why: coWhy(r.a, r.b, '：庇う') }; } });
   /* 弔う：同じ仲間（二人とも仲間の関係）を亡くした二人。亡くなった人は記録の登場人物にはしない（名前だけ）。一人につき一度 */
   function deadMate(ctx, a, b) {
     var pf = ctx.pair(a, b), done = pf.coMourn || {};
     return ctx.chars.filter(function (d) { return d !== a && d !== b && d.alive === false && !done[d.i] && T().comrade(ctx, a, d) && T().comrade(ctx, b, d); })[0] || null;
   }
   add({
-    id: 'tie_nw_co_mourn', cat: 'bond', w: 1.6,
+    id: 'tie_nw_co_mourn', label: '亡くなった仲間を弔う', cat: 'bond', w: 1.6,
     roles: function (ctx, a, b) { var r = coR(ctx, a, b); return r && deadMate(ctx, a, b) ? r : null; },
     run: function (ctx, r) {
       var d = deadMate(ctx, r.a, r.b); if (!d) return null;
@@ -597,7 +597,7 @@
       return { text: fill(pk(ctx, CO.mourn), r.a, r.b, d) + fill(pk(ctx, CO.mournRe[per(r.b)]), r.a, r.b, d), why: coWhy(r.a, r.b, '：' + d.name + 'を弔う') };
     }
   });
-  add({ id: 'tie_nw_co_together', cat: 'bond', w: 0.5, roles: coR, run: function (ctx, r) { ctx.mod2(r.a, r.b, { trust: 3, aff: 2 }, { trust: 3, aff: 2 }); return { text: fill(pk(ctx, CO.together), r.a, r.b) + fill(pk(ctx, CO.togetherRe[per(r.b)]), r.a, r.b), why: coWhy(r.a, r.b, '：一緒に動く') }; } });
+  add({ id: 'tie_nw_co_together', label: '仲間と一緒に動く', cat: 'bond', w: 0.5, roles: coR, run: function (ctx, r) { ctx.mod2(r.a, r.b, { trust: 3, aff: 2 }, { trust: 3, aff: 2 }); return { text: fill(pk(ctx, CO.together), r.a, r.b) + fill(pk(ctx, CO.togetherRe[per(r.b)]), r.a, r.b), why: coWhy(r.a, r.b, '：一緒に動く') }; } });
 
   /* ======================= 想いの差で過激に：本命の嫉妬の暴走・盲信の排除 ======================= */
   /* {a}＝本命を想う人、{b}＝本命、{c}＝本命と親しい人 */
@@ -613,7 +613,7 @@
     })
   };
   add({
-    id: 'tie_nw_honmei', cat: 'conflict', w: function (ctx, r) { var g = HK.Gap ? HK.Gap.of(ctx, r.A, r.B) : 0; return g < 0.3 ? 0 : 0.35 * gapK(ctx, r.A, r.B) * (HK.Dark ? HK.Dark.f(ctx, 'harm') : 1); },
+    id: 'tie_nw_honmei', label: '本命への嫉妬が暴走する', cat: 'conflict', w: function (ctx, r) { var g = HK.Gap ? HK.Gap.of(ctx, r.A, r.B) : 0; return g < 0.3 ? 0 : 0.35 * gapK(ctx, r.A, r.B) * (HK.Dark ? HK.Dark.f(ctx, 'harm') : 1); },
     roles: function (ctx, a, b) { var t = from(ctx, a, b, 'honmei'); if (!t || ctx.pair(a, b).couple || (HK.Obsess && HK.Obsess.blocked && HK.Obsess.blocked(ctx, a, b))) return null; return rivalsOf(ctx, a, b).length ? { A: a, B: b } : null; },
     run: function (ctx, r) {
       var l = rivalsOf(ctx, r.A, r.B), c = l.length ? ctx.rng.pick(l) : null; if (!c) return null;
@@ -634,7 +634,7 @@
   };
   function nearB(ctx, a, b) { return thirds(ctx, a, b, function (c) { return ctx.R(b, c).aff >= 25; }); }
   add({
-    id: 'tie_nw_blind', cat: 'conflict', w: function (ctx, r) { var g = HK.Gap ? HK.Gap.of(ctx, r.A, r.B) : 0; return g < 0.3 ? 0 : 0.3 * gapK(ctx, r.A, r.B); },
+    id: 'tie_nw_blind', label: '盲信する相手から人を遠ざける', cat: 'conflict', w: function (ctx, r) { var g = HK.Gap ? HK.Gap.of(ctx, r.A, r.B) : 0; return g < 0.3 ? 0 : 0.3 * gapK(ctx, r.A, r.B); },
     roles: function (ctx, a, b) { var t = from(ctx, a, b, 'blind'); return t && nearB(ctx, a, b).length ? { A: a, B: b } : null; },
     run: function (ctx, r) {
       var l = nearB(ctx, r.A, r.B), c = l.length ? ctx.rng.pick(l) : null; if (!c) return null;

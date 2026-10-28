@@ -145,3 +145,10 @@
   var ZC = LIST.map(function (e) { var e2 = {}; for (var k in e) e2[k] = e[k]; e2.mini = false; return e2; });
   HK.atScen('zombie', function () { var Z = HK.ZB; if (Z && Z.scen) HK.addTo(Z.scen.events, ZC); });
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   hb_news=想い人に恋人ができたと知る
+   hb_alone=失恋してひとりで泣く
+   hb_comfort=失恋した人を友人が慰める
+   hb_force=失恋を受け入れられず相手に迫る
+   hb_letgo=失恋を受け入れて想いを手放す
+*/

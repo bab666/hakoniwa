@@ -545,13 +545,13 @@
     /* 足す出来事は mine に集めて HK.addTo で足す（分割読み込みで組み込みが箱庭の本体より後になっても、元のファイルの順に並ぶ） */
     var mine = [];
     mine.push({
-      id: 'gf_think', cat: 'solo', scope: 'solo', noOdd: true,
+      id: 'gf_think', label: '亡くした人のことばかり考える', cat: 'solo', scope: 'solo', noOdd: true,
       when: function (ctx, a) { var l = lossOf(a); return !!l && l.lv >= 15 && ctx.stepIndex - l.last >= (heavy(l) ? 1 : 2); },
       w: function (ctx, a) { var l = lossOf(a); return (0.4 + l.lv / 30) * (heavy(l) ? 1.4 : 1) * (opt.w || 1); },
       run: function (ctx, a) { return beat(ctx, a, lossOf(a), opt); }
     });
     mine.push({
-      id: 'gf_reckless', cat: 'solo', scope: 'solo', noOdd: true,
+      id: 'gf_reckless', label: '悲しみから無茶をする', cat: 'solo', scope: 'solo', noOdd: true,
       when: function (ctx, a) { var l = lossOf(a); return !!l && l.lv >= 50 && !l.calm && l.reckless < 2 && l.type !== 'flat' && ctx.stepIndex - l.at >= 1; },
       w: function (ctx, a) { var l = lossOf(a); return (0.2 + a.tr.impulse * 0.8 + (l.type === 'blame' || l.type === 'bright' ? 0.4 : 0)) * (opt.w || 1) * HK.Dark.f(ctx, 'harm'); },
       run: function (ctx, a) {
@@ -565,7 +565,7 @@
     });
     /* 執着・信仰する側：壊れる（一度だけ） */
     mine.push({
-      id: 'gf_broken', cat: 'solo', scope: 'solo', noOdd: true,
+      id: 'gf_broken', label: '喪失で心が壊れてしまう', cat: 'solo', scope: 'solo', noOdd: true,
       when: function (ctx, a) { var l = lossOf(a); return !!l && !!l.dev && !l.calm && !l.brokenDev && l.lv >= 50 && ctx.stepIndex - l.at >= 1; },
       w: function (ctx, a) { return (0.8 + lossOf(a).lv / 60) * (opt.w || 1); },
       run: function (ctx, a) {
@@ -576,7 +576,7 @@
     });
     /* 執着・信仰する側：後追い（深さが深いほど何度も。止める人がいれば止まる） */
     mine.push({
-      id: 'gf_follow', cat: 'solo', scope: 'solo', noOdd: true,
+      id: 'gf_follow', label: '亡くした人のあとを追おうとする', cat: 'solo', scope: 'solo', noOdd: true,
       when: function (ctx, a) { var l = lossOf(a); return !!l && !!l.dev && !l.calm && l.lv >= 60 && (l.follow || 0) < (l.d >= 120 ? 2 : 1) && ctx.stepIndex - l.at >= 1 && ctx.stepIndex - (l.followAt || -9) >= 3; },
       w: function (ctx, a) { var l = lossOf(a); return (0.5 + a.tr.impulse * 0.5 + a.tr.ac * 0.4 + (l.type === 'blame' || l.type === 'sink' ? 0.4 : 0)) * (opt.w || 1); },
       run: function (ctx, a) {
@@ -594,7 +594,7 @@
       }
     });
     mine.push({
-      id: 'gf_comfort', cat: 'help', scope: 'pair', noOdd: true,
+      id: 'gf_comfort', label: '大切な人を亡くした人に寄り添う', cat: 'help', scope: 'pair', noOdd: true,
       when: function (ctx, a, b) {
         var l = lossOf(b);
         if (!l || l.lv < 20 || l.who === a.i || ctx.stepIndex - l.comfortAt < 3 || (l.comforts || 0) >= 4 || !ok(b)) return false;

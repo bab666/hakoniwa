@@ -7,7 +7,7 @@
 - 出来事は build のたびに自動で数え直されます（`node hakoniwa-tools/build/build.js <ビルド>` の中で `js/event-catalog.js` とこのファイルを作り直す）。手で追記しません。
 - 関係が条件の出来事は、`when` に `HK.Ties.has(ctx, a, b, 'master')` のように関係の鍵をそのまま書けば拾われます。補助の関数（`is(k)`・`o.roles(…)` など）で隠れるときは、出来事に `tie: 'master'`（複数なら `'lover,fwb'` か配列。関係を問わないと明示するなら `'-'`）を付けます。
 - 夜・モブ・内容のスイッチ・死ネタ・残酷は、`sex: true`／`r18: true`・`HK.Content.ok(ctx, 'force')`・`HK.Dark.f(ctx, 'kill')`・`ctx.kill(…)` から拾います。拾えない書き方なら `tags: ['night', 'mob', 'force', 'preg', 'violence', 'abuse', 'death', 'cruel']` から当てはまるものを付けます（文や動きは変えない）。
-- 表示名は `label` が無ければ、run の最初の文の先頭 30 字です。分かりにくければ `label: '…'` を付けます。
+- 表示名（画面の「主な出来事」と内訳）は、出来事の `label`、なければファイルの `/* @labels … */` の印（1 行に「id=表示名」。id の `*` は何にでも当たる）、なければ run の最初の地の文（文の切れ目で 25 字以内に切る）です。利用者向けなので、id・英字・台詞「…」を入れず、内容の分かる 8〜25 字の日本語にします。足した出来事に表示名が付いたことを build のあとに確かめます（表示名の無い出来事は 0 件を保つ）。
 - 物語型の箱庭（場面を関数で書くもの）は、場面の近くに 1 行のコメントを書くと数えられます：`/* @event scen=jashin id=jn_god_night cat=夜 tie=- tags=night,mob,force label=神に捧げられる夜 */`。表（配列・オブジェクト）は `/* @event-table scen=jashin path=JASHIN.DUO_EV label=二人の場面 */`（`pair=1` は職業×職業の表として数だけ、`rows=1` は行ごとに一覧へ）。
 - R18 の場面の印は、R18専用のファイルか `/* r18:begin */`〜`/* r18:end */` の中に書きます（全年齢版のビルドでは読まれません）。
 - 足したら build を回し、`js/event-catalog.js` の差分（その出来事が入ったか）を確かめてコミットします。
@@ -52,196 +52,196 @@
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 同僚 | 2 | tie_colleague〔c〕、tie_colleague2〔b〕 |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 同級生 | 1 | tie_classmate〔c〕 |
-| 兄弟（不仲） | 6 | rb_goukon_sbSpat〔c〕、rb_goukon_sbCompare〔c〕、rb_goukon_sbGrudge〔c〕、rb_goukon_sbDefend〔c〕 ほか |
-| 親族 | 1 | tie_relative〔c〕 |
-| 上司と部下 | 1 | tie_boss〔c〕 |
-| 恩人 | 4 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 |
-| 片想い | 15 | u_serve〔c〕、u_tri〔c〕、u_protect〔c〕、{b}は長いあいだ黙っていた。それから（u_confess）〔c〕 ほか |
-| 執着（ヤンデレ） | 14 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 1 | tie_worship〔c〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 7 | rb_goukon_bdClash〔c〕、rb_goukon_bdSnark〔c〕、rb_goukon_bdForced〔c〕、rb_goukon_bdCredit〔c〕 ほか |
-| ライバル | 1 | 敵対する二人の強引な夜に、暴力の段が入る（重いのとき）（ct_violence_hook）〔a〕 |
-| 敵対 | 8 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 ほか |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 4 | grp_cheer〔b〕、grp_bless〔b〕、怒り、二度と離れないと誓う（CP・攻撃性）（mob_after）〔b〕、ct_preg_news〔d〕 |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 22 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 1 | tie_ly_ex〔c〕 |
-| 歪んだ関係 | 5 | tie_abuse〔c〕、tie_warm_r18〔b〕、ct_dv〔c〕、ct_abuse_night〔c〕 ほか |
-| 主従 | 1 | tie_master_r18〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 3 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕 |
-| 関係を問わない | 178 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}が{b}をからかった。{b}は笑ってみせたが、目が笑っ…（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}が{b}の（lecture） ほか |
+| 同僚 | 2 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕 |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 同級生 | 1 | 同級生と昔話で笑い合う（tie_classmate）〔c〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_goukon_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_goukon_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_goukon_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_goukon_sbDefend）〔c〕 ほか |
+| 親族 | 1 | 親族どうしの思い出と助け合い（tie_relative）〔c〕 |
+| 上司と部下 | 1 | 上司の責任と部下の支え（tie_boss）〔c〕 |
+| 恩人 | 4 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 |
+| 片想い | 15 | 片想いの相手に尽くす（u_serve）〔c〕、片想いの相手がほかの人を見ている（u_tri）〔c〕、片想いの相手をかばう（u_protect）〔c〕、片想いの相手に想いを告げる（u_confess）〔c〕 ほか |
+| 執着（ヤンデレ） | 14 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 1 | 崇める相手に尽くす（tie_worship）〔c〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 7 | 反りの合わない二人が衝突する（rb_goukon_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_goukon_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_goukon_bdForced）〔c〕、手柄と責任を押し付け合う（rb_goukon_bdCredit）〔c〕 ほか |
+| ライバル | 1 | 敵対する二人の強引な夜に、暴力の段が入る（ct_violence_hook）〔a〕 |
+| 敵対 | 8 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 ほか |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 4 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕、怒り、二度と離れないと誓う（CP・攻撃性）（mob_after）〔b〕、妊娠が分かる（ct_preg_news）〔d〕 |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 22 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 1 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕 |
+| 歪んだ関係 | 5 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕、親しい二人が一線を越える夜（tie_warm_r18）〔b〕、恋人に手を上げる（ct_dv）〔c〕、歪んだ関係で拒めない夜（ct_abuse_night）〔c〕 ほか |
+| 主従 | 1 | 従う側が主に力ずくで迫る（tie_master_r18）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 3 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕 |
+| 関係を問わない | 178 | {a}は{b}に他愛ない話を振った（talk）、{a}が{b}をからかった（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、相手のやり方に口を出す（lecture） ほか |
 
 種類：交流 83・対立 75・恋愛 62・献身 44・単独行動 26・ハプニング 7・夜 4・裏切り 1
 
 R18：夜 13 件：住人どうし〔受け攻め・関係：セフレ〕 2、住人どうし〔合意のない展開・関係：執着（ヤンデレ）〕 2、住人どうし〔関係：セフレ〕 2、住人どうし〔合意のない展開〕 1、住人どうし〔合意のない展開・暴力をともなう性描写・重い・関係：不仲・関係：ライバル・関係：敵対〕 1、住人どうし〔合意のない展開・関係：主従〕 1、住人どうし〔合意のない展開・関係：歪んだ関係〕 1、住人どうし〔暴力をともなう性描写・関係：歪んだ関係〕 1、住人どうし〔歪んだ関係（DV など）・関係：歪んだ関係〕 1、住人どうし〔関係：歪んだ関係〕 1
 
-内容の軸：合意のない展開：6件（スイッチ「合意のない展開」が入のとき・重いのとき：1件）〔表示側：条件つき・関係（敵対・執着・主従・歪んだ関係）しだい〕／妊娠：2件（スイッチ「妊娠」が入のとき・重いのとき：1件）〔表示側：条件つき・重いのとき〕／暴力をともなう性描写：2件（スイッチ「暴力をともなう性描写」が入のとき・重いのとき：1件）〔表示側：条件つき・重いのとき〕／歪んだ関係（DV など）：2件（スイッチ「歪んだ関係（DV など）」が入のとき）〔表示側：条件つき・関係「歪んだ関係」か、重いとき〕／死ネタ：なし／残酷な展開：3件（重いのとき：1件）
+内容の軸：合意のない展開：6件（内容のスイッチ「合意のない展開」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・関係（敵対・執着・主従・歪んだ関係）しだい〕／妊娠：2件（内容のスイッチ「妊娠」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・重いのとき〕／暴力をともなう性描写：2件（内容のスイッチ「暴力をともなう性描写」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・重いのとき〕／歪んだ関係（DV など）：2件（内容のスイッチ「歪んだ関係（DV など）」が入のとき）〔表示側：条件つき・関係「歪んだ関係」か、重いとき〕／死ネタ：なし／残酷な展開：3件（展開の重さが「重い」のとき：1件）
 
 ### 出られない部屋（whiteroom）
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 2 | tie_rc_whiteroom_friend_blame〔c〕、tie_rc_whiteroom_friend_joke〔c〕 |
-| 同僚 | 2 | tie_colleague〔c〕、tie_colleague2〔b〕 |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 幼馴染 | 2 | tie_rc_whiteroom_childhood_old〔c〕、tie_rc_whiteroom_childhood_sign〔c〕 |
-| 同級生 | 1 | tie_classmate〔c〕 |
-| 兄弟姉妹 | 2 | tie_rc_whiteroom_sib_bicker〔c〕、tie_rc_whiteroom_sib_back〔c〕 |
-| 兄弟（不仲） | 6 | rb_whiteroom_sbSpat〔c〕、rb_whiteroom_sbCompare〔c〕、rb_whiteroom_sbGrudge〔c〕、rb_whiteroom_sbDefend〔c〕 ほか |
-| 親族 | 1 | tie_relative〔c〕 |
-| 親子 | 2 | tie_rc_whiteroom_parent_worry〔c〕、tie_rc_whiteroom_parent_care〔c〕 |
-| 師弟 | 2 | tie_rc_whiteroom_mentor_calm〔c〕、tie_rc_whiteroom_mentor_defy〔c〕 |
-| 上司と部下 | 2 | tie_boss〔c〕、冷たくされても、信仰する側の想いは揺らがない（rt_keep）〔d〕 |
-| 恩人 | 5 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 ほか |
-| 片想い | 15 | u_serve〔c〕、u_tri〔c〕、u_protect〔c〕、{b}は長いあいだ黙っていた。それから（u_confess）〔c〕 ほか |
-| 執着（ヤンデレ） | 14 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 2 | tie_worship〔c〕、冷たくされても、信仰する側の想いは揺らがない（rt_keep）〔d〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 7 | rb_whiteroom_bdClash〔c〕、rb_whiteroom_bdSnark〔c〕、rb_whiteroom_bdForced〔c〕、rb_whiteroom_bdCredit〔c〕 ほか |
-| ライバル | 1 | 敵対する二人の強引な夜に、暴力の段が入る（重いのとき）（ct_violence_hook）〔a〕 |
-| 敵対 | 8 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 ほか |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 6 | grp_cheer〔b〕、grp_bless〔b〕、怒り、二度と離れないと誓う（CP・攻撃性）（mob_after）〔b〕、ct_preg_news〔d〕 ほか |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 21 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 3 | tie_ly_ex〔c〕、tie_rc_whiteroom_ex_awk〔c〕、tie_rc_whiteroom_ex_know〔c〕 |
-| 歪んだ関係 | 5 | tie_abuse〔c〕、tie_warm_r18〔b〕、ct_dv〔c〕、ct_abuse_night〔c〕 ほか |
-| 主従 | 1 | tie_master_r18〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 12 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕、rs_rival〔c〕 ほか |
-| 関係を問わない | 232 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}が{b}をからかった。{b}は笑ってみせたが、目が笑っ…（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}が{b}の（lecture） ほか |
+| 友人 | 2 | 閉じ込められた友人どうしの行き違い（tie_rc_whiteroom_friend_blame）〔c〕、友人の軽口で支える（tie_rc_whiteroom_friend_joke）〔c〕 |
+| 同僚 | 2 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕 |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 幼馴染 | 2 | 幼馴染の昔話でからかう（tie_rc_whiteroom_childhood_old）〔c〕、子どものころの合図（tie_rc_whiteroom_childhood_sign）〔c〕 |
+| 同級生 | 1 | 同級生と昔話で笑い合う（tie_classmate）〔c〕 |
+| 兄弟姉妹 | 2 | 閉じ込められても口げんか（tie_rc_whiteroom_sib_bicker）〔c〕、きょうだいで支え合う（tie_rc_whiteroom_sib_back）〔c〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_whiteroom_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_whiteroom_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_whiteroom_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_whiteroom_sbDefend）〔c〕 ほか |
+| 親族 | 1 | 親族どうしの思い出と助け合い（tie_relative）〔c〕 |
+| 親子 | 2 | 親の心配が空回りする（tie_rc_whiteroom_parent_worry）〔c〕、子が親を支える（tie_rc_whiteroom_parent_care）〔c〕 |
+| 師弟 | 2 | 師が弟子を落ち着かせる（tie_rc_whiteroom_mentor_calm）〔c〕、弟子が師に逆らう（tie_rc_whiteroom_mentor_defy）〔c〕 |
+| 上司と部下 | 2 | 上司の責任と部下の支え（tie_boss）〔c〕、冷たくされても、信仰する側の想いは揺らがない（rt_keep）〔d〕 |
+| 恩人 | 5 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 ほか |
+| 片想い | 15 | 片想いの相手に尽くす（u_serve）〔c〕、片想いの相手がほかの人を見ている（u_tri）〔c〕、片想いの相手をかばう（u_protect）〔c〕、片想いの相手に想いを告げる（u_confess）〔c〕 ほか |
+| 執着（ヤンデレ） | 14 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 2 | 崇める相手に尽くす（tie_worship）〔c〕、冷たくされても、信仰する側の想いは揺らがない（rt_keep）〔d〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 7 | 反りの合わない二人が衝突する（rb_whiteroom_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_whiteroom_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_whiteroom_bdForced）〔c〕、手柄と責任を押し付け合う（rb_whiteroom_bdCredit）〔c〕 ほか |
+| ライバル | 1 | 敵対する二人の強引な夜に、暴力の段が入る（ct_violence_hook）〔a〕 |
+| 敵対 | 8 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 ほか |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 6 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕、怒り、二度と離れないと誓う（CP・攻撃性）（mob_after）〔b〕、妊娠が分かる（ct_preg_news）〔d〕 ほか |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 21 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 3 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕、元恋人と閉じ込められた気まずさ（tie_rc_whiteroom_ex_awk）〔c〕、元恋人だから分かる気遣い（tie_rc_whiteroom_ex_know）〔c〕 |
+| 歪んだ関係 | 5 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕、親しい二人が一線を越える夜（tie_warm_r18）〔b〕、恋人に手を上げる（ct_dv）〔c〕、歪んだ関係で拒めない夜（ct_abuse_night）〔c〕 ほか |
+| 主従 | 1 | 従う側が主に力ずくで迫る（tie_master_r18）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 12 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕、同一人物の二人が同じ人を想う（rs_rival）〔c〕 ほか |
+| 関係を問わない | 232 | {a}は{b}に他愛ない話を振った（talk）、{a}が{b}をからかった（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、相手のやり方に口を出す（lecture） ほか |
 
 種類：交流 112・対立 81・恋愛 74・献身 53・単独行動 33・ハプニング 9・脱出 8・裏切り 5・夜 4
 
 R18：夜 23 件：住人どうし〔条件の印なし〕 6、住人どうし〔受け攻め〕 3、住人どうし〔受け攻め・関係：セフレ〕 2、住人どうし〔合意のない展開・関係：執着（ヤンデレ）〕 2、住人どうし〔関係：セフレ〕 2、住人どうし〔合意のない展開〕 1、住人どうし〔合意のない展開・暴力をともなう性描写・重い・関係：不仲・関係：ライバル・関係：敵対〕 1、住人どうし〔合意のない展開・関係：主従〕 1、住人どうし〔合意のない展開・関係：歪んだ関係〕 1、住人どうし〔暴力をともなう性描写・関係：歪んだ関係〕 1、住人どうし〔歪んだ関係（DV など）・関係：歪んだ関係〕 1、住人どうし〔関係：同一人物〕 1、住人どうし〔関係：歪んだ関係〕 1
 
-内容の軸：合意のない展開：6件（スイッチ「合意のない展開」が入のとき・重いのとき：1件）〔表示側：条件つき・関係（敵対・執着・主従・歪んだ関係）しだい〕／妊娠：2件（スイッチ「妊娠」が入のとき・重いのとき：1件）〔表示側：条件つき・重いのとき〕／暴力をともなう性描写：2件（スイッチ「暴力をともなう性描写」が入のとき・重いのとき：1件）〔表示側：条件つき・重いのとき〕／歪んだ関係（DV など）：2件（スイッチ「歪んだ関係（DV など）」が入のとき）〔表示側：条件つき・関係「歪んだ関係」か、重いとき〕／死ネタ：1件／残酷な展開：6件（重いのとき：1件）
+内容の軸：合意のない展開：6件（内容のスイッチ「合意のない展開」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・関係（敵対・執着・主従・歪んだ関係）しだい〕／妊娠：2件（内容のスイッチ「妊娠」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・重いのとき〕／暴力をともなう性描写：2件（内容のスイッチ「暴力をともなう性描写」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・重いのとき〕／歪んだ関係（DV など）：2件（内容のスイッチ「歪んだ関係（DV など）」が入のとき）〔表示側：条件つき・関係「歪んだ関係」か、重いとき〕／死ネタ：1件／残酷な展開：6件（展開の重さが「重い」のとき：1件）
 
 ### クラスメイト（classroom）
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 2 | tie_rc_classroom_friend_split〔c〕、tie_rc_classroom_friend_study〔c〕 |
-| 同僚 | 2 | tie_colleague〔c〕、tie_colleague2〔b〕 |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 幼馴染 | 2 | tie_rc_classroom_childhood_tease〔c〕、tie_rc_classroom_childhood_always〔c〕 |
-| 同級生 | 3 | tie_classmate〔c〕、tie_rc_classroom_classmate_again〔c〕、tie_rc_classroom_classmate_know〔c〕 |
-| 兄弟姉妹 | 2 | tie_rc_classroom_sib_bicker〔c〕、tie_rc_classroom_sib_back〔c〕 |
-| 兄弟（不仲） | 6 | rb_classroom_sbSpat〔c〕、rb_classroom_sbCompare〔c〕、rb_classroom_sbGrudge〔c〕、rb_classroom_sbDefend〔c〕 ほか |
-| 親族 | 1 | tie_relative〔c〕 |
-| 親子 | 2 | tie_rc_classroom_parent_meddle〔c〕、tie_rc_classroom_parent_care〔c〕 |
-| 師弟 | 2 | tie_rc_classroom_mentor_strict〔c〕、tie_rc_classroom_mentor_proud〔c〕 |
-| 上司と部下 | 3 | tie_boss〔c〕、tie_rc_classroom_boss_habit〔c〕、tie_rc_classroom_boss_cover〔c〕 |
-| 恩人 | 4 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 |
-| 片想い | 15 | u_serve〔c〕、u_tri〔c〕、u_protect〔c〕、{b}は長いあいだ黙っていた。それから（u_confess）〔c〕 ほか |
-| 執着（ヤンデレ） | 13 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 1 | tie_worship〔c〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 6 | rb_classroom_bdClash〔c〕、rb_classroom_bdSnark〔c〕、rb_classroom_bdForced〔c〕、rb_classroom_bdCredit〔c〕 ほか |
-| 敵対 | 7 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 ほか |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 3 | grp_cheer〔b〕、grp_bless〔b〕、怒り、二度と離れないと誓う（CP・攻撃性）（mob_after）〔b〕 |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 6 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 3 | tie_ly_ex〔c〕、tie_rc_classroom_ex_awk〔c〕、tie_rc_classroom_ex_easy〔c〕 |
-| 歪んだ関係 | 2 | tie_abuse〔c〕、tie_warm_r18〔b〕 |
-| 主従 | 1 | tie_master_r18〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 3 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕 |
-| 関係を問わない | 186 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}が{b}をからかった。{b}は笑ってみせたが、目が笑っ…（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}が{b}の（lecture） ほか |
+| 友人 | 2 | 行事での食い違い（tie_rc_classroom_friend_split）〔c〕、友人としての支え（tie_rc_classroom_friend_study）〔c〕 |
+| 同僚 | 2 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕 |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 幼馴染 | 2 | 教室で昔の話が出る（tie_rc_classroom_childhood_tease）〔c〕、昔からの合図と気遣い（tie_rc_classroom_childhood_always）〔c〕 |
+| 同級生 | 3 | 同級生と昔話で笑い合う（tie_classmate）〔c〕、前の学年から続く張り合い（tie_rc_classroom_classmate_again）〔c〕、ずっと同じクラスだった気安さ（tie_rc_classroom_classmate_know）〔c〕 |
+| 兄弟姉妹 | 2 | 学校でもいつもの口げんか（tie_rc_classroom_sib_bicker）〔c〕、学校でのきょうだいの助け合い（tie_rc_classroom_sib_back）〔c〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_classroom_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_classroom_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_classroom_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_classroom_sbDefend）〔c〕 ほか |
+| 親族 | 1 | 親族どうしの思い出と助け合い（tie_relative）〔c〕 |
+| 親子 | 2 | 学校での口出し（tie_rc_classroom_parent_meddle）〔c〕、子から親への気遣い（tie_rc_classroom_parent_care）〔c〕 |
+| 師弟 | 2 | 学校でも師の顔が出る（tie_rc_classroom_mentor_strict）〔c〕、弟子が師を立て、師が認める（tie_rc_classroom_mentor_proud）〔c〕 |
+| 上司と部下 | 3 | 上司の責任と部下の支え（tie_boss）〔c〕、バイト先の上下が教室に出る（tie_rc_classroom_boss_habit）〔c〕、上の立場から下を気遣う（tie_rc_classroom_boss_cover）〔c〕 |
+| 恩人 | 4 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 |
+| 片想い | 15 | 片想いの相手に尽くす（u_serve）〔c〕、片想いの相手がほかの人を見ている（u_tri）〔c〕、片想いの相手をかばう（u_protect）〔c〕、片想いの相手に想いを告げる（u_confess）〔c〕 ほか |
+| 執着（ヤンデレ） | 13 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 1 | 崇める相手に尽くす（tie_worship）〔c〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 6 | 反りの合わない二人が衝突する（rb_classroom_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_classroom_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_classroom_bdForced）〔c〕、手柄と責任を押し付け合う（rb_classroom_bdCredit）〔c〕 ほか |
+| 敵対 | 7 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 ほか |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 3 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕、怒り、二度と離れないと誓う（CP・攻撃性）（mob_after）〔b〕 |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 6 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 3 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕、別れたあとの教室の気まずさ（tie_rc_classroom_ex_awk）〔c〕、元恋人どうしの、友人としての距離（tie_rc_classroom_ex_easy）〔c〕 |
+| 歪んだ関係 | 2 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕、親しい二人が一線を越える夜（tie_warm_r18）〔b〕 |
+| 主従 | 1 | 従う側が主に力ずくで迫る（tie_master_r18）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 3 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕 |
+| 関係を問わない | 186 | {a}は{b}に他愛ない話を振った（talk）、{a}が{b}をからかった（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、相手のやり方に口を出す（lecture） ほか |
 
 種類：交流 100・対立 73・献身 48・恋愛 43・単独行動 30・ハプニング 7・裏切り 2・夜 1
 
 R18：夜 5 件：住人どうし〔受け攻め・関係：セフレ〕 2、住人どうし〔合意のない展開・関係：主従〕 1、住人どうし〔合意のない展開・関係：執着（ヤンデレ）〕 1、住人どうし〔関係：歪んだ関係〕 1
 
-内容の軸：合意のない展開：2件（スイッチ「合意のない展開」が入のとき）〔表示側：条件つき・関係（敵対・執着・主従・歪んだ関係）しだい〕／妊娠：なし〔表示側：なし・妊娠の場面なし〕／暴力をともなう性描写：なし〔表示側：なし・場面なし〕／歪んだ関係（DV など）：1件（スイッチ「歪んだ関係（DV など）」が入のとき）〔表示側：条件つき・関係「歪んだ関係」か、重いとき〕／死ネタ：なし／残酷な展開：2件
+内容の軸：合意のない展開：2件（内容のスイッチ「合意のない展開」が入のとき）〔表示側：条件つき・関係（敵対・執着・主従・歪んだ関係）しだい〕／妊娠：なし〔表示側：なし・妊娠の場面なし〕／暴力をともなう性描写：なし〔表示側：なし・場面なし〕／歪んだ関係（DV など）：1件（内容のスイッチ「歪んだ関係（DV など）」が入のとき）〔表示側：条件つき・関係「歪んだ関係」か、重いとき〕／死ネタ：なし／残酷な展開：2件
 
 ### 無人島（island）
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 3 | {a}は探索の帰りに見つけた桜色の貝殻を、黙って{b}の手の…（i_solo_gift）〔b〕、tie_rc_island_friend_share〔c〕、tie_rc_island_friend_watch〔c〕 |
-| 同僚 | 2 | tie_colleague〔c〕、tie_colleague2〔b〕 |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 幼馴染 | 2 | tie_rc_island_childhood_reckless〔c〕、tie_rc_island_childhood_beach〔c〕 |
-| 同級生 | 3 | tie_classmate〔c〕、tie_rc_island_classmate_rival〔c〕、tie_rc_island_classmate_roll〔c〕 |
-| 兄弟姉妹 | 2 | tie_rc_island_sib_food〔c〕、tie_rc_island_sib_storm〔c〕 |
-| 兄弟（庇護） | 2 | ir_prebel〔d〕、ir_pcare〔d〕 |
-| 兄弟（親友のよう） | 1 | ir_csig〔d〕 |
-| 兄弟（不仲） | 6 | rb_island_sbSpat〔c〕、rb_island_sbCompare〔c〕、rb_island_sbGrudge〔c〕、rb_island_sbDefend〔c〕 ほか |
-| 親族 | 1 | tie_relative〔c〕 |
-| 親子 | 2 | tie_rc_island_parent_stop〔c〕、tie_rc_island_parent_care〔c〕 |
-| 教師と生徒 | 2 | ir_lesson〔d〕、ir_scold〔d〕 |
-| 師弟 | 3 | ir_train〔d〕、tie_rc_island_mentor_drill〔c〕、tie_rc_island_mentor_stand〔c〕 |
-| 上司と部下 | 3 | tie_boss〔c〕、tie_rc_island_boss_rank〔c〕、tie_rc_island_boss_trust〔c〕 |
-| 恩人 | 4 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 |
-| 片想い | 15 | u_serve〔c〕、u_tri〔c〕、u_protect〔c〕、{b}は長いあいだ黙っていた。それから（u_confess）〔c〕 ほか |
-| 執着（ヤンデレ） | 13 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 1 | tie_worship〔c〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 6 | rb_island_bdClash〔c〕、rb_island_bdSnark〔c〕、rb_island_bdForced〔c〕、rb_island_bdCredit〔c〕 ほか |
-| ライバル | 1 | {a}は探索の帰りに見つけた桜色の貝殻を、黙って{b}の手の…（i_solo_gift）〔b〕 |
-| 敵対 | 4 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 8 | grp_cheer〔b〕、grp_bless〔b〕、怒り、二度と離れないと誓う（CP・攻撃性）（mob_after）〔b〕、ct_preg_news〔d〕 ほか |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 21 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 3 | tie_ly_ex〔c〕、tie_rc_island_ex_awk〔c〕、tie_rc_island_ex_know〔c〕 |
-| 歪んだ関係 | 5 | tie_abuse〔c〕、tie_warm_r18〔b〕、ct_dv〔c〕、ct_abuse_night〔c〕 ほか |
-| 主従 | 1 | tie_master_r18〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 3 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕 |
-| 関係を問わない | 234 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}が{b}をからかった。{b}は笑ってみせたが、目が笑っ…（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}が{b}の（lecture） ほか |
+| 友人 | 3 | {a}は一番きれいな貝殻を拾って、{b}に渡そうとして（i_solo_gift）〔b〕、友人どうしの食い違い（tie_rc_island_friend_share）〔c〕、友人としての支え（tie_rc_island_friend_watch）〔c〕 |
+| 同僚 | 2 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕 |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 幼馴染 | 2 | 幼馴染の無茶を叱る（tie_rc_island_childhood_reckless）〔c〕、子どものころの思い出（tie_rc_island_childhood_beach）〔c〕 |
+| 同級生 | 3 | 同級生と昔話で笑い合う（tie_classmate）〔c〕、学生のころの張り合いが島で出る（tie_rc_island_classmate_rival）〔c〕、同じクラスだった息の合い方（tie_rc_island_classmate_roll）〔c〕 |
+| 兄弟姉妹 | 2 | 食料の取り合い（tie_rc_island_sib_food）〔c〕、きょうだいの背中合わせ（tie_rc_island_sib_storm）〔c〕 |
+| 兄弟（庇護） | 2 | 守られる側のきょうだいが反発する（ir_prebel）〔d〕、きょうだいの世話を焼く（ir_pcare）〔d〕 |
+| 兄弟（親友のよう） | 1 | きょうだいの合図と思い出（ir_csig）〔d〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_island_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_island_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_island_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_island_sbDefend）〔c〕 ほか |
+| 親族 | 1 | 親族どうしの思い出と助け合い（tie_relative）〔c〕 |
+| 親子 | 2 | 親が子の無茶を止める（tie_rc_island_parent_stop）〔c〕、子が親を気遣う（tie_rc_island_parent_care）〔c〕 |
+| 教師と生徒 | 2 | 先生が生徒に島の知恵を教える（ir_lesson）〔d〕、先生と生徒の叱責と反発（ir_scold）〔d〕 |
+| 師弟 | 3 | 師匠が弟子に稽古をつける（ir_train）〔d〕、島でも稽古の口調（tie_rc_island_mentor_drill）〔c〕、弟子が師を支える（tie_rc_island_mentor_stand）〔c〕 |
+| 上司と部下 | 3 | 上司の責任と部下の支え（tie_boss）〔c〕、島では肩書きは関係ない……はず（tie_rc_island_boss_rank）〔c〕、部下が上司を立て、支える（tie_rc_island_boss_trust）〔c〕 |
+| 恩人 | 4 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 |
+| 片想い | 15 | 片想いの相手に尽くす（u_serve）〔c〕、片想いの相手がほかの人を見ている（u_tri）〔c〕、片想いの相手をかばう（u_protect）〔c〕、片想いの相手に想いを告げる（u_confess）〔c〕 ほか |
+| 執着（ヤンデレ） | 13 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 1 | 崇める相手に尽くす（tie_worship）〔c〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 6 | 反りの合わない二人が衝突する（rb_island_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_island_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_island_bdForced）〔c〕、手柄と責任を押し付け合う（rb_island_bdCredit）〔c〕 ほか |
+| ライバル | 1 | {a}は一番きれいな貝殻を拾って、{b}に渡そうとして（i_solo_gift）〔b〕 |
+| 敵対 | 4 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 8 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕、怒り、二度と離れないと誓う（CP・攻撃性）（mob_after）〔b〕、妊娠が分かる（ct_preg_news）〔d〕 ほか |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 21 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 3 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕、元恋人と二人きりの作業（tie_rc_island_ex_awk）〔c〕、元恋人だから知っている気遣い（tie_rc_island_ex_know）〔c〕 |
+| 歪んだ関係 | 5 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕、親しい二人が一線を越える夜（tie_warm_r18）〔b〕、恋人に手を上げる（ct_dv）〔c〕、歪んだ関係で拒めない夜（ct_abuse_night）〔c〕 ほか |
+| 主従 | 1 | 従う側が主に力ずくで迫る（tie_master_r18）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 3 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕 |
+| 関係を問わない | 234 | {a}は{b}に他愛ない話を振った（talk）、{a}が{b}をからかった（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、相手のやり方に口を出す（lecture） ほか |
 
 種類：交流 98・対立 84・献身 74・恋愛 55・単独行動 39・ハプニング 10・脱出 8・裏切り 6・ハプニング 2・夜 2・戦闘 1
 
 R18：夜 12 件：住人どうし〔受け攻め・関係：セフレ〕 2、住人どうし〔関係：セフレ〕 2、住人どうし〔合意のない展開・関係：主従〕 1、住人どうし〔合意のない展開・関係：執着（ヤンデレ）〕 1、住人どうし〔合意のない展開・関係：歪んだ関係〕 1、住人どうし〔暴力をともなう性描写・関係：歪んだ関係〕 1、住人どうし〔条件の印なし〕 1、住人どうし〔歪んだ関係（DV など）・関係：歪んだ関係〕 1、住人どうし〔環境値：天候の荒さ 60 超〕 1、住人どうし〔関係：歪んだ関係〕 1
 
-内容の軸：合意のない展開：5件（スイッチ「合意のない展開」が入のとき）〔表示側：条件つき・関係（敵対・執着・主従・歪んだ関係）しだい〕／妊娠：2件（スイッチ「妊娠」が入のとき・重いのとき：1件）〔表示側：条件つき・重いのとき〕／暴力をともなう性描写：1件（スイッチ「暴力をともなう性描写」が入のとき）〔表示側：条件つき・重いのとき〕／歪んだ関係（DV など）：2件（スイッチ「歪んだ関係（DV など）」が入のとき）〔表示側：条件つき・関係「歪んだ関係」か、重いとき〕／死ネタ：2件（体力が尽きると死ぬ箱庭（出来事の外でも死が起きる））／残酷な展開：2件
+内容の軸：合意のない展開：5件（内容のスイッチ「合意のない展開」が入のとき）〔表示側：条件つき・関係（敵対・執着・主従・歪んだ関係）しだい〕／妊娠：2件（内容のスイッチ「妊娠」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・重いのとき〕／暴力をともなう性描写：1件（内容のスイッチ「暴力をともなう性描写」が入のとき）〔表示側：条件つき・重いのとき〕／歪んだ関係（DV など）：2件（内容のスイッチ「歪んだ関係（DV など）」が入のとき）〔表示側：条件つき・関係「歪んだ関係」か、重いとき〕／死ネタ：2件（体力が尽きると死ぬ箱庭（出来事の外でも死が起きる））／残酷な展開：2件
 
 ### 宇宙船漂流記（ship）
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| バディ | 1 | 感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕 |
-| 親友 | 1 | 感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕 |
-| 兄弟姉妹 | 1 | 感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕 |
-| 親子 | 1 | 感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕 |
+| バディ | 1 | 感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕 |
+| 親友 | 1 | 感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕 |
+| 兄弟姉妹 | 1 | 感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕 |
+| 親子 | 1 | 感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕 |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
-| 執着（ヤンデレ） | 4 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（物語型では死なない）（os_obsess）〔a〕、感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
+| 執着（ヤンデレ） | 4 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（os_obsess）〔a〕、感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 敵対 | 1 | 憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
-| 恋人 | 2 | 感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕、恋人の夜（恋人・両想い・関係の近い二人）（ship_night_lover）〔a〕 |
+| 恋人 | 2 | 感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕、恋人の夜（恋人・両想い・関係の近い二人）（ship_night_lover）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
-| 本命 | 1 | 感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕 |
+| 本命 | 1 | 感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕 |
 | セフレ | 1 | 愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
 | 仲間 | 1 | 仲間：息の合った分担・助け合い（tns_comrade）〔a〕 |
 | 同一人物 | 1 | 同一人物の二人が出会う（片方の死・正体の露見など）（ss_same）〔a〕 |
@@ -251,7 +251,7 @@ R18：夜 12 件：住人どうし〔受け攻め・関係：セフレ〕 2、�
 
 R18：夜 5 件：モブ〔合意のない展開〕 1、モブ〔合意のない展開・環境値：夜の出来事の起こりやすさ〕 1、住人どうし〔条件の印なし〕 1、住人どうし〔環境値：夜の出来事の起こりやすさ〕 1、住人どうし〔関係：恋人〕 1
 
-内容の軸：合意のない展開：2件（スイッチ「合意のない展開」が入のとき）〔表示側：ある・星の生命体に襲われる〕／妊娠：なし〔表示側：なし・妊娠の場面なし〕／暴力をともなう性描写：なし〔表示側：なし・場面なし〕／歪んだ関係（DV など）：なし〔表示側：なし・スイッチで足す場面なし（関係としては出る）〕／死ネタ：5件／残酷な展開：3件
+内容の軸：合意のない展開：2件（内容のスイッチ「合意のない展開」が入のとき）〔表示側：ある・星の生命体に襲われる〕／妊娠：なし〔表示側：なし・妊娠の場面なし〕／暴力をともなう性描写：なし〔表示側：なし・場面なし〕／歪んだ関係（DV など）：なし〔表示側：なし・スイッチで足す場面なし（関係としては出る）〕／死ネタ：5件／残酷な展開：3件
 
 表（数だけ）：星の資源 30件、星の生命体 37件、星の文明 30件、船のトラブル 12件、宇宙での遭遇 14件、船を滅ぼすトラブル 6件
 
@@ -261,93 +261,93 @@ R18：夜 5 件：モブ〔合意のない展開〕 1、モブ〔合意のない
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 2 | tie_rc_zombie_friend_leave〔c〕、tie_rc_zombie_friend_cheer〔c〕 |
-| 同僚 | 3 | tie_colleague〔c〕、tie_colleague2〔b〕、zb_colleague〔c〕 |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 幼馴染 | 2 | tie_rc_zombie_childhood_again〔c〕、tie_rc_zombie_childhood_sign〔c〕 |
-| 同級生 | 2 | tie_classmate〔c〕、zb_classmate〔c〕 |
+| 友人 | 2 | 友人どうしの判断の食い違い（tie_rc_zombie_friend_leave）〔c〕、友人の励まし（tie_rc_zombie_friend_cheer）〔c〕 |
+| 同僚 | 3 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕、同僚と街でいつもの分担（zb_colleague）〔c〕 |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 幼馴染 | 2 | 幼馴染の無茶（tie_rc_zombie_childhood_again）〔c〕、子どものころの合図（tie_rc_zombie_childhood_sign）〔c〕 |
+| 同級生 | 2 | 同級生と昔話で笑い合う（tie_classmate）〔c〕、同級生と見張りの合間に昔話（zb_classmate）〔c〕 |
 | 親友 | 1 | 治療薬を探す（大切な人が咬まれたとき）（zb_cure）〔a〕 |
-| 兄弟姉妹 | 3 | tie_rc_zombie_sib_split〔c〕、tie_rc_zombie_sib_back〔c〕、治療薬を探す（大切な人が咬まれたとき）（zb_cure）〔a〕 |
-| 兄弟（不仲） | 6 | rb_zombie_sbSpat〔c〕、rb_zombie_sbCompare〔c〕、rb_zombie_sbGrudge〔c〕、rb_zombie_sbDefend〔c〕 ほか |
-| 親族 | 2 | tie_relative〔c〕、zb_relative〔c〕 |
-| 親子 | 4 | tie_rc_zombie_parent_shield〔c〕、tie_rc_zombie_parent_guard〔c〕、tie_rc_zombie_parent_fight〔c〕、治療薬を探す（大切な人が咬まれたとき）（zb_cure）〔a〕 |
-| 教師と生徒 | 1 | zr_scold〔b〕 |
-| 上司と部下 | 2 | tie_boss〔c〕、zb_boss〔c〕 |
-| 恩人 | 5 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 ほか |
-| 片想い | 16 | z_cr_guard〔b〕、u_serve〔c〕、u_tri〔c〕、u_protect〔c〕 ほか |
-| 執着（ヤンデレ） | 18 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 2 | tie_worship〔c〕、zb_worship〔c〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 7 | rb_zombie_bdClash〔c〕、rb_zombie_bdSnark〔c〕、rb_zombie_bdForced〔c〕、rb_zombie_bdCredit〔c〕 ほか |
-| ライバル | 1 | 敵対する二人の強引な夜に、暴力の段が入る（重いのとき）（ct_violence_hook）〔a〕 |
-| 敵対 | 8 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 ほか |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 13 | grp_cheer〔b〕、grp_bless〔b〕、怒り、二度と離れないと誓う（CP・攻撃性）（mob_after）〔b〕、ct_preg_news〔d〕 ほか |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 14 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 3 | tie_ly_ex〔c〕、tie_rc_zombie_ex_awk〔c〕、tie_rc_zombie_ex_trust〔c〕 |
-| 歪んだ関係 | 5 | tie_abuse〔c〕、tie_warm_r18〔b〕、ct_dv〔c〕、ct_abuse_night〔c〕 ほか |
-| 主従 | 1 | tie_master_r18〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 3 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕 |
-| 関係を問わない | 130 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}がぽつりと弱音をこぼした。{b}は茶化さずに最後まで聞…（confide）、{a}は、{c}と親しげに話す{b}から目を逸らせなかった。（jealous） ほか |
+| 兄弟姉妹 | 3 | 物資の分け方で口げんか（tie_rc_zombie_sib_split）〔c〕、きょうだいの背中合わせ（tie_rc_zombie_sib_back）〔c〕、治療薬を探す（大切な人が咬まれたとき）（zb_cure）〔a〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_zombie_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_zombie_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_zombie_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_zombie_sbDefend）〔c〕 ほか |
+| 親族 | 2 | 親族どうしの思い出と助け合い（tie_relative）〔c〕、親族と家族の行方を語り合う（zb_relative）〔c〕 |
+| 親子 | 4 | 親が子をかばう（tie_rc_zombie_parent_shield）〔c〕、子が親を守る（tie_rc_zombie_parent_guard）〔c〕、過保護への反発（tie_rc_zombie_parent_fight）〔c〕、治療薬を探す（大切な人が咬まれたとき）（zb_cure）〔a〕 |
+| 教師と生徒 | 1 | 勝手に外へ出る生徒を先生が止める（zr_scold）〔b〕 |
+| 上司と部下 | 2 | 上司の責任と部下の支え（tie_boss）〔c〕、上司が部下に指示を出して守る（zb_boss）〔c〕 |
+| 恩人 | 5 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 ほか |
+| 片想い | 16 | 想いを隠したまま守り続ける（z_cr_guard）〔b〕、片想いの相手に尽くす（u_serve）〔c〕、片想いの相手がほかの人を見ている（u_tri）〔c〕、片想いの相手をかばう（u_protect）〔c〕 ほか |
+| 執着（ヤンデレ） | 18 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 2 | 崇める相手に尽くす（tie_worship）〔c〕、崇める相手のために食料を削る（zb_worship）〔c〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 7 | 反りの合わない二人が衝突する（rb_zombie_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_zombie_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_zombie_bdForced）〔c〕、手柄と責任を押し付け合う（rb_zombie_bdCredit）〔c〕 ほか |
+| ライバル | 1 | 敵対する二人の強引な夜に、暴力の段が入る（ct_violence_hook）〔a〕 |
+| 敵対 | 8 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 ほか |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 13 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕、怒り、二度と離れないと誓う（CP・攻撃性）（mob_after）〔b〕、妊娠が分かる（ct_preg_news）〔d〕 ほか |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 14 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 3 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕、元恋人との気まずい同行（tie_rc_zombie_ex_awk）〔c〕、元恋人だから背中を預けられる（tie_rc_zombie_ex_trust）〔c〕 |
+| 歪んだ関係 | 5 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕、親しい二人が一線を越える夜（tie_warm_r18）〔b〕、恋人に手を上げる（ct_dv）〔c〕、歪んだ関係で拒めない夜（ct_abuse_night）〔c〕 ほか |
+| 主従 | 1 | 従う側が主に力ずくで迫る（tie_master_r18）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 3 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕 |
+| 関係を問わない | 130 | {a}は{b}に他愛ない話を振った（talk）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、{a}がぽつりと弱音をこぼした（confide）、{a}は、{c}と親しげに話す{b}から目を逸らせなかった（jealous） ほか |
 
 種類：対立 64・交流 58・献身 54・単独行動 47・恋愛 36・ハプニング 7・戦闘 5・夜 4・裏切り 2・ハプニング 1
 
 R18：夜 19 件：モブ〔合意のない展開〕 3、住人どうし〔受け攻め・関係：セフレ〕 2、住人どうし〔合意のない展開・関係：執着（ヤンデレ）〕 2、住人どうし〔関係：恋人〕 2、住人どうし〔受け攻め・関係：恋人〕 1、住人どうし〔合意のない展開〕 1、住人どうし〔合意のない展開・暴力をともなう性描写・重い・関係：不仲・関係：ライバル・関係：敵対〕 1、住人どうし〔合意のない展開・関係：主従〕 1、住人どうし〔合意のない展開・関係：歪んだ関係〕 1、住人どうし〔暴力をともなう性描写・関係：歪んだ関係〕 1、住人どうし〔条件の印なし〕 1、住人どうし〔歪んだ関係（DV など）・関係：歪んだ関係〕 1、住人どうし〔関係：セフレ〕 1、住人どうし〔関係：歪んだ関係〕 1
 
-内容の軸：合意のない展開：9件（スイッチ「合意のない展開」が入のとき・重いのとき：1件）〔表示側：条件つき・関係（敵対・執着・主従・歪んだ関係）しだい〕／妊娠：2件（スイッチ「妊娠」が入のとき・重いのとき：1件）〔表示側：条件つき・重いのとき〕／暴力をともなう性描写：2件（スイッチ「暴力をともなう性描写」が入のとき・重いのとき：1件）〔表示側：条件つき・重いのとき〕／歪んだ関係（DV など）：2件（スイッチ「歪んだ関係（DV など）」が入のとき）〔表示側：条件つき・関係「歪んだ関係」か、重いとき〕／死ネタ：7件（体力が尽きると死ぬ箱庭（出来事の外でも死が起きる））／残酷な展開：8件（重いのとき：1件）
+内容の軸：合意のない展開：9件（内容のスイッチ「合意のない展開」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・関係（敵対・執着・主従・歪んだ関係）しだい〕／妊娠：2件（内容のスイッチ「妊娠」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・重いのとき〕／暴力をともなう性描写：2件（内容のスイッチ「暴力をともなう性描写」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・重いのとき〕／歪んだ関係（DV など）：2件（内容のスイッチ「歪んだ関係（DV など）」が入のとき）〔表示側：条件つき・関係「歪んだ関係」か、重いとき〕／死ネタ：7件（体力が尽きると死ぬ箱庭（出来事の外でも死が起きる））／残酷な展開：8件（展開の重さが「重い」のとき：1件）
 
 ### 邪神村RTA（jashin）
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 同僚 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 先輩後輩 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| バディ | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 幼馴染 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 同級生 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 友達以上恋人未満 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 親友 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 兄弟姉妹 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 兄弟（庇護） | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 兄弟（親友のよう） | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 兄弟（不仲） | 2 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕、きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
-| 親族 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 親子 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 擬似親子 | 2 | 疑似親子の秘密（実は村の出身だった）（js_pparent）〔a〕、関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 教師と生徒 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 師弟 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 上司と部下 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
+| 友人 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 同僚 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 先輩後輩 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| バディ | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 幼馴染 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 同級生 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 友達以上恋人未満 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 親友 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 兄弟姉妹 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 兄弟（庇護） | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 兄弟（親友のよう） | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 兄弟（不仲） | 2 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕、きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
+| 親族 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 親子 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 擬似親子 | 2 | 疑似親子の秘密（実は村の出身だった）（js_pparent）〔a〕、関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 教師と生徒 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 師弟 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 上司と部下 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
-| 執着（ヤンデレ） | 4 | 愛憎（揉める・身を挺して守る）（js_hatelove）〔a〕、執着：恋敵への嫉妬が積もる・暴走して閉じ込める（物語型では死なない）（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
+| 執着（ヤンデレ） | 4 | 愛憎（揉める・身を挺して守る）（js_hatelove）〔a〕、執着：恋敵への嫉妬が積もる・暴走して閉じ込める（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
 | ライバル | 1 | 探偵どうし（手がかりの奪い合い・ぶつかり合い）（js_feud）〔a〕 |
-| 敵対 | 4 | 探偵どうし（手がかりの奪い合い・ぶつかり合い）（js_feud）〔a〕、憎しみ（生贄に差し出す・人目のないところで手にかける）（js_hate）〔a〕、関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕、憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 敵対 | 4 | 探偵どうし（手がかりの奪い合い・ぶつかり合い）（js_feud）〔a〕、憎しみ（生贄に差し出すなど）（js_hate）〔a〕、関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕、憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
-| 恋人 | 3 | 恋人を作る（吊り橋・告白・恋人どうしの場面）（js_love）〔a〕、関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕、イゴーロナクに煽られた恋人の交わり（js_climax_lover）〔a〕 |
+| 恋人 | 3 | 恋人を作る（吊り橋・告白・恋人どうしの場面）（js_love）〔a〕、関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕、イゴーロナクに煽られた恋人の交わり（js_climax_lover）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
-| セフレ | 2 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕、愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
-| 運命の番 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 番 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 主従 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
+| セフレ | 2 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕、愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
+| 運命の番 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 番 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 主従 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
 | 仲間 | 1 | 仲間：息の合った分担・助け合い（tns_comrade）〔a〕 |
 | 同一人物 | 1 | 同一人物の二人が出会う（片方の死・正体の露見など）（ss_same）〔a〕 |
-| 関係を問わない | 25 | クライマックスの場所と神の顕現（全滅もある）（js_cave）、関係の変化（語らい・共闘・口論・疑い・仲直り・告白・嫉妬）（js_drama）、裏切り（仲間を村に売る・一人で逃げる）（js_betray）、村の歓迎の宴（js_feast） ほか |
+| 関係を問わない | 25 | クライマックスの場所と神の顕現（全滅もある）（js_cave）、関係の変化（語らい・共闘・口論・疑い・仲直りなど）（js_drama）、裏切り（仲間を村に売る・一人で逃げる）（js_betray）、村の歓迎の宴（js_feast） ほか |
 
 種類：夜 13・対立 10・交流 8・ハプニング 4・献身 3・単独行動 3・裏切り 2・恋愛 2・戦闘 1
 
 R18：夜 13 件：モブ〔合意のない展開・妊娠〕 7、住人どうし〔妊娠〕 3、モブ〔合意のない展開〕 2、住人どうし〔関係：恋人〕 1
 
-内容の軸：合意のない展開：9件（スイッチ「合意のない展開」が入のとき）〔表示側：ある・村人・神・眷属に襲われる〕／妊娠：10件（スイッチ「妊娠」が入のとき）〔表示側：ある・いつも（疑似妊娠）〕／暴力をともなう性描写：なし〔表示側：なし・場面なし〕／歪んだ関係（DV など）：なし〔表示側：なし・スイッチで足す場面なし（関係としては出る）〕／死ネタ：10件／残酷な展開：6件
+内容の軸：合意のない展開：9件（内容のスイッチ「合意のない展開」が入のとき）〔表示側：ある・村人・神・眷属に襲われる〕／妊娠：10件（内容のスイッチ「妊娠」が入のとき）〔表示側：ある・いつも（疑似妊娠）〕／暴力をともなう性描写：なし〔表示側：なし・場面なし〕／歪んだ関係（DV など）：なし〔表示側：なし・スイッチで足す場面なし（関係としては出る）〕／死ネタ：10件／残酷な展開：6件
 
 表（数だけ）：神（手がかり・対抗策） 51件、職業の出来事 21件、職業×職業の出来事 14組（職業×職業）、役職×役職の特別な出来事（協力・因縁） 200組（職業×職業）、祠の効果 7件
 
@@ -359,16 +359,16 @@ R18：夜 13 件：モブ〔合意のない展開・妊娠〕 7、住人どう�
 | --- | --- | --- |
 | 親友 | 1 | 楽にしてあげたかった（mercy）〔a〕 |
 | 兄弟姉妹 | 2 | 保険金（insurance）〔a〕、楽にしてあげたかった（mercy）〔a〕 |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
 | 親子 | 2 | 保険金（insurance）〔a〕、楽にしてあげたかった（mercy）〔a〕 |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
 | 片想い | 3 | 媚薬の夜：片想いの暴走（yk_r18_crush）〔a〕、嫉妬（jealous）〔a〕、歪んだ執着（obsess）〔a〕 |
-| 執着（ヤンデレ） | 4 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（物語型では死なない）（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕、愛憎（揉める・犯人に狙われた相手を守る）（yk_hatelove）〔a〕 |
+| 執着（ヤンデレ） | 4 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕、愛憎（揉める・犯人に狙われた相手を守る）（yk_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
 | ライバル | 3 | 媚薬の夜：敵どうし（yk_r18_enemy）〔a〕、探偵どうし（手がかりの奪い合い・ぶつかり合い）（yk_feud）〔a〕、嫉妬（jealous）〔a〕 |
 | 敵対 | 5 | 媚薬の夜：敵どうし（yk_r18_enemy）〔a〕、憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕、探偵どうし（手がかりの奪い合い・ぶつかり合い）（yk_feud）〔a〕、憎しみ（騒ぎに紛れて吹雪へ締め出す・手にかける）（yk_hate）〔a〕 ほか |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
 | 恋人 | 3 | 媚薬の夜：恋人どうし（yk_r18_lover）〔a〕、保険金（insurance）〔a〕、楽にしてあげたかった（mercy）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
@@ -377,13 +377,13 @@ R18：夜 13 件：モブ〔合意のない展開・妊娠〕 7、住人どう�
 | 番 | 2 | 保険金（insurance）〔a〕、楽にしてあげたかった（mercy）〔a〕 |
 | 仲間 | 1 | 仲間：息の合った分担・助け合い（tns_comrade）〔a〕 |
 | 同一人物 | 1 | 同一人物の二人が出会う（片方の死・正体の露見など）（ss_same）〔a〕 |
-| 関係を問わない | 24 | 犯人が媚薬を盛った夜（乱交・一人で悶える・正気の人が現場を守る ほか）（yk_r18_night）〔a〕、媚薬の夜：館の使用人（yk_r18_servant）、媚薬の夜：手がかりを持つ人の口封じ（yk_r18_silence）、快楽殺人の犯人の夜（yk_r18_pleasure） ほか |
+| 関係を問わない | 24 | 犯人が媚薬を盛った夜（乱交・一人で悶えるなど）（yk_r18_night）〔a〕、媚薬の夜：館の使用人（yk_r18_servant）、媚薬の夜：手がかりを持つ人の口封じ（yk_r18_silence）、快楽殺人の犯人の夜（yk_r18_pleasure） ほか |
 
 種類：謎解き 22・対立 10・夜 7・交流 5・死亡 1・献身 1・恋愛 1・単独行動 1・ハプニング 1
 
 R18：夜 7 件：モブ〔合意のない展開〕 1、住人どうし〔合意のない展開〕 1、住人どうし〔合意のない展開・暴力をともなう性描写〕 1、住人どうし〔合意のない展開・関係：ライバル・関係：敵対〕 1、住人どうし〔条件の印なし〕 1、住人どうし〔関係：恋人〕 1、住人どうし〔関係：片想い〕 1
 
-内容の軸：合意のない展開：4件（スイッチ「合意のない展開」が入のとき）〔表示側：ある・使用人・犯人に襲われる〕／妊娠：なし〔表示側：なし・妊娠の場面なし〕／暴力をともなう性描写：1件（スイッチ「暴力をともなう性描写」が入のとき）〔表示側：条件つき・快楽殺人の動機〕／歪んだ関係（DV など）：なし〔表示側：なし・スイッチで足す場面なし（関係としては出る）〕／死ネタ：5件／残酷な展開：6件
+内容の軸：合意のない展開：4件（内容のスイッチ「合意のない展開」が入のとき）〔表示側：ある・使用人・犯人に襲われる〕／妊娠：なし〔表示側：なし・妊娠の場面なし〕／暴力をともなう性描写：1件（内容のスイッチ「暴力をともなう性描写」が入のとき）〔表示側：条件つき・快楽殺人の動機〕／歪んだ関係（DV など）：なし〔表示側：なし・スイッチで足す場面なし（関係としては出る）〕／死ネタ：5件／残酷な展開：6件
 
 表（数だけ）：犯人の動機 21件、職業×職業の出来事 14組（職業×職業）
 
@@ -393,46 +393,46 @@ R18：夜 7 件：モブ〔合意のない展開〕 1、住人どうし〔合意
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 2 | tie_rc_omega_friend_meddle〔c〕、tie_rc_omega_friend_cover〔c〕 |
-| 同僚 | 5 | tie_colleague〔c〕、tie_colleague2〔b〕、om_tie_colleague〔c〕、om_tiekeep_colleague〔c〕 ほか |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 幼馴染 | 2 | tie_rc_omega_childhood_test〔c〕、tie_rc_omega_childhood_stay〔c〕 |
-| 同級生 | 4 | tie_classmate〔c〕、om_tie_classmate〔c〕、om_tiekeep_classmate〔c〕、om_tiegrow_classmate〔c〕 |
-| 兄弟姉妹 | 2 | tie_rc_omega_sib_bicker〔c〕、tie_rc_omega_sib_guard〔c〕 |
-| 兄弟（不仲） | 6 | rb_omega_sbSpat〔c〕、rb_omega_sbCompare〔c〕、rb_omega_sbGrudge〔c〕、rb_omega_sbDefend〔c〕 ほか |
-| 親族 | 4 | tie_relative〔c〕、om_tie_relative〔c〕、om_tiekeep_relative〔c〕、om_tiegrow_relative〔c〕 |
-| 親子 | 2 | tie_rc_omega_parent_worry〔c〕、tie_rc_omega_parent_care〔c〕 |
-| 師弟 | 2 | tie_rc_omega_mentor_teach〔c〕、tie_rc_omega_mentor_defy〔c〕 |
-| 上司と部下 | 4 | tie_boss〔c〕、om_tie_boss〔c〕、om_tiekeep_boss〔c〕、om_tiegrow_boss〔c〕 |
-| 恩人 | 7 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 ほか |
-| 執着（ヤンデレ） | 14 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 4 | tie_worship〔c〕、om_tie_worship〔c〕、om_tiekeep_worship〔c〕、om_tiegrow_worship〔c〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 7 | rb_omega_bdClash〔c〕、rb_omega_bdSnark〔c〕、rb_omega_bdForced〔c〕、rb_omega_bdCredit〔c〕 ほか |
-| ライバル | 2 | {b}は、{c}の隣に立つ{a}を睨みつけた。αの威圧がぶつ…（om_rival）〔c〕、敵対する二人の強引な夜に、暴力の段が入る（重いのとき）（ct_violence_hook）〔a〕 |
-| 敵対 | 8 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 ほか |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 20 | grp_cheer〔b〕、grp_bless〔b〕、怒り、二度と離れないと誓う（CP・攻撃性）（mob_after）〔b〕、ct_preg_news〔d〕 ほか |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 21 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 3 | tie_ly_ex〔c〕、tie_rc_omega_ex_scent〔c〕、tie_rc_omega_ex_care〔c〕 |
-| 歪んだ関係 | 5 | tie_abuse〔c〕、tie_warm_r18〔b〕、ct_dv〔c〕、ct_abuse_night〔c〕 ほか |
-| 運命の番 | 2 | 一度は抗った。それでも{a}の体は、{c}の匂いを忘れてくれ…（om_fated_waver）〔c〕、om_fated_realize〔c〕 |
-| 主従 | 1 | tie_master_r18〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 4 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕、{a}は{b}の胸ぐらを掴むようにして言った。（om_same）〔c〕 |
-| 関係を問わない | 100 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}が{b}をからかった。{b}は笑ってみせたが、目が笑っ…（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}が{b}の（lecture） ほか |
+| 友人 | 2 | 友人どうしの第二性をめぐる行き違い（tie_rc_omega_friend_meddle）〔c〕、友人の発情期・偏見に寄り添う（tie_rc_omega_friend_cover）〔c〕 |
+| 同僚 | 5 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕、同僚の職場の日常（om_tie_colleague）〔c〕、同僚どうしで支え合う（om_tiekeep_colleague）〔c〕 ほか |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 幼馴染 | 2 | 第二性が分かる前からの幼馴染（tie_rc_omega_childhood_test）〔c〕、幼馴染の変わらない距離（tie_rc_omega_childhood_stay）〔c〕 |
+| 同級生 | 4 | 同級生と昔話で笑い合う（tie_classmate）〔c〕、同級生との再会と日常（om_tie_classmate）〔c〕、同級生どうしで支え合う（om_tiekeep_classmate）〔c〕、同級生と昔話から近づく（om_tiegrow_classmate）〔c〕 |
+| 兄弟姉妹 | 2 | 第二性の違うきょうだいの口げんか（tie_rc_omega_sib_bicker）〔c〕、きょうだいで守り合う（tie_rc_omega_sib_guard）〔c〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_omega_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_omega_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_omega_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_omega_sbDefend）〔c〕 ほか |
+| 親族 | 4 | 親族どうしの思い出と助け合い（tie_relative）〔c〕、親族どうしの日常（om_tie_relative）〔c〕、親族どうしで支え合う（om_tiekeep_relative）〔c〕、親族が家族のような距離になる（om_tiegrow_relative）〔c〕 |
+| 親子 | 2 | 親の心配が重い（tie_rc_omega_parent_worry）〔c〕、子が親を支える（tie_rc_omega_parent_care）〔c〕 |
+| 師弟 | 2 | 師が第二性に振り回されない生き方を教える（tie_rc_omega_mentor_teach）〔c〕、弟子が師に逆らう（tie_rc_omega_mentor_defy）〔c〕 |
+| 上司と部下 | 4 | 上司の責任と部下の支え（tie_boss）〔c〕、上司と部下の職場の日常（om_tie_boss）〔c〕、上司と部下が支え合う（om_tiekeep_boss）〔c〕、上司と部下が職場の外で対等に（om_tiegrow_boss）〔c〕 |
+| 恩人 | 7 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 ほか |
+| 執着（ヤンデレ） | 14 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 4 | 崇める相手に尽くす（tie_worship）〔c〕、崇める相手への献身（om_tie_worship）〔c〕、崇める相手を支え続ける（om_tiekeep_worship）〔c〕、崇める関係が深まる（om_tiegrow_worship）〔c〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 7 | 反りの合わない二人が衝突する（rb_omega_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_omega_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_omega_bdForced）〔c〕、手柄と責任を押し付け合う（rb_omega_bdCredit）〔c〕 ほか |
+| ライバル | 2 | {b}は、{c}の隣に立つ{a}を睨みつけた（om_rival）〔c〕、敵対する二人の強引な夜に、暴力の段が入る（ct_violence_hook）〔a〕 |
+| 敵対 | 8 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 ほか |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 20 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕、怒り、二度と離れないと誓う（CP・攻撃性）（mob_after）〔b〕、妊娠が分かる（ct_preg_news）〔d〕 ほか |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 21 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 3 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕、元恋人の匂いと気まずさ（tie_rc_omega_ex_scent）〔c〕、元恋人だから知っている気遣い（tie_rc_omega_ex_care）〔c〕 |
+| 歪んだ関係 | 5 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕、親しい二人が一線を越える夜（tie_warm_r18）〔b〕、恋人に手を上げる（ct_dv）〔c〕、歪んだ関係で拒めない夜（ct_abuse_night）〔c〕 ほか |
+| 運命の番 | 2 | 運命の番を前に心が揺れる（om_fated_waver）〔c〕、運命の番だと気づく（om_fated_realize）〔c〕 |
+| 主従 | 1 | 従う側が主に力ずくで迫る（tie_master_r18）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 4 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕、{a}は{b}の胸ぐらを掴むようにして言った（om_same）〔c〕 |
+| 関係を問わない | 100 | {a}は{b}に他愛ない話を振った（talk）、{a}が{b}をからかった（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、相手のやり方に口を出す（lecture） ほか |
 
 種類：交流 81・対立 71・恋愛 47・献身 32・単独行動 16・ハプニング 6・夜 4・裏切り 1
 
 R18：夜 19 件：住人どうし〔受け攻め・関係：セフレ〕 2、住人どうし〔合意のない展開・関係：執着（ヤンデレ）〕 2、住人どうし〔関係：セフレ〕 2、住人どうし〔関係：恋人〕 2、モブ〔合意のない展開・環境値：発情期の重さ〕 1、モブ〔条件の印なし〕 1、住人どうし〔合意のない展開・暴力をともなう性描写・重い・関係：不仲・関係：ライバル・関係：敵対〕 1、住人どうし〔合意のない展開・環境値：発情期の重さ・性欲・関係：恋人〕 1、住人どうし〔合意のない展開・関係：主従〕 1、住人どうし〔合意のない展開・関係：歪んだ関係〕 1、住人どうし〔暴力をともなう性描写・関係：歪んだ関係〕 1、住人どうし〔歪んだ関係（DV など）・関係：歪んだ関係〕 1、住人どうし〔環境値：描写の有無：濃い・関係：恋人〕 1、住人どうし〔環境値：発情期の重さ〕 1、住人どうし〔関係：歪んだ関係〕 1
 
-内容の軸：合意のない展開：7件（スイッチ「合意のない展開」が入のとき・重いのとき：1件）〔表示側：条件つき・関係（敵対・執着・主従・歪んだ関係）しだい〕／妊娠：2件（スイッチ「妊娠」が入のとき・重いのとき：1件）〔表示側：条件つき・重いのとき〕／暴力をともなう性描写：2件（スイッチ「暴力をともなう性描写」が入のとき・重いのとき：1件）〔表示側：条件つき・重いのとき〕／歪んだ関係（DV など）：2件（スイッチ「歪んだ関係（DV など）」が入のとき）〔表示側：条件つき・関係「歪んだ関係」か、重いとき〕／死ネタ：なし／残酷な展開：4件（重いのとき：1件）
+内容の軸：合意のない展開：7件（内容のスイッチ「合意のない展開」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・関係（敵対・執着・主従・歪んだ関係）しだい〕／妊娠：2件（内容のスイッチ「妊娠」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・重いのとき〕／暴力をともなう性描写：2件（内容のスイッチ「暴力をともなう性描写」が入のとき・展開の重さが「重い」のとき：1件）〔表示側：条件つき・重いのとき〕／歪んだ関係（DV など）：2件（内容のスイッチ「歪んだ関係（DV など）」が入のとき）〔表示側：条件つき・関係「歪んだ関係」か、重いとき〕／死ネタ：なし／残酷な展開：4件（展開の重さが「重い」のとき：1件）
 
 表（数だけ）：職業×職業の出来事 38組（職業×職業）（JOB_PAIR_RULES の26組（omega-jobs-pair2.js）を含む）
 
@@ -440,10 +440,10 @@ R18：夜 19 件：住人どうし〔受け攻め・関係：セフレ〕 2、�
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
-| 執着（ヤンデレ） | 1 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（物語型では死なない）（os_obsess）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
+| 執着（ヤンデレ） | 1 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（os_obsess）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
-| 関係を問わない | 3 | 複数人（見せつけられる・助けに入る・興奮した仲間が襲う・慰め合う・手招き）（dg_party）〔a〕、攻めの挑戦者の堕ち方（責められる・見て堕ちる・手を出す）（dg_topfall）、罠・魔物に責められる・捕まる（dg_trap） |
+| 関係を問わない | 3 | 複数人（見せつけられる・助けに入るなど）（dg_party）〔a〕、攻めの挑戦者の堕ち方（責められる・見て堕ちるなど）（dg_topfall）、罠・魔物に責められる・捕まる（dg_trap） |
 
 種類：対立 3・夜 3
 
@@ -460,21 +460,21 @@ R18：夜 3 件：モブ〔合意のない展開〕 1、モブ〔条件の印な
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
-| 片想い | 1 | 恋人・番・本命を匂わせる台詞（カーテン越し・あの人）（ms_love）〔a〕 |
+| 片想い | 1 | 恋人・番・本命を匂わせる台詞（カーテン越しなど）（ms_love）〔a〕 |
 | 執着（ヤンデレ） | 2 | 執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 敵対 | 1 | 憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
-| 恋人 | 1 | 恋人・番・本命を匂わせる台詞（カーテン越し・あの人）（ms_love）〔a〕 |
-| 夫婦 | 1 | 恋人・番・本命を匂わせる台詞（カーテン越し・あの人）（ms_love）〔a〕 |
+| 恋人 | 1 | 恋人・番・本命を匂わせる台詞（カーテン越しなど）（ms_love）〔a〕 |
+| 夫婦 | 1 | 恋人・番・本命を匂わせる台詞（カーテン越しなど）（ms_love）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
-| 本命 | 1 | 恋人・番・本命を匂わせる台詞（カーテン越し・あの人）（ms_love）〔a〕 |
+| 本命 | 1 | 恋人・番・本命を匂わせる台詞（カーテン越しなど）（ms_love）〔a〕 |
 | セフレ | 1 | 愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
-| 運命の番 | 1 | 恋人・番・本命を匂わせる台詞（カーテン越し・あの人）（ms_love）〔a〕 |
-| 番 | 1 | 恋人・番・本命を匂わせる台詞（カーテン越し・あの人）（ms_love）〔a〕 |
+| 運命の番 | 1 | 恋人・番・本命を匂わせる台詞（カーテン越しなど）（ms_love）〔a〕 |
+| 番 | 1 | 恋人・番・本命を匂わせる台詞（カーテン越しなど）（ms_love）〔a〕 |
 | 仲間 | 1 | 仲間：息の合った分担・助け合い（tns_comrade）〔a〕 |
-| 関係を問わない | 3 | 寝落ちしているあいだに達する（ms_sleep）、施術（少しずつ際どく。気づく・言い訳に騙される）（ms_treat）、施術者に体を開かれていく（題材なので合意のない展開はいつも入）（ms_r18） |
+| 関係を問わない | 3 | 寝落ちしているあいだに達する（ms_sleep）、施術（少しずつ際どく）（ms_treat）、施術者に体を開かれていく（ms_r18） |
 
 種類：交流 4・対立 4・夜 3・献身 1・恋愛 1・単独行動 1
 
@@ -490,11 +490,11 @@ R18：夜 3 件：モブ〔合意のない展開〕 2、住人どうし〔関係
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 1 | 壁の向こうの住人（助ける・手を出す・立ち去る・お仕置き）（hole_behind）〔a〕 |
-| 片想い | 1 | 壁の向こうの住人（助ける・手を出す・立ち去る・お仕置き）（hole_behind）〔a〕 |
-| 執着（ヤンデレ） | 1 | 壁の向こうの住人（助ける・手を出す・立ち去る・お仕置き）（hole_behind）〔a〕 |
-| 恋人 | 1 | 壁の向こうの住人（助ける・手を出す・立ち去る・お仕置き）（hole_behind）〔a〕 |
-| 関係を問わない | 2 | 遮断が壊れて最中に感覚が戻る（hole_live）、穴にはまったまま、向こう側で何かをされる（解放の瞬間にまとめて戻る）（hole_main） |
+| 友人 | 1 | 壁の向こうの住人（助ける・手を出す・立ち去るなど）（hole_behind）〔a〕 |
+| 片想い | 1 | 壁の向こうの住人（助ける・手を出す・立ち去るなど）（hole_behind）〔a〕 |
+| 執着（ヤンデレ） | 1 | 壁の向こうの住人（助ける・手を出す・立ち去るなど）（hole_behind）〔a〕 |
+| 恋人 | 1 | 壁の向こうの住人（助ける・手を出す・立ち去るなど）（hole_behind）〔a〕 |
+| 関係を問わない | 2 | 遮断が壊れて最中に感覚が戻る（hole_live）、穴にはまったまま、向こう側で何かをされる（hole_main） |
 
 種類：夜 3
 
@@ -508,19 +508,19 @@ R18：夜 3 件：モブ〔合意のない展開〕 2、住人どうし〔関係
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
-| 執着（ヤンデレ） | 3 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（物語型では死なない）（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
+| 執着（ヤンデレ） | 3 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
 | 敵対 | 1 | 憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
 | セフレ | 1 | 愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
 | 仲間 | 1 | 仲間：息の合った分担・助け合い（tns_comrade）〔a〕 |
 | 同一人物 | 1 | 同一人物の二人が出会う（片方の死・正体の露見など）（ss_same）〔a〕 |
-| 関係を問わない | 5 | 不死・吸血鬼（倒れても起き上がる・発狂・血を吸う）（rpg_special）、階ごとの出来事（戦闘・宝箱・罠・商人・泉・休憩）（rpg_floor）、階層の主（20体）（rpg_boss）、喧嘩・魔術師の人質・謎かけ・呪いの装備・賭場・女神像・隠し部屋・料理（rpg_event） ほか |
+| 関係を問わない | 5 | 不死・吸血鬼（倒れても起き上がる・発狂・血を吸う）（rpg_special）、階ごとの出来事（戦闘・宝箱・罠・商人・泉・休憩）（rpg_floor）、階層の主（20体）（rpg_boss）、喧嘩・魔術師の人質・謎かけ・呪いの装備・賭場など（rpg_event） ほか |
 
 種類：対立 7・交流 5・ハプニング 2・戦闘 1・献身 1・恋愛 1・単独行動 1・探索 1
 
@@ -532,7 +532,7 @@ R18：夜 3 件：モブ〔合意のない展開〕 2、住人どうし〔関係
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
 | 関係を問わない | 1 | 当たり前の仕事として施す・受ける（違和感に気づく）（kh_work） |
 
@@ -550,9 +550,9 @@ R18：夜 1 件：モブ〔合意のない展開〕 1
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
-| 関係を問わない | 4 | インキュバス派との精の奪い合い・吸い合い勝負（sc_rival）、精を分け与える（住人どうし）（sc_share）〔a〕、住人を標的にする（気づく・抗う・流される・惚れ込む）（sc_target）〔a〕、獲物を誘惑して精を集める（sc_hunt） |
+| 関係を問わない | 4 | インキュバス派との精の奪い合い・吸い合い勝負（sc_rival）、精を分け与える（住人どうし）（sc_share）〔a〕、住人を標的にする（気づく・抗う・流されるなど）（sc_target）〔a〕、獲物を誘惑して精を集める（sc_hunt） |
 
 種類：夜 4・対立 2
 
@@ -570,15 +570,15 @@ R18：夜 4 件：モブ〔合意のない展開〕 2、住人どうし〔条件
 | --- | --- | --- |
 | 友人 | 1 | 友人に催眠をかけられる（sm_friend）〔a〕 |
 | 同僚 | 1 | 同僚に催眠をかけられる（sm_colleague）〔a〕 |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
-| 執着（ヤンデレ） | 4 | 暗示で縛り続ける（恋人・ストーカー。重いのとき）（ct_saimin_abuse）〔a〕、ストーカーに催眠をかけられる（sm_stalker）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
+| 執着（ヤンデレ） | 4 | 暗示で縛り続ける（恋人・ストーカー）（ct_saimin_abuse）〔a〕、ストーカーに催眠をかけられる（sm_stalker）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
 | 敵対 | 2 | 恨みを持った相手に催眠をかけられる（sm_grudge）〔a〕、憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
-| 恋人 | 2 | 暗示で縛り続ける（恋人・ストーカー。重いのとき）（ct_saimin_abuse）〔a〕、恋人に催眠をかけられる（sm_lover）〔a〕 |
+| 恋人 | 2 | 暗示で縛り続ける（恋人・ストーカー）（ct_saimin_abuse）〔a〕、恋人に催眠をかけられる（sm_lover）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
 | セフレ | 1 | 愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
 | 仲間 | 1 | 仲間：息の合った分担・助け合い（tns_comrade）〔a〕 |
@@ -588,7 +588,7 @@ R18：夜 4 件：モブ〔合意のない展開〕 2、住人どうし〔条件
 
 R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし〔条件の印なし〕 1
 
-内容の軸：合意のない展開：1件（スイッチ「合意のない展開」が入のとき）〔表示側：ある・同意のない催眠〕／妊娠：1件（スイッチ「妊娠」が入のとき・重いのときだけ）〔表示側：条件つき・重いのとき〕／暴力をともなう性描写：なし〔表示側：なし・場面なし〕／歪んだ関係（DV など）：1件（スイッチ「歪んだ関係（DV など）」が入のとき・重いのときだけ）〔表示側：条件つき・重いのとき〕／死ネタ：なし／残酷な展開：2件
+内容の軸：合意のない展開：1件（内容のスイッチ「合意のない展開」が入のとき）〔表示側：ある・同意のない催眠〕／妊娠：1件（内容のスイッチ「妊娠」が入のとき・展開の重さが「重い」のときだけ）〔表示側：条件つき・重いのとき〕／暴力をともなう性描写：なし〔表示側：なし・場面なし〕／歪んだ関係（DV など）：1件（内容のスイッチ「歪んだ関係（DV など）」が入のとき・展開の重さが「重い」のときだけ）〔表示側：条件つき・重いのとき〕／死ネタ：なし／残酷な展開：2件
 
 表（数だけ）：催眠中のハプニング 15件、暗示 37件
 
@@ -598,12 +598,12 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 兄弟姉妹 | 1 | 家族の共演（親子・きょうだい。性的な場面にしない）（vr_kin）〔a〕 |
-| 兄弟（庇護） | 1 | 家族の共演（親子・きょうだい。性的な場面にしない）（vr_kin）〔a〕 |
-| 兄弟（親友のよう） | 1 | 家族の共演（親子・きょうだい。性的な場面にしない）（vr_kin）〔a〕 |
-| 兄弟（不仲） | 2 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕、家族の共演（親子・きょうだい。性的な場面にしない）（vr_kin）〔a〕 |
-| 親子 | 1 | 家族の共演（親子・きょうだい。性的な場面にしない）（vr_kin）〔a〕 |
-| 擬似親子 | 1 | 家族の共演（親子・きょうだい。性的な場面にしない）（vr_kin）〔a〕 |
+| 兄弟姉妹 | 1 | 家族の共演（親子・きょうだい）（vr_kin）〔a〕 |
+| 兄弟（庇護） | 1 | 家族の共演（親子・きょうだい）（vr_kin）〔a〕 |
+| 兄弟（親友のよう） | 1 | 家族の共演（親子・きょうだい）（vr_kin）〔a〕 |
+| 兄弟（不仲） | 2 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕、家族の共演（親子・きょうだい）（vr_kin）〔a〕 |
+| 親子 | 1 | 家族の共演（親子・きょうだい）（vr_kin）〔a〕 |
+| 擬似親子 | 1 | 家族の共演（親子・きょうだい）（vr_kin）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
 | 関係を問わない | 2 | 企画に挑む（一人ずつ・投票・耐久・対決・チーム戦）（vr_show）〔a〕、罰ゲーム（vr_penalty） |
 
@@ -621,19 +621,19 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 2
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 同僚 | 2 | 関係ならではの夜（同僚・同級生・上司と部下・信仰・恩人）（lk_r18_ties）〔a〕、関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
-| 同級生 | 2 | 関係ならではの夜（同僚・同級生・上司と部下・信仰・恩人）（lk_r18_ties）〔a〕、関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
+| 同僚 | 2 | 関係ならではの夜（同僚・同級生・上司と部下など）（lk_r18_ties）〔a〕、関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
+| 同級生 | 2 | 関係ならではの夜（同僚・同級生・上司と部下など）（lk_r18_ties）〔a〕、関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
 | 親族 | 1 | 関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
-| 上司と部下 | 2 | 関係ならではの夜（同僚・同級生・上司と部下・信仰・恩人）（lk_r18_ties）〔a〕、関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
-| 恩人 | 3 | 関係ならではの夜（同僚・同級生・上司と部下・信仰・恩人）（lk_r18_ties）〔a〕、関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕、負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
+| 上司と部下 | 2 | 関係ならではの夜（同僚・同級生・上司と部下など）（lk_r18_ties）〔a〕、関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
+| 恩人 | 3 | 関係ならではの夜（同僚・同級生・上司と部下など）（lk_r18_ties）〔a〕、関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕、負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
 | 執着（ヤンデレ） | 2 | 執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
-| 執着（信仰） | 2 | 関係ならではの夜（同僚・同級生・上司と部下・信仰・恩人）（lk_r18_ties）〔a〕、関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
+| 執着（信仰） | 2 | 関係ならではの夜（同僚・同級生・上司と部下など）（lk_r18_ties）〔a〕、関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 不仲 | 2 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕、嫌い合う二人が、媚薬で抑えきれなくなる（lk_r18_hate）〔a〕 |
 | ライバル | 1 | 嫌い合う二人が、媚薬で抑えきれなくなる（lk_r18_hate）〔a〕 |
 | 敵対 | 2 | 嫌い合う二人が、媚薬で抑えきれなくなる（lk_r18_hate）〔a〕、憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
 | セフレ | 1 | 愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
@@ -645,7 +645,7 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 2
 
 R18：夜 7 件：住人どうし〔条件の印なし〕 3、モブ〔合意のない展開〕 1、モブ〔条件の印なし〕 1、住人どうし〔関係：不仲・関係：ライバル・関係：敵対〕 1、住人どうし〔関係：同僚・関係：同級生・関係：上司と部下・関係：恩人・関係：執着（信仰）〕 1
 
-内容の軸：合意のない展開：1件（スイッチ「合意のない展開」が入のとき）〔表示側：ある・群衆に襲われる〕／妊娠：なし〔表示側：なし・妊娠の場面なし〕／暴力をともなう性描写：なし〔表示側：なし・場面なし〕／歪んだ関係（DV など）：なし〔表示側：なし・スイッチで足す場面なし（関係としては出る）〕／死ネタ：なし／残酷な展開：4件
+内容の軸：合意のない展開：1件（内容のスイッチ「合意のない展開」が入のとき）〔表示側：ある・群衆に襲われる〕／妊娠：なし〔表示側：なし・妊娠の場面なし〕／暴力をともなう性描写：なし〔表示側：なし・場面なし〕／歪んだ関係（DV など）：なし〔表示側：なし・スイッチで足す場面なし（関係としては出る）〕／死ネタ：なし／残酷な展開：4件
 
 表（数だけ）：仕掛け 6件
 
@@ -655,18 +655,18 @@ R18：夜 7 件：住人どうし〔条件の印なし〕 3、モブ〔合意の
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 1 | 好意モード（好意で信頼を取りにいく・好きな人には入れられない）（jr_love）〔a〕 |
-| 幼馴染 | 2 | 好意モード（好意で信頼を取りにいく・好きな人には入れられない）（jr_love）〔a〕、人狼の勝利の夜（近い関係の二人は合意のうえ）（jr_wolf_close）〔a〕 |
-| 親友 | 2 | 好意モード（好意で信頼を取りにいく・好きな人には入れられない）（jr_love）〔a〕、人狼の勝利の夜（近い関係の二人は合意のうえ）（jr_wolf_close）〔a〕 |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
+| 友人 | 1 | 好意モード（好意で信頼を取りにいくなど）（jr_love）〔a〕 |
+| 幼馴染 | 2 | 好意モード（好意で信頼を取りにいくなど）（jr_love）〔a〕、人狼の勝利の夜（近い関係の二人は合意のうえ）（jr_wolf_close）〔a〕 |
+| 親友 | 2 | 好意モード（好意で信頼を取りにいくなど）（jr_love）〔a〕、人狼の勝利の夜（近い関係の二人は合意のうえ）（jr_wolf_close）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
-| 執着（ヤンデレ） | 3 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（物語型では死なない）（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
+| 執着（ヤンデレ） | 3 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
-| 敵対 | 2 | 好意モード（好意で信頼を取りにいく・好きな人には入れられない）（jr_love）〔a〕、憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 敵対 | 2 | 好意モード（好意で信頼を取りにいくなど）（jr_love）〔a〕、憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
-| 恋人 | 2 | 好意モード（好意で信頼を取りにいく・好きな人には入れられない）（jr_love）〔a〕、人狼の勝利の夜（近い関係の二人は合意のうえ）（jr_wolf_close）〔a〕 |
+| 恋人 | 2 | 好意モード（好意で信頼を取りにいくなど）（jr_love）〔a〕、人狼の勝利の夜（近い関係の二人は合意のうえ）（jr_wolf_close）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
 | セフレ | 2 | 人狼の勝利の夜（近い関係の二人は合意のうえ）（jr_wolf_close）〔a〕、愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
 | 仲間 | 1 | 仲間：息の合った分担・助け合い（tns_comrade）〔a〕 |
@@ -677,7 +677,7 @@ R18：夜 7 件：住人どうし〔条件の印なし〕 3、モブ〔合意の
 
 R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし〔関係：幼馴染・関係：親友・関係：恋人・関係：セフレ〕 1
 
-内容の軸：合意のない展開：1件（スイッチ「合意のない展開」が入のとき）〔表示側：条件つき・人狼が勝ったとき〕／妊娠：なし〔表示側：なし・妊娠の場面なし〕／暴力をともなう性描写：なし〔表示側：なし・場面なし〕／歪んだ関係（DV など）：なし〔表示側：なし・スイッチで足す場面なし（関係としては出る）〕／死ネタ：1件／残酷な展開：3件
+内容の軸：合意のない展開：1件（内容のスイッチ「合意のない展開」が入のとき）〔表示側：条件つき・人狼が勝ったとき〕／妊娠：なし〔表示側：なし・妊娠の場面なし〕／暴力をともなう性描写：なし〔表示側：なし・場面なし〕／歪んだ関係（DV など）：なし〔表示側：なし・スイッチで足す場面なし（関係としては出る）〕／死ネタ：1件／残酷な展開：3件
 
 表（数だけ）：罰ゲーム 11件
 
@@ -713,33 +713,33 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 同僚 | 2 | tie_colleague〔c〕、tie_colleague2〔b〕 |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 同級生 | 1 | tie_classmate〔c〕 |
-| 兄弟（不仲） | 6 | rb_goukon_sbSpat〔c〕、rb_goukon_sbCompare〔c〕、rb_goukon_sbGrudge〔c〕、rb_goukon_sbDefend〔c〕 ほか |
-| 親族 | 1 | tie_relative〔c〕 |
-| 上司と部下 | 1 | tie_boss〔c〕 |
-| 恩人 | 4 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 |
-| 片想い | 15 | u_serve〔c〕、u_tri〔c〕、u_protect〔c〕、{b}は長いあいだ黙っていた。それから（u_confess）〔c〕 ほか |
-| 執着（ヤンデレ） | 12 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 1 | tie_worship〔c〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 6 | rb_goukon_bdClash〔c〕、rb_goukon_bdSnark〔c〕、rb_goukon_bdForced〔c〕、rb_goukon_bdCredit〔c〕 ほか |
-| 敵対 | 7 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 ほか |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 2 | grp_cheer〔b〕、grp_bless〔b〕 |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 21 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 1 | tie_ly_ex〔c〕 |
-| 歪んだ関係 | 1 | tie_abuse〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 3 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕 |
-| 関係を問わない | 176 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}が{b}をからかった。{b}は笑ってみせたが、目が笑っ…（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}が{b}の（lecture） ほか |
+| 同僚 | 2 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕 |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 同級生 | 1 | 同級生と昔話で笑い合う（tie_classmate）〔c〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_goukon_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_goukon_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_goukon_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_goukon_sbDefend）〔c〕 ほか |
+| 親族 | 1 | 親族どうしの思い出と助け合い（tie_relative）〔c〕 |
+| 上司と部下 | 1 | 上司の責任と部下の支え（tie_boss）〔c〕 |
+| 恩人 | 4 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 |
+| 片想い | 15 | 片想いの相手に尽くす（u_serve）〔c〕、片想いの相手がほかの人を見ている（u_tri）〔c〕、片想いの相手をかばう（u_protect）〔c〕、片想いの相手に想いを告げる（u_confess）〔c〕 ほか |
+| 執着（ヤンデレ） | 12 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 1 | 崇める相手に尽くす（tie_worship）〔c〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 6 | 反りの合わない二人が衝突する（rb_goukon_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_goukon_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_goukon_bdForced）〔c〕、手柄と責任を押し付け合う（rb_goukon_bdCredit）〔c〕 ほか |
+| 敵対 | 7 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 ほか |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 2 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕 |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 21 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 1 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕 |
+| 歪んだ関係 | 1 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 3 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕 |
+| 関係を問わない | 176 | {a}は{b}に他愛ない話を振った（talk）、{a}が{b}をからかった（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、相手のやり方に口を出す（lecture） ほか |
 
 種類：交流 83・対立 71・恋愛 59・献身 43・単独行動 25・ハプニング 7・裏切り 1
 
@@ -749,38 +749,38 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 2 | tie_rc_whiteroom_friend_blame〔c〕、tie_rc_whiteroom_friend_joke〔c〕 |
-| 同僚 | 2 | tie_colleague〔c〕、tie_colleague2〔b〕 |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 幼馴染 | 2 | tie_rc_whiteroom_childhood_old〔c〕、tie_rc_whiteroom_childhood_sign〔c〕 |
-| 同級生 | 1 | tie_classmate〔c〕 |
-| 兄弟姉妹 | 2 | tie_rc_whiteroom_sib_bicker〔c〕、tie_rc_whiteroom_sib_back〔c〕 |
-| 兄弟（不仲） | 6 | rb_whiteroom_sbSpat〔c〕、rb_whiteroom_sbCompare〔c〕、rb_whiteroom_sbGrudge〔c〕、rb_whiteroom_sbDefend〔c〕 ほか |
-| 親族 | 1 | tie_relative〔c〕 |
-| 親子 | 2 | tie_rc_whiteroom_parent_worry〔c〕、tie_rc_whiteroom_parent_care〔c〕 |
-| 師弟 | 2 | tie_rc_whiteroom_mentor_calm〔c〕、tie_rc_whiteroom_mentor_defy〔c〕 |
-| 上司と部下 | 2 | tie_boss〔c〕、冷たくされても、信仰する側の想いは揺らがない（rt_keep）〔d〕 |
-| 恩人 | 5 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 ほか |
-| 片想い | 15 | u_serve〔c〕、u_tri〔c〕、u_protect〔c〕、{b}は長いあいだ黙っていた。それから（u_confess）〔c〕 ほか |
-| 執着（ヤンデレ） | 12 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 2 | tie_worship〔c〕、冷たくされても、信仰する側の想いは揺らがない（rt_keep）〔d〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 6 | rb_whiteroom_bdClash〔c〕、rb_whiteroom_bdSnark〔c〕、rb_whiteroom_bdForced〔c〕、rb_whiteroom_bdCredit〔c〕 ほか |
-| 敵対 | 7 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 ほか |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 3 | grp_cheer〔b〕、grp_bless〔b〕、rm_tease〔b〕 |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 20 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 3 | tie_ly_ex〔c〕、tie_rc_whiteroom_ex_awk〔c〕、tie_rc_whiteroom_ex_know〔c〕 |
-| 歪んだ関係 | 1 | tie_abuse〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 11 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕、rs_rival〔c〕 ほか |
-| 関係を問わない | 227 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}が{b}をからかった。{b}は笑ってみせたが、目が笑っ…（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}が{b}の（lecture） ほか |
+| 友人 | 2 | 閉じ込められた友人どうしの行き違い（tie_rc_whiteroom_friend_blame）〔c〕、友人の軽口で支える（tie_rc_whiteroom_friend_joke）〔c〕 |
+| 同僚 | 2 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕 |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 幼馴染 | 2 | 幼馴染の昔話でからかう（tie_rc_whiteroom_childhood_old）〔c〕、子どものころの合図（tie_rc_whiteroom_childhood_sign）〔c〕 |
+| 同級生 | 1 | 同級生と昔話で笑い合う（tie_classmate）〔c〕 |
+| 兄弟姉妹 | 2 | 閉じ込められても口げんか（tie_rc_whiteroom_sib_bicker）〔c〕、きょうだいで支え合う（tie_rc_whiteroom_sib_back）〔c〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_whiteroom_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_whiteroom_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_whiteroom_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_whiteroom_sbDefend）〔c〕 ほか |
+| 親族 | 1 | 親族どうしの思い出と助け合い（tie_relative）〔c〕 |
+| 親子 | 2 | 親の心配が空回りする（tie_rc_whiteroom_parent_worry）〔c〕、子が親を支える（tie_rc_whiteroom_parent_care）〔c〕 |
+| 師弟 | 2 | 師が弟子を落ち着かせる（tie_rc_whiteroom_mentor_calm）〔c〕、弟子が師に逆らう（tie_rc_whiteroom_mentor_defy）〔c〕 |
+| 上司と部下 | 2 | 上司の責任と部下の支え（tie_boss）〔c〕、冷たくされても、信仰する側の想いは揺らがない（rt_keep）〔d〕 |
+| 恩人 | 5 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 ほか |
+| 片想い | 15 | 片想いの相手に尽くす（u_serve）〔c〕、片想いの相手がほかの人を見ている（u_tri）〔c〕、片想いの相手をかばう（u_protect）〔c〕、片想いの相手に想いを告げる（u_confess）〔c〕 ほか |
+| 執着（ヤンデレ） | 12 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 2 | 崇める相手に尽くす（tie_worship）〔c〕、冷たくされても、信仰する側の想いは揺らがない（rt_keep）〔d〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 6 | 反りの合わない二人が衝突する（rb_whiteroom_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_whiteroom_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_whiteroom_bdForced）〔c〕、手柄と責任を押し付け合う（rb_whiteroom_bdCredit）〔c〕 ほか |
+| 敵対 | 7 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 ほか |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 3 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕、恋人どうしを冷やかす（rm_tease）〔b〕 |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 20 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 3 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕、元恋人と閉じ込められた気まずさ（tie_rc_whiteroom_ex_awk）〔c〕、元恋人だから分かる気遣い（tie_rc_whiteroom_ex_know）〔c〕 |
+| 歪んだ関係 | 1 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 11 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕、同一人物の二人が同じ人を想う（rs_rival）〔c〕 ほか |
+| 関係を問わない | 227 | {a}は{b}に他愛ない話を振った（talk）、{a}が{b}をからかった（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、相手のやり方に口を出す（lecture） ほか |
 
 種類：交流 112・対立 76・恋愛 69・献身 52・単独行動 31・ハプニング 9・脱出 8・裏切り 4
 
@@ -790,38 +790,38 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 2 | tie_rc_classroom_friend_split〔c〕、tie_rc_classroom_friend_study〔c〕 |
-| 同僚 | 2 | tie_colleague〔c〕、tie_colleague2〔b〕 |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 幼馴染 | 2 | tie_rc_classroom_childhood_tease〔c〕、tie_rc_classroom_childhood_always〔c〕 |
-| 同級生 | 3 | tie_classmate〔c〕、tie_rc_classroom_classmate_again〔c〕、tie_rc_classroom_classmate_know〔c〕 |
-| 兄弟姉妹 | 2 | tie_rc_classroom_sib_bicker〔c〕、tie_rc_classroom_sib_back〔c〕 |
-| 兄弟（不仲） | 6 | rb_classroom_sbSpat〔c〕、rb_classroom_sbCompare〔c〕、rb_classroom_sbGrudge〔c〕、rb_classroom_sbDefend〔c〕 ほか |
-| 親族 | 1 | tie_relative〔c〕 |
-| 親子 | 2 | tie_rc_classroom_parent_meddle〔c〕、tie_rc_classroom_parent_care〔c〕 |
-| 師弟 | 2 | tie_rc_classroom_mentor_strict〔c〕、tie_rc_classroom_mentor_proud〔c〕 |
-| 上司と部下 | 3 | tie_boss〔c〕、tie_rc_classroom_boss_habit〔c〕、tie_rc_classroom_boss_cover〔c〕 |
-| 恩人 | 4 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 |
-| 片想い | 15 | u_serve〔c〕、u_tri〔c〕、u_protect〔c〕、{b}は長いあいだ黙っていた。それから（u_confess）〔c〕 ほか |
-| 執着（ヤンデレ） | 12 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 1 | tie_worship〔c〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 6 | rb_classroom_bdClash〔c〕、rb_classroom_bdSnark〔c〕、rb_classroom_bdForced〔c〕、rb_classroom_bdCredit〔c〕 ほか |
-| 敵対 | 7 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 ほか |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 2 | grp_cheer〔b〕、grp_bless〔b〕 |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 6 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 3 | tie_ly_ex〔c〕、tie_rc_classroom_ex_awk〔c〕、tie_rc_classroom_ex_easy〔c〕 |
-| 歪んだ関係 | 1 | tie_abuse〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 3 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕 |
-| 関係を問わない | 186 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}が{b}をからかった。{b}は笑ってみせたが、目が笑っ…（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}が{b}の（lecture） ほか |
+| 友人 | 2 | 行事での食い違い（tie_rc_classroom_friend_split）〔c〕、友人としての支え（tie_rc_classroom_friend_study）〔c〕 |
+| 同僚 | 2 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕 |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 幼馴染 | 2 | 教室で昔の話が出る（tie_rc_classroom_childhood_tease）〔c〕、昔からの合図と気遣い（tie_rc_classroom_childhood_always）〔c〕 |
+| 同級生 | 3 | 同級生と昔話で笑い合う（tie_classmate）〔c〕、前の学年から続く張り合い（tie_rc_classroom_classmate_again）〔c〕、ずっと同じクラスだった気安さ（tie_rc_classroom_classmate_know）〔c〕 |
+| 兄弟姉妹 | 2 | 学校でもいつもの口げんか（tie_rc_classroom_sib_bicker）〔c〕、学校でのきょうだいの助け合い（tie_rc_classroom_sib_back）〔c〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_classroom_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_classroom_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_classroom_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_classroom_sbDefend）〔c〕 ほか |
+| 親族 | 1 | 親族どうしの思い出と助け合い（tie_relative）〔c〕 |
+| 親子 | 2 | 学校での口出し（tie_rc_classroom_parent_meddle）〔c〕、子から親への気遣い（tie_rc_classroom_parent_care）〔c〕 |
+| 師弟 | 2 | 学校でも師の顔が出る（tie_rc_classroom_mentor_strict）〔c〕、弟子が師を立て、師が認める（tie_rc_classroom_mentor_proud）〔c〕 |
+| 上司と部下 | 3 | 上司の責任と部下の支え（tie_boss）〔c〕、バイト先の上下が教室に出る（tie_rc_classroom_boss_habit）〔c〕、上の立場から下を気遣う（tie_rc_classroom_boss_cover）〔c〕 |
+| 恩人 | 4 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 |
+| 片想い | 15 | 片想いの相手に尽くす（u_serve）〔c〕、片想いの相手がほかの人を見ている（u_tri）〔c〕、片想いの相手をかばう（u_protect）〔c〕、片想いの相手に想いを告げる（u_confess）〔c〕 ほか |
+| 執着（ヤンデレ） | 12 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 1 | 崇める相手に尽くす（tie_worship）〔c〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 6 | 反りの合わない二人が衝突する（rb_classroom_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_classroom_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_classroom_bdForced）〔c〕、手柄と責任を押し付け合う（rb_classroom_bdCredit）〔c〕 ほか |
+| 敵対 | 7 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 ほか |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 2 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕 |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 6 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 3 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕、別れたあとの教室の気まずさ（tie_rc_classroom_ex_awk）〔c〕、元恋人どうしの、友人としての距離（tie_rc_classroom_ex_easy）〔c〕 |
+| 歪んだ関係 | 1 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 3 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕 |
+| 関係を問わない | 186 | {a}は{b}に他愛ない話を振った（talk）、{a}が{b}をからかった（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、相手のやり方に口を出す（lecture） ほか |
 
 種類：交流 100・対立 72・献身 48・恋愛 41・単独行動 30・ハプニング 7・裏切り 2
 
@@ -831,42 +831,42 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 3 | {a}は探索の帰りに見つけた桜色の貝殻を、黙って{b}の手の…（i_solo_gift）〔b〕、tie_rc_island_friend_share〔c〕、tie_rc_island_friend_watch〔c〕 |
-| 同僚 | 2 | tie_colleague〔c〕、tie_colleague2〔b〕 |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 幼馴染 | 2 | tie_rc_island_childhood_reckless〔c〕、tie_rc_island_childhood_beach〔c〕 |
-| 同級生 | 3 | tie_classmate〔c〕、tie_rc_island_classmate_rival〔c〕、tie_rc_island_classmate_roll〔c〕 |
-| 兄弟姉妹 | 2 | tie_rc_island_sib_food〔c〕、tie_rc_island_sib_storm〔c〕 |
-| 兄弟（庇護） | 2 | ir_prebel〔d〕、ir_pcare〔d〕 |
-| 兄弟（親友のよう） | 1 | ir_csig〔d〕 |
-| 兄弟（不仲） | 6 | rb_island_sbSpat〔c〕、rb_island_sbCompare〔c〕、rb_island_sbGrudge〔c〕、rb_island_sbDefend〔c〕 ほか |
-| 親族 | 1 | tie_relative〔c〕 |
-| 親子 | 2 | tie_rc_island_parent_stop〔c〕、tie_rc_island_parent_care〔c〕 |
-| 教師と生徒 | 2 | ir_lesson〔d〕、ir_scold〔d〕 |
-| 師弟 | 3 | ir_train〔d〕、tie_rc_island_mentor_drill〔c〕、tie_rc_island_mentor_stand〔c〕 |
-| 上司と部下 | 3 | tie_boss〔c〕、tie_rc_island_boss_rank〔c〕、tie_rc_island_boss_trust〔c〕 |
-| 恩人 | 4 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 |
-| 片想い | 15 | u_serve〔c〕、u_tri〔c〕、u_protect〔c〕、{b}は長いあいだ黙っていた。それから（u_confess）〔c〕 ほか |
-| 執着（ヤンデレ） | 12 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 1 | tie_worship〔c〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 6 | rb_island_bdClash〔c〕、rb_island_bdSnark〔c〕、rb_island_bdForced〔c〕、rb_island_bdCredit〔c〕 ほか |
-| ライバル | 1 | {a}は探索の帰りに見つけた桜色の貝殻を、黙って{b}の手の…（i_solo_gift）〔b〕 |
-| 敵対 | 4 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 6 | grp_cheer〔b〕、grp_bless〔b〕、il_jealous〔d〕、is_gift〔b〕 ほか |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 20 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 3 | tie_ly_ex〔c〕、tie_rc_island_ex_awk〔c〕、tie_rc_island_ex_know〔c〕 |
-| 歪んだ関係 | 1 | tie_abuse〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 3 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕 |
-| 関係を問わない | 230 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}が{b}をからかった。{b}は笑ってみせたが、目が笑っ…（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}が{b}の（lecture） ほか |
+| 友人 | 3 | {a}は一番きれいな貝殻を拾って、{b}に渡そうとして（i_solo_gift）〔b〕、友人どうしの食い違い（tie_rc_island_friend_share）〔c〕、友人としての支え（tie_rc_island_friend_watch）〔c〕 |
+| 同僚 | 2 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕 |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 幼馴染 | 2 | 幼馴染の無茶を叱る（tie_rc_island_childhood_reckless）〔c〕、子どものころの思い出（tie_rc_island_childhood_beach）〔c〕 |
+| 同級生 | 3 | 同級生と昔話で笑い合う（tie_classmate）〔c〕、学生のころの張り合いが島で出る（tie_rc_island_classmate_rival）〔c〕、同じクラスだった息の合い方（tie_rc_island_classmate_roll）〔c〕 |
+| 兄弟姉妹 | 2 | 食料の取り合い（tie_rc_island_sib_food）〔c〕、きょうだいの背中合わせ（tie_rc_island_sib_storm）〔c〕 |
+| 兄弟（庇護） | 2 | 守られる側のきょうだいが反発する（ir_prebel）〔d〕、きょうだいの世話を焼く（ir_pcare）〔d〕 |
+| 兄弟（親友のよう） | 1 | きょうだいの合図と思い出（ir_csig）〔d〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_island_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_island_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_island_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_island_sbDefend）〔c〕 ほか |
+| 親族 | 1 | 親族どうしの思い出と助け合い（tie_relative）〔c〕 |
+| 親子 | 2 | 親が子の無茶を止める（tie_rc_island_parent_stop）〔c〕、子が親を気遣う（tie_rc_island_parent_care）〔c〕 |
+| 教師と生徒 | 2 | 先生が生徒に島の知恵を教える（ir_lesson）〔d〕、先生と生徒の叱責と反発（ir_scold）〔d〕 |
+| 師弟 | 3 | 師匠が弟子に稽古をつける（ir_train）〔d〕、島でも稽古の口調（tie_rc_island_mentor_drill）〔c〕、弟子が師を支える（tie_rc_island_mentor_stand）〔c〕 |
+| 上司と部下 | 3 | 上司の責任と部下の支え（tie_boss）〔c〕、島では肩書きは関係ない……はず（tie_rc_island_boss_rank）〔c〕、部下が上司を立て、支える（tie_rc_island_boss_trust）〔c〕 |
+| 恩人 | 4 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 |
+| 片想い | 15 | 片想いの相手に尽くす（u_serve）〔c〕、片想いの相手がほかの人を見ている（u_tri）〔c〕、片想いの相手をかばう（u_protect）〔c〕、片想いの相手に想いを告げる（u_confess）〔c〕 ほか |
+| 執着（ヤンデレ） | 12 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 1 | 崇める相手に尽くす（tie_worship）〔c〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 6 | 反りの合わない二人が衝突する（rb_island_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_island_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_island_bdForced）〔c〕、手柄と責任を押し付け合う（rb_island_bdCredit）〔c〕 ほか |
+| ライバル | 1 | {a}は一番きれいな貝殻を拾って、{b}に渡そうとして（i_solo_gift）〔b〕 |
+| 敵対 | 4 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 6 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕、想う相手が誰かと親しくて妬く（il_jealous）〔d〕、恋人たちに手作りの贈り物をする（is_gift）〔b〕 ほか |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 20 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 3 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕、元恋人と二人きりの作業（tie_rc_island_ex_awk）〔c〕、元恋人だから知っている気遣い（tie_rc_island_ex_know）〔c〕 |
+| 歪んだ関係 | 1 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 3 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕 |
+| 関係を問わない | 230 | {a}は{b}に他愛ない話を振った（talk）、{a}が{b}をからかった（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、相手のやり方に口を出す（lecture） ほか |
 
 種類：交流 98・対立 80・献身 73・恋愛 50・単独行動 38・ハプニング 10・脱出 8・裏切り 6・ハプニング 2・戦闘 1
 
@@ -876,23 +876,23 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| バディ | 1 | 感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕 |
-| 親友 | 1 | 感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕 |
-| 兄弟姉妹 | 1 | 感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕 |
-| 親子 | 1 | 感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕 |
+| バディ | 1 | 感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕 |
+| 親友 | 1 | 感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕 |
+| 兄弟姉妹 | 1 | 感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕 |
+| 親子 | 1 | 感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕 |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
-| 執着（ヤンデレ） | 4 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（物語型では死なない）（os_obsess）〔a〕、感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
+| 執着（ヤンデレ） | 4 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（os_obsess）〔a〕、感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 敵対 | 1 | 憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
-| 恋人 | 1 | 感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕 |
+| 恋人 | 1 | 感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
-| 本命 | 1 | 感染症で倒れた人への反応（執着・恋人・本命・家族・親友）（ship_infect_react）〔a〕 |
+| 本命 | 1 | 感染症で倒れた人への反応（執着・恋人・本命など）（ship_infect_react）〔a〕 |
 | セフレ | 1 | 愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
 | 仲間 | 1 | 仲間：息の合った分担・助け合い（tns_comrade）〔a〕 |
 | 同一人物 | 1 | 同一人物の二人が出会う（片方の死・正体の露見など）（ss_same）〔a〕 |
-| 関係を問わない | 7 | 全滅のあとの「ひとりの船」（不死・吸血鬼）（ship_after_wipe）、不死・吸血鬼（蘇る・発狂・血を吸う）（ship_special）、星の探索（着陸・調査。失敗すると怪我をし、死ぬこともある）（ship_explore）、星の感染症（うつる・倒れる・看取る）（ship_infect） ほか |
+| 関係を問わない | 7 | 全滅のあとの「ひとりの船」（不死・吸血鬼）（ship_after_wipe）、不死・吸血鬼（蘇る・発狂・血を吸う）（ship_special）、星の探索（着陸・調査）（ship_explore）、星の感染症（うつる・倒れる・看取る）（ship_infect） ほか |
 
 種類：交流 6・対立 5・ハプニング 3・献身 2・単独行動 2・恋愛 1・探索 1
 
@@ -906,37 +906,37 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 2 | tie_rc_br_friend_doubt〔c〕、tie_rc_br_friend_watch〔c〕 |
-| 同僚 | 2 | tie_colleague〔c〕、tie_colleague2〔b〕 |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 幼馴染 | 2 | tie_rc_br_childhood_lie〔c〕、tie_rc_br_childhood_sign〔c〕 |
-| 同級生 | 3 | tie_classmate〔c〕、tie_rc_br_classmate_aim〔c〕、tie_rc_br_classmate_roll〔c〕 |
-| 兄弟姉妹 | 2 | tie_rc_br_sib_who〔c〕、tie_rc_br_sib_back〔c〕 |
-| 兄弟（不仲） | 6 | rb_br_sbSpat〔c〕、rb_br_sbCompare〔c〕、rb_br_sbGrudge〔c〕、rb_br_sbDefend〔c〕 ほか |
-| 親族 | 1 | tie_relative〔c〕 |
-| 親子 | 2 | tie_rc_br_parent_shield〔c〕、tie_rc_br_parent_notchild〔c〕 |
-| 師弟 | 2 | tie_rc_br_mentor_teach〔c〕、tie_rc_br_mentor_blade〔c〕 |
-| 上司と部下 | 3 | tie_boss〔c〕、tie_rc_br_boss_order〔c〕、tie_rc_br_boss_take〔c〕 |
-| 恩人 | 4 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 |
-| 執着（ヤンデレ） | 12 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 1 | tie_worship〔c〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 6 | rb_br_bdClash〔c〕、rb_br_bdSnark〔c〕、rb_br_bdForced〔c〕、rb_br_bdCredit〔c〕 ほか |
-| 敵対 | 4 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 3 | grp_cheer〔b〕、grp_bless〔b〕、血の止まらない腹を押さえたまま、{a}は{b}に言った。（lastwords）〔d〕 |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 14 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 3 | tie_ly_ex〔c〕、tie_rc_br_ex_meet〔c〕、tie_rc_br_ex_trust〔c〕 |
-| 歪んだ関係 | 1 | tie_abuse〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 3 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕 |
-| 関係を問わない | 177 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}が{b}の（lecture）、{a}がぽつりと弱音をこぼした。{b}は茶化さずに最後まで聞…（confide） ほか |
+| 友人 | 2 | 友人を信じきれない（tie_rc_br_friend_doubt）〔c〕、友人どうしの見張りと支え（tie_rc_br_friend_watch）〔c〕 |
+| 同僚 | 2 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕 |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 幼馴染 | 2 | 幼馴染だから嘘が分かる（tie_rc_br_childhood_lie）〔c〕、子どものころの合図（tie_rc_br_childhood_sign）〔c〕 |
+| 同級生 | 3 | 同級生と昔話で笑い合う（tie_classmate）〔c〕、同じ教室にいた相手に武器を向けられるか（tie_rc_br_classmate_aim）〔c〕、教室の思い出で正気を保つ（tie_rc_br_classmate_roll）〔c〕 |
+| 兄弟姉妹 | 2 | どちらが生き残るかの言い争い（tie_rc_br_sib_who）〔c〕、きょうだいの背中合わせ（tie_rc_br_sib_back）〔c〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_br_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_br_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_br_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_br_sbDefend）〔c〕 ほか |
+| 親族 | 1 | 親族どうしの思い出と助け合い（tie_relative）〔c〕 |
+| 親子 | 2 | 親が子を守る（tie_rc_br_parent_shield）〔c〕、守られるだけの子でいたくない（tie_rc_br_parent_notchild）〔c〕 |
+| 師弟 | 2 | 師が弟子に生き延びる術を教える（tie_rc_br_mentor_teach）〔c〕、弟子は師に刃を向けられない（tie_rc_br_mentor_blade）〔c〕 |
+| 上司と部下 | 3 | 上司の責任と部下の支え（tie_boss）〔c〕、上司の指示に従うか迷う（tie_rc_br_boss_order）〔c〕、上司が責任を引き受ける（tie_rc_br_boss_take）〔c〕 |
+| 恩人 | 4 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 |
+| 執着（ヤンデレ） | 12 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 1 | 崇める相手に尽くす（tie_worship）〔c〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 6 | 反りの合わない二人が衝突する（rb_br_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_br_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_br_bdForced）〔c〕、手柄と責任を押し付け合う（rb_br_bdCredit）〔c〕 ほか |
+| 敵対 | 4 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 3 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕、血の止まらない腹を押さえたまま、{a}は{b}に言った（lastwords）〔d〕 |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 14 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 3 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕、元恋人との鉢合わせ（tie_rc_br_ex_meet）〔c〕、元恋人に背中を任せる（tie_rc_br_ex_trust）〔c〕 |
+| 歪んだ関係 | 1 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 3 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕 |
+| 関係を問わない | 177 | {a}は{b}に他愛ない話を振った（talk）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、相手のやり方に口を出す（lecture）、{a}がぽつりと弱音をこぼした（confide） ほか |
 
 種類：対立 72・交流 66・単独行動 50・献身 47・恋愛 21・脱出 8・ハプニング 8・裏切り 7・戦闘 3
 
@@ -946,37 +946,37 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 2 | tie_rc_trial_friend_vote〔c〕、tie_rc_trial_friend_stay〔c〕 |
-| 同僚 | 2 | tie_colleague〔c〕、tie_colleague2〔b〕 |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 幼馴染 | 2 | tie_rc_trial_childhood_know〔c〕、tie_rc_trial_childhood_sign〔c〕 |
-| 同級生 | 3 | tie_classmate〔c〕、tie_rc_trial_classmate_suspect〔c〕、tie_rc_trial_classmate_roll〔c〕 |
-| 兄弟姉妹 | 2 | tie_rc_trial_sib_motive〔c〕、tie_rc_trial_sib_guard〔c〕 |
-| 兄弟（不仲） | 6 | rb_trial_sbSpat〔c〕、rb_trial_sbCompare〔c〕、rb_trial_sbGrudge〔c〕、rb_trial_sbDefend〔c〕 ほか |
-| 親族 | 1 | tie_relative〔c〕 |
-| 親子 | 2 | tie_rc_trial_parent_doubt〔c〕、tie_rc_trial_parent_protect〔c〕 |
-| 師弟 | 2 | tie_rc_trial_mentor_deduce〔c〕、tie_rc_trial_mentor_refuse〔c〕 |
-| 上司と部下 | 3 | tie_boss〔c〕、tie_rc_trial_boss_speak〔c〕、tie_rc_trial_boss_cover〔c〕 |
-| 恩人 | 4 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 |
-| 執着（ヤンデレ） | 12 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 1 | tie_worship〔c〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 6 | rb_trial_bdClash〔c〕、rb_trial_bdSnark〔c〕、rb_trial_bdForced〔c〕、rb_trial_bdCredit〔c〕 ほか |
-| 敵対 | 4 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 2 | grp_cheer〔b〕、grp_bless〔b〕 |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 21 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 3 | tie_ly_ex〔c〕、tie_rc_trial_ex_alibi〔c〕、tie_rc_trial_ex_trust〔c〕 |
-| 歪んだ関係 | 1 | tie_abuse〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 3 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕 |
-| 関係を問わない | 169 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}が{b}をからかった。{b}は笑ってみせたが、目が笑っ…（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}が{b}の（lecture） ほか |
+| 友人 | 2 | 投票で友人を庇いきれなかった（tie_rc_trial_friend_vote）〔c〕、友人として寄り添う（tie_rc_trial_friend_stay）〔c〕 |
+| 同僚 | 2 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕 |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 幼馴染 | 2 | 幼馴染だから嘘が見える（tie_rc_trial_childhood_know）〔c〕、子どものころの合図（tie_rc_trial_childhood_sign）〔c〕 |
+| 同級生 | 3 | 同級生と昔話で笑い合う（tie_classmate）〔c〕、同級生を疑ってしまう（tie_rc_trial_classmate_suspect）〔c〕、同じクラスだった思い出で支え合う（tie_rc_trial_classmate_roll）〔c〕 |
+| 兄弟姉妹 | 2 | きょうだいで疑い合う（tie_rc_trial_sib_motive）〔c〕、きょうだいで守り合う（tie_rc_trial_sib_guard）〔c〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_trial_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_trial_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_trial_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_trial_sbDefend）〔c〕 ほか |
+| 親族 | 1 | 親族どうしの思い出と助け合い（tie_relative）〔c〕 |
+| 親子 | 2 | 親が子を疑いかける（tie_rc_trial_parent_doubt）〔c〕、子が親を守る（tie_rc_trial_parent_protect）〔c〕 |
+| 師弟 | 2 | 師が弟子に考え方を教える（tie_rc_trial_mentor_deduce）〔c〕、弟子が師を疑えない／師に逆らう（tie_rc_trial_mentor_refuse）〔c〕 |
+| 上司と部下 | 3 | 上司の責任と部下の支え（tie_boss）〔c〕、上司に異を唱える（tie_rc_trial_boss_speak）〔c〕、上司が部下を庇う（tie_rc_trial_boss_cover）〔c〕 |
+| 恩人 | 4 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 |
+| 執着（ヤンデレ） | 12 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 1 | 崇める相手に尽くす（tie_worship）〔c〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 6 | 反りの合わない二人が衝突する（rb_trial_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_trial_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_trial_bdForced）〔c〕、手柄と責任を押し付け合う（rb_trial_bdCredit）〔c〕 ほか |
+| 敵対 | 4 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 2 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕 |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 21 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 3 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕、元恋人のアリバイ（tie_rc_trial_ex_alibi）〔c〕、元恋人を信じる（tie_rc_trial_ex_trust）〔c〕 |
+| 歪んだ関係 | 1 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 3 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕 |
+| 関係を問わない | 169 | {a}は{b}に他愛ない話を振った（talk）、{a}が{b}をからかった（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、相手のやり方に口を出す（lecture） ほか |
 
 種類：交流 82・対立 68・献身 46・単独行動 35・恋愛 27・裏切り 11・脱出 10・死亡 1
 
@@ -986,39 +986,39 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 2 | tie_rc_zombie_friend_leave〔c〕、tie_rc_zombie_friend_cheer〔c〕 |
-| 同僚 | 3 | tie_colleague〔c〕、tie_colleague2〔b〕、zb_colleague〔c〕 |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 幼馴染 | 2 | tie_rc_zombie_childhood_again〔c〕、tie_rc_zombie_childhood_sign〔c〕 |
-| 同級生 | 2 | tie_classmate〔c〕、zb_classmate〔c〕 |
+| 友人 | 2 | 友人どうしの判断の食い違い（tie_rc_zombie_friend_leave）〔c〕、友人の励まし（tie_rc_zombie_friend_cheer）〔c〕 |
+| 同僚 | 3 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕、同僚と街でいつもの分担（zb_colleague）〔c〕 |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 幼馴染 | 2 | 幼馴染の無茶（tie_rc_zombie_childhood_again）〔c〕、子どものころの合図（tie_rc_zombie_childhood_sign）〔c〕 |
+| 同級生 | 2 | 同級生と昔話で笑い合う（tie_classmate）〔c〕、同級生と見張りの合間に昔話（zb_classmate）〔c〕 |
 | 親友 | 1 | 治療薬を探す（大切な人が咬まれたとき）（zb_cure）〔a〕 |
-| 兄弟姉妹 | 3 | tie_rc_zombie_sib_split〔c〕、tie_rc_zombie_sib_back〔c〕、治療薬を探す（大切な人が咬まれたとき）（zb_cure）〔a〕 |
-| 兄弟（不仲） | 6 | rb_zombie_sbSpat〔c〕、rb_zombie_sbCompare〔c〕、rb_zombie_sbGrudge〔c〕、rb_zombie_sbDefend〔c〕 ほか |
-| 親族 | 2 | tie_relative〔c〕、zb_relative〔c〕 |
-| 親子 | 4 | tie_rc_zombie_parent_shield〔c〕、tie_rc_zombie_parent_guard〔c〕、tie_rc_zombie_parent_fight〔c〕、治療薬を探す（大切な人が咬まれたとき）（zb_cure）〔a〕 |
-| 教師と生徒 | 1 | zr_scold〔b〕 |
-| 上司と部下 | 2 | tie_boss〔c〕、zb_boss〔c〕 |
-| 恩人 | 5 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 ほか |
-| 片想い | 16 | z_cr_guard〔b〕、u_serve〔c〕、u_tri〔c〕、u_protect〔c〕 ほか |
-| 執着（ヤンデレ） | 16 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 2 | tie_worship〔c〕、zb_worship〔c〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 6 | rb_zombie_bdClash〔c〕、rb_zombie_bdSnark〔c〕、rb_zombie_bdForced〔c〕、rb_zombie_bdCredit〔c〕 ほか |
-| 敵対 | 7 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 ほか |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 10 | grp_cheer〔b〕、grp_bless〔b〕、{a}は咬み跡を隠したまま、{b}に言った。（z_last）〔d〕、見張りの交代のとき、{a}は{b}の隣に座ったまま言った。（z_confess）〔d〕 ほか |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 13 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 3 | tie_ly_ex〔c〕、tie_rc_zombie_ex_awk〔c〕、tie_rc_zombie_ex_trust〔c〕 |
-| 歪んだ関係 | 1 | tie_abuse〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 3 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕 |
-| 関係を問わない | 125 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}がぽつりと弱音をこぼした。{b}は茶化さずに最後まで聞…（confide）、{a}は、{c}と親しげに話す{b}から目を逸らせなかった。（jealous） ほか |
+| 兄弟姉妹 | 3 | 物資の分け方で口げんか（tie_rc_zombie_sib_split）〔c〕、きょうだいの背中合わせ（tie_rc_zombie_sib_back）〔c〕、治療薬を探す（大切な人が咬まれたとき）（zb_cure）〔a〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_zombie_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_zombie_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_zombie_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_zombie_sbDefend）〔c〕 ほか |
+| 親族 | 2 | 親族どうしの思い出と助け合い（tie_relative）〔c〕、親族と家族の行方を語り合う（zb_relative）〔c〕 |
+| 親子 | 4 | 親が子をかばう（tie_rc_zombie_parent_shield）〔c〕、子が親を守る（tie_rc_zombie_parent_guard）〔c〕、過保護への反発（tie_rc_zombie_parent_fight）〔c〕、治療薬を探す（大切な人が咬まれたとき）（zb_cure）〔a〕 |
+| 教師と生徒 | 1 | 勝手に外へ出る生徒を先生が止める（zr_scold）〔b〕 |
+| 上司と部下 | 2 | 上司の責任と部下の支え（tie_boss）〔c〕、上司が部下に指示を出して守る（zb_boss）〔c〕 |
+| 恩人 | 5 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 ほか |
+| 片想い | 16 | 想いを隠したまま守り続ける（z_cr_guard）〔b〕、片想いの相手に尽くす（u_serve）〔c〕、片想いの相手がほかの人を見ている（u_tri）〔c〕、片想いの相手をかばう（u_protect）〔c〕 ほか |
+| 執着（ヤンデレ） | 16 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 2 | 崇める相手に尽くす（tie_worship）〔c〕、崇める相手のために食料を削る（zb_worship）〔c〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 6 | 反りの合わない二人が衝突する（rb_zombie_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_zombie_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_zombie_bdForced）〔c〕、手柄と責任を押し付け合う（rb_zombie_bdCredit）〔c〕 ほか |
+| 敵対 | 7 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 ほか |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 10 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕、{a}は咬み跡を隠したまま、{b}に言った（z_last）〔d〕、見張りの交代のとき、{a}は{b}の隣に座ったまま言った（z_confess）〔d〕 ほか |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 13 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 3 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕、元恋人との気まずい同行（tie_rc_zombie_ex_awk）〔c〕、元恋人だから背中を預けられる（tie_rc_zombie_ex_trust）〔c〕 |
+| 歪んだ関係 | 1 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 3 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕 |
+| 関係を問わない | 125 | {a}は{b}に他愛ない話を振った（talk）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、{a}がぽつりと弱音をこぼした（confide）、{a}は、{c}と親しげに話す{b}から目を逸らせなかった（jealous） ほか |
 
 種類：対立 59・交流 58・献身 53・単独行動 46・恋愛 32・ハプニング 7・戦闘 3・裏切り 2・ハプニング 1
 
@@ -1028,41 +1028,41 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 同僚 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 先輩後輩 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| バディ | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 幼馴染 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 同級生 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 友達以上恋人未満 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 親友 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 兄弟姉妹 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 兄弟（庇護） | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 兄弟（親友のよう） | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 兄弟（不仲） | 2 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕、きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
-| 親族 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 親子 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 擬似親子 | 2 | 疑似親子の秘密（実は村の出身だった）（js_pparent）〔a〕、関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 教師と生徒 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 師弟 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 上司と部下 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
+| 友人 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 同僚 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 先輩後輩 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| バディ | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 幼馴染 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 同級生 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 友達以上恋人未満 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 親友 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 兄弟姉妹 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 兄弟（庇護） | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 兄弟（親友のよう） | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 兄弟（不仲） | 2 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕、きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
+| 親族 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 親子 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 擬似親子 | 2 | 疑似親子の秘密（実は村の出身だった）（js_pparent）〔a〕、関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 教師と生徒 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 師弟 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 上司と部下 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
-| 執着（ヤンデレ） | 4 | 愛憎（揉める・身を挺して守る）（js_hatelove）〔a〕、執着：恋敵への嫉妬が積もる・暴走して閉じ込める（物語型では死なない）（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
+| 執着（ヤンデレ） | 4 | 愛憎（揉める・身を挺して守る）（js_hatelove）〔a〕、執着：恋敵への嫉妬が積もる・暴走して閉じ込める（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
 | ライバル | 1 | 探偵どうし（手がかりの奪い合い・ぶつかり合い）（js_feud）〔a〕 |
-| 敵対 | 4 | 探偵どうし（手がかりの奪い合い・ぶつかり合い）（js_feud）〔a〕、憎しみ（生贄に差し出す・人目のないところで手にかける）（js_hate）〔a〕、関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕、憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 敵対 | 4 | 探偵どうし（手がかりの奪い合い・ぶつかり合い）（js_feud）〔a〕、憎しみ（生贄に差し出すなど）（js_hate）〔a〕、関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕、憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
-| 恋人 | 2 | 恋人を作る（吊り橋・告白・恋人どうしの場面）（js_love）〔a〕、関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
+| 恋人 | 2 | 恋人を作る（吊り橋・告白・恋人どうしの場面）（js_love）〔a〕、関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
-| セフレ | 2 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕、愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
-| 運命の番 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 番 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
-| 主従 | 1 | 関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う）（js_rel）〔a〕 |
+| セフレ | 2 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕、愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
+| 運命の番 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 番 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
+| 主従 | 1 | 関係で変わる行動（かばう・見捨てるなど）（js_rel）〔a〕 |
 | 仲間 | 1 | 仲間：息の合った分担・助け合い（tns_comrade）〔a〕 |
 | 同一人物 | 1 | 同一人物の二人が出会う（片方の死・正体の露見など）（ss_same）〔a〕 |
-| 関係を問わない | 12 | クライマックスの場所と神の顕現（全滅もある）（js_cave）、関係の変化（語らい・共闘・口論・疑い・仲直り・告白・嫉妬）（js_drama）、裏切り（仲間を村に売る・一人で逃げる）（js_betray）、村の歓迎の宴（js_feast） ほか |
+| 関係を問わない | 12 | クライマックスの場所と神の顕現（全滅もある）（js_cave）、関係の変化（語らい・共闘・口論・疑い・仲直りなど）（js_drama）、裏切り（仲間を村に売る・一人で逃げる）（js_betray）、村の歓迎の宴（js_feast） ほか |
 
 種類：対立 10・交流 8・ハプニング 4・単独行動 3・裏切り 2・献身 2・恋愛 2・戦闘 1
 
@@ -1078,16 +1078,16 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 | --- | --- | --- |
 | 親友 | 1 | 楽にしてあげたかった（mercy）〔a〕 |
 | 兄弟姉妹 | 2 | 保険金（insurance）〔a〕、楽にしてあげたかった（mercy）〔a〕 |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
 | 親子 | 2 | 保険金（insurance）〔a〕、楽にしてあげたかった（mercy）〔a〕 |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
 | 片想い | 2 | 嫉妬（jealous）〔a〕、歪んだ執着（obsess）〔a〕 |
-| 執着（ヤンデレ） | 4 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（物語型では死なない）（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕、愛憎（揉める・犯人に狙われた相手を守る）（yk_hatelove）〔a〕 |
+| 執着（ヤンデレ） | 4 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕、愛憎（揉める・犯人に狙われた相手を守る）（yk_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
 | ライバル | 2 | 探偵どうし（手がかりの奪い合い・ぶつかり合い）（yk_feud）〔a〕、嫉妬（jealous）〔a〕 |
 | 敵対 | 4 | 憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕、探偵どうし（手がかりの奪い合い・ぶつかり合い）（yk_feud）〔a〕、憎しみ（騒ぎに紛れて吹雪へ締め出す・手にかける）（yk_hate）〔a〕、復讐（revenge）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
 | 恋人 | 2 | 保険金（insurance）〔a〕、楽にしてあげたかった（mercy）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
@@ -1110,39 +1110,39 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 2 | tie_rc_omega_friend_meddle〔c〕、tie_rc_omega_friend_cover〔c〕 |
-| 同僚 | 5 | tie_colleague〔c〕、tie_colleague2〔b〕、om_tie_colleague〔c〕、om_tiekeep_colleague〔c〕 ほか |
-| 先輩後輩 | 1 | tie_senpai〔c〕 |
-| バディ | 1 | tie_buddy〔c〕 |
-| 幼馴染 | 2 | tie_rc_omega_childhood_test〔c〕、tie_rc_omega_childhood_stay〔c〕 |
-| 同級生 | 4 | tie_classmate〔c〕、om_tie_classmate〔c〕、om_tiekeep_classmate〔c〕、om_tiegrow_classmate〔c〕 |
-| 兄弟姉妹 | 2 | tie_rc_omega_sib_bicker〔c〕、tie_rc_omega_sib_guard〔c〕 |
-| 兄弟（不仲） | 6 | rb_omega_sbSpat〔c〕、rb_omega_sbCompare〔c〕、rb_omega_sbGrudge〔c〕、rb_omega_sbDefend〔c〕 ほか |
-| 親族 | 4 | tie_relative〔c〕、om_tie_relative〔c〕、om_tiekeep_relative〔c〕、om_tiegrow_relative〔c〕 |
-| 親子 | 2 | tie_rc_omega_parent_worry〔c〕、tie_rc_omega_parent_care〔c〕 |
-| 師弟 | 2 | tie_rc_omega_mentor_teach〔c〕、tie_rc_omega_mentor_defy〔c〕 |
-| 上司と部下 | 4 | tie_boss〔c〕、om_tie_boss〔c〕、om_tiekeep_boss〔c〕、om_tiegrow_boss〔c〕 |
-| 恩人 | 7 | tie_benefactor〔c〕、tie_nw_gu_refuse〔c〕、tie_nw_gu_obey〔c〕、{a}は{b}が何かをやり遂げるたびに、誰よりも大きな拍手を…（tie_nw_gu_guilt）〔c〕 ほか |
-| 執着（ヤンデレ） | 12 | tie_nw_dep_search〔c〕、tie_nw_dep_check〔c〕、tie_nw_dep_cling〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た。見つ…（tie_nw_dep_worry）〔c〕 ほか |
-| 執着（信仰） | 4 | tie_worship〔c〕、om_tie_worship〔c〕、om_tiekeep_worship〔c〕、om_tiegrow_worship〔c〕 |
-| 一方的な好意・敬愛 | 5 | tie_nw_os_cheer〔c〕、tie_nw_os_gift〔c〕、tie_nw_os_watch〔c〕、tie_nw_os_freeze〔c〕 ほか |
-| 盲信 | 2 | tie_nw_blind〔c〕、tie_blind〔c〕 |
-| 不仲 | 6 | rb_omega_bdClash〔c〕、rb_omega_bdSnark〔c〕、rb_omega_bdForced〔c〕、rb_omega_bdCredit〔c〕 ほか |
-| ライバル | 1 | {b}は、{c}の隣に立つ{a}を睨みつけた。αの威圧がぶつ…（om_rival）〔c〕 |
-| 敵対 | 7 | tie_nw_hate_demean〔c〕、tie_nw_hate_trap〔c〕、tie_nw_hate_isolate〔c〕、tie_nw_hate_harm〔c〕 ほか |
-| 無関心 | 3 | tie_nw_ap_talk〔c〕、tie_nw_ap_gift〔c〕、tie_nw_ap_other〔c〕 |
-| 恐怖 | 5 | tie_nw_fr_avoid〔c〕、tie_nw_fr_freeze〔c〕、tie_nw_fr_obey〔c〕、tie_nw_fr_shelter〔c〕 ほか |
-| 恋人 | 18 | grp_cheer〔b〕、grp_bless〔b〕、付き合えないのは分かっていた。それでも{a}と{b}は、飲ん…（om_night）〔b〕、{a}は{b}の首筋に歯を立て、くっきりと痕を残した。（om_amagami）〔b〕 ほか |
-| 夫婦 | 1 | tie_spouse〔c〕 |
-| 許嫁 | 6 | tie_nw_fi_eager〔c〕、tie_nw_fi_unsure〔c〕、tie_nw_fi_refuse〔c〕、tie_nw_fi_talk〔c〕 ほか |
-| 本命 | 1 | tie_nw_honmei〔c〕 |
-| セフレ | 20 | tie_nw_mi_secret〔c〕、tie_nw_mi_found〔c〕、tie_nw_mi_cut〔c〕、{a}は{b}の荷物が重そうなのを見て、何も言わずに半分を持…（tie_nw_mi_noshow）〔c〕 ほか |
-| 元恋人 | 3 | tie_ly_ex〔c〕、tie_rc_omega_ex_scent〔c〕、tie_rc_omega_ex_care〔c〕 |
-| 歪んだ関係 | 1 | tie_abuse〔c〕 |
-| 運命の番 | 2 | 一度は抗った。それでも{a}の体は、{c}の匂いを忘れてくれ…（om_fated_waver）〔c〕、om_fated_realize〔c〕 |
-| 仲間 | 4 | tie_nw_co_help〔c〕、tie_nw_co_cover〔c〕、tie_nw_co_mourn〔c〕、tie_nw_co_together〔c〕 |
-| 同一人物 | 4 | attr_mirror_talk〔c〕、attr_mirror_habit〔c〕、attr_mirror_clash〔c〕、{a}は{b}の胸ぐらを掴むようにして言った。（om_same）〔c〕 |
-| 関係を問わない | 97 | {a}は{b}に他愛ない話を振った。思ったより会話が続いた。（talk）、{a}が{b}をからかった。{b}は笑ってみせたが、目が笑っ…（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った。（care）、{a}が{b}の（lecture） ほか |
+| 友人 | 2 | 友人どうしの第二性をめぐる行き違い（tie_rc_omega_friend_meddle）〔c〕、友人の発情期・偏見に寄り添う（tie_rc_omega_friend_cover）〔c〕 |
+| 同僚 | 5 | 同僚どうしの軽口と分担（tie_colleague）〔c〕、同僚の連携と仕事の外の顔（tie_colleague2）〔b〕、同僚の職場の日常（om_tie_colleague）〔c〕、同僚どうしで支え合う（om_tiekeep_colleague）〔c〕 ほか |
+| 先輩後輩 | 1 | 先輩の面倒見と後輩の憧れ（tie_senpai）〔c〕 |
+| バディ | 1 | バディが目配せ一つで連携する（tie_buddy）〔c〕 |
+| 幼馴染 | 2 | 第二性が分かる前からの幼馴染（tie_rc_omega_childhood_test）〔c〕、幼馴染の変わらない距離（tie_rc_omega_childhood_stay）〔c〕 |
+| 同級生 | 4 | 同級生と昔話で笑い合う（tie_classmate）〔c〕、同級生との再会と日常（om_tie_classmate）〔c〕、同級生どうしで支え合う（om_tiekeep_classmate）〔c〕、同級生と昔話から近づく（om_tiegrow_classmate）〔c〕 |
+| 兄弟姉妹 | 2 | 第二性の違うきょうだいの口げんか（tie_rc_omega_sib_bicker）〔c〕、きょうだいで守り合う（tie_rc_omega_sib_guard）〔c〕 |
+| 兄弟（不仲） | 6 | 不仲なきょうだいが顔を合わせて口喧嘩（rb_omega_sbSpat）〔c〕、きょうだいと比べられてきた恨み（rb_omega_sbCompare）〔c〕、不仲なきょうだいを放っておけない（rb_omega_sbGrudge）〔c〕、悪く言われたきょうだいをかばう（rb_omega_sbDefend）〔c〕 ほか |
+| 親族 | 4 | 親族どうしの思い出と助け合い（tie_relative）〔c〕、親族どうしの日常（om_tie_relative）〔c〕、親族どうしで支え合う（om_tiekeep_relative）〔c〕、親族が家族のような距離になる（om_tiegrow_relative）〔c〕 |
+| 親子 | 2 | 親の心配が重い（tie_rc_omega_parent_worry）〔c〕、子が親を支える（tie_rc_omega_parent_care）〔c〕 |
+| 師弟 | 2 | 師が第二性に振り回されない生き方を教える（tie_rc_omega_mentor_teach）〔c〕、弟子が師に逆らう（tie_rc_omega_mentor_defy）〔c〕 |
+| 上司と部下 | 4 | 上司の責任と部下の支え（tie_boss）〔c〕、上司と部下の職場の日常（om_tie_boss）〔c〕、上司と部下が支え合う（om_tiekeep_boss）〔c〕、上司と部下が職場の外で対等に（om_tiegrow_boss）〔c〕 |
+| 恩人 | 7 | 恩人の気遣いと消えない感謝（tie_benefactor）〔c〕、恩人の頼みを断れない（tie_nw_gu_refuse）〔c〕、負い目から恩人に逆らえない（tie_nw_gu_obey）〔c〕、{a}は{b}が手こずっているのを見て（tie_nw_gu_guilt）〔c〕 ほか |
+| 執着（ヤンデレ） | 12 | 依存する相手の姿が見えず探し回る（tie_nw_dep_search）〔c〕、依存する相手を何度も確かめる（tie_nw_dep_check）〔c〕、依存する相手にすがりつく（tie_nw_dep_cling）〔c〕、{a}は{b}が戻らないと聞くと、誰より先に探しに出た（tie_nw_dep_worry）〔c〕 ほか |
+| 執着（信仰） | 4 | 崇める相手に尽くす（tie_worship）〔c〕、崇める相手への献身（om_tie_worship）〔c〕、崇める相手を支え続ける（om_tiekeep_worship）〔c〕、崇める関係が深まる（om_tiegrow_worship）〔c〕 |
+| 一方的な好意・敬愛 | 5 | 推しを陰から応援する（tie_nw_os_cheer）〔c〕、推しに差し入れをする（tie_nw_os_gift）〔c〕、推しを遠くから見守る（tie_nw_os_watch）〔c〕、推しに話しかけられて固まる（tie_nw_os_freeze）〔c〕 ほか |
+| 盲信 | 2 | 盲信する相手から人を遠ざける（tie_nw_blind）〔c〕、盲信する相手に近づく人を遠ざける（tie_blind）〔c〕 |
+| 不仲 | 6 | 反りの合わない二人が衝突する（rb_omega_bdClash）〔c〕、気に食わない相手に皮肉を言う（rb_omega_bdSnark）〔c〕、気に食わない相手としぶしぶ組む（rb_omega_bdForced）〔c〕、手柄と責任を押し付け合う（rb_omega_bdCredit）〔c〕 ほか |
+| ライバル | 1 | {b}は、{c}の隣に立つ{a}を睨みつけた（om_rival）〔c〕 |
+| 敵対 | 7 | 憎む相手を人前で貶める（tie_nw_hate_demean）〔c〕、憎む相手を陥れる（tie_nw_hate_trap）〔c〕、憎む相手を孤立させる（tie_nw_hate_isolate）〔c〕、憎しみが危害に変わる（tie_nw_hate_harm）〔c〕 ほか |
+| 無関心 | 3 | 無関心な相手に話しかけても響かない（tie_nw_ap_talk）〔c〕、無関心な相手に好意を受け流される（tie_nw_ap_gift）〔c〕、無関心な相手に素通りされる（tie_nw_ap_other）〔c〕 |
+| 恐怖 | 5 | 恐れる相手と同じ場所にいられない（tie_nw_fr_avoid）〔c〕、恐れる相手に話しかけられて固まる（tie_nw_fr_freeze）〔c〕、恐れる相手に従わされる（tie_nw_fr_obey）〔c〕、怯える人が頼れる人に身を寄せる（tie_nw_fr_shelter）〔c〕 ほか |
+| 恋人 | 18 | 恋人どうしを冷やかして応援する（grp_cheer）〔b〕、想いをしまって二人を祝福する（grp_bless）〔b〕、付き合えないのは分かっていた（om_night）〔b〕、{a}は{b}の首筋に歯を立て、くっきりと痕を残した（om_amagami）〔b〕 ほか |
+| 夫婦 | 1 | 連れ添った二人のいつもの時間（tie_spouse）〔c〕 |
+| 許嫁 | 6 | 乗り気の許嫁が歩み寄る（tie_nw_fi_eager）〔c〕、決められた縁に戸惑う許嫁（tie_nw_fi_unsure）〔c〕、許嫁に断りたい気持ちを打ち明ける（tie_nw_fi_refuse）〔c〕、許嫁どうしで婚約について話す（tie_nw_fi_talk）〔c〕 ほか |
+| 本命 | 1 | 本命への嫉妬が暴走する（tie_nw_honmei）〔c〕 |
+| セフレ | 20 | 愛人どうしの秘密の時間（tie_nw_mi_secret）〔c〕、愛人との関係が見つかる（tie_nw_mi_found）〔c〕、愛人に手切れを告げる（tie_nw_mi_cut）〔c〕、{a}と{b}は、どちらからともなく役目を分け合った（tie_nw_mi_noshow）〔c〕 ほか |
+| 元恋人 | 3 | 元恋人と目が合って気まずくなる（tie_ly_ex）〔c〕、元恋人の匂いと気まずさ（tie_rc_omega_ex_scent）〔c〕、元恋人だから知っている気遣い（tie_rc_omega_ex_care）〔c〕 |
+| 歪んだ関係 | 1 | すれ違いの多い恋人の束縛と喧嘩（tie_abuse）〔c〕 |
+| 運命の番 | 2 | 運命の番を前に心が揺れる（om_fated_waver）〔c〕、運命の番だと気づく（om_fated_realize）〔c〕 |
+| 仲間 | 4 | 仲間どうしで助け合う（tie_nw_co_help）〔c〕、仲間をかばう（tie_nw_co_cover）〔c〕、亡くなった仲間を弔う（tie_nw_co_mourn）〔c〕、仲間と一緒に動く（tie_nw_co_together）〔c〕 |
+| 同一人物 | 4 | 同一人物と鏡のように話す（attr_mirror_talk）〔c〕、同一人物どうし癖まで同じ（attr_mirror_habit）〔c〕、同一人物に自分の嫌なところを見る（attr_mirror_clash）〔c〕、{a}は{b}の胸ぐらを掴むようにして言った（om_same）〔c〕 |
+| 関係を問わない | 97 | {a}は{b}に他愛ない話を振った（talk）、{a}が{b}をからかった（tease）、{a}は{b}の顔色の悪さに気づき、黙って隣に座った（care）、相手のやり方に口を出す（lecture） ほか |
 
 種類：交流 81・対立 66・恋愛 45・献身 30・単独行動 15・ハプニング 6・裏切り 1
 
@@ -1158,12 +1158,12 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 | 執着（ヤンデレ） | 2 | 執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 敵対 | 1 | 憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
 | セフレ | 1 | 愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
 | 仲間 | 1 | 仲間：息の合った分担・助け合い（tns_comrade）〔a〕 |
-| 関係を問わない | 1 | 施術（少しずつ際どく。気づく・言い訳に騙される）（ms_treat） |
+| 関係を問わない | 1 | 施術（少しずつ際どく）（ms_treat） |
 
 種類：交流 4・対立 4・献身 1・恋愛 1・単独行動 1
 
@@ -1177,19 +1177,19 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
-| 執着（ヤンデレ） | 3 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（物語型では死なない）（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
+| 執着（ヤンデレ） | 3 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
 | 敵対 | 1 | 憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
 | セフレ | 1 | 愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
 | 仲間 | 1 | 仲間：息の合った分担・助け合い（tns_comrade）〔a〕 |
 | 同一人物 | 1 | 同一人物の二人が出会う（片方の死・正体の露見など）（ss_same）〔a〕 |
-| 関係を問わない | 5 | 不死・吸血鬼（倒れても起き上がる・発狂・血を吸う）（rpg_special）、階ごとの出来事（戦闘・宝箱・罠・商人・泉・休憩）（rpg_floor）、階層の主（20体）（rpg_boss）、喧嘩・魔術師の人質・謎かけ・呪いの装備・賭場・女神像・隠し部屋・料理（rpg_event） ほか |
+| 関係を問わない | 5 | 不死・吸血鬼（倒れても起き上がる・発狂・血を吸う）（rpg_special）、階ごとの出来事（戦闘・宝箱・罠・商人・泉・休憩）（rpg_floor）、階層の主（20体）（rpg_boss）、喧嘩・魔術師の人質・謎かけ・呪いの装備・賭場など（rpg_event） ほか |
 
 種類：対立 7・交流 5・ハプニング 2・戦闘 1・献身 1・恋愛 1・単独行動 1・探索 1
 
@@ -1203,13 +1203,13 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 | --- | --- | --- |
 | 友人 | 1 | 友人に催眠をかけられる（sm_friend）〔a〕 |
 | 同僚 | 1 | 同僚に催眠をかけられる（sm_colleague）〔a〕 |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
 | 執着（ヤンデレ） | 3 | ストーカーに催眠をかけられる（sm_stalker）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
 | 敵対 | 2 | 恨みを持った相手に催眠をかけられる（sm_grudge）〔a〕、憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
 | 恋人 | 1 | 恋人に催眠をかけられる（sm_lover）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
@@ -1230,7 +1230,7 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 | --- | --- | --- |
 | 同僚 | 1 | 関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
 | 同級生 | 1 | 関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
 | 親族 | 1 | 関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
 | 上司と部下 | 1 | 関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕 |
 | 恩人 | 2 | 関係ごとの反応・関係を保つ・発展させる出来事（lk_ties）〔a〕、負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
@@ -1239,7 +1239,7 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
 | 敵対 | 1 | 憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
 | セフレ | 1 | 愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
@@ -1259,18 +1259,18 @@ R18：夜 2 件：住人どうし〔合意のない展開〕 1、住人どうし
 
 | 関係 | 件数 | 主な出来事 |
 | --- | --- | --- |
-| 友人 | 1 | 好意モード（好意で信頼を取りにいく・好きな人には入れられない）（jr_love）〔a〕 |
-| 幼馴染 | 1 | 好意モード（好意で信頼を取りにいく・好きな人には入れられない）（jr_love）〔a〕 |
-| 親友 | 1 | 好意モード（好意で信頼を取りにいく・好きな人には入れられない）（jr_love）〔a〕 |
-| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種）（rbs_sibbad）〔a〕 |
+| 友人 | 1 | 好意モード（好意で信頼を取りにいくなど）（jr_love）〔a〕 |
+| 幼馴染 | 1 | 好意モード（好意で信頼を取りにいくなど）（jr_love）〔a〕 |
+| 親友 | 1 | 好意モード（好意で信頼を取りにいくなど）（jr_love）〔a〕 |
+| 兄弟（不仲） | 1 | きょうだい（不仲）：口喧嘩・比べられた恨みなど（rbs_sibbad）〔a〕 |
 | 恩人 | 1 | 負い目：恩人の頼みを断れない（tns_guilt）〔a〕 |
-| 執着（ヤンデレ） | 3 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（物語型では死なない）（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
+| 執着（ヤンデレ） | 3 | 執着：恋敵への嫉妬が積もる・暴走して閉じ込める（os_obsess）〔a〕、執着（依存）：探しに行く・居場所を確かめる（tns_dep）〔a〕、執着（愛憎）：探す・守る・責める・試す（tns_hatelove）〔a〕 |
 | 一方的な好意・敬愛 | 1 | 推し：遠くから見守る・差し入れる（tns_oshi）〔a〕 |
 | 不仲 | 1 | 不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種）（rbs_bad）〔a〕 |
-| 敵対 | 2 | 好意モード（好意で信頼を取りにいく・好きな人には入れられない）（jr_love）〔a〕、憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
-| 無関心 | 1 | 無関心：向けられた言葉が届かない・差し出されたものに目もくれない（tns_apathy）〔a〕 |
+| 敵対 | 2 | 好意モード（好意で信頼を取りにいくなど）（jr_love）〔a〕、憎悪：陥れる・貶めて孤立させる（tns_hate）〔a〕 |
+| 無関心 | 1 | 無関心：向けられた言葉が届かないなど（tns_apathy）〔a〕 |
 | 恐怖 | 1 | 恐怖：避ける・目を合わせない・命じられると従う（tns_fear）〔a〕 |
-| 恋人 | 1 | 好意モード（好意で信頼を取りにいく・好きな人には入れられない）（jr_love）〔a〕 |
+| 恋人 | 1 | 好意モード（好意で信頼を取りにいくなど）（jr_love）〔a〕 |
 | 許嫁 | 1 | 許嫁：乗り気・戸惑い・断りたい側の破談（tns_fiance）〔a〕 |
 | セフレ | 1 | 愛人：人目を忍ぶ・秘密がばれかける（tns_mistress）〔a〕 |
 | 仲間 | 1 | 仲間：息の合った分担・助け合い（tns_comrade）〔a〕 |

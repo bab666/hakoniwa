@@ -63,7 +63,7 @@
       }
     },
     {
-      id: 'fwb_again', cat: 'romance', sex: true, scope: 'pair',
+      id: 'fwb_again', label: 'セフレといつもの部屋で落ち合う', cat: 'romance', sex: true, scope: 'pair',
       when: function (ctx, a, b) { var pf = ctx.pair(a, b); return F.allowed(ctx) && pf.fwb && !pf.couple && pf.night && (!HK.Pos || HK.Pos.okSex(a, b)); },
       w: function (ctx, a, b) { return 0.9 + ctx.R(a, b).att / 60; },
       run: function (ctx, a, b) {

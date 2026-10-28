@@ -156,7 +156,7 @@
   }
 
   scen.events.push({
-    id: 'rt_pat', cat: 'bond', scope: 'pair',
+    id: 'rt_pat', label: '昔からの縁で落ち込む相手を支える', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !a.flags.down && !b.flags.down && hasTie(ctx, a, b); },
     w: function () { return 0.85; },
     run: function (ctx, a, b) {
@@ -262,7 +262,7 @@
     return lv ? 'love' : 'deep';
   }
   scen.events.push({
-    id: 'rt_grow', cat: 'bond', scope: 'pair',
+    id: 'rt_grow', label: '閉じ込められて関係が深まる', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) {
       if (a.flags.down || b.flags.down || ctx.stepIndex < 1 || !hasTie(ctx, a, b)) return false;
       var pf = ctx.pair(a, b);

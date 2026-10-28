@@ -4,7 +4,9 @@
      読み込み中は窓に「読み込んでいます」を出し、読めたら表に差し替える。読めなければ「一覧を読み込めませんでした」
    ・ボタンは HK.Tips.scenBtn を包んで、TIPS のボタンの後ろに足す（late のかたまり。カードは late を読んだあと描き直される。データが無くても出す）
    ・全年齢モード（HK.SAFE_ON）では R18 だけの出来事（r）を数えず、「R18：夜」のタブと R18 の内容の軸を出さない（全年齢版のデータにはもともと無い）
-   ・窓は TIPS と同じ部品（gearov・gearbox）。表は狭い幅では列を減らし、横にはみ出さない
+   ・窓は TIPS と同じ部品（gearov・gearbox）。表は狭い幅では列を詰め、横にはみ出さない
+   ・画面に出すのは利用者向けの言葉だけ（表示名・種類・条件）。出来事の id・出どころのファイル・関係の判定の方法などの作り手向けの情報は出さない
+     （それらは docs/reports/2026-10-28/event-catalog.md に残す。2026-10-28 の利用者の指示）。行を押すと、その行の出来事の一覧（表示名と条件）が開く
    両方のビルドに同じファイルを置く */
 (function () {
   'use strict';
@@ -21,16 +23,19 @@
     return s.ev.map(function (i) { return c.ev[i]; }).filter(function (e) { return e && !(safe() && e.r); });
   }
   function tieName(k) { var c = C(), l = (c && c.ties) || []; for (var i = 0; i < l.length; i++) if (l[i][0] === k) return l[i][1]; return k; }
-  function catName(k) { var c = C(); return k ? ((c && c.cats && c.cats[k]) || k) : '（種類の印なし）'; }
-  function nm(e) { return String(e.n || e.i || '').replace(/\{a\}/g, 'Ａ').replace(/\{b\}/g, 'Ｂ').replace(/\{c\}/g, 'Ｃ'); }
-  var HOW = { a: '印', b: '条件の文字列', d: '定義の文字列', c: 'id', '-': '' };
+  function catName(k) { var c = C(); return k ? ((c && c.cats && c.cats[k]) || k) : 'そのほか'; }
+  /* 表示名（全件に付けてある。無いものは一覧に出さない） */
+  function nm(e) { return String(e.n || '').replace(/\{a\}/g, 'Ａ').replace(/\{b\}/g, 'Ｂ').replace(/\{c\}/g, 'Ｃ'); }
+  function named(l) { return l.filter(function (e) { return !!e.n; }); }
+  /* 条件の語を利用者向けに */
+  function condText(x) { return x === '重い' ? '展開が重いとき' : x; }
   var AX = [['death', '死ネタ'], ['cruel', '残酷な展開']];
   /* R18 の軸・条件の語（全年齢モードでは外す）と、「R18：夜」の注記 */
   var R18C = null, NIGHT_NOTE = '';
   /* r18:begin */
   AX.push(['force', '合意のない展開', 1], ['preg', '妊娠', 1], ['violence', '暴力をともなう性描写', 1], ['abuse', '歪んだ関係（DV など）', 1]);
   R18C = /^(合意のない展開|妊娠|暴力をともなう性描写|歪んだ関係（DV など）|受け攻め|性欲)$/;
-  NIGHT_NOTE = '相手の行の下は条件（内容のスイッチ・展開の重さ・環境値・関係・受け攻め・性欲）。条件の印が無い夜も、恋愛対象・受け攻め・描写の設定・「R18に参加しない」などの共通の決まりには従います。';
+  NIGHT_NOTE = '相手の下に書いたのは、その夜が起きる条件（内容のスイッチ・展開の重さ・環境値・関係・受け攻め・性欲）です。条件の書いていない夜も、恋愛対象・受け攻め・描写の設定・「R18に参加しない」などの決まりには従います。';
   /* r18:end */
   var ST = { yes: 'ある', cond: '条件つき', no: 'ない' };
   var CHUNK = 'pack-catalog';
@@ -45,23 +50,24 @@
   if (HK.wrap) HK.wrap(HK.Tips, 'scenBtn', function (f0) { return function (id) { return (f0 ? f0.apply(this, arguments) : '') + btn(id); }; });
 
   /* ---------- 窓の中身 ---------- */
+  /* 行を押すと開く一覧：表示名と、利用者に意味のある印（種類・夜・モブ・条件・関係）だけ */
   function list(l) {
+    l = named(l);
+    if (!l.length) return '<p class="evcnone">該当する出来事はありません。</p>';
     return '<ul class="evclist">' + l.map(function (e) {
-      var cs = (e.c || []).filter(function (x) { return !(safe() && R18C && R18C.test(x)); }).concat((e.t || []).map(function (k) { return '関係：' + tieName(k); }), e.mo ? ['モブ'] : []);
-      var f = e.f >= 0 && C().files[e.f] ? C().files[e.f].replace(/^js\//, '') : '';
-      return '<li><span class="evcn">' + esc(nm(e)) + '</span>' + (e.n && e.i ? '<span class="evcid">' + esc(e.i) + '</span>' : '') +
-        (cs.length ? '<span class="evcc">' + cs.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</span>' : '') +
-        '<span class="evcf">' + esc(f) + (HOW[e.m] ? '・関係は' + HOW[e.m] + 'から' : '') + '</span></li>';
+      var cs = [catName(e.k)].concat(!safe() && e.x ? ['夜（R18）'] : [], e.mo ? ['モブ'] : [],
+        (e.c || []).filter(function (x) { return !(safe() && R18C && R18C.test(x)); }).map(condText), (e.t || []).map(function (k) { return '関係：' + tieName(k); }));
+      return '<li><span class="evcn">' + esc(nm(e)) + '</span>' + '<span class="evcc">' + cs.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</span></li>';
     }).join('') + '</ul>';
   }
-  /* 行（押すと一覧が開く）。cols：[見出し, 件数, 主な出来事] */
+  /* 行（押すと一覧が開く）。列：見出し・件数・主な出来事（表示名を 4 件まで） */
   function table(head, rows, key) {
     if (!rows.length) return '<p class="evcnone">該当する出来事はありません。</p>';
     return '<table class="evct"><thead><tr><th scope="col">' + esc(head) + '</th><th scope="col" class="num">件数</th><th scope="col" class="evcmain">主な出来事</th></tr></thead><tbody>' +
       rows.map(function (r, i) {
-        var rid = key + i;
+        var rid = key + i, ns = named(r.l);
         return '<tr class="evcrow" data-evrow="' + rid + '" tabindex="0" aria-expanded="false" aria-controls="evcd-' + rid + '"><th scope="row">' + esc(r.h) + (r.sub ? '<span class="evcsub">' + esc(r.sub) + '</span>' : '') + '</th><td class="num">' + r.l.length + '</td>' +
-          '<td class="evcmain">' + r.l.slice(0, 3).map(function (e) { return esc(nm(e)); }).join('／') + (r.l.length > 3 ? ' ほか' : '') + '</td></tr>' +
+          '<td class="evcmain">' + ns.slice(0, 4).map(function (e) { return esc(nm(e)); }).join('／') + (ns.length > 4 ? ' ほか' : '') + '</td></tr>' +
           '<tr class="evcdet" id="evcd-' + rid + '" hidden><td colspan="3">' + list(r.l) + '</td></tr>';
       }).join('') + '</tbody></table>';
   }
@@ -69,7 +75,7 @@
     var c = C(), g = {}, rows = [];
     ev.forEach(function (e) { (e.t && e.t.length ? e.t : ['-']).forEach(function (k) { (g[k] = g[k] || []).push(e); }); });
     (c.ties || []).forEach(function (t) { if (g[t[0]]) rows.push({ h: t[1], l: g[t[0]] }); });
-    if (g['-']) rows.push({ h: '関係を問わない', sub: '関係の条件が拾えないものを含む', l: g['-'] });
+    if (g['-']) rows.push({ h: '関係を問わない', l: g['-'] });
     return rows;
   }
   function byCat(ev) {
@@ -77,13 +83,13 @@
     ev.forEach(function (e) { var k = e.k || ''; if (!g[k]) { g[k] = []; ks.push(k); } g[k].push(e); });
     ks.sort(function (a, b) { return g[b].length - g[a].length || (a < b ? -1 : 1); });
     var rows = ks.map(function (k) { return { h: catName(k), l: g[k] }; });
-    if (!safe()) { var n = ev.filter(function (e) { return e.x; }); if (n.length) rows.push({ h: '夜（R18）', sub: '上の種類と重なる', l: n }); }
+    if (!safe()) { var n = ev.filter(function (e) { return e.x; }); if (n.length) rows.push({ h: '夜（R18）', sub: '上の種類と重なります', l: n }); }
     return rows;
   }
   function byNight(ev) {
     var g = {}, ks = [];
     ev.filter(function (e) { return e.x; }).forEach(function (e) {
-      var cs = (e.c || []).concat((e.t || []).map(function (k) { return '関係：' + tieName(k); })), k = (e.mo ? 'モブ' : '住人どうし') + '\n' + (cs.join('・') || '条件の印なし');
+      var cs = (e.c || []).map(condText).concat((e.t || []).map(function (k) { return '関係：' + tieName(k); })), k = (e.mo ? 'モブ' : '住人どうし') + '\n' + (cs.join('・') || '特別な条件なし');
       if (!g[k]) { g[k] = []; ks.push(k); }
       g[k].push(e);
     });
@@ -98,18 +104,17 @@
       var o0 = A[a[0]], l = ev.filter(function (e) { return (e.a || []).indexOf(a[0]) >= 0; });
       /* 全年齢モードで R18 だけの出来事を外して件数が変わったら、状態と注記は外したあとの出来事から作り直す */
       var o = o0.n === l.length ? o0 : { s: !l.length ? 'no' : l.every(function (e) { return (e.c || []).indexOf('重い') >= 0; }) ? 'cond' : 'yes', n: l.length };
-      var jt = !safe() && o.j ? '<span class="evcsub">表示側の見込み：' + esc(ST[o.j] || o.j) + (o.jt ? '（' + esc(o.jt) + '）' : '') + (o.d ? '・食い違い' : '') + '</span>' : '';
       var rid = 'x' + i;
-      return '<tr class="evcrow" data-evrow="' + rid + '" tabindex="0" aria-expanded="false" aria-controls="evcd-' + rid + '"><th scope="row">' + esc(a[1]) + '</th><td>' + esc(l.length ? (ST[o.s] || '') : 'ない') + (o.t ? '<span class="evcsub">' + esc(o.t) + '</span>' : '') + jt + '</td><td class="num">' + l.length + '</td></tr>' +
-        '<tr class="evcdet" id="evcd-' + rid + '" hidden><td colspan="3">' + (l.length ? list(l) : '<p class="evcnone">印の付いた出来事はありません。</p>') + '</td></tr>';
+      return '<tr class="evcrow" data-evrow="' + rid + '" tabindex="0" aria-expanded="false" aria-controls="evcd-' + rid + '"><th scope="row">' + esc(a[1]) + '</th><td>' + esc(l.length ? (ST[o.s] || '') : 'ない') + (o.t ? '<span class="evcsub">' + esc(o.t) + '</span>' : '') + '</td><td class="num">' + l.length + '</td></tr>' +
+        '<tr class="evcdet" id="evcd-' + rid + '" hidden><td colspan="3">' + list(l) + '</td></tr>';
     }).join('') + '</tbody></table><p class="evcnote">「条件つき」は、内容のスイッチ・展開の重さ（重い）が要る出来事だけのとき。死ネタ・残酷は、展開の重さ・死ネタの重さで起こりやすさが変わります（穏やかでも起きないわけではありません）。</p>';
   }
   function body(id) {
     var s = scenOf(id), ev = evsOf(id), tied = ev.filter(function (e) { return e.t && e.t.length; }).length;
     var night = safe() ? [] : ev.filter(function (e) { return e.x; }), mob = night.filter(function (e) { return e.mo; }).length;
     var tabs = [['tie', '関係ごと'], ['cat', '種類ごと'], ['ax', '内容']];
-    if (!safe() && C().build !== 'zenrei' && NIGHT_NOTE) tabs.push(['night', 'R18：夜']);
-    var h = '<p class="tiplead">出来事 ' + ev.length + ' 件（関係が条件 ' + tied + ' 件・関係を問わない ' + (ev.length - tied) + ' 件）' + (night.length ? '。夜（R18）' + night.length + ' 件（うちモブ相手 ' + mob + ' 件）' : '') + '。行を押すと一覧が開きます。</p>';
+    if (!safe() && C().build !== 'zenrei' && NIGHT_NOTE) tabs.push(['night', '夜（R18）']);
+    var h = '<p class="tiplead">出来事 ' + ev.length + ' 件（関係が条件 ' + tied + ' 件・関係を問わない ' + (ev.length - tied) + ' 件）' + (night.length ? '。夜（R18）' + night.length + ' 件（うちモブ相手 ' + mob + ' 件）' : '') + '。行を押すと、その出来事の一覧が開きます。</p>';
     h += '<div class="evctabs" role="tablist">' + tabs.map(function (t, i) { return '<button type="button" role="tab" class="evctab" data-evtab="' + t[0] + '" aria-selected="' + (i ? 'false' : 'true') + '" aria-controls="evcp-' + t[0] + '" id="evct-' + t[0] + '">' + esc(t[1]) + '</button>'; }).join('') + '</div>';
     var P = {
       tie: table('関係', byTie(ev), 't'),
@@ -118,11 +123,12 @@
       night: table('相手', byNight(ev), 'n') + (night.length ? '<p class="evcnote">' + esc(NIGHT_NOTE) + '</p>' : '')
     };
     tabs.forEach(function (t, i) { h += '<div class="evcpane" role="tabpanel" id="evcp-' + t[0] + '" aria-labelledby="evct-' + t[0] + '"' + (i ? ' hidden' : '') + '>' + P[t[0]] + '</div>'; });
-    if (s.tables && s.tables.length) h += '<div class="gearsec"><h3>表（数だけ）</h3><ul class="tipul">' + s.tables.map(function (t) { return '<li>' + esc(t.n) + '：' + t.c + (t.p ? ' 組（職業×職業）' : ' 件') + (t.note ? '（' + esc(t.note) + '）' : '') + '</li>'; }).join('') + '</ul></div>';
-    h += '<div class="gearsec"><ul class="tipul evcfoot"><li>数は仕組みが数えた出来事の種類の数で、文の本数ではありません。同じ出来事でも、起きるかどうかは住人の気質・関係・設定しだいです。</li>' +
-      '<li>関係の判定は、出来事の印・条件の書き方・id から推定しています。「関係を問わない」には、関係の条件が拾えなかった出来事も入ります。</li>' +
-      (s.story ? '<li>この箱庭は物語型です。場面は筋書きの中で組み立てるので、印を付けた主な場面と表だけを数えています（手書きの場面は入っていません）。</li>' : '<li>この箱庭の出来事の山（共通の出来事・箱庭の出来事・小さな出来事・関係の出来事）とハプニングを数えています。</li>') +
-      '<li>邪神村・吹雪の館・オメガバースの職業の掛け合わせは、組の数だけです。</li></ul></div>';
+    /* 組み合わせや表から選ばれる場面（種類の数だけ） */
+    if (s.tables && s.tables.length) h += '<div class="gearsec"><h3>このほかに選ばれる場面</h3><ul class="tipul">' + s.tables.map(function (t) { return '<li>' + esc(t.n) + '：' + t.c + (t.p ? ' 組' : ' 種類') + '</li>'; }).join('') + '</ul></div>';
+    h += '<div class="gearsec"><ul class="tipul evcfoot"><li>数は出来事の種類の数で、文の本数ではありません。同じ出来事でも、起きるかどうかは住人の気質・関係・設定しだいです。</li>' +
+      '<li>「関係を問わない」出来事も、関係のある二人のあいだで起きることがあります。</li>' +
+      (s.story ? '<li>この箱庭は物語型です。筋書きの中で起きる主な場面と、場面の材料になる組み合わせを載せています。</li>' : '<li>どの箱庭にもある出来事と、この箱庭だけの出来事・ハプニングを載せています。</li>') +
+      (s.tables && s.tables.some(function (t) { return t.p; }) ? '<li>職業の組み合わせで起きる出来事は、組の数だけを載せています。</li>' : '') + '</ul></div>';
     return h;
   }
 
@@ -141,11 +147,10 @@
     '.evcsub{display:block;font-weight:400;font-size:11px;color:var(--muted);margin-top:2px}' +
     '.evcdet>td{background:color-mix(in srgb,var(--ink) 4%,transparent);padding:4px 8px}' +
     '.evclist{list-style:none;margin:0;padding:0;font-size:12.5px;line-height:1.6}.evclist li{padding:5px 0;border-bottom:1px dashed var(--line)}.evclist li:last-child{border-bottom:0}' +
-    '.evcn{font-weight:600}.evcid{margin-left:6px;font-size:11px;color:var(--muted);font-family:var(--f-num,monospace)}' +
+    '.evcn{font-weight:600}' +
     '.evcc{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}.evcc span{font-size:11px;padding:0 6px;border:1px solid var(--line);border-radius:4px;color:var(--muted)}' +
-    '.evcf{display:block;font-size:11px;color:var(--muted)}' +
     '.evcnote,.evcnone{font-size:12px;color:var(--muted);margin:8px 0 0}.evcfoot{font-size:12px}.evcwait{color:var(--muted)}' +
-    '@media (max-width:560px){.evct{table-layout:auto}.evct .evcmain{display:none}.evct th[scope="row"]{width:auto}.evctab{font-size:12.5px;padding:5px 10px}}';
+    '@media (max-width:560px){.evct th[scope="row"]{width:30%}.evct .num{width:3.2em}.evctab{font-size:12.5px;padding:5px 10px}}';
   var st = document.createElement('style'); st.textContent = css; (document.head || document.documentElement).appendChild(st);
 
   /* ---------- 窓 ---------- */

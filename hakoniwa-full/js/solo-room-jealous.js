@@ -133,7 +133,7 @@
   ];
 
   A.EV.push({
-    id: 'jealous_claim', cat: 'romance', scope: 'pair', pri: true,
+    id: 'jealous_claim', label: '決めた相手がほかの人と抱き合うのを見る', cat: 'romance', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (HK.SAFE_ON || !hasH(ctx) || !free(a) || !free(b)) return false;
       if (!a.flags.excl || a.flags.partner !== b.i) return false;

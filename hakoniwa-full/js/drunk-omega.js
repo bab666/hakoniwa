@@ -10,7 +10,7 @@
   var OMS = HK.SCENARIOS && HK.SCENARIOS.omega;
   if (OMS) {
     OMS.events.push({
-      id: 'om_drink', cat: 'romance', scope: 'pair',
+      id: 'om_drink', label: '酔った勢いで相手に近づく', cat: 'romance', scope: 'pair',
       when: function (ctx, a, b) { var pf = ctx.pair(a, b); var mk = a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; return ctx.om && ctx.om.met && (ctx.om.met[mk] || ctx.R(a, b).aff > 5 || pf.couple) && (pf.dkAt == null || ctx.stepIndex - pf.dkAt >= 4); },
       w: function (ctx, a, b) { return (0.35 + a.tr.fc * 0.3 + ctx.R(a, b).aff / 150 + (ctx.pair(a, b).couple ? 0.2 : 0)) * [1, 1.3, 1.15, 1, 0.85, 0.7][D.strong(ctx, a)]; },
       run: function (ctx, a, b) {
@@ -30,7 +30,7 @@
       }
     });
     OMS.events.push({
-      id: 'om_drink_morning', cat: 'romance', scope: 'pair',
+      id: 'om_drink_morning', label: '酔った夜の翌朝', cat: 'romance', scope: 'pair',
       when: function (ctx, a, b) { var pf = ctx.pair(a, b); return pf.dkMorning != null && ctx.stepIndex - pf.dkMorning === 1; },
       w: function () { return 1.5; },
       run: function (ctx, a, b) {

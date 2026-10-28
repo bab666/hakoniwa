@@ -78,7 +78,7 @@
   ev('ir_csig', 'bond', is('sibclose'), 5, function (ctx, a) { return 0.6 + a.tr.fc * 0.5; },
     function (ctx, a, b) { ctx.mod2(a, b, { trust: 8, aff: 4 }, { trust: 8, aff: 4 }); ctx.stress(a, -6); ctx.stress(b, -6); var r = ctx.rng(); return { text: fill(ctx.pick(r < 0.35 ? T.closeSignal : r < 0.7 ? T.closeRace : T.closeMemory), mm(a, b)), why: '親友のような{sibs}（FC）' }; });
   /* 恋愛相手の固定 */
-  add({ id: 'ir_lrefuse', cat: 'romance', scope: 'pair',
+  add({ id: 'ir_lrefuse', label: '決めた相手がいるので想いを断る', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { return RK.locked(a) && !RK.lockedTo(a, b) && ctx.R(b, a).att > 35 && !ctx.pair(a, b).lockRef; },
     w: function (ctx, a, b) { return 0.8 + ctx.R(b, a).att / 60; },
     run: function (ctx, a, b) { ctx.pair(a, b).lockRef = true; ctx.mod(b, a, { att: -10, ten: 6 }); ctx.stress(b, 12); var t = HK.lockNames(ctx.chars, a); return { text: fill(ctx.pick(T.lockRefuse), mm(a, b)), why: a.name + 'は恋愛の相手を' + (t ? t + 'と' : '') + '決めている。' + b.name + 'の想い（惹かれ ' + Math.round(ctx.R(b, a).att) + '）には応えない' }; } });
@@ -87,7 +87,7 @@
   /* 兄貴・姉貴分／関西弁 */
   ev('ir_aniki', 'help', function (ctx, a) { return RK.tone(a) === 'aniki'; }, 5, function (ctx, a, b) { return 0.6 + a.tr.np * 0.5 + a.tr.lead * 0.4 + b.stress / 100; },
     function (ctx, a, b) { ctx.others(a).forEach(function (o) { ctx.stress(o, -5); ctx.mod(o, a, { trust: 4 }); }); return { text: fill(ctx.pick(T.anikiRally), mm(a, b)), why: a.name + 'の面倒見のよさ（NP・CP。兄貴・姉貴分）' }; });
-  add({ id: 'ir_anikiAlone', cat: 'solo', scope: 'solo',
+  add({ id: 'ir_anikiAlone', label: '頼られる側がひとりで限界を抱える', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { return RK.tone(a) === 'aniki' && a.stress > 45 && !a.flags.anikiCry; },
     w: function (ctx, a) { return 0.6 + a.stress / 100; },
     run: function (ctx, a) { a.flags.anikiCry = true; ctx.stress(a, -15); return { text: fill(ctx.pick(T.anikiAlone), mm(a)), why: '頼られる側の' + a.name + 'にも、限界はある（ストレス ' + Math.round(a.stress) + '）' }; } });
@@ -99,7 +99,7 @@
     help: L('{a}は{b}の様子がおかしいのに気づいて、黙って隣に座った。「顔に出てる。半分よこせ｜顔に出ている。半分よこせ｜顔に出ていますよ。半分ください」――荷物の話なのか、気持ちの話なのか、{b}には分かっていた。|{a}は{b}の分の見張りを代わった。「次はあなたの番ね｜次はあなたの番だ｜次はあなたの番ですよ」|{a}はふらつく{b}に肩を貸した。「重い｜＝｜重いです」{b}は言い返した。「うるさい｜＝｜うるさいです」――いつものやりとりだった。|{a}は{b}の手当てをしながら言った。「これで貸し一つ｜これで貸し一つだ｜これで貸し一つですね」'),
     repay: L('今度は{a}が、弱った{b}に肩を貸した。「この前の借り。これでチャラな｜この前の借りだ。これで帳消しだ｜この前の借りです。これでチャラですね」|{a}は{b}の分まで働いた。「貸し借りなしだろ｜貸し借りなしだろう｜貸し借りなしでしょう」――{b}は小さく笑った。|{a}は{b}の隣に座った。前に、{b}がそうしてくれたように。')
   };
-  add({ id: 'ir_cguard', cat: 'help', scope: 'pair',
+  add({ id: 'ir_cguard', label: '弱ったきょうだいに肩を貸す', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return RK.kind(ctx, a, b) === 'sibclose' && (b.hp < 85 || b.stress > 25 || ctx.food < 20) && RK.cool(ctx, a, b, 'cguard', 4); },
     w: function (ctx, a, b) { return 0.8 + a.tr.np * 0.4 + a.tr.fc * 0.2 + (ctx.pair(a, b).owe === a.i ? 2 : 0); },
     run: function (ctx, a, b) {
@@ -112,3 +112,20 @@
     } });
   RK.mourn(isl, MOURN, 'ir');
 })();
+/* @labels（出来事の一覧の表示名。工場で作る出来事に付ける。1 行に「id=表示名」、id の * は何にでも当たる。hakoniwa-tools/build/event-catalog.js が読む）
+   ir_lesson=先生が生徒に島の知恵を教える
+   ir_shield=先生が嵐から生徒をかばう
+   ir_grown=生徒が弱った先生を支える
+   ir_scold=先生と生徒の叱責と反発
+   ir_train=師匠が弟子に稽古をつける
+   ir_surpass=弟子が師匠に並ぶ
+   ir_pfood=きょうだいに自分の食料を分ける
+   ir_pstorm=嵐の夜にきょうだいを守る
+   ir_prebel=守られる側のきょうだいが反発する
+   ir_pcare=きょうだいの世話を焼く
+   ir_csig=きょうだいの合図と思い出
+   ir_ldevote=決めた相手に尽くす
+   ir_aniki=兄貴分が皆を励ます
+   ir_kansai=関西弁の軽口で場を和ませる
+   ir_mourn=亡くなった人を悼む
+*/

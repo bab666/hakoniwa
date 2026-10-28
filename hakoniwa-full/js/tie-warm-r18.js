@@ -434,7 +434,7 @@
 
   /* ================= 出来事 ================= */
   HK.addTo(HK.COMMON, {
-    id: 'tie_warm_r18', cat: 'romance', sex: true, scope: 'pair', r18: true,
+    id: 'tie_warm_r18', label: '親しい二人が一線を越える夜', cat: 'romance', sex: true, scope: 'pair', r18: true,
     when: function (ctx, a, b) {
       if (!b || HK.SAFE_ON || ctx.stepIndex < 1) return false;
       var pf = ctx.pair(a, b);

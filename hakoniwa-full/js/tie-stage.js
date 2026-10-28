@@ -128,7 +128,7 @@
   var SIT_WHY = { chide: { pos: '嗜められて素直に聞いた', neg: '嗜められてヘソを曲げた' }, success: { pos: '成功を「さすが」と認めた', neg: '成功に「調子に乗るな」' }, fail: { pos: '失敗を励ました', neg: '失敗に嫌味を言った' } };
   var GR_NAME = { '': 'ふつう', good: '良好', bad: '険悪' };
   HK.addTo(HK.COMMON, {
-    id: 'tie_grade', cat: 'bond', scope: 'pair',
+    id: 'tie_grade', label: '上の立場の人が叱る・褒める・励ます', cat: 'bond', scope: 'pair',
     when: function (ctx, a, b) { return !!stageTie(ctx, a, b); },
     w: function (ctx) { return 0.9 * own(ctx); },
     run: function (ctx, a, b) {
@@ -169,7 +169,7 @@
   TS.MARKS = { expel: '破門', graduate: '一人前', overturn: '主従逆転' };
   function installMarks() { if (HK.MARK_NAME) for (var k in TS.MARKS) if (!HK.MARK_NAME[k]) HK.MARK_NAME[k] = TS.MARKS[k]; }
   HK.addTo(HK.COMMON, {
-    id: 'tie_trial', cat: 'conflict', scope: 'pair',
+    id: 'tie_trial', label: '一人前か下剋上か、節目の試練', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { var t = stageTie(ctx, a, b); return !!t && ctx.stepIndex >= 2 && !ctx.pair(a, b).trialDone && here(a) && here(b); },
     w: function (ctx) { return 0.14 * own(ctx); },
     run: function (ctx, a, b) {
@@ -223,7 +223,7 @@
     unaware: L('{b}はそれが誰の心遣いなのか知らないまま、「助かった｜＝｜助かりました」と呟いた。{a}はそれで十分だった。|{b}は気づかずに通り過ぎていった。{a}は、それでいいと思った。慕っているのは、自分の勝手だから。|{b}は差し入れに首をかしげ、近くにいた誰かに礼を言った。{a}は少しだけ苦笑して、何も言わなかった。')
   };
   HK.addTo(HK.COMMON, {
-    id: 'tie_fond', cat: 'help', scope: 'pair',
+    id: 'tie_fond', label: '慕う相手を陰から見守る', cat: 'help', scope: 'pair',
     when: function (ctx, a, b) { return !!(HK.Ties && HK.Ties.from(ctx, a, b, 'fond')); },
     w: function (ctx) { return 1.1 * own(ctx); },
     run: function (ctx, a, b) {
@@ -244,7 +244,7 @@
     blind: L('{b}は{a}がしたことに気づいていなかった。{c}だけが、遠ざけられた理由を飲み込めずにいた。|{c}は肩をすくめて引き下がった。{b}のまわりには、いつの間にか{a}しかいなくなっていた。|{b}は{a}を褒めた。「いつも気が利くね｜いつもよく気が利く｜いつも気が利きますね」――{a}は誇らしげに頷いた。{c}は、それを遠くから見ていた。')
   };
   HK.addTo(HK.COMMON, {
-    id: 'tie_blind', cat: 'conflict', scope: 'pair',
+    id: 'tie_blind', label: '盲信する相手に近づく人を遠ざける', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) {
       if (!(HK.Ties && HK.Ties.from(ctx, a, b, 'blind'))) return false;
       return ctx.others(b).some(function (c) { return c !== a && ctx.R(c, b).aff > 5; });

@@ -983,7 +983,7 @@
 
   /* 消費（媚薬・酒・激辛・錠剤） */
   EV.push({
-    id: 'consume', cat: 'escape', scope: 'solo', pri: true,
+    id: 'consume', label: '条件の飲み物や食べ物を口にする', cat: 'escape', scope: 'solo', pri: true,
     when: function (ctx, a) { return !a.flags.down && ctx.rules.some(function (r) { return K[r.k].type === 'consume' && globLeft(ctx, r) > 0; }); },
     w: function (ctx, a) {
       var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && globLeft(ctx, x) > 0; })[0];
@@ -1079,7 +1079,7 @@
     }
   });
   EV.push({
-    id: 'decline_more', cat: 'conflict', scope: 'pair',
+    id: 'decline_more', label: '決めた相手がいるので誘いを断る', cat: 'conflict', scope: 'pair',
     when: function (ctx, a, b) { return crowd(ctx) && b.flags.partner != null && b.flags.partner !== a.i && !HK.ngPair(a, b) && eager(ctx, a) > 0.55 && R(ctx, a, b).att > 15; },
     w: function (ctx, a) { return 0.6 + eager(ctx, a); },
     run: function (ctx, a, b) {

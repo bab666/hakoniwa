@@ -18,6 +18,8 @@
      ・内容の軸：合意のない展開・妊娠・暴力・歪んだ関係（Content の印・tags）、死ネタ（HK.Dark の死ネタの種類・ctx.kill・tags の death）、残酷（HK.Dark の harm・cage・assault・暴力・tags の cruel）
    印（新しい出来事を足すときの決まり。docs/reports/2026-10-28/event-catalog.md の冒頭にも書く）
      ・出来事のオブジェクト：tie: 'master'（関係が条件なら）、tags: ['night','mob','force','preg','violence','abuse','death','cruel']（拾えないとき）、label: '表示名'
+       表示名は label → ファイルの /* @labels（1 行に id=表示名。* は何にでも当たる）*\/ → run の最初の地の文（25 字まで。言い回しの候補 | から 1 行に収まるものを選び、文の切れ目で切る）
+       → run が表をそのまま引くとき（ctx.pick(BUDDY)）はその表の最初の地の文。画面には id を出さない（md には残す）
      ・コードで書いた場面（物語型など）：その場面の近くに 1 行のコメント
          /* @event scen=jashin id=jn_god_night cat=夜 tie=- tags=night,mob,force label=神に捧げられる夜 *\/
        表（配列やオブジェクト）をまとめて数えるとき：
@@ -192,7 +194,7 @@ function defSnippet(src, id) {
     const at = typeof t === 'string' ? src.indexOf(t) : (src.match(t) || { index: -1 }).index;
     if (at < 0) continue;
     let end = Math.min(src.length, at + 700);
-    const nx = src.slice(at + 10, end).search(/\n\s*(?:ev\(|add\(|\{\s*id:|[A-Za-z]\w*:\s*\{\s*k:|id: ')/);
+    const nx = src.slice(at + 10, end).search(/\n\s*,?\s*(?:ev\(|add\(|E\('|mk\('|\{\s*id:|[A-Za-z]\w*:\s*\{\s*k:|id: ')/);
     if (nx > 0) end = at + 10 + nx;
     return { at, text: src.slice(at, end), exact: typeof t === 'string' };
   }
@@ -207,29 +209,101 @@ function r18Ranges(raw) {
   return out;
 }
 /* 表示名：地の文の先頭（R18 の語・体の語の印を含まない、日本語の文字列）。台詞（「…」）は入れない：
-   台詞の断片が箱庭以外のかたまり（この一覧の pack-catalog）に載ると、口調の書き下ろしの行き先（build-tone.js の②：その台詞が1つの箱庭のかたまりにだけある）が変わるため */
+   台詞の断片が箱庭以外のかたまり（この一覧の pack-catalog）に載ると、口調の書き下ろしの行き先（build-tone.js の②：その台詞が1つの箱庭のかたまりにだけある）が変わるため
+   長さは 1 行で読める 25 字まで（{a}{b} は 1 字に数える）。長い文は文の切れ目（。、）で切り、切れ目が無いときだけ「…」で切る */
+const NAME_MAX = 25, NAME_MIN = 6;
+const vlen = s => s.replace(/\{[a-c]\}/g, 'x').length;
+/* 長い表示名を 1 行に収める。戻り値 { t: 表示名, q: 収まり方（3 文がそのまま・2 「、」で切った・1 括弧の前／括弧の中の並びで切った・0 字数で切った） } */
+function fitName(s) {
+  s = s.split('。')[0].replace(/[、，・／\s]+$/, '');
+  /* 「。」で切って閉じていない括弧は閉じる */
+  if (s.split('（').length > s.split('）').length) s += '）';
+  if (vlen(s) <= NAME_MAX) return { t: s, q: 3 };
+  /* 「〇〇（ア・イ・ウ・エ）」の形：括弧の中の並びを入るだけ残して「など）」で閉じる。並びでなければ括弧の前まで */
+  const p = s.indexOf('（');
+  if (p >= 3 && vlen(s.slice(0, p)) <= NAME_MAX && s.indexOf('）', p) === s.length - 1) {
+    const inner = s.slice(p + 1).replace(/）.*$/, '').split('・');
+    let t = '';
+    for (let i = 0; i < inner.length; i++) { const x = s.slice(0, p) + '（' + inner.slice(0, i + 1).join('・') + 'など）'; if (vlen(x) <= NAME_MAX) t = x; else break; }
+    return { t: t && inner.length > 1 ? t : s.slice(0, p), q: 1 };
+  }
+  /* 「ア・イ・ウ・エ」の並び：入るだけ残して「など」 */
+  if (s.indexOf('・') > 0) {
+    const it = s.split('・');
+    let t = '';
+    for (let i = 1; i < it.length; i++) { const x = it.slice(0, i).join('・') + 'など'; if (vlen(x) <= NAME_MAX) t = x; else break; }
+    if (vlen(t) >= 8) return { t, q: 1 };
+  }
+  /* 25 字以内で最後の「、」まで（短すぎるときは使わない） */
+  let best = -1;
+  for (let i = 0; i < s.length; i++) if (s[i] === '、' && vlen(s.slice(0, i)) <= NAME_MAX && vlen(s.slice(0, i)) >= 8) best = i;
+  if (best > 0) return { t: s.slice(0, best), q: 2 };
+  let out = '';
+  for (const ch of s.match(/\{[a-c]\}|[\s\S]/g)) { if (vlen(out + ch) > NAME_MAX - 1) break; out += ch; }
+  return { t: out + '…', q: 0 };
+}
+function cutName(s) { return fitName(s).t; }
+/* 置き換えの印（{a}{b}{c} 以外の {area}・{w} など）は、表示名では「…」にする（その文の候補は後回し） */
+const OTHER_PH = /\{(?![abc]\})[^{}]*\}/g;
 function cleanHead(code) {
   if (!code) return '';
   const re = /'((?:[^'\\\n]|\\.){6,})'|"((?:[^"\\\n]|\\.){6,})"/g;
-  let m;
+  let m, fall = null;
   while ((m = re.exec(code))) {
-    let s = (m[1] || m[2] || '').replace(/\\(.)/g, '$1');
-    if (!JP.test(s) || BM.EXPLICIT.test(s) || /\{[^{}a-z]+\}/.test(s)) continue;
-    s = s.split('|')[0].replace(/\[[^\]]*\]/, '').split(/[「『]/)[0].replace(/[＠@].*$/, '').replace(/\{sibs?(?::[^}]*)?\}/g, '…').replace(/\s+/g, ' ').replace(/^[：、。，・／\s（）()]+/, '').trim();
-    s = s.replace(/[（(「『、・／\s]+$/, '');
-    /* 文の途中から始まる断片（a.name + 'の…' のような連結の後半）は使わない */
-    if (s.length < 6 || !/\{[ab]\}|[。、]/.test(s) || /^[）)」』、。・／のがをにはとでもへやかけ]/.test(s)) continue;
-    return s.length > 30 ? s.slice(0, 30) + '…' : s;
+    const raw0 = (m[1] || m[2] || '').replace(/\\(.)/g, '$1');
+    if (!JP.test(raw0) || BM.EXPLICIT.test(raw0) || /\{[^{}a-z]+\}/.test(raw0)) continue;
+    /* 文字列の連結（'…' + x + '…'）の後半は使わない */
+    if (/\+\s*$/.test(code.slice(Math.max(0, m.index - 12), m.index))) continue;
+    const joined = /^\s*\+/.test(code.slice(m.index + m[0].length, m.index + m[0].length + 12));
+    let best = null;
+    /* 言い回しの候補（| 区切り）を順に見て、1 行に収まる地の文がいちばんよいものを選ぶ */
+    raw0.split('|').slice(0, 8).forEach((v, vi, all) => {
+      v = v.replace(/\[[^\]]*\]/, '');
+      const pre = v.split(/[「『]/)[0], talk = pre.length < v.length;
+      let s = pre.replace(/[＠@].*$/, '').replace(/\{sibs?(?::[^}]*)?\}/g, 'きょうだい').replace(/\s+/g, ' ').replace(/^[：、。，・／\s（）()―…]+/, '').trim();
+      s = s.replace(/[（(「『、・／\s]+$/, '');
+      /* 助詞で終わる文（台詞の直前で切れた「{a}は{b}に」・連結の前半）は使わない */
+      if (/[をにでとはがへものや]$/.test(s)) return;
+      /* 連結の前半（最後の候補）は、文の切れ目（。、）までを使う（切れ目が無ければ使わない） */
+      if (joined && vi === all.length - 1 && !talk) {
+        const k = Math.max(s.lastIndexOf('。'), s.lastIndexOf('、'));
+        if (k < 0) return;
+        s = s.slice(0, k + 1);
+      }
+      /* 文の途中から始まる断片（a.name + 'の…' のような連結の後半）は使わない */
+      if (s.length < NAME_MIN || !/\{[ab]\}|[。、]/.test(s) || /^[）)」』、。・／のがをにはとでもへやかけ]/.test(s)) return;
+      const f = fitName(s);
+      OTHER_PH.lastIndex = 0;
+      if (OTHER_PH.test(f.t)) { f.t = f.t.replace(OTHER_PH, '…'); f.q -= 0.5; }
+      OTHER_PH.lastIndex = 0;
+      if (vlen(f.t.replace(/…$/, '')) < NAME_MIN || f.q === 2 && /[をにでとはがへものや]$/.test(f.t)) return;
+      if (!best || f.q > best.q) best = f;
+    });
+    if (best && best.q >= 2) return best.t;
+    if (best && (!fall || best.q > fall.q)) fall = best;
   }
-  return '';
+  return fall ? fall.t : '';
+}
+/* run が表をそのまま引く場面（ctx.pick(BUDDY)・pick(ctx, BUDDY) で、表が var BUDDY = L('…') か [ … ] のもの）は、その表の最初の地の文を拾う。
+   添字で選ぶ表（SENPAI[k]）や、ほかの場面と共有する表は、一つの分岐の文になってしまうので拾わない（label を付ける） */
+function refsHead(run, src, all) {
+  if (!run || !src) return '';
+  const ids = [];
+  run.replace(/\bpick\(\s*(?:ctx\s*,\s*)?([A-Z][A-Z0-9_]+)\s*\)/g, (m0, id) => { if (ids.indexOf(id) < 0) ids.push(id); return m0; });
+  if (ids.length !== 1) return '';
+  const id = ids[0];
+  /* 同じファイルのほかの場面も同じ表を引くなら使わない */
+  if (all && all.some(r => r !== run && new RegExp('\\b' + id + '\\b').test(r))) return '';
+  const dm = new RegExp('\\b(?:var|let|const)\\s+' + id + '\\s*=\\s*(?:L\\(|\\[)').exec(src);
+  return dm ? cleanHead(src.slice(dm.index, dm.index + 1500)) : '';
 }
 
 /* ---------- 印のコメント ---------- */
 function parseMarks(srcs) {
-  const ev = [], tables = [];
+  const ev = [], tables = [], names = [];
   Object.keys(srcs).sort().forEach(f => {
     const s = srcs[f];
-    if (s.indexOf('@event') < 0) return;
+    if (s.indexOf('@event') < 0 && s.indexOf('@labels') < 0) return;
     const re = /\/\*\s*@event(-table)?\s+([\s\S]*?)\*\//g;
     let m;
     while ((m = re.exec(s))) {
@@ -240,8 +314,14 @@ function parseMarks(srcs) {
       o.scens = o.scen.split(',').map(x => x.trim()).filter(Boolean);
       (m[1] ? tables : ev).push(o);
     }
+    /* 表示名の印（工場で作る出来事に）：/* @labels の下に 1 行ずつ「id=表示名」。id の * は何にでも当たる（rb_*_sbSpat） */
+    const rl = /\/\*\s*@labels\b([\s\S]*?)\*\//g;
+    while ((m = rl.exec(s))) m[1].split('\n').forEach(l => {
+      const k = l.match(/^\s*([A-Za-z0-9_*]+)\s*=\s*(\S.*?)\s*$/);
+      if (k) names.push({ re: new RegExp('^' + k[1].replace(/\*/g, '[A-Za-z0-9_]*') + '$'), label: k[2], f });
+    });
   });
-  return { ev, tables };
+  return { ev, tables, names };
 }
 function resolvePath(HK, p) {
   let v = HK;
@@ -418,6 +498,10 @@ function make(dir, opt) {
   };
   const scen = {}, poolIds = {};   /* poolIds：箱庭ごとの出来事の山とハプニングの id（箱庭の指定で外す前。--headless の突き合わせ用） */
   const cctx = { KEYS, TIES, HK, TORD, safeBuild };
+  /* ファイルごとの出来事の run（refsHead で、表がほかの場面と共有かを見る） */
+  const RUNS = {};
+  stores(HK).forEach(([, a]) => a.forEach(o => { const b = o && typeof o === 'object' && V.born.get(o); if (b && b.src.run) (RUNS[b.f] = RUNS[b.f] || []).push(b.src.run); }));
+  const runsOf = f => RUNS[f] || [];
   const addEv = (d, sc, kind) => {
     const k = d._obj || d;
     if (evKey.has(k)) return evKey.get(k);
@@ -425,7 +509,8 @@ function make(dir, opt) {
     const c = classify(d, cctx);
     let cat = d.cat;
     if (kind === 'incident') cat = 'incident';
-    const label = d.label || cleanHead(d.src.run) || (d.snipExact ? cleanHead(d.snip) : '') || '';
+    const nm = !d.label && d.id ? marks.names.find(x => x.re.test(d.id)) : null;
+    const label = d.label || nm ? cutName(d.label || nm.label) : cleanHead(d.src.run) || (d.snipExact ? cleanHead(d.snip) : '') || refsHead(d.src.run, d.f ? V.srcs[d.f] : '', runsOf(d.f)) || '';
     const o = { i: d.id || '', n: label, k: cat || '', t: c.ties, m: c.m, c: c.conds.filter(x => !/^関係：/.test(x) && x !== 'モブ'), f: d.f ? fileIx(d.f) : -1 };
     if (c.r18) o.r = 1;
     if (c.night) o.x = 1;
@@ -504,8 +589,8 @@ function make(dir, opt) {
       const always = t === 'force' && CORE[id];
       const st = !l.length ? 'no' : (R18_AX[t] && !always) || need.dark === l.length ? 'cond' : 'yes';
       const notes = [];
-      if (l.length && R18_AX[t]) notes.push(always ? '題材なので、いつも入' : 'スイッチ「' + AX_LABEL[t] + '」が入のとき');
-      if (l.length && need.dark) notes.push('重いのとき' + (need.dark === l.length ? 'だけ' : '：' + need.dark + '件'));
+      if (l.length && R18_AX[t]) notes.push(always ? '題材なので、いつも入' : '内容のスイッチ「' + AX_LABEL[t] + '」が入のとき');
+      if (l.length && need.dark) notes.push('展開の重さが「重い」のとき' + (need.dark === l.length ? 'だけ' : '：' + need.dark + '件'));
       if (t === 'death' && S[id] && S[id].lethal === true) notes.push('体力が尽きると死ぬ箱庭（出来事の外でも死が起きる）');
       const o = { s: st, n: l.length };
       if (notes.length) o.t = notes.join('・');
@@ -608,7 +693,7 @@ const MD_HEAD = '# 出来事の一覧（箱庭ごと・関係ごと・R18 の夜
   '- 出来事は build のたびに自動で数え直されます（`node hakoniwa-tools/build/build.js <ビルド>` の中で `js/event-catalog.js` とこのファイルを作り直す）。手で追記しません。\n' +
   '- 関係が条件の出来事は、`when` に `HK.Ties.has(ctx, a, b, \'master\')` のように関係の鍵をそのまま書けば拾われます。補助の関数（`is(k)`・`o.roles(…)` など）で隠れるときは、出来事に `tie: \'master\'`（複数なら `\'lover,fwb\'` か配列。関係を問わないと明示するなら `\'-\'`）を付けます。\n' +
   '- 夜・モブ・内容のスイッチ・死ネタ・残酷は、`sex: true`／`r18: true`・`HK.Content.ok(ctx, \'force\')`・`HK.Dark.f(ctx, \'kill\')`・`ctx.kill(…)` から拾います。拾えない書き方なら `tags: [\'night\', \'mob\', \'force\', \'preg\', \'violence\', \'abuse\', \'death\', \'cruel\']` から当てはまるものを付けます（文や動きは変えない）。\n' +
-  '- 表示名は `label` が無ければ、run の最初の文の先頭 30 字です。分かりにくければ `label: \'…\'` を付けます。\n' +
+  '- 表示名（画面の「主な出来事」）は、出来事の `label`、なければファイルの `/* @labels … */` の印（1 行に「id=表示名」。id の `*` は何にでも当たる。`E(…)`・`mk(…)` のような位置引数の工場で作る出来事向け）、なければ run の最初の地の文（25 字まで、文の切れ目で切る）です。新しい出来事には「何が起きるか」が分かる 8〜25 字の `label: \'…\'` を付けます（台詞「…」・性的な語は入れない）。画面には id を出さず、この md には表示名（id）の形で残します。\n' +
   '- 物語型の箱庭（場面を関数で書くもの）は、場面の近くに 1 行のコメントを書くと数えられます：`/* @event scen=jashin id=jn_god_night cat=夜 tie=- tags=night,mob,force label=神に捧げられる夜 */`。表（配列・オブジェクト）は `/* @event-table scen=jashin path=JASHIN.DUO_EV label=二人の場面 */`（`pair=1` は職業×職業の表として数だけ、`rows=1` は行ごとに一覧へ）。\n' +
   '- R18 の場面の印は、R18専用のファイルか `/* r18:begin */`〜`/* r18:end */` の中に書きます（全年齢版のビルドでは読まれません）。\n' +
   '- 足したら build を回し、`js/event-catalog.js` の差分（その出来事が入ったか）を確かめてコミットします。\n\n' +

@@ -88,7 +88,7 @@
   var add = function (o) {
     var when0 = o.when, w0 = o.w, run0 = o.run;
     isl.events.push({
-      id: o.id, cat: o.cat, scope: 'self',
+      id: o.id, label: o.label, cat: o.cat, scope: 'self',
       when: function (ctx, a) { var b = tgt(ctx, a); return !!b && ctx.romanceOk([a, b]) && when0(ctx, a, b); },
       w: function (ctx, a) { var b = tgt(ctx, a); return b ? w0(ctx, a, b) * 1.6 : 0; },
       run: function (ctx, a) { var b = tgt(ctx, a), r = run0(ctx, a, b); if (r) r.with = [b].concat(r.with || []); return r; }
@@ -97,7 +97,7 @@
 
   /* 吊り橋：苦しい場面を一緒に越えた二人 */
   add({
-    id: 'il_hardship', cat: 'romance', scope: 'pair',
+    id: 'il_hardship', label: '苦しい場面を越えて惹かれ合う', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { return ctx.stepIndex >= 1 && R(ctx, a, b).aff > -5 && !couple(ctx, a, b) && R(ctx, a, b).att < 60; },
     w: function (ctx, a, b) { return 0.35 + (a.stress + b.stress) / 260 + (ctx.env.storm || 0) / 300 + Math.max(0, R(ctx, a, b).aff) / 200; },
     run: function (ctx, a, b) {
@@ -108,7 +108,7 @@
   });
   /* 焚き火の夜 */
   add({
-    id: 'il_fire', cat: 'romance', scope: 'pair',
+    id: 'il_fire', label: '夜の焚き火で二人の距離が縮まる', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { var r = R(ctx, a, b); return (r.att > 10 || r.aff > 20) && !couple(ctx, a, b) && r.ten < 55; },
     w: function (ctx, a, b) { var r = R(ctx, a, b); return 0.35 + r.att / 70 + a.tr.warmth * 0.3 + a.tr.ac * 0.2; },
     run: function (ctx, a, b) {
@@ -118,7 +118,7 @@
   });
   /* 手当て */
   add({
-    id: 'il_care', cat: 'romance', scope: 'pair',
+    id: 'il_care', label: '手当てで触れた手に胸が騒ぐ', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { return R(ctx, a, b).aff > 12 && !couple(ctx, a, b); },
     w: function (ctx, a, b) { return 0.3 + a.tr.np * 0.5 + (100 - (b.hp == null ? 100 : b.hp)) / 150; },
     run: function (ctx, a, b) {
@@ -129,7 +129,7 @@
   });
   /* 嫉妬：{a}が想う{b}が、{c}と親しくしている */
   add({
-    id: 'il_jealous', cat: 'romance', scope: 'pair',
+    id: 'il_jealous', label: '想う相手が誰かと親しくて妬く', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) {
       if (R(ctx, a, b).att < 35 || couple(ctx, a, b)) return false;
       return ctx.others(b).some(function (c) { return c !== a && (ctx.pair(b, c).couple || R(ctx, b, c).att > 30 || R(ctx, b, c).aff > 45); });
@@ -144,7 +144,7 @@
   });
   /* 告白 */
   add({
-    id: 'il_confess', cat: 'romance', scope: 'pair',
+    id: 'il_confess', label: '島で想いを告げる', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) {
       var r = R(ctx, a, b), p = ctx.pair(a, b), fell = p.fellBy === a.i;
       if (p.couple || p.confessed[a.i]) return false;
@@ -173,7 +173,7 @@
   });
   /* 恋人どうしの小さな場面 */
   add({
-    id: 'il_couple', cat: 'romance', scope: 'pair',
+    id: 'il_couple', label: '恋人になった二人の島の日々', cat: 'romance', scope: 'pair',
     when: function (ctx, a, b) { return couple(ctx, a, b); },
     w: function (ctx, a, b) { return 0.4 + a.tr.warmth * 0.3; },
     run: function (ctx, a, b) {

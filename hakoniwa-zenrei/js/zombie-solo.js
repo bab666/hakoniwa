@@ -69,7 +69,7 @@
 
   /* ひとりの時間（気質ごと）。同じ文の繰り返しを減らすため、ほかのひとりの出来事より少し多めに出る */
   Z.scen.events.push({
-    id: 'z_mood', cat: 'solo', scope: 'solo',
+    id: 'z_mood', label: 'ひとりの時間の過ごし方', cat: 'solo', scope: 'solo',
     when: function (ctx, a) { return !a.z.cult && !(a.z.zombie); },
     w: function (ctx, a) { return 1.6 + a.stress / 120 + (Z.here(ctx, a).length ? 0 : 0.8); },
     run: function (ctx, a) {
