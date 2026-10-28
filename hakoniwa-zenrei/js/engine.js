@@ -251,7 +251,8 @@
     if (c0 && c0.ties && HK.Ties && HK.tieOptNoLove && a && b && c0.chars && c0.chars[a.i] === a && HK.Ties.all(c0, a, b).some(function (t) { return t.type === 'worship' && HK.tieOptNoLove(t) && t.cold !== 'dominate'; })) return false;
     /* 恋愛相手を決めた人は、その相手以外とは恋愛しない（相手が箱庭にいなければ誰とも） */
     if (a && b && HK.lockOut(a, b)) return false;
-    if (a.role === 'teacher' || b.role === 'teacher') return false;
+    /* クラスメイトの先生と生徒は恋愛しない（先生どうしは、ふつうの住人どうしと同じ。2026-10-28 先生を複数に） */
+    if ((a.role === 'teacher') !== (b.role === 'teacher')) return false;
     /* 未成年（全年齢版の職業など）：幼子は恋愛しない。未成年と大人も恋愛しない */
     if (a.minor === 'child' || b.minor === 'child' || (a.minor || '') !== (b.minor || '')) return false;
     if (!a.likes || a.likes === 'both') return true;

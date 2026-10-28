@@ -13,7 +13,7 @@
   add({
     id: 'classroom', name: 'クラスメイト', kicker: '日常・一年間',
     desc: '同じクラスで過ごす一年。テスト、体育祭、文化祭、修学旅行。行事ごとに関係が動く。',
-    unit: '月', preRel: 4, lethal: false, factions: true, maxCast: 30,
+    unit: '月', preRel: 4, lethal: false, factions: true, maxCast: 35,
     derived: ['warmth', 'lead', 'jealous', 'caution'],
     env: [
       { id: 'grade', label: '学年', type: 'select', def: '2', options: [{ v: '1', label: '高校1年' }, { v: '2', label: '高校2年（修学旅行あり）' }, { v: '3', label: '高校3年（受験）' }, { v: 'all', label: '学園全体（学年は住人ごと・先輩後輩あり）' }], desc: '学園全体にすると、住人ごとの「学年」で1〜3年生が混ざる。上級生と下級生は先輩・後輩になり、後輩は先輩に敬語で「〜先輩」と呼ぶ（呼び方や敬語を自分で決めた人はそのまま）' },
@@ -22,9 +22,12 @@
       { id: 'bully', label: 'いじめ', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'あり（気質と雰囲気しだい）' }, { v: 'high', label: 'あり（起きやすい）' }, { v: 'off', label: 'なし' }], desc: '「なし」にすると、いじめも陰口・嫌がらせの小さな出来事も起きない' },
       { id: 'span', label: '期間', type: 'select', def: 'year', options: [{ v: 'year', label: '一年間' }, { v: 'term', label: '一学期だけ' }] },
       /* 先生との恋愛（classroom-teacher-love.js。2026-10-28）：既定は「なし」。末尾に置く（ほかの環境値の並びと既定の結果を変えない） */
-      { id: 'tlove', label: '先生との恋愛', type: 'select', def: 'off', options: [{ v: 'off', label: 'なし' }, { v: 'secret', label: 'あり（隠れて付き合う）' }, { v: 'open', label: 'あり（公にすることもある）' }], desc: '「担任の先生」を選んだときだけ働く。「あり」にすると、先生と生徒のあいだにも恋が生まれることがある（恋愛対象は両方向で確かめる。生徒どうしより起こりにくく、先生は厳しさ（CP）が高いほど踏みとどまり、遠慮（AC）が高いほど流される）。付き合っても周りには秘密で、見られる・噂になる・バレかけることがある。「公にすることもある」なら、公にする選択と周りの反応・保護者の場面もある。3年生と付き合ったまま年度末を迎えると、卒業後にどうなったかの結末が付く。登場人物はすべて成人として扱います' }
+      { id: 'tlove', label: '先生との恋愛', type: 'select', def: 'off', options: [{ v: 'off', label: 'なし' }, { v: 'secret', label: 'あり（隠れて付き合う）' }, { v: 'open', label: 'あり（公にすることもある）' }], desc: '先生（「担任の先生」か参加表の「先生（受け持ち）」）がいるときだけ働く。「あり」にすると、先生と生徒のあいだにも恋が生まれることがある（恋愛対象は両方向で確かめる。生徒どうしより起こりにくく、先生は厳しさ（CP）が高いほど踏みとどまり、遠慮（AC）が高いほど流される）。付き合っても周りには秘密で、見られる・噂になる・バレかけることがある。「公にすることもある」なら、公にする選択と周りの反応・保護者の場面もある。3年生と付き合ったまま年度末を迎えると、卒業後にどうなったかの結末が付く。登場人物はすべて成人として扱います' }
     ],
-    perFields: [{ id: 'grade', label: '学年（学園全体のとき）', auto: 'おまかせ（2年）', options: [{ id: '1', label: '1年生' }, { id: '2', label: '2年生' }, { id: '3', label: '3年生' }] }],
+    /* 先生（受け持ち）：先生にする人と、学園全体のときに受け持つ学年（classroom-teacher.js）。上の「担任の先生」で選んだ人も先生になる。
+       一つの学年に先生が二人以上いれば、一人目（「担任の先生」で選んだ人、なければ名簿の上の人）が担任、ほかは副担任 */
+    perFields: [{ id: 'grade', label: '学年（学園全体のとき）', auto: 'おまかせ（2年）', offWhen: function (pk) { return pk.tch ? '先生なので学年なし' : ''; }, options: [{ id: '1', label: '1年生' }, { id: '2', label: '2年生' }, { id: '3', label: '3年生' }] },
+      { id: 'tch', label: '先生（受け持ち）', auto: '生徒', options: [{ id: 't', label: '先生（受け持ちはおまかせ）' }, { id: '1', label: '先生：1年を受け持つ' }, { id: '2', label: '先生：2年を受け持つ' }, { id: '3', label: '先生：3年を受け持つ' }] }],
     /* 学園全体：住人ごとの学年を決め、学年の違う二人を先輩・後輩にする（台詞の敬語と「〜先輩」の呼び方も） */
     extraTies: function (ctx, input) {
       var all = ctx.env.grade === 'all';
@@ -74,6 +77,8 @@
         /* 全員が休んでいる（不登校など）ときは、テストの結果の場面を出さない */
         if (!rank.length) return;
         var top = rank[0].c, bot = rank[rank.length - 1].c;
+        /* 最下位の回数（3年生の卒業の判定に使う：classroom-staff.js） */
+        if (rank.length >= 3) bot.flags.testLow = (bot.flags.testLow || 0) + 1;
         ctx.say({ text: (m === '5月' ? '中間' : '期末') + 'テストの結果が出た。トップは' + top.name + '、最下位は' + bot.name + '。' });
         P.forEach(function (c) { if (c !== top && c.tr.cp > 0.6) { ctx.k = 1; ctx.R(c, top).ten += 8; } });
         P.forEach(function (c) { if (c.grade === 3) c.stress = HK.clamp(c.stress + 10, 0, 100); });
@@ -97,6 +102,8 @@
     finish: function (ctx) {
       if (HK.ClassLife) HK.ClassLife.finish(ctx);
       ctx.present().forEach(function (c) {
+        /* 卒業できなかった3年生（classroom-staff.js の flags.ryu.fail）の行く末は、そちらで書く */
+        if (c.flags.ryu && c.flags.ryu.fail) return;
         var g = c.grade === 3;
         if (c.stress > 75) { c.fate = '休みがちに'; c.fateNote = '三学期は教室にいないことが増えた'; }
         else { c.fate = g ? '卒業' : '進級'; c.fateNote = g ? '卒業式の日、' + (ctx.closest(c) ? ctx.closest(c).name + 'と写真を撮った' : '一人で校門を出た') : (ctx.closest(c) ? ctx.closest(c).name + 'と同じクラスになりたいと思っている' : '春休みを待っている'); }

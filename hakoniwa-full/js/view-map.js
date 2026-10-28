@@ -609,17 +609,23 @@
     var teachers = [], st2 = [];
     res.chars.forEach(function (c, i) {
       var pk = per[i] || {}, role = pk.role || '';
-      if (role === 'teacher' || c.fate === '担任') { teachers.push(i); return; }
+      if (role === 'teacher' || c.fate === '担任' || c.fate === '副担任') { teachers.push(i); return; }
       var g = c.grade != null ? +c.grade : all ? (+((pk.pick || {}).grade) || 2) : (+(res.env && res.env.grade) || 2);
       st2.push({ i: i, g: g, k: (pk.pick || {}).klass || (pk.pick || {}).cls || '' });
     });
     var grades = all ? [1, 2, 3] : [+(res.env && res.env.grade) || 2];
     return { all: all, teachers: teachers, students: st2, grades: grades };
   }
+  /* 先生の受け持ち（classroom-teacher.js が c.outLabel に「1年の担任」「副担任」「2年の担任・休職」などを書く。古い記録は学年なしの担任） */
+  function tInfo(c) { var l = c.outLabel || c.fate || '', m = /^([123])年の/.exec(l); return { g: m ? +m[1] : 0, sub: /副担任/.test(l), leave: /休職/.test(l) || c.fate === '休職' }; }
+  function tLabel(res, list) {
+    var nm = function (i) { return res.chars[i].name + (tInfo(res.chars[i]).leave ? '（休職）' : ''); };
+    var main = list.filter(function (i) { return !tInfo(res.chars[i]).sub; }), sub = list.filter(function (i) { return tInfo(res.chars[i]).sub; });
+    return (main.length ? '担任：' + main.map(nm).join('・') : '') + (sub.length ? (main.length ? '／' : '') + '副担任：' + sub.map(nm).join('・') : '');
+  }
   M.classChart = function (res) {
     if (res.scenId !== 'classroom' || !res.chars.length) return '';
     var R = roster(res), G = M.groups(res), gof = groupOf(res), LV = lovers(res);
-    var tName = R.teachers.map(function (i) { return res.chars[i].name; }).join('・');
     function cell(i) {
       var c = res.chars[i], fg = gof[i] != null ? G[gof[i]] : null, lv = LV[i] || [];
       var ring = fg ? fcol(res, fg) : 'transparent', gk = fg ? gof[i] : -1;
@@ -646,7 +652,8 @@
       if (!ks.length) ks = [''];
       var body = ks.map(function (k) {
         var l = klasses[k] || [];
-        return '<div class="kroom"><div class="khd">' + (k ? esc(k) : (R.all ? '1クラス' : 'クラス')) + (!R.all && tName ? '<span class="kt">担任：' + esc(tName) + '</span>' : '') + '<span class="kn">' + l.length + '人</span></div>' +
+        var tl = tLabel(res, R.all ? R.teachers.filter(function (i) { return tInfo(res.chars[i]).g === g; }) : R.teachers);
+        return '<div class="kroom"><div class="khd">' + (k ? esc(k) : (R.all ? '1クラス' : 'クラス')) + (tl ? '<span class="kt">' + esc(tl) + '</span>' : '') + '<span class="kn">' + l.length + '人</span></div>' +
           (l.length ? '<ul class="kgrid">' + l.map(function (s) { return cell(s.i); }).join('') + '</ul>' : '<p class="hint" style="margin:6px 0">この学年の住人はいません。</p>') + '</div>';
       }).join('');
       return '<section class="kgrade"><h3>' + (R.all ? g + '年生' : '高校' + g + '年') + '</h3>' + body + '</section>';
@@ -655,7 +662,7 @@
       (Object.keys(LV).length ? '<span class="kleg"><b class="klvm">♥</b>恋人</span>' : '');
     return '<h2 class="sec">学年・クラス</h2><div class="panel kpanel">' +
       (R.all ? '<p class="hint" style="margin:0 0 8px">学園全体（1〜3年生）。縁の色と形（左上の輪の印）は派閥、♥は恋人。</p>' +
-        (R.teachers.length ? '<div class="kteach">担任' + R.teachers.map(function (i) { return '<span>' + U.av(res, i, 24) + esc(res.chars[i].name) + '</span>'; }).join('') + '</div>' : '') : '<p class="hint" style="margin:0 0 8px">縁の色と形（左上の輪の印）は派閥、♥は恋人。</p>') +
+        (R.teachers.length ? '<div class="kteach">先生' + R.teachers.map(function (i) { var ti = tInfo(res.chars[i]); return '<span>' + U.av(res, i, 24) + esc(res.chars[i].name) + (ti.g ? '<small>（' + ti.g + '年の' + (ti.sub ? '副担任' : '担任') + (ti.leave ? '・休職' : '') + '）</small>' : '') + '</span>'; }).join('') + '</div>' : '') : '<p class="hint" style="margin:0 0 8px">縁の色と形（左上の輪の印）は派閥、♥は恋人。</p>') +
       '<div class="kframes">' + frames + '</div><div class="klegend">' + legend + '</div></div>';
   };
 
@@ -673,7 +680,7 @@
       var R = roster(res);
       L.push('');
       L.push('■ 学年・クラス' + (R.all ? '（学園全体）' : ''));
-      if (R.teachers.length) L.push('・担任：' + R.teachers.map(nm).join('・'));
+      if (R.teachers.length) L.push(R.all ? '・先生：' + R.teachers.map(function (i) { var ti = tInfo(res.chars[i]); return nm(i) + (ti.g ? '（' + ti.g + '年の' + (ti.sub ? '副担任' : '担任') + (ti.leave ? '・休職' : '') + '）' : ''); }).join('・') : '・' + tLabel(res, R.teachers));
       R.grades.forEach(function (g) {
         var l = R.students.filter(function (s) { return s.g === g; });
         L.push('・' + (R.all ? g + '年生' : '高校' + g + '年') + '（1クラス・' + l.length + '人）：' + (l.length ? l.map(function (s) { var c = res.chars[s.i]; return c.name + '（' + (c.fate || '―') + '）'; }).join('、') : 'なし'));

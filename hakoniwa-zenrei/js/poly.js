@@ -40,9 +40,15 @@
   P.mode = function (x) { if (!x) return 'none'; if (x.poly) return x.poly; return P.modeOf(x.env); };
 
   /* ---------- 恋人の一覧 ---------- */
+  /* 恋人の一覧は、恋人の印（pf.couple）が変わるまで覚えておく（P.watch の setter が ctx._couV を進める。
+     大人数（35人）で canCouple などから何度も呼ばれ、毎回全員の組を引くと重いため。2026-10-28 担当KB。結果は変わらない） */
   P.lovers = function (ctx, c) {
     if (!isCtx(ctx) || !c) return [];
-    return ctx.chars.filter(function (o) { return o !== c && ctx.pair(c, o).couple; });
+    var ver = ctx._couV || 0, L = ctx._couL;
+    if (!L || L.v !== ver) L = ctx._couL = { v: ver, m: {} };
+    var r = L.m[c.i];
+    if (!r) r = L.m[c.i] = ctx.chars.filter(function (o) { return o !== c && ctx.pair(c, o).couple; });
+    return r.slice();
   };
   function others(ctx, a, not) { return P.lovers(ctx, a).filter(function (o) { return o !== not && alive(o); }); }
   function feel(ctx, a, b) { var r = ctx.R(a, b); return r ? r.att + r.aff * 0.5 : 0; }
@@ -199,8 +205,10 @@
         /* 恋愛相手の固定が食い違う二人は、どの出来事からでも恋人にしない（engine.js の HK.lockConflict） */
         if (nv && HK.lockConflict && HK.lockConflict(a, b)) return;
         v = nv;
+        /* 恋人の一覧の覚え（P.lovers）を捨てる。onCouple・onBreak の中で一覧を引くこともあるので、先に進める */
+        ctx._couV = (ctx._couV || 0) + 1;
         if (pf._polyRestore) return;
-        if (nv) { if (onCouple(ctx, pf, a, b) === false) v = false; }
+        if (nv) { if (onCouple(ctx, pf, a, b) === false) { v = false; ctx._couV++; } }
         else onBreak(ctx, pf);
       }
     });

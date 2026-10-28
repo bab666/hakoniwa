@@ -66,6 +66,9 @@
         あり：恋愛対象の合わない先生×生徒が恋人・恋愛の出来事・夜になった（両方向）／全年齢モード・全年齢版で先生との夜（lewd・「先生と生徒の夜」）が出た／
         R18に参加しない人・性行為の相手を固定した生徒（固定の相手はほかの生徒）が先生との夜に出た／場にいない人（不登校など）が「先生と生徒の」出来事に出た（記録の直前に見る）／
         秘密のあいだに、このファイル以外の失恋・片想い・嫉妬の出来事が先生の名前を出した
+   S34（2026-10-28 担当KB）: クラスメイトの先生が生徒の輪に入った・休職した先生が出た。4人以上の回の3回に2回、最後の一人（6人の回の一部は二人。二人目は
+        参加表の「先生（受け持ち）」の学年つき）を先生にし、学年（学園全体・3年・1年・2年）と展開の重さ（重い／ふつう）を回して、
+        先生が派閥の一員・いじめの加害か標的・テストの順位・不登校になった／休職（理由に「休職（」）のあとの区切りの出来事に出た／先生の行く末が生徒のもの（卒業・進級・留年など）を数える
    W1: 箱庭の場所に合わない語（PLACE_NG）が記録の地の文に出た。媚薬ロッカー：狭い箱の中に「席・皿・周りが（割って入る人）」は出ない
        （2026-10-26 順83。hate-kit.js・hate-love.js の狭い場所の文 hkSpace: 'cramped'）。合計と箱庭ごとの数は最後の「W1」の行 */
 'use strict';
@@ -83,7 +86,7 @@ const { openBuild } = require('./lib.js');
     const sents = t => String(t).replace(NONSEX, '＿').split(/[。！？\n」]/);
     const isSex = s => SEXCORE.test(s);
     const out = { n: {}, ex: {}, drop: {}, runs: 0, err: [], bySc: {}, anySex: {} };
-    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33'];
+    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33', 'S34'];
     out.info = {};
     /* S31：避けている人が自分から迫った（2026-10-28 担当JE）。迫る札（物語型）と、迫らない札（断る・逃げる・助ける など） */
     const APPROACH_TAG = /告白|口づけ|キス|夜這い|誘|迫|押し倒|監禁|独占|一夜|セフレ|デート|求愛|口説|抱|愛撫|奉仕|夜|催眠|媚薬|襲|執着|甘え|膝枕|添い寝|手を(?:繋|握)|恋|想い|両想い/;
@@ -575,8 +578,16 @@ const { openBuild } = require('./lib.js');
         if (sameNg) { [[0, 1], [1, 0]].forEach(([x, y]) => { const c = chars[sameNg[x]]; c.loveNG = Array.isArray(c.loveNG) ? c.loveNG : []; if (c.loveNG.indexOf(sameNg[y]) < 0) c.loveNG.push(sameNg[y]); }); }
         /* 館：探偵2人と助手2人の回を混ぜる（S9） */
         if (sc === 'yakata' && n >= 4 && s % 2 === 0) { [0, 1, 2, 3].forEach(k => { const r0 = k < 2 ? 'detective' : 'assistant'; perChar[k].role = r0; perChar[k].pick = Object.assign({}, perChar[k].pick, { role: r0 }); }); }
+        /* S34：クラスメイトの先生（4人以上の回の3回に2回。6人の回の一部は先生二人で、二人目は受け持ちの学年つき） */
+        const tIdx = sc === 'classroom' && !feel && !avd && n >= 4 && s % 3 ? (n >= 6 && s % 3 === 2 ? [n - 1, n - 2] : [n - 1]) : [];
+        tIdx.forEach((k, j) => { perChar[k].role = 'teacher'; perChar[k].pick = Object.assign({}, perChar[k].pick, { tch: j ? String(1 + s % 3) : 't' }); });
         const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
         (scen.env || []).forEach((e, k) => { if (e.options && e.options.length > 1 && (s + k) % 3 === 0) env[e.id] = e.options[(s + k) % e.options.length].v; });
+        if (tIdx.length) {
+          env.grade = ['all', '3', '1', '2'][Math.floor(s / 3) % 4];
+          if (env.grade === 'all') perChar.forEach((pc, i) => { if (tIdx.indexOf(i) < 0) pc.pick = Object.assign({}, pc.pick, { grade: String(1 + i % 3) }); });
+          if (s % 2) { env.heavy = 'dark'; env.bully = 'high'; }
+        }
         /* 役割（mob.js の HK.Roles）は、回ごとに「おまかせ」と「住人から」を交互に */
         (scen.env || []).forEach(e => { if (/^role_/.test(e.id)) env[e.id] = s % 2 ? 'res' : 'auto'; });
         ENVSET.forEach(kv => { env[kv[0]] = isNaN(+kv[1]) ? kv[1] : +kv[1]; });
@@ -640,6 +651,22 @@ const { openBuild } = require('./lib.js');
           });
         }
         if (lastS) { storyCheck(lastS, true); lastS = null; }
+        /* S34：先生が生徒の輪に入った・休職した先生が出た */
+        if (tIdx.length && res && Array.isArray(res.log)) {
+          const tn = tIdx.map(k => chars[k].name), isT = i => tIdx.indexOf(i) >= 0, leaveAt = {};
+          const fin = res.factions && res.factions.final;
+          if (fin && Array.isArray(fin.groups)) fin.groups.forEach(g => (g.members || []).forEach(m => { if (isT(m)) hit('S34', '先生が派閥に ' + chars[m].name); }));
+          ((res.end && res.end.notes) || []).forEach(t0 => { const m = /^いじめ：(.+?)→(.+?)（/.exec(t0); if (m && (tn.indexOf(m[1]) >= 0 || tn.indexOf(m[2]) >= 0)) hit('S34', '先生がいじめに | ' + t0); });
+          res.log.forEach(e => {
+            if (!e) return;
+            if (tn.some(x => new RegExp('(トップは|最下位は)' + x + '[。、]').test(e.text || ''))) hit('S34', '先生がテストの順位に | ' + String(e.text).slice(0, 80));
+            if (/限界を越えた負担/.test(e.why || '') && e.actors && isT(e.actors[0])) hit('S34', '先生が不登校に | ' + String(e.text).slice(0, 80));
+            if (/休職（/.test(e.why || '') && e.actors && isT(e.actors[0]) && leaveAt[e.actors[0]] == null) { leaveAt[e.actors[0]] = e.step; out.info.teacherLeave = (out.info.teacherLeave || 0) + 1; return; }
+            if (e.kind === 'event' && e.actors) e.actors.forEach(i => { if (leaveAt[i] != null && e.step > leaveAt[i]) hit('S34', '休職した先生が出来事に ' + chars[i].name + ' | ' + String(e.text).slice(0, 100)); });
+          });
+          (res.chars || []).forEach((c, i) => { if (isT(i) && /^(卒業|進級|留年|不登校|休みがちに)$/.test(c.fate || '')) hit('S34', '先生の行く末が生徒のもの ' + c.name + '：' + c.fate); });
+          out.info.teacherRuns = (out.info.teacherRuns || 0) + 1;
+        }
         /* S15（物語型）：関係図の恋の線 */
         if (cur.story && res.relmap && Array.isArray(res.relmap.edges)) res.relmap.edges.forEach(ed => { if (ed.cls === 'love' && lockBad(chars[ed.a] && { i: ed.a, locks: cfgL(chars[ed.a].loveLock) }, chars[ed.b] && { i: ed.b, locks: cfgL(chars[ed.b].loveLock) })) hit('S15', '関係図 ' + chars[ed.a].name + '×' + chars[ed.b].name + ' ' + ed.label); });
         out.runs++; out.bySc[sc].runs++;
@@ -902,7 +929,7 @@ const { openBuild } = require('./lib.js');
   }, { N, only, WHY, HOT, mode, ENVSET });
   const ids = Object.keys(r.bySc);
   for (const sc of ids) {
-    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33'].map(k => k + ' ' + (b[k] || 0));
+    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33', 'S34'].map(k => k + ' ' + (b[k] || 0));
     console.log(sc.padEnd(10), 'runs', b.runs, cells.join(' '), '誰とでも可の体の出来事', r.anySex[sc] || 0);
   }
   console.log('合計', JSON.stringify(r.n), '止めた', JSON.stringify(r.drop));

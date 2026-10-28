@@ -206,7 +206,7 @@
     ]
   });
 
-  /* クラスメイトの担任（classroom-teacher.js の ctx.teacher）と、親子・きょうだいの生徒。担任は教室の輪（ctx.present）に入らないので、
+  /* クラスメイトの先生（classroom-teacher.js の ctx.teachers）と、親子・きょうだいの生徒。担任は教室の輪（ctx.present）に入らないので、
      区切りの始めに、ひと月に一度まで（35%）起こす。{a}＝担任、{b}＝生徒 */
   var TEACH = {
     parentA: { mood: 'rub', cat: 'conflict', why: '担任が親（すれ違い）', T: L(
@@ -230,18 +230,19 @@
     var ph0 = sc.phase;
     sc.phase = function (ctx, s, n) {
       ph0.apply(this, arguments);
-      var t = ctx.teacher;
-      if (!t || !here(t) || ctx.env && ctx.env.tieEv === 'off') return;
+      /* 先生は何人でも（classroom-teacher.js の ctx.teachers。休職中の先生は場にいないので出さない） */
+      var TS = (ctx.teachers || (ctx.teacher ? [ctx.teacher] : [])).filter(here);
+      if (!TS.length || ctx.env && ctx.env.tieEv === 'off') return;
       var cand = [];
-      ctx.present().forEach(function (x) {
+      TS.forEach(function (t) { ctx.present().forEach(function (x) {
         if (x === t) return;
         var r = find(ctx, t, x, 'parent') || find(ctx, t, x, 'sib');
         /* 関係ごとの「出来事：起こさない」（ties.js の noev）なら出さない */
         if (r && r.t.noev === 'off') return;
-        if (r && (GROUP[r.t.type] === 'sib' || r.side === 'A')) cand.push({ x: x, r: r });
-      });
+        if (r && (GROUP[r.t.type] === 'sib' || r.side === 'A')) cand.push({ t: t, x: x, r: r });
+      }); });
       if (!cand.length || ctx.rng() > 0.35) return;
-      var c = ctx.rng.pick(cand), x = c.x, r = c.r, k = (GROUP[r.t.type] === 'sib' ? 'sib' : 'parent') + (ctx.rng() < 0.5 ? 'A' : 'B'), o = TEACH[k];
+      var c = ctx.rng.pick(cand), t = c.t, x = c.x, r = c.r, k = (GROUP[r.t.type] === 'sib' ? 'sib' : 'parent') + (ctx.rng() < 0.5 ? 'A' : 'B'), o = TEACH[k];
       var ok = lines(ctx, D.classroom, o, t, x);
       if (!ok.length) { k = k.slice(0, -1) + (k.slice(-1) === 'A' ? 'B' : 'A'); o = TEACH[k]; ok = lines(ctx, D.classroom, o, t, x); }
       if (!ok.length) return;

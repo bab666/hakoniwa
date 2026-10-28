@@ -10,11 +10,11 @@
   if (HK.Special) HK.Special.install();
   /* 分割読み込み：あとから読んだかたまりで登録された箱庭（ゾンビの街・館など）にも足す（install は何度呼んでも同じ） */
   if (HK.Special && HK.Load && HK.Load.onChunk) HK.Load.onChunk(function () { HK.Special.install(); });
-  /* 登録できる住人の上限（箱庭に参加できるのは最大30人）。2026-10-26 に 100 → 200、2026-10-27 に 200 → 1000。
+  /* 登録できる住人の上限（箱庭に参加できるのは最大35人。2026-10-28 に 30 → 35）。2026-10-26 に 100 → 200、2026-10-27 に 200 → 1000。
      アイコン（画像）は localStorage に入りきらないので、IndexedDB に分けて置く（saves.js の HK.IconStore。使えない環境では従来どおり住人の保存に入れる）。
      住人・関係そのものも IndexedDB に置く（state-store.js の HK.StateStore。localStorage には約1MBまで写し、超えたら「IndexedDB にある」印だけ） */
   var MAX = 1000;
-  var JOIN_MAX = 30;
+  var JOIN_MAX = 35;
   /* 13人目以降の色トークン（明暗それぞれ。上限 MAX 人分） */
   (function () {
     var L = [], D = [];
@@ -1227,7 +1227,7 @@
       (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p>' + loveCrowdNote(S.scenId) + '<div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return inGrp(c, g); }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button><button class="btn small ghost" data-act="joingrpdel" data-g="' + esc(g) + '" title="このグループを参加から外す" aria-label="' + esc(g) + 'を参加から外す">−</button></span>'; }).join('') + '</div>' : '') + (lazyBox && CP ? CP.boxTools() : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th>' + (hasAct ? '<th>最初の行動</th>' : '') + (hasGoal ? '<th>短期目標</th>' : '') + statHead + '</tr></thead><tbody><!--rows--></tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
       (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、カードの「この箱庭のTIPS」にあります。</p>' : '') +
       (sexCols && S.chars.length ? '<p class="hint" style="margin-top:8px">性別と恋愛対象は、住人タブの各住人の「設定」と同じものです。</p>' : '') +
-      (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') },
+      (S.scenId === 'classroom' && S.chars.length && HK.CastTeacher ? HK.CastTeacher.selectHtml(S) : '') },
       { k: 'run', html: runBar() }];
     /* 参加表は行ごとに分けて渡す（変わった行だけ入れ替える。住人の名前などは esc 済みなので <!-- は表の位置にしか無い） */
     var pp = segs[3].html.split('<!--rows-->');   /* 3：参加表（もとの「高度設定」の節は 2026-10-28 に住人タブの「口調・喘ぎの設定」へ移した） */
@@ -1257,11 +1257,9 @@
   }
 
   /* ---------- 実行 ---------- */
-  function castFor(id) {
-    var J = joined(id), tc = id === 'classroom' && S.teacher ? S.chars.filter(function (c) { return c.id === S.teacher; })[0] : null;
-    if (!tc) return J;
-    return J.filter(function (c) { return c !== tc; }).concat([tc]);
-  }
+  /* クラスメイトの先生（「担任の先生」と参加表の「先生（受け持ち）」。名簿の後ろに回す）は ui-cast-teacher.js */
+  function isTeacher(c, id) { return !!HK.CastTeacher && HK.CastTeacher.isTeacher(S, c, id, per); }
+  function castFor(id) { return HK.CastTeacher ? HK.CastTeacher.order(S, joined(id), id, per) : joined(id); }
   function buildInput(seed) {
     var env = {};
     var scen = HK.SCENARIOS[S.scenId];
@@ -1287,7 +1285,7 @@
       })(),
       perChar: castFor(S.scenId).map(function (c) {
         var p = per(c, S.scenId);
-        return { action: p.action, goal: p.goal, stats: JSON.parse(JSON.stringify(p.stats || {})), weapon: p.weapon, pick: JSON.parse(JSON.stringify(p.pick || {})), role: S.scenId === 'classroom' && c.id === S.teacher ? 'teacher' : '' };
+        return { action: p.action, goal: p.goal, stats: JSON.parse(JSON.stringify(p.stats || {})), weapon: p.weapon, pick: JSON.parse(JSON.stringify(p.pick || {})), role: isTeacher(c, S.scenId) ? 'teacher' : '' };
       }),
       ties: (function () {
         cleanTies();

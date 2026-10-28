@@ -147,6 +147,7 @@ js/solo-massage-cast.js @scen:massage
 js/solo-massage.js @scen:massage
 js/factions.js @pack:rel
 js/classroom-teacher.js @scen:classroom
+js/classroom-staff.js @scen:classroom
 js/classroom-teacher-love.js @scen:classroom
 js/classroom-cheer.js @scen:classroom
 js/endings.js
@@ -284,6 +285,7 @@ js/ui-cast-tools.js
 js/ui-box-draw.js
 js/ui-import.js
 js/ui.js
+js/ui-cast-teacher.js
 js/ui-gear.js
 js/ui-adv.js
 js/ui-voice.js

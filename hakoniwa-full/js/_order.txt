@@ -204,6 +204,7 @@ js/dungeon-events-b.js @scen:dungeon
 js/dungeon-events-c.js @scen:dungeon
 js/factions.js @pack:rel
 js/classroom-teacher.js @scen:classroom
+js/classroom-staff.js @scen:classroom
 js/classroom-teacher-love.js @scen:classroom
 js/classroom-cheer.js @scen:classroom
 js/endings.js
@@ -400,6 +401,7 @@ js/ui-cast-tools.js
 js/ui-box-draw.js
 js/ui-import.js
 js/ui.js
+js/ui-cast-teacher.js
 js/ui-gear.js
 js/ui-adv.js
 js/ui-adv-moan.js

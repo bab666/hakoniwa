@@ -143,7 +143,7 @@
     if (!S) return '';
     var sc = !S.scenId ? null : HK.Load && HK.Load.info ? HK.Load.info(S.scenId) : HK.SCENARIOS && HK.SCENARIOS[S.scenId];
     if (!sc) return '箱庭を選んでください';
-    var mn = sc.minCast || 2, mx = Math.min(sc.maxCast || 12, 30), list = S.join && S.join[S.scenId], chars = S.chars || [];
+    var mn = sc.minCast || 2, mx = Math.min(sc.maxCast || 12, 35), list = S.join && S.join[S.scenId], chars = S.chars || [];
     var n = list ? chars.filter(function (c) { return list.indexOf(c.id) >= 0; }).length : Math.min(chars.length, mx);
     if (n < mn) return mn === 1 ? '挑戦する住人を1人選んでください' : '参加する住人を' + mn + '人以上選んでください';
     return '';

@@ -32,6 +32,8 @@
     '後ろ': { nd: '後孔', ns: '後ろ', nb: '後ろ', ed: 'アナル／ケツ穴', es: 'アナル／お尻の穴', eb: '後ろ', m: '肛門' },
     '精液': { nd: '白濁／精液', ns: '精／白濁', nb: '精', ed: '精液／ザーメン', es: '精液／白濁', eb: '白濁', m: '精液' },
     '愛液': { nd: '愛液', ns: '蜜', nb: '蜜', ed: '愛液／まん汁', es: '愛液', eb: '蜜', m: '分泌液' },
+    /* 男性器だけの人の {愛液}（先走り）。{愛液} の持ち主が男性器だけの人のとき wordFor が読み替える。文に直接 {先走り} と書いてもよい（2026-10-28） */
+    '先走り': { nd: '先走り', ns: '先走り', nb: '滲んだもの', ed: '先走り／我慢汁', es: '先走り', eb: '先走り', m: 'カウパー液' },
     '股間': { nd: '股間', ns: '脚の間／股間', nb: '脚の間', ed: '股間', es: '股間', eb: '股', m: '陰部' }
   };
   var KEYS = Object.keys(T);
@@ -149,6 +151,11 @@
   /* 自由記入（partM・partF）は、その人の体の語にだけ使う（台詞でも、話し手の体とは限らないので、体の持ち主で見る。2026-10-27） */
   function wordFor(key, ctx, who, owner, seedStr, inQ) {
     var c = owner;
+    /* {愛液} は女性器の語。持ち主が男性器だけの人なら先走りに読み替える（持ち主が分からなくても、その場に女性器のある人がいなければ同じ。2026-10-28） */
+    if (key === '愛液') {
+      var mOnly = c ? (hasM(c) && !hasF(c)) : !!(ctx.here && ctx.here.length && !ctx.here.some(hasF) && ctx.here.some(hasM));
+      if (mOnly) key = '先走り';
+    }
     if (X.MODE !== 'direct' && c) {
       if (key === '男性器' && c.partM) return c.partM;
       if (key === '女性器' && c.partF) return c.partF;

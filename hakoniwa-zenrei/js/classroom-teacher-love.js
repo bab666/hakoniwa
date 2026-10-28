@@ -176,7 +176,9 @@
   var YEAR_AFTER = {
     sec: L('{s}が進級しても、二人は秘密を守り続けた。廊下ですれ違うときの一瞬の目配せだけが、二人の約束の印だった。|二人の秘密は、次の学年でも続いていく。{s}は、卒業の日に{t}の名前を堂々と呼ぶことを、ひそかな目標にしている。'),
     pub: L('進級しても、二人の関係は変わらなかった。新しいクラスメイトたちも、すぐにそれを当たり前のことと受け止めた。|次の年も、二人は学校の外で恋人として過ごした。周りの目を気にしないで済む毎日を、二人は大事にしている。'),
-    term: L('夏休みのあいだ、二人は人目のない町で何度か会った。二学期が始まっても、二人の秘密はまだ守られている。|夏休みが終わる頃、二人の関係は少しだけ深くなっていた。二学期の始業式の朝、{s}は何も知らない顔で{t}に挨拶をした。')
+    term: L('夏休みのあいだ、二人は人目のない町で何度か会った。二学期が始まっても、二人の秘密はまだ守られている。|夏休みが終わる頃、二人の関係は少しだけ深くなっていた。二学期の始業式の朝、{s}は何も知らない顔で{t}に挨拶をした。'),
+    /* 卒業できなかった3年生（もう一年） */
+    ryu: L('{s}は、もう一年3年生をやり直すことになった。それでも、二人の関係は変わらなかった。{t}は、今度こそ{s}を卒業させると心に決めている。|卒業できなかった春、いちばん近くで{s}を支えたのは{t}だった。二人は、もう一年同じ校舎で過ごす。卒業の日に交わすはずだった言葉は、一年先に持ち越された。')
   };
 
   /* ---------- R18版：先生と生徒の夜（{a}＝攻め {b}＝受け。{ca}＝受けが攻めを呼ぶ呼び方 {cb}＝攻めが受けを呼ぶ呼び方） ---------- */
@@ -426,9 +428,11 @@
     var TT = teachers(ctx), SS = students(ctx);
     if (!TT.length || !SS.length) return;
     TT.forEach(function (t) {
-      var mine = SS.filter(function (s) { return ctx.pair(t, s).couple; });
+      /* 学園全体では、受け持ちの学年の生徒だけ（classroom-teacher.js の HK.ClassTeach.inScope。2026-10-28 担当KB2） */
+      var CT = HK.ClassTeach, ST = CT && CT.inScope ? SS.filter(function (s) { return CT.inScope(ctx, t, s); }) : SS;
+      var mine = ST.filter(function (s) { return ctx.pair(t, s).couple; });
       mine.forEach(function (s) { if (loveOk(ctx, t, s)) coupleBeat(ctx, t, s, tl(ctx, t, s)); });
-      if (!mine.length) approach(ctx, t, SS);
+      if (!mine.length) approach(ctx, t, ST);
       ctx.flush();
     });
   }
@@ -449,7 +453,8 @@
   }
   var AFTER_N = { cont_open: '続いた（卒業してから堂々と）', cont_live: '続いた（一緒に暮らす）', cont_vow: '続いた（結婚の約束）', fade: '自然消滅', part: '別れた（先生から「ここまで」）', reunite: '数年後に再会' };
   function endCouple(ctx, t, s, st) {
-    var term = ctx.env.span === 'term', grad = !term && s.grade === 3, m = { t: t, s: s }, who = t.name + 'と' + s.name;
+    /* 卒業できなかった3年生（classroom-staff.js の flags.ryu.fail）は卒業の場面にせず、もう一年（2026-10-28 担当KB2） */
+    var term = ctx.env.span === 'term', ryu = !term && !!(s.flags.ryu && s.flags.ryu.fail), grad = !term && s.grade === 3 && !ryu, m = { t: t, s: s }, who = t.name + 'と' + s.name;
     var k = st.pub ? 'pub' : 'sec';
     if (grad) {
       var ak = afterKind(ctx, t, s, st);
@@ -459,7 +464,7 @@
     }
     var yk = term ? 'term' : k;
     ctx.act2({ actors: [s, t], cat: 'romance', mag: 20, text: F(ctx, pick(ctx, YEAR[yk]), m), why: '結末：先生と生徒の恋（' + (term ? '一学期の終わり' : '来年も') + (st.pub ? '' : '・秘密のまま') + '）' });
-    note(ctx, who + 'のその後――' + F(ctx, pick(ctx, YEAR_AFTER[yk]), m) + '（先生と生徒の恋：' + (st.pub ? '公にしたまま' : '秘密のまま') + '次の' + (term ? '学期' : '年') + 'へ）');
+    note(ctx, who + 'のその後――' + F(ctx, pick(ctx, YEAR_AFTER[ryu ? 'ryu' : yk]), m) + '（先生と生徒の恋：' + (st.pub ? '公にしたまま' : '秘密のまま') + (ryu ? '、卒業できずにもう一年' : '次の' + (term ? '学期' : '年') + 'へ') + '）');
   }
   function endHold(ctx, t, s, st) {
     var rs = R(ctx, s, t), yes = rs.att >= 20 && rs.aff >= 5 && canPair(ctx, t, s) && loveOk(ctx, t, s), m = { t: t, s: s };
@@ -471,12 +476,12 @@
   function ending(ctx) {
     scoped(ctx, function () {
       allTeachers(ctx).forEach(function (t) {
-        if (!t.alive) return;
+        if (!HK.State.here(t)) return;   /* 休職した先生（t.out。classroom-staff.js）は結末の場面に出ない（2026-10-28 担当KB2） */
         ctx.chars.forEach(function (s) {
           if (s === t || isT(s) || !s.alive || (s.flags && s.flags.caged != null)) return;
           var pf = ctx.pair(t, s), st = pf.tl;
           if (pf.couple && loveOk(ctx, t, s)) endCouple(ctx, t, s, st || tl(ctx, t, s));
-          else if (st && st.hold && !pf.couple && ctx.env.span !== 'term' && s.grade === 3) endHold(ctx, t, s, st);
+          else if (st && st.hold && !pf.couple && ctx.env.span !== 'term' && s.grade === 3 && !(s.flags.ryu && s.flags.ryu.fail)) endHold(ctx, t, s, st);
         });
       });
       ctx.flush();

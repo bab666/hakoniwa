@@ -114,6 +114,8 @@
       if (P.length < 2) return;
       if (!F) { F = ctx.flags.fest = { title: '模擬店', lead: ctx.most(P, function (c) { return c.tr.lead; }).i, work: 0 }; }
       var lead = ctx.chars[F.lead];
+      /* 仕切り役が学校に来ていない（不登校など）ときは、いま教室にいる人が代わりに仕切る */
+      if (!HK.State.here(lead)) { lead = ctx.most(P, function (c) { return c.tr.lead; }); F.lead = lead.i; }
       ctx.incident('文化祭の準備期間。出し物は「' + F.title + '」。');
       var hard = P.filter(function (c) { return c.tr.np * 0.5 + c.tr.ac * 0.4 + c.tr.a * 0.2 > 0.55; });
       var slack = P.filter(function (c) { return hard.indexOf(c) < 0 && c.tr.fc * (1 - c.tr.ac) > 0.3; });
@@ -196,10 +198,12 @@
     '3月': function (ctx) {
       whiteDay(ctx);
       var P = ctx.present();
-      var G3 = P.filter(function (c) { return gr(ctx, c) === 3; });
+      /* 卒業できなかった3年生（classroom-staff.js の flags.ryu.fail）は、卒業式で送り出す側にも送り出される側にも入れない（その人の場面は classroom-staff.js） */
+      var G3 = P.filter(function (c) { return gr(ctx, c) === 3 && !(c.flags.ryu && c.flags.ryu.fail); });
+      var rest3 = P.filter(function (c) { return gr(ctx, c) !== 3; });
       if (G3.length) {
-        ctx.incident(G3.length < P.length ? '卒業式。三年生の' + G3.map(function (c) { return c.name; }).join('・') + 'が、学校を去る日。' : '卒業式。');
-        if (G3.length < P.length) seeOff(ctx, G3, P.filter(function (c) { return gr(ctx, c) !== 3; }));
+        ctx.incident(rest3.length ? '卒業式。三年生の' + G3.map(function (c) { return c.name; }).join('・') + 'が、学校を去る日。' : '卒業式。');
+        if (rest3.length) seeOff(ctx, G3, rest3);
         G3.forEach(function (a) {
           var c = crushOf(ctx, a, 50);
           if (!c || c.out || ctx.rng() > 0.3 + a.tr.honesty * 0.5 || (HK.Poly && !HK.Poly.canTry(ctx, a, c))) return;
@@ -207,8 +211,8 @@
           ctx.act2({ actors: [a, c], cat: 'romance', mag: 15, fx: function () { ctx.mod2(a, c, { att: 6 }, { att: yes ? 10 : 2 }); if (yes) ctx.pair(a, c).couple = true; else { ctx.stress(a, 15); hurt(ctx, a); } },
             text: ctx.t(ctx.pick(yes ? ['式のあと、{a}は{b}に第二ボタンをねだった。{b}は黙って、ボタンごと学ランの前を外した。', '式のあと、{a}は{b}を桜の木の下に呼び出した。「ずっと言えなかったことがある｜＝｜ずっと言えなかったことがあります」――{b}は、最後まで聞いてから頷いた。', '{a}は{b}の卒業アルバムの寄せ書きの欄に、一行だけ書いた。{b}はそれを読んで、{a}を追いかけた。'] : ['{a}は{b}を呼び止めて、それから「元気でね｜元気でな｜お元気で」とだけ言った。', '{a}は{b}に花束を渡した。言いたかったことは、花束の中のカードにも書けなかった。', '{a}は校門のところで{b}を待っていたが、{b}は友達に囲まれていて、結局手を振っただけだった。']), a, c), why: '最後の日。' + a.name + 'の惹かれ（' + Math.round(R(ctx, a, c).att) + '）' });
         });
-        if (G3.length === P.length) return;
-        P = P.filter(function (c) { return gr(ctx, c) !== 3; });
+        if (!rest3.length) return;
+        P = rest3;
       }
       if (P.length < 2) return;
       ctx.incident('球技大会。来月にはクラス替えがある。');
