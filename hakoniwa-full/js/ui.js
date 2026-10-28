@@ -583,12 +583,12 @@
       /* ツールバー・グループごとの節（見出しに「仲間とみなす」）・ページ送り（ui-cast-pages.js）。絞り込みで隠した住人・折りたたんだ節・ほかのページの住人は描かない */
       (CP ? CP.castHtml() : '<div class="cast" id="castlist">' + S.chars.map(function (c, i) { var h = resRow(c, i); return grpHidden(c) ? h.replace('<div class="res"', '<div class="res" hidden style="display:none"') : h; }).join('') + '</div>') +
       (S.chars.length >= MAX ? '<p class="hint" id="castfull" style="color:var(--warn)">住人が上限の' + MAX + '人まで登録されています。追加・複製するには、誰かを削除してください。</p>' : '') +
-      (CT ? CT.bottom() : '') +
+      (CT ? CT.bottom() : '') + (HK.VoiceSet ? HK.VoiceSet.html() : '') +   /* 口調・喘ぎの設定（全体／住人。ui-voice.js。2026-10-28 担当LA） */
       tiesSection() +
       '<div class="row" style="margin-top:20px"><span class="spacer"></span><button class="btn primary" data-act="tobox">箱庭を選ぶ</button></div>';
     $('#view-cast').innerHTML = html;
     if (CP) CP.after($('#view-cast'));
-    if (CT) CT.after();
+    if (CT) CT.after(); if (HK.VoiceSet) HK.VoiceSet.after();
   }
 
   /* ---------- 既存の関係 ---------- */
@@ -1220,7 +1220,6 @@
     var rows = lazyBox && CP ? CP.boxRows(rowOf, J, 2 + nCols).split(/(?=<tr[\s>])/) : S.chars.map(rowOf);
 
     var segs = [{ k: 'cards', html: head }, { k: 'env', html: '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + ' <span class="envbtns"><button type="button" class="mini" data-act="envreset" title="この箱庭の環境値を初期値に戻す">初期値に戻す</button><button type="button" class="mini" data-act="envrand" title="環境値をランダムに決める（文字の項目はそのまま）">ランダム</button></span></h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + contentBox() + '</div></div>' },
-      { k: 'adv', html: HK.Adv ? HK.Adv.html() : '' },
       { k: 'uses', html: '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
       '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' },
       { k: 'per', html: '<h2 class="sec">' + (!hasAct && !hasGoal ? (scen.solo ? '挑戦者の設定' : '住人ごとの設定') : scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
@@ -1231,12 +1230,12 @@
       (S.scenId === 'classroom' && S.chars.length ? '<div class="row" style="margin-top:10px"><label for="teacher"><b>担任の先生</b></label><select id="teacher" data-f="teacher"><option value="">なし（生徒だけ）</option>' + S.chars.map(function (c) { return '<option value="' + c.id + '"' + (S.teacher === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="margin:0">一人だけ先生にできます。先生は生徒の人数に数えず、生徒との恋愛は起きません。</span></div>' : '') },
       { k: 'run', html: runBar() }];
     /* 参加表は行ごとに分けて渡す（変わった行だけ入れ替える。住人の名前などは esc 済みなので <!-- は表の位置にしか無い） */
-    var pp = segs[4].html.split('<!--rows-->');
-    segs[4] = pp.length === 2 ? { k: 'per', pre: pp[0], rows: rows, post: pp[1] } : { k: 'per', html: pp.join(rows.join('')) };
+    var pp = segs[3].html.split('<!--rows-->');   /* 3：参加表（もとの「高度設定」の節は 2026-10-28 に住人タブの「口調・喘ぎの設定」へ移した） */
+    segs[3] = pp.length === 2 ? { k: 'per', pre: pp[0], rows: rows, post: pp[1] } : { k: 'per', html: pp.join(rows.join('')) };
     drawBox(segs.filter(function (x) { return x.html || x.rows; }), opt, '', loadSel);
   }
   function drawBox(segs, opt, tail, badge) {
-    var vb = $('#view-box'), after = function () { if (CP) CP.after(vb); if (HK.Adv) HK.Adv.afterRender(); };
+    var vb = $('#view-box'), after = function () { if (CP) CP.after(vb); };
     if (!BD) { vb.innerHTML = segs[0].html + tail + segs.slice(1).map(function (x) { return x.rows ? x.pre + x.rows.join('') + x.post : x.html; }).join(''); after(); return; }
     BD.draw(vb, segs, { defer: !!(opt && opt.defer), sel: S.scenId, badge: badge ? scLoadBadge(S.scenId) : '', tail: tail, after: after, live: function () { return tab === 'box'; } });
   }
@@ -1524,7 +1523,7 @@
     Object.keys(input.env || {}).forEach(function (k) { if (k !== 'ct') (gIds[k] ? S.glob : S.env[sid])[k] = input.env[k]; });
     if (!miss.length && ids.length) { S.join = S.join || {}; S.join[sid] = ids; }
     save(); setTab('box');
-    toast('条件とシードを箱庭タブに写しました（自動では動かしません）。' + (miss.length ? '住人「' + miss.slice(0, 3).join('・') + '」が見つからないので、参加者はそのままです。' : '') + '住人の設定や版が保存時と違うと、同じ結果にはなりません' + (adv && HK.SavesAdv && HK.SavesAdv.differs(adv) ? '。保存時の高度設定は「高度設定を写す」で戻せます' : ''));
+    toast('条件とシードを箱庭タブに写しました（自動では動かしません）。' + (miss.length ? '住人「' + miss.slice(0, 3).join('・') + '」が見つからないので、参加者はそのままです。' : '') + '住人の設定や版が保存時と違うと、同じ結果にはなりません' + (adv && HK.SavesAdv && HK.SavesAdv.differs(adv) ? '。保存時の' + HK.Adv.LABEL + 'は「' + HK.Adv.LABEL + 'を写す」で戻せます' : ''));
   }
   /* セーブから結果を開く（保存した結果だけを表示する。回し直しはしない）・条件を写す */
   HK.UIres = {

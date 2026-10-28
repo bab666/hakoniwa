@@ -380,7 +380,7 @@
     var rep = false;
     if (diff.length) {
       if (ctx && ctx.advAns != null) rep = ctx.advAns;
-      else { rep = window.confirm('高度設定の辞書の中身が、今のものと読み込むもので違います。\n読み込むものに置き換えますか？' + (ctx && ctx.multi ? '（このあとのファイルも同じにします）' : '') + '\n\n［OK］置き換える\n［キャンセル］今のものを残す'); if (ctx) ctx.advAns = rep; }
+      else { rep = window.confirm(((HK.Adv && HK.Adv.LABEL) || '全体の口調の設定') + '（辞書・調整）の中身が、今のものと読み込むもので違います。\n読み込むものに置き換えますか？' + (ctx && ctx.multi ? '（このあとのファイルも同じにします）' : '') + '\n\n［OK］置き換える\n［キャンセル］今のものを残す'); if (ctx) ctx.advAns = rep; }
     }
     keys.forEach(function (k) { if (!HK.Adv.get(k) || (rep && diff.indexOf(k) >= 0)) { if (HK.Adv.get(k) !== adv[k]) { HK.Adv.set(k, adv[k], true); n++; } } });
     return n;

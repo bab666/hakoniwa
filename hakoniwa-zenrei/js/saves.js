@@ -255,7 +255,7 @@
       '<p class="savetitle">' + esc(r.title) + '</p>' +
       '<p class="savecast">' + esc(r.names) + (seedOf(r) != null ? '　<span class="saveseed">シード ' + esc(seedOf(r)) + '</span>' : '') + '</p>' +
       '<p class="savever hint small" style="margin:2px 0 0">保存時の版：' + esc(VM.label(r.ver || res.ver, r.at)) + '</p>' +
-      (advLabel(r.adv) ? '<p class="saveadv hint small" style="margin:2px 0 0">高度設定：' + esc(advLabel(r.adv)) + '</p>' : '') +
+      (advLabel(r.adv) ? '<p class="saveadv hint small" style="margin:2px 0 0">' + esc(advLB()) + '：' + esc(advLabel(r.adv)) + '</p>' : '') +
       (okr ? '' : '<p class="savelost hint small" style="margin:2px 0 0;color:var(--hot,#B4232A)">結果が残っていないため開けません（保存時の版でのみ再現できます）</p>') + '</div>' +
       '<div class="saveact">' +
       (okr ? '<button class="btn small" data-sv="open">開く</button>' : '') +
@@ -324,6 +324,8 @@
   /* ---------- 保存時の高度設定（2026-10-28）：記録の adv の要約・今の設定との比べ・写す・開いた画面の飾り ----------
      記録（セーブの rec.adv・履歴の rec.adv）は読むだけ。写すのは今の高度設定（HK.Adv.set。欄とエンジンに当たる）で、記録は変えない。
      この画面に節がある欄だけを見る（全年齢版・全年齢モードでは R18 の欄を写さない・数えない） */
+  /* 画面での呼び名（ui-adv.js の HK.Adv.LABEL。もとの「高度設定」。2026-10-28 から住人タブの「口調・喘ぎの設定」の対象「全体」） */
+  function advLB() { return (HK.Adv && HK.Adv.LABEL) || '全体の口調の設定'; }
   function advSecs() { var A = HK.Adv; return A && A.secs ? A.secs.filter(function (s) { return !(A.RETIRED && A.RETIRED[s.id]); }) : []; }
   function advName(s) { return String(s.title || s.id).replace(/（[^（）]*）\s*$/, ''); }
   /* 要約：「喘ぎの辞書 12行・喘ぎ声の調整あり」の形（文字の欄は空でない行の数、選択欄の節は「あり」）。何も無ければ '' */
@@ -351,20 +353,19 @@
   function advDiffers(adv) { var w = advWant(adv); return !!(HK.Adv && Object.keys(w).length && !advSame(w)); }
   function advCopy(adv) {
     var A = HK.Adv, want = advWant(adv), ids = Object.keys(want);
-    if (!A || !ids.length) { toast('この記録には、今の版で写せる高度設定がありません'); return; }
-    if (advSame(want)) { toast('今の高度設定は、この記録の保存時と同じです'); return; }
+    if (!A || !ids.length) { toast('この記録には、今の版で写せる' + advLB() + 'がありません'); return; }
+    if (advSame(want)) { toast('今の' + advLB() + 'は、この記録の保存時と同じです'); return; }
     var cur = A.snap ? A.snap() : null, curAny = cur && advSecs().some(function (s) { return cur[s.id]; });
-    if (curAny && !window.confirm('今の高度設定を、この記録の保存時のものに置き換えます。よろしいですか？')) return;
+    if (curAny && !window.confirm('今の' + advLB() + 'を、この記録の保存時のものに置き換えます。よろしいですか？')) return;
     advSecs().forEach(function (s) {
       var v = want[s.id] || '';
       if ((A.get(s.id) || '') === v) return;
       A.set(s.id, v);
-      /* 箱庭タブの欄が描いてあれば、文字の欄はその場で合わせる（選択欄の節は、箱庭タブを開くと描き直される） */
-      var ta = document.querySelector('textarea[data-f="adv"][data-k="' + s.id.replace(/["\\]/g, '') + '"]');
-      if (ta) ta.value = v;
     });
+    /* 住人タブの「口調・喘ぎの設定」の節が描いてあれば、描き直して合わせる（ui-voice.js） */
+    if (HK.VoiceSet && HK.VoiceSet.refresh) HK.VoiceSet.refresh();
     var names = advSecs().filter(function (s) { return want[s.id]; }).map(advName);
-    toast('高度設定を写しました（' + names.join('・') + '）。次に箱庭を動かしたときから効きます');
+    toast(advLB() + 'を写しました（' + names.join('・') + '）。次に箱庭を動かしたときから効きます');
   }
   /* 結果の画面の飾り（ui.js の renderResult から）：セーブ・履歴から開いた結果なら、保存時の版のとなりに高度設定の要約と、
      「条件を箱庭タブに写す」「高度設定を写す」を出す（高度設定の無い記録は要約もボタンも出さない）。履歴の一覧には「高度設定あり」の印 */
@@ -372,10 +373,10 @@
     if (!host) return;
     if (res && opened && !host.querySelector('#advbar')) {
       var lab = advLabel(opened.adv), canCond = !!(res.input && Array.isArray(res.input.chars) && HK.UIres && HK.UIres.copyCond);
-      var html = (lab ? '<p class="hint small" id="advnote" style="margin:2px 0 0">高度設定：' + esc(lab) + '</p>' : '') +
+      var html = (lab ? '<p class="hint small" id="advnote" style="margin:2px 0 0">' + esc(advLB()) + '：' + esc(lab) + '</p>' : '') +
         '<div class="row openbar" id="advbar" style="margin-top:6px;gap:6px;flex-wrap:wrap">' +
-        (canCond ? '<button type="button" class="btn small ghost" data-sv="ocond" title="住人・環境・シードを箱庭タブに写す（自動では動かしません。高度設定は写しません）">条件を箱庭タブに写す</button>' : '') +
-        (lab ? '<button type="button" class="btn small ghost" data-sv="oadv" title="今の高度設定を、この記録の保存時のものに置き換える（記録は変えません）">高度設定を写す</button>' : '') + '</div>';
+        (canCond ? '<button type="button" class="btn small ghost" data-sv="ocond" title="' + esc('住人・環境・シードを箱庭タブに写す（自動では動かしません。' + advLB() + 'は写しません）') + '">条件を箱庭タブに写す</button>' : '') +
+        (lab ? '<button type="button" class="btn small ghost" data-sv="oadv" title="' + esc('今の' + advLB() + 'を、この記録の保存時のものに置き換える（記録は変えません）') + '">' + esc(advLB()) + 'を写す</button>' : '') + '</div>';
       if (!canCond && !lab) html = '';
       var anchor = host.querySelector('#vernote') || host.querySelector('#histnote') || host.querySelector('.resulthead');
       if (html) { if (anchor) anchor.insertAdjacentHTML('afterend', html); else host.insertAdjacentHTML('afterbegin', html); }
@@ -383,7 +384,7 @@
     var box = host.querySelector('.hist');
     if (box && Array.isArray(hist)) Array.prototype.forEach.call(box.querySelectorAll('[data-act="hist"]'), function (b) {
       var it = hist[+b.dataset.k];
-      if (it && it.ad && it.r && !b.querySelector('.advmark')) b.insertAdjacentHTML('beforeend', '<span class="nums advmark">高度設定あり</span>');
+      if (it && it.ad && it.r && !b.querySelector('.advmark')) b.insertAdjacentHTML('beforeend', '<span class="nums advmark">' + esc(advLB()) + 'あり</span>');
     });
   }
   HK.SavesAdv = { advOf: advOf, label: advLabel, differs: advDiffers, copy: advCopy, deco: advDeco };

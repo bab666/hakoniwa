@@ -404,6 +404,9 @@ js/ui-adv.js
 js/ui-adv-moan.js
 js/ui-adv-moan-fit.js
 js/ui-gear-moan.js
+js/ui-voice.js
+js/ui-voice-copy.js
+js/ui-voice-moan.js
 js/notice.js
 js/ui-fold.js
 js/ui-mobile.js

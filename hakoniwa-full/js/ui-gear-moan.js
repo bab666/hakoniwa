@@ -1,5 +1,6 @@
-/* 箱庭シミュレーター（R18版のみ）: 住人の ⚙設定 の「喘ぎの辞書・声の区分（この住人だけ）」（2026-10-28 担当HW2）
-   ui-gear.js の「話し方」の節の「喘ぎの口調」の下に出す（HK.GearMoan.html）。欄の入力は ui-gear.js の onField から HK.GearMoan.field に、
+/* 箱庭シミュレーター（R18版のみ）: 住人ごとの「喘ぎの辞書・声の区分（この住人だけ）」（2026-10-28 担当HW2）
+   2026-10-28（担当LA）から、住人タブの「口調・喘ぎの設定」の節（ui-voice.js・ui-voice-moan.js）で対象に住人を選んだときの「喘ぎ」の折りたたみに出す
+   （HK.GearMoan.html(c, { flat: true })。⚙設定の窓には出さない）。欄の入力は ui-voice.js の入力の処理から HK.GearMoan.field に、
    見本のボタン（data-gact="moandemo"）はクリックの処理から HK.GearMoan.act に届く。
    保存する欄（住人）：
      c.moanDict  … 喘ぎの辞書（受けのとき）。書式は高度設定の「喘ぎの辞書」と同じで、範囲は書かない（[乗り気 1]・[喘ぎ 乗り気 1]・[小説 最中] も読む）。上限 4000 字
@@ -8,7 +9,7 @@
      c.moanOpt   … { tease: 攻めのときの言葉責め・焦らしの多さ, retort: 受けのときの言い返しの多さ }（off|less|normal|more。normal は持たない）。
                    moan-cut.js（HK.Moan.tease）が読む：言葉責め・焦らし off 0／less 半分／normal 表どおり／more 1.5倍（一場面 3 回まで）、
                    言い返し off 0／less 1割5分／normal 3割／more 6割（一場面 2 回まで）。2026-10-28 担当M1
-   ここで決めた辞書は高度設定の 住人= よりも優先し、区分は高度設定の口調ごとの区分より優先する（moan-engine.js の HK.Moan.ownOf・fit）。
+   ここで決めた辞書は全体の設定（もとの高度設定）の 住人= よりも優先し、区分は全体の設定の口調ごとの区分より優先する（moan-engine.js の HK.Moan.ownOf・fit）。
    見本「この住人の声を出してみる」は、その住人の口調・喘ぎの口調・性別・夜の性格・辞書・区分をそのまま使い、箱庭と同じ HK.Moan.pick／say を通す（HK.Moan.demo の who）。
    全年齢モードでは何も出さない。登場人物はすべて成人として扱う。全年齢版にはこのファイルを置かない */
 (function () {
@@ -40,7 +41,7 @@
   }
   function fitHint(c) {
     var k = M.fitKind(toneOfC(c), c);
-    return '高度設定までの区分：' + (KIND_LABEL[k.advKind] || k.advKind) + (k.advMasc ? '・男性的な語尾を残す' : '') + '。いま効く区分：' + (KIND_LABEL[k.kind] || k.kind) + (k.kind !== 'off' && k.masc ? '・男性的な語尾を残す' : '') + (k.own ? '（この住人の設定）' : '');
+    return '全体の設定までの区分：' + (KIND_LABEL[k.advKind] || k.advKind) + (k.advMasc ? '・男性的な語尾を残す' : '') + '。いま効く区分：' + (KIND_LABEL[k.kind] || k.kind) + (k.kind !== 'off' && k.masc ? '・男性的な語尾を残す' : '') + (k.own ? '（この住人の設定）' : '');
   }
   function sumText(c) {
     var n = lines(c), f = M.ownFitNorm(c.moanFit), out = [];
@@ -57,19 +58,20 @@
     return (style === 'novel' ? M.NOVEL_KEYS : M.keys()).map(function (k) { return opt(k.key, k.label, cur); }).join('');
   }
   var G = HK.GearMoan = {};
-  /* ⚙設定の欄（ctx: { open: 開いているか, ld: 性欲「なし」で暗くする属性 }） */
+  /* 欄（ctx: { open: 開いているか, flat: 折りたたみの外枠を付けない（住人タブの節の中） }） */
   G.html = function (c, ctx) {
     if (HK.SAFE_ON || !c) return '';
     ctx = ctx || {};
     var f = M.ownFitNorm(c.moanFit) || {}, k = M.fitKind(toneOfC(c), c), o = c.moanOpt || {};
     var ta = function (gf, v, ph) { return '<textarea data-gf="' + gf + '" rows="4" spellcheck="false" maxlength="' + M.OWN_MAX + '" placeholder="' + esc(ph) + '" style="width:100%;box-sizing:border-box;font-size:13px">' + esc(v || '') + '</textarea>'; };
     var amt = function (gf, v, label, title) { return '<label title="' + esc(title) + '">' + esc(label) + ' <select data-gf="' + gf + '" aria-label="' + esc(label) + '">' + AMOUNT.map(function (x) { return opt(x[0], x[1] + (x[0] === 'normal' ? '（既定）' : ''), v || 'normal'); }).join('') + '</select></label>'; };
-    return '<details class="gdet" data-k="gmoan"' + (ctx.open ? ' open' : '') + '><summary>喘ぎの辞書・声の区分（この住人だけ） <span class="gkn" id="gm-sum">' + esc(sumText(c)) + '</span></summary>' +
-      '<div class="gmoan" style="padding:4px 0">' +
+    var head = ctx.flat ? '<p class="gearhint" style="margin:8px 0 0"><b>喘ぎの辞書・声の区分（この住人だけ）</b> <span class="gkn" id="gm-sum">' + esc(sumText(c)) + '</span></p>' :
+      '<details class="gdet" data-k="gmoan"' + (ctx.open ? ' open' : '') + '><summary>喘ぎの辞書・声の区分（この住人だけ） <span class="gkn" id="gm-sum">' + esc(sumText(c)) + '</span></summary>';
+    return head + '<div class="gmoan" style="padding:4px 0">' +
       '<div class="gearrow"><label>声の区分（この住人だけ） <select data-gf="moanFitKind" aria-label="この住人の声の区分">' + KIND_OPT.map(function (x) { return opt(x[0], x[1], f.kind || ''); }).join('') + '</select></label>' +
       '<label><input type="checkbox" data-gf="moanFitMasc"' + (k.masc ? ' checked' : '') + '> 男性的な語尾を残す（女性でも「〜ぜ」「〜ぞ」）</label></div>' +
       '<p class="gearhint" id="gm-fit">' + esc(fitHint(c)) + '</p>' +
-      '<p class="gearhint">はっきり：「やめて」→「やめろ」、泣き声の拒みは「むり」に／やわらかい：「やめろ」→「やめて」、「〜ぞ」→「〜よ」／古風・尊大：「〜ちゃう」→「〜てしまう」／区分なし：性別の整えだけ／整えない：表の文のまま。高度設定の口調ごとの区分より優先します。</p>' +
+      '<p class="gearhint">はっきり：「やめて」→「やめろ」、泣き声の拒みは「むり」に／やわらかい：「やめろ」→「やめて」、「〜ぞ」→「〜よ」／古風・尊大：「〜ちゃう」→「〜てしまう」／区分なし：性別の整えだけ／整えない：表の文のまま。全体の設定の「喘ぎ声の調整」の口調ごとの区分より優先します。</p>' +
       '<h4 style="margin:10px 0 2px;font-size:13px">受けのとき</h4>' +
       ta('moanDict', c.moanDict, '[乗り気 1]\nん……っ|は、ぁ……\n[懇願 1]\nもっと……おねがい……\n[小説 最中]\nあ……っ、そこ……') +
       '<p class="gearhint" id="gm-err-r" style="color:var(--warn,#b00)">' + esc(errText(c.moanDict) || sideNote(c.moanDict, false)) + '</p>' +
@@ -80,15 +82,16 @@
       '<p class="gearhint" id="gm-err-t" style="color:var(--warn,#b00)">' + esc(errText(c.moanDictT) || sideNote(c.moanDictT, true)) + '</p>' +
       '<p class="gearhint">場面と段階：' + esc(M.modeList ? M.modeList(true) : '') + '</p>' +
       '<div class="gearrow">' + amt('moanOptTease', o.tease, '言葉責め・焦らしの多さ', '攻めのときに、言葉責め・焦らす台詞を言う多さです（夜の性格で決まる割合にかけます）。なし／少なめ（半分）／ふつう／多め（1.5倍）') + '</div>' +
-      '<p class="gearhint">言葉責め・焦らしは主に夜の性格がサド・意地悪の人が使い、受けはたまに言い返します。辞書はこの住人だけに効き、高度設定の「喘ぎの辞書」の 住人= よりも優先します。書いた行は区分では直さず、崩しもしません（台詞の口調の言い換えは通ります）。</p>' +
+      '<p class="gearhint">言葉責め・焦らしは主に夜の性格がサド・意地悪の人が使い、受けはたまに言い返します。辞書はこの住人だけに効き、全体の設定の「喘ぎの辞書」の 住人= よりも優先します。書いた行は区分では直さず、崩しもしません（台詞の口調の言い換えは通ります）。</p>' +
       '<h4 style="margin:10px 0 2px;font-size:13px">この住人の声を出してみる</h4>' +
       '<div class="gearrow"><label>作風 <select data-gf="gmStyle" id="gm-style" aria-label="見本の作風">' + opt('ero', '男性向け', 'ero') + opt('novel', '小説調', 'ero') + '</select></label>' +
       '<label>場面 <select id="gm-key" aria-label="見本の場面">' + keyOpts('ero', c.pos === 'top' ? 't3' : 'w1') + '</select></label>' +
       '<label title="言葉責め・焦らし・攻めの崩れ・言い返しの台詞を、快感で遮られた形にして出します">崩れ <select id="gm-cut" aria-label="見本の崩れ">' + (M.CUT_LABEL || ['なし']).map(function (l, i) { return opt(String(i), l, '0'); }).join('') + '</select></label>' +
       '<button type="button" class="btn small" data-gact="moandemo">出してみる</button></div>' +
       '<div class="tonesample" id="gm-demo" aria-live="polite"></div>' +
-      '</div></details>';
+      '</div>' + (ctx.flat ? '' : '</details>');
   };
+  G.sumText = sumText;
   /* 住人の行の要約（ui-gear.js の UI.summary） */
   G.summary = function (c) {
     if (HK.SAFE_ON || !c) return [];

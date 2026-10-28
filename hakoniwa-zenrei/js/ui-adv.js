@@ -1,5 +1,7 @@
-/* 箱庭シミュレーター: 高度設定（利用者が書き換えられる辞書の欄）
-   「箱庭と環境」タブの環境値の下に「高度設定」の節を出す。節の中身は HK.Adv.add で登録する（節が一つもなければ何も出さない）：
+/* 箱庭シミュレーター: 全体の口調・喘ぎの設定（もとの「高度設定」。利用者が書き換えられる辞書の欄）
+   2026-10-28（担当LA）から、描く場所は住人タブの「口調・喘ぎの設定」（全年齢版は「口調の設定」）の節で、対象「全体」を選んだときの中身（ui-voice.js が A.body() を呼ぶ）。
+   箱庭タブには出さない。API（add/get/set/snap/pin/of/secs/RETIRED/data/exportTo/importFrom）と保存先（HK.store の adv）は変えない。
+   節の中身は HK.Adv.add で登録する（節が一つもなければ何も出さない）：
      ・喘ぎ声の調整（moan-engine.js の HK.Moan.setFit。R18版だけ）… ui-adv-moan-fit.js が登録（選択欄とスライダーの節。sec.html）
      ・喘ぎの辞書（moan-engine.js の HK.Moan。R18版だけ）… ui-adv-moan.js が登録
    書いた文字列はブラウザに保存し（HK.store の adv）、JSON の書き出し（全員のとき）にも adv として入る。
@@ -40,21 +42,25 @@
     if (!el) return;
     el.textContent = errors && errors.length ? '読めなかった行：' + errors.slice(0, 5).join('／') + (errors.length > 5 ? '（ほか' + (errors.length - 5) + '件）' : '') : '';
   };
-  A.html = function () {
+  /* 画面での呼び名（セーブ・履歴の要約、「…を写す」のボタンなど。saves.js・portable.js・tips.js が使う） */
+  A.LABEL = '全体の口調の設定';
+  /* r18:begin */
+  if (!HK.SAFE_ON) A.LABEL = '全体の口調・喘ぎの設定';
+  /* r18:end */
+  /* 節の中身（見出しなし）。住人タブの「口調・喘ぎの設定」の対象「全体」から（ui-voice.js） */
+  A.body = function () {
     if (!A.secs.length) return '';
-    var what = '';
-    /* r18:begin */
-    if (!HK.SAFE_ON) what = '喘ぎ';
-    /* r18:end */
-    return '<h2 class="sec">高度設定</h2><div class="panel"><p class="hint" style="margin-top:0">辞書や調整を変えて、' + (what ? what + 'を' : '') + '自分好みにできます。空欄なら組み込みのまま。書いた内容はこのブラウザに保存され、JSONの書き出し（全員）にも入ります。</p>' +
+    return '<p class="hint" style="margin-top:0">辞書や調整を変えて、箱庭全体の既定を自分好みにできます。空欄なら組み込みのまま。書いた内容はこのブラウザに保存され、JSONの書き出し（全員）とセーブ・履歴の写しにも入ります。</p>' +
       A.secs.map(function (s) {
         return '<div class="advsec" style="margin-top:12px"><div class="lab" style="font-weight:600">' + esc(s.title) + '</div>' +
           (s.desc ? '<div class="desc" style="font-size:12px;color:var(--muted);white-space:pre-wrap;margin:4px 0">' + esc(s.desc) + '</div>' : '') +
           (s.html ? s.html() : '<textarea data-f="adv" data-k="' + esc(s.id) + '" rows="' + (s.rows || 8) + '" placeholder="' + esc(s.placeholder || '') + '" spellcheck="false">' + esc(data[s.id] || '') + '</textarea>' +
           '<div class="desc" id="adv-err-' + esc(s.id) + '" style="font-size:12px;color:#b00;min-height:1.2em"></div>') +
           (s.extra ? s.extra() : '') + '</div>';
-      }).join('') + '</div>';
+      }).join('');
   };
+  /* 見出し＋枠つき（以前の箱庭タブの形。いまは使っていないが、呼ぶ側のために残す） */
+  A.html = function () { var b = A.body(); return b ? '<h2 class="sec">' + esc(A.LABEL) + '</h2><div class="panel">' + b + '</div>' : ''; };
   /* 欄の入力（ui.js の onField から） */
   A.onInput = function (t) { var sec = A.secs.filter(function (s) { return s.id === t.dataset.k; })[0]; if (sec && sec.onInput) sec.onInput(t); else A.set(t.dataset.k, t.value); };
   /* 節ごとのボタン（data-act="adv:…"） */

@@ -1,5 +1,7 @@
 /* 箱庭シミュレーター ui: 住人ごとの設定（⚙️）
    節は ①話し方 ②プロフィール ③体と設定 ④恋愛（R18版は恋愛と夜） ⑤相手ごとの設定（殺さない相手・関係・呼び方・二人称/一人称・受け攻め・夜の性格）。
+   ①話し方の欄（口調・一人称・語尾・辞書・呼び方・敬語・喘ぎ など）は 2026-10-28（担当LA）に住人タブの「口調・喘ぎの設定」の節（ui-voice.js）へ移した。
+   ここには要約と「口調・喘ぎをより細かく設定する」のボタンだけを置く（押すと窓を閉じて、その節をこの住人にして開く）。
    固定の説明は各節の ？（TIPS）に置く。欄の data-gf は保存との互換のため変えない。
    ※口調や関係は台詞・文面と関係の初期値に効く。行動の判断はエゴグラムの数値で決まる */
 (function () {
@@ -111,7 +113,7 @@
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   /* ---------- 設定の窓 ---------- */
-  var cur = null, ov = null, opener = null, keigoOpen = false, egoOpen = true;
+  var cur = null, ov = null, opener = null, egoOpen = true;
   /* 折りたたみ（恋愛相手の固定・性行為の相手・恋愛にしない相手）の開閉。窓を開いているあいだだけ覚える。基本は閉じる */
   var openMap = {};
   /* 住人が多いとき（61人以上）は、閉じている一覧の中身（住人を並べたチェック）を DOM に作らず、開いたときに入れる（lazyIn。住人1000人で窓を開くのが重かった） */
@@ -151,78 +153,17 @@
       (sb.notes.length ? '<br>' + esc(sb.notes.join('。')) + '。' : '') + '</p>';
     return h + '<p class="gearhint">' + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (D.loveOpt ? (t.love === 'ok' ? '。恋愛に発展：するにしているので、想いが恋に変わることもある' : '。恋愛に発展：しないにしているので、想いは恋にならない') : '') + '</p>';
   }
-  /* 口調の見本：ふつうの言い回しの台詞を、この住人の口調・一人称・呼び方に直して見せる（数秒ごとに切り替わる） */
-  /* 口調ごとの見本は tone-registry.js の sample（一人称は「私」、相手は{o}で書き、表示のときに本人の一人称・呼び方に直す） */
-  var SAMPLE = {};
-  Object.keys(HK.TONES || {}).forEach(function (k) { if (HK.TONES[k].sample) SAMPLE[k] = HK.TONES[k].sample; });
-  /* 性別で見本を分けている口調（sampleF / sampleM）は、その性別のときだけそちらを使う */
-  /* 台詞の見本は全口調で同じ文（tone-registry.js の HK.TONE_SAMPLE。いまは6文。文の数は固定しない）。口調の辞書と書き下ろしで口調ごとの形になる */
-  function sampleOf(tk, g) { var T = HK.TONES[tk] || {}; return HK.TONE_SAMPLE || (g === 'f' && T.sampleF) || (g === 'm' && T.sampleM) || SAMPLE[tk]; }
-  function sampleLines(c) {
-    var V = HK.Voice;
-    if (!V || !V.processText) return '';
-    /* 分割読み込み（load.js）：この住人の口調の書き下ろしのかたまりがまだなら、読んでから描き直す（そのあいだは「読み込んでいます…」） */
-    if (HK.Load && HK.Load.tonesReady && !HK.Load.tonesReady([c])) {
-      var cid = c.id;
-      HK.Load.ensureTones([c]).then(function () { if (cur === cid) sampleRefresh(); }, function () {
-        var b = document.getElementById('tonesample');
-        if (b && cur === cid) b.innerHTML = '<span class="tsh">台詞の見本</span><span class="tsl on">口調のデータを読み込めませんでした。窓を開き直すと、もう一度読み込みます</span>';
-      });
-      return '<span class="tsh">台詞の見本</span><span class="tsl on">読み込んでいます…</span>';
-    }
-    var s = S(), o = s.chars.filter(function (x) { return x !== c; })[0] || { name: '相手', id: '' };
-    var me = { name: c.name, fp: (c.fpFor && o.id && c.fpFor[o.id]) || c.fp || '', you: (c.youFor && o.id && c.youFor[o.id]) || c.you || '', marks: c.marks || '', toneCustom: c.toneCustom || '', gender: c.gender || '', tone: HK.Ending ? HK.Ending.toneOf(c) : HK.toneOf ? HK.toneOf(c) : c.tone || '', call: c.call || '', callG: c.callG || null, calls: c.calls || null };
-    var kgo = c.keigo ? s.chars.filter(function (x) { return x !== c && c.keigo[x.id]; })[0] : null;
-    me.persona = HK.personaOf ? HK.personaOf({ tone: c.tone, eg: c.eg }) : 'gentle';
-    var ppl = [me, { name: o.name, fp: '', gender: o.gender || '', tone: '', persona: 'gentle' }];
-    if (me.calls && o.id && me.calls[o.id]) { me.calls = {}; me.calls[o.name] = c.calls[o.id]; } else me.calls = null;
-    var tk = me.tone && (HK.TONE_SAMPLE || SAMPLE[me.tone]) ? me.tone : SAMPLE[me.persona] ? me.persona : 'gentle';
-    var SL = sampleOf(tk, c.gender);
-    var lines = SL.map(function (t) { return esc(V.processText(t.replace(/\{n\}/g, c.name).replace(/\{o\}/g, o.name), ppl).replace(new RegExp('^' + c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), '')); });
-    /* 敬語で話す相手がいれば、その相手への一言も見本に足す */
-    if (kgo && me.persona !== 'polite' && me.tone !== 'polite') {
-      var km = Object.assign({}, me, { keigo: {}, calls: c.calls && c.calls[kgo.id] ? {} : null }); km.keigo[kgo.name] = 1; if (km.calls) km.calls[kgo.name] = c.calls[kgo.id];
-      lines.push(esc(V.processText(SL[2].replace(/\{n\}/g, c.name).replace(/\{o\}/g, kgo.name), [km, { name: kgo.name, fp: '', gender: kgo.gender || '', tone: '', persona: 'gentle' }]).replace(new RegExp('^' + c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), '')) + '（敬語の相手へ）');
-    }
-    return '<span class="tsh">台詞の見本（' + esc(toneLabel(tk)) + '・一人称と呼び方も反映）</span>' + lines.map(function (l, i) { return '<span class="tsl' + (i === 0 ? ' on' : '') + '">' + l + '</span>'; }).join('');
-  }
-  var tsTimer = null;
-  function sampleTick() {
-    if (tsTimer) clearInterval(tsTimer);
-    tsTimer = setInterval(function () {
-      var box = document.getElementById('tonesample');
-      if (!box || !ov || ov.hidden) { clearInterval(tsTimer); tsTimer = null; return; }
-      var ls = box.querySelectorAll('.tsl'); if (!ls.length) return;
-      var k = 0; ls.forEach(function (x, i) { if (x.classList.contains('on')) k = i; });
-      ls[k].classList.remove('on'); ls[(k + 1) % ls.length].classList.add('on');
-    }, 2600);
-  }
-  function sampleRefresh() { var c = byId(cur), box = document.getElementById('tonesample'); if (c && box) box.innerHTML = sampleLines(c); }
   /* 関係を付けずに出した相手ごとの行（窓を開いているあいだだけ。何か決めれば、関係がなくても行は残る） */
   var extra = {};
   function extraOf(c) { return extra[c.id] || {}; }
   function body(c) {
     var s = S(), others = s.chars.filter(function (x) { return x !== c; });
     lazyIn = {}; lazyMany = others.length > 60;
-    var autoK = HK.toneAuto ? HK.toneAuto(HK.traits(c.eg)) : HK.personaAuto(HK.traits(c.eg));
-    var keys = HK.TONE_KEYS || HK.PERSONA_KEYS;
-    var toneSel = '<select data-gf="tone" aria-label="口調">' + opt('', 'おまかせ（' + toneLabel(autoK) + '）', c.tone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.tone || '', t.desc); }).join('') + '</select>';
-    var tInfo = HK.toneInfo ? HK.toneInfo(c.tone || autoK) : HK.PERSONA[c.tone || autoK];
-    /* 喘ぎの口調（R18版だけ。moan-engine.js が喘ぎを作るときにいつもの口調の代わりに使う）：口調の欄のすぐ下 */
-    var moanRow = '', ld = '';
+    var ld = '';
     /* r18:begin */
     /* 性欲の強さ「なし」：合意のある夜に効く欄を暗くする（attr.js の A.libDim。値は消さない） */
     ld = HK.Attr && HK.Attr.libDim ? HK.Attr.libDim(c) : '';
-    if (!HK.SAFE_ON) moanRow = '<div' + ld + '><div class="gearrow"><label>喘ぎの口調 <select data-gf="moanTone" aria-label="喘ぎの口調">' + opt('', 'いつもの口調と同じ', c.moanTone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.moanTone || '', t.desc); }).join('') + '</select></label></div>' +
-      '<p class="gearhint">喘ぎ声・夜の場面の声だけ、この口調で出します（普段は作った口調で話す人の、素の声が出る様子に）。</p>' +
-      '<p class="gearhint">声の区分や割合は 箱庭タブ → 高度設定 → 喘ぎ声の調整 で、この住人だけの辞書と区分は下の「喘ぎの辞書・声の区分（この住人だけ）」で変えられます。</p>' +
-      /* 住人の欄の喘ぎの辞書・声の区分・見本（ui-gear-moan.js） */
-      (HK.GearMoan ? HK.GearMoan.html(c, { open: openMap.gmoan }) : '') + '</div>';
     /* r18:end */
-    var callSel = '<select data-gf="call" aria-label="基本の呼び方">' + (HK.CALL_STYLES || [{ v: '', label: 'おまかせ' }]).map(function (o) { return opt(o.v, o.label, c.call || ''); }).join('') + '</select>';
-    /* 相手の性別で分けるとき：男性・女性・その他ごとの敬称 */
-    var SUF = (HK.CALL_STYLES || []).filter(function (o) { return o.v && o.v !== 'gender'; }), CGD = { m: 'kun', f: 'chan', x: 'san' };
-    if (c.call === 'gender') callSel += [['m', '男性'], ['f', '女性'], ['x', 'その他']].map(function (g) { return '<label>' + g[1] + 'には <select data-gf="callG" data-g="' + g[0] + '" aria-label="' + g[1] + 'の呼び方">' + SUF.map(function (o) { return opt(o.v, o.label, (c.callG && c.callG[g[0]]) || CGD[g[0]]); }).join('') + '</select></label>'; }).join('');
     /* 恋愛・R18にしない相手（苦手な組み合わせ）。どちらに付けても、二人のあいだでは恋愛・R18の場面が起きない */
     /* 相手を選ぶ折りたたみ（複数可）：恋愛相手の固定・性行為の相手・恋愛にしない相手。住人が多くても伸びないよう、基本は閉じる */
     var cbs = function (gf, ids) { return others.map(function (o) { return '<label><input type="checkbox" data-gf="' + gf + '" data-o="' + esc(o.id) + '"' + ((ids || []).indexOf(o.id) >= 0 ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join(''); };
@@ -289,16 +230,10 @@
     return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
       /* 固定の説明は各節の ？（TIPS）に置き、ここには選んだものによって変わる説明（口調・関係・この住人の傾向）だけを出す */
       (HK.egoDesc ? '<details class="gego"' + (egoOpen ? ' open' : '') + '><summary>この住人の傾向<span class="gegc">' + esc(HK.toCode(c.eg)) + '・' + esc(HK.egoAttWord(c)) + '</span></summary><ul id="egodesc">' + HK.egoDesc(c).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul></details>' : '') +
-      '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3><div class="gearrow"><label>口調 ' + toneSel + '</label>' + (HK.Ending ? HK.Ending.badge(c) : '') + '<label>一人称 <input type="text" data-gf="fp" value="' + esc(c.fp || '') + '" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="' + esc(c.you || '') + '" maxlength="8" placeholder="空なら口調から"></label></div>' + (HK.Attr && HK.Attr.fpMoreHtml ? HK.Attr.fpMoreHtml(c, esc) : '') + moanRow +
-      '<div class="gearrow"><label title="文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます">語尾の記号 <input type="text" data-gf="marks" value="' + esc(c.marks || '') + '" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label>' +
-      (HK.TONE_CUSTOM_OFF ? '' : '<label title="口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで">語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label>') + '</div>' +
-      '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
-      '<div class="tonesample anim" id="tonesample" aria-live="polite">' + sampleLines(c) + '</div>' +
-      /* 語尾の設定（かんたん）：欄と見本は tone-ending.js */
-      (HK.Ending ? HK.Ending.gearHtml(c, others[0], { esc: esc, opt: opt }) : '') +
-      '<div class="gearrow"><label>基本の呼び方 ' + callSel + '</label><label><input type="checkbox" data-gf="keigoOlder"' + (c.keigoOlder ? ' checked' : '') + '> 年上の相手には敬語（年齢を決めた人どうし）</label></div>' +
-      (others.length ? '<details class="gkeigo"' + (keigoOpen ? ' open' : '') + '><summary>敬語で話す相手 <span class="gkn">' + (function () { var n = others.filter(function (o) { return c.keigo && c.keigo[o.id]; }).length; return n ? n + '人' : 'なし'; })() + '</span></summary><div class="gearrow">' + lazyBody('keigo', keigoOpen, others.map(function (o) { return '<label><input type="checkbox" data-gf="keigo" data-o="' + o.id + '"' + (c.keigo && c.keigo[o.id] ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join('')) + '</div>' +
-        ((c.tone || autoK) === 'polite' ? '<p class="gearhint">いまの口調は敬語なので、誰にでも敬語で話します。</p>' : '') + '</details>' : '') + '</div>' +
+      /* ①話し方：要約と、住人タブの「口調・喘ぎの設定」へのボタン（欄は ui-voice.js） */
+      '<div class="gearsec"><h3>話し方' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3>' +
+        '<p class="gearhint" style="margin:0 0 6px">' + esc(HK.VoiceSet ? HK.VoiceSet.sumLine(c) : '') + '</p>' +
+        '<div class="gearrow"><button type="button" class="btn small" data-gact="tovoice">' + esc(HK.VoiceSet ? HK.VoiceSet.MORE : '口調をより細かく設定する') + '</button></div></div>' +
       /* ②プロフィール：性別・誕生月・年齢・お酒・恋愛対象・色 */
       '<div class="gearsec"><h3>プロフィール' + (HK.Tips ? HK.Tips.btn('gear-profile') : '') + '</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
         '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label>' +
@@ -327,22 +262,20 @@
     /* 住人が多いとき（61人以上）：住人を選ぶ欄に「名前で探す」、住人を並べたチェックの一覧に「名前で絞り込む」を添える（ui-cast-pages.js） */
     if (HK.CastPages) HK.CastPages.after(box);
     ov.scrollTop = y;
-    sampleTick();
   }
   function open(id, from) {
-    if (cur !== id) { keigoOpen = false; egoOpen = true; extra = {}; openMap = {}; }
+    if (cur !== id) { egoOpen = true; extra = {}; openMap = {}; }
     cur = id; opener = from || null;
     if (!ov) {
       ov = document.createElement('div');
       ov.className = 'gearov';
       ov.innerHTML = '<div class="gearbox" role="dialog" aria-modal="true" aria-labelledby="geartitle"></div>';
       document.body.appendChild(ov);
-      ov.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('gkeigo')) keigoOpen = e.target.open; }, true);
       ov.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('gego')) egoOpen = e.target.open; }, true);
       ov.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('gdet')) openMap[e.target.dataset.k] = e.target.open; }, true);
       /* 開いたら、入れずにおいた一覧の中身を入れる（上の lazyIn） */
       ov.addEventListener('toggle', function (e) {
-        var d = e.target, k = d.classList && (d.classList.contains('gkeigo') ? 'keigo' : d.classList.contains('gdet') ? d.dataset.k : null), box = k && d.open && lazyIn[k] != null ? d.querySelector('.gearrow') : null;
+        var d = e.target, k = d.classList && (d.classList.contains('gdet') ? d.dataset.k : null), box = k && d.open && lazyIn[k] != null ? d.querySelector('.gearrow') : null;
         if (!box) return;
         box.innerHTML = lazyIn[k]; delete lazyIn[k];
         if (HK.CastPages) HK.CastPages.after(d);
@@ -374,10 +307,9 @@
     var c = byId(cur), s = S(), act = b.dataset.gact;
     if (!c) return;
     s.ties = s.ties || [];
-    /* r18:begin */
-    if (HK.GearMoan && HK.GearMoan.act(act, c, b)) return;
-    /* r18:end */
     if (act === 'close') close();
+    /* 「口調・喘ぎをより細かく設定する」：窓を閉じて、住人タブの節をこの住人にして開く（ui-voice.js） */
+    else if (act === 'tovoice') { var vid = c.id; close(); if (HK.VoiceSet) HK.VoiceSet.open(vid); }
     else if (act === 'tdel') { s.ties.splice(+b.dataset.k, 1); changed(true); }
     else if (act === 'tadd' || act === 'tnew') {
       var oid = act === 'tadd' ? b.dataset.o : (ov.querySelector('[data-gf="newo"]') || {}).value;
@@ -434,25 +366,12 @@
     if (f === 'at_sameC' && t.dataset.o) (extra[c.id] = extra[c.id] || {})[t.dataset.o] = 1;
     if (HK.Attr && HK.Attr.gearField(c, f, t, isInput, changed, byId)) return;
     if (HK.Shared && HK.Shared.gearField(c, f, t, isInput, changed)) return;
-    if (HK.Ending && HK.Ending.gearField(c, f, t, isInput, changed, sampleRefresh, s.chars.filter(function (x) { return x !== c; })[0])) return;
-    /* r18:begin */
-    if (HK.GearMoan && HK.GearMoan.field(c, f, t, isInput, changed)) return;
-    /* r18:end */
     switch (f) {
-      case 'tone': if (isInput) return; c.tone = HK.toneValid && HK.toneValid(t.value) ? t.value : ''; changed(true); break;
-      case 'moanTone': if (isInput) return; if (HK.toneValid && HK.toneValid(t.value)) c.moanTone = t.value; else delete c.moanTone; changed(true); break;
-      case 'fp': c.fp = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;
-      case 'you': c.you = t.value.trim().slice(0, 8); changed(false); sampleRefresh(); break;
-      case 'marks': c.marks = t.value.trim().slice(0, 30); changed(false); sampleRefresh(); break;
-      case 'toneCustom': c.toneCustom = String(t.value).slice(0, 120); if (!isInput) c.toneCustom = HK.normToneCustom ? HK.normToneCustom(c.toneCustom) : ''; changed(false); sampleRefresh(); break;
-      case 'call': if (isInput) return; c.call = t.value; changed(true); break;
-      case 'callG': if (isInput) return; c.callG = c.callG || {}; c.callG[t.dataset.g] = t.value; changed(false); sampleRefresh(); break;
-      case 'gender': case 'likes': if (isInput) return; c[f] = t.value; changed(false); if (f === 'gender') { sampleRefresh(); render(); } else if (!HK.SAFE_ON) render(); break;
+      case 'gender': case 'likes': if (isInput) return; c[f] = t.value; changed(false); if (f === 'gender') render(); else if (!HK.SAFE_ON) render(); break;
       /* 体の関係の相手・性欲の強さ（R18版。attr.js の値の一覧で確かめる） */
       case 'sexLikes': case 'libido': if (isInput) return; c[f] = HK.Attr && HK.Attr.label(f, t.value) && t.value ? t.value : ''; changed(f === 'libido'); break;
       case 'bmonth': if (isInput) return; c.bmonth = t.value; changed(false); break;
       case 'age': c.age = +t.value >= 1 && +t.value <= 150 ? String(Math.floor(+t.value)) : ''; changed(false); break;
-      case 'keigoOlder': if (isInput) return; c.keigoOlder = t.checked; changed(false); sampleRefresh(); break;
       case 'pos': if (isInput) return; c.pos = ['top', 'bottom', 'riba'].indexOf(t.value) >= 0 ? t.value : ''; changed(false); render(); break;
       case 'futa': if (isInput) return; c.futa = t.checked; changed(false); break;
       case 'daku': if (isInput) return; c.daku = t.checked; changed(false); break;
@@ -497,8 +416,7 @@
         if (t.checked) { c.noKillFor.push(o.id); o.noKillFor.push(c.id); }
         changed(true);
       })(); break;
-      case 'keigo': if (isInput) return; c.keigo = c.keigo || {}; if (t.checked) c.keigo[t.dataset.o] = 1; else delete c.keigo[t.dataset.o]; changed(false); sampleRefresh(); (function () { var kn = ov && ov.querySelector('.gkn'), n = ov ? ov.querySelectorAll('[data-gf="keigo"]:checked').length : 0; if (kn) kn.textContent = n ? n + '人' : 'なし'; })(); break;
-      case 'callone': c.calls = c.calls || {}; if (t.value.trim()) c.calls[t.dataset.o] = t.value.trim().slice(0, 16); else delete c.calls[t.dataset.o]; changed(false); sampleRefresh(); break;
+      case 'callone': c.calls = c.calls || {}; if (t.value.trim()) c.calls[t.dataset.o] = t.value.trim().slice(0, 16); else delete c.calls[t.dataset.o]; changed(false); break;
       case 'ttype': if (isInput || !tie) return; tie.type = t.value; var CO = HK.coldOpts ? HK.coldOpts(t.value) : null; if (!CO || !CO.map[tie.cold || '']) delete tie.cold; if (HK.tieExtraNorm) HK.tieExtraNorm(tie); changed(true); break;
       case 'textra': if (isInput || !tie) return; (function () { var xf = t.dataset.xf; if (t.value && !(tie.type === 'fiance' && t.value === 'eager')) tie[xf] = t.value; else delete tie[xf]; })(); changed(true); break;
       case 'tdir': if (isInput || !tie) return; var me = t.value === 'a'; var o = tie.a === c.id ? tie.b : tie.a, a0 = tie.a; tie.a = me ? c.id : o; tie.b = me ? o : c.id; if (tie.a !== a0 && (tie.lh === 'a' || tie.lh === 'b')) tie.lh = tie.lh === 'a' ? 'b' : 'a'; /* 向きを入れ替えても、愛憎を持つ人は同じ人のまま */ changed(true); break;
