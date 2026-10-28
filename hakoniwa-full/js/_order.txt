@@ -144,6 +144,7 @@ js/room-games.js @scen:whiteroom
 js/room-trio-note.js @scen:whiteroom
 js/room-noexit-note.js @scen:whiteroom
 js/solo-room-jealous.js @scen:whiteroom
+js/sex-lead-r18.js @scen:whiteroom
 js/ego-image.js
 js/omega-data.js
 js/omega-jobs.js @scen:omega

@@ -426,7 +426,7 @@
     var ks = keySet(res), H = hotInfo(res), groups = [], cur = null;
     /* 似た派閥の出来事が続くときは畳む（factions.js の HK.Factions.foldSet。表示だけ。人で絞り込んでいるときは畳まない） */
     var fold = res.factions && HK.Factions && HK.Factions.foldSet && !tl.who.length ? HK.Factions.foldSet(res) : null;
-    res.log.forEach(function (e) {
+    res.log.forEach(function (e, li) {
       if (e.kind === 'step') { cur = { label: e.label, step: e.step, items: [] }; groups.push(cur); return; }
       if (!cur) { cur = { label: '', step: null, items: [] }; groups.push(cur); }
       if (tl.who.length) {
@@ -435,7 +435,8 @@
       }
       if (tl.keyOnly && !(ks[e.n] || e.kind === 'death' || e.odd || e.mag >= 25 || e.goal || e.goalExit || (e.mark && e.mark.length) || isHot(e, H))) return;
       if (tl.cat !== 'all' && e.cat !== tl.cat && e.kind !== 'death') return;
-      if (tl.lewd && !HK.lewdEvent(e)) return;
+      /* エロシーンだけ：場面の前振りの段（R18版の出られない部屋。sex-lead-r18.js の e.tag 'きっかけ'）は、次の場面と一緒に出す */
+      if (tl.lewd && !HK.lewdEvent(e) && !(e.tag === 'きっかけ' && HK.lewdEvent(res.log[li + 1] || {}))) return;
       if (fold && fold[e.n] && !isHot(e, H)) { if (!cur.fold) { cur.fold = { fold: [] }; cur.items.push(cur.fold); } cur.fold.fold.push(e); return; }
       cur.items.push(e);
     });
