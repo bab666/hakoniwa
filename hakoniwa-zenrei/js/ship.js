@@ -59,7 +59,7 @@
       { id: 'supply', label: '積んでいる物資', min: 0, max: 100, def: 50, lo: 'ぎりぎり', hi: '潤沢', desc: '食料と修理部品の量' },
       { id: 'contact', label: '未知との遭遇', min: 0, max: 100, def: 50, lo: 'めったにない', hi: 'たびたび', desc: '漂流中に、不思議なものに出会う頻度' },
       { id: 'romance', label: '恋愛の起こりやすさ', min: 0, max: 100, def: 50, lo: '起きない', hi: '起きやすい', desc: '船員どうしの想い・恋人になる出来事の起こりやすさ。0にすると恋愛の交流（恋の気配・想い・告白・恋人）を出しません' }
-    ].concat(R18ON ? [{ id: 'slewd', label: '夜の出来事の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: 'たびたび', desc: '船員どうしの夜、星の花粉、異星の生き物、文明の儀式の起きやすさ' }] : []),
+    ].concat(HK.Unlike && HK.Unlike.ENV ? [Object.assign({}, HK.Unlike.ENV)] : [], R18ON ? [{ id: 'slewd', label: '夜の出来事の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: 'たびたび', desc: '船員どうしの夜、星の花粉、異星の生き物、文明の儀式の起きやすさ' }] : []),
     stats: [{ id: 'hp', label: '体力', desc: '怪我や飢え、探索の危険への強さ' }, { id: 'tech', label: '技術', desc: '修理・航法・調査の腕' }],
     perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（気質から）', options: ROLES.map(function (r) { return { id: r.id, label: r.label }; }) }],
     actions: [], goals: [], events: []
@@ -477,6 +477,9 @@
     if (ck && rng() < 0.5) { sp.morale = clamp(sp.morale + 6 + skill(ck, 'cook') * 6, 0, 100); ST.sayB(S, { actors: [ck], tag: '食事', text: F(pk(S, T.MEAL), { a: ck.name }), why: '料理人の腕で士気が上がった' }, ck.name + 'の料理'); }
     /* 船員どうしの絆が動く出来事（晩酌・ケンカ・共同作業など） */
     bonds(S);
+    /* 運命の揺らぎ：関係のある相手への「らしくない」行動と、それを見た相手の反応・後日談（unlike.js。一回の航海でこの場面を呼ぶのは約12回。見込みは14回で割る） */
+    /* @event scen=ship id=unl_story cat=bond tie=- label=らしくない行動と相手の動揺・ときめき */
+    if (HK.Unlike && HK.Unlike.story) { var un = HK.Unlike.story(S, 'ship', live(S), { n: 14 }); if (un) { ST.sayB(S, { actors: [un.a, un.b], tag: un.tag, text: un.text, why: un.why }, un.a.name + 'の、らしくない振る舞い', true); setRel(S, un.a, un.b, un.d); } }
     /* 孤独・病気 */
     var lo = L0.filter(function (p) { return p.m.fear > 55 || p.tr.ac > 0.6; })[0];
     if (lo && rng() < 0.3) { lo.m.fear = clamp(lo.m.fear + 4, 0, 100); ST.sayB(S, { actors: [lo], tag: '孤独', text: F(pk(S, T.LONELY), { a: lo.name }), why: '' }, lo.name + 'は宇宙の静けさに沈んだ'); }

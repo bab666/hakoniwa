@@ -31,7 +31,7 @@
       { id: 'hard', label: 'トリックの難しさ', min: 0, max: 100, def: 50, lo: '単純', hi: '難解' },
       { id: 'acc', label: '共犯者', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'yes', label: 'いる' }, { v: 'no', label: 'いない（単独犯）' }] },
       { id: 'motive', label: '動機', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }].concat(Y.MOTIVES.map(function (m) { return { v: m.id, label: m.cat + '：' + m.label }; })) }
-    ],
+    ].concat(HK.Unlike && HK.Unlike.ENV ? [Object.assign({}, HK.Unlike.ENV)] : []),
     stats: [{ id: 'wit', label: '推理力', desc: '手がかりの見つけやすさ・推理の正確さ。犯人なら痕跡の消し方のうまさ' }, { id: 'nerve', label: '度胸', desc: '恐怖への強さ・腕っぷし。追い詰められたときの動きに効く' }],
     perFields: [{ id: 'role', label: '役割', auto: 'おまかせ（ゲストの職業を気質から）', groups: true, options: Y.ROLES.map(function (r) { return { id: r.id, label: r.label, group: r.group }; }) },
       /* 犯人になったときの動機（順22）。犯人に選ばれた人の動機は、その人の欄 > 全体の設定「動機」 > 抽選 */
@@ -372,6 +372,12 @@
     var sc = live.filter(function (p) { return p.m.fear > 60; })[0];
     if (sc && rng() < 0.5) { sc.locked = true; ST.sayB(S, { actors: [sc], tag: '恐怖', text: F(pk(S, T.PANIC), { a: sc.name }), why: '恐怖 ' + Math.round(sc.m.fear) }, sc.name + 'は閉じこもった'); }
     flirt(S, 'night');
+    /* 運命の揺らぎ：関係のある相手への「らしくない」行動と、それを見た相手の反応・後日談（unlike.js。夜ごとに一度呼ぶ） */
+    /* @event scen=yakata id=unl_story cat=bond tie=- label=らしくない行動と相手の動揺・ときめき */
+    if (HK.Unlike && HK.Unlike.story) {
+      var un = HK.Unlike.story(S, 'yakata', live.filter(function (q) { return alive(q) && !q.bound && !q.locked && !q.mad; }), { n: (+S.env.days || 3) + 1 });
+      if (un) { ST.sayB(S, { actors: [un.a, un.b], tag: un.tag, text: un.text, why: un.why }, un.a.name + 'の、らしくない振る舞い', true); setRel(S, un.a, un.b, un.d); }
+    }
   }
   /* ---------- 恋人どうしのいちゃつき（順23。日常キットの館の場面 HK.Daily.storyLove：談話室・暖炉の前・客室・雪の中庭） ----------
      恋人・夫婦（恋人に開く）・運命の番・番と、互いに本命の二人だけ。HK.canLove を両方向・恋愛にしない組（ngPair）・恋愛なしの家族は除く。

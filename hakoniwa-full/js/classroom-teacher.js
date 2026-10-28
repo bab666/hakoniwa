@@ -410,7 +410,8 @@
     if (B && ctx.chars[B.by] && ctx.chars[B.tg]) {
       var ba = ctx.chars[B.by], bt = ctx.chars[B.tg], stopper = B.stopped && B.stopped.by != null ? ctx.chars[B.stopped.by] : null;
       var pool = B.stopped ? CE_BULLY.off.filter(function (l) { return stopper || l.indexOf('{c}') < 0; }) : CE_BULLY.on;
-      if (!(bt.out && bt.flags.absent)) { used[bt.i] = 1; say(fill(ctx.pick(pool), ba, bt, stopper), [bt], B.stopped ? 'いじめは止まった' : 'いじめは年度末まで続いた'); }
+      /* 亡くなった人・監禁中の人（S にいない人）は年度末の文に出さない。続いているいじめの文は、加害の側も生きていてその場にいるときだけ（2026-10-28） */
+      if (S.indexOf(bt) >= 0 && (B.stopped || S.indexOf(ba) >= 0) && !(bt.out && bt.flags.absent)) { used[bt.i] = 1; say(fill(ctx.pick(pool), ba, bt, stopper), [bt], B.stopped ? 'いじめは止まった' : 'いじめは年度末まで続いた'); }
     }
     S.filter(function (c) { return c.out && c.flags.absent && !ryu(c); }).slice(0, 3).forEach(function (c) { used[c.i] = 1; say(fill(ctx.pick(CE_ABSENT), c).replace(/\{s\}/g, c.flags.absent.since), [], c.name + 'は不登校のまま'); });
     R3.forEach(function (c) {

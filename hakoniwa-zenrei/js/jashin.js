@@ -37,7 +37,7 @@
       { id: 'npc', label: '記者と警察官', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'both', label: '両方いる' }, { v: 'reporter', label: '記者だけ' }, { v: 'police', label: '警察官だけ' }, { v: 'none', label: 'どちらもいない' }] },
       { id: 'amnesia', label: '記憶を失っている人', min: 0, max: 50, def: 8, lo: 'いない', hi: '二人に一人', unit: '％', desc: '一人ずつ、この確率で記憶を失ったまま参加する' },
       { id: 'tour', label: 'シークレットツアー', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ（約10％）' }, { v: 'yes', label: 'ツアーにする' }, { v: 'no', label: 'ツアーにしない' }] }
-    ],
+    ].concat(HK.Unlike && HK.Unlike.ENV ? [Object.assign({}, HK.Unlike.ENV)] : []),
     stats: [
       { id: 'luck', label: '運', desc: '襲われたときに助かる確率、霧の中で道を見つける確率に効く' },
       { id: 'stamina', label: '体力', desc: '襲われたときの抵抗、走って逃げる力、怪我への強さに効く' }
@@ -376,7 +376,8 @@
   /* ---------- 対抗策が判明 ---------- */
   function solve(S, partial, who) {
     S.solved = true; S.partial = partial;
-    var lead = who || S.P.filter(alive).sort(function (a, b) { return skill(b, 'lore') - skill(a, 'lore'); })[0];
+    /* 読み解くのは、縛られて閉じ込められた人・連れ去られた人でない人（いなければ生きている人から。2026-10-28） */
+    var lead = who || S.P.filter(function (q) { return alive(q) && !q.bound && !q.taken; }).concat(S.P.filter(alive)).sort(function (a, b) { return (a.bound || a.taken ? 1 : 0) - (b.bound || b.taken ? 1 : 0) || skill(b, 'lore') - skill(a, 'lore'); })[0];
     var o = ST.say(S, { actors: lead ? [lead] : [], tag: '対抗策', text: (lead ? lead.name + 'は集めた手がかりを並べ、顔を上げた。「分かった。この村の神は――' + S.G.name + 'だ｜＝｜分かりました。この村の神は――' + S.G.name + 'です」' : '手がかりがそろった。この村の神は、' + S.G.name + 'だ。') + '対抗策は、' + S.G.sol + '。' + (partial ? '（手がかりは一つ足りない。推測で補った）' : ''), why: partial ? '手がかり ' + S.found.length + '/' + S.G.clues.length + '。' + (lead ? lead.name + 'の知識で残りを推し量った' : '') : '手がかりが全部そろった', mag: 36 });
     ST.key(S, o, '対抗策が判明');
   }

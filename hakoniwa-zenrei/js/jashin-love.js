@@ -163,6 +163,12 @@
       if (S.rng() < 0.35) { p.love = p.love || { t: null, pt: 0, tries: 0 }; loveAct(S, p, h, live, true); }
     });
     flirt(S, h);
+    /* 運命の揺らぎ：関係のある相手への「らしくない」行動と、それを見た相手の反応・後日談（unlike.js。2時間ごとに一度呼ぶ。相手と型がそろわない回が多いので、見込みは儀式までの時間の3分の1で割る） */
+    /* @event scen=jashin id=unl_story cat=bond tie=- label=らしくない行動と相手の動揺・ときめき */
+    if (HK.Unlike && HK.Unlike.story) {
+      var un = HK.Unlike.story(S, 'jashin', live.filter(function (p) { return al(p) && !p.bound && !p.possessed && !(JS.SPEC && JS.SPEC.mad && JS.SPEC.mad(p)); }), { n: Math.max(4, Math.round((+S.env.hours || 36) / 3)) });
+      if (un) { ST.sayB(S, { actors: [un.a, un.b], tag: un.tag, text: un.text, why: un.why }, un.a.name + 'の、らしくない振る舞い', true); setRel(S, un.a, un.b, un.d); }
+    }
   };
   /* ---------- 恋人どうしのいちゃつき（順23。日常キットの村の場面 HK.Daily.storyLove：宿・社・畑・夜の縁側） ----------
      恋人・夫婦（恋人に開く）・運命の番・番と、互いに本命の二人だけ。HK.canLove を両方向・恋愛にしない組（ngPair）は除く。

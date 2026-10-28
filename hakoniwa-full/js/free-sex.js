@@ -145,12 +145,21 @@
       ctx.stress(y, 8);
       ctx.k = k0;
       /* 出来事の途中で呼ばれるので、いまの出来事のあとに出す（engine.js の pending・flush） */
-      var o = { kind: 'event', cat: 'conflict', actors: [y, x, z], text: text, why: why, mag: 14 };
+      var o = { kind: 'event', cat: 'conflict', actors: [y, x, z], text: text, why: why, mag: 14, _fsJeal: true };
       (ctx.pending = ctx.pending || []).push(o);
       return o;
     }
     if (HK.Story && HK.Story.say) return HK.Story.say(ctx, { actors: [y.i, x.i, z.i], tag: '嫉妬', text: text, why: why });
     return null;
   }
+  /* 嫉妬は出来事のあと（pending）に出すので、出すまでのあいだに三人のだれかが場を離れていたら（扉をくぐって部屋を出た・連れ去られた・亡くなった など）出さない
+     （2026-10-28：出られない部屋で、全員が出られる扉が開いたあとに、部屋を出た人の嫉妬が出ていたのを直す） */
+  if (HK.Ctx && HK.wrap) HK.wrap(HK.Ctx.prototype, 'flush', function (f) {
+    return function () {
+      var P = this.pending;
+      if (P && P.some(function (o) { return o && o._fsJeal; })) this.pending = P.filter(function (o) { return !(o && o._fsJeal) || (o.actors || []).every(function (c) { return HK.State.here(c); }); });
+      return f.apply(this, arguments);
+    };
+  });
   /* r18:end */
 })();
