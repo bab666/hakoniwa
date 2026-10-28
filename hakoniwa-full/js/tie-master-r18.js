@@ -164,6 +164,8 @@
   function due(ctx, S, M) { var pl = MR.plan(ctx, S, M); return pl.on && ctx.stepIndex >= pl.at; }
   HK.addTo(HK.COMMON, {
     id: 'tie_master_r18', cat: 'conflict', sex: true, force: true, r18: true, pri: true, noOdd: true, scope: 'pair',
+    /* 出来事の一覧の印（夜・合意のない展開。条件は MR.ok の中にあり、when の文字列からは拾えないため。動きには使わない） */
+    tags: ['night', 'force'],
     when: function (ctx, a, b) {
       var x = roles(ctx, a, b);
       if (!x || ctx.stepIndex < 1 || MR.done(ctx, x[0], x[1]) || !MR.ok(ctx, x[0], x[1])) return false;

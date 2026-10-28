@@ -3,6 +3,10 @@
    ・疑似親子（親代わり）の二人には、どちらかが実はこの村の出身だった、という秘密が明かされることがある
    ・追い詰められた人は、仲間を村に売ったり、一人だけ逃げたりして裏切る。裏切りがばれると、一行から締め出される
    ・結果画面に関係図を出す（最初の関係＋村で生まれた・変わった関係＋かばった・救った・裏切った・殺した） */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jashin id=js_drama cat=bond label=関係の変化（語らい・共闘・口論・疑い・仲直り・告白・嫉妬） */
+/* @event scen=jashin id=js_pparent cat=bond tie=pparent label=疑似親子の秘密（実は村の出身だった） */
+/* @event scen=jashin id=js_betray cat=betray label=裏切り（仲間を村に売る・一人で逃げる） */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, clamp = HK.clamp;

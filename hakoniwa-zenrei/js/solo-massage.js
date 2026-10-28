@@ -1,6 +1,12 @@
 /* 箱庭診断: ソロR18「これって本当にマッサージですか？」
    施術は少しずつ際どくなる。いつ気づくか、言い訳に騙されるか、快楽に負けるか。
    慎重・冷静（A・慎重さ・ドライさ）なら気づきやすく、素直（AC・NP）なら言い訳に騙されやすい。 */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event-table scen=massage path=MassageMore.INCIDENTS label=施術中のハプニング cat=ハプニング */
+/* @event scen=massage id=ms_treat cat=solo label=施術（少しずつ際どく。気づく・言い訳に騙される） */
+/* r18:begin */
+/* @event scen=massage id=ms_r18 cat=夜 tags=night,mob,force label=施術者に体を開かれていく（題材なので合意のない展開はいつも入） */
+/* r18:end */
 (function () {
   'use strict';
   var HK = window.HK, K = HK.SoloKit, DG = HK.DG;

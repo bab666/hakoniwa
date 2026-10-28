@@ -8,6 +8,11 @@
    ・5階ごと（と目標の階）に階層の主が階段を守る。倒すまで下りられない。倒しきれなければ、引き返すか、態勢を立て直してもう一度挑む
    ・階層の主は20体（仕掛けつき）。喧嘩・魔術師の人質・謎かけ・呪いの装備・賭場・女神像・隠し部屋・料理も起きる（rpg-data.js）
    全年齢・R18版の両方で使う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=rpg id=rpg_floor cat=探索 tags=death label=階ごとの出来事（戦闘・宝箱・罠・商人・泉・休憩） */
+/* @event scen=rpg id=rpg_boss cat=combat tags=death label=階層の主（20体） */
+/* @event scen=rpg id=rpg_event cat=ハプニング label=喧嘩・魔術師の人質・謎かけ・呪いの装備・賭場・女神像・隠し部屋・料理 */
+/* @event scen=rpg id=rpg_wipe cat=ハプニング tags=death cond=HK.Dark.f(S, 'wipe') label=全滅 */
 (function () {
   'use strict';
   var HK = window.HK;

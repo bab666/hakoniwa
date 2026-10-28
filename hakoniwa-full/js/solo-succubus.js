@@ -2,6 +2,10 @@
    住人がサキュバスになって一晩、街で精を集める。魅力はあるのか、ちゃんと誘惑できるのか、どう誘惑するのか、
    一晩で何ml集められるのかを、住人どうしで比べられる。住人の一人を「先輩サキュバス」にすると、
    その性格に応じたアドバイスをくれる */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event-table scen=succubus path=SUCCUBUS.EVENTS label=夜の街のハプニング cat=ハプニング */
+/* @event-table scen=succubus path=SUCCUBUS.PREY label=獲物（モブ） cat=夜 */
+/* @event scen=succubus id=sc_hunt cat=夜 tags=night,mob,force label=獲物を誘惑して精を集める */
 (function () {
   'use strict';
   /* 同じ結果の中で、同じ文・台詞を繰り返さない：まだ使っていない文から選び、使い切ったら、いちばん前に使った文から戻す */

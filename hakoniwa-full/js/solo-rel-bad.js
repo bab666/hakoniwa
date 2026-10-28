@@ -1,6 +1,9 @@
 /* 箱庭シミュレーター（R18版のみ）: 関係「きょうだい（不仲）」「不仲」の出来事 ― 常識改変・サキュバスの一夜・エロバラエティ番組・エロトラップダンジョン
    しくみは rel-bad-story.js と同じ（場面の区切りごとに、まれに起きる）。エロトラップダンジョンは階の切り替わりごと。
    きょうだいどうしの出来事は、性的な展開にしない。全年齢版ではこのファイルは読み込まれない。登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=kaihen,succubus,variety,dungeon id=rbs_sibbad cat=conflict tie=sibbad label=きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種） */
+/* @event scen=kaihen,succubus,variety,dungeon id=rbs_bad cat=conflict tie=bad label=不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種） */
 (function () {
   'use strict';
   var HK = window.HK, RB = HK.RelBad;

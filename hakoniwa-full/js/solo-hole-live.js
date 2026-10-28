@@ -4,6 +4,8 @@
    ・場所ごとの壁の向こうの反応（LIVE）　・体の感覚（FEEL：受ける側 recv／跨られる側 top）　・性格ごとの反応（REACT）
    ・享受の段階での、自分から求める仕草（ENJOY）　・時間切れ（MID_END）
    {a}=本人。登場人物はすべて成人として扱う。自分で「攻め」を選んだ人には、この展開は起きない（solo-hole.js） */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=hole id=hole_live cat=夜 tags=night,mob,force label=遮断が壊れて最中に感覚が戻る */
 (function () {
   'use strict';
   var HK = window.HK;

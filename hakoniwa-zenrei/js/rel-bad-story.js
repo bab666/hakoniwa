@@ -3,6 +3,9 @@
    ・場面の区切り（ST.step）のたびに、関係のある二人に、まれに出来事が起きる（一回の遊びで最大5回・同じ型は二人につき一度）
    ・型はどの箱庭でも同じ12種（きょうだい（不仲）6種・不仲6種）。どの型になるかは気質の数値と、それまでの出来事で決まる
    {a}=動く人 {b}=相手 {c}=居合わせた第三者 */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jashin,yakata,rpg,jinro,locker,saimin id=rbs_sibbad cat=conflict tie=sibbad label=きょうだい（不仲）：口喧嘩・比べられた恨み・かばう・歩み寄り（6種） */
+/* @event scen=jashin,yakata,rpg,jinro,locker,saimin id=rbs_bad cat=conflict tie=bad label=不仲：衝突・皮肉・しぶしぶの協力・大喧嘩（6種） */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story;

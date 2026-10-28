@@ -8,6 +8,21 @@
    ・役割：船長・エンジニア・航海士・船医・科学者・生物学者・通信士・保安員・料理人
    ・R18版では、船員どうしの夜、星の花粉、異星の生き物、文明の儀式の場面がある（ship-r18.js）。
      受け攻めは HK.Pos で決め、自分で「攻め」を選んだ人を受ける側にしない。女性どうしは女性どうしの描写にする */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event-table scen=ship path=SHIP.RES label=星の資源 cat=探索 */
+/* @event-table scen=ship path=SHIP.LIFE label=星の生命体 cat=探索 */
+/* @event-table scen=ship path=SHIP.CIV label=星の文明 cat=探索 */
+/* @event-table scen=ship path=SHIP.T.TROUBLE label=船のトラブル cat=ハプニング */
+/* @event-table scen=ship path=SHIP.T.SPACE label=宇宙での遭遇 cat=ハプニング */
+/* @event-table scen=ship path=SHIP.DOOM label=船を滅ぼすトラブル cat=ハプニング */
+/* @event scen=ship id=ship_explore cat=探索 tags=death cond=HK.Dark.f(S, 'kill') label=星の探索（着陸・調査。失敗すると怪我をし、死ぬこともある） */
+/* @event scen=ship id=ship_infect cat=ハプニング tags=death cond=HK.Dark.f(S, 'kill') label=星の感染症（うつる・倒れる・看取る） */
+/* @event scen=ship id=ship_kidnap cat=ハプニング label=研究のための誘拐（文明に連れ去られる） */
+/* @event scen=ship id=ship_doom cat=ハプニング tags=death cond=HK.Dark.f(S, 'wipe') label=船を滅ぼすトラブル（全滅） */
+/* @event scen=ship id=ship_bond cat=bond tie=- label=船員どうしの絆（晩酌・仲裁・嫉妬など） */
+/* r18:begin */
+/* @event scen=ship id=ship_xeno cat=夜 tags=night,mob,force cond=HK.Content.ok(S, 'force') env.slewd label=星の生命体・異種族に迫られる夜（誘い・強引・攫われる・調べられる） */
+/* r18:end */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, SH = HK.SHIP = HK.SHIP || {};

@@ -415,6 +415,8 @@
   /* 足す順は HK.addTo で元のファイルの順に保つ（敵視・喪失の組み込みが、分割読み込みでは後から足すため） */
   HK.addTo(EV, {
     id: 'om_mobr', cat: 'conflict', scope: 'solo', sex: true, r18: true, noOdd: true,
+    /* 出来事の一覧の印（モブ・合意のない展開。条件は victimOk の中にあり、when の文字列からは拾えないため。動きには使わない） */
+    tags: ['night', 'mob', 'force'],
     when: function (ctx, v) { var s = ctx.om.mobR; return !(s && (s.n >= 2 || s.by[v.i] != null)) && victimOk(ctx, v); },
     w: function (ctx, v) {
       var heat = (ctx.env.heat == null ? 50 : ctx.env.heat) / 100, bonded = !!(BD && BD.mateOf && BD.mateOf(ctx, v));

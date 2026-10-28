@@ -10,6 +10,9 @@
    ・描写：ほのめかす＝ぼかした本文（ship.js の bodyFor）と短い前置きだけ。ほどほど・濃い＝夜の種類ごとの段落（男×女・女×女・女攻め×男）と、
      受ける側の態度9種の一文。数行で短くなら段落は使わない。男性向けは擬音と♡の喘ぎの段落
    台詞の一人称は「私」で書き、口調の言い換えに任せる。登場人物はすべて成人として扱う。自分で攻めを選んだ人は受ける側にしない（bodyFor が向きを決める） */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=ship id=ship_night_crew cat=夜 tie=- tags=night cond=env.slewd label=船員どうしの夜（勢いの夜・二度目の夜・一夜の過ち） */
+/* @event scen=ship id=ship_night_lover cat=夜 tie=lover tags=night label=恋人の夜（恋人・両想い・関係の近い二人） */
 (function () {
   'use strict';
   var HK = window.HK, SH = HK.SHIP = HK.SHIP || {};

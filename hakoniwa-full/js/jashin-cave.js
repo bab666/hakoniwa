@@ -3,6 +3,8 @@
    ・その場所でも死の罠が待つ。村人が追ってくることもある。関係による出来事や、敵対勢力の乱入もある
    ・儀式を企む術者がいれば、生贄を揃えて別の神を呼び、対抗させる（成功率が上がる）。その場でばれることもある
    ・対抗策に失敗するか、刻限を過ぎると、神が顕現する。顕現した神は、村ごと一行を呑み込むことがある（全滅） */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jashin id=js_cave cat=ハプニング tags=death cond=HK.Dark.f(S, 'kill') label=クライマックスの場所と神の顕現（全滅もある） */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, clamp = HK.clamp, M = JS && JS.MORE;

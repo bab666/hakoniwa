@@ -2,6 +2,9 @@
    ・「負けた陣営は罰ゲーム」のとき：罰ゲーム（11種）を一つ選び、負けた人それぞれが性格に応じた反応をする
    ・人狼陣営が勝ったとき、まれに、騙された側が人狼に詰め寄る（関係の近さ・最後まで信じていたか・騙りに乗せられたか で決まる）
    台詞の言い回しは口調の変換に任せる（ここではふつうの話し言葉で書く）。全年齢・R18版の両方で使う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event-table scen=jinro path=JinroAfter.PUN label=罰ゲーム cat=ハプニング */
+/* @event scen=jinro id=jr_confront cat=conflict label=騙された側が人狼に詰め寄る */
 (function () {
   'use strict';
   var HK = window.HK;

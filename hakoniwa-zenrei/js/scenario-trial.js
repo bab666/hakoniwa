@@ -1,4 +1,6 @@
 /* 箱庭診断: 裁判デスゲーム（動機→殺人→捜査→裁判→処刑） */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=trial id=tr_exec cat=death tags=death,cruel label=学級裁判と処刑（投票で選ばれた人・黒幕・裏切り者） */
 (function () {
   'use strict';
   var HK = window.HK;

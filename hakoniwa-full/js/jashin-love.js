@@ -3,6 +3,8 @@
    ・狙った相手に恋人ができたら、嫉妬して諦め、別の相手を探す
    ・恋が叶ったあとも、恋人どうしの場面（手を繋いで逃げる・見張りを交代で・帰ったらの約束 …）が続く
    jashin-goals.js の act を包む。目標が「恋人を作る」でない人には何もしない */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jashin id=js_love cat=romance tie=lover label=恋人を作る（吊り橋・告白・恋人どうしの場面） */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, clamp = HK.clamp;

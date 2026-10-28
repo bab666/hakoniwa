@@ -6,6 +6,10 @@
    ・部屋数の上限に達したら「主の間に辿り着いた」として最終戦へ進み、必ずどちらかの終わり方に収束させる
    イベント本文は dungeon-events-*.js、表示は dungeon-view.js
    部品（部位・呪い・道具・テーマの表と記述形式 DG.D・DG.add）は dungeon-kit.js（中核）。ここは進行計算と箱庭の登録（箱庭のかたまり scen-dungeon） */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event-table scen=dungeon path=DG.pool label=罠・魔物・宝箱 cat=探索 */
+/* @event-table scen=dungeon path=DG.BOSSES label=最深部の主 cat=combat */
+/* @event scen=dungeon id=dg_trap cat=夜 tags=night,mob,force label=罠・魔物に責められる・捕まる */
 (function () {
   'use strict';
   var HK = window.HK;

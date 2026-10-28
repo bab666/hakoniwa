@@ -1,5 +1,7 @@
 /* 箱庭診断: 無人島の海と探索 ―― 大物釣り／海に引き込まれる・漂流と帰還／一人の探索／二人以上の探索（関係で展開が変わる）
    関係の見方：恋人・惹かれ合い（love）／両片想い（pining：どちらも想っているのに、相手は自分を何とも思っていないと思い込んでいる）／片想い（crush）／ライバル・険悪（rival）／仲良し（friend）／疑い（wary）／まだ他人（plain） */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=island id=is_sea_lost cat=ハプニング tags=death label=海に引き込まれる・漂流 */
 (function () {
   'use strict';
   var HK = window.HK;

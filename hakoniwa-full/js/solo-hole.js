@@ -1,6 +1,8 @@
 /* 箱庭診断: ソロR18「感覚遮断穴」
    壁の穴に下半身がはまり、向こう側の感覚は遮断されている。何をされても分からない――はずだった。
    向こう側で起きたことは「溜まって」いき、解放の瞬間に一度に戻ってくる。そこで、どう果て、どう喘ぎ、どう混乱するか。 */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=hole id=hole_main cat=夜 tags=night,mob,force label=穴にはまったまま、向こう側で何かをされる（解放の瞬間にまとめて戻る） */
 (function () {
   'use strict';
   var HK = window.HK, K = HK.SoloKit, DG = HK.DG;

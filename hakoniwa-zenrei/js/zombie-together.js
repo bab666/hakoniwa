@@ -2,6 +2,8 @@
    ・ゾンビになった住人に襲われた人は、喰い殺されるだけでなく、その場でゾンビとして起き上がり、二人並んでさまようことがある
    ・逃げ切った人の体に、気づかない引っかき傷や、隠した歯形が残ることがある
    ・発症まで時間がある恋人どうしは、残りの日々を一緒に過ごしてから心中を図ることがある（成功するとは限らない） */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=zombie id=zb_together cat=romance tie=lover tags=death cond=HK.Dark.f(ctx, 'shinju') label=一緒にゾンビになる・心中を図る */
 (function () {
   'use strict';
   var HK = window.HK, Z = HK.ZB;

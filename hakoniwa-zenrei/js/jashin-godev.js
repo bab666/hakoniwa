@@ -7,6 +7,8 @@
    ・凝ったしくみの神は SP[神のid] = { tick, cave, manifest, end }（jashin-godev-sp-a.js / -b.js）
    ・洞窟（jashin-cave.js）と顕現にも、神ごとの場面を差し込める
    {a}=選ばれた住人 {b}=そばにいる別の住人 {g}=村での神の呼び名 {v}=村の名 */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jashin id=js_godev cat=ハプニング tags=death cond=HK.Dark.f(S, 'kill') label=神ごとの固有イベント（50柱） */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, clamp = HK.clamp;

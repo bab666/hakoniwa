@@ -9,6 +9,17 @@
    ・恐怖・無関心の組は恋愛・夜の出来事にしない。許嫁・依存・推し・愛人・負い目・仲間の出来事は、恐怖・無関心のある組では起こさない
    ・許嫁で「断りたい」側に、ほかに恋愛の相手（関係・物語の恋人の記録）がいると「破談」が一度だけ起き、以後その二人の許嫁の出来事は起きない
    {a}＝気持ちを持つ側 {b}＝相手 {c}＝居合わせた第三者（いなければ箱庭ごとのモブ） */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=ship,jashin,yakata,rpg,jinro,locker,saimin,massage id=tns_apathy cat=bond tie=apathy label=無関心：向けられた言葉が届かない・差し出されたものに目もくれない */
+/* @event scen=ship,jashin,yakata,rpg,jinro,locker,saimin,massage id=tns_fear cat=conflict tie=fear label=恐怖：避ける・目を合わせない・命じられると従う */
+/* @event scen=ship,jashin,yakata,rpg,jinro,locker,saimin,massage id=tns_fiance cat=bond tie=fiance label=許嫁：乗り気・戸惑い・断りたい側の破談 */
+/* @event scen=ship,jashin,yakata,rpg,jinro,locker,saimin,massage id=tns_dep cat=conflict tie=yan label=執着（依存）：探しに行く・居場所を確かめる */
+/* @event scen=ship,jashin,yakata,rpg,jinro,locker,saimin,massage id=tns_hatelove cat=conflict tie=yan tags=cruel cond=HK.Dark.f(S, 'harm') label=執着（愛憎）：探す・守る・責める・試す */
+/* @event scen=ship,jashin,yakata,rpg,jinro,locker,saimin,massage id=tns_hate cat=conflict tie=enemy tags=cruel cond=HK.Dark.f(S, 'harm') label=憎悪：陥れる・貶めて孤立させる */
+/* @event scen=ship,jashin,yakata,rpg,jinro,locker,saimin,massage id=tns_guilt cat=bond tie=benefactor label=負い目：恩人の頼みを断れない */
+/* @event scen=ship,jashin,yakata,rpg,jinro,locker,saimin,massage id=tns_oshi cat=bond tie=fond label=推し：遠くから見守る・差し入れる */
+/* @event scen=ship,jashin,yakata,rpg,jinro,locker,saimin,massage id=tns_mistress cat=romance tie=fwb label=愛人：人目を忍ぶ・秘密がばれかける */
+/* @event scen=ship,jashin,yakata,rpg,jinro,locker,saimin,massage id=tns_comrade cat=help tie=comrade label=仲間：息の合った分担・助け合い */
 (function () {
   'use strict';
   var HK = window.HK;

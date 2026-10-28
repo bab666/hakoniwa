@@ -3,6 +3,15 @@
    一人のとき・三人以上のときは locker-crowd.js（LK.crowd）で進める。
    感度が上がると、堪え性のない人から手を出し始める。乗るか嗜めるかは関係と性格しだい。
    拘束されたままなら生殺し、動けるなら狭い中での焦らしセックス。脱出後にベッドで続きをすることも */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event-table scen=locker path=LOCKER.GIMMICK label=仕掛け cat=escape */
+/* @event scen=locker id=lk_escape cat=escape label=仕掛けを解いて脱出する */
+/* @event scen=locker id=lk_urge cat=romance label=媚薬で手を出す・嗜める（乗るか嗜めるかは関係と性格しだい） */
+/* r18:begin */
+/* @event scen=locker id=lk_r18_inside cat=夜 tie=- tags=night label=ロッカーの中で繋がる（拘束なら生殺し・焦らし） */
+/* @event scen=locker id=lk_r18_bed cat=夜 tie=- tags=night label=脱出後のベッド */
+/* @event scen=locker id=lk_r18_hate cat=夜 tie=enemy,rival,bad tags=night cond=HK.Dark.f(S, 'assault') label=嫌い合う二人が、媚薬で抑えきれなくなる */
+/* r18:end */
 (function () {
   'use strict';
   var HK = window.HK, LK = HK.LOCKER, ST = HK.Story, clamp = HK.clamp;

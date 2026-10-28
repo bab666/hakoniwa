@@ -21,6 +21,12 @@
        催眠で同意のない催眠になったとき、理由に〔合意のない展開〕と書く（重さに関係なく）。
    記録の理由（why）には〔妊娠〕〔暴力をともなう性描写〕〔DVなど歪んだ関係〕〔合意のない展開〕の印を書く（遊ぶ人が見分けられるように。点検の道具も数える）。
    全年齢版にはこのファイルはない。登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=goukon,island,whiteroom,zombie,omega id=ct_preg_hook cat=夜 tags=preg cond=HK.Content.ok(ctx, 'preg') HK.Dark.on(ctx) === 'dark' label=夜のあとに孕む描写（重いのとき・男性器×女性器、α×Ω） */
+/* @event scen=saimin id=ct_saimin_preg cat=夜 tags=preg cond=HK.Content.ok(S, 'preg') HK.Dark.on(S) === 'dark' label=催眠の結末：孕む描写（重いのとき） */
+/* @event scen=saimin id=ct_saimin_abuse cat=conflict tie=lover,yan tags=abuse cond=HK.Content.ok(S, 'abuse') HK.Dark.on(S) === 'dark' label=暗示で縛り続ける（恋人・ストーカー。重いのとき） */
+/* @event scen=whiteroom,omega,zombie,goukon id=ct_violence_hook cat=夜 tie=enemy,rival,bad tags=night,violence,force cond=HK.Content.ok(ctx, 'violence') HK.Dark.on(ctx) === 'dark' label=敵対する二人の強引な夜に、暴力の段が入る（重いのとき） */
+/* @event scen=goukon,island,whiteroom,zombie,omega id=ct_abuse_violence cat=夜 tie=abuse tags=night,violence cond=HK.Content.ok(ctx, 'violence') label=歪んだ関係の拒めない夜に、暴力の段が入る */
 (function () {
   'use strict';
   var HK = window.HK;

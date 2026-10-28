@@ -4,6 +4,8 @@
    ・薬のある場所には障害（群れ・危険な薬品庫・先客）があり、手に入れたら相手のもとへ向かう
    ・投与すると、治ることもあれば、体が溶けて触手の怪物になることもある
    ・相手がもう死んでいたら、絶望はいっそう深くなる */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=zombie id=zb_cure cat=help tie=lover,sibling,parent,best tags=death label=治療薬を探す（大切な人が咬まれたとき） */
 (function () {
   'use strict';
   var HK = window.HK, Z = HK.ZB;

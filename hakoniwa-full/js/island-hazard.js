@@ -1,4 +1,6 @@
 /* 箱庭診断: 無人島の危険生物（毒蛇など）―― 気配 → 襲撃 → 会議 → 武器づくり → 討伐 */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=island id=is_hazard cat=ハプニング tags=death cond=HK.Dark.f(ctx, 'kill') label=危険生物（毒・獣の襲撃・討伐） */
 (function () {
   'use strict';
   var HK = window.HK;

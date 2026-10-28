@@ -1,5 +1,6 @@
 /* 箱庭シミュレーター：読み込むスクリプトを「かたまり」にまとめ、目録（HK_MANIFEST）を index.html に書き込む
-   node build.js <ビルドのディレクトリ>（hakoniwa-full / hakoniwa-zenrei） [--best] [--no-min] [--no-guard] [--all] [--soft] [--no-manifest] [--no-tone-verify]
+   node build.js <ビルドのディレクトリ>（hakoniwa-full / hakoniwa-zenrei） [--best] [--no-min] [--no-guard] [--all] [--soft] [--no-manifest] [--no-tone-verify] [--no-catalog]
+   ・はじめに出来事の一覧（js/event-catalog.js・docs/reports/2026-10-28/event-catalog.md）を event-catalog.js で作り直す（_order.txt に js/event-catalog.js があるとき）
    ・<ビルド>/js/_order.txt が読み込み順の一覧（全部読んだときの元の順。# から行末はコメント）。1行の書き方：
        js/xx.js                     … 中核（core。起動時に読む）
        late js/xx.js                … late（画面が出たあと裏で読む。late と tone-base を読み終わると HK.LATE_READY = true・HK.onLate()）
@@ -121,6 +122,15 @@ const exec = [];
 /* 一覧に載っていない js/*.js を知らせる（読み込み漏れの防止） */
 fs.readdirSync(path.join(dir, 'js')).filter(f => /\.js$/.test(f) && !/^bundle-/.test(f) && fs.statSync(path.join(dir, 'js', f)).isFile())
   .forEach(f => { if (!seen.has('js/' + f) && 'js/' + f !== LOADF) console.warn('※ _order.txt に載っていない: js/' + f); });
+
+/* ---------- 出来事の一覧（js/event-catalog.js と docs/reports/2026-10-28/event-catalog.md）を作り直す ----------
+   全部のかたまりを vm で読んで箱庭ごとに出来事を数える（event-catalog.js。数秒）。かたまりを組み立てる前に書くので、今回のかたまり（pack-catalog）に入る。--no-catalog で作らない（前のまま） */
+let catalogInfo = '';
+if (seen.has('js/event-catalog.js') && !flag('--no-catalog')) {
+  const EC = require('./event-catalog.js'), r = EC.build(dir, { safeBuild: STRIP });
+  catalogInfo = r.line;
+  if (r.errs.length) { console.warn('※ 出来事の一覧を作る vm の実行で ' + r.errs.length + ' 件の例外：'); r.errs.slice(0, 5).forEach(e => console.warn('  ' + e)); }
+}
 
 /* ---------- かたまりを組み立てる ---------- */
 const HARD = STRIP ? M.loadHard(dir) : null;
@@ -355,5 +365,6 @@ if (tz.n) {
   if (big.length) console.warn('※ br が 90KB を超える口調のかたまり：' + big.map(x => x[0] + ' ' + k(x[1])).join('、'));
 }
 if (toneInfo) console.log('  ' + toneInfo);
+if (catalogInfo) console.log('  ' + catalogInfo);
 console.log('  合計 ' + k(tot.raw) + '（gz ' + k(tot.gz) + '・br ' + k(tot.br) + '）。index.html の目録 ' + k(Buffer.byteLength(MF.manifestJs(manifest))) + (removed ? '。古いファイルを ' + removed + ' 本消した' : ''));
 if (chunks.core.z.br > 1024 * 1024) console.warn('※ 中核（core）の br が 1MB を超えています（' + k(chunks.core.z.br) + '）。起動時に読む量の目安は 1MB 以下です');

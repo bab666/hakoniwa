@@ -7,6 +7,8 @@
    ・受け攻め（HK.Pos）：動く側が手を出す側なら、女性は指、それ以外は挿入。手を出す側が受けなら挿入はしない（触れる・舐める、相手が攻めなら跨る）。
      自分で「攻め」を選んだ、はまっている人には、跨る以外の手出しはしない
    ・助け出されたら、その場で終わり。まだ感覚が戻っていなければ、その瞬間に溜まっていた分が一度に戻り、助けた人に抱きつきながら達する */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=hole id=hole_behind cat=夜 tie=lover,crush,yan,friend tags=night label=壁の向こうの住人（助ける・手を出す・立ち去る・お仕置き） */
 (function () {
   'use strict';
   var HK = window.HK, K = HK.SoloKit;

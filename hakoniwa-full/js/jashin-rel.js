@@ -2,6 +2,9 @@
    ・関係（恋人・家族・親友・敵対など）で、かばう・見捨てる・助けに行く・身代わりになる・後を追う…が変わる
    ・一定の確率で、記憶を失ったまま参加する人がいる。記憶が戻ると、本当の理由が分かる（村の出身・前の祭りの生き残り・仲間を誘い込んだ手先…）
    ・名探偵は、仲間の死や村の殺人事件を推理で解く。ポンコツ探偵は、的外れな推理で邪魔をする（たまに当たる） */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jashin id=js_rel cat=help tie=lover,mate,fated,almost,fwb,sibling,sibprot,sibclose,sibbad,parent,pparent,relative,best,buddy,childhood,friend,mentor,master,teacher,senpai,colleague,classmate,boss,enemy tags=death label=関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う） */
+/* @event scen=jashin id=js_amnesia cat=solo label=記憶喪失（記憶が戻ると本当の理由が分かる） */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, clamp = HK.clamp, T = JS && JS.RELT;

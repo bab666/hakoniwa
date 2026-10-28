@@ -4,6 +4,12 @@
    ・参加者どうしで交わると、受け側が村の秘術で疑似妊娠する。疑似妊娠した人は、生贄に選ばれたとき神の子を産む巫女になりやすい
    ・描写の作風「男性向け」では、村人・神・眷属・儀式の夜も男性向けの書き方で組む（eroMob）。夜這い・洞窟と場所の眷属・生贄の儀には庇い展開がある（coverTry。第6ラウンド）
    全年齢版ではこのファイルは読み込まれず、全年齢モードでも使わない。登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jashin id=js_r18_yobai cat=夜 tags=night,mob,force,preg cond=HK.Content.ok(S, 'force') HK.Content.ok(S, 'preg') env.r18 label=村人の夜這い */
+/* @event scen=jashin id=js_r18_pair cat=夜 tie=- tags=night,preg cond=HK.Content.ok(S, 'preg') env.r18 label=参加者どうしの夜（媚薬の熱・疑似妊娠） */
+/* @event scen=jashin id=js_r18_dream cat=夜 tags=night,mob,force,preg cond=HK.Content.ok(S, 'preg') label=夢（神に犯される夢） */
+/* @event scen=jashin id=js_r18_cave cat=夜 tags=night,mob,force,preg cond=HK.Content.ok(S, 'force') HK.Content.ok(S, 'preg') label=洞窟の眷属 */
+/* @event scen=jashin id=js_r18_ritual cat=夜 tags=night,mob,force,preg cond=HK.Content.ok(S, 'force') HK.Content.ok(S, 'preg') label=生贄の儀・神の子を産む巫女 */
 (function () {
   'use strict';
   var HK = window.HK, JS = HK.JASHIN, ST = HK.Story, scen = HK.SCENARIOS && HK.SCENARIOS.jashin;

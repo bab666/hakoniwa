@@ -11,6 +11,10 @@
    ■ 暴走の重さ：R18版は監禁（体の関係を含む）・恋敵への危害・心中まで。全年齢版はほのめかす程度で、死には至らない
      性的な場面は、受け攻めの指定（HK.Pos.order）どおりの向きで書き、攻めに設定した人が受ける側になることはない
    箱庭ごとの文は HK.Obsess.PACK[箱庭のid]（obsess-omega.js など）で足す */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* r18:begin */
+/* @event scen=classroom,goukon,whiteroom,omega,zombie id=ob_cage_night cat=夜 tie=yan tags=night,force,cruel cond=HK.Content.ok(ctx, 'force') label=執着の監禁の夜（閉じ込めた相手に迫る） */
+/* r18:end */
 (function () {
   'use strict';
   var HK = window.HK;

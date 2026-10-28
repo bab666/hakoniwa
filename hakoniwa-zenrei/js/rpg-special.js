@@ -2,6 +2,8 @@
    ・倒れたまま助からなかった不死・吸血鬼は、次の階に下りる前に起き上がる（魔術師に攫われているあいだは戻らない）
    ・特殊役職の人は、傷と深さで心がすり減ると発狂して動けなくなる（戦わない）。仲の良い仲間が落ち着かせるまで戻らない
    ・吸血鬼は三日に一度（地下では一階およそ半日）、仲間の血を吸う。全年齢の箱庭なので、性的な場面にはしない */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=rpg id=rpg_special cat=solo tags=death label=不死・吸血鬼（倒れても起き上がる・発狂・血を吸う） */
 (function () {
   'use strict';
   var HK = window.HK, SP = HK.Special;

@@ -5,6 +5,8 @@
    ・強い（4・5）：村人と盃を重ね、先に酔った村人の口から、村の秘密（手がかり）を聞き出すことがある
    ・慎重な人は、盃に口をつけるふりをしてかわす。未成年の職業（全年齢版の高校生・令嬢・幼子）は酒を飲まない（甘酒・ジュース）
    {a}=その人 {b}=介抱する仲間 */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jashin id=js_feast cat=bond label=村の歓迎の宴 */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, clamp = HK.clamp;

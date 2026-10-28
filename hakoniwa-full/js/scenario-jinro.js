@@ -7,6 +7,8 @@
    ・台詞は jinro-data.js
    ・賞品があると、勝ちたい気持ち（FC・衝動性・負けず嫌い）が推理の熱量に乗る
    全年齢・R18版の両方で使う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jinro id=jr_game cat=conflict tags=death cond=HK.Dark.f(S, 'night') label=人狼ゲーム（占い・騙り・投票・夜の襲撃） */
 (function () {
   'use strict';
   var HK = window.HK;

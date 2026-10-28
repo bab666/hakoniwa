@@ -307,6 +307,8 @@ js/ero-scene.js
 js/reset.js
 js/voice-seg.js
 js/voice-fp.js
+# 出来事の一覧のデータ（build が毎回作り直す）。late に入れず、族のかたまり pack-catalog にして、箱庭カードの「出来事の一覧」を押したときだけ読む（event-catalog-ui.js が HK.Load.ensure）
+js/event-catalog.js @pack:catalog
 # ==== ここから下は late の区切り：上の行（中核・族）をすべて読んだあとに実行される行。late・tone の行と、もとは late だった族の行を、元の実行の順のまま置く ====
 tone js/voice-override-rows.js
 tone js/voice-override-rows2.js
@@ -364,3 +366,5 @@ late js/tips-scen-c.js
 late js/tips-scen-d.js
 late js/export-out.js
 late js/ui-perzoom.js
+# 出来事の一覧の画面（ボタンと窓。データは pack-catalog）
+late js/event-catalog-ui.js

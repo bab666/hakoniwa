@@ -4,6 +4,18 @@
    ・手がかりは種類（観察・知識・聞き込み・霊感・探索）ごとに、気質と職業で見つけやすさが変わる
    ・儀式の刻限までに解けなければ、生贄の儀が始まる。村人に襲われる、祠を壊す、偽情報の記者、仕切りたがる警察官…
    ・何時間で脱出できたかを記録する（RTA）。R18版では solo-jashin-r18.js が夜の出来事を足す */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event-table scen=jashin path=JASHIN.GODS label=神（手がかり・対抗策） cat=謎解き */
+/* @event-table scen=jashin path=JASHIN.JOBEV.EV label=職業の出来事 cat=探索 */
+/* @event-table scen=jashin path=JASHIN.JOBPAIR.PAIRS label=職業×職業の出来事 pair=1 */
+/* @event-table scen=jashin path=JASHIN.DUO_EV label=役職×役職の特別な出来事（協力・因縁） pair=1 */
+/* @event-table scen=jashin path=JASHIN.SHRINE_FX label=祠の効果 cat=ハプニング */
+/* @event scen=jashin id=js_trap cat=ハプニング tags=death cond=HK.Dark.f(S, 'kill') label=村の罠 */
+/* @event scen=jashin id=js_attack cat=combat tags=death,mob cond=HK.Dark.f(S, 'raid') label=村人の襲撃 */
+/* @event scen=jashin id=js_madness cat=solo tags=death cond=HK.Dark.f(S, 'madness') label=恐怖で発狂する */
+/* @event scen=jashin id=js_curse cat=solo tags=death cond=HK.Dark.f(S, 'kill') label=呪い（時間がたつと命を落とす） */
+/* @event scen=jashin id=js_sacrifice cat=ハプニング tags=death,cruel,mob label=生贄の儀 */
+/* @event scen=jashin id=js_grudge cat=betray tags=death cond=HK.Dark.f(S, 'grudge') label=恨みの殺し */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, clamp = HK.clamp, M = JS && JS.MORE;

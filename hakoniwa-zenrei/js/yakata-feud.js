@@ -8,6 +8,10 @@
      唇・体に踏み込むのは、恋愛対象と受け攻めの合う組だけ（feud-kit.js の HK.Feud.clash）。
      同じ二人の「構う」（hate-love.js）と「揉める」は、同じ日のうちに重ねない
    台詞は tone-lines.js（口調ごとの書き下ろし） */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=yakata id=yk_feud cat=conflict tie=rival,enemy label=探偵どうし（手がかりの奪い合い・ぶつかり合い） */
+/* @event scen=yakata id=yk_hate cat=conflict tie=enemy tags=death,cruel cond=HK.Dark.f(S, 'grudge') label=憎しみ（騒ぎに紛れて吹雪へ締め出す・手にかける） */
+/* @event scen=yakata id=yk_hatelove cat=conflict tie=yan label=愛憎（揉める・犯人に狙われた相手を守る） */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, Y = HK.YAKATA, FD = HK.Feud, clamp = HK.clamp;

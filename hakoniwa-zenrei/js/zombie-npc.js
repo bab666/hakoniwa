@@ -1,5 +1,7 @@
 /* 箱庭シミュレーター: ゾンビの街 ― 住人以外の生存者（NPC）
    軍人・宗教家・狂人・迷子の子・医者・略奪者・配信者・老人・咬まれた市民が、ランダムに街に現れる */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=zombie id=zb_npc cat=ハプニング tags=death,mob label=住人以外の生存者（軍人・略奪者・狂人など） */
 (function () {
   'use strict';
   var HK = window.HK, Z = HK.ZB;

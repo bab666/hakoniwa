@@ -5,6 +5,8 @@
    目を覚ますかは、心の強さ（意志：K.will）と態度（persona）で決める。組：recv＝男性の施術者（客の体は問わない書き方）／
    ff＝女性の施術者と女性器のある客／lady＝女性の施術者と男性器のある客（女攻め×男）。ERO_* は描写の作風が男性向けのとき。
    {a}＝客 {m}＝施術者（寝落ちはモブの施術者の回だけ）。登場人物はすべて成人 */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=massage id=ms_sleep cat=夜 tags=night,mob,force label=寝落ちしているあいだに達する */
 (function () {
   'use strict';
   var HK = window.HK;

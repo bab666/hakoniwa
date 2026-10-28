@@ -13,6 +13,8 @@
    組の点検：体の関係は HK.State.pairSex（受け攻め・恋愛対象・R18に参加しない・性行為の相手の固定）・HK.ngPair・HK.sexBlocked、
    向きは HK.Pos.order の先頭が攻め（攻めの指定の人が受けの位置に来る組は使わない）。性器なしの組は HK.NoGen（口・指・玩具）。
    乱数：決めごとは物語とは別の乱数（攻めの指定の人がいない回は、何も変わらない）。登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=dungeon id=dg_topfall cat=夜 tags=night,mob label=攻めの挑戦者の堕ち方（責められる・見て堕ちる・手を出す） */
 (function () {
   'use strict';
   var HK = window.HK, DG = HK && HK.DG;

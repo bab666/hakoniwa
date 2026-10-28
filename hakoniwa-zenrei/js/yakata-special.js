@@ -2,6 +2,8 @@
    ・殺された不死・吸血鬼は、遺体が見つかったあと（朝・昼・夕方の頭）に蘇る。犯人の顔は見ていないので、事件の謎は残る
    ・特殊役職の人は、恐怖の高い時間が続くと発狂して動けなくなる（仲の良い人が落ち着かせるまで）。発狂中は犯人に狙われやすい
    ・吸血鬼は三日に一度、夜に人の血を吸う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=yakata id=yk_special cat=solo tags=death label=不死・吸血鬼（殺されても蘇る・発狂・血を吸う） */
 (function () {
   'use strict';
   var HK = window.HK, Y = HK.YAKATA, SP = HK.Special, ST = HK.Story;

@@ -8,6 +8,8 @@
      SS.note（やむを得ず殺すときの添え書き）。各箱庭の殺す経路から、HK.SameStory があれば呼ぶ
    ・台詞は3本「くだけた常体｜硬い常体｜敬語」（一人称は「私」、二人称は「あなた」）
    {a}＝主に動く側 {b}＝同一人物の相手 {c}＝居合わせた第三者。登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jinro,yakata,ship,rpg,jashin,locker id=ss_same cat=bond tie=same label=同一人物の二人が出会う（片方の死・正体の露見など） */
 (function () {
   'use strict';
   var HK = window.HK;

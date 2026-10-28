@@ -8,6 +8,9 @@
      執着している人・恋人・本命・家族・親友／相棒・（いなければ）いちばん近しい人が反応する。関係 × 態度9種 × 3文以上。
      死んだ人・船を離れている人は反応しない。同じ月の同じ病人に、同じ人は二度反応しない
    ship.js から呼ぶ。ship.js の中身は SH.API で受け取る */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=ship id=ship_after_wipe cat=solo tags=death label=全滅のあとの「ひとりの船」（不死・吸血鬼） */
+/* @event scen=ship id=ship_infect_react cat=help tie=yan,lover,honmei,sibling,parent,best,buddy label=感染症で倒れた人への反応（執着・恋人・本命・家族・親友） */
 (function () {
   'use strict';
   var HK = window.HK, SH = HK.SHIP, ST = HK.Story;

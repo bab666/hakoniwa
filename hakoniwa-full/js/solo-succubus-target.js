@@ -11,6 +11,8 @@
    ・標的の「精」のメーターは、残っている精（吸われるたびに減る）。結果の注記に、誰に誘われてどうなったかを残す
    {a}=サキュバス {t}=標的 {x}=上 {y}=下 {spot}=場所 {ml}=吸った精 {town}=狩り場 {lv}=惚れた相手
    喘ぎ {m1}=上の人／{n1}=下の人／{c2}=標的の絶頂。登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=succubus id=sc_target cat=夜 tie=- tags=night label=住人を標的にする（気づく・抗う・流される・惚れ込む） */
 (function () {
   'use strict';
   var HK = window.HK, SB = HK.SUCCUBUS, ST = HK.Story;

@@ -50,7 +50,8 @@ const LOAD_FALLBACK = `(function () { var HK = window.HK = window.HK || {}; var 
     has: function () { return true; }, ensure: function () { return Promise.resolve(); }, prefetch: function () {}, all: function () { return Promise.resolve(); } }; })();`;
 
 /* ---------- 実行して情報を集める ----------
-   chunks：[{ name, hash, files: [{ n, f, src }] }]（実行の順。先頭が core）、loadSrc：js/load.js の中身（無ければ null） */
+   chunks：[{ name, hash, files: [{ n, f, src }] }]（実行の順。先頭が core）、loadSrc：js/load.js の中身（無ければ null）
+   onFile(f, HK)：ファイルを1本実行するたびに呼ぶ（任意。出来事の一覧 event-catalog.js が使う） */
 function runVm(opt) {
   const win = makeWindow(opt), ctx = vm.createContext(win), errs = [], t0 = Date.now();
   const onRej = e => errs.push('（約束の失敗）' + String(e && e.message || e).slice(0, 160));
@@ -75,9 +76,11 @@ function runVm(opt) {
       try { run('HK.Load.def(' + x.n + ", '" + x.f + "', function () {\n" + x.src + '\n});', x.f, -1); }
       catch (e) { errs.push(x.f + ': ' + String(e && e.message || e).slice(0, 160)); }
       scan(c.name);
+      if (opt.onFile) opt.onFile(x.f, win.HK || {});   /* 出来事の一覧（event-catalog.js）が、どのファイルが足したかを覚えるため */
     });
     if (!c.noDone) try { win.HK.Load.done(c.name, c.hash, 1); } catch (e) { errs.push(c.name + ' の done: ' + String(e && e.message || e).slice(0, 160)); }
     scan(c.name);
+    if (opt.onFile) opt.onFile('@done:' + c.name, win.HK || {});
   });
   process.removeListener('unhandledRejection', onRej);
   const HK = win.HK || {};

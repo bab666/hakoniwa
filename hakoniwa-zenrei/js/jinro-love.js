@@ -4,6 +4,8 @@
    ・好感度は、住人どうしの関係（恋人・親友・敵対など）＋感じのよさ＋ランダムで決まる
    ・関係のある人は、性格どおりのやり方（甘える・必死に訴える・泣き落とし・距離を詰める・信頼を盾にする）で
      好意を使って信頼を取りにいく。成功するかは嘘の技能（演技力：正直さの低さ・知能・ポーカーフェイス）次第 */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jinro id=jr_love cat=romance tie=lover,best,friend,childhood,enemy label=好意モード（好意で信頼を取りにいく・好きな人には入れられない） */
 (function () {
   'use strict';
   var HK = window.HK, scen = HK.SCENARIOS && HK.SCENARIOS.jinro;

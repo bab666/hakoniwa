@@ -3,6 +3,8 @@
    医師と看護師、社長と秘書、探偵と助手、先生と学生、追う側（警察官・刑事）と追われる側（ヤクザ・詐欺師）。
    二人の関係（出会ったばかり／仕事仲間／惹かれ合っている／恋人／険悪）で、出来事が変わる。
    {x}=一人目の役 {y}=二人目の役 {place}=店などの場所 */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event-table scen=omega path=OMEGA.JOB_PAIRS label=職業×職業の出来事 pair=1 note=JOB_PAIR_RULES の26組（omega-jobs-pair2.js）を含む */
 (function () {
   'use strict';
   var HK = window.HK, OM = HK.OMEGA;

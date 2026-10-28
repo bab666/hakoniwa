@@ -9,6 +9,8 @@
    ・台詞は態度9種 ×（各段2本以上）× 3本のベース「くだけた常体｜硬い常体｜敬語」（一人称は「私」、二人称は「あなた」。口調の辞書が言い換える）。
      カーテン越しの始まりと事後は、相手が隣にいる前提の台詞（CUR）。地の文はカーテン越し（cur）と、相手がいない（away）で分け、各3文
    ・R18に参加しない人・全年齢モード（HK.SAFE_ON）・普通のマッサージのまま（plain）の回は出さない（solo-massage.js の側で止める）。登場人物はすべて成人 */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=massage id=ms_love cat=夜 tie=lover,mate,fated,spouse,honmei,crush tags=night label=恋人・番・本命を匂わせる台詞（カーテン越し・あの人） */
 (function () {
   'use strict';
   var HK = window.HK;

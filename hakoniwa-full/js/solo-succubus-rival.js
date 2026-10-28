@@ -11,6 +11,9 @@
    {a}=住人 {r}=ライバル {f}=派閥 {t}=獲物 {spot}=場所 {ml}=得た精 {lost}=奪われた精
    {g}=分ける側 {c}=分けてもらう側 {x}=上 {y}=下。喘ぎ {m1}=上の人／{n1}=下の人／{c1}=分けてもらう側／{g2}=分ける側
    登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=succubus id=sc_rival cat=夜 tags=night,mob,force label=インキュバス派との精の奪い合い・吸い合い勝負 */
+/* @event scen=succubus id=sc_share cat=夜 tie=- tags=night label=精を分け与える（住人どうし） */
 (function () {
   'use strict';
   var HK = window.HK, SB = HK.SUCCUBUS, ST = HK.Story;

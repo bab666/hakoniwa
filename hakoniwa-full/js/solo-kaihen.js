@@ -1,6 +1,10 @@
 /* 箱庭シミュレーター: 常識改変（R18）
    エロいことが「当たり前の仕事」になった世界。理性的な人ほど、真面目に施す側として働いている。
    何をするのか、違和感に気づくのか、気づいたらどうするのかを、一日の営業を通して見る */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event-table scen=kaihen path=KAIHEN.EVENTS label=営業中のハプニング cat=ハプニング */
+/* @event-table scen=kaihen path=KAIHEN.SIT label=改変された職場 cat=solo */
+/* @event scen=kaihen id=kh_work cat=夜 tags=night,mob,force label=当たり前の仕事として施す・受ける（違和感に気づく） */
 (function () {
   'use strict';
   /* 同じ結果の中で、同じ文・台詞を繰り返さない：まだ使っていない文から選び、使い切ったら、いちばん前に使った文から戻す */

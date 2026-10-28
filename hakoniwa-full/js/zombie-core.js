@@ -2,6 +2,8 @@
    住人は9つのエリアのどこかからランダムに始まり、同じエリアにいる者どうしだけが関わり合う。
    咬まれた者は、体力と運しだいの時間ののちにゾンビになる。ゾンビになった住人は、気質と関係しだいで
    手当たり次第に人を襲うか、愛着のある相手だけを追いかける */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=zombie id=zb_bite cat=combat tags=death,cruel cond=HK.Dark.f(ctx, 'kill') label=群れとの遭遇・咬まれて発症する（ゾンビになった住人が人を襲う） */
 (function () {
   'use strict';
   var HK = window.HK, Z = HK.ZB;

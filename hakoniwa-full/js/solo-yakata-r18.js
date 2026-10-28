@@ -5,6 +5,14 @@
      手がかりを持つ人の口封じ・館の使用人・乱交・一人で悶える・正気の人が現場を守る）
    ・翌朝、現場が荒らされて手がかりが失われ、酒の残った人の捜査は鈍る
    全年齢版ではこのファイルは読み込まれず、全年齢モードでも使わない。登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=yakata id=yk_r18_night cat=夜 tie=- tags=night cond=env.r18 label=犯人が媚薬を盛った夜（乱交・一人で悶える・正気の人が現場を守る ほか） */
+/* @event scen=yakata id=yk_r18_lover cat=夜 tie=lover tags=night label=媚薬の夜：恋人どうし */
+/* @event scen=yakata id=yk_r18_enemy cat=夜 tie=enemy,rival tags=night,force cond=HK.Content.ok(S, 'force') label=媚薬の夜：敵どうし */
+/* @event scen=yakata id=yk_r18_crush cat=夜 tie=crush tags=night label=媚薬の夜：片想いの暴走 */
+/* @event scen=yakata id=yk_r18_servant cat=夜 tags=night,mob,force cond=HK.Content.ok(S, 'force') label=媚薬の夜：館の使用人 */
+/* @event scen=yakata id=yk_r18_silence cat=夜 tags=night,force cond=HK.Content.ok(S, 'force') label=媚薬の夜：手がかりを持つ人の口封じ */
+/* @event scen=yakata id=yk_r18_pleasure cat=夜 tags=night,force,violence,death cond=HK.Content.ok(S, 'violence') HK.Content.ok(S, 'force') label=快楽殺人の犯人の夜 */
 (function () {
   'use strict';
   var HK = window.HK, Y = HK.YAKATA, ST = HK.Story, scen = HK.SCENARIOS && HK.SCENARIOS.yakata;

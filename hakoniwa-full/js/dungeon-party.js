@@ -1,5 +1,7 @@
 /* 箱庭診断: エロトラップダンジョン ― 複数人で挑むときの出来事
    見せつけられて火照る／気分が悪くなる／助けに入る／興奮した仲間が襲ってくる／慰め合う／堕ちた仲間が手招きする */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=dungeon id=dg_party cat=夜 tie=- tags=night label=複数人（見せつけられる・助けに入る・興奮した仲間が襲う・慰め合う・手招き） */
 (function () {
   'use strict';
   var HK = window.HK, DG = HK.DG;

@@ -7,6 +7,9 @@
    ・環境設定「人狼の勝利の夜」：おまかせ（半分くらい）／必ず／なし
    交わりの本体は HK.R18M.sex（態度ごとの喘ぎ・男女／女性どうし／女性の攻めの書き分け）
    登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jinro id=jr_wolf_close cat=夜 tie=lover,fwb,best,childhood tags=night label=人狼の勝利の夜（近い関係の二人は合意のうえ） */
+/* @event scen=jinro id=jr_wolf_force cat=夜 tags=night,force cond=HK.Content.on(env, 'force') label=人狼の勝利の夜（強引に迫られる） */
 (function () {
   'use strict';
   var HK = window.HK, scen = HK.SCENARIOS && HK.SCENARIOS.jinro, JA = HK.JinroAfter;

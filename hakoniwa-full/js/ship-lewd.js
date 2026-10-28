@@ -6,6 +6,10 @@
      庇い展開（仲間が助けに入る）もこのファイル（R.coverPlan・R.coverRun。文は ship-r18-xeno.js の SH.X.cov）
    ・濃い：もう一度の段落・一文（again・xAgain）
    {t}＝攻め、{u}＝受け、{a}＝生き物と出会った船員、{x}＝生き物。登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=ship id=ship_lab cat=夜 tags=night,mob,force cond=HK.Content.ok(S, 'force') label=文明の研究（体を調べられる） */
+/* @event scen=ship id=ship_nurse cat=夜 tags=night label=看病の夜 */
+/* @event scen=ship id=ship_cover cat=help tags=mob label=庇い展開（襲われた仲間を助けに入る） */
 (function () {
   'use strict';
   var HK = window.HK, SH = HK.SHIP;

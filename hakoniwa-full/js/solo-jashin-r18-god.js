@@ -6,6 +6,14 @@
    ・描写の作風「男性向け」：受ける夜を男性向けの段で組む（eroRecv。小説調のときは以前のまま）
    ・庇い展開：受ける夜に、その場にいる住人が割って入る（kbPlan。殴られる・身代わり・二人とも・縛られて見せつけられる。翌朝の二人）
    全年齢版ではこのファイルは読み込まれない。登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jashin id=js_god_shub cat=夜 tie=- tags=night,preg cond=HK.Content.ok(S, 'preg') label=シュブ＝ニグラスの収穫祭（参加者どうし） */
+/* @event scen=jashin id=js_god_goat cat=夜 tags=night,mob,force,preg cond=HK.Content.ok(S, 'preg') label=黒い仔山羊に襲われる */
+/* @event scen=jashin id=js_god_yig cat=夜 tags=night,mob,force label=イグの夢（ラミアの姿で迫られる） */
+/* @event scen=jashin id=js_god_chau cat=夜 tags=night,mob,force,cruel label=チャウグナー・フォーンの村人の襲撃 */
+/* @event scen=jashin id=js_god_night cat=夜 tags=night,mob,force,preg cond=HK.Content.ok(S, 'force') HK.Content.ok(S, 'preg') label=神ごとの夜（48柱：夢・儀式・眷属・村人・憑依） */
+/* @event scen=jashin id=js_god_pair cat=夜 tie=- tags=night,preg cond=HK.Content.ok(S, 'preg') label=神の気配に当てられた参加者どうしの夜 */
+/* @event scen=jashin id=js_cover cat=help tags=mob label=庇い展開（殴られる・身代わり・二人とも・見せつけられる） */
 (function () {
   'use strict';
   var HK = window.HK, JS = HK.JASHIN, ST = HK.Story;

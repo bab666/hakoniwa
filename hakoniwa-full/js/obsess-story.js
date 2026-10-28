@@ -5,6 +5,8 @@
    ■ 「執着なし」・血縁（恋愛：なし）・恋愛の成り立たない組では生まれない
    ■ 暴走（80〜）：物語型では死に至らない（閉じ込める・恋敵に釘を刺す・二人で消えたいとほのめかす）。R18版の閉じ込めは文だけで、すぐに解かれる
    使い方：var r = HK.Obsess.storyTick(S, live, { rate, place, pack }); if (r) ST.say(S, { actors: r.actors, tag: r.tag, text: r.text, why: r.why, mag: r.mag }); */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jashin,yakata,jinro,ship,rpg,dungeon id=os_obsess cat=conflict tie=yan tags=cruel cond=HK.Dark.f(S, 'cage') label=執着：恋敵への嫉妬が積もる・暴走して閉じ込める（物語型では死なない） */
 (function () {
   'use strict';
   var HK = window.HK, O = HK.Obsess;

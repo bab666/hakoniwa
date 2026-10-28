@@ -9,6 +9,8 @@
      信仰で恋愛に発展しない・支配している組は、命じられての体の関係だけ（恋の結末・恋の文にしない。ベッドは荒く）
    {u}=向きのある関係の t.a（上司・信仰する側・恩人）、{d}=t.b（部下・信仰される側・恩を受けた側）。向きのない関係は {a}{b}
    登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=locker id=lk_ties cat=bond tie=colleague,classmate,boss,worship,benefactor,relative label=関係ごとの反応・関係を保つ・発展させる出来事 */
 (function () {
   'use strict';
   var HK = window.HK, LK = HK.LOCKER, ST = HK.Story;

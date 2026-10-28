@@ -7,6 +7,15 @@
      体の関係になれる組（HK.Pos.okSex・HK.State.r18ok・HK.ngPair・HK.sexBlocked・HK.canLove を両方向）のときだけ三人の場面に。
      ロッカー越しの嫉妬・失恋・取り合い（すれ違い系）と、応援・伝言・励まし・祝福（仲良し系）は、半々くらいになるように選ぶ
    ・二人のときは solo-locker.js の本筋のまま（このファイルは LK.crowd を足すだけ） */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=locker id=lk_crowd_jeal cat=conflict label=三人以上：ロッカー越しの嫉妬・失恋・取り合い */
+/* @event scen=locker id=lk_crowd_cheer cat=bond label=三人以上：応援・伝言・励まし・祝福 */
+/* @event scen=locker id=lk_one cat=solo label=一人：耐える・見回りに見つけてもらう・自力で出る */
+/* r18:begin */
+/* @event scen=locker id=lk_r18_mob cat=夜 tags=night,mob,force cond=HK.Content.on(S.env, 'force') HK.Dark.f(S, 'assault') label=見回り・群衆に襲われる */
+/* @event scen=locker id=lk_r18_mobfall cat=夜 tags=night,mob cond=HK.Dark.f(S, 'fall') label=見回りの人を自分から誘う（堕ちる） */
+/* @event scen=locker id=lk_r18_solo cat=夜 tags=night label=一人で慰める */
+/* r18:end */
 (function () {
   'use strict';
   var HK = window.HK, LK = HK.LOCKER, ST = HK.Story;

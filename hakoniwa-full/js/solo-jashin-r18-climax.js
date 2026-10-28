@@ -3,6 +3,9 @@
    ・場所ごとの眷属（鏡の先の異空間・婚礼の座敷・森の宴・貸本屋の書庫・廃劇場・岩礁・竹林の無音堂）。
      ほかの場所では、もとの洞窟の描写（solo-jashin-r18.js）を場所の語に置き換えて使う
    全年齢版ではこのファイルは読み込まれない。登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=jashin id=js_climax_lover cat=夜 tie=lover tags=night label=イゴーロナクに煽られた恋人の交わり */
+/* @event scen=jashin id=js_climax_mob cat=夜 tags=night,mob,force,preg cond=HK.Content.ok(S, 'force') HK.Content.ok(S, 'preg') label=場所ごとの眷属（異空間・婚礼の座敷・森の宴など） */
 (function () {
   'use strict';
   var HK = window.HK, JS = HK.JASHIN, ST = HK.Story;

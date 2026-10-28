@@ -7,6 +7,8 @@
      言葉の {o}=話しかける相手。信仰される側が支配しているときは、信仰される側が命じ、信仰する側が従う（体の向きは受け攻めの指定どおり）
    ・恋愛・R18にしない組（親族の恋愛：なし・恋愛に発展しない信仰）は、solo-locker.js の判定でここまで来ない
    全年齢版にはこのファイルはない。登場人物はすべて成人として扱う */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=locker id=lk_r18_ties cat=夜 tie=colleague,classmate,boss,worship,benefactor tags=night label=関係ならではの夜（同僚・同級生・上司と部下・信仰・恩人） */
 (function () {
   'use strict';
   var HK = window.HK, LK = HK.LOCKER, NT = LK && LK.TIES, ST = HK.Story;

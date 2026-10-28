@@ -2,6 +2,13 @@
    複数人が深夜のお色気バラエティに出演し、ランダムに選ばれた企画（約50種）で得点を競う。
    企画の形式（一人ずつ挑戦・観覧客の投票・全員同時の耐久・一対一の対決・二チーム対抗）ごとに展開が変わり、
    ハプニング・罰ゲーム・恋の芽生え・下剋上を経て、最後に優勝者が決まる */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event-table scen=variety path=VARIETY.KIKAKU label=企画 cat=夜 */
+/* @event-table scen=variety path=VARIETY.EVENTS label=収録中のハプニング cat=ハプニング */
+/* @event-table scen=variety path=VARIETY.CHAR_EV label=出演者ごとの出来事 cat=solo */
+/* @event scen=variety id=vr_show cat=夜 tie=- tags=night,force label=企画に挑む（一人ずつ・投票・耐久・対決・チーム戦） */
+/* @event scen=variety id=vr_kin cat=bond tie=parent,sibling,sibbad,sibclose,sibprot,pparent label=家族の共演（親子・きょうだい。性的な場面にしない） */
+/* @event scen=variety id=vr_penalty cat=夜 tags=night,force label=罰ゲーム */
 (function () {
   'use strict';
   var HK = window.HK, VA = HK.VARIETY, ST = HK.Story, clamp = HK.clamp;

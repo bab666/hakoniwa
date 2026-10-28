@@ -4,6 +4,8 @@
    ・特殊役職の人は、ストレスの高い月が続くと発狂して動けなくなる（仲の良い人が落ち着かせるまで）
    ・吸血鬼は月に一度、人の血を吸う（船の上は時間の流れが単調なので、ひと月を三日分として数える）
    ship.js の月の流れから SH.SPEC.setup・SH.SPEC.month を呼ぶ */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event scen=ship id=ship_special cat=solo tags=death label=不死・吸血鬼（蘇る・発狂・血を吸う） */
 (function () {
   'use strict';
   var HK = window.HK, SH = HK.SHIP, SP = HK.Special, ST = HK.Story;

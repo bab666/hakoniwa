@@ -5,6 +5,18 @@
    そのあと、数日後の二人（後日談）を、記憶が消えたか・二人の関係・かけられた人の気質で書き分ける。
    かける側がモブなら、性別（「かける人の性別」）も選べる。女性のかける側は、男性が相手なら自分から跨って導き（女攻め×男）、女性が相手なら女性どうしの文になる。
    内容のスイッチ「合意のない展開」が切のときは、恨み・ストーカーは性的な暗示をかけず、同僚・友人・恋人は合意の上の催眠プレイになる */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event-table scen=saimin path=SAIMIN.EVENTS label=催眠中のハプニング cat=ハプニング */
+/* @event-table scen=saimin path=SAIMIN.SUG label=暗示 cat=solo */
+/* @event scen=saimin id=sm_colleague cat=bond tie=colleague label=同僚に催眠をかけられる */
+/* @event scen=saimin id=sm_lover cat=romance tie=lover label=恋人に催眠をかけられる */
+/* @event scen=saimin id=sm_friend cat=bond tie=friend label=友人に催眠をかけられる */
+/* @event scen=saimin id=sm_grudge cat=conflict tie=enemy label=恨みを持った相手に催眠をかけられる */
+/* @event scen=saimin id=sm_stalker cat=conflict tie=yan tags=mob label=ストーカーに催眠をかけられる */
+/* r18:begin */
+/* @event scen=saimin id=sm_r18_sex cat=夜 tie=- tags=night label=暗示から実際の行為へ */
+/* @event scen=saimin id=sm_r18_force cat=夜 tags=night,force cond=HK.Content.ok(S, 'force') label=同意のない催眠（恨み・ストーカー） */
+/* r18:end */
 (function () {
   'use strict';
   var HK = window.HK, SM = HK.SAIMIN, ST = HK.Story, clamp = HK.clamp;

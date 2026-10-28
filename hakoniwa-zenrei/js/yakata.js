@@ -5,6 +5,12 @@
    ・犯人（＋共犯）と動機は抽選。探偵が犯人のこともあり、そのときは助手やほかの人が探偵を引き継ぐ
    ・現場と手口とトリックは約100通り。痕跡を見つけられるかは、探偵役と犯人の能力のぶつかり合い
    ・結末：逮捕／自殺／吹雪の中へ逃走／探偵を襲う／濡れ衣／逃げおおせる … */
+/* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
+/* @event-table scen=yakata path=YAKATA.MOTIVES label=犯人の動機 cat=謎解き rows=1 */
+/* @event-table scen=yakata path=YAKATA.JOBS.PAIR label=職業×職業の出来事 pair=1 */
+/* @event scen=yakata id=yk_murder cat=death tags=death,cruel label=殺人（現場・手口・トリック 約100通り） */
+/* @event scen=yakata id=yk_detect cat=謎解き label=推理（痕跡を見つける・探偵と犯人のぶつかり合い） */
+/* @event scen=yakata id=yk_end cat=ハプニング tags=death label=結末（逮捕・自殺・吹雪へ逃走・探偵を襲う・濡れ衣） */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, Y = HK.YAKATA, clamp = HK.clamp;
