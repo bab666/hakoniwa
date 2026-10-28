@@ -30,10 +30,12 @@
     if (c.marks) bits.push('語尾：' + c.marks);
     if (c.toneCustom && !HK.TONE_CUSTOM_OFF) bits.push('付け替え：' + c.toneCustom);
     /* r18:begin */
-    /* 高度設定「喘ぎ声の調整」で、この人の声の区分を既定から変えてあれば添える（moan-engine.js の HK.Moan.fitNote） */
-    var fnote = !HK.SAFE_ON && HK.Moan && HK.Moan.fitNote && HK.Moan.toneOf ? HK.Moan.fitNote(HK.Moan.toneOf(c)) : '';
+    /* 高度設定「喘ぎ声の調整」・この住人の「声の区分」で、この人の声の区分を既定から変えてあれば添える（moan-engine.js の HK.Moan.fitNote。住人の設定なら「（住人）」） */
+    var fnote = !HK.SAFE_ON && HK.Moan && HK.Moan.fitNote && HK.Moan.toneOf ? HK.Moan.fitNote(HK.Moan.toneOf(c), c) : '';
     if (c.moanTone && !HK.SAFE_ON) bits.push('喘ぎ：' + toneLabel(c.moanTone) + (fnote ? '（声：' + fnote + '）' : ''));
     else if (fnote) bits.push('声：' + fnote);
+    /* 住人の欄の喘ぎの辞書（ui-gear-moan.js）：「喘ぎ辞書：N行」など */
+    if (!HK.SAFE_ON && HK.GearMoan) bits = bits.concat(HK.GearMoan.summary(c));
     /* r18:end */
     if (HK.Ending && HK.Ending.on(c)) bits.push(HK.Ending.labelFor(c));
     if (c.call) bits.push('呼び方：' + callLabel(c.call));
@@ -213,7 +215,9 @@
     ld = HK.Attr && HK.Attr.libDim ? HK.Attr.libDim(c) : '';
     if (!HK.SAFE_ON) moanRow = '<div' + ld + '><div class="gearrow"><label>喘ぎの口調 <select data-gf="moanTone" aria-label="喘ぎの口調">' + opt('', 'いつもの口調と同じ', c.moanTone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.moanTone || '', t.desc); }).join('') + '</select></label></div>' +
       '<p class="gearhint">喘ぎ声・夜の場面の声だけ、この口調で出します（普段は作った口調で話す人の、素の声が出る様子に）。</p>' +
-      '<p class="gearhint">声の区分や割合は 箱庭タブ → 高度設定 → 喘ぎ声の調整 で変えられます。</p></div>';
+      '<p class="gearhint">声の区分や割合は 箱庭タブ → 高度設定 → 喘ぎ声の調整 で、この住人だけの辞書と区分は下の「喘ぎの辞書・声の区分（この住人だけ）」で変えられます。</p>' +
+      /* 住人の欄の喘ぎの辞書・声の区分・見本（ui-gear-moan.js） */
+      (HK.GearMoan ? HK.GearMoan.html(c, { open: openMap.gmoan }) : '') + '</div>';
     /* r18:end */
     var callSel = '<select data-gf="call" aria-label="基本の呼び方">' + (HK.CALL_STYLES || [{ v: '', label: 'おまかせ' }]).map(function (o) { return opt(o.v, o.label, c.call || ''); }).join('') + '</select>';
     /* 相手の性別で分けるとき：男性・女性・その他ごとの敬称 */
@@ -370,6 +374,9 @@
     var c = byId(cur), s = S(), act = b.dataset.gact;
     if (!c) return;
     s.ties = s.ties || [];
+    /* r18:begin */
+    if (HK.GearMoan && HK.GearMoan.act(act, c, b)) return;
+    /* r18:end */
     if (act === 'close') close();
     else if (act === 'tdel') { s.ties.splice(+b.dataset.k, 1); changed(true); }
     else if (act === 'tadd' || act === 'tnew') {
@@ -428,6 +435,9 @@
     if (HK.Attr && HK.Attr.gearField(c, f, t, isInput, changed, byId)) return;
     if (HK.Shared && HK.Shared.gearField(c, f, t, isInput, changed)) return;
     if (HK.Ending && HK.Ending.gearField(c, f, t, isInput, changed, sampleRefresh, s.chars.filter(function (x) { return x !== c; })[0])) return;
+    /* r18:begin */
+    if (HK.GearMoan && HK.GearMoan.field(c, f, t, isInput, changed)) return;
+    /* r18:end */
     switch (f) {
       case 'tone': if (isInput) return; c.tone = HK.toneValid && HK.toneValid(t.value) ? t.value : ''; changed(true); break;
       case 'moanTone': if (isInput) return; if (HK.toneValid && HK.toneValid(t.value)) c.moanTone = t.value; else delete c.moanTone; changed(true); break;

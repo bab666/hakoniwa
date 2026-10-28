@@ -74,7 +74,8 @@
   /* 主導している側（dom）は「見るな」「ふざけ」のような拒む声を使わない。合意の場面の受ける側も、強く拒む声（やめ・ふざけ・離せ）は使わない */
   var M_DOM = /見るな|見ないで|ふざけ|やめ|離せ|調子に|待っ|ちょっと|感じてなんか|勘違い|そこは、いけない/, M_REF = /ふざけ|やめ|離せ|触んな/;
   function moan(S, who, st, dom) {
-    var V = HK.ThickVM && HK.ThickVM.VB, ps = (who && (who.persona || (HK.personaOf ? HK.personaOf(who) : ''))) || 'gentle';
+    /* 夜の性格（高度設定の夜の性格→声の基盤を含む）・喘ぎの口調があれば、その態度の表で（moan-engine.js の HK.Moan.novelPs。なければ今までどおり） */
+    var V = HK.ThickVM && HK.ThickVM.VB, ps = (HK.Moan && HK.Moan.novelPs && HK.Moan.novelPs(who)) || (who && (who.persona || (HK.personaOf ? HK.personaOf(who) : ''))) || 'gentle';
     var l = V && (V[ps] || V.gentle);
     if (!l) return '';
     /* 受ける側は、口調ごとの喘ぎ（novel-moan-tone.js：こらえる＝始まり、崩れる＝果てる）も混ぜる */
@@ -82,7 +83,7 @@
     if (own.length) base = base.concat(own);
     var re = dom ? M_DOM : M_REF, c = base.filter(function (x) { return !re.test(x); });
     /* 喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）を通す。こらえる（0）＝最中、崩れる（1）＝果てる。主導している側は攻めの声。元の表も4割ほど残る */
-    if (HK.Moan && HK.Moan.say) return who.name + '「' + HK.Moan.say(S, who, dom ? (st ? 'top' : 'topmid') : st ? 'climax' : 'mid', { novel: true }, c.length ? c : base) + '」';
+    if (HK.Moan && HK.Moan.say) return who.name + '「' + HK.Moan.say(S, who, dom ? (st ? 'top' : 'topmid') : st ? 'climax' : 'mid', { novel: true, own: own }, c.length ? c : base) + '」';
     return who.name + '「' + pick(S, c.length ? c : base) + '」';
   }
   /* 嗜虐的な攻め（HK.Ero.sadist）のとき：少し乱暴に（髪を掴む・乱暴に押し倒す・強く腰を掴んで激しく打ちつける・両手首を押さえつける）。首・縛る拘束は使わない。{x}の台詞は口調の言い換えを通る */

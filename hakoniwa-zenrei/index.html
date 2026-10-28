@@ -19,7 +19,7 @@
 <title>箱庭シミュレーター</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <script>
-/* 表示の切り替え（色の量 data-palette：mono 藍のみ／chars キャラ色／full フル、白黒 data-theme：auto 端末に合わせる／light／gray／dark。ヘッダーの半月のボタンで 自動→白→グレー→黒 と巡る）。見た目だけで結果には影響しない。鍵：hakoniwa-z:palette・hakoniwa-z:theme（描く前に付けて、ちらつかないように） */
+/* 表示の切り替え（色の量 data-palette：mono 藍のみ／chars キャラ色／full フル、白黒 data-theme：auto 端末に合わせる／light／gray／dark。ヘッダーの丸を三分割したボタン（白・グレー・黒。選んでいる区画の下に印、自動は「A」）で 自動→白→グレー→黒 と巡る）。見た目だけで結果には影響しない。鍵：hakoniwa-z:palette・hakoniwa-z:theme（描く前に付けて、ちらつかないように） */
 (function () {
   var P = 'hakoniwa-z:', R = document.documentElement, PAL = ['mono', 'chars', 'full'], THM = ['auto', 'light', 'gray', 'dark'];
   function get(k, ok, d) { try { var v = window.localStorage.getItem(P + k); return ok.indexOf(v) >= 0 ? v : d; } catch (e) { return d; } }
@@ -40,6 +40,8 @@
     if (!b) return;
     if (b.hasAttribute('data-pal')) { pal = b.getAttribute('data-pal'); put('palette', pal); } else { thm = b.hasAttribute('data-thmcycle') ? THM[(THM.indexOf(thm) + 1) % THM.length] : b.getAttribute('data-thm'); put('theme', thm); }
     apply();
+    /* 押した直後 1.2 秒だけ、ボタンの下に今の白黒を小さな札で出す（スマホはホバーの title が出ないため。CSS は 担当HY の節の .thmbtn[data-flash]） */
+    if (b.hasAttribute('data-thmcycle')) { b.setAttribute('data-flash', { auto: '自動', light: '白', gray: 'グレー', dark: '黒' }[thm]); clearTimeout(b._flash); b._flash = setTimeout(function () { b.removeAttribute('data-flash'); }, 1200); }
   });
 })();
 </script>
@@ -159,6 +161,22 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .brandrow .r18mark { align-self: flex-start; margin-left: 6px; padding: 2px 7px; border: 1px solid var(--ink); border-radius: 3px; color: var(--ink); font-family: var(--f-num); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; line-height: 1.4; white-space: nowrap; }
 .navsep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
 .brandlinks .thmbtn { width: 34px; min-height: 34px; }
+/* ── 担当HY（2026-10-28）：白／グレー／黒の切り替えアイコン（丸を縦に三分割。左から 白・グレー・黒） ──
+   区画の色は配色に関係なく固定（白＝紙の白・グレー＝藍 50%・黒＝藍）で、輪郭と仕切りは currentColor（黒版では明るい線になり、黒の区画も背景から浮く）。
+   選んでいる区画の下に小さな印（data-now は index.html 先頭のスクリプトが付ける）。自動は右上に「A」の札と、いま端末が使っている側の印を薄く。
+   押した直後 1.2 秒だけボタンの下に「グレー」などの札（data-flash。スマホにはホバーがないため） */
+.thmbtn { position: relative; }
+.thmbtn svg.tz { display: block; width: 22px; height: 22px; }
+.thmbtn .tz-w { fill: #FFFFFF; }
+.thmbtn .tz-g { fill: #8A919D; }
+.thmbtn .tz-k { fill: #16233B; }
+.thmbtn .tz-o { fill: none; stroke: currentColor; stroke-width: 1.2; }
+.thmbtn .tz-mk { fill: currentColor; opacity: 0; }
+.thmbtn[data-now="light"] .tz-mk[data-k="light"], .thmbtn[data-now="gray"] .tz-mk[data-k="gray"], .thmbtn[data-now="dark"] .tz-mk[data-k="dark"] { opacity: 1; }
+.thmbtn[data-now="auto"] .tz-mk[data-k="light"] { opacity: .4; }
+@media (prefers-color-scheme: dark) { .thmbtn[data-now="auto"] .tz-mk[data-k="light"] { opacity: 0; } .thmbtn[data-now="auto"] .tz-mk[data-k="dark"] { opacity: .4; } }
+.thmbtn[data-now="auto"]::after { content: "A"; position: absolute; top: 1px; right: 1px; min-width: 11px; height: 11px; box-sizing: border-box; padding: 0 1px; border: 1px solid currentColor; border-radius: 3px; background: var(--paper); color: var(--ink); font-family: var(--f-num); font-size: 8px; font-weight: 700; line-height: 9px; text-align: center; pointer-events: none; }
+.thmbtn[data-flash]::before { content: attr(data-flash); position: absolute; top: calc(100% + 4px); left: 50%; transform: translateX(-50%); z-index: 30; padding: 1px 8px; border-radius: var(--r); background: var(--ink); color: var(--paper); font-size: 11px; font-weight: 500; line-height: 1.6; white-space: nowrap; pointer-events: none; }
 .tab-saves b svg { display: block; width: 1.1em; height: 1.1em; }
 /* 各タブの先頭の肩見出し（Mono・大文字） */
 #view-cast::before, #view-box::before, #view-result::before { display: block; margin: 0 0 4px; font-family: var(--f-num); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted2); }
@@ -290,6 +308,35 @@ button.chip:hover { border-color: var(--ink); }
 .res.drop-after { box-shadow: 0 2px 0 0 var(--ink); }
 body.noselect { -webkit-user-select: none; user-select: none; cursor: grabbing; }
 .sample-note { font-size: 12px; color: var(--ink); margin: 8px 0 0; padding-left: 8px; border-left: 2px solid var(--ink); }
+/* ── 担当HY（2026-10-28）：住人の行を詰める。名前 → コード＋態度の札 → 気質（「FC優位・AC低め」）を一列に縦に積み、気質は折り返さない ──
+   気質は1行（長いときは省略記号。全文は title）。PC はエゴグラムの5欄を 60px に抑え、折れ線と「削除」を右に寄せる。上の段は 92px 以内、2段目（グループ・タグ・メモ・設定・複製）との間は 6px。
+   スマホ幅（760px 以下）は 名前＋コード／エゴグラム／メモ の3段のまま、隙間だけ詰める（気質はコードの横に1行で、入りきらない分は省略記号。「削除」はエゴグラムの右に置いて1段減らす） */
+.res .codeline { flex-wrap: wrap; gap: 3px 6px; }
+.res .codeline .egatt { margin-left: 0; }
+.res .who .ty { order: 3; flex: 1 0 100%; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; line-height: 1.45; color: var(--muted); }
+@media (min-width: 761px) {
+  .res { grid-template-columns: 50px minmax(140px, 210px) minmax(240px, 324px) minmax(118px, 1fr) auto; gap: 6px 12px; padding: 10px 12px 10px 30px; }
+  .res .who input { min-height: 30px; padding: 3px 8px; }
+  .res .codeline { margin-top: 3px; row-gap: 2px; }
+  .res .codeline .code { flex: none; width: 84px; min-height: 26px; padding: 2px 4px; }
+  .res .ego { grid-template-columns: repeat(5, minmax(0, 60px)); }
+  .res .ego label { gap: 2px; }
+  .res .ego input { min-height: 30px; padding: 3px 2px; }
+  .res .gwrap { justify-self: end; }
+  .res .memo { gap: 4px 6px; }
+  .res .memo input, .res .memo select { min-height: 32px; }
+  .res .memo .btn.small { min-height: 32px; }
+}
+@media (max-width: 760px) {
+  .res { gap: 8px 10px; padding: 10px 10px 10px 30px; }
+  .res .codeline { margin-top: 6px; flex-wrap: nowrap; }
+  .res .codeline .code { flex: none; width: 84px; }
+  .res .who .ty { order: 0; flex: 1 1 0; }
+  .res > div.who { grid-column: 2 / -1; }
+  .res > div.ego { grid-column: 1 / 3; grid-row: 2; }
+  .res > [data-act="del"] { grid-column: 3; grid-row: 2; align-self: end; }
+  .res .memo { gap: 6px; }
+}
 
 /* 既存の関係 */
 .tiebox { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-card); padding: 14px 16px; }
@@ -476,6 +523,43 @@ table.per td:nth-child(2) b { white-space: nowrap; overflow: hidden; text-overfl
 .fgroup.lone { border-style: dashed; color: var(--muted); }
 .fhist { list-style: none; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px dashed var(--line); display: grid; gap: 4px; font-size: 13px; }
 .fhist .st { font-family: var(--f-num); font-size: 11px; color: var(--muted2); display: inline-block; min-width: 72px; }
+/* ── 担当HX（2026-10-28）：関係図の時点のチップ（最終／開始時／転機）と、派閥の見分け（番号ごとの形の印・藍のみ／キャラ色では線の形） ── */
+/* 関係図の見出しの右に時点のチップ（view-map.js の HK.MapView.atBar）。文字は data-l から出す（見出しの文字＝折りたたみの鍵を「関係図」のまま保つため。読み上げは aria-label） */
+h2.sec.mapsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.mapat { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: var(--f-body); letter-spacing: 0; }
+.mapat .chip::before, .mapatnow::before { content: attr(data-l); }
+.mapat .chip.dim { color: var(--muted); border-style: dashed; }
+.mapat .chip.dim[aria-pressed="true"] { color: var(--paper); border-style: solid; }
+.mapatnow { display: none; font-size: 12px; font-weight: 400; color: var(--muted); }
+@media print { .mapatnow { display: inline; } }
+/* 派閥の印（12px の輪。0 実線・1 破線・2 点線・3 一点鎖線・4 二重・5〜8 は太い線）。関係図の名札・派閥の節・クラスの表で同じ印。フルでは派閥の色 */
+.fmark { display: inline-block; flex: none; vertical-align: -1px; }
+.fgroup b .fmark { margin-right: 2px; }
+.fhist .fmark { margin-right: 3px; }
+.kleg .fmark { margin-right: 1px; }
+.fgroup.fg { border-color: var(--fc); }
+.kcell { position: relative; }
+.kcell .kfm { position: absolute; left: 3px; top: 3px; line-height: 0; font-style: normal; }
+/* 藍のみ・キャラ色（派閥の色が藍に落ちる）：囲み・枠・縁を番号ごとの線の形と塗りの濃さで描き分ける */
+:root[data-palette="mono"] .fhull, :root[data-palette="chars"] .fhull { stroke-width: 1.8; stroke-opacity: .85; stroke-dasharray: none; fill: color-mix(in srgb, var(--ai) 9%, transparent); }
+:root[data-palette="mono"] .fhull.fp1, :root[data-palette="chars"] .fhull.fp1 { stroke-dasharray: 6 3; fill: color-mix(in srgb, var(--ai) 5%, transparent); }
+:root[data-palette="mono"] .fhull.fp2, :root[data-palette="chars"] .fhull.fp2 { stroke-dasharray: 0.1 4; stroke-linecap: round; stroke-width: 2.4; fill: color-mix(in srgb, var(--ai) 13%, transparent); }
+:root[data-palette="mono"] .fhull.fp3, :root[data-palette="chars"] .fhull.fp3 { stroke-dasharray: 8 3 0.1 3; stroke-linecap: round; fill: color-mix(in srgb, var(--ai) 7%, transparent); }
+:root[data-palette="mono"] .fhull.fp4, :root[data-palette="chars"] .fhull.fp4 { stroke-width: 1.4; fill: color-mix(in srgb, var(--ai) 11%, transparent); }
+:root[data-palette="mono"] .fhull.fp5, :root[data-palette="chars"] .fhull.fp5 { stroke-width: 3.4; fill: color-mix(in srgb, var(--ai) 4%, transparent); }
+:root[data-palette="mono"] .fhull.fp6, :root[data-palette="chars"] .fhull.fp6 { stroke-width: 3.4; stroke-dasharray: 8 4; fill: color-mix(in srgb, var(--ai) 15%, transparent); }
+:root[data-palette="mono"] .fhull.fp7, :root[data-palette="chars"] .fhull.fp7 { stroke-width: 3.4; stroke-dasharray: 0.1 6; stroke-linecap: round; fill: color-mix(in srgb, var(--ai) 8%, transparent); }
+:root[data-palette="mono"] .fhull.fp8, :root[data-palette="chars"] .fhull.fp8 { stroke-width: 3.4; stroke-dasharray: 10 4 0.1 4; stroke-linecap: round; fill: color-mix(in srgb, var(--ai) 10%, transparent); }
+.fhull2 { display: none; fill: none; stroke-width: 1.4; stroke-opacity: .85; }
+:root[data-palette="mono"] .fhull2, :root[data-palette="chars"] .fhull2 { display: inline; stroke: var(--ai) !important; }
+:root[data-palette="mono"] .fgroup.fg, :root[data-palette="chars"] .fgroup.fg,
+:root[data-palette="mono"] .kcell.inf, :root[data-palette="chars"] .kcell.inf { border: 2px solid var(--ai); box-shadow: none; }
+:root[data-palette="mono"] .fgroup.fg.dict, :root[data-palette="chars"] .fgroup.fg.dict { box-shadow: inset 0 0 0 1px var(--ai); }
+:root[data-palette="mono"] :is(.fgroup.fg, .kcell.inf):is(.fp1, .fp6), :root[data-palette="chars"] :is(.fgroup.fg, .kcell.inf):is(.fp1, .fp6) { border-style: dashed; }
+:root[data-palette="mono"] :is(.fgroup.fg, .kcell.inf):is(.fp2, .fp7), :root[data-palette="chars"] :is(.fgroup.fg, .kcell.inf):is(.fp2, .fp7) { border-style: dotted; }
+:root[data-palette="mono"] :is(.fgroup.fg, .kcell.inf):is(.fp3, .fp8), :root[data-palette="chars"] :is(.fgroup.fg, .kcell.inf):is(.fp3, .fp8) { border-style: dashed; outline: 1.5px dotted var(--ai); outline-offset: -6px; }
+:root[data-palette="mono"] :is(.fgroup.fg, .kcell.inf).fp4, :root[data-palette="chars"] :is(.fgroup.fg, .kcell.inf).fp4 { border: 4px double var(--ai); }
+:root[data-palette="mono"] :is(.fgroup.fg, .kcell.inf):is(.fp5, .fp6, .fp7, .fp8), :root[data-palette="chars"] :is(.fgroup.fg, .kcell.inf):is(.fp5, .fp6, .fp7, .fp8) { border-width: 3.5px; }
 .fhist .rg { font-weight: 700; margin-right: 10px; }
 
 /* ダンジョン */
@@ -533,6 +617,75 @@ h2.sec .hotleg { display: inline-flex; align-items: center; gap: 6px; margin-lef
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"], [data-theme="gray"]) .ev.trouble { --trouble-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M6 1.4L11 10.3H1z' fill='none' stroke='%23C9D4EC' stroke-width='1.3' stroke-linejoin='round'/><path d='M6 4.7v2.6' fill='none' stroke='%23C9D4EC' stroke-width='1.3' stroke-linecap='round'/><circle cx='6' cy='8.8' r='.75' fill='%23C9D4EC'/></svg>"); } }
 .ev.trouble:not(.death) .evb::before { content: "トラブル"; display: inline-block; font-family: var(--f-num); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; line-height: 1.6; color: var(--ink); border: 1px solid var(--ink); border-radius: 2px; padding: 0 5px 0 19px; background: var(--trouble-ic) no-repeat 5px 50% / 11px 11px; margin-right: 8px; vertical-align: 2px; }
 .ev .oddb { font-family: var(--f-num); font-size: 10px; font-weight: 600; letter-spacing: 0.1em; color: var(--odd); border: 1px dashed var(--odd); border-radius: 2px; padding: 0 5px; margin-left: 6px; }
+/* ── 担当HZ（2026-10-28）：重要な出来事の細い枠と、フルでは種類ごとの薄い背景 ── */
+/* view.js（evLi・HK.View.hotKindSolo）が重要な出来事の li に data-hot（death 死亡／lewd 情事／turn 転機／goal 目標／trouble トラブル）を付ける。
+   どの色の量でも細い枠（角丸 4px）で囲む。左の点の位置は変えない（枠の分だけ左へ出すので、点は --hfx と左の線の太さ --hbl で戻す）。
+   藍のみ・キャラ色：色は使わず線の種類で分ける（死亡＝藍の実線 2px／転機＝藍の実線 1px／情事＝破線／目標＝二重線／トラブル＝点線）。
+   フル：種類ごとの色（--hot-○○）を紙に混ぜた薄い背景と、左の縁 3px。本文は藍の太字のまま（白・グレー・黒で 4.5:1 以上）。印刷は背景を消してグレーの線の種類だけ */
+:root { --hot-death: #D7263D; --hot-lewd: #8E44AD; --hot-turn: #E8590C; --hot-goal: #D9A400; --hot-trouble: #0C8599; --hk-mix: 10%; --hk-leg: 28%; }
+:root[data-theme="gray"] { --hot-death: #C11F38; --hot-lewd: #7D3C98; --hot-turn: #C9500C; --hot-goal: #B8860B; --hot-trouble: #0B7285; --hk-mix: 14%; --hk-leg: 32%; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"], [data-theme="gray"]) { --hot-death: #FF5C7A; --hot-lewd: #C597DE; --hot-turn: #FF9A4C; --hot-goal: #F2CC4C; --hot-trouble: #5FC6D6; --hk-mix: 18%; --hk-leg: 40%; }
+}
+:root[data-theme="dark"] { --hot-death: #FF5C7A; --hot-lewd: #C597DE; --hot-turn: #FF9A4C; --hot-goal: #F2CC4C; --hot-trouble: #5FC6D6; --hk-mix: 18%; --hk-leg: 40%; }
+[data-hot="death"] { --hk: var(--hot-death); }
+[data-hot="lewd"] { --hk: var(--hot-lewd); }
+[data-hot="turn"] { --hk: var(--hot-turn); }
+[data-hot="goal"] { --hk: var(--hot-goal); }
+[data-hot="trouble"] { --hk: var(--hot-trouble); }
+.stepblk { --hfx: 10px; }
+#xo-shot .stepblk { --hfx: 10px; }
+:is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot] { --hbl: 1px; border: 1px solid var(--line2); border-radius: 4px; padding: 6px 10px; margin-left: calc(-1 * var(--hfx)); }
+/* 点：枠の分だけ戻す（赤の大きな点 .hot・#dgtl／#sttl の key・climax・death と、ふつうの 7px の点） */
+:is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot]::before { left: calc(-1 * var(--rail) - 4px + var(--hfx) - var(--hbl)); top: 14px; }
+:is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot]:is(.hot, #dgtl .key, #dgtl .climax, #dgtl .death, #sttl .key, #sttl .climax, #sttl .death)::before { left: calc(-1 * var(--rail) - 6px + var(--hfx) - var(--hbl)); top: 12px; }
+/* 出られない部屋の「条件達成」の左罫は、枠と重ならないように外す（枠の種類が目標を示す） */
+:is(#tl, #dgtl, #sttl, .tl) .ev.goal[data-hot] .evb { border-left: 0; padding-left: 0; }
+/* 藍のみ・キャラ色：線の種類 */
+:root:not([data-palette="full"]) :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="death"] { --hbl: 2px; border: 2px solid var(--ink); }
+:root:not([data-palette="full"]) :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="turn"] { border-color: var(--ink); }
+:root:not([data-palette="full"]) :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="lewd"] { border: 1px dashed var(--ink); }
+:root:not([data-palette="full"]) :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="goal"] { --hbl: 3px; border: 3px double var(--ink); }
+:root:not([data-palette="full"]) :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="trouble"] { --hbl: 2px; border: 2px dotted var(--ink); }
+/* フル：薄い背景と左の縁（color-mix の無いブラウザでは面の色 --bg1 と左の縁だけ） */
+:root[data-palette="full"] :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot] { --hbl: 3px; background: var(--bg1); border-left: 3px solid var(--hk); }
+/* 色の面の上の補足・数値・種類の札は、藍 76%（--muted2）にして 4.5:1 を保つ（赤の塗りの札はそのまま） */
+:root[data-palette="full"] :is(#tl, #dgtl, #sttl, .tl) .ev[data-hot] :is(.why, .nums, .rn), :root[data-palette="full"] :is(#tl, #dgtl, #sttl, .tl) .ev[data-hot]:not(.hot, .key, .climax, .death) .c { color: var(--muted2); }
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+  :root[data-palette="full"] :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot] { background: color-mix(in srgb, var(--hk) var(--hk-mix), var(--paper)); border-color: color-mix(in srgb, var(--hk) 40%, var(--paper)); border-left-color: var(--hk); }
+}
+/* 見出しの凡例：その結果に出る種類だけ。四角の見本（フルは色、ほかは線の種類） */
+h2.sec .hotleg { flex-wrap: wrap; gap: 4px 10px; }
+.hotleg .hkl { color: var(--muted); }
+.hotleg .hk { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; color: var(--ink); }
+.hotleg .hk i { display: inline-block; flex: none; width: 16px; height: 11px; box-sizing: border-box; border: 1px solid var(--ink); border-radius: 2px; background: none; }
+:root:not([data-palette="full"]) .hotleg .hk[data-hot="death"] i { border-width: 2px; }
+:root:not([data-palette="full"]) .hotleg .hk[data-hot="lewd"] i { border-style: dashed; }
+:root:not([data-palette="full"]) .hotleg .hk[data-hot="goal"] i { border: 3px double var(--ink); }
+:root:not([data-palette="full"]) .hotleg .hk[data-hot="trouble"] i { border: 2px dotted var(--ink); }
+:root[data-palette="full"] .hotleg .hk i { border-color: var(--hk); border-left-width: 3px; background: var(--bg1); }
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+  :root[data-palette="full"] .hotleg .hk i { background: color-mix(in srgb, var(--hk) var(--hk-leg), var(--paper)); }
+}
+@media (max-width: 760px) {
+  .stepblk { --hfx: 6px; }
+  :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot] { padding: 6px 8px; }
+}
+/* 印刷：背景色は出さず、グレーの線の種類だけ（インクを節約。どの色の量でも同じ） */
+@media print {
+  .stepblk { --hfx: 8px; }
+  :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot] { --hbl: 1px !important; background: none !important; border: 1px solid #A3A9B3 !important; }
+  :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="death"] { --hbl: 2px !important; border: 2px solid #6A7282 !important; }
+  :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="turn"] { border-color: #6A7282 !important; }
+  :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="lewd"] { border: 1px dashed #6A7282 !important; }
+  :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="goal"] { --hbl: 3px !important; border: 3px double #6A7282 !important; }
+  :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="trouble"] { --hbl: 2px !important; border: 2px dotted #6A7282 !important; }
+  .hotleg .hk i { background: none !important; border: 1px solid #6A7282 !important; }
+  .hotleg .hk[data-hot="death"] i { border-width: 2px !important; }
+  .hotleg .hk[data-hot="lewd"] i { border-style: dashed !important; }
+  .hotleg .hk[data-hot="goal"] i { border: 3px double #6A7282 !important; }
+  .hotleg .hk[data-hot="trouble"] i { border: 2px dotted #6A7282 !important; }
+}
 .name { font-weight: 700; }
 .empty { text-align: center; padding: 48px 16px; color: var(--muted); }
 .empty .t { font-family: var(--f-body); font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
@@ -802,7 +955,7 @@ details.zmap > summary:hover { background: var(--bg1); }
         <a class="chip-link" href="https://docs.google.com/document/d/1o6UgdEEMXhUEZeODa3pWeVgMBlIEBi-cyktbtUmSNe0/edit?tab=t.0" target="_blank" rel="noopener">更新履歴</a>
         <button type="button" class="chip-link" data-act="notice-open" aria-haspopup="dialog" aria-controls="notice">注意事項</button>
         <span class="navsep" aria-hidden="true"></span>
-        <div class="uiseg" role="group" aria-label="色の量"><button type="button" data-pal="mono" aria-pressed="false">藍のみ</button><button type="button" data-pal="chars" aria-pressed="false">キャラ色</button><button type="button" data-pal="full" aria-pressed="true">フル</button></div><button type="button" class="btn icon thmbtn" data-thmcycle title="白／グレー／黒：自動（端末に合わせる）。押すと 自動→白→グレー→黒 の順に切り替え" aria-label="白／グレー／黒の切り替え（いま：自動）"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75v12.5A6.25 6.25 0 0 0 8 1.75z" fill="currentColor"/></svg></button>
+        <div class="uiseg" role="group" aria-label="色の量"><button type="button" data-pal="mono" aria-pressed="false">藍のみ</button><button type="button" data-pal="chars" aria-pressed="false">キャラ色</button><button type="button" data-pal="full" aria-pressed="true">フル</button></div><button type="button" class="btn icon thmbtn" data-thmcycle title="白／グレー／黒：自動（端末に合わせる）。押すと 自動→白→グレー→黒 の順に切り替え" aria-label="白／グレー／黒の切り替え（いま：自動）"><svg class="tz" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path class="tz-w" d="M7.67 1.9A7 7 0 0 0 7.67 15.1z"/><path class="tz-g" d="M7.67 1.9A7 7 0 0 1 12.33 1.9V15.1A7 7 0 0 1 7.67 15.1z"/><path class="tz-k" d="M12.33 1.9A7 7 0 0 1 12.33 15.1z"/><path class="tz-o" d="M7.67 1.9V15.1M12.33 1.9V15.1"/><circle class="tz-o" cx="10" cy="8.5" r="7"/><rect class="tz-mk" data-k="light" x="3.3" y="17.2" width="4" height="2.4" rx=".7"/><rect class="tz-mk" data-k="gray" x="8" y="17.2" width="4" height="2.4" rx=".7"/><rect class="tz-mk" data-k="dark" x="12.7" y="17.2" width="4" height="2.4" rx=".7"/></svg></button>
       </nav>
     </div>
     <div class="row" id="topmeta"></div>
@@ -846,7 +999,7 @@ details.zmap > summary:hover { background: var(--bg1); }
 
 <script>window.HK_SAFE_BUILD = 1;</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"ca09599b43","api":1,"build":"zenrei","core":"js/c/core.998408c123.js",
+<script>window.HK_MANIFEST={"v":"e35c9a9f93","api":1,"build":"zenrei","core":"js/c/core.d3528b2b0c.js",
 "chunks":{
   "late":{"src":"js/c/late.8a86ea34e5.js","br":81251,"deps":[]},
   "pack-rel":{"src":"js/c/pack-rel.7350da939f.js","br":176618,"deps":[]},
@@ -861,7 +1014,7 @@ details.zmap > summary:hover { background: var(--bg1); }
   "scen-zombie":{"src":"js/c/scen-zombie.0caa9ad49a.js","br":134658,"deps":["pack-rel"]},
   "scen-rpg":{"src":"js/c/scen-rpg.c7006400cd.js","br":27140,"deps":["pack-story"]},
   "scen-saimin":{"src":"js/c/scen-saimin.31f30a91c5.js","br":36974,"deps":[]},
-  "scen-locker":{"src":"js/c/scen-locker.7d4fe87e5b.js","br":67941,"deps":[]},
+  "scen-locker":{"src":"js/c/scen-locker.9ffd4deadc.js","br":67943,"deps":[]},
   "scen-jashin":{"src":"js/c/scen-jashin.3d6c2189f3.js","br":231193,"deps":["pack-story"]},
   "scen-yakata":{"src":"js/c/scen-yakata.5b32153c78.js","br":82890,"deps":["pack-story"]},
   "scen-ship":{"src":"js/c/scen-ship.44c7319efd.js","br":105256,"deps":["pack-story"]},
@@ -922,7 +1075,7 @@ details.zmap > summary:hover { background: var(--bg1); }
   "rpg":{"id":"rpg","name":"ダンジョンRPG","kicker":"パーティ・冒険","desc":"パーティを組んでダンジョンへ。階ごとにランダムな戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、誰が宝箱に手を伸ばし、どこで引き返すのか。地下30階の主を倒せば踏破、引き返せば帰還、全員倒れれば全滅。","solo":true,"minCast":1,"maxCast":6,"unit":"階","castHint":"1〜6人のパーティで潜ります。職業は「おまかせ」ならエゴグラムから決まります。前に出るか、宝箱を開けるか、引き返すかは気質の数値で決まります。踏破できるのは一割ほど。多くは途中で引き返します。","env":[{"id":"floors","label":"目標の階層"},{"id":"danger","label":"魔物の強さ"},{"id":"loot","label":"お宝の多さ"},{"id":"retreat","label":"撤退"}],"stats":[{"id":"str","label":"腕っぷし"},{"id":"luck","label":"運"},{"id":"int","label":"知能"}],"perFields":[{"id":"job","label":"職業","auto":"おまかせ（エゴグラムから）","options":[{"id":"warrior","label":"戦士"},{"id":"mage","label":"魔法使い"},{"id":"priest","label":"僧侶"},{"id":"thief","label":"盗賊"},{"id":"hunter","label":"狩人"},{"id":"bard","label":"吟遊詩人"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"パーティでダンジョンに潜り、いくら持ち帰れるか。","descLong":"パーティを組んでダンジョンへ。階ごとに戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、どこで引き返し、いくら持ち帰れるか。"},"tags":["relSome","race","job","undead","death"],"chunks":["scen-rpg"]},
   "jinro":{"id":"jinro","name":"人狼","kicker":"ゲーム・推理","desc":"住人どうしで人狼ゲーム。配役は人狼・狩人・占い師・霊媒師・村人からランダム。人狼は性格で戦法（騙り・潜伏・仲間切り・庇い合い）を選び、村は仕切り役しだいで方針（ローラー・真贋の見極め・グレー吊り）が変わる。信頼と協力、そして裏切り。知能は性格とは別に決まる。","solo":true,"minCast":4,"maxCast":15,"unit":"日","castHint":"4〜15人。配役の数は環境値で決めます（人狼は全体の半分未満に自動で調整）。ゲームなので、襲う相手や投票先は既存の関係と関係なく、推理と立ち回りで決まります。","env":[{"id":"wolves","label":"人狼の数"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"lovemode","label":"好意モード"},{"id":"prize","label":"賞品"},{"id":"prizeText","label":"賞品（自由に書く）"}],"stats":[{"id":"int","label":"知能"},{"id":"poker","label":"ポーカーフェイス"}],"perFields":[{"id":"role","label":"配役","auto":"ランダム","options":[{"id":"wolf","label":"人狼"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"vill","label":"村人"}]}],"card":{"desc":"住人どうしの人狼ゲーム、騙りと推理と裏切り。","descLong":"住人どうしで人狼ゲーム。人狼は性格で騙りや潜伏を選び、村は仕切り役しだいで方針が変わる。信頼と協力、そして裏切り。"},"tags":["relSome","night","race","death"],"chunks":["scen-jinro"]}},
 "tones":{"auto":["aniki","proud","stern","tsun","gentle","devoted","cool","free","shy","polite"],"pack":{"mixed":"tone-mixed","noja":"tone-noja","kansai":"tone-kansai","mukuchi":"tone-mukuchi","gentleman":"tone-gentleman","ane":"tone-ane","calm":"tone-calm","chara":"tone-chara","darui":"tone-darui","devoted_p":"tone-devoted-p","genki":"tone-genki","gentle_n":"tone-gentle-n","gyaru":"tone-gyaru","hero":"tone-hero","kohai":"tone-kohai","mystic":"tone-mystic","ojou":"tone-ojou","tsun_n":"tone-tsun-n","usan":"tone-usan","yankee":"tone-yankee","sondai":"tone-sondai","cool_soft":"tone-cool-soft","boku_n":"tone-boku-n","god":"tone-god","darui_lite":"tone-darui-lite","keigo_sarc":"tone-keigo-sarc","keigo_bossy":"tone-keigo-bossy","keigo_flat":"tone-keigo-flat","keigo_twist":"tone-keigo-twist","mukuchi_ne":"tone-mukuchi-ne","otaku":"tone-otaku","ronkyaku":"tone-ronkyaku","chara_down":"tone-chara-down","flat_plain":"tone-flat-plain","tame":"tone-tame"}}};</script>
-<script src="js/c/core.998408c123.js"></script>
+<script src="js/c/core.d3528b2b0c.js"></script>
 <!-- scripts:end -->
 
 </body></html>

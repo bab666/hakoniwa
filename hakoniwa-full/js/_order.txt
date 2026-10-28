@@ -93,6 +93,9 @@ js/ero-moan-tone.js
 js/novel-moan-tone.js
 js/moan-dict.js
 js/moan-said.js
+js/moan-tease-r18.js
+js/moan-top-said.js
+js/moan-said-more.js
 js/moan-engine.js
 js/moan-mob.js
 js/thick-sex.js
@@ -394,6 +397,7 @@ js/ui-gear.js
 js/ui-adv.js
 js/ui-adv-moan.js
 js/ui-adv-moan-fit.js
+js/ui-gear-moan.js
 js/notice.js
 js/ui-fold.js
 js/ui-mobile.js

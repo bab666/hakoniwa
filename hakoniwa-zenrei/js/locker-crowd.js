@@ -679,7 +679,8 @@
       /* 敵対の二人（合意のない展開が入。hostOk）：強引な側は、苛立ちごとぶつけるように手を出しやすい（solo-locker.js の二人のときと同じ +0.35）。
          合意の上では手を出せない組（forceOnly）は、強引な側からだけ。愛憎を持つ側は、構ってほしくて手を出しやすい（+0.2）。2026-10-27 担当HL */
       var hp = hostOk(S, a, b), hT = hp && hostTop(S, a, b) === a, fo = hp && !consentOk(S, a, b);
-      if (hT) urge += 0.35;
+      /* 強引な側の上乗せは展開の重さ（mood-dial.js の assault：穏やか 0.35・重い 1.8。ふつうは 1 で乱数も引かない）に従う。2026-10-28 担当HX */
+      if (hT) urge += 0.35 * HK.Dark.f(S, 'assault');
       if (lhHas(S, a, b) && canAct(S, a, b)) urge += 0.2;
       /* 性欲の強さ（HK.Pos.libMul）：合意の場面の起こりやすさに掛ける（ふつうの二人なら 1 で、今までどおり） */
       var lm = fo ? 1 : libMul([a, b]);

@@ -405,21 +405,25 @@
   T.react = function (pick, b, again) { var ps = psOf(b), R = again ? T.REACT_AGAIN : T.REACT; return pick(R[ps] || R.gentle); };
   /* 口調ごとの喘ぎ（novel-moan-tone.js：最中・果てる）を、態度の喘ぎに足して使う。
      R（乱数か状態）を渡されたときは、喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調：♡なし・言葉多め）を通す。元の表も4割ほど残る */
+  /* 夜の性格（高度設定の夜の性格→声の基盤を含む）・喘ぎの口調があれば、態度の表をその態度で引く（moan-engine.js の HK.Moan.novelPs。なければ今までどおり） */
+  function nps(b) { return HK.Moan && HK.Moan.novelPs ? HK.Moan.novelPs(b, { top: (HK.NovelMoan && HK.NovelMoan.top) || null }) : ''; }
   T.moan = function (pick, b, climax, R) {
-    var ps = psOf(b), M = climax ? T.CMOAN : T.MOAN, l = M[ps] || M.gentle, own = HK.NovelMoan ? HK.NovelMoan.list(b, climax ? 2 : 1) : [];
+    var ps = nps(b) || psOf(b), M = climax ? T.CMOAN : T.MOAN, l = M[ps] || M.gentle, own = HK.NovelMoan ? HK.NovelMoan.list(b, climax ? 2 : 1) : [];
     var old = function () { return pick(own.length ? l.concat(own) : l); };
-    if (R && HK.Moan && HK.Moan.say) return HK.Moan.say(R, b, climax ? 'climax' : 'mid', { novel: true, top: (HK.NovelMoan && HK.NovelMoan.top) || null }, old);
+    /* own・base：口調の表と態度の表（高度設定の「口調ごとの喘ぎを混ぜる割合」を動かしたときの比率に使う） */
+    if (R && HK.Moan && HK.Moan.say) return HK.Moan.say(R, b, climax ? 'climax' : 'mid', { novel: true, top: (HK.NovelMoan && HK.NovelMoan.top) || null, own: own, base: l }, old);
     return old();
   };
 
   /* 前戯の段の受けの声（こらえる段階）。合意の場面なので、強く拒む声（やめ・ふざけ・離せ）は使わない。R があれば喘ぎの辞書（HK.Moan.say の始まり）を通す */
   var REF0 = /ふざけ|やめ|離せ|触んな|触るな|見るな|調子に/;
   T.moan0 = function (pick, b, R) {
-    var ps = psOf(b), own = HK.NovelMoan ? HK.NovelMoan.list(b, 0) : [], l = (T.MOAN[ps] || T.MOAN.gentle).concat(own);
+    var ps = nps(b) || psOf(b), own = HK.NovelMoan ? HK.NovelMoan.list(b, 0) : [], l = (T.MOAN[ps] || T.MOAN.gentle).concat(own);
     var ok = l.filter(function (x) { return !REF0.test(x); });
     var old = function () { return pick(ok.length ? ok : l); };
     if (R && HK.Moan && HK.Moan.say) {
-      for (var i = 0; i < 6; i++) { var t = HK.Moan.say(R, b, 'start', { novel: true, top: (HK.NovelMoan && HK.NovelMoan.top) || null }, old); if (!REF0.test(t)) return t; }
+      var nf = function (x) { return !REF0.test(x); }, oo = { novel: true, top: (HK.NovelMoan && HK.NovelMoan.top) || null, own: own.filter(nf), base: (T.MOAN[ps] || T.MOAN.gentle).filter(nf) };
+      for (var i = 0; i < 6; i++) { var t = HK.Moan.say(R, b, 'start', oo, old); if (!REF0.test(t)) return t; }
       return old();
     }
     return old();

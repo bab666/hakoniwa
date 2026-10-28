@@ -186,6 +186,8 @@
     c.tone = okTone(c.tone) ? c.tone || '' : '';
     /* 喘ぎの口調（R18版。moan-engine.js）：決めたときだけ持つ。空ならいつもの口調 */
     if (c.moanTone && typeof c.moanTone === 'string' && okTone(c.moanTone)) c.moanTone = String(c.moanTone); else delete c.moanTone;
+    /* 住人の喘ぎの辞書（受け・攻め）・声の区分・言葉責めと言い返しの多さ（R18版の ui-gear-moan.js。全年齢版では持たない） */
+    ['moanDict', 'moanDictT'].forEach(function (k) { if (typeof c[k] === 'string' && c[k].trim() && !HK.SAFE_BUILD) c[k] = c[k].slice(0, 4000); else delete c[k]; }); (function (f, o) { var g = {}, p = {}; if (f && typeof f === 'object' && !HK.SAFE_BUILD) { if (['firm', 'soft', 'grand', 'none', 'off'].indexOf(f.kind) >= 0) g.kind = f.kind; if (typeof f.masc === 'boolean') g.masc = f.masc; } if (o && typeof o === 'object' && !HK.SAFE_BUILD) ['tease', 'retort'].forEach(function (k) { if (['off', 'less', 'more'].indexOf(o[k]) >= 0) p[k] = o[k]; }); if (Object.keys(g).length) c.moanFit = g; else delete c.moanFit; if (Object.keys(p).length) c.moanOpt = p; else delete c.moanOpt; })(c.moanFit, c.moanOpt);
     c.fp = str(c.fp, 8).trim();
     c.color = typeof c.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(c.color) ? c.color : '';
     c.call = okCall(c.call) ? c.call || '' : '';
@@ -549,7 +551,7 @@
       '<span class="avset">' + '<button type="button" class="avbtn" data-act="iconpick" aria-label="' + esc(c.name) + 'のアイコンを' + (c.icon ? '変える' : '設定する') + '" title="アイコンを' + (c.icon ? '変える' : '設定する') + '">' + HK.Icons.html(c.name, i, 44) + (c.icon ? '' : '<i class="avplus" aria-hidden="true">＋</i>') + '</button>' +
       (c.icon ? '<button type="button" class="avdel" data-act="icondel" aria-label="' + esc(c.name) + 'のアイコンを外す" title="アイコンを外す">×</button>' : '') + '</span>' +
       '<div class="who"><input type="text" id="nm-' + c.id + '" data-f="name" value="' + esc(c.name) + '" aria-label="名前" maxlength="24">' +
-      '<div class="codeline"><input type="text" class="code" id="cd-' + c.id + '" data-f="code" value="' + HK.toCode(c.eg) + '" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="5文字コード（CP NP A FC AC）"><span class="ty">' + esc(HK.egoType(c.eg).label) + '</span>' + (HK.egoAttWord ? '<span class="egatt" title="態度（台詞の表の種類）。「設定」の「この住人の傾向」に説明があります">' + esc(HK.egoAttWord(c)) + '</span>' : '') + '</div></div>' +
+      '<div class="codeline"><input type="text" class="code" id="cd-' + c.id + '" data-f="code" value="' + HK.toCode(c.eg) + '" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="5文字コード（CP NP A FC AC）"><span class="ty" title="' + esc(HK.egoType(c.eg).label) + '">' + esc(HK.egoType(c.eg).label) + '</span>' + (HK.egoAttWord ? '<span class="egatt" title="態度（台詞の表の種類）。「設定」の「この住人の傾向」に説明があります">' + esc(HK.egoAttWord(c)) + '</span>' : '') + '</div></div>' +
       '<div class="ego">' + HK.FACTORS.map(function (k) {
         return '<label title="' + esc(HK.FACTOR_FULL[k]) + '">' + k + '<input type="number" id="eg-' + c.id + '-' + k + '" inputmode="decimal" min="0" max="20" step="1" data-f="eg" data-k="' + k + '" value="' + c.eg[k] + '"></label>';
       }).join('') + '</div>' +
@@ -806,7 +808,7 @@
         if (HK.Attr) HK.Attr.exportTo(o, c, ref);
         if (HK.Shared) HK.Shared.exportTo(o, c);
         if (c.toneCustom) o.toneCustom = c.toneCustom;
-        if (c.moanTone) o.moanTone = c.moanTone;
+        if (c.moanTone) o.moanTone = c.moanTone; ['moanDict', 'moanDictT', 'moanFit', 'moanOpt'].forEach(function (k) { if (c[k]) o[k] = JSON.parse(JSON.stringify(c[k])); });
         /* 固定した相手：一人なら番号（以前の形）、二人以上なら番号の並び */
         var lks = idList(c.loveLock).map(ref).filter(function (x) { return x != null; });
         if (lks.length) o.loveLock = lks.length === 1 ? lks[0] : lks;
@@ -893,7 +895,7 @@
       if (HK.Attr) HK.Attr.importFrom(c, o);
       if (HK.Shared) HK.Shared.importFrom(c, o);
       if (o.toneCustom != null) c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(String(o.toneCustom).slice(0, 120)) : '');
-      if (o.moanTone != null) c.moanTone = okTone(o.moanTone) ? String(o.moanTone || '') : '';
+      if (o.moanTone != null) c.moanTone = okTone(o.moanTone) ? String(o.moanTone || '') : ''; ['moanDict', 'moanDictT', 'moanFit', 'moanOpt'].forEach(function (k) { if (o[k] != null) c[k] = typeof o[k] === 'string' ? o[k].slice(0, 4000) : JSON.parse(JSON.stringify(o[k])); });
       c._lk = o.loveLock; c._sl = o.sexLock; c._slm = !!o.sexLockMob; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
       if (o.fp != null) c.fp = String(o.fp).trim().slice(0, 8);
       if (typeof o.icon === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(o.icon) && o.icon.length < 400000) c.icon = o.icon;
@@ -1280,7 +1282,7 @@
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
           var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' ? c.sexLock : c.sexLock === 'pick' || c.sexLock === 'pickMob' ? lockIdx(c.sexLocks) : '', sexLockMob: c.sexLock === 'pickMob' && idList(c.sexLocks).length > 0, loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
           /* 喘ぎの口調（R18版。全年齢モードでは渡さない） */
-          if (c.moanTone && !HK.SAFE_ON) o.moanTone = c.moanTone;
+          if (!HK.SAFE_ON) ['moanTone', 'moanDict', 'moanDictT', 'moanFit'].forEach(function (k) { if (c[k]) o[k] = c[k]; });
           return HK.Attr ? HK.Attr.toInput(o, c, ids) : o;
         });
       })(),
@@ -1379,7 +1381,7 @@
     catch (err) { toast('シミュレーション中にエラーが起きました：' + err.message); if (window.console) console.error(err); return null; }
     res.input = input;
     /* 版の印（saves.js の HK.VerMark）：セーブ・履歴に残し、開いたときに「保存時の版」として出す */
-    if (HK.VerMark && !res.ver) res.ver = HK.VerMark.now();
+    if (HK.VerMark && !res.ver) res.ver = HK.VerMark.now(); if (HK.Adv && HK.Adv.pin) HK.Adv.pin(res);   /* 動かしたときの高度設定（セーブ・履歴の adv。ui-adv.js） */
     result = res; showAll = false; opened = null;
     V.resetFilter();
     if (record) {
@@ -1423,7 +1425,7 @@
     (rec ? HK.History.put(rec) : Promise.resolve(false)).then(function (ok) {
       histPend = histPend.filter(function (x) { return x !== h; });
       if (hist.indexOf(h) < 0) return;
-      if (ok) { h.r = 1; h.r18 = rec.r18; histSave(); return; }
+      if (ok) { h.r = 1; h.r18 = rec.r18; if (rec.adv) h.ad = 1; histSave(); return; }   /* ad：結果に高度設定（adv）も残した印（一覧の「高度設定あり」） */
       delete h.r; delete h.r18; histSave();
       toast('ブラウザの保存領域が足りないため、この結果を「これまでの箱庭」に残せませんでした（一覧からは開けません）。残したいときは「この結果をセーブ」か「JSONで書き出す」を使ってください');
     });
@@ -1457,7 +1459,7 @@
       if (!result.input) result.input = it.input;
       if (!result.ver && (rec.ver || it.ver)) result.ver = rec.ver || it.ver;
       showAll = false; V.resetFilter();
-      histNote = HIST_MSG.kept; histCur = it; opened = { from: 'hist', at: it.t };
+      histNote = HIST_MSG.kept; histCur = it; opened = { from: 'hist', at: it.t, adv: rec.adv || null };   /* adv：記録の高度設定（開いた画面の要約と「高度設定を写す」。saves.js の HK.SavesAdv） */
       setTab('result');
     });
   }
@@ -1509,11 +1511,11 @@
     /* 結果のセーブ（saves.js） */
     if (result && HK.Saves && !host.querySelector('#savebtn')) { var sb = host.querySelector('#sharebar') || host.querySelector('.resulthead'); if (sb) sb.insertAdjacentHTML('afterend', HK.Saves.button()); }
     /* 履歴から開いたときの知らせと、履歴の一覧の説明 */
-    histDeco(host);
+    histDeco(host); if (HK.SavesAdv) HK.SavesAdv.deco(host, result, opened, hist);   /* 保存時の高度設定の要約・「条件を箱庭タブに写す」「高度設定を写す」 */
   }
   /* セーブデータから結果を開く・同じ条件で回し直す */
   /* 条件（住人・環境・シード）を箱庭タブに写す。自動では動かさない。住人は名前で探し、見つからない人がいれば参加者は変えない */
-  function copyCond(input) {
+  function copyCond(input, adv) {   /* adv：開いた記録の高度設定（写さない。今と違えば知らせに1行添える） */
     if (!input || !scenOf(input.scenId)) { toast('この箱庭は今の版にありません'); return; }
     var sid = input.scenId, ids = [], miss = [], gIds = {};
     (input.chars || []).forEach(function (c) { var m = S.chars.filter(function (x) { return x.name === c.name; })[0]; if (m) ids.push(m.id); else miss.push(c.name); });
@@ -1522,7 +1524,7 @@
     Object.keys(input.env || {}).forEach(function (k) { if (k !== 'ct') (gIds[k] ? S.glob : S.env[sid])[k] = input.env[k]; });
     if (!miss.length && ids.length) { S.join = S.join || {}; S.join[sid] = ids; }
     save(); setTab('box');
-    toast('条件とシードを箱庭タブに写しました（自動では動かしません）。' + (miss.length ? '住人「' + miss.slice(0, 3).join('・') + '」が見つからないので、参加者はそのままです。' : '') + '住人の設定や版が保存時と違うと、同じ結果にはなりません');
+    toast('条件とシードを箱庭タブに写しました（自動では動かしません）。' + (miss.length ? '住人「' + miss.slice(0, 3).join('・') + '」が見つからないので、参加者はそのままです。' : '') + '住人の設定や版が保存時と違うと、同じ結果にはなりません' + (adv && HK.SavesAdv && HK.SavesAdv.differs(adv) ? '。保存時の高度設定は「高度設定を写す」で戻せます' : ''));
   }
   /* セーブから結果を開く（保存した結果だけを表示する。回し直しはしない）・条件を写す */
   HK.UIres = {
@@ -1746,7 +1748,7 @@
   function refreshRow(row, c, fromCode) {
     var i = S.chars.indexOf(c);
     row.querySelector('.gwrap').innerHTML = egoGraph(c.eg, i);
-    row.querySelector('.ty').textContent = HK.egoType(c.eg).label;
+    var ty = row.querySelector('.ty'); ty.textContent = ty.title = HK.egoType(c.eg).label;
     var ea = row.querySelector('.egatt'); if (ea && HK.egoAttWord) ea.textContent = HK.egoAttWord(c);
     var tn = row.querySelector('select[data-f="tone"] option[value=""]');
     if (tn) tn.textContent = '口調：おまかせ（' + autoTone(c) + '）';

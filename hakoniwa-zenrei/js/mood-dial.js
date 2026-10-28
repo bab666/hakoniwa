@@ -6,7 +6,7 @@
      auto のときは展開の重さと同じ段になるので、既定のままなら前と同じ結果になる
    ・どちらに効くかは、出来事の側が渡す種類（kind）で決まる。死ネタ側の種類は DEATH の一覧
        死ネタ：kill 殺す・死ぬ　shinju 心中　madness 発狂　raid 襲撃　wipe 全滅　night 人狼の夜の襲撃　grudge 恨みの殺し
-       展開　：cage 監禁　harm 危害（死なない。命に関わるときは kill を渡す）　breakup 別れ　cheat 浮気　heartbreak 失恋　fall 堕ち　spite 恨み・仕返し（殺さない）
+       展開　：cage 監禁　harm 危害（死なない。命に関わるときは kill を渡す）　breakup 別れ　cheat 浮気　heartbreak 失恋　fall 堕ち　spite 恨み・仕返し（殺さない）　assault 襲われる・強引に抱かれる（合意のない展開。媚薬ロッカー・ゾンビの街）
    ・出来事の側は、確率や重みに HK.Dark.f(ctx, 'kill') を掛けるだけ（ふつうのときは 1 で、乱数も引かない。結果は前と同じ）
        f：悪いことが起きる確率・重みに掛ける倍率　live：生き延びる確率 p を「失敗する側 ×f」に直す　pace：執着などが積もる速さ
        skip：穏やかのとき、まれに重い展開を見送る（ふつう・重いでは乱数を引かずに false）　endings：結末を選ぶとき、悪い結末の重みに掛ける倍率
@@ -19,8 +19,8 @@
   var HK = window.HK;
   if (!HK) return;
   var MUL = {
-    mild: { kill: 0.35, shinju: 0.35, cage: 0.35, harm: 0.35, breakup: 0.35, cheat: 0.35, heartbreak: 0.35, madness: 0.35, fall: 0.5, raid: 0.35, wipe: 0.5, grudge: 0.35, spite: 0.35, night: 0.7 },
-    dark: { kill: 1.8, shinju: 1.8, cage: 1.8, harm: 1.8, breakup: 1.8, cheat: 1.8, heartbreak: 1.8, madness: 1.8, fall: 1.8, raid: 1.8, wipe: 1.8, grudge: 1.8, spite: 1.8 }
+    mild: { kill: 0.35, shinju: 0.35, cage: 0.35, harm: 0.35, breakup: 0.35, cheat: 0.35, heartbreak: 0.35, madness: 0.35, fall: 0.5, raid: 0.35, wipe: 0.5, grudge: 0.35, spite: 0.35, assault: 0.35, night: 0.7 },
+    dark: { kill: 1.8, shinju: 1.8, cage: 1.8, harm: 1.8, breakup: 1.8, cheat: 1.8, heartbreak: 1.8, madness: 1.8, fall: 1.8, raid: 1.8, wipe: 1.8, grudge: 1.8, spite: 1.8, assault: 1.8 }
   };
   /* 死ネタの重さに従う種類 */
   var DEATH = { kill: 1, shinju: 1, madness: 1, raid: 1, wipe: 1, night: 1, grudge: 1 };

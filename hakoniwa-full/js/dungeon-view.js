@@ -128,8 +128,10 @@
     return out.filter(function (b) { return b.items.length; }).map(function (b) {
       return '<div class="stepblk"><div class="when">' + esc(b.label.replace(/^地下(\d+)階・/, 'B$1 ')) + '</div><ol>' + b.items.map(function (e) {
         var cls = 'ev' + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (e.tag === '陥落' ? ' death' : '');
+        /* 重要な出来事の種類（view.js の HK.View.hotKindSolo。枠と、フルでは種類ごとの背景） */
+        var hk = HK.View && HK.View.hotKindSolo ? HK.View.hotKindSolo(e, res) : '';
         var avs = avsOf(res, e);
-        return '<li class="' + cls + (avs ? ' hasav' : '') + '">' + avs + '<div class="evb">' + (res.noGear ? '' : '<span class="rn">' + (e.room + 1) + '</span>') + '<span class="c">' + esc(e.tag || '') + '</span>' + paint(e.text, res) +
+        return '<li class="' + cls + (hk ? ' hot-' + hk : '') + (avs ? ' hasav' : '') + '"' + (hk ? ' data-hot="' + hk + '"' : '') + '>' + avs + '<div class="evb">' + (res.noGear ? '' : '<span class="rn">' + (e.room + 1) + '</span>') + '<span class="c">' + esc(e.tag || '') + '</span>' + paint(e.text, res) +
           ((e.why || e.key || e.kind === 'climax') ? '<span class="why">' + (e.why ? esc(e.why) : '') + (e.key || e.kind === 'climax' ? '<span class="nums">　理性' + e.v.r + '・堕ち' + e.v.c + '</span>' : '') + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
@@ -157,7 +159,7 @@
       '<div class="cards" style="margin-top:12px">' + heroCard(res, res.hero) +
       '<div class="ccard"><div class="hd"><span class="nm" style="font-size:16px">開発度</span><span class="nums">' + (res.hero.hardTop ? '攻めの挑戦者は罠や魔物に責められないので、開発度は伸びない' : '罠や魔物に責められた部位ほど伸び、次から感じやすくなる') + '</span></div>' + devBars(res.hero) + '</div></div>') +
       '<h2 class="sec">足りなかったもの・効いたもの</h2><ul class="dgadvice">' + res.advice.map(function (a) { return '<li>' + paint(a, res) + '</li>'; }).join('') + '</ul>' +
-      '<h2 class="sec" id="tlhead">探索の記録</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button>' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="dglewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + '</div><div class="tl" id="dgtl">' + timeline(res) + '</div>' +
+      '<h2 class="sec" id="tlhead">探索の記録' + (HK.View && HK.View.hotLegendSolo ? HK.View.hotLegendSolo(res) : '') + '</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button>' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="dglewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + '</div><div class="tl" id="dgtl">' + timeline(res) + '</div>' +
       (histHtml || '');
   };
   DV.toggleKey = function () {

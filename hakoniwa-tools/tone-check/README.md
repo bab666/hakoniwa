@@ -88,7 +88,7 @@ node orient-audit.js ../../hakoniwa-zenrei 40 '' --why
 
 ## moan-audit.js（喘ぎ声の点検）
 
-`node moan-audit.js ../../hakoniwa-full 8 r18 --why`（口調を1つずつ全員に固定し、男女・小説調／男性向け・ほどほど／濃いを回して、喘ぎ・山場の声の (a) 口調・性別に合わない語尾〈規則は lint.js の MOAN_RULES〉／(b) 同じ場面で同じ喘ぎ／(c) 口調の語尾つきが3割超え を数える。`safe`・全年齢版では (d) 喘ぎの混入。`--night=sadist,maso,mean,sweet,shy,match,none`・`--moantone=noja` で夜の性格・喘ぎの口調の効き、`--from=前の --json` で規則だけ当て直し、`--moanfit=設定.json` で高度設定「喘ぎ声の調整」〈HK.Moan.setFit の書式〉を当てて回す）
+`node moan-audit.js ../../hakoniwa-full 8 r18 --why`（口調を1つずつ全員に固定し、男女・小説調／男性向け・ほどほど／濃いを回して、喘ぎ・山場の声の (a) 口調・性別に合わない語尾〈規則は lint.js の MOAN_RULES〉／(b) 同じ場面で同じ喘ぎ／(c) 口調の語尾つきが3割超え を数える。`safe`・全年齢版では (d) 喘ぎの混入。`--night=sadist,maso,mean,sweet,shy,match,none`・`--moantone=noja` で夜の性格・喘ぎの口調の効き、`--from=前の --json` で規則だけ当て直し、`--moanfit=設定.json` で高度設定「喘ぎ声の調整」〈HK.Moan.setFit の書式〉を当てて回す。`--moandict=辞書.txt` で高度設定「喘ぎの辞書」、`--owndict=辞書.txt`・`--ownfit=soft` で全員の住人の欄「喘ぎの辞書・声の区分（この住人だけ）」を当てて回し、利用者の辞書の行が記録に出た数〈男性向け／小説調、小説調の鍵 [小説 …] の行〉を出す）
 
 ## setting-audit.js（性行為に関わる設定が場面に反映されているかの点検。2026-10-27）
 

@@ -70,6 +70,51 @@
   /* 情事（エロシーン）は R18 版で全年齢モードでないときだけ */
   function lewdHot(e) { return !HK.SAFE_ON && !!HK.lewdEvent && HK.lewdEvent(e); }
   function isHot(e, H) { return e.kind === 'death' || !!(e.mark && e.mark.length) || !!H.tp[e.n] || lewdHot(e); }
+  /* 重要な出来事の種類（担当HZ 2026-10-28。表示だけ）：死亡＞情事＞転機＞目標＞トラブル の順で一つに決める。li に hot-○○ と data-hot を付け、
+     index.html の時系列の節が細い枠（藍のみ・キャラ色は線の種類、フルは種類ごとの薄い背景と左の縁）を描く。.hot（赤の点・太字）は今までどおり 死亡・情事・転機 だけ */
+  var HOT_ORDER = ['death', 'lewd', 'turn', 'goal', 'trouble'];
+  var HOT_NAME = { death: '死亡', turn: '転機', goal: '目標', trouble: 'トラブル' };
+  var HOT_TIP = { death: '死亡・全滅・陥落', turn: '組の転機・関係の節目（付き合い始めた・別れた など）', goal: '条件達成・扉が開いた・脱出・勝利など、箱庭の目標', trouble: '襲撃・故障・危機などの大きなトラブル' };
+  /* r18:begin */
+  HOT_NAME.lewd = '情事'; HOT_TIP.lewd = '情事（R18 の場面）';
+  /* r18:end */
+  var HOT_GOAL = /脱出|抜け出|救(?:っ|い|出|助)|成功|勝利|撃破|討伐|踏破|生還|帰還|達成|優勝|解決|判明|手がかり|真相|回避/;
+  var HOT_DEATH = /^(?:死|全滅|弔い|処刑|殉|最期|陥落|発狂)/;
+  function hotKind(e, H) {
+    if (!e || e.kind === 'step' || e.kind === 'phase') return '';
+    if (e.kind === 'death') return 'death';
+    if (lewdHot(e)) return 'lewd';
+    if ((e.mark && e.mark.length) || H.tp[e.n]) return 'turn';
+    if (e.goal || e.goalExit || (e.cat === 'escape' && (e.mag || 0) >= 40)) return 'goal';
+    if (e.trouble || (e.cat === 'combat' && Math.abs(e.mag || 0) >= 25)) return 'trouble';
+    return '';
+  }
+  /* ひとり用の記録（dungeon-view.js の #dgtl・solo-story-kit.js の #sttl）：決め手（key）・山場（climax）・死・トラブルの印のある出来事だけ */
+  V.hotKindSolo = function (e, res) {
+    if (!e || e.kind === 'step' || e.kind === 'phase') return '';
+    var tag = String(e.tag || ''), dead = HOT_DEATH.test(tag);
+    if (!(e.key || e.kind === 'climax' || e.trouble || dead)) return '';
+    if (dead) return 'death';
+    if (lewdHot(e)) return 'lewd';
+    var why = '';
+    if (e.key && res && res.turns) res.turns.forEach(function (t) { if (t.n === e.n) why += t.why || ''; });
+    if (HOT_GOAL.test(tag + ' ' + why)) return 'goal';
+    if (e.trouble) return 'trouble';
+    return 'turn';
+  };
+  /* 時系列の見出しの凡例：その結果に出る種類だけ。フルは色の小さな四角、藍のみ・キャラ色は線の種類の見本（index.html の .hotleg .hk） */
+  function hotLegendOf(seen) {
+    var ks = HOT_ORDER.filter(function (k) { return seen[k] && HOT_NAME[k]; });
+    if (!ks.length) return '';
+    return '<span class="hotleg" role="note" aria-label="重要な出来事の見分け方"><span class="hkl">重要</span>' + ks.map(function (k) {
+      return '<span class="hk" data-hot="' + k + '" title="' + esc(HOT_TIP[k]) + '"><i aria-hidden="true"></i>' + esc(HOT_NAME[k]) + '</span>';
+    }).join('') + '</span>';
+  }
+  V.hotLegendSolo = function (res) {
+    var seen = {};
+    (res && res.log || []).forEach(function (e) { var k = V.hotKindSolo(e, res); if (k) seen[k] = 1; });
+    return hotLegendOf(seen);
+  };
 
   /* ---------- 関係図 ---------- */
   /* 文字幅の目安（全角=1、半角=0.55） */
@@ -122,7 +167,10 @@
     });
     return best;
   }
+  /* 関係図の時点（最終／開始時／転機。view-map.js の HK.MapView.atRes）：その時点の結果。最終・時点の記録がない結果はそのまま */
+  function atOf(res) { return HK.MapView && HK.MapView.atRes ? HK.MapView.atRes(res) : res; }
   function mapSvg(res) {
+    res = atOf(res);
     /* 派閥の囲み・線の絞り込み・間引き（view-map.js）。なければ従来どおり楕円に並べる */
     var MV = HK.MapView;
     /* 絞り込み（全員／派閥ごと／個人ごと）：絞った人だけの結果 R で描き、丸の番号・色は元の番号（orig）に戻す */
@@ -246,6 +294,7 @@
   }
   /* 関係図の凡例：この結果にある線の種類だけ（線の形は図と同じ）と、丸の輪の意味 */
   function mapLegend(res) {
+    res = atOf(res);
     var has = {};
     res.pairs.forEach(function (p) { if (p.label !== 'strangers') has[p.cls === 'obsess' ? 'love' : p.cls] = 1; });
     var items = LEG.filter(function (x) { return has[x[0]]; }).map(function (x) {
@@ -262,7 +311,7 @@
   }
 
   /* view-map.js が使う部品 */
-  V._map = { tw: tw, overlap: overlap, pc: pc, fateCls: fateCls, av: av };
+  V._map = { tw: tw, overlap: overlap, pc: pc, fateCls: fateCls, av: av, hot: hotInfo, turnOf: turnOf, tno: tno, legend: mapLegend };
 
   /* ---------- ペアの推移グラフ ---------- */
   function spark(p, res) {
@@ -401,8 +450,8 @@
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
     function evLi(e) {
-      var hot = isHot(e, H);
-      var cls = 'ev' + (e.kind === 'event' && e.cat ? ' cat-' + e.cat : '') + (e.trouble ? ' trouble' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (hot ? ' hot' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '');
+      var hot = isHot(e, H), hk = hotKind(e, H);
+      var cls = 'ev' + (e.kind === 'event' && e.cat ? ' cat-' + e.cat : '') + (e.trouble ? ' trouble' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (hot ? ' hot' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '') + (hk ? ' hot-' + hk : '');
       var chip = e.kind === 'event' ? '<span class="c cc-' + esc(e.cat) + '">' + esc(HK.CAT_NAME[e.cat] || e.cat) + '</span>' : '';
       /* 出られない部屋：条件を満たした・扉が開いた出来事の札 */
       if (e.goal || e.goalExit) chip = (e.goal || []).map(function (g) { return '<span class="goalb">条件達成：' + esc(g) + '</span>'; }).join('') + (e.goalExit ? '<span class="goalb exitb">扉が開いた</span>' : '') + chip;
@@ -416,7 +465,7 @@
       var talk = !!(avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)));
       var body = paint(e.text, res, sg);
       if (talk) body = body.replace(/「[^「」]*」/g, '<span class="q">$&</span>');
-      return '<li class="' + cls + (avs ? ' hasav' : '') + (talk ? ' talk' : '') + '">' + avs + '<div class="evb">' + chip + body + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+      return '<li class="' + cls + (avs ? ' hasav' : '') + (talk ? ' talk' : '') + '"' + (hk ? ' data-hot="' + hk + '"' : '') + '>' + avs + '<div class="evb">' + chip + body + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
     }
   }
   function tlBar(res) {
@@ -436,8 +485,12 @@
       '<span class="tlsep" aria-hidden="true"></span>' + who + (tl.who.length ? '<button class="btn small ghost" data-act="whoclear">絞り込みを解除</button>' : '') + '</div>';
   }
 
-  /* 見出しの横の凡例：この結果に情事（エロシーン）があるときだけ「情事」を入れる */
-  function hotLegend(res) { return '転機・' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '情事・' : '') + '死亡'; }
+  /* 見出しの横の凡例：この結果に出る重要な出来事の種類だけ（情事は R18 版で全年齢モードでないときだけ） */
+  function hotLegend(res) {
+    var H = hotInfo(res), seen = {};
+    res.log.forEach(function (e) { var k = hotKind(e, H); if (k) seen[k] = 1; });
+    return hotLegendOf(seen);
+  }
 
   /* ---------- 全体 ---------- */
   V.resetFilter = function () { tl = { who: [], keyOnly: false, cat: 'all', lewd: false }; };
@@ -468,14 +521,14 @@
       endingBlock(res) +
       '<div class="uses" style="margin-top:12px">' + envChips + '</div>' +
       (HK.MapView ? HK.MapView.classChart(res) : '') +
-      '<h2 class="sec">関係図</h2><figure class="trayfig">' + (function () { var sv = mapSvg(res); return (HK.MapView ? '<div id="mapbar">' + HK.MapView.bar(res) + '</div>' : '') + '<div class="tray" id="map">' + sv + '</div>'; })() + '<figcaption><div class="maplegs">' + mapLegend(res) + '</div><div class="mapcap"><span>住人の丸を押すと、その人の経過に絞り込めます。＊は意外な組み合わせ。矢印は気持ちや行為の向き。</span><span>砂箱 57×72×7cm</span></div></figcaption></figure>' +
+      '<h2 class="sec mapsec">関係図' + (HK.MapView && HK.MapView.atBar ? HK.MapView.atBar(res) : '') + '</h2><figure class="trayfig">' + (function () { var sv = mapSvg(res); return (HK.MapView ? '<div id="mapbar">' + HK.MapView.bar(res) + '</div>' : '') + '<div class="tray" id="map">' + sv + '</div>'; })() + '<figcaption><div class="maplegs">' + mapLegend(res) + '</div><div class="mapcap"><span>住人の丸を押すと、その人の経過に絞り込めます。＊は意外な組み合わせ。矢印は気持ちや行為の向き。</span><span>砂箱 57×72×7cm</span></div></figcaption></figure>' +
       factionBlock(res) +
       (sur.length ? '<h2 class="sec">意外な組み合わせ</h2><p class="hint">エゴグラム上の相性予想と、箱庭での結末が食い違ったペアです。解釈の掘りどころ。</p><div class="cards">' + sur.map(function (p) { return pairCard(p, res); }).join('') + '</div>' : '') +
       '<h2 class="sec">関係の結末</h2><div class="cards">' + rest.slice(0, limit).map(function (p) { return pairCard(p, res); }).join('') + '</div>' +
       (rest.length > limit ? '<div class="more"><button class="btn" data-act="showall">残り' + (rest.length - limit) + '組を表示</button></div>' : '') +
       (strangers ? '<p class="hint" style="margin-top:8px">ほかに「他人のまま」の組が' + strangers + '組あります。住人の丸を押すと、その人の関係だけを図で追えます。</p>' : '') +
       '<h2 class="sec">住人ごとの読み解き</h2><div class="cards">' + res.chars.map(function (c) { return charCard(c, res); }).join('') + '</div>' +
-      '<h2 class="sec" id="tlhead">時系列<span class="hotleg"><i class="hotdot" aria-hidden="true"></i>' + hotLegend(res) + '</span></h2>' + (scen.longRun && scen.longRun(res.env) ? '<p class="hint">長期間のため、最初は重要な出来事だけの短縮版で表示しています。「すべて」を押すと全部見られます。</p>' : '') + '<div id="tlbar">' + tlBar(res) + '</div><div class="tl" id="tl">' + timeline(res) + '</div>' +
+      '<h2 class="sec" id="tlhead">時系列' + hotLegend(res) + '</h2>' + (scen.longRun && scen.longRun(res.env) ? '<p class="hint">長期間のため、最初は重要な出来事だけの短縮版で表示しています。「すべて」を押すと全部見られます。</p>' : '') + '<div id="tlbar">' + tlBar(res) + '</div><div class="tl" id="tl">' + timeline(res) + '</div>' +
       historyBlock(lastOpts.history || []);
     host.innerHTML = html;
   };
@@ -519,8 +572,14 @@
   }
 
   /* ---------- 派閥 ---------- */
+  /* 派閥の印（関係図の囲み・クラスの表と同じ番号の形。view-map.js の HK.MapView.fmark）。図に無い派閥（過去の派閥）は印なし */
+  function facMark(res, leader) {
+    var MV = HK.MapView, k = MV && MV.fidx ? MV.fidx(res, leader) : -1;
+    return k < 0 ? null : { k: k, mark: MV.fmark(k), cls: MV.fcls(k), col: MV.fcol(k) };
+  }
   function groupChips(g, res, regime) {
-    return '<span class="fgroup' + (regime === 'dictator' ? ' dict' : '') + '"><b>' + av(res, g.leader, 20) + esc(res.chars[g.leader].name) + '派</b>' +
+    var fm = facMark(res, g.leader);
+    return '<span class="fgroup' + (regime === 'dictator' ? ' dict' : '') + (fm ? ' fg ' + fm.cls : '') + '"' + (fm ? ' style="--fc:' + fm.col + '"' : '') + '><b>' + (fm ? fm.mark : '') + av(res, g.leader, 20) + esc(res.chars[g.leader].name) + '派</b>' +
       g.members.filter(function (m) { return m !== g.leader; }).map(function (m) { return '<span>' + av(res, m, 20) + esc(res.chars[m].name) + '</span>'; }).join('') + '</span>';
   }
   function factionBlock(res) {
@@ -538,7 +597,7 @@
       (last.loners.length ? '<span class="fgroup lone"><b>無所属</b>' + last.loners.map(function (m) { return '<span>' + av(res, m, 20) + esc(res.chars[m].name) + '</span>'; }).join('') + '</span>' : '') + '</div>' : '';
     var rows = h.map(function (x) {
       return '<li><span class="st">' + esc(x.label) + '</span><span class="rg">' + esc(R[x.regime]) + '</span>' +
-        (x.groups.length ? x.groups.map(function (g) { return esc(res.chars[g.leader].name) + '派（' + g.members.length + '）'; }).join('　') + (x.loners.length ? '　無所属' + x.loners.length : '') : '') + '</li>';
+        (x.groups.length ? x.groups.map(function (g) { var fm = facMark(res, g.leader); return (fm ? fm.mark : '') + esc(res.chars[g.leader].name) + '派（' + g.members.length + '）'; }).join('　') + (x.loners.length ? '　無所属' + x.loners.length : '') : '') + '</li>';
     }).join('');
     /* 派閥の決め方・リーダーの決め方（factions.js の facMode・facLead。選んでいない結果は今までどおり） */
     var fm = (res.env || {}).facMode, fl = (res.env || {}).facLead;

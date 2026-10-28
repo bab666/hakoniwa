@@ -8,7 +8,7 @@
    ・IndexedDB が使えない環境は localStorage の history:res（{ id: 記録 }）に置く。容量が限られる（住人の保存と分け合う）ので、新しいものから RES_LS 件・合わせて LS_BUDGET 文字まで。
      はみ出した履歴は結果が無くなるので開けない（一覧に「結果なし」と出す）
    ・結果の大きさの目安（住人10人）：合コン 130KB・ゾンビの街 320KB・オメガバース 450KB、一人用は 10〜30KB。IndexedDB では一覧の上限（12件。ui.js の HIST_MAX）まで置く
-   ・記録の形：{ id, at, r18, v: 1, result }。r18 は R18モードで動かした結果か（全年齢モード・全年齢版では表示しない。全年齢版の移行・読み込みでも写さない）
+   ・記録の形：{ id, at, r18, v: 1, ver, adv（動かしたときの高度設定。2026-10-28 から。空なら無し）, result }。r18 は R18モードで動かした結果か（全年齢モード・全年齢版では表示しない。全年齢版の移行・読み込みでも写さない）
    ・全年齢版の初回の移行：safe.js の印の hdb が 'wait' のあいだに、R18版の置き場（hakoniwa-history）から r18 でない記録を一度だけ写す */
 (function () {
   'use strict';
@@ -95,7 +95,11 @@
     /* ver：動かしたときの版の印（saves.js の HK.VerMark。ui.js の simulate が res.ver に入れる） */
     var data = JSON.parse(JSON.stringify(res));
     if (!data.ver && HK.VerMark) data.ver = HK.VerMark.now();
-    return { id: id, at: Date.now(), v: 1, r18: !HK.SAFE_ON, ver: data.ver || null, result: data };
+    var rec = { id: id, at: Date.now(), v: 1, r18: !HK.SAFE_ON, ver: data.ver || null, result: data };
+    /* adv：動かしたときの高度設定（ui-adv.js の HK.Adv.of。空でない欄だけ。無ければ持たない。2026-10-28 より前の記録には無い） */
+    var adv = HK.Adv && HK.Adv.of ? HK.Adv.of(res) : null;
+    if (adv) rec.adv = JSON.parse(JSON.stringify(adv));
+    return rec;
   }
   /* 置く（新しく足すだけ。同じ id の結果がすでにあれば書き換えずに残す＝保存した結果は保存後に書き換えない。2026-10-28 の決まり）。
      入りきらなければ false（呼ぶ側が「残せなかった」と知らせる） */

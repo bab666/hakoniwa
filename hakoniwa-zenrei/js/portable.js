@@ -483,8 +483,8 @@
     if (arr) {
       /* セーブの JSON（saves.js の書き出し）：saves.js の読み込みと同じ形に整える */
       var sv = safeSaves(arr.filter(isSaveRec).map(function (x) {
-        return { id: x.id || sid(), at: x.at || Date.now(), v: 1, app: 'hakoniwa', name: x.name || '', scenId: x.scenId || (x.result.input || {}).scenId, scenName: x.scenName || '', names: x.names || '', seed: x.seed, title: x.title || '', memo: x.memo || '', r18: x.r18 !== false, ver: x.ver || (x.result && x.result.ver) || null, savedVer: x.savedVer || null, result: x.result };
-      }));
+        return { id: x.id || sid(), at: x.at || Date.now(), v: 1, app: 'hakoniwa', name: x.name || '', scenId: x.scenId || (x.result.input || {}).scenId, scenName: x.scenName || '', names: x.names || '', seed: x.seed, title: x.title || '', memo: x.memo || '', r18: x.r18 !== false, ver: x.ver || (x.result && x.result.ver) || null, savedVer: x.savedVer || null, result: x.result, adv: HK.SavesAdv ? HK.SavesAdv.advOf(x.adv) : null };
+      }).map(function (x) { if (!x.adv) delete x.adv; return x; }));   /* adv：記録の高度設定（あればそのまま運ぶ） */
       ctx.drop += arr.filter(isSaveRec).length - sv.length;
       sv.forEach(function (x) { if (ctx.sid[x.id]) return; ctx.sid[x.id] = 1; ctx.saves.push(x); });
       ctx.files++; return;

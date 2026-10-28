@@ -46,7 +46,7 @@
       '.res .memo input.tags{flex:0 1 150px}.cptags .chip{cursor:pointer}' +
       '.cpfind{width:9em;max-width:100%;font-size:12px}.cpfind.bad{border-color:var(--warn)}' +
       '.cpfilt{display:block;width:100%;max-width:20em;margin:0 0 6px;font-size:13px}' +
-      '#tiepages,#tiebody{min-width:0;max-width:100%}#tiepages select{max-width:100%}#tiepages .cptools{margin-top:0}#castlist .res-ph{height:220px;border:1px dashed var(--line);border-radius:var(--r);background:var(--surface)}@media (max-width:600px){#castlist .res-ph{height:370px}}';
+      '#tiepages,#tiebody{min-width:0;max-width:100%}#tiepages select{max-width:100%}#tiepages .cptools{margin-top:0}#castlist .res-ph{height:160px;border:1px dashed var(--line);border-radius:var(--r);background:var(--surface)}@media (max-width:600px){#castlist .res-ph{height:340px}}';
     var s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
   })();
 

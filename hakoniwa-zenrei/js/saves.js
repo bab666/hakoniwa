@@ -150,12 +150,23 @@
     var opened = HK.UIres && HK.UIres.opened && (HK.UIres.shown ? HK.UIres.shown() : HK.UIres.get()) === res ? HK.UIres.opened() : null;
     var ver = data.ver || (opened ? null : VM.now());
     if (ver) data.ver = ver;
-    return {
+    /* 高度設定（adv）：動かしたときの写し（ui-adv.js の HK.Adv.of）。セーブ・履歴から開いた結果を今セーブするときは、その記録の adv を引き継ぐ（今の設定にはしない） */
+    var adv = advOf(opened ? opened.adv : HK.Adv && HK.Adv.of ? HK.Adv.of(res) : null);
+    var rec = {
       id: uid(), at: Date.now(), v: 1, app: 'hakoniwa',
       name: '', scenId: input.scenId, scenName: sc.name || input.scenId || '',
       names: (input.chars || []).map(function (c) { return c.name; }).join('・'),
       seed: input.seed != null ? input.seed : data.seed, title: titleOf(res), memo: '', r18: !HK.SAFE_ON, ver: ver || null, savedVer: VM.now(), result: data
     };
+    if (adv) rec.adv = adv;
+    return rec;
+  }
+  /* 記録に入れる高度設定の形：文字列の欄だけ（空・やめた欄は落とす）。何も無ければ null（記録に adv を持たせない） */
+  function advOf(o) {
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+    var m = {}, any = false, RT = HK.Adv && HK.Adv.RETIRED || {};
+    Object.keys(o).forEach(function (k) { if (typeof o[k] === 'string' && o[k] && !RT[k]) { m[k] = o[k].slice(0, 20000); any = true; } });
+    return any ? m : null;
   }
   function save(res) {
     if (!res) { toast('セーブする結果がありません'); return; }
@@ -205,6 +216,7 @@
     ok = ok.filter(function (r) { if (r.id && have.indexOf(r.id) >= 0) { skip++; return false; } return true; });
     Promise.all(ok.map(function (r) {
       var rec = { id: r.id || uid(), at: r.at || Date.now(), v: 1, app: 'hakoniwa', name: r.name || '', scenId: r.scenId || (r.result.input || {}).scenId, scenName: r.scenName || '', names: r.names || '', seed: r.seed, title: r.title || titleOf(r.result), memo: r.memo || '', r18: r.r18 !== false, ver: r.ver || (r.result && r.result.ver) || null, savedVer: r.savedVer || null, result: r.result };
+      var adv = advOf(r.adv); if (adv) rec.adv = adv;   /* ファイルの記録が持つ高度設定はそのまま運ぶ */
       return addNew(rec);
     })).then(function (rs) { var n = rs.filter(Boolean).length; cache = null; toast(n + '件のセーブデータを読み込みました' + (skip ? '（同じセーブ' + skip + '件は今あるものを残して省略）' : '')); render(); });
     });
@@ -243,6 +255,7 @@
       '<p class="savetitle">' + esc(r.title) + '</p>' +
       '<p class="savecast">' + esc(r.names) + (seedOf(r) != null ? '　<span class="saveseed">シード ' + esc(seedOf(r)) + '</span>' : '') + '</p>' +
       '<p class="savever hint small" style="margin:2px 0 0">保存時の版：' + esc(VM.label(r.ver || res.ver, r.at)) + '</p>' +
+      (advLabel(r.adv) ? '<p class="saveadv hint small" style="margin:2px 0 0">高度設定：' + esc(advLabel(r.adv)) + '</p>' : '') +
       (okr ? '' : '<p class="savelost hint small" style="margin:2px 0 0;color:var(--hot,#B4232A)">結果が残っていないため開けません（保存時の版でのみ再現できます）</p>') + '</div>' +
       '<div class="saveact">' +
       (okr ? '<button class="btn small" data-sv="open">開く</button>' : '') +
@@ -263,13 +276,21 @@
     var k = t.dataset.sv, li = t.closest('.saveitem'), r = li ? rec(li.dataset.id) : null;
     if (k === 'importfile') { var f = document.getElementById('savefile'); if (f) { f.value = ''; f.click(); } return; }
     if (k === 'exportall') { all().then(function (l) { exportRecs(HK.SAFE_ON ? l.filter(function (r) { return !r.r18; }) : l, 'hakoniwa-saves'); }); return; }
+    /* 開いた画面（セーブ・履歴から開いた結果）の「条件を箱庭タブに写す」「高度設定を写す」。記録そのものは変えない */
+    if (k === 'ocond' || k === 'oadv') {
+      var oo = HK.UIres && HK.UIres.opened && HK.UIres.opened(), cr = HK.UIres && HK.UIres.get();
+      if (!oo || !cr) return;
+      if (k === 'ocond') { if (cr.input && HK.UIres.copyCond) HK.UIres.copyCond(cr.input, oo.adv); }
+      else advCopy(oo.adv);
+      return;
+    }
     if (!r) return;
     /* 開く：保存した結果だけを表示する（回し直さない）。結果の無いセーブは開かない */
     if (k === 'open') {
       if (!hasRes(r.result)) { toast('このセーブは結果が残っていないため開けません（保存時の版でのみ再現できます）'); return; }
       var shown = JSON.parse(JSON.stringify(r.result));
       if (!shown.ver && r.ver) shown.ver = r.ver;
-      if (HK.UIres) HK.UIres.show(shown, { from: 'save', at: r.at });
+      if (HK.UIres) HK.UIres.show(shown, { from: 'save', at: r.at, adv: advOf(r.adv) });
       return;
     }
     if (k === 'copycond') { if (HK.UIres && HK.UIres.copyCond && r.result && r.result.input) HK.UIres.copyCond(r.result.input); return; }
@@ -299,6 +320,73 @@
   var IC_SAVE = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2.5h7.5L12 5v6.5H2z M4.5 2.5v3h4v-3 M4 11.5V8h6v3.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
   var IC_DONE = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function button() { return '<div class="row savebar"><button class="btn" id="savebtn" data-act="saveres">' + IC_SAVE + 'この結果をセーブ</button><button class="btn ghost small" data-act="saveresjson" title="ブラウザに保存せず、この結果をそのままJSONファイルに書き出す">JSONで書き出す</button><button class="btn ghost small" data-tab="saves">セーブデータを見る</button></div>'; }
+
+  /* ---------- 保存時の高度設定（2026-10-28）：記録の adv の要約・今の設定との比べ・写す・開いた画面の飾り ----------
+     記録（セーブの rec.adv・履歴の rec.adv）は読むだけ。写すのは今の高度設定（HK.Adv.set。欄とエンジンに当たる）で、記録は変えない。
+     この画面に節がある欄だけを見る（全年齢版・全年齢モードでは R18 の欄を写さない・数えない） */
+  function advSecs() { var A = HK.Adv; return A && A.secs ? A.secs.filter(function (s) { return !(A.RETIRED && A.RETIRED[s.id]); }) : []; }
+  function advName(s) { return String(s.title || s.id).replace(/（[^（）]*）\s*$/, ''); }
+  /* 要約：「喘ぎの辞書 12行・喘ぎ声の調整あり」の形（文字の欄は空でない行の数、選択欄の節は「あり」）。何も無ければ '' */
+  function advLabel(adv) {
+    adv = advOf(adv);
+    if (!adv) return '';
+    var secs = advSecs(), known = {}, txt = [], ui = [], other = 0;
+    secs.forEach(function (s) {
+      known[s.id] = 1;
+      var v = adv[s.id];
+      if (!v) return;
+      if (s.html) { ui.push(advName(s) + 'あり'); return; }
+      var n = v.split(/\r?\n/).filter(function (l) { return l.trim(); }).length;
+      txt.push(advName(s) + (n ? ' ' + n + '行' : 'あり'));
+    });
+    Object.keys(adv).forEach(function (k) { if (!known[k]) other++; });
+    /* この画面に節の無い欄（ほかの版・ほかのモードの欄）は、全年齢モード・全年齢版では数えない */
+    if (other && !HK.SAFE_ON) ui.push('ほか' + other + '件');
+    return txt.concat(ui).join('・');
+  }
+  /* 写す対象（この画面に節がある欄）：{ id: 文字列 } */
+  function advWant(adv) { var a = advOf(adv) || {}, m = {}; advSecs().forEach(function (s) { if (a[s.id]) m[s.id] = a[s.id]; }); return m; }
+  function advSame(want) { var A = HK.Adv; return advSecs().every(function (s) { return (A.get(s.id) || '') === (want[s.id] || ''); }); }
+  /* 記録の高度設定が今のものと違うか（「条件を箱庭タブに写す」の知らせに1行添えるか） */
+  function advDiffers(adv) { var w = advWant(adv); return !!(HK.Adv && Object.keys(w).length && !advSame(w)); }
+  function advCopy(adv) {
+    var A = HK.Adv, want = advWant(adv), ids = Object.keys(want);
+    if (!A || !ids.length) { toast('この記録には、今の版で写せる高度設定がありません'); return; }
+    if (advSame(want)) { toast('今の高度設定は、この記録の保存時と同じです'); return; }
+    var cur = A.snap ? A.snap() : null, curAny = cur && advSecs().some(function (s) { return cur[s.id]; });
+    if (curAny && !window.confirm('今の高度設定を、この記録の保存時のものに置き換えます。よろしいですか？')) return;
+    advSecs().forEach(function (s) {
+      var v = want[s.id] || '';
+      if ((A.get(s.id) || '') === v) return;
+      A.set(s.id, v);
+      /* 箱庭タブの欄が描いてあれば、文字の欄はその場で合わせる（選択欄の節は、箱庭タブを開くと描き直される） */
+      var ta = document.querySelector('textarea[data-f="adv"][data-k="' + s.id.replace(/["\\]/g, '') + '"]');
+      if (ta) ta.value = v;
+    });
+    var names = advSecs().filter(function (s) { return want[s.id]; }).map(advName);
+    toast('高度設定を写しました（' + names.join('・') + '）。次に箱庭を動かしたときから効きます');
+  }
+  /* 結果の画面の飾り（ui.js の renderResult から）：セーブ・履歴から開いた結果なら、保存時の版のとなりに高度設定の要約と、
+     「条件を箱庭タブに写す」「高度設定を写す」を出す（高度設定の無い記録は要約もボタンも出さない）。履歴の一覧には「高度設定あり」の印 */
+  function advDeco(host, res, opened, hist) {
+    if (!host) return;
+    if (res && opened && !host.querySelector('#advbar')) {
+      var lab = advLabel(opened.adv), canCond = !!(res.input && Array.isArray(res.input.chars) && HK.UIres && HK.UIres.copyCond);
+      var html = (lab ? '<p class="hint small" id="advnote" style="margin:2px 0 0">高度設定：' + esc(lab) + '</p>' : '') +
+        '<div class="row openbar" id="advbar" style="margin-top:6px;gap:6px;flex-wrap:wrap">' +
+        (canCond ? '<button type="button" class="btn small ghost" data-sv="ocond" title="住人・環境・シードを箱庭タブに写す（自動では動かしません。高度設定は写しません）">条件を箱庭タブに写す</button>' : '') +
+        (lab ? '<button type="button" class="btn small ghost" data-sv="oadv" title="今の高度設定を、この記録の保存時のものに置き換える（記録は変えません）">高度設定を写す</button>' : '') + '</div>';
+      if (!canCond && !lab) html = '';
+      var anchor = host.querySelector('#vernote') || host.querySelector('#histnote') || host.querySelector('.resulthead');
+      if (html) { if (anchor) anchor.insertAdjacentHTML('afterend', html); else host.insertAdjacentHTML('afterbegin', html); }
+    }
+    var box = host.querySelector('.hist');
+    if (box && Array.isArray(hist)) Array.prototype.forEach.call(box.querySelectorAll('[data-act="hist"]'), function (b) {
+      var it = hist[+b.dataset.k];
+      if (it && it.ad && it.r && !b.querySelector('.advmark')) b.insertAdjacentHTML('beforeend', '<span class="nums advmark">高度設定あり</span>');
+    });
+  }
+  HK.SavesAdv = { advOf: advOf, label: advLabel, differs: advDiffers, copy: advCopy, deco: advDeco };
 
   /* put は「新しく足す」だけ（同じ id があれば残す）。portable.js・save-folder.js もこれを使う */
   HK.Saves = { render: render, button: button, save: save, all: all, importText: importText, put: addNew, rename: rename, clear: clear, hasRes: hasRes, DB: DB, STORE: ST, LS: LS };

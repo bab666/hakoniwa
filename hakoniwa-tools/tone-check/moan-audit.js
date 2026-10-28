@@ -19,7 +19,10 @@
    効き：--night=… で夜の性格ごとに、HK.Moan に夜の性格が届いたか・基盤の態度（サド＝強気／マゾ＝健気／意地悪＝奔放／甘々＝穏やか／恥じらい＝恥じらい）・鍵の割合を、
          --moantone=口調 で、喘ぎの口調で作った声の割合を出す（moan-engine.js の HK.Moan.nightOf・toneOf）
    調整：--moanfit=設定.json で、高度設定「喘ぎ声の調整」（HK.Moan.setFit）の設定を当てて回す（区分・夜の性格→声の基盤・割合・性別の整え。書式は moan-engine.js の M.setFit）。
-         例：{"tone":{"proud":{"kind":"soft","masc":false}}}（強気をやわらかく）／{"night":{"sadist":"shy"}}／{"rate":{"tone":1}}／{"tone":{"proud":{"kind":"off"}}} */
+         例：{"tone":{"proud":{"kind":"soft","masc":false}}}（強気をやわらかく）／{"night":{"sadist":"shy"}}／{"rate":{"tone":1}}／{"tone":{"proud":{"kind":"off"}}}
+   辞書：--moandict=辞書.txt で、高度設定「喘ぎの辞書」（HK.Moan.setUser）を当てて回す。--owndict=辞書.txt で、全員の住人の欄「喘ぎの辞書（この住人だけ）」（c.moanDict）に入れて回す。
+         --ownfit=区分（firm|soft|grand|none|off）で全員の「声の区分（この住人だけ）」（c.moanFit）を決めて回す。
+         利用者の辞書の行が記録に出た数（男性向け／小説調、小説調の鍵 [小説 …] の行）を出す（2026-10-28 担当HW2） */
 'use strict';
 const fs = require('fs');
 const { openBuild } = require('./lib.js');
@@ -34,17 +37,19 @@ const { MOAN_RULES } = require('./lint.js');
      --moantone=口調：全員の「喘ぎの口調」（c.moanTone）を決めて回す。どちらも、喘ぎの選び方に効いているか（効き）を表に出す */
   const NIGHTS = opt('night') ? opt('night').split(',').map(x => x === 'none' ? '' : x) : null, MT = opt('moantone') || '';
   const FIT = opt('moanfit') ? JSON.parse(fs.readFileSync(opt('moanfit'), 'utf8')) : null;
+  const DICT = opt('moandict') ? fs.readFileSync(opt('moandict'), 'utf8') : '', OWN = opt('owndict') ? fs.readFileSync(opt('owndict'), 'utf8') : '', OWNFIT = opt('ownfit') || '';
   /* --from=前の --json の出力：回さずに、集めた喘ぎに規則だけ当て直す（規則を直したときの確かめ） */
   const FROM = opt('from');
   if (FROM) { report(Object.assign({ runs: 0, err: [], tones: [], scens: [], gen: 0, genMatched: 0, full: true }, JSON.parse(fs.readFileSync(FROM))), [], FROM, 0); return; }
   if (!dir) { console.error('使い方: node moan-audit.js <ビルド> [回数] [r18|safe|\'\'] [--tones=…] [--scen=…] [--why]'); process.exit(1); }
   const { browser, page, errors } = await openBuild(dir, mode);
   const t0 = Date.now();
-  const r = await page.evaluate(({ N, TONES, SCEN, NIGHTS, MT, FIT }) => {
+  const r = await page.evaluate(({ N, TONES, SCEN, NIGHTS, MT, FIT, DICT, OWN, OWNFIT }) => {
     const HK = window.HK, V = HK.Voice, M = HK.Moan, E = HK.Ero, SAFE = !!HK.SAFE_ON;
     /* 喘ぎ声の調整を当てる（当てたあとの、整えた設定を表に出す） */
     const fitSet = FIT && M && M.setFit ? (M.setFit(FIT), M.fitCfg) : null;
-    const out = { runs: 0, err: [], moans: [], dup: [], safeHits: [], tones: [], gen: 0, genMatched: 0, safe: SAFE, full: !!M, fit: fitSet };
+    const dictErr = DICT && M && M.setUser ? M.setUser(DICT).errors : [];
+    const out = { runs: 0, err: [], moans: [], dup: [], safeHits: [], tones: [], gen: 0, genMatched: 0, safe: SAFE, full: !!M, fit: fitSet, dictErr };
     const norm = s => String(s || '').replace(/[⁠⁡-⁤♡゛ﾞ\s　]/g, '');
     const letters = s => norm(s).replace(/[…‥、。！？!?っッー〜～ぁぃぅぇぉゃゅょ「」（）・]/g, '');
     /* 素の喘ぎの表（口調の色のない行）。ここに無い文を「口調の語尾が付いた」と数える */
@@ -82,6 +87,8 @@ const { MOAN_RULES } = require('./lint.js');
         let r;
         try { r = f0.apply(this, arguments); } finally { depth--; }
         if (kind === 'pick' && cur) cur.srcs.push((M.lastSrc || '?') + ':' + arguments[2]);
+        /* 小説調の利用者の行（HK.Moan.say が pick を通さずに出した辞書の行） */
+        if (outer && cur && kind === 'say' && M.lastSay === 'user') cur.srcs.push('user:novel');
         if (outer && cur && typeof r === 'string' && r && who) {
           const cx = arguments[3] && typeof arguments[3] === 'object' ? arguments[3] : {}, ks = cur.srcs.map(x => x.split(':')[1]);
           const n = norm(r), old = !cur.srcs.length, tone = cur.srcs.some(x => /^tone/.test(x));
@@ -118,6 +125,8 @@ const { MOAN_RULES } = require('./lint.js');
           chars.push({ name: NAMES[i], eg: { CP: Math.round(rr() * 20), NP: Math.round(rr() * 20), A: Math.round(rr() * 20), FC: Math.round(rr() * 20), AC: Math.round(rr() * 20) }, memo: '', gender: gp[i % gp.length], likes: '', tone, fp: '', pos: '', color: '', call: '', calls: {}, loveLock: '' });
           if (night != null) chars[i].night = night === 'match' ? (i % 2 ? 'match' : 'sadist') : night;
           if (MT) chars[i].moanTone = MT;
+          if (OWN) chars[i].moanDict = OWN;
+          if (OWNFIT) chars[i].moanFit = { kind: OWNFIT };
           perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
         }
         const env = {}; (sc.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : ''); });
@@ -174,7 +183,7 @@ const { MOAN_RULES } = require('./lint.js');
       }
     })));
     return out;
-  }, { N, TONES, SCEN, NIGHTS, MT, FIT });
+  }, { N, TONES, SCEN, NIGHTS, MT, FIT, DICT, OWN, OWNFIT });
   report(r, errors, dir, Math.round((Date.now() - t0) / 1000));
   await browser.close();
   function report(r, errors, dir, sec) {
@@ -184,6 +193,7 @@ const { MOAN_RULES } = require('./lint.js');
   if (r.err.length) console.log('  失敗の例', r.err.slice(0, 3));
   if (errors.length) console.log('  ページのエラー', errors.slice(0, 3));
   if (r.fit !== undefined && FIT) console.log('  喘ぎ声の調整:', JSON.stringify(r.fit));
+  if (r.dictErr && r.dictErr.length) console.log('  辞書の読めなかった行:', r.dictErr.slice(0, 3));
   if (r.safe || !r.full) {
     console.log('(d) 全年齢での喘ぎの混入:', r.safeHits.length);
     r.safeHits.slice(0, SHOW).forEach(h => console.log('   [' + h.why + '] ' + h.tone + ' ' + h.id + '#' + h.s + ' 「' + h.q + '」 … ' + h.ctx));
@@ -200,6 +210,10 @@ const { MOAN_RULES } = require('./lint.js');
   const bD = r.dup.filter(d => d.src === 'l' || d.src === 'q').length;
   console.log('(b) 同じ場面で同じ喘ぎが2回:', r.dup.length, '＝ 喘ぎ', r.dup.length - bD, '＋ 台詞（参考）', bD);
   const gm = r.moans.filter(m => m.toned >= 0), tonedN = gm.filter(m => m.toned > 0).length;
+  if (DICT || OWN) {
+    const us = r.moans.filter(m => /user:/.test(m.src)), un = us.filter(m => /user:novel/.test(m.src));
+    console.log('利用者の辞書の行が記録に出た数:', us.length, '＝ 男性向け', us.filter(m => m.style === 'ero').length, '・小説調', us.filter(m => m.style === 'novel').length, '（うち小説調の鍵 [小説 …] の行', un.length, '）');
+  }
   console.log('(c) 口調の語尾が付いた喘ぎ（HK.Moan が作った声 ' + gm.length + ' のうち）: 全体', (100 * tonedN / Math.max(1, gm.length)).toFixed(1) + '%');
   /* 口調 × 性別 × 作風 の表 */
   const key = m => m.tone + '\t' + m.g + '\t' + m.style;

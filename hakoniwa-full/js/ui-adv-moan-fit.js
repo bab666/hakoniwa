@@ -21,7 +21,7 @@
   var KIND_OPT = { firm: 'はっきり（言い切り）', soft: 'やわらかい', grand: '古風・尊大', none: '区分なし（性別だけ）', off: '整えない' };
   var RATES = [
     { k: 'tone', label: '口調の語尾を付ける割合', lo: 0, hi: 100, desc: '素の言葉の喘ぎの文末に、口調の語尾（〜ですわ・〜じゃ など）を付ける割合。0% なら付けない' },
-    { k: 'toneMoan', label: '口調ごとの喘ぎを混ぜる割合', lo: 0, hi: 100, desc: '口調ごとに書いた喘ぎ（口調の味が濃い文）を、素の言葉の代わりに使う割合' },
+    { k: 'toneMoan', label: '口調ごとの喘ぎを混ぜる割合', lo: 0, hi: 100, desc: '口調ごとに書いた喘ぎ（口調の味が濃い文）を、素の言葉の代わりに使う割合。小説調では、元の表から引くときの「口調ごとの小説調の喘ぎ」と「態度の喘ぎ」の比べ（既定の 25% で今までどおり混ぜ、0% で口調の表を使わず、100% で口調の表だけ）' },
     { k: 'set', label: '喘ぎの口調を決めた人の、口調の濃さ', lo: 0, hi: 100, desc: '住人の「喘ぎの口調」を決めた人だけ、上の2つの割合をこの値にする（決めた口調が聞こえるように）' },
     { k: 'talk', label: '言葉のある喘ぎの多さ', lo: 50, hi: 150, desc: '「そこ、いい……っ」のような言葉のある喘ぎと、言葉のない声の比べ（態度ごとの割合にかける倍率）' }
   ];
@@ -66,6 +66,13 @@
     var ch = changedTones();
     return ch.length ? '変更中：' + ch.length + ' 口調（' + ch.slice(0, 6).map(toneLabel).join('・') + (ch.length > 6 ? ' ほか' : '') + '）' : '変更なし（全口調が既定）';
   }
+  /* 場面の選択肢：受け／攻め（M.MODES の top）／小説調 の optgroup。gear.js の住人の見本からも使う（HK.MoanFitUI.keyOpts） */
+  function keyOpts(cur, style) {
+    var ks = M.keys(), og = function (label, list) { return list.length ? '<optgroup label="' + esc(label) + '">' + list.map(function (k) { return '<option value="' + esc(k.key) + '"' + (k.key === cur ? ' selected' : '') + '>' + esc(k.label) + '</option>'; }).join('') + '</optgroup>' : ''; };
+    if (style === 'novel') return og('小説調（受け）', M.NOVEL_KEYS || []);
+    return og('受け', ks.filter(function (k) { return !M.isTopKey(k.key); })) + og('攻め', ks.filter(function (k) { return M.isTopKey(k.key); }));
+  }
+  HK.MoanFitUI = { keyOpts: keyOpts };
   function demoBox() {
     var tones = (HK.TONE_KEYS || []).map(function (t) { return [t, toneLabel(t)]; });
     return '<div class="mf-h">見本</div><div class="mf-d">口調・性別・夜の性格・場面を選んで、箱庭と同じ選び方で喘ぎを出します（上の調整と下の「喘ぎの辞書」も効きます）。態度は口調から決まります。各行の右に出どころを、区分で直った行は「直す前 → 直した後」を出します。</div>' +
@@ -73,7 +80,8 @@
       '<label>口調 ' + sel('id="adv-mf-tone" aria-label="見本の口調"', tones, 'gentle') + '</label>' +
       '<label>性別 ' + sel('id="adv-mf-g" aria-label="見本の性別"', [['f', '女性'], ['m', '男性']], 'f') + '</label>' +
       '<label>夜の性格 ' + sel('id="adv-mf-night" aria-label="見本の夜の性格"', [['', 'おまかせ']].concat(nightList().map(function (x) { return [x[0], x[1]]; })), '') + '</label>' +
-      '<label>場面 ' + sel('id="adv-mf-key" aria-label="見本の場面"', M.keys().map(function (k) { return [k.key, k.label]; }), 'w1') + '</label>' +
+      '<label>作風 ' + sel('id="adv-mf-style" data-f="adv" data-k="' + ID + '" data-m="style" aria-label="見本の作風"', [['ero', '男性向け'], ['novel', '小説調']], 'ero') + '</label>' +
+      '<label>場面 <select id="adv-mf-key" aria-label="見本の場面">' + keyOpts('w1', 'ero') + '</select></label>' +
       '<button type="button" class="mini" data-act="adv:mf-demo">出してみる</button><button type="button" class="mini" data-act="adv:mf-all">全場面を一気に</button></div>' +
       '<div class="mf-demo" id="adv-mf-demo" aria-live="polite"></div>';
   }
@@ -133,6 +141,8 @@
     } else if (m === 'night') c.night[t.dataset.n] = t.value;
     else if (m === 'rate') { c.rate[t.dataset.r] = (+t.value) / 100; }
     else if (m === 'gender') c.gender[t.dataset.g] = !!t.checked;
+    /* 見本の作風：場面の一覧を入れ替える（設定は変えない） */
+    else if (m === 'style') { var ks = document.getElementById('adv-mf-key'); if (ks) ks.innerHTML = keyOpts(t.value === 'novel' ? 'n1' : 'w1', t.value); return; }
     else return;
     save(c);
     refresh();
@@ -141,15 +151,17 @@
     var out = document.getElementById('adv-mf-demo'), ts = document.getElementById('adv-mf-tone'), gs = document.getElementById('adv-mf-g'), ns = document.getElementById('adv-mf-night'), ks = document.getElementById('adv-mf-key');
     if (!out || !ts) return;
     if (!again) DEMO.n++;
-    var seed = 12345 + DEMO.n * 7919, o = { tone: ts.value, gender: gs ? gs.value : 'f', night: ns ? ns.value : '', detail: true };
+    var st = document.getElementById('adv-mf-style'), novel = !!(st && st.value === 'novel');
+    var seed = 12345 + DEMO.n * 7919, o = { tone: ts.value, gender: gs ? gs.value : 'f', night: ns ? ns.value : '', detail: true, style: novel ? 'novel' : '' };
     DEMO.last = { all: all };
-    var SRC = { base: '素の言葉', tone: '口調の喘ぎ', shared: '共通', user: '利用者の辞書' };
+    var SRC = { base: '素の言葉', tone: '口調の喘ぎ', shared: '共通', user: '利用者の辞書', ntone: '小説調の口調の表', nbase: '小説調の態度の表' };
     var line = function (r) {
       var fx = r.fixed ? '<span class="mf-src">（直す前「' + esc(r.raw) + '」 → ' + esc(M.KIND_LABEL[r.kind] && r.kind !== 'none' ? M.KIND_LABEL[r.kind] : '性別の整え') + '）</span>' : '';
       return '「' + esc(r.s) + '」<span class="mf-src">' + esc(SRC[r.src] || r.src || '') + (r.ends ? '＋口調の語尾' : '') + '</span>' + fx;
     };
-    var keys = all ? M.keys() : M.keys().filter(function (k) { return k.key === (ks ? ks.value : 'w1'); });
-    var fk = M.fitKind(M.toneOf({ tone: o.tone })), head = '<div class="mf-src" style="margin-left:0">' + esc(toneLabel(o.tone)) + '・' + (o.gender === 'm' ? '男性' : '女性') + '・態度 ' + esc(psLabel(M.psOf({ tone: o.tone, gender: o.gender, eg: { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 } }, o.night ? { night: o.night } : {}))) + '・区分 ' + esc(KIND_OPT[fk.kind]) + (fk.def ? '（既定）' : '（変更）') + '</div>';
+    var allK = novel ? (M.NOVEL_KEYS || []) : M.keys(), keys = all ? allK : allK.filter(function (k) { return k.key === (ks ? ks.value : 'w1'); });
+    if (!keys.length) keys = allK.slice(0, 1);
+    var fk = M.fitKind(M.toneOf({ tone: o.tone })), head = '<div class="mf-src" style="margin-left:0">' + (novel ? '小説調・' : '男性向け・') + esc(toneLabel(o.tone)) + '・' + (o.gender === 'm' ? '男性' : '女性') + '・態度 ' + esc(psLabel(M.psOf({ tone: o.tone, gender: o.gender, eg: { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 } }, o.night ? { night: o.night } : {}))) + '・区分 ' + esc(KIND_OPT[fk.kind]) + (fk.def ? '（既定）' : '（変更）') + '</div>';
     out.innerHTML = head + keys.map(function (k, i) {
       var rows = M.demo(k.key, Object.assign({ n: all ? 2 : 5, seed: seed + i * 31 }, o));
       return (all ? '<div class="mf-key">' + esc(k.label) + '</div>' : '') + rows.map(line).join('<br>');

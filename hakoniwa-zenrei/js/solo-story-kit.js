@@ -230,7 +230,9 @@
         var ids = (lead != null ? [lead] : []).concat(e.actors.filter(function (i) { return i !== lead; })).slice(0, 3);
         var avs = e.actors.length || lead != null ? '<span class="avs">' + ids.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
         var tc = tagCls(e);
-        return '<li class="ev' + (tc ? ' cat-' + tc : '') + (e.trouble ? ' trouble' : '') + (tc === 'death' ? ' death' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (avs ? ' hasav' : '') + (avs && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)) ? ' talk' : '') + '">' + avs + '<div class="evb">' + (e.tag ? '<span class="c' + (tc ? ' cc-' + tc : '') + '">' + esc(e.tag) + '</span>' : '') + paint(e.text, res, sg) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+        /* 重要な出来事の種類（view.js の HK.View.hotKindSolo。枠と、フルでは種類ごとの背景） */
+        var hk = HK.View && HK.View.hotKindSolo ? HK.View.hotKindSolo(e, res) : '';
+        return '<li' + (hk ? ' data-hot="' + hk + '"' : '') + ' class="ev' + (hk ? ' hot-' + hk : '') + (tc ? ' cat-' + tc : '') + (e.trouble ? ' trouble' : '') + (tc === 'death' ? ' death' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (avs ? ' hasav' : '') + (avs && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)) ? ' talk' : '') + '">' + avs + '<div class="evb">' + (e.tag ? '<span class="c' + (tc ? ' cc-' + tc : '') + '">' + esc(e.tag) + '</span>' : '') + paint(e.text, res, sg) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
@@ -306,7 +308,7 @@
       '<div class="uses" style="margin-top:12px">' + envChips + '</div>' +
       table(res) + relSvg(res) +
       '<h2 class="sec">住人ごとの推移</h2><div class="cards">' + res.heroes.map(function (h) { return card(res, h); }).join('') + '</div>' +
-      '<h2 class="sec" id="tlhead">記録</h2><div id="stbar">' + bar(res) + '</div><div class="tl" id="sttl">' + timeline(res) + '</div>' + (histHtml || '');
+      '<h2 class="sec" id="tlhead">記録' + (HK.View && HK.View.hotLegendSolo ? HK.View.hotLegendSolo(res) : '') + '</h2><div id="stbar">' + bar(res) + '</div><div class="tl" id="sttl">' + timeline(res) + '</div>' + (histHtml || '');
     if (!host._stBound) {
       host._stBound = true;
       host.addEventListener('click', function (ev) {

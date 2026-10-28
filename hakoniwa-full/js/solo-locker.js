@@ -327,7 +327,7 @@
         var a = order[k], b = a.o;
         var urge = (a.goal && a.goal.id === 'want' ? 0.12 : a.goal && a.goal.id === 'out' ? -0.08 : 0) + (a.action && a.action.id === 'flow' ? 0.08 : a.action && a.action.id === 'solve' ? -0.06 : 0) + a.m.heat / 100 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.m.reason / 130 - a.tr.cp * 0.12 + (plotter === a ? 0.45 : 0) + ({ lover: 0.15, fwb: 0.2, almost: 0.1, crush: crusher === a ? 0.2 : 0, mutual: 0.2, tension: -0.1 }[rel] || 0) + (fwbAll && rel !== 'fwb' ? 0.2 : 0) + (crusher === a && rel !== 'crush' && rel !== 'mutual' ? 0.15 : 0);
         /* 敵対している二人：攻めの側は、苛立ちごとぶつけるように手を出しやすい */
-        if (hateP && HSX.order(S, a, b)[0] === a) urge += 0.35;
+        if (hateP && HSX.order(S, a, b)[0] === a) urge += 0.35 * HK.Dark.f(S, 'assault');
         if (lhAny && !clash && LHo.has(S, a, b)) urge += 0.2;
         if (nt) urge += NT.urge(nt, a);
         /* 本命がほかにいる人は、一途に踏みとどまる（媚薬の熱が限界なら妥協する） */

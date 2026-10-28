@@ -40,7 +40,7 @@
     /* 始まり・最中・果てる声と、攻めの果てる声は、喘ぎの辞書（moan-engine.js の HK.Moan.say の小説調）を通す。元の表も4割ほど残る */
     var mk = { start: 'start', mid: 'mid', climax: 'climax', topc: 'top' }[kind];
     /* 無理やりの場面（story-lewd.js が S._r18F に印を付ける）は、嫌がる喘ぎで */
-    if (mk && HK.Moan && HK.Moan.say) return p.name + '「' + HK.Moan.say(S, p, mk, { novel: true, force: S._r18F != null && S._r18F === (S.log || []).length }, list) + '」';
+    if (mk && HK.Moan && HK.Moan.say) return p.name + '「' + HK.Moan.say(S, p, mk, { novel: true, force: S._r18F != null && S._r18F === (S.log || []).length, own: own }, list) + '」';
     return p.name + '「' + pick(S, list) + '」';
   }
   function moodOf(m) { return m === 'rough' || m === 'drug' || m === 'love' ? m : 'plain'; }

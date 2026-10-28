@@ -62,6 +62,13 @@
   /* JSON の書き出し・読み込み */
   A.exportTo = function (o) { var any = false, m = {}; Object.keys(data).forEach(function (k) { if (data[k] && !A.RETIRED[k]) { m[k] = data[k]; any = true; } }); if (any) o.adv = m; };
   A.importFrom = function (o) { if (!o || !o.adv || typeof o.adv !== 'object') return; Object.keys(o.adv).forEach(function (k) { if (typeof o.adv[k] === 'string' && !A.RETIRED[k]) A.set(k, o.adv[k].slice(0, 20000), true); }); };
+  /* セーブ・履歴に残す写し（saves.js・history.js。2026-10-28）：この画面に節がある欄のうち、空でないものだけ（欄名は決め打ちしない。
+     全年齢版・全年齢モードでは R18 の節を登録しないので R18 の欄は入らない。やめた欄 A.RETIRED も入れない）。無ければ null。
+     pin(res)：箱庭を動かしたとき（ui.js の simulate）の写しを結果に結び付けておく（結果の中身には入れない）。of(res)：その写し（無ければ今の写し） */
+  A.snap = function () { var m = {}, any = false; A.secs.forEach(function (s) { var v = data[s.id]; if (typeof v === 'string' && v && !A.RETIRED[s.id]) { m[s.id] = v; any = true; } }); return any ? m : null; };
+  var pins = typeof WeakMap === 'function' ? new WeakMap() : null;
+  A.pin = function (res) { if (pins && res && typeof res === 'object') pins.set(res, A.snap()); };
+  A.of = function (res) { return pins && res && typeof res === 'object' && pins.has(res) ? pins.get(res) : A.snap(); };
   /* 描いたあとに、読めなかった行を出す */
   A.afterRender = function () { A.secs.forEach(function (s) { var r = s.apply && data[s.id] ? s.apply(data[s.id]) : null; A.showErrors(s.id, r && r.errors); if (s.after) s.after(); }); };
 })();

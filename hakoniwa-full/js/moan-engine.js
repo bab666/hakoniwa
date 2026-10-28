@@ -12,7 +12,7 @@
      HK.Moan.say(S, who, 場面, o, 元の表)（箱庭ごとの喘ぎ・小説調の場面から）… 場面（始まり・最中・果てる・攻め・キス・口）と o（嫌がる・声を殺す・小説調）から鍵を選ぶ
      本文の {m0}〜{m2} はこれまでどおり。{m:w1} {m:p} {m:k} のように鍵でも差し込める（HK.Ero.fill）
    ■ 優先順位
-     住人ごとの上書き ＞ 利用者の口調の喘ぎ ＞ 利用者の態度の上書き ＞ 態度の基盤（moan-said.js。ときどき口調ごとの喘ぎ ero-moan-tone.js） ＞ 口調ごとの喘ぎ（ときどき）・ero-kit.js の表 ＞ 共通（利用者の上書き ＞ moan-dict.js）
+     住人の欄の辞書（⚙設定「喘ぎの辞書（この住人だけ）」c.moanDict） ＞ 高度設定の 住人= ＞ 利用者の口調の喘ぎ ＞ 利用者の態度の上書き ＞ 態度の基盤（moan-said.js。ときどき口調ごとの喘ぎ ero-moan-tone.js） ＞ 口調ごとの喘ぎ（ときどき）・ero-kit.js の表 ＞ 共通（利用者の上書き ＞ moan-dict.js）
      利用者の辞書の行は、書いたとおり（これまでどおり台詞の口調の変換を通す）
    ■ 利用者の辞書（高度設定「喘ぎの辞書」。HK.Moan.setUser(文字列)）
      [喘ぎ 共通 乗り気 1]            ← 共通の、乗り気の1段階目（短い喘ぎ）を置き換える。1行に1つ（「|」で区切って複数も可）
@@ -21,6 +21,11 @@
      [喘ぎ 態度=強気 乗り気 2]       ← その態度の人の言葉の基盤を置き換える
      [喘ぎ 住人=アキラ 乗り気 3]     ← その住人だけ（いちばん優先）
      場面の名前：乗り気／嫌がる／声を抑える／激しく／懇願／キス／口でしている／口でされる／攻め（鍵 w r h p b k o l t でもよい）
+     [喘ぎ 共通 小説 始まり]         ← 描写の作風「小説調」の、始まり・最中・果てる声（鍵 n1〜n3。範囲は同じ。小説調の口調の表・態度の表より優先。嫌がる場面には使わない）
+     「追加」は、共通なら組み込みの行に足し、口調=・態度=・住人=・住人の欄なら半々で組み込みの声と混ぜる
+   ■ 住人ごとの設定（⚙設定。HK.simulate の入口で入力の住人から M.own を作る。2026-10-28 担当HW2）
+     c.moanDict … 書式は上と同じで範囲は書かない（[乗り気 1]・[喘ぎ 乗り気 1]・[小説 最中] も読む）。いちばん優先
+     c.moanFit  … { kind: 区分, masc: 男性的な語尾を残す }。区分は 住人の設定 ＞ 高度設定の口調ごとの区分 ＞ 組み込み
    登場人物はすべて成人として扱う。全年齢版にはこのファイルを置かない */
 (function () {
   'use strict';
@@ -35,8 +40,9 @@
     k: { label: 'キス', stages: ['キス中'] },
     o: { label: '口でしている', stages: ['鼻声'] },
     l: { label: '口でされる', stages: ['乗り気', '嫌がる'] },
-    t: { label: '攻め', stages: ['吐息', '声を我慢', '口でされて漏れる', 'かわいいと言う', 'もう限界', '謝りながら'] }
+    t: { label: '攻め', top: true, stages: ['吐息', '声を我慢', '口でされて漏れる', 'かわいいと言う', 'もう限界', '謝りながら'] }
   };
+  /* 場面の名前の別名（MODES の label はそのまま読む。2026-10-28 担当HW2：辞書の読み方は MODES に足した鍵・場面名なら何でも読む。top: true は攻めの場面（⚙設定の「攻めのとき」の欄）） */
   var MODE_BY_NAME = { '乗り気': 'w', '嫌がる': 'r', '声を抑える': 'h', '激しく': 'p', '激しく突かれる': 'p', '懇願': 'b', 'キス': 'k', 'キス中': 'k', '口でしている': 'o', '口でされる': 'l', '攻め': 't' };
   /* 言葉だけの鍵・言葉のない鍵・両方を混ぜる鍵 */
   var WORDS_ONLY = { w3: 1, r0: 1, b0: 1, b1: 1, b2: 1, t3: 1, t4: 1, t5: 1 };
@@ -81,6 +87,14 @@
     var t = who.moanTone || (M.map && nm && M.map[nm]) || '';
     return t && (!HK.toneValid || HK.toneValid(t)) ? t : '';
   }
+  /* 名前で利用者の表を引くときの名前：名前の伏せ字（HK.NameGuard）と、短い名前（漢字二字・ひらがな三字まで）に箱庭のあいだ付く見えない印（persona-final.js の U+2064）を外す。
+     （2026-10-28 担当HW2：印のせいで [喘ぎ 住人=飯塚 …] のような短い名前の行が引けていなかった） */
+  function plainName(n) {
+    if (!n) return '';
+    var s = HK.NameGuard && HK.NameGuard.stack.length ? HK.NameGuard.decAll(String(n)) : String(n);
+    return s.replace(/[\u2060-\u2064]/g, '');
+  }
+  M.plainName = plainName;
   /* ---------- 夜の性格（attr.js の HK.Attr.nightOf。2026-10-27） ----------
      夜の性格を、喘ぎの言葉の基盤にする態度（moan-said.js・ero-kit.js の M の態度9種）と鍵の選び方に効かせる。口調（語尾）は口調のまま（喘ぎの口調があればそちら）。
        サド sadist   → 強気 proud の基盤（受けでも挑む声・荒い主導）。攻めのときは「かわいいと言う」（t3）が増える
@@ -186,13 +200,15 @@
   var FIT_GRAND_R = [[new RegExp('ちゃう' + FE, 'g'), 'てしまう'], [new RegExp('ちゃった' + FE, 'g'), 'てしまった'], [new RegExp('じゃう' + FE, 'g'), 'でしまう'], [new RegExp('じゃん' + FE, 'g'), 'ではないか'], [new RegExp('でしょ' + FE, 'g'), 'だろう']];
   function runR(s, R) { R.forEach(function (r) { s = s.replace(r[0], r[1]); }); return s; }
   /* 利用者の辞書の行（書いたまま出すので直さない） */
-  var USER_SET = null, USER_OF = null;
+  var USER_SET = null, USER_OF = null, OWN_OF = null;
   M.isUser = function (s) {
-    var U = M.user; if (!U || !s) return false;
-    if (USER_OF !== U) {
-      USER_OF = U; USER_SET = {};
+    var U = M.user, O = M.own; if ((!U && !O) || !s) return false;
+    if (USER_OF !== U || OWN_OF !== O) {
+      USER_OF = U; OWN_OF = O; USER_SET = {};
       var add = function (o) { if (!o) return; Object.keys(o).forEach(function (k) { var v = o[k]; if (Array.isArray(v)) v.forEach(function (x) { USER_SET[String(x).replace(/[\u2060♡\s　]/g, '')] = 1; }); else add(v); }); };
-      add(U.shared); add(U.tone); add(U.persona); add(U.who);
+      if (U) { add(U.shared); add(U.tone); add(U.persona); add(U.who); }
+      /* 住人の欄の辞書の行も（箱庭を回すあいだ・台詞を整えるあいだの M.own） */
+      if (O) Object.keys(O).forEach(function (k) { add(O[k].d); });
     }
     return !!USER_SET[String(s).replace(/[\u2060♡\s　]/g, '')];
   };
@@ -252,20 +268,24 @@
     return { errors: errors, cfg: M.fitCfg };
   };
   M.fitCfg = null;
-  M.fitKind = function (t) {
-    var d = defKind(t), k = CC ? kindIn(CC, t) : d;
-    return { kind: k.kind, masc: k.masc, dialect: k.dialect, hasDialect: !!DIALECT[t], def: k.kind === d.kind && k.masc === d.masc && k.dialect === d.dialect, defKind: d.kind, defMasc: d.masc };
+  /* who（住人）を渡すと、住人の設定（⚙設定「声の区分（この住人だけ）」c.moanFit）も重ねる（own＝住人の設定で変わったか、advKind＝高度設定までの区分） */
+  M.fitKind = function (t, who) {
+    var d = defKind(t), k0 = CC ? kindIn(CC, t) : d, of = who ? ownFitOf(who) : null, k = of ? ownKind(k0, of) : k0;
+    return { kind: k.kind, masc: k.masc, dialect: k.dialect, hasDialect: !!DIALECT[t], def: k.kind === d.kind && k.masc === d.masc && k.dialect === d.dialect, defKind: d.kind, defMasc: d.masc, own: !!of && (k.kind !== k0.kind || k.masc !== k0.masc), advKind: k0.kind, advMasc: k0.masc };
   };
+  function ownKind(k, of) { return { kind: of.kind || k.kind, masc: of.masc != null ? of.masc : k.masc, dialect: k.dialect }; }
   /* 区分の短い名前（画面の要約「（声：やわらかい）」など。既定のままなら ''） */
   M.KIND_LABEL = { firm: 'はっきり', soft: 'やわらかい', grand: '古風・尊大', none: '区分なし', off: '整えない' };
-  M.fitNote = function (t) {
-    if (!t || !CC) return '';
-    var k = M.fitKind(t), d = defKind(t), out = [];
+  M.fitNote = function (t, who) {
+    var of = who ? ownFitOf(who) : null;
+    if (!t || (!CC && !of)) return '';
+    var k = M.fitKind(t, who), d = defKind(t), out = [];
     if (k.def) return '';
     if (k.kind !== d.kind) out.push(M.KIND_LABEL[k.kind]);
     if (k.kind !== 'off' && k.masc !== d.masc) out.push(k.masc ? '男性的な語尾を残す' : '男性的な語尾を外す');
     if (k.kind !== 'off' && k.dialect !== d.dialect) out.push(k.dialect ? '方言の語尾' : '方言の語尾なし');
-    return out.join('・');
+    /* 住人の設定で変えたものは「（住人）」を添える */
+    return out.join('・') + (k.own && out.length ? '（住人）' : '');
   };
   /* 箱庭を回すあいだの固定（下の HK.simulate の包みから） */
   M._fitEnter = function () { var p = RUN; RUN = p !== undefined ? p : CC; return p; };
@@ -276,11 +296,13 @@
     var mk = s.charAt(0) === NOTONE ? NOTONE : '', q = mk ? s.slice(1) : s, q0 = q, t = toneOf(who), g = who.gender, V = HK.Voice;
     /* 区分（利用者の調整がなければ組み込みの FIT_* の振り分けそのまま） */
     var c = cc(), fk = c ? kindIn(c, t) : null, firm, soft, grand, masc, dia, gm = true, gf = true;
+    /* 住人の設定（⚙設定「声の区分（この住人だけ）」）を、高度設定の区分の上に重ねる */
+    var of = ownFitOf(who); if (of) fk = ownKind(fk || defKind(t), of);
     if (!fk) { firm = FIT_FIRM[t]; soft = FIT_SOFT[t]; grand = FIT_GRAND[t]; masc = FIT_MASC[t]; dia = t === 'noja' || t === 'kansai'; }
     else {
       /* 「整えない」：口調の整えも性別の整えもしない（表の文のまま） */
       if (fk.kind === 'off') return s;
-      firm = fk.kind === 'firm' || fk.kind === 'grand'; grand = fk.kind === 'grand'; soft = fk.kind === 'soft'; masc = fk.masc; dia = fk.dialect; gm = c.unfemM; gf = c.unmascF;
+      firm = fk.kind === 'firm' || fk.kind === 'grand'; grand = fk.kind === 'grand'; soft = fk.kind === 'soft'; masc = fk.masc; dia = fk.dialect; if (c) { gm = c.unfemM; gf = c.unmascF; }
     }
     /* 男性の女性的な語尾を先に外す（外したあとの「じょうず、だね」も、のじゃ・関西弁の語尾に直るように） */
     /* 男性的な語尾が個性の口調（チャラい・ヤンキー・熱血 など）の男性の「〜わ」（来るわ・頼むわ）は男性の言い方なので残す（関西弁の扱いで「〜わ」を外さない） */
@@ -313,8 +335,8 @@
      { list, src } を返す。src … 'user' 利用者の行（書いたまま） ／ 'tone' 口調ごとの喘ぎ（書き下ろし。口調の味つき） ／ 'base' 素の言葉（口調の色を薄めて出す） */
   function wordPool(S, who, key, ctx) {
     var U = M.user, ps = psOf(who, ctx), tone = toneOf(who), lg = LEGACY[key];
-    if (U && U.tone[tone] && U.tone[tone][key]) return { list: U.tone[tone][key], src: 'user' };
-    if (U && U.persona[ps] && U.persona[ps][key]) return { list: U.persona[ps][key], src: 'user' };
+    var ut = U ? ulist(S, U.tone[tone], key, U.adds['tone:' + tone]) : null; if (ut) return { list: ut, src: 'user' };
+    var up = U ? ulist(S, U.persona[ps], key, U.adds['persona:' + ps]) : null; if (up) return { list: up, src: 'user' };
     var TM = E.TONE_MOAN && E.TONE_MOAN[tone], tl = TM && lg && TM[lg] && TM[lg].length ? TM[lg] : null;
     var tr = ctx && ctx.toneMoanRate != null ? ctx.toneMoanRate : moanToneOf(who) ? rateOf('set', M.SET_RATE) : rateOf('toneMoan', M.TONE_MOAN_RATE);
     if (tl && rand(S) < tr) return { list: tl, src: 'tone' };
@@ -420,9 +442,10 @@
     ctx = ctx || {};
     if (!MODES[key.charAt(0)] || !MODES[key.charAt(0)].stages[+key.slice(1)]) key = 'w0';
     var U = M.user, ps = psOf(who, ctx), out = null, tag = (who && who.name) + '.' + key;
-    /* 住人ごとの上書き */
+    /* 住人ごとの上書き（住人の欄の辞書 ＞ 高度設定の 住人=） */
     M.lastSrc = 'user'; M.lastEnds = false;
-    if (U && who && who.name && U.who[who.name] && U.who[who.name][key]) out = fresh(S, fillPart(U.who[who.name][key], who, ctx), tag);
+    var own = ownOf(who), wb = whoBox(U, who), uo = (own && ulist(S, own.d, key, own.add)) || (wb && ulist(S, wb.d, key, wb.add));
+    if (uo) out = fresh(S, fillPart(uo, who, ctx), tag);
     if (out == null || out === '') {
       M.lastSrc = 'shared';
       var wantWords = WORDS_ONLY[key] ? true : MIX[key] ? rand(S) < talkOf(ctx.talk != null ? ctx.talk : (MIX[key] < 1 ? MIX[key] : (TALK[ps] || 0.5))) : false;
@@ -530,29 +553,63 @@
   };
   /* 利用者の辞書に、この人のこの鍵の行があるか */
   M.userHas = function (who, key, ctx) {
-    var U = M.user; if (!U) return false;
-    var nm = who && who.name, tone = toneOf(who), ps = psOf(who, ctx);
-    return !!((nm && U.who[nm] && U.who[nm][key]) || (U.tone[tone] && U.tone[tone][key]) || (U.persona[ps] && U.persona[ps][key]) || U.shared[key]);
+    var U = M.user, own = ownOf(who); if (own && own.d[key]) return true;
+    if (!U) return false;
+    var wb = whoBox(U, who), tone = toneOf(who), ps = psOf(who, ctx);
+    return !!((wb && wb.d[key]) || (U.tone[tone] && U.tone[tone][key]) || (U.persona[ps] && U.persona[ps][key]) || U.shared[key]);
   };
   /* 小説調：♡を落とす（空白の重なりも詰める） */
   M.plain = function (s) { var t = String(s || ''), mk = t.charAt(0) === NOTONE ? NOTONE : ''; t = t.replace(/\u2060/g, '').replace(/♡+/g, '').replace(/[ 　]{2,}/g, '　').replace(/^[ 　]+|[ 　]+$/g, ''); return mk + (t || '……っ'); };
   var RECV_KIND = { start: 1, mid: 1, climax: 1, lick: 1 };
+  /* 小説調の始まり・最中・果てる声 → 利用者の辞書の小説の鍵（[喘ぎ … 小説 始まり] など。n0〜n2） */
+  var NOVEL_KEY = { start: 'n0', mid: 'n1', climax: 'n2' };
+  /* M.lastSay … いちばん新しい M.say の声の出どころ（見本・点検から）：'user' 利用者の辞書の小説の行 ／ 'old' 元の表（小説調の口調の表・態度の表・箱庭の表）／ 'pick' 喘ぎの辞書（M.pick） ／ 'safe'
+     M.lastOld … 'old' のとき、小説調の口調の表（novel-moan-tone.js）から来たなら 'ntone'、それ以外は 'nbase' */
   M.say = function (S, who, kind, o, old) {
     o = o || {};
-    var useOld = function () { if (typeof old === 'function') return old(); if (old && old.length) return fresh(S, old, (who && who.name) + '.old.' + kind); return null; };
+    var useOld = function () { var nv = novelOld(S, who, kind, o, old); if (nv !== undefined) return nv; if (typeof old === 'function') return old(); if (old && old.length) return fresh(S, old, (who && who.name) + '.old.' + kind); return null; };
     /* 元の表の声も、口調・性別に合わない語尾を整える（全年齢モードでは fit は何もしない） */
-    var useOld0 = useOld; useOld = function () { var v = useOld0(); return typeof v === 'string' ? fit(v, who) : v; };
+    var useOld0 = useOld; useOld = function () { var v = useOld0(); M.lastSay = 'old'; M.lastRaw = v; M.lastOld = typeof v === 'string' && o.own && o.own.indexOf(v) >= 0 ? 'ntone' : 'nbase'; return typeof v === 'string' ? fit(v, who) : v; };
     /* 全年齢モードでは喘ぎを出さない（元の表があればそれ。R18の表は全年齢モードで空になる） */
-    if (HK.SAFE_ON) { var so = useOld(); return so == null ? '' : so; }
+    if (HK.SAFE_ON) { var so = useOld(); M.lastSay = 'safe'; return so == null ? '' : so; }
     /* 自分で攻めを選んだ人の受け身の声は、元の表（攻め向けに絞ったもの）のまま */
     if (RECV_KIND[kind] && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(who) && old) { var ho = useOld(); if (ho != null) return ho; }
+    /* 小説調：利用者の辞書の小説の鍵（住人の欄 ＞ 住人= ＞ 口調= ＞ 態度= ＞ 共通）があれば、元の表・喘ぎの辞書より先に（嫌がる場面は除く。行が無ければ乱数を引かない） */
+    var nk = o.novel && !o.force ? NOVEL_KEY[kind] : null, nu = nk ? novelUser(S, who, nk, o) : null;
+    if (nu) { M.lastSay = 'user'; M.lastSrc = 'user'; M.lastRaw = nu; return M.plain(nu); }
     var key = M.keyFor(S, who, kind, o);
     /* 元の表はいつもの口調の言い換えを通るので、喘ぎの口調を決めた人には使わない（乱数の引き方は変えない） */
     if (o.novel && old && !M.userHas(who, key, o) && rand(S) < 0.4 && !moanToneOf(who)) { var no = useOld(); if (no) return no; }
     var cx = { force: !!o.force, deep: !!o.deep, late: !!o.late, top: o.top || null, oral: kind === 'lick' };
     if (o.talk != null) cx.talk = o.talk; else if (o.novel) cx.talk = 0.6;
     var out = bare(M.pick(S, who, key, cx));
+    M.lastSay = 'pick';
     return o.novel ? M.plain(out) : out;
+  };
+  /* 小説調の利用者の行（なければ null。乱数は行があるときだけ） */
+  function novelUser(S, who, nk, o) {
+    var U = M.user, own = ownOf(who);
+    if (!U && !own) return null;
+    var wb = whoBox(U, who), l = (own && ulist(S, own.d, nk, own.add)) || (wb && ulist(S, wb.d, nk, wb.add));
+    if (!l && U) { var t = toneOf(who); l = ulist(S, U.tone[t], nk, U.adds['tone:' + t]); }
+    if (!l && U) { var ps = psOf(who, o); l = ulist(S, U.persona[ps], nk, U.adds['persona:' + ps]) || (U.shared[nk] && U.shared[nk].length ? U.shared[nk] : null); }
+    return l ? fresh(S, l, (who && who.name) + '.' + nk) || null : null;
+  }
+  /* 小説調の元の表の、口調の表（o.own＝novel-moan-tone.js の行）と態度の表（o.base）の比率（高度設定「口調ごとの喘ぎを混ぜる割合」を既定から動かしたときだけ。
+     既定 25% のときの比率を「混ぜて引いたときの自然な比率」とし、0% で口調の表を使わず、100% で口調の表だけ。動かしていなければ undefined（呼ぶ側の元の引き方のまま） */
+  function novelOld(S, who, kind, o, old) {
+    var c = cc(); if (!o.novel || !o.own || !c || c.rate.toneMoan == null || moanToneOf(who)) return undefined;
+    var arr = Array.isArray(old) ? old : null, own = arr ? o.own.filter(function (x) { return arr.indexOf(x) >= 0; }) : o.own;
+    var base = o.base || (arr ? arr.filter(function (x) { return own.indexOf(x) < 0; }) : null);
+    if (!base || !own.length && !base.length) return undefined;
+    var r = c.rate.toneMoan, nat = own.length / Math.max(1, own.length + base.length), share = r <= 0.25 ? nat * r / 0.25 : nat + (1 - nat) * (r - 0.25) / 0.75;
+    var l = own.length && (!base.length || rand(S) < share) ? own : base;
+    return fresh(S, l, (who && who.name) + '.old.' + kind) || undefined;
+  }
+  /* 小説調の態度の表を引く態度（thick-sex.js・r18-thick.js の元の表）：夜の性格（高度設定の夜の性格→声の基盤を含む）か喘ぎの口調があればその態度、なければ ''（呼ぶ側の態度のまま） */
+  M.novelPs = function (who, ctx) {
+    if (!who || HK.SAFE_ON) return '';
+    return M.nightOf(who, ctx) || moanToneOf(who) ? psOf(who, ctx) : '';
   };
 
   /* 箱庭を回しているあいだだけ、住人の名前 → 喘ぎの口調 の対応表を置く（設定した人がいなければ空のまま） */
@@ -568,12 +625,95 @@
       });
       M.map = mp; var prevN = M.nmap; M.nmap = nmp;
       ((input && input.chars) || []).forEach(function (c, i) { if (nmp && c && c.name && !nmp[c.name]) nmp[c.name] = { i: i, night: '', nightFor: null }; });
-      /* 喘ぎ声の調整（M.setFit）は入口の設定に固定する */
-      var prevF = M._fitEnter();
-      try { return simM.apply(this, arguments); } finally { M.map = prev; M.nmap = prevN; M._fitLeave(prevF); }
+      /* 喘ぎ声の調整（M.setFit）は入口の設定に固定する。住人の欄の辞書・区分（c.moanDict・c.moanFit）は名前で引く表に */
+      var prevF = M._fitEnter(), prevO = M.own; M.own = M.ownMap(input && input.chars);
+      try { return simM.apply(this, arguments); } finally { M.map = prev; M.nmap = prevN; M._fitLeave(prevF); M.own = prevO; }
     };
     for (var km in simM) if (Object.prototype.hasOwnProperty.call(simM, km)) HK.simulate[km] = simM[km];
     HK.simulate._moanTone = true;
+  }
+  /* 台詞の仕上げ（voice.js の processResult。persona-final.js が箱庭のあとに呼ぶ）のあいだも、住人の欄の辞書・区分を名前で引けるように
+     （利用者の行を区分で直さない M.isUser と、住人の区分の M.fit のため） */
+  var VO = HK.Voice;
+  if (VO && VO.processResult && !VO.processResult._moanOwn) {
+    var prM = VO.processResult;
+    VO.processResult = function (res, input) {
+      var prevO = M.own; M.own = M.ownMap(input && input.chars);
+      try { return prM.apply(this, arguments); } finally { M.own = prevO; }
+    };
+    VO.processResult._moanOwn = true;
+  }
+
+  /* ---------- 住人ごとの喘ぎ（⚙設定の「喘ぎの辞書（この住人だけ）」c.moanDict・「声の区分（この住人だけ）」c.moanFit。2026-10-28 担当HW2） ----------
+     M.own … 箱庭を回すあいだ・台詞を整えるあいだだけ、名前（印を外したもの）→ { d: 鍵 → 行, add: 鍵 → 1（見出しに「追加」）, fit: { kind, masc } | null } の表
+     who が moanDict・moanFit を持っていれば（見本・画面の住人）、それも読む。全年齢モードでは何もしない */
+  var OWN_CACHE = {}, OWN_N = 0;
+  M.OWN_MAX = 4000;
+  /* 住人の欄の辞書 → { d, add, errors, n（行の数） }。見出しの範囲は書かない（書いてあっても読み飛ばす） */
+  M.parseOwn = function (text) {
+    var src = String(text || '').slice(0, M.OWN_MAX);
+    if (OWN_CACHE[src]) return OWN_CACHE[src];
+    var lines = src.split(/\r?\n/).map(function (raw) {
+      var h = raw.replace(/^\s+|\s+$/g, '').match(/^[\[［]\s*(.+?)\s*[\]］]$/);
+      if (!h) return raw;
+      var parts = h[1].split(/[\s　]+/);
+      if (parts[0] === '喘ぎ') parts.shift();
+      if (parts.length && (parts[0] === '共通' || /^(?:口調|態度|住人)[=＝]/.test(parts[0]))) parts.shift();
+      return '[喘ぎ 住人=＊ ' + parts.join(' ') + ']';
+    });
+    var p = M.parse(lines.join('\n')), d = p.who['＊'] || {}, n = 0;
+    Object.keys(d).forEach(function (k) { n += d[k].length; });
+    var r = { d: d, add: p.adds['who:＊'] || {}, errors: p.errors.map(function (e) { return e.replace(/住人=＊ ?/, '').replace('範囲が読めません（共通／口調=／態度=／住人=）', '見出しが読めません'); }), n: n };
+    if (++OWN_N > 200) { OWN_CACHE = {}; OWN_N = 0; }
+    return (OWN_CACHE[src] = r);
+  };
+  /* 区分の設定 { kind, masc } を整える（既定のままなら null） */
+  M.ownFitNorm = function (f) {
+    if (!f || typeof f !== 'object') return null;
+    var o = {};
+    if (KINDS[f.kind]) o.kind = f.kind;
+    if (typeof f.masc === 'boolean') o.masc = f.masc;
+    return o.kind || o.masc != null ? o : null;
+  };
+  /* 住人の欄：c.moanDict（受けのとき）・c.moanDictT（攻めのとき）の二つの辞書を合わせる */
+  function ownFrom(c) {
+    if (!c) return null;
+    var f = M.ownFitNorm(c.moanFit), d = null, add = {};
+    [c.moanDict, c.moanDictT].forEach(function (tx) {
+      if (typeof tx !== 'string' || !tx.trim()) return;
+      var p = M.parseOwn(tx);
+      Object.keys(p.d).forEach(function (k) { (d = d || {})[k] = p.d[k]; });
+      Object.keys(p.add).forEach(function (k) { add[k] = 1; });
+    });
+    if (!d && !f) return null;
+    return { d: d || {}, add: add, fit: f };
+  }
+  /* 入力の住人 → 名前の表（誰も決めていなければ null） */
+  M.ownMap = function (chars) {
+    if (HK.SAFE_ON) return null;
+    var m = null;
+    (chars || []).forEach(function (c) { var e = c && c.name ? ownFrom(c) : null; if (e) (m = m || {})[plainName(c.name)] = e; });
+    return m;
+  };
+  function ownOf(who) {
+    if (!who || HK.SAFE_ON) return null;
+    var e = M.own && who.name ? M.own[plainName(who.name)] : null;
+    return e || (who.moanDict || who.moanFit ? ownFrom(who) : null);
+  }
+  function ownFitOf(who) { var e = ownOf(who); return e ? e.fit : null; }
+  M.ownOf = ownOf;
+  /* 利用者の表から鍵の行（見出しに「追加」なら半々で組み込みの声に回す。乱数は行があるときだけ） */
+  function ulist(S, box, key, adds) {
+    var l = box && box[key];
+    if (!l || !l.length) return null;
+    if (adds && adds[key] && rand(S) >= 0.5) return null;
+    return l;
+  }
+  /* 高度設定の 住人= の表（印を外した名前で引く） */
+  function whoBox(U, who) {
+    if (!U || !who || !who.name) return null;
+    var nm = plainName(who.name), k = U.who[nm] ? nm : U.who[who.name] ? who.name : null;
+    return k == null ? null : { d: U.who[k], add: U.adds['who:' + k] };
   }
 
   /* ---------- 利用者の辞書 ---------- */
@@ -591,8 +731,27 @@
     for (var i = 0; i < ks.length; i++) if (HK.PERSONA[ks[i]].label === name) return ks[i];
     return null;
   }
+  var NOVEL_ST = { '始まり': 0, '最中': 1, '果てる': 2 };
+  /* 場面の名前・鍵の一文字 → 鍵（MODES に登録されているものなら何でも） */
+  function modeOf(name) {
+    if (!name) return null;
+    if (MODE_BY_NAME[name] && MODES[MODE_BY_NAME[name]]) return MODE_BY_NAME[name];
+    if (/^[a-z]$/.test(name) && MODES[name]) return name;
+    for (var k in MODES) if (MODES[k].label === name) return k;
+    return null;
+  }
+  M.modeOf = modeOf;
+  /* 説明文（場面と段階の一覧）。top：true なら攻めの場面だけ、false なら受けの場面だけ、省けば全部 */
+  M.modeList = function (top) {
+    return Object.keys(MODES).filter(function (m) { return top == null || !!MODES[m].top === !!top; }).map(function (m) {
+      var st = MODES[m].stages; return MODES[m].label + (st.length > 1 ? ' ' + st.map(function (x, i) { return (i + 1) + x; }).join(' ') : '');
+    }).join('／');
+  };
+  M.isTopKey = function (key) { var m = MODES[String(key || '').charAt(0)]; return !!(m && m.top); };
   function keyOf(mode, stage) {
-    var m = MODE_BY_NAME[mode] || (/^[wrhpbkolt]$/.test(mode) ? mode : null);
+    /* 小説調の鍵（[喘ぎ 共通 小説 始まり] → n0） */
+    if (mode === '小説' || mode === 'n') { var ns = NOVEL_ST[stage] != null ? NOVEL_ST[stage] : stage == null || stage === '' ? 0 : +String(stage).replace(/[０-９]/g, function (d) { return String.fromCharCode(d.charCodeAt(0) - 0xFEE0); }) - 1; return ns >= 0 && ns < 3 ? 'n' + ns : null; }
+    var m = modeOf(mode);
     if (!m) return null;
     var st = stage == null || stage === '' ? 0 : (+String(stage).replace(/[０-９]/g, function (d) { return String.fromCharCode(d.charCodeAt(0) - 0xFEE0); }) - 1);
     if (!(st >= 0 && st < MODES[m].stages.length)) return null;
@@ -600,7 +759,7 @@
   }
   /* 文字列 → { shared, tone, persona, who, errors } */
   M.parse = function (text) {
-    var out = { shared: {}, tone: {}, persona: {}, who: {}, errors: [] }, cur = null, lines = String(text || '').split(/\r?\n/);
+    var out = { shared: {}, tone: {}, persona: {}, who: {}, adds: {}, errors: [] }, cur = null, lines = String(text || '').split(/\r?\n/);
     lines.forEach(function (raw, i) {
       var line = raw.replace(/^\s+|\s+$/g, '');
       if (!line || /^[#＃]/.test(line)) return;
@@ -610,15 +769,17 @@
         if (add) parts.pop();
         var mode = parts[1], stage = parts[2];
         /* 鍵そのもの（w1）で書いたとき */
-        if (parts.length === 2 && /^[wrhpbkolt]\d$/.test(parts[1])) { mode = parts[1].charAt(0); stage = String(+parts[1].slice(1) + 1); }
+        if (parts.length === 2 && /^[a-z]\d$/.test(parts[1]) && (MODES[parts[1].charAt(0)] || parts[1].charAt(0) === 'n')) { mode = parts[1].charAt(0); stage = String(+parts[1].slice(1) + 1); }
         var key = keyOf(mode, stage);
         if (!key) { out.errors.push((i + 1) + '行目：場面か段階が読めません（' + h[1] + '）'); cur = null; return; }
-        var box = null;
+        var box = null, sid = '';
         if (scope === '共通') box = out.shared;
-        else if (/^口調[=＝]/.test(scope)) { var tk = toneKeyOf(scope.slice(3)); if (!tk) { out.errors.push((i + 1) + '行目：口調「' + scope.slice(3) + '」が見つかりません'); cur = null; return; } box = out.tone[tk] = out.tone[tk] || {}; }
-        else if (/^態度[=＝]/.test(scope)) { var pk = personaKeyOf(scope.slice(3)); if (!pk) { out.errors.push((i + 1) + '行目：態度「' + scope.slice(3) + '」が見つかりません'); cur = null; return; } box = out.persona[pk] = out.persona[pk] || {}; }
-        else if (/^住人[=＝]/.test(scope)) { var nm = scope.slice(3); box = out.who[nm] = out.who[nm] || {}; }
+        else if (/^口調[=＝]/.test(scope)) { var tk = toneKeyOf(scope.slice(3)); if (!tk) { out.errors.push((i + 1) + '行目：口調「' + scope.slice(3) + '」が見つかりません'); cur = null; return; } box = out.tone[tk] = out.tone[tk] || {}; sid = 'tone:' + tk; }
+        else if (/^態度[=＝]/.test(scope)) { var pk = personaKeyOf(scope.slice(3)); if (!pk) { out.errors.push((i + 1) + '行目：態度「' + scope.slice(3) + '」が見つかりません'); cur = null; return; } box = out.persona[pk] = out.persona[pk] || {}; sid = 'persona:' + pk; }
+        else if (/^住人[=＝]/.test(scope)) { var nm = scope.slice(3).replace(/[\u2060-\u2064]/g, ''); box = out.who[nm] = out.who[nm] || {}; sid = 'who:' + nm; }
         else { out.errors.push((i + 1) + '行目：範囲が読めません（共通／口調=／態度=／住人=）'); cur = null; return; }
+        /* 口調=・態度=・住人= の「追加」：組み込みの声と半々で混ぜる（共通は組み込みの行に足す） */
+        if (add && sid) (out.adds[sid] = out.adds[sid] || {})[key] = 1;
         cur = { box: box, key: key, add: add, started: false };
         return;
       }
@@ -635,28 +796,51 @@
   };
   M.setUser = function (text) {
     var p = M.parse(text);
+    /* 「追加」の印だけの表は数えない */
     var any = Object.keys(p.shared).length || Object.keys(p.tone).length || Object.keys(p.persona).length || Object.keys(p.who).length;
     M.user = any ? p : null;
     M.userText = String(text || '');
     return p;
   };
-  /* 設定画面の見本（鍵ごとに数個出す。rng は固定の種）。箱庭と同じ M.pick を通る（利用者の辞書・喘ぎ声の調整もそのまま効く）
-     HK.Moan.demo(鍵, o) … o: { tone 口調（既定 穏やか）, gender 'f'|'m'（既定 'f'）, night 夜の性格（''＝おまかせ・sadist…shy）, n 個数（既定 4）, seed 種, detail 真なら詳しく }
-       detail のとき [{ s 出した文, raw 整える前の文, src 'base'|'tone'|'shared'|'user', ends 口調の語尾が付いた, fixed 区分で直った, kind 区分 }] を返す。ふだんは文の配列
+  /* 設定画面の見本（鍵ごとに数個出す。rng は固定の種）。箱庭と同じ M.pick・M.say を通る（利用者の辞書・喘ぎ声の調整・住人の欄もそのまま効く）
+     HK.Moan.demo(鍵, o) … o: { tone 口調（既定 穏やか）, gender 'f'|'m'（既定 'f'）, night 夜の性格（''＝おまかせ・sadist…shy）, n 個数（既定 4）, seed 種, detail 真なら詳しく,
+                              who 住人（⚙設定の見本：名前・口調・喘ぎの口調・性別・夜の性格・住人の欄の辞書と区分をそのまま使う）, style 'novel' なら小説調（鍵は n0 始まり・n1 最中・n2 果てる） }
+       detail のとき [{ s 出した文, raw 整える前の文, src 'base'|'tone'|'shared'|'user'|'ntone'|'nbase', ends 口調の語尾が付いた, fixed 区分で直った, kind 区分 }] を返す。ふだんは文の配列
      HK.Moan.demo(鍵, 態度, 口調, 個数)（従来の呼び方）も読める（性別なし） */
+  M.NOVEL_KEYS = [{ key: 'n0', kind: 'start', label: '小説調・始まり' }, { key: 'n1', kind: 'mid', label: '小説調・最中' }, { key: 'n2', kind: 'climax', label: '小説調・果てる' }];
   M.demo = function (key, o, tone0, n0) {
     if (o == null || typeof o !== 'object') o = { tone: tone0 || o || 'gentle', gender: '', n: n0, persona: o || 'gentle' };
     var x = o.seed != null ? (o.seed >>> 0) % 2147483648 : 12345, R = function () { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; };
     R.int = function (m) { return Math.floor(R() * m); };
-    var tone = o.tone || 'gentle', S = o.S || { rng: R, log: [] };
-    var who = { name: '見本', tone: tone, gender: o.gender == null ? 'f' : o.gender, eg: { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 } };
-    if (o.persona) who.persona = o.persona;
-    var cx = { top: { gender: 'm' } }; if (o.night) cx.night = o.night;
-    var out = [], strip = function (s) { return String(s == null ? '' : s).replace(/\u2060/g, ''); };
-    for (var i = 0; i < (o.n || 4); i++) {
-      var s = strip(M.pick(S, who, key, Object.assign({}, cx))), raw = strip(M.lastRaw), src = M.lastSrc;
-      out.push(o.detail ? { s: s, raw: raw, src: src, ends: !!M.lastEnds, fixed: src !== 'user' && raw !== s, kind: M.fitKind(toneOf(who)).kind } : s);
+    var S = o.S || { rng: R, log: [], env: { style: o.style === 'novel' ? 'novel' : 'ero' } }, w0 = o.who;
+    var who = w0 ? { name: w0.name || '見本', tone: (HK.toneOf ? HK.toneOf(w0) : w0.tone) || 'gentle', gender: w0.gender || '', eg: w0.eg || { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 }, pos: w0.pos || '' }
+      : { name: '見本', tone: o.tone || 'gentle', gender: o.gender == null ? 'f' : o.gender, eg: { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 } };
+    if (o.persona && !w0) who.persona = o.persona;
+    if (w0 && HK.personaOf) who.persona = HK.personaOf(w0);
+    var top = { name: '相手', gender: 'm' }, cx = { top: top }; if (o.night) cx.night = o.night;
+    /* 住人の見本：喘ぎの口調・夜の性格・住人の欄を、箱庭を回すときと同じ表に一時的に置く */
+    var sv = { map: M.map, nmap: M.nmap, own: M.own, top: HK.NovelMoan ? HK.NovelMoan.top : null };
+    if (w0) {
+      var pn = plainName(who.name);
+      if (w0.moanTone) { M.map = {}; M.map[who.name] = w0.moanTone; }
+      M.nmap = {}; M.nmap[who.name] = { i: 0, night: w0.night || '', nightFor: null };
+      var oe = ownFrom(w0); M.own = oe ? {} : M.own; if (oe) M.own[pn] = oe;
     }
+    var out = [], strip = function (s) { return String(s == null ? '' : s).replace(/\u2060/g, ''); }, nk = /^n\d$/.test(key) ? M.NOVEL_KEYS[+key.slice(1)] : null, T = HK.ThickSex;
+    try {
+      if (HK.NovelMoan) HK.NovelMoan.top = top;
+      for (var i = 0; i < (o.n || 4); i++) {
+        var s, src;
+        if (nk) {
+          /* 小説調：交わりの場面（thick-sex.js の T.moan0・T.moan）と同じ引き方 */
+          var pk = function (l) { return l && l.length ? l[R.int(l.length)] : ''; };
+          s = T && T.moan ? (nk.kind === 'start' ? T.moan0(pk, who, S) : T.moan(pk, who, nk.kind === 'climax', S)) : M.say(S, who, nk.kind, { novel: true, top: top }, null);
+          src = M.lastSay === 'old' ? M.lastOld : M.lastSay === 'user' ? 'user' : M.lastSrc;
+        } else { s = M.pick(S, who, key, Object.assign({}, cx)); src = M.lastSrc; }
+        s = strip(s); var raw = strip(M.lastRaw);
+        out.push(o.detail ? { s: s, raw: raw, src: src, ends: !nk && !!M.lastEnds, fixed: src !== 'user' && raw !== s && M.plain(raw).replace(/\u2060/g, '') !== s, kind: M.fitKind(toneOf(who), who).kind } : s);
+      }
+    } finally { M.map = sv.map; M.nmap = sv.nmap; M.own = sv.own; if (HK.NovelMoan) HK.NovelMoan.top = sv.top; }
     return out;
   };
   /* 保存してある辞書を読む（ui-adv.js が HK.store の adv.moan に入れる） */
