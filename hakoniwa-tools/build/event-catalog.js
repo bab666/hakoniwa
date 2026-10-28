@@ -1,6 +1,7 @@
 /* 箱庭シミュレーター：箱庭ごとの「出来事の一覧」を作る（build.js から毎回呼ぶ。単独でも動く）
    node hakoniwa-tools/build/event-catalog.js <ビルド>（hakoniwa-full / hakoniwa-zenrei） [--print] [--headless]
-     ・<ビルド>/js/event-catalog.js（HK.EVENT_CATALOG。族のかたまり pack-catalog。画面 event-catalog-ui.js がボタンを押したときに読む）と docs/reports/2026-10-28/event-catalog.md の、そのビルドの節を書き直す
+     ・<ビルド>/js/event-catalog.js（HK.EVENT_CATALOG。族のかたまり pack-catalog。画面 event-catalog-ui.js がボタンを押したときに読む）と docs/reports/2026-10-28/event-catalog.md の、そのビルドの節（と冒頭の決まり MD_HEAD）を書き直す
+       md は抜粋でなく全件：箱庭ごとの「出来事の全件」（その箱庭だけの出来事）＋ビルドの節の最後の「いくつもの箱庭に出る出来事」。古くなっていないかは catalog-check.js で確かめる
      ・--print：書かずに、箱庭ごとの件数だけを出す　--headless：ブラウザ（Playwright）で #all を開いて数え、node の vm で数えた結果と id の並びが同じか確かめる（遅い。点検用）
    しくみ
      ・build.js と同じ順・同じ包み（HK.Load.def）で、全部のかたまりを node の vm で読む（build-manifest.js の runVm。R18版は #r18）。
@@ -444,7 +445,7 @@ function make(dir, opt) {
   const raw = {};   /* ファイル → 生のソース（r18 の範囲を見る） */
   const rawOf = f => raw[f] != null ? raw[f] : (raw[f] = fs.existsSync(path.join(dir, f)) ? fs.readFileSync(path.join(dir, f), 'utf8') : '');
   const files = [], fileIx = f => { let i = files.indexOf(f); if (i < 0) { files.push(f); i = files.length - 1; } return i; };
-  const evs = [], evKey = new Map();
+  const evs = [], evKey = new Map(), labelBy = [];
   const S = HK.SCENARIOS || {};
   const order = (HK.SCEN_ORDER || []).filter(id => S[id]).concat(Object.keys(S).filter(id => (HK.SCEN_ORDER || []).indexOf(id) < 0).sort());
   const base = e => { let x = e; for (let i = 0; i < 6; i++) { const p = Object.getPrototypeOf(x); if (!p || p === Object.prototype || p.id !== x.id) break; x = p; } return x; };
@@ -511,6 +512,8 @@ function make(dir, opt) {
     if (kind === 'incident') cat = 'incident';
     const nm = !d.label && d.id ? marks.names.find(x => x.re.test(d.id)) : null;
     const label = d.label || nm ? cutName(d.label || nm.label) : cleanHead(d.src.run) || (d.snipExact ? cleanHead(d.snip) : '') || refsHead(d.src.run, d.f ? V.srcs[d.f] : '', runsOf(d.f)) || '';
+    /* 表示名の出どころ（catalog-check.js の「印の無い新しい出来事」用。データには書かない）：mark＝印のコメント（@event）・label＝出来事の label／name・labels＝@labels・auto＝本文から拾った */
+    labelBy.push(d.label && !d.labelAuto ? (kind === 'mark' ? 'mark' : 'label') : nm ? 'labels' : label ? 'auto' : '');
     const o = { i: d.id || '', n: label, k: cat || '', t: c.ties, m: c.m, c: c.conds.filter(x => !/^関係：/.test(x) && x !== 'モブ'), f: d.f ? fileIx(d.f) : -1 };
     if (c.r18) o.r = 1;
     if (c.night) o.x = 1;
@@ -566,7 +569,7 @@ function make(dir, opt) {
       if (mk.rows && Array.isArray(v)) v.forEach((row, ri) => {
         if (!row || typeof row !== 'object') return;
         const d = { id: row.id || mk.path + '[' + ri + ']', label: typeof row.name === 'string' ? row.name : typeof row.label === 'string' ? row.label : typeof row.title === 'string' ? row.title : '', cat: mk.cat || '', tie: row.tie != null ? row.tie : mk.tie, tags: row.tags || mk.tags, src: srcOf(row), f: mk.f, r18file: fullOnly(mk.f), inR18: false };
-        if (!d.label) { const t = Array.isArray(row.t) ? row.t[0] : row.t; if (typeof t === 'string') d.label = cleanHead("'" + t.replace(/'/g, '’') + "'"); }
+        if (!d.label) { const t = Array.isArray(row.t) ? row.t[0] : row.t; if (typeof t === 'string') { d.label = cleanHead("'" + t.replace(/'/g, '’') + "'"); d.labelAuto = true; } }
         d._obj = row;
         const ix = addEv(d, S[id], 'row');
         if (info.ev.indexOf(ix) < 0) info.ev.push(ix);
@@ -600,7 +603,7 @@ function make(dir, opt) {
     info.ax = A;
   });
   const data = { v: 1, build: safeBuild ? 'zenrei' : 'full', ties: ORD.map(k => [k, TIES[k]]), cats: CATN, files, ev: evs, scen, order: Object.keys(scen) };
-  return { data, raw: poolIds, ms: Date.now() - t0, errs: V.R.errs, HK };
+  return { data, raw: poolIds, labelBy, ms: Date.now() - t0, errs: V.R.errs, HK };
 }
 /* content-events-r18.js の表（ENG・HATE・OBS・MOBF・PREG_STORY・NO_SCEN）と content.js の CORE を読んで、表示側の判定を写す（いちばん起きやすい設定のとき） */
 function judgeTables(src, csrc) {
@@ -635,9 +638,36 @@ function toJs(data) {
   return head + '(function () {\n  var HK = window.HK;\n  if (!HK) return;\n  HK.EVENT_CATALOG = { v: ' + data.v + ', build: ' + j(data.build) + ', ties: ' + j(data.ties) + ', cats: ' + j(data.cats) + ',\n files: ' + j(data.files) + ',\n order: ' + j(data.order) + ',\n scen: {\n' + sc + '\n },\n ev: [\n' + ev + '\n ] };\n})();\n';
 }
 const esc = s => String(s == null ? '' : s).replace(/\|/g, '｜').replace(/\n/g, ' ');
+/* 表示名（画面と同じく {a}{b}{c} はＡＢＣに） */
+const nmMd = e => String(e.n || '').replace(/\{a\}/g, 'Ａ').replace(/\{b\}/g, 'Ｂ').replace(/\{c\}/g, 'Ｃ');
+const nameCell = e => e.n ? esc(nmMd(e)) + (e.i ? '（' + esc(e.i) + '）' : '') : esc(e.i);
+/* 全件の一覧の並び：分類（HK.CAT_NAME の順。名前が同じ分類はまとめる）→ 関係（HK.TIE_ORDER の順。関係を問わないは最後）→ 表示名 → id（文字コードの順。決定的） */
+function fullSorter(data) {
+  const ck = Object.keys(data.cats), tk = data.ties.map(x => x[0]);
+  const catName = k => k ? data.cats[k] || k : 'そのほか';
+  const catRank = k => { const n = catName(k), i = ck.findIndex(x => data.cats[x] === n); return k ? (i >= 0 ? i : ck.length) : ck.length + 1; };
+  const tieRank = e => { const r = (e.t || []).map(k => tk.indexOf(k)).filter(i => i >= 0); return r.length ? Math.min.apply(null, r) : tk.length; };
+  const cmp = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+  return (a, b) => catRank(a.k) - catRank(b.k) || cmp(catName(a.k), catName(b.k)) || tieRank(a) - tieRank(b) || cmp((a.t || []).join(','), (b.t || []).join(',')) || cmp(nmMd(a), nmMd(b)) || cmp(a.i, b.i);
+}
+/* 全件の一覧の 1 行：分類・関係・表示名（id）・条件（夜・モブ・内容のスイッチ・展開の重さ・環境値・受け攻め・性欲・内容の軸）［・出る箱庭］ */
+function fullRow(data, e, T, full, where) {
+  const cs = [];
+  if (full && e.x) cs.push('夜（R18）'); else if (full && e.r) cs.push('R18 だけ');
+  if (e.mo) cs.push('モブ');
+  (e.c || []).forEach(x => cs.push(x === '重い' ? '展開が重いとき' : x));
+  (e.a || []).forEach(t => cs.push(AX_LABEL[t] || t));
+  const cond = cs.filter((x, i) => cs.indexOf(x) === i);
+  return '| ' + esc(e.k ? data.cats[e.k] || e.k : 'そのほか') + ' | ' + esc((e.t || []).map(k => T[k] || k).join('・') || '問わない') + ' | ' + nameCell(e) + ' | ' + esc(cond.join('・') || '-') + (where != null ? ' | ' + esc(where) : '') + ' |';
+}
 function toMd(data) {
   const L = [], E = data.ev, T = {}; data.ties.forEach(([k, l]) => { T[k] = l; });
   const full = data.build === 'full';
+  /* いくつもの箱庭に出る出来事（同じ出来事を箱庭ごとに繰り返さず、最後の節にまとめて載せる） */
+  const inScen = {};
+  data.order.forEach(id => data.scen[id].ev.forEach(i => { (inScen[i] = inScen[i] || []).push(id); }));
+  const shared = i => (inScen[i] || []).length > 1;
+  const sorter = fullSorter(data);
   L.push('## ' + (full ? 'R18版（hakoniwa-full）' : '全年齢版（hakoniwa-zenrei）'));
   L.push('');
   L.push('箱庭 ' + data.order.length + ' 個・出来事 ' + E.length + ' 件（同じ出来事が複数の箱庭に出るときは1件）。分類の方法：a 印／b 条件の文字列／d 定義の文字列／c id／- 拾えない（関係を問わない）。');
@@ -667,7 +697,7 @@ function toMd(data) {
     data.ties.map(x => x[0]).concat(['-']).forEach(k => {
       const l = rows[k];
       if (!l) return;
-      L.push('| ' + (k === '-' ? '関係を問わない' : esc(T[k])) + ' | ' + l.length + ' | ' + l.slice(0, 4).map(e => esc(e.n || e.i) + (e.n ? '（' + esc(e.i) + '）' : '') + (e.m !== '-' ? '〔' + e.m + '〕' : '')).join('、') + (l.length > 4 ? ' ほか' : '') + ' |');
+      L.push('| ' + (k === '-' ? '関係を問わない' : esc(T[k])) + ' | ' + l.length + ' | ' + l.slice(0, 4).map(e => nameCell(e) + (e.m !== '-' ? '〔' + e.m + '〕' : '')).join('、') + (l.length > 4 ? ' ほか' : '') + ' |');
     });
     L.push('');
     const cats = {};
@@ -683,31 +713,80 @@ function toMd(data) {
     L.push('内容の軸：' + axn.join('／'));
     if (s.tables.length) { L.push(''); L.push('表（数だけ）：' + s.tables.map(t => esc(t.n) + ' ' + t.c + (t.p ? '組（職業×職業）' : '件') + (t.note ? '（' + esc(t.note) + '）' : '')).join('、')); }
     if (s.story) { L.push(''); L.push('物語型：場面は関数で書かれていて、印（@event／@event-table）の付いたものだけを数えています。印の無い手書きの場面は入っていません。'); }
+    /* 出来事の全件（この箱庭だけのもの。いくつもの箱庭に出るものは最後の節） */
+    const own = s.ev.filter(i => !shared(i)).map(i => E[i]).sort(sorter), nShared = s.ev.length - own.length;
+    L.push('');
+    L.push('#### ' + esc(s.name) + 'の出来事の全件（' + s.ev.length + ' 件）');
+    L.push('');
+    L.push('この箱庭だけの出来事 ' + own.length + ' 件' + (nShared ? '。ほかに、いくつもの箱庭に出る出来事 ' + nShared + ' 件（この節の最後の「いくつもの箱庭に出る出来事」に、出る箱庭と一緒に載せています）' : '') + '。並びは分類→関係→表示名。');
+    if (own.length) {
+      L.push('');
+      L.push('| 分類 | 関係 | 出来事（id） | 条件 |');
+      L.push('| --- | --- | --- | --- |');
+      own.forEach(e => L.push(fullRow(data, e, T, full)));
+    }
     L.push('');
   });
+  /* いくつもの箱庭に出る出来事 */
+  const sh = Object.keys(inScen).map(Number).filter(shared).sort((a, b) => sorter(E[a], E[b]));
+  if (sh.length) {
+    const engine = data.order.filter(id => !data.scen[id].story);
+    L.push('### いくつもの箱庭に出る出来事（' + sh.length + ' 件）');
+    L.push('');
+    L.push('どの箱庭にもある出来事（共通の出来事・関係の出来事など）と、いくつかの箱庭で使う出来事です。並びは分類→関係→表示名。「エンジン型の全箱庭」は ' + engine.map(id => data.scen[id].name).join('・') + '。');
+    L.push('');
+    L.push('| 分類 | 関係 | 出来事（id） | 条件 | 出る箱庭 |');
+    L.push('| --- | --- | --- | --- | --- |');
+    sh.forEach(i => {
+      const ids = inScen[i], all = engine.length > 2 && engine.every(x => ids.indexOf(x) >= 0);
+      const where = all ? 'エンジン型の全箱庭' + (ids.length > engine.length ? '・' + ids.filter(x => engine.indexOf(x) < 0).map(x => data.scen[x].name).join('・') : '') : ids.map(x => data.scen[x].name).join('・');
+      L.push(fullRow(data, E[i], T, full, where));
+    });
+    L.push('');
+  }
   return L.join('\n');
 }
 const MD_HEAD = '# 出来事の一覧（箱庭ごと・関係ごと・R18 の夜）\n\n' +
-  'このファイルは `hakoniwa-tools/build/event-catalog.js` が build のたびに書き直します（各ビルドの節は `<!-- catalog:<ビルド>:begin -->`〜`end` の間だけ。冒頭の決まりは手で直してよい）。画面では、箱庭カードの「この箱庭のTIPS」の隣の「出来事の一覧」から同じ表が見られます。\n\n' +
-  '## 新しい出来事を足すときの決まり\n\n' +
-  '- 出来事は build のたびに自動で数え直されます（`node hakoniwa-tools/build/build.js <ビルド>` の中で `js/event-catalog.js` とこのファイルを作り直す）。手で追記しません。\n' +
+  'このファイルは `hakoniwa-tools/build/event-catalog.js` が build のたびに書き直します（冒頭のこの決まりも含めて全部。決まりを変えるときは event-catalog.js の `MD_HEAD` を直す）。手で追記しません。画面では、箱庭カードの「この箱庭のTIPS」の隣の「出来事の一覧」から同じ表が見られます（行を押すと、その行の出来事の全件が開く）。\n\n' +
+  'このファイルは抜粋ではなく全件を載せます：箱庭ごとの「出来事の全件」（その箱庭だけの出来事）と、各ビルドの節の最後の「いくつもの箱庭に出る出来事」（出る箱庭と一緒に）を合わせると、そのビルドの出来事が 1 件残らず入ります。関係ごとの表の「主な出来事」だけは抜粋です。\n\n' +
+  '## 新しい出来事を足すときの決まり（CLAUDE.md と同じ）\n\n' +
+  '出来事を足したら、次の 5 つを必ず行います。\n\n' +
+  '1. **印を付ける**（下の「印の付け方」）：関係が条件なら `tie:`、拾えない内容は `tags:`、表示名は `label:` か `/* @labels */`、物語型の場面は `/* @event … */`。\n' +
+  '2. **両ビルドで build して一覧を作り直す**：`node hakoniwa-tools/build/build.js hakoniwa-full` と `hakoniwa-zenrei`。`js/event-catalog.js`・`js/c/pack-catalog.*`・このファイルが作り直されます。\n' +
+  '3. **`node hakoniwa-tools/build/catalog-check.js` を 0 件にする**：一覧が元のファイルより古い（build し忘れ）・表示名の無い出来事・印の無い新しい場面（表示名が本文から自動で拾われた新しい出来事や、場面の書き方が増えたのに印が増えていないファイル）を見つけます。既にある出来事の言い回し・分岐を足しただけで「印の無い新しい場面の可能性」と出たときは、そのファイルに 1 行 `/* @event-ok <何を足したか> */` を書きます。\n' +
+  '4. **差分に全件入っていることを確かめる**：catalog-check の最後に、コミット済み（HEAD）の一覧から足された出来事・消えた出来事が表示名つきで出ます。足した出来事がすべて出ているか、消すつもりのない出来事が消えていないかを見ます。\n' +
+  '5. **一覧のファイルを同じコミットに含める**：`hakoniwa-full/js/event-catalog.js`・`hakoniwa-zenrei/js/event-catalog.js`・両ビルドの `js/c/`（pack-catalog と目録の index.html）・このファイルを、出来事を足したのと同じコミットに入れます。\n\n' +
+  '### 印の付け方\n\n' +
   '- 関係が条件の出来事は、`when` に `HK.Ties.has(ctx, a, b, \'master\')` のように関係の鍵をそのまま書けば拾われます。補助の関数（`is(k)`・`o.roles(…)` など）で隠れるときは、出来事に `tie: \'master\'`（複数なら `\'lover,fwb\'` か配列。関係を問わないと明示するなら `\'-\'`）を付けます。\n' +
   '- 夜・モブ・内容のスイッチ・死ネタ・残酷は、`sex: true`／`r18: true`・`HK.Content.ok(ctx, \'force\')`・`HK.Dark.f(ctx, \'kill\')`・`ctx.kill(…)` から拾います。拾えない書き方なら `tags: [\'night\', \'mob\', \'force\', \'preg\', \'violence\', \'abuse\', \'death\', \'cruel\']` から当てはまるものを付けます（文や動きは変えない）。\n' +
-  '- 表示名（画面の「主な出来事」）は、出来事の `label`、なければファイルの `/* @labels … */` の印（1 行に「id=表示名」。id の `*` は何にでも当たる。`E(…)`・`mk(…)` のような位置引数の工場で作る出来事向け）、なければ run の最初の地の文（25 字まで、文の切れ目で切る）です。新しい出来事には「何が起きるか」が分かる 8〜25 字の `label: \'…\'` を付けます（台詞「…」・性的な語は入れない）。画面には id を出さず、この md には表示名（id）の形で残します。\n' +
+  '- 表示名（画面の「主な出来事」と内訳）は、出来事の `label`、なければファイルの `/* @labels … */` の印（1 行に「id=表示名」。id の `*` は何にでも当たる）、なければ run の最初の地の文（文の切れ目で 25 字以内に切る）です。利用者向けなので、id・英字・台詞「…」を入れず、内容の分かる 8〜25 字の日本語にします。新しい出来事には必ず `label:` か `@labels` で付けます（本文から自動で拾った表示名のままの新しい出来事は、catalog-check が知らせます）。\n' +
   '- 物語型の箱庭（場面を関数で書くもの）は、場面の近くに 1 行のコメントを書くと数えられます：`/* @event scen=jashin id=jn_god_night cat=夜 tie=- tags=night,mob,force label=神に捧げられる夜 */`。表（配列・オブジェクト）は `/* @event-table scen=jashin path=JASHIN.DUO_EV label=二人の場面 */`（`pair=1` は職業×職業の表として数だけ、`rows=1` は行ごとに一覧へ）。\n' +
-  '- R18 の場面の印は、R18専用のファイルか `/* r18:begin */`〜`/* r18:end */` の中に書きます（全年齢版のビルドでは読まれません）。\n' +
-  '- 足したら build を回し、`js/event-catalog.js` の差分（その出来事が入ったか）を確かめてコミットします。\n\n' +
+  '- R18 の場面の印は、R18専用のファイルか `/* r18:begin */`〜`/* r18:end */` の中に書きます（全年齢版のビルドでは読まれません）。\n\n' +
   '## 数え方と限界\n\n' +
-  '- 数は仕組みが数えた「出来事の種類」の数で、文の本数ではありません。同じ出来事が複数の箱庭に出るときは、箱庭ごとに数えます。\n' +
+  '- 数は仕組みが数えた「出来事の種類」の数で、文の本数ではありません。同じ出来事が複数の箱庭に出るときは、箱庭ごとに数えます（全件の一覧では「いくつもの箱庭に出る出来事」に 1 回だけ載せます）。\n' +
   '- エンジン型の箱庭は、その箱庭の出来事の山（`HK.buildPool`）とハプニング（`HK.INCIDENTS`）。物語型の箱庭は、印の付いた場面と表だけです（手書きの場面は入らない）。\n' +
   '- 関係の判定は文字列からの推定です（分類の方法の記号を見てください）。「関係を問わない」には、関係の条件が補助の関数に隠れていて拾えなかったものも入ります。\n' +
-  '- 邪神村・吹雪の館・オメガバースの職業の掛け合わせ（職業×職業の表）は、組の数だけを出します。\n';
-function writeMd(data) {
-  let md = fs.existsSync(OUT_MD) ? fs.readFileSync(OUT_MD, 'utf8') : MD_HEAD;
+  '- 邪神村・吹雪の館・オメガバースの職業の掛け合わせ（職業×職業の表）と、物語型の場面の材料（罠・魔物・動機など）は、件数だけを出します。\n';
+/* md 全体を作る：冒頭（MD_HEAD）＋各ビルドの節（<!-- catalog:<ビルド>:begin -->〜end）。今の md からほかのビルドの節を引き継ぐ（catalog-check.js も使う） */
+function mdText(cur, data) {
   const b = '<!-- catalog:' + data.build + ':begin -->', e = '<!-- catalog:' + data.build + ':end -->';
   const block = b + '\n' + toMd(data) + '\n' + e;
+  const at = cur ? cur.indexOf('<!-- catalog:') : -1;
+  let md = at >= 0 ? MD_HEAD + '\n' + cur.slice(at) : MD_HEAD;
   if (md.indexOf(b) >= 0) md = md.replace(new RegExp(b + '[\\s\\S]*?' + e), () => block);
   else md = md.replace(/\s*$/, '\n\n') + block + '\n';
+  /* 節の順は full → zenrei */
+  const fb = md.indexOf('<!-- catalog:full:begin -->'), zb = md.indexOf('<!-- catalog:zenrei:begin -->');
+  if (fb > zb && zb >= 0) {
+    const fe = md.indexOf('<!-- catalog:full:end -->') + '<!-- catalog:full:end -->'.length, ze = md.indexOf('<!-- catalog:zenrei:end -->') + '<!-- catalog:zenrei:end -->'.length;
+    md = md.slice(0, zb) + md.slice(fb, fe) + md.slice(ze, fb) + md.slice(zb, ze) + md.slice(fe);
+  }
+  return md;
+}
+function writeMd(data) {
+  const cur = fs.existsSync(OUT_MD) ? fs.readFileSync(OUT_MD, 'utf8') : '';
+  const md = mdText(cur, data);
+  if (md === cur) return;
   fs.mkdirSync(path.dirname(OUT_MD), { recursive: true });
   fs.writeFileSync(OUT_MD, md);
 }
@@ -718,9 +797,12 @@ function build(dir, opt) {
   if (!same) fs.writeFileSync(p, js);
   writeMd(r.data);
   const d = r.data, nd = Object.keys(d.scen).reduce((a, id) => a + Object.keys(d.scen[id].ax).filter(t => d.scen[id].ax[t].d).length, 0);
-  return { line: '出来事の一覧 ' + d.order.length + '箱庭・' + d.ev.length + '件（' + Math.round(Buffer.byteLength(js) / 1024) + 'KB・' + r.ms + 'ms' + (same ? '・変わらず' : '・作り直し') + (nd ? '・表示側との食い違い ' + nd + '件' : '') + '）', errs: r.errs, data: d };
+  const noName = d.ev.filter(e => !hasName(e)).length;
+  return { line: '出来事の一覧 ' + d.order.length + '箱庭・' + d.ev.length + '件（' + Math.round(Buffer.byteLength(js) / 1024) + 'KB・' + r.ms + 'ms' + (same ? '・変わらず' : '・作り直し') + (nd ? '・表示側との食い違い ' + nd + '件' : '') + '・表示名の無い出来事 ' + noName + '件）' + (noName ? '　※ label か @labels で表示名を付けてください（catalog-check.js で一覧が出ます）' : ''), errs: r.errs, data: d };
 }
-module.exports = { make, build, toJs, toMd, classify, tieKeysIn };
+/* 表示名がある（日本語を含む。id のままの英字は無いのと同じ） */
+function hasName(e) { return !!e.n && JP.test(e.n); }
+module.exports = { make, build, toJs, toMd, mdText, hasName, classify, tieKeysIn, OUT_JS, OUT_MD };
 
 if (require.main === module) {
   const args = process.argv.slice(2).filter(a => !/^--/.test(a)), flags = process.argv.slice(2).filter(a => /^--/.test(a));

@@ -1,6 +1,6 @@
 /* 箱庭シミュレーター：読み込むスクリプトを「かたまり」にまとめ、目録（HK_MANIFEST）を index.html に書き込む
    node build.js <ビルドのディレクトリ>（hakoniwa-full / hakoniwa-zenrei） [--best] [--no-min] [--no-guard] [--all] [--soft] [--no-manifest] [--no-tone-verify] [--no-catalog]
-   ・はじめに出来事の一覧（js/event-catalog.js・docs/reports/2026-10-28/event-catalog.md）を event-catalog.js で作り直す（_order.txt に js/event-catalog.js があるとき）
+   ・はじめに出来事の一覧（js/event-catalog.js・docs/reports/2026-10-28/event-catalog.md）を event-catalog.js で作り直す（_order.txt に js/event-catalog.js があるとき）。出来事を足したら、両ビルドの build のあとで catalog-check.js を 0 件にする
    ・<ビルド>/js/_order.txt が読み込み順の一覧（全部読んだときの元の順。# から行末はコメント）。1行の書き方：
        js/xx.js                     … 中核（core。起動時に読む）
        late js/xx.js                … late（画面が出たあと裏で読む。late と tone-base を読み終わると HK.LATE_READY = true・HK.onLate()）
