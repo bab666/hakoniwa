@@ -8,6 +8,7 @@
        住人のオン／オフ・関係・受け攻めで書き換わる文（内容のスイッチの「起きます／起きません」・出られない部屋の「三人で」の事前の表示・恋人の多い人の注意書き・部屋の名前）は今までどおり見えたまま。
    ■ HK.NgBand：体の関係にならない組の帯（薄い黄色の面・藍の枠・「⚠」・見出し「体の関係にならない組」）。1組1行に「誰と誰：理由。直し方」と、その人の ⚙設定を開くボタン。
      ・HK.NgBand.html({ title, lead, rows: [{ a, b, who, t, fix }], notes: [], foot })：帯の HTML
+       （red: true で赤い帯〔薄い赤の面・赤い枠・「⛔」・見出しと前書きは赤字。出られない部屋の「この状況では脱出できません」room-noexit-note.js〕。count: false で見出しに組の数を付けない）
      ・HK.NgBand.ending(res, E)：結末の但し書きを帯にする（出られない部屋：最初の記録の「扉の紙の但し書き」から組と理由を読む。常識改変：結末の行
        「住人どうしの施術にならない組：…」。マッサージ：結末の「理由」「直し方」）。帯に移した行は E.lines から外す（文字の書き出しは今までどおり）。
        記録（seed・result）は読むだけで、書き換えない・回し直さない。直し方の文は記録に無いので、理由の文（pos.js の HK.Pos.noSexInfo の t）から引く（下の FIX。noSexInfo の文を変えたらここも合わせる）
@@ -42,12 +43,21 @@
     '.ngband .nggear svg{flex:0 0 auto}' +
     '.ending .ngband{margin:10px 0 6px}' +
     '#trio-note{margin:0 0 4px}#trio-note .desc{margin:0 0 8px;font-size:12px;color:var(--muted2)}' +
+    /* 赤い帯（脱出できない）：紙に赤を少し混ぜた面と赤い枠。見出しと前書きは赤字（暗い面では、文字の色に寄せて明るい赤になる） */
+    '.ngband.ngred{border-color:#C62F3A;background:#FCEBEC;background:color-mix(in srgb,#E5484D 12%,var(--paper))}' +
+    '.ngband.ngred .nghead,.ngband.ngred .nglead{color:#B3232D;color:color-mix(in srgb,#D93A44 78%,var(--ink))}' +
+    '.ngband.ngred .nglead{font-weight:700;font-size:12.5px}' +
+    '.ngband.ngred li{border-top-color:color-mix(in srgb,#E5484D 35%,var(--line2))}' +
+    '#noexit-note{margin:0 0 4px}' +
     '#view-box .ctw.ngmini{display:block!important;margin:3px 0 2px 22px!important;padding:2px 8px;border-left:3px solid var(--ai,var(--ink));border-radius:4px;background:#FFF6D6;background:color-mix(in srgb,#F2C230 17%,var(--paper));color:var(--ink);font-size:11.5px;line-height:1.6;opacity:1!important}' +
     '#view-box .ctw.ngmini::before{content:"\\26A0\\FE0E\\00A0";font-weight:700}' +
     '@supports not (color: color-mix(in srgb, red 50%, blue)){' +
       '@media (prefers-color-scheme: dark){:root:not([data-theme="light"]):not([data-theme="gray"]) .ngband,:root:not([data-theme="light"]):not([data-theme="gray"]) #view-box .ctw.ngmini{background:#2A2715}}' +
       ':root[data-theme="dark"] .ngband,:root[data-theme="dark"] #view-box .ctw.ngmini{background:#2A2715}' +
-      ':root[data-theme="gray"] .ngband,:root[data-theme="gray"] #view-box .ctw.ngmini{background:#EEE6C8}}';
+      ':root[data-theme="gray"] .ngband,:root[data-theme="gray"] #view-box .ctw.ngmini{background:#EEE6C8}' +
+      '@media (prefers-color-scheme: dark){:root:not([data-theme="light"]):not([data-theme="gray"]) .ngband.ngred{background:#3A1E21}:root:not([data-theme="light"]):not([data-theme="gray"]) .ngband.ngred .nghead,:root:not([data-theme="light"]):not([data-theme="gray"]) .ngband.ngred .nglead{color:#FF9C9C}}' +
+      ':root[data-theme="dark"] .ngband.ngred{background:#3A1E21}:root[data-theme="dark"] .ngband.ngred .nghead,:root[data-theme="dark"] .ngband.ngred .nglead{color:#FF9C9C}' +
+      ':root[data-theme="gray"] .ngband.ngred{background:#F2DADB}}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   /* ---------- 環境値の説明の「？」 ---------- */
@@ -100,7 +110,8 @@
   B.html = function (o) {
     var rows = o.rows || [], notes = o.notes || [];
     if (!rows.length && !notes.length) return '';
-    return '<div class="ngband" role="note"' + (o.id ? ' id="' + esc(o.id) + '"' : '') + '><p class="nghead"><span class="ngic" aria-hidden="true">⚠︎</span>' + esc(o.title || '') + (rows.length ? '（' + rows.length + '組）' : '') + '</p>' +
+    /* o.red：脱出できない・成り立たないことを知らせる赤い帯（room-noexit-note.js。印は ⛔）。o.count === false なら見出しに組の数を付けない */
+    return '<div class="ngband' + (o.red ? ' ngred' : '') + '" role="note"' + (o.id ? ' id="' + esc(o.id) + '"' : '') + '><p class="nghead"><span class="ngic" aria-hidden="true">' + (o.red ? '⛔' : '⚠︎') + '</span>' + esc(o.title || '') + (rows.length && o.count !== false ? '（' + rows.length + '組）' : '') + '</p>' +
       (o.lead ? '<p class="nglead">' + esc(o.lead) + '</p>' : '') +
       '<ul>' + rows.map(function (r) {
         var who = r.who || (r.a && r.b ? r.a + 'と' + r.b : '');

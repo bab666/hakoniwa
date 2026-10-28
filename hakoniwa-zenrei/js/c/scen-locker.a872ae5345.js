@@ -1,6 +1,6 @@
 ;
 /* ==== js/solo-locker-more.js ==== */
-HK.Load.def(193,'js/solo-locker-more.js',function(){
+HK.Load.def(194,'js/solo-locker-more.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER;
@@ -172,7 +172,7 @@ add(LK.OUTSIDE,'ガスのタンクが空になり、非常用の換気扇が回�
 });
 ;
 /* ==== js/solo-locker-bed.js ==== */
-HK.Load.def(194,'js/solo-locker-bed.js',function(){
+HK.Load.def(195,'js/solo-locker-bed.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER;
@@ -212,7 +212,7 @@ return[SOFT.label[kind]];
 });
 ;
 /* ==== js/locker-ties.js ==== */
-HK.Load.def(195,'js/locker-ties.js',function(){
+HK.Load.def(196,'js/locker-ties.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,ST=HK.Story;
@@ -456,7 +456,7 @@ return n;
 });
 ;
 /* ==== js/locker-tie-more.js ==== */
-HK.Load.def(196,'js/locker-tie-more.js',function(){
+HK.Load.def(197,'js/locker-tie-more.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,ST=HK.Story;
@@ -1036,7 +1036,7 @@ return n;
 });
 ;
 /* ==== js/locker-crowd.js ==== */
-HK.Load.def(197,'js/locker-crowd.js',function(){
+HK.Load.def(198,'js/locker-crowd.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,ST=HK.Story;
@@ -1944,7 +1944,7 @@ LK.crowd=function(input){return input.chars.length<=1?soloRun(input):groupRun(in
 });
 ;
 /* ==== js/solo-locker.js ==== */
-HK.Load.def(198,'js/solo-locker.js',function(){
+HK.Load.def(199,'js/solo-locker.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,ST=HK.Story,clamp=HK.clamp;
@@ -2193,6 +2193,7 @@ else if(pair.rest>0){pair.rest--;order=[];}
 for(var k=0;k<order.length;k++){
 var a=order[k],b=a.o;
 if(HK.Avoid&&(HK.Avoid.of(S,a,b)|| !HK.Avoid.topOk(S,a,b)))continue;
+if(a===master&&servant&& !svW&&LK.inGate&& !clash&& !ngP&& !r18No&& !libNo&&plotter!==servant&&servant.cnt.hold>=2&& !servant.broke&&master.m.heat>=70&&LK.inGate(S,{A:A,B:B,pair:pair,M:master,Sv:servant,servant:servant})){lewdNow=true;break;}
 var urge=(a.goal&&a.goal.id==='want'?0.12:a.goal&&a.goal.id==='out'? -0.08:0)+(a.action&&a.action.id==='flow'?0.08:a.action&&a.action.id==='solve'? -0.06:0)+a.m.heat/100+a.tr.impulse*0.35+a.tr.fc*0.15-a.m.reason/130-a.tr.cp*0.12+(plotter===a?0.45:0)+({lover:0.15,fwb:0.2,almost:0.1,crush:crusher===a?0.2:0,mutual:0.2,tension: -0.1}[rel]||0)+(fwbAll&&rel!=='fwb'?0.2:0)+(crusher===a&&rel!=='crush'&&rel!=='mutual'?0.15:0);
 if(hateP&&HSX.order(S,a,b)[0]===a)urge+=0.35*HK.Dark.f(S,'assault');
 if(lhAny&& !clash&&LHo.has(S,a,b))urge+=0.2;
@@ -2378,7 +2379,10 @@ if(!bed&&R18&&lhAny&&pair.sexIn&& !clash&& !libForce&& !pair.refusedHard&&LHo.se
 if(servant&&servant.cnt.hold>=2&& !servant.broke&&master.m.heat<70)bed=false;
 var endure=bed&&clash;
 if(endure)bed=false;
-if(bed&&LK.bedGate&&LK.bedGate(S,{A:A,B:B,pair:pair,plotter:plotter,master:svW?null:master,servant:svW?null:servant,how:how,lew:lew}))bed=false;
+if(LK.bedGate&& !clash&& !libNo&& !ngP&& !r18No){
+var gate=LK.bedGate(S,{A:A,B:B,pair:pair,plotter:plotter,master:svW?null:master,servant:svW?null:servant,how:how,lew:lew,bed:bed});
+if(gate==='no')bed=false;else if(gate==='bed')bed=true;
+}
 var outcome,bedLabels=[];
 if(bed){
 outcome='bed';
@@ -2394,7 +2398,7 @@ outcome='endure';
 var ke=A.m.reason>=B.m.reason?A:B,tye=clashType(ke);
 ST.key(S,ST.say(S,{actors:[A,B],tag:'耐え抜いた',text:(how==='timeout'?LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/,''):'')+ST.fmt(pk(LK.CLASH.bed[tye]),{a:ke.name,b:ke.o.name}),why:(r18No?'二人とも媚薬で火照っていた（':'二人とも発情していた（')+Math.round(A.m.heat)+'・'+Math.round(B.m.heat)+'）が、'+(tieNL?nlWhy+'の二人なので':sexP?'体の関係にならない二人（'+sexWhy+'）なので':libNo?'体の関係にならない二人（'+libWho.name+'は性欲が「なし」）なので':'受け攻めの向きが合わない二人なので')+'、ベッドには行かなかった（'+ke.name+'の理性 '+Math.round(ke.m.reason)+'）',mag:30}),'結末');
 }else{
-outcome=how==='timeout'?'rescue':plotter&& !plotOk?'plotfail':pair.refusedHard&&pair.acts>=1&& !pair.sexIn?'angry':pair.acts>=1?'awkward':(A.cnt.make+B.cnt.make)>0||(clash&&A.cnt.hold+B.cnt.hold>0)?'near':'clean';
+outcome=how==='timeout'?'rescue':plotter&& !plotOk?'plotfail':pair.refusedHard&&pair.acts>=1&& !pair.sexIn?'angry':pair.acts>=1?'awkward':(A.cnt.make+B.cnt.make)>0||(clash&&A.cnt.hold+B.cnt.hold>0)||pair.toNo?'near':'clean';
 var who0=outcome==='angry'?(A.cnt.refuse>=B.cnt.refuse?B:A):outcome==='plotfail'?plotter:outcome==='near'?(A.cnt.make+A.cnt.hold>=B.cnt.make+B.cnt.hold?A:B):pair.sexIn&&pair.top?pair.top:A;
 var AF=LK.AFTER,ak=pair.sexIn&&outcome==='awkward'&&AF.awkwardSex?'awkwardSex':pair.sexIn&&outcome==='rescue'&&AF.rescueSex?'rescueSex':outcome;
 var aft=AF[ak].filter(function(l){return(A.cnt.refuse+B.cnt.refuse>0|| !/嗜め/.test(l))&&(ak!=='rescueSex'||(ff? !/繋が/.test(l): !/脚を絡め合った/.test(l))&&(pair.conn|| !/まだ(繋が|脚を絡め)/.test(l)));});
@@ -2402,12 +2406,13 @@ var tA=ST.fmt(pk(aft.length?aft:AF[outcome]),{a:who0.name,b:who0.o.name});
 var RA=LK.REL&&LK.REL.after[rel];
 if(RA&&pair.acts>=1&&outcome!=='angry'&&outcome!=='plotfail'&&rng()<0.7)tA+=ST.fmt(pk(RA),{a:who0.name,b:who0.o.name,c:(crusher||A).name,o:(crusher||A).o.name,u:nt?nt.u.name:'',d:nt?nt.d.name:''});
 if(nt)tA+=NT.afterNote(S,nt,outcome,plotter);
-if(plotter&&plotOk&&pair.acts>=1)tA+=ST.fmt(pk(AF.plotwin.filter(function(l){return!/ベッド|眠|寝顔/.test(l);})),{a:plotter.name,b:plotter.o.name});
+if(plotter&&plotOk&&pair.acts>=1&& !pair.toNo)tA+=ST.fmt(pk(AF.plotwin.filter(function(l){return!/ベッド|眠|寝顔/.test(l);})),{a:plotter.name,b:plotter.o.name});
 ST.key(S,ST.say(S,{actors:[A,B],tag:{clean:'無事に脱出',near:'踏みとどまった',awkward:'気まずい脱出',angry:'怒りの脱出',plotfail:'計画失敗',rescue:'時間切れ'}[outcome],text:tA,why:'手を出した回数 '+pair.acts+'・嗜めた回数 '+(A.cnt.refuse+B.cnt.refuse)+'・発情 '+Math.round(A.m.heat)+'／'+Math.round(B.m.heat),mag:30}),'結末');
 }
 P.forEach(function(p){
 var f;
-if(plotter===p)f=outcome==='bed'?'相手をモノにした':pair.sexIn&&outcome!=='plotfail'?'ロッカーの中で相手をモノにした':pair.acts>=1&&outcome!=='plotfail'?'少しだけ思いを遂げた':'計画が空回りした';
+if(p.toFateU)f=p.toFateU;
+else if(plotter===p)f=outcome==='bed'?'相手をモノにした':pair.sexIn&&outcome!=='plotfail'?'ロッカーの中で相手をモノにした':pair.acts>=1&&outcome!=='plotfail'?'少しだけ思いを遂げた':'計画が空回りした';
 else if(svW&&servant===p)f=NT.fate(nt,p);
 else if(servant===p&&p.toFate)f=p.toFate;
 else if(servant===p)f=p.broke?'主に手を出してしまった':p.ordered?'主の許しで身を委ねた':p.cnt.hold?'主に手を出さず耐えきった':'主に身を委ねた';
@@ -2418,12 +2423,12 @@ else if(p.cnt.refuse>=2&&outcome!=='bed'&& !p.cnt.accept)f='最後まで嗜め�
 else if(p.cnt.refuse>=1&&p.cnt.accept>=1)f='嗜めきれずに流された';
 else if(p.cnt.accept>=1)f='流された';
 else f=p.m.reason>30?'理性を保ちきった':'ぎりぎりで踏みとどまった';
-p.fate=f+(outcome==='bed'?'・ベッドで激しく':'');
+p.fate=f+(outcome==='bed'&& !pair.forced?'・ベッドで激しく':'');
 p.notes.push('発情 '+Math.round(p.m.heat)+'・理性 '+Math.round(p.m.reason)+'・'+W_CL+' '+p.cnt.climax+'回');
 p.notes.push('仕掛けた '+p.cnt.make+'回・応じた '+p.cnt.accept+'回・嗜めた '+p.cnt.refuse+'回'+(p.cnt.hold?'・耐えた '+p.cnt.hold+'回':'')+(p.cnt.solve?'・仕掛けを解いた '+p.cnt.solve+'回':''));
 });
 var mins=(escTurn+1)*5;
-var title={bed:(how==='timeout'?'時間切れで扉が開いたが、':mins+'分で脱出したが、')+'二人は部屋を出ずにベッドへ直行した。',clean:mins+'分で無事に脱出。何も起きなかった。',near:mins+'分で脱出。危ない瞬間はあったが、二人は踏みとどまった。',awkward:mins+'分で脱出。'+(pair.sexIn?'ロッカーの中で'+(ff?'肌を重ねた':'一線を越えた')+'ことは、ガスのせいにした。':'ロッカーの中のことは、ガスのせいにした。'),angry:mins+'分で脱出。'+(A.cnt.refuse>=B.cnt.refuse?A.name:B.name)+'の怒りは収まらなかった。',plotfail:mins+'分で脱出。'+(plotter?plotter.name:'')+'の計画は空回りした。',rescue:'制限時間内に脱出できず、扉は時間切れで開いた。'+(pair.conn?'そのとき二人は、まだ'+(ff?'肌を重ねたままだった。':'繋がったままだった。'):pair.sexIn?'ロッカーの中で何があったかは、二人だけが知っている。':''),endure:(how==='timeout'?'時間切れで扉が開いた。':mins+'分で脱出。')+'目の前のベッドには目もくれず、二人は媚薬が抜けるまで耐え抜いた。'}[outcome];
+var title={bed:(how==='timeout'?'時間切れで扉が開いたが、':mins+'分で脱出したが、')+(pair.forced&&master&&servant?master.name+'は'+servant.name+'を部屋から出さなかった。':'二人は部屋を出ずにベッドへ直行した。'),clean:mins+'分で無事に脱出。何も起きなかった。',near:mins+'分で脱出。危ない瞬間はあったが、二人は踏みとどまった。',awkward:mins+'分で脱出。'+(pair.sexIn?'ロッカーの中で'+(ff?'肌を重ねた':'一線を越えた')+'ことは、ガスのせいにした。':'ロッカーの中のことは、ガスのせいにした。'),angry:mins+'分で脱出。'+(A.cnt.refuse>=B.cnt.refuse?A.name:B.name)+'の怒りは収まらなかった。',plotfail:mins+'分で脱出。'+(plotter?plotter.name:'')+'の計画は空回りした。',rescue:'制限時間内に脱出できず、扉は時間切れで開いた。'+(pair.conn?'そのとき二人は、まだ'+(ff?'肌を重ねたままだった。':'繋がったままだった。'):pair.sexIn?'ロッカーの中で何があったかは、二人だけが知っている。':''),endure:(how==='timeout'?'時間切れで扉が開いた。':mins+'分で脱出。')+'目の前のベッドには目もくれず、二人は媚薬が抜けるまで耐え抜いた。'}[outcome];
 var lines=P.map(function(p){return p.name+'：'+p.fate;});
 lines.push('仕掛け：'+gimmicks.map(function(g,i){return g.name+(i<gi?'（解除）':'');}).join('→')+(how==='luck'?'（外から開いた）':''));
 if(pair.level>=0)lines.push('ロッカーの中でいちばん進んだのは「'+actLabel(pair.level)+'」');
@@ -2448,7 +2453,7 @@ summary:'媚薬ロッカー：'+title
 })();
 });
 ;
-HK.Load.def(198.5,'tone:scen-locker',function(){
+HK.Load.def(199.5,'tone:scen-locker',function(){
 HK.Load.toneData("mixed",{"F":[
 ["……隠しても無駄だな。お互いに","……隠しても無駄ですね。お互い様だよ"],
 ["〈〉も〈〉も、がんばってください！　もうすぐ出られますから！","〈〉も〈〉も、がんばって！　もうすぐ出られますから！",1],
@@ -2632,4 +2637,4 @@ HK.Load.toneData("keigo_flat",{"F":[
 ["そちらのお二人、生きていますか","そちらのお二人。生存確認です",1],
 ["〈〉も〈〉も、がんばってください！　もうすぐ出られますから！","〈〉、〈〉。もうすぐ出られます。作業を続けてください",1]]});
 });
-HK.Load.done('scen-locker', 'ad5f3abbf4', 1);
+HK.Load.done('scen-locker', 'a872ae5345', 1);

@@ -97,6 +97,7 @@ js/room-tie-more2.js @scen:whiteroom
 js/room-same.js @scen:whiteroom
 js/room-games.js @scen:whiteroom
 js/room-trio-note.js @scen:whiteroom
+js/room-noexit-note.js @scen:whiteroom
 js/scenario-trial.js @scen:trial
 js/ego-image.js
 js/omega-data.js

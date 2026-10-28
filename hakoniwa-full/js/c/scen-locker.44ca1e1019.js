@@ -1,6 +1,6 @@
 ;
 /* ==== js/solo-locker-more.js ==== */
-HK.Load.def(279,'js/solo-locker-more.js',function(){
+HK.Load.def(280,'js/solo-locker-more.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER;
@@ -280,7 +280,7 @@ add(LK.OUTSIDE,'ガスのタンクが空になり、非常用の換気扇が回�
 });
 ;
 /* ==== js/solo-locker-bed.js ==== */
-HK.Load.def(280,'js/solo-locker-bed.js',function(){
+HK.Load.def(281,'js/solo-locker-bed.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER;
@@ -601,7 +601,7 @@ return n;
 });
 ;
 /* ==== js/locker-thick.js ==== */
-HK.Load.def(281,'js/locker-thick.js',function(){
+HK.Load.def(282,'js/locker-thick.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,T=HK.ThickSex,ST=HK.Story;
@@ -685,7 +685,7 @@ finally{B.fore=save.fore;B.insert=save.insert;B.pos=save.pos;B.climax=save.clima
 });
 ;
 /* ==== js/locker-ties.js ==== */
-HK.Load.def(282,'js/locker-ties.js',function(){
+HK.Load.def(283,'js/locker-ties.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,ST=HK.Story;
@@ -929,7 +929,7 @@ return n;
 });
 ;
 /* ==== js/locker-ties-r18.js ==== */
-HK.Load.def(283,'js/locker-ties-r18.js',function(){
+HK.Load.def(284,'js/locker-ties-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,NT=LK&&LK.TIES,ST=HK.Story;
@@ -1306,7 +1306,7 @@ LK.TIES_R18={INTRO:INTRO,MID:MID,PEAK:PEAK,ERO_PEAK:ERO_PEAK,AFTER:AFTER,W:W};
 });
 ;
 /* ==== js/locker-tie-more.js ==== */
-HK.Load.def(284,'js/locker-tie-more.js',function(){
+HK.Load.def(285,'js/locker-tie-more.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,ST=HK.Story;
@@ -1890,7 +1890,7 @@ return n;
 });
 ;
 /* ==== js/locker-tie-more-r18.js ==== */
-HK.Load.def(285,'js/locker-tie-more-r18.js',function(){
+HK.Load.def(286,'js/locker-tie-more-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,ST=HK.Story;
@@ -2288,7 +2288,7 @@ return n;
 });
 ;
 /* ==== js/locker-tie-order-r18.js ==== */
-HK.Load.def(286,'js/locker-tie-order-r18.js',function(){
+HK.Load.def(287,'js/locker-tie-order-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,ST=HK.Story;
@@ -2334,30 +2334,73 @@ shy:'や、やめないで……め、命令……｜や、やめるな……め
 polite:'そのまま、続けて。……命令だよ｜そのまま、続けろ。……命令だ｜そのまま、続けてください。……命令です|遠慮はいらないよ。主が許すから｜遠慮はいらない。主が許す｜遠慮はいりませんよ。主が許しますから'
 })
 };
+var IN_ASK=P9({
+proud:'我慢はそこまで。主が許す、じゃない。主が命じる｜我慢はそこまでだ。主が許すのではない。主が命じる｜我慢はそこまでです。主が許すのではありません。主が命じます|私の前で耐えてみせる必要はない。命令だよ、こっちを向いて｜私の前で耐えてみせる必要はない。命令だ、こちらを向け｜私の前で耐えてみせる必要はありません。命令です、こちらを向きなさい',
+stern:'耐えるのはもういい。これは命令｜耐えるのはもういい。これは命令だ｜耐えるのはもう結構です。これは命令です|動かないで。ここから先は、私が決める｜動くな。ここから先は、私が決める｜動かないでください。ここから先は、私が決めます',
+tsun:'い、いつまで我慢してるの。命令だから、こっち来て｜い、いつまで我慢している。命令だ、こっちに来い｜い、いつまで我慢しているんですか。命令です、こちらに来てください|か、勘違いしないで。命令だから、言うことを聞いて｜か、勘違いするな。命令だから、言うことを聞け｜か、勘違いなさらないで。命令ですから、言うことを聞いてください',
+gentle:'もう耐えなくていいよ。……主の命令、聞けるよね｜もう耐えなくていい。……主の命令は聞けるな｜もう耐えなくていいんですよ。……主の命令、聞けますね|大丈夫。今だけは、命令に従って｜大丈夫だ。今だけは、命令に従え｜大丈夫です。今だけは、命令に従ってください',
+devoted:'あなたが耐えるのを、もう見ていられない。命令する、私に全部預けて｜あなたが耐えるのを、もう見ていられない。命令する、私に全部預けろ｜あなたが耐えるのを、もう見ていられません。命令します、私に全部預けてください|主として命じる。……あなたは、私だけ見ていて｜主として命じる。……あなたは、私だけ見ていろ｜主として命じます。……あなたは、私だけ見ていてください',
+cool:'我慢は終わり。命令｜我慢は終わりだ。命令だ｜我慢は終わりです。命令です|時間の無駄。命令に従って｜時間の無駄だ。命令に従え｜時間の無駄です。命令に従ってください',
+free:'はい、我慢比べはおしまい。主の命令ね｜よし、我慢比べはおしまいだ。主の命令だ｜はい、我慢比べはおしまいです。主の命令ですよ|耐えてる顔も悪くないけど、もう十分。命令だよ｜耐えている顔も悪くないが、もう十分だ。命令だ｜耐えていらっしゃるお顔も悪くありませんが、もう十分です。命令ですよ',
+shy:'そ、そんなに我慢しないで……め、命令、だから｜そ、そんなに我慢するな……め、命令、だ｜そ、そんなに我慢しないでください……め、命令、ですから|こ、こっち、向いて。……命令｜こ、こっちを、向け。……命令だ｜こ、こちらを、向いてください。……命令です',
+polite:'十分に耐えてくれたね。ここからは、主の命令に従って｜十分に耐えてくれた。ここからは、主の命令に従え｜十分に耐えてくださいましたね。ここからは、主の命令に従ってください|申し訳ないけど、これは命令。我慢はもうやめて｜申し訳ないが、これは命令だ。我慢はもうやめろ｜申し訳ありませんが、これは命令です。我慢はもうおやめください'
+});
+var IN_HOLD=L('{u}は{l}の両手首をまとめて、ロッカーの奥の壁に押さえつけた。狭い箱の中に、逃げる隙間はどこにもなかった。{u}は{l}の耳元で、扉が開いたら続きをすると告げた。|'+
+'{l}が身をよじるたびに、背中がロッカーの壁にぶつかって鈍い音を立てた。{u}は体ごと{l}を押さえ込み、首筋に唇を押し当てた。扉が開くまでの時間が、{l}にはひどく長かった。|'+
+'{u}は{l}の顎を掴んで上を向かせ、命令をもう一度だけ繰り返した。{l}の返事を待たずに、{u}の手が服の内側へ滑り込んだ。狭いロッカーの中では、{l}が顔を背けることさえ許されなかった。');
+var IN_NO={
+refuse:L('{l}は狭いロッカーの中で、器用に肩をすくめた。{l}「こんなところで命令ごっこ？　出てからにして｜こんなところで命令ごっこか。出てからにしろ｜こんなところで命令ごっこですか。出てからにしてください」――{u}は言い返せずに、黙って仕掛けの方へ向き直った。|'+
+'{l}は{u}の額を指で軽く弾いた。{l}「その命令、却下。耐えてるのは、あなたのためでもあるんだから｜その命令は却下だ。耐えているのは、あなたのためでもある｜そのご命令、却下です。耐えているのは、あなたのためでもあるんですから」――対等に近い二人には、命令はただの冗談にしかならなかった。|'+
+'{l}は小さく吹き出した。{l}「主の威厳、ロッカーの中じゃ台無しだよ｜主の威厳も、ロッカーの中では台無しだな｜主の威厳も、ロッカーの中では台無しですね」――{u}もつられて笑い、張りつめていた空気が少しだけ緩んだ。'),
+decline:L('{l}は首を振り、狭い中でできるだけ身を引いた。{l}「どんな命令でも聞く。でも、それだけは聞けない｜どんな命令でも聞く。だが、それだけは聞けない｜どんなご命令でも聞きます。でも、それだけはお聞きできません」――{u}は伸ばしかけた手を、ゆっくりと下ろした。|'+
+'{l}は目を伏せたまま、震える声で答えた。{l}「ここで命令に従ったら、明日から主の顔が見られない｜ここで命令に従えば、明日から主の顔が見られない｜ここでご命令に従ったら、明日から主のお顔が見られません」――{u}は苦く笑って、命令を取り消した。|'+
+'{l}は、ロッカーの扉に背中を押しつけるようにして距離を取った。{u}は、{l}の青ざめた顔を見て、自分の口にしたことを悔やんだ。{u}「……忘れて。今のは、命令じゃない｜……忘れろ。今のは、命令ではない｜……お忘れください。今のは、命令じゃありません」'),
+rebuff:L('{l}は{u}の手を払いのけた。{l}「媚薬で命令までおかしくなった？　聞くわけない｜媚薬で命令までおかしくなったか。聞くわけがない｜媚薬でご命令までおかしくなりましたか。聞くわけがありません」――{l}はそれきり、狭いロッカーの中で{u}に背を向けた。|'+
+'{l}の目が、すっと冷えた。{l}「耐えてきたのは、あなたのためじゃない。自分のため｜耐えてきたのは、あなたのためではない。自分のためだ｜耐えてきたのは、あなたのためではありません。自分のためです」――{u}の命令は、狭い箱の中で行き場をなくした。|'+
+'{l}は{u}の胸を押し返し、ロッカーの壁際ぎりぎりまで身を引いた。{l}「命令なら、出てからいくらでも聞く。ここでは聞かない｜＝｜ご命令なら、出てからいくらでもお聞きします。ここではお聞きしません」――{u}は舌打ちをこらえて、手を引いた。')
+};
+var FORCE_DOOR=L('扉が開いても、{u}の命令は取り消されなかった。{u}は{l}の腕を掴んだまま、部屋の奥の{bed}まで引きずっていった。{l}が振り返った扉の向こうは、ひどく遠く見えた。|'+
+'ロッカーの扉が開く音がしても、{u}は{l}を離さなかった。ロッカーの中で始まったことの続きを、{u}は{bed}の上で終わらせるつもりだった。{l}の抵抗は、狭い箱の中にいたときよりも弱かった。|'+
+'外の空気が流れ込んだのは、ほんの一瞬だった。{u}は{l}を{bed}に突き倒し、その上にのしかかった。{u}「命令は、まだ終わってない｜命令は、まだ終わっていない｜命令は、まだ終わっていません」');
 var FATE={refuse:'主の命令を笑って断った',decline:'主の命令を断り、主が引いた',rebuff:'主の命令を撥ねつけた',force:'主の命令でねじ伏せられた',take:'主の命令で身を委ねた',give:'主の命令で主を抱いた'};
+var FATE_U={refuse:'命令を笑って断られた',decline:'命令を断られ、引き下がった',rebuff:'命令を撥ねつけられた',force:'命令で従者をねじ伏せた',denyX:'家族の一線の前で想いを拒まれた',denyH:'家族の暮らしを守って拒んだ'};
 var LOVE_T= /^(lover|mate|fated|almost|fwb)$/,PINE_T= /^(crush|honmei|worship|blind|yan|fond)$/;
 function tiesOf(S,a,b){return(S.ties||[]).filter(function(t){return t&&((t.a===a.i&&t.b===b.i)||(t.a===b.i&&t.b===a.i));});}
+function pines(S,ties,x){return ties.some(function(t){return LOVE_T.test(t.type)||(PINE_T.test(t.type)&&S.P&&S.P[t.a]===x);});}
 function relB(S,ties,x){
 var v=0;
 ties.forEach(function(t){
 if(LOVE_T.test(t.type)||(PINE_T.test(t.type)&&S.P&&S.P[t.a]===x))v+=35;
-if(t.cold==='good')v+=10;else if(t.cold==='bad')v-=25;
+if(t.cold==='good')v+=5;else if(t.cold==='bad')v-=25;
 });
 return v;
 }
-function fondOf(S,ties,x){
-var c=x.cnt||{},m=x.m||{};
-var body=Math.min(40,8+(m.heat||0)*0.25+Math.min(2,c.accept||0)*6+Math.min(2,c.make||0)*5-Math.min(2,c.refuse||0)*10);
-return clamp(body+relB(S,ties,x));
+var LIBF={low:0.6,high:1.15,none:0};
+function libOf(x){return HK.Pos&&HK.Pos.libOf?HK.Pos.libOf(x):'';}
+function libF(x){var v=libOf(x);return LIBF[v]!=null?LIBF[v]:1;}
+function fondOf(S,ties,x,bedOk){
+var c=x.cnt||{},m=x.m||{},h=m.heat||0,cp=(x.tr&&x.tr.cp)||0;
+var body=h*0.36*libF(x)+Math.min(2,c.accept||0)*6+Math.min(2,c.make||0)*5-Math.min(2,c.refuse||0)*10-cp*10-(m.reason||0)*0.2+(+bedOk||0);
+var v=Math.max(0,Math.min(45,body))+relB(S,ties,x);
+if(h>=25&&pines(S,ties,x))v=Math.max(v,45);
+return clamp(h<25?Math.min(v,20):v);
 }
-function optOf(S,A,B,peek,place){
+function optOf(S,A,B,peek,place,bedOk){
 var ties=tiesOf(S,A,B);
 var o={peek: !!peek,place:place||PL_BED,ties:ties,
-fond:function(x){return fondOf(S,ties,x);},
-aff:function(x){return clamp(40+relB(S,ties,x));},
-willing:function(x){return!!(x&&x.m&&x.m.heat>=85);}};
+fond:function(x){return fondOf(S,ties,x,bedOk);},
+aff:function(x){var v=clamp(40+relB(S,ties,x));return x&&x.m&&x.m.heat<25?Math.min(v,60):v;},
+willing:function(x){return!!(x&&x.m&&x.m.heat>=90&&(x.m.reason||0)<10&&libF(x)>=1);}};
 if(!(HK.Pos&&HK.Pos.forceOn&&HK.Pos.forceOn(S)))o.force=false;
 return o;
+}
+function tieFor(S,x,y){
+if(!R18.groupOf)return null;
+var gi=R18.groupOf(S,x,y),T=TO();
+if(gi&&gi.e&&gi.e.t&&(gi.g==='master'||gi.g==='fam'))return{g:gi.g,t:gi.e.t};
+if(gi&&gi.g!=='pine')return null;
+var fam=tiesOf(S,x,y).filter(function(t){return T.famOk(t);})[0];
+return fam?{g:'fam',t:fam}:null;
 }
 function align(r,x,y){
 var p=r.p,T=TO();
@@ -2366,52 +2409,124 @@ if(p.type==='order')p.kind=x===p.up?'take':'give';
 p.top=x;p.bot=y;p.why=T.why(p);
 r.x=x;r.y=y;
 }
-function planFor(S,A,B,x,y,pair){
+function planFor(S,A,B,x,y,pair,how){
 var T=TO();
-if(!T||HK.SAFE_ON|| !R18.groupOf)return null;
-var gi=R18.groupOf(S,x,y);
-if(!gi|| !gi.e|| !gi.e.t||(gi.g!=='master'&&gi.g!=='fam'))return null;
+how=how||{};
+if(!T||HK.SAFE_ON)return null;
+var gi=tieFor(S,x,y);
+if(!gi)return null;
 if(gi.g==='master'&&pair&&pair.svOrd)return null;
-if(gi.g==='fam'&& !T.famOk(gi.e.t))return null;
-var f=T.find(S,x,y,{tie:gi.e.t});
+if(gi.g==='fam'&& !T.famOk(gi.t))return null;
+var f=T.find(S,x,y,{tie:gi.t});
 if(!f||(gi.g==='master'?'order':'stand')!==f.type)return null;
-var o0=optOf(S,A,B,true);o0.find=f;
-if(!T.plan(S,x,y,o0))return null;
-var o1=optOf(S,A,B,false);o1.find=f;
-var p=T.plan(S,x,y,o1);
+var opt=function(peek){
+var o=optOf(S,A,B,peek,how.place,how.bedOk?(f.type==='order'?10:4):0);
+o.find=f;
+if(f.type==='order'&&pines(S,o.ties,f.down))o.force=false;
+if(f.type==='stand'){o.like=42;o.willing=null;}
+return o;
+};
+if(!T.plan(S,x,y,opt(true)))return null;
+var p=T.plan(S,x,y,opt(false));
 if(!p)return null;
 var r={g:gi.g,p:p,x:x,y:y};
 align(r,x,y);
-r.sc=T.scene(S,p,{place:PL_BED});
+r.sc=T.scene(S,p,{place:how.place||PL_BED});
 return r;
 }
+function fateNo(o,p){
+if(p.type==='order'){
+if(o.servant===p.down&&FATE[p.react])p.down.toFate=FATE[p.react];
+if(FATE_U[p.react])p.up.toFateU=FATE_U[p.react];
+}else if(p.kind==='deny'&&p.x&&p.h){p.x.toFateU=FATE_U.denyX;p.h.toFateU=FATE_U.denyH;}
+}
 LK.bedGate=function(S,o){
-if(HK.SAFE_ON|| !TO()|| !o|| !o.pair|| !o.A|| !o.B||o.pair.toTried)return false;
-var pair=o.pair,A=o.A,B=o.B;
+if(HK.SAFE_ON|| !TO()|| !o|| !o.pair|| !o.A|| !o.B)return'';
+var pair=o.pair,A=o.A,B=o.B,nob= !o.bed;
+if(pair.toPlan&&pair.toPlan.inLk)return nob&& !pair.conn?'bed':'';
+if(pair.toNo)return o.bed?'no':'';
+if(pair.toTried)return'';
+if(nob&&pair.conn)return'';
+if(nob&&pair.sexIn)return'';
 pair.toTried=true;
 var x=o.plotter||(A.cnt.make>=B.cnt.make?A:B),y=x===A?B:A;
 if(HK.Pos&&HK.Pos.order(x,y,[x,y])[0]!==x){var t0=x;x=y;y=t0;}
-var r=planFor(S,A,B,x,y,pair);
-if(!r)return false;
+var gi=tieFor(S,x,y);
+if(!gi)return'';
+if(nob&&gi.g==='master'){
+var f0=TO().find(S,x,y,{tie:gi.t});
+if(!f0||f0.type!=='order'||pair.svOrd)return'';
+var M=f0.up,hi=libOf(M)==='high',pl=o.plotter===M;
+if(!(M.m.heat>=(hi?40:50)||pl))return'';
+if(S.rng()>=0.5+Math.max(0,M.m.heat-50)/100+(hi?0.15:0)+(pl?0.3:0))return'';
+}
+var r=planFor(S,A,B,x,y,pair,{bedOk: !nob});
+if(!r)return'';
 var p=r.p;
-if(!p.sex&&pair.conn)return false;
+if(!p.sex&&pair.conn)return'';
+if(!p.sex&&pair.sexIn)return'';
+if(!p.sex&&o.plotter&&o.plotter===(p.type==='order'?p.down:p.h))return'';
+if(nob&&p.sex&&p.type==='stand'&&S.rng()>=0.6)return'';
+r.nob=nob;
 pair.toPlan=r;
 if(p.type==='order')pair.toOrd=true;
-if(p.sex)return false;
+if(p.sex)return nob?'bed':'';
 note('no',p);
-var ev=ST.say(S,{actors:[A,B],tag:p.type==='order'?'主の命令':'家族の一線',text:r.sc.open,why:p.why,mag:24});
+pair.toNo=true;
+var ev=ST.say(S,{actors:[A,B],tag:p.type==='order'?'主の命令':'家族の一線',text:r.sc.open,why:p.why+(nob?'（ベッドの条件とは別に）':''),mag:24});
 ST.key(S,ev,p.type==='order'?p.up.name+'の命令は通らなかった':p.h.name+'が家族の線を守った');
-if(p.type==='order'&&o.servant===p.down&&FATE[p.react])p.down.toFate=FATE[p.react];
+fateNo(o,p);
+return'no';
+};
+function fillIn(s,M,Sv){
+return String(s).replace(/\{u\}/g,M.name).replace(/\{l\}/g,Sv.name).replace(/\{(room|door|paper|bed|here)\}/g,function(q,k){return PL_IN[k];});
+}
+LK.inGate=function(S,o){
+if(HK.SAFE_ON|| !TO()|| !o|| !o.pair|| !o.M|| !o.Sv)return false;
+var pair=o.pair,M=o.M,Sv=o.Sv,T=TO();
+if(pair.toIn||pair.svOrd||pair.toTried||pair.conn||pair.acts||M.bound)return false;
+var gi=tieFor(S,M,Sv);
+if(!gi||gi.g!=='master')return false;
+var f=T.find(S,M,Sv,{tie:gi.t});
+if(!f||f.type!=='order'||f.up!==M||f.down!==Sv)return false;
+if(pair.inTried)return false;
+pair.inTried=true;
+var r=planFor(S,o.A,o.B,M,Sv,pair,{place:PL_IN});
+if(!r||(r.p.sex&& !r.p.force)||r.p.rebel)return false;
+if(S.rng()>=0.6)return false;
+var p=r.p,mp=ps(M),ask=M.name+'「'+pick(S,IN_ASK[mp])+'」',ev,why=p.why+'（'+Sv.name+'は'+Sv.cnt.hold+'回耐えていた・'+M.name+'の発情 '+Math.round(M.m.heat)+'）';
+pair.toIn=true;pair.toOrd=true;pair.toTried=true;
+if(p.force){
+var X=T.X,rx=(X.REACT.take[p.react]||X.REACT.take.obeyF).filter(function(l){return!/灯り|\{bed\}|ベッド/.test(l);});
+var text=ask+fillIn(pick(S,rx),M,Sv)+fillIn(pick(S,X.PUSH[mp]||X.PUSH.proud),M,Sv)+fillIn(pick(S,IN_HOLD),M,Sv);
+ev=ST.sayB(S,{actors:[M,Sv],tag:'主の命令',text:text,why:why+'／ロッカーの中では押さえつけたまま、続きは扉が開いてから',mag:34},'',true);
+ST.key(S,ev,M.name+'が命令で'+Sv.name+'を押さえつけた');
+r.inLk=true;pair.toPlan=r;pair.rest=99;
+Sv.cnt.refuse++;Sv.m.reason=clamp(Sv.m.reason+10);
+if(o.servant===Sv)Sv.toFate=FATE.force;
+M.toFateU=FATE_U.force;
+note('inforce',p);
+return true;
+}
+ev=ST.sayB(S,{actors:[M,Sv],tag:'主の命令',text:ask+fillIn(pick(S,IN_NO[p.react]||IN_NO.decline),M,Sv),why:why,mag:24},'',true);
+ST.key(S,ev,M.name+'の命令は通らなかった');
+Sv.cnt.refuse++;Sv.m.reason=clamp(Sv.m.reason+10);M.m.reason=clamp(M.m.reason+8);
+pair.toNo=true;pair.rest=99;
+fateNo(o,p);
+note('inno',p);
 return true;
 };
 function forceBed(S,o,r){
-var p=r.p,pre=o.how==='timeout'&&LK.BED&&LK.BED.timeout?LK.BED.timeout[0]:'';
-var text=TO().forceBody(S,p.top,p.bot,pre+r.sc.open,r.sc.after||'',{place:PL_BED,fade:r.sc.fade});
-var ev=ST.say(S,{actors:[o.A,o.B],tag:'主の命令',text:text,why:p.why+'／'+p.top.name+'が攻め',mag:45,kind:'climax'});
+var p=r.p,pre= !r.inLk&&o.how==='timeout'&&LK.BED&&LK.BED.timeout?LK.BED.timeout[0]:'';
+if(r.inLk){p.place=PL_BED;r.sc=TO().scene(S,p,{place:PL_BED});}
+var open=r.inLk?pick(S,FORCE_DOOR):r.sc.open;
+var text=TO().forceBody(S,p.top,p.bot,pre+open,r.sc.after||'',{place:PL_BED,fade:r.sc.fade});
+var ev=ST.say(S,{actors:[o.A,o.B],tag:'主の命令',text:text,why:p.why+'／'+p.top.name+'が攻め'+(r.nob?'（ベッドの条件とは別に）':''),mag:45,kind:'climax'});
 ST.key(S,ev,p.up.name+'が命令でねじ伏せた');
 note('force',p);
 if(o.pair)o.pair.forced=(o.pair.forced||0)+1;
 if(o.servant===p.down)p.down.toFate=FATE.force;
+p.up.toFateU=FATE_U.force;
 return['主の命令でねじ伏せる'];
 }
 var bed1=LK.bed;
@@ -2420,7 +2535,7 @@ if(!o||o.lkoDone||HK.SAFE_ON|| !o.x|| !o.y|| !TO())return bed1.apply(this,argume
 var pair=o.pair||{},r=pair.toPlan||null;
 if(!r&& !pair.toTried){
 pair.toTried=true;
-r=planFor(S,o.A,o.B,o.x,o.y,pair);
+r=planFor(S,o.A,o.B,o.x,o.y,pair,{bedOk:true});
 if(r&&(!r.p.sex||r.p.force))r=null;
 if(r){pair.toPlan=r;if(r.p.type==='order')pair.toOrd=true;}
 }
@@ -2430,7 +2545,7 @@ if(p.force)return forceBed(S,o,r);
 if(r.x!==o.x){align(r,o.x,o.y);r.sc=TO().scene(S,p,{place:PL_BED});}
 var o2=Object.assign({},o,{lkoDone:true,noOrder:true,lead:{text:r.sc.open,label:p.type==='order'?'主の命令':'家族の立場',why:p.why}});
 var start=S.log.length,res;
-note('bed',p);
+note(r.nob?'bed2':'bed',p);
 S.lkTOcur=r;
 try{res=bed1.call(this,S,o2);}finally{S.lkTOcur=null;}
 if(p.type==='order'){
@@ -2444,7 +2559,7 @@ return res;
 R18.hesHook=function(S,c){
 var r=S.lkTOcur;
 if(!r|| !r.p.sex||r.p.force)return'';
-var p=r.p,k=c.g==='master'&&p.type==='order'?(p.kind==='give'?'give':'take'):c.g==='fam'&&p.type==='stand'?'stand':'';
+var p=r.p,k=p.type==='order'?(p.kind==='give'?'give':'take'):p.type==='stand'?'stand':'';
 return k?ST.fmt(pick(S,BRIDGE[k]),{u:p.up.name,l:p.down.name}):'';
 };
 R18.introHook=function(S,c){
@@ -2480,7 +2595,7 @@ R18.ORDER_COUNT=function(){var n=0;Object.keys(BRIDGE).forEach(function(k){n+=BR
 });
 ;
 /* ==== js/locker-crowd.js ==== */
-HK.Load.def(287,'js/locker-crowd.js',function(){
+HK.Load.def(288,'js/locker-crowd.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,ST=HK.Story;
@@ -3395,7 +3510,7 @@ LK.crowd=function(input){return input.chars.length<=1?soloRun(input):groupRun(in
 });
 ;
 /* ==== js/locker-crowd-r18.js ==== */
-HK.Load.def(288,'js/locker-crowd-r18.js',function(){
+HK.Load.def(289,'js/locker-crowd-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER;
@@ -3618,7 +3733,7 @@ addL(R.TP.ff,'{a}は{b}の脚のあいだに指を沈め、{c}と目を合わせ
 });
 ;
 /* ==== js/locker-trio-bed.js ==== */
-HK.Load.def(289,'js/locker-trio-bed.js',function(){
+HK.Load.def(290,'js/locker-trio-bed.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,ST=HK.Story;
@@ -3849,7 +3964,7 @@ return{Lk:best.Lk,who:m.slice(),labels:pairBed(S,api,best.Lk,m,how,cc)};
 });
 ;
 /* ==== js/locker-night-top.js ==== */
-HK.Load.def(290,'js/locker-night-top.js',function(){
+HK.Load.def(291,'js/locker-night-top.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER;
@@ -3975,7 +4090,7 @@ N.bound.top.shy=L(
 });
 ;
 /* ==== js/locker-night-bot.js ==== */
-HK.Load.def(291,'js/locker-night-bot.js',function(){
+HK.Load.def(292,'js/locker-night-bot.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER;
@@ -4061,7 +4176,7 @@ N.bound.bot.sweet=L('後ろ手に手錠をかけられていても、{b}は{a}�
 });
 ;
 /* ==== js/locker-night.js ==== */
-HK.Load.def(292,'js/locker-night.js',function(){
+HK.Load.def(293,'js/locker-night.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK&&HK.LOCKER;
@@ -4118,7 +4233,7 @@ return out?{text:out,label:labels.join('・')}:NONE;
 });
 ;
 /* ==== js/locker-night-light.js ==== */
-HK.Load.def(293,'js/locker-night-light.js',function(){
+HK.Load.def(294,'js/locker-night-light.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK&&HK.LOCKER;
@@ -4201,7 +4316,7 @@ return text?{text:text,label:who.name+'＝'+nameOf(night)}:NONE;
 });
 ;
 /* ==== js/solo-locker.js ==== */
-HK.Load.def(294,'js/solo-locker.js',function(){
+HK.Load.def(295,'js/solo-locker.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,LK=HK.LOCKER,ST=HK.Story,clamp=HK.clamp;
@@ -4453,6 +4568,7 @@ else if(pair.rest>0){pair.rest--;order=[];}
 for(var k=0;k<order.length;k++){
 var a=order[k],b=a.o;
 if(HK.Avoid&&(HK.Avoid.of(S,a,b)|| !HK.Avoid.topOk(S,a,b)))continue;
+if(a===master&&servant&& !svW&&LK.inGate&& !clash&& !ngP&& !r18No&& !libNo&&plotter!==servant&&servant.cnt.hold>=2&& !servant.broke&&master.m.heat>=70&&LK.inGate(S,{A:A,B:B,pair:pair,M:master,Sv:servant,servant:servant})){lewdNow=true;break;}
 var urge=(a.goal&&a.goal.id==='want'?0.12:a.goal&&a.goal.id==='out'? -0.08:0)+(a.action&&a.action.id==='flow'?0.08:a.action&&a.action.id==='solve'? -0.06:0)+a.m.heat/100+a.tr.impulse*0.35+a.tr.fc*0.15-a.m.reason/130-a.tr.cp*0.12+(plotter===a?0.45:0)+({lover:0.15,fwb:0.2,almost:0.1,crush:crusher===a?0.2:0,mutual:0.2,tension: -0.1}[rel]||0)+(fwbAll&&rel!=='fwb'?0.2:0)+(crusher===a&&rel!=='crush'&&rel!=='mutual'?0.15:0);
 if(hateP&&HSX.order(S,a,b)[0]===a)urge+=0.35*HK.Dark.f(S,'assault');
 if(lhAny&& !clash&&LHo.has(S,a,b))urge+=0.2;
@@ -4638,7 +4754,10 @@ if(!bed&&R18&&lhAny&&pair.sexIn&& !clash&& !libForce&& !pair.refusedHard&&LHo.se
 if(servant&&servant.cnt.hold>=2&& !servant.broke&&master.m.heat<70)bed=false;
 var endure=bed&&clash;
 if(endure)bed=false;
-if(bed&&LK.bedGate&&LK.bedGate(S,{A:A,B:B,pair:pair,plotter:plotter,master:svW?null:master,servant:svW?null:servant,how:how,lew:lew}))bed=false;
+if(LK.bedGate&& !clash&& !libNo&& !ngP&& !r18No){
+var gate=LK.bedGate(S,{A:A,B:B,pair:pair,plotter:plotter,master:svW?null:master,servant:svW?null:servant,how:how,lew:lew,bed:bed});
+if(gate==='no')bed=false;else if(gate==='bed')bed=true;
+}
 var outcome,bedLabels=[];
 if(bed){
 outcome='bed';
@@ -4654,7 +4773,7 @@ outcome='endure';
 var ke=A.m.reason>=B.m.reason?A:B,tye=clashType(ke);
 ST.key(S,ST.say(S,{actors:[A,B],tag:'耐え抜いた',text:(how==='timeout'?LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/,''):'')+ST.fmt(pk(LK.CLASH.bed[tye]),{a:ke.name,b:ke.o.name}),why:(r18No?'二人とも媚薬で火照っていた（':'二人とも発情していた（')+Math.round(A.m.heat)+'・'+Math.round(B.m.heat)+'）が、'+(tieNL?nlWhy+'の二人なので':sexP?'体の関係にならない二人（'+sexWhy+'）なので':libNo?'体の関係にならない二人（'+libWho.name+'は性欲が「なし」）なので':'受け攻めの向きが合わない二人なので')+'、ベッドには行かなかった（'+ke.name+'の理性 '+Math.round(ke.m.reason)+'）',mag:30}),'結末');
 }else{
-outcome=how==='timeout'?'rescue':plotter&& !plotOk?'plotfail':pair.refusedHard&&pair.acts>=1&& !pair.sexIn?'angry':pair.acts>=1?'awkward':(A.cnt.make+B.cnt.make)>0||(clash&&A.cnt.hold+B.cnt.hold>0)?'near':'clean';
+outcome=how==='timeout'?'rescue':plotter&& !plotOk?'plotfail':pair.refusedHard&&pair.acts>=1&& !pair.sexIn?'angry':pair.acts>=1?'awkward':(A.cnt.make+B.cnt.make)>0||(clash&&A.cnt.hold+B.cnt.hold>0)||pair.toNo?'near':'clean';
 var who0=outcome==='angry'?(A.cnt.refuse>=B.cnt.refuse?B:A):outcome==='plotfail'?plotter:outcome==='near'?(A.cnt.make+A.cnt.hold>=B.cnt.make+B.cnt.hold?A:B):pair.sexIn&&pair.top?pair.top:A;
 var AF=LK.AFTER,ak=pair.sexIn&&outcome==='awkward'&&AF.awkwardSex?'awkwardSex':pair.sexIn&&outcome==='rescue'&&AF.rescueSex?'rescueSex':outcome;
 var aft=AF[ak].filter(function(l){return(A.cnt.refuse+B.cnt.refuse>0|| !/嗜め/.test(l))&&(ak!=='rescueSex'||(ff? !/繋が/.test(l): !/脚を絡め合った/.test(l))&&(pair.conn|| !/まだ(繋が|脚を絡め)/.test(l)));});
@@ -4662,12 +4781,13 @@ var tA=ST.fmt(pk(aft.length?aft:AF[outcome]),{a:who0.name,b:who0.o.name});
 var RA=LK.REL&&LK.REL.after[rel];
 if(RA&&pair.acts>=1&&outcome!=='angry'&&outcome!=='plotfail'&&rng()<0.7)tA+=ST.fmt(pk(RA),{a:who0.name,b:who0.o.name,c:(crusher||A).name,o:(crusher||A).o.name,u:nt?nt.u.name:'',d:nt?nt.d.name:''});
 if(nt)tA+=NT.afterNote(S,nt,outcome,plotter);
-if(plotter&&plotOk&&pair.acts>=1)tA+=ST.fmt(pk(AF.plotwin.filter(function(l){return!/ベッド|眠|寝顔/.test(l);})),{a:plotter.name,b:plotter.o.name});
+if(plotter&&plotOk&&pair.acts>=1&& !pair.toNo)tA+=ST.fmt(pk(AF.plotwin.filter(function(l){return!/ベッド|眠|寝顔/.test(l);})),{a:plotter.name,b:plotter.o.name});
 ST.key(S,ST.say(S,{actors:[A,B],tag:{clean:'無事に脱出',near:'踏みとどまった',awkward:'気まずい脱出',angry:'怒りの脱出',plotfail:'計画失敗',rescue:'時間切れ'}[outcome],text:tA,why:'手を出した回数 '+pair.acts+'・嗜めた回数 '+(A.cnt.refuse+B.cnt.refuse)+'・発情 '+Math.round(A.m.heat)+'／'+Math.round(B.m.heat),mag:30}),'結末');
 }
 P.forEach(function(p){
 var f;
-if(plotter===p)f=outcome==='bed'?'相手をモノにした':pair.sexIn&&outcome!=='plotfail'?'ロッカーの中で相手をモノにした':pair.acts>=1&&outcome!=='plotfail'?'少しだけ思いを遂げた':'計画が空回りした';
+if(p.toFateU)f=p.toFateU;
+else if(plotter===p)f=outcome==='bed'?'相手をモノにした':pair.sexIn&&outcome!=='plotfail'?'ロッカーの中で相手をモノにした':pair.acts>=1&&outcome!=='plotfail'?'少しだけ思いを遂げた':'計画が空回りした';
 else if(svW&&servant===p)f=NT.fate(nt,p);
 else if(servant===p&&p.toFate)f=p.toFate;
 else if(servant===p)f=p.broke?'主に手を出してしまった':p.ordered?'主の許しで身を委ねた':p.cnt.hold?'主に手を出さず耐えきった':'主に身を委ねた';
@@ -4678,12 +4798,12 @@ else if(p.cnt.refuse>=2&&outcome!=='bed'&& !p.cnt.accept)f='最後まで嗜め�
 else if(p.cnt.refuse>=1&&p.cnt.accept>=1)f='嗜めきれずに流された';
 else if(p.cnt.accept>=1)f='流された';
 else f=p.m.reason>30?'理性を保ちきった':'ぎりぎりで踏みとどまった';
-p.fate=f+(outcome==='bed'?'・ベッドで激しく':'');
+p.fate=f+(outcome==='bed'&& !pair.forced?'・ベッドで激しく':'');
 p.notes.push('発情 '+Math.round(p.m.heat)+'・理性 '+Math.round(p.m.reason)+'・'+W_CL+' '+p.cnt.climax+'回');
 p.notes.push('仕掛けた '+p.cnt.make+'回・応じた '+p.cnt.accept+'回・嗜めた '+p.cnt.refuse+'回'+(p.cnt.hold?'・耐えた '+p.cnt.hold+'回':'')+(p.cnt.solve?'・仕掛けを解いた '+p.cnt.solve+'回':''));
 });
 var mins=(escTurn+1)*5;
-var title={bed:(how==='timeout'?'時間切れで扉が開いたが、':mins+'分で脱出したが、')+'二人は部屋を出ずにベッドへ直行した。',clean:mins+'分で無事に脱出。何も起きなかった。',near:mins+'分で脱出。危ない瞬間はあったが、二人は踏みとどまった。',awkward:mins+'分で脱出。'+(pair.sexIn?'ロッカーの中で'+(ff?'肌を重ねた':'一線を越えた')+'ことは、ガスのせいにした。':'ロッカーの中のことは、ガスのせいにした。'),angry:mins+'分で脱出。'+(A.cnt.refuse>=B.cnt.refuse?A.name:B.name)+'の怒りは収まらなかった。',plotfail:mins+'分で脱出。'+(plotter?plotter.name:'')+'の計画は空回りした。',rescue:'制限時間内に脱出できず、扉は時間切れで開いた。'+(pair.conn?'そのとき二人は、まだ'+(ff?'肌を重ねたままだった。':'繋がったままだった。'):pair.sexIn?'ロッカーの中で何があったかは、二人だけが知っている。':''),endure:(how==='timeout'?'時間切れで扉が開いた。':mins+'分で脱出。')+'目の前のベッドには目もくれず、二人は媚薬が抜けるまで耐え抜いた。'}[outcome];
+var title={bed:(how==='timeout'?'時間切れで扉が開いたが、':mins+'分で脱出したが、')+(pair.forced&&master&&servant?master.name+'は'+servant.name+'を部屋から出さなかった。':'二人は部屋を出ずにベッドへ直行した。'),clean:mins+'分で無事に脱出。何も起きなかった。',near:mins+'分で脱出。危ない瞬間はあったが、二人は踏みとどまった。',awkward:mins+'分で脱出。'+(pair.sexIn?'ロッカーの中で'+(ff?'肌を重ねた':'一線を越えた')+'ことは、ガスのせいにした。':'ロッカーの中のことは、ガスのせいにした。'),angry:mins+'分で脱出。'+(A.cnt.refuse>=B.cnt.refuse?A.name:B.name)+'の怒りは収まらなかった。',plotfail:mins+'分で脱出。'+(plotter?plotter.name:'')+'の計画は空回りした。',rescue:'制限時間内に脱出できず、扉は時間切れで開いた。'+(pair.conn?'そのとき二人は、まだ'+(ff?'肌を重ねたままだった。':'繋がったままだった。'):pair.sexIn?'ロッカーの中で何があったかは、二人だけが知っている。':''),endure:(how==='timeout'?'時間切れで扉が開いた。':mins+'分で脱出。')+'目の前のベッドには目もくれず、二人は媚薬が抜けるまで耐え抜いた。'}[outcome];
 var lines=P.map(function(p){return p.name+'：'+p.fate;});
 lines.push('仕掛け：'+gimmicks.map(function(g,i){return g.name+(i<gi?'（解除）':'');}).join('→')+(how==='luck'?'（外から開いた）':''));
 if(pair.level>=0)lines.push('ロッカーの中でいちばん進んだのは「'+actLabel(pair.level)+'」');
@@ -4708,7 +4828,7 @@ summary:'媚薬ロッカー：'+title
 })();
 });
 ;
-HK.Load.def(294.5,'tone:scen-locker',function(){
+HK.Load.def(295.5,'tone:scen-locker',function(){
 HK.Load.toneData("mixed",{"F":[
 ["……隠しても無駄だな。お互いに","……隠しても無駄ですね。お互い様だよ"],
 ["〈〉も〈〉も、がんばってください！　もうすぐ出られますから！","〈〉も〈〉も、がんばって！　もうすぐ出られますから！",1],
@@ -5051,4 +5171,4 @@ HK.Load.toneData("keigo_flat",{"F":[
 ["そちらのお二人、生きていますか","そちらのお二人。生存確認です",1],
 ["〈〉も〈〉も、がんばってください！　もうすぐ出られますから！","〈〉、〈〉。もうすぐ出られます。作業を続けてください",1]]});
 });
-HK.Load.done('scen-locker', '7514ad5124', 1);
+HK.Load.done('scen-locker', '44ca1e1019', 1);
