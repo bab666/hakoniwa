@@ -11,8 +11,9 @@
      master：主従 ― 既存の仕組み（solo-locker.js の従者が耐える・主の許し、solo-locker-bed.js の主の命令の誘い）のまま、
           ためらいの段だけ tie-warm-r18.js の X.HES（{rel}＝主と従者）と X.CROSS.mcall／mserve を呼ぶ（攻めが主なら主が召す形、従なら従が仕える形）
    ■ 命令・立場の型のキット（HK.TieOrder。別の担当が作る）をつなぐ場所：R18.hesHook（ためらいの段）と R18.introHook（導入の段）。
-     どちらも function (S, c) を置けば、c＝{ g（型）, k（関係の鍵）, t（関係）, u, d（関係の向き）, x（攻め）, y（受け）, rel } を受け取り、
-     文字列を返せばその段の文と差し替える（空なら今の文のまま）。今は null（キットに依らずに動く）
+     どちらも function (S, c) を置けば、c＝{ g（型）, k（関係の鍵）, t（関係）, u, d（関係の向き）, x（攻め）, y（受け）, rel, o（LK.bed の引数） } を受け取り、
+     文字列を返せばその段の文と差し替える（空なら今の文のまま）。introHook には今の導入 c.intro・ためらいの段 c.hes も渡す（ためらいの段を先に決める）。
+     つないでいるのは locker-tie-order-r18.js（2026-10-28 担当LJ）。R18.groupOf(S, x, y) で二人の夜の型を引ける
    ■ 体の動きは必ず {a}＝攻め・{b}＝受け（HK.Pos.order の向き。自分で攻めを選んだ人を受けにしない）。{u}{d}＝関係の向き、言葉の {o}＝話しかける相手
      地の文は性別の組（m＝攻めが男性の体／ff＝女性どうし／fm＝女性の攻めが男性に跨る）ごとに3文以上。山場と言葉は態度9種。男性向け（o.ero）は擬音と♡の段（2文以上）
    ■ 足さないとき：描写「ぼかす」・全年齢モード・性器なしの人がいる組（HK.NoGen：導入とためらいだけ）・locker-ties-r18.js の関係（同僚・同級生・上司と部下・恩人・信仰・親族）が
@@ -392,6 +393,8 @@
     return '';
   }
   function ctxOf(g, e, x, y) { return { g: g, k: e.k, t: e.t, u: e.u, d: e.d, x: x, y: y, rel: e.rel }; }
+  /* 二人の夜の型（つなぎ口を使う側が、ベッドの前に型を知るため）：{ g, e } か null */
+  R18.groupOf = function (S, x, y) { var e = entry(S, x, y); return e && GRP[e.k] ? { g: GRP[e.k], e: e } : null; };
   function afterText(S, g, e, k, vv) {
     var t = ST.fmt(pick(S, AFTER[g][k]), vv);
     if (g === 'temp' && AFT_REL[e.k]) t += ST.fmt(pick(S, AFT_REL[e.k]), vv);
@@ -408,15 +411,18 @@
     var es = S.log.slice(start).filter(function (q) { return q && typeof q.text === 'string' && q.kind !== 'step' && q.kind !== 'phase'; });
     if (!es.length) return res;
     var g = GRP[e.k], k = kindOf(x, y), vv = { a: x.name, b: y.name, u: e.u.name, d: e.d.name, rel: e.rel }, c = ctxOf(g, e, x, y);
+    c.o = o;
     /* 関係ならではの最中・山場・事後は、ほかの関係の夜の文（locker-ties-r18.js の o.nt）が無く、性器なしの人がいない組だけ。主従は今の仕組みのまま */
     var full = !o.nt && g !== 'master' && !!MID[g] && !(HK.NoGen && HK.NoGen.on && HK.NoGen.on(x, y));
     /* 導入とためらい */
     var inv = es[0].tag === 'ベッドへ' ? es[0] : null;
     if (inv) {
       var it = !o.nt && INTRO[e.k] ? ST.fmt(pick(S, INTRO[e.k]), vv) : '';
-      if (R18.introHook) { var ih = R18.introHook(S, c); if (ih) it = ih; }
       var hs = hesLine(S, g, e, x, y);
       if (R18.hesHook) { var hh = R18.hesHook(S, c); if (hh) hs = hh; }
+      /* 導入のつなぎ口には、今の導入（c.intro）とためらいの段（c.hes）も渡す（恋人の一言を、照れの文と同じ話し手・同じ向きにしないため） */
+      c.intro = it; c.hes = hs;
+      if (R18.introHook) { var ih = R18.introHook(S, c); if (ih) it = ih; }
       if (it || hs) { inv.text += it + hs; inv.why = (inv.why || '') + '／' + e.rel + 'の二人（' + GLABEL[g] + '）'; }
     }
     if (!full) return res;

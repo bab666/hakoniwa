@@ -309,6 +309,7 @@ js/locker-ties.js @scen:locker
 js/locker-ties-r18.js @scen:locker
 js/locker-tie-more.js @scen:locker
 js/locker-tie-more-r18.js @scen:locker
+js/locker-tie-order-r18.js @scen:locker
 js/locker-crowd.js @scen:locker
 js/locker-crowd-r18.js @scen:locker
 js/locker-trio-bed.js @scen:locker

@@ -6362,17 +6362,19 @@ var baseSel='<select data-gf="end:base" aria-label="語尾の設定のベース�
 ['K','F','P'].map(function(k){return opt(k,'文の形：'+FORM_LABEL[k],e.base||'');}).join('')+
 keys.map(function(k){var t=HK.toneInfo&&HK.toneInfo(k);return t?opt(k,t.label,e.base||''):'';}).join('')+'</select>';
 var inp=function(k,label,ph,title){return'<label'+(title?' title="'+esc(title)+'"':'')+'>'+label+' <input type="text" data-gf="end:'+k+'" value="'+esc(e[k]||'')+'" maxlength="'+FIELDS[k]+'" placeholder="'+esc(ph)+'"></label>';};
-var s=sampleHtml(c,o);
 var st0=function(on){return on?'使う':e.off?'使わない':'未設定';};
 var cid=esc(c.id||'');
-return'<details class="gend" data-endk="e" data-cid="'+cid+'"'+(isOpen(c,'e',E.active(e))?' open':'')+'><summary><b>語尾の設定（かんたん）</b><span class="gendon">'+st0(E.active(e))+'</span></summary>'+
+var easy='<details class="gend" data-endk="e" data-cid="'+cid+'"'+(isOpen(c,'e',E.active(e))?' open':'')+'><summary><b>語尾の設定（かんたん）</b><span class="gendon">'+st0(E.active(e))+'</span></summary>'+
 '<p class="gearhint">例文の語尾を、同じ法則で書き換えます（です→ですぞ・ます→ますぞ・ません→ませんぞ、だ・だよ→だぜ・よ・ね→ぜ のように）。決めた欄だけが効き、空の欄はベースの口調のままです。一人称・二人称は上の欄を使います。</p>'+
-'<div class="gearrow"><label>ベースの口調 '+baseSel+'</label><label title="語尾の設定と、下の「口調の辞書（上級）」の両方を止めます（書いた中身は残ります）"><input type="checkbox" data-gf="end:off"'+(e.off?' checked':'')+'> いまは使わない</label></div>'+
+'<div class="gearrow"><label>ベースの口調 '+baseSel+'</label><label title="語尾の設定と「口調の辞書（上級）」の両方を止めます（書いた中身は残ります）"><input type="checkbox" data-gf="end:off"'+(e.off?' checked':'')+'> いまは使わない</label></div>'+
 '<div class="gearrow">'+inp('plain','語尾（ふだん）','例：〜ですぞ／〜だぜ／〜なのよ','「です・ます」で始まれば敬語の語尾、それ以外は常体の語尾として扱います')+inp('ask','語尾（問い）','例：〜ですかな？／〜か？／〜なのかしら？')+'</div>'+
 '<div class="gearrow">'+inp('surprise','驚いたとき','例：なんと！／うわ、まじで','文頭の「え」「うそ」「マジ」などを置き換えます。／で区切ると候補を4つまで')+inp('laugh','短い笑い声','例：フハハ／ふふ／にしし','「はは」「ふふ」などを置き換えます')+'</div>'+
 '<div class="gearrow">'+inp('lead','前置き（任意）','例：やれやれ／ふむ','台詞の頭にときどき付ける一言（3回に1回くらい）')+
 '<label>言い切り <select data-gf="end:flat" aria-label="言い切りを使う">'+opt('','なし（語尾をいつも付ける）',e.flat||'')+opt('some','たまに',e.flat||'')+opt('often','よく',e.flat||'')+'</select></label></div>'+
-'</details>'+
+'</details>';
+if(h.part==='easy')return easy;
+var s=sampleHtml(c,o);
+var dict=
 '<details class="gend gendict" data-endk="d" data-cid="'+cid+'"'+(isOpen(c,'d',!!dictText(c))?' open':'')+'><summary><b>口調の辞書（上級）</b><span class="gendon gdon">'+st0(!!dictText(c)&& !e.off)+'</span><span class="gendsub">辞書を直接書く・言い換えた台詞の見本</span></summary>'+
 '<p class="gearhint">この住人だけの口調の辞書を書けます（住人ごとの辞書の書き方。[口調 …] の見出しと名前は省けます）。語尾の設定と両方あるときは、ここに書いた [文末]・[語彙]・[規則]・[効果] を上に重ね、同じ項目はこちらが勝ちます。</p>'+
 '<p class="gearhint" style="white-space:pre-wrap">'+esc(T.help?T.help():'')+'</p>'+
@@ -6380,6 +6382,7 @@ return'<details class="gend" data-endk="e" data-cid="'+cid+'"'+(isOpen(c,'e',E.a
 '<textarea data-gf="end:dict" rows="8" maxlength="'+DICT_MAX+'" spellcheck="false" aria-label="この住人の口調の辞書" style="width:100%;font-size:13px;font-family:inherit" placeholder="'+esc('[文末]\nです=でござる\nます=まする\n[語彙]\nありがとう=かたじけない\n[規則]\n前置き=さて')+'">'+esc(c.toneDict||'')+'</textarea>'+
 '<div class="tonesample endsample" id="endsample" aria-live="polite">'+s.html+'</div></details>'+
 '<p class="enderr" id="enderr"'+(s.err?'':' hidden')+'>'+esc(s.err)+'</p>';
+return h.part==='dict'?dict:easy+dict;
 };
 E.gearField=function(c,f,t,isInput,changed,refresh,other){
 if(!/^end:/.test(f||''))return false;
@@ -6392,13 +6395,14 @@ else return true;
 c.ending=isInput?e:E.clean(e);
 changed(false);
 var s=sampleHtml(c,other);
-var box=document.getElementById('endsample'),er=document.getElementById('enderr'),bd=document.getElementById('endbadge');
+var root=(t&&t.closest&&t.closest('[data-vroot]'))||document;
+var box=root.querySelector('#endsample'),er=root.querySelector('#enderr'),bd=root.querySelector('#endbadge');
 if(box)box.innerHTML=s.html;
 if(er){er.textContent=s.err;er.hidden= !s.err;}
 if(bd)bd.hidden= !E.on(c);
-var labs=document.querySelectorAll('.gend .gendon'),ce=E.clean(e),st1=function(on){return on?'使う':ce.off?'使わない':'未設定';};
-if(labs[0])labs[0].textContent=st1(E.active(ce));
-if(labs[1])labs[1].textContent=st1(!!dictText(c)&& !ce.off);
+var la=root.querySelector('.gend[data-endk="e"] .gendon'),ld=root.querySelector('.gend[data-endk="d"] .gendon'),ce=E.clean(e),st1=function(on){return on?'使う':ce.off?'使わない':'未設定';};
+if(la)la.textContent=st1(E.active(ce));
+if(ld)ld.textContent=st1(!!dictText(c)&& !ce.off);
 if(refresh)refresh();
 return true;
 };
@@ -28143,7 +28147,7 @@ endure:L('二人はベッドに背を向けて、床に背中合わせで座っ�
 });
 ;
 /* ==== js/solo-r18-moan-data.js ==== */
-HK.Load.def(352,'js/solo-r18-moan-data.js',function(){
+HK.Load.def(353,'js/solo-r18-moan-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -28512,7 +28516,7 @@ D.STRONG.cool_soft=1;D.STRONG.god=1;
 });
 ;
 /* ==== js/solo-r18-moan.js ==== */
-HK.Load.def(353,'js/solo-r18-moan.js',function(){
+HK.Load.def(354,'js/solo-r18-moan.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,D=HK.R18M_DATA;
@@ -28735,7 +28739,7 @@ npc:function(S,kind,a){return F(pick(S,D.NPC[kind]),{a:a?a.name:''}).replace(/�
 });
 ;
 /* ==== js/solo-feud-r18.js ==== */
-HK.Load.def(354,'js/solo-feud-r18.js',function(){
+HK.Load.def(355,'js/solo-feud-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,FD=HK.Feud;
@@ -28770,7 +28774,7 @@ return clash0.apply(this,arguments);
 });
 ;
 /* ==== js/same-story.js ==== */
-HK.Load.def(362,'js/same-story.js',function(){
+HK.Load.def(363,'js/same-story.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -29257,7 +29261,7 @@ t:L('隣のロッカーから聞こえる{b}の独り言は、{a}が今まさに
 });
 ;
 /* ==== js/same-story-r18.js ==== */
-HK.Load.def(363,'js/same-story-r18.js',function(){
+HK.Load.def(364,'js/same-story-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SS=HK&&HK.SameStory;
@@ -29275,7 +29279,7 @@ trio:L('媚薬で火照った{a}と{b}の体が、左右から{c}に押しつけ
 });
 ;
 /* ==== js/solo-rel-bad.js ==== */
-HK.Load.def(364,'js/solo-rel-bad.js',function(){
+HK.Load.def(365,'js/solo-rel-bad.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,RB=HK.RelBad;
@@ -29365,7 +29369,7 @@ return r;
 });
 ;
 /* ==== js/safe.js ==== */
-HK.Load.def(365,'js/safe.js',function(){
+HK.Load.def(366,'js/safe.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -29649,7 +29653,7 @@ return sim;
 });
 ;
 /* ==== js/share-card.js ==== */
-HK.Load.def(368,'js/share-card.js',function(){
+HK.Load.def(369,'js/share-card.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -29917,7 +29921,7 @@ return'<div class="sharebar" id="sharebar"><button class="btn" data-act="sharepn
 });
 ;
 /* ==== js/egoquiz.js ==== */
-HK.Load.def(369,'js/egoquiz.js',function(){
+HK.Load.def(370,'js/egoquiz.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape;
@@ -30034,7 +30038,7 @@ Z.ans[Z.i]=ANS[+ev.key-1][1];Z.i++;draw();
 });
 ;
 /* ==== js/saves.js ==== */
-HK.Load.def(370,'js/saves.js',function(){
+HK.Load.def(371,'js/saves.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -30496,7 +30500,7 @@ ok:function(){return!!ic.db;}
 });
 ;
 /* ==== js/history.js ==== */
-HK.Load.def(371,'js/history.js',function(){
+HK.Load.def(372,'js/history.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -30632,7 +30636,7 @@ HK.History={DB:DB,STORE:ST,LS:LSK,RES_LS:RES_LS,open:open,make:make,put:put,get:
 });
 ;
 /* ==== js/portable.js ==== */
-HK.Load.def(372,'js/portable.js',function(){
+HK.Load.def(373,'js/portable.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -31297,7 +31301,7 @@ toStr:toStr,fromStr:fromStr,importSettings:importSettings,settingsData:settingsD
 });
 ;
 /* ==== js/state-store.js ==== */
-HK.Load.def(373,'js/state-store.js',function(){
+HK.Load.def(374,'js/state-store.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -31595,7 +31599,7 @@ return{mode:mode,db:DB,lsFull:t!=null&& !markerOf(t),lsMarker: !!markerOf(t),byt
 });
 ;
 /* ==== js/save-folder.js ==== */
-HK.Load.def(374,'js/save-folder.js',function(){
+HK.Load.def(375,'js/save-folder.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -32011,7 +32015,7 @@ useHandle:function(h,ask){dir=h;dirName=h.name||'フォルダ';memOnly=false;if(
 });
 ;
 /* ==== js/tips.js ==== */
-HK.Load.def(375,'js/tips.js',function(){
+HK.Load.def(376,'js/tips.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -32111,7 +32115,7 @@ sections:[
 },
 'cast':{
 title:'住人',
-lead:'各住人の ⚙️ 設定で、プロフィール・恋愛・関係をまとめて決められます。口調・呼び方は、住人の一覧の下の「'+VSN+'」の節で決めます（⚙️ 設定の「'+VSN.replace('の設定','')+'をより細かく設定する」からも移れます）。',
+lead:'各住人の ⚙️ 設定で、口調（口調・一人称・二人称・語尾の記号・語尾の設定（かんたん）まで）・プロフィール・恋愛・関係をまとめて決められます。口調の辞書・呼び方・敬語などの細かい設定は、住人の一覧の下の「'+VSN+'」の節で決めます（⚙️ 設定の「'+VSN.replace('の設定','')+'をより細かく設定する」からも移れます）。',
 sections:[
 {h:'何が行動を決めるか',items:[
 '行動・判断・相性は、エゴグラムから計算した「気質」（衝動性・慎重さ・温かさ・リーダー性など）で決まります。',
@@ -32273,7 +32277,7 @@ sections:[
 },
 'gear-talk':{
 title:VSN,
-lead:'住人タブの「'+VSN+'」の節で、上の「対象」に住人を選ぶとその人の話し方を、「全体」を選ぶと全員に効く既定を編集できます。節の頭のボタンで、別の住人へのコピー（足す／置き換える）・全体と住人のあいだの写し・文字列での受け渡し・初期化ができます。全箱庭の台詞に効きます。行動や判断は、エゴグラムの数値だけで決まります。ここで決めるのは、その行動をとったときの話し方・呼び方です（口調で行動が制限されることはありません）。',
+lead:'口調・一人称・二人称・怒ったとき／恋人になってからの一人称・名前の読み・語尾の記号・語尾の設定（かんたん）は、各住人の ⚙️ 設定の「口調」でも編集できます（同じ設定なので、片方で変えるともう片方にも出ます）。それより細かい設定は、住人タブの「'+VSN+'」の節で、上の「対象」に住人を選ぶとその人の話し方を、「全体」を選ぶと全員に効く既定を編集できます。節の頭のボタンで、別の住人へのコピー（足す／置き換える）・全体と住人のあいだの写し・文字列での受け渡し・初期化ができます。全箱庭の台詞に効きます。行動や判断は、エゴグラムの数値だけで決まります。ここで決めるのは、その行動をとったときの話し方・呼び方です（口調で行動が制限されることはありません）。',
 sections:[
 {h:'口調',items:[
 '「おまかせ」はエゴグラムから口調を選びます。',
@@ -32563,7 +32567,7 @@ return'<button type="button" class="tipscen" data-tip="scen:'+esc(id)+'" aria-la
 });
 ;
 /* ==== js/scen-meta.js ==== */
-HK.Load.def(376,'js/scen-meta.js',function(){
+HK.Load.def(377,'js/scen-meta.js',function(){
 (function(){
 'use strict';
 var HK=window.HK=window.HK||{};
@@ -32631,7 +32635,7 @@ return o;
 });
 ;
 /* ==== js/scen-tags.js ==== */
-HK.Load.def(377,'js/scen-tags.js',function(){
+HK.Load.def(378,'js/scen-tags.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -32717,7 +32721,7 @@ return'<span class="ftag'+(t.warn?' warn':'')+(j>=fit?' tx':'')+'" data-act="fta
 });
 ;
 /* ==== js/shared-stats.js ==== */
-HK.Load.def(378,'js/shared-stats.js',function(){
+HK.Load.def(379,'js/shared-stats.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -32896,7 +32900,7 @@ SH.importFrom=function(c,o){if(o.ab&&typeof o.ab==='object')c.ab=JSON.parse(JSON
 });
 ;
 /* ==== js/ui-rand.js ==== */
-HK.Load.def(379,'js/ui-rand.js',function(){
+HK.Load.def(380,'js/ui-rand.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -32977,7 +32981,7 @@ return c;
 });
 ;
 /* ==== js/ui-cast-pages.js ==== */
-HK.Load.def(380,'js/ui-cast-pages.js',function(){
+HK.Load.def(381,'js/ui-cast-pages.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -33515,7 +33519,7 @@ SIZES:SIZES
 });
 ;
 /* ==== js/ui-ties.js ==== */
-HK.Load.def(381,'js/ui-ties.js',function(){
+HK.Load.def(382,'js/ui-ties.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -34019,7 +34023,7 @@ state:function(){return B;}
 });
 ;
 /* ==== js/ui-env.js ==== */
-HK.Load.def(382,'js/ui-env.js',function(){
+HK.Load.def(383,'js/ui-env.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -34205,7 +34209,7 @@ return'';
 });
 ;
 /* ==== js/ui-cast-tools.js ==== */
-HK.Load.def(383,'js/ui-cast-tools.js',function(){
+HK.Load.def(384,'js/ui-cast-tools.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -34549,7 +34553,7 @@ open:openData,close:closeData,isOpen:isOpen,sortNow:sortNow
 });
 ;
 /* ==== js/ui-box-draw.js ==== */
-HK.Load.def(384,'js/ui-box-draw.js',function(){
+HK.Load.def(385,'js/ui-box-draw.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -34749,7 +34753,7 @@ if(stale){ev.stopImmediatePropagation();if(ev.type==='click'&&ev.cancelable)ev.p
 });
 ;
 /* ==== js/ui-import.js ==== */
-HK.Load.def(385,'js/ui-import.js',function(){
+HK.Load.def(386,'js/ui-import.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -34859,7 +34863,7 @@ clear:function(){text='';}
 });
 ;
 /* ==== js/ui.js ==== */
-HK.Load.def(386,'js/ui.js',function(){
+HK.Load.def(387,'js/ui.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape,V=HK.View;
@@ -36575,7 +36579,7 @@ bkNotice();
 });
 ;
 /* ==== js/ui-cast-teacher.js ==== */
-HK.Load.def(387,'js/ui-cast-teacher.js',function(){
+HK.Load.def(388,'js/ui-cast-teacher.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -36599,7 +36603,7 @@ HK.CastTeacher={isTeacher:isTeacher,order:order,selectHtml:selectHtml};
 });
 ;
 /* ==== js/ui-gear.js ==== */
-HK.Load.def(388,'js/ui-gear.js',function(){
+HK.Load.def(389,'js/ui-gear.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape;
@@ -36680,7 +36684,8 @@ var css='.gearbtn .gearic{display:inline-flex;flex:none;width:14px;height:14px}.
 '.gtie .one{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.gtie input[type=text]{width:12em}'+
 'details.gkeigo,details.gdet{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r-card,6px);padding:6px 10px}details.gkeigo summary,details.gdet summary{cursor:pointer;font-size:13px;color:var(--muted)}details.gkeigo .gkn,details.gdet .gkn{font-size:12px;margin-left:4px;color:var(--ink)}details.gkeigo[open] summary,details.gdet[open] summary{margin-bottom:4px}'+
 '.gscope{margin:-2px 0 8px;padding:4px 8px;border-left:2px solid var(--line2,var(--line));background:var(--bg1,transparent);border-radius:0 4px 4px 0}.gforh{font-size:12px;color:var(--muted);margin-left:4px}.gfnote{color:var(--accent)}'+
-'@media (max-width:520px){.gearbox{padding:12px}.gtie input[type=text]{width:100%}}'+
+'.gearrow label{min-width:0;max-width:100%}'+
+'@media (max-width:520px){.gearbox{padding:12px}.gtie input[type=text]{width:100%}.gearsec[data-vroot] .gearrow input[type=text]{max-width:100%;width:100%!important}}'+
 '.gdim{opacity:.45}.gdim:hover,.gdim:focus-within{opacity:.75}.gdis{opacity:.5}.gdis select{cursor:not-allowed}.gearrow .gnote{flex:1 1 100%;margin:0}.glibnote{border-left:2px solid var(--line2,var(--line));padding-left:8px}';
 css+='details.gego{margin:10px 0 0;border:1px solid var(--line);border-radius:var(--r-card,6px);padding:6px 10px;background:var(--bg1,transparent)}details.gego summary{cursor:pointer;font-size:14px;font-weight:600}details.gego .gegc{font-size:12px;font-weight:400;color:var(--muted);margin-left:6px}details.gego ul{margin:6px 0 2px;padding-left:1.2em;font-size:13px;line-height:1.7}details.gego li{margin:2px 0}'+
 '.egatt{display:inline-block;font-size:11px;line-height:1.5;color:var(--muted2,var(--muted));border:1px solid var(--line);border-radius:999px;padding:0 6px;margin-left:6px;white-space:nowrap;vertical-align:1px}';
@@ -36776,9 +36781,12 @@ var addable=others.length?'<div class="gearrow"><label>相手 <select data-gf="n
 '<label>関係 <select data-gf="newt" aria-label="関係の種類">'+typeOpts('friend')+opt('','（関係は付けずに相手ごとの設定だけ）','friend')+(HK.Attr&&HK.Attr.sameForHtml?opt('__same','同一人物（別の世界・別の時間の自分）','friend'):'')+'</select></label>'+(function(){var gm=groupMates(c);return gm.length?'<label title="'+esc('同じグループ（'+grpsOf(c).join('・')+'）の全員に、選んだ関係を付けます：'+gm.map(function(o){return o.name;}).join('・')+'。向きのある関係は、'+c.name+'が左（上司・先輩・師匠など）になります')+'"><input type="checkbox" data-gf="newgrp"> グループの全員と（'+gm.length+'人）</label>':'';})()+'<button type="button" class="btn small" data-gact="tnew">追加</button></div>':'<p class="gearhint">ほかの住人がいません。</p>';
 return'<div class="gearhd">'+HK.Icons.html(c.name,s.chars.indexOf(c),36)+'<h2 id="geartitle">'+esc(c.name)+'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>'+
 (HK.egoDesc?'<details class="gego"'+(egoOpen?' open':'')+'><summary>この住人の傾向<span class="gegc">'+esc(HK.toCode(c.eg))+'・'+esc(HK.egoAttWord(c))+'</span></summary><ul id="egodesc">'+HK.egoDesc(c).map(function(l){return'<li>'+esc(l)+'</li>';}).join('')+'</ul></details>':'')+
-'<div class="gearsec"><h3>話し方'+(HK.Tips?HK.Tips.btn('gear-talk'):'')+'</h3>'+
-'<p class="gearhint" style="margin:0 0 6px">'+esc(HK.VoiceSet?HK.VoiceSet.sumLine(c):'')+'</p>'+
-'<div class="gearrow"><button type="button" class="btn small" data-gact="tovoice">'+esc(HK.VoiceSet?HK.VoiceSet.MORE:'口調をより細かく設定する')+'</button></div></div>'+
+(function(){
+var VS=HK.VoiceSet,ms=VS&&VS.moreSum?VS.moreSum(c):'';
+return'<div class="gearsec" data-vroot><h3>口調'+(HK.Tips?HK.Tips.btn('gear-talk'):'')+'</h3>'+(VS&&VS.basicHtml?VS.basicHtml(c):'')+
+'<p class="gearhint">口調の辞書・呼び方・敬語などのほかの欄は「'+esc(VS?VS.LABEL:'口調の設定')+'」で決めます'+(ms?'（いま：'+esc(ms)+'）':'')+'。</p>'+
+'<div class="gearrow"><button type="button" class="btn small" data-gact="tovoice">'+esc(VS?VS.MORE:'口調をより細かく設定する')+'</button></div></div>';
+})()+
 '<div class="gearsec"><h3>プロフィール'+(HK.Tips?HK.Tips.btn('gear-profile'):'')+'</h3><div class="gearrow"><label>性別 '+selOf('gender',GENDERS,c.gender)+'</label>'+
 '<label>恋愛対象 '+selOf('likes',LIKES,c.likes)+'</label>'+
 '<label>誕生月 '+selOf('bmonth',[['','決めない']].concat([1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){return[String(m),m+'月'];})),c.bmonth||'')+'</label>'+
@@ -36800,6 +36808,7 @@ if(!c){close();return;}
 var box=ov.querySelector('.gearbox'),y=ov.scrollTop;
 box.innerHTML=body(c);
 if(HK.CastPages)HK.CastPages.after(box);
+if(HK.VoiceSet&&HK.VoiceSet.sampleTick)HK.VoiceSet.sampleTick();
 ov.scrollTop=y;
 }
 function open(id,from){
@@ -36895,6 +36904,7 @@ if(!c)return;
 var tie=t.dataset.k!=null?(s.ties||[])[+t.dataset.k]:null;
 var isInput=ev.type==='input';
 if(f==='at_sameC'&&t.dataset.o)(extra[c.id]=extra[c.id]||{})[t.dataset.o]=1;
+if(HK.VoiceSet&&HK.VoiceSet.basicField&&HK.VoiceSet.basicField(c,f,t,isInput,changed))return;
 if(HK.Attr&&HK.Attr.gearField(c,f,t,isInput,changed,byId))return;
 if(HK.Shared&&HK.Shared.gearField(c,f,t,isInput,changed))return;
 switch(f){
@@ -36960,7 +36970,7 @@ if(UI.refresh)UI.refresh();
 });
 ;
 /* ==== js/ui-adv.js ==== */
-HK.Load.def(389,'js/ui-adv.js',function(){
+HK.Load.def(390,'js/ui-adv.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -37063,7 +37073,7 @@ A.afterRender=function(){A.secs.forEach(function(s){var r=s.apply&&data[s.id]?s.
 });
 ;
 /* ==== js/ui-adv-moan.js ==== */
-HK.Load.def(390,'js/ui-adv-moan.js',function(){
+HK.Load.def(391,'js/ui-adv-moan.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Adv,M=HK&&HK.Moan;
@@ -37276,7 +37286,7 @@ return'<div class="desc" style="font-size:12px;color:var(--muted);margin-top:4px
 });
 ;
 /* ==== js/ui-adv-moan-fit.js ==== */
-HK.Load.def(391,'js/ui-adv-moan-fit.js',function(){
+HK.Load.def(392,'js/ui-adv-moan-fit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Adv,M=HK&&HK.Moan;
@@ -37461,7 +37471,7 @@ if(HK.toast)HK.toast('喘ぎ声の調整を既定に戻しました');
 });
 ;
 /* ==== js/ui-gear-moan.js ==== */
-HK.Load.def(392,'js/ui-gear-moan.js',function(){
+HK.Load.def(393,'js/ui-gear-moan.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,M=HK&&HK.Moan;
@@ -37619,7 +37629,7 @@ return true;
 });
 ;
 /* ==== js/ui-voice.js ==== */
-HK.Load.def(393,'js/ui-voice.js',function(){
+HK.Load.def(394,'js/ui-voice.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,UI=HK&&HK.UI;
@@ -37674,8 +37684,7 @@ var V=HK.Voice;
 if(!V|| !V.processText)return'';
 if(HK.Load&&HK.Load.tonesReady&& !HK.Load.tonesReady([c])){
 HK.Load.ensureTones([c]).then(function(){VS.sampleRefresh();},function(){
-var b=document.getElementById('vs-tonesample');
-if(b)b.innerHTML='<span class="tsh">台詞の見本</span><span class="tsl on">口調のデータを読み込めませんでした。対象を選び直すと、もう一度読み込みます</span>';
+boxes().forEach(function(b){if((b.getAttribute('data-cid')||'')===(c.id||''))b.innerHTML='<span class="tsh">台詞の見本</span><span class="tsl on">口調のデータを読み込めませんでした。対象を選び直すと、もう一度読み込みます</span>';});
 });
 return'<span class="tsh">台詞の見本</span><span class="tsl on">読み込んでいます…</span>';
 }
@@ -37696,41 +37705,66 @@ return'<span class="tsh">台詞の見本（'+esc(toneLabel(tk))+(c.id?'・一人
 }
 var GS={tone:'gentle',g:'f'};
 function demoChar(){return{id:'',name:'見本',tone:GS.tone,gender:GS.g,eg:{CP:10,NP:10,A:10,FC:10,AC:10}};}
+function sampleBox(c,others){return'<div class="tonesample anim vs-ts" data-cid="'+esc(c.id||'')+'" aria-live="polite">'+sampleLines(c,others)+'</div>';}
+function boxes(){return Array.prototype.slice.call(document.querySelectorAll('.vs-ts'));}
 VS.sampleRefresh=function(){
-var box=document.getElementById('vs-tonesample'),c=cur();
-if(!box)return;
+boxes().forEach(function(box){
+var id=box.getAttribute('data-cid'),c=id?byId(id):null;
+if(id&& !c)return;
 box.innerHTML=c?sampleLines(c,S().chars.filter(function(x){return x!==c;})):sampleLines(demoChar(),[]);
+});
 };
 var tsTimer=null;
 function sampleTick(){
 if(tsTimer)clearInterval(tsTimer);
 tsTimer=setInterval(function(){
-var box=document.getElementById('vs-tonesample');
-if(!box|| !box.offsetParent){if(!box){clearInterval(tsTimer);tsTimer=null;}return;}
+var bs=boxes();
+if(!bs.length){clearInterval(tsTimer);tsTimer=null;return;}
+bs.forEach(function(box){
+if(!box.offsetParent)return;
 var ls=box.querySelectorAll('.tsl');if(ls.length<2)return;
 var k=0;ls.forEach(function(x,i){if(x.classList.contains('on'))k=i;});
 ls[k].classList.remove('on');ls[(k+1)%ls.length].classList.add('on');
+});
 },2600);
 }
+VS.sampleTick=sampleTick;
 var TONE_KEYS=['tone','fp','you','fpAngry','fpLover','marks','toneCustom','ending','toneDict','call','callG','keigoOlder'];
 var keigoOpen=false;
-function toneCharHtml(c){
-var s=S(),others=s.chars.filter(function(x){return x!==c;}),autoK=autoKey(c);
-var keys=HK.TONE_KEYS||HK.PERSONA_KEYS;
+function basicHtml(c,others){
+var autoK=autoKey(c),keys=HK.TONE_KEYS||HK.PERSONA_KEYS;
 var toneSel='<select data-gf="tone" aria-label="口調">'+opt('','おまかせ（'+toneLabel(autoK)+'）',c.tone||'')+keys.map(function(k){var t=HK.toneInfo?HK.toneInfo(k):HK.PERSONA[k];return opt(k,t.label,c.tone||'',t.desc);}).join('')+'</select>';
 var tInfo=HK.toneInfo?HK.toneInfo(c.tone||autoK):HK.PERSONA[c.tone||autoK];
-var callSel='<select data-gf="call" aria-label="基本の呼び方">'+(HK.CALL_STYLES||[{v:'',label:'おまかせ'}]).map(function(o){return opt(o.v,o.label,c.call||'');}).join('')+'</select>';
-var SUF=(HK.CALL_STYLES||[]).filter(function(o){return o.v&&o.v!=='gender';}),CGD={m:'kun',f:'chan',x:'san'};
-if(c.call==='gender')callSel+=[['m','男性'],['f','女性'],['x','その他']].map(function(g){return'<label>'+g[1]+'には <select data-gf="callG" data-g="'+g[0]+'" aria-label="'+g[1]+'の呼び方">'+SUF.map(function(o){return opt(o.v,o.label,(c.callG&&c.callG[g[0]])||CGD[g[0]]);}).join('')+'</select></label>';}).join('');
-var many=others.length>60,kn=others.filter(function(o){return c.keigo&&c.keigo[o.id];}).length;
-var kList=function(){return others.map(function(o){return'<label><input type="checkbox" data-gf="keigo" data-o="'+esc(o.id)+'"'+(c.keigo&&c.keigo[o.id]?' checked':'')+'> '+esc(o.name)+'</label>';}).join('');};
 return'<div class="gearrow"><label>口調 '+toneSel+'</label>'+(HK.Ending?HK.Ending.badge(c):'')+'<label>一人称 <input type="text" data-gf="fp" value="'+esc(c.fp||'')+'" maxlength="8" placeholder="空なら口調から"></label><label>二人称 <input type="text" data-gf="you" value="'+esc(c.you||'')+'" maxlength="8" placeholder="空なら口調から"></label></div>'+
 (HK.Attr&&HK.Attr.fpMoreHtml?HK.Attr.fpMoreHtml(c,esc):'')+
 '<div class="gearrow"><label title="文末の「。」「！」がこの記号になります。空白で区切って複数書くと、文ごとにランダムに選びます">語尾の記号 <input type="text" data-gf="marks" value="'+esc(c.marks||'')+'" maxlength="30" placeholder="例：！！！　または　♣ ♦" style="width:14em"></label>'+
 (HK.TONE_CUSTOM_OFF?'':'<label title="口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで">語尾の付け替え <input type="text" data-gf="toneCustom" value="'+esc(c.toneCustom||'')+'" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label>')+'</div>'+
 '<p class="gearhint">'+esc(tInfo?tInfo.desc:'')+'</p>'+
-'<div class="tonesample anim" id="vs-tonesample" aria-live="polite">'+sampleLines(c,others)+'</div>'+
-(HK.Ending?HK.Ending.gearHtml(c,others[0],{esc:esc,opt:opt}):'')+
+sampleBox(c,others)+
+(HK.Ending?HK.Ending.gearHtml(c,others[0],{esc:esc,opt:opt,part:'easy'}):'');
+}
+VS.basicHtml=function(c){return basicHtml(c,S().chars.filter(function(x){return x!==c;}));};
+function basicField(c,f,t,isInput,changed){
+if(/^end:/.test(f)&&HK.Ending)return HK.Ending.gearField(c,f,t,isInput,changed,VS.sampleRefresh,S().chars.filter(function(x){return x!==c;})[0]);
+switch(f){
+case'tone':if(isInput)return true;c.tone=HK.toneValid&&HK.toneValid(t.value)?t.value:'';if(HK.Load&&HK.Load.ensureTones)HK.Load.ensureTones([c]).then(null,function(){});changed(true);return true;
+case'fp':c.fp=t.value.trim().slice(0,8);changed(false);VS.sampleRefresh();return true;
+case'you':c.you=t.value.trim().slice(0,8);changed(false);VS.sampleRefresh();return true;
+case'marks':c.marks=t.value.trim().slice(0,30);changed(false);VS.sampleRefresh();return true;
+case'toneCustom':c.toneCustom=String(t.value).slice(0,120);if(!isInput)c.toneCustom=HK.normToneCustom?HK.normToneCustom(c.toneCustom):'';changed(false);VS.sampleRefresh();return true;
+}
+return false;
+}
+VS.basicField=basicField;
+function toneCharHtml(c){
+var s=S(),others=s.chars.filter(function(x){return x!==c;}),autoK=autoKey(c);
+var callSel='<select data-gf="call" aria-label="基本の呼び方">'+(HK.CALL_STYLES||[{v:'',label:'おまかせ'}]).map(function(o){return opt(o.v,o.label,c.call||'');}).join('')+'</select>';
+var SUF=(HK.CALL_STYLES||[]).filter(function(o){return o.v&&o.v!=='gender';}),CGD={m:'kun',f:'chan',x:'san'};
+if(c.call==='gender')callSel+=[['m','男性'],['f','女性'],['x','その他']].map(function(g){return'<label>'+g[1]+'には <select data-gf="callG" data-g="'+g[0]+'" aria-label="'+g[1]+'の呼び方">'+SUF.map(function(o){return opt(o.v,o.label,(c.callG&&c.callG[g[0]])||CGD[g[0]]);}).join('')+'</select></label>';}).join('');
+var many=others.length>60,kn=others.filter(function(o){return c.keigo&&c.keigo[o.id];}).length;
+var kList=function(){return others.map(function(o){return'<label><input type="checkbox" data-gf="keigo" data-o="'+esc(o.id)+'"'+(c.keigo&&c.keigo[o.id]?' checked':'')+'> '+esc(o.name)+'</label>';}).join('');};
+return basicHtml(c,others)+
+(HK.Ending?HK.Ending.gearHtml(c,others[0],{esc:esc,opt:opt,part:'dict'}):'')+
 '<div class="gearrow"><label>基本の呼び方 '+callSel+'</label><label><input type="checkbox" data-gf="keigoOlder"'+(c.keigoOlder?' checked':'')+'> 年上の相手には敬語（年齢を決めた人どうし）</label></div>'+
 (others.length?'<details class="gkeigo" id="vs-keigo"'+(keigoOpen?' open':'')+'><summary>敬語で話す相手 <span class="gkn" id="vs-kn">'+(kn?kn+'人':'なし')+'</span></summary><div class="gearrow">'+(keigoOpen|| !many?kList():'')+'</div>'+
 ((c.tone||autoK)==='polite'?'<p class="gearhint">いまの口調は敬語なので、誰にでも敬語で話します。</p>':'')+'</details>':'')+
@@ -37755,7 +37789,7 @@ return'<p class="gearhint">口調は住人ごとに決めます（箱庭全体�
 '<p class="gearhint">口調が「おまかせ」の住人は、エゴグラムから口調を選びます（同じ口調でも、気質によって荒さや優しさが変わります）。女性の住人の男性的な言い方は、口調に合わせて整えます。</p>'+
 '<div class="gearrow"><label>見本の口調 <select data-vf="gtone" aria-label="見本の口調">'+keys.map(function(k){return opt(k,toneLabel(k),GS.tone);}).join('')+'</select></label>'+
 '<label>性別 <select data-vf="gsex" aria-label="見本の性別">'+opt('f','女性',GS.g)+opt('m','男性',GS.g)+opt('','その他',GS.g)+'</select></label></div>'+
-'<div class="tonesample anim" id="vs-tonesample" aria-live="polite">'+sampleLines(demoChar(),[])+'</div>'+
+sampleBox(demoChar(),[])+
 '<p class="gearhint" style="margin-top:10px">口調か語尾の設定を決めている住人：'+(who.length?who.length+'人':'いません（全員おまかせ）')+'</p>'+
 (who.length?'<div class="vs-who">'+who.slice(0,40).map(chip).join('')+(who.length>40?'<span class="gearhint" style="margin:0">ほか '+(who.length-40)+'人</span>':'')+'</div>':'');
 }
@@ -37769,13 +37803,8 @@ return b.join('・');
 }
 function toneField(c,f,t,isInput,changed){
 if(/^at_/.test(f)&&HK.Attr)return HK.Attr.gearField(c,f,t,isInput,changed,byId);
-if(/^end:/.test(f)&&HK.Ending)return HK.Ending.gearField(c,f,t,isInput,changed,VS.sampleRefresh,S().chars.filter(function(x){return x!==c;})[0]);
+if(basicField(c,f,t,isInput,changed))return true;
 switch(f){
-case'tone':if(isInput)return true;c.tone=HK.toneValid&&HK.toneValid(t.value)?t.value:'';if(HK.Load&&HK.Load.ensureTones)HK.Load.ensureTones([c]).then(null,function(){});changed(true);return true;
-case'fp':c.fp=t.value.trim().slice(0,8);changed(false);VS.sampleRefresh();return true;
-case'you':c.you=t.value.trim().slice(0,8);changed(false);VS.sampleRefresh();return true;
-case'marks':c.marks=t.value.trim().slice(0,30);changed(false);VS.sampleRefresh();return true;
-case'toneCustom':c.toneCustom=String(t.value).slice(0,120);if(!isInput)c.toneCustom=HK.normToneCustom?HK.normToneCustom(c.toneCustom):'';changed(false);VS.sampleRefresh();return true;
 case'call':if(isInput)return true;c.call=t.value;changed(true);return true;
 case'callG':if(isInput)return true;c.callG=c.callG||{};c.callG[t.dataset.g]=t.value;changed(false);VS.sampleRefresh();return true;
 case'keigoOlder':if(isInput)return true;c.keigoOlder=t.checked;changed(false);VS.sampleRefresh();return true;
@@ -37809,7 +37838,7 @@ return'<details class="vsf" data-vk="'+esc(p.id)+'"'+(isOpen(c,p.id)?' open':'')
 function panelHtml(){
 var c=cur(),chars=S().chars,i=c?chars.indexOf(c): -1;
 var lead=c?esc(c.name)+'だけの設定です。保存先はこの住人（住人のJSON・セーブの住人にも入ります）。':'全員に効く既定です。保存先はこのブラウザの全体の設定（全員のJSONの書き出し・セーブと履歴の写しにも入ります）。';
-return'<div class="panel" id="vs-panel"><div class="vs-head"><label for="vs-target">対象 '+targetSel(c)+'</label>'+
+return'<div class="panel" id="vs-panel" data-vroot><div class="vs-head"><label for="vs-target">対象 '+targetSel(c)+'</label>'+
 (chars.length?'<span class="vs-nav" style="display:inline-flex;gap:6px"><button type="button" class="btn small ghost" data-vact="prev" aria-label="前の住人">← 前</button><button type="button" class="btn small ghost" data-vact="next" aria-label="次の住人">次 →</button></span>':'')+'</div>'+
 '<p class="hint vs-lead">'+lead+'</p>'+
 (function(){var t=VS.tools?VS.tools(c):'';return t?'<div class="vs-tools">'+t+'</div>':'';})()+
@@ -37824,7 +37853,7 @@ if(!p)return;
 var c=cur();
 if(HK.CastPages)HK.CastPages.after(p);
 VS.parts.forEach(function(x){if(x.after)x.after(c);});
-if(document.getElementById('vs-tonesample'))sampleTick();
+if(p.querySelector('.vs-ts'))sampleTick();
 };
 VS.refresh=function(){
 var p=document.getElementById('vs-panel');
@@ -37841,7 +37870,16 @@ var row=c&&document.querySelector('#view-cast .res[data-id="'+String(c.id).repla
 if(row&&UI.summary)row.innerHTML=UI.summary(c);
 Array.prototype.forEach.call(document.querySelectorAll('#vs-panel [data-vsum]'),function(el){var p=VS.part(el.getAttribute('data-vsum'));if(p&&p.sum&&c)el.textContent=p.sum(c);});
 };
-VS.sumLine=function(c){return VS.parts.map(function(p){return p.sum?p.sum(c):'';}).filter(Boolean).join('・');};
+VS.moreSum=function(c){
+var b=[],kn=Object.keys(c.keigo||{}).filter(function(k){return c.keigo[k]&&byId(k);}).length;
+var cl=(HK.CALL_STYLES||[]).filter(function(o){return o.v&&o.v===c.call;})[0];
+if(typeof c.toneDict==='string'&&c.toneDict.trim())b.push('口調の辞書：あり');
+if(cl)b.push('呼び方：'+cl.label);
+if(kn)b.push('敬語の相手：'+kn+'人');
+if(c.keigoOlder)b.push('年上には敬語');
+VS.parts.forEach(function(p){var s=p.id!=='tone'&&p.sum?p.sum(c):'';if(s)b.push(s);});
+return b.join('・');
+};
 function toHead(force){
 var d=document.getElementById('fold-voiceset')||document.getElementById('voiceset');
 if(!d)return;
@@ -37913,7 +37951,7 @@ if(VS.onTool)VS.onTool(act,c,b);
 });
 ;
 /* ==== js/ui-voice-copy.js ==== */
-HK.Load.def(394,'js/ui-voice-copy.js',function(){
+HK.Load.def(395,'js/ui-voice-copy.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,VS=HK&&HK.VoiceSet,UI=HK&&HK.UI;
@@ -38163,7 +38201,7 @@ if(UI.refresh)UI.refresh();
 });
 ;
 /* ==== js/ui-voice-moan.js ==== */
-HK.Load.def(395,'js/ui-voice-moan.js',function(){
+HK.Load.def(396,'js/ui-voice-moan.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,VS=HK&&HK.VoiceSet,M=HK&&HK.Moan,A=HK&&HK.Adv;
@@ -38301,7 +38339,7 @@ if(HK.UI&&HK.UI.refresh)HK.UI.refresh();
 });
 ;
 /* ==== js/notice.js ==== */
-HK.Load.def(396,'js/notice.js',function(){
+HK.Load.def(397,'js/notice.js',function(){
 (function(){
 'use strict';
 var last=null;
@@ -38334,7 +38372,7 @@ window.HK.Notice={open:open,close:close};
 });
 ;
 /* ==== js/ui-fold.js ==== */
-HK.Load.def(397,'js/ui-fold.js',function(){
+HK.Load.def(398,'js/ui-fold.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -38386,7 +38424,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/ui-mobile.js ==== */
-HK.Load.def(398,'js/ui-mobile.js',function(){
+HK.Load.def(399,'js/ui-mobile.js',function(){
 (function(){
 'use strict';
 var css='@media (max-width:600px){'+
@@ -38458,7 +38496,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/ui-log.js ==== */
-HK.Load.def(399,'js/ui-log.js',function(){
+HK.Load.def(400,'js/ui-log.js',function(){
 (function(){
 'use strict';
 var css='html body .stepblk .when{color:#16233B;color:var(--ink,#16233B);-webkit-text-fill-color:currentColor;background:#fff;background:var(--paper,#fff);color-scheme:light only;opacity:1;mix-blend-mode:normal}'+
@@ -38469,7 +38507,7 @@ var st=document.createElement('style');st.textContent=css;document.head.appendCh
 });
 ;
 /* ==== js/ui-filter.js ==== */
-HK.Load.def(400,'js/ui-filter.js',function(){
+HK.Load.def(401,'js/ui-filter.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -38559,7 +38597,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/obsess-kit.js ==== */
-HK.Load.def(402,'js/obsess-kit.js',function(){
+HK.Load.def(403,'js/obsess-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -38939,7 +38977,7 @@ if(opt.extra)HK.addTo(scen.events,opt.extra.slice());
 });
 ;
 /* ==== js/lewd-unify.js ==== */
-HK.Load.def(408,'js/lewd-unify.js',function(){
+HK.Load.def(409,'js/lewd-unify.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -39080,7 +39118,7 @@ if(HK.Load&&HK.Load.onChunk)HK.Load.onChunk(function(){Object.keys(X.CONF).forEa
 });
 ;
 /* ==== js/lewd-mark.js ==== */
-HK.Load.def(409,'js/lewd-mark.js',function(){
+HK.Load.def(410,'js/lewd-mark.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -39128,7 +39166,7 @@ return sim;
 });
 ;
 /* ==== js/ero-scene.js ==== */
-HK.Load.def(410,'js/ero-scene.js',function(){
+HK.Load.def(411,'js/ero-scene.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -39184,7 +39222,7 @@ HK.wrap(HK,'simulate',function(sim0){var f=function(){return X.finish(sim0.apply
 });
 ;
 /* ==== js/ero-flavor-lines-r18.js ==== */
-HK.Load.def(411,'js/ero-flavor-lines-r18.js',function(){
+HK.Load.def(412,'js/ero-flavor-lines-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -39534,7 +39572,7 @@ HK.EROFLAVOR={DRY:DRY,DEAL:DEAL,REL_DRY:REL_DRY,REL_DEAL:REL_DEAL,NOVEL:NOVEL,ER
 });
 ;
 /* ==== js/ero-flavor-r18.js ==== */
-HK.Load.def(412,'js/ero-flavor-r18.js',function(){
+HK.Load.def(413,'js/ero-flavor-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -39991,7 +40029,7 @@ apply:function(text){F.bias=norm(text);return{errors:[]};}
 });
 ;
 /* ==== js/reset.js ==== */
-HK.Load.def(414,'js/reset.js',function(){
+HK.Load.def(415,'js/reset.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -40046,7 +40084,7 @@ HK.resetStorage=wipe;
 });
 ;
 /* ==== js/voice-seg.js ==== */
-HK.Load.def(415,'js/voice-seg.js',function(){
+HK.Load.def(416,'js/voice-seg.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK.Voice||{};
@@ -40230,7 +40268,7 @@ return sim;
 });
 ;
 /* ==== js/voice-fp.js ==== */
-HK.Load.def(416,'js/voice-fp.js',function(){
+HK.Load.def(417,'js/voice-fp.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -40288,7 +40326,7 @@ return saved.length?function(){saved.forEach(function(s){s[0].fp=s[1];});}:null;
 });
 ;
 /* ==== js/rel-bad-story.js ==== */
-HK.Load.def(473,'js/rel-bad-story.js',function(){
+HK.Load.def(474,'js/rel-bad-story.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story;
@@ -40457,4 +40495,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '5b9f92443a', 1);
+HK.Load.done('core', 'ad2d21b6ce', 1);

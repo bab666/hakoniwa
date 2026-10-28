@@ -351,8 +351,9 @@
         /* 性欲「なし」の人がいて、敵対の強引な場面だけが開いている二人：手を出すのは強引な側（攻め）だけ */
         if (libForce && HSX.order(S, a, b)[0] !== a) continue;
         if (servant === a && plotter !== a) {
-          var order2 = !clash && !a.ordered && master.m.heat > 70 && master.tr.cp + master.tr.fc > (svW ? NT.ordTh(nt) : 0.8) && rng() < 0.5;
-          if (order2) { a.ordered = true; a.m.reason = 0; ST.sayB(S, { actors: [a, b], tag: svW ? (nt.dom ? '命令' : '許し') : '主の許し', text: ST.fmt(pk(SV.order), { a: a.name, b: b.name }), why: (svW ? '信仰される側の' : '主の') + b.name + 'も発情していた（' + Math.round(b.m.heat) + '）', mag: 26 }, b.name + 'が' + (svW && nt.dom ? '命じた' : '許しを与えた'), true); urge += 0.6; }
+          /* 主の命令の型（R18版の locker-tie-order-r18.js。pair.toOrd）が出た回は、主の許しを重ねない（2026-10-28 担当LJ） */
+          var order2 = !clash && !a.ordered && !pair.toOrd && master.m.heat > 70 && master.tr.cp + master.tr.fc > (svW ? NT.ordTh(nt) : 0.8) && rng() < 0.5;
+          if (order2) { a.ordered = true; pair.svOrd = true; a.m.reason = 0; ST.sayB(S, { actors: [a, b], tag: svW ? (nt.dom ? '命令' : '許し') : '主の許し', text: ST.fmt(pk(SV.order), { a: a.name, b: b.name }), why: (svW ? '信仰される側の' : '主の') + b.name + 'も発情していた（' + Math.round(b.m.heat) + '）', mag: 26 }, b.name + 'が' + (svW && nt.dom ? '命じた' : '許しを与えた'), true); urge += 0.6; }
           else if (urge > 0.4 && a.m.reason > 8 + a.tr.ac * 10) {
             a.cnt.hold++; a.m.reason = clamp(a.m.reason - 6, 0, 100);
             if (a.cnt.hold <= 2) ST.sayB(S, { actors: [a, b], tag: svW ? '崇める相手に触れない' : '耐える従者', text: ST.fmt(pk(SV.hold), { a: a.name, b: b.name }), why: (svW ? '信仰（崇める相手には、許されるまで触れない' : '主への忠誠（CP') + '・理性 ' + Math.round(a.m.reason) + '）', mag: 20 }, a.name + 'は耐えた', a.cnt.hold === 1);
@@ -486,7 +487,7 @@
         /* 新しい関係ならではの最中（R18版のみ。locker-ties-r18.js） */
         if (nt && NT.r18Act && R18 && lew !== 'low' && lv === 4 && !nt.r18In) { nt.r18In = true; t += NT.r18Act(S, nt, tp, tp.o, { moan: moan }); }
         /* ほかの関係ならではの最中（R18版のみ。locker-tie-more-r18.js の LK.TIES2.r18Act。恋人・片想い・家族など） */
-        else if (!nt && LK.TIES2 && LK.TIES2.r18Act && R18 && lew !== 'low' && lv === 4 && !pair.lkmIn) { pair.lkmIn = true; t += LK.TIES2.r18Act(S, tp, tp.o); }
+        else if (!nt && LK.TIES2 && LK.TIES2.r18Act && R18 && lew !== 'low' && lv === 4 && !pair.lkmIn) { pair.lkmIn = true; t += LK.TIES2.r18Act(S, tp, tp.o, pair); }
         /* 夜の性格（R18版のみ。locker-night.js）：キス〜口（1〜3）は動く側→受ける側、繋がる（4）は攻め→受けに。同じ組で各段階一回だけ。
            swap のときは ax＝b（誘われて動いた攻め）。描写「ぼかす」・全年齢版では足さない */
         var nightL = '';
@@ -579,6 +580,9 @@
     /* 向きの決まらない二人は、ベッドを前にしても一線を越えない（耐え抜く展開に） */
     var endure = bed && clash;
     if (endure) bed = false;
+    /* 主従の命令・家族の立場の型（R18版の locker-tie-order-r18.js の LK.bedGate）：命令が通らない・家族の線を越えない夜は、
+       その場面だけを書いてベッドへ行かない（下の「起きない」流れへ）。全年齢版・全年齢モードでは何もしない（2026-10-28 担当LJ） */
+    if (bed && LK.bedGate && LK.bedGate(S, { A: A, B: B, pair: pair, plotter: plotter, master: svW ? null : master, servant: svW ? null : servant, how: how, lew: lew })) bed = false;
     var outcome, bedLabels = [];
     if (bed) {
       outcome = 'bed';
@@ -617,6 +621,7 @@
       var f;
       if (plotter === p) f = outcome === 'bed' ? '相手をモノにした' : pair.sexIn && outcome !== 'plotfail' ? 'ロッカーの中で相手をモノにした' : pair.acts >= 1 && outcome !== 'plotfail' ? '少しだけ思いを遂げた' : '計画が空回りした';
       else if (svW && servant === p) f = NT.fate(nt, p);
+      else if (servant === p && p.toFate) f = p.toFate;
       else if (servant === p) f = p.broke ? '主に手を出してしまった' : p.ordered ? '主の許しで身を委ねた' : p.cnt.hold ? '主に手を出さず耐えきった' : '主に身を委ねた';
       else if (clash && (p.cnt.hold || outcome === 'endure')) f = '触れずに耐え抜いた';
       else if (p.cnt.make >= 2 && p.cnt.make === p.o.cnt.make && p.o !== plotter && p.o !== servant) f = '一緒に堕ちた';

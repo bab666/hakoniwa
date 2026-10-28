@@ -274,26 +274,29 @@
     var loud = quiet.o;
     var quietScore = (quiet.cnt.refuse + quiet.cnt.hold) * 0.25 + quiet.tr.ac * 0.3 + (quiet.cnt.make === 0 ? 0.25 : 0) + ((o.rel === 'crush' || o.rel === 'mutual') && quiet !== o.plotter ? 0.15 : 0);
     var q, oo, kind;
-    if (o.master && o.servant && o.servant.cnt.hold >= 1 && rng() < 0.6) { q = o.master; oo = o.servant; kind = 'order'; }
+    /* o.lead＝誘いの段を差し替える文 { text, label, why }（R18版の locker-tie-order-r18.js：主従の命令・家族の立場の型。2026-10-28 担当LJ）。
+       o.noOrder＝主の命令の誘い（order）を使わない（命令の型と重ねない） */
+    if (o.lead) { q = x; oo = y; kind = 'lead'; }
+    else if (o.master && o.servant && !o.noOrder && o.servant.cnt.hold >= 1 && rng() < 0.6) { q = o.master; oo = o.servant; kind = 'order'; }
     else if (HK.Pos && HK.Pos.nori(y) && y.cnt.make > 0 && rng() < 0.45) { q = y; oo = x; kind = 'nori'; }
     else if (!o.plotter && rng() < 0.08 + quietScore * 0.7) { q = quiet; oo = loud; kind = q === x ? 'quietTop' : 'quietBottom'; }
     else if (!o.plotter && rng() < 0.25) { q = loud; oo = quiet; kind = 'stop'; }
     else { q = o.plotter || loud; oo = q.o; kind = 'eager'; }
     /* 避けている人は誘う側にならない：誘う人が相手を避けていれば、相手のほうが待ちきれずに誘う形にする（avoid-kit.js の HK.Avoid。2026-10-28） */
     var avN = '';
-    if (HK.Avoid && HK.Avoid.of(S, q, oo) && !HK.Avoid.of(S, oo, q)) { avN = '／' + HK.Avoid.note(S, q, oo); var q0 = q; q = oo; oo = q0; kind = 'eager'; }
+    if (!o.lead && HK.Avoid && HK.Avoid.of(S, q, oo) && !HK.Avoid.of(S, oo, q)) { avN = '／' + HK.Avoid.note(S, q, oo); var q0 = q; q = oo; oo = q0; kind = 'eager'; }
     if (kind === 'nori') INVITE.nori = LK.BED.noriInvite || INVITE.eager;
     /* ロッカーの中で手を出した人に「一度も手を出さなかった」と書かない */
-    var inv = INVITE[kind].filter(function (l) { return (q.cnt.refuse > 0 || !/嗜め/.test(l)) && (q.cnt.make === 0 || !/手を出さなかった|理性を保って/.test(l)) && !(o.how === 'timeout' && /扉が開/.test(l)) && !(xHard && q !== x && !noPush(l)); });
+    var inv = o.lead ? [] : INVITE[kind].filter(function (l) { return (q.cnt.refuse > 0 || !/嗜め/.test(l)) && (q.cnt.make === 0 || !/手を出さなかった|理性を保って/.test(l)) && !(o.how === 'timeout' && /扉が開/.test(l)) && !(xHard && q !== x && !noPush(l)); });
     /* 誘い → 攻めの始まりの一言（攻めが誘ったときは控えめに）→ 脱がせる */
-    var t1 = (o.how === 'timeout' ? LK.BED.timeout[0] : '') + ST.fmt(pick(S, inv.length ? inv : INVITE[kind]), { q: q.name, o: oo.name }) + MK('S') + ST.fmt(pick(S, LK.BED.strip), vv(x, y));
+    var t1 = (o.how === 'timeout' ? LK.BED.timeout[0] : '') + (o.lead ? o.lead.text : ST.fmt(pick(S, inv.length ? inv : INVITE[kind]), { q: q.name, o: oo.name })) + MK('S') + ST.fmt(pick(S, LK.BED.strip), vv(x, y));
     /* 攻めが自分で誘ったときは誘いの台詞が始まりの一言（最中の厚い段落にも攻めの台詞が多いので、足すのは誘ったのが受けのときの7割） */
     t1 = fillTop(t1, x, { S: function () { return q !== x && rng() < 0.7 ? topSay(S, o, x, y, 'start') : ''; } }, 1, 0);
     var nTop = cnt(t1, x);
-    var whyInv = { quietTop: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った（仕掛けた ' + q.cnt.make + '回・嗜めた ' + q.cnt.refuse + '回）', quietBottom: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った（仕掛けた ' + q.cnt.make + '回・嗜めた ' + q.cnt.refuse + '回）', nori: '受けの' + q.name + 'がノリノリで、自分から誘った', eager: q.name + 'が待ちきれなかった' + (o.plotter === q ? '（思惑どおり）' : ''), stop: oo.name + 'は帰ろうとしたが、' + q.name + 'が引き止めた', order: '主の' + q.name + 'が、耐えた従者に許しを与えた' }[kind];
+    var whyInv = { quietTop: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った（仕掛けた ' + q.cnt.make + '回・嗜めた ' + q.cnt.refuse + '回）', quietBottom: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った（仕掛けた ' + q.cnt.make + '回・嗜めた ' + q.cnt.refuse + '回）', nori: '受けの' + q.name + 'がノリノリで、自分から誘った', eager: q.name + 'が待ちきれなかった' + (o.plotter === q ? '（思惑どおり）' : ''), stop: oo.name + 'は帰ろうとしたが、' + q.name + 'が引き止めた', order: '主の' + q.name + 'が、耐えた従者に許しを与えた' }[kind] || (o.lead && o.lead.why) || '';
     var o3 = ST.say(S, { actors: [A, B], tag: 'ベッドへ', text: t1, why: whyInv + avN + '／発情 ' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + (o.pair.sexIn ? '／ロッカーの中では焦らされるだけだった' : ''), mag: 40 });
     ST.key(S, o3, kind === 'quietTop' || kind === 'quietBottom' ? 'おとなしかった' + q.name + 'からベッドへ誘った' : '部屋から出ずにベッドへ');
-    labels.push({ quietTop: 'おとなしかった方から誘う', quietBottom: 'おとなしかった方から誘う', nori: '受けがノリノリで誘う', eager: '待ちきれずに', stop: '帰ろうとして引き戻される', order: '主の命令' }[kind]);
+    labels.push({ quietTop: 'おとなしかった方から誘う', quietBottom: 'おとなしかった方から誘う', nori: '受けがノリノリで誘う', eager: '待ちきれずに', stop: '帰ろうとして引き戻される', order: '主の命令' }[kind] || (o.lead && o.lead.label) || '');
 
     /* 性器なしの人がいる組（pos-nogen.js の HK.NoGen）：挿れる・跨って腰を沈める段は使わず、口・指と玩具の場面に退避する
        （見直しの HK.NoGen.review は「喉から声が漏れた」の「喉」を口の文と取り違えて見逃すことがあるので、組み立ての段階で分ける） */
