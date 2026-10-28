@@ -354,9 +354,14 @@
     invite: L('{x}と{y}は顔を見合わせ、部屋の隅で膝を抱えていた{h}に手を差し出した。「一人だけ置いていくのは、なしにしよう｜一人だけ置いていくのは、なしだ｜一人だけ置いていくのは、なしにしましょう」|{x}は{y}の手を握ったまま、{h}の方を振り返った。「{h}も、一緒に｜{h}も、一緒に来い｜{h}も、一緒に来てください」――{y}も、黙って頷いた。|二人で出たら、{h}は一人きりでこの部屋に残る。{x}と{y}は同じことを考えていた。「……三人で、出よう｜……三人で、出るぞ｜……三人で、出ましょう」'),
     free: L('{h}が「三人の方が早くない？｜三人の方が早くないか？｜三人の方が早くないですか？」と笑った。誰も、反対しなかった。|{h}は残りの二人の手を引いて、ベッドの真ん中に座らせた。「せっかくだし、みんなで｜せっかくだ、みんなでやろう｜せっかくですし、みんなでやりましょう」'),
     late: L('時間がない。三人は顔を見合わせ、言葉少なに決めた。「……三人で、一回で終わらせよう｜＝｜……三人で、一回で終わらせましょう」|照明が暗くなっていく中で、三人は誰からともなく身を寄せ合った。'),
+    /* 不仲の二人（{h} と {x}）が、張りつめたまま条件のために割り切る。{y} はもう一人（2026-10-28 担当LG） */
+    grudge: L('{h}と{x}は、但し書きを読んでも目を合わせなかった。先に口を開いたのは{x}だった。{x}「勘違いしないで。ここを出るためだから｜勘違いするな。ここを出るためだ｜勘違いしないでください。ここを出るためです」{h}「こっちの台詞｜こちらの台詞だ｜こちらの台詞です」――{y}は、二人の顔を見比べて黙っていた。|{h}と{x}のあいだの空気は、最後まで冷えたままだった。それでも、時間は待ってくれない。{y}が「出るまでの、一回だけ｜出るまでの一回だけだ｜出るまでの、一回だけです」と言うと、二人はそっぽを向いたまま頷いた。|{x}は{h}を睨んで、それから扉の紙を睨んだ。{x}「……好きでするわけじゃない｜……好きでするわけではない｜……好きでするわけじゃありません」{h}「知ってる。こっちも同じ｜知っている。こちらも同じだ｜知っています。こちらも同じです」――{y}が、黙って二人のあいだの毛布を広げた。'),
     warm: L('この部屋で過ごすうちに、三人の距離はすっかり縮まっていた。{h}が但し書きを指さすと、残りの二人は顔を見合わせて、小さく笑った。|「誰と誰が、とかじゃなくてさ｜誰と誰が、ということではなく｜誰と誰が、とかじゃなくてですね」と{h}が言った。「三人で、ってのはどう？｜三人で、というのはどうだ？｜三人で、というのはどうですか？」――二人は少し考えて、頷いた。')
   };
+  var GRUDGE_AFTER = null;
   /* r18:begin */
+  /* 不仲の二人が割り切った三人の場面の結び（{a}{b} が不仲の二人、{c} がもう一人。2026-10-28 担当LG） */
+  GRUDGE_AFTER = L('息が整うと、{a}と{b}は何事もなかったように背中を向け合った。{c}だけが、二人のあいだで小さく息をついた。|{b}は服を拾い上げながら、{a}を見ずに言った。{b}「……出たら、忘れて｜……出たら、忘れろ｜……出たら、忘れてください」{a}「言われなくても｜言われなくてもそうする｜言われなくても、そうします」――{c}は、聞こえないふりをした。|{a}と{b}のあいだの空気は、終わったあとも少しも変わらなかった。ただ、言い返す声だけが、さっきより少し小さかった。{c}は二人の顔を見比べて、何も言わなかった。');
   var CLIMAX3 = L('三人はほとんど同時に果てて、そのまま折り重なるようにベッドに沈んだ。|最後に誰が果てたのか、誰も覚えていなかった。乱れたシーツの上で、荒い息だけが聞こえていた。|終わったあと、三人は川の字になって寝転がった。真ん中の誰かが、両側の手を握っていた。');
   /* r18:end */
 
@@ -486,10 +491,16 @@
       if (o.tag) used.push(o.tag);
       return X.fill(fpk(o.t.filter(penOK)), r);
     };
+    /* こじれた三人（R18版の room-trio-rival-r18.js の HK.TrioRival。2026-10-28 担当LG）：攻め二人×受けで、受けと不仲の積極的な攻めと、受けに片想いの攻めがいる初回は、
+       「あなたがやって」と押しつける→（片想いが遠慮がちなら）待ちきれずに不仲が手を出す→片想いが取られまいと割って入る→不仲が奪い返す、の段取りで書く。
+       ふつうの前戯と山場の文は使わない（段取りの文と重ならないように） */
+    var rvM = T3 && first && !isLoveAny(kind) && HK.TrioRival ? HK.TrioRival.match(ctx, sp) : null, rvR = null;
+    if (rvM) { rvR = HK.TrioRival.apply(ctx, rvM, put, fpk, function (l, rr) { return apartOK(l, rr); }, !!tShort); used.push(rvR.tag); }
+    ctx.flags.lastTrioRival = rvR ? rvR.why : null;
     /* 前戯（初回だけ）：嫉妬・開放度・きっかけに合う文を優先 */
     var ltW = ltOn && first && !tShort && ctx.rng() < 0.85 ? ltPick('warm') : null;
     if (ltW) put('fore', ltW, 2);
-    else if (first && !tShort) {
+    else if (first && !tShort && !rvR) {
       /* 前戯の文も、触れ合わせない二人（apart：中心の形で直接は繋がらない二人・恋愛対象の合わない二人）が触れ合う文を除く */
       var warmPool = [];
       X.WARM.forEach(function (o) { var ls = o.t.filter(function (l) { return noHub(l) && apartOK(l); }); if (ls.length) { var c = {}; for (var k in o) c[k] = o[k]; c.t = ls; warmPool.push(c); } });
@@ -570,7 +581,8 @@
     if (sp.p === 'sandwich' && V && !hardTop(sp.m, g) && ctx.rng() < 0.6) put('peak', X.fill(V.line(pf, sp.m.persona, 'climax', 'b').replace(/\{b\}/g, '{m}').replace(/\{a\}/g, '{t}'), r), 3);
     /* 絶頂：形・嫉妬・開放度に合う文があれば優先 */
     var ltC = ltOn && !TE && !r.synced && ctx.rng() < 0.6 ? ltPick('climax') : null;
-    if (ltC) put('peak', ltC, 1);
+    if (rvR) { /* こじれた三人：山場は段取りの文で書いた */ }
+    else if (ltC) put('peak', ltC, 1);
     /* 男性向けの絶頂：「{t}も{m}も搾りとられた」は、{t}{m}がどちらも入れる側（二人で一人を・挟む形）で、男性器のある人のときだけ（2026-10-26。
        女性の攻め・受けの{m}が搾りとられる文になっていた） */
     else if (TE && (teC = pickA(TE.TRIO.climax.filter(function (l) { return !(ngE && /\{s:(?:hit|cum)\}|搾り|注|吐き出/.test(l)); }).filter(function (l) { return !/搾りと[られ]/.test(l) || ((sp.p === 'twoOne' || sp.p === 'sandwich') && HK.Pos && HK.Pos.hasM(sp.t) && HK.Pos.hasM(sp.m)); }))) !== null) put('peak', efill(teC), 1);
@@ -727,13 +739,27 @@
      三組とも直接できれば三人とも、二組なら中心とだけ触れ合う形で（kind は恋人どうしの三人なら love など、ほかは warm）。
      書けないときは null（呼ぶ側が抱き合う版に落とす） */
   T.sexOk3 = function (g) { return g.length === 3 && !!sexShape(g, false); };
-  T.condScene = function (ctx, g, first) {
+  /* opt.kind 'grudge'・opt.gr（不仲で張りつめたまま割り切った組。room-games.js の grudgeOk。2026-10-28 担当LG）：
+     書き出しは OPEN.grudge（{h} と {x} が不仲の二人、{y} がもう一人）。中心のある形なら、中心が {h} のまま、不仲の相手を {x} に */
+  T.condScene = function (ctx, g, first, opt) {
     if (!T.sexOk3(g)) return null;
     var sh = sexShape(g, false);
     var sp = shape(ctx, sh.sg, sh.hubOnly), kind = harmony(ctx, g) ? loveKind(ctx, g) || 'warm' : 'warm';
     if (kind === 'lovehub' || kind === 'loveclash') kind = 'warm';
+    var gr = opt && opt.kind === 'grudge' && opt.gr && opt.gr.length ? opt.gr[0] : null;
+    /* こじれた三人（HK.TrioRival：受けと不仲の攻め×片想いの攻め）は、張りつめていなくても書き出しを不仲の形に（「距離が縮まっていた」と書かない） */
+    var rvM0 = !gr && kind === 'warm' && first && HK.TrioRival ? HK.TrioRival.match(ctx, sp) : null;
+    if (rvM0) gr = [rvM0.u, rvM0.k];
+    if (gr) kind = 'grudge';
     var go = orderG(ctx, g, sh, sp, kind);
+    if (gr) {
+      var h0 = go[0];
+      if (gr.indexOf(h0) >= 0) { var x0 = gr[0] === h0 ? gr[1] : gr[0]; go = [h0, x0].concat(g.filter(function (c) { return c !== h0 && c !== x0; })); }
+      else if (!sh.hubOnly) go = [gr[0], gr[1]].concat(g.filter(function (c) { return gr.indexOf(c) < 0; }));
+    }
     var text = scene(ctx, go, kind, first, ctx.present().length, { sg: go, hubOnly: sh.hubOnly, sp: sp }, true);
+    /* 不仲の二人：終わったあとも、二人のあいだは冷えたまま（{h}{x} が不仲の二人、{y} がもう一人） */
+    if (gr && GRUDGE_AFTER && !ctx.flags.lastTrioRival) text += ctx.t(ctx.pick(GRUDGE_AFTER), go[0], go[1], go[2]);
     var why = (KIND_WHY[kind] || '') + infoWhy(ctx, sh);
     if (ctx.flags.lastTrioTags && ctx.flags.lastTrioTags.length) { why += '／見所：' + ctx.flags.lastTrioTags.join('・'); ctx.flags.lastTrioTags = null; }
     return { text: text, why: why, kind: kind };
@@ -885,12 +911,14 @@
       return ctx.t(ctx.pick(late ? TURN_LATE : TURN), c);
     }).join('');
   }
-  var KIND_WHY = { loveclash: '二人の恋人が、同じ一人にそろって執着していた。円満ではなく、激しい取り合いになった', love: '三人とも互いに恋人どうしで、円満だった', lovehub: '一人が残りの二人の両方と恋人（または友達以上恋人未満）で、残りの二人も仲がよい。円満な三人', hub: '二人が同じ一人に惹かれていた', invite: '恋人同士が、残る一人を誘った', free: '三人とも積極的だった', late: '残り時間への焦り。三人なら一度で済む', warm: '三人とも、互いに打ち解けていた', auto: '三人ちょうどで、受けに回れる人がいた', join: '二人が先に始めていて、三人目が加わった', aphro: '媚薬が三人に回っていた' };
+  var KIND_WHY = { loveclash: '二人の恋人が、同じ一人にそろって執着していた。円満ではなく、激しい取り合いになった', love: '三人とも互いに恋人どうしで、円満だった', lovehub: '一人が残りの二人の両方と恋人（または友達以上恋人未満）で、残りの二人も仲がよい。円満な三人', hub: '二人が同じ一人に惹かれていた', invite: '恋人同士が、残る一人を誘った', free: '三人とも積極的だった', late: '残り時間への焦り。三人なら一度で済む', warm: '三人とも、互いに打ち解けていた', grudge: '不仲の二人も、もう一人がいる三人ならと、条件のために割り切った', auto: '三人ちょうどで、受けに回れる人がいた', join: '二人が先に始めていて、三人目が加わった', aphro: '媚薬が三人に回っていた' };
   function infoWhy(ctx, sh) {
     var info = ctx.flags.lastTrioInfo;
     if (!info) return '';
+    var rvW = ctx.flags.lastTrioRival ? '／' + ctx.flags.lastTrioRival : '';
+    ctx.flags.lastTrioRival = null;
     var hubNote = sh && sh.hubOnly ? '（' + pairsOf(sh.sg).filter(function (p) { return !okSex(p[0], p[1]); }).map(function (p) { return p[0].name + 'と' + p[1].name; }).join('・') + 'は直接は繋がらない）' : '';
-    return '／形：' + (SHAPE_LABEL[info.p] || info.p) + hubNote + '／嫉妬：' + JEAL_LABEL[info.jeal] + (info.j ? '（' + info.j + '）' : '') + '／受けの開放度：' + OPEN_LABEL[info.open] + (info.s ? '（' + info.s + '）' : '') + (info.after ? '／結末：' + { sour: '険悪', bond: '連帯', yield: '折れた' }[info.after] : '');
+    return '／形：' + (SHAPE_LABEL[info.p] || info.p) + hubNote + '／嫉妬：' + JEAL_LABEL[info.jeal] + (info.j ? '（' + info.j + '）' : '') + '／受けの開放度：' + OPEN_LABEL[info.open] + (info.s ? '（' + info.s + '）' : '') + (info.after ? '／結末：' + { sour: '険悪', bond: '連帯', yield: '折れた' }[info.after] : '') + rvW;
   }
   HK.addTo(EV, {
     id: 'trio_auto', label: '三人で条件を満たす流れになる', cat: 'romance', sex: true, scope: 'pair', pri: true,

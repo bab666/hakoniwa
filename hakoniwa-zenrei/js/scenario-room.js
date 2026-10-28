@@ -1109,7 +1109,13 @@
     ctx.present().filter(function (c) { return c !== a && eager(ctx, c) > 0.55 && c.flags.partner == null && !trioOut(c); })
       .sort(function (x, y) { return eager(ctx, y) - eager(ctx, x); })
       .forEach(function (c) { if (G.length < 4 && G.every(function (g) { return okSex(g, c); })) G.push(c); });
-    return G.length >= 3 ? G : null;
+    if (G.length >= 3) return G;
+    /* 三人なら、どの二人も体の関係を持てなくても、中心の一人が残りの二人の両方と持てる形（攻め二人×受け一人など。HK.RoomTrio.plan3＝HK.Pos.trioPlan）で輪にする。
+       攻めどうしのような直接は触れ合わない組は、同じ輪にいても見ているだけ（2026-10-28 担当LG：利用者の報告「攻め二人・受け一人で 3P が起きない」） */
+    var T3 = HK.RoomTrio, cs = ctx.present().filter(function (c) { return c !== a && eager(ctx, c) > 0.55 && c.flags.partner == null && !trioOut(c); })
+      .sort(function (x, y) { return eager(ctx, y) - eager(ctx, x); });
+    for (var i = 0; T3 && T3.plan3 && i < cs.length; i++) for (var j = i + 1; j < cs.length; j++) { var g3 = [a, cs[i], cs[j]], pl = T3.plan3(g3); if (pl && !pl.all) { g3.hub = pl.hub; return g3; } }
+    return null;
   }
   EV.push({
     id: 'group_h', cat: 'romance', sex: true, scope: 'solo', pri: true,
@@ -1125,7 +1131,9 @@
       var others = ctx.present().filter(function (c) { return G.indexOf(c) < 0; });
       /* 条件の順番あり：条件1を待っている組のエッチは数えない（rh＝エッチの条件。数えない組があれば、最後に「まだ数えない」と書く） */
       var rh = ctx.rules.filter(function (r) { return r.k === 'h'; })[0], gWait = null;
-      G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i) { ctx.pair(x, y).night = true; ctx.mod2(x, y, { att: 8, aff: 4 }, { att: 8, aff: 4 }); if (!bumpAct(ctx, rh, x, y, 1, null, false) && !gWait) gWait = [x, y]; } }); });
+      /* 夜を過ごしたことにするのは、直接の行為があった組だけ（中心のある三人の、直接は触れ合わない組は数えるだけ。room-games.js の条件「三人で」と同じ） */
+      G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i) { if (!G.hub || okSex(x, y)) ctx.pair(x, y).night = true; ctx.mod2(x, y, { att: 8, aff: 4 }, { att: 8, aff: 4 }); if (!bumpAct(ctx, rh, x, y, 1, null, false) && !gWait) gWait = [x, y]; } }); });
+      var tps = G.hub ? [[G[0], G[1]], [G[0], G[2]], [G[1], G[2]]].filter(function (p) { return okSex(p[0], p[1]); }) : null;
       others.forEach(function (o) { G.forEach(function (g) { ctx.mod(o, g, { ten: 6 }); }); ctx.stress(o, 8); });
       /* 輪の中心は、自分で攻めを選んだ人がいればその人（受ける側には回さない） */
       var lead = (HK.Pos && G.filter(function (c) { return HK.Pos.hardTopIn(c, G); })[0]) || a, g2 = G.filter(function (c) { return c !== lead; });
@@ -1135,6 +1143,8 @@
       groupLine = function () {
         /* 三人ちょうどなら、三人の場面の組み立て（trio-talk-r18.js の HK.Trio3：HK.Pos.trioPlan で形を決め、台詞の応酬・擬音・体の位置の一文。2026-10-28 担当JC） */
         if (G.length === 3 && HK.Trio3 && HK.Trio3.quick && !HK.SAFE_ON) { var q3 = HK.Trio3.quick(ctx, G, { env: ctx.env }); if (q3) return q3; }
+        /* 中心のある三人は、三人の組み立てで書けなければ照明を落とす一文に（下の、二人ずつ抱く書き方は直接は触れ合わない組を触れ合わせることがあるため） */
+        if (G.hub) return null;
         /* 4 人なら、4 人の組み立て（trio4-talk-r18.js の HK.Trio3.quick4：三人の形に 4 人目を足し、待つ・相手の交代・二組並行・山場の順番。2026-10-28 担当KF） */
         if (G.length === 4 && HK.Trio3 && HK.Trio3.quick4 && !HK.SAFE_ON) { var q4 = HK.Trio3.quick4(ctx, G, { env: ctx.env, lead: lead }); if (q4) { g4in = true; return q4; } }
         /* 受け攻めの指定どおりに：跨るのは受け、交互に抱くのは二人に対して攻めに回れる人、背後から触れられるのは攻めを選んでいない人 */
@@ -1148,17 +1158,19 @@
       };
       /* r18:end */
       var text = ctx.t('{a}が「もう、みんなでいいじゃん｜もう、みんなでいいだろう｜もう、みんなでいいじゃないですか」と笑った。', a) + names(G) + 'は顔を見合わせ、誰からともなく手を伸ばした。' +
-        (groupLine ? groupLine() : ctx.t('{a}が照明を落とすと、{b}と{c}も黙って身を寄せた。その先のことは、輪の中にいた者だけが知っている。', lead, g2[0], g2[1])) +
+        ((groupLine && groupLine()) || ctx.t('{a}が照明を落とすと、{b}と{c}も黙って身を寄せた。その先のことは、輪の中にいた者だけが知っている。', G.hub || lead, (G.hub ? G.filter(function (c) { return c !== G.hub; }) : g2)[0], (G.hub ? G.filter(function (c) { return c !== G.hub; }) : g2)[1])) +
         (G.length > 3 && !g4in ? names(G.slice(3)) + 'も、すぐに輪の中に引き込まれた。' : '') + '――' + (others.length ? names(others) + 'は部屋の隅で、背中を向けて耳を塞いでいた。' : '');
       var exitTxt = [];
       /* 三人以上での同時達成が認められていれば、全員そろって出る（room-trio.js） */
       if (HK.RoomTrio && (ctx.env.multi || 'note') !== 'no' && G.every(function (x) { return G.every(function (y) { return x === y || pairDone(ctx, x, y); }); })) {
         ctx.flags.multiKnown = true;
-        return HK.RoomTrio.exitGroup(ctx, G, text, names(G) + 'の積極性が揃った。但し書き：三人以上で同時なら全員分', true, 'free');
+        var exG = HK.RoomTrio.exitGroup(ctx, G, text, names(G) + 'の積極性が揃った。但し書き：三人以上で同時なら全員分', true, 'free');
+        if (tps && exG) exG.trioPairs = tps;
+        return exG;
       }
-      G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i && !x.out && !y.out && pairDone(ctx, x, y)) { var ex = exitPair(ctx, x, y, '', '複数人で条件を満たした', true); exitTxt.push(ex.text); } }); });
+      G.forEach(function (x) { G.forEach(function (y) { if (x.i < y.i && !x.out && !y.out && pairDone(ctx, x, y)) { var ex = exitPair(ctx, x, y, '', '複数人で条件を満たした', !G.hub || okSex(x, y)); exitTxt.push(ex.text); } }); });
       if (gWait) text += waitNote(ctx, rh, gWait[0], gWait[1]);
-      return { text: text + (exitTxt.length ? exitTxt[0] : ''), why: names(G) + 'の積極性が揃った（' + G.map(function (c) { return Math.round(eager(ctx, c) * 100); }).join('・') + '）', mag: 35 };
+      return { trioPairs: tps, text: text + (exitTxt.length ? exitTxt[0] : ''), why: names(G) + 'の積極性が揃った（' + G.map(function (c) { return Math.round(eager(ctx, c) * 100); }).join('・') + '）' + (G.hub ? '／' + G.hub.name + 'を真ん中に（' + G.filter(function (c) { return c !== G.hub; }).map(function (c) { return c.name; }).join('と') + 'は直接は触れ合わない）' : ''), mag: 35 };
     }
   });
 

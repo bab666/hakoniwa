@@ -209,6 +209,7 @@ js/solo-locker-data.js
 js/solo-locker-more.js @scen:locker
 js/solo-locker-bed.js @scen:locker
 js/locker-ties.js @scen:locker
+js/locker-tie-more.js @scen:locker
 js/locker-crowd.js @scen:locker
 js/solo-locker.js @scen:locker
 js/rpg-data.js @scen:rpg
@@ -282,6 +283,7 @@ js/shared-stats.js
 js/ui-rand.js
 js/ui-cast-pages.js
 js/ui-ties.js
+js/ui-env.js
 js/ui-cast-tools.js
 js/ui-box-draw.js
 js/ui-import.js

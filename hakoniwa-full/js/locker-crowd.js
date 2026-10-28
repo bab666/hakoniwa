@@ -678,6 +678,8 @@
     Lk.ff = !!(Pos && Pos.ff(x, y));
     if (Lk.conn) { contTurn(S, Lk); S.lewdNow = true; return; }
     if (Lk.rest > 0) { Lk.rest--; return; }
+    /* 関係ごとの交流（locker-tie-more.js。二人のときと同じ文）：狭さ・外の足音・扉の隙間の外気 */
+    if (LK.TIES2) LK.TIES2.turn(S, x, y, { turn: turn, conn: Lk.conn, crowd: true });
     var order = rng() < 0.5 ? [x, y] : [y, x];
     for (var k = 0; k < order.length; k++) {
       var a = order[k], b = a === x ? y : x;
@@ -887,6 +889,11 @@
     var rng = S.rng, pk = S.pk, m = Lk.m, R = LK.CROWD_R18;
     Lk.trioNow = false;
     if (Lk.rest > 0) { Lk.rest--; return; }
+    /* 関係ごとの交流（locker-tie-more.js）：三人のロッカーでは、関係のある二人の組（あれば）で。三人で触れ合っているあいだは起こさない */
+    if (LK.TIES2 && !Lk.trioIn) {
+      var tp2 = [[m[0], m[1]], [m[0], m[2]], [m[1], m[2]]].filter(function (pr) { return LK.TIES2.list(S, pr[0], pr[1]).length; });
+      if (tp2.length) { var pr2 = tp2[rng.int(tp2.length)]; LK.TIES2.turn(S, pr2[0], pr2[1], { turn: turn, conn: false, crowd: true }); }
+    }
     var heat = m.reduce(function (s, p) { return s + p.m.heat; }, 0) / 3, reason = m.reduce(function (s, p) { return s + p.m.reason; }, 0) / 3;
     var lead = m.slice().filter(function (p) { return !HK.Avoid || !m.some(function (q) { return q !== p && HK.Avoid.of(S, p, q); }); }).sort(function (p, q) { return (q.m.heat / 100 + q.tr.impulse * 0.3 + q.tr.fc * 0.15 - q.m.reason / 130) - (p.m.heat / 100 + p.tr.impulse * 0.3 + p.tr.fc * 0.15 - p.m.reason / 130); })[0];
     if (!lead) return;

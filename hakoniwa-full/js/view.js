@@ -562,11 +562,13 @@
   function endingBlock(res) {
     if (!HK.Endings) return '';
     var E = HK.Endings.build(res);
+    /* 体の関係にならない組の但し書き（出られない部屋）：見出しのすぐ下に帯で（ui-env.js の HK.NgBand.ending。記録を読むだけ） */
+    var ngb = HK.NgBand && HK.NgBand.ending ? HK.NgBand.ending(res, E) : '';
     /* 全体の転機（いちばん大きい組の転機）を概要の最後に赤で */
     var top = hotInfo(res).top, te = top != null ? res.log[top] : null;
     var tst = te && tno(te.step) ? '<div class="tpstat"><dt>転機</dt><dd class="hot">' + tno(te.step) + '</dd>' + (te.label ? '<dd class="tplab">' + esc(te.label) + '</dd>' : '') + '</div>' : '';
     return '<section class="ending" aria-label="結末"><div class="eyebrow">結末</div><p class="ehead">' + paint(E.headline, res) + '</p>' +
-      (E.stats.length || tst ? '<dl class="estats">' + E.stats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(s[1]) + '</dd></div>'; }).join('') + tst + '</dl>' : '') +
+      (E.stats.length || tst ? '<dl class="estats">' + E.stats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(s[1]) + '</dd></div>'; }).join('') + tst + '</dl>' : '') + ngb +
       (E.lines.length ? '<ul class="elines">' + E.lines.map(function (l) { return '<li>' + paint(l, res) + '</li>'; }).join('') + '</ul>' : '') +
       (HK.Epilogue && HK.Epilogue.html ? HK.Epilogue.html(E, res, paint) : '') + (E.after || '') + '</section>';
   }

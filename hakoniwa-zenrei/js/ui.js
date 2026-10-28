@@ -976,9 +976,11 @@
     return HK.Content.TAGS.map(function (t) {
       var n = ctNote(t.id, cx), dim = n.off ? ' style="opacity:.45"' : '';
       return '<label data-ct="' + t.id + '" title="' + esc(t.desc) + '" style="flex-basis:100%"><input type="checkbox" data-f="ct" data-k="' + t.id + '"' + (m[t.id] ? ' checked' : '') + dim + '> <span class="ctn"' + dim + '>' + esc(t.label) + '</span>' +
-        '<span class="desc ctw" style="display:inline;margin-left:6px">' + esc(n.t) + '</span></label>';
+        '<span class="' + ctCls(n) + '" style="display:inline;margin-left:6px">' + esc(n.t) + '</span></label>';
     }).join('');
   }
+  /* 「起きません」の注記は、体の関係にならない組と同じ色の小さな帯にする（ui-env.js の HK.NgBand.ctCls。文は変えない） */
+  function ctCls(n) { return HK.NgBand ? HK.NgBand.ctCls(n.off, n.t) : 'desc ctw'; }
   /* 参加者・関係・設定を変えたら、注記と薄さだけをその場で書き換える（チェックの欄は作り直さない） */
   function updCtWhy() {
     var b = document.querySelector('#view-box .ctbox');
@@ -986,29 +988,33 @@
     var cx = ctCx();
     Array.prototype.forEach.call(b.querySelectorAll('label[data-ct]'), function (l) {
       var n = ctNote(l.getAttribute('data-ct'), cx), op = n.off ? '.45' : '', i = l.querySelector('input'), sp = l.querySelector('.ctn'), w = l.querySelector('.ctw');
-      if (i) i.style.opacity = op; if (sp) sp.style.opacity = op; if (w && w.textContent !== n.t) w.textContent = n.t;
+      if (i) i.style.opacity = op; if (sp) sp.style.opacity = op; if (w && w.textContent !== n.t) w.textContent = n.t; if (w && w.className !== ctCls(n)) w.className = ctCls(n);
     });
   }
   function contentBox() {
     if (!HK.Content || HK.SAFE_ON) return '';
-    return '<div class="envitem wide"><div class="lab"><span>内容のスイッチ（全箱庭で共通・初期はすべて切）</span></div><div class="ctbox">' + ctItems() +
-      '</div><div class="desc">入れたものだけが起きます。切のときは、その場面を起こさないか、やわらかい分岐に替えます。エロトラップダンジョンなどR18が中心の箱庭では「合意のない展開」は常に入です。' + CT_MORE + '</div></div>';
+    var h = envHelp({ id: 'ct', label: '内容のスイッチ', desc: '入れたものだけが起きます。切のときは、その場面を起こさないか、やわらかい分岐に替えます。エロトラップダンジョンなどR18が中心の箱庭では「合意のない展開」は常に入です。' + CT_MORE });
+    return '<div class="envitem wide"><div class="lab"><span class="labt"><span>内容のスイッチ（全箱庭で共通・初期はすべて切）</span>' + h.q + '</span></div>' + h.d + '<div class="ctbox">' + ctItems() + '</div></div>';
+  }
+  /* 環境値の説明 e.desc は、ラベルの横の「？」にしまう（押すと欄の下に開く・title にも全文。ui-env.js の HK.EnvHelp。2026-10-28 利用者の指示）。
+     e.desc はすべて固定の文（住人の設定では変わらない）。住人で変わる文（内容のスイッチの注記・三人の場面の事前の表示など）は別の口で、見えたまま */
+  function envHelp(e) {
+    var H = HK.EnvHelp, k = 'env-' + e.id;
+    if (!H) return { q: '', d: e.desc ? '<div class="desc">' + esc(e.desc) + '</div>' : '' };
+    return { q: H.q(k, e.label, e.desc), d: H.body(k, e.desc) };
   }
   function envItem(e, scenId) {
-    var v = envVal(e, scenId), g = HK.GLOBAL_ENV.indexOf(e) >= 0 ? '1' : '0';
+    var v = envVal(e, scenId), g = HK.GLOBAL_ENV.indexOf(e) >= 0 ? '1' : '0', h = envHelp(e);
     if (e.type === 'text') {
-      return '<div class="envitem wide"><div class="lab"><label for="env-' + e.id + '">' + esc(e.label) + '</label></div><input type="text" id="env-' + e.id + '" data-f="env" data-g="' + g + '" data-k="' + e.id + '" value="' + esc(v) + '" placeholder="' + esc(e.placeholder || '') + '" maxlength="60" style="width:100%;margin-top:4px">' +
-        (e.desc ? '<div class="desc">' + esc(e.desc) + '</div>' : '') + '</div>';
+      return '<div class="envitem wide"><div class="lab"><span class="labt"><label for="env-' + e.id + '">' + esc(e.label) + '</label>' + h.q + '</span></div><input type="text" id="env-' + e.id + '" data-f="env" data-g="' + g + '" data-k="' + e.id + '" value="' + esc(v) + '" placeholder="' + esc(e.placeholder || '') + '" maxlength="60" style="width:100%;margin-top:4px">' + h.d + '</div>';
     }
     if (e.type === 'select') {
-      return '<div class="envitem"><div class="lab"><span>' + esc(e.label) + '</span></div><select id="env-' + e.id + '" data-f="env" data-g="' + g + '" data-k="' + e.id + '">' +
-        e.options.map(function (o) { return '<option value="' + esc(o.v) + '"' + (o.v === v ? ' selected' : '') + '>' + esc(o.label) + '</option>'; }).join('') + '</select>' +
-        (e.desc ? '<div class="desc">' + esc(e.desc) + '</div>' : '') + '</div>';
+      return '<div class="envitem"><div class="lab"><span class="labt"><span>' + esc(e.label) + '</span>' + h.q + '</span></div><select id="env-' + e.id + '" data-f="env" data-g="' + g + '" data-k="' + e.id + '">' +
+        e.options.map(function (o) { return '<option value="' + esc(o.v) + '"' + (o.v === v ? ' selected' : '') + '>' + esc(o.label) + '</option>'; }).join('') + '</select>' + h.d + '</div>';
     }
-    return '<div class="envitem"><div class="lab"><label for="env-' + e.id + '">' + esc(e.label) + '</label><span class="num" id="ev-' + e.id + '">' + v + (e.unit || '') + '</span></div>' +
+    return '<div class="envitem"><div class="lab"><span class="labt"><label for="env-' + e.id + '">' + esc(e.label) + '</label>' + h.q + '</span><span class="num" id="ev-' + e.id + '">' + v + (e.unit || '') + '</span></div>' +
       '<input type="range" id="env-' + e.id + '" min="' + e.min + '" max="' + e.max + '" step="1" value="' + v + '" data-f="env" data-g="' + g + '" data-k="' + e.id + '" data-unit="' + (e.unit || '') + '">' +
-      '<div class="ends"><span>' + esc(e.lo || '') + '</span><span>' + esc(e.hi || '') + '</span></div>' +
-      (e.desc ? '<div class="desc">' + esc(e.desc) + '</div>' : '') + '</div>';
+      '<div class="ends"><span>' + esc(e.lo || '') + '</span><span>' + esc(e.hi || '') + '</span></div>' + h.d + '</div>';
   }
   function per(c, scenId) {
     S.per[c.id] = S.per[c.id] || {};

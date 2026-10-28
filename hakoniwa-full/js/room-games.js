@@ -388,22 +388,60 @@
   /* 三人の誰も、決めた相手（「相手は一人だけ」）がこの三人の外にいない */
   function exclOk(ctx, g) { return g.every(function (x) { return !g.some(function (y) { return y !== x && A.exclOther(ctx, x, y); }); }); }
   function readyPair(ctx, x, y, lv) { return A.willing(ctx, x, y, lv) || A.desperate(ctx, x, y, lv); }
+  /* 張りつめていない組が、時間が三割半を過ぎて焦り・覚悟・積極性で踏み切る */
+  function lateOk(ctx, x, y, late) { return late && R(ctx, x, y).ten < 55 && R(ctx, y, x).ten < 55 && [x, y].every(function (z) { return z.stress > 45 || z.flags.resign || A.eager(ctx, z) > 0.5; }); }
+  /* 不仲・敵対の二人（関係の不仲・敵対・ライバル、または嫌悪 35 以上。2026-10-28 担当LG：利用者の報告「不仲の相手がいると 3P が起きない」）。
+     二人きりのエッチには、部屋の仕掛けとしての敵対する二人の場面（hate-sex-room-r18.js）があるが、三人の場面には道がなく、
+     張りつめた組（緊張 55 以上）は最後まで「その気」にも「焦りが限界」にもならないので、三人の場面が起きなかった */
+  function grudge(ctx, x, y) {
+    if (HK.SAFE_ON || !x || !y) return false;
+    var ts = HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, x, y) : [], H = HK.HateKit;
+    return ts.some(function (t) { return /^(rival|enemy|bad)$/.test(t.type); }) || !!(H && H.level && (H.level(ctx, x, y) >= 35 || H.level(ctx, y, x) >= 35));
+  }
+  /* 不仲の二人が、もう一人がいる三人の場面なら割り切って加わる：時間が三割半を過ぎて、二人とも焦り（性欲「弱い」の人は強い焦り）・覚悟・積極性があり、
+     どちらも相手を避けていない（HK.Avoid：苦手・避けている人は、割り切っても加わらない）。三人のうち、ほかの直接の組の一つ以上がその気か焦りで踏み切れること（pickTrio） */
+  /* 愛憎（不仲・敵対の欄の lh。hate-love.js の HK.LoveHate）を持つ人は、三人の場面では相手をもう一人に取られそうなので、早く（時間の二割から）・
+     弱い焦りでも踏み込む（2026-10-28 担当LG：利用者の要望「愛憎は、誰かに取られると思ったら自分が手に入れたいと思う気持ちもある」）。
+     愛憎を持たない側は、ふつうの不仲と同じ（時間の三割半を過ぎて焦り） */
+  function grudgeOk(ctx, x, y, late) {
+    if (!grudge(ctx, x, y)) return false;
+    if (HK.Avoid && (HK.Avoid.of(ctx, x, y) || HK.Avoid.of(ctx, y, x))) return false;
+    var LH = HK.LoveHate, early = ctx.stepIndex >= ctx.stepsTotal * 0.2;
+    return [x, y].every(function (z) {
+      var o = z === x ? y : x;
+      if (LH && LH.has && LH.has(ctx, z, o)) return early && (z.flags.resign || z.stress > 25 || A.eager(ctx, z) > 0.35);
+      if (!late) return false;
+      var low = HK.Pos && HK.Pos.libOf && HK.Pos.libOf(z) === 'low';
+      return z.flags.resign || z.stress > (low ? 55 : 40) || A.eager(ctx, z) > (low ? 0.65 : 0.5);
+    });
+  }
   function pickTrio(ctx, a, b) {
     var r = trioRule(ctx);
     if (!r) return null;
     var late = ctx.stepIndex >= ctx.stepsTotal * 0.35;
     var cs = ctx.present().filter(function (c) { return c !== a && c !== b && free(c); }), best = null, bv = -1e9;
     cs.forEach(function (c) {
-      var g = [a, b, c];
+      var g = [a, b, c], gr = [];
       if (A.pairDone(ctx, a, b) && A.pairDone(ctx, a, c) && A.pairDone(ctx, b, c)) return;
       if (!exclOk(ctx, g) || (HK.Poly && HK.Poly.faithOk && !HK.Poly.faithOk(ctx, g))) return;
       var ok;
       if (soft(ctx)) ok = pairs3(g).every(function (p) { var x = p[0], y = p[1]; return (R(ctx, x, y).ten < 60 && R(ctx, y, x).ten < 60 && R(ctx, x, y).trust > -30 && R(ctx, y, x).trust > -30) || (late && x.stress > 60 && y.stress > 60); });
-      /* 三組とも：その気がある（惹かれと信頼）か焦りが限界。時間が三割半を過ぎたら、張りつめていない組は焦り・覚悟・積極性で踏み切る */
-      else ok = hardOk(g) && pairs3(g).every(function (p) { var x = p[0], y = p[1]; if (!direct(x, y)) return R(ctx, x, y).ten < 60 && R(ctx, y, x).ten < 60; return !(HK.RoomReluct && HK.RoomReluct.blocks(ctx, x, y)) && (readyPair(ctx, x, y, 4) || (late && R(ctx, x, y).ten < 55 && R(ctx, y, x).ten < 55 && [x, y].every(function (z) { return z.stress > 45 || z.flags.resign || A.eager(ctx, z) > 0.5; }))); });
+      /* 三組とも：その気がある（惹かれと信頼）か焦りが限界。時間が三割半を過ぎたら、張りつめていない組は焦り・覚悟・積極性で踏み切る。
+         不仲の組（grudgeOk）は、ほかの直接の組が一つ以上踏み切れるときだけ、割り切って加わる */
+      else {
+        var warm = 0;
+        ok = hardOk(g) && pairs3(g).every(function (p) {
+          var x = p[0], y = p[1];
+          if (!direct(x, y)) return R(ctx, x, y).ten < 60 && R(ctx, y, x).ten < 60;
+          if (HK.RoomReluct && HK.RoomReluct.blocks(ctx, x, y)) return false;
+          if (readyPair(ctx, x, y, 4) || lateOk(ctx, x, y, late)) { warm++; return true; }
+          if (grudgeOk(ctx, x, y, late)) { gr.push(p); return true; }
+          return false;
+        }) && (!gr.length || warm > 0);
+      }
       if (!ok) return;
-      var v = pairs3(g).reduce(function (s, p) { return s + R(ctx, p[0], p[1]).att + R(ctx, p[1], p[0]).att + R(ctx, p[0], p[1]).aff; }, 0);
-      if (v > bv) { bv = v; best = g; }
+      var v = pairs3(g).reduce(function (s, p) { return s + R(ctx, p[0], p[1]).att + R(ctx, p[1], p[0]).att + R(ctx, p[0], p[1]).aff; }, 0) - gr.length * 40;
+      if (v > bv) { bv = v; best = g; best.gr = gr; }
     });
     return best;
   }
@@ -415,7 +453,8 @@
   EV.push({
     id: 'cond_trio', label: '三人で条件を満たそうとする', cat: 'bond', scope: 'pair', pri: true,
     when: function (ctx, a, b) { return !!ctx.flags.trioRule && ctx.stepIndex >= 1 && free(a) && free(b) && !!pickTrio(ctx, a, b); },
-    w: function (ctx, a) { return 1.6 + ctx.stepIndex / Math.max(4, ctx.stepsTotal) * 2 + A.eager(ctx, a); },
+    /* 残り三割を切ったら、時間切れを前に三人の場面へ向かいやすく（三人がそろって踏み切れる回に、ほかの出来事に埋もれて時間が尽きないように。2026-10-28 担当LG） */
+    w: function (ctx, a) { return 1.6 + ctx.stepIndex / Math.max(4, ctx.stepsTotal) * 2 + A.eager(ctx, a) + (ctx.stepIndex >= ctx.stepsTotal * 0.7 ? 2 : 0); },
     run: function (ctx, a, b) {
       var g = pickTrio(ctx, a, b), r = trioRule(ctx);
       if (!g) return null;
@@ -423,11 +462,15 @@
       var hard = !soft(ctx), text = '', why = '', sex = false, waited = null;
       /* r18:begin */
       if (hard && HK.RoomTrio && HK.RoomTrio.condScene) {
-        var sc = HK.RoomTrio.condScene(ctx, g, first);
+        /* 不仲の組が割り切って加わる三人（grudgeOk）：場面の書き出しは、張りつめたまま条件のために割り切る形（room-trio.js の kind 'grudge'） */
+        var gr = g.gr || [];
+        var sc = HK.RoomTrio.condScene(ctx, g, first, gr.length ? { kind: 'grudge', gr: gr } : null);
         if (sc) {
-          text = (first && LEAD_H ? ctx.t(pickNew(ctx,LEAD_H), a, b, c) : '') + sc.text;
+          text = (first && LEAD_H && !gr.length ? ctx.t(pickNew(ctx,LEAD_H), a, b, c) : '') + sc.text;
           var wt = P.filter(function (p) { return !direct(p[0], p[1]); });
-          why = '条件「三人で」：' + (wt.length ? '中心の一人とだけ触れ合う三人（' + nm(g) + '。' + wt.map(function (p) { return p[0].name + 'と' + p[1].name; }).join('・') + 'は直接は触れ合わない）。' : '三組とも体の関係を持てる三人（' + nm(g) + '）。') + sc.why; sex = true;
+          why = '条件「三人で」：' + (wt.length ? '中心の一人とだけ触れ合う三人（' + nm(g) + '。' + wt.map(function (p) { return p[0].name + 'と' + p[1].name; }).join('・') + 'は直接は触れ合わない）。' : '三組とも体の関係を持てる三人（' + nm(g) + '）。') + sc.why +
+            (gr.length ? '／' + gr.map(function (p) { return p[0].name + 'と' + p[1].name + '（緊張 ' + Math.round(Math.max(R(ctx, p[0], p[1]).ten, R(ctx, p[1], p[0]).ten)) + '）'; }).join('・') + 'は不仲で張りつめたままだったが、焦り（' + gr.map(function (p) { return p[0].name + ' ' + Math.round(p[0].stress) + '・' + p[1].name + ' ' + Math.round(p[1].stress); }).join('／') + '）に押されて、もう一人がいる三人ならと割り切った' : ''); sex = true;
+          ctx.flags.trioSexN = (ctx.flags.trioSexN || 0) + 1;
           /* 夜を過ごしたことにするのは、直接の行為があった組だけ */
           P.forEach(function (p) { if (direct(p[0], p[1])) ctx.pair(p[0], p[1]).night = true; ctx.pair(p[0], p[1]).heatDone = true; });
         }
@@ -486,16 +529,25 @@
     }
     if (HK.SAFE_ON) { ctx.flags.trioSoft = true; if (HK._trioPrev) HK._trioPrev.res = { n: C.length, soft: true }; return; }
     /* r18:begin */
-    var ng = [], okAny = false, okN = 0;
+    var ng = [], okAny = false, okN = 0, okList = [];
     for (var i = 0; i < C.length; i++) for (var j = i + 1; j < C.length; j++) {
       if (!A.okSex(C[i], C[j])) ng.push([C[i], C[j]]);
-      for (var k2 = j + 1; k2 < C.length; k2++) if (hardOk([C[i], C[j], C[k2]])) { okAny = true; okN++; }
+      for (var k2 = j + 1; k2 < C.length; k2++) if (hardOk([C[i], C[j], C[k2]])) { okAny = true; okN++; okList.push(okInfo(ctx, [C[i], C[j], C[k2]])); }
     }
+    /* 成り立つ三人ごとの形（中心・直接は触れ合わない組・不仲の組）。最初の記録の但し書きと事前の表示で、三人の場面の可否を二人の組の理由と分けて書く（2026-10-28 担当LG：
+       利用者の報告「恋愛対象が合わない、と出て 3P が起きない」。攻めどうしの組の理由が、三人の場面が成り立たない理由のように読めたため） */
+    ctx.flags.trioOkList = okList;
     ctx.flags.trioNG = ng.map(function (p) { return [p[0].i, p[1].i]; });
     ctx.flags.trioOut = C.filter(function (c) { return HK.Pos && HK.Pos.trioOptOut && HK.Pos.trioOptOut(c); }).map(function (c) { return c.i; });
     ctx.flags.trioFaith = faithOut(ctx, C).map(function (c) { return c.i; });
     /* 箱庭タブの事前の表示（room-trio-note.js の HK.RoomGames.preview）：この顔ぶれで成り立つ三人の数と、成り立たない組の理由 */
-    if (HK._trioPrev) HK._trioPrev.res = { n: C.length, okN: okN, ng: ng.map(function (p) { return ngInfo(ctx, p[0], p[1]); }), out: C.filter(function (c) { return HK.Pos && HK.Pos.trioOptOut && HK.Pos.trioOptOut(c); }).map(function (c) { return c.name; }), faith: faithOut(ctx, C).map(function (c) { return c.name; }),
+    /* 不仲・敵対の組（体の関係は持てるが張りつめている。2026-10-28 担当LG）：事前の表示に、割り切って加わるまでの条件・避けている人を書く */
+    var tense = [];
+    for (var i2 = 0; i2 < C.length; i2++) for (var j2 = i2 + 1; j2 < C.length; j2++) if (A.okSex(C[i2], C[j2]) && grudge(ctx, C[i2], C[j2])) {
+      var av2 = HK.Avoid ? [[C[i2], C[j2]], [C[j2], C[i2]]].filter(function (p) { return HK.Avoid.of(ctx, p[0], p[1]); })[0] : null;
+      tense.push({ a: C[i2].name, b: C[j2].name, avoid: av2 ? av2[0].name : '', low: [C[i2], C[j2]].filter(function (z) { return HK.Pos && HK.Pos.libOf && HK.Pos.libOf(z) === 'low'; }).map(function (z) { return z.name; }) });
+    }
+    if (HK._trioPrev) HK._trioPrev.res = { n: C.length, okN: okN, tense: tense, trios: okList.map(function (o) { return { names: o.g.map(function (i) { return ctx.chars[i].name; }), hub: o.hub != null ? ctx.chars[o.hub].name : '', watch: o.watch.map(function (p) { return ngInfo(ctx, ctx.chars[p[0]], ctx.chars[p[1]]); }), tense: o.tense.map(function (p) { return { a: ctx.chars[p[0]].name, b: ctx.chars[p[1]].name }; }) }; }), ng: ng.map(function (p) { return ngInfo(ctx, p[0], p[1]); }), out: C.filter(function (c) { return HK.Pos && HK.Pos.trioOptOut && HK.Pos.trioOptOut(c); }).map(function (c) { return c.name; }), faith: faithOut(ctx, C).map(function (c) { return c.name; }),
       /* 点検用：okSex と理由の有無が食い違う組の数（0 であること） */
       odd: (function () { var n = 0; for (var i = 0; i < C.length; i++) for (var j = i + 1; j < C.length; j++) if (!A.okSex(C[i], C[j]) !== !!(HK.Pos.noSexInfo && HK.Pos.noSexInfo(C[i], C[j], { ctx: ctx }))) n++; return n; })() };
     if (!okAny) {
@@ -509,11 +561,49 @@
   /* 体の関係を持てない組の書き方（最初の記録の注意書き） */
   var NG_NOTE = null;
   /* r18:begin */
+  /* 三人の場面にならなかった理由（結末の注意書き。2026-10-28 担当LG）：体の関係を持てる三人のうち、踏み切れなかった直接の組と、その理由・直し方 */
+  function stuckWhy(ctx, x, y) {
+    var t = function (p, q) { return Math.round(Math.max(R(ctx, p, q).ten, R(ctx, q, p).ten)); };
+    if (HK.RoomReluct && HK.RoomReluct.blocks(ctx, x, y)) return x.name + 'と' + y.name + 'は、この場所でするのを渋ったままだった';
+    if (grudge(ctx, x, y)) {
+      var av = HK.Avoid ? [[x, y], [y, x]].filter(function (p) { return HK.Avoid.of(ctx, p[0], p[1]); })[0] : null;
+      if (av) return av[0].name + 'は' + av[1].name + 'を避けている（' + HK.Avoid.why(ctx, av[0], av[1]) + '）ので、割り切っても加わらなかった（' + av[0].name + 'が持つ側の「愛憎」を不仲に付けると、避けずに加わる）';
+      var low = [x, y].filter(function (z) { return HK.Pos && HK.Pos.libOf && HK.Pos.libOf(z) === 'low'; });
+      return x.name + 'と' + y.name + 'は不仲で張りつめたまま（緊張 ' + t(x, y) + '）、割り切れるほど焦りが溜まらなかった（焦り ' + Math.round(x.stress) + '・' + Math.round(y.stress) + (low.length ? '。性欲「弱い」の' + nm(low) + 'は、強い焦りが要る' : '') + '）';
+    }
+    if (t(x, y) >= 55) return x.name + 'と' + y.name + 'は張りつめたままだった（緊張 ' + t(x, y) + '）';
+    return x.name + 'と' + y.name + 'は、その気になるほど惹かれも信頼も育たず、焦りも足りなかった（惹かれ ' + Math.round(R(ctx, x, y).att) + '・' + Math.round(R(ctx, y, x).att) + '／焦り ' + Math.round(x.stress) + '・' + Math.round(y.stress) + '）';
+  }
+  function missNote(ctx) {
+    var C = ctx.chars.filter(function (c) { return c.alive !== false; }), best = null, bn = 9;
+    for (var i = 0; i < C.length; i++) for (var j = i + 1; j < C.length; j++) for (var k = j + 1; k < C.length; k++) {
+      var g = [C[i], C[j], C[k]];
+      if (!hardOk(g)) continue;
+      var st = pairs3(g).filter(function (p) { var x = p[0], y = p[1]; return direct(x, y) && ((HK.RoomReluct && HK.RoomReluct.blocks(ctx, x, y)) || !(readyPair(ctx, x, y, 4) || lateOk(ctx, x, y, true) || grudgeOk(ctx, x, y, true))); });
+      if (st.length < bn) { bn = st.length; best = { g: g, st: st }; }
+    }
+    if (!best) return '';
+    var gr = best.st.some(function (p) { return grudge(ctx, p[0], p[1]); });
+    return '条件「三人で」：三人の場面にならなかった（' + nm(best.g) + '：' + (best.st.length ? best.st.map(function (p) { return stuckWhy(ctx, p[0], p[1]); }).join('。') : '三人がそろって踏み切る機会がないまま、時間が尽きた') +
+      '。直し方：閉じ込められる時間を長くする・部屋の圧を上げる' + (gr ? '・二人の関係の「不仲」を外す' : '') + '）';
+  }
   /* 体の関係を持てない理由（2026-10-28 担当JB：pos.js の HK.Pos.whyNoSex に置き換えた。性欲「なし」・一途・恋愛やR18にしない相手・
      体の関係の相手「なし」・恋愛相手の固定に合わせた性行為の相手の固定などが、みな「受け攻め」に落ちていたため） */
   function whyNG(ctx, x, y) { return (HK.Pos && HK.Pos.whyNoSex && HK.Pos.whyNoSex(x, y, { ctx: ctx })) || '受け攻めの組み合わせが成り立たない'; }
   /* 事前の表示（room-trio-note.js）に渡す中身：成り立たない組の理由と直し方 */
   function ngInfo(ctx, x, y) { var d = HK.Pos && HK.Pos.noSexInfo ? HK.Pos.noSexInfo(x, y, { ctx: ctx }) : null; return { a: x.name, b: y.name, t: d ? d.t : '受け攻めの組み合わせが成り立たない', fix: d ? d.fix : '' }; }
+  /* 成り立つ三人の形：{ g: 番号, hub: 中心の番号か null, watch: 直接は触れ合わない組, tense: 不仲の組 } */
+  function okInfo(ctx, g) {
+    var pl = HK.RoomTrio && HK.RoomTrio.plan3 ? HK.RoomTrio.plan3(g) : null, ix = function (p) { return [p[0].i, p[1].i]; };
+    return { g: g.map(function (c) { return c.i; }), hub: pl && !pl.all && pl.hub ? pl.hub.i : null, watch: pl ? pl.watch.map(ix) : [], tense: pairs3(g).filter(function (p) { return direct(p[0], p[1]) && grudge(ctx, p[0], p[1]); }).map(ix) };
+  }
+  /* 成り立つ三人の一行（「ユイ・ソウタ・レンの三人は、ユイを真ん中にすれば成り立つ（ソウタとレンは直接は触れ合わない――理由）。ソウタとユイは不仲なので…」） */
+  function okLine(ctx, o) {
+    var ch = function (i) { return ctx.chars[i]; }, g = o.g.map(ch);
+    var t = nm(g) + 'の三人は、' + (o.hub != null ? ch(o.hub).name + 'を真ん中にすれば成り立つ（' + o.watch.map(function (p) { return ch(p[0]).name + 'と' + ch(p[1]).name + 'は直接は触れ合わない――' + whyNG(ctx, ch(p[0]), ch(p[1])); }).join('。') + '）' : '三組とも触れ合える');
+    if (o.tense.length) t += '。' + o.tense.map(function (p) { return ch(p[0]).name + 'と' + ch(p[1]).name; }).join('・') + 'は不仲なので、時間が経って焦りが溜まってから、割り切って加わる';
+    return t;
+  }
   NG_NOTE = function (ctx, fall) {
     var ps = (ctx.flags.trioNG || []).map(function (p) { var x = ctx.chars[p[0]], y = ctx.chars[p[1]]; return x.name + 'と' + y.name + '（' + whyNG(ctx, x, y) + '）'; });
     /* 住人の設定「三人の場面（3P）：しない」の人（2026-10-27 担当HN） */
@@ -522,7 +612,14 @@
     var fs = (ctx.flags.trioFaith || []).map(function (i) { return ctx.chars[i].name; });
     if (fs.length) on += fs.join('・') + 'は一途で、恋人でない人がいる三人には加わらない。';
     if (fall) return '扉の紙の条件「三人で仲良くしないと出られない」は、この部屋では成り立たなかった。' + on + (ps.length ? ps.join('、') + 'は体の関係を持てない組なので、二組以上が体の関係を持てる三人を選べない。' : '二組以上が体の関係を持てる三人がいない。') + '紙の文字がにじんで、条件は「三人で抱き合う」に書き換わった。';
-    return on || ps.length ? '扉の紙の但し書き：' + on + (ps.length ? ps.join('、') + 'は体の関係を持てない組なので、その二人を含む三人では、二人の両方と体の関係を持てるもう一人を真ん中にしたときだけ、条件「三人で」を満たせる（二人は直接は触れ合わない）。' : '') : '';
+    /* 成り立つ三人を先に（三人の場面の可否）。二人の組の理由は、その三人の形の説明として書き、形に出てこない組だけを最後にまとめる */
+    var ok = (ctx.flags.trioOkList || []).filter(function (o) { return o.hub != null || o.tense.length; }), shown = {};
+    ok.slice(0, 3).forEach(function (o) { o.watch.forEach(function (p) { shown[p[0] + '_' + p[1]] = 1; }); });
+    var rest = (ctx.flags.trioNG || []).filter(function (p) { return !shown[p[0] + '_' + p[1]]; }).map(function (p) { var x = ctx.chars[p[0]], y = ctx.chars[p[1]]; return x.name + 'と' + y.name + '（' + whyNG(ctx, x, y) + '）'; });
+    var tl = ok.slice(0, 3).map(function (o) { return okLine(ctx, o); });
+    if (!on && !tl.length && !rest.length) return '';
+    return '扉の紙の但し書き：' + on + (tl.length ? tl.join('。') + '。' + (ok.length > 3 ? 'ほかに' + (ok.length - 3) + '組の三人でも成り立つ。' : '') : '') +
+      (rest.length ? rest.join('、') + 'は体の関係にならない二人なので、同じ三人に入っても直接は触れ合わない。' : '');
   };
   /* r18:end */
   scen.phase = function (ctx, s, n) {
@@ -532,7 +629,7 @@
     if (ctx.flags.trioFall === 'few') ctx.say({ text: '扉の紙の条件は「三人で」だったが、部屋にいるのは' + ctx.chars.length + '人だけだった。三人そろわなければ、この条件は成り立たない。紙の文字がにじんで、条件は「ハグ」に書き換わった。' });
     else if (ctx.flags.trioFall === 'ng' && NG_NOTE) ctx.say({ text: NG_NOTE(ctx, true) });
     if (ctx.flags.trioLabel) ctx.flags.roomLabel = ctx.flags.trioLabel;
-    if (ctx.flags.trioRule && !ctx.flags.trioFall && NG_NOTE && ((ctx.flags.trioNG || []).length || (ctx.flags.trioOut || []).length || (ctx.flags.trioFaith || []).length)) { var nt = NG_NOTE(ctx, false); if (nt) ctx.say({ text: nt }); }
+    if (ctx.flags.trioRule && !ctx.flags.trioFall && NG_NOTE) { var nt = NG_NOTE(ctx, false); if (nt) ctx.say({ text: nt }); }
     ctx.rules.forEach(function (r) {
       var pool = r.k === 'trio3' && !soft(ctx) && INTRO_H ? INTRO_H : INTRO[r.k] || HK.RoomGames.INTRO[r.k];
       if (pool && pool.length) ctx.say({ text: fillN(ctx.pick(pool), r.n) });
@@ -554,6 +651,8 @@
     if (ctx.flags.trioFall === 'few') notes('条件「三人で」：部屋に三人そろわなかったので、「ハグ」に替わった');
     /* r18:begin */
     if (ctx.flags.trioFall === 'ng') notes('条件「三人で」：体の関係を持てる三人がいなかったので、「三人で抱き合う」に替わった');
+    /* 三人の場面が一度も起きなかった部屋：どの組が踏み切れなかったかと直し方（2026-10-28 担当LG） */
+    if (ctx.flags.trioRule && !soft(ctx) && !ctx.flags.trioFall && !ctx.flags.trioSexN) { var mn = missNote(ctx); if (mn) notes(mn); }
     /* r18:end */
   };
 

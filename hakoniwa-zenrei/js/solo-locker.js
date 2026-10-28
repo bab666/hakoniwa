@@ -329,6 +329,8 @@
       }
       /* 新しい関係：閉じ込められたときの反応・関係を保つ・発展させる（locker-ties.js）。恩返しは仕掛けを進める */
       if (nt) { var ntE = NT.turn(S, nt, { turn: turn, pair: pair, ngP: ngP }); if (ntE && ntE.prog && gimmicks[gi] && !gimmicks[gi].lewd) prog = clamp(prog + ntE.prog, 0, 99); }
+      /* 関係ごとの交流（locker-tie-more.js）：狭さ・外の足音・扉の隙間の外気。どの関係でも（同一人物も）、5分ごとにまれに一つ */
+      if (LK.TIES2) LK.TIES2.turn(S, A, B, { turn: turn, conn: pair.conn, ngP: ngP });
       /* 手を出す（一コマに受け入れる出来事は一つまで。繋がっているあいだは、その続きだけ） */
       var lewdNow = false;
       var order = rng() < 0.5 ? [A, B] : [B, A];
@@ -483,6 +485,8 @@
         }
         /* 新しい関係ならではの最中（R18版のみ。locker-ties-r18.js） */
         if (nt && NT.r18Act && R18 && lew !== 'low' && lv === 4 && !nt.r18In) { nt.r18In = true; t += NT.r18Act(S, nt, tp, tp.o, { moan: moan }); }
+        /* ほかの関係ならではの最中（R18版のみ。locker-tie-more-r18.js の LK.TIES2.r18Act。恋人・片想い・家族など） */
+        else if (!nt && LK.TIES2 && LK.TIES2.r18Act && R18 && lew !== 'low' && lv === 4 && !pair.lkmIn) { pair.lkmIn = true; t += LK.TIES2.r18Act(S, tp, tp.o); }
         /* 夜の性格（R18版のみ。locker-night.js）：キス〜口（1〜3）は動く側→受ける側、繋がる（4）は攻め→受けに。同じ組で各段階一回だけ。
            swap のときは ax＝b（誘われて動いた攻め）。描写「ぼかす」・全年齢版では足さない */
         var nightL = '';

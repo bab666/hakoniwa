@@ -318,7 +318,8 @@
         var tr = a.tr || {}, kinds = [['iyami', 0.7 + (tr.cp || 0) * 0.3], ['jama', 0.6 + (tr.fc || 0) * 0.4], ['yatsu', 0.4 + (tr.aggr || 0) * 0.5 + (tr.impulse || 0) * 0.2], ['teki', 0.4 + (tr.aggr || 0) * 0.4 + (tr.jealous || 0) * 0.3]];
         var k = HK.weighted(ctx.rng, kinds, function (q) { return q[1]; })[0], J = JEAL[k], m = { a: a, b: b, t: t };
         var text = ctx.pick(J.lead) + a.name + ctx.pick((J.to === 't' ? JEAL_T : JEAL_R)[ps(a)]) + ctx.pick(JEAL_TAIL[LH.has(ctx, t, a) ? 'both' : 'one']);
-        ctx.mod(a, b, { ten: 10, aff: -6 }); ctx.mod(a, t, { att: 3, ten: 3 }); ctx.stress(a, 6);
+        /* 取られそうで、口では嫌っている相手が欲しくなる（惹かれを足し、張りつめを足さない。2026-10-28 担当LG：利用者の要望「愛憎は、誰かに取られると思ったら自分が手に入れたいと思う気持ちもある」） */
+        ctx.mod(a, b, { ten: 10, aff: -6 }); ctx.mod(a, t, { att: 7, ten: 0 }); ctx.stress(a, 6);
         if (HK.Obsess && HK.Obsess.feed) HK.Obsess.feed(ctx, a, t, 3);
         return { with: [t], text: fill(text, m), why: a.name + 'の嫉妬（愛憎）。' + t.name + 'が' + b.name + 'と' + (j.s === 2 ? '親しくしたばかりだった' : '親しげにしていた') + '。口では嫌っている相手なのに、我慢ならなかった／' + J.label, mag: 18 };
       }

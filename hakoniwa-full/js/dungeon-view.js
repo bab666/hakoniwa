@@ -95,9 +95,11 @@
     ];
     if (!res.estats && c.edge) stats.push(['寸止め', c.edge + '回']);
     if (!res.estats && c.seek) stats.push(['自分から', c.seek + '回']);
+    /* 体の関係にならない組の但し書き（常識改変・マッサージ）：帯にして見出しのすぐ下に（ui-env.js の HK.NgBand.ending。帯に移した行は写しの行から外す。記録は書き換えない） */
+    var EL = { lines: (E.lines || []).slice() }, ngb = HK.NgBand && HK.NgBand.ending ? HK.NgBand.ending(res, EL, stats) : '';
     return '<section class="ending dgend ' + E.kind + '" aria-label="結末"><div class="eyebrow">' + (E.kind === 'over' ? 'GAME OVER' : '結末') + '</div><p class="ehead">' + esc(E.title) + '</p>' +
-      '<dl class="estats">' + stats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(String(s[1])) + '</dd></div>'; }).join('') + '</dl>' +
-      '<ul class="elines">' + E.lines.map(function (l) { return '<li>' + paint(l, res) + '</li>'; }).join('') + '</ul></section>';
+      '<dl class="estats">' + stats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(String(s[1])) + '</dd></div>'; }).join('') + '</dl>' + ngb +
+      '<ul class="elines">' + EL.lines.map(function (l) { return '<li>' + paint(l, res) + '</li>'; }).join('') + '</ul></section>';
   }
 
   function turns(res) {
