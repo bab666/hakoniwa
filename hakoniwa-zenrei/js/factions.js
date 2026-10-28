@@ -332,6 +332,8 @@
     classroom: ['{a}は昼休みの席を、{b}たちの輪から{c}たちの輪へ移した。それだけで、{pl}中に鞍替えの噂が広まった。'],
     island: ['{a}は寝床を、{b}たちの焚き火のそばから{c}たちの焚き火のそばへ移した。誰も口には出さなかったが、意味は皆わかっていた。']
   };
+  /* 鞍替え（元の頭がもういない）：{a} 抜けた人・{b} 元の頭・{c} 新しい頭 */
+  var T_SWAP_GONE = ['{a}は、{b}のいなくなったグループを離れて{c}の側についた。', '{b}のいない輪に、{a}はもう戻らなかった。次に見かけたとき、{a}は{c}の隣にいた。'];
   /* 前の頭が、自分の派閥をたたんでほかの派閥に入った：{a} 前の頭・{c} 新しい頭 */
   var T_FOLD = {
     _: ['{a}は自分の派閥をたたみ、{c}の側についた。',
@@ -509,8 +511,10 @@
       var hurt = function () { sw.forEach(function (x) { if (x.o !== x.c) ctx.mod(x.o, x.c, { ten: 15, trust: -15 }); }); };
       cand(ctx, 'swap', function () {
         var m = sw[0], more = sw.slice(1).map(function (x) { return x.c; });
-        var t = m.o === m.c ? fill(pickT(ctx, T_FOLD), { a: m.c.name, c: m.n.name }) : fill(pickT(ctx, T_SWAP), { a: m.c.name, b: m.o.name, c: m.n.name, pl: W.pl, spot: W.spot });
-        return tag(ctx.act2({ actors: [m.c, m.o, m.n].filter(function (x, j, A) { return A.indexOf(x) === j; }).concat(more), cat: 'betray', mag: 15, fx: hurt,
+        /* 元の頭が亡くなった・退場したあとの鞍替えは、その人が振る舞う型（背を向ける など）を使わない（state-audit S25。2026-10-28） */
+        var oGone = !m.o.alive || m.o.out;
+        var t = m.o === m.c ? fill(pickT(ctx, T_FOLD), { a: m.c.name, c: m.n.name }) : oGone ? fill(ctx.pick(T_SWAP_GONE), { a: m.c.name, b: m.o.name, c: m.n.name }) : fill(pickT(ctx, T_SWAP), { a: m.c.name, b: m.o.name, c: m.n.name, pl: W.pl, spot: W.spot });
+        return tag(ctx.act2({ actors: [m.c, m.o, m.n].filter(function (x, j, A) { return A.indexOf(x) === j && (x !== m.o || !oGone); }).concat(more), cat: 'betray', mag: 15, fx: hurt,
           text: t + (more.length ? '同じ頃、' + nameList(more) + 'も所属を変えた。' : ''), why: m.c.name + 'の' + m.n.name + 'への信頼（' + Math.round(R(ctx, m.c, m.n).trust) + '）が上回った' }), 'swap');
       }, { silent: hurt });
     }

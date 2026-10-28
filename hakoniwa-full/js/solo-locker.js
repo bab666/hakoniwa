@@ -250,6 +250,8 @@
         if (hl) t += tp.name + '「' + pk(hl) + '」';
       } else if (ph === 'edge' && lew !== 'low' && V && V.EDGE && V.EDGE[bt.persona] && rng() < 0.6) t += bt.name + '「' + pk(V.EDGE[bt.persona]) + '」';
       else if (ph === 'climax') { t = climax(tp, climax(bt, t), true); pair.done = true; }
+      /* 繋がっているあいだに一度だけ、攻めの言葉責め・焦らし（＋受けの言い返し）か攻めの一言と受けの声（R18版の trio-talk-r18.js の HK.Trio3.pairTalk。2026-10-28 担当JC） */
+      else if (ph === 'move' && lew !== 'low' && !HK.SAFE_ON && HK.Trio3 && HK.Trio3.pairTalk && pair.talkR !== pair.rounds) { pair.talkR = pair.rounds; t += HK.Trio3.pairTalk(S, tp, bt, { hush: true, ero: !!(HK.Lewd && HK.Lewd.ero(env)) }); }
       else if (ph === 'after') { pair.conn = false; pair.done = false; pair.rest = 1 + rng.int(2); P.forEach(function (p) { p.m.reason = clamp(p.m.reason + 8, 0, 100); p.rxCool = true; }); }
       var tag = ff && ph === 'move' ? '肌を重ねたまま' : C.tag[ph];
       ST.sayB(S, { actors: [tp, bt], tag: tag, text: t, why: { move: '繋がったまま、狭い箱の中で', hush: '外の物音に、二人とも動きを止めた', edge: bt.name + 'が限界に近い', climax: 'ロッカーの中で、二人とも果てた', after: '一度果てて、少しだけ正気が戻った（理性 +8）' }[ph] + '（快感 ' + tp.name + ' ' + Math.round(Math.min(100, tp.m.plea)) + '・' + bt.name + ' ' + Math.round(Math.min(100, bt.m.plea)) + '）', mag: ph === 'climax' ? 34 : 18, kind: 'climax' }, tp.name + 'と' + bt.name + '：' + tag, ph === 'climax');
@@ -325,6 +327,8 @@
       else if (pair.rest > 0) { pair.rest--; order = []; }
       for (var k = 0; k < order.length; k++) {
         var a = order[k], b = a.o;
+        /* 避けている人は自分から手を出さない（攻めに固定された人が受けを避けている組・お互いに避けている組も。avoid-kit.js の HK.Avoid。2026-10-28） */
+        if (HK.Avoid && (HK.Avoid.of(S, a, b) || !HK.Avoid.topOk(S, a, b))) continue;
         var urge = (a.goal && a.goal.id === 'want' ? 0.12 : a.goal && a.goal.id === 'out' ? -0.08 : 0) + (a.action && a.action.id === 'flow' ? 0.08 : a.action && a.action.id === 'solve' ? -0.06 : 0) + a.m.heat / 100 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.m.reason / 130 - a.tr.cp * 0.12 + (plotter === a ? 0.45 : 0) + ({ lover: 0.15, fwb: 0.2, almost: 0.1, crush: crusher === a ? 0.2 : 0, mutual: 0.2, tension: -0.1 }[rel] || 0) + (fwbAll && rel !== 'fwb' ? 0.2 : 0) + (crusher === a && rel !== 'crush' && rel !== 'mutual' ? 0.15 : 0);
         /* 敵対している二人：攻めの側は、苛立ちごとぶつけるように手を出しやすい */
         if (hateP && HSX.order(S, a, b)[0] === a) urge += 0.35 * HK.Dark.f(S, 'assault');

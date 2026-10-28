@@ -378,7 +378,11 @@
   /* 体の関係の三人として成り立つか（R18版：三人の場面（3P）の判定 room-trio.js の T.sexOk3＝HK.Pos.trioPlan。2026-10-27 担当HN）：
      「三人の場面（3P）：しない」の人がいれば成り立たない。三組とも直接できれば三人とも、二組なら中心の一人とだけ触れ合う形。
      直接できない組（direct が偽：性行為の相手の固定・受け攻め・恋愛対象など）は、同じ場にいても見ている・声をかけるだけ */
-  function hardOk(g) { var T = HK.RoomTrio; return !!(T && T.sexOk3 && T.sexOk3(g)); }
+  /* 一途（poly.js）で恋人のいる人は、恋人でない人がいる三人には加わらない（engine.js の romanceOk が止める）ので、その三人は成り立たない（2026-10-28 担当JB） */
+  function faith3(g) { return !HK.Poly || !HK.Poly.faithOk || !HK._curCtx || HK.Poly.faithOk(HK._curCtx, g); }
+  function hardOk(g) { var T = HK.RoomTrio; return !!(T && T.sexOk3 && T.sexOk3(g)) && faith3(g); }
+  /* 一途で、この部屋に恋人がいて恋人でない人とは三人にならない人 */
+  function faithOut(ctx, C) { return C.filter(function (c) { return c.faithful && HK.Poly && HK.Poly.faithOk && C.some(function (o) { return o !== c && !HK.Poly.faithOk(ctx, [c, o]); }); }); }
   function direct(x, y) { return !!(A.okSex && A.okSex(x, y)); }
   function soft(ctx) { return !!ctx.flags.trioSoft || HK.SAFE_ON; }
   /* 三人の誰も、決めた相手（「相手は一人だけ」）がこの三人の外にいない */
@@ -472,6 +476,7 @@
     ctx.flags.romantic = true;
     var C = ctx.chars.filter(function (c) { return HK.State.here(c); });
     if (C.length < 3) {
+      if (HK._trioPrev) HK._trioPrev.res = { n: C.length, few: true };
       /* 二人しかいない：三人で、は成り立たないので「ハグ」に（もう一つの条件がハグなら、三人で、を外す） */
       if (ctx.rules.some(function (q) { return q.k === 'hug'; })) ctx.rules.splice(ctx.rules.indexOf(tr), 1); else tr.k = 'hug';
       ctx.flags.trioRule = false; ctx.flags.trioFall = 'few';
@@ -479,15 +484,20 @@
       ctx.flags.trioLabel = HK.roomLabelOf(ctx.env, ctx.rules);
       return;
     }
-    if (HK.SAFE_ON) { ctx.flags.trioSoft = true; return; }
+    if (HK.SAFE_ON) { ctx.flags.trioSoft = true; if (HK._trioPrev) HK._trioPrev.res = { n: C.length, soft: true }; return; }
     /* r18:begin */
-    var ng = [], okAny = false;
+    var ng = [], okAny = false, okN = 0;
     for (var i = 0; i < C.length; i++) for (var j = i + 1; j < C.length; j++) {
       if (!A.okSex(C[i], C[j])) ng.push([C[i], C[j]]);
-      for (var k2 = j + 1; k2 < C.length; k2++) if (hardOk([C[i], C[j], C[k2]])) okAny = true;
+      for (var k2 = j + 1; k2 < C.length; k2++) if (hardOk([C[i], C[j], C[k2]])) { okAny = true; okN++; }
     }
     ctx.flags.trioNG = ng.map(function (p) { return [p[0].i, p[1].i]; });
     ctx.flags.trioOut = C.filter(function (c) { return HK.Pos && HK.Pos.trioOptOut && HK.Pos.trioOptOut(c); }).map(function (c) { return c.i; });
+    ctx.flags.trioFaith = faithOut(ctx, C).map(function (c) { return c.i; });
+    /* 箱庭タブの事前の表示（room-trio-note.js の HK.RoomGames.preview）：この顔ぶれで成り立つ三人の数と、成り立たない組の理由 */
+    if (HK._trioPrev) HK._trioPrev.res = { n: C.length, okN: okN, ng: ng.map(function (p) { return ngInfo(ctx, p[0], p[1]); }), out: C.filter(function (c) { return HK.Pos && HK.Pos.trioOptOut && HK.Pos.trioOptOut(c); }).map(function (c) { return c.name; }), faith: faithOut(ctx, C).map(function (c) { return c.name; }),
+      /* 点検用：okSex と理由の有無が食い違う組の数（0 であること） */
+      odd: (function () { var n = 0; for (var i = 0; i < C.length; i++) for (var j = i + 1; j < C.length; j++) if (!A.okSex(C[i], C[j]) !== !!(HK.Pos.noSexInfo && HK.Pos.noSexInfo(C[i], C[j], { ctx: ctx }))) n++; return n; })() };
     if (!okAny) {
       ctx.flags.trioSoft = true; ctx.flags.trioFall = 'ng';
       softNow = true;
@@ -499,19 +509,18 @@
   /* 体の関係を持てない組の書き方（最初の記録の注意書き） */
   var NG_NOTE = null;
   /* r18:begin */
-  /* 体の関係を持てない理由（R18に参加しない／恋愛対象が合わない／性行為の相手の固定などの縛り／受け攻めの組み合わせ） */
-  function whyNG(x, y) {
-    if (x.noR18 || y.noR18) return (x.noR18 ? x : y).name + 'がR18に参加しない';
-    if (HK.Pos && HK.Pos.genderOK && !HK.Pos.genderOK(x, y)) return '恋愛対象が合わない';
-    if (HK.sexBlocked && HK.sexBlocked(x, y)) return '相手の固定などの縛りがある';
-    if (HK.roomWsNoSex && HK.roomWsNoSex(HK._curCtx, x, y)) return '恋愛にしない関係';
-    return '受け攻めの組み合わせが成り立たない';
-  }
+  /* 体の関係を持てない理由（2026-10-28 担当JB：pos.js の HK.Pos.whyNoSex に置き換えた。性欲「なし」・一途・恋愛やR18にしない相手・
+     体の関係の相手「なし」・恋愛相手の固定に合わせた性行為の相手の固定などが、みな「受け攻め」に落ちていたため） */
+  function whyNG(ctx, x, y) { return (HK.Pos && HK.Pos.whyNoSex && HK.Pos.whyNoSex(x, y, { ctx: ctx })) || '受け攻めの組み合わせが成り立たない'; }
+  /* 事前の表示（room-trio-note.js）に渡す中身：成り立たない組の理由と直し方 */
+  function ngInfo(ctx, x, y) { var d = HK.Pos && HK.Pos.noSexInfo ? HK.Pos.noSexInfo(x, y, { ctx: ctx }) : null; return { a: x.name, b: y.name, t: d ? d.t : '受け攻めの組み合わせが成り立たない', fix: d ? d.fix : '' }; }
   NG_NOTE = function (ctx, fall) {
-    var ps = (ctx.flags.trioNG || []).map(function (p) { var x = ctx.chars[p[0]], y = ctx.chars[p[1]]; return x.name + 'と' + y.name + '（' + whyNG(x, y) + '）'; });
+    var ps = (ctx.flags.trioNG || []).map(function (p) { var x = ctx.chars[p[0]], y = ctx.chars[p[1]]; return x.name + 'と' + y.name + '（' + whyNG(ctx, x, y) + '）'; });
     /* 住人の設定「三人の場面（3P）：しない」の人（2026-10-27 担当HN） */
     var os = (ctx.flags.trioOut || []).map(function (i) { return ctx.chars[i].name; });
     var on = os.length ? os.join('・') + 'は、三人の場面に加わらない。' : '';
+    var fs = (ctx.flags.trioFaith || []).map(function (i) { return ctx.chars[i].name; });
+    if (fs.length) on += fs.join('・') + 'は一途で、恋人でない人がいる三人には加わらない。';
     if (fall) return '扉の紙の条件「三人で仲良くしないと出られない」は、この部屋では成り立たなかった。' + on + (ps.length ? ps.join('、') + 'は体の関係を持てない組なので、二組以上が体の関係を持てる三人を選べない。' : '二組以上が体の関係を持てる三人がいない。') + '紙の文字がにじんで、条件は「三人で抱き合う」に書き換わった。';
     return on || ps.length ? '扉の紙の但し書き：' + on + (ps.length ? ps.join('、') + 'は体の関係を持てない組なので、その二人を含む三人では、二人の両方と体の関係を持てるもう一人を真ん中にしたときだけ、条件「三人で」を満たせる（二人は直接は触れ合わない）。' : '') : '';
   };
@@ -523,7 +532,7 @@
     if (ctx.flags.trioFall === 'few') ctx.say({ text: '扉の紙の条件は「三人で」だったが、部屋にいるのは' + ctx.chars.length + '人だけだった。三人そろわなければ、この条件は成り立たない。紙の文字がにじんで、条件は「ハグ」に書き換わった。' });
     else if (ctx.flags.trioFall === 'ng' && NG_NOTE) ctx.say({ text: NG_NOTE(ctx, true) });
     if (ctx.flags.trioLabel) ctx.flags.roomLabel = ctx.flags.trioLabel;
-    if (ctx.flags.trioRule && !ctx.flags.trioFall && NG_NOTE && ((ctx.flags.trioNG || []).length || (ctx.flags.trioOut || []).length)) { var nt = NG_NOTE(ctx, false); if (nt) ctx.say({ text: nt }); }
+    if (ctx.flags.trioRule && !ctx.flags.trioFall && NG_NOTE && ((ctx.flags.trioNG || []).length || (ctx.flags.trioOut || []).length || (ctx.flags.trioFaith || []).length)) { var nt = NG_NOTE(ctx, false); if (nt) ctx.say({ text: nt }); }
     ctx.rules.forEach(function (r) {
       var pool = r.k === 'trio3' && !soft(ctx) && INTRO_H ? INTRO_H : INTRO[r.k] || HK.RoomGames.INTRO[r.k];
       if (pool && pool.length) ctx.say({ text: fillN(ctx.pick(pool), r.n) });

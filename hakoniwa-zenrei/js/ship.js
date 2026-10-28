@@ -680,6 +680,9 @@
         : pickP(PR, function (x) { return 0.6 + Math.max(0, bond(S, x[0], x[1])) * 0.6 + (x[0].tr.warmth + x[1].tr.warmth) * 0.3; });
     if (!pr) return;
     var a = rng() < 0.5 ? pr[0] : pr[1], b = a === pr[0] ? pr[1] : pr[0], w0 = bond(S, a, b);
+    /* 想いの場面（手を差し出す・告白する）は、避けていない側から（avoid-kit.js の HK.Avoid。お互いに避けている二人には起こさない。2026-10-28） */
+    var avN = '';
+    if (kind === 'love' && HK.Avoid) { var avP = HK.Avoid.pick(S, a, b); if (!avP) return; if (avP.a !== a) { a = avP.a; b = avP.b; w0 = bond(S, a, b); } avN = avP.note ? '／' + avP.note : ''; }
     var others = L0.filter(function (q) { return q !== a && q !== b; });
     /* 船長の使命感：自分が揉めかけても、その場で収めてしまうことが多い */
     if (BAD && (capt(a) || capt(b)) && rng() < 0.6) {
@@ -713,7 +716,7 @@
       /* 想いが育ちきった二人は、ここで恋人になる（恋人になったことを記録に書く。乗り換えなら、前の恋人との別れの記録が先に出る） */
       var jk = !lover(S, a, b) && bond(S, a, b) > 0.6 ? canJoin(S, a, b) : '';
       if (jk) join(S, a, b);
-      ST.sayB(S, { actors: [a, b], tag: jk ? '恋人に' : '想い', text: F(pk(S, T.PAIR_LOVE), { a: a.name, b: b.name }) + (jk ? F(pk(S, T.PAIR_JOIN), { a: a.name, b: b.name }) : ''), why: '閉ざされた船で、想いが育った' + (jk ? '：恋人になった' + (jk === 'switch' ? '（乗り換え）' : '') : '') + '（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'と' + b.name, !!jk);
+      ST.sayB(S, { actors: [a, b], tag: jk ? '恋人に' : '想い', text: F(pk(S, T.PAIR_LOVE), { a: a.name, b: b.name }) + (jk ? F(pk(S, T.PAIR_JOIN), { a: a.name, b: b.name }) : ''), why: '閉ざされた船で、想いが育った' + (jk ? '：恋人になった' + (jk === 'switch' ? '（乗り換え）' : '') : '') + '（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' + avN }, a.name + 'と' + b.name, !!jk);
     }
     else if (kind === 'jealous') {
       /* {c}：{a}に想いを寄せている人が、{a}と{b}の親しさを見てしまう */

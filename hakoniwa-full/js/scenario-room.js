@@ -1053,6 +1053,8 @@
       var groupLine = null;
       /* r18:begin */
       groupLine = function () {
+        /* 三人ちょうどなら、三人の場面の組み立て（trio-talk-r18.js の HK.Trio3：HK.Pos.trioPlan で形を決め、台詞の応酬・擬音・体の位置の一文。2026-10-28 担当JC） */
+        if (G.length === 3 && HK.Trio3 && HK.Trio3.quick && !HK.SAFE_ON) { var q3 = HK.Trio3.quick(ctx, G, { env: ctx.env }); if (q3) return q3; }
         /* 受け攻めの指定どおりに：跨るのは受け、交互に抱くのは二人に対して攻めに回れる人、背後から触れられるのは攻めを選んでいない人 */
         var tb = HK.Pos ? HK.Pos.order(lead, g2[0], [lead, g2[0]]) : [lead, g2[0]];
         var both = !HK.Pos || (HK.Pos.order(lead, g2[0], [lead, g2[0]])[0] === lead && HK.Pos.order(lead, g2[1], [lead, g2[1]])[0] === lead);

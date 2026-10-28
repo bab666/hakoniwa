@@ -42,6 +42,8 @@
       c.P.forEach(function (v) {
         if (c.isW(v) || !St.here(v) || !St.pairSex(w, v) || (HK.sexBlocked && HK.sexBlocked(w, v))) return;
         if (Pz.order(w, v, [w, v])[0] !== w) return;
+        /* 避けている相手を、人狼の側から襲いには行かない（avoid-kit.js の HK.Avoid。2026-10-28） */
+        if (HK.Avoid && HK.Avoid.of(S, w, v)) return;
         var cl = close(c.input, w, v), love = cl >= 0.45 && HK.canLove && HK.canLove(w, v) && HK.canLove(v, w);
         if (!love && !force) return;
         var sc = (love ? 1 + cl : 0.2 + ((w.tr && w.tr.aggr) || 0) * 0.5 + ((w.tr && w.tr.impulse) || 0) * 0.4) + rng() * 0.3;
@@ -85,7 +87,7 @@
     var zs = c.P.filter(function (z) { return z !== y && z !== x && !c.isW(z) && St.here(z) && tieOf(c.input, z, y) !== 'apathy'; });
     if (!zs.length || kr() >= 0.5) return null;
     var z = zs.slice().sort(function (a, b) { return close(c.input, b, y) - close(c.input, a, y); })[kr() < 0.6 ? 0 : kr.int(zs.length)];
-    var take = KB.canTake(z) && St.pairSex(x, z) && !(HK.sexBlocked && HK.sexBlocked(x, z)) && Pz.order(x, z, [x, z])[0] === x && !Pz.hardTop(z, x) && !COLD[tieOf(c.input, x, z)] && !(HK.NoGen && HK.NoGen.on(x, z));
+    var take = KB.canTake(z) && St.pairSex(x, z) && !(HK.Avoid && HK.Avoid.of(c.S, x, z)) && !(HK.sexBlocked && HK.sexBlocked(x, z)) && Pz.order(x, z, [x, z])[0] === x && !Pz.hardTop(z, x) && !COLD[tieOf(c.input, x, z)] && !(HK.NoGen && HK.NoGen.on(x, z));
     var opts = ['hit']; if (take) opts.push('subA', 'both', 'both'); else opts.push('subR'); if (KB.canWatch(z)) opts.push('watch', 'watch');
     var tie = tieOf(c.input, z, y);
     return { z: z, x: x, y: y, mode: opts[kr.int(opts.length)], rel: KB.rel(z, y, tie, { att: close(c.input, z, y) * 60, trust: close(c.input, z, y) * 60 }) };

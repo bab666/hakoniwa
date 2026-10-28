@@ -672,6 +672,8 @@
     var order = rng() < 0.5 ? [x, y] : [y, x];
     for (var k = 0; k < order.length; k++) {
       var a = order[k], b = a === x ? y : x;
+      /* 避けている人は自分から手を出さない（avoid-kit.js の HK.Avoid。2026-10-28） */
+      if (HK.Avoid && (HK.Avoid.of(S, a, b) || !HK.Avoid.topOk(S, a, b))) continue;
       var urge = (a.goal && a.goal.id === 'want' ? 0.12 : a.goal && a.goal.id === 'out' ? -0.08 : 0) + (a.action && a.action.id === 'flow' ? 0.08 : a.action && a.action.id === 'solve' ? -0.06 : 0) + a.m.heat / 100 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.m.reason / 130 - a.tr.cp * 0.12 + relW(S, a, b, 'urge');
       /* 本命がほかにいる人は、一途に踏みとどまる（媚薬の熱が限界なら妥協する） */
       if (a.honmei != null && a.honmei !== b.i) urge -= desperate(a) ? 0.05 : 0.3;
@@ -780,7 +782,10 @@
       var cb = climaxBy(S, bt, tp, false), ct = climaxBy(S, tp, bt, true);
       if (cb && ct) t = moan(S, bt, false, md, true) + cb + moan(S, tp, true, md, true) + ct;
       bumpClimax(bt); bumpClimax(tp); Lk.done = true;
-    } else if (ph === 'after') { Lk.conn = false; Lk.done = false; Lk.rest = 1 + rng.int(2); Lk.m.forEach(function (p) { p.m.reason = clamp(p.m.reason + 8, 0, 100); p.rxCool = true; }); }
+    }
+    /* 繋がっているあいだに一度だけ、攻めの言葉責め・焦らし（＋受けの言い返し）か攻めの一言と受けの声（R18版の trio-talk-r18.js の HK.Trio3.pairTalk。2026-10-28 担当JC） */
+    else if (ph === 'move' && S.lew !== 'low' && !HK.SAFE_ON && HK.Trio3 && HK.Trio3.pairTalk && !Lk.talked) { Lk.talked = true; t += HK.Trio3.pairTalk(S, tp, bt, { hush: true, ero: !!S.eroOn }); }
+    else if (ph === 'after') { Lk.conn = false; Lk.done = false; Lk.rest = 1 + rng.int(2); Lk.m.forEach(function (p) { p.m.reason = clamp(p.m.reason + 8, 0, 100); p.rxCool = true; }); }
     var tag = md === 'ff' && ph === 'move' ? '肌を重ねたまま' : C.tag[ph];
     ST.sayB(S, { actors: [tp, bt], tag: tag, text: t, why: { move: '繋がったまま、狭い箱の中で', hush: '外の物音に、二人とも動きを止めた', edge: bt.name + 'が限界に近い', climax: 'ロッカーの中で、二人とも果てた', after: '一度果てて、少しだけ正気が戻った（理性 +8）' }[ph] + '（ロッカー' + Lk.n + '・快感 ' + tp.name + ' ' + Math.round(Math.min(100, tp.m.plea)) + '・' + bt.name + ' ' + Math.round(Math.min(100, bt.m.plea)) + '）', mag: ph === 'climax' ? 34 : 18, kind: 'climax' }, tp.name + 'と' + bt.name + '：' + tag, ph === 'climax');
   }
@@ -874,7 +879,8 @@
     Lk.trioNow = false;
     if (Lk.rest > 0) { Lk.rest--; return; }
     var heat = m.reduce(function (s, p) { return s + p.m.heat; }, 0) / 3, reason = m.reduce(function (s, p) { return s + p.m.reason; }, 0) / 3;
-    var lead = m.slice().sort(function (p, q) { return (q.m.heat / 100 + q.tr.impulse * 0.3 + q.tr.fc * 0.15 - q.m.reason / 130) - (p.m.heat / 100 + p.tr.impulse * 0.3 + p.tr.fc * 0.15 - p.m.reason / 130); })[0];
+    var lead = m.slice().filter(function (p) { return !HK.Avoid || !m.some(function (q) { return q !== p && HK.Avoid.of(S, p, q); }); }).sort(function (p, q) { return (q.m.heat / 100 + q.tr.impulse * 0.3 + q.tr.fc * 0.15 - q.m.reason / 130) - (p.m.heat / 100 + p.tr.impulse * 0.3 + p.tr.fc * 0.15 - p.m.reason / 130); })[0];
+    if (!lead) return;
     var urge = lead.m.heat / 100 + lead.tr.impulse * 0.35 + lead.tr.fc * 0.15 - lead.m.reason / 130 - lead.tr.cp * 0.12;
     var others = m.filter(function (p) { return p !== lead; });
     /* 三人とも組める三人（trioOk）：二人のときと同じく、期待している・流れに任せる人は手を出しやすい。愛憎を持つ相手がいれば +0.2、性欲の強さの倍率も掛ける（2026-10-27 担当HL）。
@@ -957,20 +963,28 @@
     var R = LK.CROWD_R18, pk = S.pk, r = { t: sp.t, m: sp.m, u: sp.u }, vv = { t: sp.t.name, m: sp.m.name, u: sp.u.name, h: (sp.h || sp.m).name };
     /* 中心のある三人（sp.hub）は、中心とだけ触れ合う表（R.OPEN3H・SHAPE3H・TPW・TRIO_ERO.softH・CL3H。残りの二人は見ている・声をかけるだけ） */
     var H = !!(sp.hub && R.SHAPE3H);
-    var out = ST.fmt(pk(H ? R.OPEN3H : R.OPEN3), vv) + ST.fmt(pk((H ? R.SHAPE3H : R.SHAPE3)[sp.p]), vv);
+    /* 三人の場面の組み立て（R18版の trio-talk-r18.js の HK.Trio3。2026-10-28 担当JC）：段ごとに文を置き、攻め→受け→もう一人の台詞の応酬・擬音（男性向け）・
+       誰の体がどうなっているかの一文を足して、描写の長さに合わせて文の量をそろえる。中心のある三人は、中心でない二人を触れ合わせない */
+    var hb = sp.hub ? (sp.h || sp.m) : null, apart = hb ? [[sp.t, sp.m, sp.u].filter(function (c) { return c !== hb; })] : [];
+    var T3 = HK.Trio3 && !HK.SAFE_ON ? HK.Trio3.begin(S, sp, { env: S.env, ero: !!S.eroOn, apart: apart, first: true }) : null;
+    var out = '', put = function (st, t, pri) { if (!t) return; if (T3) T3.add(st, t, pri); else out += t; };
+    /* 描写の長さが「短く」なら、始まり・二人ずつの最中・二人目からの果てる文も削ってよい文にする */
+    var sh3 = !!(T3 && T3.len === 'short');
+    put('fore', ST.fmt(pk(H ? R.OPEN3H : R.OPEN3), vv), sh3 ? 2 : 1);
+    put('in', ST.fmt(pk((H ? R.SHAPE3H : R.SHAPE3)[sp.p]), vv), 1);
     /* 二人ずつ：oneTwo は t→m・t→u、twoOne は t→u・m→u、sandwich は t→m・m→u。{c}＝残りの一人 */
     var prs = sp.p === 'oneTwo' ? [[sp.t, sp.m, sp.u], [sp.t, sp.u, sp.m]] : sp.p === 'twoOne' ? [[sp.t, sp.u, sp.m], [sp.m, sp.u, sp.t]] : [[sp.t, sp.m, sp.u], [sp.m, sp.u, sp.t]];
     /* 夜の性格（R18版のみ。locker-night.js）：二人ずつの最中（繋がっている）のあとに、攻め→受けの deep の一文。同じ人の同じ役（攻め／受け）は一度だけ */
     var nUsed = {}, nLab = [];
     S.trioNight = '';
-    prs.forEach(function (z) {
-      out += ST.fmt(pk((H ? R.TPW : R.TP)[modeOf(z[0], z[1])]), { a: z[0].name, b: z[1].name, c: z[2].name });
+    prs.forEach(function (z, zi) {
+      put(zi ? 'mid' : 'in', ST.fmt(pk((H ? R.TPW : R.TP)[modeOf(z[0], z[1])]), { a: z[0].name, b: z[1].name, c: z[2].name }), zi || sh3 ? 2 : 1);
       if (!LK.nightLine) return;
       var uT = nUsed['a' + z[0].i], uB = nUsed['b' + z[1].i];
       if (uT && uB) return;
       var mo = modeOf(z[0], z[1]), nr = LK.nightLine(S, z[0], z[1], 'deep', { mode: mo === 'ins' ? 'mf' : mo, only: uT ? 'bot' : uB ? 'top' : undefined });
       if (!nr || !nr.text) return;
-      out += nr.text; nLab.push(nr.label); nUsed['a' + z[0].i] = nUsed['b' + z[1].i] = true;
+      put('mid', nr.text, 3); nLab.push(nr.label); nUsed['a' + z[0].i] = nUsed['b' + z[1].i] = true;
     });
     S.trioNight = nLab.join('・');
     if (S.eroOn && HK.ThickEro && HK.ThickEro.trioFill) {
@@ -978,15 +992,15 @@
       var pen = tops.every(function (c) { return !isF(c); }) && R.TRIO_ERO.pen[sp.p];
       /* 二人の攻めが一人を（twoOne）・中心のある三人は、指と舌の文のうち、受ける人に向かう文だけ（R.TRIO_ERO.softU）。攻めどうし・繋がらない二人が責め合う文にしない */
       var soft = H && R.TRIO_ERO.softH ? R.TRIO_ERO.softH[sp.p] : (sp.p === 'twoOne' || sp.hub) && R.TRIO_ERO.softU ? R.TRIO_ERO.softU[sp.p] || R.TRIO_ERO.soft : R.TRIO_ERO.soft;
-      out += HK.ThickEro.trioFill(S, ST.fmt(pk(pen || soft), vv), r);
+      put('mid', HK.ThickEro.trioFill(S, ST.fmt(pk(pen || soft), vv), r), 2);
     }
     /* 果てる：受ける人から順に（真ん中の sandwich は受ける側として） */
     var recv = sp.p === 'oneTwo' ? [[sp.m, sp.t], [sp.u, sp.t]] : sp.p === 'twoOne' ? [[sp.u, sp.t]] : [[sp.u, sp.m], [sp.m, sp.t]];
     var tops2 = sp.p === 'oneTwo' ? [[sp.t, sp.m]] : sp.p === 'twoOne' ? [[sp.t, sp.u], [sp.m, sp.u]] : [[sp.t, sp.m]];
-    recv.forEach(function (z) { out += moan(S, z[0], false, modeOf(z[1], z[0]), true) + climaxBy(S, z[0], z[1], false); bumpClimax(z[0]); });
-    tops2.forEach(function (z) { out += moan(S, z[0], true, modeOf(z[0], z[1]), true) + climaxBy(S, z[0], z[1], true); bumpClimax(z[0]); });
-    out += ST.fmt(pk(H ? R.CL3H : R.CL3), vv);
-    return out;
+    recv.forEach(function (z, zi) { put('peak', moan(S, z[0], false, modeOf(z[1], z[0]), true) + climaxBy(S, z[0], z[1], false), zi && sh3 ? 2 : 1); bumpClimax(z[0]); });
+    tops2.forEach(function (z) { put('peak', moan(S, z[0], true, modeOf(z[0], z[1]), true) + climaxBy(S, z[0], z[1], true), sh3 ? 3 : T3 && T3.len === 'mix' ? 2 : 1); bumpClimax(z[0]); });
+    put('after', ST.fmt(pk(H ? R.CL3H : R.CL3), vv), 2);
+    return T3 ? T3.text() : out;
   }
 
   /* ---------- ロッカー越しの出来事 ---------- */

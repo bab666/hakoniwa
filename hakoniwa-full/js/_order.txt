@@ -98,6 +98,7 @@ js/moan-top-said.js
 js/moan-said-more.js
 js/moan-engine.js
 js/moan-cut.js
+js/trio-talk-r18.js
 js/moan-mob.js
 js/thick-sex.js
 js/thick-sex-ero.js
@@ -116,6 +117,7 @@ js/scenario-room.js @scen:whiteroom
 js/room-reluct.js @scen:whiteroom
 js/room-trio-lines.js @scen:whiteroom
 js/room-trio.js @scen:whiteroom
+js/room-last3-r18.js @scen:whiteroom
 js/room-left.js @scen:whiteroom
 js/room-cheer.js @scen:whiteroom
 js/hate-sex-r18.js
@@ -124,11 +126,13 @@ js/hate-love-r18.js @pack:rel
 js/content-text-r18.js
 js/content-events-r18.js
 js/room-know.js @scen:whiteroom
+js/room-end.js @scen:whiteroom
 js/room-tie.js @scen:whiteroom
 js/room-same.js @scen:whiteroom
 js/room-same-r18.js @scen:whiteroom
 js/room-tie-r18.js @scen:whiteroom
 js/room-games.js @scen:whiteroom
+js/room-trio-note.js @scen:whiteroom
 js/solo-room-jealous.js @scen:whiteroom
 js/ego-image.js
 js/omega-data.js
@@ -261,6 +265,7 @@ js/view.js
 js/view-map.js
 js/dungeon-view.js
 js/solo-story-kit.js
+js/avoid-kit.js
 js/attr-look.js
 js/attr-race.js
 js/attr-meet.js

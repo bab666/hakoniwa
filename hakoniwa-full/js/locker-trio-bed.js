@@ -170,33 +170,41 @@
     }
     /* 脱がせる→形ごとの始まり→二人ずつの最中（攻めの一言を一つ）→受けの山場 */
     var prs = sp.p === 'oneTwo' ? [[sp.t, sp.m, sp.u], [sp.t, sp.u, sp.m]] : sp.p === 'twoOne' ? [[sp.t, sp.u, sp.m], [sp.m, sp.u, sp.t]] : sp.p === 'sandwich' ? [[sp.t, sp.m, sp.u], [sp.m, sp.u, sp.t]] : [[sp.t, sp.m, sp.u], [sp.m, sp.u, sp.t], [sp.u, sp.t, sp.m]];
-    var t2 = ST.fmt(pick(S, TB.STRIP), vv) + ST.fmt(pick(S, TB.OPEN[sp.p]), vv);
+    /* 三人の場面の組み立て（trio-talk-r18.js の HK.Trio3。2026-10-28 担当JC）：段ごとに文を置き、攻め→受け→もう一人の台詞の応酬・擬音（男性向け）・
+       誰の体がどうなっているかの一文を足して、描写の長さに合わせて文の量をそろえる。記録は今までどおり「三人の夜」（前戯〜最中）と「三人の絶頂」（山場・事後）に分ける */
+    var hub0 = sp.hub ? (sp.h || sp.m) : null;
+    var T3 = HK.Trio3 && !HK.SAFE_ON ? HK.Trio3.begin(S, sp, { env: S.env, ero: !!S.eroOn, apart: hub0 ? [m3.filter(function (c) { return c !== hub0; })] : [], first: true }) : null;
+    var t2 = '', t3 = '', put = function (st, t, pri) { if (!t) return; if (T3) T3.add(st, t, pri); else if (st === 'peak' || st === 'after') t3 += t; else t2 += t; };
+    /* 描写の長さが「短く」なら、始まり・二人ずつの最中・二人目からの果てる文も削ってよい文にする */
+    var sh3 = !!(T3 && T3.len === 'short');
+    put('fore', ST.fmt(pick(S, TB.STRIP), vv), sh3 ? 3 : 2);
+    put('fore', ST.fmt(pick(S, TB.OPEN[sp.p]), vv), sh3 ? 2 : 1);
     var used = {};
     prs.forEach(function (z, i) {
       var k = tpKey(api, z[0], z[1]), pool = TB.TP[k].filter(function (l) { return !used[l]; }), l = pick(S, pool.length ? pool : TB.TP[k]);
       used[l] = 1;
-      t2 += ST.fmt(l, { a: z[0].name, b: z[1].name, c: z[2].name });
-      if (i === 0) t2 += ST.fmt(pick(S, (sp.p === 'oneTwo' ? TB.TOP : TB.TOP1)[ps(z[0])]), { a: z[0].name });
+      put(i ? 'mid' : 'in', ST.fmt(l, { a: z[0].name, b: z[1].name, c: z[2].name }), i === 0 && !sh3 ? 1 : i <= 1 ? 2 : 3);
+      if (i === 0) put('in', ST.fmt(pick(S, (sp.p === 'oneTwo' ? TB.TOP : TB.TOP1)[ps(z[0])]), { a: z[0].name }), 3);
     });
     /* 受けの山場（態度9種）：二人から同時に求められる人（twoOne の {u}・sandwich の {m}・三人とも組める oneTwo と輪はどちらか） */
     var hr = sp.p === 'twoOne' ? sp.u : sp.p === 'sandwich' ? sp.m : sp.p === 'ring' ? rng.pick(m3) : !sp.hub ? rng.pick([sp.m, sp.u]) : null;
-    if (hr) { var hb = m3.filter(function (c) { return c !== hr; }); t2 += ST.fmt(pick(S, TB.HL[ps(hr)]), { a: hr.name, b: hb[0].name, c: hb[1].name }); }
-    ST.say(S, { actors: m3, tag: '三人の夜', text: t2, why: whyBase + '・仮眠室のベッドで', mag: 46, kind: 'climax' });
-    labels.push({ oneTwo: '攻め一人が二人を', twoOne: '攻め二人が一人を', sandwich: '真ん中を挟んで', ring: '輪になって' }[sp.p]);
+    if (hr) { var hb = m3.filter(function (c) { return c !== hr; }); put('mid', ST.fmt(pick(S, TB.HL[ps(hr)]), { a: hr.name, b: hb[0].name, c: hb[1].name }), 2); }
     /* 男性向けの山場（形ごと。攻めが全員男性の体なら pen） */
-    var t3 = '';
     if (S.eroOn && HK.ThickEro && HK.ThickEro.trioFill) {
       var tops = sp.p === 'oneTwo' ? [sp.t] : sp.p === 'ring' ? m3 : [sp.t, sp.m];
       var ngAny = !!(HK.NoGen && HK.NoGen.on && prs.some(function (z) { return HK.NoGen.on(z[0], z[1]); }));
       var pen = !ngAny && tops.every(function (c) { return !api.isF(c); });
-      t3 += HK.ThickEro.trioFill(S, ST.fmt(pick(S, TB.ERO[pen ? 'pen' : 'soft'][sp.p]), vv), { t: sp.t, m: sp.m, u: sp.u });
+      put('mid', HK.ThickEro.trioFill(S, ST.fmt(pick(S, TB.ERO[pen ? 'pen' : 'soft'][sp.p]), vv), { t: sp.t, m: sp.m, u: sp.u }), 2);
     }
     /* 果てる：受ける人から順に（攻めは最後）。輪は三人とも受ける側として */
     var recv = sp.p === 'oneTwo' ? [[sp.m, sp.t], [sp.u, sp.t]] : sp.p === 'twoOne' ? [[sp.u, sp.t]] : sp.p === 'sandwich' ? [[sp.u, sp.m], [sp.m, sp.t]] : [[sp.m, sp.t], [sp.u, sp.m], [sp.t, sp.u]];
     var tops2 = sp.p === 'oneTwo' ? [[sp.t, sp.m]] : sp.p === 'twoOne' ? [[sp.t, sp.u], [sp.m, sp.u]] : sp.p === 'sandwich' ? [[sp.t, sp.m]] : [];
-    recv.forEach(function (z) { t3 += moan(S, z[0], false) + climaxBy(S, api, z[0], z[1], false); api.bumpClimax(z[0]); });
-    tops2.forEach(function (z) { t3 += moan(S, z[0], true) + climaxBy(S, api, z[0], z[1], true); api.bumpClimax(z[0]); });
-    t3 += pick(S, TB.CL);
+    recv.forEach(function (z, zi) { put('peak', moan(S, z[0], false) + climaxBy(S, api, z[0], z[1], false), zi && sh3 ? 2 : 1); api.bumpClimax(z[0]); });
+    tops2.forEach(function (z) { put('peak', moan(S, z[0], true) + climaxBy(S, api, z[0], z[1], true), sh3 ? 3 : T3 && T3.len === 'mix' ? 2 : 1); api.bumpClimax(z[0]); });
+    put('after', pick(S, TB.CL), 2);
+    if (T3) { var o3 = T3.render(); t2 = o3.fore + o3.in + o3.mid; t3 = o3.peak + o3.after; }
+    ST.say(S, { actors: m3, tag: '三人の夜', text: t2, why: whyBase + '・仮眠室のベッドで', mag: 46, kind: 'climax' });
+    labels.push({ oneTwo: '攻め一人が二人を', twoOne: '攻め二人が一人を', sandwich: '真ん中を挟んで', ring: '輪になって' }[sp.p]);
     ST.say(S, { actors: m3, tag: '三人の絶頂', text: t3, why: '媚薬が切れるまで、三人は仮眠室を出なかった', mag: 46, kind: 'climax' });
     /* 一夜のうちに、もう一、二度ずつ */
     m3.forEach(function (p) { p.cnt.climax += 1 + rng.int(2); });

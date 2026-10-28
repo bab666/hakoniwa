@@ -18,7 +18,8 @@
   function ok(p, h, cd) { return p.lastNight == null || h - p.lastNight >= cd; }
   function mark(p, h) { p.lastNight = h; p.cnt.r18 = (p.cnt.r18 || 0) + 1; }
   /* 神ごとの夜の中の住人どうしの場面は、「住人どうしの夜」が0なら出さない（順162） */
-  function mates(S, p, live, h, cd) { if (JS.R18.lvPC && JS.R18.lvPC(S) <= 0) return []; return live.filter(function (q) { return q !== p && (!HK.State || HK.State.mobSexOk(q)) && JS.alive(q) && !q.bound && ok(q, h, cd) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) && JS.R18.okPair(p, q); }); }
+  /* 参加者どうしの夜の相手：攻め（HK.Pos.order の一人目）が迫る書き方なので、攻めに固定された人が受けを避けている組・お互いに避けている組は除く（avoid-kit.js。2026-10-28） */
+  function mates(S, p, live, h, cd) { if (JS.R18.lvPC && JS.R18.lvPC(S) <= 0) return []; return live.filter(function (q) { return q !== p && (!HK.State || HK.State.mobSexOk(q)) && JS.alive(q) && !q.bound && ok(q, h, cd) && (HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) && JS.R18.okPair(p, q) && (!HK.Avoid || HK.Avoid.topOk(S, p, q)); }); }
   /* 自分で攻めを選んだ人（村人・眷属・神に「される」場面に入れない） */
   function top(p) { return (HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(p) : JS.R18.hardTop(p)); }
 
@@ -665,7 +666,7 @@
   function yig(S, p, live, h) {
     var rng = S.rng, lv = JS.R18.lvMob(S), m = M();
     if (!ok(p, h, 8) || rng() > lv * (p.aphro ? 0.4 : 0.25)) return false;
-    var lover = live.filter(function (q) { return q !== p && JS.alive(q) && !q.bound && JS.REL.bond(S, p, q) >= 0.35 && (HK.canLove ? HK.canLove(q, p) : true) && JS.R18.okPair(p, q); }).sort(function (a, b) { return JS.REL.bond(S, p, b) - JS.REL.bond(S, p, a); })[0];
+    var lover = live.filter(function (q) { return q !== p && JS.alive(q) && !q.bound && JS.REL.bond(S, p, q) >= 0.35 && !(HK.Avoid && (HK.Avoid.of(S, q, p) || !HK.Avoid.topOk(S, p, q))) && (HK.canLove ? HK.canLove(q, p) : true) && JS.R18.okPair(p, q); }).sort(function (a, b) { return JS.REL.bond(S, p, b) - JS.REL.bond(S, p, a); })[0];
     mark(p, h);
     var strong = m && m.isStrong(p);
     if (lover && rng() < 0.5) {

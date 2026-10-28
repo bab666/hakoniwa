@@ -527,7 +527,9 @@
 
   /* ======================= 関係の判定 ======================= */
   var LB = HK.LABELS;
-  LB.shinju = { name: '心中', cls: 'obsess', pol: 0 };
+  /* 心中は執着の仕組み（obsess-kit.js・中核）が HK.LABELS.shinju（殺害の札）を持つ。ゾンビの心中は自分の札 zshinju を足し、
+     共有の表の鍵を上書きしない（上書きすると、ゾンビのかたまりを読んだかどうかでほかの箱庭の心中の札が変わる） */
+  LB.zshinju = { name: '心中', cls: 'obsess', pol: 0 };
   LB.zmercy = { name: '情けの一撃', cls: 'kill', pol: -1 };
   LB.zexec = { name: '発症前に殺した', cls: 'kill', pol: -2 };
   LB.zkill = { name: 'ゾンビになって喰らった', cls: 'kill', pol: -2 };
@@ -540,7 +542,7 @@
   LB.zparted = { name: '死に別れ', cls: 'pine', pol: 1 };
   scen.classifyFirst = function (ctx, A, B, pf) {
     var d = function (i) { return i; };
-    if (pf.shinju) return { id: 'shinju' };
+    if (pf.shinju) return { id: 'zshinju' };
     if (pf.zkill != null) return { id: 'zkill', dir: d(pf.zkill) };
     if (pf.zbite != null) return { id: 'zbite', dir: d(pf.zbite) };
     if (pf.zmercy != null) return { id: 'zmercy', dir: d(pf.zmercy) };
@@ -558,7 +560,7 @@
   scen.pairText = function (ctx, A, B, cl) {
     var n = function (i) { return ctx.chars[i].name; }, o = function (i) { return i === A.i ? B.name : A.name; };
     switch (cl.id) {
-      case 'shinju': return '咬まれた一人と、それを一人にできなかった一人。二人は一緒に逝くことを選んだ。';
+      case 'zshinju': return '咬まれた一人と、それを一人にできなかった一人。二人は一緒に逝くことを選んだ。';
       case 'zkill': return 'ゾンビになった' + n(cl.dir) + 'が、' + o(cl.dir) + 'を喰い殺した。';
       case 'zbite': return 'ゾンビになった' + n(cl.dir) + 'が、' + o(cl.dir) + 'に咬みついた。';
       case 'zmercy': return n(cl.dir) + 'は、' + o(cl.dir) + 'を一人にしないために、自分の手で終わらせた。';

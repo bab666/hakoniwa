@@ -395,7 +395,8 @@
     var stn0 = O.stance(ctx, b, a);
     /* 受け入れている・共依存でない夜は、合意のない展開の切羽詰まった場面：恋愛対象「なし」の人も（HK.Pos.forceOpen。2026-10-27 担当HC） */
     var forced = !(stn0 === 'mutual' || stn0 === 'accept');
-    var gate = function () { return ctx.romanceOk([a, b]) && HK.Pos && HK.Pos.okSex && HK.Pos.okSex(a, b); };
+    /* 監禁の夜は執着する側（a）から。執着される側が a を避けていて、受け攻めの指定で攻めに固定されている組は、夜にしない（avoid-kit.js の HK.Avoid.okSex。2026-10-28） */
+    var gate = function () { return ctx.romanceOk([a, b]) && HK.Pos && HK.Pos.okSex && HK.Pos.okSex(a, b) && (!HK.Avoid || HK.Avoid.okSex(ctx, a, b)); };
     var night = !safe && opt.night !== false && (!forced || (!HK.Content || HK.Content.ok(ctx, 'force'))) && (forced && HK.Pos && HK.Pos.forceOpen ? HK.Pos.forceOpen(ctx, [a, b], gate) : gate()) && ctx.rng() < 0.55;
     if (night) {
       var ord = HK.Pos.order(a, b), top = ord[0] === a;

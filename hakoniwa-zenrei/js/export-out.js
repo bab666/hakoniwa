@@ -21,6 +21,8 @@
   var SHOT_W = 900, OUT_W = 1200;   /* 時系列は幅 900px で組み、1200/900 倍で描く（文字を大きめに、くっきり） */
   var FONT = '"Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic",Meiryo,system-ui,sans-serif';
   var FONT_N = '"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace';
+  /* 見出し・署名も画面の本文の書体で（書体の切り替え：ゴシック⇄明朝体。index.html の data-font が --f-body を差し替える。読めなければ上のゴシック） */
+  function bodyFont() { try { var v = getComputedStyle(document.documentElement).getPropertyValue('--f-body').trim(); if (v) return v; } catch (e) { /* 既定のまま */ } return FONT; }
 
   var ua = navigator.userAgent || '', plat = navigator.platform || '';
   var isIOS = /iPhone|iPad|iPod/.test(ua) || (/Mac/.test(plat) && navigator.maxTouchPoints > 1);
@@ -282,7 +284,7 @@
   function today() { var d = new Date(); return d.getFullYear() + '.' + (d.getMonth() + 1) + '.' + d.getDate(); }
   /* 見出し（上）と署名（下）を canvas に描き、真ん中に時系列の一切れを貼る */
   function compose(slice, info, C, k, n, cont) {
-    var W = OUT_W, X = 48, IW = W - X * 2;
+    var W = OUT_W, X = 48, IW = W - X * 2, FONT = bodyFont();
     var meas = document.createElement('canvas').getContext('2d');
     meas.font = '400 19px ' + FONT;
     var whoLines = wrapText(meas, '住人　' + info.who.join('・'), IW);

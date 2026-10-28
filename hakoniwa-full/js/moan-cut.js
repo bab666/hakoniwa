@@ -332,6 +332,13 @@
     return nm + '「' + NOTONE + M.cut(S, who, k, 3, { names: names, role: 'top' }).replace(/^\u2060/, '') + '」';
   }
 
+  /* 外から「名前「＠名前＠3本の台詞」」＋崩しの印を作る（三人の場面 trio-talk-r18.js などが使う。2026-10-28 担当JC）。
+     lv 0 崩さない／1〜3 崩し方（M.cut と同じ）。role 'top'｜'bot' は強弱の傾き、tail は lv3 の語尾の後ろに付ける声 */
+  M.cutQuote = function (S, who, nm, q, lv, role, tail) {
+    var r = rngOf(S);
+    return quote(nm || (who && who.name) || '', String(q || ''), HK.SAFE_ON ? 0 : lv | 0, r, hardP(M.tilt(who, {}, role === 'bot' ? 'bot' : 'top')), tail);
+  };
+
   /* ---------- 呼応：言葉責め・焦らし → 言い返し ---------- */
   M.tease = function (S, top, bot, stage, o, sc0) {
     if (HK.SAFE_ON || !top || !bot) return ['', ''];

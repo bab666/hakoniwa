@@ -375,7 +375,9 @@
         var ts = tiesOf(S, a, b);
         /* もう恋人（番）になっている二人は、告白しない */
         if (ts.some(function (t) { return t.type === 'lover' || t.type === 'mate' || t.type === 'fated'; })) return;
-        var ok = ts.some(function (t) { return (t.type === 'crush' && t.a === a.i) || ((t.type === 'almost' || t.type === 'ex') && a.i < b.i); });
+        /* 避けている人は自分から告白しない。友達以上・元恋人の二人は、片方だけが避けているなら避けていない側から（avoid-kit.js の HK.Avoid。2026-10-28） */
+        var AV = HK.Avoid, ab = !!(AV && AV.of(S, a, b)), ba = !!(AV && AV.of(S, b, a));
+        var ok = !ab && ts.some(function (t) { return (t.type === 'crush' && t.a === a.i) || ((t.type === 'almost' || t.type === 'ex') && (ba || a.i < b.i)); });
         if (!ok || rng() > 0.55) return;
         done = 1; a.m.fear = clamp(a.m.fear - 10, 0, 100); b.m.fear = clamp(b.m.fear - 6, 0, 100);
         /* 両片想いでも、複数の恋人「なし」でどちらかに別の恋人がいれば恋人にはならない（HK.Poly.storyCan） */

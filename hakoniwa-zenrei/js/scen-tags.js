@@ -60,10 +60,21 @@
     succubus: ['relLow', 'raceNight', 'mob'],
     variety: ['relLow', 'raceNight']
   };
-  /* 全年齢版・全年齢モードでは、一人用の箱庭の夜の一文と夜の性格は無い（種族（夜）・夜の顔の札を出さない） */
+  /* r18:begin */
+  /* 三人の場面（3P）が起きる箱庭（R18版だけ。全年齢版の目録には出さない。2026-10-28 担当JB）。
+     HK.Pos.trioPlan を使う箱庭：出られない部屋（room-trio.js・最後の三人）・媚薬ロッカー（locker-trio-bed.js・同一人物の三人）・吹雪の館（輪の夜）・エロトラップダンジョン（三人目が加わる） */
+  DEF.trio = { label: '3P 可', desc: '三人の場面（3P）が起きる箱庭。住人の「三人の場面（3P）：する／しない」と固定した相手で変わります' };
+  ['whiteroom', 'locker', 'yakata', 'dungeon'].forEach(function (id) {
+    var t = TG.TABLE[id];
+    if (!t || t.indexOf('trio') >= 0) return;
+    var at = t.indexOf('night') >= 0 ? t.indexOf('night') + 1 : t.indexOf('raceNight') >= 0 ? t.indexOf('raceNight') + 1 : 1;
+    t.splice(at, 0, 'trio');
+  });
+  /* r18:end */
+  /* 全年齢版・全年齢モードでは、一人用の箱庭の夜の一文と夜の性格は無い（種族（夜）・夜の顔・3P 可の札を出さない） */
   TG.of = function (id) {
     var ks = TG.TABLE[id] || [];
-    return ks.filter(function (k) { return DEF[k] && !(HK.SAFE_ON && (k === 'raceNight' || k === 'night')); }).map(function (k) { return { k: k, label: DEF[k].label, desc: DEF[k].desc }; });
+    return ks.filter(function (k) { return DEF[k] && !(HK.SAFE_ON && (k === 'raceNight' || k === 'night' || k === 'trio')); }).map(function (k) { return { k: k, label: DEF[k].label, desc: DEF[k].desc }; });
   };
   /* カードの中身（ui.js から）。pre は先頭に足す札 [{ html（中身の HTML）, title, warn }]（R18 の描写の注記・箱庭の注意書きの短い札）。
      選んでいないカード（PC）はタグを1行だけ見せる：いちばん狭いカード（190px）の1行に入る数を字数から見積もり、残りは「+n」の札にまとめる（.tx は選んだカードでだけ見える。

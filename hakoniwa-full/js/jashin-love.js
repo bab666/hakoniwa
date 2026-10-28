@@ -106,7 +106,7 @@
 
   /* 気になる相手を決める（jashin-goals.js の love と同じ選び方） */
   function pickTarget(S, p, live) {
-    var L0 = p.love, cs = live.filter(function (q) { return q !== p && !q.bound && al(q) && HK.canLove(p, q) && HK.canLove(q, p) && (!HK.Poly || HK.Poly.storyCan(S, p, q)) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && HK.tieNoLove(t); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
+    var L0 = p.love, cs = live.filter(function (q) { return q !== p && !q.bound && al(q) && !(HK.Avoid && HK.Avoid.of(S, p, q)) && HK.canLove(p, q) && HK.canLove(q, p) && (!HK.Poly || HK.Poly.storyCan(S, p, q)) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && HK.tieNoLove(t); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
     if (!cs.length) return null;
     var b = HK.weighted(S.rng, cs, function (q) { return 1 + Math.max(0, bond(S, p, q)) * 2 + q.tr.warmth; });
     L0.pt = 0;
@@ -128,6 +128,8 @@
     var b = L0.t;
     if (!b || !al(b)) b = L0.t = pickTarget(S, p, live);
     if (!b || b.bound) return false;
+    /* 避けている相手には、自分から近づかない（嫌悪が強まって避けるようになったら、狙うのをやめる。avoid-kit.js の HK.Avoid。2026-10-28） */
+    if (HK.Avoid && HK.Avoid.of(S, p, b)) { L0.t = null; L0.pt = 0; return false; }
     /* 狙った相手に、ほかの恋人ができた */
     var lv = hasTie(S, p, b, 'lover,mate,fated') ? null : loverOf(S, b, p);
     if (lv && lv !== p) {

@@ -251,6 +251,8 @@
         var a = P[i], b = P[i === x.a ? x.b : x.a];
         if (!x.fell[i] || x.said[i] || x.fell[i] >= S.m || !a.alive || !b.alive) return;
         if (A.lover(S, a, b)) { x.said[i] = 1; return; }
+        /* 避けている相手には、自分から告白しない（avoid-kit.js の HK.Avoid。2026-10-28） */
+        if (HK.Avoid && HK.Avoid.of(S, a, b)) { x.said[i] = 1; return; }
         /* 恋人になれるか（ship.js の canJoin：恋愛対象・固定を両方向・一途・複数の恋人の設定。「なし」で恋人がいれば、乗り換えるほど気持ちが傾いているか）。
            自分に恋人がいて乗り換えられないなら、想いは胸にしまって告白しない */
         var jk = A.canJoin(S, a, b);
@@ -327,6 +329,9 @@
     var free = tier !== 'love' && !!(HK.State.freeSex && HK.State.freeSex(S, a, b));
     /* 誘う側：過ちだと考えていない人、FC の高い人 */
     if (x && (x.mis[a.i] && !x.mis[b.i] || (!x.mis[b.i] && tr(b, 'fc') > tr(a, 'fc')))) { var tmp = a; a = b; b = tmp; }
+    /* 避けている人は誘う側にならない（避けていない側が誘う。お互いに避けている・避けている人が攻めに固定される二人の夜は起こさない。avoid-kit.js。2026-10-28） */
+    var avN = '';
+    if (HK.Avoid) { var avP = HK.Avoid.pick(S, a, b); if (!avP || !HK.Avoid.topOk(S, a, b)) return; a = avP.a; b = avP.b; avN = avP.note ? '／' + avP.note : ''; }
     var pre = '';
     if (tier === 'again' && x && x.mis[b.i]) {
       /* 過ちだと考えている人：関係が深まっていれば結局応じる。そうでなければ断って気まずくなる */
@@ -373,7 +378,7 @@
     var y = (S.nt || {})[A.rk(a, b)], nth = y ? y.n + 1 : 1;
     /* 体だけの夜：導入に「恋ではない」一文（free-sex.js） */
     var o = ST.say(S, { actors: [a, b], tag: civ ? '儀式の夜' : pol ? '花粉の夜' : free ? '体だけの夜' : TAG[tier], kind: 'climax', text: (free ? HK.FreeSex.lead(S, a, b) : '') + open + (pre ? ' ' + pre : '') + mid + body + aft,
-      why: (free ? HK.FreeSex.why(a, b) + '／' : '') + (civ ? '文明の歓迎の儀式' : pol ? '星の花粉にあてられた' : tier === 'love' ? '恋人どうし・深い仲の夜' : tier === 'again' ? nth + '度目の夜' : '関係の浅い二人の、勢いの夜') + '／関係の近さ ' + Math.round(c.w * 100), mag: 30 });
+      why: (free ? HK.FreeSex.why(a, b) + '／' : '') + (civ ? '文明の歓迎の儀式' : pol ? '星の花粉にあてられた' : tier === 'love' ? '恋人どうし・深い仲の夜' : tier === 'again' ? nth + '度目の夜' : '関係の浅い二人の、勢いの夜') + '／関係の近さ ' + Math.round(c.w * 100) + avN, mag: 30 });
     if (!S.r18Key) { S.r18Key = true; ST.key(S, o, a.name + 'と' + b.name + 'の夜'); }
     if (free) { HK.FreeSex.mark(S, a, b); HK.FreeSex.jealous(S, a, b); }
     after(S, A, a, b, tier);

@@ -359,9 +359,10 @@
     /* 閉じ込められている人（濡れ衣・推理の誤り：bound）は、寄り添う・閉じこもる場面に出さない */
     var rng = S.rng, live = S.P.filter(function (q) { return alive(q) && !q.bound; });
     var pairs = [];
-    live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i && cat(S, a, b) === 'love') pairs.push([a, b]); }); });
+    /* 寄り添うのは、避けていない側から（一人目が寄り添う側。お互いに避けている二人は寄り添わない。avoid-kit.js の HK.Avoid。2026-10-28） */
+    live.forEach(function (a) { live.forEach(function (b) { if (a.i < b.i && cat(S, a, b) === 'love') { var ld = HK.Avoid ? HK.Avoid.lead(S, a, b) : [a, b]; if (ld) pairs.push(ld); } }); });
     /* 向きの決まらない組（HK.Pos.okSex でない二人）は、寄り添って夜を過ごさず、交代で見張って明かす */
-    if (pairs.length && rng() < 0.5) { var pr = rng.pick(pairs); pr.forEach(function (p) { p.m.fear = clamp(p.m.fear - 8, 0, 100); }); ST.sayB(S, { actors: pr, tag: '夜', text: pining(S, pr[0], pr[1]) && T.PINE_NIGHT && (!HK.Pos || HK.Pos.okSex(pr[0], pr[1])) ? F(pk(S, T.PINE_NIGHT), { a: pr[0].name, b: pr[1].name }) : pr[0].name + 'と' + pr[1].name + (HK.Pos && !HK.Pos.okSex(pr[0], pr[1]) ? 'は、同じ部屋で交代に見張りをしながら夜を明かした。扉の向こうの物音に、二人で耳を澄ませた。' : 'は、同じ部屋で夜を明かした。互いの体温だけが、確かなものだった。'), why: '関係：' + relLabel(S, pr[0], pr[1]) }, pr[0].name + 'と' + pr[1].name + 'が寄り添った'); }
+    if (pairs.length && rng() < 0.5) { var pr = rng.pick(pairs); pr.forEach(function (p) { p.m.fear = clamp(p.m.fear - 8, 0, 100); }); ST.sayB(S, { actors: pr, tag: '夜', text: pining(S, pr[0], pr[1]) && T.PINE_NIGHT && (!HK.Pos || HK.Pos.okSex(pr[0], pr[1])) ? F(pk(S, T.PINE_NIGHT), { a: pr[0].name, b: pr[1].name }) : pr[0].name + 'と' + pr[1].name + (HK.Pos && !HK.Pos.okSex(pr[0], pr[1]) ? 'は、同じ部屋で交代に見張りをしながら夜を明かした。扉の向こうの物音に、二人で耳を澄ませた。' : 'は、同じ部屋で夜を明かした。互いの体温だけが、確かなものだった。'), why: '関係：' + relLabel(S, pr[0], pr[1]) + (HK.Avoid && HK.Avoid.of(S, pr[1], pr[0]) ? '／' + HK.Avoid.note(S, pr[1], pr[0]) : '') }, pr[0].name + 'と' + pr[1].name + 'が寄り添った'); }
     var sc = live.filter(function (p) { return p.m.fear > 60; })[0];
     if (sc && rng() < 0.5) { sc.locked = true; ST.sayB(S, { actors: [sc], tag: '恐怖', text: F(pk(S, T.PANIC), { a: sc.name }), why: '恐怖 ' + Math.round(sc.m.fear) }, sc.name + 'は閉じこもった'); }
     flirt(S, 'night');
@@ -757,7 +758,7 @@
           if (pining(S, a, b) && B.pine) opts.push([a, b, 'pine', 0.7]);
         }
         if (w >= -0.1 && b.m.fear > 45) opts.push([a, b, 'protect', 0.4 + a.tr.np * 0.5]);
-        if (w >= 0.3 && !lover && !kinNo(S, a, b) && (!HK.canLove || HK.canLove(a, b)) && (!HK.Poly || HK.Poly.storyCan(S, a, b)) && !S.confessed) opts.push([a, b, 'confess', 0.3 + a.tr.fc * 0.4 + w * 0.5]);
+        if (w >= 0.3 && !lover && !kinNo(S, a, b) && !(HK.Avoid && HK.Avoid.of(S, a, b)) && (!HK.canLove || HK.canLove(a, b)) && (!HK.Poly || HK.Poly.storyCan(S, a, b)) && !S.confessed) opts.push([a, b, 'confess', 0.3 + a.tr.fc * 0.4 + w * 0.5]);
         if (b === S.cul && a !== S.cul && skill(a, 'obs') > 0.5) opts.push([a, b, 'distrust', 0.4]);
       });
     });

@@ -238,6 +238,18 @@
       parts.push(names(pk(S, mode ? T.joinAfter : T.after[love ? 'love' : 'cool']), M));
     }
     var text = parts.join(thick || low ? '\n\n' : ' ');
+    /* 三人目が加わった場面（share：二人で一人を／serve：一人が二人を）は、三人の場面の組み立て（trio-talk-r18.js の HK.Trio3。2026-10-28 担当JC）で
+       攻め→受け→もう一人の台詞の応酬・擬音・体の位置の一文を足し、文の量をそろえる（段ごとに段落。乱数は文の乱数 R(S)） */
+    if (!low && c && (mode === 'share' || mode === 'serve') && HK.Trio3 && HK.Trio3.begin) {
+      var sp3 = mode === 'share' ? { p: 'twoOne', t: t, m: c, u: u } : { p: 'oneTwo', t: t, m: u, u: c };
+      var T3 = HK.Trio3.begin({ rng: R(S).rng, log: S.log, env: S.env }, sp3, { env: S.env, ero: !!ero, short: !thick, apart: [mode === 'share' ? [t, c] : [u, c]], first: true, posePost: true });
+      if (T3) {
+        var ST3 = ['fore', 'in', 'mid', 'peak'];
+        parts.forEach(function (x, i) { T3.add(ST3[i] || 'after', x, i >= 4 && i === parts.length - 1 ? 2 : 1); });
+        var o3 = T3.render();
+        text = ['fore', 'in', 'mid', 'peak', 'after'].map(function (k) { return o3[k]; }).filter(Boolean).join(thick ? '\n\n' : ' ');
+      }
+    }
 
     /* 結果：二人（三人）とも果て、迷宮に一歩近づく。誘った側は熱が抜けて理性が少し戻り、誘われた側は理性が削れる */
     spend(S, u, false); spend(S, t, true);

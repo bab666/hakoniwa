@@ -49,6 +49,11 @@
    S29: 結末・行く末・その後・結末の文で、亡くなった人が生きている扱い（生還・恋人として暮らす など）／生きている人が亡くなった扱い。
         主な関係で、亡くなった人の組の恋人・友人に（死別）がない
    S30: 場を離れた人（脱出・行方不明・連れ去り）・閉じ込められた人（物語型の縛られた人・囚われ、監禁）が、主役・話し手として出た（脱出・救出・監禁の札は除く）
+   S31（2026-10-28 担当JE）: 避けている人が自分から迫った。記録の出来事で、迫る側（actors の一人目）が相手（二人目）を避けている（HK.Avoid.of：苦手・避けている／
+        片想いの想われる側の「苦手」／執着される側の「怖がっている・嫌っている」／支配される側の「怯えている・逃げ出したい」／恐怖／無関心／嫌悪と回避型の気質）。
+        迫る出来事：エンジン型は恋愛（cat:'romance'）・体の関係の印（sex）・執着の行動（ob_act）、物語型は迫る札（告白・誘い・口づけ・夜這い・押し倒す・監禁 など。APPROACH_TAG）と、
+        住人二人だけの性的な場面の記録（lewd）。ふつうの回と、追加の「避けている関係」の配役（ACASTS）で NA 回（N/2、4 回以上）ずつ回して数える（その回の S1〜S18 も数える）。
+        「参考」の s31 に、箱庭・札ごとの件数を出す
    S19〜S21 は、ふつうの回（N 回）のあとに、追加の関係を使う配役（FCASTS）で NF 回（N/2、4 回以上）ずつ回して数える（その回の S1〜S18 も数える）。
    「参考」には、恐怖で避けた・無関心で受け流した・破談・仲間の出来事の数を出す
    「止めた」：出来事の記録の手前（Ctx.say の防波堤）で捨てられた件数。出所を直すと減る（0 でなくてよい）
@@ -69,8 +74,23 @@ const { openBuild } = require('./lib.js');
     const sents = t => String(t).replace(NONSEX, '＿').split(/[。！？\n」]/);
     const isSex = s => SEXCORE.test(s);
     const out = { n: {}, ex: {}, drop: {}, runs: 0, err: [], bySc: {}, anySex: {} };
-    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30'];
+    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31'];
     out.info = {};
+    /* S31：避けている人が自分から迫った（2026-10-28 担当JE）。迫る札（物語型）と、迫らない札（断る・逃げる・助ける など） */
+    const APPROACH_TAG = /告白|口づけ|キス|夜這い|誘|迫|押し倒|監禁|独占|一夜|セフレ|デート|求愛|口説|抱|愛撫|奉仕|夜|催眠|媚薬|襲|執着|甘え|膝枕|添い寝|手を(?:繋|握)|恋|想い|両想い/;
+    const APPROACH_NO = /失恋|恋敵|元恋人|夜明け|夜番|夜警|見張り|一夜明け|無音の夜|断|拒|逃|避け|庇|救|看病|弔|回想|噂|目撃|覗|嫉妬|監禁から|解放|襲撃/;
+    /* 迫られた側の反応の記録（執着の物語型 obsess-story.js：actors が［執着される側, 執着する側］で、理由が「〇〇の気持ち（…）」） */
+    const REACT_WHY = /^[^。／]{1,16}の気持ち（(?:気づいていない|怖がっている|嫌っている|困惑している|受け入れている|共依存)）/;
+    out.s31 = {}; out.stuck = {};
+    /* 参考：避けている人が攻めに固定されていて、HK.Pos.order が向きを入れ替えられなかった呼び出し元（avoid-kit.js の AV.onStuck。場面になったかは問わない） */
+    if (HK.Avoid) HK.Avoid.onStuck = () => { if (!cur) return; const st = String(new Error().stack || '').split('\n').slice(3, 6).map(l => { const m = l.match(/at (?:(\S+) \()?.*?\/js\/(?:c\/)?([\w-]+)[^/]*?\.js:(\d+)/); return m ? (m[1] || '?') + '@' + m[2] + ':' + m[3] : ''; }).filter(Boolean).join(' < '); const k = cur.sc + ' ' + st; out.stuck[k] = (out.stuck[k] || 0) + 1; };
+    const avoidHit = (x, acs, o, label) => {
+      if (!HK.Avoid || !cur || acs.length < 2) return;
+      const a = acs[0], b = acs[1];
+      if (!a || !b || a === b || a.i === b.i || !HK.Avoid.of(x, a, b)) return;
+      const k = cur.sc + ' ' + label; out.s31[k] = (out.s31[k] || 0) + 1;
+      hit('S31', a.name + '→' + b.name + '（' + HK.Avoid.why(x, a, b) + '） [' + label + '] | ' + String(o.text || '').slice(0, 120));
+    };
     /* S19〜S21 の共通部品：追加の関係（無関心・恐怖・許嫁）の組 */
     const tkey = (i, j) => Math.min(i, j) + '-' + Math.max(i, j);
     const nlOf = (ties, i, j) => (ties || []).filter(t => (t.type === 'apathy' || t.type === 'fear') && ((t.a === i && t.b === j) || (t.a === j && t.b === i)))[0] || null;
@@ -96,7 +116,7 @@ const { openBuild } = require('./lib.js');
     out.n.W1 = 0; out.ex.W1 = [];
     const PLACE_NG = { locker: /席|皿|周りが/ };
     let cur = null, lastCtx = null;
-    const hit = (k, msg) => { out.n[k]++; out.bySc[cur.sc][k] = (out.bySc[cur.sc][k] || 0) + 1; if (out.ex[k].length < (WHY ? 40 : 6)) out.ex[k].push(cur.sc + (cur.feel ? '（追加の関係の配役）' : '') + ' | ' + msg); };
+    const hit = (k, msg) => { out.n[k]++; out.bySc[cur.sc][k] = (out.bySc[cur.sc][k] || 0) + 1; if (out.ex[k].length < (WHY ? 40 : 6)) out.ex[k].push(cur.sc + (cur.feel ? '（追加の関係の配役）' : cur.avd ? '（避けている配役）' : '') + ' | ' + msg); };
     /* S13・S14：恋人の数と一途（区切りごとと回の終わりに ctx.pf を走査） */
     const pkey = (x, y) => Math.min(x.i, y.i) + '-' + Math.max(x.i, y.i);
     const loversOf = (ctx, x) => ctx.chars.filter(y => y !== x && y.alive !== false && ctx.pf[pkey(x, y)] && ctx.pf[pkey(x, y)].couple);
@@ -194,6 +214,11 @@ const { openBuild } = require('./lib.js');
         const over = this.chars.every(c => !c.alive || c.out);
         if (kind === 'step' && cur && !cur.story) { lastCtx = this; polyCheck(this, false); feelStep(this, false); }
         const e = say0.call(this, o);
+        /* S31（エンジン型）：恋愛・体の関係・執着の行動の出来事の主役が、相手を避けている */
+        if (cur && !cur.story && e && !e.skipped && !SKIPK.test(kind) && acs.length >= 2) {
+          const evid = (this._ev && this._ev.id) || '', sx = o.sex != null ? !!o.sex : !!(this._ev && this._ev.sex);
+          if (o.cat === 'romance' || sx || /^ob_act/.test(evid)) avoidHit(this, acs, o, (o.cat || '') + (sx ? '+sex' : '') + ':' + (evid || kind));
+        }
         /* S19・S20・S21（エンジン型）：無関心・恐怖の二人の恋愛の出来事／無関心な人の助け合い・嫉妬・心配／破談のあとの恋愛の出来事 */
         if (cur && cur.feel && !cur.story && e && !e.skipped && !SKIPK.test(kind) && acs.length >= 2) {
           const x = acs[0], y = acs[1], nl = nlOf(cur.feel, x.i, y.i);
@@ -256,6 +281,11 @@ const { openBuild } = require('./lib.js');
         const acs = (o.actors || []).map(p => typeof p === 'number' ? (P && P[p]) : p).filter(p => p && p.i != null);
         const snap = acs.map((p, k) => ({ p, lead: k === 0, dead: p.alive === false && p._auditDeadStep, out: !!(p.out || p.gone || p.taken) && p._auditOutStep }));
         const e = ss0.call(this, S, o);
+        /* S31（物語型）：迫る札の記録・住人二人だけの性的な場面の記録で、一人目が二人目を避けている */
+        if (cur && cur.story && S && acs.length >= 2 && !SKIPK.test(kind)) {
+          const tg = String(o.tag || '');
+          if (!REACT_WHY.test(String(o.why || '')) && ((APPROACH_TAG.test(tg) && !APPROACH_NO.test(tg)) || (e && e.lewd && acs.length === 2 && !APPROACH_NO.test(tg)))) avoidHit(S, acs, o, (tg || kind) + (e && e.lewd ? '+lewd' : ''));
+        }
         /* S19・S20（物語型）：無関心・恐怖の二人だけの、恋愛・夜の札の記録 */
         if (cur && cur.feel && cur.story && acs.length === 2 && /告白|恋|想い|デート|口づけ|キス|両想い|夜/.test(o.tag || '') && !/失恋|恋敵|元恋人|夜明け|夜番|夜警|見張り|一夜明け|無音の夜/.test(o.tag || '')) { const nl = nlOf(cur.feel, acs[0].i, acs[1].i); if (nl) hit(nlKey(nl), '物語型 [' + o.tag + '] ' + nlTxt(S.P, nl) + ' | ' + String(o.text).slice(0, 100)); }
         /* S15・S16（物語型）：恋人の記録の増え方と、二人だけの恋愛の札の記録 */
@@ -459,6 +489,19 @@ const { openBuild } = require('./lib.js');
     /* S19〜S21：追加の気持ち・関係を使う配役（1シナリオあたり NF 回。ふつうの回のあとに回す。S1〜S18 もこの回で数える）
        無関心と恐怖は、恋人・セフレ・片想いと重ねて「恋愛にならないほうが勝つ」ことも見る。許嫁は乗り気どうし（恋愛対象が合う組・合わない組）と、断りたい側の破談 */
     const NF = Math.max(4, Math.round(N / 2));
+    /* S31：避けている関係の配役（2026-10-28 担当JE）。避けている人（★）が攻め・受け・どちらでもの回を混ぜ、相手は想っている・敵視している。
+       shy＝回避型の気質にする人（嫌悪レベルと組み合わせて「避けている」になる） */
+    const NA = Math.max(4, Math.round(N / 2));
+    const ACASTS = [
+      /* ★1 は 0 を苦手（敵対の相手の気持ち）、★3 は 2 の片想いを苦手、★5 は 4 の執着を怖がっている */
+      { g: ['m', 'f', 'm', 'f', 'f', 'm'], p: ['bottom', 'top', '', 'top', 'bottom', 'top'], ties: [{ a: 0, b: 1, type: 'enemy', cold: 'avoid' }, { a: 2, b: 3, type: 'crush', cold: 'dislike' }, { a: 4, b: 5, type: 'yan', cold: 'afraid' }] },
+      /* ★0 は 1 を苦手（不仲の相手の気持ち・1 は 0 に片想いも）、★2 は 3 の支配に怯えている、★4 は 5 の執着を嫌っている、★shy の 5 は 4 を嫌悪 */
+      { g: ['f', 'm', 'f', 'm', 'm', 'f'], p: ['top', 'bottom', 'top', '', 'top', 'riba'], ties: [{ a: 1, b: 0, type: 'bad', cold: 'avoid' }, { a: 1, b: 0, type: 'crush' }, { a: 3, b: 2, type: 'abuse', cold: 'fear' }, { a: 5, b: 4, type: 'yan', cold: 'hate' }], shy: [] },
+      /* 嫌悪と回避型の気質：0↔1 敵対で ★1 は回避型、2↔3 敵対で 2 は愛憎（避けていない）・★3 は回避型、★5 は 4 の片想いを苦手 */
+      { g: ['m', 'm', 'f', 'm', 'm', 'f'], p: ['', 'top', 'bottom', 'top', 'bottom', ''], ties: [{ a: 0, b: 1, type: 'enemy' }, { a: 2, b: 3, type: 'enemy', lh: 'a' }, { a: 4, b: 5, type: 'crush', cold: 'dislike' }], shy: [1, 3] },
+      /* 恐怖・無関心・苦手を重ねる：★0 は 1 を恐れる、★2 は 3 に無関心（3 は 2 に片想い）、★4 は 5 を苦手（敵対）・4 は回避型 */
+      { g: ['f', 'm', 'm', 'f', 'f', 'f'], p: ['top', 'bottom', 'top', 'bottom', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'fear' }, { a: 2, b: 3, type: 'apathy' }, { a: 3, b: 2, type: 'crush' }, { a: 5, b: 4, type: 'enemy', cold: 'avoid' }], shy: [4] }
+    ];
     const FCASTS = [
       { g: ['m', 'f', 'm', 'f', 'm', 'f'], p: ['top', 'bottom', '', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'apathy' }, { a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'fear' }, { a: 3, b: 2, type: 'crush' }, { a: 4, b: 5, type: 'fiance' }, { a: 1, b: 4, type: 'yan', sub: 'dep' }] },
       { g: ['f', 'm', 'f', 'm', 'f', 'f'], p: ['', 'top', 'bottom', 'top', '', 'bottom'], ties: [{ a: 1, b: 0, type: 'fear' }, { a: 0, b: 1, type: 'yan', sub: 'hatelove' }, { a: 2, b: 3, type: 'fiance', feel: 'refuse' }, { a: 4, b: 5, type: 'fiance' }, { a: 3, b: 5, type: 'apathy' }, { a: 5, b: 3, type: 'fwb' }] },
@@ -473,10 +516,10 @@ const { openBuild } = require('./lib.js');
     for (const sc of ids) {
       const scen = HK.SCENARIOS[sc]; if (!scen) continue;
       out.bySc[sc] = { runs: 0 };
-      for (let s = 0; s < N + NF; s++) {
-        const feel = s >= N;
-        const cast = feel ? Object.assign({ ng: [], noR18: [], lo: [], same: null, fa: [], lk: [9, 9], lk2: [9, 9] }, FCASTS[(s - N) % FCASTS.length]) : CASTS[s % CASTS.length];
-        const n = feel ? Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 6)) : Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 2 + (s % 5)));
+      for (let s = 0; s < N + NF + NA; s++) {
+        const avd = s >= N + NF, feel = s >= N && !avd;
+        const cast = avd ? Object.assign({ ng: [], noR18: [], lo: [], same: null, fa: [], lk: [9, 9], lk2: [9, 9] }, ACASTS[(s - N - NF) % ACASTS.length]) : feel ? Object.assign({ ng: [], noR18: [], lo: [], same: null, fa: [], lk: [9, 9], lk2: [9, 9] }, FCASTS[(s - N) % FCASTS.length]) : CASTS[s % CASTS.length];
+        const n = feel || avd ? Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 6)) : Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 2 + (s % 5)));
         const chars = [], perChar = [];
         for (let i = 0; i < n; i++) {
           const ng = []; cast.ng.forEach(pr => { if (pr[0] === i && pr[1] < n) ng.push(pr[1]); if (pr[1] === i && pr[0] < n) ng.push(pr[0]); });
@@ -485,20 +528,22 @@ const { openBuild } = require('./lib.js');
             posNpc: cast.noR18.indexOf(i) >= 0 || cast.lo.indexOf(i) >= 0 ? ['bottom', 'riba', 'top', ''][s % 4] : '' });
           perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
         }
+        /* S31：回避型の気質の人（AC 高・CP 低・攻撃性 低） */
+        if (avd && cast.shy) cast.shy.forEach(i => { if (chars[i]) chars[i].eg = { CP: 3 + (s % 3), NP: 12, A: 10, FC: 6, AC: 16 + (s % 4) }; });
         /* S15：5回に2回、二人を互いに恋愛相手として固定する（4人の回は lk、6人の回は lk2。相手が箱庭にいるときだけ） */
-        const lk = feel ? null : s % 5 === 2 ? cast.lk : s % 5 === 4 ? cast.lk2 : null;
+        const lk = feel || avd ? null : s % 5 === 2 ? cast.lk : s % 5 === 4 ? cast.lk2 : null;
         if (lk && lk[0] < n && lk[1] < n) { chars[lk[0]].loveLock = String(lk[1]); chars[lk[1]].loveLock = String(lk[0]); }
         /* 固定の複数化（2026-10-26）：10回に1回（s%10===4）、lk の一人目は二人を固定する（三人目もその一人目だけを固定。二人目と三人目は恋愛・夜にならないはず） */
         const lk3 = lk && s % 10 === 4 && n >= 3 && lk[0] < n && lk[1] < n ? [0, 1, 2, 3, 4, 5].filter(i => i < n && i !== lk[0] && i !== lk[1])[0] : null;
         if (lk3 != null) { chars[lk[0]].loveLock = [lk[1], lk3]; chars[lk3].loveLock = [lk[0]]; }
         /* S17：5回に1回（s%5===3）、二人を互いに固定し、R18に参加する方の一人の性行為の相手を「誰とでも可」にする */
-        const lkAny = !feel && s % 5 === 3 && cast.lk[0] < n && cast.lk[1] < n ? cast.lk : null;
+        const lkAny = !feel && !avd && s % 5 === 3 && cast.lk[0] < n && cast.lk[1] < n ? cast.lk : null;
         if (lkAny) {
           chars[lkAny[0]].loveLock = String(lkAny[1]); chars[lkAny[1]].loveLock = String(lkAny[0]);
           chars[cast.noR18.indexOf(lkAny[0]) >= 0 ? lkAny[1] : lkAny[0]].sexLock = 'any';
         }
         /* S12：奇数回は同一人物の組を足す（相手どうしに書く） */
-        const same = !feel && s % 2 && cast.same && cast.same[1] < n ? cast.same : null;
+        const same = !feel && !avd && s % 2 && cast.same && cast.same[1] < n ? cast.same : null;
         if (same) { chars[same[0]].same = same[1]; chars[same[1]].same = same[0]; }
         const sameNg = same && s % 4 === 1 ? same : null;
         if (sameNg) { [[0, 1], [1, 0]].forEach(([x, y]) => { const c = chars[sameNg[x]]; c.loveNG = Array.isArray(c.loveNG) ? c.loveNG : []; if (c.loveNG.indexOf(sameNg[y]) < 0) c.loveNG.push(sameNg[y]); }); }
@@ -518,7 +563,7 @@ const { openBuild } = require('./lib.js');
         const offTags = {};
         if (HK.Content && HK.Content.TAGS) { if (s % 2 === 0) { HK.Content.TAGS.forEach(t => { offTags[t.id] = true; }); env.ct = ''; } else env.ct = HK.Content.TAGS.map(t => t.id).join(','); }
         const ties = (cast.ties || []).filter(t => t.a < n && t.b < n);
-        cur = { sc, story: !!scen.solo, offTags, feel: feel ? ties : null };
+        cur = { sc, story: !!scen.solo, offTags, feel: feel ? ties : null, avd };
         let res;
         lastCtx = null;
         dz = { snap: {}, deaths: [], rev: [], engine: null, S: null };
@@ -738,11 +783,13 @@ const { openBuild } = require('./lib.js');
   }, { N, only, WHY, HOT, mode, ENVSET });
   const ids = Object.keys(r.bySc);
   for (const sc of ids) {
-    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30'].map(k => k + ' ' + (b[k] || 0));
+    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31'].map(k => k + ' ' + (b[k] || 0));
     console.log(sc.padEnd(10), 'runs', b.runs, cells.join(' '), '誰とでも可の体の出来事', r.anySex[sc] || 0);
   }
   console.log('合計', JSON.stringify(r.n), '止めた', JSON.stringify(r.drop));
   console.log('参考（追加の関係の出来事の数）', JSON.stringify(r.info));
+  console.log('S31（避けている人が自分から迫った：箱庭と札・出来事ごと）', JSON.stringify(r.s31));
+  console.log('参考：攻めに固定された避けている人（向きを入れ替えられなかった呼び出し元）', JSON.stringify(r.stuck));
   console.log('W1（箱庭の場所に合わない語）', r.n.W1, JSON.stringify(Object.keys(r.bySc).filter(sc => r.bySc[sc].W1).reduce((o, sc) => { o[sc] = r.bySc[sc].W1; return o; }, {})));
   for (const k of Object.keys(r.ex)) if (r.ex[k].length) { console.log('--- ' + k); r.ex[k].forEach(x => console.log('  ' + x)); }
   if (r.err.length) { console.log('--- 例外'); r.err.slice(0, 20).forEach(x => console.log('  ' + x)); }

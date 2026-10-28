@@ -36,8 +36,11 @@
     else if (!o.plotter && rng() < 0.08 + ((quiet.cnt.refuse + quiet.cnt.hold) * 0.25 + quiet.tr.ac * 0.3) * 0.7) { q = quiet; oo = loud; kind = 'quiet'; }
     else if (!o.plotter && rng() < 0.25) { q = loud; oo = quiet; kind = 'stop'; }
     else { q = o.plotter || loud; oo = q.o; kind = 'eager'; }
+    /* 避けている人は誘う側にならない：誘う人が相手を避けていれば、相手のほうが待ちきれずに誘う形にする（avoid-kit.js の HK.Avoid。2026-10-28） */
+    var avN = '';
+    if (HK.Avoid && HK.Avoid.of(S, q, oo) && !HK.Avoid.of(S, oo, q)) { avN = '／' + HK.Avoid.note(S, q, oo); var q0 = q; q = oo; oo = q0; kind = 'eager'; }
     var t1 = (o.how === 'timeout' ? LK.BED.timeout[0] : '') + ST.fmt(pick(S, SOFT.invite[kind]), { q: q.name, o: oo.name });
-    var o3 = ST.say(S, { actors: [A, B], tag: 'ベッドへ', text: t1, why: { quiet: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った', eager: q.name + 'が待ちきれなかった' + (o.plotter === q ? '（思惑どおり）' : ''), stop: oo.name + 'は帰ろうとしたが、' + q.name + 'が引き止めた', order: '主の' + q.name + 'が、耐えた従者に許しを与えた' }[kind], mag: 40 });
+    var o3 = ST.say(S, { actors: [A, B], tag: 'ベッドへ', text: t1, why: { quiet: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った', eager: q.name + 'が待ちきれなかった' + (o.plotter === q ? '（思惑どおり）' : ''), stop: oo.name + 'は帰ろうとしたが、' + q.name + 'が引き止めた', order: '主の' + q.name + 'が、耐えた従者に許しを与えた' }[kind] + avN, mag: 40 });
     ST.key(S, o3, kind === 'quiet' ? 'おとなしかった' + q.name + 'から誘った' : '部屋から出ずに二人きりに');
     ST.say(S, { actors: [A, B], tag: '二人きりの夜', text: pick(S, SOFT.fade), why: '関係：' + o.REL_LABEL[o.rel], mag: 45, kind: 'climax' });
     ST.say(S, { actors: [A, B], tag: '翌朝', text: ST.fmt(pick(S, SOFT.morning), { a: x.name, b: y.name }), why: '媚薬が切れるまで、二人は部屋を出なかった', mag: 30 });
@@ -276,6 +279,9 @@
     else if (!o.plotter && rng() < 0.08 + quietScore * 0.7) { q = quiet; oo = loud; kind = q === x ? 'quietTop' : 'quietBottom'; }
     else if (!o.plotter && rng() < 0.25) { q = loud; oo = quiet; kind = 'stop'; }
     else { q = o.plotter || loud; oo = q.o; kind = 'eager'; }
+    /* 避けている人は誘う側にならない：誘う人が相手を避けていれば、相手のほうが待ちきれずに誘う形にする（avoid-kit.js の HK.Avoid。2026-10-28） */
+    var avN = '';
+    if (HK.Avoid && HK.Avoid.of(S, q, oo) && !HK.Avoid.of(S, oo, q)) { avN = '／' + HK.Avoid.note(S, q, oo); var q0 = q; q = oo; oo = q0; kind = 'eager'; }
     if (kind === 'nori') INVITE.nori = LK.BED.noriInvite || INVITE.eager;
     /* ロッカーの中で手を出した人に「一度も手を出さなかった」と書かない */
     var inv = INVITE[kind].filter(function (l) { return (q.cnt.refuse > 0 || !/嗜め/.test(l)) && (q.cnt.make === 0 || !/手を出さなかった|理性を保って/.test(l)) && !(o.how === 'timeout' && /扉が開/.test(l)) && !(xHard && q !== x && !noPush(l)); });
@@ -285,7 +291,7 @@
     t1 = fillTop(t1, x, { S: function () { return q !== x && rng() < 0.7 ? topSay(S, o, x, y, 'start') : ''; } }, 1, 0);
     var nTop = cnt(t1, x);
     var whyInv = { quietTop: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った（仕掛けた ' + q.cnt.make + '回・嗜めた ' + q.cnt.refuse + '回）', quietBottom: 'ロッカーの中でいちばんおとなしかった' + q.name + 'から誘った（仕掛けた ' + q.cnt.make + '回・嗜めた ' + q.cnt.refuse + '回）', nori: '受けの' + q.name + 'がノリノリで、自分から誘った', eager: q.name + 'が待ちきれなかった' + (o.plotter === q ? '（思惑どおり）' : ''), stop: oo.name + 'は帰ろうとしたが、' + q.name + 'が引き止めた', order: '主の' + q.name + 'が、耐えた従者に許しを与えた' }[kind];
-    var o3 = ST.say(S, { actors: [A, B], tag: 'ベッドへ', text: t1, why: whyInv + '／発情 ' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + (o.pair.sexIn ? '／ロッカーの中では焦らされるだけだった' : ''), mag: 40 });
+    var o3 = ST.say(S, { actors: [A, B], tag: 'ベッドへ', text: t1, why: whyInv + avN + '／発情 ' + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + (o.pair.sexIn ? '／ロッカーの中では焦らされるだけだった' : ''), mag: 40 });
     ST.key(S, o3, kind === 'quietTop' || kind === 'quietBottom' ? 'おとなしかった' + q.name + 'からベッドへ誘った' : '部屋から出ずにベッドへ');
     labels.push({ quietTop: 'おとなしかった方から誘う', quietBottom: 'おとなしかった方から誘う', nori: '受けがノリノリで誘う', eager: '待ちきれずに', stop: '帰ろうとして引き戻される', order: '主の命令' }[kind]);
 

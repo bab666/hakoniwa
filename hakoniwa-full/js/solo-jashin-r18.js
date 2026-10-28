@@ -736,7 +736,8 @@
       if (rng() > lv * (p.aphro ? 0.32 : 0.12)) return false;
       p.lastNight = h; p.cnt.r18 = (p.cnt.r18 || 0) + 1;
       /* 体だけの関係の組（「誰とでも可」の人と固定外の相手。HK.State.freeSex。free-sex.js）も、参加者どうしの夜の相手になる（恋愛の条件 HK.canLove は見ない） */
-      var mates = pc <= 0 ? [] : live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && ((HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) || !!(HK.State.freeSex && HK.State.freeSex(S, p, q))) && okPair(p, q) && (!HK.Pos || !HK.Pos.libOK || HK.Pos.libOK([p, q])); });
+      /* 部屋を訪ねて押し倒すのは攻め（HK.Pos.order の一人目）。避けている人が攻めに固定される組・お互いに避けている組は相手にしない（avoid-kit.js。2026-10-28） */
+      var mates = pc <= 0 ? [] : live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && (!HK.Avoid || HK.Avoid.topOk(S, p, q)) && ((HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) || !!(HK.State.freeSex && HK.State.freeSex(S, p, q))) && okPair(p, q) && (!HK.Pos || !HK.Pos.libOK || HK.Pos.libOK([p, q])); });
       var top = HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(p) : hardTop(p);
       var r0 = rng();
       /* 性行為の相手を「固定した相手だけ」にした人（noMob）：夢の神・清めの湯・村人の夜這いには進まず、住人どうしの夜だけ */

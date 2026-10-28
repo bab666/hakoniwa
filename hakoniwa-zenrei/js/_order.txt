@@ -90,9 +90,11 @@ js/room-trio.js @scen:whiteroom
 js/room-left.js @scen:whiteroom
 js/room-cheer.js @scen:whiteroom
 js/room-know.js @scen:whiteroom
+js/room-end.js @scen:whiteroom
 js/room-tie.js @scen:whiteroom
 js/room-same.js @scen:whiteroom
 js/room-games.js @scen:whiteroom
+js/room-trio-note.js @scen:whiteroom
 js/scenario-trial.js @scen:trial
 js/ego-image.js
 js/omega-data.js
@@ -194,6 +196,7 @@ js/view.js
 js/view-map.js
 js/dungeon-view.js
 js/solo-story-kit.js
+js/avoid-kit.js
 js/attr-look.js
 js/attr-race.js
 js/attr-meet.js

@@ -84,7 +84,7 @@
           if (mutual(S, a, b)) opts.push([a, b, 'mutual', 0.6]);
         }
         if (w >= -0.1 && b.m.fear > 55) opts.push([a, b, 'protect', 0.3 + a.tr.np * 0.5]);
-        if (w >= 0.3 && !has(S, a, b, 'lover,mate,fated') && !S.ties.some(function (t) { return ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)) && HK.tieNoLove(t); }) && (!HK.canLove || HK.canLove(a, b)) && (!HK.Poly || HK.Poly.storyCan(S, a, b)) && !S.dConfess) opts.push([a, b, 'confess', 0.25 + a.tr.fc * 0.4 + w * 0.4 + (mutual(S, a, b) ? 0.2 : 0)]);
+        if (w >= 0.3 && !has(S, a, b, 'lover,mate,fated') && !(HK.Avoid && HK.Avoid.of(S, a, b)) && !S.ties.some(function (t) { return ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)) && HK.tieNoLove(t); }) && (!HK.canLove || HK.canLove(a, b)) && (!HK.Poly || HK.Poly.storyCan(S, a, b)) && !S.dConfess) opts.push([a, b, 'confess', 0.25 + a.tr.fc * 0.4 + w * 0.4 + (mutual(S, a, b) ? 0.2 : 0)]);
         if (a.tr.a > 0.5 && (b.traitor || b.plot || b.sold)) opts.push([a, b, 'distrust', 0.6]);
         if (S.ties.some(function (t) { return t.type === 'crush' && t.a === a.i && t.b === b.i; }) && !(has(S, a, b, 'lover,mate,fated') && S.ties.some(function (t) { return t.type === 'crush' && t.a === b.i && t.b === a.i; }))) { var c = P.filter(function (q) { return q !== a && q !== b && bond(S, b, q) > 0.4; })[0]; if (c) opts.push([a, b, mutual(S, a, b) ? 'mjealous' : 'jealous', 0.5, c]); }
       });

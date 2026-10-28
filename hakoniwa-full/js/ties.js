@@ -743,6 +743,9 @@
           var fi = HK.Ties.has(ctx, A, B, 'fiance'); if (fi) fi.couple = false;
         });
       });
+      /* 避けている人は自分から迫らない（avoid-kit.js の HK.Avoid。2026-10-28 担当JE）：engine.js は ctx._apathy があるときだけ出来事の門 apathyBlock を通すので、
+         無関心の組がなくても印の表を作っておく（中身が空なら、無関心の判定・値の凍結は今までどおり何もしない） */
+      if (HK.Avoid) ctx._apathy = ctx._apathy || {};
     },
     /* 無関心の凍結：a→b の値を覚える（engine.js が初期の関係を整えたあとに呼ぶ）／覚えた値に戻す（区切りの終わりと結果の前） */
     freezeInit: function (ctx) {
@@ -758,6 +761,9 @@
     apathy: function (ctx, a, b) { return !!(ctx && ctx._apathy && a && b && ctx._apathy[a.i + '>' + b.i]); },
     /* 無関心な a が b との出来事に入らないもの（恋愛・助け合い・嫉妬・心配・慰め・夜） */
     apathyBlock: function (ctx, a, b, e) {
+      /* 避けている a は、b に自分から迫る出来事（恋愛・体の関係・執着の行動）の主役にならない（avoid-kit.js の HK.Avoid.block。2026-10-28 担当JE）。
+         engine.js の act() の候補選び（出来事の定義の sex の印も見る）と actRun（起きたあと）の両方がここを通る */
+      if (HK.Avoid && e && HK.Avoid.block(ctx, a, b, e)) return true;
       if (!HK.Ties.apathy(ctx, a, b) || !e) return false;
       return e.cat === 'romance' || e.cat === 'help' || /jeal|envy|worry|care|comfort|grief|mourn|obsess|^ob_|night|sex|kiss|date|confess/i.test(e.id || '') || /嫉妬|心配/.test(e.why || '');
     },

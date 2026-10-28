@@ -89,13 +89,15 @@
     var L0 = p.love || (p.love = { t: null, pt: 0, tries: 0 });
     if (L0.done) return false;
     if (!L0.t || !al(L0.t)) {
-      var cs = live.filter(function (q) { return q !== p && !q.bound && canLove(p, q) && (!HK.Poly || HK.Poly.storyCan(S, p, q)) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && HK.tieNoLove(t); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
+      var cs = live.filter(function (q) { return q !== p && !q.bound && canLove(p, q) && !(HK.Avoid && HK.Avoid.of(S, p, q)) && (!HK.Poly || HK.Poly.storyCan(S, p, q)) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && HK.tieNoLove(t); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
       if (!cs.length) return false;
       L0.t = HK.weighted(rng, cs, function (q) { return 1 + Math.max(0, bond(S, p, q)) * 2 + q.tr.warmth; }); L0.pt = 0;
       ST.sayB(S, { actors: [p, L0.t], tag: '恋', text: F(pk(S, T.LOVE_PICK), { a: p.name, b: L0.t.name }), why: p.name + 'の目標は「恋人を作る」（FC・NP・衝動）' }, p.name + 'は' + L0.t.name + 'が気になっていた');
       return true;
     }
     var b = L0.t, m = { a: p.name, b: b.name };
+    /* 避けている相手には、自分から口説かない・告白しない（avoid-kit.js の HK.Avoid。2026-10-28） */
+    if (HK.Avoid && HK.Avoid.of(S, p, b)) { L0.t = null; L0.pt = 0; return false; }
     if (L0.pt >= 2 && bond(S, p, b) >= 0.3) {
       /* 告白 */
       /* 複数の恋人「なし」で、どちらかに別の恋人がいる組は実らない（HK.Poly.storyCan） */

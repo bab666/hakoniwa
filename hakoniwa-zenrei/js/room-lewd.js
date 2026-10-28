@@ -157,6 +157,8 @@
     if (L.foreFor && !opt.toolText && mode !== 'speed') out.push(L.foreFor(ctx, A, B, true));
     out.push(tools && (opt.toolText || ctx.rng() < 0.35) ? pick(ctx, FF_TOY) : pick(ctx, FF_BODY[st] || FF_BODY.gentle));
     out.push(react(ctx, B));
+    /* 最中の一往復：攻めの言葉責め・焦らし（＋受けの言い返し）か、攻めの一言と受けの声（R18版の trio-talk-r18.js の HK.Trio3.pairTalk。2026-10-28 担当JC） */
+    if (HK.Trio3 && HK.Trio3.pairTalk && !HK.SAFE_ON && mode !== 'speed' && ctx.rng() < 0.7) out.push(HK.Trio3.pairTalk(ctx, A, B, { ero: !!(HK.Lewd && HK.Lewd.ero(ctx.env)) }));
     out.push(pick(ctx, FF_CLIMAX));
     var V = HK.Voice, pf = function (arr) { return fp(ctx, arr); };
     if (V && ctx.rng() < 0.7) out.push(V.line(pf, B.persona, 'climax', 'b'));
@@ -201,6 +203,8 @@
     var ntx = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(A, B, HK.Pos && HK.Pos.isF(A) ? 'fm' : 'mf', function (arr) { return pick(ctx, arr); }, false) : '';
     if (ntx) lew.push(ntx);
     lew.push(react(ctx, B));
+    /* 最中の一往復（ffScene と同じ。2026-10-28 担当JC） */
+    if (HK.Trio3 && HK.Trio3.pairTalk && !HK.SAFE_ON && mode !== 'speed' && ctx.rng() < 0.7) lew.push(HK.Trio3.pairTalk(ctx, A, B, { ero: !!(HK.Lewd && HK.Lewd.ero(ctx.env)) }));
     var V = HK.Voice, pf = function (arr) { return fp(ctx, arr); };
     /* 口調ごとの「寸前」の一言 */
     if (V && ctx.rng() < 0.4) lew.push(V.line(pf, B.persona, 'edge', 'b'));

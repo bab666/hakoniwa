@@ -402,6 +402,61 @@
      ・三組とも直接できれば all（hub は null）。二組なら、両方の組に入る人が中心（hub）。残りの一組（watch）は同じ場にいても触れ合わない（見ている・声をかける程度）
      ・直接できる組が一つ以下なら null（3P にせず、二人の場面に落とす）。全年齢版・全年齢モードでは常に null
      ・形（誰が誰を抱くか）は呼ぶ側が pairs の向き（HK.Pos.order）で決め、作れなければ 3P にしない */
+  /* r18:begin */
+  /* ---------- 体の関係を持てない理由（2026-10-28 担当JB。利用者の不具合報告「なんで持てないのか、理由を表示してほしい」） ----------
+     HK.Pos.noSexInfo(a, b, opt) → null（持てる）か { k: 理由の種類, t: 理由（利用者向けの言葉）, fix: 直し方 }。HK.Pos.whyNoSex(a, b, opt) は t だけ。
+     判定は出られない部屋の okSex（scenario-room.js：HK.Pos.okSex＝orients〔HK.sexBlocked・恋愛対象・受け攻め〕＋性欲 libOK＋恋愛にしない関係 HK.roomWsNoSex）と
+     同じものを、利用者に伝える順に見る：R18に参加しない／性欲の強さ「なし」／恋愛対象が合わない／体の関係の相手「なし」／恋愛・R18にしない相手／
+     同じ人の恋人どうし／性行為の相手の固定（恋愛相手の固定に合わせている場合を含む）／一途／関係「無関心」「恐怖」・恋愛なしの家族／
+     部屋の恋愛にしない関係／受け攻め。どれにも当たらないのに持てない組は、受け攻めの理由にまとめる（okSex と食い違わない）。
+     opt.ctx（無ければ HK._curCtx）：名前を引く住人の並び・関係。opt.room が偽なら部屋の恋愛にしない関係を見ない。R18版だけ（全年齢版には無いので、呼ぶ側は HK.Pos.whyNoSex があるときだけ使う） */
+  var LIKE_JA = { m: '男性', f: '女性', both: '男女両方', none: 'なし' }, GEN_JA = { m: '男性', f: '女性' };
+  var POS_JA = { top: '攻め', bottom: '受け', riba: 'リバ' };
+  P.noSexInfo = function (a, b, opt) {
+    if (!a || !b || a === b) return null;
+    opt = opt || {};
+    var ctx = opt.ctx || HK._curCtx, C = ctx && ctx.chars, pr = [[a, b], [b, a]], i, x, y;
+    var nameOf = function (k) { var c = C && k >= 0 ? C[k] : null; return c ? c.name : 'この箱庭にいない人'; };
+    var gen = function (c) { return GEN_JA[c.gender] ? '（' + GEN_JA[c.gender] + '）' : ''; };
+    for (i = 0; i < 2; i++) { x = pr[i][0]; if (x.noR18) return { k: 'noR18', t: x.name + 'が「R18に参加しない」', fix: x.name + 'の「R18に参加しない」を外す' }; }
+    for (i = 0; i < 2; i++) { x = pr[i][0]; if (!P.libOK([x])) return { k: 'lib', t: x.name + 'の性欲の強さが「なし」', fix: x.name + 'の「性欲の強さ」を「ふつう」などにする' }; }
+    for (i = 0; i < 2; i++) {
+      x = pr[i][0]; y = pr[i][1];
+      if (likesOne(x, y, true)) continue;
+      if (x.likes === 'none') {
+        var sl = P.sexLikeOf(x);
+        if (sl === 'none' || !sl) return { k: 'sexLikes', t: x.name + 'の恋愛対象が「なし」で、体の関係の相手も「なし」', fix: x.name + 'の「体の関係の相手」を選ぶ' };
+        return { k: 'sexLikes', t: x.name + 'の体の関係の相手「' + (LIKE_JA[sl] || sl) + '」に、' + y.name + gen(y) + 'が合わない', fix: x.name + 'の「体の関係の相手」を変える' };
+      }
+      return { k: 'likes', t: x.name + 'の恋愛対象「' + (LIKE_JA[x.likes] || x.likes) + '」に、' + y.name + gen(y) + 'が合わない', fix: x.name + 'の「恋愛対象」を変える' };
+    }
+    for (i = 0; i < 2; i++) { x = pr[i][0]; y = pr[i][1]; if (x.ng && x.ng.indexOf(y.i) >= 0) return { k: 'ng', t: x.name + 'が' + y.name + 'を「恋愛・R18にしない相手」にしている', fix: x.name + 'の「恋愛・R18にしない相手」から' + y.name + 'を外す' }; }
+    if ((a.coNG && a.coNG.indexOf(b.i) >= 0) || (b.coNG && b.coNG.indexOf(a.i) >= 0)) return { k: 'coNG', t: a.name + 'と' + b.name + 'は同じ人の恋人どうし（恋人が複数いる人の恋人どうしは、体の関係にしない）', fix: a.name + 'と' + b.name + 'のあいだに恋愛の関係（恋人・セフレ など）を足すか、恋人の関係を見直す' };
+    for (i = 0; i < 2; i++) {
+      x = pr[i][0]; y = pr[i][1];
+      var s = x.sexLock;
+      if (s === 'any') continue;
+      if (Array.isArray(x.sexLocks) || typeof s === 'number') {
+        if (HK.sexLockOut && HK.sexLockOut(x, y)) return { k: 'sexLock', t: x.name + 'は性行為の相手を' + (Array.isArray(x.sexLocks) ? x.sexLocks : [s]).map(nameOf).join('・') + 'に固定している', fix: x.name + 'の「性行為の相手の固定」に' + y.name + 'を足すか、「誰とでも可」にする' };
+      } else if (HK.lockOut && HK.lockOut(x, y)) {
+        return { k: 'loveLock', t: x.name + 'は恋愛相手を' + HK.locks(x).map(nameOf).join('・') + 'に固定していて、性行為の相手は「恋愛相手の固定に合わせる」になっている', fix: x.name + 'の「性行為の相手の固定」を「誰とでも可」にすると持てる（恋愛には進まない）' };
+      }
+    }
+    for (i = 0; i < 2; i++) { x = pr[i][0]; y = pr[i][1]; if (HK.Poly && HK.Poly.faithNG && HK.Poly.faithNG(x, y)) return { k: 'faith', t: x.name + 'は一途で、恋人がいる間は恋人以外と体の関係を持たない', fix: x.name + 'の「一途」を外す' }; }
+    if (HK.noLovePair && HK.noLovePair(a, b)) {
+      var T0 = HK.Ties, kind = ctx && T0 && T0.has ? (T0.has(ctx, a, b, 'apathy') ? '関係「無関心」' : T0.has(ctx, a, b, 'fear') ? '関係「恐怖」' : '「恋愛：なし」の家族') : '関係「無関心」「恐怖」か「恋愛：なし」の家族';
+      return { k: 'noLove', t: a.name + 'と' + b.name + 'は' + kind + 'の二人', fix: '二人の関係を変える（家族なら関係の「恋愛」を「あり」にする）' };
+    }
+    if (opt.room !== false && HK.roomWsNoSex && HK.roomWsNoSex(ctx, a, b)) return { k: 'room', t: a.name + 'と' + b.name + 'は恋愛にしない関係（「恋愛：なし」の家族・信仰）', fix: '二人の関係の「恋愛」を「あり」にする' };
+    if (!P.okSex(a, b)) {
+      var lab = function (c, o) { return explicit(c, o) ? POS_JA[P.of(c, o)] || 'おまかせ' : 'おまかせ'; };
+      return { k: 'pos', t: '受け攻めが合わない（' + a.name + '：' + lab(a, b) + '・' + b.name + '：' + lab(b, a) + '）', fix: '受け攻め（相手ごとの指定・「相手の受け攻め」）を、どちらかが受けかリバに回れるようにする' };
+    }
+    return null;
+  };
+  P.whyNoSex = function (a, b, opt) { var r = P.noSexInfo(a, b, opt); return r ? r.t : null; };
+  /* r18:end */
+
   P.trioOptOut = function (c) { return src(c, 'trio') === 'no'; };
   P.trioPlan = function (a, b, c, opt) {
     var m = [a, b, c];

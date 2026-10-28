@@ -115,7 +115,8 @@
     /* 二人のうち、強引に出る側（いなければ null）。
        受け攻めの指定に従う：強引な側が、その組で攻めに回れない（相手が自分で攻めを選んだ人など）なら、乱暴にはできない */
     forcer: function (x, a, b) {
-      var P = HK.Pos, can = function (f, o) { return !P || P.order(f, o, [f, o])[0] === f; };
+      /* 避けている人（avoid-kit.js の HK.Avoid）は、強引に出る側にならない（2026-10-28） */
+      var P = HK.Pos, can = function (f, o) { return (!P || P.order(f, o, [f, o])[0] === f) && !(HK.Avoid && HK.Avoid.of(x, f, o)); };
       return H.forceful(x, a, b) && can(a, b) ? a : H.forceful(x, b, a) && can(b, a) ? b : null;
     },
     /* a が b を敵視している二人（a→b）。lv は a の嫌悪レベル */
