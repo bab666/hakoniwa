@@ -118,7 +118,7 @@
   /* 登録順（reg）：住人を足した時刻（同じミリ秒に続けて足しても順が崩れないよう、前の値より必ず大きくする）。並び替えたあとも「登録順に戻す」で戻せる */
   var lastReg = 0;
   function newReg() { var t = Date.now(); if (t <= lastReg) t = lastReg + 1; lastReg = t; return t; }
-  function mk(c) { var o = { id: uid(), reg: newReg(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', tags: c.tags ? str(c.tags, 80).trim() : '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', posLike: c.posLike || '', color: c.color || '', loveLock: idList(c.loveLock), sexLock: c.sexLock || '', sexLocks: idList(c.sexLocks), loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
+  function mk(c) { var o = { id: uid(), reg: newReg(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', tags: c.tags ? str(c.tags, 80).trim() : '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', color: c.color || '', loveLock: idList(c.loveLock), sexLock: c.sexLock || '', sexLocks: idList(c.sexLocks), loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
 
   /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
@@ -181,7 +181,6 @@
     if (['', 'm', 'f', 'x'].indexOf(c.gender || '') < 0) c.gender = '';
     if (['', 'm', 'f', 'both', 'none'].indexOf(c.likes || '') < 0) c.likes = '';
     if (['', 'top', 'bottom', 'riba'].indexOf(c.pos || '') < 0) c.pos = '';
-    if (['', 'tb', 'tr', 'br', 'any'].indexOf(c.posLike || '') < 0) c.posLike = '';
     migUserTone(c);
     c.tone = okTone(c.tone) ? c.tone || '' : '';
     /* 喘ぎの口調（R18版。moan-engine.js）：決めたときだけ持つ。空ならいつもの口調 */
@@ -785,7 +784,6 @@
       chars: list.map(function (c) {
         var o = { name: c.name, code: HK.toCode(c.eg), eg: c.eg, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '' };
         if (c.tags) o.tags = c.tags;
-        if (c.posLike) o.posLike = c.posLike;
         if (c.reg) o.reg = c.reg;
         if (c.icon) o.icon = c.icon;
         if (c.color) o.color = c.color;
@@ -870,7 +868,6 @@
       if (['', 'm', 'f', 'x'].indexOf(o.gender || '') >= 0) c.gender = o.gender || '';
       if (['', 'm', 'f', 'both', 'none'].indexOf(o.likes || '') >= 0) c.likes = o.likes || '';
       if (['', 'top', 'bottom', 'riba'].indexOf(o.pos || '') >= 0) c.pos = o.pos || '';
-      if (['', 'tb', 'tr', 'br', 'any'].indexOf(o.posLike || '') >= 0) c.posLike = o.posLike || '';
       if (o.tone == null || o.tone === '' || (HK.toneValid ? HK.toneValid(o.tone) : HK.PERSONA[o.tone])) c.tone = o.tone || '';
       if (typeof o.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(o.color)) c.color = o.color;
       if (typeof o.call === 'string') c.call = o.call;
@@ -1277,7 +1274,7 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' ? c.sexLock : c.sexLock === 'pick' || c.sexLock === 'pickMob' ? lockIdx(c.sexLocks) : '', sexLockMob: c.sexLock === 'pickMob' && idList(c.sexLocks).length > 0, loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' ? c.sexLock : c.sexLock === 'pick' || c.sexLock === 'pickMob' ? lockIdx(c.sexLocks) : '', sexLockMob: c.sexLock === 'pickMob' && idList(c.sexLocks).length > 0, loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
           /* 喘ぎの口調（R18版。全年齢モードでは渡さない） */
           if (!HK.SAFE_ON) ['moanTone', 'moanDict', 'moanDictT', 'moanFit'].forEach(function (k) { if (c[k]) o[k] = c[k]; });
           return HK.Attr ? HK.Attr.toInput(o, c, ids) : o;

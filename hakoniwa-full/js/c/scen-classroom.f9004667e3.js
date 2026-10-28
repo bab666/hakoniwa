@@ -1427,6 +1427,7 @@ FC:L('{t}は一瞬目を丸くして、それから困ったように頭をか�
 AC:L('{t}は真っ赤になって、手に持っていた出席簿を取り落とした。{t}「ご、ごめん……それは、受け取れない｜す、すまない……それは、受け取れない｜ご、ごめんなさい……それは、受け取れません」――拾い上げた出席簿で顔を隠すようにして、{t}は足早に教室を出ていった。{s}は、追いかけることができなかった。')
 }
 };
+var CONF_PUSH=L('{s}は、もう引かないつもりで、{t}に想いを打ち明けた。{t}は目を伏せて、先生として断ろうとした。{s}「答えをもらうまで、帰らない｜答えをもらうまで、帰らない｜答えをもらうまで、帰りません」――まっすぐな目に見つめられて、{t}は言葉に詰まった。{t}「……だめだって、分かってるのに｜……だめだと、分かっているのに｜……だめだって、分かっているのに」――{t}が小さく頷いたのは、押し切られたからなのか、本当は待っていたからなのか、{t}自身にも分からなかった。|準備室の扉の前で、{s}は{t}の袖をつかんで離さなかった。{t}は何度も廊下の方を振り返り、そのたびに{s}の顔に目を戻した。{t}「……誰にも、言わないって約束して｜……誰にも、言わないと約束してくれ｜……誰にも、言わないって約束してください」――断る言葉を探しているうちに、{t}はとうとう流されてしまった。その日から、二人は誰にも言えない秘密を持つことになった。|{s}の告白に、{t}は青い顔で首を振った。けれど{s}は引かなかった。{s}「先生が困るのは分かってる。それでも、好き｜先生が困るのは分かっている。それでも、好きだ｜先生が困るのは分かってます。それでも、好きです」――{t}は長いあいだ黙っていた。やがて、消え入りそうな声で答えた。「＠{t}＠……少しだけ、なら｜……少しだけ、なら｜……少しだけ、でしたら」――それが、二人の秘密の始まりだった。');
 var CONF_LAW={
 t:L('{t}は放課後の準備室に{s}を呼び、扉を閉めるなり言った。{t}「回りくどいのは嫌い。あなたが好き。……私と付き合って｜回りくどいのは嫌いだ。あなたが好きだ。……私と付き合え｜回りくどいのは嫌いです。あなたが好きです。……私と付き合ってください」――{s}が「＠{s}＠でも、先生なのに……｜だが、先生なのに……｜でも、先生なのに……」と言いかけると、{t}は眉ひとつ動かさなかった。{t}「問題ない。私が決める｜問題ない。私が決める｜問題ありません。私が決めます」――{s}は、頷くほかなかった。|廊下ですれ違いざま、{t}は{s}の手首をつかんで、空き教室に引き入れた。{t}「卒業まで待つ気はない。今、返事をして｜卒業まで待つ気はない。今、返事をしろ｜卒業まで待つ気はありません。今、返事をしてください」――{s}が驚いて扉の方を見ると、{t}は小さく鼻で笑った。{t}「立場？ 知ったことじゃない｜立場？ 知ったことではない｜立場？ 知ったことじゃありません」――{s}は真っ赤になって、小さく頷いた。|帰りの車の中で、{t}はハンドルを握ったまま言った。{t}「あなたを、私のものにしたい。誰が何を言おうと関係ない｜あなたを、私のものにしたい。誰が何と言おうと関係ない｜あなたを、私のものにしたいんです。誰が何を言おうと関係ありません」――あまりにまっすぐな言葉に、{s}は思わず笑ってしまった。笑いながら、{s}は「＠{s}＠……うん｜……ああ｜……はい」と答えていた。'),
 s:L('{s}の告白を、{t}は最後まで聞かなかった。途中で{s}の顎に指をかけ、上を向かせた。{t}「知ってた。……私も同じ｜知っていた。……私も同じだ｜知ってました。……私も同じです」――{s}が「＠{s}＠でも、先生は……｜だが、先生は……｜でも、先生は……」と言いかけると、{t}は首を振った。{t}「先生だから何？ 私が決める｜教師だから何だ？ 私が決める｜先生だから何ですか？ 私が決めます」|{s}が震える声で想いを告げると、{t}はあっさり頷いた。{t}「いいよ。付き合おう｜いいだろう。付き合おう｜いいですよ。付き合いましょう」――あまりに簡単な答えに、{s}のほうが慌てた。{t}「規則？ そんなもの、どうにでもなる｜規則？ そんなもの、どうにでもなる｜規則？ そんなもの、どうにでもなります」――{t}はそう言って、{s}の頭を軽く撫でた。|{s}の告白を聞くと、{t}は面白そうに目を細めた。{t}「先に言われるとは思わなかった。……いいよ、私のものになって｜先に言われるとは思わなかった。……いいだろう、私のものになれ｜先に言われるとは思いませんでした。……いいですよ、私のものになってください」――{t}は周りに誰がいるかも確かめずに、{s}の手を握った。{s}のほうが慌てて、廊下の左右を見回した。')
@@ -1592,22 +1593,30 @@ if(goS())return confS(ctx,t,s,st,scr);
 if(scr.v>=0.35&&goT())return confT(ctx,t,s,st,scr);
 }
 function canPair(ctx,t,s){return free(ctx,s,t)&&free(ctx,t,s)&&(!HK.Poly|| !HK.Poly.canCouple||HK.Poly.canCouple(ctx,t,s));}
+function pushP(ctx,t,s,scr){
+var ac=t.tr.ac,rs=R(ctx,s,t);
+if(ac<0.6||scr.duty||scr.law||scr.kind==='law')return 0;
+return HK.clamp((ac-0.5)*(1.2-scr.v)*3*(0.6+Math.max(0,rs.att-40)/50+s.tr.fc*0.15),0,0.5);
+}
 function confS(ctx,t,s,st,scr){
 var rt=R(ctx,t,s);
 var yes=rt.att>=28-(0.5-scr.v)*16&&canPair(ctx,t,s)&&ctx.rng()<HK.clamp(0.78-scr.v*0.75+rt.att/150+t.tr.ac*0.08,0.02,0.95);
+var pP=yes?0:pushP(ctx,t,s,scr);
+var push=pP>0&&rt.att>=10&&canPair(ctx,t,s)&&ctx.rng()<pP;
+if(push)yes=true;
 var hold= !yes&&s.grade===3&&ctx.env.span!=='term'&&rt.att>=14&&scr.v>=0.45;
 var res=yes?'yes':hold?'hold':'no';
-var list=res==='yes'?(scr.law?CONF_LAW.s:CONF_S.yes):scr.duty?CONF_DUTY[res]:res==='no'?CONF_S.no[top(t)]||CONF_S.no.NP:CONF_S[res];
+var list=res==='yes'?(push?CONF_PUSH:scr.law?CONF_LAW.s:CONF_S.yes):scr.duty?CONF_DUTY[res]:res==='no'?CONF_S.no[top(t)]||CONF_S.no.NP:CONF_S[res];
 var ok=false;
 ctx.act2({actors:[s,t],cat:'romance',mag:res==='yes'?25:15,
 fx:function(){
 ctx.pair(t,s).confessed[s.i]=true;
-if(res==='yes'){ok=couple(ctx,t,s,'s');if(ok)ctx.mod2(s,t,{att:8,aff:8,trust:6},{att:10,aff:8,trust:6});}
+if(res==='yes'){ok=couple(ctx,t,s,'s');if(ok){if(push){ctx.mod2(s,t,{att:8,aff:8,trust:6},{att:6,aff:4,trust:2});ctx.stress(t,8);}else ctx.mod2(s,t,{att:8,aff:8,trust:6},{att:10,aff:8,trust:6});}}
 else if(res==='hold'){st.hold=true;st.holdAt=ctx.stepIndex;ctx.mod2(s,t,{trust:6},{att:4,trust:4});}
 else{st.noUntil=ctx.stepIndex+4;ctx.stress(s,18);ctx.mod(s,t,{att: -10});}
 },
 text:F(ctx,pick(ctx,list),{t:t,s:s}),
-why:'先生と生徒の恋：'+s.name+'から告白（'+s.name+'→先生 惹かれ '+Math.round(R(ctx,s,t).att)+'）／'+t.name+'の側：惹かれ '+Math.round(rt.att)+'・'+(res==='yes'?'受け入れた。隠れて付き合う':res==='hold'?'「卒業するまで待って」':'先生として断った（'+top(t)+'優位）')+'。'+scr.why});
+why:'先生と生徒の恋：'+s.name+'から告白（'+s.name+'→先生 惹かれ '+Math.round(R(ctx,s,t).att)+'）／'+t.name+'の側：惹かれ '+Math.round(rt.att)+'・'+(res==='yes'?(push?'押し切られて受け入れた（AC 高：強く迫られて流された）。隠れて付き合う':'受け入れた。隠れて付き合う'):res==='hold'?'「卒業するまで待って」':'先生として断った（'+top(t)+'優位）')+'。'+scr.why});
 }
 function confT(ctx,t,s,st,scr){
 var rs=R(ctx,s,t),yes=rs.att>=26&&rs.aff>=10&&canPair(ctx,t,s);
@@ -3218,4 +3227,4 @@ HK.Load.toneData("keigo_bossy",{"F":[
 HK.Load.toneData("keigo_flat",{"F":[
 ["味見はしたので、たぶん大丈夫です","味見は済んでいます。問題ないはずです",1]]});
 });
-HK.Load.done('scen-classroom', '09fa4a43ff', 1);
+HK.Load.done('scen-classroom', 'f9004667e3', 1);

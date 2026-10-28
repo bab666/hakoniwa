@@ -245,10 +245,10 @@
       '<div class="gearsec"><h3>体と設定' + (HK.Tips ? HK.Tips.btn('gear-body') : '') + '</h3>' + (HK.Attr ? HK.Attr.gearHtml(c, others, { esc: esc, opt: opt, selOf: selOf }) : '') + partRow + '</div>' +
       /* ③'箱庭の能力：箱庭をまたいで共通の能力値・欄（体力・運・推理力・特殊役職 など。shared-stats.js） */
       (HK.Shared && HK.Shared.shown().length ? '<div class="gearsec"><h3>箱庭の能力' + (HK.Tips ? HK.Tips.btn('gear-ab') : '') + '</h3>' + HK.Shared.gearHtml(c, { esc: esc, opt: opt }) + '</div>' : '') +
-      /* ④恋愛（R18版は恋愛と夜）：受け攻め・恋愛対象（受け攻め）・恋愛相手の固定・一途・恋愛にしない相手（R18：性行為の相手の固定・R18に参加しない・夜の性格・ふたなり など） */
+      /* ④恋愛（R18版は恋愛と夜）：受け攻め・恋愛相手の固定・一途・恋愛にしない相手（R18：性行為の相手の固定・R18に参加しない・夜の性格・ふたなり など） */
       '<div class="gearsec"><h3>' + (HK.SAFE_ON ? '恋愛' : '恋愛と夜') + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3>' +
       '<div class="gearrow"><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
-        '<label>恋愛対象（受け攻め） ' + selOf('posLike', (HK.Pos ? HK.Pos.LIKE_OPTS : []).map(function (o) { return [o.v, o.label]; }), c.posLike || '') + '</label>' + nightRow + '</div>' +
+        nightRow + '</div>' +
       '<div class="gearrow">' + sexSel + '<label title="恋人ができたら、その恋人がいる間は、ほかの人と恋愛・夜の場面になりません（浮気しない）。恋人がいないうちは、ふつうに恋をします"><input type="checkbox" data-gf="faithful"' + (c.faithful ? ' checked' : '') + '> 一途（恋人ができたら、ほかの人に惹かれない・浮気しない）</label></div>' + r18Row +
       lockBox + sexBox + ngRow + '</div>' +
       /* ⑤相手ごとの設定：関係・呼び方・二人称/一人称・受け攻め・夜の性格・同一人物（闇堕ちVer） */
@@ -383,7 +383,6 @@
       case 'partF': c.partF = t.value.replace(/[「」『』{}]/g, '').trim().slice(0, 10); changed(false); break;
       case 'alcohol': if (isInput) return; c.alcohol = HK.ALC_OK(t.value) ? t.value : ''; changed(true); break;
       case 'posNpc': if (isInput) return; c.posNpc = HK.Pos ? HK.Pos.npcValid(t.value) : ''; changed(false); break;
-      case 'posLike': if (isInput) return; c.posLike = HK.Pos && HK.Pos.likeValid(t.value) ? t.value : ''; changed(false); break;
       case 'colorauto': if (isInput) return; if (t.checked) c.color = ''; else c.color = (ov.querySelector('[data-gf="color"]') || {}).value || '#3d6f93'; changed(true); UI.applyColors(s.chars); break;
       case 'color': if (/^#[0-9a-fA-F]{6}$/.test(t.value)) { c.color = t.value; UI.applyColors(s.chars); changed(false); } break;
       /* 恋愛相手の固定（複数可）：印を付けた相手は「恋愛にしない相手」から外す */
