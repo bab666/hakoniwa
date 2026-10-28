@@ -146,7 +146,8 @@
     id: 'moan', label: '喘ぎ', keys: KEYS, resetKeys: KEYS,
     charHtml: charHtml, sum: sum, field: field,
     globalHtml: function () { return A ? A.body() : ''; },
-    after: function (c) { if (!c && A) A.afterRender(); },
+    /* 住人のとき：辞書の欄を中身に合わせて伸ばす（ui-adv.js の A.growAll。2026-10-28 担当LD） */
+    after: function (c) { if (!c && A) A.afterRender(); else if (A && A.growAll) A.growAll(document.getElementById('vs-panel')); },
     act: function (act, c, el) { return !!(G() && G().act(act, c, el)); },
     toChar: toChar, fromChar: fromChar, mergeAdv: mergeAdv
   });

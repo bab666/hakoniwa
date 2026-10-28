@@ -28,8 +28,7 @@
     var css = ':root{' + L.join(';') + '}@media (prefers-color-scheme: dark){:root:not([data-theme="light"], [data-theme="gray"]){' + D.join(';') + '}}:root[data-theme="dark"]{' + D.join(';') + '}:root[data-palette="mono"]{' + M.join(';') + '}' +
       /* 住人が多いとき（最大 MAX 人）の一覧：画面の外の行は描画を後回しにする（対応していないブラウザでは何もしない） */
       '#castlist .res{content-visibility:auto;contain-intrinsic-size:auto 132px}' +
-      /* 関係の行も同じ（住人1000人・関係300本で、住人タブの描画が 3秒台 → 1秒ほど）。min-width:0 は、スマホの幅で欄が折り返さずに横にはみ出していたのを直す */
-      '#view-cast .tierow{content-visibility:auto;contain-intrinsic-size:auto 96px;min-width:0}' +
+      /* 関係の行の描画の後回し（content-visibility）は ui-ties.js の CSS */
       /* 箱庭のデータを読み込み中・失敗の印（load.js）：カードの高さを変えないように右上に重ねる。設定欄の仮表示は高さを確保して、読み終えたときのずれを小さく */
       '.scen .scload{position:absolute;top:-9px;right:8px;z-index:1;font-family:var(--f-num);font-size:10.5px;letter-spacing:.06em;line-height:1.5;padding:0 6px;border:1px solid var(--ink);border-radius:3px;background:var(--paper);color:var(--ink);pointer-events:none;white-space:nowrap}' +
       '.scen .scload.ng{background:var(--paper);color:var(--ink);border-style:dashed;pointer-events:auto}.scen .scload.ng button{font:inherit;color:inherit;background:none;border:0;padding:0 0 0 4px;text-decoration:underline;cursor:pointer}' +
@@ -682,46 +681,10 @@
     var v = t.value; t.innerHTML = charOpts(v); t.value = v;
   }
   ['focusin', 'mousedown', 'touchstart', 'keydown'].forEach(function (k) { document.addEventListener(k, tieFill, true); });
-  /* きょうだいの関係の行：二人の続柄（「美咲（姉）→ 健（弟）：兄弟（庇護）」）と注意（年齢が未設定・同じ年齢・庇護の向きと年齢が逆）を添える（sib-word.js） */
-  function sibText(t) {
-    if (!HK.Sib || !HK.Sib.ui || !HK.tieText || !(HK.Sib.isSibTie(t) || t.type === 'stepsib')) return '';
-    var byId = function (id) { return S.chars.filter(function (c) { return c.id === id; })[0] || null; };
-    var A = byId(t.a), B = byId(t.b);
-    if (!A || !B) return '';
-    var tx = HK.tieText(t, function (id) { var c = byId(id); return c ? c.name : ''; }, byId), u = HK.Sib.ui(A, B, t);
-    return '<b>' + esc(tx) + '</b>。' + (u && u.notes.length ? esc(u.notes.join('。')) + '。' : '');
-  }
+  /* 住人どうしの既存の関係の節（関係の行・グループの見出し・一括設定。ui-ties.js。このファイルより前に読む） */
   function tiesSection() {
     cleanTies();
-    var byId = {}, lz = S.chars.length > TIE_LAZY ? ' data-lazy="1"' : '';
-    S.chars.forEach(function (c) { byId[c.id] = c; });
-    var tieRow = function (t, k) {
-      var D = HK.TIES[t.type];
-      return '<div class="tierow" data-k="' + k + '">' +
-        '<select id="ta-' + k + '" data-f="tie" data-k="' + k + '" data-p="a"' + lz + ' aria-label="関係の起点">' + tieCharOpts(t.a, byId) + '</select>' +
-        '<select id="tt-' + k + '" data-f="tie" data-k="' + k + '" data-p="type"' + (lz && CP ? ' data-lazyt="1"' : '') + ' aria-label="関係の種類">' + (lz && CP ? CP.typeOpt(t.type) : HK.tieOptions ? HK.tieOptions(t.type, { dir: true }) : HK.TIE_ORDER.map(function (id) { var d = HK.TIES[id]; return '<option value="' + id + '"' + (id === t.type ? ' selected' : '') + '>' + esc(d.label) + (d.dir ? '（' + d.roleA + '→' + d.roleB + '）' : '') + '</option>'; }).join('')) + '</select>' +
-        '<select id="tb-' + k + '" data-f="tie" data-k="' + k + '" data-p="b"' + lz + ' aria-label="関係の相手">' + tieCharOpts(t.b, byId) + '</select>' +
-        ((D.family && !D.loveOK) || D.loveOpt ? '<select id="tl-' + k + '" data-f="tie" data-k="' + k + '" data-p="love" aria-label="恋愛"><option value=""' + (t.love === 'ok' ? '' : ' selected') + '>' + (D.loveOpt ? '恋愛に発展：しない' : '恋愛：なし') + '</option><option value="ok"' + (t.love === 'ok' ? ' selected' : '') + '>' + (D.loveOpt ? '恋愛に発展：する' : '恋愛：あり') + '</option></select>' : '') +
-        (function () { var CO = HK.coldOpts ? HK.coldOpts(t.type) : null; return CO ? '<select id="tc-' + k + '" data-f="tie" data-k="' + k + '" data-p="cold" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return '<option value="' + id + '"' + ((t.cold || '') === id ? ' selected' : '') + '>' + esc(CO.map[id].label) + '</option>'; }).join('') + '</select>' : ''; })() +
-        /* 追加の欄（型・度合い・気持ち・様子。許嫁は二人それぞれの気持ち） */
-        /* hide の欄（敵対の度合い「憎悪」）は出さない（保存済みの値は残って効く）。愛憎の欄は、一人目・二人目を名前で出す */
-        (HK.tieExtra ? HK.tieExtra(t.type) : []).filter(function (x) { return !x.hide; }).map(function (x) {
-          var who = x.who ? S.chars.filter(function (c) { return c.id === (x.who === 'a' ? t.a : t.b); })[0] : null, v = t[x.f] || (t.type === 'fiance' ? 'eager' : '');
-          var na = (S.chars.filter(function (c) { return c.id === t.a; })[0] || {}).name, nb = (S.chars.filter(function (c) { return c.id === t.b; })[0] || {}).name;
-          return '<select id="tx' + x.f + '-' + k + '" data-f="tie" data-k="' + k + '" data-p="' + x.f + '" aria-label="' + esc(who ? who.name + 'の気持ち' : x.aria) + '">' + x.order.map(function (id) { return '<option value="' + id + '"' + (v === id ? ' selected' : '') + '>' + esc((who ? who.name + 'の気持ち：' : '') + (HK.tieExtraLabel ? HK.tieExtraLabel(x, id, na, nb) : x.map[id].label)) + '</option>'; }).join('') + '</select>';
-        }).join('') +
-        '<button class="btn ghost small" data-act="tiedel" data-k="' + k + '">削除</button>' +
-        '<span class="tiehint">' + sibText(t) + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (t.love === 'ok' && D.family ? '。恋愛：ありにしているので、恋愛に発展することもある（信頼が崩れにくいのは同じ）' : '') + (D.loveOpt ? (t.love === 'ok' ? '。恋愛に発展：するにしているので、想いが恋に変わることもある' : '。恋愛に発展：しないにしているので、想いは恋にならない') : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '') + '</span></div>';
-    };
-    /* 関係が多いとき・住人のページ送りがあるときは、表示する関係の選択・名前で探す・50本ずつのページ送り（ui-cast-pages.js） */
-    var rows = CP ? CP.tieHtml(tieRow) : S.ties.map(tieRow).join('');
-    return '<h2 class="sec">住人どうしの既存の関係' + (HK.Tips ? HK.Tips.btn('ties') : '') + '</h2>' +
-      '<p class="hint">箱庭に入る前からある関係です。初期の好意や信頼が変わり、行動の傾向にも補正がかかります。各住人の「設定」からも編集できます。</p>' +
-      '<div class="tiebox"><div class="ties">' + (rows || '<p class="hint" style="margin:0">まだ関係は登録されていません。</p>') + '</div>' +
-      '<div class="row" style="margin-top:8px"><button class="btn" data-act="tieadd"' + (S.chars.length < 2 ? ' disabled' : '') + '>関係を1つ追加</button></div>' +
-      '<div style="margin-top:12px"><textarea id="tiebulk" rows="3" placeholder="朝霧→鷹野 片想い（脈なし）\n鷹野-白石 親友\n白石とミナトは恋人\n朝霧 鷹野 白石 同僚\n3年A組 同級生"></textarea>' +
-      '<div class="row" style="margin-top:6px"><button class="btn" data-act="tieimport">まとめて読み込む</button><span class="fmt">1行に「名前 名前 関係」。3人以上の名前（「名前 名前 名前 チーム」）や、グループ名（「3年A組 同級生」）を書くと、全員の組にまとめて付けます（上司と部下などの向きのある関係は、最初の人→残りの全員）。書き方は見出しの ？ にあります。</span></div>' +
-      '<ul class="warn" id="tiewarns" hidden></ul></div></div>';
+    return HK.TiesUI ? HK.TiesUI.section({ opts: tieCharOpts, lazy: S.chars.length > TIE_LAZY }) : '';
   }
 
   /* 「【グループ名】」「# グループ名」「グループ：〇〇」の行から下を、そのグループとして読む */

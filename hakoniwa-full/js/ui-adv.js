@@ -18,9 +18,59 @@
   A.data = data;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   A.esc = esc;
+  /* 説明文の簡単な書式（sec.descFmt の節だけ。2026-10-28 担当LD）：1行ずつ
+       ■で始まる行 → 小見出し ／ ・で始まる行 → 箇条書き ／ 名前と内容を全角の縦棒で区切った行 → 表の行（左が見出しの列） ／ それ以外 → 段落。空行は区切り。
+       [ ] で囲んだ所（辞書の見出しの書き方）は枠付きの印にする。文字はすべてエスケープしてから組む */
+  function inl(s) { return esc(s).replace(/\[[^\[\]]{1,40}\]/g, function (m) { return '<code>' + m + '</code>'; }); }
+  A.fmt = function (text) {
+    var out = [], list = null, tbl = null;
+    function flush() { if (list) out.push('<ul>' + list.join('') + '</ul>'); if (tbl) out.push('<table>' + tbl.join('') + '</table>'); list = tbl = null; }
+    String(text || '').split('\n').forEach(function (raw) {
+      var l = raw.replace(/^\s+|\s+$/g, ''), m;
+      if (!l) { flush(); return; }
+      if (l.charAt(0) === '■') { flush(); out.push('<div class="advh">' + inl(l.replace(/^■\s*/, '')) + '</div>'); return; }
+      if (l.charAt(0) === '・') { if (tbl) flush(); (list = list || []).push('<li>' + inl(l.slice(1)) + '</li>'); return; }
+      if ((m = l.match(/^([^｜\[]{1,16})｜(.+)$/))) { if (list) flush(); (tbl = tbl || []).push('<tr><th scope="row">' + inl(m[1]) + '</th><td>' + inl(m[2]) + '</td></tr>'); return; }
+      flush(); out.push('<p>' + inl(l) + '</p>');
+    });
+    flush();
+    return out.join('');
+  };
+  /* 中身に合わせて欄を伸ばす（data-grow の textarea。画面の高さの 7 割まで。それより長ければ欄の中でスクロール） */
+  A.grow = function (el) {
+    if (!el || el.tagName !== 'TEXTAREA' || !el.hasAttribute('data-grow')) return;
+    /* 閉じた折りたたみの中など、描かれていない欄は測れないので触らない（開いたときに下の toggle で伸ばす） */
+    if (!el.getClientRects().length) return;
+    var mx = Math.max(240, Math.round((window.innerHeight || 800) * 0.7)), y = window.pageYOffset;
+    el.style.height = 'auto';
+    var h = el.scrollHeight + 2;
+    el.style.height = Math.min(h, mx) + 'px';
+    el.style.overflowY = h > mx ? 'auto' : 'hidden';
+    if (Math.abs(window.pageYOffset - y) > 1) window.scrollTo(0, y);
+  };
+  A.growAll = function (root) { if (root && root.querySelectorAll) Array.prototype.forEach.call(root.querySelectorAll('textarea[data-grow]'), A.grow); else if (!root) A.growAll(document); };
+  document.addEventListener('toggle', function (e) { var d = e.target; if (d && d.open && d.querySelector && d.querySelector('textarea[data-grow]')) A.growAll(d); }, true);
+  (function () {
+    if (!document.head || document.getElementById('adv-css')) return;
+    var st = document.createElement('style');
+    st.id = 'adv-css';
+    st.textContent = '.advdesc{font-size:12.5px;color:var(--muted);margin:4px 0 8px;line-height:1.7}.advdesc p{margin:3px 0}' +
+      '.advdesc .advh{font-weight:700;font-size:13px;color:var(--ink);margin:12px 0 3px}.advdesc .advh:first-child{margin-top:4px}' +
+      '.advdesc ul{margin:2px 0 4px;padding-left:1.3em}.advdesc li{margin:2px 0}' +
+      '.advdesc table{border-collapse:collapse;width:100%;margin:2px 0 6px}.advdesc th,.advdesc td{text-align:left;vertical-align:top;padding:4px 0;border-top:1px solid var(--line)}' +
+      '.advdesc tr:first-child th,.advdesc tr:first-child td{border-top:0}.advdesc th{white-space:nowrap;font-weight:600;color:var(--ink);padding-right:12px;width:1%}' +
+      '.advdesc code{font-family:inherit;font-size:inherit;background:var(--soft,rgba(127,127,127,.12));border:1px solid var(--line);border-radius:3px;padding:0 3px;white-space:nowrap}' +
+      '.advtools{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin:6px 0}.advtools label{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:13px;color:var(--muted);min-width:0;max-width:100%}' +
+      '.advtools select{max-width:100%;min-width:0}.advtools .advmsg{flex-basis:100%;font-size:12px;color:var(--muted);margin:0}.advtools .advmsg:empty{display:none}' +
+      /* 狭い画面：表の行は、名前の下に内容（名前が折れて読みにくくならないように） */
+      '@media (max-width:520px){.advdesc tr{display:block;border-top:1px solid var(--line);padding:4px 0}.advdesc tr:first-child{border-top:0}' +
+      '.advdesc th,.advdesc td{display:block;border-top:0;padding:0;width:auto;white-space:normal}.advdesc code{white-space:normal}}';
+    document.head.appendChild(st);
+  })();
   /* sec: { id, title, desc, placeholder, rows, apply(text) → { errors: [] }, extra() → html（任意）, onAct(act, el)（任意）,
        html() → 欄の中身（任意。textarea の代わり。中の入力は data-f="adv" data-k="<id>" にすると onInput(el) に届く）, onInput(el)（任意）, after()（任意。描いたあと）,
-       before: 先に出す節の id（任意。その節の上に並べる） } */
+       before: 先に出す節の id（任意。その節の上に並べる）,
+       descFmt: 真なら desc を上の A.fmt の書式で描く, tools() → 欄の上に出すボタンなど（任意）, grow: 真なら欄が中身に合わせて伸びる（A.grow） } */
   A.add = function (sec) {
     if (A.RETIRED[sec.id]) return;
     if (!A.secs.some(function (s) { return s.id === sec.id; })) {
@@ -53,8 +103,9 @@
     return '<p class="hint" style="margin-top:0">辞書や調整を変えて、箱庭全体の既定を自分好みにできます。空欄なら組み込みのまま。書いた内容はこのブラウザに保存され、JSONの書き出し（全員）とセーブ・履歴の写しにも入ります。</p>' +
       A.secs.map(function (s) {
         return '<div class="advsec" style="margin-top:12px"><div class="lab" style="font-weight:600">' + esc(s.title) + '</div>' +
-          (s.desc ? '<div class="desc" style="font-size:12px;color:var(--muted);white-space:pre-wrap;margin:4px 0">' + esc(s.desc) + '</div>' : '') +
-          (s.html ? s.html() : '<textarea data-f="adv" data-k="' + esc(s.id) + '" rows="' + (s.rows || 8) + '" placeholder="' + esc(s.placeholder || '') + '" spellcheck="false">' + esc(data[s.id] || '') + '</textarea>' +
+          (s.desc ? (s.descFmt ? '<div class="desc advdesc">' + A.fmt(s.desc) + '</div>' : '<div class="desc" style="font-size:12px;color:var(--muted);white-space:pre-wrap;margin:4px 0">' + esc(s.desc) + '</div>') : '') +
+          (s.tools ? '<div class="advtools">' + s.tools() + '</div>' : '') +
+          (s.html ? s.html() : '<textarea data-f="adv" data-k="' + esc(s.id) + '" rows="' + (s.rows || 8) + '"' + (s.grow ? ' data-grow="1"' : '') + ' placeholder="' + esc(s.placeholder || '') + '" spellcheck="false">' + esc(data[s.id] || '') + '</textarea>' +
           '<div class="desc" id="adv-err-' + esc(s.id) + '" style="font-size:12px;color:#b00;min-height:1.2em"></div>') +
           (s.extra ? s.extra() : '') + '</div>';
       }).join('');
@@ -62,7 +113,7 @@
   /* 見出し＋枠つき（以前の箱庭タブの形。いまは使っていないが、呼ぶ側のために残す） */
   A.html = function () { var b = A.body(); return b ? '<h2 class="sec">' + esc(A.LABEL) + '</h2><div class="panel">' + b + '</div>' : ''; };
   /* 欄の入力（ui.js の onField から） */
-  A.onInput = function (t) { var sec = A.secs.filter(function (s) { return s.id === t.dataset.k; })[0]; if (sec && sec.onInput) sec.onInput(t); else A.set(t.dataset.k, t.value); };
+  A.onInput = function (t) { var sec = A.secs.filter(function (s) { return s.id === t.dataset.k; })[0]; if (sec && sec.onInput) sec.onInput(t); else { A.set(t.dataset.k, t.value); A.grow(t); } };
   /* 節ごとのボタン（data-act="adv:…"） */
   A.onAct = function (act, el) { A.secs.forEach(function (s) { if (s.onAct) s.onAct(act, el); }); };
   /* JSON の書き出し・読み込み */
@@ -76,5 +127,5 @@
   A.pin = function (res) { if (pins && res && typeof res === 'object') pins.set(res, A.snap()); };
   A.of = function (res) { return pins && res && typeof res === 'object' && pins.has(res) ? pins.get(res) : A.snap(); };
   /* 描いたあとに、読めなかった行を出す */
-  A.afterRender = function () { A.secs.forEach(function (s) { var r = s.apply && data[s.id] ? s.apply(data[s.id]) : null; A.showErrors(s.id, r && r.errors); if (s.after) s.after(); }); };
+  A.afterRender = function () { A.secs.forEach(function (s) { var r = s.apply && data[s.id] ? s.apply(data[s.id]) : null; A.showErrors(s.id, r && r.errors); if (s.after) s.after(); }); A.growAll(); };
 })();

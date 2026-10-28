@@ -275,12 +275,13 @@
       if (q && !(hit(by[t.a], q) || hit(by[t.b], q))) return;
       ks.push(k);
     });
-    return ks;
+    /* グループの見出しでまとめるときは、節の順に並べる（ui-ties.js） */
+    return HK.TiesUI ? HK.TiesUI.sortKs(ks) : ks;
   }
   function tieBody(cv) {
     var T = X.S().ties || [], ks = tieList(cv), pages = Math.max(1, Math.ceil(ks.length / TIE_PAGE));
     st.tpage = clamp(st.tpage | 0, 0, pages - 1);
-    var from = st.tpage * TIE_PAGE, rows = ks.slice(from, from + TIE_PAGE).map(function (k) { return lastTieRow(T[k], k); }).join('');
+    var from = st.tpage * TIE_PAGE, sl = ks.slice(from, from + TIE_PAGE), rows = HK.TiesUI ? HK.TiesUI.rowsHtml(T, sl, lastTieRow, ks) : sl.map(function (k) { return lastTieRow(T[k], k); }).join('');
     if (!ks.length) rows = '<p class="hint" style="margin:0">' + (st.tq ? '「' + esc(st.tq) + '」に合う関係はありません。' : 'このページの住人に関わる関係はありません（「すべての関係」で、ほかの関係も見られます）。') + '</p>';
     return pager('tpage', '関係', st.tpage, pages, from, TIE_PAGE, ks.length, '本', '', 'top') + rows + pager('tpage', '関係', st.tpage, pages, from, TIE_PAGE, ks.length, '本', '', 'bottom');
   }
@@ -289,7 +290,7 @@
     lastTieRow = rowOf;
     if (!T.length) return '';
     var cv = castView();
-    if (!cv.paged && T.length <= TIE_PAGE) return T.map(rowOf).join('');
+    if (!cv.paged && T.length <= TIE_PAGE) { var all = T.map(function (t, k) { return k; }); return HK.TiesUI ? HK.TiesUI.rowsHtml(T, HK.TiesUI.sortKs(all), rowOf, all) : T.map(rowOf).join(''); }
     var mode = tieMode(cv);
     return '<div id="tiepages"><div class="row cptools">' +
       (cv.paged ? '<label class="hint">表示する関係 <select id="tmode" aria-label="表示する関係"><option value="page"' + (mode === 'page' ? ' selected' : '') + '>このページの住人に関わる関係</option><option value="all"' + (mode === 'all' ? ' selected' : '') + '>すべての関係（' + T.length + '本）</option></select></label>' : '') +
@@ -315,6 +316,8 @@
     if (ks.indexOf(k) < 0) { st.tmode = 'all'; ks = tieList(cv); }
     var at = ks.indexOf(k);
     if (at >= 0) st.tpage = Math.floor(at / TIE_PAGE);
+    /* グループの見出しを折りたたんでいれば開く（ui-ties.js） */
+    if (HK.TiesUI) HK.TiesUI.reveal(k);
   }
 
   /* ---------- 箱庭タブの参加者選び（住人が41人以上のとき。ui.js の renderBox が行の描画 rowOf を渡す） ---------- */

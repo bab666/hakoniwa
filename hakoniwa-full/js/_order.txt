@@ -399,6 +399,7 @@ js/scen-tags.js
 js/shared-stats.js
 js/ui-rand.js
 js/ui-cast-pages.js
+js/ui-ties.js
 js/ui-cast-tools.js
 js/ui-box-draw.js
 js/ui-import.js

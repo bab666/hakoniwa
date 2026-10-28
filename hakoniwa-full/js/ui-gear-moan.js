@@ -63,7 +63,13 @@
     if (HK.SAFE_ON || !c) return '';
     ctx = ctx || {};
     var f = M.ownFitNorm(c.moanFit) || {}, k = M.fitKind(toneOfC(c), c), o = c.moanOpt || {};
-    var ta = function (gf, v, ph) { return '<textarea data-gf="' + gf + '" rows="4" spellcheck="false" maxlength="' + M.OWN_MAX + '" placeholder="' + esc(ph) + '" style="width:100%;box-sizing:border-box;font-size:13px">' + esc(v || '') + '</textarea>'; };
+    var ta = function (gf, v, ph) { return '<textarea data-gf="' + gf + '" rows="6" data-grow="1" spellcheck="false" maxlength="' + M.OWN_MAX + '" placeholder="' + esc(ph) + '" style="width:100%;box-sizing:border-box;font-size:13px">' + esc(v || '') + '</textarea>'; };
+    /* 全場面の見出しを引き込む（ui-adv-moan.js の HK.MoanPull.toOwn。声はこの住人の今の声。2026-10-28 担当LD） */
+    var pr = function (side) {
+      return HK.MoanPull ? '<div class="gearrow"><button type="button" class="btn small" data-gact="moanpull" data-side="' + side + '" title="この欄に、' + (side === 't' ? '攻め' : '受け') + 'の全場面の見出しと、この住人の今の声（組み込み）を入れます">全場面の見出しを引き込む</button>' +
+        '<label title="見出しの末尾に「追加」を付けます。組み込みの声を消さずに、書いた行と半々で混ぜて使います"><input type="checkbox" id="gm-pull-add-' + side + '"> 「追加」の形で</label></div>' +
+        '<p class="gearhint" id="gm-pull-msg-' + side + '" aria-live="polite"></p>' : '';
+    };
     var amt = function (gf, v, label, title) { return '<label title="' + esc(title) + '">' + esc(label) + ' <select data-gf="' + gf + '" aria-label="' + esc(label) + '">' + AMOUNT.map(function (x) { return opt(x[0], x[1] + (x[0] === 'normal' ? '（既定）' : ''), v || 'normal'); }).join('') + '</select></label>'; };
     var head = ctx.flat ? '<p class="gearhint" style="margin:8px 0 0"><b>喘ぎの辞書・声の区分（この住人だけ）</b> <span class="gkn" id="gm-sum">' + esc(sumText(c)) + '</span></p>' :
       '<details class="gdet" data-k="gmoan"' + (ctx.open ? ' open' : '') + '><summary>喘ぎの辞書・声の区分（この住人だけ） <span class="gkn" id="gm-sum">' + esc(sumText(c)) + '</span></summary>';
@@ -72,12 +78,12 @@
       '<label><input type="checkbox" data-gf="moanFitMasc"' + (k.masc ? ' checked' : '') + '> 男性的な語尾を残す（女性でも「〜ぜ」「〜ぞ」）</label></div>' +
       '<p class="gearhint" id="gm-fit">' + esc(fitHint(c)) + '</p>' +
       '<p class="gearhint">はっきり：「やめて」→「やめろ」、泣き声の拒みは「むり」に／やわらかい：「やめろ」→「やめて」、「〜ぞ」→「〜よ」／古風・尊大：「〜ちゃう」→「〜てしまう」／区分なし：性別の整えだけ／整えない：表の文のまま。全体の設定の「喘ぎ声の調整」の口調ごとの区分より優先します。</p>' +
-      '<h4 style="margin:10px 0 2px;font-size:13px">受けのとき</h4>' +
+      '<h4 style="margin:10px 0 2px;font-size:13px">受けのとき</h4>' + pr('r') +
       ta('moanDict', c.moanDict, '[乗り気 1]\nん……っ|は、ぁ……\n[懇願 1]\nもっと……おねがい……\n[小説 最中]\nあ……っ、そこ……') +
       '<p class="gearhint" id="gm-err-r" style="color:var(--warn,#b00)">' + esc(errText(c.moanDict) || sideNote(c.moanDict, false)) + '</p>' +
       '<p class="gearhint">見出し [場面 段階] の下に1行1つ（「|」区切りでも可）。末尾に「追加」で、組み込みの声と半々で混ぜます。場面と段階：' + esc(M.modeList ? M.modeList(false) : '') + '／小説調 始まり 最中 果てる</p>' +
       '<div class="gearrow">' + amt('moanOptRetort', o.retort, '言い返しの多さ', '受けのときに、相手の言葉責め・焦らしに言い返す（「うるさい……っ」「全部、あなたのせいです……あっ！」など）多さです。なし／少なめ（1割5分）／ふつう（3割）／多め（6割）') + '</div>' +
-      '<h4 style="margin:10px 0 2px;font-size:13px">攻めのとき</h4>' +
+      '<h4 style="margin:10px 0 2px;font-size:13px">攻めのとき</h4>' + pr('t') +
       ta('moanDictT', c.moanDictT, '[攻め 1]\nっ……は、ぁ……\n[攻め 4]\nかわいい……もっと、声、聞かせて') +
       '<p class="gearhint" id="gm-err-t" style="color:var(--warn,#b00)">' + esc(errText(c.moanDictT) || sideNote(c.moanDictT, true)) + '</p>' +
       '<p class="gearhint">場面と段階：' + esc(M.modeList ? M.modeList(true) : '') + '</p>' +
@@ -115,7 +121,9 @@
       case 'moanDict': case 'moanDictT': {
         var v = String(t.value || '').slice(0, M.OWN_MAX);
         if (v.trim()) c[f] = v; else delete c[f];
-        changed(false); refresh(c); return true;
+        changed(false); refresh(c);
+        if (HK.Adv && HK.Adv.grow) HK.Adv.grow(t);
+        return true;
       }
       case 'moanFitKind': case 'moanFitMasc': {
         if (isInput && f === 'moanFitKind') return true;
@@ -147,8 +155,9 @@
     }
     return false;
   };
-  /* 見本のボタン */
-  G.act = function (act, c) {
+  /* 見本のボタン・全場面の見出しを引き込むボタン（data-gact="moanpull" data-side="r"|"t"） */
+  G.act = function (act, c, el) {
+    if (act === 'moanpull' && !HK.SAFE_ON && c) { if (HK.MoanPull) HK.MoanPull.toOwn(c, el && el.getAttribute('data-side')); return true; }
     if (act !== 'moandemo' || HK.SAFE_ON || !c) return false;
     var out = document.getElementById('gm-demo'), ks = document.getElementById('gm-key'), st = document.getElementById('gm-style');
     if (!out) return true;

@@ -24,6 +24,12 @@
        （鍵 w r h p b k o l t z j u a e でもよい。MODES に足した場面はどれも読む。台詞の場面の行は言い換えを通し、崩さない）
      [喘ぎ 共通 小説 始まり]         ← 描写の作風「小説調」の、始まり・最中・果てる声（鍵 n1〜n3。範囲は同じ。小説調の口調の表・態度の表より優先。嫌がる場面には使わない）
      「追加」は、共通なら組み込みの行に足し、口調=・態度=・住人=・住人の欄なら半々で組み込みの声と混ぜる
+     2026-10-28 担当LD（設定画面の「全場面の見出しを引き込む」で、どの見出しも書き換えが効くように）：
+       ・言葉だけの鍵（WORDS_ONLY：限界の拒絶・イく予告・名前を呼ぶ・拒絶・懇願・余韻など）の 共通 の行は、態度の基盤より先に使う（前は基盤が無いときの控えだけ）。「追加」なら半々
+       ・言葉のない鍵（短い喘ぎ・声を抑える・激しく・キス・口でしている・口でされる など。WORDS_ONLY でも MIX でもない鍵）の 口調=・態度= の行も使う（前は読むだけで効かなかった）。
+         優先は 住人の欄 ＞ 住人= ＞ 口調= ＞ 態度= ＞ 共通。言葉と混ぜる鍵（MIX）は今までどおり（共通＝言葉のない分、口調=・態度=＝言葉のある分）
+       ・利用者の行の {名}（相手の呼び方）・{p}（相手の性器の呼び方）は、どの範囲でも埋める（相手が分からなければ、その行は使わない）
+       利用者の辞書が空なら、何も変わらない（乱数の引き方も同じ）
    ■ 喘ぎ・攻めの声の作り直し（2026-10-28 担当M1。設計書 docs/reports/2026-10-27/moan-redesign.md）
      鍵を足した：攻め t6 決壊／言葉責め z0〜z3・焦らし j0〜j3・攻めの崩れ u0〜u6（3本の台詞。line: true）／受け w4 イく予告・w5 名前を呼ぶ／言い返し a0〜a3（3本の台詞）／余韻 e0
      ・t0〜t2・t6：態度ごとの声（moan-top-said.js の HK.MOAN_TOP_SAID）を先に（t0〜t2 は態度の表を共通の表の 2 倍の重みで、t6 は態度の表だけ）。E.moan の段階2・M.say の top で 3 割前後 t6
@@ -73,6 +79,8 @@
 
   /* SET_RATE：喘ぎの口調を決めた人は、口調の語尾・口調ごとの喘ぎを使う割合をこちらに上げる（決めた口調が聞こえるように） */
   var M = HK.Moan = { MODES: MODES, user: null, TONE_RATE: 0.25, TONE_MOAN_RATE: 0.25, SET_RATE: 0.5, map: null };
+  /* 鍵の種類（設定画面の「全場面の見出しを引き込む」が、範囲ごとに効く声を選ぶのに使う。ui-adv-moan.js。読むだけ） */
+  M.KEY_KIND = { words: WORDS_ONLY, mix: MIX };
   M.keys = function () { var out = []; Object.keys(MODES).forEach(function (m) { MODES[m].stages.forEach(function (s, i) { out.push({ key: m + i, mode: m, stage: i, label: MODES[m].label + '・' + s }); }); }); return out; };
   M.label = function (key) { var m = MODES[key.charAt(0)], i = +key.slice(1); return m && m.stages[i] ? m.label + '・' + m.stages[i] : key; };
 
@@ -396,6 +404,8 @@
     var U = M.user, ps = psOf(who, ctx), tone = toneOf(who), lg = LEGACY[key];
     var ut = U ? ulist(S, U.tone[tone], key, U.adds['tone:' + tone]) : null; if (ut) return { list: ut, src: 'user' };
     var up = U ? ulist(S, U.persona[ps], key, U.adds['persona:' + ps]) : null; if (up) return { list: up, src: 'user' };
+    /* 言葉だけの鍵の 共通 の行（2026-10-28 担当LD） */
+    var us = U && WORDS_ONLY[key] ? ulist(S, U.shared, key, U.adds.shared) : null; if (us) return { list: us, src: 'user' };
     var TM = E.TONE_MOAN && E.TONE_MOAN[tone], tl = TM && lg && TM[lg] && TM[lg].length ? TM[lg] : null;
     var tr = ctx && ctx.toneMoanRate != null ? ctx.toneMoanRate : moanToneOf(who) ? rateOf('set', M.SET_RATE) : rateOf('toneMoan', M.TONE_MOAN_RATE);
     if (tl && rand(S) < tr) return { list: tl, src: 'tone' };
@@ -516,7 +526,12 @@
     /* 住人ごとの上書き（住人の欄の辞書 ＞ 高度設定の 住人=） */
     M.lastSrc = 'user'; M.lastEnds = false;
     var own = ownOf(who), wb = whoBox(U, who), uo = (own && ulist(S, own.d, key, own.add)) || (wb && ulist(S, wb.d, key, wb.add));
-    if (uo) out = fresh(S, fillPart(uo, who, ctx), tag);
+    if (uo) out = fresh(S, fillName(fillPart(uo, who, ctx), who, ctx), tag);
+    /* 言葉のない鍵の 口調=・態度= の行（2026-10-28 担当LD。言葉のある鍵は wordPool、攻めの声 t0〜t2・t6 は topTone が引く） */
+    if ((out == null || out === '') && U && !WORDS_ONLY[key] && !MIX[key] && !TOP_T[key]) {
+      var tn0 = toneOf(who), ut0 = ulist(S, U.tone[tn0], key, U.adds['tone:' + tn0]) || ulist(S, U.persona[ps], key, U.adds['persona:' + ps]);
+      if (ut0) out = fresh(S, fillName(fillPart(ut0, who, ctx), who, ctx), tag);
+    }
     if (out == null || out === '') {
       M.lastSrc = 'shared';
       /* 同じ場面で、この人の前の声が言葉のない短い声だったら、言葉のある声を 7 割に上げる（単文の喘ぎが続かないように。2026-10-28 担当M1。呼ぶ側が talk を決めたときは除く） */
@@ -878,8 +893,8 @@
         else if (/^態度[=＝]/.test(scope)) { var pk = personaKeyOf(scope.slice(3)); if (!pk) { out.errors.push((i + 1) + '行目：態度「' + scope.slice(3) + '」が見つかりません'); cur = null; return; } box = out.persona[pk] = out.persona[pk] || {}; sid = 'persona:' + pk; }
         else if (/^住人[=＝]/.test(scope)) { var nm = scope.slice(3).replace(/[\u2060-\u2064]/g, ''); box = out.who[nm] = out.who[nm] || {}; sid = 'who:' + nm; }
         else { out.errors.push((i + 1) + '行目：範囲が読めません（共通／口調=／態度=／住人=）'); cur = null; return; }
-        /* 口調=・態度=・住人= の「追加」：組み込みの声と半々で混ぜる（共通は組み込みの行に足す） */
-        if (add && sid) (out.adds[sid] = out.adds[sid] || {})[key] = 1;
+        /* 口調=・態度=・住人= の「追加」：組み込みの声と半々で混ぜる（共通は組み込みの行に足す。共通の言葉だけの鍵は組み込みの共通の行が無いので、adds.shared で半々に） */
+        if (add) (out.adds[sid || 'shared'] = out.adds[sid || 'shared'] || {})[key] = 1;
         cur = { box: box, key: key, add: add, started: false };
         return;
       }
