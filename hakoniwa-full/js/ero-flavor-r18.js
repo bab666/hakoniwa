@@ -368,7 +368,8 @@
     var f = function (T, U, o) {
       if (HK.SAFE_ON || !T || !U || !o) return tb0.apply(this, arguments);
       var self = this, args = arguments;
-      return F.scope(o.rng, T, U, null, function (fl) {
+      /* o.flavor（慰めの夜 omega-mob-after-r18.js の 'sweet' など）があれば、その色で */
+      return F.scope(o.rng, T, U, o.flavor ? { flavor: o.flavor } : null, function (fl) {
         if ((fl === 'dry' || fl === 'deal') && !o.noAfter && !o.after) {
           var kd = HK.TKC.kind ? HK.TKC.kind(T, U, o.flav) : 'mf', af = F.after(o.rng, fl, kd === 'ff' ? 'ff' : kd === 'ride' ? 'fm' : 'mf');
           if (af) return tb0.call(self, T, U, Object.assign({}, o, { after: af.replace(/\{a\}/g, '{T}').replace(/\{b\}/g, '{U}') }));

@@ -483,6 +483,7 @@ tone js/tone-fix-g7f-r18.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/omega-mob-r18.js @scen:omega
+js/omega-mob-after-r18.js @scen:omega
 js/incidents-social.js @pack:rel
 js/incidents-goukon.js @scen:goukon
 js/incidents-room.js @scen:whiteroom

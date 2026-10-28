@@ -302,11 +302,14 @@
     else if (TEASY[ps]) { pz = 0.2; pj = 0.1; } else { pz = 0.1; pj = 0.1; }
     var mo = M.optOf ? M.optOf(top).tease : 'normal', mul = AMT[mo];
     if (frc) pj = 0;
+    /* 慰めの夜（o.rel 'comfort'。オメガバースの、街のαに襲われたあと。omega-mob-after-r18.js）：言葉責め・焦らしを使わない（甘々の焦らしの締めも） */
+    var cmf = !!(o && o.rel === 'comfort');
+    if (cmf) { pz = 0; pj = 0; }
     var z = 0, j = 0, more = mo === 'more';
     if (pz > 0 && r() < Math.min(1, pz * mul)) z = 1 + (cz > 1 && r() < 0.5 ? 1 : 0) + (more && r() < 0.5 ? 1 : 0);
     if (pj > 0 && r() < Math.min(1, pj * mul)) j = 1 + (cj > 1 && r() < 0.5 ? 1 : 0) + (more && r() < 0.5 ? 1 : 0);
     while (z + j > 3) { if (z >= j) z--; else j--; }
-    return (sc.plan = { z: z, j: j, sweetJ: nt === 'sweet', nt: nt === 'sadist' || nt === 'mean' ? nt : '', force: frc });
+    return (sc.plan = { z: z, j: j, sweetJ: nt === 'sweet' && !cmf, nt: nt === 'sadist' || nt === 'mean' ? nt : '', force: frc });
   }
   /* 呼び名の差し込み（{a} などの文字で書く呼ぶ側は、受けの文字も） */
   var BWHO = { '{a}': '{b}', '{x}': '{y}', '{T}': '{U}', '{A}': '{B}' };

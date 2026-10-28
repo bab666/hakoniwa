@@ -12,7 +12,6 @@
   var T = HK.RoomTrio = {};
   function R(ctx, a, b) { return ctx.R(a, b); }
   function L(s) { return s.split('|'); }
-  function nm3(g) { return g.map(function (c) { return c.name; }).join('・'); }
   function kn(n) { return ['', '一人', '二人', '三人', '四人', '五人', '六人'][n] || n + '人'; }
 
   /* 箱庭の設定：三人以上での条件達成（初期値は「最初から紙に書いてある」。三人ちょうどで条件がエッチか媚薬なら、受けに回れる人が一人でもいれば三人の場面が自然に起こる） */
@@ -699,12 +698,15 @@
       var ex0 = { group: g.map(function (c) { return c.i; }), label: ctx.label, trio: true, night: !!night, kind: kind || 'warm' };
       (ctx.flags.exits = ctx.flags.exits || []).push(ex0);
       ctx.flags.trios.push(ex0);
+      /* 残る人の場面は、区切りの行（扉が開いた）のあとの別の記録（scenario-room.js の doorOpen） */
       var st = ctx.t(ctx.pick([
-        '扉の鍵が外れる音がした。{a}は二人の背中を押して先に行かせ、自分は部屋の中に向き直った。{a}「{b}を一人にはしない。すぐ行く｜＝｜{b}を一人にはしません。すぐ行きます」',
-        '扉が開いた。{a}は出ていく二人に手を振ってから、部屋の隅の{b}の隣に腰を下ろした。{a}「待たせた。次は、二人で｜待たせたな。次は、二人でだ｜お待たせしました。次は、二人で」',
-        '鍵の外れる音に、{b}が顔を上げた。{a}は扉をくぐらず、{b}の手を取った。{a}「先に出てて。{b}と一緒に行くから｜先に出ていろ。{b}と一緒に行く｜先に出ていてください。{b}と一緒に行きますから」――二人は頷いて、先に扉をくぐった。'
+        '{a}は二人の背中を押して先に行かせ、自分は部屋の中に向き直った。{a}「{b}を一人にはしない。すぐ行く｜＝｜{b}を一人にはしません。すぐ行きます」',
+        '{a}は出ていく二人に手を振ってから、部屋の隅の{b}の隣に腰を下ろした。{a}「待たせた。次は、二人で｜待たせたな。次は、二人でだ｜お待たせしました。次は、二人で」',
+        '{b}が顔を上げた。{a}は外へは出ず、{b}の手を取った。{a}「先に出てて。{b}と一緒に行くから｜先に出ていろ。{b}と一緒に行く｜先に出ていてください。{b}と一緒に行きますから」――二人は頷いて、先に外へ出た。'
       ]), sf.s, sf.o);
-      return { cat: 'escape', mag: 40, text: text + st, why: why + '／' + sf.s.name + 'には、部屋に残る恋人（' + sf.o.name + '）がいる。場面は三人までにして、' + sf.s.name + 'が残った', with: g.concat([sf.o]), lewd: night ? true : undefined };
+      var sw = sf.s.name + 'には、部屋に残る恋人（' + sf.o.name + '）がいる。場面は三人までにして、' + sf.s.name + 'が残った';
+      if (A.doorOpen) A.doorOpen(ctx, { g: g, with: [sf.o], ex: ex0, noEnd: true, why: why, cat: 'escape', mag: 30, post: st, postWhy: sw });
+      return { cat: 'escape', mag: 40, text: text, why: why + '／' + sw, with: g, lewd: night ? true : undefined };
     }
     g.forEach(function (c) {
       c.out = true; c.fate = '脱出';
@@ -715,8 +717,11 @@
     var ex = { group: g.map(function (c) { return c.i; }), label: ctx.label, trio: true, night: !!night, kind: kind || 'warm' };
     (ctx.flags.exits = ctx.flags.exits || []).push(ex);
     ctx.flags.trios.push(ex);
-    var al = A.bringAlong ? A.bringAlong(ctx, g) : '';
-    return { cat: 'escape', mag: 40, text: text + '扉の鍵が外れる音がした。' + nm3(g) + 'は、' + kn(g.length) + 'そろって部屋を出た。' + al, why: why + (al ? '／条件を満たした人と一緒に、ほかの全員も出られる部屋' : ''), with: g, lewd: night ? true : undefined };
+    var al = A.bringAlong ? A.bringAlong(ctx, g) : [];
+    var w = why + (al.length ? '／条件を満たした人と一緒に、ほかの全員も出られる部屋' : '');
+    /* 場面の文は条件を満たしたところまで。扉が開いたこと・外に出た後は、別の記録（scenario-room.js の doorOpen） */
+    if (A.doorOpen) A.doorOpen(ctx, { g: g.concat(al), ex: ex, why: w });
+    return { cat: 'escape', mag: 40, text: text, why: w, with: g, lewd: night ? true : undefined };
   };
   /* 条件「三人で」（room-games.js）の三人の場面：三人の場面（3P）の判定（plan3＝HK.Pos.trioPlan）が通る三人なら、
      三組とも直接できれば三人とも、二組なら中心とだけ触れ合う形で（kind は恋人どうしの三人なら love など、ほかは warm）。

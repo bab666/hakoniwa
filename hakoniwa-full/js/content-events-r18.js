@@ -176,6 +176,37 @@
     if (can(Bt, T) && P.lv && P.lv(Bt) > P.lv(T)) return '受け攻めが合わない（主の' + nm(Bt) + 'のほうが攻め度が高く、主が攻めに回る）';
     return '';
   }
+  /* オメガバースの「発情期のΩが街のαに襲われる」（omega-mob-r18.js の om_mobr）：Ωになりうる住人ごとに、襲われない理由（襲われうるなら ''）。
+     omega-mob-r18.js の canRape（HK.State.mobSexOk・HK.Pos.canReceive・性器なし）を入力の住人で見る（2026-10-28 担当KI） */
+  function omWhy(Bs, c) {
+    var P = Bs.P;
+    if (c.noR18) return 'R18に参加しない';
+    var Lk = HK.sexLockRead ? HK.sexLockRead(c) : null;
+    if (Lk && Lk.locks && !Lk.mob) return '性行為の相手を「固定した相手だけ」にしている（「固定した相手＋モブ」なら起きる）';
+    if (P && !P.canReceive(c)) return 'モブ相手に受けに回れない（受け攻めかモブ相手の受け攻めが「攻め」）';
+    if (P && P.noGen && P.noGen(c)) return '性器なし';
+    return '';
+  }
+  /* オメガバースの街のαの場面の一文：{ ev: 起きうるときの文, ng: 起きないときの理由 } */
+  function omMob(o, Bs) {
+    var pk = function (c) { return (o.pickOf && o.pickOf(c)) || c.pick || {}; };
+    var canO = function (c) { var x = pk(c); return !x.sex || x.sex === 'o' || (x.sex === 'a' && x.sw !== 'no') || (x.sex === 'b' && x.sw === 'yes'); };
+    var env = o.env || {}, lv = env.mobheat || 'on', os = Bs.cs.filter(canO);
+    if (!os.length) return { ev: '', ng: 'Ωになりうる住人がいないので、発情期に街のαに襲われる場面は起きません。' };
+    if (lv === 'off') return { ev: '', ng: '環境値「街のαに襲われやすさ」が「なし」なので、発情期に街のαに襲われる場面は起きません。' };
+    var ok = [], bad = [];
+    os.forEach(function (c) { var w = omWhy(Bs, c); if (w) bad.push(nm(c) + '（' + w + '）'); else ok.push(c); });
+    var badT = bad.length ? few(bad) + 'は襲われません' : '';
+    if (!ok.length) return { ev: '', ng: '発情期に街のαに襲われる場面は、' + few(bad) + 'のため起きません。' };
+    var mate = ok.filter(function (c) { return Bs.ties.some(function (t) { return t.type === 'mate' && (t.a === c || t.b === c); }); });
+    var heat = env.heat == null ? 50 : +env.heat, notes = [];
+    notes.push({ many: '街のαに襲われやすさ：多い', lots: '街のαに襲われやすさ：とても多い' }[lv] || '街のαに襲われやすさ：ふつう（起きにくい。多い・とても多いで増える）');
+    if (heat < 40) notes.push('発情期の重さが40未満で抑制剤が効きやすく、起きにくい');
+    else if (heat >= 80) notes.push('発情期の重さ' + heat + '：抑制剤が効きにくい');
+    if (mate.length) notes.push('番のいる' + few(mate.map(nm)) + 'は起きにくい');
+    if (badT) notes.push(badT);
+    return { ev: '発情期のΩが街のαに襲われる（襲われうるΩ：' + few(ok.map(nm)) + '。' + notes.join('・') + '）', ng: '' };
+  }
   function tiesOfType(B, re) { return B.ties.filter(function (t) { return re.test(t.type); }); }
   function anyPair(B, fn) { for (var i = 0; i < B.r18.length; i++) for (var j = 0; j < B.r18.length; j++) if (i !== j && fn(B.r18[i], B.r18[j])) return [B.r18[i], B.r18[j]]; return null; }
   /* 妊娠・孕む描写 */
@@ -227,7 +258,7 @@
     if (ms.length) ev.push('主従（' + ms.map(function (t) { return nm(t.b) + 'が主の' + nm(t.a) + 'を'; }).slice(0, 2).join('・') + '襲う）');
     var ab = id !== 'classroom' ? tiesOfType(B, /^abuse$/).filter(function (t) { return B.sexTB(t.a, t.b); }) : [];
     if (ab.length) ev.push('歪んだ関係の拒めない夜（' + ab.map(function (t) { return nm(t.a) + '→' + nm(t.b); }).slice(0, 2).join('・') + '）');
-    if (id === 'omega' && rc.length) ev.push('発情期のΩが街のαに襲われる' + rcT);
+    if (id === 'omega') { var om = omMob(o, B); if (om.ev) ev.push(om.ev); else ng += om.ng; }
     if (id === 'zombie' && rc.length) ev.push('略奪者・ゾンビに襲われる' + rcT);
     if (ev.length) return J('yes', ev.join('／') + (ng ? '（' + ng + '）' : ''));
     var pair = anyPair(B, B.sexTB);

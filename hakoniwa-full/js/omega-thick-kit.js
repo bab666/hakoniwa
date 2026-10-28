@@ -563,7 +563,8 @@
     },
     /* オメガバースの体の組み合わせ（第二性を優先） */
     omegaKind: function (T, U) { return TK.kind(T, U, 'omega'); },
-    /* o.depth：1＝短め（書き出し・最中・頂）、2＝ふつう（最中に体の一文と崩れはじめを足す）、3＝長め（さらに体位を変える段落を足す）
+    /* o.soft：乱暴な抱き方・押し倒す型を使わない（慰めの夜など）
+       o.depth：1＝短め（書き出し・最中・頂）、2＝ふつう（最中に体の一文と崩れはじめを足す）、3＝長め（さらに体位を変える段落を足す）
        o.extra：最中のあとに差し込む段落（場面ごとの文。呼び出し側の差し込み記号のまま）
        o.add：箱庭ごとに足す文。元の表に足して引く（同じ回で同じ文が戻ってこないように表を厚くする）。
          { open/mid/peak: {mf,mm,ff,ride}（乱暴な抱き方のときは足さない）, deep: {core,ride,ff,rough}, gx: {mf,mm,ff,ride: {mid,peak}},
@@ -577,8 +578,9 @@
         return ((o.lead || '') + ng.text).replace(/\{a\}/g, '{T}').replace(/\{b\}/g, '{U}').replace(/\{bed\}/g, o.bed || 'シーツ');
       }
       var kd = TK.kind(T, U, o.flav), riba = kd === 'ff' && Pz && Pz.bothRiba && Pz.bothRiba(T, U);
-      var rough = kd !== 'ff' && kd !== 'ride' && !!(o.rough || (HK.Ero && HK.Ero.sadist && HK.Ero.sadist(T, U) && rng() < 0.3));
-      var set = kd === 'ff' ? FF : kd === 'ride' ? RIDE : rough ? ROUGH : (CORE[topOf(T)] || CORE.NP);
+      /* o.soft（2026-10-28 担当KI：オメガバースの慰めの夜）：乱暴な抱き方にしない・攻めの因子の型は NP か AC（押し倒す・組み敷く型を使わない）。ほかの呼び出しは前と同じ（乱数の使い方も） */
+      var rough = kd !== 'ff' && kd !== 'ride' && !o.soft && !!(o.rough || (HK.Ero && HK.Ero.sadist && HK.Ero.sadist(T, U) && rng() < 0.3));
+      var set = kd === 'ff' ? FF : kd === 'ride' ? RIDE : rough ? ROUGH : (CORE[o.soft && !/^(NP|AC)$/.test(topOf(T)) ? 'NP' : topOf(T)] || CORE.NP);
       /* 二人ともリバの女性どうしだけ、脚を重ねる・上下の入れ替わりを混ぜる */
       var AD = o.add || {}, adk = function (k) { return !rough && AD[k] && AD[k][kd] ? AD[k][kd] : []; };
       var pool = function (k) { var b = riba && FF_RIBA[k] ? set[k].concat(FF_RIBA[k]) : set[k]; return b.concat(adk(k)); };

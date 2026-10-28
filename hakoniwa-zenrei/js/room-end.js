@@ -7,6 +7,8 @@
      外の情景  ：扉が消える・夜景・駅・雨上がり・公園・屋上・朝の光 など
      関係の層  ：恋人・夫婦／体だけ・一夜（R18。全年齢では友人・気まずさの型）／三人（room-trio.js の後日談）／友人／敵対・愛憎／無関心／最後の三人（R18。room-last3-r18.js）
      巻き込まれなかった人：三人の場面や夜に関わらなかった人の一文（「〇〇は巻き込まれなかったことにホッとしつつ、友人の△△との約束場所へ向かっていった」）
+   ■ 扉が開いたことは、出口ごとの区切りの行「条件を満たしたので扉が開いた。」で示す（scenario-room.js の doorFlush。2026-10-28 担当KJ）。
+     まだ部屋に人が残るうちに先に出た組は、区切りの行のあとに組ごとの「外に出た後」（RE.groupEnd）を書き、結末の段ではその組（told）の出る様子・関係の層を書き直さない
    ■ 1つの結末は 3〜6 文（三人の後日談を含めて数え、多いときは二つ目からの関係の層・情景・一人だけ先に出た文・巻き込まれなかった人・一緒に出た人の文の順に省く。情景は先に1文の型に縮める）
    ■ 環境値「登場しない住人の名前を出す」（outsideNames：no 出さない／yes 出す。既定は出さない）：
      名簿にいて今回は参加していない住人のうち、参加者と友人・親友・幼馴染・相棒・恋人・夫婦・許嫁・家族の関係がある人を、動かす前に入力の outside に写す
@@ -75,30 +77,35 @@
   function roName(ctx, o) { return o.n && ctx.env.outsideNames === 'yes' ? o.l + 'の' + o.n : o.l; }
 
   /* ---------- 文 ---------- */
-  /* 扉が開く（一度だけ開いたとき。{t}＝時刻） */
+  /* 扉が開く（{t}＝時刻）。扉が開いたことは、出口ごとに区切りの行「条件を満たしたので扉が開いた。」（scenario-room.js の doorFlush）で示すので、
+     結末の段では、区切りの行の無い出方（出た記録の無いまま部屋を出た人がいる）のときだけ使う */
   var DOOR = L('{t}、条件を満たしたので扉が開いた。|{t}、扉の紙の数字がそろい、鍵の外れる音がした。|{t}、白い扉が、何の前触れもなく内側へ開いた。|{t}、扉の紙の文字がすっと薄れ、鍵が外れた。|{t}、扉の向こうから、冷たい風が細く吹きこんできた。');
-  /* 部屋全体の条件（飲み切る・全員で など）で開いたとき */
-  var DOOR_ALL = L('{t}、部屋の条件がすべてそろい、扉がゆっくりと開いた。|{t}、最後の条件が満たされると同時に、扉の鍵が外れた。|{t}、扉の紙に「達成」の二文字が浮かび、扉が開いた。');
-  /* 条件「誰かを殺す（気絶させる）」で開いたとき */
-  var DOOR_KILL = L('{t}、扉が開いた。誰も、すぐには動けなかった。|{t}、鍵の外れる音が、やけに大きく響いた。|{t}、扉は、何事もなかったかのように静かに開いた。');
+  /* 条件「誰かを殺す（気絶させる）」で開いたあとの、出ていく前の間（扉が開いたことは書かない） */
+  var KILL_PAUSE = L('誰も、すぐには動けなかった。|開いた扉の向こうから、場違いなほど明るい光が差しこんでいた。|しばらくのあいだ、誰も扉に近づこうとしなかった。');
   /* 出る様子（{G}＝出た人の名前、{a}{b}＝手を取る二人・先に出る二人、{R}＝ほかの人） */
   var EXIT = {
-    rush: L('{G}が我先にと外に飛び出した。|{G}は顔も見合わせず、先を争うように扉をくぐった。|{G}は扉が開ききるのも待たずに、廊下へ駆け出した。|{G}は、誰が先かも決めないまま、押し合うようにして外へ出た。'),
-    hand2: L('{a}は{b}の手を取って、扉をくぐった。|{a}と{b}は手を繋いだまま、一歩ずつ外へ出た。|{b}が差し出した手を{a}が握り返し、二人は並んで扉をくぐった。|{a}は{b}の肩を抱くようにして、ゆっくり外へ出た。'),
-    handG: L('{a}は{b}の手を取って扉をくぐり、{R}もそのあとに続いた。|{R}が先に出て、{a}と{b}は手を繋いだまま最後に扉をくぐった。|{a}と{b}が手を繋いで先に出ると、{R}も黙ってあとに続いた。'),
-    silent: L('{G}は互いに目を合わせないまま、黙って扉をくぐった。|誰も口をきかなかった。{G}は、一度も振り返らずに外へ出た。|{G}は、肩がぶつからないように間を空けて、無言で外へ出た。'),
-    silent2: L('{a}が先に出て、{b}は少し間を置いてから、無言であとに続いた。|{a}と{b}は、どちらも相手を見ないまま、黙って扉をくぐった。|{a}は{b}より先に出ようとして、扉の前で肩がぶつかった。どちらも、何も言わなかった。'),
-    calm: L('{G}は顔を見合わせてから、そろって外へ出た。|{G}は、白い部屋を一度だけ振り返ってから扉をくぐった。|{G}は、拍子抜けするほどあっさりと外へ出た。|{G}は、誰からともなく小さく笑って、扉をくぐった。')
+    rush: L('{G}が我先にと外に飛び出した。|{G}は顔も見合わせず、先を争うように外へ出た。|{G}は扉が開ききるのも待たずに、廊下へ駆け出した。|{G}は、誰が先かも決めないまま、押し合うようにして外へ出た。'),
+    hand2: L('{a}は{b}の手を取って、外へ出た。|{a}と{b}は手を繋いだまま、一歩ずつ外へ出た。|{b}が差し出した手を{a}が握り返し、二人は並んで扉を抜けた。|{a}は{b}の肩を抱くようにして、ゆっくり外へ出た。'),
+    handG: L('{a}は{b}の手を取って扉を抜け、{R}もそのあとに続いた。|{R}が先に出て、{a}と{b}は手を繋いだまま最後に扉を抜けた。|{a}と{b}が手を繋いで先に出ると、{R}も黙ってあとに続いた。'),
+    silent: L('{G}は互いに目を合わせないまま、黙って外へ出た。|誰も口をきかなかった。{G}は、一度も振り返らずに外へ出た。|{G}は、肩がぶつからないように間を空けて、無言で外へ出た。'),
+    silent2: L('{a}が先に出て、{b}は少し間を置いてから、無言であとに続いた。|{a}と{b}は、どちらも相手を見ないまま、黙って扉を抜けた。|{a}は{b}より先に出ようとして、扉の前で肩がぶつかった。どちらも、何も言わなかった。'),
+    calm: L('{G}は顔を見合わせてから、外へ出た。|{G}は、白い部屋を一度だけ振り返ってから扉を抜けた。|{G}は、拍子抜けするほどあっさりと外へ出た。|{G}は、誰からともなく小さく笑って、外へ出た。')
   };
-  /* 何もしていないのに一緒に出た人（全員で出られる部屋。{L}＝一緒に出た人、{G}＝扉を開けた人） */
-  var ALONG = L('{L}も、{G}が開けた扉から、一緒に外へ出た。|{L}も開いた扉から、そっとあとに続いた。|{L}は、何もしていないのに出られたことに首をかしげながら、外へ出た。|{L}は置いていかれまいと、慌ててあとを追った。|{L}は少し遅れて、肩をすくめながら扉をくぐった。');
+  /* 何もしていないのに一緒に出た人（全員で出られる部屋。{L}＝一緒に出た人、{G}＝扉を開けた人）。
+     申し訳なく思った・気にしなかった などの気持ちは、ここには書かず結末の欄（fateNote。scenario-room.js の alongNote）に書く */
+  var ALONG = L('{L}も、{G}が開けた扉から、一緒に外へ出た。|{L}も開いた扉から、そっとあとに続いた。|{L}も、開いた扉から遅れずに外へ出た。|{L}は置いていかれまいと、慌ててあとを追った。|{L}は少し遅れて、肩をすくめながら扉を抜けた。');
   /* 条件を満たした組から順に出た（{SEQ}＝「3時間後に〇〇と△△が、7時間後に××が」） */
-  var ORDER = L('扉は、条件を満たした組ごとに開いた。{SEQ}外へ出た。|{SEQ}、それぞれ扉をくぐった。|一組ずつ、扉は開いては閉じた。{SEQ}白い部屋をあとにした。|{SEQ}、順に外へ出ていった。');
-  var ORDER_MANY = L('扉は、条件を満たした組ごとに何度も開いた。最後に扉をくぐったのは、{G}だった。|一組、また一組と、扉の向こうへ消えていった。最後に出たのは{G}だった。');
+  var ORDER = L('扉は、条件を満たした組ごとに開いた。{SEQ}外へ出た。|{SEQ}、それぞれ外へ出た。|一組ずつ、扉は開いては閉じた。{SEQ}白い部屋をあとにした。|{SEQ}、順に外へ出ていった。');
+  var ORDER_MANY = L('扉は、条件を満たした組ごとに何度も開いた。最後に外へ出たのは、{G}だった。|一組、また一組と、扉の向こうへ消えていった。最後に出たのは{G}だった。');
   /* 一人だけ先に出て、残った人があとから出た（{a}＝先に出た人、{b}＝あとから出た人） */
-  var FIRST = L('{a}だけが先に外へ出て、{b}はあとから出てきた。|先に出た{a}は、扉の外で{b}が出てくるのを待っていた。|{b}は一度は部屋に残ったが、{a}に遅れて扉をくぐった。');
+  var FIRST = L('{a}だけが先に外へ出て、{b}はあとから出てきた。|先に出た{a}は、扉の外で{b}が出てくるのを待っていた。|{b}は一度は部屋に残ったが、{a}に遅れて外へ出た。');
   /* 全員が出たあとの外の情景（1〜2文） */
   var SCENE = L('全員が外に出たところで、背後の扉は音もなく消えた。廊下の先には、見覚えのある街の夜景が広がっていた。|外の空気は、思っていたよりずっと冷たかった。振り返ると、白い部屋はもうどこにもなかった。|最後の一人が出ると、白い部屋の照明がひとりでに落ち、扉はただの壁に戻った。|扉の外は、見慣れた駅の裏通りだった。遠くで、終電の発車ベルが鳴っていた。|外は雨上がりで、濡れたアスファルトに街灯の光がにじんでいた。振り返った先に、扉はもうなかった。|廊下を抜けると、明け方の公園に出た。白い部屋のことは、夢だったと言われれば信じてしまいそうだった。|扉の向こうは、どこかのビルの屋上だった。夜風の中で、遠くの観覧車がゆっくり回っていた。|外に出ると、朝の光がまぶしかった。背後で扉の閉まる音がして、それきり何も聞こえなくなった。');
+  /* 組ごとの「外に出た後」の情景（まだ部屋に人が残るときの、先に出た組。1文。groupEnd） */
+  var SCENE_G = L('扉の外は、見慣れた駅の裏通りだった。|廊下を抜けると、明け方の公園に出た。|扉の向こうは、どこかのビルの屋上だった。夜風が、思ったより冷たかった。|外は雨上がりで、濡れたアスファルトに街灯の光がにじんでいた。|外に出ると、朝の光がまぶしかった。');
+  /* 先に出て、一人が部屋に残った組の、外に出た人（{a}＝出た人、{b}＝残った人、{c}＝残った人が付き添う三人目の恋人） */
+  var GO_LATER = L('外に出た{a}は、部屋に残った{b}のことが、帰り道のあいだずっと頭から離れなかった。|{a}は一人で外の空気を吸った。残ると決めた{b}の顔を思い出して、少しだけ笑った。|{a}は振り返らずに歩き出した。{b}とは、それきりになった。|{a}は外で{b}を待とうとして、やめた。{b}が自分で選んだことだった。');
+  var GO_WAIT = L('{a}は扉の外の壁にもたれて、{b}と{c}が出てくるのを待つことにした。|外に出た{a}は、閉じた扉にそっと手を当てた。{b}と{c}なら、きっとすぐに出てくる。|{a}は外の廊下に座りこんで、{b}と{c}を待った。待つのは、少しも苦ではなかった。');
   /* 文が多いときの短い情景（1文） */
   var SCENE1 = L('背後で、扉が音もなく消えた。|白い部屋の話は、それで終わりになった。|振り返ると、扉のあった場所はただの壁になっていた。|外の空気は、思っていたよりずっと冷たかった。|廊下の先には、見覚えのある街の夜景が広がっていた。');
   /* 取り残された人がいる（{L}） */
@@ -107,7 +114,7 @@
   var NONE = L('{t}。照明が最後の一段まで落ち、白い部屋は真っ暗になった。扉の紙の条件は、誰ひとり満たせなかった。{L}は暗闇の中で、互いの息づかいだけを数えていた。|{t}。扉は最後まで開かなかった。{L}は壁にもたれて、朝とも夜ともつかない白い光を黙って見上げていた。この部屋から出た人は、一人もいない。|{t}。時間切れを知らせるように、扉の紙の文字がすっと消えた。{L}は顔を見合わせたが、誰も何も言わなかった。白い部屋は、全員を閉じ込めたまま静まり返った。|{t}。扉の紙の文字は最後まで変わらなかった。{L}は白い部屋に閉じ込められたまま、限界の時刻を迎えた。|{t}。{L}の誰も、もう扉の方を見なくなっていた。白い部屋は、何事もなかったように静まり返っていた。');
   /* 一人しか出られない部屋（{a}＝出た人、{b}＝背中を押した人・押しのけられた人、{L}＝部屋に残った人） */
   var ONE = {
-    sacrifice: L('{a}がくぐった扉は、二度と開かなかった。外の光の中で、{a}は何度も振り返った。|{a}は一人で外の世界に戻った。{b}に押された背中の感触が、いつまでも消えなかった。|外に出た{a}は、扉のあった場所の壁に額をつけた。向こう側で{b}が待っている気がした。|扉をくぐった{a}は、一歩ごとに足が重くなった。最後に見た{b}は、笑って手を振っていた。|{a}は外の光の中で立ち尽くした。{b}が残ったのは自分のためだと、分かりすぎるほど分かっていた。'),
+    sacrifice: L('{a}がくぐった扉は、二度と開かなかった。外の光の中で、{a}は何度も振り返った。|{a}は一人で外の世界に戻った。{b}に押された背中の感触が、いつまでも消えなかった。|外に出た{a}は、扉のあった場所の壁に額をつけた。向こう側で{b}が待っている気がした。|外に出た{a}は、一歩ごとに足が重くなった。最後に見た{b}は、笑って手を振っていた。|{a}は外の光の中で立ち尽くした。{b}が残ったのは自分のためだと、分かりすぎるほど分かっていた。'),
     grab: L('一人で外に出た{a}は、振り返らずに歩き出した。|{a}が抜け出したあと、扉は二度と開かなかった。{L}は閉じた扉を見つめたまま、長いあいだ動かなかった。|外の空気を吸った{a}は、一度だけ立ち止まった。それから、白い部屋のことは忘れたふりをして歩き出した。|{a}は外に出るなり、走り出した。背後で扉の閉まる音がしても、足を止めなかった。|{a}は一人で外に出た。白い部屋に残った{L}の声は、もう聞こえなかった。')
   };
   /* 一人で出た人のその後（{RO}＝外の関係の人。ある型は、その人がいるときだけ） */
@@ -142,7 +149,7 @@
   var OUT_X = L('{a}は外に出るとすぐ、{RO}に電話をかけた。声を聞いたら、ようやく帰ってきた気がした。|{a}を待っていたのは、{RO}からの山ほどの不在着信だった。|{a}は、{RO}の顔が無性に見たくなって、帰り道を少しだけ遠回りした。');
   /* 外に恋人がいるのに、部屋の中で誰かと夜を過ごした人 */
   var OUT_G = L('{a}は{RO}からの着信に気づいたが、出られなかった。白い部屋でのことは、言えそうになかった。|{a}は、待ち合わせ場所に立つ{RO}を遠くから見つけて、足が止まった。|{a}は{RO}に会う前に、念入りに手を洗った。それで何かが消えるわけではなかった。');
-  RE.TEXT = { DOOR: DOOR, EXIT: EXIT, ALONG: ALONG, ORDER: ORDER, SCENE: SCENE, SCENE1: SCENE1, SOME: SOME, NONE: NONE, ONE: ONE, STAYED: STAYED, PAIR: PAIR, BY_O: BY_O, BY_N: BY_N, OUT_X: OUT_X, OUT_G: OUT_G };
+  RE.TEXT = { DOOR: DOOR, KILL_PAUSE: KILL_PAUSE, SCENE_G: SCENE_G, GO_LATER: GO_LATER, GO_WAIT: GO_WAIT, EXIT: EXIT, ALONG: ALONG, ORDER: ORDER, SCENE: SCENE, SCENE1: SCENE1, SOME: SOME, NONE: NONE, ONE: ONE, STAYED: STAYED, PAIR: PAIR, BY_O: BY_O, BY_N: BY_N, OUT_X: OUT_X, OUT_G: OUT_G };
 
   /* ---------- 二人の関係の層 ---------- */
   function avgR(ctx, a, b) { var r1 = ctx.R(a, b), r2 = ctx.R(b, a); return { att: (r1.att + r2.att) / 2, aff: (r1.aff + r2.aff) / 2, ten: (r1.ten + r2.ten) / 2 }; }
@@ -222,6 +229,38 @@
     if (e.stay != null) return [C[e.a]];
     return [C[e.a], C[e.b]];
   }
+  /* 外の情景の場所（駅・公園…）：組ごとの結末で使った場所は、あとの結末の段で使わない（同じ情景を2回書かない） */
+  var SKEY = /駅|夜景|雨|公園|屋上|朝|観覧車|冷た|消え/g;
+  function freshScene(ctx, pool, peek) {
+    var used = ctx.flags.endScene || [], ks = function (t) { return String(t).match(SKEY) || []; };
+    var ok = pool.filter(function (t) { return !ks(t).some(function (k) { return used.indexOf(k) >= 0; }); });
+    var t = ctx.pick(ok.length ? ok : pool);
+    if (!peek) ctx.flags.endScene = used.concat(ks(t));
+    return t;
+  }
+
+  /* ---------- 組ごとの「外に出た後」（2026-10-28 担当KJ） ----------
+     扉が開いて一組だけが先に出たとき（まだ部屋に人が残るとき）に、区切りの行「条件を満たしたので扉が開いた。」のあとへ置く 1〜3 文（scenario-room.js の doorFlush）。
+     部品：出る様子（exitLine）＋関係の層（PAIR。三人以上の組は、後日談が結末の段にあるので外の情景 SCENE_G）。先に出て一人が残った組は GO_LATER／GO_WAIT（三人目の恋人に付き添う）。
+     書いた組の出た記録には told が付き、結末の段（closing）はその組の出る様子・一緒に出た人・関係の層を書き直さない。外の情景の場所も、結末の段では避ける。
+     この扉で部屋の動きが終わるとき（全員が出た など）は呼ばれない（最後の「結末」の段に任せる） */
+  RE.groupEnd = function (ctx, ex, opt) {
+    opt = opt || {};
+    if (!ex || ex.how) return '';
+    var C = ctx.chars, parts = [];
+    if (ex.stay != null) {
+      var lt = opt.lt;
+      parts.push({ t: fill(ctx.pick(lt ? GO_WAIT : GO_LATER), { a: C[ex.a].name, b: C[ex.stay].name, c: lt ? lt.name : '' }), o: 0 });
+    } else {
+      var g = membersOf(ctx, ex), lay;
+      if (ex.trio || g.length > 2) lay = { t: freshScene(ctx, SCENE_G), o: 1 };
+      else { var x = g[0], y = g[1]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } lay = { t: fill(ctx.pick(pairPool(kindOf(ctx, x, y))), { a: x.name, b: y.name }), o: 0 }; }
+      /* 関係の層の一文目が出るところから書く型（「外に出ると」「部屋を出た〇〇は」など）なら、出る様子は重ねない */
+      if (!/^[^。]*(?:外に出る|部屋を出た|扉を出た)/.test(lay.t)) parts.push({ t: exitLine(ctx, g), o: 2 });
+      parts.push(lay);
+    }
+    return trim(parts, 3).map(function (p) { return p.t; }).join('');
+  };
 
   function closing(ctx, late) {
     var C = ctx.chars, P = ctx.present(), out = C.filter(function (c) { return c.out; });
@@ -236,7 +275,6 @@
       title = '誰も出られなかった';
     } else if (one) {
       var a = C[one.a], b = C[one.b], Lr = nm(P) || b.name;
-      parts.push({ t: fill(ctx.pick(DOOR), { t: timeOf(one.label) }), o: 3 });
       parts.push({ t: fill(ctx.pick(ONE[one.how]), { a: a.name, b: b.name, L: Lr }), o: 0 });
       var oo = outs(ctx, a)[0];
       var pool = oo && ctx.rng() < 0.6 ? ONE_AFTER[one.how + 'O'] : ONE_AFTER[one.how];
@@ -244,33 +282,32 @@
       parts.push({ t: fill(ctx.pick(pool), { a: a.name, b: b.name, RO: oo ? roName(ctx, oo) : '' }), o: 0 });
       title = a.name + 'だけが外へ出た';
     } else {
-      /* 出方 */
-      var real = ex.filter(function (e) { return !e.how; });
-      if (real.length === 1) {
-        var e0 = real[0], g0 = membersOf(ctx, e0);
-        var dp = kill && e0.group ? DOOR_KILL : e0.group && !e0.trio ? DOOR_ALL : DOOR;
-        parts.push({ t: fill(ctx.pick(dp), { t: timeOf(e0.label) }), o: 0 });
+      /* 出方（扉が開いたことは区切りの行で示したので書かない。組ごとの結末を書いた組 told は、出る様子・一緒に出た人・関係の層を書き直さない） */
+      var real = ex.filter(function (e) { return !e.how; }), fresh = real.filter(function (e) { return !e.told; });
+      if (fresh.length === 1) {
+        var e0 = fresh[0], g0 = membersOf(ctx, e0);
+        if (kill && e0.group) parts.push({ t: ctx.pick(KILL_PAUSE), o: 4 });
         parts.push({ t: kill && e0.group ? fill(ctx.pick(EXIT.silent), { G: nm(g0) }) : exitLine(ctx, g0), o: 0 });
-      } else if (real.length > 1) {
+      } else if (fresh.length > 1) {
         var byL = [], lab = {};
-        real.forEach(function (e) { var k = seqLabel(e.label); if (lab[k] == null) { lab[k] = byL.length; byL.push({ l: k, g: [] }); } byL[lab[k]].g.push(membersOf(ctx, e)); });
+        fresh.forEach(function (e) { var k = seqLabel(e.label); if (lab[k] == null) { lab[k] = byL.length; byL.push({ l: k, g: [] }); } byL[lab[k]].g.push(membersOf(ctx, e)); });
         var gname = function (gs) { return gs.map(function (g) { return g.length === 2 ? g[0].name + 'と' + g[1].name : nm(g); }).join('、'); };
         if (byL.length <= 3) parts.push({ t: fill(ctx.pick(ORDER), { SEQ: byL.map(function (x) { return x.l + 'に' + gname(x.g) + 'が'; }).join('、') }), o: 0 });
         else parts.push({ t: fill(ctx.pick(ORDER_MANY), { G: gname(byL[byL.length - 1].g) }), o: 0 });
-      } else parts.push({ t: fill(ctx.pick(DOOR), { t: tEnd }), o: 0 });
+      } else if (!real.length) parts.push({ t: fill(ctx.pick(DOOR), { t: tEnd }), o: 0 });
       /* 一緒に出た人（全員で出られる部屋） */
-      var alongE = real.filter(function (e) { return e.along && e.along.length; }).pop();
+      var alongE = fresh.filter(function (e) { return e.along && e.along.length; }).pop();
       if (alongE) parts.push({ t: fill(ctx.pick(ALONG), { L: nm(alongE.along.map(function (i) { return C[i]; })), G: nm(membersOf(ctx, alongE)) }), o: 2.5 });
       /* 一人だけ先に出て、残った人があとから出た */
       real.filter(function (e) { return e.stay != null && C[e.stay].out; }).slice(0, 1).forEach(function (e) { parts.push({ t: fill(ctx.pick(FIRST), { a: C[e.a].name, b: C[e.stay].name }), o: 5 }); });
       /* 外の情景・取り残された人 */
-      if (!P.length) { title = C.length === 2 ? '二人とも部屋を出た' : '全員が部屋を出た'; parts.push({ t: ctx.pick(SCENE), alt: ctx.pick(SCENE1), o: 6 }); }
+      if (!P.length) { title = C.length === 2 ? '二人とも部屋を出た' : '全員が部屋を出た'; parts.push({ t: freshScene(ctx, SCENE), alt: freshScene(ctx, SCENE1, true), o: 6 }); }
       else if (left.length) { title = nm(left) + 'が取り残された'; parts.push({ t: fill(ctx.pick(SOME), { L: nm(left) }), o: 0 }); }
       else title = nm(stayed) + 'が自分から残った';
       if (stayed.length) parts.push({ t: fill(ctx.pick(STAYED), { S: nm(stayed) }), o: 2 });
       /* 関係の層（三人で出た組は room-trio.js の後日談がある） */
       var nL = 0;
-      real.forEach(function (e) {
+      fresh.forEach(function (e) {
         if (e.trio) return;
         var t;
         if (e.group) t = fill(ctx.pick(kill ? PAIR.kill : PAIR.group), { G: nm(e.group.map(function (i) { return C[i]; })) });
@@ -315,7 +352,7 @@
     }
     trim(parts, 6);
     /* 少なすぎるとき（2文以下）は、情景を一つ足す */
-    if (out.length && !P.length && parts.reduce(function (s, p) { return s + sn(p.t); }, 0) <= 2 && !parts.some(function (p) { return SCENE.indexOf(p.t) >= 0 || SCENE1.indexOf(p.t) >= 0; })) parts.splice(Math.min(2, parts.length), 0, { t: ctx.pick(SCENE), o: 6 });
+    if (out.length && !P.length && parts.reduce(function (s, p) { return s + sn(p.t); }, 0) <= 2 && !parts.some(function (p) { return SCENE.indexOf(p.t) >= 0 || SCENE1.indexOf(p.t) >= 0; })) parts.splice(Math.min(2, parts.length), 0, { t: freshScene(ctx, SCENE), o: 6 });
     ctx.flags.outcome = (ctx.flags.outcome || ctx.flags.roomLabel || '') + ' ― ' + title;
     ctx.say({ kind: 'step', cat: 'phase', text: '結末' });
     ctx.say({ kind: 'event', cat: 'phase', cageOk: true, actors: who, text: parts.map(function (p) { return p.t; }).join(''), why: '結末：' + title, mag: 30 });

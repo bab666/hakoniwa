@@ -230,18 +230,78 @@
   function hasPairRule(ctx) { return ctx.rules.some(function (r) { return isPairT(K[r.k]); }); }
   /* 条件を満たした人と一緒に、残りの全員も出られる部屋か（順26） */
   function allOut(ctx) { return !ctx.flags.isOne && !ctx.flags.oneCond && ctx.env.allout === 'on'; }
-  /* 扉が開いたとき、条件を満たした人（g）と一緒に、部屋に残っていた人も出る（倒れている人は担がれて出る）。出た記録（ctx.flags.exits の最後）に along を足し、文を返す */
-  var ALONG = ['扉が開くと、{L}も{G}のあとについて外へ出た。何もしていないのに出られたことに、{L}は少しだけ申し訳なさそうな顔をした。', '開いた扉の前で、{G}は振り返って{L}を手招きした。この部屋は、誰かが条件を満たせば全員が出られる部屋だった。{L}は顔を見合わせてから、扉をくぐった。', '鍵の外れる音を聞いて、{L}も立ち上がった。{G}が開けた扉から、部屋にいた全員が外へ出た。'];
+  /* ---------- 扉が開いたとき（2026-10-28 担当KJ：退出の定型「扉の鍵が外れる音がした」「そろって部屋を出た」「扉をくぐった」「あとについて外へ出た」を廃止） ----------
+     出口（exitPair・finishExit・oneDoor・exitAll・三人の exitGroup（room-trio.js）・一人しか出られない部屋の sacrifice／grab）は、
+     場面の文を「条件を満たしたところ」で終え、doorOpen で扉が開いたことを予約する。予約は、その組が出てくる次の記録（条件を満たした場面）の
+     すぐあとに、別の記録として出す：
+       1. 区切りの行（kind:'phase'）「条件を満たしたので扉が開いた。」（理由の欄は、条件がそろった理由）
+       2. 外に出た後（post：残る・押し出す・三人で出るのを待つ などの場面と、組の結末 HK.RoomEnd.groupEnd の 1〜3 文）。
+          この扉で部屋の動きが終わるとき（全員が出た・一人しか出られない部屋で誰かが出た など。scen.end）は組の結末を書かず、最後の「結末」の段に任せる。
+          組の結末を書いた出た記録には told を付け、結末の段はその組の出る様子・関係の層を書き直さない（room-end.js）
+     場面が記録に残らなかったとき（恋愛が起きない組の場面など）は、区切りの終わり（after）・結末（finish）の前に出す。
+     条件を満たしていないのに一緒に出た人（全員で出られる部屋）は場面の文に書かず、結末の欄（fateNote）に性格で書き分ける（alongNote） */
+  var DOOR_LINE = '条件を満たしたので扉が開いた。';
+  /* d：{ g: 扉を開けた人と一緒に出た人, why, ex: 出た記録（組の結末を書くとき）, post: 外に出た後の場面の文, cat, mag, postWhy, with: post に出る人, noEnd: 組の結末を書かない, lt: 部屋に残る三人目の恋人 } */
+  function doorOpen(ctx, d) { (ctx.flags.doorQ = ctx.flags.doorQ || []).push(d); }
+  function endNow(ctx) { return !!(scen.end && scen.end(ctx, ctx.stepIndex, ctx.stepsTotal)); }
+  function doorHit(ctx, o) {
+    var Q = ctx.flags.doorQ;
+    if (!Q || !Q.length || ctx.flags.doorBusy) return false;
+    var A = (o.actors || []).map(function (c) { return typeof c === 'number' ? c : c && c.i; });
+    return Q.some(function (d) { return d.g.some(function (c) { return c && A.indexOf(c.i) >= 0; }); });
+  }
+  function doorFlush(ctx) {
+    var Q = ctx.flags.doorQ;
+    if (!Q || !Q.length || ctx.flags.doorBusy) return;
+    ctx.flags.doorQ = []; ctx.flags.doorBusy = true;
+    try {
+      Q.forEach(function (d) {
+        var g = d.g.filter(function (c, i, s) { return c && s.indexOf(c) === i; }), p0 = (ctx.pending || []).length;
+        ctx.say({ kind: 'phase', cat: 'phase', actors: g, text: DOOR_LINE, why: d.why || '', mag: 25 });
+        /* 残る人の送り出しの一言（room-cheer.js が区切りの行を見て積む。印 _rcA）は、外に出た後の文より前に出す */
+        var P = ctx.pending || [], so = P.filter(function (o, i) { return i >= p0 && o && o._rcA != null; });
+        if (so.length) { ctx.pending = P.filter(function (o) { return so.indexOf(o) < 0; }); so.forEach(function (o) { ctx.say(o); }); }
+        var t = d.post || '', ex = d.ex;
+        if (ex && !endNow(ctx)) {
+          ex.told = true;
+          if (!d.noEnd && HK.RoomEnd && HK.RoomEnd.groupEnd) t += HK.RoomEnd.groupEnd(ctx, ex, { lt: d.lt }) || '';
+        }
+        var w = (d.with || []).filter(function (c) { return c && g.indexOf(c) < 0; });
+        if (t) ctx.say({ kind: 'event', cat: d.cat || 'escape', cageOk: true, actors: g.concat(w), text: t, why: d.postWhy || names(g) + 'が部屋の外へ出たあと', mag: d.mag || 14 });
+      });
+    } finally { ctx.flags.doorBusy = false; }
+  }
+  /* 何もしていないのに一緒に出た人の、結末の欄（場面の文には書かない）。
+     申し訳なく思う人（健気・恥じらい・敬語・NP の高い穏やか、NP と AC がともに高い）／気にしない人（俺が法律：CP・FC 高×AC 低、強気・奔放・ドライ）／ふつう */
+  function alongMood(c) {
+    var t = c.baseTr || c.tr || {}, p = HK.personaOf ? HK.personaOf(c) : '';
+    if ((t.cp >= 0.65 && t.fc >= 0.6 && t.ac <= 0.4) || (p === 'proud' && t.np < 0.45)) return 'law';
+    if (p === 'free' && t.ac < 0.5) return 'free';
+    if (t.cold >= 0.72 || (p === 'cool' && t.np < 0.4)) return 'dry';
+    if (p === 'devoted' || p === 'shy' || p === 'polite' || (p === 'gentle' && t.np >= 0.55) || (t.np >= 0.65 && t.ac >= 0.6)) return 'sorry';
+    return '';
+  }
+  var ALONG_NOTE = {
+    sorry: ['{G}が条件を満たして開いた扉から、一緒に部屋を出た。何もしていないのに出られたことを、少し申し訳なく思った', '{G}が条件を満たして開いた扉から、一緒に部屋を出た。自分は何もしていないのに、と{G}に何度も頭を下げた', '{G}が条件を満たして開いた扉から、一緒に部屋を出た。何もせずに出られたことが、少し後ろめたかった'],
+    law: ['{G}が条件を満たして開いた扉から、当然のような顔で出た', '{G}が条件を満たして開いた扉から、礼も言わずにいちばん先に出た'],
+    free: ['{G}が条件を満たして開いた扉から、一緒に部屋を出た。何もせずに出られて、得をしたと思った', '{G}が条件を満たして開いた扉から、ラッキーだと笑って出た'],
+    dry: ['{G}が条件を満たして開いた扉から、一緒に部屋を出た。得をしたと思っただけで、特に何も感じなかった', '{G}が条件を満たして開いた扉から、一緒に部屋を出た。何もせずに出られたのは運がよかった、とだけ思った']
+  };
+  function alongNote(c, gn) {
+    if (c.flags.down) return gn + 'が条件を満たして開いた扉から、一緒に部屋を出た（倒れていたので、担がれて出た）';
+    var m = alongMood(c), L = m && ALONG_NOTE[m];
+    return L ? L[c.i % L.length].replace(/\{G\}/g, gn) : gn + 'が条件を満たして開いた扉から、一緒に部屋を出た';
+  }
+  /* 扉が開いたとき、条件を満たした人（g）と一緒に、部屋に残っていた人も出る（倒れている人は担がれて出る）。出た記録（ctx.flags.exits の最後）に along を足し、一緒に出た人の一覧を返す */
   function bringAlong(ctx, g) {
-    if (!allOut(ctx)) return '';
+    if (!allOut(ctx)) return [];
     var L = ctx.present().filter(function (c) { return g.indexOf(c) < 0 && !c.out; });
-    if (!L.length) return '';
+    if (!L.length) return [];
     var gn = g.map(function (c) { return c.name; }).join('と');
-    L.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = gn + 'が条件を満たして開いた扉から、一緒に部屋を出た' + (c.flags.down ? '（倒れていたので、担がれて出た）' : ''); });
+    L.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = alongNote(c, gn); });
     var ex = ctx.flags.exits || [], last = ex[ex.length - 1];
     if (last) last.along = (last.along || []).concat(L.map(function (c) { return c.i; }));
-    var down = L.filter(function (c) { return c.flags.down; });
-    return ctx.pick(ALONG).replace(/\{L\}/g, names(L)).replace(/\{G\}/g, gn) + (down.length ? names(down) + 'は倒れたままだったので、' + gn + 'が肩を貸して運び出した。' : '');
+    return L;
   }
 
   /* 円満な三人（三人とも互いに恋人どうし：room-trio.js）の二人だけが先に条件を満たしたとき、もう一人の恋人を部屋に残して出ていかない。
@@ -270,19 +330,22 @@
     if (L.length > 1 && gv > 0.95 && rng() < 0.7) {
       var cand = L.filter(function (o) { return o !== giver; });
       go = cand.slice().sort(function (x, y) { return ctx.R(giver, y).aff - ctx.R(giver, x).aff; })[0]; how = 'sacrifice';
-      t = ctx.t(ctx.pick(['扉の鍵が外れた。けれど紙の下には、小さな字で「ただし、一人だけ」と足されていた。{a}は迷わず{b}の背中を押した。「先に行って｜先に行け｜先に行ってください」', '扉が開いた。誰が出るのか、と誰もが黙った。{a}が{b}の手を取って、扉の前まで連れていった。「{b}が出て。私はいい｜{b}が出ろ。私はいい｜{b}が出てください。私はいいです」', '鍵の外れる音のあと、扉の上の文字が光った。「一人だけ」――{a}は{b}を振り返り、笑ってみせた。「行きなよ｜行け｜行ってください」']), giver, go);
+      t = ctx.t(ctx.pick(['扉の紙の下には、小さな字で「ただし、一人だけ」と足されていた。{a}は迷わず{b}の背中を押した。「先に行って｜先に行け｜先に行ってください」', '誰が出るのか、と誰もが黙った。{a}が{b}の手を取って、扉の前まで連れていった。「{b}が出て。私はいい｜{b}が出ろ。私はいい｜{b}が出てください。私はいいです」', '扉の上の文字が光った。「一人だけ」――{a}は{b}を振り返り、笑ってみせた。「行きなよ｜行け｜行ってください」']), giver, go);
       giver.fate = '残った'; giver.fateNote = go.name + 'を先に出した';
       ctx.mod2(giver, go, { aff: 10 }, { aff: 25, trust: 25, att: 10 });
     } else {
       go = L.length > 1 ? taker : L[0]; how = 'grab';
       var rest = L.filter(function (o) { return o !== go; });
-      t = rest.length ? ctx.t(ctx.pick(['扉の鍵が外れた。「一人だけ」と書き足された紙を読むより早く、{a}は扉に手をかけていた。{b}の声に、{a}は振り返らなかった。', '扉が開いた瞬間、{a}は{b}を押しのけて外へ出た。扉は、すぐに閉まった。', '「一人しか出られないなら｜一人しか出られないのなら｜一人しか出られないのでしたら」{a}はそれだけ言って、扉をくぐった。残された{b}は、閉まった扉を見つめていた。']), go, rest[0]) : ctx.t('扉の鍵が外れた。{a}は一人で、扉をくぐった。', go);
+      t = rest.length ? ctx.t(ctx.pick(['「一人だけ」と書き足された紙を読むより早く、{a}は扉に手をかけていた。{b}の声に、{a}は振り返らなかった。', '{a}は{b}を押しのけて、一人で外へ出た。扉は、すぐに閉まった。', '「一人しか出られないなら｜一人しか出られないのなら｜一人しか出られないのでしたら」{a}はそれだけ言って、外へ出た。残された{b}は、閉まった扉を見つめていた。']), go, rest[0]) : '';
       rest.forEach(function (o) { ctx.mod(o, go, { aff: -25, ten: 30, trust: -35 }); });
     }
-    go.out = true; go.fate = '脱出'; go.fateNote = how === 'sacrifice' ? giver.name + 'に背中を押されて一人で出た' : '一人で扉をくぐった';
+    go.out = true; go.fate = '脱出'; go.fateNote = how === 'sacrifice' ? giver.name + 'に背中を押されて一人で出た' : '一人で部屋を出た';
     ctx.flags.oneOut = true;
     (ctx.flags.exits = ctx.flags.exits || []).push({ a: go.i, b: (how === 'sacrifice' ? giver : (L.filter(function (o) { return o !== go; })[0] || go)).i, label: ctx.label, how: how });
-    return { cat: how === 'sacrifice' ? 'help' : 'betray', mag: 45, text: text + t, why: why + '／一人しか出られない部屋（' + (how === 'sacrifice' ? giver.name + 'の優しさ' : go.name + 'のドライさ') + '）' };
+    /* 誰が出るかの場面は、区切りの行のあと（外に出たあとの結末は、最後の「結末」の段） */
+    var ow = '一人しか出られない部屋（' + (how === 'sacrifice' ? giver.name + 'の優しさ' : go.name + 'のドライさ') + '）';
+    doorOpen(ctx, { g: L, why: why, post: t, postWhy: ow + '。' + go.name + 'だけが脱出した', cat: how === 'sacrifice' ? 'help' : 'betray', mag: 45, noEnd: true });
+    return { cat: 'escape', mag: 30, text: text, why: why + '／' + ow };
   }
   function exitPair(ctx, a, b, text, why, night) {
     if (ctx.flags.oneCond) return oneDoor(ctx, [a, b], text, why, night);
@@ -295,25 +358,30 @@
         if (W[key]) return { cat: 'romance', mag: 6, text: text + a.name + 'と' + b.name + 'は、' + lt.name + 'と三人で出るまで、扉の前を素通りした。', why: why + '／三人で出るのを待っている' };
         W[key] = true;
         ctx.mod(lt, a, { trust: 4, aff: 3 }); ctx.mod(lt, b, { trust: 4, aff: 3 });
-        return { cat: 'romance', mag: 24, text: text + ctx.t(ctx.pick([
-          '扉の鍵が外れる音がした。けれど{a}と{b}は、立ち上がらなかった。{b}が{c}に手を伸ばした。{b}「三人で来たんだから、三人で出よう｜三人で来たのだから、三人で出よう｜三人で来たのですから、三人で出ましょう」',
-          '扉の鍵が外れた。{a}は扉を一度だけ見て、それから{c}の隣に座り直した。{a}「{c}を置いていくわけないでしょ｜{c}を置いていくわけがないだろう｜{c}を置いていくわけがありません」――{b}も、黙って{c}の反対側に座った。',
-          '鍵の外れる音に、{c}が顔を上げた。{c}「……行っていいよ｜……行っていい｜……行ってください」{a}と{b}は同時に首を振った。三人は恋人どうしだった。誰か一人を置いて出る扉なら、くぐる理由がなかった。'
-        ]), a, b, lt), why: why + '／' + lt.name + 'も二人の恋人。円満な三人なので、二人だけで先に出ず、三人で出るのを待つ', with: [lt] };
+        var lw = lt.name + 'も二人の恋人。円満な三人なので、二人だけで先に出ず、三人で出るのを待つ';
+        doorOpen(ctx, { g: [a, b], with: [lt], why: why, cat: 'romance', mag: 24, postWhy: lw, post: ctx.t(ctx.pick([
+          '{a}と{b}は、立ち上がらなかった。{b}が{c}に手を伸ばした。{b}「三人で来たんだから、三人で出よう｜三人で来たのだから、三人で出よう｜三人で来たのですから、三人で出ましょう」',
+          '{a}は扉を一度だけ見て、それから{c}の隣に座り直した。{a}「{c}を置いていくわけないでしょ｜{c}を置いていくわけがないだろう｜{c}を置いていくわけがありません」――{b}も、黙って{c}の反対側に座った。',
+          '{c}が顔を上げた。{c}「……行っていいよ｜……行っていい｜……行ってください」{a}と{b}は同時に首を振った。三人は恋人どうしだった。誰か一人を置いて出る扉なら、くぐる理由がなかった。'
+        ]), a, b, lt) });
+        return { cat: 'romance', mag: 24, text: text, why: why + '／' + lw };
       }
       /* 二人ずつしか認めない部屋：一人は先に出て、もう一人は残って三人目の恋人に付き添う */
       stay = HK.RoomTrio && (pairDone(ctx, a, lt) ? b : pairDone(ctx, b, lt) ? a : (a.tr.np >= b.tr.np ? a : b));
       var go0 = stay === a ? b : a;
       go0.out = true; go0.fate = '脱出'; go0.fateNote = stay.name + 'と条件を満たして出た（' + stay.name + 'は、' + lt.name + 'のために残った）';
       stay.flags.stayed = (stay.flags.stayed || 0) + 1;
-      (ctx.flags.exits = ctx.flags.exits || []).push({ a: go0.i, b: stay.i, label: ctx.label, night: !!night, stay: stay.i });
+      var exS = { a: go0.i, b: stay.i, label: ctx.label, night: !!night, stay: stay.i };
+      (ctx.flags.exits = ctx.flags.exits || []).push(exS);
       if (night && okSex(a, b)) ctx.pair(a, b).night = true;
       ctx.mod2(stay, lt, { trust: 6, aff: 4 }, { trust: 6, aff: 4 });
-      return { cat: 'romance', mag: 30, text: text + ctx.t(ctx.pick([
-        '扉の鍵が外れた。{a}は{b}の背中を押した。{a}「先に出て、待ってて。{c}と一緒に行くから｜先に出て、待っていろ。{c}と一緒に行く｜{c}と一緒に行きますから、先に出て待っていてください」――{b}は振り返りながら扉をくぐった。',
-        '扉の鍵が外れた。{b}だけが外に出て、{a}は{c}の隣に残った。{a}「一人にはしないよ｜一人にはしない｜一人にはしません」――扉の向こうで、{b}が「待ってる｜待っている｜待っています」と言った。',
-        '扉の鍵が外れた。{a}と{b}は短く口づけを交わし、{b}が先に出た。{a}は{c}の手を握った。{a}「次は、私たちの番｜次は、私たちの番だ｜次は、私たちの番です」'
-      ]), stay, go0, lt), why: why + '／' + lt.name + 'も二人の恋人。二人ずつしか出られない部屋なので、' + stay.name + 'が残って付き添う' };
+      var sw = lt.name + 'も二人の恋人。二人ずつしか出られない部屋なので、' + stay.name + 'が残って付き添う';
+      doorOpen(ctx, { g: [a, b], with: [lt], ex: exS, lt: lt, why: why, cat: 'romance', mag: 24, postWhy: go0.name + 'だけが脱出した。' + sw, post: ctx.t(ctx.pick([
+        '{a}は{b}の背中を押した。{a}「先に出て、待ってて。{c}と一緒に行くから｜先に出て、待っていろ。{c}と一緒に行く｜{c}と一緒に行きますから、先に出て待っていてください」――{b}は振り返りながら外へ出た。',
+        '{b}だけが外に出て、{a}は{c}の隣に残った。{a}「一人にはしないよ｜一人にはしない｜一人にはしません」――扉の向こうで、{b}が「待ってる｜待っている｜待っています」と言った。',
+        '{a}と{b}は短く口づけを交わし、{b}が先に出た。{a}は{c}の手を握った。{a}「次は、私たちの番｜次は、私たちの番だ｜次は、私たちの番です」'
+      ]), stay, go0, lt) });
+      return { cat: 'romance', mag: 30, text: text, why: why + '／' + sw };
     }
     /* 体の関係を持てない組（三人の場面で数えられただけの二人など）は、夜を過ごしたことにしない */
     if (night && !okSex(a, b)) night = false;
@@ -324,17 +392,20 @@
       var go = stay === a ? b : a;
       go.out = true; go.fate = '脱出'; go.fateNote = stay.name + 'と条件を満たして出た（' + stay.name + 'は残った）';
       stay.flags.stayed = (stay.flags.stayed || 0) + 1;
-      (ctx.flags.exits = ctx.flags.exits || []).push({ a: go.i, b: stay.i, label: ctx.label, night: true, stay: stay.i });
+      var exE = { a: go.i, b: stay.i, label: ctx.label, night: true, stay: stay.i };
+      (ctx.flags.exits = ctx.flags.exits || []).push(exE);
       ctx.pair(a, b).night = true;
       ctx.mod(go, stay, { ten: 6 });
-      return { cat: 'romance', mag: 30, text: text + '扉の鍵が外れた。' + go.name + 'は出ていったが、' + stay.name + 'は「もうちょっといる｜もう少しいる｜もう少しいます」と言って、残っている人たちの方を振り返った。', why: why + '／' + stay.name + 'の積極性（' + Math.round(eager(ctx, stay) * 100) + '）' };
+      var ew = stay.name + 'の積極性（' + Math.round(eager(ctx, stay) * 100) + '）';
+      doorOpen(ctx, { g: [a, b], ex: exE, why: why, cat: 'romance', mag: 20, postWhy: go.name + 'だけが脱出した。' + ew, post: go.name + 'は外へ出ていったが、' + stay.name + 'は「もうちょっといる｜もう少しいる｜もう少しいます」と言って、残っている人たちの方を振り返った。' });
+      return { cat: 'romance', mag: 30, text: text, why: why + '／' + ew };
     }
     a.out = b.out = true;
     (ctx.flags.exits = ctx.flags.exits || []).push({ a: a.i, b: b.i, label: ctx.label, night: !!night });
     var pfx = ctx.pair(a, b);
     if (night) pfx.nights = Math.max(pfx.nights || 0, prog(ctx, a, b).act.h || 1);
-    if (night && !pfx.forced && HK.FWB && HK.FWB.decide(ctx, a, b)) { HK.FWB.mark(ctx, a, b); text += HK.FWB.after(ctx, a, b) + '扉の鍵が外れる音がした。'; return finishExit(ctx, a, b, text, why, night); }
-    return finishExit(ctx, a, b, text + '扉の鍵が外れる音がした。', why, night);
+    if (night && !pfx.forced && HK.FWB && HK.FWB.decide(ctx, a, b)) { HK.FWB.mark(ctx, a, b); text += HK.FWB.after(ctx, a, b); }
+    return finishExit(ctx, a, b, text, why, night);
   }
   function finishExit(ctx, a, b, text, why, night) {
     a.fate = b.fate = '脱出';
@@ -342,8 +413,11 @@
     if (night) ctx.pair(a, b).night = true;
     ctx.mod2(a, b, { trust: 8 }, { trust: 8 });
     /* 全員で出られる部屋（順26）：部屋に残っていた人も、一緒に出る */
-    var al = bringAlong(ctx, [a, b]);
-    return { cat: 'escape', mag: 35, text: text + al, why: why + (al ? '／条件を満たした人と一緒に、ほかの全員も出られる部屋' : '') };
+    var al = bringAlong(ctx, [a, b]), ex = ctx.flags.exits || [];
+    var w = why + (al.length ? '／条件を満たした人と一緒に、ほかの全員も出られる部屋' : '');
+    /* 場面の文は条件を満たしたところまで。扉が開いたこと・外に出た後は、別の記録（doorOpen） */
+    doorOpen(ctx, { g: [a, b].concat(al), ex: ex[ex.length - 1], why: w });
+    return { cat: 'escape', mag: 35, text: text, why: w };
   }
   /* 条件の数え方は出来事ごとに散らばっている（会話・三人・口論の中の行為など）。
      区切りの終わりに、条件がそろったのにまだ部屋にいる組があれば、その場で扉を開ける */
@@ -358,7 +432,7 @@
       var a = P[i], b = P[j];
       if (a.out || b.out || !pairDone(ctx, a, b) || loveWaiting(ctx, a, b)) continue;
       var ex = exitPair(ctx, a, b, '扉の紙を見ると、' + a.name + 'と' + b.name + 'の分の数字が、いつの間にかそろっていた。', a.name + 'と' + b.name + 'の条件が、ほかの出来事の中でそろった', night);
-      ctx.say({ kind: 'event', cat: 'escape', actors: [a, b], text: ex.text + (a.out && b.out ? a.name + 'と' + b.name + 'は、扉をくぐった。' : ''), why: ex.why, mag: ex.mag || 30 });
+      ctx.say({ kind: 'event', cat: 'escape', actors: [a, b], text: ex.text, why: ex.why, mag: ex.mag || 30 });
     }
   }
   /* 部屋全体の条件の最後の一つ（「最後の一杯が空になった」。水・風船などは条件の側の last） */
@@ -368,13 +442,15 @@
     if (!P.length) return;
     var kr = ctx.rules.some(function (r) { return r.k === 'kill'; });
     var vic = kr ? ctx.chars.filter(function (c) { return (c.alive === false && c.killedBy != null) || c.flags.knocked; }) : [];
-    if (ctx.flags.oneCond) { var od = oneDoor(ctx, P, '', '部屋全体の条件がそろった'); ctx.say({ kind: 'event', cat: od.cat, actors: P, text: od.text, why: od.why, mag: od.mag }); return; }
+    if (ctx.flags.oneCond) { var od = oneDoor(ctx, P, '', '部屋全体の条件がそろった'); if (od.text) ctx.say({ kind: 'event', cat: od.cat, actors: P, text: od.text, why: od.why, mag: od.mag }); doorFlush(ctx); return; }
     var vn = names(vic);
     P.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = kr ? (HK.SAFE_ON ? vn + 'を気絶させて開いた扉から、部屋を出た' : vn + 'の命と引き換えに開いた扉から、部屋を出た') : '条件を満たし、全員で部屋を出た'; });
-    (ctx.flags.exits = ctx.flags.exits || []).push({ group: P.map(function (c) { return c.i; }), label: ctx.label });
-    var et = kr ? ctx.pick(HK.SAFE_ON ? ['扉の鍵が外れる音がした。' + names(P) + 'は、床に倒れた' + vn + 'を振り返り、それから外へ出た。', '扉が開いた。' + names(P) + 'は、まだ目を覚まさない' + vn + 'を残して、扉をくぐった。'] : ['扉の鍵が外れる音がした。' + names(P) + 'は、' + vn + 'のほうを見ないようにして外へ出た。', '扉が音もなく開いた。' + names(P) + 'は、誰も口をきかないまま、' + vn + 'を残して部屋を出た。'])
-      : lastOf(ctx.rules[0]) + '瞬間、扉が音もなく開いた。' + names(P) + 'は、顔を見合わせてから外へ出た。';
-    ctx.say({ kind: 'event', cat: 'escape', actors: P, text: et, why: '部屋全体の条件を満たした', mag: 30 });
+    var exG = { group: P.map(function (c) { return c.i; }), label: ctx.label };
+    (ctx.flags.exits = ctx.flags.exits || []).push(exG);
+    /* 出ていく様子（倒れた人を残して・顔を見合わせて）は、最後の「結末」の段に任せる */
+    doorOpen(ctx, { g: P, ex: exG, why: kr ? (HK.SAFE_ON ? vn + 'を気絶させて、部屋全体の条件がそろった' : vn + 'の命と引き換えに、部屋全体の条件がそろった') : '部屋全体の条件を満たした' });
+    if (kr) doorFlush(ctx);
+    else ctx.say({ kind: 'event', cat: 'escape', actors: P, text: lastOf(ctx.rules[0]) + '。', why: '部屋全体の条件を満たした', mag: 30 });
   }
   /* 進捗が動いたあと、出られる組がいれば出す */
   function checkExit(ctx, a, b) {
@@ -630,7 +706,7 @@
       /* 条件を満たした出来事・扉が開いた出来事に印をつける（経過の画面で色を変えて示す。view.js） */
       ctx.flags.goalSeen = {}; ctx.flags.goalOut = 0;
       var say0 = ctx.say;
-      ctx.say = function (o) { var e = say0.call(this, o); markGoals(ctx, e); return e; };
+      ctx.say = function (o) { var e = say0.call(this, o); markGoals(ctx, e); if (o && o.kind !== 'step' && doorHit(ctx, o)) doorFlush(ctx); return e; };
     },
     phase: function (ctx, s, n) {
       if (s === 0) {
@@ -640,8 +716,10 @@
       if (s === n - 1 && ctx.present().length > 1) ctx.say({ text: '照明が一段暗くなった。残された時間は少ない。' });
     },
     after: function (ctx) {
+      doorFlush(ctx);
       countFlavor(ctx);
       sweepExits(ctx);
+      doorFlush(ctx);
       var P = ctx.present();
       P.forEach(function (c) { c.stress = HK.clamp(c.stress + ctx.env.pressure / 100 * 12 + 4, 0, 100); });
       /* 二人きりは話す時間が長い：毎時間、少しずつ距離が縮む */
@@ -655,7 +733,9 @@
     },
     end: function (ctx) { return ctx.flags.oneOut || ctx.present().filter(function (c) { return !c.flags.knocked; }).length <= (hasPairRule(ctx) ? 1 : 0); },
     finish: function (ctx) {
+      doorFlush(ctx);
       sweepExits(ctx);
+      doorFlush(ctx);
       /* 気絶した人は present() に入らないので、部屋に残った人として別に足す */
       ctx.present().concat(ctx.chars.filter(function (c) { return c.alive !== false && !c.out && c.flags && c.flags.knocked; })).forEach(function (c) {
         /* 条件を満たしたのに、自分の意思で残った人（exitPair の stay）は「取り残された」ではない */
@@ -1247,7 +1327,9 @@
       ctx.flags.oneOut = true;
       (ctx.flags.exits = ctx.flags.exits || []).push({ a: b.i, b: a.i, label: ctx.label, how: 'sacrifice' });
       ctx.mod2(a, b, { aff: 10 }, { aff: 25, trust: 25, att: 10 });
-      return { mag: 45, text: ctx.t(ctx.pick(['{a}は{b}を扉の外へ押し出した。「先に行って｜先に行け｜先に行ってください」扉は二度と開かなかった。', '{a}は{b}の背中を叩いた。「あなたが出て。私はいい｜あなたが出ろ。私はいい｜あなたが出てください。私はいいです」閉まる扉の隙間で、{a}は笑っていた。', '「私、待ってるから｜私は、待っている｜私、待っています」と{a}は言った。それが嘘だと、{b}にも分かっていた。']), a, b), why: a.name + 'のNP（' + Math.round(a.eg.NP) + '）と' + b.name + 'への好意（' + Math.round(R(ctx, a, b).aff) + '）' };
+      var tx = ctx.t(ctx.pick(['{a}は{b}を扉の前へ押しやった。「先に行って｜先に行け｜先に行ってください」', '{a}は{b}の背中を叩いた。「あなたが出て。私はいい｜あなたが出ろ。私はいい｜あなたが出てください。私はいいです」{a}は笑っていた。', '「私、待ってるから｜私は、待っている｜私、待っています」と{a}は言った。それが嘘だと、{b}にも分かっていた。']), a, b);
+      doorOpen(ctx, { g: [a, b], why: '一人しか出られない部屋。' + a.name + 'が' + b.name + 'を先に出した' });
+      return { mag: 45, text: tx, why: a.name + 'のNP（' + Math.round(a.eg.NP) + '）と' + b.name + 'への好意（' + Math.round(R(ctx, a, b).aff) + '）' };
     }
   });
   EV.push({
@@ -1256,11 +1338,13 @@
     /* 一人で抜け駆けするのはドライで攻撃的な人。NPが高い人はまずしない */
     w: function (ctx, a) { return Math.max(0.01 + a.stress / 1200, a.tr.cold * 0.7 + a.tr.aggr * 0.5 - a.tr.np * 0.4 - a.tr.ac * 0.25 - 0.3); },
     run: function (ctx, a, b) {
-      a.out = true; a.fate = '脱出'; a.fateNote = '一人で扉をくぐった';
+      a.out = true; a.fate = '脱出'; a.fateNote = '一人で部屋を出た';
       ctx.flags.oneOut = true;
       (ctx.flags.exits = ctx.flags.exits || []).push({ a: a.i, b: b.i, label: ctx.label, how: 'grab' });
       ctx.others(a).forEach(function (o) { ctx.mod(o, a, { aff: -30, ten: 35, trust: -40 }); });
-      return { mag: 45, text: ctx.t(ctx.pick(['{b}が目を離した隙に、{a}は一人で扉をくぐった。振り返らなかった。', '{a}は{b}の手を振りほどいて、閉まりかけた扉に体を滑り込ませた。', '眠ったふりをしていた{a}は、皆が寝静まるのを待って、扉に手をかけた。']), a, b), why: a.name + 'のドライさ（A高・NP低）と攻撃性。焦り ' + Math.round(a.stress) };
+      var tx = ctx.t(ctx.pick(['{b}が目を離した隙に、{a}は一人で扉に手をかけた。振り返らなかった。', '{a}は{b}の手を振りほどいて、扉に手をかけた。', '眠ったふりをしていた{a}は、皆が寝静まるのを待って、扉に手をかけた。']), a, b);
+      doorOpen(ctx, { g: [a, b], why: '一人しか出られない部屋。' + a.name + 'が一人で出た' });
+      return { mag: 45, text: tx, why: a.name + 'のドライさ（A高・NP低）と攻撃性。焦り ' + Math.round(a.stress) };
     }
   });
 
@@ -1340,7 +1424,7 @@
   /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
   if (HK.SCEN_ORDER.indexOf('whiteroom') < 0) HK.SCEN_ORDER.splice(1, 0, 'whiteroom');
   /* 追加の展開（room-trio.js など）から使う部品 */
-  HK.RoomAPI = { K: K, EV: EV, scen: scen, prog: prog, ruleDone: ruleDone, seqWait: seqWait, seqFlush: seqFlush, bumpAct: bumpAct, waitNote: waitNote, pairDone: pairDone, leftText: leftText, eager: eager, willing: willing, desperate: desperate, tieWall: tieWall, names: names, hasPairRule: hasPairRule, finishExit: finishExit, exitPair: exitPair,
+  HK.RoomAPI = { K: K, EV: EV, scen: scen, prog: prog, ruleDone: ruleDone, seqWait: seqWait, seqFlush: seqFlush, bumpAct: bumpAct, waitNote: waitNote, pairDone: pairDone, leftText: leftText, eager: eager, willing: willing, desperate: desperate, tieWall: tieWall, names: names, hasPairRule: hasPairRule, finishExit: finishExit, exitPair: exitPair, doorOpen: doorOpen, doorFlush: doorFlush, DOOR_LINE: DOOR_LINE,
     /* 条件を足す側（room-games.js・room-games-r18.js）から使う部品 */
     KLABEL: KLABEL, ITEM: ITEM, ACT_TEXT: ACT_TEXT, addKind: addKind, noteN: noteN, isGlob: isGlob, globLeft: globLeft, globDone: globDone, checkExit: checkExit, exitAll: exitAll, oneDoor: oneDoor, allOut: allOut, bringAlong: bringAlong, lastOf: lastOf, okSex: okSex, exclOther: exclOther, cntTag: cntTag };
 })();

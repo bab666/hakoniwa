@@ -239,8 +239,8 @@
       var sexed = !!ctx.flags.lastTrioInfo, add = '';
       if (sexed && !HK.SAFE_ON && S.X && S.X.trio) add = S.X.trio(ctx, t.a, t.b, t.c) || '';
       if (!add) add = ctx.t(q3(ctx.pick(TRIO_SAFE)), t.a, t.b, t.c);
-      /* 進み具合の表示・扉の開く文より前（場面の終わり）に差し込む */
-      var at = -1, re = /（三人で[^）]*）|扉はまだ開かない。|扉の鍵が外れる音がした。|扉が開いた。|鍵の外れる音に/g, m;
+      /* 進み具合の表示より前（場面の終わり）に差し込む。扉が開いたことは場面の文に書かず、別の記録（区切りの行。scenario-room.js の doorOpen）になったので、扉の文は探さない */
+      var at = -1, re = /（三人で[^）]*）|扉はまだ開かない。/g, m;
       while ((m = re.exec(r.text))) { if (m.index >= r.text.length * 0.5) { at = m.index; break; } }
       r.text = at >= 0 ? r.text.slice(0, at) + add + r.text.slice(at) : r.text + add;
       r.why = (r.why || '') + '／' + t.a.name + 'と' + t.b.name + 'は同一人物。' + t.c.name + 'は' + t.a.name + 'の' + (tie(ctx, t.a, t.c, 'spouse') ? '結婚相手' : '恋人');

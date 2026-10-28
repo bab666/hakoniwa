@@ -13,6 +13,11 @@
    ■ 作風：小説調（N）と男性向け（E。擬音・♡の嫌がる喘ぎ・態度9種の山場・モブの声）。描写の有無「ほのめかす」は行為を書かない。数行で短く＝行為＋山場だけ。濃い＝もう一度
    ■ 点検の決まり：性的な語のある文には住人の名前を一人だけ（庇った人と襲われた人を同じ文に並べない）。庇った人の名前の文には、モブの語と性的な語を一緒に置かない。
      男のモブの文は「男」、女のモブの文は「獲物」を入れる（住人でない相手の文として数える）。台詞は3本・一人称「私」・二人称「あなた」。モブの台詞は「＠…」。
+   ■ 環境値「街のαに襲われやすさ」（mobheat。2026-10-28 担当KI。ゾンビの街の zpair と同じ作り）：
+     off なし（起きない）／on ふつう（既定。前と同じ：重み×1・1回の箱庭で2回まで・同じΩは1回）／
+     many 多い（重み×6・3回まで・同じΩに2回まで）／lots とても多い（重み×40・4回まで・同じΩに2回まで）。多い・とても多いでは進行役の出来事（pri）として選ぶ。同じΩの2回目は、前の発情期から4区切り以上あと。
+     抑制剤の効き：発情期の重さが80以上なら、抑制剤を飲んだΩの重みの係数を 0.35 → 0.6 に（重い発情期は抑制剤が効きにくい）。
+     襲われたΩ（庇った人の身代わりで助かったときを除く）は、次の区切りの「そのあと」の出来事（omega-mob-after-r18.js の om_mobr_after）に回す（s.after に積む）
    登場人物はすべて成人として扱う。全年齢版にはこのファイルを置かない */
 (function () {
   'use strict';
@@ -271,12 +276,58 @@
     f: L('「＠可愛い声。もっと鳴いて」|「＠抑制剤も飲まずに出歩くから、こうなるの」|「＠いい匂い……頭がくらくらする」|「＠ほら、腰が動いてる」|「＠暴れないの。痛くされたいの？」|「＠声、我慢しなくていいのよ」')
   };
 
+  /* 山場の三本目（2026-10-28 担当KI：街のαに襲われやすさ「多い」「とても多い」で1回の箱庭に何度も起きるので、同じ文が3回出ないように）。{M} の文は書かない */
+  (function () {
+    var E3 = {
+      proud: '{v}は奥歯を噛みしめ、声だけは出すまいとしていた。{s:hit}。{v}「{vm1}」――漏れた声に、{v}自身がいちばん驚いた顔をした。最後の一度で、{v}の背中が弓なりに反った。',
+      stern: '{v}は床に爪を立て、乱れる呼吸を数えようとした。{s:hit}。数える声が乱れ、やがて途切れる。{v}は全身をこわばらせたまま、短く震えて果てた。',
+      tsun: '{v}は感じてなんかいないと、自分に言い聞かせるように首を振った。{s:wet}。{v}「{vm1}」――首を振るたびに、甘い声が勝手にこぼれた。果てた瞬間、{v}は悔しさに唇を噛んで泣いた。',
+      gentle: '{v}は、誰か助けてと心の中で繰り返していた。{s:hit}。その声は、熱に溶けて形にならなかった。{v}は涙をこぼしながら、小さく体を震わせて果てた。',
+      devoted: '{v}は目を閉じて、早く終わってと祈っていた。{s:hit}。{v}「{vm1}」――祈る声がほどけて、ただの喘ぎになる。{v}の体は、細く何度も跳ねて果てた。',
+      cool: '{v}は天井の染みを見つめて、意識をよそへ逃がそうとした。{s:hit}。逃がしたはずの意識が、熱に引き戻される。{v}の無表情が崩れたのは、果てる一瞬だけだった。',
+      free: '{v}は軽口を叩いて、怖さをごまかそうとした。{s:hit}。{v}「{vm1}」――軽口はすぐに続かなくなった。{v}は目に涙を溜めたまま、体を大きく跳ねさせて果てた。',
+      shy: '{v}は唇を噛んで、声を一つも漏らすまいとしていた。{s:wet}。噛んだ唇の隙間から、か細い声がこぼれる。{v}は体を小さく丸めて、震えながら果てた。',
+      polite: '{v}は震える声で、もうおやめくださいと繰り返した。{s:hit}。{v}「{vm1}」――丁寧な言葉は、途中から喘ぎに呑まれていった。果てたあと、{v}は焦点の合わない目で宙を見つめていた。'
+    };
+    var N3 = {
+      proud: '{v}は奥歯を噛みしめ、声だけは出すまいとしていた。それでも喉の奥から、掠れた吐息が漏れる。最後の一度で、{v}の背中が大きく反った。',
+      stern: '{v}は床に爪を立て、乱れる呼吸を整えようとした。整えるそばから、息は熱に乱されていく。{v}は全身をこわばらせたまま、短く震えて果てた。',
+      tsun: '{v}は感じてなんかいないと、自分に言い聞かせるように首を振った。首を振るたびに、こらえた声がこぼれる。果てた瞬間、{v}は悔しさに唇を噛んで泣いた。',
+      gentle: '{v}は、誰か助けてと心の中で繰り返していた。その声は、熱に溶けて形にならなかった。{v}は涙をこぼしながら、小さく体を震わせて果てた。',
+      devoted: '{v}は目を閉じて、早く終わってと祈っていた。祈りの言葉がほどけて、ただの吐息になる。{v}の体は、細く何度も震えて果てた。',
+      cool: '{v}は天井の染みを見つめて、意識をよそへ逃がそうとした。逃がしたはずの意識が、熱に引き戻される。{v}の無表情が崩れたのは、果てる一瞬だけだった。',
+      free: '{v}は軽口を叩いて、怖さをごまかそうとした。その軽口も、すぐに続かなくなった。{v}は目に涙を溜めたまま、体を大きく震わせて果てた。',
+      shy: '{v}は唇を噛んで、声を一つも漏らすまいとしていた。噛んだ唇の隙間から、か細い声がこぼれる。{v}は体を小さく丸めて、震えながら果てた。',
+      polite: '{v}は震える声で、もうおやめくださいと繰り返した。丁寧な言葉は、途中から吐息に呑まれていった。果てたあと、{v}は焦点の合わない目で宙を見つめていた。'
+    };
+    Object.keys(E3).forEach(function (k) { if (T.ePeak[k]) T.ePeak[k].push(E3[k]); if (T.nPeak[k]) T.nPeak[k].push(N3[k]); });
+  })();
+
   /* ---------- 判定 ---------- */
+  /* ---------- 環境値「街のαに襲われやすさ」 ---------- */
+  var MH = { off: 0, on: 1, many: 2, lots: 3 }, MH_W = [0, 1, 6, 40], MH_MAX = [0, 2, 3, 4], MH_PER = [0, 1, 2, 2];
+  function mhLv(ctx) { var v = ctx.env && ctx.env.mobheat; return MH[v] != null ? MH[v] : 1; }
+  if (!scen.env.some(function (e) { return e.id === 'mobheat'; })) {
+    var hi0 = 0; scen.env.forEach(function (e, i) { if (e.id === 'heat') hi0 = i + 1; });
+    scen.env.splice(hi0, 0, { id: 'mobheat', label: '街のαに襲われやすさ', type: 'select', def: 'on', options: [{ v: 'off', label: 'なし（街のαには襲われない）' }, { v: 'on', label: 'ふつう' }, { v: 'many', label: '多い（1回の箱庭で3回まで・同じΩに2回目も）' }, { v: 'lots', label: 'とても多い（発情期のたびに狙われやすい）' }],
+      desc: '発情期のΩが、街で見知らぬα（住人ではないモブ）に襲われる場面の起きやすさ（内容のスイッチの「合意のない展開」も入にしたときだけ）。「多い」「とても多い」では発情期のたびに狙われやすくなり、襲われた次の区切りに、関係のある住人が慰める・そばで見守る・怒って探しに行く場面と、Ωの受け止め方（泣く・平気なふり・自分を責める・「Ωだから仕方ない」と諦める など）が続く。襲われるのは、モブ相手に受けに回れるΩだけ（「攻め」指定・性行為の相手を「固定した相手だけ」・R18に参加しない人・性器なしの人は襲われない）。番のいるΩ・抑制剤の効いたΩは起きにくい（発情期の重さが80以上なら抑制剤は効きにくい）。「なし」では起きない' });
+  }
   function canRape(p) { var P = HK.Pos; return !!(HK.State.mobSexOk(p) && (!P || P.canReceive(p)) && !(P && P.noGen && P.noGen(p))); }
   function victimOk(ctx, v) {
     return sx(v) === 'o' && v.om.heat > 0 && HK.State.canAct(v) && canRape(v) && (!HK.Content || HK.Content.ok(ctx, 'force'));
   }
-  function st(ctx) { return ctx.om.mobR || (ctx.om.mobR = { n: 0, prot: 0, by: {} }); }
+  function st(ctx) { return ctx.om.mobR || (ctx.om.mobR = { n: 0, prot: 0, by: {}, cnt: {}, after: [] }); }
+  /* 起こせるか（回数の上限・同じΩの回数と間隔）。ふつうは前と同じ（2回まで・同じΩは1回） */
+  function roomOk(ctx, v) {
+    var lv = mhLv(ctx), s = ctx.om.mobR;
+    if (!lv) return false;
+    if (!s) return true;
+    if (s.n >= MH_MAX[lv]) return false;
+    if (s.by[v.i] == null) return true;
+    return ((s.cnt && s.cnt[v.i]) || 1) < MH_PER[lv] && ctx.stepIndex - s.by[v.i] >= 4;
+  }
+  /* 抑制剤の係数：発情期の重さが80以上なら効きが弱い */
+  function suppK(ctx, v) { var h = ctx.env.heat == null ? 50 : ctx.env.heat; return v.om.supp ? (h >= 80 ? 0.6 : 0.35) : 1; }
   /* 関係（庇う人 p から見た、襲われる人 v） */
   function relOf(ctx, p, v) {
     var Ti = HK.Ties, r = ctx.R(p, v);
@@ -357,7 +408,7 @@
     var mp = { v: v.name, M: mob.M, Ms: mob.Ms, w: w };
     var R = HK.DarkThick && HK.DarkThick.resist ? HK.DarkThick.resist(rng, v).replace(/\{v\}/g, v.name) : '';
     var parts = [fill(ctx, pk(ctx, T.open[type]), mp) + R];
-    s.n++; s.by[v.i] = ctx.stepIndex;
+    s.n++; s.by[v.i] = ctx.stepIndex; s.cnt[v.i] = (s.cnt[v.i] || 0) + 1;
     if (pr) {
       p = pr.p; rel = pr.rel; ctx._shieldN = (ctx._shieldN || 0) + 1;
       var pm = { v: v.name, p: p.name, M: mob.M, Ms: mob.Ms, w: w };
@@ -403,25 +454,35 @@
     } else {
       parts.push(low ? fill(ctx, pk(ctx, T.veil), mp) : body(ctx, v, mob, type, { w: w }));
     }
+    /* そのあとの場面（次の区切り。omega-mob-after-r18.js）：襲われたΩだけ（身代わりで助かったときは積まない） */
+    if (fate === 'hurt') s.after.push({ v: v.i, at: ctx.stepIndex, p: p ? p.i : -1, rel: rel, br: br, type: type, w: w, mob: mob.g, n: s.cnt[v.i] });
     if (fate === 'hurt') { ctx.stress(v, 40); }
     else ctx.stress(v, 25);
     if (!p) parts.push(fill(ctx, pk(ctx, T.after), mp));
     if (HK.Emo) HK.Emo.bump(ctx, v, { fear: fate === 'hurt' ? 45 : 30 }, '街のα');
-    var why = v.name + 'の発情期の匂いに、' + (type === 'prey' ? '街のα（モブ）が群がり、無理やり襲われた' : '居合わせたα（モブ）が理性を失い、無理やり襲いかかった') + '（発情期の重さ ' + heat + (bonded ? '・番がいても' : '') + '）';
+    /* 合意のない展開の印（HK.Pos.FORCE_MARK。2026-10-28 担当KI：庇った人が性欲「なし」でも、記録の上で合意の場面と取り違えないように。orient-audit の O6） */
+    var why = ((HK.Pos && HK.Pos.FORCE_MARK) || '') + v.name + 'の発情期の匂いに、' + (type === 'prey' ? '街のα（モブ）が群がり、無理やり襲われた' : '居合わせたα（モブ）が理性を失い、無理やり襲いかかった') + '（発情期の重さ ' + heat + (bonded ? '・番がいても' : '') + '）';
     if (p) why += '。' + p.name + '（' + REL_NAME[rel] + '）が割って入った――' + { hit: '庇って殴られた', offer: '身代わりを申し出て、代わりに犯された', both: '二人とも犯された', watch: '縛られて見せつけられ、匂いに当てられて興奮してしまった' }[br];
     return { cat: 'conflict', sex: true, lewd: !low, with: p && withOk(v, p) ? [p] : [], text: J(parts), why: why, mag: p ? 55 : 48 };
   }
 
-  /* 足す順は HK.addTo で元のファイルの順に保つ（敵視・喪失の組み込みが、分割読み込みでは後から足すため） */
-  HK.addTo(EV, {
+  /* 多い・とても多いでは、箱庭の進行役の出来事（pri）として選ぶ（engine.js の act：重み×priBoost、小イベントの取り分の計算に入れない）。
+     ふつうは前と同じ（pri でない）。pri は直前の when で見た環境値で決まる（一回の箱庭の中では変わらない） */
+  var lvNow = 1;
+  var EVD = {
     id: 'om_mobr', cat: 'conflict', scope: 'solo', sex: true, r18: true, noOdd: true,
     /* 出来事の一覧の印（モブ・合意のない展開。条件は victimOk の中にあり、when の文字列からは拾えないため。動きには使わない） */
     tags: ['night', 'mob', 'force'],
-    when: function (ctx, v) { var s = ctx.om.mobR; return !(s && (s.n >= 2 || s.by[v.i] != null)) && victimOk(ctx, v); },
+    when: function (ctx, v) { lvNow = mhLv(ctx); return roomOk(ctx, v) && victimOk(ctx, v); },
     w: function (ctx, v) {
       var heat = (ctx.env.heat == null ? 50 : ctx.env.heat) / 100, bonded = !!(BD && BD.mateOf && BD.mateOf(ctx, v));
-      return (0.3 + heat * 0.7) * (v.om.supp ? 0.35 : 1) * (bonded ? 0.35 : 1);
+      return (0.3 + heat * 0.7) * suppK(ctx, v) * (bonded ? 0.35 : 1) * MH_W[mhLv(ctx)];
     },
     run: run
-  });
+  };
+  Object.defineProperty(EVD, 'pri', { enumerable: true, get: function () { return lvNow >= 2; } });
+  /* 足す順は HK.addTo で元のファイルの順に保つ（敵視・喪失の組み込みが、分割読み込みでは後から足すため） */
+  HK.addTo(EV, EVD);
+  /* そのあとの場面（omega-mob-after-r18.js）と表示（content-events-r18.js）が使う */
+  OM.MobR = { relOf: relOf, REL_NAME: REL_NAME, canRape: canRape, lv: mhLv, st: st, withOk: withOk, WHERE: WHERE };
 })();
