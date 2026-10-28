@@ -1,0 +1,546 @@
+/* 箱庭シミュレーター: クラスメイト ― 先生と生徒の恋愛（環境値「先生との恋愛」tlove。2026-10-28 担当KC）
+   ■ 環境値 tlove（scenario-classroom.js の env の末尾）：
+       off（既定）…今までどおり、先生と生徒の間に恋愛は起きない。このファイルは何も足さない（乱数も引かない）
+       secret …あり（隠れて付き合う）。恋人になっても周りには秘密
+       open …あり（公にすることもある）。秘密のまま始まり、バレかけたときや卒業が近いときに、公にする選択がある
+     担任の先生（住人の役割 role 'teacher'）がいないときも、何もしない。
+   ■ 先生は複数いる前提：ctx.teachers があればそれ、無ければ [ctx.teacher]（classroom-teacher.js）。
+   ■ 恋愛の可否：HK.canLove を HK.wrap で包み、このファイルの場面を回している間（ctx._tlScope）だけ、先生×生徒の組の
+     「先生は恋愛しない」（engine.js の役割の判定）を外す。恋愛対象の性別・受け攻め（pos.js の okLove）・恋愛にしない組・恋愛相手の固定は、
+     そのまま両方向で通す（HK.State.pairLove）。夜は HK.State.pairSex（HK.Pos.okSex）と ctx.romanceOk(…, { sex: true }) を通す。
+     共通の出来事（片想いの相手 ctx.crush・嫉妬など）からは、今までどおり先生は恋愛の相手にならない（先生と生徒の恋は、このファイルの場面だけで進む）。
+     classroom-teacher.js が設定のときに 0 にする先生との惹かれは、オンのときだけ元の値に戻す（cls.setup を包む）。
+   ■ 起こりやすさ：生徒どうしより低め。先生の側は CP が高いほど踏みとどまり、AC が高いほど流される（惹かれの育ち・告白・受け入れ）。
+   ■ 場面（月の終わり。cls.after を包む）
+       近づく（6種）：放課後の教室／進路相談のあとに／補習／帰り道／連絡先を渡す／「先生」と呼ぶ距離感
+       告白：生徒から（受ける・「卒業するまで待って」＝3年生だけ・断る）／先生から（受ける・断る）
+       恋人になってから：人目を避けた逢瀬／見られる（黙っていてくれる・噂を広める）／噂になる／バレかける（処分の危機。
+         secret は身を潜める・先生から「ここまで」、open は公にする選択）／公にする（open だけ。周りの反応・保護者）／
+         秘密を知る人の嫉妬（すれ違い系）／秘密を守ってくれる友達（仲良し系）／R18版の夜（r18 の印の中。準備室・夜の教室・先生の部屋）
+   ■ 秘密（pf.tl.pub が偽）：関係図の札は「恋人（秘密）」（HK.LABELS.tlsecret）。秘密を知る人は pf.tl.known（見た・噂を聞いた）。
+     共通の失恋・片想いの出来事（heartbreak.js の hb_news、unreq.js の想い人 HK.Unreq.heartOf）は、秘密を知らない人からは先生との恋を見ない。
+   ■ 結末（cls.finish を包む。卒業式・修了式の段の最後の一文の前に入れる）：年度末に付き合っている組は、卒業式のあとの一文と「その後」
+     （3年生：続く（堂々と・一緒に暮らす・結婚の約束）／自然消滅／別れる（先生から「ここまで」）／再会（数年後）。気質・信頼・好意で分ける）、
+     1・2年生は「来年も秘密を続ける」など、一学期だけなら夏休みの約束。「卒業するまで待って」と言われた3年生は、卒業式のあとに答えを聞く。
+     「〇〇と〇〇のその後――」を結末の覚え書き（ctx.flags.endNotes）に足す（共通の「その後」epilogue.js がその組を重ねて書かないように）。
+   全年齢モード（HK.SAFE_ON）・全年齢版は恋愛まで（夜の場面は r18 の印の中）。登場人物はすべて成人として扱う */
+(function () {
+  'use strict';
+  var HK = window.HK, cls = HK.SCENARIOS && HK.SCENARIOS.classroom;
+  if (!cls || !HK.State) return;
+  function L(s) { return s.split('|'); }
+  function R(ctx, a, b) { return ctx.R(a, b); }
+  function on(ctx) { var v = ctx && ctx.env && ctx.env.tlove; return !!(ctx && ctx.scen === cls && (v === 'secret' || v === 'open')); }
+  function isT(c) { return !!c && c.role === 'teacher'; }
+  function allTeachers(ctx) { return (ctx.teachers && ctx.teachers.length ? ctx.teachers : ctx.teacher ? [ctx.teacher] : []).filter(Boolean); }
+  function teachers(ctx) { return allTeachers(ctx).filter(function (t) { return HK.State.here(t); }); }
+  function students(ctx) { return ctx.present().filter(function (c) { return !isT(c) && !(c.flags && c.flags.teacher); }); }
+  function tl(ctx, t, s) { var pf = ctx.pair(t, s); return pf.tl || (pf.tl = { known: {}, risk: 0, nights: 0 }); }
+  function ps(c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || 'gentle'; }
+  function top(c) { return HK.voiceTop ? HK.voiceTop(c) : 'NP'; }
+  function scoped(ctx, fn) { var o = ctx._tlScope; ctx._tlScope = true; try { return fn(); } finally { ctx._tlScope = o; } }
+  /* 文の差し込み：{t}＝先生 {s}＝生徒 {w}＝第三者 {ca}・{cb}＝夜の呼び方（F0）。{a}・{b} は ctx.t（F） */
+  function F0(str, m) { return String(str).replace(/\{(t|s|w|ca|cb)\}/g, function (x, k) { var v = m[k]; return v == null ? x : typeof v === 'string' ? v : v.name; }); }
+  function F(ctx, str, m) { return ctx.t(F0(str, m), m.a, m.b); }
+  function pick(ctx, list) { return ctx.pick(list); }
+  function span(ctx) { return ctx.env.span === 'term' ? '一学期' : '一年'; }
+
+  /* ---------- 恋愛の判定（先生×生徒の組は、このファイルの場面の中だけで開く） ---------- */
+  HK.wrap(HK, 'canLove', function (prev) {
+    return function (a, b) {
+      var c0 = HK._curCtx;
+      if (a && b && c0 && c0._tlScope && isT(a) !== isT(b) && on(c0)) {
+        var t = isT(a) ? a : b, r0 = t.role;
+        t.role = 'teacher-love';
+        try { return prev.apply(this, arguments); } finally { t.role = r0; }
+      }
+      return prev.apply(this, arguments);
+    };
+  });
+  /* 恋の二人になれる組：恋愛対象（両方向）・受け攻め・恋愛にしない組・固定・家族・恋愛の起こりやすさ */
+  function loveOk(ctx, t, s) { return scoped(ctx, function () { return HK.State.pairLove(t, s) && !ctx.pair(t, s).kin && ctx.romanceOk([t, s]); }); }
+  /* 恋人がいない（not は数えない） */
+  function free(ctx, x, not) {
+    var ls = HK.Poly && HK.Poly.lovers ? HK.Poly.lovers(ctx, x) : ctx.chars.filter(function (o) { return o !== x && ctx.pair(x, o).couple; });
+    return !ls.some(function (o) { return o !== not && o.alive !== false; });
+  }
+  /* 先生の踏みとどまり（CP が高いほど小さく、AC が高いほど大きい）と、生徒の惹かれやすさ */
+  function rT(t) { return HK.clamp(1.05 - t.tr.cp * 0.6 + t.tr.ac * 0.35, 0.25, 1.2); }
+  function rS(ctx, s, t) { return 0.75 + s.tr.fc * 0.2 + s.tr.ac * 0.1 + (R(ctx, s, t).aff > 20 ? 0.2 : 0); }
+  /* 秘密を知らない人（viewer）から見えない、x の先生との恋（x が先生と秘密で付き合っている） */
+  function hidden(ctx, viewer, x) {
+    if (!on(ctx) || !x || isT(x)) return false;
+    return allTeachers(ctx).some(function (t) {
+      if (t === viewer) return false;
+      var pf = ctx.pair(t, x);
+      return !!pf.couple && !(pf.tl && (pf.tl.pub || (viewer && pf.tl.known[viewer.i])));
+    });
+  }
+
+  /* ====================== 文 ====================== */
+  /* 近づく（6種）。{t}＝先生 {s}＝生徒 */
+  var NEAR = [
+    { id: 'room', name: '放課後の教室', w: function () { return 1; },
+      T: L('放課後の教室に、{s}だけが残っていた。日誌を書き終えるのを待つあいだ、{t}は窓際で小テストの採点をしていた。{s}「先生、いつもこんなに遅くまでいるの？｜先生は、いつもこんなに遅くまでいるのか？｜先生、いつもこんなに遅くまでいらっしゃるんですか？」――{t}は赤ペンを止めて、少しだけ笑った。夕日が、二人の机のあいだに長い影を落としていた。|{s}が忘れ物を取りに戻ると、誰もいない教室で{t}が黒板を消していた。{s}は黙って、反対側の端から黒板消しを動かした。真ん中で手が止まり、二人は同時に顔を上げた。{t}「……ありがとう。もう暗いから、気をつけて帰って｜……助かった。もう暗い、気をつけて帰れ｜……ありがとうございます。もう暗いですから、気をつけて帰ってくださいね」|放課後、{s}は{t}に頼まれて、教室の掲示物を貼り替えた。脚立を押さえる{t}の手が、ときどき{s}の足首に触れそうになった。作業が終わる頃には、二人とも妙に口数が少なくなっていた。') },
+    { id: 'career', name: '進路相談のあとに', w: function (ctx, t, s) { return s.grade === 3 ? 1.4 : 0.5; },
+      T: L('進路相談が終わったあとも、{s}はすぐには席を立たなかった。{t}は資料をまとめながら、「ほかに話したいことがあるなら、聞くよ｜ほかに話したいことがあるなら、聞こう｜ほかに話したいことがあるなら、聞きますよ」と言った。{s}は進路とは関係のない話を、三十分もした。{t}は一度も時計を見なかった。|{t}「あなたなら、どこへ行っても大丈夫だよ｜あなたなら、どこへ行っても大丈夫だ｜あなたなら、どこへ行っても大丈夫ですよ」――進路相談の終わりに、{t}はそう言った。{s}は嬉しいはずなのに、胸の奥が少し痛んだ。卒業したらこの人に会えなくなるのだと、そのとき初めて気づいたからだった。|進路相談の面談室で、{t}は{s}の志望校の資料を一緒にめくった。ふと顔を上げると、思っていたより近くに{t}の顔があった。{s}は資料に目を戻したが、もう一行も頭に入ってこなかった。') },
+    { id: 'hoshu', name: '補習', w: function (ctx, t, s) { return ctx.stat(s, 'study') <= 2 ? 1.3 : 0.5; },
+      T: L('補習を受けていたのは、{s}一人だけだった。{t}は隣の席に座って、解き方を一行ずつ書いてみせた。肩が触れそうな距離で、{s}の頭には数式がひとつも入ってこなかった。|{t}は補習のプリントの端に、小さく「よくできました」と書いた。{s}はそれを、ほかのどのプリントよりも丁寧にファイルにしまった。次の週も、{s}は分かっている問題をわざと一問だけ間違えた。|補習の日、教室の冷房が壊れていた。{t}は職員室から扇風機を抱えてきて、{s}の方へ向けた。自分は汗だくのまま板書を続ける{t}の背中を、{s}はずっと見ていた。') },
+    { id: 'way', name: '帰り道', w: function () { return 0.9; },
+      T: L('帰りの電車で、{s}は偶然{t}と同じ車両に乗り合わせた。{t}は一瞬迷ってから、{s}の隣の吊り革をつかんだ。学校の外で見る{t}は、教室にいるときより少しだけ若く見えた。|雨の日の夕方、傘を忘れた{s}が昇降口で立ち尽くしていると、{t}が自分の傘を差し出した。{t}「返すのは明日でいいから｜返すのは明日でいい｜返すのは明日でいいですよ」――{t}は鞄を頭に乗せて、雨の中を駆けていった。{s}は、その傘を返すのが少しだけ惜しかった。|駅までの道を、{t}と{s}は並んで歩いた。話題はいつの間にか、授業のことから好きな本のことへ移っていた。改札の前で別れるとき、{t}は「今の話は、ほかの人には内緒｜今の話は、ほかの者には内緒だ｜今の話は、ほかの人には内緒ですよ」と笑った。') },
+    { id: 'contact', name: '連絡先を渡す', w: function () { return 1.5; },
+      when: function (ctx, t, s, st) { return !st.contact && R(ctx, s, t).att >= 16 && R(ctx, t, s).att >= 14; },
+      T: L('{s}が提出したノートが返ってくると、最後のページに小さな紙が挟まっていた。{t}の字で、連絡先が一行だけ書いてあった。「＠＠困ったときだけ」と添えられたその紙を、{s}は手帳のいちばん奥にしまった。|放課後の廊下で、{s}は{t}に小さく折った紙を渡した。中には、自分の連絡先が書いてあった。{t}は受け取るべきか迷うように紙を見つめ、それから黙って胸ポケットにしまった。|{t}は迷った末に、{s}に連絡先を教えた。{t}「進路のことで、何かあったら｜進路のことで、何かあればだ｜進路のことで、何かあったら、ですよ」――言い訳のように付け足した{t}の耳は、少し赤かった。その夜、{s}の携帯が一度だけ短く鳴った。') },
+    { id: 'call', name: '「先生」と呼ぶ距離感', w: function () { return 1; },
+      when: function (ctx, t, s) { return R(ctx, s, t).att >= 20; },
+      T: L('廊下ですれ違いざま、{s}はつい{t}を名前だけで呼びかけて、慌てて口をつぐんだ。{t}は振り返らずに、「＠{t}＠ここでは、先生、でしょう｜ここでは、先生、だ｜ここでは、先生、ですよ」と小さく言った。その声は、叱っているようには聞こえなかった。|{s}「先生って、先生じゃないときは何してるの？｜先生は、先生でないときは何をしている？｜先生って、先生じゃないときは何をしてるんですか？」――{t}は少し考えてから、「＠{t}＠先生じゃないときなんて、ないよ｜先生でないときなど、ない｜先生じゃないときなんて、ありませんよ」と答えた。その言い方が、{s}には少しだけ寂しそうに聞こえた。|{s}は「先生」と呼ぶたびに、その言葉が二人のあいだに引かれた線のように思えた。それでも、呼ばずにはいられなかった。{t}が振り向いてくれるのは、その言葉にだけだったからだ。') }
+  ];
+
+  /* 告白（生徒から）。受ける／卒業するまで待って（3年生）／断る（先生の気質ごと） */
+  var CONF_S = {
+    yes: L('放課後の教室で、{s}は{t}の前に立った。{s}「先生のことが、好き。先生としてじゃなくて、一人の人として｜先生のことが、好きだ。教師としてではなく、一人の人として｜先生のことが、好きです。先生としてじゃなく、一人の人として、です」――{t}は長いあいだ黙っていた。やがて{t}は廊下に誰もいないのを確かめてから、{s}の手をそっと握った。{t}「……誰にも、言わないで｜……誰にも、言うな｜……誰にも、言わないでください」|{s}は進路の相談をするふりをして、準備室で{t}に想いを告げた。{t}は困った顔をして、窓の外に目をやった。それでも、首を横には振らなかった。二人はその日から、誰にも言えない約束をひとつ持つことになった。'),
+    hold: L('{s}の告白に、{t}は静かに首を振った。{t}「今は、答えられない。……卒業したら、もう一度聞かせて｜今は、答えられない。……卒業したら、もう一度聞かせてくれ｜今は、答えられません。……卒業したら、もう一度聞かせてください」――それは、断りの言葉ではなかった。{s}はその日から、卒業式までの日数を指折り数えるようになった。|{t}は、{s}の想いを最後まで聞いてから、困ったように笑った。{t}「あなたが卒業するまでは、私はあなたの先生でいなきゃいけない｜あなたが卒業するまでは、私はあなたの教師でいなければならない｜あなたが卒業するまでは、私はあなたの先生でいなければいけません」――{s}は、その言葉の続きを、卒業式の日まで待つことにした。'),
+    no: {
+      CP: L('{s}の告白を、{t}は最後まで黙って聞いた。{t}「ありがとう。でも、私はあなたの先生だから｜ありがとう。だが、私はあなたの教師だ｜ありがとう。でも、私はあなたの先生ですから」――{t}はそれ以上何も言わず、いつもの顔で教室を出ていった。{s}は、閉まった扉をしばらく見つめていた。'),
+      NP: L('{t}は{s}の想いを、優しく、けれどはっきりと断った。{t}「その気持ちは、大事にしまっておいて。いつか、ちゃんと届く人に渡して｜その気持ちは、大事にしまっておけ。いつか、届くべき人に渡すんだ｜その気持ちは、大事にしまっておいてください。いつか、ちゃんと届く人に渡してくださいね」――{s}は泣かないように唇を噛んだ。{t}は、{s}が落ち着くまで黙ってそばにいた。'),
+      A: L('{t}は{s}の告白に、少しも慌てなかった。{t}「それは、毎日会う大人への憧れだと思う。……卒業したら、きっと分かるよ｜それは、毎日会う大人への憧れだろう。……卒業すれば、きっと分かる｜それは、毎日会う大人への憧れだと思います。……卒業したら、きっと分かりますよ」――穏やかな言い方が、かえって{s}の胸に刺さった。{s}は小さく頭を下げて、教室を出た。'),
+      FC: L('{t}は一瞬目を丸くして、それから困ったように頭をかいた。{t}「うれしいけど、それはだめ。先生、クビになっちゃう｜うれしいが、それはだめだ。教師を続けられなくなる｜うれしいですけど、それはだめです。先生、クビになっちゃいます」――冗談めかした声だったが、目は笑っていなかった。{s}も無理に笑って、その話はそれきりになった。'),
+      AC: L('{t}は真っ赤になって、手に持っていた出席簿を取り落とした。{t}「ご、ごめん……それは、受け取れない｜す、すまない……それは、受け取れない｜ご、ごめんなさい……それは、受け取れません」――拾い上げた出席簿で顔を隠すようにして、{t}は足早に教室を出ていった。{s}は、追いかけることができなかった。')
+    }
+  };
+  /* 告白（先生から）。受ける／断る */
+  var CONF_T = {
+    yes: L('{t}は、自分が何を言おうとしているのか分かっていた。それでも、放課後の準備室で{s}に向かって口を開いた。{t}「あなたのことを、生徒として見られなくなった｜あなたを、生徒として見られなくなった｜あなたのことを、生徒として見られなくなりました」――{s}は驚いた顔をして、それから小さく頷いた。窓の外では、運動部の掛け声が遠く聞こえていた。|帰りの車の中で、{t}は前を見たまま言った。「＠{t}＠……卒業までなんて、待てそうにない｜……卒業まで、待てそうにない｜……卒業までなんて、待てそうにありません」――{s}は返事の代わりに、{t}の袖をそっとつかんだ。その夜から、二人は秘密を分け合う恋人になった。'),
+    no: L('{t}は、言わないと決めていた言葉を、とうとう口にした。{s}は困ったように目を伏せた。{s}「先生のことは好き。でも、そういう好きじゃない｜先生のことは好きだ。だが、そういう好きではない｜先生のことは好きです。でも、そういう好きじゃないんです」――{t}は「＠{t}＠そうだよね｜そうだな｜そうですよね」と笑って、それきりその話はしなかった。|{t}が打ち明けた想いに、{s}は長いあいだ答えなかった。やがて{s}は深く頭を下げた。{s}「……先生は、先生のままでいて｜……先生は、先生のままでいてくれ｜……先生は、先生のままでいてください」――{t}は黙って頷き、次の日からは前と同じ顔で教壇に立った。')
+  };
+
+  /* 恋人になってから：人目を避けた逢瀬（秘密）／公にしたあと */
+  var DATE = {
+    sec: L('日曜日、{t}と{s}は、学校から電車で一時間かかる町で待ち合わせた。知っている顔のいない商店街を、二人は少しだけ離れて歩いた。人混みの中でだけ、指先がそっと触れ合った。|放課後の準備室で、{t}と{s}は扉から一番遠い机をはさんで座った。話すのは、他愛もない一日のことばかりだった。廊下に足音が聞こえるたび、二人は先生と生徒の顔に戻った。|夜、{s}の携帯が短く鳴った。{t}からの、おやすみの一言だけのメッセージだった。{s}はそれを何度も読み返してから、誰にも見られないように画面を伏せた。|{t}は授業中、{s}の方を一度も見なかった。けれど返ってきたノートの余白には、{s}にしか分からない小さな印が描いてあった。教室の誰も、二人のあいだに流れているものに気づかなかった。|休日の夕方、{t}は学校から遠い海沿いの道まで車を走らせた。助手席の{s}は、窓を少しだけ開けて潮の匂いを吸い込んだ。ここなら、誰に見られる心配もなかった。'),
+    pub: L('{t}と{s}が付き合っていることは、もうクラスの誰もが知っていた。それでも二人は、学校の中では先生と生徒の距離を守った。校門を出てから、ようやく手を繋いだ。|休日、{t}と{s}は駅前の映画館に並んでいた。クラスメイトに見つかって冷やかされても、二人はもう隠れなかった。{s}は少し照れながら、{t}の腕に自分の腕を絡めた。|放課後、{s}は堂々と職員室の{t}の机まで迎えに行った。ほかの先生たちは見て見ぬふりをして、書類に目を落とした。二人は並んで、夕方の校門を出ていった。')
+  };
+  /* 見られる（{w}＝見た人） */
+  var SEEN = L('放課後、{w}は準備室の前で足を止めた。少しだけ開いた扉の向こうで、{t}と{s}が、先生と生徒にしては近すぎる距離で話していた。{w}は息を殺して、その場を離れた。|日曜日の駅で、{w}は{t}と{s}を見かけた。二人は少し離れて歩いていたが、改札の前で{s}が{t}の袖を引いた。{w}は見なかったことにしようとして、できなかった。|{w}は、{s}の携帯の画面に{t}からのメッセージが光るのを、偶然見てしまった。そこに並んでいたのは、先生が生徒に送るような言葉ではなかった。{w}は何も言わずに目を逸らした。');
+  var SEEN_KEEP = L('{w}は、見たことを誰にも言わなかった。次の日、{w}は{s}にだけ小さく言った。{w}「……気をつけなよ｜……気をつけろ｜……気をつけてくださいね」――{s}は青ざめて、それから深く頭を下げた。|{w}はしばらく迷ってから、自分の胸の中にしまっておくことにした。{s}が毎日あんなに楽しそうなのは、きっとそのせいなのだろうと思った。{w}は、それを壊す気にはなれなかった。');
+  var SEEN_SPREAD = L('{w}は、見たことを一番仲のいい友達にだけ話した。その友達も、一番仲のいい友達にだけ話した。三日後には、{t}と{s}の名前が並んだ話が、教室の隅で囁かれていた。|{w}は、どうしても黙っていられなかった。昼休み、{w}は声をひそめて、近くの席のクラスメイトに見たことを話した。その話は、{w}が思っていたよりずっと速く広がっていった。');
+  /* 噂になる */
+  var RUMOR = L('{t}と{s}が付き合っているらしい、という噂が、昼休みの教室に流れた。{s}は聞こえないふりをして弁当を食べ続けた。箸を持つ手が、少しだけ震えていた。|黒板の隅に、誰かが{t}と{s}の名前を並べて相合傘を書いていた。{t}は何も言わずにそれを消して、いつもどおり授業を始めた。教室には、くすくすという笑い声だけが残った。|廊下を歩くと、{s}の背中にひそひそ声がついてきた。{t}は職員室で、ほかの先生たちの視線をいつもより多く感じた。二人は、学校の中で目を合わせるのをやめた。');
+  /* バレかける（処分の危機） */
+  var CRISIS = L('{t}は、学年主任に呼び出された。生徒との関係について妙な噂が出ている、とだけ告げられた。職員室に戻ってきた{t}の顔は、紙のように白かった。|{s}の家から、学校に一本の電話がかかってきた。{t}は校長室に呼ばれ、長いあいだ戻ってこなかった。処分、という言葉が、職員室の空気の中に重く漂っていた。|ある朝、{t}の机の上に、差出人のない封筒が置かれていた。中には、二人が並んで歩いている写真が一枚だけ入っていた。{t}は封筒を握りしめたまま、しばらく動けなかった。');
+  var CRISIS_LOW = L('{t}と{s}は、しばらく会わないことにした。廊下ですれ違っても、二人は目を合わせなかった。噂は少しずつ、別の誰かの話題に押し流されていった。|{t}は、学年主任の前で、すべてを否定した。{s}も、何を訊かれても首を横に振った。二人が次に二人きりで話したのは、それからひと月以上あとのことだった。');
+  var CRISIS_END = L('{t}は、誰もいない教室に{s}を呼んだ。{t}「……ここまでにしよう。あなたの未来を、私が壊すわけにはいかない｜……ここまでにしよう。あなたの将来を、私が壊すわけにはいかない｜……ここまでにしましょう。あなたの未来を、私が壊すわけにはいきません」――{s}は何か言いかけて、やめた。{t}の目が、もう決めた人の目をしていたからだった。|{t}は、短い手紙を{s}に渡した。そこには、もう二人きりでは会えないこと、それが{s}のためだということが、几帳面な字で書いてあった。{s}は手紙を読み終えると、声を殺して泣いた。');
+  /* 公にする（open だけ）。決める場面／周りの反応／保護者 */
+  var PUB_GO = L('{t}は、もう隠さないと決めた。学年主任と{s}の保護者の前で、{t}は{s}と真剣に付き合っていると頭を下げた。{s}もその隣で、同じように深く頭を下げた。|{s}は{t}の手を握って、職員室の扉を開けた。{s}「隠れてこそこそするのは、もうやめる｜隠れてこそこそするのは、もうやめる｜隠れてこそこそするのは、もうやめます」――{t}は一度だけ目を閉じて、それから{s}と並んで学年主任の前に立った。');
+  var PUB_REACT = {
+    warm: L('{t}と{s}のことは、すぐにクラス中に知れ渡った。{w}は「＠{w}＠お似合いじゃん｜似合いだな｜お似合いですね」と言って、{s}の肩を叩いた。教室のあちこちから、冷やかしと拍手が起きた。|{w}は、{s}の机の上に購買のパンをひとつ置いた。{w}「おめでとう。……ちゃんと、先生にも言っといて｜おめでとう。……先生にも、きちんと伝えておけ｜おめでとうございます。……先生にも、ちゃんと伝えておいてくださいね」――{s}は照れくさそうに笑って、パンを受け取った。'),
+    cold: L('朝のホームルームの前、教室はざわついていた。{t}と{s}のことを、もう誰もが知っていた。{w}は複雑そうな顔で{s}を見て、それから何も言わずに目を逸らした。|{w}は、{s}が教室に入ってくるなり、わざと大きな声で隣の席の友達に話しかけた。{s}の方は、一度も見なかった。{s}は自分の席に座って、ただ前を向いていた。')
+  };
+  var PUB_PARENT = L('{s}の家では、その夜、長い話し合いがあった。{s}の親は最初、言葉を失っていた。それでも最後には、{t}に一度ちゃんと会わせてほしい、とだけ言った。|保護者会で、{t}は自分から事情を説明した。会場はしばらく静まり返った。{t}は担任として、そして一人の大人として、最後まで頭を上げなかった。|週末、{t}はスーツを着て{s}の家を訪ねた。{s}の親は、玄関で長いあいだ{t}の顔を見ていた。やがて、黙って二人を家の中へ通した。');
+  /* 秘密を知る人の嫉妬（すれ違い系） */
+  var JEAL = {
+    s: L('{w}は、{s}が{t}を見るときの目を知っていた。自分には一度も向けられたことのない目だった。{w}は{s}に話しかけようとして、結局、背を向けた。胸の奥で、嫉妬が小さく燃えていた。|{w}は、{s}の携帯が鳴るたびに、それが誰からなのか分かってしまう自分が嫌だった。{s}の笑顔は、もう自分の方を向いていなかった。{w}は、ノートの端を強く握りしめた。'),
+    friend: L('{w}は、{s}と一番仲がいいのは自分だと思っていた。けれど最近の{s}は、放課後になるとすぐにいなくなる。行き先を知っているからこそ、{w}は置いていかれたような嫉妬を飲み込むしかなかった。|昼休み、{s}の携帯が鳴ると、{s}は{w}との話を途中でやめて廊下へ出ていった。相手が誰なのか、{w}は知っていた。戻ってきた{s}に、{w}はいつもより素っ気ない返事しかできなかった。胸の奥の嫉妬に、{w}は自分でも驚いていた。'),
+    t: L('{w}はずっと、{t}のことが好きだった。だから、{t}が{s}にだけ見せる顔に気づいてしまった。{w}は授業中、{s}の背中を見つめたまま、嫉妬で唇を噛んだ。|{w}は、{t}が{s}の答案にだけ長いコメントを書いているのを知っていた。{w}の答案には、いつも丸だけだった。それが嫉妬なのだと、{w}はもう認めるしかなかった。'),
+    threat: L('{w}は{s}を廊下の隅に呼び出した。{w}「先生とのこと、みんなに言ったらどうなるかな｜先生とのことを、皆に言ったらどうなるだろうな｜先生とのこと、皆に言ったらどうなるでしょうね」――{s}は答えられなかった。{w}の声は笑っていたが、目は嫉妬で冷たく光っていた。')
+  };
+  /* 秘密を守ってくれる友達（仲良し系） */
+  var COVER = L('{w}は、{t}と{s}のことを知っている数少ない一人だった。準備室で二人が話しているあいだ、{w}は廊下の角で見張りをした。足音が近づくと、{w}はわざと大きな声で{s}の名前を呼んだ。|{s}の親に週末の行き先を訊かれたとき、{w}は「＠{w}＠私と図書館に行ってた｜私と図書館へ行っていた｜私と図書館に行っていました」と答えた。あとでそれを知った{s}は、{w}に何度も礼を言った。{w}は「＠{w}＠そのかわり、今度ちゃんと話を聞かせて｜その代わり、今度きちんと話を聞かせろ｜その代わり、今度ちゃんと話を聞かせてください」と笑った。|{t}と{s}の噂を面白半分に口にしたクラスメイトに、{w}は「＠{w}＠見てもないのに、適当なこと言わないの｜見てもいないのに、適当なことを言うな｜見てもいないのに、適当なことを言わないでください」と言い返した。{s}は、{w}がかばってくれたのだと気づいた。その話は、それきり広がらなかった。');
+
+  /* ---------- 結末 ---------- */
+  /* 卒業式のあと（3年生）：秘密のまま／公にしていた */
+  var GRAD = {
+    sec: L('卒業式のあと、{s}は誰もいなくなった教室で{t}を待っていた。{t}は少し遅れてやって来て、黒板の前で足を止めた。{s}「もう、先生って呼ばなくていい？｜もう、先生と呼ばなくていいか？｜もう、先生って呼ばなくていいですか？」――{t}は答えの代わりに、卒業証書の筒を持った{s}の手を、初めて人目を気にせずに握った。|卒業式の日、{t}は担任として、最後まで{s}を特別扱いしなかった。式が終わり、校門の前の人影がまばらになった頃、{t}はようやく{s}の名前を呼んだ。二人は並んで、一年間隠し続けた道を、今度は堂々と歩いた。|卒業式が終わると、{s}は胸の花を外して、準備室の扉をノックした。{t}は何も言わずに扉を開け、{s}を中に入れた。秘密の恋が、秘密でなくなる日だった。'),
+    pub: L('卒業式のあと、クラスメイトたちは{t}と{s}を校門の前に押し出して、二人の写真を撮った。{s}は照れながら、{t}の腕にしがみついた。先生と生徒として過ごす最後の日を、二人はみんなに見送られて終えた。|卒業式の日、{s}は式のあいだずっと、教職員の席の{t}を見ていた。最後のホームルームが終わると、{t}は教卓を降りて{s}の前に立った。{t}「卒業、おめでとう｜卒業、おめでとう｜卒業、おめでとうございます」――それは、先生としての最後の言葉だった。')
+  };
+  /* その後（覚え書き。台詞は入れない） */
+  var AFTER = {
+    cont_open: L('卒業した{s}と{t}は、もう人目を避けなかった。休日の駅前で手を繋いで歩く二人を、元のクラスメイトが何度か見かけている。隠れて付き合った日々は、いつの間にか二人の笑い話になった。|卒業してから、二人は初めて堂々とデートをした。行き先は、あの頃いつも人目を避けて通った、学校の近くの商店街だった。もう誰に見られてもいいのだと思うと、{s}は少しだけ泣きそうになった。'),
+    cont_live: L('{s}が卒業して一年が経つ頃、二人は小さな部屋を借りて一緒に暮らし始めた。台所に並んだ二つのマグカップを見て、{s}は今でも少し照れくさくなる。{t}を先生と呼んでしまう癖だけは、なかなか抜けなかった。|卒業から二年、{t}と{s}は同じ部屋に帰るようになった。採点の赤ペンが散らばったテーブルで、{s}は夕食の皿を並べる。あの頃は想像もできなかった毎日が、今は当たり前になっていた。'),
+    cont_vow: L('{s}が卒業して数年が経った春、{t}は指輪を差し出した。初めて想いを告げた日の教室の話をすると、二人はいつも同じところで笑う。結婚式には、あの年のクラスメイトを全員呼ぶつもりでいる。|卒業して最初の冬、{t}は{s}に、結婚を前提に付き合ってほしいと改めて伝えた。{s}は、ずっと前からそのつもりだったと答えた。二人の左手の薬指には、今、同じ指輪が光っている。'),
+    fade: L('卒業してから、{s}の毎日は新しい人と新しい場所でいっぱいになった。{t}への連絡は、週に一度になり、月に一度になった。最後のメッセージにどちらも返信しないまま、二人の関係は静かに終わった。|{s}は遠くの町に進学した。{t}とは、最初の夏までは毎晩のように電話をした。秋が来る頃には、話すことが少しずつ見つからなくなり、やがて電話は鳴らなくなった。'),
+    part: L('卒業から半年後、{t}は{s}を呼び出して、ここまでにしよう、と告げた。これからの{s}の人生を、自分が縛ってはいけないと思ったのだという。{s}は泣いて怒ったが、{t}の決心は変わらなかった。|{t}は、{s}が卒業した翌月に別の学校へ移った。最後に会った日、{t}はもう会わないほうがいい、とだけ言った。{s}はその言葉の本当の意味を、何年も経ってから知った。'),
+    reunite: L('卒業式の日、二人は何も約束しないまま別れた。それから数年後、教育実習で母校に戻った{s}は、職員室で{t}と再会した。{t}は少し年を取っていたが、笑い方は昔のままだった。二人がもう一度並んで歩き出すまで、そう時間はかからなかった。|卒業してから、二人は一度も会わなかった。五年後の同窓会の帰り道、{s}は駅のホームで{t}を見つけた。二人とも何から話せばいいのか分からないまま、最終電車を一本見送った。')
+  };
+  /* 卒業するまで待って、と言われた3年生 */
+  var HOLD = {
+    yes: L('卒業式が終わったあと、{t}は約束どおり{s}を呼び止めた。{t}「卒業、おめでとう。……あの日の答え、今なら言える｜卒業、おめでとう。……あの日の答えを、今なら言える｜卒業、おめでとうございます。……あの日の答え、今なら言えます」――{t}は、{s}が一年前に告げたのと同じ言葉を、今度は自分から返した。二人は、その日から恋人になった。|卒業式のあとの教室で、{s}はもう一度、同じ想いを告げた。{t}は今度は首を振らずに、{s}の手を両手で包んだ。生徒と先生だった二人は、その日、ただの二人になった。'),
+    no: L('卒業式のあと、{t}は約束の教室で{s}を待っていた。けれど、{s}は来なかった。{t}は黒板に何か書きかけて、やめた。待たせたのは自分の方だったのだと、{t}は分かっていた。')
+  };
+  var HOLD_AFTER = L('卒業してから、二人は少しずつ、先生と生徒ではない二人になっていった。待った一年は、二人にとって大事な時間になった。|卒業を待って始まった恋は、そのあとも長く続いた。{s}は今でも、卒業式の日に握られた手の温かさを覚えている。');
+  /* 1・2年生（来年も）・一学期だけ（夏休み） */
+  var YEAR = {
+    sec: L('修了式の日、{t}と{s}は、誰もいない廊下で一瞬だけ目を合わせた。来年も、二人の関係は秘密のままだ。{s}は春休みのカレンダーに、小さな印をひとつだけ付けた。|{s}は来年も、この学校で{t}を先生と呼ぶ。二人は、あと一年、誰にも言えない恋を続けると決めた。卒業の日に何を言うかは、まだ決めていない。'),
+    pub: L('{t}と{s}の関係は、もう誰もが知っている。来年も、二人は学校の中では先生と生徒、校門を出たら恋人のままだ。クラスメイトたちは、それを当たり前のように受け入れていた。|修了式のあと、{s}は堂々と{t}の隣を歩いて帰った。来年のクラスがどうなっても、二人の関係は変わらない。春休みの予定は、もう二人で決めてあった。'),
+    term: L('終業式の日、{t}と{s}は、夏休みに会う約束を誰にも見られないように交わした。一学期のあいだ守り通した秘密は、まだ誰にも知られていない。{s}は通知表よりも、夏休みのことで頭がいっぱいだった。|終業式のあと、{s}の携帯に{t}から短いメッセージが届いた。夏休みの最初の週末の、待ち合わせ場所だけが書いてあった。{s}は誰にも見られないように、それを胸に抱えて帰った。')
+  };
+  var YEAR_AFTER = {
+    sec: L('{s}が進級しても、二人は秘密を守り続けた。廊下ですれ違うときの一瞬の目配せだけが、二人の約束の印だった。|二人の秘密は、次の学年でも続いていく。{s}は、卒業の日に{t}の名前を堂々と呼ぶことを、ひそかな目標にしている。'),
+    pub: L('進級しても、二人の関係は変わらなかった。新しいクラスメイトたちも、すぐにそれを当たり前のことと受け止めた。|次の年も、二人は学校の外で恋人として過ごした。周りの目を気にしないで済む毎日を、二人は大事にしている。'),
+    term: L('夏休みのあいだ、二人は人目のない町で何度か会った。二学期が始まっても、二人の秘密はまだ守られている。|夏休みが終わる頃、二人の関係は少しだけ深くなっていた。二学期の始業式の朝、{s}は何も知らない顔で{t}に挨拶をした。')
+  };
+
+  /* ---------- R18版：先生と生徒の夜（{a}＝攻め {b}＝受け。{ca}＝受けが攻めを呼ぶ呼び方 {cb}＝攻めが受けを呼ぶ呼び方） ---------- */
+  var NIGHT = null;
+  /* r18:begin */
+  var N_PLACE = { prep: '準備室', room: '夜の教室', home: '先生の部屋' };
+  var N_OPEN = {
+    prep: {
+      mf: L('放課後の準備室で、{t}は内側から静かに鍵を回した。積み上げられた教材の陰で、{a}は{b}を棚に押しつけるように抱き寄せた。廊下の向こうから、運動部の掛け声がかすかに聞こえていた。{a}は声を潜めたまま、{b}のシャツの釦をひとつずつ外していった。|準備室の窓には、{t}が先にブラインドを下ろしていた。{a}は机の上の書類を脇へ寄せ、そこに{b}を座らせた。{b}「{ca}、ここ、学校なのに……｜{ca}、ここは学校だぞ……｜{ca}、ここ、学校なのに……」――{a}は答える代わりに、その口を唇で塞いだ。'),
+      fm: L('準備室の鍵が閉まる音がして、{a}は{b}の胸を押して古いソファに座らせた。{a}はそのまま{b}の膝に跨り、ネクタイの結び目に指をかけた。{b}「{ca}、誰か来たら……｜＝｜＝」――{a}は人差し指を{b}の唇に当てて、黙らせた。|放課後の準備室で、{a}は{b}の手を引いて、扉から一番遠い机の陰へ連れていった。{a}は{b}を壁にもたれさせ、自分から唇を重ねた。主導権を握っているのは、最初から{a}の方だった。'),
+      ff: L('準備室の鍵をかけると、{a}は{b}を古い資料棚の陰に引き寄せた。袖口から伸びた指が、{b}の頬を、首筋を、ゆっくりとなぞっていく。{b}は声が漏れないように、自分の手の甲を唇に押し当てた。|放課後の準備室は、紙とインクの匂いがした。{a}は{b}の髪をそっと耳にかけ、その耳元で{cb}、と囁いた。それだけで、{b}の肩が小さく震えた。')
+    },
+    room: {
+      mf: L('日が落ちて、校舎にはもう誰も残っていなかった。明かりを消した教室で、{a}は{b}を教卓に押しつけた。窓から差し込む街灯の光が、二人の影を黒板に長く映していた。|最後の見回りが終わったあとの教室は、昼間とは別の場所のようだった。{a}は{b}の手首をつかんで、窓際の席まで連れていった。毎日{s}が座っている机の上で、{a}は{b}の服に手をかけた。'),
+      fm: L('誰もいない夜の教室で、{a}は{b}を椅子に座らせた。{a}は裾が乱れるのも構わずに{b}の膝に乗り、首に腕を回した。{b}「{ca}……ここ、教室……｜{ca}……ここは、教室だ……｜{ca}……ここ、教室です……」――{a}は「＠{a}＠知ってる｜知っている｜知っています」と笑って、{b}の唇を塞いだ。|消灯後の教室に、非常灯の緑だけがぼんやり灯っていた。{a}は教卓に腰かけ、{b}を脚のあいだに引き寄せた。そこから先を決めるのは、{a}の方だった。'),
+      ff: L('放課後の教室に、二人分の影だけが残っていた。{a}は{b}を窓際の机に座らせ、カーテンを半分だけ引いた。カーテンの隙間から夕日が差し込み、{b}の肌を赤く染めていた。|誰もいなくなった教室で、{a}は{b}の襟元の釦をひとつ外した。{b}「{ca}、もし誰か来たら……｜＝｜＝」――{a}は扉の方をちらりと見てから、「＠{a}＠来ないよ｜来ない｜来ませんよ」と囁いた。')
+    },
+    home: {
+      mf: L('{t}の部屋に{s}が来るのは、これで何度目かだった。玄関の扉が閉まるなり、{a}は{b}を壁に押しつけて口づけた。学校では決して見せない顔が、そこにあった。|カーテンを閉め切った{t}の部屋で、二人はようやく人目を気にせずに済んだ。{a}は{b}をベッドに横たえ、その上に覆いかぶさった。{b}「{ca}……」――掠れた声で呼ばれて、{a}は小さく笑った。'),
+      fm: L('{t}の部屋の小さなソファで、{a}は{b}を押し倒した。{a}は{b}の上に跨がり、ゆっくりとシャツの裾をたくし上げた。ここでは、どちらが先生でどちらが生徒かなど、もう関係なかった。|休日の昼下がり、{t}の部屋のカーテンは閉めたままだった。{a}は{b}をベッドの端に座らせ、正面から膝の上に乗った。{a}が首筋に唇を落とすと、{b}の喉が小さく鳴った。'),
+      ff: L('{t}の部屋のベッドは、二人には少し狭かった。{a}は{b}を抱き寄せ、額と額をくっつけて笑った。学校では呼べない呼び方で、{a}は{b}を何度も呼んだ。|週末、{s}は誰にも行き先を告げずに{t}の部屋を訪れた。{a}は玄関で{b}を抱きしめたまま、しばらく離さなかった。やがて二人は、もつれるようにベッドへ倒れ込んだ。')
+    }
+  };
+  /* 果てたあとの受けの様子（受けの態度9種） */
+  var N_PEAK = {
+    proud: L('{b}は荒い息のまま、{a}の肩に爪を立てた。{b}「……調子に乗るなよ、{ca}｜……調子に乗るな、{ca}｜……調子に乗らないでください、{ca}」――悪態とは裏腹に、{b}は{a}から離れようとしなかった。|{b}は顔を背けたまま、{a}の腕を振りほどこうとはしなかった。{b}「……今の、誰にも言うなよ｜……今のは、誰にも言うな｜……今の、誰にも言わないでくださいね」――耳まで赤いのを、{b}は隠しきれていなかった。'),
+    stern: L('{b}は乱れた息を整えようとして、うまくいかなかった。{b}「……こんなこと、本当はいけないのに｜……こんなことは、本来許されないのに｜……こんなこと、本当はいけないのに」――そう言いながら、{b}の手は{a}の背中を離さなかった。|{b}は目を閉じたまま、しばらく黙っていた。{b}「……けじめが、つかなくなる｜……けじめが、つかなくなる｜……けじめが、つかなくなります」――{a}がその額に口づけると、{b}は諦めたように力を抜いた。'),
+    tsun: L('{b}は真っ赤な顔で、{a}の胸を軽く叩いた。{b}「ば、ばか……声、聞こえたらどうするの｜ば、ばか……声が聞こえたらどうする｜ば、ばか……声、聞こえたらどうするんですか」――叩く手には、まるで力が入っていなかった。|{b}はそっぽを向いたまま、{a}の指を握り返した。{b}「べ、別に、よかったとか思ってないから｜べ、別に、よかったなどと思っていない｜べ、別に、よかったなんて思ってませんから」――握った指は、なかなか離れなかった。'),
+    gentle: L('{b}は{a}の頬に手を添えて、ふわりと笑った。{b}「{ca}……好き｜{ca}……好きだ｜{ca}……好きです」――その一言を言うためだけに、ずっと我慢していたような声だった。|{b}は{a}の髪を指で梳きながら、目を細めた。{b}「こうしてると、全部忘れそう｜こうしていると、全部忘れそうだ｜こうしていると、全部忘れそうです」――二人のあいだに、穏やかな沈黙が降りた。'),
+    devoted: L('{b}は{a}の胸に顔を埋めたまま、何度も呼んだ。{b}「{ca}、離れないで。もう少しだけ｜{ca}、離れるな。もう少しだけ｜{ca}、離れないでください。もう少しだけ」――{a}は返事の代わりに、{b}を強く抱きしめた。|{b}は{a}の手を取って、自分の頬に押し当てた。{b}「あなたのためなら、何を隠したっていい｜あなたのためなら、何を隠しても構わない｜あなたのためなら、何を隠したっていいんです」――その目は、少しも迷っていなかった。'),
+    cool: L('{b}は天井を見上げたまま、しばらく黙っていた。{b}「……誰にも言えないね、これ｜……誰にも言えないな、これは｜……誰にも言えませんね、これ」――淡々とした声の端が、ほんの少しだけ甘く崩れていた。|{b}は乱れた前髪をかき上げて、短く息を吐いた。{b}「……想定より、ずっと良かった｜……想定より、ずっと良かった｜……想定より、ずっと良かったです」――平静を装った声は、少しだけ上ずっていた。'),
+    free: L('{b}はくすくす笑いながら、{a}の首に腕を回した。{b}「ね、{ca}。……今の、すごかった｜なあ、{ca}。……今のは、すごかった｜ね、{ca}。……今の、すごかったです」――悪びれない声に、{a}も思わず吹き出した。|{b}は大の字になって、天井に向かって息を吐いた。{b}「はあ……もう一回、って言ったら怒る？｜はあ……もう一回、と言ったら怒るか？｜はあ……もう一回、って言ったら怒ります？」――{a}が答える前に、{b}はまた楽しそうに笑った。'),
+    shy: L('{b}は顔を両手で覆って、指のあいだから{a}を見た。{b}「……み、見ないで。今、すごい顔してる｜……み、見るな。今、ひどい顔をしている｜……み、見ないでください。今、すごい顔してます」――{a}がその手をそっと外すと、{b}は耳まで真っ赤になった。|{b}は{a}の胸に額を押しつけて、消え入りそうな声で言った。{b}「……は、恥ずかしい……｜……は、恥ずかしい……｜……は、恥ずかしいです……」――{a}が背中を撫でると、{b}は小さく身を縮めた。'),
+    polite: L('{b}は乱れた髪を直そうとして、手が震えているのに気づいた。{b}「……ごめん、{ca}。あんな声を｜……すまない、{ca}。あんな声を｜……失礼いたしました、{ca}。あんな声を」――{a}はその唇に、黙ってもう一度口づけた。|{b}は身なりを整えようとして、途中で手を止めた。{b}「……もう少しだけ、このままで｜……もう少しだけ、このままでいい｜……もう少しだけ、このままでいさせてください」――{a}は頷いて、{b}の肩を抱き寄せた。')
+  };
+  /* 事後（場所ごと。人目を忍ぶ） */
+  var N_AFTER = {
+    prep: L('身なりを整えると、{t}は先に準備室を出て、廊下に誰もいないのを確かめた。{s}は五分待ってから、別の階段を下りた。昇降口で靴を履き替えるあいだも、指先にはまだ相手の体温が残っていた。|準備室の窓を細く開けると、夕方の風が火照った頬を冷やした。{t}は乱れた資料を元どおりに積み直し、{s}は床に落ちた釦を探した。明日の朝には、二人ともいつもの先生と生徒の顔に戻っていなければならない。'),
+    room: L('二人は、乱れた机と椅子を元の位置に戻した。{t}は黒板の隅に残っていた指の跡を、袖で拭き消した。校門を出るときは、十分ずつ時間をずらした。|教室の明かりをつけないまま、二人は手探りで服を着直した。{s}は自分の机を指でなぞって、明日ここに座るときのことを考えた。きっと、授業どころではないだろうと思った。'),
+    home: L('{s}が帰る時間になると、{t}は駅のひとつ手前まで車で送った。車を降りる前に、二人はもう一度だけ短く唇を重ねた。月曜日の朝には、また何もなかった顔で教室にいなければならない。|夕方まで、二人は狭いベッドの上で他愛もない話をした。{t}が学生時代の話をすると、{s}は声を立てて笑った。{s}が帰ったあと、部屋には二人分の体温がしばらく残っていた。')
+  };
+  NIGHT = function (ctx, t, s, st) {
+    var TS = HK.ThickSex, P = HK.Pos;
+    if (!TS || HK.SAFE_ON) return null;
+    var od = P && P.order ? P.order(t, s, [t, s]) : [t, s], A = od[0], B = od[1];
+    var mode = P && P.isF && P.isF(A) && P.isF(B) ? 'ff' : P && P.isF && P.isF(A) && !P.isF(B) ? 'fm' : 'mf';
+    var place = pick(ctx, st.nights ? ['prep', 'room', 'home'] : ['prep', 'home']);
+    var m = { t: t, s: s, a: A, b: B, ca: isT(A) ? '先生' : A.name, cb: isT(B) ? '先生' : B.name };
+    var open = F0(pick(ctx, N_OPEN[place][mode]), m);
+    var after = F0(pick(ctx, N_PEAK[ps(B)] || N_PEAK.gentle), m) + '\n\n' + F0(pick(ctx, N_AFTER[place]), m);
+    var r = TS.scene({ pick: function (arr) { return ctx.pick(arr); }, rng: ctx.rng, ctx: ctx, a: A, b: B, style: TS.style(A), open: open, after: after });
+    var txt = ctx.t(r.text, A, B);
+    if (r.mode === 'ff' && HK.FF && HK.FF.fix) txt = HK.FF.fix(ctx, txt, A, B);
+    return { text: txt, a: A, b: B, place: N_PLACE[place] };
+  };
+  /* r18:end */
+  function nightOk(ctx, t, s) {
+    return !!NIGHT && !HK.SAFE_ON && HK.State.r18ok(t) && HK.State.r18ok(s) && HK.State.pairSex(t, s) && ctx.romanceOk([t, s], { sex: true });
+  }
+
+  /* ====================== 進め方 ====================== */
+  function couple(ctx, t, s, by) {
+    var pf = ctx.pair(t, s), st = tl(ctx, t, s);
+    pf.couple = true;
+    if (!pf.couple) return false;   /* 恋人にできない組（poly.js が断った） */
+    st.since = ctx.stepIndex; st.by = by; st.hold = false; st.pub = false;
+    return true;
+  }
+  /* 近づく場面 → 告白 */
+  function approach(ctx, t, SS) {
+    /* 「卒業するまで待って」と答えた先生は、ほかの生徒とは近づかない */
+    if (ctx.chars.some(function (s) { var st = s !== t && ctx.pair(t, s).tl; return !!(st && st.hold); })) return;
+    if (ctx.rng() > 0.45) return;
+    var C = SS.filter(function (s) {
+      var st = ctx.pair(t, s).tl;
+      if (st && (st.ended || (st.noUntil != null && ctx.stepIndex < st.noUntil))) return false;
+      return free(ctx, s, t) && free(ctx, t, s) && loveOk(ctx, t, s);
+    });
+    if (!C.length) return;
+    var s = ctx.most(C, function (c) { return 0.3 + Math.max(0, R(ctx, c, t).aff) / 60 + R(ctx, c, t).att / 35 + R(ctx, t, c).att / 40 + c.tr.fc * 0.2 + ctx.rng() * 0.4; });
+    var st = tl(ctx, t, s);
+    var sc = HK.weighted(ctx.rng, NEAR, function (x) { return (!x.when || x.when(ctx, t, s, st)) ? x.w(ctx, t, s) : 0; });
+    if (!sc) return;
+    var gS = rS(ctx, s, t), gT = rT(t);
+    var e = ctx.act2({ actors: [s, t], cat: 'romance', mag: 8,
+      fx: function () {
+        ctx.mod(s, t, { att: 6 * gS, aff: 3, trust: 2 });
+        ctx.mod(t, s, { att: 4.5 * gT, aff: 2, trust: 2 });
+        if (sc.id === 'contact') st.contact = true;
+      },
+      text: F(ctx, pick(ctx, sc.T), { t: t, s: s }),
+      why: function () { return '先生と生徒の恋：' + sc.name + '（惹かれ ' + s.name + '→先生 ' + Math.round(R(ctx, s, t).att) + '／先生→' + s.name + ' ' + Math.round(R(ctx, t, s).att) + '。' + t.name + 'は' + (gT < 0.7 ? 'CPが高く踏みとどまる' : gT > 1 ? 'ACが高く流されやすい' : '迷いながら') + '）'; } });
+    if (!e) return;
+    confess(ctx, t, s, st);
+  }
+  function confess(ctx, t, s, st) {
+    var rs = R(ctx, s, t), rt = R(ctx, t, s);
+    if (rs.att >= 40 && rs.aff >= 5 && ctx.rng() < 0.25 + (s.tr.honesty || 0) * 0.3 + s.tr.fc * 0.2) return confS(ctx, t, s, st);
+    if (rt.att >= 46 && ctx.rng() < 0.15 + t.tr.ac * 0.25 + t.tr.fc * 0.1 - t.tr.cp * 0.15) return confT(ctx, t, s, st);
+  }
+  function canPair(ctx, t, s) { return free(ctx, s, t) && free(ctx, t, s) && (!HK.Poly || !HK.Poly.canCouple || HK.Poly.canCouple(ctx, t, s)); }
+  function confS(ctx, t, s, st) {
+    var rt = R(ctx, t, s);
+    var yes = rt.att >= 28 && canPair(ctx, t, s) && ctx.rng() < 0.4 + t.tr.ac * 0.3 - t.tr.cp * 0.35 + rt.att / 150;
+    var hold = !yes && s.grade === 3 && ctx.env.span !== 'term' && rt.att >= 14 && t.tr.cp >= 0.35;
+    var res = yes ? 'yes' : hold ? 'hold' : 'no';
+    var list = res === 'no' ? CONF_S.no[top(t)] || CONF_S.no.NP : CONF_S[res];
+    var ok = false;
+    ctx.act2({ actors: [s, t], cat: 'romance', mag: res === 'yes' ? 25 : 15,
+      fx: function () {
+        ctx.pair(t, s).confessed[s.i] = true;
+        if (res === 'yes') { ok = couple(ctx, t, s, 's'); if (ok) ctx.mod2(s, t, { att: 8, aff: 8, trust: 6 }, { att: 10, aff: 8, trust: 6 }); }
+        else if (res === 'hold') { st.hold = true; st.holdAt = ctx.stepIndex; ctx.mod2(s, t, { trust: 6 }, { att: 4, trust: 4 }); }
+        else { st.noUntil = ctx.stepIndex + 4; ctx.stress(s, 18); ctx.mod(s, t, { att: -10 }); }
+      },
+      text: F(ctx, pick(ctx, list), { t: t, s: s }),
+      why: '先生と生徒の恋：' + s.name + 'から告白（' + s.name + '→先生 惹かれ ' + Math.round(R(ctx, s, t).att) + '）／' + t.name + 'の側：惹かれ ' + Math.round(rt.att) + '・' + (res === 'yes' ? '受け入れた。隠れて付き合う' : res === 'hold' ? '「卒業するまで待って」' : '先生として断った（' + top(t) + '優位）') });
+  }
+  function confT(ctx, t, s, st) {
+    var rs = R(ctx, s, t), yes = rs.att >= 26 && rs.aff >= 10 && canPair(ctx, t, s);
+    ctx.act2({ actors: [t, s], cat: 'romance', mag: yes ? 25 : 15,
+      fx: function () {
+        ctx.pair(t, s).confessed[t.i] = true;
+        if (yes) { if (couple(ctx, t, s, 't')) ctx.mod2(t, s, { att: 8, aff: 8, trust: 6 }, { att: 10, aff: 8, trust: 6 }); }
+        else { st.noUntil = ctx.stepIndex + 6; ctx.stress(t, 15); ctx.mod(t, s, { att: -12 }); ctx.mod(s, t, { trust: -4 }); }
+      },
+      text: F(ctx, pick(ctx, yes ? CONF_T.yes : CONF_T.no), { t: t, s: s }),
+      why: '先生と生徒の恋：' + t.name + '（先生）から告白（惹かれ ' + Math.round(R(ctx, t, s).att) + '・AC ' + Math.round(t.tr.ac * 100) + '）／' + s.name + 'の側：惹かれ ' + Math.round(rs.att) + '・' + (yes ? '受け入れた。隠れて付き合う' : '応えなかった') });
+  }
+
+  /* 恋人になってから（毎月ひとつ） */
+  function witness(ctx, t, s, st) {
+    var L0 = students(ctx).filter(function (w) { return w !== s && !st.known[w.i]; });
+    return L0.length ? ctx.most(L0, function (w) { return w.tr.a * 0.4 + (w.tr.jealous || 0) * 0.3 + Math.max(0, R(ctx, w, s).aff) / 100 + ctx.rng() * 0.5; }) : null;
+  }
+  function knowers(ctx, s, st) { return students(ctx).filter(function (w) { return w !== s && st.known[w.i]; }); }
+  /* 嫉妬する人：秘密を知っていて、{s} か先生に惹かれている人か、{s} の親しい友達で嫉妬・執着が強い人（置いていかれた嫉妬） */
+  function loveJ(ctx, t, s, w) { return (R(ctx, w, s).att >= 20 && HK.canLove(w, s)) || (R(ctx, w, t).att >= 15 && HK.canLove(w, t)); }
+  function friendJ(ctx, s, w) { return R(ctx, w, s).aff > 22 && (w.tr.jealous || 0) >= 0.45; }
+  function jealOf(ctx, t, s, st) {
+    var K = knowers(ctx, s, st).filter(function (w) { return loveJ(ctx, t, s, w) || friendJ(ctx, s, w); });
+    return K.length ? ctx.most(K, function (w) { return Math.max(R(ctx, w, s).att, R(ctx, w, t).att) / 40 + (w.tr.jealous || 0); }) : null;
+  }
+  function coverOf(ctx, t, s, st) {
+    var K = knowers(ctx, s, st).filter(function (w) { return R(ctx, w, s).aff > 22 && R(ctx, w, s).att < 30 && R(ctx, w, s).ten < 30 && R(ctx, w, t).att < 25; });
+    return K.length ? ctx.most(K, function (w) { return R(ctx, w, s).aff / 40 + w.tr.np * 0.5; }) : null;
+  }
+  function coupleBeat(ctx, t, s, st) {
+    if (st.low != null && ctx.stepIndex < st.low) return;
+    if (ctx.rng() > 0.8) return;
+    if (st.since == null) st.since = 0;   /* 関係の設定で始めから恋人だった組 */
+    var open = ctx.env.tlove === 'open', months = ctx.stepIndex - (st.since == null ? ctx.stepIndex : st.since);
+    if (!st.pub) st.risk += 5;
+    var opts = [{ k: 'date', w: 1 }];
+    if (nightOk(ctx, t, s) && months >= 1 && (st.nights || 0) < 3) opts.push({ k: 'night', w: 0.9 });
+    if (!st.pub) {
+      var wit = witness(ctx, t, s, st);
+      if (wit) opts.push({ k: 'seen', w: 0.5 + st.risk / 80, x: wit });
+      if (st.spread && st.rumor == null) opts.push({ k: 'rumor', w: 1.2 });
+      if (st.risk >= 40 && (st.crisisAt == null || ctx.stepIndex - st.crisisAt >= 4)) opts.push({ k: 'crisis', w: 1.6 });
+      if (open && months >= 2) opts.push({ k: 'public', w: 0.15 + (s.grade === 3 && /^(1|2|3)月$/.test(ctx.label) ? 0.6 : 0) });
+    }
+    var jw = jealOf(ctx, t, s, st); if (jw) opts.push({ k: 'jeal', w: 0.7, x: jw });
+    var cw = !st.pub && coverOf(ctx, t, s, st); if (cw) opts.push({ k: 'cover', w: 0.45, x: cw });
+    var o = HK.weighted(ctx.rng, opts, function (x) { return x.w; });
+    if (o) BEAT[o.k](ctx, t, s, st, o.x);
+  }
+  function why0(ctx, t, s, st, k) { return '先生と生徒の恋（' + (st.pub ? '公にしている' : '秘密') + '）：' + k; }
+  var BEAT = {
+    date: function (ctx, t, s, st) {
+      ctx.act2({ actors: [s, t], cat: 'romance', mag: 8, fx: function () { ctx.mod2(s, t, { aff: 3, att: 4, trust: 2 }, { aff: 3, att: 4, trust: 2 }); ctx.stress(s, -4); },
+        text: F(ctx, pick(ctx, st.pub ? DATE.pub : DATE.sec), { t: t, s: s }), why: why0(ctx, t, s, st, st.pub ? '恋人どうしの時間' : '人目を避けて会う') });
+    },
+    night: function (ctx, t, s, st) {
+      var nr = NIGHT ? NIGHT(ctx, t, s, st) : null;
+      if (!nr) return BEAT.date(ctx, t, s, st);
+      ctx.act2({ actors: [nr.a, nr.b], cat: 'romance', sex: true, mag: 16,
+        fx: function () { var pf = ctx.pair(t, s); pf.night = true; pf.nights = (pf.nights || 0) + 1; st.nights = (st.nights || 0) + 1; ctx.mod2(t, s, { aff: 4, att: 6, trust: 3 }, { aff: 4, att: 6, trust: 3 }); if (!st.pub) st.risk += 4; },
+        text: nr.text, why: '先生と生徒の夜（' + nr.place + '。人目を忍んで）／' + nr.a.name + 'が攻め・' + nr.b.name + 'が受け' });
+    },
+    seen: function (ctx, t, s, st, w) {
+      var keep = w.tr.np * 0.6 + Math.max(0, R(ctx, w, s).aff) / 60 + w.tr.caution * 0.3 + ctx.rng() * 0.4 > (w.tr.jealous || 0) * 0.5 + w.tr.fc * 0.3 + (R(ctx, w, s).att > 30 ? 0.3 : 0) + 0.35;
+      ctx.act2({ actors: [w, s, t], cat: keep ? 'bond' : 'betray', mag: 12,
+        fx: function () {
+          st.known[w.i] = 1;
+          if (keep) { ctx.mod2(w, s, { trust: 4 }, { trust: 10, aff: 4 }); st.risk += 2; }
+          else { st.spread = true; st.risk += 12; ctx.mod(s, w, { ten: 6 }); }
+          ctx.stress(s, keep ? 6 : 10);
+        },
+        text: F(ctx, pick(ctx, SEEN), { t: t, s: s, w: w }) + F(ctx, pick(ctx, keep ? SEEN_KEEP : SEEN_SPREAD), { t: t, s: s, w: w }),
+        why: why0(ctx, t, s, st, w.name + 'に見られた。' + (keep ? '黙っていてくれた（NP・' + s.name + 'への好意）' : '黙っていられず、話が広がり始めた')) });
+    },
+    rumor: function (ctx, t, s, st) {
+      ctx.act2({ actors: [s, t], cat: 'conflict', mag: 12,
+        fx: function () { st.rumor = ctx.stepIndex; st.risk += 15; students(ctx).forEach(function (w) { if (w !== s) st.known[w.i] = 1; }); ctx.stress(s, 12); ctx.stress(t, 10); },
+        text: F(ctx, pick(ctx, RUMOR), { t: t, s: s }), why: why0(ctx, t, s, st, '噂になった（危うさ ' + Math.round(st.risk) + '）') });
+    },
+    crisis: function (ctx, t, s, st) {
+      var rt = R(ctx, t, s), rs = R(ctx, s, t);
+      var goPub = ctx.env.tlove === 'open' && Math.min(rt.trust, rs.trust) >= 25 && ctx.rng() < 0.45 + (s.tr.honesty || 0) * 0.2 + t.tr.np * 0.2;
+      var end = !goPub && ctx.rng() < 0.18 + t.tr.cp * 0.45 - rt.att / 220;
+      st.crisisAt = ctx.stepIndex;
+      var head = F(ctx, pick(ctx, CRISIS), { t: t, s: s });
+      if (goPub) return BEAT.public(ctx, t, s, st, null, head);
+      ctx.act2({ actors: [t, s], cat: end ? 'conflict' : 'bond', mag: end ? 22 : 12,
+        fx: function () {
+          ctx.stress(t, 15); ctx.stress(s, 12);
+          if (end) { var pf = ctx.pair(t, s); pf.couple = false; pf.brokeAt = ctx.stepIndex; st.ended = true; ctx.mod2(s, t, { att: -8, aff: -4 }, { att: -6 }); ctx.stress(s, 20); }
+          else { st.risk = 8; st.low = ctx.stepIndex + 2; }
+        },
+        text: head + F(ctx, pick(ctx, end ? CRISIS_END : CRISIS_LOW), { t: t, s: s }),
+        why: why0(ctx, t, s, st, 'バレかけた（処分の危機）。' + (end ? t.name + 'から「ここまで」（CP ' + Math.round(t.tr.cp * 100) + '）' : 'しばらく会わずに身を潜める')) });
+    },
+    public: function (ctx, t, s, st, x, head) {
+      var P = students(ctx).filter(function (w) { return w !== s; });
+      var wa = P.length ? ctx.most(P, function (w) { return R(ctx, w, s).aff / 40 + w.tr.np * 0.4 + ctx.rng() * 0.3; }) : null;
+      var wc = P.filter(function (w) { return w !== wa; }), wb = wc.length ? ctx.most(wc, function (w) { return Math.max(R(ctx, w, s).att, R(ctx, w, t).att) / 40 + (w.tr.jealous || 0) * 0.5 + w.tr.cp * 0.3 + ctx.rng() * 0.3; }) : null;
+      var warm = !!wa && R(ctx, wa, s).aff > 10;
+      var parts = [(head || '') + F(ctx, pick(ctx, PUB_GO), { t: t, s: s })];
+      if (wa) parts.push(F(ctx, pick(ctx, PUB_REACT[warm ? 'warm' : 'cold']), { t: t, s: s, w: wa }));
+      if (wb && warm && (R(ctx, wb, s).att >= 25 || R(ctx, wb, t).att >= 20)) parts.push(F(ctx, pick(ctx, PUB_REACT.cold), { t: t, s: s, w: wb }));
+      parts.push(F(ctx, pick(ctx, PUB_PARENT), { t: t, s: s }));
+      ctx.act2({ actors: [t, s].concat(wa ? [wa] : []), cat: 'bond', mag: 20,
+        fx: function () {
+          st.pub = true; st.pubAt = ctx.stepIndex; st.risk = 0;
+          students(ctx).forEach(function (w) { if (w !== s) st.known[w.i] = 1; });
+          ctx.mod2(t, s, { trust: 8 }, { trust: 10, aff: 4 }); ctx.stress(t, 12); ctx.stress(s, 6);
+          if (wa) ctx.mod(s, wa, { aff: warm ? 5 : -3 });
+        },
+        text: parts.join('\n\n'), why: why0(ctx, t, s, st, '公にすると決めた（周りの反応：' + (wa ? wa.name + (warm ? 'は祝福・仲良し' : 'は戸惑い') : '―') + '／保護者）') });
+    },
+    jeal: function (ctx, t, s, st, w) {
+      var lv = loveJ(ctx, t, s, w), toS = R(ctx, w, s).att >= R(ctx, w, t).att, threat = !st.pub && (w.tr.aggr || 0) * 0.6 + w.tr.cp * 0.4 + ctx.rng() * 0.3 > 0.75;
+      ctx.act2({ actors: [w, s, t], cat: 'conflict', mag: 12,
+        fx: function () { ctx.mod(w, !lv || toS ? t : s, { ten: 10, aff: -4 }); if (!lv) ctx.mod(w, s, { aff: -2 }); ctx.stress(w, 8); if (threat) { st.risk += 10; ctx.stress(s, 12); ctx.mod(s, w, { ten: 10, trust: -8 }); } },
+        text: F(ctx, pick(ctx, threat ? JEAL.threat : JEAL[!lv ? 'friend' : toS ? 's' : 't']), { t: t, s: s, w: w }),
+        why: why0(ctx, t, s, st, w.name + 'の嫉妬（秘密を知っている。' + (!lv ? s.name + 'の親しい友達で、置いていかれた気がした' : (toS ? s.name : t.name) + 'への惹かれ') + '）' + (threat ? '。言いふらすとほのめかした' : '')) });
+    },
+    cover: function (ctx, t, s, st, w) {
+      ctx.act2({ actors: [w, s, t], cat: 'help', mag: 10,
+        fx: function () { st.risk = Math.max(0, st.risk - 8); ctx.mod2(w, s, { aff: 4, trust: 4 }, { aff: 6, trust: 10 }); },
+        text: F(ctx, pick(ctx, COVER), { t: t, s: s, w: w }), why: why0(ctx, t, s, st, w.name + 'が秘密を守ってくれた（応援・仲良し）') });
+    }
+  };
+
+  function turn(ctx) {
+    var TT = teachers(ctx), SS = students(ctx);
+    if (!TT.length || !SS.length) return;
+    TT.forEach(function (t) {
+      var mine = SS.filter(function (s) { return ctx.pair(t, s).couple; });
+      mine.forEach(function (s) { if (loveOk(ctx, t, s)) coupleBeat(ctx, t, s, tl(ctx, t, s)); });
+      if (!mine.length) approach(ctx, t, SS);
+      ctx.flush();
+    });
+  }
+
+  /* 結末：年度末に付き合っている組と、卒業するまで待ってと言われた3年生 */
+  function note(ctx, s) { (ctx.flags.endNotes = ctx.flags.endNotes || []).push(s); }
+  function afterKind(ctx, t, s, st) {
+    var ab = R(ctx, t, s), ba = R(ctx, s, t), aff = Math.min(ab.aff, ba.aff), tr = Math.min(ab.trust, ba.trust), rr = function () { return ctx.rng() * 0.4; };
+    var sc = {
+      cont: aff / 50 + tr / 60 + (st.pub ? 0.3 : 0) + t.tr.np * 0.3 + rr(),
+      fade: s.tr.fc * 0.6 + Math.max(0, 1 - tr / 60) * 0.5 + rr(),
+      part: t.tr.cp * 0.8 + (st.risk || 0) / 100 + (st.crisisAt != null ? 0.2 : 0) + rr(),
+      reunite: aff > 25 ? t.tr.cp * 0.5 + aff / 80 + rr() : -1
+    };
+    var best = 'cont'; Object.keys(sc).forEach(function (k) { if (sc[k] > sc[best]) best = k; });
+    if (best === 'cont') best = ctx.pick(['cont_open', 'cont_live', 'cont_vow']);
+    return { k: best, why: '好意 ' + Math.round(aff) + '・信頼 ' + Math.round(tr) + '・' + t.name + 'のCP ' + Math.round(t.tr.cp * 100) + '・' + s.name + 'のFC ' + Math.round(s.tr.fc * 100) };
+  }
+  var AFTER_N = { cont_open: '続いた（卒業してから堂々と）', cont_live: '続いた（一緒に暮らす）', cont_vow: '続いた（結婚の約束）', fade: '自然消滅', part: '別れた（先生から「ここまで」）', reunite: '数年後に再会' };
+  function endCouple(ctx, t, s, st) {
+    var term = ctx.env.span === 'term', grad = !term && s.grade === 3, m = { t: t, s: s }, who = t.name + 'と' + s.name;
+    var k = st.pub ? 'pub' : 'sec';
+    if (grad) {
+      var ak = afterKind(ctx, t, s, st);
+      ctx.act2({ actors: [s, t], cat: 'romance', mag: 25, text: F(ctx, pick(ctx, GRAD[k]), m), why: '結末：先生と生徒の恋（卒業）' + (st.pub ? '' : '。最後まで秘密を守った') });
+      note(ctx, who + 'のその後――' + F(ctx, pick(ctx, AFTER[ak.k]), m) + '（先生と生徒の恋の結末：' + AFTER_N[ak.k] + '。' + ak.why + '）');
+      return;
+    }
+    var yk = term ? 'term' : k;
+    ctx.act2({ actors: [s, t], cat: 'romance', mag: 20, text: F(ctx, pick(ctx, YEAR[yk]), m), why: '結末：先生と生徒の恋（' + (term ? '一学期の終わり' : '来年も') + (st.pub ? '' : '・秘密のまま') + '）' });
+    note(ctx, who + 'のその後――' + F(ctx, pick(ctx, YEAR_AFTER[yk]), m) + '（先生と生徒の恋：' + (st.pub ? '公にしたまま' : '秘密のまま') + '次の' + (term ? '学期' : '年') + 'へ）');
+  }
+  function endHold(ctx, t, s, st) {
+    var rs = R(ctx, s, t), yes = rs.att >= 20 && rs.aff >= 5 && canPair(ctx, t, s) && loveOk(ctx, t, s), m = { t: t, s: s };
+    var e = ctx.act2({ actors: [t, s], cat: yes ? 'romance' : 'solo', mag: 25,
+      fx: function () { if (yes && couple(ctx, t, s, 'hold')) { st.pub = true; ctx.mod2(t, s, { att: 10, aff: 8 }, { att: 10, aff: 8 }); } },
+      text: F(ctx, pick(ctx, yes ? HOLD.yes : HOLD.no), m), why: '結末：「卒業するまで待って」の答え（' + s.name + '→先生 惹かれ ' + Math.round(rs.att) + '）' });
+    if (e && yes) note(ctx, t.name + 'と' + s.name + 'のその後――' + F(ctx, pick(ctx, HOLD_AFTER), m) + '（先生と生徒の恋：卒業を待って恋人に）');
+  }
+  function ending(ctx) {
+    scoped(ctx, function () {
+      allTeachers(ctx).forEach(function (t) {
+        if (!t.alive) return;
+        ctx.chars.forEach(function (s) {
+          if (s === t || isT(s) || !s.alive || (s.flags && s.flags.caged != null)) return;
+          var pf = ctx.pair(t, s), st = pf.tl;
+          if (pf.couple && loveOk(ctx, t, s)) endCouple(ctx, t, s, st || tl(ctx, t, s));
+          else if (st && st.hold && !pf.couple && ctx.env.span !== 'term' && s.grade === 3) endHold(ctx, t, s, st);
+        });
+      });
+      ctx.flush();
+    });
+  }
+
+  /* ====================== 箱庭への取り付け ====================== */
+  /* 設定：classroom-teacher.js が 0 にする先生と生徒の惹かれを、オンのときだけ元の値に戻す */
+  var setupP = cls.setup;
+  cls.setup = function (ctx) {
+    if (!on(ctx)) return setupP.apply(this, arguments);
+    var keep = [];
+    ctx.chars.forEach(function (a) { ctx.chars.forEach(function (b) { if (a !== b && isT(a) !== isT(b)) keep.push([a, b, ctx.R(a, b).att]); }); });
+    var r = setupP.apply(this, arguments);
+    keep.forEach(function (k) { ctx.R(k[0], k[1]).att = k[2]; });
+    return r;
+  };
+  /* 月の終わり：先生と生徒の恋の場面 */
+  var afterP = cls.after;
+  cls.after = function (ctx) {
+    var r = afterP ? afterP.apply(this, arguments) : undefined;
+    if (on(ctx) && teachers(ctx).length) { scoped(ctx, function () { turn(ctx); }); ctx.flush(); }
+    return r;
+  };
+  /* 結末：卒業式・修了式の段の最後の一文（理由のない、登場人物のいない一文）の前に入れる。見つからなければ最後に */
+  var finishP = cls.finish;
+  cls.finish = function (ctx) {
+    if (!on(ctx) || !allTeachers(ctx).length) return finishP.apply(this, arguments);
+    var own = Object.prototype.hasOwnProperty.call(ctx, 'say') ? ctx.say : null, base = own || HK.Ctx.prototype.say, step = false, done = false;
+    ctx.say = function (o) {
+      if (!done && o && o.kind === 'step') step = true;
+      else if (!done && step && o && !o.kind && !(o.actors && o.actors.length) && !o.why) { done = true; ending(ctx); }
+      return base.apply(this, arguments);
+    };
+    try { finishP.apply(this, arguments); }
+    finally { if (own) ctx.say = own; else delete ctx.say; }
+    if (!done) ending(ctx);
+  };
+  /* 結末の関係：秘密の恋人は「恋人（秘密）」 */
+  if (HK.LABELS && !HK.LABELS.tlsecret) HK.LABELS.tlsecret = { name: '恋人（秘密）', cls: 'love', pol: 2 };
+  var classifyP = cls.classify, pairTextP = cls.pairText;
+  cls.classify = function (ctx, A, B, pf) {
+    if (on(ctx) && pf && pf.couple && isT(A) !== isT(B) && !(pf.tl && pf.tl.pub)) {
+      var ab = ctx.R(A, B), ba = ctx.R(B, A);
+      if (!(ab.aff < 0 || ba.aff < 0 || ab.ten > 70 || ba.ten > 70)) return { id: 'tlsecret' };
+    }
+    return classifyP ? classifyP.apply(this, arguments) : null;
+  };
+  cls.pairText = function (ctx, A, B, cl) {
+    if (cl && cl.id === 'tlsecret') return '先生と生徒のまま、誰にも言えない恋人どうしとして' + span(ctx) + 'を過ごした。';
+    return pairTextP ? pairTextP.apply(this, arguments) : null;
+  };
+
+  /* 共通の失恋・片想いの出来事：秘密を知らない人からは、先生との恋を見ない */
+  if (HK.Unreq && HK.Unreq.heartOf) HK.wrap(HK.Unreq, 'heartOf', function (prev) {
+    return function (ctx, b, a) {
+      var c = prev.apply(this, arguments);
+      return c && isT(c) && !isT(b) && hidden(ctx, a, b) ? null : c;
+    };
+  });
+  (HK.Heartbreak || []).forEach(function (ev) {
+    if (!ev || ev.id !== 'hb_news' || typeof ev.when !== 'function') return;
+    HK.wrap(ev, 'when', function (prev) { return function (ctx, a, b) { return on(ctx) && hidden(ctx, a, b) ? false : prev.apply(this, arguments); }; });
+  });
+
+  HK.TeacherLove = { on: on, hidden: hidden, teachers: allTeachers };
+})();

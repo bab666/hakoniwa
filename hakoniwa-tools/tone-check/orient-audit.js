@@ -22,6 +22,9 @@
         配役：恋愛対象「なし」の人に体の関係の相手を順に（おまかせ／男性／女性／男女両方／なし）、奇数回は全員に性欲の強さ（ふつう／なし／弱い／強い）を付ける。
      O6 性欲「なし」の人が、合意ありの二人の性的な場面（理由に〔合意のない展開〕の印がない）に出た（R18版。2026-10-27 担当HG）。
         R18が中心の箱庭（HK.State.R18_CORE：ダンジョン・遮断穴・常識改変・サキュバス・バラエティ・マッサージ）と催眠は、箱庭の仕掛けそのものが相手の場面なので数えない
+     O7 クラスメイトの先生と生徒（環境値「先生との恋愛」tlove。2026-10-28 担当KC）：クラスメイトの奇数回は住人0を担任の先生にして、なし／隠れて付き合う／公にすることもある を順に回す。
+        なしの回で、先生×生徒が結末の恋の線（love・night・pine）になった／先生が恋愛の出来事（cat:'romance'）・性的な場面（lewd）に出た。
+        ありの回の恋愛対象の食い違いは O1〜O3 がそのまま見る（先生と生徒の組も、ほかの組と同じ）
    ・O2・O3 は文から拾うので誤判定がありうる。--why で例を出すので目で確かめる */
 const { openBuild } = require('./lib');
 (async () => {
@@ -66,7 +69,7 @@ const { openBuild } = require('./lib');
     const SAFE = !!HK.SAFE_ON;
     const LIB_SKIP = Object.assign({ saimin: 1 }, (HK.State && HK.State.R18_CORE) || {});
     ids.forEach(id => {
-      const sc = HK.SCENARIOS[id], o = res0[id] = { runs: 0, err: 0, O1: 0, O2: 0, O3: 0, O4: 0, O5: 0, O6: 0, F: 0, Fc: 0, ex: [] };
+      const sc = HK.SCENARIOS[id], o = res0[id] = { runs: 0, err: 0, O1: 0, O2: 0, O3: 0, O4: 0, O5: 0, O6: 0, O7: 0, F: 0, Fc: 0, ex: [] };
       for (let s = 0; s < N; s++) {
         const type = ['het', 'homo', 'mix'][s % 3];
         const n = Math.max(sc.minCast || 2, Math.min(sc.maxCast || 6, 2 + (s % 5)));
@@ -78,6 +81,9 @@ const { openBuild } = require('./lib');
           if (/^role_/.test(e.id)) env[e.id] = s % 2 ? 'res' : 'auto';
         });
         ENVSET.forEach(kv => { env[kv[0]] = isNaN(+kv[1]) ? kv[1] : +kv[1]; });
+        /* O7：クラスメイトの奇数回は、住人0を担任の先生にして「先生との恋愛」を順に回す */
+        const teach = id === 'classroom' && s % 2 === 1;
+        if (teach) env.tlove = ['off', 'secret', 'open'][(s >> 1) % 3];
         const ties = s % 4 === 3 && n >= 2 ? [{ a: 0, b: 1, type: ['friend', 'enemy', 'best', 'colleague'][s % 4] }] : [];
         /* O4 の配役（2026-10-26）：4回に1回、恋愛：なしの家族（0-1）と無関心・恐怖（1-2）を付ける。恋愛対象は「両方」にそろえて、この二組だけが恋愛・夜の候補から外れるようにする */
         const NL_T = s % 4 === 1 && n >= 2;
@@ -97,7 +103,7 @@ const { openBuild } = require('./lib');
         let res;
         /* 内容のスイッチ（content.js）：指定がなければすべて入にして、いちばん広く回す */
         if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
-        try { res = HK.simulate({ scenId: id, seed: 4000 + s * 17, env, chars, perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })), ties }); }
+        try { res = HK.simulate({ scenId: id, seed: 4000 + s * 17, env, chars, perChar: chars.map((c, i) => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: teach && i === 0 ? 'teacher' : '' })), ties }); }
         catch (e) { o.err++; continue; }
         o.runs++;
         const C = (res.chars && res.chars.length ? res.chars : chars).map((c, i) => ({ name: c.name, gender: chars[i] ? chars[i].gender : c.gender, likes: chars[i] ? chars[i].likes : c.likes, sexLikes: chars[i] ? chars[i].sexLikes : '', libido: chars[i] ? chars[i].libido : '' }));
@@ -144,15 +150,20 @@ const { openBuild } = require('./lib');
             note('O4', who(ns[0]) + '×' + who(ns[1]) + ' ｜ ' + x.tag + ' ｜ ' + sn.slice(0, 140));
           }));
         }
+        /* O7：先生との恋愛「なし」の回で、先生×生徒が恋の線・恋愛の出来事・性的な場面に出た */
+        if (teach && env.tlove === 'off') {
+          edges.forEach(e => { if ((e.a === 0 || e.b === 0) && !tieLove(e.a, e.b) && /^(love|night|pine)$/.test(e.cls)) note('O7', '先生との恋愛なし：結末 ' + who(e.a) + '×' + who(e.b) + '＝' + e.name); });
+          (res.log || []).forEach(e => { if (e && Array.isArray(e.actors) && e.actors.indexOf(0) >= 0 && e.actors.length >= 2 && (e.cat === 'romance' || e.lewd) && !e.actors.every((x, k, A) => k === 0 || tieLove(A[0], x))) note('O7', '先生との恋愛なし：' + (e.label || '') + ' ' + String(e.text).slice(0, 80)); });
+        }
         /* O5：全年齢モード・全年齢版で、性的な文（はっきりした語）が出た */
         if (SAFE) (res.log || []).forEach(e => { if (!e || typeof e.text !== 'string') return; const t5 = e.text.replace(NOTSEX, ''), m5 = t5.match(SAFE5); if (m5) note('O5', (e.tag || e.label || '') + ' ｜「' + m5[0] + '」 ' + t5.slice(Math.max(0, m5.index - 60), m5.index + 40)); });
       }
     });
     return res0;
   }, { N, WHY, ENVSET });
-  const tot = { O1: 0, O2: 0, O3: 0, O4: 0, O5: 0, O6: 0 };
+  const tot = { O1: 0, O2: 0, O3: 0, O4: 0, O5: 0, O6: 0, O7: 0 };
   let totF = 0, totFc = 0;
-  for (const id in r) { const o = r[id]; totF += o.F; totFc += o.Fc; ['O1', 'O2', 'O3', 'O4', 'O5', 'O6'].forEach(k => { tot[k] += o[k]; }); console.log(id.padEnd(10), 'runs', o.runs, 'err', o.err, 'O1', o.O1, 'O2', o.O2, 'O3', o.O3, 'O4', o.O4, 'O5', o.O5, 'O6', o.O6, 'F非合意', o.F, 'F合意', o.Fc); o.ex.forEach(x => console.log('    ' + x.replace(/\n/g, ' '))); }
+  for (const id in r) { const o = r[id]; totF += o.F; totFc += o.Fc; ['O1', 'O2', 'O3', 'O4', 'O5', 'O6', 'O7'].forEach(k => { tot[k] += o[k]; }); console.log(id.padEnd(10), 'runs', o.runs, 'err', o.err, 'O1', o.O1, 'O2', o.O2, 'O3', o.O3, 'O4', o.O4, 'O5', o.O5, 'O6', o.O6, 'O7', o.O7, 'F非合意', o.F, 'F合意', o.Fc); o.ex.forEach(x => console.log('    ' + x.replace(/\n/g, ' '))); }
   console.log('合計', JSON.stringify(tot), '（F＝恋愛対象「なし」の人が、体の関係の相手の性別に合う相手と体の関係になった数。エラーではない）非合意', totF, '・合意', totFc);
   console.log('pageerr', errors.slice(0, 3));
   await browser.close();

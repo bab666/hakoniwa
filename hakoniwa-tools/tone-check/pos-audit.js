@@ -27,6 +27,8 @@
      V12: モブ相手の受け攻めを「攻め」にした住人（住人どうしでは攻めでない人）が、住人の名前がほかに出ない文（モブ・魔物・罠が相手）で受ける側の文になった
      V13: 夜の主導の文（pos-lead-r18.js の HK.PosLead.log）の受け持ちが向きと食い違う（主導の文の「受け」が、二人の向き HK.Pos.order で攻めになる・自分で攻めを選んでいる）
      V14: 相手ごとの受け・攻め度で向きが決まる組（HK.Pos.prefer。リバどうしは除く）で、決まった攻めが受ける側の文になった（二人だけが出る文）
+   クラスメイトの奇数回（2026-10-28 担当KC）：住人0を担任の先生にして、環境値「先生との恋愛」をあり（隠れて付き合う／公にすることもある）にし、
+     住人0と1を関係の設定で恋人にして回す（R18版の先生と生徒の夜 classroom-teacher-love.js の受け攻め・体の語を V1〜V14 で見る）
    --why：数えずに除いた候補とその理由も出す（性的でない文・女性の攻めが男性に跨って迎える文・「攻めに〜された」の書き方 など）
    誤判定を減らすための除外：性的でない言い回し（NONSEX：「上達」「一貫」「旅路の果て」「注がれたお茶」など）は判定の前に消す。
    V2 は文に性的な語（SEXCORE）があるときだけ数え、女性の攻めが男性の相手に跨って自分の中に迎える文（女攻め×男）は数えない。
@@ -94,7 +96,7 @@ const { openBuild } = require('./lib.js');
         const chars = chars0;
         for (let i = 0; i < n; i++) {
           chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: cast.g[i], likes: '', tone: '', fp: '', pos: cast.p[i], posLike: cast.l[i] || '', color: '', call: '', calls: {}, loveLock: '', posNpc: NPCBOT && (cast.p[i] === 'top' || cast.p[i] === 'riba') ? 'bottom' : '', genital: (cast.gn || [])[i] || '' });
-          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
+          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: sc === 'classroom' && s % 2 === 1 && i === 0 ? 'teacher' : '' });
         }
         /* V5：奇数回は夜の性格を付ける（0 番はたいてい攻め指定。攻め指定のマゾも混ぜる）。1 番から 0 番へは相手ごとの指定でサド */
         if (s % 2 && HK.Attr) { const NIGHT = ['maso', 'sadist', 'maso', 'mean', 'sweet', 'shy']; chars.forEach((c, i) => { c.night = NIGHT[(i + (s >> 1)) % NIGHT.length]; }); if (n >= 2) chars[1].nightFor = { 0: 'sadist' }; }
@@ -135,7 +137,12 @@ const { openBuild } = require('./lib.js');
         });
         Object.keys(env).forEach(k => { if (/^role_/.test(k)) env[k] = s % 2 ? 'res' : 'auto'; });
         ENVSET.forEach(kv => { env[kv[0]] = isNaN(+kv[1]) ? kv[1] : +kv[1]; });
-        const ties = (cast.ties || []).filter(t => t.a < n && t.b < n);
+        let ties = (cast.ties || []).filter(t => t.a < n && t.b < n);
+        /* クラスメイトの奇数回：先生（住人0）との恋愛をありにして、住人0と1を恋人にする */
+        if (sc === 'classroom' && s % 2 === 1 && n >= 2) {
+          env.tlove = s % 4 === 1 ? 'secret' : 'open';
+          ties = ties.filter(t => !((t.a === 0 && t.b === 1) || (t.a === 1 && t.b === 0))).concat([{ a: 0, b: 1, type: 'lover' }]);
+        }
         let res;
         /* 内容のスイッチ（content.js）：指定がなければすべて入にして、いちばん広く回す */
         if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');

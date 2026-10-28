@@ -204,6 +204,7 @@ js/dungeon-events-b.js @scen:dungeon
 js/dungeon-events-c.js @scen:dungeon
 js/factions.js @pack:rel
 js/classroom-teacher.js @scen:classroom
+js/classroom-teacher-love.js @scen:classroom
 js/classroom-cheer.js @scen:classroom
 js/endings.js
 js/epilogue.js

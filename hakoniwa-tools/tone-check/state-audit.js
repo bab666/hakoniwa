@@ -60,6 +60,12 @@
    S19〜S21 は、ふつうの回（N 回）のあとに、追加の関係を使う配役（FCASTS）で NF 回（N/2、4 回以上）ずつ回して数える（その回の S1〜S18 も数える）。
    「参考」には、恐怖で避けた・無関心で受け流した・破談・仲間の出来事の数を出す
    「止めた」：出来事の記録の手前（Ctx.say の防波堤）で捨てられた件数。出所を直すと減る（0 でなくてよい）
+   S33（2026-10-28 担当KC）: クラスメイトの先生と生徒（環境値「先生との恋愛」tlove。classroom-teacher-love.js）。担任の先生（role 'teacher'）を置いた配役で、
+        なし／隠れて付き合う／公にすることもある を順に回す（max(12, N) 回）。
+        なし：先生×生徒が恋人・夜・恋の線（関係図の love・night・pine。関係の設定の組は除く）・恋愛の出来事（cat:'romance'）・性的な場面（lewd）・「先生と生徒の」出来事に出た／
+        あり：恋愛対象の合わない先生×生徒が恋人・恋愛の出来事・夜になった（両方向）／全年齢モード・全年齢版で先生との夜（lewd・「先生と生徒の夜」）が出た／
+        R18に参加しない人・性行為の相手を固定した生徒（固定の相手はほかの生徒）が先生との夜に出た／場にいない人（不登校など）が「先生と生徒の」出来事に出た（記録の直前に見る）／
+        秘密のあいだに、このファイル以外の失恋・片想い・嫉妬の出来事が先生の名前を出した
    W1: 箱庭の場所に合わない語（PLACE_NG）が記録の地の文に出た。媚薬ロッカー：狭い箱の中に「席・皿・周りが（割って入る人）」は出ない
        （2026-10-26 順83。hate-kit.js・hate-love.js の狭い場所の文 hkSpace: 'cramped'）。合計と箱庭ごとの数は最後の「W1」の行 */
 'use strict';
@@ -77,7 +83,7 @@ const { openBuild } = require('./lib.js');
     const sents = t => String(t).replace(NONSEX, '＿').split(/[。！？\n」]/);
     const isSex = s => SEXCORE.test(s);
     const out = { n: {}, ex: {}, drop: {}, runs: 0, err: [], bySc: {}, anySex: {} };
-    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32'];
+    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33'];
     out.info = {};
     /* S31：避けている人が自分から迫った（2026-10-28 担当JE）。迫る札（物語型）と、迫らない札（断る・逃げる・助ける など） */
     const APPROACH_TAG = /告白|口づけ|キス|夜這い|誘|迫|押し倒|監禁|独占|一夜|セフレ|デート|求愛|口説|抱|愛撫|奉仕|夜|催眠|媚薬|襲|執着|甘え|膝枕|添い寝|手を(?:繋|握)|恋|想い|両想い/;
@@ -838,11 +844,65 @@ const { openBuild } = require('./lib.js');
       put(JSON.parse(bak));
       cur = null;
     }
+    /* S33：クラスメイトの先生と生徒（環境値「先生との恋愛」。2026-10-28 担当KC） */
+    if (HK.SCENARIOS.classroom && (!only || only.indexOf('classroom') >= 0)) {
+      cur = { sc: 'classroom先生', story: false }; out.bySc[cur.sc] = out.bySc[cur.sc] || { runs: 0 };
+      const SAFE = !!HK.SAFE_ON, TLW = /先生と生徒の/, NT = Math.max(12, N);
+      const one = (a, b) => { if (!a.likes || a.likes === 'both') return true; if (a.likes === 'none') return false; if (!b.gender || b.gender === 'x') return true; return a.likes === b.gender; };
+      const say0 = HK.Ctx.prototype.say;
+      HK.Ctx.prototype.say = function (o) {
+        if (o && TLW.test(String(o.why || '')) && (o.actors || []).some(c => c && !HK.State.here(c))) hit('S33', '場にいない人が先生と生徒の出来事に出た：' + (o.actors || []).filter(c => c && !HK.State.here(c)).map(c => c.name).join('・'));
+        return say0.apply(this, arguments);
+      };
+      try {
+        for (let s = 0; s < NT; s++) {
+          const tl = ['off', 'secret', 'open'][s % 3], n = 5 + (s % 3), chars = [], perChar = [];
+          for (let i = 0; i < n; i++) {
+            chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: (i + s) % 2 ? 'f' : 'm',
+              likes: ['', 'm', 'f', 'both', 'none', ''][(i * 3 + s) % 6], tone: '', fp: '', pos: ['', 'top', 'bottom', 'riba'][(i + s) % 4], calls: {}, loveNG: [],
+              noR18: (s % 4 === 1 && i === 0) || (s % 4 === 2 && i === 1), sexLock: s % 5 === 3 && i === 2 ? '3' : '' });
+            perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: { grade: String(1 + ((s + i) % 3)) }, role: i === 0 ? 'teacher' : '' });
+          }
+          const env = { grade: ['3', 'all', '2', '1'][s % 4], tlove: tl, climate: 70 };
+          if (HK.Content) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
+          /* あり：半分の回は、関係の設定で先生と生徒を恋人にして始める（恋人になってからの場面と夜を見る） */
+          const ties = tl !== 'off' && s % 2 ? [{ a: 0, b: 1 + (s % 3), type: 'lover' }] : [];
+          const tie = (a, b) => ties.some(t => (t.a === a && t.b === b) || (t.a === b && t.b === a));
+          let res;
+          try { res = HK.simulate({ scenId: 'classroom', seed: 8100 + s * 13, env, chars, perChar, ties }); } catch (e) { out.err.push('S33: ' + String(e && e.stack || e).slice(0, 300)); continue; }
+          out.runs++; out.bySc[cur.sc].runs++;
+          const T = 0, nm = i => chars[i] ? chars[i].name + '(' + chars[i].gender + '→' + (chars[i].likes || '任') + ')' : '?';
+          (res.pairs || []).forEach(p => {
+            if (p.a !== T && p.b !== T) return;
+            const x = p.a === T ? p.b : p.a;
+            if (tl === 'off' && !tie(T, x) && /^(love|night|pine)$/.test(p.cls)) hit('S33', 'なしなのに先生×生徒の関係 ' + nm(T) + '×' + nm(x) + '＝' + p.name);
+            if (tl !== 'off' && !tie(T, x) && p.cls === 'love' && !(one(chars[T], chars[x]) && one(chars[x], chars[T]))) hit('S33', '恋愛対象の合わない先生×生徒が ' + p.name + '：' + nm(T) + '×' + nm(x));
+          });
+          let secretNow = false;
+          (res.log || []).forEach(e => {
+            if (!e || !e.text || e.kind === 'step' || e.kind === 'phase') return;
+            const ac = e.actors || [], hasT = ac.indexOf(T) >= 0, mine = TLW.test(e.why || ''), stu = ac.filter(i => i !== T);
+            if (mine) out.info.tlEv = (out.info.tlEv || 0) + 1;
+            if (mine && e.lewd) out.info.tlNight = (out.info.tlNight || 0) + 1;
+            if (mine && /恋（秘密）/.test(e.why || '')) secretNow = true;
+            if (mine && /恋（公にしている）|公にすると決めた|結末：/.test(e.why || '')) secretNow = false;
+            if (tl === 'off' && (mine || (hasT && (e.cat === 'romance' || e.lewd)))) hit('S33', 'なしなのに先生と生徒の恋・夜の出来事：' + e.text.slice(0, 60));
+            if (!hasT) { if (secretNow && !mine && /失恋|片想い|想い人|恋敵|嫉妬/.test(e.why || '') && e.text.indexOf(chars[T].name) >= 0) hit('S33', '秘密の先生との恋を、ほかの出来事が語った：' + e.text.slice(0, 80)); return; }
+            if (mine && e.cat === 'romance' && stu.length === 1 && !tie(T, stu[0]) && !(one(chars[T], chars[stu[0]]) && one(chars[stu[0]], chars[T]))) hit('S33', '恋愛対象の合わない先生と生徒の恋の出来事：' + nm(T) + '×' + nm(stu[0]) + ' ' + e.text.slice(0, 50));
+            if (!e.lewd && !/先生と生徒の夜/.test(e.why || '')) return;
+            if (SAFE) hit('S33', '全年齢で先生との夜：' + e.text.slice(0, 60));
+            if (chars[T].noR18) hit('S33', 'R18に参加しない先生が夜に出た：' + nm(T));
+            stu.forEach(i => { if (chars[i].noR18) hit('S33', 'R18に参加しない生徒が先生との夜に出た：' + nm(i)); if (chars[i].sexLock && chars[i].sexLock !== String(T)) hit('S33', '固定した相手だけの生徒が先生との夜に出た：' + nm(i)); });
+          });
+        }
+      } finally { HK.Ctx.prototype.say = say0; }
+      cur = null;
+    }
     return out;
   }, { N, only, WHY, HOT, mode, ENVSET });
   const ids = Object.keys(r.bySc);
   for (const sc of ids) {
-    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32'].map(k => k + ' ' + (b[k] || 0));
+    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33'].map(k => k + ' ' + (b[k] || 0));
     console.log(sc.padEnd(10), 'runs', b.runs, cells.join(' '), '誰とでも可の体の出来事', r.anySex[sc] || 0);
   }
   console.log('合計', JSON.stringify(r.n), '止めた', JSON.stringify(r.drop));

@@ -147,6 +147,7 @@ js/solo-massage-cast.js @scen:massage
 js/solo-massage.js @scen:massage
 js/factions.js @pack:rel
 js/classroom-teacher.js @scen:classroom
+js/classroom-teacher-love.js @scen:classroom
 js/classroom-cheer.js @scen:classroom
 js/endings.js
 js/epilogue.js
