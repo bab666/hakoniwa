@@ -17,7 +17,9 @@
    表：口調 × 性別 × 作風 の (a) 件数／喘ぎの数。--why で例文（どの表から来たか：pick の鍵と出どころ、台詞なら「台詞」）を出す
    (a)(b) は「喘ぎ」（HK.Moan の声・喘ぎの表・山場／寸前の声の表）と「台詞（参考）」（喘ぎの表にない、言い換えを通る山場の台詞。台詞の点検 lint.js の受け持ち）に分けて出す
    効き：--night=… で夜の性格ごとに、HK.Moan に夜の性格が届いたか・基盤の態度（サド＝強気／マゾ＝健気／意地悪＝奔放／甘々＝穏やか／恥じらい＝恥じらい）・鍵の割合を、
-         --moantone=口調 で、喘ぎの口調で作った声の割合を出す（moan-engine.js の HK.Moan.nightOf・toneOf） */
+         --moantone=口調 で、喘ぎの口調で作った声の割合を出す（moan-engine.js の HK.Moan.nightOf・toneOf）
+   調整：--moanfit=設定.json で、高度設定「喘ぎ声の調整」（HK.Moan.setFit）の設定を当てて回す（区分・夜の性格→声の基盤・割合・性別の整え。書式は moan-engine.js の M.setFit）。
+         例：{"tone":{"proud":{"kind":"soft","masc":false}}}（強気をやわらかく）／{"night":{"sadist":"shy"}}／{"rate":{"tone":1}}／{"tone":{"proud":{"kind":"off"}}} */
 'use strict';
 const fs = require('fs');
 const { openBuild } = require('./lib.js');
@@ -31,15 +33,18 @@ const { MOAN_RULES } = require('./lint.js');
   /* --night=sadist,maso,mean,sweet,shy,match,none：夜の性格を全員に決めて回す（match は偶数番の住人をサド・奇数番を「相手に合わせる」に）。
      --moantone=口調：全員の「喘ぎの口調」（c.moanTone）を決めて回す。どちらも、喘ぎの選び方に効いているか（効き）を表に出す */
   const NIGHTS = opt('night') ? opt('night').split(',').map(x => x === 'none' ? '' : x) : null, MT = opt('moantone') || '';
+  const FIT = opt('moanfit') ? JSON.parse(fs.readFileSync(opt('moanfit'), 'utf8')) : null;
   /* --from=前の --json の出力：回さずに、集めた喘ぎに規則だけ当て直す（規則を直したときの確かめ） */
   const FROM = opt('from');
   if (FROM) { report(Object.assign({ runs: 0, err: [], tones: [], scens: [], gen: 0, genMatched: 0, full: true }, JSON.parse(fs.readFileSync(FROM))), [], FROM, 0); return; }
   if (!dir) { console.error('使い方: node moan-audit.js <ビルド> [回数] [r18|safe|\'\'] [--tones=…] [--scen=…] [--why]'); process.exit(1); }
   const { browser, page, errors } = await openBuild(dir, mode);
   const t0 = Date.now();
-  const r = await page.evaluate(({ N, TONES, SCEN, NIGHTS, MT }) => {
+  const r = await page.evaluate(({ N, TONES, SCEN, NIGHTS, MT, FIT }) => {
     const HK = window.HK, V = HK.Voice, M = HK.Moan, E = HK.Ero, SAFE = !!HK.SAFE_ON;
-    const out = { runs: 0, err: [], moans: [], dup: [], safeHits: [], tones: [], gen: 0, genMatched: 0, safe: SAFE, full: !!M };
+    /* 喘ぎ声の調整を当てる（当てたあとの、整えた設定を表に出す） */
+    const fitSet = FIT && M && M.setFit ? (M.setFit(FIT), M.fitCfg) : null;
+    const out = { runs: 0, err: [], moans: [], dup: [], safeHits: [], tones: [], gen: 0, genMatched: 0, safe: SAFE, full: !!M, fit: fitSet };
     const norm = s => String(s || '').replace(/[⁠⁡-⁤♡゛ﾞ\s　]/g, '');
     const letters = s => norm(s).replace(/[…‥、。！？!?っッー〜～ぁぃぅぇぉゃゅょ「」（）・]/g, '');
     /* 素の喘ぎの表（口調の色のない行）。ここに無い文を「口調の語尾が付いた」と数える */
@@ -169,7 +174,7 @@ const { MOAN_RULES } = require('./lint.js');
       }
     })));
     return out;
-  }, { N, TONES, SCEN, NIGHTS, MT });
+  }, { N, TONES, SCEN, NIGHTS, MT, FIT });
   report(r, errors, dir, Math.round((Date.now() - t0) / 1000));
   await browser.close();
   function report(r, errors, dir, sec) {
@@ -178,6 +183,7 @@ const { MOAN_RULES } = require('./lint.js');
   console.log('== moan-audit', dir, label, '回数', r.runs, '口調', r.tones.length, '箱庭', (r.scens || []).length, '失敗', r.err.length, 'ページのエラー', errors.length, '秒', sec);
   if (r.err.length) console.log('  失敗の例', r.err.slice(0, 3));
   if (errors.length) console.log('  ページのエラー', errors.slice(0, 3));
+  if (r.fit !== undefined && FIT) console.log('  喘ぎ声の調整:', JSON.stringify(r.fit));
   if (r.safe || !r.full) {
     console.log('(d) 全年齢での喘ぎの混入:', r.safeHits.length);
     r.safeHits.slice(0, SHOW).forEach(h => console.log('   [' + h.why + '] ' + h.tone + ' ' + h.id + '#' + h.s + ' 「' + h.q + '」 … ' + h.ctx));
@@ -223,7 +229,9 @@ const { MOAN_RULES } = require('./lint.js');
   }
   /* 夜の性格・喘ぎの口調の効き */
   if (r.nightFx && r.nightFx.length) {
-    const EXP = { sadist: 'proud', maso: 'devoted', mean: 'free', sweet: 'gentle', shy: 'shy' };
+    /* --moanfit の夜の性格→声の基盤（night）を当てていれば、その態度を期待にする（'off' は口調の態度のままなので数えない） */
+    const EXP = Object.assign({ sadist: 'proud', maso: 'devoted', mean: 'free', sweet: 'gentle', shy: 'shy' }, (r.fit && r.fit.night) || {});
+    if (r.fit && r.fit.night) console.log('（喘ぎ声の調整の夜の性格→声の基盤：' + JSON.stringify(r.fit.night) + '）');
     console.log('\n### 夜の性格の効き（HK.Moan の声。期待：サド＝強気の基盤／マゾ＝健気の基盤・懇願 b が増える／意地悪＝奔放の基盤・攻めで t3 が増える／甘々＝穏やかの基盤／恥じらい＝恥じらいの基盤・声を抑える h が増える）');
     console.log('設定\t本人\t声の数\t夜の性格が届いた\t期待の基盤（基盤の声のうち）\tb 懇願\th 抑える\tt3 かわいい\tw3 限界');
     const grpK = {}; r.nightFx.forEach(x => { const k = (x.set || '(なし)') + '\t' + (x.own || '-'); (grpK[k] = grpK[k] || []).push(x); });

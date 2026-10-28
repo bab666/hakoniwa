@@ -30,7 +30,10 @@
     if (c.marks) bits.push('語尾：' + c.marks);
     if (c.toneCustom && !HK.TONE_CUSTOM_OFF) bits.push('付け替え：' + c.toneCustom);
     /* r18:begin */
-    if (c.moanTone && !HK.SAFE_ON) bits.push('喘ぎ：' + toneLabel(c.moanTone));
+    /* 高度設定「喘ぎ声の調整」で、この人の声の区分を既定から変えてあれば添える（moan-engine.js の HK.Moan.fitNote） */
+    var fnote = !HK.SAFE_ON && HK.Moan && HK.Moan.fitNote && HK.Moan.toneOf ? HK.Moan.fitNote(HK.Moan.toneOf(c)) : '';
+    if (c.moanTone && !HK.SAFE_ON) bits.push('喘ぎ：' + toneLabel(c.moanTone) + (fnote ? '（声：' + fnote + '）' : ''));
+    else if (fnote) bits.push('声：' + fnote);
     /* r18:end */
     if (HK.Ending && HK.Ending.on(c)) bits.push(HK.Ending.labelFor(c));
     if (c.call) bits.push('呼び方：' + callLabel(c.call));
@@ -209,7 +212,8 @@
     /* 性欲の強さ「なし」：合意のある夜に効く欄を暗くする（attr.js の A.libDim。値は消さない） */
     ld = HK.Attr && HK.Attr.libDim ? HK.Attr.libDim(c) : '';
     if (!HK.SAFE_ON) moanRow = '<div' + ld + '><div class="gearrow"><label>喘ぎの口調 <select data-gf="moanTone" aria-label="喘ぎの口調">' + opt('', 'いつもの口調と同じ', c.moanTone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.moanTone || '', t.desc); }).join('') + '</select></label></div>' +
-      '<p class="gearhint">喘ぎ声・夜の場面の声だけ、この口調で出します（普段は作った口調で話す人の、素の声が出る様子に）。</p></div>';
+      '<p class="gearhint">喘ぎ声・夜の場面の声だけ、この口調で出します（普段は作った口調で話す人の、素の声が出る様子に）。</p>' +
+      '<p class="gearhint">声の区分や割合は 箱庭タブ → 高度設定 → 喘ぎ声の調整 で変えられます。</p></div>';
     /* r18:end */
     var callSel = '<select data-gf="call" aria-label="基本の呼び方">' + (HK.CALL_STYLES || [{ v: '', label: 'おまかせ' }]).map(function (o) { return opt(o.v, o.label, c.call || ''); }).join('') + '</select>';
     /* 相手の性別で分けるとき：男性・女性・その他ごとの敬称 */

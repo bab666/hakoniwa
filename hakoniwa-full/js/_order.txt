@@ -393,6 +393,7 @@ js/ui.js
 js/ui-gear.js
 js/ui-adv.js
 js/ui-adv-moan.js
+js/ui-adv-moan-fit.js
 js/notice.js
 js/ui-fold.js
 js/ui-mobile.js
