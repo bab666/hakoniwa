@@ -28,7 +28,8 @@
   var KIND = {
     classmate: 'pal', friend: 'pal', best: 'pal', childhood: 'pal', acq: 'pal', colleague: 'pal', buddy: 'pal', comrade: 'pal',
     parent: 'parent', pparent: 'parent',
-    sibling: 'sib', sibclose: 'sib', sibbad: 'sib', sibprot: 'sib', relative: 'sib',
+    /* 兄弟（不仲）は、張り合う・突っぱねる台詞（foe）にする（2026-10-28 担当MH。不仲の組が仲良く見えないように） */
+    sibling: 'sib', sibclose: 'sib', sibbad: 'foe', sibprot: 'sib', relative: 'sib',
     boss: 'boss', mentor: 'boss', teacher: 'boss', senpai: 'boss', master: 'boss',
     lover: 'love', mate: 'love', fated: 'love', fiance: 'love',
     ex: 'ex', fwb: 'fwb', crush: 'crush', honmei: 'crush', almost: 'crush',
@@ -151,7 +152,10 @@
       if (i < bi) { bi = i; best = t; }
     });
     if (!best) return null;
-    var k0 = KIND[best.type], D = HK.TIES[best.type] || {}, dir = !!(D.dir && DIRK[k0]);
+    var k0 = KIND[best.type];
+    /* 家族の仲：不仲（kg）・師弟などの仲：険悪（cold）の二人も、張り合う台詞（foe）にする */
+    if ((k0 === 'sib' || k0 === 'parent' || k0 === 'boss') && (best.kg === 'bad' || best.cold === 'bad')) k0 = 'foe';
+    var D = HK.TIES[best.type] || {}, dir = !!(D.dir && DIRK[k0]);
     var A = dir ? ctx.chars[best.a] : a, B = dir ? ctx.chars[best.b] : b, r = lab(best);
     return { k: k0, t: best, A: A, B: B, dir: dir, r: r, ra: dir ? D.roleA : r, rb: dir ? D.roleB : r };
   }
@@ -174,7 +178,7 @@
   function say(ctx, rel, sc, a, b, c, txt) {
     var ac = [a, b].concat(c ? [c] : []);
     var fx = rel.k === 'foe' ? { ten: 2 } : rel.k === 'ex' ? { ten: 1 } : { aff: 2, trust: 1 };
-    return ctx.act2({ actors: ac, cat: 'bond', fx: function () { ctx.mod2(a, b, fx, fx); }, text: txt, why: whyOf(rel, sc), mag: 4 });
+    return ctx.act2({ actors: ac, cat: rel.k === 'foe' ? 'conflict' : 'bond', fx: function () { ctx.mod2(a, b, fx, fx); }, text: txt, why: whyOf(rel, sc), mag: 4 });
   }
   /* 一つの段で、関係の台詞を最大 n 組まで（組ごとに確率 p） */
   function scene(ctx, sc, n, p) {

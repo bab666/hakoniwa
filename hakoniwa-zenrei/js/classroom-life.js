@@ -192,6 +192,8 @@
       if (P.length < 2) return;
       ctx.incident('三学期の始まり。冬休み明けの教室は、少しだけ空気が変わっていた。');
       var a = ctx.rng.pick(P), b = ctx.closest(a);
+      /* 不仲の二人（sib-feud.js の HK.SibFeud.chilly。雪解け前）は、冬休みのあいだも連絡を返さない（2026-10-28 担当MH） */
+      if (b && HK.SibFeud && HK.SibFeud.chilly(ctx, a, b)) { ctx.act2({ actors: [a, b], cat: 'conflict', fx: function () { ctx.mod2(a, b, { ten: 3 }, { ten: 3 }); }, text: ctx.t('{a}は冬休みのあいだ、{b}からの連絡に一度も返事をしなかった。三学期の教室で目が合っても、二人はすぐに視線を逸らした。周りは、二人のあいだの冷たい空気に気づかないふりをした。', a, b), why: '冬休みのあいだも、不仲は変わらなかった' }); return; }
       if (b) ctx.act2({ actors: [a, b], cat: 'bond', fx: function () { ctx.mod2(a, b, { trust: 5, aff: 4 }, { trust: 5, aff: 4 }); }, text: ctx.t('{a}は{b}と初詣に行った話を、誰にも言わなかった。', a, b), why: '冬休みのあいだに縮まった距離' });
     },
     '2月': function (ctx) { valentine(ctx); },

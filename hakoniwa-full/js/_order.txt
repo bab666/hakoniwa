@@ -533,6 +533,7 @@ js/zombie-npc.js @scen:zombie
 js/zombie-reunion.js @scen:zombie
 js/zombie-rel.js @scen:zombie
 js/rel-bad-engine.js @pack:rel
+js/sib-feud.js @pack:rel
 js/solo-kaihen-ero.js @scen:kaihen
 js/solo-kaihen-talk.js @scen:kaihen
 js/solo-kaihen-after.js @scen:kaihen

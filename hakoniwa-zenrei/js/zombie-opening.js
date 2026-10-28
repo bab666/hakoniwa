@@ -93,6 +93,8 @@
   var PACTG = L('{g}は、{area}の一室で身を寄せ合った。最初に段取りを決めたのは{lead}だった。|{lead}が「ここで夜を越す。見張りは二人ずつ｜＝｜ここで夜を越します。見張りは二人ずつです」と言い、{g}はそれに従った。誰も、ほかの案を持っていなかった。|{g}は輪になって座り、それぞれが知っていることを話した。話が終わる頃には、自然と{lead}の顔を見るようになっていた。|{area}に集まった{g}は、まず噛まれていないことを確かめ合った。{lead}が全員の腕を順番に見て回った。');
   /* もともと知り合い（家族・友人など）どうしの同盟：名前を確かめ合ったりはしない */
   var PACTK = L('{a}と{b}は顔を見合わせて、黙って頷いた。言葉はいらなかった。|{a}は{b}の無事を確かめると、すぐに荷物を半分持った。「行こう。今度は離れないで｜行くぞ。今度は離れるな｜行きましょう。今度は離れないでください」|{a}と{b}は、いつもの調子で軽口を叩き合った。そうでもしないと、膝が震えそうだった。|{b}は{a}の顔を見るなり、張りつめていたものが切れたように座り込んだ。{a}はその隣に腰を下ろし、見張りは自分がやると言った。');
+  /* もともと知った仲でも、不仲の二人（sib-feud.js の HK.SibFeud.chilly：兄弟（不仲）・不仲・敵対・ライバル・家族の仲：不仲・師弟などの仲：険悪。雪解け前）は渋々の同盟（2026-10-28 担当MH） */
+  var PACTF = L('{a}と{b}は、よりによって同じ場所に逃げ込んでいた。二人は不機嫌に顔を見合わせたが、一人で生き延びられないことも分かっていた。{a}「今だけだから｜今だけだ｜今だけですから」{b}「こっちの台詞｜こちらの台詞だ｜こちらの台詞です」|{a}は{b}の顔を見るなり舌打ちした。それでも、渋々荷物の半分を受け取った。生き延びるための同盟に、仲の良さは要らなかった。|{a}と{b}は、互いに武器を下ろすまでにずいぶん時間がかかった。結局、口をきかないまま、見張りの順番だけを決めた。');
   var DOUBT = L('{d}だけは、少し離れた場所に座っていた。|{d}は、誰とも目を合わせようとしなかった。|{d}は「足手まといは置いていく｜＝｜足手まといは置いていきます」と小さく付け加えた。|{d}は、自分の荷物を抱えたまま眠った。');
   Z.pacts = function (ctx) {
     var rng = ctx.rng, P = ctx.present(), byArea = {};
@@ -116,8 +118,9 @@
       if (g.length === 2) {
         var p = B.pairs[0];
         var known = HK.Ties && HK.Ties.get(ctx, p[0], p[1]);
-        t = f(ctx.pick(known ? PACTK : PACT2), { a: p[0].name, b: p[1].name, w: wname(p[0]) });
-        if (known) why = 'もともと知った仲（' + (HK.Sib && HK.Sib.isSibTie(known) && HK.tieLabel ? HK.tieLabel(known) : HK.TIES && HK.TIES[known.like || known.type] ? HK.TIES[known.like || known.type].label : '知り合い') + '）。同じ' + an(ctx, +k) + 'で合流した';
+        var chilly = !!(known && HK.SibFeud && HK.SibFeud.chilly(ctx, p[0], p[1]));
+        t = f(ctx.pick(chilly ? PACTF : known ? PACTK : PACT2), { a: p[0].name, b: p[1].name, w: wname(p[0]) });
+        if (known) why = 'もともと知った仲（' + (HK.Sib && HK.Sib.isSibTie(known) && HK.tieLabel ? HK.tieLabel(known) : HK.TIES && HK.TIES[known.like || known.type] ? HK.TIES[known.like || known.type].label : '知り合い') + '）。同じ' + an(ctx, +k) + 'で合流した' + (chilly ? '（不仲のまま、渋々の同盟）' : '');
       } else {
         var lead = ctx.most(g, function (c) { return c.tr.lead; });
         t = f(ctx.pick(PACTG), { g: names(g), lead: lead.name, area: an(ctx, +k) });

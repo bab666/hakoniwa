@@ -266,8 +266,9 @@
           ex.told = true;
           if (!d.noEnd && HK.RoomEnd && HK.RoomEnd.groupEnd) t += HK.RoomEnd.groupEnd(ctx, ex, { lt: d.lt }) || '';
         }
-        var w = (d.with || []).filter(function (c) { return c && g.indexOf(c) < 0; });
-        if (t) ctx.say({ kind: 'event', cat: d.cat || 'escape', cageOk: true, actors: g.concat(w), text: t, why: d.postWhy || names(g) + 'が部屋の外へ出たあと', mag: d.mag || 14 });
+        var w = (d.with || []).filter(function (c) { return c && g.indexOf(c) < 0; }), ga = d.lead && g.indexOf(d.lead) > 0 ? [d.lead].concat(g.filter(function (c) { return c !== d.lead; })) : g;
+        if (t) { var po = { kind: 'event', cat: d.cat || 'escape', cageOk: true, actors: ga.concat(w), text: t, why: d.postWhy || names(g) + 'が部屋の外へ出たあと', mag: d.mag || 14 }; if (d.sex === false) po.sex = false; ctx.say(po); }
+        if (d.after) d.after();
       });
     } finally { ctx.flags.doorBusy = false; }
   }
@@ -326,7 +327,7 @@
     var giver = ctx.most(L, function (c) { var others = L.filter(function (o) { return o !== c; }); return c.tr.np * 1.2 + (others.length ? Math.max.apply(null, others.map(function (o) { return ctx.R(c, o).aff; })) / 80 : 0) - c.tr.cold * 0.4; });
     var taker = ctx.most(L, function (c) { return c.tr.cold * 0.7 + c.tr.aggr * 0.5 + c.stress / 200 - c.tr.np * 0.4; });
     var gv = giver.tr.np * 1.2 + (L.length > 1 ? Math.max.apply(null, L.filter(function (o) { return o !== giver; }).map(function (o) { return ctx.R(giver, o).aff; })) / 80 : 0);
-    var go, how, t;
+    var go, how, t, after = null;
     if (L.length > 1 && gv > 0.95 && rng() < 0.7) {
       var cand = L.filter(function (o) { return o !== giver; });
       go = cand.slice().sort(function (x, y) { return ctx.R(giver, y).aff - ctx.R(giver, x).aff; })[0]; how = 'sacrifice';
@@ -337,14 +338,17 @@
       go = L.length > 1 ? taker : L[0]; how = 'grab';
       var rest = L.filter(function (o) { return o !== go; });
       t = rest.length ? ctx.t(ctx.pick(['「一人だけ」と書き足された紙を読むより早く、{a}は扉に手をかけていた。{b}の声に、{a}は振り返らなかった。', '{a}は{b}を押しのけて、一人で外へ出た。扉は、すぐに閉まった。', '「一人しか出られないなら｜一人しか出られないのなら｜一人しか出られないのでしたら」{a}はそれだけ言って、外へ出た。残された{b}は、閉まった扉を見つめていた。']), go, rest[0]) : '';
-      rest.forEach(function (o) { ctx.mod(o, go, { aff: -25, ten: 30, trust: -35 }); });
+      /* 置いていかれた人の気持ちが変わるのは、置いていかれたあと（扉の場面を書いたあと。doorFlush の after）。
+         先に変えると、扉が開くまでの出来事（スピード型の拘束 など）の記録が、まだ起きていない裏切りのあとの気持ちで書かれてしまう */
+      after = function () { rest.forEach(function (o) { ctx.mod(o, go, { aff: -25, ten: 30, trust: -35 }); }); };
     }
     go.out = true; go.fate = '脱出'; go.fateNote = how === 'sacrifice' ? giver.name + 'に背中を押されて一人で出た' : '一人で部屋を出た';
     ctx.flags.oneOut = true;
     (ctx.flags.exits = ctx.flags.exits || []).push({ a: go.i, b: (how === 'sacrifice' ? giver : (L.filter(function (o) { return o !== go; })[0] || go)).i, label: ctx.label, how: how });
     /* 誰が出るかの場面は、区切りの行のあと（外に出たあとの結末は、最後の「結末」の段） */
     var ow = '一人しか出られない部屋（' + (how === 'sacrifice' ? giver.name + 'の優しさ' : go.name + 'のドライさ') + '）';
-    doorOpen(ctx, { g: L, why: why, post: t, postWhy: ow + '。' + go.name + 'だけが脱出した', cat: how === 'sacrifice' ? 'help' : 'betray', mag: 45, noEnd: true });
+    /* 扉の場面の主役は、背中を押した人（譲った）か、一人で出た人（奪った）。体の関係の場面ではない（sex: false） */
+    doorOpen(ctx, { g: L, why: why, post: t, postWhy: ow + '。' + go.name + 'だけが脱出した', cat: how === 'sacrifice' ? 'help' : 'betray', mag: 45, noEnd: true, lead: how === 'sacrifice' ? giver : go, sex: false, after: after || null });
     return { cat: 'escape', mag: 30, text: text, why: why + '／' + ow };
   }
   function exitPair(ctx, a, b, text, why, night) {

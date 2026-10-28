@@ -577,7 +577,9 @@
     group_h: function (ctx, o) { var g = groupOf(ctx, o); return g.length >= 3 ? { gen: 'group', who: g } : null; },
     /* 闇に堕ちた自分 */
     rs_dk_force: function (ctx, o) { return (o.actors || []).length >= 2 && o.text.length >= 80 ? { gen: 'dark', who: o.actors.slice(0, 2) } : null; },
-    rs_dk_ntr: function (ctx, o) { return o.sex === true && (o.actors || []).length >= 3 ? { gen: 'ntr', who: o.actors.slice(0, 3) } : null; }
+    rs_dk_ntr: function (ctx, o) { return o.sex === true && (o.actors || []).length >= 3 ? { gen: 'ntr', who: o.actors.slice(0, 3) } : null; },
+    /* 運命の揺らぎ：らしくない一面にそそられた側から誘う夜（unlike-r18.js。二人の夜と同じ前振り） */
+    unl_heat: function (ctx, o) { return o.sex === true && (o.actors || []).length >= 2 ? { gen: 'pair', who: o.actors.slice(0, 2) } : null; }
   };
 
   /* ---------- 見つけた場面から、前振りの材料をまとめる ---------- */

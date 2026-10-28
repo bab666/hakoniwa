@@ -681,7 +681,7 @@
       ['good', 0.6], ['bad', 0.15 + tense * 0.4], ['please', L0.some(pleaser) ? 0.6 + tense * 0.5 : 0], ['jealous', L0.length >= 3 ? 0.35 : 0], ['makeup', neg.length ? 0.8 : 0], ['love', lv.length ? 0.6 * ST.romK(S) : 0]
     ];
     var kind = HK.weighted(rng, opts, function (o) { return o[1]; })[0];
-    /* 二人を選ぶ：揉めごとは気の荒い・相性の悪い二人、仲が深まる出来事は誰とでも */
+    /* 二人を選ぶ：揉めごとは気の荒い・相性の悪い二人、仲が深まる出来事は誰とでも（不仲の組は選ばれにくい。雪解けのあとは少し戻る。sib-feud.js の HK.SibFeud.storyDamp） */
     function pickP(list, f) { return list.length ? HK.weighted(rng, list, f) : null; }
     if (kind === 'please') {
       var pl = pickP(L0.filter(pleaser), function (q) { return 0.5 + q.tr.ac; }), down = pl && L0.filter(function (q) { return q !== pl; }).sort(function (x, y) { return (y.m.st || 0) - (x.m.st || 0); })[0];
@@ -695,7 +695,7 @@
     var BAD = /fight|drink_bad|ration|duty|game_bad|^bad$/.test(kind);
     var pr = kind === 'makeup' ? pickP(neg, function () { return 1; }) : kind === 'love' ? pickP(lv, function (x) { return 0.5 + Math.max(0, bond(S, x[0], x[1])); })
       : BAD ? pickP(PR, function (x) { return Math.max(0.05, 0.5 + (x[0].tr.aggr + x[1].tr.aggr) * 0.6 - bond(S, x[0], x[1]) * 0.6 + ((x[0].m.st || 0) + (x[1].m.st || 0)) / 200) * (capt(x[0]) || capt(x[1]) ? 0.35 : 1); })
-        : pickP(PR, function (x) { return 0.6 + Math.max(0, bond(S, x[0], x[1])) * 0.6 + (x[0].tr.warmth + x[1].tr.warmth) * 0.3; });
+        : pickP(PR, function (x) { return (0.6 + Math.max(0, bond(S, x[0], x[1])) * 0.6 + (x[0].tr.warmth + x[1].tr.warmth) * 0.3) * (HK.SibFeud ? HK.SibFeud.storyDamp(S, x[0], x[1]) : 1); });
     if (!pr) return;
     var a = rng() < 0.5 ? pr[0] : pr[1], b = a === pr[0] ? pr[1] : pr[0], w0 = bond(S, a, b);
     /* 想いの場面（手を差し出す・告白する）は、避けていない側から（avoid-kit.js の HK.Avoid。お互いに避けている二人には起こさない。2026-10-28） */

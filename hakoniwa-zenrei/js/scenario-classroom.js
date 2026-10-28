@@ -90,6 +90,13 @@
         for (var i = 0; i + 1 < sh.length; i += 2) {
           ctx.k = 1; ctx._mag = 0; ctx._touched = {};
           var a = sh[i], b = sh[i + 1];
+          /* 不仲の二人（sib-feud.js の HK.SibFeud.chilly。雪解け前）は、同じ部屋でも口をきかない（2026-10-28 担当MH） */
+          if (HK.SibFeud && HK.SibFeud.chilly(ctx, a, b)) {
+            ctx.mod2(a, b, { ten: 4 }, { ten: 4 });
+            e = ctx.say({ kind: 'event', cat: 'conflict', actors: [a, b], text: a.name + 'と' + b.name + 'は、よりによって同じ部屋になった。消灯のあとも二人は背中を向け合ったまま、どちらも口をきかなかった。周りの話し声が、かえって二人の沈黙を目立たせた。', why: '修学旅行の夜（ランダムな組み合わせ。不仲の二人）', mag: 6 });
+            ctx.pair(a, b).moments.push({ n: e.n, mag: e.mag });
+            continue;
+          }
           ctx.mod2(a, b, { trust: 8, att: 4 }, { trust: 8, att: 4 });
           var ab = R(ctx, a, b);
           e = ctx.say({ kind: 'event', cat: ab.att > 35 && ctx.romanceOk([a, b]) ? 'romance' : 'bond', actors: [a, b], text: ab.att > 35 && ctx.romanceOk([a, b]) ? a.name + 'と' + b.name + 'は、旅館の廊下の自販機の前で偶然二人になった。' : a.name + 'と' + b.name + 'は同じ布団の列で、眠くなるまで話した。', why: '修学旅行の夜（ランダムな組み合わせ）', mag: ctx._mag });

@@ -72,7 +72,8 @@
     tryRewind: function (S, h) {
       if (!S.relic || S.rewound) return false;
       var p = S.P[S.relic.by];
-      if (!p || !p.alive || (HK.State && !HK.State.here(p))) return false;   /* 持ち主がその場にいない（村を出た・連れ去られた）なら応えない */
+      /* 持ち主がその場にいない（村を出た・連れ去られた・縛られて民宿や土蔵に残された・囚われている）なら応えない */
+      if (!p || !p.alive || p.bound || p.captive || (HK.State && !HK.State.here(p))) return false;
       if (S.rng() > 0.75) {
         ST.say(S, { actors: [p], tag: '沈黙', text: p.name + 'の' + S.relic.n + 'は、' + S.G.call + 'を前にして、ただ冷たいままだった。', why: 'アーティファクトは応えなかった（25％）', mag: 10 });
         return false;

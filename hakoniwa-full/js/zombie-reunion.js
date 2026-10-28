@@ -144,6 +144,8 @@
     var t = tie(ctx, a, b), ra = ctx.R(a, b), rb = ctx.R(b, a);
     if (t) {
       var ty = t.type, first = t.a === a.i;
+      /* 家族の仲：不仲（kg）・師弟などの仲：険悪（cold）の二人は、不仲の再会にする（2026-10-28 担当MH） */
+      if (t.kg === 'bad' || t.cold === 'bad') return 'bad';
       if (ty === 'lover' || ty === 'mate' || ty === 'fated') return 'lover';
       /* 家族で「恋愛：あり」（ties.js の HK.tieFamLove）の二人が恋人になっていれば（惹かれ合っていれば）、恋人どうしの再会にする */
       if (HK.tieFamLove && HK.tieFamLove(t) && (ctx.pair(a, b).couple || (ra.att > 45 && rb.att > 40))) return 'lover';

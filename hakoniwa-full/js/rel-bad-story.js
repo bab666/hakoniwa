@@ -12,6 +12,8 @@
   if (!ST) return;
   var RB = HK.RelBad = HK.RelBad || {};
   var STORY = RB.STORY = RB.STORY || {};
+  /* 区切りの窓口（下の ST.step の包みの最後に呼ぶ）。族のかたまりのファイルが足す（読み込み順によらず、足した表をここで作り直さない） */
+  RB.EXTRA = RB.EXTRA || [];
   function L(s) { return s.split('|'); }
   function fill(t, m) { return String(t).replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
 
@@ -92,6 +94,8 @@
       var c = choose(S, S.P, S.rbTies, TX, S.rng);
       if (c) ST.say(S, make(S, c, TX));
     }
+    /* ほかのファイルが足す物語型の関係の出来事（sib-feud.js の不仲の二人の出来事など。HK.addTo(HK.RelBad.EXTRA, fn) で足す。fn(S, label)） */
+    for (var xi = 0; xi < RB.EXTRA.length; xi++) RB.EXTRA[xi](S, label);
     return o;
   };
 
