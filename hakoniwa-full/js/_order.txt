@@ -9,7 +9,8 @@
 @chunk scen-jinro deps=pack-story
 @chunk scen-dungeon deps=pack-story
 @chunk scen-goukon deps=pack-rel
-@chunk scen-whiteroom deps=pack-rel
+@chunk pack-trap
+@chunk scen-whiteroom deps=pack-rel,pack-trap
 @chunk scen-classroom deps=pack-rel
 @chunk scen-island deps=pack-rel
 @chunk scen-zombie deps=pack-rel
@@ -25,7 +26,7 @@
 @chunk scen-succubus deps=pack-rel,pack-solo
 @chunk scen-saimin deps=pack-rel,pack-solo
 @chunk scen-variety deps=pack-rel,pack-solo
-@chunk scen-locker deps=pack-rel,pack-solo
+@chunk scen-locker deps=pack-rel,pack-solo,pack-trap
 js/load.js
 js/load-order.js
 js/scenarios-init.js
@@ -111,6 +112,7 @@ js/scenario-classroom.js @scen:classroom
 js/mini.js
 js/mini-tails.js @pack:rel
 js/scenarios-b.js @scen:island
+js/trap-open.js @pack:trap
 js/room-lewd.js @scen:whiteroom
 js/room-lewd-more.js @scen:whiteroom
 js/room-lewd-x.js @scen:whiteroom
@@ -324,6 +326,7 @@ js/locker-night-bot.js @scen:locker
 js/locker-night.js @scen:locker
 js/locker-night-light.js @scen:locker
 js/solo-locker.js @scen:locker
+js/trap-open-locker.js @scen:locker
 js/rpg-data.js @scen:rpg
 js/scenario-rpg.js @scen:rpg
 js/jashin-data.js @scen:jashin
@@ -400,6 +403,7 @@ js/solo-rel-bad.js
 js/safe.js
 js/safe-room.js @scen:whiteroom
 js/room-games-r18.js @scen:whiteroom
+js/trap-open-room.js @scen:whiteroom
 js/share-card.js
 js/egoquiz.js
 js/saves.js

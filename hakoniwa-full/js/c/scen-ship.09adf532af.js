@@ -1,6 +1,6 @@
 ;
 /* ==== js/ship-res.js ==== */
-HK.Load.def(340,'js/ship-res.js',function(){
+HK.Load.def(342,'js/ship-res.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP=HK.SHIP||{};
@@ -40,7 +40,7 @@ SH.RES=[
 });
 ;
 /* ==== js/ship-life.js ==== */
-HK.Load.def(341,'js/ship-life.js',function(){
+HK.Load.def(343,'js/ship-life.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP=HK.SHIP||{};
@@ -320,7 +320,7 @@ report:'地の熱を運ぶ茸'}
 });
 ;
 /* ==== js/ship-life2.js ==== */
-HK.Load.def(342,'js/ship-life2.js',function(){
+HK.Load.def(344,'js/ship-life2.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP=HK.SHIP||{};
@@ -399,7 +399,7 @@ function L(s){return s.split('|');}
 });
 ;
 /* ==== js/ship-civ.js ==== */
-HK.Load.def(343,'js/ship-civ.js',function(){
+HK.Load.def(345,'js/ship-civ.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP=HK.SHIP||{};
@@ -709,7 +709,7 @@ report:'惑星意識との接触'}
 });
 ;
 /* ==== js/ship-text.js ==== */
-HK.Load.def(344,'js/ship-text.js',function(){
+HK.Load.def(346,'js/ship-text.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP=HK.SHIP||{};
@@ -1184,7 +1184,7 @@ wiped:[
 });
 ;
 /* ==== js/ship-r18.js ==== */
-HK.Load.def(345,'js/ship-r18.js',function(){
+HK.Load.def(347,'js/ship-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP=HK.SHIP||{};
@@ -1311,7 +1311,7 @@ civ:[
 });
 ;
 /* ==== js/ship-r18-xeno.js ==== */
-HK.Load.def(346,'js/ship-r18-xeno.js',function(){
+HK.Load.def(348,'js/ship-r18-xeno.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP=HK.SHIP||{};
@@ -1676,7 +1676,7 @@ cold:[
 });
 ;
 /* ==== js/ship-r18-xeno2.js ==== */
-HK.Load.def(347,'js/ship-r18-xeno2.js',function(){
+HK.Load.def(349,'js/ship-r18-xeno2.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP=HK.SHIP||{};
@@ -2195,7 +2195,7 @@ return gen()||(sp[m]?pick(sp[m]):kd[m]?pick(kd[m]):'');
 });
 ;
 /* ==== js/ship-thick.js ==== */
-HK.Load.def(348,'js/ship-thick.js',function(){
+HK.Load.def(350,'js/ship-thick.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP,TK=HK.TKC;
@@ -2291,7 +2291,7 @@ R.alienTop=(R.alienTop||[]).concat(L('絡みつこうとした触手を、{a}は
 });
 ;
 /* ==== js/ship-lewd.js ==== */
-HK.Load.def(349,'js/ship-lewd.js',function(){
+HK.Load.def(351,'js/ship-lewd.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP;
@@ -2591,7 +2591,7 @@ return r;
 });
 ;
 /* ==== js/ship-night.js ==== */
-HK.Load.def(350,'js/ship-night.js',function(){
+HK.Load.def(352,'js/ship-night.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP=HK.SHIP||{};
@@ -2940,7 +2940,7 @@ SH.NIGHT={run:run,after:function(S,A,a,b){after(S,A,a,b,A.lover(S,a,b)?'love':'c
 });
 ;
 /* ==== js/ship-r18-more.js ==== */
-HK.Load.def(351,'js/ship-r18-more.js',function(){
+HK.Load.def(353,'js/ship-r18-more.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP;
@@ -3425,7 +3425,7 @@ SH.NIGHT.run._top=true;
 });
 ;
 /* ==== js/ship-bond.js ==== */
-HK.Load.def(352,'js/ship-bond.js',function(){
+HK.Load.def(354,'js/ship-bond.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP=HK.SHIP||{};
@@ -3472,7 +3472,7 @@ BIRTHDAY:L('今日が{a}の誕生日だと、{b}がこっそり皆に伝えて�
 });
 ;
 /* ==== js/ship-crisis.js ==== */
-HK.Load.def(353,'js/ship-crisis.js',function(){
+HK.Load.def(355,'js/ship-crisis.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP=HK.SHIP||{};
@@ -3537,7 +3537,7 @@ end:L('通風管から、無数の影が溢れ出した。{n}は操縦室に立�
 });
 ;
 /* ==== js/ship.js ==== */
-HK.Load.def(354,'js/ship.js',function(){
+HK.Load.def(356,'js/ship.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,SH=HK.SHIP=HK.SHIP||{};
@@ -4549,7 +4549,7 @@ SH.API={live:live,bond:bond,lover:lover,amour:amour,canJoin:canJoin,join:join,lo
 });
 ;
 /* ==== js/ship-special.js ==== */
-HK.Load.def(355,'js/ship-special.js',function(){
+HK.Load.def(357,'js/ship-special.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP,SP=HK.Special,ST=HK.Story;
@@ -4609,7 +4609,7 @@ adapter:adapter
 });
 ;
 /* ==== js/ship-after.js ==== */
-HK.Load.def(356,'js/ship-after.js',function(){
+HK.Load.def(358,'js/ship-after.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP,ST=HK.Story;
@@ -5033,7 +5033,7 @@ return true;
 });
 ;
 /* ==== js/ship-xeno-thick.js ==== */
-HK.Load.def(472,'js/ship-xeno-thick.js',function(){
+HK.Load.def(475,'js/ship-xeno-thick.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP,X2=SH&&SH.X2;
@@ -5041,7 +5041,7 @@ if(!X2)return;
 function L(s){return s.split('|');}
 var FORM={
 em:L('ぴりっ、と皮膚の下を微かな電流が走った。{x}は肌の表面ではなく、神経そのものを撫でていた。触れられていないはずの場所が、内側から順番に灯っていく。{a}は歯を食いしばったが、筋肉は{a}の命令ではなく、{x}の周波数に従って震えた。|計器が一斉に狂った。同時に、{a}の体のあちこちで、触れられてもいない神経がぱちぱちと弾けはじめた。{x}の電流は痛みの手前で止まり、そこから先を、すべて快感に書き換えていった。|{x}が近づくたび、{a}の髪がふわりと逆立った。見えない手に撫でられるように、静電気の波が肌の上を往復する。波が敏感なところを通り過ぎるたびに、{a}の喉から短い声が漏れた。'),
-gas:L('息を止めても無駄だった。{x}は肌の毛穴から、粘膜から、ゆっくりと染み込んでくる。体の内側を冷たい霧がなぞり、通ったあとから熱が灯る。肺の奥まで満たされるたび、{a}の視界の端で、色のない歌が明滅した。|霧は甘い匂いがした。吸い込むたびに手足の感覚が遠のき、代わりに、霧に触れられている場所だけが、ありえないほど鮮明になっていった。|霧が濃くなるにつれ、{a}の肌はどこもかしこも濡れたように敏感になっていった。霧に包まれているだけで、全身を同時に撫でられているのと変わらなかった。'),
+gas:L('息を止めても無駄だった。{x}は肌の毛穴から、粘膜から、ゆっくりと染み込んでくる。体の内側を冷たい霧がなぞり、通ったあとから熱が灯る。肺の隅々まで満たされるたび、{a}の視界の端で、色のない歌が明滅した。|霧は甘い匂いがした。吸い込むたびに手足の感覚が遠のき、代わりに、霧に触れられている場所だけが、ありえないほど鮮明になっていった。|霧が濃くなるにつれ、{a}の肌はどこもかしこも濡れたように敏感になっていった。霧に包まれているだけで、全身を同時に撫でられているのと変わらなかった。'),
 phase:L('{x}は、そこにいるのにいなかった。輪郭が揺らぐたび、触れられる場所がずれる。外側を撫でていたはずの感触が、次の瞬間には体の内側にあった。皮膚という境目が、{x}には意味を持たないらしかった。|翅が一度瞬くごとに、{x}は少しずつ{a}の体の「内側」へずれ込んできた。服も皮膚も通り抜けて、奥にあるものだけを、直接なぞられる。|触れられる、と身構えた場所には何も来なかった。代わりに、まったく別の場所が、内側から甘く撫でられる。予測を裏切られるたび、{a}の体は無防備に跳ねた。'),
 serpent:L('冷たく滑らかな鱗が、{a}の腿に、腰に、胸に、幾重にも巻きついた。締めつけは決して苦しくはならず、ただ逃げ場だけを正確に奪っていく。鱗の一枚一枚が波打つたび、全身を同時に撫で上げられる感触に、{a}の背が勝手に反った。|長い胴が、ゆっくりと{a}の体を一巻きずつ確かめていった。どこが一番震えるのかを覚えると、{x}はそこだけを、執拗に鱗でこすり上げた。|鱗の隙間から滲む温かな粘りが、{a}の肌を滑らかにしていった。滑りのよくなった体を、{x}の胴がゆっくりと擦り上げては締め、締めてはほどく。'),
 tiny:L('目に見えないほど小さなものが、無数に、肌の上を這っていた。一つ一つは羽毛ほどの重さもない。けれどそれが何万と集まり、体の窪みという窪みに入り込んでくると、{a}にはもう、どこを触られているのか数えることができなかった。|ざわ、と全身の産毛が一斉に逆立った。微細な{x}が肌の上を流れるたび、通り道に沿って、細い熱の線が何本も引かれていく。|微細な{x}は、{a}の耳の後ろ、膝の裏、指の股と、自分でも触れたことのない場所ばかりを選んで集まってきた。くすぐったさは、すぐに耐えがたい疼きに変わった。')
@@ -5079,7 +5079,7 @@ lure:L('{x}が最後に深く震えた瞬間、{a}の体は大きく跳ね、声
 force:L('奥を叩く律動が一段と速くなり、熱いものが体の奥に溢れた。{a}は抗う力を失ったまま、腰を痙攣させて達した。{x}が離れたあとも、体の芯の震えはしばらく止まらなかった。|最後に奥を強く叩かれた瞬間、{a}の視界が白く弾けた。抗う声は途切れ、{a}は押さえつけられたまま、体を弓なりに反らせて達した。|{x}が低く唸って動きを止めた。熱いものが体の奥に広がるのを感じながら、{a}もまた、震えながら頂へ押し上げられた。'),
 take:L('何度目かも分からない頂のあと、{a}は自分の声がかすれていることにようやく気づいた。{x}たちは満ち足りたように鳴き交わし、ぐったりした{a}の体を、巣の柔らかな底に横たえた。|巣の中に、{a}のかすれた声が響いた。また一つ、数えきれない頂が重なり、{a}は{x}たちの体温に包まれたまま意識を手放した。|{x}たちが満足して離れたのは、{a}が声も出せなくなってからだった。巣の底で、{a}は火照った体を丸めて震え続けた。'),
 probe:L('刺激が最も強くなった瞬間、{a}は背を反らして達した。{x}は{a}の痙攣が収まるまでを最後まで観察し、それから、記録を終えたように静かに離れていった。|刺激の強さが一気に上げられ、{a}の体は記録を取る暇も与えずに跳ね上がった。{x}は{a}が達する瞬間を、最後まで食い入るように見つめていた。|{x}が最後に試したのは、それまででいちばん強い刺激だった。{a}は声を上げる間もなく達し、{x}はそれを確かめると、満足げに体を引いた。'),
-invade:L('頭の奥で白い光が弾けた。何にも触れられていないのに、{a}は全身を震わせて果てた。{x}はその余韻の中に、満足げに留まり続けた。|体の内側で、{x}が一斉に震えた。逃げ場のない快感が頭の奥で弾け、{a}は誰もいない場所で、ひとり全身を痙攣させて果てた。|{x}が感覚の奥深くまで流れ込んだ瞬間、{a}の意識はふっと途切れた。気がついたとき、体はまだ甘く痺れたまま、内側で何かが満足げに静まっていた。|頭の奥で、何かがぱちんと弾けた。触れられていない脳の芯が直接撫で上げられ、{a}の視界は真っ白に染まる。体が遅れて、ようやく絶頂に追いついた。|全身の血が一度に沸騰したようだった。熱が体の芯から噴き上がり、{a}は声にならない声を上げて、内側から焼き尽くされるように果てた。|頂は、終わらなかった。引き延ばされた時間の中で、昇りつめた感覚がいつまでも続く。{a}は果てたまま、果て続けた。{x}がようやく時間を戻したとき、{a}は声も出せずに崩れ落ちた。|体の内側を満たしきった何かが、最後にゆっくりと脈打った。その一拍で、{a}の体は内側から押し上げられるように達した。外からは何も触れていないのに、体の奥は、満たされた重みでいつまでも震えていた。|色と音と熱が、一つの光になって弾けた。{a}は見て、聞いて、触れられて、そのすべてで同時に果てた。光が消えたあとも、世界の色がしばらく、甘く肌を撫で続けていた。|記憶の中の絶頂と、今の絶頂が重なった。二つの頂が一度に押し寄せ、{a}は過去と今の両方で、同時に果てた。')
+invade:L('頭の奥で白い光が弾けた。何にも触れられていないのに、{a}は全身を震わせて果てた。{x}はその余韻の中に、満足げに留まり続けた。|体の内側で、{x}が一斉に震えた。逃げ場のない快感が頭の芯で弾け、{a}は誰もいない場所で、ひとり全身を痙攣させて果てた。|{x}が感覚の奥深くまで流れ込んだ瞬間、{a}の意識はふっと途切れた。気がついたとき、体はまだ甘く痺れたまま、内側で何かが満足げに静まっていた。|頭の奥で、何かがぱちんと弾けた。触れられていない脳の芯が直接撫で上げられ、{a}の視界は真っ白に染まる。体が遅れて、ようやく絶頂に追いついた。|全身の血が一度に沸騰したようだった。熱が体の芯から噴き上がり、{a}は声にならない声を上げて、内側から焼き尽くされるように果てた。|頂は、終わらなかった。引き延ばされた時間の中で、昇りつめた感覚がいつまでも続く。{a}は果てたまま、果て続けた。{x}がようやく時間を戻したとき、{a}は声も出せずに崩れ落ちた。|体の内側を満たしきった何かが、最後にゆっくりと脈打った。その一拍で、{a}の体は内側から押し上げられるように達した。外からは何も触れていないのに、体の奥は、満たされた重みでいつまでも震えていた。|色と音と熱が、一つの光になって弾けた。{a}は見て、聞いて、触れられて、そのすべてで同時に果てた。光が消えたあとも、世界の色がしばらく、甘く肌を撫で続けていた。|記憶の中の絶頂と、今の絶頂が重なった。二つの頂が一度に押し寄せ、{a}は過去と今の両方で、同時に果てた。')
 };
 var RESIST={
 CP:L('{a}「……っ、ふざけるな、離れろ……！」|{a}「こんなもので……っ、屈すると思うな……」|{a}「触るな……っ、その手を、どけろ……！」'),
@@ -5112,6 +5112,11 @@ A:L('{a}「反応の記録は取れた。……興味深い｜反応の記録は
 FC:L('{a}「あはは、すっかり懐いちゃった｜はは、すっかり懐いたな｜あはは、すっかり懐いてしまいましたね」|{a}「ね、また遊ぼ？｜また遊ぶぞ｜また遊びましょうね」'),
 AC:L('{a}「……だ、大丈夫だった、かな……｜……だ、大丈夫だったか……｜……だ、大丈夫でしたか……」|{a}「ご、ごめんね……でも、気持ちよさそうだったから……｜す、すまない……だが、気持ちよさそうだった……｜ご、ごめんなさい……でも、気持ちよさそうでしたから……」')
 };
+var NG_IN= /押し入|奥まで|一番奥|奥を(?:強く)?叩|奥に(?:溢|広が)|沈めて|叩きはじめ|同じ深さ|貫|挿/;
+var PEAK_NG=L('{x}は{a}の口を器官で塞いだまま、押さえつける力をさらに強めた。息も声も奪われた{a}の体が、地面の上で大きく跳ねた。{a}は抗う力を失ったまま、全身を痙攣させて達した。|'+
+'押さえ込まれた肌の上を、{x}の器官が執拗に這い回った。逃げ場のないまま同じ場所ばかりを責め立てられ、{a}の視界が白く弾けた。{a}は体を弓なりに反らせて、震えながら達した。|'+
+'{x}が低く唸り、{a}の喉に熱いものを流し込んだ。むせ返りながらも{a}の体は勝手に震え、押さえつけられたまま頂へ押し上げられた。{x}が離れたあとも、体の芯の震えはしばらく止まらなかった。');
+function okNG(arr,ng,alt){if(!ng)return arr;var f=arr.filter(function(t){return!NG_IN.test(t);});return f.length?f:alt||arr;}
 function pk(S,arr){return arr[S.rng.int(arr.length)];}
 X2.thick=function(S,d,m,a,top,body,ft,always){
 if(HK.SAFE_ON|| !body)return null;
@@ -5119,17 +5124,18 @@ if(HK.Lewd&&HK.Lewd.conf('ship')&&HK.Lewd.ero(S.env)&&HK.Lewd.lv(S.env)!=='low')
 if(!always&&S.rng()>1/3)return null;
 ft=RESIST[ft]?ft:'NP';
 if(top)return/翌朝|それ以来|その夜|次の日/.test(body)?null:[body,pk(S,TOP_MID),pk(S,TOP_LINE[ft]),pk(S,TOP_PEAK),pk(S,TOP_LAST[ft]),pk(S,TOP_AFTER)].join('\n\n');
-var sense=FORM[d.form]||KIND[d.kind]||KIND.neutral;
+var ng= !!(HK.Pos&&HK.Pos.noGen&&HK.Pos.noGen(a));
+var sense=okNG(FORM[d.form]||KIND[d.kind]||KIND.neutral,ng,KIND.neutral);
 var cutAt=body.indexOf('\u0003'),bodyRest=cutAt>=0?body.slice(cutAt):'';
 if(cutAt>=0)body=body.slice(0,cutAt);
 var P=[body];
 if(m==='invade'){
-P.push(pk(S,SENSE[d.id]&&S.rng()<0.5?SENSE[d.id]:S.rng()<0.6?SENSE_INV:sense));
-if(S.rng()<0.4){var s2=pk(S,SENSE_INV);if(P.indexOf(s2)<0)P.push(s2);}
+P.push(pk(S,okNG(SENSE[d.id]&&S.rng()<0.5?SENSE[d.id]:S.rng()<0.6?SENSE_INV:sense,ng,sense)));
+if(S.rng()<0.4){var s2=pk(S,okNG(SENSE_INV,ng,sense));if(P.indexOf(s2)<0)P.push(s2);}
 }else P.push(pk(S,sense));
 if(m==='lure')P.push(pk(S,OVER.lure),pk(S,RESIST[ft]));
-else{P.push(pk(S,RESIST[ft]));if(S.rng()<0.6)P.push(pk(S,OVER[m]||OVER.force));}
-P.push(pk(S,BREAK[ft]),pk(S,PEAK[m]||PEAK.force));
+else{P.push(pk(S,RESIST[ft]));if(S.rng()<0.6)P.push(pk(S,okNG(OVER[m]||OVER.force,ng,OVER.probe)));}
+P.push(pk(S,BREAK[ft]),pk(S,okNG(PEAK[m]||PEAK.force,ng,PEAK_NG)));
 var after=bodyRest+(X2.AFTER[m]?pk(S,X2.AFTER[m]):'');
 if(X2.REACT&&X2.REACT[ft]&&S.rng()<0.7)after+=pk(S,X2.REACT[ft]);
 if(after)P.push(after);
@@ -5158,7 +5164,7 @@ X.hugeAct=X.hugeAct.concat([
 })();
 });
 ;
-HK.Load.def(472.5,'tone:scen-ship',function(){
+HK.Load.def(475.5,'tone:scen-ship',function(){
 HK.Load.toneData("mixed",{"F":[
 ["どうせなら、誰かと飲みたかったんだ","どうせなら、誰かと飲みたかったんです。……一人だと、つまんないし",1],
 ["ここで喧嘩して、誰が得するの？","ここで喧嘩して、誰が得するんですか？　……ね、やめよう",1],
@@ -5513,4 +5519,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 HK.Load.toneData("chara_down",{"F":[
 ["一年、よく持ちこたえましたね。私の自慢の船員たちです","一年、よく持ちこたえましたねー。私の自慢の船員たちですよ、ほんと",1]]});
 });
-HK.Load.done('scen-ship', '5a15f56444', 1);
+HK.Load.done('scen-ship', '09adf532af', 1);

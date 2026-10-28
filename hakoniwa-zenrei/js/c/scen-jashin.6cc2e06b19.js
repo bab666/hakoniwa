@@ -1,6 +1,6 @@
 ;
 /* ==== js/jashin-data.js ==== */
-HK.Load.def(203,'js/jashin-data.js',function(){
+HK.Load.def(206,'js/jashin-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -169,7 +169,7 @@ JS.ESCAPE_OK=L('{a}は霧の切れ間を見つけ、そのまま山道を駆け�
 });
 ;
 /* ==== js/jashin-jobs.js ==== */
-HK.Load.def(204,'js/jashin-jobs.js',function(){
+HK.Load.def(207,'js/jashin-jobs.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK&&HK.JASHIN;
@@ -436,7 +436,7 @@ return true;
 });
 ;
 /* ==== js/jashin-jobs-pair.js ==== */
-HK.Load.def(205,'js/jashin-jobs-pair.js',function(){
+HK.Load.def(208,'js/jashin-jobs-pair.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK&&HK.JASHIN;
@@ -685,7 +685,7 @@ var ST=HK.Story;
 });
 ;
 /* ==== js/jashin-gods.js ==== */
-HK.Load.def(206,'js/jashin-gods.js',function(){
+HK.Load.def(209,'js/jashin-gods.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK.JASHIN;
@@ -853,7 +853,7 @@ JS.GOD={};JS.GODS.forEach(function(g){JS.GOD[g.id]=g;});
 });
 ;
 /* ==== js/jashin-fx-a.js ==== */
-HK.Load.def(207,'js/jashin-fx-a.js',function(){
+HK.Load.def(210,'js/jashin-fx-a.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK.JASHIN;
@@ -953,7 +953,7 @@ F('ygolonac',
 });
 ;
 /* ==== js/jashin-gods-rev.js ==== */
-HK.Load.def(208,'js/jashin-gods-rev.js',function(){
+HK.Load.def(211,'js/jashin-gods-rev.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK.JASHIN;
@@ -1060,7 +1060,7 @@ JS.GOD={};JS.GODS.forEach(function(g){JS.GOD[g.id]=g;});
 });
 ;
 /* ==== js/jashin-more.js ==== */
-HK.Load.def(209,'js/jashin-more.js',function(){
+HK.Load.def(212,'js/jashin-more.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK.JASHIN;
@@ -1110,7 +1110,7 @@ NO_ENGULF:L('{g}は、まだ完全には目覚めていなかった。その一�
 });
 ;
 /* ==== js/jashin-rel-text.js ==== */
-HK.Load.def(210,'js/jashin-rel-text.js',function(){
+HK.Load.def(213,'js/jashin-rel-text.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK.JASHIN;
@@ -1215,7 +1215,7 @@ MURDER_UNSOLVED:'事件は、誰にも解かれないまま、村の空気だけ
 });
 ;
 /* ==== js/jashin-rel.js ==== */
-HK.Load.def(211,'js/jashin-rel.js',function(){
+HK.Load.def(214,'js/jashin-rel.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp,T=JS&&JS.RELT;
@@ -1300,6 +1300,7 @@ ST.sayB(S,{actors:[p],tag:'誤解',text:p.name+'の縄が解かれた。疑い�
 });
 live=A(S);
 amnTick(S,live,h);
+live=A(S);
 if(night&&rng()<0.18){
 var pairs=[];
 live.forEach(function(a){live.forEach(function(b){if(a.i<b.i){var c=cat(S,a,b);if(c==='love'||c==='family'||c==='close')pairs.push([a,b,c]);else if(c==='crush'&&mutual(S,a,b))pairs.push([a,b,'mutual']);}});});
@@ -1573,7 +1574,7 @@ JS.REL={setup:setup,arrive:arrive,amnArrive:amnArrive,tick:tick,onDeath:onDeath,
 });
 ;
 /* ==== js/jashin-drama.js ==== */
-HK.Load.def(212,'js/jashin-drama.js',function(){
+HK.Load.def(215,'js/jashin-drama.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp;
@@ -1765,7 +1766,7 @@ JS.DRAMA={tick:tick,edge:edge,relmap:relmap,setRel:setRel};
 });
 ;
 /* ==== js/jashin.js ==== */
-HK.Load.def(213,'js/jashin.js',function(){
+HK.Load.def(216,'js/jashin.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp,M=JS&&JS.MORE;
@@ -2322,7 +2323,7 @@ JS.core={die:die,sacrifice:sacrifice,flee:flee,names:names,jobOf:jobOf,label:lab
 });
 ;
 /* ==== js/jashin-muno.js ==== */
-HK.Load.def(214,'js/jashin-muno.js',function(){
+HK.Load.def(217,'js/jashin-muno.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK.JASHIN;
@@ -2381,7 +2382,7 @@ JS.core.die(S,q,p.name+'の巻き添えで',DRAG_DIE,ST.fmt(ST.pick(S,DRAG),{a:p
 });
 ;
 /* ==== js/jashin-special.js ==== */
-HK.Load.def(215,'js/jashin-special.js',function(){
+HK.Load.def(218,'js/jashin-special.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK.JASHIN,SP=HK.Special;
@@ -2435,7 +2436,7 @@ note:function(p){var n=SP.endNote(p);if(p.mad&& !p.spec)n='発狂（'+p.mad.labe
 });
 ;
 /* ==== js/jashin-duo-data.js ==== */
-HK.Load.def(216,'js/jashin-duo-data.js',function(){
+HK.Load.def(219,'js/jashin-duo-data.js',function(){
 (function(){
 'use strict';
 var JS=window.HK&&window.HK.JASHIN;
@@ -2627,7 +2628,7 @@ JS.DUO_EV=JS.DUO_EV||[];
 });
 ;
 /* ==== js/jashin-duo.js ==== */
-HK.Load.def(217,'js/jashin-duo.js',function(){
+HK.Load.def(220,'js/jashin-duo.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK.JASHIN,ST=HK.Story;
@@ -2769,7 +2770,7 @@ if(key&&out)ST.key(S,out,key);
 });
 ;
 /* ==== js/jashin-cave.js ==== */
-HK.Load.def(218,'js/jashin-cave.js',function(){
+HK.Load.def(221,'js/jashin-cave.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp,M=JS&&JS.MORE;
@@ -2888,7 +2889,7 @@ JS.CAVE={climax:climax,manifest:manifest};
 });
 ;
 /* ==== js/jashin-loop.js ==== */
-HK.Load.def(219,'js/jashin-loop.js',function(){
+HK.Load.def(222,'js/jashin-loop.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp;
@@ -3020,7 +3021,7 @@ return ST.fmt(ST.pick(S,L('一年後、{a}の名前で、消印のない絵葉�
 });
 ;
 /* ==== js/jashin-feast.js ==== */
-HK.Load.def(220,'js/jashin-feast.js',function(){
+HK.Load.def(223,'js/jashin-feast.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp;
@@ -3099,7 +3100,7 @@ ST.say(S,{actors:actors,tag:'歓迎の宴',text:ST.pick(S,T.intro)+parts.join(''
 });
 ;
 /* ==== js/jashin-mage.js ==== */
-HK.Load.def(221,'js/jashin-mage.js',function(){
+HK.Load.def(224,'js/jashin-mage.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp,M=JS&&JS.MORE;
@@ -3265,7 +3266,7 @@ JS.MAGE={act:act,defend:defend,sabotage:sabotage,witness:witness,ritualSummon:ri
 });
 ;
 /* ==== js/jashin-goals-text.js ==== */
-HK.Load.def(222,'js/jashin-goals-text.js',function(){
+HK.Load.def(225,'js/jashin-goals-text.js',function(){
 (function(){
 'use strict';
 var JS=window.HK.JASHIN;
@@ -3390,7 +3391,7 @@ SOLVE_IDLE:L('{a}は、失踪事件の資料を広げ、村の地図と見比べ
 });
 ;
 /* ==== js/jashin-goals.js ==== */
-HK.Load.def(223,'js/jashin-goals.js',function(){
+HK.Load.def(226,'js/jashin-goals.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp;
@@ -3703,7 +3704,7 @@ JS.GOALX={tick:tick,arrive:arrive,act:act,detect:detect,hijackRitual:hijackRitua
 });
 ;
 /* ==== js/jashin-love.js ==== */
-HK.Load.def(224,'js/jashin-love.js',function(){
+HK.Load.def(227,'js/jashin-love.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp;
@@ -3878,7 +3879,7 @@ JS.LOVEX={act:loveAct};
 });
 ;
 /* ==== js/jashin-npc-text.js ==== */
-HK.Load.def(225,'js/jashin-npc-text.js',function(){
+HK.Load.def(228,'js/jashin-npc-text.js',function(){
 (function(){
 'use strict';
 var JS=window.HK.JASHIN;
@@ -3996,7 +3997,7 @@ end_guilt:L('{a}は、村を出てからも、鏡を見るたびに目を逸ら�
 });
 ;
 /* ==== js/jashin-npc.js ==== */
-HK.Load.def(226,'js/jashin-npc.js',function(){
+HK.Load.def(229,'js/jashin-npc.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp;
@@ -4258,7 +4259,7 @@ JS.UNPC={arrive:arrive,tick:tick,end:end};
 });
 ;
 /* ==== js/jashin-godev.js ==== */
-HK.Load.def(227,'js/jashin-godev.js',function(){
+HK.Load.def(230,'js/jashin-godev.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp;
@@ -4378,7 +4379,7 @@ JS.GODEV={E:E,EV:EV,SP:SP,L:L,WHO:WHO,pickWho:pickWho,other:other,fmt:fmt,pk:pk,
 });
 ;
 /* ==== js/jashin-godev-data-a.js ==== */
-HK.Load.def(228,'js/jashin-godev-data-a.js',function(){
+HK.Load.def(231,'js/jashin-godev-data-a.js',function(){
 (function(){
 'use strict';
 var JS=window.HK&&window.HK.JASHIN,GD=JS&&JS.GODEV;
@@ -4500,7 +4501,7 @@ okE:{clue:1,fear:10},ngE:{fear:18},after:function(S,a,ok){if(!ok)a.viol=(a.viol|
 });
 ;
 /* ==== js/jashin-godev-data-b.js ==== */
-HK.Load.def(229,'js/jashin-godev-data-b.js',function(){
+HK.Load.def(232,'js/jashin-godev-data-b.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK&&HK.JASHIN,GD=JS&&JS.GODEV,clamp=HK&&HK.clamp;
@@ -4711,7 +4712,7 @@ okE:{clue:1,fear:12},ngE:{fear:28,hp: -18},why:'ひながたさまの箱庭は�
 });
 ;
 /* ==== js/jashin-godev-sp-a.js ==== */
-HK.Load.def(230,'js/jashin-godev-sp-a.js',function(){
+HK.Load.def(233,'js/jashin-godev-sp-a.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp,GD=JS&&JS.GODEV;
@@ -4998,7 +4999,7 @@ return{bonus: -0.12,why:'成り代わった神が紛れていた'};
 });
 ;
 /* ==== js/jashin-godev-sp-b.js ==== */
-HK.Load.def(231,'js/jashin-godev-sp-b.js',function(){
+HK.Load.def(234,'js/jashin-godev-sp-b.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp,GD=JS&&JS.GODEV;
@@ -5169,7 +5170,7 @@ F('chaugnar',null,
 });
 ;
 /* ==== js/jashin-place-lines.js ==== */
-HK.Load.def(232,'js/jashin-place-lines.js',function(){
+HK.Load.def(235,'js/jashin-place-lines.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK&&HK.JASHIN,V=HK&&HK.Voice;
@@ -5386,7 +5387,7 @@ return p.name+'「'+t.replace(/\{b\}/g,b?b.name:'')+'」';
 });
 ;
 /* ==== js/jashin-feud.js ==== */
-HK.Load.def(233,'js/jashin-feud.js',function(){
+HK.Load.def(236,'js/jashin-feud.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,FD=HK.Feud,clamp=HK.clamp;
@@ -5559,7 +5560,7 @@ return true;
 });
 ;
 /* ==== js/jashin-fx-b.js ==== */
-HK.Load.def(317,'js/jashin-fx-b.js',function(){
+HK.Load.def(320,'js/jashin-fx-b.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,JS=HK.JASHIN;
@@ -5695,7 +5696,7 @@ F('sekai',
 });
 ;
 /* ==== js/jashin-place.js ==== */
-HK.Load.def(318,'js/jashin-place.js',function(){
+HK.Load.def(321,'js/jashin-place.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp;
@@ -6250,7 +6251,7 @@ JS.PLACE={GEN:GEN,UNIQ:UNIQ,FAC:FAC,FAC_OF:FAC_OF,pick:pick,begin:begin,end:end,
 })();
 });
 ;
-HK.Load.def(318.5,'tone:scen-jashin',function(){
+HK.Load.def(321.5,'tone:scen-jashin',function(){
 HK.Load.toneData("mixed",{"F":[
 ["ここでは、ただの人でいい","ここでは、ただの人でいいんですよ"],
 ["なら、書き換えればいい","なら、書き換えればいいんですよ"],
@@ -6963,4 +6964,4 @@ HK.Load.toneData("sondai",{"F":[
 HK.Load.toneData("keigo_sarc",{"F":[
 ["待ってください。古文書にそんな記述はありません。燃やしたって、あれは眠ったままどこへでも滲み出てきます","待ってください。古文書のどこに、そんな記述が？　燃やしたところで無駄です。あれは眠ったまま、どこへでも滲み出てきます",1]]});
 });
-HK.Load.done('scen-jashin', '43290fbb72', 1);
+HK.Load.done('scen-jashin', '6cc2e06b19', 1);

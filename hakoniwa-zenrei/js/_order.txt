@@ -10,7 +10,9 @@
 @chunk scen-br deps=pack-rel
 @chunk scen-trial deps=pack-rel
 @chunk scen-goukon deps=pack-rel
-@chunk scen-whiteroom deps=pack-rel
+@chunk pack-trap
+@chunk scen-whiteroom deps=pack-rel,pack-trap
+@chunk scen-locker deps=pack-trap
 @chunk scen-classroom deps=pack-rel
 @chunk scen-island deps=pack-rel
 @chunk scen-zombie deps=pack-rel
@@ -80,6 +82,7 @@ js/mini-tails.js @pack:rel
 js/scenarios-b.js @scen:island
 js/deathgame-kit.js
 js/scenario-br.js @scen:br
+js/trap-open.js @pack:trap
 js/room-lewd.js
 js/room-lewd-more.js @scen:whiteroom
 js/room-lewd-x.js @scen:whiteroom
@@ -98,6 +101,7 @@ js/room-same.js @scen:whiteroom
 js/room-games.js @scen:whiteroom
 js/room-trio-note.js @scen:whiteroom
 js/room-noexit-note.js @scen:whiteroom
+js/trap-open-room.js @scen:whiteroom
 js/scenario-trial.js @scen:trial
 js/ego-image.js
 js/omega-data.js
@@ -216,6 +220,7 @@ js/locker-ties.js @scen:locker
 js/locker-tie-more.js @scen:locker
 js/locker-crowd.js @scen:locker
 js/solo-locker.js @scen:locker
+js/trap-open-locker.js @scen:locker
 js/rpg-data.js @scen:rpg
 js/scenario-rpg.js @scen:rpg
 js/jashin-data.js @scen:jashin
