@@ -6,7 +6,10 @@
        三人ならではの型（攻めが二人の受けを比べる CMP・受け二人の掛け合い BAN・攻め二人の掛け合い TOPS・挟まれて声が割れる SPLIT・見ている人の一言 WAIT・事後の一言 AFT3）
      ・擬音（作風「男性向け」だけ。ero-kit.js の HK.Ero.sfx。小説調は擬音を使わず、息と間の一文）
      ・「誰の体がどうなっているか」の一文（POSE：形 × 体の組。形が変わるときの SHIFT、山場の順番 ORDER、事後に残る手 REST）
-   を足し、描写の長さ（lewdLen）に合わせて文の量をそろえる（地の文：厚く 12〜20／混ぜる（厚い回）8〜12／短く 4〜6。台詞は別に数える）。
+   を足し、描写の長さ（lewdLen）に合わせて文の量をそろえる（地の文：厚く 8〜12／混ぜる（厚い回）5〜8／短く 3〜4。台詞は 10／6／3 まで。2026-10-28 担当KF：
+   利用者の要望「3P の文章もここまで長くする必要はない。無理に 3P アピールはしなくていい」で量を下げ、擬音・台詞の応酬・体の位置の一文は 1 段に 1 つずつ（同じ段で重ねない）。
+   人数を数えて体を足し算する言い回し（「六本の指」「三人分の〜」など）は使わず、「影が折り重なった」くらいの軽い言い回しにする）。
+   4 人の輪（出られない部屋の「みんなで」）は trio4-talk-r18.js の HK.Trio3.quick4 が、この組み立てに 4 人目の文を足して使う（o.more・o.endE・o.posePre・o.four）。
    ■ 使い方
      var C = HK.Trio3.begin(S, sp, o)   … S は ctx か物語型の S（rng・log・env）。sp = { p: oneTwo｜twoOne｜sandwich｜ring, t, m, u }（{t}＝上 {m}＝真ん中 {u}＝下）
                                            o = { env, short（呼ぶ側が短く書くと決めた）, ero（男性向け）, rel（lover など。EroTop の関係）, first（初回。前戯の応酬）,
@@ -238,9 +241,9 @@
       '「……ふふ、まだ、体が熱い｜……まだ、体が熱いな｜……ふふ、まだ、体が熱いです」|' +
       '「{x}、{y}、ありがとう。……すごく、幸せだった｜＝｜{x}、{y}、ありがとうございます。……すごく、幸せでした」'),
     devoted: L('「二人とも、どこも痛くない？｜二人とも、どこも痛くないか｜お二人とも、どこも痛くないですか？」|' +
-      '「三人とも、一緒にいられて、よかった｜＝｜三人とも、一緒にいられて、よかったです」|' +
+      '「こうして一緒にいられて、よかった｜＝｜こうして一緒にいられて、よかったです」|' +
       '「{x}、{y}。……また、三人でいようね｜{x}、{y}。……また、三人でいよう｜{x}、{y}。……また、三人でいましょうね」'),
-    cool: L('「……三人分の体温は、さすがに暑い｜＝｜……三人分の体温は、さすがに暑いですね」|' +
+    cool: L('「……さすがに、暑い。くっつきすぎ｜……さすがに、暑い。くっつきすぎだ｜……さすがに、暑いですね。くっつきすぎです」|' +
       '「{x}が先、次が{y}。……順番は、覚えた｜{x}が先、次が{y}だ。……順番は、覚えた｜{x}が先、次が{y}でした。……順番は、覚えました」|' +
       '「呼吸、落ち着いた？　……二人とも｜呼吸は、落ち着いたか。……二人とも｜呼吸、落ち着きましたか？　……お二人とも」'),
     free: L('「あー、楽しかった！　もう一回やる？｜ああ、楽しかった！　もう一度やるか？｜あー、楽しかったです！　もう一回やります？」|' +
@@ -257,55 +260,55 @@
   /* ======================= 地の文 ======================= */
   /* POSE：誰の体がどうなっているか（形 × 体の組。edgeKind：m／fm／ff／n）。印の前には持ち主の「名前の」を置く */
   X.POSE = {
-    /* {t}は〈main：{t}→{m}〉、〈hand：{t}→{u}〉。 */
+    /* {t}は〈main：{t}→{m}〉、〈hand：{t}→{u}〉。説明的にしない（「後ろから」「跨って」程度の短い形） */
     oneTwo: {
       main: {
-        m: L('{m}の脚を抱え上げて奥まで貫き|{m}を組み敷いて深く腰を沈め|{m}の腰を引き寄せて根元まで埋め'),
-        fm: L('{m}の上に跨って腰を落とし|{m}の腰に跨って、その{男性器}を根元まで呑みこみ'),
-        ff: L('{m}の{女性器}に指を二本沈め|{m}の脚のあいだに顔を埋め'),
-        n: L('{m}を組み敷いて肌を重ね|{m}の首筋に唇を這わせ')
+        m: L('{m}を組み敷いて貫き|{m}の脚を抱え上げて沈め'),
+        fm: L('{m}に跨り|{m}の上で腰を落とし'),
+        ff: L('{m}に指を沈め|{m}の脚のあいだに顔を埋め'),
+        n: L('{m}を組み敷き|{m}に覆いかぶさり')
       },
       hand: {
-        m: L('空いた手で{u}の内腿を撫で上げていた|空いた手で{u}の{乳首}を転がしていた'),
-        fm: L('空いた手で{u}の{男性器}を握りこんでいた|空いた手で{u}の{乳首}をつまんでいた'),
-        ff: L('空いた手で{u}の{陰核}を転がしていた|空いた指を{u}の{ナカ}に沈めていた'),
-        n: L('空いた手で{u}の{胸}をまさぐっていた|空いた手で{u}の髪を撫でていた')
+        m: L('片手で{u}を抱き寄せていた|空いた手を{u}の腿に置いていた'),
+        fm: L('片手で{u}を抱き寄せていた|空いた手で{u}の{男性器}を握っていた'),
+        ff: L('片手で{u}を抱き寄せていた|空いた指を{u}の{ナカ}に沈めていた'),
+        n: L('片手で{u}を抱き寄せていた|空いた手で{u}の髪を撫でていた')
       },
-      any: L('{m}は仰向けで{t}を受け止め、{u}は{t}の背中に胸を寄せて、自分の番を待っていた。|{t}の下では{m}が、{t}の肩口では{u}が、それぞれ{t}の名前を呼んでいた。')
+      any: L('{m}は{t}の下に、{u}は{t}の背中に寄り添っていた。|{t}の下には{m}が、肩口には{u}がいた。')
     },
     /* {u}は〈back：{t}→{u}〉、前では〈front：{m}→{u}〉。 */
     twoOne: {
       back: {
-        m: L('後ろから{t}に深く貫かれ|{t}に腰を抱えこまれて、後ろから奥まで突かれ'),
-        fm: L('{t}に跨られて根元まで呑みこまれ|腰の上で{t}に揺さぶられ'),
-        ff: L('後ろから{t}の指で{ナカ}を探られ|{t}に背中から抱かれて、指で{女性器}をかき回され'),
-        n: L('後ろから{t}に抱きすくめられ、首筋に唇を這わされ|{t}に背中から覆いかぶさられ')
+        m: L('後ろから{t}に貫かれ|{t}に後ろから突かれ'),
+        fm: L('{t}に跨られ|腰の上で{t}に揺さぶられ'),
+        ff: L('後ろから{t}の指に探られ|{t}に背中から抱かれ'),
+        n: L('後ろから{t}に抱きすくめられ|{t}に背中から覆いかぶさられ')
       },
       front: {
-        m: L('{m}の{男性器}を咥えさせられていた|{m}の{男性器}に舌を這わせていた'),
-        fm: L('{m}の{女性器}に舌を這わせていた|{m}の{胸}に顔を埋めていた'),
-        ff: L('{m}に{u}の{乳首}を吸われていた|{m}に唇を塞がれていた'),
+        m: L('{m}の{男性器}を咥えていた|{m}に唇を塞がれていた'),
+        fm: L('{m}の{胸}に顔を埋めていた|{m}に唇を塞がれていた'),
+        ff: L('{m}に唇を塞がれていた|{m}に{u}の{乳首}を吸われていた'),
         n: L('{m}に唇を塞がれていた|{m}の腕にしがみついていた')
       },
-      any: L('{u}の体は、前から{m}に、後ろから{t}に抱えこまれて、どこにも逃げ場がなかった。')
+      any: L('{u}は、前から{m}に、後ろから{t}に抱えこまれていた。')
     },
     /* {m}は〈front：{m}→{u}〉、〈back：{t}→{m}〉。 */
     sandwich: {
       front: {
-        m: L('{u}の脚を割って奥まで沈め|{u}を組み敷いて深く貫き'),
-        fm: L('{u}の上に跨って腰を落とし|{u}に跨って、その{男性器}を根元まで呑みこみ'),
-        ff: L('{u}の脚のあいだに指を沈め|{u}の{女性器}に舌を這わせ'),
+        m: L('{u}を組み敷いて貫き|{u}の脚を割って沈め'),
+        fm: L('{u}に跨って腰を落とし|{u}の上に跨り'),
+        ff: L('{u}に指を沈め|{u}の脚のあいだに顔を埋め'),
         n: L('{u}を胸の下に抱きこみ|{u}の首筋に唇を落とし')
       },
       back: {
-        m: L('その{m}の腰を、{t}が後ろから掴んで貫いていた|その{m}の背中に覆いかぶさって、{t}が奥まで突き入れていた'),
-        fm: L('その{m}の背中には、{t}の{胸}が押しつけられていた|その{m}の首筋に、{t}が後ろから歯を立てていた'),
-        ff: L('その{m}の{女性器}を、{t}が後ろから指でかき回していた|その{m}の背後から、{t}の指が{m}の{ナカ}を探っていた'),
-        n: L('その{m}を、{t}が後ろから抱きすくめていた|その{m}の背中に、{t}が唇を落としていた')
+        m: L('後ろからは{t}に貫かれていた|後ろからは{t}に腰を掴まれていた'),
+        fm: L('背中には{t}の{胸}が押しつけられていた|首筋に後ろから{t}の歯が立てられていた'),
+        ff: L('後ろからは{t}の指に探られていた|背中から{t}に抱かれていた'),
+        n: L('後ろからは{t}に抱きすくめられていた|背中に{t}の唇が落ちていた')
       },
-      any: L('前の{u}と後ろの{t}のあいだで、{m}だけが両方の熱を受けとめていた。')
+      any: L('{m}は、前の{u}と後ろの{t}に挟まれていた。')
     },
-    ring: { any: L('{t}は{m}を、{m}は{u}を、{u}は{t}を――三人は輪になって、隣の相手の体に手と唇を伸ばしていた。|{t}の指は{m}に、{m}の唇は{u}に、{u}の手は{t}に。三人の体は、ひと続きの輪になっていた。') }
+    ring: { any: L('{t}は{m}に、{m}は{u}に、{u}は{t}に手を伸ばし、影が輪になって折り重なった。|{t}の指は{m}に、{m}の唇は{u}に、{u}の手は{t}に伸びていた。') }
   };
   /* SHIFT：形が変わる一文 */
   X.SHIFT = {
@@ -314,14 +317,14 @@
       fm: L('{t}は{m}の上から降り、今度は{u}の上に跨り直した。'),
       ff: L('{t}は{m}から指を抜き、今度は{u}の{女性器}へ指を移した。'),
       n: L('{t}は{m}の髪を撫でてから体を離し、今度は{u}を抱き寄せた。'),
-      any: L('待ちかねていた{u}が、{t}の首に腕を回して引き寄せた。{m}は息を整えながら、それを見ていた。')
+      any: L('待ちかねていた{u}が、{t}の首に腕を回して引き寄せた。|{t}は{m}の髪を撫でてから、{u}の方へ移った。')
     },
     twoOne: { any: L('{t}と{m}は{u}を挟んだまま場所を替え、今度は{m}が{u}の後ろに回った。|{m}の目配せで、{t}と{m}は{u}の前と後ろを替わった。') },
     sandwich: {
       mm: L('{t}が腰を押し出すたび、その勢いで{m}は{u}へ深く押しこまれた。'),
       any: L('{m}は前の{u}と後ろの{t}のあいだで、逃げ場もなく揺さぶられた。|{u}が{m}の背に腕を回すと、{m}は前と後ろの両方に縫いとめられたように動けなくなった。')
     },
-    ring: { any: L('一巡すると、三人は向きを変えて、また隣の相手へ手を伸ばした。') }
+    ring: { any: L('一巡すると、向きを変えて、また隣の相手へ手が伸びた。') }
   };
   /* SFX：擬音の一文（男性向けだけ。{a}＝攻め {b}＝受け。擬音だけの文は文の数に入れない）／BREATH：小説調の息と間の一文 */
   X.SFX = {
@@ -332,13 +335,13 @@
     cum: L('{s:cum}。{a}は{b}の{ナカ}で果て、{b}はそれを搾りとるように震えた。|{s:cum}。{a}の熱が{b}の奥に注がれ、{b}の背中がしなった。'),
     cumFm: L('{s:cum}。{a}は{b}の熱を自分の{ナカ}で受けとめ、腰を落としたまま震えた。')
   };
-  X.BREATH = L('{b}の息が、短く詰まってはほどけた。|{a}の動きが深くなるたび、{b}の声は細く途切れた。|しばらくは、三人分の息づかいだけが聞こえていた。|{b}は声を殺そうとして、殺しきれずに{a}の肩へ額を押しつけた。|誰も喋らなかった。衣擦れと、誰かの喉の鳴る音だけがした。');
+  X.BREATH = L('{b}の息が、短く詰まってはほどけた。|{a}の動きが深くなるたび、{b}の声は細く途切れた。|しばらくは、荒い息づかいだけが聞こえていた。|{b}は声を殺そうとして、殺しきれずに{a}の肩へ額を押しつけた。|誰も喋らなかった。衣擦れと、誰かの喉の鳴る音だけがした。');
   /* ORDER：山場の順番（一人ずつ／同時） */
   X.ORDER = {
-    oneTwo: L('{m}が先に、少し遅れて{u}が達した。二人を見届けてから、{t}も果てた。|{u}の震えが{m}に伝わって、二人はほとんど同時に崩れた。{t}も、そのすぐあとに果てた。'),
-    twoOne: L('最初に崩れたのは{u}だった。その震えに引きずられるように、{t}も{m}も続けざまに果てた。|{t}と{m}に挟まれたまま、{u}は何度も達した。最後に、二人もほとんど同時に果てた。'),
-    sandwich: L('真ん中の{m}が、前と後ろから同時に追い詰められて、真っ先に崩れた。{u}と{t}も、続けて果てた。|先に達したのは{u}で、その震えに{m}が、{m}の震えに{t}が、順番に呑まれていった。'),
-    ring: L('三人の声が重なって、誰が先に達したのか、もう分からなかった。|一人が達すると、その震えが輪を伝って、三人はほとんど続けざまに果てた。')
+    oneTwo: L('{m}が先に、少し遅れて{u}が達し、それを見届けて{t}も果てた。|{u}の震えが{m}に伝わって二人はほとんど同時に崩れ、{t}もすぐあとに果てた。'),
+    twoOne: L('最初に崩れたのは{u}で、その震えに引きずられるように、{t}も{m}も続けざまに果てた。|{t}と{m}に挟まれたまま{u}は何度も達し、最後に二人も果てた。'),
+    sandwich: L('真ん中の{m}が前と後ろから追い詰められて真っ先に崩れ、{u}と{t}も続けて果てた。|先に達したのは{u}で、その震えに{m}が、{m}の震えに{t}が、順番に呑まれていった。'),
+    ring: L('声が重なって、誰が先に達したのか、もう分からなかった。|一人が達すると、その震えが輪を伝って、続けざまに果てていった。')
   };
   /* FORE：始まりの一文（呼ぶ側に前戯の文がないとき。形の組だけが触れ合う）／AFTER：事後の一文（呼ぶ側に事後の文がないとき） */
   X.FORE = {
@@ -347,7 +350,7 @@
     sandwich: L('{m}は{u}を抱き寄せて唇を重ね、その{m}の背中に、{t}がそっと寄り添った。|{t}の指が{m}の服をほどき、{m}の指が{u}の服をほどいた。'),
     ring: L('三人は輪になって座り、隣の相手の服に手をかけた。|誰からともなく、三人は隣の相手の首筋に唇を寄せた。')
   };
-  X.AFTER = L('三人分の荒い息が、しばらく静まらなかった。|誰も、すぐには起き上がらなかった。|汗の引かない肌のまま、三人はしばらく天井を見上げていた。');
+  X.AFTER = L('荒い息が、しばらく静まらなかった。|誰も、すぐには起き上がらなかった。|汗の引かない肌のまま、しばらく誰も動かなかった。');
   /* BEAT：台詞と地の文のあいだの短い間（名前・体の語を書かない） */
   X.BEAT = L('短い沈黙が落ちた。|誰かが、小さく息を呑んだ。|息を整える間もなかった。|衣擦れの音だけが続いた。');
   /* REST：事後に残る手（{a}{b}＝形の組） */
@@ -440,12 +443,12 @@
   function isSfx(x) { return /^[ぁ-んァ-ヶー、っッ…‥♡〜\s　]+[。！!]?$/.test(x); }
   X.narrN = function (t) { return sents(t).filter(function (x) { return !isQuote(x) && !isSfx(x); }).length; };
   X.quoteN = function (t) { return (String(t || '').match(/「/g) || []).length; };
-  var RANGE = { thick: [12, 20], mix: [8, 12], short: [4, 6] };
+  var RANGE = { thick: [8, 12], mix: [5, 8], short: [3, 4] };
   /* 台詞の応酬の数（段ごと。0 は応酬を足さない） */
-  var XCH = { thick: { fore: 2, in: 2, mid: 3, peak: 3, after: 2 }, mix: { fore: 0, in: 2, mid: 3, peak: 2, after: 0 }, short: { fore: 0, in: 0, mid: 0, peak: 2, after: 0 } };
+  var XCH = { thick: { fore: 2, in: 2, mid: 2, peak: 2, after: 2 }, mix: { fore: 0, in: 2, mid: 2, peak: 2, after: 0 }, short: { fore: 0, in: 0, mid: 0, peak: 2, after: 0 } };
   var STG = ['fore', 'in', 'mid', 'peak', 'after'];
   /* 台詞の数の上限（場面の全部。多ければ重さ 3 の台詞の文・足した応酬の後ろの行から削る） */
-  var QMAX = { thick: 16, mix: 10, short: 5 };
+  var QMAX = { thick: 10, mix: 6, short: 3 };
   var SWAP = /入れ替|場所を(?:替|譲)|交代|替わっ|移っ|移し|譲った/;
   var SOLO2 = /私しかいない|二人きり|二人だけ|ほかに誰も|他に誰も|誰もいない|誰も見てない|誰も見ていない|誰も聞いてない|誰も聞いていない/;
   /* 擬音があるか（ero-kit.js の SFX の頭） */
@@ -459,6 +462,10 @@
     this.E = edgesOf(sp);
     this.apart = o.apart || [];
     this.g = [sp.t, sp.m, sp.u];
+    /* 4 人の輪（trio4-talk-r18.js）：形の三人のほかに場にいる人（o.more）。性器なしの間の一文・「三人」の行の避けに使う */
+    this.gAll = this.g.concat(o.more || []);
+    /* 夜の色（担当KH の HK.EroFlavor）：攻めと受けの組の色のうち多いもの。ドライ・駆け引きでは甘い台詞を外し、攻めの一言も色に合わせる */
+    this.fl = o.flavor || (HK.EroFlavor && HK.EroFlavor.group ? HK.EroFlavor.group(S, sp.t, [sp.m, sp.u].concat(o.more || []), o) : '');
   }
   X.begin = function (S, sp, o) {
     if (HK.SAFE_ON || !S || !sp || !sp.t || !sp.m || !sp.u || !M()) return null;
@@ -473,12 +480,26 @@
     if (text) this.parts.push({ st: STG.indexOf(st) >= 0 ? st : 'mid', t: String(text), pri: pri || 2, tag: tag || '', gen: false, pos: '' });
     return this;
   };
-  Comp.prototype.gen1 = function (st, text, pri, pos, lines) {
-    if (text) this.parts.push({ st: st, t: String(text), pri: pri || 2, tag: '', gen: true, pos: pos || 'post', lines: lines || null });
+  Comp.prototype.gen1 = function (st, text, pri, pos, lines, kind) {
+    if (text) this.parts.push({ st: st, t: String(text), pri: pri || 2, tag: '', gen: true, pos: pos || 'post', lines: lines || null, kind: kind || (lines ? 'xch' : '') });
   };
   /* 呼ぶ側の文（足した文は見ない）がその段にあるか */
   Comp.prototype.has = function (st, re) { return this.parts.some(function (p) { return !p.gen && p.st === st && (!re || re.test(p.t)); }); };
   Comp.prototype.rand = function () { return rngOf(this.S)(); };
+  /* 表から一つ（4 人の輪では「三人」と書いた行を避ける。残らなければ元の表から） */
+  Comp.prototype.pk = function (arr) {
+    if (this.o.more && this.o.more.length && arr) { var f = arr.filter(function (l) { return String(l).indexOf('三人') < 0; }); if (f.length) arr = f; }
+    return pick(this.S, arr);
+  };
+  /* 呼ぶ側の文に、その段の台詞の応酬（台詞が二つ以上）がもうあるか */
+  Comp.prototype.hasXch = function (st) { return this.parts.some(function (p) { return !p.gen && p.st === st && X.quoteN(p.t) >= 2; }); };
+  /* その段に、もう同じ種類（sfx 擬音・息／pose 体の位置・形が変わる一文／xch 応酬）の文があるか（1 段に 1 つずつ） */
+  Comp.prototype.hasKind = function (st, k) {
+    if (k === 'sfx' && this.has(st, SFXRE)) return true;
+    if (k === 'xch' && this.hasXch(st)) return true;
+    if (k === 'pose' && this.has(st, SWAP)) return true;
+    return this.parts.some(function (p) { return p.gen && p.st === st && p.kind === k; });
+  };
   Comp.prototype.r3 = function () { return { t: this.sp.t, m: this.sp.m, u: this.sp.u }; };
   /* 二人が触れ合ってよいか（直接は繋がらない二人でない） */
   Comp.prototype.touch = function (a, b) { return !this.apart.some(function (p) { return (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a); }); };
@@ -491,7 +512,9 @@
   /* ---------- 台詞の一行 ---------- */
   /* 3本の台詞（「＠名前＠…」。lv で崩す） */
   Comp.prototype.say3 = function (who, T, r, lv, role, idx) {
-    var arr = T[psOf(who)] || T.gentle, l = idx != null && arr[idx] ? arr[idx] : pick(this.S, arr);
+    var arr = T[psOf(who)] || T.gentle;
+    if (this.fl && HK.EroFlavor && HK.EroFlavor.trim) arr = HK.EroFlavor.trim(arr, this.fl);
+    var l = idx != null && arr[idx] ? arr[idx] : pick(this.S, arr);
     if (!l) return '';
     var q = fill(unq(l), r), Mo = M();
     if (Mo && Mo.cutQuote && lv) return Mo.cutQuote(this.S, who, who.name, q, lv, role || 'bot');
@@ -503,6 +526,7 @@
     if (!ET || !ET.say || !top || !bot) return '';
     var k = edgeKind(top, bot), opt = { rel: this.o.rel || undefined };
     if (k !== 'n') opt.kind = k;
+    if (this.fl) opt.flavor = this.fl;
     /* 二人きりを前提にした台詞（「ここには私しかいない」など）は、三人の場面では引き直す（3回まで） */
     for (var i = 0; i < 3; i++) { var l = ET.say(this.S, top, bot, st, opt); if (!l || !SOLO2.test(l)) return l || ''; }
     return '';
@@ -580,35 +604,35 @@
   };
   /* ---------- 地の文 ---------- */
   Comp.prototype.pose = function () {
-    var sp = this.sp, S = this.S, r = { t: sp.t, m: sp.m, u: sp.u }, PO = X.POSE[sp.p], s = '';
+    var sp = this.sp, self = this, r = { t: sp.t, m: sp.m, u: sp.u }, PO = X.POSE[sp.p], s = '', pk = function (a) { return self.pk(a); };
     if (!PO) return '';
     if (sp.p === 'oneTwo') {
-      if (this.rand() < 0.75) s = '{t}は' + pick(S, PO.main[edgeKind(sp.t, sp.m)]) + '、' + pick(S, PO.hand[edgeKind(sp.t, sp.u)]) + '。';
-      else s = pick(S, PO.any);
+      if (this.rand() < 0.75) s = '{t}は' + pk(PO.main[edgeKind(sp.t, sp.m)]) + '、' + pk(PO.hand[edgeKind(sp.t, sp.u)]) + '。';
+      else s = pk(PO.any);
     } else if (sp.p === 'twoOne') {
-      if (this.rand() < 0.8) s = '{u}は' + pick(S, PO.back[edgeKind(sp.t, sp.u)]) + '、前では' + pick(S, PO.front[edgeKind(sp.m, sp.u)]) + '。';
-      else s = pick(S, PO.any);
+      if (this.rand() < 0.8) s = '{u}は' + pk(PO.back[edgeKind(sp.t, sp.u)]) + '、前では' + pk(PO.front[edgeKind(sp.m, sp.u)]) + '。';
+      else s = pk(PO.any);
     } else if (sp.p === 'sandwich') {
-      if (this.rand() < 0.8) s = '{m}は' + pick(S, PO.front[edgeKind(sp.m, sp.u)]) + '、' + pick(S, PO.back[edgeKind(sp.t, sp.m)]) + '。';
-      else s = pick(S, PO.any);
-    } else s = pick(S, PO.any);
+      if (this.rand() < 0.8) s = '{m}は' + pk(PO.front[edgeKind(sp.m, sp.u)]) + '、' + pk(PO.back[edgeKind(sp.t, sp.m)]) + '。';
+      else s = pk(PO.any);
+    } else s = pk(PO.any);
     return fill(s, r);
   };
   Comp.prototype.shift = function () {
-    var sp = this.sp, S = this.S, SH = X.SHIFT[sp.p], r = { t: sp.t, m: sp.m, u: sp.u };
+    var sp = this.sp, self = this, SH = X.SHIFT[sp.p], r = { t: sp.t, m: sp.m, u: sp.u }, pk = function (a) { return self.pk(a); };
     if (!SH) return '';
     var l;
-    if (sp.p === 'oneTwo') l = this.rand() < 0.7 ? pick(S, SH[edgeKind(sp.t, sp.u)] || SH.any) : pick(S, SH.any);
-    else if (sp.p === 'sandwich') l = edgeKind(sp.t, sp.m) === 'm' && edgeKind(sp.m, sp.u) === 'm' && this.rand() < 0.5 ? pick(S, SH.mm) : pick(S, SH.any);
-    else l = pick(S, SH.any);
+    if (sp.p === 'oneTwo') l = this.rand() < 0.7 ? pk(SH[edgeKind(sp.t, sp.u)] || SH.any) : pk(SH.any);
+    else if (sp.p === 'sandwich') l = edgeKind(sp.t, sp.m) === 'm' && edgeKind(sp.m, sp.u) === 'm' && this.rand() < 0.5 ? pk(SH.mm) : pk(SH.any);
+    else l = pk(SH.any);
     return fill(l, r);
   };
   Comp.prototype.sfx = function (st, cum) {
     var f = this.focus(st), a = f.top, b = f.bot, k = edgeKind(a, b), S = this.S, l;
-    if (!this.ero) return fill(pick(S, X.BREATH), { a: a, b: b });
+    if (!this.ero) return fill(this.pk(X.BREATH), { a: a, b: b });
     if (cum) {
-      /* 男性の体の攻めの組（m）か、女性の攻めが男性に跨る組（fm）だけ */
-      var e = this.E.filter(function (x) { var kk = edgeKind(x[0], x[1]); return kk === 'm' || kk === 'fm'; })[0];
+      /* 男性の体の攻めの組（m）か、女性の攻めが男性に跨る組（fm）だけ。4 人の輪は、山場の組（o.endE）から */
+      var e = (this.o.endE || this.E).filter(function (x) { var kk = edgeKind(x[0], x[1]); return kk === 'm' || kk === 'fm'; })[0];
       if (!e) return '';
       a = e[0]; b = e[1]; k = edgeKind(a, b);
       l = pick(S, k === 'm' ? X.SFX.cum : X.SFX.cumFm);
@@ -621,47 +645,52 @@
       var m = x.match(/\{([tmu])\}の震えが\{([tmu])\}/);
       return !m || self.touch(sp[m[1]], sp[m[2]]);
     });
-    return fill(pick(this.S, l.length ? l : X.ORDER.twoOne.slice(0, 1)), { t: sp.t, m: sp.m, u: sp.u });
+    return fill(this.pk(l.length ? l : X.ORDER.twoOne.slice(0, 1)), { t: sp.t, m: sp.m, u: sp.u });
   };
   Comp.prototype.rest = function () {
-    var e = this.E[Math.floor(this.rand() * this.E.length)];
-    return fill(pick(this.S, X.REST), { a: e[0], b: e[1] });
+    var EE = this.o.endE || this.E, e = EE[Math.floor(this.rand() * EE.length)];
+    return fill(this.pk(X.REST), { a: e[0], b: e[1] });
   };
-  /* 足す文を作る（呼ぶ側の文がそろってから） */
+  /* 足す文を作る（呼ぶ側の文がそろってから）。擬音（小説調は息）・台詞の応酬・体の位置の一文は、1 段に 1 つずつ（呼ぶ側の文にもうあれば足さない） */
   Comp.prototype.gen = function () {
     if (this._gen) return;
     this._gen = true;
     var len = this.len, o = this.o, self = this;
-    var x = function (st, pri, pos) { var ls = self.xch(st); if (ls.length) self.gen1(st, ls.join(''), pri, pos, ls); };
+    var x = function (st, pri, pos) { if (self.hasKind(st, 'xch')) return; var ls = self.xch(st); if (ls.length) self.gen1(st, ls.join(''), pri, pos, ls); };
+    var sfx = function (st, pri, pos, cum) { if (self.hasKind(st, 'sfx')) return; self.gen1(st, self.sfx(st, cum), pri, pos, null, 'sfx'); };
+    var pose = function (st, pri, pos) { if (self.hasKind(st, 'pose')) return; self.gen1(st, self.pose(), pri, pos, null, 'pose'); };
     /* 呼ぶ側に始まり・事後の文がなければ一文ずつ（輪・媚薬の夜など） */
-    if (len !== 'short' && !this.has('fore')) this.gen1('fore', fill(pick(this.S, X.FORE[this.sp.p] || X.FORE.ring), this.r3()), 3, 'pre');
-    if (len !== 'short' && !this.has('after')) this.gen1('after', pick(this.S, X.AFTER), 3, 'pre');
+    if (len !== 'short' && !this.has('fore')) this.gen1('fore', fill(this.pk(X.FORE[this.sp.p] || X.FORE.ring), this.r3()), 3, 'pre');
+    if (len !== 'short' && !this.has('after')) this.gen1('after', this.pk(X.AFTER), 3, 'pre');
     /* 前戯：初回だけ */
     if (o.first !== false && (len === 'thick' || this.has('fore'))) x('fore', 2, 'post');
-    /* 繋がる */
-    /* 擬音は男性向けだけ：短くは繋がるところに一つ（削らない）、ほかは繋がる（削ってよい）・最中（削らない）・山場の果てる音 */
+    /* 繋がる：応酬 → 体の位置の一文（三人目が途中から加わる場面は最中に）→ 擬音（男性向けだけ） */
     var hasSfx = this.parts.some(function (p) { return SFXRE.test(p.t); });
-    if (len === 'short') { this.gen1('in', this.pose(), 2, 'post'); if (this.ero) this.gen1('in', this.sfx('in'), hasSfx ? 2 : 1, 'post'); }
-    else { x('in', 1, 'pre'); if (this.ero && !this.has('in', SFXRE)) this.gen1('in', this.sfx('in'), 2, 'post'); }
-    /* 最中：体の位置 → 形が変わる → （呼ぶ側の見所）→ 擬音（小説調は息）→ 応酬 */
+    if (len === 'short') { pose('in', 2, 'post'); if (this.ero) sfx('in', hasSfx ? 2 : 1, 'post'); }
+    else {
+      x('in', 1, 'pre');
+      if (!o.posePost) pose('in', 1, o.posePre ? 'pre' : 'post');
+      if (this.ero) sfx('in', 2, 'post');
+    }
+    /* 最中：（体の位置が最中の場面は体の位置、ほかは形が変わる一文）→（呼ぶ側の見所）→ 擬音（小説調は息）→ 応酬 */
     if (len !== 'short') {
-      this.gen1('mid', this.pose(), 1, o.posePost ? 'post' : 'pre');
-      /* 呼ぶ側の文に入れ替わり・交代がもうあれば、形が変わる一文は足さない */
-      if ((this.sp.p !== 'sandwich' || this.rand() < 0.6) && !this.parts.some(function (p) { return SWAP.test(p.t); })) this.gen1('mid', this.shift(), 3, 'pre');
-      this.gen1('mid', this.sfx('mid'), this.ero && !hasSfx ? 1 : this.ero ? 2 : 3, 'post');
+      if (o.posePost) pose('mid', 1, 'post');
+      else if ((this.sp.p !== 'sandwich' || this.rand() < 0.6) && !this.parts.some(function (p) { return SWAP.test(p.t); })) this.gen1('mid', this.shift(), 3, 'pre', null, 'pose');
+      sfx('mid', this.ero && !hasSfx ? 1 : this.ero ? 2 : 3, 'post');
       /* 一人が二人を：形が変わった（攻めが次の人へ移った）すぐあとに受け二人の掛け合い */
       x('mid', 1, this.sp.p === 'oneTwo' ? 'pre' : 'post');
     }
     /* 山場：応酬 → （呼ぶ側の絶頂）→ 順番（呼ぶ側に絶頂の文がないとき）→ 果てる擬音 */
     x('peak', 1, 'pre');
     if (!this.has('peak')) this.gen1('peak', this.order(), 1, 'post');
-    if (this.ero && !this.has('peak', /どぷ|びゅ|どくん|どくっ/)) this.gen1('peak', this.sfx('peak', true), 2, 'post');
+    if (this.ero && !this.has('peak', /どぷ|びゅ|どくん|どくっ/)) sfx('peak', 2, 'post', true);
     /* 事後 */
-    if (len !== 'short') { x('after', 2, 'post'); this.gen1('after', this.rest(), 3, 'post'); }
+    if (len !== 'short') { x('after', 2, 'post'); this.gen1('after', this.rest(), 3, 'post', null, 'pose'); }
   };
   /* 文の量をそろえる：多すぎれば重い順（3 → 2）・最中から削る。少なすぎれば息・残る手・形の一文を足す */
   Comp.prototype.fit = function () {
-    var R = RANGE[this.len], parts = this.parts, self = this;
+    /* o.range・o.qmax（{ thick: [下, 上], … }・{ thick: 数, … }）：呼ぶ側が前置きの文を別に書く場面（4 人の輪）で、この組み立ての分だけの量にする */
+    var R = (this.o.range && this.o.range[this.len]) || RANGE[this.len], parts = this.parts, self = this;
     var nOf = function (p) { if (p.n == null) p.n = X.narrN(p.t); return p.n; };
     /* 段の順につないだ文で数える（「――」で終わる文は次の文とつながるので、一つずつの和とはずれる） */
     var total = function () { return X.narrN(STG.map(function (st) { var ps = parts.filter(function (p) { return p.st === st; }); return ps.filter(function (p) { return p.pos === 'pre'; }).concat(ps.filter(function (p) { return !p.pos; }), ps.filter(function (p) { return p.pos === 'post'; })).map(function (p) { return p.t; }).join(''); }).join('')); };
@@ -685,7 +714,7 @@
       if (d.tag) self.dropped.push(d.tag);
     }
     /* 台詞が多すぎるとき */
-    var qOf = function (p) { return X.quoteN(p.t); }, qTot = function () { return parts.reduce(function (s, p) { return s + qOf(p); }, 0); }, QM = QMAX[this.len];
+    var qOf = function (p) { return X.quoteN(p.t); }, qTot = function () { return parts.reduce(function (s, p) { return s + qOf(p); }, 0); }, QM = (this.o.qmax && this.o.qmax[this.len]) || QMAX[this.len];
     guard = 0;
     while (qTot() > QM && guard++ < 40) {
       var q3 = parts.filter(function (p) { return !p.gen && p.pri >= 3 && qOf(p) > 0 && (total() - nOf(p) >= R[0]); });
@@ -695,10 +724,16 @@
       if (!xs.length) break;
       var xp = xs[0]; xp.lines.pop(); xp.t = xp.lines.join(''); xp.n = null;
     }
-    var adds = [function () { return ['mid', self.sfx('mid'), 'post']; }, function () { return ['after', self.rest(), 'post']; }, function () { return ['in', self.pose(), 'post']; },
-      function () { return ['mid', self.shift(), 'pre']; }, function () { return ['in', self.sfx('in'), 'post']; }, function () { return ['peak', self.order(), 'post']; },
-      function () { return ['after', pick(self.S, X.AFTER), 'pre']; }, function () { return ['fore', fill(pick(self.S, X.FORE[self.sp.p] || X.FORE.ring), self.r3()), 'pre']; }];
-    for (var i = 0; i < adds.length && total() < R[0]; i++) { var a = adds[i](); if (a[1] && !parts.some(function (p) { return p.t === a[1]; })) this.gen1(a[0], a[1], 3, a[2]); }
+    /* 足りなければ足す（同じ段に同じ種類の文がもうあれば足さない。呼ぶ側に絶頂の文があれば順番は足さない） */
+    var adds = [['mid', 'sfx', function () { return self.sfx('mid'); }, 'post'], ['after', 'pose', function () { return self.rest(); }, 'post'], ['in', 'pose', function () { return self.pose(); }, 'post'],
+      ['mid', 'pose', function () { return self.shift(); }, 'pre'], ['in', 'sfx', function () { return self.sfx('in'); }, 'post'], ['peak', 'order', function () { return self.has('peak') ? '' : self.order(); }, 'post'],
+      ['after', 'after', function () { return self.pk(X.AFTER); }, 'pre'], ['fore', 'fore', function () { return fill(self.pk(X.FORE[self.sp.p] || X.FORE.ring), self.r3()); }, 'pre']];
+    for (var i = 0; i < adds.length && total() < R[0]; i++) {
+      var a = adds[i];
+      if ((a[1] === 'sfx' || a[1] === 'pose') && this.hasKind(a[0], a[1])) continue;
+      var tx = a[2]();
+      if (tx && !parts.some(function (p) { return p.t === tx; })) this.gen1(a[0], tx, 3, a[3], null, a[1]);
+    }
   };
   Comp.prototype.render = function () {
     if (this._out) return this._out;
@@ -707,7 +742,7 @@
     var parts = this.parts, out = {}, self = this;
     /* 性器なしの人がいる三人：台詞で終わる文のすぐあとに地の文が続くと、点検（pos-audit の V7）が台詞の話し手の名前と次の地の文を一つの文として読むので、
        名前を出さない短い間の一文をはさむ（挿入・性器の語は書かない） */
-    var ng = !!(P() && P().noGen && this.g.some(function (c) { return P().noGen(c); })), prevQ = false;
+    var ng = !!(P() && P().noGen && this.gAll.some(function (c) { return P().noGen(c); })), prevQ = false;
     STG.forEach(function (st) {
       var ps = parts.filter(function (p) { return p.st === st; });
       out[st] = ps.filter(function (p) { return p.pos === 'pre'; }).concat(ps.filter(function (p) { return !p.pos; }), ps.filter(function (p) { return p.pos === 'post'; })).map(function (p) {
@@ -719,6 +754,7 @@
     });
     var all = STG.map(function (k) { return out[k]; }).join('');
     this.info = { len: this.len, ero: this.ero, p: this.sp.p, narr: X.narrN(all), quotes: X.quoteN(all), dropped: this.dropped.slice() };
+    if (this.o.four) this.info.four = this.o.four;
     this._out = out;
     if (X.onScene) try { X.onScene(this.info, all, this); } catch (e) { /* 点検用 */ }
     return out;

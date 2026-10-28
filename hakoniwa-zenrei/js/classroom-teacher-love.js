@@ -10,7 +10,14 @@
      そのまま両方向で通す（HK.State.pairLove）。夜は HK.State.pairSex（HK.Pos.okSex）と ctx.romanceOk(…, { sex: true }) を通す。
      共通の出来事（片想いの相手 ctx.crush・嫉妬など）からは、今までどおり先生は恋愛の相手にならない（先生と生徒の恋は、このファイルの場面だけで進む）。
      classroom-teacher.js が設定のときに 0 にする先生との惹かれは、オンのときだけ元の値に戻す（cls.setup を包む）。
-   ■ 起こりやすさ：生徒どうしより低め。先生の側は CP が高いほど踏みとどまり、AC が高いほど流される（惹かれの育ち・告白・受け入れ）。
+   ■ 起こりやすさ：生徒どうしより低め。先生の側は「立場への意識」scruple（0〜1。2026-10-28 担当KC2）で決まる：
+       A（理詰め）・NP（生徒を守る責任感）・AC（怯え・世間体）・慎重さで高く、FC（衝動）・攻撃性・衝動性・主導性・ドライさで低い。
+       CP は向きで効く：CP 高×FC 高×AC 低（NP 低）＝「俺が法律」で大きく下げ、CP 高×NP 高（生徒のために）・CP 高×A 高×AC 高（理詰め・世間体）で大きく上げる。
+       関係の設定で先生から生徒への片想い・本命・執着・慕う・信仰・友達以上があれば大きく下げ（平気で隠れて付き合う）、生徒からの片想いだけなら少し下げる。
+       使う所：惹かれの育ち・近づく回数・先生から誘う場面・先生からの告白（低いほど早くグイグイ）・受け入れ・「卒業するまで待って」（高いときだけ）・
+       秘密のあいだの大胆さ（低いと見られやすく噂・バレかけが増える）・バレかけたときの「ここまで」（高いときだけ。低い「俺が法律」は動じない）・
+       公にする選択（open。低いと自分から）・結末（低いと続く、高いと別れる・自然消滅・再会）。理由の欄に「立場への意識 低（俺が法律：CP 高・FC 高・AC 低／…）」と出す。
+       台詞は先生の気質 5 種に加えて、「俺が法律」型（口が強い）と責任感型（抑えた）を、近づく・告白・バレかけ・卒業式で書き分ける。
    ■ 場面（月の終わり。cls.after を包む）
        近づく（6種）：放課後の教室／進路相談のあとに／補習／帰り道／連絡先を渡す／「先生」と呼ぶ距離感
        告白：生徒から（受ける・「卒業するまで待って」＝3年生だけ・断る）／先生から（受ける・断る）
@@ -64,8 +71,61 @@
     var ls = HK.Poly && HK.Poly.lovers ? HK.Poly.lovers(ctx, x) : ctx.chars.filter(function (o) { return o !== x && ctx.pair(x, o).couple; });
     return !ls.some(function (o) { return o !== not && o.alive !== false; });
   }
-  /* 先生の踏みとどまり（CP が高いほど小さく、AC が高いほど大きい）と、生徒の惹かれやすさ */
-  function rT(t) { return HK.clamp(1.05 - t.tr.cp * 0.6 + t.tr.ac * 0.35, 0.25, 1.2); }
+  /* ---------- 先生の「立場への意識」scruple（0〜1。高いほど教師の立場を気にして踏みとどまる。乱数は引かない） ----------
+     base（その先生の性格だけ）：0.5 ＋ 高くする側（A・NP・AC・慎重さ）− 低くする側（FC・攻撃性・衝動性・主導性・ドライさ。責任感が強いほど効きにくい）
+       − 俺が法律 law ＝ (CP−0.35)×FC×(1−AC)×(1−NP)²×2.5 ＋ 立場・規範 duty ＝ (CP−0.45)×(NP−0.25)×6 ＋ (CP−0.5)×(A×AC−0.25)×4（上限 0.9）
+     組ごと：関係の設定で、先生から生徒への片想い・本命・執着（×0.35）／慕う・信仰・友達以上（×0.55）、生徒から先生への片想い・本命・執着だけ（×0.88） */
+  function hh(v) { return v - 0.5; }
+  function egoScr(t) {
+    var x = t.tr, cp = x.cp, np = x.np, a = x.a, fc = x.fc, ac = x.ac;
+    var dNP = Math.max(0, cp - 0.45) * Math.max(0, np - 0.25) * 6, dA = Math.max(0, cp - 0.5) * Math.max(0, a * ac - 0.25) * 4;
+    var duty = Math.min(0.9, dNP + dA);
+    var law = Math.max(0, cp - 0.35) * fc * (1 - ac) * (1 - np) * (1 - np) * 2.5;
+    var pos = 0.22 * hh(a) + 0.18 * hh(np) + 0.2 * hh(ac) + 0.1 * hh(x.caution);
+    var neg = (0.22 * hh(fc) + 0.06 * hh(x.aggr) + 0.06 * hh(x.impulse) + 0.04 * hh(x.lead) + 0.06 * hh(x.cold)) * (1 - Math.min(0.8, duty));
+    var v = HK.clamp(0.5 + pos - neg - law + duty, 0, 1);
+    /* 型：俺が法律（law）／生徒のために（dutyNP）／理詰め・世間体（dutyA）／それ以外は効いている因子で言う */
+    var kind = law >= 0.15 && law >= duty * 0.5 ? 'law' : duty >= 0.3 ? ((dNP >= dA && np >= 0.5) || dA < 0.1 ? 'np' : 'a') : '';
+    return { v: v, law: law, duty: duty, kind: kind, part: { A: 0.22 * hh(a), NP: 0.18 * hh(np), AC: 0.2 * hh(ac), FC: -0.22 * hh(fc), duty: duty, law: -law } };
+  }
+  var TIE_T = [['crush', '片想い', 0.35], ['honmei', '本命', 0.35], ['yan', '執着', 0.35], ['fond', '慕う', 0.55], ['worship', '信仰', 0.55]];
+  var TIE_S = [['crush', '片想い'], ['honmei', '本命'], ['yan', '執着']];
+  function tieOf(ctx, t, s) {
+    var T = HK.Ties;
+    if (!s || !T || !T.from || !ctx.tiesAll) return null;
+    for (var i = 0; i < TIE_T.length; i++) if (T.from(ctx, t, s, TIE_T[i][0])) return { k: TIE_T[i][2], why: '先生→' + s.name + 'の' + TIE_T[i][1] + 'で、立場は二の次（隠れて付き合うのも平気）' };
+    if (T.has && T.has(ctx, t, s, 'almost')) return { k: 0.55, why: s.name + 'と友達以上恋人未満で、立場より気持ちが先に立つ' };
+    for (var j = 0; j < TIE_S.length; j++) if (T.from(ctx, s, t, TIE_S[j][0])) return { k: 0.88, why: s.name + '→先生の' + TIE_S[j][1] + '（少しだけ揺らぐ）' };
+    return null;
+  }
+  /* 因子の高低（記号 A・B＝高、C＝中、D＝低） */
+  function lvF(t, k) { var v = t.eg && t.eg[k] != null ? t.eg[k] : 10; return k + ' ' + (v >= 10 ? '高' : v < 5.5 ? '低' : '中'); }
+  function topF(t) { var eg = t.eg || {}, f = (HK.FACTORS || ['CP', 'NP', 'A', 'FC', 'AC']).slice().sort(function (x, y) { return (eg[y] || 0) - (eg[x] || 0); }), tops = f.filter(function (k) { return eg[k] === eg[f[0]]; }); return tops.length > 2 ? '' : tops.join('・') + '優位'; }
+  function scrWhy(t, e, tie, v) {
+    var d;
+    if (e.kind === 'law') d = '俺が法律：' + ['CP', 'FC', 'AC'].map(function (k) { return lvF(t, k); }).join('・');
+    else if (e.kind === 'np') d = '責任感・生徒のために：' + lvF(t, 'CP') + '・' + lvF(t, 'NP');
+    else if (e.kind === 'a') d = '理詰め・世間体：' + ['CP', 'A', 'AC'].map(function (k) { return lvF(t, k); }).join('・');
+    else {
+      var NM = { A: ['理詰め', 'A'], NP: ['責任感', 'NP'], AC: ['世間体', 'AC'], FC: ['衝動', 'FC'] };
+      var ks = Object.keys(e.part).filter(function (k) { return Math.abs(e.part[k]) >= 0.03 && (e.part[k] > 0) === (v >= 0.5); }).sort(function (x, y) { return Math.abs(e.part[y]) - Math.abs(e.part[x]); }).slice(0, 2);
+      d = ks.length ? ks.map(function (k) {
+        if (k === 'duty') return '規範意識：' + lvF(t, 'CP');
+        if (k === 'law') return '自分がルール：' + lvF(t, 'CP') + '・' + lvF(t, 'AC');
+        return (k === 'FC' ? (v >= 0.5 ? '衝動が弱い' : '衝動') : v >= 0.5 ? NM[k][0] : NM[k][0] + 'が弱い') + '：' + lvF(t, NM[k][1]);
+      }).join('・') : 'どの因子も目立たない';
+    }
+    var code = HK.toCode && t.eg ? HK.toCode(t.eg) : '';
+    var tp = topF(t);
+    return '立場への意識 ' + (v < 0.35 ? '低' : v > 0.7 ? '高' : '中') + '（' + d + '／' + [tp, code].filter(Boolean).join('・') + (tie ? '。' + tie.why : '') + '）';
+  }
+  /* 先生 t の、生徒 s に対する立場への意識。s を省くと性格だけ */
+  function scruple(ctx, t, s) {
+    var e = egoScr(t), tie = s ? tieOf(ctx, t, s) : null, v = e.v * (tie ? tie.k : 1);
+    return { v: v, base: e.v, kind: e.kind, law: e.kind === 'law' && v < 0.4, duty: (e.kind === 'np' || e.kind === 'a') && v >= 0.6, tie: tie, why: scrWhy(t, e, tie, v) };
+  }
+  /* 先生の惹かれの育ち（立場への意識が低いほど大きい）と、生徒の惹かれやすさ */
+  function rT(sc) { return HK.clamp(1.45 - sc.v * 0.9, 0.3, 1.35); }
   function rS(ctx, s, t) { return 0.75 + s.tr.fc * 0.2 + s.tr.ac * 0.1 + (R(ctx, s, t).aff > 20 ? 0.2 : 0); }
   /* 秘密を知らない人（viewer）から見えない、x の先生との恋（x が先生と秘密で付き合っている） */
   function hidden(ctx, viewer, x) {
@@ -96,6 +156,12 @@
       T: L('廊下ですれ違いざま、{s}はつい{t}を名前だけで呼びかけて、慌てて口をつぐんだ。{t}は振り返らずに、「＠{t}＠ここでは、先生、でしょう｜ここでは、先生、だ｜ここでは、先生、ですよ」と小さく言った。その声は、叱っているようには聞こえなかった。|{s}「先生って、先生じゃないときは何してるの？｜先生は、先生でないときは何をしている？｜先生って、先生じゃないときは何をしてるんですか？」――{t}は少し考えてから、「＠{t}＠先生じゃないときなんて、ないよ｜先生でないときなど、ない｜先生じゃないときなんて、ありませんよ」と答えた。その言い方が、{s}には少しだけ寂しそうに聞こえた。|{s}は「先生」と呼ぶたびに、その言葉が二人のあいだに引かれた線のように思えた。それでも、呼ばずにはいられなかった。{t}が振り向いてくれるのは、その言葉にだけだったからだ。') }
   ];
 
+  /* 先生から近づく（立場への意識が低い先生）。LAW＝「俺が法律」型（口が強い）／ほかは衝動・好意で、悪びれずに */
+  var NEAR_LAW = L('放課後、{t}は廊下で{s}を呼び止めた。{t}「今日の補習、あなただけ残って｜今日の補習は、あなただけ残れ｜今日の補習、あなただけ残ってください」――補習など、予定にはなかった。{s}が「＠{s}＠先生、誰かに見られたら……｜先生、誰かに見られたら……｜先生、誰かに見られたら……」と言いかけると、{t}は当たり前のように教室の扉を閉めた。{t}「問題ない。私が決める｜問題ない。私が決める｜問題ありません。私が決めます」|雨の夕方、昇降口で立ち尽くしていた{s}の前に、{t}の車が停まった。{t}「乗って。送っていく｜乗れ。送っていく｜乗ってください。送っていきます」――{s}が周りの目を気にして足を止めると、{t}は助手席の扉を内側から押し開けた。{t}「立場？ 知ったことじゃない｜立場？ 知ったことではない｜立場？ 知ったことじゃありません」――車は、下校する生徒たちのあいだを堂々と抜けていった。|{t}は職員室の前で、{s}に自分の連絡先を書いた紙を差し出した。通りかかったほかの先生がちらりと見ても、{t}は手を引っ込めなかった。{t}「連絡は、ここに。遠慮はいらない｜連絡は、ここにしろ。遠慮はいらない｜連絡は、ここにください。遠慮はいりません」――{s}が紙を握りしめて顔を上げたときには、{t}はもう背を向けて歩き出していた。');
+  var NEAR_T = L('{t}は授業のあと、{s}の机に寄って小声で言った。{t}「放課後、少し手伝ってほしいことがあるんだ｜放課後、少し手伝ってほしいことがある｜放課後、少し手伝ってほしいことがあるんです」――頼まれたのは、資料室の片付けだった。片付けはすぐに終わったのに、二人は日が暮れるまで、資料室の窓辺で他愛もない話を続けた。|休み時間、{t}は{s}の席の前にしゃがみこんで、{s}の読んでいる本を覗き込んだ。{t}「それ、私も好き。読み終わったら感想を聞かせて｜それは、私も好きだ。読み終えたら感想を聞かせてくれ｜それ、私も好きなんです。読み終わったら感想を聞かせてください」――周りの生徒たちの視線にも、{t}はまるで気づいていないようだった。{s}だけが、頬の熱さを持て余していた。|{t}は帰り道で{s}を見つけると、わざわざ自転車を降りて隣を歩いた。駅までの十分間、{t}はずっと楽しそうに喋り続けた。別れ際、{t}は「＠{t}＠また明日。……明日も、この道で｜また明日だ。……明日も、この道で｜また明日。……明日も、この道でお願いします」と手を振った。');
+  /* 生徒が近づいても、立場への意識が高い先生（責任感・理詰め）は線を引く */
+  var NEAR_DUTY = L('放課後の教室で、{s}はいつまでも帰ろうとしなかった。{t}は採点の手を止め、少しだけ困った顔をした。{t}「もう遅い。……あなたの家の人が心配する｜もう遅い。……あなたの家の者が心配する｜もう遅いですよ。……あなたのご家族が心配します」――{t}は自分から教室の扉を開け、{s}が廊下へ出るまで、そこを動かなかった。|{s}が連絡先を書いた紙を差し出すと、{t}は受け取らずに、そっと押し返した。{t}「気持ちはうれしい。でも、私はあなたの先生だから｜気持ちはうれしい。だが、私はあなたの教師だ｜気持ちはうれしいです。でも、私はあなたの先生ですから」――{t}は穏やかに笑ったが、その目は少しも揺れていなかった。{s}は紙を握りしめたまま、小さく頷いた。|帰り道で{s}と一緒になると、{t}は必ず人通りの多い道を選んだ。駅までの話題も、授業と進路のことから外れなかった。{t}「何かあれば、職員室においで。いつでも聞く｜何かあれば、職員室に来い。いつでも聞く｜何かあれば、職員室に来てください。いつでも聞きます」――優しい言葉なのに、{s}にはそれが、二人のあいだに引かれた線のように聞こえた。');
+
   /* 告白（生徒から）。受ける／卒業するまで待って（3年生）／断る（先生の気質ごと） */
   var CONF_S = {
     yes: L('放課後の教室で、{s}は{t}の前に立った。{s}「先生のことが、好き。先生としてじゃなくて、一人の人として｜先生のことが、好きだ。教師としてではなく、一人の人として｜先生のことが、好きです。先生としてじゃなく、一人の人として、です」――{t}は長いあいだ黙っていた。やがて{t}は廊下に誰もいないのを確かめてから、{s}の手をそっと握った。{t}「……誰にも、言わないで｜……誰にも、言うな｜……誰にも、言わないでください」|{s}は進路の相談をするふりをして、準備室で{t}に想いを告げた。{t}は困った顔をして、窓の外に目をやった。それでも、首を横には振らなかった。二人はその日から、誰にも言えない約束をひとつ持つことになった。'),
@@ -107,6 +173,15 @@
       FC: L('{t}は一瞬目を丸くして、それから困ったように頭をかいた。{t}「うれしいけど、それはだめ。先生、クビになっちゃう｜うれしいが、それはだめだ。教師を続けられなくなる｜うれしいですけど、それはだめです。先生、クビになっちゃいます」――冗談めかした声だったが、目は笑っていなかった。{s}も無理に笑って、その話はそれきりになった。'),
       AC: L('{t}は真っ赤になって、手に持っていた出席簿を取り落とした。{t}「ご、ごめん……それは、受け取れない｜す、すまない……それは、受け取れない｜ご、ごめんなさい……それは、受け取れません」――拾い上げた出席簿で顔を隠すようにして、{t}は足早に教室を出ていった。{s}は、追いかけることができなかった。')
     }
+  };
+  /* 告白と受け入れ：「俺が法律」型（t＝先生から告白して受け入れられた／s＝生徒の告白を堂々と受ける）と、責任感型（断る・待って） */
+  var CONF_LAW = {
+    t: L('{t}は放課後の準備室に{s}を呼び、扉を閉めるなり言った。{t}「回りくどいのは嫌い。あなたが好き。……私と付き合って｜回りくどいのは嫌いだ。あなたが好きだ。……私と付き合え｜回りくどいのは嫌いです。あなたが好きです。……私と付き合ってください」――{s}が「＠{s}＠でも、先生なのに……｜だが、先生なのに……｜でも、先生なのに……」と言いかけると、{t}は眉ひとつ動かさなかった。{t}「問題ない。私が決める｜問題ない。私が決める｜問題ありません。私が決めます」――{s}は、頷くほかなかった。|廊下ですれ違いざま、{t}は{s}の手首をつかんで、空き教室に引き入れた。{t}「卒業まで待つ気はない。今、返事をして｜卒業まで待つ気はない。今、返事をしろ｜卒業まで待つ気はありません。今、返事をしてください」――{s}が驚いて扉の方を見ると、{t}は小さく鼻で笑った。{t}「立場？ 知ったことじゃない｜立場？ 知ったことではない｜立場？ 知ったことじゃありません」――{s}は真っ赤になって、小さく頷いた。|帰りの車の中で、{t}はハンドルを握ったまま言った。{t}「あなたを、私のものにしたい。誰が何を言おうと関係ない｜あなたを、私のものにしたい。誰が何と言おうと関係ない｜あなたを、私のものにしたいんです。誰が何を言おうと関係ありません」――あまりにまっすぐな言葉に、{s}は思わず笑ってしまった。笑いながら、{s}は「＠{s}＠……うん｜……ああ｜……はい」と答えていた。'),
+    s: L('{s}の告白を、{t}は最後まで聞かなかった。途中で{s}の顎に指をかけ、上を向かせた。{t}「知ってた。……私も同じ｜知っていた。……私も同じだ｜知ってました。……私も同じです」――{s}が「＠{s}＠でも、先生は……｜だが、先生は……｜でも、先生は……」と言いかけると、{t}は首を振った。{t}「先生だから何？ 私が決める｜教師だから何だ？ 私が決める｜先生だから何ですか？ 私が決めます」|{s}が震える声で想いを告げると、{t}はあっさり頷いた。{t}「いいよ。付き合おう｜いいだろう。付き合おう｜いいですよ。付き合いましょう」――あまりに簡単な答えに、{s}のほうが慌てた。{t}「規則？ そんなもの、どうにでもなる｜規則？ そんなもの、どうにでもなる｜規則？ そんなもの、どうにでもなります」――{t}はそう言って、{s}の頭を軽く撫でた。|{s}の告白を聞くと、{t}は面白そうに目を細めた。{t}「先に言われるとは思わなかった。……いいよ、私のものになって｜先に言われるとは思わなかった。……いいだろう、私のものになれ｜先に言われるとは思いませんでした。……いいですよ、私のものになってください」――{t}は周りに誰がいるかも確かめずに、{s}の手を握った。{s}のほうが慌てて、廊下の左右を見回した。')
+  };
+  var CONF_DUTY = {
+    no: L('{t}は{s}の告白を、目を逸らさずに最後まで聞いた。{t}「ありがとう。……でも、受け取れない。あなたを守るのが、私の仕事だから｜ありがとう。……だが、受け取れない。あなたを守るのが、私の務めだ｜ありがとうございます。……でも、受け取れません。あなたを守るのが、私の仕事ですから」――{t}の声は優しかったが、少しも揺れなかった。{s}には、その誠実さがかえって苦しかった。|{t}は長いあいだ黙っていた。やがて、窓の外を見たまま静かに言った。{t}「あなたの学校生活を、私のせいで台無しにはできない｜あなたの学校生活を、私のせいで台無しにはできない｜あなたの学校生活を、私のせいで台無しにはできません」――{s}は何も言い返せずに、ただ頷いた。{t}が本当はどんな顔をしていたのか、{s}には見えなかった。|{t}は困ったように笑い、それから真顔に戻った。{t}「私は、あなたの先生でいたい。最後まで、ちゃんと｜私は、あなたの教師でいたい。最後まで、きちんと｜私は、あなたの先生でいたいんです。最後まで、ちゃんと」――断りの言葉なのに、{s}にはそれが、精一杯の誠意に聞こえた。{s}は涙をこらえて、深く頭を下げた。'),
+    hold: L('{t}は{s}の想いを聞き終えると、ゆっくりと息を吐いた。{t}「今は、あなたの先生でいさせて。卒業の日に、もう一度だけ聞かせて｜今は、あなたの教師でいさせてくれ。卒業の日に、もう一度だけ聞かせてくれ｜今は、あなたの先生でいさせてください。卒業の日に、もう一度だけ聞かせてください」――それは、生徒を守るための精一杯の答えだった。{s}は、その言葉を胸の奥にしまった。|{t}は首を横に振りかけて、途中でやめた。{t}「あなたのためにも、今は答えない。……待っていられる？｜あなたのためにも、今は答えない。……待っていられるか？｜あなたのためにも、今は答えません。……待っていられますか？」――{s}が頷くと、{t}はほんの少しだけ笑った。卒業式までの日々が、二人にとって長い約束になった。')
   };
   /* 告白（先生から）。受ける／断る */
   var CONF_T = {
@@ -128,6 +203,9 @@
   /* バレかける（処分の危機） */
   var CRISIS = L('{t}は、学年主任に呼び出された。生徒との関係について妙な噂が出ている、とだけ告げられた。職員室に戻ってきた{t}の顔は、紙のように白かった。|{s}の家から、学校に一本の電話がかかってきた。{t}は校長室に呼ばれ、長いあいだ戻ってこなかった。処分、という言葉が、職員室の空気の中に重く漂っていた。|ある朝、{t}の机の上に、差出人のない封筒が置かれていた。中には、二人が並んで歩いている写真が一枚だけ入っていた。{t}は封筒を握りしめたまま、しばらく動けなかった。');
   var CRISIS_LOW = L('{t}と{s}は、しばらく会わないことにした。廊下ですれ違っても、二人は目を合わせなかった。噂は少しずつ、別の誰かの話題に押し流されていった。|{t}は、学年主任の前で、すべてを否定した。{s}も、何を訊かれても首を横に振った。二人が次に二人きりで話したのは、それからひと月以上あとのことだった。');
+  /* バレかけても「俺が法律」型は動じない（身を潜めない）／責任感型は自分から「ここまで」 */
+  var CRISIS_LAW = L('その日の放課後、{t}は廊下で待っていた{s}の肩を軽く叩いた。{t}「何も心配いらない。問題ない。私が決める｜何も心配はいらない。問題ない。私が決める｜何も心配いりません。問題ありません。私が決めます」――{t}は、まるで何事もなかったように{s}を準備室に呼んだ。噂は、{t}の堂々とした態度の前で、かえって勢いを失っていった。|{s}が青ざめて「＠{s}＠しばらく会わないほうがいい｜しばらく会わないほうがいい｜しばらく会わないほうがいいです」と言うと、{t}は小さく鼻で笑った。{t}「立場？ 知ったことじゃない。あなたと会うのをやめる理由にはならない｜立場？ 知ったことではない。あなたと会うのをやめる理由にはならない｜立場？ 知ったことじゃありません。あなたと会うのをやめる理由にはなりません」――{t}は{s}の手を一度だけ強く握り、それからいつもの顔で職員室へ戻っていった。|それでも、{t}の態度は少しも変わらなかった。{t}「くだらない。こんなことで、私は何も変えない｜くだらない。こんなことで、私は何も変えない｜くだらないですね。こんなことで、私は何も変えません」――その夜も、{s}の携帯には、いつもの場所といつもの時間だけを書いた短いメッセージが届いた。{s}は震える指で、了解、とだけ返した。');
+  var CRISIS_DUTY = L('{t}は、誰もいない進路指導室に{s}を呼んだ。{t}「ここまでにしよう。あなたの将来を守るのが、先生の役目だから｜ここまでにしよう。あなたの将来を守るのが、教師の役目だ｜ここまでにしましょう。あなたの将来を守るのが、先生の役目ですから」――{t}は一度も声を震わせなかった。{s}が部屋を出ていったあと、{t}は長いあいだ、机に両手をついたまま動かなかった。|{t}は、{s}の名前が出る前に、自分ひとりで話を引き受けた。そのあとで、{s}に短く告げた。{t}「あなたは何も悪くない。……だから、もう会わない｜あなたは何も悪くない。……だから、もう会わない｜あなたは何も悪くありません。……だから、もう会いません」――{s}は泣きながら首を振ったが、{t}の答えは変わらなかった。|{t}は{s}を廊下の窓辺に呼び止め、ほかの生徒に話すのと同じ声で言った。{t}「あなたの未来のほうが、私の気持ちより大事。……ここまでにしよう｜あなたの未来のほうが、私の気持ちより大事だ。……ここまでにしよう｜あなたの未来のほうが、私の気持ちより大事です。……ここまでにしましょう」――それが先生としての最後の務めなのだと、{s}にも分かってしまった。{s}は唇を噛んで、黙って頷いた。');
   var CRISIS_END = L('{t}は、誰もいない教室に{s}を呼んだ。{t}「……ここまでにしよう。あなたの未来を、私が壊すわけにはいかない｜……ここまでにしよう。あなたの将来を、私が壊すわけにはいかない｜……ここまでにしましょう。あなたの未来を、私が壊すわけにはいきません」――{s}は何か言いかけて、やめた。{t}の目が、もう決めた人の目をしていたからだった。|{t}は、短い手紙を{s}に渡した。そこには、もう二人きりでは会えないこと、それが{s}のためだということが、几帳面な字で書いてあった。{s}は手紙を読み終えると、声を殺して泣いた。');
   /* 公にする（open だけ）。決める場面／周りの反応／保護者 */
   var PUB_GO = L('{t}は、もう隠さないと決めた。学年主任と{s}の保護者の前で、{t}は{s}と真剣に付き合っていると頭を下げた。{s}もその隣で、同じように深く頭を下げた。|{s}は{t}の手を握って、職員室の扉を開けた。{s}「隠れてこそこそするのは、もうやめる｜隠れてこそこそするのは、もうやめる｜隠れてこそこそするのは、もうやめます」――{t}は一度だけ目を閉じて、それから{s}と並んで学年主任の前に立った。');
@@ -152,6 +230,9 @@
     sec: L('卒業式のあと、{s}は誰もいなくなった教室で{t}を待っていた。{t}は少し遅れてやって来て、黒板の前で足を止めた。{s}「もう、先生って呼ばなくていい？｜もう、先生と呼ばなくていいか？｜もう、先生って呼ばなくていいですか？」――{t}は答えの代わりに、卒業証書の筒を持った{s}の手を、初めて人目を気にせずに握った。|卒業式の日、{t}は担任として、最後まで{s}を特別扱いしなかった。式が終わり、校門の前の人影がまばらになった頃、{t}はようやく{s}の名前を呼んだ。二人は並んで、一年間隠し続けた道を、今度は堂々と歩いた。|卒業式が終わると、{s}は胸の花を外して、準備室の扉をノックした。{t}は何も言わずに扉を開け、{s}を中に入れた。秘密の恋が、秘密でなくなる日だった。'),
     pub: L('卒業式のあと、クラスメイトたちは{t}と{s}を校門の前に押し出して、二人の写真を撮った。{s}は照れながら、{t}の腕にしがみついた。先生と生徒として過ごす最後の日を、二人はみんなに見送られて終えた。|卒業式の日、{s}は式のあいだずっと、教職員の席の{t}を見ていた。最後のホームルームが終わると、{t}は教卓を降りて{s}の前に立った。{t}「卒業、おめでとう｜卒業、おめでとう｜卒業、おめでとうございます」――それは、先生としての最後の言葉だった。')
   };
+  /* 卒業式のあと：「俺が法律」型（人前でも堂々と）／責任感型（最後まで先生でいた） */
+  var GRAD_LAW = L('卒業式が終わるなり、{t}は保護者や生徒たちの見ている前で、まっすぐ{s}のところへ歩いてきた。{t}「卒業おめでとう。今日からは、誰にも文句は言わせない｜卒業おめでとう。今日からは、誰にも文句は言わせない｜卒業おめでとうございます。今日からは、誰にも文句は言わせません」――{t}は{s}の手を取り、ざわめく人垣のあいだを堂々と抜けていった。|卒業式のあと、{t}は校門の前で{s}を待っていた。周りの視線など、最初から気にしていなかった。{t}「迎えに来た。帰ろう｜迎えに来た。帰るぞ｜迎えに来ました。帰りましょう」――{s}が笑って駆け寄ると、{t}は当たり前のようにその肩を抱いた。|最後のホームルームで、{t}は教卓に手をついて、クラス全員の前で言った。{t}「最後にひとつ。私は{s}と付き合っている。以上｜最後にひとつ。私は{s}と付き合っている。以上だ｜最後にひとつ。私は{s}と付き合っています。以上です」――教室は一瞬で静まり返り、それから歓声と悲鳴でいっぱいになった。{s}は真っ赤になって、机に突っ伏した。');
+  var GRAD_DUTY = L('卒業式のあと、{t}は人の波が引くのを待ってから、{s}を呼び止めた。{t}「卒業おめでとう。……やっと、先生じゃなくなれる｜卒業おめでとう。……ようやく、教師ではなくなれる｜卒業おめでとうございます。……やっと、先生じゃなくなれます」――{t}は、この一年ずっと我慢してきた顔で、初めて人目を気にせずに{s}の手を握った。|最後のホームルームが終わるまで、{t}は一度も{s}を特別扱いしなかった。教室に誰もいなくなってから、{t}はようやく{s}の前に立った。{t}「よく頑張ったね。最後まで、あなたの先生でいられてよかった｜よく頑張ったな。最後まで、あなたの教師でいられてよかった｜よく頑張りましたね。最後まで、あなたの先生でいられてよかったです」――{s}は、その言葉の重さを知っていた。|卒業証書を受け取った{s}に、{t}は深く頭を下げた。{t}「今まで、たくさん我慢させてごめん。今日からは、ちゃんと向き合う｜今まで、多く我慢させてすまなかった。今日からは、きちんと向き合う｜今まで、たくさん我慢させてごめんなさい。今日からは、ちゃんと向き合います」――{s}は泣き笑いの顔で、{t}の胸に飛び込んだ。');
   /* その後（覚え書き。台詞は入れない） */
   var AFTER = {
     cont_open: L('卒業した{s}と{t}は、もう人目を避けなかった。休日の駅前で手を繋いで歩く二人を、元のクラスメイトが何度か見かけている。隠れて付き合った日々は、いつの間にか二人の笑い話になった。|卒業してから、二人は初めて堂々とデートをした。行き先は、あの頃いつも人目を避けて通った、学校の近くの商店街だった。もう誰に見られてもいいのだと思うと、{s}は少しだけ泣きそうになった。'),
@@ -251,41 +332,53 @@
   function approach(ctx, t, SS) {
     /* 「卒業するまで待って」と答えた先生は、ほかの生徒とは近づかない */
     if (ctx.chars.some(function (s) { var st = s !== t && ctx.pair(t, s).tl; return !!(st && st.hold); })) return;
-    if (ctx.rng() > 0.45) return;
+    /* 近づく回数：立場への意識が低い先生ほど多い（いちばん低い組で見る。乱数は引かない計算） */
+    var vMin = SS.reduce(function (m, s) { return Math.min(m, scruple(ctx, t, s).v); }, 1);
+    if (ctx.rng() > 0.45 + (0.5 - vMin) * 0.3) return;
     var C = SS.filter(function (s) {
       var st = ctx.pair(t, s).tl;
       if (st && (st.ended || (st.noUntil != null && ctx.stepIndex < st.noUntil))) return false;
       return free(ctx, s, t) && free(ctx, t, s) && loveOk(ctx, t, s);
     });
     if (!C.length) return;
-    var s = ctx.most(C, function (c) { return 0.3 + Math.max(0, R(ctx, c, t).aff) / 60 + R(ctx, c, t).att / 35 + R(ctx, t, c).att / 40 + c.tr.fc * 0.2 + ctx.rng() * 0.4; });
-    var st = tl(ctx, t, s);
-    var sc = HK.weighted(ctx.rng, NEAR, function (x) { return (!x.when || x.when(ctx, t, s, st)) ? x.w(ctx, t, s) : 0; });
+    /* 誰に近づくか：立場への意識が低い先生は、自分の惹かれで選ぶ（片想いの相手など） */
+    var s = ctx.most(C, function (c) { var lo = 1 - scruple(ctx, t, c).v; return 0.3 + Math.max(0, R(ctx, c, t).aff) / 60 + R(ctx, c, t).att / 35 + R(ctx, t, c).att / (40 - lo * 15) + c.tr.fc * 0.2 + ctx.rng() * 0.4; });
+    var st = tl(ctx, t, s), scr = scruple(ctx, t, s);
+    /* 先生から誘う：立場への意識が低いほど、先生の惹かれが強いほど起きる（「俺が法律」型は口の強い誘い方） */
+    var lead = ctx.rng() < HK.clamp((0.45 - scr.v) * 1.4 + Math.max(0, R(ctx, t, s).att) / 150, 0, 0.75);
+    var duty = !lead && scr.duty && ctx.rng() < 0.35;
+    var sc = lead ? { id: 'lead', name: '先生から誘う', T: scr.law ? NEAR_LAW : NEAR_T } : duty ? { id: 'duty', name: '先生が線を引く', T: NEAR_DUTY }
+      : HK.weighted(ctx.rng, NEAR, function (x) { return (!x.when || x.when(ctx, t, s, st)) ? x.w(ctx, t, s) : 0; });
     if (!sc) return;
-    var gS = rS(ctx, s, t), gT = rT(t);
-    var e = ctx.act2({ actors: [s, t], cat: 'romance', mag: 8,
+    var gS = rS(ctx, s, t), gT = rT(scr);
+    var e = ctx.act2({ actors: lead ? [t, s] : [s, t], cat: 'romance', mag: 8,
       fx: function () {
-        ctx.mod(s, t, { att: 6 * gS, aff: 3, trust: 2 });
-        ctx.mod(t, s, { att: 4.5 * gT, aff: 2, trust: 2 });
+        ctx.mod(s, t, { att: (lead ? 5 : 6) * gS, aff: 3, trust: 2 });
+        ctx.mod(t, s, { att: (lead ? 6 : duty ? 2 : 4.5) * gT, aff: 2, trust: duty ? 4 : 2 });
         if (sc.id === 'contact') st.contact = true;
       },
       text: F(ctx, pick(ctx, sc.T), { t: t, s: s }),
-      why: function () { return '先生と生徒の恋：' + sc.name + '（惹かれ ' + s.name + '→先生 ' + Math.round(R(ctx, s, t).att) + '／先生→' + s.name + ' ' + Math.round(R(ctx, t, s).att) + '。' + t.name + 'は' + (gT < 0.7 ? 'CPが高く踏みとどまる' : gT > 1 ? 'ACが高く流されやすい' : '迷いながら') + '）'; } });
+      why: function () { return '先生と生徒の恋：' + sc.name + '（惹かれ ' + s.name + '→先生 ' + Math.round(R(ctx, s, t).att) + '／先生→' + s.name + ' ' + Math.round(R(ctx, t, s).att) + '。' + t.name + 'の' + scr.why + '）'; } });
     if (!e) return;
     confess(ctx, t, s, st);
   }
+  /* 告白：生徒の側は今までどおり。先生の側は立場への意識が低いほど早く（惹かれが浅くても）・よく告白する。低い先生は生徒より先に動く */
   function confess(ctx, t, s, st) {
-    var rs = R(ctx, s, t), rt = R(ctx, t, s);
-    if (rs.att >= 40 && rs.aff >= 5 && ctx.rng() < 0.25 + (s.tr.honesty || 0) * 0.3 + s.tr.fc * 0.2) return confS(ctx, t, s, st);
-    if (rt.att >= 46 && ctx.rng() < 0.15 + t.tr.ac * 0.25 + t.tr.fc * 0.1 - t.tr.cp * 0.15) return confT(ctx, t, s, st);
+    var rs = R(ctx, s, t), rt = R(ctx, t, s), scr = scruple(ctx, t, s);
+    var goS = function () { return rs.att >= 40 && rs.aff >= 5 && ctx.rng() < 0.25 + (s.tr.honesty || 0) * 0.3 + s.tr.fc * 0.2; };
+    var goT = function () { return rt.att >= 46 - (0.5 - scr.v) * 24 && ctx.rng() < HK.clamp(0.62 - scr.v * 0.7 + t.tr.fc * 0.08, 0, 0.6); };
+    if (scr.v < 0.35 && goT()) return confT(ctx, t, s, st, scr);
+    if (goS()) return confS(ctx, t, s, st, scr);
+    if (scr.v >= 0.35 && goT()) return confT(ctx, t, s, st, scr);
   }
   function canPair(ctx, t, s) { return free(ctx, s, t) && free(ctx, t, s) && (!HK.Poly || !HK.Poly.canCouple || HK.Poly.canCouple(ctx, t, s)); }
-  function confS(ctx, t, s, st) {
+  /* 受け入れ：立場への意識が低いほど受ける（AC が高いと少し押し切られやすい）。「卒業するまで待って」は意識が中くらい以上の先生だけ */
+  function confS(ctx, t, s, st, scr) {
     var rt = R(ctx, t, s);
-    var yes = rt.att >= 28 && canPair(ctx, t, s) && ctx.rng() < 0.4 + t.tr.ac * 0.3 - t.tr.cp * 0.35 + rt.att / 150;
-    var hold = !yes && s.grade === 3 && ctx.env.span !== 'term' && rt.att >= 14 && t.tr.cp >= 0.35;
+    var yes = rt.att >= 28 - (0.5 - scr.v) * 16 && canPair(ctx, t, s) && ctx.rng() < HK.clamp(0.78 - scr.v * 0.75 + rt.att / 150 + t.tr.ac * 0.08, 0.02, 0.95);
+    var hold = !yes && s.grade === 3 && ctx.env.span !== 'term' && rt.att >= 14 && scr.v >= 0.45;
     var res = yes ? 'yes' : hold ? 'hold' : 'no';
-    var list = res === 'no' ? CONF_S.no[top(t)] || CONF_S.no.NP : CONF_S[res];
+    var list = res === 'yes' ? (scr.law ? CONF_LAW.s : CONF_S.yes) : scr.duty ? CONF_DUTY[res] : res === 'no' ? CONF_S.no[top(t)] || CONF_S.no.NP : CONF_S[res];
     var ok = false;
     ctx.act2({ actors: [s, t], cat: 'romance', mag: res === 'yes' ? 25 : 15,
       fx: function () {
@@ -295,9 +388,9 @@
         else { st.noUntil = ctx.stepIndex + 4; ctx.stress(s, 18); ctx.mod(s, t, { att: -10 }); }
       },
       text: F(ctx, pick(ctx, list), { t: t, s: s }),
-      why: '先生と生徒の恋：' + s.name + 'から告白（' + s.name + '→先生 惹かれ ' + Math.round(R(ctx, s, t).att) + '）／' + t.name + 'の側：惹かれ ' + Math.round(rt.att) + '・' + (res === 'yes' ? '受け入れた。隠れて付き合う' : res === 'hold' ? '「卒業するまで待って」' : '先生として断った（' + top(t) + '優位）') });
+      why: '先生と生徒の恋：' + s.name + 'から告白（' + s.name + '→先生 惹かれ ' + Math.round(R(ctx, s, t).att) + '）／' + t.name + 'の側：惹かれ ' + Math.round(rt.att) + '・' + (res === 'yes' ? '受け入れた。隠れて付き合う' : res === 'hold' ? '「卒業するまで待って」' : '先生として断った（' + top(t) + '優位）') + '。' + scr.why });
   }
-  function confT(ctx, t, s, st) {
+  function confT(ctx, t, s, st, scr) {
     var rs = R(ctx, s, t), yes = rs.att >= 26 && rs.aff >= 10 && canPair(ctx, t, s);
     ctx.act2({ actors: [t, s], cat: 'romance', mag: yes ? 25 : 15,
       fx: function () {
@@ -305,8 +398,8 @@
         if (yes) { if (couple(ctx, t, s, 't')) ctx.mod2(t, s, { att: 8, aff: 8, trust: 6 }, { att: 10, aff: 8, trust: 6 }); }
         else { st.noUntil = ctx.stepIndex + 6; ctx.stress(t, 15); ctx.mod(t, s, { att: -12 }); ctx.mod(s, t, { trust: -4 }); }
       },
-      text: F(ctx, pick(ctx, yes ? CONF_T.yes : CONF_T.no), { t: t, s: s }),
-      why: '先生と生徒の恋：' + t.name + '（先生）から告白（惹かれ ' + Math.round(R(ctx, t, s).att) + '・AC ' + Math.round(t.tr.ac * 100) + '）／' + s.name + 'の側：惹かれ ' + Math.round(rs.att) + '・' + (yes ? '受け入れた。隠れて付き合う' : '応えなかった') });
+      text: F(ctx, pick(ctx, yes ? (scr.law ? CONF_LAW.t : CONF_T.yes) : CONF_T.no), { t: t, s: s }),
+      why: '先生と生徒の恋：' + t.name + '（先生）から告白（惹かれ ' + Math.round(R(ctx, t, s).att) + '。' + scr.why + '）／' + s.name + 'の側：惹かれ ' + Math.round(rs.att) + '・' + (yes ? '受け入れた。隠れて付き合う' : '応えなかった') });
   }
 
   /* 恋人になってから（毎月ひとつ） */
@@ -330,16 +423,18 @@
     if (st.low != null && ctx.stepIndex < st.low) return;
     if (ctx.rng() > 0.8) return;
     if (st.since == null) st.since = 0;   /* 関係の設定で始めから恋人だった組 */
-    var open = ctx.env.tlove === 'open', months = ctx.stepIndex - (st.since == null ? ctx.stepIndex : st.since);
-    if (!st.pub) st.risk += 5;
+    var open = ctx.env.tlove === 'open', months = ctx.stepIndex - (st.since == null ? ctx.stepIndex : st.since), v = scruple(ctx, t, s).v;
+    /* 秘密のあいだの大胆さ：立場への意識が低いほど人目を気にせず、危うさが早くたまり、見られやすい */
+    if (!st.pub) st.risk += 3 + (1 - v) * 5;
     var opts = [{ k: 'date', w: 1 }];
-    if (nightOk(ctx, t, s) && months >= 1 && (st.nights || 0) < 3) opts.push({ k: 'night', w: 0.9 });
+    if (nightOk(ctx, t, s) && months >= 1 && (st.nights || 0) < 3) opts.push({ k: 'night', w: 0.9 + (0.5 - v) * 0.4 });
     if (!st.pub) {
       var wit = witness(ctx, t, s, st);
-      if (wit) opts.push({ k: 'seen', w: 0.5 + st.risk / 80, x: wit });
+      if (wit) opts.push({ k: 'seen', w: (0.5 + st.risk / 80) * (1.4 - v * 0.8), x: wit });
       if (st.spread && st.rumor == null) opts.push({ k: 'rumor', w: 1.2 });
       if (st.risk >= 40 && (st.crisisAt == null || ctx.stepIndex - st.crisisAt >= 4)) opts.push({ k: 'crisis', w: 1.6 });
-      if (open && months >= 2) opts.push({ k: 'public', w: 0.15 + (s.grade === 3 && /^(1|2|3)月$/.test(ctx.label) ? 0.6 : 0) });
+      /* 公にする（open）：立場への意識が低い先生は、自分から早めに公にする */
+      if (open && months >= (v < 0.35 ? 1 : 2)) opts.push({ k: 'public', w: (0.15 + (s.grade === 3 && /^(1|2|3)月$/.test(ctx.label) ? 0.6 : 0)) * HK.clamp(1.6 - v * 1.2, 0.3, 1.6) + (v < 0.3 ? 0.35 : 0) });
     }
     var jw = jealOf(ctx, t, s, st); if (jw) opts.push({ k: 'jeal', w: 0.7, x: jw });
     var cw = !st.pub && coverOf(ctx, t, s, st); if (cw) opts.push({ k: 'cover', w: 0.45, x: cw });
@@ -376,23 +471,27 @@
         fx: function () { st.rumor = ctx.stepIndex; st.risk += 15; students(ctx).forEach(function (w) { if (w !== s) st.known[w.i] = 1; }); ctx.stress(s, 12); ctx.stress(t, 10); },
         text: F(ctx, pick(ctx, RUMOR), { t: t, s: s }), why: why0(ctx, t, s, st, '噂になった（危うさ ' + Math.round(st.risk) + '）') });
     },
+    /* バレかける：open で公にするかは、立場への意識が低いほど選びやすい。「ここまで」は意識が高い先生だけ。「俺が法律」型は動じず、身を潜めない */
     crisis: function (ctx, t, s, st) {
-      var rt = R(ctx, t, s), rs = R(ctx, s, t);
-      var goPub = ctx.env.tlove === 'open' && Math.min(rt.trust, rs.trust) >= 25 && ctx.rng() < 0.45 + (s.tr.honesty || 0) * 0.2 + t.tr.np * 0.2;
-      var end = !goPub && ctx.rng() < 0.18 + t.tr.cp * 0.45 - rt.att / 220;
+      var rt = R(ctx, t, s), rs = R(ctx, s, t), scr = scruple(ctx, t, s);
+      var goPub = ctx.env.tlove === 'open' && Math.min(rt.trust, rs.trust) >= 25 && ctx.rng() < 0.45 + (s.tr.honesty || 0) * 0.2 + t.tr.np * 0.2 + (0.5 - scr.v) * 0.5;
+      var end = !goPub && scr.v >= 0.5 && ctx.rng() < 0.15 + (scr.v - 0.5) * 1.1 - rt.att / 220;
+      var stand = !goPub && !end && scr.law;
       st.crisisAt = ctx.stepIndex;
       var head = F(ctx, pick(ctx, CRISIS), { t: t, s: s });
-      if (goPub) return BEAT.public(ctx, t, s, st, null, head);
+      if (goPub) return BEAT.public(ctx, t, s, st, null, head, scr);
       ctx.act2({ actors: [t, s], cat: end ? 'conflict' : 'bond', mag: end ? 22 : 12,
         fx: function () {
-          ctx.stress(t, 15); ctx.stress(s, 12);
+          ctx.stress(t, stand ? 6 : 15); ctx.stress(s, 12);
           if (end) { var pf = ctx.pair(t, s); pf.couple = false; pf.brokeAt = ctx.stepIndex; st.ended = true; ctx.mod2(s, t, { att: -8, aff: -4 }, { att: -6 }); ctx.stress(s, 20); }
+          else if (stand) { st.risk = 20; ctx.mod2(t, s, { trust: 2 }, { trust: 4, att: 3 }); }
           else { st.risk = 8; st.low = ctx.stepIndex + 2; }
         },
-        text: head + F(ctx, pick(ctx, end ? CRISIS_END : CRISIS_LOW), { t: t, s: s }),
-        why: why0(ctx, t, s, st, 'バレかけた（処分の危機）。' + (end ? t.name + 'から「ここまで」（CP ' + Math.round(t.tr.cp * 100) + '）' : 'しばらく会わずに身を潜める')) });
+        text: head + F(ctx, pick(ctx, end ? (scr.duty ? CRISIS_DUTY : CRISIS_END) : stand ? CRISIS_LAW : CRISIS_LOW), { t: t, s: s }),
+        why: why0(ctx, t, s, st, 'バレかけた（処分の危機）。' + (end ? t.name + 'から「ここまで」' : stand ? t.name + 'は動じず、会うのをやめない' : 'しばらく会わずに身を潜める') + '。' + scr.why) });
     },
-    public: function (ctx, t, s, st, x, head) {
+    public: function (ctx, t, s, st, x, head, scr) {
+      scr = scr || scruple(ctx, t, s);
       var P = students(ctx).filter(function (w) { return w !== s; });
       var wa = P.length ? ctx.most(P, function (w) { return R(ctx, w, s).aff / 40 + w.tr.np * 0.4 + ctx.rng() * 0.3; }) : null;
       var wc = P.filter(function (w) { return w !== wa; }), wb = wc.length ? ctx.most(wc, function (w) { return Math.max(R(ctx, w, s).att, R(ctx, w, t).att) / 40 + (w.tr.jealous || 0) * 0.5 + w.tr.cp * 0.3 + ctx.rng() * 0.3; }) : null;
@@ -408,7 +507,7 @@
           ctx.mod2(t, s, { trust: 8 }, { trust: 10, aff: 4 }); ctx.stress(t, 12); ctx.stress(s, 6);
           if (wa) ctx.mod(s, wa, { aff: warm ? 5 : -3 });
         },
-        text: parts.join('\n\n'), why: why0(ctx, t, s, st, '公にすると決めた（周りの反応：' + (wa ? wa.name + (warm ? 'は祝福・仲良し' : 'は戸惑い') : '―') + '／保護者）') });
+        text: parts.join('\n\n'), why: why0(ctx, t, s, st, '公にすると決めた（周りの反応：' + (wa ? wa.name + (warm ? 'は祝福・仲良し' : 'は戸惑い') : '―') + '／保護者。' + scr.why + '）') });
     },
     jeal: function (ctx, t, s, st, w) {
       var lv = loveJ(ctx, t, s, w), toS = R(ctx, w, s).att >= R(ctx, w, t).att, threat = !st.pub && (w.tr.aggr || 0) * 0.6 + w.tr.cp * 0.4 + ctx.rng() * 0.3 > 0.75;
@@ -439,17 +538,19 @@
 
   /* 結末：年度末に付き合っている組と、卒業するまで待ってと言われた3年生 */
   function note(ctx, s) { (ctx.flags.endNotes = ctx.flags.endNotes || []).push(s); }
+  /* その後：立場への意識が低いほど続く（堂々と）。高いほど、先生から身を引く・自然消滅・時間をおいて再会 */
   function afterKind(ctx, t, s, st) {
-    var ab = R(ctx, t, s), ba = R(ctx, s, t), aff = Math.min(ab.aff, ba.aff), tr = Math.min(ab.trust, ba.trust), rr = function () { return ctx.rng() * 0.4; };
+    var ab = R(ctx, t, s), ba = R(ctx, s, t), aff = Math.min(ab.aff, ba.aff), tr = Math.min(ab.trust, ba.trust), rr = function () { return ctx.rng() * 0.4; }, scr = scruple(ctx, t, s), v = scr.v;
+    /* 好意・信頼は 60 で頭打ち（長く付き合った組はどれも高くなり、性格の差が消えるため） */
     var sc = {
-      cont: aff / 50 + tr / 60 + (st.pub ? 0.3 : 0) + t.tr.np * 0.3 + rr(),
-      fade: s.tr.fc * 0.6 + Math.max(0, 1 - tr / 60) * 0.5 + rr(),
-      part: t.tr.cp * 0.8 + (st.risk || 0) / 100 + (st.crisisAt != null ? 0.2 : 0) + rr(),
-      reunite: aff > 25 ? t.tr.cp * 0.5 + aff / 80 + rr() : -1
+      cont: Math.min(aff, 60) / 60 + Math.min(tr, 60) / 60 + (st.pub ? 0.3 : 0) + t.tr.np * 0.3 + (0.45 - v) * 1.0 + rr(),
+      fade: s.tr.fc * 0.6 + Math.max(0, 1 - tr / 60) * 0.5 + v * 0.3 + rr(),
+      part: v * 0.95 + (st.risk || 0) / 150 + (st.crisisAt != null ? 0.15 : 0) + rr(),
+      reunite: aff > 25 ? v * 0.8 + Math.min(aff, 60) / 100 + rr() : -1
     };
     var best = 'cont'; Object.keys(sc).forEach(function (k) { if (sc[k] > sc[best]) best = k; });
-    if (best === 'cont') best = ctx.pick(['cont_open', 'cont_live', 'cont_vow']);
-    return { k: best, why: '好意 ' + Math.round(aff) + '・信頼 ' + Math.round(tr) + '・' + t.name + 'のCP ' + Math.round(t.tr.cp * 100) + '・' + s.name + 'のFC ' + Math.round(s.tr.fc * 100) };
+    if (best === 'cont') best = ctx.pick(v < 0.35 ? ['cont_open', 'cont_open', 'cont_live', 'cont_vow'] : ['cont_open', 'cont_live', 'cont_vow']);
+    return { k: best, why: '好意 ' + Math.round(aff) + '・信頼 ' + Math.round(tr) + '・' + t.name + 'の' + scr.why + '・' + s.name + 'のFC ' + Math.round(s.tr.fc * 100) };
   }
   var AFTER_N = { cont_open: '続いた（卒業してから堂々と）', cont_live: '続いた（一緒に暮らす）', cont_vow: '続いた（結婚の約束）', fade: '自然消滅', part: '別れた（先生から「ここまで」）', reunite: '数年後に再会' };
   function endCouple(ctx, t, s, st) {
@@ -457,8 +558,8 @@
     var term = ctx.env.span === 'term', ryu = !term && !!(s.flags.ryu && s.flags.ryu.fail), grad = !term && s.grade === 3 && !ryu, m = { t: t, s: s }, who = t.name + 'と' + s.name;
     var k = st.pub ? 'pub' : 'sec';
     if (grad) {
-      var ak = afterKind(ctx, t, s, st);
-      ctx.act2({ actors: [s, t], cat: 'romance', mag: 25, text: F(ctx, pick(ctx, GRAD[k]), m), why: '結末：先生と生徒の恋（卒業）' + (st.pub ? '' : '。最後まで秘密を守った') });
+      var ak = afterKind(ctx, t, s, st), scr = scruple(ctx, t, s);
+      ctx.act2({ actors: [s, t], cat: 'romance', mag: 25, text: F(ctx, pick(ctx, scr.law ? GRAD_LAW : scr.duty ? GRAD_DUTY : GRAD[k]), m), why: '結末：先生と生徒の恋（卒業）' + (st.pub ? '' : '。最後まで秘密を守った') + (scr.law ? '。卒業式のあとは人前でも堂々と' : scr.duty ? '。最後まで先生として線を守った' : '') });
       note(ctx, who + 'のその後――' + F(ctx, pick(ctx, AFTER[ak.k]), m) + '（先生と生徒の恋の結末：' + AFTER_N[ak.k] + '。' + ak.why + '）');
       return;
     }
@@ -547,5 +648,5 @@
     HK.wrap(ev, 'when', function (prev) { return function (ctx, a, b) { return on(ctx) && hidden(ctx, a, b) ? false : prev.apply(this, arguments); }; });
   });
 
-  HK.TeacherLove = { on: on, hidden: hidden, teachers: allTeachers };
+  HK.TeacherLove = { on: on, hidden: hidden, teachers: allTeachers, scruple: function (ctx, t, s) { return scruple(ctx, t, s); } };
 })();

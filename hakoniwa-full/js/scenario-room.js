@@ -1049,12 +1049,14 @@
       others.forEach(function (o) { G.forEach(function (g) { ctx.mod(o, g, { ten: 6 }); }); ctx.stress(o, 8); });
       /* 輪の中心は、自分で攻めを選んだ人がいればその人（受ける側には回さない） */
       var lead = (HK.Pos && G.filter(function (c) { return HK.Pos.hardTopIn(c, G); })[0]) || a, g2 = G.filter(function (c) { return c !== lead; });
-      /* 輪の中の文は R18 の文（全年齢版では抜いて、照明を落とす一文にする） */
-      var groupLine = null;
+      /* 輪の中の文は R18 の文（全年齢版では抜いて、照明を落とす一文にする）。g4in：4 人の輪を 4 人の組み立てで書いた（「○○も、すぐに輪の中に引き込まれた。」を足さない） */
+      var groupLine = null, g4in = false;
       /* r18:begin */
       groupLine = function () {
         /* 三人ちょうどなら、三人の場面の組み立て（trio-talk-r18.js の HK.Trio3：HK.Pos.trioPlan で形を決め、台詞の応酬・擬音・体の位置の一文。2026-10-28 担当JC） */
         if (G.length === 3 && HK.Trio3 && HK.Trio3.quick && !HK.SAFE_ON) { var q3 = HK.Trio3.quick(ctx, G, { env: ctx.env }); if (q3) return q3; }
+        /* 4 人なら、4 人の組み立て（trio4-talk-r18.js の HK.Trio3.quick4：三人の形に 4 人目を足し、待つ・相手の交代・二組並行・山場の順番。2026-10-28 担当KF） */
+        if (G.length === 4 && HK.Trio3 && HK.Trio3.quick4 && !HK.SAFE_ON) { var q4 = HK.Trio3.quick4(ctx, G, { env: ctx.env, lead: lead }); if (q4) { g4in = true; return q4; } }
         /* 受け攻めの指定どおりに：跨るのは受け、交互に抱くのは二人に対して攻めに回れる人、背後から触れられるのは攻めを選んでいない人 */
         var tb = HK.Pos ? HK.Pos.order(lead, g2[0], [lead, g2[0]]) : [lead, g2[0]];
         var both = !HK.Pos || (HK.Pos.order(lead, g2[0], [lead, g2[0]])[0] === lead && HK.Pos.order(lead, g2[1], [lead, g2[1]])[0] === lead);
@@ -1067,7 +1069,7 @@
       /* r18:end */
       var text = ctx.t('{a}が「もう、みんなでいいじゃん｜もう、みんなでいいだろう｜もう、みんなでいいじゃないですか」と笑った。', a) + names(G) + 'は顔を見合わせ、誰からともなく手を伸ばした。' +
         (groupLine ? groupLine() : ctx.t('{a}が照明を落とすと、{b}と{c}も黙って身を寄せた。その先のことは、輪の中にいた者だけが知っている。', lead, g2[0], g2[1])) +
-        (G.length > 3 ? names(G.slice(3)) + 'も、すぐに輪の中に引き込まれた。' : '') + '――' + (others.length ? names(others) + 'は部屋の隅で、背中を向けて耳を塞いでいた。' : '');
+        (G.length > 3 && !g4in ? names(G.slice(3)) + 'も、すぐに輪の中に引き込まれた。' : '') + '――' + (others.length ? names(others) + 'は部屋の隅で、背中を向けて耳を塞いでいた。' : '');
       var exitTxt = [];
       /* 三人以上での同時達成が認められていれば、全員そろって出る（room-trio.js） */
       if (HK.RoomTrio && (ctx.env.multi || 'note') !== 'no' && G.every(function (x) { return G.every(function (y) { return x === y || pairDone(ctx, x, y); }); })) {

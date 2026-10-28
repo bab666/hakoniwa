@@ -119,6 +119,7 @@ js/room-reluct.js @scen:whiteroom
 js/room-trio-lines.js @scen:whiteroom
 js/room-trio.js @scen:whiteroom
 js/room-last3-r18.js @scen:whiteroom
+js/trio4-talk-r18.js @scen:whiteroom
 js/room-left.js @scen:whiteroom
 js/room-cheer.js @scen:whiteroom
 js/hate-sex-r18.js
@@ -426,6 +427,8 @@ js/dark-thick.js @pack:rel
 js/lewd-unify.js
 js/lewd-mark.js
 js/ero-scene.js
+js/ero-flavor-lines-r18.js
+js/ero-flavor-r18.js
 js/futari-r18.js @scen:futari
 js/reset.js
 js/voice-seg.js
