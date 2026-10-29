@@ -146,6 +146,12 @@
     ntr: L('{a}にとって、{c}を奪うことは、同じ顔の{b}を傷つけるいちばんの方法だった。|{c}が{b}を想っていることを、{a}は知っていた。だから、{b}と同じ顔で近づいた。'),
     oforce: L('主従の二人を、部屋は容赦なく閉じ込めていた。|この部屋で、{a}の言葉は命令の重さを持っていた。|主である{a}が一度決めたことを、覆せた例しはなかった。')
   };
+  /* ---------- 愛憎の二人のふつうの夜（表の顔ごと。{a}＝愛憎を持つ側。2026-10-29） ---------- */
+  T.LHF = {
+    hate: L('{a}は{b}を嫌っていた。同じくらい、誰にも渡したくなかった。|憎いのか欲しいのか、{a}自身にももう分からなかった。'),
+    love: L('{a}と{b}は、顔を合わせれば喧嘩ばかりしていた。喧嘩の数だけ、{a}は{b}から目を離せなくなっていた。|{a}は、{b}の前でだけはどうしても素直になれなかった。言えなかった言葉の分だけ、熱だけが溜まっていた。'),
+    peer: L('{a}は、{b}と張り合うことでしか、{b}のそばにいる理由を作れずにいた。その理由が、もう足りなくなっていた。|負けたくないのか、離れたくないのか、{a}にももう分からなかった。')
+  };
   /* ---------- 関係ごとの夜・命令の夜（場面に詳しい導入があるので短く） ---------- */
   T.TIE = {
     order: L('{a}と{b}は主従だった。この部屋でも、その形は崩れなかった。|命じる側と従う側。白い部屋の中でも、二人の立ち位置は変わらなかった。'),
@@ -269,6 +275,18 @@
   function R(ctx, a, b) { return ctx.R ? ctx.R(a, b) : { att: 0, aff: 0, ten: 0 }; }
   function hateLv(ctx, a, b) { var H = HK.HateKit; return H && H.level ? Math.max(H.level(ctx, a, b), H.level(ctx, b, a)) : 0; }
   /* 二人の間柄：love／crushA（a→b）／crushB（b→a）／hate／family／rank／fwb／ex／obsess／friend／warm／stranger */
+  /* 愛憎（HK.LoveHate）：持つ側を {a} にして表の顔の一文を出す（持たない組は何もしない）。kind：hate は強引な場面の文 T.FORCE.hateLove */
+  function lhLine(ctx, a, b, P, m, mat, hateKind) {
+    var LH = HK.LoveHate;
+    if (!LH || !LH.any || !b || !LH.any(ctx, a, b)) return false;
+    var x = LH.has(ctx, a, b) ? a : b, y = x === a ? b : a, fc = LH.face ? LH.face(ctx, x, y) : 'hate';
+    var tab = hateKind ? T.FORCE.hateLove : (T.LHF[fc] || (fc === 'kin' ? null : T.LHF.hate));
+    if (!tab) return false;
+    var ma = m.a, mb = m.b;
+    m.a = x; m.b = y; P(tab); m.a = ma; m.b = mb;
+    mat.push('愛憎（' + x.name + '→' + y.name + (LH.has(ctx, y, x) ? '・双方' : '') + '、表の顔：' + ((LH.FACE_JA && LH.FACE_JA[fc]) || fc) + '）');
+    return true;
+  }
   function relKey(ctx, a, b) {
     var ty = tieTy(ctx, a, b), ab = R(ctx, a, b), ba = R(ctx, b, a);
     if (FAM_T[ty]) return 'family';
@@ -321,7 +339,7 @@
 
   /* ======================= 前振りを組み立てる =======================
      o = { who: [言い出した人, 相手, …], kind, mode, ev, fl, rv, hub, trio, lastRel, shy, actIntro, head（場面の頭の文。重ならないように見る）, again: { n, other } }
-     kind：pair（二人の夜）／trio／rival（こじれた三人）／group（みんなで）／last（最後の三人）／hate／mr（従が主に）／aforce（媚薬で押し倒す）／speed／dark／ntr／oforce（命令でねじ伏せる）／
+     kind：lhurge（愛憎の衝動で手を出す）／pair（二人の夜）／trio／rival（こじれた三人）／group（みんなで）／last（最後の三人）／hate／mr（従が主に）／aforce（媚薬で押し倒す）／speed／dark／ntr／oforce（命令でねじ伏せる）／
            order（命令の夜）／family（家族の立場）／tie（関係ごとの夜）／jealous（「一人だけ」を取り戻す）／game（罰ゲーム）
      返す：{ text, why } */
   SL.text = function (ctx, o) {
@@ -416,7 +434,7 @@
       var tgt = kind === 'ntr' ? (who[2] || b) : b, again2 = !first || o.mode === 'done', pr = '';
       if (kind === 'hate') {
         if (again2) { P(T.FORCE.hateAgain); mat.push('腐れ縁の二度目'); }
-        else { sitFirst(); P(HK.LoveHate && HK.LoveHate.any && HK.LoveHate.any(ctx, a, b) ? T.FORCE.hateLove : T.FORCE.hate); mat.push('敵対（嫌悪 ' + Math.round(hateLv(ctx, a, b)) + '）'); }
+        else { sitFirst(); if (!lhLine(ctx, a, b, P, m, mat, true)) P(T.FORCE.hate); mat.push('敵対（嫌悪 ' + Math.round(hateLv(ctx, a, b)) + '）'); }
         quote('push', 0.55);
         pr = heatOf(tgt) >= 2 ? 'heat' : ctx.rng() < 0.55 ? 'hate' : !again2 && hLeft && (tk.k === 'late' || tk.k === 'last') ? 'time' : !again2 && hLeft && ctx.rng() < 0.5 ? 'cond' : 'power';
       } else if (kind === 'oforce') {
@@ -432,6 +450,10 @@
         pr = heatOf(tgt) >= 2 ? 'heat' : 'power';
       } else { P(T.FORCE.ntr); mat.push('闇に堕ちた自分の寝取り'); timeS(); }
       if (pr) { m.b = tgt; P(T.PUSH[pr]); mat.push('抵抗が通らなかった：' + { power: '力の差', cond: '条件', heat: '媚薬', hate: '嫌悪と欲', time: '時間' }[pr]); }
+    } else if (kind === 'lhurge') {
+      /* ---------- 愛憎の「衝動で手を出す」（hate-love-more-r18.js の tie_lh_urge。きっかけの文はそちらの R.urgeLead） ---------- */
+      var LR = HK.LoveHate && HK.LoveHate.R18, ul = LR && LR.urgeLead && b ? LR.urgeLead(ctx, a, b) : null;
+      if (ul) { out.push(ul.text); mat.push(ul.why.replace(/^きっかけ：/, '')); } else { lhLine(ctx, a, b, P, m, mat, false); feelS(a, b); }
     } else if (kind === 'tie' || kind === 'order' || kind === 'family') {
       /* ---------- 関係ごとの夜・命令の夜・家族の立場：場面の頭に部屋の一文（条件の紙・夜・扉）と関係の導入があるので、関係・気持ち・時間だけ ---------- */
       if (!first) againS(false);
@@ -442,6 +464,7 @@
           var rk0 = relKey(ctx, a, b);
           if (rk0 === 'love' && o.shy) { P(T.TIE.shy); mat.push('恋人・場所に照れる'); }
           else { P(T.CAUSE[rk0] || T.CAUSE.warm); mat.push('間柄：' + relJa(rk0)); }
+          lhLine(ctx, a, b, P, m, mat, false);
         }
         if (nSent(out.join('')) < 2) feelS(a, b);
         timeS();
@@ -457,6 +480,8 @@
       if (!first) againS(false); else sitFirst();
       var rk = relKey(ctx, a, b), cause = o.mode === 'aphro' || heat >= 3 ? 'heat' : drunk >= 40 ? 'drunk' : o.mode === 'des' && rk !== 'love' ? 'despair' : rk;
       if (first || cause === 'heat') { P(T.CAUSE[cause] || T.CAUSE.warm); mat.push(cause === 'heat' ? '媚薬の熱（' + heat.toFixed(1) + '）' : cause === 'drunk' ? '酒の勢い' : cause === 'despair' ? '焦りと諦め' : '間柄：' + relJa(rk)); }
+      /* 愛憎の二人は、恋愛系・対等系のふつうの夜にも愛憎の一文（2026-10-29） */
+      if (first) lhLine(ctx, a, b, P, m, mat, false);
       if (o.mode === 'aphro') {
         /* 媚薬が回りきった二人（aphro_heat）：場面の頭に、手を伸ばす一文と台詞があるので、熱の様子だけ */
         P(T.FORCE.aforce2); mat.push('媚薬が回りきった');
@@ -579,7 +604,9 @@
     rs_dk_force: function (ctx, o) { return (o.actors || []).length >= 2 && o.text.length >= 80 ? { gen: 'dark', who: o.actors.slice(0, 2) } : null; },
     rs_dk_ntr: function (ctx, o) { return o.sex === true && (o.actors || []).length >= 3 ? { gen: 'ntr', who: o.actors.slice(0, 3) } : null; },
     /* 運命の揺らぎ：らしくない一面にそそられた側から誘う夜（unlike-r18.js。二人の夜と同じ前振り） */
-    unl_heat: function (ctx, o) { return o.sex === true && (o.actors || []).length >= 2 ? { gen: 'pair', who: o.actors.slice(0, 2) } : null; }
+    unl_heat: function (ctx, o) { return o.sex === true && (o.actors || []).length >= 2 ? { gen: 'pair', who: o.actors.slice(0, 2) } : null; },
+    /* 愛憎：突き放したあと・複雑のあとの衝動で手を出す（hate-love-more-r18.js。2026-10-29） */
+    tie_lh_urge: function (ctx, o) { return o.sex === true && (o.actors || []).length >= 2 ? { gen: 'lhurge', who: o.actors.slice(0, 2) } : null; }
   };
 
   /* ---------- 見つけた場面から、前振りの材料をまとめる ---------- */
@@ -603,6 +630,7 @@
       if (FAM_T[ty]) I.kind = 'family';
       I.shy = /^tie_rn_(couple|spouse|lover|mate|fated|fiance|honmei)/.test(ev);
     }
+    else if (ev === 'tie_lh_urge' || G.lhurge) I.kind = 'lhurge';
     else if (ev === 'hate_sex' || G.hate) I.kind = 'hate';
     else if (G.dark) I.kind = 'dark';
     else if (G.ntr) I.kind = 'ntr';

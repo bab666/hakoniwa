@@ -165,6 +165,10 @@
     if (crushed.length) lines.push('潰れた：' + X.names(crushed));
     var kusG = X.withLabel(['kusare', 'kusare1']);
     if (kusG.length) lines.push('腐れ縁（愛憎）：' + kusG.map(X.pn).join('、'));
+    /* 愛憎の結末の残り 2 種（hate-love.js。2026-10-29）：喧嘩ばかりの恋人（分類は恋人のまま、印 lh:'couple'）・口の悪い家族 */
+    var kenG = couples.filter(function (p) { return p.lh === 'couple'; }), kinG = X.withLabel(['lhkin', 'lhkin1']);
+    if (kenG.length) lines.push('喧嘩ばかりの恋人：' + kenG.map(X.pn).join('、'));
+    if (kinG.length) lines.push('口の悪い家族：' + kinG.map(X.pn).join('、'));
     var ones = X.withLabel(['oneway']);
     if (ones.length) lines.push('片想いのまま：' + ones.map(function (p) { return X.nm(p.dir) + '→' + X.nm(p.dir === p.a ? p.b : p.a); }).join('、'));
     return {
@@ -186,6 +190,10 @@
     /* 愛憎の二人（hate-love.js の腐れ縁） */
     var kus = X.withLabel(['kusare', 'kusare1']);
     if (kus.length) lines.push('腐れ縁（愛憎）：' + kus.map(X.pn).join('、'));
+    /* 喧嘩ばかりの恋人（恋人のまま。印 lh:'couple'）・口の悪い家族（2026-10-29） */
+    var kenC = lovers.filter(function (p) { return p.lh === 'couple'; }), kinC = X.withLabel(['lhkin', 'lhkin1']);
+    if (kenC.length) lines.push('喧嘩ばかりの恋人：' + kenC.map(X.pn).join('、'));
+    if (kinC.length) lines.push('口の悪い家族：' + kinC.map(X.pn).join('、'));
     var ones = X.withLabel(['oneway', 'pining']);
     if (ones.length) lines.push('言えなかった想い：' + ones.map(function (p) { return p.label === 'pining' ? X.pn(p) + '（両片想い）' : X.nm(p.dir) + '→' + X.nm(p.dir === p.a ? p.b : p.a); }).join('、'));
     var absent = X.byFate(/休みがち/), nogo = X.byFate(/不登校/);
@@ -307,4 +315,14 @@
       lines: lines
     };
   };
+  /* 愛憎の結末「喧嘩ばかりの恋人」の名前付け（hate-love.js の LH.endPatch。分類は lovers のまま、名前と印 lh:'couple' だけ。2026-10-29） */
+  if (HK.simulate && HK.wrap && HK.LoveHate && HK.LoveHate.endPatch) HK.wrap(HK, 'simulate', function (sim0) {
+    var f = function () {
+      var LH = HK.LoveHate;
+      LH.endBegin();
+      return LH.endPatch(sim0.apply(this, arguments));
+    };
+    for (var ks in sim0) if (Object.prototype.hasOwnProperty.call(sim0, ks)) f[ks] = sim0[ks];
+    return f;
+  });
 })();

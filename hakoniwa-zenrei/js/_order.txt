@@ -53,6 +53,7 @@ js/tone-lines.js
 js/hate-kit.js
 js/feud-kit.js
 js/hate-love.js
+js/hate-love-more.js
 js/tone-firm.js
 js/tone-polite-kin.js
 js/tone-new.js

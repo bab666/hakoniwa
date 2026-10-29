@@ -134,7 +134,7 @@ const ID_RULE = [
   [/^u_/, 'crush'], [/^pn_/, 'crush'], [/^(?:fc|fw|fwb)_/, 'fwb'], [/^ob_/, 'yan'], [/^hk_/, 'enemy'],
   [/^rb_[a-z]+_sb/, 'sibbad'], [/^rb_/, 'bad'], [/^tie_nw_ap_/, 'apathy'], [/^tie_nw_fr_/, 'fear'], [/^tie_nw_fi_/, 'fiance'],
   [/^tie_nw_dep_|^tie_nw_hl_/, 'yan'], [/^tie_nw_hate_/, 'enemy'], [/^tie_nw_gu_/, 'benefactor'], [/^tie_nw_os_/, 'fond'], [/^tie_nw_mi_/, 'fwb'], [/^tie_nw_co_/, 'comrade'],
-  [/^tie_lh_/, 'yan'], [/^tie_ab_|^ct_dv$|^ct_abuse/, 'abuse'], [/^rs_|^attr_mirror_/, 'same']
+  [/^tie_lh_/, 'lovehate'], [/^tie_ab_|^ct_dv$|^ct_abuse/, 'abuse'], [/^rs_|^attr_mirror_/, 'same']
 ];
 /* 位置 i の直前で開いている括弧の呼び出しの名前と、その前に ! があるか */
 function callAt(s, i) {

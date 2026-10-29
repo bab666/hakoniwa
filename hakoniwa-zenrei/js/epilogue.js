@@ -271,7 +271,11 @@
     obsess: L('{a}と{b}の関係は、どこか歪んだまま続いた。|{a}と{b}は、離れようとしても、結局また引き寄せられた。|{a}と{b}のあいだにあるものを、周りの誰も言い当てられなかった。'),
     /* 腐れ縁（愛憎。hate-love.js）：双方は {a}{b}、片方だけは {x}（愛憎を持つ側）→{y} */
     kusare: L('{a}と{b}は、その後も顔を合わせるたびに憎まれ口を叩き合った。それでも、どちらも相手から離れようとはしなかった。|{a}と{b}は、二度と顔も見たくないと言い合った翌日に、また同じ場所で鉢合わせた。|{a}と{b}の喧嘩は、今もどこかで続いている。周りはもう、止めようともしなかった。'),
-    kusare1: L('{x}は今も、{y}の顔を見るたびに悪態をつく。それでいて、{y}の姿が見えないと、なぜか落ち着かなかった。|{x}は、{y}のことなど嫌いだと言い続けた。言い続けるために、何度でも{y}に会いに行った。|{x}が{y}に向ける嫌味は、相変わらず手厳しかった。{y}がそれに慣れてしまったことだけが、{x}には少し不満だった。')
+    kusare1: L('{x}は今も、{y}の顔を見るたびに悪態をつく。それでいて、{y}の姿が見えないと、なぜか落ち着かなかった。|{x}は、{y}のことなど嫌いだと言い続けた。言い続けるために、何度でも{y}に会いに行った。|{x}が{y}に向ける嫌味は、相変わらず手厳しかった。{y}がそれに慣れてしまったことだけが、{x}には少し不満だった。'),
+    /* 喧嘩ばかりの恋人（恋人のまま。結果の組の印 lh:'couple'）・口の悪い家族（双方は {a}{b}、片方だけは {x}（愛憎を持つ側）→{y}）。2026-10-29 */
+    lhcouple: L('{a}と{b}は、その後も顔を合わせるたびに言い合いをした。言い合いが終わると、どちらからともなく隣に座った。|{a}と{b}の喧嘩は、恋人になってからも減らなかった。減らないまま、二人は離れなかった。|{a}と{b}は、今日もつまらないことで口喧嘩をしている。周りはもう、それを二人の仲のよさだと思っていた。'),
+    lhkin: L('{a}と{b}は、その後も口を開けば文句を言い合った。それでも、困ったときに真っ先に連絡するのは互いだった。|{a}と{b}の口喧嘩は、家族の集まりの名物になった。止める者は、もういなかった。|{a}と{b}は、相変わらず互いの欠点ばかり並べ立てた。並べ立てられるほど、互いのことをよく知っていた。'),
+    lhkin1: L('{x}は今も、{y}の顔を見るたびに小言を言う。それでいて、{y}が困っていると、誰より先に手を貸した。|{x}は、{y}のことなど知らないと言い続けた。言い続けながら、{y}の好物だけは欠かさず覚えていた。|{x}の口の悪さは、{y}の前でだけ増した。{y}はもう、それが{x}なりの気遣いだと知っていた。')
   };
   var PAIR_TINT = {
     joy: L('二人とも、よく笑うようになった。|二人の笑い声が、よく聞こえた。'),
@@ -280,7 +284,7 @@
     fear: L('二人とも、あの日の怖さをまだ忘れられずにいた。|二人は、互いが無事であることを何度も確かめ合った。'),
     shame: L('二人とも、あのときのことになると目をそらした。|二人は、あの日のことを笑い話にはできずにいた。')
   };
-  var LABEL_G = { lovers: 'love', bonded: 'love', fatedmate: 'love', mated: 'love', pining: 'pining', oneway: 'oneway', night: 'night', vague: 'night', fwbsettle: 'night', breakup: 'apart', fwbend: 'apart', allybreak: 'apart', rivals: 'rival', dislike: 'rival', kinfeud: 'rival', lovehate: 'rival', kusare: 'kusare', kusare1: 'kusare1', awkward: 'apart', friends: 'friend', partners: 'friend', kinbond: 'friend', accomplice: 'friend', guard: 'friend', obsess: 'obsess' };
+  var LABEL_G = { lovers: 'love', bonded: 'love', fatedmate: 'love', mated: 'love', pining: 'pining', oneway: 'oneway', night: 'night', vague: 'night', fwbsettle: 'night', breakup: 'apart', fwbend: 'apart', allybreak: 'apart', rivals: 'rival', dislike: 'rival', kinfeud: 'rival', lovehate: 'rival', kusare: 'kusare', kusare1: 'kusare1', lhkin: 'lhkin', lhkin1: 'lhkin1', awkward: 'apart', friends: 'friend', partners: 'friend', kinbond: 'friend', accomplice: 'friend', guard: 'friend', obsess: 'obsess' };
   var CLS_G = { love: 'love', pine: 'pining', night: 'night', enemy: 'rival', partner: 'friend', friend: 'friend', guard: 'friend', obsess: 'obsess' };
   X.AF = AF; X.REL = REL; X.MOOD = MOOD; X.PAIR = PAIR;
   var GONE = /連れ去|行方不明|神隠し|消えた|取り残|流され|姿をくらま|逃亡|逮捕|取り押さえ|濡れ衣/, CAGED = /監禁|囚われ|閉じ込め|幽閉/, FALLEN = /堕ち|陥落|虜|巫女になった|従者|眷属|堕とされ/, ESC = /脱出|救助|生還|帰還|逃げ延び|街を出|島を出|抜け出|助けを呼びに|イカダ|生き延び/;
@@ -350,7 +354,7 @@
   X.pairAfter = function (res, p, used) {
     var C = res.chars || [], A = C[p.a], B = C[p.b];
     if (!A || !B) return '';
-    var g = LABEL_G[p.label] || CLS_G[p.cls];
+    var g = p.lh === 'couple' ? 'lhcouple' : LABEL_G[p.label] || CLS_G[p.cls];
     if (!g || !PAIR[g]) return '';
     var seed = String(res.seed != null ? res.seed : ''), x = p.dir === p.b ? B : A, y = x === A ? B : A;
     var t = pickU(PAIR[g], seed + '|' + A.name + B.name + g, used);

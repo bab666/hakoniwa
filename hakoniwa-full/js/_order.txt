@@ -66,6 +66,7 @@ js/tone-lines.js
 js/hate-kit.js
 js/feud-kit.js
 js/hate-love.js
+js/hate-love-more.js
 js/tone-firm.js
 js/tone-polite-kin.js
 js/tone-new.js
@@ -134,6 +135,7 @@ js/room-cheer.js @scen:whiteroom
 js/hate-sex-r18.js
 js/hate-sex-room-r18.js @scen:whiteroom
 js/hate-love-r18.js @pack:rel
+js/hate-love-more-r18.js @pack:rel
 js/content-text-r18.js
 js/content-events-r18.js
 js/room-know.js @scen:whiteroom
