@@ -312,7 +312,8 @@
         K.settle(S);
         tierShown = tierNow();
       }
-      var nEv = vis ? Math.min(2, vis) : 0;
+      /* 一区切りが数時間（解放までの時間が 9 時間以上）のときは、その時間に来た人のぶん、壁の向こうの出来事も多く書く（区切りの時間の数まで。1〜2 時間ごとなら今までどおり 2 件まで） */
+      var nEv = vis ? Math.min(Math.max(2, stepH), vis) : 0;
       if (live && !nEv) say(S, { kind: 'ev', tag: '間', text: K.fmt(S, fresh(S, LV.LULL[tierNow()])), why: '' });
       for (var ev = 0; ev < nEv; ev++) {
         var be = beyond(), f = be.fx;
@@ -322,14 +323,14 @@
           liveSeen.push(be.t); if (liveSeen.length > 4) liveSeen.shift(); f = be.fx;
           visits++; people += f.n || 0; meta.cum += f.cum || 0; meta.tent += f.tent || 0; meta.mark += f.mark || 0; meta.ride += f.ride || 0;
           liveFx(be); K.settle(S);
-          if (rng() > 0.6) break;
+          if (rng() > 1 - 0.4 / stepH) break;
           continue;
         }
         visits++; people += f.n || 0; meta.cum += f.cum || 0; meta.tent += f.tent || 0; meta.mark += f.mark || 0; meta.ride += f.ride || 0;
         if (!hardTop) stored += (40 + env.wild * 0.6) * (1 + be.lv * 0.45 + (f.cum || 0) * 0.15 + (f.tent || 0) * 0.12) * (0.7 + rng() * 0.6) * h.sens;
         var txt = K.fmt(S, be.t.replace(/◯/g, String(H))) + (!hardTop && !f.amb && rng() < 0.55 ? K.fmt(S, pk(S, EL('contrast', X.CONTRAST))) : '');
         say(S, { kind: 'ev', tag: '壁の向こう', text: txt, why: hardTop ? (guard ? '性行為の相手を固定した相手だけにしている：手を出そうとした相手を追い払った' : '攻めの指定：手を出そうとした相手を追い払った') : metaWhy() + '（溜まった感覚 ' + Math.round(stored) + '）' });
-        if (rng() > 0.5) break;
+        if (rng() > 1 - 0.5 / stepH) break;
       }
       /* 受けの反抗：壁の向こうに食ってかかる（感覚が戻る前は相手が少し怯み、戻ったあとは快感を怒りで押し返す） */
       if (defyT && nEv && defyN < 3 && (!live || tierNow() < 2) && rng() < 0.3 + h.tr.cp * 0.25 + h.tr.aggr * 0.15) {
@@ -410,7 +411,8 @@
     if (hardTop) {
       /* 攻めの指定：何もさせなかった。戻ってくる感覚はない。抜け出したあと、壁の向こうの相手を逆に締め上げることもある */
       say(S, { kind: 'sys', tag: '解放', text: (early ? '' : K.fmt(S, pk(S, RELEASE))) + K.fmt(S, pk(S, X.TOP_RELEASE)), why: '壁の向こうには、何もさせなかった（追い払った相手 ' + visits + '）' });
-      var revenge = !guard && visits > 0 && rng() < 0.4 + h.tr.aggr * 0.3 + h.tr.cp * 0.2;
+      /* 性行為の相手を「固定した相手だけ」にした人（noMob）は、自分で攻めを選んでいても、壁の向こうの相手を責め返さない（モブとの場面に出ない） */
+      var revenge = !guard && !h.noMob && visits > 0 && rng() < 0.4 + h.tr.aggr * 0.3 + h.tr.cp * 0.2;
       var ot = say(S, { kind: 'ev', tag: revenge ? '返り討ち' : '余韻', text: K.fmt(S, pk(S, revenge ? X.TOP_REVENGE[plKey] : X.TOP_AFTER)), why: revenge ? '壁の向こうに回り、手を出そうとした相手を逆に責めた（攻撃性・CP）' : '' });
       K.key(S, ot, revenge ? '壁の向こうの相手を返り討ちにした' : '何もさせずに出てきた');
       K.snap(S, { s: 0 });

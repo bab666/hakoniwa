@@ -164,6 +164,8 @@
     l.stress = HK.clamp((l.stress || 0) + 22, 0, 100);
     l.flags = l.flags || {}; l.flags.dumpedBy = x.i;
     var note = { kind: 'event', cat: 'conflict', actors: [x, l], mag: 18, text: fill(ctx.pick(SWITCH[per(x)]), x, nw, l), why: x.name + 'は' + l.name + 'と別れて、' + nw.name + 'に乗り換えた（複数の恋人：なし。恋人は一人まで）' };
+    /* 前の恋人がもう場にいない（部屋を出た・亡くなった・閉じ込められている）ときは、別れは記録に書かない（その場にいない人を出来事に出さない） */
+    if (l.out || l.alive === false || (l.flags && l.flags.caged != null)) return { pf: pl, note: null };
     (ctx.pending = ctx.pending || []).push(note);
     return { pf: pl, note: note };
   }

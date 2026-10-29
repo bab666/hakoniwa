@@ -91,6 +91,32 @@
 
   /* ---------- 進捗 ---------- */
   function prog(ctx, a, b) { var k = key(a, b); return (ctx.flags.prog[k] = ctx.flags.prog[k] || { act: {}, said: {} }); }
+  /* 求める回数が多いほど、条件を進める出来事の起きやすさを上げる（残り 1 で ×1、10 で ×1.75、100 で ×2.5 まで。できるかどうか（when）はそのまま）。
+     n を渡したときは、時間の進みより条件の進みが遅れているときだけ上げる（間に合っている部屋を早く終わらせて、記録を短くしないように） */
+  function needK(left, n, ctx) {
+    if (!(left > 1)) return 1;
+    if (n && ctx && (n - left) / n >= (ctx.stepIndex || 0) / Math.max(1, ctx.stepsTotal || 1)) return 1;
+    return 1 + Math.min(1.5, Math.log(left) / Math.LN10 * 0.75);
+  }
+  /* 二人の条件の起きやすさの倍率（行為・言葉の条件のうち、いちばん大きいもの） */
+  function needKPair(ctx, el, a, b) {
+    var m = 1;
+    (el || []).forEach(function (r) { var v = effOf(ctx, r, a, b) || [0, 0], T = K[r.k]; m = Math.max(m, needK(r.n - (T.type === 'word' && T.mode !== 'sum' ? Math.min(v[0], v[1]) : T.type === 'word' ? v[0] + v[1] : v[0]), r.n, ctx)); });
+    return m;
+  }
+  /* 時間内に達成できるペース：一回の出来事で進む数（まとめて n 回）が、このままでは時間内に満たせない数なら、追いつく数に上げる。
+     時間の進みに条件の進みが追いついているあいだは使わない（n＝求める数）。tk＝試みの記録 { n：これまでの回数, t0：最初の区切り }。見込み＝残りの区切り × これまでの一区切りあたりの試み（初めは rate）。
+     もとの数 inc より小さくはしない（乱数は引かない。間に合うペースなら inc のまま。既定の回数 1 では inc のまま） */
+  function paceInc(ctx, tk, left, inc, rate, n) {
+    var si = ctx.stepIndex || 0;
+    if (tk.t0 == null) tk.t0 = si;
+    tk.n = (tk.n || 0) + 1;
+    if (!(left > 1)) return inc;
+    /* 時間の進みに条件の進みが追いついているあいだは、もとの数のまま */
+    if (n && (n - left) / n >= si / Math.max(1, ctx.stepsTotal || 1)) return inc;
+    var rem = Math.max(1, (ctx.stepsTotal || 1) - 1 - si), obs = tk.n > 1 ? Math.max(rate, (tk.n - 1) / Math.max(1, si - tk.t0)) : rate;
+    return Math.max(inc, Math.min(left, Math.ceil(left / Math.max(1, rem * obs))));
+  }
   /* 誰かを殺す（気絶させる）条件で数える人数：住人の手で死んだ人と、気絶させられた人 */
   function killCount(ctx) { return ctx.chars.filter(function (c) { return (c.alive === false && c.killedBy != null) || c.flags.knocked; }).length; }
   /* 条件の生の数（二人の組なら [a の分, b の分]） */
@@ -220,12 +246,12 @@
   /* 回数の表示の頭：3人以上の部屋では、条件は組ごとに数えるので「誰と誰の分」かを添える（組が変わると数が戻ったように見えるため） */
   function pairTag(ctx, a, b) { return ctx.chars.length > 2 ? (HK.pairNameOf ? HK.pairNameOf(a, b) : a.name + '×' + b.name) + 'の' : ''; }
   /* 回数の表示。条件の順番があって条件1がまだの条件2は、満たした時点で数が戻る（先の分は数えない）ので、数の代わりにそう書く */
-  function cntTag(ctx, r, a, b, cnt) {
+  function cntTag(ctx, r, a, b, cnt, inc) {
     /* 条件1を待っている条件2：回数によらず「まだ数えない」と書く */
     if (seqWait(ctx, r, a, b)) return waitNote(ctx, r, a, b);
     if (r.n <= 1) return '';
     if (seqOn(ctx) && r === ctx.rules[1] && !ruleDone(ctx, ctx.rules[0], a, b)) return '（' + pairTag(ctx, a, b) + K[r.k].noun + 'は条件1のあとから数える）';
-    return '（' + pairTag(ctx, a, b) + K[r.k].noun + ' ' + cnt + '/' + r.n + '）';
+    return '（' + pairTag(ctx, a, b) + K[r.k].noun + ' ' + cnt + '/' + r.n + (inc > 1 ? '・まとめて' + inc + K[r.k].unit : '') + '）';
   }
   function hasPairRule(ctx) { return ctx.rules.some(function (r) { return isPairT(K[r.k]); }); }
   /* 条件を満たした人と一緒に、残りの全員も出られる部屋か（順26） */
@@ -661,14 +687,14 @@
     exclude: ['take_charge'],
     env: [
       { id: 'cond', label: '条件1', type: 'select', def: 'h', options: options },
-      { id: 'n1', label: '条件1の回数・本数', min: 1, max: 100, def: 1, lo: '1', hi: '100', desc: '「キスを10回」「媚薬を10本」の数字' },
+      { id: 'n1', label: '条件1の回数・本数', min: 1, max: 100, def: 1, lo: '1', hi: '100', desc: '「キスを10回」「媚薬を10本」の数字。多いほど、住人は条件を進める行動をよく選び、残りの時間に合わせて一度に何回ぶんかをまとめて進める' },
       { id: 'cond2', label: '条件2（任意）', type: 'select', def: 'none', options: [{ v: 'none', label: 'なし' }].concat(options.filter(function (o) { return o.v !== 'one'; })) },
       { id: 'n2', label: '条件2の回数・本数', min: 1, max: 100, def: 1, lo: '1', hi: '100' },
       { id: 'order', label: '条件の順番', type: 'select', def: 'any', options: [{ v: 'any', label: 'どちらからでも（同時に数える）' }, { v: 'seq', label: '条件1を満たしてから条件2（先に満たした条件2は数えない）' }], desc: 'どちらからでも：「媚薬2本とキス、両方を済ませないと出られない部屋」。条件1から：「媚薬を2本飲み切ったあとに、キスしないと出られない部屋」（条件1の前の条件2は、起きにくく、起きても数えない）' },
       { id: 'only1', label: '一人しか出られない（ほかの条件と併用）', type: 'select', def: 'off', options: [{ v: 'off', label: 'なし' }, { v: 'on', label: 'あり：条件を満たしても、扉をくぐれるのは一人だけ' }], desc: '条件1に「一人しか出られない」、条件2にキスなどを選んでも同じになる（条件2を満たすと扉が開き、くぐれるのは一人）。三人以上で一緒に満たしたときも一人だけ' },
       { id: 'allout', label: '条件を満たした人と一緒に、全員出られる', type: 'select', def: 'off', options: [{ v: 'off', label: 'なし（条件を満たした人だけが出る）' }, { v: 'on', label: 'あり：誰かが条件を満たして扉が開けば、何もしていない人も一緒に出られる' }], desc: '例：二人が条件を満たして扉が開いたとき、部屋に残っていた三人目もついでに出られる。「一人しか出られない」部屋では働かない' },
       { id: 'label', label: '部屋の名前（空欄なら自動）', type: 'text', def: '', placeholder: '例：媚薬を10本飲み切らないと出られない部屋' },
-      { id: 'hours', label: '閉じ込められる時間', min: 4, max: 240, def: 10, lo: '4時間', hi: '10日', unit: '時間', desc: '48時間を超えると、経過は数時間ごとにまとめ、結果は重要な出来事だけの短縮版で表示する' },
+      { id: 'hours', label: '閉じ込められる時間', min: 4, max: 240, def: 10, lo: '4時間', hi: '10日', unit: '時間', desc: '長いほど、条件を進める出来事はゆっくりでも積み重なり、時間内に満たしやすくなる。48時間を超えると、経過は数時間ごとにまとめ、結果は重要な出来事だけの短縮版で表示する' },
       { id: 'pressure', label: '部屋の圧', min: 0, max: 100, def: 50, lo: '居心地がいい', hi: '息苦しい', desc: '高いほど焦りが溜まり、覚悟が早く決まる' }
     ],
     stats: [{ id: 'exp', label: '恋愛経験', desc: '高いほど条件への抵抗が小さい' }, { id: 'hp', label: '体力', desc: '媚薬・酒・激辛に耐える力。低い人が飲みすぎると倒れる' }],
@@ -837,7 +863,8 @@
       /* 条件の順番あり：できる行為が、条件1を待っている条件2だけなら、起きにくくする（数えないので） */
       var el = actElig(ctx, a, b);
       if (el.length && el.every(function (x) { return seqWait(ctx, x, a, b); })) w *= 0.15;
-      return w;
+      /* 求める回数が多いほど、試みる（できる組だけ。可否は when のまま） */
+      return w * needKPair(ctx, el, a, b);
     },
     run: function (ctx, a, b) {
       /* 条件1を待っていない条件を先に選ぶ */
@@ -846,6 +873,8 @@
       var first = !p.act[r.k] && !(p.pre && p.pre[r.k]);
       var span = Math.max(3, ctx.stepsTotal * 0.55);
       var inc = r.n > 3 ? Math.max(1, Math.round(r.n / span * (wl ? 1.3 : 0.8) * (0.6 + ctx.rng() * 0.8) * (6 - T.lvl) / 3)) : 1 + (wl && r.n > 1 && ctx.rng() < 0.5 ? 1 : 0);
+      /* 残りの数と残りの時間から、時間内に満たせるペースに（文は一回ぶん、数は「まとめて n 回」） */
+      if (!wait) inc = paceInc(ctx, (p.tk = p.tk || {})[r.k] = p.tk[r.k] || {}, r.n - ((effOf(ctx, r, a, b) || [0])[0] || 0), inc, 0.4, r.n);
       bumpAct(ctx, r, a, b, inc);
       var g = T.lvl * 2.5;
       ctx.mod2(a, b, { att: wl ? g + 2 : g / 2, aff: wl ? g / 2 : 0, trust: 2 }, { att: wl ? g + 2 : g / 2, aff: wl ? g / 2 : 0, trust: 2 });
@@ -882,7 +911,7 @@
       /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：はじめてのエッチに「恋ではない」一文。体だけの関係の印（恋人にはしない） */
       var fsx = r.k === 'h' && HK.State.freeSex && HK.State.freeSex(ctx, a, b);
       if (fsx) { if (first) text = HK.FreeSex.lead(ctx, a, b) + text; HK.FreeSex.mark(ctx, a, b); if (first) HK.FreeSex.jealous(ctx, a, b); }
-      text += cntTag(ctx, r, a, b, p.act[r.k]);
+      text += cntTag(ctx, r, a, b, p.act[r.k], inc);
       var whyT = (wait ? '条件の順番：条件1のあとから数える（今のは数えない）／' : '') + (cl ? cl.why + '／' : '') + (rough ? rough.name + 'は' + (rough === a ? b : a).name + 'を敵視している（嫌悪 ' + Math.round(HKr.level(ctx, rough, rough === a ? b : a)) + '）・強引な性格。条件のために、乱暴に' : wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった');
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, r.k === 'h');
       if (!wait && p.act[r.k] >= r.n) text += '扉はまだ開かない。' + a.name + 'と' + b.name + 'に残っているのは、' + leftText(ctx, a, b) + '。';
@@ -941,13 +970,15 @@
       /* 条件の順番あり：言える言葉が、条件1を待っている条件2だけなら、起きにくくする（数えないので） */
       var el = wordElig(ctx, a, b);
       if (el.length && el.every(function (x) { return seqWait(ctx, x, a, b); })) w *= 0.15;
-      return w;
+      return w * needKPair(ctx, el, a, b);
     },
     run: function (ctx, a, b) {
       /* 恋愛・R18にしない二人は、「好き」と言い合う条件には手をつけない（ほかの言葉の条件だけ）。条件1を待っていない条件を先に選ぶ */
       var el = wordElig(ctx, a, b), r = el.filter(function (x) { return !seqWait(ctx, x, a, b); })[0] || el[0];
       var p = prog(ctx, a, b), rr = R(ctx, a, b), text, whyT, cat = 'bond', wait = seqWait(ctx, r, a, b);
       var inc = r.k === 'praise' ? 1 + ctx.rng.int(Math.max(1, Math.ceil(r.n / 4))) : r.n > 3 ? Math.max(1, Math.round(r.n / Math.max(3, ctx.stepsTotal * 0.5) * (0.6 + ctx.rng() * 0.8))) : 1;
+      /* 時間内に満たせるペースに（言い合う条件は、言った人の分の残りで） */
+      if (!wait) { var wv = effOf(ctx, r, a, b) || [0, 0]; inc = paceInc(ctx, (p.tk = p.tk || {})[r.k + a.i] = p.tk[r.k + a.i] || {}, r.n - (K[r.k].mode === 'sum' ? wv[0] + wv[1] : (p.said[r.k + a.i] || 0)), inc, 0.4, r.n); }
       /* 条件1を待っている言葉は数えない（p.pre に残す）。条件1が済んだあとは、数え直しを先に済ませてから足す */
       if (wait) { p.pre = p.pre || {}; p.pre[r.k] = (p.pre[r.k] || 0) + inc; }
       else { seqFlush(ctx, r, a, b); p.said[r.k + a.i] = (p.said[r.k + a.i] || 0) + inc; }
@@ -978,7 +1009,7 @@
       var T = K[r.k];
       if (T.mode === 'both' && a.flags.partner == null) { a.flags.partner = b.i; if (b.flags.partner == null) b.flags.partner = a.i; }
       var cnt = T.mode === 'sum' ? (p.said[r.k + a.i] || 0) + (p.said[r.k + b.i] || 0) : p.said[r.k + a.i];
-      text += cntTag(ctx, r, a, b, cnt);
+      text += cntTag(ctx, r, a, b, cnt, inc);
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, false);
       if (pairOnlyWait(ctx, a, b)) text += '扉はまだ開かない。' + a.name + 'と' + b.name + 'に残っているのは、' + leftText(ctx, a, b) + '。';
       return { cat: cat, text: text, why: whyT };
@@ -993,7 +1024,8 @@
       var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && globLeft(ctx, x) > 0; })[0];
       /* 酒は、お酒に強い人ほど進んで引き受ける（キャラの設定「お酒」） */
       /* wb：飲み物ごとの起きやすさの上乗せ（水など。room-games-r18.js） */
-      return 0.8 + ITEM[r.k].fit(a) * 1.5 + a.stress / 120 + ctx.stepIndex / Math.max(4, ctx.env.hours) * 1.5 + (r.k === 'sake' && a.alcohol ? (a.alcohol - 3) * 0.3 : 0) + (ITEM[r.k].wb || 0);
+      /* 経過の割合は時間で（48 時間を超えると一区切りが数時間）。残りの本数が多いほど、手を伸ばしやすい（needK。単位を掛ける前の数で） */
+      return (0.8 + ITEM[r.k].fit(a) * 1.5 + a.stress / 120 + ctx.stepIndex * (ctx.stepH || 1) / Math.max(4, ctx.env.hours) * 1.5 + (r.k === 'sake' && a.alcohol ? (a.alcohol - 3) * 0.3 : 0) + (ITEM[r.k].wb || 0)) * needK(globLeft(ctx, r) / (K[r.k].mul || 1), r.n / (K[r.k].mul || 1), ctx);
     },
     run: function (ctx, a) {
       var r = ctx.rules.filter(function (x) { return K[x.k].type === 'consume' && globLeft(ctx, x) > 0; })[0];
@@ -1011,6 +1043,9 @@
       var scale = Math.max(1, Math.round(r.n / Math.max(4, ctx.stepsTotal * 1.2) * (I.mult || 1)));
       if (I.round) scale = Math.max(I.round, Math.round(scale / I.round) * I.round);
       var n = Math.min(left, (1 + (drinker.tr.impulse > 0.6 ? ctx.rng.int(3) : ctx.rng.int(2))) * scale);
+      /* 時間内に飲み切れるペースに（部屋全体で数える。単位を掛けた数のまま、丸めの単位 round があればそれに揃える） */
+      var np = paceInc(ctx, (ctx.flags.ctk = ctx.flags.ctk || {})[r.k] = ctx.flags.ctk[r.k] || {}, left, n, 0.6, r.n);
+      if (np > n) n = Math.min(left, I.round ? Math.ceil(np / I.round) * I.round : np);
       ctx.flags.consumed[r.k] = (ctx.flags.consumed[r.k] || 0) + n;
       var dk = ctx.flags.drank[drinker.i] = ctx.flags.drank[drinker.i] || {};
       dk[r.k] = (dk[r.k] || 0) + n;

@@ -1098,6 +1098,75 @@ l.forEach(function(t){if(t&&(t.type==='apathy'||t.type==='fear')&&t.a!==t.b&& !(
 if(!Object.keys(nl).length)return ties;
 return l.filter(function(t){return!(t&&FEAR_DROP.test(t.type)&&nl[Math.min(t.a,t.b)+'-'+Math.max(t.a,t.b)]);});
 };
+function pairKey(x,y){return x<y?x+'|'+y:y+'|'+x;}
+function samePair(x,t){return!!(x&&t&&((x.a===t.a&&x.b===t.b)||(x.a===t.b&&x.b===t.a)));}
+HK.tiePastOK=function(t){return!!(t&&T[t.type]&&HK.tieExtra(t.type).some(function(x){return x.f==='past';}));};
+HK.tiePastHome=function(ties,t,skip){return(ties||[]).filter(function(x){return x!==skip&&samePair(x,t)&&HK.tiePastOK(x);})[0]||null;};
+HK.tiePastGet=function(ties,ref){
+var r={past:'',pastB:''};
+(ties||[]).forEach(function(x){
+if(!samePair(x,ref))return;
+var fw=x.a===ref.a,f=fw?x.past:x.pastB,b=fw?x.pastB:x.past;
+if(!r.past&&f&&HK.TIE_PAST[f])r.past=f;
+if(!r.pastB&&b&&HK.TIE_PAST[b])r.pastB=b;
+});
+return r;
+};
+HK.tiePastGather=function(ties,t,skip){
+var home=HK.tiePastHome(ties,t,skip),v=home?HK.tiePastGet(ties,home):null;
+if(!home)return null;
+(ties||[]).forEach(function(x){if(x!==skip&&samePair(x,t)){delete x.past;delete x.pastB;}});
+if(v.past)home.past=v.past;
+if(v.pastB)home.pastB=v.pastB;
+return home;
+};
+HK.tiePastMoveOut=function(ties,t){if(t)HK.tiePastRemove(ties,[t]);};
+HK.tiePastRemove=function(ties,gone){
+var L=ties||[],done={};
+(gone||[]).forEach(function(t){
+var k=t&&pairKey(t.a,t.b);
+if(!t||done[k])return;
+done[k]=1;
+var home=L.filter(function(x){return gone.indexOf(x)<0&&samePair(x,t)&&HK.tiePastOK(x);})[0],v=home?HK.tiePastGet(L,home):null;
+L.forEach(function(x){if(samePair(x,t)){delete x.past;delete x.pastB;}});
+if(v&&v.past)home.past=v.past;
+if(v&&v.pastB)home.pastB=v.pastB;
+});
+};
+HK.tiePastSet=function(ties,t,f,v){
+var home=HK.tiePastGather(ties,t);
+if(!home)return;
+var g=(f==='past')===(t.a===home.a)?'past':'pastB';
+if(v&&HK.TIE_PAST[v])home[g]=v;else delete home[g];
+};
+HK.tiePastPairs=function(ties){
+var m={};
+(ties||[]).forEach(function(t){
+if(!t||t.a===t.b)return;
+var k=pairKey(t.a,t.b),v=m[k]||(m[k]={a:t.a,b:t.b,f:'',r:''}),fw=t.a===v.a;
+[[fw?'f':'r',t.past],[fw?'r':'f',t.pastB]].forEach(function(q){if(!v[q[0]]&&q[1]&&HK.TIE_PAST[q[1]])v[q[0]]=q[1];});
+});
+return m;
+};
+HK.tiePastKey=pairKey;
+HK.tiePastCompact=function(list){
+var PP=HK.tiePastPairs(list);
+(list||[]).forEach(function(o){
+var v=PP[pairKey(o.a,o.b)],fw=v&&v.a===o.a;
+delete o.past;delete o.pastB;
+if(!v||v.done|| !HK.tiePastOK(o))return;
+v.done=1;
+if(fw?v.f:v.r)o.past=fw?v.f:v.r;
+if(fw?v.r:v.f)o.pastB=fw?v.r:v.f;
+});
+return list;
+};
+HK.tiePastIndex=function(ties){
+var g={},out=new Map();
+(ties||[]).forEach(function(t){if(t&&t.a!==t.b)(g[pairKey(t.a,t.b)]=g[pairKey(t.a,t.b)]||[]).push(t);});
+Object.keys(g).forEach(function(k){var h=g[k].filter(HK.tiePastOK)[0];if(h)out.set(h,HK.tiePastGet(g[k],h));});
+return out;
+};
 HK.tieHidden=function(id){return!!(HK.TIES[id]&&HK.TIES[id].hidden);};
 HK.CRUSH_COLD={
 '':{label:'想われる側：ふつう',short:''},
@@ -1465,6 +1534,7 @@ var x={};for(var k in t)if(k!=='cold')x[k]=t[k];
 x.mutual=true;out.push(x);
 var y={};for(var k2 in x)y[k2]=x[k2];
 y.a=x.b;y.b=x.a;
+delete y.past;delete y.pastB;if(x.pastB)y.past=x.pastB;if(x.past)y.pastB=x.past;
 if(!(ties||[]).some(function(u){return u&&u.type==='crush'&&u.a===y.a&&u.b===y.b;}))out.push(y);
 });
 return out;
@@ -1476,6 +1546,7 @@ return!!(HK.Ties.from(ctx,a,b,'crush')&&HK.Ties.from(ctx,b,a,'crush'));
 },
 apply:function(ctx,ties){
 ctx.ties={};ctx.tiesAll={};
+var PP=HK.tiePastPairs(ties);
 (HK.fearTies(ties)||[]).forEach(function(t){
 var A=ctx.chars[t.a],B=ctx.chars[t.b],D=T[t.type];
 if(!A|| !B||A===B|| !D)return;
@@ -1521,6 +1592,9 @@ var GR= /^(mentor|master|boss|teacher)$/.test(t.type)&&t.cold&&HK.TIE_GRADE?HK.T
 if(GR&&GR.ab){add(ab,GR.ab);add(ba,GR.ba||GR.ab);}
 var xf={};
 HK.tieExtra(t.type).forEach(function(x){var v=t[x.f];if(v&&x.map[v])xf[x.f]=v;});
+var PV=PP[pairKey(t.a,t.b)];
+delete xf.past;delete xf.pastB;
+if(PV&& !PV.done&&HK.tiePastOK(t)){PV.done=1;var pfw=PV.a===t.a,p1=pfw?PV.f:PV.r,p2=pfw?PV.r:PV.f;if(p1)xf.past=p1;if(p2)xf.pastB=p2;}
 if(t.type==='fiance'){
 xf.feel=xf.feel||'eager';xf.feelB=xf.feelB||'eager';add(ab,HK.FIANCE_FEEL[xf.feel].ab);add(ba,HK.FIANCE_FEEL[xf.feelB].ab);
 if(!HK.Ties.fiLoveOk(A,B)){ab.att=Math.min(ab.att,8);ba.att=Math.min(ba.att,8);}
@@ -1876,6 +1950,7 @@ if(r2)r2.ten=HK.clamp(r2.ten+6,0,100);
 l.stress=HK.clamp((l.stress||0)+22,0,100);
 l.flags=l.flags||{};l.flags.dumpedBy=x.i;
 var note={kind:'event',cat:'conflict',actors:[x,l],mag:18,text:fill(ctx.pick(SWITCH[per(x)]),x,nw,l),why:x.name+'は'+l.name+'と別れて、'+nw.name+'に乗り換えた（複数の恋人：なし。恋人は一人まで）'};
+if(l.out||l.alive===false||(l.flags&&l.flags.caged!=null))return{pf:pl,note:null};
 (ctx.pending=ctx.pending||[]).push(note);
 return{pf:pl,note:note};
 }
@@ -32540,7 +32615,7 @@ sections:[
 '**気持ちの重さ（恋人・夫婦・本命）** … 「普通／軽い／重い」を選べます。重いと、離れたくない・相手の居場所を確かめる・ほかの人と親しげな恋人に嫉妬して独占しようとする場面が増えます。軽いと、連絡は少なめで互いの時間を大事にする、淡々とした場面になります（ふたりの日常などの恋人の場面にも出ます）。本命は想う人の気持ちです。恋愛対象の合わない二人には出ません。',
 '**家族の仲（親子・擬似親子・きょうだい・兄弟（庇護）・義理のきょうだい・親族・恩人）** … 「ふつう／良好／不仲」を選べます。不仲なら家族の出来事が口論・無視の形になり、言い合いが重なると和解することもあります（家族の信頼が一定より下がりにくいのは同じ）。良好なら気安く助け合う場面に寄ります。師弟・主従・上司と部下・教師と生徒の「仲」と同じ考えです。',
 '**元恋人の気持ち** … 二人それぞれに「気まずい／ふっきれている／未練がある」を選べます（許嫁の気持ちと同じ形）。ふっきれた人は友達のように話し、未練のある人は相手を目で追い、昔に戻れたらと口にします（未練は恋愛対象が合うときだけ）。',
-'**過去** … どの関係にも「昔は仲が良かった／昔は敵だった／初恋の相手／昔助けられた／昔ひどいことをした」を添えられます。過去は二人それぞれから選べます（欄が「過去（○○から）」「過去（△△から）」の二つ。例：○○から見ると初恋の相手、△△から見ると昔助けてもらった人）。初恋・助けられた・ひどいことをしたは、その欄の人から見た過去です。昔は仲が良かった・昔は敵だったは向きが無いので、どちらか片方で選べば二人ともに効きます（両方で選んでも二重には効きません）。箱庭の始めに導入の一文（両方向あればそれぞれ）が入り、回想の場面と、関係の出来事の台詞への一言の差し込みが、一組につき1回の箱庭で両方向あわせて3回まで出ます（同じ文は繰り返しません）。初恋は、恋愛対象が合わない向きなら「昔の憧れ」として書きます。',
+'**過去** … どの関係にも「昔は仲が良かった／昔は敵だった／初恋の相手／昔助けられた／昔ひどいことをした」を添えられます。過去は二人それぞれから選べます（欄が「過去（○○から）」「過去（△△から）」の二つ。例：○○から見ると初恋の相手、△△から見ると昔助けてもらった人）。初恋・助けられた・ひどいことをしたは、その欄の人から見た過去です。昔は仲が良かった・昔は敵だったは向きが無いので、どちらか片方で選べば二人ともに効きます（両方で選んでも二重には効きません）。同じ二人に関係を重ねても、過去の欄はその二人の最初の関係の枠（一覧では最初の行）に一つだけ出て、二人の過去として一度だけ効きます（その関係を外すと、残った関係に移ります）。箱庭の始めに導入の一文（両方向あればそれぞれ）が入り、回想の場面と、関係の出来事の台詞への一言の差し込みが、一組につき1回の箱庭で両方向あわせて3回まで出ます（同じ文は繰り返しません）。初恋は、恋愛対象が合わない向きなら「昔の憧れ」として書きます。',
 '**出来事：起こさない** … どの関係にも付けられます。その関係の専用の出来事（関係ごとの場面・家族の日常など）だけを止め、初期値・行動の傾向・恋人の扱い・恩人の負い目などの関係の色は残します（全体の設定「関係性イベント：出さない」の、関係ごとの版）。',
 '**師匠の呼び方** … 師弟の弟子が、⚙️ 設定の「相手ごとの設定」で師匠の呼び方を決めていれば、関係の場面の「師匠」「お師匠」「師（は・の…）」をその呼び方にします（師匠が自分を指して言う台詞はそのまま）。',
 '**複数の恋人（全体の設定）** … 「あり」に加えて「あり・恋人どうしは険悪」「あり・恋人どうしは仲が良い」を選べます。同じ人の恋人になった二人が、険悪なら鉢合わせて口論になり、仲が良いなら愛している人の話で盛り上がったり三人で過ごしたりします。結末の「複数の恋人」の一文にも、恋人どうしの仲が添えられます。',
@@ -33981,8 +34056,9 @@ var xs='',past='',ev='';
 xs+=loveSel(t,'id="tl-'+k+'" data-f="tie" data-k="'+k+'" data-p="love"',true);
 var CO=HK.coldOpts?HK.coldOpts(t.type):null;
 if(CO)xs+='<select id="tc-'+k+'" data-f="tie" data-k="'+k+'" data-p="cold" aria-label="'+CO.aria+'">'+CO.order.map(function(id){return'<option value="'+id+'"'+((t.cold||'')===id?' selected':'')+'>'+esc(CO.map[id].label)+'</option>';}).join('')+'</select>';
-(HK.tieExtra?HK.tieExtra(t.type):[]).filter(function(x){return!x.hide;}).forEach(function(x){
-var who=x.who?by[x.who==='a'?t.a:t.b]:null,v=t[x.f]||(t.type==='fiance'?'eager':'');
+var PV=X.pi?X.pi.get(t)||null:{past:t.past||'',pastB:t.pastB||''};
+(HK.tieExtra?HK.tieExtra(t.type):[]).filter(function(x){return!x.hide&&(!x.from||PV);}).forEach(function(x){
+var who=x.who?by[x.who==='a'?t.a:t.b]:null,v=x.from?PV[x.f]:t[x.f]||(t.type==='fiance'?'eager':'');
 var h='<select id="tx'+x.f+'-'+k+'" data-f="tie" data-k="'+k+'" data-p="'+x.f+'" aria-label="'+esc(who?who.name+'の気持ち':x.from?((x.from==='a'?na:nb)||x.aria.slice(0,3))+'から見た過去':x.aria)+'">'+x.order.map(function(id){return'<option value="'+id+'"'+(v===id?' selected':'')+'>'+esc((who?who.name+'の気持ち：':'')+(HK.tieExtraLabel?HK.tieExtraLabel(x,id,na,nb):x.map[id].label))+'</option>';}).join('')+'</select>';
 if(x.from)past+=h;else if(x.f==='noev')ev=h;else xs+=h;
 });
@@ -34049,7 +34125,7 @@ if(FOLD[s.key]){delete FOLD[s.key];keepFold();}
 function section(ctx){
 var s=S(),CP=HK.CastPages||null,by=Object.create(null);
 s.chars.forEach(function(c){by[c.id]=c;});
-var X={by:by,lz:ctx.lazy?' data-lazy="1"':'',CP:CP,opts:ctx.opts};
+var X={by:by,lz:ctx.lazy?' data-lazy="1"':'',CP:CP,opts:ctx.opts,pi:HK.tiePastIndex?HK.tiePastIndex(s.ties):null};
 var row=function(t,k){return rowHtml(t,k,X);};
 lastRow=row;
 var T=s.ties||[],idx=T.map(function(t,k){return k;});
@@ -34210,7 +34286,7 @@ var hit=(s.ties||[]).filter(function(t){return tieHit(t,by);});
 if(op==='del'){
 var tx4='関係を'+hit.length+'本削除します';
 return{n:hit.length,msg:hit.length?tx4:'当てはまる関係はありません',ask:tx4+'。よろしいですか？',label:'関係を'+hit.length+'本削除した',
-run:function(){var gone=hit.slice();s.ties=(s.ties||[]).filter(function(t){return gone.indexOf(t)<0;});return'関係を'+gone.length+'本削除しました';}};
+run:function(){var gone=hit.slice();if(HK.tiePastRemove)HK.tiePastRemove(s.ties,gone);s.ties=(s.ties||[]).filter(function(t){return gone.indexOf(t)<0;});return'関係を'+gone.length+'本削除しました';}};
 }
 if(op==='love'){
 var lv=B.lv,ll=(LV.filter(function(x){return x[0]===lv;})[0]||['',''])[1];
@@ -34221,6 +34297,13 @@ run:function(){L4.forEach(function(t){if(lv)t.love=lv;else delete t.love;});retu
 }
 var fv=B.fv.split(':'),ff=fv[0],val=fv[1]||'',fl=(FV.filter(function(x){return x[0]===B.fv;})[0]||['',''])[1];
 var okF=function(t){return(HK.tieExtra?HK.tieExtra(t.type):[]).some(function(x){return x.f===ff;});};
+if(ff==='past'&&HK.tiePastHome){
+var seenP={},PL=[],nP=0,noP=hit.filter(function(t){return!okF(t);}).length;
+hit.forEach(function(t){var h=HK.tiePastHome(s.ties,t),kp=h&&HK.tiePastKey(h.a,h.b);if(!h||seenP[kp])return;seenP[kp]=1;nP++;var cur=HK.tiePastGet(s.ties,h);if(val?cur.past!==val:cur.past||cur.pastB)PL.push(h);});
+var tx8=hit.length+'本（'+nP+'組）のうち'+PL.length+'組の過去を「'+fl+'」にします（過去は二人の組に一つ）'+(noP?'（'+noP+'本はこの欄のない関係です）':'');
+return{n:PL.length,msg:PL.length?tx8:'変わる組はありません（'+hit.length+'本が当てはまり、すでに「'+fl+'」か、この欄のない関係です）',ask:tx8+'。よろしいですか？',label:PL.length+'組の過去を「'+fl+'」にした',
+run:function(){PL.forEach(function(h){HK.tiePastGather(s.ties,h);if(val)h.past=val;else{delete h.past;delete h.pastB;}});return PL.length+'組の過去を「'+fl+'」にしました';}};
+}
 var L3=hit.filter(function(t){return okF(t)&&(t[ff]||'')!==val;}),no=hit.filter(function(t){return!okF(t);}).length;
 var tx5=hit.length+'本のうち'+L3.length+'本を「'+fl+'」にします'+(no?'（'+no+'本はこの欄のない関係です）':'');
 return{n:L3.length,msg:L3.length?tx5:'変わる関係はありません（'+hit.length+'本が当てはまり、すでに「'+fl+'」か、この欄のない関係です）',ask:tx5+'。よろしいですか？',label:'関係'+L3.length+'本を「'+fl+'」にした',
@@ -36371,7 +36454,7 @@ seenC[i+'-'+j]=1;
 out.push({a:J.indexOf(x.id),b:J.indexOf(y.id),type:'comrade',cold:'',love:''});
 }
 }
-return out;
+return HK.tiePastCompact?HK.tiePastCompact(out):out;
 })()
 };
 }
@@ -36632,13 +36715,16 @@ var nt1=freeTie();if(!nt1){toast('追加できる関係がありません');retu
 S.ties.push(nt1);if(CP)CP.revealTie(S.ties.length-1);
 save();renderCast();break;
 case'tiedel':
+if(HK.tiePastMoveOut)HK.tiePastMoveOut(S.ties,S.ties[+t.dataset.k]);
 S.ties.splice(+t.dataset.k,1);save();renderCast();break;
 case'tieimport':
 var pr=HK.parseTies($('#tiebulk').value,S.chars);
 S.ties=S.ties||[];
 pr.ties.forEach(function(nt){
 var ex=S.ties.filter(function(x){return x.type===nt.type&&((x.a===nt.a&&x.b===nt.b)||(x.a===nt.b&&x.b===nt.a));})[0];
-if(ex){ex.a=nt.a;ex.b=nt.b;ex.type=nt.type;if(nt.cold)ex.cold=nt.cold;else delete ex.cold;HK.TIE_XF.forEach(function(f){if(nt[f])ex[f]=nt[f];else delete ex[f];});}else S.ties.push(nt);
+if(ex){if(ex.a!==nt.a){var p0=ex.past;if(ex.pastB)ex.past=ex.pastB;else delete ex.past;if(p0)ex.pastB=p0;else delete ex.pastB;}ex.a=nt.a;ex.b=nt.b;ex.type=nt.type;if(nt.cold)ex.cold=nt.cold;else delete ex.cold;HK.TIE_XF.forEach(function(f){if(f==='past'||f==='pastB')return;if(nt[f])ex[f]=nt[f];else delete ex[f];});}else S.ties.push(nt);
+var pv={past:nt.past,pastB:nt.pastB};if(!ex){delete nt.past;delete nt.pastB;}
+['past','pastB'].forEach(function(f){if(pv[f])HK.tiePastSet(S.ties,ex||nt,f,pv[f]);});
 });
 (pr.groups||[]).forEach(function(g){S.grpComrade=S.grpComrade||{};S.grpComrade[g]=1;});
 save();renderCast();
@@ -36863,6 +36949,8 @@ updLoveWarn();
 else if(f==='tie'){
 var tt=S.ties[+t.dataset.k];
 if(tt&& /^(?:a|b|type)$/.test(t.dataset.p)){var na=t.dataset.p==='a'?t.value:tt.a,nb=t.dataset.p==='b'?t.value:tt.b,nty=t.dataset.p==='type'?t.value:tt.type;if(hasTie(na,nb,nty,+t.dataset.k)){toast('その二人には「'+(HK.TIES[nty]?HK.TIES[nty].label:nty)+'」がすでにあります');t.value=tt[t.dataset.p];return;}}
+if(tt&&(t.dataset.p==='past'||t.dataset.p==='pastB')){HK.tiePastSet(S.ties,tt,t.dataset.p,t.value);save();renderCast();return;}
+if(tt&&(/^[ab]$/.test(t.dataset.p)||(t.dataset.p==='type'&& !HK.tiePastOK({type:t.value})))&&(tt.past||tt.pastB)){HK.tiePastMoveOut(S.ties,tt);if(t.dataset.p!=='type'){tt[t.dataset.p]=t.value;save();renderCast();return;}}
 if(tt&&HK.TIE_XF.indexOf(t.dataset.p)>=0){if(t.value&& !(tt.type==='fiance'&&t.value==='eager'))tt[t.dataset.p]=t.value;else delete tt[t.dataset.p];save();renderCast();return;}
 if(tt){tt[t.dataset.p]=t.value;if(t.dataset.p==='love'&& !t.value)delete tt.love;if(t.dataset.p==='type'&&HK.tieExtraNorm)HK.tieExtraNorm(tt);if(t.dataset.p==='type'||t.dataset.p==='cold'||t.dataset.p==='love'){save();renderCast();return;}}
 }
@@ -37128,9 +37216,9 @@ if(HK.tieOptions)return HK.tieOptions(sel);
 return HK.TIE_ORDER.map(function(id){var d=HK.TIES[id];return opt(id,d.label,sel);}).join('');
 }
 function extraSels(t,k,attr){
-var pw='';
-return(HK.tieExtra?HK.tieExtra(t.type):[]).filter(function(x){return!x.hide;}).map(function(x){
-var who=x.who?byId(x.who==='a'?t.a:t.b):null,v=t[x.f]||(t.type==='fiance'?'eager':'');
+var pw='',PV=pastOf(t);
+return(HK.tieExtra?HK.tieExtra(t.type):[]).filter(function(x){return!x.hide&&(!x.from||PV);}).map(function(x){
+var who=x.who?byId(x.who==='a'?t.a:t.b):null,v=x.from?PV[x.f]:t[x.f]||(t.type==='fiance'?'eager':'');
 var na=(byId(t.a)||{}).name,nb=(byId(t.b)||{}).name;
 var ar=who?who.name+'の気持ち':x.from?((x.from==='a'?na:nb)||(x.from==='a'?'一人目':'二人目'))+'から見た過去':x.aria;
 var h='<select '+attr+' data-xf="'+x.f+'" data-k="'+k+'" aria-label="'+esc(ar)+'"'+(x.from?' title="'+esc(PAST_SYM)+'"':'')+'>'+x.order.map(function(id){return opt(id,(who?who.name+'の気持ち：':'')+(HK.tieExtraLabel?HK.tieExtraLabel(x,id,na,nb):x.map[id].label),v);}).join('')+'</select>';
@@ -37140,6 +37228,7 @@ return x.from==='b'?'<div class="gtpw">'+pw+'</div>':'';
 }).join('');
 }
 UI.extraSels=extraSels;
+function pastOf(t){var L=S().ties||[];return HK.tiePastHome&&HK.tiePastHome(L,t)===t?HK.tiePastGet(L,t):HK.tiePastHome?null:{past:t.past||'',pastB:t.pastB||''};}
 var PAST_SYM='過去は二人それぞれから選べます。昔は仲が良かった・昔は敵だった は向きが無いので、どちらか片方で選べば二人ともに効きます';
 function tieRow(c,o,t,k){
 var D=HK.TIES[t.type],L=HK.TiesUI&&HK.TiesUI.love,CO=HK.coldOpts?HK.coldOpts(t.type):null;
@@ -37151,7 +37240,8 @@ if(L)h+=L.sel(t,'class="gtlove" data-gf="tlove" data-k="'+k+'"');
 else if((D.family&& !D.loveOK)||D.loveOpt)h+='<select data-gf="tlove" data-k="'+k+'" aria-label="恋愛">'+opt('','恋愛：なし',t.love||'')+opt('ok','恋愛：あり',t.love||'')+'</select>';
 if(CO)h+='<select data-gf="tcold" data-k="'+k+'" aria-label="'+CO.aria+'">'+CO.order.map(function(id){return opt(id,CO.map[id].label,t.cold||'');}).join('')+'</select>';
 h+=extraSels(t,k,'data-gf="textra"')+'</div>';
-if([t.past,t.pastB].some(function(v){return HK.TIE_PAST&&HK.TIE_PAST[v]&&HK.TIE_PAST[v].sym;}))h+='<p class="gearhint gpast">'+esc(PAST_SYM)+'</p>';
+var PV0=pastOf(t);
+if(PV0&&[PV0.past,PV0.pastB].some(function(v){return HK.TIE_PAST&&HK.TIE_PAST[v]&&HK.TIE_PAST[v].sym;}))h+='<p class="gearhint gpast">'+esc(PAST_SYM)+'</p>';
 var sb=HK.Sib&&HK.Sib.ui?HK.Sib.ui(c,o,t):null;
 if(sb)h+='<p class="gearhint gsib">続柄：'+esc(sb.src==='none'?'上下なし（'+sb.pair+'）':sb.src==='set'&&sb.rel?sb.rel+'（上下の設定）':sb.rel?'自動（'+sb.rel+'）':'自動（決まっていません）')+'　呼び方：'+esc(sb.auto?'自動（'+sb.call+'）':sb.call?sb.call:'名前（'+o.name+'）')+
 (sb.notes.length?'<br>'+esc(sb.notes.join('。'))+'。':'')+'</p>';
@@ -37291,7 +37381,7 @@ if(!c)return;
 s.ties=s.ties||[];
 if(act==='close')close();
 else if(act==='tovoice'){var vid=c.id;close();if(HK.VoiceSet)HK.VoiceSet.open(vid);}
-else if(act==='tdel'){s.ties.splice(+b.dataset.k,1);changed(true);}
+else if(act==='tdel'){if(HK.tiePastMoveOut)HK.tiePastMoveOut(s.ties,s.ties[+b.dataset.k]);s.ties.splice(+b.dataset.k,1);changed(true);}
 else if(act==='tadd'||act==='tnew'){
 var oid=act==='tadd'?b.dataset.o:(ov.querySelector('[data-gf="newo"]')||{}).value;
 var ty=act==='tadd'?'friend':(ov.querySelector('[data-gf="newt"]')||{}).value;
@@ -37391,8 +37481,8 @@ if(t.checked){c.noKillFor.push(o.id);o.noKillFor.push(c.id);}
 changed(true);
 })();break;
 case'callone':c.calls=c.calls||{};if(t.value.trim())c.calls[t.dataset.o]=t.value.trim().slice(0,16);else delete c.calls[t.dataset.o];changed(false);break;
-case'ttype':if(isInput|| !tie)return;tie.type=t.value;var CO=HK.coldOpts?HK.coldOpts(t.value):null;if(!CO|| !CO.map[tie.cold||''])delete tie.cold;if(HK.tieExtraNorm)HK.tieExtraNorm(tie);changed(true);break;
-case'textra':if(isInput|| !tie)return;(function(){var xf=t.dataset.xf;if(t.value&& !(tie.type==='fiance'&&t.value==='eager'))tie[xf]=t.value;else delete tie[xf];})();changed(true);break;
+case'ttype':if(isInput|| !tie)return;tie.type=t.value;if(HK.tiePastOK&& !HK.tiePastOK(tie))HK.tiePastMoveOut(s.ties,tie);var CO=HK.coldOpts?HK.coldOpts(t.value):null;if(!CO|| !CO.map[tie.cold||''])delete tie.cold;if(HK.tieExtraNorm)HK.tieExtraNorm(tie);changed(true);break;
+case'textra':if(isInput|| !tie)return;(function(){var xf=t.dataset.xf;if((xf==='past'||xf==='pastB')&&HK.tiePastSet){HK.tiePastSet(s.ties,tie,xf,t.value);return;}if(t.value&& !(tie.type==='fiance'&&t.value==='eager'))tie[xf]=t.value;else delete tie[xf];})();changed(true);break;
 case'tdir':if(isInput|| !tie)return;var me=t.value==='a';var o=tie.a===c.id?tie.b:tie.a,a0=tie.a;tie.a=me?c.id:o;tie.b=me?o:c.id;if(tie.a!==a0&&(tie.lh==='a'||tie.lh==='b'))tie.lh=tie.lh==='a'?'b':'a';if(tie.a!==a0&&(tie.past||tie.pastB)){var p0=tie.past;if(tie.pastB)tie.past=tie.pastB;else delete tie.past;if(p0)tie.pastB=p0;else delete tie.pastB;}changed(true);break;
 case'tlove':if(isInput|| !tie)return;if(t.value==='ok'||t.value==='no')tie.love=t.value;else delete tie.love;changed(true);break;
 case'tcold':if(isInput|| !tie)return;if(t.value)tie.cold=t.value;else delete tie.cold;changed(false);break;
@@ -40934,4 +41024,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', 'd4b4d3508f', 1);
+HK.Load.done('core', 'd5abcded9b', 1);
