@@ -326,7 +326,8 @@ const JUDGE = function (HK, opt) {
     const lhKin = () => (cur && cur.feel || []).filter(t => t.type === 'lovehate' && cur.feel.some(u => HK.TIES[u.type] && HK.TIES[u.type].family && u.love !== 'ok' && tkey(u.a, u.b) === tkey(t.a, t.b)) && !cur.feel.some(u => /^(lover|crush|yan|fwb|fiance|mate|fated)$/.test(u.type) && tkey(u.a, u.b) === tkey(t.a, t.b)));
     const esHit = (acs, o, label) => {
       if (!cur || !cur.feel || acs.length < 2) return;
-      const x = acs[0].i, y = acs[1].i, txt = label + ' ' + String(o.why || '') + ' ' + String(o.tag || '');
+      /* 理由の欄は見ない（館の「一行」の紹介・恐怖の落ちぶれ cf_fall の理由にも「愛憎」が入るため）。エンジン型は出来事 id、物語型は札 */
+      const x = acs[0].i, y = acs[1].i, txt = label + ' ' + String(o.tag || '');
       if (/(^|:)(tie_)?lh_/.test(label) || /愛憎/.test(txt)) out.info.lhEv = (out.info.lhEv || 0) + 1;
       if (/(^|:)(tie_es_|es_story_)/.test(label) || /劣等感|優越/.test(txt)) out.info.esEv = (out.info.esEv || 0) + 1;
       if (!(feelHas('fear', x, y) || feelHas('apathy', x, y))) return;

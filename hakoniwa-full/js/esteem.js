@@ -321,7 +321,8 @@
   }
   function ev(id, label, k, w, tie) {
     return {
-      id: id, label: label, cat: 'solo', scope: 'solo', tie: tie || 'inferior,superior', pri: true, noOdd: true,
+      /* pri（優先）は付けない：反応の出来事が夜の出来事の枠を押しのけ、劣等感・優越の二人の体の関係が起きにくくなるため（sexgate の l・m 列） */
+      id: id, label: label, cat: 'solo', scope: 'solo', tie: tie || 'inferior,superior', noOdd: true,
       when: function (ctx, a) { return !!pendE(ctx, a, k); },
       w: function () { return w; },
       run: function (ctx, a) { return runE(ctx, a, k); }
@@ -334,7 +335,7 @@
     ev('tie_es_outshine', '相手より活躍して安堵する・得意になる', 'out', 5),
     ev('tie_es_gloat', '見下す相手の失敗にほくそ笑む', 'gloat', 4, 'superior'),
     {
-      id: 'tie_es_strive', label: '劣等感の相手を見返そうと無理をする', cat: 'solo', scope: 'solo', tie: 'inferior', pri: true, noOdd: true,
+      id: 'tie_es_strive', label: '劣等感の相手を見返そうと無理をする', cat: 'solo', scope: 'solo', tie: 'inferior', noOdd: true,
       when: function (ctx, a) { return !!striveE(ctx, a); },
       w: function (ctx, a) { var t = trOf(a); return 0.6 + (t.cp || 0) * 0.5 + (t.a || 0) * 0.3; },
       run: function (ctx, a) {
