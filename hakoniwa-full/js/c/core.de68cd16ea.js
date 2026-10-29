@@ -4303,11 +4303,33 @@ if(typeof v==='string'&&v.trim()&& !NG_YOU.test(v.trim()))out.push(v.trim().slic
 return out;
 };
 NG.within=function(g,fn){NG.stack.push(g);try{return fn();}finally{NG.stack.splice(NG.stack.lastIndexOf(g),1);}};
+NG.casts=[];
+NG.cast=function(){return NG.casts.length?NG.casts[NG.casts.length-1]:null;};
+NG.withCast=function(chars,fn){
+if(!Array.isArray(chars))return fn();
+NG.casts.push(chars);
+try{return fn();}finally{NG.casts.splice(NG.casts.lastIndexOf(chars),1);}
+};
 NG.guard=function(text,people,fn){
-if(typeof text!=='string'|| !text)return fn(text,null);
+if(people==null)people=NG.cast();
+if(typeof text!=='string'|| !text|| !people)return fn(text,null);
 var g=NG.make(NG.wordsOf(people),text);
 if(!g)return fn(text,null);
 return g.dec(NG.within(g,function(){return fn(g.enc(text),g);}));
+};
+NG.text=function(fn){
+var hit=Object.create(null);
+var touches=function(p){
+var b=p&&typeof p.name==='string'?ngBare(p.name):'';
+if(!b)return false;
+if(!(b in hit)){var r;try{r=fn(b);}catch(err){r=null;}hit[b]=r!==b;}
+return hit[b];
+};
+return function(t,people){
+if(people==null)people=NG.cast();
+var P=Array.isArray(people)?people.filter(touches):[];
+return NG.guard(t,P,function(s){return fn(s);});
+};
 };
 NG.decAll=function(s){for(var i=NG.stack.length-1;i>=0;i--)s=NG.stack[i].dec(s);return s;};
 if(HK.NameSafe&&HK.NameSafe.dec&& !HK.NameSafe.dec._ng){
@@ -13357,8 +13379,325 @@ return l?((opt&&opt.who)||top.name)+l:'';
 })();
 });
 ;
+/* ==== js/after-reply-r18.js ==== */
+HK.Load.def(64,'js/after-reply-r18.js',function(){
+(function(){
+'use strict';
+var HK=window.HK;
+if(!HK||HK.AfterReply)return;
+var PS=['proud','stern','tsun','gentle','devoted','cool','free','shy','polite'];
+var FL=['sweet','dry','deal'];
+function L(s){return s.split('|');}
+var Q={};
+var ORDER=[];
+function add(id,re,tbl){
+if(!Q[id])ORDER.push(id);
+var q=Q[id]=Q[id]||{re:re,t:{}};
+if(re)q.re=re;
+Object.keys(tbl||{}).forEach(function(fl){
+var o=q.t[fl]=q.t[fl]||{};
+Object.keys(tbl[fl]).forEach(function(ps){o[ps]=(o[ps]||[]).concat(L(tbl[fl][ps]));});
+});
+}
+var TAIL_OK= /^(?:と[^「」。]{0,24}(?:訊|尋ね|聞|囁|言|笑)[いっ]た?。?|。)?$/;
+function lastQuote(line){
+if(typeof line!=='string')return null;
+var s=line.replace(/\s+$/,''),i=s.lastIndexOf('「'),j=s.lastIndexOf('」');
+if(i<0||j<i)return null;
+if(!TAIL_OK.test(s.slice(j+1)))return null;
+return s.slice(i,j+1);
+}
+function qid(line){
+var q=lastQuote(line);
+if(!q|| !/[？?](?:｜|」)/.test(q))return'';
+for(var k=0;k<ORDER.length;k++)if(Q[ORDER[k]].re&&Q[ORDER[k]].re.test(q))return ORDER[k];
+return'';
+}
+function rngOf(S){
+var r=S&&S.rng?S.rng:S;
+if(typeof r==='function')return r;
+if(r&&r.int)return function(){return r.int(1000000)/1000000;};
+return Math.random;
+}
+function psOf(c){var p=HK.personaOf?HK.personaOf(c):c&&c.persona;return PS.indexOf(p)>=0?p:'gentle';}
+function flOf(S,top,bot,opt){
+var F=HK.EroFlavor,fl=opt&&opt.fl;
+if(!fl&&F){
+var sc=F.cur&&F.cur();
+if(sc&&sc.a&&sc.b&&((sc.a===top&&sc.b===bot)||(sc.a===bot&&sc.b===top)))fl=sc.fl;
+else if(F.of){try{fl=F.of(S,top,bot,opt&&opt.rel?{rel:opt.rel}:null);}catch(e){fl='';}}
+}
+if(fl==='rough')fl='dry';
+if(FL.indexOf(fl)<0)fl='sweet';
+if(((opt&&opt.mode)||(HK.AfterReply&&HK.AfterReply.mode))==='des'&&fl==='sweet')fl='dry';
+return fl;
+}
+function pick(S,id,top,bot,opt){
+opt=opt||{};
+if(HK.SAFE_ON||opt.force|| !Q[id]|| !bot)return'';
+var t=Q[id].t,fl=flOf(S,top,bot,opt),ps=psOf(bot);
+var cell=(t[fl]&&t[fl][ps])||(t.dry&&t.dry[ps])||(t.sweet&&t.sweet[ps]);
+if(!cell|| !cell.length)return'';
+var r=rngOf(S),x=cell[Math.floor(r()*cell.length)];
+return x||'';
+}
+function fill(s,aT,bT){return s.replace(/\{([ab])\}/g,function(m,k){return k==='a'?aT:bT;});}
+var BW={'{a}':'{b}','{x}':'{y}','{T}':'{U}','{b}':'{a}','{y}':'{x}','{U}':'{T}'};
+var AR=HK.AfterReply={Q:Q,add:add,qid:qid,pick:pick,fill:fill,flavor:flOf,lastQuote:lastQuote,mode:''};
+AR.after=function(S,line,top,bot,opt){
+var id=qid(line);
+if(!id)return line;
+var rep=pick(S,id,top,bot,opt);
+return rep?line+rep:line;
+};
+function wrapSay(){
+var ET=HK.EroTop;
+if(!ET|| !ET.say|| !HK.wrap)return;
+HK.wrap(ET,'say',function(say0){
+var f=function(S,top,bot,stage,opt){
+var s=say0.apply(this,arguments);
+if(!s||HK.SAFE_ON|| !top|| !bot||top===bot||(stage!=='after'&&stage!=='end'&&stage!=='last'))return s;
+if((opt&&(opt.force||opt.noReply))||bot.i==null||bot.mob)return s;
+var id=qid(s);
+if(!id)return s;
+var aT=opt&&opt.who,bT=aT?(opt.bwho||BW[aT]):bot.name;
+if(!aT)aT=top.name;
+if(!bT)return s;
+var rep=pick(S,id,top,bot,{rel:opt&&opt.rel,fl:opt&&opt.replyFl,mode:opt&&opt.replyMode});
+return rep?s+fill(rep,aT,bT):s;
+};
+return f;
+});
+}
+wrapSay();
+add('hurt',/痛かった[？?」]|痛く、なかった|痛く、ありませんでした|つらいところ|おつらいところ/,{
+sweet:{
+proud:'{b}は「この程度で痛がるわけないでしょ｜この程度で痛がるものか｜この程度で痛がるわけがありません」と言い返したが、声はまだ少し震えていた。',
+stern:'{b}は少し間を置いて、「平気。……加減してくれたの、分かってる｜平気だ。……加減してくれたのは、分かっている｜平気です。……加減してくださったのは、分かっています」と答えた。',
+tsun:'{b}は顔を背けて、「い、痛くなんかない。……ちょっとだけ、だよ｜い、痛くなどない。……少しだけだ｜い、痛くなんかありません。……少しだけ、です」と答えた。',
+gentle:'{b}は首を横に振って、「大丈夫。優しくしてくれたから｜大丈夫だ。優しくしてくれたからな｜大丈夫です。優しくしてくださったから」と答えた。',
+devoted:'{b}は首を振って、「ううん。あなたがしてくれることなら、平気｜いや。あなたがしてくれることなら、平気だ｜いいえ。あなたがしてくださることなら、平気です」と答えた。',
+cool:'{b}は少し考えてから、「最初だけ。あとは、問題なかった｜最初だけだ。あとは問題なかった｜最初だけです。あとは、問題ありませんでした」と答えた。',
+free:'{b}は笑って、「全然。むしろ、もっとしてほしかったくらい｜全然だ。むしろ、もっとしてほしかったくらいだ｜全然です。むしろ、もっとしてほしかったくらいです」と答えた。',
+shy:'{b}は真っ赤になって、小さく首を横に振った。「……痛く、なかった｜……痛くは、なかった｜……痛く、なかったです」',
+polite:'{b}は「気をつかってくれて、ありがとう。大丈夫｜気遣いに感謝する。大丈夫だ｜お気遣い、ありがとうございます。大丈夫です」と答えた。'
+},
+dry:{
+proud:'{b}は「平気。いちいち訊かないで｜平気だ。いちいち訊くな｜平気です。いちいち訊かないでください」と返した。',
+stern:'{b}は手首を確かめて、「問題ない｜＝｜問題ありません」と短く答えた。',
+tsun:'{b}は「別に。……訊くくらいなら、最初から加減して｜別に。……訊くくらいなら、最初から加減しろ｜別に。……訊くくらいなら、最初から加減してください」と返した。',
+gentle:'{b}は首を振って、「大丈夫。少し休めば平気｜大丈夫だ。少し休めば平気だ｜大丈夫です。少し休めば平気です」と答えた。',
+devoted:'{b}は「平気。あなたは？｜平気だ。あなたは｜平気です。あなたは？」と答えた。',
+cool:'{b}は手首を回して見せ、「支障なし｜＝｜支障ありません」とだけ答えた。',
+free:'{b}は肩をすくめて、「平気平気。慣れてるし｜平気だ。慣れている｜平気です。慣れていますから」と答えた。',
+shy:'{b}は目を合わせないまま、小さく首を横に振った。',
+polite:'{b}は「問題ない。気にしないで｜問題ない。気にするな｜問題ございません。お気になさらないでください」と答えた。'
+},
+deal:{
+proud:'{b}は口の端を上げて、「痛かったって言ったら、責任取ってくれるの？｜痛かったと言ったら、責任を取るのか｜痛かったと言ったら、責任を取ってくださるんですか？」と返した。',
+stern:'{b}は「その質問は、次の加減のため？｜その質問は、次の加減のためか｜そのご質問は、次の加減のためですか？」と問い返した。',
+tsun:'{b}は「痛かった。……だから、次はもっと上手くして｜痛かった。……だから、次はもっと上手くやれ｜痛かったです。……ですから、次はもっと上手にしてください」と返した。',
+gentle:'{b}は{a}の手首を取って同じところを指でなぞり、「あなたも、同じことをされてみる？｜あなたも、同じことをされてみるか｜あなたも、同じことをされてみますか？」と返した。',
+devoted:'{b}は「少しだけ。……だから、あとで手当てして｜少しだけだ。……だから、あとで手当てしてくれ｜少しだけです。……ですから、あとで手当てしてください」と答えた。',
+cool:'{b}は「痛いかどうかより、次の手順を聞かせて｜痛いかどうかより、次の手順を聞かせろ｜痛いかどうかより、次の手順をお聞かせください」と返した。',
+free:'{b}はにやりとして、「ちょっとね。でも、その分は返してもらうから｜少しな。だが、その分は返してもらう｜少しだけ。でも、その分は返していただきますから」と答えた。',
+shy:'{b}は少し黙ってから、「……痛くなかったって言ったら、またしてくれる？｜……痛くなかったと言ったら、またしてくれるか｜……痛くなかったと言ったら、またしてくださいますか？」と訊き返した。',
+polite:'{b}は「答える代わりに、次はあなたの手首を貸してもらっていい？｜答える代わりに、次はあなたの手首を貸してもらう｜お答えする代わりに、次はあなたの手首をお借りしてもよろしいですか？」と返した。'
+}
+});
+add('again',/もう一回(?:する[？?」]|するか|なさいます|くらい、いい|[？?]」|か」)/,{
+sweet:{
+proud:'{b}は「……仕方ないな。一回だけね｜……仕方ない。一回だけだ｜……仕方ありませんね。一回だけですよ」と答えた。顔は、まんざらでもなさそうだった。',
+stern:'{b}は少し考えて、「……休憩を挟んでからなら｜……休憩を挟んでからなら、いい｜……休憩を挟んでからでしたら」と答えた。',
+tsun:'{b}は「し、したいなら、すれば｜し、したいなら、すればいい｜し、したいのでしたら、どうぞ」と答えて、毛布の中で{a}の手を握った。',
+gentle:'{b}は笑って、「少しだけ休んでから、ね｜少し休んでからにしよう｜少しだけ休んでから、にしましょう」と答えた。',
+devoted:'{b}は迷わず頷いた。「……うん。何回でも｜……ああ。何回でも｜……はい。何回でも」',
+cool:'{b}は時計を見上げてから、「時間は、まだある｜＝｜時間は、まだあります」と答えた。',
+free:'{b}は「待ってた｜待っていた｜待っていました」と即答して、{a}の首に腕を回した。',
+shy:'{b}は毛布で顔を隠したまま、小さく頷いた。',
+polite:'{b}は頬を染めて、「……うん。よろしく｜……ああ。よろしく頼む｜……はい。よろしくお願いします」と答えた。'
+},
+dry:{
+proud:'{b}は「その元気、どこから来るの｜その元気は、どこから来るんだ｜その元気は、どこから来るんですか」と呆れた顔で返した。',
+stern:'{b}は「今日はここまで｜今日はここまでだ｜今日はここまでです」と短く答えた。',
+tsun:'{b}は「しない。……水飲んでからなら、考える｜しない。……水を飲んでからなら、考える｜しません。……お水を飲んでからなら、考えます」と答えた。',
+gentle:'{b}は首を横に振った。「今日は、もう十分｜今日は、もう十分だ｜今日は、もう十分です」',
+devoted:'{b}は少し迷ってから、「……あなたがしたいなら｜……あなたがしたいなら、いい｜……あなたがなさりたいなら」と答えた。',
+cool:'{b}は「体力的に無理。次の機会に｜体力的に無理だ。次の機会に｜体力的に無理です。次の機会に」と答えた。',
+free:'{b}は「してもいいけど、先にシャワー｜してもいいが、先にシャワーだ｜してもいいですけど、先にシャワーです」と答えた。',
+shy:'{b}は小さく首を横に振って、毛布を肩まで引き上げた。',
+polite:'{b}は「今日は、ここまでにして｜今日は、ここまでにしてくれ｜本日は、ここまでにさせてください」と答えた。'
+},
+deal:{
+proud:'{b}は「いいよ。ただし、今度は手加減なしでね｜いいだろう。ただし、今度は手加減なしだ｜いいですよ。ただし、今度は手加減なしで」と返した。',
+stern:'{b}は「条件がある。今度は、時計を見ないこと｜条件がある。今度は時計を見るな｜条件があります。今度は、時計を見ないこと」と返した。',
+tsun:'{b}は「お願いしますって言えたら、考えてあげる｜お願いしますと言えたら、考えてやる｜お願いしますと言えたら、考えてあげます」と返した。',
+gentle:'{b}は{a}の唇に指を当てて、「次は、もっとゆっくり。それが条件｜次は、もっとゆっくりだ。それが条件だ｜次は、もっとゆっくり。それが条件です」と答えた。',
+devoted:'{b}は「いいよ。そのかわり、朝まで離れないで｜いい。そのかわり、朝まで離れるな｜いいですよ。そのかわり、朝まで離れないでください」と答えた。',
+cool:'{b}は「さっきより上手くできるなら｜さっきより上手くできるならな｜さっきより上手にできるのでしたら」と返した。',
+free:'{b}は{a}の胸を指でなぞって、「そっちがへばらないなら、何回でも｜そっちがへばらないなら、何回でも付き合う｜そちらがへばらないなら、何回でも」と返した。',
+shy:'{b}は少し間を置いてから、「……今度は、あなたが先に、ちゃんと言って｜……今度は、あなたが先に、ちゃんと言え｜……今度は、あなたが先に、ちゃんと言ってください」と答えた。',
+polite:'{b}は「じゃあ、一つだけお願い聞いてくれる？｜では、一つだけ頼みを聞いてくれるか｜では、一つだけお願いを聞いていただけますか？」と返した。'
+}
+});
+add('how',/満足してもらえた|ご満足いただけ|あなたも、そうでしょ|あなたも、そうだろう/,{
+sweet:{
+proud:'{b}は「……まあまあ。次はもっと頑張って｜……まあまあだ。次はもっと頑張れ｜……まあまあです。次はもっと頑張ってください」と答えて、{a}の胸に額を押しつけた。',
+stern:'{b}は少し間を置いてから、「……うん。十分すぎるくらい｜……ああ。十分すぎるくらいだ｜……はい。十分すぎるくらいです」と答えた。',
+tsun:'{b}は「そ、そういうこと、訊かないで｜そ、そういうことを訊くな｜そ、そういうことは、訊かないでください」と返したが、耳まで赤かった。',
+gentle:'{b}は頷いて、「うん。すごく、よかった｜ああ。すごく、よかった｜はい。すごく、よかったです」と答えた。',
+devoted:'{b}は「うん。……あなたも、よかった？｜ああ。……あなたも、よかったか｜はい。……あなたも、よかったですか？」と訊き返した。',
+cool:'{b}は「想定以上だった、とだけ言っておく｜＝｜想定以上でした、とだけ申し上げておきます」と答えた。',
+free:'{b}は「最高。文句なし｜最高だ。文句なしだ｜最高です。文句なしです」と即答した。',
+shy:'{b}は毛布に顔を埋めたまま、こくりと頷いた。',
+polite:'{b}は「うん。……すごく｜ああ。……とても｜はい。……とても」と答えた。'
+},
+dry:{
+proud:'{b}は「悪くはなかった｜＝｜悪くはありませんでした」とだけ答えた。',
+stern:'{b}は「十分｜十分だ｜十分です」と短く答えた。',
+tsun:'{b}は「……まあ、点数をつけるなら、及第点｜……まあ、点数をつけるなら、及第点だ｜……まあ、点数をつけるなら、及第点です」と答えた。',
+gentle:'{b}は「うん。よかった｜ああ。よかった｜はい。よかったです」と短く答えて、水に手を伸ばした。',
+devoted:'{b}は「うん。あなたは？｜ああ。あなたは｜はい。あなたは？」と答えた。',
+cool:'{b}は「数字で言えば、十分な結果｜数字で言えば、十分な結果だ｜数字で言えば、十分な結果です」と答えた。',
+free:'{b}は「まあね。いい運動になった｜まあな。いい運動になった｜ええ。いい運動になりました」と答えた。',
+shy:'{b}は目をそらしたまま、小さく頷いた。',
+polite:'{b}は「うん。おかげさまで｜ああ。おかげさまで｜ええ。おかげさまで」と答えた。'
+},
+deal:{
+proud:'{b}は「あなたの顔を見れば分かるでしょ。私より必死だった｜あなたの顔を見れば分かるだろう。私より必死だった｜あなたのお顔を見れば分かるでしょう。私より必死でしたよ」と返した。',
+stern:'{b}は「評価は、次の結果を見てから｜評価は、次の結果を見てからだ｜評価は、次の結果を見てからにします」と返した。',
+tsun:'{b}は「さあね。あなたが先に言ったら、教えてあげる｜さあな。あなたが先に言ったら、教えてやる｜さあ。あなたが先に言ったら、教えてあげます」と返した。',
+gentle:'{b}は「そう見えたなら、あなたの勝ち｜そう見えたなら、あなたの勝ちだ｜そう見えたのなら、あなたの勝ちです」と答えた。',
+devoted:'{b}は「あなたのほうこそ。……違う？｜あなたの方こそ。……違うか｜あなたの方こそ。……違いますか？」と返した。',
+cool:'{b}は「その質問、答えたら貸しになる？｜その質問に答えたら、貸しになるか｜そのご質問にお答えしたら、貸しになりますか？」と返した。',
+free:'{b}は「七十点。残りは、次で取り返して｜七十点だ。残りは次で取り返せ｜七十点です。残りは、次で取り返してください」と返した。',
+shy:'{b}は少し黙ってから、「……あなたは、どうだったの？｜……あなたは、どうだった｜……あなたは、どうでしたか？」と訊き返した。',
+polite:'{b}は「答えは、次まで取っておく｜＝｜お答えは、次回まで取っておきます」と返した。'
+}
+});
+add('later',/また、こうして(?:いい|も)|また、してもいい/,{
+sweet:{
+proud:'{b}は「……ダメって言うと思う？｜……駄目だと言うと思うか｜……駄目だと言うと思いますか？」と返して、{a}の手を握った。',
+stern:'{b}は少し考えて、「……うん。いつでも｜……ああ。いつでもいい｜……はい。いつでも」と答えた。',
+tsun:'{b}は「か、勝手にすれば｜か、勝手にしろ｜か、勝手にしてください」と答えて、そっぽを向いた。',
+gentle:'{b}は頷いて、「うん。今度は、もっとゆっくりね｜ああ。今度は、もっとゆっくりな｜はい。今度は、もっとゆっくりで」と答えた。',
+devoted:'{b}は「うん。あなたがしたいとき、いつでも｜ああ。あなたがしたいとき、いつでも｜はい。あなたがなさりたいとき、いつでも」と答えた。',
+cool:'{b}は「……拒む理由が見当たらない｜＝｜……拒む理由が見当たりません」と答えた。',
+free:'{b}は「当たり前じゃん。次は私の部屋ね｜当たり前だ。次は私の部屋だ｜当たり前です。次は私の部屋で」と即答した。',
+shy:'{b}は真っ赤になって、何度も小さく頷いた。',
+polite:'{b}は「うん。……喜んで｜ああ。……喜んで｜はい。……喜んで」と答えた。'
+},
+dry:{
+proud:'{b}は「気が向いたらね｜気が向いたらな｜気が向いたら、ですね」と答えた。',
+stern:'{b}は「予定が合えば｜予定が合えば、だ｜予定が合えば、です」と答えた。',
+tsun:'{b}は「……一回だけなら、考えなくもない｜＝｜……一回だけなら、考えなくもないです」と答えた。',
+gentle:'{b}は「うん。連絡して｜ああ。連絡をくれ｜はい。連絡してください」と答えた。',
+devoted:'{b}は「あなたがそうしたいなら｜あなたがそうしたいなら、いい｜あなたがそうなさりたいなら」と答えた。',
+cool:'{b}は「お互いの都合がつけばね｜お互いの都合がつけばな｜お互いの都合がつけば、ですね」と答えた。',
+free:'{b}は「いいよ。軽い感じでね｜いいぞ。軽い感じでな｜いいですよ。軽い感じで」と答えた。',
+shy:'{b}は少し迷ってから、小さく頷いた。',
+polite:'{b}は「都合のいいときに、連絡して｜都合のいいときに、連絡してくれ｜ご都合のよいときに、ご連絡ください」と答えた。'
+},
+deal:{
+proud:'{b}は「あなたが私を口説けたらね｜あなたが私を口説けたらな｜あなたが私を口説けたら、ですね」と返した。',
+stern:'{b}は「次の約束は、あなたから言い出すこと。それが条件｜次の約束は、あなたから言い出すこと。それが条件だ｜次のお約束は、あなたから言い出すこと。それが条件です」と返した。',
+tsun:'{b}は「ちゃんと頼めたら、いいけど｜ちゃんと頼めたら、いいが｜ちゃんと頼めたら、いいですけど」と返した。',
+gentle:'{b}は「今度は、あなたが誘いに来て｜今度は、あなたが誘いに来い｜今度は、あなたが誘いに来てください」と答えた。',
+devoted:'{b}は「いいよ。……その代わり、次は名前で呼んで｜いい。……その代わり、次は名前で呼べ｜いいですよ。……その代わり、次は名前で呼んでください」と答えた。',
+cool:'{b}は「次も同じ手で来るなら、断る｜＝｜次も同じ手でいらっしゃるなら、お断りします」と返した。',
+free:'{b}は「いいよ。次は、私が呼び出す番｜いいぞ。次は私が呼び出す番だ｜いいですよ。次は、私が呼び出す番です」と答えた。',
+shy:'{b}は少し間を置いてから、「……あなたが、そう言ってくれるなら｜＝｜……あなたが、そう言ってくださるなら」と答えた。',
+polite:'{b}は「じゃあ、次は食事から、っていうのはどう？｜では、次は食事から、というのはどうだ｜では、次はお食事から、というのはいかがでしょう」と返した。'
+}
+});
+add('sleepnot',/まだ寝かせない(?:って|と)言ったら/,{
+sweet:{
+proud:'{b}は「受けて立つ。……途中で寝ても、文句言わないでね｜受けて立つ。……途中で寝ても、文句を言うなよ｜受けて立ちます。……途中で寝ても、文句は言わないでくださいね」と返した。',
+stern:'{b}は「……少しだけなら、付き合う｜……少しだけなら、付き合おう｜……少しだけなら、お付き合いします」と答えた。',
+tsun:'{b}は「し、知らない。……勝手にすれば｜し、知らん。……勝手にしろ｜し、知りません。……勝手にしてください」と答えて、毛布の中で{a}の手を探した。',
+gentle:'{b}は笑って、「じゃあ、眠くなるまで、話していよう｜では、眠くなるまで話していよう｜では、眠くなるまで、お話ししていましょう」と答えた。',
+devoted:'{b}は「いいよ。あなたが眠くなるまで、起きてる｜いい。あなたが眠くなるまで、起きている｜いいですよ。あなたが眠くなるまで、起きています」と答えた。',
+cool:'{b}は「明日に響かない範囲でなら｜明日に響かない範囲でならな｜明日に響かない範囲でしたら」と答えた。',
+free:'{b}は「望むところ｜望むところだ｜望むところです」と即答した。',
+shy:'{b}は毛布で顔を半分隠して、「……い、いいよ｜……い、いいぞ｜……い、いいですよ」と小さく答えた。',
+polite:'{b}は「……お手柔らかに、お願い｜……お手柔らかに頼む｜……お手柔らかに、お願いします」と答えた。'
+},
+dry:{
+proud:'{b}は「寝る。あなたも寝て｜寝る。あなたも寝ろ｜寝ます。あなたも寝てください」と答えて、背を向けた。',
+stern:'{b}は「寝る。明日がある｜＝｜寝ます。明日がありますから」と短く答えた。',
+tsun:'{b}は「寝る。おやすみ｜＝｜寝ます。おやすみなさい」とだけ答えた。',
+gentle:'{b}は「今日は寝よう。続きは、また今度｜今日は寝よう。続きは、また今度だ｜今日は寝ましょう。続きは、また今度」と答えた。',
+devoted:'{b}は少し迷ってから、「……少しだけなら｜……少しだけならいい｜……少しだけでしたら」と答えた。',
+cool:'{b}は「睡眠は削らない主義｜睡眠は削らない主義だ｜睡眠は削らない主義です」と答えた。',
+free:'{b}は「あと一回でおしまいね｜あと一回でおしまいだ｜あと一回でおしまいですよ」と答えた。',
+shy:'{b}は小さく首を横に振って、毛布を引き上げた。',
+polite:'{b}は「明日に響くから、今夜はここまで｜明日に響く。今夜はここまでだ｜明日に障りますので、今夜はここまでに」と答えた。'
+},
+deal:{
+proud:'{b}は「先に寝たほうが負けね｜先に寝た方が負けだ｜先に寝た方が負けですよ」と返した。',
+stern:'{b}は「寝かせない理由を、一つ言えたら考える｜寝かせない理由を一つ言えたら、考える｜寝かせない理由を一つおっしゃれたら、考えます」と返した。',
+tsun:'{b}は「やれるものなら、やってみれば｜やれるものなら、やってみろ｜やれるものなら、やってみてください」と返した。',
+gentle:'{b}は「じゃあ、私も寝かせない｜では、私も寝かせない｜では、私も寝かせません」と返した。',
+devoted:'{b}は「あなたが先に音を上げるほうに賭ける｜あなたが先に音を上げる方に賭ける｜あなたが先に音を上げる方に賭けます」と返した。',
+cool:'{b}は「それなら、朝ご飯はあなたの担当｜それなら、朝食はあなたの担当だ｜それなら、朝食はあなたの担当です」と返した。',
+free:'{b}は「いいね。じゃあ、賭けようか。先に寝たほうが朝ご飯｜いいな。では、賭けよう。先に寝た方が朝飯だ｜いいですね。では、賭けましょう。先に寝た方が朝ご飯です」と返した。',
+shy:'{b}は少し間を置いてから、「……私が先に寝ちゃったら、起こしてくれる？｜……私が先に寝たら、起こしてくれるか｜……私が先に寝てしまったら、起こしてくださいますか？」と訊き返した。',
+polite:'{b}は「じゃあ、私も同じこと言っていい？｜では、私も同じことを言わせてもらう｜では、私も同じことを申し上げてもよろしいですか？」と返した。'
+}
+});
+add('stay',/くっついて(?:て|い)/,{
+sweet:{
+proud:'{b}は「……好きにすれば｜……好きにしろ｜……お好きにどうぞ」と答えて、{a}の背中に腕を回した。',
+stern:'{b}は黙って頷き、{a}の肩に毛布を掛け直した。',
+tsun:'{b}は「……ちょっとだけ、だからね｜……少しだけだぞ｜……少しだけ、ですからね」と答えて、自分から{a}に寄った。',
+gentle:'{b}は「もちろん。好きなだけ｜もちろんだ。好きなだけいい｜もちろんです。お好きなだけ」と答えた。',
+devoted:'{b}は「うん。私も、まだ離れたくない｜ああ。私も、まだ離れたくない｜はい。私も、まだ離れたくありません」と答えた。',
+cool:'{b}は「……構わない｜＝｜……構いません」と答えて、腕をほどかなかった。',
+free:'{b}は「ちょっとと言わず、朝までどうぞ｜少しと言わず、朝までいい｜少しと言わず、朝までどうぞ」と答えた。',
+shy:'{b}は返事の代わりに、{a}の指をそっと握った。',
+polite:'{b}は「うん。……どうぞ｜ああ。……どうぞ｜はい。……どうぞ」と答えた。'
+},
+dry:{
+proud:'{b}は「少しだけね。暑いから｜少しだけだ。暑いからな｜少しだけですよ。暑いですから」と答えた。',
+stern:'{b}は「五分だけ｜五分だけだ｜五分だけです」と答えた。',
+tsun:'{b}は「……勝手にすれば｜……勝手にしろ｜……勝手にしてください」と答えて、動かなかった。',
+gentle:'{b}は「いいよ。眠くなるまでね｜いい。眠くなるまでな｜いいですよ。眠くなるまで」と答えた。',
+devoted:'{b}は黙って頷いた。',
+cool:'{b}は「シャワーまでなら｜シャワーまでならいい｜シャワーまででしたら」と答えた。',
+free:'{b}は「いいけど、汗くさいよ｜いいが、汗くさいぞ｜いいですけど、汗くさいですよ」と答えた。',
+shy:'{b}は小さく頷いて、少しだけ場所を空けた。',
+polite:'{b}は「少しなら｜少しならいい｜少しでしたら」と答えた。'
+},
+deal:{
+proud:'{b}は「いいけど、高くつくよ｜いいが、高くつくぞ｜いいですけど、高くつきますよ」と返した。',
+stern:'{b}は「理由を言えたら｜理由を言えたらいい｜理由を言えたら、構いません」と返した。',
+tsun:'{b}は「お願い、って言えたらね｜お願い、と言えたらな｜お願い、と言えたら、ですね」と返した。',
+gentle:'{b}は「じゃあ、その間に、さっきの話の続きをしよう｜では、その間にさっきの話の続きをしよう｜では、その間に、さっきのお話の続きをしましょう」と答えた。',
+devoted:'{b}は「いいよ。その代わり、寝顔は見ないで｜いい。その代わり、寝顔は見るな｜いいですよ。その代わり、寝顔は見ないでください」と答えた。',
+cool:'{b}は「延長料金は、朝のコーヒーで｜延長料金は、朝のコーヒーだ｜延長料金は、朝のコーヒーで」と返した。',
+free:'{b}は「ちょっとで済むの？｜ちょっとで済むのか｜ちょっとで済みますか？」と笑って返した。',
+shy:'{b}は少し間を置いてから、「……あなたが、そうしたいなら｜＝｜……あなたが、そうなさりたいなら」と答えた。',
+polite:'{b}は「じゃあ、私からもひとつお願い｜では、私からもひとつ頼みがある｜では、私からもひとつお願いがあります」と返した。'
+}
+});
+add('erase',/なかったことにして(?:いい|も)/,{
+dry:{
+proud:'{b}は「好きにして。私は覚えてるけど｜好きにしろ。私は覚えているが｜お好きにどうぞ。私は覚えていますけど」と返した。',
+stern:'{b}は「……分かった。記録には残さない｜＝｜……分かりました。記録には残しません」と答えた。',
+tsun:'{b}は「最初から、何もなかったけど？｜最初から、何もなかったが｜最初から、何もありませんでしたけど？」と返した。',
+gentle:'{b}は少し間を置いて、「あなたがそうしたいなら、そうしよう｜＝｜あなたがそうなさりたいなら、そうしましょう」と答えた。',
+devoted:'{b}は少し迷ってから、黙って頷いた。',
+cool:'{b}は「了解。なかったことにする｜了解だ。なかったことにする｜了解しました。なかったことにします」と答えた。',
+free:'{b}は「いいけど、もったいないなあ｜いいが、もったいないな｜いいですけど、もったいないですね」と答えた。',
+shy:'{b}は真っ赤な顔で、何度も頷いた。',
+polite:'{b}は「分かった。お互いに、ってことで｜分かった。お互いに、ということで｜承知しました。お互いに、ということで」と答えた。'
+}
+});
+})();
+});
+;
 /* ==== js/lewd-words.js ==== */
-HK.Load.def(64,'js/lewd-words.js',function(){
+HK.Load.def(65,'js/lewd-words.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -13639,7 +13978,7 @@ return r;
 });
 ;
 /* ==== js/part-words.js ==== */
-HK.Load.def(65,'js/part-words.js',function(){
+HK.Load.def(66,'js/part-words.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -13734,7 +14073,7 @@ return r;
 });
 ;
 /* ==== js/ero-moan-tone.js ==== */
-HK.Load.def(66,'js/ero-moan-tone.js',function(){
+HK.Load.def(67,'js/ero-moan-tone.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -13971,7 +14310,7 @@ var F=FIX[k]=FIX[k]||{};
 });
 ;
 /* ==== js/novel-moan-tone.js ==== */
-HK.Load.def(67,'js/novel-moan-tone.js',function(){
+HK.Load.def(68,'js/novel-moan-tone.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -14183,7 +14522,7 @@ var F=FIX[k]=FIX[k]||{};
 });
 ;
 /* ==== js/moan-dict.js ==== */
-HK.Load.def(68,'js/moan-dict.js',function(){
+HK.Load.def(69,'js/moan-dict.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -14221,7 +14560,7 @@ noSweet:L('やぁ♡|だめぇ♡|むりぃ♡|まっ、て♡|いやぁ♡')
 });
 ;
 /* ==== js/moan-said.js ==== */
-HK.Load.def(69,'js/moan-said.js',function(){
+HK.Load.def(70,'js/moan-said.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -14341,7 +14680,7 @@ t5:L('……っ、申し訳ありません……止まれません……っ|く�
 });
 ;
 /* ==== js/moan-tease-r18.js ==== */
-HK.Load.def(70,'js/moan-tease-r18.js',function(){
+HK.Load.def(71,'js/moan-tease-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -14492,7 +14831,7 @@ z2:L('「大嫌いな相手の手で、こんなに乱れてる。……見て�
 });
 ;
 /* ==== js/moan-top-said.js ==== */
-HK.Load.def(71,'js/moan-top-said.js',function(){
+HK.Load.def(72,'js/moan-top-said.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -14636,7 +14975,7 @@ u4:L('「上で、イく。あなたも、一緒に……！｜上でイく。�
 });
 ;
 /* ==== js/moan-said-more.js ==== */
-HK.Load.def(72,'js/moan-said-more.js',function(){
+HK.Load.def(73,'js/moan-said-more.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -14751,7 +15090,7 @@ a3:L('「そっちこそ、腰、震えてるじゃないか｜そちらこそ�
 });
 ;
 /* ==== js/moan-engine.js ==== */
-HK.Load.def(73,'js/moan-engine.js',function(){
+HK.Load.def(74,'js/moan-engine.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,E=HK&&HK.Ero;
@@ -15492,7 +15831,7 @@ try{var adv=HK.store&&HK.store.get('adv',null);if(adv&&adv.moan)M.setUser(adv.mo
 });
 ;
 /* ==== js/moan-cut.js ==== */
-HK.Load.def(74,'js/moan-cut.js',function(){
+HK.Load.def(75,'js/moan-cut.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,M=HK&&HK.Moan,E=HK&&HK.Ero;
@@ -15888,7 +16227,7 @@ M.CUT_LABEL=['なし','少し','遮られる','決壊'];
 });
 ;
 /* ==== js/trio-talk-r18.js ==== */
-HK.Load.def(75,'js/trio-talk-r18.js',function(){
+HK.Load.def(76,'js/trio-talk-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,E=HK&&HK.Ero;
@@ -16582,7 +16921,7 @@ return C.text();
 });
 ;
 /* ==== js/moan-mob.js ==== */
-HK.Load.def(76,'js/moan-mob.js',function(){
+HK.Load.def(77,'js/moan-mob.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,E=HK&&HK.Ero,M=HK&&HK.Moan;
@@ -16733,7 +17072,7 @@ return say0.apply(this,arguments);
 });
 ;
 /* ==== js/thick-sex.js ==== */
-HK.Load.def(77,'js/thick-sex.js',function(){
+HK.Load.def(78,'js/thick-sex.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -17151,7 +17490,7 @@ return{text:out.join('\n\n'),hard:hard,jealous:jl,mode:mode};
 });
 ;
 /* ==== js/thick-sex-ero.js ==== */
-HK.Load.def(78,'js/thick-sex-ero.js',function(){
+HK.Load.def(79,'js/thick-sex-ero.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -17421,7 +17760,7 @@ return ero?X.fill(S,t,a,b):t;
 });
 ;
 /* ==== js/free-sex.js ==== */
-HK.Load.def(80,'js/free-sex.js',function(){
+HK.Load.def(81,'js/free-sex.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -17628,7 +17967,7 @@ return f.apply(this,arguments);
 });
 ;
 /* ==== js/mini.js ==== */
-HK.Load.def(83,'js/mini.js',function(){
+HK.Load.def(84,'js/mini.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -17771,6 +18110,24 @@ A:['{a}は頭の中で、次の手を三つ考えた。','{a}の表情からは�
 FC:['{a}は鼻歌まじりだった。','{a}はすぐに飽きて、別のことを始めた。','{a}は一人で小さく笑った。'],
 AC:['{a}は誰かに見られていないか、何度も振り返った。','{a}は小さくため息をついた。','{a}は、自分のしたことが正しかったのか考え込んだ。']
 };
+HK.TAILS_Q={
+CP:['{b}は少し間を置いてから、短く答えた。','{b}は「さあね｜さあな｜さあ、どうでしょう」とはぐらかした。','{b}は答えをはぐらかして、肩をすくめた。'],
+NP:['{b}は少し考えてから、丁寧に答えた。','{b}は笑って、ちゃんと答えた。','{b}は相手の顔を見て、正直に答えた。'],
+A:['{b}は少し考えてから、短く答えた。','{b}は表情を変えずに、簡潔に答えた。','{b}は一瞬だけ言葉を探してから、答えた。'],
+FC:['{b}は即答した。','{b}は冗談で返して、それから本当のことを答えた。','{b}は「それ聞く？｜それを聞くか｜それ、聞きます？」と笑ってから答えた。'],
+AC:['{b}は少し迷ってから、小さな声で答えた。','{b}は答えに詰まって、目を泳がせた。','{b}は俯いたまま、ぽつりと答えた。']
+};
+var Q_END= /[？?]」(?:と[^。「」]{0,16}(?:訊|尋ね|聞)いた)?。?$/,Q_PASS= /[？?]」と[^。「」]{0,16}(?:訊|尋ね|聞)(?:か|ね)れた。?$/;
+function askEnd(text,a,b){
+if(!text|| !a|| !b||text.indexOf(b.name+'「')>=0)return'';
+var pass=Q_PASS.test(text);
+if(!pass&& !Q_END.test(text))return'';
+var qi=text.lastIndexOf('「'),st=text.lastIndexOf('。',qi)+1,sen=text.slice(st,qi);
+if(sen.indexOf(b.name+'は')>=0&&sen.indexOf(a.name+'は')<0)return'';
+if(!(sen.indexOf(a.name)>=0||sen===''))return'';
+return pass?'a':'b';
+}
+HK.askEnd=askEnd;
 function tail(ctx,who,cat,self,text){
 var T=HK.TAILS[cat];
 if(!T|| !who)return'';
@@ -17857,7 +18214,8 @@ var cand=c?list:list.filter(function(t){return t.indexOf('{c}')<0;});
 if(hasLove&& !loveTalkOk(ctx,[a,b,c])){var nl=cand.filter(function(t){return!LOVE_TXT.test(t);});if(nl.length)cand=nl;}
 if(b&&a.age&&b.age){var ag=cand.filter(function(t){return ageFits(t,a,b);});if(ag.length)cand=ag;else return null;}
 var text=ctx.t(ctx.pick(cand.length?cand:list),a,b,c);
-if(withTail&&b&&ctx.rng()<0.55)text+=tail(ctx,b,tcat,false,text);
+var isQ=withTail&&b?askEnd(text,a,b):'',ans=isQ==='a'?a:b;
+if(withTail&&b&&(ctx.rng()<0.55||isQ))text+=isQ?ctx.t(ctx.pick(HK.TAILS_Q[HK.voiceTop(ans)]||HK.TAILS_Q.A),null,ans):tail(ctx,b,tcat,false,text);
 if(selfTail&&ctx.rng()<0.5)text+=tail(ctx,a,'solo',true);
 return{text:text,why:why(ctx,a,b,terms),with:c?[c]:null};
 }
@@ -17871,7 +18229,7 @@ if(HK.addTo)HK.addTo(L,list);else HK.MINI[scenId]=L.concat(list);
 });
 ;
 /* ==== js/hate-sex-r18.js ==== */
-HK.Load.def(102,'js/hate-sex-r18.js',function(){
+HK.Load.def(104,'js/hate-sex-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -18411,7 +18769,7 @@ moan:function(x,who,n,ero){return moanOf(x,who,n,ero,true);}
 });
 ;
 /* ==== js/content-text-r18.js ==== */
-HK.Load.def(105,'js/content-text-r18.js',function(){
+HK.Load.def(107,'js/content-text-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -18512,7 +18870,7 @@ T.GOUKON_HATE=L('一次会が終わり、店の前で解散になった。帰る
 });
 ;
 /* ==== js/content-events-r18.js ==== */
-HK.Load.def(106,'js/content-events-r18.js',function(){
+HK.Load.def(108,'js/content-events-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -18992,7 +19350,7 @@ Object.keys(sim0).forEach(function(k){HK.simulate[k]=sim0[k];});
 });
 ;
 /* ==== js/ego-image.js ==== */
-HK.Load.def(121,'js/ego-image.js',function(){
+HK.Load.def(123,'js/ego-image.js',function(){
 (function(){
 "use strict";
 var IMG={
@@ -19124,7 +19482,7 @@ window.HK.EgoImage={of:of};
 });
 ;
 /* ==== js/omega-data.js ==== */
-HK.Load.def(122,'js/omega-data.js',function(){
+HK.Load.def(124,'js/omega-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -19312,7 +19670,7 @@ return{name:rng.pick(OM.GIFTS[top]||OM.GIFTS.NP),nest:false,top:top};
 });
 ;
 /* ==== js/omega-heat.js ==== */
-HK.Load.def(124,'js/omega-heat.js',function(){
+HK.Load.def(126,'js/omega-heat.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA;
@@ -19439,7 +19797,7 @@ return n;
 });
 ;
 /* ==== js/omega-detective.js ==== */
-HK.Load.def(125,'js/omega-detective.js',function(){
+HK.Load.def(127,'js/omega-detective.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,OM=HK.OMEGA;
@@ -19523,7 +19881,7 @@ run:function(ctx,a){ctx.stress(a,3);return{text:ctx.t(ctx.pick(SOLO),a),why:'助
 });
 ;
 /* ==== js/omega-thick-kit.js ==== */
-HK.Load.def(142,'js/omega-thick-kit.js',function(){
+HK.Load.def(144,'js/omega-thick-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -20136,7 +20494,7 @@ add(DEEP.core,'{T}は{U}を{bed}の端に座らせ、自分は床に膝をつい
 });
 ;
 /* ==== js/goukon-fresh.js ==== */
-HK.Load.def(151,'js/goukon-fresh.js',function(){
+HK.Load.def(153,'js/goukon-fresh.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -20171,7 +20529,7 @@ for(var k in sim0)if(Object.prototype.hasOwnProperty.call(sim0,k))HK.simulate[k]
 });
 ;
 /* ==== js/thick-vmd.js ==== */
-HK.Load.def(169,'js/thick-vmd.js',function(){
+HK.Load.def(171,'js/thick-vmd.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -20232,7 +20590,7 @@ on:function(){return!HK.SAFE_ON;}
 });
 ;
 /* ==== js/dungeon-rich.js ==== */
-HK.Load.def(170,'js/dungeon-rich.js',function(){
+HK.Load.def(172,'js/dungeon-rich.js',function(){
 (function(){
 'use strict';
 var DG=window.HK.DG=window.HK.DG||{};
@@ -20303,7 +20661,7 @@ shy:L('{a}は部屋の隅っこで小さく丸まり、誰も来ないことを�
 });
 ;
 /* ==== js/dungeon-persona.js ==== */
-HK.Load.def(171,'js/dungeon-persona.js',function(){
+HK.Load.def(173,'js/dungeon-persona.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,DG=HK.DG=HK.DG||{};
@@ -20419,7 +20777,7 @@ shy:['{a}は背中を丸めて、顔を両手で隠した。','{a}は太腿を�
 });
 ;
 /* ==== js/dungeon-kit.js ==== */
-HK.Load.def(172,'js/dungeon-kit.js',function(){
+HK.Load.def(174,'js/dungeon-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -20476,7 +20834,7 @@ DG.parseOpts=parseOpts;
 });
 ;
 /* ==== js/solo-kit.js ==== */
-HK.Load.def(180,'js/solo-kit.js',function(){
+HK.Load.def(182,'js/solo-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,DG=HK.DG;
@@ -20696,7 +21054,7 @@ L('{a}は品も礼儀も忘れて、何度目かの波に沈んで果てた。|{
 });
 ;
 /* ==== js/endings.js ==== */
-HK.Load.def(194,'js/endings.js',function(){
+HK.Load.def(196,'js/endings.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -20980,7 +21338,7 @@ lines:lines
 });
 ;
 /* ==== js/epilogue.js ==== */
-HK.Load.def(195,'js/epilogue.js',function(){
+HK.Load.def(197,'js/epilogue.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -21459,7 +21817,7 @@ return compose(p,P_kind((p.how||'')+' '+(p.fate||''),null),storyAddressee(S,p,in
 });
 ;
 /* ==== js/scenario-futari.js ==== */
-HK.Load.def(196,'js/scenario-futari.js',function(){
+HK.Load.def(198,'js/scenario-futari.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -22433,7 +22791,7 @@ safe:[
 });
 ;
 /* ==== js/zombie-data.js ==== */
-HK.Load.def(198,'js/zombie-data.js',function(){
+HK.Load.def(200,'js/zombie-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -22529,7 +22887,7 @@ bad:L('{f}からの最後のメッセージは「かまれた」の四文字だ�
 });
 ;
 /* ==== js/rel-kit.js ==== */
-HK.Load.def(208,'js/rel-kit.js',function(){
+HK.Load.def(210,'js/rel-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -22585,7 +22943,7 @@ return res;
 });
 ;
 /* ==== js/pining-core.js ==== */
-HK.Load.def(219,'js/pining-core.js',function(){
+HK.Load.def(221,'js/pining-core.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -22606,7 +22964,7 @@ HK.simulate._pining=true;
 });
 ;
 /* ==== js/pos.js ==== */
-HK.Load.def(234,'js/pos.js',function(){
+HK.Load.def(236,'js/pos.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -23019,7 +23377,7 @@ HK.simulate._pos=true;
 });
 ;
 /* ==== js/attr.js ==== */
-HK.Load.def(235,'js/attr.js',function(){
+HK.Load.def(237,'js/attr.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -23790,7 +24148,7 @@ return f;
 });
 ;
 /* ==== js/attr-height.js ==== */
-HK.Load.def(236,'js/attr-height.js',function(){
+HK.Load.def(238,'js/attr-height.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -23912,7 +24270,7 @@ return gf0.apply(this,arguments);
 });
 ;
 /* ==== js/attr-yomi.js ==== */
-HK.Load.def(237,'js/attr-yomi.js',function(){
+HK.Load.def(239,'js/attr-yomi.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -23951,7 +24309,7 @@ return r;
 });
 ;
 /* ==== js/food.js ==== */
-HK.Load.def(238,'js/food.js',function(){
+HK.Load.def(240,'js/food.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -24272,7 +24630,7 @@ Object.keys(F.HOOK).forEach(function(s){F.hookMini(s,F.HOOK[s]);});
 });
 ;
 /* ==== js/special.js ==== */
-HK.Load.def(239,'js/special.js',function(){
+HK.Load.def(241,'js/special.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -24642,7 +25000,7 @@ SP.thirsty=function(A,p){return vampDue(A,p);};
 });
 ;
 /* ==== js/special-r18.js ==== */
-HK.Load.def(240,'js/special-r18.js',function(){
+HK.Load.def(242,'js/special-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SP=HK.Special;
@@ -24712,7 +25070,7 @@ return fmt(h[Math.floor(A.rng()*h.length)],{v:v.name,w:w.name})+fmt(line,{v:v.na
 });
 ;
 /* ==== js/pos-ff.js ==== */
-HK.Load.def(245,'js/pos-ff.js',function(){
+HK.Load.def(247,'js/pos-ff.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -24863,7 +25221,7 @@ for(var k in sim0)if(Object.prototype.hasOwnProperty.call(sim0,k))HK.simulate[k]
 });
 ;
 /* ==== js/pos-lead-r18.js ==== */
-HK.Load.def(246,'js/pos-lead-r18.js',function(){
+HK.Load.def(248,'js/pos-lead-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -25007,7 +25365,7 @@ HK.simulate._lead=true;
 });
 ;
 /* ==== js/pos-fm.js ==== */
-HK.Load.def(247,'js/pos-fm.js',function(){
+HK.Load.def(249,'js/pos-fm.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -25161,7 +25519,7 @@ for(var k in sim0)if(Object.prototype.hasOwnProperty.call(sim0,k))HK.simulate[k]
 });
 ;
 /* ==== js/pos-nogen.js ==== */
-HK.Load.def(248,'js/pos-nogen.js',function(){
+HK.Load.def(250,'js/pos-nogen.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -25509,7 +25867,7 @@ for(var k in sim0)if(Object.prototype.hasOwnProperty.call(sim0,k))HK.simulate[k]
 });
 ;
 /* ==== js/persona-final.js ==== */
-HK.Load.def(249,'js/persona-final.js',function(){
+HK.Load.def(251,'js/persona-final.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,DG=HK.DG;
@@ -25556,7 +25914,7 @@ return res;
 });
 ;
 /* ==== js/pair-name.js ==== */
-HK.Load.def(250,'js/pair-name.js',function(){
+HK.Load.def(252,'js/pair-name.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -25618,7 +25976,7 @@ return((o[0]&&o[0].name)||'')+(sep==null?'×':sep)+((o[1]&&o[1].name)||'');
 });
 ;
 /* ==== js/icons.js ==== */
-HK.Load.def(251,'js/icons.js',function(){
+HK.Load.def(253,'js/icons.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape;
@@ -25685,7 +26043,7 @@ im.src=url;
 });
 ;
 /* ==== js/view.js ==== */
-HK.Load.def(252,'js/view.js',function(){
+HK.Load.def(254,'js/view.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape;
@@ -26267,7 +26625,7 @@ return L.join('\n');
 });
 ;
 /* ==== js/view-map.js ==== */
-HK.Load.def(253,'js/view-map.js',function(){
+HK.Load.def(255,'js/view-map.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape,V=HK.View;
@@ -26900,7 +27258,7 @@ if(document.head)addCss();else document.addEventListener('DOMContentLoaded',addC
 });
 ;
 /* ==== js/dungeon-view.js ==== */
-HK.Load.def(254,'js/dungeon-view.js',function(){
+HK.Load.def(256,'js/dungeon-view.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,DG=HK.DG,esc=HK.escape;
@@ -27093,7 +27451,7 @@ return L.join('\n');
 });
 ;
 /* ==== js/solo-story-kit.js ==== */
-HK.Load.def(255,'js/solo-story-kit.js',function(){
+HK.Load.def(257,'js/solo-story-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape;
@@ -27411,7 +27769,7 @@ hook();
 });
 ;
 /* ==== js/avoid-kit.js ==== */
-HK.Load.def(256,'js/avoid-kit.js',function(){
+HK.Load.def(258,'js/avoid-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -27596,7 +27954,7 @@ HK.Story.say._avoid=true;
 });
 ;
 /* ==== js/attr-look.js ==== */
-HK.Load.def(257,'js/attr-look.js',function(){
+HK.Load.def(259,'js/attr-look.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -27668,7 +28026,7 @@ HK.Story.say._attrLook=true;
 });
 ;
 /* ==== js/attr-race.js ==== */
-HK.Load.def(258,'js/attr-race.js',function(){
+HK.Load.def(260,'js/attr-race.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -27851,7 +28209,7 @@ return s;
 });
 ;
 /* ==== js/attr-meet.js ==== */
-HK.Load.def(259,'js/attr-meet.js',function(){
+HK.Load.def(261,'js/attr-meet.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -28158,7 +28516,7 @@ A.daily._meet=true;
 });
 ;
 /* ==== js/fam-kin.js ==== */
-HK.Load.def(260,'js/fam-kin.js',function(){
+HK.Load.def(262,'js/fam-kin.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -28201,7 +28559,7 @@ ST.state._kin=true;
 });
 ;
 /* ==== js/solo-variety-data.js ==== */
-HK.Load.def(278,'js/solo-variety-data.js',function(){
+HK.Load.def(280,'js/solo-variety-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -28464,7 +28822,7 @@ polite:L('「力及ばず、申し訳ございません」|「次の機会に挽
 });
 ;
 /* ==== js/solo-flow-omega.js ==== */
-HK.Load.def(284,'js/solo-flow-omega.js',function(){
+HK.Load.def(286,'js/solo-flow-omega.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -28476,7 +28834,7 @@ HK.OMEGA.HEAT.NORI=L('{b}は待ちきれずに{a}の首に腕を回して巣へ�
 });
 ;
 /* ==== js/solo-locker-data.js ==== */
-HK.Load.def(286,'js/solo-locker-data.js',function(){
+HK.Load.def(288,'js/solo-locker-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -28653,7 +29011,7 @@ endure:L('二人はベッドに背を向けて、床に背中合わせで座っ�
 });
 ;
 /* ==== js/solo-r18-moan-data.js ==== */
-HK.Load.def(364,'js/solo-r18-moan-data.js',function(){
+HK.Load.def(366,'js/solo-r18-moan-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -29022,7 +29380,7 @@ D.STRONG.cool_soft=1;D.STRONG.god=1;
 });
 ;
 /* ==== js/solo-r18-moan.js ==== */
-HK.Load.def(365,'js/solo-r18-moan.js',function(){
+HK.Load.def(367,'js/solo-r18-moan.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,D=HK.R18M_DATA;
@@ -29245,7 +29603,7 @@ npc:function(S,kind,a){return F(pick(S,D.NPC[kind]),{a:a?a.name:''}).replace(/�
 });
 ;
 /* ==== js/solo-feud-r18.js ==== */
-HK.Load.def(366,'js/solo-feud-r18.js',function(){
+HK.Load.def(368,'js/solo-feud-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,FD=HK.Feud;
@@ -29280,7 +29638,7 @@ return clash0.apply(this,arguments);
 });
 ;
 /* ==== js/same-story.js ==== */
-HK.Load.def(374,'js/same-story.js',function(){
+HK.Load.def(376,'js/same-story.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -29767,7 +30125,7 @@ t:L('隣のロッカーから聞こえる{b}の独り言は、{a}が今まさに
 });
 ;
 /* ==== js/same-story-r18.js ==== */
-HK.Load.def(375,'js/same-story-r18.js',function(){
+HK.Load.def(377,'js/same-story-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SS=HK&&HK.SameStory;
@@ -29785,7 +30143,7 @@ trio:L('媚薬で火照った{a}と{b}の体が、左右から{c}に押しつけ
 });
 ;
 /* ==== js/solo-rel-bad.js ==== */
-HK.Load.def(376,'js/solo-rel-bad.js',function(){
+HK.Load.def(378,'js/solo-rel-bad.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,RB=HK.RelBad;
@@ -29875,7 +30233,7 @@ return r;
 });
 ;
 /* ==== js/safe.js ==== */
-HK.Load.def(377,'js/safe.js',function(){
+HK.Load.def(379,'js/safe.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -30006,7 +30364,7 @@ t=out.join('');
 WORD.forEach(function(w){t=t.replace(w[0],w[1]);});
 return t.replace(/(――[^。]*。)(?:――[^。]*。)+/g,'$1');
 }
-HK.SafeText=softText;
+HK.SafeText=HK.NameGuard&&HK.NameGuard.text?HK.NameGuard.text(softText):softText;
 function eachChunk(fn){fn();if(HK.Load&&HK.Load.onChunk)HK.Load.onChunk(fn);}
 function scenOf(id){return HK.SCENARIOS[id]||(HK.Load&&HK.Load.info?HK.Load.info(id):null);}
 if(!ON){
@@ -30159,7 +30517,7 @@ return sim;
 });
 ;
 /* ==== js/share-card.js ==== */
-HK.Load.def(381,'js/share-card.js',function(){
+HK.Load.def(383,'js/share-card.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -30427,7 +30785,7 @@ return'<div class="sharebar" id="sharebar"><button class="btn" data-act="sharepn
 });
 ;
 /* ==== js/egoquiz.js ==== */
-HK.Load.def(382,'js/egoquiz.js',function(){
+HK.Load.def(384,'js/egoquiz.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape;
@@ -30544,7 +30902,7 @@ Z.ans[Z.i]=ANS[+ev.key-1][1];Z.i++;draw();
 });
 ;
 /* ==== js/saves.js ==== */
-HK.Load.def(383,'js/saves.js',function(){
+HK.Load.def(385,'js/saves.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -31006,7 +31364,7 @@ ok:function(){return!!ic.db;}
 });
 ;
 /* ==== js/history.js ==== */
-HK.Load.def(384,'js/history.js',function(){
+HK.Load.def(386,'js/history.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -31142,7 +31500,7 @@ HK.History={DB:DB,STORE:ST,LS:LSK,RES_LS:RES_LS,open:open,make:make,put:put,get:
 });
 ;
 /* ==== js/portable.js ==== */
-HK.Load.def(385,'js/portable.js',function(){
+HK.Load.def(387,'js/portable.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -31807,7 +32165,7 @@ toStr:toStr,fromStr:fromStr,importSettings:importSettings,settingsData:settingsD
 });
 ;
 /* ==== js/state-store.js ==== */
-HK.Load.def(386,'js/state-store.js',function(){
+HK.Load.def(388,'js/state-store.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -32105,7 +32463,7 @@ return{mode:mode,db:DB,lsFull:t!=null&& !markerOf(t),lsMarker: !!markerOf(t),byt
 });
 ;
 /* ==== js/save-folder.js ==== */
-HK.Load.def(387,'js/save-folder.js',function(){
+HK.Load.def(389,'js/save-folder.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -32521,7 +32879,7 @@ useHandle:function(h,ask){dir=h;dirName=h.name||'フォルダ';memOnly=false;if(
 });
 ;
 /* ==== js/tips.js ==== */
-HK.Load.def(388,'js/tips.js',function(){
+HK.Load.def(390,'js/tips.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -33091,7 +33449,7 @@ return'<button type="button" class="tipscen" data-tip="scen:'+esc(id)+'" aria-la
 });
 ;
 /* ==== js/scen-meta.js ==== */
-HK.Load.def(389,'js/scen-meta.js',function(){
+HK.Load.def(391,'js/scen-meta.js',function(){
 (function(){
 'use strict';
 var HK=window.HK=window.HK||{};
@@ -33159,7 +33517,7 @@ return o;
 });
 ;
 /* ==== js/scen-tags.js ==== */
-HK.Load.def(390,'js/scen-tags.js',function(){
+HK.Load.def(392,'js/scen-tags.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -33245,7 +33603,7 @@ return'<span class="ftag'+(t.warn?' warn':'')+(j>=fit?' tx':'')+'" data-act="fta
 });
 ;
 /* ==== js/shared-stats.js ==== */
-HK.Load.def(391,'js/shared-stats.js',function(){
+HK.Load.def(393,'js/shared-stats.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -33424,7 +33782,7 @@ SH.importFrom=function(c,o){if(o.ab&&typeof o.ab==='object')c.ab=JSON.parse(JSON
 });
 ;
 /* ==== js/ui-rand.js ==== */
-HK.Load.def(392,'js/ui-rand.js',function(){
+HK.Load.def(394,'js/ui-rand.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -33505,7 +33863,7 @@ return c;
 });
 ;
 /* ==== js/ui-cast-pages.js ==== */
-HK.Load.def(393,'js/ui-cast-pages.js',function(){
+HK.Load.def(395,'js/ui-cast-pages.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -34043,7 +34401,7 @@ SIZES:SIZES
 });
 ;
 /* ==== js/ui-ties.js ==== */
-HK.Load.def(394,'js/ui-ties.js',function(){
+HK.Load.def(396,'js/ui-ties.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -34590,7 +34948,7 @@ state:function(){return B;}
 });
 ;
 /* ==== js/ui-env.js ==== */
-HK.Load.def(395,'js/ui-env.js',function(){
+HK.Load.def(397,'js/ui-env.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -34784,7 +35142,7 @@ return'';
 });
 ;
 /* ==== js/ui-cast-tools.js ==== */
-HK.Load.def(396,'js/ui-cast-tools.js',function(){
+HK.Load.def(398,'js/ui-cast-tools.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -35128,7 +35486,7 @@ open:openData,close:closeData,isOpen:isOpen,sortNow:sortNow
 });
 ;
 /* ==== js/ui-box-draw.js ==== */
-HK.Load.def(397,'js/ui-box-draw.js',function(){
+HK.Load.def(399,'js/ui-box-draw.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -35328,7 +35686,7 @@ if(stale){ev.stopImmediatePropagation();if(ev.type==='click'&&ev.cancelable)ev.p
 });
 ;
 /* ==== js/ui-import.js ==== */
-HK.Load.def(398,'js/ui-import.js',function(){
+HK.Load.def(400,'js/ui-import.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -35438,7 +35796,7 @@ clear:function(){text='';}
 });
 ;
 /* ==== js/ui.js ==== */
-HK.Load.def(399,'js/ui.js',function(){
+HK.Load.def(401,'js/ui.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape,V=HK.View;
@@ -37161,7 +37519,7 @@ bkNotice();
 });
 ;
 /* ==== js/ui-cast-teacher.js ==== */
-HK.Load.def(400,'js/ui-cast-teacher.js',function(){
+HK.Load.def(402,'js/ui-cast-teacher.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -37185,7 +37543,7 @@ HK.CastTeacher={isTeacher:isTeacher,order:order,selectHtml:selectHtml};
 });
 ;
 /* ==== js/ui-gear.js ==== */
-HK.Load.def(401,'js/ui-gear.js',function(){
+HK.Load.def(403,'js/ui-gear.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,esc=HK.escape;
@@ -37570,7 +37928,7 @@ if(UI.refresh)UI.refresh();
 });
 ;
 /* ==== js/ui-adv.js ==== */
-HK.Load.def(402,'js/ui-adv.js',function(){
+HK.Load.def(404,'js/ui-adv.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -37673,7 +38031,7 @@ A.afterRender=function(){A.secs.forEach(function(s){var r=s.apply&&data[s.id]?s.
 });
 ;
 /* ==== js/ui-adv-moan.js ==== */
-HK.Load.def(403,'js/ui-adv-moan.js',function(){
+HK.Load.def(405,'js/ui-adv-moan.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Adv,M=HK&&HK.Moan;
@@ -37886,7 +38244,7 @@ return'<div class="desc" style="font-size:12px;color:var(--muted);margin-top:4px
 });
 ;
 /* ==== js/ui-adv-moan-fit.js ==== */
-HK.Load.def(404,'js/ui-adv-moan-fit.js',function(){
+HK.Load.def(406,'js/ui-adv-moan-fit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Adv,M=HK&&HK.Moan;
@@ -38071,7 +38429,7 @@ if(HK.toast)HK.toast('喘ぎ声の調整を既定に戻しました');
 });
 ;
 /* ==== js/ui-gear-moan.js ==== */
-HK.Load.def(405,'js/ui-gear-moan.js',function(){
+HK.Load.def(407,'js/ui-gear-moan.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,M=HK&&HK.Moan;
@@ -38229,7 +38587,7 @@ return true;
 });
 ;
 /* ==== js/ui-voice.js ==== */
-HK.Load.def(406,'js/ui-voice.js',function(){
+HK.Load.def(408,'js/ui-voice.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,UI=HK&&HK.UI;
@@ -38551,7 +38909,7 @@ if(VS.onTool)VS.onTool(act,c,b);
 });
 ;
 /* ==== js/ui-voice-copy.js ==== */
-HK.Load.def(407,'js/ui-voice-copy.js',function(){
+HK.Load.def(409,'js/ui-voice-copy.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,VS=HK&&HK.VoiceSet,UI=HK&&HK.UI;
@@ -38801,7 +39159,7 @@ if(UI.refresh)UI.refresh();
 });
 ;
 /* ==== js/ui-voice-moan.js ==== */
-HK.Load.def(408,'js/ui-voice-moan.js',function(){
+HK.Load.def(410,'js/ui-voice-moan.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,VS=HK&&HK.VoiceSet,M=HK&&HK.Moan,A=HK&&HK.Adv;
@@ -38939,7 +39297,7 @@ if(HK.UI&&HK.UI.refresh)HK.UI.refresh();
 });
 ;
 /* ==== js/notice.js ==== */
-HK.Load.def(409,'js/notice.js',function(){
+HK.Load.def(411,'js/notice.js',function(){
 (function(){
 'use strict';
 var last=null;
@@ -38972,7 +39330,7 @@ window.HK.Notice={open:open,close:close};
 });
 ;
 /* ==== js/ui-fold.js ==== */
-HK.Load.def(410,'js/ui-fold.js',function(){
+HK.Load.def(412,'js/ui-fold.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -39024,7 +39382,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/ui-mobile.js ==== */
-HK.Load.def(411,'js/ui-mobile.js',function(){
+HK.Load.def(413,'js/ui-mobile.js',function(){
 (function(){
 'use strict';
 var css='@media (max-width:600px){'+
@@ -39096,7 +39454,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/ui-log.js ==== */
-HK.Load.def(412,'js/ui-log.js',function(){
+HK.Load.def(414,'js/ui-log.js',function(){
 (function(){
 'use strict';
 var css='html body .stepblk .when{color:#16233B;color:var(--ink,#16233B);-webkit-text-fill-color:currentColor;background:#fff;background:var(--paper,#fff);color-scheme:light only;opacity:1;mix-blend-mode:normal}'+
@@ -39107,7 +39465,7 @@ var st=document.createElement('style');st.textContent=css;document.head.appendCh
 });
 ;
 /* ==== js/ui-filter.js ==== */
-HK.Load.def(413,'js/ui-filter.js',function(){
+HK.Load.def(415,'js/ui-filter.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -39197,7 +39555,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/obsess-kit.js ==== */
-HK.Load.def(415,'js/obsess-kit.js',function(){
+HK.Load.def(417,'js/obsess-kit.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -39577,7 +39935,7 @@ if(opt.extra)HK.addTo(scen.events,opt.extra.slice());
 });
 ;
 /* ==== js/lewd-unify.js ==== */
-HK.Load.def(421,'js/lewd-unify.js',function(){
+HK.Load.def(423,'js/lewd-unify.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -39718,7 +40076,7 @@ if(HK.Load&&HK.Load.onChunk)HK.Load.onChunk(function(){Object.keys(X.CONF).forEa
 });
 ;
 /* ==== js/lewd-mark.js ==== */
-HK.Load.def(422,'js/lewd-mark.js',function(){
+HK.Load.def(424,'js/lewd-mark.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -39766,7 +40124,7 @@ return sim;
 });
 ;
 /* ==== js/ero-scene.js ==== */
-HK.Load.def(423,'js/ero-scene.js',function(){
+HK.Load.def(425,'js/ero-scene.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -39822,7 +40180,7 @@ HK.wrap(HK,'simulate',function(sim0){var f=function(){return X.finish(sim0.apply
 });
 ;
 /* ==== js/ero-flavor-lines-r18.js ==== */
-HK.Load.def(424,'js/ero-flavor-lines-r18.js',function(){
+HK.Load.def(426,'js/ero-flavor-lines-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -40172,7 +40530,7 @@ HK.EROFLAVOR={DRY:DRY,DEAL:DEAL,REL_DRY:REL_DRY,REL_DEAL:REL_DEAL,NOVEL:NOVEL,ER
 });
 ;
 /* ==== js/ero-flavor-r18.js ==== */
-HK.Load.def(425,'js/ero-flavor-r18.js',function(){
+HK.Load.def(427,'js/ero-flavor-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -40629,7 +40987,7 @@ apply:function(text){F.bias=norm(text);return{errors:[]};}
 });
 ;
 /* ==== js/reset.js ==== */
-HK.Load.def(427,'js/reset.js',function(){
+HK.Load.def(429,'js/reset.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -40684,7 +41042,7 @@ HK.resetStorage=wipe;
 });
 ;
 /* ==== js/voice-seg.js ==== */
-HK.Load.def(428,'js/voice-seg.js',function(){
+HK.Load.def(430,'js/voice-seg.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK.Voice||{};
@@ -40849,15 +41207,16 @@ if(typeof seg.nk==='string')seg.nk=NS.dec(seg.nk);
 return seg;
 };
 }
+var NGd=HK.NameGuard,withCast=function(chars,fn){return NGd&&NGd.withCast?NGd.withCast(chars,fn):fn();};
 if(NS&&HK.simulate&& !HK.simulate._nameSafe)HK.wrap(HK,'simulate',function(sim2){
 var sim=function(input){
-var cs=input&&input.chars;
-if(!Array.isArray(cs)|| !cs.some(function(c){return c&&NS.need(c.name);}))return sim2.apply(this,arguments);
+var cs=input&&input.chars,self=this,args=arguments;
+if(!Array.isArray(cs)|| !cs.some(function(c){return c&&NS.need(c.name);}))return withCast(cs,function(){return sim2.apply(self,args);});
 var ren=Object.create(null),rn=function(k){return Object.prototype.hasOwnProperty.call(ren,k)?ren[k]:k;};
 cs.forEach(function(c){if(c&&NS.need(c.name))ren[c.name]=NS.enc(c.name);});
 var rk=function(m){if(!m||typeof m!=='object'||Array.isArray(m))return m;var o={};Object.keys(m).forEach(function(k){o[rn(k)]=m[k];});return o;};
 var in2=Object.assign({},input,{chars:cs.map(function(c){return c&&typeof c==='object'?Object.assign({},c,{name:rn(c.name),calls:rk(c.calls),keigo:rk(c.keigo)}):c;})});
-var r=sim2.call(this,in2);
+var r=withCast(in2.chars,function(){return sim2.call(self,in2);});
 try{NS.decDeep(r);}catch(err){}
 return r;
 };
@@ -40869,7 +41228,7 @@ return sim;
 });
 ;
 /* ==== js/voice-fp.js ==== */
-HK.Load.def(429,'js/voice-fp.js',function(){
+HK.Load.def(431,'js/voice-fp.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -40927,7 +41286,7 @@ return saved.length?function(){saved.forEach(function(s){s[0].fp=s[1];});}:null;
 });
 ;
 /* ==== js/rel-bad-story.js ==== */
-HK.Load.def(487,'js/rel-bad-story.js',function(){
+HK.Load.def(489,'js/rel-bad-story.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story;
@@ -41098,4 +41457,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '01ce376e84', 1);
+HK.Load.done('core', 'de68cd16ea', 1);

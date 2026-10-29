@@ -220,13 +220,19 @@
     }
     if (mode !== 'speed') lew.push(tk('after', 0.75));
     if (mode === 'repeat') lew.splice(0, 0, pick(ctx, REPEAT));
+    var arp = '';
     if (mode === 'will' || mode === 'des' || mode === 'aphro') {
       /* まだ条件が残っている組には、扉が開く・部屋を出る締めを使わない */
       var API = HK.RoomAPI, open = !API || !API.pairDone || API.pairDone(ctx, a, b);
       var af = open ? AFTER[mode] : AFTER[mode].filter(function (l) { return !/扉|出られる|行こう|条件は、満たした/.test(l); });
-      lew.push(pick(ctx, af.length ? af : AFTER[mode]));
+      var afl = pick(ctx, af.length ? af : AFTER[mode]);
+      lew.push(afl);
+      /* 余韻の行が問い（「出たら、何がしたい？」と訊いた など）なら、受けの返事を続ける（R18版の room-after-reply-r18.js の L.afterReply。色×受けの態度。2026-10-29 担当MN） */
+      arp = L.afterReply ? L.afterReply(ctx, afl, A, B, mode) : '';
+      if (arp) lew.push(arp);
     }
-    if (V && mode !== 'speed' && ctx.rng() < 0.4) lew.push(V.line(pf, B.persona, 'after', 'b'));
+    /* 口調ごとの事後の一言は、問いに返事をした回には重ねない（乱数の引き方は変えない） */
+    if (V && mode !== 'speed' && ctx.rng() < 0.4 && !arp) lew.push(V.line(pf, B.persona, 'after', 'b'));
     return lew.map(function (s) { return t(ctx, s, A, B); }).join('') + (opt.dash ? '――' : '');
   };
   /* r18:end */

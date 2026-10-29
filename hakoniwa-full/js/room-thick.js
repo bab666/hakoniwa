@@ -76,7 +76,7 @@
     stern: L('{b}は乱れた呼吸を数えようとして、途中でやめた。|{b}は「……取り乱した」とだけ言い、{a}の肩に額を押しつけた。|{b}は白い天井を見上げたまま、しばらく自分の鼓動を聞いていた。'),
     tsun: L('{b}は「い、今のは聞かなかったことにして」と毛布をかぶった。|{b}は{a}の胸を拳で軽く叩いた。「……ばか」――叩いた手は、そのまま{a}の背中に回った。|{b}は顔を背けたまま、{a}の指に自分の指を絡めた。'),
     gentle: L('{b}は汗ばんだ{a}の髪を指で梳き、「頑張ったね」と笑った。|{b}は{a}を抱き寄せて、背中をゆっくり撫でた。白い部屋の静けさが戻ってきた。|{b}はとろけた目のまま、{a}の額にキスを落とした。'),
-    devoted: L('{b}は潤んだ目で{a}を見上げ、「……ちゃんと、できてた？」と訊いた。|{b}は{a}にしがみついたまま、「まだ、離れないで」と囁いた。|{b}は震える指で{a}の頬に触れ、幸せそうに目を細めた。'),
+    devoted: L('{b}は潤んだ目で{a}を見上げ、「……ちゃんと、できてた？」と訊いた。{a}が黙って頷くと、{b}はほっとしたように目を閉じた。|{b}は{a}にしがみついたまま、「まだ、離れないで」と囁いた。|{b}は震える指で{a}の頬に触れ、幸せそうに目を細めた。'),
     cool: L('{b}は乱れた前髪の下で目を閉じ、「……想定より、ずっと」とだけ呟いた。|{b}はしばらく黙っていたが、やがて小さく息を吐いた。「計算が、全部飛んだ」|{b}のいつもの冷静な顔は、なかなか戻ってこなかった。'),
     free: L('{b}は笑いながら仰向けに転がった。「やば。この部屋、ちょっと好きかも」|{b}は息を切らしたまま{a}に抱きつき、「ね、もう一回」とねだった。|{b}は満足そうに伸びをして、{a}の肩に頭を預けた。'),
     shy: L('{b}は毛布を頭まで引き上げて、中から「……見てないよね」と訊いた。|{b}は自分の声を思い出して、{a}の胸に顔を押しつけたまま動けなくなった。|{b}は真っ赤な顔で、毛布の端から{a}を盗み見た。'),
@@ -90,10 +90,10 @@
       stern: '{b}は乱れた襟を直そうとして、手が震えているのに気づいた。|{b}は長く息を吐いてから、「……少し、待ってくれ」と低く言った。',
       tsun: '{b}は「ぜ、全然平気だし」と言いながら、{a}の腕から出ていこうとしなかった。|{b}は枕に顔を押しつけて、「こっち見ないで」とくぐもった声で言った。',
       gentle: '{b}はまだ震えている指で、{a}の頬にそっと触れた。|{b}は{a}を胸に抱いたまま、「ありがとう」と小さく言った。',
-      devoted: '{b}は息を整えながら、それでも{a}の汗を拭おうと手を伸ばした。|{b}は「ちゃんと、できてましたか」と心配そうに{a}を見上げた。',
+      devoted: '{b}は息を整えながら、それでも{a}の汗を拭おうと手を伸ばした。|{b}は「ちゃんと、できてましたか」と心配そうに{a}を見上げた。{a}が小さく頷くと、{b}はようやく肩の力を抜いた。',
       cool: '{b}は天井を見つめたまま、しばらく瞬きもしなかった。|{b}は「……想定より、ずっと」と言いかけて、口を閉じた。',
       free: '{b}は息を弾ませたまま笑い出し、「すごかった」と素直に言った。|{b}は{a}に抱きついて、「ねえ、もう一回」と悪戯っぽく囁いた。',
-      shy: '{b}は毛布を鼻の上まで引き上げて、目だけで{a}を見た。|{b}は「……変な声、出てなかった？」と、消え入りそうな声で訊いた。',
+      shy: '{b}は毛布を鼻の上まで引き上げて、目だけで{a}を見た。|{b}は「……変な声、出てなかった？」と、消え入りそうな声で訊いた。{a}は少し考えてから、「＠{a}＠少しだけ｜少しだけな｜少しだけです」と答えた。{b}は毛布の中で小さく悲鳴を上げた。',
       polite: '{b}は乱れた髪を整えながら、「……見苦しいところ、見せちゃったね……｜……見苦しいところを見せた｜お見苦しいところを」と頭を下げようとした。|{b}は{a}の手を両手で包み、「光栄です」と静かに微笑んだ。'
     };
     Object.keys(M).forEach(function (k) { PEAK_PS[k] = (PEAK_PS[k] || []).concat(L(M[k])); });
@@ -227,11 +227,15 @@
     var tb = TOPR[psOf(A)] || TOPR.gentle, key = stage === 'start' ? (mode === 'des' || mode === 'aphro' ? 'des' : 'will') : stage;
     var own = (tb[key] || []).filter(function (l) { return !(o.closed && TOP_CLOSED.test(l)); });
     var E = HK.EroTop, night = HK.Attr && HK.Attr.nightOf ? HK.Attr.nightOf(A, B) : '', s = '';
+    /* 事後の一言が問いなら、受けの返事を続ける（共通の表は after-reply-r18.js が HK.EroTop.say の中で、白い部屋の表はここで。仕方なく＝des は甘めでもドライの返事） */
     if (E && (!own.length || ctx.rng() < (night ? 0.6 : 0.45))) {
-      s = E.say(ctx, A, B, stage, { rel: relOf(ctx, A, B, mode, o.rel), who: '{a}' });
+      s = E.say(ctx, A, B, stage, { rel: relOf(ctx, A, B, mode, o.rel), who: '{a}', replyMode: mode });
       if (s && o.closed && TOP_CLOSED.test(s)) s = '';
     }
-    if (!s && own.length) s = '{a}' + freshPick(ctx, own);
+    if (!s && own.length) {
+      s = '{a}' + freshPick(ctx, own);
+      if (stage === 'after' && LW.afterReply) s += LW.afterReply(ctx, s, A, B, mode);
+    }
     return s;
   };
   LW.THICK.TOPR = TOPR; LW.THICK.FORE = FORE; LW.THICK.FORE_S = FORE_S; LW.THICK.INS_S = INS_S;
@@ -304,20 +308,26 @@
     if (high && mode !== 'speed') peak += HK.ThickEro.again(ctx, pick, A, B, !!ero, false) + '\n\n';
     /* 事後の一言：短い版はいつも候補に。厚い版は、山場までの攻めの台詞が2本以下のときだけ（あとで差し込む） */
     var topAfter = mode === 'speed' ? '' : tsay('after', short ? 0.75 : 0.7), afPick = pick(af.length ? af : al);
-    var tail = peak + afPick + (ctx.rng() < 0.5 ? pick(AFTER_PS[ps] || AFTER_PS.gentle) : '');
+    /* 事後の余韻の行が問い（「出たら、何がしたい？」と訊いた など）なら、受けの態度の段の代わりに、その問いへの受けの返事を置く
+       （room-after-reply-r18.js の LW.afterReply。色×受けの態度。2026-10-29 担当MN）。問いでない回は乱数の引き方を変えない */
+    var psOn = ctx.rng() < 0.5, afRep = LW.afterReply ? LW.afterReply(ctx, afPick, A, B, mode) : '';
+    var tail = peak + afPick + (afRep || (psOn ? pick(AFTER_PS[ps] || AFTER_PS.gentle) : ''));
     var withAfter = function (txt) {
-      if (!topAfter || txt.indexOf(afPick) < 0) return txt;
+      /* 余韻の行が問いのときは、その前に攻めの事後の一言を差し込まない（問いと返事を続けるため） */
+      if (!topAfter || afRep || txt.indexOf(afPick) < 0) return txt;
       var n = (txt.match(/\{a\}「|\{a\}は[^。「」]{0,20}「/g) || []).length;
       return n <= 2 ? txt.replace(afPick, topAfter + afPick) : txt;
     };
+    /* 共通の山場（thick-sex.js・thick-sex-ero.js）が攻めの事後の一言で問うたときの返事も、仕方なく（des）ならドライの表にする（HK.AfterReply.mode） */
+    var ARm = HK.AfterReply, inMode = function (fn) { if (!ARm) return fn(); var m0 = ARm.mode; ARm.mode = mode; try { return fn(); } finally { ARm.mode = m0; } };
     if (ero) {
-      var er = short ? HK.ThickEro.short({ S: ctx, pick: pick, a: A, b: B, open: open.split('\n\n')[0], again: high && mode !== 'speed', after: topAfter + afPick })
-        : HK.ThickEro.scene({ S: ctx, pick: pk2, rng: ctx.rng, a: A, b: B, style: st, open: open, after: tail, place: 'room' });
+      var er = inMode(function () { return short ? HK.ThickEro.short({ S: ctx, pick: pick, a: A, b: B, open: open.split('\n\n')[0], again: high && mode !== 'speed', after: topAfter + afPick + afRep })
+        : HK.ThickEro.scene({ S: ctx, pick: pk2, rng: ctx.rng, a: A, b: B, style: st, open: open, after: tail, place: 'room' }); });
       var etx = ctx.t(er.text, A, B);
       if (ff && HK.FF && HK.FF.fix) etx = HK.FF.fix(ctx, etx, A, B, { tools: !!(ctx.flags && ctx.flags.toolbox) });
       return etx + (opt.dash ? '――' : '');
     }
-    var r = T.scene({ pick: pk2, rng: ctx.rng, a: A, b: B, style: st, open: open, after: tail, place: 'room', jealous: !!opt.jealous && A === a });
+    var r = inMode(function () { return T.scene({ pick: pk2, rng: ctx.rng, a: A, b: B, style: st, open: open, after: tail, place: 'room', jealous: !!opt.jealous && A === a }); });
     var txt = ctx.t(withAfter(r.text), A, B);
     if (ff && HK.FF && HK.FF.fix) txt = HK.FF.fix(ctx, txt, A, B, { tools: !!(ctx.flags && ctx.flags.toolbox) });
     return txt + (opt.dash ? '――' : '');

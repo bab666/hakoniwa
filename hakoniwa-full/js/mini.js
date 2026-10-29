@@ -155,6 +155,29 @@
     FC: ['{a}は鼻歌まじりだった。', '{a}はすぐに飽きて、別のことを始めた。', '{a}は一人で小さく笑った。'],
     AC: ['{a}は誰かに見られていないか、何度も振り返った。', '{a}は小さくため息をついた。', '{a}は、自分のしたことが正しかったのか考え込んだ。']
   };
+  /* 問いへの反応：文の終わりが {a} の問い（「…？」と訊いた・「…？」で終わる）なら、相手の反応は「答える」形にする（2026-10-29 担当MN）。
+     上の反応（「最後まで聞いていた」「もっと言って、と冗談めかした」など）は話や行動への反応なので、問いのあとに置くと会話が噛み合わない。
+     問いの中身を問わずに通じる、答え方・はぐらかし方だけを書く（相手のいちばん強い因子で分岐） */
+  HK.TAILS_Q = {
+    CP: ['{b}は少し間を置いてから、短く答えた。', '{b}は「さあね｜さあな｜さあ、どうでしょう」とはぐらかした。', '{b}は答えをはぐらかして、肩をすくめた。'],
+    NP: ['{b}は少し考えてから、丁寧に答えた。', '{b}は笑って、ちゃんと答えた。', '{b}は相手の顔を見て、正直に答えた。'],
+    A: ['{b}は少し考えてから、短く答えた。', '{b}は表情を変えずに、簡潔に答えた。', '{b}は一瞬だけ言葉を探してから、答えた。'],
+    FC: ['{b}は即答した。', '{b}は冗談で返して、それから本当のことを答えた。', '{b}は「それ聞く？｜それを聞くか｜それ、聞きます？」と笑ってから答えた。'],
+    AC: ['{b}は少し迷ってから、小さな声で答えた。', '{b}は答えに詰まって、目を泳がせた。', '{b}は俯いたまま、ぽつりと答えた。']
+  };
+  /* 文の終わりが問いなら、答える人を返す：a が訊いた →'b'、a が訊かれた（受け身。「{a}は{b}に「…？」と訊かれた」）→'a'。
+     b が訊いた文、名前「 の形で相手がもう答えている文、問いで終わらない文は ''（今までどおりの反応） */
+  var Q_END = /[？?]」(?:と[^。「」]{0,16}(?:訊|尋ね|聞)いた)?。?$/, Q_PASS = /[？?]」と[^。「」]{0,16}(?:訊|尋ね|聞)(?:か|ね)れた。?$/;
+  function askEnd(text, a, b) {
+    if (!text || !a || !b || text.indexOf(b.name + '「') >= 0) return '';
+    var pass = Q_PASS.test(text);
+    if (!pass && !Q_END.test(text)) return '';
+    var qi = text.lastIndexOf('「'), st = text.lastIndexOf('。', qi) + 1, sen = text.slice(st, qi);
+    if (sen.indexOf(b.name + 'は') >= 0 && sen.indexOf(a.name + 'は') < 0) return '';
+    if (!(sen.indexOf(a.name) >= 0 || sen === '')) return '';
+    return pass ? 'a' : 'b';
+  }
+  HK.askEnd = askEnd;
   function tail(ctx, who, cat, self, text) {
     var T = HK.TAILS[cat];
     if (!T || !who) return '';
@@ -251,7 +274,9 @@
         /* 年齢が決まっている二人なら、「同い年」「年上」の文は実際の年齢に合うものだけ */
         if (b && a.age && b.age) { var ag = cand.filter(function (t) { return ageFits(t, a, b); }); if (ag.length) cand = ag; else return null; }
         var text = ctx.t(ctx.pick(cand.length ? cand : list), a, b, c);
-        if (withTail && b && ctx.rng() < 0.55) text += tail(ctx, b, tcat, false, text);
+        /* 問いで終わる文には、いつも相手の答え（HK.TAILS_Q）を続ける。問いでない文は今までどおり（乱数の引き方も同じ） */
+        var isQ = withTail && b ? askEnd(text, a, b) : '', ans = isQ === 'a' ? a : b;
+        if (withTail && b && (ctx.rng() < 0.55 || isQ)) text += isQ ? ctx.t(ctx.pick(HK.TAILS_Q[HK.voiceTop(ans)] || HK.TAILS_Q.A), null, ans) : tail(ctx, b, tcat, false, text);
         if (selfTail && ctx.rng() < 0.5) text += tail(ctx, a, 'solo', true);
         return { text: text, why: why(ctx, a, b, terms), with: c ? [c] : null };
       }

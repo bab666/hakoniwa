@@ -90,6 +90,7 @@ js/mood-dial.js
 js/mob.js
 js/ero-kit.js
 js/ero-top-lines-r18.js
+js/after-reply-r18.js
 js/lewd-words.js
 js/part-words.js
 js/ero-moan-tone.js
@@ -117,6 +118,7 @@ js/room-lewd.js @scen:whiteroom
 js/room-lewd-more.js @scen:whiteroom
 js/room-lewd-x.js @scen:whiteroom
 js/room-thick.js @scen:whiteroom
+js/room-after-reply-r18.js @scen:whiteroom
 js/scenario-room.js @scen:whiteroom
 js/room-reluct.js @scen:whiteroom
 js/room-trio-lines.js @scen:whiteroom

@@ -4263,11 +4263,33 @@ if(typeof v==='string'&&v.trim()&& !NG_YOU.test(v.trim()))out.push(v.trim().slic
 return out;
 };
 NG.within=function(g,fn){NG.stack.push(g);try{return fn();}finally{NG.stack.splice(NG.stack.lastIndexOf(g),1);}};
+NG.casts=[];
+NG.cast=function(){return NG.casts.length?NG.casts[NG.casts.length-1]:null;};
+NG.withCast=function(chars,fn){
+if(!Array.isArray(chars))return fn();
+NG.casts.push(chars);
+try{return fn();}finally{NG.casts.splice(NG.casts.lastIndexOf(chars),1);}
+};
 NG.guard=function(text,people,fn){
-if(typeof text!=='string'|| !text)return fn(text,null);
+if(people==null)people=NG.cast();
+if(typeof text!=='string'|| !text|| !people)return fn(text,null);
 var g=NG.make(NG.wordsOf(people),text);
 if(!g)return fn(text,null);
 return g.dec(NG.within(g,function(){return fn(g.enc(text),g);}));
+};
+NG.text=function(fn){
+var hit=Object.create(null);
+var touches=function(p){
+var b=p&&typeof p.name==='string'?ngBare(p.name):'';
+if(!b)return false;
+if(!(b in hit)){var r;try{r=fn(b);}catch(err){r=null;}hit[b]=r!==b;}
+return hit[b];
+};
+return function(t,people){
+if(people==null)people=NG.cast();
+var P=Array.isArray(people)?people.filter(touches):[];
+return NG.guard(t,P,function(s){return fn(s);});
+};
 };
 NG.decAll=function(s){for(var i=NG.stack.length-1;i>=0;i--)s=NG.stack[i].dec(s);return s;};
 if(HK.NameSafe&&HK.NameSafe.dec&& !HK.NameSafe.dec._ng){
@@ -12901,6 +12923,24 @@ A:['{a}は頭の中で、次の手を三つ考えた。','{a}の表情からは�
 FC:['{a}は鼻歌まじりだった。','{a}はすぐに飽きて、別のことを始めた。','{a}は一人で小さく笑った。'],
 AC:['{a}は誰かに見られていないか、何度も振り返った。','{a}は小さくため息をついた。','{a}は、自分のしたことが正しかったのか考え込んだ。']
 };
+HK.TAILS_Q={
+CP:['{b}は少し間を置いてから、短く答えた。','{b}は「さあね｜さあな｜さあ、どうでしょう」とはぐらかした。','{b}は答えをはぐらかして、肩をすくめた。'],
+NP:['{b}は少し考えてから、丁寧に答えた。','{b}は笑って、ちゃんと答えた。','{b}は相手の顔を見て、正直に答えた。'],
+A:['{b}は少し考えてから、短く答えた。','{b}は表情を変えずに、簡潔に答えた。','{b}は一瞬だけ言葉を探してから、答えた。'],
+FC:['{b}は即答した。','{b}は冗談で返して、それから本当のことを答えた。','{b}は「それ聞く？｜それを聞くか｜それ、聞きます？」と笑ってから答えた。'],
+AC:['{b}は少し迷ってから、小さな声で答えた。','{b}は答えに詰まって、目を泳がせた。','{b}は俯いたまま、ぽつりと答えた。']
+};
+var Q_END= /[？?]」(?:と[^。「」]{0,16}(?:訊|尋ね|聞)いた)?。?$/,Q_PASS= /[？?]」と[^。「」]{0,16}(?:訊|尋ね|聞)(?:か|ね)れた。?$/;
+function askEnd(text,a,b){
+if(!text|| !a|| !b||text.indexOf(b.name+'「')>=0)return'';
+var pass=Q_PASS.test(text);
+if(!pass&& !Q_END.test(text))return'';
+var qi=text.lastIndexOf('「'),st=text.lastIndexOf('。',qi)+1,sen=text.slice(st,qi);
+if(sen.indexOf(b.name+'は')>=0&&sen.indexOf(a.name+'は')<0)return'';
+if(!(sen.indexOf(a.name)>=0||sen===''))return'';
+return pass?'a':'b';
+}
+HK.askEnd=askEnd;
 function tail(ctx,who,cat,self,text){
 var T=HK.TAILS[cat];
 if(!T|| !who)return'';
@@ -12987,7 +13027,8 @@ var cand=c?list:list.filter(function(t){return t.indexOf('{c}')<0;});
 if(hasLove&& !loveTalkOk(ctx,[a,b,c])){var nl=cand.filter(function(t){return!LOVE_TXT.test(t);});if(nl.length)cand=nl;}
 if(b&&a.age&&b.age){var ag=cand.filter(function(t){return ageFits(t,a,b);});if(ag.length)cand=ag;else return null;}
 var text=ctx.t(ctx.pick(cand.length?cand:list),a,b,c);
-if(withTail&&b&&ctx.rng()<0.55)text+=tail(ctx,b,tcat,false,text);
+var isQ=withTail&&b?askEnd(text,a,b):'',ans=isQ==='a'?a:b;
+if(withTail&&b&&(ctx.rng()<0.55||isQ))text+=isQ?ctx.t(ctx.pick(HK.TAILS_Q[HK.voiceTop(ans)]||HK.TAILS_Q.A),null,ans):tail(ctx,b,tcat,false,text);
 if(selfTail&&ctx.rng()<0.5)text+=tail(ctx,a,'solo',true);
 return{text:text,why:why(ctx,a,b,terms),with:c?[c]:null};
 }
@@ -21015,7 +21056,7 @@ t=out.join('');
 WORD.forEach(function(w){t=t.replace(w[0],w[1]);});
 return t.replace(/(――[^。]*。)(?:――[^。]*。)+/g,'$1');
 }
-HK.SafeText=softText;
+HK.SafeText=HK.NameGuard&&HK.NameGuard.text?HK.NameGuard.text(softText):softText;
 function eachChunk(fn){fn();if(HK.Load&&HK.Load.onChunk)HK.Load.onChunk(fn);}
 function scenOf(id){return HK.SCENARIOS[id]||(HK.Load&&HK.Load.info?HK.Load.info(id):null);}
 if(!ON){
@@ -30173,15 +30214,16 @@ if(typeof seg.nk==='string')seg.nk=NS.dec(seg.nk);
 return seg;
 };
 }
+var NGd=HK.NameGuard,withCast=function(chars,fn){return NGd&&NGd.withCast?NGd.withCast(chars,fn):fn();};
 if(NS&&HK.simulate&& !HK.simulate._nameSafe)HK.wrap(HK,'simulate',function(sim2){
 var sim=function(input){
-var cs=input&&input.chars;
-if(!Array.isArray(cs)|| !cs.some(function(c){return c&&NS.need(c.name);}))return sim2.apply(this,arguments);
+var cs=input&&input.chars,self=this,args=arguments;
+if(!Array.isArray(cs)|| !cs.some(function(c){return c&&NS.need(c.name);}))return withCast(cs,function(){return sim2.apply(self,args);});
 var ren=Object.create(null),rn=function(k){return Object.prototype.hasOwnProperty.call(ren,k)?ren[k]:k;};
 cs.forEach(function(c){if(c&&NS.need(c.name))ren[c.name]=NS.enc(c.name);});
 var rk=function(m){if(!m||typeof m!=='object'||Array.isArray(m))return m;var o={};Object.keys(m).forEach(function(k){o[rn(k)]=m[k];});return o;};
 var in2=Object.assign({},input,{chars:cs.map(function(c){return c&&typeof c==='object'?Object.assign({},c,{name:rn(c.name),calls:rk(c.calls),keigo:rk(c.keigo)}):c;})});
-var r=sim2.call(this,in2);
+var r=withCast(in2.chars,function(){return sim2.call(self,in2);});
 try{NS.decDeep(r);}catch(err){}
 return r;
 };
@@ -30422,4 +30464,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', 'fc6a485b7e', 1);
+HK.Load.done('core', '9cc5cfae0c', 1);

@@ -1,6 +1,6 @@
 ;
 /* ==== js/solo-saimin-data.js ==== */
-HK.Load.def(274,'js/solo-saimin-data.js',function(){
+HK.Load.def(276,'js/solo-saimin-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -404,7 +404,7 @@ depend:L('{a}は{h}に腹を立てていた。それなのに、{h}の「えら�
 });
 ;
 /* ==== js/solo-saimin-more.js ==== */
-HK.Load.def(275,'js/solo-saimin-more.js',function(){
+HK.Load.def(277,'js/solo-saimin-more.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SM=HK.SAIMIN;
@@ -480,7 +480,7 @@ if(SM.EVENTS)SM.EVENTS.push(
 });
 ;
 /* ==== js/solo-saimin-sex.js ==== */
-HK.Load.def(276,'js/solo-saimin-sex.js',function(){
+HK.Load.def(278,'js/solo-saimin-sex.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SM=HK.SAIMIN;
@@ -812,7 +812,7 @@ return{text:t,why:'数日後の夜、'+(cat==='fall'?'自分から戻ってき�
 });
 ;
 /* ==== js/solo-saimin.js ==== */
-HK.Load.def(277,'js/solo-saimin.js',function(){
+HK.Load.def(279,'js/solo-saimin.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SM=HK.SAIMIN,ST=HK.Story,clamp=HK.clamp;
@@ -1213,8 +1213,10 @@ var res=finish(S,input,T,HY);
 return lew==='low'?softWords(res):res;
 }
 var SOFTW=[[/快楽堕ち/g,'ハマり度'],[/快楽に/g,'暗示に'],[/ねだる/g,'せがむ'],[/快楽/g,'心地よさ'],[/堕ちた/g,'ハマった'],[/堕ち/g,'ハマり'],[/快感/g,'ふわふわ'],[/絶頂/g,'放心']];
+var softW1=function(s){SOFTW.forEach(function(w){s=s.replace(w[0],w[1]);});return s;};
+if(HK.NameGuard&&HK.NameGuard.text)softW1=HK.NameGuard.text(softW1);
 function softWords(o){
-if(typeof o==='string'){SOFTW.forEach(function(w){o=o.replace(w[0],w[1]);});return o;}
+if(typeof o==='string')return softW1(o);
 if(Array.isArray(o)){for(var i=0;i<o.length;i++)o[i]=softWords(o[i]);return o;}
 if(o&&typeof o==='object')Object.keys(o).forEach(function(k){if(k!=='id'&&k!=='kind'&&k!=='type'&&k!=='color')o[k]=softWords(o[k]);});
 return o;
@@ -1425,7 +1427,7 @@ summary:'催眠：'+T.map(function(p){return p.name+'='+p.fate;}).join('、')
 });
 ;
 /* ==== js/solo-saimin-ero.js ==== */
-HK.Load.def(469,'js/solo-saimin-ero.js',function(){
+HK.Load.def(471,'js/solo-saimin-ero.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -1877,7 +1879,7 @@ HK.Ero.add('saimin',{
 });
 ;
 /* ==== js/solo-saimin-thick.js ==== */
-HK.Load.def(470,'js/solo-saimin-thick.js',function(){
+HK.Load.def(472,'js/solo-saimin-thick.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SM=HK&&HK.SAIMIN;
@@ -2147,7 +2149,7 @@ return'\n\n'+fin(S,R,p,paras.join('\n\n'),ro);
 });
 ;
 /* ==== js/solo-erotic-more-b.js ==== */
-HK.Load.def(474,'js/solo-erotic-more-b.js',function(){
+HK.Load.def(476,'js/solo-erotic-more-b.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2256,7 +2258,7 @@ Object.keys(C).forEach(function(k){var g=SM.SUG[k];if(g&&g.cmd)add(g.cmd,C[k]);}
 })();
 });
 ;
-HK.Load.def(474.5,'tone:scen-saimin',function(){
+HK.Load.def(476.5,'tone:scen-saimin',function(){
 HK.Load.toneData("mixed",{"F":[
 ["……すっごい、いい気分……","……すっごい、いい気分です……",1],
 ["あなたの指先は、十倍敏感になる。触れるたびに、触れた指のほうが気持ちよくなる","あなたの指先は、十倍敏感になります。触れるたびに……触れた指のほうが、気持ちよくなるよ",1],
@@ -3514,4 +3516,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 ["……その、また、かけてくれないか？","……その、また、かけてくれないか？",1],
 ["すまない、無理だ。笑ってしまう","すまない、無理だ。……フッ、笑ってしまう",1]]});
 });
-HK.Load.done('scen-saimin', 'b8690d8b74', 1);
+HK.Load.done('scen-saimin', '6f01fc69a9', 1);
