@@ -990,7 +990,7 @@ both:{label:'愛憎：双方',short:'愛憎（双方）'}
 };
 HK.LOVEHATE_ORDER=['','a','b','both'];
 HK.LH_BACK={
-'':{label:'相手：持たない（{a}だけ）',short:''},
+'':{label:'相手：持たない（片方だけ）',short:''},
 both:{label:'相手も愛憎を持つ（双方）',short:'双方',mutual:true}
 };
 HK.LH_BACK_ORDER=['','both'];
@@ -5096,12 +5096,17 @@ return q;
 };
 var FEM_PROUD={proud:1};
 var FP_END='(?=[…‥。！？!?、」♡〜\n]|$)';
-var FP_NOUN='([一-鿿々ァ-ヶー]|ため|だけ|きり|こと|もの|ほう|ところ|はず|つもり|ばかり|くらい|ぐらい|同じ|まま|とおり|嫌い|好き|きれい|綺麗|本当|ほんと|なし|せい|連れ|それ|これ|あれ|そう|わけ|一緒|当たり前|当然|最後|勝ち|負け|おしまい|おあいこ)';
+var FP_NOUN='([一-鿿々ァ-ヶー]|ため|だけ|きり|こと|もの|ほう|ところ|はず|つもり|ばかり|くらい|ぐらい|同じ|まま|とおり|嫌い|好き|扱い|違い|間違い|勘違い|思い|願い|狙い|せい|きれい|綺麗|本当|ほんと|なし|連れ|それ|これ|あれ|そう|わけ|一緒|当たり前|当然|最後|勝ち|負け|おしまい|おあいこ)';
 function femProud(q){
 return q.replace(new RegExp('([るたいなうくすつ])んだ'+FP_END,'g'),'$1のよ')
 .replace(new RegExp('(何|なに|誰|どこ|どれ|いつ)だ'+FP_END,'g'),'$1なの')
 .replace(new RegExp(FP_NOUN+'だ'+FP_END,'g'),'$1よ')
+.replace(new RegExp('([^\\sんい「、。！？!?…‥ー〜♡っッ])だ'+FP_END,'g'),function(m,c,off,str){
+var w=str.slice(Math.max(0,off-2),off+1);
+return/(?:^|[^ぁ-ゖ])(?:ま|た)$|また$/.test(str.slice(0,off+1))&& !/あんた$|こなた$|あなた$/.test(w+'')?m:c+'よ';
+})
 .replace(new RegExp('(嫌い|好き|大嫌い|大好き)、だ'+FP_END,'g'),'$1、よ')
+.replace(new RegExp('みたいだ'+FP_END,'g'),'みたいね')
 .replace(/(^|[「…‥、。\s])だが(?=[、…‥])/g,'$1でも').replace(/([一-鿿々ァ-ヶー]|ため|だけ|こと|もの|はず|つもり|同じ)だが(?=、)/g,'$1だけど')
 .replace(/言っておくが(?=[、…‥])/g,'言っておくけど')
 .replace(new RegExp('(から|けど|ので|で)な'+FP_END,'g'),'$1ね')
@@ -42676,4 +42681,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '581b685533', 1);
+HK.Load.done('core', 'ef52e61306', 1);
