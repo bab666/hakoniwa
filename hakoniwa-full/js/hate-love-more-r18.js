@@ -63,18 +63,44 @@
     };
   };
 
+  /* ---------- 起こりやすさ（2026-10-29 利用者の指示「起こりやすいように」） ----------
+     ・引き金：突き放したあと・複雑のあとに加えて、強く当たった「構う」・嫉妬（LH.HARD。hate-love.js の LH.mark）のあとにも印を残す（待ちの印があれば上書きしない）
+     ・待つ区切り：3 → URGE_WIN（5）。性欲＋衝動の目安：0.4 → 0.3
+     ・印のある間は、持つ側が相手を出来事の相手に選びやすく（HK.Ties.pull に ＋3） */
+  var URGE_WIN = 5;
+  function urgeLive(ctx, a, b) {
+    var u = ctx.pair && ctx.pair(a, b).lhUrge, d = u ? ctx.stepIndex - u.at : -1;
+    return !!(u && !u.done && u.by === a.i && u.to === b.i && d >= 0 && d <= URGE_WIN);
+  }
+  if (LH.mark && !LH.mark._urge) {
+    HK.wrap(LH, 'mark', function (prev) {
+      var f = function (x, a, b, kind) {
+        var o = prev.apply(this, arguments);
+        if (!HK.SAFE_ON && x && typeof x.pair === 'function' && x.stepIndex != null && a && b && LH.HARD && LH.HARD[kind] && LH.has(x, a, b) && !urgeLive(x, a, b)) {
+          var pf = x.pair(a, b);
+          if (!pf.lhUrge || pf.lhUrge.done || pf.lhUrge.by !== a.i) pf.lhUrge = { by: a.i, to: b.i, at: x.stepIndex, from: 'regret' };
+        }
+        return o;
+      };
+      f._urge = true; return f;
+    });
+  }
+  if (HK.Ties && HK.Ties.pull) HK.wrap(HK.Ties, 'pull', function (prev) {
+    return function (ctx, a, o) { var w = prev.apply(this, arguments); return !HK.SAFE_ON && ctx && a && o && typeof ctx.pair === 'function' && urgeLive(ctx, a, o) ? w + 3 : w; };
+  });
+
   /* ---------- 起きてよい組 ---------- */
   function libOk(ctx, a, b) {
     var P = HK.Pos;
     if (!P) return false;
     if (P.libOf(a) === 'none') return false;
-    return P.libOf(a) === 'high' || (P.sexDrive ? P.sexDrive(ctx, a, b) >= 0.4 : false);
+    return P.libOf(a) === 'high' || (P.sexDrive ? P.sexDrive(ctx, a, b) >= 0.3 : false);
   }
   function ready(ctx, a, b) {
     var pf = ctx.pair(a, b), u = pf.lhUrge, W = HK.TieWarmR18;
     if (HK.SAFE_ON || !u || u.done || u.by !== a.i || u.to !== b.i) return false;
     var d = ctx.stepIndex - u.at;
-    if (d < 1 || d > 3) return false;
+    if (d < 1 || d > URGE_WIN) return false;
     if (!W || !W.ok || !W.X || !HK.ThickSex || !W.ok(ctx, a, b)) return false;
     if (!LH.has(ctx, a, b) || !LH.sexOk(ctx, a, b) || (HK.Pos && !HK.Pos.okSex(a, b))) return false;
     if (HK.Avoid && HK.Avoid.of && (HK.Avoid.of(ctx, a, b) || HK.Avoid.of(ctx, b, a))) return false;
