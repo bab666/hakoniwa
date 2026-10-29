@@ -222,8 +222,9 @@
       ctx.mod2(a, b, { att: 8, aff: 3, ten: 2 }, { att: 8, aff: 3, ten: 2 });
       /* R18版：攻めが強引に始め、受けは口では嫌がるがまんざらではない（hate-sex-r18.js。描写の設定もそちらで） */
       var HS = !HK.SAFE_ON && HK.HateSex;
-      if (HS) {
-        var hs = HS.scene(ctx, a, b, {}), ob = HS.order(ctx, a, b), host = HS.hostile(ctx, a, b);
+      /* 敵対の強引な場面（嫌悪系の顔）だけ HS.scene。恋人・友人などに愛憎を重ねた合意の夜は、下の言い争いから始まる文に（2026-10-29 愛憎の改修） */
+      if (HS && HS.hostile(ctx, a, b)) {
+        var hs = HS.scene(ctx, a, b, {}), ob = HS.order(ctx, a, b), host = true;
         /* 敵対の強引な場面は合意のない展開：理由に印（HK.Pos.FORCE_MARK）を付ける（性欲「なし」の人もこの場面には出るため。orient-audit.js の O6 が見る。2026-10-28 担当JA）。
            恋愛対象「なし」の人の印（HS.why の中の HK.Pos.noneWhy）がもう付いていれば足さない */
         var hw = host ? HS.why(ctx, a, b) : '憎みながら惹かれ合う（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性' + lhWhy(ctx, a, b), FMK = HK.Pos && HK.Pos.FORCE_MARK;

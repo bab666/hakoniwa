@@ -328,11 +328,11 @@ const JUDGE = function (HK, opt) {
       if (!cur || !cur.feel || acs.length < 2) return;
       const x = acs[0].i, y = acs[1].i, txt = label + ' ' + String(o.why || '') + ' ' + String(o.tag || '');
       if (/(^|:)(tie_)?lh_/.test(label) || /愛憎/.test(txt)) out.info.lhEv = (out.info.lhEv || 0) + 1;
-      if (/(^|:)tie_es_/.test(label) || /劣等感|優越/.test(txt)) out.info.esEv = (out.info.esEv || 0) + 1;
+      if (/(^|:)(tie_es_|es_story_)/.test(label) || /劣等感|優越/.test(txt)) out.info.esEv = (out.info.esEv || 0) + 1;
       if (!(feelHas('fear', x, y) || feelHas('apathy', x, y))) return;
       const why = (feelHas('fear', x, y) ? '恐怖' : '無関心');
       if ((/(^|:)(tie_)?lh_/.test(label) || /愛憎/.test(txt)) && feelHas('lovehate', x, y)) hit('S35', why + '＋愛憎の ' + acs[0].name + '→' + acs[1].name + ' が迫った [' + label + '] | ' + String(o.text || '').slice(0, 100));
-      if ((/(^|:)tie_es_/.test(label) || /劣等感|優越/.test(txt)) && (feelHas('inferior', x, y) || feelHas('superior', x, y))) hit('S36', why + '＋劣等感・優越の ' + acs[0].name + '→' + acs[1].name + ' [' + label + '] | ' + String(o.text || '').slice(0, 100));
+      if ((/(^|:)(tie_es_|es_story_)/.test(label) || /劣等感|優越/.test(txt)) && (feelHas('inferior', x, y) || feelHas('superior', x, y))) hit('S36', why + '＋劣等感・優越の ' + acs[0].name + '→' + acs[1].name + ' [' + label + '] | ' + String(o.text || '').slice(0, 100));
     };
     /* 区切りごと（エンジン型）：無関心・恐怖の組が恋人・夜になっていないか／破談のあとに恋人になっていないか */
     const feelStep = (ctx, end) => {
