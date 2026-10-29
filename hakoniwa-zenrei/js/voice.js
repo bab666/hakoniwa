@@ -783,7 +783,8 @@
             if (svT) { who.tone = svT.t; who.toneCustom = svT.c; who.fp = svT.fp; }
           }
           q = q.replace(/([！？!?])。/g, '$1');   /* 「ごめんごめん！。」のような重なりを整える */
-          if (rec) rec.push({ k: kind, w: who ? people.indexOf(who) : kind === 'm' ? nameBefore(text, start, people) : -1 });
+          /* f:1 … 目印「＠名前＠」で話し手を固定した台詞（推定ではない。点検 seg-audit が推定の失敗と区別する） */
+          if (rec) rec.push({ k: kind, w: who ? people.indexOf(who) : kind === 'm' ? nameBefore(text, start, people) : -1, f: fix && fix.k === 's' ? 1 : 0 });
           out += text.slice(last, start + 1) + q + '」';
           last = i + 1; start = -1;
         }

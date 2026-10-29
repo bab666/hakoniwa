@@ -1,6 +1,6 @@
 ;
 /* ==== js/solo-succubus-data.js ==== */
-HK.Load.def(265,'js/solo-succubus-data.js',function(){
+HK.Load.def(268,'js/solo-succubus-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -15,7 +15,7 @@ masq:{name:'仮面舞踏会',spots:L('シャンデリアの下|バルコニー|�
 SB.STYLE={
 CP:{label:'女王様型',desc:'命令して跪かせる',approach:L('{a}は{t}の顎を指先で持ち上げた。「私の目を見なさい。……いい子ね」|{a}は{t}の前に立ちはだかり、ネクタイを引いて顔を寄せさせた。「今夜はあなた、私のものよ」|{a}は{t}の隣の席に座り、注文も聞かずに言った。「ついてきなさい」')},
 NP:{label:'甘やかし型',desc:'包み込んで溶かす',approach:L('{a}は{t}の隣に座り、そっと頭を撫でた。「頑張ったね。今夜はもう、何もしなくていいよ」|{a}は疲れた顔の{t}に、温かい缶コーヒーを差し出した。「ちょっと休んでいきませんか」|{a}は{t}の肩に手を置いた。「つらかったでしょう。全部、私に預けて」')},
-A:{label:'分析型',desc:'相手の好みを読み切る',approach:L('{a}は{t}の視線の動きを三十秒観察し、好みの髪型と服装に姿を変えてから声をかけた。|{a}は{t}のスマホの待ち受けと、飲んでいる酒の銘柄から、言うべき台詞を組み立てた。|{a}は「あなた、本当はこういうのが好きでしょう」と、{t}が誰にも言ったことのない好みを言い当てた。')},
+A:{label:'分析型',desc:'相手の好みを読み切る',approach:L('{a}は{t}の視線の動きを三十秒観察し、好みの髪型と服装に姿を変えてから声をかけた。|{a}は{t}のスマホの待ち受けと、飲んでいる酒の銘柄から、言うべき台詞を組み立てた。|{a}は「＠{a}＠あなた、本当はこういうのが好きでしょう」と、{t}が誰にも言ったことのない好みを言い当てた。')},
 FC:{label:'ノリと勢い型',desc:'楽しく巻き込む',approach:L('{a}は{t}の腕に抱きついた。「ねえねえ、今ひま？　ひまだよね？　遊ぼ！」|{a}はカラオケのマイクを{t}に押しつけ、デュエットを始めた。三曲目で、{t}は笑っていた。|{a}は{t}の帽子を奪って走り出した。「返してほしかったら、追いかけてきて！」')},
 AC:{label:'健気型',desc:'お願いして断れなくする',approach:L('{a}は{t}の袖をそっと掴んだ。「あの……少しだけ、一緒にいてもらえませんか」|{a}は{t}の前で転び、涙目で見上げた。「ご、ごめんなさい……私、こういうの初めてで……」|{a}は「お腹が空いて……あなたの、少しだけ分けてもらえたら……」と、消え入りそうな声で言った。')}
 };
@@ -114,7 +114,7 @@ review:{good:L('「無事に帰ってきてくれて、それだけで嬉しい�
 });
 ;
 /* ==== js/solo-succubus-more.js ==== */
-HK.Load.def(266,'js/solo-succubus-more.js',function(){
+HK.Load.def(269,'js/solo-succubus-more.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SB=HK.SUCCUBUS;
@@ -295,7 +295,7 @@ polite:L('「も、申し訳……ございません……っ、私の方が…�
 });
 ;
 /* ==== js/solo-succubus-kohyo.js ==== */
-HK.Load.def(267,'js/solo-succubus-kohyo.js',function(){
+HK.Load.def(270,'js/solo-succubus-kohyo.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SB=HK.SUCCUBUS;
@@ -382,7 +382,7 @@ return{text:t,key:k,why:{O:'期待以上',M:'期待どおり',U:'期待以下'}[
 });
 ;
 /* ==== js/solo-succubus.js ==== */
-HK.Load.def(268,'js/solo-succubus.js',function(){
+HK.Load.def(271,'js/solo-succubus.js',function(){
 (function(){
 'use strict';
 function pkF(S,arr){
@@ -865,7 +865,7 @@ summary:'サキュバスの一夜：'+rank.map(function(p){return p.name+' '+Mat
 });
 ;
 /* ==== js/solo-succubus-rival.js ==== */
-HK.Load.def(269,'js/solo-succubus-rival.js',function(){
+HK.Load.def(272,'js/solo-succubus-rival.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SB=HK.SUCCUBUS,ST=HK.Story;
@@ -1284,7 +1284,7 @@ return b.join('・');
 });
 ;
 /* ==== js/solo-succubus-target.js ==== */
-HK.Load.def(270,'js/solo-succubus-target.js',function(){
+HK.Load.def(273,'js/solo-succubus-target.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SB=HK.SUCCUBUS,ST=HK.Story;
@@ -1695,7 +1695,7 @@ S.P.forEach(function(p){if(p.tgLog&&p.tgLog.length&&p.role==='hunt')p.notes.push
 });
 ;
 /* ==== js/solo-flow-succubus.js ==== */
-HK.Load.def(280,'js/solo-flow-succubus.js',function(){
+HK.Load.def(283,'js/solo-flow-succubus.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -1717,7 +1717,7 @@ SB.AGAIN=L('{spot}で、{a}は見覚えのある顔を見つけた。この前�
 });
 ;
 /* ==== js/solo-succubus-types.js ==== */
-HK.Load.def(464,'js/solo-succubus-types.js',function(){
+HK.Load.def(467,'js/solo-succubus-types.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SB=HK.SUCCUBUS;
@@ -1890,7 +1890,7 @@ return tpl.replace(/\{q\}/g,q);
 });
 ;
 /* ==== js/solo-succubus-ero.js ==== */
-HK.Load.def(465,'js/solo-succubus-ero.js',function(){
+HK.Load.def(468,'js/solo-succubus-ero.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2110,7 +2110,7 @@ HK.Ero.add('succubus',T2);
 });
 ;
 /* ==== js/solo-erotic-more-a-succubus.js ==== */
-HK.Load.def(470,'js/solo-erotic-more-a-succubus.js',function(){
+HK.Load.def(473,'js/solo-erotic-more-a-succubus.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2193,7 +2193,7 @@ Object.keys(AP).forEach(function(k){if(SB.STYLE[k])SB.STYLE[k].approach=SB.STYLE
 })();
 });
 ;
-HK.Load.def(470.5,'tone:scen-succubus',function(){
+HK.Load.def(473.5,'tone:scen-succubus',function(){
 HK.Load.toneData("mixed",{"F":[
 ["ちょっと、暇なら付き合いなさいよ！　……楽しいとこ行くの","ちょっと、暇なら付き合ってくださいよ！　……楽しいとこ行くんだ"],
 ["断る理由があるなら言ってみろ","断る理由があるなら、言ってみてくださいよ",1],
@@ -3208,4 +3208,4 @@ HK.Load.toneData("keigo_bossy",{"F":[
 HK.Load.toneData("chara_down",{"F":[
 ["もうお果てになりますか？","あれ、もうイっちゃいます？",1]]});
 });
-HK.Load.done('scen-succubus', '69606501da', 1);
+HK.Load.done('scen-succubus', '8df55ed7db', 1);

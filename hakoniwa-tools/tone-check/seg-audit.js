@@ -88,9 +88,10 @@ const { openBuild } = require('./lib.js');
             if (x.t === 'u') { hit('c', show()); return; }
             if (!(x.t === 'l' || x.t === 'q') || !(x.who >= 0)) return;
             /* 登場人物にいない話し手：文のどこにも名前が出てこなければ a1（誤りの疑いが強い）、名前が出ていれば a1w（多くは正しい。登場人物の記録漏れ） */
-            if (acts.length && acts.indexOf(x.who) < 0) { if (x.nm) out.n.a1n++; else if (e.text.indexOf(names[x.who]) < 0) hit('a1', show()); else hit('a1w', show()); }
+            if (acts.length && acts.indexOf(x.who) < 0) { if (x.nm || x.f) out.n.a1n++; else if (e.text.indexOf(names[x.who]) < 0) hit('a1', show()); else hit('a1w', show()); }
             if (dead[x.who] && !isDeath && !/^(?:memory|grief|mourn|epilogue)$/.test(e.cat || '')) hit('a2', show());
-            if (x.nm) return;
+            /* 名前「 の形か、目印「＠名前＠」で固定した台詞は、推定ではないので b1・b2 を見ない */
+            if (x.nm || x.f) return;
             /* b1：「……」と村人が言った */
             const textE = NSF ? NSF.encText(e.text, names) : e.text;
             const after = textE.slice(qb, qb + 40), m1 = after.match(/^(?:と|って)、?([^、。「」\s]{1,14}?)(?:が|は)([^。「」]{0,14})/);
