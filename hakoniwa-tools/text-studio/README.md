@@ -59,7 +59,7 @@ node hakoniwa-tools/text-studio/server.js
 - 試し実行のページは自動で読み直される（ビルドしなくても試せる）
 - **コミットの前に、上の「ビルド」を押す**（両方のビルドで `hakoniwa-tools/build/build.js` を実行し、`bundle-*.js` と index.html を作り直す）
 - 文を足したり直したりしたら、「依頼と更新履歴」タブで更新履歴に一行足す（CLAUDE.md の決まり）
-- js を変えたあとの確認（tone-check の collect.js・pos-audit.js）は、これまでどおり
+- js を変えたあとの確認は、tone-check の audit-all.js（点検の一式。2026-10-29 から）
 
 ## 点検（コマンドでも）
 

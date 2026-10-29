@@ -1,5 +1,7 @@
 # 箱庭シミュレーター：フェーズ7以降の実装指示書
 
+> 2026-10-29 追記：この文書に出てくる sex-audit・emo-audit・daily-audit・dark-audit・text-audit（と punct-audit・stage-audit）は削除した。価値のある判定は `hakoniwa-tools/tone-check/audit-all.js` の判定 misc に取り込み、点検は audit-all を中心に回す（`docs/reports/2026-10-29/audit-consolidation.md`）。
+
 作成日：2026-10-25　対象 HEAD：52f4d32
 前の指示書：`implementation-brief.md`（フェーズ0〜6、完了）。アンケートは 414 件（10/24 14:23〜10/25 14:04）。前回の仕分け（305 件）からの増分 109 件（10/25 2:07〜）をこの文書で拾う。
 

@@ -14,21 +14,47 @@
    ・出来事の id：エンジン型は出来事の定義の id（この点検が Ctx.prototype.say を包んで、いま起こしている出来事 ctx._ev の id を記録に写す）。
      id の無い記録（箱庭の進行の出来事・物語型）は「札：理由の頭」を id の代わりにする
    ・目安（2026-10-28）：不仲の組の「仲良し」が 2 割以下、「不仲らしい」が 5 割以上。友人の組の比率は直す前と変わらないこと
-   ・最後に、不仲の組で「仲良し」が 2 割を超える箱庭と、仲良しに数えた出来事 id（多い順）を出す。--ids で全箱庭の id の内訳 */
+   ・最後に、不仲の組で「仲良し」が 2 割を超える箱庭と、仲良しに数えた出来事 id（多い順）を出す。--ids で全箱庭の id の内訳 
+   （2026-10-29 担当MQ）配役（パス feud）と判定（judge feud）を分けて module.exports で出す。audit-all.js の追加の配役パス（--extra=feud）が
+     同じ関数を使う（比率の点検なので、ほかのパスの回には当てない）。使い方・出力は今までどおり */
 'use strict';
-const { openBuild } = require('./lib.js');
 const fs = require('fs');
-(async () => {
-  const args = process.argv.slice(2).filter(a => !/^--/.test(a));
-  const dir = args[0], N = +args[1] || 24, mode = args[2] || '', only = args[3] ? args[3].split(',') : null;
-  const WHY = process.argv.includes('--why'), IDS = process.argv.includes('--ids');
-  const JSONOUT = (process.argv.find(a => /^--json=/.test(a)) || '').slice(7);
-  const SAMPLES = +((process.argv.find(a => /^--samples=/.test(a)) || '').slice(10)) || 0;
-  if (!dir) { console.log('使い方: node feud-audit.js <ビルド> [回数] [r18|safe|\'\'] [箱庭,…] [--why] [--ids] [--json=out.json] [--samples=n]'); process.exit(1); }
-  const { browser, page, errors } = await openBuild(dir, mode);
-  const r = await page.evaluate(({ N, only, WHY, SAMPLES }) => {
+const core = require('./audit/core.js');
+
+/* ---------- パス feud（ページの中）：opt = { N, only } ---------- */
+const PASS = function* (HK, opt) {
+  const N = opt.N || 24, only = opt.only || null;
     const SCENS = ['goukon', 'classroom', 'island', 'whiteroom', 'omega', 'zombie', 'jashin', 'yakata', 'ship', 'locker'].filter(s => HK.SCENARIOS[s] && (!only || only.indexOf(s) >= 0));
     const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];
+    /* 不仲の関係の種類（回ごとに回す） */
+    const KINDS = [
+      { k: 'sibbad', t: { type: 'sibbad' } },
+      { k: 'bad', t: { type: 'bad' } },
+      { k: 'enemy', t: { type: 'enemy' } },
+      { k: 'rival', t: { type: 'rival' } },
+      { k: 'cold:bad', t: { type: 'mentor', cold: 'bad' } },
+      { k: 'kg:bad', t: { type: 'sibling', kg: 'bad' } }
+    ];
+    for (const sc of SCENS) {
+      const scen = HK.SCENARIOS[sc];
+      const n = Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 6));
+      for (let s = 0; s < N; s++) {
+        const chars = [];
+        for (let i = 0; i < n; i++) chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, gender: ['m', 'f', 'f', 'm', 'm', 'f'][(i + s) % 6], calls: {}, loveNG: [] });
+        const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : ''); });
+        const K1 = KINDS[s % KINDS.length], K2 = KINDS[(s + 3) % KINDS.length];
+        const ties = [Object.assign({ a: 0, b: 1 }, K1.t)];
+        const pairs = [{ a: 0, b: 1, k: K1.k }];
+        if (n >= 4) { ties.push(Object.assign({ a: 2, b: 3 }, K2.t)); pairs.push({ a: 2, b: 3, k: K2.k }); }
+        if (n >= 6) { ties.push({ a: 4, b: 5, type: 'friend' }); pairs.push({ a: 4, b: 5, k: 'friend' }); }
+        yield { sc, s, input: { scenId: sc, seed: 4100 + s, env, chars, perChar: chars.map(() => ({ pick: {} })), ties }, meta: { pairs } };
+      }
+    }
+};
+
+/* ---------- 判定 feud（ページの中）：opt = { why, samples } ---------- */
+const JUDGE = function (HK, opt) {
+  const WHY = !!opt.why, SAMPLES = opt.samples || 0;
     /* 不仲の関係の種類（回ごとに回す） */
     const KINDS = [
       { k: 'sibbad', t: { type: 'sibbad' } },
@@ -59,21 +85,12 @@ const fs = require('fs');
       return 'neu';
     };
     const idOf = e => e.eid || ((e.tag ? e.tag + '：' : '') + String(e.why || '').replace(/^[^：]{1,14}と[^：]{1,14}：/, '').split(/[（。、(]/)[0].slice(0, 16)) || '?';
-    SCENS.forEach(sc => {
-      const scen = HK.SCENARIOS[sc];
-      const n = Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 6));
-      const o = out.sc[sc] = { feud: 0, neu: 0, warm: 0, love: 0, fr: { feud: 0, neu: 0, warm: 0, love: 0 }, runs: 0 };
-      for (let s = 0; s < N; s++) {
-        const chars = [];
-        for (let i = 0; i < n; i++) chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, gender: ['m', 'f', 'f', 'm', 'm', 'f'][(i + s) % 6], calls: {}, loveNG: [] });
-        const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : ''); });
-        const K1 = KINDS[s % KINDS.length], K2 = KINDS[(s + 3) % KINDS.length];
-        const ties = [Object.assign({ a: 0, b: 1 }, K1.t)];
-        const pairs = [{ a: 0, b: 1, k: K1.k }];
-        if (n >= 4) { ties.push(Object.assign({ a: 2, b: 3 }, K2.t)); pairs.push({ a: 2, b: 3, k: K2.k }); }
-        if (n >= 6) { ties.push({ a: 4, b: 5, type: 'friend' }); pairs.push({ a: 4, b: 5, k: 'friend' }); }
-        let res;
-        try { res = HK.simulate({ scenId: sc, seed: 4100 + s, env, chars, perChar: chars.map(() => ({ pick: {} })), ties }); } catch (e) { out.err.push(sc + ' ' + s + ' ' + String(e).slice(0, 120)); continue; }
+    return {
+      accept() { return false; },
+      error(run, e) { out.err.push(run.sc + ' ' + run.s + ' ' + String(e).slice(0, 120)); },
+      end(run, res) {
+        const sc = run.sc, pairs = run.meta.pairs;
+        const o = out.sc[sc] || (out.sc[sc] = { feud: 0, neu: 0, warm: 0, love: 0, fr: { feud: 0, neu: 0, warm: 0, love: 0 }, runs: 0 });
         o.runs++; out.runs++;
         (res.log || []).forEach(e => {
           if (!e || !e.text || BIG.test(e.kind || '') || e.key) return;
@@ -90,10 +107,14 @@ const fs = require('fs');
             if ((WHY || SAMPLES) && I.ex.length < Math.max(2, SAMPLES)) I.ex.push(p.k + ' ' + c + ' | ' + String(e.why || '').slice(0, 60) + ' | ' + String(e.text).replace(/\n/g, ' ').slice(0, 260));
           });
         });
-      }
-    });
-    return out;
-  }, { N, only, WHY, SAMPLES });
+      },
+      finish() { return out; }
+    };
+};
+
+/* ---------- 出力（今までの形） ---------- */
+function print(r, errors, o) {
+  const WHY = !!o.why, IDS = !!o.ids, JSONOUT = o.json;
   const pct = (x, t) => t ? (x / t * 100).toFixed(0) + '%' : '-';
   const K4 = ['feud', 'neu', 'warm', 'love'], NM = { feud: '不仲らしい', neu: '中立', warm: '仲良し', love: '恋愛' };
   const tt = o => K4.reduce((s, k) => s + (o[k] || 0), 0);
@@ -128,5 +149,25 @@ const fs = require('fs');
   if (JSONOUT) fs.writeFileSync(JSONOUT, JSON.stringify(r, null, 1));
   console.log('runs', r.runs, 'err', r.err.length, JSON.stringify(r.err.slice(0, 3)));
   console.log('pageerr', errors.length, JSON.stringify(errors.slice(0, 3)));
-  await browser.close();
+}
+function summarize(r) {
+  const K4 = ['feud', 'neu', 'warm', 'love'], T = {}; K4.forEach(k => { T[k] = 0; });
+  Object.keys(r.sc || {}).forEach(sc => K4.forEach(k => { T[k] += r.sc[sc][k] || 0; }));
+  const tot = K4.reduce((s, k) => s + T[k], 0), pc = x => tot ? Math.round(x / tot * 100) + '%' : '-';
+  /* 目安（不仲の組の仲良し 2 割以下・不仲らしい 5 割以上）に届かなければ 1 */
+  const ng = tot && !(T.warm / tot <= 0.2 && T.feud / tot >= 0.5) ? 1 : 0;
+  return { items: { feud: ng }, ex: { feud: ng ? ['仲良し ' + pc(T.warm) + '・不仲らしい ' + pc(T.feud)] : [] }, info: { 回: r.runs, 不仲の組の仲良し: pc(T.warm), 不仲らしい: pc(T.feud) }, err: r.err.length, errEx: r.err.slice(0, 3) };
+}
+const LABEL = { feud: '不仲の組の交流が目安に届かない（仲良し 2 割以下・不仲らしい 5 割以上）' };
+module.exports = { passes: { feud: PASS }, judges: { feud: JUDGE }, print, summarize, LABEL };
+
+if (require.main === module) (async () => {
+  const args = process.argv.slice(2).filter(a => !/^--/.test(a));
+  const dir = args[0], N = +args[1] || 24, mode = args[2] || '', only = args[3] ? args[3].split(',') : null;
+  const WHY = process.argv.includes('--why'), IDS = process.argv.includes('--ids');
+  const JSONOUT = (process.argv.find(a => /^--json=/.test(a)) || '').slice(7);
+  const SAMPLES = +((process.argv.find(a => /^--samples=/.test(a)) || '').slice(10)) || 0;
+  if (!dir) { console.log('使い方: node feud-audit.js <ビルド> [回数] [r18|safe|\'\'] [箱庭,…] [--why] [--ids] [--json=out.json] [--samples=n]'); process.exit(1); }
+  const t = await core.runTool({ dir, hash: mode, lewdMode: '', mod: module.exports, pass: 'feud', judge: 'feud', opt: { N, only, why: WHY, samples: SAMPLES } });
+  print(t.r, t.errors, { why: WHY, ids: IDS, json: JSONOUT });
 })();

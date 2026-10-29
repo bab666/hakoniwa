@@ -1,5 +1,7 @@
 # フェーズ1〜6 デバッグ結果（2026-10-25）
 
+> 2026-10-29 追記：この文書に出てくる sex-audit・emo-audit・daily-audit・dark-audit・text-audit（と punct-audit・stage-audit）は削除した。価値のある判定は `hakoniwa-tools/tone-check/audit-all.js` の判定 misc に取り込み、点検は audit-all を中心に回す（`docs/reports/2026-10-29/audit-consolidation.md`）。
+
 項目は `debug-plan.md`。点検は R18版（r18）・全年齢モード（safe）・全年齢版の3通りで、1条件あたり40回以上、箱庭の最少〜最多人数で回した。
 
 ## 結果の一覧（最終）

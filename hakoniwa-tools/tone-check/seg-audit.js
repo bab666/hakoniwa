@@ -9,40 +9,21 @@
    整合：seg をつなぐと e.text と同じか（join）、HK.fmtLong の改行が seg を使っても同じか（fmt）、隠しの区分（_sq）が残っていないか（sq）。どれも 0 にする
    参考：区分ごとの件数、区分の合わせ方（中身で合った／順番で合った／文から決め直した）
    環境変数 NAMES=ユキノ！,アキラ。,… で住人の名前を変える（名前に記号のある住人の点検）
-   --dump=出力.json で、すべての「」（前後の文・区分・話し手）を書き出す（誤りの型を目で見るとき） */
+   --dump=出力.json で、すべての「」（前後の文・区分・話し手）を書き出す（誤りの型を目で見るとき） 
+   （2026-10-29 担当MQ）配役（パス seg）と判定（judge seg）を分けて module.exports で出す。audit-all.js が同じ関数を使い、
+     ほかのパスの回（口調・人数の違う配役）にも A〜C・整合を当てる。使い方・出力は今までどおり */
 'use strict';
 const fs = require('fs');
-const { openBuild } = require('./lib.js');
-(async () => {
-  const args = process.argv.slice(2).filter(a => !/^--/.test(a));
-  const dir = args[0], N = +args[1] || 6, mode = args[2] || '', only = args[3] ? args[3].split(',') : null;
-  const WHY = process.argv.includes('--why'), JS = (process.argv.find(a => /^--json=/.test(a)) || '').slice(7), DUMP = !!(process.argv.find(a => /^--dump=/.test(a)));
-  const DUMPF = (process.argv.find(a => /^--dump=/.test(a)) || '').slice(7);
-  if (!dir) { console.error('使い方: node seg-audit.js <ビルド> [回数] [r18|safe|\'\'] [箱庭id,…] [--why]'); process.exit(1); }
-  const { browser, page, errors } = await openBuild(dir, mode);
-  const NAMES0 = (process.env.NAMES || '').split(',').filter(Boolean);
-  const r = await page.evaluate(({ N, only, WHY, DUMP, NAMES0 }) => {
-    const HK = window.HK, S = HK.Seg;
-    const out = { dump: [], n: { a1n: 0, a1w: 0, a1: 0, a2: 0, b1: 0, b2: 0, c: 0, join: 0, fmt: 0, fmtSeg: 0, sq: 0 }, kinds: {}, ex: { a1: [], a1w: [], a2: [], b1: [], b2: [], c: [], join: [], fmt: [] }, bySc: {}, runs: 0, err: [], quotes: 0 };
-    if (!S) { out.err.push('HK.Seg がない'); return out; }
-    S.stat.content = S.stat.order = S.stat.redo = 0;
-    const lim = WHY ? 60 : 5;
-    /* 環境変数 NAMES=ユキノ！,アキラ。,…（6人ぶん）で、名前に記号のある住人でも点検できる */
+const core = require('./audit/core.js');
+
+/* ---------- パス seg（ページの中）：opt = { N, only, names } ---------- */
+const PASS = function* (HK, opt) {
+  const N = opt.N || 6, only = opt.only || null, NAMES0 = opt.names || [];
     const NAMES = NAMES0.length >= 6 ? NAMES0.slice(0, 6) : ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'], tones = HK.TONE_KEYS.slice();
-    /* 住人以外の人物を表す語（b の判定。主語がこれで、住人の名前を含まない） */
-    const MOBN = /(?:村人|村の|店員|店長|客|男|女|老人|老婆|子ども|子供|少年|少女|医者|医師|看護師|兵士|警官|警備員|司会|係員|教師|先生|生徒|乗客|船員|案内人|使用人|執事|メイド|神主|巫女|住職|村長|長老|婆|爺|主人|女将|マスター|店主|運転手|配達員|管理人|受付|スタッフ|騎士|商人|衛兵|門番|職員|研究員|隊員|監視員|看守|ゴブリン|オーク|魔物|ゾンビ|生存者|略奪者|男たち|女たち|連中|誰か|声|アナウンス|放送|スピーカー|機械|AI|システム|神|邪神|サキュバス|インキュバス|施術師|マッサージ師|整体師|カメラマン|監督|客引き|酔っ払い|サラリーマン|他校|隣の|相手)/;
-    const PERS = /(?:人|者|員|師|長|主|客|家|官|士|婆|爺|娘|男|女|猫|さん|様|殿|神|鬼|獣|医|僧|兵|童|衆|の子|マン|ター|スト)$/;
-    const ACTV = /(?:言[っいうわえ]|囁[いか]|告げ|訊[いか]|尋ね|答え|呟[いか]|教え|叫[んば]|笑[っいうわ]|怒鳴|命じ|手招き|読み上げ|頷[いか]|撫で|差し出|取り出|振り返|微笑[んみ]|指さ|呼び止め|現れ|近づ|立ちはだか|声をかけ|話しかけ|口を開|頭を下げ)[^。、「」]{0,12}$/;
-    const PRON = /^(?:二人|三人|四人|みんな|全員|皆|彼ら|彼女ら|一同|一行|誰も)/;
-    const SAYV = /(?:言|囁|告げ|訊|尋ね|答え|呟|続け|促|声をかけ|教え|叫|笑|返|怒鳴|呼びかけ|話しかけ|口を開|切り出|ぼや|つぶや|ささや|唸|頷|微笑|告|宣言|説明|案内|注意|忠告)/;
-    const BOUND = /[。！？!?」\n]|――/g;
-    const lastBound = s => { let cut = 0, m; BOUND.lastIndex = 0; while ((m = BOUND.exec(s))) cut = m.index + m[0].length; return cut; };
     function rnd(s) { let x = s; return () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648; }
-    let ti = 0, cur = '';
-    const hit = (k, msg) => { out.n[k]++; out.bySc[cur][k] = (out.bySc[cur][k] || 0) + 1; if (out.ex[k].length < lim) out.ex[k].push(cur + ' | ' + msg); };
-    HK.SCEN_ORDER.forEach(id => {
-      const sc = HK.SCENARIOS[id]; if (!sc || (only && only.indexOf(id) < 0)) return;
-      cur = id; out.bySc[id] = { runs: 0 };
+    let ti = 0;
+    for (const id of HK.SCEN_ORDER) {
+      const sc = HK.SCENARIOS[id]; if (!sc || (only && only.indexOf(id) < 0)) continue;
       const n = Math.max(sc.minCast || 2, Math.min(sc.maxCast || 6, 6));
       for (let s = 0; s < N; s++) {
         const rr = rnd(1000 + s * 77 + id.length), chars = [], perChar = [];
@@ -58,8 +39,38 @@ const { openBuild } = require('./lib.js');
           if (e.id === 'mode' && e.options && e.options.some(o => o.v === 'lewd')) env[e.id] = 'lewd';
         });
         if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
-        let res;
-        try { res = HK.simulate({ scenId: id, seed: 12345 + s * 101, env, chars, perChar, ties: s % 3 === 2 ? [{ a: 0, b: 1, type: 'lover' }] : [] }); } catch (e) { out.err.push(id + ':' + s + ' ' + (e && e.message)); continue; }
+        yield { sc: id, s, input: { scenId: id, seed: 12345 + s * 101, env, chars, perChar, ties: s % 3 === 2 ? [{ a: 0, b: 1, type: 'lover' }] : [] }, meta: {} };
+      }
+    }
+};
+
+/* ---------- 判定 seg（ページの中）：opt = { why, dump } ---------- */
+const JUDGE = function (HK, opt) {
+  const WHY = !!opt.why, DUMP = !!opt.dump;
+    const S = HK.Seg;
+    const out = { dump: [], n: { a1n: 0, a1w: 0, a1: 0, a2: 0, b1: 0, b2: 0, c: 0, join: 0, fmt: 0, fmtSeg: 0, sq: 0 }, kinds: {}, ex: { a1: [], a1w: [], a2: [], b1: [], b2: [], c: [], join: [], fmt: [] }, bySc: {}, runs: 0, err: [], quotes: 0 };
+    if (!S) { out.err.push('HK.Seg がない'); return { finish() { return out; } }; }
+    S.stat.content = S.stat.order = S.stat.redo = 0;
+    let st0 = {}; const acc = {};
+    const lim = WHY ? 60 : 5;
+    /* 住人以外の人物を表す語（b の判定。主語がこれで、住人の名前を含まない） */
+    const MOBN = /(?:村人|村の|店員|店長|客|男|女|老人|老婆|子ども|子供|少年|少女|医者|医師|看護師|兵士|警官|警備員|司会|係員|教師|先生|生徒|乗客|船員|案内人|使用人|執事|メイド|神主|巫女|住職|村長|長老|婆|爺|主人|女将|マスター|店主|運転手|配達員|管理人|受付|スタッフ|騎士|商人|衛兵|門番|職員|研究員|隊員|監視員|看守|ゴブリン|オーク|魔物|ゾンビ|生存者|略奪者|男たち|女たち|連中|誰か|声|アナウンス|放送|スピーカー|機械|AI|システム|神|邪神|サキュバス|インキュバス|施術師|マッサージ師|整体師|カメラマン|監督|客引き|酔っ払い|サラリーマン|他校|隣の|相手)/;
+    const PERS = /(?:人|者|員|師|長|主|客|家|官|士|婆|爺|娘|男|女|猫|さん|様|殿|神|鬼|獣|医|僧|兵|童|衆|の子|マン|ター|スト)$/;
+    const ACTV = /(?:言[っいうわえ]|囁[いか]|告げ|訊[いか]|尋ね|答え|呟[いか]|教え|叫[んば]|笑[っいうわ]|怒鳴|命じ|手招き|読み上げ|頷[いか]|撫で|差し出|取り出|振り返|微笑[んみ]|指さ|呼び止め|現れ|近づ|立ちはだか|声をかけ|話しかけ|口を開|頭を下げ)[^。、「」]{0,12}$/;
+    const PRON = /^(?:二人|三人|四人|みんな|全員|皆|彼ら|彼女ら|一同|一行|誰も)/;
+    const SAYV = /(?:言|囁|告げ|訊|尋ね|答え|呟|続け|促|声をかけ|教え|叫|笑|返|怒鳴|呼びかけ|話しかけ|口を開|切り出|ぼや|つぶや|ささや|唸|頷|微笑|告|宣言|説明|案内|注意|忠告)/;
+    const BOUND = /[。！？!?」\n]|――/g;
+    const lastBound = s => { let cut = 0, m; BOUND.lastIndex = 0; while ((m = BOUND.exec(s))) cut = m.index + m[0].length; return cut; };
+    let cur = '';
+    const hit = (k, msg) => { out.n[k]++; out.bySc[cur][k] = (out.bySc[cur][k] || 0) + 1; if (out.ex[k].length < lim) out.ex[k].push(cur + ' | ' + msg); };
+    return {
+      /* 区分の合わせ方（HK.Seg.stat）は、この判定が見た回のぶんだけを足す（同じページでほかのパスを回しても今までの数になるように） */
+      begin() { st0 = Object.assign({}, S.stat); },
+      after() { Object.keys(S.stat).forEach(k => { if (typeof S.stat[k] === 'number') acc[k] = (acc[k] || 0) + S.stat[k] - (st0[k] || 0); }); },
+      error(run, e) { if (run.pass === 'seg') out.err.push(run.sc + ':' + run.s + ' ' + (e && e.message)); },
+      end(run, res) {
+        const id = run.sc, chars = run.input.chars;
+        cur = id; if (!out.bySc[id]) out.bySc[id] = { runs: 0 };
         out.runs++; out.bySc[id].runs++;
         const names = chars.map(c => c.name), dead = {};
         /* 名前に記号（！。？など）のある住人：下の b1・b2 の文の区切りで、名前の中の記号を区切りと見ないよう、置き換えた名前（core.js の HK.NameSafe。長さは同じ）で調べる */
@@ -77,6 +88,8 @@ const { openBuild } = require('./lib.js');
           }
           const acts = (e.actors || []).map(x => typeof x === 'number' ? x : x && x.i);
           const isDeath = e.kind === 'death' || /^(?:死|最期|弔い|殉)/.test(e.tag || '');
+          /* 蘇った人（不死・吸血鬼の「蘇生」の記録。state-audit の revived と同じ見方）は、その記録から死んだ人として数えない（2026-10-29 担当MQ：audit-all でほかのパスの不死の回に当てたため） */
+          if (e.tag === '蘇生' || /蘇生/.test(String(e.why || ''))) acts.forEach(i => { delete dead[i]; });
           let off = 0;
           seg.forEach((x, k) => {
             const at = off; off += x.s.length;
@@ -109,11 +122,17 @@ const { openBuild } = require('./lib.js');
           });
           if (e.kind === 'death' && acts.length) dead[acts[0]] = true;
         });
+      },
+      finish() {
+    out.stat = Object.assign({}, S.stat, acc);
+        return out;
       }
-    });
-    out.stat = Object.assign({}, S.stat);
-    return out;
-  }, { N, only, WHY, DUMP, NAMES0 });
+    };
+};
+
+/* ---------- 出力（今までの形） ---------- */
+function print(r, errors, o) {
+  const dir = o.dir, mode = o.mode, DUMPF = o.dumpf, JS = o.json;
   if (DUMPF) fs.writeFileSync(DUMPF, JSON.stringify(r.dump));
   delete r.dump;
   console.log('== seg-audit', dir, mode || '(全年齢版)', '回数', r.runs, '「」', r.quotes, 'ページのエラー', errors.length, errors.slice(0, 2));
@@ -127,5 +146,22 @@ const { openBuild } = require('./lib.js');
   Object.keys(r.bySc).forEach(sc => { const b = r.bySc[sc]; if (cols.some(k => b[k])) console.log('  ', sc.padEnd(10), cols.map(k => k + ' ' + (b[k] || 0)).join('  ')); });
   Object.keys(r.ex).forEach(k => { if (r.ex[k].length) { console.log('--', k); r.ex[k].forEach(x => console.log('  ' + x)); } });
   if (JS) fs.writeFileSync(JS, JSON.stringify(r));
-  await browser.close();
+}
+function summarize(r) {
+  const items = { join: r.n.join, fmt: r.n.fmt, sq: r.n.sq, a1: r.n.a1, a2: r.n.a2, b1: r.n.b1 }, ex = {};
+  Object.keys(items).forEach(k => { ex[k] = (r.ex[k] || []).slice(0, 3); });
+  return { items, ex, info: { 回: r.runs, '「」': r.quotes, '参考 b2': r.n.b2, '参考 u（区分が決まらない）': r.n.c, '参考 a1w': r.n.a1w }, err: r.err.length, errEx: r.err.slice(0, 3) };
+}
+const LABEL = { join: 'seg をつなぐと本文と違う', fmt: '改行が seg の有無で違う', sq: '隠しの区分の残り', a1: '話し手が登場人物にいず文にも名前がない', a2: '死んだ人が話す', b1: 'モブの台詞を住人に（と村人が言った）' };
+module.exports = { passes: { seg: PASS }, judges: { seg: JUDGE }, print, summarize, LABEL };
+
+if (require.main === module) (async () => {
+  const args = process.argv.slice(2).filter(a => !/^--/.test(a));
+  const dir = args[0], N = +args[1] || 6, mode = args[2] || '', only = args[3] ? args[3].split(',') : null;
+  const WHY = process.argv.includes('--why'), JS = (process.argv.find(a => /^--json=/.test(a)) || '').slice(7), DUMP = !!(process.argv.find(a => /^--dump=/.test(a)));
+  const DUMPF = (process.argv.find(a => /^--dump=/.test(a)) || '').slice(7);
+  if (!dir) { console.error('使い方: node seg-audit.js <ビルド> [回数] [r18|safe|\'\'] [箱庭id,…] [--why]'); process.exit(1); }
+  const NAMES0 = (process.env.NAMES || '').split(',').filter(Boolean);
+  const t = await core.runTool({ dir, hash: mode, lewdMode: '', mod: module.exports, pass: 'seg', judge: 'seg', opt: { N, only, names: NAMES0, why: WHY, dump: DUMP } });
+  print(t.r, t.errors, { dir, mode, dumpf: DUMPF, json: JS });
 })();

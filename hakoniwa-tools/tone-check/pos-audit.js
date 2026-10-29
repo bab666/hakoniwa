@@ -32,33 +32,15 @@
    --why：数えずに除いた候補とその理由も出す（性的でない文・女性の攻めが男性に跨って迎える文・「攻めに〜された」の書き方 など）
    誤判定を減らすための除外：性的でない言い回し（NONSEX：「上達」「一貫」「旅路の果て」「注がれたお茶」など）は判定の前に消す。
    V2 は文に性的な語（SEXCORE）があるときだけ数え、女性の攻めが男性の相手に跨って自分の中に迎える文（女攻め×男）は数えない。
-   V1 は箱庭が用意した男性のモブ（サキュバスの獲物・常識改変の客・マッサージのスタッフ）や星の生命体・壁の向こうの誰かが相手の文を数えない */
-const { openBuild } = require('./lib.js');
-(async () => {
-  const dir = process.argv[2], N = +process.argv[3] || 24, only = process.argv[4] && !/^--/.test(process.argv[4]) ? process.argv[4].split(',') : null;
-  const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
-  const RANDPOS = !!process.env.RANDPOS;
-  const NPCBOT = !!process.env.NPCBOT, POSFOR = !!process.env.POSFOR, DUMP = process.env.DUMP || '', SAMPLES = process.argv.includes('--samples'), WHY = process.argv.includes('--why'), FF = process.argv.includes('--ff'), HOT = process.argv.includes('--hot');
-  const { browser, page, errors } = await openBuild(dir, '', { lewdMode: 'direct' });
-  const r = await page.evaluate(({ N, only, FF, HOT, ENVSET, WHY, NPCBOT, POSFOR, DUMP, RANDPOS }) => {
-    const P = HK.Pos, MALE = P.MALE_RE;
-    const SEX = /抱い|抱かれ|エッチ|繋がっ|イカせ|イかせ|イった|イっ|果て|喘|挿れ|貫|舐め|愛撫|達し|体を重ね|奥まで|突き上げ|腰を(振|沈|打ち|揺)|跨[っが]|中に|犯/;
-    const NPC_M = /男|客|獲物|審査員|触手|ゾンビ|魔物|オーク|ゴブリン|スライム|神|村人|教師|先生|店長|上司|略奪者|おじさん|兵|盗賊|医者|マッサージ師|施術師|整体師|司会|AD|カメラマン|監督|悪魔|インキュバス|獣|狼|蛇|蔦|植物|機械|ロボット|看守|看護|患者|社長|部長|課長|主人|旦那|夫|彼氏|王|騎士|勇者|魔王|山賊|漁師|船長/;
-    /* 性的でない言い回し（「上達した」「一貫性」「舐めんな」「結果を受け入れた」など）は、性的な語の判定の前に消しておく */
-    const NONSEX = /（イった）|（イかなかった）|犯人|犯行|犯罪|防犯|共犯|主犯|(?:拳|腕|手|杖|旗|剣|槍)を(?:突き上げ|天に突き上げ)|(?:匂い|香り)が[^。]{0,10}(?:入ってき|奥まで)|(?:洞窟|森|遺跡|施設|地下|迷宮|神殿)の最奥|(?:ポケット|鞄|カバン|袋|懐|隙間|財布)に(?:ねじ込|突っ込)|(?:ひとかけら|かけら|傷|塩|飴|アイス|スプーン|皿|唇|封)を舐め|杯に[^。]{0,16}注がれ|(?:炎|火)が[^。]{0,12}を舐め|成れの果て|の果て(?=[にのへでまを、。])|果てしな|注がれた(?:お茶|茶|酒|水|コーヒー|紅茶|スープ|グラス|杯)|(?:お茶|茶|酒|水|コーヒー|紅茶|スープ)を注|上達|到達|配達|伝達|達成|発達|通達|熟達|調達|速達|先達|一貫|貫徹|貫通|貫禄|突き止め|突き当た|突き放|突き返|突き出|突き抜け|舐めん[なじ]|舐めた(?:真似|口)|舐めてんの|舐めてる(?:の|だろ)|残っているのは、エッチ[^。]*。?|受け入れ(?:られな|がた|る覚悟|てもらえ)|結果を受け入れ|運命を受け入れ|事実を受け入れ|提案を受け入れ|申し出を受け入れ|(?:記憶|情報|知識|声|映像|光|風|水|空気|お茶|茶|酒|視線|注目|愛情|力|魔力)(?:が|を)?[^。]{0,4}(?:注がれ|流れ込|注ぎ)/g;
-    const clean = t => t.replace(NONSEX, '＿');
-    /* 文単位で性的かどうか（「中に」「貫」など、性的でない文にも出る語は入れない） */
-    const SEXCORE = /抱き潰|エッチ|イカせ|イかせ|イった|イっ|果て|喘|挿れ|挿入|舐め|愛撫|達し|体を重ね|腰を(?:振|沈|打ち|揺|落と|突き|使)|跨[っがりるら]|犯|根元|締めつけ|締め付け|締め上げ|吐き出|射精|ナカ|♡|昂り|濡れ|蜜|奥を|奥に|奥まで|一つにな|ひとつにな|繋がっ|繋がり|繋がる|呑み込|搾り|搾精|脈打|熱を増|ノット|種付け|孕|精を|白濁|注が|中に出/;
-    const sentOf = (t, i) => { let a = i; while (a > 0 && !/[。！？\n]/.test(t[a - 1])) a--; let b = i; while (b < t.length && !/[。！？\n]/.test(t[b])) b++; return t.slice(a, b); };
-    /* 箱庭が用意している男性のモブ（サキュバスの獲物・常識改変の客）は、女性の住人の相手でも男性の体で書いてよい */
-    const MOBM = [];
-    try { const SB = HK.SUCCUBUS; if (SB && SB.PREY) Object.keys(SB.PREY).forEach(k => SB.PREY[k] && SB.PREY[k].name && MOBM.push(SB.PREY[k].name)); } catch (e) { }
-    try { const KH = HK.KAIHEN; if (KH && KH.SIT) Object.keys(KH.SIT).forEach(k => (KH.SIT[k].npc || []).forEach(nm => nm && MOBM.push(nm))); } catch (e) { }
-    /* 宇宙船漂流記の星の生命体・異星の民、壁の向こうの誰か（壁尻）も、住人ではない相手として扱う */
-    try { const SH = HK.SHIP; if (SH && SH.LIFE) SH.LIFE.forEach(x => x && x.name && MOBM.push(x.name)); } catch (e) { }
-    const hasMobM = t => MOBM.some(nm => t.indexOf(nm) >= 0) || /夢の中|(?:風|氷|闇|影|水|炎|光|霧)の(?:腕|手|指|舌)|の民の住人|の若者たち|民(?=[をはがのに])|巨体|異星の|壁の向こう|向こう側の誰か|向こうの誰か|正体の分からない何か|若いスタッフ|二人のスタッフ|無口な職人|精液検査センター/.test(t);
-    const skip = []; const sk = (why, sc, t, i) => { if (WHY && skip.length < 300) skip.push(why + ' | ' + sc + ' | …' + t.slice(Math.max(0, i - 30), i + 60) + '…'); };
-    const out = { skip, V1: [], V2: [], V3: [], V4: [], V5: [], V6: [], V7: [], V8: [], V10: [], V11: [], V12: [], V13: [], V14: [], n: { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V10: 0, V11: 0, V12: 0, V13: 0, V14: 0 }, err: [], runs: 0, bySc: {}, v5n: 0, lead: 0, npcTop: 0, pref: 0 };
+   V1 は箱庭が用意した男性のモブ（サキュバスの獲物・常識改変の客・マッサージのスタッフ）や星の生命体・壁の向こうの誰かが相手の文を数えない
+   （2026-10-29 担当MQ）配役（パス pos。--hot・--ff は opt）と判定（judge pos）を分けて module.exports で出す。audit-all.js が同じ関数を使い、
+     ほかのパスの回（R18版）にも V1〜V14 を当てる。使い方・出力は今までどおり */
+'use strict';
+const core = require('./audit/core.js');
+
+/* ---------- パス pos（ページの中）：opt = { N, only, ff, hot, env, npcbot, posfor, randpos } ---------- */
+const PASS = function* (HK, opt) {
+  const N = opt.N || 24, only = opt.only || null, FF = !!opt.ff, HOT = !!opt.hot, ENVSET = opt.env || [], NPCBOT = !!opt.npcbot, POSFOR = !!opt.posfor, RANDPOS = !!opt.randpos;
     /* RANDPOS の乱数（箱庭と回ごとに決まる） */
     const rngOf = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
     const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];
@@ -88,7 +70,6 @@ const { openBuild } = require('./lib.js');
     const ids = (only || Object.keys(HK.SCENARIOS));
     for (const sc of ids) {
       const scen = HK.SCENARIOS[sc]; if (!scen) continue;
-      out.bySc[sc] = { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V10: 0, V11: 0, V12: 0, V13: 0, V14: 0, runs: 0 };
       for (let s = 0; s < N; s++) {
         const cast = CASTS[s % CASTS.length];
         const n = Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 2 + (s % 5)));
@@ -146,10 +127,44 @@ const { openBuild } = require('./lib.js');
         let res;
         /* 内容のスイッチ（content.js）：指定がなければすべて入にして、いちばん広く回す */
         if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
+        yield { sc, s, input: { scenId: sc, seed: 2000 + s, env, chars: chars0, perChar, ties }, meta: {} };
+      }
+    }
+};
+
+/* ---------- 判定 pos（ページの中）：opt = { why, dump } ---------- */
+const JUDGE = function (HK, opt) {
+  const WHY = !!opt.why, DUMP = opt.dump || '';
+    const P = HK.Pos, MALE = P.MALE_RE;
+    const SEX = /抱い|抱かれ|エッチ|繋がっ|イカせ|イかせ|イった|イっ|果て|喘|挿れ|貫|舐め|愛撫|達し|体を重ね|奥まで|突き上げ|腰を(振|沈|打ち|揺)|跨[っが]|中に|犯/;
+    const NPC_M = /男|客|獲物|審査員|触手|ゾンビ|魔物|オーク|ゴブリン|スライム|神|村人|教師|先生|店長|上司|略奪者|おじさん|兵|盗賊|医者|マッサージ師|施術師|整体師|司会|AD|カメラマン|監督|悪魔|インキュバス|獣|狼|蛇|蔦|植物|機械|ロボット|看守|看護|患者|社長|部長|課長|主人|旦那|夫|彼氏|王|騎士|勇者|魔王|山賊|漁師|船長/;
+    /* 性的でない言い回し（「上達した」「一貫性」「舐めんな」「結果を受け入れた」など）は、性的な語の判定の前に消しておく */
+    const NONSEX = /（イった）|（イかなかった）|犯人|犯行|犯罪|防犯|共犯|主犯|(?:拳|腕|手|杖|旗|剣|槍)を(?:突き上げ|天に突き上げ)|(?:匂い|香り)が[^。]{0,10}(?:入ってき|奥まで)|(?:洞窟|森|遺跡|施設|地下|迷宮|神殿)の最奥|(?:ポケット|鞄|カバン|袋|懐|隙間|財布)に(?:ねじ込|突っ込)|(?:ひとかけら|かけら|傷|塩|飴|アイス|スプーン|皿|唇|封)を舐め|杯に[^。]{0,16}注がれ|(?:炎|火)が[^。]{0,12}を舐め|成れの果て|の果て(?=[にのへでまを、。])|果てしな|注がれた(?:お茶|茶|酒|水|コーヒー|紅茶|スープ|グラス|杯)|(?:お茶|茶|酒|水|コーヒー|紅茶|スープ)を注|上達|到達|配達|伝達|達成|発達|通達|熟達|調達|速達|先達|一貫|貫徹|貫通|貫禄|突き止め|突き当た|突き放|突き返|突き出|突き抜け|舐めん[なじ]|舐めた(?:真似|口)|舐めてんの|舐めてる(?:の|だろ)|残っているのは、エッチ[^。]*。?|受け入れ(?:られな|がた|る覚悟|てもらえ)|結果を受け入れ|運命を受け入れ|事実を受け入れ|提案を受け入れ|申し出を受け入れ|(?:記憶|情報|知識|声|映像|光|風|水|空気|お茶|茶|酒|視線|注目|愛情|力|魔力)(?:が|を)?[^。]{0,4}(?:注がれ|流れ込|注ぎ)/g;
+    const clean = t => t.replace(NONSEX, '＿');
+    /* 文単位で性的かどうか（「中に」「貫」など、性的でない文にも出る語は入れない） */
+    const SEXCORE = /抱き潰|エッチ|イカせ|イかせ|イった|イっ|果て|喘|挿れ|挿入|舐め|愛撫|達し|体を重ね|腰を(?:振|沈|打ち|揺|落と|突き|使)|跨[っがりるら]|犯|根元|締めつけ|締め付け|締め上げ|吐き出|射精|ナカ|♡|昂り|濡れ|蜜|奥を|奥に|奥まで|一つにな|ひとつにな|繋がっ|繋がり|繋がる|呑み込|搾り|搾精|脈打|熱を増|ノット|種付け|孕|精を|白濁|注が|中に出/;
+    const sentOf = (t, i) => { let a = i; while (a > 0 && !/[。！？\n]/.test(t[a - 1])) a--; let b = i; while (b < t.length && !/[。！？\n]/.test(t[b])) b++; return t.slice(a, b); };
+    /* 箱庭が用意している男性のモブ（サキュバスの獲物・常識改変の客）は、女性の住人の相手でも男性の体で書いてよい */
+    const MOBM = [];
+    try { const SB = HK.SUCCUBUS; if (SB && SB.PREY) Object.keys(SB.PREY).forEach(k => SB.PREY[k] && SB.PREY[k].name && MOBM.push(SB.PREY[k].name)); } catch (e) { }
+    try { const KH = HK.KAIHEN; if (KH && KH.SIT) Object.keys(KH.SIT).forEach(k => (KH.SIT[k].npc || []).forEach(nm => nm && MOBM.push(nm))); } catch (e) { }
+    /* 宇宙船漂流記の星の生命体・異星の民、壁の向こうの誰か（壁尻）も、住人ではない相手として扱う */
+    try { const SH = HK.SHIP; if (SH && SH.LIFE) SH.LIFE.forEach(x => x && x.name && MOBM.push(x.name)); } catch (e) { }
+    const hasMobM = t => MOBM.some(nm => t.indexOf(nm) >= 0) || /夢の中|(?:風|氷|闇|影|水|炎|光|霧)の(?:腕|手|指|舌)|の民の住人|の若者たち|民(?=[をはがのに])|巨体|異星の|壁の向こう|向こう側の誰か|向こうの誰か|正体の分からない何か|若いスタッフ|二人のスタッフ|無口な職人|精液検査センター/.test(t);
+    const skip = []; const sk = (why, sc, t, i) => { if (WHY && skip.length < 300) skip.push(why + ' | ' + sc + ' | …' + t.slice(Math.max(0, i - 30), i + 60) + '…'); };
+    const out = { skip, V1: [], V2: [], V3: [], V4: [], V5: [], V6: [], V7: [], V8: [], V10: [], V11: [], V12: [], V13: [], V14: [], n: { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V10: 0, V11: 0, V12: 0, V13: 0, V14: 0 }, err: [], runs: 0, bySc: {}, v5n: 0, lead: 0, npcTop: 0, pref: 0 };
+    return {
+      /* R18版だけ（全年齢モード・全年齢版では回さない） */
+      accept() { return !HK.SAFE_ON; },
+      begin(run) {
+        if (!out.bySc[run.sc]) out.bySc[run.sc] = { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V10: 0, V11: 0, V12: 0, V13: 0, V14: 0, runs: 0 };
         if (HK.Attr) HK.Attr.log = [];
         if (HK.PosLead) HK.PosLead.log = [];
         if (HK.LewdWords) HK.LewdWords.V10.length = 0;
-        try { res = HK.simulate({ scenId: sc, seed: 2000 + s, env, chars: chars0, perChar, ties }); } catch (e) { out.err.push(sc + ': ' + String(e && e.stack || e).slice(0, 300)); continue; }
+      },
+      error(run, e) { out.err.push(run.sc + ': ' + String(e && e.stack || e).slice(0, 300)); },
+      end(run, res) {
+        const sc = run.sc, s = run.s, chars0 = run.input.chars;
         out.runs++; out.bySc[sc].runs++;
         /* V10：体の語の印の持ち主がその場にいない（住人でない相手が出る文は除く） */
         if (HK.LewdWords) HK.LewdWords.V10.forEach(v => {
@@ -415,11 +430,14 @@ const { openBuild } = require('./lib.js');
             if (a && b && !P.okSex(a, b) && t.indexOf(a.name) >= 0 && t.indexOf(b.name) >= 0) { out.n.V3++; out.bySc[sc].V3++; if (out.V3.length < 200) out.V3.push(sc + '#' + s + ' | ' + a.name + '(' + (a.pos || '-') + a.gender + ')×' + b.name + '(' + (b.pos || '-') + b.gender + ') | ' + t.slice(0, 300)); }
           }
         }
-      }
-    }
-    return out;
-  }, { N, only, FF, HOT, ENVSET, WHY, NPCBOT, POSFOR, DUMP, RANDPOS });
-  /* DUMP=箱庭#回：その回の配役と本文をすべて出す（調べるとき用） */
+      },
+      finish() { return out; }
+    };
+};
+
+/* ---------- 出力（今までの形） ---------- */
+function print(r, errors, o) {
+  const SAMPLES = !!o.samples, WHY = !!o.why;
   if (r.dump) console.log('##### DUMP\n' + JSON.stringify(r.dump.chars.map(c => ({ name: c.name, g: c.gender, pos: c.pos, posFor: c.posFor, posLike: c.posLike, genital: c.genital }))) + '\n' + r.dump.texts.join('\n----\n'));
   console.log('runs', r.runs, 'counts', JSON.stringify(r.n), 'V5で見た夜の性格の文', r.v5n, 'V13で見た主導の文', r.lead, 'V12の人', r.npcTop, 'V14の組', r.pref);
   console.log('by scenario', JSON.stringify(Object.fromEntries(Object.entries(r.bySc).filter(([k, v]) => v.V1 || v.V2 || v.V3 || v.V4 || v.V5 || v.V6 || v.V7 || v.V8 || v.V10 || v.V11 || v.V12 || v.V13 || v.V14))));
@@ -427,5 +445,22 @@ const { openBuild } = require('./lib.js');
   if (SAMPLES) for (const k of ['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V10', 'V11', 'V12', 'V13', 'V14']) { console.log('##### ' + k); (r[k] || []).forEach(x => console.log(x)); }
   if (WHY) { console.log('##### 除外したもの'); r.skip.forEach(x => console.log(x.replace(/\n/g, ' '))); }
   console.log('pageerr', errors.slice(0, 5));
-  await browser.close();
+}
+const KEYS = ['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V10', 'V11', 'V12', 'V13', 'V14'];
+function summarize(r) {
+  const items = {}, ex = {};
+  KEYS.forEach(k => { items[k] = (r.n && r.n[k]) || 0; ex[k] = (r[k] || []).slice(0, 3); });
+  return { items, ex, info: { 回: r.runs, 夜の性格の文: r.v5n, 主導の文: r.lead }, err: r.err.length, errEx: r.err.slice(0, 3) };
+}
+const LABEL = { V1: '女性どうしに男性の体の語', V2: '攻めを選んだ人が受ける文', V3: '向きの決まらない二人の性的な場面', V4: '女性の攻めが男性の体', V5: '夜の性格の文の受け持ちが逆', V6: '女性の体が男性の体で描かれた', V7: '性器なしの人に挿入・性器の語', V8: '選んだ性器と食い違う体の語', V10: '体の語の印の持ち主がその場にいない', V11: '受けを選んだ人が挿れる文', V12: 'モブには攻めの人が受ける文', V13: '夜の主導の文の受け持ちが逆', V14: '相手ごとの受け攻めで決まった攻めが受ける文' };
+module.exports = { passes: { pos: PASS }, judges: { pos: JUDGE }, print, summarize, LABEL, KEYS };
+
+if (require.main === module) (async () => {
+
+  const dir = process.argv[2], N = +process.argv[3] || 24, only = process.argv[4] && !/^--/.test(process.argv[4]) ? process.argv[4].split(',') : null;
+  const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
+  const RANDPOS = !!process.env.RANDPOS;
+  const NPCBOT = !!process.env.NPCBOT, POSFOR = !!process.env.POSFOR, DUMP = process.env.DUMP || '', SAMPLES = process.argv.includes('--samples'), WHY = process.argv.includes('--why'), FF = process.argv.includes('--ff'), HOT = process.argv.includes('--hot');
+  const t = await core.runTool({ dir, hash: '', lewdMode: 'direct', mod: module.exports, pass: 'pos', judge: 'pos', opt: { N, only, ff: FF, hot: HOT, env: ENVSET, npcbot: NPCBOT, posfor: POSFOR, randpos: RANDPOS, why: WHY, dump: DUMP } });
+  print(t.r, t.errors, { samples: SAMPLES, why: WHY });
 })();

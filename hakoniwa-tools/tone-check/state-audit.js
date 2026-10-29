@@ -72,16 +72,216 @@
         参加表の「先生（受け持ち）」の学年つき）を先生にし、学年（学園全体・3年・1年・2年）と展開の重さ（重い／ふつう）を回して、
         先生が派閥の一員・いじめの加害か標的・テストの順位・不登校になった／休職（理由に「休職（」）のあとの区切りの出来事に出た／先生の行く末が生徒のもの（卒業・進級・留年など）を数える
    W1: 箱庭の場所に合わない語（PLACE_NG）が記録の地の文に出た。媚薬ロッカー：狭い箱の中に「席・皿・周りが（割って入る人）」は出ない
-       （2026-10-26 順83。hate-kit.js・hate-love.js の狭い場所の文 hkSpace: 'cramped'）。合計と箱庭ごとの数は最後の「W1」の行 */
+       （2026-10-26 順83。hate-kit.js・hate-love.js の狭い場所の文 hkSpace: 'cramped'）。合計と箱庭ごとの数は最後の「W1」の行 
+   （2026-10-29 担当MQ）配役（パス state：ふつうの回・追加の関係・避けている配役・W1 のロッカー・死の回・蘇る回・画面の S22・S33 の先生）と
+     判定（judge state）を分けて module.exports で出す。audit-all.js が同じ関数を使い、ほかのパスの回にも S1〜S32 を当てる
+     （S19・S20・S21 は回の関係に無関心・恐怖・許嫁があれば見る。内容のスイッチは env.ct から決める）。使い方・出力は今までどおり */
 'use strict';
-const { openBuild } = require('./lib.js');
-(async () => {
-  const args = process.argv.slice(2).filter(a => !/^--/.test(a));
-  const dir = args[0], N = +args[1] || 24, mode = args[2] || '', only = args[3] ? args[3].split(',') : null;
-  const WHY = process.argv.includes('--why'), HOT = process.argv.includes('--hot');
-  const { browser, page, errors } = await openBuild(dir, mode, { lewdMode: 'direct' });
-  const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
-  const r = await page.evaluate(({ N, only, WHY, HOT, mode, ENVSET }) => {
+const core = require('./audit/core.js');
+
+/* ---------- パス state（ページの中）：opt = { N, only, hot, env } ---------- */
+const PASS = function* (HK, opt) {
+  const N = opt.N || 24, only = opt.only || null, HOT = !!opt.hot, ENVSET = opt.env || [];
+    const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ', 'ソウタ', 'リコ'];
+    /* 配役：執着（監禁を起こす）・恋人・恋愛にしない相手・R18に参加しない人・性行為の相手を固定した人（lo）を混ぜる */
+    const CASTS = [
+      { g: ['m', 'f', 'm', 'f', 'm', 'f'], p: ['top', 'bottom', '', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'yan' }, { a: 2, b: 3, type: 'lover' }], ng: [[4, 5]], noR18: [2], lo: [3], same: [3, 4], lk: [2, 3], lk2: [1, 4] },
+      { g: ['f', 'f', 'm', 'm', 'f', 'm'], p: ['', '', 'top', 'bottom', 'top', ''], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'yan' }], ng: [[0, 2]], noR18: [4], lo: [1], same: [3, 5], fa: [0], lk: [0, 1], lk2: [4, 5] },
+      { g: ['m', 'm', 'f', 'f', 'm', 'f'], p: ['top', 'bottom', 'top', 'bottom', '', ''], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'lover' }, { a: 4, b: 0, type: 'yan' }], ng: [[1, 5]], noR18: [5], lo: [0, 1], same: [3, 4], fa: [3], lk: [2, 3], lk2: [4, 5] },
+      { g: ['f', 'm', 'f', 'm', 'f', 'm'], p: ['top', 'bottom', '', 'top', 'bottom', ''], ties: [{ a: 0, b: 1, type: 'fwb' }, { a: 3, b: 2, type: 'yan' }], ng: [[4, 1]], noR18: [0], lo: [], same: [2, 5], fa: [2], lk: [0, 2], lk2: [2, 4] }
+    ];
+    /* S19〜S21：追加の気持ち・関係を使う配役（1シナリオあたり NF 回。ふつうの回のあとに回す。S1〜S18 もこの回で数える）
+       無関心と恐怖は、恋人・セフレ・片想いと重ねて「恋愛にならないほうが勝つ」ことも見る。許嫁は乗り気どうし（恋愛対象が合う組・合わない組）と、断りたい側の破談 */
+    const NF = Math.max(4, Math.round(N / 2));
+    /* S31：避けている関係の配役（2026-10-28 担当JE）。避けている人（★）が攻め・受け・どちらでもの回を混ぜ、相手は想っている・敵視している。
+       shy＝回避型の気質にする人（嫌悪レベルと組み合わせて「避けている」になる） */
+    const NA = Math.max(4, Math.round(N / 2));
+    const ACASTS = [
+      /* ★1 は 0 を苦手（敵対の相手の気持ち）、★3 は 2 の片想いを苦手、★5 は 4 の執着を怖がっている */
+      { g: ['m', 'f', 'm', 'f', 'f', 'm'], p: ['bottom', 'top', '', 'top', 'bottom', 'top'], ties: [{ a: 0, b: 1, type: 'enemy', cold: 'avoid' }, { a: 2, b: 3, type: 'crush', cold: 'dislike' }, { a: 4, b: 5, type: 'yan', cold: 'afraid' }] },
+      /* ★0 は 1 を苦手（不仲の相手の気持ち・1 は 0 に片想いも）、★2 は 3 の支配に怯えている、★4 は 5 の執着を嫌っている、★shy の 5 は 4 を嫌悪 */
+      { g: ['f', 'm', 'f', 'm', 'm', 'f'], p: ['top', 'bottom', 'top', '', 'top', 'riba'], ties: [{ a: 1, b: 0, type: 'bad', cold: 'avoid' }, { a: 1, b: 0, type: 'crush' }, { a: 3, b: 2, type: 'abuse', cold: 'fear' }, { a: 5, b: 4, type: 'yan', cold: 'hate' }], shy: [] },
+      /* 嫌悪と回避型の気質：0↔1 敵対で ★1 は回避型、2↔3 敵対で 2 は愛憎（避けていない）・★3 は回避型、★5 は 4 の片想いを苦手 */
+      { g: ['m', 'm', 'f', 'm', 'm', 'f'], p: ['', 'top', 'bottom', 'top', 'bottom', ''], ties: [{ a: 0, b: 1, type: 'enemy' }, { a: 2, b: 3, type: 'enemy', lh: 'a' }, { a: 4, b: 5, type: 'crush', cold: 'dislike' }], shy: [1, 3] },
+      /* 恐怖・無関心・苦手を重ねる：★0 は 1 を恐れる、★2 は 3 に無関心（3 は 2 に片想い）、★4 は 5 を苦手（敵対）・4 は回避型 */
+      { g: ['f', 'm', 'm', 'f', 'f', 'f'], p: ['top', 'bottom', 'top', 'bottom', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'fear' }, { a: 2, b: 3, type: 'apathy' }, { a: 3, b: 2, type: 'crush' }, { a: 5, b: 4, type: 'enemy', cold: 'avoid' }], shy: [4] }
+    ];
+    const FCASTS = [
+      { g: ['m', 'f', 'm', 'f', 'm', 'f'], p: ['top', 'bottom', '', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'apathy' }, { a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'fear' }, { a: 3, b: 2, type: 'crush' }, { a: 4, b: 5, type: 'fiance' }, { a: 1, b: 4, type: 'yan', sub: 'dep' }] },
+      { g: ['f', 'm', 'f', 'm', 'f', 'f'], p: ['', 'top', 'bottom', 'top', '', 'bottom'], ties: [{ a: 1, b: 0, type: 'fear' }, { a: 0, b: 1, type: 'yan', sub: 'hatelove' }, { a: 2, b: 3, type: 'fiance', feel: 'refuse' }, { a: 4, b: 5, type: 'fiance' }, { a: 3, b: 5, type: 'apathy' }, { a: 5, b: 3, type: 'fwb' }] },
+      { g: ['m', 'm', 'f', 'f', 'm', 'f'], p: ['top', 'top', '', '', 'bottom', 'top'], ties: [{ a: 0, b: 1, type: 'fiance' }, { a: 2, b: 3, type: 'fiance', feel: 'unsure' }, { a: 4, b: 5, type: 'fear' }, { a: 4, b: 5, type: 'fwb', mode: 'mistress' }, { a: 0, b: 2, type: 'enemy', grade: 'hate' }, { a: 1, b: 3, type: 'comrade' }, { a: 1, b: 5, type: 'comrade' }, { a: 3, b: 5, type: 'comrade' }] },
+      { g: ['f', 'm', 'm', 'f', 'f', 'm'], p: ['bottom', 'top', 'riba', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'fwb', mode: 'mistress' }, { a: 1, b: 3, type: 'lover' }, { a: 2, b: 4, type: 'apathy' }, { a: 4, b: 2, type: 'yan' }, { a: 5, b: 0, type: 'fear' }, { a: 3, b: 5, type: 'benefactor', feel: 'guilt' }, { a: 2, b: 5, type: 'fond', mode: 'oshi' }, { a: 3, b: 4, type: 'honmei' }] }
+    ];
+    /* 性行為の相手を固定する人（lo）の相手：関係の恋人がいればその人、いなければ隣の人（2026-10-26：「恋人だけ」をなくし、固定に一本化） */
+    const loPart = (cast, i, n) => { const t = (cast.ties || []).filter(t => t.type === 'lover' && (t.a === i || t.b === i) && t.a < n && t.b < n)[0]; return t ? (t.a === i ? t.b : t.a) : (i + 1) % n; };
+    /* 箱庭の仕掛けそのものがモブ・魔物の箱庭（「固定した相手だけ」でも縛らない。engine.js の HK.State.mobSexOk の説明） */
+    const MOB_FREE = { dungeon: 1, succubus: 1, variety: 1 };
+    const ids = only || Object.keys(HK.SCENARIOS);
+    for (const sc of ids) {
+      const scen = HK.SCENARIOS[sc]; if (!scen) continue;
+      for (let s = 0; s < N + NF + NA; s++) {
+        const avd = s >= N + NF, feel = s >= N && !avd;
+        const cast = avd ? Object.assign({ ng: [], noR18: [], lo: [], same: null, fa: [], lk: [9, 9], lk2: [9, 9] }, ACASTS[(s - N - NF) % ACASTS.length]) : feel ? Object.assign({ ng: [], noR18: [], lo: [], same: null, fa: [], lk: [9, 9], lk2: [9, 9] }, FCASTS[(s - N) % FCASTS.length]) : CASTS[s % CASTS.length];
+        const n = feel || avd ? Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 6)) : Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 2 + (s % 5)));
+        const chars = [], perChar = [];
+        for (let i = 0; i < n; i++) {
+          const ng = []; cast.ng.forEach(pr => { if (pr[0] === i && pr[1] < n) ng.push(pr[1]); if (pr[1] === i && pr[0] < n) ng.push(pr[0]); });
+          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: cast.g[i], likes: '', tone: '', fp: '', pos: cast.p[i], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: ng, noR18: cast.noR18.indexOf(i) >= 0, sexLock: cast.lo.indexOf(i) >= 0 ? String(loPart(cast, i, n)) : '', sexLockMob: cast.lo.indexOf(i) >= 0 && s % 3 === 1, faithful: (cast.fa || []).indexOf(i) >= 0,
+            /* モブ相手の受け攻め（2026-10-26 担当AW）：R18に参加しない人・固定した相手だけの人に、モブには受け・リバ・攻めを付けても S4・S6 が 0 か */
+            posNpc: cast.noR18.indexOf(i) >= 0 || cast.lo.indexOf(i) >= 0 ? ['bottom', 'riba', 'top', ''][s % 4] : '' });
+          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
+        }
+        /* S31：回避型の気質の人（AC 高・CP 低・攻撃性 低） */
+        if (avd && cast.shy) cast.shy.forEach(i => { if (chars[i]) chars[i].eg = { CP: 3 + (s % 3), NP: 12, A: 10, FC: 6, AC: 16 + (s % 4) }; });
+        /* S15：5回に2回、二人を互いに恋愛相手として固定する（4人の回は lk、6人の回は lk2。相手が箱庭にいるときだけ） */
+        const lk = feel || avd ? null : s % 5 === 2 ? cast.lk : s % 5 === 4 ? cast.lk2 : null;
+        if (lk && lk[0] < n && lk[1] < n) { chars[lk[0]].loveLock = String(lk[1]); chars[lk[1]].loveLock = String(lk[0]); }
+        /* 固定の複数化（2026-10-26）：10回に1回（s%10===4）、lk の一人目は二人を固定する（三人目もその一人目だけを固定。二人目と三人目は恋愛・夜にならないはず） */
+        const lk3 = lk && s % 10 === 4 && n >= 3 && lk[0] < n && lk[1] < n ? [0, 1, 2, 3, 4, 5].filter(i => i < n && i !== lk[0] && i !== lk[1])[0] : null;
+        if (lk3 != null) { chars[lk[0]].loveLock = [lk[1], lk3]; chars[lk3].loveLock = [lk[0]]; }
+        /* S17：5回に1回（s%5===3）、二人を互いに固定し、R18に参加する方の一人の性行為の相手を「誰とでも可」にする */
+        const lkAny = !feel && !avd && s % 5 === 3 && cast.lk[0] < n && cast.lk[1] < n ? cast.lk : null;
+        if (lkAny) {
+          chars[lkAny[0]].loveLock = String(lkAny[1]); chars[lkAny[1]].loveLock = String(lkAny[0]);
+          chars[cast.noR18.indexOf(lkAny[0]) >= 0 ? lkAny[1] : lkAny[0]].sexLock = 'any';
+        }
+        /* S12：奇数回は同一人物の組を足す（相手どうしに書く） */
+        const same = !feel && !avd && s % 2 && cast.same && cast.same[1] < n ? cast.same : null;
+        if (same) { chars[same[0]].same = same[1]; chars[same[1]].same = same[0]; }
+        const sameNg = same && s % 4 === 1 ? same : null;
+        if (sameNg) { [[0, 1], [1, 0]].forEach(([x, y]) => { const c = chars[sameNg[x]]; c.loveNG = Array.isArray(c.loveNG) ? c.loveNG : []; if (c.loveNG.indexOf(sameNg[y]) < 0) c.loveNG.push(sameNg[y]); }); }
+        /* 館：探偵2人と助手2人の回を混ぜる（S9） */
+        if (sc === 'yakata' && n >= 4 && s % 2 === 0) { [0, 1, 2, 3].forEach(k => { const r0 = k < 2 ? 'detective' : 'assistant'; perChar[k].role = r0; perChar[k].pick = Object.assign({}, perChar[k].pick, { role: r0 }); }); }
+        /* S34：クラスメイトの先生（4人以上の回の3回に2回。6人の回の一部は先生二人で、二人目は受け持ちの学年つき） */
+        const tIdx = sc === 'classroom' && !feel && !avd && n >= 4 && s % 3 ? (n >= 6 && s % 3 === 2 ? [n - 1, n - 2] : [n - 1]) : [];
+        tIdx.forEach((k, j) => { perChar[k].role = 'teacher'; perChar[k].pick = Object.assign({}, perChar[k].pick, { tch: j ? String(1 + s % 3) : 't' }); });
+        const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
+        (scen.env || []).forEach((e, k) => { if (e.options && e.options.length > 1 && (s + k) % 3 === 0) env[e.id] = e.options[(s + k) % e.options.length].v; });
+        if (tIdx.length) {
+          env.grade = ['all', '3', '1', '2'][Math.floor(s / 3) % 4];
+          if (env.grade === 'all') perChar.forEach((pc, i) => { if (tIdx.indexOf(i) < 0) pc.pick = Object.assign({}, pc.pick, { grade: String(1 + i % 3) }); });
+          if (s % 2) { env.heavy = 'dark'; env.bully = 'high'; }
+        }
+        /* 役割（mob.js の HK.Roles）は、回ごとに「おまかせ」と「住人から」を交互に */
+        (scen.env || []).forEach(e => { if (/^role_/.test(e.id)) env[e.id] = s % 2 ? 'res' : 'auto'; });
+        ENVSET.forEach(kv => { env[kv[0]] = isNaN(+kv[1]) ? kv[1] : +kv[1]; });
+        if (HOT) (scen.env || []).forEach(e => {
+          if (e.max != null && /lewd|dose|shady|heat|prey|pleasure|traffic|ev$|aphro|night|npc|lust|yobai/.test(e.id)) env[e.id] = e.max;
+          else if (e.options && /lewd/.test(e.id)) { const hi = e.options.filter(o => /high|max|lewd/.test(o.v))[0]; if (hi) env[e.id] = hi.v; }
+        });
+        /* 内容のスイッチ（あれば）：偶数回は全部切る */
+        /* 内容のスイッチ：偶数回はすべて切、奇数回はすべて入（S8 は切の回に、合意のない場面などが出たら数える） */
+        const offTags = {};
+        if (HK.Content && HK.Content.TAGS) { if (s % 2 === 0) { HK.Content.TAGS.forEach(t => { offTags[t.id] = true; }); env.ct = ''; } else env.ct = HK.Content.TAGS.map(t => t.id).join(','); }
+        const ties = (cast.ties || []).filter(t => t.a < n && t.b < n);
+        yield { sc, s, input: { scenId: sc, seed: 3000 + s, env, chars, perChar, ties }, meta: { kind: 'main', feel, avd, lk, lkAny, same, sameNg, tIdx, offTags } };
+      }
+    }
+    /* W1（追加の回）：ふつうの配役には敵視の組がないので、媚薬ロッカーは敵対・不仲（愛憎つきも）の組で N/2 回（4回以上）回して、
+       対立の文（hate-kit.js・hate-love.js の狭い場所の文）に場所に合わない語が出ないかを見る（二人・三人・四人） */
+    if (HK.SCENARIOS.locker && (!only || only.indexOf('locker') >= 0)) {
+      const scL = HK.SCENARIOS.locker, NW = Math.max(4, Math.round(N / 2));
+      for (let s = 0; s < NW; s++) {
+        const n = 2 + (s % 3), types = ['enemy', 'bad'];
+        const chars = NAMES.slice(0, n).map((nm, i) => ({ name: nm, eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, gender: (s + i) % 2 ? 'f' : 'm', likes: 'both', pos: '', loveNG: [] }));
+        const ties = [{ a: 0, b: 1, type: types[s % 2], lh: s % 4 === 1 ? 'both' : s % 4 === 3 ? 'a' : '' }];
+        if (n >= 3) ties.push({ a: 2, b: 0, type: types[(s + 1) % 2] });
+        const env = {}; (scL.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
+        yield { sc: 'locker', s, input: { scenId: 'locker', seed: 7000 + s, env, chars, ties, perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })) }, meta: { kind: 'w1' } };
+      }
+    }
+    /* S25〜S30（追加の回）：死のある箱庭を、不死・吸血鬼（不死あり／なし）・同一人物・執着（監禁）・愛憎・発狂しやすい気質・
+       展開の重さ「重い」・死ネタの重さ「重い」を混ぜた配役で ND 回（N/2、4 回以上）ずつ回す（その回の S1〜S18 も数える） */
+    const DZ_SC = ['zombie', 'jashin', 'yakata', 'ship', 'rpg', 'jinro', 'island', 'whiteroom', 'omega', 'locker', 'dungeon', 'succubus', 'br', 'trial', 'classroom'];
+    const ND = Math.max(4, Math.round(N / 2));
+    for (const sc of DZ_SC) {
+      const scen = HK.SCENARIOS[sc]; if (!scen || (only && only.indexOf(sc) < 0)) continue;
+      for (let s = 0; s < ND; s++) {
+        const n = sc === 'jinro' ? 6 + (s % 3) : Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 3 + (s % 4)));
+        const chars = [], perChar = [];
+        for (let i = 0; i < n; i++) {
+          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: (i + s) % 3 === 0 ? 'f' : (i + s) % 3 === 1 ? 'm' : (i % 2 ? 'f' : 'm'), likes: '', tone: '', fp: '', pos: ['top', 'bottom', '', 'riba'][(i + s) % 4], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: [], noR18: false, sexLock: '', faithful: false });
+          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
+        }
+        if (s % 3 === 0) chars[n - 1].eg = { CP: 4, NP: 6, A: 2, FC: 8, AC: 20 };   /* 発狂しやすい気質 */
+        const ties = [];
+        if (s % 4 === 0) ties.push({ a: 0, b: 1, type: 'yan' });
+        if (s % 4 === 1) ties.push({ a: 0, b: 1, type: 'yan', sub: 'hatelove' });
+        if (s % 4 === 2) { ties.push({ a: 0, b: 1, type: 'lover' }); if (n >= 4) ties.push({ a: 2, b: 3, type: 'lover' }); }
+        if (s % 4 === 3 && n >= 4) { chars[2].same = 3; chars[3].same = 2; ties.push({ a: 1, b: 0, type: 'yan' }); }
+        if (s % 5 === 1) chars[1 % n].race = 'vampire';
+        if (s % 5 === 2) chars[Math.min(2, n - 1)].feats = ['immortal'];
+        if (s % 5 === 3) perChar[0].pick.special = 'immortal';
+        if (s % 5 === 4) { chars[1 % n].race = 'vampire'; chars[1 % n].feats = ['fang', 'cold']; }
+        const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
+        (scen.env || []).forEach((e, k) => { if (e.options && e.options.length > 1 && (s + k) % 3 === 0) env[e.id] = e.options[(s + k) % e.options.length].v; else if (e.max != null && e.min != null && (s + k) % 4 === 1) env[e.id] = e.max; });
+        (scen.env || []).forEach(e => { if (/^role_/.test(e.id)) env[e.id] = s % 2 ? 'res' : 'auto'; });
+        if (HOT) (scen.env || []).forEach(e => { if (e.max != null && /lewd|dose|shady|heat|prey|pleasure|traffic|ev$|aphro|night|npc|lust|yobai|danger|hostile|serial|outbreak|turn/.test(e.id)) env[e.id] = e.max; });
+        if (s % 3 === 0) { env.heavy = 'dark'; env.death = 'dark'; } else if (s % 3 === 1) env.death = 'dark';
+        if (sc === 'whiteroom' && s % 2 === 0) env.cond = 'kill';
+        if (HK.Content && HK.Content.TAGS) env.ct = s % 4 === 0 ? '' : HK.Content.TAGS.map(t => t.id).join(',');
+        yield { sc, s, input: { scenId: sc, seed: 7000 + s, env, chars, perChar, ties }, meta: { kind: 'dz' } };
+      }
+    }
+    /* S32（追加の回。2026-10-28 担当KA）：蘇る箱庭（HK.Special.SCENES）を、住人の大半が不死・吸血鬼の配役で NI 回（N/2、4 回以上）ずつ回す。
+       特殊役職の不死・体の特徴の不死・吸血鬼（不死あり）・吸血鬼（不死を外した＝蘇らない）を混ぜ、展開と死ネタの重さ「重い」・危険の設定を上げる。
+       蘇る人の遺言（S32）と、その回の S1〜S30 も数える */
+    const SPS = (HK.Special && HK.Special.SCENES) || [];
+    const NI = Math.max(4, Math.round(N / 2));
+    for (const sc of SPS) {
+      const scen = HK.SCENARIOS[sc]; if (!scen || (only && only.indexOf(sc) < 0)) continue;
+      for (let s = 0; s < NI; s++) {
+        const n = Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 4 + (s % 3)));
+        const chars = [], perChar = [];
+        for (let i = 0; i < n; i++) {
+          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: (i + s) % 2 ? 'f' : 'm', likes: '', tone: '', fp: '', pos: ['top', 'bottom', '', 'riba'][(i + s) % 4], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: [], noR18: false, sexLock: '', faithful: false });
+          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
+          const k = (i + s) % 5;
+          if (k === 0) perChar[i].pick.special = 'immortal';
+          else if (k === 1) chars[i].race = 'vampire';
+          else if (k === 2) chars[i].feats = ['immortal'];
+          else if (k === 3 && s % 2) { chars[i].race = 'vampire'; chars[i].feats = ['fang', 'cold']; }
+        }
+        /* 口調の違い（疎む・当たり前・怯える・軽口が出るように） */
+        const TONES = ['darui', 'gentleman', 'gyaru', 'honwaka', 'mukuchi', 'chara', 'noja', ''];
+        chars.forEach((c, i) => { if ((i + s) % 3 === 0) c.tone = TONES[(i + s) % TONES.length]; });
+        const ties0 = [{ a: 0, b: 1, type: s % 2 === 0 ? 'lover' : 'yan' }];
+        const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
+        (scen.env || []).forEach(e => { if (e.max != null && /danger|hostile|serial|outbreak|turn|lewd|ev$/.test(e.id)) env[e.id] = e.max; });
+        env.heavy = 'dark'; env.death = 'dark';
+        if (HK.Content && HK.Content.TAGS) env.ct = s % 2 ? '' : HK.Content.TAGS.map(t => t.id).join(',');
+        yield { sc, s, input: { scenId: sc, seed: 8000 + s, env, chars, perChar, ties: ties0 }, meta: { kind: 's32' } };
+      }
+    }
+    /* S22：グループの「仲間」（ui.js）。オンのグループの住人どうしにだけ、箱庭に渡す関係「仲間」が付く／オフでは付かない／
+       ほかの関係はそのまま残る（仲間は重ねるだけ）／JSON にオン・オフが入る（古い JSON は「なし」として読める） */
+    if (HK.UI && HK.UI.state && HK.UI.buildInput && HK.UI.normState) {
+      yield { sc: '画面', s: 0, special: true, meta: { kind: 's22' } };
+    }
+    /* S33：クラスメイトの先生と生徒（環境値「先生との恋愛」。2026-10-28 担当KC） */
+    if (HK.SCENARIOS.classroom && (!only || only.indexOf('classroom') >= 0)) {
+      const NT = Math.max(12, N);
+        for (let s = 0; s < NT; s++) {
+          const tl = ['off', 'secret', 'open'][s % 3], n = 5 + (s % 3), chars = [], perChar = [];
+          for (let i = 0; i < n; i++) {
+            chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: (i + s) % 2 ? 'f' : 'm',
+              likes: ['', 'm', 'f', 'both', 'none', ''][(i * 3 + s) % 6], tone: '', fp: '', pos: ['', 'top', 'bottom', 'riba'][(i + s) % 4], calls: {}, loveNG: [],
+              noR18: (s % 4 === 1 && i === 0) || (s % 4 === 2 && i === 1), sexLock: s % 5 === 3 && i === 2 ? '3' : '' });
+            perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: { grade: String(1 + ((s + i) % 3)) }, role: i === 0 ? 'teacher' : '' });
+          }
+          const env = { grade: ['3', 'all', '2', '1'][s % 4], tlove: tl, climate: 70 };
+          if (HK.Content) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
+          /* あり：半分の回は、関係の設定で先生と生徒を恋人にして始める（恋人になってからの場面と夜を見る） */
+          const ties = tl !== 'off' && s % 2 ? [{ a: 0, b: 1 + (s % 3), type: 'lover' }] : [];
+          const tie = (a, b) => ties.some(t => (t.a === a && t.b === b) || (t.a === b && t.b === a));
+          yield { sc: 'classroom', s, input: { scenId: 'classroom', seed: 8100 + s * 13, env, chars, perChar, ties }, meta: { kind: 's33', tl } };
+        }
+    }
+};
+
+/* ---------- 判定 state（ページの中）：opt = { why, mode: 'r18'|'safe'|'' } ---------- */
+const JUDGE = function (HK, opt) {
+  const WHY = !!opt.why, mode = opt.mode || '';
     const SEXCORE = /抱き潰|エッチ|イカせ|イかせ|イった|イっ|果て|喘|挿れ|挿入|舐め|愛撫|達し|体を重ね|腰を(?:振|沈|打ち|揺|落と|突き|使)|跨[っがりるら]|犯|根元|締めつけ|締め付け|射精|ナカ|♡|昂り|濡れ|蜜|奥を|奥に|奥まで|一つにな|ひとつにな|繋がっ|繋がり|繋がる|呑み込|搾り|搾精|脈打|ノット|種付け|孕|精を|白濁|注が|中に出/;
     const NONSEX = /(?:石|壁|祠|床|地面|木の幹|根)[^。]{0,24}脈打|不老の蜜|酸素を孕む白石|金の蜜の小壺|金色のとろりとした蜜|蜜がわずかな量|(?:根元|地面|土|床下|墓)を[^。]{0,6}掘|芋を[^。]{0,8}掘|根元に生えた|(?:荷物|袋|箱|リュック|ポケット|引き出し)の(?:最)?奥|(?:泥|砂|波|水|沼|流れ)[^。]{0,12}呑み込|眼窩の奥|傷を舐め|蜜の湖|(?:手袋|服|上着|靴)が[^。]{0,8}濡れ|濡れた岩|濡れた砂|窓の奥|荒れ果て|(?:渦|波|闇|海|霧|炎)に呑ま|呑み込んで、海|歌がひとつに|本殿の奥|(?:杯|盃|グラス)に[^。]{0,12}注が|蜜蝋|大地が[^。]{0,6}脈打|根元に手|樹皮の奥|ひとかけらを舐め|唇を舐めて我慢|蜂蜜|蜜で煮|ずぶ濡れ|根元(?:から|で)|石碑の根元|首を締め|喉が締めつけ|胸が締めつけ|神殿の奥|廃屋の奥|歯磨き粉[^。]*舐め|濡れた肩|濡れた(?:羽|翼)|濡れた(?:ユキノ|アキラ|ミナト|カオル|ハルカ|レンジ)|綱は、生き物のように脈打|影が一つ|残っているのは[^。]*|(?:洞窟|ロッカー|蔵|櫓|石舞台|森|島|部屋|棚|引き出し|鞄|物置|倉庫|屋敷|館|廊下|路地|喉|胸|心|目|瞳)の(?:最)?奥|最奥を前|濡れ(?:タオル|ていた|た(?:服|シャツ|髪|地面|床|手|頬|瞳|目|体|まま|葉|布|手ぬぐい|ハンカチ))|(?:酒|お茶|水)が注が|犯人|犯行|防犯|犯罪|共犯|ほかに：[^\n]*|上達|到達|配達|伝達|達成|発達|通達|熟達|調達|速達|先達|の果て(?=[にのへでまを、。])|果てしな|舐めん[なじ]|舐めた(?:真似|口)|(?:洞窟|森|遺跡|施設|地下|迷宮|神殿)の最奥|涙に濡れ|雨に濡れ|濡れた(?:髪|服|地面|床|手|頬|瞳|目)|血に濡れ|注がれた(?:お茶|茶|酒|水|コーヒー|紅茶|スープ|グラス|杯)|(?:視線|注目|愛情|光|魔力)が注が|びしょ濡れ/g;
     const MOB = /男たち|男が|客|触手|ゾンビ|魔物|オーク|ゴブリン|スライム|村人|略奪者|おじさん|兵士|盗賊|マッサージ師|施術師|整体師|司会|カメラマン|監督|インキュバス|獣|看守|見知らぬ|誰とも知れない|壁の向こう|向こう側の誰か|モブ|生命体|異星|神(?:は|が|の手|に)|邪神/;
@@ -516,104 +716,56 @@ const { openBuild } = require('./lib.js');
         });
       });
     }
-    const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ', 'ソウタ', 'リコ'];
-    /* 配役：執着（監禁を起こす）・恋人・恋愛にしない相手・R18に参加しない人・性行為の相手を固定した人（lo）を混ぜる */
-    const CASTS = [
-      { g: ['m', 'f', 'm', 'f', 'm', 'f'], p: ['top', 'bottom', '', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'yan' }, { a: 2, b: 3, type: 'lover' }], ng: [[4, 5]], noR18: [2], lo: [3], same: [3, 4], lk: [2, 3], lk2: [1, 4] },
-      { g: ['f', 'f', 'm', 'm', 'f', 'm'], p: ['', '', 'top', 'bottom', 'top', ''], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'yan' }], ng: [[0, 2]], noR18: [4], lo: [1], same: [3, 5], fa: [0], lk: [0, 1], lk2: [4, 5] },
-      { g: ['m', 'm', 'f', 'f', 'm', 'f'], p: ['top', 'bottom', 'top', 'bottom', '', ''], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'lover' }, { a: 4, b: 0, type: 'yan' }], ng: [[1, 5]], noR18: [5], lo: [0, 1], same: [3, 4], fa: [3], lk: [2, 3], lk2: [4, 5] },
-      { g: ['f', 'm', 'f', 'm', 'f', 'm'], p: ['top', 'bottom', '', 'top', 'bottom', ''], ties: [{ a: 0, b: 1, type: 'fwb' }, { a: 3, b: 2, type: 'yan' }], ng: [[4, 1]], noR18: [0], lo: [], same: [2, 5], fa: [2], lk: [0, 2], lk2: [2, 4] }
-    ];
-    /* S19〜S21：追加の気持ち・関係を使う配役（1シナリオあたり NF 回。ふつうの回のあとに回す。S1〜S18 もこの回で数える）
-       無関心と恐怖は、恋人・セフレ・片想いと重ねて「恋愛にならないほうが勝つ」ことも見る。許嫁は乗り気どうし（恋愛対象が合う組・合わない組）と、断りたい側の破談 */
-    const NF = Math.max(4, Math.round(N / 2));
-    /* S31：避けている関係の配役（2026-10-28 担当JE）。避けている人（★）が攻め・受け・どちらでもの回を混ぜ、相手は想っている・敵視している。
-       shy＝回避型の気質にする人（嫌悪レベルと組み合わせて「避けている」になる） */
-    const NA = Math.max(4, Math.round(N / 2));
-    const ACASTS = [
-      /* ★1 は 0 を苦手（敵対の相手の気持ち）、★3 は 2 の片想いを苦手、★5 は 4 の執着を怖がっている */
-      { g: ['m', 'f', 'm', 'f', 'f', 'm'], p: ['bottom', 'top', '', 'top', 'bottom', 'top'], ties: [{ a: 0, b: 1, type: 'enemy', cold: 'avoid' }, { a: 2, b: 3, type: 'crush', cold: 'dislike' }, { a: 4, b: 5, type: 'yan', cold: 'afraid' }] },
-      /* ★0 は 1 を苦手（不仲の相手の気持ち・1 は 0 に片想いも）、★2 は 3 の支配に怯えている、★4 は 5 の執着を嫌っている、★shy の 5 は 4 を嫌悪 */
-      { g: ['f', 'm', 'f', 'm', 'm', 'f'], p: ['top', 'bottom', 'top', '', 'top', 'riba'], ties: [{ a: 1, b: 0, type: 'bad', cold: 'avoid' }, { a: 1, b: 0, type: 'crush' }, { a: 3, b: 2, type: 'abuse', cold: 'fear' }, { a: 5, b: 4, type: 'yan', cold: 'hate' }], shy: [] },
-      /* 嫌悪と回避型の気質：0↔1 敵対で ★1 は回避型、2↔3 敵対で 2 は愛憎（避けていない）・★3 は回避型、★5 は 4 の片想いを苦手 */
-      { g: ['m', 'm', 'f', 'm', 'm', 'f'], p: ['', 'top', 'bottom', 'top', 'bottom', ''], ties: [{ a: 0, b: 1, type: 'enemy' }, { a: 2, b: 3, type: 'enemy', lh: 'a' }, { a: 4, b: 5, type: 'crush', cold: 'dislike' }], shy: [1, 3] },
-      /* 恐怖・無関心・苦手を重ねる：★0 は 1 を恐れる、★2 は 3 に無関心（3 は 2 に片想い）、★4 は 5 を苦手（敵対）・4 は回避型 */
-      { g: ['f', 'm', 'm', 'f', 'f', 'f'], p: ['top', 'bottom', 'top', 'bottom', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'fear' }, { a: 2, b: 3, type: 'apathy' }, { a: 3, b: 2, type: 'crush' }, { a: 5, b: 4, type: 'enemy', cold: 'avoid' }], shy: [4] }
-    ];
-    const FCASTS = [
-      { g: ['m', 'f', 'm', 'f', 'm', 'f'], p: ['top', 'bottom', '', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'apathy' }, { a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'fear' }, { a: 3, b: 2, type: 'crush' }, { a: 4, b: 5, type: 'fiance' }, { a: 1, b: 4, type: 'yan', sub: 'dep' }] },
-      { g: ['f', 'm', 'f', 'm', 'f', 'f'], p: ['', 'top', 'bottom', 'top', '', 'bottom'], ties: [{ a: 1, b: 0, type: 'fear' }, { a: 0, b: 1, type: 'yan', sub: 'hatelove' }, { a: 2, b: 3, type: 'fiance', feel: 'refuse' }, { a: 4, b: 5, type: 'fiance' }, { a: 3, b: 5, type: 'apathy' }, { a: 5, b: 3, type: 'fwb' }] },
-      { g: ['m', 'm', 'f', 'f', 'm', 'f'], p: ['top', 'top', '', '', 'bottom', 'top'], ties: [{ a: 0, b: 1, type: 'fiance' }, { a: 2, b: 3, type: 'fiance', feel: 'unsure' }, { a: 4, b: 5, type: 'fear' }, { a: 4, b: 5, type: 'fwb', mode: 'mistress' }, { a: 0, b: 2, type: 'enemy', grade: 'hate' }, { a: 1, b: 3, type: 'comrade' }, { a: 1, b: 5, type: 'comrade' }, { a: 3, b: 5, type: 'comrade' }] },
-      { g: ['f', 'm', 'm', 'f', 'f', 'm'], p: ['bottom', 'top', 'riba', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'fwb', mode: 'mistress' }, { a: 1, b: 3, type: 'lover' }, { a: 2, b: 4, type: 'apathy' }, { a: 4, b: 2, type: 'yan' }, { a: 5, b: 0, type: 'fear' }, { a: 3, b: 5, type: 'benefactor', feel: 'guilt' }, { a: 2, b: 5, type: 'fond', mode: 'oshi' }, { a: 3, b: 4, type: 'honmei' }] }
-    ];
-    /* 性行為の相手を固定する人（lo）の相手：関係の恋人がいればその人、いなければ隣の人（2026-10-26：「恋人だけ」をなくし、固定に一本化） */
-    const loPart = (cast, i, n) => { const t = (cast.ties || []).filter(t => t.type === 'lover' && (t.a === i || t.b === i) && t.a < n && t.b < n)[0]; return t ? (t.a === i ? t.b : t.a) : (i + 1) % n; };
-    /* 箱庭の仕掛けそのものがモブ・魔物の箱庭（「固定した相手だけ」でも縛らない。engine.js の HK.State.mobSexOk の説明） */
     const MOB_FREE = { dungeon: 1, succubus: 1, variety: 1 };
-    const ids = only || Object.keys(HK.SCENARIOS);
-    for (const sc of ids) {
-      const scen = HK.SCENARIOS[sc]; if (!scen) continue;
-      out.bySc[sc] = { runs: 0 };
-      for (let s = 0; s < N + NF + NA; s++) {
-        const avd = s >= N + NF, feel = s >= N && !avd;
-        const cast = avd ? Object.assign({ ng: [], noR18: [], lo: [], same: null, fa: [], lk: [9, 9], lk2: [9, 9] }, ACASTS[(s - N - NF) % ACASTS.length]) : feel ? Object.assign({ ng: [], noR18: [], lo: [], same: null, fa: [], lk: [9, 9], lk2: [9, 9] }, FCASTS[(s - N) % FCASTS.length]) : CASTS[s % CASTS.length];
-        const n = feel || avd ? Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 6)) : Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 2 + (s % 5)));
-        const chars = [], perChar = [];
-        for (let i = 0; i < n; i++) {
-          const ng = []; cast.ng.forEach(pr => { if (pr[0] === i && pr[1] < n) ng.push(pr[1]); if (pr[1] === i && pr[0] < n) ng.push(pr[0]); });
-          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: cast.g[i], likes: '', tone: '', fp: '', pos: cast.p[i], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: ng, noR18: cast.noR18.indexOf(i) >= 0, sexLock: cast.lo.indexOf(i) >= 0 ? String(loPart(cast, i, n)) : '', sexLockMob: cast.lo.indexOf(i) >= 0 && s % 3 === 1, faithful: (cast.fa || []).indexOf(i) >= 0,
-            /* モブ相手の受け攻め（2026-10-26 担当AW）：R18に参加しない人・固定した相手だけの人に、モブには受け・リバ・攻めを付けても S4・S6 が 0 か */
-            posNpc: cast.noR18.indexOf(i) >= 0 || cast.lo.indexOf(i) >= 0 ? ['bottom', 'riba', 'top', ''][s % 4] : '' });
-          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
+    /* S33：先生と生徒の出来事に、場にいない人が出た（記録の直前に見る。S33 の回だけ） */
+    const SAFE = !!HK.SAFE_ON, TLW = /先生と生徒の/;
+      const one = (a, b) => { if (!a.likes || a.likes === 'both') return true; if (a.likes === 'none') return false; if (!b.gender || b.gender === 'x') return true; return a.likes === b.gender; };
+    let s33on = false;
+    {
+      const say0 = HK.Ctx.prototype.say;
+      HK.Ctx.prototype.say = function (o) {
+        if (s33on && cur) if (o && TLW.test(String(o.why || '')) && (o.actors || []).some(c => c && !HK.State.here(c))) hit('S33', '場にいない人が先生と生徒の出来事に出た：' + (o.actors || []).filter(c => c && !HK.State.here(c)).map(c => c.name).join('・'));
+        return say0.apply(this, arguments);
+      };
+    }
+    /* ほかのパスの回：内容のスイッチは env.ct（content.js の HK.Content.on と同じく、空・無しは全部切） */
+    const offOf = env => { const o = {}, ct = env && env.ct; if (HK.Content && HK.Content.TAGS) HK.Content.TAGS.forEach(t => { if (ct == null || ct === '' || (',' + ct + ',').indexOf(',' + t.id + ',') < 0) o[t.id] = true; }); return o; };
+    const kindOf = run => run.pass === 'state' ? (run.meta || {}).kind : 'x';
+    let xm = null;
+    return {
+      begin(run) {
+        const k = kindOf(run), sc = run.sc, scen = HK.SCENARIOS[sc], m = run.meta || {};
+        if (k === 'main') { out.bySc[sc] = out.bySc[sc] || { runs: 0 }; cur = { sc, story: !!scen.solo, offTags: m.offTags, feel: m.feel ? run.input.ties : null, avd: m.avd }; lastCtx = null; dz = { snap: {}, deaths: [], rev: [], engine: null, S: null }; }
+        else if (k === 'w1') { out.bySc.locker = out.bySc.locker || { runs: 0 }; cur = { sc: 'locker', story: true, offTags: {}, feel: null }; }
+        else if (k === 'dz' || k === 's32') { out.bySc[sc] = out.bySc[sc] || { runs: 0 }; cur = { sc, story: !!scen.solo, offTags: {}, feel: null }; dz = { snap: {}, deaths: [], rev: [], engine: null, S: null }; lastCtx = null; lastS = null; }
+        else if (k === 's33') { cur = { sc: 'classroom先生', story: false }; out.bySc[cur.sc] = out.bySc[cur.sc] || { runs: 0 }; s33on = true; }
+        else {
+          /* ほかのパスの回：ふつうの回と同じ見方（固定・同一人物・先生の配役の印は無し）。無関心・恐怖・許嫁の関係があれば S19〜S21 も見る */
+          const ties = run.input.ties || [], fl = ties.filter(t => t.type === 'apathy' || t.type === 'fear' || t.type === 'fiance');
+          xm = { offTags: offOf(run.input.env), feel: fl.length ? ties : null };
+          out.bySc[sc] = out.bySc[sc] || { runs: 0 };
+          cur = { sc, story: !!scen.solo, offTags: xm.offTags, feel: xm.feel, avd: false }; lastCtx = null; lastS = null; dz = { snap: {}, deaths: [], rev: [], engine: null, S: null };
         }
-        /* S31：回避型の気質の人（AC 高・CP 低・攻撃性 低） */
-        if (avd && cast.shy) cast.shy.forEach(i => { if (chars[i]) chars[i].eg = { CP: 3 + (s % 3), NP: 12, A: 10, FC: 6, AC: 16 + (s % 4) }; });
-        /* S15：5回に2回、二人を互いに恋愛相手として固定する（4人の回は lk、6人の回は lk2。相手が箱庭にいるときだけ） */
-        const lk = feel || avd ? null : s % 5 === 2 ? cast.lk : s % 5 === 4 ? cast.lk2 : null;
-        if (lk && lk[0] < n && lk[1] < n) { chars[lk[0]].loveLock = String(lk[1]); chars[lk[1]].loveLock = String(lk[0]); }
-        /* 固定の複数化（2026-10-26）：10回に1回（s%10===4）、lk の一人目は二人を固定する（三人目もその一人目だけを固定。二人目と三人目は恋愛・夜にならないはず） */
-        const lk3 = lk && s % 10 === 4 && n >= 3 && lk[0] < n && lk[1] < n ? [0, 1, 2, 3, 4, 5].filter(i => i < n && i !== lk[0] && i !== lk[1])[0] : null;
-        if (lk3 != null) { chars[lk[0]].loveLock = [lk[1], lk3]; chars[lk3].loveLock = [lk[0]]; }
-        /* S17：5回に1回（s%5===3）、二人を互いに固定し、R18に参加する方の一人の性行為の相手を「誰とでも可」にする */
-        const lkAny = !feel && !avd && s % 5 === 3 && cast.lk[0] < n && cast.lk[1] < n ? cast.lk : null;
-        if (lkAny) {
-          chars[lkAny[0]].loveLock = String(lkAny[1]); chars[lkAny[1]].loveLock = String(lkAny[0]);
-          chars[cast.noR18.indexOf(lkAny[0]) >= 0 ? lkAny[1] : lkAny[0]].sexLock = 'any';
-        }
-        /* S12：奇数回は同一人物の組を足す（相手どうしに書く） */
-        const same = !feel && !avd && s % 2 && cast.same && cast.same[1] < n ? cast.same : null;
-        if (same) { chars[same[0]].same = same[1]; chars[same[1]].same = same[0]; }
-        const sameNg = same && s % 4 === 1 ? same : null;
-        if (sameNg) { [[0, 1], [1, 0]].forEach(([x, y]) => { const c = chars[sameNg[x]]; c.loveNG = Array.isArray(c.loveNG) ? c.loveNG : []; if (c.loveNG.indexOf(sameNg[y]) < 0) c.loveNG.push(sameNg[y]); }); }
-        /* 館：探偵2人と助手2人の回を混ぜる（S9） */
-        if (sc === 'yakata' && n >= 4 && s % 2 === 0) { [0, 1, 2, 3].forEach(k => { const r0 = k < 2 ? 'detective' : 'assistant'; perChar[k].role = r0; perChar[k].pick = Object.assign({}, perChar[k].pick, { role: r0 }); }); }
-        /* S34：クラスメイトの先生（4人以上の回の3回に2回。6人の回の一部は先生二人で、二人目は受け持ちの学年つき） */
-        const tIdx = sc === 'classroom' && !feel && !avd && n >= 4 && s % 3 ? (n >= 6 && s % 3 === 2 ? [n - 1, n - 2] : [n - 1]) : [];
-        tIdx.forEach((k, j) => { perChar[k].role = 'teacher'; perChar[k].pick = Object.assign({}, perChar[k].pick, { tch: j ? String(1 + s % 3) : 't' }); });
-        const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
-        (scen.env || []).forEach((e, k) => { if (e.options && e.options.length > 1 && (s + k) % 3 === 0) env[e.id] = e.options[(s + k) % e.options.length].v; });
-        if (tIdx.length) {
-          env.grade = ['all', '3', '1', '2'][Math.floor(s / 3) % 4];
-          if (env.grade === 'all') perChar.forEach((pc, i) => { if (tIdx.indexOf(i) < 0) pc.pick = Object.assign({}, pc.pick, { grade: String(1 + i % 3) }); });
-          if (s % 2) { env.heavy = 'dark'; env.bully = 'high'; }
-        }
-        /* 役割（mob.js の HK.Roles）は、回ごとに「おまかせ」と「住人から」を交互に */
-        (scen.env || []).forEach(e => { if (/^role_/.test(e.id)) env[e.id] = s % 2 ? 'res' : 'auto'; });
-        ENVSET.forEach(kv => { env[kv[0]] = isNaN(+kv[1]) ? kv[1] : +kv[1]; });
-        if (HOT) (scen.env || []).forEach(e => {
-          if (e.max != null && /lewd|dose|shady|heat|prey|pleasure|traffic|ev$|aphro|night|npc|lust|yobai/.test(e.id)) env[e.id] = e.max;
-          else if (e.options && /lewd/.test(e.id)) { const hi = e.options.filter(o => /high|max|lewd/.test(o.v))[0]; if (hi) env[e.id] = hi.v; }
-        });
-        /* 内容のスイッチ（あれば）：偶数回は全部切る */
-        /* 内容のスイッチ：偶数回はすべて切、奇数回はすべて入（S8 は切の回に、合意のない場面などが出たら数える） */
-        const offTags = {};
-        if (HK.Content && HK.Content.TAGS) { if (s % 2 === 0) { HK.Content.TAGS.forEach(t => { offTags[t.id] = true; }); env.ct = ''; } else env.ct = HK.Content.TAGS.map(t => t.id).join(','); }
-        const ties = (cast.ties || []).filter(t => t.a < n && t.b < n);
-        cur = { sc, story: !!scen.solo, offTags, feel: feel ? ties : null, avd };
-        let res;
-        lastCtx = null;
-        dz = { snap: {}, deaths: [], rev: [], engine: null, S: null };
-        try { res = HK.simulate({ scenId: sc, seed: 3000 + s, env, chars, perChar, ties }); } catch (e) { out.err.push(sc + ': ' + String(e && e.stack || e).slice(0, 300)); dz = null; continue; }
+      },
+      error(run, e) {
+        const k = kindOf(run), sc = run.sc;
+        if (k === 'main') { out.err.push(sc + ': ' + String(e && e.stack || e).slice(0, 300)); dz = null; }
+        else if (k === 'w1') { out.err.push('W1 locker: ' + String(e && e.stack || e).slice(0, 300)); cur = null; }
+        else if (k === 'dz') { out.err.push(sc + '（S25〜の回）: ' + String(e && e.stack || e).slice(0, 300)); dz = null; cur = null; }
+        else if (k === 's32') { out.err.push(sc + '（S32 の回）: ' + String(e && e.stack || e).slice(0, 300)); dz = null; cur = null; }
+        else if (k === 's33') { out.err.push('S33: ' + String(e && e.stack || e).slice(0, 300)); }
+        else { out.err.push(sc + '（' + run.pass + '）: ' + String(e && e.stack || e).slice(0, 300)); dz = null; cur = null; }
+      },
+      after(run) {
+        const k = kindOf(run);
+        if (k === 's33') { s33on = false; cur = null; }
+        if (k === 'x') { cur = null; dz = null; lastS = null; lastCtx = null; xm = null; }
+      },
+      end(run, res) {
+        const k = kindOf(run), sc = run.sc, scen = HK.SCENARIOS[sc], m = run.meta || {}, chars = run.input.chars, perChar = run.input.perChar, ties = run.input.ties || [];
+        if (k === 'main' || k === 'x') {
+          const feel = k === 'main' ? m.feel : !!(xm && xm.feel), lk = k === 'main' ? m.lk : null, lkAny = k === 'main' ? m.lkAny : null, same = k === 'main' ? m.same : null, sameNg = k === 'main' ? m.sameNg : null;
+          const tIdx = (k === 'main' && m.tIdx) || [], offTags = k === 'main' ? m.offTags : xm.offTags;
         /* S25〜S30：死んだ・消えた人の再登場（文レベル） */
         try { dzCheck(res, chars, sc); } catch (e) { out.err.push(sc + ' dzCheck: ' + String(e && e.stack || e).slice(0, 300)); }
         dz = null;
@@ -734,7 +886,7 @@ const { openBuild } = require('./lib.js');
             const core = HK.State && HK.State.R18_CORE && HK.State.R18_CORE[sc];
             inS.forEach(i => { if (chars[i].noR18 && mode === 'r18' && !core) hit('S4', nm[i] + ' [' + (e.tag || e.cat || '') + '] | ' + x.slice(0, 140)); });
             if (inS.length === 2 && (lk || lkAny)) { const L2 = inS.map(i => ({ i, locks: cfgL(chars[i].loveLock), sx: chars[i].sexLock })); if (lockBad(L2[0], L2[1]) && !anyOk(L2[0], L2[1])) hit('S15', '性的な文 ' + nm[inS[0]] + '×' + nm[inS[1]] + ' [' + (e.tag || e.cat || '') + '] | ' + x.slice(0, 140)); }
-            for (let a = 0; a < inS.length; a++) for (let b = a + 1; b < inS.length; b++) if (chars[inS[a]].loveNG.indexOf(inS[b]) >= 0 && inS.length === 2) hit('S5', nm[inS[a]] + '×' + nm[inS[b]] + ' | ' + x.slice(0, 140));
+            for (let a = 0; a < inS.length; a++) for (let b = a + 1; b < inS.length; b++) if ((chars[inS[a]].loveNG || []).indexOf(inS[b]) >= 0 && inS.length === 2) hit('S5', nm[inS[a]] + '×' + nm[inS[b]] + ' | ' + x.slice(0, 140));
             if (sameNg && inS.length === 2 && inS.indexOf(same[0]) >= 0 && inS.indexOf(same[1]) >= 0) hit('S12', nm[same[0]] + '×' + nm[same[1]] + ' | ' + x.slice(0, 140));
             inS.forEach(i => { const sl = chars[i].sexLock; if (sl !== '' && sl != null && sl !== 'any' && !chars[i].sexLockMob && mode === 'r18' && !MOB_FREE[sc] && MOB.test(x) && inS.length === 1) hit('S6', nm[i] + ' | ' + x.slice(0, 140)); });
           });
@@ -745,110 +897,50 @@ const { openBuild } = require('./lib.js');
           }
         });
         cur = null;
-      }
-    }
-    /* W1（追加の回）：ふつうの配役には敵視の組がないので、媚薬ロッカーは敵対・不仲（愛憎つきも）の組で N/2 回（4回以上）回して、
-       対立の文（hate-kit.js・hate-love.js の狭い場所の文）に場所に合わない語が出ないかを見る（二人・三人・四人） */
-    if (HK.SCENARIOS.locker && PLACE_NG.locker && (!only || only.indexOf('locker') >= 0)) {
-      const scL = HK.SCENARIOS.locker, NW = Math.max(4, Math.round(N / 2));
-      out.bySc.locker = out.bySc.locker || { runs: 0 };
-      for (let s = 0; s < NW; s++) {
-        const n = 2 + (s % 3), types = ['enemy', 'bad'];
-        const chars = NAMES.slice(0, n).map((nm, i) => ({ name: nm, eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, gender: (s + i) % 2 ? 'f' : 'm', likes: 'both', pos: '', loveNG: [] }));
-        const ties = [{ a: 0, b: 1, type: types[s % 2], lh: s % 4 === 1 ? 'both' : s % 4 === 3 ? 'a' : '' }];
-        if (n >= 3) ties.push({ a: 2, b: 0, type: types[(s + 1) % 2] });
-        const env = {}; (scL.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
-        cur = { sc: 'locker', story: true, offTags: {}, feel: null };
-        let res;
-        try { res = HK.simulate({ scenId: 'locker', seed: 7000 + s, env, chars, ties, perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })) }); } catch (e) { out.err.push('W1 locker: ' + String(e && e.stack || e).slice(0, 300)); cur = null; continue; }
+        } else if (k === 'w1') {
         (res.log || []).forEach(e => { if (!e || typeof e.text !== 'string') return; const nar = e.text.replace(/「[^」]*」/g, '「」'); const m = nar.match(PLACE_NG.locker); if (m) hit('W1', '「' + m[0] + '」（敵対の配役） [' + (e.tag || '') + '] | ' + nar.slice(Math.max(0, m.index - 60), m.index + 60)); });
         out.info.w1Runs = (out.info.w1Runs || 0) + 1;
         cur = null;
-      }
-    }
-    /* S25〜S30（追加の回）：死のある箱庭を、不死・吸血鬼（不死あり／なし）・同一人物・執着（監禁）・愛憎・発狂しやすい気質・
-       展開の重さ「重い」・死ネタの重さ「重い」を混ぜた配役で ND 回（N/2、4 回以上）ずつ回す（その回の S1〜S18 も数える） */
-    const DZ_SC = ['zombie', 'jashin', 'yakata', 'ship', 'rpg', 'jinro', 'island', 'whiteroom', 'omega', 'locker', 'dungeon', 'succubus', 'br', 'trial', 'classroom'];
-    const ND = Math.max(4, Math.round(N / 2));
-    for (const sc of DZ_SC) {
-      const scen = HK.SCENARIOS[sc]; if (!scen || (only && only.indexOf(sc) < 0)) continue;
-      out.bySc[sc] = out.bySc[sc] || { runs: 0 };
-      for (let s = 0; s < ND; s++) {
-        const n = sc === 'jinro' ? 6 + (s % 3) : Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 3 + (s % 4)));
-        const chars = [], perChar = [];
-        for (let i = 0; i < n; i++) {
-          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: (i + s) % 3 === 0 ? 'f' : (i + s) % 3 === 1 ? 'm' : (i % 2 ? 'f' : 'm'), likes: '', tone: '', fp: '', pos: ['top', 'bottom', '', 'riba'][(i + s) % 4], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: [], noR18: false, sexLock: '', faithful: false });
-          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
-        }
-        if (s % 3 === 0) chars[n - 1].eg = { CP: 4, NP: 6, A: 2, FC: 8, AC: 20 };   /* 発狂しやすい気質 */
-        const ties = [];
-        if (s % 4 === 0) ties.push({ a: 0, b: 1, type: 'yan' });
-        if (s % 4 === 1) ties.push({ a: 0, b: 1, type: 'yan', sub: 'hatelove' });
-        if (s % 4 === 2) { ties.push({ a: 0, b: 1, type: 'lover' }); if (n >= 4) ties.push({ a: 2, b: 3, type: 'lover' }); }
-        if (s % 4 === 3 && n >= 4) { chars[2].same = 3; chars[3].same = 2; ties.push({ a: 1, b: 0, type: 'yan' }); }
-        if (s % 5 === 1) chars[1 % n].race = 'vampire';
-        if (s % 5 === 2) chars[Math.min(2, n - 1)].feats = ['immortal'];
-        if (s % 5 === 3) perChar[0].pick.special = 'immortal';
-        if (s % 5 === 4) { chars[1 % n].race = 'vampire'; chars[1 % n].feats = ['fang', 'cold']; }
-        const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
-        (scen.env || []).forEach((e, k) => { if (e.options && e.options.length > 1 && (s + k) % 3 === 0) env[e.id] = e.options[(s + k) % e.options.length].v; else if (e.max != null && e.min != null && (s + k) % 4 === 1) env[e.id] = e.max; });
-        (scen.env || []).forEach(e => { if (/^role_/.test(e.id)) env[e.id] = s % 2 ? 'res' : 'auto'; });
-        if (HOT) (scen.env || []).forEach(e => { if (e.max != null && /lewd|dose|shady|heat|prey|pleasure|traffic|ev$|aphro|night|npc|lust|yobai|danger|hostile|serial|outbreak|turn/.test(e.id)) env[e.id] = e.max; });
-        if (s % 3 === 0) { env.heavy = 'dark'; env.death = 'dark'; } else if (s % 3 === 1) env.death = 'dark';
-        if (sc === 'whiteroom' && s % 2 === 0) env.cond = 'kill';
-        if (HK.Content && HK.Content.TAGS) env.ct = s % 4 === 0 ? '' : HK.Content.TAGS.map(t => t.id).join(',');
-        cur = { sc, story: !!scen.solo, offTags: {}, feel: null };
-        dz = { snap: {}, deaths: [], rev: [], engine: null, S: null };
-        let res;
-        lastCtx = null; lastS = null;
-        try { res = HK.simulate({ scenId: sc, seed: 7000 + s, env, chars, perChar, ties }); } catch (e) { out.err.push(sc + '（S25〜の回）: ' + String(e && e.stack || e).slice(0, 300)); dz = null; cur = null; continue; }
+        } else if (k === 'dz') {
         try { dzCheck(res, chars, sc); } catch (e) { out.err.push(sc + ' dzCheck: ' + String(e && e.stack || e).slice(0, 300)); }
         lastS = null; dz = null; cur = null;
         out.runs++; out.bySc[sc].runs++; out.info.dzRuns = (out.info.dzRuns || 0) + 1;
-      }
-    }
-    /* S32（追加の回。2026-10-28 担当KA）：蘇る箱庭（HK.Special.SCENES）を、住人の大半が不死・吸血鬼の配役で NI 回（N/2、4 回以上）ずつ回す。
-       特殊役職の不死・体の特徴の不死・吸血鬼（不死あり）・吸血鬼（不死を外した＝蘇らない）を混ぜ、展開と死ネタの重さ「重い」・危険の設定を上げる。
-       蘇る人の遺言（S32）と、その回の S1〜S30 も数える */
-    const SPS = (HK.Special && HK.Special.SCENES) || [];
-    const NI = Math.max(4, Math.round(N / 2));
-    for (const sc of SPS) {
-      const scen = HK.SCENARIOS[sc]; if (!scen || (only && only.indexOf(sc) < 0)) continue;
-      out.bySc[sc] = out.bySc[sc] || { runs: 0 };
-      for (let s = 0; s < NI; s++) {
-        const n = Math.max(scen.minCast || 2, Math.min(scen.maxCast || 6, 4 + (s % 3)));
-        const chars = [], perChar = [];
-        for (let i = 0; i < n; i++) {
-          chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: (i + s) % 2 ? 'f' : 'm', likes: '', tone: '', fp: '', pos: ['top', 'bottom', '', 'riba'][(i + s) % 4], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: [], noR18: false, sexLock: '', faithful: false });
-          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
-          const k = (i + s) % 5;
-          if (k === 0) perChar[i].pick.special = 'immortal';
-          else if (k === 1) chars[i].race = 'vampire';
-          else if (k === 2) chars[i].feats = ['immortal'];
-          else if (k === 3 && s % 2) { chars[i].race = 'vampire'; chars[i].feats = ['fang', 'cold']; }
-        }
-        /* 口調の違い（疎む・当たり前・怯える・軽口が出るように） */
-        const TONES = ['darui', 'gentleman', 'gyaru', 'honwaka', 'mukuchi', 'chara', 'noja', ''];
-        chars.forEach((c, i) => { if ((i + s) % 3 === 0) c.tone = TONES[(i + s) % TONES.length]; });
-        const ties0 = [{ a: 0, b: 1, type: s % 2 === 0 ? 'lover' : 'yan' }];
-        const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
-        (scen.env || []).forEach(e => { if (e.max != null && /danger|hostile|serial|outbreak|turn|lewd|ev$/.test(e.id)) env[e.id] = e.max; });
-        env.heavy = 'dark'; env.death = 'dark';
-        if (HK.Content && HK.Content.TAGS) env.ct = s % 2 ? '' : HK.Content.TAGS.map(t => t.id).join(',');
-        cur = { sc, story: !!scen.solo, offTags: {}, feel: null };
-        dz = { snap: {}, deaths: [], rev: [], engine: null, S: null };
-        let res;
-        lastCtx = null; lastS = null;
-        try { res = HK.simulate({ scenId: sc, seed: 8000 + s, env, chars, perChar, ties: ties0 }); } catch (e) { out.err.push(sc + '（S32 の回）: ' + String(e && e.stack || e).slice(0, 300)); dz = null; cur = null; continue; }
+        } else if (k === 's32') {
         try { dzCheck(res, chars, sc); } catch (e) { out.err.push(sc + ' dzCheck(S32): ' + String(e && e.stack || e).slice(0, 300)); }
         (res.log || []).forEach(e => { if (e && e.tag === '蘇生') out.info.revive = (out.info.revive || 0) + 1; });
         lastS = null; dz = null; cur = null;
         out.runs++; out.bySc[sc].runs++; out.info.s32Runs = (out.info.s32Runs || 0) + 1;
-      }
-    }
-    /* S22：グループの「仲間」（ui.js）。オンのグループの住人どうしにだけ、箱庭に渡す関係「仲間」が付く／オフでは付かない／
-       ほかの関係はそのまま残る（仲間は重ねるだけ）／JSON にオン・オフが入る（古い JSON は「なし」として読める） */
-    if (HK.UI && HK.UI.state && HK.UI.buildInput && HK.UI.normState) {
+        } else if (k === 's33') {
+          const tl = m.tl;
+          const tie = (a, b) => ties.some(t => (t.a === a && t.b === b) || (t.a === b && t.b === a));
+          out.runs++; out.bySc[cur.sc].runs++;
+          const T = 0, nm = i => chars[i] ? chars[i].name + '(' + chars[i].gender + '→' + (chars[i].likes || '任') + ')' : '?';
+          (res.pairs || []).forEach(p => {
+            if (p.a !== T && p.b !== T) return;
+            const x = p.a === T ? p.b : p.a;
+            if (tl === 'off' && !tie(T, x) && /^(love|night|pine)$/.test(p.cls)) hit('S33', 'なしなのに先生×生徒の関係 ' + nm(T) + '×' + nm(x) + '＝' + p.name);
+            if (tl !== 'off' && !tie(T, x) && p.cls === 'love' && !(one(chars[T], chars[x]) && one(chars[x], chars[T]))) hit('S33', '恋愛対象の合わない先生×生徒が ' + p.name + '：' + nm(T) + '×' + nm(x));
+          });
+          let secretNow = false;
+          (res.log || []).forEach(e => {
+            if (!e || !e.text || e.kind === 'step' || e.kind === 'phase') return;
+            const ac = e.actors || [], hasT = ac.indexOf(T) >= 0, mine = TLW.test(e.why || ''), stu = ac.filter(i => i !== T);
+            if (mine) out.info.tlEv = (out.info.tlEv || 0) + 1;
+            if (mine && e.lewd) out.info.tlNight = (out.info.tlNight || 0) + 1;
+            if (mine && /恋（秘密）/.test(e.why || '')) secretNow = true;
+            if (mine && /恋（公にしている）|公にすると決めた|結末：/.test(e.why || '')) secretNow = false;
+            if (tl === 'off' && (mine || (hasT && (e.cat === 'romance' || e.lewd)))) hit('S33', 'なしなのに先生と生徒の恋・夜の出来事：' + e.text.slice(0, 60));
+            if (!hasT) { if (secretNow && !mine && /失恋|片想い|想い人|恋敵|嫉妬/.test(e.why || '') && e.text.indexOf(chars[T].name) >= 0) hit('S33', '秘密の先生との恋を、ほかの出来事が語った：' + e.text.slice(0, 80)); return; }
+            if (mine && e.cat === 'romance' && stu.length === 1 && !tie(T, stu[0]) && !(one(chars[T], chars[stu[0]]) && one(chars[stu[0]], chars[T]))) hit('S33', '恋愛対象の合わない先生と生徒の恋の出来事：' + nm(T) + '×' + nm(stu[0]) + ' ' + e.text.slice(0, 50));
+            if (!e.lewd && !/先生と生徒の夜/.test(e.why || '')) return;
+            if (SAFE) hit('S33', '全年齢で先生との夜：' + e.text.slice(0, 60));
+            if (chars[T].noR18) hit('S33', 'R18に参加しない先生が夜に出た：' + nm(T));
+            stu.forEach(i => { if (chars[i].noR18) hit('S33', 'R18に参加しない生徒が先生との夜に出た：' + nm(i)); if (chars[i].sexLock && chars[i].sexLock !== String(T)) hit('S33', '固定した相手だけの生徒が先生との夜に出た：' + nm(i)); });
+          });
+        }
+      },
+      special(run) {
+        if (kindOf(run) !== 's22') return;
       cur = { sc: '画面', story: false }; out.bySc['画面'] = out.bySc['画面'] || { runs: 0 };
       const S0 = HK.UI.state(), bak = JSON.stringify(S0);
       const sid = (HK.SCEN_ORDER || []).filter(id => HK.SCENARIOS[id] && !HK.SCENARIOS[id].solo && (HK.SCENARIOS[id].maxCast || 6) >= 4)[0];
@@ -882,63 +974,13 @@ const { openBuild } = require('./lib.js');
       } catch (e) { out.err.push('S22: ' + String(e && e.stack || e).slice(0, 300)); }
       put(JSON.parse(bak));
       cur = null;
-    }
-    /* S33：クラスメイトの先生と生徒（環境値「先生との恋愛」。2026-10-28 担当KC） */
-    if (HK.SCENARIOS.classroom && (!only || only.indexOf('classroom') >= 0)) {
-      cur = { sc: 'classroom先生', story: false }; out.bySc[cur.sc] = out.bySc[cur.sc] || { runs: 0 };
-      const SAFE = !!HK.SAFE_ON, TLW = /先生と生徒の/, NT = Math.max(12, N);
-      const one = (a, b) => { if (!a.likes || a.likes === 'both') return true; if (a.likes === 'none') return false; if (!b.gender || b.gender === 'x') return true; return a.likes === b.gender; };
-      const say0 = HK.Ctx.prototype.say;
-      HK.Ctx.prototype.say = function (o) {
-        if (o && TLW.test(String(o.why || '')) && (o.actors || []).some(c => c && !HK.State.here(c))) hit('S33', '場にいない人が先生と生徒の出来事に出た：' + (o.actors || []).filter(c => c && !HK.State.here(c)).map(c => c.name).join('・'));
-        return say0.apply(this, arguments);
-      };
-      try {
-        for (let s = 0; s < NT; s++) {
-          const tl = ['off', 'secret', 'open'][s % 3], n = 5 + (s % 3), chars = [], perChar = [];
-          for (let i = 0; i < n; i++) {
-            chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: (i + s) % 2 ? 'f' : 'm',
-              likes: ['', 'm', 'f', 'both', 'none', ''][(i * 3 + s) % 6], tone: '', fp: '', pos: ['', 'top', 'bottom', 'riba'][(i + s) % 4], calls: {}, loveNG: [],
-              noR18: (s % 4 === 1 && i === 0) || (s % 4 === 2 && i === 1), sexLock: s % 5 === 3 && i === 2 ? '3' : '' });
-            perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: { grade: String(1 + ((s + i) % 3)) }, role: i === 0 ? 'teacher' : '' });
-          }
-          const env = { grade: ['3', 'all', '2', '1'][s % 4], tlove: tl, climate: 70 };
-          if (HK.Content) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
-          /* あり：半分の回は、関係の設定で先生と生徒を恋人にして始める（恋人になってからの場面と夜を見る） */
-          const ties = tl !== 'off' && s % 2 ? [{ a: 0, b: 1 + (s % 3), type: 'lover' }] : [];
-          const tie = (a, b) => ties.some(t => (t.a === a && t.b === b) || (t.a === b && t.b === a));
-          let res;
-          try { res = HK.simulate({ scenId: 'classroom', seed: 8100 + s * 13, env, chars, perChar, ties }); } catch (e) { out.err.push('S33: ' + String(e && e.stack || e).slice(0, 300)); continue; }
-          out.runs++; out.bySc[cur.sc].runs++;
-          const T = 0, nm = i => chars[i] ? chars[i].name + '(' + chars[i].gender + '→' + (chars[i].likes || '任') + ')' : '?';
-          (res.pairs || []).forEach(p => {
-            if (p.a !== T && p.b !== T) return;
-            const x = p.a === T ? p.b : p.a;
-            if (tl === 'off' && !tie(T, x) && /^(love|night|pine)$/.test(p.cls)) hit('S33', 'なしなのに先生×生徒の関係 ' + nm(T) + '×' + nm(x) + '＝' + p.name);
-            if (tl !== 'off' && !tie(T, x) && p.cls === 'love' && !(one(chars[T], chars[x]) && one(chars[x], chars[T]))) hit('S33', '恋愛対象の合わない先生×生徒が ' + p.name + '：' + nm(T) + '×' + nm(x));
-          });
-          let secretNow = false;
-          (res.log || []).forEach(e => {
-            if (!e || !e.text || e.kind === 'step' || e.kind === 'phase') return;
-            const ac = e.actors || [], hasT = ac.indexOf(T) >= 0, mine = TLW.test(e.why || ''), stu = ac.filter(i => i !== T);
-            if (mine) out.info.tlEv = (out.info.tlEv || 0) + 1;
-            if (mine && e.lewd) out.info.tlNight = (out.info.tlNight || 0) + 1;
-            if (mine && /恋（秘密）/.test(e.why || '')) secretNow = true;
-            if (mine && /恋（公にしている）|公にすると決めた|結末：/.test(e.why || '')) secretNow = false;
-            if (tl === 'off' && (mine || (hasT && (e.cat === 'romance' || e.lewd)))) hit('S33', 'なしなのに先生と生徒の恋・夜の出来事：' + e.text.slice(0, 60));
-            if (!hasT) { if (secretNow && !mine && /失恋|片想い|想い人|恋敵|嫉妬/.test(e.why || '') && e.text.indexOf(chars[T].name) >= 0) hit('S33', '秘密の先生との恋を、ほかの出来事が語った：' + e.text.slice(0, 80)); return; }
-            if (mine && e.cat === 'romance' && stu.length === 1 && !tie(T, stu[0]) && !(one(chars[T], chars[stu[0]]) && one(chars[stu[0]], chars[T]))) hit('S33', '恋愛対象の合わない先生と生徒の恋の出来事：' + nm(T) + '×' + nm(stu[0]) + ' ' + e.text.slice(0, 50));
-            if (!e.lewd && !/先生と生徒の夜/.test(e.why || '')) return;
-            if (SAFE) hit('S33', '全年齢で先生との夜：' + e.text.slice(0, 60));
-            if (chars[T].noR18) hit('S33', 'R18に参加しない先生が夜に出た：' + nm(T));
-            stu.forEach(i => { if (chars[i].noR18) hit('S33', 'R18に参加しない生徒が先生との夜に出た：' + nm(i)); if (chars[i].sexLock && chars[i].sexLock !== String(T)) hit('S33', '固定した相手だけの生徒が先生との夜に出た：' + nm(i)); });
-          });
-        }
-      } finally { HK.Ctx.prototype.say = say0; }
-      cur = null;
-    }
-    return out;
-  }, { N, only, WHY, HOT, mode, ENVSET });
+      },
+      finish() { return out; }
+    };
+};
+
+/* ---------- 出力（今までの形） ---------- */
+function print(r, errors) {
   const ids = Object.keys(r.bySc);
   for (const sc of ids) {
     const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33', 'S34'].map(k => k + ' ' + (b[k] || 0));
@@ -952,5 +994,21 @@ const { openBuild } = require('./lib.js');
   for (const k of Object.keys(r.ex)) if (r.ex[k].length) { console.log('--- ' + k); r.ex[k].forEach(x => console.log('  ' + x)); }
   if (r.err.length) { console.log('--- 例外'); r.err.slice(0, 20).forEach(x => console.log('  ' + x)); }
   console.log('pageerr', JSON.stringify(errors.slice(0, 5)));
-  await browser.close();
+}
+const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33', 'S34', 'W1'];
+function summarize(r) {
+  const items = {}, ex = {};
+  KEYS.forEach(k => { items[k] = r.n[k] || 0; ex[k] = (r.ex[k] || []).slice(0, 3); });
+  return { items, ex, info: { 回: r.runs, 止めた: r.drop }, err: r.err.length, errEx: r.err.slice(0, 3) };
+}
+const LABEL = { S1: '死んだ人が出来事の主語に', S2: '監禁中の人が出来事に', S3: '場を離れた人が出来事に', S4: 'R18に参加しない人が性的な文に', S5: '恋愛・R18にしない二人が性的な文に', S6: '固定した相手だけの人がモブと', S7: '同じ記録で同じ性的な文が二度', S8: '切った内容のスイッチの出来事', S9: '館の助手が別の探偵を先生と', S10: '同じ性的な文が3つ以上の記録に', S11: '最期の言葉の名前の取り違え', S12: '同一人物の二人の恋愛・性的な文', S13: '複数の恋人なしで恋人が二人', S14: '一途な人が恋人以外と', S15: '恋愛相手の固定の外と恋愛・夜', S16: '別れずに別の相手と恋人に', S17: '誰とでも可の人の固定外の恋愛', S18: '体だけの場面のあとに恋人・恋愛', S19: '無関心の二人の恋愛・値の動き', S20: '恐怖の二人の恋愛', S21: '許嫁の破談のあとの恋愛', S22: 'グループの仲間（画面）', S25: '死んだ人が文の主語・話し手', S26: '死んだ人が主役・名前の出ない相手', S27: '遺体の残らない死の人の遺体の文', S28: '蘇りの記録なしに生き返った', S29: '結末で生死の扱いが食い違う', S30: '不在・閉じ込めの人が主役・話し手', S31: '避けている人が自分から迫った', S32: '蘇る人の遺言', S33: '先生と生徒の恋（環境値）', S34: '先生が生徒の輪に・休職した先生', W1: '箱庭の場所に合わない語' };
+module.exports = { passes: { state: PASS }, judges: { state: JUDGE }, print, summarize, LABEL, KEYS };
+
+if (require.main === module) (async () => {
+  const args = process.argv.slice(2).filter(a => !/^--/.test(a));
+  const dir = args[0], N = +args[1] || 24, mode = args[2] || '', only = args[3] ? args[3].split(',') : null;
+  const WHY = process.argv.includes('--why'), HOT = process.argv.includes('--hot');
+  const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
+  const t = await core.runTool({ dir, hash: mode, lewdMode: 'direct', mod: module.exports, pass: 'state', judge: 'state', opt: { N, only, hot: HOT, env: ENVSET, why: WHY, mode } });
+  print(t.r, t.errors);
 })();

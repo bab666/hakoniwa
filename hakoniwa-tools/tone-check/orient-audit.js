@@ -26,26 +26,16 @@
      O7 クラスメイトの先生と生徒（環境値「先生との恋愛」tlove。2026-10-28 担当KC）：クラスメイトの奇数回は住人0を担任の先生にして、なし／隠れて付き合う／公にすることもある を順に回す。
         なしの回で、先生×生徒が結末の恋の線（love・night・pine）になった／先生が恋愛の出来事（cat:'romance'）・性的な場面（lewd）に出た。
         ありの回の恋愛対象の食い違いは O1〜O3 がそのまま見る（先生と生徒の組も、ほかの組と同じ）
-   ・O2・O3 は文から拾うので誤判定がありうる。--why で例を出すので目で確かめる */
-const { openBuild } = require('./lib');
-(async () => {
-  const dir = process.argv[2], N = +process.argv[3] || 40, mode = process.argv[4] || 'r18', WHY = process.argv.includes('--why');
-  if (!dir) { console.log('使い方: node orient-audit.js <ビルドのフォルダ> [回数] [r18|safe] [--why]'); process.exit(1); }
-  const { browser, page, errors } = await openBuild(dir, mode === 'safe' ? 'safe' : mode === 'r18' ? 'r18' : '', { lewdMode: 'direct' });
-  const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
-  const r = await page.evaluate(({ N, WHY, ENVSET }) => {
-    const SEX = /挿入|挿れ|射精|精液|愛液|ちんぽ|喘ぎ|喘い|腰を振|腰を打ち|奥まで(?:突|沈|貫)|(?<!牙が)深く沈|フェラ|咥え込|秘所|貫か|貫い|絶頂|イっ|イく|中に出|舐め上げ|乳首|性器|ひだ|襞|潮を|搾り取|犯し|犯さ|セックス|抱き潰|跨って腰|騎乗|ノット|夜を共に|体を重ね|肌を重ね|一夜を共に|抱かれ|抱いた|求め合/;
-    /* 出られない部屋の条件「『好き』と言い合う」を義理で満たす場面（扉を見たまま「好きだ。……これでいいか？」など）は告白ではないので O3 に数えない（3本化で硬い常体の「好きだ。」が CONF に当たるようになったため） */
-    const ROOM_LOVE_COND = /これでいい(?:か|ですか)?？|棒読み|扉を見たまま/;
-    const CONF = /(?:付き合って|恋人になって)(?:ください|ほしい|くれ(?!た))|付き合おう|恋人になった|両想いに|告白した|想いを告げ|好きだ。|好きです。/;
-    const NOTSEX = /(?:殺人|罪|過ち|犯罪)を犯[しさすせ]?|精液検査|ほかの結果：[^\n]*|ほかに：[^\n]*|アシスタントに[^。]*|抱いた(?:まま|肩|膝)|肩を抱|膝を抱|頭を抱|抱いた(?:子|赤)|日照りに喘|息を喘|旅路の果て|(?:胸|腹|喉|背中|心臓)を貫か|(?:希望|期待|疑問|不安|疑い|好意|敬意)を抱いた/;
-    const LOVE_T = /^(lover|fwb|mate|fated|crush|almost|ex|yan|worship)$/;
-    function one(a, b) { if (!a.likes || a.likes === 'both') return true; if (a.likes === 'none') return false; if (!b.gender || b.gender === 'x') return true; return a.likes === b.gender; }
-    function ok(a, b) { return one(a, b) && one(b, a); }
-    /* 体の関係として合うか：恋愛対象「なし」の人は「体の関係の相手」（sexLikes）で見る（全年齢モード・全年齢版では体の関係にならない） */
-    function oneS(a, b) { let v = a.likes; if (v === 'none') { if (SAFE) return false; v = a.sexLikes || ''; if (v === 'none') return false; } if (!v || v === 'both') return true; if (!b.gender || b.gender === 'x') return true; return v === b.gender; }
-    function okS(a, b) { return oneS(a, b) && oneS(b, a); }
-    const FORCE_RE = /〔合意のない展開〕/;
+   ・O2・O3 は文から拾うので誤判定がありうる。--why で例を出すので目で確かめる
+   （2026-10-29 担当MQ）配役（パス orient）と判定（judge orient）を分けて module.exports で出す。audit-all.js が同じ関数を使い、
+     ほかのパスの回にも O1〜O3・O5・O6 を当てる（O4・O7 はこのパスの配役の印 NL_T・teach を見るので、このパスの回だけ）。
+     使い方・出力は今までどおり */
+'use strict';
+const core = require('./audit/core.js');
+
+/* ---------- パス orient（ページの中）：opt = { N: 回数, env: [[鍵, 値]…] } ---------- */
+const PASS = function* (HK, opt) {
+  const N = opt.N || 40, ENVSET = opt.env || [];
     const NAMES = ['アキラ', 'ユキノ', 'ミナト', 'ソラ', 'カエデ', 'ヒカル', 'レンジ', 'カオル'];
     /* 配役の型：het＝異性だけ、homo＝同性だけ、mix＝ばらばら */
     function cast(type, n, s) {
@@ -58,19 +48,9 @@ const { openBuild } = require('./lib');
       }
       return out;
     }
-    const res0 = {};
     const ids = HK.SCEN_ORDER.filter(id => HK.SCENARIOS[id]);
-    /* 恋愛：なしの家族（ties.js の family で loveOK でないもの） */
-    const FAMNL = {}; Object.keys(HK.TIES || {}).forEach(k => { if (HK.TIES[k].family && !HK.TIES[k].loveOK) FAMNL[k] = 1; });
-    /* O4：住人の名前がちょうど二人で、モブの語のない文。O5：全年齢モード・全年齢版の性的な文（はっきりした語だけ） */
-    const MOB4 = /男たち|客|触手|ゾンビ|魔物|村人|略奪者|モブ|生命体|異星|邪神|眷属|獲物|スタッフ|見知らぬ|壁の向こう/;
-    const NOT4 = /殺し|付き合っているか|罪を|秘密を|嘘を|見て(?:い|しま)|見つめ|眺め|気づ|噂|想像|思い出|夢(?:に|で|を|の)|話を|話して|話し(?:た|合)|相談|からかわ|冷やかし|嫉妬|応援|祝福|目撃|もし|ふり|フリ|王様ゲーム|命令|お題|罰ゲーム|キス！|告白の練習|告白するなら|付き合ってや(?:る|らなく)|付き合ってもいない|ほかに：|ほかの結果：|だったものに抱かれ|腕の中でしばらく浅い息|数えてもらえない|口づけるように|肩を抱|抱きしめ|抱き寄せ|抱きとめ|抱きかかえ|抱き合/;
-    const SEX4 = /挿れ|挿入|射精|精液|腰を(?:振|打ちつけ|沈め|揺ら|落と)|跨[っが]|喘(?:ぎ|い)|絶頂|イかせ|イカせ|イった|イっちゃ|果て(?:た|て)|体を重ね|肌を重ね|繋がっ|中に出|愛撫|抱かれ|抱いた(?!まま)|口づけ|キス|唇を(?:重ね|奪)|告白し|付き合(?:って|おう|い始)|恋人(?:に|どうし|同士)にな|両想いにな/;
-    const SAFE5 = /挿れ|挿入|射精|精液|腰を(?:振|打ちつけ|沈め|揺ら)|跨って腰|喘ぎ|絶頂|♡|中に出|イかせ|イカせ|イっ(?:た|ちゃ)|ちんぽ|秘所|愛液|抱き潰/;
-    const SAFE = !!HK.SAFE_ON;
-    const LIB_SKIP = Object.assign({ saimin: 1 }, (HK.State && HK.State.R18_CORE) || {});
-    ids.forEach(id => {
-      const sc = HK.SCENARIOS[id], o = res0[id] = { runs: 0, err: 0, O1: 0, O2: 0, O3: 0, O4: 0, O5: 0, O6: 0, O7: 0, F: 0, Fc: 0, ex: [] };
+    for (const id of ids) {
+      const sc = HK.SCENARIOS[id];
       for (let s = 0; s < N; s++) {
         const type = ['het', 'homo', 'mix'][s % 3];
         const n = Math.max(sc.minCast || 2, Math.min(sc.maxCast || 6, 2 + (s % 5)));
@@ -100,12 +80,47 @@ const { openBuild } = require('./lib');
           ties.length = 0;
           ties.push({ a: 1, b: 0, type: 'abuse', cold: 'fear' }, { a: 2, b: 0, type: 'yan', cold: 'confused' }, { a: 0, b: 2, type: 'enemy', lh: 'both' }, { a: 1, b: 2, type: 'enemy', lh: 'both' });
         }
-        const nlPair = (a, b) => ties.some(t => (FAMNL[t.type] && t.love !== 'ok' || t.type === 'apathy' || t.type === 'fear') && ((t.a === a && t.b === b) || (t.a === b && t.b === a)));
-        let res;
         /* 内容のスイッチ（content.js）：指定がなければすべて入にして、いちばん広く回す */
         if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
-        try { res = HK.simulate({ scenId: id, seed: 4000 + s * 17, env, chars, perChar: chars.map((c, i) => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: teach && i === 0 ? 'teacher' : '' })), ties }); }
-        catch (e) { o.err++; continue; }
+        yield { sc: id, s, input: { scenId: id, seed: 4000 + s * 17, env, chars, perChar: chars.map((c, i) => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: teach && i === 0 ? 'teacher' : '' })), ties }, meta: { type, NL_T, FT, teach } };
+      }
+    }
+};
+
+/* ---------- 判定 orient（ページの中）：opt = { why } ---------- */
+const JUDGE = function (HK, opt) {
+  const WHY = !!opt.why;
+    const SEX = /挿入|挿れ|射精|精液|愛液|ちんぽ|喘ぎ|喘い|腰を振|腰を打ち|奥まで(?:突|沈|貫)|(?<!牙が)深く沈|フェラ|咥え込|秘所|貫か|貫い|絶頂|イっ|イく|中に出|舐め上げ|乳首|性器|ひだ|襞|潮を|搾り取|犯し|犯さ|セックス|抱き潰|跨って腰|騎乗|ノット|夜を共に|体を重ね|肌を重ね|一夜を共に|抱かれ|抱いた|求め合/;
+    /* 出られない部屋の条件「『好き』と言い合う」を義理で満たす場面（扉を見たまま「好きだ。……これでいいか？」など）は告白ではないので O3 に数えない（3本化で硬い常体の「好きだ。」が CONF に当たるようになったため） */
+    const ROOM_LOVE_COND = /これでいい(?:か|ですか)?？|棒読み|扉を見たまま/;
+    const CONF = /(?:付き合って|恋人になって)(?:ください|ほしい|くれ(?!た))|付き合おう|恋人になった|両想いに|告白した|想いを告げ|好きだ。|好きです。/;
+    const NOTSEX = /(?:殺人|罪|過ち|犯罪)を犯[しさすせ]?|精液検査|ほかの結果：[^\n]*|ほかに：[^\n]*|アシスタントに[^。]*|抱いた(?:まま|肩|膝)|肩を抱|膝を抱|頭を抱|抱いた(?:子|赤)|日照りに喘|息を喘|旅路の果て|(?:胸|腹|喉|背中|心臓)を貫か|(?:希望|期待|疑問|不安|疑い|好意|敬意)を抱いた/;
+    const LOVE_T = /^(lover|fwb|mate|fated|crush|almost|ex|yan|worship)$/;
+    function one(a, b) { if (!a.likes || a.likes === 'both') return true; if (a.likes === 'none') return false; if (!b.gender || b.gender === 'x') return true; return a.likes === b.gender; }
+    function ok(a, b) { return one(a, b) && one(b, a); }
+    /* 体の関係として合うか：恋愛対象「なし」の人は「体の関係の相手」（sexLikes）で見る（全年齢モード・全年齢版では体の関係にならない） */
+    function oneS(a, b) { let v = a.likes; if (v === 'none') { if (SAFE) return false; v = a.sexLikes || ''; if (v === 'none') return false; } if (!v || v === 'both') return true; if (!b.gender || b.gender === 'x') return true; return v === b.gender; }
+    function okS(a, b) { return oneS(a, b) && oneS(b, a); }
+    const FORCE_RE = /〔合意のない展開〕/;
+    /* 恋愛：なしの家族（ties.js の family で loveOK でないもの） */
+    const FAMNL = {}; Object.keys(HK.TIES || {}).forEach(k => { if (HK.TIES[k].family && !HK.TIES[k].loveOK) FAMNL[k] = 1; });
+    /* O4：住人の名前がちょうど二人で、モブの語のない文。O5：全年齢モード・全年齢版の性的な文（はっきりした語だけ） */
+    const MOB4 = /男たち|客|触手|ゾンビ|魔物|村人|略奪者|モブ|生命体|異星|邪神|眷属|獲物|スタッフ|見知らぬ|壁の向こう/;
+    const NOT4 = /殺し|付き合っているか|罪を|秘密を|嘘を|見て(?:い|しま)|見つめ|眺め|気づ|噂|想像|思い出|夢(?:に|で|を|の)|話を|話して|話し(?:た|合)|相談|からかわ|冷やかし|嫉妬|応援|祝福|目撃|もし|ふり|フリ|王様ゲーム|命令|お題|罰ゲーム|キス！|告白の練習|告白するなら|付き合ってや(?:る|らなく)|付き合ってもいない|ほかに：|ほかの結果：|だったものに抱かれ|腕の中でしばらく浅い息|数えてもらえない|口づけるように|肩を抱|抱きしめ|抱き寄せ|抱きとめ|抱きかかえ|抱き合/;
+    const SEX4 = /挿れ|挿入|射精|精液|腰を(?:振|打ちつけ|沈め|揺ら|落と)|跨[っが]|喘(?:ぎ|い)|絶頂|イかせ|イカせ|イった|イっちゃ|果て(?:た|て)|体を重ね|肌を重ね|繋がっ|中に出|愛撫|抱かれ|抱いた(?!まま)|口づけ|キス|唇を(?:重ね|奪)|告白し|付き合(?:って|おう|い始)|恋人(?:に|どうし|同士)にな|両想いにな/;
+    const SAFE5 = /挿れ|挿入|射精|精液|腰を(?:振|打ちつけ|沈め|揺ら)|跨って腰|喘ぎ|絶頂|♡|中に出|イかせ|イカせ|イっ(?:た|ちゃ)|ちんぽ|秘所|愛液|抱き潰/;
+    const SAFE = !!HK.SAFE_ON;
+    const LIB_SKIP = Object.assign({ saimin: 1 }, (HK.State && HK.State.R18_CORE) || {});
+    const res0 = {};
+    const oOf = id => res0[id] || (res0[id] = { runs: 0, err: 0, O1: 0, O2: 0, O3: 0, O4: 0, O5: 0, O6: 0, O7: 0, F: 0, Fc: 0, ex: [] });
+    return {
+      error(run) { oOf(run.sc).err++; },
+      end(run, res) {
+        const id = run.sc, o = oOf(id), m = run.meta || {}, inp = run.input;
+        /* ほかのパスの回：配役の型はパスの名前、NL_T・FT・teach は無し（O4・O7 はこのパスの回だけ） */
+        const type = run.pass === 'orient' ? m.type : run.pass, NL_T = run.pass === 'orient' && !!m.NL_T, FT = run.pass === 'orient' && !!m.FT, teach = run.pass === 'orient' && !!m.teach;
+        const chars = inp.chars, ties = inp.ties || [], env = inp.env || {};
+        const nlPair = (a, b) => ties.some(t => (FAMNL[t.type] && t.love !== 'ok' || t.type === 'apathy' || t.type === 'fear') && ((t.a === a && t.b === b) || (t.a === b && t.b === a)));
         o.runs++;
         const C = (res.chars && res.chars.length ? res.chars : chars).map((c, i) => ({ name: c.name, gender: chars[i] ? chars[i].gender : c.gender, likes: chars[i] ? chars[i].likes : c.likes, sexLikes: chars[i] ? chars[i].sexLikes : '', libido: chars[i] ? chars[i].libido : '' }));
         /* FT の回：執着（yan）は恋愛の関係として外さない（恋愛対象「なし」の人が、執着から恋人・告白に進まないかを見る）。歪んだ関係（abuse）は恋人どうしの関係なので、ユーザーの指定として外す */
@@ -158,14 +173,34 @@ const { openBuild } = require('./lib');
         }
         /* O5：全年齢モード・全年齢版で、性的な文（はっきりした語）が出た */
         if (SAFE) (res.log || []).forEach(e => { if (!e || typeof e.text !== 'string') return; const t5 = e.text.replace(NOTSEX, ''), m5 = t5.match(SAFE5); if (m5) note('O5', (e.tag || e.label || '') + ' ｜「' + m5[0] + '」 ' + t5.slice(Math.max(0, m5.index - 60), m5.index + 40)); });
-      }
-    });
-    return res0;
-  }, { N, WHY, ENVSET });
+      },
+      finish() { return res0; }
+    };
+};
+
+/* ---------- 出力（今までの形） ---------- */
+function print(r, errors) {
   const tot = { O1: 0, O2: 0, O3: 0, O4: 0, O5: 0, O6: 0, O7: 0 };
   let totF = 0, totFc = 0;
   for (const id in r) { const o = r[id]; totF += o.F; totFc += o.Fc; ['O1', 'O2', 'O3', 'O4', 'O5', 'O6', 'O7'].forEach(k => { tot[k] += o[k]; }); console.log(id.padEnd(10), 'runs', o.runs, 'err', o.err, 'O1', o.O1, 'O2', o.O2, 'O3', o.O3, 'O4', o.O4, 'O5', o.O5, 'O6', o.O6, 'O7', o.O7, 'F非合意', o.F, 'F合意', o.Fc); o.ex.forEach(x => console.log('    ' + x.replace(/\n/g, ' '))); }
   console.log('合計', JSON.stringify(tot), '（F＝恋愛対象「なし」の人が、体の関係の相手の性別に合う相手と体の関係になった数。エラーではない）非合意', totF, '・合意', totFc);
   console.log('pageerr', errors.slice(0, 3));
-  await browser.close();
+}
+/* audit-all のまとめ：項目ごとの件数と例 */
+function summarize(r) {
+  const K = ['O1', 'O2', 'O3', 'O4', 'O5', 'O6', 'O7'], items = {}, ex = {};
+  K.forEach(k => { items[k] = 0; ex[k] = []; });
+  let runs = 0, err = 0, F = 0, Fc = 0;
+  Object.keys(r || {}).forEach(id => { const o = r[id]; runs += o.runs; err += o.err; F += o.F; Fc += o.Fc; K.forEach(k => { items[k] += o[k]; }); o.ex.forEach(x => { const k = x.split(' ')[0]; if (ex[k] && ex[k].length < 3) ex[k].push(id + ' ' + x); }); });
+  return { items, ex, info: { 回: runs, 失敗: err, 'F非合意': F, 'F合意': Fc }, err };
+}
+const LABEL = { O1: '恋愛対象に合わない結末の関係', O2: '恋愛対象に合わない二人の性的な場面', O3: '恋愛対象に合わない告白', O4: '恋愛：なしの家族・無関心・恐怖の二人の恋愛・夜', O5: '全年齢で性的な語', O6: '性欲「なし」の人の合意の場面', O7: '先生との恋愛なしで先生×生徒の恋・夜' };
+module.exports = { passes: { orient: PASS }, judges: { orient: JUDGE }, print, summarize, LABEL };
+
+if (require.main === module) (async () => {
+  const dir = process.argv[2], N = +process.argv[3] || 40, mode = process.argv[4] || 'r18', WHY = process.argv.includes('--why');
+  if (!dir) { console.log('使い方: node orient-audit.js <ビルドのフォルダ> [回数] [r18|safe] [--why]'); process.exit(1); }
+  const ENVSET = ((process.argv.find(a => /^--env=/.test(a)) || '').slice(6)).split(',').filter(Boolean).map(x => x.split(':'));
+  const t = await core.runTool({ dir, hash: mode === 'safe' ? 'safe' : mode === 'r18' ? 'r18' : '', lewdMode: 'direct', mod: module.exports, pass: 'orient', judge: 'orient', opt: { N, env: ENVSET, why: WHY } });
+  print(t.r, t.errors);
 })();

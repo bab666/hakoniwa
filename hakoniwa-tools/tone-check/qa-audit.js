@@ -9,24 +9,48 @@
      噛み合わない（ng）：上のどれでもない（地の文・相手の台詞を地の文で包んだ行で、答える動作のない行）
    「独立」：同じ問い（名前を伏せた文）の直後の文が回によって 2 通り以上ある＝問いの行のあとに別の表から行を置いている組み立て。
      ng のうち独立の問いのものを ng独立 に数える（これを 0 に近づける）
-   出力：箱庭ごとの件数の表、ng独立の多い問い（直後の文の例つき） */
+   出力：箱庭ごとの件数の表、ng独立の多い問い（直後の文の例つき） 
+   （2026-10-29 担当MQ）配役（パス qa）と判定（judge qa）を分けて module.exports で出す。audit-all.js が同じ関数を使う
+     （比率の点検なので、ほかのパスの回には当てない）。使い方・出力は今までどおり */
 'use strict';
 const fs = require('fs');
-const { openBuild } = require('./lib.js');
-(async () => {
-  const args = process.argv.slice(2).filter(a => !/^--/.test(a));
-  const dir = args[0], N = +args[1] || 12, mode = args[2] || '', only = args[3] ? args[3].split(',') : null;
-  const EX = +((process.argv.find(a => /^--ex=/.test(a)) || '').slice(5) || 25), JS = (process.argv.find(a => /^--json=/.test(a)) || '').slice(7);
-  if (!dir) { console.error('使い方: node qa-audit.js <ビルド> [回数] [r18|safe|\'\'] [箱庭id,…]'); process.exit(1); }
-  const { browser, page, errors } = await openBuild(dir, mode);
-  const r = await page.evaluate(({ N, only }) => {
-    const HK = window.HK, S = HK.Seg;
-    const out = { bySc: {}, keys: {}, runs: 0, err: [] };
-    if (!S) { out.err.push('HK.Seg がない'); return out; }
+const core = require('./audit/core.js');
+
+/* ---------- パス qa（ページの中）：opt = { N, only } ---------- */
+const PASS = function* (HK, opt) {
+  const N = opt.N || 12, only = opt.only || null;
     const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'], tones = HK.TONE_KEYS.slice(), POS = ['', 'top', 'bottom', 'riba'];
-    const ANS = /答え|応え|返し|返事|返す|はぐらか|頷|うなず|首を(?:縦|横)?に?振|首を傾げ|答える代わり|即答|肩をすくめ|考えてから|少し考え|しばらく考え|間を置いて|迷わず/;
     function rnd(s) { let x = s; return () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648; }
     let ti = 0;
+    for (const id of HK.SCEN_ORDER) {
+      const sc = HK.SCENARIOS[id]; if (!sc || (only && only.indexOf(id) < 0)) continue;
+      const n = Math.max(sc.minCast || 2, Math.min(sc.maxCast || 6, 6));
+      for (let s = 0; s < N; s++) {
+        const rr = rnd(1000 + s * 77 + id.length), chars = [], perChar = [];
+        for (let i = 0; i < n; i++) {
+          chars.push({ name: NAMES[i], eg: { CP: Math.round(rr() * 20), NP: Math.round(rr() * 20), A: Math.round(rr() * 20), FC: Math.round(rr() * 20), AC: Math.round(rr() * 20) }, memo: '', gender: (i + s) % 3 === 0 ? 'm' : (i + s) % 3 === 1 ? 'f' : '', likes: '', tone: tones[(ti++) % tones.length], fp: '', pos: POS[(i + s) % 4], color: '', call: '' });
+          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
+        }
+        const env = {}; (sc.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : ''); });
+        if (s % 2) (sc.env || []).forEach((e, k) => {
+          if (e.max != null && /lewd|dose|shady|heat|npc|prey|depth|skill|monsters|pleasure|traffic|ev$/.test(e.id)) env[e.id] = e.max;
+          else if (e.options && e.options.some(o => o.v === 'high') && /lewd/.test(e.id)) env[e.id] = 'high';
+          else if (e.options && e.options.length > 1 && !/lewd|^mode$/.test(e.id) && (s + k) % 2) env[e.id] = e.options[(s + k) % e.options.length].v;
+          if (e.id === 'mode' && e.options && e.options.some(o => o.v === 'lewd')) env[e.id] = 'lewd';
+        });
+        if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
+        yield { sc: id, s, input: { scenId: id, seed: 12345 + s * 101, env, chars, perChar, ties: s % 3 === 2 ? [{ a: 0, b: 1, type: 'lover' }] : [] }, meta: {} };
+      }
+    }
+};
+
+/* ---------- 判定 qa（ページの中） ---------- */
+const JUDGE = function (HK, opt) {
+    const S = HK.Seg;
+    const out = { bySc: {}, keys: {}, runs: 0, err: [] };
+    if (!S) { out.err.push('HK.Seg がない'); return { finish() { return out; } }; }
+    const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'], tones = HK.TONE_KEYS.slice(), POS = ['', 'top', 'bottom', 'riba'];
+    const ANS = /答え|応え|返し|返事|返す|はぐらか|頷|うなず|首を(?:縦|横)?に?振|首を傾げ|答える代わり|即答|肩をすくめ|考えてから|少し考え|しばらく考え|間を置いて|迷わず/;
     /* 文に分ける：地の文の「。」「\n」の後、台詞行（l）の後で、続く地の文が「と」「って」などで受けないとき */
     function sentences(seg) {
       const sens = []; let cur = [];
@@ -51,26 +75,12 @@ const { openBuild } = require('./lib.js');
       return sens;
     }
     const strip = (s, names) => { names.forEach((n, i) => { s = s.split(n).join('X'); }); return s.replace(/[\s]+/g, ''); };
-    HK.SCEN_ORDER.forEach(id => {
-      const sc = HK.SCENARIOS[id]; if (!sc || (only && only.indexOf(id) < 0)) return;
-      const B = out.bySc[id] = { runs: 0, q: 0, ans: 0, moan: 0, end: 0, self: 0, ng: 0, ngInd: 0, aq: 0, aans: 0, amoan: 0, aend: 0, aself: 0, ang: 0, angInd: 0 };
-      const n = Math.max(sc.minCast || 2, Math.min(sc.maxCast || 6, 6));
-      for (let s = 0; s < N; s++) {
-        const rr = rnd(1000 + s * 77 + id.length), chars = [], perChar = [];
-        for (let i = 0; i < n; i++) {
-          chars.push({ name: NAMES[i], eg: { CP: Math.round(rr() * 20), NP: Math.round(rr() * 20), A: Math.round(rr() * 20), FC: Math.round(rr() * 20), AC: Math.round(rr() * 20) }, memo: '', gender: (i + s) % 3 === 0 ? 'm' : (i + s) % 3 === 1 ? 'f' : '', likes: '', tone: tones[(ti++) % tones.length], fp: '', pos: POS[(i + s) % 4], color: '', call: '' });
-          perChar.push({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' });
-        }
-        const env = {}; (sc.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : ''); });
-        if (s % 2) (sc.env || []).forEach((e, k) => {
-          if (e.max != null && /lewd|dose|shady|heat|npc|prey|depth|skill|monsters|pleasure|traffic|ev$/.test(e.id)) env[e.id] = e.max;
-          else if (e.options && e.options.some(o => o.v === 'high') && /lewd/.test(e.id)) env[e.id] = 'high';
-          else if (e.options && e.options.length > 1 && !/lewd|^mode$/.test(e.id) && (s + k) % 2) env[e.id] = e.options[(s + k) % e.options.length].v;
-          if (e.id === 'mode' && e.options && e.options.some(o => o.v === 'lewd')) env[e.id] = 'lewd';
-        });
-        if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
-        let res;
-        try { res = HK.simulate({ scenId: id, seed: 12345 + s * 101, env, chars, perChar, ties: s % 3 === 2 ? [{ a: 0, b: 1, type: 'lover' }] : [] }); } catch (e) { out.err.push(id + ':' + s + ' ' + (e && e.message)); continue; }
+    return {
+      accept() { return false; },
+      error(run, e) { out.err.push(run.sc + ':' + run.s + ' ' + (e && e.message)); },
+      end(run, res) {
+        const id = run.sc;
+        const B = out.bySc[id] || (out.bySc[id] = { runs: 0, q: 0, ans: 0, moan: 0, end: 0, self: 0, ng: 0, ngInd: 0, aq: 0, aans: 0, amoan: 0, aend: 0, aself: 0, ang: 0, angInd: 0 });
         out.runs++; B.runs++;
         (res.log || []).forEach(e => {
           if (!e || !e.seg || typeof e.text !== 'string') return;
@@ -108,10 +118,14 @@ const { openBuild } = require('./lib.js');
             K.fol[nk] = (K.fol[nk] || 0) + 1;
           });
         });
-      }
-    });
-    return out;
-  }, { N, only });
+      },
+      finish() { return out; }
+    };
+};
+
+/* ---------- 出力（今までの形） ---------- */
+function print(r, errors, o) {
+  const EX = o.ex, JS = o.json;
   /* 独立：直後の文が 2 通り以上ある問い */
   const keys = Object.values(r.keys);
   keys.forEach(K => {
@@ -142,5 +156,22 @@ const { openBuild } = require('./lib.js');
   if (r.err.length) console.log('\n失敗', r.err.length, r.err.slice(0, 3));
   if (errors.length) console.log('ページのエラー', errors.length, errors.slice(0, 3));
   if (JS) fs.writeFileSync(JS, JSON.stringify({ bySc: r.bySc, total: T, keys }, null, 1));
-  await browser.close();
+}
+/* audit-all のまとめ：噛み合わない（独立）の数（参考。0 に近づける目安） */
+function summarize(r) {
+  let ngInd = 0, angInd = 0, q = 0, aq = 0;
+  Object.values(r.keys || {}).forEach(K => { const v = Object.keys(K.fol).length >= 2, x = v ? (K.cls.ng || 0) : 0; ngInd += x; if (K.ask) angInd += x; });
+  Object.values(r.bySc || {}).forEach(b => { q += b.q; aq += b.aq; });
+  return { items: {}, ex: {}, info: { 回: r.runs, '問い（訊いた）': aq, '噛み合わない独立（訊いた）': angInd, '問い（すべて）': q, '噛み合わない独立（すべて）': ngInd }, err: r.err.length, errEx: r.err.slice(0, 3) };
+}
+const LABEL = {};
+module.exports = { passes: { qa: PASS }, judges: { qa: JUDGE }, print, summarize, LABEL };
+
+if (require.main === module) (async () => {
+  const args = process.argv.slice(2).filter(a => !/^--/.test(a));
+  const dir = args[0], N = +args[1] || 12, mode = args[2] || '', only = args[3] ? args[3].split(',') : null;
+  const EX = +((process.argv.find(a => /^--ex=/.test(a)) || '').slice(5) || 25), JS = (process.argv.find(a => /^--json=/.test(a)) || '').slice(7);
+  if (!dir) { console.error('使い方: node qa-audit.js <ビルド> [回数] [r18|safe|\'\'] [箱庭id,…]'); process.exit(1); }
+  const t = await core.runTool({ dir, hash: mode, lewdMode: '', mod: module.exports, pass: 'qa', judge: 'qa', opt: { N, only } });
+  print(t.r, t.errors, { ex: EX, json: JS });
 })();

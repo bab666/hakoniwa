@@ -12,19 +12,14 @@
    ・台詞の見本：全口調 × 全名前 × 文の型（「〈名前〉、おはよう！」「〈名前〉くん、昨日はごめんね」「私は〈名前〉だ。腹が減った」…。R18版は性器の語・喘ぎも）を、
      台詞の仕上げ全部（HK.Voice.processResult）に通して、同じく双子と比べる（--no-probe で省く）
    ・名前の伏せ字（voice.js の HK.NameGuard。U+9FA6〜U+9FFE・U+E100〜U+E1FF）が結果の文（記録・seg・結末・注記）に残っていないか（印の残り）も数える。目標はどれも 0
-   環境変数 NAMES=飯塚,飯沼,… で名前の一覧を差し替えられる */
+   環境変数 NAMES=飯塚,飯沼,… で名前の一覧を差し替えられる 
+   （2026-10-29 担当MQ）audit-all.js の追加の配役パス（--extra=name）から同じ関数（PAGE）を呼べるよう、module.exports で出す。使い方・出力は今までどおり */
 'use strict';
 const fs = require('fs');
-const { openBuild } = require('./lib.js');
-(async () => {
-  const args = process.argv.slice(2).filter(a => !/^--/.test(a));
-  const dir = args[0], N = +args[1] || 4, mode = args[2] || '', only = args[3] ? args[3].split(',') : null;
-  const WHY = process.argv.includes('--why'), JS = (process.argv.find(a => /^--json=/.test(a)) || '').slice(7);
-  if (!dir) { console.error('使い方: node name-audit.js <ビルド> [回数] [r18|safe|\'\'] [箱庭id,…] [--why]'); process.exit(1); }
-  const { browser, page, errors } = await openBuild(dir, mode);
-  const NAMES0 = (process.env.NAMES || '').split(',').filter(Boolean);
-  const PROBE = !process.argv.includes('--no-probe');
-  const r = await page.evaluate(({ N, only, WHY, NAMES0, PROBE }) => {
+const core = require('./audit/core.js');
+
+/* ---------- ページの中：双子の回と台詞の見本（今までの点検をそのまま。opt = { N, only, WHY, NAMES0, PROBE }） ---------- */
+const PAGE = function ({ N, only, WHY, NAMES0, PROBE }) {
     const HK = window.HK;
     /* 言い換えの語を含む名前（飯→ご飯、腹→お腹、酒→お酒、金→お金、胸・乳・尻・竿・穴・玉・中出・奥（体の語）、君・様・貴様（二人称）、私・僕・俺（一人称）、
        兄・姉・母・父（家族の呼び方）、先生、本当（関西弁 ほんま）、嘘・子供・大人（辞書の語）。一字の名前・長い名前（飯塚太郎）・記号のある名前（飯田！）も） */
@@ -224,7 +219,17 @@ const { openBuild } = require('./lib.js');
     if (HK.NameGuard && HK.NameGuard.stack.length) { out.n.mark++; out.ex.mark.push('伏せ字の表が戻っていない（HK.NameGuard.stack ' + HK.NameGuard.stack.length + '）'); }
     out.tones = tones.length; out.names = NAMES.length;
     return out;
-  }, { N, only, WHY, NAMES0, PROBE });
+};
+/* audit-all の枠組み：パスは special の回を 1 つ返し、判定がその中で PAGE を丸ごと回す（双子の回は名前を差し替えた配役なので、ほかのパスと回を共有しない） */
+const PASS = function* (HK, opt) { yield { sc: '（名前の双子）', s: 0, special: true, meta: { opt } }; };
+const JUDGE = function (HK, opt) {
+  let r = null;
+  return { accept() { return false; }, special(run) { const o = Object.assign({}, opt, run.meta && run.meta.opt); r = window.__AUD.F.name({ N: o.N || 4, only: o.only || null, WHY: !!o.why, NAMES0: o.names || [], PROBE: o.probe !== false }); }, finish() { return r; } };
+};
+
+/* ---------- 出力（今までの形） ---------- */
+function print(r, errors, o) {
+  const dir = o.dir, mode = o.mode, WHY = !!o.why, JS = o.json;
   console.log('== name-audit', dir, mode || '(全年齢版)', '回数', r.runs, '比べた文', r.entries, '双子と記録の数が合わない回', r.desync, 'ページのエラー', errors.length, errors.slice(0, 2));
   if (r.err.length) console.log('失敗', r.err.length, r.err.slice(0, 3));
   const total = r.n.pre + r.n.part;
@@ -243,6 +248,24 @@ const { openBuild } = require('./lib.js');
     if (WHY && P.ex.noise.length) { console.log('-- 見本 noise'); P.ex.noise.forEach(x => console.log('  ' + x)); }
   }
   if (JS) fs.writeFileSync(JS, JSON.stringify(r));
-  await browser.close();
   process.exitCode = total + r.n.mark + (P ? P.n.pre + P.n.part : 0) ? 1 : 0;
+}
+function summarize(r) {
+  const P = r.probe || { n: { pre: 0, part: 0 }, ex: { pre: [], part: [] } };
+  const items = { pre: r.n.pre, part: r.n.part, mark: r.n.mark, probePre: P.n.pre, probePart: P.n.part };
+  const ex = { pre: r.ex.pre.slice(0, 3), part: r.ex.part.slice(0, 3), mark: r.ex.mark.slice(0, 3), probePre: (P.ex.pre || []).slice(0, 3), probePart: (P.ex.part || []).slice(0, 3) };
+  return { items, ex, info: { 回: r.runs, 比べた文: r.entries, '参考 筋が分かれた回': r.desync, '参考 名前に触れない違い': r.noise }, err: r.err.length, errEx: r.err.slice(0, 3) };
+}
+const LABEL = { pre: '名前の前に語が付いた（ご飯塚 など）', part: '名前の一部・全部が別の語に', mark: '名前の伏せ字の残り', probePre: '台詞の見本：名前の前に語', probePart: '台詞の見本：名前の一部・全部が別の語' };
+module.exports = { passes: { name: PASS }, judges: { name: JUDGE }, fns: { name: PAGE }, print, summarize, LABEL };
+
+if (require.main === module) (async () => {
+  const args = process.argv.slice(2).filter(a => !/^--/.test(a));
+  const dir = args[0], N = +args[1] || 4, mode = args[2] || '', only = args[3] ? args[3].split(',') : null;
+  const WHY = process.argv.includes('--why'), JS = (process.argv.find(a => /^--json=/.test(a)) || '').slice(7);
+  if (!dir) { console.error('使い方: node name-audit.js <ビルド> [回数] [r18|safe|\'\'] [箱庭id,…] [--why]'); process.exit(1); }
+  const NAMES0 = (process.env.NAMES || '').split(',').filter(Boolean);
+  const PROBE = !process.argv.includes('--no-probe');
+  const t = await core.runTool({ dir, hash: mode, lewdMode: '', mod: module.exports, pass: 'name', judge: 'name', opt: { N, only, why: WHY, names: NAMES0, probe: PROBE } });
+  print(t.r, t.errors, { dir, mode, why: WHY, json: JS });
 })();

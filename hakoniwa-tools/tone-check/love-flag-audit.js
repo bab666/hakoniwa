@@ -16,28 +16,56 @@
        恋愛の分類の出来事が今までどおり起きる。恋愛を止めるのは「恋愛：なし」をはっきり選んだときと、家族）。
        全箱庭の Y の合計が 0 なら、恋愛：ありが効いていないのでエラー
    ・結末の関係のうち、入力の関係そのものを表示した線（物語型の関係図で、★の付かない、関係の名前の線）は数えない（設定の表示で、出来事の結果ではないため）
-   ・N2 は文から拾うので誤判定がありうる。--why で例を出すので目で確かめる */
-const { openBuild } = require('./lib');
-(async () => {
-  const dir = process.argv[2], N = +process.argv[3] || 24, mode = process.argv[4] || 'r18', WHY = process.argv.includes('--why');
-  if (!dir) { console.log('使い方: node love-flag-audit.js <ビルドのフォルダ> [回数] [r18|safe] [--why]'); process.exit(1); }
-  const { browser, page, errors } = await openBuild(dir, mode === 'safe' ? 'safe' : mode === 'r18' ? 'r18' : '', { lewdMode: 'direct' });
-  const r = await page.evaluate(({ N, WHY }) => {
+   ・N2 は文から拾うので誤判定がありうる。--why で例を出すので目で確かめる 
+   （2026-10-29 担当MQ）配役（パス loveflag）と判定（judge loveflag）を分けて module.exports で出す。audit-all.js が同じ関数を使い、
+     ほかのパスの回でも「恋愛：なし」の関係（t.love === 'no'）があれば、その組に N1〜N4 を当てる。使い方・出力は今までどおり */
+'use strict';
+const core = require('./audit/core.js');
+
+/* ---------- パス loveflag（ページの中）：opt = { N } ---------- */
+const PASS = function* (HK, opt) {
+  const N = opt.N || 24;
     const NAMES = ['アキラ', 'ユキノ', 'ミナト', 'ソラ', 'カエデ', 'ヒカル'];
     const NO_T = ['friend', 'enemy', 'bad', 'yan', 'master', 'pparent', 'lover'];
-    const CONF = /告白し|想いを告げ|付き合(?:って(?:ください|ほしい|くれ(?!た))|おう|い始)|恋人(?:に|どうし|同士)にな|両想いにな|好きだ。|好きです。/;
-    /* 告白でない言い回し（練習・冗談・ゲームのお題・噂・回想・ほかの人の話など） */
-    const NOTC = /練習|冗談|ふり|フリ|王様ゲーム|お題|罰ゲーム|命令|噂|もし|夢|思い出|想像|応援|祝福|からかわ|冷やかし|これでいい(?:か|ですか)?？|棒読み|扉を見たまま|ほかに：|ほかの結果：/;
     const ids = HK.SCEN_ORDER.filter(id => HK.SCENARIOS[id]);
-    const out = {};
-    const run = (id, sc, s, ties, n) => {
+    const mk = (id, sc, s, ties, n) => {
       const chars = [];
       for (let i = 0; i < n; i++) chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, gender: (i + s) % 2 ? 'f' : 'm', likes: 'both', pos: '', tone: '', fp: '', calls: {}, memo: '' });
       const env = {}; (sc.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
       (sc.env || []).forEach(e => { if (e.max != null && /romance|love|night|lewd/.test(e.id)) env[e.id] = e.max; });
       if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
-      return HK.simulate({ scenId: id, seed: 9100 + s * 37, env, chars, perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })), ties });
+      return ({ scenId: id, seed: 9100 + s * 37, env, chars, perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })), ties });
     };
+    for (const id of ids) {
+      const sc = HK.SCENARIOS[id];
+      const lo = Math.max(sc.minCast || 2, 4), hi = Math.min(sc.maxCast || 6, 6);
+      for (let s = 0; s < N; s++) {
+        const n = Math.min(hi, lo + (s % 3)) >= (sc.minCast || 2) ? Math.min(hi, lo + (s % 3)) : (sc.minCast || 2);
+        if (n < 2) continue;
+        if (s % 4 === 3) {
+          /* ありの回：家族（兄弟姉妹）・執着（信仰）を「恋愛：あり」と「自動」で */
+          const ty = (s >> 2) % 2 ? 'worship' : 'sibling';
+          for (const lv of ['ok', '']) {
+            const tl = [{ a: 0, b: 1, type: ty, love: lv }];
+            yield { sc: id, s, input: mk(id, sc, s, tl, n), meta: { lf: lv === 'ok' ? 'yes' : 'auto', ty } };
+          }
+          continue;
+        }
+        const t1 = NO_T[s % NO_T.length], t2 = NO_T[(s + 3) % NO_T.length];
+        const ties = [{ a: 0, b: 1, type: t1, love: 'no' }];
+        if (n >= 4) ties.push({ a: 2, b: 3, type: t2, love: 'no' });
+        yield { sc: id, s, input: mk(id, sc, s, ties, n), meta: { lf: 'no' } };
+      }
+    }
+};
+
+/* ---------- 判定 loveflag（ページの中）：opt = { why } ---------- */
+const JUDGE = function (HK, opt) {
+  const WHY = !!opt.why;
+    const CONF = /告白し|想いを告げ|付き合(?:って(?:ください|ほしい|くれ(?!た))|おう|い始)|恋人(?:に|どうし|同士)にな|両想いにな|好きだ。|好きです。/;
+    /* 告白でない言い回し（練習・冗談・ゲームのお題・噂・回想・ほかの人の話など） */
+    const NOTC = /練習|冗談|ふり|フリ|王様ゲーム|お題|罰ゲーム|命令|噂|もし|夢|思い出|想像|応援|祝福|からかわ|冷やかし|これでいい(?:か|ですか)?？|棒読み|扉を見たまま|ほかに：|ほかの結果：/;
+    const out = {};
     /* 結果から、組 pr（[i, j]）の恋愛のしるしを数える */
     const signs = (res, pr, ex, tag, ties) => {
       const setLab = {}; (ties || []).forEach(t => { if ((t.a === pr[0] && t.b === pr[1]) || (t.a === pr[1] && t.b === pr[0])) setLab[HK.tieLabel ? HK.tieLabel(t) : t.type] = 1; });
@@ -65,34 +93,30 @@ const { openBuild } = require('./lib');
       }
       return o;
     };
-    ids.forEach(id => {
-      const sc = HK.SCENARIOS[id], o = out[id] = { runs: 0, err: 0, N1: 0, N2: 0, N3: 0, N4: 0, Y: 0, Z: 0, Z1: 0, ex: [] };
-      const lo = Math.max(sc.minCast || 2, 4), hi = Math.min(sc.maxCast || 6, 6);
-      for (let s = 0; s < N; s++) {
-        const n = Math.min(hi, lo + (s % 3)) >= (sc.minCast || 2) ? Math.min(hi, lo + (s % 3)) : (sc.minCast || 2);
-        if (n < 2) continue;
-        if (s % 4 === 3) {
-          /* ありの回：家族（兄弟姉妹）・執着（信仰）を「恋愛：あり」と「自動」で */
-          const ty = (s >> 2) % 2 ? 'worship' : 'sibling';
-          ['ok', ''].forEach(lv => {
-            const tl = [{ a: 0, b: 1, type: ty, love: lv }];
-            let res; try { res = run(id, sc, s, tl, n); } catch (e) { o.err++; if (o.ex.length < 8) o.ex.push('ERR ' + e.message); return; }
-            o.runs++;
+    const oOf = id => out[id] || (out[id] = { runs: 0, err: 0, N1: 0, N2: 0, N3: 0, N4: 0, Y: 0, Z: 0, Z1: 0, ex: [] });
+    return {
+      /* ほかのパスの回は、「恋愛：なし」の関係があるときだけ */
+      accept(run) { return (run.input && run.input.ties || []).some(t => t.love === 'no'); },
+      error(run, e) { if (run.pass !== 'loveflag') return; const o = oOf(run.sc); o.err++; if (o.ex.length < 8) o.ex.push('ERR ' + e.message); },
+      end(run, res) {
+        const o = oOf(run.sc), m = run.pass === 'loveflag' ? (run.meta || {}) : { lf: 'no' }, ties = run.input.ties || [];
+        o.runs++;
+        if (m.lf === 'yes' || m.lf === 'auto') {
+          const lv = m.lf === 'yes' ? 'ok' : '', ty = m.ty, tl = ties;
+          if (lv === 'ok') o.yr = (o.yr || 0) + 1;
             const g = signs(res, [0, 1], lv === 'ok' ? null : o.ex, '[自動 ' + ty + ']', tl);
             if (lv === 'ok') o.Y += g.N1 + g.N2 + g.N3; else { o.Z += g.N2 + g.N3; o.Z1 += g.N1; }
-          });
-          continue;
+          return;
         }
-        const t1 = NO_T[s % NO_T.length], t2 = NO_T[(s + 3) % NO_T.length];
-        const ties = [{ a: 0, b: 1, type: t1, love: 'no' }];
-        if (n >= 4) ties.push({ a: 2, b: 3, type: t2, love: 'no' });
-        let res; try { res = run(id, sc, s, ties, n); } catch (e) { o.err++; if (o.ex.length < 8) o.ex.push('ERR ' + e.message); continue; }
-        o.runs++;
-        ties.forEach(t => { const g = signs(res, [t.a, t.b], o.ex, '[なし ' + t.type + ']', ties); ['N1', 'N2', 'N3', 'N4'].forEach(k => { o[k] += g[k]; }); });
-      }
-    });
-    return out;
-  }, { N, WHY });
+        const no = ties.filter(t => t.love === 'no');
+        no.forEach(t => { const g = signs(res, [t.a, t.b], o.ex, '[なし ' + t.type + ']', ties); ['N1', 'N2', 'N3', 'N4'].forEach(k => { o[k] += g[k]; }); });
+      },
+      finish() { return out; }
+    };
+};
+
+/* ---------- 出力（今までの形） ---------- */
+function print(r, errors) {
   const tot = { N1: 0, N2: 0, N3: 0, N4: 0, Y: 0, Z: 0, Z1: 0, err: 0 };
   for (const id in r) {
     const o = r[id]; Object.keys(tot).forEach(k => { tot[k] += o[k]; });
@@ -101,6 +125,23 @@ const { openBuild } = require('./lib');
   }
   console.log('合計', JSON.stringify(tot), '（N1〜N4・Z・err は 0 であること。Y は 0 より大きいこと。Z1 は参考）');
   console.log('pageerr', errors.slice(0, 3));
-  await browser.close();
   if (tot.N1 + tot.N2 + tot.N3 + tot.N4 + tot.Z + tot.err > 0 || tot.Y === 0 || errors.length) process.exitCode = 1;
+}
+function summarize(r) {
+  const K = ['N1', 'N2', 'N3', 'N4', 'Z'], items = {}, ex = {};
+  K.forEach(k => { items[k] = 0; ex[k] = []; });
+  let runs = 0, err = 0, Y = 0, Z1 = 0, yr = 0;
+  Object.keys(r || {}).forEach(id => { const o = r[id]; runs += o.runs; err += o.err; Y += o.Y; Z1 += o.Z1; yr += o.yr || 0; K.forEach(k => { items[k] += o[k]; }); o.ex.forEach(x => { const m = String(x).match(/ (N[1-4]) /); const k = m ? m[1] : 'Z'; if (ex[k] && ex[k].length < 3) ex[k].push(id + ' ' + x); }); });
+  /* 「恋愛：あり」が効いていない（ありの回があるのに Y が 0）のもエラー */
+  items.Y0 = yr && Y === 0 ? 1 : 0;
+  return { items, ex, info: { 回: runs, 'あり Y': Y, '参考 Z1': Z1 }, err };
+}
+const LABEL = { N1: '恋愛：なしの二人の恋愛の出来事', N2: '恋愛：なしの二人の告白・恋人になる文', N3: '恋愛：なしの二人の結末の恋', N4: '恋愛：なしの二人の惹かれが上がった', Z: '自動（家族・信仰）の告白・結末の恋', Y0: '恋愛：ありが効いていない（Y が 0）' };
+module.exports = { passes: { loveflag: PASS }, judges: { loveflag: JUDGE }, print, summarize, LABEL };
+
+if (require.main === module) (async () => {
+  const dir = process.argv[2], N = +process.argv[3] || 24, mode = process.argv[4] || 'r18', WHY = process.argv.includes('--why');
+  if (!dir) { console.log('使い方: node love-flag-audit.js <ビルドのフォルダ> [回数] [r18|safe] [--why]'); process.exit(1); }
+  const t = await core.runTool({ dir, hash: mode === 'safe' ? 'safe' : mode === 'r18' ? 'r18' : '', lewdMode: 'direct', mod: module.exports, pass: 'loveflag', judge: 'loveflag', opt: { N, why: WHY } });
+  print(t.r, t.errors);
 })();
