@@ -55,7 +55,7 @@
     sondai: { label: '尊大（〜のかね）', desc: '「君、ふざけているのかね」「私に任せたまえ」「ほう、そういうものかね」。尊大で、やや古風な話し方。めったに取り乱さないが、驚くと声を荒らげる。文面は厳格のものを使う', base: 'stern', top: 'CP', fp: { m: '私', f: '私', x: '私' }, lines: 'base', derive: 'gentleman', firm: 'gentleman', reluct: 0.15 },
     kansai: { label: '関西弁（軽め）', desc: '語尾がやわらかい関西弁。態度はエゴグラムから決まる', base: null, top: null, kansai: true, fp: { m: '俺', f: 'うち', x: 'うち' }, egoTable: true, lines: 'base', reluct: -0.05 },
     noja: { label: 'のじゃ（古風）', desc: '「〜なのじゃ」「〜じゃろう」「〜ぞ」「おぬし」。古風で少し尊大な話し方。態度はエゴグラムから決まる', base: null, top: null, fp: { m: 'わし', f: 'わらわ', x: 'わし' }, egoTable: true, lines: 'base', firm: 'noja', reluct: 0.08 },
-    mixed: { label: '敬語まじりのため口', desc: '「私は〇〇です。よろしく」「大丈夫。何とかなります」。基本は敬語で、短い一言や問いだけため口になる、距離感のゆれる話し方', base: null, top: null, egoTable: true, lines: 'base', reluct: 0.05 },
+    mixed: { label: '敬語まじりのため口', desc: '「私は〇〇です。よろしく」「大丈夫。何とかなります」。説明や頼みごとは敬語で、短い一言・問い・驚き・念押しはため口になる、距離感のゆれる話し方', base: null, top: null, egoTable: true, lines: 'base', reluct: 0.05 },
     mukuchi: { label: '無口', desc: '「……」「……ん」。ほとんど喋らず、話してもひと言だけ。態度はエゴグラムから決まる', base: null, top: null, egoTable: true, lines: 'base', group: 'soft', reluct: 0.12 },
     hero: { label: '熱血（〜だぜ！）', desc: '「任せとけ！」「〜だぜ！」「行くぞ！」。まっすぐで暑苦しい、物語の主人公のような話し方。文面は奔放のものを使う', base: 'free', top: 'FC', fp: { m: '俺', f: 'あたし', x: '俺' }, derive: 'free', noBang: true, reluct: -0.2 },
     gyaru: { label: 'ギャル（マジ・〜じゃん）', desc: '「よろ〜」「マジヤバ！」「チョーイケてる」「そんなん知らんし！」。ノリと勢いのギャルの話し方。文面は奔放のものを使う', base: 'free', top: 'FC', fp: { m: '俺', f: 'あたし', x: 'ウチ' }, derive: 'free', reluct: -0.25 },

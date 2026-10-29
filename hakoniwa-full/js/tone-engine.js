@@ -21,6 +21,7 @@
      助詞落とし=0.3         ← が・は・を を落とす割合
      存在=おる              ← いる／いた／いない／います → おる／おった／おらぬ（が・は・も・に などの直後だけ。〜ている は進行の規則）
      短い文はため口=6       ← 敬語のベースで、助詞のない短い一言（大丈夫です→大丈夫、ありがとうございます→ありがとう）と短い問い（飲みますか？→飲む？）だけをため口にする（敬語まじり）
+     ため口を混ぜる=0.15    ← 敬語のベースで、文ごとに くだけた常体（K）の同じ文と入れ替える（敬語まじり）。問い・感嘆・念押し・誘いは ため口、頼みごとは敬語、言い切りは値の割合で ため口。2文以上の台詞は両方が入る
      縮約=はい              ← 分からない→分かんない、ちょうだい→ちょーだい など
      強調語=マジ／めっちゃ  ← 形容詞の前に差し込む（台詞に一度まで。文に勢い（！や強い語）があるときだけ）
      強調語の割合=0.4       ← 差し込む割合（既定 0.5）
@@ -82,8 +83,79 @@
     var tone = who && (HK.toneOf ? HK.toneOf(who) : who.tone), b = T.baseOf(tone, kg), q1 = s[b] || s.K;
     /* alts：選ばなかったベース（既存の書き下ろし辞書は元の文で引いてあるので、3本のどれかに一致すれば使う） */
     var alts = [s.K, s.F, s.P].filter(function (x, i, a) { return x && x !== q1 && a.indexOf(x) === i; });
-    return { q: q1, dict: kg ? null : T.dictOf(tone), base: b, alts: alts };
+    var d = kg ? null : T.dictOf(tone);
+    /* 規則「ため口を混ぜる」（敬語まじりのため口）：敬語のベースの文を、文ごとに くだけた常体（K）の同じ文と入れ替える。
+       書き下ろしは元の文で引くので、選ばなかった P を alts の先頭に置く（これまでどおり P で引いた書き下ろしが先に当たる） */
+    if (d && b === 'P' && d.rules && d.rules.mixK && s.K && s.P && s.K !== s.P) {
+      var seed = q + '#' + ((who && who.name) || '');
+      if (HK.NameGuard && HK.NameGuard.stack.length) seed = HK.NameGuard.decAll(seed);
+      var qm = mixKP(s.K, s.P, d.rules.mixK, seed, d.rules.shortCasual);
+      if (qm !== q1) { alts = [s.P].concat(alts.filter(function (x) { return x !== s.P; })); q1 = qm; }
+    }
+    return { q: q1, dict: d, base: b, alts: alts };
   };
+
+  /* ---------- 敬語の文とため口の文を混ぜる（規則「ため口を混ぜる」。敬語まじりのため口） ----------
+     敬語のベース（P）の文を、文ごとに くだけた常体（K）の同じ番目の文と入れ替える（K と P の文の数がそろうときだけ。そろわなければ P のまま）。
+     くじで混ぜるのではなく、文の種類で決める（2026-10-26 の利用者の指示「くじで混ぜるのをやめる」を守る）：
+       短い一言・決まり文句・短い問い（規則「短い文はため口」の対象）と、18字以下の問い・感嘆（！）・驚きの反応（え、〜）・念押し（〜ですね・〜ですよ）・誘い（〜ましょう）は ため口、
+       頼みごと（〜ください・〜ませんか）は敬語、言い切り（説明）は敬語。くじを引くのは言い切りの文だけで、値はその文をため口にする割合（20字を超える文は半分）。
+     2文以上の台詞は、敬語の文とため口の文が両方入るようにする（「大丈夫。何とかなります」「私を信じてください。後悔はさせないよ」）。
+     P の文に「〜さん」「〜様」「先生」があって K の文にないとき、K の文が P の文と中身でずれているときは、K の文ではなく P の文の文末だけを崩す（呼び方の「さん」を落とさない） */
+  var MX_SENT = /(?<=[。！？!?]+)(?![。！？!?」』）)])/;
+  var MX_POL = /(?:です|ます|ません|ました|でした|でしょう|ましょう|ください|下さい|ございます)(?:か|ね|よ|よね|けど|から|が|し|の)*$/;
+  /* 二つの文の中身の重なり（記号・空白を除いた字の、共通の数 ÷ 短いほうの字数） */
+  function mxSim(a, b) {
+    var strip = function (x) { return x.replace(/[。！？!?、，…‥\s　「」『』（）()っッー〜～♡]/g, ''); };
+    a = strip(a); b = strip(b);
+    if (!a || !b) return 1;
+    var cnt = {}, n = 0;
+    for (var i = 0; i < a.length; i++) cnt[a.charAt(i)] = (cnt[a.charAt(i)] || 0) + 1;
+    for (var j = 0; j < b.length; j++) { var ch = b.charAt(j); if (cnt[ch]) { cnt[ch]--; n++; } }
+    return n / Math.min(a.length, b.length);
+  }
+  function mixKP(K, P, rate, seed, sc) {
+    var ks = K.split(MX_SENT), ps = P.split(MX_SENT);
+    if (ks.length !== ps.length || ks.length > 8) return P;
+    var info = ps.map(function (p, i) {
+      var punct = (p.match(/[。！？!?]*[\s　]*$/) || [''])[0], body = p.slice(0, p.length - punct.length);
+      var core = splitTail(body)[0].replace(/^[…‥、\s　]+/, ''), len = core.length;
+      if (!MX_POL.test(core) || ks[i] === p) return { fixed: true };
+      var pre = core.replace(/(?:です|ます|ません|ました|でしょう|ください|ましょう|でした|ございます)[かねよ]*$/, '');
+      var ask = /[？?]/.test(punct);
+      /* 短い一言・決まり文句・短い問い（規則「短い文はため口」で崩れる文）は、ため口の文として数える */
+      if (sc != null && (SET_PHRASE.test(core) || (len <= sc && !/[はがをにへとでもの]/.test(pre)) || (ask && len <= sc + 2))) return { fixed: true, casual: true };
+      /* 文の種類で決める（くじは言い切りの文だけ）：頼みごと（〜ください・〜ませんか）は敬語。問い・感嘆（！）・念押し（〜ですね・〜ですよ）・誘い（〜ましょう）は、
+         長くなければため口。言い切りは、値の割合でため口（長い説明は半分の割合） */
+      var short2 = len <= 18;
+      /* 驚き・とっさの反応で始まる文（「え、それは聞いていません」「うそ、もう朝ですか」）も感嘆と同じに扱う */
+      var react = /^(?:えっ?、|えっ|ええっ?、|うそ|嘘、|まさか|あっ?、|わっ|うわ|へえ|ほんと|本当に？)/.test(core);
+      var pc = /(?:ください|下さい|ませんか)$/.test(core) ? 0 : ask || react || /ましょう(?:か|よ|ね)?$/.test(core) || /[！!]/.test(punct) || /(?:ね|よ|よね)$/.test(core) ? (short2 ? 1 : rate) : len > 20 ? rate / 2 : rate;
+      return { pc: pc, len: len };
+    });
+    var pick = info.map(function (o, i) { return !o.fixed && hash(seed + '#mx' + i) % 1000 < o.pc * 1000; });
+    var free = [], picked = [];
+    info.forEach(function (o, i) { if (!o.fixed) { free.push(i); if (pick[i]) picked.push(i); } });
+    var casualN = picked.length + info.filter(function (o) { return o.casual; }).length, politeN = free.length - picked.length;
+    /* 2文以上：全部が敬語なら、いちばんため口になりやすい文（同じなら後ろの文）を ため口に。全部がため口なら、ため口にした文のうちいちばん長い文を敬語に戻す（「私は〇〇です。よろしく」） */
+    if (politeN + casualN >= 2 && !casualN) {
+      var best = -1; free.forEach(function (i) { if (best < 0 || info[i].pc >= info[best].pc) best = i; });
+      if (best >= 0) pick[best] = true;
+    } else if (politeN + casualN >= 2 && !politeN && picked.length) {
+      var lg = -1; picked.forEach(function (i) { if (lg < 0 || info[i].len > info[lg].len) lg = i; });
+      if (lg >= 0) pick[lg] = false;
+    }
+    /* 短い一言・短い問いも、K の文があればそれを使う（敬語→ため口の表で崩すより自然：「起きていますか？」→「起きてる？」。「起きている？」にしない） */
+    info.forEach(function (o, i) { if (o.casual) pick[i] = true; });
+    if (!pick.some(Boolean)) return P;
+    return ps.map(function (p, i) {
+      if (!pick[i]) return p;
+      /* K の文が P の文と中身でずれている（文の数は同じでも、K「誰か！　いないの！？」・P「すみません！　誰か、いませんか！」）ときも、P の文の文末だけを崩す */
+      if ((/さん|様|さま|先生/.test(p) && !/さん|様|さま|先生/.test(ks[i])) || mxSim(ks[i], p) < 0.34) return T.casualize(p, seed);
+      /* 文頭の空白は P の文のものを使う（「〜ですか。　効いてるよ」のように、K の「？　」の空白が「。」の後ろに残らないように） */
+      return (p.match(/^[\s　]*/) || [''])[0] + ks[i].replace(/^[\s　]+/, '');
+    }).join('');
+  }
 
   /* ---------- 文を切る（文末の処理のため）。tail は …‥っ〜ー♡ など、文末記号の手前の飾り ---------- */
   var END = /([。！？!?]+)/, POLITE_CUT = /(?:です|ます|ません|ました|でしょう|ください|ましょう|でした)(?:から|けど|が|し|ので|のに|よ|ね|よね)?$/;
@@ -710,7 +782,7 @@
   };
 
   /* ---------- 辞書の文字列を読む ---------- */
-  var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '強調語の割合': 'emphRate', '存在': 'exist', '短い文はため口': 'shortCasual',
+  var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '強調語の割合': 'emphRate', '存在': 'exist', '短い文はため口': 'shortCasual', 'ため口を混ぜる': 'mixK',
     '前置き': 'lead', '言い切りの前置き': 'leadS', '反応の前置き': 'leadR', '一度だけ': 'once', '前置きの割合': 'leadRate', '驚き': 'surprise', '笑い': 'laugh', '言い切り': 'flat', '動揺': 'shaken', '動揺の割合': 'shakenRate', '強い文の説明': 'strongExpl' };
   var FX_KEYS = { '感嘆符を落とす': 'bangOff', '伸ばす': 'stretch', '言い切りに！': 'bangOn', '言い切りに!': 'bangOn', '短くする': 'short', '言いよどみ': 'stammer', '前に……': 'dots', '間を置く': 'pause' };
   /* 「元=先1／先2」の候補。空の候補（「です(い)=／です」の左側）は「消す」の意味で残す */
@@ -754,10 +826,11 @@
       if (sec === 'ends') { var cond = null; var cm = k.match(/^(.+?)\((.+)\)$/); if (cm) { k = cm[1]; try { cond = new RegExp(cm[2] + '$'); } catch (e) { cond = null; } } cur.ends.push([k, alts(v), cond]); return; }
       if (sec === 'words') { cur.words.push([k, alts(v)]); return; }
       if (sec === 'rules') {
-        var rk = RULE_KEYS[k]; if (!rk) { out.errors.push((i + 1) + '行目：規則「' + k + '」は使えません（否定／進行／断定／助詞落とし／縮約／強調語／存在／短い文はため口／前置き／言い切りの前置き／反応の前置き／驚き／笑い／言い切り／動揺／一度だけ／強い文の説明）'); return; }
+        var rk = RULE_KEYS[k]; if (!rk) { out.errors.push((i + 1) + '行目：規則「' + k + '」は使えません（否定／進行／断定／助詞落とし／縮約／強調語／存在／短い文はため口／ため口を混ぜる／前置き／言い切りの前置き／反応の前置き／驚き／笑い／言い切り／動揺／一度だけ／強い文の説明）'); return; }
         if (rk === 'drop') { var rate = parseFloat(v); cur.rules.drop = rate > 0 ? Math.min(1, rate) : 0; }
         else if (rk === 'emphRate') { var er = parseFloat(v); cur.rules.emphRate = er >= 0 ? Math.min(1, er) : 0.5; }
         else if (rk === 'shortCasual') { var sl = parseInt(v, 10); cur.rules.shortCasual = sl > 0 ? sl : 6; }
+        else if (rk === 'mixK') { var mk = parseFloat(v); if (mk >= 0) cur.rules.mixK = Math.min(1, mk); else out.errors.push((i + 1) + '行目：ため口を混ぜるは 0〜1 の数'); }
         else if (rk === 'contract') cur.rules.contract = yes(v);
         else if (rk === 'emph') cur.rules.emph = alts(v);
         else if (rk === 'lead' || rk === 'shaken' || rk === 'leadS' || rk === 'leadR' || rk === 'once') { var lv = alts(v).filter(Boolean); if (lv.length) cur.rules[rk] = lv; }
@@ -831,7 +904,7 @@
     var d = T.user[k] || T.dicts[k]; if (!d) return [];
     return SAMPLES.map(function (s) { var sp = T.split(s); return '「' + T.apply(sp[d.base] || sp.K, d, { name: '見本' }) + '」'; });
   };
-  T.help = function () { return '書き方：[口調] 名前=／ベース=K・F・P／一人称=／二人称=／態度=（省略可）。[文末] 元=先（／で候補）。[語彙] 元=先（「ばかり=ばかり」のように同じ語を書くと、短い語「ばか」がその長い語の中に当たらない）。[規則] 否定=ぬ・へん・ん／進行=ておる・とる／断定=や／助詞落とし=0.3／縮約=はい／強調語=マジ／めっちゃ／前置き=フッ……。／やれやれ（前置きの割合=0.3）／言い切りの前置き=まあ、（言い切りの台詞だけ）／反応の前置き=へえ、／ほう、（〜ですね・〜ますね の台詞だけ）／一度だけ=けどね（足すのは台詞の最後の文に一度だけ）／驚き=なんと！／おお……（文頭の え・うそ・マジ などを置き換え。空なら消す）／笑い=フハハ（はは・ふふ などを置き換え。空なら消す）／言い切り=0.3（文末の よ・ね・さ・ぞ を落とす割合）／動揺=く……ッ！／バカな……！（「！」の強い文の頭に。動揺の割合=0.5）。[効果] 感嘆符を落とす・伸ばす・言い切りに！・短くする・言いよどみ=はい。\n※ 試作中：3本のベース（K｜F｜P）で書かれた台詞にだけ効きます。1本の台詞はこれまでの言い換えになります。'; };
+  T.help = function () { return '書き方：[口調] 名前=／ベース=K・F・P／一人称=／二人称=／態度=（省略可）。[文末] 元=先（／で候補）。[語彙] 元=先（「ばかり=ばかり」のように同じ語を書くと、短い語「ばか」がその長い語の中に当たらない）。[規則] 否定=ぬ・へん・ん／進行=ておる・とる／断定=や／助詞落とし=0.3／縮約=はい／ため口を混ぜる=0.15（ベース=P のとき、問い・感嘆・念押しの文を くだけた形に。言い切りの文は この割合で）／強調語=マジ／めっちゃ／前置き=フッ……。／やれやれ（前置きの割合=0.3）／言い切りの前置き=まあ、（言い切りの台詞だけ）／反応の前置き=へえ、／ほう、（〜ですね・〜ますね の台詞だけ）／一度だけ=けどね（足すのは台詞の最後の文に一度だけ）／驚き=なんと！／おお……（文頭の え・うそ・マジ などを置き換え。空なら消す）／笑い=フハハ（はは・ふふ などを置き換え。空なら消す）／言い切り=0.3（文末の よ・ね・さ・ぞ を落とす割合）／動揺=く……ッ！／バカな……！（「！」の強い文の頭に。動揺の割合=0.5）。[効果] 感嘆符を落とす・伸ばす・言い切りに！・短くする・言いよどみ=はい。\n※ 試作中：3本のベース（K｜F｜P）で書かれた台詞にだけ効きます。1本の台詞はこれまでの言い換えになります。'; };
   T.sample = function () { return '[口調]\n名前=ですぞ侍\nベース=P\n一人称=拙者\n二人称=貴殿\n[文末]\nです=ですぞ／ですな\nですか=ですかな\nますか=ますかな\nました=ましたぞ\nません=ませぬ\nください=くだされ\n[語彙]\nありがとうございます=かたじけない\nすみません=面目ない\n[規則]\n否定=ぬ\n進行=ておる'; };
 
   /* 以前の箱庭全体の辞書（高度設定の adv.tone）は廃止した。保存の文字列は当てず（T.user に入れない・選択欄に足さない）、
