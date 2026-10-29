@@ -554,7 +554,7 @@
       '<span class="avset">' + '<button type="button" class="avbtn" data-act="iconpick" aria-label="' + esc(c.name) + 'のアイコンを' + (c.icon ? '変える' : '設定する') + '" title="アイコンを' + (c.icon ? '変える' : '設定する') + '">' + HK.Icons.html(c.name, i, 44) + (c.icon ? '' : '<i class="avplus" aria-hidden="true">＋</i>') + '</button>' +
       (c.icon ? '<button type="button" class="avdel" data-act="icondel" aria-label="' + esc(c.name) + 'のアイコンを外す" title="アイコンを外す">×</button>' : '') + '</span>' +
       '<div class="who"><input type="text" id="nm-' + c.id + '" data-f="name" value="' + esc(c.name) + '" aria-label="名前" maxlength="24">' +
-      '<div class="codeline"><input type="text" class="code" id="cd-' + c.id + '" data-f="code" value="' + HK.toCode(c.eg) + '" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="5文字コード（CP NP A FC AC）"><span class="ty" title="' + esc(HK.egoType(c.eg).label) + '">' + esc(HK.egoType(c.eg).label) + '</span>' + (HK.egoAttWord ? '<span class="egatt" title="態度（台詞の表の種類）。「設定」の「この住人の傾向」に説明があります">' + esc(HK.egoAttWord(c)) + '</span>' : '') + '</div></div>' +
+      '<div class="codeline"><input type="text" class="code" id="cd-' + c.id + '" data-f="code" value="' + HK.toCode(c.eg) + '" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="5文字コード（CP NP A FC AC）"><span class="ty" title="' + esc(HK.egoType(c.eg).label) + '">' + esc(HK.egoType(c.eg).label) + '</span>' + (HK.egoTypeName ? '<span class="egatt egname" title="エゴグラムから見た性格の型。「設定」の「この住人の傾向」に説明があります">' + esc(HK.egoTypeName(c)) + '</span>' : '') + (HK.egoToneWord ? '<span class="egatt egtone" title="この住人の口調（台詞の話し方）。おまかせだとエゴグラムから決まります">' + esc(HK.egoToneWord(c)) + '</span>' : '') + '</div></div>' +
       '<div class="ego">' + HK.FACTORS.map(function (k) {
         return '<label title="' + esc(HK.FACTOR_FULL[k]) + '">' + k + '<input type="number" id="eg-' + c.id + '-' + k + '" inputmode="decimal" min="0" max="20" step="1" data-f="eg" data-k="' + k + '" value="' + c.eg[k] + '"></label>';
       }).join('') + '</div>' +
@@ -1722,7 +1722,8 @@
     var i = S.chars.indexOf(c);
     row.querySelector('.gwrap').innerHTML = egoGraph(c.eg, i);
     var ty = row.querySelector('.ty'); ty.textContent = ty.title = HK.egoType(c.eg).label;
-    var ea = row.querySelector('.egatt'); if (ea && HK.egoAttWord) ea.textContent = HK.egoAttWord(c);
+    var ea = row.querySelector('.egname'); if (ea && HK.egoTypeName) ea.textContent = HK.egoTypeName(c);
+    var et = row.querySelector('.egtone'); if (et && HK.egoToneWord) et.textContent = HK.egoToneWord(c);
     var tn = row.querySelector('select[data-f="tone"] option[value=""]');
     if (tn) tn.textContent = '口調：おまかせ（' + autoTone(c) + '）';
     if (fromCode) {
@@ -1744,6 +1745,7 @@
     else if (f === 'tags' && c) { c.tags = t.value.trim().slice(0, 80); }
     else if (f === 'tone' && c) {
       c.tone = (HK.toneValid ? HK.toneValid(t.value) : HK.PERSONA[t.value]) ? t.value : '';
+      var etw = row.querySelector('.egtone'); if (etw && HK.egoToneWord) etw.textContent = HK.egoToneWord(c);
       /* 口調の書き下ろしのかたまりを裏で読んでおく（動かすときに待たないように。失敗は動かすときに知らせる） */
       if (HK.Load && HK.Load.ensureTones) HK.Load.ensureTones([c]).then(null, function () { /* 同上 */ });
     }

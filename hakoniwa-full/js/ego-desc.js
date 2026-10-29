@@ -55,6 +55,20 @@
   }
   /* 住人一覧に出す態度の一語 */
   HK.egoAttWord = function (c) { return D.ATT[attKey(c)].label; };
+  /* 住人一覧のエゴグラムの隣に出す性格の型の名前（2026-10-29 利用者の指示：態度の一語だとエゴグラムの型に見えるため）。
+     高い因子（14以上）が二つなら型の名前（PAIR）、一つならその因子の一語、どれも高くなければ「バランス型」 */
+  var ONE = { CP: '厳格な指導者', NP: '面倒見のいい世話役', A: '理性的な分析家', FC: '自由な感情家', AC: '協調的な気配り屋' };
+  HK.egoTypeName = function (c) {
+    var eg = egOf(c), by = HK.FACTORS.slice().sort(function (x, y) { return eg[y] - eg[x]; });
+    var hi = by.filter(function (k) { return eg[k] >= HI; });
+    if (hi.length >= 2) return D.PAIR[hi[0] + '+' + hi[1]] || D.PAIR[hi[1] + '+' + hi[0]] || ONE[hi[0]];
+    return hi.length ? ONE[hi[0]] : 'バランス型';
+  };
+  /* 住人一覧に出す口調の名前（設定した口調。おまかせなら、自動で決まる口調を添えて「口調：おまかせ（穏やか）」） */
+  HK.egoToneWord = function (c) {
+    var set = !!(c && HK.toneValid && HK.toneValid(c.tone)), lab = HK.toneLabel ? HK.toneLabel(c) : D.ATT[attKey(c)].label;
+    return set ? '口調：' + lab : '口調：おまかせ（' + lab + '）';
+  };
   /* 説明の行（文字列の配列。3〜5行） */
   HK.egoDesc = function (c) {
     var eg = egOf(c), tr = HK.traits(eg), out = [];
