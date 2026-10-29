@@ -16,11 +16,21 @@
   function dot(i) { return '<span class="dot" style="background:' + pc(i) + '"></span>'; }
   function av(res, i, size, extra) { var c = res.chars[i]; return c ? HK.Icons.html(c.name, i, size, extra) : ''; }
 
+  /* 出られない部屋の回数の表示（scenario-room.js の cntTag「（誰と誰のエッチ 10/100・まとめて5回）」、飲む・お題の「（媚薬 3/10本）」、三人の「（三人で：A×B 3/10・…）」）を、
+     太字・強調色・少し大きめで目立たせる（表示だけで記録は変えない。履歴・保存から開いた記録も同じ。「まだ数えない」などの注記は数字が無いので当たらない。HK.fmtLong が語と数字のあいだの空白を詰めることがあるので、空白は無くてもよい。2026-10-29 担当RD） */
+  var ROOMCNT_RE = /（[^（）<>]{1,40}? ?\d+\/\d+(?:[本杯錠回個つ人秒]|ml)?(?:・まとめて\d+[^（）<>・]{1,3})?(?:・[^（）<>]{1,30}? ?\d+\/\d+(?:[本杯錠回個つ人秒]|ml)?)*）/g;
+  function roomCnt(t, res) { return res && res.scenId === 'whiteroom' ? t.replace(ROOMCNT_RE, '<span class="roomcnt">$&</span>') : t; }
+  if (typeof document !== 'undefined' && document.head && !document.getElementById('hk-roomcnt')) {
+    var rcs = document.createElement('style'); rcs.id = 'hk-roomcnt';
+    rcs.textContent = '.roomcnt{font-weight:700;color:var(--accent);font-size:1.08em;background:var(--accent-soft);border-radius:4px;padding:0 .2em;margin:0 .1em}';
+    document.head.appendChild(rcs);
+  }
+
   /* 本文中のキャラ名に色をつける */
   function paint(text, res, seg) {
     /* 山場の長い描写は段落（改行）で区切ってある。長い文は段落と台詞で改行する（HK.fmtLong。記録の seg があれば台詞の塊を seg から取る） */
     var list = res.chars.map(function (c) { return { n: esc(c.name), i: c.i }; }).sort(function (a, b) { return b.n.length - a.n.length; });
-    var t = esc(HK.fmtLong ? HK.fmtLong(text, res.chars.map(function (c) { return c.name; }), seg) : text).replace(/\n/g, '<br>');
+    var t = roomCnt(esc(HK.fmtLong ? HK.fmtLong(text, res.chars.map(function (c) { return c.name; }), seg) : text).replace(/\n/g, '<br>'), res);
     if (!list.length) return t;
     var re = new RegExp(list.map(function (x) { return x.n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
     return t.replace(re, function (m) {

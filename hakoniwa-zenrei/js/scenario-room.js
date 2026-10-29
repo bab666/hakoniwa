@@ -1,4 +1,5 @@
 /* 箱庭診断: 〇〇しないと出られない部屋（ルールを組み立てられる密室） */
+/* @event-ok まとめて進んだ回のダイジェストの段（既にある出来事に足すだけ。2026-10-29 担当RD） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -875,6 +876,7 @@
       var inc = r.n > 3 ? Math.max(1, Math.round(r.n / span * (wl ? 1.3 : 0.8) * (0.6 + ctx.rng() * 0.8) * (6 - T.lvl) / 3)) : 1 + (wl && r.n > 1 && ctx.rng() < 0.5 ? 1 : 0);
       /* 残りの数と残りの時間から、時間内に満たせるペースに（文は一回ぶん、数は「まとめて n 回」） */
       if (!wait) inc = paceInc(ctx, (p.tk = p.tk || {})[r.k] = p.tk[r.k] || {}, r.n - ((effOf(ctx, r, a, b) || [0])[0] || 0), inc, 0.4, r.n);
+      var before = p.act[r.k] || 0;
       bumpAct(ctx, r, a, b, inc);
       var g = T.lvl * 2.5;
       ctx.mod2(a, b, { att: wl ? g + 2 : g / 2, aff: wl ? g / 2 : 0, trust: 2 }, { att: wl ? g + 2 : g / 2, aff: wl ? g / 2 : 0, trust: 2 });
@@ -911,7 +913,10 @@
       /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：はじめてのエッチに「恋ではない」一文。体だけの関係の印（恋人にはしない） */
       var fsx = r.k === 'h' && HK.State.freeSex && HK.State.freeSex(ctx, a, b);
       if (fsx) { if (first) text = HK.FreeSex.lead(ctx, a, b) + text; HK.FreeSex.mark(ctx, a, b); if (first) HK.FreeSex.jealous(ctx, a, b); }
-      text += cntTag(ctx, r, a, b, p.act[r.k], inc);
+      /* まとめて進んだ回（一回の場面で数が二つ以上進んだ）：場面のあと、回数の表示の前に、まとめた分のダイジェストの段を挟む（room-lewd.js の LW.digest。2026-10-29 担当RD） */
+      var got = wait ? 0 : (p.act[r.k] || 0) - before;
+      if (got > 1 && LW && LW.digest) text += '\n\n' + LW.digest(ctx, a, b, r.k, got, { will: wl, rough: rough });
+      text += cntTag(ctx, r, a, b, p.act[r.k], wait ? inc : got);   /* 「まとめて n 回」は実際に進んだ数（上限で止まった分・道具で足した一回も合わせる） */
       var whyT = (wait ? '条件の順番：条件1のあとから数える（今のは数えない）／' : '') + (cl ? cl.why + '／' : '') + (rough ? rough.name + 'は' + (rough === a ? b : a).name + 'を敵視している（嫌悪 ' + Math.round(HKr.level(ctx, rough, rough === a ? b : a)) + '）・強引な性格。条件のために、乱暴に' : wl ? '互いの惹かれ（' + Math.round(R(ctx, a, b).att) + '／' + Math.round(R(ctx, b, a).att) + '）と信頼' : '焦りと諦め（' + Math.round(a.stress) + '／' + Math.round(b.stress) + '）。気持ちより状況が先だった');
       if (checkExit(ctx, a, b)) return exitPair(ctx, a, b, text, whyT, r.k === 'h');
       if (!wait && p.act[r.k] >= r.n) text += '扉はまだ開かない。' + a.name + 'と' + b.name + 'に残っているのは、' + leftText(ctx, a, b) + '。';
@@ -1006,6 +1011,8 @@
       }
       if (text.indexOf('{b}') < 0) text = '（' + b.name + 'に）' + text;
       text = ctx.t(text, a, b);
+      /* まとめて言った回：まとめた分の一文（いいところは、挙げた数より多く進んだときだけ） */
+      if (!wait && inc > 1 && HK.RoomLewd && HK.RoomLewd.digest && (r.k !== 'praise' || inc > 3)) text += HK.RoomLewd.digest(ctx, a, b, r.k, inc, {});
       var T = K[r.k];
       if (T.mode === 'both' && a.flags.partner == null) { a.flags.partner = b.i; if (b.flags.partner == null) b.flags.partner = a.i; }
       var cnt = T.mode === 'sum' ? (p.said[r.k + a.i] || 0) + (p.said[r.k + b.i] || 0) : p.said[r.k + a.i];
@@ -1239,6 +1246,7 @@
       pf.forced = a.i;
       var p = prog(ctx, a, b);
       var waited = [];
+      var rh0 = ctx.rules.filter(function (r) { return r.k === 'h'; })[0], h0 = rh0 ? p.act.h || 0 : 0;
       ctx.rules.forEach(function (r) { if (K[r.k].type === 'act' && !bumpAct(ctx, r, a, b, 0, r.n)) waited.push(r); });
       var liked = R(ctx, b, a).att > 35;
       ctx.mod2(a, b, { att: 4, trust: -4 }, liked ? { att: 6, ten: 10, trust: -6 } : { ten: 35, trust: -35, aff: -20 });
@@ -1248,6 +1256,8 @@
         var SPD = { kiss: ['{a}は縛った{b}の顎を持ち上げ、条件の数だけ、手早く唇を重ねた。', '{a}は身動きの取れない{b}に、息つく暇もなくキスを繰り返した。'], hug: ['{a}は縛った{b}を正面から抱きすくめ、条件の回数だけ腕に力を込めた。', '{a}は{b}を後ろから抱え込み、「はい、一回、二回」と数えながら締めつけた。'], hand: ['{a}は縛られた{b}の指に、自分の指を無理やり絡めた。'], lap: ['{a}は{b}の頭を自分の膝に押しつけて、条件の時間が過ぎるまで離さなかった。'] };
         ctx.rules.forEach(function (r) { if (SPD[r.k]) text += ctx.t(ctx.pick(SPD[r.k]), a, b); });
       }
+      /* エッチの条件が一度に満ちた回：まとめた分のダイジェストの段（room-lewd.js の LW.digest。仕方なくの書き方）と回数の表示 */
+      if (rh0 && HK.RoomLewd && HK.RoomLewd.digest && (p.act.h || 0) - h0 > 1) text = text.replace(/――$/, '') + '\n\n' + HK.RoomLewd.digest(ctx, a, b, 'h', (p.act.h || 0) - h0, { will: false }) + cntTag(ctx, rh0, a, b, p.act.h, (p.act.h || 0) - h0);
       text += liked ? ctx.t('{b}は解かれた手首をさすりながら「…強引すぎ｜…強引すぎる｜…強引すぎます」とだけ言った。耳が赤かった。', a, b) : ctx.t('{b}は解かれた手首をさすったまま、{a}と一度も目を合わせなかった。', a, b);
       if (waited.length) text += waitNote(ctx, waited[0], a, b);
       var whyT = a.name + 'のスピード型（ドライさ ' + Math.round(a.tr.cold * 100) + '・攻撃性 ' + Math.round(a.tr.aggr * 100) + '・NP低）';
