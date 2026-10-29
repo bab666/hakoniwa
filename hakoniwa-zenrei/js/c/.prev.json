@@ -1,8 +1,8 @@
 {
  "cur": {
-  "core": "core.3dfe1db58a.js",
+  "core": "core.4b202b8daf.js",
   "late": "late.7f9090b6fa.js",
-  "pack-rel": "pack-rel.bcbee694de.js",
+  "pack-rel": "pack-rel.91d8316de5.js",
   "scen-goukon": "scen-goukon.450319c9cd.js",
   "scen-classroom": "scen-classroom.48c560a0aa.js",
   "scen-island": "scen-island.f17291d03f.js",
@@ -21,7 +21,7 @@
   "scen-ship": "scen-ship.d63b7754b7.js",
   "scen-jinro": "scen-jinro.f62b0e1787.js",
   "pack-story": "pack-story.b8442f1623.js",
-  "pack-catalog": "pack-catalog.a5ceaa633f.js",
+  "pack-catalog": "pack-catalog.e4e60de6fe.js",
   "tone-base": "tone-base.d7efffbfbc.js",
   "tone-ane": "tone-ane.279a4b533e.js",
   "tone-boku-n": "tone-boku-n.91cbdf5c4b.js",
@@ -60,7 +60,7 @@
   "tone-yankee": "tone-yankee.9e3ac96a43.js"
  },
  "prev": {
-  "core": "core.f0159e6c46.js",
+  "core": "core.3dfe1db58a.js",
   "late": "late.7f9090b6fa.js",
   "pack-rel": "pack-rel.bcbee694de.js",
   "scen-goukon": "scen-goukon.450319c9cd.js",

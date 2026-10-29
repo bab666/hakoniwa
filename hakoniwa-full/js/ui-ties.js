@@ -1,5 +1,5 @@
 /* 箱庭シミュレーター: 住人タブ「住人どうしの既存の関係」の表と一括設定（2026-10-28）
-   ・関係1本を、列のそろった1行に描く（左の人｜関係｜右の人｜気持ち・様子｜過去｜出来事｜削除）。広い画面は1行、中くらいは2段、スマホ幅は縦に積む。
+   ・関係1本を、列のそろった1行に描く（左の人｜関係｜右の人｜気持ち・様子｜過去（左の人から・右の人から）｜出来事｜削除）。広い画面は1行、中くらいは2段、スマホ幅は縦に積む。
      関係の説明は行の下に薄い字で1行（押すと全文。title にも全文）
    ・二人の住人のグループ（c.group）で見出しを付けてまとめる：同じグループ→そのグループ、違うグループ→「○○ と ××」、どちらもなし→「グループなし」。
      見出しは件数つきの折りたたみ（details）。折りたたみは表示用の保存 hakoniwa:tiefold（全年齢版は hakoniwa-z:tiefold）に覚える。グループが一つも無いときは見出しを出さない
@@ -19,22 +19,22 @@
   (function () {
     if (typeof document === 'undefined' || !document.head) return;
     var css =
-      /* 関係の行：スマホ幅（〜599px）は「左の人 右の人 削除」「関係」「気持ち・様子」「過去 出来事」「説明」の順に積む */
+      /* 関係の行：スマホ幅（〜599px）は「左の人 右の人 削除」「関係」「気持ち・様子」「過去（二人それぞれから）」「出来事」「説明」の順に積む */
       '.tiebox .ties{display:block}' +
-      '.tiebox .tierow,.tiebox .tiehead{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;grid-template-areas:"a b d" "t t t" "x x x" "p e e" "h h h";gap:4px 6px;align-items:center;min-width:0}' +
+      '.tiebox .tierow,.tiebox .tiehead{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;grid-template-areas:"a b d" "t t t" "x x x" "p p p" "e e e" "h h h";gap:4px 6px;align-items:center;min-width:0}' +
       '.tiebox .tierow{padding:7px 0;border-bottom:1px solid var(--line);content-visibility:auto;contain-intrinsic-size:auto 120px}' +
       '.tiebox .tierow:last-child{border-bottom:0}' +
       '.tiebox .tc{min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center}' +
       '.tiebox .tc select{flex:1 1 7em;min-width:0;width:100%;max-width:100%}.tiebox .tcx select{flex-basis:9em}.tiebox .tc .cpfind{flex:1 1 100%;width:auto}' +
       '.tiebox .tca{grid-area:a}.tiebox .tct{grid-area:t}.tiebox .tcb{grid-area:b}.tiebox .tcx{grid-area:x}.tiebox .tcp{grid-area:p}.tiebox .tce{grid-area:e}.tiebox .tcd{grid-area:d;justify-content:flex-end}' +
-      '.tiebox .tcx:empty{display:none}' +
+      '.tiebox .tcx:empty{display:none}.tiebox .tcp select{flex-basis:100%}' +
       '.tiebox .tiehint{grid-area:h;display:block;min-width:0;font-size:11.5px;line-height:1.5;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}' +
       '.tiebox .tiehint.open{white-space:normal;overflow:visible;cursor:default}.tiebox .tiehint:empty{display:none}' +
       '.tiebox .tiehead{display:none;font-size:11.5px;color:var(--muted);padding:0 0 4px;border-bottom:1px solid var(--line2)}' +
       /* 中くらい（600px〜）：「左の人 関係 右の人 削除」「気持ち・様子 過去 出来事」の2段（列は縦にそろう） */
       '@media (min-width:600px){.tiebox .tierow,.tiebox .tiehead{grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) minmax(0,1fr) auto;grid-template-areas:"a t b d" "x p e ." "h h h h"}.tiebox .tierow{contain-intrinsic-size:auto 96px}}' +
       /* 広い画面（1000px〜）：1行（見出しの行も出す） */
-      '@media (min-width:1000px){.tiebox .tierow,.tiebox .tiehead{grid-template-columns:minmax(5.5em,1fr) minmax(9em,1.8fr) minmax(5.5em,1fr) minmax(0,1.6fr) minmax(0,1.3fr) minmax(9.5em,1fr) auto;grid-template-areas:"a t b x p e d" "h h h h h h h"}' +
+      '@media (min-width:1000px){.tiebox .tierow,.tiebox .tiehead{grid-template-columns:minmax(5.5em,1fr) minmax(9em,1.5fr) minmax(5.5em,1fr) minmax(0,1.3fr) minmax(0,2.3fr) minmax(9.5em,1fr) auto;grid-template-areas:"a t b x p e d" "h h h h h h h"}' +
       '.tiebox .tiehead{display:grid}.tiebox .tierow{contain-intrinsic-size:auto 64px}}' +
       '.tiebox .tiehead span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
       /* グループの見出し */
@@ -116,8 +116,8 @@
        過去・出来事はどの関係にもある欄なので、それぞれの列にそろえて置く */
     (HK.tieExtra ? HK.tieExtra(t.type) : []).filter(function (x) { return !x.hide; }).forEach(function (x) {
       var who = x.who ? by[x.who === 'a' ? t.a : t.b] : null, v = t[x.f] || (t.type === 'fiance' ? 'eager' : '');
-      var h = '<select id="tx' + x.f + '-' + k + '" data-f="tie" data-k="' + k + '" data-p="' + x.f + '" aria-label="' + esc(who ? who.name + 'の気持ち' : x.aria) + '">' + x.order.map(function (id) { return '<option value="' + id + '"' + (v === id ? ' selected' : '') + '>' + esc((who ? who.name + 'の気持ち：' : '') + (HK.tieExtraLabel ? HK.tieExtraLabel(x, id, na, nb) : x.map[id].label)) + '</option>'; }).join('') + '</select>';
-      if (x.f === 'past') past = h; else if (x.f === 'noev') ev = h; else xs += h;
+      var h = '<select id="tx' + x.f + '-' + k + '" data-f="tie" data-k="' + k + '" data-p="' + x.f + '" aria-label="' + esc(who ? who.name + 'の気持ち' : x.from ? ((x.from === 'a' ? na : nb) || x.aria.slice(0, 3)) + 'から見た過去' : x.aria) + '">' + x.order.map(function (id) { return '<option value="' + id + '"' + (v === id ? ' selected' : '') + '>' + esc((who ? who.name + 'の気持ち：' : '') + (HK.tieExtraLabel ? HK.tieExtraLabel(x, id, na, nb) : x.map[id].label)) + '</option>'; }).join('') + '</select>';
+      if (x.from) past += h; else if (x.f === 'noev') ev = h; else xs += h;
     });
     var hint = sibText(t, by) + (D.dir ? esc(D.roleA) + 'は左、' + esc(D.roleB) + 'は右。' : '') + esc(D.effect || '') + (loveNote(t) ? '。' + esc(loveNote(t)) : '') + (t.type === 'crush' && t.cold === 'other' ? '。想われる側に恋人や片想いなどの関係を別に登録すると、その人が「好きな人」として扱われる' : '');
     return '<div class="tierow" data-k="' + k + '">' +

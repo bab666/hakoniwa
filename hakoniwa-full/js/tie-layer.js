@@ -3,7 +3,8 @@
      恋人の日常（daily-kit.js の部品）にも、重い・軽いの分岐を足す（関係 wtHeavy／wtLight）
    ・家族の仲（親子・擬似親子・きょうだい・兄弟（庇護）・義理のきょうだい・親族・恩人の欄 kg）：不仲＝口論・無視・和解／良好＝気安く助け合う
    ・元恋人の気持ち（元恋人の欄 feel・feelB）：気まずい／ふっきれている／未練（未練は恋愛対象が合う向きだけ）
-   ・二人の過去（どの関係にも付く欄 past）：導入の一文（箱庭の始め）と、回想の出来事、関係の出来事の台詞への差し込み（一組につき箱庭1回で3回まで）
+   ・二人の過去（どの関係にも付く欄 past＝一人目から・pastB＝二人目から）：導入の一文（箱庭の始め。両方向を一つの段に）と、回想の出来事、関係の出来事の台詞への差し込み
+     （一組につき箱庭1回で、両方向あわせて3回まで。回想は回数の少ない向きから。同じ文は二度言わない）
    ・関係ごとの出来事のオフ（どの関係にも付く欄 noev）：関係の出来事（id が HK.TIE_EV_RE に合う場面）の起こる条件を調べるあいだ、
      「出来事：起こさない」の関係を見えないことにする（ties.js の HK.Ties.all が ctx._evq を見る）。関係の色（初期値・倍率・恋人の扱い）は残る
    恋愛の分岐は HK.canLove を両方向・HK.ngPair・家族（恋愛なし）を通した組だけ。死んだ人・その場にいない人・監禁中の人は出さない（HK.State.here）。
@@ -59,8 +60,8 @@
     return r;
   };
 
-  /* ======================= 二人の過去（past） =======================
-     {a}＝一人目（t.a。初恋をした側・助けられた側・ひどいことをした側）、{b}＝二人目。first は恋愛対象が合わない向きなら「憧れ」の文にする */
+  /* ======================= 二人の過去（past・pastB） =======================
+     {a}＝その過去を持つ側（past は t.a、pastB は t.b。初恋をした側・助けられた側・ひどいことをした側）、{b}＝相手。first は恋愛対象が合わない向きなら「憧れ」の文にする */
   var PAST = {
     friend: {
       intro: L('{a}と{b}は、昔はいつも一緒にいた。いつから距離ができたのか、二人ともはっきりとは覚えていなかった。|{a}と{b}は、昔はよく笑い合う仲だった。今の二人がどう見えるにせよ、あのころのことは二人とも忘れていなかった。'),
@@ -89,77 +90,91 @@
     }
   };
   TL.PAST = PAST;
-  function pastTie(ctx, a, b) { var l = HK.Ties.all(ctx, a, b); for (var i = 0; i < l.length; i++) if (l[i].past && HK.TIE_PAST[l[i].past]) return l[i]; return null; }
-  function pastN(ctx, t) { var m = ctx._pastC || (ctx._pastC = {}); return m[keyOf(ctx.chars[t.a], ctx.chars[t.b])] || 0; }
-  function pastAt(ctx, t) { var m = ctx._pastC || (ctx._pastC = {}); return m['@' + keyOf(ctx.chars[t.a], ctx.chars[t.b])]; }
-  function pastBump(ctx, t) { var m = ctx._pastC || (ctx._pastC = {}), k = keyOf(ctx.chars[t.a], ctx.chars[t.b]); m[k] = (m[k] || 0) + 1; m['@' + k] = ctx.stepIndex == null ? -1 : ctx.stepIndex; }
+  /* 一組の過去の向き（v：a＝見る人・b＝相手・k＝札・d＝向きの印）。同じ二人のどの関係の past（一人目から）・pastB（二人目から）も集める。
+     向きの無い札（sym）は一度だけ、同じ向き・同じ札も一度だけ */
+  function pastViews(l) {
+    var v = [], seen = {};
+    var put = function (x, y, k) { var P = HK.TIE_PAST[k], key = P && P.sym ? k : x + '>' + y + ':' + k; if (!k || !P || seen[key]) return; seen[key] = 1; v.push({ a: x, b: y, k: k, d: x < y ? 'f' : 'r' }); };
+    (l || []).forEach(function (t) { put(t.a, t.b, t.past); put(t.b, t.a, t.pastB); });
+    return v;
+  }
+  function pastTie(ctx, a, b) { return pastViews(HK.Ties.all(ctx, a, b)); }
+  function pcnt(ctx) { return ctx._pastC || (ctx._pastC = {}); }
+  function pastN(ctx, v) { return pcnt(ctx)[keyOf(ctx.chars[v.a], ctx.chars[v.b])] || 0; }
+  function pastAt(ctx, v) { return pcnt(ctx)['@' + keyOf(ctx.chars[v.a], ctx.chars[v.b])]; }
+  function pastBump(ctx, v, touch) { var m = pcnt(ctx), k = keyOf(ctx.chars[v.a], ctx.chars[v.b]); m[k] = (m[k] || 0) + 1; m['@' + k] = ctx.stepIndex == null ? -1 : ctx.stepIndex; if (touch) m[v.d + k] = (m[v.d + k] || 0) + 1; }
+  /* 回想に使う向き：回想の回数が少ない向き。同じ回数の向きが二つ以上なら、区切りの番号で順に選ぶ（乱数は使わない。向きが一つなら今までと同じ） */
+  function pastPick(ctx, vs) {
+    var m = pcnt(ctx), k = vs.length && keyOf(ctx.chars[vs[0].a], ctx.chars[vs[0].b]), n = function (v) { return m[v.d + k] || 0; };
+    var lo = Math.min.apply(null, vs.map(n)), c = vs.filter(function (v) { return n(v) === lo; });
+    return c[(ctx.stepIndex > 0 ? ctx.stepIndex : 0) % c.length];
+  }
   var PAST_MAX = 3;
-  /* 過去の札の文（kind：intro／touch）。{a}＝t.a 側、{b}＝t.b 側で埋める */
-  function pastText(ctx, t, kind) {
-    var A = ctx.chars[t.a], B = ctx.chars[t.b], k = t.past;
+  /* 過去の札の文（kind：intro／touch）。{a}＝見る人、{b}＝相手で埋める。同じ二人に一度出した文は二度言わない（残りが無ければ空） */
+  function pastText(ctx, v, kind) {
+    var A = ctx.chars[v.a], B = ctx.chars[v.b], k = v.k;
     if (k === 'first' && !HK.canLove(A, B)) k = 'adore';
     var o = PAST[k];
     if (!o) return '';
     var l = o[kind];
     if (k === 'hurt' && kind === 'touch' && ctx.R(B, A).aff > 20 && ctx.R(B, A).ten < 35) l = o.forgive;
-    return fill(pk(ctx, l), A, B);
+    var said = pcnt(ctx)['#' + keyOf(A, B)] || (pcnt(ctx)['#' + keyOf(A, B)] = {}), tx = fill(pk(ctx, l), A, B);
+    if (said[tx]) { var rest = l.filter(function (x) { return !said[fill(x, A, B)]; }); tx = rest.length ? fill(pk(ctx, rest), A, B) : ''; }
+    if (tx) said[tx] = 1;
+    return tx;
   }
-  function pastWhy(ctx, t) {
-    var A = ctx.chars[t.a], B = ctx.chars[t.b], x = { names: true, map: HK.TIE_PAST };
-    var s = t.past === 'first' && !HK.canLove(A, B) ? '昔の憧れ' : HK.tieExtraShort(x, t.past, A.name, B.name);
-    return A.name + 'と' + B.name + 'の過去：' + s;
+  function pastWhy(ctx, vs) {
+    var A = ctx.chars[vs[0].a], B = ctx.chars[vs[0].b], x = { names: true, map: HK.TIE_PAST };
+    return A.name + 'と' + B.name + 'の過去：' + vs.map(function (v) { var P = ctx.chars[v.a], Q = ctx.chars[v.b]; return v.k === 'first' && !HK.canLove(P, Q) ? P.name + 'の昔の憧れ' : HK.tieExtraShort(x, v.k, P.name, Q.name); }).join('・');
   }
-  /* 導入の一文（箱庭の始め。一組に一度） */
+  /* 導入の一文（箱庭の始め。一組に一度。両方向の過去があれば、それぞれの一文を一つの段に） */
   function intro(ctx) {
-    var seen = {};
     Object.keys(ctx.tiesAll || {}).forEach(function (k) {
-      (ctx.tiesAll[k] || []).forEach(function (t) {
-        if (!t.past || seen[k] || !HK.TIE_PAST[t.past]) return;
-        var A = ctx.chars[t.a], B = ctx.chars[t.b];
-        if (!A || !B || !here(A) || !here(B)) return;
-        seen[k] = 1;
-        var tx = pastText(ctx, t, 'intro');
-        if (!tx) return;
-        pastBump(ctx, t);
-        (ctx.pending = ctx.pending || []).push({ kind: 'event', cat: 'bond', actors: [A, B], mag: 4, text: tx, why: pastWhy(ctx, t) + '（導入）' });
-      });
+      var vs = pastViews(ctx.tiesAll[k]);
+      if (!vs.length) return;
+      var A = ctx.chars[vs[0].a], B = ctx.chars[vs[0].b];
+      if (!A || !B || !here(A) || !here(B)) return;
+      var tx = vs.map(function (v) { return pastText(ctx, v, 'intro'); }).join('');
+      if (!tx) return;
+      pastBump(ctx, vs[0]);
+      (ctx.pending = ctx.pending || []).push({ kind: 'event', cat: 'bond', actors: [A, B], mag: 4, text: tx, why: pastWhy(ctx, vs) + '（導入）' });
     });
   }
   /* 関係の出来事の台詞のあとに、回想の一言を差し込む（3割。同じ区切りに二度は入れない） */
   function pastTouch(ctx, a, b, r) {
-    var t = pastTie(ctx, a, b);
-    if (!t || pastN(ctx, t) >= PAST_MAX || pastAt(ctx, t) === ctx.stepIndex) return r;
-    var A = ctx.chars[t.a], B = ctx.chars[t.b];
+    var vs = pastTie(ctx, a, b);
+    if (!vs.length || pastN(ctx, vs[0]) >= PAST_MAX || pastAt(ctx, vs[0]) === ctx.stepIndex) return r;
+    var v = pastPick(ctx, vs), A = ctx.chars[v.a], B = ctx.chars[v.b];
     if (!here(A) || !here(B) || ctx.rng() > 0.3) return r;
-    var tx = pastText(ctx, t, 'touch');
+    var tx = pastText(ctx, v, 'touch');
     if (!tx) return r;
-    pastBump(ctx, t);
+    pastBump(ctx, v, 1);
     r.text += tx;
-    if (typeof r.why === 'string') r.why += '／' + pastWhy(ctx, t);
+    if (typeof r.why === 'string') r.why += '／' + pastWhy(ctx, [v]);
     return r;
   }
   TL.pastTouch = pastTouch;
   /* 回想の出来事（関係の出来事の少ない組でも、過去が顔を出すように） */
   push({
-    id: 'tie_ly_past', label: '二人の過去がふと顔を出す', cat: 'bond',
+    id: 'tie_ly_past', label: '二人の過去がふと顔を出す', cat: 'bond', tie: '-',
     when: function (ctx, a, b) {
       if (!ctx._past || !b || !here(a) || !here(b)) return false;
-      var t = pastTie(ctx, a, b);
-      return !!t && pastN(ctx, t) < PAST_MAX && pastAt(ctx, t) !== ctx.stepIndex;
+      var vs = pastTie(ctx, a, b);
+      return !!vs.length && pastN(ctx, vs[0]) < PAST_MAX && pastAt(ctx, vs[0]) !== ctx.stepIndex;
     },
     w: function () { return 0.3; },
     run: function (ctx, a, b) {
-      var t = pastTie(ctx, a, b);
-      if (!t) return null;
-      var A = ctx.chars[t.a], B = ctx.chars[t.b], tx = pastText(ctx, t, 'touch');
+      var vs = pastTie(ctx, a, b);
+      if (!vs.length) return null;
+      var v = pastPick(ctx, vs), A = ctx.chars[v.a], B = ctx.chars[v.b], tx = pastText(ctx, v, 'touch');
       if (!tx) return null;
-      pastBump(ctx, t);
-      if (t.past === 'friend') ctx.mod2(A, B, { aff: 3, trust: 2 }, { aff: 3, trust: 2 });
-      else if (t.past === 'foe') ctx.mod2(A, B, { ten: -2, aff: 2 }, { ten: -2, aff: 2 });
-      else if (t.past === 'first') ctx.mod(A, B, HK.canLove(A, B) && !(HK.ngPair && HK.ngPair(A, B)) ? { att: 2, aff: 2 } : { aff: 2 });
-      else if (t.past === 'saved') ctx.mod2(A, B, { trust: 3, aff: 2 }, { aff: 1 });
-      else if (t.past === 'hurt') { if (ctx.R(B, A).aff > 20 && ctx.R(B, A).ten < 35) ctx.mod2(A, B, { ten: -3 }, { ten: -6, aff: 4 }); else ctx.mod2(A, B, { ten: 2 }, { ten: 3 }); }
-      return { text: tx, why: pastWhy(ctx, t) + '（回想）', mag: 6 };
+      pastBump(ctx, v, 1);
+      if (v.k === 'friend') ctx.mod2(A, B, { aff: 3, trust: 2 }, { aff: 3, trust: 2 });
+      else if (v.k === 'foe') ctx.mod2(A, B, { ten: -2, aff: 2 }, { ten: -2, aff: 2 });
+      else if (v.k === 'first') ctx.mod(A, B, HK.canLove(A, B) && !(HK.ngPair && HK.ngPair(A, B)) ? { att: 2, aff: 2 } : { aff: 2 });
+      else if (v.k === 'saved') ctx.mod2(A, B, { trust: 3, aff: 2 }, { aff: 1 });
+      else if (v.k === 'hurt') { if (ctx.R(B, A).aff > 20 && ctx.R(B, A).ten < 35) ctx.mod2(A, B, { ten: -3 }, { ten: -6, aff: 4 }); else ctx.mod2(A, B, { ten: 2 }, { ten: 3 }); }
+      return { text: tx, why: pastWhy(ctx, [v]) + '（回想）', mag: 6 };
     }
   });
 

@@ -169,12 +169,13 @@
     linger: { label: '未練がある', short: '未練', ab: { att: 12, aff: 6 }, att: 1.3, rom: 1.4 }
   };
   HK.EX_FEEL_ORDER = ['', 'over', 'linger'];
-  /* 二人の過去の札（どの関係にも付けられる欄 past）。向きのある札（初恋・助けられた・ひどいことをした）は一人目（{a}）から見た過去。
-     導入の一文と、関係の出来事の台詞に回想を差し込む（一組につき箱庭1回で3回まで）。nl・ns の %a・%b は二人の名前 */
+  /* 二人の過去の札（どの関係にも付けられる欄 past・pastB）。past＝一人目（{a}）から見た過去、pastB＝二人目（{b}）から見た過去（2026-10-29。双方向に設定できる）。
+     向きのある札（初恋・助けられた・ひどいことをした）は、その欄の人から見た過去。向きの無い札（sym：昔は仲が良かった・昔は敵だった）は片方に入れれば二人ともに効く
+     （両方に同じ札を入れても二重には効かない）。導入の一文と、関係の出来事の台詞に回想を差し込む（一組につき箱庭1回で、両方向あわせて3回まで）。nl・ns の %a・%b は二人の名前（pastB は入れ替えて読む） */
   HK.TIE_PAST = {
     '': { label: '過去：なし', short: '' },
-    friend: { label: '過去：昔は仲が良かった', short: '昔は仲が良かった', ab: { trust: 6 }, ba: { trust: 6 } },
-    foe: { label: '過去：昔は敵だった', short: '昔は敵どうし', ab: { ten: 8 }, ba: { ten: 8 } },
+    friend: { label: '過去：昔は仲が良かった', short: '昔は仲が良かった', sym: true, ab: { trust: 6 }, ba: { trust: 6 } },
+    foe: { label: '過去：昔は敵だった', short: '昔は敵どうし', sym: true, ab: { ten: 8 }, ba: { ten: 8 } },
     first: { label: '過去：一人目の初恋の相手が二人目', short: '初恋の相手', nl: '過去：%aの初恋の相手が%b', ns: '%aの初恋の相手', ab: { aff: 6, att: 6 } },
     saved: { label: '過去：一人目は昔、二人目に助けられた', short: '昔助けられた', nl: '過去：%aは昔、%bに助けられた', ns: '%aは昔%bに助けられた', ab: { aff: 8, trust: 10 }, ba: { aff: 3 } },
     hurt: { label: '過去：一人目は昔、二人目にひどいことをした', short: '昔ひどいことをした', nl: '過去：%aは昔、%bにひどいことをした', ns: '%aは昔%bにひどいことをした', ab: { ten: 6 }, ba: { aff: -8, trust: -10, ten: 10 } }
@@ -188,7 +189,7 @@
   };
   HK.TIE_NOEV_ORDER = ['', 'off'];
   /* 追加の欄の名前の一覧（保存・書き出し・読み込み・まとめて読み込むで通す。ui.js も使う） */
-  HK.TIE_XF = ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh', 'elder', 'heavy', 'kg', 'past', 'noev'];
+  HK.TIE_XF = ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh', 'elder', 'heavy', 'kg', 'past', 'pastB', 'noev'];
   /* 関係ごとの追加の選択肢（「相手の気持ち」cold とは別の欄）。f＝関係の欄の名前、who＝その欄がどちらの側の気持ちか（表示用） */
   HK.tieExtra = function (type) {
     var X = {
@@ -209,13 +210,21 @@
     if (type === 'honmei') X[type] = [{ f: 'heavy', map: HK.LOVE_WEIGHT, order: HK.LOVE_WEIGHT_ORDER, aria: '想う人の気持ちの重さ' }];
     if (type === 'ex') X[type] = [{ f: 'feel', who: 'a', map: HK.EX_FEEL, order: HK.EX_FEEL_ORDER, aria: '一人目の気持ち' }, { f: 'feelB', who: 'b', map: HK.EX_FEEL, order: HK.EX_FEEL_ORDER, aria: '二人目の気持ち' }];
     if (HK.KIN_GRADE_RE.test(type)) X[type] = (X[type] || []).concat([{ f: 'kg', map: HK.KIN_GRADE, order: HK.KIN_GRADE_ORDER, aria: '二人の仲' }]);
-    if (T[type] && !T[type].hidden && type !== 'noobs') X[type] = (X[type] || []).concat([{ f: 'past', map: HK.TIE_PAST, order: HK.TIE_PAST_ORDER, aria: '二人の過去', names: true }, { f: 'noev', map: HK.TIE_NOEV, order: HK.TIE_NOEV_ORDER, aria: 'この関係の出来事' }]);
+    if (T[type] && !T[type].hidden && type !== 'noobs') X[type] = (X[type] || []).concat([{ f: 'past', from: 'a', map: HK.TIE_PAST, order: HK.TIE_PAST_ORDER, aria: '一人目から見た過去', names: true }, { f: 'pastB', from: 'b', map: HK.TIE_PAST, order: HK.TIE_PAST_ORDER, aria: '二人目から見た過去', names: true }, { f: 'noev', map: HK.TIE_NOEV, order: HK.TIE_NOEV_ORDER, aria: 'この関係の出来事' }]);
     return X[type] || [];
   };
   /* 追加の欄の選択肢の文字（names の欄は、一人目・二人目を名前に置き換える（選択肢の nl・ns の % に名前）。na・nb＝名前。なければ元の文字） */
+  /* 過去の欄（from：'a'＝一人目から・'b'＝二人目から）は「過去（名前から）：初恋の相手が△△」（見る人の名前は欄の名前に出すので、文からは外す）。
+     二人目からの欄は一人目・二人目を入れ替えて読む */
+  function pastLabel(x, m, na, nb) {
+    var sw = x.from === 'b', p = sw ? nb : na, q = sw ? na : nb;
+    if (p && q) return (m.nl ? m.nl.replace(/^過去：%a[のは]/, '過去：').replace(/%b/g, q) : m.label).replace(/^過去：/, '過去（' + p + 'から）：');
+    return (sw ? m.label.replace(/[一二]人目/g, function (w) { return w === '一人目' ? '二人目' : '一人目'; }) : m.label).replace(/^過去：[一二]人目[のは]/, '過去：').replace(/^過去：/, '過去（' + (sw ? '二人目' : '一人目') + 'から）：');
+  }
   HK.tieExtraLabel = function (x, id, na, nb) {
     var m = x && x.map && x.map[id];
     if (!m) return '';
+    if (x.from) return pastLabel(x, m, na, nb);
     if (!x.names || !m.nl) return m.label;
     /* 二人の名前を両方使う選択肢（過去の札：%a・%b） */
     if (/%[ab]/.test(m.nl)) return na && nb ? m.nl.replace(/%a/g, na).replace(/%b/g, nb) : m.label;
@@ -225,6 +234,7 @@
   HK.tieExtraShort = function (x, id, na, nb) {
     var m = x && x.map && x.map[id];
     if (!m || !m.short) return '';
+    if (x.from === 'b') { var sw = na; na = nb; nb = sw; }
     if (!x.names || !m.ns) return m.short;
     if (/%[ab]/.test(m.ns)) return na && nb ? m.ns.replace(/%a/g, na).replace(/%b/g, nb) : m.short;
     var n = id === 'a' ? na : id === 'b' ? nb : '';
@@ -393,9 +403,22 @@
     ['憎悪', 'enemy', { grade: 'hate' }], ['負い目', 'benefactor', { feel: 'guilt' }], ['推し', 'fond', { mode: 'oshi' }], ['愛人', 'fwb', { mode: 'mistress' }]
   ];
 
+  /* 過去の札の言葉（まとめて読み込む） */
+  var PAST_W = [[/過去\s*[:：]?\s*(?:昔は)?仲が良かった|昔は仲が良かった|昔は友達だった/, 'friend'], [/過去\s*[:：]?\s*(?:昔は)?敵だった|昔は敵だった|昔は敵(?:どうし|同士)/, 'foe'],
+    [/過去\s*[:：]?\s*初恋(?:の相手)?|初恋の相手|初恋/, 'first'], [/過去\s*[:：]?\s*(?:昔)?助けられた|昔、?助けられた/, 'saved'], [/過去\s*[:：]?\s*(?:昔)?ひどいことをした|昔、?ひどいことをした/, 'hurt']];
   HK.parseTies = function (text, chars) {
     var out = [], warn = [], groups = [];
     var names = chars.map(function (c) { return { n: c.name, id: c.id }; }).sort(function (a, b) { return b.n.length - a.n.length; });
+    /* 「/」のあとの段が「名前→名前 過去の札」だけなら、その向きの過去（f＝見る人、t＝相手、k＝札）。「←」は向きを逆にする */
+    var pastSeg = function (sg) {
+      var k = '', s = sg, hit = [];
+      PAST_W.forEach(function (w) { if (!k && w[0].test(s)) { k = w[1]; s = s.replace(w[0], ''); } });
+      if (!k) return null;
+      names.forEach(function (x) { var p = s.indexOf(x.n); if (p >= 0 && hit.length < 3 && hit.every(function (h) { return h.id !== x.id; })) { hit.push({ id: x.id, pos: p }); s = s.slice(0, p) + Array(x.n.length + 1).join('\u0000') + s.slice(p + x.n.length); } });
+      if (hit.length !== 2 || s.replace(/[\u0000\s\u3000→←⇒⇐\->＞<＜:：,，、。]/g, '')) return null;
+      hit.sort(function (a, b) { return a.pos - b.pos; });
+      return /←|⇐|<|＜/.test(sg) ? { f: hit[1].id, t: hit[0].id, k: k, s: sg.trim() } : { f: hit[0].id, t: hit[1].id, k: k, s: sg.trim() };
+    };
     /* グループ名（住人の group。カンマ区切りで複数）。「3年A組 同級生」のように書くと、そのグループの全員の組に付ける。
        住人の名前・関係の言葉と同じグループ名は使わない（名前・関係として読む） */
     var gmap = {};
@@ -406,6 +429,16 @@
       var line = raw.replace(/^\s*(?:[-*・●○]|\d+[.)])\s*/, '').trim();
       if (!line) return;
       var found = [], used = line, gfound = [];
+      /* 向きつきの過去の段（例：「朝霧→鷹野 親子 初恋 / 鷹野→朝霧 昔助けられた」）。段は伏せて、関係の読み取り（向きの「←」も）には使わない */
+      var pDir = [], lineM = line, pos0 = 0;
+      if (/[\/／]/.test(line)) line.split(/[\/／]/).forEach(function (sg, si) {
+        var st = pos0, pd = si ? pastSeg(sg) : null;
+        pos0 += sg.length + 1;
+        if (!pd) return;
+        pDir.push(pd);
+        used = used.slice(0, st - 1) + used.slice(st - 1, st + sg.length).replace(/[^\s\u3000\/]/g, '\u0000') + used.slice(st + sg.length);
+        lineM = lineM.slice(0, st - 1) + Array(sg.length + 2).join(' ') + lineM.slice(st + sg.length);
+      });
       gnames.forEach(function (g) { var p = used.indexOf(g); if (p >= 0) { gfound.push({ g: g, pos: p }); used = mask(used, p, g.length); } });
       /* 愛憎（敵対・不仲の追加の欄）：「愛憎:双方」「愛憎（名前だけ）」「愛憎：一人目だけ」。「執着（愛憎）」は執着の型（XALIAS）として読む。
          名前より先に読む（「名前だけ」の名前を三人目として数えないように。行のほかの場所に名前がなければ、その名前は住人として残す） */
@@ -436,13 +469,12 @@
       /* 関係の層の選択肢（2026-10-26）：過去の札・出来事のオフ・気持ちの重さ・家族の仲・元恋人の気持ち。関係の言葉より先に読む（「昔は敵だった」の「敵」を敵対と読まないように）。
          どの関係の行にも書けて、合わない関係には付かない（HK.tieExtraNorm） */
       var lyX = {};
-      [[/過去\s*[:：]?\s*(?:昔は)?仲が良かった|昔は仲が良かった|昔は友達だった/, 'past', 'friend'], [/過去\s*[:：]?\s*(?:昔は)?敵だった|昔は敵だった|昔は敵(?:どうし|同士)/, 'past', 'foe'],
-        [/過去\s*[:：]?\s*初恋(?:の相手)?|初恋の相手|初恋/, 'past', 'first'], [/過去\s*[:：]?\s*(?:昔)?助けられた|昔、?助けられた/, 'past', 'saved'], [/過去\s*[:：]?\s*(?:昔)?ひどいことをした|昔、?ひどいことをした/, 'past', 'hurt'],
+      PAST_W.map(function (w) { return [w[0], 'past', w[1]]; }).concat([
         [/出来事\s*[:：]?\s*(?:なし|無し|起こさない|オフ)|イベント\s*[:：]?\s*(?:なし|無し|オフ)/, 'noev', 'off'],
         [/(?:気持ち(?:の重さ)?\s*[:：]?\s*)?(?:重い|重め)/, 'heavy', 'heavy'], [/(?:気持ち(?:の重さ)?\s*[:：]?\s*)?(?:軽い|軽め)/, 'heavy', 'light'],
         [/仲\s*[:：]\s*(?:良好|仲良し)|仲良好|仲が良い/, 'kg', 'good'], [/仲\s*[:：]\s*不仲/, 'kg', 'bad'],
         [/(?:ふっきれ|吹っ切れ)(?:て(?:いる|る))?/, 'exf', 'over'], [/未練/, 'exf', 'linger'], [/気まずい/, 'exf', '']
-      ].forEach(function (w) { var m = used.match(w[0]); if (!m || lyX[w[1]] != null) return; lyX[w[1]] = w[2]; used = used.replace(w[0], function (x) { return Array(x.length + 1).join('\u0000'); }); });
+      ]).forEach(function (w) { var m = used.match(w[0]); if (!m || lyX[w[1]] != null) return; lyX[w[1]] = w[2]; used = used.replace(w[0], function (x) { return Array(x.length + 1).join('\u0000'); }); });
       names.forEach(function (x) {
         var p = used.indexOf(x.n);
         if (p >= 0 && found.every(function (f) { return f.id !== x.id; })) {
@@ -510,7 +542,7 @@
         prs.forEach(function (pr) {
           var a = pr[0], b = pr[1];
           /* 「BはAの親」「子」などの言い回しで向きを反転 */
-          if (T[ty].dir && /の(子|子ども|息子|娘|従者|部下|後輩|生徒|弟子|弟|妹)|←/.test(line)) { var t = a; a = b; b = t; }
+          if (T[ty].dir && /の(子|子ども|息子|娘|従者|部下|後輩|生徒|弟子|弟|妹)|←/.test(lineM)) { var t = a; a = b; b = t; }
           var nt = { a: a, b: b, type: ty };
           if (ty === 'crush' && cold) nt.cold = cold;
           if ((ty === 'bad' || ty === 'enemy') && back) nt.cold = back;
@@ -528,14 +560,17 @@
           }
           /* 関係の層の選択肢（合わない関係の欄は tieExtraNorm が外す） */
           if (lyX.past) nt.past = lyX.past;
+          /* 向きつきの過去：一人目から見た向きなら past、二人目から見た向きなら pastB */
+          pDir.forEach(function (pd) { if (pd.f === a && pd.t === b) { nt.past = pd.k; pd.hit = 1; } else if (pd.f === b && pd.t === a) { nt.pastB = pd.k; pd.hit = 1; } });
           if (lyX.noev) nt.noev = lyX.noev;
           if (lyX.heavy) nt.heavy = lyX.heavy;
           if (lyX.kg) nt.kg = lyX.kg;
           if (ty === 'ex' && lyX.exf) { nt.feel = lyX.exf; nt.feelB = lyX.exf; }
-          if (lyX.past || lyX.noev || lyX.heavy || lyX.kg || lyX.exf) HK.tieExtraNorm(nt);
+          if (lyX.past || pDir.length || lyX.noev || lyX.heavy || lyX.kg || lyX.exf) HK.tieExtraNorm(nt);
           out.push(nt);
         });
       });
+      pDir.forEach(function (pd) { if (!pd.hit) warn.push((i + 1) + '行目の「' + pd.s.slice(0, 24) + '」は、この行の関係の二人の向きにならないので、過去は付けませんでした'); });
     });
     return { ties: out, warnings: warn, groups: groups };
   };
@@ -551,7 +586,7 @@
     }
     var CO = HK.coldOpts(tie.type);
     /* 追加の欄（型・度合い・気持ち・様子）の短い名前 */
-    var xs = HK.tieExtra(tie.type).map(function (x) { var v = tie[x.f] || (tie.type === 'fiance' ? 'eager' : ''), m = x.map[v]; return m && m.short ? (x.who ? nameOf(x.who === 'a' ? tie.a : tie.b) + '：' : '') + HK.tieExtraShort(x, v, nameOf(tie.a), nameOf(tie.b)) : ''; }).filter(Boolean).join('・');
+    var xs = HK.tieExtra(tie.type).map(function (x) { var v = tie[x.f] || (tie.type === 'fiance' ? 'eager' : ''), m = x.map[v]; return m && m.short ? (x.who ? nameOf(x.who === 'a' ? tie.a : tie.b) + '：' : '') + HK.tieExtraShort(x, v, nameOf(tie.a), nameOf(tie.b)) : ''; }).filter(function (v, j, l) { return v && l.indexOf(v) === j; }).join('・');
     if (D.dir) return nameOf(tie.a) + '（' + D.roleA + '）→ ' + nameOf(tie.b) + '（' + D.roleB + '）：' + D.label + (CO && tie.cold && CO.map[tie.cold] && CO.map[tie.cold].short ? '（' + CO.map[tie.cold].short + '）' : '') + (xs ? '（' + xs + '）' : '');
     return nameOf(tie.a) + ' × ' + nameOf(tie.b) + '：' + D.label + (xs ? '（' + xs + '）' : '');
   };
@@ -769,8 +804,11 @@
         if (t.type === 'ex') { var XF1 = HK.EX_FEEL[xf.feel || ''], XF2 = HK.EX_FEEL[xf.feelB || '']; if (XF1 && XF1.ab) add(ab, lyAtt(XF1.ab, A, B)); if (XF2 && XF2.ab) add(ba, lyAtt(XF2.ab, B, A)); }
         var PSD = xf.past && HK.TIE_PAST[xf.past];
         if (PSD) { if (PSD.ab) add(ab, lyAtt(PSD.ab, A, B)); if (PSD.ba) add(ba, PSD.ba); }
+        /* 二人目から見た過去（pastB）：向きを入れ替えて足す。向きの無い札が一人目からと同じなら二重に足さない */
+        var PSB = xf.pastB && !(xf.pastB === xf.past && HK.TIE_PAST[xf.pastB].sym) && HK.TIE_PAST[xf.pastB];
+        if (PSB) { if (PSB.ab) add(ba, lyAtt(PSB.ab, B, A)); if (PSB.ba) add(ab, PSB.ba); }
         if (xf.noev) ctx._noEv = true;
-        if (xf.past) ctx._past = true;
+        if (xf.past || xf.pastB) ctx._past = true;
         var o = { type: t.type, like: D.like || '', a: A.i, b: B.i, cold: CD || HB || OB || WB || AB || GR ? t.cold || '' : '', love: HK.tieLoveNorm(t), mutual: !!t.mutual, spouse: !!t.spouse, married: t.married || '', step: !!t.step };
         /* 追加の欄は、ある関係だけに付ける（ほかの関係の中身は今までと同じ） */
         if (t.type === 'yan') o.sub = xf.sub || '';
@@ -788,6 +826,7 @@
         if (KGD) o.kg = xf.kg;
         if (t.type === 'ex') { if (xf.feel) o.feel = xf.feel; if (xf.feelB) o.feelB = xf.feelB; }
         if (xf.past) o.past = xf.past;
+        if (xf.pastB) o.pastB = xf.pastB;
         if (xf.noev) o.noev = xf.noev;
         if (t.type === 'fiance') {
           o.feel = xf.feel; o.feelB = xf.feelB;
