@@ -514,8 +514,11 @@
   }
   /* 描写を「ぼかす」ときは、結果の言葉もやわらかく */
   var SOFTW = [[/快楽堕ち/g, 'ハマり度'], [/快楽に/g, '暗示に'], [/ねだる/g, 'せがむ'], [/快楽/g, '心地よさ'], [/堕ちた/g, 'ハマった'], [/堕ち/g, 'ハマり'], [/快感/g, 'ふわふわ'], [/絶頂/g, '放心']];
+  /* 住人の名前・呼び名は言い換えない（「快楽」さんを「心地よさ」にしない。voice.js の HK.NameGuard.text が、いま回している住人の名前を伏せて通す） */
+  var softW1 = function (s) { SOFTW.forEach(function (w) { s = s.replace(w[0], w[1]); }); return s; };
+  if (HK.NameGuard && HK.NameGuard.text) softW1 = HK.NameGuard.text(softW1);
   function softWords(o) {
-    if (typeof o === 'string') { SOFTW.forEach(function (w) { o = o.replace(w[0], w[1]); }); return o; }
+    if (typeof o === 'string') return softW1(o);
     if (Array.isArray(o)) { for (var i = 0; i < o.length; i++) o[i] = softWords(o[i]); return o; }
     if (o && typeof o === 'object') Object.keys(o).forEach(function (k) { if (k !== 'id' && k !== 'kind' && k !== 'type' && k !== 'color') o[k] = softWords(o[k]); });
     return o;

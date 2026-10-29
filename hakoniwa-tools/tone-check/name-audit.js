@@ -2,6 +2,7 @@
    使い方: node name-audit.js <ビルドのディレクトリ> [1箱庭あたりの回数=4] [r18|safe|''] [箱庭id,…] [--why] [--no-probe] [--json=出力.json]
    ・言い換えの語（飯・腹・酒・金・胸・君・兄・母・私・本当・剛直・快楽…）を名前に含む住人（NAMES の約40人。一字の名前・「飯塚」と「飯塚太郎」・記号のある名前も）を
      順に配役し、口調は全口調（HK.TONE_KEYS）を順に回す。相手ごとの呼び方（calls：名前の頭の字＋ちゃん「飯ちゃん」）・敬称（call）・一人称に自分の名前（fp）も混ぜる
+   ・4 回に 1 回は描写を「ぼかす」（lewd=low）にして、結果の地の文に当たる全年齢の語の置き換え（HK.SafeText・催眠の「ぼかす」の語）も通す
    ・同じ種・同じ設定で、名前だけを言い換えに当たらない字（柊・椿・榊…。字の種類と長さは同じ）にした回（双子）も回し、
      双子の名前を元の名前に戻した文と、本番の文とを記録ごとに比べる。違う所が名前（呼び名を含む）に触れていれば「壊れた」と数える
        接頭辞：名前の前に語が付いた（ご飯塚・お腹巻）
@@ -112,8 +113,10 @@ const { openBuild } = require('./lib.js');
         const short = as.length <= 6 && bs.length <= 6 && !/\n/.test(as + bs) && !words.some(w => as.indexOf(w) >= 0);
         const inside = short && nms.find(x => d.b0 < x[1] && d.b1 > x[0] && (d.b0 > x[0] || d.b1 < x[1]) && d.b0 >= x[0] - 1 && d.b1 <= x[1] + 1);
         const whole = !inside && short && as && nms.find(x => d.b0 === x[0] && d.b1 === x[1] && as.length <= 4);
-        /* 名前のすぐ前に語が足された：接頭辞（ご飯塚・お腹巻） */
-        const before = lone && nms.find(x => d.b0 === x[0] && d.b1 === x[0] && /[ごお御]$/.test(as));
+        /* 名前のすぐ前に語が足された：接頭辞（ご飯塚・お腹巻）。本番の文でも、足された語のすぐ後ろに同じ名前が続き、足された語がほかの住人の名前の一部でないときだけ
+           （双子の回と別の文になり、本番の住人「御飯」の「御」と双子の「飯塚太郎」の頭がたまたま並んだだけのものは数えない） */
+        const inAName = () => spansOf(a, words).some(y => y[0] <= d.a0 && y[1] >= d.a1);
+        const before = lone && /[ごお御]$/.test(as) && !inAName() ? nms.find(x => d.b0 === x[0] && d.b1 === x[0] && a.startsWith(x[2], d.a1)) : null;
         const owner = x => cast.find(nm => x[2].indexOf(nm) === 0 || (x[2].charAt(0) === nm.charAt(0) && /ちゃん$/.test(x[2]))) || x[2];
         /* 本番の文の同じ位置に、ほかの住人の名前がある（双子の回と話の筋が分かれて別の人の話になった）なら壊れではない */
         const other = x => { const ax = x[0] + (d.a0 - d.b0); return spansOf(a, words).some(y => y[2] !== x[2] && y[0] <= ax && y[1] > ax); };
@@ -160,6 +163,8 @@ const { openBuild } = require('./lib.js');
           else if (e.options && e.options.length > 1 && !/lewd|^mode$/.test(e.id) && (s + k) % 2) env[e.id] = e.options[(s + k) % e.options.length].v;
           if (e.id === 'mode' && e.options && e.options.some(o => o.v === 'lewd')) env[e.id] = 'lewd';
         });
+        /* 描写を「ぼかす」回（R18版の lewd-unify.js・催眠の「ぼかす」の語の置き換え。全年齢の言い換え HK.SafeText が地の文に当たる） */
+        if (s % 4 === 2) (sc.env || []).forEach(e => { if (/lewd/.test(e.id) && e.options && e.options.some(o => o.v === 'low')) env[e.id] = 'low'; });
         if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
         const perChar = () => cast.map(() => ({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' }));
         const ties = s % 3 === 2 && n > 1 ? [{ a: 0, b: 1, type: 'lover' }] : [];

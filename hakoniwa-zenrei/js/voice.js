@@ -903,13 +903,41 @@
   };
   /* 伏せ字の中で fn を呼ぶ（入れ子の伏せ字は外側の字を使わない）。fn の結果の文字列は呼ぶ側が g.dec で戻す */
   NG.within = function (g, fn) { NG.stack.push(g); try { return fn(); } finally { NG.stack.splice(NG.stack.lastIndexOf(g), 1); } };
+  /* いま回している箱庭の住人（HK.simulate のいちばん外側の包み（voice-seg.js）が、回しているあいだだけ積む）。
+     結果の仕上げで地の文を言い換える所（全年齢の語の置き換え HK.SafeText・催眠の「ぼかす」の語など）は、住人を渡さなくても NG.guard／NG.words がここから名前を引いて伏せる */
+  NG.casts = [];
+  NG.cast = function () { return NG.casts.length ? NG.casts[NG.casts.length - 1] : null; };
+  NG.withCast = function (chars, fn) {
+    if (!Array.isArray(chars)) return fn();
+    NG.casts.push(chars);
+    try { return fn(); } finally { NG.casts.splice(NG.casts.lastIndexOf(chars), 1); }
+  };
   /* 文 text を、住人 people の名前を伏せて fn(伏せた文, 伏せ字の表) に通し、戻して返す（地の文・台詞のまとまりの言い換え用）。
-     fn の中で名前を見るときは g.enc(名前)（伏せる語がなければ g は null） */
+     people を省くと、いま回している箱庭の住人（NG.cast()）。fn の中で名前を見るときは g.enc(名前)（伏せる語がなければ g は null） */
   NG.guard = function (text, people, fn) {
-    if (typeof text !== 'string' || !text) return fn(text, null);
+    if (people == null) people = NG.cast();
+    if (typeof text !== 'string' || !text || !people) return fn(text, null);
     var g = NG.make(NG.wordsOf(people), text);
     if (!g) return fn(text, null);
     return g.dec(NG.within(g, function () { return fn(g.enc(text), g); }));
+  };
+  /* 文を言い換える関数 fn(文) を、名前を伏せて通す形にする（返す関数は (文, 住人?)。住人を省くと、いま回している箱庭の住人）。
+     地の文に当たる語の置き換え（HK.SafeText・催眠の「ぼかす」の語など）は、これで包んで出す（置き換えのたびに名前の除外を書かない）。
+     伏せるのは、名前だけを fn に通すと変わってしまう住人（「快楽」「絶頂」など。結果は名前ごとに覚える）だけ。
+     ほかの住人の名前は伏せない（伏せ字は漢字なので、fn の中の字の種類の数え方（喘ぎだけの台詞の見分けなど）が変わり、名前と関係のない文まで変わるのを避ける） */
+  NG.text = function (fn) {
+    var hit = Object.create(null);
+    var touches = function (p) {
+      var b = p && typeof p.name === 'string' ? ngBare(p.name) : '';
+      if (!b) return false;
+      if (!(b in hit)) { var r; try { r = fn(b); } catch (err) { r = null; } hit[b] = r !== b; }
+      return hit[b];
+    };
+    return function (t, people) {
+      if (people == null) people = NG.cast();
+      var P = Array.isArray(people) ? people.filter(touches) : [];
+      return NG.guard(t, P, function (s) { return fn(s); });
+    };
   };
   /* いま伏せている名前を全部戻す（点検の道具が言い換えの途中を記録するとき。core.js の HK.NameSafe.dec からも戻す） */
   NG.decAll = function (s) { for (var i = NG.stack.length - 1; i >= 0; i--) s = NG.stack[i].dec(s); return s; };

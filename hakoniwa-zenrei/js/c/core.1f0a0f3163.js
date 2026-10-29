@@ -4099,6 +4099,8 @@ V.processText=function(text,people,actors){
 if(typeof text==='string'&&text.indexOf('\u2062')>=0&&(text.indexOf('「')<0|| !people|| !people.length))text=text.replace(/\u2062/g,'');
 if(!text||typeof text!=='string'||(text.indexOf('「')<0&&text.indexOf('（')<0)|| !people|| !people.length)return text;
 var out='',last=0,depth=0,start= -1,rec=Array.isArray(V._segBuf)?V._segBuf:null;
+if(HK.Tone)HK.Tone.scene={};
+V._callScene={};
 for(var i=0;i<text.length;i++){
 var ch=text[i];
 if(ch==='（'&&depth===0){
@@ -4261,11 +4263,33 @@ if(typeof v==='string'&&v.trim()&& !NG_YOU.test(v.trim()))out.push(v.trim().slic
 return out;
 };
 NG.within=function(g,fn){NG.stack.push(g);try{return fn();}finally{NG.stack.splice(NG.stack.lastIndexOf(g),1);}};
+NG.casts=[];
+NG.cast=function(){return NG.casts.length?NG.casts[NG.casts.length-1]:null;};
+NG.withCast=function(chars,fn){
+if(!Array.isArray(chars))return fn();
+NG.casts.push(chars);
+try{return fn();}finally{NG.casts.splice(NG.casts.lastIndexOf(chars),1);}
+};
 NG.guard=function(text,people,fn){
-if(typeof text!=='string'|| !text)return fn(text,null);
+if(people==null)people=NG.cast();
+if(typeof text!=='string'|| !text|| !people)return fn(text,null);
 var g=NG.make(NG.wordsOf(people),text);
 if(!g)return fn(text,null);
 return g.dec(NG.within(g,function(){return fn(g.enc(text),g);}));
+};
+NG.text=function(fn){
+var hit=Object.create(null);
+var touches=function(p){
+var b=p&&typeof p.name==='string'?ngBare(p.name):'';
+if(!b)return false;
+if(!(b in hit)){var r;try{r=fn(b);}catch(err){r=null;}hit[b]=r!==b;}
+return hit[b];
+};
+return function(t,people){
+if(people==null)people=NG.cast();
+var P=Array.isArray(people)?people.filter(touches):[];
+return NG.guard(t,P,function(s){return fn(s);});
+};
 };
 NG.decAll=function(s){for(var i=NG.stack.length-1;i>=0;i--)s=NG.stack[i].dec(s);return s;};
 if(HK.NameSafe&&HK.NameSafe.dec&& !HK.NameSafe.dec._ng){
@@ -4746,7 +4770,7 @@ darui_talk:{label:'言葉数の多いダウナー',desc:'「聞いてないけ�
 otaku:{label:'男オタク（〜ですぞ）',desc:'「それは聞いていませんぞ」「なんと！」「感謝ですぞ」。丁寧だけど独特の語尾で話す、オタクの話し方。一人称は「拙者」。文面は敬語のものを使う',base:'polite',top:'FC',fp:{m:'拙者',f:'私',x:'拙者'},group:'polite',dictOnly:true,reluct: -0.05,
 axis:{polite:2,attitude:'free',ending:'m'}},
 tsun_soft:{label:'意地っ張り（柔らかい語尾）',desc:'「聞いてないけど……」「何とかなるよ……」「……ありがと、ね」。意地っ張りの当たりを柔らかくした話し方。文面は意地っ張りのものを使う',base:'tsun',top:'CP',fp:{m:'俺',f:'私',x:'私'},dictOnly:true,reluct:0.12},
-keigo_twist:{label:'ひねくれ敬語（〜ですけどね）',desc:'「へえ、それは聞いていませんが」「まあ、本当に助かりましたけどね」「何とかなるんじゃないですか？」。敬語は崩さず、丁寧なまま冷ややかに捻る話し方。「〜けどね」は台詞の締めに時々、ほかは「〜ませんが」「〜ですよ？」の皮肉と「まあ、」「へえ、」の前置き。文面は敬語のものを使う',base:'polite',top:'A',fp:{m:'私',f:'私',x:'私'},group:'polite',dictOnly:true,reluct:0.1},
+keigo_twist:{label:'ひねくれ敬語（〜ですけどね）',desc:'「へえ、それは聞いていませんが」「まあ、本当に助かりましたけどね」「別に、急がなくていいんじゃないですか」。敬語は崩さず、丁寧なまま冷ややかに捻る話し方。相手の話には「へえ、〜ですね」、勧めには「別に、〜んじゃないですか」、言い返しには「〜ませんが」。「〜けどね」は台詞の締めに時々。文面は敬語のものを使う',base:'polite',top:'A',fp:{m:'私',f:'私',x:'私'},group:'polite',dictOnly:true,reluct:0.1},
 mukuchi_ne:{label:'無口（……だね）',desc:'「え……それ聞いてない」「……無理はしなくていいよ」「……本当だね」。ほとんど喋らず、話してもひと言だけ。無口と違って、元の「よ」「ね」「だね」が残る、少しやさしい話し方。態度はエゴグラムから決まる',base:null,top:null,egoTable:true,group:'soft',dictOnly:true,reluct:0.12},
 ronkyaku:{label:'冷徹な論客（〜なのだよ）',desc:'「フッ……。相変わらず、キミの理屈は破綻しているな」「何とかなるのだよ」。冷静沈着で論理的、プライドが高く慇懃無礼。めったに取り乱さないが、崩れると「バカな……！」。二人称は「キミ」。文面は厳格のものを使う',base:'stern',top:'A',fp:{m:'私',f:'私',x:'私'},firm:'plain',dictOnly:true,reluct:0.1,
 axis:{polite:0,attitude:'proud',ending:'m'}},
@@ -5130,6 +5154,17 @@ if(!sm|| !yh||hiraS(sm[3])!==yh)return pre;
 var hd=callHead(c,to),bits=sm[2].match(/[ぁ-ゖァ-ヶ][ぁぃぅぇぉゃゅょァィゥェォャュョ]?[、…‥]+/g);
 return pre.slice(0,pre.length-sm[2].length)+(hd?bits.map(function(b){return hd+b.replace(MORA,'');}).join(''):'');
 }
+var CALL_NO_HEAD= /^(?:別に|べ、別に|うるさ|は？|はあ|ふん|うん|ええ|はい|いや|そう|へえ|ほう|なるほど|まあ|違)/;
+var CALL_WARN= /危ない[！!]?$|気をつけ(?:て|ろ)|伏せ(?:て|ろ)|逃げ(?:て|ろ)|離れ(?:て|ろ|るな)|下がっ(?:て|ろ)|後ろ[！!]?$|来るな|止まれ$|動くな/;
+var CALL_IMP= /(?:(?:て|[んい]で)(?:ください|下さい|くれ|くれよ|ちょうだい|ほしい|ね|よ|な|ろ|くださいね|くださいよ)?|ないで(?:ください|くれ|ね|よ)?|[うくぐすつぬぶむる]な|なさい|しろ|せよ|[えけげせてべめれろ]|こい|来い|ましょう(?:よ|か)?|よう(?:よ|か|ぜ)?|ろう(?:よ|か|ぜ)?|こう(?:よ|か|ぜ)?|おう(?:よ|か|ぜ)?|お願い(?:します|しますね)?|頼む|頼みます|待って|やめて)$/;
+var CALL_NOT_IMP= /(?:[るたいだん]って|くて|[^ぁ-ゖ]で|たりして|[わらさ]れて|おやすみなさい|ねえ|へえ|ええ|(?:そ|こ|あ|ど)れ|誰|[ただ]め|[だわ]け|だろ|でしょ|かしら|ません|ました|でした|です|ます)$/;
+function callable(q){
+var s1=(String(q).replace(/^[…‥\s　]+/,'').match(/^[^。！？!?]*/)||[''])[0].replace(/[…‥っッ〜ー～♡\s　、]+$/,'');
+if(!s1||CALL_NO_HEAD.test(s1))return false;
+if(CALL_WARN.test(s1))return true;
+return CALL_IMP.test(s1)&& !CALL_NOT_IMP.test(s1);
+}
+V.callable=callable;
 V.callAddress=function(q,who,to,raw){
 if(!who|| !to||to===who|| !to.name|| !(who.call||(who.calls&&who.calls[to.name])))return q;
 if((to.mob&& !(who.calls&&who.calls[to.name]))||String(raw||'').indexOf('\u2063')>=0)return q;
@@ -5146,6 +5181,10 @@ if(!(how===2||how===3||how===4)||V._addrMob)return q;
 if(/^[…‥\s]*(?:先生|師匠|先輩|兄さん|姉さん|兄ちゃん|姉ちゃん|母さん|父さん|お母さん|お父さん|隊長|団長|社長|部長|課長|店長|博士|教授|閣下|殿下|陛下|お嬢様|坊ちゃん|旦那|親方|隊員|諸君|みんな|皆|お前ら|お前たち|君たち|あなたたち)[、。！？!?…]/.test(q))return q;
 if(/[ぁぃぅぇぉ]|っ、|ッ、/.test(q)|| /(?:こと|もの|とか|かな)[。…]*$/.test(q))return q;
 if(/♡/.test(q)||body.length<7|| /^[ぁ-ゖァ-ヶ]{0,4}[ッっ]?$/.test(body)||hashS(HK.NameGuard&&HK.NameGuard.stack.length?HK.NameGuard.decAll(String(raw||q)+who.name):String(raw||q)+who.name)%3)return q;
+if(!callable(q))return q;
+var sk=who.name+'>'+to.name,scene=V._callScene;
+if(scene&&scene[who.name])return q;
+if(scene)scene[who.name]=sk;
 var m=q.match(/^([…‥\s]*)/);
 return m[1]+c+'、'+q.slice(m[1].length);
 };
@@ -5633,6 +5672,42 @@ var CASUAL_ENDS=[
 ['んですよね',['んだよね']],['んですけど',['んだけど']],['んですから',['んだから']],['んですか',['の'],/[るたいうくつすぬむぶぐ]$/],['んですね',['んだね']],['んですよ',['んだよ']],['んでした',['んだった']],['んでしょう',['んでしょ']],['んです',['んだ']],
 ['でしょうか',['かな']],['でしょう',['でしょ']],['ですよね',['だよね']],['ですね',['ね'],/い$/],['ですよ',['よ'],/い$/],['ですね',['だね']],['ですよ',['だよ']],['ですか',['']],['でした',['だった']],['です',['']]
 ];
+var TW_REACT= /^(?:へえ|ほう|なるほど|意外|面白|おもしろ|珍し|素敵|さすが|お上手|上手|立派|初耳|知りませんでした|知らなかった|すご)/;
+var TW_REACT_IN= /意外|なるほど|面白い|おもしろい|珍しい|素敵|さすが|上手|立派|初耳|似合|話しやすい|仲がいい|いいコンビ|意外と/;
+var TW_URGE= /^(.*?)((?:なくて|なくても|(?<![れせ])ても|でも|て|で)いい|なくても大丈夫|(?:ほう|方)がいい)(?:んです|のです|です)(?:よ|ね|よね)?$/;
+var TW_RETORT= /^(?:別に|べ、別に|ふん|は？|はあ|そんな(?:こと|の|わけ)|違います|うるさ|余計な|大きなお世話|知りません|関係(?:あり|ない)|どうでも|勝手に)|(?:ません|ませんでした)(?:よ|が|けど)?$/;
+var TW_POL_END= /(?:です|ます|ません|ました|でした|でしょう)(?:よ|ね|よね)?$/;
+function twistSeg(body,punct,core0,first,seed,noQ){
+var st=splitTail(body),core=st[0];
+var ask= /^[？?]/.test(punct)|| /(?:か|かね|でしょうか)$/.test(core0);
+if(ask|| /(?:ください|くださいね|ませんか|ましょう|ましょうか)$/.test(core0)|| !TW_POL_END.test(core0))return{type:'other'};
+var um=core0.length<=30&&core0.match(TW_URGE);
+if(um&& !/ません$/.test(um[1])&& !/私|わたし|俺|僕/.test(core0)){
+var mk=core.match(/(?:んです|のです|です)?(?:よ|ね|よね)?$/),stem=core.slice(0,core.length-mk[0].length);
+if(!/(?:いい|大丈夫|平気|構いません)$/.test(stem.replace(new RegExp(MARK,'g'),'')))return{type:'other'};
+stem=stem.replace(/構いません$/,'構わない').replace(/(大丈夫|平気)$/,'$1な');
+var giveBetsu=first&& !/(?:ほう|方)がいい$|ばいい$|たらいい$/.test(um[2])&& !/別に/.test(core0)&& !LEAD_DONE.test(core0);
+return{body:(giveBetsu?'別に、':'')+stem+'んじゃないですか'+st[1],lead:giveBetsu,type:'urge'};
+}
+if(core0.length<=20&& !/ません/.test(core0)&&(TW_REACT.test(core0)||TW_REACT_IN.test(core0))){
+var em=core.match(/(です|ます|ました|でした|でしょう)(?:よ|ね|よね)?$/);
+if(em){
+var head=core.slice(0,core.length-em[0].length)+em[1]+'ね';
+var pre=first&&TW_REACT.test(core0)&& !/^(?:へえ|ほう|なるほど)/.test(core0)&& !LEAD_DONE.test(core0)?(hash(seed)%3?'へえ、':'ほう、'):'';
+return{body:pre+head+st[1],lead: !!pre,type:'react'};
+}
+}
+if(TW_RETORT.test(core0))return{type:noQ?'retortNoQ':'retort'};
+return{type:'explain'};
+}
+function twistEnds(d,type,noQ){
+if(type==='retort'||type==='other')return d.ends;
+var c=d._twEnds||(d._twEnds=d.ends.map(function(e){
+var keep=e[1].filter(function(x){return/[？?]$/.test(e[0])|| !/[？?]$/.test(x);});
+return[e[0],keep.length?keep:[e[0]],e[2]];
+}));
+return c;
+}
 T.apply=function(q,d,who){
 if(!q|| !d)return q;
 var seed=q+'#'+((who&&who.name)||'');
@@ -5679,6 +5754,8 @@ var q0t=q0.replace(/[\s　」]+$/,'');
 var hot= !dP?0: /[…‥]っ/.test(q0)|| /[…‥][！!]+$/.test(q0t)?2: /[！!]$/.test(q0t)|| /愛して|大好き|^[…‥]*([ぁ-ゖ])、\1/.test(q0)?1:0;
 var ss=segs(q),prevTail='',once=r.once&&r.once.length?{list:r.once,used:r.once.filter(function(w){return w&&q.indexOf(w)>=0;}),cur:false}:null,lastI= -1;
 ss.forEach(function(s,i){if(s.body.replace(/[…‥、〜ー～っッ♡\s　]/g,''))lastI=i;});
+var twLead=false,twFirst= -1,twNoQ= !!(r.twistType&&T.scene&&T.scene[(who&&who.name)||'']);
+if(r.twistType)ss.forEach(function(s,i){if(twFirst<0&&s.body.replace(/[…‥、〜ー～っッ♡\s　]/g,''))twFirst=i;});
 ss=ss.map(function(s,i){
 var body=s.body;
 if(r.neg)body=ruleNeg(body,r.neg);
@@ -5691,7 +5768,13 @@ var sc=r.shortCasual!=null&&(SET_PHRASE.test(core0)||(coreLen<=r.shortCasual&& !
 var strong= /^[！!]/.test(punct)&&r.strongExpl!=='残す';
 if(strong)body=strongCut(body);
 if(once)once.cur=i===lastI;
-var ap=applyEnds(body,punct,sc?CASUAL_ENDS:d.ends,seed,i,newRules(r),strong,prevTail,sc?null:once,grave,hot||(dP&&WARM.test(core0)?1:0));
+var endsUse=sc?CASUAL_ENDS:d.ends;
+if(r.twistType&& !sc&& !hot){
+var tw=twistSeg(body,punct,core0,i===twFirst&& !/^[…‥]/.test(s.body),seed+'#tw'+i,twNoQ);
+if(tw.body!=null){if(tw.lead)twLead=true;return{body:tw.body.replace(new RegExp(MARK,'g'),''),punct:punct};}
+endsUse=twistEnds(d,tw.type,twNoQ);
+}
+var ap=applyEnds(body,punct,endsUse,seed,i,newRules(r),strong,prevTail,sc?null:once,grave,hot||(dP&&WARM.test(core0)?1:0));
 prevTail=ap.tail||(/[んの]だ$/.test(splitTail(ap.body.replace(new RegExp(MARK,'g'),''))[0])?'んだ':'');
 return{body:ap.body.replace(new RegExp(MARK,'g'),''),punct:ap.punct};
 });
@@ -5708,7 +5791,8 @@ if(fx.pause){var pk=0;q=q.replace(/(?<![…‥])。(?=[^…‥])/g,function(m){p
 if(!/[…‥]。/.test(q0))q=q.replace(/([…‥])。/g,'$1');
 q=q.replace(/(よ|ね)\1(?=[。！？!?…‥〜ー～」]|$)/g,function(m,c){return q0.indexOf(m)>=0?m:c;});
 q=q.replace(/[…‥]{3,}/g,function(m){return m.length<=dots0?m:'……';});
-if((r.shaken||r.lead||r.leadS||r.leadR)&& !MOAN.test(q0)){
+if(r.twistType&&T.scene)T.scene[(who&&who.name)||'']= /よ[？?]/.test(q)&& !/よ[？?]/.test(q0);
+if((r.shaken||r.lead||r.leadS||r.leadR)&& !MOAN.test(q0)&& !twLead){
 var shk=r.shaken?ruleShaken(q,r.shaken,r.shakenRate==null?0.5:r.shakenRate,seed):null;
 if(shk!=null)q=shk;
 else if((r.lead||r.leadS||r.leadR)&& !LEAD_DONE.test(q)&& !/^[^。！？!?]*[！!]/.test(q)&&q.replace(/[。、…‥！!？?\s　「」]/g,'').length>6&&hash(seed+'#ld')%100<Math.round((r.leadRate==null?0.3:r.leadRate)*100)){
@@ -5748,7 +5832,7 @@ if(d.base!=='P'&&(f==='P'||segs(q).some(function(s){return P_FORM_MID.test(split
 else if(f==='K'&&d.base==='P'&&HK.Voice&&HK.Voice.polite)q=HK.Voice.polite(q);
 return T.apply(q,d,who);
 };
-var RULE_KEYS={'否定':'neg','進行':'prog','断定':'copula','助詞落とし':'drop','縮約':'contract','強調語':'emph','強調語の割合':'emphRate','存在':'exist','短い文はため口':'shortCasual','ため口を混ぜる':'mixK',
+var RULE_KEYS={'否定':'neg','進行':'prog','断定':'copula','助詞落とし':'drop','縮約':'contract','強調語':'emph','強調語の割合':'emphRate','存在':'exist','短い文はため口':'shortCasual','ため口を混ぜる':'mixK','皮肉の型':'twistType',
 '前置き':'lead','言い切りの前置き':'leadS','反応の前置き':'leadR','一度だけ':'once','前置きの割合':'leadRate','驚き':'surprise','笑い':'laugh','言い切り':'flat','動揺':'shaken','動揺の割合':'shakenRate','強い文の説明':'strongExpl'};
 var FX_KEYS={'感嘆符を落とす':'bangOff','伸ばす':'stretch','言い切りに！':'bangOn','言い切りに!':'bangOn','短くする':'short','言いよどみ':'stammer','前に……':'dots','間を置く':'pause'};
 function alts(v){return String(v).split(/[／/]/).map(function(x){return x.replace(/^\s+|\s+$/g,'');});}
@@ -5790,12 +5874,13 @@ return;
 if(sec==='ends'){var cond=null;var cm=k.match(/^(.+?)\((.+)\)$/);if(cm){k=cm[1];try{cond=new RegExp(cm[2]+'$');}catch(e){cond=null;}}cur.ends.push([k,alts(v),cond]);return;}
 if(sec==='words'){cur.words.push([k,alts(v)]);return;}
 if(sec==='rules'){
-var rk=RULE_KEYS[k];if(!rk){out.errors.push((i+1)+'行目：規則「'+k+'」は使えません（否定／進行／断定／助詞落とし／縮約／強調語／存在／短い文はため口／ため口を混ぜる／前置き／言い切りの前置き／反応の前置き／驚き／笑い／言い切り／動揺／一度だけ／強い文の説明）');return;}
+var rk=RULE_KEYS[k];if(!rk){out.errors.push((i+1)+'行目：規則「'+k+'」は使えません（否定／進行／断定／助詞落とし／縮約／強調語／存在／短い文はため口／ため口を混ぜる／皮肉の型／前置き／言い切りの前置き／反応の前置き／驚き／笑い／言い切り／動揺／一度だけ／強い文の説明）');return;}
 if(rk==='drop'){var rate=parseFloat(v);cur.rules.drop=rate>0?Math.min(1,rate):0;}
 else if(rk==='emphRate'){var er=parseFloat(v);cur.rules.emphRate=er>=0?Math.min(1,er):0.5;}
 else if(rk==='shortCasual'){var sl=parseInt(v,10);cur.rules.shortCasual=sl>0?sl:6;}
 else if(rk==='mixK'){var mk=parseFloat(v);if(mk>=0)cur.rules.mixK=Math.min(1,mk);else out.errors.push((i+1)+'行目：ため口を混ぜるは 0〜1 の数');}
 else if(rk==='contract')cur.rules.contract=yes(v);
+else if(rk==='twistType')cur.rules.twistType=yes(v);
 else if(rk==='emph')cur.rules.emph=alts(v);
 else if(rk==='lead'||rk==='shaken'||rk==='leadS'||rk==='leadR'||rk==='once'){var lv=alts(v).filter(Boolean);if(lv.length)cur.rules[rk]=lv;}
 else if(rk==='surprise'||rk==='laugh')cur.rules[rk]=alts(v);
@@ -6168,8 +6253,17 @@ T.addBuiltin([
 'ましょう=ましょうか／ましょうかね／ましょう',
 'ないでください=ないでくださいね／ないでください','てください=てください／てくださいね／てください。……まあ、一応','でください=でください／でくださいね','ください=ください／ください。一応',
 'お願いします=お願いします／お願いしますね。……一応','さまです=さまです','様です=様です','ございます=ございます','失礼します=失礼します','いただきます=いただきます','てきます=てきます',
+'お、お見苦しいところを=み、見苦しいところ、見せちゃいましたね','お見苦しいところを=……見苦しいところ、見せちゃいましたね／まあ、見なかったことにしてください',
+'お見苦しいところを、お見せしました=見苦しいところ、見せちゃいましたね／まあ、見なかったことにしてください','お見苦しいところをお見せしました=見苦しいところ、見せちゃいましたね／まあ、見なかったことにしてください',
+'お見苦しいところを、失礼いたしました=見苦しいところ、見せちゃいましたね／まあ、見なかったことにしてください',
+'失礼いたします=失礼しますね／失礼しますけどね','失礼いたしました=失礼しました／失礼しちゃいましたね',
 '[語彙]','すごいですね=大したものですね','すごいです=大したものです','ありがとうございます=どうも','ありがとうございました=どうも',
-'[規則]','言い切りの前置き=まあ、','反応の前置き=へえ、／ほう、／おやおや、','前置きの割合=0.3','驚き=へえ／ほう／おやおや','笑い=ふふ／はは','一度だけ=けどね／よ？',
+'申し訳ございません=すみません','申し訳ありません=すみません','恐れ入りますが=すみませんけど','恐れ入ります=どうも','かしこまりました=はいはい、分かりました／分かりましたよ',
+'お手数をおかけしました=面倒かけちゃいましたね','お手数をおかけします=面倒かけますね','かと存じます=かと思いますけど','と存じます=と思いますけど','お申し付けください=言ってください',
+'お慕い申し上げております=……好きですよ。一応','お待ち申し上げておりました=待ってましたよ','お願いいたします=お願いしますね',
+'ておりました=てました','ております=てます','ておりません=てません','でおります=でます',
+'でございますね=ですね','でございます=です','でございました=でした','恐縮でございます=それはどうも','恐縮です=それはどうも',
+'[規則]','言い切りの前置き=まあ、','反応の前置き=へえ、／ほう、／おやおや、','前置きの割合=0.3','驚き=へえ／ほう／おやおや','笑い=ふふ／はは','一度だけ=けどね／よ？','皮肉の型=はい',
 '',
 '[口調 mukuchi_ne]','名前=無口（……だね）','ベース=K',
 '[文末]','じゃん=','でしょ=','てよ=て','ないでよ=ないで',
@@ -9082,6 +9176,8 @@ function kudake(q){
 return q
 .replace(/([ぁ-ゖ一-鿿]*?)しゅうございま(す|した)/g,function(m,s,t){return s+(t==='す'?'しいです':'しかったです');})
 .replace(/申し訳(?:ございません|ありません)(?:でした)?/g,'すいません')
+.replace(/(?:お、)?お見苦しいところを、?(?:お見せしました|失礼(?:いたし|し)ました)/g,'かっこ悪いとこ、見せちゃいましたね').replace(/(?:お、)?お見苦しいところを(?=[。…‥」]|$)/g,'かっこ悪いとこ、見せちゃいました')
+.replace(/お手数をおかけしました/g,'手間かけさせちゃいました').replace(/お手数をおかけします/g,'手間かけますねー')
 .replace(/恐れ入りますが/g,'すいませんけど').replace(/恐れ入ります(?=、)/g,'すいません').replace(/恐れ入ります/g,'どうもです').replace(/恐縮(?:でございます|です)/g,'どうもです')
 .replace(/でございま(す|した|しょう)/g,function(m,t){return t==='す'?'です':t==='した'?'でした':'でしょう';})
 .replace(/ございましたら/g,'あったら')
@@ -20941,7 +21037,7 @@ t=out.join('');
 WORD.forEach(function(w){t=t.replace(w[0],w[1]);});
 return t.replace(/(――[^。]*。)(?:――[^。]*。)+/g,'$1');
 }
-HK.SafeText=softText;
+HK.SafeText=HK.NameGuard&&HK.NameGuard.text?HK.NameGuard.text(softText):softText;
 function eachChunk(fn){fn();if(HK.Load&&HK.Load.onChunk)HK.Load.onChunk(fn);}
 function scenOf(id){return HK.SCENARIOS[id]||(HK.Load&&HK.Load.info?HK.Load.info(id):null);}
 if(!ON){
@@ -30099,15 +30195,16 @@ if(typeof seg.nk==='string')seg.nk=NS.dec(seg.nk);
 return seg;
 };
 }
+var NGd=HK.NameGuard,withCast=function(chars,fn){return NGd&&NGd.withCast?NGd.withCast(chars,fn):fn();};
 if(NS&&HK.simulate&& !HK.simulate._nameSafe)HK.wrap(HK,'simulate',function(sim2){
 var sim=function(input){
-var cs=input&&input.chars;
-if(!Array.isArray(cs)|| !cs.some(function(c){return c&&NS.need(c.name);}))return sim2.apply(this,arguments);
+var cs=input&&input.chars,self=this,args=arguments;
+if(!Array.isArray(cs)|| !cs.some(function(c){return c&&NS.need(c.name);}))return withCast(cs,function(){return sim2.apply(self,args);});
 var ren=Object.create(null),rn=function(k){return Object.prototype.hasOwnProperty.call(ren,k)?ren[k]:k;};
 cs.forEach(function(c){if(c&&NS.need(c.name))ren[c.name]=NS.enc(c.name);});
 var rk=function(m){if(!m||typeof m!=='object'||Array.isArray(m))return m;var o={};Object.keys(m).forEach(function(k){o[rn(k)]=m[k];});return o;};
 var in2=Object.assign({},input,{chars:cs.map(function(c){return c&&typeof c==='object'?Object.assign({},c,{name:rn(c.name),calls:rk(c.calls),keigo:rk(c.keigo)}):c;})});
-var r=sim2.call(this,in2);
+var r=withCast(in2.chars,function(){return sim2.call(self,in2);});
 try{NS.decDeep(r);}catch(err){}
 return r;
 };
@@ -30348,4 +30445,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '4ea7d792cc', 1);
+HK.Load.done('core', '1f0a0f3163', 1);

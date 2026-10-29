@@ -170,7 +170,9 @@
     WORD.forEach(function (w) { t = t.replace(w[0], w[1]); });
     return t.replace(/(――[^。]*。)(?:――[^。]*。)+/g, '$1');
   }
-  HK.SafeText = softText;   /* 出られない部屋など、ほかの箱庭の仕上げにも使う（safe-room.js）。R18版の描写の有無「ほのめかす」でも使う（lewd-unify.js） */
+  /* 出られない部屋など、ほかの箱庭の仕上げにも使う（safe-room.js）。R18版の描写の有無「ほのめかす」でも使う（lewd-unify.js）。
+     住人の名前・呼び名は言い換えない（「快楽」さんを「心地よさ」にしない）：HK.SafeText(文, 住人?) は voice.js の HK.NameGuard.text で名前を伏せて通す。住人を省くと、いま回している箱庭の住人 */
+  HK.SafeText = HK.NameGuard && HK.NameGuard.text ? HK.NameGuard.text(softText) : softText;
 
   /* 分割読み込み：箱庭の登録や表を書き換える部分は、今あるものに当てたうえで、後から届いたかたまりのたびに当て直す（どれも何度当てても同じ結果） */
   function eachChunk(fn) { fn(); if (HK.Load && HK.Load.onChunk) HK.Load.onChunk(fn); }
