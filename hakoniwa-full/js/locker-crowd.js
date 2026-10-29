@@ -759,9 +759,11 @@
         return;
       }
       b.cnt.accept++; Lk.lv = lv; Lk.lastAct = turn; S.lewdNow = true; b.rxLv = Math.max(b.rxCool ? 0 : b.rxLv || 0, resp === 'accept' ? 2 : 1); b.rxCool = false;
-      var eroNow = resp === 'accept';
+      var eroNow = resp === 'accept', lhLv = false;
       if (swap) t += ST.fmt(pk(LK.TAKE[tp.bound ? 'bound' : 'free']), vT) + ST.fmt(pk(hands(actPool, tp, bt)), { a: tp.name, b: bt.name });
       else if (hateNow) t += HK.HateSex.react(S, a, b, lv);
+      /* 愛憎を持つ側が、表の顔が恋愛系の相手に応じる：口では文句を言いながら、恋人どうしの甘えとして（solo-locker.js の LK.LH_LOVE。2026-10-29 担当C） */
+      else if ((lhLv = !!(LK.LH_LOVE && LK.lhLoveOf && LK.lhLoveOf(S, a, b)) && rng() < 0.7)) t += ST.fmt(pk(LK.LH_LOVE.lead), vT) + say2(S, b, LK.LH_LOVE.say);
       else t += ST.fmt(pk(hands((resp === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (l) { return (lead === tp && md === 'ins') || !/受け入れ/.test(l); }), a, b)), vT) + (resp === 'accept' && rng() < 0.6 ? say2(S, b, LK.ACCEPT_SAY) : '');
       var gain = [15, 20, 30, 40, 50][lv];
       tp.m.plea += gain * tp.sens * 0.8; bt.m.plea += gain * bt.sens;
@@ -781,7 +783,7 @@
       /* 札も恋愛の札（キス・口づけ）にしない（恋愛の出来事として数えない） */
       var ld = fr && !hateNow && !Lk.freeLed ? HK.FreeSex.lead(S, a, b) : '';
       var hw = hateNow ? HK.HateSex.why(S, a, b) + (fo ? '／' + forceWhy(S, a, b) : '') + '／' : '';
-      var said = ST.sayB(S, { actors: [a, b], tag: fr && !hateNow ? '体だけ・' + actLabel(Lk, lv).replace(/キス|口づけ/g, '唇') : actLabel(Lk, lv), text: ld + t, why: hw + (fr && !hateNow ? HK.FreeSex.why(a, b) + '／' : '') + a.name + 'が「' + actLabel(Lk, lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた' : hateNow ? '押し切られた' : resp === 'accept' ? '乗った' : '流された') + '（ロッカー' + Lk.n + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(Lk, lv), lv >= 3);
+      var said = ST.sayB(S, { actors: [a, b], tag: fr && !hateNow ? '体だけ・' + actLabel(Lk, lv).replace(/キス|口づけ/g, '唇') : actLabel(Lk, lv), text: ld + t, why: hw + (fr && !hateNow ? HK.FreeSex.why(a, b) + '／' : '') + a.name + 'が「' + actLabel(Lk, lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた' : hateNow ? '押し切られた' : lhLv ? '口では文句を言いながら、拒まなかった（愛憎。表の顔は恋愛系）' : resp === 'accept' ? '乗った' : '流された') + '（ロッカー' + Lk.n + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）', mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(Lk, lv), lv >= 3);
       if (ld && said) Lk.freeLed = true;
       if (lv === 4 && !Lk.keySex) { Lk.keySex = true; var o2 = S.log[S.log.length - 1]; if (o2) ST.key(S, o2, 'ロッカー' + Lk.n + 'で' + (ff ? '肌を重ねた' : '繋がった')); }
       if (fr && !fo && lv === 4 && !Lk.freeMark) { Lk.freeMark = true; HK.FreeSex.mark(S, a, b); HK.FreeSex.jealous(S, a, b); }

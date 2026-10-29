@@ -278,8 +278,10 @@
     var why = [];
     var p0 = CF.pairOf(Z, a, b);
     if (p0 && p0.lv && romOK(Z, a, b) && affOf(Z, a, b) > 5 && Z.rng() < CF.LOVE_P) return { k: 'love', why: '恋愛：あり・もともと好意があった（まれ）' };
-    var hos = hostile(Z, a, b), lh = HK.LoveHate && HK.LoveHate.dir ? HK.LoveHate.dir(Z, a, b) : '';
-    var wA = t.aggr * 1.2 + t.cp * 0.7 + (hos ? 0.45 : 0) + (lh === 'a' || lh === 'both' ? 0.45 : 0) + (p === 'proud' || p === 'stern' ? 0.15 : 0);
+    /* 愛憎（気持ちの関係「愛憎」・古い lh）を a が持つ：攻撃型 +0.45。恐怖と愛憎が重なっても、設計 2-4 のとおり恐怖が勝つ（恐れる側は迫らない）ので、
+       ここは恐怖の組でも効く dir のまま（has は恐怖の組を外す。2026-10-29 担当C：新しい関係でも効くことを確かめた） */
+    var hos = hostile(Z, a, b), lh0 = HK.LoveHate && HK.LoveHate.dir ? HK.LoveHate.dir(Z, a, b) : '', lh = lh0 === 'a' || lh0 === 'both';
+    var wA = t.aggr * 1.2 + t.cp * 0.7 + (hos ? 0.45 : 0) + (lh ? 0.45 : 0) + (p === 'proud' || p === 'stern' ? 0.15 : 0);
     var wF = t.ac * 1.1 + t.caution * 0.5 + (p === 'shy' || p === 'polite' ? 0.2 : 0);
     var wS = t.np * 1.2 + (p === 'devoted' || p === 'gentle' ? 0.25 : 0);
     var g = wpick(Z, { aggr: wA * wA, flee: wF * wF, shel: wS * wS });

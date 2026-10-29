@@ -129,9 +129,11 @@
     var T = HK.Ties, has = function (k) { return !!(T && T.has && (T.has(ctx, a, b, k) || T.has(ctx, b, a, k))); };
     if ((Z.isLover && Z.isLover(ctx, a, b)) || has('spouse') || has('fiance') || has('mate') || has('fated')) return 'lover';
     if (has('fwb') || (a.sexLocks || []).indexOf(b.i) >= 0 || (b.sexLocks || []).indexOf(a.i) >= 0) return 'fixed';
+    /* 愛憎（気持ちの関係「愛憎」。どの関係にも重ねられる。2026-10-29 担当C）：HK.LoveHate.any が新しい関係（古い lh も）を読み、恐怖・無関心・恋愛：なしの家族などは外す。
+       相棒・親友に重ねた愛憎も、愛憎の相手として数える（恋人・体の関係の相手が先） */
+    if (HK.LoveHate && HK.LoveHate.any && HK.LoveHate.any(ctx, a, b)) return 'lovehate';
     if (has('buddy')) return 'buddy';
     if (has('best')) return 'best';
-    if (HK.LoveHate && HK.LoveHate.any && HK.LoveHate.any(ctx, a, b)) return 'lovehate';
     return '';
   };
   Z.PAIR_LBL = { lover: '恋人', fixed: '体の関係の相手', buddy: '相棒', best: '親友', lovehate: '愛憎の相手' };

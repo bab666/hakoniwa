@@ -3,7 +3,7 @@
    受けは口では嫌がるが、心も体もまんざらではない反応をして、最後は受けのほうからも求める（合意の場面として書く）
    ・使う箱庭：出られない部屋（このファイルで出来事を足す）・媚薬ロッカー（solo-locker.js の応じ方。HateSex.react）・
      オメガバース（omega-passion.js の「憎みながらの夜」）・ゾンビの街（solo-sit-night-r18.js の「敵対する二人の夜」）
-   ・敵対：関係（ライバル・不仲・敵対）があるか、嫌悪レベル（hate-kit.js）が35以上。
+   ・敵対：関係（ライバル・不仲・敵対）があるか、嫌悪レベル（hate-kit.js）が35以上。愛憎の二人は表の顔が嫌悪系のときだけ（下の 2026-10-29）。
      恋愛・R18にしない組・血縁・向きの決まらない組・恋愛の対象にならない組・どちらかに恋人がいる組では起きない
    ・文：性別の組（m＝攻めが男性の体／ff＝女性どうし（指・舌・肌）／fm＝女性の攻めが上になる）ごとに、始まり・最中・果て・もう一度。
      受けの「口で嫌がる台詞」「まんざらな反応」「山場（嫌がる言葉が崩れて求める）」「事後」は態度9種で書き分け。喘ぎは ero-kit.js（口調・濁点の設定）
@@ -19,6 +19,8 @@
      嫌悪が片方向の組（片想い・執着する側を、相手だけが嫌う など）は、嫌っていない側が攻め。受け攻めの指定で向きが合わなければ起こさない（hostile が偽）。
      攻めが受けを想っている（片想い・執着など）ときは、攻めの導入（LOVE_LEAD）と台詞（RETORT_L・RETORT_ROOM_L・MID_L・LAST_L）を想いの文に。
      愛憎の文は持つ側だけ（攻めの一言は攻めが、受けの事後は受けが持つとき）。理由に「／向き：攻め＝○○（…）・受け＝××（…）」
+   ・2026-10-29（愛憎の改修・担当C）：愛憎（気持ちの関係）の二人は、表の顔が嫌悪系（HK.LoveHate.face が 'hate'）のときだけ敵対の強引な場面にする（hostile の lhSoft）。
+     恋愛系・対等系・関係なしの愛憎の二人は、各箱庭のふつうの夜に任せる（ライバル＋愛憎も対等系）
    全年齢版にはこのファイルはない。登場人物はすべて成人として扱う */
 (function () {
   'use strict';
@@ -451,6 +453,10 @@
   function dirOk(x, T, B) { return (hates(x, B, T) || avoids(x, B, T)) && !avoids(x, T, B); }
   /* 攻めが受けを想っている向き（嫌悪が片方向で、攻めは嫌っていない）：攻めの台詞を想いの文に */
   function loveTop(x, T, B) { return !hates(x, T, B) && loves(x, T, B); }
+  /* 愛憎の表の顔（2026-10-29。docs/reports/2026-10-29/lovehate-design.md の 3 章）：愛憎の二人のうち、表の顔が嫌悪系（HK.LoveHate.face が 'hate'：敵対・不仲・兄弟（不仲）・険悪な上下）
+     でない組（恋愛系・家族系・対等系・関係なし）は、敵対の強引な場面にしない（出られない部屋の hate_sex・合コンの帰り道・ゾンビの言い争いの夜・ロッカーの強引な側 など、
+     この hostile を通る入口すべて）。ふつうの夜（各箱庭の既存の入口）に任せる。愛憎の無い敵対の二人は今までどおり */
+  function lhSoft(x, a, b) { var LH = HK.LoveHate; return !!(LH && LH.face && LH.any(x, a, b) && LH.face(x, a, b) !== 'hate'); }
   var HS = HK.HateSex = {
     OPEN: OPEN, BODY: BODY, STRIP: STRIP, FORE: FORE, ERO_FORE: ERO_FORE, INSERT: INSERT, ERO_INSERT: ERO_INSERT, RETORT: RETORT, RETORT_ROOM: RETORT_ROOM, MID: MID, LAST: LAST, LOVE_LEAD: LOVE_LEAD, RETORT_L: RETORT_L, RETORT_ROOM_L: RETORT_ROOM_L, MID_L: MID_L, LAST_L: LAST_L, PROTEST2: PROTEST2, ERO_BODY: ERO_BODY, PEAK: PEAK, ERO_PEAK: ERO_PEAK, AGAIN: AGAIN, FADE: FADE, PROTEST: PROTEST, TELL: TELL, YIELD: YIELD, AFTER: AFTER,
     /* 敵対しているか（関係のライバル・不仲・敵対、または嫌悪レベル35以上）。体の関係になれない組・恋愛の対象にならない組は除く */
@@ -461,6 +467,7 @@
       if (!(opt && opt.room) && HK.Content && !HK.Content.ok(x, 'force')) return false;
       if (HK.ngSexPair && HK.ngSexPair(a, b)) return false;
       if (x.pair && x.pair(a, b).kin) return false;
+      if (lhSoft(x, a, b)) return false;
       /* 合意のない展開が入なら、恋愛対象「なし」の人も（HK.Pos.forceOpen。恋愛対象の性別・受け攻めの指定はこれまでどおり。2026-10-27 担当HC） */
       /* 「恋愛：なし」の敵対の二人（free-sex.js の HK.FreeSex.kind が 'off'）は、恋愛（HK.canLove）を見ずに体の関係だけで判定する（2026-10-28 担当MC） */
       var okP = function () { return (!HK.Pos || HK.Pos.okSex(a, b)) && (!HK.canLove || (HK.canLove(a, b) && HK.canLove(b, a)) || !!(HK.FreeSex && HK.FreeSex.kind && HK.FreeSex.kind(x, a, b) === 'off')); };
@@ -575,6 +582,8 @@
     avoids: function (x, c, o) { return avoids(x, c, o); },
     loves: function (x, c, o) { return loves(x, c, o); },
     dirOk: function (x, T, B) { return dirOk(x, T, B); },
+    /* 嫌悪系以外の顔の愛憎の二人か（真なら、敵対の強引な場面にしない） */
+    lhSoft: function (x, a, b) { return lhSoft(x, a, b); },
     /* 恋愛対象「なし」の人が入る強引な場面の理由の印（HK.Pos.forceOpen で開いたとき。orient-audit.js が見る） */
     noneWhy: function (x, T, B) {
       return HK.Pos && HK.Pos.noneWhy ? HK.Pos.noneWhy(x, [T, B]) : '';

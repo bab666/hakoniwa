@@ -1,4 +1,5 @@
 /* 箱庭シミュレーター（R18版のみ）: 出られない部屋で、条件「エッチ」の部屋に閉じ込められた敵対する二人（hate_sex）
+   2026-10-29（愛憎の改修・担当C）：入口は、表の顔が嫌悪系の愛憎の二人と、愛憎の無い敵対の二人だけ（HK.LoveHate.face。恋愛系・対等系の愛憎の二人はふつうの夜へ）。
    2026-10-27（分割読み込みの第3段）：hate-sex-r18.js（中核。HK.HateSex の部品と文）から、出られない部屋に足す出来事だけを分けた（箱庭のかたまり scen-whiteroom。hate-sex-r18.js のすぐ後に読む）。
    登場人物はすべて成人として扱う */
 (function () {
@@ -32,7 +33,10 @@
         if (HK.SAFE_ON || ctx.flags.isOne || ctx.stepIndex < 1 || ctx.flags.trioCur) return false;
         if (a.out || b.out || a.flags.down || b.flags.down || a.flags.cagePair != null || b.flags.cagePair != null) return false;
         var pf = ctx.pair(a, b);
-        /* 愛憎の組（hate-love.js）：条件のエッチを済ませたあとでも、部屋にいるあいだはまた起きうる（腐れ縁の二度目） */
+        /* 愛憎の二人（気持ちの関係「愛憎」。hate-love.js の HK.LoveHate）は、表の顔が嫌悪系（敵対・不仲・兄弟（不仲）・険悪な上下）のときだけこの入口に来る。
+           恋愛系・対等系・関係なしの愛憎の二人は、部屋のふつうの夜に任せる（HS.hostile の lhSoft が外す。2026-10-29 担当C。設計 3 章） */
+        if (HS.lhSoft && HS.lhSoft(ctx, a, b)) return false;
+        /* 嫌悪系の愛憎の組：条件のエッチを済ませたあとでも、部屋にいるあいだはまた起きうる（腐れ縁の二度目） */
         var lhP = HK.LoveHate && HK.LoveHate.any(ctx, a, b) && (pf.hateSex || 0) >= 1 && (pf.hateSex || 0) < 3;   /* 繰り返しすぎないよう、部屋の中では三回まで */
         if (!ctx.rules.some(function (r) { return r.k === 'h' && (lhP || !A.ruleDone(ctx, r, a, b)); })) return false;
         if (pf.hateSexAt != null && ctx.stepIndex - pf.hateSexAt < (lhP ? 3 : 2)) return false;
@@ -47,7 +51,7 @@
       w: function (ctx, a, b) {
         /* 条件の順番：条件1を待っている条件2のエッチは起きにくく（×0.15） */
         var rh = ctx.rules.filter(function (q) { return q.k === 'h'; })[0], sw = rh && A.seqWait && A.seqWait(ctx, rh, a, b) ? 0.15 : 1;
-        /* 愛憎の相手を取られそうなら、起きやすく（×1.6） */
+        /* 愛憎の重み（HK.LoveHate.k：片方 ×2・双方 ×2.6。嫌悪系の顔の組だけがここに来る）。愛憎の相手を取られそうなら、起きやすく（×1.6） */
         return (1.2 + (hateLv(ctx, a, b) + hateLv(ctx, b, a)) / 120 + (a.tr.aggr || 0) + (a.flags.aphro || 0) * 0.3 + ctx.stepIndex / Math.max(1, ctx.stepsTotal)) * (HK.LoveHate ? HK.LoveHate.k(ctx, a, b) : 1) * (rivalOf(ctx, a, b) ? 1.6 : 1) * sw;
       },
       run: function (ctx, a, b) {

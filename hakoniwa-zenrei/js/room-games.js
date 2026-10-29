@@ -400,7 +400,7 @@
   }
   /* 不仲の二人が、もう一人がいる三人の場面なら割り切って加わる：時間が三割半を過ぎて、二人とも焦り（性欲「弱い」の人は強い焦り）・覚悟・積極性があり、
      どちらも相手を避けていない（HK.Avoid：苦手・避けている人は、割り切っても加わらない）。三人のうち、ほかの直接の組の一つ以上がその気か焦りで踏み切れること（pickTrio） */
-  /* 愛憎（不仲・敵対の欄の lh。hate-love.js の HK.LoveHate）を持つ人は、三人の場面では相手をもう一人に取られそうなので、早く（時間の二割から）・
+  /* 愛憎（気持ちの関係「愛憎」。2026-10-29 に不仲・敵対の欄 lh から移した。hate-love.js の HK.LoveHate が新しい関係も古い lh も読む）を持つ人は、三人の場面では相手をもう一人に取られそうなので、早く（時間の二割から）・
      弱い焦りでも踏み込む（2026-10-28 担当LG：利用者の要望「愛憎は、誰かに取られると思ったら自分が手に入れたいと思う気持ちもある」）。
      愛憎を持たない側は、ふつうの不仲と同じ（時間の三割半を過ぎて焦り） */
   function grudgeOk(ctx, x, y, late) {
@@ -567,7 +567,7 @@
     if (HK.RoomReluct && HK.RoomReluct.blocks(ctx, x, y)) return x.name + 'と' + y.name + 'は、この場所でするのを渋ったままだった';
     if (grudge(ctx, x, y)) {
       var av = HK.Avoid ? [[x, y], [y, x]].filter(function (p) { return HK.Avoid.of(ctx, p[0], p[1]); })[0] : null;
-      if (av) return av[0].name + 'は' + av[1].name + 'を避けている（' + HK.Avoid.why(ctx, av[0], av[1]) + '）ので、割り切っても加わらなかった（' + av[0].name + 'が持つ側の「愛憎」を不仲に付けると、避けずに加わる）';
+      if (av) return av[0].name + 'は' + av[1].name + 'を避けている（' + HK.Avoid.why(ctx, av[0], av[1]) + '）ので、割り切っても加わらなかった（' + av[0].name + 'から' + av[1].name + 'への「愛憎」を付けると、避けずに加わる）';
       var low = [x, y].filter(function (z) { return HK.Pos && HK.Pos.libOf && HK.Pos.libOf(z) === 'low'; });
       return x.name + 'と' + y.name + 'は不仲で張りつめたまま（緊張 ' + t(x, y) + '）、割り切れるほど焦りが溜まらなかった（焦り ' + Math.round(x.stress) + '・' + Math.round(y.stress) + (low.length ? '。性欲「弱い」の' + nm(low) + 'は、強い焦りが要る' : '') + '）';
     }

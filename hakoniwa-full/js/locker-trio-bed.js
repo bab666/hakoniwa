@@ -28,7 +28,9 @@
     /* 敵対・愛憎のある三人：口では嫌がりながら */
     rough: L('「勘違いしないで。ガスのせいだから｜勘違いするな。ガスのせいだ｜勘違いしないでください。ガスのせいですから」――{q}はそう吐き捨てながら、{x}と{y}を倉庫の奥のベッドへ押しやった。誰も、本気では逆らわなかった。|外に出ても、三人は睨み合ったままだった。先に目を逸らしたのが誰だったのかは分からない。次の瞬間には、{q}が{x}の襟と{y}の手首を同時に掴み、二人を引きずるようにして倉庫の奥のベッドへ倒れ込んでいた。|「あなたたちとなんて、冗談じゃない｜あなたたちとなど、冗談ではない｜あなたたちとなんて、冗談じゃありません」――口ではそう言いながら、{q}の手は{x}と{y}の手首を離さなかった。三人の足は、出口とは反対の、仮眠室のベッドへ向かっていた。')
   };
-  TB.INVITE_LB = { eager: '待ちきれずに', quiet: 'おとなしかった人から誘う', join: '二人に加わる', rough: '口では嫌がりながら' };
+  /* 愛憎のある三人で、敵対の関係が無く、愛憎の組の表の顔が恋愛系（HK.LoveHate.face が 'love'）：拗ねた恋人どうしの言い方で（2026-10-29 担当C。設計 3 章） */
+  TB.INVITE.sulk = L('{q}は扉の前で{x}と{y}を振り返り、ふくれっ面のまま倉庫の奥のベッドを顎で示した。「……言っとくけど、まだ怒ってるから｜……言っておくが、まだ怒っているからな｜……言っておきますけど、まだ怒っていますからね」――その手は、もう二人の指を握っていた。|外に出るなり、{q}は{x}の袖を引いた。「さっきの続き、向こうでしよう。……喧嘩の続きじゃなくて｜さっきの続きを、向こうでする。……喧嘩の続きではなく｜さっきの続き、向こうでしましょう。……喧嘩の続きではありませんよ」――{y}が笑うと、{q}は耳まで赤くなって睨み返した。|{q}は「あなたたちなんか知らない｜あなたたちなど知らない｜あなたたちなんて知りません」と言いながら、二人の手を離さなかった。拗ねた背中が、そのまま倉庫の奥の仮眠室へ二人を連れていった。');
+  TB.INVITE_LB = { eager: '待ちきれずに', quiet: 'おとなしかった人から誘う', join: '二人に加わる', rough: '口では嫌がりながら', sulk: '拗ねたまま誘う' };
   /* 時間切れで扉が開いたとき（誘いの前に） */
   TB.TIMEOUT = L('ブザーが鳴り、ロッカーが一斉に開いた。時間切れだった。倉庫の奥の仮眠室には、古いけれど大きなベッドが置かれていた。|時間切れを告げる音とともに、ロックが外れた。這い出した三人の目に、倉庫の奥の仮眠用のベッドが映った。|スピーカーが「お疲れさまでした」と告げ、扉が開いた。倉庫の奥に、誰かが寝泊まりしていたらしい仮眠室があった。');
   /* 二人きりのベッドへ：残りの一人（{c}）が先に出る（{a}{b}＝ベッドへ行く二人） */
@@ -115,7 +117,8 @@
     rough: L('朝になると、三人は互いに目を合わせようとしなかった。誰かが「……ガスのせいだから｜……ガスのせいだ｜……ガスのせいですから」と言い、誰も否定しなかった。|{t}は乱れた服を乱暴に直し、{m}と{u}に背を向けた。「今夜のことは、忘れて｜今夜のことは、忘れろ｜今夜のことは、忘れてください」――その耳は、赤いままだった。|三人は口をきかないまま倉庫を出た。それでも分かれ道まで、誰も一人で先に行こうとはしなかった。'),
     plain: L('朝の光の中で、三人はしばらく天井を見上げていた。誰かが「……すごかった｜……すごかったな｜……すごかったです」と言って、三人で吹き出した。|三人とも、服を探すのが面倒になって、しばらく裸のまま寝転がっていた。甘い匂いは、もうどこにも残っていなかった。|{u}は二人の寝息を聞きながら、そっと目を閉じた。ロッカーに閉じ込められたことが、少しだけ、悪くない夜に思えた。')
   };
-  TB.MORNING_LB = { sweet: '翌朝、三人だけの秘密に', rough: '翌朝、ガスのせいにした', plain: '翌朝、三人で笑った' };
+  TB.MORNING.sulk = L('朝になると、{t}は寝癖のまま{m}と{u}を睨んだ。「昨日のこと、まだ許してないから｜昨日のことは、まだ許していないからな｜昨日のこと、まだ許していませんから」――そう言いながら、{t}は二人の肩に毛布を掛け直した。|三人は朝から小さな言い争いをした。どちらが先に寝たか、誰が毛布を取ったか。それでも倉庫を出るとき、三人の手は自然に繋がっていた。|{m}が「喧嘩してたの、忘れてたね｜喧嘩していたのを、忘れていたな｜喧嘩していたの、忘れていましたね」と言うと、{u}がわざとらしくそっぽを向いた。{t}だけが、隠しきれずに笑っていた。');
+  TB.MORNING_LB = { sweet: '翌朝、三人だけの秘密に', rough: '翌朝、ガスのせいにした', plain: '翌朝、三人で笑った', sulk: '翌朝、言い争いながら寄り添った' };
   TB.FADE = L('――そこから先は、三人だけの秘密になった。|――仮眠室の明かりが消えたあとのことは、三人だけが知っている。|――その夜のことを、三人は誰にも話していない。');
 
   /* 二人きりのベッド（LK.bed）に渡す関係（solo-locker.js と同じ寄せ方） */
@@ -130,6 +133,13 @@
   function loyalOut(S, api, a, b) { return S.P.some(function (q) { return q !== a && q !== b && [a, b].some(function (c) { return api.tiesOf(S, c, q).some(function (t) { return /^(lover|mate|fated)$/.test(t.type); }) && api.okLove(c, q); }); }); }
   function hostileIn(S, api, m) { return pairsOf(m).some(function (pr) { return api.tiesOf(S, pr[0], pr[1]).some(function (t) { return /^(rival|enemy|bad)$/.test(t.type); }); }); }
   function lhIn(S, api, m) { return pairsOf(m).some(function (pr) { return api.lhHas(S, pr[0], pr[1]) || api.lhHas(S, pr[1], pr[0]); }); }
+  /* 愛憎の組がどれも表の顔が恋愛系（拗ねた恋人どうし。敵対の関係のある三人は rough のまま） */
+  function lhLoveIn(S, api, m) {
+    var LH = HK.LoveHate, lp = pairsOf(m).filter(function (pr) { return api.lhHas(S, pr[0], pr[1]) || api.lhHas(S, pr[1], pr[0]); });
+    return !!(LH && LH.face && lp.length && lp.every(function (pr) { return LH.face(S, pr[0], pr[1]) === 'love'; }));
+  }
+  /* 誘い・翌朝の型：敵対のある三人は rough、恋愛系の顔の愛憎だけなら sulk、ほかの愛憎は rough */
+  function lhTone(S, api, m) { return hostileIn(S, api, m) ? 'rough' : lhIn(S, api, m) ? (lhLoveIn(S, api, m) ? 'sulk' : 'rough') : ''; }
   function sweetIn(S, api, m) { return pairsOf(m).some(function (pr) { return api.tiesOf(S, pr[0], pr[1]).some(function (t) { return /^(lover|mate|fated|almost|crush)$/.test(t.type); }) || api.interest(S, pr[0], pr[1]); }); }
   /* 扉が開いたあとの喘ぎ（声を殺さなくてよい場面。solo-locker.js の moan(p, top, true) と同じ） */
   function moan(S, p, top) {
@@ -161,7 +171,7 @@
     var t1 = (how === 'timeout' ? pick(S, TB.TIMEOUT) : '') + ST.fmt(pick(S, TB.INVITE[kind]), { q: q.name, x: xy[0].name, y: xy[1].name });
     var shapeLb = { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: sp.t.name + '→' + sp.m.name + '→' + sp.u.name, ring: '輪（' + sp.t.name + '→' + sp.m.name + '→' + sp.u.name + '→' + sp.t.name + '）' }[sp.p];
     var whyBase = '三人の場面：' + (sp.hub ? (sp.h || sp.m).name + 'が二人の両方と体の関係になれる組だった（中心のある三人：直接の行為ができる組は二つで、残りの二人は同じ場にいても触れ合わない）' : '三人とも、受け攻め・恋愛対象・縛りの合う組だった') + '（受け攻め：' + shapeLb + '）';
-    var o1 = ST.say(S, { actors: m3, tag: '三人でベッドへ', text: t1, why: { eager: q.name + 'が待ちきれなかった', quiet: 'ロッカーの中でいちばん落ち着いていた' + q.name + 'から誘った', join: xy[0].name + 'と' + xy[1].name + 'がベッドへ向かい、別のロッカーだった' + q.name + 'が加わった', rough: '敵対していた三人だが、媚薬の熱には逆らえなかった（口では嫌がりながら）' }[kind] + '／発情 ' + m3.map(function (p) { return Math.round(p.m.heat); }).join('・'), mag: 40 });
+    var o1 = ST.say(S, { actors: m3, tag: '三人でベッドへ', text: t1, why: { eager: q.name + 'が待ちきれなかった', quiet: 'ロッカーの中でいちばん落ち着いていた' + q.name + 'から誘った', join: xy[0].name + 'と' + xy[1].name + 'がベッドへ向かい、別のロッカーだった' + q.name + 'が加わった', rough: '敵対していた三人だが、媚薬の熱には逆らえなかった（口では嫌がりながら）', sulk: '愛憎のある三人（表の顔は恋愛系）。口では文句を言いながら、離れられなかった' }[kind] + '／発情 ' + m3.map(function (p) { return Math.round(p.m.heat); }).join('・'), mag: 40 });
     ST.key(S, o1, '三人でベッドへ');
     if (S.lew === 'low') {
       ST.say(S, { actors: m3, tag: '三人の夜', text: pick(S, TB.FADE), why: whyBase, mag: 45, kind: 'climax' });
@@ -210,8 +220,8 @@
     ST.say(S, { actors: m3, tag: '三人の絶頂', text: t3, why: '媚薬が切れるまで、三人は仮眠室を出なかった', mag: 46, kind: 'climax' });
     /* 一夜のうちに、もう一、二度ずつ */
     m3.forEach(function (p) { p.cnt.climax += 1 + rng.int(2); });
-    var tone = hostileIn(S, api, m3) || lhIn(S, api, m3) ? 'rough' : sweetIn(S, api, m3) ? 'sweet' : rng() < 0.5 ? 'sweet' : 'plain';
-    ST.say(S, { actors: m3, tag: '翌朝（三人）', text: ST.fmt(pick(S, TB.MORNING[tone]), vv), why: tone === 'sweet' && !sweetIn(S, api, m3) ? '三人とも、悪くない朝を迎えた' : { sweet: '三人とも、互いに惹かれ合っていた', rough: '敵対・愛憎のある三人だった', plain: '三人とも、悪くない夜だったと思っていた' }[tone], mag: 30 });
+    var tone = lhTone(S, api, m3) || (sweetIn(S, api, m3) ? 'sweet' : rng() < 0.5 ? 'sweet' : 'plain');
+    ST.say(S, { actors: m3, tag: '翌朝（三人）', text: ST.fmt(pick(S, TB.MORNING[tone]), vv), why: tone === 'sweet' && !sweetIn(S, api, m3) ? '三人とも、悪くない朝を迎えた' : { sweet: '三人とも、互いに惹かれ合っていた', rough: '敵対・愛憎のある三人だった', plain: '三人とも、悪くない夜だったと思っていた', sulk: '愛憎のある三人だった（表の顔は恋愛系。喧嘩しながら離れない）' }[tone], mag: 30 });
     labels.push(TB.MORNING_LB[tone]);
     return labels;
   }
@@ -276,7 +286,7 @@
       if (!sp) { var bp2 = P.length === 3 && bestPair(S, api, m); if (!bp2 || !LK.bed) return null; return { Lk: best.Lk, who: bp2, labels: pairBed(S, api, best.Lk, bp2, how, m.filter(function (p) { return bp2.indexOf(p) < 0; })[0]) }; }
       sp = ringOf(S, sp, m);
       /* 誘う人：中心のある三人は中心の人（残りの二人は触れ合わないので）。ほかは熱のいちばん高い人か、いちばん落ち着いていた人 */
-      var kind = hostileIn(S, api, m) || lhIn(S, api, m) ? 'rough' : 'eager', q = sp.h || m.slice().sort(function (a, b) { return b.m.heat - a.m.heat; })[0];
+      var kind = lhTone(S, api, m) || 'eager', q = sp.h || m.slice().sort(function (a, b) { return b.m.heat - a.m.heat; })[0];
       if (kind === 'eager' && !sp.h) { var qq = m.slice().sort(function (a, b) { return (b.m.reason + b.tr.ac * 20) - (a.m.reason + a.tr.ac * 20); })[0]; if (rng() < 0.3 + qq.tr.ac * 0.3) { kind = 'quiet'; q = qq; } }
       return { Lk: best.Lk, who: m, labels: trioBed(S, api, sp, kind, how, q) };
     }

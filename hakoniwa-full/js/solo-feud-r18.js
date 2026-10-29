@@ -26,11 +26,11 @@
     return t + R.resist(S, X, Y, { endure: false }) + R.sex(S, X, Y, { mood: 'rough', fore: false, short: true });
   };
   /* 女性どうしの揉み合い（feud-kit.js の ffClash）も、作風「男性向け」のときは上と同じ組み立てにする（以前は小説調の FF の文のまま）。
-     条件は feud-kit.js の clash と同じ（唇・体に踏み込める組・強引な側が攻め・夜の出来事が0でない・体を奪ってよい組） */
+     条件は feud-kit.js の clash と同じ（唇・体に踏み込める組・強引な側が攻め・夜の出来事が0でない・体を奪ってよい組・設定の愛憎なら表の顔が嫌悪系 FD.forceOk） */
   var clash0 = FD.clash;
   FD.clash = function (S, a, b, pick) {
     var LW = HK.Lewd, Pz = HK.Pos;
-    if (LW && LW.storyEro && LW.storyForceSex && Pz && Pz.ff(a, b) && LW.storyEro(S) && !(HK.NoGen && HK.NoGen.on(a, b)) && FD.touchOk(S, a, b) && Pz.order(a, b, [a, b])[0] === a && FD.r18On(S) && FD.bodyOk(S, a, b)) {
+    if (LW && LW.storyEro && LW.storyForceSex && Pz && Pz.ff(a, b) && LW.storyEro(S) && !(HK.NoGen && HK.NoGen.on(a, b)) && FD.touchOk(S, a, b) && Pz.order(a, b, [a, b])[0] === a && FD.r18On(S) && FD.bodyOk(S, a, b) && (!FD.forceOk || FD.forceOk(S, a, b))) {
       var t = a.name + 'と' + b.name + 'の口論は、いつの間にか怒鳴り合いになっていた。' + HK.TL.line(a, 'LH_CLASH', b);
       return { text: t + FD.r18Clash(S, a, b) + HK.TL.line(a, 'LH_AFTER', b), r18: true, touch: true };
     }

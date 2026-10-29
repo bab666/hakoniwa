@@ -178,6 +178,8 @@
     }
   });
 
+  /* 設定の愛憎（HK.LoveHate）の一言（理由の欄。敵対の強引な場面の理由 HS.why には、もう入っている） */
+  function lhWhy(ctx, a, b) { var LHm = HK.LoveHate, w = LHm && LHm.any && LHm.any(ctx, a, b) ? LHm.why(ctx, a, b) : ''; return w ? '／' + w : ''; }
   /* --- 憎みながら、夜を重ねる --- */
   var HN = {
     open: L('「あなたなんか嫌いだ｜＝｜あなたなんか嫌いです」と{a}が言った。「知ってる｜知っている｜知っています」と{b}が言った。それが合図だった。|言い争いは、いつの間にか服の掴み合いになり、ベッドの上で終わった。|{a}と{b}は、互いの悪口を言い合いながら、ホテルの部屋の鍵を開けた。|殴り合いの寸前で、{a}は{b}の手首を掴み、そのまま壁に縫いとめた。'),
@@ -207,7 +209,10 @@
       if (HS && HS.loves && (function (o) { return (HS.loves(ctx, o[1], o[0]) && !HS.hates(ctx, o[1], o[0])) || HS.avoids(ctx, o[0], o[1]); })(HS.order(ctx, a, b))) return false;
       /* 敵対の強引な場面でない愛憎の夜は、合意ありの夜なので、性欲「なし」の人は出さない（pos.js の HK.Pos.libNone。2026-10-28 担当JA） */
       if (HK.Pos && HK.Pos.libNone && HK.Pos.libNone([a, b])) return false;
-      return hateLove(ctx, a, b) && (hateLove(ctx, b, a) || ctx.R(b, a).att > 40) && (pf.hateKiss || 0) >= 1;
+      /* 値の判定（hateLove：惹かれと苛立ち）に加えて、設定の愛憎（気持ちの関係「愛憎」。HK.LoveHate.has）も見る（値 or 設定。2026-10-29 担当C。設計 3 章）。
+         愛憎の二人は、唇を奪う場面（om_forcekiss）の代わりに「構う」（hate-love.js の tie_lh_kamau）が一度あればよい */
+      var LHm = HK.LoveHate, lhA = !!(LHm && LHm.has(ctx, a, b)), lhB = !!(LHm && LHm.has(ctx, b, a));
+      return (hateLove(ctx, a, b) || lhA) && (hateLove(ctx, b, a) || lhB || ctx.R(b, a).att > 40) && ((pf.hateKiss || 0) >= 1 || ((lhA || lhB) && (pf.lhN || 0) >= 1));
     },
     /* 愛憎の組（hate-love.js）は起きやすい（R18版。HK.LoveHate.k） */
     w: function (ctx, a, b) { return (0.6 + (a.tr.impulse + b.tr.impulse) * 0.5 + ctx.env.heat / 200) * strifeK(ctx) * (!HK.SAFE_ON && HK.LoveHate && HK.HateSex ? HK.LoveHate.k(ctx, a, b) : 1); },
@@ -221,14 +226,14 @@
         var hs = HS.scene(ctx, a, b, {}), ob = HS.order(ctx, a, b), host = HS.hostile(ctx, a, b);
         /* 敵対の強引な場面は合意のない展開：理由に印（HK.Pos.FORCE_MARK）を付ける（性欲「なし」の人もこの場面には出るため。orient-audit.js の O6 が見る。2026-10-28 担当JA）。
            恋愛対象「なし」の人の印（HS.why の中の HK.Pos.noneWhy）がもう付いていれば足さない */
-        var hw = host ? HS.why(ctx, a, b) : '憎みながら惹かれ合う（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性', FMK = HK.Pos && HK.Pos.FORCE_MARK;
+        var hw = host ? HS.why(ctx, a, b) : '憎みながら惹かれ合う（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性' + lhWhy(ctx, a, b), FMK = HK.Pos && HK.Pos.FORCE_MARK;
         if (host && FMK && hw.indexOf(FMK) < 0 && HK.Pos.forceOn && HK.Pos.forceOn(ctx)) hw += '／' + FMK + '内容のスイッチ「合意のない展開」';
         return { text: fill(ctx, hs + ctx.pick(HN.end), ob[0], ob[1]), why: hw + (HS.shieldWhy ? HS.shieldWhy(HS.lastShield) : ''), mag: 28 };
       }
       var t = ctx.pick(HN.open) + ctx.pick(lewd(ctx) === 'low' || !HN.mid ? HN.low : HN.mid) + ctx.pick(HN.end);
       /* 受け攻め：抱く側を {a} に */
       var ab = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b];
-      return { text: fill(ctx, t, ab[0], ab[1]), why: '憎みながら惹かれ合う（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性', mag: 26 };
+      return { text: fill(ctx, t, ab[0], ab[1]), why: '憎みながら惹かれ合う（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性' + lhWhy(ctx, a, b), mag: 26 };
     }
   });
 
