@@ -8,6 +8,7 @@
      O3 二人だけの出来事で、告白・恋人になる文なのに、告白した側（最初の人）の恋愛対象が合わない
      O4 恋愛：なしの家族・無関心・恐怖の二人が、結末の恋愛・夜・片想いの関係になった／二人の名前だけが出る性的な文・恋愛の文（告白・キス・恋人になる）に出た
         （4回に1回、0-1 に恋愛：なしの家族、1-2 に無関心か恐怖を付けて、その回だけ数える。2026-10-26 追加：R18が中心の箱庭・吸血の夜で家族の二人が体の関係になっていたため）
+        （2026-10-28 担当MG）無関心・恐怖の引き金「力ずくで迫られる」（cold-fear-r18.js：理由に〔合意のない展開〕と「無関心／恐怖の変化：」）の場面は、O4 の性的な文に数えない（恋愛対象・受け攻めは O2 がそのまま見る）
      O5 全年齢モード（safe）・全年齢版で、はっきりした性的な語の文が出た（2026-10-26 追加：女性上位の見直しが全年齢モードで事件の文を差し替えていたため）
      （2026-10-27 担当HC）恋愛対象「なし」は「恋愛にならない」の意味。内容のスイッチ「合意のない展開」が入（展開の重さが穏やかでない）のときの
         切羽詰まった場面（執着の監禁の夜・歪んだ関係の拒めない夜・敵対する二人の強引なエッチ・出られない部屋の条件のエッチ）だけは、恋愛対象「なし」の人も体の関係になれる。
@@ -141,7 +142,7 @@ const { openBuild } = require('./lib');
         /* O4：恋愛：なしの家族・無関心・恐怖の二人が、結末の恋愛・夜の関係になった／二人の名前だけが出る性的な文・恋愛の文に出た（出来事の登場人物の数は問わない） */
         if (NL_T) {
           edges.forEach(e => { if (C[e.a] && C[e.b] && (e.cls === 'love' || e.cls === 'night' || e.cls === 'pine') && nlPair(e.a, e.b)) note('O4', '結末 ' + who(e.a) + '×' + who(e.b) + '＝' + e.name); });
-          const T4 = (res.log || []).map(e => e && typeof e.text === 'string' ? { t: e.text, tag: e.tag || e.label || '' } : null).filter(Boolean);
+          const T4 = (res.log || []).map(e => e && typeof e.text === 'string' && !/〔合意のない展開〕[^]*(?:無関心|恐怖)の変化：/.test(String(e.why || '')) ? { t: e.text, tag: e.tag || e.label || '' } : null).filter(Boolean);
           if (res.ending && Array.isArray(res.ending.lines)) res.ending.lines.forEach(l => typeof l === 'string' && T4.push({ t: l, tag: '結末' }));
           T4.forEach(x => x.t.replace(NOTSEX, '').split(/(?<=[。！？\n])/).forEach(sn => {
             const ns = []; C.forEach((c, i) => { if (sn.indexOf(c.name) >= 0) ns.push(i); });

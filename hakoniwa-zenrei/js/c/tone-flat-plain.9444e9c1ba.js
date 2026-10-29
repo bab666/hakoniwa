@@ -1,0 +1,6 @@
+;
+HK.Load.def(363,'tone:flat_plain',function(){
+HK.Load.toneData("flat_plain",{"F":[
+["ふん、いいんじゃないか。……つまらない","ふん、いいんじゃないか。……つまらない",1]]});
+});
+HK.Load.done('tone-flat-plain', '9444e9c1ba', 1);

@@ -37,6 +37,8 @@
    S19: 無関心（a→b）：a から b への好意・惹かれが区切りごとの記録（history）で動いた／結果の値が記録と違う／二人が恋人・夜・恋愛の出来事・性的な文・関係図の恋の線になった／
         a が b との助け合い（cat:'help' の主役）・嫉妬や心配（理由書き）の出来事に入った／HK.canLove・HK.Pos.okSex が通った
    S20: 恐怖（a が b を恐れる）：二人が恋人・夜・恋愛の出来事・性的な文・関係図の恋の線（物語型は恋愛・夜の札、恋人の記録）になった／HK.canLove（両方向）・HK.Pos.okSex が通った
+        （2026-10-28 担当MG：無関心・恐怖は引き金の出来事で動く設計（cold-fear.js）。S19 は、理由に「無関心の変化：」がある記録（二人とも登場）の区切りから先の値の動きと、
+        そのあとの助け合い・嫉妬・心配を数えない。S19・S20 の性的な文は、R18版の引き金「力ずくで迫られる」場面（理由に〔合意のない展開〕と「無関心／恐怖の変化：」）を数えない）
    S21: 許嫁：破談（pf.fiBroken）のあとに恋人（pf.couple）・恋愛の出来事が出た／恋愛対象・受け攻めの合わない許嫁が恋人と同じ扱いになった
    S22: グループの「仲間」（画面）：オンのグループの住人どうしに関係「仲間」が付かない／オフ・別のグループの組に付いた／ほかの関係が消えた／JSON にオン・オフが入らない／古い JSON が読めない
    S25〜S30（2026-10-26、死んだ・消えた人の再登場。記録ごとに、書く直前の住人の状態を写して文で見る。ふつうの回と、死のある箱庭を
@@ -85,6 +87,9 @@ const { openBuild } = require('./lib.js');
     const MOB = /男たち|男が|客|触手|ゾンビ|魔物|オーク|ゴブリン|スライム|村人|略奪者|おじさん|兵士|盗賊|マッサージ師|施術師|整体師|司会|カメラマン|監督|インキュバス|獣|看守|見知らぬ|誰とも知れない|壁の向こう|向こう側の誰か|モブ|生命体|異星|神(?:は|が|の手|に)|邪神/;
     const sents = t => String(t).replace(NONSEX, '＿').split(/[。！？\n」]/);
     const isSex = s => SEXCORE.test(s);
+    /* 無関心・恐怖の引き金の記録（cold-fear.js・cold-fear-r18.js。2026-10-28 担当MG）：理由に「無関心の変化：」「恐怖の変化：」。
+       S19 は、引き金の記録のあとの値の動き・助け合いを数えない。S19・S20 の性的な文は、引き金の「力ずくで迫られる」場面（理由に〔合意のない展開〕と変化の印）を数えない */
+    const CFX = /無関心の変化：/, CFF = /〔合意のない展開〕[^]*(?:無関心|恐怖)の変化：/;
     const out = { n: {}, ex: {}, drop: {}, runs: 0, err: [], bySc: {}, anySex: {} };
     const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33', 'S34'];
     out.info = {};
@@ -236,8 +241,10 @@ const { openBuild } = require('./lib.js');
         if (cur && cur.feel && !cur.story && e && !e.skipped && !SKIPK.test(kind) && acs.length >= 2) {
           const x = acs[0], y = acs[1], nl = nlOf(cur.feel, x.i, y.i);
           if (o.cat === 'romance' && nl) hit(nlKey(nl), '恋愛 ' + nlTxt(this.chars, nl) + ' | ' + String(o.text).slice(0, 120));
+          /* 無関心の引き金（cold-fear.js：理由に「無関心の変化：」）のあとは、無関心が解けているので助け合いなどに入ってよい（2026-10-28 担当MG） */
+          if (CFX.test(String(o.why || ''))) cur.feel.forEach(t => { if (t.type === 'apathy' && acs.some(c => c.i === t.a) && acs.some(c => c.i === t.b)) (cur.cfBroke = cur.cfBroke || {})[t.a + '>' + t.b] = 1; });
           cur.feel.forEach(t => {
-            if (t.type !== 'apathy' || acs[0].i !== t.a || !acs.some(c => c.i === t.b)) return;
+            if (t.type !== 'apathy' || acs[0].i !== t.a || !acs.some(c => c.i === t.b) || (cur.cfBroke && cur.cfBroke[t.a + '>' + t.b])) return;
             if (o.cat === 'help' || /嫉妬|心配/.test(String(o.why || ''))) hit('S19', '無関心な' + this.chars[t.a].name + 'が' + this.chars[t.b].name + 'との' + (o.cat === 'help' ? '助け合い' : '嫉妬・心配') + 'に [' + ((this._ev && this._ev.id) || '') + '] | ' + String(o.text).slice(0, 100));
           });
           const fi = cur.feel.filter(t => t.type === 'fiance' && tkey(t.a, t.b) === tkey(x.i, y.i))[0];
@@ -626,7 +633,10 @@ const { openBuild } = require('./lib.js');
             /* 無関心：a→b の好意・惹かれが、区切りごとの記録（history）でずっと同じ */
             if (t.type === 'apathy' && !cur.story && Array.isArray(res.history) && res.history.length) {
               const k = tkey(t.a, t.b), ia = t.a < t.b ? 0 : 1, it = t.a < t.b ? 3 : 4, v0 = res.history[0].rel && res.history[0].rel[k];
-              if (v0) res.history.forEach(h => { const v = h.rel && h.rel[k]; if (v && (Math.abs(v[ia] - v0[ia]) > 1e-6 || Math.abs(v[it] - v0[it]) > 1e-6)) hit('S19', '値が動いた ' + nlTxt(chars, t) + '（' + h.label + '：好意 ' + Math.round(v0[ia]) + '→' + Math.round(v[ia]) + '・惹かれ ' + Math.round(v0[it]) + '→' + Math.round(v[it]) + '）'); });
+              /* 引き金（理由に「無関心の変化：」、二人とも登場）の区切りから先は、値が動いてよい */
+              const trg = (res.log || []).filter(e => e && CFX.test(String(e.why || '')) && Array.isArray(e.actors) && e.actors.indexOf(t.a) >= 0 && e.actors.indexOf(t.b) >= 0)[0];
+              const tStep = trg ? trg.step : Infinity;
+              if (v0) res.history.forEach(h => { const v = h.rel && h.rel[k]; if (h.step >= tStep) return; if (v && (Math.abs(v[ia] - v0[ia]) > 1e-6 || Math.abs(v[it] - v0[it]) > 1e-6)) hit('S19', '値が動いた ' + nlTxt(chars, t) + '（' + h.label + '：好意 ' + Math.round(v0[ia]) + '→' + Math.round(v[ia]) + '・惹かれ ' + Math.round(v0[it]) + '→' + Math.round(v[it]) + '）'); });
               const pr = (res.pairs || []).filter(p => tkey(p.a, p.b) === k)[0], last = res.history[res.history.length - 1].rel[k];
               if (pr && last) { const ab = t.a < t.b ? pr.rel.ab : pr.rel.ba; if (Math.abs(ab.aff - Math.round(last[ia])) > 1 || Math.abs(ab.att - Math.round(last[it])) > 1) hit('S19', '結果の値が記録と違う ' + nlTxt(chars, t)); }
             }
@@ -643,7 +653,7 @@ const { openBuild } = require('./lib.js');
           /* 性的な文に、無関心・恐怖の二人の名前だけが出た */
           (res.log || []).forEach(e => {
             if (!e || typeof e.text !== 'string') return;
-            sents(e.text).forEach(x => { if (!isSex(x) || MOB.test(x) || /最期に遺した言葉/.test(x)) return; const inS = chars.map((c, i) => x.indexOf(c.name) >= 0 ? i : -1).filter(i => i >= 0); if (inS.length === 2) { const nl = nlOf(ties, inS[0], inS[1]); if (nl) hit(nlKey(nl), '性的な文 ' + nlTxt(chars, nl) + ' | ' + x.slice(0, 120)); } });
+            if (!CFF.test(String(e.why || ''))) sents(e.text).forEach(x => { if (!isSex(x) || MOB.test(x) || /最期に遺した言葉/.test(x)) return; const inS = chars.map((c, i) => x.indexOf(c.name) >= 0 ? i : -1).filter(i => i >= 0); if (inS.length === 2) { const nl = nlOf(ties, inS[0], inS[1]); if (nl) hit(nlKey(nl), '性的な文 ' + nlTxt(chars, nl) + ' | ' + x.slice(0, 120)); } });
             /* 参考：恐怖で避けた・無関心で受け流した出来事の数 */
             const w = String(e.why || '');
             if (/を恐れている：|に庇護を求めた/.test(w)) out.info.fear = (out.info.fear || 0) + 1;
