@@ -293,7 +293,9 @@
     out.push(ntx + fea + (sl.mid ? tsay('mid') : ''));
     /* 果てたあとの受けの余韻の声（moan-engine.js の HK.Moan.say の after＝e0。呼ぶ側の事後の文・もう一度の段落がないときに 3 割5分。2026-10-28 担当M1） */
     var rr0 = R0 && (typeof R0 === 'function' ? R0 : R0.rng), e0 = !opt.after && !agT && rr0 && HK.Moan && HK.Moan.say && !HK.SAFE_ON && rr0() < 0.35 ? HK.Moan.say(R0, b, 'after', { top: a }, null) : '';
-    out.push((sl.peak ? tsay('peak') : '') + cl + (e0 ? '{b}「' + e0 + '」' : '') + (sl.after ? '\n\n' + tsay('after') : ''));
+    /* 受けの余韻の声が問いなら、攻めの返事を続ける（after-reply-top-r18.js。問いでなければ乱数を引かない） */
+    var e0r = e0 && HK.AfterReply && HK.AfterReply.replyB ? HK.AfterReply.replyB(R0, e0, a, b, '{a}', '{b}', { rel: opt.rel, force: opt.force }) : '';
+    out.push((sl.peak ? tsay('peak') : '') + cl + (e0 ? '{b}「' + e0 + '」' + e0r : '') + (sl.after ? '\n\n' + tsay('after') : ''));
     var ci = out.length - 1;
     if (agT) out.push(agT);
     if (opt.after) out.push(opt.after);

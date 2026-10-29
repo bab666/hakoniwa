@@ -91,6 +91,7 @@ js/mob.js
 js/ero-kit.js
 js/ero-top-lines-r18.js
 js/after-reply-r18.js
+js/after-reply-top-r18.js
 js/lewd-words.js
 js/part-words.js
 js/ero-moan-tone.js

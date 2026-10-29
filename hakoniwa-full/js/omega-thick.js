@@ -1,3 +1,4 @@
+/* @event-ok 事後の返事を追加（2026-10-29 担当MS） */
 /* 箱庭シミュレーター: オメガバース（R18版のみ）の山場を段落に分けて厚くする ― 発情期の夜・恋人と番の夜・勢いの夜・愛憎の夜・隠れた夜
    ■ 組み立ては omega-thick-kit.js の HK.TKC（中核）。ここはオメガバースの箱庭だけが使う部分（2026-10-27 に omega-thick.js から共通の組み立てを分けた）
    ■ 書き分け・受け攻め・描写の濃さの決まりは omega-thick-kit.js の冒頭のとおり。登場人物はすべて成人として扱う */
@@ -119,7 +120,12 @@
     var rel = kind === 'hate' ? 'hate' : kind === 'affair' || kind === 'night' ? 'casual' : pf && pf.couple || kind === 'bond' || kind === 'love' ? 'lover' : '';
     var E = HK.EroTop, night = HK.Attr && HK.Attr.nightOf ? HK.Attr.nightOf(T, U) : '', s = '';
     if (E && (!own || !own.length || ctx.rng() < (night ? 0.55 : 0.4))) s = E.say(ctx, T, U, stage, { rel: rel, who: '{T}' });
-    if (!s && own && own.length) s = '{T}' + fp(ctx, own);
+    if (!s && own && own.length) {
+      s = '{T}' + fp(ctx, own);
+      /* 事後の一言が問いなら、受けの返事を続ける（after-reply-r18.js の表。共通の表から来たものは HK.EroTop.say の包みで済んでいる。問いでなければ乱数を引かない） */
+      var AR = HK.AfterReply, qd = stage === 'after' && AR && AR.qid ? AR.qid(s) : '';
+      if (qd && U && U.i != null && !U.mob) s += AR.fill(AR.pick(ctx, qd, T, U, { rel: rel }) || '', '{T}', '{U}');
+    }
     return s;
   }
   /* 3つの段の一言をまとめて（TK.body の o.top に渡す形） */

@@ -1,3 +1,4 @@
+/* @event-ok 事後の返事を追加（2026-10-29 担当MS） */
 /* 箱庭シミュレーター: 小説調の山場（本番・絶頂）を、段落に分けて厚くする共通の文（R18版のみ。合コン・出られない部屋・媚薬ロッカー）
    一場面を「始まり／繋がって揺れる／感じていく（喘ぎ）／果てる／余韻」の段落に分け、400字前後にする（段落は '\n\n' で区切る）。
    {a}=攻め（動く・主導する側） {b}=受け。手や息遣い・熱・締めつけを細かく、快感と喘ぎを入れ、余裕のある側と崩れていく側を対比させる。
@@ -498,7 +499,9 @@
     out.push((pl ? pl : '') + fa + T.react(pick, b, nth >= 2) + (HK.Attr ? HK.Attr.pairLine(a, b, 'touch', pick) : ''));
     /* 果てたあとの受けの余韻の声（moan-engine.js の HK.Moan.say の after＝e0。呼ぶ側の事後の文がないときに 3 割5分） */
     var e0 = !opt.after && HK.Moan && HK.Moan.say && opt.rng && !HK.SAFE_ON && opt.rng() < 0.35 ? HK.Moan.say(opt.rng, b, 'after', { novel: true, top: a }, null) : '';
-    out.push((sl.peak ? tsay('peak') : '') + '{b}「' + T.moan(pick, b, true, opt.rng) + '」' + cl + (e0 ? '\n\n{b}「' + e0 + '」' : '') + (sl.after ? '\n\n' + tsay('after') : ''));
+    /* 受けの余韻の声が問い（「……まだ、くっついてて、いい……？」）なら、攻めの返事を続ける（after-reply-top-r18.js。問いでなければ乱数を引かない） */
+    var e0r = e0 && HK.AfterReply && HK.AfterReply.replyB ? HK.AfterReply.replyB(opt.rng, e0, a, b, '{a}', '{b}', { rel: opt.rel, force: opt.force }) : '';
+    out.push((sl.peak ? tsay('peak') : '') + '{b}「' + T.moan(pick, b, true, opt.rng) + '」' + cl + (e0 ? '\n\n{b}「' + e0 + '」' + e0r : '') + (sl.after ? '\n\n' + tsay('after') : ''));
     if (opt.after) out.push(opt.after);
     /* 種族のプレイの一文（attr-race-r18.js。二人とも種族がなければ何もしない）：前戯＝始まりと前戯・最中＝繋がって揺れる・山場＝果てる・事後＝余韻 */
     if (HK.Attr && HK.Attr.raceWeave) HK.Attr.raceWeave(out, a, b, pick, { fore: [0, 1], mid: 2, climax: opt.after ? out.length - 2 : out.length - 1, after: opt.after ? out.length - 1 : -1 }, { mode: mode });

@@ -1,3 +1,4 @@
+/* @event-ok 事後の返事を追加（2026-10-29 担当MS） */
 /* 箱庭シミュレーター（R18版のみ）: 三人の場面（3P）の組み立て（HK.Trio3）。2026-10-28 担当JC
    出られない部屋（room-trio.js・room-last3-r18.js・scenario-room.js の輪）・媚薬ロッカー（locker-crowd.js・locker-trio-bed.js）・
    吹雪の館（solo-yakata-r18.js の媚薬の夜）・エロトラップダンジョン（dungeon-tempt.js の三人目）の三人の場面に、
@@ -601,6 +602,14 @@
       var hubC = this.apart.length ? this.g.filter(function (x) { return !self.apart.some(function (p) { return p.indexOf(x) >= 0; }); })[0] : null;
       var sp3 = hubC || this.g[Math.floor(this.rand() * 3)], rest = this.g.filter(function (x) { return x !== sp3; });
       L3 = [this.botLine(bb, 'after', tp), this.say3(sp3, X.AFT3, { x: rest[0], y: rest[1] })];
+      /* 受けの事後の問い（「……まだ、くっついてて、いい……？」・三人の事後の一言「……ま、また、してくれる……？」）には、攻めの返事を続ける
+         （after-reply-top-r18.js。三人の事後の一言は、話し手を抱いた攻めが答える。話し手を抱いた人がいなければ足さない。問いでなければ乱数を引かない） */
+      var AR = HK.AfterReply, fo = { rel: this.o.rel, fl: this.fl, force: !!this.o.force };
+      if (AR && AR.replyB) {
+        if (L3[0]) L3[0] += AR.replyB(this.S, L3[0], tp, bb, tp.name, bb.name, fo);
+        var tp3 = this.E.filter(function (e) { return e[1] === sp3; })[0];
+        if (L3[1] && tp3) L3[1] += AR.replyB(this.S, L3[1], tp3[0], sp3, tp3[0].name, sp3.name, fo);
+      }
     }
     return L3.filter(Boolean).slice(0, n);
   };
