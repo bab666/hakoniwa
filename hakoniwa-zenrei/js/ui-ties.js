@@ -114,8 +114,10 @@
     if (CO) xs += '<select id="tc-' + k + '" data-f="tie" data-k="' + k + '" data-p="cold" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return '<option value="' + id + '"' + ((t.cold || '') === id ? ' selected' : '') + '>' + esc(CO.map[id].label) + '</option>'; }).join('') + '</select>';
     /* 追加の欄（型・度合い・気持ち・様子。許嫁・元恋人は二人それぞれの気持ち）。hide の欄（敵対の度合い「憎悪」）は出さない（保存済みの値は残って効く）。
        過去・出来事はどの関係にもある欄なので、それぞれの列にそろえて置く */
-    (HK.tieExtra ? HK.tieExtra(t.type) : []).filter(function (x) { return !x.hide; }).forEach(function (x) {
-      var who = x.who ? by[x.who === 'a' ? t.a : t.b] : null, v = t[x.f] || (t.type === 'fiance' ? 'eager' : '');
+    /* 過去の欄は同じ二人の組に一か所（組で最初の関係の行だけ。値は組の中で向きごとに最初に見つかったもの。ties.js の HK.tiePastIndex） */
+    var PV = X.pi ? X.pi.get(t) || null : { past: t.past || '', pastB: t.pastB || '' };
+    (HK.tieExtra ? HK.tieExtra(t.type) : []).filter(function (x) { return !x.hide && (!x.from || PV); }).forEach(function (x) {
+      var who = x.who ? by[x.who === 'a' ? t.a : t.b] : null, v = x.from ? PV[x.f] : t[x.f] || (t.type === 'fiance' ? 'eager' : '');
       var h = '<select id="tx' + x.f + '-' + k + '" data-f="tie" data-k="' + k + '" data-p="' + x.f + '" aria-label="' + esc(who ? who.name + 'の気持ち' : x.from ? ((x.from === 'a' ? na : nb) || x.aria.slice(0, 3)) + 'から見た過去' : x.aria) + '">' + x.order.map(function (id) { return '<option value="' + id + '"' + (v === id ? ' selected' : '') + '>' + esc((who ? who.name + 'の気持ち：' : '') + (HK.tieExtraLabel ? HK.tieExtraLabel(x, id, na, nb) : x.map[id].label)) + '</option>'; }).join('') + '</select>';
       if (x.from) past += h; else if (x.f === 'noev') ev = h; else xs += h;
     });
@@ -192,7 +194,7 @@
   function section(ctx) {
     var s = S(), CP = HK.CastPages || null, by = Object.create(null);
     s.chars.forEach(function (c) { by[c.id] = c; });
-    var X = { by: by, lz: ctx.lazy ? ' data-lazy="1"' : '', CP: CP, opts: ctx.opts };
+    var X = { by: by, lz: ctx.lazy ? ' data-lazy="1"' : '', CP: CP, opts: ctx.opts, pi: HK.tiePastIndex ? HK.tiePastIndex(s.ties) : null };
     var row = function (t, k) { return rowHtml(t, k, X); };
     lastRow = row;
     var T = s.ties || [], idx = T.map(function (t, k) { return k; });
@@ -370,7 +372,7 @@
       if (op === 'del') {
         var tx4 = '関係を' + hit.length + '本削除します';
         return { n: hit.length, msg: hit.length ? tx4 : '当てはまる関係はありません', ask: tx4 + '。よろしいですか？', label: '関係を' + hit.length + '本削除した',
-          run: function () { var gone = hit.slice(); s.ties = (s.ties || []).filter(function (t) { return gone.indexOf(t) < 0; }); return '関係を' + gone.length + '本削除しました'; } };
+          run: function () { var gone = hit.slice(); if (HK.tiePastRemove) HK.tiePastRemove(s.ties, gone); /* 組の過去は残る関係へ移す */ s.ties =(s.ties || []).filter(function (t) { return gone.indexOf(t) < 0; }); return '関係を' + gone.length + '本削除しました'; } };
       }
       if (op === 'love') {
         var lv = B.lv, ll = (LV.filter(function (x) { return x[0] === lv; })[0] || ['', ''])[1];
@@ -381,6 +383,14 @@
       }
       var fv = B.fv.split(':'), ff = fv[0], val = fv[1] || '', fl = (FV.filter(function (x) { return x[0] === B.fv; })[0] || ['', ''])[1];
       var okF = function (t) { return (HK.tieExtra ? HK.tieExtra(t.type) : []).some(function (x) { return x.f === ff; }); };
+      /* 過去は組（同じ二人）につき一か所：組の家にまとめて、一人目から（家の向き）を変える。「過去：なし」は二人それぞれからの過去を両方消す */
+      if (ff === 'past' && HK.tiePastHome) {
+        var seenP = {}, PL = [], nP = 0, noP = hit.filter(function (t) { return !okF(t); }).length;
+        hit.forEach(function (t) { var h = HK.tiePastHome(s.ties, t), kp = h && HK.tiePastKey(h.a, h.b); if (!h || seenP[kp]) return; seenP[kp] = 1; nP++; var cur = HK.tiePastGet(s.ties, h); if (val ? cur.past !== val : cur.past || cur.pastB) PL.push(h); });
+        var tx8 = hit.length + '本（' + nP + '組）のうち' + PL.length + '組の過去を「' + fl + '」にします（過去は二人の組に一つ）' + (noP ? '（' + noP + '本はこの欄のない関係です）' : '');
+        return { n: PL.length, msg: PL.length ? tx8 : '変わる組はありません（' + hit.length + '本が当てはまり、すでに「' + fl + '」か、この欄のない関係です）', ask: tx8 + '。よろしいですか？', label: PL.length + '組の過去を「' + fl + '」にした',
+          run: function () { PL.forEach(function (h) { HK.tiePastGather(s.ties, h); if (val) h.past = val; else { delete h.past; delete h.pastB; } }); return PL.length + '組の過去を「' + fl + '」にしました'; } };
+      }
       var L3 = hit.filter(function (t) { return okF(t) && (t[ff] || '') !== val; }), no = hit.filter(function (t) { return !okF(t); }).length;
       var tx5 = hit.length + '本のうち' + L3.length + '本を「' + fl + '」にします' + (no ? '（' + no + '本はこの欄のない関係です）' : '');
       return { n: L3.length, msg: L3.length ? tx5 : '変わる関係はありません（' + hit.length + '本が当てはまり、すでに「' + fl + '」か、この欄のない関係です）', ask: tx5 + '。よろしいですか？', label: '関係' + L3.length + '本を「' + fl + '」にした',

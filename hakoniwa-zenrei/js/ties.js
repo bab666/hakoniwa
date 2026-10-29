@@ -258,6 +258,88 @@
     if (!Object.keys(nl).length) return ties;
     return l.filter(function (t) { return !(t && FEAR_DROP.test(t.type) && nl[Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b)]); });
   };
+  /* ---------- 過去は組（同じ二人）につき一か所（2026-10-29 担当MJ2） ----------
+     同じ二人に関係を重ねても、過去の欄（past＝一人目から・pastB＝二人目から）は、その組で過去の欄を持てる最初の関係（家）にだけ出し、そこに持たせる。
+     2つ目以降の関係に入っている値（以前の設定）は、向きごとに「組の中で最初に見つかった値」として読む。編集したら家に寄せ、ほかの関係の past・pastB は消す。
+     関係を消す・種類を変えて家が変わるときは、残った関係に移す（HK.tiePastMoveOut）。箱庭では一組に一回だけ効く（HK.Ties.apply） */
+  function pairKey(x, y) { return x < y ? x + '|' + y : y + '|' + x; }
+  function samePair(x, t) { return !!(x && t && ((x.a === t.a && x.b === t.b) || (x.a === t.b && x.b === t.a))); }
+  HK.tiePastOK = function (t) { return !!(t && T[t.type] && HK.tieExtra(t.type).some(function (x) { return x.f === 'past'; })); };
+  /* 組の家（過去の欄を持てる最初の関係。skip は除く）。無ければ null */
+  HK.tiePastHome = function (ties, t, skip) { return (ties || []).filter(function (x) { return x !== skip && samePair(x, t) && HK.tiePastOK(x); })[0] || null; };
+  /* 組の過去（ref の向きで。past＝ref.a から、pastB＝ref.b から）：向きごとに、組の中で最初に見つかった値 */
+  HK.tiePastGet = function (ties, ref) {
+    var r = { past: '', pastB: '' };
+    (ties || []).forEach(function (x) {
+      if (!samePair(x, ref)) return;
+      var fw = x.a === ref.a, f = fw ? x.past : x.pastB, b = fw ? x.pastB : x.past;
+      if (!r.past && f && HK.TIE_PAST[f]) r.past = f;
+      if (!r.pastB && b && HK.TIE_PAST[b]) r.pastB = b;
+    });
+    return r;
+  };
+  /* 組の過去を家に寄せる（ほかの関係の past・pastB は消す。skip の関係は家にしないが、値は拾い、消さない）。返り値：家（無ければ null） */
+  HK.tiePastGather = function (ties, t, skip) {
+    var home = HK.tiePastHome(ties, t, skip), v = home ? HK.tiePastGet(ties, home) : null;
+    if (!home) return null;
+    (ties || []).forEach(function (x) { if (x !== skip && samePair(x, t)) { delete x.past; delete x.pastB; } });
+    if (v.past) home.past = v.past;
+    if (v.pastB) home.pastB = v.pastB;
+    return home;
+  };
+  /* 関係 t を消す・ほかの組へ移す・過去の欄の無い種類にする前に：t の組の過去を残る関係（家）へ移し、t からは消す */
+  HK.tiePastMoveOut = function (ties, t) { if (t) HK.tiePastRemove(ties, [t]); };
+  /* gone の関係をまとめて消す前に：それぞれの組の過去を、残る関係の家へ移す（gone からは消す。残る家が無ければ過去はなくなる） */
+  HK.tiePastRemove = function (ties, gone) {
+    var L = ties || [], done = {};
+    (gone || []).forEach(function (t) {
+      var k = t && pairKey(t.a, t.b);
+      if (!t || done[k]) return;
+      done[k] = 1;
+      var home = L.filter(function (x) { return gone.indexOf(x) < 0 && samePair(x, t) && HK.tiePastOK(x); })[0], v = home ? HK.tiePastGet(L, home) : null;
+      L.forEach(function (x) { if (samePair(x, t)) { delete x.past; delete x.pastB; } });
+      if (v && v.past) home.past = v.past;
+      if (v && v.pastB) home.pastB = v.pastB;
+    });
+  };
+  /* 欄の編集：t の向きの欄 f（'past'・'pastB'）を v にする。値は組の家に持たせ、ほかの関係からは消す */
+  HK.tiePastSet = function (ties, t, f, v) {
+    var home = HK.tiePastGather(ties, t);
+    if (!home) return;
+    var g = (f === 'past') === (t.a === home.a) ? 'past' : 'pastB';
+    if (v && HK.TIE_PAST[v]) home[g] = v; else delete home[g];
+  };
+  /* 箱庭に渡す関係の並びから、組ごとの過去（a・b の向きで f＝a から、r＝b から） */
+  HK.tiePastPairs = function (ties) {
+    var m = {};
+    (ties || []).forEach(function (t) {
+      if (!t || t.a === t.b) return;
+      var k = pairKey(t.a, t.b), v = m[k] || (m[k] = { a: t.a, b: t.b, f: '', r: '' }), fw = t.a === v.a;
+      [[fw ? 'f' : 'r', t.past], [fw ? 'r' : 'f', t.pastB]].forEach(function (q) { if (!v[q[0]] && q[1] && HK.TIE_PAST[q[1]]) v[q[0]] = q[1]; });
+    });
+    return m;
+  };
+  HK.tiePastKey = pairKey;
+  /* 箱庭への入力（ui.js の buildInput）：組の過去を、組で最初に過去の欄を持つ関係にだけ持たせる（その場で書き換える） */
+  HK.tiePastCompact = function (list) {
+    var PP = HK.tiePastPairs(list);
+    (list || []).forEach(function (o) {
+      var v = PP[pairKey(o.a, o.b)], fw = v && v.a === o.a;
+      delete o.past; delete o.pastB;
+      if (!v || v.done || !HK.tiePastOK(o)) return;
+      v.done = 1;
+      if (fw ? v.f : v.r) o.past = fw ? v.f : v.r;
+      if (fw ? v.r : v.f) o.pastB = fw ? v.r : v.f;
+    });
+    return list;
+  };
+  /* 一覧の描画用（関係が多くても一度なめるだけ）：家 → 組の過去（家の向きで）の Map */
+  HK.tiePastIndex = function (ties) {
+    var g = {}, out = new Map();
+    (ties || []).forEach(function (t) { if (t && t.a !== t.b) (g[pairKey(t.a, t.b)] = g[pairKey(t.a, t.b)] || []).push(t); });
+    Object.keys(g).forEach(function (k) { var h = g[k].filter(HK.tiePastOK)[0]; if (h) out.set(h, HK.tiePastGet(g[k], h)); });
+    return out;
+  };
   /* 関係の一覧の外（関係の種類の選択肢に出さない）の関係 */
   HK.tieHidden = function (id) { return !!(HK.TIES[id] && HK.TIES[id].hidden); };
   /* 片想いの「想われる側」の温度（相手にされていない片想い） */
@@ -711,6 +793,8 @@
         x.mutual = true; out.push(x);
         var y = {}; for (var k2 in x) y[k2] = x[k2];
         y.a = x.b; y.b = x.a;
+        /* 過去は向きつきなので、逆向きの写しでは入れ替える */
+        delete y.past; delete y.pastB; if (x.pastB) y.past = x.pastB; if (x.past) y.pastB = x.past;
         if (!(ties || []).some(function (u) { return u && u.type === 'crush' && u.a === y.a && u.b === y.b; })) out.push(y);
       });
       return out;
@@ -723,6 +807,8 @@
     },
     apply: function (ctx, ties) {
       ctx.ties = {}; ctx.tiesAll = {};
+      /* 過去は一組に一回だけ効かせる：組の過去をまとめ、組で最初に過去の欄を持つ（ここまで残った）関係にだけ付ける */
+      var PP = HK.tiePastPairs(ties);
       (HK.fearTies(ties) || []).forEach(function (t) {
         var A = ctx.chars[t.a], B = ctx.chars[t.b], D = T[t.type];
         if (!A || !B || A === B || !D) return;
@@ -785,6 +871,9 @@
         /* 追加の欄（2026-10-25）：憎悪・負い目・許嫁のそれぞれの気持ち */
         var xf = {};
         HK.tieExtra(t.type).forEach(function (x) { var v = t[x.f]; if (v && x.map[v]) xf[x.f] = v; });
+        var PV = PP[pairKey(t.a, t.b)];
+        delete xf.past; delete xf.pastB;
+        if (PV && !PV.done && HK.tiePastOK(t)) { PV.done = 1; var pfw = PV.a === t.a, p1 = pfw ? PV.f : PV.r, p2 = pfw ? PV.r : PV.f; if (p1) xf.past = p1; if (p2) xf.pastB = p2; }
         if (t.type === 'fiance') {
           xf.feel = xf.feel || 'eager'; xf.feelB = xf.feelB || 'eager'; add(ab, HK.FIANCE_FEEL[xf.feel].ab); add(ba, HK.FIANCE_FEEL[xf.feelB].ab);
           /* 恋愛対象・受け攻めが合わない許嫁は、家どうしの約束だけ（最初の惹かれも低く抑える） */

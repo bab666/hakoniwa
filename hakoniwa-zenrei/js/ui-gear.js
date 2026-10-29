@@ -141,9 +141,10 @@
   /* 関係の追加の欄（型・気持ち・様子・愛憎。ties.js の HK.tieExtra）。許嫁は二人それぞれの気持ち */
   function extraSels(t, k, attr) {
     /* hide の欄（敵対の度合い「憎悪」）は出さない（保存済みの値はそのまま残って効く）。愛憎の欄は、一人目・二人目を名前で出す */
-    var pw = '';
-    return (HK.tieExtra ? HK.tieExtra(t.type) : []).filter(function (x) { return !x.hide; }).map(function (x) {
-      var who = x.who ? byId(x.who === 'a' ? t.a : t.b) : null, v = t[x.f] || (t.type === 'fiance' ? 'eager' : '');
+    /* 過去の欄は同じ二人の組に一か所（組で最初の関係の枠だけ。値は組の中で向きごとに最初に見つかったもの。ties.js の HK.tiePastHome） */
+    var pw = '', PV = pastOf(t);
+    return (HK.tieExtra ? HK.tieExtra(t.type) : []).filter(function (x) { return !x.hide && (!x.from || PV); }).map(function (x) {
+      var who = x.who ? byId(x.who === 'a' ? t.a : t.b) : null, v = x.from ? PV[x.f] : t[x.f] || (t.type === 'fiance' ? 'eager' : '');
       var na = (byId(t.a) || {}).name, nb = (byId(t.b) || {}).name;
       /* 過去の欄（一人目から・二人目から）は、見る人の名前を欄の名前にして、二つを一段（.gtpw）にまとめる */
       var ar = who ? who.name + 'の気持ち' : x.from ? ((x.from === 'a' ? na : nb) || (x.from === 'a' ? '一人目' : '二人目')) + 'から見た過去' : x.aria;
@@ -154,6 +155,8 @@
     }).join('');
   }
   UI.extraSels = extraSels;
+  /* t がその組の過去の欄を出す関係（組の家）なら、組の過去 { past, pastB }（t の向きで）。ほかは null */
+  function pastOf(t) { var L = S().ties || []; return HK.tiePastHome && HK.tiePastHome(L, t) === t ? HK.tiePastGet(L, t) : HK.tiePastHome ? null : { past: t.past || '', pastB: t.pastB || '' }; }
   var PAST_SYM = '過去は二人それぞれから選べます。昔は仲が良かった・昔は敵だった は向きが無いので、どちらか片方で選べば二人ともに効きます';
   /* 関係1本を1枠に描く（2026-10-28 担当MA）：1行目「関係の種類・向き・外す」、2行目「恋愛・仲・過去・出来事」などの小さな欄（狭い幅では折り返す）、
      その下に続柄（きょうだい）と説明（1行で省略。押すと全文）。恋愛の欄はどの関係にもある（ui-ties.js の HK.TiesUI.love） */
@@ -168,7 +171,8 @@
     if (CO) h += '<select data-gf="tcold" data-k="' + k + '" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return opt(id, CO.map[id].label, t.cold || ''); }).join('') + '</select>';
     h += extraSels(t, k, 'data-gf="textra"') + '</div>';
     /* 過去に向きの無い札（昔は仲が良かった・昔は敵だった）を選んだときだけ、片方で足りることを添える */
-    if ([t.past, t.pastB].some(function (v) { return HK.TIE_PAST && HK.TIE_PAST[v] && HK.TIE_PAST[v].sym; })) h += '<p class="gearhint gpast">' + esc(PAST_SYM) + '</p>';
+    var PV0 = pastOf(t);
+    if (PV0 && [PV0.past, PV0.pastB].some(function (v) { return HK.TIE_PAST && HK.TIE_PAST[v] && HK.TIE_PAST[v].sym; })) h += '<p class="gearhint gpast">' + esc(PAST_SYM) + '</p>';
     /* きょうだい：続柄と呼び方（自動のときは「自動（姉）」）、注意（年齢が未設定・同じ年齢・庇護の向きと年齢が逆）。sib-word.js */
     var sb = HK.Sib && HK.Sib.ui ? HK.Sib.ui(c, o, t) : null;
     /* 続柄：上下の欄（elder）で決めたときは「姉（上下の設定）」、上下なしは「上下なし（姉妹）」、ほかは「自動（姉）」 */
@@ -342,7 +346,7 @@
     if (act === 'close') close();
     /* 「口調・喘ぎをより細かく設定する」：窓を閉じて、住人タブの節をこの住人にして開く（ui-voice.js） */
     else if (act === 'tovoice') { var vid = c.id; close(); if (HK.VoiceSet) HK.VoiceSet.open(vid); }
-    else if (act === 'tdel') { s.ties.splice(+b.dataset.k, 1); changed(true); }
+    else if (act === 'tdel') { if (HK.tiePastMoveOut) HK.tiePastMoveOut(s.ties, s.ties[+b.dataset.k]); /* 組の過去は残る関係へ移す */ s.ties.splice(+b.dataset.k, 1); changed(true); }
     else if (act === 'tadd' || act === 'tnew') {
       var oid = act === 'tadd' ? b.dataset.o : (ov.querySelector('[data-gf="newo"]') || {}).value;
       var ty = act === 'tadd' ? 'friend' : (ov.querySelector('[data-gf="newt"]') || {}).value;
@@ -450,8 +454,8 @@
         changed(true);
       })(); break;
       case 'callone': c.calls = c.calls || {}; if (t.value.trim()) c.calls[t.dataset.o] = t.value.trim().slice(0, 16); else delete c.calls[t.dataset.o]; changed(false); break;
-      case 'ttype': if (isInput || !tie) return; tie.type = t.value; var CO = HK.coldOpts ? HK.coldOpts(t.value) : null; if (!CO || !CO.map[tie.cold || '']) delete tie.cold; if (HK.tieExtraNorm) HK.tieExtraNorm(tie); changed(true); break;
-      case 'textra': if (isInput || !tie) return; (function () { var xf = t.dataset.xf; if (t.value && !(tie.type === 'fiance' && t.value === 'eager')) tie[xf] = t.value; else delete tie[xf]; })(); changed(true); break;
+      case 'ttype': if (isInput || !tie) return; tie.type = t.value; if (HK.tiePastOK && !HK.tiePastOK(tie)) HK.tiePastMoveOut(s.ties, tie); /* 過去の欄の無い種類にしたら、組の過去はほかの関係へ */ var CO = HK.coldOpts ? HK.coldOpts(t.value) : null; if (!CO || !CO.map[tie.cold || '']) delete tie.cold; if (HK.tieExtraNorm) HK.tieExtraNorm(tie); changed(true); break;
+      case 'textra': if (isInput || !tie) return; (function () { var xf = t.dataset.xf; if ((xf === 'past' || xf === 'pastB') && HK.tiePastSet) { HK.tiePastSet(s.ties, tie, xf, t.value); return; } /* 過去は組の家に寄せる */ if (t.value && !(tie.type === 'fiance' && t.value === 'eager')) tie[xf] = t.value; else delete tie[xf]; })(); changed(true); break;
       case 'tdir': if (isInput || !tie) return; var me = t.value === 'a'; var o = tie.a === c.id ? tie.b : tie.a, a0 = tie.a; tie.a = me ? c.id : o; tie.b = me ? o : c.id; if (tie.a !== a0 && (tie.lh === 'a' || tie.lh === 'b')) tie.lh = tie.lh === 'a' ? 'b' : 'a'; /* 向きを入れ替えても、愛憎を持つ人は同じ人のまま */ if (tie.a !== a0 && (tie.past || tie.pastB)) { var p0 = tie.past; if (tie.pastB) tie.past = tie.pastB; else delete tie.past; if (p0) tie.pastB = p0; else delete tie.pastB; } /* 過去も、持つ人は同じ人のまま */ changed(true); break;
       case 'tlove': if (isInput || !tie) return; if (t.value === 'ok' || t.value === 'no') tie.love = t.value; else delete tie.love; changed(true); break;
       case 'tcold': if (isInput || !tie) return; if (t.value) tie.cold = t.value; else delete tie.cold; changed(false); break;

@@ -1277,7 +1277,7 @@
             out.push({ a: J.indexOf(x.id), b: J.indexOf(y.id), type: 'comrade', cold: '', love: '' });
           }
         }
-        return out;
+        return HK.tiePastCompact ? HK.tiePastCompact(out) : out;   /* 組の過去は一組に一か所（ties.js） */
       })()
     };
   }
@@ -1580,13 +1580,17 @@
         S.ties.push(nt1); if (CP) CP.revealTie(S.ties.length - 1);
         save(); renderCast(); break;
       case 'tiedel':
+        if (HK.tiePastMoveOut) HK.tiePastMoveOut(S.ties, S.ties[+t.dataset.k]); /* 組の過去は残る関係へ（ties.js） */
         S.ties.splice(+t.dataset.k, 1); save(); renderCast(); break;
       case 'tieimport':
         var pr = HK.parseTies($('#tiebulk').value, S.chars);
         S.ties = S.ties || [];
         pr.ties.forEach(function (nt) {
           var ex = S.ties.filter(function (x) { return x.type === nt.type && ((x.a === nt.a && x.b === nt.b) || (x.a === nt.b && x.b === nt.a)); })[0];
-          if (ex) { ex.a = nt.a; ex.b = nt.b; ex.type = nt.type; if (nt.cold) ex.cold = nt.cold; else delete ex.cold; HK.TIE_XF.forEach(function (f) { if (nt[f]) ex[f] = nt[f]; else delete ex[f]; }); } else S.ties.push(nt);
+          /* 過去は組に一か所（ties.js の HK.tiePastSet）：書いた向きだけを組の家に入れ、書いていない過去は消さない。向きが逆になる関係は、持っている過去も入れ替える */
+          if (ex) { if (ex.a !== nt.a) { var p0 = ex.past; if (ex.pastB) ex.past = ex.pastB; else delete ex.past; if (p0) ex.pastB = p0; else delete ex.pastB; } ex.a = nt.a; ex.b = nt.b; ex.type = nt.type; if (nt.cold) ex.cold = nt.cold; else delete ex.cold; HK.TIE_XF.forEach(function (f) { if (f === 'past' || f === 'pastB') return; if (nt[f]) ex[f] = nt[f]; else delete ex[f]; }); } else S.ties.push(nt);
+          var pv = { past: nt.past, pastB: nt.pastB }; if (!ex) { delete nt.past; delete nt.pastB; }
+          ['past', 'pastB'].forEach(function (f) { if (pv[f]) HK.tiePastSet(S.ties, ex || nt, f, pv[f]); });
         });
         /* 「グループ名 仲間」の行：そのグループを仲間とみなす */
         (pr.groups || []).forEach(function (g) { S.grpComrade = S.grpComrade || {}; S.grpComrade[g] = 1; });
@@ -1824,6 +1828,9 @@
       var tt = S.ties[+t.dataset.k];
       /* 変更の結果、同じ二人に同じ関係が二つになるなら戻す */
       if (tt && /^(?:a|b|type)$/.test(t.dataset.p)) { var na = t.dataset.p === 'a' ? t.value : tt.a, nb = t.dataset.p === 'b' ? t.value : tt.b, nty = t.dataset.p === 'type' ? t.value : tt.type; if (hasTie(na, nb, nty, +t.dataset.k)) { toast('その二人には「' + (HK.TIES[nty] ? HK.TIES[nty].label : nty) + '」がすでにあります'); t.value = tt[t.dataset.p]; return; } }
+      /* 過去は組に一か所（ties.js）：欄の編集は組の家へ。人を変える・過去の欄の無い種類にするときは、組の過去を残る関係へ移す */
+      if (tt && (t.dataset.p === 'past' || t.dataset.p === 'pastB')) { HK.tiePastSet(S.ties, tt, t.dataset.p, t.value); save(); renderCast(); return; }
+      if (tt && (/^[ab]$/.test(t.dataset.p) || (t.dataset.p === 'type' && !HK.tiePastOK({ type: t.value }))) && (tt.past || tt.pastB)) { HK.tiePastMoveOut(S.ties, tt); if (t.dataset.p !== 'type') { tt[t.dataset.p] = t.value; save(); renderCast(); return; } }
       if (tt && HK.TIE_XF.indexOf(t.dataset.p) >= 0) { if (t.value && !(tt.type === 'fiance' && t.value === 'eager')) tt[t.dataset.p] = t.value; else delete tt[t.dataset.p]; save(); renderCast(); return; }
       if (tt) { tt[t.dataset.p] = t.value; if (t.dataset.p === 'love' && !t.value) delete tt.love; if (t.dataset.p === 'type' && HK.tieExtraNorm) HK.tieExtraNorm(tt); if (t.dataset.p === 'type' || t.dataset.p === 'cold' || t.dataset.p === 'love') { save(); renderCast(); return; } }
     }
