@@ -6,7 +6,8 @@
      c.moanDict  … 喘ぎの辞書（受けのとき）。書式は高度設定の「喘ぎの辞書」と同じで、範囲は書かない（[乗り気 1]・[喘ぎ 乗り気 1]・[小説 最中] も読む）。上限 4000 字
      c.moanDictT … 喘ぎの辞書（攻めのとき）。攻めの場面（M.MODES の top：攻め t・言葉責め z・焦らし j・攻めの崩れ u）の行
      c.moanFit   … 声の区分 { kind: firm|soft|grand|none|off, masc: 真偽 }（既定のままなら持たない）
-     c.moanOpt   … { tease: 攻めのときの言葉責め・焦らしの多さ, retort: 受けのときの言い返しの多さ }（off|less|normal|more。normal は持たない）。
+     c.moanOpt   … { tease: 攻めのときの言葉責め・焦らしの多さ, retort: 受けのときの言い返しの多さ }（off|less|normal|more。normal は持たない）、
+                   night: 夜の性格があるときの声の基盤（'off'＝口調の態度のまま・態度の鍵。持たなければ全体の設定のまま。2026-10-29）。
                    moan-cut.js（HK.Moan.tease）が読む：言葉責め・焦らし off 0／less 半分／normal 表どおり／more 1.5倍（一場面 3 回まで）、
                    言い返し off 0／less 1割5分／normal 3割／more 6割（一場面 2 回まで）。2026-10-28 担当M1
    ここで決めた辞書は全体の設定（もとの高度設定）の 住人= よりも優先し、区分は全体の設定の口調ごとの区分より優先する（moan-engine.js の HK.Moan.ownOf・fit）。
@@ -50,8 +51,10 @@
     var o = c.moanOpt || {};
     if (o.tease) out.push('言葉責め：' + lab(o.tease));
     if (o.retort) out.push('言い返し：' + lab(o.retort));
+    if (o.night) out.push('夜の声：' + nightLab(o.night));
     return out.length ? out.join('・') : '決めていません';
   }
+  function nightLab(v) { return v === 'off' ? '口調の態度のまま' : ((HK.PERSONA && HK.PERSONA[v]) || {}).label || ''; }
   function lab(v) { for (var i = 0; i < AMOUNT.length; i++) if (AMOUNT[i][0] === v) return AMOUNT[i][1]; return ''; }
   function keyOpts(style, cur) {
     if (HK.MoanFitUI && HK.MoanFitUI.keyOpts) return HK.MoanFitUI.keyOpts(cur, style);
@@ -77,6 +80,9 @@
       '<div class="gearrow"><label>声の区分（この住人だけ） <select data-gf="moanFitKind" aria-label="この住人の声の区分">' + KIND_OPT.map(function (x) { return opt(x[0], x[1], f.kind || ''); }).join('') + '</select></label>' +
       '<label><input type="checkbox" data-gf="moanFitMasc"' + (k.masc ? ' checked' : '') + '> 男性的な語尾を残す（女性でも「〜ぜ」「〜ぞ」）</label></div>' +
       '<p class="gearhint" id="gm-fit">' + esc(fitHint(c)) + '</p>' +
+      '<div class="gearrow"><label title="夜の性格（サド・マゾ・意地悪・甘々・恥じらい）があるとき、言葉のある喘ぎの元にする態度です。全体の設定のままなら、全体の「喘ぎ声の調整」の「夜の性格 → 声の基盤」（既定はサド→強気・マゾ→健気・意地悪→奔放・甘々→穏やか・恥じらい→恥じらい）。口調の態度のままなら、夜の性格があっても口調の態度で鳴きます（懇願が増える・声を抑えるなどの場面の選び方は夜の性格のまま）">夜の声の基盤（この住人だけ） <select data-gf="moanOptNight" aria-label="この住人の夜の声の基盤">' +
+        opt('', '全体の設定のまま', o.night || '') + opt('off', '口調の態度のまま', o.night || '') + (HK.PERSONA_KEYS || []).map(function (p) { return opt(p, (HK.PERSONA[p] || {}).label || p, o.night || ''); }).join('') + '</select></label></div>' +
+      '<p class="gearhint">夜の性格がある日の、言葉のある喘ぎの態度です（例：サドで厳格のまま鳴く人は「厳格」、サドで強気な人は「強気」）。夜の性格を決めていない人には効きません。</p>' +
       '<p class="gearhint">はっきり：「やめて」→「やめろ」、泣き声の拒みは「むり」に／やわらかい：「やめろ」→「やめて」、「〜ぞ」→「〜よ」／古風・尊大：「〜ちゃう」→「〜てしまう」／区分なし：性別の整えだけ／整えない：表の文のまま。全体の設定の「喘ぎ声の調整」の口調ごとの区分より優先します。</p>' +
       '<h4 style="margin:10px 0 2px;font-size:13px">受けのとき</h4>' + pr('r') +
       ta('moanDict', c.moanDict, '[乗り気 1]\nん……っ|は、ぁ……\n[懇願 1]\nもっと……おねがい……\n[小説 最中]\nあ……っ、そこ……') +
@@ -105,6 +111,7 @@
     if (n) out.push('喘ぎ辞書：' + n + '行');
     if (o.tease) out.push('言葉責め：' + lab(o.tease));
     if (o.retort) out.push('言い返し：' + lab(o.retort));
+    if (o.night) out.push('夜の声：' + nightLab(o.night));
     return out;
   };
   function refresh(c) {
@@ -139,6 +146,13 @@
         changed(false); refresh(c);
         var mc = document.querySelector('[data-gf="moanFitMasc"]'); if (mc) mc.checked = M.fitKind(toneOfC(c), c).masc;
         return true;
+      }
+      case 'moanOptNight': {
+        if (isInput) return true;
+        var on = Object.assign({}, c.moanOpt || {});
+        if (t.value === 'off' || (t.value && HK.PERSONA && HK.PERSONA[t.value])) on.night = t.value; else delete on.night;
+        if (Object.keys(on).length) c.moanOpt = on; else delete c.moanOpt;
+        changed(false); refresh(c); return true;
       }
       case 'moanOptTease': case 'moanOptRetort': {
         if (isInput) return true;

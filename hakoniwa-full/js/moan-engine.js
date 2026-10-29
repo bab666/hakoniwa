@@ -144,9 +144,15 @@
     if (v === 'match') { var pv = (p && ((p.nightFor && who.i != null && p.nightFor[who.i]) || p.night)) || raw(cp, cw); v = (A && A.MATCH && A.MATCH[pv]) || ''; }
     return NIGHT_PS[v] ? v : '';
   };
+  /* 夜の性格があるときの声の基盤：住人の設定（⚙の c.moanOpt.night。'off'＝口調の態度のまま・態度の鍵。2026-10-29 利用者の要望「サドだけど冷静／サドだけど強気」）＞ 全体の「喘ぎ声の調整」＞ NIGHT_PS */
   function psOf(who, ctx) {
     var nt = M.nightOf(who, ctx);
-    if (nt) { var c = cc(), np = c && c.night[nt]; if (np === 'off') return psBase(who); return np || NIGHT_PS[nt]; }
+    if (nt) {
+      var own = M.optOf(who).night;
+      if (own === 'off') return psBase(who);
+      if (own) return own;
+      var c = cc(), np = c && c.night[nt]; if (np === 'off') return psBase(who); return np || NIGHT_PS[nt];
+    }
     return psBase(who);
   }
   function psBase(who) {
@@ -808,12 +814,13 @@
   }
   function ownFitOf(who) { var e = ownOf(who); return e ? e.fit : null; }
   M.ownOf = ownOf;
-  /* 住人の設定「言葉責め・焦らしの多さ」「言い返しの多さ」（⚙設定の c.moanOpt。off|less|normal|more。normal は持たない）。who が持っていればそれ、なければ入力の住人から */
+  /* 住人の設定「言葉責め・焦らしの多さ」「言い返しの多さ」（⚙設定の c.moanOpt。off|less|normal|more。normal は持たない）。who が持っていればそれ、なければ入力の住人から。
+     night … 夜の性格があるときの声の基盤（'off'＝口調の態度のまま・態度の鍵。'' は全体の設定のまま） */
   var OPT_V = { off: 1, less: 1, normal: 1, more: 1 };
   M.optOf = function (who) {
-    if (!who || HK.SAFE_ON) return { tease: 'normal', retort: 'normal' };
+    if (!who || HK.SAFE_ON) return { tease: 'normal', retort: 'normal', night: '' };
     var o = who.moanOpt || (M.chars && who.name && M.chars[plainName(who.name)] ? M.chars[plainName(who.name)].moanOpt : null) || {};
-    return { tease: OPT_V[o.tease] ? o.tease : 'normal', retort: OPT_V[o.retort] ? o.retort : 'normal' };
+    return { tease: OPT_V[o.tease] ? o.tease : 'normal', retort: OPT_V[o.retort] ? o.retort : 'normal', night: o.night === 'off' || (o.night && HK.PERSONA && HK.PERSONA[o.night]) ? o.night : '' };
   };
   /* moan-cut.js（遮り・呼応）が使う中の部品 */
   M._in = { ulist: ulist, whoBox: whoBox, rand: rand, rint: rint, fresh: fresh, persons: persons, fillName: fillName, partnerOf: partnerOf, NOTONE: NOTONE, TOP_NG: TOP_NG, fallenOf: fallenOf };
@@ -938,6 +945,8 @@
     if (w0) {
       var pn = plainName(who.name);
       if (w0.moanTone) { M.map = {}; M.map[who.name] = w0.moanTone; }
+      /* 住人の言葉責め・言い返しの多さと夜の声の基盤（c.moanOpt）も、見本に効かせる */
+      if (w0.moanOpt) who.moanOpt = w0.moanOpt;
       M.nmap = {}; M.nmap[who.name] = { i: 0, night: w0.night || '', nightFor: null };
       var oe = ownFrom(w0); M.own = oe ? {} : M.own; if (oe) M.own[pn] = oe;
     }

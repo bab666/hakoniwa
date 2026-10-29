@@ -4981,7 +4981,13 @@ HK.calmText=function(t){return calmText(t);};
 function calmText(t){CALM.forEach(function(r){t=t.replace(r[0],r[1]);});return t.replace(/^、+/,'').replace(/([。！？…])、+/g,'$1');}
 var sq0=V.styleQuote;
 var END='(?=[…‥。！？!?、」♡〜]|$)';
-var FEM_FIRM={proud:1,stern:1,cool:1,calm:1,tsun:1};
+var FEM_FIRM={proud:1,stern:1,cool:1,calm:1,cool_soft:1,tsun:1};
+var FEM_PLAIN={stern:1,cool:1,calm:1,cool_soft:1};
+var YG_I2E={'い':'え','き':'け','ぎ':'げ','し':'せ','ち':'て','に':'ね','び':'べ','み':'め','り':'れ'};
+function plainYagare(q){
+return q.replace(/(話|出|返|離|渡|消|探|直|貸|回|隠|外|押|許|晒|殺|落と|起こ|鳴ら|揺ら|垂ら|漏ら)しやがれ/g,'$1せ').replace(/しやがれ/g,'しろ')
+.replace(/([ぁ-ゖ一-鿿々])やがれ/g,function(m,c){return YG_I2E[c]?YG_I2E[c]:c+'ろ';});
+}
 V.genderEnd=function(q,who){
 if(!q|| !who)return q;
 var T=HK.TONES&&HK.TONES[who.tone];
@@ -4999,7 +5005,8 @@ q=q.replace(/(^|[「、…‥\s])おや、あら(?:あら)?/g,'$1おや')
 q=q.replace(/じゃねえか/g,'じゃない').replace(/じゃねえ(?=[…‥。！？!?、」♡よ]|$)/g,'じゃない')
 .replace(/([ぁ-ゖ])ねえ(?=[よか…‥。！？!?、」]|$)/g,'$1ない')
 .replace(new RegExp('だぜ'+END,'g'),'だよ').replace(new RegExp('([ぁ-ゖ])ぜ'+END,'g'),'$1よ')
-.replace(/やがれ/g,'なさい').replace(/だろうが(?=[…‥。！？!?、」]|$)/g,'でしょう');
+.replace(/だろうが(?=[…‥。！？!?、」]|$)/g,FEM_PLAIN[who.tone]?'だろう':'でしょう');
+q=FEM_PLAIN[who.tone]?plainYagare(q).replace(new RegExp('だぜ'+END,'g'),'だ').replace(new RegExp('([ぁ-ゖ])ぜ'+END,'g'),'$1'):q.replace(/やがれ/g,'なさい');
 }
 if(who.gender==='f'&&(!HK.toneAxis||(HK.toneAxis(who.tone)||{}).ending!=='m'))q=femKiri(femSoft(q,who),who);
 return q;
@@ -5007,20 +5014,23 @@ return q;
 var FEM_DROP={stern:1,cool:1,calm:1};
 var FEM_HARSH= /殺|潰|殴|呪|ぶっ|ぶち|思い知|後悔|地獄|八つ裂|覚え|吊|晒/,FEM_WILL= /証明|暴|ネタ|笑い話|見返|終わらせ|勝っ/;
 function femSoft(q,who){
-var drop=FEM_DROP[who.tone],ks=who.tone==='kansai';
+var drop=FEM_DROP[who.tone]||FEM_PLAIN[who.tone],ks=who.tone==='kansai';
 var sent=function(str,off){var a=str.slice(0,off);return a.slice(Math.max(a.lastIndexOf('。'),a.lastIndexOf('！'),a.lastIndexOf('？'))+1);};
-return q.replace(/じゃねえか?/g,'じゃない')
+var plain=FEM_PLAIN[who.tone];
+if(plain)q=plainYagare(q);
+q=q.replace(/じゃねえか?/g,'じゃない')
 .replace(who.tone==='usan'? /^$/ : /((?:(?<![たかな])ら|(?<=に)なら|[まわがばさ]|(?<=[かまらわ])ん|でき|見え|言え|聞こえ|られ|れ|め|せ|け))(?<!ねえ)ねえ(?!ね)(?=[よかぞぜ…‥。！？!?、」♡〜]|ん[だで]|$)/g,'$1ない')
 .replace(/(?:し|([えけげせてねべめれ]))やがって/g,function(m,e){return(e||'し')+'てくれちゃって';}).replace(/てやが(?:る|った)/g,function(m){return/った$/.test(m)?'てた':'てる';}).replace(/しやがる/g,'する').replace(/やがれ/g,'なさい')
 .replace(/くれてやる(?=[よぞぜ…‥。！？!?、」♡〜]|$|から)/g,'あげる')
-.replace(/(て|(?<=ん)で)やる(?=[よぞぜ…‥。！？!?、」♡〜]|$|から)/g,function(m,te,off,str){var s0=sent(str,off);if(FEM_HARSH.test(s0))return m;if(ks)return(te==='て'?'た':'だ')+'る';return te+(FEM_WILL.test(s0)?'みせる':'あげる');})
-.replace(new RegExp('だぜ'+END,'g'),drop?'だ':'だよ').replace(new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![いな])ぜ'+END,'g'),'よ')
-.replace(new RegExp('だぞ'+END,'g'),drop?'だ':'だよ').replace(new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![どなうーよ])ぞ'+END,'g'),ks?'':'よ')
-.replace(/だろうが(?=[…‥。！？!?、」]|$)/g,'でしょう')
-.replace(/だろ(?=[…‥。！!、」♡〜]|$)/g,function(m,off,str){return/(?:何|なに|なん|どう|なぜ|どこ|いつ|誰(?!か)|どれ|どんな)/.test(sent(str,off))?m:'でしょ';})
+.replace(/(て|(?<=ん)で)やる(?=[よぞぜ…‥。！？!?、」♡〜]|$|から)/g,function(m,te,off,str){var s0=sent(str,off);if(FEM_HARSH.test(s0)||plain)return m;if(ks)return(te==='て'?'た':'だ')+'る';return te+(FEM_WILL.test(s0)?'みせる':'あげる');})
+.replace(new RegExp('だぜ'+END,'g'),drop?'だ':'だよ').replace(new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![いな])ぜ'+END,'g'),plain?'':'よ')
+.replace(new RegExp('だぞ'+END,'g'),drop?'だ':'だよ').replace(new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![どなうーよ])ぞ'+END,'g'),ks||plain?'':'よ')
+.replace(/だろうが(?=[…‥。！？!?、」]|$)/g,plain?'だろう':'でしょう');
+if(plain)return q;
+return q.replace(/だろ(?=[…‥。！!、」♡〜]|$)/g,function(m,off,str){return/(?:何|なに|なん|どう|なぜ|どこ|いつ|誰(?!か)|どれ|どんな)/.test(sent(str,off))?m:'でしょ';})
 .replace(/(^|[「、…‥\s])おい(?=[、！!…‥。っ]|$)/g,'$1ねえ').replace(new RegExp('(?<=[一-鿿ァ-ヶー])しろ'+END,'g'),'しなさい');
 }
-var FEM_KIRI={proud:1,stern:1,cool:1,calm:1,cool_soft:1,tsun:1,tsun_n:1},FEM_KIRI_YO={proud:1,tsun:1,tsun_n:1};
+var FEM_KIRI={proud:1,tsun:1,tsun_n:1},FEM_KIRI_YO={proud:1,tsun:1,tsun_n:1};
 var FK_E2U={'え':'う','け':'く','げ':'ぐ','せ':'す','て':'つ','べ':'ぶ','め':'む','れ':'る'};
 var FK_E2I={'え':'い','け':'き','げ':'ぎ','せ':'し','て':'ち','べ':'び','め':'み','れ':'り'};
 var FK_U2TE={'う':'って','つ':'って','る':'って','く':'いて','ぐ':'いで','す':'して','む':'んで','ぶ':'んで','ぬ':'んで'};
@@ -5085,6 +5095,7 @@ return{b:fkTe(stem,gu)+yo(y)};
 function femKiri(q,who){
 if(!q||who.tone==='kansai')return q;
 var kiri= !!FEM_KIRI[who.tone],keepYo= !!FEM_KIRI_YO[who.tone];
+if(FEM_PLAIN[who.tone])return q.replace(/すげえ/g,'すごい').replace(/すげ(?=[…‥、。！!？?っッ〜ー]|$)/g,'すご');
 var moanLine= /[ぁぃぅぇぉ♡]|[っッ](?=[…‥、。！!？?\s」〜～ー]|$)/.test(q);
 q=q.replace(/すげえ/g,'すごい').replace(/すげ(?=[…‥、。！!？?っッ〜ー]|$)/g,'すご').replace(/(^|[^ご御一-鿿々]|[朝昼晩])飯(?![場盒粒])/g,'$1ご飯')
 .replace(/^([…‥\s]*)悪い(?=[。、])/,'$1ごめん').replace(/([てで])くれ(?=、)/g,'$1');
@@ -6291,8 +6302,10 @@ T.addBuiltin([
 'ます=ますけどね／ます／ますよ／ますけどね／ますよ？／ます','ますよ=ますよ／ますよ？／ますけどね','ますね=ますね／ますけどね／ますね','ますか=ますか／ますかね',
 'ません((?<!すみ|すい|申し訳あり|申し訳ござい))=ませんけどね／ませんが／ません／ませんけどね／ませんよ？／ませんよ','ました((?<!おかけし|お待たせし|失礼し))=ましたけどね／ました／ましたよ／ましたけどね／ました',
 'ましょう=ましょうか／ましょうかね／ましょう',
-'ないでください=ないでくださいね／ないでください','てください=てください／てくださいね／てください。……まあ、一応','でください=でください／でくださいね','ください=ください／ください。一応',
-'お願いします=お願いします／お願いしますね。……一応','さまです=さまです','様です=様です','ございます=ございます','失礼します=失礼します','いただきます=いただきます','てきます=てきます',
+'ないでください((?:無理し|無茶し|抱え込ま|我慢し|溜め込ま|根を詰め|夜更かしし|風邪をひか|怪我をし|倒れ|一人で行か))=ないでください／ないでくださいね／ないでください。……別に、心配してるわけじゃありませんけど／ないでくださいね。……まあ、一応',
+'てください((?:(?:たら|なら|ば|ときは|時は)、?(?:私に|すぐ|遠慮なく|遠慮せず)?言っ|頼っ|呼ん|相談し|休ん|寝|気をつけ|気を付け|大事にし|温かくし|暖かくし|食べ|飲ん|頼んで|声をかけ))=てください／てくださいね／てください。……まあ、一応／てください。……念のため、ですけど',
+'ないでください=ないでくださいね／ないでください','てください=てください／てくださいね','でください=でください／でくださいね','ください=ください',
+'お願いします=お願いします／お願いしますね','さまです=さまです','様です=様です','ございます=ございます','失礼します=失礼します','いただきます=いただきます','てきます=てきます',
 'お、お見苦しいところを=み、見苦しいところ、見せちゃいましたね','お見苦しいところを=……見苦しいところ、見せちゃいましたね／まあ、見なかったことにしてください',
 'お見苦しいところを、お見せしました=見苦しいところ、見せちゃいましたね／まあ、見なかったことにしてください','お見苦しいところをお見せしました=見苦しいところ、見せちゃいましたね／まあ、見なかったことにしてください',
 'お見苦しいところを、失礼いたしました=見苦しいところ、見せちゃいましたね／まあ、見なかったことにしてください',
@@ -6300,10 +6313,10 @@ T.addBuiltin([
 '[語彙]','すごいですね=大したものですね','すごいです=大したものです','ありがとうございます=どうも','ありがとうございました=どうも',
 '申し訳ございません=すみません','申し訳ありません=すみません','恐れ入りますが=すみませんけど','恐れ入ります=どうも','かしこまりました=はいはい、分かりました／分かりましたよ',
 'お手数をおかけしました=面倒かけちゃいましたね','お手数をおかけします=面倒かけますね','かと存じます=かと思いますけど','と存じます=と思いますけど','お申し付けください=言ってください',
-'お慕い申し上げております=……好きですよ。一応','お待ち申し上げておりました=待ってましたよ','お願いいたします=お願いしますね',
+'お慕い申し上げております=……好きですよ。一応／……好きですよ。悪いですか','お待ち申し上げておりました=待ってましたよ','お願いいたします=お願いしますね',
 'ておりました=てました','ております=てます','ておりません=てません','でおります=でます',
 'でございますね=ですね','でございます=です','でございました=でした','恐縮でございます=それはどうも','恐縮です=それはどうも',
-'[規則]','言い切りの前置き=まあ、','反応の前置き=へえ、／ほう、／おやおや、','前置きの割合=0.3','驚き=へえ／ほう／おやおや','笑い=ふふ／はは','一度だけ=けどね／よ？','皮肉の型=はい',
+'[規則]','言い切りの前置き=まあ、','反応の前置き=へえ、／ほう、／おやおや、','前置きの割合=0.3','驚き=へえ／ほう／おやおや','笑い=ふふ／はは','一度だけ=けどね／よ？／一応／心配してる／念のため','皮肉の型=はい',
 '',
 '[口調 mukuchi_ne]','名前=無口（……だね）','ベース=K',
 '[文末]','じゃん=','でしょ=','てよ=て','ないでよ=ないで',
@@ -32176,6 +32189,7 @@ var DB=K('hakoniwa-state'),OLD='hakoniwa-state',ST='state',KV='kv',VER=1;
 var BIG=['state','state:backup','state:rescue'],WATCH={state:1,adv:1,history:1};
 var LS_MAX=1000000,MARK='hakoniwa-idb',WAIT_MAX=8000;
 var mem={},memSeq={},meta={},lsSeq={},seq=0,held={},fails=0;
+var checking=false,boot0=null,recovered='',first=null,dirty=false;
 var mode='ls';
 var subs=[];
 function isBig(k){return BIG.indexOf(k)>=0;}
@@ -32262,15 +32276,20 @@ getAll(d,ST).then(function(m){d.close();ok(m&&m[k]&&typeof m[k].text==='string'?
 }catch(e){ok(null);}
 });
 }
-var pend={},busy=false,waiters=[];
-function queue(k){pend[k]=1;pump();}
+var pend={},inflight=0,FLIGHT=3,waiters=[],sched=false;
+function queue(k){
+pend[k]=1;
+if(sched)return;
+sched=true;
+Promise.resolve().then(function(){sched=false;pump();});
+}
 function pump(){
-if(busy)return;
+if(checking||inflight>=FLIGHT)return;
 var ks=Object.keys(pend);
-if(!ks.length){var w=waiters;waiters=[];w.forEach(function(f){f();});return;}
-busy=true;pend={};
+if(!ks.length){if(!inflight){var w=waiters;waiters=[];w.forEach(function(f){f();});}return;}
+inflight++;pend={};
 var at={};ks.forEach(function(k){at[k]=memSeq[k]||0;});
-open().then(function(d){
+var write=function(d){
 if(!d)return false;
 return new Promise(function(ok){
 try{
@@ -32278,11 +32297,13 @@ var tx=d.transaction(ST,'readwrite'),os=tx.objectStore(ST);
 ks.forEach(function(k){if(mem[k]==null)os.delete(k);else os.put({k:k,text:mem[k],seq:at[k],at:Date.now(),meta:meta[k]||{}});});
 tx.oncomplete=function(){ok(true);};
 tx.onerror=tx.onabort=function(e){if(e&&e.preventDefault)e.preventDefault();ok(false);};
+if(typeof tx.commit==='function')try{tx.commit();}catch(e){}
 }catch(e){ok(false);}
 });
-}).then(function(ok){
+};
+(idb?Promise.resolve(write(idb)):open().then(write)).then(function(ok){
 ks.forEach(function(k){after(k,at[k],ok);});
-busy=false;pump();
+inflight--;pump();
 });
 }
 function after(k,s,ok){
@@ -32298,18 +32319,20 @@ return;
 }
 fails++;
 if(mem[k]!=null&&memSeq[k]===s&&(lsSeq[k]||0)<s&&lsSet(k,mem[k])){lsSeq[k]=s;return;}
-if(k==='state'&&mem[k]!=null)toast('住人をブラウザに保存できませんでした（保存領域がいっぱいかもしれません）。「まるごと書き出し」でファイルに残してください');
+if(k==='state'&&mem[k]!=null&&memSeq[k]===s)toast('住人をブラウザに保存できませんでした（保存領域がいっぱいかもしれません）。「まるごと書き出し」でファイルに残してください');
 if(window.console)console.warn('住人の保存を IndexedDB に書けませんでした：'+k);
 }
 function setText(k,text,obj){
 if(text!=null&&typeof text!=='string')text=JSON.stringify(text);
 if(held[k])return false;
+if(recovered==='reload')return true;
 if(mode!=='idb'){
 if(text==null){lsDel(k);emit(k);return true;}
 if(!lsSet(k,text))return false;
 emit(k);
 return true;
 }
+if(checking&&k==='state'){var b=text==null?'':body(text);if(first==null)first=b;else if(b!==first)dirty=true;}
 seq++;
 mem[k]=text;memSeq[k]=seq;
 if(text!=null){var o=obj;if(!o){try{o=JSON.parse(text);}catch(e){o=null;}}meta[k]=metaOf(k,o);}else delete meta[k];
@@ -32366,8 +32389,9 @@ return setText(k,t===undefined?null:t,v);
 };
 var readyFn,ready=new Promise(function(ok){readyFn=ok;});
 var L=HK.Load,gate=null;
+function canHold(){return!!(L&&typeof L.def==='function'&&typeof L.done==='function'&&L.file==='js/state-store.js');}
 function hold(){
-if(!L||typeof L.def!=='function'||typeof L.done!=='function'||L.file!=='js/state-store.js')return false;
+if(!canHold())return false;
 var def0=L.def,done0=L.done,q=[];
 L.def=function(){q.push([def0,arguments]);};
 L.done=function(){q.push([done0,arguments]);};
@@ -32384,17 +32408,35 @@ if(!keep)held={};
 if(gate){var g=gate;gate=null;g();}
 readyFn(mode);
 }
+function atOf(k,text){
+try{var o=JSON.parse(text);return o&&typeof o==='object'? +(k==='state'?o.savedAt:o.at)||0:0;}catch(e){return 0;}
+}
+function newer(k,t,R){
+if(!R||typeof R.text!=='string'||t==null||markerOf(t)||R.text===t)return false;
+var a=atOf(k,t),b= +R.at||atOf(k,R.text);
+return a>0&&b>a;
+}
+function body(text){
+try{var o=JSON.parse(text);if(o&&typeof o==='object'){delete o.v;delete o.savedAt;return JSON.stringify(o);}}catch(e){}
+return text;
+}
 function resolve(recs){
 var other=[];
 BIG.forEach(function(k){
 var t=lsGet(k),mk=markerOf(t),R=recs&&recs[k];
+if(t!=null&& !mk&&newer(k,t,R)){
+mem[k]=R.text;memSeq[k]=R.seq||0;meta[k]=R.meta||{};recovered=recovered||'wait';
+if(R.text.length<=LS_MAX&&lsSet(k,R.text))lsSeq[k]=0;else{lsDel(k);flagSet(k,true);}
+if(window.console)console.warn('住人の保存：localStorage より IndexedDB のほうが新しいので、IndexedDB から読みました：'+k);
+return;
+}
 if(t!=null&& !mk){
 mem[k]=t;lsSeq[k]=0;
 if(!R){memSeq[k]=0;try{meta[k]=metaOf(k,JSON.parse(t));}catch(e){meta[k]={};}queue(k);}
 else if(R.text===t){memSeq[k]=R.seq||0;meta[k]=R.meta||{};}
 return;
 }
-if(R&&typeof R.text==='string'){mem[k]=R.text;memSeq[k]=R.seq||0;meta[k]=R.meta||{};return;}
+if(R&&typeof R.text==='string'){mem[k]=R.text;memSeq[k]=R.seq||0;meta[k]=R.meta||{};if(t==null&&k==='state'&& !flagGet(k))recovered=recovered||'idb';return;}
 if(mk&&mk[MARK]&&mk[MARK]!==DB)other.push([k,mk[MARK]]);
 else if(mk&&window.console)console.warn('住人の保存の印はありますが、IndexedDB に見つかりませんでした：'+k);
 });
@@ -32410,14 +32452,46 @@ return Promise.all(other.map(function(x){
 return readOther(x[1],x[0]).then(function(r){if(r&&mem[x[0]]==null){mem[x[0]]=r.text;memSeq[x[0]]=0;meta[x[0]]=r.meta||{};queue(x[0]);}});
 }));
 }
+var RKEY='hk-staterecover:'+DB;
+function check(){
+checking=true;
+var end=function(){if(!checking)return;checking=false;clearTimeout(tm);pump();};
+var tm=setTimeout(end,WAIT_MAX);
+open().then(function(d){
+if(!d){if(mode==='idb')mode='ls';return end();}
+return getKeys(d,ST,BIG).then(function(recs){
+if(!checking)return;
+var lost=function(k){var R=recs[k];return boot0[k]==null? !!(R&&typeof R.text==='string'):newer(k,boot0[k],R);};
+if(!recs|| !lost('state'))return end();
+var ks=BIG.filter(lost);
+if(dirty){
+if(window.console)console.warn('住人の保存：IndexedDB に新しい保存がありましたが、このページで住人を変えたので、今の住人を保存します');
+return end();
+}
+var last=0;try{last= +window.sessionStorage.getItem(RKEY)||0;}catch(e){last=0;}
+if(Date.now()-last<30000){if(window.console)console.warn('住人の保存：IndexedDB から戻すのは続けて行いません');return end();}
+try{window.sessionStorage.setItem(RKEY,String(Date.now()));}catch(e){}
+ks.forEach(function(k){
+var R=recs[k];
+mem[k]=R.text;memSeq[k]= ++seq;meta[k]=R.meta||{};
+if(R.text.length<=LS_MAX&&lsSet(k,R.text)){lsSeq[k]=seq;flagSet(k,false);}else{lsDel(k);flagSet(k,true);}
+});
+recovered='reload';
+if(window.console)console.warn('住人の保存：localStorage の書き込みが消えていたので、IndexedDB の新しい保存に戻して読み込み直します：'+ks.join(','));
+location.reload();
+});
+}).catch(function(e){if(window.console)console.error('住人の保存の照らし合わせでエラー',e);end();});
+}
 (function boot(){
 if(!hasIDB()){mode='ls';readyFn(mode);return;}
 var need=BIG.some(function(k){return markerOf(lsGet(k))||flagGet(k);});
-if(!need){
+var st0=lsGet('state'),weak=st0==null||st0.indexOf('"sample":true')>=0;
+if(!need&& !(weak&&canHold())){
 mode='idb';
-BIG.forEach(function(k){var t=lsGet(k);if(t!=null){mem[k]=t;memSeq[k]=0;lsSeq[k]=0;}});
+boot0={};
+BIG.forEach(function(k){var t=lsGet(k);boot0[k]=t;if(t!=null){mem[k]=t;memSeq[k]=0;lsSeq[k]=0;}});
 readyFn(mode);
-open().then(function(d){if(!d&&mode==='idb')mode='ls';});
+check();
 return;
 }
 var gated=hold();
@@ -32456,7 +32530,7 @@ setLimit:function(n){if(n>0)LS_MAX=n;},
 on:function(fn){if(typeof fn==='function')subs.push(fn);},
 info:function(){
 var t=lsGet('state');
-return{mode:mode,db:DB,lsFull:t!=null&& !markerOf(t),lsMarker: !!markerOf(t),bytes:mem.state?mem.state.length:(t?t.length:0),fails:fails};
+return{mode:mode,db:DB,lsFull:t!=null&& !markerOf(t),lsMarker: !!markerOf(t),bytes:mem.state?mem.state.length:(t?t.length:0),fails:fails,checking:checking,recovered:recovered};
 }
 };
 })();
@@ -41457,4 +41531,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', 'de68cd16ea', 1);
+HK.Load.done('core', '9881f4b288', 1);
