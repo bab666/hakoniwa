@@ -581,7 +581,10 @@ swept:(Math.max(0,fall-0.35)*1.8+t.ac*0.4+t.fc*0.3+(p.ty==='lover'?0.6:0)+(p.cnt
 report:(t.cp*0.7+t.a*0.5+0.1)*(1-fall*0.6)*({stalker:1.6,colleague:1.3,grudge:1.3,friend:0.7,lover:0.1}[p.ty]||1)*(p.consent?0.2:1),
 flee:t.ac*0.4+(1-fall)*0.4+0.12
 };
-var k=HK.weighted(rng,Object.keys(w),function(x){return Math.pow(Math.max(0.01,w[x]),2);});
+var AW=(S.env&&S.env.afterwake)||'auto';
+if(AW==='swept'){w.swept=w.swept*1.6+0.35;w.report*=0.5;w.flee*=0.8;}
+else if(AW==='resist'){w.swept*=0.25;w.report+=0.15;w.flee+=0.15;}
+var k=AW==='always'?'swept':HK.weighted(rng,Object.keys(w),function(x){return Math.pow(Math.max(0.01,w[x]),2);});
 var v={a:p.name,h:p.h},aTop=p.aTopLast;
 if(k==='swept'){
 p.swept=true;p.m.fall=Math.min(100,p.m.fall+25);p.cnt.climax+=1;p.cnt.lewd++;
@@ -873,6 +876,8 @@ env:[
 {id:'rounds',label:'暗示の数',min:2,max:8,def:5,lo:'2回',hi:'8回',unit:'回'},
 {id:'mode',label:'暗示の方向',type:'select',def:'mix',options:[{v:'mix',label:'おまかせ'},{v:'lewd',label:'エッチなものだけ'},{v:'peace',label:'平和なものだけ'}]},
 {id:'erase',label:'終わったあとの記憶',type:'select',def:'random',options:[{v:'random',label:'かける相手しだい'},{v:'keep',label:'消さない'},{v:'erase',label:'消そうとする'}]},
+{id:'wakeup',label:'途中で目が覚めるか',type:'select',def:'auto',desc:'おまかせは、性格（エゴグラム）・かかりやすさ・催眠の深さで決まります。「必ず一度は覚める」は、最後まで覚めなかったときも最後の暗示のあとで目を覚まします',options:[{v:'auto',label:'おまかせ（性格で決まる）'},{v:'often',label:'覚めやすい'},{v:'rare',label:'覚めにくい'},{v:'always',label:'必ず一度は覚める'},{v:'never',label:'最後まで覚めない'}]},
+{id:'afterwake',label:'目が覚めたあと',type:'select',def:'auto',desc:'エッチな暗示のあとで目が覚めたときの反応。おまかせは、快楽堕ちの度合い・性格・関係で決まります（恋人は流されやすく、同僚・ストーカーなどは通報しやすい）',options:[{v:'auto',label:'おまかせ（性格・関係で決まる）'},{v:'swept',label:'流されやすい'},{v:'resist',label:'抵抗しやすい（通報・逃げる）'},{v:'always',label:'必ず流される'}]},
 {id:'ev',label:'ハプニングの頻度',min:0,max:100,def:45,lo:'たまに',hi:'頻繁'},
 {id:'lewd',label:'描写の濃さ',type:'select',def:'mid',options:[{v:'low',label:'ぼかす'},{v:'mid',label:'ほどほど'},{v:'high',label:'濃いめ'}]}
 ],
@@ -1001,6 +1006,12 @@ return ps.join('\n\n');
 })(o.text.split('\n\n'));
 return ST.sayB(S,o,short,force);
 }
+var WK=env.wakeup||'auto',WK_K={often:4,rare:0.3,always:2.5,never:0}[WK],WK_LOW={often:36,rare:12}[WK]||22;
+if(WK_K==null)WK_K=1;
+function lowWake(p){
+if(WK==='never'){if(p.m.depth<22)p.m.depth=22;return false;}
+return p.m.depth<WK_LOW;
+}
 function wake(p){
 p.woke=true;
 var o=say(p,{tag:'目覚め',text:vJoin(ST.fmt(ST.pick(S,L('{a}がはっと目を見開いた。目の前に{h}の顔があった。自分の格好を見下ろして、{a}は息を呑んだ。|{a}の瞳に、急に光が戻った。{a}は「……え。{you}、何してるの｜……え。{you}、何をしているんだ｜……え。{you}、何をしているんですか」と後ずさった。|{a}は跳ね起きた。体はまだ火照っているのに、頭だけが冷えていた。')),{a:p.name,h:p.h}),p,SM.RESIST_SAY[p.persona]?p.name+ST.pick(S,SM.RESIST_SAY[p.persona]):''),why:'催眠が浅くなって、途中で目を覚ました（深さ '+Math.round(p.m.depth)+'）',mag:35},'',true);
@@ -1079,7 +1090,7 @@ if(fx.record)p.recorded=true;
 if(fx.aware)p.halfAware=true;
 if(fx.guilt)p.guilt=true;
 say(p,{tag:'ハプニング',text:ST.fmt(ST.pick(S,e.t),v),why:fx.depth?'深さ '+(fx.depth>0?'+':'')+fx.depth+'（'+Math.round(p.m.depth)+'）':''},p.name+'：ハプニング');
-if(p.m.depth<22)return wake(p);
+if(lowWake(p))return wake(p);
 }
 var nKs=HK.Pos&&HK.Pos.nightK?HK.Pos.nightK(S):1;
 var ks=Object.keys(SM.SUG).filter(function(k){return okSug(p,k,env)&&(p.used[k]||0)<2;});
@@ -1131,7 +1142,7 @@ why+='／'+W_CL+' '+cl+'回';
 }
 p.m.depth=clamp(p.m.depth+(full?5: -5),0,100);
 why+=full?'：受け入れた':'：半分だけ受け入れた';
-if(full&&g.snap&&lew!=='low'&&SM.SNAP&&rng()<g.snap*(1.2-p.m.fall/100)){
+if(full&&g.snap&&lew!=='low'&&SM.SNAP&&WK_K>0&&rng()<g.snap*(1.2-p.m.fall/100)*WK_K){
 var snk=p.ff?(aTop?'SNAP_FF_TOP':'SNAP_FF'):p.fm&&SM.SNAP_FM?'SNAP_FM':aTop&&SM.SNAP_TOP_F&&HK.Pos&&HK.Pos.isF(p)?'SNAP_TOP_F':aTop&&SM.SNAP_TOP?'SNAP_TOP':'SNAP';
 t+=eF(S,p,ST.fmt(ST.pick(S,eL(S,snk,SM[snk])),v));
 t=vJoin(t,p,SM.RESIST_SAY[p.persona]&&rng()<0.5?p.name+ST.pick(S,SM.RESIST_SAY[p.persona]):'');
@@ -1139,7 +1150,7 @@ p.woke=true;p.wokeCum=true;p.m.depth=0;p.aTopLast=aTop;
 why+='／'+snapWord(p)+'催眠が解けた（快楽堕ち '+Math.round(p.m.fall)+'）';
 mag=40;
 }
-if(!p.woke&&g.lewd&&lew!=='low'&&SM.midSnap&&SM.midSnapOk(k)&&p.cnt.lewd>=2&&rng()<(0.03+(full?0:0.05)+p.m.resist/1000+Math.max(0,40-p.m.depth)/500)*(1.1-p.m.fall/100)){
+if(!p.woke&&g.lewd&&lew!=='low'&&SM.midSnap&&SM.midSnapOk(k)&&p.cnt.lewd>=2&&WK_K>0&&rng()<WK_K*(0.03+(full?0:0.05)+p.m.resist/1000+Math.max(0,40-p.m.depth)/500)*(1.1-p.m.fall/100)){
 t+=SM.midSnap(wrapS(S,p),p,k);
 p.woke=true;p.wokeMid=true;p.m.depth=0;p.aTopLast=aTop;
 why+='／行為の最中に我に返った（快楽堕ち '+Math.round(p.m.fall)+'・抵抗 '+Math.round(p.m.resist)+'）';
@@ -1159,7 +1170,8 @@ var o2=say(p,{tag:sr.tag,text:sr.text,why:sr.why,mag:40,kind:sr.k==='swept'?'cli
 ST.key(S,o2,p.name+'：'+{swept:'我に返っても流された',report:'その場で通報した',flee:'逃げ出した'}[sr.k]);
 }
 }
-if(p.m.depth<22&& !p.wokeCum&& !p.wokeMid)wake(p);
+if(lowWake(p)&& !p.wokeCum&& !p.wokeMid)wake(p);
+else if(WK==='always'&&r===env.rounds-1&& !p.woke&& !p.failed)wake(p);
 });
 ST.flushShort(S,'ほかに：');
 ST.snap(S,keys);
@@ -1284,7 +1296,7 @@ var s=HK.Ero.moan(S,q,+n);q.eroDom=d;return s;
 return HK.Ero.fill(S,t,p);
 }
 function wrapS(S,p){
-return{rng:S.rng,pick:function(a){return ST.pick(S,a);},fmt:function(t,v){return eF(S,p,ST.fmt(t,v));},
+return{rng:S.rng,env:S.env,pick:function(a){return ST.pick(S,a);},fmt:function(t,v){return eF(S,p,ST.fmt(t,v));},
 alt:function(key,arr){return eL(S,key,arr);},
 cv:function(q,top){return eroOn(S)&& !top?HK.Ero.moan(S,q,2):null;}};
 }
@@ -3516,4 +3528,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 ["……その、また、かけてくれないか？","……その、また、かけてくれないか？",1],
 ["すまない、無理だ。笑ってしまう","すまない、無理だ。……フッ、笑ってしまう",1]]});
 });
-HK.Load.done('scen-saimin', 'd807c2d2b7', 1);
+HK.Load.done('scen-saimin', 'a3ba2a4155', 1);

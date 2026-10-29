@@ -990,7 +990,7 @@ both:{label:'愛憎：双方',short:'愛憎（双方）'}
 };
 HK.LOVEHATE_ORDER=['','a','b','both'];
 HK.LH_BACK={
-'':{label:'相手：持たない（{a}だけ）',short:''},
+'':{label:'相手：持たない（片方だけ）',short:''},
 both:{label:'相手も愛憎を持つ（双方）',short:'双方',mutual:true}
 };
 HK.LH_BACK_ORDER=['','both'];
@@ -1565,7 +1565,7 @@ if(k==null)return 1;
 var d=lhPair(list||[t],t.a,t.b);
 return d?Math.max(k,d==='both'?1:0.85):k;
 };
-HK.FEEL_IMP={lovehate:1.3,lovehateHost1:1.1,inferior:1.2,superior:1.3};
+HK.FEEL_IMP={lovehate:1.3,lovehateHost1:1.1,inferior:1.3,superior:1.3};
 HK.feelImpK=function(list,x,y){
 var k=1,d=lhPair(list,x,y),host=(list||[]).some(function(u){return u&&HK.HOST_TIE_RE.test(u.type)&&((u.a===x&&u.b===y)||(u.a===y&&u.b===x));});
 if(d)k=Math.max(k,d!=='both'&&host?HK.FEEL_IMP.lovehateHost1:HK.FEEL_IMP.lovehate);
@@ -5051,10 +5051,34 @@ q=q.replace(/じゃねえか/g,'じゃない').replace(/じゃねえ(?=[…‥�
 q=FEM_PLAIN[who.tone]?plainYagare(q).replace(new RegExp('だぜ'+END,'g'),'だ').replace(new RegExp('([ぁ-ゖ])ぜ'+END,'g'),'$1'):q.replace(/やがれ/g,'なさい');
 }
 if(who.gender==='f'&&(!HK.toneAxis||(HK.toneAxis(who.tone)||{}).ending!=='m'))q=femKiri(femSoft(q,who),who);
+if(who.gender==='f'&&FEM_PROUD[who.tone])q=femProud(q);
 return q;
 };
+var FEM_PROUD={proud:1};
+var FP_END='(?=[…‥。！？!?、」♡〜\n]|$)';
+var FP_NOUN='([一-鿿々ァ-ヶー]|ため|だけ|きり|こと|もの|ほう|ところ|はず|つもり|ばかり|くらい|ぐらい|同じ|まま|とおり|嫌い|好き|扱い|違い|間違い|勘違い|思い|願い|狙い|せい|きれい|綺麗|本当|ほんと|なし|連れ|それ|これ|あれ|そう|わけ|一緒|当たり前|当然|最後|勝ち|負け|おしまい|おあいこ)';
+function femProud(q){
+return q.replace(new RegExp('([るたいなうくすつ])んだ'+FP_END,'g'),'$1のよ')
+.replace(new RegExp('(何|なに|誰|どこ|どれ|いつ)だ'+FP_END,'g'),'$1なの')
+.replace(new RegExp(FP_NOUN+'だ'+FP_END,'g'),'$1よ')
+.replace(new RegExp('([^\\sんい「、。！？!?…‥ー〜♡っッ])だ'+FP_END,'g'),function(m,c,off,str){
+var w=str.slice(Math.max(0,off-2),off+1);
+return/(?:^|[^ぁ-ゖ])(?:ま|た)$|また$/.test(str.slice(0,off+1))&& !/あんた$|こなた$|あなた$/.test(w+'')?m:c+'よ';
+})
+.replace(new RegExp('(嫌い|好き|大嫌い|大好き)、だ'+FP_END,'g'),'$1、よ')
+.replace(new RegExp('みたいだ'+FP_END,'g'),'みたいね')
+.replace(/(^|[「…‥、。\s])だが(?=[、…‥])/g,'$1でも').replace(/([一-鿿々ァ-ヶー]|ため|だけ|こと|もの|はず|つもり|同じ)だが(?=、)/g,'$1だけど')
+.replace(/言っておくが(?=[、…‥])/g,'言っておくけど')
+.replace(new RegExp('(から|けど|ので|で)な'+FP_END,'g'),'$1ね')
+.replace(/(つもり|本気|正気|それだけ|終わり|限界|降参|満足)か(?=[。？?」]|$)/g,'$1なの')
+.replace(/(つもり|本気|正気|それだけ|終わり|限界|降参|満足)なの。(?=[^」])/g,'$1なの？　').replace(/(つもり|本気|正気|それだけ|終わり|限界|降参|満足)なの。/g,'$1なの？')
+.replace(new RegExp('どうした'+'(?=[。？?」…‥]|$)','g'),'どうしたの')
+.replace(new RegExp('([にで])いろ'+FP_END,'g'),'$1いなさい')
+.replace(new RegExp('すんな'+FP_END,'g'),'しないで')
+.replace(/(?<![じゃ])(いい|ない)か(?=[。？?」]|$)/g,'$1？').replace(/？[。？?]/g,'？');
+}
 var FEM_DROP={stern:1,cool:1,calm:1};
-var FEM_HARSH= /殺|潰|殴|呪|ぶっ|ぶち|思い知|後悔|地獄|八つ裂|覚え|吊|晒/,FEM_WILL= /証明|暴|ネタ|笑い話|見返|終わらせ|勝っ/;
+var FEM_HARSH= /殺|潰|殴|呪|ぶっ|ぶち|思い知|後悔|地獄|八つ裂|覚えて[ろお]|吊|晒/,FEM_WILL= /証明|暴|ネタ|笑い話|見返|終わらせ|勝っ/;
 function femSoft(q,who){
 var drop=FEM_DROP[who.tone]||FEM_PLAIN[who.tone],ks=who.tone==='kansai';
 var sent=function(str,off){var a=str.slice(0,off);return a.slice(Math.max(a.lastIndexOf('。'),a.lastIndexOf('！'),a.lastIndexOf('？'))+1);};
@@ -31202,4 +31226,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '6b8251e45e', 1);
+HK.Load.done('core', '44c69e8dd9', 1);

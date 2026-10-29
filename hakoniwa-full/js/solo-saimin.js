@@ -90,6 +90,11 @@
       { id: 'rounds', label: '暗示の数', min: 2, max: 8, def: 5, lo: '2回', hi: '8回', unit: '回' },
       { id: 'mode', label: '暗示の方向', type: 'select', def: 'mix', options: [{ v: 'mix', label: 'おまかせ' }, { v: 'lewd', label: 'エッチなものだけ' }, { v: 'peace', label: '平和なものだけ' }] },
       { id: 'erase', label: '終わったあとの記憶', type: 'select', def: 'random', options: [{ v: 'random', label: 'かける相手しだい' }, { v: 'keep', label: '消さない' }, { v: 'erase', label: '消そうとする' }] },
+      /* 途中で目が覚めるか・目が覚めたあと（2026-10-29 利用者の指示。おまかせは今までどおり性格・深さ・関係で決まる） */
+      { id: 'wakeup', label: '途中で目が覚めるか', type: 'select', def: 'auto', desc: 'おまかせは、性格（エゴグラム）・かかりやすさ・催眠の深さで決まります。「必ず一度は覚める」は、最後まで覚めなかったときも最後の暗示のあとで目を覚まします', options: [{ v: 'auto', label: 'おまかせ（性格で決まる）' }, { v: 'often', label: '覚めやすい' }, { v: 'rare', label: '覚めにくい' }, { v: 'always', label: '必ず一度は覚める' }, { v: 'never', label: '最後まで覚めない' }] },
+      /* r18:begin */
+      { id: 'afterwake', label: '目が覚めたあと', type: 'select', def: 'auto', desc: 'エッチな暗示のあとで目が覚めたときの反応。おまかせは、快楽堕ちの度合い・性格・関係で決まります（恋人は流されやすく、同僚・ストーカーなどは通報しやすい）', options: [{ v: 'auto', label: 'おまかせ（性格・関係で決まる）' }, { v: 'swept', label: '流されやすい' }, { v: 'resist', label: '抵抗しやすい（通報・逃げる）' }, { v: 'always', label: '必ず流される' }] },
+      /* r18:end */
       { id: 'ev', label: 'ハプニングの頻度', min: 0, max: 100, def: 45, lo: 'たまに', hi: '頻繁' },
       { id: 'lewd', label: '描写の濃さ', type: 'select', def: 'mid', options: [{ v: 'low', label: 'ぼかす' }, { v: 'mid', label: 'ほどほど' }, { v: 'high', label: '濃いめ' }] }
     ],
@@ -262,6 +267,13 @@
         })(o.text.split('\n\n'));
       return ST.sayB(S, o, short, force);
     }
+    /* 途中で目が覚めるか（環境値 wakeup）：深さが落ちたときに覚める境目と、行為の最中・中に出されたときに我に返る確率の倍率 */
+    var WK = env.wakeup || 'auto', WK_K = { often: 4, rare: 0.3, always: 2.5, never: 0 }[WK], WK_LOW = { often: 36, rare: 12 }[WK] || 22;
+    if (WK_K == null) WK_K = 1;
+    function lowWake(p) {
+      if (WK === 'never') { if (p.m.depth < 22) p.m.depth = 22; return false; }
+      return p.m.depth < WK_LOW;
+    }
     function wake(p) {
       p.woke = true;
       var o = say(p, { tag: '目覚め', text: vJoin(ST.fmt(ST.pick(S, L('{a}がはっと目を見開いた。目の前に{h}の顔があった。自分の格好を見下ろして、{a}は息を呑んだ。|{a}の瞳に、急に光が戻った。{a}は「……え。{you}、何してるの｜……え。{you}、何をしているんだ｜……え。{you}、何をしているんですか」と後ずさった。|{a}は跳ね起きた。体はまだ火照っているのに、頭だけが冷えていた。')), { a: p.name, h: p.h }), p, SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: '催眠が浅くなって、途中で目を覚ました（深さ ' + Math.round(p.m.depth) + '）', mag: 35 }, '', true);
@@ -354,7 +366,7 @@
           if (fx.aware) p.halfAware = true;
           if (fx.guilt) p.guilt = true;
           say(p, { tag: 'ハプニング', text: ST.fmt(ST.pick(S, e.t), v), why: fx.depth ? '深さ ' + (fx.depth > 0 ? '+' : '') + fx.depth + '（' + Math.round(p.m.depth) + '）' : '' }, p.name + '：ハプニング');
-          if (p.m.depth < 22) return wake(p);
+          if (lowWake(p)) return wake(p);
         }
         /* 暗示を選ぶ（腕がいいほど、相手の弱い暗示を見抜く） */
         var nKs = HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1;
@@ -416,7 +428,7 @@
           p.m.depth = clamp(p.m.depth + (full ? 5 : -5), 0, 100);
           why += full ? '：受け入れた' : '：半分だけ受け入れた';
           /* 中に出された熱で、我に返る（快楽堕ちが進んでいるほど返りにくい） */
-          if (full && g.snap && lew !== 'low' && SM.SNAP && rng() < g.snap * (1.2 - p.m.fall / 100)) {
+          if (full && g.snap && lew !== 'low' && SM.SNAP && WK_K > 0 && rng() < g.snap * (1.2 - p.m.fall / 100) * WK_K) {
             var snk = p.ff ? (aTop ? 'SNAP_FF_TOP' : 'SNAP_FF') : p.fm && SM.SNAP_FM ? 'SNAP_FM' : aTop && SM.SNAP_TOP_F && HK.Pos && HK.Pos.isF(p) ? 'SNAP_TOP_F' : aTop && SM.SNAP_TOP ? 'SNAP_TOP' : 'SNAP';
             t += eF(S, p, ST.fmt(ST.pick(S, eL(S, snk, SM[snk])), v));
             t = vJoin(t, p, SM.RESIST_SAY[p.persona] && rng() < 0.5 ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : '');
@@ -425,7 +437,7 @@
             mag = 40;
           }
           /* 行為の最中に、ふと我に返る（半分しか効いていないとき・抵抗が強いときほど起きやすく、快楽堕ちが進むほど起きにくい） */
-          if (!p.woke && g.lewd && lew !== 'low' && SM.midSnap && SM.midSnapOk(k) && p.cnt.lewd >= 2 && rng() < (0.03 + (full ? 0 : 0.05) + p.m.resist / 1000 + Math.max(0, 40 - p.m.depth) / 500) * (1.1 - p.m.fall / 100)) {
+          if (!p.woke && g.lewd && lew !== 'low' && SM.midSnap && SM.midSnapOk(k) && p.cnt.lewd >= 2 && WK_K > 0 && rng() < WK_K * (0.03 + (full ? 0 : 0.05) + p.m.resist / 1000 + Math.max(0, 40 - p.m.depth) / 500) * (1.1 - p.m.fall / 100)) {
             t += SM.midSnap(wrapS(S, p), p, k);
             p.woke = true; p.wokeMid = true; p.m.depth = 0; p.aTopLast = aTop;
             why += '／行為の最中に我に返った（快楽堕ち ' + Math.round(p.m.fall) + '・抵抗 ' + Math.round(p.m.resist) + '）';
@@ -445,7 +457,9 @@
             ST.key(S, o2, p.name + '：' + { swept: '我に返っても流された', report: 'その場で通報した', flee: '逃げ出した' }[sr.k]);
           }
         }
-        if (p.m.depth < 22 && !p.wokeCum && !p.wokeMid) wake(p);
+        if (lowWake(p) && !p.wokeCum && !p.wokeMid) wake(p);
+        /* 「必ず一度は覚める」：最後の暗示のあとまで覚めなかったら、ここで目を覚ます */
+        else if (WK === 'always' && r === env.rounds - 1 && !p.woke && !p.failed) wake(p);
       });
       ST.flushShort(S, 'ほかに：');
       ST.snap(S, keys);
@@ -602,7 +616,7 @@
   }
   /* solo-saimin-sex.js の afterSnap / midSnap に渡す道具（男性向けの文に差し替える alt・喘ぎを埋める fmt・絶頂の声 cv） */
   function wrapS(S, p) {
-    return { rng: S.rng, pick: function (a) { return ST.pick(S, a); }, fmt: function (t, v) { return eF(S, p, ST.fmt(t, v)); },
+    return { rng: S.rng, env: S.env, pick: function (a) { return ST.pick(S, a); }, fmt: function (t, v) { return eF(S, p, ST.fmt(t, v)); },
       alt: function (key, arr) { return eL(S, key, arr); },
       cv: function (q, top) { return eroOn(S) && !top ? HK.Ero.moan(S, q, 2) : null; } };
   }

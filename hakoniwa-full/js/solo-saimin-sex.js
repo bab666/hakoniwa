@@ -115,7 +115,11 @@
       report: (t.cp * 0.7 + t.a * 0.5 + 0.1) * (1 - fall * 0.6) * ({ stalker: 1.6, colleague: 1.3, grudge: 1.3, friend: 0.7, lover: 0.1 }[p.ty] || 1) * (p.consent ? 0.2 : 1),
       flee: t.ac * 0.4 + (1 - fall) * 0.4 + 0.12
     };
-    var k = HK.weighted(rng, Object.keys(w), function (x) { return Math.pow(Math.max(0.01, w[x]), 2); });
+    /* 目が覚めたあと（環境値 afterwake。2026-10-29 利用者の指示）：おまかせは上の重みのまま */
+    var AW = (S.env && S.env.afterwake) || 'auto';
+    if (AW === 'swept') { w.swept = w.swept * 1.6 + 0.35; w.report *= 0.5; w.flee *= 0.8; }
+    else if (AW === 'resist') { w.swept *= 0.25; w.report += 0.15; w.flee += 0.15; }
+    var k = AW === 'always' ? 'swept' : HK.weighted(rng, Object.keys(w), function (x) { return Math.pow(Math.max(0.01, w[x]), 2); });
     var v = { a: p.name, h: p.h }, aTop = p.aTopLast;
     if (k === 'swept') {
       p.swept = true; p.m.fall = Math.min(100, p.m.fall + 25); p.cnt.climax += 1; p.cnt.lewd++;
