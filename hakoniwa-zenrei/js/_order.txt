@@ -214,6 +214,8 @@ js/attr-meet.js
 js/fam-kin.js
 js/cold-fear-text.js @pack:rel
 js/cold-fear.js @pack:rel
+js/esteem-text.js @pack:rel
+js/esteem.js @pack:rel
 js/solo-saimin-data.js @scen:saimin
 js/solo-saimin.js @scen:saimin
 js/solo-locker-data.js
