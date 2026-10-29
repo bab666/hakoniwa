@@ -478,6 +478,8 @@
        理性（P.reason：CP・慎重さ・A・我慢の値・媚薬ロッカーの理性メーター）で起きにくくする（P.reasonK：理性が高い ×0.55 前後〜低い ×1.25。0 にはしない。
        酒・媚薬・発情・火照り・出られない部屋の条件・もう体の関係がある、は理性の効きを弱める。2026-10-28 利用者の追加の指示「理性なども加味して」）、
        sexRel を掛ける。全年齢版・全年齢モード・体の関係にならない組（HK.State.pairSex）では 0。
+       環境値「夜の起こりやすさ」の倍率（P.nightK）はここでは掛けない（惹かれの壁（dv）と出来事の重みの両方に効いて二重になるため。
+       出来事の重み（engine.js の act）・物語型の箱庭の夜の見込み・free-sex.js の F.chance の側で一度だけ掛ける。2026-10-29 担当MI）
      ・P.driveWhy(ctx, a, b)：理由（why）に足す内訳の短い語（「性欲 強・衝動 高・理性 低」）
        各箱庭の夜の確率式は今までどおりで、恋愛の条件を外した「体の関係の経路」（free-sex.js の HK.State.freeSex）の起こりやすさに使う */
   P.hostK = function (a, b) {
@@ -510,6 +512,41 @@
     var sit = Math.min(0.4, drunk * 0.25 + aph * 0.25 + heat * 0.2 + lust * 0.15 + st * 0.05 + (pf && pf.night ? 0.08 : 0));
     return HK.clamp((0.12 + imp * 0.45 + sit) * lib * P.reasonK(ctx, a, b) * P.sexRel(ctx, a, b), 0, 1);
   };
+  /* ---------- 環境値「夜の起こりやすさ」（R18版の全体の環境値 night。events-common.js。2026-10-29 担当MI。利用者の指示「夜の起こりやすさも環境でできるように」） ----------
+     ・P.night(ctx)：値（0〜100）。指定が無い（古い記録・全年齢版・全年齢モード）なら既定の 50
+     ・P.nightK(ctx)：倍率。50 で 1・100 で 1.7・0 で 0（恋愛の起こりやすさと同じ形 0.3 + 値/50×0.7）。全年齢モード・R18が中心の箱庭（HK.State.R18_CORE）では 1
+       住人どうしの合意の夜の入口（エンジンの出来事の重み・物語型の箱庭の夜の見込み・F.chance）に一度だけ掛ける（sexDrive には掛けない）。合意のない展開（force）・モブの夜・出られない部屋の条件の夜には掛けない
+     ・P.nightOff(ctx)：0 で住人どうしの合意の夜を止めるか（engine.js の romanceOk の守り・物語型の箱庭の入口）。出られない部屋で条件に体の関係があるときは止めない（条件の夜） */
+  P.night = function (ctx) {
+    var v = ctx && ctx.env ? ctx.env.night : null;
+    if (v == null || v === '' || isNaN(+v)) return 50;
+    return HK.clamp(+v, 0, 100);
+  };
+  P.nightK = function (ctx) {
+    if (HK.SAFE_ON) return 1;
+    var v = P.night(ctx);
+    if (v === 50) return 1;
+    var sid = ctx ? (ctx.scen ? ctx.scen.id : ctx.scenId) : null;   /* scenId：特殊能力（special.js）の受け渡し A */
+    if (sid && HK.State && HK.State.R18_CORE && HK.State.R18_CORE[sid]) return 1;
+    return v <= 0 ? 0 : 0.3 + v / 50 * 0.7;
+  };
+  P.roomCond = function (ctx) { return !!(ctx && ctx.scen && ctx.scen.id === 'whiteroom' && Array.isArray(ctx.rules) && ctx.rules.some(function (r) { return r && r.k === 'h'; })); };
+  P.nightOff = function (ctx) { return P.nightK(ctx) === 0 && !P.roomCond(ctx); };
+  /* 夜の起こりやすさが 0 なのに起きた性的な場面（記録の e.lewd）の理由の欄に、止めなかった理由を添える（engine.js の Ctx.say・solo-story-kit.js の ST.say）。
+     o：記録の元（actors・force・why）。止めない場面でなければ ''（住人どうしの合意の夜は 0 では起きないので、ふつうは付かない） */
+  P.nightNote = function () { return ''; };
+  /* r18:begin */
+  P.nightNote = function (ctx, o) {
+    if (HK.SAFE_ON || !ctx || !ctx.env || ctx.env.night == null || P.night(ctx) !== 0 || !o) return '';
+    var sid = ctx.scen ? ctx.scen.id : ctx.scenId, head = '夜の起こりやすさ 0 でも止めない：';
+    if (sid && HK.State && HK.State.R18_CORE && HK.State.R18_CORE[sid]) return head + 'R18が中心の箱庭の題材の場面';
+    if (P.roomCond(ctx)) return head + '出られない部屋の条件の夜';
+    if (o.force || (ctx._ev && ctx._ev.force) || (P.FORCE_MARK && String(o.why || '').indexOf(P.FORCE_MARK) >= 0)) return head + '合意のない展開';
+    var who = {}; (o.actors || []).forEach(function (x) { var i = x != null && typeof x === 'object' ? x.i : x; if (i != null && i >= 0) who[i] = 1; });
+    if (Object.keys(who).length < 2) return head + 'モブ・一人の場面';
+    return '';
+  };
+  /* r18:end */
   /* 理性（0〜1）：規範（CP）・慎重さ・冷静さ（A）・我慢の値（stats.gaman 1〜5。あれば）・理性メーター（m.reason 0〜100。媚薬ロッカー） */
   P.reason = function (c) {
     if (!c) return 0.5;

@@ -320,7 +320,9 @@
     var rng = S.rng, L0 = A.live(S), R = SH.R18, ST = HK.Story, sl = (S.env.slewd || 0) / 100;
     confessions(S, A);
     /* 一回の遊びの上限・ひと月に一つ・同じ二人の間隔（ship.js の sxRoom）。漂流記は色事が主題ではないので、起きる見込みも控えめに */
-    if (L0.length < 2 || (A.room && !A.room(S)) || rng() > sl * 0.32) return;
+    /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK：50 で 1・100 で 1.7・0 で 0）を、夜になる見込みに掛ける（0 なら船員どうしの夜は起きない。2026-10-29 担当MI） */
+    var nK = HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1;
+    if (L0.length < 2 || nK <= 0 || (A.room && !A.room(S)) || rng() > sl * 0.32 * nK) return;
     /* 関係の浅い組も夜を共にする見込み（起こりやすさ 40 で 0.05、100 で 0.6） */
     var lowP = clamp((sl - 0.35) / 0.65, 0, 1) * 0.6 + 0.02;
     var cand = [];

@@ -15,7 +15,8 @@
   function pick(ctx, a) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(ctx, a, function (l) { return ctx.pick(l); }) : ctx.pick(a); }
 
   /* ---------- 回数の目安 ---------- */
-  function cap(ctx) { var n = (ctx.om && ctx.om.sexN) || 0; return n < 1 ? 1 : n < 2 ? 0.85 : n < 3 ? 0.3 : n < 4 ? 0.08 : 0.03; }
+  /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK）を上げたときは、回数の目安も緩める（数えた回数を nightK で割る。50 以下では変えない。2026-10-29 担当MI） */
+  function cap(ctx) { var n = ((ctx.om && ctx.om.sexN) || 0) / Math.max(1, HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(ctx) : 1); return n < 1 ? 1 : n < 2 ? 0.85 : n < 3 ? 0.3 : n < 4 ? 0.08 : 0.03; }
   OM.sexCap = cap;
 
   /* 二人の組み合わせ：ao=α攻め×Ω受け oa=Ω攻め×α受け aa=α同士 oo=Ω同士 b=βがいる */

@@ -530,7 +530,7 @@
       });
       /* 恋人どうしのまま気持ちが冷えきった二人は、ここで別れる（別れの出来事を記録に出す。仲直りもある） */
       gSour(ctx, P, used);
-      var rf = gRom(ctx), cand = [];
+      var rf = gRom(ctx), cand = [], nK = HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(ctx) : 1;
       for (var i = 0; i < P.length; i++) for (var j = i + 1; j < P.length; j++) {
         var a = P[i], b = P[j], ab = R(ctx, a, b), ba = R(ctx, b, a);
         var v = Math.min(ab.att, ba.att) + Math.min(ab.aff, ba.aff) * 0.5 + (ctx.pair(a, b).couple ? 30 : 0);
@@ -553,7 +553,7 @@
           if (rng() >= HK.FreeSex.chance(ctx, c.a, c.b, 1.2) * Math.sqrt(HK.Pos.hostK ? HK.Pos.hostK(c.a, c.b) : 1)) return;
         } else if (fs) {
           var dr = ((c.a.flags.drunk || 0) + (c.b.flags.drunk || 0)) / 200, im0 = (c.a.tr.impulse + c.b.tr.impulse) / 2;
-          if (rng() >= HK.clamp(0.25 + dr * 0.5 + im0 * 0.35, 0, 0.9) * 0.5 * HK.FreeSex.factor(ctx, c.a, c.b)) return;
+          if (rng() >= HK.clamp(0.25 + dr * 0.5 + im0 * 0.35, 0, 0.9) * 0.5 * HK.FreeSex.factor(ctx, c.a, c.b) * nK) return;
         } else if (c.v < 55 - rf * 20 || !HK.canLove(ca, cb) || !HK.canLove(cb, ca)) return;
         /* 家族（きょうだい・親子・親族など）で「恋愛：なし」の二人は、一緒に帰る組・お持ち帰りにしない */
         if (ctx.pair(c.a, c.b).kin) return;
@@ -563,7 +563,8 @@
         used[c.a.i] = used[c.b.i] = 1;
         var imp = (c.a.tr.impulse + c.b.tr.impulse) / 2;
         /* 性欲の強さ（HK.Pos.libMul。既定は 1）：お持ち帰りの夜になる起こりやすさに掛ける */
-        var night = so || fs || (imp > 0.55 && rng() < imp * 0.9 * (HK.Pos && HK.Pos.libMul ? HK.Pos.libMul([c.a, c.b]) : 1));
+        /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK：50 で 1・100 で 1.7・0 で 0）：0 ならお持ち帰りの夜にしない（一緒に帰るだけ）。2026-10-29 担当MI */
+        var night = nK > 0 && (so || fs || (imp > 0.55 && rng() < imp * 0.9 * (HK.Pos && HK.Pos.libMul ? HK.Pos.libMul([c.a, c.b]) : 1) * nK));
         /* R18に参加しない人・体の関係にならない組（HK.sexBlocked）・性欲「なし」の人（HK.Pos.libOK）は、お持ち帰りの夜にしない（一緒に帰るだけ。恋愛は止めない） */
         if (night && ((HK.sexBlocked && HK.sexBlocked(c.a, c.b)) || (HK.Pos && HK.Pos.libOK && !HK.Pos.libOK([c.a, c.b])))) night = false;
         if (night) ctx.pair(c.a, c.b).night = true;

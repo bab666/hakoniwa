@@ -46,13 +46,30 @@
 
   /* 関係の「恋愛：なし」の二人（住人の印 loveOff。ties.js の HK.Ties.after・HK.loveOffMark） */
   function offPair(a, b) { return !!((a.loveOff && a.loveOff.indexOf(b.i) >= 0) || (b.loveOff && b.loveOff.indexOf(a.i) >= 0)); }
-  /* 体だけの場面の種類：'lock'（誰とでも可の人と固定外の相手）／'none'（恋愛対象「なし」の人）／'off'（「恋愛：なし」の二人）／'host'（敵対・不仲の二人）／''（どれでもない） */
+  /* 恋愛の起こりやすさが 0 の回（エンジン型。恋愛が中心の箱庭を除く）：恋愛は起きないが、夜は環境値「夜の起こりやすさ」（pos.js の HK.Pos.nightK）で決まる。
+     住人どうしは「恋愛：なし」の二人と同じ体だけの場面に入る（恋人にはならない。2026-10-29 担当MI：恋愛の起こりやすさと夜の起こりやすさを独立に）。
+     回している ctx（HK._curCtx）の住人のときだけ（物語型の箱庭や、前の回の ctx を見ないように） */
+  /* 体だけの関係になりうる組は、組ごとに一度だけ決める（ROM0_P。シードと二人の番号から決めるので、乱数の流れは変えない）。
+     全部の組を体だけの経路に入れると、組ごとに一度ずつ起きる夜（オメガの om_night など）が期間中にほとんどの組で起き、恋愛 50 の回より夜が増えたため */
+  var ROM0_P = 0.2;
+  function pairRoll(c, a, b) {
+    var t = String(c.seed) + ':' + Math.min(a.i, b.i) + '-' + Math.max(a.i, b.i), h = 0x811c9dc5;
+    for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return h / 4294967296;
+  }
+  function rom0(a, b) {
+    var c = HK._curCtx;
+    return !!(c && eng(c) && c.chars && c.chars[a.i] === a && c.chars[b.i] === b && c.env && c.env.romance === 0 && !(c.scen && c.scen.romanceCore)) && pairRoll(c, a, b) < ROM0_P;
+  }
+  HK.State.rom0 = rom0;
+  /* 体だけの場面の種類：'lock'（誰とでも可の人と固定外の相手）／'none'（恋愛対象「なし」の人）／'off'（「恋愛：なし」の二人・恋愛の起こりやすさ 0 の回の二人）／'host'（敵対・不仲の二人）／''（どれでもない） */
   function kindOf(a, b) {
     if (!a || !b || a === b) return '';
     if (HK.lockSexOnly && HK.lockSexOnly(a, b)) return 'lock';
     if (noneFree(a, b)) return 'none';
     if (offPair(a, b) && !(HK.ngPair && HK.ngPair(a, b))) return 'off';
     if (HK.Pos && HK.Pos.hostile && HK.Pos.hostile(a, b) && !(HK.ngPair && HK.ngPair(a, b))) return 'host';
+    if (rom0(a, b) && !(HK.ngPair && HK.ngPair(a, b))) return 'off';
     return '';
   }
   /* 恋愛対象「なし」の人の組も、受け攻めと「体の関係の相手」の性別（HK.Pos.okSex の体の関係の判定）・性欲「なし」でない（HK.State.pairSex）を通る組だけ */
@@ -79,7 +96,8 @@
   F.chance = function (ctx, a, b, k) {
     var hk = HK.Pos && HK.Pos.hostK ? HK.Pos.hostK(a, b) : 1;
     var d = HK.Pos && HK.Pos.sexDrive ? HK.Pos.sexDrive(ctx, a, b) / (hk > 0 ? hk : 1) : 0;
-    return HK.clamp(d * (k == null ? 1 : k) * (F.loverOf(ctx, a, b.i) || F.loverOf(ctx, b, a.i) ? 0.3 : 1), 0, 0.95) * hk;
+    /* 夜の起こりやすさ（pos.js の HK.Pos.nightK）は、起きるかを一度だけ決めるこの見込みに掛ける（sexDrive には掛けない。2026-10-29 担当MI） */
+    return HK.clamp(d * (k == null ? 1 : k) * (F.loverOf(ctx, a, b.i) || F.loverOf(ctx, b, a.i) ? 0.3 : 1) * (HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(ctx) : 1), 0, 0.95) * hk;
   };
   /* 固定した恋人（その場にいる人）。いなければ null */
   /* 恋愛相手の固定は複数人を持てる（HK.locks）。notI がその中にいれば固定外ではないので null。いれば、その場にいる最初の一人。
@@ -165,7 +183,7 @@
   F.why = function (a, b) {
     var kd = kindOf(a, b);
     var dw = HK.Pos && HK.Pos.driveWhy ? '（' + HK.Pos.driveWhy(HK._curCtx && HK._curCtx.chars && HK._curCtx.chars[a.i] === a ? HK._curCtx : null, a, b) + '）' : '';
-    if (kd === 'off') return a.name + 'と' + b.name + 'は恋愛にならない関係（関係の「恋愛：なし」）。恋人にはならないまま、性欲と勢いで体だけの関係に' + dw;
+    if (kd === 'off') return a.name + 'と' + b.name + 'は恋愛にならない関係（' + (offPair(a, b) ? '関係の「恋愛：なし」' : '恋愛の起こりやすさ 0') + '）。恋人にはならないまま、性欲と勢いで体だけの関係に' + dw;
     if (kd === 'host') return a.name + 'と' + b.name + 'は表面上は嫌い合っている（敵対・不仲）。それでも性欲と衝動に負けて、体だけの関係に（嫌悪のぶん起きにくい）' + dw;
     var x = freeOne(a, b);
     if (x.likes === 'none') {

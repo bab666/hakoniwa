@@ -505,6 +505,7 @@
     var scen = scenOf(res);
     var envChips = (scen.env || []).concat(HK.GLOBAL_ENV || []).map(function (e) {
       var v = (res.env || {})[e.id];
+      if (e.r18 && HK.SAFE_ON) return '';   /* R18版だけの環境値（夜の起こりやすさ）は全年齢モードでは出さない */
       var shown = e.type === 'select' ? ((e.options || []).filter(function (o) { return o.v === v; })[0] || {}).label : v + (e.unit || '');
       /* その設定ができる前にセーブした結果（値が無い・今は無い選択肢）は、その欄を出さない */
       if (v == null || shown == null) return '';

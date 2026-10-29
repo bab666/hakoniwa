@@ -18,6 +18,11 @@
 /* r18:end */
 (function () {
   'use strict';
+  /* 夜の起こりやすさ 0（全体の環境値 night。R18版だけ）で手を出さなかった理由（whyNot）。全年齢版には文を入れない（その枝は通らない） */
+  var NIGHT0_WHY = '';
+  /* r18:begin */
+  NIGHT0_WHY = '夜の起こりやすさが 0 な';
+  /* r18:end */
   var HK = window.HK, LK = HK.LOCKER, ST = HK.Story;
   /* 表・数の見出しの言葉（全年齢版は「高鳴り」） */
   var W_CL = '高鳴り';
@@ -187,6 +192,7 @@
   }
   /* 合意の上で手を出し合える組（これまでの canAct）＋性欲「なし」の人がいない（HK.Pos.libOK。2026-10-27 担当HL） */
   function consentOk(S, a, b) {
+    if (S && S.nightNo) return false;
     if (HK.Pos && !HK.Pos.okSex(a, b)) return false;
     if (HK.ngPair && HK.ngPair(a, b) && !freeOk(S, a, b)) return false;
     if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
@@ -243,6 +249,10 @@
     var LX = HK.Lewd, lcf = LX && LX.conf('locker');
     S.eroOn = !!(lcf && HK.Ero && HK.Ero.on(S) && HK.ThickEro && S.R18);
     S.pk = function (arr) { return LK.pick(S, arr); };
+    /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK：50 で 1・100 で 1.7・0 で 0。2026-10-29 担当MI）：0 なら合意の上では手を出し合わない（consentOk。
+       敵対の強引な場面＝合意のない展開の経路・見回りの人（モブ）は止めない）。1 より小さければ、その見込みでだけ合意の場面を開く。上げたときは手を出す勢いを上げる */
+    S.nK = HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1;
+    S.nightNo = !HK.SAFE_ON && (S.nK <= 0 || (S.nK < 1 && !(S.rng() < S.nK)));
     S.P.forEach(function (p) {
       p.m = { heat: 0, reason: clamp(70 + p.tr.cp * 15 + (p.stats.gaman || 3) * 3, 40, 100), plea: 0, esc: 0 };
       p.cnt = { make: 0, refuse: 0, accept: 0, climax: 0, solve: 0, hold: 0, self: 0, jeal: 0, warm: 0 };
@@ -659,6 +669,7 @@
     if (noLoveTie(S, a, b)) return n + 'とは恋愛にしない関係な';
     if (HK.Pos && !HK.Pos.okSex(a, b)) return n + 'とは受け攻めの向きか恋愛対象が合わない';
     if (!libOk(a, b)) return (HK.Pos.libOf(a) === 'none' ? a : b).name + 'は性欲が「なし」な';
+    if (S && S.nightNo) return NIGHT0_WHY;
     return n + 'とは恋愛にならない組な';
   }
   function relW(S, a, b, side) {
@@ -696,7 +707,7 @@
       if (hT) urge += 0.35 * HK.Dark.f(S, 'assault');
       if (lhHas(S, a, b) && canAct(S, a, b)) urge += 0.2;
       /* 性欲の強さ（HK.Pos.libMul）：合意の場面の起こりやすさに掛ける（ふつうの二人なら 1 で、今までどおり） */
-      var lm = fo ? 1 : libMul([a, b]);
+      var lm = fo ? 1 : libMul([a, b]) * (S.nK > 1 ? S.nK : 1);
       if (lm !== 1 && urge > 0) urge *= lm;
       if (urge < 0.36 + rng() * 0.3) continue;
       if (!canAct(S, a, b)) { holdPair(S, a, b, whyNot(S, a, b)); return; }
@@ -721,6 +732,7 @@
       }
       a.cnt.make++;
       var w = b.m.heat / 100 + relW(S, b, a, 'acc') + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (rng() - 0.5) * 0.3;
+      if (S.nK > 1) w += (S.nK - 1) * 0.25;   /* 夜の起こりやすさを上げたときは、応じやすい */
       if (b.honmei != null && b.honmei !== a.i) w -= desperate(b) ? 0.05 : 0.35;
       if (loyal(S, b, a)) w -= desperate(b) ? 0.05 : 0.3;
       if (lhHas(S, b, a)) w += 0.25;

@@ -769,7 +769,9 @@
     /* 性欲（pos.js の HK.Pos.libOK・libMul）：「なし」の人は看病の夜にならない。起こりやすさに二人の倍率（既定は 1） */
     if (!r18on(S) || !R || !R.nurseTop || !Pz || !Pz.okSex(a, b) || (Pz.libOK && !Pz.libOK([a, b])) || family(S, a, b) || !sxRoom(S, [a, b])) return;
     /* 理性（pos.js の HK.Pos.reasonK：理性が高い二人ほど起きにくい ×0.55〜1.25。熱・酒・媚薬で効きが弱まる。2026-10-28 担当MC） */
-    if (rng() > S.env.slewd / 100 * (amour(S, a, b) ? 0.7 : bond(S, a, b) > 0.3 ? 0.45 : 0.15) * (Pz.libMul ? Pz.libMul([a, b]) : 1) * (Pz.reasonK ? Pz.reasonK(S, a, b) : 1)) return;
+    /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK。0 なら看病の夜にならない。2026-10-29 担当MI） */
+    var nK = Pz.nightK ? Pz.nightK(S) : 1;
+    if (nK <= 0 || rng() > S.env.slewd / 100 * (amour(S, a, b) ? 0.7 : bond(S, a, b) > 0.3 ? 0.45 : 0.15) * (Pz.libMul ? Pz.libMul([a, b]) : 1) * (Pz.reasonK ? Pz.reasonK(S, a, b) : 1) * nK) return;
     /* 受け攻め：自分で攻めを選んだ人は、熱があっても受けにならない */
     var o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
     if (Pz.hardTop(u, t)) return;
@@ -899,7 +901,8 @@
   /* 性的な場面の回数：漂流記は色事が主題の箱庭ではないので、一回の遊びで起きる数に上限を置く。
      上限は「夜の出来事の起こりやすさ」しだい（20未満 1・40で 2・70で 3・100で 4）。性的な場面は、ひと月に一つまで。
      同じ二人は一回の遊びで二度まで、二度目は三か月以上あける（船員どうしの夜・看病の夜・星の生命体・異種族の誘い・研究のすべてで数える） */
-  function sxCap(S) { var sl = (S.env.slewd || 0) / 100; return sl <= 0 ? 0 : sl < 0.2 ? 1 : 1 + Math.floor(sl * 3 + 1e-9); }
+  /* 夜の起こりやすさ（全体の環境値 night）を上げたときは上限も上げる（HK.Pos.nightK が 1 より大きいときだけ。下げても上限は変えない：モブ・合意のない展開の場面は止めないため） */
+  function sxCap(S) { var sl = (S.env.slewd || 0) / 100 * Math.max(1, HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1); return sl <= 0 ? 0 : sl < 0.2 ? 1 : 1 + Math.floor(sl * 3 + 1e-9); }
   function sxRoom(S, ps) {
     var X = S.sx || (S.sx = { n: 0, m: -9, pr: {} });
     if (X.n >= sxCap(S) || X.m === S.m) return false;
@@ -959,7 +962,8 @@
     /* 関係の深さで夜の種類が変わる（勢いの夜・二度目の夜・恋人の夜）、過ちだと渋る人、夜をきっかけに恋に落ちて告白する人 */
     if (SH.NIGHT) { SH.NIGHT.run(S, NAPI); return; }
     var rng = S.rng, L0 = live(S), R = SH.R18;
-    if (L0.length < 2 || !sxRoom(S) || rng() > S.env.slewd / 100 * 0.3) return;
+    var nK = HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1;   /* 夜の起こりやすさ（全体の環境値 night） */
+    if (L0.length < 2 || nK <= 0 || !sxRoom(S) || rng() > S.env.slewd / 100 * 0.3 * nK) return;
     var pairs = [];
     L0.forEach(function (a) { L0.forEach(function (b) { if (a.i < b.i && HK.Pos.okSex(a, b) && !family(S, a, b) && sxRoom(S, [a, b]) && (amour(S, a, b) || bond(S, a, b) > 0.25 || rng() < 0.15)) pairs.push([a, b]); }); });
     if (!pairs.length) return;

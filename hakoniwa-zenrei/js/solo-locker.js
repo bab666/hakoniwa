@@ -14,6 +14,11 @@
 /* r18:end */
 (function () {
   'use strict';
+  /* 夜の起こりやすさ 0（全体の環境値 night。R18版だけ）で手を出さなかった理由の文。全年齢版には文を入れない（その枝は通らない） */
+  var NIGHT0 = { hold: '', bed: '' };
+  /* r18:begin */
+  NIGHT0 = { hold: 'とは体の関係にならない（夜の起こりやすさが 0）ので、手は出さなかった（', bed: '体の関係にならない二人（夜の起こりやすさが 0）なので' };
+  /* r18:end */
   var HK = window.HK, LK = HK.LOCKER, ST = HK.Story, clamp = HK.clamp;
   /* 表・数の見出しの言葉（全年齢版は「高鳴り」） */
   var W_CL = '高鳴り';
@@ -139,7 +144,13 @@
     var libWho = libNo ? (HK.Pos.libOf(A) === 'none' ? A : B) : null;
     /* 性欲の強さの倍率（弱い ×0.5・強い ×1.6。ふつうの二人は 1 で、今までどおり） */
     var libM = HK.Pos && HK.Pos.libMul ? HK.Pos.libMul([A, B]) : 1;
-    if (ngP || r18No || libNo) plotter = null;
+    /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK：50 で 1・100 で 1.7・0 で 0。2026-10-29 担当MI）：0 なら、性欲「なし」の二人と同じく
+       合意の上では体の関係にならない（手を出さずに耐える・自分から閉じ込められた人は出さない。敵対の強引な場面＝合意のない展開の経路は開いたまま）。
+       1 より小さければ、その見込みでだけ合意の場面を開く。上げたときは、手を出す勢いとベッドへ行く見込みを上げる */
+    var nK = HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1;
+    var nightNo = !ngP && !r18No && !libNo && !HK.SAFE_ON && (nK <= 0 || (nK < 1 && !(rng() < nK)));
+    if (nK > 1) libM *= nK;
+    if (ngP || r18No || libNo || nightNo) plotter = null;
     /* 拘束 */
     var bind = env.bind === 'random' ? rng.pick(['both', 'one', 'none', 'both']) : env.bind;
     P.forEach(function (p) {
@@ -160,8 +171,8 @@
     /* 敵対している二人（関係がライバル・不仲・敵対）：攻めの側から強引に手を出し、受けは口では嫌がるが、まんざらではない応じ方をする（hate-sex-r18.js。R18版のみ） */
     if (!S.ties) S.ties = (HK.Story && HK.Story.tiesOk ? HK.Story.tiesOk(S.P, input.ties) : input.ties || []);
     var HSX = R18 && HK.HateSex, hateP = !!(HSX && rel === 'tension' && !ngP && !clash && HSX.hostile(S, A, B));
-    var libForce = libNo && hateP;
-    if (libNo && !hateP) clash = true;
+    var libForce = (libNo || nightNo) && hateP;
+    if ((libNo || nightNo) && !hateP) clash = true;
     /* 愛憎（敵対・不仲の追加の欄。hate-love.js）：持つ側は構ってほしくて手を出しやすく、持つ側が受けなら口では嫌がりながら応じやすい。二度目・ベッドへの続きも起きやすい */
     var LHo = HK.LoveHate, lhAny = !!(LHo && !ngP && LHo.any(S, A, B));
     function hardTop(p) { return !!(Pos && Pos.hardTop(p, p && p.o)); }
@@ -228,7 +239,7 @@
       a.cnt.hold++; a.m.reason = clamp(a.m.reason + 3, 0, 100); a.m.plea = clamp(a.m.plea + 8, 0, 90);
       if (a.cnt.hold > 3 && rng() < 0.5) return;
       var ty = clashType(a), C = LK.CLASH;
-      ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + (a.noR18 ? 'は媚薬で火照っていた（' : 'は発情していた（') + Math.round(a.m.heat) + '）が、' + b.name + (libNo ? 'とは体の関係にならない（' + libWho.name + 'は性欲が「なし」）ので、手は出さなかった（' : ngP ? 'とは' + (tieNL ? nlWhy + 'の二人' : '恋愛・R18にしない組') + 'なので、手は出さなかった（' : sexP ? 'とは体の関係にならない（' + sexWhy + '）ので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
+      ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + (a.noR18 ? 'は媚薬で火照っていた（' : 'は発情していた（') + Math.round(a.m.heat) + '）が、' + b.name + (libNo ? 'とは体の関係にならない（' + libWho.name + 'は性欲が「なし」）ので、手は出さなかった（' : nightNo ? NIGHT0.hold : ngP ? 'とは' + (tieNL ? nlWhy + 'の二人' : '恋愛・R18にしない組') + 'なので、手は出さなかった（' : sexP ? 'とは体の関係にならない（' + sexWhy + '）ので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
     }
     /* 女性の攻め（t）×男性の受け（u）か：女性が跨る書き方にする */
     function fmPair(t, u) { return !!(Pos && !ff && Pos.isF(t) && !Pos.isF(u)); }
@@ -341,7 +352,7 @@
         /* 避けている人は自分から手を出さない（攻めに固定された人が受けを避けている組・お互いに避けている組も。avoid-kit.js の HK.Avoid。2026-10-28） */
         if (HK.Avoid && (HK.Avoid.of(S, a, b) || !HK.Avoid.topOk(S, a, b))) continue;
         /* 耐え続ける従者に、主が命令で押し切る（R18版の locker-tie-order-r18.js の LK.inGate。一度だけ。全年齢版・全年齢モードでは何もしない。2026-10-28 担当LK） */
-        if (a === master && servant && !svW && LK.inGate && !clash && !ngP && !r18No && !libNo && plotter !== servant && servant.cnt.hold >= 2 && !servant.broke && master.m.heat >= 70 && LK.inGate(S, { A: A, B: B, pair: pair, M: master, Sv: servant, servant: servant })) { lewdNow = true; break; }
+        if (a === master && servant && !svW && LK.inGate && !clash && !ngP && !r18No && !libNo && !nightNo && plotter !== servant && servant.cnt.hold >= 2 && !servant.broke && master.m.heat >= 70 && LK.inGate(S, { A: A, B: B, pair: pair, M: master, Sv: servant, servant: servant })) { lewdNow = true; break; }
         var urge = (a.goal && a.goal.id === 'want' ? 0.12 : a.goal && a.goal.id === 'out' ? -0.08 : 0) + (a.action && a.action.id === 'flow' ? 0.08 : a.action && a.action.id === 'solve' ? -0.06 : 0) + a.m.heat / 100 + a.tr.impulse * 0.35 + a.tr.fc * 0.15 - a.m.reason / 130 - a.tr.cp * 0.12 + (plotter === a ? 0.45 : 0) + ({ lover: 0.15, fwb: 0.2, almost: 0.1, crush: crusher === a ? 0.2 : 0, mutual: 0.2, tension: -0.1 }[rel] || 0) + (fwbAll && rel !== 'fwb' ? 0.2 : 0) + (crusher === a && rel !== 'crush' && rel !== 'mutual' ? 0.15 : 0);
         /* 敵対している二人：攻めの側は、苛立ちごとぶつけるように手を出しやすい */
         if (hateP && HSX.order(S, a, b)[0] === a) urge += 0.35 * HK.Dark.f(S, 'assault');
@@ -367,8 +378,8 @@
         if (a.m.heat >= 70 && b.m.heat < 40 && urge > 0.5 && rng() < 0.6) {
           var kind = b.tr.np > 0.6 ? 'give' : b.m.heat > 25 || b.tr.fc > 0.6 ? 'tempted' : 'help';
           /* 手で楽にするのは、体の関係になれる二人で、楽にされる側が自分で攻めを選んだ人でないときだけ */
-          if (kind === 'give' && (clash || libNo || hardTop(a))) kind = 'help';
-          if (kind === 'tempted' && (ngP || r18No || libNo)) kind = 'help';   /* 恋愛・R18にしない二人・R18に参加しない人がいる二人は、つられない */
+          if (kind === 'give' && (clash || libNo || nightNo || hardTop(a))) kind = 'help';
+          if (kind === 'tempted' && (ngP || r18No || libNo || nightNo)) kind = 'help';   /* 恋愛・R18にしない二人・R18に参加しない人がいる二人は、つられない */
           if (kind === 'tempted') b.m.heat = clamp(b.m.heat + 15, 0, 100);
           /* 恋愛・R18にしない二人は、抱き寄せる・胸に手を当てさせる・額を合わせる・耳元で囁く なだめ方をしない */
           /* R18に参加しない人（{a}）を「発情して」と書かない（soft） */
@@ -421,6 +432,7 @@
         var w = b.m.heat / 100 + ({ lover: 0.5, fwb: 0.45, almost: 0.3, crush: crusher === b ? 0.45 : -0.05, mutual: 0.45, friend: 0, tension: -0.3, ex: 0.05, stranger: -0.1, master: servant === b ? 0.35 : 0.2 }[rel] || 0) + b.tr.np * 0.15 + b.tr.ac * 0.1 - b.tr.cp * 0.25 - b.m.reason / 160 + (plotter === b ? 0.8 : 0) + (fwbAll && rel !== 'fwb' ? 0.35 : 0) + (fcKind === 'mutual' ? 0.2 : 0) + (crusher === b && rel !== 'crush' && rel !== 'mutual' ? 0.2 : 0) + (rng() - 0.5) * 0.3;
         if (HK.lockOut(b, a)) w -= 0.5;
         if (lhAny && LHo.has(S, b, a)) w += 0.25;
+        if (nK > 1) w += (nK - 1) * 0.25;   /* 夜の起こりやすさを上げたときは、応じやすい */
         if (nt) w += NT.accW(nt, a, b);
         var resp = w > 0.55 ? 'accept' : w > 0.32 ? 'passive' : 'refuse';
         /* 受け攻め：挿入では、仕掛けた側が攻めか受けかで書き分ける */
@@ -544,7 +556,7 @@
           if (ok) wk.cnt.solve++;
         } else if (G2.lewd && rng() < 0.05 + (A.m.heat + B.m.heat) / 450 + ({ lover: 0.3, fwb: 0.25, almost: 0.2, tension: -0.15 }[rel] || 0)) {
           prog = 100;
-          ST.sayB(S, { actors: [A, B], tag: G2.name, text: ST.fmt(pk(pair.conn || pair.level >= 2 ? LK.KISS_MID : LK.KISS_DUTY && (r18No || libNo || (HK.Pos && HK.Pos.genderOK && !HK.Pos.genderOK(A, B))) ? LK.KISS_DUTY : LK.KISS_OK), v0), why: '脱出のためにキスをした（' + (r18No ? r18No.name + 'はR18に参加しないので、事務的に。火照り ' : '発情 ') + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）', mag: 24 }, '', true);
+          ST.sayB(S, { actors: [A, B], tag: G2.name, text: ST.fmt(pk(pair.conn || pair.level >= 2 ? LK.KISS_MID : LK.KISS_DUTY && (r18No || libNo || nightNo || (HK.Pos && HK.Pos.genderOK && !HK.Pos.genderOK(A, B))) ? LK.KISS_DUTY : LK.KISS_OK), v0), why: '脱出のためにキスをした（' + (r18No ? r18No.name + 'はR18に参加しないので、事務的に。火照り ' : '発情 ') + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）', mag: 24 }, '', true);
         } else if (G2.lewd && !pair.conn && rng() < 0.3) {
           ST.sayB(S, { actors: [A, B], tag: G2.name, text: ST.fmt(pk(G2.try), v0) + ST.fmt(pk(G2.ng), v0), why: 'キスしないと開かない' }, 'キスの扉は開かないまま');
         }
@@ -585,7 +597,7 @@
     /* 主従の命令・家族の立場の型（R18版の locker-tie-order-r18.js の LK.bedGate）：命令が通らない・家族の線を越えない夜は、
        その場面だけを書いてベッドへ行かない（下の「起きない」流れへ）。全年齢版・全年齢モードでは何もしない（2026-10-28 担当LJ）
        ベッドの条件を満たさなかった夜も、主の命令・家族の立場から始まる夜がある（'bed' ならベッドへ。向きの決まらない二人・体の関係にしない二人は通さない。2026-10-28 担当LK） */
-    if (LK.bedGate && !clash && !libNo && !ngP && !r18No) {
+    if (LK.bedGate && !clash && !libNo && !nightNo && !ngP && !r18No) {
       var gate = LK.bedGate(S, { A: A, B: B, pair: pair, plotter: plotter, master: svW ? null : master, servant: svW ? null : servant, how: how, lew: lew, bed: bed });
       if (gate === 'no') bed = false; else if (gate === 'bed') bed = true;
     }
@@ -606,7 +618,7 @@
       outcome = 'endure';
       /* 理性の残っていた方が、性格に合わせたやり方で二人を引き離す */
       var ke = A.m.reason >= B.m.reason ? A : B, tye = clashType(ke);
-      ST.key(S, ST.say(S, { actors: [A, B], tag: '耐え抜いた', text: (how === 'timeout' ? LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/, '') : '') + ST.fmt(pk(LK.CLASH.bed[tye]), { a: ke.name, b: ke.o.name }), why: (r18No ? '二人とも媚薬で火照っていた（' : '二人とも発情していた（') + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）が、' + (tieNL ? nlWhy + 'の二人なので' : sexP ? '体の関係にならない二人（' + sexWhy + '）なので' : libNo ? '体の関係にならない二人（' + libWho.name + 'は性欲が「なし」）なので' : '受け攻めの向きが合わない二人なので') + '、ベッドには行かなかった（' + ke.name + 'の理性 ' + Math.round(ke.m.reason) + '）', mag: 30 }), '結末');
+      ST.key(S, ST.say(S, { actors: [A, B], tag: '耐え抜いた', text: (how === 'timeout' ? LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/, '') : '') + ST.fmt(pk(LK.CLASH.bed[tye]), { a: ke.name, b: ke.o.name }), why: (r18No ? '二人とも媚薬で火照っていた（' : '二人とも発情していた（') + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）が、' + (tieNL ? nlWhy + 'の二人なので' : sexP ? '体の関係にならない二人（' + sexWhy + '）なので' : libNo ? '体の関係にならない二人（' + libWho.name + 'は性欲が「なし」）なので' : nightNo ? NIGHT0.bed : '受け攻めの向きが合わない二人なので') + '、ベッドには行かなかった（' + ke.name + 'の理性 ' + Math.round(ke.m.reason) + '）', mag: 30 }), '結末');
     } else {
       /* ロッカーの中で最後までした二人は「怒りの脱出」にしない（そのあと受け入れている） */
       outcome = how === 'timeout' ? 'rescue' : plotter && !plotOk ? 'plotfail' : pair.refusedHard && pair.acts >= 1 && !pair.sexIn ? 'angry' : pair.acts >= 1 ? 'awkward' : (A.cnt.make + B.cnt.make) > 0 || (clash && A.cnt.hold + B.cnt.hold > 0) || pair.toNo ? 'near' : 'clean';

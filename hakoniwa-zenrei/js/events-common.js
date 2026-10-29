@@ -10,6 +10,18 @@
     { id: 'incident', label: 'ハプニングの頻度', min: 0, max: 100, def: 60, lo: 'たまに', hi: '毎回', desc: '天候・物資・追加ルールなど、全員に降りかかる出来事' },
     { id: 'tieEv', label: '関係性イベント', type: 'select', def: 'on', options: [{ v: 'on', label: '出す' }, { v: 'off', label: '出さない（関係は初期値と恋人の扱いだけに使う）' }], desc: '上司と部下・恩人・夫婦など、関係ごとの専用の場面' }
   ];
+  /* r18:begin */
+  /* 夜の起こりやすさ（R18版だけ。2026-10-29 担当MI。利用者の指示「恋愛の起こりやすさだけでなく、夜の起こりやすさも環境でできるように」）：
+     倍率は pos.js の HK.Pos.nightK（50 で 1・100 で 1.7・0 で 0）。性欲＋衝動性＋状況×理性（HK.Pos.sexDrive）・エンジンの体の出来事の重み・物語型の箱庭の夜の見込みに掛ける。
+     r18：全年齢モードでは欄を出さない（ui.js の genv・view.js の結果の札）。sparse：指定が無ければ住人の env に入れない（古い記録・全年齢モードの結果は既定 50 として読む。指紋も変えない）。
+     all＋show：物語型の箱庭のうち住人どうしの夜がある箱庭（NIGHT_SOLO）にも出す。R18が中心の箱庭（HK.State.R18_CORE）には出さない（条件の夜なので効かせない） */
+  var NIGHT_SOLO = { ship: 1, jashin: 1, yakata: 1, saimin: 1, locker: 1, jinro: 1 };
+  HK.GLOBAL_ENV.splice(2, 0, {
+    id: 'night', label: '夜の起こりやすさ', min: 0, max: 100, def: 50, lo: '起きにくい', hi: '起きやすい', r18: 1, sparse: 1, all: 1,
+    show: function (scen) { return !!scen && !(HK.State && HK.State.R18_CORE && HK.State.R18_CORE[scen.id]) && (!scen.solo || !!NIGHT_SOLO[scen.id]); },
+    desc: '性欲・衝動性・理性で決まる、住人どうしの夜（エッチの場面）の起こりやすさ全体を増減する（50 でそのまま、100 で 1.7 倍ほど）。0 にすると住人どうしの合意の夜は起きない（出られない部屋の条件の夜・合意のない展開・モブとの夜は除く。R18 が中心の箱庭は題材なので効かない）。恋愛の起こりやすさとは別で、恋愛 0・夜 100 なら、恋人にはならずに体だけの夜が増える'
+  });
+  /* r18:end */
   /* 複数の恋人（なし／あり／秘密。poly.js） */
   if (HK.Poly && HK.Poly.ENV) HK.GLOBAL_ENV.push(HK.Poly.ENV);
   /* モブへの呼びかけ（台詞の中でモブを呼ぶとき。mob.js の HK.Mob.addr・tone-plus.js の V.mobAddr）。all：一人用・物語型の箱庭にも出す */

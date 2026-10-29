@@ -48,6 +48,8 @@
         /* 避けている相手を、人狼の側から襲いには行かない（avoid-kit.js の HK.Avoid。2026-10-28） */
         if (HK.Avoid && HK.Avoid.of(S, w, v)) return;
         var cl = close(c.input, w, v), love = cl >= 0.45 && HK.canLove && HK.canLove(w, v) && HK.canLove(v, w);
+        /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightOff）が 0：近い関係の二人の合意の夜にしない（強引な夜＝合意のない展開は内容のスイッチどおり。2026-10-29 担当MI） */
+        if (love && Pz.nightOff && Pz.nightOff(S)) love = false;
         if (!love && !force) return;
         var sc = (love ? 1 + cl : 0.2 + ((w.tr && w.tr.aggr) || 0) * 0.5 + ((w.tr && w.tr.impulse) || 0) * 0.4) + rng() * 0.3;
         cands.push({ w: w, v: v, love: love, sc: sc });

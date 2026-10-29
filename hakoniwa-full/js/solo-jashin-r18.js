@@ -23,7 +23,8 @@
   scen.env.push({ id: 'jlewd', label: '住人どうしの夜の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: '毎晩', desc: '住人どうしの夜（媚薬の熱・恐怖の夜・恋人や惹かれ合った二人・役職どうしの夜）の起きやすさ。0にすると、住人どうしの夜は起きません' });
   scen.env.push({ id: 'jmob', label: '村人・神の夜の起こりやすさ', min: 0, max: 100, def: 40, lo: '起きない', hi: '毎晩', desc: '村人の夜這い・清めの湯・夢に現れる神・取り憑かれた仲間・洞窟の眷属・生贄の儀・神ごとの夜の起きやすさ。夜這いが苦手なら、ここを0にしてください（住人どうしの夜はそのまま起きます）。以前の「夜の出来事の起こりやすさ」の値を引き継ぎます' });
   /* 二つの起こりやすさ（0〜1） */
-  function lvPC(S) { return Math.max(0, Math.min(100, +S.env.jlewd || 0)) / 100; }
+  /* 住人どうしの夜には、全体の環境値「夜の起こりやすさ」（pos.js の HK.Pos.nightK：50 で 1・100 で 1.7・0 で 0）も掛ける（村人・神の夜 jmob には掛けない。2026-10-29 担当MI） */
+  function lvPC(S) { return Math.min(1, Math.max(0, Math.min(100, +S.env.jlewd || 0)) / 100 * (HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1)); }
   function lvMob(S) { var v = S.env.jmob == null ? S.env.jlewd : S.env.jmob; return Math.max(0, Math.min(100, +v || 0)) / 100; }
 
   var MEAL = L('歓迎の膳には、山菜と川魚と、甘い香りの濁り酒が並んだ。|女将が「村の名物です」と、とろりとした汁物をよそった。|夕餉の膳に、見たことのない赤い茸が添えられていた。');
@@ -698,7 +699,9 @@
     room: function (S, ps) {
       if ((S.r18Tot || 0) >= JS.R18.cap(S)) return false;
       var w = S.r18Who || {};
-      return (ps || []).every(function (p) { return p && (w[p.i] || 0) < 2; });
+      /* 一人あたりの夜は二夜まで。夜の起こりやすさ（全体の環境値 night）を上げたときは三夜まで（2026-10-29 担当MI） */
+      var per = HK.Pos && HK.Pos.nightK && HK.Pos.nightK(S) > 1 ? 3 : 2;
+      return (ps || []).every(function (p) { return p && (w[p.i] || 0) < per; });
     },
     /* 性的な夜を一つ数える（ps は場面に出た人） */
     spend: function (S, ps) {
@@ -738,13 +741,15 @@
         var rest = Object.keys(DOSE).filter(function (k) { return (S.r18Doses || []).indexOf(k) < 0; });
         if (rest.length && rng() < 0.35 + lv * 0.4) dose(S, live, rest[Math.floor(rng() * rest.length)]);
       }
-      if (p.lastNight != null && h - p.lastNight < 10) return false;
+      /* 同じ人の夜の間隔（10 時間）。夜の起こりやすさ（全体の環境値 night）を上げたときは短くする（100 で 6 時間。50 以下では変えない。2026-10-29 担当MI） */
+      var gap = 10 / Math.max(1, HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1);
+      if (p.lastNight != null && h - p.lastNight < gap) return false;
       /* 理性（pos.js の HK.Pos.reasonK。一人ぶん：理性が高い人ほど夜に流されにくい ×0.55〜1.25。媚薬が回ると効きが弱まる。2026-10-28 担当MC） */
       if (rng() > lv * (p.aphro ? 0.32 : 0.12) * (HK.Pos && HK.Pos.reasonK ? HK.Pos.reasonK(S, p, p) : 1)) return false;
       p.lastNight = h; p.cnt.r18 = (p.cnt.r18 || 0) + 1;
       /* 体だけの関係の組（「誰とでも可」の人と固定外の相手。HK.State.freeSex。free-sex.js）も、参加者どうしの夜の相手になる（恋愛の条件 HK.canLove は見ない） */
       /* 部屋を訪ねて押し倒すのは攻め（HK.Pos.order の一人目）。避けている人が攻めに固定される組・お互いに避けている組は相手にしない（avoid-kit.js。2026-10-28） */
-      var mates = pc <= 0 ? [] : live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= 10) && (!HK.Avoid || HK.Avoid.topOk(S, p, q)) && ((HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) || !!(HK.State.freeSex && HK.State.freeSex(S, p, q))) && okPair(p, q) && (!HK.Pos || !HK.Pos.libOK || HK.Pos.libOK([p, q])); });
+      var mates = pc <= 0 ? [] : live.filter(function (q) { return q !== p && (q.lastNight == null || h - q.lastNight >= gap) && (!HK.Avoid || HK.Avoid.topOk(S, p, q)) && ((HK.canLove ? HK.canLove(p, q) && HK.canLove(q, p) : true) || !!(HK.State.freeSex && HK.State.freeSex(S, p, q))) && okPair(p, q) && (!HK.Pos || !HK.Pos.libOK || HK.Pos.libOK([p, q])); });
       var top = HK.Pos && HK.Pos.hardTopNpc ? HK.Pos.hardTopNpc(p) : hardTop(p);
       var r0 = rng();
       /* 性行為の相手を「固定した相手だけ」にした人（noMob）：夢の神・清めの湯・村人の夜這いには進まず、住人どうしの夜だけ */

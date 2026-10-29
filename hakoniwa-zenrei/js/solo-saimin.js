@@ -215,6 +215,11 @@
          合意のない展開が入（同意のない催眠）は、内容のスイッチどおり（2026-10-27 担当HM） */
       var libNo = !!(S.gate && Pz && Pz.libOf && (Pz.libOf(p) === 'none' || (HY && Pz.libOf(HY) === 'none')));
       p.noSex = !!(Pz && HY && !Pz.okSex(HY, p)) || kinNo || mobNo || resNo || p.noForce || libNo;
+      /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK：50 で 1・100 で 1.7・0 で 0。2026-10-29 担当MI）：住人のかけ手と同意を取った催眠プレイは、
+         0 なら性的な暗示をかけない（1 より小さければ、その見込みでだけかける）。上げたときは「平和な暗示だけ」の回を減らす。
+         同意のない催眠（合意のない展開が入）・モブのかけ手は止めない */
+      var nK = Pz && Pz.nightK ? Pz.nightK(S) : 1;
+      if (HY && p.consent && !p.noSex && nK < 1 && !(nK > 0 && rng() < nK)) p.noSex = true;
       p.aTop = !!(Pz && !p.noSex && (HY ? Pz.order(HY, p, [HY, p])[0] === p : Pz.vsNpc(p, '') === 'top'));
       p.ff = !!(Pz && (HY ? Pz.ff(HY, p) : p.hf && Pz.isF(p)));
       /* かける側が女性で、男性（女性でない人）を導く組（女攻め×男）：{h} が跨る・導く専用の文（fm）を使う。男性の体で書いた {h} の文は使わない。
@@ -222,7 +227,7 @@
       var hFem = HY ? !!(Pz && Pz.isF(HY)) : !!p.hf;
       p.fm = !!(Pz && !p.noSex && !p.ff && !p.aTop && hFem && (!HY || (HK.FM && HK.FM.on && HK.FM.on(HY, p)) || Pz.order(HY, p, [HY, p])[0] === HY));
       p.aTopLast = p.aTop;
-      p.peaceOnly = env.mode === 'mix' && rng() < ({ friend: 0.3, colleague: 0.15, lover: 0.1 }[ty] || 0);
+      p.peaceOnly = env.mode === 'mix' && rng() < ({ friend: 0.3, colleague: 0.15, lover: 0.1 }[ty] || 0) / (HY && p.consent ? Math.max(1, nK) : 1);
       p.sens = 0.6 + (p.stats.sens || 3) * 0.18;
       /* かかりやすさ（0〜1） */
       p.sus = clamp(0.2 + (p.stats.sugg || 3) * 0.08 + p.tr.ac * 0.25 + p.tr.fc * 0.15 + p.tr.np * 0.08 - p.tr.a * 0.2 - p.tr.cp * 0.2 + dot(p.M.aff, p.tr) + p.T.trust * 0.15 + skill * 0.15 + (p.action.id === 'trust' ? 0.12 : p.action.id === 'doubt' ? -0.15 : 0.04) + (p.goal.id === 'safe' ? -0.08 : 0), 0.02, 0.98);
@@ -352,6 +357,7 @@
           if (p.m.depth < 22) return wake(p);
         }
         /* 暗示を選ぶ（腕がいいほど、相手の弱い暗示を見抜く） */
+        var nKs = HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1;
         var ks = Object.keys(SM.SUG).filter(function (k) { return okSug(p, k, env) && (p.used[k] || 0) < 2; });
         if (!ks.length) return;
         var k = HK.weighted(rng, ks, function (k2) {
@@ -361,6 +367,8 @@
         p.used[k] = (p.used[k] || 0) + 1;
         var g = SM.SUG[k];
         var score = p.m.depth - g.req + p.aff[k] * 70 + p.m.fall * 0.25 + (p.stats.sugg || 3) * 3 + rng() * 30 - 15 - p.m.resist * 0.1;
+        /* 夜の起こりやすさを上げたときは、同意を取った催眠プレイの性的な暗示を受け入れやすい（住人のかけ手だけ。2026-10-29 担当MI） */
+        if (g.lewd && HY && p.consent && nKs > 1) score += (nKs - 1) * 25;
         var res = score >= 8 ? 'full' : score >= -10 ? 'part' : 'ng';
         var t = cmdText(p, g), why = '暗示「' + g.label + '」（必要な深さ ' + g.req + '・今の深さ ' + Math.round(p.m.depth) + '・' + p.name + 'との相性 ' + (p.aff[k] >= 0.15 ? '◎' : p.aff[k] >= 0 ? '○' : '△') + '）';
         var mag = 15;

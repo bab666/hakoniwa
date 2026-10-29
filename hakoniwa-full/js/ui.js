@@ -39,9 +39,11 @@
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   })();
   /* fac：派閥の設定（factions.js）は派閥のある箱庭だけに、その箱庭の環境値のすぐあとに出す */
+  /* r18：R18版だけの環境値（夜の起こりやすさ）は全年齢モードでは出さない。show：出す箱庭を絞る（events-common.js） */
+  function gshow(scen) { return function (e) { return !(e.r18 && HK.SAFE_ON) && (!e.show || e.show(scen)); }; }
   function genv(scen) {
-    if (scen.solo) return scen.env.concat(HK.GLOBAL_ENV.filter(function (e) { return e.all; }));
-    var g = HK.GLOBAL_ENV.filter(function (e) { return !e.fac || scen.factions; });
+    if (scen.solo) return scen.env.concat(HK.GLOBAL_ENV.filter(function (e) { return e.all; }).filter(gshow(scen)));
+    var g = HK.GLOBAL_ENV.filter(function (e) { return !e.fac || scen.factions; }).filter(gshow(scen));
     return scen.env.concat(g.filter(function (e) { return e.fac; }), g.filter(function (e) { return !e.fac; }));
   }
   /* 箱庭の情報：本体（HK.SCENARIOS）か、まだ読んでいない箱庭は目録から作った仮の箱庭（load.js の HK.Load.info。stub: true。一覧・人数・名前にだけ使う） */

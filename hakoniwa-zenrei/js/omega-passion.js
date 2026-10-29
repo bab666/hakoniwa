@@ -200,6 +200,8 @@
       /* R18版：関係で敵対している二人（ライバル・不仲・敵対／嫌悪レベル35以上）は、攻めの側から強引に（hate-sex-r18.js） */
       var HS = !HK.SAFE_ON && HK.HateSex;
       if (HS && HS.order(ctx, a, b)[0] === a && HS.hostile(ctx, a, b)) return true;
+      /* 敵対の強引な場面でない愛憎の夜は合意ありの夜なので、夜の起こりやすさ 0（pos.js の HK.Pos.nightOff）では起こさない（2026-10-29 担当MI） */
+      if (HK.Pos && HK.Pos.nightOff && HK.Pos.nightOff(ctx)) return false;
       /* 受けになる人が相手を想っていて嫌っていない（片想い・執着の側）・攻めになる人が相手を苦手で避けているなら、憎みながらの夜にしない
          （嫌悪からの流されの文が当たる・避けている人は自分から押し倒さない。2026-10-28 担当JD） */
       if (HS && HS.loves && (function (o) { return (HS.loves(ctx, o[1], o[0]) && !HS.hates(ctx, o[1], o[0])) || HS.avoids(ctx, o[0], o[1]); })(HS.order(ctx, a, b))) return false;

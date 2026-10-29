@@ -423,7 +423,7 @@
       /* 同意のない体の関係は、内容のスイッチ「合意のない展開」が入のときだけ（content.js） */
       var forceOk = !HK.Content || HK.Content.on(A.env, 'force', A.scenId);
       if (forceOk && Pz && Pz.okSex(p, b) && !(HK.State && !(HK.State.r18ok(p) && HK.State.r18ok(b))) && !(HK.sexBlocked && HK.sexBlocked(p, b)) && A.rng() < (A.lewd || 0.4) * (how === '催眠' ? 1 : 0.7)) sex = SP.R18.text(A, p, b, how);
-    } else if (A.r18 && SP.R18 && HK.Pos && HK.Pos.okSex(p, b) && !(HK.State && !(HK.State.r18ok(p) && HK.State.r18ok(b))) && !(HK.sexBlocked && HK.sexBlocked(p, b)) && A.rng() < (A.lewd || 0.4) * 0.5) sex = SP.R18.text(A, p, b, how);
+    } else if (A.r18 && SP.R18 && HK.Pos && HK.Pos.okSex(p, b) && !(HK.State && !(HK.State.r18ok(p) && HK.State.r18ok(b))) && !(HK.sexBlocked && HK.sexBlocked(p, b)) && A.rng() < (A.lewd || 0.4) * 0.5 * (HK.Pos.nightK ? HK.Pos.nightK(A) : 1)) sex = SP.R18.text(A, p, b, how);   /* 同意の吸血のあとの夜：夜の起こりやすさ（HK.Pos.nightK）を掛ける */
     if (sex) t += sex;
     t += fmt(pick(A, how === '催眠' ? V.afterHypno : V.after), { a: p.name, b: b.name });
     A.setHp(b, A.hp(b) - hp); A.addStress(b, stress);

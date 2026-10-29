@@ -814,9 +814,9 @@
   function actElig(ctx, a, b) {
     return ctx.rules.filter(function (x) { var T = K[x.k]; return T.type === 'act' && !ruleDone(ctx, x, a, b) && !(T.lvl >= 5 && !okSex(a, b)) && (willing(ctx, a, b, T.lvl) || desperate(ctx, a, b, T.lvl)); });
   }
-  /* 行為（手を繋ぐ〜エッチ） */
+  /* 行為（手を繋ぐ〜エッチ）。nightCond：部屋の条件を満たす出来事なので、環境値「夜の起こりやすさ」を掛けず、0 でも止めない（engine.js の act・romanceOk。条件の二人の夜・スピード型も同じ） */
   EV.push({
-    id: 'doact', cat: 'romance', sex: true, scope: 'pair', pri: true,
+    id: 'doact', cat: 'romance', sex: true, nightCond: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (a.flags.down || b.flags.down) return false;
       return ctx.rules.some(function (r) {
@@ -1122,7 +1122,7 @@
     return null;
   }
   EV.push({
-    id: 'group_h', cat: 'romance', sex: true, scope: 'solo', pri: true,
+    id: 'group_h', cat: 'romance', sex: true, nightCond: true, scope: 'solo', pri: true,
     when: function (ctx, a) {
       if (!ctx.rules.some(function (r) { return r.k === 'h'; }) || ctx.flags.groupDone) return false;
       return ctx.present().length >= 3 && eager(ctx, a) > 0.7 && !!groupOf(ctx, a);
@@ -1181,7 +1181,7 @@
   /* スピード型：相手の隙をついて拘束し、さっさと条件を満たして出る */
   function speedy(c) { return c.tr.cold * 0.45 + c.tr.aggr * 0.3 + c.tr.impulse * 0.25 - c.tr.np * 0.35; }
   EV.push({
-    id: 'speedrun', cat: 'romance', sex: true, scope: 'pair', pri: true,
+    id: 'speedrun', cat: 'romance', sex: true, nightCond: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       if (a.flags.down || b.flags.down || ctx.pair(a, b).speedTried || speedy(a) < 0.38 || ctx.stepIndex < 1) return false;
       if (b.flags.partner != null && b.flags.partner !== a.i) return false;

@@ -26,6 +26,8 @@
     this.env = {};
     var defs = this.scen.env.concat(HK.GLOBAL_ENV);
     defs.forEach(function (e) {
+      /* sparse：指定が無ければ入れない（夜の起こりやすさ。古い記録・全年齢モードでは既定として読む。pos.js の HK.Pos.night） */
+      if (e.sparse && !(input.env && input.env[e.id] != null)) return;
       self.env[e.id] = input.env && input.env[e.id] != null ? input.env[e.id] : e.def;
     });
     /* 内容のスイッチ（content.js）は箱庭の環境値の一覧にないので、そのまま写す */
@@ -386,11 +388,13 @@
     return best;
   };
 
-  Ctx.prototype.bias = function (a, cat) {
+  /* ev：出来事の定義（省略可）。体だけの場面の経路を扱う体の出来事（sex と free の印。恋愛が前提の love の印のないもの）は、恋愛の起こりやすさを掛けない
+     （夜の起こりやすさ（pos.js の HK.Pos.nightK）だけで決まる。act が掛ける。2026-10-29 担当MI：恋愛と夜を独立に） */
+  Ctx.prototype.bias = function (a, cat, ev) {
     var m = 1;
     if (a.action && a.action.bias && a.action.bias[cat] != null) m *= a.action.bias[cat];
     if (a.goal && a.goal.bias && a.goal.bias[cat] != null) m *= a.goal.bias[cat];
-    if (cat === 'romance') m *= this.env.romance === 0 && !this.scen.romanceCore ? 0 : 0.3 + this.env.romance / 50 * 0.7;
+    if (cat === 'romance' && !(ev && ev.sex && ev.free && !ev.love)) m *= this.env.romance === 0 && !this.scen.romanceCore ? 0 : 0.3 + this.env.romance / 50 * 0.7;
     if (cat === 'conflict' || cat === 'combat' || cat === 'betray') m *= 0.3 + this.env.strife / 50 * 0.7;
     if (this.scen.catBias && this.scen.catBias[cat] != null) m *= this.scen.catBias[cat];
     return m;
@@ -434,6 +438,8 @@
       odd: !!o.odd, mag: o.mag || 0, kind: o.kind || 'phase'
     };
     if (lw) e.lewd = true;
+    /* 夜の起こりやすさ 0 でも起きた場面（条件の夜・合意のない展開・モブ）は、止めなかった理由を理由の欄に添える（pos.js の HK.Pos.nightNote） */
+    if (lw && HK.Pos && HK.Pos.nightNote) { var nn = HK.Pos.nightNote(this, o); if (nn) e.why = (e.why ? e.why + '／' : '') + nn; }
     this.log.push(e);
     return e;
   };
@@ -465,6 +471,9 @@
     /* 体の関係の出来事（ev.sex）は、R18に参加しない人・体の関係にならない組（HK.sexBlocked：性行為の相手の固定など）では起こさない。
        恋愛は止めない（pos.js の HK.Pos.okLove）ので、恋人どうしの夜・恋愛が中心の箱庭の体の場面はここで止める */
     if (ev && ev.sex) { for (var s0 = 0; s0 < L.length; s0++) { if (L[s0].noR18) return false; for (var s1 = s0 + 1; s1 < L.length; s1++) if (direct(L[s0], L[s1]) && HK.sexBlocked(L[s0], L[s1])) return false; } }
+    /* 夜の起こりやすさが 0（pos.js の HK.Pos.nightOff）：住人どうしの合意の体の出来事は起こさない。合意のない展開（force）・出られない部屋の条件の出来事（nightCond）・
+       条件に体の関係がある出られない部屋（条件の夜）・R18が中心の箱庭（nightK が 1）は止めない（2026-10-29 担当MI） */
+    if (ev && ev.sex && !ev.force && a && b && !ev.nightCond && !(this._ev && this._ev.nightCond) && HK.Pos && HK.Pos.nightOff && HK.Pos.nightOff(this)) return false;
     /* 恋愛なしの家族は、恋愛が中心の箱庭（romanceCore）でも恋愛の出来事を起こさない */
     if (a && b && this.pair(a, b).kin) return false;
     /* 体だけの場面の組（free-sex.js の HK.State.freeSex：「恋愛：なし」の二人・敵対や不仲の二人・誰とでも可の人と固定外の相手・恋愛対象「なし」の人）の
@@ -482,7 +491,8 @@
     if (HK.Emo && HK.Emo.blockLove(this, L)) return false;
     if (this.scen && this.scen.romanceCore) return true;
     if (a && b && this.pair(a, b).couple) return true;
-    if (this.env && this.env.romance === 0) return false;
+    /* 恋愛の起こりやすさが 0：恋愛の出来事は起こさない。体だけの場面の経路（body）は、夜の起こりやすさで決まるので通す（2026-10-29 担当MI） */
+    if (this.env && this.env.romance === 0 && !body) return false;
     if (body) return true;
     if (a && b && HK.lockSexOnly(a, b)) { var a0 = Object.assign({}, a, { lock: null, locks: null }), b0 = Object.assign({}, b, { lock: null, locks: null }); return HK.canLove(a0, b0) && HK.canLove(b0, a0); }
     if (a && b) return HK.canLove(a, b) && HK.canLove(b, a);
@@ -850,7 +860,7 @@
       if (bb && ctx._apathy && HK.Ties.apathyBlock(ctx, a, bb, e)) return;
       var w = e.w(ctx, a, bb);
       if (!(w > 0)) return;
-      w *= ctx.bias(a, e.cat);
+      w *= ctx.bias(a, e.cat, e);
       if (e.cat === 'combat' || e.cat === 'kill' || e.cat === 'betray') w *= HK.Dark.f(ctx, e.dk || (e.cat === 'betray' ? 'spite' : 'kill'));   /* 展開の重さ（mood-dial.js） */
       if (bb && HK.Ties) w *= HK.Ties.bias(ctx, a, bb, e.cat, e);
       if (bb && e.cat === 'romance' && (a.honmei != null || bb.honmei != null)) w *= HK.honmeiFactor(ctx, a, bb);
@@ -858,6 +868,9 @@
       if (e.sex && !e.force && HK.Pos && HK.Pos.libMul) w *= HK.Pos.libMul(bb ? [a, bb] : [a]);
       /* 理性（pos.js の HK.Pos.reasonK。R18版）：合意ありの体の出来事は、二人の理性が高いほど起きにくい（×0.55〜1.25。止めはしない。酒・媚薬・条件などで理性の効きは弱まる。2026-10-28） */
       if (e.sex && !e.force && bb && HK.Pos && HK.Pos.reasonK && !HK.SAFE_ON) w *= HK.Pos.reasonK(ctx, a, bb);
+      /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK：50 で 1・100 で 1.7・0 で 0）：住人どうしの合意の体の出来事の重みに掛ける。
+         合意のない展開（force）・モブとの夜（相手が住人でない）・出られない部屋の条件の出来事（nightCond）には掛けない（2026-10-29 担当MI） */
+      if (e.sex && !e.force && bb && !e.nightCond && HK.Pos && HK.Pos.nightK && !HK.SAFE_ON) w *= HK.Pos.nightK(ctx);
       if (HK.Emo) w *= HK.Emo.weight(ctx, a, e);   /* 気分（emotion.js）：悲しみ→恋愛を控える、怒り→対立など */
       if (bb && e.cat === 'romance' && HK.Dark.on(ctx) !== 'normal' && HK.Dark.cheat(ctx, a, bb)) w *= HK.Dark.f(ctx, 'cheat');   /* 展開の重さ：恋人のいる人の、ほかの人との恋愛・夜 */
       if (w <= 0) return;
@@ -950,7 +963,8 @@
   function classify0(ctx, A, B, pf) {
     var ab = ctx.R(A, B), ba = ctx.R(B, A);
     /* 関係で恋愛しない二人（HK.tieLoveNoPair：「恋愛：なし」・自動で「なし」の無関心・恐怖など）は、値がどうでも恋人・両片想い・片想いにしない */
-    var noL = HK.tieLoveNoPair(ctx, A, B);
+    /* R18版：恋愛の起こりやすさ 0 の回も（体だけの夜（free-sex.js の rom0）があっても恋人・片想いにしない。2026-10-29 担当MI） */
+    var noL = HK.tieLoveNoPair(ctx, A, B) || !!(!HK.SAFE_ON && ctx.env && ctx.env.romance === 0 && !(ctx.scen && ctx.scen.romanceCore));
     var love = function (r) { return !noL && r.aff > 38 && r.att > 42; };
     var dir = null;
     if (ctx.scen.classifyFirst) { var sf = ctx.scen.classifyFirst(ctx, A, B, pf); if (sf) return sf; }

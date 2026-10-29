@@ -31,6 +31,8 @@
     /* 内容のスイッチ（content.js）は環境値の一覧にないので、そのまま写す */
     env.ct = input.env && input.env.ct != null ? String(input.env.ct) : '';
     if (HK.Dark) HK.Dark.keep(input.env, env); else env.heavy = 'normal';   /* 展開の重さ（mood-dial.js。全体の設定） */
+    /* 夜の起こりやすさ（R18版の全体の環境値 night。pos.js の HK.Pos.nightK が S.env.night を読む）：指定があるときだけ写す（無ければ既定の 50 として読む） */
+    if (input.env && input.env.night != null && input.env.night !== '' && !isNaN(+input.env.night)) env.night = +input.env.night;
     var S = { scen: scen, rng: HK.rng(input.seed), env: env, log: [], hist: [], turns: [], recent: [], step: 0, label: '', flags: {} };
     S.P = input.chars.map(function (c, i) {
       var pc = (input.perChar && input.perChar[i]) || {};
@@ -72,6 +74,8 @@
     if (HK.Emo && HK.Emo.story) HK.Emo.story(S, o);   /* 気分（emotion.js） */
     /* エロシーンの印（ero-scene.js）：o.lewd、生成器の touch、体の語の印 */
     if (o.kind !== 'step' && HK.EroScene && HK.EroScene.hit(S, o)) o.lewd = true;
+    /* 夜の起こりやすさ 0 でも起きた場面（合意のない展開・モブ・一人）は、止めなかった理由を理由の欄に添える（pos.js の HK.Pos.nightNote） */
+    if (o.lewd && HK.Pos && HK.Pos.nightNote) { var nn = HK.Pos.nightNote(S, o); if (nn) o.why = (o.why ? o.why + '／' : '') + nn; }
     S.log.push(o);
     return o;
   };
