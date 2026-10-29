@@ -13014,6 +13014,28 @@ var m=S2._eroScene;if(!m||m.at!==S2.log.length){m=S2._eroScene={at:S2.log.length
 m.used.push(x);
 return x;
 };
+E.dedupeLog=function(res,input,only){
+if(HK.SAFE_ON|| !res|| !Array.isArray(res.log)|| !input|| !Array.isArray(input.chars))return;
+var P=input.chars.map(function(c,i){return Object.assign({},c,{i:i});});
+res.log.forEach(function(e,n){
+if(!e||typeof e.text!=='string'||e.text.indexOf('♡')<0||(only&& !only[n]))return;
+var h=2166136261,sd=String(res.seed)+'|'+n;
+for(var k=0;k<sd.length;k++)h=Math.imul(h^sd.charCodeAt(k),16777619)>>>0;
+var r=function(){h=(Math.imul(h^(h>>>15),2246822507)+0x6D2B79F5)>>>0;return(h>>>8)/16777216;};
+r.int=function(m){return Math.floor(r()*m);};
+e.text=E.dedupeMoan({rng:r,P:P,log:[]},e.text);
+});
+};
+if(HK.simulate&& !HK.simulate._moanDedupe&&HK.wrap)HK.wrap(HK,'simulate',function(sim0){
+var f=function(input){
+var res=sim0.apply(this,arguments);
+E.dedupeLog(res,input);
+return res;
+};
+for(var ks in sim0)if(Object.prototype.hasOwnProperty.call(sim0,ks))f[ks]=sim0[ks];
+f._moanDedupe=true;
+return f;
+});
 if(HK.simulate&& !HK.simulate._sceneS&&HK.wrap)HK.wrap(HK,'simulate',function(sim0){
 var f=function(){lastS=null;pend=null;return sim0.apply(this,arguments);};
 for(var ks in sim0)if(Object.prototype.hasOwnProperty.call(sim0,ks))f[ks]=sim0[ks];
@@ -13033,6 +13055,23 @@ var i=used.indexOf(x);if(i>=0)used.splice(i,1);
 used.push(x);
 return E.sceneMark(S,x);
 }
+E.dedupeMoan=function(S,text){
+if(HK.SAFE_ON||typeof text!=='string'||text.indexOf('♡')<0)return text;
+var P=(S&&(S.P||S.chars))||[],seen={};
+var key=function(v){return String(v).replace(/[\s　\u2060]/g,'');};
+return text.replace(/([^\s「」。！？\n]{1,12})「(\u2060?)([^「」]{6,})」/g,function(m,nm,mk,body){
+var k=key(body);
+if(!/♡|…っ/.test(k))return m;
+if(!seen[k]){seen[k]=1;return m;}
+var who=P.filter(function(p){return p&&p.name&&nm.slice(-p.name.length)===p.name;})[0];
+if(!who|| !S.rng)return m;
+for(var i=0;i<6;i++){
+var v=E.moan(S,who,/♡♡/.test(body)?2:1),kv=key(v);
+if(v&& !seen[kv]&&key(text).indexOf(kv)<0){seen[kv]=1;return nm+'「'+mk+(mk?String(v).replace(/^\u2060+/,''):v)+'」';}
+}
+return m;
+});
+};
 E.fresh=function(S,arr,base){
 if(!arr|| !arr.length)return base?base(arr):undefined;
 var own=(S&&S.rng)||S,rng=own&&own.int?own:S&&S.rng;
@@ -13718,11 +13757,12 @@ if(!AR||AR.qidB)return;
 var PS=['proud','stern','tsun','gentle','devoted','cool','free','shy','polite'];
 function L(s){return s.split('|');}
 function psOf(c){var p=HK.personaOf?HK.personaOf(c):c&&c.persona;return PS.indexOf(p)>=0?p:'gentle';}
-function rngOf(S){
-var r=S&&S.rng?S.rng:S;
-if(typeof r==='function')return r;
-if(r&&r.int)return function(){return r.int(1000000)/1000000;};
-return Math.random;
+function hashRng(str){
+var h=2166136261;str=String(str);
+for(var k=0;k<str.length;k++)h=Math.imul(h^str.charCodeAt(k),16777619)>>>0;
+var r=function(){h=(Math.imul(h^(h>>>15),2246822507)+0x6D2B79F5)>>>0;return(h>>>8)/16777216;};
+r.int=function(m){return Math.floor(r()*m);};
+return r;
 }
 var stat=AR.stat={bq:0,bqr:0,sq:0,sqr:0,bmiss:{},smiss:{}};
 function inner(s){
@@ -13743,11 +13783,11 @@ if(!q|| !isQ(q))return'';
 for(var k=0;k<ORDER_B.length;k++)if(QB[ORDER_B[k]].re.test(q))return ORDER_B[k];
 return'';
 }
-function pickB(S,id,top,bot,opt){
+function pickB(S,r,id,top,bot,opt){
 var t=QB[id]&&QB[id].t,fl=AR.flavor(S,top,bot,opt||{}),ps=psOf(top);
 var cell=t&&((t[fl]&&t[fl][ps])||(t.dry&&t.dry[ps])||(t.sweet&&t.sweet[ps]));
 if(!cell|| !cell.length)return'';
-return cell[Math.floor(rngOf(S)()*cell.length)]||'';
+return cell[Math.floor(r()*cell.length)]||'';
 }
 function okPair(top,bot,opt){
 if(HK.SAFE_ON|| !top|| !bot||top===bot)return false;
@@ -13762,12 +13802,12 @@ if(!q|| !isQ(q))return'';
 stat.bq++;
 var id=qidB(q);
 if(!id){stat.bmiss[q]=(stat.bmiss[q]||0)+1;return'';}
-var rep=pickB(S,id,top,bot,{rel:opt&&opt.rel,fl:opt&&opt.fl,mode:opt&&opt.mode});
+var rep=pickB(S,hashRng(q+'|'+top.name+'|'+bot.name+'|'+((S&&S.log&&S.log.length)||0)),id,top,bot,{rel:opt&&opt.rel,fl:opt&&opt.fl,mode:opt&&opt.mode});
 if(!rep)return'';
 stat.bqr++;
 return AR.fill(rep,aT||top.name,bT||bot.name);
 };
-AR.qidB=qidB;AR.addB=addB;AR.QB=QB;
+AR.qidB=qidB;AR.addB=addB;AR.QB=QB;AR.hashRng=hashRng;
 addB('stay_b',/くっついて(?:て|い)|もう少しだけ、こうして/,{
 sweet:{
 proud:'{a}は{b}を引き寄せ、「＠{a}＠離れていいなんて、言ってない｜離れていいとは、言っていない｜離れていいとは、申し上げていません」と返した。|{a}は鼻で笑って、「＠{a}＠訊かなくても、離さないよ｜訊かなくても、離さない｜訊かなくても、離しませんよ」と腕に力を込めた。',
@@ -13873,7 +13913,7 @@ shy:'{a}は「＠{a}＠……じゃ、じゃあ、次は、あなたから誘っ
 polite:'{a}は「＠{a}＠では、日取りはあなたが決めて｜では、日取りはあなたが決めろ｜では、日取りはあなたがお決めください」と返した。|{a}は「＠{a}＠次の約束、今ここでしてくれるなら｜次の約束を、今ここでしてくれるならな｜次のお約束を、今ここでしてくださるなら」と返した。'
 }
 });
-addB('care_b',/どこも痛くない|痛くない(?:か|です)|呼吸[、は]?\s*落ち着い/,{
+addB('care_b',/どこも、?痛くない|痛くない(?:か|です)|呼吸[、は]?\s*落ち着い/,{
 sweet:{
 proud:'{a}は笑って、「＠{a}＠こっちの心配より、自分の心配をしたら｜こちらの心配より、自分の心配をしろ｜こちらの心配より、ご自分の心配をなさったら」と{b}の額を小突いた。|{a}は「＠{a}＠平気。あなたこそ、立てる？｜平気だ。あなたこそ、立てるか｜平気です。あなたこそ、立てますか？」と返した。',
 stern:'{a}は「＠{a}＠問題ない。……気にかけてくれて、ありがとう｜問題ない。……気にかけてくれて、感謝する｜問題ありません。……気にかけてくださって、ありがとうございます」と答えた。|{a}は少し表情を緩めて、「＠{a}＠平気。あなたが無事なら、それでいい｜平気だ。あなたが無事なら、それでいい｜平気です。あなたが無事なら、それでいいです」と答えた。',
@@ -13908,6 +13948,114 @@ shy:'{a}は「＠{a}＠……あ、あなたこそ、平気……？｜……あ
 polite:'{a}は「＠{a}＠平気。そちらは、いかが？｜平気だ。そちらはどうだ｜平気です。そちらは、いかがですか？」と返した。|{a}は「＠{a}＠ご心配なく。お返しに、肩でも揉もうか｜心配無用だ。お返しに、肩でも揉もうか｜ご心配なく。お返しに、肩でもお揉みしましょうか」と返した。'
 }
 });
+function widen(id,src){var q=AR.Q[id];if(q&&q.re)AR.add(id,new RegExp(q.re.source+'|'+src),{});}
+widen('later','また明日もし|そばにいても(?:いい|か)|おそばにいても');
+widen('hurt','きつくなかった');
+AR.add('loud_t',/変な声/,{
+sweet:{
+proud:'{b}は「出てた。……かわいかったけど｜出ていた。……悪くなかったが｜出ていましたよ。……かわいかったですけど」と返した。',
+stern:'{b}は少し間を置いて、「……気にならなかった｜＝｜……気になりませんでした」と答えた。',
+tsun:'{b}は「……べ、別に、聞いてないし｜……べ、別に、聞いていない｜……べ、別に、聞いていませんし」と顔を背けた。',
+gentle:'{b}は微笑んで、「ううん。いい声だった｜いや。いい声だった｜いいえ。いいお声でした」と答えた。',
+devoted:'{b}は「あなたの声なら、全部好き｜あなたの声なら、全部好きだ｜あなたの声なら、全部好きです」と答えた。',
+cool:'{b}は「記録しておきたいくらいだった｜＝｜記録しておきたいくらいでした」と答えた。',
+free:'{b}は笑って、「出てた出てた。もう一回聞きたい｜出ていた。もう一度聞きたい｜出ていましたよ。もう一回聞きたいです」と答えた。',
+shy:'{b}は真っ赤になって、「……わ、私のほうが、出てたと思う｜……わ、私のほうが、出ていたと思う｜……わ、私のほうが、出ていたと思います」と答えた。',
+polite:'{b}は「ううん、素敵だった｜いや、素敵だった｜いいえ、素敵でした」と穏やかに答えた。'
+},
+dry:{
+proud:'{b}は「少しね。今さらでしょ｜少しな。今さらだろう｜少しです。今さらでしょう」と返した。',
+stern:'{b}は「許容範囲｜許容範囲だ｜許容範囲です」と答えた。',
+tsun:'{b}は「……知らない｜……知らん｜……知りません」と返した。',
+gentle:'{b}は「平気。誰にも聞こえてないよ｜平気だ。誰にも聞こえていない｜平気です。誰にも聞こえていませんよ」と答えた。',
+devoted:'{b}は黙って首を横に振った。',
+cool:'{b}は「計器の音で、聞こえなかった｜＝｜計器の音で、聞こえませんでした」と答えた。',
+free:'{b}は「気にしすぎ｜気にしすぎだ｜気にしすぎですよ」と手を振った。',
+shy:'{b}は目を逸らして、小さく首を横に振った。',
+polite:'{b}は「問題ないと思う｜問題ないと思う｜問題ないと思います」と答えた。'
+},
+deal:{
+proud:'{b}は「教えてほしい？　もう一回したら教える｜教えてほしいか。もう一度したら教える｜教えてほしいですか？　もう一回したら教えます」と返した。',
+stern:'{b}は「答える前に、こっちを見て｜答える前に、こっちを見ろ｜お答えする前に、こちらを見てください」と返した。',
+tsun:'{b}は「……そっちこそ、私の声、聞いてた？｜……そっちこそ、私の声を聞いていたか｜……そちらこそ、私の声、聞いていましたか？」と訊き返した。',
+gentle:'{b}は「秘密。次も聞かせてくれたら、教える｜秘密だ。次も聞かせてくれたら、教える｜秘密です。次も聞かせてくれたら、教えます」と返した。',
+devoted:'{b}は「正直に言うね。……出てた｜正直に言う。……出ていた｜正直に言います。……出ていました」と答えた。',
+cool:'{b}は「確かめたいなら、もう一度｜確かめたいなら、もう一度だ｜確かめたいなら、もう一度」と返した。',
+free:'{b}は「真似してあげよっか？｜真似してやろうか｜真似してあげましょうか？」と笑った。',
+shy:'{b}は「……な、ないしょ｜……な、内緒だ｜……な、内緒です」と答えた。',
+polite:'{b}は「それは、次の機会に｜それは、次の機会にな｜それは、次の機会に」と返した。'
+}
+});
+AR.add('ease',/楽になった/,{
+sweet:{
+proud:'{b}は「……おかげさまで｜……おかげでな｜……おかげさまで」と短く返して、{a}の胸に額を預けた。',
+stern:'{b}は小さく頷いて、「……助かった｜＝｜……助かりました」と答えた。',
+tsun:'{b}は「……べ、別に、あなたのおかげじゃないから｜……べ、別に、あなたのおかげではない｜……べ、別に、あなたのおかげではありませんから」と顔を背けた。',
+gentle:'{b}は「うん。……ありがとう｜ああ。……ありがとう｜はい。……ありがとうございます」と答えた。',
+devoted:'{b}は「うん。あなたがいてくれたから｜ああ。あなたがいてくれたからだ｜はい。あなたがいてくださったから」と答えた。',
+cool:'{b}は「熱は引いた。……感謝する｜＝｜熱は引きました。……感謝します」と答えた。',
+free:'{b}は「うん、すっきり！｜ああ、すっきりした｜はい、すっきりしました」と笑った。',
+shy:'{b}は真っ赤な顔で、小さく何度も頷いた。',
+polite:'{b}は「うん。迷惑をかけて、ごめん｜ああ。迷惑をかけて、すまない｜はい。ご迷惑をおかけしました」と答えた。'
+},
+dry:{
+proud:'{b}は「……まあね｜……まあな｜……まあ、そうですね」とだけ返した。',
+stern:'{b}は「問題ない｜＝｜問題ありません」と短く答えた。',
+tsun:'{b}は「……少しだけ｜……少しだけだ｜……少しだけです」と返した。',
+gentle:'{b}は「うん。もう平気｜ああ。もう平気だ｜はい。もう平気です」と答えた。',
+devoted:'{b}は黙って頷いた。',
+cool:'{b}は「熱は下がった｜＝｜熱は下がりました」と答えた。',
+free:'{b}は「だいぶね｜だいぶな｜だいぶ、楽になりました」と答えた。',
+shy:'{b}は目を合わせないまま、小さく頷いた。',
+polite:'{b}は「おかげさまで｜＝｜おかげさまで」と答えた。'
+},
+deal:{
+proud:'{b}は「楽になったぶん、次はこっちの番｜楽になったぶん、次はこっちの番だ｜楽になったぶん、次はこちらの番です」と返した。',
+stern:'{b}は「借りができた。……返す｜借りができた。……返す｜借りができました。……お返しします」と答えた。',
+tsun:'{b}は「……恩を着せるつもり？｜……恩を着せるつもりか｜……恩を着せるおつもりですか？」と返した。',
+gentle:'{b}は「うん。今度は、私が助ける番ね｜ああ。今度は、私が助ける番だ｜はい。今度は、私が助ける番ですね」と答えた。',
+devoted:'{b}は「うん。……今度は、あなたの熱も引かせてあげる｜ああ。……今度は、あなたの熱も引かせてやる｜はい。……今度は、あなたの熱も引かせてさしあげます」と答えた。',
+cool:'{b}は「楽になった。……代価は、何がいい？｜楽になった。……代価は何がいい｜楽になりました。……代価は、何がよろしいですか？」と返した。',
+free:'{b}は「うん。お礼は何がいい？｜ああ。礼は何がいい｜はい。お礼は何がいいですか？」と笑った。',
+shy:'{b}は「……う、うん。……お、お返し、するから｜……あ、ああ。……お、お返しは、する｜……は、はい。……お、お返し、しますから」と答えた。',
+polite:'{b}は「おかげさまで。この借りは、必ず｜おかげでな。この借りは、必ず返す｜おかげさまで。このご恩は、必ずお返しします」と答えた。'
+}
+});
+AR.add('mark',/印[、を]?\s*もう一つ/,{
+sweet:{
+proud:'{b}は「……好きにすれば。どうせ全部あなたのものでしょ｜……好きにしろ。どうせ全部あなたのものだ｜……お好きにどうぞ。どうせ全部あなたのものです」と首筋を差し出した。',
+stern:'{b}は黙って襟元を寛げ、首筋を差し出した。',
+tsun:'{b}は「……み、見えないところにしてよね｜……み、見えないところにしろ｜……み、見えないところにしてくださいね」と言いながら、首を傾けた。',
+gentle:'{b}は微笑んで、「うん。いくつでも｜ああ。いくつでも｜はい。いくつでも」と答えた。',
+devoted:'{b}は「うん。あなたの印なら、いくつでも欲しい｜ああ。あなたの印なら、いくつでも欲しい｜はい。あなたの印なら、いくつでも欲しいです」と答えた。',
+cool:'{b}は「……構わない。消える前に、また付ければいい｜＝｜……構いません。消える前に、また付ければいいです」と答えた。',
+free:'{b}は「いいよ。見せびらかしちゃお｜いい。見せびらかしてやろう｜いいですよ。見せびらかしちゃいましょう」と笑った。',
+shy:'{b}は真っ赤になって、そっと髪をかき上げた。',
+polite:'{b}は「うん。……どうぞ｜ああ。……どうぞ｜はい。……どうぞ」と小さく答えた。'
+},
+dry:{
+proud:'{b}は「一つだけね｜一つだけだ｜一つだけですよ」と返した。',
+stern:'{b}は「服で隠れる場所なら｜服で隠れる場所ならいい｜服で隠れる場所でしたら」と答えた。',
+tsun:'{b}は「……勝手にすれば｜……勝手にしろ｜……勝手にしてください」と返した。',
+gentle:'{b}は「いいよ。でも、やさしくね｜いい。だが、優しくな｜いいですよ。でも、やさしくしてくださいね」と答えた。',
+devoted:'{b}は黙って頷いた。',
+cool:'{b}は「治るのに三日かかる。それでよければ｜治るのに三日かかる。それでいいなら｜治るのに三日かかります。それでよければ」と答えた。',
+free:'{b}は「どうぞー｜好きにしろ｜どうぞ」と首を傾けた。',
+shy:'{b}は目を逸らしたまま、小さく頷いた。',
+polite:'{b}は「目立たない場所なら｜目立たない場所ならいい｜目立たない場所でしたら」と答えた。'
+},
+deal:{
+proud:'{b}は「いいけど、こっちも付けさせて｜いいが、こっちも付けさせろ｜いいですけど、こちらも付けさせてください」と返した。',
+stern:'{b}は「一つにつき、一つ。等価交換｜一つにつき一つだ。等価交換だ｜一つにつき、一つ。等価交換です」と返した。',
+tsun:'{b}は「……お、お願いします、って言えたらね｜……お、お願いします、と言えたらな｜……お、お願いします、と言えたら、ですね」と返した。',
+gentle:'{b}は「じゃあ、私もあなたに一つ付けていい？｜では、私もあなたに一つ付けていいか｜では、私もあなたに一つ付けていいですか？」と返した。',
+devoted:'{b}は「いいよ。そのかわり、ずっと消さないで｜いい。そのかわり、ずっと消すな｜いいですよ。そのかわり、ずっと消さないでください」と返した。',
+cool:'{b}は「場所は、私が決める｜＝｜場所は、私が決めます」と返した。',
+free:'{b}は「どこに付けるか、当てっこしよ｜どこに付けるか、当ててみろ｜どこに付けるか、当てっこしましょう」と笑った。',
+shy:'{b}は「……ひ、一つだけ、なら｜……ひ、一つだけなら｜……ひ、一つだけ、でしたら」と答えた。',
+polite:'{b}は「それなら、明日は首の詰まった服を貸して｜それなら、明日は首の詰まった服を貸せ｜それでしたら、明日は首の詰まった服をお貸しください」と返した。'
+}
+});
 var START_Q= /いい[？?…]|いいか|いいよね|いいね[？?]|いいでしょ|いいだろう|よろしい(?:です)?(?:よね|か)|いいですか|くれる[？?…]|くれるか|くれない[？?…]|くださいますか|くれますか|てみる[？?]|てみるか|てみますか/;
 var OK_S={
 proud:'{b}は「＠{b}＠……好きにすれば｜……好きにしろ｜……お好きにどうぞ」と短く返した。|{b}は鼻で笑って、「＠{b}＠今さら、訊くこと？｜今さら訊くことか｜今さら、訊くことですか？」と返した。',
@@ -13930,7 +14078,7 @@ stat.sq++;
 if(!START_Q.test(lq)){stat.smiss[lq]=(stat.smiss[lq]||0)+1;return'';}
 var cell=OK_S[psOf(bot)]||OK_S.gentle;
 stat.sqr++;
-return AR.fill(cell[Math.floor(rngOf(S)()*cell.length)],aT||top.name,bT||bot.name);
+return AR.fill(cell[Math.floor(hashRng(lq+'|'+top.name+'|'+bot.name+'|'+((S&&S.log&&S.log.length)||0))()*cell.length)],aT||top.name,bT||bot.name);
 };
 var BW={'{a}':'{b}','{x}':'{y}','{T}':'{U}'};
 function wrapTopSay(){
@@ -13957,7 +14105,7 @@ HK.wrap(T3,'topSay',function(ts0){
 var f=function(S,T,U,stage,tbl,opt){
 var s=ts0.apply(this,arguments);
 if(!s)return s;
-if(stage==='after')return s+(AR.qid(s)&& !(opt&&opt.force)&&U&&U.i!=null&& !U.mob?AR.fill(AR.pick(S,AR.qid(s),T,U,{rel:opt&&opt.rel})||'',T.name,U.name):'');
+if(stage==='after')return s+(AR.qid(s)&& !(opt&&opt.force)&&U&&U.i!=null&& !U.mob?AR.fill(AR.pick({rng:hashRng(s+'|'+((S&&S.log&&S.log.length)||0))},AR.qid(s),T,U,{rel:opt&&opt.rel,fl:AR.flavor(S,T,U,{rel:opt&&opt.rel})})||'',T.name,U.name):'');
 if(stage!=='start')return s;
 var rep=AR.replyS(S,s,T,U,T&&T.name,U&&U.name,opt);
 return rep?s+rep:s;
@@ -26143,7 +26291,9 @@ var big=(res.log||[]).map(function(e){return e&&typeof e.text==='string'?e.text:
 var seg=function(x){var l=String(x).split(/\{[^}]+\}/),b='';l.forEach(function(y){if(y.length>b.length)b=y;});return b.length>=8?b:'';};
 var rp=function(a){return a[rng?rng.int(a.length):Math.floor(Math.random()*a.length)];};
 var ctx={S:S,ero:ero,scen:input.scenId||'',pick:function(a){var f=a.filter(function(x){var k=typeof x==='string'?seg(x):'';return!k||big.indexOf(k)<0;});var r=rp(f.length?f:a);if(typeof r==='string')big+='\n'+r.replace(/\{[^}]+\}/g,'|');return r;}};
-(res.log||[]).forEach(function(e){if(e&&typeof e.text==='string'){var t0=e.text;e.text=NG.fixText(ctx,e.text,cs,Ns);if(NG.debug&&t0!==e.text)NG.debug.push({before:t0,after:e.text});}});
+var chg={};
+(res.log||[]).forEach(function(e,n){if(e&&typeof e.text==='string'){var t0=e.text;e.text=NG.fixText(ctx,e.text,cs,Ns);if(t0!==e.text)chg[n]=1;if(NG.debug&&t0!==e.text)NG.debug.push({before:t0,after:e.text});}});
+if(HK.Ero&&HK.Ero.dedupeLog&&Object.keys(chg).length)HK.Ero.dedupeLog(res,input,chg);
 if(res.ending&&Array.isArray(res.ending.lines))res.ending.lines=res.ending.lines.map(function(l){return typeof l==='string'?NG.fixText(ctx,l,cs,Ns):l;});
 (res.chars||[]).forEach(function(c){if(c&&typeof c.fateNote==='string')c.fateNote=NG.fixText(ctx,c.fateNote,cs,Ns);});
 return res;
@@ -41824,4 +41974,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', 'd40344e75b', 1);
+HK.Load.done('core', 'b1ae32c269', 1);

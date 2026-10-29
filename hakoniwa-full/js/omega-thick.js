@@ -124,7 +124,7 @@
       s = '{T}' + fp(ctx, own);
       /* 事後の一言が問いなら、受けの返事を続ける（after-reply-r18.js の表。共通の表から来たものは HK.EroTop.say の包みで済んでいる。問いでなければ乱数を引かない） */
       var AR = HK.AfterReply, qd = stage === 'after' && AR && AR.qid ? AR.qid(s) : '';
-      if (qd && U && U.i != null && !U.mob) s += AR.fill(AR.pick(ctx, qd, T, U, { rel: rel }) || '', '{T}', '{U}');
+      if (qd && U && U.i != null && !U.mob) s += AR.fill(AR.pick({ rng: AR.hashRng ? AR.hashRng(s + '|' + T.name + '|' + U.name) : ctx.rng }, qd, T, U, { rel: rel, fl: AR.flavor(ctx, T, U, { rel: rel }) }) || '', '{T}', '{U}');
     }
     return s;
   }

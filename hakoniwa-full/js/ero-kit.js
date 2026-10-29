@@ -110,6 +110,30 @@
     m.used.push(x);
     return x;
   };
+  /* 回し終えた結果の記録（only：記録の番号の表。省くと全部）で、同じ記録の中の同じ喘ぎの二度目を引き直す（E.dedupeMoan）。人は入力の住人（名前で引く）。
+     回し終えたあとで文を差し替える見直し（pos-nogen.js の NG.review）も、差し替えた記録に当てる */
+  E.dedupeLog = function (res, input, only) {
+    if (HK.SAFE_ON || !res || !Array.isArray(res.log) || !input || !Array.isArray(input.chars)) return;
+    var P = input.chars.map(function (c, i) { return Object.assign({}, c, { i: i }); });
+    res.log.forEach(function (e, n) {
+      if (!e || typeof e.text !== 'string' || e.text.indexOf('♡') < 0 || (only && !only[n])) return;
+      var h = 2166136261, sd = String(res.seed) + '|' + n;
+      for (var k = 0; k < sd.length; k++) h = Math.imul(h ^ sd.charCodeAt(k), 16777619) >>> 0;
+      var r = function () { h = (Math.imul(h ^ (h >>> 15), 2246822507) + 0x6D2B79F5) >>> 0; return (h >>> 8) / 16777216; };
+      r.int = function (m) { return Math.floor(r() * m); };
+      e.text = E.dedupeMoan({ rng: r, P: P, log: [] }, e.text);
+    });
+  };
+  if (HK.simulate && !HK.simulate._moanDedupe && HK.wrap) HK.wrap(HK, 'simulate', function (sim0) {
+    var f = function (input) {
+      var res = sim0.apply(this, arguments);
+      E.dedupeLog(res, input);
+      return res;
+    };
+    for (var ks in sim0) if (Object.prototype.hasOwnProperty.call(sim0, ks)) f[ks] = sim0[ks];
+    f._moanDedupe = true;
+    return f;
+  });
   /* 箱庭を回し始めるたびに忘れる（前の回の S を使わない） */
   if (HK.simulate && !HK.simulate._sceneS && HK.wrap) HK.wrap(HK, 'simulate', function (sim0) {
     var f = function () { lastS = null; pend = null; return sim0.apply(this, arguments); };
@@ -136,6 +160,26 @@
   /* 一回の結果の中で同じ文を繰り返さない選び方（喘ぎ以外の地の文・反応・事後にも使う）。
      S … その回のもの（箱庭の ctx・物語型の S・rng のどれでも。中の rng に覚える）、base … 元の選び方（ctx.pick など。候補を絞ってから渡す）。
      まだ使っていない文から選び、使い切ったら、いちばん前に使ったものから戻す */
+  /* 一つの記録の中で、同じ喘ぎ（♡・「…っ」のある台詞）が二度出たら、二度目をその人の喘ぎから引き直す（2026-10-29 担当MR：宇宙船の恋人の夜。
+     場面の重複避け（sceneAvoid）は記録の数で場面を見分けるうえ、記録を出したあとに喘ぎを足す部品もあるので、箱庭を回し終えたところで全記録に当てる（下の HK.simulate の包み）。
+     引き直しの乱数は回の種と記録の番号から別に作る（箱庭の展開は変えない）。重複が無ければ何もしない */
+  E.dedupeMoan = function (S, text) {
+    if (HK.SAFE_ON || typeof text !== 'string' || text.indexOf('♡') < 0) return text;
+    var P = (S && (S.P || S.chars)) || [], seen = {};
+    var key = function (v) { return String(v).replace(/[\s　\u2060]/g, ''); };
+    return text.replace(/([^\s「」。！？\n]{1,12})「(\u2060?)([^「」]{6,})」/g, function (m, nm, mk, body) {
+      var k = key(body);
+      if (!/♡|…っ/.test(k)) return m;
+      if (!seen[k]) { seen[k] = 1; return m; }
+      var who = P.filter(function (p) { return p && p.name && nm.slice(-p.name.length) === p.name; })[0];
+      if (!who || !S.rng) return m;
+      for (var i = 0; i < 6; i++) {
+        var v = E.moan(S, who, /♡♡/.test(body) ? 2 : 1), kv = key(v);
+        if (v && !seen[kv] && key(text).indexOf(kv) < 0) { seen[kv] = 1; return nm + '「' + mk + (mk ? String(v).replace(/^\u2060+/, '') : v) + '」'; }
+      }
+      return m;
+    });
+  };
   E.fresh = function (S, arr, base) {
     if (!arr || !arr.length) return base ? base(arr) : undefined;
     var own = (S && S.rng) || S, rng = own && own.int ? own : S && S.rng;

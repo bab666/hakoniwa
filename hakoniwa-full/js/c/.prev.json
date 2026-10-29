@@ -1,8 +1,8 @@
 {
  "cur": {
-  "core": "core.c3d8bec68f.js",
+  "core": "core.b1ae32c269.js",
   "late": "late.cfa578a575.js",
-  "pack-rel": "pack-rel.4d2184929d.js",
+  "pack-rel": "pack-rel.53f6b1cd56.js",
   "scen-goukon": "scen-goukon.70a0161d7b.js",
   "scen-classroom": "scen-classroom.84512bce09.js",
   "scen-island": "scen-island.86517a5d41.js",
@@ -67,7 +67,7 @@
   "tone-yankee": "tone-yankee.31497b7d1f.js"
  },
  "prev": {
-  "core": "core.d40344e75b.js",
+  "core": "core.dcb7989687.js",
   "late": "late.cfa578a575.js",
   "pack-rel": "pack-rel.4d2184929d.js",
   "scen-goukon": "scen-goukon.70a0161d7b.js",
