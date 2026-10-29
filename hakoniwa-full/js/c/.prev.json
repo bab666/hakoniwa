@@ -16,7 +16,7 @@
   "scen-hole": "scen-hole.95eb1bd70b.js",
   "scen-zombie": "scen-zombie.fd83a7050b.js",
   "scen-rpg": "scen-rpg.c170211c99.js",
-  "scen-kaihen": "scen-kaihen.672cdcb94a.js",
+  "scen-kaihen": "scen-kaihen.65807aaaa5.js",
   "scen-succubus": "scen-succubus.42ac370067.js",
   "scen-saimin": "scen-saimin.d807c2d2b7.js",
   "scen-variety": "scen-variety.c2e41ef354.js",
@@ -67,9 +67,9 @@
   "tone-yankee": "tone-yankee.62a1d8e08b.js"
  },
  "prev": {
-  "core": "core.8601eaeb60.js",
+  "core": "core.c9864fc5e1.js",
   "late": "late.d3adca0e0c.js",
-  "pack-rel": "pack-rel.720bf57782.js",
+  "pack-rel": "pack-rel.3654377b75.js",
   "scen-goukon": "scen-goukon.7ae70f51ac.js",
   "scen-classroom": "scen-classroom.6a155ca61e.js",
   "scen-island": "scen-island.bd6ec5e1c6.js",

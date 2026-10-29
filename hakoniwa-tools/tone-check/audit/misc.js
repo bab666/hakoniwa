@@ -174,7 +174,7 @@ const JUDGE = function (HK, opt) {
           /* F>I：指の段落の次の地の文の段落 */
           for (let i = 0; i < paras.length; i++) {
             const pi = strip(paras[i]);
-            if (!FINGER.test(pi) || OUT.test(pi) || INS.test(pi)) continue;
+            if (!FINGER.test(pi.replace(/髪に指[^。]*/g, '')) || OUT.test(pi) || INS.test(pi)) continue;   /* 「髪に指を差し入れた」は髪（2026-10-29） */
             let j = i + 1; while (j < paras.length && !strip(paras[j]).replace(/[\s―…・、。]/g, '').replace(new RegExp(NAMES.join('|'), 'g'), '')) j++;
             if (j >= paras.length) continue;
             const pj = strip(paras[j]);
