@@ -1,3 +1,4 @@
+/* @event-ok 施す側の決まり文句を一回の遊びで2度までに（2026-10-29 担当MR） */
 /* 箱庭シミュレーター: 常識改変（R18）
    エロいことが「当たり前の仕事」になった世界。理性的な人ほど、真面目に施す側として働いている。
    何をするのか、違和感に気づくのか、気づいたらどうするのかを、一日の営業を通して見る */
@@ -28,6 +29,15 @@
   var HK = window.HK, KH = HK.KAIHEN, ST = HK.Story, clamp = HK.clamp;
   var VO = KH && KH.VOICE;
   function L(s) { return s.split('|'); }
+  /* 施す側の決まり文句（職場×気質の表・口調ごとの表・場面の表）。一回の遊びで同じ台詞は2度まで（施術の場面が多く、同じ文が一回に3度以上出ていた。2026-10-29 担当MR：state-audit の S10） */
+  function giverLine(S, g, ero, SIT) {
+    var rng = S.rng, n = S._kaiLn = S._kaiLn || {}, fresh2 = function (x) { return x && (n[x] || 0) < 2; };
+    var take = function (x) { n[x] = (n[x] || 0) + 1; return x; };
+    var sid = S.v.sid, k = 'lines.' + sid + '.' + g.top;
+    if (ero && rng() < 0.7 && HK.Ero.has('kaihen', k)) { var a = pkF(S, E(S, k, [])); if (fresh2(a)) return take(a); }
+    if (VO && VO.GIVER[g.persona] && rng() < 0.55) { var b = pkF(S, VO.GIVER[g.persona]); if (fresh2(b)) return take(b); }
+    return take(pkF(S, nm(S, SIT.lines[g.top] || SIT.lines.NP)));
+  }
 
   var scen = {
     id: 'kaihen', name: '常識改変', kicker: '1〜6人・R18', solo: true, maxCast: 6, minCast: 1,
@@ -305,7 +315,7 @@
       return;
     }
     var r2name = fl === 'double' ? rng.pick(SIT.npc.filter(function (x) { return x !== rname; })) : null;
-    var t = (r && r.role === 'giver' ? ST.fmt(pkF(S, L('客が途切れた合間に、{p}は{r}を練習台にすることにした。「今日の手順、確認させて」|{p}は{r}を施術台に寝かせた。「次のお客様の前に、一度通しでやっておきたいの」|{r}が「最近、自分も溜まってて」と言うと、{p}は当然のように施術台を勧めた。')), v) : '') + (r && r.role === 'out' ? ST.fmt(pkF(S, nm(S, SIT.out ? SIT.out.taken : E(S, 'out.taken', KH.OUT.taken))), { o: r.name, p: g.name }) : fl === 'talk' ? ST.fmt(pkF(S, nm(S, F.talk)), v) : fl === 'double' ? ST.fmt(pkF(S, F.double), { p: g.name, r: rname, r2: r2name }) : (fl === 'watch' ? ST.fmt(pkF(S, F.watch), v) : '') + ST.fmt(pkF(S, nm(S, SIT.consult)), v)) + g.name + (ero && rng() < 0.7 && HK.Ero.has('kaihen', 'lines.' + S.v.sid + '.' + g.top) ? pkF(S, E(S, 'lines.' + S.v.sid + '.' + g.top, [])) : VO && VO.GIVER[g.persona] && rng() < 0.55 ? pkF(S, VO.GIVER[g.persona]) : pkF(S, nm(S, SIT.lines[g.top] || SIT.lines.NP)));
+    var t = (r && r.role === 'giver' ? ST.fmt(pkF(S, L('客が途切れた合間に、{p}は{r}を練習台にすることにした。「今日の手順、確認させて」|{p}は{r}を施術台に寝かせた。「次のお客様の前に、一度通しでやっておきたいの」|{r}が「最近、自分も溜まってて」と言うと、{p}は当然のように施術台を勧めた。')), v) : '') + (r && r.role === 'out' ? ST.fmt(pkF(S, nm(S, SIT.out ? SIT.out.taken : E(S, 'out.taken', KH.OUT.taken))), { o: r.name, p: g.name }) : fl === 'talk' ? ST.fmt(pkF(S, nm(S, F.talk)), v) : fl === 'double' ? ST.fmt(pkF(S, F.double), { p: g.name, r: rname, r2: r2name }) : (fl === 'watch' ? ST.fmt(pkF(S, F.watch), v) : '') + ST.fmt(pkF(S, nm(S, SIT.consult)), v)) + g.name + giverLine(S, g, ero, SIT);
     /* 施術中の掛け合い（solo-kaihen-talk.js）：始める前の説明 */
     var kindT = KH.ACTKIND[act[0]] || 'hand', talkWhy = '';
     var tp = KH.talk && rng() < 0.55 ? KH.talk(S, 'pre', g, r, rname, kindT, false) : null;

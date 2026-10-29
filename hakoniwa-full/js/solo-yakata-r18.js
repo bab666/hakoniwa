@@ -253,7 +253,8 @@
       sober.slice(0, 2).forEach(function (q) { t += F(fp(S, SKIP), { a: q.name }); });
       /* 「R18に参加しない」人（HK.State.r18ok が偽）には、媚薬の効きを性的でない書き方（火照り・めまい・息苦しさ）にする */
       drunk.slice(0, 2).forEach(function (q) { if (HK.State && !HK.State.r18ok(q)) { if (rng() < 0.5) t += F(fp(S, DRUG_SOFT), { a: q.name }); } else if (lwEro(S)) t += EF(S, fp(S, Y_ERO.drug), q); else if (rng() < 0.5) t += pz(S, q, 'drug'); });
-      var o = ST.say(S, { actors: [c].concat(drunk), tag: '媚薬', kind: 'climax', text: t, why: '犯人の' + c.name + 'が媚薬を盛った（' + { wine: 'ワイン', hotwine: 'ホットワイン', spirits: '強い酒', incense: 'お香', bath: '大浴場の湯', sweets: '菓子', heater: '暖房', tea: '紅茶', oil: 'マッサージオイル', dark: '停電と香水' }[D.id] + '）。追い詰められるほど盛りやすい（夜の出来事 ' + S.env.ylewd + '）。その夜、事件はうやむやになる', mag: 40 });
+      /* 館じゅうに媚薬を盛る記録は、特定の相手に迫る記録ではない（approach: false。state-audit の S31 は数えない）。二人の場面は下の pairScene が HK.Avoid を通す */
+      var o = ST.say(S, { actors: [c].concat(drunk), tag: '媚薬', kind: 'climax', approach: false, text: t, why: '犯人の' + c.name + 'が媚薬を盛った（' + { wine: 'ワイン', hotwine: 'ホットワイン', spirits: '強い酒', incense: 'お香', bath: '大浴場の湯', sweets: '菓子', heater: '暖房', tea: '紅茶', oil: 'マッサージオイル', dark: '停電と香水' }[D.id] + '）。追い詰められるほど盛りやすい（夜の出来事 ' + S.env.ylewd + '）。その夜、事件はうやむやになる', mag: 40 });
       ST.key(S, o, c.name + 'が媚薬を盛った');
       var P = D.p, scenes = 0, pcOn = nK >= 1 || (nK > 0 && rng() < nK);
       function pairScene(kind, x, y, extra, why) {

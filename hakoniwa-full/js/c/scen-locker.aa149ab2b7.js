@@ -3305,7 +3305,10 @@ if(consentOk(S,h,r[0])&&consentOk(S,h,r[1])&&touchOk(S,r[0],r[1]))return{all:fal
 return null;
 }
 function trioOk(S,m){
-if(!trioPlan(S,m))return false;
+var pl=trioPlan(S,m);
+if(!pl)return false;
+if(HK.Avoid&&(pl.all?trioPairs(m):m.filter(function(c){return c!==pl.hub;}).map(function(c){return[pl.hub,c];}))
+.some(function(pr){return HK.Avoid.of(S,pr[0],pr[1])||HK.Avoid.of(S,pr[1],pr[0]);}))return false;
 if(m.some(function(p){return S.P.some(function(q){return m.indexOf(q)<0&&has(S,p,q,/^(lover|mate|fated)$/)&&okLove(p,q);});}))return false;
 return m.every(function(p){return p.honmei==null||(m.some(function(q){return q.i===p.honmei;})&&desperate(p));});
 }
@@ -5246,4 +5249,4 @@ HK.Load.toneData("keigo_flat",{"F":[
 ["そちらのお二人、生きていますか","そちらのお二人。生存確認です",1],
 ["〈〉も〈〉も、がんばってください！　もうすぐ出られますから！","〈〉、〈〉。もうすぐ出られます。作業を続けてください",1]]});
 });
-HK.Load.done('scen-locker', '4325787a8f', 1);
+HK.Load.done('scen-locker', 'aa149ab2b7', 1);

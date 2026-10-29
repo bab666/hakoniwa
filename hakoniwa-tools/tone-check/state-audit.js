@@ -505,7 +505,8 @@ const JUDGE = function (HK, opt) {
         /* S31（物語型）：迫る札の記録・住人二人だけの性的な場面の記録で、一人目が二人目を避けている */
         if (cur && cur.story && S && acs.length >= 2 && !SKIPK.test(kind)) {
           const tg = String(o.tag || '');
-          if (!REACT_WHY.test(String(o.why || '')) && ((APPROACH_TAG.test(tg) && !APPROACH_NO.test(tg)) || (e && e.lewd && acs.length === 2 && !APPROACH_NO.test(tg)))) avoidHit(S, acs, o, (tg || kind) + (e && e.lewd ? '+lewd' : ''));
+          /* approach: false の記録（館じゅうに媚薬を盛る など、特定の相手に迫らない記録。2026-10-29 担当MR）は数えない */
+          if (o.approach !== false && !REACT_WHY.test(String(o.why || '')) && ((APPROACH_TAG.test(tg) && !APPROACH_NO.test(tg)) || (e && e.lewd && acs.length === 2 && !APPROACH_NO.test(tg)))) avoidHit(S, acs, o, (tg || kind) + (e && e.lewd ? '+lewd' : ''));
         }
         /* S19・S20（物語型）：無関心・恐怖の二人だけの、恋愛・夜の札の記録 */
         if (cur && cur.feel && cur.story && acs.length === 2 && /告白|恋|想い|デート|口づけ|キス|両想い|夜/.test(o.tag || '') && !/失恋|恋敵|元恋人|夜明け|夜番|夜警|見張り|一夜明け|無音の夜/.test(o.tag || '')) { const nl = nlOf(cur.feel, acs[0].i, acs[1].i); if (nl) hit(nlKey(nl), '物語型 [' + o.tag + '] ' + nlTxt(S.P, nl) + ' | ' + String(o.text).slice(0, 100)); }

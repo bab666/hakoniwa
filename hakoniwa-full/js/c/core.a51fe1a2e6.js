@@ -15176,7 +15176,12 @@ return NIGHT_PS[v]?v:'';
 };
 function psOf(who,ctx){
 var nt=M.nightOf(who,ctx);
-if(nt){var c=cc(),np=c&&c.night[nt];if(np==='off')return psBase(who);return np||NIGHT_PS[nt];}
+if(nt){
+var own=M.optOf(who).night;
+if(own==='off')return psBase(who);
+if(own)return own;
+var c=cc(),np=c&&c.night[nt];if(np==='off')return psBase(who);return np||NIGHT_PS[nt];
+}
 return psBase(who);
 }
 function psBase(who){
@@ -15711,9 +15716,9 @@ function ownFitOf(who){var e=ownOf(who);return e?e.fit:null;}
 M.ownOf=ownOf;
 var OPT_V={off:1,less:1,normal:1,more:1};
 M.optOf=function(who){
-if(!who||HK.SAFE_ON)return{tease:'normal',retort:'normal'};
+if(!who||HK.SAFE_ON)return{tease:'normal',retort:'normal',night:''};
 var o=who.moanOpt||(M.chars&&who.name&&M.chars[plainName(who.name)]?M.chars[plainName(who.name)].moanOpt:null)||{};
-return{tease:OPT_V[o.tease]?o.tease:'normal',retort:OPT_V[o.retort]?o.retort:'normal'};
+return{tease:OPT_V[o.tease]?o.tease:'normal',retort:OPT_V[o.retort]?o.retort:'normal',night:o.night==='off'||(o.night&&HK.PERSONA&&HK.PERSONA[o.night])?o.night:''};
 };
 M._in={ulist:ulist,whoBox:whoBox,rand:rand,rint:rint,fresh:fresh,persons:persons,fillName:fillName,partnerOf:partnerOf,NOTONE:NOTONE,TOP_NG:TOP_NG,fallenOf:fallenOf};
 function ulist(S,box,key,adds){
@@ -15820,6 +15825,7 @@ var sv={map:M.map,nmap:M.nmap,own:M.own,top:HK.NovelMoan?HK.NovelMoan.top:null};
 if(w0){
 var pn=plainName(who.name);
 if(w0.moanTone){M.map={};M.map[who.name]=w0.moanTone;}
+if(w0.moanOpt)who.moanOpt=w0.moanOpt;
 M.nmap={};M.nmap[who.name]={i:0,night:w0.night||'',nightFor:null};
 var oe=ownFrom(w0);M.own=oe?{}:M.own;if(oe)M.own[pn]=oe;
 }
@@ -17670,7 +17676,10 @@ fm:{
 soft:L('{a}は{b}の{男性器}を両手で包んで、ゆっくりと上下に扱いた。{s:wet}。手のひらの中でびくびくと脈打つのを感じて、{a}はうっとりと目を細める。\n\n{b}「{mb0}」\n\n{a}の脚のあいだはもう、{b}の指がぬるりと滑るほど濡れていた。|'+
 '{a}は{b}の{男性器}を口いっぱいに頬張り、じゅぽじゅぽと音を立てて扱いた。{s:suck}。{b}の指が、{a}の髪に絡まる。\n\n{b}「{mb0}」\n\n{a}は口を離すと、唾液で濡れた{男性器}に頬ずりして、{b}を上目づかいに見上げた。'),
 dom:L('{a}は{b}を押し倒して顔の上に跨り、濡れた{女性器}を唇に押しつけた。{s:suck}。{b}の舌が這うたびに、{a}は腰を揺らして自分のいいところに当てる。\n\n{b}「{mb0}」\n\n{a}はそのまま後ろ手に{b}の{男性器}を掴み、{亀頭}を指でぐりぐりと嬲った。|'+
-'{a}は{b}の{男性器}の根元をきゅっと握って、イけないようにしたまま先っぽを舐め回した。{s:suck}。寸止めされるたびに、{b}の腰ががくがくと震える。\n\n{b}「{mb1}」\n\n{a}は濡れた唇を舐めて、{b}を見下ろした。'),
+'{a}は{b}の{男性器}の根元をきゅっと握って、イけないようにしたまま先っぽを舐め回した。{s:suck}。寸止めされるたびに、{b}の腰ががくがくと震える。\n\n{b}「{mb1}」\n\n{a}は濡れた唇を舐めて、{b}を見下ろした。|'+
+'{a}は{b}の両手首を頭の上でまとめて押さえ、{乳首}に爪の先をかりかりと立てた。{s:wet}。{b}の{男性器}が、触れられてもいないのにびくりと跳ねる。\n\n{b}「{mb0}」\n\n{a}は空いた手で{男性器}を一度だけ撫で上げると、わざと手を離して{b}の顔を覗き込んだ。|'+
+'{a}は{b}の脚のあいだに膝をつき、{男性器}の裏筋を舌先で根元から{亀頭}までゆっくりとなぞった。{s:suck}。{b}が腰を浮かせて追いかけると、{a}は口を離して太腿に歯を立てる。\n\n{b}「{mb0}」\n\n{a}は{b}が焦れて身をよじるまで、同じことを何度も繰り返した。|'+
+'{a}は{b}の胸板に腰を下ろし、濡れた{女性器}を擦りつけながら、後ろ手に{男性器}をゆるゆると扱いた。{s:wet}。{b}の息が、浅く乱れていく。\n\n{b}「{mb1}」\n\n{a}は{b}が限界の顔をした瞬間に手を止め、くすりと笑って{亀頭}を指で弾いた。'),
 play:L('{a}は{b}の{男性器}を握って数を数えながら扱き、数えるたびに速さを変えた。{s:wet}。{b}がこらえきれずに腰を浮かせると、{a}はけらけらと笑う。\n\n{b}「{mb0}」\n\n{a}は濡れた自分の{女性器}を{b}の{男性器}にすりすりと擦りつけ、首を傾げて{b}の顔を覗き込んだ。')
 },
 gen:L('{a}は{b}の首筋をれろりと舐め上げながら、脚のあいだを指でまさぐった。{s:wet}。{b}の体が、触れられるたびにびくびくと跳ねる。\n\n{b}「{mb0}」\n\n{a}は一番敏感なところを見つけると、そこばかりを執拗に擦り続けた。|'+
@@ -25571,20 +25580,20 @@ shy:L('{b}は真っ赤な顔をシーツに隠そうとしたが、{a}の指に�
 polite:L('{b}は「お、お許しください……」と途切れ途切れに言いながら、口を塞がれたまま震えた。|{b}は乱れた襟元を直そうとした手を{a}に取られ、深く口づけられた。丁寧な言葉は、甘い吐息に溶けて消えた。|{b}は最後まで姿勢を正そうとしていたが、喉の手前を撫でられた瞬間、ふっと力が抜けて{a}の胸に崩れた。')
 };
 var CLIMAX_H={
-proud:L('{b}は「指なんかで……」と吐き捨てた直後、{a}に弱いところを押し上げられて背を反らした。悔しげに唇を噛んだまま、体だけが正直に震えた。|{b}は最後まで{a}を睨んでいたが、玩具の強さを上げられた瞬間に目を見開き、シーツを握りしめて達した。|{b}は声を噛み殺そうとして失敗した。{a}の指が同じ場所を正確に撫で続け、{b}は腰を跳ね上げて果てた。'),
-stern:L('{b}は「……っ、止め、ろ」と命じかけたが、その声ごと崩れた。{a}の指を締めつけたまま、{b}は長く震えた。|{b}は姿勢を崩すまいと耐えていた。けれど{a}が玩具を押し当てたまま指を曲げると、背筋が大きくしなった。|{b}の眉間の皺がほどけたのは、最後の一瞬だった。{a}の指に追い上げられ、{b}は声もなく達した。'),
-tsun:L('「ゆ、指だけで、イくわけ……っ」――言い終わる前に、{b}は{a}の手首を掴んだまま震えていた。|{b}は真っ赤な顔で「ばか」と言い、次の瞬間、玩具の震えに腰を跳ねさせて達した。|{b}は顔を背けたまま、{a}の指をきつく締めつけた。ぎゅっと閉じた目の端に、涙が滲んでいた。'),
-gentle:L('{b}は{a}の名前を呼びながら、指の動きに合わせてゆっくりと昇りつめた。震えが収まるまで、{a}は手を止めずに撫で続けた。|{b}は「そこ……」と囁き、{a}の肩に顔を埋めて達した。とろけた吐息が、{a}の首筋にかかった。|玩具のやわらかな震えに包まれて、{b}は{a}の手を握ったまま、甘く長く震えた。'),
-devoted:L('{b}は「イっても、いいですか」と訊き、{a}が頷いた瞬間に達した。うれしそうに、{a}の手に頬をすり寄せた。|{b}は{a}の指に身を任せたまま、健気に体を揺らした。最後に名前を呼んで、小さく崩れた。|{b}は{a}を見上げたまま、玩具の震えに何度も小さく達した。そのたびに、「ありがとう、ございます」と息を震わせた。'),
-cool:L('{b}は冷静な顔を保とうとしていたが、指の角度が変わった瞬間に息を詰まらせた。数える余裕もないまま、体が震えた。|「……想定より、早い」――そう呟いた{b}の声は、玩具の震えに途中で崩れた。|{b}は目を閉じ、自分の反応を確かめるように息を整えていた。けれど最後の一押しで、思考ごと白く弾けた。'),
-free:L('{b}は「やば、それ、やばい」と笑いながら、{a}の指に合わせて自分から体を揺らし、声を上げて達した。|{b}は玩具を押し当てられた瞬間に「待って待って」と笑い、言い終わる前に体を跳ねさせた。|{b}は{a}にしがみつき、「もっと」とせがんだ。二度目の波は、一度目よりも早かった。'),
-shy:L('{b}は枕で顔を隠したまま、{a}の指に追い上げられて小さく震えた。枕の向こうから、か細い声が漏れた。|{b}は「見ないで……」と言いながら、玩具の震えに耐えきれず、真っ赤な顔で達した。|{b}は声を殺そうとして{a}の肩に顔を押しつけ、そのまま、ぎゅっと体を強張らせて果てた。'),
-polite:L('{b}は「は、はしたない声を……」と詫びながら、{a}の指の動きに合わせて達した。|{b}は最後まで言葉を崩すまいとしたが、玩具の強さを上げられた瞬間、「申し訳、ございませ……」と言いかけて震えた。|{b}は乱れた呼吸を整えようとしたが、{a}がもう一度弱いところを撫でると、丁寧な言葉は甘い声に溶けた。')
+proud:L('{b}は「指なんかで……」と吐き捨てた直後、{a}に弱いところを押し上げられて背を反らした。悔しげに唇を噛んだまま、体だけが正直に震えた。|{b}は最後まで{a}を睨んでいたが、玩具の強さを上げられた瞬間に目を見開き、シーツを握りしめて達した。|{b}は声を噛み殺そうとして失敗した。{a}の指が同じ場所を正確に撫で続け、{b}は腰を跳ね上げて果てた。|{b}は「この程度で」と鼻で笑ってみせたが、{a}の指がもう一本増えると、その笑いは喉の奥で途切れた。腰が勝手に浮き、{b}は悔しげに{a}の肩へ爪を立てて達した。|{b}は主導権を取り返そうと{a}の手首を掴んだ。けれど掴んだまま、弱いところを擦り上げられ、{b}は掴んだ手に力を込めたまま果てた。'),
+stern:L('{b}は「……っ、止め、ろ」と命じかけたが、その声ごと崩れた。{a}の指を締めつけたまま、{b}は長く震えた。|{b}は姿勢を崩すまいと耐えていた。けれど{a}が玩具を押し当てたまま指を曲げると、背筋が大きくしなった。|{b}の眉間の皺がほどけたのは、最後の一瞬だった。{a}の指に追い上げられ、{b}は声もなく達した。|{b}は唇を固く結び、乱れまいと呼吸を数えていた。数が途中で飛んだとき、{b}の体はもう{a}の指を締めつけて震えていた。|{b}は「……まだだ」と低く言った。{a}はその言葉に構わず指を進め、{b}の背が反った瞬間、短い息だけが漏れた。'),
+tsun:L('「ゆ、指だけで、イくわけ……っ」――言い終わる前に、{b}は{a}の手首を掴んだまま震えていた。|{b}は真っ赤な顔で「ばか」と言い、次の瞬間、玩具の震えに腰を跳ねさせて達した。|{b}は顔を背けたまま、{a}の指をきつく締めつけた。ぎゅっと閉じた目の端に、涙が滲んでいた。|{b}は「べ、別に、気持ちよくなんか」と言いかけて、玩具を押し当てられた途端に声を裏返らせた。真っ赤な顔のまま、{b}は{a}の服の裾を握って震えた。|{b}は{a}を押しのけようとした手で、逆に{a}の腕にしがみついた。「……い、今の、見なかったことにして」――震えは、なかなか収まらなかった。'),
+gentle:L('{b}は{a}の名前を呼びながら、指の動きに合わせてゆっくりと昇りつめた。震えが収まるまで、{a}は手を止めずに撫で続けた。|{b}は「そこ……」と囁き、{a}の肩に顔を埋めて達した。とろけた吐息が、{a}の首筋にかかった。|玩具のやわらかな震えに包まれて、{b}は{a}の手を握ったまま、甘く長く震えた。|{b}は{a}の頬に手を添えて、「ありがとう」と小さく言った。その言葉の終わりに、ゆるやかな波が{b}の体を通り抜けていった。|{b}は{a}の指に自分の指を重ね、動きを確かめるように導いた。いちばんやさしい場所で、{b}はふわりとほどけるように果てた。'),
+devoted:L('{b}は「イっても、いいですか」と訊き、{a}が頷いた瞬間に達した。うれしそうに、{a}の手に頬をすり寄せた。|{b}は{a}の指に身を任せたまま、健気に体を揺らした。最後に名前を呼んで、小さく崩れた。|{b}は{a}を見上げたまま、玩具の震えに何度も小さく達した。そのたびに、「ありがとう、ございます」と息を震わせた。|{b}は「もっと、{a}の好きなように」と囁き、{a}の手に自分から腰を寄せた。果てたあとも、{b}は{a}の指を離そうとしなかった。|{b}は{a}の顔を見つめたまま、目を逸らさずに達した。潤んだ目の奥に、満たされた色が広がった。'),
+cool:L('{b}は冷静な顔を保とうとしていたが、指の角度が変わった瞬間に息を詰まらせた。数える余裕もないまま、体が震えた。|「……想定より、早い」――そう呟いた{b}の声は、玩具の震えに途中で崩れた。|{b}は目を閉じ、自分の反応を確かめるように息を整えていた。けれど最後の一押しで、思考ごと白く弾けた。|{b}は呼吸を整えようと目を閉じたが、玩具の震えが一段上がると、閉じた瞼の奥で何かが弾けた。整えた息は、一息で乱れきった。|{b}は「……そこは、反則だ」と淡々と告げた。その声の平らさとは裏腹に、{b}の太ももは{a}の手を挟み込んで震えていた。'),
+free:L('{b}は「やば、それ、やばい」と笑いながら、{a}の指に合わせて自分から体を揺らし、声を上げて達した。|{b}は玩具を押し当てられた瞬間に「待って待って」と笑い、言い終わる前に体を跳ねさせた。|{b}は{a}にしがみつき、「もっと」とせがんだ。二度目の波は、一度目よりも早かった。|{b}は「ねえ、いっしょに数えて」と笑い、三つ目を数える前に体を跳ねさせた。笑い声と甘い声が、ひとつに混ざった。|{b}は{a}の手から玩具を取り上げ、自分の好きな場所に当て直した。「ここ、ここ」と導いた先で、{b}はあっけなく果てた。'),
+shy:L('{b}は枕で顔を隠したまま、{a}の指に追い上げられて小さく震えた。枕の向こうから、か細い声が漏れた。|{b}は「見ないで……」と言いながら、玩具の震えに耐えきれず、真っ赤な顔で達した。|{b}は声を殺そうとして{a}の肩に顔を押しつけ、そのまま、ぎゅっと体を強張らせて果てた。|{b}は{a}の胸に顔を埋めたまま、声にならない声を漏らした。{a}が背中を撫でると、{b}の震えがゆっくりと静まっていった。|{b}はシーツを口元まで引き上げ、{a}と目が合うたびに隠れた。最後は隠れる余裕もなく、{b}は小さく震えて達した。'),
+polite:L('{b}は「は、はしたない声を……」と詫びながら、{a}の指の動きに合わせて達した。|{b}は最後まで言葉を崩すまいとしたが、玩具の強さを上げられた瞬間、「申し訳、ございませ……」と言いかけて震えた。|{b}は乱れた呼吸を整えようとしたが、{a}がもう一度弱いところを撫でると、丁寧な言葉は甘い声に溶けた。|{b}は「失礼、いたします」と律儀に断ってから、{a}の肩に額を預けた。その丁寧さが崩れたのは、ほんの数秒後のことだった。|{b}は乱れた裾を気にしながらも、{a}の指を拒まなかった。最後の一押しで、{b}の口から言葉にならない吐息がこぼれた。')
 };
 var FIN_O={
-c:L('{a}は最後に{b}の口の中で大きく脈打ち、甘い粘液を溢れさせてから、ゆっくりと離れていった。|{a}は{b}の舌に絡みついたまま震え、やがて満ち足りたように力を緩めた。|{a}が離れたあとも、{b}の口の中には甘い痺れが残っていた。'),
-m:L('{a}は低く息を詰め、{b}の口の中で果てた。{b}は喉を鳴らして、こぼさないように受け止めた。|{a}は{b}の髪を撫でる指に力を込め、口の中で熱を弾けさせた。{b}の喉が、こくりと動いた。|{a}は最後に深く息を吐き、{b}の唇からゆっくりと熱を引いた。濡れた唇が、名残惜しそうに開いたままだった。'),
-f:L('{a}は{b}の舌に熱いところを押しつけたまま、太ももを震わせて達した。|{a}は{b}の髪に指を絡め、腰を小さく揺らしながら、甘い声を上げて果てた。|{b}の舌の動きに追い立てられて、{a}は短く声を上げて達した。それから{b}の顔を、そっと離した。'),
+c:L('{a}は最後に{b}の口の中で大きく脈打ち、甘い粘液を溢れさせてから、ゆっくりと離れていった。|{a}は{b}の舌に絡みついたまま震え、やがて満ち足りたように力を緩めた。|{a}が離れたあとも、{b}の口の中には甘い痺れが残っていた。|{a}は{b}の舌の上でひときわ強く脈打ち、とろりとした甘さを残して静かになった。{b}の唇の端から、甘い雫がひとすじこぼれた。|{a}は{b}の頬を両手で包んだまま、口の中で小さく震えて果てた。離れたあとも、{b}の舌には痺れるような甘さが残っていた。'),
+m:L('{a}は低く息を詰め、{b}の口の中で果てた。{b}は喉を鳴らして、こぼさないように受け止めた。|{a}は{b}の髪を撫でる指に力を込め、口の中で熱を弾けさせた。{b}の喉が、こくりと動いた。|{a}は最後に深く息を吐き、{b}の唇からゆっくりと熱を引いた。濡れた唇が、名残惜しそうに開いたままだった。|{a}は{b}の頭を抱え込むように引き寄せ、喉の手前で熱を弾けさせた。{b}はむせそうになりながらも、最後まで口を離さなかった。|{a}は{b}の名前を掠れた声で呼び、口の中で何度も脈打った。{b}は目を伏せたまま、こくり、こくりと喉を鳴らした。'),
+f:L('{a}は{b}の舌に熱いところを押しつけたまま、太ももを震わせて達した。|{a}は{b}の髪に指を絡め、腰を小さく揺らしながら、甘い声を上げて果てた。|{b}の舌の動きに追い立てられて、{a}は短く声を上げて達した。それから{b}の顔を、そっと離した。|{a}は{b}の肩に指を食い込ませ、腰を震わせて声を詰まらせた。{b}が舌を止めずにいると、{a}の太ももがもう一度大きく跳ねた。|{a}は{b}の舌が同じ場所をなぞり続けるのに耐えきれず、背を反らして果てた。それから力の抜けた指で、{b}の髪をそっと撫でた。'),
 x:L('{a}は最後に深く口づけ、震える{b}の舌をそっと解放した。|{a}は{b}の口から指を抜き、濡れた指先を自分の唇でぬぐった。|{a}は{b}の舌をもう一度だけ吸ってから、ゆっくりと唇を離した。二人の唇のあいだに、細い糸が光った。|{a}は{b}の額に額を合わせ、乱れた息が落ち着くのを待った。口の中には、まだ{a}の指の感触が残っていた。')
 };
 var AFTER=L('{a}は{b}の唇を親指で拭い、汗ばんだ前髪をかき上げた。{b}はしばらく、ぼんやりと天井を見ていた。|二人は毛布にくるまったまま、しばらく何も言わなかった。{b}の呼吸だけが、少しずつ落ち着いていった。|{a}は{b}の背中をゆっくりと撫で、乱れた呼吸が静まるのを待った。|{b}は{a}の胸に額を預け、「……ずるい」と小さく呟いた。|{a}は{b}の手を取り、指先に一つずつ口づけた。{b}はくすぐったそうに笑い、それから目を閉じた。|{b}は乱れた髪を直しながら、{a}の顔をまともに見られなかった。{a}はそれを面白そうに眺めていた。');
@@ -36021,7 +36030,7 @@ if(['','top','bottom','riba'].indexOf(c.pos||'')<0)c.pos='';
 migUserTone(c);
 c.tone=okTone(c.tone)?c.tone||'':'';
 if(c.moanTone&&typeof c.moanTone==='string'&&okTone(c.moanTone))c.moanTone=String(c.moanTone);else delete c.moanTone;
-['moanDict','moanDictT'].forEach(function(k){if(typeof c[k]==='string'&&c[k].trim()&& !HK.SAFE_BUILD)c[k]=c[k].slice(0,4000);else delete c[k];});(function(f,o){var g={},p={};if(f&&typeof f==='object'&& !HK.SAFE_BUILD){if(['firm','soft','grand','none','off'].indexOf(f.kind)>=0)g.kind=f.kind;if(typeof f.masc==='boolean')g.masc=f.masc;}if(o&&typeof o==='object'&& !HK.SAFE_BUILD)['tease','retort'].forEach(function(k){if(['off','less','more'].indexOf(o[k])>=0)p[k]=o[k];});if(Object.keys(g).length)c.moanFit=g;else delete c.moanFit;if(Object.keys(p).length)c.moanOpt=p;else delete c.moanOpt;})(c.moanFit,c.moanOpt);
+['moanDict','moanDictT'].forEach(function(k){if(typeof c[k]==='string'&&c[k].trim()&& !HK.SAFE_BUILD)c[k]=c[k].slice(0,4000);else delete c[k];});(function(f,o){var g={},p={};if(f&&typeof f==='object'&& !HK.SAFE_BUILD){if(['firm','soft','grand','none','off'].indexOf(f.kind)>=0)g.kind=f.kind;if(typeof f.masc==='boolean')g.masc=f.masc;}if(o&&typeof o==='object'&& !HK.SAFE_BUILD){['tease','retort'].forEach(function(k){if(['off','less','more'].indexOf(o[k])>=0)p[k]=o[k];});if(o.night==='off'||(typeof o.night==='string'&&HK.PERSONA&&HK.PERSONA[o.night]))p.night=o.night;}if(Object.keys(g).length)c.moanFit=g;else delete c.moanFit;if(Object.keys(p).length)c.moanOpt=p;else delete c.moanOpt;})(c.moanFit,c.moanOpt);
 c.fp=str(c.fp,8).trim();
 c.color=typeof c.color==='string'&& /^#[0-9a-fA-F]{6}$/.test(c.color)?c.color:'';
 c.call=okCall(c.call)?c.call||'':'';
@@ -38541,8 +38550,10 @@ if(f)out.push('声：'+(f.kind?KIND_LABEL[f.kind]:'')+(f.masc!=null?(f.kind?'・
 var o=c.moanOpt||{};
 if(o.tease)out.push('言葉責め：'+lab(o.tease));
 if(o.retort)out.push('言い返し：'+lab(o.retort));
+if(o.night)out.push('夜の声：'+nightLab(o.night));
 return out.length?out.join('・'):'決めていません';
 }
+function nightLab(v){return v==='off'?'口調の態度のまま':((HK.PERSONA&&HK.PERSONA[v])||{}).label||'';}
 function lab(v){for(var i=0;i<AMOUNT.length;i++)if(AMOUNT[i][0]===v)return AMOUNT[i][1];return'';}
 function keyOpts(style,cur){
 if(HK.MoanFitUI&&HK.MoanFitUI.keyOpts)return HK.MoanFitUI.keyOpts(cur,style);
@@ -38566,6 +38577,9 @@ return head+'<div class="gmoan" style="padding:4px 0">'+
 '<div class="gearrow"><label>声の区分（この住人だけ） <select data-gf="moanFitKind" aria-label="この住人の声の区分">'+KIND_OPT.map(function(x){return opt(x[0],x[1],f.kind||'');}).join('')+'</select></label>'+
 '<label><input type="checkbox" data-gf="moanFitMasc"'+(k.masc?' checked':'')+'> 男性的な語尾を残す（女性でも「〜ぜ」「〜ぞ」）</label></div>'+
 '<p class="gearhint" id="gm-fit">'+esc(fitHint(c))+'</p>'+
+'<div class="gearrow"><label title="夜の性格（サド・マゾ・意地悪・甘々・恥じらい）があるとき、言葉のある喘ぎの元にする態度です。全体の設定のままなら、全体の「喘ぎ声の調整」の「夜の性格 → 声の基盤」（既定はサド→強気・マゾ→健気・意地悪→奔放・甘々→穏やか・恥じらい→恥じらい）。口調の態度のままなら、夜の性格があっても口調の態度で鳴きます（懇願が増える・声を抑えるなどの場面の選び方は夜の性格のまま）">夜の声の基盤（この住人だけ） <select data-gf="moanOptNight" aria-label="この住人の夜の声の基盤">'+
+opt('','全体の設定のまま',o.night||'')+opt('off','口調の態度のまま',o.night||'')+(HK.PERSONA_KEYS||[]).map(function(p){return opt(p,(HK.PERSONA[p]||{}).label||p,o.night||'');}).join('')+'</select></label></div>'+
+'<p class="gearhint">夜の性格がある日の、言葉のある喘ぎの態度です（例：サドで厳格のまま鳴く人は「厳格」、サドで強気な人は「強気」）。夜の性格を決めていない人には効きません。</p>'+
 '<p class="gearhint">はっきり：「やめて」→「やめろ」、泣き声の拒みは「むり」に／やわらかい：「やめろ」→「やめて」、「〜ぞ」→「〜よ」／古風・尊大：「〜ちゃう」→「〜てしまう」／区分なし：性別の整えだけ／整えない：表の文のまま。全体の設定の「喘ぎ声の調整」の口調ごとの区分より優先します。</p>'+
 '<h4 style="margin:10px 0 2px;font-size:13px">受けのとき</h4>'+pr('r')+
 ta('moanDict',c.moanDict,'[乗り気 1]\nん……っ|は、ぁ……\n[懇願 1]\nもっと……おねがい……\n[小説 最中]\nあ……っ、そこ……')+
@@ -38593,6 +38607,7 @@ var n=lines(c),out=[],o=c.moanOpt||{};
 if(n)out.push('喘ぎ辞書：'+n+'行');
 if(o.tease)out.push('言葉責め：'+lab(o.tease));
 if(o.retort)out.push('言い返し：'+lab(o.retort));
+if(o.night)out.push('夜の声：'+nightLab(o.night));
 return out;
 };
 function refresh(c){
@@ -38625,6 +38640,13 @@ var nf=M.ownFitNorm(fo);if(nf)c.moanFit=nf;else delete c.moanFit;
 changed(false);refresh(c);
 var mc=document.querySelector('[data-gf="moanFitMasc"]');if(mc)mc.checked=M.fitKind(toneOfC(c),c).masc;
 return true;
+}
+case'moanOptNight':{
+if(isInput)return true;
+var on=Object.assign({},c.moanOpt||{});
+if(t.value==='off'||(t.value&&HK.PERSONA&&HK.PERSONA[t.value]))on.night=t.value;else delete on.night;
+if(Object.keys(on).length)c.moanOpt=on;else delete c.moanOpt;
+changed(false);refresh(c);return true;
 }
 case'moanOptTease':case'moanOptRetort':{
 if(isInput)return true;
@@ -41531,4 +41553,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '9881f4b288', 1);
+HK.Load.done('core', 'a51fe1a2e6', 1);

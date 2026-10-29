@@ -851,7 +851,11 @@
   }
   /* 三人とも互いに体の関係になれる・想い合える組（または中心のある三人）で、本命がいる人はその本命もこの三人の中にいて、熱が限界のときだけ */
   function trioOk(S, m) {
-    if (!trioPlan(S, m)) return false;
+    var pl = trioPlan(S, m);
+    if (!pl) return false;
+    /* 直接触れ合う組のどちらかが相手を避けている三人（avoid-kit.js の HK.Avoid）は、三人の場面にしない（三人の場面では誰もが自分から触れにいくため。2026-10-29 担当MR：state-audit の S31） */
+    if (HK.Avoid && (pl.all ? trioPairs(m) : m.filter(function (c) { return c !== pl.hub; }).map(function (c) { return [pl.hub, c]; }))
+      .some(function (pr) { return HK.Avoid.of(S, pr[0], pr[1]) || HK.Avoid.of(S, pr[1], pr[0]); })) return false;
     /* 恋人がこの三人の外にいる人は、三人の場面に加わらない */
     if (m.some(function (p) { return S.P.some(function (q) { return m.indexOf(q) < 0 && has(S, p, q, /^(lover|mate|fated)$/) && okLove(p, q); }); })) return false;
     return m.every(function (p) { return p.honmei == null || (m.some(function (q) { return q.i === p.honmei; }) && desperate(p)); });
