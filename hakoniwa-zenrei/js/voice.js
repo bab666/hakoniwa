@@ -687,6 +687,9 @@
     if (typeof text === 'string' && text.indexOf('\u2062') >= 0 && (text.indexOf('「') < 0 || !people || !people.length)) text = text.replace(/\u2062/g, '');
     if (!text || typeof text !== 'string' || (text.indexOf('「') < 0 && text.indexOf('（') < 0) || !people || !people.length) return text;
     var out = '', last = 0, depth = 0, start = -1, rec = Array.isArray(V._segBuf) ? V._segBuf : null;
+    /* 場面（この文ひとつ）ごとの覚え：ひねくれ敬語の「〜よ？」を続けない（tone-engine.js の T.scene）・呼びかけの名前を続けない（tone-plus.js の callAddress） */
+    if (HK.Tone) HK.Tone.scene = {};
+    V._callScene = {};
     for (var i = 0; i < text.length; i++) {
       var ch = text[i];
       if (ch === '（' && depth === 0) {

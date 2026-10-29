@@ -382,7 +382,7 @@ devoted:'{b}は息を整えながら、それでも{a}の汗を拭おうと手�
 cool:'{b}は天井を見つめたまま、しばらく瞬きもしなかった。|{b}は「……想定より、ずっと」と言いかけて、口を閉じた。',
 free:'{b}は息を弾ませたまま笑い出し、「すごかった」と素直に言った。|{b}は{a}に抱きついて、「ねえ、もう一回」と悪戯っぽく囁いた。',
 shy:'{b}は毛布を鼻の上まで引き上げて、目だけで{a}を見た。|{b}は「……変な声、出てなかった？」と、消え入りそうな声で訊いた。',
-polite:'{b}は乱れた髪を整えながら、「お見苦しいところを」と頭を下げようとした。|{b}は{a}の手を両手で包み、「光栄です」と静かに微笑んだ。'
+polite:'{b}は乱れた髪を整えながら、「……見苦しいところ、見せちゃったね……｜……見苦しいところを見せた｜お見苦しいところを」と頭を下げようとした。|{b}は{a}の手を両手で包み、「光栄です」と静かに微笑んだ。'
 };
 Object.keys(M).forEach(function(k){PEAK_PS[k]=(PEAK_PS[k]||[]).concat(L(M[k]));});
 })();
@@ -659,6 +659,25 @@ options.push({v:k,label:label});
 }
 function noteN(s){(scen.env||[]).forEach(function(e){if(e.id==='n1'||e.id==='n2')e.desc=(e.desc?e.desc+'。':'')+s;});}
 function prog(ctx,a,b){var k=key(a,b);return(ctx.flags.prog[k]=ctx.flags.prog[k]||{act:{},said:{}});}
+function needK(left,n,ctx){
+if(!(left>1))return 1;
+if(n&&ctx&&(n-left)/n>=(ctx.stepIndex||0)/Math.max(1,ctx.stepsTotal||1))return 1;
+return 1+Math.min(1.5,Math.log(left)/Math.LN10*0.75);
+}
+function needKPair(ctx,el,a,b){
+var m=1;
+(el||[]).forEach(function(r){var v=effOf(ctx,r,a,b)||[0,0],T=K[r.k];m=Math.max(m,needK(r.n-(T.type==='word'&&T.mode!=='sum'?Math.min(v[0],v[1]):T.type==='word'?v[0]+v[1]:v[0]),r.n,ctx));});
+return m;
+}
+function paceInc(ctx,tk,left,inc,rate,n){
+var si=ctx.stepIndex||0;
+if(tk.t0==null)tk.t0=si;
+tk.n=(tk.n||0)+1;
+if(!(left>1))return inc;
+if(n&&(n-left)/n>=si/Math.max(1,ctx.stepsTotal||1))return inc;
+var rem=Math.max(1,(ctx.stepsTotal||1)-1-si),obs=tk.n>1?Math.max(rate,(tk.n-1)/Math.max(1,si-tk.t0)):rate;
+return Math.max(inc,Math.min(left,Math.ceil(left/Math.max(1,rem*obs))));
+}
 function killCount(ctx){return ctx.chars.filter(function(c){return(c.alive===false&&c.killedBy!=null)||c.flags.knocked;}).length;}
 function rawOf(ctx,rule,a,b){
 var T=K[rule.k];
@@ -768,11 +787,11 @@ return left.length>0&&left.length<ctx.rules.length;
 }
 function pairDone(ctx,a,b){return ctx.rules.every(function(r){return ruleDone(ctx,r,a,b);});}
 function pairTag(ctx,a,b){return ctx.chars.length>2?(HK.pairNameOf?HK.pairNameOf(a,b):a.name+'×'+b.name)+'の':'';}
-function cntTag(ctx,r,a,b,cnt){
+function cntTag(ctx,r,a,b,cnt,inc){
 if(seqWait(ctx,r,a,b))return waitNote(ctx,r,a,b);
 if(r.n<=1)return'';
 if(seqOn(ctx)&&r===ctx.rules[1]&& !ruleDone(ctx,ctx.rules[0],a,b))return'（'+pairTag(ctx,a,b)+K[r.k].noun+'は条件1のあとから数える）';
-return'（'+pairTag(ctx,a,b)+K[r.k].noun+' '+cnt+'/'+r.n+'）';
+return'（'+pairTag(ctx,a,b)+K[r.k].noun+' '+cnt+'/'+r.n+(inc>1?'・まとめて'+inc+K[r.k].unit:'')+'）';
 }
 function hasPairRule(ctx){return ctx.rules.some(function(r){return isPairT(K[r.k]);});}
 function allOut(ctx){return!ctx.flags.isOne&& !ctx.flags.oneCond&&ctx.env.allout==='on';}
@@ -1144,14 +1163,14 @@ derived:['caution','honesty','impulse','cold'],
 exclude:['take_charge'],
 env:[
 {id:'cond',label:'条件1',type:'select',def:'h',options:options},
-{id:'n1',label:'条件1の回数・本数',min:1,max:100,def:1,lo:'1',hi:'100',desc:'「キスを10回」「媚薬を10本」の数字'},
+{id:'n1',label:'条件1の回数・本数',min:1,max:100,def:1,lo:'1',hi:'100',desc:'「キスを10回」「媚薬を10本」の数字。多いほど、住人は条件を進める行動をよく選び、残りの時間に合わせて一度に何回ぶんかをまとめて進める'},
 {id:'cond2',label:'条件2（任意）',type:'select',def:'none',options:[{v:'none',label:'なし'}].concat(options.filter(function(o){return o.v!=='one';}))},
 {id:'n2',label:'条件2の回数・本数',min:1,max:100,def:1,lo:'1',hi:'100'},
 {id:'order',label:'条件の順番',type:'select',def:'any',options:[{v:'any',label:'どちらからでも（同時に数える）'},{v:'seq',label:'条件1を満たしてから条件2（先に満たした条件2は数えない）'}],desc:'どちらからでも：「媚薬2本とキス、両方を済ませないと出られない部屋」。条件1から：「媚薬を2本飲み切ったあとに、キスしないと出られない部屋」（条件1の前の条件2は、起きにくく、起きても数えない）'},
 {id:'only1',label:'一人しか出られない（ほかの条件と併用）',type:'select',def:'off',options:[{v:'off',label:'なし'},{v:'on',label:'あり：条件を満たしても、扉をくぐれるのは一人だけ'}],desc:'条件1に「一人しか出られない」、条件2にキスなどを選んでも同じになる（条件2を満たすと扉が開き、くぐれるのは一人）。三人以上で一緒に満たしたときも一人だけ'},
 {id:'allout',label:'条件を満たした人と一緒に、全員出られる',type:'select',def:'off',options:[{v:'off',label:'なし（条件を満たした人だけが出る）'},{v:'on',label:'あり：誰かが条件を満たして扉が開けば、何もしていない人も一緒に出られる'}],desc:'例：二人が条件を満たして扉が開いたとき、部屋に残っていた三人目もついでに出られる。「一人しか出られない」部屋では働かない'},
 {id:'label',label:'部屋の名前（空欄なら自動）',type:'text',def:'',placeholder:'例：媚薬を10本飲み切らないと出られない部屋'},
-{id:'hours',label:'閉じ込められる時間',min:4,max:240,def:10,lo:'4時間',hi:'10日',unit:'時間',desc:'48時間を超えると、経過は数時間ごとにまとめ、結果は重要な出来事だけの短縮版で表示する'},
+{id:'hours',label:'閉じ込められる時間',min:4,max:240,def:10,lo:'4時間',hi:'10日',unit:'時間',desc:'長いほど、条件を進める出来事はゆっくりでも積み重なり、時間内に満たしやすくなる。48時間を超えると、経過は数時間ごとにまとめ、結果は重要な出来事だけの短縮版で表示する'},
 {id:'pressure',label:'部屋の圧',min:0,max:100,def:50,lo:'居心地がいい',hi:'息苦しい',desc:'高いほど焦りが溜まり、覚悟が早く決まる'}
 ],
 stats:[{id:'exp',label:'恋愛経験',desc:'高いほど条件への抵抗が小さい'},{id:'hp',label:'体力',desc:'媚薬・酒・激辛に耐える力。低い人が飲みすぎると倒れる'}],
@@ -1304,7 +1323,7 @@ w*=0.6+eager(ctx,a);
 }
 var el=actElig(ctx,a,b);
 if(el.length&&el.every(function(x){return seqWait(ctx,x,a,b);}))w*=0.15;
-return w;
+return w*needKPair(ctx,el,a,b);
 },
 run:function(ctx,a,b){
 var el=actElig(ctx,a,b),r=el.filter(function(x){return!seqWait(ctx,x,a,b);})[0]||el[0];
@@ -1312,6 +1331,7 @@ var T=K[r.k],p=prog(ctx,a,b),wl=willing(ctx,a,b,T.lvl),wait=seqWait(ctx,r,a,b);
 var first= !p.act[r.k]&& !(p.pre&&p.pre[r.k]);
 var span=Math.max(3,ctx.stepsTotal*0.55);
 var inc=r.n>3?Math.max(1,Math.round(r.n/span*(wl?1.3:0.8)*(0.6+ctx.rng()*0.8)*(6-T.lvl)/3)):1+(wl&&r.n>1&&ctx.rng()<0.5?1:0);
+if(!wait)inc=paceInc(ctx,(p.tk=p.tk||{})[r.k]=p.tk[r.k]||{},r.n-((effOf(ctx,r,a,b)||[0])[0]||0),inc,0.4,r.n);
 bumpAct(ctx,r,a,b,inc);
 var g=T.lvl*2.5;
 ctx.mod2(a,b,{att:wl?g+2:g/2,aff:wl?g/2:0,trust:2},{att:wl?g+2:g/2,aff:wl?g/2:0,trust:2});
@@ -1343,7 +1363,7 @@ var cl=r.k==='h'&&first&&bothBottom(a,b)?clashText(ctx,a,b):null;
 if(cl)text=cl.text+text;
 var fsx=r.k==='h'&&HK.State.freeSex&&HK.State.freeSex(ctx,a,b);
 if(fsx){if(first)text=HK.FreeSex.lead(ctx,a,b)+text;HK.FreeSex.mark(ctx,a,b);if(first)HK.FreeSex.jealous(ctx,a,b);}
-text+=cntTag(ctx,r,a,b,p.act[r.k]);
+text+=cntTag(ctx,r,a,b,p.act[r.k],inc);
 var whyT=(wait?'条件の順番：条件1のあとから数える（今のは数えない）／':'')+(cl?cl.why+'／':'')+(rough?rough.name+'は'+(rough===a?b:a).name+'を敵視している（嫌悪 '+Math.round(HKr.level(ctx,rough,rough===a?b:a))+'）・強引な性格。条件のために、乱暴に':wl?'互いの惹かれ（'+Math.round(R(ctx,a,b).att)+'／'+Math.round(R(ctx,b,a).att)+'）と信頼':'焦りと諦め（'+Math.round(a.stress)+'／'+Math.round(b.stress)+'）。気持ちより状況が先だった');
 if(checkExit(ctx,a,b))return exitPair(ctx,a,b,text,whyT,r.k==='h');
 if(!wait&&p.act[r.k]>=r.n)text+='扉はまだ開かない。'+a.name+'と'+b.name+'に残っているのは、'+leftText(ctx,a,b)+'。';
@@ -1394,12 +1414,13 @@ if(ctx.rules.some(function(r){return K[r.k].type==='word'&&K[r.k].mode==='both'&
 if(a.flags.partner!=null)w*=a.flags.partner===b.i?1.8:0.6;
 var el=wordElig(ctx,a,b);
 if(el.length&&el.every(function(x){return seqWait(ctx,x,a,b);}))w*=0.15;
-return w;
+return w*needKPair(ctx,el,a,b);
 },
 run:function(ctx,a,b){
 var el=wordElig(ctx,a,b),r=el.filter(function(x){return!seqWait(ctx,x,a,b);})[0]||el[0];
 var p=prog(ctx,a,b),rr=R(ctx,a,b),text,whyT,cat='bond',wait=seqWait(ctx,r,a,b);
 var inc=r.k==='praise'?1+ctx.rng.int(Math.max(1,Math.ceil(r.n/4))):r.n>3?Math.max(1,Math.round(r.n/Math.max(3,ctx.stepsTotal*0.5)*(0.6+ctx.rng()*0.8))):1;
+if(!wait){var wv=effOf(ctx,r,a,b)||[0,0];inc=paceInc(ctx,(p.tk=p.tk||{})[r.k+a.i]=p.tk[r.k+a.i]||{},r.n-(K[r.k].mode==='sum'?wv[0]+wv[1]:(p.said[r.k+a.i]||0)),inc,0.4,r.n);}
 if(wait){p.pre=p.pre||{};p.pre[r.k]=(p.pre[r.k]||0)+inc;}
 else{seqFlush(ctx,r,a,b);p.said[r.k+a.i]=(p.said[r.k+a.i]||0)+inc;}
 if(r.k==='love'){
@@ -1429,7 +1450,7 @@ text=ctx.t(text,a,b);
 var T=K[r.k];
 if(T.mode==='both'&&a.flags.partner==null){a.flags.partner=b.i;if(b.flags.partner==null)b.flags.partner=a.i;}
 var cnt=T.mode==='sum'?(p.said[r.k+a.i]||0)+(p.said[r.k+b.i]||0):p.said[r.k+a.i];
-text+=cntTag(ctx,r,a,b,cnt);
+text+=cntTag(ctx,r,a,b,cnt,inc);
 if(checkExit(ctx,a,b))return exitPair(ctx,a,b,text,whyT,false);
 if(pairOnlyWait(ctx,a,b))text+='扉はまだ開かない。'+a.name+'と'+b.name+'に残っているのは、'+leftText(ctx,a,b)+'。';
 return{cat:cat,text:text,why:whyT};
@@ -1440,7 +1461,7 @@ id:'consume',label:'条件の飲み物や食べ物を口にする',cat:'escape',
 when:function(ctx,a){return!a.flags.down&&ctx.rules.some(function(r){return K[r.k].type==='consume'&&globLeft(ctx,r)>0;});},
 w:function(ctx,a){
 var r=ctx.rules.filter(function(x){return K[x.k].type==='consume'&&globLeft(ctx,x)>0;})[0];
-return 0.8+ITEM[r.k].fit(a)*1.5+a.stress/120+ctx.stepIndex/Math.max(4,ctx.env.hours)*1.5+(r.k==='sake'&&a.alcohol?(a.alcohol-3)*0.3:0)+(ITEM[r.k].wb||0);
+return(0.8+ITEM[r.k].fit(a)*1.5+a.stress/120+ctx.stepIndex*(ctx.stepH||1)/Math.max(4,ctx.env.hours)*1.5+(r.k==='sake'&&a.alcohol?(a.alcohol-3)*0.3:0)+(ITEM[r.k].wb||0))*needK(globLeft(ctx,r)/(K[r.k].mul||1),r.n/(K[r.k].mul||1),ctx);
 },
 run:function(ctx,a){
 var r=ctx.rules.filter(function(x){return K[x.k].type==='consume'&&globLeft(ctx,x)>0;})[0];
@@ -1456,6 +1477,8 @@ if(meek&&meek.tr.ac>0.6){drinker=meek;forced=true;}
 var scale=Math.max(1,Math.round(r.n/Math.max(4,ctx.stepsTotal*1.2)*(I.mult||1)));
 if(I.round)scale=Math.max(I.round,Math.round(scale/I.round)*I.round);
 var n=Math.min(left,(1+(drinker.tr.impulse>0.6?ctx.rng.int(3):ctx.rng.int(2)))*scale);
+var np=paceInc(ctx,(ctx.flags.ctk=ctx.flags.ctk||{})[r.k]=ctx.flags.ctk[r.k]||{},left,n,0.6,r.n);
+if(np>n)n=Math.min(left,I.round?Math.ceil(np/I.round)*I.round:np);
 ctx.flags.consumed[r.k]=(ctx.flags.consumed[r.k]||0)+n;
 var dk=ctx.flags.drank[drinker.i]=ctx.flags.drank[drinker.i]||{};
 dk[r.k]=(dk[r.k]||0)+n;
@@ -10806,4 +10829,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 ["止まった。もう止まっている","止まった。……もう、止まっているのだよ",1],
 ["この紙、誤字っていないか","この紙、誤字があるのではないかね",1]]});
 });
-HK.Load.done('scen-whiteroom', '2b8e5812e1', 1);
+HK.Load.done('scen-whiteroom', '1a555c4083', 1);

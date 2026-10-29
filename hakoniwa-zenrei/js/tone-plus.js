@@ -417,6 +417,18 @@
     var hd = callHead(c, to), bits = sm[2].match(/[ぁ-ゖァ-ヶ][ぁぃぅぇぉゃゅょァィゥェォャュョ]?[、…‥]+/g);
     return pre.slice(0, pre.length - sm[2].length) + (hd ? bits.map(function (b) { return hd + b.replace(MORA, ''); }).join('') : '');
   }
+  /* 呼びかけの名前を頭に足してよい台詞か：最初の文が、相手に向かう命令・頼み・懇願・引き止め・誘い・警告で終わる（問い・言い切り・返事・反応・言い返しは除く） */
+  var CALL_NO_HEAD = /^(?:別に|べ、別に|うるさ|は？|はあ|ふん|うん|ええ|はい|いや|そう|へえ|ほう|なるほど|まあ|違)/;
+  var CALL_WARN = /危ない[！!]?$|気をつけ(?:て|ろ)|伏せ(?:て|ろ)|逃げ(?:て|ろ)|離れ(?:て|ろ|るな)|下がっ(?:て|ろ)|後ろ[！!]?$|来るな|止まれ$|動くな/;
+  var CALL_IMP = /(?:(?:て|[んい]で)(?:ください|下さい|くれ|くれよ|ちょうだい|ほしい|ね|よ|な|ろ|くださいね|くださいよ)?|ないで(?:ください|くれ|ね|よ)?|[うくぐすつぬぶむる]な|なさい|しろ|せよ|[えけげせてべめれろ]|こい|来い|ましょう(?:よ|か)?|よう(?:よ|か|ぜ)?|ろう(?:よ|か|ぜ)?|こう(?:よ|か|ぜ)?|おう(?:よ|か|ぜ)?|お願い(?:します|しますね)?|頼む|頼みます|待って|やめて)$/;
+  var CALL_NOT_IMP = /(?:[るたいだん]って|くて|[^ぁ-ゖ]で|たりして|[わらさ]れて|おやすみなさい|ねえ|へえ|ええ|(?:そ|こ|あ|ど)れ|誰|[ただ]め|[だわ]け|だろ|でしょ|かしら|ません|ました|でした|です|ます)$/;
+  function callable(q) {
+    var s1 = (String(q).replace(/^[…‥\s　]+/, '').match(/^[^。！？!?]*/) || [''])[0].replace(/[…‥っッ〜ー～♡\s　、]+$/, '');
+    if (!s1 || CALL_NO_HEAD.test(s1)) return false;
+    if (CALL_WARN.test(s1)) return true;
+    return CALL_IMP.test(s1) && !CALL_NOT_IMP.test(s1);
+  }
+  V.callable = callable;
   V.callAddress = function (q, who, to, raw) {
     if (!who || !to || to === who || !to.name || !(who.call || (who.calls && who.calls[to.name]))) return q;
     /* 相手がモブなら、呼び方を決めていない限り二人称のまま（V.mobAddr） */
@@ -439,6 +451,12 @@
     /* 息づかい（は、ぁ・っ、・小さい母音）の混じる台詞と、問いへの短い答え（「〜こと」「〜とか」で終わる）には足さない */
     if (/[ぁぃぅぇぉ]|っ、|ッ、/.test(q) || /(?:こと|もの|とか|かな)[。…]*$/.test(q)) return q;
     if (/♡/.test(q) || body.length < 7 || /^[ぁ-ゖァ-ヶ]{0,4}[ッっ]?$/.test(body) || hashS(HK.NameGuard && HK.NameGuard.stack.length ? HK.NameGuard.decAll(String(raw || q) + who.name) : String(raw || q) + who.name) % 3) return q;
+    /* 頭に名前を足すのは、相手に向かって呼びかける文（命令・頼み・懇願・引き止め・誘い・警告。「ローリッツ、私から離れるな」「待って」「来てください」）だけ。
+       言い返し・返事・反応・説明（「別に頼んでいない」「意外ですね」「うん」）には足さない。同じ場面（文ひとつ）では一人一度まで（2026-10-29 利用者の指示「名前も呼ばなくていい」「呼びかけなら構わないが、ほどほどに」） */
+    if (!callable(q)) return q;
+    var sk = who.name + '>' + to.name, scene = V._callScene;
+    if (scene && scene[who.name]) return q;
+    if (scene) scene[who.name] = sk;
     var m = q.match(/^([…‥\s]*)/);
     return m[1] + c + '、' + q.slice(m[1].length);
   };

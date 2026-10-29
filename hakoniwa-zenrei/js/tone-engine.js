@@ -22,6 +22,7 @@
      存在=おる              ← いる／いた／いない／います → おる／おった／おらぬ（が・は・も・に などの直後だけ。〜ている は進行の規則）
      短い文はため口=6       ← 敬語のベースで、助詞のない短い一言（大丈夫です→大丈夫、ありがとうございます→ありがとう）と短い問い（飲みますか？→飲む？）だけをため口にする（敬語まじり）
      ため口を混ぜる=0.15    ← 敬語のベースで、文ごとに くだけた常体（K）の同じ文と入れ替える（敬語まじり）。問い・感嘆・念押し・誘いは ため口、頼みごとは敬語、言い切りは値の割合で ため口。2文以上の台詞は両方が入る
+     皮肉の型=はい          ← ひねくれ敬語：文の種類で皮肉の形を選ぶ（反応→「へえ、〜ですね」、念押し・勧め→「別に、〜んじゃないですか」、問いの形の「〜ですよ？」は言い返しだけ。同じ場面で続けない）
      縮約=はい              ← 分からない→分かんない、ちょうだい→ちょーだい など
      強調語=マジ／めっちゃ  ← 形容詞の前に差し込む（台詞に一度まで。文に勢い（！や強い語）があるときだけ）
      強調語の割合=0.4       ← 差し込む割合（既定 0.5）
@@ -613,6 +614,54 @@
     ['んですよね', ['んだよね']], ['んですけど', ['んだけど']], ['んですから', ['んだから']], ['んですか', ['の'], /[るたいうくつすぬむぶぐ]$/], ['んですね', ['んだね']], ['んですよ', ['んだよ']], ['んでした', ['んだった']], ['んでしょう', ['んでしょ']], ['んです', ['んだ']],
     ['でしょうか', ['かな']], ['でしょう', ['でしょ']], ['ですよね', ['だよね']], ['ですね', ['ね'], /い$/], ['ですよ', ['よ'], /い$/], ['ですね', ['だね']], ['ですよ', ['だよ']], ['ですか', ['']], ['でした', ['だった']], ['です', ['']]
   ];
+  /* ---------- 規則「皮肉の型」（ひねくれ敬語。2026-10-29 利用者の報告「やたら疑問形を使う」「意外ですよ？ではなく、へえ、意外ですね」「まあ、急がなくていいですよ？ではなく、別に、急がなくていいんじゃないですか」） ----------
+     皮肉の形を くじだけで散らさず、文の種類で選ぶ（敬語のベースの文。問い・頼みごと・強い声は辞書の文末のまま）：
+       反応（意外・なるほど・面白い・珍しい・上手 など、相手の話への感想）… 「へえ、〜ですね」（問いの形にしない。「へえ、」は台詞の最初の文で、その語で始まる短い文だけ）
+       念押し・勧め（〜なくていい・〜ていい・〜でいい・〜ほうがいい）… 「別に、〜んじゃないですか」（ほうがいい には「別に、」を付けない）
+       言い返し（別に・ふん・そんな・違います・〜ません で始まる／終わる文）… 辞書の候補のまま（〜ませんが・〜ですよ？・〜じゃないですか？ はここだけ）
+       説明（そのほか）… 問いの形を足す候補（〜ですよ？・〜じゃないですか？・〜でしょう？）を外す
+     同じ場面（voice.js の processText 一回）で直前のこの人の台詞が「〜よ？」なら、言い返しでも問いの形を足さない（T.scene） */
+  var TW_REACT = /^(?:へえ|ほう|なるほど|意外|面白|おもしろ|珍し|素敵|さすが|お上手|上手|立派|初耳|知りませんでした|知らなかった|すご)/;
+  var TW_REACT_IN = /意外|なるほど|面白い|おもしろい|珍しい|素敵|さすが|上手|立派|初耳|似合|話しやすい|仲がいい|いいコンビ|意外と/;
+  /* 相手に向けた許し・勧めだけ（「私は平気です」「思われてもいいです」「五分で構いません」のような自分のことの言い切りは除く） */
+  var TW_URGE = /^(.*?)((?:なくて|なくても|(?<![れせ])ても|でも|て|で)いい|なくても大丈夫|(?:ほう|方)がいい)(?:んです|のです|です)(?:よ|ね|よね)?$/;
+  var TW_RETORT = /^(?:別に|べ、別に|ふん|は？|はあ|そんな(?:こと|の|わけ)|違います|うるさ|余計な|大きなお世話|知りません|関係(?:あり|ない)|どうでも|勝手に)|(?:ません|ませんでした)(?:よ|が|けど)?$/;
+  var TW_POL_END = /(?:です|ます|ません|ました|でした|でしょう)(?:よ|ね|よね)?$/;
+  function twistSeg(body, punct, core0, first, seed, noQ) {
+    var st = splitTail(body), core = st[0];
+    var ask = /^[？?]/.test(punct) || /(?:か|かね|でしょうか)$/.test(core0);
+    if (ask || /(?:ください|くださいね|ませんか|ましょう|ましょうか)$/.test(core0) || !TW_POL_END.test(core0)) return { type: 'other' };
+    /* 念押し・勧め */
+    var um = core0.length <= 30 && core0.match(TW_URGE);
+    if (um && !/ません$/.test(um[1]) && !/私|わたし|俺|僕/.test(core0)) {
+      var mk = core.match(/(?:んです|のです|です)?(?:よ|ね|よね)?$/), stem = core.slice(0, core.length - mk[0].length);
+      if (!/(?:いい|大丈夫|平気|構いません)$/.test(stem.replace(new RegExp(MARK, 'g'), ''))) return { type: 'other' };
+      stem = stem.replace(/構いません$/, '構わない').replace(/(大丈夫|平気)$/, '$1な');
+      var giveBetsu = first && !/(?:ほう|方)がいい$|ばいい$|たらいい$/.test(um[2]) && !/別に/.test(core0) && !LEAD_DONE.test(core0);
+      return { body: (giveBetsu ? '別に、' : '') + stem + 'んじゃないですか' + st[1], lead: giveBetsu, type: 'urge' };
+    }
+    /* 反応 */
+    if (core0.length <= 20 && !/ません/.test(core0) && (TW_REACT.test(core0) || TW_REACT_IN.test(core0))) {
+      var em = core.match(/(です|ます|ました|でした|でしょう)(?:よ|ね|よね)?$/);
+      if (em) {
+        var head = core.slice(0, core.length - em[0].length) + em[1] + 'ね';
+        var pre = first && TW_REACT.test(core0) && !/^(?:へえ|ほう|なるほど)/.test(core0) && !LEAD_DONE.test(core0) ? (hash(seed) % 3 ? 'へえ、' : 'ほう、') : '';
+        return { body: pre + head + st[1], lead: !!pre, type: 'react' };
+      }
+    }
+    if (TW_RETORT.test(core0)) return { type: noQ ? 'retortNoQ' : 'retort' };
+    return { type: 'explain' };
+  }
+  /* 型ごとの文末の候補（辞書の候補から、問いの形を足すものを外す。辞書ごとに作り置く） */
+  function twistEnds(d, type, noQ) {
+    if (type === 'retort' || type === 'other') return d.ends;
+    var c = d._twEnds || (d._twEnds = d.ends.map(function (e) {
+      var keep = e[1].filter(function (x) { return /[？?]$/.test(e[0]) || !/[？?]$/.test(x); });
+      return [e[0], keep.length ? keep : [e[0]], e[2]];
+    }));
+    return c;
+  }
+
   /* ---------- 適用 ---------- */
   T.apply = function (q, d, who) {
     if (!q || !d) return q;
@@ -685,6 +734,9 @@
     var hot = !dP ? 0 : /[…‥]っ/.test(q0) || /[…‥][！!]+$/.test(q0t) ? 2 : /[！!]$/.test(q0t) || /愛して|大好き|^[…‥]*([ぁ-ゖ])、\1/.test(q0) ? 1 : 0;
     var ss = segs(q), prevTail = '', once = r.once && r.once.length ? { list: r.once, used: r.once.filter(function (w) { return w && q.indexOf(w) >= 0; }), cur: false } : null, lastI = -1;
     ss.forEach(function (s, i) { if (s.body.replace(/[…‥、〜ー～っッ♡\s　]/g, '')) lastI = i; });
+    /* 規則「皮肉の型」：この台詞の前置きを型の側で決めたか（決めたら、前置きの規則は当てない）。同じ場面の直前の台詞が「〜よ？」なら、この台詞では使わない */
+    var twLead = false, twFirst = -1, twNoQ = !!(r.twistType && T.scene && T.scene[(who && who.name) || '']);
+    if (r.twistType) ss.forEach(function (s, i) { if (twFirst < 0 && s.body.replace(/[…‥、〜ー～っッ♡\s　]/g, '')) twFirst = i; });
     ss = ss.map(function (s, i) {
       var body = s.body;
       if (r.neg) body = ruleNeg(body, r.neg);
@@ -700,7 +752,13 @@
       var strong = /^[！!]/.test(punct) && r.strongExpl !== '残す';
       if (strong) body = strongCut(body);
       if (once) once.cur = i === lastI;
-      var ap = applyEnds(body, punct, sc ? CASUAL_ENDS : d.ends, seed, i, newRules(r), strong, prevTail, sc ? null : once, grave, hot || (dP && WARM.test(core0) ? 1 : 0));
+      var endsUse = sc ? CASUAL_ENDS : d.ends;
+      if (r.twistType && !sc && !hot) {
+        var tw = twistSeg(body, punct, core0, i === twFirst && !/^[…‥]/.test(s.body), seed + '#tw' + i, twNoQ);
+        if (tw.body != null) { if (tw.lead) twLead = true; return { body: tw.body.replace(new RegExp(MARK, 'g'), ''), punct: punct }; }
+        endsUse = twistEnds(d, tw.type, twNoQ);
+      }
+      var ap = applyEnds(body, punct, endsUse, seed, i, newRules(r), strong, prevTail, sc ? null : once, grave, hot || (dP && WARM.test(core0) ? 1 : 0));
       /* 「〜んだ」「〜なんだ」で終わった文の次の文には、「〜んだ」を足す候補を選ばない（「止まったんだ。もう止まっているんだ」にしない。2026-10-26 順151） */
       prevTail = ap.tail || (/[んの]だ$/.test(splitTail(ap.body.replace(new RegExp(MARK, 'g'), ''))[0]) ? 'んだ' : '');
       return { body: ap.body.replace(new RegExp(MARK, 'g'), ''), punct: ap.punct };
@@ -724,7 +782,8 @@
     q = q.replace(/(よ|ね)\1(?=[。！？!?…‥〜ー～」]|$)/g, function (m, c) { return q0.indexOf(m) >= 0 ? m : c; });
     q = q.replace(/[…‥]{3,}/g, function (m) { return m.length <= dots0 ? m : '……'; });
     /* 動揺（強い感情の文の頭）と前置き（台詞の頭）。喘ぎには付けない。動揺を付けた台詞には前置きを付けない */
-    if ((r.shaken || r.lead || r.leadS || r.leadR) && !MOAN.test(q0)) {
+    if (r.twistType && T.scene) T.scene[(who && who.name) || ''] = /よ[？?]/.test(q) && !/よ[？?]/.test(q0);
+    if ((r.shaken || r.lead || r.leadS || r.leadR) && !MOAN.test(q0) && !twLead) {
       var shk = r.shaken ? ruleShaken(q, r.shaken, r.shakenRate == null ? 0.5 : r.shakenRate, seed) : null;
       if (shk != null) q = shk;
       else if ((r.lead || r.leadS || r.leadR) && !LEAD_DONE.test(q) && !/^[^。！？!?]*[！!]/.test(q) && q.replace(/[。、…‥！!？?\s　「」]/g, '').length > 6 && hash(seed + '#ld') % 100 < Math.round((r.leadRate == null ? 0.3 : r.leadRate) * 100)) {
@@ -782,7 +841,7 @@
   };
 
   /* ---------- 辞書の文字列を読む ---------- */
-  var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '強調語の割合': 'emphRate', '存在': 'exist', '短い文はため口': 'shortCasual', 'ため口を混ぜる': 'mixK',
+  var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '強調語の割合': 'emphRate', '存在': 'exist', '短い文はため口': 'shortCasual', 'ため口を混ぜる': 'mixK', '皮肉の型': 'twistType',
     '前置き': 'lead', '言い切りの前置き': 'leadS', '反応の前置き': 'leadR', '一度だけ': 'once', '前置きの割合': 'leadRate', '驚き': 'surprise', '笑い': 'laugh', '言い切り': 'flat', '動揺': 'shaken', '動揺の割合': 'shakenRate', '強い文の説明': 'strongExpl' };
   var FX_KEYS = { '感嘆符を落とす': 'bangOff', '伸ばす': 'stretch', '言い切りに！': 'bangOn', '言い切りに!': 'bangOn', '短くする': 'short', '言いよどみ': 'stammer', '前に……': 'dots', '間を置く': 'pause' };
   /* 「元=先1／先2」の候補。空の候補（「です(い)=／です」の左側）は「消す」の意味で残す */
@@ -826,12 +885,13 @@
       if (sec === 'ends') { var cond = null; var cm = k.match(/^(.+?)\((.+)\)$/); if (cm) { k = cm[1]; try { cond = new RegExp(cm[2] + '$'); } catch (e) { cond = null; } } cur.ends.push([k, alts(v), cond]); return; }
       if (sec === 'words') { cur.words.push([k, alts(v)]); return; }
       if (sec === 'rules') {
-        var rk = RULE_KEYS[k]; if (!rk) { out.errors.push((i + 1) + '行目：規則「' + k + '」は使えません（否定／進行／断定／助詞落とし／縮約／強調語／存在／短い文はため口／ため口を混ぜる／前置き／言い切りの前置き／反応の前置き／驚き／笑い／言い切り／動揺／一度だけ／強い文の説明）'); return; }
+        var rk = RULE_KEYS[k]; if (!rk) { out.errors.push((i + 1) + '行目：規則「' + k + '」は使えません（否定／進行／断定／助詞落とし／縮約／強調語／存在／短い文はため口／ため口を混ぜる／皮肉の型／前置き／言い切りの前置き／反応の前置き／驚き／笑い／言い切り／動揺／一度だけ／強い文の説明）'); return; }
         if (rk === 'drop') { var rate = parseFloat(v); cur.rules.drop = rate > 0 ? Math.min(1, rate) : 0; }
         else if (rk === 'emphRate') { var er = parseFloat(v); cur.rules.emphRate = er >= 0 ? Math.min(1, er) : 0.5; }
         else if (rk === 'shortCasual') { var sl = parseInt(v, 10); cur.rules.shortCasual = sl > 0 ? sl : 6; }
         else if (rk === 'mixK') { var mk = parseFloat(v); if (mk >= 0) cur.rules.mixK = Math.min(1, mk); else out.errors.push((i + 1) + '行目：ため口を混ぜるは 0〜1 の数'); }
         else if (rk === 'contract') cur.rules.contract = yes(v);
+        else if (rk === 'twistType') cur.rules.twistType = yes(v);
         else if (rk === 'emph') cur.rules.emph = alts(v);
         else if (rk === 'lead' || rk === 'shaken' || rk === 'leadS' || rk === 'leadR' || rk === 'once') { var lv = alts(v).filter(Boolean); if (lv.length) cur.rules[rk] = lv; }
         else if (rk === 'surprise' || rk === 'laugh') cur.rules[rk] = alts(v);   /* 空の候補は「消す」 */
