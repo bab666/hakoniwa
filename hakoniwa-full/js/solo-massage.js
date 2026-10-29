@@ -382,6 +382,8 @@
         res.heroes = [res.hero, { i: TR.i, name: TR.name, eg: TR.eg, memo: TR.memo, persona: TR.persona, tone: TR.tone, top: HK.egoType(TR.eg).top, action: '（施術者）', goal: '—', stats: {}, dev: {}, curses: [], items: [], climax: 0 }];
         res.chars = input.chars.slice(0, 2).map(function (c, i) { return { name: c.name, i: i }; });
         res.log.forEach(function (e) { if (e.kind !== 'step') e.actors = [h.i, TR.i]; });
+        /* 住人の施術者の台詞（店のスタッフ用の敬語1本）を3本の台詞に（solo-massage-cast.js の C.res3） */
+        if (MC && MC.res3) res.log.forEach(function (e) { if (e && typeof e.text === 'string') e.text = MC.res3(e.text); });
       }
       return res;
     }
