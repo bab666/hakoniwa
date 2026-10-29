@@ -177,6 +177,10 @@
         }
       }
       if (!ty) ty = env.who !== 'random' && SM.TYPES[env.who] ? env.who : rng.pick(Object.keys(SM.TYPES));
+      /* 合意のない展開が切で、住人のかけ手と敵対・ライバルの二人（おまかせ）：恨みの種類（性的な暗示をかけない）だけにせず、
+         表面上は反発し合いながら同意を取った催眠プレイにすることがある（友人の種類に関係の名前の札。起こりやすさは ties.js の HK.sexTieK：敵対 0.6・ライバル 0.85、愛憎があれば戻す）。
+         利用者の指示「敵対はあくまで表面上＋しづらい程度」（2026-10-28 担当MC） */
+      if (S.gate && HY && tt && env.who === 'random' && ty === 'grudge' && /^(enemy|rival)$/.test(tt.type) && !kinNo && rng() < (HK.sexTieK ? HK.sexTieK(tt) : 0.6)) { ty = 'friend'; famL = (HK.TIES[tt.type] && HK.TIES[tt.type].label) || ''; }
       /* 合意のない展開が切：おまかせで選んだモブの恨み・ストーカーは、同僚・友人・恋人に替える */
       if (S.gate && !HY && env.who === 'random' && (ty === 'grudge' || ty === 'stalker')) ty = rng.pick(['colleague', 'friend', 'lover']);
       /* モブのかける側の性別：設定がなければ、かけられる人の恋愛対象に合わせる（どちらでもよければ、男性・女性の人にはときどき女性） */

@@ -7,12 +7,15 @@
      二度目の誘いを渋って断り、気まずくなる。関係が深まっていれば、結局は応じることもある
    ・恋に落ちる：勢いの夜・二度目の夜のあと、気質（献身・穏やか・内気ほど）しだいで相手に恋をする。翌月以降に告白し、
      相手の気持ちしだいで恋人になる（関係図の「恋仲」）か、実らない
+     恋愛の可否（両方向）を通らない組・相手を避けている人（avoid-kit.js の HK.Avoid）・敵対や不仲の二人は恋に落ちない（free-sex.js の HK.FreeSex.fallOk）。
+     敵対・不仲の二人は、かわりに「嫌いなのに」の後日談（HK.FreeSex.afterHost。一人一度）
    ・描写：ほのめかす＝ぼかした本文（ship.js の bodyFor）と短い前置きだけ。ほどほど・濃い＝夜の種類ごとの段落（男×女・女×女・女攻め×男）と、
      受ける側の態度9種の一文。数行で短くなら段落は使わない。男性向けは擬音と♡の喘ぎの段落
    台詞の一人称は「私」で書き、口調の言い換えに任せる。登場人物はすべて成人として扱う。自分で攻めを選んだ人は受ける側にしない（bodyFor が向きを決める） */
 /* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
 /* @event scen=ship id=ship_night_crew cat=夜 tie=- tags=night cond=env.slewd label=船員どうしの夜（勢いの夜・二度目の夜・一夜の過ち） */
 /* @event scen=ship id=ship_night_lover cat=夜 tie=lover tags=night label=恋人の夜（恋人・両想い・関係の近い二人） */
+/* @event-ok 船員どうしの夜のあとの分岐「嫌いなのに」（敵対・不仲の二人は恋に落ちるかわりに、嫌い合ったまま体だけの関係の後日談。2026-10-29 担当MC2） */
 (function () {
   'use strict';
   var HK = window.HK, SH = HK.SHIP = HK.SHIP || {};
@@ -292,8 +295,18 @@
         ST.sayB(S, { actors: [p, q], tag: '一夜の過ち', text: A.F(A.pk(S, att(p, T.mistake)), { a: p.name, b: q.name }) + A.F(A.pk(S, T.mistakeTail), { a: p.name, b: q.name }), why: p.name + 'は昨夜のことを過ちだと考えた（気質：' + (HK.PERSONA && HK.PERSONA[per(p)] ? HK.PERSONA[per(p)].label : per(p)) + '・CP・慎重さ）' }, p.name + 'は' + q.name + 'との夜を過ちだと考えた');
         return;
       }
-      /* 恋に落ちる */
-      if (!x.fell[p.i] && !x.mis[p.i] && (!HK.canLove || (HK.canLove(p, q) && HK.canLove(q, p))) && rng() < fallP(p, w, x.n)) {
+      /* 恋に落ちる：恋愛の可否（両方向）・避けている人（HK.Avoid）・敵対や不仲の二人は、free-sex.js の HK.FreeSex.fallOk で止める（2026-10-29 担当MC2）。
+         敵対・不仲の二人は恋ではなく「嫌いなのに」「体だけ」の後日談（HK.FreeSex.afterHost。一人一度） */
+      var FS = HK.FreeSex, fok = FS && FS.fallOk ? FS.fallOk(S, p, q) : (!HK.canLove || (HK.canLove(p, q) && HK.canLove(q, p)));
+      if (!fok) {
+        x.host = x.host || {};
+        if (!x.host[p.i] && !x.fell[p.i] && !x.mis[p.i] && FS && FS.afterHost && FS.kind && FS.kind(S, p, q) === 'host' && rng() < fallP(p, w, x.n) + 0.2) {
+          x.host[p.i] = 1;
+          ST.say(S, { actors: [p, q], tag: '嫌いなのに', text: FS.afterHost(S, p, q), why: q.name + 'との夜のあとも、' + p.name + 'の気持ちは変わらない（敵対・不仲のまま、体だけの関係' + (HK.Avoid && HK.Avoid.of(S, p, q) ? '。' + HK.Avoid.why(S, p, q) : '') + '）', mag: 14 });
+        }
+        return;
+      }
+      if (!x.fell[p.i] && !x.mis[p.i] && rng() < fallP(p, w, x.n)) {
         x.fell[p.i] = S.m || 1;
         A.setRel(S, p, q, 0.12);
         var o = ST.say(S, { actors: [p, q], tag: '恋に落ちる', text: A.F(A.pk(S, att(p, T.fall)), { a: p.name, b: q.name }), why: q.name + 'との夜をきっかけに、' + p.name + 'は恋に落ちた（' + (x.n >= 2 ? x.n + '度目の夜' : '初めての夜') + '）', mag: 26 });
@@ -318,17 +331,23 @@
         var w = A.bond(S, a, b), lv = A.lover(S, a, b), x = (S.nt || {})[A.rk(a, b)];
         /* 恋人の夜は、恋人の記録（S.lovers）にある二人だけ。恋人でない深い仲の二人の初めての夜は、勢いの夜の文が合わないので起こさない */
         var tier = lv ? 'love' : x && x.n >= 1 ? 'again' : 'casual';
-        if (tier === 'casual' && w >= 0.6) return;
+        /* 「恋愛：なし」の二人・敵対や不仲の二人（free-sex.js の HK.FreeSex.lust。2026-10-28 担当MC）は、体だけの夜（導入に「恋人にはならない」一文）なので、深い仲でも勢いの夜にしてよい */
+        var lustP = tier === 'casual' && !!(HK.FreeSex && HK.FreeSex.lust && HK.FreeSex.lust(S, a, b));
+        if (tier === 'casual' && w >= 0.6 && !lustP) return;
         if (tier === 'again' && x.ref >= 2 && w < 0.55) return;
-        if (tier === 'casual' && !(w > 0.25 || (w > -0.25 && rng() < lowP))) return;
-        cand.push({ a: a, b: b, w: w, tier: tier, x: x });
+        /* 敵対・不仲の二人は、関係の近さが低くても止めない（表面上の嫌悪。重みは関係の近さを高め（0.8）として見て、HK.Pos.hostK で下げる。二度目の夜の重みが積み重なって、友人の 4 割を切らないように） */
+        var hostL = lustP && HK.FreeSex.kind(S, a, b) === 'host';
+        if (tier === 'casual' && !(w > 0.25 || hostL || (w > -0.25 && rng() < lowP))) return;
+        cand.push({ a: a, b: b, w: w, tier: tier, x: x, hostL: hostL });
       });
     });
     if (!cand.length) return;
     /* 「誰とでも可」の人と固定外の相手・恋愛対象「なし」の人（HK.State.freeSex。free-sex.js）：体だけの夜。固定した恋人が船にいれば ×0.3。
        性欲の強さ（HK.Pos.libMul。既定は 1）は、どの組の重みにも掛ける */
-    var c = HK.weighted(rng, cand, function (o) { return (o.tier === 'love' ? 1.3 + o.w : o.tier === 'again' ? 1.5 + Math.max(0, o.w) * 0.5 : 0.3 + Math.max(0, o.w) * 0.6) * (HK.State.freeSex && HK.State.freeSex(S, o.a, o.b) ? HK.FreeSex.factor(S, o.a, o.b, true) : 1) * (HK.Pos.libMul ? HK.Pos.libMul([o.a, o.b]) : 1); });
+    var c = HK.weighted(rng, cand, function (o) { return (o.tier === 'love' ? 1.3 + o.w : o.tier === 'again' ? 1.5 + Math.max(0, o.w) * 0.5 : 0.3 + Math.max(0, o.hostL ? Math.max(o.w, 0.8) : o.w) * 0.6) * (HK.State.freeSex && HK.State.freeSex(S, o.a, o.b) ? HK.FreeSex.factor(S, o.a, o.b, true) : 1) * (HK.Pos.libMul ? HK.Pos.libMul([o.a, o.b]) : 1); });
     var a = c.a, b = c.b, tier = c.tier, x = c.x;
+    /* 理性で踏みとどまる（pos.js の HK.Pos.reasonP：理性がふつうより高い二人は 0.61〜1 の見込みでしか進まない。酒・媚薬・もう夜を過ごした、で効きが弱まる。2026-10-28 担当MC） */
+    if (HK.Pos.reasonP && rng() > HK.Pos.reasonP(S, a, b)) return;
     var free = tier !== 'love' && !!(HK.State.freeSex && HK.State.freeSex(S, a, b));
     /* 誘う側：過ちだと考えていない人、FC の高い人 */
     if (x && (x.mis[a.i] && !x.mis[b.i] || (!x.mis[b.i] && tr(b, 'fc') > tr(a, 'fc')))) { var tmp = a; a = b; b = tmp; }

@@ -65,7 +65,7 @@
       new: L('翌朝、{a}と{b}は互いの顔をまともに見られなかった。それでも、隣に座る距離は昨日より近かった。|朝、{b}は「……昨夜のこと、なかったことにはしないから」と言った。{a}は、黙って頷いた。|{a}は水を汲みながら、何度も{b}の方を振り返った。{b}が小さく手を振ると、{a}は慌てて目を逸らした。')
     }
   };
-  var REL_NAME = { free: '体だけの関係（恋愛相手は別の人に固定・性行為の相手は「誰とでも可」）', freeNone: '体だけの関係（恋愛対象「なし」の人。恋愛にはならない）', lover: '恋人', fwb: 'セフレ', lock: '{a}が想い続けた相手', yan: '{a}の執着（相手も受け入れている）', ex: '元恋人との再燃', crush: '{a}の片想いが報われた', pining: '両片想いが通じた', bridge: '吊り橋（恐怖を、恋と取り違えた夜）', rival: '張り合ってきた二人の吊り橋', mentor: '師弟の一線', osana: '幼馴染', new: '惹かれ合った二人' };
+  var REL_NAME = { free: '体だけの関係（恋愛相手は別の人に固定・性行為の相手は「誰とでも可」）', freeNone: '体だけの関係（恋愛対象「なし」の人。恋愛にはならない）', freeOff: '体だけの関係（関係の「恋愛：なし」の二人。恋人にはならない）', freeHost: '体だけの関係（敵対・不仲の二人。表面上は嫌い合っている）', lover: '恋人', fwb: 'セフレ', lock: '{a}が想い続けた相手', yan: '{a}の執着（相手も受け入れている）', ex: '元恋人との再燃', crush: '{a}の片想いが報われた', pining: '両片想いが通じた', bridge: '吊り橋（恐怖を、恋と取り違えた夜）', rival: '張り合ってきた二人の吊り橋', mentor: '師弟の一線', osana: '幼馴染', new: '惹かれ合った二人' };
 
   /* ======================= 「いつ死ぬか分からないから、今」：誘う側（{a}）の一言（態度9種） ======================= */
   var NOW = {
@@ -397,17 +397,25 @@
     var ra = ctx.R(a, b), rb = ctx.R(b, a);
     return a.stress + b.stress >= (sc === 'island' ? 15 : 50) && ra.att >= 5 && rb.att >= 5 && ra.aff > -10 && rb.aff > -10 && ra.ten < 45 && rb.ten < 45;
   }
+  /* 理由の欄の体だけの関係の名前（free-sex.js の HK.FreeSex.kind：'off'＝「恋愛：なし」の二人・'host'＝敵対・不仲の二人。2026-10-29 担当MC2：どの組も「誰とでも可」の説明になっていた） */
+  function freeName(ctx, r) {
+    var kd = HK.FreeSex && HK.FreeSex.kind ? HK.FreeSex.kind(ctx, r.a, r.b) : '';
+    return kd === 'off' ? 'freeOff' : kd === 'host' ? 'freeHost' : kd === 'none' || r.a.likes === 'none' || r.b.likes === 'none' ? 'freeNone' : 'free';
+  }
   /* 惹かれの閾値（危機の夜は10下がる＝吊り橋） */
   var TH = { free: 0, bridge: 0, lover: 28, fwb: 28, lock: 36, yan: 30, ex: 32, crush: 34, pining: 32, rival: 36, mentor: 40, osana: 38, new: 52 };
   function ready(ctx, r, crisis) {
-    var a = r.a, b = r.b, ra = ctx.R(a, b), rb = ctx.R(b, a), th = TH[r.k] - (crisis ? 10 : 0);
+    /* 惹かれの閾値は、性欲＋衝動性（pos.js の HK.Pos.sexDrive。理性・酔い・火照り込み）が強いほど下がる（dv：最大 24。2026-10-28 担当MC：性的な出来事は性欲・衝動性で判定し、惹かれだけで止めない） */
+    var a = r.a, b = r.b, ra = ctx.R(a, b), rb = ctx.R(b, a), dv = r.k !== 'free' && HK.Pos && HK.Pos.sexDrive ? HK.Pos.sexDrive(ctx, a, b) * 24 : 0, th = TH[r.k] - (crisis ? 10 : 0) - dv;
     /* 体だけの関係：惹かれ（恋愛の手前で止めてある）ではなく、嫌い合っていないこと・張り詰めていないことと、焦り（危機の夜は焦りがなくても） */
-    if (r.k === 'free') return ra.aff > -10 && rb.aff > -10 && ra.ten < 50 && rb.ten < 50 && (crisis || a.stress + b.stress >= 20);
+    /* 敵対・不仲の二人（free-sex.js の HK.FreeSex.kind が 'host'）は、嫌い合っていても止めない（表面上の嫌悪。重みは HK.FreeSex.factor の HK.Pos.hostK で下げる。2026-10-28 担当MC） */
+    if (r.k === 'free') return ((ra.aff > -10 && rb.aff > -10 && ra.ten < 50 && rb.ten < 50) || (HK.FreeSex && HK.FreeSex.kind(ctx, a, b) === 'host')) && (crisis || a.stress + b.stress >= 20);
     if (r.k === 'crush') return ra.att > th + 10 && rb.att > th;
     if (r.k === 'yan') return rb.att > th;
     if (!(ra.att > th && rb.att > th)) return false;
     if (r.k === 'mentor') return ra.trust > 25 || rb.trust > 25;
-    if (r.k === 'new') return ra.aff > (crisis ? 10 : 22) && rb.aff > (crisis ? 10 : 22);
+    /* 知り合ったばかりの二人の好意の壁も、性欲＋衝動性で半分まで下がる */
+    if (r.k === 'new') return ra.aff > (crisis ? 10 : 22) - dv / 2 && rb.aff > (crisis ? 10 : 22) - dv / 2;
     return true;
   }
 
@@ -615,14 +623,15 @@
   function why(ctx, st, r, extra, sc) {
     r = { a: r.a, b: r.b, k: r.k, sc: sc };
     var v = { a: r.a.name, b: r.b.name, d: st.d ? st.d.name : '', h: st.h ? st.h.name : '' };
-    return fill((r.sc === 'island' && SIT_NAME_I[st.id]) || SIT_NAME[st.id], v) + '（' + fill(REL_NAME[r.k === 'free' && (r.a.likes === 'none' || r.b.likes === 'none') ? 'freeNone' : r.k], v) + '／惹かれ ' + Math.round(ctx.R(r.a, r.b).att) + '・' + Math.round(ctx.R(r.b, r.a).att) + '／焦り ' + Math.round(r.a.stress) + '・' + Math.round(r.b.stress) + (extra || '') + '）';
+    return fill((r.sc === 'island' && SIT_NAME_I[st.id]) || SIT_NAME[st.id], v) + '（' + fill(REL_NAME[r.k === 'free' ? freeName(ctx, r) : r.k], v) + '／惹かれ ' + Math.round(ctx.R(r.a, r.b).att) + '・' + Math.round(ctx.R(r.b, r.a).att) + '／焦り ' + Math.round(r.a.stress) + '・' + Math.round(r.b.stress) + (extra || '') + '）';
   }
 
   /* ======================= 無人島 ======================= */
   /* 2026-10-27（分割読み込みの第3段）：箱庭に足すのは、その箱庭の本体（scen-island・scen-zombie）が有るとき（HK.atScen）。足す順は HK.addTo で元のファイルの順に保つ */
   if (RN.I) HK.atScen('island', function (isl) {
     HK.addTo(isl.events, {
-      id: 'ir18_sit', label: '吊り橋の気持ちで迎える島の夜', cat: 'romance', sex: true, scope: 'pair', r18: true,
+      /* free：体だけの関係（relOf の 'free'）を中で扱う（engine.js の romanceOk が「恋愛：なし」の二人を恋愛の可否で止めない。2026-10-28 担当MC） */
+      id: 'ir18_sit', label: '吊り橋の気持ちで迎える島の夜', cat: 'romance', sex: true, free: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (!baseOk(ctx, a, b, 2)) return false;
         return cands(ctx, a, b, 'island').list.length > 0;
@@ -645,7 +654,7 @@
   if (RN.ZT) HK.atScen('zombie', function () {
     if (!(Z && Z.scen && Z.loveLv)) return;
     HK.addTo(Z.scen.events, {
-      id: 'zr18_sit', label: '極限の街で求め合う夜', cat: 'romance', sex: true, scope: 'pair', r18: true,
+      id: 'zr18_sit', label: '極限の街で求め合う夜', cat: 'romance', sex: true, free: true, scope: 'pair', r18: true,
       when: function (ctx, a, b) {
         if (Z.loveLv(ctx) === 'off' || !baseOk(ctx, a, b, 4)) return false;
         if (a.z.bitten || b.z.bitten || a.z.alone || b.z.alone) return false;

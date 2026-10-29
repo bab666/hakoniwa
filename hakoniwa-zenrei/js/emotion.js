@@ -233,7 +233,8 @@
   function evBump(ctx, cat, A, text) {
     var a = A[0], b = A[1];
     if (!a) return;
-    if (cat === 'romance') { X.bump(ctx, a, { joy: 12 }); if (b) X.bump(ctx, b, { joy: 10 }); }
+    /* 恋愛の出来事のあとは、体の熱（火照り lust）も少し上がる（R18版。性的な場面の文なら下の EXPL でさらに上がる。2026-10-28 担当MC） */
+    if (cat === 'romance') { X.bump(ctx, a, safe() ? { joy: 12 } : { joy: 12, lust: 8 }); if (b) X.bump(ctx, b, safe() ? { joy: 10 } : { joy: 10, lust: 8 }); }
     else if (cat === 'bond') { X.bump(ctx, a, { joy: 6 }); if (b) X.bump(ctx, b, { joy: 6 }); }
     else if (cat === 'help') { X.bump(ctx, a, { joy: 3 }); if (b) X.bump(ctx, b, { joy: 6, fear: -6 }); }
     else if (cat === 'conflict') { X.bump(ctx, a, { anger: 10 }); if (b) X.bump(ctx, b, { anger: 8, fear: 3 }); }
@@ -348,7 +349,7 @@
       }
     }
     var tag = o.tag || '', B = o.actors.slice(1).map(function (i) { return P[i]; }).filter(Boolean);
-    if (T_LOVE.test(tag)) { [a].concat(B).forEach(function (p) { X.bump(S, p, kind === 'climax' && !safe() ? { lust: 22, joy: 6 } : { joy: 10 }); }); }
+    if (T_LOVE.test(tag)) { [a].concat(B).forEach(function (p) { X.bump(S, p, kind === 'climax' && !safe() ? { lust: 22, joy: 6 } : safe() ? { joy: 10 } : { joy: 10, lust: 8 }); }); }
     else if (T_DANGER.test(tag)) { [a].concat(B).forEach(function (p) { X.bump(S, p, { fear: 14 }); }); }
     else if (T_CONF.test(tag)) { X.bump(S, a, { anger: 10 }); B.forEach(function (p) { X.bump(S, p, { anger: 6, fear: 6 }); }); }
     else if (T_HELP.test(tag)) { [a].concat(B).forEach(function (p) { X.bump(S, p, { joy: 5 }); }); }

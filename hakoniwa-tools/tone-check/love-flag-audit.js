@@ -4,7 +4,9 @@
      環境値のうち恋愛・夜の起こりやすさは最大にする
    ・なしの回（4回に3回）：0-1 と 2-3 に、友人／敵対／不仲／執着（ヤンデレ）／主従／擬似親子（家族で、自動なら恋愛あり）／恋人 のどれかを「恋愛：なし」で付ける
      見るもの（その二人について。どれも0件であること）
-       N1 二人だけの恋愛の出来事（cat が romance の出来事で、登場人物がその二人だけ）
+       N1 二人だけの恋愛の出来事（cat が romance の出来事で、登場人物がその二人だけ）。
+          性的な場面の記録（e.lewd）と、体だけの関係の理由（free-sex.js の HK.FreeSex.why「体だけの関係」）の記録は数えない
+          （2026-10-28 担当MC：「恋愛：なし」は恋愛だけを止め、性的な出来事は性欲・衝動性・理性で起きる。性的な出来事は恋愛ではない）
        N2 二人の名前だけが出る文で、告白・恋人になる・両想いになる
        N3 結末の関係（エンジン型の pairs、物語型の relmap）が恋人・両想い・片想い（cls が love・pine）
        N4 惹かれの上昇（エンジン型の history：どちらかの向きの惹かれが、最初の記録より上がった）
@@ -45,7 +47,7 @@ const { openBuild } = require('./lib');
       const note = (k, msg) => { o[k]++; if (WHY && ex && ex.length < 8) ex.push(tag + ' ' + k + ' ' + msg); };
       (res.log || []).forEach(e => {
         if (!e || typeof e.text !== 'string' || e.skipped) return;
-        if (e.cat === 'romance' && Array.isArray(e.actors) && e.actors.length === 2 && inP(e.actors[0]) && inP(e.actors[1]) && e.actors[0] !== e.actors[1]) note('N1', (e.label || e.tag || '') + ' ｜ ' + e.text.slice(0, 100));
+        if (e.cat === 'romance' && !e.lewd && !/体だけの関係/.test(e.why || '') && Array.isArray(e.actors) && e.actors.length === 2 && inP(e.actors[0]) && inP(e.actors[1]) && e.actors[0] !== e.actors[1]) note('N1', (e.label || e.tag || '') + ' ｜ ' + e.text.slice(0, 100));
         e.text.split(/(?<=[。！？\n])/).forEach(sn => {
           const ns = []; C.forEach((nm, i) => { if (nm && sn.indexOf(nm) >= 0) ns.push(i); });
           if (ns.length !== 2 || !inP(ns[0]) || !inP(ns[1])) return;

@@ -413,7 +413,8 @@
   /* 体の関係の出来事か（出来事の定義の印 sex:true）。say・act2 に渡された印がなければ、いま act() が起こしている出来事（ctx._ev）の印を見る */
   /* force：合意のない展開の切羽詰まった場面の印（pos.js の HK.Pos.forceOpen。恋愛対象「なし」の人も体の場面に入れる） */
   /* trioPairs：三人以上の場面（3P）で直接の行為をする組（room-trio.js など。romanceOk がその組だけを体の関係として見る。2026-10-27 担当HN） */
-  function sexEv(ctx, o) { return { sex: o && o.sex != null ? !!o.sex : !!(ctx._ev && ctx._ev.sex), force: !!(o && o.force != null ? o.force : ctx._ev && ctx._ev.force), trioPairs: o && o.trioPairs || null }; }
+  /* free：体だけの場面の経路（free-sex.js の HK.State.freeSex）を出来事の中で扱う印（2026-10-28 担当MC）。この印のある体の出来事だけ、「恋愛：なし」の二人でも romanceOk を通す */
+  function sexEv(ctx, o) { return { sex: o && o.sex != null ? !!o.sex : !!(ctx._ev && ctx._ev.sex), force: !!(o && o.force != null ? o.force : ctx._ev && ctx._ev.force), trioPairs: o && o.trioPairs || null, free: !!(o && o.free != null ? o.free : ctx._ev && ctx._ev.free) }; }
   HK.sexEv = sexEv;
   Ctx.prototype.say = function (o) {
     if (o.actors && o.actors.length >= 2 && this.chars && this.chars.some(function (c) { return HK.lockAny(c); })) sexOnlyFix(this, o.actors);
@@ -466,8 +467,14 @@
     if (ev && ev.sex) { for (var s0 = 0; s0 < L.length; s0++) { if (L[s0].noR18) return false; for (var s1 = s0 + 1; s1 < L.length; s1++) if (direct(L[s0], L[s1]) && HK.sexBlocked(L[s0], L[s1])) return false; } }
     /* 恋愛なしの家族は、恋愛が中心の箱庭（romanceCore）でも恋愛の出来事を起こさない */
     if (a && b && this.pair(a, b).kin) return false;
+    /* 体だけの場面の組（free-sex.js の HK.State.freeSex：「恋愛：なし」の二人・敵対や不仲の二人・誰とでも可の人と固定外の相手・恋愛対象「なし」の人）の
+       体の関係の出来事のうち、体だけの経路を自分で扱う出来事（定義か結果の印 free。恋愛が前提の印 ev.love のないもの）は、恋愛の可否（HK.tieLoveNoPair・HK.canLove）を門にしない。
+       印の無い体の出来事（恋人の夜など恋愛が前提の場面）は、これまでどおり恋愛の可否で止める。
+       可否は HK.Pos.okSex（HK.State.pairSex：受け攻め・恋愛対象・R18に参加しない・性欲「なし」・固定）が freeSex の中で見る（2026-10-28 担当MC。
+       利用者の指示「性的イベントは性欲＋衝動性で判定し、恋愛感情が発生を防がないように」） */
+    var body = !!(ev && ev.sex && ev.free && !ev.love && a && b && HK.State.freeSex && HK.State.freeSex(this, a, b));
     /* 関係で恋愛しない二人（「恋愛：なし」・自動で「なし」。ties.js の HK.tiesLove）も、恋愛が中心の箱庭・恋人の関係でも恋愛の出来事を起こさない */
-    if (a && b && HK.tieLoveNoPair(this, a, b)) return false;
+    if (a && b && !body && HK.tieLoveNoPair(this, a, b)) return false;
     /* 歪んだ関係から離れる決心をした二人（tie-abuse.js の abFree）は、もう恋愛の出来事を起こさない。
        別れたばかりの二人（brokeAt）も、しばらく（8回）は恋愛の出来事を起こさない（すぐに元に戻らないように） */
     if (a && b) { var pfr = this.pair(a, b); if (pfr.abFree) return false; if (pfr.brokeAt != null && this.stepIndex - pfr.brokeAt < 8) return false; if (pfr.fiBroken != null) return false; }
@@ -476,6 +483,7 @@
     if (this.scen && this.scen.romanceCore) return true;
     if (a && b && this.pair(a, b).couple) return true;
     if (this.env && this.env.romance === 0) return false;
+    if (body) return true;
     if (a && b && HK.lockSexOnly(a, b)) { var a0 = Object.assign({}, a, { lock: null, locks: null }), b0 = Object.assign({}, b, { lock: null, locks: null }); return HK.canLove(a0, b0) && HK.canLove(b0, a0); }
     if (a && b) return HK.canLove(a, b) && HK.canLove(b, a);
     return !(a && a.likes === 'none');
@@ -844,10 +852,12 @@
       if (!(w > 0)) return;
       w *= ctx.bias(a, e.cat);
       if (e.cat === 'combat' || e.cat === 'kill' || e.cat === 'betray') w *= HK.Dark.f(ctx, e.dk || (e.cat === 'betray' ? 'spite' : 'kill'));   /* 展開の重さ（mood-dial.js） */
-      if (bb && HK.Ties) w *= HK.Ties.bias(ctx, a, bb, e.cat);
+      if (bb && HK.Ties) w *= HK.Ties.bias(ctx, a, bb, e.cat, e);
       if (bb && e.cat === 'romance' && (a.honmei != null || bb.honmei != null)) w *= HK.honmeiFactor(ctx, a, bb);
       /* 性欲の強さ（pos.js の HK.Pos.libMul。R18版）：合意ありの体の出来事の重みに二人の倍率（既定は 1） */
       if (e.sex && !e.force && HK.Pos && HK.Pos.libMul) w *= HK.Pos.libMul(bb ? [a, bb] : [a]);
+      /* 理性（pos.js の HK.Pos.reasonK。R18版）：合意ありの体の出来事は、二人の理性が高いほど起きにくい（×0.55〜1.25。止めはしない。酒・媚薬・条件などで理性の効きは弱まる。2026-10-28） */
+      if (e.sex && !e.force && bb && HK.Pos && HK.Pos.reasonK && !HK.SAFE_ON) w *= HK.Pos.reasonK(ctx, a, bb);
       if (HK.Emo) w *= HK.Emo.weight(ctx, a, e);   /* 気分（emotion.js）：悲しみ→恋愛を控える、怒り→対立など */
       if (bb && e.cat === 'romance' && HK.Dark.on(ctx) !== 'normal' && HK.Dark.cheat(ctx, a, bb)) w *= HK.Dark.f(ctx, 'cheat');   /* 展開の重さ：恋人のいる人の、ほかの人との恋愛・夜 */
       if (w <= 0) return;
@@ -889,7 +899,7 @@
     var sex = res.sex != null ? !!res.sex : !!pick.e.sex;
     /* 出来事の側で恋愛に変わったときも、恋愛が起きない組なら書かない */
     var force = res.force != null ? !!res.force : !!pick.e.force;
-    if (cat === 'romance' && !ctx.romanceOk(pick.b ? [a, pick.b] : [a], { sex: sex, force: force, trioPairs: res.trioPairs || null })) return;
+    if (cat === 'romance' && !ctx.romanceOk(pick.b ? [a, pick.b] : [a], { sex: sex, force: force, trioPairs: res.trioPairs || null, free: res.free != null ? !!res.free : !!pick.e.free })) return;
     if (pick.b && ctx._apathy && HK.Ties.apathyBlock(ctx, a, pick.b, { cat: cat, id: pick.e.id, why: typeof res.why === 'string' ? res.why : '' })) return;
     var actors = [a];
     if (pick.b) actors.push(pick.b);

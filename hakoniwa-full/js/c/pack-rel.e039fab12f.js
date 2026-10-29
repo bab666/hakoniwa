@@ -6194,7 +6194,7 @@ if(!RK)return;
 var L=RK.L,fill=RK.fill;
 function order(a,b){return HK.Pos?HK.Pos.order(a,b,[a,b]):[a,b];}
 function okPair(ctx,a,b){
-if((a.likes==='none'||b.likes==='none')&&HK.State.freeSex&&HK.State.freeSex(ctx,a,b))return!RK.noRomance(ctx,a,b);
+if((a.likes==='none'||b.likes==='none'||(HK.FreeSex&&HK.FreeSex.lust&&HK.FreeSex.lust(ctx,a,b)))&&HK.State.freeSex&&HK.State.freeSex(ctx,a,b))return!RK.noRomance(ctx,a,b);
 if(HK.lockSexOnly&&HK.lockSexOnly(a,b)){var a0=Object.assign({},a,{lock:null,locks:null}),b0=Object.assign({},b,{lock:null,locks:null});return HK.canLove(a0,b0)&&HK.canLove(b0,a0)&& !RK.noRomance(ctx,a,b);}
 return HK.canLove(a,b)&&HK.canLove(b,a)&& !RK.noRomance(ctx,a,b)&& !HK.lockBlocks(a,b);
 }
@@ -6462,7 +6462,7 @@ free:L('朝、{a}は先に起きて身支度を整えた。{b}も、昨夜のこ
 new:L('翌朝、{a}と{b}は互いの顔をまともに見られなかった。それでも、隣に座る距離は昨日より近かった。|朝、{b}は「……昨夜のこと、なかったことにはしないから」と言った。{a}は、黙って頷いた。|{a}は水を汲みながら、何度も{b}の方を振り返った。{b}が小さく手を振ると、{a}は慌てて目を逸らした。')
 }
 };
-var REL_NAME={free:'体だけの関係（恋愛相手は別の人に固定・性行為の相手は「誰とでも可」）',freeNone:'体だけの関係（恋愛対象「なし」の人。恋愛にはならない）',lover:'恋人',fwb:'セフレ',lock:'{a}が想い続けた相手',yan:'{a}の執着（相手も受け入れている）',ex:'元恋人との再燃',crush:'{a}の片想いが報われた',pining:'両片想いが通じた',bridge:'吊り橋（恐怖を、恋と取り違えた夜）',rival:'張り合ってきた二人の吊り橋',mentor:'師弟の一線',osana:'幼馴染',new:'惹かれ合った二人'};
+var REL_NAME={free:'体だけの関係（恋愛相手は別の人に固定・性行為の相手は「誰とでも可」）',freeNone:'体だけの関係（恋愛対象「なし」の人。恋愛にはならない）',freeOff:'体だけの関係（関係の「恋愛：なし」の二人。恋人にはならない）',freeHost:'体だけの関係（敵対・不仲の二人。表面上は嫌い合っている）',lover:'恋人',fwb:'セフレ',lock:'{a}が想い続けた相手',yan:'{a}の執着（相手も受け入れている）',ex:'元恋人との再燃',crush:'{a}の片想いが報われた',pining:'両片想いが通じた',bridge:'吊り橋（恐怖を、恋と取り違えた夜）',rival:'張り合ってきた二人の吊り橋',mentor:'師弟の一線',osana:'幼馴染',new:'惹かれ合った二人'};
 var NOW={
 proud:L('「明日、どっちが生きてるかなんて分からない。……だから、今だ」{a}は目を逸らさずに言った。|{a}は唇を噛んだ。「後悔しながら死ぬのだけは、ごめんだ」|「……今さら遠慮するな。今夜を逃したら、次はないかもしれない」{a}の声は低く、少しだけ震えていた。'),
 stern:L('「冷静に考えた。……明日の保証はない。だから、今夜は君と過ごしたい」{a}はそう言った。|{a}は長く黙ったあとで、ようやく口を開いた。「先延ばしにする理由が、もう見つからない」|「規律も段取りも、今夜は要らない」{a}はそう言って、{b}の手を握った。'),
@@ -6763,15 +6763,19 @@ function bridgeReady(ctx,a,b,sc){
 var ra=ctx.R(a,b),rb=ctx.R(b,a);
 return a.stress+b.stress>=(sc==='island'?15:50)&&ra.att>=5&&rb.att>=5&&ra.aff> -10&&rb.aff> -10&&ra.ten<45&&rb.ten<45;
 }
+function freeName(ctx,r){
+var kd=HK.FreeSex&&HK.FreeSex.kind?HK.FreeSex.kind(ctx,r.a,r.b):'';
+return kd==='off'?'freeOff':kd==='host'?'freeHost':kd==='none'||r.a.likes==='none'||r.b.likes==='none'?'freeNone':'free';
+}
 var TH={free:0,bridge:0,lover:28,fwb:28,lock:36,yan:30,ex:32,crush:34,pining:32,rival:36,mentor:40,osana:38,new:52};
 function ready(ctx,r,crisis){
-var a=r.a,b=r.b,ra=ctx.R(a,b),rb=ctx.R(b,a),th=TH[r.k]-(crisis?10:0);
-if(r.k==='free')return ra.aff> -10&&rb.aff> -10&&ra.ten<50&&rb.ten<50&&(crisis||a.stress+b.stress>=20);
+var a=r.a,b=r.b,ra=ctx.R(a,b),rb=ctx.R(b,a),dv=r.k!=='free'&&HK.Pos&&HK.Pos.sexDrive?HK.Pos.sexDrive(ctx,a,b)*24:0,th=TH[r.k]-(crisis?10:0)-dv;
+if(r.k==='free')return((ra.aff> -10&&rb.aff> -10&&ra.ten<50&&rb.ten<50)||(HK.FreeSex&&HK.FreeSex.kind(ctx,a,b)==='host'))&&(crisis||a.stress+b.stress>=20);
 if(r.k==='crush')return ra.att>th+10&&rb.att>th;
 if(r.k==='yan')return rb.att>th;
 if(!(ra.att>th&&rb.att>th))return false;
 if(r.k==='mentor')return ra.trust>25||rb.trust>25;
-if(r.k==='new')return ra.aff>(crisis?10:22)&&rb.aff>(crisis?10:22);
+if(r.k==='new')return ra.aff>(crisis?10:22)-dv/2&&rb.aff>(crisis?10:22)-dv/2;
 return true;
 }
 function recent(ctx,a,b,re,back){
@@ -6956,11 +6960,11 @@ return pf._sitC;
 function why(ctx,st,r,extra,sc){
 r={a:r.a,b:r.b,k:r.k,sc:sc};
 var v={a:r.a.name,b:r.b.name,d:st.d?st.d.name:'',h:st.h?st.h.name:''};
-return fill((r.sc==='island'&&SIT_NAME_I[st.id])||SIT_NAME[st.id],v)+'（'+fill(REL_NAME[r.k==='free'&&(r.a.likes==='none'||r.b.likes==='none')?'freeNone':r.k],v)+'／惹かれ '+Math.round(ctx.R(r.a,r.b).att)+'・'+Math.round(ctx.R(r.b,r.a).att)+'／焦り '+Math.round(r.a.stress)+'・'+Math.round(r.b.stress)+(extra||'')+'）';
+return fill((r.sc==='island'&&SIT_NAME_I[st.id])||SIT_NAME[st.id],v)+'（'+fill(REL_NAME[r.k==='free'?freeName(ctx,r):r.k],v)+'／惹かれ '+Math.round(ctx.R(r.a,r.b).att)+'・'+Math.round(ctx.R(r.b,r.a).att)+'／焦り '+Math.round(r.a.stress)+'・'+Math.round(r.b.stress)+(extra||'')+'）';
 }
 if(RN.I)HK.atScen('island',function(isl){
 HK.addTo(isl.events,{
-id:'ir18_sit',label:'吊り橋の気持ちで迎える島の夜',cat:'romance',sex:true,scope:'pair',r18:true,
+id:'ir18_sit',label:'吊り橋の気持ちで迎える島の夜',cat:'romance',sex:true,free:true,scope:'pair',r18:true,
 when:function(ctx,a,b){
 if(!baseOk(ctx,a,b,2))return false;
 return cands(ctx,a,b,'island').list.length>0;
@@ -6981,7 +6985,7 @@ var Z=HK.ZB;
 if(RN.ZT)HK.atScen('zombie',function(){
 if(!(Z&&Z.scen&&Z.loveLv))return;
 HK.addTo(Z.scen.events,{
-id:'zr18_sit',label:'極限の街で求め合う夜',cat:'romance',sex:true,scope:'pair',r18:true,
+id:'zr18_sit',label:'極限の街で求め合う夜',cat:'romance',sex:true,free:true,scope:'pair',r18:true,
 when:function(ctx,a,b){
 if(Z.loveLv(ctx)==='off'|| !baseOk(ctx,a,b,4))return false;
 if(a.z.bitten||b.z.bitten||a.z.alone||b.z.alone)return false;
@@ -9646,4 +9650,4 @@ RB0.EXTRA=RB0.EXTRA||[];
 HK.addTo(RB0.EXTRA,storyHook);
 })();
 });
-HK.Load.done('pack-rel', 'c59ac5fa11', 1);
+HK.Load.done('pack-rel', 'e039fab12f', 1);

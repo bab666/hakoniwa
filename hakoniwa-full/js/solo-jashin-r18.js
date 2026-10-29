@@ -739,7 +739,8 @@
         if (rest.length && rng() < 0.35 + lv * 0.4) dose(S, live, rest[Math.floor(rng() * rest.length)]);
       }
       if (p.lastNight != null && h - p.lastNight < 10) return false;
-      if (rng() > lv * (p.aphro ? 0.32 : 0.12)) return false;
+      /* 理性（pos.js の HK.Pos.reasonK。一人ぶん：理性が高い人ほど夜に流されにくい ×0.55〜1.25。媚薬が回ると効きが弱まる。2026-10-28 担当MC） */
+      if (rng() > lv * (p.aphro ? 0.32 : 0.12) * (HK.Pos && HK.Pos.reasonK ? HK.Pos.reasonK(S, p, p) : 1)) return false;
       p.lastNight = h; p.cnt.r18 = (p.cnt.r18 || 0) + 1;
       /* 体だけの関係の組（「誰とでも可」の人と固定外の相手。HK.State.freeSex。free-sex.js）も、参加者どうしの夜の相手になる（恋愛の条件 HK.canLove は見ない） */
       /* 部屋を訪ねて押し倒すのは攻め（HK.Pos.order の一人目）。避けている人が攻めに固定される組・お互いに避けている組は相手にしない（avoid-kit.js。2026-10-28） */

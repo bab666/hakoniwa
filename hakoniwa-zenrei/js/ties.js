@@ -647,6 +647,22 @@
       [[A, B], [B, A]].forEach(function (q) { var l = q[0].loveOff = Array.isArray(q[0].loveOff) ? q[0].loveOff : []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); });
     });
   };
+  /* ---------- 敵対・不仲の二人の印（2026-10-28 担当MC。利用者の指示「敵対はあくまで表面上＋しづらい程度」） ----------
+     敵対（enemy）・不仲（bad）の関係の二人に、互いの hostOf（相手の番号 → 体の関係の起こりやすさの倍率 SEX_BIAS。愛憎を持つ側がいれば戻す）を付ける。
+     体の関係の判定（free-sex.js の HK.State.freeSex・pos.js の HK.Pos.hostK）が見る：敵対の二人の夜は止めず、起こりやすさだけ下げる。
+     P：番号で引ける住人、ties：関係の並び（エンジン型は HK.Ties.after、物語型は fam-kin.js の HK.kinNG が呼ぶ） */
+  HK.HOST_TIE_RE = /^(enemy|bad)$/;
+  /* 体の関係の出来事の、関係ごとの倍率（表面上の嫌悪で「しづらい」程度。愛憎が双方なら 1、片方なら 0.85 まで戻す） */
+  var SEX_BIAS = HK.SEX_TIE_BIAS = { enemy: 0.6, bad: 0.7, rival: 0.85 };
+  HK.sexTieK = function (t) { var k = t && SEX_BIAS[t.type]; if (k == null) return 1; return t.lh ? Math.max(k, t.lh === 'both' ? 1 : 0.85) : k; };
+  HK.hostMark = function (P, ties) {
+    if (!P) return;
+    (ties || []).forEach(function (t) {
+      if (!t || t.a === t.b || !HK.HOST_TIE_RE.test(t.type) || !P[t.a] || !P[t.b]) return;
+      var A = P[t.a], B = P[t.b], k = HK.sexTieK(t);
+      [[A, B], [B, A]].forEach(function (q) { var m = q[0].hostOf = q[0].hostOf && typeof q[0].hostOf === 'object' ? q[0].hostOf : {}; m[q[1].i] = Math.min(m[q[1].i] == null ? 1 : m[q[1].i], k); });
+    });
+  };
   HK.Ties = {
     /* 片想いの「両片想い」を、向きを逆にした片想い二本に開く（どちらも mutual: true）。箱庭に渡す前に一度だけ */
     expand: function (ties) {
@@ -790,6 +806,8 @@
     /* 関係をすべて当てたあとの印：無関心・恐怖の二人は互いの noLove に入れる（恋愛・夜の判定のすべてが偽になる）。
        無関心は ctx._apathy（a→b）、恐怖は ctx._fear（a→b）に覚える（engine.js の凍結・避ける重み・出来事の門）。許嫁の恋人扱いは外す */
     after: function (ctx) {
+      /* 敵対・不仲の二人の印（HK.hostMark。体の関係は止めず、起こりやすさを下げる） */
+      Object.keys(ctx.tiesAll || {}).forEach(function (k) { HK.hostMark(ctx.chars, ctx.tiesAll[k]); });
       Object.keys(ctx.tiesAll || {}).forEach(function (k) {
         /* 恋愛：なし（自動の既定を含む。HK.tiesLove）の二人は、互いの loveOff に入れる（恋愛だけを止める：engine.js の HK.canLove。写しの住人でも効くように） */
         var L0 = ctx.tiesAll[k], X0 = L0.length ? ctx.chars[L0[0].a] : null, Y0 = L0.length ? ctx.chars[L0[0].b] : null;
@@ -887,8 +905,10 @@
       return null;
     },
     /* a が b に向けて起こす行動の倍率（重ねた関係ぶん掛け合わせる） */
-    bias: function (ctx, a, b, cat) {
-      var r = 1;
+    /* ev：出来事の定義（engine.js の act が渡す）。体の関係の出来事（ev.sex で、恋愛が前提の印 ev.love のないもの）は、敵対・不仲・ライバルの恋愛の倍率の代わりに
+       SEX_BIAS を使う。体だけの経路を扱う出来事（ev.free）は「恋愛：なし」で恋愛の出来事を下げる倍率（×0.1）も掛けない（2026-10-28 担当MC） */
+    bias: function (ctx, a, b, cat, ev) {
+      var r = 1, body = cat === 'romance' && !!(ev && ev.sex && !ev.love);
       HK.Ties.all(ctx, a, b).forEach(function (t) {
         var D = T[t.type], m;
         if (D.hate) m = t.a !== a.i && t.cold && HK.HATE_BACK[t.cold] ? HK.HATE_BACK[t.cold].bias : D.bias || {};
@@ -898,8 +918,9 @@
         if (t.type === 'benefactor' && t.feel === 'guilt' && t.a !== a.i) m = HK.BENE_FEEL.guilt.biasB;
         /* 許嫁：それぞれの気持ちで恋愛の出来事の起こりやすさが変わる */
         if (t.type === 'fiance' && cat === 'romance') { var fe = HK.FIANCE_FEEL[(t.a === a.i ? t.feel : t.feelB) || 'eager']; if (fe) r *= fe.rom; if (!HK.Ties.fiLoveOk(a, b)) r *= 0.02; }
+        if (body && SEX_BIAS[t.type] != null) { r *= HK.sexTieK(t); return; }
         if (m[cat] != null) r *= cat === 'romance' && HK.tieFamLove(t) ? Math.max(m[cat], 1) : m[cat];
-        if (cat === 'romance' && (HK.tieOptNoLove(t) || t.love === 'no')) r *= 0.1;
+        if (cat === 'romance' && !(body && ev.free) && (HK.tieOptNoLove(t) || t.love === 'no')) r *= 0.1;
         /* 関係の層の選択肢（2026-10-26）：気持ちの重さ（本命は想う人の側だけ）・家族の仲・元恋人それぞれの気持ち */
         if (t.heavy && cat === 'romance' && HK.LOVE_WEIGHT[t.heavy] && (t.type !== 'honmei' || t.a === a.i)) r *= HK.LOVE_WEIGHT[t.heavy].rom || 1;
         if (t.kg && HK.KIN_GRADE[t.kg] && HK.KIN_GRADE[t.kg].bias && HK.KIN_GRADE[t.kg].bias[cat] != null) r *= HK.KIN_GRADE[t.kg].bias[cat];

@@ -2332,6 +2332,11 @@ return fill(pk(ctx,T_REG,x),x,y);
 for(k=0;k<2;k++){
 x=two[k];y=two[1-k];
 if(p.couple||p.fellBy!=null)break;
+var FS=HK.FreeSex;
+if(FS&&FS.fallOk&& !FS.fallOk(ctx,x,y)){
+if(p.hostBy==null&&FS.afterHost&&FS.kind&&FS.kind(ctx,x,y)==='host'&&rng()<(FALL[ps(x)]||0.2)+0.2){p.hostBy=x.i;p.hostNow=true;out=FS.afterHost(ctx,x,y);break;}
+continue;
+}
 if(rng()<(FALL[ps(x)]||0.2)+x.tr.ac*0.12+(60-Math.min(60,R(ctx,x,y).att))/400){
 p.fellBy=x.i;
 ctx.mod(x,y,{att:24,aff:12});
@@ -2370,7 +2375,8 @@ if(give){r.text=give+r.text;r.why=(r.why||'')+'。一度は過ちと言った'+(
 var am=aftermath(ctx,a,b,was);
 if(am){
 r.text+=(/\n\n/.test(r.text)?'\n\n':'')+am;
-r.why=(r.why||'')+(p.regret!=null?'。'+ctx.chars[p.regret].name+'は、この夜を過ちと考えた（態度・CP）':p.fellBy!=null?'。'+ctx.chars[p.fellBy].name+'は、この夜をきっかけに恋に落ちた':'');
+r.why=(r.why||'')+(p.regret!=null?'。'+ctx.chars[p.regret].name+'は、この夜を過ちと考えた（態度・CP）':p.hostNow?'。'+ctx.chars[p.hostBy].name+'は、この夜のあとも嫌い合ったまま（敵対・不仲。恋にはならず体だけの関係）':p.fellBy!=null?'。'+ctx.chars[p.fellBy].name+'は、この夜をきっかけに恋に落ちた':'');
+p.hostNow=false;
 }
 return r;
 };
@@ -3134,4 +3140,4 @@ HK.Load.toneData("keigo_bossy",{"F":[
 HK.Load.toneData("chara_down",{"F":[
 ["こんな場所で申し上げるのは不躾ですが……〈〉のことが、好きです","こんなとこで言うのもアレなんですけど……〈〉のこと、好きなんですよね",1]]});
 });
-HK.Load.done('scen-island', 'f249ad5071', 1);
+HK.Load.done('scen-island', 'a3127571b3', 1);

@@ -466,7 +466,8 @@
 
   /* 発情期・ラットのそばで */
   EV.push({
-    id: 'om_heat', label: '発情期の熱に浮かされる', cat: 'romance', sex: true, scope: 'pair', pri: true,
+    /* free：体だけの経路（HK.State.freeSex。「恋愛：なし」の二人・敵対の二人など）を heatScene の中で扱う（engine.js の romanceOk が恋愛の可否で止めない。2026-10-28 担当MC） */
+    id: 'om_heat', label: '発情期の熱に浮かされる', cat: 'romance', sex: true, free: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) { return (a.om.heat > 0 && sx(a) === 'o') || (b.om.heat > 0 && sx(b) === 'o') || (a.om.rut > 0 && sx(a) === 'a' && sx(b) === 'o'); },
     w: function (ctx, a, b) { return 1.5 + ctx.env.heat / 50 + Math.max(ctx.R(a, b).att, ctx.R(b, a).att) / 50; },
     run: function (ctx, a, b) { return heatScene(ctx, a, b); }
@@ -555,9 +556,10 @@
 
   /* 発情期でなくても、勢いで一線を越える夜（恋人にならないまま続くこともある） */
   EV.push({
-    id: 'om_night', cat: 'romance', sex: true, scope: 'pair',
+    id: 'om_night', cat: 'romance', sex: true, free: true, scope: 'pair',
     /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex）は、恋愛の条件（HK.canLove・惹かれ・恋人のいない人どうし）を外す（番のいる人は除く） */
-    when: function (ctx, a, b) { var pf = ctx.pair(a, b); if (pf.couple || pf.night || !met(ctx, a, b) || BD.mateOf(ctx, a) || BD.mateOf(ctx, b)) return false; return HK.State.freeSex(ctx, a, b) || (HK.canLove(a, b) && HK.canLove(b, a) && ctx.R(a, b).att > 28 && ctx.R(b, a).att > 24 && !partnerOf(ctx, a) && !partnerOf(ctx, b)); },
+    /* 惹かれの壁は、性欲＋衝動性（HK.Pos.sexDrive。理性・状況込み。全年齢では 0）が強いほど下がる（最大 20。2026-10-28 担当MC：性的な出来事は性欲・衝動性で判定する） */
+    when: function (ctx, a, b) { var pf = ctx.pair(a, b); if (pf.couple || pf.night || !met(ctx, a, b) || BD.mateOf(ctx, a) || BD.mateOf(ctx, b)) return false; var dv = HK.Pos && HK.Pos.sexDrive ? HK.Pos.sexDrive(ctx, a, b) * 20 : 0; return HK.State.freeSex(ctx, a, b) || (HK.canLove(a, b) && HK.canLove(b, a) && ctx.R(a, b).att > 28 - dv && ctx.R(b, a).att > 24 - dv && !partnerOf(ctx, a) && !partnerOf(ctx, b)); },
     w: function (ctx, a, b) { var h = ctx.om.hesitate[key(a, b)] ? 1 : 0, fs = HK.State.freeSex(ctx, a, b); return ((HK.FWB.lean(a) + HK.FWB.lean(b)) * 1.4 + h * 0.8 + (a.goal.id === 'free' ? 0.6 : 0) + (fs ? 0.5 : 0)) * (fs ? HK.FreeSex.factor(ctx, a, b, true) : 1); },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b); pf.night = true; pf.nights = (pf.nights || 0) + 1;

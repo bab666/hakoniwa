@@ -2350,6 +2350,7 @@ function F(t,m){return ST.fmt(t,m);}
 function okP(a,b){return!HK.Pos||HK.Pos.okSex(a,b);}
 function libOk(a,b){return!HK.Pos|| !HK.Pos.libOK||HK.Pos.libOK([a,b]);}
 function libW(prs){if(!HK.Pos|| !HK.Pos.libMul|| !prs.length)return 1;var m=0;prs.forEach(function(pr){m+=HK.Pos.libMul(pr);});return m/prs.length;}
+function stay(S,pr,host){if(!HK.Pos|| !HK.Pos.reasonP)return false;return S.rng()>HK.Pos.reasonP(S,pr[0],pr[1])*(host&&HK.Pos.hostK?HK.Pos.hostK(pr[0],pr[1]):1);}
 function hardTop(p){return!!(HK.Pos&&HK.Pos.hardTop(p));}
 function isFF(a,b){return!!(HK.Pos&&HK.Pos.ff(a,b));}
 function fmFix(S,t,x,y){
@@ -2701,19 +2702,19 @@ Y.setRel(S,c,v,-0.5,'脅迫',c);
 }});
 }
 var br=pairs(function(a,b){return a.m.fear+b.m.fear>80&&Y.bond(S,a,b)> -0.2;});
-if(br.length)EV.push({w:2*libW(br),f:function(){var pr=rng.pick(br),o=od(pr[0],pr[1]);
+if(br.length)EV.push({w:2*libW(br),f:function(){var pr=rng.pick(br),o=od(pr[0],pr[1]);if(stay(S,pr))return;
 ST.say(S,{actors:o,tag:'吊り橋',kind:'climax',text:F(fp(S,PLF('bridge',T.bridge,o[0],o[1])),{x:o[0].name,y:o[1].name})+SX(S,o[0],o[1],'love')+aft(S,o[1]),why:PW(S)+'恐怖の夜に、'+o[0].name+'と'+o[1].name+'が求め合った（恐怖 '+Math.round(o[0].m.fear)+'・'+Math.round(o[1].m.fear)+'）',mag:32});
 o.forEach(function(q){q.m.fear=Math.max(0,q.m.fear-20);});Y.setRel(S,o[0],o[1],0.35,'吊り橋の一夜');}});
 var bp=pairs(function(a,b){return Y.bond(S,a,b)> -0.4;});
-if(bp.length)EV.push({w:1.2*libW(bp),f:function(){var pr=rng.pick(bp),o=od(pr[0],pr[1]);
+if(bp.length)EV.push({w:1.2*libW(bp),f:function(){var pr=rng.pick(bp),o=od(pr[0],pr[1]);if(stay(S,pr))return;
 ST.say(S,{actors:o,tag:'大浴場',kind:'climax',text:F(fp(S,PLF('bath',T.bath,o[0],o[1])),{x:o[0].name,y:o[1].name})+SX(S,o[0],o[1],'plain',false,['tachi','taimen','haimen','kijo','kuchi','yubi'])+aft(S,o[1]),why:PW(S)+'夜の大浴場で、'+o[0].name+'と'+o[1].name+'が鉢合わせた',mag:30});
 Y.setRel(S,o[0],o[1],0.25,'湯けむりの一夜');}});
 var wp=pairs(function(a,b){return Y.bond(S,a,b)> -0.1&&(a.tr.cp+b.tr.cp>0.8||a.isDet||b.isDet||a.role==='butler'||b.role==='butler');});
-if(wp.length)EV.push({w:1*libW(wp),f:function(){var pr=rng.pick(wp),o=od(pr[0],pr[1]);
+if(wp.length)EV.push({w:1*libW(wp),f:function(){var pr=rng.pick(wp),o=od(pr[0],pr[1]);if(stay(S,pr))return;
 ST.say(S,{actors:o,tag:'凍える夜',kind:'climax',text:F(fp(S,PLF('warmth',T.warmth,o[0],o[1])),{x:o[0].name,y:o[1].name})+SX(S,o[0],o[1],'love',false,['soku','taimen','seijo','haimen'])+aft(S,o[1]),why:PW(S)+'吹雪の中を捜索した'+o[0].name+'と'+o[1].name+'が、肌で温め合った',mag:30});
 Y.setRel(S,o[0],o[1],0.3,'温め合った');}});
-var fp2=[];live.forEach(function(a){live.forEach(function(b){if(a.i<b.i&&HK.State.freeSex&&HK.State.freeSex(S,a,b)&&libOk(a,b)&&Y.bond(S,a,b)> -0.3&&(!HK.Avoid||HK.Avoid.topOk(S,a,b)))fp2.push([a,b]);});});
-if(fp2.length)EV.push({w:2*HK.FreeSex.factor(S,fp2[0][0],fp2[0][1]),f:function(){var pr=rng.pick(fp2),o=od(pr[0],pr[1]);
+var fp2=[];live.forEach(function(a){live.forEach(function(b){if(a.i<b.i&&HK.State.freeSex&&HK.State.freeSex(S,a,b)&&libOk(a,b)&&(Y.bond(S,a,b)> -0.3||HK.FreeSex.kind(S,a,b)==='host')&&(!HK.Avoid||HK.Avoid.topOk(S,a,b)))fp2.push([a,b]);});});
+if(fp2.length)EV.push({w:2*HK.FreeSex.factor(S,fp2[0][0],fp2[0][1]),f:function(){var pr=rng.pick(fp2),o=od(pr[0],pr[1]);if(stay(S,pr,true))return;
 ST.say(S,{actors:o,tag:'体だけの夜',kind:'climax',text:HK.FreeSex.lead(S,pr[0],pr[1])+F(fp(S,FREE_IN),{x:o[0].name,y:o[1].name})+SX(S,o[0],o[1],'plain')+aft(S,o[1]),why:PW(S)+HK.FreeSex.why(pr[0],pr[1])+'／吹雪に閉ざされた夜',mag:30});
 Y.setRel(S,o[0],o[1],0.15,'体だけの関係');HK.FreeSex.mark(S,o[0],o[1]);HK.FreeSex.jealous(S,o[0],o[1]);}});
 var sus=live.filter(function(q){return q.m.sus>40&&q.tr.fc+(q.tr.lie||q.tr.a*0.5||0)>0.8;}).sort(function(a,b){return b.m.sus-a.m.sus;})[0];
@@ -3496,4 +3497,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 ["さて――皆。この事件の真相が分かった","さて――諸君。この事件の真相が分かったのだよ",1],
 ["少しいいか？　昨夜のことで、聞きたいことがある","少しいいかね？　昨夜のことで、聞きたいことがあるのだよ",1]]});
 });
-HK.Load.done('scen-yakata', 'a66b2d9cec', 1);
+HK.Load.done('scen-yakata', '9aa5ec2e44', 1);

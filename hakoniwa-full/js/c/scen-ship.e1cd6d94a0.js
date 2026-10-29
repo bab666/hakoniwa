@@ -2840,7 +2840,16 @@ A.setRel(S,p,q,-0.1);A.mark(S,p,q,'quarrel');A.stress(p,6);
 ST.sayB(S,{actors:[p,q],tag:'一夜の過ち',text:A.F(A.pk(S,att(p,T.mistake)),{a:p.name,b:q.name})+A.F(A.pk(S,T.mistakeTail),{a:p.name,b:q.name}),why:p.name+'は昨夜のことを過ちだと考えた（気質：'+(HK.PERSONA&&HK.PERSONA[per(p)]?HK.PERSONA[per(p)].label:per(p))+'・CP・慎重さ）'},p.name+'は'+q.name+'との夜を過ちだと考えた');
 return;
 }
-if(!x.fell[p.i]&& !x.mis[p.i]&&(!HK.canLove||(HK.canLove(p,q)&&HK.canLove(q,p)))&&rng()<fallP(p,w,x.n)){
+var FS=HK.FreeSex,fok=FS&&FS.fallOk?FS.fallOk(S,p,q):(!HK.canLove||(HK.canLove(p,q)&&HK.canLove(q,p)));
+if(!fok){
+x.host=x.host||{};
+if(!x.host[p.i]&& !x.fell[p.i]&& !x.mis[p.i]&&FS&&FS.afterHost&&FS.kind&&FS.kind(S,p,q)==='host'&&rng()<fallP(p,w,x.n)+0.2){
+x.host[p.i]=1;
+ST.say(S,{actors:[p,q],tag:'嫌いなのに',text:FS.afterHost(S,p,q),why:q.name+'との夜のあとも、'+p.name+'の気持ちは変わらない（敵対・不仲のまま、体だけの関係'+(HK.Avoid&&HK.Avoid.of(S,p,q)?'。'+HK.Avoid.why(S,p,q):'')+'）',mag:14});
+}
+return;
+}
+if(!x.fell[p.i]&& !x.mis[p.i]&&rng()<fallP(p,w,x.n)){
 x.fell[p.i]=S.m||1;
 A.setRel(S,p,q,0.12);
 var o=ST.say(S,{actors:[p,q],tag:'恋に落ちる',text:A.F(A.pk(S,att(p,T.fall)),{a:p.name,b:q.name}),why:q.name+'との夜をきっかけに、'+p.name+'は恋に落ちた（'+(x.n>=2?x.n+'度目の夜':'初めての夜')+'）',mag:26});
@@ -2859,15 +2868,18 @@ L0.forEach(function(b){
 if(a.i>=b.i|| !HK.Pos.okSex(a,b)||(HK.Pos.libOK&& !HK.Pos.libOK([a,b]))||A.family(S,a,b)||(A.room&& !A.room(S,[a,b])))return;
 var w=A.bond(S,a,b),lv=A.lover(S,a,b),x=(S.nt||{})[A.rk(a,b)];
 var tier=lv?'love':x&&x.n>=1?'again':'casual';
-if(tier==='casual'&&w>=0.6)return;
+var lustP=tier==='casual'&& !!(HK.FreeSex&&HK.FreeSex.lust&&HK.FreeSex.lust(S,a,b));
+if(tier==='casual'&&w>=0.6&& !lustP)return;
 if(tier==='again'&&x.ref>=2&&w<0.55)return;
-if(tier==='casual'&& !(w>0.25||(w> -0.25&&rng()<lowP)))return;
-cand.push({a:a,b:b,w:w,tier:tier,x:x});
+var hostL=lustP&&HK.FreeSex.kind(S,a,b)==='host';
+if(tier==='casual'&& !(w>0.25||hostL||(w> -0.25&&rng()<lowP)))return;
+cand.push({a:a,b:b,w:w,tier:tier,x:x,hostL:hostL});
 });
 });
 if(!cand.length)return;
-var c=HK.weighted(rng,cand,function(o){return(o.tier==='love'?1.3+o.w:o.tier==='again'?1.5+Math.max(0,o.w)*0.5:0.3+Math.max(0,o.w)*0.6)*(HK.State.freeSex&&HK.State.freeSex(S,o.a,o.b)?HK.FreeSex.factor(S,o.a,o.b,true):1)*(HK.Pos.libMul?HK.Pos.libMul([o.a,o.b]):1);});
+var c=HK.weighted(rng,cand,function(o){return(o.tier==='love'?1.3+o.w:o.tier==='again'?1.5+Math.max(0,o.w)*0.5:0.3+Math.max(0,o.hostL?Math.max(o.w,0.8):o.w)*0.6)*(HK.State.freeSex&&HK.State.freeSex(S,o.a,o.b)?HK.FreeSex.factor(S,o.a,o.b,true):1)*(HK.Pos.libMul?HK.Pos.libMul([o.a,o.b]):1);});
 var a=c.a,b=c.b,tier=c.tier,x=c.x;
+if(HK.Pos.reasonP&&rng()>HK.Pos.reasonP(S,a,b))return;
 var free=tier!=='love'&& !!(HK.State.freeSex&&HK.State.freeSex(S,a,b));
 if(x&&(x.mis[a.i]&& !x.mis[b.i]||(!x.mis[b.i]&&tr(b,'fc')>tr(a,'fc')))){var tmp=a;a=b;b=tmp;}
 var avN='';
@@ -4185,7 +4197,7 @@ var w0=bond(S,a,b);
 b.m.hp=clamp(b.m.hp+8,0,100);stress(b,-5);setRel(S,a,b,0.28);mark(S,a,b,'nurse');
 ST.sayB(S,{actors:[a,b],tag:'看病',text:F(pk(S,BP(S,'NURSE')),{a:a.name,b:b.name}),why:'弱っているところを支えた（体力 +8）（関係 '+Math.round(w0*100)+'→'+Math.round(bond(S,a,b)*100)+'）'},a.name+'が'+b.name+'を看病した');
 if(!r18on(S)|| !R|| !R.nurseTop|| !Pz|| !Pz.okSex(a,b)||(Pz.libOK&& !Pz.libOK([a,b]))||family(S,a,b)|| !sxRoom(S,[a,b]))return;
-if(rng()>S.env.slewd/100*(amour(S,a,b)?0.7:bond(S,a,b)>0.3?0.45:0.15)*(Pz.libMul?Pz.libMul([a,b]):1))return;
+if(rng()>S.env.slewd/100*(amour(S,a,b)?0.7:bond(S,a,b)>0.3?0.45:0.15)*(Pz.libMul?Pz.libMul([a,b]):1)*(Pz.reasonK?Pz.reasonK(S,a,b):1))return;
 var o=Pz.order(a,b,[a,b]),t=o[0],u=o[1];
 if(Pz.hardTop(u,t))return;
 var body=bodyOf(S,t,u,'nurse');
@@ -5519,4 +5531,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 HK.Load.toneData("chara_down",{"F":[
 ["一年、よく持ちこたえましたね。私の自慢の船員たちです","一年、よく持ちこたえましたねー。私の自慢の船員たちですよ、ほんと",1]]});
 });
-HK.Load.done('scen-ship', 'b6903448e5', 1);
+HK.Load.done('scen-ship', 'e1cd6d94a0', 1);

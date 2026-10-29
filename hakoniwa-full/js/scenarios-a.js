@@ -534,7 +534,11 @@
       for (var i = 0; i < P.length; i++) for (var j = i + 1; j < P.length; j++) {
         var a = P[i], b = P[j], ab = R(ctx, a, b), ba = R(ctx, b, a);
         var v = Math.min(ab.att, ba.att) + Math.min(ab.aff, ba.aff) * 0.5 + (ctx.pair(a, b).couple ? 30 : 0);
-        cand.push({ a: a, b: b, v: v });
+        /* 「恋愛：なし」の二人・敵対や不仲の二人（free-sex.js の HK.FreeSex.lust）は、惹かれ・好意の代わりに性欲＋衝動性（HK.Pos.sexDrive）で並べる（2026-10-28 担当MC）。
+           並べる順では敵対・不仲の倍率（HK.Pos.hostK）を外す（関係のない組に先を越されて、性欲「ふつう」の敵対の二人がほとんど帰れなくなるため。起きにくさは下の HK.FreeSex.chance で掛ける） */
+        var lu = !!(HK.FreeSex && HK.FreeSex.lust && HK.FreeSex.lust(ctx, a, b));
+        if (lu) v = Math.max(v, HK.Pos.sexDrive(ctx, a, b) / (HK.Pos.hostK ? HK.Pos.hostK(a, b) : 1) * 115);
+        cand.push({ a: a, b: b, v: v, lu: lu });
       }
       cand.sort(function (x, y) { return y.v - x.v; });
       cand.forEach(function (c) {
@@ -543,7 +547,11 @@
         /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex。free-sex.js）：惹かれの閾値の代わりに、酔いと勢いで（恋人の組の半分ほど。固定した恋人がいれば ×0.3） */
         var fs = !!(HK.State.freeSex && HK.State.freeSex(ctx, c.a, c.b));
         if (used[c.a.i] || used[c.b.i]) return;
-        if (fs) {
+        if (fs && c.lu) {
+          /* 「恋愛：なし」の二人・敵対や不仲の二人：酔いと性欲＋衝動性で（HK.FreeSex.chance。敵対・不仲は起きにくい）。
+             帰り道は一度きりの判定で、性欲の強い二人だと上限に届きやすいので、敵対・不仲の倍率をもう一段（平方根ぶん）掛ける（友人の 5〜7 割の目安） */
+          if (rng() >= HK.FreeSex.chance(ctx, c.a, c.b, 1.2) * Math.sqrt(HK.Pos.hostK ? HK.Pos.hostK(c.a, c.b) : 1)) return;
+        } else if (fs) {
           var dr = ((c.a.flags.drunk || 0) + (c.b.flags.drunk || 0)) / 200, im0 = (c.a.tr.impulse + c.b.tr.impulse) / 2;
           if (rng() >= HK.clamp(0.25 + dr * 0.5 + im0 * 0.35, 0, 0.9) * 0.5 * HK.FreeSex.factor(ctx, c.a, c.b)) return;
         } else if (c.v < 55 - rf * 20 || !HK.canLove(ca, cb) || !HK.canLove(cb, ca)) return;
@@ -581,7 +589,7 @@
         tg.outc = outc; tg.walk = walkLove; tg.newLove = !wasCouple && (outc === 'lover' || walkLove);
         if (walkLove) { ctx.pair(c.a, c.b).couple = true; c.a.fateNote += '。帰り道で付き合うことになった'; c.b.fateNote += '。帰り道で付き合うことになった'; }
         if (outc === 'forget') ctx.pair(c.a, c.b).forgot = true;
-        var e = ctx.say({ kind: 'event', cat: 'romance', sex: !!night, actors: [c.a, c.b], text: night ? c.a.name + 'と' + c.b.name + 'は、店を出たあと同じタクシーに乗った。' + (fs ? HK.FreeSex.lead(ctx, c.a, c.b) : '') + (gn ? gn.text : 'その先のことは、二人しか知らない。') + (gn ? '' : (function () {
+        var e = ctx.say({ kind: 'event', cat: 'romance', sex: !!night, free: !!fs, actors: [c.a, c.b], text: night ? c.a.name + 'と' + c.b.name + 'は、店を出たあと同じタクシーに乗った。' + (fs ? HK.FreeSex.lead(ctx, c.a, c.b) : '') + (gn ? gn.text : 'その先のことは、二人しか知らない。') + (gn ? '' : (function () {
           /* 受け攻めの指定どおりの「翌朝」 */
           var tb = HK.Pos ? HK.Pos.order(c.a, c.b, [c.a, c.b]) : [c.a, c.b];
           /* 全年齢版・全年齢モードは、体の名残を書かない翌朝 */

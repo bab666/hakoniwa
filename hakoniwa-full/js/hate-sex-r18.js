@@ -462,7 +462,8 @@
       if (HK.ngSexPair && HK.ngSexPair(a, b)) return false;
       if (x.pair && x.pair(a, b).kin) return false;
       /* 合意のない展開が入なら、恋愛対象「なし」の人も（HK.Pos.forceOpen。恋愛対象の性別・受け攻めの指定はこれまでどおり。2026-10-27 担当HC） */
-      var okP = function () { return (!HK.Pos || HK.Pos.okSex(a, b)) && (!HK.canLove || (HK.canLove(a, b) && HK.canLove(b, a))); };
+      /* 「恋愛：なし」の敵対の二人（free-sex.js の HK.FreeSex.kind が 'off'）は、恋愛（HK.canLove）を見ずに体の関係だけで判定する（2026-10-28 担当MC） */
+      var okP = function () { return (!HK.Pos || HK.Pos.okSex(a, b)) && (!HK.canLove || (HK.canLove(a, b) && HK.canLove(b, a)) || !!(HK.FreeSex && HK.FreeSex.kind && HK.FreeSex.kind(x, a, b) === 'off')); };
       if (!(HK.Pos && HK.Pos.forceOpen ? HK.Pos.forceOpen(x, [a, b], okP) : okP())) return false;
       if (!tiesOf(x, a, b).some(function (t) { return HOST.test(t.type); }) && !(hateLv(x, a, b) >= 35 || hateLv(x, b, a) >= 35)) return false;
       /* 向き（2026-10-28 担当JD）：受けが攻めを嫌っていない組（嫌悪が片方向で、受け攻めの指定で嫌っていない側が受けになる組など）・避けている人が攻めになる組では起こさない */

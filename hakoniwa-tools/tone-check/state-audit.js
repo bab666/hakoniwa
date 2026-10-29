@@ -31,7 +31,7 @@
         主役（記録の一人目か二人目）として出た（エンジン型）。配役の一部（5回に1回）で、二人を互いに固定し、そのうち一人を「誰とでも可」にする。
         体の関係の出来事（sex の印つき）は出てよい（それが「誰とでも可」の意味）ので、件数だけ「誰とでも可の体の出来事」として数える。
         この回では S15 の「恋愛の出来事」「性的な文」も見るが、「誰とでも可」で許されている組（HK.lockSexOnly）の体の出来事・性的な文は数えない
-   S18: 「誰とでも可」の人と固定外の相手の「体だけの場面」（free-sex.js の HK.FreeSex.mark：エンジン型は pf.freeSex、物語型は S.freeSex）のあとに、
+   S18: 「誰とでも可」の人と固定外の相手（・恋愛対象「なし」の人・「恋愛：なし」の二人。敵対・不仲の二人は恋愛を止めていないので除く）の「体だけの場面」（free-sex.js の HK.FreeSex.mark：エンジン型は pf.freeSex、物語型は S.freeSex）のあとに、
         その組が恋人になった（エンジン型は pf.couple、物語型は恋人の記録 S.lovers・S.rom・関係の恋人）／その組に恋愛の出来事が出た
         （エンジン型は cat:'romance' で体の出来事の印 sex がないもの、物語型は告白・恋・想い・デート・口づけ・キスの札）。S17 と同じ配役の回で見る
    S19: 無関心（a→b）：a から b への好意・惹かれが区切りごとの記録（history）で動いた／結果の値が記録と違う／二人が恋人・夜・恋愛の出来事・性的な文・関係図の恋の線になった／
@@ -229,7 +229,8 @@ const { openBuild } = require('./lib.js');
         /* S31（エンジン型）：恋愛・体の関係・執着の行動の出来事の主役が、相手を避けている */
         if (cur && !cur.story && e && !e.skipped && !SKIPK.test(kind) && acs.length >= 2) {
           const evid = (this._ev && this._ev.id) || '', sx = o.sex != null ? !!o.sex : !!(this._ev && this._ev.sex);
-          if (o.cat === 'romance' || sx || /^ob_act/.test(evid)) avoidHit(this, acs, o, (o.cat || '') + (sx ? '+sex' : '') + ':' + (evid || kind));
+          /* 一人の出来事（scope: 'solo'。街のαに襲われたΩを、そばの住人が庇う om_mobr など）は、一人目が迫る側ではないので数えない（2026-10-28 担当MC） */
+          if ((o.cat === 'romance' || sx || /^ob_act/.test(evid)) && !(this._ev && this._ev.scope === 'solo')) avoidHit(this, acs, o, (o.cat || '') + (sx ? '+sex' : '') + ':' + (evid || kind));
         }
         /* S19・S20・S21（エンジン型）：無関心・恐怖の二人の恋愛の出来事／無関心な人の助け合い・嫉妬・心配／破談のあとの恋愛の出来事 */
         if (cur && cur.feel && !cur.story && e && !e.skipped && !SKIPK.test(kind) && acs.length >= 2) {
@@ -260,10 +261,11 @@ const { openBuild } = require('./lib.js');
           const fz = this._audit18 || (this._audit18 = {});
           Object.keys(this.pf).forEach(k => {
             const pf = this.pf[k];
-            if (pf.freeSex && !fz[k]) fz[k] = 1;
+            /* 敵対・不仲の二人の体だけの場面（free-sex.js の HK.FreeSex.kind が 'host'）は、恋愛を止めていない組なので、そのあと恋人・恋愛になってよい（数えない。2026-10-28 担当MC） */
+            if (pf.freeSex && !fz[k]) { const ij0 = k.split('-').map(Number), x0 = this.chars[ij0[0]], y0 = this.chars[ij0[1]]; fz[k] = x0 && y0 && HK.FreeSex && HK.FreeSex.kind && HK.FreeSex.kind(this, x0, y0) === 'host' ? 3 : 1; }
             if (fz[k] === 1 && pf.couple) { fz[k] = 2; const ij = k.split('-').map(Number); hit('S18', '恋人化 ' + this.chars[ij[0]].name + '×' + this.chars[ij[1]].name + ' [' + ((this._ev && this._ev.id) || o.kind || '') + ']'); }
           });
-          if (e && !e.skipped && o.cat === 'romance' && !sexMark && !SKIPK.test(kind) && acs.length >= 2 && fz[pkey(acs[0], acs[1])]) hit('S18', '恋愛 ' + acs[0].name + '×' + acs[1].name + ' [' + ((this._ev && this._ev.id) || '') + '] | ' + String(o.text).slice(0, 120));
+          if (e && !e.skipped && o.cat === 'romance' && !sexMark && !SKIPK.test(kind) && acs.length >= 2 && fz[pkey(acs[0], acs[1])] === 1) hit('S18', '恋愛 ' + acs[0].name + '×' + acs[1].name + ' [' + ((this._ev && this._ev.id) || '') + '] | ' + String(o.text).slice(0, 120));
         }
         /* S15：二人だけの恋愛の出来事に、固定が食い違う組（「誰とでも可」で許されている組の体の出来事は除く） */
         if (cur && !cur.story && e && !e.skipped && o.cat === 'romance' && !SKIPK.test(kind) && acs.length === 2 && lockBad(acs[0], acs[1]) && !(anyPair && sexMark)) hit('S15', '恋愛 ' + acs[0].name + '×' + acs[1].name + '（固定：' + lockTxt(this.chars, acs[0], acs[1]) + '）| ' + String(o.text).slice(0, 120));

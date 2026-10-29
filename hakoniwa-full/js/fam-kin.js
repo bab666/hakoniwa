@@ -21,6 +21,8 @@
     });
     /* 関係の「恋愛：なし」（自動の既定を含む。ties.js の HK.tiesLove）の二人は、互いの loveOff に入れる（恋愛だけを止める：engine.js の HK.canLove） */
     if (HK.loveOffMark) HK.loveOffMark(P, ties);
+    /* 敵対・不仲の二人の印（ties.js の HK.hostMark。体の関係は止めず、起こりやすさを下げる。2026-10-28 担当MC） */
+    if (HK.hostMark) HK.hostMark(P, ties);
   };
   /* 関係「無関心」「恐怖」の二人は、互いの noLove に入れる（engine.js の HK.noLovePair：恋愛にも体の関係にもならない。エンジン型は ties.js の HK.Ties.after） */
   HK.fearNG = function (P, ties) {

@@ -768,7 +768,8 @@
     ST.sayB(S, { actors: [a, b], tag: '看病', text: F(pk(S, BP(S, 'NURSE')), { a: a.name, b: b.name }), why: '弱っているところを支えた（体力 +8）（関係 ' + Math.round(w0 * 100) + '→' + Math.round(bond(S, a, b) * 100) + '）' }, a.name + 'が' + b.name + 'を看病した');
     /* 性欲（pos.js の HK.Pos.libOK・libMul）：「なし」の人は看病の夜にならない。起こりやすさに二人の倍率（既定は 1） */
     if (!r18on(S) || !R || !R.nurseTop || !Pz || !Pz.okSex(a, b) || (Pz.libOK && !Pz.libOK([a, b])) || family(S, a, b) || !sxRoom(S, [a, b])) return;
-    if (rng() > S.env.slewd / 100 * (amour(S, a, b) ? 0.7 : bond(S, a, b) > 0.3 ? 0.45 : 0.15) * (Pz.libMul ? Pz.libMul([a, b]) : 1)) return;
+    /* 理性（pos.js の HK.Pos.reasonK：理性が高い二人ほど起きにくい ×0.55〜1.25。熱・酒・媚薬で効きが弱まる。2026-10-28 担当MC） */
+    if (rng() > S.env.slewd / 100 * (amour(S, a, b) ? 0.7 : bond(S, a, b) > 0.3 ? 0.45 : 0.15) * (Pz.libMul ? Pz.libMul([a, b]) : 1) * (Pz.reasonK ? Pz.reasonK(S, a, b) : 1)) return;
     /* 受け攻め：自分で攻めを選んだ人は、熱があっても受けにならない */
     var o = Pz.order(a, b, [a, b]), t = o[0], u = o[1];
     if (Pz.hardTop(u, t)) return;

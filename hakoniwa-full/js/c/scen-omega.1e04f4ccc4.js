@@ -1824,7 +1824,7 @@ if(r.tr.a>0.6)return ctx.t('{b}はしばらく黙って眺めてから、「よ�
 return ctx.t('{b}は照れくさそうに受け取った。',null,r);
 }
 EV.push({
-id:'om_heat',label:'発情期の熱に浮かされる',cat:'romance',sex:true,scope:'pair',pri:true,
+id:'om_heat',label:'発情期の熱に浮かされる',cat:'romance',sex:true,free:true,scope:'pair',pri:true,
 when:function(ctx,a,b){return(a.om.heat>0&&sx(a)==='o')||(b.om.heat>0&&sx(b)==='o')||(a.om.rut>0&&sx(a)==='a'&&sx(b)==='o');},
 w:function(ctx,a,b){return 1.5+ctx.env.heat/50+Math.max(ctx.R(a,b).att,ctx.R(b,a).att)/50;},
 run:function(ctx,a,b){return heatScene(ctx,a,b);}
@@ -1900,8 +1900,8 @@ ctx.mod2(X,O,{aff:6,trust:6},{aff:6,trust:6});
 return{cat:'help',text:ctx.t(ctx.pick(['{a}は自分の抑制剤を半分、{b}に分けた。「分かるよ。しんどいよね｜分かる。しんどいな｜分かります。しんどいですよね」','{a}と{b}は、Ω同士で発情期の愚痴を言い合った。少しだけ楽になった。']),X,O),why:'Ω同士の共感',mag:8};
 }
 EV.push({
-id:'om_night',cat:'romance',sex:true,scope:'pair',
-when:function(ctx,a,b){var pf=ctx.pair(a,b);if(pf.couple||pf.night|| !met(ctx,a,b)||BD.mateOf(ctx,a)||BD.mateOf(ctx,b))return false;return HK.State.freeSex(ctx,a,b)||(HK.canLove(a,b)&&HK.canLove(b,a)&&ctx.R(a,b).att>28&&ctx.R(b,a).att>24&& !partnerOf(ctx,a)&& !partnerOf(ctx,b));},
+id:'om_night',cat:'romance',sex:true,free:true,scope:'pair',
+when:function(ctx,a,b){var pf=ctx.pair(a,b);if(pf.couple||pf.night|| !met(ctx,a,b)||BD.mateOf(ctx,a)||BD.mateOf(ctx,b))return false;var dv=HK.Pos&&HK.Pos.sexDrive?HK.Pos.sexDrive(ctx,a,b)*20:0;return HK.State.freeSex(ctx,a,b)||(HK.canLove(a,b)&&HK.canLove(b,a)&&ctx.R(a,b).att>28-dv&&ctx.R(b,a).att>24-dv&& !partnerOf(ctx,a)&& !partnerOf(ctx,b));},
 w:function(ctx,a,b){var h=ctx.om.hesitate[key(a,b)]?1:0,fs=HK.State.freeSex(ctx,a,b);return((HK.FWB.lean(a)+HK.FWB.lean(b))*1.4+h*0.8+(a.goal.id==='free'?0.6:0)+(fs?0.5:0))*(fs?HK.FreeSex.factor(ctx,a,b,true):1);},
 run:function(ctx,a,b){
 var pf=ctx.pair(a,b);pf.night=true;pf.nights=(pf.nights||0)+1;
@@ -5828,4 +5828,4 @@ HK.Load.toneData("keigo_bossy",{"F":[
 HK.Load.toneData("ronkyaku",{"F":[
 ["生きてくれ。……〈〉の匂いが、この世界からなくなるのは嫌だ","生きてくれたまえ。……〈〉の匂いがこの世界から消えるのは、耐えがたいのだよ",1]]});
 });
-HK.Load.done('scen-omega', '0a286e5331', 1);
+HK.Load.done('scen-omega', '1e04f4ccc4', 1);

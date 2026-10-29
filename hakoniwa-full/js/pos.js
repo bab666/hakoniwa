@@ -470,6 +470,81 @@
     return { pairs: pairs, hub: hub, all: false, watch: all.filter(function (pr) { return pairs.indexOf(pr) < 0; }) };
   };
 
+  /* ---------- 性的な出来事の起こりやすさ（2026-10-28 担当MC。利用者の指示「性的イベントは性欲＋衝動性で判定し、恋愛感情が発生を防がないように」） ----------
+     可否は P.okSex（＋R18に参加しない・性欲「なし」・固定。HK.State.pairSex）だけで決め、恋愛の可否（HK.canLove）は門にしない。
+     ・P.hostK(a, b)：敵対・不仲の二人の倍率（ties.js の HK.hostMark が付けた hostOf。敵対 0.6・不仲 0.7、愛憎があれば戻す。関係が無ければ 1）
+     ・P.sexRel(ctx, a, b)：関係の補正。恋人 1.3・体の関係のある二人 1.2・片想い 1.15、敵対・不仲は hostK。「恋愛：なし」の組は ±0（1）
+     ・P.sexDrive(ctx, a, b)：0〜1。性欲（P.libK）＋衝動性（tr.impulse）＋状況（酔い・媚薬・発情・火照り（気分 lust）・ストレス・もう夜を過ごした）を主にし、
+       理性（P.reason：CP・慎重さ・A・我慢の値・媚薬ロッカーの理性メーター）で起きにくくする（P.reasonK：理性が高い ×0.55 前後〜低い ×1.25。0 にはしない。
+       酒・媚薬・発情・火照り・出られない部屋の条件・もう体の関係がある、は理性の効きを弱める。2026-10-28 利用者の追加の指示「理性なども加味して」）、
+       sexRel を掛ける。全年齢版・全年齢モード・体の関係にならない組（HK.State.pairSex）では 0。
+     ・P.driveWhy(ctx, a, b)：理由（why）に足す内訳の短い語（「性欲 強・衝動 高・理性 低」）
+       各箱庭の夜の確率式は今までどおりで、恋愛の条件を外した「体の関係の経路」（free-sex.js の HK.State.freeSex）の起こりやすさに使う */
+  P.hostK = function (a, b) {
+    if (!a || !b || a === b) return 1;
+    var x = a.hostOf && a.hostOf[b.i], y = b.hostOf && b.hostOf[a.i];
+    if (x == null && y == null) return 1;
+    return Math.min(x == null ? 1 : x, y == null ? 1 : y);
+  };
+  P.hostile = function (a, b) { return !!(a && b && a !== b && ((a.hostOf && a.hostOf[b.i] != null) || (b.hostOf && b.hostOf[a.i] != null))); };
+  function pfOf(ctx, a, b) { return ctx && HK.Ctx && ctx instanceof HK.Ctx ? ctx.pair(a, b) : null; }
+  P.sexRel = function (ctx, a, b) {
+    var pf = pfOf(ctx, a, b), m = P.hostK(a, b);
+    if (pf && pf.couple) m *= 1.3;
+    else if (pf && (pf.fwb || pf.night)) m *= 1.2;
+    else if (ctx && HK.Ties && HK.Ties.from && pf && (HK.Ties.from(ctx, a, b, 'crush') || HK.Ties.from(ctx, b, a, 'crush'))) m *= 1.15;
+    return m;
+  };
+  P.sexDrive = function (ctx, a, b) {
+    if (!a || !b || a === b || HK.SAFE_ON) return 0;
+    if (HK.State && HK.State.pairSex ? !HK.State.pairSex(a, b) : !P.okSex(a, b)) return 0;
+    var lib = Math.sqrt(P.libK(a) * P.libK(b));
+    var imp = (((a.tr && a.tr.impulse) != null ? a.tr.impulse : 0.4) + ((b.tr && b.tr.impulse) != null ? b.tr.impulse : 0.4)) / 2;
+    var fl = function (c, k) { return Math.max((c.flags && +c.flags[k]) || 0, k === 'aphro' && c.aphro ? 1 : 0); };
+    var drunk = (fl(a, 'drunk') + fl(b, 'drunk')) / 200;
+    var aph = Math.min(1, (fl(a, 'aphro') + fl(b, 'aphro')) / 2);
+    var heat = Math.min(1, Math.max((a.m && +a.m.heat) || 0, (b.m && +b.m.heat) || 0, (a.om && +a.om.heat > 0 ? 80 : 0), (b.om && +b.om.heat > 0 ? 80 : 0)) / 100);
+    var lust = Math.min(1, (((a.emo && a.emo.lust) || 0) + ((b.emo && b.emo.lust) || 0)) / 200);
+    var st = ((a.stress || 0) + (b.stress || 0)) / 200;
+    var pf = pfOf(ctx, a, b);
+    var sit = Math.min(0.4, drunk * 0.25 + aph * 0.25 + heat * 0.2 + lust * 0.15 + st * 0.05 + (pf && pf.night ? 0.08 : 0));
+    return HK.clamp((0.12 + imp * 0.45 + sit) * lib * P.reasonK(ctx, a, b) * P.sexRel(ctx, a, b), 0, 1);
+  };
+  /* 理性（0〜1）：規範（CP）・慎重さ・冷静さ（A）・我慢の値（stats.gaman 1〜5。あれば）・理性メーター（m.reason 0〜100。媚薬ロッカー） */
+  P.reason = function (c) {
+    if (!c) return 0.5;
+    var t = c.tr || {}, v = (t.cp != null ? t.cp : 0.5) * 0.4 + (t.caution != null ? t.caution : 0.5) * 0.3 + (t.a != null ? t.a : 0.5) * 0.3;
+    var g = c.stats && c.stats.gaman != null ? +c.stats.gaman : null;
+    if (g != null && !isNaN(g)) v = v * 0.7 + HK.clamp((g - 1) / 4, 0, 1) * 0.3;
+    if (c.m && c.m.reason != null && !isNaN(+c.m.reason)) v = Math.min(v, HK.clamp(+c.m.reason / 100, 0, 1));
+    return HK.clamp(v, 0, 1);
+  };
+  /* 理性の効きを弱める状況（0〜0.85）：酒・媚薬（flags.aphro、物語型の箱庭の印 c.aphro）・発情・火照り・ストレス・出られない部屋の条件（体の関係・キス）・もう夜を過ごした */
+  P.reasonErode = function (ctx, a, b) {
+    var fl = function (c, k) { return Math.max((c.flags && +c.flags[k]) || 0, k === 'aphro' && c.aphro ? 1 : 0); };
+    var drunk = (fl(a, 'drunk') + fl(b, 'drunk')) / 200, aph = Math.min(1, (fl(a, 'aphro') + fl(b, 'aphro')) / 2);
+    var heat = Math.min(1, Math.max((a.m && +a.m.heat) || 0, (b.m && +b.m.heat) || 0, (a.om && +a.om.heat > 0 ? 80 : 0), (b.om && +b.om.heat > 0 ? 80 : 0)) / 100);
+    var lust = Math.min(1, (((a.emo && a.emo.lust) || 0) + ((b.emo && b.emo.lust) || 0)) / 200), st = ((a.stress || 0) + (b.stress || 0)) / 200;
+    var room = !!(ctx && ctx.scen && ctx.scen.id === 'whiteroom' && Array.isArray(ctx.rules) && ctx.rules.some(function (r) { return r && (r.k === 'h' || r.k === 'kiss'); }));
+    var pf = pfOf(ctx, a, b);
+    return Math.min(0.85, drunk * 0.6 + aph * 0.6 + heat * 0.5 + lust * 0.3 + st * 0.2 + (room ? 0.35 : 0) + (pf && (pf.night || pf.fwb) ? 0.25 : 0));
+  };
+  /* 理性の倍率：二人の理性の平均（状況で削れたあと）が高いほど起きにくい（1 で ×0.55、0 で ×1.25）。止めはしない */
+  P.reasonK = function (ctx, a, b) {
+    var r = (P.reason(a) + P.reason(b)) / 2 * (1 - P.reasonErode(ctx, a, b));
+    return HK.clamp(1.25 - r * 0.7, 0.55, 1.25);
+  };
+  /* 理性で踏みとどまる見込みの逆（0.61〜1）：起きるかどうかを一度だけ決める箇所（物語型の箱庭の夜など）で、理性がふつうより高い二人だけ起きにくくする（低い二人は 1） */
+  P.reasonP = function (ctx, a, b) { return HK.SAFE_ON || !a || !b ? 1 : Math.min(1, P.reasonK(ctx, a, b) / 0.9); };
+  var LIB_W = { none: 'なし', low: '弱', high: '強' };
+  P.driveWhy = function (ctx, a, b) {
+    var lv = function (v) { return v >= 0.62 ? '高' : v <= 0.38 ? '低' : '中'; };
+    var lb = function (c) { return LIB_W[P.libOf(c)] || '中'; };
+    var imp = ((a.tr && a.tr.impulse != null ? a.tr.impulse : 0.4) + (b.tr && b.tr.impulse != null ? b.tr.impulse : 0.4)) / 2;
+    var r = (P.reason(a) + P.reason(b)) / 2 * (1 - P.reasonErode(ctx, a, b));
+    return '性欲 ' + (lb(a) === lb(b) ? lb(a) : lb(a) + '／' + lb(b)) + '・衝動 ' + lv(imp) + '・理性 ' + lv(r);
+  };
+
   /* 受け攻めの向きが成り立つかを、恋愛できる相手の判定に加える */
   if (HK.canLove && !HK.canLove._pos) {
     var cl0 = HK.canLove;

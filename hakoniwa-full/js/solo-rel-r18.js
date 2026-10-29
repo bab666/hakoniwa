@@ -15,7 +15,8 @@
   function order(a, b) { return HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b]; }
   function okPair(ctx, a, b) {
     /* 恋愛対象「なし」の人の体だけの関係（free-sex.js の HK.State.freeSex。体の関係の相手・性欲の強さは pos.js）：恋愛（HK.canLove）は見ない。2026-10-27 担当HG */
-    if ((a.likes === 'none' || b.likes === 'none') && HK.State.freeSex && HK.State.freeSex(ctx, a, b)) return !RK.noRomance(ctx, a, b);
+    /* 「恋愛：なし」の二人・敵対や不仲の二人（free-sex.js の HK.FreeSex.lust。2026-10-28 担当MC）も、恋愛を見ずに体だけの関係として */
+    if ((a.likes === 'none' || b.likes === 'none' || (HK.FreeSex && HK.FreeSex.lust && HK.FreeSex.lust(ctx, a, b))) && HK.State.freeSex && HK.State.freeSex(ctx, a, b)) return !RK.noRomance(ctx, a, b);
     /* 恋愛相手の固定が食い違うだけで、体の関係は許されている組（engine.js の HK.lockSexOnly）：恋愛相手の固定を外して、恋愛対象の向きだけを見る（恋愛には進まない） */
     if (HK.lockSexOnly && HK.lockSexOnly(a, b)) { var a0 = Object.assign({}, a, { lock: null, locks: null }), b0 = Object.assign({}, b, { lock: null, locks: null }); return HK.canLove(a0, b0) && HK.canLove(b0, a0) && !RK.noRomance(ctx, a, b); }
     return HK.canLove(a, b) && HK.canLove(b, a) && !RK.noRomance(ctx, a, b) && !HK.lockBlocks(a, b);

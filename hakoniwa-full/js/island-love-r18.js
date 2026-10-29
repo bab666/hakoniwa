@@ -95,6 +95,13 @@
     for (k = 0; k < 2; k++) {
       x = two[k]; y = two[1 - k];
       if (p.couple || p.fellBy != null) break;
+      /* 恋愛の可否（両方向）・避けている人（HK.Avoid）・敵対や不仲の二人は恋に落ちない（free-sex.js の HK.FreeSex.fallOk。2026-10-29 担当MC2）。
+         敵対・不仲の二人は「嫌いなのに」「体だけ」の後日談（HK.FreeSex.afterHost。組ごとに一度） */
+      var FS = HK.FreeSex;
+      if (FS && FS.fallOk && !FS.fallOk(ctx, x, y)) {
+        if (p.hostBy == null && FS.afterHost && FS.kind && FS.kind(ctx, x, y) === 'host' && rng() < (FALL[ps(x)] || 0.2) + 0.2) { p.hostBy = x.i; p.hostNow = true; out = FS.afterHost(ctx, x, y); break; }
+        continue;
+      }
       if (rng() < (FALL[ps(x)] || 0.2) + x.tr.ac * 0.12 + (60 - Math.min(60, R(ctx, x, y).att)) / 400) {
         p.fellBy = x.i;
         ctx.mod(x, y, { att: 24, aff: 12 });
@@ -136,7 +143,8 @@
       var am = aftermath(ctx, a, b, was);
       if (am) {
         r.text += (/\n\n/.test(r.text) ? '\n\n' : '') + am;
-        r.why = (r.why || '') + (p.regret != null ? '。' + ctx.chars[p.regret].name + 'は、この夜を過ちと考えた（態度・CP）' : p.fellBy != null ? '。' + ctx.chars[p.fellBy].name + 'は、この夜をきっかけに恋に落ちた' : '');
+        r.why = (r.why || '') + (p.regret != null ? '。' + ctx.chars[p.regret].name + 'は、この夜を過ちと考えた（態度・CP）' : p.hostNow ? '。' + ctx.chars[p.hostBy].name + 'は、この夜のあとも嫌い合ったまま（敵対・不仲。恋にはならず体だけの関係）' : p.fellBy != null ? '。' + ctx.chars[p.fellBy].name + 'は、この夜をきっかけに恋に落ちた' : '');
+        p.hostNow = false;
       }
       return r;
     };
