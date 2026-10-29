@@ -152,7 +152,17 @@
      ・はっきりした口調（強気・厳格・冷静・冷静（落ち着き）・意地っ張り）の女性：男性的な荒い語尾（じゃねえ・〜ねえ・だぜ・やがれ）を女性の言い方に
        （ヤンキー・兄貴分・熱血など、荒い話し方そのものが口調の口調は直さない） */
   var END = '(?=[…‥。！？!?、」♡〜]|$)'; /* r18:ok */
-  var FEM_FIRM = { proud: 1, stern: 1, cool: 1, calm: 1, tsun: 1 };
+  var FEM_FIRM = { proud: 1, stern: 1, cool: 1, calm: 1, cool_soft: 1, tsun: 1 };
+  /* 硬い言い切りが個性の口調（厳格・冷静・冷静（落ち着き）・冷静（丸い））の女性：荒い語（じゃねえ・やがれ・ぜ・ぞ）だけ直し、
+     命令（出せ・待て・しろ）・推し量り（〜だろう）・詠嘆の「だな」・「〜てくれ」・「〜ないか」は言い切りのまま（「〜なさい」「〜ね」「〜でしょう」にしない。2026-10-29 利用者の指摘） */
+  var FEM_PLAIN = { stern: 1, cool: 1, calm: 1, cool_soft: 1 };
+  /* 「〜やがれ」を素の命令形に（待ちやがれ→待て、見やがれ→見ろ） */
+  var YG_I2E = { 'い': 'え', 'き': 'け', 'ぎ': 'げ', 'し': 'せ', 'ち': 'て', 'に': 'ね', 'び': 'べ', 'み': 'め', 'り': 'れ' };
+  function plainYagare(q) {
+    /* 「しやがれ」は、五段の「話し・出し」などの後だけ「せ」、ほか（勝手にしやがれ）は「しろ」 */
+    return q.replace(/(話|出|返|離|渡|消|探|直|貸|回|隠|外|押|許|晒|殺|落と|起こ|鳴ら|揺ら|垂ら|漏ら)しやがれ/g, '$1せ').replace(/しやがれ/g, 'しろ')
+      .replace(/([ぁ-ゖ一-鿿々])やがれ/g, function (m, c) { return YG_I2E[c] ? YG_I2E[c] : c + 'ろ'; });
+  }
   V.genderEnd = function (q, who) {
     if (!q || !who) return q;
     var T = HK.TONES && HK.TONES[who.tone];
@@ -170,7 +180,8 @@
       q = q.replace(/じゃねえか/g, 'じゃない').replace(/じゃねえ(?=[…‥。！？!?、」♡よ]|$)/g, 'じゃない')
         .replace(/([ぁ-ゖ])ねえ(?=[よか…‥。！？!?、」]|$)/g, '$1ない')
         .replace(new RegExp('だぜ' + END, 'g'), 'だよ').replace(new RegExp('([ぁ-ゖ])ぜ' + END, 'g'), '$1よ')
-        .replace(/やがれ/g, 'なさい').replace(/だろうが(?=[…‥。！？!?、」]|$)/g, 'でしょう');
+        .replace(/だろうが(?=[…‥。！？!?、」]|$)/g, FEM_PLAIN[who.tone] ? 'だろう' : 'でしょう');
+      q = FEM_PLAIN[who.tone] ? plainYagare(q).replace(new RegExp('だぜ' + END, 'g'), 'だ').replace(new RegExp('([ぁ-ゖ])ぜ' + END, 'g'), '$1') : q.replace(/やがれ/g, 'なさい');
     }
     if (who.gender === 'f' && (!HK.toneAxis || (HK.toneAxis(who.tone) || {}).ending !== 'm')) q = femKiri(femSoft(q, who), who);
     return q;
@@ -181,26 +192,31 @@
   var FEM_DROP = { stern: 1, cool: 1, calm: 1 };
   var FEM_HARSH = /殺|潰|殴|呪|ぶっ|ぶち|思い知|後悔|地獄|八つ裂|覚え|吊|晒/, FEM_WILL = /証明|暴|ネタ|笑い話|見返|終わらせ|勝っ/;
   function femSoft(q, who) {
-    var drop = FEM_DROP[who.tone], ks = who.tone === 'kansai';
+    var drop = FEM_DROP[who.tone] || FEM_PLAIN[who.tone], ks = who.tone === 'kansai';
     var sent = function (str, off) { var a = str.slice(0, off); return a.slice(Math.max(a.lastIndexOf('。'), a.lastIndexOf('！'), a.lastIndexOf('？')) + 1); };
-    return q.replace(/じゃねえか?/g, 'じゃない')
+    var plain = FEM_PLAIN[who.tone];
+    if (plain) q = plainYagare(q);
+    q = q.replace(/じゃねえか?/g, 'じゃない')
       .replace(who.tone === 'usan' ? /^$/ : /((?:(?<![たかな])ら|(?<=に)なら|[まわがばさ]|(?<=[かまらわ])ん|でき|見え|言え|聞こえ|られ|れ|め|せ|け))(?<!ねえ)ねえ(?!ね)(?=[よかぞぜ…‥。！？!?、」♡〜]|ん[だで]|$)/g, '$1ない')
       .replace(/(?:し|([えけげせてねべめれ]))やがって/g, function (m, e) { return (e || 'し') + 'てくれちゃって'; }).replace(/てやが(?:る|った)/g, function (m) { return /った$/.test(m) ? 'てた' : 'てる'; }).replace(/しやがる/g, 'する').replace(/やがれ/g, 'なさい')
       .replace(/くれてやる(?=[よぞぜ…‥。！？!?、」♡〜]|$|から)/g, 'あげる')
-      .replace(/(て|(?<=ん)で)やる(?=[よぞぜ…‥。！？!?、」♡〜]|$|から)/g, function (m, te, off, str) { var s0 = sent(str, off); if (FEM_HARSH.test(s0)) return m; if (ks) return (te === 'て' ? 'た' : 'だ') + 'る'; return te + (FEM_WILL.test(s0) ? 'みせる' : 'あげる'); })
-      .replace(new RegExp('だぜ' + END, 'g'), drop ? 'だ' : 'だよ').replace(new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![いな])ぜ' + END, 'g'), 'よ')
-      .replace(new RegExp('だぞ' + END, 'g'), drop ? 'だ' : 'だよ').replace(new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![どなうーよ])ぞ' + END, 'g'), ks ? '' : 'よ')
-      .replace(/だろうが(?=[…‥。！？!?、」]|$)/g, 'でしょう')
-      .replace(/だろ(?=[…‥。！!、」♡〜]|$)/g, function (m, off, str) { return /(?:何|なに|なん|どう|なぜ|どこ|いつ|誰(?!か)|どれ|どんな)/.test(sent(str, off)) ? m : 'でしょ'; })
+      .replace(/(て|(?<=ん)で)やる(?=[よぞぜ…‥。！？!?、」♡〜]|$|から)/g, function (m, te, off, str) { var s0 = sent(str, off); if (FEM_HARSH.test(s0) || plain) return m; if (ks) return (te === 'て' ? 'た' : 'だ') + 'る'; return te + (FEM_WILL.test(s0) ? 'みせる' : 'あげる'); })
+      .replace(new RegExp('だぜ' + END, 'g'), drop ? 'だ' : 'だよ').replace(new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![いな])ぜ' + END, 'g'), plain ? '' : 'よ')
+      .replace(new RegExp('だぞ' + END, 'g'), drop ? 'だ' : 'だよ').replace(new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![どなうーよ])ぞ' + END, 'g'), ks || plain ? '' : 'よ')
+      .replace(/だろうが(?=[…‥。！？!?、」]|$)/g, plain ? 'だろう' : 'でしょう');
+    /* 硬い言い切りの口調（FEM_PLAIN）は、断定の「だろ」・呼びかけの「おい」・命令の「しろ」をそのまま */
+    if (plain) return q;
+    return q.replace(/だろ(?=[…‥。！!、」♡〜]|$)/g, function (m, off, str) { return /(?:何|なに|なん|どう|なぜ|どこ|いつ|誰(?!か)|どれ|どんな)/.test(sent(str, off)) ? m : 'でしょ'; })
       .replace(/(^|[「、…‥\s])おい(?=[、！!…‥。っ]|$)/g, '$1ねえ').replace(new RegExp('(?<=[一-鿿ァ-ヶー])しろ' + END, 'g'), 'しなさい');
   }
   /* 女性の話し手（男性的な口調を選んでいない人）の文末の、命令・禁止・詠嘆の「な」・「〜てくれ」・「〜のか」・「〜かよ」などの男性的な形（2026-10-26 順148）。
      掛け合いの文や、硬い常体（F）のベース・強い口調の言い換え・書き下ろしから来る「全部聞かせろ」「声を殺すな」「正直な体だな」「もっと聞かせてくれ」を、
-     ・きりっとした口調（強気・厳格・冷静・冷静（落ち着き）・冷静（丸い）・意地っ張り）は「全部聞かせなさい」「声を殺さないで」「正直な体ね」「もっと聞かせて」に
+     ・きりっとした口調（強気・意地っ張り）は「全部聞かせなさい」「声を殺さないで」「正直な体ね」「もっと聞かせて」に
        （強気・意地っ張りは「〜なさいよ」も残す）。とっさの「伏せろ！」「離せ！」「触るな！」、喘ぎの混じる拒み（「触るな……っ」）は、そのまま
+     ・硬い言い切りの口調（厳格・冷静・冷静（落ち着き）・冷静（丸い）。FEM_PLAIN）は、ここでは何も変えない（言い切りのまま。2026-10-29）
      ・それ以外の口調は「全部聞かせて」「声を殺さないで」「正直な体だね」に
      関西弁（独自の語尾）・ミステリアス以外の仕上げの済んだ口調もここを通るが、言い換えるのは文末の形だけ。脅し・罵り（殺す・死ね など）の文はそのまま */
-  var FEM_KIRI = { proud: 1, stern: 1, cool: 1, calm: 1, cool_soft: 1, tsun: 1, tsun_n: 1 }, FEM_KIRI_YO = { proud: 1, tsun: 1, tsun_n: 1 };
+  var FEM_KIRI = { proud: 1, tsun: 1, tsun_n: 1 }, FEM_KIRI_YO = { proud: 1, tsun: 1, tsun_n: 1 };
   var FK_E2U = { 'え': 'う', 'け': 'く', 'げ': 'ぐ', 'せ': 'す', 'て': 'つ', 'べ': 'ぶ', 'め': 'む', 'れ': 'る' };
   var FK_E2I = { 'え': 'い', 'け': 'き', 'げ': 'ぎ', 'せ': 'し', 'て': 'ち', 'べ': 'び', 'め': 'み', 'れ': 'り' };
   var FK_U2TE = { 'う': 'って', 'つ': 'って', 'る': 'って', 'く': 'いて', 'ぐ': 'いで', 'す': 'して', 'む': 'んで', 'ぶ': 'んで', 'ぬ': 'んで' };
@@ -281,6 +297,8 @@
   function femKiri(q, who) {
     if (!q || who.tone === 'kansai') return q;
     var kiri = !!FEM_KIRI[who.tone], keepYo = !!FEM_KIRI_YO[who.tone];
+    /* 硬い言い切りの口調（FEM_PLAIN）：言葉の「すげえ」だけ直し、文末の形（命令・だな・てくれ・ないか・だろう）は言い切りのまま。「飯」「悪い」も口調の語彙（厳格の辞書の ご飯=飯・ごめん=すまない）なので直さない */
+    if (FEM_PLAIN[who.tone]) return q.replace(/すげえ/g, 'すごい').replace(/すげ(?=[…‥、。！!？?っッ〜ー]|$)/g, 'すご');
     var moanLine = /[ぁぃぅぇぉ♡]|[っッ](?=[…‥、。！!？?\s」〜～ー]|$)/.test(q);
     /* 言葉：すげえ→すごい、飯→ご飯、謝りの「悪い。」→「ごめん。」 */
     q = q.replace(/すげえ/g, 'すごい').replace(/すげ(?=[…‥、。！!？?っッ〜ー]|$)/g, 'すご').replace(/(^|[^ご御一-鿿々]|[朝昼晩])飯(?![場盒粒])/g, '$1ご飯')
