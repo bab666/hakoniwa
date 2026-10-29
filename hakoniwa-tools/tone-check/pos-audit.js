@@ -427,7 +427,9 @@ const JUDGE = function (HK, opt) {
             if (a && b && /男たち|略奪者|目出し帽|村人たち|村の男|若い衆/.test(t0)) continue;
             /* 性的な文が「相手」（サキュバスの獲物など、名前のないモブ）とのものだけで、二人が同じ性的な文に出ないときは数えない */
             if (a && b) { const ss = t.split(/(?<=[。！？\n])/).filter(x => SEXCORE.test(x) && (x.indexOf(a.name) >= 0 || x.indexOf(b.name) >= 0)); if (ss.length && !ss.some(x => x.indexOf(a.name) >= 0 && x.indexOf(b.name) >= 0) && ss.every(x => /相手/.test(x))) continue; }
-            if (a && b && !P.okSex(a, b) && t.indexOf(a.name) >= 0 && t.indexOf(b.name) >= 0) { out.n.V3++; out.bySc[sc].V3++; if (out.V3.length < 200) out.V3.push(sc + '#' + s + ' | ' + a.name + '(' + (a.pos || '-') + a.gender + ')×' + b.name + '(' + (b.pos || '-') + b.gender + ') | ' + t.slice(0, 300)); }
+            /* R18が中心の箱庭（HK.State.R18_CORE：常識改変・ダンジョンなど）では「R18に参加しない」は効かない仕様（engine.js の HK.charFlags）。その設定を外した写しで見る（2026-10-29 利用者の判断） */
+            const core = HK.State && HK.State.R18_CORE && HK.State.R18_CORE[sc], v3c = c => core && c.noR18 ? Object.assign({}, c, { noR18: false }) : c;
+            if (a && b && !P.okSex(v3c(a), v3c(b)) && t.indexOf(a.name) >= 0 && t.indexOf(b.name) >= 0) { out.n.V3++; out.bySc[sc].V3++; if (out.V3.length < 200) out.V3.push(sc + '#' + s + ' | ' + a.name + '(' + (a.pos || '-') + a.gender + ')×' + b.name + '(' + (b.pos || '-') + b.gender + ') | ' + t.slice(0, 300)); }
           }
         }
       },
