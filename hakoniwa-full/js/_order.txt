@@ -293,6 +293,9 @@ js/fam-kin.js
 js/cold-fear-text.js @pack:rel
 js/cold-fear.js @pack:rel
 js/cold-fear-r18.js @pack:rel
+js/esteem-text.js @pack:rel
+js/esteem.js @pack:rel
+js/esteem-r18.js @pack:rel
 js/solo-kaihen-data.js @scen:kaihen
 js/solo-kaihen-more.js @scen:kaihen
 js/solo-kaihen-voice.js @scen:kaihen
