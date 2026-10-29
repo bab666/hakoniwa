@@ -12,7 +12,7 @@
   "scen-br": "scen-br.910e32b404.js",
   "scen-trial": "scen-trial.6aad1fd472.js",
   "scen-dungeon": "scen-dungeon.f8de2e1e93.js",
-  "scen-massage": "scen-massage.45b9344bfe.js",
+  "scen-massage": "scen-massage.0c2a2a38f9.js",
   "scen-hole": "scen-hole.48737df521.js",
   "scen-zombie": "scen-zombie.fd83a7050b.js",
   "scen-rpg": "scen-rpg.c170211c99.js",
@@ -67,7 +67,7 @@
   "tone-yankee": "tone-yankee.62a1d8e08b.js"
  },
  "prev": {
-  "core": "core.32a69a5b8f.js",
+  "core": "core.8e480378cf.js",
   "late": "late.d3adca0e0c.js",
   "pack-rel": "pack-rel.3038812eb5.js",
   "scen-goukon": "scen-goukon.9dd7db5027.js",
