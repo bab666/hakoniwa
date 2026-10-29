@@ -56,6 +56,10 @@
         迫る出来事：エンジン型は恋愛（cat:'romance'）・体の関係の印（sex）・執着の行動（ob_act）、物語型は迫る札（告白・誘い・口づけ・夜這い・押し倒す・監禁 など。APPROACH_TAG）と、
         住人二人だけの性的な場面の記録（lewd）。ふつうの回と、追加の「避けている関係」の配役（ACASTS）で NA 回（N/2、4 回以上）ずつ回して数える（その回の S1〜S18 も数える）。
         「参考」の s31 に、箱庭・札ごとの件数を出す
+   S35（2026-10-29 愛憎）: 恐怖・無関心と愛憎を同じ向きに持つ人が、愛憎の出来事（id が tie_lh_・lh_、理由・札に「愛憎」）で自分から迫った（一人目）／
+        家族の表の顔（兄弟姉妹など）に愛憎を重ねた組が、恋愛の関係なしに恋人になった（エンジン型の pf.couple・物語型の恋人の記録）。配役は FCASTS の愛憎の回
+   S36（2026-10-29 劣等感・優越）: 恐怖・無関心を同じ向きに持つ人が、劣等感・優越の出来事（id が tie_es_、理由・札に「劣等感」「優越」）の一人目に出た／
+        HK.Ties.expand のあとに、同じ向きの劣等感と優越が両方残った
    S32（2026-10-28 担当KA）: 蘇る人（特殊役職の不死・体の特徴の不死・吸血鬼。蘇らない吸血鬼 spNoRev・行方不明 spGone は除く。HK.Special.canRevive）の
         最期の言葉（遺言）が、記録の文（「〇〇が最期に遺した言葉」）・住人の lastWords・結末の箇条書き・結末の「最期の言葉」（E.last）に出た。
         蘇る人は遺言を残さず、蘇ったときの一言（special.js の SP.reviveLine）を残す。判定は回の終わりの住人（物語型 S.P・エンジン型 ctx.chars）で見る
@@ -110,7 +114,11 @@ const PASS = function* (HK, opt) {
       { g: ['m', 'f', 'm', 'f', 'm', 'f'], p: ['top', 'bottom', '', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'apathy' }, { a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'fear' }, { a: 3, b: 2, type: 'crush' }, { a: 4, b: 5, type: 'fiance' }, { a: 1, b: 4, type: 'yan', sub: 'dep' }] },
       { g: ['f', 'm', 'f', 'm', 'f', 'f'], p: ['', 'top', 'bottom', 'top', '', 'bottom'], ties: [{ a: 1, b: 0, type: 'fear' }, { a: 0, b: 1, type: 'yan', sub: 'hatelove' }, { a: 2, b: 3, type: 'fiance', feel: 'refuse' }, { a: 4, b: 5, type: 'fiance' }, { a: 3, b: 5, type: 'apathy' }, { a: 5, b: 3, type: 'fwb' }] },
       { g: ['m', 'm', 'f', 'f', 'm', 'f'], p: ['top', 'top', '', '', 'bottom', 'top'], ties: [{ a: 0, b: 1, type: 'fiance' }, { a: 2, b: 3, type: 'fiance', feel: 'unsure' }, { a: 4, b: 5, type: 'fear' }, { a: 4, b: 5, type: 'fwb', mode: 'mistress' }, { a: 0, b: 2, type: 'enemy', grade: 'hate' }, { a: 1, b: 3, type: 'comrade' }, { a: 1, b: 5, type: 'comrade' }, { a: 3, b: 5, type: 'comrade' }] },
-      { g: ['f', 'm', 'm', 'f', 'f', 'm'], p: ['bottom', 'top', 'riba', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'fwb', mode: 'mistress' }, { a: 1, b: 3, type: 'lover' }, { a: 2, b: 4, type: 'apathy' }, { a: 4, b: 2, type: 'yan' }, { a: 5, b: 0, type: 'fear' }, { a: 3, b: 5, type: 'benefactor', feel: 'guilt' }, { a: 2, b: 5, type: 'fond', mode: 'oshi' }, { a: 3, b: 4, type: 'honmei' }] }
+      { g: ['f', 'm', 'm', 'f', 'f', 'm'], p: ['bottom', 'top', 'riba', '', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'fwb', mode: 'mistress' }, { a: 1, b: 3, type: 'lover' }, { a: 2, b: 4, type: 'apathy' }, { a: 4, b: 2, type: 'yan' }, { a: 5, b: 0, type: 'fear' }, { a: 3, b: 5, type: 'benefactor', feel: 'guilt' }, { a: 2, b: 5, type: 'fond', mode: 'oshi' }, { a: 3, b: 4, type: 'honmei' }] },
+      /* S35：0→1 恐怖＋愛憎（恐れる側は迫らない）、2→3 無関心＋愛憎、4↔5 兄弟姉妹＋愛憎（双方。恋愛：自動のまま恋人にならない） */
+      { g: ['m', 'f', 'm', 'f', 'f', 'm'], p: ['top', 'bottom', 'top', 'bottom', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'fear' }, { a: 0, b: 1, type: 'lovehate' }, { a: 2, b: 3, type: 'apathy' }, { a: 2, b: 3, type: 'lovehate' }, { a: 4, b: 5, type: 'sibling' }, { a: 4, b: 5, type: 'lovehate', cold: 'both' }] },
+      /* S36：0→1 恐怖＋劣等感、2→3 無関心＋優越、4→5 劣等感と優越を同じ向きに（あとの方が残る）、5→4 愛憎（友人の顔） */
+      { g: ['f', 'm', 'f', 'm', 'm', 'f'], p: ['bottom', 'top', '', 'top', 'top', 'bottom'], ties: [{ a: 0, b: 1, type: 'fear' }, { a: 0, b: 1, type: 'inferior' }, { a: 2, b: 3, type: 'apathy' }, { a: 2, b: 3, type: 'superior' }, { a: 4, b: 5, type: 'inferior' }, { a: 4, b: 5, type: 'superior' }, { a: 4, b: 5, type: 'friend' }, { a: 5, b: 4, type: 'lovehate' }] }
     ];
     /* 性行為の相手を固定する人（lo）の相手：関係の恋人がいればその人、いなければ隣の人（2026-10-26：「恋人だけ」をなくし、固定に一本化） */
     const loPart = (cast, i, n) => { const t = (cast.ties || []).filter(t => t.type === 'lover' && (t.a === i || t.b === i) && t.a < n && t.b < n)[0]; return t ? (t.a === i ? t.b : t.a) : (i + 1) % n; };
@@ -291,7 +299,7 @@ const JUDGE = function (HK, opt) {
        S19 は、引き金の記録のあとの値の動き・助け合いを数えない。S19・S20 の性的な文は、引き金の「力ずくで迫られる」場面（理由に〔合意のない展開〕と変化の印）を数えない */
     const CFX = /無関心の変化：/, CFF = /〔合意のない展開〕[^]*(?:無関心|恐怖)の変化：/;
     const out = { n: {}, ex: {}, drop: {}, runs: 0, err: [], bySc: {}, anySex: {} };
-    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33', 'S34'];
+    const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33', 'S34', 'S35', 'S36'];
     out.info = {};
     /* S31：避けている人が自分から迫った（2026-10-28 担当JE）。迫る札（物語型）と、迫らない札（断る・逃げる・助ける など） */
     const APPROACH_TAG = /告白|口づけ|キス|夜這い|誘|迫|押し倒|監禁|独占|一夜|セフレ|デート|求愛|口説|抱|愛撫|奉仕|夜|催眠|媚薬|襲|執着|甘え|膝枕|添い寝|手を(?:繋|握)|恋|想い|両想い/;
@@ -313,6 +321,19 @@ const JUDGE = function (HK, opt) {
     const nlOf = (ties, i, j) => (ties || []).filter(t => (t.type === 'apathy' || t.type === 'fear') && ((t.a === i && t.b === j) || (t.a === j && t.b === i)))[0] || null;
     const nlKey = t => t.type === 'apathy' ? 'S19' : 'S20';
     const nlTxt = (C, t) => (C[t.a] || {}).name + '→' + (C[t.b] || {}).name + '：' + (t.type === 'apathy' ? '無関心' : '恐怖');
+    /* S35・S36：恐怖・無関心と同じ向きの愛憎・劣等感・優越（cold:'both' の愛憎は双方） */
+    const feelHas = (ty, a, b) => (cur && cur.feel || []).some(t => t.type === ty && ((t.a === a && t.b === b) || (ty === 'lovehate' && t.cold === 'both' && t.a === b && t.b === a)));
+    const lhKin = () => (cur && cur.feel || []).filter(t => t.type === 'lovehate' && cur.feel.some(u => HK.TIES[u.type] && HK.TIES[u.type].family && u.love !== 'ok' && tkey(u.a, u.b) === tkey(t.a, t.b)) && !cur.feel.some(u => /^(lover|crush|yan|fwb|fiance|mate|fated)$/.test(u.type) && tkey(u.a, u.b) === tkey(t.a, t.b)));
+    const esHit = (acs, o, label) => {
+      if (!cur || !cur.feel || acs.length < 2) return;
+      const x = acs[0].i, y = acs[1].i, txt = label + ' ' + String(o.why || '') + ' ' + String(o.tag || '');
+      if (/(^|:)(tie_)?lh_/.test(label) || /愛憎/.test(txt)) out.info.lhEv = (out.info.lhEv || 0) + 1;
+      if (/(^|:)tie_es_/.test(label) || /劣等感|優越/.test(txt)) out.info.esEv = (out.info.esEv || 0) + 1;
+      if (!(feelHas('fear', x, y) || feelHas('apathy', x, y))) return;
+      const why = (feelHas('fear', x, y) ? '恐怖' : '無関心');
+      if ((/(^|:)(tie_)?lh_/.test(label) || /愛憎/.test(txt)) && feelHas('lovehate', x, y)) hit('S35', why + '＋愛憎の ' + acs[0].name + '→' + acs[1].name + ' が迫った [' + label + '] | ' + String(o.text || '').slice(0, 100));
+      if ((/(^|:)tie_es_/.test(label) || /劣等感|優越/.test(txt)) && (feelHas('inferior', x, y) || feelHas('superior', x, y))) hit('S36', why + '＋劣等感・優越の ' + acs[0].name + '→' + acs[1].name + ' [' + label + '] | ' + String(o.text || '').slice(0, 100));
+    };
     /* 区切りごと（エンジン型）：無関心・恐怖の組が恋人・夜になっていないか／破談のあとに恋人になっていないか */
     const feelStep = (ctx, end) => {
       if (!cur || !cur.feel || !ctx || !ctx.pf) return;
@@ -325,6 +346,7 @@ const JUDGE = function (HK, opt) {
           if (n0 > (seen['n' + tkey(t.a, t.b)] || 0)) hit(nlKey(t), '夜 ' + nlTxt(C, t));
           seen['n' + tkey(t.a, t.b)] = n0;
         }
+        if (t.type === 'lovehate' && lhKin().indexOf(t) >= 0 && pf.couple && !seen['k' + tkey(t.a, t.b)]) { seen['k' + tkey(t.a, t.b)] = 1; hit('S35', '家族の顔の愛憎が恋人に ' + C[t.a].name + '×' + C[t.b].name); }
         if (t.type === 'fiance' && pf.fiBroken != null && pf.couple && !seen['f' + tkey(t.a, t.b)]) { seen['f' + tkey(t.a, t.b)] = 1; hit('S21', '破談のあとに恋人 ' + C[t.a].name + '×' + C[t.b].name); }
       });
     };
@@ -437,6 +459,8 @@ const JUDGE = function (HK, opt) {
           /* 一人の出来事（scope: 'solo'。街のαに襲われたΩを、そばの住人が庇う om_mobr など）は、一人目が迫る側ではないので数えない（2026-10-28 担当MC） */
           if ((o.cat === 'romance' || sx || /^ob_act/.test(evid)) && !(this._ev && this._ev.scope === 'solo')) avoidHit(this, acs, o, (o.cat || '') + (sx ? '+sex' : '') + ':' + (evid || kind));
         }
+        /* S35・S36（エンジン型） */
+        if (cur && !cur.story && e && !e.skipped && !SKIPK.test(kind) && acs.length >= 2) esHit(acs, o, (this._ev && this._ev.id) || kind);
         /* S19・S20・S21（エンジン型）：無関心・恐怖の二人の恋愛の出来事／無関心な人の助け合い・嫉妬・心配／破談のあとの恋愛の出来事 */
         if (cur && cur.feel && !cur.story && e && !e.skipped && !SKIPK.test(kind) && acs.length >= 2) {
           const x = acs[0], y = acs[1], nl = nlOf(cur.feel, x.i, y.i);
@@ -508,6 +532,8 @@ const JUDGE = function (HK, opt) {
           /* approach: false の記録（館じゅうに媚薬を盛る など、特定の相手に迫らない記録。2026-10-29 担当MR）は数えない */
           if (o.approach !== false && !REACT_WHY.test(String(o.why || '')) && ((APPROACH_TAG.test(tg) && !APPROACH_NO.test(tg)) || (e && e.lewd && acs.length === 2 && !APPROACH_NO.test(tg)))) avoidHit(S, acs, o, (tg || kind) + (e && e.lewd ? '+lewd' : ''));
         }
+        /* S35・S36（物語型） */
+        if (cur && cur.story && S && acs.length >= 2 && !SKIPK.test(kind)) esHit(acs, o, String(o.id || o.tag || kind));
         /* S19・S20（物語型）：無関心・恐怖の二人だけの、恋愛・夜の札の記録 */
         if (cur && cur.feel && cur.story && acs.length === 2 && /告白|恋|想い|デート|口づけ|キス|両想い|夜/.test(o.tag || '') && !/失恋|恋敵|元恋人|夜明け|夜番|夜警|見張り|一夜明け|無音の夜/.test(o.tag || '')) { const nl = nlOf(cur.feel, acs[0].i, acs[1].i); if (nl) hit(nlKey(nl), '物語型 [' + o.tag + '] ' + nlTxt(S.P, nl) + ' | ' + String(o.text).slice(0, 100)); }
         /* S15・S16（物語型）：恋人の記録の増え方と、二人だけの恋愛の札の記録 */
@@ -736,13 +762,18 @@ const JUDGE = function (HK, opt) {
     return {
       begin(run) {
         const k = kindOf(run), sc = run.sc, scen = HK.SCENARIOS[sc], m = run.meta || {};
+        /* S36：同じ向きの劣等感と優越は、箱庭に渡す前（HK.Ties.expand）に一つになる */
+        if (run.input && Array.isArray(run.input.ties) && HK.Ties && HK.Ties.expand) {
+          const ex = HK.Ties.expand(run.input.ties), seenE = {};
+          ex.forEach(t => { if (t.type !== 'inferior' && t.type !== 'superior') return; const kk = t.a + '>' + t.b; if (seenE[kk]) { cur = { sc: run.sc, story: false }; out.bySc[sc] = out.bySc[sc] || { runs: 0 }; hit('S36', '同じ向きの劣等感と優越が残った ' + t.a + '→' + t.b); } seenE[kk] = 1; });
+        }
         if (k === 'main') { out.bySc[sc] = out.bySc[sc] || { runs: 0 }; cur = { sc, story: !!scen.solo, offTags: m.offTags, feel: m.feel ? run.input.ties : null, avd: m.avd }; lastCtx = null; dz = { snap: {}, deaths: [], rev: [], engine: null, S: null }; }
         else if (k === 'w1') { out.bySc.locker = out.bySc.locker || { runs: 0 }; cur = { sc: 'locker', story: true, offTags: {}, feel: null }; }
         else if (k === 'dz' || k === 's32') { out.bySc[sc] = out.bySc[sc] || { runs: 0 }; cur = { sc, story: !!scen.solo, offTags: {}, feel: null }; dz = { snap: {}, deaths: [], rev: [], engine: null, S: null }; lastCtx = null; lastS = null; }
         else if (k === 's33') { cur = { sc: 'classroom先生', story: false }; out.bySc[cur.sc] = out.bySc[cur.sc] || { runs: 0 }; s33on = true; }
         else {
           /* ほかのパスの回：ふつうの回と同じ見方（固定・同一人物・先生の配役の印は無し）。無関心・恐怖・許嫁の関係があれば S19〜S21 も見る */
-          const ties = run.input.ties || [], fl = ties.filter(t => t.type === 'apathy' || t.type === 'fear' || t.type === 'fiance');
+          const ties = run.input.ties || [], fl = ties.filter(t => t.type === 'apathy' || t.type === 'fear' || t.type === 'fiance' || t.type === 'lovehate' || t.type === 'inferior' || t.type === 'superior');
           xm = { offTags: offOf(run.input.env), feel: fl.length ? ties : null };
           out.bySc[sc] = out.bySc[sc] || { runs: 0 };
           cur = { sc, story: !!scen.solo, offTags: xm.offTags, feel: xm.feel, avd: false }; lastCtx = null; lastS = null; dz = { snap: {}, deaths: [], rev: [], engine: null, S: null };
@@ -782,6 +813,12 @@ const JUDGE = function (HK, opt) {
               if (HK.canLove(x, y) || HK.canLove(y, x)) hit(nlKey(t), '恋愛の判定が通る（HK.canLove） ' + nlTxt(P0, t));
               if (HK.Pos && HK.Pos.okSex(x, y)) hit(nlKey(t), '体の関係の判定が通る（HK.Pos.okSex） ' + nlTxt(P0, t));
               if (lastS && cur.story && lastS.P === P0) { const lv = storyLov(lastS); if (lv[tkey(t.a, t.b)]) hit(nlKey(t), '物語型の恋人の記録 ' + nlTxt(P0, t)); }
+            }
+            /* S35：家族の顔の愛憎（物語型の恋人の記録・恋人の結末の関係） */
+            if (t.type === 'lovehate' && x && y && lhKin().indexOf(t) >= 0) {
+              if (lastS && cur.story && lastS.P === P0) { const lv = storyLov(lastS); if (lv[tkey(t.a, t.b)]) hit('S35', '家族の顔の愛憎が物語型の恋人に ' + x.name + '×' + y.name); }
+              const pr = (res.pairs || []).filter(p => tkey(p.a, p.b) === tkey(t.a, t.b))[0];
+              if (pr && pr.cls === 'love' && /恋人|両想い|夫婦/.test(String(pr.name || ''))) hit('S35', '家族の顔の愛憎の結末が恋人 ' + x.name + '×' + y.name + '＝' + pr.name);
             }
             /* 無関心：a→b の好意・惹かれが、区切りごとの記録（history）でずっと同じ */
             if (t.type === 'apathy' && !cur.story && Array.isArray(res.history) && res.history.length) {
@@ -984,7 +1021,7 @@ const JUDGE = function (HK, opt) {
 function print(r, errors) {
   const ids = Object.keys(r.bySc);
   for (const sc of ids) {
-    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33', 'S34'].map(k => k + ' ' + (b[k] || 0));
+    const b = r.bySc[sc]; const cells = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33', 'S34', 'S35', 'S36'].map(k => k + ' ' + (b[k] || 0));
     console.log(sc.padEnd(10), 'runs', b.runs, cells.join(' '), '誰とでも可の体の出来事', r.anySex[sc] || 0);
   }
   console.log('合計', JSON.stringify(r.n), '止めた', JSON.stringify(r.drop));
@@ -996,13 +1033,13 @@ function print(r, errors) {
   if (r.err.length) { console.log('--- 例外'); r.err.slice(0, 20).forEach(x => console.log('  ' + x)); }
   console.log('pageerr', JSON.stringify(errors.slice(0, 5)));
 }
-const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33', 'S34', 'W1'];
+const KEYS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33', 'S34', 'S35', 'S36', 'W1'];
 function summarize(r) {
   const items = {}, ex = {};
   KEYS.forEach(k => { items[k] = r.n[k] || 0; ex[k] = (r.ex[k] || []).slice(0, 3); });
   return { items, ex, info: { 回: r.runs, 止めた: r.drop }, err: r.err.length, errEx: r.err.slice(0, 3) };
 }
-const LABEL = { S1: '死んだ人が出来事の主語に', S2: '監禁中の人が出来事に', S3: '場を離れた人が出来事に', S4: 'R18に参加しない人が性的な文に', S5: '恋愛・R18にしない二人が性的な文に', S6: '固定した相手だけの人がモブと', S7: '同じ記録で同じ性的な文が二度', S8: '切った内容のスイッチの出来事', S9: '館の助手が別の探偵を先生と', S10: '同じ性的な文が3つ以上の記録に', S11: '最期の言葉の名前の取り違え', S12: '同一人物の二人の恋愛・性的な文', S13: '複数の恋人なしで恋人が二人', S14: '一途な人が恋人以外と', S15: '恋愛相手の固定の外と恋愛・夜', S16: '別れずに別の相手と恋人に', S17: '誰とでも可の人の固定外の恋愛', S18: '体だけの場面のあとに恋人・恋愛', S19: '無関心の二人の恋愛・値の動き', S20: '恐怖の二人の恋愛', S21: '許嫁の破談のあとの恋愛', S22: 'グループの仲間（画面）', S25: '死んだ人が文の主語・話し手', S26: '死んだ人が主役・名前の出ない相手', S27: '遺体の残らない死の人の遺体の文', S28: '蘇りの記録なしに生き返った', S29: '結末で生死の扱いが食い違う', S30: '不在・閉じ込めの人が主役・話し手', S31: '避けている人が自分から迫った', S32: '蘇る人の遺言', S33: '先生と生徒の恋（環境値）', S34: '先生が生徒の輪に・休職した先生', W1: '箱庭の場所に合わない語' };
+const LABEL = { S1: '死んだ人が出来事の主語に', S2: '監禁中の人が出来事に', S3: '場を離れた人が出来事に', S4: 'R18に参加しない人が性的な文に', S5: '恋愛・R18にしない二人が性的な文に', S6: '固定した相手だけの人がモブと', S7: '同じ記録で同じ性的な文が二度', S8: '切った内容のスイッチの出来事', S9: '館の助手が別の探偵を先生と', S10: '同じ性的な文が3つ以上の記録に', S11: '最期の言葉の名前の取り違え', S12: '同一人物の二人の恋愛・性的な文', S13: '複数の恋人なしで恋人が二人', S14: '一途な人が恋人以外と', S15: '恋愛相手の固定の外と恋愛・夜', S16: '別れずに別の相手と恋人に', S17: '誰とでも可の人の固定外の恋愛', S18: '体だけの場面のあとに恋人・恋愛', S19: '無関心の二人の恋愛・値の動き', S20: '恐怖の二人の恋愛', S21: '許嫁の破談のあとの恋愛', S22: 'グループの仲間（画面）', S25: '死んだ人が文の主語・話し手', S26: '死んだ人が主役・名前の出ない相手', S27: '遺体の残らない死の人の遺体の文', S28: '蘇りの記録なしに生き返った', S29: '結末で生死の扱いが食い違う', S30: '不在・閉じ込めの人が主役・話し手', S31: '避けている人が自分から迫った', S32: '蘇る人の遺言', S33: '先生と生徒の恋（環境値）', S34: '先生が生徒の輪に・休職した先生', S35: '恐怖・無関心＋愛憎で迫った・家族の愛憎が恋人に', S36: '恐怖・無関心＋劣等感・優越の出来事・同じ向きの二重', W1: '箱庭の場所に合わない語' };
 module.exports = { passes: { state: PASS }, judges: { state: JUDGE }, print, summarize, LABEL, KEYS };
 
 if (require.main === module) (async () => {

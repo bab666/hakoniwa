@@ -19,8 +19,10 @@ const core = require('./audit/core.js');
   /* [記号, 表の見出し, 関係, 気質の上書き（理性）] */
 const COND = [
     ['a', '恋人', { type: 'lover' }], ['b', '友人', { type: 'friend' }], ['c', 'なし友人', { type: 'friend', love: 'no' }], ['d', 'なし恋人', { type: 'lover', love: 'no' }],
-    ['e', '敵対', { type: 'enemy' }], ['f', '不仲', { type: 'bad' }], ['g', '敵対愛憎', { type: 'enemy', lh: 'both' }], ['h', '関係なし', null],
-    ['i', '理性高', { type: 'friend', love: 'no' }, 'hi'], ['j', '理性低', { type: 'friend', love: 'no' }, 'lo']
+    ['e', '敵対', { type: 'enemy' }], ['f', '不仲', { type: 'bad' }], ['g', '敵対愛憎', [{ type: 'enemy' }, { type: 'lovehate', cold: 'both' }]], ['h', '関係なし', null],
+    ['i', '理性高', { type: 'friend', love: 'no' }, 'hi'], ['j', '理性低', { type: 'friend', love: 'no' }, 'lo'],
+    /* 気持ちの関係（2026-10-29。設計 4 章）：愛憎・劣等感・優越を付けた組が、付けない組（友人 b）より起こりにくくなっていないこと（衝動の倍率が効いていること） */
+    ['k', '友人愛憎', [{ type: 'friend' }, { type: 'lovehate', cold: 'both' }]], ['l', '友人劣等', [{ type: 'friend' }, { type: 'inferior' }]], ['m', '友人優越', [{ type: 'friend' }, { type: 'superior' }]]
   ];
 
 /* ---------- パス sexgate（ページの中）：opt = { N, only, force, lib, cond } ---------- */
@@ -47,7 +49,7 @@ const PASS = function* (HK, opt) {
           (sc.env || []).forEach(e => { if (e.max != null && /romance|love|night|lewd|heat|aphro|dose|pleasure|shady|prey/.test(e.id)) env[e.id] = e.max; });
           if (HK.Content) env.ct = HK.Content.TAGS.map(t => t.id).filter(t => FORCE || t !== 'force').join(',');
           const ties = [];
-          if (cd[2]) { ties.push(Object.assign({ a: 0, b: 1 }, cd[2])); if (n >= 4) ties.push(Object.assign({ a: 2, b: 3 }, cd[2])); }
+          if (cd[2]) [].concat(cd[2]).forEach(tt => { ties.push(Object.assign({ a: 0, b: 1 }, tt)); if (n >= 4) ties.push(Object.assign({ a: 2, b: 3 }, tt)); });
           yield { sc: id, s, input: { scenId: id, seed: 7300 + s * 41, env, chars, perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })), ties }, meta: { k } };
         }
       }
@@ -94,6 +96,8 @@ function verdict(r, show) {
       if (low.length) bad.push(id);
     }
     if (c.j >= MIN && c.i === 0) { v += '／不具合（理性で止まった）'; if (bad.indexOf(id) < 0) bad.push(id); }
+    /* 気持ちの関係の列：付けない組の 85% を下回ったら不具合（しづらくしない原則。比べる側が MIN_B 件以上あるときだけ） */
+    [['g', 'e'], ['k', 'b'], ['l', 'b'], ['m', 'b']].forEach(([x, y]) => { if (c[x] != null && c[y] >= MIN_B && c[x] < c[y] * 0.85) { v += '／不具合：' + x + '=' + Math.round(c[x] / c[y] * 100) + '%（' + y + ' 比）'; if (bad.indexOf(id) < 0) bad.push(id); } });
     if (c.j > 0) v += '／理性 高÷低 ' + Math.round(c.i / c.j * 100) + '%';
     show && console.log(id.padEnd(10), COND.map(cd => String(c[cd[0]]).padEnd(8 + cd[1].length)).join(' '), v, o.err ? 'err ' + o.err : '');
     if (show) o.ex.forEach(x => console.log('    ' + String(x).replace(/\n/g, ' ')));

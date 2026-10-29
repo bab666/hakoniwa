@@ -952,6 +952,9 @@ T.fond={mods:{aff:1.15,trust:1.1,att:0.4},effect:'慕う側が相手を一方的
 T.blind={mods:{trust:1.25,att:0.4},effect:'盲信する側は相手を絶対に正しいと信じ、相手に近づく人を遠ざけようとする。恋愛にはならない。揺らぎにくい',label:'盲信',dir:true,roleA:'盲信する側',roleB:'盲信される側',ab:{aff:40,trust:70,ten:4},ba:{aff:6,trust:8},pol:0,chem:0.4,pull:2,stiffA:{trust:0.2,aff:0.3},floorA:{trust:40},biasA:{help:2,conflict:1.3,romance:0.3,betray:0.1},biasB:{}};
 T.apathy={mods:{},effect:'無関心な側は相手に何の感情も動かさない。好意・信頼・惹かれ・緊張は最初のまま変わらず、相手との恋愛・夜・嫉妬・心配・助け合いの出来事に入らない（相手からの一方的な働きかけは起きる）',label:'無関心',dir:true,roleA:'無関心な側',roleB:'相手',ab:{},ba:{},pol:0,chem:0.05,pull:0.9,apathy:true,biasA:{romance:0,help:0.15,bond:0.3,conflict:0.4,combat:0.5,betray:0.6},biasB:{}};
 T.fear={mods:{},modsA:{trust:0.5,aff:0.6},effect:'恐れる側は相手を避け（同じ場所にいたがらない・目を合わせない・話しかけられると固まる）、命じられると逆らえずに従い、ほかの人に庇護を求める。この二人は恋愛にも夜にもならない',label:'恐怖',dir:true,roleA:'恐れる側',roleB:'恐れられる側',ab:{ten:42,aff: -12,trust: -18},ba:{},pol: -1,chem:0.05,fric:1.2,pull:1.1,fear:true,stiffA:{ten:0.4},biasA:{romance:0,help:0.3,bond:0.25,conflict:0.35,combat:0.25,betray:0.7},biasB:{romance:0.2}};
+T.lovehate={mods:{},effect:'愛憎を持つ側は、口や態度では嫌悪・反発しながら相手を構いたがり、相手がほかの人を構うと嫉妬する。どの関係にも重ねられ、表の関係（敵対・恋人・家族・友人など）で振る舞いの顔が変わる。相手も持つ（双方）を選べる。恋愛対象・受け攻めの合わない相手とは、構う・嫉妬するだけで恋人や体の関係にはならない',label:'愛憎',dir:true,roleA:'愛憎を持つ側',roleB:'向けられる側',ab:{ten:4},ba:{},pol:0,pull:1.25,feelTie:true};
+T.inferior={mods:{},modsA:{trust:0.8},effect:'劣等感を持つ側は相手に引け目を感じていて、助けられる・相手が目立つ・優しくされると、素直に受け取れず自己嫌悪に陥る。見返そうとして、肩を並べることも、恨みに変わることもある',label:'劣等感',dir:true,roleA:'引け目を感じる側',roleB:'相手',ab:{ten:6},ba:{},pol:0,pull:1.1,feelTie:true};
+T.superior={mods:{},modsA:{aff:0.8},effect:'優越を持つ側は自分が相手より上だと思っていて、助けられると「なぜこいつに」と苛立ち、相手より活躍できると優越感を覚える。相手が実力を示し続けると認めることも、立場が逆転することもある',label:'優越',dir:true,roleA:'見下す側',roleB:'相手',ab:{ten:4},ba:{},pol:0,pull:1.1,feelTie:true};
 T.fiance={mods:{att:1.1},effect:'家どうしや周りが決めた、結婚の約束をした二人。それぞれの気持ち（乗り気・戸惑い・断りたい）を選べる。両方が乗り気なら恋人と同じ扱い（恋愛対象と受け攻めが合う組だけ）。断りたい側がほかの人を好きになると、破談になることがある',label:'許嫁',ab:{aff:15,att:16,trust:15,ten:8},pol:1,chem:1.1,pull:1.9,fiance:true,bias:{romance:1.3,help:1.2,bond:1.1}};
 T.comrade={mods:{trust:1.15},effect:'同じグループの仲間。信頼が育ちやすく、助け合い・庇い合い・一緒に動く出来事が起きる。恋愛や嫉妬には関わらない',label:'仲間',ab:{aff:6,trust:12},pol:1,pull:0.8,hidden:true,comrade:true,bias:{help:1.4,bond:1.2,betray:0.6}};
 Object.keys(T).forEach(function(k){
@@ -971,7 +974,7 @@ devote:{label:'型：献身（尽くして囲い込む）',short:'献身'},
 bind:{label:'型：束縛（監視して縛る）',short:'束縛'},
 purge:{label:'型：排除（近づく人を遠ざける）',short:'排除'},
 dep:{label:'型：依存（傍にいないと不安で、探す・確かめる・すがる）',short:'依存'},
-hatelove:{label:'型：愛憎（探し守りながら、責めて試して傷つける）',short:'愛憎'}
+hatelove:{label:'型：試す（探し守りながら、責めて試して傷つける）',short:'試す'}
 };
 HK.OBS_SUB_ORDER=['','devote','bind','purge','dep','hatelove'];
 HK.ENEMY_GRADE={
@@ -986,6 +989,36 @@ b:{label:'愛憎：二人目だけ',short:'愛憎（二人目だけ）',nl:'愛�
 both:{label:'愛憎：双方',short:'愛憎（双方）'}
 };
 HK.LOVEHATE_ORDER=['','a','b','both'];
+HK.LH_BACK={
+'':{label:'相手：持たない（{a}だけ）',short:''},
+both:{label:'相手も愛憎を持つ（双方）',short:'双方',mutual:true}
+};
+HK.LH_BACK_ORDER=['','both'];
+var FEEL_EXCL={apathy:'lovehate',lovehate:'apathy',inferior:'superior',superior:'inferior'};
+HK.tieFeelFix=function(list,tie){
+var o=tie&&FEEL_EXCL[tie.type];
+if(!o|| !Array.isArray(list))return'';
+var rm=list.filter(function(u){return u&&u!==tie&&u.type===o&&u.a===tie.a&&u.b===tie.b;});
+if(!rm.length)return'';
+rm.forEach(function(u){list.splice(list.indexOf(u),1);});
+return'同じ向きに「'+T[tie.type].label+'」と「'+T[o].label+'」は同時に持てないので、「'+T[o].label+'」を外しました';
+};
+HK.tieLhMigrate=function(list){
+if(!Array.isArray(list))return list;
+var add=[];
+list.forEach(function(t){
+if(!t|| !t.lh||(t.type!=='enemy'&&t.type!=='bad')){if(t&&t.lh&&t.type!=='enemy'&&t.type!=='bad')delete t.lh;return;}
+var a=t.lh==='b'?t.b:t.a,b=t.lh==='b'?t.a:t.b,both=t.lh==='both';
+delete t.lh;
+var has=list.concat(add).some(function(u){return u&&u.type==='lovehate'&&((u.a===a&&u.b===b)||(both&&u.a===b&&u.b===a));});
+if(has)return;
+var nt={a:a,b:b,type:'lovehate'};
+if(both)nt.cold='both';
+add.push(nt);
+});
+add.forEach(function(t){list.push(t);});
+return list;
+};
 HK.SIB_ELDER={
 '':{label:'上下：自動（年齢）',short:''},
 a:{label:'上下：一人目が上',short:'一人目が上',nl:'上下：%が上',ns:'%が上'},
@@ -1045,8 +1078,7 @@ HK.TIE_XF=['sub','grade','feel','feelB','mode','lh','elder','heavy','kg','past',
 HK.tieExtra=function(type){
 var X={
 yan:[{f:'sub',map:HK.OBS_SUB,order:HK.OBS_SUB_ORDER,aria:'執着の型'}],
-enemy:[{f:'lh',map:HK.LOVEHATE,order:HK.LOVEHATE_ORDER,aria:'愛憎',names:true},{f:'grade',map:HK.ENEMY_GRADE,order:HK.ENEMY_GRADE_ORDER,aria:'敵対の度合い',hide:true}],
-bad:[{f:'lh',map:HK.LOVEHATE,order:HK.LOVEHATE_ORDER,aria:'愛憎',names:true}],
+enemy:[{f:'grade',map:HK.ENEMY_GRADE,order:HK.ENEMY_GRADE_ORDER,aria:'敵対の度合い',hide:true}],
 benefactor:[{f:'feel',map:HK.BENE_FEEL,order:HK.BENE_FEEL_ORDER,aria:'恩を受けた側の気持ち'}],
 fond:[{f:'mode',map:HK.FOND_MODE,order:HK.FOND_MODE_ORDER,aria:'慕う側の様子'}],
 fwb:[{f:'mode',map:HK.FWB_MODE,order:HK.FWB_MODE_ORDER,aria:'セフレの様子'}],
@@ -1229,6 +1261,7 @@ HK.coldOpts=function(type){
 if(type==='crush'&&HK.CRUSH_COLD)return{map:HK.CRUSH_COLD,order:HK.CRUSH_COLD_ORDER,aria:'想われる側の気持ち'};
 if((type==='bad'||type==='enemy')&&HK.HATE_BACK)return{map:HK.HATE_BACK,order:HK.HATE_BACK_ORDER,aria:'相手の気持ち'};
 if(type==='yan'&&HK.OBS_BACK)return{map:HK.OBS_BACK,order:HK.OBS_BACK_ORDER,aria:'執着される側の気持ち'};
+if(type==='lovehate'&&HK.LH_BACK)return{map:HK.LH_BACK,order:HK.LH_BACK_ORDER,aria:'相手の気持ち'};
 if(type==='worship'&&HK.WORSHIP_BACK)return{map:HK.WORSHIP_BACK,order:HK.WORSHIP_BACK_ORDER,aria:'信仰される側の気持ち'};
 if(type==='abuse'&&HK.ABUSE_BACK)return{map:HK.ABUSE_BACK,order:HK.ABUSE_BACK_ORDER,aria:'支配される側の気持ち'};
 if(type==='spouse'&&HK.MARRIED_COLD)return{map:HK.MARRIED_COLD,order:HK.MARRIED_COLD_ORDER,aria:'夫婦の様子'};
@@ -1239,12 +1272,12 @@ var HATE_WORDS=[[/一方的|片思いならぬ|相手は気にして(?:い)?な�
 var COLD_WORDS=[[/両片想い|両片思い|実は相手も/,'mutual'],[/脈なし|眼中に|相手にされ|興味がない|興味なし/,'none'],[/友達としか|友達止まり|異性として見|恋愛対象外|対象外/,'friend'],[/苦手|嫌われ|避けられ|避けて/,'dislike'],[/他に好き|ほかに好き|別に好き|好きな人がいる/,'other']];
 HK.TIE_ORDER=['acq','friend','colleague','senpai','buddy','childhood','classmate','almost','best','sibling','sibprot','sibclose','sibbad','stepsib','relative','parent','pparent','teacher','mentor','boss','benefactor','crush','yan','worship','bad','rival','enemy','lover','spouse','honmei','fwb','ex','abuse','fated','mate','master','noobs'];
 HK.TIE_ORDER.splice(HK.TIE_ORDER.indexOf('worship')+1,0,'fond','blind');
-HK.TIE_ORDER.splice(HK.TIE_ORDER.indexOf('enemy')+1,0,'apathy','fear');
+HK.TIE_ORDER.splice(HK.TIE_ORDER.indexOf('enemy')+1,0,'apathy','fear','lovehate','inferior','superior');
 HK.TIE_ORDER.splice(HK.TIE_ORDER.indexOf('spouse')+1,0,'fiance');
 HK.TIE_GROUPS=[
 {id:'stance',label:'立場・つながり',ids:['acq','friend','best','buddy','childhood','classmate','colleague','senpai','boss','teacher','mentor','master','rival']},
 {id:'family',label:'家族・血縁',ids:['sibling','sibprot','sibclose','sibbad','stepsib','parent','pparent','relative']},
-{id:'feeling',label:'気持ち（執着・恩・片想いなど）',ids:['crush','honmei','yan','worship','fond','blind','benefactor','bad','enemy','apathy','fear','abuse','noobs']},
+{id:'feeling',label:'気持ち（執着・恩・片想いなど）',ids:['crush','honmei','yan','worship','fond','blind','benefactor','bad','enemy','apathy','fear','lovehate','inferior','superior','abuse','noobs']},
 {id:'love',label:'恋愛・夫婦の状態',ids:['almost','lover','spouse','fiance','fwb','ex','mate','fated']}
 ];
 HK.tieOptions=function(sel,o){
@@ -1283,10 +1316,10 @@ var ALIAS=[
 ['主従','master'],['主人','master'],['従者','master'],['主','master'],
 ['の子','parent'],['子ども','parent'],['息子','parent'],['娘','parent'],['の親','parent'],['父','parent'],['母','parent'],
 ['兄','sibling'],['弟','sibling'],['姉','sibling'],['妹','sibling'],['友','friend'],
-['無関心','apathy'],['恐怖','fear'],['恐れている','fear'],['許嫁','fiance'],['許婚','fiance'],['いいなずけ','fiance'],['婚約者','fiance'],['仲間','comrade']
+['無関心','apathy'],['恐怖','fear'],['恐れている','fear'],['劣等感','inferior'],['引け目','inferior'],['優越感','superior'],['優越','superior'],['見下して','superior'],['見下す','superior'],['許嫁','fiance'],['許婚','fiance'],['いいなずけ','fiance'],['婚約者','fiance'],['仲間','comrade']
 ];
 var XALIAS=[
-['執着（依存）','yan',{sub:'dep'}],['執着(依存)','yan',{sub:'dep'}],['執着（愛憎）','yan',{sub:'hatelove'}],['執着(愛憎)','yan',{sub:'hatelove'}],
+['執着（依存）','yan',{sub:'dep'}],['執着(依存)','yan',{sub:'dep'}],['執着（愛憎）','yan',{sub:'hatelove'}],['執着(愛憎)','yan',{sub:'hatelove'}],['執着（試す）','yan',{sub:'hatelove'}],['執着(試す)','yan',{sub:'hatelove'}],
 ['執着（献身）','yan',{sub:'devote'}],['執着（束縛）','yan',{sub:'bind'}],['執着（排除）','yan',{sub:'purge'}],
 ['憎悪','enemy',{grade:'hate'}],['負い目','benefactor',{feel:'guilt'}],['推し','fond',{mode:'oshi'}],['愛人','fwb',{mode:'mistress'}]
 ];
@@ -1322,8 +1355,9 @@ used=used.slice(0,st-1)+used.slice(st-1,st+sg.length).replace(/[^\s\u3000\/]/g,'
 lineM=lineM.slice(0,st-1)+Array(sg.length+2).join(' ')+lineM.slice(st+sg.length);
 });
 gnames.forEach(function(g){var p=used.indexOf(g);if(p>=0){gfound.push({g:g,pos:p});used=mask(used,p,g.length);}});
-var lhW='',lhName='',lhWarned=false;
+var lhW='',lhName='',lhWarned=false,lhBare=false;
 used=used.replace(/(?<!執着[（(])愛憎\s*[:：]?\s*[（(]?\s*(双方|両方|お互い|互い|一人目だけ|1人目だけ|二人目だけ|2人目だけ|[^\s　（）()]{1,16}?だけ)?\s*[）)]?/,function(x,w,at){
+lhBare= !w;
 lhW= !w|| /^(双方|両方|お互い|互い)$/.test(w)?'both': /^(一人目|1人目)だけ$/.test(w)?'a': /^(二人目|2人目)だけ$/.test(w)?'b':'name';
 if(lhW!=='name')return Array(x.length+1).join('\u0000');
 lhName=w.replace(/だけ$/,'');
@@ -1373,7 +1407,7 @@ used=used.slice(0,p0)+Array(ALIAS[k][0].length+1).join('\u0000')+used.slice(p0+A
 k--;
 }
 if(cold==='mutual'&&types.indexOf('crush')<0)types.unshift('crush');
-if(lhW&&types.indexOf('enemy')<0&&types.indexOf('bad')<0)types.unshift('enemy');
+if(lhW&&types.indexOf('lovehate')<0)types.push('lovehate');
 if(elW&& !types.length)types.unshift('sibling');
 if(elW&&elW!=='auto'&&types.length&& !types.some(function(x){return/^(sibling|sibclose|sibbad|stepsib)$/.test(x);}))warn.push((i+1)+'行目の「上下」は、兄弟姉妹・兄弟（親友のよう）・兄弟（不仲）・義理のきょうだいにだけ付けられます（兄弟（庇護）は向きで上下が決まります）');
 if(types.indexOf('bad')>=0&&types.indexOf('sibling')>=0)types=types.filter(function(x){return x!=='bad';}).map(function(x){return x==='sibling'?'sibbad':x;});
@@ -1411,10 +1445,12 @@ if(ty==='crush'&&cold)nt.cold=cold;
 if((ty==='bad'||ty==='enemy')&&back)nt.cold=back;
 if(ty==='yan'&&obc)nt.cold=obc;
 if(xtra[ty])for(var xf in xtra[ty])nt[xf]=xtra[ty][xf];
-if(lhW&&(ty==='enemy'||ty==='bad')){
+if(lhW&&ty==='lovehate'){
 var lhId=lhW;
 if(lhW==='name'){var nmA=(names.filter(function(x){return x.id===a;})[0]||{}).n,nmB=(names.filter(function(x){return x.id===b;})[0]||{}).n;lhId=lhName&&lhName===nmA?'a':lhName&&lhName===nmB?'b':'';if(!lhId&& !lhWarned){lhWarned=true;warn.push((i+1)+'行目の「'+lhName+'だけ」は、この行の二人の名前ではないので、愛憎は付けませんでした');}}
-if(lhId)nt.lh=lhId;
+if(lhBare&& /→|⇒|->|←|⇐/.test(lineM)&& !/⇔|↔/.test(lineM))lhId='a';
+if(lhId==='b'){nt.a=b;nt.b=a;}
+if(lhId==='both')nt.cold='both';
 }
 if(elW&&elW!=='auto'&& /^(sibling|sibclose|sibbad|stepsib)$/.test(ty)){
 var elId=elW;
@@ -1452,7 +1488,7 @@ var PRIO=['mate','fated','abuse','lover','fiance','parent','pparent','sibprot','
 PRIO.splice(PRIO.indexOf('worship')+1,0,'blind','fond');
 PRIO.splice(PRIO.indexOf('crush'),0,'fear');
 PRIO.splice(PRIO.indexOf('bad')+1,0,'apathy');
-PRIO.push('comrade');
+PRIO.push('lovehate','superior','inferior','comrade');
 function keyOf(a,b){return a.i<b.i?a.i+'-'+b.i:b.i+'-'+a.i;}
 HK.tieHas=function(ctx,a,b,type){
 var T0=HK.Ties;
@@ -1514,19 +1550,54 @@ var A=P[t.a],B=P[t.b];
 };
 HK.HOST_TIE_RE= /^(enemy|bad)$/;
 var SEX_BIAS=HK.SEX_TIE_BIAS={enemy:0.6,bad:0.7,rival:0.85};
-HK.sexTieK=function(t){var k=t&&SEX_BIAS[t.type];if(k==null)return 1;return t.lh?Math.max(k,t.lh==='both'?1:0.85):k;};
+function lhPair(list,x,y){
+var fa=false,fb=false;
+(list||[]).forEach(function(u){
+if(!u|| !((u.a===x&&u.b===y)||(u.a===y&&u.b===x)))return;
+if(u.type==='lovehate'){if(u.cold==='both')fa=fb=true;else if(u.a===x)fa=true;else fb=true;}
+else if((u.type==='enemy'||u.type==='bad')&&u.lh){if(u.lh==='both')fa=fb=true;else if((u.lh==='a')===(u.a===x))fa=true;else fb=true;}
+});
+return fa&&fb?'both':fa?'a':fb?'b':'';
+}
+HK.sexTieK=function(t,list){
+var k=t&&SEX_BIAS[t.type];
+if(k==null)return 1;
+var d=lhPair(list||[t],t.a,t.b);
+return d?Math.max(k,d==='both'?1:0.85):k;
+};
+HK.FEEL_IMP={lovehate:1.3,lovehateHost1:1.1,inferior:1.2,superior:1.3};
+HK.feelImpK=function(list,x,y){
+var k=1,d=lhPair(list,x,y),host=(list||[]).some(function(u){return u&&HK.HOST_TIE_RE.test(u.type)&&((u.a===x&&u.b===y)||(u.a===y&&u.b===x));});
+if(d)k=Math.max(k,d!=='both'&&host?HK.FEEL_IMP.lovehateHost1:HK.FEEL_IMP.lovehate);
+(list||[]).forEach(function(u){if(u&&(u.type==='inferior'||u.type==='superior')&&((u.a===x&&u.b===y)||(u.a===y&&u.b===x)))k=Math.max(k,HK.FEEL_IMP[u.type]);});
+return k;
+};
 HK.hostMark=function(P,ties){
 if(!P)return;
 (ties||[]).forEach(function(t){
-if(!t||t.a===t.b|| !HK.HOST_TIE_RE.test(t.type)|| !P[t.a]|| !P[t.b])return;
-var A=P[t.a],B=P[t.b],k=HK.sexTieK(t);
+if(!t||t.a===t.b|| !P[t.a]|| !P[t.b])return;
+var A=P[t.a],B=P[t.b];
+if(T[t.type]&&T[t.type].feelTie){
+var fk=HK.feelImpK(ties,t.a,t.b);
+[[A,B],[B,A]].forEach(function(q){var m=q[0].feelOf=q[0].feelOf&&typeof q[0].feelOf==='object'?q[0].feelOf:{};m[q[1].i]=Math.max(m[q[1].i]||1,fk);});
+return;
+}
+if(!HK.HOST_TIE_RE.test(t.type))return;
+var k=HK.sexTieK(t,ties);
 [[A,B],[B,A]].forEach(function(q){var m=q[0].hostOf=q[0].hostOf&&typeof q[0].hostOf==='object'?q[0].hostOf:{};m[q[1].i]=Math.min(m[q[1].i]==null?1:m[q[1].i],k);});
 });
 };
 HK.Ties={
 expand:function(ties){
 var out=[];
+ties=HK.tieLhMigrate((ties||[]).map(function(t){if(!t)return t;var c={};for(var kc in t)c[kc]=t[kc];return c;}));
 (ties||[]).forEach(function(t){
+if(t&&t.type==='lovehate'&&t.cold==='both'){
+var l1={};for(var kl in t)if(kl!=='cold')l1[kl]=t[kl];
+l1.mutual=true;out.push(l1);
+if(!ties.some(function(u){return u&&u.type==='lovehate'&&u.a===t.b&&u.b===t.a;})){var l2={};for(var kl2 in l1)l2[kl2]=l1[kl2];l2.a=t.b;l2.b=t.a;delete l2.past;delete l2.pastB;out.push(l2);}
+return;
+}
 if(t&&t.type==='spouse'){var sp={};for(var k3 in t)sp[k3]=t[k3];sp.type=t.cold==='divorced'?'ex':'lover';sp.spouse=true;sp.married=t.cold||'';delete sp.cold;out.push(sp);return;}
 if(t&&t.type==='stepsib'){var st={};for(var k4 in t)st[k4]=t[k4];st.type='relative';st.step=true;out.push(st);return;}
 if(!(t&&t.type==='crush'&&t.cold==='mutual')){out.push(t);return;}
@@ -1537,6 +1608,13 @@ y.a=x.b;y.b=x.a;
 delete y.past;delete y.pastB;if(x.pastB)y.past=x.pastB;if(x.past)y.pastB=x.past;
 if(!(ties||[]).some(function(u){return u&&u.type==='crush'&&u.a===y.a&&u.b===y.b;}))out.push(y);
 });
+var seenE={};
+out=out.slice().reverse().filter(function(u){
+if(!u||(u.type!=='inferior'&&u.type!=='superior'))return true;
+var ke=u.a+'>'+u.b;
+if(seenE[ke])return false;
+seenE[ke]=1;return true;
+}).reverse();
 return out;
 },
 pining:function(ctx,a,b){
@@ -1600,8 +1678,7 @@ xf.feel=xf.feel||'eager';xf.feelB=xf.feelB||'eager';add(ab,HK.FIANCE_FEEL[xf.fee
 if(!HK.Ties.fiLoveOk(A,B)){ab.att=Math.min(ab.att,8);ba.att=Math.min(ba.att,8);}
 }
 if(t.type==='enemy'&&xf.grade==='hate')add(ab,HK.ENEMY_GRADE.hate.ab);
-if(xf.lh==='a'||xf.lh==='both')add(ab,{att:HK.canLove(A,B)?18:0,ten:4});
-if(xf.lh==='b'||xf.lh==='both')add(ba,{att:HK.canLove(B,A)?18:0,ten:4});
+if(t.type==='lovehate')add(ab,{att:HK.canLove(A,B)?18:0});
 if(t.type==='benefactor'&&xf.feel==='guilt')add(ba,HK.BENE_FEEL.guilt.ba);
 var lyAtt=function(d,x,y){if(!d||d.att==null||d.att<=0||HK.canLove(x,y))return d;var o2={};for(var kd in d)if(kd!=='att')o2[kd]=d[kd];return o2;};
 var LWD=xf.heavy&&HK.LOVE_WEIGHT[xf.heavy];
@@ -1615,12 +1692,12 @@ var PSB=xf.pastB&& !(xf.pastB===xf.past&&HK.TIE_PAST[xf.pastB].sym)&&HK.TIE_PAST
 if(PSB){if(PSB.ab)add(ba,lyAtt(PSB.ab,B,A));if(PSB.ba)add(ab,PSB.ba);}
 if(xf.noev)ctx._noEv=true;
 if(xf.past||xf.pastB)ctx._past=true;
-var o={type:t.type,like:D.like||'',a:A.i,b:B.i,cold:CD||HB||OB||WB||AB||GR?t.cold||'':'',love:HK.tieLoveNorm(t),mutual: !!t.mutual,spouse: !!t.spouse,married:t.married||'',step: !!t.step};
+var LB=t.type==='lovehate'&&t.cold&&HK.LH_BACK[t.cold]?HK.LH_BACK[t.cold]:null;
+var o={type:t.type,like:D.like||'',a:A.i,b:B.i,cold:CD||HB||OB||WB||AB||GR||LB?t.cold||'':'',love:HK.tieLoveNorm(t),mutual: !!t.mutual,spouse: !!t.spouse,married:t.married||'',step: !!t.step};
 if(t.type==='yan')o.sub=xf.sub||'';
 if(t.type==='enemy')o.grade=xf.grade||'';
 if(/^(sibling|sibclose|sibbad)$/.test(t.type)||(t.type==='relative'&&t.step)){var el0=t.elder;if(el0&&HK.SIB_ELDER[el0])o.elder=el0;}
 if(HK.Sib&&HK.Sib.isSibTie(o))o.sibLab=HK.Sib.tieLabel(o,A,B)||'';
-if(t.type==='enemy'||t.type==='bad')o.lh=xf.lh||'';
 if(t.type==='benefactor')o.feel=xf.feel||'thanks';
 if(t.type==='fond')o.mode=xf.mode||'adore';
 if(t.type==='fwb')o.mode=xf.mode||'equal';
@@ -1720,7 +1797,7 @@ for(var i=0;i<l.length;i++)if((l[i].type===type||l[i].like===type)&&l[i].a===a.i
 return null;
 },
 bias:function(ctx,a,b,cat,ev){
-var r=1,body=cat==='romance'&& !!(ev&&ev.sex&& !ev.love);
+var r=1,body=cat==='romance'&& !!(ev&&ev.sex&& !ev.love),feelDone=false;
 HK.Ties.all(ctx,a,b).forEach(function(t){
 var D=T[t.type],m;
 if(D.hate)m=t.a!==a.i&&t.cold&&HK.HATE_BACK[t.cold]?HK.HATE_BACK[t.cold].bias:D.bias||{};
@@ -1728,7 +1805,8 @@ else if(D.dir)m=(t.a===a.i?D.biasA:D.biasB)||{};
 else m=D.bias||{};
 if(t.type==='benefactor'&&t.feel==='guilt'&&t.a!==a.i)m=HK.BENE_FEEL.guilt.biasB;
 if(t.type==='fiance'&&cat==='romance'){var fe=HK.FIANCE_FEEL[(t.a===a.i?t.feel:t.feelB)||'eager'];if(fe)r*=fe.rom;if(!HK.Ties.fiLoveOk(a,b))r*=0.02;}
-if(body&&SEX_BIAS[t.type]!=null){r*=HK.sexTieK(t);return;}
+if(body&&SEX_BIAS[t.type]!=null){r*=HK.sexTieK(t,HK.Ties.all(ctx,a,b));return;}
+if(body&&D.feelTie){if(!feelDone){feelDone=true;r*=HK.feelImpK(HK.Ties.all(ctx,a,b),a.i,b.i);}return;}
 if(m[cat]!=null)r*=cat==='romance'&&HK.tieFamLove(t)?Math.max(m[cat],1):m[cat];
 if(cat==='romance'&& !(body&&ev.free)&&(HK.tieOptNoLove(t)||t.love==='no'))r*=0.1;
 if(t.heavy&&cat==='romance'&&HK.LOVE_WEIGHT[t.heavy]&&(t.type!=='honmei'||t.a===a.i))r*=HK.LOVE_WEIGHT[t.heavy].rom||1;
@@ -1750,7 +1828,11 @@ return;
 }
 if(m!=null)r*=f==='att'&&HK.tieFamLove(t)?Math.max(m,1):m;
 if(f==='att'&&(HK.tieOptNoLove(t)||t.love==='no'))r*=0.05;
-if(f==='att'&&t.lh&&(t.lh==='both'||(t.lh==='a')===(t.a===a.i)))r*=D.mods&&D.mods.att?1.6/D.mods.att:1.6;
+if(f==='att'&&t.type==='lovehate'&&t.a===a.i){
+var hk0=1;
+HK.Ties.all(ctx,a,b).forEach(function(u){var Du=T[u.type];if(Du&&Du.hate&&Du.mods&&Du.mods.att)hk0*=Du.mods.att;});
+r*=1.6/hk0;
+}
 if(D.dir&&(D.modsA||D.modsB)){var dm=t.a===a.i?D.modsA:D.modsB;if(dm&&dm[f]!=null)r*=dm[f];}
 if(t.type==='fiance'&&f==='att'){var fe=HK.FIANCE_FEEL[(t.a===a.i?t.feel:t.feelB)||'eager'];if(fe)r*=fe.att;if(!HK.Ties.fiLoveOk(a,b))r*=0.1;}
 if(t.type==='ex'&&f==='att'){var xe2=HK.EX_FEEL[(t.a===a.i?t.feel:t.feelB)||''];if(xe2&&xe2.att)r*=xe2.att;}
@@ -8572,11 +8654,24 @@ dir:function(x,a,b){
 if(!x|| !a|| !b||a===b)return'';
 var fa=false,fb=false;
 tieList(x,a,b).forEach(function(t){
+if(t.type==='lovehate'){
+if(t.cold==='both'){fa=fb=true;return;}
+if(t.a===a.i)fa=true;else fb=true;
+return;
+}
 if((t.type!=='enemy'&&t.type!=='bad')|| !t.lh)return;
 if(t.lh==='both'){fa=fb=true;return;}
 if((t.lh==='a')===(t.a===a.i))fa=true;else fb=true;
 });
 return fa&&fb?'both':fa?'a':fb?'b':'';
+},
+face:function(x,a,b){
+var l=tieList(x,a,b),has=function(re){return l.some(function(t){return re.test(t.type);});};
+if(has(/^(enemy|bad|sibbad)$/)||l.some(function(t){return/^(mentor|master|boss|teacher)$/.test(t.type)&&t.cold==='bad';}))return'hate';
+if(has(/^(lover|spouse|ex|fwb|crush|honmei|mate|fated|almost|fiance|yan)$/))return'love';
+var kin=l.filter(function(t){return HK.TIES[t.type]&&HK.TIES[t.type].family;});
+if(kin.length)return kin.some(function(t){return t.love==='ok';})?'love':'kin';
+return'peer';
 },
 off:function(x,a,b){
 if(HK.ngExplicit&&HK.ngExplicit(a,b))return true;
@@ -8584,6 +8679,8 @@ if(HK.lockOut&&HK.lockOut(a,b))return true;
 if(isCtx(x)){
 if(x.pair(a,b).kin)return true;
 if(HK.Ties.apathy&&(HK.Ties.apathy(x,a,b)||HK.Ties.fears(x,a,b)||HK.Ties.fears(x,b,a)))return true;
+}else if(tieList(x,a,b).some(function(t){return(t.type==='apathy'&&t.a===a.i)||t.type==='fear'||(t.noev==='off'&&t.type==='lovehate');})){
+return true;
 }
 return false;
 },
@@ -8611,6 +8708,25 @@ k:function(x,a,b){return LH.mutual(x,a,b)?2.6:LH.any(x,a,b)?2:1;},
 why:function(x,a,b){
 var m=LH.mutual(x,a,b);
 return m?a.name+'と'+b.name+'は、互いに愛憎を抱いている（口では嫌い合いながら、離れられない）':LH.has(x,a,b)?a.name+'は'+b.name+'に愛憎を抱いている（口では嫌いながら、構わずにいられない）':LH.has(x,b,a)?b.name+'は'+a.name+'に愛憎を抱いている（口では嫌いながら、構わずにいられない）':'';
+}
+};
+var ES=HK.Esteem={
+raw:function(x,a,b){
+if(!x|| !a|| !b||a===b)return'';
+var r='';
+tieList(x,a,b).forEach(function(t){if((t.type==='inferior'||t.type==='superior')&&t.a===a.i)r=t.type;});
+return r;
+},
+off:function(x,a,b){
+if(isCtx(x))return!!(HK.Ties.apathy&&(HK.Ties.apathy(x,a,b)||HK.Ties.fears(x,a,b)||HK.Ties.fears(x,b,a)));
+return tieList(x,a,b).some(function(t){return(t.type==='apathy'&&t.a===a.i)||t.type==='fear'||((t.type==='inferior'||t.type==='superior')&&t.a===a.i&&t.noev==='off');});
+},
+of:function(x,a,b){var r=ES.raw(x,a,b);return r&& !ES.off(x,a,b)?r:'';},
+inferior:function(x,a,b){return ES.of(x,a,b)==='inferior';},
+superior:function(x,a,b){return ES.of(x,a,b)==='superior';},
+targets:function(x,a){
+var L0=isCtx(x)?x.chars:(x.P||[]);
+return L0.filter(function(o){return o&&o!==a&&here(o)&&ES.of(x,a,o);}).map(function(o){return{who:o,kind:ES.of(x,a,o)};});
 }
 };
 var KAMAU={
@@ -11600,7 +11716,7 @@ pining:{name:'両片想い',cls:'love',pol:2},
 night:{name:'一夜の関係',cls:'night',pol:1},
 vague:{name:'曖昧な関係',cls:'night',pol:1},
 oneway:{name:'片想い',cls:'pine',pol:0},
-lovehate:{name:'愛憎',cls:'obsess',pol:0},
+lovehate:{name:'憎みながら惹かれ合う',cls:'obsess',pol:0},
 rivals:{name:'宿敵',cls:'enemy',pol: -2},
 accomplice:{name:'共犯',cls:'partner',pol:1},
 partners:{name:'相棒',cls:'partner',pol:2},
@@ -16044,6 +16160,10 @@ var x=a.hostOf&&a.hostOf[b.i],y=b.hostOf&&b.hostOf[a.i];
 if(x==null&&y==null)return 1;
 return Math.min(x==null?1:x,y==null?1:y);
 };
+P.feelK=function(a,b){
+if(!a|| !b||a===b)return 1;
+return Math.max(1,(a.feelOf&&a.feelOf[b.i])||1,(b.feelOf&&b.feelOf[a.i])||1);
+};
 P.hostile=function(a,b){return!!(a&&b&&a!==b&&((a.hostOf&&a.hostOf[b.i]!=null)||(b.hostOf&&b.hostOf[a.i]!=null)));};
 function pfOf(ctx,a,b){return ctx&&HK.Ctx&&ctx instanceof HK.Ctx?ctx.pair(a,b):null;}
 P.sexRel=function(ctx,a,b){
@@ -16066,7 +16186,7 @@ var lust=Math.min(1,(((a.emo&&a.emo.lust)||0)+((b.emo&&b.emo.lust)||0))/200);
 var st=((a.stress||0)+(b.stress||0))/200;
 var pf=pfOf(ctx,a,b);
 var sit=Math.min(0.4,drunk*0.25+aph*0.25+heat*0.2+lust*0.15+st*0.05+(pf&&pf.night?0.08:0));
-return HK.clamp((0.12+imp*0.45+sit)*lib*P.reasonK(ctx,a,b)*P.sexRel(ctx,a,b),0,1);
+return HK.clamp((0.12+imp*0.45*P.feelK(a,b)+sit)*lib*P.reasonK(ctx,a,b)*P.sexRel(ctx,a,b),0,1);
 };
 P.night=function(ctx){
 var v=ctx&&ctx.env?ctx.env.night:null;
@@ -23856,9 +23976,10 @@ sections:[
 '無関心・恐怖は「恋愛：あり」にしても気持ちが育ちにくく（惹かれ・好意の伸びは、無関心でおよそ4分の1、恐怖でおよそ10分の1）、恐怖は脅し・怒鳴り声・暴力を向けられるといっそう深まります。気持ちが大きく動くのは劇的なことがあったときだけで、弱ったときに相手に助けられると、無関心は解けて心が動き、恐怖は少し和らぎます。',
 '恐れていた相手が落ちぶれる・弱みを見せる（けが・病気・ゾンビに噛まれる・孤立する・疑われる など）と、恐怖は続きません。攻撃的な人は、極限の箱庭（ゾンビの街・無人島・邪神村・人狼・吹雪の館・宇宙船など）では突き落とす・見捨てて逃げる・「私は悪くない……」と言いながら売り渡す、ほかの箱庭では見下す・言い返す・縁を切る。臆病な人は相手から逃れ、面倒見のよい人は弱った相手に歪んだ庇護欲を向けます。まれに恋に転じることもあります（恋愛：あり のとき）。結末と関係のまとめに、恐怖のその後（憎しみ・見下し・歪んだ庇護・逃れた・恋）が出ます。',
 '**許嫁** … 二人それぞれの気持ち（乗り気・戸惑い・断りたい）を選べます。両方が乗り気で、恋愛対象と受け攻めが合う二人だけ恋人と同じ扱いになります。合わない二人は家どうしの約束として向き合います。断りたい側がほかの人を好きになると、破談になることがあります。',
-'**型・気持ち・様子** … 執着（ヤンデレ）は型（献身・束縛・排除・依存・愛憎）、恩人は恩を受けた側の気持ち（負い目）、一方的な好意・敬愛は様子（推し）、セフレは様子（愛人）を選べます。以前の「敵対の度合い（憎悪）」の選択肢はなくなりました（保存してあった設定はそのまま効きます。まとめて読み込むで「憎悪」と書いても付けられます）。',
-'**愛憎（敵対・不仲）** … 敵対と不仲には「愛憎：なし／〇〇だけ／××だけ／双方」を選べます。愛憎を持つ人は、口や態度では相手を嫌いながら、わざと突っかかる・嫌味を言いながら隣に座る・物を取り上げて追いかけさせる・世話を焼いて「勘違いするな」と言う・ほかの人といる相手に割り込む、といった形で相手を構います。相手がほかの人と親しくすると、嫉妬して嫌味・邪魔・八つ当たりをしたり、その人に敵意を向けたりします（嫉妬深い性格でなくても）。',
-'**〇〇だけ・双方の違い** … 「〇〇だけ」は、その人だけが愛憎を持ち、相手はふつうの敵対のまま（無視する・気にしない・苛立つ）です。「双方」は二人とも持つので、言い返しながら構い返します。愛憎なし（敵対のみ）は、相手がほかの人を構っていても、嫉妬深い性格でなければ怒りません。',
+'**型・気持ち・様子** … 執着（ヤンデレ）は型（献身・束縛・排除・依存・試す）、恩人は恩を受けた側の気持ち（負い目）、一方的な好意・敬愛は様子（推し）、セフレは様子（愛人）を選べます。以前の「敵対の度合い（憎悪）」の選択肢はなくなりました（保存してあった設定はそのまま効きます。まとめて読み込むで「憎悪」と書いても付けられます）。',
+'**愛憎（気持ちの関係）** … 関係の一覧の「気持ち」にある「愛憎」は、どの関係にも重ねられます（敵対・恋人・きょうだい・友人・ライバル・関係なしの二人にも）。「相手も愛憎を持つ（双方）」も選べます。愛憎を持つ人は、口や態度では相手を嫌いながら、わざと突っかかる・嫌味を言いながら隣に座る・物を取り上げて追いかけさせる・世話を焼いて「勘違いするな」と言う・ほかの人といる相手に割り込む、といった形で相手を構います。相手がほかの人と親しくすると、嫉妬して嫌味・邪魔・八つ当たりをしたり、その人に敵意を向けたりします（嫉妬深い性格でなくても）。',
+'**表の関係で変わる顔・双方の違い** … 振る舞いの顔は、重ねた関係で変わります（敵対・不仲なら喧嘩しながら構う、恋人なら素直になれない、家族なら口が悪い、友人・ライバルなら張り合いながら目で追う）。片方だけなら相手はふつうに接し、「双方」は二人とも持つので言い返しながら構い返します。以前の敵対・不仲の「愛憎」の欄で付けたものは、読み込むと同じ向きの「愛憎」に写ります。',
+'**劣等感・優越** … 関係の一覧の「気持ち」にあります。劣等感の人は、相手に助けられる・相手が目立つ・優しくされると、素直に受け取れず自己嫌悪に陥ります。優越の人は、助けられると「なぜこいつに」と苛立ち、相手より活躍できると優越感を覚えます。続けば、肩を並べる・認める・恨みに変わる・立場が逆転する、などに変わることがあります。同じ向きに劣等感と優越は付けられません。',
 '**愛憎でも越えないもの** … 恋愛対象が合わない二人は、構う・嫉妬するだけで、恋愛にはなりません。「恋愛にしない相手」「恋愛相手の固定」も守られます（恋愛にしない相手や、ほかの人に恋愛相手を固定している人の愛憎は、ふつうの敵対として扱います）。結末では、強い絡みがあった愛憎の二人は「腐れ縁（愛憎）」になります。',
 '**仲間** … 住人の一覧の「仲間とみなすグループ」で、グループごとに入れます。入れたグループの住人どうしは、信頼が育ちやすく、助け合い・庇い合い・弔い・一緒に動く出来事が起きます（恋愛・嫉妬には関わりません）。無人島・クラスメイトで環境値「派閥の決め方」を「仲間とみなす」グループで固定にすると、そのグループがそのまま派閥になります。関係図では、線の絞り込みを「全部」にしたときに薄い線で出ます。',
 '強い想い（執着・本命・盲信・憎悪・恐怖）を向ける人は、相手から返ってくる気持ちとの差が大きいほど、過激な行動に出やすくなります（「展開の重さ」が穏やかなら抑えめ）。記録の理由に「想いの差」が出ます。'
@@ -23898,7 +24019,7 @@ sections:[
 {h:'まとめて読み込む',items:[
 '1行に「名前 名前 関係」。例：`朝霧→鷹野 片想い（脈なし）`、`鷹野-白石 親友`、`白石とミナトは恋人`',
 '「セフレで片想い」のように関係を重ねても、関係を1つずつ追加してもかまいません。',
-'**愛憎** … 敵対・不仲の行に「愛憎:双方」「愛憎（名前だけ）」「愛憎：一人目だけ」と書くと、愛憎を付けます。例：`朝霧→鷹野 敵対 愛憎（鷹野だけ）`、`朝霧 鷹野 不仲 愛憎:双方`。関係を書かずに「愛憎」だけなら、敵対として付けます。',
+'**愛憎・劣等感・優越** … 「愛憎」と書くと気持ちの関係「愛憎」を付けます。ほかの関係と一緒に書けば重ねます。例：`朝霧 鷹野 愛憎`（双方）、`朝霧→鷹野 愛憎`（朝霧だけ）、`朝霧 鷹野 敵対 愛憎（鷹野だけ）`、`朝霧 鷹野 恋人 愛憎:双方`。「劣等感」「優越」も同じく、最初に書いた人が持ちます（例：`朝霧 鷹野 劣等感`＝朝霧が鷹野に引け目）。',
 '**上下（きょうだい）** … きょうだいの行に「上下:名前」と書くとその人が上、「上下なし」と書くと上下なし（対等）にします。例：`朝霧 鷹野 兄弟姉妹 上下:鷹野`、`朝霧 鷹野 姉妹 上下なし`。',
 '**複数人にまとめて** … 1行に3人以上の名前を書くと、全員の組に同じ関係を付けます。例：`朝霧 鷹野 白石 ミナト 同僚`（6組）、`朝霧 鷹野 白石 チーム`（チーム・チームメイトは同僚として付けます）。',
 '**向きのある関係**（上司と部下・先輩後輩・師弟・教師と生徒・片想いなど）は、最初に書いた人→残りの全員です。例：`朝霧 鷹野 白石 上司と部下` は、朝霧が上司で、鷹野と白石が部下（2組）。',
@@ -26639,7 +26760,7 @@ if(HK.Attr)HK.Attr.normRefs(c,ids,S0.chars);
 var byId={};
 S0.chars.forEach(function(c){byId[c.id]=c;});
 S0.chars.forEach(function(c){(c.loveNG||[]).forEach(function(k){var o=byId[k];if(o){o.loveNG=o.loveNG||[];if(o.loveNG.indexOf(c.id)<0)o.loveNG.push(c.id);}});});
-S0.ties=(Array.isArray(S0.ties)?S0.ties:[]).filter(function(t){
+S0.ties=(Array.isArray(S0.ties)?(HK.tieLhMigrate?HK.tieLhMigrate(S0.ties):S0.ties):[]).filter(function(t){
 if(!t||typeof t.type!=='string'|| !Object.prototype.hasOwnProperty.call(HK.TIES,t.type)|| !ids[t.a]|| !ids[t.b]||t.a===t.b)return false;
 if(HK.tieHidden&&HK.tieHidden(t.type))return false;
 var CO=HK.coldOpts?HK.coldOpts(t.type):null;
@@ -27196,6 +27317,7 @@ var CO2=HK.coldOpts?HK.coldOpts(t.type):null;
 var nt0=t.cold&&CO2&&CO2.map[t.cold]?{a:a,b:b,type:t.type,cold:t.cold}:{a:a,b:b,type:t.type};
 if(t.love==='ok'||t.love==='no')nt0.love=t.love;
 HK.TIE_XF.forEach(function(f){if(typeof t[f]==='string'&&t[f])nt0[f]=t[f];});
+if(HK.tieLhMigrate)HK.tieLhMigrate([nt0]).slice(1).forEach(function(x){S.ties.push(x);});
 if(HK.tieExtraNorm)HK.tieExtraNorm(nt0);
 if(HK.tieHidden&&HK.tieHidden(nt0.type))return;
 S.ties.push(nt0);tn++;
@@ -28026,7 +28148,7 @@ if(tt&& /^(?:a|b|type)$/.test(t.dataset.p)){var na=t.dataset.p==='a'?t.value:tt.
 if(tt&&(t.dataset.p==='past'||t.dataset.p==='pastB')){HK.tiePastSet(S.ties,tt,t.dataset.p,t.value);save();renderCast();return;}
 if(tt&&(/^[ab]$/.test(t.dataset.p)||(t.dataset.p==='type'&& !HK.tiePastOK({type:t.value})))&&(tt.past||tt.pastB)){HK.tiePastMoveOut(S.ties,tt);if(t.dataset.p!=='type'){tt[t.dataset.p]=t.value;save();renderCast();return;}}
 if(tt&&HK.TIE_XF.indexOf(t.dataset.p)>=0){if(t.value&& !(tt.type==='fiance'&&t.value==='eager'))tt[t.dataset.p]=t.value;else delete tt[t.dataset.p];save();renderCast();return;}
-if(tt){tt[t.dataset.p]=t.value;if(t.dataset.p==='love'&& !t.value)delete tt.love;if(t.dataset.p==='type'&&HK.tieExtraNorm)HK.tieExtraNorm(tt);if(t.dataset.p==='type'||t.dataset.p==='cold'||t.dataset.p==='love'){save();renderCast();return;}}
+if(tt){tt[t.dataset.p]=t.value;if(t.dataset.p==='love'&& !t.value)delete tt.love;if(t.dataset.p==='type'&&HK.tieExtraNorm)HK.tieExtraNorm(tt);if(t.dataset.p==='type'&&HK.tieFeelFix){var ffm=HK.tieFeelFix(S.ties,tt);if(ffm)toast(ffm);}if(t.dataset.p==='type'||t.dataset.p==='cold'||t.dataset.p==='love'){save();renderCast();return;}}
 }
 else if(f==='seed')S.seed=t.value.replace(/[^\d]/g,'');
 else if(f==='teacher'){S.teacher=t.value;save();renderBox();return;}
@@ -28523,7 +28645,7 @@ if(t.checked){c.noKillFor.push(o.id);o.noKillFor.push(c.id);}
 changed(true);
 })();break;
 case'callone':c.calls=c.calls||{};if(t.value.trim())c.calls[t.dataset.o]=t.value.trim().slice(0,16);else delete c.calls[t.dataset.o];changed(false);break;
-case'ttype':if(isInput|| !tie)return;tie.type=t.value;if(HK.tiePastOK&& !HK.tiePastOK(tie))HK.tiePastMoveOut(s.ties,tie);var CO=HK.coldOpts?HK.coldOpts(t.value):null;if(!CO|| !CO.map[tie.cold||''])delete tie.cold;if(HK.tieExtraNorm)HK.tieExtraNorm(tie);changed(true);break;
+case'ttype':if(isInput|| !tie)return;tie.type=t.value;if(HK.tieFeelFix){var ffm=HK.tieFeelFix(s.ties,tie);if(ffm&&HK.toast)HK.toast(ffm);}if(HK.tiePastOK&& !HK.tiePastOK(tie))HK.tiePastMoveOut(s.ties,tie);var CO=HK.coldOpts?HK.coldOpts(t.value):null;if(!CO|| !CO.map[tie.cold||''])delete tie.cold;if(HK.tieExtraNorm)HK.tieExtraNorm(tie);changed(true);break;
 case'textra':if(isInput|| !tie)return;(function(){var xf=t.dataset.xf;if((xf==='past'||xf==='pastB')&&HK.tiePastSet){HK.tiePastSet(s.ties,tie,xf,t.value);return;}if(t.value&& !(tie.type==='fiance'&&t.value==='eager'))tie[xf]=t.value;else delete tie[xf];})();changed(true);break;
 case'tdir':if(isInput|| !tie)return;var me=t.value==='a';var o=tie.a===c.id?tie.b:tie.a,a0=tie.a;tie.a=me?c.id:o;tie.b=me?o:c.id;if(tie.a!==a0&&(tie.lh==='a'||tie.lh==='b'))tie.lh=tie.lh==='a'?'b':'a';if(tie.a!==a0&&(tie.past||tie.pastB)){var p0=tie.past;if(tie.pastB)tie.past=tie.pastB;else delete tie.past;if(p0)tie.pastB=p0;else delete tie.pastB;}changed(true);break;
 case'tlove':if(isInput|| !tie)return;if(t.value==='ok'||t.value==='no')tie.love=t.value;else delete tie.love;changed(true);break;
@@ -29566,7 +29688,7 @@ depend:t.ac*0.7+(1-t.fc)*0.35+(1-t.a)*0.2
 Object.keys(s).forEach(function(k){if(s[k]>s[best])best=k;});
 return best;
 };
-O.TYPE_NAME={devote:'献身',bind:'束縛',purge:'排除',depend:'依存',hatelove:'愛憎'};
+O.TYPE_NAME={devote:'献身',bind:'束縛',purge:'排除',depend:'依存',hatelove:'試す'};
 O.stance=function(ctx,b,a){
 var y=O.yanTie(ctx,a,b);
 if(y&&y.cold)return y.cold;
@@ -30538,4 +30660,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '649e8753d2', 1);
+HK.Load.done('core', 'c9a33b0d46', 1);
