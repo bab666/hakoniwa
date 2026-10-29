@@ -5,7 +5,7 @@
      出方      ：全員一緒に（扉が一度だけ開く）／条件を満たした組から順に／一人だけ先に（残りはあとで）／取り残された人がいる／自分から残った人がいる／一人しか出られない
      出る様子  ：我先に（関係が薄い）／手を取って（恋人・親友）／無言で（敵対）／ふつう。一緒に出た人（全員で出られる部屋）
      外の情景  ：扉が消える・夜景・駅・雨上がり・公園・屋上・朝の光 など
-     関係の層  ：恋人・夫婦／体だけ・一夜（R18。全年齢では友人・気まずさの型）／三人（room-trio.js の後日談）／友人／敵対・愛憎／無関心／最後の三人（R18。room-last3-r18.js）
+     関係の層  ：恋人・夫婦／体だけ・一夜（R18。全年齢では友人・気まずさの型）／三人（room-trio.js の後日談）／友人／敵対／腐れ縁（愛憎の二人で体の関係か強い絡み。2026-10-29）／無関心／最後の三人（R18。room-last3-r18.js）
      巻き込まれなかった人：三人の場面や夜に関わらなかった人の一文（「〇〇は巻き込まれなかったことにホッとしつつ、友人の△△との約束場所へ向かっていった」）
    ■ 扉が開いたことは、出口ごとの区切りの行「条件を満たしたので扉が開いた。」で示す（scenario-room.js の doorFlush。2026-10-28 担当KJ）。
      まだ部屋に人が残るうちに先に出た組は、区切りの行のあとに組ごとの「外に出た後」（RE.groupEnd）を書き、結末の段ではその組（told）の出る様子・関係の層を書き直さない
@@ -135,6 +135,9 @@
     far: L('{a}と{b}は扉を出たところで別れた。名前のほかは、互いのことをほとんど知らないままだった。|{a}と{b}は外に出るなり、目も合わせずに別々の道を選んだ。二人がまた会うことは、たぶんない。|外に出ると、{a}と{b}はそれぞれのスマホを確かめ、短く会釈して離れた。白い部屋で一緒だったことだけが、二人の接点だった。|{a}と{b}は、出口で軽く会釈をしただけだった。名前を呼ぶ機会は、結局一度もなかった。|外に出ると、{a}も{b}も、それぞれの日常へ紛れていった。'),
     go: L('{a}は先に外へ出た。部屋に残った{b}のことが、帰り道のあいだずっと頭から離れなかった。|{a}は一人で外の空気を吸った。残ると決めた{b}の顔を思い出して、少しだけ笑った。|{a}は振り返らずに外へ出た。{b}とは、それきりになった。|{a}は外で{b}を待とうとして、やめた。{b}が自分で選んだことだった。'),
     group: L('{G}は外に出ると、誰からともなく大きく息を吐いた。それから、近くの店でそろって朝食をとった。|{G}は扉の外で一度だけ振り返り、それぞれの帰り道へ散っていった。|外に出た{G}は、あの部屋のことは「なかったこと」にしようと決めた。けれど、全員の連絡先はちゃんと残っていた。|{G}は、扉の外で互いの無事を確かめ合い、駅までは一緒に歩いた。'),
+    /* 腐れ縁（愛憎の二人で、体の関係か強い絡みがあった。2026-10-29 担当C。調査の気づき 12）。kusare＝双方、kusare1＝{a} だけが持つ（{a}＝愛憎を持つ側） */
+    kusare: L('{a}と{b}は、扉を出たところで「これで清々した｜これで清々した｜これで清々しました」と同時に言い、同時に顔をしかめた。帰る方向は、なぜか同じだった。|{a}と{b}は、連絡先を交換しなかった。それでも一週間後、二人は同じ店で鉢合わせて、また口喧嘩を始めた。|外に出た{a}と{b}は、駅までずっと言い争っていた。改札の前で、どちらからともなく「じゃあ、また｜じゃあ、またな｜では、またお会いしましょう」と言った。|{a}は{b}に「二度と会いたくない｜二度と会いたくない｜二度と会いたくありません」と言い、{b}は「こっちの台詞｜こちらの台詞だ｜こちらの台詞です」と返した。二人が次に会ったのは、三日後だった。'),
+    kusare1: L('{a}は扉を出るなり、{b}に背を向けた。けれど角を曲がる前に一度だけ振り返り、{b}がまだそこにいるのを確かめた。|{a}は「せいせいした｜せいせいした｜せいせいしました」と吐き捨てて歩き出した。その夜、{a}は{b}の名前を検索しかけて、乱暴にスマホを伏せた。|{b}は何事もなかったように帰っていった。{a}だけが、その背中に向かって聞こえないほどの悪態をつき、それから長いあいだ立ち尽くしていた。|{a}は{b}の連絡先を消そうとして、指を止めた。嫌いな相手の番号を、なぜ消せないのか、{a}自身にも分からなかった。'),
     kill: L('{G}は、外に出ても誰も口をきかなかった。白い部屋に置いてきたものの重さだけが、帰り道について来た。|{G}は、二度とこの話をしないと約束して別れた。|{G}は、扉の外で一度だけ振り返った。そこにはもう、壁しかなかった。')
   };
   /* r18:begin */
@@ -162,9 +165,24 @@
   }
   function isClose(ctx, a, b) { return ['best', 'buddy', 'childhood', 'sibclose'].some(function (t) { return tieHas(ctx, a, b, t); }); }
   function isLove(ctx, a, b) { var pf = ctx.pair(a, b), v = avgR(ctx, a, b); return !!pf.couple || (v.att > 45 && v.aff > 35); }
-  /* 層の種類（乱数は使わない）：love／fwb／hate／night／friend／far（R18 の層が無い・全年齢なら fwb→friend、night→awk） */
+  /* 腐れ縁（2026-10-29 担当C）：愛憎（気持ちの関係。HK.LoveHate）の二人で、恋人になっていない・殺していない、
+     体の関係（夜・敵対の強引な場面）か強い絡み（構う・嫉妬・挑発×2 が合わせて 3 回以上。hate-love.js の結末「腐れ縁（愛憎）」と同じ条件）があった。
+     'kusare'（双方）／'kusare1'（片方）／''。家族系の顔（恋愛：なし）の組は、愛憎を持たない扱い（LoveHate.off）なので出ない */
+  function kusareOf(ctx, a, b) {
+    var LH = HK.LoveHate, pf = ctx.pair(a, b);
+    if (!LH || !LH.has || pf.couple || pf.kill) return '';
+    var ha = LH.has(ctx, a, b), hb = LH.has(ctx, b, a);
+    if (!ha && !hb) return '';
+    var n = (pf.lhN || 0) + (pf.lhJeal || 0) + (pf.lhLewd || 0) * 2;
+    if (!(pf.night || pf.hateSex || pf.hateNight) && n < 3) return '';
+    return ha && hb ? 'kusare' : 'kusare1';
+  }
+  /* 層の種類（乱数は使わない）：love／fwb／kusare／kusare1／hate／night／friend／far（R18 の層が無い・全年齢なら fwb→friend、night→awk） */
   function kindOf(ctx, a, b) {
     var pf = ctx.pair(a, b), v = avgR(ctx, a, b), r18 = !HK.SAFE_ON && !!PAIR.fwb;
+    if (isLove(ctx, a, b) && pf.couple) return 'love';
+    var ku = kusareOf(ctx, a, b);
+    if (ku) return ku;
     if (isLove(ctx, a, b)) return 'love';
     if (pf.fwb) return r18 ? 'fwb' : 'friend';
     if (isHate(ctx, a, b)) return 'hate';
@@ -175,9 +193,18 @@
   RE.kindOf = kindOf;
   /* 一夜を過ごした二人の文：R18版は一夜の型と気まずさの型から、全年齢は気まずさの型から */
   function pairPool(k) { return k === 'night' ? (PAIR.night && !HK.SAFE_ON ? PAIR.night.concat(PAIR.awk) : PAIR.awk) : PAIR[k] || PAIR.far; }
+  /* 二人の関係の層の一文（{a}{b}）。片方だけの腐れ縁は、{a} を愛憎を持つ側にそろえる */
+  function pairLayer(ctx, x, y) {
+    var k = kindOf(ctx, x, y);
+    if (k === 'kusare1' && !HK.LoveHate.has(ctx, x, y)) { var s = x; x = y; y = s; }
+    return fill(ctx.pick(pairPool(k)), { a: x.name, b: y.name });
+  }
+  RE.pairLayer = pairLayer;
   /* 出る様子：手を取る（恋人・親友）／無言（敵対）／我先に（関係が薄い）／ふつう */
   function manner(ctx, g) {
-    var ps = pairsOf(g), hp = ps.filter(function (p) { return isLove(ctx, p[0], p[1]); })[0] || ps.filter(function (p) { var v = avgR(ctx, p[0], p[1]); return isClose(ctx, p[0], p[1]) || (v.aff > 45 && v.ten < 30); })[0];
+    /* 腐れ縁の二人（kusareOf）は手を取って出ない（関係の層の言い争いと食い違うため） */
+    var ps = pairsOf(g).filter(function (p) { return !kusareOf(ctx, p[0], p[1]); }), hp = ps.filter(function (p) { return isLove(ctx, p[0], p[1]); })[0] || ps.filter(function (p) { var v = avgR(ctx, p[0], p[1]); return isClose(ctx, p[0], p[1]) || (v.aff > 45 && v.ten < 30); })[0];
+    ps = pairsOf(g);
     if (hp) return { m: 'hand', p: hp };
     if (ps.some(function (p) { return isHate(ctx, p[0], p[1]); })) return { m: 'silent', p: ps[0] };
     if (ps.every(function (p) { var v = avgR(ctx, p[0], p[1]); return v.aff < 15 && v.att < 20; })) return { m: 'rush' };
@@ -254,7 +281,7 @@
     } else {
       var g = membersOf(ctx, ex), lay;
       if (ex.trio || g.length > 2) lay = { t: freshScene(ctx, SCENE_G), o: 1 };
-      else { var x = g[0], y = g[1]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } lay = { t: fill(ctx.pick(pairPool(kindOf(ctx, x, y))), { a: x.name, b: y.name }), o: 0 }; }
+      else { var x = g[0], y = g[1]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } lay = { t: pairLayer(ctx, x, y), o: 0 }; }
       /* 関係の層の一文目が出るところから書く型（「外に出ると」「部屋を出た〇〇は」など）なら、出る様子は重ねない */
       if (!/^[^。]*(?:外に出る|部屋を出た|扉を出た)/.test(lay.t)) parts.push({ t: exitLine(ctx, g), o: 2 });
       parts.push(lay);
@@ -312,7 +339,7 @@
         var t;
         if (e.group) t = fill(ctx.pick(kill ? PAIR.kill : PAIR.group), { G: nm(e.group.map(function (i) { return C[i]; })) });
         else if (e.stay != null) t = fill(ctx.pick(PAIR.go), { a: C[e.a].name, b: C[e.b].name });
-        else { var x = C[e.a], y = C[e.b]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } t = fill(ctx.pick(pairPool(kindOf(ctx, x, y))), { a: x.name, b: y.name }); }
+        else { var x = C[e.a], y = C[e.b]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } t = pairLayer(ctx, x, y); }
         parts.push({ t: t, o: nL ? 8 + nL : 1 });
         nL++;
       });

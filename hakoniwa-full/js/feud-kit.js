@@ -1,7 +1,9 @@
 /* 箱庭シミュレーター: 探偵どうしの関係と、憎しみ・愛憎の共通部品（邪神村RTA・吹雪の館で使う）
    ・関係の種類：設定された人間関係（S.ties）から決める
-       愛憎 … 敵対・不仲の「愛憎」の欄（tie.lh。hate-love.js の HK.LoveHate）を設定していれば、それに従う（片方だけなら、持つ側だけが揉めながら構う）。
+       愛憎 … 気持ちの関係「愛憎」（2026-10-29。古い敵対・不仲の欄 lh も。hate-love.js の HK.LoveHate.dir／has）を設定していれば、それに従う（片方だけなら、持つ側だけが揉めながら構う）。
+              恐怖・無関心の組、愛憎の関係に「出来事：起こさない」を付けた組は、設定していても愛憎として動かない（HK.LoveHate.off。物語型でも効く）。
               設定していなければ、以前の判定：恋愛の関係（恋人・片想い・セフレ・元恋人…）と、敵対・不仲・ライバルが同じ二人に重なっている
+              （恐怖・無関心の組と、「出来事：起こさない」を付けた関係は数えない）
        憎しみ … 敵対・不仲・きょうだい（不仲）だけで、恋愛の関係がない
    ・名探偵とポンコツ探偵の顔合わせの台詞は、二人の関係（先輩後輩の向き・ライバル・恋人・親しい・初対面）で変わる
    ・成人向けの描写（愛憎の二人が揉めて、無理やり体を重ねる）は solo-feud-r18.js（R18版のみ）が HK.Feud.r18Clash を足す
@@ -94,17 +96,23 @@
     return t;
   }
   /* r18:end */
-  /* 以前の判定（愛憎の欄を設定していない組）：恋愛の関係と、敵視（どちらかの嫌悪が不仲以上）かライバルが重なっている。向きはない */
-  function lhOld(S, a, b) { return love(S, a, b) && (lv(S, a, b) >= 35 || lv(S, b, a) >= 35 || has(S, a, b, RIVAL)); }
-  /* 愛憎の欄（tie.lh）を、この二人のあいだの敵対・不仲に設定しているか */
+  /* 以前の判定（愛憎を設定していない組）：恋愛の関係と、敵視（どちらかの嫌悪が不仲以上）かライバルが重なっている。向きはない。
+     恐怖・無関心の組（HK.LoveHate.off：どちら向きでも）と、恋愛・敵視の関係に「出来事：起こさない」を付けた組は数えない（2026-10-29 担当C。調査の気づき 6） */
+  function lhOld(S, a, b) {
+    var LH = HK.LoveHate;
+    if (LH && LH.off && (LH.off(S, a, b) || LH.off(S, b, a))) return false;
+    if (ties(S, a, b).some(function (t) { return t.noev === 'off' && inL(t.type, LOVE + ',' + RIVAL + ',' + HATE); })) return false;
+    return love(S, a, b) && (lv(S, a, b) >= 35 || lv(S, b, a) >= 35 || has(S, a, b, RIVAL));
+  }
+  /* 愛憎（気持ちの関係「愛憎」か、古い lh）を、この二人に設定しているか（向きは問わない。HK.LoveHate.dir） */
   function lhSet(S, a, b) { return !!(HK.LoveHate && HK.LoveHate.dir(S, a, b)); }
   /* 同じ二人の「構う」（hate-love.js）と「揉める」を、同じ区切りで重ねないための記録（S.lhLast[組] = 区切りの値） */
   function lhKey(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
   var F = HK.Feud = {
     ties: ties, has: has, level: lv,
-    /* 愛憎の二人か（向きは問わない）。愛憎の欄を設定していればそれ（HK.LoveHate.any）、なければ以前の判定 */
+    /* 愛憎の二人か（向きは問わない）。愛憎を設定していればそれ（HK.LoveHate.any。恐怖・無関心・「出来事：起こさない」は外れる）、なければ以前の判定 */
     lovehate: function (S, a, b) { return lhSet(S, a, b) ? HK.LoveHate.any(S, a, b) : lhOld(S, a, b); },
-    /* a が b に愛憎を抱いているか（揉めながら構う・身を挺して守るのは、こちらが真の側）。以前の判定は両方向とも真 */
+    /* a が b に愛憎を抱いているか（揉めながら構う・身を挺して守るのは、こちらが真の側。HK.LoveHate.has）。以前の判定は両方向とも真 */
     lhFrom: function (S, a, b) { return lhSet(S, a, b) ? HK.LoveHate.has(S, a, b) : lhOld(S, a, b); },
     /* 理由の欄の一言 */
     lhWhy: function (S, a, b) { return (lhSet(S, a, b) && HK.LoveHate.why(S, a, b)) || '憎しみと執着が、同じだけ育っている'; },
@@ -119,6 +127,9 @@
     },
     /* 体を重ねてよい組か（R18に参加しない・性行為の相手の固定・全年齢モードなど。HK.LoveHate.sexOk） */
     bodyOk: function (S, a, b) { return F.touchOk(S, a, b) && (!HK.LoveHate || HK.LoveHate.sexOk(S, a, b)); },
+    /* 揉めて無理やり体を奪う場面にしてよい組か（2026-10-29 担当C。設計 3 章）：設定の愛憎の二人は、表の顔が嫌悪系（HK.LoveHate.face が 'hate'）のときだけ。
+       恋愛系・対等系・関係なしの愛憎の二人は、揉めても唇を奪うまで（体を重ねるのは、それぞれの箱庭のふつうの夜に任せる）。設定の無い以前の判定の組は今までどおり */
+    forceOk: function (S, a, b) { var LH = HK.LoveHate; return !lhSet(S, a, b) || !(LH && LH.face) || LH.face(S, a, b) === 'hate'; },
     /* 憎しみ：a が b を嫌っていて、恋愛の関係がない（一方的でもよい） */
     hate: function (S, a, b) { return lv(S, a, b) >= 35 && !love(S, a, b); },
     /* 敵対の強さの憎しみ（生贄に差し出す・手にかけるのはこちら） */
@@ -149,7 +160,7 @@
     label: function (S, a, b) { return ties(S, a, b).map(function (t) { return HK.tieLabel ? HK.tieLabel(t) : HK.TIES && HK.TIES[t.type] ? HK.TIES[t.type].label : t.type; }).join('・') || 'なし'; },
     /* 愛憎の二人が揉めたときの描写（{text, r18, touch}）。a=強引な側。R18版では solo-feud-r18.js が r18Clash を足す
        恋愛対象・受け攻めの決まり：唇・体に踏み込むのは F.touchOk の組だけ（合わない組・攻め×攻めは NOTOUCH で口論と掴み合いまで。touch: false）。
-       体を奪う場面は、F.bodyOk の組で、強引な側 a が攻め（HK.Pos.order の先頭）のときだけ。
+       体を奪う場面は、F.bodyOk の組で、強引な側 a が攻め（HK.Pos.order の先頭）のときだけ。設定の愛憎の二人は、表の顔が嫌悪系のときだけ（F.forceOk）。
        向きが逆（b が攻め）なら、唇だけの揉み合いで、b が逆に押さえ込む（攻めを選んだ人を受けにしない）。女性どうしは指と舌の描写（FF_CLASH） */
     clash: function (S, a, b, pick) {
       var t = a.name + 'と' + b.name + 'の口論は、いつの間にか怒鳴り合いになっていた。' + HK.TL.line(a, 'LH_CLASH', b);
@@ -157,7 +168,7 @@
       if (!F.touchOk(S, a, b)) return { text: t + (pick ? fill(pick(NOTOUCH)) + pick(NOTOUCH_AFTER) : ''), r18: false, touch: false };
       var Pz = HK.Pos, aTop = !Pz || Pz.order(a, b, [a, b])[0] === a;
       var pk = pick || function (l) { return l[0]; };
-      if (aTop && F.r18Clash && F.r18On && F.r18On(S) && F.bodyOk(S, a, b)) {
+      if (aTop && F.r18Clash && F.r18On && F.r18On(S) && F.bodyOk(S, a, b) && F.forceOk(S, a, b)) {
         if (Pz && Pz.ff(a, b)) return { text: t + ffClash(S, a, b, pk) + HK.TL.line(a, 'LH_AFTER', b), r18: true, touch: true };
         return { text: t + F.r18Clash(S, a, b) + HK.TL.line(a, 'LH_AFTER', b), r18: true, touch: true };
       }

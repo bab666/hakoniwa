@@ -27,6 +27,31 @@
   /* r18:end */
   if (!LK || !ST) return;
 
+  /* 愛憎（気持ちの関係「愛憎」）の二人で、表の顔が恋愛系（HK.LoveHate.face が 'love'：恋人・夫婦・元恋人・セフレ・片想い など）のとき、
+     愛憎を持つ側（{b}）が相手（{a}）に応じる文（2026-10-29 担当C。設計 3 章）。口では文句を言いながら、恋人どうしの甘えとして受け入れる（ふつうの敵対の「口では嫌がる」とは別）。
+     lead は地の文（{b} が拗ねたまま拒まない）、say は {b} の態度9種の台詞（3本）。locker-crowd.js（大人数）も使う */
+  LK.LH_LOVE = {
+    lead: [
+      '{b}はさっきまでの口喧嘩の続きのような顔で、{a}を睨んだ。それでも、{a}の手を払いのけはしなかった。',
+      '{b}は小さく舌打ちをして、{a}の胸に額を押しつけた。怒った顔のまま、{b}の腕は{a}の背中に回っていた。',
+      '{b}は目を逸らした。拗ねた横顔のまま、{a}の袖を掴んだ指だけは離さなかった。',
+      '{b}は{a}の肩を一度だけ小突いた。それが、{b}なりの「いいよ」の合図だと、{a}はとうに知っていた。'
+    ],
+    say: {
+      proud: ['「……今日だけだからね。調子に乗らないで｜……今日だけだ。調子に乗るな｜……今日だけですからね。調子に乗らないでください」', '「喧嘩は、まだ終わってないから。……あとで続きをする｜喧嘩は、まだ終わっていない。……あとで続きだ｜喧嘩は、まだ終わっていませんから。……あとで続きをします」'],
+      stern: ['「こういうところが、あなたの嫌なところ。……離れないで｜こういうところが、あなたの嫌なところだ。……離れるな｜こういうところが、あなたの嫌なところです。……離れないでください」', '「怒ってるのは変わらない。……それとこれとは、別｜怒っているのは変わらない。……それとこれとは、別だ｜怒っているのは変わりません。……それとこれとは、別です」'],
+      tsun: ['「べ、別に嬉しくなんかない。……あなただから、仕方なくだから｜べ、別に嬉しくなどない。……あなただから、仕方なくだ｜べ、別に嬉しくなんかありません。……あなただから、仕方なくですから」', '「か、勘違いしないで。まだ許してないんだから｜か、勘違いするな。まだ許していないんだ｜か、勘違いしないでください。まだ許していないんですから」'],
+      gentle: ['「さっきまで喧嘩してたのに……ずるいよ、あなたは｜さっきまで喧嘩していたのに……ずるいな、あなたは｜さっきまで喧嘩していたのに……ずるいですよ、あなたは」', '「……もう、怒ってるのが馬鹿みたい｜……もう、怒っているのが馬鹿みたいだ｜……もう、怒っているのが馬鹿みたいです」'],
+      devoted: ['「嫌い。……嫌いだけど、あなたじゃなきゃ嫌｜嫌いだ。……嫌いだが、あなたでなければ嫌だ｜嫌いです。……嫌いですけど、あなたでなければ嫌です」', '「ひどい人。……でも、離してあげない｜ひどい人だ。……だが、離してはやらない｜ひどい人です。……でも、離してあげません」'],
+      cool: ['「腹は立ってる。それとこれとは、別の話｜腹は立っている。それとこれとは、別の話だ｜腹は立っています。それとこれとは、別の話です」', '「……反論はあとでまとめて言う。今は、いい｜……反論はあとでまとめて言う。今は、いい｜……反論はあとでまとめて申し上げます。今は、いいです」'],
+      free: ['「ほんと最悪。……ま、あなたならいいけど｜本当に最悪だ。……まあ、あなたならいいが｜本当に最悪です。……まあ、あなたならいいですけど」', '「ずるいなあ。そういうとこ、嫌いなのに｜ずるいな。そういうところが、嫌いなのに｜ずるいですね。そういうところ、嫌いなのに」'],
+      shy: ['「お、怒ってるんだからね……。で、でも、やめないで｜お、怒っているんだからな……。で、でも、やめるな｜お、怒っているんですからね……。で、でも、やめないでください」', '「……き、嫌いって言ったの、う、嘘じゃないから……｜……き、嫌いと言ったのは、う、嘘ではない……｜……き、嫌いと言ったの、う、嘘じゃありませんから……」'],
+      polite: ['「まだ許したわけじゃない、って言いたいところだけど……｜まだ許したわけではない、と言いたいところだが……｜まだ許したわけではありません、と申し上げたいところですが……」', '「仲直りは、出てからにしよう。……今は、このままで｜仲直りは、出てからにしよう。……今は、このままでいい｜仲直りは、出てからにいたしましょう。……今は、このままで」']
+    }
+  };
+  /* 愛憎を持つ側 b が、表の顔が恋愛系の相手 a に応じるか */
+  LK.lhLoveOf = function (S, a, b) { var LH = HK.LoveHate; return !!(LH && LH.face && LH.has(S, b, a) && LH.face(S, a, b) === 'love'); };
+
   /* 体の関係の相手を固定している人の説明（全年齢版の言い方） */
   var W_SEXL = '心に決めた相手を';
   /* r18:begin */
@@ -173,7 +198,7 @@
     var HSX = R18 && HK.HateSex, hateP = !!(HSX && rel === 'tension' && !ngP && !clash && HSX.hostile(S, A, B));
     var libForce = (libNo || nightNo) && hateP;
     if ((libNo || nightNo) && !hateP) clash = true;
-    /* 愛憎（敵対・不仲の追加の欄。hate-love.js）：持つ側は構ってほしくて手を出しやすく、持つ側が受けなら口では嫌がりながら応じやすい。二度目・ベッドへの続きも起きやすい */
+    /* 愛憎（気持ちの関係「愛憎」。古い敵対・不仲の欄 lh も。hate-love.js の HK.LoveHate）：持つ側は構ってほしくて手を出しやすく、持つ側が受けなら口では嫌がりながら応じやすい。二度目・ベッドへの続きも起きやすい */
     var LHo = HK.LoveHate, lhAny = !!(LHo && !ngP && LHo.any(S, A, B));
     function hardTop(p) { return !!(Pos && Pos.hardTop(p, p && p.o)); }
     if (bind === 'one') {
@@ -469,12 +494,14 @@
         }
         b.cnt.accept++; pair.level = lv; pair.acts++; pair.lastAct = turn; lewdNow = true;
         /* 応じ方の段階（1 流される・2 乗る）。一度乗った相手が流されるときは、拒みかける文ではなく応じる文で書く */
-        var rxNow = resp === 'accept' ? 2 : 1, rx0 = b.rxCool ? 0 : b.rxLv || 0, giveIn = !swap && b.cnt.refuse > 0 && !b.gaveIn && LK.GIVEIN;
+        var rxNow = resp === 'accept' ? 2 : 1, rx0 = b.rxCool ? 0 : b.rxLv || 0, giveIn = !swap && b.cnt.refuse > 0 && !b.gaveIn && LK.GIVEIN, lhLv = false;
         var rxText = !swap && resp === 'passive' && rx0 >= 2 ? 'accept' : resp;
         b.rxLv = Math.max(rx0, rxNow); b.rxCool = false; if (giveIn) b.gaveIn = true;
         eroNow = resp === 'accept';
         if (swap) t += ST.fmt(pk(LK.TAKE[b.bound ? 'bound' : 'free']), vT) + ST.fmt(pk(actPool), vA);
         else if (hateNow) t += HSX.react(S, a, b, lv);
+        /* 愛憎を持つ側が、表の顔が恋愛系の相手に応じる：口では文句を言いながら、恋人どうしの甘えとして（LK.LH_LOVE。2026-10-29 担当C） */
+        else if ((lhLv = lhAny && !clash && LK.lhLoveOf(S, a, b) && rng() < 0.7)) t += ST.fmt(pk(LK.LH_LOVE.lead), { a: a.name, b: b.name }) + say2(b, LK.LH_LOVE.say);
         else t += (giveIn ? ST.fmt(pk(hands(giveIn, a, b)), { a: a.name, b: b.name }) : '') + ST.fmt(pk(hands((rxText === 'accept' ? LK.ACCEPT : LK.PASSIVE).filter(function (x) { return (aTop && !ff && !fmPair(a, b)) || !/受け入れ/.test(x); }), a, b)), { a: a.name, b: b.name }) + (resp === 'accept' && rng() < 0.6 ? say2(b, LK.ACCEPT_SAY) : '');
         /* キスの最中の声（R18版のみ。moan-engine.js の共通の声 k0。言葉のない声）：受ける側が一つ。描写「ぼかす」・全年齢では足さない */
         if (R18 && lew !== 'low' && LV[lv] === 'kiss' && HK.Moan && HK.Moan.pick && !bx.noR18 && rng() < 0.6) t += bx.name + '「' + HK.Moan.pick(S, bx, 'k0', {}) + '」';
@@ -528,7 +555,7 @@
         var G = gimmicks[gi];
         if (G && G.lewd && lv >= 1) { prog = 100; t += ST.fmt(pk(lv >= 2 && LK.KISS_MID ? LK.KISS_MID : G.ok), { a: a.name, b: b.name }); }
         eroNow = false;
-        var o2 = ST.sayB(S, { actors: [a, b], tag: actLabel(lv), text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた（' + (hardTop(b) ? '攻め' : '動く側') + '）' : resp === 'accept' ? '乗った' : hateNow ? '口では嫌がったが、拒みきらなかった' : '流された') + '（関係：' + RL[rel] + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）' + (nightL ? '／夜の性格：' + nightL : '') + (libForce ? '／' + (HK.Pos.FORCE_MARK || '〔合意のない展開〕') + libWho.name + 'は性欲が「なし」だが、媚薬と敵意の切羽詰まった場面で体の関係になった（合意のない展開）' : ''), mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(lv), lv >= 3 || pair.acts === 1);
+        var o2 = ST.sayB(S, { actors: [a, b], tag: actLabel(lv), text: t, why: a.name + 'が「' + actLabel(lv) + '」を仕掛けた（発情 ' + Math.round(a.m.heat) + '）／' + b.name + 'は' + (swap ? '誘いに乗って、自分から動いた（' + (hardTop(b) ? '攻め' : '動く側') + '）' : lhLv ? '口では文句を言いながら、拒まなかった（愛憎。表の顔は恋愛系）' : resp === 'accept' ? '乗った' : hateNow ? '口では嫌がったが、拒みきらなかった' : '流された') + '（関係：' + RL[rel] + '・' + b.name + 'の発情 ' + Math.round(b.m.heat) + '）' + (nightL ? '／夜の性格：' + nightL : '') + (libForce ? '／' + (HK.Pos.FORCE_MARK || '〔合意のない展開〕') + libWho.name + 'は性欲が「なし」だが、媚薬と敵意の切羽詰まった場面で体の関係になった（合意のない展開）' : ''), mag: 18 + lv * 5, kind: 'climax' }, a.name + '→' + b.name + '：' + actLabel(lv), lv >= 3 || pair.acts === 1);
         if (o2 && pair.acts === 1) ST.key(S, o2, '最初に手を出したのは' + a.name);
         if (o2 && lv === 4 && !pair.keySex) { pair.keySex = true; ST.key(S, o2, ff ? 'ロッカーの中で肌を重ねた' : 'ロッカーの中で繋がった'); }
         break;
@@ -663,8 +690,11 @@
     if (fcKind && LK.FC) lines.push(ST.fmt(pk(LK.FC.end[fcKind]), { c: crusher.name, o: crusher.o.name }));
     /* 両片想い：何かあった二人は「……こっちの台詞」と通じる。何もなかった二人は、すれ違ったまま */
     if (nt) { var ntL = NT.endLine(S, nt); if (ntL) lines.push(ntL); }
-    /* 愛憎：何かあった二人は腐れ縁 */
-    if (lhAny && pair.acts >= 1 && pair.level >= 1) lines.push((LHo.mutual(S, A, B) ? A.name + 'と' + B.name + '：腐れ縁（愛憎）。口では嫌い合いながら、結局また触れ合ってしまう' : (LHo.has(S, A, B) ? A : B).name + '→' + (LHo.has(S, A, B) ? B : A).name + '：腐れ縁（愛憎）。口では嫌いながら、構わずにいられない'));
+    /* 愛憎：何かあった二人は腐れ縁。恋人どうし（表の顔が恋愛系で、関係が恋人）は「喧嘩ばかりの恋人」（設計 2-5 の名前。2026-10-29 担当C） */
+    if (lhAny && pair.acts >= 1 && pair.level >= 1) {
+      var lhLover = rel === 'lover' && LHo.face && LHo.face(S, A, B) === 'love', lhNm = lhLover ? '喧嘩ばかりの恋人（愛憎）' : '腐れ縁（愛憎）';
+      lines.push(LHo.mutual(S, A, B) ? A.name + 'と' + B.name + '：' + lhNm + (lhLover ? '。喧嘩をしては、結局また触れ合ってしまう' : '。口では嫌い合いながら、結局また触れ合ってしまう') : (LHo.has(S, A, B) ? A : B).name + '→' + (LHo.has(S, A, B) ? B : A).name + '：' + lhNm + (lhLover ? '。突き放すようなことばかり言いながら、離れられない' : '。口では嫌いながら、構わずにいられない'));
+    }
     /* R18に参加しない人がいて、恋愛はできる二人（loveNo）：体の関係の代わりに、触れずに耐えた・気づかい合った時間が恋のきっかけになる
        （両片想いは通じる。ほかの関係は LK.REL.pure の一文。何もなかった二人・怒って出た二人には出さない） */
     var heldNo = loveNo && (A.cnt.hold + B.cnt.hold > 0 || outcome === 'endure') && outcome !== 'angry' && outcome !== 'plotfail';

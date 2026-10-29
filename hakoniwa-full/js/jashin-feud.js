@@ -4,14 +4,15 @@
    ・ライバル・敵対の探偵は、手がかりを奪い合う。敵対している名探偵どうしは、ぶつかり合うこともある
    ・憎しみだけの相手は、村人に生贄として差し出したり、人目のないところで手にかけたりする
    ・愛憎の二人は、揉めると無理やり唇や体を奪うこともあるが、それ以上に、相手が危ないときは身を挺して守る
-     愛憎の欄（tie.lh）を設定した組は、それに従う（片方だけなら、持つ側だけが揉めながら構い、守る）。
+     愛憎（気持ちの関係「愛憎」。古い敵対・不仲の欄 lh も）を設定した組は、それに従う（片方だけなら、持つ側だけが揉めながら構い、守る。feud-kit.js の HK.Feud.lhFrom → HK.LoveHate.has）。
+     恐怖・無関心の組、「出来事：起こさない」を付けた組は、愛憎として動かない（物語型でも。2026-10-29）。
      唇・体に踏み込むのは、恋愛対象と受け攻めの合う組だけ（feud-kit.js の HK.Feud.clash）。
      同じ二人の「構う」（hate-love.js）と「揉める」は、同じ区切り（4時間）のうちに重ねない
    台詞は tone-lines.js（口調ごとの書き下ろし） */
 /* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
 /* @event scen=jashin id=js_feud cat=conflict tie=rival,enemy label=探偵どうし（手がかりの奪い合い・ぶつかり合い） */
 /* @event scen=jashin id=js_hate cat=conflict tie=enemy tags=death,cruel cond=HK.Dark.f(S, 'grudge') label=憎しみ（生贄に差し出す・人目のないところで手にかける） */
-/* @event scen=jashin id=js_hatelove cat=conflict tie=yan label=愛憎（揉める・身を挺して守る） */
+/* @event scen=jashin id=js_hatelove cat=conflict tie=lovehate label=愛憎（揉める・身を挺して守る） */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, FD = HK.Feud, clamp = HK.clamp;

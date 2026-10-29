@@ -342,6 +342,8 @@
       if (!b || scenOf(ctx) !== 'goukon' || !HS || ctx.stepIndex < 3 || !on(ctx, 'force')) return false;
       var pf = ctx.pair(a, b);
       if (pf.ctHate || pf.hateSexAt != null || !HK.Pos.okForce(ctx, a, b) || !ctx.romanceOk([a, b], { sex: true, force: true })) return false;
+      /* 愛憎（気持ちの関係）の二人は、表の顔が嫌悪系（HK.LoveHate.face が 'hate'）のときだけ。恋愛系・対等系の愛憎の二人は合コンのふつうの夜に任せる（2026-10-29 担当C。HS.hostile でも外す） */
+      if (HS.lhSoft && HS.lhSoft(ctx, a, b)) return false;
       return HS.order(ctx, a, b)[0] === a && HS.hostile(ctx, a, b) && !HS.taken(ctx, a, b);
     },
     w: function (ctx, a) { return 3 + (a.tr.aggr || 0) + (a.tr.impulse || 0) * 0.5; },
