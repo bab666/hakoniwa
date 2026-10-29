@@ -938,7 +938,7 @@
     night: { name: '一夜の関係', cls: 'night', pol: 1 },
     vague: { name: '曖昧な関係', cls: 'night', pol: 1 },
     oneway: { name: '片想い', cls: 'pine', pol: 0 },
-    lovehate: { name: '愛憎', cls: 'obsess', pol: 0 },
+    lovehate: { name: '憎みながら惹かれ合う', cls: 'obsess', pol: 0 },
     rivals: { name: '宿敵', cls: 'enemy', pol: -2 },
     accomplice: { name: '共犯', cls: 'partner', pol: 1 },
     partners: { name: '相棒', cls: 'partner', pol: 2 },

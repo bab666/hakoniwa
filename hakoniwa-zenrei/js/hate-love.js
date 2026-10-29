@@ -1,5 +1,5 @@
-/* 箱庭シミュレーター: 愛憎（敵対・不仲の追加の欄 lh。2026-10-26）
-   ■ 設定：関係「敵対」「不仲」の追加の欄（ties.js の HK.LOVEHATE）。''＝なし／a＝一人目だけ／b＝二人目だけ／both＝双方
+/* 箱庭シミュレーター: 愛憎（気持ちの関係「愛憎」{a}→{b}。2026-10-29 に敵対・不仲の追加の欄 lh から移した。設計は docs/reports/2026-10-29/lovehate-design.md）
+   ■ 設定：気持ちの関係「愛憎」（ties.js の T.lovehate）。どの関係にも重ねられる。相手の気持ち both＝双方。古い保存の形（敵対・不仲の欄 lh：a／b／both）も読む
    ■ 判定：HK.LoveHate（x はエンジン型の ctx でも、物語型の S でもよい。hate-kit.js の tieList と同じ流儀）
        dir(x, a, b) → 'a'（a が b に）／'b'（b が a に）／'both'／''（設定のまま。a から見た向き）
        has(x, a, b) → a が b に愛憎を持つか。恋愛・R18にしない相手・恋愛相手の固定（ほかの人）・家族（恋愛：なし）・無関心・恐怖の組では持たない（ふつうの敵対）
@@ -32,15 +32,31 @@
   function fill(t, m) { return String(t).replace(/\{(a|b|c|t)\}/g, function (s, k) { return m[k] ? m[k].name : s; }); }
 
   var LH = HK.LoveHate = {
+    /* 気持ちの関係「愛憎」（2026-10-29。ties.js の T.lovehate）を読む。相手の気持ち both（開く前の形）と、古い保存の形（敵対・不仲の欄 lh）も読む */
     dir: function (x, a, b) {
       if (!x || !a || !b || a === b) return '';
       var fa = false, fb = false;
       tieList(x, a, b).forEach(function (t) {
+        if (t.type === 'lovehate') {
+          if (t.cold === 'both') { fa = fb = true; return; }
+          if (t.a === a.i) fa = true; else fb = true;
+          return;
+        }
         if ((t.type !== 'enemy' && t.type !== 'bad') || !t.lh) return;
         if (t.lh === 'both') { fa = fb = true; return; }
         if ((t.lh === 'a') === (t.a === a.i)) fa = true; else fb = true;
       });
       return fa && fb ? 'both' : fa ? 'a' : fb ? 'b' : '';
+    },
+    /* 表の顔（設計 2-1）：同じ二人に重ねた関係で決める。hate＝嫌悪系（敵対・不仲・兄弟（不仲）・険悪な上下）／love＝恋愛系（恋人・夫婦・元恋人・セフレ・片想い など）／
+       kin＝家族系（きょうだい・親子・親族・義理。「恋愛：あり」なら love）／peer＝対等系・無関係（友人・ライバル・同僚・知人・関係なし）。優先は 嫌悪 → 恋愛 → 家族 → 対等 */
+    face: function (x, a, b) {
+      var l = tieList(x, a, b), has = function (re) { return l.some(function (t) { return re.test(t.type); }); };
+      if (has(/^(enemy|bad|sibbad)$/) || l.some(function (t) { return /^(mentor|master|boss|teacher)$/.test(t.type) && t.cold === 'bad'; })) return 'hate';
+      if (has(/^(lover|spouse|ex|fwb|crush|honmei|mate|fated|almost|fiance|yan)$/)) return 'love';
+      var kin = l.filter(function (t) { return HK.TIES[t.type] && HK.TIES[t.type].family; });
+      if (kin.length) return kin.some(function (t) { return t.love === 'ok'; }) ? 'love' : 'kin';
+      return 'peer';
     },
     /* 愛憎を持たない扱いにする組（ふつうの敵対としてふるまう） */
     off: function (x, a, b) {
@@ -49,6 +65,9 @@
       if (isCtx(x)) {
         if (x.pair(a, b).kin) return true;
         if (HK.Ties.apathy && (HK.Ties.apathy(x, a, b) || HK.Ties.fears(x, a, b) || HK.Ties.fears(x, b, a))) return true;
+      } else if (tieList(x, a, b).some(function (t) { return (t.type === 'apathy' && t.a === a.i) || t.type === 'fear' || (t.noev === 'off' && t.type === 'lovehate'); })) {
+        /* 物語型でも、無関心（a→b）・恐怖（どちら向きでも）の組と、愛憎の関係に「出来事：起こさない」を付けた組は持たない扱い（2026-10-29。調査の気づき 6） */
+        return true;
       }
       return false;
     },
@@ -79,6 +98,30 @@
     why: function (x, a, b) {
       var m = LH.mutual(x, a, b);
       return m ? a.name + 'と' + b.name + 'は、互いに愛憎を抱いている（口では嫌い合いながら、離れられない）' : LH.has(x, a, b) ? a.name + 'は' + b.name + 'に愛憎を抱いている（口では嫌いながら、構わずにいられない）' : LH.has(x, b, a) ? b.name + 'は' + a.name + 'に愛憎を抱いている（口では嫌いながら、構わずにいられない）' : '';
+    }
+  };
+
+  /* ---------- 劣等感・優越（気持ちの関係 inferior・superior。2026-10-29。設計 7 章） ----------
+     HK.Esteem.of(x, a, b) → 'inferior'（a が b に引け目）／'superior'（a が b を見下す）／''。同じ向きに両方は持たない（ties.js の HK.Ties.expand が後のほうを残す）
+     無関心（a→b）・恐怖（どちら向きでも）の組、「出来事：起こさない」を付けた関係では持たない扱い（出来事を起こさない）。恋愛対象・受け攻めには関わらない */
+  var ES = HK.Esteem = {
+    raw: function (x, a, b) {
+      if (!x || !a || !b || a === b) return '';
+      var r = '';
+      tieList(x, a, b).forEach(function (t) { if ((t.type === 'inferior' || t.type === 'superior') && t.a === a.i) r = t.type; });
+      return r;
+    },
+    off: function (x, a, b) {
+      if (isCtx(x)) return !!(HK.Ties.apathy && (HK.Ties.apathy(x, a, b) || HK.Ties.fears(x, a, b) || HK.Ties.fears(x, b, a)));
+      return tieList(x, a, b).some(function (t) { return (t.type === 'apathy' && t.a === a.i) || t.type === 'fear' || ((t.type === 'inferior' || t.type === 'superior') && t.a === a.i && t.noev === 'off'); });
+    },
+    of: function (x, a, b) { var r = ES.raw(x, a, b); return r && !ES.off(x, a, b) ? r : ''; },
+    inferior: function (x, a, b) { return ES.of(x, a, b) === 'inferior'; },
+    superior: function (x, a, b) { return ES.of(x, a, b) === 'superior'; },
+    /* a が気持ちを向けている、その場にいる人 [{ who, kind }] */
+    targets: function (x, a) {
+      var L0 = isCtx(x) ? x.chars : (x.P || []);
+      return L0.filter(function (o) { return o && o !== a && here(o) && ES.of(x, a, o); }).map(function (o) { return { who: o, kind: ES.of(x, a, o) }; });
     }
   };
 

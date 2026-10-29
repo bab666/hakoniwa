@@ -230,6 +230,7 @@
   function hostile(Z, a, b) {
     return tiesOf(Z, a, b).some(function (t) {
       var D = HK.TIES && HK.TIES[t.type];
+      if (t.type === 'lovehate' && (t.a === a.i || t.cold === 'both')) return true;
       if (t.lh && (t.lh === 'both' || (t.lh === 'a') === (t.a === a.i))) return true;
       return !!(D && D.hate && (t.a === a.i || !t.cold));
     });

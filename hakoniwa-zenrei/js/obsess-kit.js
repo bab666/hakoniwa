@@ -137,7 +137,7 @@
     Object.keys(s).forEach(function (k) { if (s[k] > s[best]) best = k; });
     return best;
   };
-  O.TYPE_NAME = { devote: '献身', bind: '束縛', purge: '排除', depend: '依存', hatelove: '愛憎' };
+  O.TYPE_NAME = { devote: '献身', bind: '束縛', purge: '排除', depend: '依存', hatelove: '試す' };
   O.stance = function (ctx, b, a) {
     var y = O.yanTie(ctx, a, b);
     if (y && y.cold) return y.cold;

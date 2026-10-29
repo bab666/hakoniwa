@@ -197,7 +197,7 @@
   var BYF = {};
   Object.keys(KD).forEach(function (k) { (BYF[KD[k].f] = BYF[KD[k].f] || []).push(k); });
   TN.KINDS = Object.keys(KD);
-  var TAG = { apathy: '無関心', fear: '恐怖', fiance: '許嫁', dep: '執着（依存）', hatelove: '執着（愛憎）', hate: '憎悪', guilt: '負い目', oshi: '推し', mistress: '愛人', comrade: '仲間' };
+  var TAG = { apathy: '無関心', fear: '恐怖', fiance: '許嫁', dep: '執着（依存）', hatelove: '執着（試す）', hate: '憎悪', guilt: '負い目', oshi: '推し', mistress: '愛人', comrade: '仲間' };
   var SKIP = /クライマックス|生贄|罰ゲーム|結末|エピローグ|解決|脱出|最後|最期|真相|推理|吹雪が止んだ|踏破|帰還|全滅|時間切れ|見つかった|解除|その後|後日談|降り立つ|力尽き|終わり/;
   var LOVE_T = /^(lover|crush|almost|honmei|fwb|mate|fated|yan|spouse|fiance)$/, DIR_LOVE = /^(crush|honmei|yan)$/;
 

@@ -221,14 +221,14 @@
         var hs = HS.scene(ctx, a, b, {}), ob = HS.order(ctx, a, b), host = HS.hostile(ctx, a, b);
         /* 敵対の強引な場面は合意のない展開：理由に印（HK.Pos.FORCE_MARK）を付ける（性欲「なし」の人もこの場面には出るため。orient-audit.js の O6 が見る。2026-10-28 担当JA）。
            恋愛対象「なし」の人の印（HS.why の中の HK.Pos.noneWhy）がもう付いていれば足さない */
-        var hw = host ? HS.why(ctx, a, b) : '愛憎（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性', FMK = HK.Pos && HK.Pos.FORCE_MARK;
+        var hw = host ? HS.why(ctx, a, b) : '憎みながら惹かれ合う（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性', FMK = HK.Pos && HK.Pos.FORCE_MARK;
         if (host && FMK && hw.indexOf(FMK) < 0 && HK.Pos.forceOn && HK.Pos.forceOn(ctx)) hw += '／' + FMK + '内容のスイッチ「合意のない展開」';
         return { text: fill(ctx, hs + ctx.pick(HN.end), ob[0], ob[1]), why: hw + (HS.shieldWhy ? HS.shieldWhy(HS.lastShield) : ''), mag: 28 };
       }
       var t = ctx.pick(HN.open) + ctx.pick(lewd(ctx) === 'low' || !HN.mid ? HN.low : HN.mid) + ctx.pick(HN.end);
       /* 受け攻め：抱く側を {a} に */
       var ab = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b];
-      return { text: fill(ctx, t, ab[0], ab[1]), why: '愛憎（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性', mag: 26 };
+      return { text: fill(ctx, t, ab[0], ab[1]), why: '憎みながら惹かれ合う（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性', mag: 26 };
     }
   });
 
@@ -399,7 +399,7 @@
   E.fated_late = ['遅すぎた運命', '{a}と{b}は運命の番だった。気づいたとき、{b}のうなじにはもう別のαの噛み跡があった。二人は触れ合わないまま、同じ街で生きている。'];
   E.stolen = ['奪った恋', '{a}は{b}を、恋人の手から奪った。始まりは裏切りだった。それでも二人は、今は同じ部屋に帰る。'];
   E.break_cheat = ['寝取られて', '{b}は{a}を裏切り、ほかの誰かと夜を過ごした。{a}はそれを許さなかった。'];
-  E.lovehate = ['愛憎のまま', '{a}と{b}は、顔を合わせれば憎まれ口を叩き、二人きりになれば唇を奪い合う。好きなのか憎いのか、本人たちにも分からない。'];
+  E.lovehate = ['憎みながら惹かれ合うまま', '{a}と{b}は、顔を合わせれば憎まれ口を叩き、二人きりになれば唇を奪い合う。好きなのか憎いのか、本人たちにも分からない。'];
   E.affair = ['秘密の夜', '{a}と{b}は、恋人には言えない夜を重ねている。'];
   ['fated_found', 'fated_switch', 'fated_late', 'stolen', 'break_cheat', 'lovehate', 'affair'].forEach(function (k) { if (OM.END_IDS.indexOf(k) < 0) OM.END_IDS.push(k); });
   function mk(ctx, id, a, b) { var d = E[id]; return { id: id, title: d[0], text: ctx.t(d[1], a, b), a: a.i, b: b ? b.i : null }; }

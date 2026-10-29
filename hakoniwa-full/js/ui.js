@@ -248,7 +248,8 @@
     var byId = {};
     S0.chars.forEach(function (c) { byId[c.id] = c; });
     S0.chars.forEach(function (c) { (c.loveNG || []).forEach(function (k) { var o = byId[k]; if (o) { o.loveNG = o.loveNG || []; if (o.loveNG.indexOf(c.id) < 0) o.loveNG.push(c.id); } }); });
-    S0.ties = (Array.isArray(S0.ties) ? S0.ties : []).filter(function (t) {
+    /* 古い保存の形（敵対・不仲の欄 lh）は、気持ちの関係「愛憎」に写してから読む（ties.js の HK.tieLhMigrate。2026-10-29） */
+    S0.ties = (Array.isArray(S0.ties) ? (HK.tieLhMigrate ? HK.tieLhMigrate(S0.ties) : S0.ties) : []).filter(function (t) {
       /* 関係の種類は自分の持つ鍵だけ（壊れた保存の type が「constructor」などでも読み込みが止まらないように） */
       if (!t || typeof t.type !== 'string' || !Object.prototype.hasOwnProperty.call(HK.TIES, t.type) || !ids[t.a] || !ids[t.b] || t.a === t.b) return false;
       /* 仲間（comrade）はグループの「仲間」から自動で付けるので、関係としては持たない */
@@ -890,6 +891,7 @@
       if (t.love === 'ok' || t.love === 'no') nt0.love = t.love;
       /* 追加の欄（型・度合い・気持ち・様子・愛憎）。古い JSON にはないので、ないときは今までどおり */
       HK.TIE_XF.forEach(function (f) { if (typeof t[f] === 'string' && t[f]) nt0[f] = t[f]; });
+      if (HK.tieLhMigrate) HK.tieLhMigrate([nt0]).slice(1).forEach(function (x) { S.ties.push(x); });
       if (HK.tieExtraNorm) HK.tieExtraNorm(nt0);
       if (HK.tieHidden && HK.tieHidden(nt0.type)) return;
       S.ties.push(nt0); tn++;
@@ -1832,7 +1834,7 @@
       if (tt && (t.dataset.p === 'past' || t.dataset.p === 'pastB')) { HK.tiePastSet(S.ties, tt, t.dataset.p, t.value); save(); renderCast(); return; }
       if (tt && (/^[ab]$/.test(t.dataset.p) || (t.dataset.p === 'type' && !HK.tiePastOK({ type: t.value }))) && (tt.past || tt.pastB)) { HK.tiePastMoveOut(S.ties, tt); if (t.dataset.p !== 'type') { tt[t.dataset.p] = t.value; save(); renderCast(); return; } }
       if (tt && HK.TIE_XF.indexOf(t.dataset.p) >= 0) { if (t.value && !(tt.type === 'fiance' && t.value === 'eager')) tt[t.dataset.p] = t.value; else delete tt[t.dataset.p]; save(); renderCast(); return; }
-      if (tt) { tt[t.dataset.p] = t.value; if (t.dataset.p === 'love' && !t.value) delete tt.love; if (t.dataset.p === 'type' && HK.tieExtraNorm) HK.tieExtraNorm(tt); if (t.dataset.p === 'type' || t.dataset.p === 'cold' || t.dataset.p === 'love') { save(); renderCast(); return; } }
+      if (tt) { tt[t.dataset.p] = t.value; if (t.dataset.p === 'love' && !t.value) delete tt.love; if (t.dataset.p === 'type' && HK.tieExtraNorm) HK.tieExtraNorm(tt); if (t.dataset.p === 'type' && HK.tieFeelFix) { var ffm = HK.tieFeelFix(S.ties, tt); if (ffm) toast(ffm); } if (t.dataset.p === 'type' || t.dataset.p === 'cold' || t.dataset.p === 'love') { save(); renderCast(); return; } }
     }
     else if (f === 'seed') S.seed = t.value.replace(/[^\d]/g, '');
     else if (f === 'teacher') { S.teacher = t.value; save(); renderBox(); return; }

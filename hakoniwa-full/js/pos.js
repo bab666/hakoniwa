@@ -488,6 +488,11 @@
     if (x == null && y == null) return 1;
     return Math.min(x == null ? 1 : x, y == null ? 1 : y);
   };
+  /* 気持ちの関係（愛憎・劣等感・優越）の衝動の倍率（ties.js の HK.hostMark が付けた feelOf。無ければ 1）。性欲の式の衝動の項に掛ける（P.sexDrive） */
+  P.feelK = function (a, b) {
+    if (!a || !b || a === b) return 1;
+    return Math.max(1, (a.feelOf && a.feelOf[b.i]) || 1, (b.feelOf && b.feelOf[a.i]) || 1);
+  };
   P.hostile = function (a, b) { return !!(a && b && a !== b && ((a.hostOf && a.hostOf[b.i] != null) || (b.hostOf && b.hostOf[a.i] != null))); };
   function pfOf(ctx, a, b) { return ctx && HK.Ctx && ctx instanceof HK.Ctx ? ctx.pair(a, b) : null; }
   P.sexRel = function (ctx, a, b) {
@@ -510,7 +515,8 @@
     var st = ((a.stress || 0) + (b.stress || 0)) / 200;
     var pf = pfOf(ctx, a, b);
     var sit = Math.min(0.4, drunk * 0.25 + aph * 0.25 + heat * 0.2 + lust * 0.15 + st * 0.05 + (pf && pf.night ? 0.08 : 0));
-    return HK.clamp((0.12 + imp * 0.45 + sit) * lib * P.reasonK(ctx, a, b) * P.sexRel(ctx, a, b), 0, 1);
+    /* 愛憎・劣等感・優越の二人は、衝動の項を強める（理性の項は下げない。2026-10-29 利用者の指示「しづらくしない。衝動性を増して手を出しやすく」） */
+    return HK.clamp((0.12 + imp * 0.45 * P.feelK(a, b) + sit) * lib * P.reasonK(ctx, a, b) * P.sexRel(ctx, a, b), 0, 1);
   };
   /* ---------- 環境値「夜の起こりやすさ」（R18版の全体の環境値 night。events-common.js。2026-10-29 担当MI。利用者の指示「夜の起こりやすさも環境でできるように」） ----------
      ・P.night(ctx)：値（0〜100）。指定が無い（古い記録・全年齢版・全年齢モード）なら既定の 50

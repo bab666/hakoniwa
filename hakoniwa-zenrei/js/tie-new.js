@@ -366,11 +366,11 @@
       return { cat: hurt ? 'conflict' : 'help', text: fill(pk(ctx, HL[key]), r.A, r.B) + fill(pk(ctx, cold ? DEP.reCold : HL.re[per(r.B)]), r.A, r.B), why: obWhy(ctx, r, '愛憎型' + { seek: '：姿が見えないと探す', guard: '：憎みながら守る', test: '：責めて試す', wound: '：傷つける言葉' }[key]), mag: hurt ? 14 : 10 };
     };
   }
-  add({ id: 'tie_nw_hl_seek', label: '愛憎の相手が戻らず探しに出る', cat: 'help', w: 0.5, roles: yanR('hatelove'), run: hlRun('seek') });
-  add({ id: 'tie_nw_hl_guard', label: '愛憎の相手を危険からかばう', cat: 'help', w: 0.5, roles: yanR('hatelove'), run: hlRun('guard') });
+  add({ id: 'tie_nw_hl_seek', label: '執着の相手が戻らず探しに出る（試す）', cat: 'help', w: 0.5, roles: yanR('hatelove'), run: hlRun('seek') });
+  add({ id: 'tie_nw_hl_guard', label: '執着の相手を危険からかばう（試す）', cat: 'help', w: 0.5, roles: yanR('hatelove'), run: hlRun('guard') });
   /* 責める・傷つける：想いの差が大きいほど起きやすい */
-  add({ id: 'tie_nw_hl_test', label: '愛憎の相手の気持ちを試す', cat: 'conflict', w: function (ctx, r) { return 0.45 * gapK(ctx, r.A, r.B); }, roles: yanR('hatelove'), run: hlRun('test') });
-  add({ id: 'tie_nw_hl_wound', label: '愛憎の相手に心ない言葉をぶつける', cat: 'conflict', w: function (ctx, r) { return 0.4 * gapK(ctx, r.A, r.B); }, roles: yanR('hatelove'), run: hlRun('wound') });
+  add({ id: 'tie_nw_hl_test', label: '執着の相手の気持ちを試す', cat: 'conflict', w: function (ctx, r) { return 0.45 * gapK(ctx, r.A, r.B); }, roles: yanR('hatelove'), run: hlRun('test') });
+  add({ id: 'tie_nw_hl_wound', label: '執着の相手に心ない言葉をぶつける（試す）', cat: 'conflict', w: function (ctx, r) { return 0.4 * gapK(ctx, r.A, r.B); }, roles: yanR('hatelove'), run: hlRun('wound') });
 
   /* ======================= 憎悪（{a}＝憎む側、{b}＝憎まれる側。文は feud-kit.js） ======================= */
   function hateR(ctx, a, b) { var Fd = HK.Feud; if (!Fd || !Fd.hateGrade || !Fd.HATE) return null; if (Fd.hateGrade(ctx, a, b)) return { A: a, B: b }; if (Fd.hateGrade(ctx, b, a)) return { A: b, B: a }; return null; }
