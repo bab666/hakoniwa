@@ -60,6 +60,8 @@
     polite: 'P', devoted: 'P', kohai: 'P', ojou: 'P', genki: 'P', keigo_sarc: 'P', keigo_bossy: 'P', keigo_flat: 'P', chara_down: 'P', mixed: 'P', otaku: 'P', keigo_twist: 'P'
   };
   var BASE_PERSONA = { K: 'gentle', F: 'proud', P: 'polite' };
+  /* 否定の規則だけを台詞に当てる（文ごと。口調の仕上げ（tone-new2.js の神の命令口調など）が使う。2026-10-29：「覚えてない」→「覚えてぬ」の直し） */
+  T.neg = function (q, to) { if (!q || !/^(ぬ|へん|ん)$/.test(to)) return q; return join(segs(q).map(function (s) { return { body: ruleNeg(s.body, to), punct: s.punct }; })); };
   T.baseOf = function (tone, kg) {
     if (kg) return 'P';
     var d = T.dictOf(tone);
@@ -229,11 +231,15 @@
   function ruleNeg(body, to) {
     var irr = IRR_NEG[to] || {};
     /* 「へん」「ん」で終わる否定の後ろの「んだ」は「のだ」に（「合わないんだ」→「合わへんのや」。「合わへんんや」にしない） */
-    var nd = to === 'へん' || to === 'ん' ? function (x) { return x.replace(/んんだ/, 'んのだ'); } : function (x) { return x; };
-    return nd(body.replace(/([一-鿿々ぁ-ゖァ-ヶ]{1,6}?)(しない|こない|来ない|いない|ない)(?=(?:よ|ね|の|か|ぞ|ぜ|さ|わ|し|から|けど|けれど|でしょ|です|んだ|のだ|って)?[っッ…‥〜～ー♡、\s　]*$)/, function (m, pre, nai) {
+    var nd = to === 'へん' || to === 'ん' ? function (x) { return x.replace(/んんだ/, 'んのだ'); } : to === 'ぬ' ? function (x) { return x.replace(/ぬんだ/, 'ぬのだ'); } : function (x) { return x; };
+    return nd(body.replace(/([一-鿿々ぁ-ゖァ-ヶ]{1,6}?)(しない|こない|来ない|いない|ない)(?=(?:よ|ね|な|の|か|ぞ|ぜ|さ|わ|し|から|けど|けれど|でしょ|です|んだ|のだ|って){0,2}[っッ…‥〜～ー♡、\s　]*$)/, function (m, pre, nai) {
       if (nai === 'ない') {
         /* 「聞いてない」（〜ていない の縮まった形）：聞いてへん／聞いておらぬ／聞いとらん */
-        if (/[^っ]て$|[んい]で$|って$/.test(pre) && !/(?:なくて|くて|じゃなくて|でなくて|んて|とて)$/.test(pre)) return to === 'へん' ? pre + 'へん' : to === 'ぬ' ? pre + 'おらぬ' : pre.replace(/て$/, 'と').replace(/で$/, 'ど') + 'らん';
+        if (/[^っ]て$|[んい]で$|って$/.test(pre) && !/(?:なくて|くて|じゃなくて|でなくて|んて|とて)$/.test(pre)) {
+          /* 「捨てない」「待てない」「持てない」のような、て で終わる語幹・可能形は「〜ぬ」（「捨ておらぬ」にしない。2026-10-29） */
+          if (/て$/.test(pre) && pre.length >= 2 && NO_TERU.indexOf(pre.slice(-2, -1)) >= 0) return pre + to;
+          return to === 'へん' ? pre + 'へん' : to === 'ぬ' ? pre + 'おらぬ' : pre.replace(/て$/, 'と').replace(/で$/, 'ど') + 'らん';
+        }
         if (!pre || /く$/.test(pre) || ADJ_NAI.test(pre) || /(じゃ|では|が|は|も|しか|なんか|なんて|に|で|て)$/.test(pre)) return m;   /* 形容詞・「〜じゃない」「〜がない」は触らない */
         /* 動詞の否定らしい形だけ：ア段（行か・分から）、エ段（食べ・見え）、一段の語幹、漢字一字（見・出・来） */
         if (!/[かがさたなばまらわえけげせぜてでねべめれ一-鿿々]$/.test(pre) && !ICHI.test(pre)) return m;

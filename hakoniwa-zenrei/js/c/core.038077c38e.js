@@ -875,6 +875,17 @@ var k=HK.personaOf?HK.personaOf({tone:c&&c.tone,eg:egOf(c)}):'gentle';
 return D.ATT[k]?k:'gentle';
 }
 HK.egoAttWord=function(c){return D.ATT[attKey(c)].label;};
+var ONE={CP:'厳格な指導者',NP:'面倒見のいい世話役',A:'理性的な分析家',FC:'自由な感情家',AC:'協調的な気配り屋'};
+HK.egoTypeName=function(c){
+var eg=egOf(c),by=HK.FACTORS.slice().sort(function(x,y){return eg[y]-eg[x];});
+var hi=by.filter(function(k){return eg[k]>=HI;});
+if(hi.length>=2)return D.PAIR[hi[0]+'+'+hi[1]]||D.PAIR[hi[1]+'+'+hi[0]]||ONE[hi[0]];
+return hi.length?ONE[hi[0]]:'バランス型';
+};
+HK.egoToneWord=function(c){
+var set= !!(c&&HK.toneValid&&HK.toneValid(c.tone)),lab=HK.toneLabel?HK.toneLabel(c):D.ATT[attKey(c)].label;
+return set?'口調：'+lab:'口調：おまかせ（'+lab+'）';
+};
 HK.egoDesc=function(c){
 var eg=egOf(c),tr=HK.traits(eg),out=[];
 var by=HK.FACTORS.slice().sort(function(x,y){return eg[y]-eg[x];});
@@ -5373,6 +5384,7 @@ proud:'F',aniki:'F',yankee:'F',stern:'F',cool:'F',calm:'F',gentleman:'F',sondai:
 polite:'P',devoted:'P',kohai:'P',ojou:'P',genki:'P',keigo_sarc:'P',keigo_bossy:'P',keigo_flat:'P',chara_down:'P',mixed:'P',otaku:'P',keigo_twist:'P'
 };
 var BASE_PERSONA={K:'gentle',F:'proud',P:'polite'};
+T.neg=function(q,to){if(!q|| !/^(ぬ|へん|ん)$/.test(to))return q;return join(segs(q).map(function(s){return{body:ruleNeg(s.body,to),punct:s.punct};}));};
 T.baseOf=function(tone,kg){
 if(kg)return'P';
 var d=T.dictOf(tone);
@@ -5503,10 +5515,13 @@ return stem+{'る':'る','た':'た','ない':'ない','なかった':'なかっ
 var IRR_NEG={'ぬ':{'しない':'せぬ','こない':'こぬ','来ない':'来ぬ','いない':'おらぬ','ない':'ない'},'へん':{'しない':'せえへん','こない':'けえへん','来ない':'来えへん','いない':'おらへん','ない':'ない'},'ん':{'しない':'せん','こない':'こん','来ない':'来ん','いない':'おらん','ない':'ない'}};
 function ruleNeg(body,to){
 var irr=IRR_NEG[to]||{};
-var nd=to==='へん'||to==='ん'?function(x){return x.replace(/んんだ/,'んのだ');}:function(x){return x;};
-return nd(body.replace(/([一-鿿々ぁ-ゖァ-ヶ]{1,6}?)(しない|こない|来ない|いない|ない)(?=(?:よ|ね|の|か|ぞ|ぜ|さ|わ|し|から|けど|けれど|でしょ|です|んだ|のだ|って)?[っッ…‥〜～ー♡、\s　]*$)/,function(m,pre,nai){
+var nd=to==='へん'||to==='ん'?function(x){return x.replace(/んんだ/,'んのだ');}:to==='ぬ'?function(x){return x.replace(/ぬんだ/,'ぬのだ');}:function(x){return x;};
+return nd(body.replace(/([一-鿿々ぁ-ゖァ-ヶ]{1,6}?)(しない|こない|来ない|いない|ない)(?=(?:よ|ね|な|の|か|ぞ|ぜ|さ|わ|し|から|けど|けれど|でしょ|です|んだ|のだ|って){0,2}[っッ…‥〜～ー♡、\s　]*$)/,function(m,pre,nai){
 if(nai==='ない'){
-if(/[^っ]て$|[んい]で$|って$/.test(pre)&& !/(?:なくて|くて|じゃなくて|でなくて|んて|とて)$/.test(pre))return to==='へん'?pre+'へん':to==='ぬ'?pre+'おらぬ':pre.replace(/て$/,'と').replace(/で$/,'ど')+'らん';
+if(/[^っ]て$|[んい]で$|って$/.test(pre)&& !/(?:なくて|くて|じゃなくて|でなくて|んて|とて)$/.test(pre)){
+if(/て$/.test(pre)&&pre.length>=2&&NO_TERU.indexOf(pre.slice(-2,-1))>=0)return pre+to;
+return to==='へん'?pre+'へん':to==='ぬ'?pre+'おらぬ':pre.replace(/て$/,'と').replace(/で$/,'ど')+'らん';
+}
 if(!pre|| /く$/.test(pre)||ADJ_NAI.test(pre)|| /(じゃ|では|が|は|も|しか|なんか|なんて|に|で|て)$/.test(pre))return m;
 if(!/[かがさたなばまらわえけげせぜてでねべめれ一-鿿々]$/.test(pre)&& !ICHI.test(pre))return m;
 return pre+to;
@@ -11003,13 +11018,15 @@ q=q.replace(/(?:君|きみ|あなた)(?:たち|達|がた|方)/g,'汝ら').repla
 .replace(/(?<![であ])だろう/g,'であろう').replace(/(な?)のだがね/g,'$1のだがな').replace(/(?<=[ぁ-ん一-鿿])だね(?=[。！!]?$)/,'だな')
 .replace(/すまない/g,'すまぬ').replace(/^ありがとう(?:ございます)?(?=[。！!]|$)/,'大儀であった').replace(/^ほう、?ありがとう/,'ほう、大儀であった').replace(/いいだろう/g,'よかろう');
 if(fp==='我')q=q.replace(/我(?:たち|達)/g,'我ら');
+if(HK.Tone&&HK.Tone.neg)q=HK.Tone.neg(q,'ぬ');
+q=q.replace(/ぬよ(?=[。！!？?…‥、」]|$)/g,'ぬ');
 return bySent(q,function(s,tl,pun,last){
 var ask= /[？?]/.test(pun);
 if(ask|| !last||tl)return s+tl+pun;
 if(/[てで]いろ$/.test(s))return s.replace(/いろ$/,'おれ')+tl+pun;
 if(/(?:いない|居ない)$/.test(s))return s.replace(/(?:いない|居ない)$/,'おらぬ')+tl+pun;
 if(/しない$/.test(s))return s.replace(/しない$/,'せぬ')+tl+pun;
-if(/[らかたまさわがばなけれせめべてげじちみびにひきりえ]ない$/.test(s)&& !NAI_NG.test(s)&& !lot(s,5))return s.replace(/ない$/,'ぬ')+tl+pun;
+if(/[らかたまさわがばなけれせめべげじちみびにひきりえ]ない$/.test(s)&& !/[てで]ない$/.test(s)&& !NAI_NG.test(s)&& !lot(s,5))return s.replace(/ない$/,'ぬ')+tl+pun;
 if(/てやる$/.test(s))return s.replace(/てやる$/,'てやろう')+tl+pun;
 if(/(?<![まやだ]|ん|の)だ$/.test(s)&& /[一-鿿ァ-ヶー々]だ$/.test(s)&& !lot(s,5))return s.replace(/だ$/,'である')+tl+pun;
 if(/(?:[るうくすつむぶぐ])$/.test(s)&&s.length>2&& !lot(s,3))return s+'ぞ'+tl+pun;
@@ -27581,7 +27598,7 @@ return'<div class="res" data-id="'+c.id+'">'+
 '<span class="avset">'+'<button type="button" class="avbtn" data-act="iconpick" aria-label="'+esc(c.name)+'のアイコンを'+(c.icon?'変える':'設定する')+'" title="アイコンを'+(c.icon?'変える':'設定する')+'">'+HK.Icons.html(c.name,i,44)+(c.icon?'':'<i class="avplus" aria-hidden="true">＋</i>')+'</button>'+
 (c.icon?'<button type="button" class="avdel" data-act="icondel" aria-label="'+esc(c.name)+'のアイコンを外す" title="アイコンを外す">×</button>':'')+'</span>'+
 '<div class="who"><input type="text" id="nm-'+c.id+'" data-f="name" value="'+esc(c.name)+'" aria-label="名前" maxlength="24">'+
-'<div class="codeline"><input type="text" class="code" id="cd-'+c.id+'" data-f="code" value="'+HK.toCode(c.eg)+'" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="5文字コード（CP NP A FC AC）"><span class="ty" title="'+esc(HK.egoType(c.eg).label)+'">'+esc(HK.egoType(c.eg).label)+'</span>'+(HK.egoAttWord?'<span class="egatt" title="態度（台詞の表の種類）。「設定」の「この住人の傾向」に説明があります">'+esc(HK.egoAttWord(c))+'</span>':'')+'</div></div>'+
+'<div class="codeline"><input type="text" class="code" id="cd-'+c.id+'" data-f="code" value="'+HK.toCode(c.eg)+'" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="5文字コード（CP NP A FC AC）"><span class="ty" title="'+esc(HK.egoType(c.eg).label)+'">'+esc(HK.egoType(c.eg).label)+'</span>'+(HK.egoTypeName?'<span class="egatt egname" title="エゴグラムから見た性格の型。「設定」の「この住人の傾向」に説明があります">'+esc(HK.egoTypeName(c))+'</span>':'')+(HK.egoToneWord?'<span class="egatt egtone" title="この住人の口調（台詞の話し方）。おまかせだとエゴグラムから決まります">'+esc(HK.egoToneWord(c))+'</span>':'')+'</div></div>'+
 '<div class="ego">'+HK.FACTORS.map(function(k){
 return'<label title="'+esc(HK.FACTOR_FULL[k])+'">'+k+'<input type="number" id="eg-'+c.id+'-'+k+'" inputmode="decimal" min="0" max="20" step="1" data-f="eg" data-k="'+k+'" value="'+c.eg[k]+'"></label>';
 }).join('')+'</div>'+
@@ -28612,7 +28629,8 @@ function refreshRow(row,c,fromCode){
 var i=S.chars.indexOf(c);
 row.querySelector('.gwrap').innerHTML=egoGraph(c.eg,i);
 var ty=row.querySelector('.ty');ty.textContent=ty.title=HK.egoType(c.eg).label;
-var ea=row.querySelector('.egatt');if(ea&&HK.egoAttWord)ea.textContent=HK.egoAttWord(c);
+var ea=row.querySelector('.egname');if(ea&&HK.egoTypeName)ea.textContent=HK.egoTypeName(c);
+var et=row.querySelector('.egtone');if(et&&HK.egoToneWord)et.textContent=HK.egoToneWord(c);
 var tn=row.querySelector('select[data-f="tone"] option[value=""]');
 if(tn)tn.textContent='口調：おまかせ（'+autoTone(c)+'）';
 if(fromCode){
@@ -28633,6 +28651,7 @@ else if(f==='group'&&c){c.group=t.value.trim().slice(0,40);}
 else if(f==='tags'&&c){c.tags=t.value.trim().slice(0,80);}
 else if(f==='tone'&&c){
 c.tone=(HK.toneValid?HK.toneValid(t.value):HK.PERSONA[t.value])?t.value:'';
+var etw=row.querySelector('.egtone');if(etw&&HK.egoToneWord)etw.textContent=HK.egoToneWord(c);
 if(HK.Load&&HK.Load.ensureTones)HK.Load.ensureTones([c]).then(null,function(){});
 }
 else if(f==='fp'&&c)c.fp=t.value.trim().slice(0,8);
@@ -31226,4 +31245,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '44c69e8dd9', 1);
+HK.Load.done('core', '038077c38e', 1);

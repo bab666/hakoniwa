@@ -141,13 +141,16 @@
       .replace(/(?<![であ])だろう/g, 'であろう').replace(/(な?)のだがね/g, '$1のだがな').replace(/(?<=[ぁ-ん一-鿿])だね(?=[。！!]?$)/, 'だな')
       .replace(/すまない/g, 'すまぬ').replace(/^ありがとう(?:ございます)?(?=[。！!]|$)/, '大儀であった').replace(/^ほう、?ありがとう/, 'ほう、大儀であった').replace(/いいだろう/g, 'よかろう');
     if (fp === '我') q = q.replace(/我(?:たち|達)/g, '我ら');
+    /* 否定は口調の辞書の規則（tone-engine.js の T.neg）で：「覚えてない」→「覚えておらぬ」、「知らないよ」→「知らぬよ」。下の文末の直しは、辞書が触らなかった分の補い（2026-10-29） */
+    if (HK.Tone && HK.Tone.neg) q = HK.Tone.neg(q, 'ぬ');
+    q = q.replace(/ぬよ(?=[。！!？?…‥、」]|$)/g, 'ぬ');   /* 「おらぬよ」の よ は神らしくない（紳士の言い換えが足した分） */
     return bySent(q, function (s, tl, pun, last) {
       var ask = /[？?]/.test(pun);
       if (ask || !last || tl) return s + tl + pun;
       if (/[てで]いろ$/.test(s)) return s.replace(/いろ$/, 'おれ') + tl + pun;
       if (/(?:いない|居ない)$/.test(s)) return s.replace(/(?:いない|居ない)$/, 'おらぬ') + tl + pun;
       if (/しない$/.test(s)) return s.replace(/しない$/, 'せぬ') + tl + pun;
-      if (/[らかたまさわがばなけれせめべてげじちみびにひきりえ]ない$/.test(s) && !NAI_NG.test(s) && !lot(s, 5)) return s.replace(/ない$/, 'ぬ') + tl + pun;
+      if (/[らかたまさわがばなけれせめべげじちみびにひきりえ]ない$/.test(s) && !/[てで]ない$/.test(s) && !NAI_NG.test(s) && !lot(s, 5)) return s.replace(/ない$/, 'ぬ') + tl + pun;
       if (/てやる$/.test(s)) return s.replace(/てやる$/, 'てやろう') + tl + pun;
       if (/(?<![まやだ]|ん|の)だ$/.test(s) && /[一-鿿ァ-ヶー々]だ$/.test(s) && !lot(s, 5)) return s.replace(/だ$/, 'である') + tl + pun;
       if (/(?:[るうくすつむぶぐ])$/.test(s) && s.length > 2 && !lot(s, 3)) return s + 'ぞ' + tl + pun;
