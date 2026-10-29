@@ -128,7 +128,7 @@
   /* ↑ 古い保存の形（敵対・不仲の欄 lh）。読み込むとき・箱庭に渡すときに、気持ちの関係「愛憎」へ写す（HK.tieLhMigrate・HK.Ties.expand） */
   /* 気持ちの関係「愛憎」の相手の気持ち（cold）：相手も愛憎を持つか */
   HK.LH_BACK = {
-    '': { label: '相手：持たない（{a}だけ）', short: '' },
+    '': { label: '相手：持たない（片方だけ）', short: '' },
     both: { label: '相手も愛憎を持つ（双方）', short: '双方', mutual: true }
   };
   HK.LH_BACK_ORDER = ['', 'both'];
