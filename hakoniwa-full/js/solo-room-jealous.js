@@ -164,6 +164,7 @@
         var rh = ctx.rules.filter(function (q) { return q.k === 'h'; })[0], p = A.prog(ctx, a, b), counted = true;
         if (rh && A.bumpAct) counted = A.bumpAct(ctx, rh, a, b, 1, null, false); else p.act.h = (p.act.h || 0) + 1;
         if (!counted && A.waitNote) t += A.waitNote(ctx, rh, a, b);
+        else if (counted && rh && rh.n > 1 && A.cntTag) t += A.cntTag(ctx, rh, a, b, Math.min(rh.n, p.act.h || 0));
         ctx.pair(a, b).night = true;
         ctx.mod2(a, b, { att: 10, aff: 6, ten: 2 }, { att: 8, aff: 4 });
         b.flags.partner = a.i; b.flags.excl = true; b.flags.exclOpen = false; b.flags.partnerAt = ctx.stepIndex;
